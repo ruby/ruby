@@ -37,7 +37,15 @@ static void syslog_write(int pri, int argc, VALUE *argv)
 /* Syslog module methods */
 static VALUE mSyslog_close(VALUE self)
 {
+    if (!syslog_opened) {
+        rb_raise(rb_eRuntimeError, "syslog not opened");
+    }
+
     closelog();
+
+    free((void *)syslog_ident);
+    syslog_ident = NULL;
+    syslog_options = syslog_facility = syslog_mask = -1;
     syslog_opened = 0;
 
     return Qnil;
@@ -51,26 +59,33 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
     if (syslog_opened) {
         rb_raise(rb_eRuntimeError, "syslog already open");
     }
+
     rb_scan_args(argc, argv, "03", &ident, &opt, &fac);
+
     if (NIL_P(ident)) {
         ident = rb_gv_get("$0"); 
     }
-    if (NIL_P(opt)) {
-        opt = INT2NUM(LOG_PID | LOG_CONS);
-    }
-    if (NIL_P(fac)) {
-        fac = INT2NUM(LOG_USER);
-    }
-
 #ifdef SafeStringValue
     SafeStringValue(ident);
 #else
     Check_SafeStr(ident);
 #endif
-    syslog_ident = (const char *)strdup(RSTRING(ident)->ptr);
-    syslog_options = NUM2INT(opt);
-    syslog_facility = NUM2INT(fac);
+    syslog_ident = strdup(RSTRING(ident)->ptr);
+
+    if (NIL_P(opt)) {
+	syslog_options = LOG_PID | LOG_CONS;
+    } else {
+	syslog_options = NUM2INT(opt);
+    }
+
+    if (NIL_P(fac)) {
+	syslog_facility = LOG_USER;
+    } else {
+	syslog_facility = NUM2INT(fac);
+    }
+
     openlog(syslog_ident, syslog_options, syslog_facility);
+
     syslog_opened = 1;
 
     setlogmask(syslog_mask = setlogmask(0));
@@ -97,22 +112,22 @@ static VALUE mSyslog_isopen(VALUE self)
 
 static VALUE mSyslog_ident(VALUE self)
 {
-    return rb_str_new2(syslog_ident);
+    return syslog_opened ? rb_str_new2(syslog_ident) : Qnil;
 }
 
 static VALUE mSyslog_options(VALUE self)
 {
-    return INT2NUM(syslog_options);
+    return syslog_opened ? INT2NUM(syslog_options) : Qnil;
 }
 
 static VALUE mSyslog_facility(VALUE self)
 {
-    return INT2NUM(syslog_facility);
+    return syslog_opened ? INT2NUM(syslog_facility) : Qnil;
 }
 
 static VALUE mSyslog_get_mask(VALUE self)
 {
-    return INT2NUM(syslog_mask);
+    return syslog_opened ? INT2NUM(syslog_mask) : Qnil;
 }
 
 static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
@@ -150,14 +165,18 @@ static VALUE mSyslog_inspect(VALUE self)
 {
     char buf[1024];
 
-    snprintf(buf, sizeof(buf),
-      "<#%s: ident=\"%s\", options=%d, facility=%d, mask=%d%s>",
-      rb_class2name(self),
-      syslog_ident,
-      syslog_options,
-      syslog_facility,
-      syslog_mask,
-      syslog_opened ? ", opened" : "");
+    if (syslog_opened) {
+	snprintf(buf, sizeof(buf),
+	  "<#%s: opened=true, ident=\"%s\", options=%d, facility=%d, mask=%d>",
+	  rb_class2name(self),
+	  syslog_ident,
+	  syslog_options,
+	  syslog_facility,
+	  syslog_mask);
+    } else {
+	snprintf(buf, sizeof(buf),
+	  "<#%s: opened=false>", rb_class2name(self));
+    }
 
     return rb_str_new2(buf);
 }
