@@ -76,7 +76,7 @@ static VALUE rb_cStat;
 
 static int
 apply2files(func, vargs, arg)
-    int (*func)();
+    void (*func)();
     VALUE vargs;
     void *arg;
 {
@@ -90,8 +90,7 @@ apply2files(func, vargs, arg)
 
     for (i=0; i<args->len; i++) {
 	path = args->ptr[i];
-	if ((*func)(RSTRING(path)->ptr, arg) < 0)
-	    rb_sys_fail(RSTRING(path)->ptr);
+	(*func)(RSTRING(path)->ptr, arg);
     }
 
     return args->len;

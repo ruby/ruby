@@ -8096,7 +8096,7 @@ rb_thread_abort_exc_set(thread, val)
     th->errinfo = Qnil;\
     th->last_status = 0;\
     th->last_line = 0;\
-    th->last_match = 0;\
+    th->last_match = Qnil;\
     th->abort = 0;\
     th->priority = 0;\
     th->gid = 1;\
