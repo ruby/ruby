@@ -1,16 +1,13 @@
+Thu Mar 22 22:15:45 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/Win32API/extconf.rb: add -fno-omit-frame-pointer.
+
 Thu Mar 22 17:43:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h: better inline function support.
 
 	* configure.in (NO_C_INLINE): check if inline is available for the
 	  C compiler.
-
-Mon Mar 19 11:03:10 2001  Koji Arai  <JCA02266@nifty.ne.jp>
-
-	* marshal.c (r_object): len calculation patch was wrong for
-	  machines SIZEOF_BDIGITS == SIZEOF_SHORT.
-
-	* gc.c: alloca prototype reorganized for C_ALLOCA machine.
 
 Wed Mar 21 23:07:45 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -47,6 +44,13 @@ Mon Mar 19 16:27:32 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (THREAD_ALLOC): flags should be initialized.
 
 	* signal.c (rb_f_kill): should use FIX2INT, not FIX2UINT.
+
+Mon Mar 19 11:03:10 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* marshal.c (r_object): len calculation patch was wrong for
+	  machines SIZEOF_BDIGITS == SIZEOF_SHORT.
+
+	* gc.c: alloca prototype reorganized for C_ALLOCA machine.
 
 Sun Mar 18 08:58:18 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
