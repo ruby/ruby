@@ -487,6 +487,8 @@ rb_ary2cary(char t, VALUE v, long *size)
       return (void*)c_parray(v,size);
     };
     rb_raise(rb_eDLTypeError, "type mismatch");
+  case T_NIL:
+    return (void*)c_parray(v, size);
   default:
     rb_raise(rb_eDLTypeError, "unsupported type");
   };
