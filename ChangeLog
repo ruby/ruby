@@ -1,3 +1,14 @@
+Sat Dec 28 00:34:03 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* {win32,bcc32}/Makefile.sub: remove `=' from --make-flags options.
+	  nmake quotes args if included `=' in args.
+
+	* instruby.rb: use getopts.rb.
+
+	* ext/dbm/extconf.rb: substitute ' with ".
+
+	* ext/gdbm/gdbm.c: add prototypes to avoid VC++ warnings.
+
 Fri Dec 27 21:41:57 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bcc32/setup.mak, win32/setup.mak(-prologue-): move srcdir from
