@@ -412,7 +412,7 @@ yaml_org_handler( n, ref )
     {
         case syck_str_kind:
             transferred = 1;
-            if ( type_id == NULL || strcmp( type_id, "str" ) == 0 )
+            if ( type_id == NULL )
             {
                 obj = rb_str_new( n->data.str->ptr, n->data.str->len );
             }
@@ -438,11 +438,38 @@ yaml_org_handler( n, ref )
             }
             else if ( strcmp( type_id, "int#hex" ) == 0 )
             {
+                syck_str_blow_away_commas( n );
                 obj = rb_cstr2inum( n->data.str->ptr, 16 );
             }
             else if ( strcmp( type_id, "int#oct" ) == 0 )
             {
+                syck_str_blow_away_commas( n );
                 obj = rb_cstr2inum( n->data.str->ptr, 8 );
+            }
+            else if ( strcmp( type_id, "int#base60" ) == 0 )
+            {
+                char *ptr, *end;
+                long sixty = 1;
+                long total = 0;
+                syck_str_blow_away_commas( n );
+                ptr = n->data.str->ptr;
+                end = n->data.str->ptr + n->data.str->len;
+                while ( end > ptr )
+                {
+                    long bnum = 0;
+                    char *colon = end - 1;
+                    while ( colon >= ptr && *colon != ':' )
+                    {
+                        colon--;
+                    }
+                    if ( *colon == ':' ) *colon = '\0';
+
+                    bnum = strtol( colon + 1, NULL, 10 );
+                    total += bnum * sixty;
+                    sixty *= 60;
+                    end = colon;
+                }
+                obj = INT2FIX(total);
             }
             else if ( strncmp( type_id, "int", 3 ) == 0 )
             {
@@ -495,27 +522,30 @@ yaml_org_handler( n, ref )
                 while ( !ISDIGIT( *ptr ) ) ptr++;
                 day = INT2FIX(strtol(ptr, NULL, 10));
 
-                if ( !cDate ) {
-                    /*
-                     * Load Date module
-                     */
-                    rb_require( "date" );
-                    cDate = rb_const_get( rb_cObject, rb_intern("Date") );
-                }
-
                 obj = rb_funcall( cDate, s_new, 3, year, mon, day );
             }
             else if ( strncmp( type_id, "timestamp", 9 ) == 0 )
             {
                 obj = rb_syck_mktime( n->data.str->ptr );
             }
-            else if ( strncmp( type_id, "merge", 5 ) == 0 )
+			else if ( strncmp( type_id, "merge", 5 ) == 0 )
+			{
+				obj = rb_funcall( cMergeKey, s_new, 0 );
+			}
+			else if ( strncmp( type_id, "default", 7 ) == 0 )
+			{
+				obj = rb_funcall( cDefaultKey, s_new, 0 );
+			}
+            else if ( strncmp( n->data.str->ptr, ":", 1 ) == 0 )
             {
-                obj = rb_funcall( cMergeKey, s_new, 0 );
+                char *tmp;
+                tmp = syck_strndup( n->data.str->ptr + 1, n->data.str->len - 1 );
+                obj = ID2SYM( rb_intern( tmp ) );
+                free( tmp );
             }
-            else if ( strncmp( type_id, "default", 7 ) == 0 )
+            else if ( strcmp( type_id, "str" ) == 0 )
             {
-                obj = rb_funcall( cDefaultKey, s_new, 0 );
+                obj = rb_str_new( n->data.str->ptr, n->data.str->len );
             }
             else
             {
@@ -544,46 +574,46 @@ yaml_org_handler( n, ref )
             obj = rb_hash_new();
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
-                VALUE k = syck_map_read( n, map_key, i );
-                VALUE v = syck_map_read( n, map_value, i );
-                int skip_aset = 0;
+				VALUE k = syck_map_read( n, map_key, i );
+				VALUE v = syck_map_read( n, map_value, i );
+				int skip_aset = 0;
 
-                /*
-                 * Handle merge keys
-                 */
-                if ( rb_obj_is_kind_of( k, cMergeKey ) )
-                {
-                    if ( rb_obj_is_kind_of( v, rb_cHash ) )
-                    {
-                        VALUE dup = rb_funcall( v, s_dup, 0 );
-                        rb_funcall( dup, s_update, 1, obj );
-                        obj = dup;
-                        skip_aset = 1;
-                    }
-                    else if ( rb_obj_is_kind_of( v, rb_cArray ) )
-                    {
-                        VALUE end = rb_ary_pop( v );
-                        if ( rb_obj_is_kind_of( end, rb_cHash ) )
-                        {
-                            VALUE dup = rb_funcall( end, s_dup, 0 );
-                            v = rb_ary_reverse( v );
-                            rb_ary_push( v, obj );
-                            rb_iterate( rb_each, v, syck_merge_i, dup );
-                            obj = dup;
-                            skip_aset = 1;
-                        }
-                    }
-                }
+				/*
+				 * Handle merge keys
+				 */
+				if ( rb_obj_is_kind_of( k, cMergeKey ) )
+				{
+					if ( rb_obj_is_kind_of( v, rb_cHash ) )
+					{
+						VALUE dup = rb_funcall( v, s_dup, 0 );
+						rb_funcall( dup, s_update, 1, obj );
+						obj = dup;
+						skip_aset = 1;
+					}
+					else if ( rb_obj_is_kind_of( v, rb_cArray ) )
+					{
+						VALUE end = rb_ary_pop( v );
+						if ( rb_obj_is_kind_of( end, rb_cHash ) )
+						{
+							VALUE dup = rb_funcall( end, s_dup, 0 );
+							v = rb_ary_reverse( v );
+							rb_ary_push( v, obj );
+							rb_iterate( rb_each, v, syck_merge_i, dup );
+							obj = dup;
+							skip_aset = 1;
+						}
+					}
+				}
                 else if ( rb_obj_is_kind_of( k, cDefaultKey ) )
                 {
                     rb_funcall( obj, s_default_set, 1, v );
                     skip_aset = 1;
                 }
 
-                if ( ! skip_aset )
-                {
-                    rb_hash_aset( obj, k, v );
-                }
+				if ( ! skip_aset )
+				{
+					rb_hash_aset( obj, k, v );
+				}
             }
         break;
     }

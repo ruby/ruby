@@ -442,6 +442,14 @@ octal: 014
 hexadecimal: 0xC
 EOY
 		)
+		assert_parse_only(
+            { 'canonical' => 685230, 'decimal' => 685230, 'octal' => '02472256'.oct, 'hexadecimal' => '0x0A74AE'.hex, 'sexagesimal' => 685230 }, <<EOY
+canonical: 685230
+decimal: +685,230
+octal: 02472256
+hexadecimal: 0x0A,74,AE
+sexagesimal: 190:20:30
+EOY
 	end
 
 	def test_spec_type_float

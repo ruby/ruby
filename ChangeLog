@@ -1,3 +1,14 @@
+Tue Jan 13 07:52:40 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/bytecode.c: turn off default implicit typing.
+
+	* ext/syck/implicit.c: detect base60 integers.
+
+	* ext/syck/rubyext.c: handle base60, as well as hex and octal
+	  with commas.  implicit typing of ruby symbols.
+
+	* test/yaml/test_yaml.rb: add test.
+
 Tue Jan 13 04:29:52 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_driver.rb (RiDriver::report_method_stuff): 
