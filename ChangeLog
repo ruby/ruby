@@ -1,3 +1,7 @@
+Tue Jul 29 17:27:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ruby.h (LLONG_MIN): fix typo.
+
 Tue Jul 29 16:38:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP::send0): add taint check.
