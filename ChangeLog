@@ -1,3 +1,8 @@
+Thu Feb 10 10:29:16 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/curses/curses.c: don't need to check HAVE_WCOLOR_SET excluding
+	  window_color_set().
+
 Thu Feb 10 00:47:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (make_struct): fixed: [ruby-core:04402]

@@ -561,7 +561,7 @@ curses_resizeterm(VALUE obj, VALUE lin, VALUE col)
 #endif
 }
 
-#if defined(USE_COLOR) && defined(HAVE_WCOLOR_SET)
+#ifdef USE_COLOR
 static VALUE
 curses_start_color(VALUE obj)
 {
