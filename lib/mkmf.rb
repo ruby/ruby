@@ -279,7 +279,7 @@ def egrep_cpp(pat, src, opt="")
   create_tmpsrc(src)
   xpopen(cpp_command('', opt)) do |f|
     if Regexp === pat
-      puts("    ruby -ne 'print if /#{pat.source}/'")
+      puts("    ruby -ne 'print if #{pat.inspect}'")
       f.grep(pat) {|l|
 	puts "#{f.lineno}: #{l}"
 	return true
@@ -513,11 +513,13 @@ def dir_config(target, idefault=nil, ldefault=nil)
 
   if idir
     idircflag = "-I" + idir
-    $CPPFLAGS += " " + idircflag unless $CPPFLAGS.split.include?(idircflag)
+    unless Shellwords.shellwords($CPPFLAGS).include?(idircflag)
+      $CPPFLAGS = idircflag + " " + $CPPFLAGS
+    end
   end
 
   if ldir
-    $LIBPATH << ldir unless $LIBPATH.include?(ldir)
+    $LIBPATH.unshift(ldir) unless $LIBPATH.include?(ldir)
   end
 
   [idir, ldir]
@@ -814,12 +816,13 @@ init_mkmf
 dir_config("opt")
 
 $make = with_config("make-prog", ENV["MAKE"] || "make")
+make, = Shellwords.shellwords($make)
 $nmake = nil
 case
 when $mswin
-  $nmake = ?m if /nmake/i =~ $make
+  $nmake = ?m if /nmake/i =~ make
 when $bccwin
-  $nmake = ?b if /Borland/i =~ `#$make -h`
+  $nmake = ?b if /Borland/i =~ `#{make} -h`
 end
 
 Config::CONFIG["srcdir"] = CONFIG["srcdir"] =

@@ -1,3 +1,13 @@
+Mon Jan 20 04:14:17 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb (egrep_cpp): use inspect to show options.
+
+	* lib/mkmf.rb (dir_config): prior configured directories to
+	  defaults.
+
+	* lib/mkmf.rb (dir_config): extract first word to determin
+	  make command type.
+
 Mon Jan 20 02:15:53 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/aix_mksym.rb: no longer used.
