@@ -1,3 +1,7 @@
+Mon Dec  6 17:49:30 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (run_trap_eval): add prototype for Microsoft compiler.
+
 Mon Dec  6 17:32:38 2004  Tanaka Akira  <akr@m17n.org>
 
 	* rubyio.h, intern.h, io.c, file.c, process.c, ext/socket/socket.c,

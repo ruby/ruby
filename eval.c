@@ -9684,6 +9684,7 @@ thread_reset_raised()
 
 static void rb_thread_ready _((rb_thread_t));
 
+static VALUE run_trap_eval _((VALUE));
 static VALUE
 run_trap_eval(arg)
     VALUE arg;
