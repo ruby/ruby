@@ -115,6 +115,9 @@ class PStore
 	    raise
 	  end
 	end
+	if @abort and !orig
+	  File.unlink(@filename)
+	end
 	@abort = false
       end
     ensure
