@@ -1,5 +1,7 @@
 Mon Mar 25 11:32:21 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
+	* dln.c (dln_argv0): unused unless USE_DLN_A_OUT.
+
 	* ext/digest: add depend files.
 
 	* ext/syslog: ditto.
