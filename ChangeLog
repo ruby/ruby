@@ -1,3 +1,13 @@
+Mon Apr 21 21:25:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* numeric.c (flo_is_finite_p): use finite() if available.
+
+	* win32/win32.h (isinf, isnan): define as macro.
+	  [ruby-win32:00533]
+
+	* bcc32/Makefile.sub, win32/Makefile.sub: no longer use
+	  missing/isinf.c, missing/isnan.c.
+
 Mon Apr 21 18:36:28 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bignum.c (rb_cstr_to_inum): unnecessarily long buffer was used

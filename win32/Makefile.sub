@@ -93,7 +93,7 @@ RFLAGS = -r
 EXTLIBS =
 !endif
 LIBS = oldnames.lib user32.lib advapi32.lib wsock32.lib $(EXTLIBS)
-MISSING = acosh.obj crypt.obj win32.obj isinf.obj isnan.obj
+MISSING = acosh.obj crypt.obj win32.obj
 
 ARFLAGS = -machine:$(MACHINE) -out:
 CC = $(CC) -nologo
@@ -245,6 +245,8 @@ config.h:
 #define HAVE_STRTOUL 1
 #define HAVE_FLOCK 1
 #define HAVE_VSNPRINTF 1
+#define HAVE_ISINF 1
+#define HAVE_ISNAN 1
 #define HAVE_FINITE 1
 #define HAVE_FMOD 1
 #define HAVE_FREXP 1
@@ -328,7 +330,7 @@ s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS),;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
-s,@LIBOBJS@, acosh.obj crypt.obj win32.obj isinf.obj isnan.obj,;t t
+s,@LIBOBJS@, acosh.obj crypt.obj win32.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
@@ -516,8 +518,6 @@ crypt.obj: {$(srcdir)}missing/crypt.c
 dup2.obj: {$(srcdir)}missing/dup2.c
 finite.obj: {$(srcdir)}missing/finite.c
 flock.obj: {$(srcdir)}missing/flock.c
-isinf.obj: {$(srcdir)}missing/isinf.c
-isnan.obj: {$(srcdir)}missing/isnan.c
 memcmp.obj: {$(srcdir)}missing/memcmp.c
 memmove.obj: {$(srcdir)}missing/memmove.c
 mkdir.obj: {$(srcdir)}missing/mkdir.c

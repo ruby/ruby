@@ -175,40 +175,30 @@ extern int do_aspawn(int, char *, char **);
 extern int kill(int, int);
 extern pid_t rb_w32_getpid(void);
 
-#ifdef __BORLANDC__
 #include <float.h>
+#if !defined __MINGW32__ || defined __NO_ISOCEXT
 #ifndef isnan
-#define isnan    _isnan
+#define isnan(x) _isnan(x)
+#endif
+#ifndef isinf
+#define isinf(x) (!_finite(x) && !_isnan(x))
+#endif
+#ifndef finite
+#define finite(x) _finite(x)
+#endif
 #endif
 
-#ifdef S_ISDIR
+#ifdef __BORLANDC__
 #undef S_ISDIR
-#endif
-
-#ifdef S_ISFIFO
 #undef S_ISFIFO
-#endif
-
-#ifdef S_ISBLK
 #undef S_ISBLK
-#endif
-
-#ifdef S_ISCHR
 #undef S_ISCHR
-#endif
-
-#ifdef S_ISREG
 #undef S_ISREG
-#endif
-
 #define S_ISDIR(m)  (((unsigned short)(m) & S_IFMT) == S_IFDIR)
 #define S_ISFIFO(m) (((unsigned short)(m) & S_IFMT) == S_IFIFO)
 #define S_ISBLK(m)  (((unsigned short)(m) & S_IFMT) == S_IFBLK)
 #define S_ISCHR(m)  (((unsigned short)(m) & S_IFMT) == S_IFCHR)
 #define S_ISREG(m)  (((unsigned short)(m) & S_IFMT) == S_IFREG)
-#elif !defined __MINGW32__ || defined __NO_ISOCEXT
-extern int isinf(double);
-extern int isnan(double);
 #endif
 
 #if !defined S_IRUSR && !defined __MINGW32__
