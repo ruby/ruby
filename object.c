@@ -1314,7 +1314,7 @@ Init_Object()
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "==", rb_obj_equal, 1);
     rb_define_method(rb_mKernel, "equal?", rb_obj_equal, 1);
-    rb_define_method(rb_mKernel, "===", rb_obj_equal, 1); 
+    rb_define_method(rb_mKernel, "===", rb_equal, 1); 
     rb_define_method(rb_mKernel, "=~", rb_false, 1);
 
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);

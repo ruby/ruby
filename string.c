@@ -773,13 +773,9 @@ rb_str_equal(str1, str2)
     VALUE str1, str2;
 {
     if (str1 == str2) return Qtrue;
-    if (TYPE(str2) != T_STRING) {
-	str2 = rb_check_string_type(str2);
-	if (NIL_P(str2)) return Qfalse;
-    }
-
-    if (RSTRING(str1)->len == RSTRING(str2)->len
-	&& rb_str_cmp(str1, str2) == 0) {
+    if (TYPE(str2) != T_STRING) return Qfalse;
+    if (RSTRING(str1)->len == RSTRING(str2)->len &&
+	rb_str_cmp(str1, str2) == 0) {
 	return Qtrue;
     }
     return Qfalse;
@@ -3194,7 +3190,6 @@ Init_String()
     rb_define_method(rb_cString, "copy_object", rb_str_replace, 1); 
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
-    rb_define_method(rb_cString, "===", rb_str_equal, 1);
     rb_define_method(rb_cString, "eql?", rb_str_eql, 1);
     rb_define_method(rb_cString, "hash", rb_str_hash_m, 0);
     rb_define_method(rb_cString, "casecmp", rb_str_casecmp, 1);

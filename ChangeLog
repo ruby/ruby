@@ -1,3 +1,19 @@
+Mon Feb  3 16:49:19 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (Init_Object): default Object#=== now calls "=="
+	  internally.
+
+	* re.c (rb_reg_initialize_m): should honor option status of
+	  original regexp.
+
+	* array.c (rb_ary_equal): ary2 should be T_ARRAY (no to_ary
+	  conversion).
+
+	* array.c (rb_ary_eql): ditto.
+
+	* string.c (rb_str_equal): str2 should be T_STRING (no to_str
+	  conversion).
+
 Mon Feb  3 16:32:52 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* re.c (rb_memsearch): a little improvement.

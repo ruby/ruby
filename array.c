@@ -1563,10 +1563,7 @@ rb_ary_equal(ary1, ary2)
     long i;
 
     if (ary1 == ary2) return Qtrue;
-    if (TYPE(ary2) != T_ARRAY) {
-	ary2 = rb_check_array_type(ary2);
-	if (NIL_P(ary2)) return Qfalse;
-    }
+    if (TYPE(ary2) != T_ARRAY) return Qfalse;
     if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (!rb_equal(RARRAY(ary1)->ptr[i], RARRAY(ary2)->ptr[i]))
@@ -1582,10 +1579,7 @@ rb_ary_eql(ary1, ary2)
     long i;
 
     if (ary1 == ary2) return Qtrue;
-    if (TYPE(ary2) != T_ARRAY) {
-	ary2 = rb_check_array_type(ary2);
-	if (NIL_P(ary2)) return Qfalse;
-    }
+    if (TYPE(ary2) != T_ARRAY) return Qfalse;
     if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (!rb_eql(RARRAY(ary1)->ptr[i], RARRAY(ary2)->ptr[i]))
@@ -1898,7 +1892,6 @@ Init_Array()
     rb_define_method(rb_cArray, "==", rb_ary_equal, 1);
     rb_define_method(rb_cArray, "eql?", rb_ary_eql, 1);
     rb_define_method(rb_cArray, "hash", rb_ary_hash, 0);
-    rb_define_method(rb_cArray, "===", rb_ary_equal, 1);
 
     rb_define_method(rb_cArray, "[]", rb_ary_aref, -1);
     rb_define_method(rb_cArray, "[]=", rb_ary_aset, -1);

@@ -1225,47 +1225,68 @@ rb_reg_initialize_m(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE src;
+    const char *s;
+    long len;
     int flags = 0;
 
+    rb_check_frozen(self);
     if (argc == 0 || argc > 3) {
 	rb_raise(rb_eArgError, "wrong number of argument");
     }
-    if (argc >= 2) {
-	if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
-	else if (RTEST(argv[1])) flags = RE_OPTION_IGNORECASE;
-    }
-    if (argc == 3) {
-	char *kcode = StringValuePtr(argv[2]);
-
-	switch (kcode[0]) {
-	  case 'n': case 'N':
+    if (TYPE(argv[0]) == T_REGEXP) {
+	if (argc > 1) {
+	    rb_warn("flags%s ignored", (argc == 3) ? " and encoding": "");
+	}
+	rb_reg_check(argv[0]);
+	flags = RREGEXP(argv[0])->ptr->options & 0xf;
+	switch (RBASIC(argv[0])->flags & KCODE_MASK) {
+	  case KCODE_NONE:
 	    flags |= 16;
 	    break;
-	  case 'e': case 'E':
+	  case KCODE_EUC:
 	    flags |= 32;
 	    break;
-	  case 's': case 'S':
+	  case KCODE_SJIS:
 	    flags |= 48;
 	    break;
-	  case 'u': case 'U':
+	  case KCODE_UTF8:
 	    flags |= 64;
 	    break;
 	  default:
 	    break;
 	}
-    }
-
-    rb_check_frozen(self);
-    src = argv[0];
-    if (TYPE(src) == T_REGEXP) {
-	rb_reg_check(src);
-	rb_reg_initialize(self, RREGEXP(src)->str, RREGEXP(src)->len, flags);
+	s = RREGEXP(argv[0])->str;
+	len = RREGEXP(argv[0])->len;
     }
     else {
-	StringValue(src);
-	rb_reg_initialize(self, RSTRING(src)->ptr, RSTRING(src)->len, flags);
+	s = StringValuePtr(argv[0]);
+	len = RREGEXP(argv[0])->len;
+	if (argc >= 2) {
+	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
+	    else if (RTEST(argv[1])) flags = RE_OPTION_IGNORECASE;
+	}
+	else if (argc == 3) {
+	    char *kcode = StringValuePtr(argv[2]);
+
+	    switch (kcode[0]) {
+	      case 'n': case 'N':
+		flags |= 16;
+		break;
+	      case 'e': case 'E':
+		flags |= 32;
+		break;
+	      case 's': case 'S':
+		flags |= 48;
+		break;
+	      case 'u': case 'U':
+		flags |= 64;
+		break;
+	      default:
+		break;
+	    }
+	}
     }
+    rb_reg_initialize(self, s, len, flags);
     return self;
 }
 
