@@ -21,8 +21,8 @@ module WEBrick
     alias orig_parse parse
 
     def parse(socket=nil)
-      if socket && socket.is_a?(OpenSSL::SSL::SSLSocket)
-        @server_cert = @config[:SSLCertificate]
+      if socket.respond_to?(:cert)
+        @server_cert = socket.cert || @config[:SSLCertificate]
         @client_cert = socket.peer_cert
         @client_cert_chain = socket.peer_cert_chain
         @cipher      = socket.cipher

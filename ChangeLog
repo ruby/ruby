@@ -1,3 +1,11 @@
+Fri Dec 19 21:24:22 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httprequest.rb (meta_vers): should not set 
+	  HTTP_CONTENT_TYPE and HTTP_CONTENT_LENGTH.
+
+	* lib/webrick/https.rb (HTTPRequest#parse): should check presence
+	  of cert() method to detect SSLSocket.
+
 Fri Dec 19 22:56:46 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/property.rb (SOAP::Property#load): new method for loading
