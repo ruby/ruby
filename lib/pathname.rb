@@ -222,7 +222,7 @@ class Pathname
     @path.dup
   end
 
-  # to_str is implemented so Pathname objects are usable with File.open, etc.
+  # to_path is implemented so Pathname objects are usable with File.open, etc.
   alias to_path to_s
 
   def inspect # :nodoc:
