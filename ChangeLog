@@ -1,3 +1,12 @@
+Tue Mar 29 00:04:57 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: move method DRbObject#reinit to DRbObject.new_with.
+          extract method DRbObject.prepare_backtrace. add DRb.regist_server,
+          remove_server, fetch_server. change server in thread variable if
+          in-proc sesrver. [druby-ja:113]
+
+	* lib/drb/gw.rb: ditto.
+
 Mon Mar 28 20:53:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extract_makefile): nothing to be removed when no file

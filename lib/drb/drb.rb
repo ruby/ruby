@@ -992,8 +992,13 @@ module DRb
 	return DRb.to_obj(ref)
       end
 
-      it = self.new(nil)
-      it.reinit(uri, ref)
+      self.new_with(uri, ref)
+    end
+
+    def self.new_with(uri, ref)
+      it = self.allocate
+      it.instance_variable_set('@uri', uri)
+      it.instance_variable_set('@ref', ref)
       it
     end
 
@@ -1025,12 +1030,6 @@ module DRb
 	@uri = uri ? uri : (DRb.uri rescue nil)
 	@ref = obj ? DRb.to_id(obj) : nil
       end
-    end
-
-    # Reinitialise this object with the given +uri+ and +ref+
-    def reinit(uri, ref)
-      @uri = uri
-      @ref = ref
     end
 
     # Get the URI of the remote object.
@@ -1065,25 +1064,45 @@ module DRb
 	return obj.__send__(msg_id, *a, &b) 
       end
 
-      succ, result = DRbConn.open(@uri) do |conn|
-	conn.send_message(self, msg_id, a, b)
+      succ, result = self.class.with_friend(@uri) do
+        DRbConn.open(@uri) do |conn|
+          conn.send_message(self, msg_id, a, b)
+        end
       end
-      return result if succ
-      unless DRbUnknown === result
-	prefix = "(#{@uri}) "
-	bt = []
-	result.backtrace.each do |x|
-	  break if /`__send__'$/ =~ x 
-	  if /^\(druby:\/\// =~ x
-	    bt.push(x)
-	  else
-	    bt.push(prefix + x)
-	  end
-	end
-	raise result, result.message, bt + caller
+
+      if succ
+        return result
+      elsif DRbUnknown === result
+        raise result
       else
-	raise result
+        bt = self.class.prepare_backtrace(@uri, result)
+        raise result, result.message, bt + caller
       end
+    end
+
+    def self.with_friend(uri)
+      friend = DRb.fetch_server(uri)
+      return yield() unless friend
+      
+      save = Thread.current['DRb']
+      Thread.current['DRb'] = { 'server' => friend }
+      return yield
+    ensure
+      Thread.current['DRb'] = save if friend
+    end
+
+    def self.prepare_backtrace(uri, result)
+      prefix = "(#{uri}) "
+      bt = []
+      result.backtrace.each do |x|
+        break if /`__send__'$/ =~ x 
+        if /^\(druby:\/\// =~ x
+          bt.push(x)
+        else
+          bt.push(prefix + x)
+        end
+      end
+      bt
     end
 
     def pretty_print(q)   # :nodoc:
@@ -1309,9 +1328,7 @@ module DRb
       @grp = ThreadGroup.new
       @thread = run
 
-      Thread.exclusive do
-	DRb.primary_server = self unless DRb.primary_server
-      end
+      DRb.regist_server(self)
     end
 
     # The URI of this DRbServer.
@@ -1352,6 +1369,7 @@ module DRb
 
     # Stop this server.
     def stop_service
+      DRb.remove_server(self)
       if  Thread.current['DRb'] && Thread.current['DRb']['server'] == self
         Thread.current['DRb']['stop_service'] = true
       else
@@ -1702,6 +1720,25 @@ module DRb
     DRbServer.default_acl(acl)
   end
   module_function :install_acl
+
+  @server = {}
+  def regist_server(server)
+    @server[server.uri] = server
+    Thread.exclusive do
+      @primary_server = server unless @primary_server
+    end
+  end
+  module_function :regist_server
+
+  def remove_server(server)
+    @server.delete(server.uri)
+  end
+  module_function :remove_server
+  
+  def fetch_server(uri)
+    @server[uri]
+  end
+  module_function :fetch_server
 end
 
 DRbObject = DRb::DRbObject
