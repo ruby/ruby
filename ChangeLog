@@ -1,3 +1,29 @@
+Sun Mar  6 06:34:31 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_start_ssl): should wait for that
+	  the underlying IO become readable or writable if the error was
+	  SSL_ERROR_WANT_READ or SSL_ERROR_WANT_WRITE. [ruby-dev:25795]
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read, ossl_ssl_write): ditto.
+
+	* ext/openssl/lib/openssl/buffering.rb
+	  (Buffering#consume_rbuf): pointless eof flag resetting is deleted.
+	  (Buffering#read): should return an empty string if the specified
+	  size is zero.
+	  (Buffering#readpartial): new method.
+	  (Buffering#readline): fix typo.
+	  (Buffering#getc): return the first character of string correctly.
+	  (Buffering#readchar): fix typo.
+	  (Buffering#eof?): should read again it the input buffer is empty.
+	  (Buffering#do_write): should rescue Errno::EAGAIN.
+	  (Buffering#puts): use "\n" as the output field separator.
+
+	* ext/openssl/extconf.rb: get rid of GNUmakefile generation.
+
+	* text/openssl/test_pair.rb: test for IO like methods.
+
+	* test/ruby/ut_eof.rb: test about empty file.
+
 Sat Mar  5 17:48:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (rb_glob): fixed mismatch of argument.

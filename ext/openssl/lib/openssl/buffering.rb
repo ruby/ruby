@@ -41,7 +41,6 @@ module Buffering
 
   def consume_rbuff(size=nil)
     if @rbuffer.size == 0
-      @eof = nil
       nil
     else
       size = @rbuffer.size unless size
@@ -54,6 +53,14 @@ module Buffering
   public
 
   def read(size=nil, buf=nil)
+    if size == 0
+      if buf
+        buf.clear
+        return buf
+      else
+        return ""
+      end
+    end
     fill_rbuff unless defined? @rbuffer
     @eof ||= nil
     until @eof
@@ -66,6 +73,31 @@ module Buffering
       ret = buf
     end
     (size && ret.empty?) ? nil : ret
+  end
+
+  def readpartial(maxlen, buf=nil)
+    if maxlen == 0
+      if buf
+        buf.clear
+        return buf
+      else
+        return ""
+      end
+    end
+    if !defined?(@rbuffer) || @rbuffer.size == 0
+      begin
+        return sysread(maxlen, buf)
+      rescue Errno::EAGAIN
+        retry
+      end
+    end
+    ret = consume_rbuff(maxlen)
+    if buf
+      buf.replace(ret)
+      ret = buf
+    end
+    raise EOFError if ret.empty?
+    ret
   end
 
   def gets(eol=$/)
@@ -101,13 +133,13 @@ module Buffering
   end
 
   def readline(eol=$/)
-    raise EOFErorr if eof?
+    raise EOFError if eof?
     gets(eol)
   end
 
   def getc
     c = read(1)
-    c ? c.to_i : nil
+    c ? c[0] : nil
   end
 
   def each_byte
@@ -117,7 +149,7 @@ module Buffering
   end
 
   def readchar
-    raise EOFErorr if eof?
+    raise EOFError if eof?
     getc
   end
 
@@ -127,6 +159,7 @@ module Buffering
 
   def eof?
     @eof ||= nil
+    fill_rbuff if !@eof && (!defined?(@rbuffer) || @rbuffer.size == 0)
     @eof && @rbuffer.size == 0
   end
   alias eof eof?
@@ -144,7 +177,12 @@ module Buffering
       remain = idx ? idx + $/.size : @wbuffer.length
       nwritten = 0
       while remain > 0
-        nwrote = syswrite(@wbuffer[nwritten,remain])
+        str = @wbuffer[nwritten,remain]
+        begin
+          nwrote = syswrite(str)
+        rescue Errno::EAGAIN
+          retry
+        end
         remain -= nwrote
         nwritten += nwrote
       end
@@ -166,10 +204,13 @@ module Buffering
 
   def puts(*args)
     s = ""
+    if args.empty?
+      s << "\n"
+    end
     args.each{|arg|
       s << arg.to_s
-      unless /#{$/}\z/o =~ s
-        s << $/
+      if $/ && /\n\z/ !~ s
+        s << "\n"
       end
     }
     do_write(s)
