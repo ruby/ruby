@@ -951,8 +951,6 @@ VALUE
 rb_Integer(val)
     VALUE val;
 {
-    VALUE v;
-
     switch (TYPE(val)) {
       case T_FLOAT:
 	if (RFLOAT(val)->value <= (double)FIXNUM_MAX
@@ -961,25 +959,20 @@ rb_Integer(val)
 	}
 	return rb_dbl2big(RFLOAT(val)->value);
 
+      case T_FIXNUM:
       case T_BIGNUM:
 	return val;
 
       case T_STRING:
 	return rb_str_to_inum(val, 0, Qtrue);
 
-      case T_FIXNUM:
-	return val;
-
       default:
 	break;
     }
-    
     if (rb_respond_to(val, rb_intern("to_int"))) {
 	return rb_to_integer(val, "to_int");
     }
-    else {
-	return rb_to_integer(val, "to_i");
-    }
+    return rb_to_integer(val, "to_i");
 }
 
 static VALUE
@@ -1310,6 +1303,7 @@ Init_Object()
 
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
     rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
+    rb_define_method(rb_cNilClass, "to_f", nil_to_f, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);

@@ -3036,7 +3036,7 @@ here_document(here)
     NODE *here;
 {
     int c, func, indent = 0;
-    char *eos, *p;
+    char *eos;
     int len;
     VALUE str = 0, line;
 

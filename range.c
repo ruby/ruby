@@ -384,11 +384,8 @@ range_min(range)
     VALUE range;
 
 {
-    VALUE b, e, step;
-    long unit;
-
-    b = rb_ivar_get(range, id_beg);
-    e = rb_ivar_get(range, id_end);
+    VALUE b = rb_ivar_get(range, id_beg);
+    VALUE e = rb_ivar_get(range, id_end);
 
     if (r_le(b, e)) return b;
     return e;
@@ -398,11 +395,8 @@ static VALUE
 range_max(range)
     VALUE range;
 {
-    VALUE b, e, step;
-    long unit;
-
-    b = rb_ivar_get(range, id_beg);
-    e = rb_ivar_get(range, id_end);
+    VALUE b = rb_ivar_get(range, id_beg);
+    VALUE e = rb_ivar_get(range, id_end);
 
     if (r_gt(b, e)) return b;
     return e;
