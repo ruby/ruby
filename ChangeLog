@@ -1,3 +1,8 @@
+Sun Feb  8 16:46:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pp.rb (PP::PPMethods::object_address_group): suppress negative
+	  sign for higher heap areas.
+
 Sun Feb  8 16:18:27 2004  akira yamada  <akira@ruby-lang.org>
 
 	* test/yaml/test_yaml.rb (YAML_Unit_Tests::test_range_cycle):
