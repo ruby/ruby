@@ -1,3 +1,7 @@
+Mon Jan 17 23:33:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (aix): fix typo.  [ruby-talk:126401]
+
 Mon Jan 17 07:08:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c: suppress warnings.
