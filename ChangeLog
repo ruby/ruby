@@ -1,6 +1,8 @@
 Thu Nov 11 09:41:01 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* dir.c (rb_push_glob): Dir.glob should have call its block.
+	* dir.c (push_braces): was confusing VALUE and char*.
+
+	* dir.c (rb_push_glob): Dir.glob should have called its block.
 
 Thu Nov 11 01:52:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

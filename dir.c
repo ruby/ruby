@@ -1153,19 +1153,18 @@ push_globs(ary, s, flags)
 }
 
 static int
-push_braces(ary, s, flags)
-    VALUE ary;
-    const char *s;
+push_braces(ary, str, flags)
+    VALUE ary, str;
     int flags;
 {
     VALUE buf;
     char *b;
-    const char *p, *t;
+    const char *s, *p, *t;
     const char *lbrace, *rbrace;
     int nest = 0;
     int status = 0;
 
-    p = s;
+    s = p = RSTRING(str)->ptr;
     lbrace = rbrace = 0;
     while (*p) {
 	if (*p == '{') {
@@ -1202,7 +1201,7 @@ push_braces(ary, s, flags)
 	}
     }
     else {
-	status = push_globs(ary, s, flags);
+	status = push_globs(ary, str, flags);
     }
 
     return status;
