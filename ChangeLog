@@ -1,6 +1,8 @@
-Thu Sep 12 17:45:15 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Thu Sep 12 18:10:03 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dir.c (glob_helper): fixed freeing buffer.  (ruby-bugs-ja:PR#332)
+
+	* dir.c (glob_helper): should pass matched path.  (ruby-bugs-ja:PR#333)
 
 Thu Sep 12 00:09:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

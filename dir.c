@@ -796,7 +796,7 @@ glob_helper(path, sub, flags, func, arg)
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
 		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (!m) {
-			status = glob_call_func(func, path, arg);
+			status = glob_call_func(func, buf, arg);
 			free(buf);
 			if (status) goto finalize;
 			continue;
