@@ -1,3 +1,12 @@
+Sat Sep  7 19:23:56 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb: Fix a bug in flatten()'s recursive set detection.
+	  [Submitted by: "Christoph" <chr_news@gmx.net>]  Some tests
+	  against the bug are added.
+
+	* lib/set.rb: Resurrect the test suite by putting it after
+	  __END__ and executing `eval DATA.read'.
+
 Sat Sep  7 08:41:39 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (rb_gc_mark_parser): ruby_eval_tree is marked in eval.c.
@@ -90,6 +99,14 @@ Thu Sep  5 01:24:26 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* mkmf.rb (xsystem): support for extmk.rb
 
 	* mkmf.rb ($CPP): remove '-E' option.  add CPPFLAGS.
+
+Wed Sep  4 16:15:17 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb: ==(o) should be aware of all the Set variant
+	  instances, not just those of its subclasses. [Submitted by:
+	  "Christoph" <chr_news@gmx.net>]
+
+	* lib/set.rb: - Fix eql?(). [ditto]
 
 Wed Sep  4 15:23:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

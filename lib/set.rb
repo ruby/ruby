@@ -225,34 +225,35 @@ class Set
     @hash.keys
   end
 
-  def _flatten(set, ids = type.new, result = type.new)
-    setid = set.id
+  def flatten_merge(set, seen = Set.new)
+    set.each { |e|
+      if e.is_a?(Set)
+	if seen.include?(e_id = e.id)
+	  raise ArgumentError, "tried to flatten recursive Set"
+	end
 
-    ids.include?(setid) and raise ArgumentError, "tried to flatten recursive #{type.name}"
-
-    ids.add(setid)
-
-    set.each { |o|
-      if o.is_a?(type)
-	_flatten(o, ids, result)
+	seen.add(e_id)
+	flatten_merge(e, seen)
+	seen.delete(e_id)
       else
-	result.add(o)
+	add(e)
       end
     }
 
-    result
+    self
   end
-  private :_flatten
+  protected :flatten_merge
 
   def flatten
-    _flatten(self)
+    type.new.flatten_merge(self)
   end
 
   def flatten!
-    ids = type.new
-    replace(_flatten(self, ids))
-
-    ids.size == 1 ? nil : self
+    if detect { |e| e.is_a?(Set) }
+      replace(flatten())
+    else
+      nil
+    end
   end
 
   def include?(o)
@@ -428,351 +429,373 @@ class Set
   end
 end
 
-=begin
 if $0 == __FILE__
-  require 'test/unit'
-  require 'test/unit/ui/console/testrunner'
-
-  class TC_Set < Test::Unit::TestCase
-    def test_aref
-      assert_nothing_raised {
-	Set[]
-	Set[nil]
-	Set[1,2,3]
-      }
-
-      assert_equal(0, Set[].size)
-      assert_equal(1, Set[nil].size)
-      assert_equal(1, Set[[]].size)
-      assert_equal(1, Set[[nil]].size)
-
-      set = Set[2,4,6,4]
-      assert_equal(Set.new([2,4,6]), set)
-    end
-
-    def test_s_new
-      assert_nothing_raised {
-	Set.new()
-	Set.new(nil)
-	Set.new([])
-	Set.new([1,2])
-	Set.new('a'..'c')
-	Set.new('XYZ')
-      }
-      assert_raises(ArgumentError) {
-	Set.new(1)
-      }
-      assert_raises(ArgumentError) {
-	Set.new(1,2)
-      }
-
-      assert_equal(0, Set.new().size)
-      assert_equal(0, Set.new(nil).size)
-      assert_equal(0, Set.new([]).size)
-      assert_equal(1, Set.new([nil]).size)
-
-      ary = [2,4,6,4]
-      set = Set.new(ary)
-      ary.clear
-      assert_equal(false, set.empty?)
-      assert_equal(3, set.size)
-    end
-
-    def test_dup
-      set1 = Set[1,2]
-      set2 = set1.dup
-
-      assert_not_same(set1, set2)
-
-      assert_equal(set1, set2)
-
-      set1.add(3)
-
-      assert_not_equal(set1, set2)
-    end
-
-    def test_size
-      assert_equal(0, Set[].size)
-      assert_equal(2, Set[1,2].size)
-      assert_equal(2, Set[1,2,1].size)
-    end
-
-    def test_empty?
-      assert_equal(true, Set[].empty?)
-      assert_equal(false, Set[1, 2].empty?)
-    end
-
-    def test_clear
-      set = Set[1,2]
-      ret = set.clear
-
-      assert_same(set, ret)
-      assert_equal(true, set.empty?)
-    end
-
-    def test_replace
-      set = Set[1,2]
-      ret = set.replace('a'..'c')
-
-      assert_same(set, ret)
-      assert_equal(Set['a','b','c'], set)
-    end
-
-    def test_to_a
-      set = Set[1,2,3,2]
-      ary = set.to_a
-
-      assert_equal([1,2,3], ary.sort)
-    end
-
-    def test_flatten
-      set1 = Set[
-	1,
-	Set[
-	  5,
-	  Set[7,
-	    Set[0]
-	  ],
-	  Set[6,2],
-	  1
-	],
-	3,
-	Set[3,4]
-      ]
-
-      set2 = set1.flatten
-      set3 = Set.new(0..7)
-
-      assert_not_same(set2, set1)
-      assert_equal(set3, set2)
-
-      # destructive
-      orig_set1 = set1
-      set1.flatten!
-
-      assert_same(orig_set1, set1)
-      assert_equal(set3, set1)
-    end
-
-    def test_include?
-      set = Set[1,2,3]
-
-      assert_equal(true, set.include?(1))
-      assert_equal(true, set.include?(2))
-      assert_equal(true, set.include?(3))
-      assert_equal(false, set.include?(0))
-      assert_equal(false, set.include?(nil))
-
-      set = Set["1",nil,"2",nil,"0","1",false]
-      assert_equal(true, set.include?(nil))
-      assert_equal(true, set.include?(false))
-      assert_equal(true, set.include?("1"))
-      assert_equal(false, set.include?(0))
-      assert_equal(false, set.include?(true))
-    end
-
-    def test_contain?
-      set = Set[1,2,3]
-
-      assert_raises(ArgumentError) {
-	set.contain?()
-      }
-
-      assert_raises(ArgumentError) {
-	set.contain?(2)
-      }
-
-      assert_equal(true, set.contain?([]))
-      assert_equal(true, set.contain?([3,1]))
-      assert_equal(false, set.contain?([1,2,0]))
-
-      assert_equal(true, Set[].contain?([]))
-    end
-
-    def test_each
-      ary = [1,3,5,7,10,20]
-      set = Set.new(ary)
-
-      assert_raises(LocalJumpError) {
-	set.each
-      }
-
-      assert_nothing_raised {
-	set.each { |o|
-	  ary.delete(o) or raise "unexpected element: #{o}"
-	}
-
-	ary.empty? or raise "forgotten elements: #{ary.join(', ')}"
-      }
-    end
-
-    def test_add
-      set = Set[1,2,3]
-
-      ret = set.add(2)
-      assert_same(set, ret)
-      assert_equal(Set[1,2,3], set)
-
-      ret = set.add(4)
-      assert_same(set, ret)
-      assert_equal(Set[1,2,3,4], set)
-    end
-
-    def test_delete
-      set = Set[1,2,3]
-
-      ret = set.delete(4)
-      assert_same(nil, ret)
-      assert_equal(Set[1,2,3], set)
-
-      ret = set.delete(2)
-      assert_equal(2, ret)
-      assert_equal(Set[1,3], set)
-    end
-
-    def test_delete_if
-      set = Set.new(1..10)
-      ret = set.delete_if { |i| i > 10 }
-      assert_same(set, ret)
-      assert_equal(Set.new(1..10), set)
-
-      set = Set.new(1..10)
-      ret = set.delete_if { |i| i % 3 == 0 }
-      assert_same(set, ret)
-      assert_equal(Set[1,2,4,5,7,8,10], set)
-    end
-
-    def test_reject!
-      set = Set.new(1..10)
-      ret = set.reject! { |i| i > 10 }
-      assert_same(nil, ret)
-      assert_equal(Set.new(1..10), set)
-
-      set = Set.new(1..10)
-      ret = set.delete_if { |i| i % 3 == 0 }
-      assert_same(set, ret)
-      assert_equal(Set[1,2,4,5,7,8,10], set)
-    end
-
-    def test_merge
-      set = Set[1,2,3]
-
-      ret = set.merge([2,4,6])
-      assert_same(set, ret)
-      assert_equal(Set[1,2,3,4,6], set)
-    end
-
-    def test_subtract
-      set = Set[1,2,3]
-
-      ret = set.subtract([2,4,6])
-      assert_same(set, ret)
-      assert_equal(Set[1,3], set)
-    end
-
-    def test_plus
-      set = Set[1,2,3]
-
-      ret = set + [2,4,6]
-      assert_not_same(set, ret)
-      assert_equal(Set[1,2,3,4,6], ret)
-    end
-
-    def test_minus
-      set = Set[1,2,3]
-
-      ret = set - [2,4,6]
-      assert_not_same(set, ret)
-      assert_equal(Set[1,3], ret)
-    end
-
-    def test_and
-      set = Set[1,2,3,4]
-
-      ret = set & [2,4,6]
-      assert_not_same(set, ret)
-      assert_equal(Set[2,4], ret)
-    end
-
-    def test_eq
-      set1 = Set[2,3,1]
-      set2 = Set[1,2,3]
-
-      assert_equal(set1, set1)
-      assert_equal(set1, set2)
-      assert_not_equal(Set[1], [1])
-    end
-
-    # def test_hash
-    # end
-
-    # def test_eql?
-    # end
-
-    def test_classify
-      set = Set.new(1..10)
-      ret = set.classify { |i| i % 3 }
-
-      assert_equal(3, ret.size)
-      assert_instance_of(Hash, ret)
-      ret.each_value { |value| assert_instance_of(Set, value) }
-      assert_equal(Set[3,6,9], ret[0])
-      assert_equal(Set[1,4,7,10], ret[1])
-      assert_equal(Set[2,5,8], ret[2])
-    end
-
-    def test_divide
-      set = Set.new(1..10)
-      ret = set.divide { |i| i % 3 }
-
-      assert_equal(3, ret.size)
-      n = 0
-      ret.each { |s| n += s.size }
-      assert_equal(set.size, n)
-      assert_equal(set, ret.flatten)
-
-      set = Set[7,10,5,11,1,3,4,9,0]
-      ret = set.divide { |a,b| (a - b).abs == 1 }
-
-      assert_equal(4, ret.size)
-      n = 0
-      ret.each { |s| n += s.size }
-      assert_equal(set.size, n)
-      assert_equal(set, ret.flatten)
-      ret.each { |s|
-	if s.include?(0)
-	  assert_equal(Set[0,1], s)
-	elsif s.include?(3)
-	  assert_equal(Set[3,4,5], s)
-	elsif s.include?(7)
-	  assert_equal(Set[7], s)
-	elsif s.include?(9)
-	  assert_equal(Set[9,10,11], s)
-	else
-	  raise "unexpected group: #{s.inspect}"
-	end
-      }
-    end
-
-    def test_inspect
-      set1 = Set[1]
-
-      assert_equal('#<Set: {1}>', set1.inspect)
-
-      set2 = Set[Set[0], 1, 2, set1]
-      assert_equal(false, set2.inspect.include?('#<Set: {...}>'))
-
-      set1.add(set2)
-      assert_equal(true, set1.inspect.include?('#<Set: {...}>'))
-    end
-
-    # def test_pretty_print
-    # end
-
-    # def test_pretty_print_cycled
-    # end
+  eval DATA.read
+end
+
+__END__
+
+require 'test/unit'
+require 'test/unit/ui/console/testrunner'
+
+class TC_Set < Test::Unit::TestCase
+  def test_aref
+    assert_nothing_raised {
+      Set[]
+      Set[nil]
+      Set[1,2,3]
+    }
+
+    assert_equal(0, Set[].size)
+    assert_equal(1, Set[nil].size)
+    assert_equal(1, Set[[]].size)
+    assert_equal(1, Set[[nil]].size)
+
+    set = Set[2,4,6,4]
+    assert_equal(Set.new([2,4,6]), set)
   end
 
-  Test::Unit::UI::Console::TestRunner.run(TC_Set)
+  def test_s_new
+    assert_nothing_raised {
+      Set.new()
+      Set.new(nil)
+      Set.new([])
+      Set.new([1,2])
+      Set.new('a'..'c')
+      Set.new('XYZ')
+    }
+    assert_raises(ArgumentError) {
+      Set.new(1)
+    }
+    assert_raises(ArgumentError) {
+      Set.new(1,2)
+    }
+
+    assert_equal(0, Set.new().size)
+    assert_equal(0, Set.new(nil).size)
+    assert_equal(0, Set.new([]).size)
+    assert_equal(1, Set.new([nil]).size)
+
+    ary = [2,4,6,4]
+    set = Set.new(ary)
+    ary.clear
+    assert_equal(false, set.empty?)
+    assert_equal(3, set.size)
+  end
+
+  def test_dup
+    set1 = Set[1,2]
+    set2 = set1.dup
+
+    assert_not_same(set1, set2)
+
+    assert_equal(set1, set2)
+
+    set1.add(3)
+
+    assert_not_equal(set1, set2)
+  end
+
+  def test_size
+    assert_equal(0, Set[].size)
+    assert_equal(2, Set[1,2].size)
+    assert_equal(2, Set[1,2,1].size)
+  end
+
+  def test_empty?
+    assert_equal(true, Set[].empty?)
+    assert_equal(false, Set[1, 2].empty?)
+  end
+
+  def test_clear
+    set = Set[1,2]
+    ret = set.clear
+
+    assert_same(set, ret)
+    assert_equal(true, set.empty?)
+  end
+
+  def test_replace
+    set = Set[1,2]
+    ret = set.replace('a'..'c')
+
+    assert_same(set, ret)
+    assert_equal(Set['a','b','c'], set)
+  end
+
+  def test_to_a
+    set = Set[1,2,3,2]
+    ary = set.to_a
+
+    assert_equal([1,2,3], ary.sort)
+  end
+
+  def test_flatten
+    # test1
+    set1 = Set[
+      1,
+      Set[
+	5,
+	Set[7,
+	  Set[0]
+	],
+	Set[6,2],
+	1
+      ],
+      3,
+      Set[3,4]
+    ]
+
+    set2 = set1.flatten
+    set3 = Set.new(0..7)
+
+    assert_not_same(set2, set1)
+    assert_equal(set3, set2)
+
+    # test2; destructive
+    orig_set1 = set1
+    set1.flatten!
+
+    assert_same(orig_set1, set1)
+    assert_equal(set3, set1)
+
+    # test3; multiple occurences of a set in an set
+    set1 = Set[1, 2]
+    set2 = Set[set1, Set[set1, 4], 3]
+
+    assert_nothing_raised {
+      set2.flatten!
+    }
+
+    assert_equal(Set.new(1..4), set2)
+
+    # test4; recursion
+    set2 = Set[]
+    set1 = Set[1, set2]
+    set2.add(set1)
+
+    assert_raises(ArgumentError) {
+      set1.flatten!
+    }
+  end
+
+  def test_include?
+    set = Set[1,2,3]
+
+    assert_equal(true, set.include?(1))
+    assert_equal(true, set.include?(2))
+    assert_equal(true, set.include?(3))
+    assert_equal(false, set.include?(0))
+    assert_equal(false, set.include?(nil))
+
+    set = Set["1",nil,"2",nil,"0","1",false]
+    assert_equal(true, set.include?(nil))
+    assert_equal(true, set.include?(false))
+    assert_equal(true, set.include?("1"))
+    assert_equal(false, set.include?(0))
+    assert_equal(false, set.include?(true))
+  end
+
+  def test_contain?
+    set = Set[1,2,3]
+
+    assert_raises(ArgumentError) {
+      set.contain?()
+    }
+
+    assert_raises(ArgumentError) {
+      set.contain?(2)
+    }
+
+    assert_equal(true, set.contain?([]))
+    assert_equal(true, set.contain?([3,1]))
+    assert_equal(false, set.contain?([1,2,0]))
+
+    assert_equal(true, Set[].contain?([]))
+  end
+
+  def test_each
+    ary = [1,3,5,7,10,20]
+    set = Set.new(ary)
+
+    assert_raises(LocalJumpError) {
+      set.each
+    }
+
+    assert_nothing_raised {
+      set.each { |o|
+	ary.delete(o) or raise "unexpected element: #{o}"
+      }
+
+      ary.empty? or raise "forgotten elements: #{ary.join(', ')}"
+    }
+  end
+
+  def test_add
+    set = Set[1,2,3]
+
+    ret = set.add(2)
+    assert_same(set, ret)
+    assert_equal(Set[1,2,3], set)
+
+    ret = set.add(4)
+    assert_same(set, ret)
+    assert_equal(Set[1,2,3,4], set)
+  end
+
+  def test_delete
+    set = Set[1,2,3]
+
+    ret = set.delete(4)
+    assert_same(nil, ret)
+    assert_equal(Set[1,2,3], set)
+
+    ret = set.delete(2)
+    assert_equal(2, ret)
+    assert_equal(Set[1,3], set)
+  end
+
+  def test_delete_if
+    set = Set.new(1..10)
+    ret = set.delete_if { |i| i > 10 }
+    assert_same(set, ret)
+    assert_equal(Set.new(1..10), set)
+
+    set = Set.new(1..10)
+    ret = set.delete_if { |i| i % 3 == 0 }
+    assert_same(set, ret)
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+  end
+
+  def test_reject!
+    set = Set.new(1..10)
+    ret = set.reject! { |i| i > 10 }
+    assert_same(nil, ret)
+    assert_equal(Set.new(1..10), set)
+
+    set = Set.new(1..10)
+    ret = set.delete_if { |i| i % 3 == 0 }
+    assert_same(set, ret)
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+  end
+
+  def test_merge
+    set = Set[1,2,3]
+
+    ret = set.merge([2,4,6])
+    assert_same(set, ret)
+    assert_equal(Set[1,2,3,4,6], set)
+  end
+
+  def test_subtract
+    set = Set[1,2,3]
+
+    ret = set.subtract([2,4,6])
+    assert_same(set, ret)
+    assert_equal(Set[1,3], set)
+  end
+
+  def test_plus
+    set = Set[1,2,3]
+
+    ret = set + [2,4,6]
+    assert_not_same(set, ret)
+    assert_equal(Set[1,2,3,4,6], ret)
+  end
+
+  def test_minus
+    set = Set[1,2,3]
+
+    ret = set - [2,4,6]
+    assert_not_same(set, ret)
+    assert_equal(Set[1,3], ret)
+  end
+
+  def test_and
+    set = Set[1,2,3,4]
+
+    ret = set & [2,4,6]
+    assert_not_same(set, ret)
+    assert_equal(Set[2,4], ret)
+  end
+
+  def test_eq
+    set1 = Set[2,3,1]
+    set2 = Set[1,2,3]
+
+    assert_equal(set1, set1)
+    assert_equal(set1, set2)
+    assert_not_equal(Set[1], [1])
+  end
+
+  # def test_hash
+  # end
+
+  # def test_eql?
+  # end
+
+  def test_classify
+    set = Set.new(1..10)
+    ret = set.classify { |i| i % 3 }
+
+    assert_equal(3, ret.size)
+    assert_instance_of(Hash, ret)
+    ret.each_value { |value| assert_instance_of(Set, value) }
+    assert_equal(Set[3,6,9], ret[0])
+    assert_equal(Set[1,4,7,10], ret[1])
+    assert_equal(Set[2,5,8], ret[2])
+  end
+
+  def test_divide
+    set = Set.new(1..10)
+    ret = set.divide { |i| i % 3 }
+
+    assert_equal(3, ret.size)
+    n = 0
+    ret.each { |s| n += s.size }
+    assert_equal(set.size, n)
+    assert_equal(set, ret.flatten)
+
+    set = Set[7,10,5,11,1,3,4,9,0]
+    ret = set.divide { |a,b| (a - b).abs == 1 }
+
+    assert_equal(4, ret.size)
+    n = 0
+    ret.each { |s| n += s.size }
+    assert_equal(set.size, n)
+    assert_equal(set, ret.flatten)
+    ret.each { |s|
+      if s.include?(0)
+	assert_equal(Set[0,1], s)
+      elsif s.include?(3)
+	assert_equal(Set[3,4,5], s)
+      elsif s.include?(7)
+	assert_equal(Set[7], s)
+      elsif s.include?(9)
+	assert_equal(Set[9,10,11], s)
+      else
+	raise "unexpected group: #{s.inspect}"
+      end
+    }
+  end
+
+  def test_inspect
+    set1 = Set[1]
+
+    assert_equal('#<Set: {1}>', set1.inspect)
+
+    set2 = Set[Set[0], 1, 2, set1]
+    assert_equal(false, set2.inspect.include?('#<Set: {...}>'))
+
+    set1.add(set2)
+    assert_equal(true, set1.inspect.include?('#<Set: {...}>'))
+  end
+
+  # def test_pretty_print
+  # end
+
+  # def test_pretty_print_cycled
+  # end
 end
-=end
+
+Test::Unit::UI::Console::TestRunner.run(TC_Set)
