@@ -179,7 +179,7 @@ if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
 end
 
 Dir.glob("*.[1-9]") do |mdoc|
-  next unless File.read(mdoc)[0] == ?.
+  next unless open(mdoc){|fh| fh.read(1) == '.'}
 
   section = mdoc[-1,1]
 
