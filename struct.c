@@ -517,6 +517,7 @@ rb_struct_aset(s, idx, val)
     return RSTRUCT(s)->ptr[i] = val;
 }
 
+static VALUE struct_entry _((VALUE, long));
 static VALUE
 struct_entry(s, n)
     VALUE s;
