@@ -2245,19 +2245,6 @@ svalue_to_avalue(v)
 }
 
 static VALUE
-avalue_splat(v)
-    VALUE v;
-{
-    if (RARRAY(v)->len == 0) {
-	return Qundef;
-    }
-    if (RARRAY(v)->len == 1) {
-	return RARRAY(v)->ptr[0];
-    }
-    return v;
-}
-
-static VALUE
 svalue_to_mrhs(v, lhs)
     VALUE v;
     NODE *lhs;
@@ -2274,6 +2261,45 @@ svalue_to_mrhs(v, lhs)
 	return rb_ary_new3(1, v);
     }
     return tmp;
+}
+
+static VALUE
+avalue_splat(v)
+    VALUE v;
+{
+    if (RARRAY(v)->len == 0) {
+	return Qundef;
+    }
+    if (RARRAY(v)->len == 1) {
+	return RARRAY(v)->ptr[0];
+    }
+    return v;
+}
+
+static VALUE
+splat_value(v)
+    VALUE v;
+{
+	if (NIL_P(v)) return rb_ary_new3(1, Qnil);
+#if 1
+	/* hack to avoid invoke Object#to_a */
+	if (TYPE(v) != T_ARRAY) {
+	    VALUE tmp = rb_check_array_type(v);
+	    if (NIL_P(tmp)) {
+		VALUE origin;
+		ID id = rb_intern("to_a");
+
+		if (search_method(CLASS_OF(v), id, &origin) &&
+		    origin != RCLASS(rb_cObject)->super) { /* exclude Object#to_a */
+		    return rb_funcall(v, id, 0);
+		}
+		else {
+		    return rb_ary_new3(1, v);
+		}
+	    }
+	}
+#endif
+	return avalue_splat(rb_Array(v));
 }
 
 static VALUE
@@ -2660,31 +2686,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_SPLAT:
-#if 0
-	/* simplified version after Object#to_a removed */
-	result = rb_eval(self, node->nd_head);
-	if (NIL_P(result)) result = rb_ary_new3(1, Qnil);
-	result = avalue_splat(rb_Array(result));
-#else
-	result = rb_eval(self, node->nd_head);
-	if (NIL_P(result)) result = rb_ary_new3(1, Qnil);
-	if (TYPE(result) != T_ARRAY) {
-	    VALUE tmp = rb_check_array_type(result);
-	    if (NIL_P(tmp)) {
-		VALUE origin;
-		ID id = rb_intern("to_a");
-
-		if (search_method(CLASS_OF(result), id, &origin) &&
-		    origin != RCLASS(rb_cObject)->super) { /* exclude Object#to_a */
-		    result = rb_funcall(result, id, 0);
-		}
-		else {
-		    result = rb_ary_new3(1, result);
-		}
-	    }
-	}
-	result = avalue_splat(rb_Array(result));
-#endif
+	result = splat_value(rb_eval(self, node->nd_head));
 	break;
 
       case NODE_SVALUE:
@@ -2845,7 +2847,7 @@ rb_eval(self, n)
 
       case NODE_ARGSCAT:
 	result = rb_ary_concat(rb_eval(self, node->nd_head),
-			       rb_eval(self, node->nd_body));
+			       splat_value(rb_eval(self, node->nd_body)));
 	break;
 
       case NODE_ARGSPUSH:
@@ -6736,7 +6738,7 @@ proc_invoke(proc, args, pcall, self)
     struct BLOCK _block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
-    int state;
+    int state, incoming_state;
     volatile int orphan;
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
@@ -6770,6 +6772,7 @@ proc_invoke(proc, args, pcall, self)
     POP_TAG();
 
     POP_ITER();
+    incoming_state = state;
     if (ruby_block->tag->dst == state) {
 	state &= TAG_MASK;
     }
@@ -6781,11 +6784,22 @@ proc_invoke(proc, args, pcall, self)
     switch (state) {
       case 0:
 	break;
-      case TAG_BREAK:
-	result = prot_tag->retval;
-	break;
       case TAG_RETRY:
-	localjump_error("retry from proc-closure", Qnil);
+	if (pcall || orphan) {
+	    localjump_error("retry from proc-closure", Qnil);
+	}
+	/* fall through */
+      case TAG_BREAK:
+	if (pcall) {
+	    result = prot_tag->retval;
+	}
+	else if (orphan) {
+	    localjump_error("break from proc-closure", prot_tag->retval);
+	}
+	else {
+	    ruby_block->tag->dst = incoming_state;
+	    JUMP_TAG(incoming_state);
+	}
 	break;
       case TAG_RETURN:
 	if (orphan) {	/* orphan procedure */

@@ -1,9 +1,19 @@
-2003-04-24  Dave Thomas  <dave@thomases.com>
+Fri Apr 25 02:03:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): Proc#yield should pass through retry and
+	  break like keyword yield. [ruby-talk:70034]
+
+	* eval.c (proc_invoke): orphan Proc now raises LocalJumpError for
+	  break and retry again.
+
+	* eval.c (rb_eval): ARGSCAT should splat the argument.
+
+	* eval.c (splat_value): splat operation function.
+
+Thu Apr 24 23:37:02 2003  Dave Thomas  <dave@thomases.com>
 
 	* lib/matrix.rb (Matrix#minor):  Used Range#size, which no longer 
 	  exists. 
-
-2003-04-24  Dave Thomas  <dave@thomases.com>
 
 	* lib/complex.rb (new!): Complex.new had been made private, but 
 	  Kernel#Complex called it. Re-exposed as new!.
@@ -21190,3 +21200,7 @@ Fri Aug 15 19:40:43 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 Wed Aug 13 17:51:46 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1 alpha0 released.
+
+Local variables:
+add-log-time-format: current-time-string
+end:
