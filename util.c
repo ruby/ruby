@@ -744,9 +744,10 @@ ruby_strtod(string, endPtr)
 				 * unnecessary overflow on I alone).  In this
 				 * case, fracExp is incremented one for each
 				 * dropped digit. */
-    int mantSize;		/* Number of digits in mantissa. */
-    int decPt;			/* Number of mantissa digits BEFORE decimal
-				 * point. */
+    int mantSize = 0;		/* Number of digits in mantissa. */
+    int decPt = FALSE;		/* mantissa has decimal point. */
+    const char *pMant;		/* Temporarily holds location of mantissa
+				 * in string. */
     const char *pExp;		/* Temporarily holds location of exponent
 				 * in string. */
 
@@ -770,28 +771,30 @@ ruby_strtod(string, endPtr)
 	sign = FALSE;
     }
 
-    /* skip preceding zeros */
-    if (*p == '0') {
-	while (*p == '0')
-	    p++;
-	p--;
-    }
-
     /*
      * Count the number of digits in the mantissa (including the decimal
      * point), and also locate the decimal point.
      */
 
-    decPt = -1;
-    for (mantSize = 0; ; mantSize += 1) {
-	c = *p;
+    for ( ; c = *p; p += 1) {
 	if (!ISDIGIT(c)) {
-	    if ((c != '.') || (decPt >= 0)) {
+	    if (c != '.' || decPt) {
 		break;
 	    }
-	    decPt = mantSize;
+	    decPt = TRUE;
 	}
-	p += 1;
+	else {
+	    if (decPt) { /* already in fractional part */
+		fracExp -= 1;
+	    }
+	    if (mantSize) { /* already in mantissa */
+		mantSize += 1;
+	    }
+	    else if (c != '0') { /* have entered mantissa */
+		mantSize += 1;
+		pMant = p;
+	    }
+	}
     }
 
     /*
@@ -802,19 +805,10 @@ ruby_strtod(string, endPtr)
      */
     
     pExp  = p;
-    p -= mantSize;
-    if (decPt < 0) {
-	decPt = mantSize;
-    }
-    else {
-	mantSize -= 1;			/* One of the digits was the point. */
-    }
+    p = pMant; /* valid if mantSize > 0 */
     if (mantSize > 18) {
-	fracExp = decPt - 18;
+	fracExp += (mantSize - 18);
 	mantSize = 18;
-    }
-    else {
-	fracExp = decPt - mantSize;
     }
     if (mantSize == 0) {
 	fraction = 0.0;

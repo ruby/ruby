@@ -1,3 +1,8 @@
+Fri May  7 11:17:27  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* util.c (ruby_strtod): 0.0000000000000000001 == 0.0 should be false.
+	  [ruby-talk:99318] [ruby-dev:23465]
+
 Thu May  6 22:27:32 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* ext/socket/socket.c (ippaddr): use NUMERICHOST if can not resolve
