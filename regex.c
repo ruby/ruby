@@ -1531,6 +1531,7 @@ re_compile_pattern(pattern, size, bufp)
 
 	  case 'x':
 	    c = scan_hex(p, 2, &numlen);
+	    if (numlen == 0) goto invalid_escape;
 	    p += numlen;
 	    had_num_literal = 1;
 	    break;
@@ -2248,6 +2249,7 @@ re_compile_pattern(pattern, size, bufp)
       case 'x':
 	had_mbchar = 0;
 	c = scan_hex(p, 2, &numlen);
+	if (numlen == 0) goto invalid_escape;
 	p += numlen;
 	had_num_literal = 1;
 	goto numeric_char;

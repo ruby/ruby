@@ -1,3 +1,12 @@
+Fri Jun 14 15:22:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (read_escape): deny zero-width hexadecimal character.
+	  (ruby-bugs-ja:PR#260)
+
+	* parse.y (tokadd_escape): ditto.
+
+	* regex.c (re_compile_pattern): ditto.
+
 Thu Jun 13 09:43:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (svalue_to_avalue): v may be Qundef.  This fix was
