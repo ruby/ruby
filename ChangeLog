@@ -1,3 +1,8 @@
+Mon Apr 26 21:40:09 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/code_objects.rb (RDoc::Context::add_alias): Only alias
+	  to instance methods.
+
 Sat Apr 24 10:38:31 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/markup/simple_markup.rb (SM::SimpleMarkup::group_lines):
