@@ -1,3 +1,12 @@
+Sat Jan 10 23:01:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBPATHFLAG, RPATHFLAG): enclose paths with single
+	  quotes.  [ruby-dev:22564]
+
+	* lib/mkmf.rb (libpathflag): do not enclose with quotes always.
+
+	* {bcc32,win32,wince}/Makefile.sub (LIBPATHFLAG): quoted.
+
 Sat Jan 10 22:46:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_inspect): new method, Dir#inspect.  [ruby-dev:22562]

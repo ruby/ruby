@@ -380,10 +380,10 @@ s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
 s,@OUTFLAG@,-o,;t t
 s,@CPPOUTFILE@,,;t t
-s,@LIBPATHFLAG@, -L%s,;t t
+s,@LIBPATHFLAG@, -L"%s",;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
-s,@LINK_SO@,$$(LDSHARED) $$(DLDFLAGS) $$(LIBPATH) $$(OBJS), $$@, nul, $$(LIBS) $$(LOCAL_LIBS), $$(DEFFILE), $$(RESFILE),;t t
+s,@LINK_SO@,$$(LDSHARED) $$(DLDFLAGS) $$(LIBPATH) $$(OBJS), $$(@:/=\), nul, $$(LIBS) $$(LOCAL_LIBS), $$(DEFFILE), $$(RESFILE),;t t
 s,@COMPILE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -c $$(<:/=\),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -P -c $$(<:/=\),;t t
 s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: .%s.%s:,;t t

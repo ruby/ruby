@@ -799,7 +799,7 @@ AC_SUBST(DLEXT2)dnl
 AC_SUBST(LIBEXT)dnl
 
 STATIC=
-: ${LIBPATHFLAG=' -L%s'}
+: ${LIBPATHFLAG=" -L'%s'"}
 : ${PATHFLAG=''}
 
 if test "$with_dln_a_out" != yes; then
@@ -873,8 +873,8 @@ if test "$with_dln_a_out" != yes; then
 	netbsd*)	: ${LDSHARED='${CC} -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
-			    LIBPATHFLAG=' -L%1$-s'
-			    RPATHFLAG=' -Wl,-R%1$-s'
+			    LIBPATHFLAG=" -L'%1\$-s'"
+			    RPATHFLAG=" -Wl,-R'%1\$-s'"
 			fi
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	: ${LDSHARED="\$(CC) -shared ${CCDLFLAGS}"}
