@@ -509,7 +509,9 @@ class TkRTTimer < TkTimer
   def initialize(*args, &b)
     super(*args, &b)
 
-    @offset_list = Array.new(DEFAULT_OFFSET_LIST_SIZE, 0.0)
+    @offset_list = Array.new(DEFAULT_OFFSET_LIST_SIZE){ [0, 0] }
+    @offset_s = 0
+    @offset_u = 0
     @est_time = nil
   end
 
@@ -533,10 +535,18 @@ class TkRTTimer < TkTimer
   end
 
   def _offset_ave
-    size = @offset_list.size.to_f
-    s = 0.0
-    @offset_list.each{|n| s + n}
-    s / size
+    size = 0
+    d_sec = 0; d_usec = 0
+    @offset_list.each_with_index{|offset, idx|
+      # weight = 1
+      weight = idx + 1
+      size += weight
+      d_sec += offset[0] * weight
+      d_usec += offset[1] * weight
+    }
+    offset_s, mod = d_sec.divmod(size)
+    offset_u = ((mod * 1000000 + d_usec) / size.to_f).round
+    [offset_s, offset_u]
   end
   private :_offset_ave
 
@@ -564,6 +574,8 @@ class TkRTTimer < TkTimer
     @current_pos += 1
     @current_proc = cmd
 
+    @offset_s, @offset_u = _offset_ave
+
     if TkComm._callback_entry?(@sleep_time)
       sleep = @sleep_time.call(self)
     else
@@ -571,26 +583,42 @@ class TkRTTimer < TkTimer
     end
 
     if @est_time
-      @est_time = Time.at(@est_time.to_f + sleep / 1000.0)
+      @est_time = Time.at(@est_time.to_i, @est_time.usec + sleep*1000)
     else
-      @est_time = Time.at(@cb_start_time.to_f + sleep / 1000.0)
+      @est_time = Time.at(@cb_start_time.to_i, 
+                          @cb_start_time.usec + sleep*1000)
     end
 
-    offset = _offset_ave
-
-    real_sleep = ((@est_time - Time.now)*1000.0 + offset).round
-    real_sleep = 0 if real_sleep < 0
+    now = Time.now
+    real_sleep = ((@est_time.to_i - now.to_i + @offset_s)*1000.0 + 
+                  (@est_time.usec - now.usec + @offset_u)/1000.0).round
+    if real_sleep <= 0
+      real_sleep = 0
+      @offset_s = now.to_i
+      @offset_u = now.usec
+    end
     @current_sleep = real_sleep
 
     set_callback(real_sleep, cmd_args)
   end
 
   def cb_call
-    @cb_start_time = Time.now
-
     if @est_time
       @offset_list.shift
-      @offset_list.push((@est_time - @cb_start_time) * 1000.0)
+
+      @cb_start_time = Time.now
+
+      if @current_sleep == 0
+        @offset_list.push([
+                            @offset_s - @cb_start_time.to_i, 
+                            @offset_u - @cb_start_time.usec
+                          ])
+      else
+        @offset_list.push([
+                            @offset_s + (@est_time.to_i - @cb_start_time.to_i),
+                            @offset_u + (@est_time.usec - @cb_start_time.usec)
+                          ])
+      end
     end
 
     @cb_cmd.call

@@ -1,3 +1,21 @@
+Mon Mar 14 00:13:49 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/timer.rb (TkRTTimer): correct calculation of offset
+	  value. get a little better accuracy. 
+
+	* ext/tk/sample/demos-en/widget: use a binding with no local variables 
+	  when eval a sample script.
+
+	* ext/tk/sample/demos-en/bind.rb: ditto.
+
+	* ext/tk/sample/demos-en/tcolor: ditto.
+
+	* ext/tk/sample/demos-jp/widget: ditto.
+
+	* ext/tk/sample/demos-jp/bind.rb: ditto.
+
+	* ext/tk/sample/demos-jp/tcolor: ditto.
+
 Sun Mar 13 22:19:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (recursive_pop): raise TypeError instead of fatal error.

@@ -93,17 +93,35 @@ TkText.new($bind_demo){|t|
     tag_binding_for_bind_demo(tag, tagstyle_bold, tagstyle_normal)
   }
   d1.bind('1', 
-          proc{eval `cat #{[$demo_dir,'items.rb'].join(File::Separator)}`})
+          proc{
+            eval(`cat #{[$demo_dir,'items.rb'].join(File::Separator)}`, 
+                 _null_binding)
+          })
   d2.bind('1', 
-          proc{eval `cat #{[$demo_dir,'plot.rb'].join(File::Separator)}`})
+          proc{
+            eval(`cat #{[$demo_dir,'plot.rb'].join(File::Separator)}`, 
+                 _null_binding)
+          })
   d3.bind('1', 
-          proc{eval `cat #{[$demo_dir,'ctext.rb'].join(File::Separator)}`})
+          proc{
+            eval(`cat #{[$demo_dir,'ctext.rb'].join(File::Separator)}`, 
+                 _null_binding)
+          })
   d4.bind('1', 
-          proc{eval `cat #{[$demo_dir,'arrow.rb'].join(File::Separator)}`})
+          proc{
+            eval(`cat #{[$demo_dir,'arrow.rb'].join(File::Separator)}`, 
+                 _null_binding)
+          })
   d5.bind('1', 
-          proc{eval `cat #{[$demo_dir,'ruler.rb'].join(File::Separator)}`})
+          proc{
+            eval(`cat #{[$demo_dir,'ruler.rb'].join(File::Separator)}`, 
+                 _null_binding)
+          })
   d6.bind('1', 
-          proc{eval `cat #{[$demo_dir,'cscroll.rb'].join(File::Separator)}`})
+          proc{
+            eval(`cat #{[$demo_dir,'cscroll.rb'].join(File::Separator)}`, 
+                 _null_binding)
+          })
 
   TkTextMarkInsert.new(t, '0.0')
   configure('state','disabled')

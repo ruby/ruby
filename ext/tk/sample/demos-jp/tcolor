@@ -124,9 +124,14 @@ def hsbToRgb(hue,sat,value)
 end
 
 
+def _null_binding
+  Module.new.instance_eval{binding}
+end
+private :_null_binding
+
 def doUpdate 
   newCmd = $command.to_s.gsub("%%","\"#{$color}\"")
-  eval(newCmd)
+  eval(newCmd, _null_binding)
 end
 
 
@@ -211,21 +216,21 @@ def tc_loadNamedColor(name)
   else
     case name.length
     when 4
-      format = /#(.{1})(.{1})(.{1})/
+      fmt = /#(.{1})(.{1})(.{1})/
       shift = 12
     when 7
-      format = /#(.{2})(.{2})(.{2})/
+      fmt = /#(.{2})(.{2})(.{2})/
       shift = 8
     when 10
-      format = /#(.{3})(.{3})(.{3})/
+      fmt = /#(.{3})(.{3})(.{3})/
       shift = 4
     when 13
-      format = /#(.{4})(.{4})(.{4})/
+      fmt = /#(.{4})(.{4})(.{4})/
       shift = 0
     else
       raise(eException,"syntax error in color name \"#{name}\"")
     end
-    name.scan(format){|strlist|
+    name.scan(fmt){|strlist|
       if strlist.length != 3
 	raise(eException,"syntax error in color name \"#{name}\"")
       end
