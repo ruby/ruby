@@ -1,3 +1,7 @@
+Wed Sep 19 17:46:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.5 released.
+
 Sat Sep  8 07:13:42 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/net/telnet.rb: waitfor(): improvement. thanks to
