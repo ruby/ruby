@@ -715,10 +715,15 @@ ruby_libpath()
     strcpy(libpath, __dos_argv0);
 #endif
     p = strrchr(libpath, '\\');
-    if (p)
+    if (p) {
 	*p = 0;
-    if (!strcasecmp(p-4, "\\bin"))
-	p -= 4;
+	if (!strcasecmp(p-4, "\\bin"))
+	    p -= 4;
+    } else {
+	strcpy(libpath, ".");
+	p = libpath + 1;
+    }
+
     strcpy(p, "\\lib");
 #if defined(__CYGWIN32__)
     p = (char *)malloc(strlen(libpath)+10);

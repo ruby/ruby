@@ -3442,7 +3442,7 @@ echo "configure:3439: checking whether OS depend dynamic link works" >&5
     openstep*)	;;
     rhapsody*)	;;
     human*)	;;
-    cygwin32*)	CCDLFLAGS=-DDLLIMPORT;;
+    cygwin*)	CCDLFLAGS=-DDLLIMPORT;;
     *) CCDLFLAGS=-fpic;;
     esac
   else
@@ -3509,7 +3509,7 @@ echo "configure:3439: checking whether OS depend dynamic link works" >&5
 			    ;;
 			esac
 			rb_cv_dlopen=yes ;;
-	cygwin32*)	LDSHARED='../../miniruby ../cygwin32_ld.rb' ;;
+	cygwin*)	LDSHARED='../../miniruby ../cygwin32_ld.rb' ;;
 	*) 		LDSHARED='ld' ;;
   esac
   echo "$ac_t""$rb_cv_dlopen" 1>&6
@@ -3592,7 +3592,7 @@ EOF
 #define DLEXT ".bundle"
 EOF
 ;;
-    cygwin32*)	DLEXT=dll
+    cygwin*)	DLEXT=dll
 	 	cat >> confdefs.h <<\EOF
 #define DLEXT ".dll"
 EOF
@@ -3875,7 +3875,7 @@ EOF
     binsuffix=.x
     setup=Setup.x68
     ;;
-  cygwin32*)
+  cygwin*)
     binsuffix=.exe
     setup=Setup
     ;;

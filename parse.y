@@ -2183,7 +2183,8 @@ here_document(term)
     char *eos;
     int len;
     VALUE str, line;
-    char *save_beg, *save_end, *save_lexp;
+    VALUE lastline_save;
+    int offset_save;
     NODE *list = 0;
     int linesave = sourceline;
 
@@ -2212,9 +2213,8 @@ here_document(term)
 	break;
     }
     tokfix();
-    save_lexp = lex_p;
-    save_beg = lex_pbeg;
-    save_end = lex_pend;
+    lastline_save = lex_lastline;
+    offset_save = lex_p - lex_pbeg;
     eos = strdup(tok());
     len = strlen(eos);
 
@@ -2262,9 +2262,11 @@ here_document(term)
 	}
     }
     free(eos);
-    lex_p = save_lexp;
-    lex_pbeg = save_beg;
-    lex_pend = save_end;
+    lex_lastline = lastline_save;
+    lex_pbeg = RSTRING(lex_lastline)->ptr;
+    lex_pend = lex_pbeg + RSTRING(lex_lastline)->len;
+    lex_p = lex_pbeg + offset_save;
+
     lex_state = EXPR_END;
     heredoc_end = sourceline;
     sourceline = linesave;

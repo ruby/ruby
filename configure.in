@@ -345,7 +345,7 @@ if test "$with_dln_a_out" != yes; then
     openstep*)	;;
     rhapsody*)	;;
     human*)	;;
-    cygwin32*)	CCDLFLAGS=-DDLLIMPORT;;
+    cygwin*)	CCDLFLAGS=-DDLLIMPORT;;
     *) CCDLFLAGS=-fpic;;
     esac
   else
@@ -412,7 +412,7 @@ if test "$with_dln_a_out" != yes; then
 			    ;;
 			esac
 			rb_cv_dlopen=yes ;;
-	cygwin32*)	LDSHARED='../../miniruby ../cygwin32_ld.rb' ;;
+	cygwin*)	LDSHARED='../../miniruby ../cygwin32_ld.rb' ;;
 	*) 		LDSHARED='ld' ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
@@ -458,7 +458,7 @@ else
 	 	AC_DEFINE(DLEXT, ".bundle");;
     rhapsody*)	DLEXT=bundle
 	 	AC_DEFINE(DLEXT, ".bundle");;
-    cygwin32*)	DLEXT=dll
+    cygwin*)	DLEXT=dll
 	 	AC_DEFINE(DLEXT, ".dll");;
     *)		DLEXT=so
     		AC_DEFINE(DLEXT, ".so");;
@@ -542,7 +542,7 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no)])
     binsuffix=.x
     setup=Setup.x68
     ;;
-  cygwin32*)
+  cygwin*)
     binsuffix=.exe
     setup=Setup
     ;;

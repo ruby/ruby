@@ -388,12 +388,7 @@ beg_len(range, begp, lenp, len)
     }
 
     *begp = beg;
-    if (beg > len) {
-	*lenp = 0;
-    }
-    else {
-	*lenp = end - beg +1;
-    }
+    *lenp = end - beg + 1;
     return TRUE;
 }
 

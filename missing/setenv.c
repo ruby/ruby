@@ -12,7 +12,10 @@ void *xrealloc ();
 #define ALLOC(type) (type*)xmalloc(sizeof(type))
 #define REALLOC_N(var,type,n) (var)=(type*)xrealloc((char*)(var),sizeof(type)*(n))
 
-#ifndef NT
+#if defined(NT) && defined(_MSC_VER)
+extern char **_environ;
+#define environ _environ
+#else
 extern char **environ;
 #endif
 extern char **origenviron;

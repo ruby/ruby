@@ -302,7 +302,6 @@ EXPORTS
 	rb_id2name
 	rb_is_const_id
 	rb_is_instance_id
-	local_var_append
 	backref_get
 	backref_set
 	lastline_get
@@ -322,7 +321,6 @@ EXPORTS
 	reg_match_pre
 	reg_match_post
 	reg_match_last
-	reg_free
 	reg_new
 	reg_regcomp
 	reg_match

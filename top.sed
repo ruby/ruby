@@ -55,4 +55,7 @@ s%@archlib@%/usr/local/lib/ruby/i386-djgpp%
 s,/dev/null 2>&1, nul,
 s,2> /dev/null,,
 }
+/^config.status/ {
+    N;N;N;N;N;d
+}
 s%y\.tab\.c%y_tab.c%

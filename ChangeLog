@@ -1,3 +1,11 @@
+Thu Jan 21 18:04:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.2.2 (stable) released.
+
+Tue Jan 19 05:01:16 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* array.c (beg_len): round range value too much.
+
 Mon Jan 18 13:02:27 1999  Kuroda Jun  <jkuro@dwe.co.j>
 
 	* hash.c (env_keys): strchr() may return NULL.
