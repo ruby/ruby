@@ -809,6 +809,12 @@ mlhs_node	: variable
 			    yyerror("dynamic constant assignment");
 			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
 		    }
+		| tCOLON3 tCONSTANT
+		    {
+			if (in_def || in_single)
+			    yyerror("dynamic constant assignment");
+			$$ = NEW_CDECL(0, 0, NEW_COLON3($2));
+		    }
 		| backref
 		    {
 		        rb_backref_error($1);
@@ -841,6 +847,12 @@ lhs		: variable
 			if (in_def || in_single)
 			    yyerror("dynamic constant assignment");
 			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
+		    }
+		| tCOLON3 tCONSTANT
+		    {
+			if (in_def || in_single)
+			    yyerror("dynamic constant assignment");
+			$$ = NEW_CDECL(0, 0, NEW_COLON3($2));
 		    }
 		| backref
 		    {
@@ -1023,6 +1035,10 @@ arg		: lhs '=' arg
 		        fixpos($$, $1);
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg
+		    {
+			yyerror("constant re-assignment");
+		    }
+		| tCOLON3 tCONSTANT tOP_ASGN arg
 		    {
 			yyerror("constant re-assignment");
 		    }
@@ -1431,7 +1447,7 @@ primary		: literal
 		    {
 			$$ = NEW_COLON2($1, $3);
 		    }
-		| tCOLON3 cname
+		| tCOLON3 tCONSTANT
 		    {
 			$$ = NEW_COLON3($2);
 		    }
@@ -3928,7 +3944,7 @@ yylex()
 	c = nextc();
 	if (c == ':') {
 	    if (lex_state == EXPR_BEG ||  lex_state == EXPR_MID ||
-		(IS_ARG() && space_seen)) {
+		lex_state == EXPR_CLASS || (IS_ARG() && space_seen)) {
 		lex_state = EXPR_BEG;
 		return tCOLON3;
 	    }

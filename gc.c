@@ -1639,7 +1639,7 @@ id2ref(obj, id)
     if (!is_pointer_to_heap((void *)ptr)) {
 	rb_raise(rb_eRangeError, "0x%lx is not id value", p0);
     }
-    if (BUILTIN_TYPE(ptr) == 0) {
+    if (RBASIC(ptr)->klass == 0) {
 	rb_raise(rb_eRangeError, "0x%lx is recycled object", p0);
     }
     return (VALUE)ptr;

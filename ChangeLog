@@ -1,3 +1,8 @@
+Fri Aug 15 02:08:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): recycle check should be done by klass == 0.
+	  [ruby-core:01408]
+
 Fri Aug 15 00:38:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c: Bug in div method fixed.
@@ -5,6 +10,10 @@ Fri Aug 15 00:38:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 	* ext/bigdecimal/lib/bigdecimal/math.rb: Newly added.
 
 	* ext/bigdecimal/sample/pi.rb: Changed so as to use math.rb.
+
+Thu Aug 14 21:19:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (Init_Thread): Continuation#[] added.  [ruby-talk:79028]
 
 Thu Aug 14 20:03:34 2003  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
@@ -20,6 +29,18 @@ Thu Aug 14 11:27:37 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* gc.c (rb_data_object_alloc): check type of 1st argument.
 	  [ruby-dev:21192]
+
+Thu Aug 14 00:21:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (mlhs_node): should allow "::Foo" (colon3) as lhs. 
+
+	* parse.y (lhs): ditto.
+
+	* parse.y (yylex): should return tCOLON3 right after kCLASS.
+	  [ruby-talk:78918]
+
+	* error.c (exc_initialize): was converting argument to string too
+	  eagerly.  Only check was needed. [ruby-talk:78958]
 
 Wed Aug 13 23:31:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 

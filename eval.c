@@ -10114,6 +10114,7 @@ Init_Thread()
     rb_undef_alloc_func(rb_cCont);
     rb_undef_method(CLASS_OF(rb_cCont), "new");
     rb_define_method(rb_cCont, "call", rb_cont_call, -1);
+    rb_define_method(rb_cCont, "[]", rb_cont_call, -1);
     rb_define_global_function("callcc", rb_callcc, 0);
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);

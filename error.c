@@ -318,12 +318,13 @@ exc_initialize(argc, argv, exc)
     VALUE *argv;
     VALUE exc;
 {
-    VALUE mesg;
+    VALUE arg;
 
-    if (rb_scan_args(argc, argv, "01", &mesg) == 1) {
+    if (rb_scan_args(argc, argv, "01", &arg) == 1) {
+	VALUE mesg = arg;
 	StringValue(mesg);	/* ensure mesg can be converted to String */
     }
-    rb_iv_set(exc, "mesg", mesg);
+    rb_iv_set(exc, "mesg", arg);
     rb_iv_set(exc, "bt", Qnil);
 
     return exc;

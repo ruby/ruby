@@ -113,7 +113,7 @@ module XMLRPC
     def initialize(prefix, &p)
       raise "No interface specified" if p.nil?
       super(prefix)
-      instance_eval &p
+      instance_eval(&p)
     end
 
     def get_methods(obj, delim=".") 
