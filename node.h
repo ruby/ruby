@@ -294,7 +294,7 @@ typedef struct RNode {
 #define NEW_DSTR(s) rb_node_newnode(NODE_DSTR,s,0,0)
 #define NEW_XSTR(s) rb_node_newnode(NODE_XSTR,s,0,0)
 #define NEW_DXSTR(s) rb_node_newnode(NODE_DXSTR,s,0,0)
-#define NEW_EVSTR(s,l) rb_node_newnode(NODE_EVSTR,rb_str_new(s,l),0,0)
+#define NEW_EVSTR(n) rb_node_newnode(NODE_EVSTR,0,(n),0)
 #define NEW_CALL(r,m,a) rb_node_newnode(NODE_CALL,r,m,a)
 #define NEW_FCALL(m,a) rb_node_newnode(NODE_FCALL,0,m,a)
 #define NEW_VCALL(m) rb_node_newnode(NODE_VCALL,0,m,0)

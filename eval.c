@@ -1141,6 +1141,17 @@ error_handle(ex)
 	fprintf(stderr, ": retry outside of rescue clause\n");
 	ex = 1;
 	break;
+      case TAG_THROW:
+	if (prot_tag && prot_tag->frame && prot_tag->frame->file) {
+	    fprintf(stderr, "%s:%d: uncaught throw\n",
+		    prot_tag->frame->file, prot_tag->frame->line);
+	}
+	else {
+	    error_pos();
+	    fprintf(stderr, ": unexpected throw\n");
+	}
+	ex = 1;
+	break;
       case TAG_RAISE:
       case TAG_FATAL:
 	if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
@@ -1354,17 +1365,21 @@ static void
 jump_tag_but_local_jump(state)
     int state;
 {
+    VALUE val;
+
+    if (prot_tag) val = prot_tag->retval;
+    else          val = Qnil;
     switch (state) {
       case 0:
 	break;
       case TAG_RETURN:
-	localjump_error("unexpected return", Qnil);
+	localjump_error("unexpected return", val);
 	break;
       case TAG_NEXT:
-	localjump_error("unexpected next", Qnil);
+	localjump_error("unexpected next", val);
 	break;
       case TAG_BREAK:
-	localjump_error("unexpected break", Qnil);
+	localjump_error("unexpected break", val);
 	break;
       case TAG_REDO:
 	localjump_error("unexpected redo", Qnil);
@@ -1412,7 +1427,6 @@ rb_eval_cmd(cmd, arg, tcheck)
     if ((state = EXEC_TAG()) == 0) {
 	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
     }
-
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
        scope_dup(saved_scope);
     ruby_scope = saved_scope;
@@ -3057,6 +3071,10 @@ rb_eval(self, n)
 
       case NODE_STR:
 	result = rb_str_new3(node->nd_lit);
+	break;
+
+      case NODE_EVSTR:
+	result = rb_obj_as_string(rb_eval(self, node->nd_body));
 	break;
 
       case NODE_DSTR:
@@ -7102,6 +7120,12 @@ rb_mod_define_method(argc, argv, mod)
 	node = NEW_DMETHOD(method_unbind(body));
     }
     else if (RDATA(body)->dmark == (RUBY_DATA_FUNC)blk_mark) {
+	struct BLOCK *block;
+
+	body = bind_clone(body);
+	Data_Get_Struct(body, struct BLOCK, block);
+	block->frame.last_func = id;
+	block->frame.last_class = mod;
 	node = NEW_BMETHOD(body);
     }
     else {

@@ -1675,14 +1675,10 @@ rb_big_abs(x)
     return x;
 }
 
-/* !!!warnig!!!!
-   this is not really a random number!!
-*/
-
 VALUE
-rb_big_rand(max, rand)
+rb_big_rand(max, rand_buf)
     VALUE max;
-    double rand;
+    double *rand_buf;
 {
     VALUE v;
     long len;
@@ -1690,7 +1686,7 @@ rb_big_rand(max, rand)
     len = RBIGNUM(max)->len;
     v = bignew(len,1);
     while (len--) {
-	BDIGITS(v)[len] = ((BDIGIT)~0) * rand;
+	BDIGITS(v)[len] = ((BDIGIT)~0) * rand_buf[len];
     }
 
     return rb_big_modulo((VALUE)v, max);

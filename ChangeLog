@@ -1,3 +1,7 @@
+Fri Jul 26 14:31:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c: replace with Mersenne Twister RNG.
+
 Fri Jul 26 12:14:48 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (yylex): modify to accept a code like "m (a){...}".
@@ -22,6 +26,24 @@ Thu Jul 25 09:05:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-move-to-block): skips RD style comments.
 
+Wed Jul 24 09:47:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (jump_tag_but_local_jump): preserve retval in
+	  LocalJumpError exceptions.
+
+	* parse.y (command): no more check for "super outside of method".
+
+	* eval.c (rb_mod_define_method): should set last_class and
+	  last_func in the block->frame.
+
+Mon Jul 22 17:23:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (error_handle): should handle TAG_THROW as well.
+
+Fri Jul 19 10:52:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): new decimal notation '0d4567'.
+
 Thu Jul 18 11:52:02 2002  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (set_socket): new method.
@@ -29,6 +51,17 @@ Thu Jul 18 11:52:02 2002  Shugo Maeda  <shugo@ruby-lang.org>
 Thu Jul 18 06:51:24 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (yylex): fix typo.
+
+Wed Jul 17 18:41:28 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): new octal notation '0o777'.
+
+Mon Jul 15 18:36:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (string_content): every string_content node should
+	  return string only.  use NODE_EVSTR to coercing.
+
+	* eval.c (rb_eval): NODE_EVSTR support.
 
 Mon Jul 15 10:35:35 2002  Minero Aoki  <aamine@loveruby.net>
 
@@ -60,6 +93,20 @@ Fri Jul 12 00:02:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/stringio/stringio.c (strio_gets_internal): fixed for record
 	  separator longer than 1.
+
+Thu Jul 11 17:59:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_quote): avoid unnecessary string allocation.
+
+	* string.c (get_pat): quote metachracters before compiling a
+	  string into a regex.
+
+	* string.c (rb_str_split_m): special treatment of strings of size
+	  1, but AWK emulation.  now uses get_pat().
+
+	* string.c (rb_str_match_m): quote metacharacters.
+
+	* string.c (rb_str_match2): ditto.
 
 Thu Jul 11 12:59:23 2002  Shugo Maeda  <shugo@ruby-lang.org>
 
@@ -255,6 +302,11 @@ Sun Jun 23 00:19:10 2002  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb, sample/cal.rb, sample/goodfriday.rb:
 	  updated to the new version (based on date2 3.3).
+
+Sat Jun 22 14:41:33 2002  Guy Decoux  <ts@moulon.inra.fr>
+
+	* ext/socket/socket.c (sock_addrinfo): make all 3 versions of
+	  getaddrinfo happy.  [ruby-core:00184]
 
 Fri Jun 21 18:49:58 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

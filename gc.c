@@ -651,7 +651,6 @@ rb_gc_mark_children(ptr)
 	  case NODE_ARRAY:
 	  case NODE_DSTR:
 	  case NODE_DXSTR:
-	  case NODE_EVSTR:
 	  case NODE_DREGX:
 	  case NODE_DREGX_ONCE:
 	  case NODE_FBODY:
@@ -697,6 +696,7 @@ rb_gc_mark_children(ptr)
 	  case NODE_MODULE:
 	  case NODE_COLON3:
 	  case NODE_OPT_N:
+	  case NODE_EVSTR:
 	    rb_gc_mark((VALUE)obj->as.node.u2.node);
 	    break;
 

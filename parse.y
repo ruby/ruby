@@ -369,22 +369,16 @@ stmts		: none
 
 stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
-			if (in_def || in_single)
-			    yyerror("alias within method");
 		        $$ = NEW_ALIAS($2, $4);
 		    }
 		| kALIAS tGVAR tGVAR
 		    {
-			if (in_def || in_single)
-			    yyerror("alias within method");
 		        $$ = NEW_VALIAS($2, $3);
 		    }
 		| kALIAS tGVAR tBACK_REF
 		    {
 			char buf[3];
 
-			if (in_def || in_single)
-			    yyerror("alias within method");
 			sprintf(buf, "$%c", $3->nd_nth);
 		        $$ = NEW_VALIAS($2, rb_intern(buf));
 		    }
@@ -395,8 +389,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| kUNDEF undef_list
 		    {
-			if (in_def || in_single)
-			    yyerror("undef within method");
 			$$ = $2;
 		    }
 		| stmt kIF_MOD expr_value
@@ -632,8 +624,6 @@ command		: operation command_args
 		    }
 		| kSUPER command_args
 		    {
-			if (!compile_for_eval && !in_def && !in_single)
-			    yyerror("super called outside of method");
 			$$ = new_super($2);
 		        fixpos($$, $2);
 		    }
@@ -1490,8 +1480,6 @@ primary		: literal
 		    }
 		| kDEF fname
 		    {
-			if (in_def || in_single)
-			    yyerror("nested method definition");
 			$<id>$ = cur_mid;
 			cur_mid = $2;
 			in_def++;
@@ -1658,16 +1646,10 @@ method_call	: operation paren_args
 		    }
 		| kSUPER paren_args
 		    {
-			if (!compile_for_eval && !in_def &&
-		            !in_single && !in_defined)
-			    yyerror("super called outside of method");
 			$$ = new_super($2);
 		    }
 		| kSUPER
 		    {
-			if (!compile_for_eval && !in_def &&
-		            !in_single && !in_defined)
-			    yyerror("super called outside of method");
 			$$ = NEW_ZSUPER();
 		    }
 		;
@@ -1936,7 +1918,7 @@ string_content	: tSTRING_CONTENT {$$ = NEW_STR($1);}
 		    {
 			lex_strnest = $<num>1;
 			lex_strterm = $<node>2;
-			$$ = $3;
+		        $$ = NEW_EVSTR($3);
 		    }
 		| tSTRING_DBEG term_push
 		    {
@@ -1954,6 +1936,7 @@ string_content	: tSTRING_CONTENT {$$ = NEW_STR($1);}
 			    $$ = $$->nd_next;
 			    rb_gc_force_recycle((VALUE)$4);
 			}
+		        $$ = NEW_EVSTR($$);
 		    }
 		;
 
@@ -3570,7 +3553,7 @@ yylex()
 		    pushback(c);
 		    tokfix();
 		    if (toklen() == start) {
-			yyerror("hexadecimal number without hex-digits");
+			yyerror("numeric literal without digits");
 		    }
 		    else if (nondigit) goto trailing_uc;
 		    yylval.val = rb_cstr_to_inum(tok(), 16, Qfalse);
@@ -3600,8 +3583,44 @@ yylex()
 		    yylval.val = rb_cstr_to_inum(tok(), 2, Qfalse);
 		    return tINTEGER;
 		}
-		if (c >= '0' && c <= '7' || c == '_') {
+		if (c == 'd' || c == 'D') {
+		    /* decimal */
+		    c = nextc();
+		    if (ISDIGIT(c)) {
+			do {
+			    if (c == '_') {
+				if (nondigit) break;
+				nondigit = c;
+				continue;
+			    }
+			    if (!ISDIGIT(c)) break;
+			    nondigit = 0;
+			    tokadd(c);
+			} while (c = nextc());
+		    }
+		    pushback(c);
+		    tokfix();
+		    if (toklen() == start) {
+			yyerror("numeric literal without digits");
+		    }
+		    else if (nondigit) goto trailing_uc;
+		    yylval.val = rb_cstr_to_inum(tok(), 10, Qfalse);
+		    return tINTEGER;
+		}
+		if (c == '_') {
+		    /* 0_0 */
+		    goto octal_number;
+		}
+		if (c == 'o' || c == 'O') {
+		    /* prefixed octal */
+		    c = nextc();
+		    if (c == '_') {
+			yyerror("numeric literal without digits");
+		    }
+		}
+		if (c >= '0' && c <= '7') {
 		    /* octal */
+		  octal_number:
 	            do {
 			if (c == '_') {
 			    if (nondigit) break;
@@ -4299,24 +4318,26 @@ block_append(head, tail)
     return head;
 }
 
+/* append item to the list */
 static NODE*
-list_append(head, tail)
-    NODE *head, *tail;
+list_append(list, item)
+    NODE *list, *item;
 {
     NODE *last;
 
-    if (head == 0) return NEW_LIST(tail);
+    if (list == 0) return NEW_LIST(item);
 
-    last = head;
+    last = list;
     while (last->nd_next) {
 	last = last->nd_next;
     }
 
-    last->nd_next = NEW_LIST(tail);
-    head->nd_alen += 1;
-    return head;
+    last->nd_next = NEW_LIST(item);
+    list->nd_alen += 1;
+    return list;
 }
 
+/* concat two lists */
 static NODE*
 list_concat(head, tail)
     NODE *head, *tail;
@@ -4439,6 +4460,7 @@ literal_append(head, tail)
     }
 }
 
+/* concat two string literals */
 static NODE *
 literal_concat(head, tail)
     NODE *head, *tail;

@@ -78,6 +78,7 @@ Standard Libraries
 - Hash::new{default}
 - hash etc. should handle self referenceing array/hash
 - Array#select(n1,n2...) works like Array#indexes(n1,n2...)
+- use Mersenne Twister RNG for random.
 * String#scanf(?)
 * Object#fmt(?)
 * Time::strptime

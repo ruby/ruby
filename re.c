@@ -1170,26 +1170,39 @@ rb_reg_initialize_m(argc, argv, self)
     return self;
 }
 
-static VALUE
-rb_reg_s_quote(argc, argv)
-    int argc;
-    VALUE *argv;
+VALUE
+rb_reg_quote(str)
+    VALUE str;
 {
-    VALUE str, kcode;
-    int kcode_saved = reg_kcode;
     char *s, *send, *t;
     VALUE tmp;
     int c;
 
-    rb_scan_args(argc, argv, "11", &str, &kcode);
-    if (!NIL_P(kcode)) {
-	rb_set_kcode(StringValuePtr(kcode));
-	curr_kcode = reg_kcode;
-	reg_kcode = kcode_saved;
-    }
-    StringValue(str);
     s = RSTRING(str)->ptr;
     send = s + RSTRING(str)->len;
+    for (; s < send; s++) {
+	c = *s;
+	if (ismbchar(c)) {
+	    int n = mbclen(c);
+
+	    while (n-- && s < send)
+		s++;
+	    s--;
+	    continue;
+	}
+	switch (c) {
+	  case '\t': case '\f': case '\r': case '\n':
+	  case '[': case ']': case '{': case '}':
+	  case '(': case ')': case '|': case '-':
+	  case '*': case '.': case '\\':
+	  case '?': case '+': case '^': case '$':
+	  case ' ': case '#':
+	    goto meta_found;
+	}
+    }
+    return str;
+
+  meta_found:
     tmp = rb_str_new(0, RSTRING(str)->len*2);
     t = RSTRING(tmp)->ptr;
 
@@ -1230,10 +1243,29 @@ rb_reg_s_quote(argc, argv)
 	}
 	*t++ = c;
     }
-    kcode_reset_option();
     rb_str_resize(tmp, t - RSTRING(tmp)->ptr);
     OBJ_INFECT(tmp, str);
     return tmp;
+}
+
+static VALUE
+rb_reg_s_quote(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE str, kcode;
+    int kcode_saved = reg_kcode;
+
+    rb_scan_args(argc, argv, "11", &str, &kcode);
+    if (!NIL_P(kcode)) {
+	rb_set_kcode(StringValuePtr(kcode));
+	curr_kcode = reg_kcode;
+	reg_kcode = kcode_saved;
+    }
+    StringValue(str);
+    str = rb_reg_quote(str);
+    kcode_reset_option();
+    return str;
 }
 
 int

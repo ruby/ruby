@@ -889,16 +889,44 @@ rb_str_index_m(argc, argv, str)
     return INT2NUM(pos);
 }
 
+static long
+rb_str_rindex(str, sub, pos)
+    VALUE str, sub;
+    long pos;
+{
+    long len = RSTRING(sub)->len;
+    char *s, *sbeg, *t;
+
+    /* substring longer than string */
+    if (RSTRING(str)->len < len) return -1;
+    if (RSTRING(str)->len - pos < len) {
+	pos = RSTRING(str)->len - len;
+    }
+    sbeg = RSTRING(str)->ptr;
+    s = RSTRING(str)->ptr + pos;
+    t = RSTRING(sub)->ptr;
+    if (len) {
+	while (sbeg <= s) {
+	    if (rb_memcmp(s, t, len) == 0) {
+		return s - RSTRING(str)->ptr;
+	    }
+	    s--;
+	}
+    }
+    else {
+	return pos;
+    }
+}
+
 static VALUE
-rb_str_rindex(argc, argv, str)
+rb_str_rindex_m(argc, argv, str)
     int argc;
     VALUE *argv;
     VALUE str;
 {
     VALUE sub;
     VALUE position;
-    int pos, len;
-    char *s, *sbeg, *t;
+    int pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &position) == 2) {
 	pos = NUM2INT(position);
@@ -927,26 +955,8 @@ rb_str_rindex(argc, argv, str)
 	break;
 
       case T_STRING:
-	len = RSTRING(sub)->len;
-	/* substring longer than string */
-	if (RSTRING(str)->len < len) return Qnil;
-	if (RSTRING(str)->len - pos < len) {
-	    pos = RSTRING(str)->len - len;
-	}
-	sbeg = RSTRING(str)->ptr;
-	s = RSTRING(str)->ptr + pos;
-	t = RSTRING(sub)->ptr;
-	if (len) {
-	    while (sbeg <= s) {
-		if (rb_memcmp(s, t, len) == 0) {
-		    return INT2NUM(s - RSTRING(str)->ptr);
-		}
-		s--;
-	    }
-	}
-	else {
-	    return INT2NUM(pos);
-	}
+	pos = rb_str_rindex(str, sub, pos);
+	if (pos >= 0) return INT2NUM(pos);
 	break;
 
       case T_FIXNUM:
@@ -996,7 +1006,7 @@ rb_str_match2(str)
     VALUE str;
 {
     StringValue(str);
-    return rb_reg_match2(rb_reg_regcomp(str));
+    return rb_reg_match2(rb_reg_regcomp(rb_reg_quote(str)));
 }
 
 static VALUE
@@ -1007,7 +1017,7 @@ rb_str_match_m(str, re)
 
     if (!NIL_P(str2)) {
 	StringValue(re);
-	re = rb_reg_regcomp(re);
+	re = rb_reg_regcomp(rb_reg_quote(re));
     }
     return rb_funcall(re, rb_intern("match"), 1, str);
 }
@@ -1397,19 +1407,29 @@ static VALUE
 get_pat(pat)
     VALUE pat;
 {
+    VALUE val;
+
     switch (TYPE(pat)) {
       case T_REGEXP:
-	break;
+	return pat;
 
       case T_STRING:
-	pat = rb_reg_regcomp(pat);
 	break;
 
       default:
-	/* type failed */
-	Check_Type(pat, T_REGEXP);
+	val = rb_check_convert_type(pat, T_STRING, "String", "to_str");
+	if (NIL_P(val)) {
+	    Check_Type(pat, T_REGEXP);
+	}
+	pat = val;
     }
-    return pat;
+    val = rb_reg_quote(pat);
+#if RUBY_VERSION_CODE < 180
+    if (val != pat) {
+	rb_warn("string pattern instead of regexp; metacharacters no longer effective");
+    }
+#endif
+    return rb_reg_regcomp(val);
 }
 
 static VALUE
@@ -2449,7 +2469,7 @@ rb_str_split_m(argc, argv, str)
 {
     VALUE spat;
     VALUE limit;
-    int char_sep = -1;
+    int awk_split = Qfalse;
     long beg, end, i = 0;
     int lim = 0;
     VALUE result, tmp;
@@ -2466,67 +2486,51 @@ rb_str_split_m(argc, argv, str)
 	    spat = rb_fs;
 	    goto fs_set;
 	}
-	char_sep = ' ';
+	awk_split = Qtrue;
     }
     else {
       fs_set:
-	switch (TYPE(spat)) {
-	  case T_STRING:
-	    if (RSTRING(spat)->len == 1) {
-		char_sep = (unsigned char)RSTRING(spat)->ptr[0];
+	if (TYPE(spat) == T_STRING && RSTRING(spat)->len == 1) {
+	    if (RSTRING(spat)->ptr[0] == ' ') {
+		awk_split = Qtrue;
 	    }
 	    else {
-		spat = rb_reg_regcomp(spat);
+		spat = rb_reg_regcomp(rb_reg_quote(spat));
 	    }
-	    break;
-	  case T_REGEXP:
-	    break;
-	  default:
-	    rb_raise(rb_eArgError, "bad separator");
+	}
+	else {
+	    spat = get_pat(spat);
 	}
     }
 
     result = rb_ary_new();
     beg = 0;
-    if (char_sep >= 0) {
+    if (awk_split) {
 	char *ptr = RSTRING(str)->ptr;
 	long len = RSTRING(str)->len;
 	char *eptr = ptr + len;
+	int skip = 1;
 
-	if (char_sep == ' ') {	/* AWK emulation */
-	    int skip = 1;
-
-	    for (end = beg = 0; ptr<eptr; ptr++) {
-		if (skip) {
-		    if (ISSPACE(*ptr)) {
-			beg++;
-		    }
-		    else {
-			end = beg+1;
-			skip = 0;
-		    }
+	for (end = beg = 0; ptr<eptr; ptr++) {
+	    if (skip) {
+		if (ISSPACE(*ptr)) {
+		    beg++;
 		}
 		else {
-		    if (ISSPACE(*ptr)) {
-			rb_ary_push(result, rb_str_substr(str, beg, end-beg));
-			skip = 1;
-			beg = end + 1;
-			if (!NIL_P(limit) && lim <= ++i) break;
-		    }
-		    else {
-			end++;
-		    }
+		    end = beg+1;
+		    skip = 0;
 		}
 	    }
-	}
-	else {
-	    for (end = beg = 0; ptr<eptr; ptr++) {
-		if (*ptr == (char)char_sep) {
+	    else {
+		if (ISSPACE(*ptr)) {
 		    rb_ary_push(result, rb_str_substr(str, beg, end-beg));
+		    skip = 1;
 		    beg = end + 1;
 		    if (!NIL_P(limit) && lim <= ++i) break;
 		}
-		end++;
+		else {
+		    end++;
+		}
 	    }
 	}
     }
@@ -3178,7 +3182,7 @@ Init_String()
     rb_define_method(rb_cString, "next!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "upto", rb_str_upto_m, 1);
     rb_define_method(rb_cString, "index", rb_str_index_m, -1);
-    rb_define_method(rb_cString, "rindex", rb_str_rindex, -1);
+    rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);

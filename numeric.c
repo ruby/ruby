@@ -861,6 +861,7 @@ rb_num2long(val)
       case T_BIGNUM:
 	return rb_big2long(val);
 
+#if 0
       case T_STRING:
 	rb_raise(rb_eTypeError, "no implicit conversion to integer from string");
 	return Qnil;		/* not reached */
@@ -869,7 +870,7 @@ rb_num2long(val)
       case T_FALSE:
 	rb_raise(rb_eTypeError, "no implicit conversion to integer from boolean");
 	return Qnil;		/* not reached */
-
+#endif
       default:
 	val = rb_to_int(val);
 	return NUM2LONG(val);

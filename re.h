@@ -33,6 +33,7 @@ int rb_reg_search _((VALUE, VALUE, int, int));
 VALUE rb_reg_regsub _((VALUE, VALUE, struct re_registers *));
 int rb_reg_adjust_startpos _((VALUE, VALUE, int, int));
 void rb_match_busy _((VALUE));
+VALUE rb_reg_quote _((VALUE));
 
 EXTERN int ruby_ignorecase;
 
