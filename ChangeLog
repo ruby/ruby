@@ -1,3 +1,8 @@
+Sun Apr 27 23:13:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* string.c (rb_str_to_i): disallow negative radix.
+	  [ruby-dev:20087]
+
 Sat Apr 26 23:34:42 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (open_args): warning message changed to "don't put space
