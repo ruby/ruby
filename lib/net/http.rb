@@ -474,47 +474,34 @@ module Net
       end
 
       resp = yield
-
       if @command.http_version == '1.0' then
         @seems_1_0 = true
       end
-      if keep_alive? header, resp then
+
+      unless keep_alive? resp then
         if @socket.closed? then
           @seems_1_0 = true
+        else
           @socket.close
         end
-      else
-        @socket.close
       end
     end
 
-    def keep_alive?( header, resp )
-      if resp.key? 'connection' then
-        if /keep-alive/i === resp['connection'] then
-          return true
-        end
-      elsif resp.key? 'proxy-connection' then
-        if /keep-alive/i === resp['proxy-connection'] then
-          return true
-        end
-      elsif header.key? 'Connection' then
-        if /keep-alive/i === header['Connection'] then
-          return true
-        end
-      else
-        if @command.http_version == '1.1' then
-          return true
-        end
-      end
+    def keep_alive?( resp )
+      /close/i === resp['connection'].to_s            and return false
+      /close/i === resp['proxy-connection'].to_s      and return false
+      @seems_1_0                                      and return false
+
+      /keep-alive/i === resp['connection'].to_s       and return true
+      /keep-alive/i === resp['proxy-connection'].to_s and return true
+      @command.http_version == '1.1'                  and return true
 
       false
     end
 
     def procheader( h )
       ret = {}
-      ret[ 'Host' ]       = address +
-                            ((port == HTTP.port) ? '' : ":#{port}")
-      ret[ 'Connection' ] = 'Keep-Alive'
+      ret[ 'Host' ]       = address + ((port == HTTP.port) ? '' : ":#{port}")
       ret[ 'Accept' ]     = '*/*'
 
       return ret unless h

@@ -458,6 +458,7 @@ module Net
     end
 
     def reopen
+      d 'reopen'
       unless closed? then
         close
       end
@@ -469,6 +470,7 @@ module Net
     attr :socket, true
 
     def close
+      d 'close'
       @socket.close
       @closed = true
     end
@@ -787,6 +789,13 @@ module Net
       @pipe = @prepipe
       @prepipe = nil
       @pipe
+    end
+
+    def d( s )
+      if @pipe then
+        @pipe << s
+        @pipe << "\n"
+      end
     end
 
   end

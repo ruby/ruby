@@ -1,3 +1,7 @@
+Fri Feb 23 13:27:05 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: keep-alive detection was incomplete.
+
 Fri Feb 23 08:24:53 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: clear read buffer after reopen.
