@@ -1,3 +1,9 @@
+Thu May 20 12:34:39 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_visibility): 
+	  At Ryan Davis' suggestion, honor visibility modifers if guarded by a
+	  statement modifier
+
 Thu May 20 12:22:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_type): do not check pointer to incomplete type,

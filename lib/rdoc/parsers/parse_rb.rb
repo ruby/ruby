@@ -2450,7 +2450,13 @@ module RDoc
             end
             
       skip_tkspace_comment(false)
-      if peek_tk.kind_of? TkNL
+      case peek_tk
+        # Ryan Davis suggested the extension to ignore modifiers, because he
+        # often writes
+        #
+        #   protected unless $TESTING
+        #
+      when TkNL, TkUNLESS_MOD, TkIF_MOD
 #        error("Missing argument") if singleton        
         container.ongoing_visibility = vis
       else
