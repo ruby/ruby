@@ -1,6 +1,7 @@
 Sat Sep 27 09:44:18 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: clear all errors on Windows.
+	  [ruby-dev:21417]
 
 	* test/fileutils/test_nowrite.rb: ditto.
 
