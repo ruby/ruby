@@ -1,3 +1,7 @@
+Tue May 18 14:24:20 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml.rb: added rdoc to beginning of lib.
+
 Tue May 18 14:00:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.h (NEW_DSTR): adjust list length.
