@@ -1,3 +1,8 @@
+Thu Jan 29 22:24:47 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* sample/openssl/gen_csr.rb: follow OpenSSL::X509::Name change.
+	  ASN.1 type of subject DN elements were wrong.
+
 Thu Jan 29 22:19:51 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/*: remove $: trick.  [ruby-dev:22763]  use test/runner.rb to

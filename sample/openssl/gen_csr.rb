@@ -19,13 +19,9 @@ keypair_file = $OPT_key
 csrout = $OPT_csrout || "csr.pem"
 keyout = $OPT_keyout || "keypair.pem"
 
-name_str = ARGV.shift or usage()
-
 $stdout.sync = true
-
-name_ary = name_str.scan(/\s*([^\/,]+)\s*/).collect { |i| i[0].split("=") }
-p name_ary
-name = X509::Name.new(name_ary, OpenSSL::ASN1::PRINTABLESTRING)
+name_str = ARGV.shift or usage()
+name = X509::Name.parse(name_str)
 
 keypair = nil
 if keypair_file
@@ -39,7 +35,7 @@ else
   end
 end
 
-puts "Generating CSR for #{name_ary.inspect}"
+puts "Generating CSR for #{name_str}"
 
 req = X509::Request.new
 req.version = 0
