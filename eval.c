@@ -6784,7 +6784,7 @@ umethod_bind(method, recv)
     method = Data_Make_Struct(rb_cMethod,struct METHOD,bm_mark,free,bound);
     *bound = *data;
     bound->recv = recv;
-    bound->rklass = CLASS_OF(recv);
+    bound->klass = CLASS_OF(recv);
 
     return method;
 }
