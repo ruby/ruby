@@ -3986,15 +3986,24 @@ static int STACK_LEVEL_MAX = 655300;
 
 extern VALUE *rb_gc_stack_start;
 static int
-stack_length()
+stack_length(p)
+    VALUE **p;
 {
-    VALUE pos;
+#ifdef C_ALLOCA
+    VALUE stack_end;
+    alloca(0);
+# define STACK_END (&stack_end)
+#else
+    VALUE *stack_end = alloca(1);
+# define STACK_END (stack_end)
+#endif
+    if (p) *p = STACK_END;
 
 #ifdef sparc
-    return rb_gc_stack_start - &pos + 0x80;
+    return rb_gc_stack_start - STACK_END + 0x80;
 #else
-    return (&pos < rb_gc_stack_start) ? rb_gc_stack_start - &pos
-	                              : &pos - rb_gc_stack_start;
+    return (STACK_END < rb_gc_stack_start) ? rb_gc_stack_start - STACK_END
+	                                   : STACK_END - rb_gc_stack_start;
 #endif
 }
 
@@ -4113,7 +4122,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
     if ((++tick & 0xff) == 0) {
 	CHECK_INTS;		/* better than nothing */
-	if (stack_length() > STACK_LEVEL_MAX) {
+	if (stack_length(0) > STACK_LEVEL_MAX) {
 	    rb_raise(rb_eSysStackError, "stack level too deep");
 	}
     }
@@ -6111,7 +6120,7 @@ proc_arity(proc)
     if (data->var == 0) return INT2FIX(-1);
     switch (nd_type(data->var)) {
       default:
-	return INT2FIX(-2);
+	return INT2FIX(-1);
       case NODE_MASGN:
 	list = data->var->nd_head;
 	n = 0;
@@ -6736,15 +6745,15 @@ static void
 rb_thread_save_context(th)
     rb_thread_t th;
 {
-    VALUE v;
+    VALUE *pos;
 
     int len;
 
-    len = stack_length();
+    len = stack_length(&pos);
     th->stk_len = 0;
-    th->stk_pos = (rb_gc_stack_start<(VALUE*)&v)?rb_gc_stack_start
-				                :rb_gc_stack_start - len;
-    if (len > th->stk_max)  {	
+    th->stk_pos = (rb_gc_stack_start<pos)?rb_gc_stack_start
+				         :rb_gc_stack_start - len;
+    if (len > th->stk_max) {
 	REALLOC_N(th->stk_ptr, VALUE, len);
 	th->stk_max = len;
     }

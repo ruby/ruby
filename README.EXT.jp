@@ -43,11 +43,13 @@ Rubyにはユーザが使う可能性のある以下のタイプがあります．
 	T_TRUE		真
 	T_FALSE		偽
 	T_DATA		データ
+	T_SYMBOL	シンボル
 
 その他に内部で利用されている以下のタイプがあります．
 
 	T_ICLASS
 	T_MATCH
+	T_UNDEF
 	T_VARMAP
 	T_SCOPE
 	T_NODE
@@ -171,26 +173,26 @@ Rubyが用意している関数を用いてください．
 
  文字列に対する関数
 
-  rb_str_new(char *ptr, int len)
+  rb_str_new(const char *ptr, long len)
 
     新しいRubyの文字列を生成する．
 
-  rb_str_new2(char *ptr)
+  rb_str_new2(const char *ptr)
 
     Cの文字列からRubyの文字列を生成する．この関数の機能は
     rb_str_new(ptr, strlen(ptr))と同等である．
 
-  rb_tainted_str_new(char *ptr, int len)
+  rb_tainted_str_new(const char *ptr, long len)
 
     汚染マークが付加された新しいRubyの文字列を生成する．外部
     からのデータに基づく文字列には汚染マークが付加されるべき
     である．
 
-  rb_tainted_str_new2(char *ptr)
+  rb_tainted_str_new2(const char *ptr)
 
     Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
 
-  rb_str_cat(VALUE str, char *ptr, int len)
+  rb_str_cat(VALUE str, const char *ptr, long len)
 
     Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
@@ -200,16 +202,16 @@ Rubyが用意している関数を用いてください．
 
     要素が0の配列を生成する．
 
-  rb_ary_new2(int len)
+  rb_ary_new2(long len)
 
     要素が0の配列を生成する．len要素分の領域をあらかじめ割り
     当てておく．
 
-  rb_ary_new3(int n, ...)
+  rb_ary_new3(long n, ...)
 
     引数で指定したn要素を含む配列を生成する．
 
-  rb_ary_new4(int n, VALUE *elts)
+  rb_ary_new4(long n, VALUE *elts)
 
     配列で与えたn要素の配列を生成する．
 
@@ -217,7 +219,6 @@ Rubyが用意している関数を用いてください．
   rb_ary_pop(VALUE ary)
   rb_ary_shift(VALUE ary)
   rb_ary_unshift(VALUE ary, VALUE val)
-  rb_ary_entry(VALUE ary, int idx)
 
     Arrayの同名のメソッドと同じ働きをする関数．第1引数は必ず
     配列でなければならない．
@@ -245,8 +246,8 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
 
 クラスやモジュールを定義するためには，以下の関数を使います．
 
-  VALUE rb_define_class(char *name, VALUE super)
-  VALUE rb_define_module(char *name)
+  VALUE rb_define_class(const char *name, VALUE super)
+  VALUE rb_define_module(const char *name)
 
 これらの関数は新しく定義されたクラスやモジュールを返します．
 メソッドや定数の定義にこれらの値が必要なので，ほとんどの場合
@@ -255,17 +256,17 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
 クラスやモジュールを他のクラスの内部にネストして定義する時に
 は以下の関数を使います．
 
-  VALUE rb_define_class_under(VALUE outer, char *name, VALUE super)
-  VALUE rb_define_module_under(VALUE outer, char *name)
+  VALUE rb_define_class_under(VALUE outer, const char *name, VALUE super)
+  VALUE rb_define_module_under(VALUE outer, const char *name)
 
 2.1.2 メソッド/特異メソッド定義
 
 メソッドや特異メソッドを定義するには以下の関数を使います．
 
-  void rb_define_method(VALUE klass, char *name, 
+  void rb_define_method(VALUE klass, const char *name, 
 		        VALUE (*func)(), int argc)
 
-  void rb_define_singleton_method(VALUE object, char *name, 
+  void rb_define_singleton_method(VALUE object, const char *name, 
 			          VALUE (*func)(), int argc)
 
 
@@ -287,7 +288,7 @@ argcが-1の時は引数を配列に入れて渡されます．argcが-2の時は引
 メソッドを定義する関数はもう二つあります．ひとつはprivateメ
 ソッドを定義する関数で，引数はrb_define_method()と同じです．
 
-  void rb_define_private_method(VALUE klass, char *name, 
+  void rb_define_private_method(VALUE klass, const char *name, 
 				VALUE (*func)(), int argc)
 
 privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
@@ -308,13 +309,13 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 という形式でも使えます．モジュール関数を定義する関数は以下の
 通りです．
 
-  void rb_define_module_function(VALUE module, char *name, 
+  void rb_define_module_function(VALUE module, const char *name, 
 		                 VALUE (*func)(), int argc)
 
 関数的メソッド(Kernelモジュールのprivate method)を定義するた
 めの関数は以下の通りです．
 
-  void rb_define_global_function(char *name, VALUE (*func)(), int argc)
+  void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
 
 
 メソッドの別名を定義するための関数は以下の通りです。
@@ -326,8 +327,8 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 拡張ライブラリが必要な定数はあらかじめ定義しておいた方が良い
 でしょう．定数を定義する関数は二つあります．
 
-  void rb_define_const(VALUE klass, char *name, VALUE val)
-  void rb_define_global_const(char *name, VALUE val)
+  void rb_define_const(VALUE klass, const char *name, VALUE val)
+  void rb_define_global_const(const char *name, VALUE val)
 
 前者は特定のクラス/モジュールに属する定数を定義するもの，後
 者はグローバルな定数を定義するものです．
@@ -348,7 +349,7 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 CからRubyの機能を呼び出すもっとも簡単な方法として，文字列で
 与えられたRubyのプログラムを評価する以下の関数があります．
 
-  VALUE rb_eval_string(char *str)
+  VALUE rb_eval_string(const char *str)
 
 この評価は現在の環境で行われます．つまり，現在のローカル変数
 などを受け継ぎます．
@@ -365,11 +366,10 @@ IDとは変数名，メソッド名を表す整数です．Rubyの中では
 
 でアクセスできます．Cからこの整数を得るためには関数
 
-  rb_intern(char *name)
+  rb_intern(const char *name)
 
-を使います．また一文字の演算子はその文字コードがそのままシン
-ボルになっています．Rubyから引数として与えられたシンボル(ま
-たは文字列)をIDに変換するには以下の関数を使います．
+を使います．Rubyから引数として与えられたシンボル(または文字
+列)をIDに変換するには以下の関数を使います．
 
   rb_to_id(VALUE symbol)
 
@@ -432,7 +432,7 @@ CとRubyで大域変数を使って情報を共有できます．共有できる大域
 変数にはいくつかの種類があります．そのなかでもっとも良く使わ
 れると思われるのはrb_define_variable()です．
 
-  void rb_define_variable(char *name, VALUE *var)
+  void rb_define_variable(const char *name, VALUE *var)
 
 この関数はRubyとCとで共有する大域変数を定義します．変数名が
 `$'で始まらない時には自動的に追加されます．この変数の値を変
@@ -441,14 +441,14 @@ CとRubyで大域変数を使って情報を共有できます．共有できる大域
 またRuby側からは更新できない変数もあります．このread onlyの
 変数は以下の関数で定義します．
 
-  void rb_define_readonly_variable(char *name, VALUE *var)
+  void rb_define_readonly_variable(const char *name, VALUE *var)
 
 これら変数の他にhookをつけた大域変数を定義できます．hook付き
 の大域変数は以下の関数を用いて定義します．hook付き大域変数の
 値の参照や設定はhookで行う必要があります．
 
-  void rb_define_hooked_variable(char *name, VALUE *var,
-				 VALUE (*getter)(), VALUE (*setter)())
+  void rb_define_hooked_variable(const char *name, VALUE *var,
+				 VALUE (*getter)(), void (*setter)())
 
 この関数はCの関数によってhookのつけられた大域変数を定義しま
 す．変数が参照された時には関数getterが，変数に値がセットされ
@@ -460,8 +460,8 @@ setterに0を指定します．
 それから，Cの関数によって実現されるRubyの大域変数を定義する
 関数があります．
 
-  void rb_define_virtual_variable(char *name,
-				  VALUE (*getter)(), VALUE (*setter)())
+  void rb_define_virtual_variable(const char *name,
+				  VALUE (*getter)(), void (*setter)())
 
 この関数によって定義されたRubyの大域変数が参照された時には
 getterが，変数に値がセットされた時にはsetterが呼ばれます．
@@ -551,7 +551,7 @@ MANIFESTというファイルは，静的リンクのmakeの時にディレクトリ
 まあ，当然なんですけど，どういう機能を実現するかどうかまず設
 計する必要があります．どんなクラスをつくるか，そのクラスには
 どんなメソッドがあるか，クラスが提供する定数などについて設計
-します．dbmクラスについてはext/dbm.docを参照してください．
+します．
 
 (4) Cコードを書く
 
@@ -911,20 +911,20 @@ rb_str_new2(s)
 
 ** クラス/モジュール定義
 
-VALUE rb_define_class(char *name, VALUE super)
+VALUE rb_define_class(const char *name, VALUE super)
 
   superのサブクラスとして新しいRubyクラスを定義する．
 
-VALUE rb_define_class_under(VALUE module, char *name, VALUE super)
+VALUE rb_define_class_under(VALUE module, const char *name, VALUE super)
 
   superのサブクラスとして新しいRubyクラスを定義し，moduleの
   定数として定義する．
 
-VALUE rb_define_module(char *name)
+VALUE rb_define_module(const char *name)
 
   新しいRubyモジュールを定義する．
 
-VALUE rb_define_module_under(VALUE module, char *name, VALUE super)
+VALUE rb_define_module_under(VALUE module, const char *name, VALUE super)
 
   新しいRubyモジュールを定義し，moduleの定数として定義する．
 
@@ -939,27 +939,27 @@ void rb_extend_object(VALUE object, VALUE module)
 
 ** 大域変数定義
 
-void rb_define_variable(char *name, VALUE *var)
+void rb_define_variable(const char *name, VALUE *var)
 
   RubyとCとで共有するグローバル変数を定義する．変数名が`$'で
   始まらない時には自動的に追加される．nameとしてRubyの識別子
   として許されない文字(例えば` ')を含む場合にはRubyプログラ
   ムからは見えなくなる．
 
-void rb_define_readonly_variable(char *name, VALUE *var)
+void rb_define_readonly_variable(const char *name, VALUE *var)
 
   RubyとCとで共有するread onlyのグローバル変数を定義する．
   read onlyであること以外はrb_define_variable()と同じ．
 
-void rb_define_virtual_variable(char *name,
-				VALUE (*getter)(), VALUE (*setter)())
+void rb_define_virtual_variable(const char *name,
+				VALUE (*getter)(), void (*setter)())
 
   関数によって実現されるRuby変数を定義する．変数が参照された
   時にはgetterが，変数に値がセットされた時にはsetterが呼ばれ
   る．
 
-void rb_define_hooked_variable(char *name, VALUE *var,
-			       VALUE (*getter)(), VALUE (*setter)())
+void rb_define_hooked_variable(const char *name, VALUE *var,
+			       VALUE (*getter)(), void (*setter)())
 
   関数によってhookのつけられたグローバル変数を定義する．変数
   が参照された時にはgetterが，関数に値がセットされた時には
@@ -973,21 +973,21 @@ void rb_global_variable(VALUE *var)
 
 ** 定数
 
-void rb_define_const(VALUE klass, char *name, VALUE val)
+void rb_define_const(VALUE klass, const char *name, VALUE val)
 
   定数を定義する．
 
-void rb_define_global_const(char *name, VALUE val)
+void rb_define_global_const(const char *name, VALUE val)
 
   大域定数を定義する．
 
-     rb_define_const(cKernal, name, val)
+     rb_define_const(rb_cObject, name, val)
 
   と同じ意味．
 
 ** メソッド定義
 
-rb_define_method(VALUE klass, char *name, VALUE (*func)(), int argc)
+rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
 
   メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 
   関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2
@@ -995,15 +995,15 @@ rb_define_method(VALUE klass, char *name, VALUE (*func)(), int argc)
   第1引数がself, 第2引数がargs(argsは引数を含むRubyの配列)と
   いう形式で与えられる．
  
-rb_define_private_method(VALUE klass, char *name, VALUE (*func)(), int argc)
+rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
 
   privateメソッドを定義する．引数はrb_define_method()と同じ．
 
-rb_define_singleton_method(VALUE klass, char *name, VALUE (*func)(), int argc)
+rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc)
 
   特異メソッドを定義する．引数はrb_define_method()と同じ．
 
-rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
+rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
 
   argc, argv形式で与えられた引数を分解する．fmtは必須引数の数, 
   付加引数の数, 残りの引数があるかを指定する文字列で, "数字
@@ -1024,11 +1024,11 @@ VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
 
   メソッド呼び出し．引数をargc, argv形式で渡す．
 
-VALUE rb_eval_string(char *str)
+VALUE rb_eval_string(const char *str)
 
   文字列をRubyスクリプトとしてコンパイル・実行する．
 
-ID rb_intern(char *name)
+ID rb_intern(const char *name)
 
   文字列に対応するIDを返す．
 
@@ -1047,20 +1047,20 @@ int rb_respond_to(VALUE obj, ID id)
 
 ** インスタンス変数
 
-VALUE rb_iv_get(VALUE obj, char *name)
+VALUE rb_iv_get(VALUE obj, const char *name)
 
   objのインスタンス変数の値を得る．`@'で始まらないインスタン
   ス変数は Rubyプログラムからアクセスできない「隠れた」イン
   スタンス変数になる．定数は大文字の名前を持つクラス(または
   モジュール)のインスタンス変数として実装されている．
 
-VALUE rb_iv_set(VALUE obj, char *name, VALUE val)
+VALUE rb_iv_set(VALUE obj, const char *name, VALUE val)
 
   objのインスタンス変数をvalにセットする．
 
 ** 制御構造
 
-VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
   func2をブロックとして設定し, func1をイテレータとして呼ぶ． 
   func1には arg1が引数として渡され, func2には第1引数にイテレー
@@ -1070,14 +1070,14 @@ VALUE rb_yield(VALUE val)
 
   valを値としてイテレータブロックを呼び出す．
 
-VALUE rb_rescue(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2)
 
   関数func1をarg1を引数に呼び出す．func1の実行中に例外が発生
   した時には func2をarg2を引数として呼ぶ．戻り値は例外が発生
   しなかった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻
   り値である．
 
-VALUE rb_ensure(VALUE (*func1)(), void *arg1, void (*func2)(), void *arg2)
+VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, void (*func2)(), VALUE arg2)
 
   関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が
   発生しても) func2をarg2を引数として実行する．戻り値はfunc1
@@ -1085,27 +1085,27 @@ VALUE rb_ensure(VALUE (*func1)(), void *arg1, void (*func2)(), void *arg2)
 
 ** 例外・エラー
 
-void rb_warning(char *fmt, ...)
+void rb_warning(const char *fmt, ...)
 
   rb_verbose時に標準エラー出力に警告情報を表示する．引数は
   printf()と同じ．
 
-void rb_raise(rb_eRuntimeError, char *fmt, ...)
+void rb_raise(rb_eRuntimeError, const char *fmt, ...)
 
   RuntimeError例外を発生させる．引数はprintf()と同じ．
 
-void rb_raise(VALUE exception, char *fmt, ...)
+void rb_raise(VALUE exception, const char *fmt, ...)
 
   exceptionで指定した例外を発生させる．fmt以下の引数は
   printf()と同じ．
 
-void rb_fatal(char *fmt, ...)
+void rb_fatal(const char *fmt, ...)
 
   致命的例外を発生させる．通常の例外処理は行なわれず, インター
   プリタが終了する(ただしensureで指定されたコードは終了前に
   実行される)．
 
-void rb_bug(char *fmt, ...)
+void rb_bug(const char *fmt, ...)
 
   インタープリタなどプログラムのバグでしか発生するはずのない
   状況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．

@@ -1,3 +1,12 @@
+Thu Oct  5 18:02:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_dup): should have propagated taint flag.
+	  (ruby-bugs:#PR64,65)
+
+Wed Oct  4 00:26:11 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_arity): proc{|a|}'s arity should be -1.
+
 Mon Oct  2 05:28:58 2000  akira yamada  <akira@ruby-lang.org>
 
 	* string.c (trnext): minus at the end of pattern.
