@@ -1,3 +1,8 @@
+Sat May 18 21:18:00 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (config.h): add VC++4/5 support about noreturn
+	  directive.
+
 Fri May 17 16:16:19 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* sampl/test.rb: use eval instead of './miniruby -c',
