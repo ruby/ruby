@@ -403,16 +403,8 @@ st_delete_safe(table, key, value, never)
 	return 0;
     }
 
-    if (EQUAL(table, *key, ptr->key)) {
-	table->num_entries--;
-	*key = ptr->key;
-	if (value != 0) *value = ptr->record;
-	ptr->key = ptr->record = never;
-	return 1;
-    }
-
-    for(; ptr->next != 0; ptr = ptr->next) {
-	if (EQUAL(table, ptr->next->key, *key)) {
+    for(; ptr != 0; ptr = ptr->next) {
+	if (EQUAL(table, ptr->key, *key)) {
 	    table->num_entries--;
 	    *key = ptr->key;
 	    if (value != 0) *value = ptr->record;
@@ -422,6 +414,25 @@ st_delete_safe(table, key, value, never)
     }
 
     return 0;
+}
+
+static int
+delete_never(key, value, never)
+    char *key, *value, *never;
+{
+    if (value == never) return ST_DELETE;
+    return ST_CONTINUE;
+}
+
+void
+st_cleanup_safe(table, never)
+    st_table *table;
+    char *never;
+{
+    int num_entries = table->num_entries;
+
+    st_foreach(table, delete_never, never);
+    table->num_entries = num_entries;
 }
 
 void

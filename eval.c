@@ -68,6 +68,19 @@ static int scope_vmode;
 #define SCOPE_SET(f)  do {scope_vmode=(f);} while(0)
 #define SCOPE_TEST(f) (scope_vmode&(f))
 
+static void print_undef _((VALUE, ID)) NORETURN;
+static void
+print_undef(klass, id)
+    VALUE klass;
+    ID id;
+{
+    rb_raise(rb_eNameError, "undefined method `%s' for %s `%s'",
+	     rb_id2name(id), 
+	     (TYPE(klass) == T_MODULE)?"module":"class",
+	     rb_class2name(klass));
+}
+
+
 #define CACHE_SIZE 0x800
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
@@ -202,8 +215,7 @@ rb_alias(klass, name, def)
 	}
     }
     if (!orig || !orig->nd_body) {
-	rb_raise(rb_eNameError, "undefined method `%s' for `%s'",
-		 rb_id2name(def), rb_class2name(klass));
+	print_undef(klass, def);
     }
     body = orig->nd_body;
     if (nd_type(body) == NODE_FBODY) { /* was alias */
@@ -252,8 +264,7 @@ rb_disable_super(klass, name)
 
     body = search_method(klass, mid, &origin);
     if (!body || !body->nd_body) {
-	rb_raise(rb_eNameError, "undefined method `%s' for `%s'",
-		 rb_id2name(mid), rb_class2name(klass));
+	print_undef(klass, mid);
     }
     if (origin == klass) {
 	body->nd_noex |= NOEX_UNDEF;
@@ -275,8 +286,7 @@ rb_enable_super(klass, name)
 
     body = search_method(klass, mid, &origin);
     if (!body || !body->nd_body || origin != klass) {
-	rb_raise(rb_eNameError, "undefined method `%s' for `%s'",
-		 rb_id2name(mid), rb_class2name(klass));
+	print_undef(klass, mid);
     }
     body->nd_noex &= ~NOEX_UNDEF;
 }
@@ -298,8 +308,7 @@ rb_export_method(klass, name, noex)
 	body = search_method(rb_cObject, name, &origin);
     }
     if (!body) {
-	rb_raise(rb_eNameError, "undefined method `%s' for `%s'",
-		 rb_id2name(name), rb_class2name(klass));
+	print_undef(klass, name);
     }
     if (body->nd_noex != noex) {
 	if (klass == origin) {
@@ -370,7 +379,7 @@ rb_attr(klass, id, read, write, ex)
     }
 }
 
-static ID init, eqq, each, aref, aset, match;
+static ID init, eqq, each, aref, aset, match, missing;
 VALUE ruby_errinfo = Qnil;
 extern NODE *ruby_eval_tree_begin;
 extern NODE *ruby_eval_tree;
@@ -886,9 +895,14 @@ void Init_ext _((void));
 void
 ruby_init()
 {
+    static int initialized = 0;
     static struct FRAME frame;
     static struct iter iter;
     int state;
+
+    if (initialized)
+	return;
+    initialized = 1;
 
     ruby_frame = top_frame = &frame;
     ruby_iter = &iter;
@@ -2648,6 +2662,9 @@ rb_eval(self, node)
 			s0 = "";
 		    }
 		}
+		else if (TYPE(klass) == T_MODULE) {
+		    s0 = " module";
+		}
 		rb_raise(rb_eNameError, "undefined method `%s' for%s `%s'",
 			 rb_id2name(node->nd_mid),s0,rb_class2name(klass));
 	    }
@@ -2935,15 +2952,16 @@ rb_f_exit(argc, argv, obj)
     VALUE obj;
 {
     VALUE status;
+    int istatus;
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &status) == 1) {
-	status = NUM2INT(status);
+	istatus = NUM2INT(status);
     }
     else {
-	status = 0;
+	istatus = 0;
     }
-    rb_exit(status);
+    rb_exit(istatus);
     return Qnil;		/* not reached */
 }
 
@@ -3526,23 +3544,20 @@ rb_f_missing(argc, argv, obj)
     }
     if (d) {
 	if (last_call_status & CSTAT_PRIV) {
-	    format = "private method `%s' called for %s";
+	    format = "private method `%s' called for %s%s%s";
 	}
 	if (last_call_status & CSTAT_PROT) {
-	    format = "protected method `%s' called for %s";
-	}
-	else if (rb_iterator_p()) {
-	    format = "undefined iterator `%s' for %s";
+	    format = "protected method `%s' called for %s%s%s";
 	}
 	else if (last_call_status & CSTAT_VCALL) {
 	    const char *mname = rb_id2name(id);
 
 	    if (('a' <= mname[0] && mname[0] <= 'z') || mname[0] == '_') {
-		format = "undefined local variable or method `%s' for %s";
+		format = "undefined local variable or method `%s' for %s%s%s";
 	    }
 	}
 	if (!format) {
-	    format = "undefined method `%s' for %s";
+	    format = "undefined method `%s' for %s%s%s";
 	}
 	if (RSTRING(d)->len > 65) {
 	    d = rb_any_to_s(obj);
@@ -3555,7 +3570,9 @@ rb_f_missing(argc, argv, obj)
     PUSH_FRAME();		/* fake frame */
     *ruby_frame = *_frame.prev->prev;
 
-    rb_raise(rb_eNameError, format, rb_id2name(id), desc);
+    rb_raise(rb_eNameError, format, rb_id2name(id),
+	     desc, desc[0]=='#'?"":":",
+	     desc[0]=='#'?"":rb_class2name(CLASS_OF(obj)));
     POP_FRAME();
 
     return Qnil;		/* not reached */
@@ -3577,7 +3594,7 @@ rb_undefined(obj, id, argc, argv, call_status)
 
     last_call_status = call_status;
 
-    return rb_funcall2(obj, rb_intern("method_missing"), argc+1, nargv);
+    return rb_funcall2(obj, missing, argc+1, nargv);
 }
 
 #ifdef DJGPP
@@ -3941,17 +3958,19 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
     }
 
-    /* receiver specified form for private method */
-    if ((noex & NOEX_PRIVATE) && scope == 0)
-	return rb_undefined(recv, mid, argc, argv, CSTAT_PRIV);
+    if (mid != missing) {
+	/* receiver specified form for private method */
+	if ((noex & NOEX_PRIVATE) && scope == 0)
+	    return rb_undefined(recv, mid, argc, argv, CSTAT_PRIV);
 
-    /* self must be kind of a specified form for private method */
-    if ((noex & NOEX_PROTECTED)) {
-	VALUE defined_class = klass;
-	while (TYPE(defined_class) == T_ICLASS)
-	    defined_class = RBASIC(defined_class)->klass;
-	if (!rb_obj_is_kind_of(ruby_frame->self, defined_class))
-	    return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);
+	/* self must be kind of a specified form for private method */
+	if ((noex & NOEX_PROTECTED)) {
+	    VALUE defined_class = klass;
+	    while (TYPE(defined_class) == T_ICLASS)
+		defined_class = RBASIC(defined_class)->klass;
+	    if (!rb_obj_is_kind_of(ruby_frame->self, defined_class))
+		return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);
+	}
     }
 
     return rb_call0(klass, recv, id, argc, argv, body, noex & NOEX_UNDEF);
@@ -4859,8 +4878,7 @@ rb_mod_modfunc(argc, argv, module)
 	id = rb_to_id(argv[i]);
 	body = search_method(module, id, 0);
 	if (body == 0 || body->nd_body == 0) {
-	    rb_raise(rb_eNameError, "undefined method `%s' for module `%s'",
-		     rb_id2name(id), rb_class2name(module));
+	    rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
 	}
 	rb_clear_cache_by_id(id);
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
@@ -5109,6 +5127,7 @@ Init_eval()
     aref = rb_intern("[]");
     aset = rb_intern("[]=");
     match = rb_intern("=~");
+    missing = rb_intern("method_missing");
 
     rb_global_variable((VALUE*)&top_scope);
     rb_global_variable((VALUE*)&ruby_eval_tree_begin);
@@ -5873,10 +5892,10 @@ struct thread {
     VALUE thread;
 };
 
-static thread_t curr_thread;
-static int num_waiting_on_fd;
-static int num_waiting_on_timer;
-static int num_waiting_on_join;
+static thread_t curr_thread = 0;
+static int num_waiting_on_fd = 0;
+static int num_waiting_on_timer = 0;
+static int num_waiting_on_join = 0;
 
 #define FOREACH_THREAD_FROM(f,x) x = f; do { x = x->next;
 #define END_FOREACH_FROM(f,x) } while (x != f)
@@ -7281,7 +7300,7 @@ Init_Thread()
     rb_cContinuation = rb_define_class("Continuation", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cContinuation), "new");
     rb_define_method(rb_cContinuation, "call", rb_continuation_call, -1);
-    rb_define_method(rb_mKernel, "callcc", rb_callcc, 0);
+    rb_define_global_function("callcc", rb_callcc, 0);
 }
 
 static VALUE

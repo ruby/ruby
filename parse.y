@@ -178,7 +178,7 @@ static void top_local_setup();
 %type <node> array assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
 %type <node> mlhs mlhs_head mlhs_tail mlhs_basic mlhs_entry mlhs_item mlhs_node
-%type <id>   variable symbol operation operation2 operation3
+%type <id>   fitem variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg
 %type <num>  f_norm_arg f_arg
 %token tUPLUS 		/* unary+ */
@@ -283,7 +283,7 @@ stmts		: none
 		    }
 
 stmt		: block_call
-		| kALIAS fname {lex_state = EXPR_FNAME;} fname
+		| kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			if (cur_mid || in_single)
 			    yyerror("alias within method");
@@ -561,11 +561,14 @@ fname		: tIDENTIFIER
 			$$ = $<id>1;
 		    }
 
-undef_list	: fname
+fitem		: fname
+		| symbol
+
+undef_list	: fitem
 		    {
 			$$ = NEW_UNDEF($1);
 		    }
-		| undef_list ',' {lex_state = EXPR_FNAME;} fname
+		| undef_list ',' {lex_state = EXPR_FNAME;} fitem
 		    {
 			$$ = block_append($1, NEW_UNDEF($4));
 		    }
@@ -1411,16 +1414,22 @@ ensure		: none
 		    }
 
 literal		: numeric
-		| tSYMBEG symbol
+		| symbol
 		    {
-		        lex_state = EXPR_END;
-			$$ = INT2FIX($2);
+			$$ = INT2FIX($1);
 		    }
 		| tREGEXP
 
-symbol		: fname
+symbol		: tSYMBEG sym
+		    {
+		        lex_state = EXPR_END;
+			$$ = $2;
+		    }
+
+sym		: fname
 		| tIVAR
 		| tGVAR
+
 
 numeric		: tINTEGER
 		| tFLOAT
@@ -1811,6 +1820,9 @@ rb_compile_file(f, file, start)
     return yycompile(strdup(f));
 }
 
+#if defined(__GNUC__) && __GNUC__ >= 2
+__inline__
+#endif
 static int
 nextc()
 {

@@ -8,7 +8,11 @@
 #if !defined(HAVE_OPENPTY) && !defined(HAVE__GETPTY)
 #include	<sys/ioctl.h>
 #endif
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#else
+#define WIFSTOPPED(status)    (((status) & 0xff) == 0x7f)
+#endif
 #include <ctype.h>
 
 #include <ruby.h>
@@ -160,7 +164,7 @@ chld_changed()
 #ifdef HAVE_WAITPID
 	cpid = waitpid(-1, &statusp, WUNTRACED|WNOHANG);
 #else
-	cpid = wait3((int *) &statusp, WUNTRACED|WNOHANG, 0);
+	cpid = wait3(&statusp, WUNTRACED|WNOHANG, 0);
 #endif
 	if (cpid == 0 || cpid == -1)
 	    return;

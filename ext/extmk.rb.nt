@@ -61,8 +61,8 @@ end
 
 CFLAGS = ""
 #LINK = "cl -o conftest.exe -I../.. -Zi -O -I. %s  conftest.c %s >  nul"
-LINK = "cl -o conftest.exe -Zi -O  %s  conftest.c %s >  nul"
-CPP = "cl -E  -I../.. -I../../missing -I../../win32 -I. -Zi -O %s conftest.c >  nul"
+LINK = "cl -o conftest.exe -Zi -O  %s  conftest.c %s %s >  nul"
+CPP = "cl -E  -I#{$ruby_inc} -I#{$ruby_inc}/missing -I#{$ruby_inc}/win32 -I. -Zi -O %s conftest.c >  nul"
 $null = open("nul", "w")
 
 $orgerr = $stderr.dup
@@ -322,7 +322,7 @@ VPATH = .
 
 CC = cl
 
-CFLAGS   = %s -I../.. -I../../missing -I../../win32 -I. -O -DNT %s #{CFLAGS} #{$CFLAGS} %s
+CFLAGS   = %s -I#{$ruby_inc} -I#{$ruby_inc}/missing -I#{$ruby_inc}/win32 -I. -O -DNT %s #{CFLAGS} #{$CFLAGS} %s
 
 RUBYLIB  = ../../ruby.lib
 DLDFLAGS =  /DLL

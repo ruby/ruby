@@ -32,7 +32,7 @@ st_table *st_init_strtable();
 st_table *st_init_strtable_with_size();
 int st_delete(), st_delete_safe();
 int st_insert(), st_lookup();
-void st_foreach(), st_add_direct(), st_free_table();
+void st_foreach(), st_add_direct(), st_free_table(), st_cleanup_safe();
 st_table *st_copy();
 
 #define ST_NUMCMP	((int (*)()) 0)

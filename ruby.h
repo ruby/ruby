@@ -87,7 +87,7 @@ extern "C" {
 
 #if SIZEOF_LONG != SIZEOF_VOIDP
 ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
-# endif
+#endif
 typedef unsigned long VALUE;
 typedef unsigned int ID;
 

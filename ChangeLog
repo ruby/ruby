@@ -1,6 +1,136 @@
-Fri Jun 25 13:07:20 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
+Thu Jul 15 16:54:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* missing/isinf.c: include "config.h" added.
+	* version 1.3.5 - version 1.4 alpha
+
+Wed Jul 14 23:45:33 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* eval.c (ruby_init): initialize for the first time only.
+
+Tue Jul 13 00:15:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (rb_hash_index): re-defined; method to retrieve a key
+	  from the value.
+
+	* hash.c (Init_Hash): member? should be re-defined for Hash.
+
+Tue Jul 12 13:54:51 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* io.c (rb_file_sysopen): wrong number of argument.
+
+Mon Jul 12 11:52:35 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_missing): class name included in message.
+
+	* eval.c (print_undef): better error message.
+
+Sun Jul 11 05:36:17 1999  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/debug.rb: patch to show proper position.
+
+Fri Jul  9 23:56:14 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* dln.c (dln_find_1): path conv. moved to conv_to_posix_path.
+
+	* dln.c (conv_to_posix_path): path conv. should be done.
+
+Fri Jul  9 10:26:47 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* random.c (RANDOM_NUMBER): should place parentheses.
+
+Fri Jul  8 11:00:51 1999  Shugo Maeda  <shugo@netlab.co.jp>
+
+	* numeric.c (fix_div): division may be out of fixnum range.
+
+	* bignum.c (bigdivmod): proper sign calculation to result.
+
+Wed Jul  7 18:27:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* st.c (st_delete_safe): was modifying wrong slot.
+
+Mon Jul  5 13:17:46 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): close all files at exit.
+
+Fri Jul  2 18:00:21 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/Mail/README: Mail-0.3.0 added to the distribution.
+
+Fri Jul  2 01:45:32 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_fastmap): avoid allocation of register
+	  variables for each invocation of re_match().  Suggested by
+	  Zasukhin Ruslan <ruslan@paradigmasoft.com>.  Thanks.
+
+Tue Jun 29 20:39:24 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* ext/tk/lib/tk.rb (TkVariable): bug fix; should value type check
+	  be added?
+
+	* string.c (rb_str_each_line): a bug in paragraph mode.
+
+	* ruby.c (load_file): shifted too much to skip #!.
+
+Tue Jun 29 06:50:21 1999  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/CGI.rb: 0.30 - cleanup release, incompatible.
+
+	* lib/telnet.rb: 0.22 - timeout added.
+
+Tue Jun 29 10:49:25 1999  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
+
+	* configure.in: better Rhapsody support.
+
+	* lib/mkmf.rb: Rhapsody/NEXTSTEP support.
+
+Tue Jun 29 01:42:13 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/pty/pty.c (chld_changed): should use POSIX.1 style wait.
+
+Mon Jun 28 21:07:36 1999  KIMURA Koichi  <kbk@kt.rim.or.jp>
+
+	* ext/extmk.rb.nt: wrong result for have_library().
+
+Mon Jun 28 15:24:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* missing/isinf.c: OSF/1 raises SIGFPE on one()/zero().
+
+	* regex.c (re_search): should search til EOS, for patterns may
+	  match beyond the end of range.
+
+Mon Jun 28 12:49:12 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_f_select): should not accept Time objects as an
+	  argument for it is time interval.
+
+	* process.c (rb_f_sleep): ditto.
+
+	* file.c (test_s): should return nil for false condition.
+
+Mon Jun 28 12:23:52 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* bignum.c (rb_dbl2big): typo.
+
+	* file.c (rb_f_test): ditto.
+
+	* string.c (rb_str_crypt): wrong message.
+
+Sun Jun 27 19:50:11 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* eval.c (rb_f_exit): should have treat signed integer status, not
+	  VALUE.
+
+	* process.c (rb_f_exit_bang): should work like exit().
+
+Sun Jun 27 16:21:32 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* string.c (rb_str_rindex): wrong position to search.
+
+Sat Jun 26 04:05:30 1999  Takaaki Tateishi  <ttate@jaist.ac.jp>
+
+	* configure.in (configure_args): --with-search-path to specify
+	  additional ruby search path.
+
+	* ruby.c (ruby_prog_init): additional search path.
 
 Fri Jun 25 13:09:12 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -8,6 +138,10 @@ Fri Jun 25 13:09:12 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): add start_paren to avoid too much
 	  finalization on maybe_finalize_jump.
+
+Fri Jun 25 13:07:20 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
+
+	* missing/isinf.c: include "config.h" added.
 
 Fri Jun 25 07:25:05 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 

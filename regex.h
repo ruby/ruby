@@ -33,6 +33,7 @@
 # define re_mbcinit ruby_re_mbcinit
 # define re_search ruby_re_search
 # define re_set_casetable ruby_re_set_casetable
+# define register_info_type ruby_register_info_type
 #endif
 
 #include <stddef.h>
@@ -90,6 +91,17 @@ void re_mbcinit ();
 #define ismbchar(c) re_mbctab[(unsigned char)(c)]
 #define mbclen(c)   (re_mbctab[(unsigned char)(c)]+1)
 
+/* Structure used in re_match() */
+
+typedef union
+{
+  unsigned char *word;
+  struct {
+    unsigned is_active : 1;
+    unsigned matched_something : 1;
+  } bits;
+} register_info_type;
+
 /* This data structure is used to represent a compiled pattern.  */
 
 struct re_pattern_buffer
@@ -116,6 +128,15 @@ struct re_pattern_buffer
 			   2 as value means can match null string
 			   but at end of range or before a character
 			   listed in the fastmap.  */
+
+    /* stack & working area for re_match() */
+    unsigned char **regstart;
+    unsigned char **regend;
+    unsigned char **old_regstart;
+    unsigned char **old_regend;
+    register_info_type *reg_info;
+    unsigned char **best_regstart;
+    unsigned char **best_regend;
   };
 
 typedef struct re_pattern_buffer regex_t;

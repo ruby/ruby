@@ -753,10 +753,9 @@ class TkVariable
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
 	raise
       else
-	INTERP._eval(format('global %s; unset %s'), @id, @id)
 	if val == []
-	  INTERP._eval(format('global %s; set %s(0) 0; unset %s(0)', 
-			      @id, @id, @id))
+	  INTERP._eval(format('global %s; unset %s; set %s(0) 0; unset %s(0)', 
+			      @id, @id, @id, @id))
 	elsif val.kind_of?(Array)
 	  a = []
 	  val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
@@ -857,7 +856,7 @@ class TkVariable
       Tk.tk_call('trace', 'variable', @id, @trace_opts, 'rb_var')
     else
       newopts = @trace_opts.dup
-      opts.each_byte{|c| newopts += c.chr unless @newopts.index(c)}
+      opts.each_byte{|c| newopts += c.chr unless newopts.index(c)}
       if newopts != @trace_opts
 	Tk.tk_call('trace', 'vdelete', @id, @trace_opts, 'rb_var')
 	@trace_opts.replace(newopts)
@@ -877,7 +876,7 @@ class TkVariable
       Tk.tk_call('trace', 'variable', @id, @trace_opts, 'rb_var')
     else
       newopts = @trace_opts.dup
-      opts.each_byte{|c| newopts += c.chr unless @newopts.index(c)}
+      opts.each_byte{|c| newopts += c.chr unless newopts.index(c)}
       if newopts != @trace_opts
 	Tk.tk_call('trace', 'vdelete', @id, @trace_opts, 'rb_var')
 	@trace_opts.replace(newopts)
@@ -2191,12 +2190,12 @@ class TkListbox<TkTextWin
   def selection_set(first, last=None)
     tk_send 'selection', 'set', first, last
   end
-  def xview(cmd, index, *more)
-    v = tk_send('xview', cmd, index, *more)
+  def xview(cmd, *more)
+    v = tk_send('xview', cmd, *more)
     v.to_i if more.size == 0
   end
-  def yview(cmd, index, *more)
-    v = tk_send('yview', cmd, index, *more)
+  def yview(cmd, *more)
+    v = tk_send('yview', cmd, *more)
     v.to_i if more.size == 0
   end
 end

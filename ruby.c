@@ -634,7 +634,7 @@ load_file(fname, script)
 		    char *path;
 		    char *pend = RSTRING(line)->ptr + RSTRING(line)->len;
 
-		    p = RSTRING(line)->ptr + 2;	/* skip `#!' */
+		    p = RSTRING(line)->ptr + 1;	/* skip `#!' */
 		    if (pend[-1] == '\n') pend--; /* chomp line */
 		    if (pend[-1] == '\r') pend--;
 		    *pend = '\0';
@@ -882,6 +882,10 @@ ruby_prog_init()
 #endif
 #ifdef RUBY_SITE_THIN_ARCHLIB
     addpath(RUBY_SITE_THIN_ARCHLIB);
+#endif
+
+#ifdef RUBY_SEARCH_PATH
+    addpath(RUBY_SEARCH_PATH);
 #endif
 
     if (rb_safe_level() == 0) {

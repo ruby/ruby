@@ -54,6 +54,8 @@ end
 CFLAGS = CONFIG["CFLAGS"]
 if PLATFORM == "m68k-human"
   CFLAGS.gsub!(/-c..-stack=[0-9]+ */, '')
+elsif PLATFORM =~ /-nextstep|-rhapsody/
+  CFLAGS.gsub!( /-arch\s\w*/, '' );
 end
 if /win32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ PLATFORM
   $null = open("nul", "w")
@@ -98,6 +100,7 @@ def try_cpp(src, opt="")
   cfile.print src
   cfile.close
   begin
+
     xsystem(format(CPP, $CFLAGS, opt))
   ensure
     system "rm -f conftest*"
@@ -335,9 +338,9 @@ def create_makefile(target)
   end
 
   unless $objs then
-    $objs = Dir["*.{c,cc}"]
+    $objs = Dir["*.{c,cc,m}"]
     for f in $objs
-      f.sub!(/\.(c|cc)$/, ".o")
+      f.sub!(/\.(c|cc|m)$/, ".o")
     end
   end
   $objs = $objs.join(" ")
@@ -402,13 +405,11 @@ EOMF
 $(DLLIB): $(OBJS)
 	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
 EOMF
-  elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc") or 
+  elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc")
     mfile.print "$(DLLIB): $(OBJS)\n"
     case PLATFORM
     when "m68k-human"
       mfile.printf "ar cru $(DLLIB) $(OBJS)\n"
-    when /-nextstep/
-      mfile.printf "cc -r $(CFLAGS) -o $(DLLIB) $(OBJS)\n"
     else
       mfile.printf "ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)\n"
     end
@@ -459,7 +460,7 @@ EOMF
   end
 end
 
-$libs = PLATFORM =~ /cygwin32|beos/ ? nil : "-lc"
+$libs = PLATFORM =~ /cygwin32|beos|rhapsody|nextstep/ ? nil : "-lc"
 $objs = nil
 $LOCAL_LIBS = ""
 $CFLAGS = ""

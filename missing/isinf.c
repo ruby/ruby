@@ -1,3 +1,21 @@
+#ifdef __osf__
+
+#define _IEEE 1
+#include <nan.h>
+
+int
+isinf(n)
+    double n;
+{
+        if (IsNANorINF(n) && IsINF(n)) {
+                return 1;
+        } else {
+                return 0;
+        }
+}
+
+#else
+
 #include "config.h"
 #ifdef HAVE_STRING_H
 # include <string.h>
@@ -23,3 +41,4 @@ isinf(n)
     return memcmp(&n, &pinf, sizeof n) == 0
 	|| memcmp(&n, &ninf, sizeof n) == 0;
 }
+#endif

@@ -1133,13 +1133,12 @@ rb_gc_call_finalizer_at_exit()
 	p = heaps[i]; pend = p + HEAP_SLOTS;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
-		DATA_PTR(p) &&
-		RANY(p)->as.data.dfree)
+		DATA_PTR(p) && RANY(p)->as.data.dfree) {
 		(*RANY(p)->as.data.dfree)(DATA_PTR(p));
-#if 0
-	    else if (BUILTIN_TYPE(p))
-		obj_free((VALUE)p);
-#endif
+	    }
+	    else if (BUILTIN_TYPE(p) == T_FILE) {
+		rb_io_fptr_finalize(RANY(p)->as.file.fptr);
+	    }
 	    p++;
 	}
     }

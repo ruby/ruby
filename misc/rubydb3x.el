@@ -7,8 +7,11 @@
 ;;; History of argument lists passed to rubydb.
 (defvar gud-rubydb-history nil)
 
-(defun gud-rubydb-massage-args (file args)
-  (cons "-r" (cons "debug" (cons file args))))
+(if (fboundp 'gud-overload-functions)
+    (defun gud-rubydb-massage-args (file args)
+      (cons "-r" (cons "debug" (cons file args))))
+  (defun gud-rubydb-massage-args (file args)
+      (cons "-r" (cons "debug" args))))
 
 ;; There's no guarantee that Emacs will hand the filter the entire
 ;; marker at once; it could be broken up across several strings.  We
@@ -17,6 +20,7 @@
 ;; beginning of a marker, we save it here between calls to the
 ;; filter.
 (defvar gud-rubydb-marker-acc "")
+(make-variable-buffer-local 'gud-rubydb-marker-acc)
 
 (defun gud-rubydb-marker-filter (string)
   (setq gud-rubydb-marker-acc (concat gud-rubydb-marker-acc string))
@@ -85,10 +89,13 @@ and source-file directory for your debugger."
 			       nil nil
 			       '(gud-rubydb-history . 1))))
 
-  (gud-overload-functions '((gud-massage-args . gud-rubydb-massage-args)
-			    (gud-marker-filter . gud-rubydb-marker-filter)
-			    (gud-find-file . gud-rubydb-find-file)))
-  (gud-common-init command-line rubydb-command-name)
+  (if (not (fboundp 'gud-overload-functions))
+      (gud-common-init command-line 'gud-rubydb-massage-args
+		       'gud-rubydb-marker-filter 'gud-rubydb-find-file)
+    (gud-overload-functions '((gud-massage-args . gud-rubydb-massage-args)
+			      (gud-marker-filter . gud-rubydb-marker-filter)
+			      (gud-find-file . gud-rubydb-find-file)))
+    (gud-common-init command-line rubydb-command-name))
 
   (gud-def gud-break  "b %l"         "\C-b" "Set breakpoint at current line.")
 ;  (gud-def gud-remove "clear %l"     "\C-d" "Remove breakpoint at current line")

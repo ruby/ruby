@@ -30,7 +30,7 @@ struct timeval {
 #endif /* NT */
 #include <ctype.h>
 
-struct timeval rb_time_timeval _((VALUE));
+struct timeval rb_time_interval _((VALUE));
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>
@@ -539,23 +539,27 @@ rb_f_fork(obj)
 }
 
 static VALUE
-rb_f_exit_bang(obj, status)
-    VALUE obj, status;
+rb_f_exit_bang(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
-    int code = -1;
+    VALUE status;
+    int istatus;
 
     rb_secure(4);
-    if (FIXNUM_P(status)) {
-	code = INT2FIX(status);
+    if (rb_scan_args(argc, argv, "01", &status) == 1) {
+	istatus = NUM2INT(status);
     }
-
+    else {
+	istatus = -1;
+    }
 #ifdef USE_CWGUSI
-    exit(code);
+    exit(istatus);
 #else
-    _exit(code);
+    _exit(istatus);
 #endif
-
-    /* not reached */
+    return Qnil;		/* not reached */
 }
 
 void
@@ -732,7 +736,7 @@ rb_f_sleep(argc, argv)
 	rb_thread_sleep_forever();
     }
     else if (argc == 1) {
-	rb_thread_wait_for(rb_time_timeval(argv[0]));
+	rb_thread_wait_for(rb_time_interval(argv[0]));
     }
     else {
 	rb_raise(rb_eArgError, "wrong # of arguments");
@@ -1007,7 +1011,7 @@ Init_process()
     rb_define_global_function("exec", rb_f_exec, -1);
 #endif
     rb_define_global_function("fork", rb_f_fork, 0);
-    rb_define_global_function("exit!", rb_f_exit_bang, 1);
+    rb_define_global_function("exit!", rb_f_exit_bang, -1);
     rb_define_global_function("system", rb_f_system, -1);
     rb_define_global_function("sleep", rb_f_sleep, -1);
 
@@ -1029,7 +1033,7 @@ Init_process()
 #if !defined(NT)
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
 #endif
-    rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, 1);
+    rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
 #ifndef USE_CWGUSI
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
 #endif

@@ -101,7 +101,7 @@ rb_time_new(sec, usec)
 }
 
 struct timeval
-rb_time_timeval(time)
+rb_time_interval(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -130,15 +130,26 @@ rb_time_timeval(time)
 	break;
 
       default:
-	if (!rb_obj_is_kind_of(time, rb_cTime)) {
-	    rb_raise(rb_eTypeError, "can't convert %s into Time",
-		     rb_class2name(CLASS_OF(time)));
-	}
-	GetTimeval(time, tobj);
-	t = tobj->tv;
+	rb_raise(rb_eTypeError, "can't convert %s into Time interval",
+		 rb_class2name(CLASS_OF(time)));
 	break;
     }
     return t;
+}
+
+struct timeval
+rb_time_timeval(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+    struct timeval t;
+
+    if (rb_obj_is_kind_of(time, rb_cTime)) {
+	GetTimeval(time, tobj);
+	t = tobj->tv;
+	return t;
+    }
+    return rb_time_interval(time);
 }
 
 static VALUE

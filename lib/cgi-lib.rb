@@ -157,7 +157,7 @@ class CGI < SimpleDelegator
     when "GET"
       ENV['QUERY_STRING'] or ""
     when "POST"
-      input.read Integer(ENV['CONTENT_LENGTH'])
+      input.read(Integer(ENV['CONTENT_LENGTH'])) or ""
     else
       read_from_cmdline
     end.split(/&/).each do |x|

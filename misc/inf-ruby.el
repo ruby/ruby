@@ -1,4 +1,4 @@
-(J;;;(B (J-*-Emacs-Lisp-*-(B
+;;; -*-Emacs-Lisp-*-
 ;;;
 ;;;  $Id$
 ;;;  $Author$
@@ -35,9 +35,12 @@
 ;;; HISTORY
 ;;; senda -  8 Apr 1998: Created.
 ;;;	 $Log$
+;;;	 Revision 1.1.1.1.2.1  1999/07/15 07:59:59  matz
+;;;	 990715
+;;;
 ;;;	 Revision 1.1.1.1  1999/01/20 04:59:36  matz
 ;;;	 ruby 1.3 cycle
-;;;
+;;;	
 ;;;	 Revision 1.1.2.1  1998/12/16 07:30:36  matz
 ;;;	 first public release of 1.1d (pre1.2) series
 ;;;	

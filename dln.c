@@ -1565,7 +1565,7 @@ conv_to_posix_path(win32, posix, len)
     if (len < strlen(first))
 	fprintf(stderr, "PATH length too long: %s\n", first);
     else
-	strcpy(posix, first);
+	cygwin32_conv_to_posix_path(first, posix);
     return dst;
 }
 #endif
@@ -1587,13 +1587,6 @@ dln_find_1(fname, path, exe_flag)
     const char* mac_fullpath;
 #endif
 
-#if defined(__CYGWIN32__)
-    int pathlen = 2 * strlen(path);
-    int rubypathlen = pathlen > MAXPATHLEN ? pathlen : MAXPATHLEN;
-    char *rubypath = alloca(rubypathlen);
-    conv_to_posix_path(path, rubypath, rubypathlen);
-    path = rubypath;
-#endif
     if (fname[0] == '/') return fname;
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;

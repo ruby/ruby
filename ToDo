@@ -1,11 +1,13 @@
 Language Spec.
 
+* %w(a\ b\ c abc) => ["a b c", "abc"]
 * package or access control for global variables
-* named arguments like foo(nation:="german" or nation: "german").
+* named arguments like foo(nation:="german") or foo(nation: "german").
 * method to retrieve argument information (need new C API)
-* multiple return values, yield values.  maybe imcompatible
-* cascading method invocation.
-* def Class#method .. end
+* multiple return values, yield values.  maybe incompatible
+* cascading method invocation ???
+* def Class#method .. end ??
+* class Foo::Bar<Baz .. end, module Boo::Bar .. end
 
 Hacking Interpreter
 
@@ -15,14 +17,17 @@ Hacking Interpreter
 * remove rb_eval() recursions
 * syntax tree -> bytecode ???
 * scrambled script, or script filter
+* setuid ruby
 
 Standard Libraries
 
-* IO/File to call initialize
 * String#scanf(?)
 * Object#fmt(?)
 * Integer[num], Float[num] (String[str]?, Array[obj]??)
-* Stream or Port, abstract superclass of IO.
+* method to detect non-number trailer for to_i/to_f.
+* Stream or Port, abstract superclass of IO ?
+* String#{pred,prev}, String#downto
+* optional stepsize argument for succ()
 
 Extension Libraries
 
@@ -31,6 +36,7 @@ Extension Libraries
 
 Ruby Libraries
 
+* maillib {pop3,smtp}
 * httplib.rb, urllib.rb, nttplib.rb, etc.
 * format like perl's
 

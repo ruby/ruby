@@ -90,7 +90,7 @@ static ID id_write;
 
 extern char *ruby_inplace_mode;
 
-struct timeval rb_time_timeval _((VALUE));
+struct timeval rb_time_interval _((VALUE));
 
 static VALUE filename, file;
 static int gets_lineno;
@@ -1296,10 +1296,10 @@ rb_file_sysopen_internal(klass, fname, flags, mode)
 
 VALUE
 rb_file_sysopen(fname, flags, mode)
-    char *fname;
+    const char *fname;
     int flags, mode;
 {
-    return rb_file_sysopen_internal(rb_cFile, flags, mode);
+    return rb_file_sysopen_internal(rb_cFile, fname, flags, mode);
 }
 
 #if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
@@ -2438,7 +2438,7 @@ rb_f_select(argc, argv, obj)
 	tp = NULL;
     }
     else {
-	timerec = rb_time_timeval(timeout);
+	timerec = rb_time_interval(timeout);
 	tp = &timerec;
     }
 

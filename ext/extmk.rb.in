@@ -439,11 +439,6 @@ $(DLLIB): $(OBJS)
 $(DLLIB): $(OBJS)
 	ar cru $(DLLIB) $(OBJS)
 "
-  elsif PLATFORM =~ "-nextstep" || PLATFORM =~ "-openstep" || PLATFORM =~ "-rhapsody"
-    mfile.printf "\
-$(DLLIB): $(OBJS)
-	cc -r $(CFLAGS) -o $(DLLIB) $(OBJS)
-"
   else
     mfile.printf "\
 $(DLLIB): $(OBJS)

@@ -631,29 +631,39 @@ rb_str_rindex(argc, argv, str)
 
     switch (TYPE(sub)) {
       case T_REGEXP:
-	pos = rb_reg_search(sub, str, pos, 1);
-	if (pos >= 0) return INT2NUM(pos); 
+	if (RREGEXP(sub)->len) {
+	    pos = rb_reg_search(sub, str, pos, 1);
+	}
+	if (pos >= 0) return INT2NUM(pos);
 	break;
 
       case T_STRING:
-	/* substring longer than string */
-	if (pos < RSTRING(sub)->len) return Qnil;
-	sbeg = RSTRING(str)->ptr;
-	s = RSTRING(str)->ptr + pos - RSTRING(sub)->len;
-	t = RSTRING(sub)->ptr;
 	len = RSTRING(sub)->len;
-	while (sbeg <= s) {
-	    if (*s == *t && memcmp(s, t, len) == 0) {
-		return INT2NUM(s - RSTRING(str)->ptr);
+	/* substring longer than string */
+	if (RSTRING(str)->len < len) return Qnil;
+	if (RSTRING(str)->len - pos < len) {
+	    pos = RSTRING(str)->len - len;
+	}
+	sbeg = RSTRING(str)->ptr;
+	s = RSTRING(str)->ptr + pos;
+	t = RSTRING(sub)->ptr;
+	if (len) {
+	    while (sbeg <= s) {
+		if (*s == *t && memcmp(s, t, len) == 0) {
+		    return INT2NUM(s - RSTRING(str)->ptr);
+		}
+		s--;
 	    }
-	    s--;
+	}
+	else {
+	    return INT2NUM(pos);
 	}
 	break;
 
       case T_FIXNUM:
       {
 	  int c = FIX2INT(sub);
-	  char *p = RSTRING(str)->ptr + pos - 1;
+	  char *p = RSTRING(str)->ptr + pos;
 	  char *pbeg = RSTRING(str)->ptr;
 
 	  while (pbeg <= p) {
@@ -1945,7 +1955,6 @@ rb_str_count(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE a1, a2;
     char table[256];
     char *s, *send;
     int init = 1;
@@ -2165,7 +2174,7 @@ rb_str_each_line(argc, argv, str)
 
     for (s = p, p += rslen; p < pend; p++) {
 	if (rslen == 0 && *p == '\n') {
-	    if (p[1] != '\n') continue;
+	    if (*++p != '\n') continue;
 	    while (*p == '\n') p++;
 	}
 	if (p[-1] == newline &&
@@ -2462,7 +2471,7 @@ rb_str_crypt(str, salt)
 
     if (TYPE(salt) != T_STRING) salt = rb_str_to_str(salt);
     if (RSTRING(salt)->len < 2)
-	rb_raise(rb_eArgError, "salt too short(need >2 bytes)");
+	rb_raise(rb_eArgError, "salt too short(need >=2 bytes)");
     return rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
 }
 

@@ -1,11 +1,11 @@
 =begin
-$Date: 1999/06/04 06:24:58 $
+$Date: 1999/06/29 09:08:51 $
 
 == SIMPLE TELNET CLIANT LIBRARY
 
 telnet.rb
 
-Version 0.20
+Version 0.22
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -20,6 +20,7 @@ Wakou Aoyama <wakou@fsinet.or.jp>
 	                   "Prompt" => /[$%#>] \z/n,     # default: /[$%#>] \z/n
 	                   "Telnetmode" => TRUE,         # default: TRUE
 	                   "Timeout" => 10,              # default: 10
+	                     # if ignore timeout then set "Timeout" to FALSE.
 	                   "Waittime" => 0,              # default: 0
 	                   "Proxy" => proxy})            # default: nil
                                     # proxy is Telnet or TCPsocket object
@@ -49,6 +50,7 @@ example
 	line = host.waitfor({"Match"   => /match/,
 	                     "String"  => "string",
 	                     "Timeout" => secs})
+	                       # if ignore timeout then set "Timeout" to FALSE.
 
 if set "String" option. Match = Regexp.new(quote(string))
 
@@ -145,76 +147,128 @@ of cource, set sync=TRUE or flush is necessary.
 
 == HISTORY
 
+=== Version 0.22
+
+1999/06/29 09:08:51
+
+- new, waitfor, cmd: {"Timeout" => FALSE}  # ignore timeout
+
+=== Version 0.21
+
+1999/06/28 18:18:55
+
+- waitfor: not rescue (EOFError)
+
 === Version 0.20
-waitfor: support for divided telnet command
 
-=== Version 0.181 1999/05/22
-bug fix: print method
+1999/06/04 06:24:58
 
-=== Version 0.18 1999/05/14
-respond to "IAC WON'T SGA" with "IAC DON'T SGA"
+- waitfor: support for divided telnet command
 
-DON'T SGA : end of line --> CR + LF
+=== Version 0.181
 
-bug fix: preprocess method
+1999/05/22
 
-=== Version 0.17 1999/04/30
-bug fix: $! + "\n"  -->  $!.to_s + "\n"
+- bug fix: print method
 
-=== Version 0.163 1999/04/11
-STDOUT.write(message) --> yield(message) if iterator?
+=== Version 0.18
 
-=== Version 0.162 1999/03/17
-add "Proxy" option
+1999/05/14
 
-required timeout.rb
+- respond to "IAC WON'T SGA" with "IAC DON'T SGA"
+- DON'T SGA : end of line --> CR + LF
+- bug fix: preprocess method
 
-=== Version 0.161 1999/02/03
-select --> IO::select
+=== Version 0.17
 
-=== Version 0.16 1998/10/09
-preprocess method change for the better
+1999/04/30
 
-add binmode method.
+- bug fix: $! + "\n"  -->  $!.to_s + "\n"
 
-change default Binmode 
-TRUE --> FALSE
+=== Version 0.163
 
-=== Version 0.15 1998/10/04
-add telnetmode method.
+1999/04/11
 
-=== Version 0.141 1998/09/22
-change default prompt
-	/[$%#>] $/ --> /[$%#>] \Z/
+- STDOUT.write(message) --> yield(message) if iterator?
 
-=== Version 0.14 1998/09/01
-IAC WILL SGA             send EOL --> CR+NULL
+=== Version 0.162
 
-IAC WILL SGA IAC DO BIN  send EOL --> CR
+1999/03/17
 
-NONE                     send EOL --> LF
+- add "Proxy" option
+- required timeout.rb
 
-add Dump_log option.
+=== Version 0.161
 
-=== Version 0.13 1998/08/25
-add print method.
+1999/02/03
 
-=== Version 0.122 1998/08/05
-support for HP-UX 10.20    thanks to WATANABE Tetsuya <tetsu@jpn.hp.com>
+- select --> IO::select
 
-socket.<< --> socket.write
+=== Version 0.16
 
-=== Version 0.121 1998/07/15
-string.+= --> string.concat
+1998/10/09
 
-=== Version 0.12 1998/06/01
-add timeout, waittime.
+- preprocess method change for the better
+- add binmode method.
+- change default Binmode. TRUE --> FALSE
 
-=== Version 0.11 1998/04/21
-add realtime output.
+=== Version 0.15
 
-=== Version 0.10 1998/04/13
-first release.
+1998/10/04
+
+- add telnetmode method.
+
+=== Version 0.141
+
+1998/09/22
+
+- change default prompt. /[$%#>] $/ --> /[$%#>] \Z/
+
+=== Version 0.14
+
+1998/09/01
+
+- IAC WILL SGA             send EOL --> CR+NULL
+- IAC WILL SGA IAC DO BIN  send EOL --> CR
+- NONE                     send EOL --> LF
+- add Dump_log option.
+
+=== Version 0.13
+
+1998/08/25
+
+- add print method.
+
+=== Version 0.122
+
+1998/08/05
+
+- support for HP-UX 10.20    thanks to WATANABE Tetsuya <tetsu@jpn.hp.com>
+- socket.<< --> socket.write
+
+=== Version 0.121
+
+1998/07/15
+
+- string.+= --> string.concat
+
+=== Version 0.12
+
+1998/06/01
+
+- add timeout, waittime.
+
+=== Version 0.11
+
+1998/04/21
+
+- add realtime output.
+
+=== Version 0.10
+
+1998/04/13
+
+- first release.
 
 =end
 
@@ -296,35 +350,35 @@ class Telnet < SimpleDelegator
   EOL  = CR + LF
 v = $-v
 $-v = false
-  VERSION = "0.20"
-  RELEASE_DATE = "$Date: 1999/06/04 06:24:58 $"
+  VERSION = "0.22"
+  RELEASE_DATE = "$Date: 1999/06/29 09:08:51 $"
 $-v = v
 
   def initialize(options)
     @options = options
-    @options["Binmode"]    = FALSE         if not @options.include?("Binmode")
-    @options["Host"]       = "localhost"   if not @options.include?("Host")
-    @options["Port"]       = 23            if not @options.include?("Port")
-    @options["Prompt"]     = /[$%#>] \z/n  if not @options.include?("Prompt")
-    @options["Telnetmode"] = TRUE          if not @options.include?("Telnetmode")
-    @options["Timeout"]    = 10            if not @options.include?("Timeout")
-    @options["Waittime"]   = 0             if not @options.include?("Waittime")
+    @options["Binmode"]    = FALSE         unless @options.key?("Binmode")
+    @options["Host"]       = "localhost"   unless @options.key?("Host")
+    @options["Port"]       = 23            unless @options.key?("Port")
+    @options["Prompt"]     = /[$%#>] \z/n  unless @options.key?("Prompt")
+    @options["Telnetmode"] = TRUE          unless @options.key?("Telnetmode")
+    @options["Timeout"]    = 10            unless @options.key?("Timeout")
+    @options["Waittime"]   = 0             unless @options.key?("Waittime")
 
     @telnet_option = { "SGA" => FALSE, "BINARY" => FALSE }
 
-    if @options.include?("Output_log")
+    if @options.key?("Output_log")
       @log = File.open(@options["Output_log"], 'a+')
       @log.sync = TRUE
       @log.binmode
     end
 
-    if @options.include?("Dump_log")
+    if @options.key?("Dump_log")
       @dumplog = File.open(@options["Dump_log"], 'a+')
       @dumplog.sync = TRUE
       @dumplog.binmode
     end
 
-    if @options.include?("Proxy")
+    if @options.key?("Proxy")
       if @options["Proxy"].kind_of?(Telnet)
         @sock = @options["Proxy"].sock
       elsif @options["Proxy"].kind_of?(TCPsocket)
@@ -335,18 +389,22 @@ $-v = v
     else
       message = "Trying " + @options["Host"] + "...\n"
       yield(message) if iterator?
-      @log.write(message) if @options.include?("Output_log")
-      @dumplog.write(message) if @options.include?("Dump_log")
+      @log.write(message) if @options.key?("Output_log")
+      @dumplog.write(message) if @options.key?("Dump_log")
 
       begin
-        timeout(@options["Timeout"]){
+        if @options["Timeout"] == FALSE
           @sock = TCPsocket.open(@options["Host"], @options["Port"])
-        }
+        else
+          timeout(@options["Timeout"]){
+            @sock = TCPsocket.open(@options["Host"], @options["Port"])
+          }
+        end
       rescue TimeoutError
         raise TimeOut, "timed-out; opening of the host"
       rescue
-        @log.write($!.to_s + "\n") if @options.include?("Output_log")
-        @dumplog.write($!.to_s + "\n") if @options.include?("Dump_log")
+        @log.write($!.to_s + "\n") if @options.key?("Output_log")
+        @dumplog.write($!.to_s + "\n") if @options.key?("Dump_log")
         raise
       end
       @sock.sync = TRUE
@@ -354,8 +412,8 @@ $-v = v
 
       message = "Connected to " + @options["Host"] + ".\n"
       yield(message) if iterator?
-      @log.write(message) if @options.include?("Output_log")
-      @dumplog.write(message) if @options.include?("Dump_log")
+      @log.write(message) if @options.key?("Output_log")
+      @dumplog.write(message) if @options.key?("Dump_log")
     end
 
     super(@sock)
@@ -386,7 +444,7 @@ $-v = v
     str.gsub!(/#{CR}#{NULL}/no, CR) if @options["Telnetmode"]
 
     # combine EOL into "\n"
-    str.gsub!(/#{EOL}/no, "\n") if not @options["Binmode"]
+    str.gsub!(/#{EOL}/no, "\n") unless @options["Binmode"]
 
     # respond to "IAC DO x"
     str.gsub!(/([^#{IAC}]?)#{IAC}#{DO}([#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}])/no){
@@ -443,41 +501,42 @@ $-v = v
     waittime = @options["Waittime"]
 
     if options.kind_of?(Hash)
-      prompt   = if options.include?("Match")
+      prompt   = if options.key?("Match")
                    options["Match"]   
-                 elsif options.include?("Prompt")
+                 elsif options.key?("Prompt")
                    options["Prompt"]
-                 elsif options.include?("String")
+                 elsif options.key?("String")
                    Regexp.new( Regexp.quote(options["String"]) )
                  end
-      time_out = options["Timeout"]  if options.include?("Timeout")
-      waittime = options["Waittime"] if options.include?("Waittime")
+      time_out = options["Timeout"]  if options.key?("Timeout")
+      waittime = options["Waittime"] if options.key?("Waittime")
     else
       prompt = options
+    end
+
+    if time_out == FALSE
+      time_out = nil
     end
 
     line = ''
     buf = ''
     until(not IO::select([@sock], nil, nil, waittime) and prompt === line)
-      raise TimeOut, "timed-out; wait for the next data" if
-        not IO::select([@sock], nil, nil, time_out)
-      begin
-        c = @sock.sysread(1024 * 1024)
-        @dumplog.print(c) if @options.include?("Dump_log")
-        buf.concat c
-        if @options["Telnetmode"]
-          buf = preprocess(buf) 
-          if /#{IAC}.?\z/no === buf
-            next
-          end 
-        end 
-        @log.print(buf) if @options.include?("Output_log")
-        yield buf if iterator?
-        line.concat(buf)
-        buf = ''
-      rescue EOFError # End of file reached
-        break
+      unless IO::select([@sock], nil, nil, time_out)
+        raise TimeOut, "timed-out; wait for the next data"
       end
+      c = @sock.sysread(1024 * 1024)
+      @dumplog.print(c) if @options.key?("Dump_log")
+      buf.concat c
+      if @options["Telnetmode"]
+        buf = preprocess(buf) 
+        if /#{IAC}.?\z/no === buf
+          next
+        end 
+      end 
+      @log.print(buf) if @options.key?("Output_log")
+      yield buf if iterator?
+      line.concat(buf)
+      buf = ''
     end
     line
   end
@@ -487,7 +546,7 @@ $-v = v
 
     str.gsub!(/#{IAC}/no, IAC + IAC) if @options["Telnetmode"]
 
-    if not @options["Binmode"]
+    unless @options["Binmode"]
       if @telnet_option["BINARY"] and @telnet_option["SGA"]
         # IAC WILL SGA IAC DO BIN send EOL --> CR
         str.gsub!(/\n/n, CR)
@@ -509,8 +568,8 @@ $-v = v
 
     if options.kind_of?(Hash)
       string   = options["String"]
-      match    = options["Match"]   if options.include?("Match")
-      time_out = options["Timeout"] if options.include?("Timeout")
+      match    = options["Match"]   if options.key?("Match")
+      time_out = options["Timeout"] if options.key?("Timeout")
     else
       string = options
     end

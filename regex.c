@@ -108,7 +108,7 @@ char *alloca();
 
 #define FREE_AND_RETURN_VOID(stackb)	return
 #define FREE_AND_RETURN(stackb,val)	return(val)
-#define DOUBLE_STACK(stackx,stackb,len,type) \
+#define DOUBLE_STACK(stackx,stackb,len,type)				\
         (stackx = (type*)alloca(2 * len * sizeof(type)),		\
 	/* Only copy what is in use.  */				\
         (type*)memcpy(stackx, stackb, len * sizeof (type)))
@@ -117,16 +117,7 @@ char *alloca();
 #define RE_ALLOCATE xmalloc
 
 #define FREE_VAR(var) if (var) free(var); var = NULL
-#define FREE_VARIABLES()						\
-  do {									\
-    FREE_VAR(regstart);							\
-    FREE_VAR(regend);							\
-    FREE_VAR(old_regstart)						\
-    FREE_VAR(old_regend);						\
-    FREE_VAR(best_regstart);						\
-    FREE_VAR(best_regend);						\
-    FREE_VAR(reg_info);							\
-  } while (0)
+#define FREE_VARIABLES()
 
 #define FREE_AND_RETURN_VOID(stackb)   free(stackb);return
 #define FREE_AND_RETURN(stackb,val)    free(stackb);return(val)
@@ -2278,6 +2269,13 @@ re_compile_pattern(pattern, size, bufp)
     }
   }
 
+  bufp->regstart = TMALLOC(regnum, unsigned char*);
+  bufp->regend = TMALLOC(regnum, unsigned char*);
+  bufp->old_regstart = TMALLOC(regnum, unsigned char*);
+  bufp->old_regend = TMALLOC(regnum, unsigned char*);
+  bufp->reg_info = TMALLOC(regnum, register_info_type);
+  bufp->best_regstart = TMALLOC(regnum, unsigned char*);
+  bufp->best_regend = TMALLOC(regnum, unsigned char*);
   FREE_AND_RETURN(stackb, 0);
 
  invalid_pattern:
@@ -2303,6 +2301,14 @@ re_free_pattern(bufp)
   free(bufp->buffer);
   free(bufp->fastmap);
   if (bufp->must_skip) free(bufp->must_skip);
+
+  free(bufp->regstart);
+  free(bufp->regend);
+  free(bufp->old_regstart);
+  free(bufp->old_regend);
+  free(bufp->best_regstart);
+  free(bufp->best_regend);
+  free(bufp->reg_info);
   free(bufp);
 }
 
@@ -2584,7 +2590,7 @@ re_compile_fastmap(bufp)
   register int j, k;
   unsigned is_a_succeed_n;
 
-  unsigned char **stackb = RE_TALLOC(NFAILURES, unsigned char*);
+  unsigned char **stackb = TMALLOC(NFAILURES, unsigned char*);
   unsigned char **stackp = stackb;
   unsigned char **stacke = stackb + NFAILURES;
   int options = bufp->options;
@@ -2932,9 +2938,7 @@ re_search(bufp, string, size, startpos, range, regs)
       if (range > 0) {
 	if (startpos > 0)
 	  return -1;
-	else if (re_match(bufp, string, size, 0, regs) >= 0)
-	  return 0;
-	return -1;
+	return re_match(bufp, string, size, 0, regs);
       }
       break;
 
@@ -2962,7 +2966,7 @@ re_search(bufp, string, size, startpos, range, regs)
     if (pbeg > pend) {		/* swap pbeg,pend */
       pos = pend; pend = pbeg; pbeg = pos;
     }
-    if (pend > size) pend = size;
+    pend = size;
     if (bufp->options & RE_OPTIMIZE_NO_BM) {
       pos = slow_search(bufp->must+1, len,
 			string+pbeg, pend-pbeg,
@@ -3118,18 +3122,7 @@ re_search(bufp, string, size, startpos, range, regs)
 
 /* The following are used for re_match, defined below:  */
 
-/* Routine used by re_match.  */
-
-/* Structure and accessing macros used in re_match:  */
-
-typedef union
-{
-  unsigned char *word;
-  struct {
-    unsigned is_active : 1;
-    unsigned matched_something : 1;
-  } bits;
-} register_info_type;
+/* Accessing macros used in re_match: */
 
 #define IS_ACTIVE(R)  ((R).bits.is_active)
 #define MATCHED_SOMETHING(R)  ((R).bits.matched_something)
@@ -3161,7 +3154,7 @@ typedef union
 									\
     /* Find out how many registers are active or have been matched.	\
        (Aside from register zero, which is only set at the end.) */	\
-    for (last_used_reg = num_regs - 1; last_used_reg > 0; last_used_reg--)\
+    for (last_used_reg = num_regs-1; last_used_reg > 0; last_used_reg--)\
       if (!REG_UNSET(regstart[last_used_reg]))				\
         break;								\
 									\
@@ -3323,16 +3316,16 @@ re_match(bufp, string_arg, size, pos, regs)
      stopped matching the regnum-th subexpression.  (The zeroth register
      keeps track of what the whole pattern matches.)  */
 
-  unsigned char **regstart = RE_TALLOC(num_regs, unsigned char*);
-  unsigned char **regend = RE_TALLOC(num_regs, unsigned char*);
+  unsigned char **regstart = bufp->regstart;
+  unsigned char **regend = bufp->regend;
 
   /* If a group that's operated upon by a repetition operator fails to
      match anything, then the register for its start will need to be
      restored because it will have been set to wherever in the string we
      are when we last see its open-group operator.  Similarly for a
      register's end.  */
-  unsigned char **old_regstart = RE_TALLOC(num_regs, unsigned char*);
-  unsigned char **old_regend = RE_TALLOC(num_regs, unsigned char*);
+  unsigned char **old_regstart = bufp->old_regstart;
+  unsigned char **old_regend = bufp->old_regend;
 
   /* The is_active field of reg_info helps us keep track of which (possibly
      nested) subexpressions we are currently in. The matched_something
@@ -3341,7 +3334,7 @@ re_match(bufp, string_arg, size, pos, regs)
      subexpression.  These two fields get reset each time through any
      loop their register is in.  */
 
-  register_info_type *reg_info = RE_TALLOC(num_regs, register_info_type);
+  register_info_type *reg_info = bufp->reg_info;
 
   /* The following record the register info as found in the above
      variables when we find a match better than any we've seen before. 
@@ -3349,8 +3342,8 @@ re_match(bufp, string_arg, size, pos, regs)
      turn happens only if we have not yet matched the entire string.  */
 
   unsigned best_regs_set = 0;
-  unsigned char **best_regstart = RE_TALLOC(num_regs, unsigned char*);
-  unsigned char **best_regend = RE_TALLOC(num_regs, unsigned char*);
+  unsigned char **best_regstart = bufp->best_regstart;
+  unsigned char **best_regend = bufp->best_regend;
 
   if (regs) {
     init_regs(regs, num_regs);
@@ -3540,8 +3533,13 @@ re_match(bufp, string_arg, size, pos, regs)
 
       case start_nowidth:
 	PUSH_FAILURE_POINT(0, d);
+	if (stackp - stackb > RE_DUP_MAX) {
+	   FREE_VARIABLES();
+	   FREE_AND_RETURN(stackb,(-2));
+	}
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	STORE_NUMBER(p+mcnt, stackp - stackb);
+	printf("%d\n", stackp - stackb);
 	continue;
 
       case stop_nowidth:
@@ -4106,6 +4104,7 @@ re_match(bufp, string_arg, size, pos, regs)
   if (best_regs_set)
     goto restore_best_regs;
 
+  FREE_VARIABLES();
   FREE_AND_RETURN(stackb,(-1)); 	/* Failure to match.  */
 }
 

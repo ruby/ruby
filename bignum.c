@@ -404,7 +404,7 @@ rb_dbl2big(d)
     double u = (d < 0)?-d:d;
 
     if (isinf(d)) {
-	rb_raise(rb_eFloatDomainError, d < 0 ? "-Inifinity" : "Inifinity");
+	rb_raise(rb_eFloatDomainError, d < 0 ? "-Infinity" : "Infinity");
     }
     if (isnan(d)) {
 	rb_raise(rb_eFloatDomainError, "NaN");
@@ -725,6 +725,7 @@ bigdivmod(x, y, div, mod, modulo)
 	    zds[i] = (USHORT)(t2 / dd);
 	    t2 %= dd;
 	}
+	RBIGNUM(z)->sign = RBIGNUM(x)->sign==RBIGNUM(y)->sign;
 	if (div) *div = bignorm(z);
 	if (mod) {
 	    if (!RBIGNUM(y)->sign) t2 = -(long)t2;

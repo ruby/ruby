@@ -950,7 +950,7 @@ fix_div(x, y)
 	i = FIX2LONG(y);
 	if (i == 0) rb_num_zerodiv();
 	i = FIX2LONG(x)/i;
-	return INT2FIX(i);
+	return INT2NUM(i);	/* FIXNUM_MIN / -1 > FIXNUM_MAX */
     }
     return rb_num_coerce_bin(x, y);
 }

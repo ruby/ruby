@@ -521,8 +521,8 @@ test_s(obj, fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_size == 0) return Qfalse;
+    if (rb_stat(fname, &st) < 0) return Qnil;
+    if (st.st_size == 0) return Qnil;
     return rb_int2inum(st.st_size);
 }
 
@@ -606,7 +606,7 @@ test_sticky(obj, fname)
 #ifdef S_ISVTX
     return check3rdbyte(STR2CSTR(fname), S_ISVTX);
 #else
-    return Qfalse;
+    return Qnil;
 #endif
 }
 
@@ -1511,7 +1511,7 @@ rb_f_test(argc, argv)
 	}
     }
     /* unknown command */
-    rb_raise(rb_eArgError, "unknow command ?%c", cmd);
+    rb_raise(rb_eArgError, "unknown command ?%c", cmd);
     return Qnil;		/* not reached */
 }
 

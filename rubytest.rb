@@ -1,11 +1,26 @@
 #! ./miniruby -I.
 
-x = ENV["LD_LIBRARY_PATH"]
-x = x ? x+":." : "."
-ENV["LD_LIBRARY_PATH"] = x
-
 require 'rbconfig'
 include Config
+
+if File.exist? CONFIG['LIBRUBY_SO']
+  case RUBY_PLATFORM
+  when /-hpux/
+    dldpath = "SHLIB_PATH"
+  when /-aix/
+    dldpath = "LIBPATH"
+  else
+    dldpath = "LD_LIBRARY_PATH"
+  end
+  x = ENV[dldpath]
+  x = x ? ".:"+x : "."
+  ENV[dldpath] = x
+end
+
+if File.exist? CONFIG['LIBRUBY_SO']
+  ENV["LD_PRELOAD"] ||= ""
+  ENV["LD_PRELOAD"] += " ./#{CONFIG['LIBRUBY_SO']}"
+end
 
 $stderr.reopen($stdout)
 error = ''
