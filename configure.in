@@ -236,6 +236,11 @@ freebsd*)	LIBS="-lm $LIBS"
 			fi
 		fi
 		;;
+linux*)		LIBS="-lm $LIBS"
+		case "$target_cpu" in
+		alpha*)
+		    CFLAGS="-mieee $CFLAGS" ;;
+		esac ;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)
@@ -872,9 +877,7 @@ case "$target_os" in
     	CFLAGS="$CFLAGS -DOS2"
 	;;
     osf*)
-	if test "$without_gcc" = "no" ; then
-	  CFLAGS="$CFLAGS -ansi"
-	else
+	if test "$without_gcc" = "yes" ; then
 	  # compile something small: taint.c is fine for this.
 	  # the main point is the '-v' flag of 'cc'.
 	  case "`cc -v -I. -c main.c -o /tmp/main.o 2>&1`" in

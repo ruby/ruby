@@ -1,3 +1,10 @@
+Sun Apr 22 17:44:37 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: add -mieee to CFLAGS on Linux/Alpha
+	  to disable "DIVISION BY ZERO" exception.
+
+	* configure.in: remove -ansi on OSF/1.
+
 Wed Apr 18 04:37:51 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: CGI::Cookie: no use PATH_INFO.
