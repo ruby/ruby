@@ -2159,7 +2159,7 @@ copy_node_scope(node, rval)
 
 #define MATCH_DATA *rb_svar(node->nd_cnt)
 
-static char* is_defined _((VALUE, NODE*, char*));
+static const char* is_defined _((VALUE, NODE*, char*));
 
 static char*
 arg_defined(self, node, buf, type)
@@ -2200,7 +2200,7 @@ search_iclass(self, klass)
     return k;
 }
 
-static char*
+static const char*
 is_defined(self, node, buf)
     VALUE self;
     NODE *node;			/* OK */
@@ -2208,9 +2208,10 @@ is_defined(self, node, buf)
 {
     VALUE val;			/* OK */
     int state;
+    static const char *ex = "expression";
 
   again:
-    if (!node) return "expression";
+    if (!node) return ex;
     switch (nd_type(node)) {
       case NODE_SUPER:
       case NODE_ZSUPER:
@@ -2238,6 +2239,7 @@ is_defined(self, node, buf)
 	val = self;
 	if (node->nd_recv == (NODE *)1) goto check_bound;
       case NODE_CALL:
+	if (!is_defined(self, node->nd_recv, buf)) return 0;
 	val = rb_eval(self, node->nd_recv);
       check_bound:
 	{
@@ -2329,6 +2331,7 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_COLON2:
+	if (!is_defined(self, node->nd_recv, buf)) return 0;
 	val = rb_eval(self, node->nd_head);
 	switch (TYPE(val)) {
 	  case T_CLASS:
@@ -2351,6 +2354,7 @@ is_defined(self, node, buf)
 
       case NODE_NTH_REF:
 	if (RTEST(rb_reg_nth_defined(node->nd_nth, MATCH_DATA))) {
+	    if (!buf) return ex;
 	    sprintf(buf, "$%d", (int)node->nd_nth);
 	    return buf;
 	}
@@ -2358,6 +2362,7 @@ is_defined(self, node, buf)
 
       case NODE_BACK_REF:
 	if (RTEST(rb_reg_nth_defined(0, MATCH_DATA))) {
+	    if (!buf) return ex;
 	    sprintf(buf, "$%c", (char)node->nd_nth);
 	    return buf;
 	}
@@ -2370,7 +2375,7 @@ is_defined(self, node, buf)
 	}
 	POP_TAG();
 	if (!state) {
-	    return "expression";
+	    return ex;
 	}
 	ruby_errinfo = Qnil;
 	break;
@@ -3865,7 +3870,7 @@ rb_eval(self, n)
       case NODE_DEFINED:
 	{
 	    char buf[20];
-	    char *desc = is_defined(self, node->nd_head, buf);
+	    const char *desc = is_defined(self, node->nd_head, buf);
 
 	    if (desc) result = rb_str_new2(desc);
 	    else result = Qnil;

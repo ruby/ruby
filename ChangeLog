@@ -1,3 +1,8 @@
+Sat Jul 31 01:25:11 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): call is_defined() before invoking
+	  rb_eval().  [ruby-talk:107867]
+
 Fri Jul 30 16:10:54 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (lib_fromUTF8_core): raise ArgumentError when
