@@ -84,6 +84,14 @@ rb_class_real(cl)
 }
 
 VALUE
+rb_obj_type(obj)
+    VALUE obj;
+{
+    rb_warn("`type' is deprecated; use `class'");
+    return rb_class_real(CLASS_OF(obj));
+}
+
+VALUE
 rb_obj_class(obj)
     VALUE obj;
 {
@@ -1292,7 +1300,7 @@ Init_Object()
     rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "id", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "type", rb_obj_class, 0);
+    rb_define_method(rb_mKernel, "type", rb_obj_type, 0);
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
 
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);

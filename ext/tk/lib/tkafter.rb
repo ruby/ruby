@@ -64,7 +64,7 @@ class TkAfter
 
   def set_next_callback(args)
     if @running == false || @proc_max == 0 || @do_loop == 0
-      Tk_CBTBL[@id] = nil ;# for GC
+      Tk_CBTBL.delete(@id) ;# for GC
       @running = false
       return
     end
@@ -72,7 +72,7 @@ class TkAfter
       if @do_loop < 0 || (@do_loop -= 1) > 0
 	@current_pos = 0
       else
-	Tk_CBTBL[@id] = nil ;# for GC
+	Tk_CBTBL.delete(@id) ;# for GC
 	@running = false
 	return
       end
@@ -272,7 +272,7 @@ class TkAfter
     @running = false
     tk_call 'after', 'cancel', @after_id if @after_id
     @after_id = nil
-    Tk_CBTBL[@id] = nil ;# for GC
+    Tk_CBTBL.delete(@id) ;# for GC
     self
   end
   alias stop cancel

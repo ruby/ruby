@@ -685,7 +685,7 @@ class TkTextTag<TkObject
 
   def destroy
     tk_call @t.path, 'tag', 'delete', @id
-    TTagID_TBL[@tpath][@id] = nil if CTagID_TBL[@tpath]
+    TTagID_TBL[@tpath].delete(@id) if CTagID_TBL[@tpath]
   end
 end
 

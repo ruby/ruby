@@ -564,7 +564,7 @@ class TkFont
   end
 
   def delete_core_tk4x
-    Tk_FontNameTBL[@id] = nil
+    Tk_FontNameTBL.delete(@id)
     Tk_FontUseTBL.delete_if{|key,value| value == self}
   end
 
@@ -581,7 +581,7 @@ class TkFont
       tk_call('font', 'delete', @compoundfont)
     rescue
     end
-    Tk_FontNameTBL[@id] = nil
+    Tk_FontNameTBL.delete(@id)
     Tk_FontUseTBL.delete_if{|key,value| value == self}
   end
 
@@ -610,7 +610,7 @@ class TkFont
 	    tk_call(w, 'configure', '-font', @latinfont)
 	  end
 	rescue
-	  Tk_FontUseTBL[w] = nil
+	  Tk_FontUseTBL.delete(w)
 	end
       end
     }
@@ -644,7 +644,7 @@ class TkFont
 	    tk_call(w, 'configure', '-kanjifont', @kanjifont)
 	  end
 	rescue
-	  Tk_FontUseTBL[w] = nil
+	  Tk_FontUseTBL.delete(w)
 	end
       end
     }

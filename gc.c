@@ -848,12 +848,12 @@ gc_sweep()
 {
     RVALUE *p, *pend, *final_list;
     int freed = 0;
-    int i, used = heaps_used;
+    int i, j;
 
     if (ruby_in_compile && ruby_parser_stack_on_heap()) {
 	/* should not reclaim nodes during compilation
            if yacc's semantic stack is not allocated on machine stack */
-	for (i = 0; i < used; i++) {
+	for (i = 0; i < heaps_used; i++) {
 	    p = heaps[i]; pend = p + heaps_limits[i];
 	    while (p < pend) {
 		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
@@ -869,8 +869,10 @@ gc_sweep()
     freelist = 0;
     final_list = deferred_final_list;
     deferred_final_list = 0;
-    for (i = 0; i < used; i++) {
+    for (i = 0; i < heaps_used; i++) {
 	int n = 0;
+	RVALUE *free = freelist;
+	RVALUE *final = final_list;
 
 	p = heaps[i]; pend = p + heaps_limits[i];
 	while (p < pend) {
@@ -899,7 +901,18 @@ gc_sweep()
 	    }
 	    p++;
 	}
-	freed += n;
+	if (n == heaps_limits[i] && freed + n > FREE_MIN) {
+	    RVALUE *pp;
+
+	    heaps_limits[i] = 0;
+	    for (pp = final_list; pp != final; pp = pp->as.free.next) {
+		p->as.free.flags |= FL_SINGLETON; /* freeing page mark */
+	    }
+	    freelist = free;	/* cancel this page from freelist */
+	}
+	else {
+	    freed += n;
+	}
     }
     if (freed < FREE_MIN) {
 	add_heap();
@@ -918,9 +931,23 @@ gc_sweep()
 	for (p = final_list; p; p = tmp) {
 	    tmp = p->as.free.next;
 	    run_final((VALUE)p);
-	    p->as.free.flags = 0;
-	    p->as.free.next = freelist;
-	    freelist = p;
+	    if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
+		p->as.free.flags = 0;
+		p->as.free.next = freelist;
+		freelist = p;
+	    }
+	}
+    }
+    for (i = j = 0; j < heaps_used; i++) {
+	if (heaps_limits[i] == 0) {
+	    free(heaps[i]);
+	    heaps_used--;
+	}
+	else {
+	    if (i != j) {
+		heaps[j] = heaps[i];
+	    }
+	    j++;
 	}
     }
 }

@@ -504,7 +504,7 @@ class TkcTag<TkObject
 
   def delete
     @c.delete @id
-    CTagID_TBL[@cpath][@id] = nil if CTagID_TBL[@cpath]
+    CTagID_TBL[@cpath].delete(@id) if CTagID_TBL[@cpath]
   end
   alias remove  delete
   alias destroy delete
@@ -688,7 +688,7 @@ class TkcItem<TkObject
 
   def delete
     @c.delete @id
-    CItemID_TBL[@path][@id] = nil if CItemID_TBL[@path]
+    CItemID_TBL[@path].delete(@id) if CItemID_TBL[@path]
   end
   alias remove  delete
   alias destroy delete
@@ -763,7 +763,7 @@ class TkImage<TkObject
   end
 
   def delete
-    Tk_IMGTBL[@id] = nil if @id
+    Tk_IMGTBL.delete(@id) if @id
     tk_call('image', 'delete', @path)
   end
   def height

@@ -264,7 +264,7 @@ module TkComm
   end
   def uninstall_cmd(id)
     id = $1 if /rb_out (c\d+)/ =~ id
-    Tk_CMDTBL[id] = nil
+    Tk_CMDTBL.delete(id)
   end
   private :install_cmd, :uninstall_cmd
 
@@ -282,7 +282,7 @@ module TkComm
   end
 
   def uninstall_win()
-    Tk_WINDOWS[@path] = nil
+    Tk_WINDOWS.delete(@path)
   end
 
   class Event
@@ -2188,7 +2188,7 @@ module TkOption
         METHOD_TBL = {}
         ADD_METHOD = #{add}
         SAFE_MODE  = #{safe}
-        %w(#{func_str}).each{|f| METHOD_TBL[f.intern] = nil }
+        %w(#{func_str}).each{|f| METHOD_TBL.delete(f.intern) }
       end
     EOD
 
