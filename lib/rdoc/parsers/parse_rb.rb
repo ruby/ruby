@@ -2267,6 +2267,8 @@ module RDoc
         tk.text.sub(/^:/, '')
       when TkId, TkOp
         tk.name
+      when TkSTRING
+        tk.text
       else
         raise "Name or symbol expected (got #{tk})"
       end
