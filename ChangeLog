@@ -1,3 +1,28 @@
+Thu Mar  7 20:08:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* gc.c (rb_source_filename): added. holds unique strings for file
+	  names with GC space.
+
+	* gc.c (rb_gc_mark): mark source file name.
+
+	* gc.c (gc_sweep): ditto.
+
+	* gc.c (Init_GC): initialize source file name table.
+
+	* intern.h (rb_source_filename): added.
+
+	* eval.c (rb_eval_string): use rb_source_filename().
+
+	* parse.y (yycompile): ditto.
+
+	* ruby.c (proc_options): ditto.
+
+	* ruby.c (load_file): ditto.
+
+	* ruby.c (ruby_script): ditto.
+
+	* ruby.c (ruby_prog_init): ditto.
+
 Wed Mar  6 17:58:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dln.c (dln_load): use LoadLibrary instead of LoadLibraryEx.

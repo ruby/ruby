@@ -198,6 +198,7 @@ VALUE rb_find_file _((VALUE));
 /* gc.c */
 int ruby_stack_check _((void));
 int ruby_stack_length _((VALUE**));
+char *rb_source_filename _((const char *));
 void rb_gc_mark_locations _((VALUE*, VALUE*));
 void rb_mark_tbl _((struct st_table*));
 void rb_mark_hash _((struct st_table*));

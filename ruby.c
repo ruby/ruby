@@ -717,7 +717,7 @@ proc_options(argc, argv)
     process_sflag();
 
     ruby_init_loadpath();
-    ruby_sourcefile = argv0;
+    ruby_sourcefile = rb_source_filename(argv0);
     if (e_script) {
 	require_libraries();
 	rb_compile_string(script, e_script, 1);
@@ -825,7 +825,7 @@ load_file(fname, script)
 		    argv[0] = path;
 		    execv(path, argv);
 
-		    ruby_sourcefile = fname;
+		    ruby_sourcefile = rb_source_filename(fname);
 		    ruby_sourceline = 1;
 		    rb_fatal("Can't exec %s", path);
 		}
@@ -951,7 +951,7 @@ ruby_script(name)
 {
     if (name) {
 	rb_progname = rb_tainted_str_new2(name);
-	ruby_sourcefile = name;
+	ruby_sourcefile = rb_source_filename(name);
     }
 }
 
@@ -990,7 +990,7 @@ ruby_prog_init()
 {
     init_ids();
 
-    ruby_sourcefile = "ruby";
+    ruby_sourcefile = rb_source_filename("ruby");
     rb_define_variable("$VERBOSE", &ruby_verbose);
     rb_define_variable("$-v", &ruby_verbose);
     rb_define_variable("$-w", &ruby_verbose);

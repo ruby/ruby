@@ -2123,7 +2123,7 @@ yycompile(f, line)
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
     heredoc_end = 0;
-    ruby_sourcefile = strdup(f);
+    ruby_sourcefile = rb_source_filename(f);
     ruby_in_compile = 1;
     n = yyparse();
     ruby_debug_lines = 0;
