@@ -875,6 +875,10 @@ call_args	: command_call
 		    {
 			$$ = $1;
 		    }
+		| args ',' command_call
+		    {
+			$$ = list_append($1, $3);
+		    }
 		| args opt_block_arg
 		    {
 			$$ = arg_blk_pass($1, $2);

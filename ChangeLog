@@ -1,3 +1,11 @@
+Sat Jul  1 03:25:56 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (call_args): command_call can be the last argument of
+	  call_args.  It had to be the only argument.
+
+	* re.c (rb_reg_s_quote): should not dump core even for unsane mbc
+	  string.
+
 Thu Jun 29 18:57:05 2000  Koga Youichirou <y-koga@mms.mt.nec.co.jp>
 
 	* ruby.c (proc_options): mktemp() vulnerability removed.

@@ -982,11 +982,11 @@ rb_reg_s_quote(argc, argv)
     tmp = ALLOCA_N(char, len*2);
     t = tmp;
 
-    for (; s != send; s++) {
+    for (; s < send; s++) {
 	if (ismbchar(*s)) {
 	    size_t n = mbclen(*s);
 
-	    while (n--)
+	    while (n-- && s < send)
 		*t++ = *s++;
 	    s--;
 	    continue;
