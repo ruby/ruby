@@ -13002,7 +13002,7 @@ recursive_check(obj)
     else {
 	VALUE list = rb_hash_aref(hash, ID2SYM(ruby_frame->this_func));
 
-	if (NIL_P(list)) return Qfalse;
+	if (NIL_P(list) || TYPE(list) != T_ARRAY) return Qfalse;
 	return rb_ary_includes(list, rb_obj_id(obj));
     }
 }
@@ -13023,7 +13023,7 @@ recursive_push(obj)
     else {
 	list = rb_hash_aref(hash, sym);
     }
-    if (NIL_P(list)) {
+    if (NIL_P(list) || TYPE(list) != T_ARRAY) {
 	list = rb_ary_new();
 	rb_hash_aset(hash, sym, list);
     }

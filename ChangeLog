@@ -1,3 +1,8 @@
+Tue Mar 15 23:12:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (recursive_check, recursive_push): more restrictive check.
+	  fixed: [ruby-dev:25916]
+
 Tue Mar 15 16:38:31 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil/tkutil.c (ary2list): give wrong arguments to hash2kv()
@@ -17,9 +22,9 @@ Mon Mar 14 12:21:03 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Mon Mar 14 00:13:49 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb (TkRTTimer): correct calculation of offset
-	  value. get a little better accuracy. 
+	  value. get a little better accuracy.
 
-	* ext/tk/sample/demos-en/widget: use a binding with no local variables 
+	* ext/tk/sample/demos-en/widget: use a binding with no local variables
 	  when eval a sample script.
 
 	* ext/tk/sample/demos-en/bind.rb: ditto.
