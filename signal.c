@@ -355,7 +355,7 @@ sighandle(sig)
 	rb_bug("trap_handler: Bad signal %d", sig);
     }
 
-#if !defined(BSD_SIGNAL)
+#if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandle);
 #endif
 

@@ -17,7 +17,9 @@ AC_ARG_WITH(gcc, [--without-gcc             never use gcc], [
 		without_gcc=no;;
 	*)	CC=$withval
 		without_gcc=$withval;;
-	esac], [without_gcc=no])
+	esac], [
+	  CC=gcc
+	  without_gcc=no])
 dnl If the user switches compilers, we can't believe the cache
 if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
 then

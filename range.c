@@ -136,6 +136,38 @@ range_eqq(range, obj)
 }
 
 static VALUE
+range_eql(range, obj)
+    VALUE range, obj;
+{
+    if (range == obj) return Qtrue;
+    if (!rb_obj_is_kind_of(obj, rb_cRange)) return Qfalse;
+
+    if (!rb_eql(rb_ivar_get(range, id_beg), rb_ivar_get(obj, id_beg)))
+	return Qfalse;
+    if (!rb_eql(rb_ivar_get(range, id_end), rb_ivar_get(obj, id_end)))
+	return Qfalse;
+
+    if (EXCL(range) != EXCL(obj)) return Qfalse;
+
+    return Qtrue;
+}
+
+static VALUE
+range_hash(range, obj)
+    VALUE range, obj;
+{
+    long hash = EXCL(range);
+    VALUE v;
+
+    v = rb_hash(rb_ivar_get(range, id_beg));
+    hash ^= v << 1;
+    v = rb_hash(rb_ivar_get(range, id_end));
+    hash ^= v << 9;
+
+    return INT2FIX(hash);
+}
+
+static VALUE
 range_each(range)
     VALUE range;
 {
@@ -353,6 +385,8 @@ Init_Range()
     rb_define_method(rb_cRange, "initialize", range_initialize, -1);
     rb_define_method(rb_cRange, "==", range_eq, 1);
     rb_define_method(rb_cRange, "===", range_eqq, 1);
+    rb_define_method(rb_cRange, "eql?", range_eql, 1);
+    rb_define_method(rb_cRange, "hash", range_hash, 0);
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "first", range_first, 0);
     rb_define_method(rb_cRange, "last", range_last, 0);

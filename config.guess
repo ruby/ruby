@@ -826,10 +826,10 @@ EOF
 		$CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null
 		if test "$?" = 0 ; then
 			./$dummy | grep 1\.99 > /dev/null
-		if test "$?" = 0 ; then LIBC="libc1" ; fi
+		if test "$?" = 0 ; then LIBC="-libc1" ; fi
 		fi	
 		rm -f $dummy.c $dummy
-	echo powerpc-unknown-linux-${LIBC}
+	echo powerpc-unknown-linux${LIBC}
 	exit 0 ;;
     alpha:Linux:*:*)
 	cat <<EOF >$dummy.s

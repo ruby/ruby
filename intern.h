@@ -38,6 +38,7 @@ VALUE rb_ary_join _((VALUE, VALUE));
 VALUE rb_ary_print_on _((VALUE, VALUE));
 VALUE rb_ary_reverse _((VALUE));
 VALUE rb_ary_sort _((VALUE));
+int rb_cmpint _((VALUE));
 VALUE rb_ary_sort_bang _((VALUE));
 VALUE rb_ary_delete _((VALUE, VALUE));
 VALUE rb_ary_delete_at _((VALUE, long));

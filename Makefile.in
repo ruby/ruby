@@ -107,13 +107,19 @@ $(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@ miniruby$(EXEEXT)
 install:	rbconfig.rb
 		@MINIRUBY@ $(srcdir)/instruby.rb $(DESTDIR)
 
-clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES) $(MAINOBJ) rbconfig.rb
-		@rm -f ext/extinit.c ext/extinit.@OBJEXT@ dmyext.@OBJEXT@
+clean-ext:
 		@-@MINIRUBY@ -Cext extmk.rb clean 2> /dev/null || true
+
+clean: clean-ext
+		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
+		@rm -f ext/extinit.c ext/extinit.@OBJEXT@ dmyext.@OBJEXT@
 		@rm -f $(PROGRAM) miniruby$(EXEEXT)
 
-distclean:	clean
-		@rm -f Makefile ext/extmk.rb config.h
+distclean-ext:
+		@-@MINIRUBY@ -Cext extmk.rb distclean 2> /dev/null || true
+
+distclean: distclean-ext clean
+		@rm -f Makefile ext/extmk.rb config.h rbconfig.rb
 		@rm -f ext/config.cache config.cache config.log config.status
 		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
 

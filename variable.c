@@ -395,7 +395,7 @@ var_getter(id, var)
     ID id;
     VALUE *var;
 {
-    if (!var || !*var) return Qnil;
+    if (!var) return Qnil;
     return *var;
 }
 

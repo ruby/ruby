@@ -903,6 +903,9 @@ error_print()
 	else
 	    fprintf(stderr, "%d", ruby_sourceline);
     }
+    else if (RARRAY(errat)->len == 0) {
+	error_pos();
+    }
     else {
 	VALUE mesg = RARRAY(errat)->ptr[0];
 

@@ -897,6 +897,7 @@ set_arg0(val, id)
       j.pst_command = s;
       pstat(PSTAT_SETCMD, j, i, 0, 0);
     }
+    rb_progname = rb_tainted_str_new(s, i);
 #elif defined(HAVE_SETPROCTITLE)
     setproctitle("%.*s", i, s);
     rb_progname = rb_tainted_str_new(s, i);
@@ -929,7 +930,6 @@ set_arg0(val, id)
     }
     rb_progname = rb_tainted_str_new2(origargv[0]);
 #endif
-    rb_progname = rb_tainted_str_new(s, i);
 }
 
 void

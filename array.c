@@ -933,6 +933,20 @@ rb_ary_reverse_m(ary)
     return rb_ary_reverse(rb_obj_dup(ary));
 }
 
+int
+rb_cmpint(cmp)
+    VALUE cmp;
+{
+    if (FIXNUM_P(cmp)) return NUM2LONG(cmp);
+    if (TYPE(cmp) == T_BIGNUM) {
+	if (RBIGNUM(cmp)->sign) return 1;
+	return -1;
+    }
+    if (rb_funcall(cmp, '>', 1, INT2FIX(0))) return 1;
+    if (rb_funcall(cmp, '<', 1, INT2FIX(0))) return -1;
+    return 0;
+}
+
 static ID cmp;
 
 static int
@@ -940,7 +954,7 @@ sort_1(a, b)
     VALUE *a, *b;
 {
     VALUE retval = rb_yield(rb_assoc_new(*a, *b));
-    return NUM2INT(retval);
+    return rb_cmpint(retval);
 }
 
 static int
@@ -957,7 +971,7 @@ sort_2(a, b)
     }
 
     retval = rb_funcall(*a, cmp, 1, *b);
-    return NUM2INT(retval);
+    return rb_cmpint(retval);
 }
 
 static VALUE

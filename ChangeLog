@@ -1,3 +1,19 @@
+Tue Nov 13 14:39:11 2001  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* signal.c (sighandle): should not re-register sighandler if
+	  POSIX_SIGNAL is defined.
+
+Mon Nov 12 16:48:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (error_print): errat array may be empty.
+
+Sat Nov 10 00:14:24 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): float '1_.0' should not be allowed.
+
+	* variable.c (var_getter): should care about var as Qfalse
+	  (ruby-bugs#PR199).
+
 Fri Nov  9 13:52:18 2001  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/config.status.in: make CFLAGS same as Makefile's one.
@@ -9,6 +25,30 @@ Thu Nov  8 20:20:37 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_call0): adjust caller source file/line while
 	  evaluating optional arguments.
+
+Thu Nov  8 18:41:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (cmpint): <=> or block for {min,max} may return bignum.
+
+	* array.c (sort_1): use rb_compint.
+
+	* array.c (sort_2): ditto.
+
+	* enum.c (min_ii): ditto.
+
+	* enum.c (min_ii): ditto.
+
+	* enum.c (max_i): ditto.
+
+	* enum.c (max_ii): ditto.
+
+Thu Nov  8 14:52:15 2001  Tanaka Akira  <akr@m17n.org>
+
+	* mkconfig.rb: use String#dump to generate Ruby string literal.
+
+Thu Nov  8 15:46:54 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_eql): should override 'eql?'
 
 Tue Nov  6 14:38:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
