@@ -12,10 +12,10 @@ File.umask(0)
 
 getopts("n", "make:", "make-flags:")
 $dryrun = $OPT["n"]
-mflags = Shellwords.shellwords($OPT["make-flags"] || "")
-mflags[0].sub!(/^(?=\w+)$/, "-") unless mflags.empty?
+mflags = Shellwords.shellwords($OPT["make-flags"] || "").uniq
+mflags[0].sub!(/^\w+$/, '-\&') unless mflags.empty?
 make, *mflags[0, 0] = Shellwords.shellwords($OPT['make'] || ENV["MAKE"] || "")
-mflags = mflags.grep(/^-[^-]*/) {$1}.join
+mflags = mflags.grep(/^-([^-])/){$1}.join
 mflags.downcase! if /nmake/i == make
 $dryrun = true if mflags.include?(?n)
 

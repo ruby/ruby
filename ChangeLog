@@ -1,3 +1,15 @@
+Sun Jan  5 14:46:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* instruby.rb: need paren in regexp(make -n install).
+
+	* ext/extmk.rb (sysquote): do not need to quote on mswin/bccwin/mingw.
+
+	* ext/extm.rb ($mflags): uniq items and remove '-' and '--'.
+	  move options to the lead.
+
+	* lib/fileutils.rb (install): model on the real install
+	  command(message).
+
 Sun Jan  5 09:36:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ruby.c (ruby_init_loadpath): under Windows, get the module

@@ -590,7 +590,7 @@ module FileUtils
 
   def install( src, dest, mode, *options )
     noop, verbose, = fu_parseargs(options, :noop, :verbose)
-    fu_output_message "install#{mode ? ' %o'%mode : ''} #{[src,dest].flatten.join ' '}" if verbose
+    fu_output_message "install -c#{mode ? ' -m 0%o'%mode : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
 
     fu_each_src_dest(src, dest) do |s,d|

@@ -28,11 +28,9 @@ $topdir = File.expand_path(".")
 $top_srcdir = srcdir
 $hdrdir = $top_srcdir
 
-$quote = 
-  /mswin|bccwin|mingw|human|os2|macos/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
-
 def sysquote(x)
-  $quote ? x.quote : x
+  @quote ||= /human|os2|macos/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
+  @quote ? x.quote : x
 end
 
 def extmake(target)
@@ -113,11 +111,13 @@ getopts('', 'extstatic', 'make:', 'make-flags:')
 
 $force_static = $OPT['extstatic'] == 'static'
 $make = $OPT['make'] || $make
-$mflags = Shellwords.shellwords($OPT['make-flags'] || "")
+$mflags = Shellwords.shellwords($OPT['make-flags'] || "").uniq
 $mflags[0].sub!(/^\w+$/, '-\&') unless $mflags.empty?
 $make, *$mflags[0, 0] = Shellwords.shellwords($make)
 
-mflags = $mflags.grep(/^-([^-].*)/) {$1}.join
+$mflags.delete_if{|x| x == '-' || x == '--'}
+
+mflags = $mflags.grep(/^-([^-])/){$1}.join
 mflags.downcase! if $nmake == ?m
 $continue = mflags.include?(?k)
 $dryrun = mflags.include?(?n)
@@ -140,6 +140,8 @@ unless $message
     $message = "compiling"
   end
 end
+
+$mflags = $mflags.partition{|x| x[0] == ?-}.flatten!
 
 EXEEXT = CONFIG['EXEEXT']
 if CROSS_COMPILING
@@ -237,11 +239,7 @@ puts "making #{rubies.join(', ')}"
 $stdout.flush
 $mflags.concat(rubies)
 
-if $quote
-  system($make, *$mflags.quote) or exit($?.exitstatus)
-else
-  exec($make, *$mflags)
-end
+system($make, *sysquote($mflags)) or exit($?.exitstatus)
 
 #Local variables:
 # mode: ruby
