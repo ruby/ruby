@@ -518,7 +518,6 @@ thread_write_select(fd)
     rb_thread_select(fd+1, 0, &fds, 0, 0);
 }
 
-#if defined(HAVE_FCNTL)
 static int
 ruby_connect(fd, sockaddr, len, socks)
     int fd;
@@ -529,6 +528,7 @@ ruby_connect(fd, sockaddr, len, socks)
     int status;
     int mode;
 
+#if defined(HAVE_FCNTL)
     mode = fcntl(fd, F_GETFL, 0);
 
 #ifdef O_NDELAY 
@@ -541,6 +541,8 @@ ruby_connect(fd, sockaddr, len, socks)
 #endif
 #endif
     fcntl(fd, F_SETFL, mode|NONBLOCKING);
+#endif /* HAVE_FCNTL */
+
     for (;;) {
 #ifdef SOCKS
 	if (socks) {
@@ -568,35 +570,13 @@ ruby_connect(fd, sockaddr, len, socks)
 #endif
 	    }
 	}
+#ifdef HAVE_FCNTL
 	mode &= ~NONBLOCKING;
 	fcntl(fd, F_SETFL, mode);
+#endif
 	return status;
     }
 }
-
-#else
-
-#ifdef SOCKS
-static int
-ruby_connect(fd, sockaddr, len, socks)
-    int fd;
-    struct sockaddr *sockaddr;
-    int len;
-    int socks;
-{
-    if (socks) {
-	return Rconnect(fd, sockaddr, len);
-    }
-    else {
-	return connect(fd, sockaddr, len);
-    }
-}
-#else
-
-#define ruby_connect(fd, sockaddr, len, socks) connect(fd, sockaddr, len)
-
-#endif /* SOCKS */
-#endif
 
 static VALUE
 open_inet(class, h, serv, type)
@@ -1054,22 +1034,9 @@ udp_connect(sock, host, port)
     fd = fileno(fptr->f);
     res0 = udp_addrsetup(fptr, host, port);
     for (res = res0; res; res = res->ai_next) {
-  retry:
 	if (ruby_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
 	    freeaddrinfo(res0);
 	    return INT2FIX(0);
-	}
-	switch (errno) {
-	  case EINTR:
-	    rb_thread_schedule();
-	    goto retry;
-
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
-	    thread_write_select(fd);
-	    goto retry;
 	}
     }
 
@@ -1386,19 +1353,7 @@ sock_connect(sock, addr)
 
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
-  retry:
     if (ruby_connect(fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len, 0) < 0) {
-	switch (errno) {
-	  case EINTR:
-	    rb_thread_schedule();
-	    goto retry;
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
-	    thread_write_select(fd);
-	    goto retry;
-	}
 	rb_sys_fail("connect(2)");
     }
 

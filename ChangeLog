@@ -1,3 +1,7 @@
+Tue May 11 08:29:28 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): .?, .+ did not work.
+
 Mon May 10 00:59:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* lib/jcode.rb: forgot to squeeze on reverse (complement) case.

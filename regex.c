@@ -1234,10 +1234,14 @@ re_compile_pattern(pattern, size, bufp)
       if (!laststart)  
 	break;
 
-      if (greedy && *laststart == anychar && b - laststart < 2) {
+      if (greedy && many_times_ok && *laststart == anychar && b - laststart <= 2) {
 	if (b[-1] == stop_paren)
 	  b--;
-	*laststart = anychar_repeat;
+	if (zero_times_ok)
+	  *laststart = anychar_repeat;
+	else {
+	  BUFPUSH(anychar_repeat);
+	}
 	break;
       }
       /* Now we know whether or not zero matches is allowed
@@ -3375,7 +3379,7 @@ re_match(bufp, string_arg, size, pos, regs)
     /* End of pattern means we might have succeeded.  */
     if (p == pend) {
       /* If not end of string, try backtracking.  Otherwise done.  */
-      if ((bufp->options & RE_OPTION_POSIXMATCH) && d != dend) {
+      if ((bufp->options & RE_OPTION_LONGEST) && d != dend) {
 	if (best_regs_set) /* non-greedy, no need to backtrack */
 	  goto restore_best_regs;
 	while (stackp != stackb && stackp[-1] == NON_GREEDY) {
@@ -3810,9 +3814,9 @@ re_match(bufp, string_arg, size, pos, regs)
 	/* Jump without taking off any failure points.  */
       case jump:
       nofinalize:
-      EXTRACT_NUMBER_AND_INCR(mcnt, p);
-      p += mcnt;
-      continue;
+        EXTRACT_NUMBER_AND_INCR(mcnt, p);
+        p += mcnt;
+        continue;
 
       /* We need this opcode so we can detect where alternatives end
 	 in `group_match_null_string_p' et al.  */

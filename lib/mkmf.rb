@@ -269,6 +269,7 @@ SRC
 end
 
 def arg_config(config, default=nil)
+  return default if /mswin32/i =~ PLATFORM
   unless defined? $configure_args
     $configure_args = {}
     for arg in CONFIG["configure_args"].split + ARGV

@@ -79,6 +79,8 @@ readline_attempted_completion_function(char *text, int start, int end)
     int i, matches;
 
     proc = rb_iv_get(mReadline, COMPLETION_PROC);
+    if (NIL_P(proc))
+	return NULL;
     rl_attempted_completion_over = 1;
     case_fold = RTEST(rb_iv_get(mReadline, COMPLETION_CASE_FOLD));
     ary = rb_funcall(proc, rb_intern("call"), 1, rb_str_new2(text));
