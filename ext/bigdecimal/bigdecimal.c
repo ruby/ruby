@@ -1201,7 +1201,7 @@ BigDecimal_pai(VALUE self, VALUE nFig)
     Real *pv;
     S_LONG mf;
 
-    mf = GetPositiveInt(nFig);
+    mf = GetPositiveInt(nFig)+VpBaseFig()-1;
     GUARD_OBJ(pv,VpCreateRbObject(mf, "0"));
     VpPai(pv);
     return ToValue(pv);
