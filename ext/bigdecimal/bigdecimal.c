@@ -2311,7 +2311,6 @@ VpSubAbs(Real *a, Real *b, Real *c)
     /* each of the last few digits of the b because the a has no */
     /* corresponding digits to be subtracted. */
     if(b_pos + word_shift > a_pos) {
-        borrow = 1;
         while(b_pos + word_shift > a_pos) {
             --c_pos;
             if(b_pos > 0) {
@@ -2320,6 +2319,7 @@ VpSubAbs(Real *a, Real *b, Real *c)
                 --word_shift;
                 c->frac[c_pos] = BASE - borrow;
             }
+            borrow = 1;
         }
     }
     /* Just assign the last few digits of a to c because b has no */
