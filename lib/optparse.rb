@@ -158,6 +158,10 @@ Individual switch class.
       raise ArgumentError, "#{arg}: incompatible argument styles\n  #{self}, #{t}"
     end
 
+    def self.pattern
+      NilClass
+    end
+
 =begin private
 --- OptionParser::Switch.new
 =end #'#"#`#
@@ -294,6 +298,9 @@ Switch that takes no arguments.
       end
       def self.incompatible_argument_styles(*)
       end
+      def self.pattern
+	Object
+      end
     end
 
 =begin private
@@ -336,7 +343,8 @@ Switch that can omit argument.
 
     class PlacedArgument < self
       def parse(arg, argv, &error)
-	unless arg or argv.empty? or /\A-/ =~ argv[0]
+	unless arg
+	  return nil, block, nil if argv.empty? or /\A-/ =~ argv[0]
 	  arg = argv.shift
 	end
 	super(*parse_arg(arg, &error))
@@ -981,8 +989,8 @@ Default options, which never appear in option summary.
 	nolong << 'no-' + o
       when /^--([^][=\s]*)(.+)?/
 	q, a = $1, $2
-	o = notwice(a ? NilClass : TrueClass, klass, 'type')
 	if a
+	  o = notwice(NilClass, klass, 'type')
 	  default_style = default_style.guess(arg = a)
 	  default_pattern, conv = search(:atype, o) unless default_pattern
 	end
@@ -999,8 +1007,8 @@ Default options, which never appear in option summary.
 	short << Regexp.new(q)
       when /^-(.)(.+)?/
 	q, a = $1, $2
-	o = notwice((a ? Object : TrueClass), klass, 'type')
 	if a
+	  o = notwice(NilClass, klass, 'type')
 	  default_style = default_style.guess(arg = a)
 	  default_pattern, conv = search(:atype, o) unless default_pattern
 	end
@@ -1014,7 +1022,7 @@ Default options, which never appear in option summary.
       end
     end
 
-    default_pattern, conv = search(:atype, Object) unless default_pattern
+    default_pattern, conv = search(:atype, default_style.pattern) unless default_pattern
     s = if short.empty? and long.empty?
 	  raise ArgumentError, "no switch given" if style or pattern or block
 	  desc

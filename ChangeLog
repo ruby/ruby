@@ -1,7 +1,10 @@
-Fri Jan 31 02:50:34 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Fri Jan 31 09:40:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb (OptionParser::List::accept): default
 	  pattern must not be nil.
+
+	* lib/optparse.rb (OptionParser::make_switch): NoArgument doesn't
+	  override other styles.
 
 Thu Jan 30 16:46:43 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
