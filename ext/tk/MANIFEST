@@ -197,6 +197,7 @@ lib/tkextlib/tcllib/autoscroll.rb
 lib/tkextlib/tcllib/ctext.rb
 lib/tkextlib/tcllib/cursor.rb
 lib/tkextlib/tcllib/datefield.rb
+lib/tkextlib/tcllib/ico.rb
 lib/tkextlib/tcllib/ip_entry.rb
 lib/tkextlib/tcllib/plotchart.rb
 lib/tkextlib/tcllib/setup.rb
