@@ -1078,7 +1078,7 @@ get_backtrace(info)
     VALUE info;
 {
     if (NIL_P(info)) return Qnil;
-    return rb_funcall(info, rb_intern("backtrace"), 0);
+    return rb_check_array_type(rb_funcall(info, rb_intern("backtrace"), 0));
 }
 
 static void
