@@ -1911,6 +1911,7 @@ popular_qualifier_num(QualifierNode* qf)
   return -1;
 }
 
+
 enum ReduceType {
   RQ_ASIS = 0, /* as is */
   RQ_DEL  = 1, /* delete parent */
@@ -2229,7 +2230,6 @@ fetch_name(UChar** src, UChar* end, UChar** rname_end, ScanEnv* env, int ref)
     return ONIGERR_EMPTY_GROUP_NAME;
   }
   else {
-    first_code = ONIGENC_MBC_TO_CODE(env->enc, p, end);
     PFETCH(c);
     first_code = c;
     if (c == '>')
@@ -2249,7 +2249,6 @@ fetch_name(UChar** src, UChar* end, UChar** rname_end, ScanEnv* env, int ref)
 
   while (!PEND) {
     name_end = p;
-    code = ONIGENC_MBC_TO_CODE(env->enc, p, end);
     PFETCH(c);
     if (c == '>' || c == ')') break;
 
@@ -2309,8 +2308,6 @@ fetch_name(UChar** src, UChar* end, UChar** rname_end, ScanEnv* env, int ref)
     if (c == '>' || c == ')') break;
     if (! ONIGENC_IS_CODE_DIGIT(enc, c))
       r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
-
-    p += (len - 1);
   }
   if (c != '>') {
     r = ONIGERR_INVALID_GROUP_NAME;

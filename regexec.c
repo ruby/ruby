@@ -274,7 +274,7 @@ onig_region_copy(OnigRegion* to, OnigRegion* from)
 
 /** stack **/
 #define INVALID_STACK_INDEX   -1
-typedef long  StackIndex;
+typedef int  StackIndex;
 
 typedef struct _StackType {
   unsigned int type;
@@ -2342,13 +2342,6 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
       STAT_OP_OUT;
       CHECK_INTERRUPT_IN_MATCH_AT;
       continue;
-      break;
-
-    case OP_REPEAT_INC_NG_SG:  STAT_OP_IN(OP_REPEAT_INC_NG_SG);
-      GET_MEMNUM_INC(mem, p); /* mem: OP_REPEAT ID */
-      STACK_GET_REPEAT(mem, stkp);
-      si = GET_STACK_INDEX(stkp);
-      goto repeat_inc_ng;
       break;
 
     case OP_REPEAT_INC_NG_SG:  STAT_OP_IN(OP_REPEAT_INC_NG_SG);

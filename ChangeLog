@@ -1,3 +1,8 @@
+Thu Nov  4 23:54:21 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* regexec.c, regparse.c, regint.h: fixed conflicts between
+	vendor branch.
+
 Thu Nov  4 23:41:55 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* ascii.c, euc_jp.c, oniggnu.h, oniguruma.h, regcomp.c,
