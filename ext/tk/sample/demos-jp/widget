@@ -223,6 +223,9 @@ txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "8. 画像を見るための簡単なユーザインターフェース\n", 
 	   tag_demo, "demo-image2")
 txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "9. ラベル付きフレーム (Tkに実装されている場合に限る)\n", 
+	   tag_demo, "demo-labelframe")
+txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
 #txt.insert('end', "リストボックス\n", tag_middle)
@@ -237,14 +240,17 @@ txt.insert('end', "3. 格言集\n", tag_demo, "demo-sayings")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-#txt.insert('end', "エントリ\n", tag_middle)
+#txt.insert('end', "エントリとスピンボックス\n", tag_middle)
 txt.insert('end', "エントリ\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. スクロールバーなし\n", tag_demo, "demo-entry1")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. スクロールバーあり\n", tag_demo, "demo-entry2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. 簡単なフォーム\n", tag_demo, "demo-form")
+txt.insert('end', "3. スピンボックス (Tkに実装されている場合に限る)\n", 
+	   tag_demo, "demo-spin")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "4. 簡単なフォーム\n", tag_demo, "demo-form")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
@@ -291,6 +297,16 @@ txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. 垂直\n", tag_demo.id, "demo-vscale")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. 水平\n", tag_demo.id, "demo-hscale")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+txt.insert('end', "ペインドウィンドウ\n", tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. 水平方向 (Tkに実装されている場合に限る)\n", 
+	   tag_demo.id, "demo-paned1")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. 垂直方向 (Tkに実装されている場合に限る)\n", 
+	   tag_demo.id, "demo-paned2")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
@@ -496,7 +512,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-		'message'=>"Ruby/Tk ウィジェットデモ Ver.1.2.2\n\n( based on Tk ウィジェットデモ :: Copyright (c) 1996-1997 Sun Microsystems, Inc. )\n\nRunning Version :: Ruby#{VERSION}/Tk#{$tk_version}#{(Tk::JAPANIZED_TK)? 'jp': ''}")
+		'message'=>"Ruby/Tk ウィジェットデモ Ver.1.3.0-jp\n\n( based on Tk ウィジェットデモ :: Copyright (c) 1996-1997 Sun Microsystems, Inc. )\n\nRunning Version :: Ruby#{VERSION}/Tk#{$tk_version}#{(Tk::JAPANIZED_TK)? 'jp': ''}")
 end
 
 ################################

@@ -206,6 +206,8 @@ txt.insert('end', "7. Two labels displaying images.\n", tag_demo, "demo-image1")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "8. A simple user interface for viewing images.\n", tag_demo, "demo-image2")
 txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "9. Labelled frames (if supported)\n", tag_demo, "demo-labelframe")
+txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
 txt.insert('end', "Listboxes\n", tag_title)
@@ -218,13 +220,15 @@ txt.insert('end', "3. A collection of famous sayings.\n", tag_demo, "demo-saying
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
-txt.insert('end', "Entries\n", tag_title)
+txt.insert('end', "Entries and Spin-boxes\n", tag_title)
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. Without scrollbars.\n", tag_demo, "demo-entry1")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. With scrollbars.\n", tag_demo, "demo-entry2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. Simple Rolodex-like form.\n", tag_demo, "demo-form")
+txt.insert('end', "3. Spin-boxes. (if supported)\n", tag_demo, "demo-spin")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "4. Simple Rolodex-like form.\n", tag_demo, "demo-form")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
@@ -265,6 +269,14 @@ txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. Vertical scale.\n", tag_demo.id, "demo-vscale")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. Horizontal scale.\n", tag_demo.id, "demo-hscale")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+txt.insert('end', "Paned Windows\n", tag_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. Horizontal paned window. (if supported)\n", tag_demo.id, "demo-paned1")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. Vertical paned window. (if supported)\n", tag_demo.id, "demo-paned2")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
@@ -490,7 +502,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-		'message'=>"Ruby/Tk widget demonstration Ver.1.0.2\n\n( based on Tk 8.1 Copyright (c) 1996-1997 Sun Microsystems, Inc. )\n\nRunning Version :: Ruby#{VERSION}/Tk#{$tk_version}")
+		'message'=>"Ruby/Tk widget demonstration Ver.1.3.0-en\n\n( based on Tk 8.1 Copyright (c) 1996-1997 Sun Microsystems, Inc. )\n\nRunning Version :: Ruby#{VERSION}/Tk#{$tk_version}")
 end
 
 ################################

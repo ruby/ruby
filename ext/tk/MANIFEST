@@ -84,10 +84,13 @@ sample/demos-en/images/teapot.ppm
 sample/demos-en/items.rb
 sample/demos-en/ixset
 sample/demos-en/label.rb
+sample/demos-en/labelframe.rb
 sample/demos-en/menu.rb
 sample/demos-en/menubu.rb
 sample/demos-en/msgbox.rb
 sample/demos-en/patch_1.1c1
+sample/demos-en/paned1.rb
+sample/demos-en/paned2.rb
 sample/demos-en/plot.rb
 sample/demos-en/puzzle.rb
 sample/demos-en/radio.rb
@@ -97,6 +100,7 @@ sample/demos-en/rolodex-j
 sample/demos-en/ruler.rb
 sample/demos-en/sayings.rb
 sample/demos-en/search.rb
+sample/demos-en/spin.rb
 sample/demos-en/square
 sample/demos-en/states.rb
 sample/demos-en/style.rb
@@ -153,10 +157,13 @@ sample/demos-jp/images/teapot.ppm
 sample/demos-jp/items.rb
 sample/demos-jp/ixset
 sample/demos-jp/label.rb
+sample/demos-jp/labelframe.rb
 sample/demos-jp/menu.rb
 sample/demos-jp/menu8x.rb
 sample/demos-jp/menubu.rb
 sample/demos-jp/msgbox.rb
+sample/demos-jp/paned1.rb
+sample/demos-jp/paned2.rb
 sample/demos-jp/plot.rb
 sample/demos-jp/puzzle.rb
 sample/demos-jp/radio.rb
@@ -166,6 +173,7 @@ sample/demos-jp/rolodex-j
 sample/demos-jp/ruler.rb
 sample/demos-jp/sayings.rb
 sample/demos-jp/search.rb
+sample/demos-jp/spin.rb
 sample/demos-jp/square
 sample/demos-jp/states.rb
 sample/demos-jp/style.rb

@@ -4271,6 +4271,9 @@ class TkFrame<TkWindow
 end
 
 class TkLabelFrame<TkFrame
+  TkCommandNames = ['labelframe'.freeze].freeze
+  WidgetClassName = 'Labelframe'.freeze
+  WidgetClassNames[WidgetClassName] = self
   def create_self(keys)
     if keys and keys != None
       tk_call 'labelframe', @path, *hash_kv(keys)
@@ -4279,6 +4282,7 @@ class TkLabelFrame<TkFrame
     end
   end
 end
+TkLabelframe = TkLabelFrame
 
 class TkPanedWindow<TkWindow
   TkCommandNames = ['panedwindow'.freeze].freeze
