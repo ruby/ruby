@@ -1545,22 +1545,7 @@ rb_eval_string_protect(str, state)
     const char *str;
     int *state;
 {
-    VALUE result = Qnil;	/* OK */
-    int status;
-
-    PUSH_TAG(PROT_NONE);
-    if ((status = EXEC_TAG()) == 0) {
-	result = rb_eval_string(str);
-    }
-    POP_TAG();
-    if (state) {
-	*state = status;
-    }
-    if (status != 0) {
-	return Qnil;
-    }
-
-    return result;
+    return rb_protect((VALUE (*)_((VALUE)))rb_eval_string, (VALUE)str, state);
 }
 
 VALUE
@@ -5161,6 +5146,8 @@ rb_rescue(b_proc, data1, r_proc, data2)
     return rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, (VALUE)0);
 }
 
+static VALUE cont_protect;
+
 VALUE
 rb_protect(proc, data, state)
     VALUE (*proc) _((VALUE));
@@ -5171,9 +5158,11 @@ rb_protect(proc, data, state)
     int status;
 
     PUSH_TAG(PROT_NONE);
+    cont_protect = (VALUE)rb_node_newnode(NODE_MEMO, cont_protect, 0, 0);
     if ((status = EXEC_TAG()) == 0) {
 	result = (*proc)(data);
     }
+    cont_protect = ((NODE *)cont_protect)->u1.value;
     POP_TAG();
     if (state) {
 	*state = status;
@@ -7810,9 +7799,9 @@ blk_free(data)
     struct BLOCK *data;
 {
     void *tmp;
- 
+
     while (data) {
-        frame_free(&data->frame);
+	frame_free(&data->frame);
 	tmp = data;
 	data = data->prev;
 	free(tmp);
@@ -9670,6 +9659,14 @@ thread_reset_raised()
 static void rb_thread_ready _((rb_thread_t));
 
 static VALUE
+run_trap_eval(arg)
+    VALUE arg;
+{
+    VALUE *p = (VALUE *)arg;
+    return rb_eval_cmd(p[0], p[1], (int)p[2]);
+}
+
+static VALUE
 rb_trap_eval(cmd, sig, safe)
     VALUE cmd;
     int sig, safe;
@@ -9677,16 +9674,16 @@ rb_trap_eval(cmd, sig, safe)
     int state;
     VALUE val = Qnil;		/* OK */
     volatile struct thread_status_t save;
+    VALUE arg[3];
 
+    arg[0] = cmd;
+    arg[1] = rb_ary_new3(1, INT2FIX(sig));
+    arg[2] = (VALUE)safe;
     THREAD_COPY_STATUS(curr_thread, &save);
     rb_thread_ready(curr_thread);
-    PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
-    if ((state = EXEC_TAG()) == 0) {
-	val = rb_eval_cmd(cmd, rb_ary_new3(1, INT2FIX(sig)), safe);
-    }
+    val = rb_protect(run_trap_eval, (VALUE)&arg, &state);
     POP_ITER();
-    POP_TAG();
     THREAD_COPY_STATUS(&save, curr_thread);
 
     if (state) {
@@ -11917,6 +11914,10 @@ rb_thread_trap_eval(cmd, sig, safe)
     int sig, safe;
 {
     rb_thread_critical = 0;
+    if (curr_thread == main_thread) {
+	rb_trap_eval(cmd, sig, safe);
+	return;
+    }
     if (!rb_thread_dead(curr_thread)) {
 	if (THREAD_SAVE_CONTEXT(curr_thread)) {
 	    return;
@@ -12272,6 +12273,7 @@ rb_callcc(self)
 	scope_dup(tag->scope);
     }
     th->thread = curr_thread->thread;
+    th->thgroup = cont_protect;
 
     for (vars = ruby_dyna_vars; vars; vars = vars->next) {
 	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
@@ -12312,6 +12314,9 @@ rb_cont_call(argc, argv, cont)
 
     if (th->thread != curr_thread->thread) {
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
+    }
+    if (th->thgroup != cont_protect) {
+	rb_raise(rb_eRuntimeError, "continuation called across trap");
     }
     switch (argc) {
       case 0:
@@ -12580,6 +12585,7 @@ Init_Thread()
     rb_define_method(rb_cCont, "call", rb_cont_call, -1);
     rb_define_method(rb_cCont, "[]", rb_cont_call, -1);
     rb_define_global_function("callcc", rb_callcc, 0);
+    rb_global_variable(&cont_protect);
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);
