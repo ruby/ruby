@@ -922,6 +922,9 @@ def create_makefile(target, srcprefix = nil)
 
   if target.include?('/')
     target_prefix, target = File.split(target)
+    target_prefix[0,0] = '/'
+  else
+    target_prefix = ""
   end
 
   srcprefix ||= '$(srcdir)'
