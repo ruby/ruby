@@ -1,3 +1,7 @@
+Wed May 19 02:21:53 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: do not use class variables.
+
 Tue May 18 21:21:43 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/csv.rb: writes lines with "\n" when row separator is not given.

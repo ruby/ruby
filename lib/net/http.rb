@@ -176,7 +176,7 @@ module Net # :nodoc:
     # :stopdoc:
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
-    @@newimpl = true    # for backward compatability
+    @newimpl = true    # for backward compatability
     # :startdoc:
 
     # Turns on net/http 1.2 (ruby 1.8) features.
@@ -188,25 +188,25 @@ module Net # :nodoc:
     #   Net::HTTP.version_1_2
     #
     def HTTP.version_1_2
-      @@newimpl = true
+      @newimpl = true
     end
 
     # Turns on net/http 1.1 (ruby 1.6) features.
     # Defaults to OFF in ruby 1.8.
     def HTTP.version_1_1
-      @@newimpl = false
+      @newimpl = false
     end
 
     # true if net/http is in version 1.2 mode.
     # Defaults to true.
     def HTTP.version_1_2?
-      @@newimpl
+      @newimpl
     end
 
     # true if net/http is in version 1.1 compatible mode.
     # Defaults to true.
     def HTTP.version_1_1?
-      not @@newimpl
+      not @newimpl
     end
 
     class << HTTP
