@@ -1,3 +1,7 @@
+Wed Feb 14 17:28:24 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: supports unknown resp_text_code.
+
 Tue Feb 13 23:05:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dir.c (lstat): should use rb_sys_stat if lstat(2) is not
