@@ -1,3 +1,8 @@
+Sat Nov 20 17:48:29 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (io_reopen): work around problem with Cygwin fseeko
+	  returning ESPIPE.
+
 Tue Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: original nkf.c rev:1.40

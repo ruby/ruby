@@ -127,9 +127,6 @@ static VALUE lineno = INT2FIX(0);
 #    define READ_DATA_PENDING_COUNT(fp) ((fp)->_egptr - (fp)->_gptr)
 #    define READ_DATA_PENDING_PTR(fp) ((fp)->_gptr)
 #  endif
-#elif defined(HAVE___FPENDING)
-#  define READ_DATA_PENDING(fp) (__fpending(fp) > 0)
-#  define READ_DATA_PENDING_COUNT(fp) (__fpending(fp))
 #elif defined(FILE_COUNT)
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_COUNT)
@@ -3283,6 +3280,7 @@ io_reopen(io, nfile)
     fd = fileno(fptr->f);
     fd2 = fileno(orig->f);
     if (fd != fd2) {
+#if !defined __CYGWIN__
 	if (fptr->f == stdin || fptr->f == stdout || fptr->f == stderr) {
 	    clearerr(fptr->f);
 	    /* need to keep stdio objects */
@@ -3290,11 +3288,14 @@ io_reopen(io, nfile)
 		rb_sys_fail(orig->path);
 	}
 	else {
+#endif
 	    fclose(fptr->f);
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
 	    fptr->f = rb_fdopen(fd, mode);
+#if !defined __CYGWIN__
 	}
+#endif
 	rb_thread_fd_close(fd);
 	if ((orig->mode & FMODE_READABLE) && pos >= 0) {
 	    if (io_seek(fptr, pos, SEEK_SET) < 0) {
