@@ -1487,7 +1487,9 @@ re_compile_pattern(pattern, size, bufp)
 	}
 	had_char_class = 0;
 
-	if (c == '-' && p != p0 + 1 && *p != ']')
+	if (c == '-' && ((p != p0 + 1 && *p != ']') ||
+                         (p[0] == '-' && p[1] != ']') ||
+                         range))
           re_warning("character class has `-' without escape");
         if (c == '[' && *p != ':')
           re_warning("character class has `[' without escape");
@@ -1675,8 +1677,6 @@ re_compile_pattern(pattern, size, bufp)
 	  if (last > c)
 	    goto invalid_pattern;
 
-	  if (last == '-' || c == '-')
-	    re_warning("character class has `-' without escape");
 	  range = 0;
 	  if (had_mbchar == 0) {
 	    for (;last<=c;last++)
@@ -2350,6 +2350,8 @@ re_compile_pattern(pattern, size, bufp)
 	break;
 
     default:
+      if (c == ']')
+        re_warning("regexp has `]' without escape");
     normal_char:		/* Expects the character in `c'.  */
       had_mbchar = 0;
       if (ismbchar(c)) {

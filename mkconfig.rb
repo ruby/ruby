@@ -84,7 +84,7 @@ end
 
 dest = drive ? /= \"(?!\$[\(\{])(?:[a-z]:)?/i : /= \"(?!\$[\(\{])/
 v_others.collect! do |x|
-  if /^\s*CONFIG\["(?!abs_|old)[a-z]+(?:_prefix|dir)"]/ === x
+  if /^\s*CONFIG\["(?!abs_|old)[a-z]+(?:_prefix|dir)"\]/ === x
     x.sub(dest, '= "$(DESTDIR)')
   else
     x
