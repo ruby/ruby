@@ -1,5 +1,6 @@
 # Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
+# Copyright (C) 2000-2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 if $SAFE > 0
   STDERR.print "-r debug.rb is not available in safe mode\n"
@@ -299,23 +300,24 @@ class Context
             stdout.print "Trace off.\n"
           end
 
-	when /^\s*b(?:reak)?\s+(.+)[#.](.+)$/
-	  pos = $2.intern.id2name
-	  file = debug_eval($1, binding)
-	  break_points.push [true, 0, file, pos]
-	  stdout.printf "Set breakpoint %d at %s.%s\n", break_points.size, file, pos
-
-	when /^\s*b(?:reak)?\s+(?:(.+):)?(.+)$/
+	when /^\s*b(?:reak)?\s+(?:(.+):)?([^.:]+)$/
 	  pos = $2
-	  file = File.basename($1 || file)
+	  file = $1 || file
+	  klass = debug_silent_eval($1, binding)
 	  if pos =~ /^\d+$/
 	    pname = pos
 	    pos = pos.to_i
 	  else
 	    pname = pos = pos.intern.id2name
 	  end
-	  break_points.push [true, 0, file, pos]
-	  stdout.printf "Set breakpoint %d at %s:%s\n", break_points.size, file, pname
+	  break_points.push [true, 0, klass || file, pos]
+	  stdout.printf "Set breakpoint %d at %s:%s\n", break_points.size, klass || file, pname
+
+	when /^\s*b(?:reak)?\s+(.+)[#.]([^.:]+)$/
+	  pos = $2.intern.id2name
+	  klass = debug_eval($1, binding)
+	  break_points.push [true, 0, klass, pos]
+	  stdout.printf "Set breakpoint %d at %s.%s\n", break_points.size, klass, pos
 
 	when /^\s*wat(?:ch)?\s+(.+)$/
 	  exp = $1
@@ -537,7 +539,8 @@ class Context
     stdout.print <<EOHELP
 Debugger help v.-0.002b
 Commands
-  b[reak] [file:]<line|method>
+  b[reak] [file|class:]<line|method>
+  b[reak] [class.]<line|method>
                              set breakpoint to some position
   wat[ch] <expression>       set watchpoint to some expression
   cat[ch] <an Exception>     set catchpoint to an exception
@@ -652,16 +655,18 @@ EOHELP
     end
   end
 
-  def check_break_points(file, pos, binding, id)
+  def check_break_points(file, klass, pos, binding, id)
     return false if break_points.empty?
-#    file = File.basename(file)
     n = 1
     for b in break_points
-      if b[0]
-	if b[1] == 0 and b[2] == file and b[3] == pos
-	  stdout.printf "Breakpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
-	  return true
-	elsif b[1] == 1
+      if b[0]		# valid
+	if b[1] == 0	# breakpoint
+	  if (b[2] == file and b[3] == pos) or
+	      (klass and b[2] == klass and b[3] == pos)
+	    stdout.printf "Breakpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
+	    return true
+	  end
+	elsif b[1] == 1	# watchpoint
 	  if debug_silent_eval(b[2], binding)
 	    stdout.printf "Watchpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
 	    return true
@@ -709,7 +714,7 @@ EOHELP
       else
 	# nothing to do. skipped.
       end
-      if @stop_next == 0 or check_break_points(file, line, binding, id)
+      if @stop_next == 0 or check_break_points(file, nil, line, binding, id)
 	@no_step = nil
 	suspend_all
 	debug_command(file, line, id, binding)
@@ -717,9 +722,7 @@ EOHELP
 
     when 'call'
       @frames.unshift [binding, file, line, id]
-      if check_break_points(file, id.id2name, binding, id) or
-	  check_break_points(klass.to_s, id.id2name, binding, id) or
-	  check_break_points(klass, id.id2name, binding, id)
+      if check_break_points(file, klass, id.id2name, binding, id)
 	suspend_all
 	debug_command(file, line, id, binding)
       end

@@ -1,3 +1,8 @@
+Sun Jul 27 14:43:37 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/debug.rb: fix breakpoint parameter parsing/checking.
+	  (?:(file|class):)(line_number|method)
+
 Sun Jul 27 10:21:28 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/unix.rb: add UNIXFileOwner, UNIXFileGroup.
@@ -61,12 +66,12 @@ Sat Jul 26 01:20:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Jul 26 00:04:25 2003  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
-	* ext/openssl/sample: Add samples.
-	  - cert2text.rb: Dump certificate file as text.
+	* ext/openssl/sample: add samples.
+	  - cert2text.rb: dump certificate file as text.
 	  - crlstore.rb: CRL store implementation.  Fetch CRL via HTTP when
 	    http-access2 is installed.
-	  - certstore.rb: Certificate store implementation.
-	  - cert_store_view.rb: Certificate store viewer with FXRuby.  Uses
+	  - certstore.rb: certificate store implementation.
+	  - cert_store_view.rb: certificate store viewer with FXRuby.  Uses
 	    c_rehash.rb, crlstore.rb and certstore.rb.
 
 Fri Jul 25 15:47:39 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
@@ -908,7 +913,7 @@ Fri Jun 20 03:09:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Jun 20 00:45:19 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 
-	* lib/csv.rb: Import csv module.
+	* lib/csv.rb: import csv module.
 
 Thu Jun 19 22:51:41 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
