@@ -1,3 +1,11 @@
+Sat Dec 11 12:41:55 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (run_trap_eval): prototype; avoid VC++ warnings.
+
+	* ext/socket/getaddrinfo.c: fix typo. fixed: [ruby-core:03947]
+
+	* win32/win32.c: need to include dln.h.
+
 Sat Dec 11 00:10:18 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_reopen): [ruby-dev:25150]

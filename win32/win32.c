@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 #include "rubysig.h"
+#include "dln.h"
 #include <fcntl.h>
 #include <process.h>
 #include <sys/stat.h>
@@ -88,7 +89,7 @@
 
 bool NtSyncProcess = TRUE;
 
-static struct ChildRecord *CreateChild(char *, char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
+static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static bool has_redirection(const char *);
 static void StartSockets ();
 static DWORD wait_events(HANDLE event, DWORD timeout);

@@ -40,7 +40,7 @@
 
 #include "config.h"
 #include <sys/types.h>
-#if !defined(__WIN32) && !defined(__VMS)
+#if !defined(_WIN32) && !defined(__VMS)
 #include <sys/param.h>
 #if defined(__BEOS__)
 # include <net/socket.h>
