@@ -126,13 +126,12 @@ rb_f_rand(obj, vmax)
     long val, max;
 
     switch (TYPE(vmax)) {
-      case T_BIGNUM:
-	return rb_big_rand(vmax);
-	
       case T_FLOAT:
-	if (RFLOAT(vmax)->value > LONG_MAX || RFLOAT(vmax)->value < LONG_MIN)
-	    return rb_big_rand(rb_dbl2big(RFLOAT(vmax)->value));
-	break;
+	if (RFLOAT(vmax)->value <= LONG_MAX && RFLOAT(vmax)->value >= LONG_MIN)
+	    break;
+	/* fall through */
+      case T_BIGNUM:
+	return rb_big_rand(vmax, RANDOM_NUMBER);
     }
 
     max = NUM2LONG(vmax);

@@ -1062,12 +1062,14 @@ rb_file_s_expand_path(argc, argv)
     VALUE fname, dname;
     char *s, *p;
     char buf[MAXPATHLEN+2];
+    int tainted = 0;
 
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
     s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
+	tainted = 1;
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    char *dir = getenv("HOME");
 
@@ -1110,9 +1112,11 @@ rb_file_s_expand_path(argc, argv)
     else if (!isdirsep(*s)) {
 	if (argc == 2) {
 	    dname = rb_file_s_expand_path(1, &dname);
+	    if (OBJ_TAINTED(dname)) tainted = 1;
 	    strcpy(buf, RSTRING(dname)->ptr);
 	}
 	else {
+	    tainted = 1;
 #ifdef HAVE_GETCWD
 	    getcwd(buf, MAXPATHLEN);
 #else
@@ -1172,7 +1176,9 @@ rb_file_s_expand_path(argc, argv)
     if (p == buf || !isdirsep(*p)) p++;
     *p = '\0';
 
-    return rb_tainted_str_new2(buf);
+    fname = rb_str_new2(buf);
+    if (tainted) OBJ_TAINT(fname);
+    return fname;
 }
 
 static int

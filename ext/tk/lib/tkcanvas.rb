@@ -129,6 +129,7 @@ end
 
 class TkCanvas<TkWindow
   include TkTreatCItemFont
+  include Scrollable
 
   WidgetClassName = 'Canvas'.freeze
   WidgetClassNames[WidgetClassName] = self

@@ -4834,6 +4834,7 @@ rb_f_require(obj, fname)
 		ext = strrchr(buf, '.');
 		strcpy(ext, DLEXT);
 		file = feature = buf;
+		if (rb_provided(feature)) return Qfalse;
 	    }
 	    file = find_file(file);
 	    if (file) goto load_dyna;
@@ -5991,7 +5992,7 @@ Init_Proc()
     rb_define_global_function("lambda", rb_f_lambda, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
     rb_cBinding = rb_define_class("Binding", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cMethod), "new");
+    rb_undef_method(CLASS_OF(rb_cBinding), "new");
     rb_define_method(rb_cBinding, "clone", bind_clone, 0);
 
     rb_cMethod = rb_define_class("Method", rb_cObject);
@@ -7332,9 +7333,12 @@ static int
 rb_thread_loading(feature)
     const char *feature;
 {
-    if (!rb_provided(feature)) return Qfalse; /* need to load */
-    if (!loading_tbl) {
-	loading_tbl = st_init_strtable();
+    if (!rb_provided(feature)) {
+	if (!loading_tbl) {
+	    loading_tbl = st_init_strtable();
+	}
+	st_insert(loading_tbl, feature, 0);
+	return Qfalse; /* need to load */
     }
     while (st_lookup(loading_tbl, feature, 0)) {
 	CHECK_INTS;

@@ -1,3 +1,30 @@
+Mon Dec  6 15:55:30 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* numeric.c (fix_rshift): Fix -1 >> 32 returned 0. (-1 is true)
+
+	* numeric.c (fix_rshift): Fix  1 >> -1 returned 0. (2 is true)
+
+Mon Dec  6 11:47:23 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (rb_f_sprintf): formatted string must be tainted if
+	  any of parameters is tainted.
+
+	* file.c (rb_file_s_expand_path): expanded file path need not to
+	  be tainted always.
+
+Sat Dec  4 01:40:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (rb_big_rand): should not use rand/random where drand48
+	  may be available.  RANDOM_NUMBER should be provided from outside.
+
+Fri Dec  3 09:54:59 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_require): should check require 'feature.o' too.
+
+Thu Dec  2 11:58:15 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* eval.c (rb_thread_loading): should maintain loading_tbl.
+
 Thu Dec  2 10:21:43 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_thread_loading_done): wrong parameter to st_delete().

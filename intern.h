@@ -57,7 +57,7 @@ VALUE rb_big_and _((VALUE, VALUE));
 VALUE rb_big_or _((VALUE, VALUE));
 VALUE rb_big_xor _((VALUE, VALUE));
 VALUE rb_big_lshift _((VALUE, VALUE));
-VALUE rb_big_rand _((VALUE));
+VALUE rb_big_rand _((VALUE, double));
 /* class.c */
 VALUE rb_class_new _((VALUE));
 VALUE rb_singleton_class_new _((VALUE));
