@@ -121,7 +121,7 @@ realclean:	distclean
 		@rm -f parse.c
 		@rm -f lex.c
 
-test:		miniruby$(EXEEXT)
+test:		miniruby$(EXEEXT) rbconfig.rb
 		@./miniruby$(EXEEXT) $(srcdir)/rubytest.rb
 
 rbconfig.rb:	miniruby$(EXEEXT) $(srcdir)/mkconfig.rb config.status

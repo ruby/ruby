@@ -210,21 +210,25 @@ flo_to_s(flt)
     char buf[24];
     char *fmt = "%.10g";
     double value = RFLOAT(flt)->value;
-    double d1, d2;
+    double avalue, d1, d2;
 
     if (isinf(value))
 	return rb_str_new2(value < 0 ? "-Infinity" : "Infinity");
     else if(isnan(value))
 	return rb_str_new2("NaN");
 
-    if (value < 1.0e-3) {
-	d1 = value;
+    avalue = fabs(value);
+    if (avalue == 0.0) {
+	fmt = "%.1f";
+    }
+    else if (avalue < 1.0e-3) {
+	d1 = avalue;
 	while (d1 < 1.0) d1 *= 10.0;
 	d1 = modf(d1, &d2);
 	if (d1 == 0) fmt = "%.1e";
     }    
-    else if (value >= 1.0e10) {
-	d1 = value;
+    else if (avalue >= 1.0e10) {
+	d1 = avalue;
 	while (d1 > 10.0) d1 /= 10.0;
 	d1 = modf(d1, &d2);
 	if (d1 == 0) fmt = "%.1e";

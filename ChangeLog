@@ -3,6 +3,17 @@ Sat Sep  8 07:13:42 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 	* lib/net/telnet.rb: waitfor(): improvement. thanks to
 	  nobu.nakada@nifty.ne.jp
 
+Sat Sep  8 04:34:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_restore_context): save current value of
+	  lastline and lastmatch in the thread struct for later restore.
+
+	* eval.c (rb_thread_save_context): restore lastline and lastmatch.
+
+Fri Sep  7 11:27:56 2001  akira yamada  <akira@ruby-lang.org>
+
+	* numeric.c (flo_to_s): should handle negative float value.
+
 Fri Sep  7 09:44:44 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/net/telnet.rb: waitfor(): bug fix.

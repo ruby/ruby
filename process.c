@@ -953,16 +953,18 @@ proc_setuid(obj, id)
 
     uid = NUM2INT(id);
 #ifdef HAVE_SETREUID
-    setreuid(uid, -1);
+    if (setreuid(uid, -1) < 0) rb_sys_fail(0);
 #else
 #ifdef HAVE_SETRUID
-    setruid(uid);
+    if (setruid(uid) < 0) rb_sys_fail(0);
 #else
     {
-	if (geteuid() == uid)
-	    setuid(uid);
-	else
+	if (geteuid() == uid) {
+	    if (setuid(uid) < 0) rb_sys_fail(0);
+	}
+	else {
 	    rb_notimplement();
+	}
     }
 #endif
 #endif
@@ -984,17 +986,19 @@ proc_setgid(obj, id)
     int gid;
 
     gid = NUM2INT(id);
-#ifdef HAS_SETRGID
-	setrgid((GIDTYPE)gid);
-#else
 #ifdef HAVE_SETREGID
-    setregid(gid, -1);
+    if (setregid(gid, -1) < 0) rb_sys_fail(0);
+#else
+#ifdef HAS_SETRGID
+    if (setrgid((GIDTYPE)gid) < 0) rb_sys_fail(0);
 #else
     {
-	if (getegid() == gid)
-	    setgid(gid);
-	else
+	if (getegid() == gid) {
+	    if (setgid(gid) < 0) rb_sys_fail(0);
+	}
+	else {
 	    rb_notimplement();
+	}
     }
 #endif
 #endif
@@ -1013,17 +1017,19 @@ static VALUE
 proc_seteuid(obj, euid)
     VALUE obj, euid;
 {
-#ifdef HAVE_SETEUID
-    if (seteuid(NUM2INT(euid)) < 0) rb_sys_fail(0);
-#else
 #ifdef HAVE_SETREUID
     if (setreuid(-1, NUM2INT(euid)) < 0) rb_sys_fail(0);
 #else
+#ifdef HAVE_SETEUID
+    if (seteuid(NUM2INT(euid)) < 0) rb_sys_fail(0);
+#else
     euid = NUM2INT(euid);
-    if (euid == getuid())
-	setuid(euid);
-    else
+    if (euid == getuid()) {
+	if (setuid(euid) < 0) rb_sys_fail(0);
+    }
+    else {
 	rb_notimplement();
+    }
 #endif
 #endif
     return euid;
@@ -1042,17 +1048,19 @@ proc_setegid(obj, egid)
     VALUE obj, egid;
 {
     rb_secure(2);
-#ifdef HAVE_SETEGID
-    if (setegid(NUM2INT(egid)) < 0) rb_sys_fail(0);
-#else
 #ifdef HAVE_SETREGID
     if (setregid(-1, NUM2INT(egid)) < 0) rb_sys_fail(0);
 #else
+#ifdef HAVE_SETEGID
+    if (setegid(NUM2INT(egid)) < 0) rb_sys_fail(0);
+#else
     egid = NUM2INT(egid);
-    if (egid == getgid())
-	setgid(egid);
-    else
+    if (egid == getgid()) {
+	if (setgid(egid) < 0) rb_sys_fail(0);
+    }
+    else {
 	rb_notimplement();
+    }
 #endif
 #endif
     return egid;

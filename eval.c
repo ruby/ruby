@@ -7154,6 +7154,7 @@ rb_thread_save_context(th)
 {
     VALUE *pos;
     int len;
+    static VALUE tval;
 
     len = stack_length(&pos);
     th->stk_len = 0;
@@ -7181,8 +7182,12 @@ rb_thread_save_context(th)
     th->tracing = tracing;
     th->errinfo = ruby_errinfo;
     th->last_status = rb_last_status;
-    th->last_line = rb_lastline_get();
-    th->last_match = rb_backref_get();
+    tval = rb_lastline_get();
+    rb_lastline_set(th->last_line);
+    th->last_line = tval;
+    tval = rb_backref_get();
+    rb_backref_set(th->last_match);
+    th->last_match = tval;
     th->safe = ruby_safe_level;
 
     th->file = ruby_sourcefile;
@@ -7246,6 +7251,7 @@ rb_thread_restore_context(th, exit)
     VALUE v;
     static rb_thread_t tmp;
     static int ex;
+    static VALUE tval;
 
     if (!th->stk_ptr) rb_bug("unsaved context");
 
@@ -7282,8 +7288,12 @@ rb_thread_restore_context(th, exit)
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(tmp->stk_pos, tmp->stk_ptr, VALUE, tmp->stk_len);
 
+    tval = rb_lastline_get();
     rb_lastline_set(tmp->last_line);
+    tmp->last_line = tval;
+    tval = rb_backref_get();
     rb_backref_set(tmp->last_match);
+    tmp->last_match = tval;
 
     longjmp(tmp->context, ex);
 }
