@@ -1,3 +1,18 @@
+Wed Dec 17 00:16:14 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: new method
+	  StringScanner#beginning_of_line? (alias #bol?)
+
+	* ext/strscan/strscan.c: new method StringScanner#concat and #<<.
+
+	* ext/strscan/strscan.c: StringScanner#new(str) does not duplicate
+	  nor freeze STR (allow destructive modification).
+
+	* test/strscan/test_stringscanner.rb: test new methods above.
+
+	* test/strscan/test_stringscanner.rb: test destructive string
+	  modification.
+
 Tue Dec 16 21:20:47 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb: don't use local variable `pp'.

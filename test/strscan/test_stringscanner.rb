@@ -5,14 +5,11 @@
 require 'strscan'
 require 'test/unit'
 
-
 class TestStringScanner < Test::Unit::TestCase
-
   def test_s_new
     s = StringScanner.new('test string')
     assert_instance_of StringScanner, s
     assert_equal false, s.eos?
-    assert_equal true, s.string.frozen?
     assert_equal false, s.tainted?
 
     str = 'test string'
@@ -21,7 +18,6 @@ class TestStringScanner < Test::Unit::TestCase
     assert_instance_of StringScanner, s
     assert_equal false, s.eos?
     assert_same str, s.string
-    assert_equal true, s.string.frozen?
     assert_equal true, s.string.tainted?
 
     str = 'test string'
@@ -30,8 +26,8 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal true, s.string.tainted?
   end
 
-if VERSION >= '1.7.0'
   UNINIT_ERROR = ArgumentError
+
   def test_s_allocate
     s = StringScanner.allocate
     assert_equal '#<StringScanner (uninitialized)>', s.inspect.sub(/StringScanner_C/, 'StringScanner')
@@ -42,7 +38,6 @@ if VERSION >= '1.7.0'
     assert_nothing_raised(UNINIT_ERROR) { s.eos? }
     assert_equal false, s.eos?
   end
-end
 
   def test_s_mustc
     assert_nothing_raised(NotImplementedError) {
@@ -70,6 +65,9 @@ end
     s.get_byte
     assert_equal '#<StringScanner 1/11 "t" @ "est s...">', s.inspect.sub(/StringScanner_C/, 'StringScanner')
     assert_equal true, s.inspect.tainted?
+
+    s = StringScanner.new("\n")
+    assert_equal '#<StringScanner 0/1 @ "\n">', s.inspect
   end
 
   def test_eos?
@@ -85,6 +83,51 @@ end
     assert_equal true, s.eos?
     s.scan(/\w+/)
     assert_equal true, s.eos?
+
+    s = StringScanner.new('test')
+    s.scan(/te/)
+    s.string.replace ''
+    assert_equal true, s.eos?
+  end
+
+  def test_bol?
+    s = StringScanner.new("a\nbbb\n\ncccc\nddd\r\neee")
+    assert_equal true, s.bol?
+    assert_equal true, s.bol?
+    s.scan(/a/)
+    assert_equal false, s.bol?
+    assert_equal false, s.bol?
+    s.scan(/\n/)
+    assert_equal true, s.bol?
+    s.scan(/b/)
+    assert_equal false, s.bol?
+    s.scan(/b/)
+    assert_equal false, s.bol?
+    s.scan(/b/)
+    assert_equal false, s.bol?
+    s.scan(/\n/)
+    assert_equal true, s.bol?
+    s.unscan
+    assert_equal false, s.bol?
+    s.scan(/\n/)
+    s.scan(/\n/)
+    assert_equal true, s.bol?
+    s.scan(/c+\n/)
+    assert_equal true, s.bol?
+    s.scan(/d+\r\n/)
+    assert_equal true, s.bol?
+    s.scan(/e+/)
+    assert_equal false, s.bol?
+  end
+
+  def test_string
+    s = StringScanner.new('test')
+    assert_equal 'test', s.string
+    s.string = 'a'
+    assert_equal 'a', s.string
+    s.scan(/a/)
+    s.string = 'b'
+    assert_equal 0, s.pos
   end
 
   def test_pos
@@ -96,6 +139,19 @@ end
     assert_equal 2, s.pos
     s.terminate
     assert_equal 11, s.pos
+  end
+
+  def test_concat
+    s = StringScanner.new('a')
+    s.scan(/a/)
+    s.concat 'b'
+    assert_equal false, s.eos?
+    assert_equal 'b', s.scan(/b/)
+    assert_equal true, s.eos?
+    s.concat 'c'
+    assert_equal false, s.eos?
+    assert_equal 'c', s.scan(/c/)
+    assert_equal true, s.eos?
   end
 
   def test_scan
@@ -139,6 +195,15 @@ end
 
     assert_nil           s.scan(/\w+/)
     assert_nil           s.scan(/\w+/)
+
+    s = StringScanner.new('test')
+    s.scan(/te/)
+    # This assumes #string does not duplicate string,
+    # but it is implementation specific issue.
+    # DO NOT RELY ON THIS FEATURE.
+    s.string.replace ''
+    # unspecified: assert_equal 2, s.pos
+    assert_equal nil, s.scan(/test/)
   end
 
   def test_skip
@@ -151,6 +216,11 @@ end
     assert_nil      s.skip(/\w+/)
     assert_nil      s.skip(/\s+/)
     assert_equal true, s.eos?
+
+    s = StringScanner.new('test')
+    s.scan(/te/)
+    s.string.replace ''
+    assert_equal nil, s.skip(/./)
   end
 
   def test_getch
@@ -175,6 +245,11 @@ end
     assert_equal "\244\242", s.getch
     assert_nil s.getch
     $KCODE = 'NONE'
+
+    s = StringScanner.new('test')
+    s.scan(/te/)
+    s.string.replace ''
+    assert_equal nil, s.getch
   end
 
   def test_get_byte
@@ -201,6 +276,11 @@ end
     assert_equal "\242", s.get_byte
     assert_nil s.get_byte
     $KCODE = 'NONE'
+
+    s = StringScanner.new('test')
+    s.scan(/te/)
+    s.string.replace ''
+    assert_equal nil, s.get_byte
   end
 
   def test_matched
@@ -392,5 +472,4 @@ end
     s.reset
     assert_equal 0, s.pos
   end
-
 end
