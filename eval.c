@@ -6052,6 +6052,7 @@ eval(self, src, scope, file, line)
 	result = ruby_errinfo;
 	ruby_errinfo = Qnil;
 	node = compile(src, file, line);
+	ruby_safe_level = safe;
 	if (ruby_nerrs > 0) {
 	    compile_error(0);
 	}
