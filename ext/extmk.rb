@@ -60,6 +60,7 @@ def extmake(target)
     $target = target
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
+    $preload = nil
     unless $ignore
       if $static ||
 	 !(t = modified?("./Makefile", MTIMES)) ||
@@ -88,7 +89,7 @@ def extmake(target)
     end
     if File.exist?("./Makefile")
       if $static
-	$extlist.push [$static, $target, File.basename($target)]
+	$extlist.push [$static, $target, File.basename($target), $preload]
       end
       unless system($make, *sysquote($mflags))
 	$ignore or $continue or return false
@@ -228,7 +229,13 @@ end
 if $extlist.size > 0
   $extinit ||= ""
   $extobjs ||= ""
-  for s,t,i in $extlist
+  list = $extlist.dup
+  until list.empty?
+    s,t,i,r = list.shift
+    if r and list.any? {|l| r.include?(l[1])}
+      list << [s,t,i]
+      next
+    end
     f = format("%s/%s.%s", s, i, $LIBEXT)
     if File.exist?(f)
       $extinit += "\tinit(Init_#{i}, \"#{t}.so\");\n"
@@ -252,7 +259,7 @@ SRC
   $extpath.delete("$(topdir)")
   $extflags = libpathflag($extpath) << " " << $extflags.strip
   conf = [
-    ['SETUP', $setup], ['EXTOBJS', $extobjs],
+    ['SETUP', $setup], [$enable_shared ? 'DLDOBJS' : 'EXTOBJS', $extobjs],
     ['EXTLIBS', $extlibs], ['EXTLDFLAGS', $extflags]
   ].map {|n, v|
     "#{n}=#{v}" if v and !(v = v.strip).empty?

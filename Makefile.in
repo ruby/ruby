@@ -30,7 +30,7 @@ EXTLIBS =
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@
 LDSHARED = @LIBRUBY_LDSHARED@
-DLDFLAGS = @LIBRUBY_DLDFLAGS@
+DLDFLAGS = @LIBRUBY_DLDFLAGS@ $(EXTLDFLAGS)
 SOLIBS = @SOLIBS@
 MAINLIBS = @MAINLIBS@
 
@@ -57,8 +57,11 @@ LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@
 
 PREP          = @PREP@ @ARCHFILE@
 SETUP         =
+EXTSTATIC     = @EXTSTATIC@
 
 EXTOBJS	      = 
+DLDOBJS	      = $(DMYEXT)
+DMYEXT	      = dmyext.@OBJEXT@
 
 MAINOBJ	      = main.@OBJEXT@
 
@@ -108,22 +111,22 @@ SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--make-flags="$(MAKEFLAGS)"
 
 all:		@MAKEFILES@ miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
-		@$(MINIRUBY) $(srcdir)/ext/extmk.rb --extstatic="@EXTSTATIC@" $(SCRIPT_ARGS)
+		@$(MINIRUBY) $(srcdir)/ext/extmk.rb --extstatic="$(EXTSTATIC)" $(SCRIPT_ARGS)
 
-miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@
+miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) $(DMYEXT)
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.@OBJEXT@ $(LIBRUBY_A) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(DMYEXT) $(LIBRUBY_A) $(LIBS) -o $@
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) $(SETUP) miniruby$(EXEEXT)
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
-$(LIBRUBY_A):	$(OBJS) dmyext.@OBJEXT@
-		@AR@ rcu $@ $(OBJS) dmyext.@OBJEXT@
+$(LIBRUBY_A):	$(OBJS) $(DMYEXT)
+		@AR@ rcu $@ $(OBJS) $(DMYEXT)
 		@-@RANLIB@ $@ 2> /dev/null || true
 
-$(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@ miniruby$(EXEEXT) $(PREP)
-		$(LDSHARED) $(DLDFLAGS) $(OBJS) dmyext.@OBJEXT@ $(SOLIBS) -o $@
+$(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) miniruby$(EXEEXT) $(PREP)
+		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) -o $@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true
