@@ -825,7 +825,7 @@ case "$target_os" in
 	;;
     cygwin*|mingw*)
 	if test x"$enable_shared" = xyes; then
-	    LIBRUBY_SO='$(RUBY_INSTALL_NAME)-'$target_os.dll
+	    LIBRUBY_SO='$(RUBY_INSTALL_NAME).'$target_os.dll
 	    LIBRUBY_DLDFLAGS='--dllname=$@ --output-lib=$(LIBRUBY) --add-stdcall-alias --def=$(RUBYDEF)'
 	else
 	    LIBRUBY_SO=dummy

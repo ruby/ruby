@@ -2,6 +2,9 @@ Wed Jul 26 10:09:01 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: set SOLIBS to LIBS on Cygwin.
 
+	* configure.in: LIBRUBY_SO='$(RUBY_INSTALL_NAME)'.$target_os.dll
+	  on cygwin and mingw32. ruby-cygwin.dll is bad. why?
+
 Tue Jul 25 19:03:04 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* cygwin/GNUmakefile: use puts instead of print, because
