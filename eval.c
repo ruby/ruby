@@ -7759,18 +7759,25 @@ rb_thread_ready(th)
 }
 
 static void
+rb_thread_die(th)
+    rb_thread_t th;
+{
+    th->gid = 0;
+    th->status = THREAD_KILLED;
+    if (th->stk_ptr) free(th->stk_ptr);
+    th->stk_ptr = 0;
+}
+
+static void
 rb_thread_remove(th)
     rb_thread_t th;
 {
     if (th->status == THREAD_KILLED) return;
 
     rb_thread_ready(th);
-    th->status = THREAD_KILLED;
-    th->gid = 0;
+    rb_thread_die(th);
     th->prev->next = th->next;
     th->next->prev = th->prev;
-    if (th->stk_ptr) free(th->stk_ptr);
-    th->stk_ptr = 0;
 }
 
 static int
@@ -9186,8 +9193,7 @@ rb_thread_atfork()
     if (rb_thread_alone()) return;
     FOREACH_THREAD(th) {
 	if (th != curr_thread) {
-	    th->gid = 0;
-	    th->status = THREAD_KILLED;
+	    rb_thread_die(th);
 	}
     }
     END_FOREACH(th);
