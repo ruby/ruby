@@ -1,3 +1,7 @@
+Fri Dec  3 00:11:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_file_initialize): [ruby-dev:25032]
+
 Thu Dec  2 16:41:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_protect): prevent continuations created inside from being
@@ -9,6 +13,11 @@ Thu Dec  2 16:41:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Dec  2 10:45:02 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/readline/test_readline.rb: fix for NetBSD.
+
+Thu Dec  2 09:57:24 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct::Marshaler): OpenStruct can be
+	  marshaled again.  [ruby-core:03862]
 
 Thu Dec  2 09:30:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -2477,7 +2477,7 @@ call_trace_func(event, node, self, id, klass)
 					    srcfile,
 					    INT2FIX(ruby_sourceline),
 					    id?ID2SYM(id):Qnil,
-					    self?rb_f_binding(self):Qnil,
+					    self ? rb_f_binding(self) : Qnil,
 					    klass?klass:Qnil),
 		    Qundef, 0);
     }

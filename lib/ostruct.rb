@@ -47,10 +47,8 @@ class OpenStruct
     @table = {}
     if hash
       for k,v in hash
-        if $DEBUG and self.respond_to?(k, true)
-          raise NameError, "already existing member #{k}", caller(2)
-        end
 	@table[k.to_sym] = v
+        new_ostruct_member(k)
       end
     end
   end
@@ -59,6 +57,27 @@ class OpenStruct
   def initialize_copy(orig)
     super
     @table = @table.dup
+  end
+
+  module Marshaler
+    def marshal_dump
+      table = @table
+      OpenStruct.new.instance_eval{@table=table; self}
+    end
+    def marshal_load(x)
+      @table = x.instance_variable_get("@table")
+      @table.each_key{|key| new_ostruct_member(key)}
+    end
+  end
+
+  def new_ostruct_member(name)
+    unless self.respond_to?(name)
+      self.instance_eval %{
+        extend OpenStruct::Marshaler
+        def #{name}; @table[:#{name}]; end
+        def #{name}=(x); @table[:#{name}] = x; end
+      }
+    end
   end
 
   def method_missing(mid, *args) # :nodoc:
@@ -72,10 +91,8 @@ class OpenStruct
 	raise TypeError, "can't modify frozen #{self.class}", caller(1)
       end
       mname.chop!
-      if $DEBUG and self.respond_to?(mname, true)
-	raise NameError, "already existing member #{mname}", caller(1)
-      end
       @table[mname.intern] = args[0]
+      self.new_ostruct_member(mname)
     elsif len == 0
       @table[mid]
     else
