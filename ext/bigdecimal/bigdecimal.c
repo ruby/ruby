@@ -3109,10 +3109,8 @@ VpFormatSt(char *psz,S_INT fFmt)
     for(i = 0; i < ie; ++i) {
         ch = psz[i];
         if(!ch) break;
-        if(ch == '.') {
-            nf = 0;
-            continue;
-        }
+        if(ch=='-' || ch=='+') continue;
+        if(ch == '.') { nf = 0;continue;}
         if(ch == 'E') break;
         nf++;
         if(nf > fFmt) {
