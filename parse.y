@@ -2547,13 +2547,12 @@ parse_qstring(term, paren)
 		c = '\\';
 		break;
 
-	      case '\'':
-		if (term == '\'') {
-		    c = '\'';
-		    break;
-		}
-		/* fall through */
 	      default:
+		/* fall through */
+		if (c == term || (paren && c == paren)) {
+		    tokadd(c);
+		    continue;
+		}
 		tokadd('\\');
 	    }
 	}
@@ -2608,7 +2607,7 @@ parse_quotedwords(term, paren)
 		c = '\\';
 		break;
 	      default:
-		if (c == term) {
+		if (c == term || (paren && c == paren)) {
 		    tokadd(c);
 		    continue;
 		}

@@ -542,12 +542,14 @@ EXTERN VALUE rb_eNameError;
 EXTERN VALUE rb_eSyntaxError;
 EXTERN VALUE rb_eLoadError;
 
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
-extern __inline__ VALUE rb_class_of _((VALUE));
-extern __inline__ int rb_type _((VALUE));
-extern __inline__ int rb_special_const_p _((VALUE));
+extern inline VALUE rb_class_of _((VALUE));
+extern inline int rb_type _((VALUE));
+extern inline int rb_special_const_p _((VALUE));
 
-extern __inline__ VALUE
+#ifndef RUBY_NO_INLINE
+extern inline
+#endif
+VALUE
 rb_class_of(VALUE obj)
 {
     if (FIXNUM_P(obj)) return rb_cFixnum;
@@ -559,7 +561,10 @@ rb_class_of(VALUE obj)
     return RBASIC(obj)->klass;
 }
 
-extern __inline__ int
+#ifndef RUBY_NO_INLINE
+extern inline
+#endif
+int
 rb_type(VALUE obj)
 {
     if (FIXNUM_P(obj)) return T_FIXNUM;
@@ -571,18 +576,15 @@ rb_type(VALUE obj)
     return BUILTIN_TYPE(obj);
 }
 
-extern __inline__ int
+#ifndef RUBY_NO_INLINE
+extern inline
+#endif
+int
 rb_special_const_p(VALUE obj)
 {
     if (SPECIAL_CONST_P(obj)) return Qtrue;
     return Qfalse;
 }
-
-#else
-VALUE rb_class_of _((VALUE));
-int rb_type _((VALUE));
-int rb_special_const_p _((VALUE));
-#endif
 
 #include "intern.h"
 

@@ -1026,11 +1026,7 @@ qpencode(str, from, len)
     }
 }
 
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
-static __inline__ int
-#else
-static int
-#endif
+static inline int
 hex2num(c)
     char c;
 {

@@ -1253,7 +1253,7 @@ rb_file_s_expand_path(argc, argv)
     }
 #if defined DOSISH
     /* skip drive letter */
-    else if (isalpha(s[0]) && s[1] == ':' && isdirsep(s[2])) {
+    else if (ISALPHA(s[0]) && s[1] == ':' && isdirsep(s[2])) {
 	while (*s && !isdirsep(*s)) {
 	    *p++ = *s++;
 	}

@@ -1,8 +1,36 @@
+Wed Feb  7 16:05:22 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (parse_quotedwords): %w should allow parenthesis escape.
+
+Wed Feb  7 00:57:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parse_qstring): %q should allow terminator escape.
+
+Wed Feb  7 00:57:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_equal): all option flags should be same to be equal.
+
 Tue Feb  6 21:01:29 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: ignore EOFError on only specified case.
 
 	* lib/net/http.rb: take HTTP 1.0 server into account.
+
+Mon Feb 5 00:39:06 2001  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* dir.c: use ISXXX() instead of isxxx().
+
+	* dln.c (aix_loaderror): ditto.
+
+	* file.c (rb_file_s_expand_path): ditto.
+
+	* string.c (rb_str_upcase_bang): ditto.
+
+	* win32/win32.c (do_spawn): ditto.
+
+	* win32/win32.c (NtMakeCmdVector): ditto.
+
+	* win32/win32.c (opendir): ditto.
 
 Fri Feb  3 00:48:50 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
@@ -10,9 +38,6 @@ Fri Feb  3 00:48:50 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 	  command. (marge from HEAD)
 
 Fri Feb  2 16:14:51 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* array.c (rb_ary_sort_bang): returns self, even if its length is
-	  less than 2.
 
 	* eval.c (POP_VARS): propagate DVAR_DONT_RECYCLE, if
 	  SCOPE_DONT_RECYCLE of ruby_scope is set.

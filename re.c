@@ -915,8 +915,7 @@ rb_reg_equal(re1, re2)
     if (min > RREGEXP(re2)->len) min = RREGEXP(re2)->len;
     if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, min) == 0 &&
 	rb_reg_cur_kcode(re1) == rb_reg_cur_kcode(re2) &&
-	!((RREGEXP(re1)->ptr->options & RE_OPTION_IGNORECASE) ^
-	  (RREGEXP(re2)->ptr->options & RE_OPTION_IGNORECASE))) {
+	RREGEXP(re1)->ptr->options == RREGEXP(re2)->ptr->options) {
 	return Qtrue;
     }
     return Qfalse;

@@ -69,7 +69,7 @@ char *strchr _((char*,char));
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
 
-#define downcase(c) (nocase && isupper(c) ? tolower(c) : (c))
+#define downcase(c) (nocase && ISUPPER(c) ? tolower(c) : (c))
 
 #if defined DOSISH
 #define isdirsep(c) ((c) == '/' || (c) == '\\')

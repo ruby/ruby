@@ -319,6 +319,7 @@ main()
 ], rb_cv_func_strtod=yes, rb_cv_func_strtod=no, rb_cv_func_strtod=no)])
 test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
 
+AC_C_INLINE
 AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_CHAR_UNSIGNED

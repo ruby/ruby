@@ -4471,7 +4471,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     struct cache_entry *ent;
 
     if (!klass) {
-	rb_raise(rb_eNotImpError, "method call on terminated obejct");
+	rb_raise(rb_eNotImpError, "method call on terminated object");
     }
     /* is it in the method cache? */
     ent = cache + EXPR1(klass, mid);

@@ -315,10 +315,7 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
-#if defined(__GNUC__) && __GNUC__ >= 2
-__inline__
-#endif
-static int
+static inline int
 is_pointer_to_heap(ptr)
     void *ptr;
 {
@@ -1053,6 +1050,7 @@ os_live_obj()
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
+		    if (!p->as.basic.klass) continue;
 		    rb_yield((VALUE)p);
 		    n++;
 		}
@@ -1085,6 +1083,7 @@ os_obj_of(of)
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
+		    if (!p->as.basic.klass) continue;
 		    if (rb_obj_is_kind_of((VALUE)p, of)) {
 			rb_yield((VALUE)p);
 			n++;
@@ -1218,7 +1217,6 @@ run_final(obj)
     }
     if (finalizer_table && st_delete(finalizer_table, &obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
-	    printf("n finals=>%d\n", finalizer_table->num_entries);
 	    args[0] = RARRAY(table)->ptr[i];
 	    rb_protect(run_single_final, (VALUE)args, &status);
 	}
@@ -1247,7 +1245,6 @@ rb_gc_call_finalizer_at_exit()
 		if (FL_TEST(p, FL_FINALIZE)) {
 		    FL_UNSET(p, FL_FINALIZE);
 		    p->as.basic.klass = 0;
-		    printf("%p\n", p);
 		    run_final((VALUE)p);
 		}
 		p++;
