@@ -1,3 +1,8 @@
+Mon May 28 22:12:01 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/extconf.rb.in: make the priority of the make rule of .c
+	  higher than .C .
+
 Mon May 28 02:43:16 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* dir.c (rb_glob_helper): teach has_magic() to handle flags and

@@ -502,21 +502,26 @@ EOS
   install_rb(mfile, $srcdir)
   mfile.printf "\n"
 
-  if /mswin32/ !~ RUBY_PLATFORM
+  unless /nmake/i =~ $make
+    unless /mswin32/ =~ RUBY_PLATFORM
+      src = '$<'
+    else
+      src = '$(subst /,\\\\,$<)'
+    end
     mfile.puts "
-.c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
-
 .cc.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
 .cpp.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
 .cxx.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
 .C.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{src}
+
+.c.@OBJEXT@:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{src}
 "
-  elsif /nmake/i =~ $make
+  else
     mfile.print "
 {$(srcdir)}.c{}.@OBJEXT@:
 	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
@@ -535,14 +540,6 @@ EOS
 	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
 .cxx.@OBJEXT@:
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
-"
-  else
-    mfile.print "
-.c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
-
-.cc.@OBJEXT@ .cpp.@OBJEXT@ .cxx.@OBJEXT@ .C.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
 "
   end
 
