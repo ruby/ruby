@@ -796,6 +796,7 @@ test/rss/test_trackback.rb
 test/ruby/beginmainend.rb
 test/ruby/endblockwarn.rb
 test/ruby/envutil.rb
+test/ruby/marshaltestlib.rb
 test/ruby/test_alias.rb
 test/ruby/test_array.rb
 test/ruby/test_assignment.rb
@@ -843,7 +844,6 @@ test/soap/calc/test_calc2.rb
 test/soap/calc/test_calc_cgi.rb
 test/soap/helloworld/hw_s.rb
 test/soap/helloworld/test_helloworld.rb
-test/soap/marshal/cmarshal.rb
 test/soap/marshal/test_digraph.rb
 test/soap/marshal/test_marshal.rb
 test/soap/marshal/test_struct.rb

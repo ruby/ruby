@@ -1,3 +1,13 @@
+Tue Feb 17 23:13:23 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/ruby/marshaltestlib.rb: common marshal testcase added.
+
+	* test/ruby/test_marshal.rb: use above testsuite.
+
+	* test/soap/marshal/test_marshal.rb: ditto.
+
+	* test/soap/marshal/cmarshal.rb: removed (not used).
+
 Tue Feb 17 19:34:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): $extout_prefix doesn't vary for libraries.
