@@ -1,3 +1,13 @@
+Wed May 12 14:19:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* struct.c (iv_get): in case of inheritance of generated struct
+	  class, __member__ and __size__ should also be inherited.
+	  Thanks for Pros Yeboah <yeboah@tu-harburg.de>.
+
+	* io.c (rb_f_gets_internal): should check number of arguments
+	  before checking rb_rs == rb_default_rs.  Thanks for Koji Arai
+	  <JCA02266@nifty.ne.jp>.
+
 Tue May 11 08:29:28 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): .?, .+ did not work.

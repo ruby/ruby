@@ -2182,7 +2182,7 @@ rb_f_gets_internal(argc, argv)
 
   retry:
     if (!next_argv()) return Qnil;
-    if (rb_rs == rb_default_rs) {
+    if (argc == 0 && rb_rs == rb_default_rs) {
 	line = rb_io_gets(file);
     }
     else {
