@@ -1,3 +1,18 @@
+Wed Feb 16 02:47:45 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read, ossl_ssl_write): should
+	  call rb_sys_fail instead of rasing SSLError if SSL_ERROR_SYSCALL
+	  occured.
+
+	* ext/openssl/lib/openssl/buffering.rb (Buffering#fill_rbuff):
+	  should rescue Errno::EAGAIN.
+
+	* ext/openssl/lib/openssl/buffering.rb (Buffering#each): fix typo.
+	  suggested by Brian Ollenberger.
+
+	* ext/openssl/lib/openssl/ssl.rb: set non-blocking flag to the
+	  underlying IO.
+
 Mon Feb 14 23:58:17 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb (RSS::ListenerMixin::tag_end):

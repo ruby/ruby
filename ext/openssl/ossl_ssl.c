@@ -517,7 +517,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 		continue;
 	    case SSL_ERROR_SYSCALL:
 		if(ERR_peek_error() == 0 && nread == 0) rb_eof_error();
-		ossl_raise(eSSLError, "SSL_read: %s", strerror(errno));
+		rb_sys_fail(0);
 	    default:
 		ossl_raise(eSSLError, "SSL_read:");
 	    }
@@ -556,6 +556,8 @@ ossl_ssl_write(VALUE self, VALUE str)
 	    case SSL_ERROR_WANT_READ:
 		rb_thread_schedule();
 		continue;
+	    case SSL_ERROR_SYSCALL:
+		rb_eof_error();
 	    default:
 		ossl_raise(eSSLError, "SSL_write:");
 	    }

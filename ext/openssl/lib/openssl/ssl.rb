@@ -16,6 +16,7 @@
 
 require "openssl"
 require "openssl/buffering"
+require "fcntl"
 
 module OpenSSL
   module SSL
@@ -49,9 +50,18 @@ module OpenSSL
       end
     end
 
+    module Nonblock
+      def initialize(*args)
+        flag = @io.fcntl(Fcntl::F_GETFL) | File::NONBLOCK
+        @io.fcntl(Fcntl::F_SETFL, flag)
+        super
+      end
+    end
+
     class SSLSocket
       include Buffering
       include SocketForwarder
+      include Nonblock
 
       def post_connection_check(hostname)
         check_common_name = true

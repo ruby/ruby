@@ -32,6 +32,8 @@ module Buffering
     @rbuffer = "" unless defined? @rbuffer
     begin
       @rbuffer << self.sysread(BLOCK_SIZE)
+    rescue Errno::EAGAIN
+      retry
     rescue EOFError
       @eof = true
     end
@@ -84,7 +86,7 @@ module Buffering
   end
 
   def each(eol=$/)
-    while line = self.gets(eol?)
+    while line = self.gets(eol)
       yield line
     end
   end
