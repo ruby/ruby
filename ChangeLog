@@ -7,7 +7,7 @@ Mon Dec 29 02:20:26 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* instruby.rb: fix install directory if destdir and compile_dir are
 	  not in the same drive.
 
-	* ext/extmk.rb: ditto.
+	* ext/extmk.rb: ditto. [ruby-list:39009]
 
 	* win32/Makefile.sub, win32/README.win32, win32/configure.bat,
 	  win32/setup.mak: new configure scheme. use ``configure --prefix=dir''
