@@ -5,8 +5,7 @@
 # Unit tests
 #
 
-$:.unshift("..")
-require 'scanf'
+require 'scanf.rb'
 require 'test/unit'
 
 # Comment out either of these lines to skip those tests.
@@ -20,12 +19,12 @@ def tests
     [
 
 # Scratchpad
-    [ "%2[a]", "nbc", []],
-    [ "%*d %*3d %*s", "123 +456 abc", [] ],
-    [ "%d%c", "123 x", [ 123, " " ] ],
-    [ "%d%c", "123x", [ 123, "x" ] ],
-    [ "%d %c", "123x", [ 123, "x" ] ],
-    [ "%d %c", "123 x", [ 123, "x" ] ],
+      [ "%2[a]", "nbc", []],
+      [ "%*d %*3d %*s", "123 +456 abc", [] ],
+      [ "%d%c", "123 x", [ 123, " " ] ],
+      [ "%d%c", "123x", [ 123, "x" ] ],
+      [ "%d %c", "123x", [ 123, "x" ] ],
+      [ "%d %c", "123 x", [ 123, "x" ] ],
 
 # Testing failures
       [ "%x", "x", [] ],
@@ -50,9 +49,9 @@ def tests
       [ "%f", "x", [] ],
       [ "%f", "z", [] ],
       [ "%f", "z3.2534", [] ],
-    [ "", "", [] ],
-    [ "", "abc 123", [] ],
-      [ '%[^\\\\w]%c', "a...1", [] ],
+      [ "", "", [] ],
+      [ "", "abc 123", [] ],
+      [ '%[^\\w]%c', "a...1", [] ],
 
 # Testing 'x'
       [ "%3x", "0xz", [0] ],
@@ -97,13 +96,12 @@ def tests
 #   mixed integer bases
 #   various mixed specifiers
 
-      [ "%[^\\\\w]%c", "...1", [ "...", "1"] ],
-      [ '%[^\\\\w]%c', "...1", [ "...", "1"] ],
+      [ "%[^\\w]%c", "...1", [ "...", "1"] ],
+      [ '%[^\\w]%c', "...1", [ "...", "1"] ],
       [ "%[abc\n]%d", "a\n\nb\n\nc   123", [ "a\n\nb\n\nc", 123 ] ],
       [ "%[abc\n]%d", "a\n\nb\n\nc \t  123", [ "a\n\nb\n\nc", 123 ] ],
       [ "%[abc\t]%d", "a\t\tb\t\tc   123", [ "a\t\tb\t\tc", 123 ] ],
       [ "%d%3[abc\n]", "123a\nbeaab", [ 123, "a\nb" ] ],
-      [ "%d%3[abc\n]", "123a\\nbeaab", [ 123, "a\nb" ] ],
       [ "%d%20c",  "42   is the key", [ 42, "   is the key" ] ],
       [ "%d %20c",  "42   is the key", [ 42, "is the key" ] ],
       [ "%d%3[^abc\n]%d", "123de\nf123", [ 123, "de" ] ],
@@ -164,8 +162,8 @@ def tests
       [ "%5c%s", "a\nb\n\nxyz", [ "a\nb\n\n","xyz" ] ],
       [ "%s%[ xyz]%d", "hello x 32", ["hello", " x ", 32] ],
       [ "%5s%8[a-z]%d", "helloblahblah 32", ["hello", "blahblah", 32] ],
-      [ '%s%[abcde\\\\s]%d', "hello badea 32", ["hello", " badea ", 32] ],
-      [ '%d%[\\\\s]%c', "123 \n\t X", [ 123," \n\t ", "X"] ],
+      [ '%s%[abcde\\s]%d', "hello badea 32", ["hello", " badea ", 32] ],
+      [ '%d%[\\s]%c', "123 \n\t X", [ 123," \n\t ", "X"] ],
       [ "%4s%2c%c", "1.2x\n\ny", [ "1.2x", "\n\n","y"] ],
       [ "%f%c %3c%d", "1.2x\n\ny123", [ 1.2, "x", "y12", 3 ] ],
       [ "%s%5c", "abc ab\ncd", [ "abc", " ab\nc" ] ],
@@ -242,8 +240,8 @@ def tests
       [ "%f %*d %s", "12.e23 45 string", ["12.e23".to_f, "string"] ],
       [ "%5f %d %s", "1.2e23 string", ["1.2e2".to_f, 3, "string"] ],
       [ "%s %f %s %d %x%c%c%c%c", 
-      "float: 1.2e23 dec/hex: 135a23 abc", 
-      ["float:", "1.2e23".to_f, "dec/hex:", 135, "a23".hex, " ", "a", "b", "c" ] ],
+        "float: 1.2e23 dec/hex: 135a23 abc", 
+        ["float:", "1.2e23".to_f, "dec/hex:", 135, "a23".hex, " ", "a", "b", "c" ] ],
 
 # Testing 's'
       [ "%s\n", "blah\n\n\n", [ "blah" ] ],
@@ -258,20 +256,20 @@ def tests
       [ "%[\n]", "\nabc", [ "\n" ] ],
       [ "%[\n\t]", "\t\n", [ "\t\n" ] ],
       [ "%[a-f]", "abczef", [ "abc" ] ],
-    [ "%d%3[abc]", "123 aaab", [ 123 ] ],
-    [ "%d%3[^abc]", "123adefdef", [ 123 ] ],
-    [ "%d%3[[:lower:]] %f", "123ade1.2", [ 123,"ade",1.2 ] ],
-    [ "%d%3[[:lower:]] %f", "123ad1.2", [ 123,"ad",1.2 ] ],
-    [ "%d%3[[:lower:]] %f", "123 ad1.2", [ 123 ] ],
-    [ "%d%[[:lower:]]", "123abcdef1.2", [ 123, "abcdef" ] ],
-    [ "%[[:lower:]]%d", "abcdef123", [ "abcdef", 123 ] ],
-    [ "%[[:digit:]]%[[:alpha:]]", "123abcdef", [ "123", "abcdef" ] ],
-    [ "%[[:digit:]]%d", "123 123", [ "123", 123 ] ],
-    [ "%[[:upper:]]", "ABCdefGHI", [ "ABC" ] ],
+      [ "%d%3[abc]", "123 aaab", [ 123 ] ],
+      [ "%d%3[^abc]", "123adefdef", [ 123 ] ],
+      [ "%d%3[[:lower:]] %f", "123ade1.2", [ 123,"ade",1.2 ] ],
+      [ "%d%3[[:lower:]] %f", "123ad1.2", [ 123,"ad",1.2 ] ],
+      [ "%d%3[[:lower:]] %f", "123 ad1.2", [ 123 ] ],
+      [ "%d%[[:lower:]]", "123abcdef1.2", [ 123, "abcdef" ] ],
+      [ "%[[:lower:]]%d", "abcdef123", [ "abcdef", 123 ] ],
+      [ "%[[:digit:]]%[[:alpha:]]", "123abcdef", [ "123", "abcdef" ] ],
+      [ "%[[:digit:]]%d", "123 123", [ "123", 123 ] ],
+      [ "%[[:upper:]]", "ABCdefGHI", [ "ABC" ] ],
 
 # Testing 'f'
       [ "%2f", "x", [0.0] ],  # width-floats match anything (by design)
-  #    [ "%f", "1.23e45", [1.23e+45] ],
+      [ "%f", "1.23e45", [1.23e+45] ],
       [ "%f", "3.25ee", [3.25] ],
       [ "%f", "3..25", [3.0] ],
       [ "%f", "+3.25", [3.25] ],
@@ -285,40 +283,28 @@ class TestStringScanf
   include Scanf
   extend ScanfTests
 
-  def tes_f
-    assert_equal(1.23e45.to_s, "1.23e45".scanf("%f")[0].to_s)
-  end
   i = 1
-  tests = self.tests
-
-  tests.each do |test|
-    eval <<-EOE
-      def test_#{i}
-	assert_equal(#{test[2].inspect},"#{test[1]}".scanf("#{test[0]}"))
+  self.tests.each do |test|
+    define_method("test_#{i}") do ||
+      assert_equal(test[2], test[1].scanf(test[0]))
       end
-    EOE
     i += 1
   end
-
 end
 
 class TestIOScanf
   include Scanf
   extend ScanfTests
   
-    i = 1
-    tests = self.tests
-       tests.each do |test|
-      str =  <<-EOE
-      def test_#{i}
-	File.open("iotest.dat", "w") { |fh| fh.print "#{test[1]}" }
-	File.open("iotest.dat", "r") { |fh|
-	  assert_equal(#{test[2].inspect},fh.scanf("#{test[0]}"))
-		     }
-        File.delete("iotest.dat")
-      end
-  EOE
-    eval str
+  i = 1
+  self.tests.each do |test|
+    define_method("test_#{i}") do ||
+      File.open("iotest.dat", "w") {|fh| fh.print test[1]}
+      File.open("iotest.dat", "r") { |fh|
+        assert_equal(test[2], fh.scanf(test[0]))
+      }
+      File.delete("iotest.dat")
+    end
     i += 1
   end
 end

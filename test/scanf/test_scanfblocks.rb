@@ -5,11 +5,10 @@
 # Some not very comprehensive tests of block behavior.
 
 
-$:.unshift("..")
 require 'test/unit'
-require 'scanf.rb'
+require 'scanf'
 
-class TestMe < Test::Unit::TestCase
+class TestScanfBlock < Test::Unit::TestCase
 
   def setup
     @str = <<-EOS
@@ -61,7 +60,8 @@ alias set_up setup
       "Scarlatti was born in 1685.",
       "Brahms was born in 1833." ],res)
     fh.close
-#    File.delete("iotest.dat")  
+  ensure
+    File.delete("iotest.dat")  
     end
 
   def test_io2
@@ -71,7 +71,8 @@ alias set_up setup
     fh.seek(0)
     assert_equal(fh.scanf("%d%f%s") {}, [])
     fh.close
- #   File.delete("iotest.dat")  
+  ensure
+    File.delete("iotest.dat")  
   end
 
 end
