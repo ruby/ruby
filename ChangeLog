@@ -1,3 +1,10 @@
+Thu Dec 23 19:08:41 2004  Tanaka Akira  <akr@m17n.org>
+
+	* rubyio.h: rename FMODE_UNSEEKABLE to FMODE_DUPLEX.
+
+	* io.c (io_check_tty): extracted function to set FMODE_LINEBUF and
+	  FMODE_DUPLEX.
+
 Thu Dec 23 13:13:33 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: define TclTkLib::COMPILE_INFO and

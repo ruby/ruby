@@ -183,7 +183,7 @@ init_sock(sock, fd)
 
     MakeOpenFile(sock, fp);
     fp->fd = fd;
-    fp->mode = FMODE_READWRITE;
+    fp->mode = FMODE_READWRITE|FMODE_DUPLEX;
     if (do_not_reverse_lookup) {
 	fp->mode |= FMODE_NOREVLOOKUP;
     }

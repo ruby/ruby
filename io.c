@@ -209,13 +209,13 @@ io_unread(OpenFile *fptr)
 {
     off_t r;
     rb_io_check_closed(fptr);
-    if (fptr->rbuf_len == 0 || fptr->mode & FMODE_UNSEEKABLE)
+    if (fptr->rbuf_len == 0 || fptr->mode & FMODE_DUPLEX)
         return;
     /* xxx: target position may be negative if buffer is filled by ungetc */
     r = lseek(fptr->fd, -fptr->rbuf_len, SEEK_CUR);
     if (r < 0) {
         if (errno == ESPIPE)
-            fptr->mode |= FMODE_UNSEEKABLE;
+            fptr->mode |= FMODE_DUPLEX;
         return;
     }
     fptr->rbuf_off = 0;
@@ -2555,7 +2555,7 @@ rb_fopen(fname, mode)
 	rb_warn("setvbuf() can't be honoured for %s", fname);
 #endif
 #ifdef __human68k__
-    fmode(file, _IOTEXT);
+    setmode(fileno(file), O_TEXT);
 #endif
     return file;
 }
@@ -2601,6 +2601,13 @@ rb_fdopen(fd, mode)
     return file;
 }
 
+static void
+io_check_tty(OpenFile *fptr)
+{
+    if ((fptr->mode & FMODE_WRITABLE) && isatty(fptr->fd))
+        fptr->mode |= FMODE_LINEBUF|FMODE_DUPLEX;
+}
+
 static VALUE
 rb_file_open_internal(io, fname, mode)
     VALUE io;
@@ -2612,8 +2619,7 @@ rb_file_open_internal(io, fname, mode)
     fptr->mode = rb_io_mode_flags(mode);
     fptr->path = strdup(fname);
     fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(rb_io_flags_mode(fptr->mode)), 0666);
-    if ((fptr->mode & FMODE_WRITABLE) && isatty(fptr->fd))
-        fptr->mode |= FMODE_LINEBUF;
+    io_check_tty(fptr);
 
     return io;
 }
@@ -2638,8 +2644,7 @@ rb_file_sysopen_internal(io, fname, flags, mode)
     fptr->path = strdup(fname);
     fptr->mode = rb_io_modenum_flags(flags);
     fptr->fd = rb_sysopen(fptr->path, flags, mode);
-    if ((fptr->mode & FMODE_WRITABLE) && isatty(fptr->fd))
-        fptr->mode |= FMODE_LINEBUF;
+    io_check_tty(fptr);
 
     return io;
 }
@@ -2930,7 +2935,7 @@ pipe_open(argc, argv, mode)
     MakeOpenFile(port, fptr);
     fptr->fd = fd;
     fptr->stdio_file = fp;
-    fptr->mode = modef | FMODE_SYNC;
+    fptr->mode = modef | FMODE_SYNC|FMODE_DUPLEX;
     fptr->pid = pid;
 
 #if defined (__CYGWIN__) || !defined(HAVE_FORK)
@@ -3883,9 +3888,7 @@ prep_stdio(f, mode, klass)
         if (fp->fd == 2) { /* stderr must be unbuffered */
             fp->mode |= FMODE_SYNC;
         }
-        if (isatty(fp->fd)) {
-            fp->mode |= FMODE_LINEBUF;
-        }
+        io_check_tty(fp);
     }
 
     return io;
@@ -3967,8 +3970,7 @@ rb_io_initialize(argc, argv, io)
 	MakeOpenFile(io, fp);
         fp->fd = fd;
 	fp->mode = rb_io_modenum_flags(flags);
-        if ((fp->mode & FMODE_WRITABLE) && isatty(fp->fd))
-            fp->mode |= FMODE_LINEBUF;
+        io_check_tty(fp);
     }
     else if (RFILE(io)->fptr) {
 	rb_raise(rb_eRuntimeError, "reinitializing IO");
