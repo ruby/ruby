@@ -918,7 +918,7 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
 	    if (ISSPACE(*prog)) {
 		len = prog - cmd;
 		do ++prog; while (ISSPACE(*prog));
-		if (!*prog) break;
+		if (!*prog--) break;
 	    }
 	    else {
 		len = 0;
