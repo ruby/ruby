@@ -7348,7 +7348,7 @@ rb_thread_loading_done(feature)
     const char *feature;
 {
     if (loading_tbl) {
-	st_delete(loading_tbl, feature, 0);
+	st_delete(loading_tbl, &feature, 0);
     }
 }
 
