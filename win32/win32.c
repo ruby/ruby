@@ -630,25 +630,59 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 extern VALUE rb_last_status;
 
 int
-do_spawn(cmd)
+do_spawn(mode, cmd)
+int mode;
 char *cmd;
 {
-    struct ChildRecord *child = CreateChild(cmd, NULL, NULL, NULL, NULL, NULL);
+    struct ChildRecord *child;
+
+    switch (mode) {
+      case P_WAIT:
+      case P_NOWAIT:
+      case P_OVERLAY:
+	break;
+      default:
+	errno = EINVAL;
+	return -1;
+    }
+
+    child = CreateChild(cmd, NULL, NULL, NULL, NULL, NULL);
     if (!child) {
 	return -1;
     }
-    rb_syswait(child->pid);
-    return NUM2INT(rb_last_status);
+
+    switch (mode) {
+      case P_WAIT:
+	rb_syswait(child->pid);
+	return NUM2INT(rb_last_status);
+      case P_NOWAIT:
+	return child->pid;
+      case P_OVERLAY:
+	exit(0);
+      default:
+	return -1;	/* not reached */
+    }
 }
 
 int
-do_aspawn(prog, argv)
+do_aspawn(mode, prog, argv)
+int mode;
 char *prog;
 char **argv;
 {
     char *cmd, *p, *q, *s, **t;
     int len, n, bs, quote;
     struct ChildRecord *child;
+
+    switch (mode) {
+      case P_WAIT:
+      case P_NOWAIT:
+      case P_OVERLAY:
+	break;
+      default:
+	errno = EINVAL;
+	return -1;
+    }
 
     for (t = argv, len = 0; *t; t++) {
 	for (p = *t, n = quote = bs = 0; *p; ++p) {
@@ -706,8 +740,18 @@ char **argv;
     if (!child) {
 	return -1;
     }
-    rb_syswait(child->pid);
-    return NUM2INT(rb_last_status);
+
+    switch (mode) {
+      case P_WAIT:
+	rb_syswait(child->pid);
+	return NUM2INT(rb_last_status);
+      case P_NOWAIT:
+	return child->pid;
+      case P_OVERLAY:
+	exit(0);
+      default:
+	return -1;	/* not reached */
+    }
 }
 
 static struct ChildRecord *

@@ -441,17 +441,13 @@ proc_exec_v(argv, prog)
     char **argv;
     char *prog;
 {
-    if (prog) {
-	security(prog);
-    }
-    else {
-	security(argv[0]);
-	prog = dln_find_exe(argv[0], 0);
-	if (!prog) {
-	    errno = ENOENT;
-	    return -1;
-	}
-    }
+    if (!prog)
+	prog = argv[0];
+    security(prog);
+    prog = dln_find_exe(prog, 0);
+    if (!prog)
+	return -1;
+
 #if (defined(MSDOS) && !defined(DJGPP)) || defined(__human68k__) || defined(__EMX__) || defined(OS2)
     {
 #if defined(__human68k__)
@@ -490,7 +486,11 @@ proc_exec_v(argv, prog)
     }
 #endif /* MSDOS or __human68k__ or __EMX__ */
     before_exec();
+#ifdef _WIN32
+    do_aspawn(P_OVERLAY, prog, argv);
+#else
     execv(prog, argv);
+#endif
     after_exec();
     return -1;
 }
@@ -531,6 +531,11 @@ rb_proc_exec(str)
     while (*str && ISSPACE(*str))
 	str++;
 
+#ifdef _WIN32
+    before_exec();
+    do_spawn(P_OVERLAY, (char *)str);
+    after_exec();
+#else
     for (s=str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 #if defined(MSDOS)
@@ -574,6 +579,7 @@ rb_proc_exec(str)
 	return proc_exec_v(argv, 0);
     }
     errno = ENOENT;
+#endif	/* _WIN32 */
     return -1;
 }
 
@@ -619,7 +625,7 @@ proc_spawn_v(argv, prog)
 #endif
     before_exec();
 #if defined(_WIN32)
-    status = do_aspawn(prog, argv);
+    status = do_aspawn(P_WAIT, prog, argv);
 #else
     status = spawnv(P_WAIT, prog, argv);
 #endif
@@ -860,7 +866,7 @@ rb_f_system(argc, argv)
 
     if (argc == 1 && prog == 0) {
 #if defined(_WIN32)
-	status = do_spawn(RSTRING(argv[0])->ptr);
+	status = do_spawn(P_WAIT, RSTRING(argv[0])->ptr);
 #else
 	status = proc_spawn(argv[0]);
 #endif

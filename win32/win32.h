@@ -176,8 +176,8 @@ extern int chown(const char *, int, int);
 extern int link(char *, char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern pid_t waitpid (pid_t, int *, int);
-extern int do_spawn(char *);
-extern int do_aspawn(char *, char **);
+extern int do_spawn(int, char *);
+extern int do_aspawn(int, char *, char **);
 extern int kill(int, int);
 extern pid_t rb_w32_getpid(void);
 
