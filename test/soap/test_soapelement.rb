@@ -1,5 +1,5 @@
 require 'test/unit'
-require '../lib/soap/baseData'
+require 'soap/baseData'
 
 class TestSOAPElement < Test::Unit::TestCase
   include SOAP
