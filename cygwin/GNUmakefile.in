@@ -55,3 +55,11 @@ GNUmakefile:	$(srcdir)/cygwin/GNUmakefile.in
 ifeq (@target_os@,mingw32)
 $(OBJS) $(MAINOBJ): win32/win32.h
 endif
+
+ifeq (@target_os@,cygwin)
+cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR).dll: $(LIBRUBY_A)
+	@NM@ --extern --defined $(LIBRUBY_A) | \
+	  $(MINIRUBY) -ne 'BEGIN{puts "EXPORTS"}; puts $$1+"=cyg$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)."+$$1 if / [CDT] _(.*)$$/' >rubydll.def
+	@DLLWRAP@ --driver-name=$(CC) -s --def=rubydll.def -o $@
+	@rm -f rubydll.def
+endif

@@ -2,6 +2,8 @@ Thu Aug  7 14:40:37 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* cygwin/GNUmakefile: better --disbale-shared option support.
 
+	* cygwin/GNUmakefile: add forwarding DLL target for cygwin.
+
 Thu Aug  7 14:21:05 2003  Corinna Vinschen  <vinschen@redhat.com>
 
 	* configure.in: Fix Cygwin specific naming of libraries to
