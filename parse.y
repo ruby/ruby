@@ -2401,7 +2401,7 @@ tokadd_escape(term)
 	return -1;
 
       default:
-	if (c == '/' && c != term)
+	if (c != '/' || c != term)
 	    tokadd('\\');
 	tokadd(c);
     }
