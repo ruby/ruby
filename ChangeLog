@@ -1,3 +1,29 @@
+Wed Dec  9 13:37:12 1998  MAEDA shugo  <shugo@aianet.ne.jp>
+
+	* pack.c (encodes): use buffering for B-encoding.
+
+	* pack.c (pack_pack): Q-encoding by 'M'.
+
+Mon Dec  7 18:24:50 1998  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* ruby.c (set_arg0): $0 supprt for HP-UX.
+
+Mon Dec  7 01:30:28 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* dln.c (dln_strerror): better error messages on win32.
+
+Thu Dec  3 16:50:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/extmk.rb.in (realclean): trouble on install.
+
+Sun Nov 29 22:25:39 1998  Takaaki Tateishi  <ttate@jaist.ac.jp>
+
+	* process.c (f_exec): check number of argument.
+
+Thu Nov 26 17:27:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c9 released.
+
 Wed Nov 25 13:07:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (yycompile): reduce known memory leak (hard to remove).

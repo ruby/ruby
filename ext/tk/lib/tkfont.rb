@@ -26,9 +26,9 @@ class TkFont
 
     when /^8\.*/
       if window
-	list(tk_call('font', 'families', '-displayof', window))
+	tk_split_simplelist(tk_call('font', 'families', '-displayof', window))
       else
-	list(tk_call('font', 'families'))
+	tk_split_simplelist(tk_call('font', 'families'))
       end
     end
   end
@@ -64,7 +64,9 @@ class TkFont
   def TkFont.init_widget_font(path, *args)
     case (Tk::TK_VERSION)
     when /^4\.*/
-      conf = tk_split_list(tk_call(*args))
+      conf = tk_split_simplelist(tk_call(*args)).
+	find_all{|prop| prop[0..5]=='-font ' || prop[0..10]=='-kanjifont '}.
+	collect{|prop| tk_split_simplelist(prop)}
       if font_inf = conf.assoc('-font')
 	ltn = font_inf[4]
 	ltn = nil if ltn == []
@@ -81,11 +83,13 @@ class TkFont
       TkFont.new(ltn, knj).call_font_configure(path, *(args + [{}]))
 
     when /^8\.*/
-      conf = tk_split_list(tk_call(*args))
-      unless font_inf = conf.assoc('-font')
+      font_prop = tk_split_simplelist(tk_call(*args)).find{|prop| 
+	prop[0..5] == '-font '
+      }
+      unless font_prop
 	raise RuntimeError, "unknown option '-font'"
       end
-      fnt = font_inf[4]
+      fnt = tk_split_simplelist(font_prop)[4]
       if fnt == []
 	TkFont.new(nil, nil).call_font_configure(path, *(args + [{}]))
       else
@@ -343,7 +347,7 @@ class TkFont
     if JAPANIZED_TK
       @fontslot = {'font'=>@compoundfont}
       tk_call('font', 'create', @compoundfont, 
-	      '-compound', "#{@latinfont} #{@kanjifont}", *hash_kv(keys))
+	      '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
     else
       tk_call('font', 'create', @compoundfont)
       latinkeys = {}
@@ -409,11 +413,12 @@ class TkFont
 	tk_call('font', 'actual', font, "-displayof", window, "-#{option}")
       end
     else
-      l = tk_split_list(if window
-			  tk_call('font', 'actual', font, "-displayof", window)
-			else
-			  tk_call('font', 'actual', font)
-			end)
+      l = tk_split_simplelist(if window
+			 	 tk_call('font', 'actual', font, 
+					             "-displayof", window)
+			      else
+			  	 tk_call('font', 'actual', font)
+			      end)
       r = []
       while key=l.shift
 	if key == '-compound'
@@ -455,7 +460,7 @@ class TkFont
     elsif option
       tk_call('font', 'configure', font, "-#{option}")
     else
-      l = tk_split_list(tk_call('font', 'configure', font))
+      l = tk_split_simplelist(tk_call('font', 'configure', font))
       r = []
       while key=l.shift
 	if key == '-compound'

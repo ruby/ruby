@@ -740,6 +740,21 @@ EOF
     BePC:BeOS:*:*)
 	echo i586-pc-beos
 	exit 0 ;;
+
+	*:Rhapsody:*:*)
+	arch=`/usr/bin/arch`
+	case "$arch" in
+	ppc)
+		echo powerpc-apple-rhapsody${UNAME_RELEASE}
+		;;
+	i[3456]86)
+		echo i386-apple-rhapsody${UNAME_RELEASE}
+		;;
+	*)
+		echo $arch-apple-rhapsody${UNAME_RELEASE}
+		;;
+	esac
+	exit 0 ;;
 esac
 
 #echo '(No uname command or uname output not recognized.)' 1>&2

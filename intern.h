@@ -124,6 +124,8 @@ VALUE class_new_instance _((int, VALUE*, VALUE));
 VALUE f_lambda _((void));
 void rb_set_end_proc _((void (*)(),VALUE));
 void gc_mark_threads _((void));
+void thread_start_timer _((void));
+void thread_stop_timer _((void));
 void thread_schedule _((void));
 void thread_wait_fd _((int));
 void thread_fd_writable _((int));

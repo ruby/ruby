@@ -213,27 +213,8 @@ f_waitpid(obj, vpid, vflags)
 char *strtok();
 
 #if defined(THREAD) && defined(HAVE_SETITIMER)
-static void
-before_exec()
-{
-    struct itimerval tval;
-
-    tval.it_interval.tv_sec = 0;
-    tval.it_interval.tv_usec = 0;
-    tval.it_value = tval.it_interval;
-    setitimer(ITIMER_VIRTUAL, &tval, NULL);
-}
-
-static void
-after_exec()
-{
-    struct itimerval tval;
-
-    tval.it_interval.tv_sec = 0;
-    tval.it_interval.tv_usec = 100000;
-    tval.it_value = tval.it_interval;
-    setitimer(ITIMER_VIRTUAL, &tval, NULL);
-}
+#define before_exec() thread_stop_timer()
+#define after_exec() thread_start_timer()
 #else
 #define before_exec()
 #define after_exec()
@@ -503,6 +484,9 @@ f_exec(argc, argv)
     VALUE prog = 0;
     int i;
 
+    if (argc == 0) {
+	ArgError("wrong # of arguments");
+    }
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
 	    ArgError("wrong first argument");

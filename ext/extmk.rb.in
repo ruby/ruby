@@ -313,11 +313,11 @@ archdir = $(pkglibdir)/@arch@
   mfile.printf $objs.join(" ")
   mfile.printf "\n"
 
-  mfile.printf "\
-TARGET = %s.%s
+  mfile.printf << EOS
+TARGET = #{target}.#{$static ? "a" : "@DLEXT@"}
 
-INSTALL = %s@INSTALL@
-INSTALL_DATA = %s@INSTALL_DATA@
+INSTALL = #{$dots}@INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
 
 binsuffix = @binsuffix@
 
@@ -328,16 +328,15 @@ clean:;		@rm -f *.o *.a *.so *.sl
 		@rm -f core ruby$(binsuffix) *~
 
 realclean:	clean
-", target,
-    if $static then "a" else "@DLEXT@" end, $dots, $dots
+EOS
 
-  mfile.printf "\
+  mfile.printf <<EOS
 
 install:
 	@test -d $(DESTDIR)$(libdir) || mkdir $(DESTDIR)$(libdir)
 	@test -d $(DESTDIR)$(pkglibdir) || mkdir $(DESTDIR)$(pkglibdir)
 	@test -d $(DESTDIR)$(archdir) || mkdir $(DESTDIR)$(archdir)
-"
+EOS
   if !$static
     mfile.printf "\
 	$(INSTALL) $(TARGET) $(DESTDIR)$(archdir)/$(TARGET)

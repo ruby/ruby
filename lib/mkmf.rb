@@ -289,7 +289,8 @@ LDSHARED = #{CONFIG["LDSHARED"]}
 
 prefix = #{CONFIG["prefix"]}
 exec_prefix = #{CONFIG["exec_prefix"]}
-libdir = #{$archdir}
+libdir = #{$libdir}
+archdir = #{$archdir}
 
 #### End of system configuration section. ####
 
@@ -312,11 +313,12 @@ clean:;		@rm -f *.o *.so *.sl
 
 realclean:	clean
 
-install:	$(libdir)/$(TARGET)
+install:	$(archdir)/$(TARGET)
 
-$(libdir)/$(TARGET): $(TARGET)
+$(archdir)/$(TARGET): $(TARGET)
 	@test -d $(libdir) || mkdir $(libdir)
-	$(INSTALL) $(TARGET) $(libdir)/$(TARGET)
+	@test -d $(archdir) || mkdir $(archdir)
+	$(INSTALL) $(TARGET) $(archdir)/$(TARGET)
 EOMF
   install_rb(mfile)
   mfile.printf "\n"

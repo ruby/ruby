@@ -20,11 +20,13 @@ class Delegator
 
   def initialize(obj)
     preserved = ::Kernel.instance_methods
+    preserved -= ["to_s","to_a","inspect","==","=~","==="]
     for t in self.type.ancestors
       preserved |= t.instance_methods
+      preserved |= t.private_instance_methods
+      preserved |= t.protected_instance_methods
       break if t == Delegator
     end
-    preserved -= ["to_s","to_a","inspect","hash","eql?","==","=~","==="]
     for method in obj.methods
       next if preserved.include? method
       eval <<EOS
@@ -32,8 +34,14 @@ def self.#{method}(*args, &block)
   begin
     __getobj__.__send__(:#{method}, *args, &block)
   rescue Exception
-    n = if /:in `__getobj__'$/ =~ $@[0] then 1 else 2 end #`
-    $@[1,n] = nil
+    c = -caller(0).size
+    if /:in `__getobj__'$/ =~ $@[c-1]  #`
+      n = 1
+    else
+      c -= 2
+      n = 3
+    end
+    $@[c,n] = nil
     raise
   end
 end
@@ -72,7 +80,7 @@ def DelegateClass(superclass)
   klass = Class.new
   methods = superclass.instance_methods
   methods -= ::Kernel.instance_methods
-  methods |= ["to_s","to_a","inspect","hash","eql?","==","=~","==="]
+  methods |= ["to_s","to_a","inspect","==","=~","==="]
   klass.module_eval <<EOS
   def initialize(obj)
     @obj = obj

@@ -385,7 +385,10 @@ static struct SCOPE *top_scope;
     _frame.cbase = the_frame->cbase;	\
     the_frame = &_frame;		\
 
-#define POP_FRAME()  the_frame = _frame.prev; }
+#define POP_FRAME()  			\
+    sourcefile = _frame.file;		\
+    sourceline = _frame.line;		\
+    the_frame = _frame.prev; }
 
 struct BLOCK {
     NODE *var;
@@ -6256,6 +6259,34 @@ int thread_tick = THREAD_TICK;
 
 static VALUE thread_raise _((int, VALUE*, VALUE));
 
+#if defined(HAVE_SETITIMER) && !defined(__BOW__)
+static int thread_init = 0;
+
+void
+thread_start_timer()
+{
+    struct itimerval tval;
+
+    if (!thread_init) return;
+    tval.it_interval.tv_sec = 0;
+    tval.it_interval.tv_usec = 100000;
+    tval.it_value = tval.it_interval;
+    setitimer(ITIMER_VIRTUAL, &tval, NULL);
+}
+
+void
+thread_stop_timer()
+{
+    struct itimerval tval;
+
+    if (!thread_init) return;
+    tval.it_interval.tv_sec = 0;
+    tval.it_interval.tv_usec = 0;
+    tval.it_value = tval.it_interval;
+    setitimer(ITIMER_VIRTUAL, &tval, NULL);
+}
+#endif
+
 VALUE
 thread_create(fn, arg)
     VALUE (*fn)();
@@ -6267,11 +6298,7 @@ thread_create(fn, arg)
     enum thread_status status;
 
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
-    static init = 0;
-
-    if (!init) {
-	struct itimerval tval;
-
+    if (!thread_init) {
 #ifdef POSIX_SIGNAL
 	posix_signal(SIGVTALRM, catch_timer);
 	posix_signal(SIGALRM, catch_timer);
@@ -6280,11 +6307,8 @@ thread_create(fn, arg)
 	signal(SIGALRM, catch_timer);
 #endif
 
-	tval.it_interval.tv_sec = 0;
-	tval.it_interval.tv_usec = 100000;
-	tval.it_value = tval.it_interval;
-	setitimer(ITIMER_VIRTUAL, &tval, NULL);
-	init = 1;
+	thread_init = 1;
+	thread_start_timer();
     }
 #endif
 

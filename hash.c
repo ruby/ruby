@@ -1002,7 +1002,7 @@ static VALUE
 env_each(hash)
     VALUE hash;
 {
-    VALUE ary = env_keys();
+    volatile VALUE ary = env_keys();
     VALUE *ptr = RARRAY(ary)->ptr;
     int len = RARRAY(ary)->len; 
 
@@ -1019,7 +1019,7 @@ env_each(hash)
 static VALUE
 env_delete_if()
 {
-    VALUE ary = env_keys();
+    volatile VALUE ary = env_keys();
     VALUE *ptr = RARRAY(ary)->ptr;
     int len = RARRAY(ary)->len; 
 

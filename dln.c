@@ -1129,15 +1129,22 @@ dln_strerror()
 
 #ifdef _WIN32
     static char message[1024];
+    int error = GetLastError();
+    char *p = message;
+    p += sprintf(message, "%d: ", error);
     FormatMessage(
 	FORMAT_MESSAGE_FROM_SYSTEM,
 	NULL,
-	GetLastError(),
-	MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-	message,
-	sizeof message,
+	error,
+	MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+	p,
+	sizeof message - strlen(message),
 	NULL);
 
+    for (p = message; *p; p++) {
+	if (*p == '\n' || *p == '\r')
+	    *p = ' ';
+    }
     return message;
 #endif
 }
@@ -1213,7 +1220,7 @@ dln_load(file)
     /* Load file */
     if ((handle =
 	LoadLibraryExA(winfile, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)) == NULL) {
-        printf("LoadLibraryExA\n");
+        printf("LoadLibraryExA: %s\n", winfile);
 	goto failed;
     }
 
