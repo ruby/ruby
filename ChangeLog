@@ -4,6 +4,11 @@ Mon Aug  6 03:29:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_rstrip_bang): new method.
 
+Mon Aug  6 00:35:03 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* struct.c (rb_struct_modify): should check frozen and taint
+	  status.
+
 Sun Aug  5 19:28:39 2001  Nobuyoshi Nakada <nobu.nakada@nifty.ne.jp>
 
 	* string.c (rb_str_associate): should consider STR_ASSOC too.
