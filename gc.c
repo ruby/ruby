@@ -302,7 +302,7 @@ add_heap()
     if (lomem == 0 || lomem > p) lomem = p;
     if (himem < pend) himem = pend;
     heaps_used++;
-    heap_slots *= 1.5;
+    heap_slots *= 1.8;
 
     while (p < pend) {
 	p->as.free.flags = 0;
@@ -371,14 +371,15 @@ static VALUE *mark_stack;
 static int mark_stack_overflow = 0;
 
 #define PUSH_MARK(obj) do {\
-    if (!mark_stack_overflow) {\
+    if (mark_stack_overflow) {\
+        FL_SET((obj),FL_MARK);\
+    }\
+    else {\
 	if (mark_stack - mark_stack_base >= MARK_STACK_SIZE) {\
 	    mark_stack_overflow = 1;\
-printf("mark stack overflow\n");\
 	}\
 	else {\
 	    if (   rb_special_const_p(obj) /* special const not marked */\
-		|| RBASIC(obj)->flags == 0 /* free cell */\
 		|| FL_TEST((obj),FL_MARK)) /* already marked */ {\
 	    }\
 	    else {\
@@ -391,6 +392,45 @@ printf("mark stack overflow\n");\
 #define POP_MARK() (*--mark_stack)
 
 #define MARK_EMPTY() (mark_stack == mark_stack_base)
+
+#ifdef NO_REGION
+
+#define PUSH_MARK_REGION(a,b) do {\
+	VALUE *tmp_beg_ptr = (a);\
+	while (tmp_beg_ptr < (b)) {\
+	    PUSH_MARK(*tmp_beg_ptr);\
+            tmp_beg_ptr++;\
+	}\
+} while (0)
+
+#else
+
+#define MARK_REGION_STACK_SIZE 1024
+static VALUE *mark_region_stack_base[MARK_REGION_STACK_SIZE];
+static VALUE **mark_region_stack;
+
+#define PUSH_MARK_REGION(a,b) do {\
+    if (mark_region_stack - mark_region_stack_base >= MARK_REGION_STACK_SIZE || (b) - (a) < 3) {\
+	VALUE *tmp_beg_ptr = (a);\
+	while (tmp_beg_ptr < (b)) {\
+	    PUSH_MARK(*tmp_beg_ptr);\
+            tmp_beg_ptr++;\
+	}\
+    }\
+    else {\
+	*mark_region_stack++ = (a);\
+	*mark_region_stack++ = (b);\
+    }\
+} while (0)
+
+#define POP_MARK_REGION(a,b) do {\
+    (b) = (*--mark_region_stack);\
+    (a) = (*--mark_region_stack);\
+} while (0)
+
+#define MARK_REGION_EMPTY() (mark_region_stack == mark_region_stack_base)
+
+#endif
 
 static void
 mark_locations_array(x, n)
@@ -439,6 +479,23 @@ rb_mark_tbl(tbl)
 }
 
 static int
+push_entry(key, value)
+    ID key;
+    VALUE value;
+{
+    PUSH_MARK(value);
+    return ST_CONTINUE;
+}
+
+static void
+push_mark_tbl(tbl)
+    st_table *tbl;
+{
+    if (!tbl) return;
+    st_foreach(tbl, push_entry, 0);
+}
+
+static int
 mark_hashentry(key, value)
     VALUE key;
     VALUE value;
@@ -454,6 +511,24 @@ rb_mark_hash(tbl)
 {
     if (!tbl) return;
     st_foreach(tbl, mark_hashentry, 0);
+}
+
+static int
+push_hashentry(key, value)
+    VALUE key;
+    VALUE value;
+{
+    PUSH_MARK(key);
+    PUSH_MARK(value);
+    return ST_CONTINUE;
+}
+
+static void
+push_mark_hash(tbl)
+    st_table *tbl;
+{
+    if (!tbl) return;
+    st_foreach(tbl, push_hashentry, 0);
 }
 
 void
@@ -624,8 +699,8 @@ gc_mark_children(ptr)
       case T_CLASS:
       case T_MODULE:
 	PUSH_MARK(obj->as.klass.super);
-	rb_mark_tbl(obj->as.klass.m_tbl);
-	rb_mark_tbl(obj->as.klass.iv_tbl);
+	push_mark_tbl(obj->as.klass.m_tbl);
+	push_mark_tbl(obj->as.klass.iv_tbl);
 	break;
 
       case T_ARRAY:
@@ -633,23 +708,18 @@ gc_mark_children(ptr)
 	  int i, len = obj->as.array.len;
 	  VALUE *ptr = obj->as.array.ptr;
 
-	  for (i=0; i < len; i++) {
-	      PUSH_MARK(*ptr);
-	      ptr++;
-	  }
+	  PUSH_MARK_REGION(ptr,ptr+len);
       }
       break;
 
       case T_HASH:
-	rb_mark_hash(obj->as.hash.tbl);
-	PUSH_MARK(obj->as.hash.ifnone);
-	break;
+	push_mark_hash(obj->as.hash.tbl);
+	obj = RANY(obj->as.hash.ifnone);
+	goto Again;
 
       case T_STRING:
-	if (obj->as.string.orig) {
-	    obj = RANY(obj->as.string.orig);
-	    goto Again;
-	}
+	obj = RANY(obj->as.string.orig);
+	goto Again;
 	break;
 
       case T_DATA:
@@ -657,7 +727,7 @@ gc_mark_children(ptr)
 	break;
 
       case T_OBJECT:
-	rb_mark_tbl(obj->as.object.iv_tbl);
+	push_mark_tbl(obj->as.object.iv_tbl);
 	break;
 
       case T_FILE:
@@ -678,17 +748,14 @@ gc_mark_children(ptr)
 	PUSH_MARK(obj->as.varmap.val);
 	obj = RANY(obj->as.varmap.next);
 	goto Again;
-	break;
 
       case T_SCOPE:
 	if (obj->as.scope.local_vars && (obj->as.scope.flags & SCOPE_MALLOC)) {
 	    int n = obj->as.scope.local_tbl[0]+1;
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 
-	    while (n--) {
-		PUSH_MARK(*vars);
-		vars++;
-	    }
+
+	    PUSH_MARK_REGION(vars,vars+n);
 	}
 	break;
 
@@ -697,10 +764,7 @@ gc_mark_children(ptr)
 	  int i, len = obj->as.rstruct.len;
 	  VALUE *ptr = obj->as.rstruct.ptr;
 
-	  for (i=0; i < len; i++) {
-	      PUSH_MARK(*ptr);
-	      ptr++;
-	  }
+	  PUSH_MARK_REGION(ptr,ptr+len);
       }
       break;
 
@@ -724,7 +788,7 @@ rb_gc_mark(ptr)
 {
     if (rb_special_const_p(ptr)) return; /* special const not marked */
     if (RBASIC(ptr)->flags == 0) return; /* free cell */
-    if (FL_TEST((ptr),FL_MARK)) return;  /* already marked */
+    if (RBASIC(ptr)->flags & FL_MARK) return; /* already marked */
     gc_mark_children(ptr);
 }
 
@@ -733,6 +797,20 @@ gc_mark()
 {
     while (!MARK_EMPTY()) {
 	rb_gc_mark(POP_MARK());
+#ifndef NO_REGION
+	while (!MARK_REGION_EMPTY()) {
+	    VALUE *p, *pend;
+
+	    POP_MARK_REGION(p, pend);
+	    while (p < pend) {
+		rb_gc_mark(*p);
+		p++;
+	    }
+	    while (!MARK_EMPTY()) {
+		rb_gc_mark(POP_MARK());
+	    }
+	}
+#endif
     }
 }
 
@@ -1040,8 +1118,11 @@ rb_gc()
     if (during_gc) return;
     during_gc++;
 
-    mark_stack = mark_stack_base;
     mark_stack_overflow = 0;
+    mark_stack = mark_stack_base;
+#ifndef NO_REGION
+    mark_region_stack = mark_region_stack_base;
+#endif
     /* mark frame stack */
     for (frame = ruby_frame; frame; frame = frame->prev) {
 	rb_gc_mark_frame(frame); 
