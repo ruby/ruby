@@ -1,3 +1,7 @@
+Fri Dec  3 12:25:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.h: fix prototype for C++.
+
 Fri Dec  3 01:55:24 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: widget configuration by TkWindow#method_missing
