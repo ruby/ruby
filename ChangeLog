@@ -1,3 +1,8 @@
+Wed Apr 21 18:39:46 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: merge SMTP-TLS patch.  This patch is
+	  contributed by Daniel Hob. [ruby-core:02789]
+
 Wed Apr 21 18:23:45 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: change coding style: def m( a ) -> def m(a).

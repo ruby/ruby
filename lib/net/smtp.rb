@@ -104,7 +104,8 @@
 # The Net::SMTP class supports three authentication schemes;
 # PLAIN, LOGIN and CRAM MD5.  (SMTP Authentication: [RFC2554])
 # To use SMTP authentication, pass extra arguments to 
-# SMTP.start/SMTP#start.
+# SMTP.start/SMTP#start.  Use in conjunction with STARTTLS to
+# prevent authentication information passing in the clear.
 # 
 #     # PLAIN
 #     Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
@@ -116,10 +117,45 @@
 #     # CRAM MD5
 #     Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
 #                     'Your Account', 'Your Password', :cram_md5)
+# 
+# === STARTTLS support
+#
+# The Net::SMTP class supports STARTTLS.
+# 
+#     # Per Instance STARTTLS
+#     smtp = Net::SMTP.new('smtp.example.com',25)
+#     smtp.enable_tls(verify, certs) if $use_tls            #(1)
+#     smtp.start('your host','username','password') { |s|
+#       s.send_message msgstr,
+#                      'your@mail.address',
+#                      'recipient@example.com'
+#     }
+#     smtp.finish
+# 
+# 1. +verify+ tells the openssl library how to verify the server
+#    certificate.  Defaults to OpenSSL::SSL::VERIFY_PEER
+#    +certs+ is a file or directory holding CA certs to use to verify the 
+#    server cert; Defaults to nil.
+# 
+# 
+#     # USE STARTTLS for all subsequent instances
+#     Net::SMTP.enable_tls
+#     # We will now use starttls for all connections.
+#     Net::SMTP.start('your.smtp.server', 25, 'mail.from,domain',
+#                     'Your Account', 'Your Password', :plain) {|smtp|
+#       smtp.send_message msgstr,
+#                         'your@mail.address',
+#                         'his_addess@example.com'
+#     }
+# 
 
 require 'net/protocol'
 require 'digest/md5'
 require 'timeout'
+begin
+  require "openssl"
+rescue LoadError
+end
 
 module Net # :nodoc:
 
@@ -162,12 +198,46 @@ module Net # :nodoc:
   class SMTP
 
     Revision = %q$Revision$.split[1]
-
+    
     # The default SMTP port, port 25.
     def SMTP.default_port
       25
     end
 
+    @use_tls = false
+    @verify = nil
+    @certs = nil
+
+    # Enable SSL for all new instances.
+    # +verify+ is the type of verification to do on the Server Cert; Defaults
+    # to OpenSSL::SSL::VERIFY_PEER.
+    # +certs+ is a file or directory holding CA certs to use to verify the 
+    # server cert; Defaults to nil.
+    def SMTP.enable_tls(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil)
+      @use_tls = true
+      @verify = verify
+      @certs = certs  
+    end
+
+    # Disable SSL for all new instances.
+    def SMTP.disable_tls
+      @use_tls = nil
+      @verify = nil
+      @certs = nil
+    end
+
+    def SMTP.use_tls?
+      @use_tls
+    end
+
+    def SMTP.verify
+      @verify
+    end
+
+    def SMTP.certs
+      @certs
+    end
+    
     # Creates a new Net::SMTP object. +address+ is the hostname
     # or ip address of your SMTP server.  +port+ is the port to
     # connect to; it defaults to port 25.
@@ -182,8 +252,11 @@ module Net # :nodoc:
       @read_timeout = 60
       @error_occured = false
       @debug_output = nil
+      @use_tls = SMTP.use_tls?
+      @certs = SMTP.certs
+      @verify = SMTP.verify      
     end
-
+    
     # Provide human-readable stringification of class state.
     def inspect
       "#<#{self.class} #{@address}:#{@port} started=#{@started}>"
@@ -204,6 +277,28 @@ module Net # :nodoc:
     end
 
     alias esmtp esmtp?
+
+    # does this instance use SSL?
+    def use_tls?
+      @use_tls
+    end
+    
+    # Enables STARTTLS for this instance.
+    # +verify+ is the type of verification to do on the Server Cert; Defaults
+    # to OpenSSL::SSL::VERIFY_PEER.
+    # +certs+ is a file or directory holding CA certs to use to verify the 
+    # server cert; Defaults to nil.
+    def enable_tls(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil)
+      @use_tls = true
+      @verify = verify
+      @certs = certs
+    end
+    
+    def disable_tls
+      @use_tls = false
+      @verify = nil
+      @certs = nil
+    end
 
     # The address of the SMTP server to connect to.
     attr_reader :address
@@ -252,12 +347,12 @@ module Net # :nodoc:
     #
     # This method is equivalent to:
     # 
-    #     Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
+    #   Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
     #
-    #     # example
-    #     Net::SMTP.start('your.smtp.server') {
-    #       smtp.send_message msgstr, 'from@example.com', ['dest@example.com']
-    #     }
+    #   # example
+    #   Net::SMTP.start('your.smtp.server') {
+    #     smtp.send_message msgstr, 'from@example.com', ['dest@example.com']
+    #   }
     #
     # If called with a block, the newly-opened Net::SMTP object is yielded
     # to the block, and automatically closed when the block finishes.  If called
@@ -340,15 +435,56 @@ module Net # :nodoc:
     def do_start(helodomain, user, secret, authtype)
       raise IOError, 'SMTP session already started' if @started
       check_auth_args user, secret, authtype if user or secret
+      s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }   
+      @socket = InternetMessageIO.new(s)
 
-      @socket = InternetMessageIO.new(timeout(@open_timeout) {
-                  TCPSocket.open(@address, @port)
-                })
       logging "SMTP session opened: #{@address}:#{@port}"
       @socket.read_timeout = @read_timeout
       @socket.debug_output = @debug_output
       check_response(critical { recv_response() })
-      begin
+      do_helo(helodomain)
+      
+      if @use_tls
+        raise 'openssl library not installed' unless defined?(OpenSSL)
+        context = OpenSSL::SSL::SSLContext.new
+        context.verify_mode = @verify
+        if @certs
+          if File.file?(@certs)
+            context.ca_file = @certs
+          elsif File.directory?(@certs)
+            context.ca_path = @certs
+          else
+            raise ArgumentError, "certs given but is not file or directory: #{@certs}"
+          end
+        end
+        s = OpenSSL::SSL::SSLSocket.new(s, context)
+        s.sync_close = true
+        starttls
+        s.connect
+        logging 'TLS started'
+        @socket = InternetMessageIO.new(s)
+        @socket.read_timeout = @read_timeout
+        @socket.debug_output = @debug_output
+        # helo response may be different after STARTTLS
+        do_helo(helodomain)
+      end
+
+      authenticate user, secret, authtype if user
+      @started = true
+    ensure
+      unless @started
+        # authentication failed, cancel connection.
+        s.close if s and not s.closed?
+        @socket = nil
+      end
+    end
+    private :do_start
+
+    # method to send helo or ehlo based on defaults and to
+    # retry with helo if server doesn't like ehlo.
+    # 
+    def do_helo(helodomain)
+       begin
         if @esmtp
           ehlo helodomain
         else
@@ -362,12 +498,8 @@ module Net # :nodoc:
         end
         raise
       end
-      authenticate user, secret, authtype if user
-      @started = true
-    ensure
-      @socket.close if not @started and @socket and not @socket.closed?
     end
-    private :do_start
+      
 
     # Finishes the SMTP session and closes TCP connection.
     # Raises IOError if not started.
@@ -579,6 +711,9 @@ module Net # :nodoc:
       getok('QUIT')
     end
 
+    def starttls
+      getok('STARTTLS')
+    end
     #
     # row level library
     #
@@ -631,7 +766,7 @@ module Net # :nodoc:
     end
 
     def logging(msg)
-      @debug_output << msg if @debug_output
+      @debug_output << msg + "\n" if @debug_output
     end
 
   end   # class SMTP
