@@ -81,13 +81,13 @@ class << File
   def compare from, to, verbose = false
     $stderr.print from, " <=> ", to, "\n" if verbose
 
+    return false if stat(from).size != stat(to).size
+
     from = open(from, "rb")
     to = open(to, "rb")
 
     ret = false
     fr = tr = ''
-
-    return false if from.stat.size != to.stat.size
 
     begin
       while fr == tr
