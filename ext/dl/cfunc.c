@@ -225,7 +225,7 @@ rb_dlcfunc_inspect(VALUE self)
 #if defined(__GNUC__)
 # define DECL_FUNC(f,ret,args,calltype)  ret (__attribute__((calltype)) *f)(args)
 /* # define DECL_FUNC(f,ret,args,calltype)  ret (*f)(args) */
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) || defined(__BORLANDC__)
 # define DECL_FUNC(f,ret,args,calltype)  ret (__##calltype *f)(args)
 #else
 # error "unsupported compiler."

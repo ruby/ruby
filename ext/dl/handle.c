@@ -133,6 +133,12 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
     const char *err;
     int i;
 
+#if defined(HAVE_DLERROR)
+# define CHECK_DLERROR if( err = dlerror() ){ func = 0; }
+#else
+# define CHECK_DLERROR
+#endif
+
     rb_secure(2);
 
     if( sym == Qnil ){
@@ -154,12 +160,8 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
     handle = dlhandle->ptr;
 
     func = dlsym(handle, name);
-#if defined(HAVE_DLERROR)
-    if( !func && (err = dlerror()) )
-#else
-    if( !func )
-#endif
-    {
+    CHECK_DLERROR;
+    if( !func ){
 #if defined(__CYGWIN__) || defined(WIN32) || defined(__MINGW32__)
 	{
 	    int  len = strlen(name);
@@ -169,33 +171,22 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 	    name_a[len+1] = '\0';
 	    func = dlsym(handle, name_a);
 	    xfree(name_a);
-#if defined(HAVE_DLERROR)
-	    if( !func && (err = dlerror()) )
-#else
-	    if( !func )
-#endif
-            {
+	    CHECK_DLERROR;
+	    if( !func ){
 		for( i = 0; i < 256; i += 4 ){
 		    int  len = strlen(name);
 		    char *name_n = (char*)xmalloc(len+5);
 		    sprintf(name_n, "%s@%d%c", name, i, 0);
 		    func = dlsym(handle, name_n);
 		    xfree(name_n);
-#if defined(HAVE_DLERROR)
-		    if( func || !(err = dlerror()) )
-#else
+		    CHECK_DLERROR;
 		    if( func )
-#endif
                     {
 			break;
 		    }
 		}
-#if defined(HAVE_DLERROR)
-		if( !func && (err = dlerror()) )
-#else
-		if( !func )
-#endif
-		{
+		CHECK_DLERROR;
+		if( !func ){
 		    rb_raise(rb_eDLError, "Unknown symbol \"%s\".", name);
 		}
 	    }
@@ -207,21 +198,13 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 	    sprintf(name_n, "%s@%d", name, i);
 	    func = dlsym(handle, name_n);
 	    xfree(name_n);
-#if defined(HAVE_DLERROR)
-	    if( func || !(err = dlerror()) )
-#else
-            if( func )
-#endif
-	    {
+	    CHECK_DLERROR;
+            if( func ){
 		break;
 	    }
 	}
-#if defined(HAVE_DLERROR)
-	if( !func && (err = dlerror()) )
-#else
-        if( !func )
-#endif
-        {
+	CHECK_DLERROR;
+        if( !func ){
 	    rb_raise(rb_eDLError, "Unknown symbol \"%s\".", name);
 	}
 #endif

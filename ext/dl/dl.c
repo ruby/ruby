@@ -62,7 +62,7 @@ rb_dl_value2ptr(VALUE self, VALUE val)
 # define MIDST_DECL_STDCALL
 # define POST_DECL_CDECL
 # define POST_DECL_STDCALL
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) || defined(__BORLANDC__)
 # define PRE_DECL_CDECL
 # define PRE_DECL_STDCALL
 # define MIDST_DECL_CDECL     __cdecl
