@@ -683,7 +683,7 @@ Struct
 
 require "socket"
 require "monitor"
-require "md5"
+require "digest/md5"
 
 module Net
   class IMAP
