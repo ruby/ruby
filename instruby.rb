@@ -6,21 +6,16 @@ include Config
 $:.unshift File.join(CONFIG["srcdir"], "lib")
 require 'fileutils'
 require 'shellwords'
+require 'getopts'
 
 File.umask(0)
 
-while arg = ARGV.shift
-  case arg
-  when /^--make-flags=(.*)/
-    Shellwords.shellwords($1).grep(/^-[^-]*n/) {break $dryrun = true}
-  when "-n"
-    $dryrun = true
-  when /^-/
-  else
-    destdir ||= arg
-  end
+getopts("n", "make:", "make-flags:")
+$dryrun = $OPT["n"]
+Shellwords.shellwords($OPT["make-flags"] || "").grep(/^-[^-]*n/) do
+  break $dryrun = true
 end
-destdir ||= ''
+destdir = ARGV[0] || ''
 
 include FileUtils::Verbose
 include FileUtils::NoWrite if $dryrun
