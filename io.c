@@ -555,8 +555,8 @@ rb_io_inspect(obj)
     OpenFile *fptr;
     char *buf, *cname;
 
-    GetOpenFile(obj, fptr);
-    if (!fptr->path) return rb_any_to_s(obj);
+    fptr = RFILE(rb_io_taint_check(obj))->fptr;
+    if (!fptr || !(fptr->f || fptr->f2) || !fptr->path) return rb_any_to_s(obj);
     cname = rb_class2name(CLASS_OF(obj));
     buf = ALLOCA_N(char, strlen(cname) + strlen(fptr->path) + 5);
     sprintf(buf, "#<%s:%s>", cname, fptr->path);

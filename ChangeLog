@@ -1,3 +1,7 @@
+Mon Sep 30 20:29:10 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (rb_io_inspect): not need to raise IOError. [ruby-talk:51871]
+
 Sun Sep 29 18:30:24 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (rb_w32_open_osfhandle): adjust
