@@ -267,7 +267,7 @@ rb_stat_inspect(self)
 {
     VALUE str;
     int i;
-    struct {
+    static struct {
         char *name;
         VALUE (*func)();
     } member[] = {

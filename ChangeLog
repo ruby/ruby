@@ -16,6 +16,10 @@ Tue May 28 12:13:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* node.h (NEW_DASGN, NEW_DASGN_CURR): remove surplus semicolons.
 
+Fri May 24 09:06:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_arg): nil test against v[6] (usec).
+
 Thu May 23 14:52:32 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ruby.c (proc_options): -v should not print version if

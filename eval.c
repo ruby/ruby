@@ -2908,6 +2908,7 @@ rb_eval(self, n)
 			ruby_errinfo = Qnil;
 			ruby_sourceline = nd_line(node);
 			ruby_in_eval++;
+			rb_dvar_push(0, 0);
 			list->nd_head = compile(list->nd_head->nd_lit,
 						ruby_sourcefile,
 						ruby_sourceline);
