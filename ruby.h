@@ -469,7 +469,6 @@ struct RBignum {
 void rb_obj_infect _((VALUE,VALUE));
 
 void rb_glob _((char*,void(*)(const char*,VALUE),VALUE));
-void rb_globi _((char*,void(*)(const char*,VALUE),VALUE));
 
 VALUE rb_define_class _((const char*,VALUE));
 VALUE rb_define_module _((const char*));

@@ -1019,7 +1019,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
-    rb_globi(buf, insert, (VALUE)&tail);
+    rb_glob(buf, insert, (VALUE)&tail);
     if (buf != buffer)
 	free(buf);
 
