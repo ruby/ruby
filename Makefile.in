@@ -110,7 +110,7 @@ install:	rbconfig.rb
 clean-ext:;	@-@MINIRUBY@ -Cext extmk.rb clean 2> /dev/null || true
 
 clean: clean-ext
-		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
+		@rm -f $(OBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
 		@rm -f ext/extinit.c ext/extinit.@OBJEXT@ dmyext.@OBJEXT@
 		@-@MINIRUBY@ -Cext extmk.rb clean 2> /dev/null || true
 		@rm -f $(PROGRAM) miniruby$(EXEEXT)
