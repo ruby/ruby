@@ -1,3 +1,11 @@
+Wed Mar  3 00:59:30 2004  David Black  <dblack@wobblini.net>
+
+	* scanf.rb: soak_up_spaces only ungetc's non-space last
+	  character
+
+	* scanf.rb: IO#block_scanf now returns partial last iteration
+	  array if format string matches partly
+
 Tue Mar  2 16:30:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (pipe_open): erred program name should be reported by
@@ -34,7 +42,7 @@ Tue Mar  2 11:28:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Mar  2 06:23:14 2004  David Black  <dblack@wobblini.net>
 
-	* Fixed Kernel#scanf to propagate code block
+	* lib/scanf.rb: fixed Kernel#scanf to propagate code block
 
 Mon Mar  1 23:25:40 2004  David Black  <dblack@wobblini.net>
 
