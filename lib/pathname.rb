@@ -213,10 +213,12 @@ class Pathname
 
   # Pathname#+ return new pathname which is concatenated with self and
   # an argument.
-  # If the argument is absolute pathname, it is just returned.
+  # If self is the current working directory `.' or
+  # the argument is absolute pathname,
+  # the argument is just returned.
   def +(other)
     other = Pathname.new(other) unless Pathname === other
-    if other.absolute?
+    if @path == '.' || other.absolute?
       other
     elsif %r{/\z} =~ @path
       Pathname.new(@path + other.to_s)
