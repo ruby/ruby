@@ -90,7 +90,7 @@ module URI
       # port          = *digit
       PORT = "\d*"
       # hostport      = host [ ":" port ]
-      HOSTPORT = "#{HOST}(?:#{PORT})?"
+      HOSTPORT = "#{HOST}(?::#{PORT})?"
 
       # userinfo      = *( unreserved | escaped |
       #                    ";" | ":" | "&" | "=" | "+" | "$" | "," )
