@@ -277,14 +277,13 @@ module Rinda
   class TupleSpace
     include DRbUndumped
     include MonitorMixin
-    def initialize(timeout=60)
+    def initialize(period=60)
       super()
       @bag = TupleBag.new
       @read_waiter = TupleBag.new
       @take_waiter = TupleBag.new
       @notify_waiter = TupleBag.new
-      @timeout = timeout
-      @period = timeout * 2
+      @period = period
       @keeper = keeper
     end
 

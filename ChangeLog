@@ -1,3 +1,7 @@
+Tue Feb 17 00:38:10 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb: TupleSpace#initialize, stop doubling timeout
+
 Tue Feb 17 00:18:03 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: import test_rinda.rb
