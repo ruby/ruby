@@ -60,9 +60,11 @@ def extract_makefile(makefile, keep = true)
   unless oldrb == newrb
     if $extout
       newrb.each {|f| installrb.delete(f)}
-      config = CONFIG.dup
-      install_dirs(target_prefix).each {|var, val| config[var] = val}
-      FileUtils.rm_f(installrb.values.collect {|f| Config.expand(f, config)}, verbose: true)
+      unless installrb.empty?
+        config = CONFIG.dup
+        install_dirs(target_prefix).each {|var, val| config[var] = val}
+        FileUtils.rm_f(installrb.values.collect {|f| Config.expand(f, config)}, verbose: true)
+      end
     end
     return false
   end
@@ -172,6 +174,7 @@ def extmake(target)
       $extpath |= $LIBPATH
     end
   ensure
+    Config::CONFIG["srcdir"] = $top_srcdir
     $hdrdir = $top_srcdir = top_srcdir
     $topdir = topdir
     Dir.chdir dir

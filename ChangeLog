@@ -1,3 +1,10 @@
+Mon Mar 28 20:53:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extract_makefile): nothing to be removed when no file
+	  was deleted.
+
+	* ext/extmk.rb (extmake): restore srcdir.
+
 Mon Mar 28 16:23:26 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/lib/tkextlib/iwidgets/notebook.rb: fixed typo.
