@@ -1,3 +1,7 @@
+Wed Feb 18 22:52:00 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/unix.rb: remove O_NONBLOCK, thanks \ay
+
 Wed Feb 18 22:47:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* ext/strscan/strscan.c: documented
