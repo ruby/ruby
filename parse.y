@@ -83,25 +83,22 @@ typedef unsigned LONG_LONG stack_type;
 typedef unsigned long stack_type;
 #endif
 
+#define BITSTACK_PUSH(stack, n)	(stack = (stack<<1)|((n)&1))
+#define BITSTACK_POP(stack)	(stack >>= 1)
+#define BITSTACK_LEXPOP(stack)	(stack = (stack >> 1) | (stack & 1))
+#define BITSTACK_SET_P(stack)	(stack&1)
+
 static stack_type cond_stack = 0;
-#define COND_PUSH(n) (cond_stack = (cond_stack<<1)|((n)&1))
-#define COND_POP() (cond_stack >>= 1)
-#define COND_LEXPOP() do {\
-    int last = COND_P();\
-    cond_stack >>= 1;\
-    if (last) cond_stack |= 1;\
-} while (0)
-#define COND_P() (cond_stack&1)
+#define COND_PUSH(n)	BITSTACK_PUSH(cond_stack, n)
+#define COND_POP()	BITSTACK_POP(cond_stack)
+#define COND_LEXPOP()	BITSTACK_LEXPOP(cond_stack)
+#define COND_P()	BITSTACK_SET_P(cond_stack)
 
 static stack_type cmdarg_stack = 0;
-#define CMDARG_PUSH(n) (cmdarg_stack = (cmdarg_stack<<1)|((n)&1))
-#define CMDARG_POP() (cmdarg_stack >>= 1)
-#define CMDARG_LEXPOP() do {\
-    int last = CMDARG_P();\
-    cmdarg_stack >>= 1;\
-    if (last) cmdarg_stack |= 1;\
-} while (0)
-#define CMDARG_P() (cmdarg_stack&1)
+#define CMDARG_PUSH(n)	BITSTACK_PUSH(cmdarg_stack, n)
+#define CMDARG_POP()	BITSTACK_POP(cmdarg_stack)
+#define CMDARG_LEXPOP()	BITSTACK_LEXPOP(cmdarg_stack)
+#define CMDARG_P()	BITSTACK_SET_P(cmdarg_stack)
 
 static int class_nest = 0;
 static int in_single = 0;
