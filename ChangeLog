@@ -1,3 +1,11 @@
+Fri Apr 11 02:41:35 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (set_stdin): assigned value must respond to "read" and
+	  "getc".
+
+	* io.c (set_outfile): assigned value must respond to "write".
+	  (ruby-bugs-ja:PR#425)
+
 Thu Apr 10 21:12:19 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: Exception line was accidentaly removed.

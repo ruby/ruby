@@ -105,7 +105,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write;
+static ID id_write, id_read, id_getc;
 
 extern char *ruby_inplace_mode;
 
@@ -2679,14 +2679,24 @@ rb_obj_display(argc, argv, self)
 }
 
 static void
+must_respond_to(mid, val, id)
+    ID mid;
+    VALUE val;
+    ID id;
+{
+    if (!rb_respond_to(val, mid)) {
+	rb_raise(rb_eTypeError, "%s must have %s method, %s given",
+		 rb_id2name(id), rb_id2name(mid),
+		 rb_obj_classname(val));
+    }
+}
+
+static void
 rb_io_defset(val, id)
     VALUE val;
     ID id;
 {
-    if (!rb_respond_to(val, id_write)) {
-	rb_raise(rb_eTypeError, "$> must have write method, %s given",
-		 rb_obj_classname(val));
-    }
+    must_respond_to(id_write, val, id);
     rb_defout = val;
 }
 
@@ -2700,6 +2710,8 @@ set_stdin(val, id, var)
 
     if (val == *var) return;
     if (TYPE(val) != T_FILE) {
+	must_respond_to(id_read, val, id);
+	must_respond_to(id_getc, val, id);
 	*var = val;
 	return;
     }
@@ -2723,8 +2735,9 @@ set_stdin(val, id, var)
 }
 
 static void
-set_outfile(val, var, orig, stdf)
+set_outfile(val, id, var, orig, stdf)
     VALUE val;
+    ID id;
     VALUE *var;
     VALUE orig;
     FILE *stdf;
@@ -2739,6 +2752,7 @@ set_outfile(val, var, orig, stdf)
 	rb_io_flush(*var);
     }
     if (TYPE(val) != T_FILE) {
+	must_respond_to(id_write, val, id);
 	*var = val;
 	return;
     }
@@ -2769,7 +2783,7 @@ set_stdout(val, id, var)
     ID id;
     VALUE *var;
 {
-    set_outfile(val, var, orig_stdout, stdout);
+    set_outfile(val, id, var, orig_stdout, stdout);
 }
 
 static void
@@ -2778,7 +2792,7 @@ set_stderr(val, id, var)
     ID id;
     VALUE *var;
 {
-    set_outfile(val, var, orig_stderr, stderr);
+    set_outfile(val, id, var, orig_stderr, stderr);
 }
 
 static VALUE
@@ -3928,6 +3942,8 @@ Init_IO()
     rb_eEOFError = rb_define_class("EOFError", rb_eIOError);
 
     id_write = rb_intern("write");
+    id_read = rb_intern("read");
+    id_getc = rb_intern("getc");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 
