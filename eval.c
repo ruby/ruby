@@ -5463,22 +5463,15 @@ thread_pass()
 }
 
 static VALUE
-thread_stop_method(thread)
-    VALUE thread;
-{
-    thread_t th = thread_check(thread);
-
-    thread_critical = 0;
-    th->status = THREAD_STOPPED;
-    thread_schedule();
-
-    return thread;
-}
-
-static VALUE
 thread_stop()
 {
-    thread_stop_method(curr_thread->thread);
+    thread_critical = 0;
+    curr_thread->status = THREAD_STOPPED;
+    if (curr_thread == curr_thread->next) {
+	Raise(eThreadError, "stopping only thread");
+    }
+    thread_schedule();
+
     return Qnil;
 }
 
@@ -5887,7 +5880,6 @@ Init_Thread()
 
     rb_define_method(cThread, "run", thread_run, 0);
     rb_define_method(cThread, "wakeup", thread_wakeup, 0);
-    rb_define_method(cThread, "stop", thread_stop_method, 0);
     rb_define_method(cThread, "exit", thread_kill, 0);
     rb_define_method(cThread, "value", thread_value, 0);
     rb_define_method(cThread, "status", thread_status, 0);

@@ -1,8 +1,8 @@
 #
 #               Date.rb - 
 #                       $Release Version: $
-#                       $Revision: 1.1.1.1.4.3 $
-#                       $Date: 1998/02/03 10:02:57 $
+#                       $Revision: 1.1.1.1.4.4 $
+#                       $Date: 1998/02/18 01:56:47 $
 #                       by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
@@ -109,6 +109,9 @@ class Date
     else
       raise TypeError, "Illegal type. (Integer or Date)"
     end
+    if d <= 0
+      raise ArgumentError, "argument out of range. (self > other)"
+    end
     return Date.at(d)
   end
   
@@ -146,11 +149,7 @@ class Date
   end
   
   def leapyear?
-    if Date.leapyear(@year) == 1
-      return FALSE
-    else
-      return TRUE
-    end
+    Date.leapyear(@year) != 1
   end
 
   def _check_date
@@ -221,10 +220,10 @@ def Date.period!(y, m, d)
     p += dl[mm]
   end
   p += (y - 1) * 365 + ((y - 1) / 4.0).to_i
-  if (y - 1) > 1752
-    p -= ((y - 1 - 1752) / 100.0).to_i
-    p += ((y - 1 - 1752) / 400.0).to_i
-    p -= (14 - 3)
+  if y > 1752
+    p -= ((y - 1) / 100.0).to_i
+    p += ((y - 1) / 400.0).to_i
+    p += 2
   elsif y == 1752 && m == 9 && d >= 14 && d <= 30
     p -= (14 - 3)
   end

@@ -59,8 +59,8 @@ class Mutex
   end
 
   def synchronize
+    lock
     begin
-      lock
       yield
     ensure
       unlock
@@ -115,22 +115,22 @@ class Queue
   end
 
   def pop non_block=false
-    item = nil
-    until item
-      Thread.critical = true
-      if @que.length == 0
-	if non_block
-	  Thread.critical = false
-	  raise ThreadError, "queue empty"
+    Thread.critical = true
+    begin
+      loop do
+	if @que.length == 0
+	  if non_block
+	    raise ThreadError, "queue empty"
+	  end
+	  @waiting.push Thread.current
+	  Thread.stop
+	else
+	  return @que.shift
 	end
-	@waiting.push Thread.current
-	Thread.stop
-      else
-	item = @que.shift
       end
+    ensure
+      Thread.critical = false
     end
-    Thread.critical = false
-    item
   end
 
   def empty?

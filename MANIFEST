@@ -104,6 +104,7 @@ lib/mailread.rb
 lib/mathn.rb
 lib/matrix.rb
 lib/mkmf.rb
+lib/monitor.rb
 lib/mutex_m.rb
 lib/observer.rb
 lib/ostruct.rb
@@ -133,6 +134,7 @@ missing/dir.h
 missing/dup2.c
 missing/file.h
 missing/flock.c
+missing/memcmp.c
 missing/memmove.c
 missing/mkdir.c
 missing/nt.c

@@ -297,8 +297,8 @@ module Sync_m
   private :sync_try_lock_sub
   
   def sync_synchronize(mode = EX)
+    sync_lock(mode)
     begin
-      sync_lock(mode)
       yield
     ensure
       sync_unlock

@@ -210,9 +210,9 @@ struct_alloc(klass, values)
     else {
 	NEWOBJ(st, struct RStruct);
 	OBJSETUP(st, klass, T_STRUCT);
-	st->len = n;
-	st->ptr = 0;		/* avoid GC crashing  */
+	st->len = 0;		/* avoid GC crashing  */
 	st->ptr = ALLOC_N(VALUE, n);
+	st->len = n;
 	MEMCPY(st->ptr, RARRAY(values)->ptr, VALUE, RARRAY(values)->len);
 	memclear(st->ptr+RARRAY(values)->len, n - RARRAY(values)->len);
 
@@ -318,9 +318,9 @@ struct_clone(s)
 {
     NEWOBJ(st, struct RStruct);
     CLONESETUP(st, s);
-    st->len = RSTRUCT(s)->len;
-    st->ptr = 0;		/* avoid GC crashing  */
+    st->len = 0;		/* avoid GC crashing  */
     st->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
+    st->len = RSTRUCT(s)->len;
     MEMCPY(st->ptr, RSTRUCT(s)->ptr, VALUE, st->len);
 
     return (VALUE)st;
