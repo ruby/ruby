@@ -26,12 +26,8 @@ if (Config::CONFIG['CC'] =~ /gcc/)  # from Win32API
   $CFLAGS << " -fno-defer-pop -fno-omit-frame-pointer"
 end
 
-if (Config::CONFIG['CC'] =~ /gcc/) && (Config::CONFIG['arch'] =~ /i.86/)
-  $with_asm = true
-else
-  $with_asm = false
-end
-$with_dlstack = ! $with_asm
+$with_dlstack ||= true
+$with_asm = ! $with_dlstack
 
 $with_type_int = try_cpp(<<EOF)
 #include "config.h"
