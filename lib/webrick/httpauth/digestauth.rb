@@ -254,7 +254,7 @@ module WEBrick
       def generate_next_nonce(req)
         now = "%012d" % req.request_time.to_i
         pk  = hexdigest(now, @instance_key)[0,32]
-        nonce = encode64(now + ":" + pk).chop # it has 60 length of chars.
+        nonce = Base64.encode64(now + ":" + pk).chop # it has 60 length of chars.
         nonce
       end
 
@@ -262,7 +262,7 @@ module WEBrick
         username = auth_req['username']
         nonce = auth_req['nonce']
 
-        pub_time, pk = decode64(nonce).split(":", 2)
+        pub_time, pk = Base64.decode64(nonce).split(":", 2)
         if (!pub_time || !pk)
           error("%s: empty nonce is given", username)
           return false

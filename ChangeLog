@@ -1,3 +1,8 @@
+Wed Nov  3 22:24:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpauth/digestauth.rb: use Base64.encode64 to
+	  avoid warnings.
+
 Wed Nov  3 17:19:59 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_uniq_bang): do not push frozen string from hash
