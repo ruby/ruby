@@ -539,15 +539,14 @@ EXTERN VALUE rb_eNameError;
 EXTERN VALUE rb_eSyntaxError;
 EXTERN VALUE rb_eLoadError;
 
-extern INLINE VALUE rb_class_of _((VALUE));
-extern INLINE int rb_type _((VALUE));
-extern INLINE int rb_special_const_p _((VALUE));
+extern inline VALUE rb_class_of _((VALUE));
+extern inline int rb_type _((VALUE));
+extern inline int rb_special_const_p _((VALUE));
 
-#if defined(HAVE_INLINE) || defined(RUBY_NO_INLINE)
 #ifndef RUBY_NO_INLINE
-extern
+extern inline
 #endif
-INLINE VALUE
+VALUE
 rb_class_of(VALUE obj)
 {
     if (FIXNUM_P(obj)) return rb_cFixnum;
@@ -560,9 +559,9 @@ rb_class_of(VALUE obj)
 }
 
 #ifndef RUBY_NO_INLINE
-extern
+extern inline
 #endif
-INLINE int
+int
 rb_type(VALUE obj)
 {
     if (FIXNUM_P(obj)) return T_FIXNUM;
@@ -575,15 +574,14 @@ rb_type(VALUE obj)
 }
 
 #ifndef RUBY_NO_INLINE
-extern
+extern inline
 #endif
-INLINE int
+int
 rb_special_const_p(VALUE obj)
 {
     if (SPECIAL_CONST_P(obj)) return Qtrue;
     return Qfalse;
 }
-#endif
 
 #include "intern.h"
 

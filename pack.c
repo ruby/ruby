@@ -1026,7 +1026,7 @@ qpencode(str, from, len)
     }
 }
 
-static INLINE int
+static inline int
 hex2num(c)
     char c;
 {

@@ -315,7 +315,7 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
-static INLINE int
+static inline int
 is_pointer_to_heap(ptr)
     void *ptr;
 {

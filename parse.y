@@ -1849,6 +1849,8 @@ none		: /* none */
 #include "regex.h"
 #include "util.h"
 
+#define enc ruby_default_encoding
+
 /* We remove any previous definition of `SIGN_EXTEND_CHAR',
    since ours (we hope) works properly with all combinations of
    machines, compilers, `char' and `unsigned char' argument types.
@@ -2045,7 +2047,7 @@ rb_compile_file(f, file, start)
     return yycompile(strdup(f), start);
 }
 
-static INLINE int
+static inline int
 nextc()
 {
     int c;
