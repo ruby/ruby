@@ -309,6 +309,7 @@ exc_initialize(argc, argv, exc)
 	StringValue(mesg);	/* ensure mesg can be converted to String */
     }
     rb_iv_set(exc, "mesg", mesg);
+    rb_iv_set(exc, "bt", Qnil);
 
     return exc;
 }

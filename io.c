@@ -1191,12 +1191,6 @@ rb_io_fptr_cleanup(fptr, fin)
     OpenFile *fptr;
     int fin;
 {
-    if (fptr->mode & FMODE_FDOPEN) {
-	if (fptr->mode & FMODE_WRITABLE) {
-	    io_fflush(GetWriteFile(fptr), fptr);
-	}
-	return;
-    }
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
     }
@@ -2621,7 +2615,7 @@ rb_io_initialize(argc, argv, io)
 #endif
     }
     MakeOpenFile(io, fp);
-    fp->mode = rb_io_modenum_flags(flags) | FMODE_FDOPEN;
+    fp->mode = rb_io_modenum_flags(flags);
     fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags, mbuf));
 
     return io;

@@ -202,7 +202,6 @@ bsock_s_for_fd(klass, fd)
     VALUE sock = init_sock(rb_obj_alloc(klass), NUM2INT(fd));
 
     GetOpenFile(sock, fptr);
-    fptr->mode |= FMODE_FDOPEN;
 
     return sock;
 }

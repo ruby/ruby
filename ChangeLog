@@ -1,3 +1,16 @@
+Mon Apr 15 09:27:31 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_unpack): should treat 'U' in character unit, not in
+	  byte unit.
+
+	* error.c (exc_initialize): should clear backtrace information.
+
+Sat Apr 13 23:42:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_fptr_cleanup): should close IO created by IO.new(fd).
+
+	* rubyio.h: remove FMODE_FDOPEN
+
 Fri Apr 12 12:54:04 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: use missing/acosh.c.

@@ -5049,14 +5049,13 @@ eval(self, src, scope, file, line)
 	    if (strcmp(file, "(eval)") == 0) {
 		if (ruby_sourceline > 1) {
 		    errat = get_backtrace(ruby_errinfo);
-		    err = RARRAY(errat)->ptr[0];
+		    err = rb_str_dup(RARRAY(errat)->ptr[0]);
 		    rb_str_cat2(err, ": ");
 		    rb_str_append(err, ruby_errinfo);
 		}
 		else {
 		    err = rb_str_dup(ruby_errinfo);
 		}
-		errat = Qnil;
 		rb_exc_raise(rb_funcall(ruby_errinfo, rb_intern("exception"), 1, err));
 	    }
 	    rb_exc_raise(ruby_errinfo);
