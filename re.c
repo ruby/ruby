@@ -879,8 +879,11 @@ rb_reg_s_quote(re, str)
 
   for (; s != send; s++) {
       if (ismbchar(*s)) {
-	  *t++ = *s++;
-	  *t++ = *s;
+	  size_t n = mbclen(*s);
+
+	  while (n--)
+	    *t++ = *s++;
+	  s--;
 	  continue;
       }
       if (*s == '[' || *s == ']'
@@ -979,7 +982,7 @@ rb_reg_regsub(str, src, regs)
 
 	c = *s++;
 	if (ismbchar(c)) {
-	    s++;
+	    s += mbclen(c) - 1;
 	    continue;
 	}
 	if (c != '\\' || s == e) continue;

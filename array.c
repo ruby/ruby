@@ -355,8 +355,9 @@ rb_ary_subseq(ary, beg, len)
 {
     VALUE ary2;
 
-    if (len <= 0) {
-	return rb_ary_new2(0);
+    if (len == 0) return rb_ary_new2(0);
+    if (len < 0) {
+	rb_raise(rb_eIndexError, "negative length %d", len);
     }
     if (beg < 0) {
 	len += beg;
@@ -393,17 +394,20 @@ beg_len(range, begp, lenp, len)
     if (end < 0) {
 	end = len + end;
     }
+    *begp = beg;
     if (beg > end) {
+	if (e == -1) {
+	    *lenp = 0;
+	    return Qtrue;
+	}
 	rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", b, e);
     }
 
-    *begp = beg;
     if (beg > len) {
 	*lenp = 0;
     }
     else {
-	len = end - beg +1;
-	*lenp = len;
+	*lenp = end - beg + 1;
     }
     return Qtrue;
 }
@@ -555,6 +559,9 @@ rb_ary_aset(argc, argv, ary)
 	if (beg < 0) {
 	    beg = RARRAY(ary)->len + beg;
 	}
+#ifdef INABA
+	if (len < 0) return Qnil;
+#endif
 	rb_ary_replace(ary, beg, len, arg3);
 	return arg3;
     }
@@ -564,6 +571,9 @@ rb_ary_aset(argc, argv, ary)
     }
     else if (beg_len(arg1, &beg, &len, RARRAY(ary)->len)) {
 	/* check if idx is Range */
+#ifdef INABA
+	if (len < 0) return Qnil;
+#endif
 	rb_ary_replace(ary, beg, len, arg2);
 	return arg2;
     }

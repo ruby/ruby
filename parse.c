@@ -5386,6 +5386,11 @@ retry:
 		    }
 		}
 	    }
+	    else if (c >= 0x80) {
+		if ((c = nextc()) != '\\') {
+		    pushback(c);
+		}
+	    }
 	}
 	/* fall through */
       case '\n':
@@ -6096,6 +6101,13 @@ retry:
     }
     if ((c == '!' || c == '?') && is_identchar(tok()[0])) {
 	tokadd(c);
+	if (c == '!') {
+	    c = nextc();
+	    if (c == '=') {
+		rb_warn("identifier! immediately followed by `='");
+	    }
+	    pushback(c);
+	}
     }
     else {
 	pushback(c);

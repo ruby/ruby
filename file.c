@@ -28,6 +28,7 @@
 # define MAXPATHLEN 1024
 #endif
 
+#include <time.h>
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #else
@@ -38,6 +39,8 @@ struct timeval {
 };
 #endif /* NT */
 #endif
+
+VALUE rb_time_new _((time_t, time_t));
 
 #ifdef HAVE_UTIME_H
 #include <utime.h>

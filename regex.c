@@ -1,29 +1,27 @@
 /* Extended regular expression matching and search library.
-   Copyright (C) 1985, 1989-90 Free Software Foundation, Inc.
+   Copyright (C) 1993, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 1, or (at your option)
-   any later version.
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Library General Public License as
+   published by the Free Software Foundation; either version 2 of the
+   License, or (at your option) any later version.
 
-   This program is distributed in the hope that it will be useful,
+   The GNU C Library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   You should have received a copy of the GNU Library General Public
+   License along with the GNU C Library; see the file COPYING.LIB.  If not,
+   write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
 /* Multi-byte extension added May, 1993 by t^2 (Takahiro Tanimoto)
    Last change: May 21, 1993 by t^2  */
 
-
-/* To test, compile with -Dtest.  This Dtestable feature turns this into
-   a self-contained program which reads a pattern, describes how it
-   compiles, then reads a string and searches for it.
-
-   On the other hand, if you compile with both -Dtest and -Dcanned you
-   can run some tests we've already thought of.  */
+#include "config.h"
+#ifdef RUBY_PLATFORM
+# define RUBY
+#endif
 
 /* We write fatal error messages on standard error.  */
 #include <stdio.h>
@@ -32,25 +30,47 @@
 #include <ctype.h>
 #include <sys/types.h>
 
-#ifdef __STDC__
-#define P(s)    s
-#define MALLOC_ARG_T size_t
+#ifndef PARAMS
+# if defined __GNUC__ || (defined __STDC__ && __STDC__)
+#  define PARAMS(args) args
+# else
+#  define PARAMS(args) ()
+# endif  /* GCC.  */
+#endif  /* Not PARAMS.  */
+
+#if defined(STDC_HEADERS)
+# include <stddef.h>
 #else
-#define P(s)    ()
-#define MALLOC_ARG_T unsigned
-#define volatile
-#define const
+/* We need this for `regex.h', and perhaps for the Emacs include files.  */
+# include <sys/types.h>
 #endif
 
-#include "config.h"
-#ifdef RUBY_PLATFORM
-# define RUBY
+#if defined(STDC_HEADERS)
+# include <stddef.h>
+#else
+/* We need this for `regex.h', and perhaps for the Emacs include files.  */
+# include <sys/types.h>
 #endif
 
-void *xmalloc P((unsigned long));
-void *xcalloc P((unsigned long,unsigned long));
-void *xrealloc P((void*,unsigned long));
-void free P((void*));
+#ifndef __STDC__
+# define volatile
+# ifdef __GNUC__
+#  define const __const__
+# else
+#  define const
+# endif
+#endif
+
+#ifdef HAVE_PROTOTYPES
+# define _(args) args
+#else
+# define _(args) ()
+#endif
+
+void *xmalloc _((unsigned long));
+void *xcalloc _((unsigned long,unsigned long));
+void *xrealloc _((void*,unsigned long));
+void free _((void*));
 
 /* #define	NO_ALLOCA	/* try it out for now */
 #ifndef NO_ALLOCA
@@ -132,16 +152,16 @@ char *alloca();
 #include "regex.h"
 
 /* Subroutines for re_compile_pattern.  */
-static void store_jump P((char*, int, char*));
-static void insert_jump P((int, char*, char*, char*));
-static void store_jump_n P((char*, int, char*, unsigned));
-static void insert_jump_n P((int, char*, char*, char*, unsigned));
-static void insert_op P((int, char*, char*));
-static void insert_op_2 P((int, char*, char*, int, int));
-static int memcmp_translate P((unsigned char*, unsigned char*, int));
-static int alt_match_null_string_p ();
-static int common_op_match_null_string_p ();
-static int group_match_null_string_p ();
+static void store_jump _((char*, int, char*));
+static void insert_jump _((int, char*, char*, char*));
+static void store_jump_n _((char*, int, char*, unsigned));
+static void insert_jump_n _((int, char*, char*, char*, unsigned));
+static void insert_op _((int, char*, char*));
+static void insert_op_2 _((int, char*, char*, int, int));
+static int memcmp_translate _((unsigned char*, unsigned char*, int));
+static int alt_match_null_string_p();
+static int common_op_match_null_string_p();
+static int group_match_null_string_p();
 
 /* Define the syntax stuff, so we can do the \<, \>, etc.  */
 
@@ -153,15 +173,17 @@ static int group_match_null_string_p ();
 #define SYNTAX(c) re_syntax_table[c]
 
 static char re_syntax_table[256];
-static void init_syntax_once P((void));
+static void init_syntax_once _((void));
 static unsigned char *translate = 0;
-static void init_regs P((struct re_registers*, unsigned int));
-static void bm_init_skip P((int *, unsigned char*, int, char*));
+static void init_regs _((struct re_registers*, unsigned int));
+static void bm_init_skip _((int *, unsigned char*, int, char*));
 static int current_mbctype = MBCTYPE_ASCII;
 
 #undef P
 
+#ifdef RUBY
 #include "util.h"
+#endif
 
 static void
 init_syntax_once()
@@ -201,28 +223,54 @@ re_set_casetable(table)
    STDC_HEADERS is defined, then autoconf has verified that the ctype
    macros don't need to be guarded with references to isascii. ...
    Defining isascii to 1 should let any compiler worth its salt
-   eliminate the && through constant folding."  */
-#ifdef isblank
-#define ISBLANK(c) isblank ((unsigned char)c)
+   eliminate the && through constant folding."
+   Solaris defines some of these symbols so we must undefine them first.  */
+
+#undef ISASCII
+#if defined STDC_HEADERS || (!defined isascii && !defined HAVE_ISASCII)
+# define ISASCII(c) 1
 #else
-#define ISBLANK(c) ((c) == ' ' || (c) == '\t')
-#endif
-#ifdef isgraph
-#define ISGRAPH(c) isgraph ((unsigned char)c)
-#else
-#define ISGRAPH(c) (isprint ((unsigned char)c) && !isspace ((unsigned char)c))
+# define ISASCII(c) isascii(c)
 #endif
 
-#define ISPRINT(c) isprint ((unsigned char)c)
-#define ISDIGIT(c) isdigit ((unsigned char)c)
-#define ISALNUM(c) isalnum ((unsigned char)c)
-#define ISALPHA(c) isalpha ((unsigned char)c)
-#define ISCNTRL(c) iscntrl ((unsigned char)c)
-#define ISLOWER(c) islower ((unsigned char)c)
-#define ISPUNCT(c) ispunct ((unsigned char)c)
-#define ISSPACE(c) isspace ((unsigned char)c)
-#define ISUPPER(c) isupper ((unsigned char)c)
-#define ISXDIGIT(c) isxdigit ((unsigned char)c)
+#ifdef isblank
+# define ISBLANK(c) (ISASCII (c) && isblank (c))
+#else
+# define ISBLANK(c) ((c) == ' ' || (c) == '\t')
+#endif
+#ifdef isgraph
+# define ISGRAPH(c) (ISASCII (c) && isgraph (c))
+#else
+# define ISGRAPH(c) (ISASCII (c) && isprint (c) && !isspace (c))
+#endif
+
+#undef ISPRINT
+#define ISPRINT(c) (ISASCII (c) && isprint (c))
+#define ISDIGIT(c) (ISASCII (c) && isdigit (c))
+#define ISALNUM(c) (ISASCII (c) && isalnum (c))
+#define ISALPHA(c) (ISASCII (c) && isalpha (c))
+#define ISCNTRL(c) (ISASCII (c) && iscntrl (c))
+#define ISLOWER(c) (ISASCII (c) && islower (c))
+#define ISPUNCT(c) (ISASCII (c) && ispunct (c))
+#define ISSPACE(c) (ISASCII (c) && isspace (c))
+#define ISUPPER(c) (ISASCII (c) && isupper (c))
+#define ISXDIGIT(c) (ISASCII (c) && isxdigit (c))
+
+#ifndef NULL
+# define NULL (void *)0
+#endif
+
+/* We remove any previous definition of `SIGN_EXTEND_CHAR',
+   since ours (we hope) works properly with all combinations of
+   machines, compilers, `char' and `unsigned char' argument types.
+   (Per Bothner suggested the basic approach.)  */
+#undef SIGN_EXTEND_CHAR
+#if __STDC__
+# define SIGN_EXTEND_CHAR(c) ((signed char) (c))
+#else  /* not __STDC__ */
+/* As in Harbison and Steele.  */
+# define SIGN_EXTEND_CHAR(c) ((((unsigned char) (c)) ^ 128) - 128)
+#endif
 
 /* These are the command codes that appear in compiled regular
    expressions, one per byte.  Some command codes are followed by
@@ -324,14 +372,6 @@ enum regexpcode
 #define NFAILURES 80
 #endif
 
-#if defined(CHAR_UNSIGNED) || defined(__CHAR_UNSIGNED__)
-#define SIGN_EXTEND_CHAR(c) ((c)>(char)127?(c)-256:(c)) /* for IBM RT */
-#endif
-#ifndef SIGN_EXTEND_CHAR
-#define SIGN_EXTEND_CHAR(x) (x)
-#endif
-
-
 /* Store NUMBER in two contiguous bytes starting at DESTINATION.  */
 #define STORE_NUMBER(destination, number)				\
   do { (destination)[0] = (number) & 0377;				\
@@ -401,7 +441,7 @@ re_set_syntax(syntax)
 #define MBC2WC(c, p)\
   do {\
     if (current_mbctype == MBCTYPE_UTF8) {\
-      int n = ismbchar(c);\
+      int n = mbclen(c) - 1;\
       int c1;\
       c &= (1<<(BYTEWIDTH-2-n)) - 1;\
       while (n--) {\
@@ -416,7 +456,7 @@ re_set_syntax(syntax)
 
 #define PATFETCH_MBC(c) \
   do {\
-    if (p + ismbchar(c) == pend) goto end_of_pattern;\
+    if (p + mbclen(c) - 1 >= pend) goto end_of_pattern;\
     MBC2WC(c, p);\
   } while(0)
 
@@ -667,7 +707,7 @@ print_partial_compiled_pattern(start, end)
 
   if (start == NULL)
     {
-      printf ("(null)\n");
+      printf("(null)\n");
       return;
     }
     
@@ -677,12 +717,12 @@ print_partial_compiled_pattern(start, end)
       switch ((enum regexpcode)*p++)
 	{
 	case unused:
-	  printf ("/unused");
+	  printf("/unused");
 	  break;
 
 	case exactn:
 	  mcnt = *p++;
-          printf ("/exactn/%d", mcnt);
+          printf("/exactn/%d", mcnt);
           do
 	    {
               putchar('/');
@@ -693,46 +733,46 @@ print_partial_compiled_pattern(start, end)
 
 	case start_memory:
           mcnt = *p++;
-          printf ("/start_memory/%d/%d", mcnt, *p++);
+          printf("/start_memory/%d/%d", mcnt, *p++);
           break;
 
 	case stop_memory:
           mcnt = *p++;
-	  printf ("/stop_memory/%d/%d", mcnt, *p++);
+	  printf("/stop_memory/%d/%d", mcnt, *p++);
           break;
 
 	case stop_paren:
-	  printf ("/stop_paren");
+	  printf("/stop_paren");
 	  break;
 
 	case casefold_on:
-	  printf ("/casefold_on");
+	  printf("/casefold_on");
 	  break;
 
 	case casefold_off:
-	  printf ("/casefold_off");
+	  printf("/casefold_off");
 	  break;
 
 	case start_nowidth:
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
-	  printf ("/start_nowidth//%d", mcnt);
+	  printf("/start_nowidth//%d", mcnt);
 	  break;
 
 	case stop_nowidth:
-	  printf ("/stop_nowidth//");
+	  printf("/stop_nowidth//");
 	  p += 2;
 	  break;
 
 	case pop_and_fail:
-	  printf ("/pop_and_fail");
+	  printf("/pop_and_fail");
 	  break;
 
 	case duplicate:
-	  printf ("/duplicate/%d", *p++);
+	  printf("/duplicate/%d", *p++);
 	  break;
 
 	case anychar:
-	  printf ("/anychar");
+	  printf("/anychar");
 	  break;
 
 	case charset:
@@ -740,8 +780,8 @@ print_partial_compiled_pattern(start, end)
           {
             register int c;
 
-            printf ("/charset%s",
-	            (enum regexpcode)*(p - 1) == charset_not ? "_not" : "");
+            printf("/charset%s",
+		   (enum regexpcode)*(p - 1) == charset_not ? "_not" : "");
 
             mcnt = *p++;
 	    printf("/%d", mcnt);
@@ -768,121 +808,121 @@ print_partial_compiled_pattern(start, end)
 	  }
 
 	case begline:
-	  printf ("/begline");
+	  printf("/begline");
           break;
 
 	case endline:
-          printf ("/endline");
+          printf("/endline");
           break;
 
 	case on_failure_jump:
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
-  	  printf ("/on_failure_jump//%d", mcnt);
+  	  printf("/on_failure_jump//%d", mcnt);
           break;
 
 	case dummy_failure_jump:
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
-  	  printf ("/dummy_failure_jump//%d", mcnt);
+  	  printf("/dummy_failure_jump//%d", mcnt);
           break;
 
 	case push_dummy_failure:
-          printf ("/push_dummy_failure");
+          printf("/push_dummy_failure");
           break;
           
         case finalize_jump:
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
-  	  printf ("/finalize_jump//%d", mcnt);
+  	  printf("/finalize_jump//%d", mcnt);
 	  break;
 
         case maybe_finalize_jump:
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
-  	  printf ("/maybe_finalize_jump//%d", mcnt);
+  	  printf("/maybe_finalize_jump//%d", mcnt);
 	  break;
 
         case jump_past_alt:
 	  EXTRACT_NUMBER_AND_INCR (mcnt, p);
-  	  printf ("/jump_past_alt//%d", mcnt);
+  	  printf("/jump_past_alt//%d", mcnt);
 	  break;
 
         case jump:
 	  EXTRACT_NUMBER_AND_INCR (mcnt, p);
-  	  printf ("/jump//%d", mcnt);
+  	  printf("/jump//%d", mcnt);
 	  break;
 
         case succeed_n: 
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
           EXTRACT_NUMBER_AND_INCR (mcnt2, p);
- 	  printf ("/succeed_n//%d//%d", mcnt, mcnt2);
+ 	  printf("/succeed_n//%d//%d", mcnt, mcnt2);
           break;
         
         case jump_n: 
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
           EXTRACT_NUMBER_AND_INCR (mcnt2, p);
- 	  printf ("/jump_n//%d//%d", mcnt, mcnt2);
+ 	  printf("/jump_n//%d//%d", mcnt, mcnt2);
           break;
         
         case set_number_at: 
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
           EXTRACT_NUMBER_AND_INCR (mcnt2, p);
- 	  printf ("/set_number_at//%d//%d", mcnt, mcnt2);
+ 	  printf("/set_number_at//%d//%d", mcnt, mcnt2);
           break;
         
 	case try_next:
 	  EXTRACT_NUMBER_AND_INCR (mcnt, p);
-  	  printf ("/try_next//%d", mcnt);
+  	  printf("/try_next//%d", mcnt);
           break;
 
 	case finalize_push:
 	  EXTRACT_NUMBER_AND_INCR (mcnt, p);
-  	  printf ("/finalize_push//%d", mcnt);
+  	  printf("/finalize_push//%d", mcnt);
           break;
 
 	case finalize_push_n:
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
           EXTRACT_NUMBER_AND_INCR (mcnt2, p);
- 	  printf ("/finalize_push_n//%d//%d", mcnt, mcnt2);
+ 	  printf("/finalize_push_n//%d//%d", mcnt, mcnt2);
           break;
 
         case wordbound:
-	  printf ("/wordbound");
+	  printf("/wordbound");
 	  break;
 
 	case notwordbound:
-	  printf ("/notwordbound");
+	  printf("/notwordbound");
           break;
 
 	case wordbeg:
-	  printf ("/wordbeg");
+	  printf("/wordbeg");
 	  break;
           
 	case wordend:
-	  printf ("/wordend");
+	  printf("/wordend");
           
 	case wordchar:
-	  printf ("/wordchar");
+	  printf("/wordchar");
           break;
 	  
 	case notwordchar:
-	  printf ("/notwordchar");
+	  printf("/notwordchar");
           break;
 
 	case begbuf:
-	  printf ("/begbuf");
+	  printf("/begbuf");
           break;
 
 	case endbuf:
-	  printf ("/endbuf");
+	  printf("/endbuf");
           break;
 
 	case endbuf2:
-	  printf ("/endbuf2");
+	  printf("/endbuf2");
           break;
 
         default:
-          printf ("?%d", *(p-1));
+          printf("?%d", *(p-1));
 	}
     }
-  printf ("/\n");
+  printf("/\n");
 }
 
 
@@ -1269,7 +1309,8 @@ re_compile_pattern(pattern, size, bufp)
 	      int size;
 	      unsigned last = (unsigned)-1;
 
-	      if ((size = EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH]))) {
+	      if ((size = EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH]))
+		  || current_mbctype) {
 		/* Ensure the space is enough to hold another interval
 		   of multi-byte chars in charset(_not)?.  */
 		size = (1 << BYTEWIDTH) / BYTEWIDTH + 2 + size*8 + 8;
@@ -2026,7 +2067,7 @@ re_compile_pattern(pattern, size, bufp)
 	    c1 = p - pattern;
 	  }
 	numeric_char:
-	  nextp = p + ismbchar(c);
+	  nextp = p + mbclen(c) - 1;
 	  if (!pending_exact || pending_exact + *pending_exact + 1 != b
 	      || *pending_exact >= (c1 ? 0176 : 0177)
 	      || *nextp == '+' || *nextp == '?'
@@ -2044,7 +2085,7 @@ re_compile_pattern(pattern, size, bufp)
 	  BUFPUSH(c);
 	  (*pending_exact)++;
 	  if (had_mbchar) {
-	    int len = ismbchar(c);
+	    int len = mbclen(c) - 1;
 	    while (len--) {
 	      PATFETCH_RAW(c);
 	      BUFPUSH(c);
@@ -2330,7 +2371,7 @@ slow_search(little, llen, big, blen, translate)
     }
     else if (translate && !ismbchar(c)) {
       while (big < bend) {
-	if (ismbchar(*big)) big+=ismbchar(*big);
+	if (ismbchar(*big)) big+=mbclen(*big)-1;
 	else if (translate[*big] == c) break;
 	big++;
       }
@@ -2338,7 +2379,7 @@ slow_search(little, llen, big, blen, translate)
     else {
       while (big < bend) {
 	if (*big == c) break;
-	if (ismbchar(*big)) big+=ismbchar(*big);
+	if (ismbchar(*big)) big+=mbclen(*big)-1;
 	big++;
       }
     }
@@ -2346,7 +2387,7 @@ slow_search(little, llen, big, blen, translate)
     if (slow_match(little, little+llen, big, bend, translate))
       return big - bsave;
 
-    if (ismbchar(*big)) big+=ismbchar(*big);
+    if (ismbchar(*big)) big+=mbclen(*big);
     big++;
   }
   return -1;
@@ -2857,7 +2898,7 @@ re_search(bufp, string, size, startpos, range, regs)
 	      while (range > 0) {
 		c = *p++;
 		if (ismbchar(c)) {
-		  int len = ismbchar(c);
+		  int len = mbclen(c) - 1;
 		  if (fastmap[c])
 		    break;
 		  p += len;
@@ -2945,7 +2986,8 @@ re_search(bufp, string, size, startpos, range, regs)
 	const char *d = string + startpos;
 
 	if (ismbchar(*d)) {
-	  range-=ismbchar(*d), startpos+=ismbchar(*d);
+	  int len = mbclen(*d) - 1;
+	  range-=len, startpos+=len;
 	  if (!range)
 	    break;
 	}
@@ -2977,14 +3019,7 @@ re_search(bufp, string, size, startpos, range, regs)
 
 /* The following are used for re_match, defined below:  */
 
-/* Roughly the maximum number of failure points on the stack.  Would be
-   exactly that if always pushed MAX_NUM_FAILURE_ITEMS each time we failed.  */
-
-int re_max_failures = 2000;
-
 /* Routine used by re_match.  */
-/* static int memcmp_translate(); *//* already declared */
-
 
 /* Structure and accessing macros used in re_match:  */
 
@@ -3239,7 +3274,7 @@ re_match(bufp, string_arg, size, pos, regs)
   stacke = &stackb[MAX_NUM_FAILURE_ITEMS * NFAILURES];
 
 #ifdef DEBUG_REGEX
-  fprintf (stderr, "Entering re_match(%s%s)\n", string1_arg, string2_arg);
+  fprintf(stderr, "Entering re_match(%s%s)\n", string1_arg, string2_arg);
 #endif
 
   /* Initialize subexpression text positions to -1 to mark ones that no
@@ -3553,7 +3588,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	    PREFETCH;
 	    cc = c = (unsigned char)*d++;
 	    if (ismbchar(c)) {
-	      if (d + ismbchar(c) <= dend) {
+	      if (d + mbclen(c) - 1 <= dend) {
 		MBC2WC(c, d);
 	      }
 	    }
@@ -3878,8 +3913,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  PREFETCH;
           if (!IS_A_LETTER(d))
             goto fail;
-	  if (ismbchar(*d) && d + ismbchar(*d) < dend)
-	    d += ismbchar(*d);
+	  if (ismbchar(*d) && d + mbclen(*d) - 1 < dend)
+	    d += mbclen(*d) - 1;
 	  d++;
 	  SET_REGS_MATCHED;
 	  break;
@@ -3888,8 +3923,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  PREFETCH;
 	  if (IS_A_LETTER(d))
             goto fail;
-	  if (ismbchar(*d) && d + ismbchar(*d) < dend)
-	    d += ismbchar(*d);
+	  if (ismbchar(*d) && d + mbclen(*d) - 1 < dend)
+	    d += mbclen(*d) - 1;
 	  d++;
           SET_REGS_MATCHED;
 	  break;
@@ -3917,12 +3952,16 @@ re_match(bufp, string_arg, size, pos, regs)
 		    continue;
 		  }
 		  if (ismbchar(c)) {
-		    if (c != (unsigned char)*p++
-			|| !--mcnt	/* redundant check if pattern was
-					   compiled properly. */
-			|| AT_STRINGS_END(d)
-			|| (unsigned char)*d++ != (unsigned char)*p++)
+		    int n;
+
+		    if (c != (unsigned char)*p++)
 		      goto fail;
+		    for (n = mbclen(c) - 1; n > 0; n--)
+		      if (!--mcnt	/* redundant check if pattern was
+					   compiled properly. */
+			  || AT_STRINGS_END(d)
+			  || (unsigned char)*d++ != (unsigned char)*p++)
+			goto fail;
 		    continue;
 		  }
 		  /* compiled code translation needed for ruby */
@@ -3945,8 +3984,10 @@ re_match(bufp, string_arg, size, pos, regs)
 	  SET_REGS_MATCHED;
           break;
 	}
+#if 0
       while (stackp != stackb && (int)stackp[-1] == 1)
 	POP_FAILURE_POINT();
+#endif
       continue;  /* Successfully executed one pattern command; keep going.  */
 
     /* Jump here if any matching operation fails. */
@@ -4287,8 +4328,12 @@ memcmp_translate(s1, s2, len)
     {
       c = *p1++;
       if (ismbchar(c)) {
+	int n;
+
 	if (c != *p2++) return 1;
-	if (memcmp(p1, p2, ismbchar(c))) return 1;
+	for (n = mbclen(c) - 1; n > 0; n--)
+	  if (!--len || *p1++ != *p2++)
+	    return 1;
       }
       else
 	if (translate[c] != translate[*p2++])

@@ -17,7 +17,7 @@ double strtod();
 #endif
 
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   0
+#define MARSHAL_MINOR   1
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -168,7 +168,7 @@ w_unique(s, arg)
 static void w_object _((VALUE,struct dump_arg*,int));
 
 static int
-rb_hash_each(key, value, arg)
+hash_each(key, value, arg)
     VALUE key, value;
     struct dump_call_arg *arg;
 {
@@ -178,7 +178,7 @@ rb_hash_each(key, value, arg)
 }
 
 static int
-rb_obj_each(id, value, arg)
+obj_each(id, value, arg)
     ID id;
     VALUE value;
     struct dump_call_arg *arg;
@@ -324,7 +324,7 @@ w_object(obj, arg, limit)
 	    w_uclass(obj, rb_cHash, arg);
 	    w_byte(TYPE_HASH, arg);
 	    w_long(RHASH(obj)->tbl->num_entries, arg);
-	    st_foreach(RHASH(obj)->tbl, rb_hash_each, &c_arg);
+	    st_foreach(RHASH(obj)->tbl, hash_each, &c_arg);
 	    break;
 
 	  case T_STRUCT:
@@ -361,7 +361,7 @@ w_object(obj, arg, limit)
 		w_unique(path, arg);
 		if (ROBJECT(obj)->iv_tbl) {
 		    w_long(ROBJECT(obj)->iv_tbl->num_entries, arg);
-		    st_foreach(ROBJECT(obj)->iv_tbl, rb_obj_each, &c_arg);
+		    st_foreach(ROBJECT(obj)->iv_tbl, obj_each, &c_arg);
 		}
 		else {
 		    w_long(0, arg);

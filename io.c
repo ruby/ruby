@@ -59,6 +59,9 @@ struct timeval {
 extern void Init_File _((void));
 
 #ifdef __BEOS__
+# ifdef _X86_
+#  define NOFILE (OPEN_MAX)
+# endif
 #include <net/socket.h>
 #endif
 
@@ -1229,6 +1232,7 @@ rb_file_sysopen(fname, flags, mode)
     MakeOpenFile(port, fptr);
 
     fd = rb_open(fname, flags, mode);
+    m = rb_io_flags_mode(flags);
     fptr->mode = rb_io_mode_flags2(flags);
     fptr->f = rb_fdopen(fd, m);
     fptr->path = strdup(fname);
@@ -2208,73 +2212,10 @@ rb_f_readline(argc, argv)
 }
 
 static VALUE
-rb_f_tell()
-{
-  return rb_io_tell(file);
-}
-
-static VALUE
-rb_f_seek(self, offset, ptrname)
-     VALUE self, offset, ptrname;
-{
-  if (!next_argv()) {
-    rb_raise(rb_eArgError, "no stream to seek");
-  }
-
-  return rb_io_seek(file, offset, ptrname);
-}
-
-static VALUE
-rb_f_set_pos(self, offset)
-     VALUE self, offset;
-{
-  if (!next_argv()) {
-    rb_raise(rb_eArgError, "no stream to pos");
-  }
-
-  return rb_io_set_pos(file, offset);
-}
-
-static VALUE
-rb_f_rewind()
-{
-  return rb_io_rewind(file);
-}
-
-static VALUE
-rb_f_eof()
-{
-    if (init_p == 0 && !next_argv())
-	return Qtrue;
-    if (rb_io_eof(file)) {
-	next_p = 1;
-	return Qtrue;
-    }
-    return Qfalse;
-}
-
-static VALUE
 rb_f_getc()
 {
+    rb_warn("getc is obsolete; use STDIN.getc instead");
     return rb_io_getc(rb_stdin);
-}
-
-static VALUE
-rb_f_ungetc(self, c)
-    VALUE self, c;
-{
-    return rb_io_ungetc(rb_stdin, c);
-}
-
-static VALUE
-rb_f_readchar()
-{
-    VALUE c = rb_f_getc();
-
-    if (NIL_P(c)) {
-	rb_eof_error();
-    }
-    return c;
 }
 
 static VALUE
@@ -2781,6 +2722,40 @@ rb_io_s_readlines(argc, argv, io)
 }
 
 static VALUE
+arg_tell()
+{
+    return rb_io_tell(file);
+}
+
+static VALUE
+arg_seek(self, offset, ptrname)
+     VALUE self, offset, ptrname;
+{
+    if (!next_argv()) {
+	rb_raise(rb_eArgError, "no stream to seek");
+    }
+
+    return rb_io_seek(file, offset, ptrname);
+}
+
+static VALUE
+arg_set_pos(self, offset)
+     VALUE self, offset;
+{
+    if (!next_argv()) {
+	rb_raise(rb_eArgError, "no stream to pos");
+    }
+
+    return rb_io_set_pos(file, offset);
+}
+
+static VALUE
+arg_rewind()
+{
+    return rb_io_rewind(file);
+}
+
+static VALUE
 arg_fileno()
 {
     return rb_io_fileno(file);
@@ -2852,6 +2827,25 @@ arg_readchar()
 	rb_eof_error();
     }
     return c;
+}
+
+static VALUE
+arg_eof()
+{
+    if (init_p == 0 && !next_argv())
+	return Qtrue;
+    if (rb_io_eof(file)) {
+	next_p = 1;
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
+static VALUE
+rb_f_eof()
+{
+    rb_warn("eof? is obsolete; use ARGF.eof? instead");
+    return arg_eof();
 }
 
 static VALUE
@@ -2952,15 +2946,10 @@ Init_IO()
     rb_define_global_function("puts", rb_f_puts, -1);
     rb_define_global_function("gets", rb_f_gets, -1);
     rb_define_global_function("readline", rb_f_readline, -1);
-    rb_define_global_function("tell", rb_f_tell, 0);
-    rb_define_global_function("seek", rb_f_seek, 2);
-    rb_define_global_function("rewind", rb_f_rewind, 0);
     rb_define_global_function("eof", rb_f_eof, 0);
     rb_define_global_function("eof?", rb_f_eof, 0);
     rb_define_global_function("getc", rb_f_getc, 0);
-    rb_define_global_function("readchar", rb_f_readchar, 0);
     rb_define_global_function("select", rb_f_select, -1);
-    rb_define_global_function("ungetc", rb_f_ungetc, 1);
 
     rb_define_global_function("readlines", rb_f_readlines, -1);
 
@@ -3086,14 +3075,13 @@ Init_IO()
     rb_define_singleton_method(argf, "readline", rb_f_readline, -1);
     rb_define_singleton_method(argf, "getc", arg_getc, 0);
     rb_define_singleton_method(argf, "readchar", arg_readchar, 0);
-    rb_define_singleton_method(argf, "tell", rb_f_tell, 0);
-    rb_define_singleton_method(argf, "seek", rb_f_seek, 2);
-    rb_define_singleton_method(argf, "rewind", rb_f_rewind, 0);
-    rb_define_singleton_method(argf, "pos", rb_f_tell, 0);
-    rb_define_singleton_method(argf, "pos=", rb_f_set_pos, 1);
-    rb_define_singleton_method(argf, "eof", rb_f_eof, 0);
-    rb_define_singleton_method(argf, "eof?", rb_f_eof, 0);
-    rb_define_singleton_method(argf, "ungetc", rb_f_ungetc, 1);
+    rb_define_singleton_method(argf, "tell", arg_tell, 0);
+    rb_define_singleton_method(argf, "seek", arg_seek, 2);
+    rb_define_singleton_method(argf, "rewind", arg_rewind, 0);
+    rb_define_singleton_method(argf, "pos", arg_tell, 0);
+    rb_define_singleton_method(argf, "pos=", arg_set_pos, 1);
+    rb_define_singleton_method(argf, "eof", arg_eof, 0);
+    rb_define_singleton_method(argf, "eof?", arg_eof, 0);
 
     rb_define_singleton_method(argf, "to_s", arg_filename, 0);
     rb_define_singleton_method(argf, "filename", arg_filename, 0);

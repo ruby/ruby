@@ -579,6 +579,7 @@ module Tk
   end
 
   module Wm
+    include TkComm
     def aspect(*args)
       w = window(tk_call('wm', 'grid', path, *args))
       w.split.collect{|s|s.to_i} if args.length == 0

@@ -5,6 +5,7 @@ Language Spec.
 * method to retrieve argument information (need new C API)
 * multiple return values, yield values.  maybe imcompatible
 * cascading method invocation.
+* def Class#method .. end
 
 Hacking Interpreter
 
@@ -14,6 +15,13 @@ Hacking Interpreter
 * remove rb_eval() recursions
 * syntax tree -> bytecode ???
 * scrambled script, or script filter
+
+Standard Libraries
+
+* String#scanf(?)
+* Object#fmt(?)
+* Integer[num], Float[num] (String[str]??)
+* Stream or Port, abstract superclass of IO.
 
 Extension Libraries
 

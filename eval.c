@@ -786,12 +786,19 @@ error_print()
 {
     VALUE errat;
     VALUE eclass;
-    VALUE einfo;
-    volatile int safe = safe_level;
+    char *einfo;
+    int elen;
 
     if (NIL_P(ruby_errinfo)) return;
 
-    errat = get_backtrace(ruby_errinfo);
+    PUSH_TAG(PROT_NONE);
+    if (EXEC_TAG() == 0) {
+	errat = get_backtrace(ruby_errinfo);
+    }
+    else {
+	errat = Qnil;
+    }
+    POP_TAG();
     if (!NIL_P(errat)) {
 	VALUE mesg = RARRAY(errat)->ptr[0];
 
@@ -802,37 +809,45 @@ error_print()
     }
 
     eclass = CLASS_OF(ruby_errinfo);
-    einfo = rb_obj_as_string(ruby_errinfo);
-    if (eclass == rb_eRuntimeError && RSTRING(einfo)->len == 0) {
+    PUSH_TAG(PROT_NONE);
+    if (EXEC_TAG() == 0) {
+	einfo = str2cstr(rb_obj_as_string(ruby_errinfo), &elen);
+    }
+    else {
+	einfo = "";
+	elen = 0;
+    }
+    POP_TAG();
+    if (eclass == rb_eRuntimeError && elen == 0) {
 	fprintf(stderr, ": unhandled exception\n");
     }
     else {
 	VALUE epath;
 
 	epath = rb_class_path(eclass);
-	if (RSTRING(einfo)->len == 0) {
+	if (elen == 0) {
 	    fprintf(stderr, ": ");
 	    fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
 	    putc('\n', stderr);
 	}
 	else {
 	    char *tail  = 0;
-	    int len = RSTRING(einfo)->len;
+	    int len = elen;
 
 	    if (RSTRING(epath)->ptr[0] == '#') epath = 0;
-	    if (tail = strchr(RSTRING(einfo)->ptr, '\n')) {
-		len = tail - RSTRING(einfo)->ptr;
+	    if (tail = strchr(einfo, '\n')) {
+		len = tail - einfo;
 		tail++;		/* skip newline */
 	    }
 	    fprintf(stderr, ": ");
-	    fwrite(RSTRING(einfo)->ptr, 1, len, stderr);
+	    fwrite(einfo, 1, elen, stderr);
 	    if (epath) {
 		fprintf(stderr, " (");
 		fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
 		fprintf(stderr, ")\n");
 	    }
 	    if (tail) {
-		fwrite(tail, 1, RSTRING(einfo)->len-len-1, stderr);
+		fwrite(tail, 1, elen-len-1, stderr);
 		putc('\n', stderr);
 	    }
 	}
@@ -858,7 +873,6 @@ error_print()
 	    }
 	}
     }
-    safe_level = safe;
 }
 
 #if !defined(NT) && !defined(__MACOS__)
@@ -895,7 +909,7 @@ ruby_init()
     /* default visibility is private at toplevel */
     SCOPE_SET(SCOPE_PRIVATE);
 
-    PUSH_TAG(PROT_NONE)
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	rb_call_inits();
 	ruby_class = rb_cObject;
@@ -3479,8 +3493,9 @@ rb_f_missing(argc, argv, obj)
     VALUE obj;
 {
     ID    id;
-    VALUE desc = 0;
+    volatile VALUE d = 0;
     char *format = 0;
+    char *desc = "";
     char *file = ruby_sourcefile;
     int   line = ruby_sourceline;
 
@@ -3492,19 +3507,19 @@ rb_f_missing(argc, argv, obj)
 	format = "undefined method `%s' for nil";
 	break;
       case T_TRUE:
-	format = "undefined method `%s' for Qtrue";
+	format = "undefined method `%s' for true";
 	break;
       case T_FALSE:
-	format = "undefined method `%s' for Qfalse";
+	format = "undefined method `%s' for false";
 	break;
       case T_OBJECT:
-	desc = rb_any_to_s(obj);
+	d = rb_any_to_s(obj);
 	break;
       default:
-	desc = rb_inspect(obj);
+	d = rb_inspect(obj);
 	break;
     }
-    if (desc) {
+    if (d) {
 	if (last_call_status & CSTAT_PRIV) {
 	    format = "private method `%s' called for %s";
 	}
@@ -3524,9 +3539,10 @@ rb_f_missing(argc, argv, obj)
 	if (!format) {
 	    format = "undefined method `%s' for %s";
 	}
-	if (RSTRING(desc)->len > 65) {
-	    desc = rb_any_to_s(obj);
+	if (RSTRING(d)->len > 65) {
+	    d = rb_any_to_s(obj);
 	}
+	desc = RSTRING(d)->ptr;
     }
 
     ruby_sourcefile = file;
@@ -3534,9 +3550,7 @@ rb_f_missing(argc, argv, obj)
     PUSH_FRAME();		/* fake frame */
     *ruby_frame = *_frame.prev->prev;
 
-    rb_raise(rb_eNameError, format,
-	     rb_id2name(id),
-	     desc?(char*)RSTRING(desc)->ptr:"");
+    rb_raise(rb_eNameError, format, rb_id2name(id), desc);
     POP_FRAME();
 
     return Qnil;		/* not reached */
@@ -4456,6 +4470,12 @@ find_file(file)
 	return file;
     }
 
+    if (file[0] == '~') {
+	VALUE argv[1];
+	argv[0] = rb_str_new2(file);
+	file = STR2CSTR(rb_file_s_expand_path(1, argv));
+    }
+
     if (rb_load_path) {
 	int i;
 
@@ -4492,9 +4512,6 @@ rb_load(fname, wrap)
     }
     else {
 	Check_SafeStr(fname);
-    }
-    if (RSTRING(fname)->ptr[0] == '~') {
-	fname = rb_file_s_expand_path(1, &fname);
     }
     file = find_file(RSTRING(fname)->ptr);
     if (!file) {
@@ -4733,6 +4750,20 @@ rb_f_require(obj, fname)
     return Qtrue;
 }
 
+static VALUE
+require_method(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    int i;
+
+    for (i=0; i<argc; i++) {
+	rb_f_require(self, argv[i]);
+    }
+    return Qnil;
+}
+
 static void
 set_method_visibility(self, argc, argv, ex)
     VALUE self;
@@ -4898,6 +4929,17 @@ rb_obj_call_init(obj)
     POP_ITER();
 }
 
+void
+rb_obj_call_init2(obj, argc, argv)
+    VALUE obj;
+    int argc;
+    VALUE *argv;
+{
+    PUSH_ITER(rb_iterator_p()?ITER_PRE:ITER_NOT);
+    rb_funcall2(obj, init, argc, argv);
+    POP_ITER();
+}
+
 VALUE
 rb_class_new_instance(argc, argv, klass)
     int argc;
@@ -4963,7 +5005,7 @@ errinfo_setter(val, id, var)
     ID id;
     VALUE *var;
 {
-    if (!rb_obj_is_kind_of(val, rb_eException)) {
+    if (!NIL_P(val) && !rb_obj_is_kind_of(val, rb_eException)) {
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
     *var = val;
@@ -5175,7 +5217,7 @@ Init_load()
     rb_define_readonly_variable("$\"", &rb_features);
 
     rb_define_global_function("load", rb_f_load, -1);
-    rb_define_global_function("require", rb_f_require, 1);
+    rb_define_global_function("require", require_method, -1);
     rb_define_global_function("autoload", rb_f_autoload, 2);
     rb_global_variable(&ruby_wrapper);
 }

@@ -51,7 +51,6 @@ OBJS	      = array.o \
 		error.o \
 		eval.o \
 		file.o \
-		fnmatch.o \
 		gc.o \
 		glob.o \
 		hash.o \
@@ -152,6 +151,9 @@ dup2.o: @srcdir@/missing/dup2.c
 flock.o: @srcdir@/missing/flock.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/flock.c
 
+fnmatch.o: @srcdir@/missing/fnmatch.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/fnmatch.c
+
 memcmp.o: @srcdir@/missing/memcmp.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/memcmp.c
 
@@ -216,7 +218,7 @@ file.o: file.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 fnmatch.o: fnmatch.c config.h fnmatch.h
 gc.o: gc.c ruby.h config.h defines.h intern.h rubysig.h st.h node.h env.h re.h regex.h
 glob.o: config.h glob.c fnmatch.h
-hash.o: hash.c ruby.h config.h defines.h intern.h st.h rubysig.h
+hash.o: hash.c ruby.h config.h defines.h intern.h st.h rubysig.h util.h
 inits.o: inits.c ruby.h config.h defines.h intern.h
 io.o: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 main.o: main.c ruby.h config.h defines.h intern.h

@@ -1,3 +1,127 @@
+Tue Feb 23 14:21:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): warn if identifier! immediately followed by `='.
+
+Tue Feb 23 12:32:41 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* eval.c (rb_load): tilde expandion moved to find_file.
+
+	* eval.c (find_file): tilde expandion added.
+
+Tue Feb 23 10:50:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (require_method): require can handle multiple fnames.
+
+	* hash.c (rb_hash_foreach_iter): hash key may be nil.
+
+Mon Feb 22 17:44:02 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): should not pop failure point on success for
+	  non-greedy matches.
+
+	* io.c (Init_IO): remove global_functions getc, readchar, ungetc,
+	  seek, tell, rewind.
+
+Sat Feb 20 22:54:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (rb_num2long): no implicit conversion from boolean.
+
+Sat Feb 20 09:58:42 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* numeric.c (flo_to_s): portable Infinity and NaN support.
+
+Sat Feb 20 07:13:31 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* io.c (rb_file_sysopen): forgot to initialize a local variable.
+
+Fri Feb 19 23:05:07 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_subseq): range check changed.
+
+	* marshal.c: increment MARSHAL_MINOR for Time format change.
+
+	* time.c (time_old_load): support old marshal format.
+
+	* time.c (time_load): changed for new format Y/M/D/h/m/s/usec.
+
+	* time.c (time_dump): marshal dump format has changed.
+
+Fri Feb 19 00:25:57 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_arg): should reject "sep\0" and such.
+
+	* time.c (time_plus): Time#+ should not receive Time object
+	  operand.
+
+	* string.c (rb_str_substr): nagative length raises exception now.
+
+	* array.c (beg_len): if end == -1, it points end of the array.
+
+	* array.c (rb_ary_subseq): nagative length raises exception now.
+
+Thu Feb 18 20:57:04 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* time.c (rb_strftime): strftime() may return 0 on success too.
+
+	* time.c (time_strftime): `\0' within format string shoule not be
+	  ommited in the result.
+
+	* time.c (rb_strftime): zero length format.
+
+	* time.c (time_to_a): yday start with 1 now.
+
+	* time.c (time_zone): support for long timezone name.
+
+	* time.c (time_yday): yday start with 1 now.
+
+	* time.c (time_minus): minus calculation was wrong.
+
+	* time.c (time_minus): sec, usec should be at least `long', maybe
+	  they should be `time_t'.
+
+	* time.c (time_plus): addition with float was wrong.
+
+	* time.c (time_to_s): support for long timezone name.
+
+	* time.c (time_gm_or_local): too far future check moved.
+
+	* time.c (time_arg): treat 2 digit year as 69-99 => 1969-1999,
+	  00-68 => 2000-2068
+
+Thu Feb 18 03:56:47 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* missing/fnmatch.c: moved to missing directory.
+
+Wed Feb 17 16:22:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* struct.c (rb_struct_alloc): actual initialization now be done in
+	  `initialize'.
+
+Wed Feb 17 09:47:15 1999  okabe katsuyuki  <hgc02147@nifty.ne.jp>
+
+	* regex.c (re_search): use mbclen() instead of ismbchar().
+
+	* re.c (rb_reg_s_quote): should handle mbchars properly.
+
+Wed Feb 17 01:25:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): stop comment concatenation by backslash follows
+	  after >= 0x80 char.  may cause problem with Latin chars.
+
+	* eval.c (error_print): exception in rb_obj_as_string() caused
+	  SEGV. protect it by PUSH_TAG/POP_TAG.
+
+	* error.c (exc_exception): `Exception#exception' should return self.
+
+Wed Feb 17 01:12:22 1999  Hirotaka Ichikawa  <hirotaka.ichikawa@tosmec.toshiba.co.jp>
+
+	* configure.in: BeOS patch.
+
+Tue Feb 16 14:25:00 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): should reallocate mbc space for
+	  character class unless current_mbctype is ASCII.
+
 Mon Feb 15 15:48:30 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* configure.in: specify `-Wl,-E' only for GNU ld.
@@ -9,6 +133,15 @@ Mon Feb 15 11:43:22 1999  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
 Sun Feb 14 22:36:40 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
 	* sprintf.c (rb_f_sprintf): `%G' was ommited.
+
+Sun Feb 14 12:47:48 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* numeric.c (Init_Numeric): allow divide by zero on FreeBSD.
+
+	* numeric.c (Init_Numeric): FloatDomainError added.
+
+	* configure.in (AC_REPLACE_FUNCS): add checks for functions
+	  insinf, isnan, and finite.
 
 Sat Feb 13 01:24:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

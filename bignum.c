@@ -403,6 +403,13 @@ rb_dbl2big(d)
     VALUE z;
     double u = (d < 0)?-d:d;
 
+    if (isinf(d)) {
+	rb_raise(rb_eFloatDomainError, d < 0 ? "-Inifinity" : "Inifinity");
+    }
+    if (isnan(d)) {
+	rb_raise(rb_eFloatDomainError, "NaN");
+    }
+
     while (!POSFIXABLE(u) || 0 != (long)u) {
 	u /= (double)(BIGRAD);
 	i++;

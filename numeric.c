@@ -25,7 +25,8 @@ VALUE rb_cFloat;
 VALUE rb_cInteger;
 VALUE rb_cFixnum;
 
-VALUE rb_eZeroDiv;
+VALUE rb_eZeroDivError;
+VALUE rb_eFloatDomainError;
 
 ID rb_frame_last_func();
 VALUE rb_float_new();
@@ -34,7 +35,7 @@ double rb_big2dbl();
 void
 rb_num_zerodiv()
 {
-    rb_raise(rb_eZeroDiv, "divided by 0");
+    rb_raise(rb_eZeroDivError, "divided by 0");
 }
 
 static VALUE
@@ -188,13 +189,17 @@ flo_to_s(flt)
 {
     char buf[24];
     char *s;
+    double value = RFLOAT(flt)->value;
 
-    sprintf(buf, "%-.10g", RFLOAT(flt)->value);
+    if (isinf(value))
+	return rb_str_new2(value < 0 ? "-Infinity" : "Infinity");
+    else if(isnan(value))
+	return rb_str_new2("NaN");
+    else
+	sprintf(buf, "%-.10g", value);
     if (s = strchr(buf, ' ')) *s = '\0';
     s = buf; if (s[0] == '-') s++;
-    if (strchr(s, '.') == 0 &&
-	strcmp(s, "Inf") != 0 &&
-	strcmp(s, "NaN") != 0) {
+    if (strchr(s, '.') == 0) {
 	int len = strlen(buf);
 	char *ind = strchr(buf, 'e');
 
@@ -684,6 +689,11 @@ rb_num2long(val)
 
       case T_STRING:
 	rb_raise(rb_eTypeError, "no implicit conversion from string");
+	return Qnil;		/* not reached */
+
+      case T_TRUE:
+      case T_FALSE:
+	rb_raise(rb_eTypeError, "no implicit conversion from boolean");
 	return Qnil;		/* not reached */
 
       default:
@@ -1405,12 +1415,13 @@ Init_Numeric()
 {
 #ifdef __FreeBSD__
     /* allow divide by zero -- Inf */
-    fpsetmask(fpgetmask() & ~(FP_X_DZ|FP_X_INV));
+    fpsetmask(fpgetmask() & ~(FP_X_DZ|FP_X_INV|FP_X_OFL));
 #endif
     coerce = rb_intern("coerce");
     to_i = rb_intern("to_i");
 
-    rb_eZeroDiv = rb_define_class("ZeroDivisionError", rb_eStandardError);
+    rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
+    rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eStandardError);
     rb_cNumeric = rb_define_class("Numeric", rb_cObject);
 
     rb_include_module(rb_cNumeric, rb_mComparable);

@@ -306,10 +306,14 @@ rb_str_substr(str, start, len)
 {
     VALUE str2;
 
+    if (len == 0) return rb_str_new(0,0);
+    if (len < 0) {
+	rb_raise(rb_eIndexError, "negative length %d", len);
+    }
     if (start < 0) {
 	start = RSTRING(str)->len + start;
     }
-    if (RSTRING(str)->len <= start || len < 0) {
+    if (RSTRING(str)->len <= start) {
 	return rb_str_new(0,0);
     }
     if (RSTRING(str)->len < start + len) {
@@ -327,33 +331,27 @@ rb_str_subseq(str, beg, end)
     VALUE str;
     int beg, end;
 {
-    int len;
+    int b, e, len;
 
-    if ((beg > 0 && end > 0 || beg < 0 && end < 0) && beg > end) {
-	rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", beg, end);
-    }
-
+    b = beg; e = end;
     if (beg < 0) {
 	beg = RSTRING(str)->len + beg;
-	if (beg < 0) beg = 0;
     }
     if (end < 0) {
 	end = RSTRING(str)->len + end;
-	if (end < 0) end = -1;
-	else if (RSTRING(str)->len < end) {
-	    end = RSTRING(str)->len;
-	}
     }
-
-    if (beg >= RSTRING(str)->len) {
+    if (beg > end) {
+	if (e != -1) {
+	    rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", b, e);
+	}
 	return rb_str_new(0, 0);
     }
 
-    len = end - beg + 1;
-    if (len < 0) {
+    if (beg >= RSTRING(str)->len) {
 	len = 0;
     }
 
+    len = end - beg + 1;
     return rb_str_substr(str, beg, len);
 }
 
@@ -863,41 +861,34 @@ rb_str_replace(str, beg, len, val)
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 }
 
-/* rb_str_replace2() understands negatice offset */
+/* rb_str_replace2() understands negative offset */
 static void
 rb_str_replace2(str, beg, end, val)
     VALUE str, val;
     int beg, end;
 {
-    int len;
+    int b, e, len;
 
-    if ((beg > 0 && end > 0 || beg < 0 && end < 0) && beg > end) {
-	rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", beg, end);
-    }
-
+    b = beg; e = end;
     if (beg < 0) {
 	beg = RSTRING(str)->len + beg;
-	if (beg < 0) {
-	    beg = 0;
-	}
-    }
-    if (RSTRING(str)->len <= beg) {
-	beg = RSTRING(str)->len;
     }
     if (end < 0) {
 	end = RSTRING(str)->len + end;
-	if (end < 0) {
-	    end = 0;
+    }
+    if (beg > end) {
+	if (e != -1) {
+	    rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", b, e);
 	}
+	end = beg - 1;
     }
-    if (RSTRING(str)->len <= end) {
-	end = RSTRING(str)->len - 1;
-    }
-    len = end - beg + 1;	/* length of substring */
-    if (len < 0) {
+    if (beg >= RSTRING(str)->len) {
+	beg = RSTRING(str)->len;
 	len = 0;
     }
-
+    else {
+	len = end - beg + 1;
+    }
     rb_str_replace(str, beg, len, val);
 }
 
@@ -1529,7 +1520,7 @@ rb_str_upcase_bang(str)
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
-	    s+=mbclen(*s);
+	    s+=mbclen(*s) - 1;
 	}
 	else if (islower(*s)) {
 	    *s = toupper(*s);
@@ -1563,7 +1554,7 @@ rb_str_downcase_bang(str)
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
-	    s+=mbclen(*s);
+	    s+=mbclen(*s) - 1;
 	}
 	else if (ISUPPER(*s)) {
 	    *s = tolower(*s);
@@ -1601,7 +1592,7 @@ rb_str_capitalize_bang(str)
     }
     while (++s < send) {
 	if (ismbchar(*s)) {
-	    s+=mbclen(*s);
+	    s+=mbclen(*s) - 1;
 	}
 	else if (ISUPPER(*s)) {
 	    *s = tolower(*s);
@@ -1633,7 +1624,7 @@ rb_str_swapcase_bang(str)
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
-	    s+=mbclen(*s);
+	    s+=mbclen(*s) - 1;
 	}
 	else if (ISUPPER(*s)) {
 	    *s = tolower(*s);

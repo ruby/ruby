@@ -775,12 +775,12 @@ rb_f_sleep(argc, argv)
     return INT2FIX(end);
 }
 
-#if !defined(NT) && !defined(DJGPP) && !defined(__human68k__) && !defined(USE_CWGUSI)
 static VALUE
 proc_getpgrp(argc, argv)
     int argc;
     VALUE *argv;
 {
+#ifdef HAVE_GETPGRP
     int pgrp;
 #ifndef GETPGRP_VOID
     VALUE vpid;
@@ -795,6 +795,9 @@ proc_getpgrp(argc, argv)
 #endif
     if (pgrp < 0) rb_sys_fail(0);
     return INT2FIX(pgrp);
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -902,7 +905,6 @@ proc_setpriority(obj, which, who, prio)
     rb_notimplement();
 #endif
 }
-#endif
 
 static VALUE
 proc_getuid(obj)
@@ -1075,7 +1077,6 @@ Init_process()
 #endif /* ifndef USE_CWGUSI */
 #endif /* ifndef NT */
 
-#if !defined(NT) && !defined(DJGPP) && !defined(__human68k__) && !defined(USE_CWGUSI)
     rb_define_module_function(rb_mProcess, "getpgrp", proc_getpgrp, -1);
     rb_define_module_function(rb_mProcess, "setpgrp", proc_setpgrp, -1);
     rb_define_module_function(rb_mProcess, "getpgid", proc_getpgid, 1);
@@ -1100,5 +1101,4 @@ Init_process()
     rb_define_module_function(rb_mProcess, "euid=", proc_seteuid, 1);
     rb_define_module_function(rb_mProcess, "egid", proc_getegid, 0);
     rb_define_module_function(rb_mProcess, "egid=", proc_setegid, 1);
-#endif
 }

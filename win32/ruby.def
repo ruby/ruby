@@ -31,6 +31,9 @@ EXPORTS
 	rb_cFile
 ;hash.c:
 	rb_cHash
+	ruby_setenv
+	ruby_setenv2
+	ruby_unsetenv
 ;io.c:
 	rb_cIO
 ;numeric.c:

@@ -35,4 +35,8 @@ char *ruby_mktemp _((void));
 void ruby_qsort _((void*, int, int, int (*)()));
 #define qsort(b,n,s,c) ruby_qsort(b,n,s,c)
 
+void ruby_setenv _((char*, char*));
+void ruby_setenv2 _((char*, char*));
+void ruby_unsetenv _((char*));
+
 #endif /* UTIL_H */

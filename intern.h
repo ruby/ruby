@@ -118,6 +118,7 @@ void rb_jump_tag _((int)) NORETURN;
 void rb_provide _((char*));
 VALUE rb_f_require _((VALUE, VALUE));
 void rb_obj_call_init _((VALUE));
+void rb_obj_call_init2 _((VALUE, int, VALUE*));
 VALUE rb_class_new_instance _((int, VALUE*, VALUE));
 VALUE rb_f_lambda _((void));
 VALUE rb_protect _((VALUE (*)(), VALUE, int*));
@@ -286,8 +287,6 @@ VALUE rb_struct_alloc _((VALUE, VALUE));
 VALUE rb_struct_aref _((VALUE, VALUE));
 VALUE rb_struct_aset _((VALUE, VALUE, VALUE));
 VALUE rb_struct_getmember _((VALUE, ID));
-/* time.c */
-VALUE rb_time_new _((int, int));
 /* variable.c */
 VALUE rb_mod_name _((VALUE));
 VALUE rb_class_path _((VALUE));

@@ -116,7 +116,7 @@ static VALUE
 classname(klass)
     VALUE klass;
 {
-    VALUE path;
+    VALUE path = Qnil;
     ID classpath = rb_intern("__classpath__");
 
     while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {

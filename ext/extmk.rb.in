@@ -294,8 +294,7 @@ LDSHARED = @LDSHARED@
 
   mfile.printf "\
 
-#program_transform_name = -e @program_transform_name@
-#RUBY_INSTALL_NAME = `t='$(program_transform_name)'; echo @RUBY_INSTALL_NAME@ | sed $$t`
+RUBY_INSTALL_NAME = @RUBY_INSTALL_NAME@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -449,7 +448,7 @@ def extmake(target)
       elsif $clean
 	system "make clean"
       else
-	system "make all"
+	system "make all" or exit
       end
     end
     if $static
@@ -514,6 +513,10 @@ end
 
 exit if $install or $clean
 $extinit = "" unless $extinit
+
+ruby = "@RUBY_INSTALL_NAME@@binsuffix@"
+miniruby = "miniruby@binsuffix@"
+
 if $extlist.size > 0
   for s,t in $extlist
     f = format("%s/%s.a", s, t)
@@ -546,8 +549,8 @@ if $extlist.size > 0
 
   Dir.chdir ".."
 
-  if older("ruby@binsuffix@", "#{$top_srcdir}/ext/@setup@") or older("ruby@binsuffix@", "miniruby@binsuffix@")
-    `rm -f ruby@binsuffix@`
+  if older(ruby, "#{$top_srcdir}/ext/@setup@") or older(ruby, miniruby)
+    system("rm -f #{ruby}")
   end
 
   if $extobjs
@@ -558,12 +561,12 @@ if $extlist.size > 0
   if PLATFORM =~ /m68k-human|beos/
     $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
   end
-  system format('make ruby@binsuffix@ EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
+  system format('make #{ruby} EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
 else
   Dir.chdir ".."
-  if older("@RUBY_INSTALL_NAME@@binsuffix@", "miniruby@binsuffix@")
-    `rm -f @RUBY_INSTALL_NAME@@binsuffix@`
-    system("make @RUBY_INSTALL_NAME@@binsuffix@")
+  if older(ruby, miniruby)
+    system("rm -f #{ruby}")
+    system("make #{ruby}")
   end
 end
 

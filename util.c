@@ -809,3 +809,4 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
    else goto nxt;                         /* need not to sort both sides */
  }
 }
+

@@ -24,15 +24,15 @@
 
 /* symbol mangling for ruby */
 #ifdef RUBY
-# define re_compile_fastmap rb_re_compile_fastmap
-# define re_compile_pattern rb_re_compile_pattern
-# define re_copy_registers rb_re_copy_registers
-# define re_free_pattern rb_re_free_pattern
-# define re_free_registers rb_re_free_registers
-# define re_match rb_re_match
-# define re_mbcinit rb_re_mbcinit
-# define re_search rb_re_search
-# define re_set_casetable rb_re_set_casetable
+# define re_compile_fastmap ruby_re_compile_fastmap
+# define re_compile_pattern ruby_re_compile_pattern
+# define re_copy_registers ruby_re_copy_registers
+# define re_free_pattern ruby_re_free_pattern
+# define re_free_registers ruby_re_free_registers
+# define re_match ruby_re_match
+# define re_mbcinit ruby_re_mbcinit
+# define re_search ruby_re_search
+# define re_set_casetable ruby_re_set_casetable
 #endif
 
 #include <stddef.h>

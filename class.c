@@ -603,7 +603,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
 	    rb_raise(rb_eArgError, "wrong # of arguments (%d for %d)", argc, n);
 	for (i=0; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
-	    *var = argv[i];
+	    if (var) *var = argv[i];
 	}
 	p++;
     }
@@ -616,10 +616,10 @@ rb_scan_args(argc, argv, fmt, va_alist)
 	for (; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
 	    if (argc > i) {
-		*var = argv[i];
+		if (var) *var = argv[i];
 	    }
 	    else {
-		*var = Qnil;
+		if (var) *var = Qnil;
 	    }
 	}
 	p++;
@@ -628,10 +628,10 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if(*p == '*') {
 	var = va_arg(vargs, VALUE*);
 	if (argc > i) {
-	    *var = rb_ary_new4(argc-i, argv+i);
+	    if (var) *var = rb_ary_new4(argc-i, argv+i);
 	}
 	else {
-	    *var = rb_ary_new();
+	    if (var) *var = rb_ary_new();
 	}
     }
     else if (*p == '\0') {

@@ -290,6 +290,7 @@ exc_exception(argc, argv, self)
 {
     VALUE etype, exc;
 
+    if (argc == 0) return self;
     if (argc == 1 && self == argv[0]) return self;
     etype = CLASS_OF(self);
     while (FL_TEST(etype, FL_SINGLETON)) {

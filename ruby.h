@@ -39,10 +39,11 @@ extern "C" {
 #include <stdio.h>
 
 /* need to include <ctype.h> to use these macros */
+#undef ISPRINT
+#define ISPRINT(c) isprint((unsigned char)(c))
 #define ISSPACE(c) isspace((unsigned char)(c))
 #define ISUPPER(c) isupper((unsigned char)(c))
 #define ISLOWER(c) islower((unsigned char)(c))
-#define ISPRINT(c) isprint((unsigned char)(c))
 #define ISALNUM(c) isalnum((unsigned char)(c))
 #define ISALPHA(c) isalpha((unsigned char)(c))
 #define ISDIGIT(c) isdigit((unsigned char)(c))
@@ -480,7 +481,9 @@ EXTERN VALUE rb_cStruct;
 
 EXTERN VALUE rb_eException;
 EXTERN VALUE rb_eStandardError;
-EXTERN VALUE rb_eSystemExit, rb_eInterrupt, rb_eFatal;
+EXTERN VALUE rb_eSystemExit;
+EXTERN VALUE rb_eInterrupt;
+EXTERN VALUE rb_eFatal;
 EXTERN VALUE rb_eArgError;
 EXTERN VALUE rb_eEOFError;
 EXTERN VALUE rb_eIndexError;
@@ -492,8 +495,9 @@ EXTERN VALUE rb_eSecurityError;
 EXTERN VALUE rb_eSyntaxError;
 EXTERN VALUE rb_eSystemCallError;
 EXTERN VALUE rb_eTypeError;
-EXTERN VALUE rb_eZeroDiv;
+EXTERN VALUE rb_eZeroDivError;
 EXTERN VALUE rb_eNotImpError;
+EXTERN VALUE rb_eFloatDomainError;
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
 extern __inline__ VALUE rb_class_of _((VALUE));
