@@ -1,3 +1,7 @@
+Mon Mar  7 10:22:06 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/un.rb: should use OptionParser. (backported form HEAD)
+
 Mon Mar  7 09:18:42 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_cmp_m): should not return false but nil.
