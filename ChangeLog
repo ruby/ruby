@@ -1,3 +1,7 @@
+Fri Aug 20 11:46:43 2004  UENO Katsuhiro  <katsu@blue.sky.or.jp>
+
+	* ext/zlib/zlib.c: GzipReader#ungetc caused crc error.
+
 Thu Aug 19 16:29:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: Fail to treat a hash value of 'font' option. 

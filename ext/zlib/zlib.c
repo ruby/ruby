@@ -119,6 +119,7 @@ static void gzfile_read_header _((struct gzfile*));
 static void gzfile_check_footer _((struct gzfile*));
 static void gzfile_write _((struct gzfile*, Bytef*, uInt));
 static long gzfile_read_more _((struct gzfile*));
+static void gzfile_calc_crc _((struct gzfile*, VALUE));
 static VALUE gzfile_read _((struct gzfile*, int));
 static VALUE gzfile_read_all _((struct gzfile*));
 static void gzfile_ungetc _((struct gzfile*, int));
@@ -2068,6 +2069,21 @@ gzfile_read_more(gz)
     return gz->z.buf_filled;
 }
 
+static void
+gzfile_calc_crc(gz, str)
+    struct gzfile *gz;
+    VALUE str;
+{
+    if (RSTRING(str)->len <= gz->ungetc) {
+	gz->ungetc -= RSTRING(str)->len;
+    }
+    else {
+	gz->crc = crc32(gz->crc, RSTRING(str)->ptr + gz->ungetc,
+			RSTRING(str)->len - gz->ungetc);
+	gz->ungetc = 0;
+    }
+}
+
 static VALUE
 gzfile_read(gz, len)
     struct gzfile *gz;
@@ -2090,13 +2106,7 @@ gzfile_read(gz, len)
     }
 
     dst = zstream_shift_buffer(&gz->z, len);
-    if (RSTRING(dst)->len <= gz->ungetc) {
-	gz->ungetc -= RSTRING(dst)->len;
-    }
-    else {
-	gz->crc = crc32(gz->crc, RSTRING(dst)->ptr + gz->ungetc,
-			RSTRING(dst)->len - gz->ungetc);
-    }
+    gzfile_calc_crc(gz, dst);
 
     OBJ_TAINT(dst);  /* for safe */
     return dst;
@@ -2119,13 +2129,7 @@ gzfile_read_all(gz)
     }
 
     dst = zstream_detach_buffer(&gz->z);
-    if (RSTRING(dst)->len <= gz->ungetc) {
-	gz->ungetc -= RSTRING(dst)->len;
-    }
-    else {
-	gz->crc = crc32(gz->crc, RSTRING(dst)->ptr + gz->ungetc,
-			RSTRING(dst)->len - gz->ungetc);
-    }
+    gzfile_calc_crc(gz, dst);
 
     OBJ_TAINT(dst);  /* for safe */
     return dst;
@@ -3008,8 +3012,7 @@ gzreader_skip_linebreaks(gz)
     while (n++, *(p++) == '\n') {
 	if (n >= gz->z.buf_filled) {
 	    str = zstream_detach_buffer(&gz->z);
-	    gz->crc = crc32(gz->crc, RSTRING(str)->ptr,
-			    RSTRING(str)->len);
+	    gzfile_calc_crc(gz, str);
 	    while (gz->z.buf_filled == 0) {
 		if (GZFILE_IS_FINISHED(gz)) return;
 		gzfile_read_more(gz);
@@ -3020,7 +3023,7 @@ gzreader_skip_linebreaks(gz)
     }
 
     str = zstream_shift_buffer(&gz->z, n - 1);
-    gz->crc = crc32(gz->crc, RSTRING(str)->ptr, RSTRING(str)->len);
+    gzfile_calc_crc(gz, str);
 }
 
 static VALUE
