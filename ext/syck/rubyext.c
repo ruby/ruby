@@ -138,6 +138,7 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
         VALUE str2 = rb_funcall2(src, s_read, 1, &n);
         if (!NIL_P(str2))
         {
+            StringValue(str2);
             len = RSTRING(str2)->len;
             memcpy( buf + skip, RSTRING(str2)->ptr, len );
         }
@@ -821,9 +822,11 @@ syck_parser_bufsize_set( self, size )
 {
 	SyckParser *parser;
 
-	Data_Get_Struct(self, SyckParser, parser);
     if ( rb_respond_to( size, s_to_i ) ) {
-        parser->bufsize = NUM2INT(rb_funcall(size, s_to_i, 0));
+        int size = NUM2INT(rb_funcall(size, s_to_i, 0));
+
+	Data_Get_Struct(self, SyckParser, parser);
+        parser->bufsize = size;
     }
 	return self;
 }
@@ -856,10 +859,10 @@ syck_parser_load(argc, argv, self)
     volatile VALUE hash;	/* protect from GC */
 
     rb_scan_args(argc, argv, "11", &port, &proc);
-	Data_Get_Struct(self, SyckParser, parser);
 
     input = rb_hash_aref( rb_attr_get( self, s_options ), sym_input );
     model = rb_hash_aref( rb_attr_get( self, s_options ), sym_model );
+	Data_Get_Struct(self, SyckParser, parser);
 	syck_set_model( parser, input, model );
 
 	bonus.taint = syck_parser_assign_io(parser, port);
@@ -887,10 +890,10 @@ syck_parser_load_documents(argc, argv, self)
     volatile VALUE hash;
 
     rb_scan_args(argc, argv, "1&", &port, &proc);
-	Data_Get_Struct(self, SyckParser, parser);
 
     input = rb_hash_aref( rb_attr_get( self, s_options ), sym_input );
     model = rb_hash_aref( rb_attr_get( self, s_options ), sym_model );
+	Data_Get_Struct(self, SyckParser, parser);
 	syck_set_model( parser, input, model );
     
 	bonus.taint = syck_parser_assign_io(parser, port);
@@ -1374,8 +1377,8 @@ syck_emitter_write_m( self, str )
 {
     SyckEmitter *emitter;
 
-	Data_Get_Struct(self, SyckEmitter, emitter);
     StringValue(str);
+	Data_Get_Struct(self, SyckEmitter, emitter);
     syck_emitter_write( emitter, RSTRING(str)->ptr, RSTRING(str)->len );
     return self;
 }
@@ -1389,8 +1392,8 @@ syck_emitter_simple_write( self, str )
 {
     SyckEmitter *emitter;
 
-	Data_Get_Struct(self, SyckEmitter, emitter);
     StringValue(str);
+	Data_Get_Struct(self, SyckEmitter, emitter);
     syck_emitter_simple( emitter, RSTRING(str)->ptr, RSTRING(str)->len );
     return self;
 }

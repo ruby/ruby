@@ -9,6 +9,13 @@
 #  or
 #	include Open3
 #      stdin, stdout, stderr = popen3('nroff -man')
+#
+#  popen3 can also take a block which will receive stdin, stdout and stderr
+#  as parameters.  This ensures stdin, stdout and stderr are closed once
+#  the block exits.
+#
+#  Such as
+#      Open3.popen3('nroff -man') { |stdin, stdout, stderr| ... }
 
 module Open3
   #[stdin, stdout, stderr] = popen3(command);

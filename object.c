@@ -149,7 +149,7 @@ VALUE
 rb_obj_id_obsolete(obj)
     VALUE obj;
 {
-    rb_warning("Object#id will be deprecated; use Object#object_id");
+    rb_warn("Object#id will be deprecated; use Object#object_id");
     return rb_obj_id(obj);
 }
 
