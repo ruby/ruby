@@ -1,3 +1,23 @@
+Tue Jan  6 06:37:53 2004  Dave Thomas  <dave@pragprog.com>
+
+	* bin/rdoc: Add --ri-system switch
+
+	* lib/.document: Update with list of files that seem to have
+	  documentation
+
+	* lib/test/unit.rb: Reorder comment to make it RDoc friendly.
+
+	* Makefile.in: add install-nodoc target, and make it
+	  generate RDoc on default install.
+
+	* lib/rdoc/ri/ri_options.rb (RI::Options::parse): Add
+	  --doc-dir option to ri.
+
+Tue Jan  6 00:04:40 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_or_yield_parameters): 
+	  fix parsing if there are braces in a method parameter list
+
 Tue Jan  6 01:01:04 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/dir.h, win32/win32.c: fix patch miss.

@@ -1997,8 +1997,11 @@ module RDoc
         case tk
         when TkSEMICOLON
           break
+        when TkLBRACE
+          nest += 1
         when TkRBRACE
-          break
+          nest -= 1
+          break if nest <= 0
         when TkLPAREN, TkfLPAREN
           nest += 1
         when end_token

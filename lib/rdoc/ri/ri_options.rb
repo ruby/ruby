@@ -25,6 +25,9 @@ module RI
     # the formatting we apply to the output
     attr_reader :formatter
 
+    # the directory we search for original documentation
+    attr_reader :doc_dir
+
     module OptionList
       
       OPTION_LIST = [
@@ -34,12 +37,16 @@ module RI
         [ "--classes",      "-c",   nil,
           "Display the names of classes and modules we\n" +
           "know about"],
+
+        [ "--doc-dir",      "-d",   "<dirname>",
+          "A directory to search for documentation. If not\n"+
+          "specified, we search the standard rdoc/ri directories."],
                                                            
         [ "--format",       "-f",   "<name>",
          "Format to use when displaying output:\n" +
          "   " + RI::TextFormatter.list + "\n" +
          "Use 'bs' (backspace) with most pager programs.\n" +
-         "To use ANSI, either also use the -T option, or\n\n" +
+         "To use ANSI, either also use the -T option, or\n" +
          "tell your pager to allow control characters\n" +
          "(for example using the -R option to less)"],
 
@@ -116,54 +123,56 @@ module RI
               ri 'Array.[]'
               ri compact\\!
 
-      EOT
+        EOT
 
-      if short_form
-        puts "For help on options, type 'ri -h'"
-        puts "For a list of classes I know about, type 'ri -c'"
-      else
-        puts "Options:\n\n"
-        OPTION_LIST.each do |long, short, arg, desc|
-          opt = sprintf("%20s", "#{long}, #{short}")
-          oparg = sprintf("%-7s", arg)
-          print "#{opt} #{oparg}"
-          desc = desc.split("\n")
-          if arg.nil? || arg.length < 7  
-            puts desc.shift
-          else
+        if short_form
+          puts "For help on options, type 'ri -h'"
+          puts "For a list of classes I know about, type 'ri -c'"
+        else
+          puts "Options:\n\n"
+          OPTION_LIST.each do|long, short, arg, desc|
+            opt = sprintf("%15s", "#{long}, #{short}")
+            if arg
+              opt << " " << arg
+            end
+            print opt
+            desc = desc.split("\n")
+            if opt.size < 17
+              print " "*(18-opt.size)
+              puts desc.shift
+            else
+              puts
+            end
+            desc.each do |line|
+              puts(" "*18 + line)
+            end
             puts
           end
-          desc.each do |line|
-            puts(" "*28 + line)
-          end
-          puts
+          exit 0
         end
-
-        exit 0
       end
     end
-
-  end
 
     # Parse command line options.
 
     def parse
-
+    
       @use_stdout   = !STDOUT.tty?
       @width        = 72
       @formatter    = RI::TextFormatter.for("plain") 
-      @list_classes = false
+        @list_classes = false
 
       begin
-        
+
         go = GetoptLong.new(*OptionList.options)
         go.quiet = true
-        
+
         go.each do |opt, arg|
           case opt
           when "--help"      then OptionList.usage
           when "--no-pager"  then @use_stdout = true
           when "--classes"   then @list_classes = true
+          when "--doc-dir"   then @doc_dir = arg
 
           when "--format"
             @formatter = RI::TextFormatter.for(arg)
@@ -181,12 +190,18 @@ module RI
             end
           end
         end
-        
+
       rescue GetoptLong::InvalidOption, GetoptLong::MissingArgument => error
         OptionList.error(error.message)
-        
+
       end
     end
+
+    # Return the doc_dir as an array, or nil if no overriding doc dir was given
+    def paths
+      @doc_dir ? [ @doc_dir ] : nil
+    end
   end
+
 end
 
