@@ -215,7 +215,6 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
 {
     VALUE which;
     VALUE val;
-    int   na;
     unsigned long f,fo;
  
     if(rb_scan_args(argc,argv,"11",&which,&val)==1) val = Qnil;
@@ -882,9 +881,8 @@ BigDecimal_sqrt(VALUE self, VALUE nFig)
 
     GUARD_OBJ(a,GetVpValue(self,1));
     mx = a->Prec *(VpBaseFig() + 1);
-    mx *= 2;
 
-    n = GetPositiveInt(nFig) + VpBaseFig() + 1;
+    n = GetPositiveInt(nFig) + VpDblFig() + 1;
     if(mx <= n) mx = n;
     GUARD_OBJ(c,VpCreateRbObject(mx, "0"));
     VpSqrt(c, a);
@@ -1045,7 +1043,6 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
     int   fPlus=0; /* =0:default,=1: set ' ' before digits ,set '+' before digits. */
     Real  *vp;
     char  *psz;
-    char  *psz2;
     char   ch;
     U_LONG nc;
     S_INT  mc = 0;
@@ -1357,7 +1354,7 @@ static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
 #endif /* _DEBUG */
 
 static U_LONG gnPrecLimit = 0;  /* Global upper limit of the precision newly allocated */
-static short  gfRoundMode = VP_ROUND_HALF_UP; /* Mode for general rounding operation   */
+static U_LONG gfRoundMode = VP_ROUND_HALF_UP; /* Mode for general rounding operation   */
 
 static U_LONG BASE_FIG = 4;     /* =log10(BASE)  */
 static U_LONG BASE = 10000L;    /* Base value(value must be 10**BASE_FIG) */
@@ -3257,7 +3254,7 @@ VpToFString(Real *a,char *psz,int fFmt,int fPlus)
            e = a->frac[i];
            while(m) {
                nn = e / m;
-               *psz++ = nn + '0';
+               *psz++ = (char)(nn + '0');
                e = e - nn * m;
                m /= 10;
            }
@@ -3627,14 +3624,22 @@ VpSqrt(Real *y, Real *x)
     S_LONG nr;
     double val;
 
+     /* Negative ? */
+    if(VpGetSign(x) < 0) {
+        VpSetNaN(y);
+        return VpException(VP_EXCEPTION_OP,"(VpSqrt) SQRT(negative value)",0);
+    }
+
+    /* NaN or Infinity ? */
     if(!VpHasVal(x)) {
         VpAsgn(y,x,1);
         goto Exit;
     }
 
-    if(VpGetSign(x) < 0) {
-        VpSetNaN(y);
-        return VpException(VP_EXCEPTION_OP,"(VpSqrt) SQRT(negative value)",0);
+    /* One ? */
+    if(VpIsOne(x)) {
+        VpSetOne(y);
+        goto Exit;
     }
 
     n = (S_LONG)y->MaxPrec;
@@ -3647,17 +3652,11 @@ VpSqrt(Real *y, Real *x)
     y_prec = (S_LONG)y->MaxPrec;
     f_prec = (S_LONG)f->MaxPrec;
 
-    VpAsgn(y, x, 1);        /* assign initial guess. y <= x */
     prec = x->exponent;
     if(prec > 0)    ++prec;
     else            --prec;
-    prec = prec / 2 - (S_LONG)y->MaxPrec;
-    /*
-     *  y  = 0.yyyy yyyy yyyy YYYY
-     *  BASE_FIG =   |  |
-     *  prec  =(0.YYYY*BASE-4)
-     */
-    VpVtoD(&val, &e, y);    /* val <- y  */
+    prec = prec - (S_LONG)y->MaxPrec;
+    VpVtoD(&val, &e, x);    /* val <- x  */
     e /= ((S_LONG)BASE_FIG);
     n = e / 2;
     if(e - n * 2 != 0) {
@@ -3675,13 +3674,13 @@ VpSqrt(Real *y, Real *x)
         y->MaxPrec *= 2;
         if(y->MaxPrec > (U_LONG)y_prec) y->MaxPrec = (U_LONG)y_prec;
         f->MaxPrec = y->MaxPrec;
-        VpDivd(f, r, x, y);    /* f = x/y  */
-        VpAddSub(r, y, f, 1);    /* r = y + x/y  */
+        VpDivd(f, r, x, y);     /* f = x/y    */
+        VpAddSub(r, f, y, -1);  /* r = f - y  */
         VpMult(f, VpPt5, r);    /* f = 0.5*r  */
-        VpAddSub(r, f, y, -1);
-        if(VpIsZero(r))         goto converge;
-        if(r->exponent <= prec) goto converge;
-        VpAsgn(y, f, 1);
+        if(VpIsZero(f))         goto converge;
+        VpAddSub(r, f, y, 1);   /* r = y + f  */
+        VpAsgn(y, r, 1);        /* y = r      */
+        if(f->exponent <= prec) goto converge;
     } while(++nr < n);
     /* */
 #ifdef _DEBUG
@@ -3691,7 +3690,6 @@ VpSqrt(Real *y, Real *x)
     }
 #endif /* _DEBUG */
     y->MaxPrec = y_prec;
-    goto Exit;
 
 converge:
     VpChangeSign(y,(S_INT)1);
@@ -3765,7 +3763,7 @@ VpMidRound(Real *y, int f, int nf)
     case VP_ROUND_HALF_EVEN: /* Banker's rounding */
         if(v>5) ++div;
         else if(v==5) {
-            if(i==(BASE_FIG-1)) {
+            if((U_LONG)i==(BASE_FIG-1)) {
                 if(ix && (y->frac[ix-1]%2)) ++div;
             } else {
                 if(div%2) ++div;
