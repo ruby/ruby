@@ -1,3 +1,7 @@
+Thu Feb 12 21:49:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/ftools.rb: documented
+
 Thu Feb 12 21:19:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/base64.rb: added and tidied documentation
