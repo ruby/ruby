@@ -1,3 +1,14 @@
+Wed Feb  2 03:30:58 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/lib/ripper/tokenizer.rb -> lexer.rb.
+
+	* ext/ripper/lib/ripper/lexer.rb: new method Ripper.slice.
+	  [experimental]
+
+	* ext/ripper/lib/ripper/sexp.rb: new file. [experimental]
+
+	* ext/ripper/lib/ripper.rb: require ripper/lexer and ripper/sexp.
+
 Tue Feb  1 21:49:24 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (DRb::DRbObject#respond_to?): check marshal_dump and

@@ -1,3 +1,4 @@
 require 'ripper/core'
-require 'ripper/tokenizer'
+require 'ripper/lexer'
 require 'ripper/filter'
+require 'ripper/sexp'
