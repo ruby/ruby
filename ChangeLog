@@ -6,6 +6,8 @@ Sat Oct 18 05:48:59 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/yaml2byte.c: YAML to bytecode converter.
 
+	* ext/syck/yamlbyte.h: Ditto.
+
 	* ext/syck/bytecode.c: Bytecode parser fixes to empty collections
 	  and empty strings.
 
