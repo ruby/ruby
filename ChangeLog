@@ -10,6 +10,8 @@ Tue Jul 29 19:20:34 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST: add lib/un.rb.
 
+	* ext/extmk.rb (INSTALL_PROG, INSTALL_DATA): modify verbose messages.
+
 Tue Jul 29 18:55:22 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: unify coding style.

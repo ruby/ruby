@@ -168,8 +168,8 @@ unless $message
       $ignore ||= true
     when "install"
       $ignore ||= true
-      $mflags.unshift("INSTALL_PROG=install -c -m 0755",
-		      "INSTALL_DATA=install -c -m 0644",
+      $mflags.unshift("INSTALL_PROG=install -c -p -m 0755",
+		      "INSTALL_DATA=install -c -p -m 0644",
 		      "MAKEDIRS=mkdir -p") if $dryrun
     end
     $message.sub!(/e?$/, "ing")
