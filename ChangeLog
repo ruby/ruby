@@ -1,4 +1,11 @@
+Wed Jan 21 01:43:42 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): open parentheses after identifiers are argument 
+	  list, even if whitespaces have seen.
+
 Tue Jan 20 15:19:59 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (terms): quoted word list by %w(a b c).
 
 	* ext/tcltklib/extconf.rb: more accurate check for tcl/tk libs.
 

@@ -1984,6 +1984,15 @@ parse_qstring(term)
     return STRING;
 }
 
+static int
+parse_quotedword(term)
+    int term;
+{
+    if (parse_qstring(term) == 0) return 0;
+    yylval.node = NEW_CALL(NEW_STR(yylval.val), rb_intern("split"), 0);
+    return DSTRING;
+}
+
 char *strdup();
 
 static int
@@ -2596,11 +2605,6 @@ retry:
 	    c = LPAREN;
 	    lex_state = EXPR_BEG;
 	}
-	else if (lex_state == EXPR_ARG && space_seen) {
-	    arg_ambiguous();
-	    c = LPAREN;
-	    lex_state = EXPR_BEG;
-	}
 	else {
 	    lex_state = EXPR_BEG;
 	}
@@ -2682,6 +2686,9 @@ retry:
 	      case 'q':
 		return parse_qstring(term);
 
+	      case 'w':
+		return parse_quotedword(term);
+
 	      case 'x':
 		return parse_string('`', term);
 
@@ -2689,7 +2696,7 @@ retry:
 		return parse_regx(term);
 
 	      default:
-		yyerror("unknown type of string `%c'", c);
+		yyerror("unknown type of %string");
 		return 0;
 	    }
 	}
