@@ -106,7 +106,6 @@ Standard Libraries
 * deprecate Array#indexes, and Array#indices.
 * require "1.6" etc. by /usr/lib/ruby/1.6/1.6.rb ;-)
 * save both "feature names" and "normalized path" in $"
-* allow marshaling of extend'ed object.
 
 Extension Libraries
 

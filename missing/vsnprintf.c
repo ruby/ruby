@@ -1018,8 +1018,11 @@ cvt(value, ndigits, flags, sign, decpt, ch, length)
 	if (value < 0) {
 		value = -value;
 		*sign = '-';
-	} else
-		*sign = '\000';
+	} else if (value == 0.0 && 1.0/value < 0) {
+	    *sign = '-';
+	} else {
+	    *sign = '\000';
+	}
 	digits = BSD__dtoa(value, mode, ndigits, decpt, &dsgn, &rve);
 	if (flags & ALT) {	/* Print trailing zeros */
 		bp = digits + ndigits;

@@ -3,6 +3,11 @@ Fri Sep  6 12:11:22 2002  Minero Aoki  <aamine@loveruby.net>
 	* parse.y (rb_gc_mark_parser): should mark ALL global variables
 	  defined in parse.y.
 
+Fri Sep  6 01:15:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (ruby_xmalloc): remove MALLOC_LIMIT to avoid frequent
+	  garabage collection.
+
 Fri Sep  6 11:47:37 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (rb_gc_mark_parser): should mark global variables

@@ -114,7 +114,7 @@ w_bytes(s, n, arg)
 	fwrite(s, 1, n, arg->fp);
     }
     else {
-	rb_str_cat(arg->str, s, n);
+	rb_str_buf_cat(arg->str, s, n);
     }
 }
 

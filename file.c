@@ -2372,7 +2372,7 @@ path_check_1(path)
 	    && (!p || !(st.st_mode & S_ISVTX))
 #endif
 	    ) {
-	    rb_warn("Insecure world writable dir %s , mode 0%o", p0, st.st_mode);
+	    rb_warn("Insecure world writable dir %s, mode 0%o", p0, st.st_mode);
 	    if (p) *p = '/';
 	    return 0;
 	}

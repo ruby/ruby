@@ -53,16 +53,6 @@ void *alloca ();
 #endif
 
 static void run_final();
-
-#ifndef GC_MALLOC_LIMIT
-#if defined(MSDOS) || defined(__human68k__)
-#define GC_MALLOC_LIMIT 200000
-#else
-#define GC_MALLOC_LIMIT 8000000
-#endif
-#endif
-
-static unsigned long malloc_memories = 0;
 static VALUE nomem_error;
 
 void
@@ -88,11 +78,7 @@ ruby_xmalloc(size)
 	rb_raise(rb_eNoMemError, "negative allocation size (or too big)");
     }
     if (size == 0) size = 1;
-    malloc_memories += size;
 
-    if (malloc_memories > GC_MALLOC_LIMIT) {
-	rb_gc();
-    }
     RUBY_CRITICAL(mem = malloc(size));
     if (!mem) {
 	rb_gc();
@@ -129,7 +115,6 @@ ruby_xrealloc(ptr, size)
     }
     if (!ptr) return xmalloc(size);
     if (size == 0) size = 1;
-    malloc_memories += size;
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
 	rb_gc();
@@ -1131,14 +1116,11 @@ rb_gc()
     SET_STACK_END;
 
     if (dont_gc || during_gc) {
-	if (!freelist || malloc_memories > GC_MALLOC_LIMIT) {
-	    malloc_memories = 0;
+	if (!freelist) {
 	    add_heap();
 	}
 	return;
     }
-
-    malloc_memories = 0;
 
     if (during_gc) return;
     during_gc++;
