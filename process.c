@@ -86,11 +86,13 @@ rb_waitpid(pid, flags, st)
     }
 
   retry:
+    TRAP_BEG;
 #ifdef HAVE_WAITPID
     result = waitpid(pid, st, flags);
 #else  /* HAVE_WAIT4 */
     result = wait4(pid, st, flags, NULL);
 #endif
+    TRAP_END;
     if (result < 0) {
 	if (errno == EINTR) {
 	    rb_thread_polling();
@@ -116,7 +118,9 @@ rb_waitpid(pid, flags, st)
     }
 
     for (;;) {
+	TRAP_BEG;
 	result = wait(st);
+	TRAP_END;
 	if (result < 0) {
 	    if (errno == EINTR) {
 		rb_thread_schedule();
@@ -170,7 +174,11 @@ proc_wait()
 	return INT2FIX(data.pid);
     }
 
-    while ((pid = wait(&state)) < 0) {
+    while (1) {
+	TRAP_BEG;
+	pid = wait(&state);
+	TRA_END;
+	if (pid >= 0) break;
         if (errno == EINTR) {
             rb_thread_schedule();
             continue;
@@ -218,7 +226,7 @@ proc_waitpid2(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE pid = proc_waitpid2(argc, argv);
+    VALUE pid = proc_waitpid(argc, argv);
     return rb_assoc_new(pid, rb_last_status);
 }
 

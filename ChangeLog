@@ -1,3 +1,27 @@
+Wed Oct 18 03:10:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.2 released.
+
+Tue Oct 17 17:30:34 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (error_print): ruby_sourcefile may be NULL.
+
+Tue Oct 17 16:36:28 2000  Wes Nakamura  <wknaka@pobox.com>
+
+	* pack.c (NATINT_U32): wrong use of sizeof.
+
+Tue Oct 17 12:48:20 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* eval.c (rb_abort): nil check against ruby_errinfo.
+
+	* eval.c (rb_thread_schedule): use FOREACH_THREAD_FROM instead of
+	  FOREACH_THREAD, since curr_thread may be removed from thread ring.
+
+	* eval.c (THREAD_ALLOC): errinfo should be Qnil.
+
+	* eval.c (rb_callcc): th->prev,th->next are now already
+	  initialized in THREAD_ALLOC.
+
 Mon Oct 16 15:37:33 2000  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* eval.c (rb_thread_inspect): tag size was shorter than required.
@@ -26,6 +50,18 @@ Mon Oct 16 01:02:02 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  $SAFE >= 4.
 
 	* parse.y (sym): symbols for class variable names.
+
+Sun Oct 15 01:49:18 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_flock): should accept interrupt.
+
+	* process.c (rb_waitpid): ditto.
+
+	* process.c (rb_waitpid): ditto.
+
+	* process.c (proc_wait): ditto.
+
+	* process.c (proc_waitpid2): wrong recursion.
 
 Sat Oct 14 03:32:13 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

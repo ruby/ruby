@@ -1530,6 +1530,7 @@ rb_file_flock(obj, operation)
 {
 #ifndef __CHECKER__
     OpenFile *fptr;
+    int ret;
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
@@ -1537,7 +1538,10 @@ rb_file_flock(obj, operation)
     if (fptr->mode & FMODE_WRITABLE) {
 	fflush(GetWriteFile(fptr));
     }
-    if (flock(fileno(fptr->f), NUM2INT(operation)) < 0) {
+    TRAP_BEG;
+    ret = flock(fileno(fptr->f), NUM2INT(operation));
+    TRAP_END;
+    if (ret < 0) {
 #ifdef EWOULDBLOCK
 	if (errno == EWOULDBLOCK) {
 	    return Qfalse;

@@ -52,7 +52,8 @@ class CGI
       request.instance_eval do
 	@output_hidden = {session_key => id}
 	@output_cookies =  [
-          Cookie::new(session_key => id,
+          Cookie::new("name" => session_key,
+		      "value" => id,
 		      "path" => if ENV["SCRIPT_NAME"] then
 				  File::dirname(ENV["SCRIPT_NAME"])
 				else
@@ -82,6 +83,10 @@ class CGI
 
     def update
       @dbman.update
+    end
+
+    def close
+      @dbman.close
     end
 
     def delete

@@ -882,7 +882,10 @@ error_print()
     }
     POP_TAG();
     if (NIL_P(errat)) {
-	fprintf(stderr, "%s:%d", ruby_sourcefile, ruby_sourceline);
+	if (ruby_sourcefile)
+	    fprintf(stderr, "%s:%d", ruby_sourcefile, ruby_sourceline);
+	else
+	    fprintf(stderr, "%d", ruby_sourceline);
     }
     else {
 	VALUE mesg = RARRAY(errat)->ptr[0];
@@ -3224,7 +3227,7 @@ rb_f_exit(argc, argv, obj)
 static void
 rb_abort()
 {
-    if (ruby_errinfo) {
+    if (!NIL_P(ruby_errinfo)) {
 	error_print();
     }
     rb_exit(1);
@@ -7110,7 +7113,7 @@ rb_thread_schedule()
 	if (n < 0) {
 	    if (rb_trap_pending) rb_trap_exec();
 	    if (errno == EINTR) goto again;
-	    FOREACH_THREAD(th) {
+	    FOREACH_THREAD_FROM(curr, th) {
 		if (th->wait_for & WAIT_SELECT) {
 		    int v = 0;
 
@@ -7123,7 +7126,7 @@ rb_thread_schedule()
 		    }
 		}
 	    }
-	    END_FOREACH(th);
+	    END_FOREACH_FROM(curr, th);
 	}
 	if (n > 0) {
 	    now = -1.0;
@@ -7638,7 +7641,6 @@ rb_thread_abort_exc_set(thread, val)
 \
     th->status = THREAD_RUNNABLE;\
     th->result = 0;\
-    th->errinfo = Qnil;\
 \
     th->stk_ptr = 0;\
     th->stk_len = 0;\
@@ -7659,7 +7661,7 @@ rb_thread_abort_exc_set(thread, val)
     th->iter = 0;\
     th->tag = 0;\
     th->tracing = 0;\
-    th->errinfo = 0;\
+    th->errinfo = Qnil;\
     th->last_status = 0;\
     th->last_line = 0;\
     th->last_match = 0;\
@@ -8205,7 +8207,6 @@ rb_callcc(self)
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }
-    th->prev = th->next = 0;
     th->thread = curr_thread->thread;
 
     for (vars = th->dyna_vars; vars; vars = vars->next) {

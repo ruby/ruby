@@ -1098,6 +1098,7 @@ Init_Time()
     rb_define_method(rb_cTime, "wday", time_wday, 0);
     rb_define_method(rb_cTime, "yday", time_yday, 0);
     rb_define_method(rb_cTime, "isdst", time_isdst, 0);
+    rb_define_method(rb_cTime, "dst?", time_isdst, 0);
     rb_define_method(rb_cTime, "zone", time_zone, 0);
 
     rb_define_method(rb_cTime, "utc?", time_utc_p, 0);

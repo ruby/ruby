@@ -24,8 +24,8 @@
 #ifdef NATINT_PACK
 # define OFF16B(p) ((char*)(p) + (natint?0:(sizeof(short) - SIZE16)))
 # define OFF32B(p) ((char*)(p) + (natint?0:(sizeof(long) - SIZE32)))
-# define NATINT_I32(x) (natint?sizeof(NUM2LONG(x)):(NUM2I32(x)))
-# define NATINT_U32(x) (natint?sizeof(NUM2ULONG(x)):(NUM2U32(x)))
+# define NATINT_I32(x) (natint?NUM2LONG(x):(NUM2I32(x)))
+# define NATINT_U32(x) (natint?NUM2ULONG(x):(NUM2U32(x)))
 # define NATINT_LEN(type,len) (natint?sizeof(type):(len))
 # ifdef WORDS_BIGENDIAN
 #   define OFF16(p) OFF16B(p)
@@ -38,10 +38,13 @@
 #endif
 
 #ifndef OFF16
-# define OFF16B(p) (char*)(p)
-# define OFF32B(p) (char*)(p)
 # define OFF16(p) (char*)(p)
 # define OFF32(p) (char*)(p)
+#endif
+
+#ifndef OFF16B
+# define OFF16B(p) (char*)(p)
+# define OFF32B(p) (char*)(p)
 #endif
 
 #define define_swapx(x, xtype)		\
