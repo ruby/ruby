@@ -788,24 +788,14 @@ An end of a defun is found by moving forward from the beginning of one."
 	'(
 	  ;; #{ }, #$hoge, #@foo are not comments
 	  ("\\(#\\)[{$@]" 1 (1 . nil))
-	  ;; the last $' in the string ,'...$' is not variable
-	  ;; the last ?' in the string ,'...?' is not ascii code
-	  ("\\(^\\|[[ \t\n<+(,=]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[?$]\\('\\)"
-	   (2 (7 . nil))
-	   (4 (7 . nil)))
-	  ;; the last $` in the string ,`...$` is not variable
-	  ;; the last ?` in the string ,`...?` is not ascii code
-	  ("\\(^\\|[[ \t\n<+(,=]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[?$]\\(`\\)"
-	   (2 (7 . nil))
-	   (4 (7 . nil)))
-	  ;; the last $" in the string ,"...$" is not variable
-	  ;; the last ?" in the string ,"...?" is not ascii code
-	  ("\\(^\\|[[ \t\n<+(,=]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[?$]\\(\"\\)"
+	  ;; the last $', $", $` in the respective string is not variable
+	  ;; the last ?', ?", ?` in the respective string is not ascii code
+	  ("\\(^\\|[\[ \t\n<+\(,=]\\)\\(['\"`]\\)\\(\\\\.\\|\\2\\|[^'\"`\n\\\\]\\)*\\\\?[?$]\\(\\2\\)"
 	   (2 (7 . nil))
 	   (4 (7 . nil)))
 	  ;; $' $" $` .... are variables
 	  ;; ?' ?" ?` are ascii codes
-	  ("[?$][#\"'`]" 0 (1 . nil))
+	  ("\\(^\\|[^\\\\]\\)\\(\\\\\\\\\\)*[?$]\\([#\"'`]\\)" 3 (1 . nil))
 	  ;; regexps
 	  ("\\(^\\|[=(,~?:;]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
 	   (4 (7 . ?/))
@@ -874,7 +864,7 @@ An end of a defun is found by moving forward from the beginning of one."
        1 font-lock-function-name-face)
      ;; keywords
      (cons (concat
-	    "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\("
+	    "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(defined\\?\\|\\("
 	    (mapconcat
 	     'identity
 	     '("alias"
@@ -914,7 +904,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "yield"
 	       )
 	     "\\|")
-	    "\\)\\>")
+	    "\\)\\>\\)")
 	   2)
      ;; variables
      '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\>"

@@ -1,3 +1,10 @@
+Fri Jan 24 05:12:55 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): deal
+	  with escaped $ and ? at the end of strings.  [ruby-talk:62297]
+
+	* misc/ruby-mode.el (ruby-font-lock-keywords): added defined?.
+
 Thu Jan 23 17:25:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): do not warn discarding already undefined
