@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "syck.h"
+#include "ruby.h"
 
 void syck_parser_pop_level( SyckParser * );
 
@@ -44,7 +45,6 @@ syck_strndup( char *buf, long len )
 long
 syck_io_file_read( char *buf, SyckIoFile *file, long max_size, long skip )
 {
-    char *beg;
     long len = 0;
 
     ASSERT( file != NULL );
@@ -233,9 +233,6 @@ syck_st_free( SyckParser *p )
 void
 syck_free_parser( SyckParser *p )
 {
-    char *key;
-    SyckNode *node;
-
     /*
      * Free tables, levels
      */
@@ -477,13 +474,11 @@ syck_parser_readlen( SyckParser *p, long max_size )
 SYMID
 syck_parse( SyckParser *p )
 {
-    char *line;
-
     ASSERT( p != NULL );
 
     syck_st_free( p );
     syck_parser_reset_levels( p );
-    yyparse( p );
+    syckparse( p );
     return p->root;
 }
 

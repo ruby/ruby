@@ -42,6 +42,15 @@
 /* Using locations.  */
 #define YYLSP_NEEDED 0
 
+/* If NAME_PREFIX is specified substitute the variables and functions
+   names.  */
+#define yyparse syckparse
+#define yylex   sycklex
+#define yyerror syckerror
+#define yylval  sycklval
+#define yychar  syckchar
+#define yydebug syckdebug
+#define yynerrs sycknerrs
 
 
 /* Tokens.  */
@@ -88,7 +97,6 @@
 #define YYLEX_PARAM     parser
 
 
-
 /* Enabling traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 1
@@ -110,7 +118,7 @@ typedef union {
     char *name;
 } yystype;
 /* Line 193 of /usr/local/share/bison/yacc.c.  */
-#line 114 "y.tab.c"
+#line 123 "y.tab.c"
 # define YYSTYPE yystype
 # define YYSTYPE_IS_TRIVIAL 1
 #endif
@@ -128,10 +136,11 @@ typedef struct yyltype
 #endif
 
 /* Copy the second part of user declarations.  */
+int sycklex( YYSTYPE *, SyckParser * );
 
 
 /* Line 213 of /usr/local/share/bison/yacc.c.  */
-#line 135 "y.tab.c"
+#line 144 "y.tab.c"
 
 #if ! defined (yyoverflow) || YYERROR_VERBOSE
 
@@ -1450,7 +1459,7 @@ yyreduce:
     }
 
 /* Line 1016 of /usr/local/share/bison/yacc.c.  */
-#line 1454 "y.tab.c"
+#line 1463 "y.tab.c"
 
   yyvsp -= yylen;
   yyssp -= yylen;

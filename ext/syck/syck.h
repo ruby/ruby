@@ -17,6 +17,7 @@
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
+#include <ctype.h>
 #include "st.h"
 
 #if defined(__cplusplus)
@@ -302,11 +303,14 @@ char *syck_match_implicit( char *, size_t );
 char *syck_strndup( char *, long );
 long syck_io_file_read( char *, SyckIoFile *, long, long );
 long syck_io_str_read( char *, SyckIoStr *, long, long );
+char *syck_base64enc( char *, long );
+char *syck_base64dec( char *, long );
 SyckEmitter *syck_new_emitter();
 void syck_emitter_ignore_id( SyckEmitter *, SYMID );
 void syck_emitter_handler( SyckEmitter *, SyckOutputHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
+void syck_emitter_simple( SyckEmitter *, char *, long );
 void syck_emitter_write( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
 char *syck_emitter_start_obj( SyckEmitter *, SYMID );
@@ -356,6 +360,12 @@ SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
 
 void apply_seq_in_map( SyckParser *, SyckNode * );
+
+/*
+ * Lexer prototypes
+ */
+int syckparse( void * );
+void syckerror( char *msg );
 
 #ifndef ST_DATA_T_DEFINED
 typedef long st_data_t;

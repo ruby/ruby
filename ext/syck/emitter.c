@@ -13,8 +13,12 @@
 #include <string.h>
 
 #include "syck.h"
+#include "ruby.h"
 
 #define DEFAULT_ANCHOR_FORMAT "id%03d"
+
+static char b64_table[] =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 struct adjust_arg {
     /* Position to start adjusting */
@@ -22,6 +26,85 @@ struct adjust_arg {
     /* Adjusting by an offset */
     int offset;
 };
+
+/*
+ * Built-in base64 (from Ruby's pack.c)
+ */
+char *
+syck_base64enc( char *s, long len )
+{
+    long i = 0;
+    int padding = '=';
+    char *buff = S_ALLOCA_N(char, len * 4 / 3 + 6);
+
+    while (len >= 3) {
+        buff[i++] = b64_table[077 & (*s >> 2)];
+        buff[i++] = b64_table[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
+        buff[i++] = b64_table[077 & (((s[1] << 2) & 074) | ((s[2] >> 6) & 03))];
+        buff[i++] = b64_table[077 & s[2]];
+        s += 3;
+        len -= 3;
+    }
+    if (len == 2) {
+        buff[i++] = b64_table[077 & (*s >> 2)];
+        buff[i++] = b64_table[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
+        buff[i++] = b64_table[077 & (((s[1] << 2) & 074) | (('\0' >> 6) & 03))];
+        buff[i++] = padding;
+    }
+    else if (len == 1) {
+        buff[i++] = b64_table[077 & (*s >> 2)];
+        buff[i++] = b64_table[077 & (((*s << 4) & 060) | (('\0' >> 4) & 017))];
+        buff[i++] = padding;
+        buff[i++] = padding;
+    }
+    buff[i++] = '\n';
+    return buff;
+}
+
+char *
+syck_base64dec( char *s, long len )
+{
+    int a = -1,b = -1,c = 0,d;
+    static int first = 1;
+    static int b64_xtable[256];
+    char *ptr = syck_strndup( s, len );
+    char *end = ptr;
+    char *send = s + len;
+
+    if (first) {
+        int i;
+        first = 0;
+
+        for (i = 0; i < 256; i++) {
+        b64_xtable[i] = -1;
+        }
+        for (i = 0; i < 64; i++) {
+        b64_xtable[(int)b64_table[i]] = i;
+        }
+    }
+    while (s < send) {
+        while (s[0] == '\r' || s[0] == '\n') { s++; }
+        if ((a = b64_xtable[(int)s[0]]) == -1) break;
+        if ((b = b64_xtable[(int)s[1]]) == -1) break;
+        if ((c = b64_xtable[(int)s[2]]) == -1) break;
+        if ((d = b64_xtable[(int)s[3]]) == -1) break;
+        *end++ = a << 2 | b >> 4;
+        *end++ = b << 4 | c >> 2;
+        *end++ = c << 6 | d;
+        s += 4;
+    }
+    if (a != -1 && b != -1) {
+        if (s + 2 < send && s[2] == '=')
+        *end++ = a << 2 | b >> 4;
+        if (c != -1 && s + 3 < send && s[3] == '=') {
+        *end++ = a << 2 | b >> 4;
+        *end++ = b << 4 | c >> 2;
+        }
+    }
+    *end = '\0';
+    //RSTRING(buf)->len = ptr - RSTRING(buf)->ptr;
+    return ptr;
+}
 
 /*
  * Allocate an emitter

@@ -8,6 +8,7 @@
  */
 
 #include "syck.h"
+#include "ruby.h"
 
 /*
  * Node allocation functions
@@ -296,7 +297,6 @@ syck_seq_read( SyckNode *seq, long idx )
 void
 syck_free_members( SyckNode *n )
 {
-    int i;
     switch ( n->kind  )
     {
         case syck_str_kind:

@@ -1,3 +1,13 @@
+Mon Jul 28 19:22:08 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/syck.h: Added 'syck' yacc prefixes.
+
+    * ext/syck/gram.c: ditto.
+
+    * ext/syck/token.c: ditto.
+
+    * ext/syck: Added ruby.h reference to source files.
+
 Tue Jul 29 03:53:28 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/net/https.rb (use_ssl=): raise ProtocolError if

@@ -37,6 +37,9 @@ typedef struct RVALUE {
 
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
 
+/*
+ * symbols and constants
+ */
 static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
@@ -53,6 +56,9 @@ static double S_nan() { return S_zero() / S_zero(); }
 
 static VALUE syck_node_transform( VALUE );
 
+/*
+ * handler prototypes
+ */
 SYMID rb_syck_parse_handler _((SyckParser *, SyckNode *));
 SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
 void rb_syck_err_handler _((SyckParser *, char *));
@@ -234,7 +240,7 @@ rb_syck_parse_handler(p, n)
     SyckParser *p;
     SyckNode *n;
 {
-    VALUE t, v, obj;
+    VALUE t, obj, v = Qnil;
     int i;
     struct parser_xtra *bonus;
 
@@ -311,9 +317,8 @@ rb_syck_load_handler(p, n)
     SyckParser *p;
     SyckNode *n;
 {
-    VALUE obj;
+    VALUE obj = Qnil;
     long i;
-    int str = 0;
     int check_transfers = 0;
     struct parser_xtra *bonus;
 
@@ -511,6 +516,9 @@ rb_syck_err_handler(p, msg)
            p->lineptr); 
 }
 
+/*
+ * provide bad anchor object to the parser.
+ */
 SyckNode *
 rb_syck_bad_anchor_handler(p, a)
     SyckParser *p;
@@ -546,26 +554,8 @@ syck_set_model( parser, model )
 }
 
 /*
- * wrap syck_parse().
+ * mark parser nodes
  */
-static VALUE
-rb_run_syck_parse(parser)
-    SyckParser *parser;
-{
-    return syck_parse(parser);
-}
-
-/*
- * free parser.
- */
-static VALUE
-rb_syck_ensure(parser)
-    SyckParser *parser;
-{
-    syck_free_parser( parser );
-    return 0;
-}
-
 static void
 syck_mark_parser(parser)
     SyckParser *parser;
@@ -620,7 +610,7 @@ syck_parser_load(argc, argv, self)
     VALUE *argv;
 	VALUE self;
 {
-    VALUE port, proc, v, model;
+    VALUE port, proc, model;
 	SyckParser *parser;
     struct parser_xtra bonus;
     volatile VALUE hash;	/* protect from GC */
@@ -637,10 +627,6 @@ syck_parser_load(argc, argv, self)
     else                 bonus.proc = proc;
     
 	parser->bonus = (void *)&bonus;
-
-#if 0
-    v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
-#endif
 
     return syck_parse( parser );
 }
@@ -730,7 +716,7 @@ syck_loader_add_domain_type( argc, argv, self )
     VALUE *argv;
        VALUE self;
 {
-    VALUE domain, type_re, proc, families, ruby_yaml_org, domain_types;
+    VALUE domain, type_re, proc;
 
     rb_scan_args(argc, argv, "2&", &domain, &type_re, &proc);
     syck_loader_add_type_family( self, domain, type_re, proc );
@@ -747,7 +733,7 @@ syck_loader_add_builtin_type( argc, argv, self )
     VALUE *argv;
        VALUE self;
 {
-    VALUE type_re, proc, families, ruby_yaml_org, domain_types;
+    VALUE type_re, proc;
 
     rb_scan_args(argc, argv, "1&", &type_re, &proc);
     syck_loader_add_type_family( self, rb_str_new2( YAML_DOMAIN ), type_re, proc );
@@ -763,7 +749,7 @@ syck_loader_add_ruby_type( argc, argv, self )
     VALUE *argv;
        VALUE self;
 {
-    VALUE type_re, proc, families, ruby_yaml_org, domain_types;
+    VALUE type_re, proc;
 
     rb_scan_args(argc, argv, "1&", &type_re, &proc);
     syck_loader_add_type_family( self, rb_str_new2( RUBY_DOMAIN ), type_re, proc );
@@ -858,7 +844,7 @@ syck_loader_transfer( self, type, val )
 
     if ( taguri != NULL )
     {
-        VALUE scheme, domain, name, type_hash, type_proc = Qnil;
+        VALUE scheme, name, type_hash, domain = Qnil, type_proc = Qnil;
         VALUE type_uri = rb_str_new2( taguri );
         VALUE str_taguri = rb_str_new2("taguri");
         VALUE str_xprivate = rb_str_new2("x-private");
