@@ -374,7 +374,7 @@ def with_destdir(dir)
   /^\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
 end
 
-def create_makefile(target, srcdir =  = $srcdir)
+def create_makefile(target, srcdir = $srcdir)
   save_libs = $libs.dup
   save_libpath = $LIBPATH.dup
   print "creating Makefile\n"
