@@ -13,12 +13,14 @@ You can freely distribute/modify this library.
 
 == Class Methods
 
-: new( address = 'localhost', port = 80 )
+: new( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
   creates a new Net::HTTP object.
+  if proxy_addr is given, this method is equals to
+  Net::HTTP::Proxy(proxy_addr,proxy_port).
 
-: start( address = 'localhost', port = 80 )
-: start( address = 'localhost', port = 80 ) {|http| .... }
-  equals to Net::HTTP.new( address, port ).start
+: start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
+: start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
+  is equals to Net::HTTP.new( address, port, proxy_addr, proxy_port ).start(&block)
 
 : port
   HTTP default port, 80
@@ -127,11 +129,8 @@ All "key" is case-insensitive.
 
 == Methods
 
-: code
-  HTTP result code. For example, '302'
-
-: message
-  HTTP result message. For example, 'Not Found'
+: body
+  the entity body. ("dest" argument for HTTP#get, post, put)
 
 : self[ key ]
   returns header field for "key".
@@ -148,9 +147,11 @@ All "key" is case-insensitive.
 : each {|name,value| .... }
   iterate for each field name and value pair
 
-: body
-  "dest" argument for HTTP#get, post, put
+: code
+  HTTP result code. For example, '302'
 
+: message
+  HTTP result message. For example, 'Not Found'
 
 = class HTTPReadAdapter
 
@@ -169,6 +170,37 @@ All "key" is case-insensitive.
   If this method is called twice, block is not called and
   returns first "dest".
 
+
+= http.rb version 1.2 features
+
+You can use these 1.2 features by calling method
+Net::HTTP.new_implementation. Or you want to use 1.1 feature,
+call Net::HTTP.old_implementation.
+
+Now old_impl is default and if new_impl was called then Net::HTTP
+changes self into new implementation.  In 1.2, new_impl is default
+and if old_impl was called then changes self into old implementation.
+
+== Warning!!!
+
+You can call new_implementation/old_implementation any times
+but CANNOT call both of them at the same time.
+You must use one implementation in one application (process).
+
+== Method
+
+: get( path, u_header = nil )
+: get( path, u_header = nil ) {|str| .... }
+get document from "path" and returns HTTPResponse object.
+
+: head( path, u_header = nil )
+get only document header from "path" and returns HTTPResponse object.
+
+: post( path, data, u_header = nil )
+: post( path, data, u_header = nil ) {|str| .... }
+post "data" to "path" entity and get document,
+then returns HTTPResponse object.
+
 =end
 
 require 'net/protocol'
@@ -184,15 +216,73 @@ module Net
     protocol_param :port,         '80'
     protocol_param :command_type, '::Net::HTTPCommand'
 
-    def HTTP.procdest( dest, block )
-      if block then
-        return ReadAdapter.new( block ), nil
-      else
-        dest ||= ''
-        return dest, dest
+    class << self
+
+      def procdest( dest, block )
+        if block then
+          return ReadAdapter.new( block ), nil
+        else
+          dest ||= ''
+          return dest, dest
+        end
       end
+
+      alias orig_new new
+
+      def new( address = nil, port = nil, p_addr = nil, p_port = nil )
+        (p_addr ? self::Proxy(p_addr, p_port) : self).orig_new( address, port )
+      end
+
+      def start( address = nil, port = nil, p_addr = nil, p_port = nil, &block )
+        new( address, port, p_addr, p_port ).start( &block )
+      end
+
     end
 
+    @new_impl = false
+
+    def HTTP.new_implementation
+      return if @new_impl
+      @new_impl = true
+      module_eval %^
+
+      undef head
+      alias head head2
+      undef head2
+
+      alias old_get2 get2
+      undef get2
+      undef get
+
+      def get( path, u_header = nil, dest = nil, &block )
+        old_get2( path, u_header ) {|f| f.body( dest, &block ) }
+      end
+
+      alias old_post2 post2
+      undef post2
+      undef post
+
+      def post( path, data, u_header = nil, dest = nil, &block )
+        old_post2( path, data, u_header ) {|f| f.body( dest, &block ) }
+      end
+
+      alias old_put2 put2
+      undef put2
+      undef put
+
+      def put( path, src, u_header = nil )
+        old_put2( path, src, u_header ) {|f| f.body }
+      end
+
+      ^
+    end
+
+    def HTTP.old_implementation
+      if @new_impl then
+        raise RuntimeError, "http.rb is already switched to new implementation"
+      end
+    end
+      
 
     def get( path, u_header = nil, dest = nil, &block )
       resp = get2( path, u_header ) {|f| dest = f.body( dest, &block ) }
@@ -237,10 +327,9 @@ module Net
 
     # not tested because I could not setup apache  (__;;;
     def put( path, src, u_header = nil )
-      ret = nil
-      resp = put2( path, src, u_header ) {|f| ret = f.body }
+      resp = put2( path, src, u_header ) {|f| f.body }
       resp.value
-      return resp, ret
+      return resp, resp.body
     end
 
     def put2( path, src, u_header = nil, &block )
