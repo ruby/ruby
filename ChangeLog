@@ -257,7 +257,6 @@ Fri Dec 24 02:22:53 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/syck/rubyext.c (syck_emitter_s_alloc, syck_emitter_initialize):
 	  ditto.
 
->>>>>>> 1.2673.2.773
 Fri Dec 24 01:21:00 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/blt.rb: add BLT extension support
