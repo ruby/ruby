@@ -209,7 +209,7 @@ def report_class_stuff(requested_class_name, namespaces)
   if namespaces.size == 1
     display_class_info(namespaces[0])
   else 
-    entries = namespaces.find_all {|m| m.name == requested_class_name}
+    entries = namespaces.find_all {|m| m.full_name == requested_class_name}
     if entries.size == 1
       display_class_info(entries[0])
     else
