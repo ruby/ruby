@@ -1,3 +1,10 @@
+Mon Jan 12 18:00:11 2004  Ian Macdonald  <ian@caliban.org>
+	
+	* file.c (test_wr, test_ww): New functions implementing new
+	  methods (File::world_readable?, File::world_writable?).
+	
+	* file.c (S_IRUGO, S_IGUGO): New macros.
+
 Mon Jan 12 12:07:22 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_methods): 

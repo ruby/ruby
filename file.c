@@ -1015,6 +1015,50 @@ test_R(obj, fname)
     return Qtrue;
 }
 
+/*
+ * call-seq:
+ *    File.world_readable?(file_name)   => fixnum or nil
+ *
+ * If <i>file_name</i> is readable by others, returns an integer
+ * representing the file permission bits of <i>file_name</i>. Returns
+ * <code>nil</code> otherwise. The meaning of the bits is platform
+ * dependent; on Unix systems, see <code>stat(2)</code>.
+ *     
+ *    File.world_readable?("/etc/passwd")	    # => 420
+ *    m = File.world_readable?("/etc/passwd")
+ *    sprintf("%o", m)				    # => "644"
+ */
+
+#ifndef S_IRUGO
+#  define S_IRUGO		(S_IRUSR | S_IRGRP | S_IROTH)
+#endif
+
+#ifndef S_IWUGO
+#  define S_IWUGO		(S_IWUSR | S_IWGRP | S_IWOTH)
+#endif
+
+static VALUE
+test_wr(obj, fname)
+    VALUE obj, fname;
+{
+#ifdef S_IROTH
+    struct stat st;
+
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if ((st.st_mode & (S_IROTH)) == S_IROTH) {
+#ifdef __BORLANDC__
+      return UINT2NUM((unsigned short)(st.st_mode &
+				       (S_IRUGO|S_IWUGO|S_IXUGO)));
+#else
+      return UINT2NUM(st.st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+#endif
+    }
+    else {
+      return Qnil;
+    }
+#endif
+    return Qfalse;
+}
 
 /*
  * call-seq:
@@ -1048,6 +1092,43 @@ test_W(obj, fname)
     SafeStringValue(fname);
     if (access(StringValueCStr(fname), W_OK) < 0) return Qfalse;
     return Qtrue;
+}
+
+/*
+ * call-seq:
+ *    File.world_writable?(file_name)   => fixnum or nil
+ *
+ * If <i>file_name</i> is writable by others, returns an integer
+ * representing the file permission bits of <i>file_name</i>. Returns
+ * <code>nil</code> otherwise. The meaning of the bits is platform
+ * dependent; on Unix systems, see <code>stat(2)</code>.
+ *     
+ *    File.world_writable?("/tmp")		    #=> 511
+ *    m = File.world_writable?("/tmp")
+ *    sprintf("%o", m)				    #=> "777"
+ */
+
+static VALUE
+test_ww(obj, fname)
+    VALUE obj, fname;
+{
+#ifdef S_IWOTH
+    struct stat st;
+
+    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if ((st.st_mode & (S_IWOTH)) == S_IWOTH) {
+#ifdef __BORLANDC__
+      return UINT2NUM((unsigned short)(st.st_mode &
+				       (S_IRUGO|S_IWUGO|S_IXUGO)));
+#else
+      return UINT2NUM(st.st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+#endif
+    }
+    else {
+      return Qnil;
+    }
+#endif
+    return Qfalse;
 }
 
 /*
@@ -4052,8 +4133,10 @@ Init_File()
     define_filetest_function("exists?", test_e, 1); /* temporary */
     define_filetest_function("readable?", test_r, 1);
     define_filetest_function("readable_real?", test_R, 1);
+    define_filetest_function("world_readable?", test_wr, 1);
     define_filetest_function("writable?", test_w, 1);
     define_filetest_function("writable_real?", test_W, 1);
+    define_filetest_function("world_writable?", test_ww, 1);
     define_filetest_function("executable?", test_x, 1);
     define_filetest_function("executable_real?", test_X, 1);
     define_filetest_function("file?", test_f, 1);
