@@ -1,3 +1,10 @@
+Sat Aug 19 01:34:02 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/sdbm/_sdbm.c (sdbm_prep): flags should be or-ed by O_BINARY on
+	  Win32 too.
+
+	* ext/sdbm/_sdbm.c (makroom): fill hole with 0 on Win32 too.
+
 Thu Aug 17 04:26:31 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.27.

@@ -206,9 +206,7 @@ int mode;
  * open the files in sequence, and stat the dirfile.
  * If we fail anywhere, undo everything, return NULL.
  */
-#ifdef MSDOS
 	flags |= O_BINARY;
-#endif
 	if ((db->pagf = open(pagname, flags, mode)) > -1) {
 		if ((db->dirf = open(dirname, flags, mode)) > -1) {
 /*
@@ -361,7 +359,7 @@ int need;
 {
 	long newp;
 	char twin[PBLKSIZ];
-#ifdef MSDOS
+#if defined MSDOS || (defined _WIN32 && !defined __CYGWIN__)
 	char zer[PBLKSIZ];
 	long oldtail;
 #endif
@@ -388,7 +386,7 @@ int need;
  * here, as sdbm_store will do so, after it inserts the incoming pair.
  */
 
-#ifdef MSDOS
+#if defined MSDOS || (defined _WIN32 && !defined __CYGWIN__)
 	/*
 	 * Fill hole with 0 if made it.
 	 * (hole is NOT read as 0)
