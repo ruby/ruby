@@ -1,8 +1,41 @@
+Tue Jun 20 15:07:39 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/parsedate.rb: don't seek year too greedy.
+
 Tue Jun 20 06:14:43 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: change: version syntax. old: x.yz, now: x.y.z
 
 	* lib/net/telnet.rb: ditto.
+
+Fri Jun 16 05:18:45 2000  Yasuhiro Fukuma  <yasuf@bsdclub.org>
+
+	* configure.in: FreeBSD: do not link dummy libxpg4 which was
+	  merged into libc.
+
+Fri Jun 16 03:17:36 2000  Satoshi Nojo  <nojo@t-samukawa.or.jp>
+
+	* ext/dbm/dbm.c (fdbm_length): use GetDBM. empty?, [] too.
+
+	* ext/gdbm/gdbm.c (fgdbm_length): ditto.
+
+	* ext/sdbm/init.c (fsdbm_length): ditto.
+
+Wed Jun 14 17:01:41 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* rubytest.rb: add CONFIG['EXEEXT'] to the executable file name.
+
+Wed Jun 14 14:50:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (method_arity): wrong arity number for the methods with
+	  optional arguments.
+
+	* time.c (make_time_t): opposite timezone shift (should be negative).
+
+Wed 14 Jun 04:58:53 2000  Dave Thomas  <dave@thomases.com>
+
+	* io.c (rb_io_set_lineno): should have returned VALUE, not
+	  integer.
 
 Wed Jun 14 13:17:02 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 

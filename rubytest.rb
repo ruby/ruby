@@ -3,7 +3,7 @@
 require 'rbconfig'
 include Config
 
-unless File.exist? "./#{CONFIG['ruby_install_name']}"
+unless File.exist? "./#{CONFIG['ruby_install_name']}#{CONFIG['EXEEXT']}"
   print "./#{CONFIG['ruby_install_name']} is not found.\n"
   print "Try `make' first, then `make test', please.\n"
   exit 0

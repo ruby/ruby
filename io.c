@@ -741,7 +741,8 @@ rb_io_set_lineno(io, lineno)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    return fptr->lineno = NUM2INT(lineno);
+    fptr->lineno = NUM2INT(lineno);
+    return lineno;
 }
 
 static void

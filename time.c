@@ -292,19 +292,16 @@ make_time_t(tptr, utc_or_local)
 	if (!tm) goto error;
 	if (tptr->tm_year != tm->tm_year) goto out_of_range;
     }
-    guess += (tptr->tm_mday - tm->tm_mday) * 3600 * 24;
+    guess += (tptr->tm_mday - tm->tm_mday) * 24 * 3600;
     guess += (tptr->tm_hour - tm->tm_hour) * 3600;
     guess += (tptr->tm_min - tm->tm_min) * 60;
     guess += (tptr->tm_sec - tm->tm_sec);
     if (guess < 0) goto out_of_range;
 
     if (!utc_or_local) {	/* localtime zone adjust */
-#if defined(HAVE_DAYLIGHT)
-	extern int daylight;
-	extern long timezone;
-
-	localtime(&guess);
-	guess += timezone + daylight;
+#if defined(HAVE_TM_ZONE)
+	tm = localtime(&guess);
+	guess -= tm->tm_gmtoff;
 #else
 	struct tm gt, lt;
 	long tzsec;
@@ -799,8 +796,14 @@ time_zone(time)
 	time_get_tm(time, tobj->gmt);
     }
 
+#if defined(HAVE_TM_ZONE)
+    return rb_str_new2(tobj->tm.tm_zone);
+#elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
+    return rb_str_new2(tzname[daylight && tobj->tm.tm_isdst]);
+#else
     len = strftime(buf, 64, "%Z", &tobj->tm);
     return rb_str_new(buf, len);
+#endif
 }
 
 static VALUE

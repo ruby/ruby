@@ -5981,7 +5981,8 @@ method_arity(method)
 	    body = body->nd_head;
 	if (!body) return INT2FIX(0);
 	n = body->nd_cnt;
-	if (body->nd_rest >= 0) n = -n-1;
+	if (body->nd_opt || body->nd_rest >= 0)
+	    n = -n-1;
 	return INT2FIX(n);
     }
 }
@@ -6114,7 +6115,7 @@ enum thread_status {
 /* +infty, for this purpose */
 #define DELAY_INFTY 1E30
 
-typedef struct thread * thread_t;
+typedef struct thread * rb_thread_t;
 
 struct thread {
     struct thread *next, *prev;
@@ -6152,7 +6153,7 @@ struct thread {
     int wait_for;
     int fd;
     double delay;
-    thread_t join;
+    rb_thread_t join;
 
     int abort;
 
@@ -6163,8 +6164,8 @@ struct thread {
 
 #define THREAD_RAISED 0x200
 
-static thread_t main_thread;
-static thread_t curr_thread = 0;
+static rb_thread_t main_thread;
+static rb_thread_t curr_thread = 0;
 
 static int num_waiting_on_fd = 0;
 static int num_waiting_on_timer = 0;
@@ -6190,7 +6191,7 @@ timeofday()
 
 static void
 thread_mark(th)
-    thread_t th;
+    rb_thread_t th;
 {
     struct FRAME *frame;
     struct BLOCK *block;
@@ -6245,7 +6246,7 @@ thread_mark(th)
 void
 rb_gc_mark_threads()
 {
-    thread_t th;
+    rb_thread_t th;
 
     if (!curr_thread) return;
     FOREACH_THREAD(th) {
@@ -6255,7 +6256,7 @@ rb_gc_mark_threads()
 
 static void
 thread_free(th)
-    thread_t th;
+    rb_thread_t th;
 {
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
@@ -6267,7 +6268,7 @@ thread_free(th)
     if (th != main_thread) free(th);
 }
 
-static thread_t
+static rb_thread_t
 rb_thread_check(data)
     VALUE data;
 {
@@ -6275,7 +6276,7 @@ rb_thread_check(data)
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Thread)",
 		 rb_class2name(CLASS_OF(data)));
     }
-    return (thread_t)RDATA(data)->data;
+    return (rb_thread_t)RDATA(data)->data;
 }
 
 static int   th_raise_argc;
@@ -6295,7 +6296,7 @@ static char *th_signm;
 
 static void
 rb_thread_save_context(th)
-    thread_t th;
+    rb_thread_t th;
 {
     VALUE v;
 
@@ -6365,11 +6366,11 @@ thread_switch(n)
 #define THREAD_SAVE_CONTEXT(th) \
     (rb_thread_save_context(th),thread_switch(setjmp((th)->context)))
 
-static void rb_thread_restore_context _((thread_t,int));
+static void rb_thread_restore_context _((rb_thread_t,int));
 
 static void
 stack_extend(th, exit)
-    thread_t th;
+    rb_thread_t th;
     int exit;
 {
     VALUE space[1024];
@@ -6380,11 +6381,11 @@ stack_extend(th, exit)
 
 static void
 rb_thread_restore_context(th, exit)
-    thread_t th;
+    rb_thread_t th;
     int exit;
 {
     VALUE v;
-    static thread_t tmp;
+    static rb_thread_t tmp;
     static int ex;
 
     if (!th->stk_ptr) rb_bug("unsaved context");
@@ -6428,7 +6429,7 @@ rb_thread_restore_context(th, exit)
 
 static void
 rb_thread_ready(th)
-    thread_t th;
+    rb_thread_t th;
 {
     /* The thread is no longer waiting on anything */
     if (th->wait_for & WAIT_FD) {
@@ -6455,7 +6456,7 @@ rb_thread_remove()
 
 static int
 rb_thread_dead(th)
-    thread_t th;
+    rb_thread_t th;
 {
     return th->status == THREAD_KILLED;
 }
@@ -6464,7 +6465,7 @@ void
 rb_thread_fd_close(fd)
     int fd;
 {
-    thread_t th;
+    rb_thread_t th;
 
     FOREACH_THREAD(th) {
 	if ((th->wait_for & WAIT_FD) && th->fd == fd) {
@@ -6505,9 +6506,9 @@ rb_thread_deadlock()
 void
 rb_thread_schedule()
 {
-    thread_t next;		/* OK */
-    thread_t th;
-    thread_t curr;
+    rb_thread_t next;		/* OK */
+    rb_thread_t th;
+    rb_thread_t curr;
 
   select_err:
     rb_thread_pending = 0;
@@ -6841,7 +6842,7 @@ static VALUE
 rb_thread_join(thread)
     VALUE thread;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     if (!rb_thread_dead(th)) {
 	if (th == curr_thread)
@@ -6894,7 +6895,7 @@ VALUE
 rb_thread_wakeup(thread)
     VALUE thread;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     if (th->status == THREAD_KILLED)
 	rb_raise(rb_eThreadError, "killed thread");
@@ -6917,7 +6918,7 @@ static VALUE
 rb_thread_kill(thread)
     VALUE thread;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     if (th->status == THREAD_TO_KILL || th->status == THREAD_KILLED)
 	return thread; 
@@ -7014,7 +7015,7 @@ static VALUE
 rb_thread_abort_exc(thread)
     VALUE thread;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     return th->abort?Qtrue:Qfalse;
 }
@@ -7023,7 +7024,7 @@ static VALUE
 rb_thread_abort_exc_set(thread, val)
     VALUE thread, val;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     th->abort = RTEST(val);
     return val;
@@ -7060,11 +7061,11 @@ rb_thread_abort_exc_set(thread, val)
     th->locals = 0;\
 } while(0)
 
-static thread_t
+static rb_thread_t
 rb_thread_alloc(klass)
     VALUE klass;
 {
-    thread_t th;
+    rb_thread_t th;
 
     THREAD_ALLOC(th);
     th->thread = Data_Wrap_Struct(klass, thread_mark, thread_free, th);
@@ -7140,7 +7141,7 @@ rb_thread_create_0(fn, arg, klass)
     void *arg;
     VALUE klass;
 {
-    thread_t th = rb_thread_alloc(klass);
+    rb_thread_t th = rb_thread_alloc(klass);
     volatile VALUE thread = th->thread;
     enum thread_status status;
     int state;
@@ -7215,7 +7216,7 @@ rb_thread_scope_shared_p()
 static VALUE
 rb_thread_yield(arg, th) 
     int arg;
-    thread_t th;
+    rb_thread_t th;
 {
     scope_dup(ruby_block->scope);
     return rb_yield_0(th->thread, 0, 0, Qfalse);
@@ -7235,7 +7236,7 @@ static VALUE
 rb_thread_value(thread)
     VALUE thread;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     rb_thread_join(thread);
 
@@ -7246,7 +7247,7 @@ static VALUE
 rb_thread_status(thread)
     VALUE thread;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     if (rb_thread_dead(th)) {
 	if (NIL_P(th->errinfo) && (th->flags & THREAD_RAISED))
@@ -7261,7 +7262,7 @@ static VALUE
 rb_thread_stop_p(thread)
     VALUE thread;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     if (rb_thread_dead(th)) return Qtrue;
     if (th->status == THREAD_STOPPED) return Qtrue;
@@ -7280,7 +7281,7 @@ rb_thread_wait_other_threads()
 static void
 rb_thread_cleanup()
 {
-    thread_t th;
+    rb_thread_t th;
 
     if (curr_thread != curr_thread->next->prev) {
 	curr_thread = curr_thread->prev;
@@ -7372,7 +7373,7 @@ rb_thread_raise(argc, argv, thread)
     VALUE *argv;
     VALUE thread;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     if (rb_thread_dead(th)) return thread;
     if (curr_thread == th) {
@@ -7430,7 +7431,7 @@ rb_thread_local_aref(thread, id)
     VALUE thread;
     ID id;
 {
-    thread_t th;
+    rb_thread_t th;
     VALUE val;
 
     th = rb_thread_check(thread);
@@ -7454,7 +7455,7 @@ rb_thread_local_aset(thread, id, val)
     ID id;
     VALUE val;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     if (safe_level >= 4 && !FL_TEST(thread, FL_TAINT))
 	rb_raise(rb_eSecurityError, "Insecure: can't modify thread values");
@@ -7482,7 +7483,7 @@ static VALUE
 rb_thread_key_p(thread, id)
     VALUE thread, id;
 {
-    thread_t th = rb_thread_check(thread);
+    rb_thread_t th = rb_thread_check(thread);
 
     if (!th->locals) return Qfalse;
     if (st_lookup(th->locals, rb_to_id(id), 0))
@@ -7497,7 +7498,7 @@ rb_callcc(self)
     VALUE self;
 {
     volatile VALUE cont;
-    thread_t th;
+    rb_thread_t th;
     struct tag *tag;
 
     THREAD_ALLOC(th);
@@ -7523,7 +7524,7 @@ rb_continuation_call(argc, argv, cont)
     VALUE *argv;
     VALUE cont;
 {
-    thread_t th = rb_thread_check(cont);
+    rb_thread_t th = rb_thread_check(cont);
 
     switch (argc) {
     case 0:

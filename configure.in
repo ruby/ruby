@@ -144,14 +144,29 @@ human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	;;
 os2_emx*)	LIBS="-lm $LIBS"
-		ac_cv_lib_xpg4_setlocale=no
 		ac_cv_lib_dir_opendir=no;;
+freebsd*)	LIBS="-lm $LIBS"
+		AC_CACHE_CHECK([whether -lxpg4 has to be linked],
+		  rb_cv_lib_xpg4_needed,
+		  [AC_TRY_CPP([
+#include <osreldate.h>
+#if __FreeBSD_version < 400020 || \
+   (__FreeBSD_version >= 500000 && __FreeBSD_version < 500005)
+#error needs libxpg4
+#endif
+		   ],
+		   rb_cv_lib_xpg4_needed=no,
+		   rb_cv_lib_xpg4_needed=yes,
+		   rb_cv_lib_xpg4_needed=yes)])
+		if test "$rb_cv_lib_xpg4_needed" = yes; then
+			AC_CHECK_LIB(xpg4, setlocale)
+		fi
+		;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
-AC_CHECK_LIB(xpg4, setlocale)	# FreeBSD needs this
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
