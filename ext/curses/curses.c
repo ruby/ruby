@@ -396,7 +396,7 @@ curses_getstr(obj)
     char rtn[1024]; /* This should be big enough.. I hope */
 
     rb_read_check(stdin);
-#ifdef GETNSTR
+#if defined(HAVE_GETNSTR)
     getnstr(rtn,1023);
 #else
     getstr(rtn);
@@ -1024,7 +1024,7 @@ window_getstr(obj)
     
     GetWINDOW(obj, winp);
     rb_read_check(stdin);
-#ifdef WGETNSTR
+#if defined(HAVE_WGETNSTR)
     wgetnstr(winp->window, rtn, 1023);
 #else
     wgetstr(winp->window, rtn);
