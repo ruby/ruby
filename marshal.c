@@ -247,7 +247,7 @@ w_uclass(obj, klass, arg)
     VALUE obj, klass;
     struct dump_arg *arg;
 {
-    if (CLASS_OF(obj) != klass) {
+    if (rb_class_real(CLASS_OF(obj)) != klass) {
 	w_byte(TYPE_UCLASS, arg);
 	w_unique(rb_class2name(CLASS_OF(obj)), arg);
     }
@@ -933,7 +933,7 @@ r_object(arg)
 	    ID slot;
 
 	    klass = rb_path2class(r_unique(arg));
-	    mem = rb_ivar_get(klass, rb_intern("__member__"));
+	    mem = rb_struct_iv_get(klass, "__member__");
 	    if (mem == Qnil) {
 		rb_raise(rb_eTypeError, "uninitialized struct");
 	    }

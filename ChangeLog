@@ -1,3 +1,11 @@
+Fri Oct 19 17:55:14 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* marshal.c (w_uclass): cloned class is not user
+	  class. (ruby-bugs-ja#PR103)
+
+	* marshal.c (r_object): Struct subclass couldn't
+	  load. (ruby-bugs-ja#PR104)
+
 Wed Oct 17 14:12:50 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* variable.c (alias_fixup): added. ad hoc support for ordinary
