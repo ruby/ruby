@@ -2579,7 +2579,7 @@ else
 #include "confdefs.h"
 #include <alloca.h>
 int main() {
-char *p = alloca(2 * sizeof(int));
+void *p = alloca(2 * sizeof(int));
 ; return 0; }
 EOF
 if { (eval echo configure:2586: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
@@ -3682,7 +3682,7 @@ else
 int main() {
 
 /* Ultrix mips cc rejects this.  */
-typedef int charset[2]; const charset x;
+typedef int charset[2]; const charset x = {0,0};
 /* SunOS 4.1.1 cc rejects this.  */
 char const *const *ccp;
 char **p;

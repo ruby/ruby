@@ -13,12 +13,17 @@
 #include <ctype.h>
 
 VALUE rb_cBignum;
+
+#if defined __MINGW32__
+#define USHORT _USHORT
+#endif
+
 typedef unsigned short USHORT;
 
-#define BDIGITS(x) RBIGNUM(x)->digits
-#define BITSPERDIG (sizeof(USHORT)*CHAR_BIT)
+#define BDIGITS(x) ((USHORT*)RBIGNUM(x)->digits)
+#define BITSPERDIG (sizeof(short)*CHAR_BIT)
 #define BIGRAD (1L << BITSPERDIG)
-#define DIGSPERLONG ((unsigned int)(sizeof(long)/sizeof(USHORT)))
+#define DIGSPERLONG ((unsigned int)(sizeof(long)/sizeof(short)))
 #define BIGUP(x) ((unsigned long)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT(x,BITSPERDIG)
 #define BIGLO(x) ((USHORT)((x) & (BIGRAD-1)))
@@ -168,6 +173,9 @@ rb_str2inum(str, base)
     const char *str;
     int base;
 {
+    const char *s = str;
+    char *end;
+    int badcheck = (base==0)?1:0;
     char sign = 1, c;
     unsigned long num;
     long len, blen = 1;
@@ -175,7 +183,7 @@ rb_str2inum(str, base)
     VALUE z;
     USHORT *zds;
 
-    while (ISSPACE(*str)) str++;
+    while (*str && ISSPACE(*str)) str++;
 
     if (*str == '+') {
 	str++;
@@ -197,11 +205,12 @@ rb_str2inum(str, base)
 	    }
 	    else {
 		base = 8;
+		if (!*str) return INT2FIX(0);
 	    }
-	    if (*str == '\0') return INT2FIX(0);
 	}
 	else {
 	    base = 10;
+	    if (!*str) return INT2FIX(0);
 	}
     }
     if (base == 8) {
@@ -215,12 +224,23 @@ rb_str2inum(str, base)
 	if (base == 2 && str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
 	    str += 2;
 	}
-	while (str[0] == '0') str++;
+	while (*str && *str == '0') str++;
+	if (!*str) str--;
 	len = 4*strlen(str)*sizeof(char);
     }
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
-	unsigned long val = strtoul((char*)str, 0, base);
+	unsigned long val = strtoul((char*)str, &end, base);
+
+	if (badcheck) {
+	    if (end == str || *end)
+		goto bad;
+	    while (*end && ISSPACE(*end)) end++;
+	    if (*end) {
+	      bad:
+		rb_raise(rb_eArgError, "invalid literal for Integer: %s", s);
+	    }
+	}
 
 	if (POSFIXABLE(val)) {
 	    if (sign) return INT2FIX(val);
@@ -256,6 +276,15 @@ rb_str2inum(str, base)
 	    break;
 	  default:
 	    c = base;
+	    if (badcheck) {
+		if (ISSPACE(c)) {
+		    while (*str && ISSPACE(*str)) str++;
+		    if (*str) {
+			break;
+		    }
+		}
+		rb_raise(rb_eArgError, "invalid literal for Integer: %s", s);
+	    }
 	    break;
 	}
 	if (c >= base) break;
@@ -274,6 +303,7 @@ rb_str2inum(str, base)
 	    break;
 	}
     }
+
     return bignorm(z);
 }
 
@@ -354,16 +384,17 @@ rb_big_to_s(x)
     return rb_big2str(x, 10);
 }
 
-unsigned long
-rb_big2ulong(x)
+static unsigned long
+big2ulong(x, type)
     VALUE x;
+    char *type;
 {
     unsigned long num;
     long len = RBIGNUM(x)->len;
     USHORT *ds;
 
     if (len > sizeof(long)/sizeof(USHORT))
-	rb_raise(rb_eArgError, "bignum too big to convert into `uint'");
+	rb_raise(rb_eArgError, "bignum too big to convert into `%s'", type);
     ds = BDIGITS(x);
     num = 0;
     while (len--) {
@@ -373,11 +404,21 @@ rb_big2ulong(x)
     return num;
 }
 
+unsigned long
+rb_big2ulong(x)
+    VALUE x;
+{
+    unsigned long num = big2ulong(x, "unsigned long");
+
+    if (!RBIGNUM(x)->sign) return -num;
+    return num;
+}
+
 long
 rb_big2long(x)
     VALUE x;
 {
-    unsigned long num = rb_big2ulong(x);
+    unsigned long num = big2ulong(x, "int");
 
     if ((long)num < 0) {
 	rb_raise(rb_eArgError, "bignum too big to convert into `int'");
@@ -393,8 +434,8 @@ rb_big_to_i(x)
     return bignorm(x);
 }
 
-VALUE
-rb_dbl2big(d)
+static VALUE
+dbl2big(d)
     double d;
 {
     unsigned long i = 0;
@@ -423,7 +464,14 @@ rb_dbl2big(d)
 	digits[i] = (USHORT)c;
     }
 
-    return bignorm(z);
+    return z;
+}
+
+VALUE
+rb_dbl2big(d)
+    double d;
+{
+    return bignorm(dbl2big(d));
 }
 
 double
@@ -460,7 +508,7 @@ rb_big_cmp(x, y)
 	break;
 
       case T_FLOAT:
-	y = rb_dbl2big(RFLOAT(y)->value);
+	y = dbl2big(RFLOAT(y)->value);
 	break;
 
       case T_BIGNUM:
@@ -495,7 +543,7 @@ rb_big_eq(x, y)
       case T_BIGNUM:
 	break;
       case T_FLOAT:
-	y = rb_dbl2big(RFLOAT(y)->value);
+	y = dbl2big(RFLOAT(y)->value);
 	break;
       default:
 	return Qfalse;
@@ -836,7 +884,7 @@ bigdivmod(x, y, div, mod, modulo)
 	if (modulo && RBIGNUM(x)->sign != RBIGNUM(y)->sign) {
 	    long len = ny;
 	    zds = BDIGITS(*mod);
-	    while (len-- && !zds[len]);
+	    while (len && !zds[len]) len--;
 	    if (len > 0) {
 		*mod = bigadd(*mod, y, 1);
 		return;
@@ -888,7 +936,7 @@ rb_big_modulo(x, y, modulo)
 	break;
 
       case T_FLOAT:
-	y = rb_dbl2big(RFLOAT(y)->value);
+	y = dbl2big(RFLOAT(y)->value);
 	break;
 
       default:
@@ -925,7 +973,7 @@ rb_big_divmod(x, y)
 	break;
 
       case T_FLOAT:
-	y = rb_dbl2big(RFLOAT(y)->value);
+	y = dbl2big(RFLOAT(y)->value);
 	break;
 
       case T_BIGNUM:
@@ -936,7 +984,7 @@ rb_big_divmod(x, y)
     }
     bigdivmod(x, y, &div, &mod, 1);
 
-    return rb_assoc_new(div, mod);;
+    return rb_assoc_new(div, mod);
 }
 
 VALUE
