@@ -595,7 +595,10 @@ rb_reg_search(re, str, pos, reverse)
     static struct re_registers regs;
     int range;
 
-    if (pos > RSTRING(str)->len) return -1;
+    if (pos > RSTRING(str)->len) {
+	rb_backref_set(Qnil);
+	return -1;
+    }
 
     rb_reg_check(re);
     if (may_need_recompile) rb_reg_prepare_re(re);

@@ -670,7 +670,12 @@ rb_str_index_m(argc, argv, str)
     }
     if (pos < 0) {
 	pos += RSTRING(str)->len;
-	if (pos < 0) return Qnil;
+	if (pos < 0) {
+	    if (TYPE(sub) == T_REGEXP) {
+		rb_backref_set(Qnil);
+	    }
+		return Qnil;
+	}
     }
 
     switch (TYPE(sub)) {
@@ -719,7 +724,12 @@ rb_str_rindex(argc, argv, str)
 	pos = NUM2INT(position);
         if (pos < 0) {
 	    pos += RSTRING(str)->len;
-	    if (pos < 0) return Qnil;
+	    if (pos < 0) {
+		if (TYPE(sub) == T_REGEXP) {
+		    rb_backref_set(Qnil);
+		}
+		return Qnil;
+	    }
         }
 	if (pos > RSTRING(str)->len) pos = RSTRING(str)->len;
     }

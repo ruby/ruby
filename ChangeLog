@@ -15,6 +15,15 @@ Mon Mar 18 10:55:03 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (str_extend): handle multi-byte characters.
 
+Sat Mar 16 15:30:40 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_search): should clear last_match if pos is out of
+	  string range.
+
+	* string.c (rb_str_index_m): ditto.
+
+	* string.c (rb_str_rindex): ditto.
+
 Thu Mar 14 16:42:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_define_class): should handle autoload.

@@ -380,7 +380,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			if (in_def || in_single) {
 			    yyerror("BEGIN in method");
 			}
-			local_push(1);
+			local_push(0);
 		    }
 		  '{' compstmt '}'
 		    {
@@ -1249,7 +1249,7 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
 			class_nest++;
-			local_push(1);
+			local_push(0);
 		        $<num>$ = ruby_sourceline;
 		    }
 		  compstmt
@@ -1270,7 +1270,7 @@ primary		: literal
 		        $<num>$ = in_single;
 		        in_single = 0;
 			class_nest++;
-			local_push(1);
+			local_push(0);
 		    }
 		  compstmt
 		  kEND
@@ -1287,7 +1287,7 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("module definition in method body");
 			class_nest++;
-			local_push(1);
+			local_push(0);
 		        $<num>$ = ruby_sourceline;
 		    }
 		  compstmt
@@ -1305,7 +1305,7 @@ primary		: literal
 			$<id>$ = cur_mid;
 			cur_mid = $2;
 			in_def++;
-			local_push(1);
+			local_push(0);
 		    }
 		  f_arglist
 		  compstmt
@@ -1333,7 +1333,7 @@ primary		: literal
 		    {
 			value_expr($2);
 			in_single++;
-			local_push(1);
+			local_push(0);
 		        lex_state = EXPR_END; /* force for args */
 		    }
 		  f_arglist
@@ -4697,7 +4697,8 @@ static struct local_vars {
 } *lvtbl;
 
 static void
-local_push(int dyna_init)
+local_push(top)
+    int top;
 {
     struct local_vars *local;
 
@@ -4709,8 +4710,11 @@ local_push(int dyna_init)
     local->dlev = 0;
     local->dyna_vars = ruby_dyna_vars;
     lvtbl = local;
-
-    if (dyna_init) ruby_dyna_vars = (struct RVarmap* )0;
+    if (!top) {
+	/* preserve reference for GC, but link should be cut. */
+	rb_dvar_push(0, (VALUE)ruby_dyna_vars);
+	ruby_dyna_vars->next = 0;
+    }
 }
 
 static void
@@ -4785,7 +4789,7 @@ local_id(id)
 static void
 top_local_init()
 {
-    local_push(0);
+    local_push(1);
     lvtbl->cnt = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
     if (lvtbl->cnt > 0) {
 	lvtbl->tbl = ALLOC_N(ID, lvtbl->cnt+3);
