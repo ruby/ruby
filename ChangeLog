@@ -1,3 +1,8 @@
+Fri Feb 13 12:26:37 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb: rescue SystemCallError instead
+	  of EINVAL.  File.link may raise EACCES on network file systems.
+
 Fri Feb 13 05:18:58 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: File.link raises EINVAL on

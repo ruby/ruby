@@ -41,7 +41,7 @@ begin
   File.open('linktmp', 'w') {|f| f.puts 'dummy' }
   File.link 'linktmp', 'linktest'
   HAVE_HARDLINK = true
-rescue NotImplementedError, Errno::EINVAL
+rescue NotImplementedError, SystemCallError
   HAVE_HARDLINK = false
 ensure
   File.unlink 'linktest' if File.exist?('linktest')
