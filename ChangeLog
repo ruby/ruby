@@ -1,6 +1,6 @@
 Wed Jan 30 15:58:04 2002  K.Kosako  <kosako@sofnec.co.jp>
 
-	* regex.c (re_adjust_startpos): fix for SJIS. 
+	* regex.c (re_adjust_startpos): fix for SJIS and UTF-8. 
 
 	* regex.c (mbc_startpos): ditto.
 
