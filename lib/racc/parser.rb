@@ -1,7 +1,7 @@
 #
 # parser.rb
 #
-# Copyright (c) 1999-2003 Minero Aoki <aamine@loveruby.net>
+# Copyright (c) 1999-2004 Minero Aoki
 #
 # This program is free software.
 # You can distribute/modify this program under the same terms of ruby.
@@ -11,6 +11,11 @@
 # without restriction.
 #
 # $raccId: parser.rb,v 1.4 2003/11/03 13:41:47 aamine Exp $
+#
+# NOTE:
+# This file is part of the runtime library of Racc parser generator.
+# If you want to generate your own parser, you must get Racc full package.
+# Get it from: http://raa.ruby-lang.org/list.rhtml?name=racc
 #
 
 unless defined?(NotImplementedError)
