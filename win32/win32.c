@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 #include "rubysig.h"
+#include "dln.h"
 #include <fcntl.h>
 #include <process.h>
 #include <sys/stat.h>
@@ -901,7 +902,18 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa, HANDLE 
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
     if (prog) {
-	shell = prog;
+	char *p = dln_find_exe(prog, NULL);
+	if (!p) {
+	    shell = prog;
+	}
+	else {
+	    shell = p;
+	    while (*p) {
+		if ((unsigned char)*p == '/')
+		    *p = '\\';
+		p = CharNext(p);
+	    }
+	}
     }
     else {
 	int redir = -1;

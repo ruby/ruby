@@ -2682,7 +2682,7 @@ pipe_open(argc, argv, pname, mode)
 #endif
 	    rb_thread_sleep(1);
 	    break;
-	  defined:
+	  default:
 	    rb_sys_fail(pname);
 	    break;
 	}
