@@ -2956,11 +2956,12 @@ re_compile_fastmap(bufp)
 	    c = beg + 1;
 	  }
 
-	  for (j = c; j < (1 << BYTEWIDTH); j++)
+	  for (j = c; j < (1 << BYTEWIDTH); j++) {
 	    if (num_literal)
 	      fastmap[j] = 1;
 	    if (ismbchar(j))
 	      fastmap[j] = 1;
+	  }
 	}
 	break;
 

@@ -1,3 +1,11 @@
+Thu Mar  9 11:13:32 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_fastmap): fixed embarrassing brace bug.
+
+Thu Mar  9 01:36:32 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* missing/flock.c: emulate missing flock() with fcntl().
+
 Wed Mar  8 02:08:43 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y: escape expansion too early.
