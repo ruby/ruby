@@ -1,3 +1,7 @@
+Sat Feb 24 22:14:00 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c (myrename): fix error handling.
+
 Sat Feb 24 15:43:31 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: use net 1.2 for also ruby 1.6 branch.

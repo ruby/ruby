@@ -2546,7 +2546,7 @@ myrename(const char *oldpath, const char *newpath)
     newatts = GetFileAttributes(newpath);
 
     if (oldatts == -1) {
-	printf("file to move doesn't exist");
+	errno = GetLastError();
 	return -1;
     }
 
