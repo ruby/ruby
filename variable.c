@@ -468,7 +468,7 @@ readonly_setter(val, id, var)
     ID id;
     void *var;
 {
-    rb_name_error(id, "can't set variable %s", rb_id2name(id));
+    rb_name_error(id, "%s is a read-only variable", rb_id2name(id));
 }
 
 static int

@@ -2762,98 +2762,13 @@ rb_io_defset(val, id, variable)
 }
 
 static void
-set_stdin(val, id, var)
+set_stdio(val, id, var)
     VALUE val;
     ID id;
     VALUE *var;
 {
-    OpenFile *fptr;
-
-    if (val == *var) return;
-    if (TYPE(val) != T_FILE) {
-	must_respond_to(id_read, val, id);
-	must_respond_to(id_getc, val, id);
-	*var = val;
-	return;
-    }
-    if (TYPE(*var) != T_FILE) {
-	*var = orig_stdin;
-    }
-
-    GetOpenFile(val, fptr);
-    rb_io_check_readable(fptr);
-    if (fileno(fptr->f) == 0 && saved_fd[0] != 0) {
-	dup2(saved_fd[0], 0);
-	close(saved_fd[0]);
-	saved_fd[0] = 0;
-    }
-    else {
-	saved_fd[0] = dup(0);
-	dup2(fileno(fptr->f), 0);
-    }
-
-    *var = val;
-}
-
-static void
-set_outfile(val, id, var, orig, stdf)
-    VALUE val;
-    ID id;
-    VALUE *var;
-    VALUE orig;
-    FILE *stdf;
-{
-    OpenFile *fptr;
-    FILE *f;
-    int fd;
-
-    if (val == *var) return;
-
-    if (TYPE(*var) == T_FILE && !rb_io_closed(*var)) {
-	rb_io_flush(*var);
-    }
-    if (TYPE(val) != T_FILE) {
-	must_respond_to(id_write, val, id);
-	*var = val;
-	return;
-    }
-    if (TYPE(*var) != T_FILE) {
-	*var = orig;
-    }
-
-    GetOpenFile(val, fptr);
-    rb_io_check_writable(fptr);
-    f = GetWriteFile(fptr);
-    fd = fileno(stdf);
-    if (fileno(fptr->f) == fd && saved_fd[fd] != fd) {
-	dup2(saved_fd[fd], fd);
-	close(saved_fd[fd]);
-	saved_fd[fd] = fd;
-    }
-    else {
-	saved_fd[fd] = dup(fd);
-	dup2(fileno(fptr->f), fd);
-    }
-
-    *var = val;
-}
-
-static void
-set_stdout(val, id, var)
-    VALUE val;
-    ID id;
-    VALUE *var;
-{
-    set_outfile(val, id, var, orig_stdout, stdout);
-}
-
-static void
-set_stderr(val, id, var)
-    VALUE val;
-    ID id;
-    VALUE *var;
-{
-    set_outfile(val, id, var, orig_stderr, stderr);
+    rb_warn("assignment to %s is deprecated; use STDIN.reopen() instead", rb_id2name(id));
+    rb_name_error(id, "%s is a read-only variable", rb_id2name(id));
 }
 
 static VALUE
@@ -4061,11 +3976,12 @@ Init_IO()
     rb_define_method(rb_cIO, "inspect",  rb_io_inspect, 0);
 
     rb_stdin = orig_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
-    rb_define_hooked_variable("$stdin", &rb_stdin, 0, set_stdin);
+    rb_define_hooked_variable("$stdin", &rb_stdin, 0, set_stdio);
     rb_stdout = orig_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO);
-    rb_define_hooked_variable("$stdout", &rb_stdout, 0, set_stdout);
+    rb_define_hooked_variable("$stdout", &rb_stdout, 0, set_stdio);
     rb_stderr = orig_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO);
-    rb_define_hooked_variable("$stderr", &rb_stderr, 0, set_stderr);
+    rb_define_hooked_variable("$stderr", &rb_stderr, 0, set_stdio);
+
     rb_defout = rb_stdout;
     rb_define_hooked_variable("$>", &rb_defout, 0, rb_io_defset);
     rb_define_hooked_variable("$defout", &rb_defout, 0, rb_io_defset);

@@ -1,3 +1,9 @@
+Thu May 15 13:18:11 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (set_stdio): $stdin, $stdout, $stderr now became read-only.
+
+	* variable.c (readonly_setter): message changed.
+
 Thu May 15 09:50:51 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/syck/syck.c (syck_parser_pop_level): add prototype.
