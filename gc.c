@@ -963,7 +963,7 @@ rb_gc()
     alloca(0);
 # define STACK_END (&stack_end)
 #else
-# if defined(__GNUC__) && (defined(__i386__) || defined(__m68k__))
+# if defined(__GNUC__) && (defined(__i386__) || defined(__mc68000__))
     VALUE *stack_end = __builtin_frame_address(0);
 # else
     VALUE *stack_end = alloca(1);

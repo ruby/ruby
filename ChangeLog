@@ -1,3 +1,13 @@
+Mon Aug  6 00:35:03 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* struct.c (rb_struct_modify): should check frozen and taint
+	  status.
+
+Sun Aug  5 07:46:18 2001  Nobuyoshi Nakada <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_undefined): do not recurse if method_missing is
+	  undefined.
+
 Wed Aug  1 20:45:14 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: changed path separator of $LIB to '\'.

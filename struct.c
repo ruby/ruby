@@ -124,6 +124,15 @@ static VALUE (*ref_func[10])() = {
     rb_struct_ref9,
 };
 
+static void
+rb_struct_modify(s)
+    VALUE s;
+{
+    if (OBJ_FROZEN(s)) rb_error_frozen("Struct");
+    if (!OBJ_TAINTED(s) && rb_safe_level() >= 4)
+       rb_raise(rb_eSecurityError, "Insecure: can't modify Struct");
+}
+
 static VALUE
 rb_struct_set(obj, val)
     VALUE obj, val;
@@ -135,6 +144,7 @@ rb_struct_set(obj, val)
     if (NIL_P(member)) {
 	rb_bug("non-initialized struct");
     }
+    rb_struct_modify(obj);
     for (i=0; i<RARRAY(member)->len; i++) {
 	slot = RARRAY(member)->ptr[i];
 	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_last_func()) {
@@ -253,6 +263,7 @@ rb_struct_initialize(self, values)
     VALUE size;
     long n;
 
+    rb_struct_modify(self);
     size = iv_get(klass, "__size__");
     n = FIX2LONG(size);
     if (n < RARRAY(values)->len) {
@@ -473,7 +484,7 @@ rb_struct_aset_id(s, id, val)
 	rb_bug("non-initialized struct");
     }
 
-    if (OBJ_FROZEN(s)) rb_error_frozen("Struct");
+    rb_struct_modify(s);
     len = RARRAY(member)->len;
     for (i=0; i<len; i++) {
 	if (SYM2ID(RARRAY(member)->ptr[i]) == id) {
@@ -504,7 +515,7 @@ rb_struct_aset(s, idx, val)
         rb_raise(rb_eIndexError, "offset %d too large for struct(size:%d)",
 		 i, RSTRUCT(s)->len);
     }
-    if (OBJ_FROZEN(s)) rb_error_frozen("Struct");
+    rb_struct_modify(s);
     return RSTRUCT(s)->ptr[i] = val;
 }
 

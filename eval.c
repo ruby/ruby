@@ -4135,11 +4135,17 @@ rb_undefined(obj, id, argc, argv, call_status)
 {
     VALUE *nargv;
 
+    last_call_status = call_status;
+
+    if (id == missing) {
+	PUSH_FRAME();
+	rb_f_missing(argc, argv, obj);
+	POP_FRAME();
+    }
+
     nargv = ALLOCA_N(VALUE, argc+1);
     nargv[0] = ID2SYM(id);
     MEMCPY(nargv+1, argv, VALUE, argc);
-
-    last_call_status = call_status;
 
     return rb_funcall2(obj, missing, argc+1, nargv);
 }
