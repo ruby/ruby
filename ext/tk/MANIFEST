@@ -29,6 +29,7 @@ sample/tkfrom.rb
 sample/tkhello.rb
 sample/tkline.rb
 sample/tkmenubutton.rb
+sample/tkoptdb-safeTk.rb
 sample/tkoptdb.rb
 sample/resource.ja
 sample/resource.en
