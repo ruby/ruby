@@ -1,3 +1,11 @@
+Tue Aug 15 17:30:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (frame_dup): should set flag FRAME_MALLOC after
+	  argv allocation.
+
+	* eval.c (blk_free): should not free argv if GC was called before
+	  frame_dup.
+
 Tue Aug 15 16:08:40 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: add ac_cv_func_times=yes for mingw32.

@@ -505,6 +505,7 @@ static struct SCOPE *top_scope;
     _frame.cbase = ruby_frame->cbase;	\
     _frame.argc = 0;			\
     _frame.argv = 0;			\
+    _frame.flags = FRAME_ALLOCA;	\
     ruby_frame = &_frame;		\
 
 #define POP_FRAME()  			\
@@ -5682,7 +5683,7 @@ blk_free(data)
 
     frame = data->frame.prev;
     while (frame) {
-	if (frame->argc > 0)
+	if (frame->argc > 0 && (frame->flags & FRAME_MALLOC))
 	    free(frame->argv);
 	tmp = frame;
 	frame = frame->prev;
@@ -5728,6 +5729,7 @@ frame_dup(frame)
 	    argv = ALLOC_N(VALUE, frame->argc);
 	    MEMCPY(argv, frame->argv, VALUE, frame->argc);
 	    frame->argv = argv;
+	    frame->flags = FRAME_MALLOC;
 	}
 	frame->tmp = 0;		/* should not preserve tmp */
 	if (!frame->prev) break;
@@ -7781,7 +7783,7 @@ rb_thread_status(thread)
     rb_thread_t th = rb_thread_check(thread);
 
     if (rb_thread_dead(th)) {
-	if (NIL_P(th->errinfo) && (th->flags & THREAD_RAISED))
+	if (!NIL_P(th->errinfo) && (th->flags & THREAD_RAISED))
 	    return Qnil;
 	return Qfalse;
     }
