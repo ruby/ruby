@@ -2,7 +2,7 @@
   Win32API - Ruby Win32 API Import Facility
 */
 
-#ifndef _MSC_VER
+#if !defined _MSC_VER && !defined NT
 #define  WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
@@ -132,6 +132,7 @@ Win32API_Call(argc, argv, obj)
     VALUE import_type;
     int nimport, timport, texport, i;
     int items;
+    int ret;
 
     items = rb_scan_args(argc, argv, "0*", &args);
 
@@ -162,7 +163,7 @@ Win32API_Call(argc, argv, obj)
 		    mov     eax, lParam
 		    push    eax
 		}
-#elif defined(__CYGWIN__) || defined(__MINGW32__)
+#elif defined __GNUC__
 		asm volatile ("pushl %0" :: "g" (lParam));
 #else
 #error
@@ -184,7 +185,7 @@ Win32API_Call(argc, argv, obj)
 		    mov     eax, pParam
 		    push    eax
 		}
-#elif defined(__CYGWIN__) || defined(__MINGW32__)
+#elif defined __GNUC__
 		asm volatile ("pushl %0" :: "g" (pParam));
 #else
 #error
@@ -194,6 +195,22 @@ Win32API_Call(argc, argv, obj)
 	}
     }
 
+#if defined __GNUC__
+    asm volatile ("call *%1" : "=r" (ret) : "g" (ApiFunction));
+    switch (texport) {
+    case _T_NUMBER:
+    case _T_INTEGER:
+	Return = INT2NUM(ret);
+	break;
+    case _T_POINTER:
+	Return = rb_str_new2((char *)ret);
+	break;
+    case _T_VOID:
+    default:
+	Return = INT2NUM(0);
+	break;
+    }
+#else
     switch (texport) {
     case _T_NUMBER:
 	ApiFunctionNumber = (ApiNumber *) ApiFunction;
@@ -214,6 +231,7 @@ Win32API_Call(argc, argv, obj)
 	Return = INT2NUM(0);
 	break;
     }
+#endif
     return Return;
 }
 
