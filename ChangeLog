@@ -1,3 +1,8 @@
+Thu Jan  8 04:36:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (WEBrick::CGI#initialize): should create
+	  @config[:Logger] if it was not given.
+
 Wed Jan  7 22:28:12 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): fix memory leak.
