@@ -418,7 +418,7 @@ class IPAddr
     #		       Socket::AI_NUMERICHOST)
     begin
       IPSocket.getaddress(prefix)		# test if address is vaild
-    rescue ArgumentError
+    rescue
       raise ArgumentError, "invalid address"
     end
     @addr = @family = nil
