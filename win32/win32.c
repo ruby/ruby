@@ -727,9 +727,10 @@ typedef struct {
 } ListInfo;
 
 static void
-insert(char *path, ListInfo *listinfo)
+insert(const char *path, VALUE vinfo)
 {
     NtCmdLineElement *tmpcurr;
+    ListInfo *listinfo = (ListInfo *)vinfo;
 
     tmpcurr = ALLOC(NtCmdLineElement);
     MEMZERO(tmpcurr, NtCmdLineElement, 1);
@@ -770,7 +771,7 @@ NtCmdGlob (NtCmdLineElement *patt)
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
-    rb_globi(buf, (void (*) _((const char*, VALUE)))insert, (VALUE)&listinfo);
+    rb_globi(buf, insert, (VALUE)&listinfo);
     if (buf != buffer)
 	free(buf);
 

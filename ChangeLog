@@ -1,3 +1,7 @@
+Sun Apr 28 17:01:56 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c (insert): fix prototype for ANSI C.
+
 Fri Apr 26 06:48:23 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl/ptr.c (cary2ary): missing break in switch statements.
