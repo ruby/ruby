@@ -1,4 +1,5 @@
 require 'test/unit'
+require "#{File.dirname(File.expand_path(__FILE__))}/envutil"
 
 $KCODE = 'none'
 
@@ -8,11 +9,7 @@ class TestSystem < Test::Unit::TestCase
   end
 
   def test_system
-    if File.exist? "miniruby" or File.exist? "miniruby.exe"
-      ruby = "./miniruby"
-    else
-      ruby = "ruby"
-    end
+    ruby = EnvUtil.rubybin
     assert_equal("foobar\n", `echo foobar`)
     assert_equal('foobar', `#{ruby} -e 'print "foobar"'`)
 

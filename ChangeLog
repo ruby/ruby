@@ -1,3 +1,13 @@
+Sun Oct  5 11:54:29 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/envutil.rb: added.  split "rubybin" from test_system.rb.
+
+	* test/ruby/test_system.rb: use envutil.rb
+
+	* test/ruby/test_beginendblock.rb: added.
+
+	* test/ruby/beginmainend.rb: added.  used in test_beginendblock.rb.
+
 Sun Oct  5 11:23:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* test/testunit/runit/test_testresult.rb: removed some unnecessary
