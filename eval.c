@@ -6933,7 +6933,7 @@ rb_set_safe_level(level)
 static VALUE
 safe_getter()
 {
-    return INT2FIX(ruby_safe_level);
+    return INT2NUM(ruby_safe_level);
 }
 
 static void

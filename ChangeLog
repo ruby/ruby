@@ -1,3 +1,11 @@
+Tue Apr 17 16:54:39 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (safe_getter): should use INT2NUM().
+
+Tue Apr 17 15:12:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big2long): 2**31 cannot fit in 31 bit long.
+
 Sat Apr 14 22:46:43 2001  Guy Decoux  <decoux@moulon.inra.fr>
 
 	* regex.c (calculate_must_string): wrong length calculation.
