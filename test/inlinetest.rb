@@ -7,12 +7,11 @@ module InlineTest
       raise RuntimeError.new("No #{part} part in the library '#{filename}'")
     end
     require(libname)
-    eval(endpart, nil, path, mainpart.count("\n")+1)
+    eval(endpart, TOPLEVEL_BINDING, path, mainpart.count("\n")+1)
   end
   module_function :eval_part
 
   def loadtest(libname)
-    Kernel.require(libname)
     in_critical do
       in_progname(libpath(libname)) do
         eval_part(libname, /^(?=if\s+(?:\$0\s*==\s*__FILE__|__FILE__\s*==\s*\$0)(?:[\#\s]|$))/, '$0 == __FILE__')
