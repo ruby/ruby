@@ -2386,10 +2386,14 @@ module RDoc
   end
 
   def parse_include(context, comment)
-    skip_tkspace_comment
-    name = get_constant_with_optional_parens
-    unless name.empty?
-      context.add_include(Include.new(name, comment))
+    loop do
+      skip_tkspace_comment
+      name = get_constant_with_optional_parens
+      unless name.empty?
+        context.add_include(Include.new(name, comment))
+      end
+      return unless peek_tk.kind_of?(TkCOMMA)
+      get_tk
     end
   end
 
