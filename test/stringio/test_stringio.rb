@@ -20,7 +20,7 @@ class TestStringIO < Test::Unit::TestCase
     io.puts "abc"
     io.truncate(0)
     io.puts "def"
-    assert_equal("\0\0\0def\n", io.string)
+    assert_equal("\0\0\0\0def\n", io.string)
   end
 
   def test_seek_beyond_eof # [ruby-dev:24194]

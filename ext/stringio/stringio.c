@@ -771,22 +771,24 @@ strio_write(self, str)
     VALUE self, str;
 {
     struct StringIO *ptr = writable(StringIO(self));
-    long len;
+    long len, olen;
 
     if (TYPE(str) != T_STRING)
 	str = rb_obj_as_string(str);
     len = RSTRING(str)->len;
     if (!len) return INT2FIX(0);
     check_modifiable(ptr);
+    olen = RSTRING(ptr->string)->len;
     if (ptr->flags & STRIO_APPEND) {
-	ptr->pos = RSTRING(ptr->string)->len;
+	ptr->pos = olen;
     }
-    if (ptr->pos == RSTRING(ptr->string)->len) {
+    if (ptr->pos == olen) {
 	rb_str_cat(ptr->string, RSTRING(str)->ptr, len);
     }
     else {
-	if (ptr->pos + len > RSTRING(ptr->string)->len) {
+	if (ptr->pos + len > olen) {
 	    rb_str_resize(ptr->string, ptr->pos + len);
+	    MEMZERO(RSTRING(ptr->string)->ptr + olen, char, ptr->pos - olen);
 	}
 	else {
 	    rb_str_modify(ptr->string);
