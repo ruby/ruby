@@ -1,3 +1,8 @@
+Fri Mar 20 16:40:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_sub_iter_s): should check last pattern since it
+	  may be matched to null.
+
 Thu Mar 19 13:48:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_04.

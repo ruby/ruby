@@ -913,7 +913,7 @@ str_sub_s(str, pat, val, once)
 	}
 
 	if (once) break;
-	if (offset >= STRLEN(str)) break;
+	if (offset > STRLEN(str)) break;
     }
     if (n == 0) return Qnil;
     if (RSTRING(str)->len > offset) {
@@ -996,7 +996,7 @@ str_sub_iter_s(str, pat, once)
 	}
 
 	if (once) break;
-	if (offset >= STRLEN(str)) break;
+	if (offset > STRLEN(str)) break;
     }
     if (n == 0) return Qnil;
     if (RSTRING(str)->len > offset) {

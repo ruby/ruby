@@ -7,14 +7,16 @@
 # foo = CGI.new
 # foo['field']   <== value of 'field'
 # foo.keys       <== array of fields
-# foo.inputs     <== hash of { <field> => <value> }
+# and foo has Hash class methods
 
 # if running on Windows(IIS or PWS) then change cwd.
 if ENV['SERVER_SOFTWARE'] =~ /^Microsoft-/ then
   Dir.chdir ENV['PATH_TRANSLATED'].sub(/[^\\]+$/, '')
 end
 
-class CGI
+require "delegate"
+
+class CGI < SimpleDelegator
 
   attr("inputs")
 
@@ -61,16 +63,10 @@ class CGI
       key, val = x.split(/=/,2).collect{|x|unescape(x)}
       @inputs[key] += ("\0" if @inputs[key]) + (val or "")
     end
+
+    super(@inputs)
   end
 
-  def keys
-    @inputs.keys
-  end
-
-  def [](key)
-    @inputs[key]
-  end
-  
   def CGI.message(msg, title = "")
     print "Content-type: text/html\n\n"
     print "<html><head><title>"
