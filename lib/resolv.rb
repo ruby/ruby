@@ -1154,6 +1154,12 @@ class Resolv
           @data << d
         end
 
+        def put_string_list(ds)
+          ds.each {|d|
+            self.put_string(d)
+          }
+        end
+
         def put_name(d)
           put_labels(d.to_a)
         end
@@ -1264,6 +1270,14 @@ class Resolv
           d = @data[@index + 1, len]
           @index += 1 + len
           return d
+        end
+
+        def get_string_list
+          strings = []
+          while @index < @limit
+            strings << self.get_string
+          end
+          strings
         end
 
         def get_name
@@ -1508,18 +1522,22 @@ class Resolv
       class TXT < Resource
         TypeValue = 16
 
-        def initialize(data)
-          @data = data
+        def initialize(first_string, *rest_strings)
+          @strings = [first_string, *rest_strings]
         end
-        attr_reader :data
+        attr_reader :strings
+
+        def data
+          @strings[0]
+        end
 
         def encode_rdata(msg)
-          msg.put_string(@data)
+          msg.put_string_list(@strings)
         end
 
         def self.decode_rdata(msg)
-          data = msg.get_string
-          return self.new(data)
+          strings = msg.get_string_list
+          return self.new(*strings)
         end
       end
 
