@@ -1,6 +1,14 @@
-Fri Dec 22 15:07:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Fri Dec 22 17:59:30 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.2 released.
+
+Fri Dec 22 17:04:12 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* win32/win32.c (myselect): avoid busy loop by adjusting fd_count.
+
+Fri Dec 22 15:07:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_cstr2inum): prefix like '0x' had removed too much.
 
 Thu Dec 21 13:01:46 2000  Tanaka Akira  <akr@m17n.org>
 

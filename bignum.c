@@ -202,32 +202,31 @@ rb_cstr2inum(str, base)
 
     while (*str && ISSPACE(*str)) str++;
 
-    if (*str == '+') {
+    if (str[0] == '+') {
 	str++;
     }
-    else if (*str == '-') {
+    else if (str[0] == '-') {
 	str++;
 	sign = 0;
     }
     if (base == 0) {
-	if (*str == '0') {
-	    str++;
-	    if (*str == 'x' || *str == 'X') {
-		str++;
+	if (str[0] == '0') {
+	    if (str[1] == 'x' || str[1] == 'X') {
 		base = 16;
 	    }
-	    else if (*str == 'b' || *str == 'B') {
-		str++;
+	    else if (str[1] == 'b' || str[1] == 'B') {
 		base = 2;
 	    }
 	    else {
 		base = 8;
-		if (!*str) return INT2FIX(0);
+		if (!str[1]) return INT2FIX(0);
 	    }
+	}
+	else if (str[0] == 0) {
+	    return INT2FIX(0);
 	}
 	else {
 	    base = 10;
-	    if (!*str) return INT2FIX(0);
 	}
     }
     if (base == 8) {

@@ -1974,6 +1974,11 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
+    r = 0;
+    if (rd && rd->fd_count > r) r = rd->fd_count;
+    if (wr && wr->fd_count > r) r = wr->fd_count;
+    if (ex && ex->fd_count > r) r = ex->fd_count;
+    if (nfds > r) nfds = r;
     if (nfds == 0 && timeout) {
 	Sleep(timeout->tv_sec * 1000 + timeout->tv_usec / 1000);
 	return 0;

@@ -102,7 +102,7 @@ OBJS          = array.obj \
 
 all:		miniruby$(EXEEXT) rbconfig.rb ext/extmk.rb \
 		$(LIBRUBY) $(MISCLIBS)
-		set LIB=../../win32;$(ORGLIBPATH)
+		set LIB=../..;$(ORGLIBPATH)
 		@.\miniruby$(EXEEXT) -Cext extmk.rb 
 
 ruby: $(PROGRAM)
@@ -195,7 +195,6 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(LIBRUBY_SO).rc: rbconfig.rb
 	$(CC) $(CFLAGS) -I. -I$(<D) $(CPPFLAGS) -c $(<:/=\)
 .c.obj:
 	$(CC) $(CFLAGS) -I. $(CPPFLAGS) -c $(<:/=\)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
 .rc.res:
 	$(RC) -I. -I$(<D) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $<

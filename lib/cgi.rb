@@ -828,7 +828,7 @@ convert string charset, and set language to "ja".
         eval <<-END
           def body.original_filename
             #{
-              filename = (Regexp::last_match[1] or "").dup
+              filename = ($1 or "").dup
               if (/Mac/ni === env_table['HTTP_USER_AGENT']) and
                  (/Mozilla/ni === env_table['HTTP_USER_AGENT']) and
                  (not /MSIE/ni === env_table['HTTP_USER_AGENT'])
