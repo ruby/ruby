@@ -583,7 +583,6 @@ isInternalCmd(const char *cmd, const char *interp)
     return 1;
 }
 
-
 SOCKET
 rb_w32_get_osfhandle(int fh)
 {
@@ -1748,12 +1747,7 @@ setgid(int gid)
 //
 
 int
-/* ioctl(int i, unsigned int u, char *data) */
-#ifdef __BORLANDC__
-  ioctl(int i, int u, ...)
-#else
-  ioctl(int i, unsigned int u, long data)
-#endif
+ioctl(int i, int u, ...)
 {
     return -1;
 }
@@ -2489,6 +2483,9 @@ rb_w32_getcwd(buffer, size)
     char *bp;
 
 #undef getcwd
+#ifndef __BORLANDC__
+#define getcwd _getcwd
+#endif
     if (getcwd(buffer, size) == NULL) {
         return NULL;
     }

@@ -1,3 +1,8 @@
+Mon Jan 19 21:28:06 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/defs.h, win32/win3.c, win32/win32.h, file.c: remove
+	  useless casts for Borland C.
+
 Mon Jan 19 17:39:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (NameError::message): internal use only.
@@ -26,7 +31,7 @@ Mon Jan 19 06:49:07 2004  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Mon Jan 19 01:08:39 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* variable.c (rb_set_class_path): do not set path if 
+	* variable.c (rb_set_class_path): do not set path if
 
 	* lib/cgi.rb (CGI::QueryExtension): give extended string, not a
 	  delegater object.
@@ -132,7 +137,7 @@ Wed Jan 14 00:58:35 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  StandardError to Exception.  [ruby-talk:89782]
 
 Tue Jan 13 18:03:02 2004  Ian Macdonald  <ian@caliban.org>
-	
+
 	* file.c (rb_stat_wr, rb_stat_ww): New functions
 	  implementing new methods (File::Stat#world_readable?,
 	  File::Stat#world_writable?).
@@ -147,7 +152,7 @@ Tue Jan 13 16:50:03 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk.rb: use $0 as the default application class name.
 
 Tue Jan 13 14:48:00 2004  Ian Macdonald  <ian@caliban.org>
-	
+
 	* lib/pathname.rb: New methods (Pathname#world_readable?,
 	  Pathname#world_writable?).
 

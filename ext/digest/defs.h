@@ -23,12 +23,8 @@
   typedef unsigned int  uint32_t;
 # if SIZEOF_LONG == 8
   typedef unsigned long uint64_t;
-# elif defined(__GNUC__)
-  typedef unsigned long long uint64_t;
-# elif defined(_MSC_VER)
-  typedef unsigned _int64 uint64_t;
-# elif defined(__BORLANDC__)
-  typedef unsigned __int64 uint64_t;
+# elif SIZEOF_LONG_LONG == 8
+  typedef unsigned LONG_LONG uint64_t;
 # else
 #  define NO_UINT64_T
 # endif

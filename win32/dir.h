@@ -1,3 +1,6 @@
+#ifndef RUBY_WIN32_DIR_H
+#define RUBY_WIN32_DIR_H
+
 #ifdef __BORLANDC__
 #  ifndef WIN32_DIR_H_
 #    define WIN32_DIR_H_
@@ -37,3 +40,5 @@ void           rb_w32_closedir(DIR *);
 #define seekdir   rb_w32_seekdir
 #define rewinddir rb_w32_rewinddir
 #define closedir  rb_w32_closedir
+
+#endif /* RUBY_WIN32_DIR_H */

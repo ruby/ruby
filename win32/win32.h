@@ -57,7 +57,7 @@ extern "C++" {
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#if !defined(__BORLANDC__)
+#ifdef HAVE_SYS_UTIME_H
 # include <sys/utime.h>
 #else
 # include <utime.h>
@@ -188,7 +188,7 @@ extern pid_t rb_w32_getpid(void);
 #endif
 #endif
 
-#ifdef __BORLANDC__
+#if 0 && defined __BORLANDC__
 #undef S_ISDIR
 #undef S_ISFIFO
 #undef S_ISBLK
@@ -240,9 +240,7 @@ extern pid_t rb_w32_getpid(void);
 //
 // stubs
 //
-#if !defined(__BORLANDC__)
-extern int       ioctl (int, unsigned int, long);
-#endif
+extern int       ioctl (int, int, ...);
 extern UIDTYPE   getuid (void);
 extern UIDTYPE   geteuid (void);
 extern GIDTYPE   getgid (void);
