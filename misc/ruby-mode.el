@@ -683,11 +683,9 @@ The variable ruby-indent-level controls the amount of indentation.
 		(setq end nil))
 	      (goto-char (or end pos))
 	      (skip-chars-backward " \t")
-	      (and
-	       (setq state (ruby-parse-region parse-start (point)))
-	       (nth 0 state)
-	       (setq begin (cdr (nth 1 state)))
-	       (goto-char pos)))
+	      (setq state (ruby-parse-region parse-start (point)))
+	      (setq begin (or (nth 0 state) (cdr (nth 1 state))))
+	      (goto-char pos))
 	    (or (bobp) (forward-char -1))
 	    (and
 	     (or (and (looking-at ruby-symbol-re)

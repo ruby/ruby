@@ -661,7 +661,7 @@ min_ii(i, memo)
  *     
  *     a = %w(albatross dog horse)
  *     a.min                                  #=> "albatross"
- *     a.max {|a,b| a.length <=> b.length }   #=> "dog"
+ *     a.min {|a,b| a.length <=> b.length }   #=> "dog"
  */
 
 static VALUE

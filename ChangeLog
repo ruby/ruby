@@ -1,3 +1,8 @@
+Fri Feb 27 02:10:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (localjump_destination): lambda should not interfere
+	  return from the yielded block.
+
 Fri Feb 27 00:53:49 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb, test/drb/drbtest.rb: require drb/eq.rb by default
@@ -6,6 +11,11 @@ Thu Feb 26 12:15:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (make_cmdvector): adjust successive double-quote
 	  handling.
+
+Thu Feb 26 09:42:56 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (delete_if_i): use st_delete_safe() (via
+	  rb_hash_delete()) instead of returning ST_DELETE.
 
 Thu Feb 26 02:35:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

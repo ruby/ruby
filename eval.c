@@ -912,6 +912,7 @@ static struct tag *prot_tag;
 #define PROT_ITER   INT2FIX(1)	/* 3 */
 #define PROT_CALL   INT2FIX(2)	/* 5 */
 #define PROT_PCALL  INT2FIX(3)	/* 7 */
+#define PROT_YIELD  INT2FIX(4)	/* 9 */
 
 #define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, setjmp(prot_tag->buf))
 
@@ -4514,10 +4515,15 @@ localjump_destination(state, retval)
 {
     struct tag *tt = prot_tag;
     VALUE tag = (state == TAG_BREAK) ? PROT_ITER : PROT_FUNC;
+    int uniq = 0;
 
     if (retval == Qundef) retval = Qnil;
     while (tt) {
-	if (tt->tag == PROT_PCALL || (tt->tag == PROT_THREAD && state == TAG_BREAK) ||
+	if (tt->tag == PROT_YIELD) {
+	    uniq = tt->frame->uniq;
+	}
+	if ((tt->tag == PROT_THREAD && state == TAG_BREAK) ||
+	    (tt->tag == PROT_PCALL && uniq == 0) ||
 	    (tt->tag == PROT_CALL || tt->tag == tag) && tt->frame->uniq == ruby_frame->uniq) {
 	    tt->dst = (VALUE)ruby_frame->uniq;
 	    tt->retval = retval;
@@ -4639,7 +4645,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     ruby_current_node = node;
 
     PUSH_ITER(block->iter);
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG(PROT_YIELD);
     if ((state = EXEC_TAG()) == 0) {
       redo:
 	if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
@@ -7988,7 +7994,7 @@ proc_invoke(proc, args, self, klass)
 	proc_set_safe_level(proc);
 	result = rb_yield_0(args, self, (self!=Qundef)?CLASS_OF(self):0, pcall, avalue);
     }
-    else if (pcall || orphan || TAG_DST()) {
+    else if (TAG_DST()) {
 	result = prot_tag->retval;
     }
     POP_TAG();
@@ -8008,7 +8014,6 @@ proc_invoke(proc, args, self, klass)
 	/* fall through */
       case TAG_BREAK:
       case TAG_RETURN:
-	if (pcall) break;
 	if (orphan) {		/* orphan block */
 	    char mesg[32];
 	    snprintf(mesg, sizeof mesg, "%s from proc-closure",
@@ -8016,6 +8021,7 @@ proc_invoke(proc, args, self, klass)
 	    localjump_error(mesg, result, state);
 	}
 	if (result != Qundef) {
+	    if (pcall) break;
 	    localjump_destination(state, result);
 	}
       default:
