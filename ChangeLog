@@ -1,3 +1,17 @@
+Tue May 20 10:51:26 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_f_missing): create exception instance by ordinal
+	  method.
+
+	* error.c (rb_name_error, rb_sys_fail): ditto.
+
+	* error.c (exc_to_s, exit_status, name_err_name,
+	  nometh_err_args, syserr_errno, syserr_eqq): access
+	  attributes.
+
+	* error.c (name_err_initialize, nometh_err_initialize,
+	  syserr_initialize): initialize attributes.
+
 Mon May 19 18:54:30 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
     * lib/token.c, lib/implicit.c: expanded character set to allow UTF-8,

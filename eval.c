@@ -4599,13 +4599,18 @@ rb_f_missing(argc, argv, obj)
     {
 	char buf[BUFSIZ];
 	int noclass = (!d || desc[0]=='#');
+	int n = 0;
+	VALUE args[3];
 
 	snprintf(buf, BUFSIZ, format, rb_id2name(id),
 		 desc, noclass ? "" : ":",
 		 noclass ? "" : rb_obj_classname(obj));
-	exc = rb_exc_new2(exc, buf);
-	rb_iv_set(exc, "name", argv[0]);
-	rb_iv_set(exc, "args", rb_ary_new4(argc-1, argv+1));
+	args[n++] = rb_str_new2(buf);
+	args[n++] = argv[0];
+	if (exc == rb_eNoMethodError) {
+	    args[n++] = rb_ary_new4(argc-1, argv+1);
+	}
+	exc = rb_class_new_instance(n, args, exc);
 	rb_exc_raise(exc);
     }
     POP_FRAME();

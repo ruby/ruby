@@ -331,7 +331,7 @@ static VALUE
 exc_to_s(exc)
     VALUE exc;
 {
-    VALUE mesg = rb_iv_get(exc, "mesg");
+    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
 
     if (NIL_P(mesg)) return rb_class_path(CLASS_OF(exc));
     if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
@@ -421,7 +421,7 @@ static VALUE
 exit_status(exc)
     VALUE exc;
 {
-    return rb_iv_get(exc, "status");
+    return rb_attr_get(exc, rb_intern("status"));
 }
 
 void
@@ -434,31 +434,56 @@ rb_name_error(id, fmt, va_alist)
     va_dcl
 #endif
 {
-    VALUE exc;
-
+    VALUE exc, argv[2];
     va_list args;
     char buf[BUFSIZ];
 
     va_init_list(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
-    exc = rb_exc_new2(rb_eNameError, buf);
-    rb_iv_set(exc, "name", ID2SYM(id));
+
+    argv[0] = rb_str_new2(buf);
+    argv[1] = ID2SYM(id);
+    exc = rb_class_new_instance(2, argv, rb_eNameError);
     rb_exc_raise(exc);
+}
+
+static VALUE
+name_err_initialize(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    VALUE name = (argc > 1) ? argv[--argc] : Qnil;
+    exc_initialize(argc, argv, self);
+    rb_iv_set(self, "name", name);
+    return self;
 }
 
 static VALUE
 name_err_name(self)
     VALUE self;
 {
-    return rb_iv_get(self, "name");
+    return rb_attr_get(self, rb_intern("name"));
+}
+
+static VALUE
+nometh_err_initialize(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    VALUE args = (argc > 2) ? argv[--argc] : Qnil;
+    name_err_initialize(argc, argv, self);
+    rb_iv_set(self, "args", args);
+    return self;
 }
 
 static VALUE
 nometh_err_args(self)
     VALUE self;
 {
-    return rb_iv_get(self, "args");
+    return rb_attr_get(self, rb_intern("args"));
 }
 
 void
@@ -506,10 +531,44 @@ get_syserr(n)
 }
 
 static VALUE
+syserr_initialize(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+#if !defined(_WIN32) && !defined(__VMS)
+    char *strerror();
+#endif
+    char *err;
+    char *buf;
+    VALUE error, mesg;
+
+    if (rb_scan_args(argc, argv, "11", &mesg, &error) == 1 && FIXNUM_P(mesg)) {
+	error = mesg;
+	mesg = Qnil;
+    }
+    err = strerror(NUM2LONG(error));
+    if (!err) err = "Unknown error";
+    if (RTEST(mesg)) {
+	StringValue(mesg);
+	buf = ALLOCA_N(char, strlen(err)+RSTRING(mesg)->len+4);
+	sprintf(buf, "%s - %s", err, RSTRING(mesg)->ptr);
+	mesg = rb_str_new2(buf);
+    }
+    else {
+	mesg = rb_str_new2(err);
+    }
+
+    exc_initialize(1, &mesg, self);
+    rb_iv_set(self, "errno", error);
+    return self;
+}
+
+static VALUE
 syserr_errno(self)
     VALUE self;
 {
-    return rb_iv_get(self, "errno");
+    return rb_attr_get(self, rb_intern("errno"));
 }
 
 static VALUE
@@ -521,7 +580,7 @@ syserr_eqq(self, exc)
     if (!rb_obj_is_kind_of(exc, rb_eSystemCallError)) return Qfalse;
     if (self == rb_eSystemCallError) return Qtrue;
 
-    num = rb_iv_get(exc, "errno");
+    num = rb_attr_get(exc, rb_intern("errno"));
     if (NIL_P(num)) {
 	VALUE klass = CLASS_OF(exc);
 
@@ -565,8 +624,10 @@ Init_Exception()
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
     rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
+    rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
+    rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
     rb_define_method(rb_eNoMethodError, "args", nometh_err_args, 0);
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
@@ -651,35 +712,18 @@ void
 rb_sys_fail(mesg)
     const char *mesg;
 {
-#if !defined(_WIN32) && !defined(__VMS)
-    char *strerror();
-#endif
-    char *err;
-    char *buf;
     extern int errno;
     int n = errno;
-    VALUE ee;
+    VALUE argv[2];
 
-    if (errno == 0) {
+    errno = 0;
+    if (n == 0) {
 	rb_bug("rb_sys_fail() - errno == 0");
     }
 
-    err = strerror(errno);
-    if (mesg) {
-	volatile VALUE tmp = rb_str_inspect(rb_str_new2(mesg));
-
-	buf = ALLOCA_N(char, strlen(err)+RSTRING(tmp)->len+4);
-	sprintf(buf, "%s - %s", err, RSTRING(tmp)->ptr);
-    }
-    else {
-	buf = ALLOCA_N(char, strlen(err)+1);
-	strcpy(buf, err);
-    }
-
-    errno = 0;
-    ee = rb_exc_new2(get_syserr(n), buf);
-    rb_iv_set(ee, "errno", INT2NUM(n));
-    rb_exc_raise(ee);
+    argv[0] = mesg ? rb_str_new2(mesg) : Qnil;
+    argv[1] = INT2NUM(n);
+    rb_exc_raise(rb_class_new_instance(2, argv, get_syserr(n)));
 }
 
 void
@@ -734,6 +778,7 @@ init_syserr()
 {
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
+    rb_define_method(rb_eSystemCallError, "initialize", syserr_initialize, -1);
     rb_define_method(rb_eSystemCallError, "errno", syserr_errno, 0);
     rb_define_singleton_method(rb_eSystemCallError, "===", syserr_eqq, 1);
 
