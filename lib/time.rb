@@ -392,21 +392,25 @@ if __FILE__ == $0
                    Time.rfc2822("Fri, 21 Nov 1997 09:55:06 -0600"))
       assert_equal(Time.utc(2003, 7, 1, 10, 52, 37) - 2 * 3600,
                    Time.rfc2822("Tue, 1 Jul 2003 10:52:37 +0200"))
-      assert_equal(Time.utc(1969, 2, 13, 23, 32, 54) + 3 * 3600 + 30 * 60,
-                   Time.rfc2822("Thu, 13 Feb 1969 23:32:54 -0330"))
       assert_equal(Time.utc(1997, 11, 21, 10, 1, 10) + 6 * 3600,
                    Time.rfc2822("Fri, 21 Nov 1997 10:01:10 -0600"))
       assert_equal(Time.utc(1997, 11, 21, 11, 0, 0) + 6 * 3600,
                    Time.rfc2822("Fri, 21 Nov 1997 11:00:00 -0600"))
       assert_equal(Time.utc(1997, 11, 24, 14, 22, 1) + 8 * 3600,
                    Time.rfc2822("Mon, 24 Nov 1997 14:22:01 -0800"))
-      assert_equal(Time.utc(1969, 2, 13, 23, 32, 0) + 3 * 3600 + 30 * 60,
-                   Time.rfc2822(" Thu,
-      13
-        Feb
-          1969
-      23:32
-               -0330 (Newfoundland Time)"))
+      begin
+        Time.at(-1)
+        assert_equal(Time.utc(1969, 2, 13, 23, 32, 54) + 3 * 3600 + 30 * 60,
+                     Time.rfc2822("Thu, 13 Feb 1969 23:32:54 -0330"))
+        assert_equal(Time.utc(1969, 2, 13, 23, 32, 0) + 3 * 3600 + 30 * 60,
+                     Time.rfc2822(" Thu,
+        13
+          Feb
+            1969
+        23:32
+                 -0330 (Newfoundland Time)"))
+      rescue ArgumentError
+      end
       assert_equal(Time.utc(1997, 11, 21, 9, 55, 6),
                    Time.rfc2822("21 Nov 97 09:55:06 GMT"))
       assert_equal(Time.utc(1997, 11, 21, 9, 55, 6) + 6 * 3600,
@@ -459,9 +463,12 @@ if __FILE__ == $0
       s = "1990-12-31T15:59:60-08:00"
       assert_equal(t, Time.iso8601(s))
 
-      t = Time.utc(1937, 1, 1, 11, 40, 27, 870000)
-      s = "1937-01-01T12:00:27.87+00:20"
-      assert_equal(t, Time.iso8601(s))
+      begin
+        t = Time.utc(1937, 1, 1, 11, 40, 27, 870000)
+        s = "1937-01-01T12:00:27.87+00:20"
+        assert_equal(t, Time.iso8601(s))
+      rescue ArgumentError
+      end
     end
 
     # http://www.w3.org/TR/xmlschema-2/
@@ -515,8 +522,11 @@ if __FILE__ == $0
       assert_equal("2001-04-17T19:23:17.12345Z", t.xmlschema(5))
       assert_equal("2001-04-17T19:23:17.1Z", t.xmlschema(1))
 
-      t = Time.utc(1960, 12, 31, 23, 0, 0, 123456)
-      assert_equal("1960-12-31T23:00:00.123456Z", t.xmlschema(6))
+      begin
+        t = Time.utc(1960, 12, 31, 23, 0, 0, 123456)
+        assert_equal("1960-12-31T23:00:00.123456Z", t.xmlschema(6))
+      rescue ArgumentError
+      end
     end
 
     def test_completion
