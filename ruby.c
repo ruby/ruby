@@ -1048,6 +1048,16 @@ verbose_setter(val, id, variable)
     ruby_verbose = RTEST(val) ? Qtrue : val;
 }
 
+static VALUE
+opt_W_getter(val, id)
+    VALUE val;
+    ID id;
+{
+    if (ruby_verbose == Qnil) return INT2FIX(0);
+    if (ruby_verbose == Qfalse) return INT2FIX(1);
+    if (ruby_verbose == Qtrue) return INT2FIX(2);
+}
+
 void
 ruby_prog_init()
 {
@@ -1057,6 +1067,7 @@ ruby_prog_init()
     rb_define_hooked_variable("$VERBOSE", &ruby_verbose, 0, verbose_setter);
     rb_define_hooked_variable("$-v", &ruby_verbose, 0, verbose_setter);
     rb_define_hooked_variable("$-w", &ruby_verbose, 0, verbose_setter);
+    rb_define_virtual_variable("$-W", opt_W_getter, 0);
     rb_define_variable("$DEBUG", &ruby_debug);
     rb_define_variable("$-d", &ruby_debug);
     rb_define_readonly_variable("$-p", &do_print);

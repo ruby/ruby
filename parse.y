@@ -4244,7 +4244,10 @@ yylex()
 	    tokadd(c);
 	    tokfix();
 	    yylval.id = rb_intern(tok());
-	    /* xxx shouldn't check if valid option variable */
+	    if (!is_global_id(yylval.id)) {
+		rb_compile_error("invalid global variable `%s'", rb_id2name(yylval.id));
+		return 0;
+	    }
 	    return tGVAR;
 
 	  case '&':		/* $&: last match */

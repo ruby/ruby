@@ -993,10 +993,11 @@ static NODE *compile _((VALUE, char*, int));
 
 static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 
-#define YIELD_LAMBDA_CALL 1
-#define YIELD_PUBLIC_DEF  2
-#define YIELD_FUNC_AVALUE 1
-#define YIELD_FUNC_SVALUE 2
+#define YIELD_LAMBDA_CALL  1
+#define YIELD_BLOCK_ORPHAN 2
+#define YIELD_PUBLIC_DEF   4
+#define YIELD_FUNC_AVALUE  1
+#define YIELD_FUNC_SVALUE  2
 
 static VALUE rb_call _((VALUE,VALUE,ID,int,const VALUE*,int));
 static VALUE module_setup _((VALUE,NODE*));
@@ -1257,6 +1258,7 @@ ruby_init()
     }
     POP_SCOPE();
     ruby_scope = top_scope;
+    top_scope->flags &= ~SCOPE_NOSTACK;
     ruby_running = 1;
 }
 
@@ -4652,7 +4654,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     ruby_current_node = node;
 
     PUSH_ITER(block->iter);
-    PUSH_TAG(lambda ? PROT_NONE : PROT_YIELD);
+    PUSH_TAG((flags & YIELD_BLOCK_ORPHAN) ? PROT_NONE : PROT_YIELD);
     if ((state = EXEC_TAG()) == 0) {
       redo:
 	if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
@@ -4684,9 +4686,10 @@ rb_yield_0(val, self, klass, flags, avalue)
 	    state = 0;
 	    result = prot_tag->retval;
 	    break;
-	  case TAG_RETURN:
-	    if (!lambda)
+	  case TAG_BREAK:
+	    if (TAG_DST()) {
 		result = prot_tag->retval;
+	    }
 	    break;
 	  default:
 	    break;
@@ -6999,6 +7002,9 @@ rb_mod_modfunc(argc, argv, module)
 	id = rb_to_id(argv[i]);
 	for (;;) {
 	    body = search_method(m, id, &m);
+	    if (body == 0) {
+		body = search_method(rb_cObject, id, &m);
+	    }
 	    if (body == 0 || body->nd_body == 0) {
 		rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
 	    }
@@ -7983,6 +7989,7 @@ proc_invoke(proc, args, self, klass)
     Data_Get_Struct(proc, struct BLOCK, data);
     pcall = (data->flags & BLOCK_LAMBDA) ? YIELD_LAMBDA_CALL : 0;
     orphan = pcall ? 0 : block_orphan(data);
+    if (orphan || pcall) pcall |= YIELD_BLOCK_ORPHAN;
     if (!pcall && RARRAY(args)->len == 1) {
 	avalue = Qfalse;
 	args = RARRAY(args)->ptr[0];
@@ -8122,6 +8129,7 @@ proc_arity(proc)
 	}
 	return INT2FIX(-1);
     }
+    if (!(data->flags & BLOCK_LAMBDA)) return INT2FIX(-1);
     if (data->var == (NODE*)1) return INT2FIX(0);
     if (data->var == (NODE*)2) return INT2FIX(0);
     switch (nd_type(data->var)) {
@@ -8162,8 +8170,32 @@ proc_eq(self, other)
     if (data->body != data2->body) return Qfalse;
     if (data->var != data2->var) return Qfalse;
     if (data->frame.uniq != data2->frame.uniq) return Qfalse;
-    if (data->dyna_vars != data2->dyna_vars) return Qfalse;
+    if (data->flags != data2->flags) return Qfalse;
+
     return Qtrue;
+}
+
+/*
+ * call-seq:
+ *   prc.hash   =>  integer
+ *
+ * Return hash value corresponding to proc body.
+ */
+
+static VALUE
+proc_hash(self, other)
+    VALUE self;
+{
+    struct BLOCK *data;
+    long hash;
+
+    Data_Get_Struct(self, struct BLOCK, data);
+    hash = (long)data->body;
+    hash ^= (long)data->var;
+    hash ^= data->frame.uniq << 16;
+    hash ^= data->flags;
+
+    return INT2FIX(hash);
 }
 
 /*
@@ -8457,6 +8489,29 @@ method_eq(method, other)
 	return Qfalse;
 
     return Qtrue;
+}
+
+/*
+ * call-seq:
+ *    meth.hash   => integer
+ *
+ * Return a hash value corresponding to the method object.
+ */
+
+static VALUE
+method_hash(method)
+    VALUE method;
+{
+    struct METHOD *m;
+    long hash;
+
+    Data_Get_Struct(method, struct METHOD, m);
+    hash = (long)m->klass;
+    hash ^= (long)m->rklass;
+    hash ^= (long)m->recv;
+    hash ^= (long)m->body;
+
+    return INT2FIX(hash);
 }
 
 /*
@@ -9092,6 +9147,8 @@ Init_Proc()
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "[]", proc_call, -2);
     rb_define_method(rb_cProc, "==", proc_eq, 1);
+    rb_define_method(rb_cProc, "eql?", proc_eq, 1);
+    rb_define_method(rb_cProc, "hash", proc_hash, 0);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_method(rb_cProc, "to_proc", proc_to_self, 0);
     rb_define_method(rb_cProc, "binding", proc_binding, 0);
@@ -9103,6 +9160,8 @@ Init_Proc()
     rb_undef_alloc_func(rb_cMethod);
     rb_undef_method(CLASS_OF(rb_cMethod), "new");
     rb_define_method(rb_cMethod, "==", method_eq, 1);
+    rb_define_method(rb_cMethod, "eql?", method_eq, 1);
+    rb_define_method(rb_cMethod, "hash", method_hash, 0);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
     rb_define_method(rb_cMethod, "call", method_call, -1);
     rb_define_method(rb_cMethod, "[]", method_call, -1);
@@ -9117,6 +9176,8 @@ Init_Proc()
     rb_undef_alloc_func(rb_cUnboundMethod);
     rb_undef_method(CLASS_OF(rb_cUnboundMethod), "new");
     rb_define_method(rb_cUnboundMethod, "==", method_eq, 1);
+    rb_define_method(rb_cUnboundMethod, "eql?", method_eq, 1);
+    rb_define_method(rb_cUnboundMethod, "hash", method_hash, 0);
     rb_define_method(rb_cUnboundMethod, "clone", method_clone, 0);
     rb_define_method(rb_cUnboundMethod, "arity", method_arity, 0);
     rb_define_method(rb_cUnboundMethod, "inspect", method_inspect, 0);

@@ -561,8 +561,10 @@ The variable ruby-indent-level controls the amount of indentation.
 (defun ruby-indent-size (pos nest)
   (+ pos (* (or nest 1) ruby-indent-level)))
 
+;;; maybe obsolete
 (defconst ruby-assign-re "\\s *\\(&&\\|||\\|<<\\|>>\\|[-+*/%&|^]\\)?=\\s *")
 
+;;; maybe obsolete
 (defun ruby-beginning-of-arg (start end)
   (save-restriction
     (narrow-to-region start (1+ end))
@@ -586,6 +588,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	       (if beg (setq beg nil arg (point))))
 	      ((looking-at ruby-operator-re)
 	       (goto-char (match-end 0))
+	       (echo "foo %s %s" arg beg)
 	       (if beg (setq beg nil arg (match-end 0))))
 	      ((not (eq (char-syntax (char-after)) ?\())
 	       (setq start (point)))))
@@ -731,7 +734,9 @@ The variable ruby-indent-level controls the amount of indentation.
 		      (not (bobp)))
 		     (save-excursion
 		       (widen)
-		       (ruby-beginning-of-arg (or begin parse-start) (point))
+		       (goto-char (or begin parse-start))
+		       (skip-syntax-forward " ")
+;;		       (ruby-beginning-of-arg (or begin parse-start) (point))
 		       (current-column)))
 		    (t
 		     (+ indent ruby-indent-level))))))))
@@ -832,7 +837,9 @@ An end of a defun is found by moving forward from the beginning of one."
 		     (skip-chars-forward ",.:;|&^~=!?\\+\\-\\*")
 		     (looking-at "\\s("))
 		   (goto-char (scan-sexps (point) 1)))
-		  ((looking-at ruby-block-beg-re)
+		  ((and (looking-at ruby-block-beg-re)
+			(not (eq (char-before (point)) ?.))
+			(not (eq (char-before (point)) ?:)))
 		   (ruby-end-of-block)
 		   (forward-word 1))
 		  ((looking-at "\\(\\$\\|@@?\\)?\\sw")

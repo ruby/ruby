@@ -1,3 +1,14 @@
+Wed Mar  3 13:10:56 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (method_hash): new method. [ruby-talk:93968]
+
+	* eval.c (proc_eq): do not compare dyna_vars.
+
+	* eval.c (proc_hash): new method.
+
+	* eval.c (rb_yield_0): protect break/return from within orphan (or
+	  lambda) Proc object.
+
 Wed Mar  3 09:52:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb ($topdir): use compile_dir only when not installed yet.
@@ -100,6 +111,11 @@ Sat Feb 28 10:31:03 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb, test/erb/test_erb.rb: don't forget filename,
 	  if both filename and safe_level given. [ruby-dev:23050]
+
+Sat Feb 28 01:08:40 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): should not allow symbol for invalid global
+	  variable (e.g. `:$-)`). [ruby-core:02518]
 
 Fri Feb 27 20:37:09 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -1120,6 +1120,20 @@ end
 ljump_test(false, get_block{break})
 ljump_test(true, lambda{break})
 
+def exit_value_test(&block)
+  block.call
+rescue LocalJumpError
+  $!.exit_value
+end
+
+test_ok(45, exit_value_test{break 45})
+
+test_ok(55, begin
+              get_block{break 55}.call
+            rescue LocalJumpError
+              $!.exit_value
+            end)
+
 test_ok(block.arity == -1)
 test_ok(lambda.arity == -1)
 test_ok(lambda{||}.arity == 0)
@@ -1140,7 +1154,7 @@ test_ok(return_in_lambda())
 
 def marity_test(m)
   method = method(m)
-  test_ok(method.arity == method.to_proc.arity)
+  test_ok(method.arity == method.to_proc.arity, 2)
 end
 marity_test(:test_ok)
 marity_test(:marity_test)
