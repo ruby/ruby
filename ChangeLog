@@ -1,6 +1,17 @@
-Thu Dec 25 00:17:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Dec 25 04:00:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.8.1 released.
+
+Thu Dec 25 00:17:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: check for nanosleep, -lrt if required.
+	  [ruby-core:02059]
+
+	* eval.c (thread_timer): use select(2) if nanosleep(2) is not
+	  available.
+
+	* eval.c: check __stub_getcontext for glibc on some platforms.
+	  [ruby-list:38984]
 
 Wed Dec 24 23:48:04 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 

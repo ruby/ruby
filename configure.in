@@ -721,6 +721,10 @@ if test "$enable_pthread" = "yes"; then
          fi
       fi
    fi
+   AC_CHECK_FUNC(nanosleep)
+   if test "$ac_cv_func_nanosleep" = "no"; then
+       AC_CHECK_LIB(rt, nanosleep, AC_DEFINE(HAVE_NANOSLEEP))
+   fi
 fi
 
 dnl default value for $KANJI

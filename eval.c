@@ -29,7 +29,7 @@
 #endif
 
 #include <stdio.h>
-#if defined(HAVE_UCONTEXT_H) && (defined(__ia64__) || defined(HAVE_NATIVETHREAD))
+#if defined(HAVE_UCONTEXT_H) && (defined(__ia64__) || defined(HAVE_NATIVETHREAD)) && !defined(__stub_getcontext)
 #include <ucontext.h>
 #define USE_CONTEXT
 #else
@@ -9552,12 +9552,19 @@ static void*
 thread_timer(dummy)
     void *dummy;
 {
-    struct timespec req, rem;
-
     for (;;) {
+#ifdef HAVE_NANOSLEEP
+	struct timespec req, rem;
+
 	req.tv_sec = 0;
 	req.tv_nsec = 10000000;
 	nanosleep(&req, &rem);
+#else
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 10000;
+	select(0, NULL, NULL, NULL, &tv);
+#endif
 	if (!rb_thread_critical) {
 	    rb_thread_pending = 1;
 	    if (rb_trap_immediate) {
