@@ -1,5 +1,7 @@
 Tue Apr  7 01:16:45 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* experimental release 1.1b9_07.
+
 	* array.c (ary_cmp): compare each element using `<=>'.
 
 	* hash.c (hash_each_with_index): yields [value, key] pair.
@@ -16,11 +18,19 @@ Mon Apr  6 14:49:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (thread_yield): must return evaluated value.
 
+Fri Apr  3 13:07:29 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (thread_schedule): context switch bypassed on wrong
+	  conditions.
+
+	* variable.c (rb_name_class): set classname by id before String
+ 	  class is initialized (1.0 behavior restored).
+
 Fri Apr  3 11:25:45 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* numeric.c (num2int): no implicit conversion from string.
 
-	* numeric.c (num2int): check that `to_i' returned Integer.
+	* numeric.c (num2int): check whether `to_i' returns an Integer.
 
 	* numeric.c (num_zero_p): new method.
 

@@ -5629,7 +5629,7 @@ thread_schedule()
 	/* raise fatal error to main thread */
 	thread_deadlock();
     }
-    if (next == curr_thread) {
+    if (next->status == THREAD_RUNNABLE && next == curr_thread) {
 	return;
     }
 
