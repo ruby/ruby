@@ -11,6 +11,60 @@
 class CSV
   class IllegalFormatError < RuntimeError; end
 
+  # Open a CSV formatted file for reading or writing.
+  #
+  # For reading.
+  #
+  # EXAMPLE 1
+  #   CSV.open('csvfile.csv', 'r') do |row|
+  #     p row
+  #   end
+  #
+  # EXAMPLE 2
+  #   reader = CSV.open('csvfile.csv', 'r')
+  #   row1 = reader.shift
+  #   row2 = reader.shift
+  #   if row2.empty?
+  #     p 'row2 not find.'
+  #   end
+  #   reader.close
+  #
+  # ARGS
+  #   filename: filename to parse.
+  #   col_sep: Column separator.  ?, by default.  If you want to separate
+  #     fields with semicolon, give ?; here.
+  #   row_sep: Row separator.  nil by default.  nil means "\r\n or \n".  If you
+  #     want to separate records with \r, give ?\r here.
+  #
+  # RETURNS
+  #   reader instance.  To get parse result, see CSV::Reader#each.
+  #
+  #
+  # For writing.
+  #
+  # EXAMPLE 1
+  #   CSV.open('csvfile.csv', 'w') do |writer|
+  #     writer << ['r1c1', 'r1c2']
+  #     writer << ['r2c1', 'r2c2']
+  #     writer << [nil, nil]
+  #   end
+  #
+  # EXAMPLE 2
+  #   writer = CSV.open('csvfile.csv', 'w')
+  #   writer << ['r1c1', 'r1c2'] << ['r2c1', 'r2c2'] << [nil, nil]
+  #   writer.close
+  #
+  # ARGS
+  #   filename: filename to generate.
+  #   col_sep: Column separator.  ?, by default.  If you want to separate
+  #     fields with semicolon, give ?; here.
+  #   row_sep: Row separator.  nil by default.  nil means "\r\n or \n".  If you
+  #     want to separate records with \r, give ?\r here.
+  #
+  # RETURNS
+  #   writer instance.  See CSV::Writer#<< and CSV::Writer#add_row to know how
+  #   to generate CSV string.
+  #
   def CSV.open(path, mode, fs = nil, rs = nil, &block)
     if mode == 'r' or mode == 'rb'
       open_reader(path, mode, fs, rs, &block)
@@ -25,63 +79,33 @@ class CSV
     open_reader(path, 'r', ',', rs, &block)
   end
 
-  # Open a CSV formatted file for reading.
-  #
-  # EXAMPLE 1
-  #   reader = CSV.parse('csvfile.csv')
-  #   row1 = reader.shift
-  #   row2 = reader.shift
-  #   if row2.empty?
-  #     p 'row2 not find.'
-  #   end
-  #   reader.close
-  #
-  # EXAMPLE 2
-  #   CSV.parse('csvfile.csv') do |row|
-  #     p row
-  #   end
-  #
-  # ARGS
-  #   filename: filename to parse.
-  #   col_sep: Column separator.  ?, by default.  If you want to separate
-  #     fields with semicolon, give ?; here.
-  #   row_sep: Row separator.  nil by default.  nil means "\r\n or \n".  If you
-  #     want to separate records with \r, give ?\r here.
-  #
-  # RETURNS
-  #   reader instance.  To get parse result, see CSV::Reader#each.
-  #
-  def CSV.parse(path, fs = nil, rs = nil, &block)
-    open_reader(path, 'r', fs, rs, &block)
+  def CSV.read(path, length = nil, offset = nil)
+    CSV.parse(IO.read(path, length, offset))
+  end
+  
+  def CSV.readlines(path, rs = nil)
+    reader = open_reader(path, 'r', ',', rs)
+    begin
+      reader.collect { |row| row }
+    ensure
+      reader.close
+    end
   end
 
-  # Open a CSV formatted file for writing.
-  #
-  # EXAMPLE 1
-  #   writer = CSV.generate('csvfile.csv')
-  #   writer << ['r1c1', 'r1c2'] << ['r2c1', 'r2c2'] << [nil, nil]
-  #   writer.close
-  #
-  # EXAMPLE 2
-  #   CSV.generate('csvfile.csv') do |writer|
-  #     writer << ['r1c1', 'r1c2']
-  #     writer << ['r2c1', 'r2c2']
-  #     writer << [nil, nil]
-  #   end
-  #
-  # ARGS
-  #   filename: filename to generate.
-  #   col_sep: Column separator.  ?, by default.  If you want to separate
-  #     fields with semicolon, give ?; here.
-  #   row_sep: Row separator.  nil by default.  nil means "\r\n or \n".  If you
-  #     want to separate records with \r, give ?\r here.
-  #
-  # RETURNS
-  #   writer instance.  See CSV::Writer#<< and CSV::Writer#add_row to know how
-  #   to generate CSV string.
-  #
   def CSV.generate(path, fs = nil, rs = nil, &block)
     open_writer(path, 'w', fs, rs, &block)
+  end
+
+  # Parse lines from given string or stream.  Return rows as an Array of Arrays.
+  def CSV.parse(str_or_readable, fs = nil, rs = nil, &block)
+    if block
+      CSV::Reader.parse(str_or_readable, fs, rs) do |row|
+        yield(row)
+      end
+      nil
+    else
+      CSV::Reader.create(str_or_readable, fs, rs).collect { |row| row }
+    end
   end
 
   # Parse a line from given string.  Bear in mind it parses ONE LINE.  Rest of
@@ -157,7 +181,7 @@ class CSV
   #     src[](idx_out_of_bounds) must return nil.  A String satisfies this
   #     requirement.
   #   idx: index of parsing location of 'src'.  0 origin.
-  #   out_dev: buffer for parsed cells.  Must respond '<<(CSV::Cell)'.
+  #   out_dev: buffer for parsed cells.  Must respond '<<(aString)'.
   #   col_sep: Column separator.  ?, by default.  If you want to separate
   #     fields with semicolon, give ?; here.
   #   row_sep: Row separator.  nil by default.  nil means "\r\n or \n".  If you
@@ -200,13 +224,9 @@ class CSV
   # instead.  To generate multi-row CSV string, see EXAMPLE below.
   #
   # EXAMPLE
-  #   def d(str)
-  #     CSV::Cell.new(str, false)
-  #   end
-  #
-  #   row1 = [d('a'), d('b')]
-  #   row2 = [d('c'), d('d')]
-  #   row3 = [d('e'), d('f')]
+  #   row1 = ['a', 'b']
+  #   row2 = ['c', 'd']
+  #   row3 = ['e', 'f']
   #   src = [row1, row2, row3]
   #   buf = ''
   #   src.each do |row|
@@ -216,8 +236,8 @@ class CSV
   #   p buf
   #
   # ARGS
-  #   src: an Array of CSV::Cell to be converted to CSV string.  Must respond to
-  #     'size' and '[](idx)'.  src[idx] must return CSV::Cell.
+  #   src: an Array of String to be converted to CSV string.  Must respond to
+  #     'size' and '[](idx)'.  src[idx] must return String.
   #   cells: num of cells in a line.
   #   out_dev: buffer for generated CSV string.  Must respond to '<<(string)'.
   #   col_sep: Column separator.  ?, by default.  If you want to separate
@@ -485,13 +505,17 @@ class CSV
 
     # Parse CSV data and get lines.  Given block is called for each parsed row.
     # Block value is always nil.  Rows are not cached for performance reason.
-    def Reader.parse(str_or_readable, fs = ',', rs = nil)
-      reader = create(str_or_readable, fs, rs)
-      reader.each do |row|
-        yield(row)
+    def Reader.parse(str_or_readable, fs = ',', rs = nil, &block)
+      reader = Reader.create(str_or_readable, fs, rs)
+      if block
+        reader.each do |row|
+          yield(row)
+        end
+        reader.close
+        nil
+      else
+        reader
       end
-      reader.close
-      nil
     end
 
     # Returns reader instance.
@@ -619,28 +643,23 @@ class CSV
   #   outfile = File.open('csvout', 'wb')
   #   CSV::Writer.generate(outfile) do |csv|
   #     csv << ['c1', nil, '', '"', "\r\n", 'c2']
-  #     # or
-  #     csv.add_row [
-  #       CSV::Cell.new('c1', false),
-  #       CSV::Cell.new('dummy', true),
-  #       CSV::Cell.new('', false),
-  #       CSV::Cell.new('"', false),
-  #       CSV::Cell.new("\r\n", false)
-  #       CSV::Cell.new('c2', false)
-  #     ]
-  #     ...
   #     ...
   #   end
   #
   #   outfile.close
   #
   class Writer
-    # Generate CSV.  Given block is called with the writer instance.
-    def Writer.generate(str_or_writable, fs = ',', rs = nil)
+    # Given block is called with the writer instance.  str_or_writable must
+    # handle '<<(string)'.
+    def Writer.generate(str_or_writable, fs = ',', rs = nil, &block)
       writer = Writer.create(str_or_writable, fs, rs)
-      yield(writer)
-      writer.close
-      nil
+      if block
+        yield(writer)
+        writer.close
+        nil
+      else
+        writer
+      end
     end
 
     # str_or_writable must handle '<<(string)'.

@@ -1,3 +1,16 @@
+Wed May 26 23:12:13 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/csv.rb (CSV.read, CSV.readlines): added.  works as IO.read and
+	  IO.readlines in CSV format.
+
+	* lib/csv.rb (CSV.parse): [CAUTION] behavior changed.  in the past,
+	  CSV.parse accepts a filename to be read-opened (it was just a
+	  shortcut of CSV.open(filename, 'r')).  now CSV.parse accepts a
+	  string or a stream to be parsed e.g.
+	  CSV.parse("1,2\n3,r") #=> [['1', '2'], ['3', '4']]
+
+	* test/csv/test_csv.rb: follow above changes.
+
 Wed May 26 14:19:42 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval, eval): make line number consistent on eval with

@@ -2,7 +2,7 @@ require 'test/unit'
 require 'tempfile'
 require 'fileutils'
 
-require 'csv'
+require '../lib/csv.rb'
 
 class CSV
   class StreamBuf
@@ -529,39 +529,40 @@ public
   end
 
   def test_s_parse
-    reader = CSV.parse(@infile)
-    assert_instance_of(CSV::IOReader, reader)
-    reader.close
+    result = CSV.parse(File.read(@infile))
+    assert_instance_of(Array, result)
+    assert_instance_of(Array, result[0])
 
-    reader = CSV.parse(@infile)
-    assert_instance_of(CSV::IOReader, reader)
-    reader.close
+    result = CSV.parse(File.read(@infile))
+    assert_instance_of(Array, result)
+    assert_instance_of(Array, result[0])
 
-    reader = CSV.parse(@infile, ?;)
-    assert_instance_of(CSV::IOReader, reader)
-    reader.close
+    assert_equal([], CSV.parse(""))
+    assert_equal([[nil]], CSV.parse("\n"))
 
-    CSV.parse(@infile) do |row|
+    CSV.parse(File.read(@infile)) do |row|
       assert_instance_of(Array, row)
       break
     end
 
-    CSV.parse(@infiletsv, ?\t) do |row|
+    CSV.parse(File.read(@infiletsv), ?\t) do |row|
       assert_instance_of(Array, row)
       break
     end
 
-    assert_raises(Errno::ENOENT) do
-      CSV.parse("NoSuchFileOrDirectory")
+    CSV.parse("") do |row|
+      assert(false)
     end
 
-    assert_raises(Errno::ENOENT) do
-      CSV.parse("NoSuchFileOrDirectory", ?;)
+    count = 0
+    CSV.parse("\n") do |row|
+      assert_equal([nil], row)
+      count += 1
     end
+    assert_equal(1, count)
 
-    CSV.parse(@emptyfile) do |row|
-      assert_fail("Must not reach here")
-    end
+    assert_equal([["a|b-c|d"]], CSV.parse("a|b-c|d"))
+    assert_equal([["a", "b"], ["c", "d"]], CSV.parse("a|b-c|d", "|", "-"))
   end
 
   def test_s_open_writer
@@ -824,15 +825,13 @@ public
       assert_equal(col, row)
     end
 
-    row = CSV.parse_line("a,b,c", nil, nil)
-    assert_equal(['a', 'b', 'c'], row)
-
-    row = CSV.parse_line("a,b,c", nil, ?b)
-    assert_equal(['a', nil], row)
-
-    row = CSV.parse_line("a,b,c", nil, "c")
-    assert_equal(['a', 'b', nil], row)
-
+    assert_equal(['a', 'b', 'c'], CSV.parse_line("a,b,c", nil, nil))
+    assert_equal(['a', nil], CSV.parse_line("a,b,c", nil, ?b))
+    assert_equal(['a', 'b', nil], CSV.parse_line("a,b,c", nil, "c"))
+    assert_equal([nil], CSV.parse_line(""))
+    assert_equal([nil], CSV.parse_line("\n"))
+    assert_equal([""], CSV.parse_line("\"\"\n"))
+    
     # Illegal format.
     buf = []
     row = CSV.parse_line("a,b,\"c\"\ra")
@@ -1696,6 +1695,10 @@ public
     assert_equal([nil], reader.shift)
     assert_equal(['abc'], reader.shift)
 
+    reader = CSV::Reader.create("ab\ncdabcef", "abc", "\n")
+    assert_equal(['ab'], reader.shift)
+    assert_equal(['cd', "ef"], reader.shift)
+
     # EOF while fs/rs matching
     reader = CSV::Reader.create("ab", 'ab-', "xyz")
     assert_equal(['ab'], reader.shift)
@@ -1711,7 +1714,7 @@ public
     assert_equal([nil, ",,", nil], reader.shift)
   end
 
-  def test_foreach
+  def test_s_foreach
     File.open(@outfile, "w") do |f|
       f << "1,2,3\n4,5,6"
     end
@@ -1729,5 +1732,22 @@ public
       row << line
     }
     assert_equal([['1', '2', '3'], ['4', '5', '6']], row)
+  end
+
+  def test_s_readlines
+    File.open(@outfile, "w") do |f|
+      f << "1,2,3\n4,5,6"
+    end
+    assert_equal([["1", "2", "3"], ["4", "5", "6"]], CSV.readlines(@outfile))
+    assert_equal([["1", "2", nil], [nil, "5", "6"]], CSV.readlines(@outfile, "3\n4"))
+  end
+
+  def test_s_read
+    File.open(@outfile, "w") do |f|
+      f << "1,2,3\n4,5,6"
+    end
+    assert_equal([["1", "2", "3"], ["4", "5", "6"]], CSV.read(@outfile))
+    assert_equal([["1", "2"]], CSV.read(@outfile, 3))
+    assert_equal([[nil], ["4", nil]], CSV.read(@outfile, 3, 5))
   end
 end
