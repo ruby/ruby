@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.0"
+#define WIN32OLE_VERSION "0.6.1"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -155,6 +155,7 @@ static HINSTANCE gole32 = NULL;
 static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
 static VALUE com_hash;
 static IDispatchVtbl com_vtbl;
+static UINT  cWIN32OLE_cp = CP_ACP;
 
 struct oledata {
     IDispatch *pDispatch;
@@ -472,10 +473,10 @@ ole_wc2mb(pw)
 {
     int size;
     LPSTR pm;
-    size = WideCharToMultiByte(CP_ACP, 0, pw, -1, NULL, 0, NULL, NULL);
+    size = WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, NULL, 0, NULL, NULL);
     if (size) {
         pm = ALLOC_N(char, size);    
-        WideCharToMultiByte(CP_ACP, 0, pw, -1, pm, size, NULL, NULL);
+        WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, pm, size, NULL, NULL);
     }
     else {
         pm = ALLOC_N(char, 1);
@@ -669,9 +670,9 @@ ole_mb2wc(pm, len)
 {
     int size;
     LPWSTR pw;
-    size = MultiByteToWideChar(CP_ACP, 0, pm, len, NULL, 0);
+    size = MultiByteToWideChar(cWIN32OLE_cp, 0, pm, len, NULL, 0);
     pw = SysAllocStringLen(NULL, size - 1);
-    MultiByteToWideChar(CP_ACP, 0, pm, len, pw, size);
+    MultiByteToWideChar(cWIN32OLE_cp, 0, pm, len, pw, size);
     return pw;
 }
 
@@ -1755,6 +1756,55 @@ fole_s_show_help(argc, argv, self)
         rb_raise(rb_eRuntimeError, "Failed to open help file `%s'",
                  StringValuePtr(helpfile));
     }
+    return Qnil;
+}
+
+/* 
+ *  call-seq:
+ *     WIN32OLE.codepage
+ * 
+ *  Returns current codepage.
+ *     WIN32OLE.codepage # => WIN32OLE::CP_ACP
+ */
+static VALUE
+fole_s_get_code_page(self)
+    VALUE self;
+{
+    return INT2FIX(cWIN32OLE_cp);
+}
+
+/* 
+ *  call-seq:
+ *     WIN32OLE.codepage = CP
+ * 
+ *  Sets current codepage.
+ *     WIN32OLE.codepage = WIN32OLE::CP_UTF8
+ */
+static VALUE
+fole_s_set_code_page(self, vcp)
+    VALUE self;
+    VALUE vcp;
+{
+    UINT cp = FIX2INT(vcp);
+
+    switch(cp) {
+    case CP_ACP:
+    case CP_OEMCP:
+    case CP_MACCP:
+    case CP_THREAD_ACP:
+    case CP_SYMBOL:
+    case CP_UTF7:
+    case CP_UTF8:
+        cWIN32OLE_cp = cp;
+        break;
+    default:
+        rb_raise(eWIN32OLE_RUNTIME_ERROR, "codepage should be WIN32OLE::CP_ACP, WIN32OLE::CP_OEMCP, WIN32OLE::CP_MACCP, WIN32OLE::CP_THREAD_ACP, WIN32OLE::CP_SYMBOL, WIN32OLE::CP_UTF7, WIN32OLE::CP_UTF8");
+        break;
+    }
+
+    /*
+     * Should this method return old codepage?
+     */
     return Qnil;
 }
 
@@ -6194,6 +6244,8 @@ Init_win32ole()
     rb_define_singleton_method(cWIN32OLE, "ole_free", fole_s_free, 1);
     rb_define_singleton_method(cWIN32OLE, "ole_reference_count", fole_s_reference_count, 1);
     rb_define_singleton_method(cWIN32OLE, "ole_show_help", fole_s_show_help, -1);
+    rb_define_singleton_method(cWIN32OLE, "codepage", fole_s_get_code_page, 0);
+    rb_define_singleton_method(cWIN32OLE, "codepage=", fole_s_set_code_page, 1);
 
     rb_define_method(cWIN32OLE, "invoke", fole_invoke, -1);
     rb_define_method(cWIN32OLE, "[]", fole_getproperty, 1);
@@ -6224,6 +6276,13 @@ Init_win32ole()
 
     rb_define_const(cWIN32OLE, "VERSION", rb_str_new2(WIN32OLE_VERSION));
     rb_define_const(cWIN32OLE, "ARGV", rb_ary_new());
+    rb_define_const(cWIN32OLE, "CP_ACP"       ,INT2FIX(CP_ACP));
+    rb_define_const(cWIN32OLE, "CP_OEMCP"     ,INT2FIX(CP_OEMCP));
+    rb_define_const(cWIN32OLE, "CP_MACCP"     ,INT2FIX(CP_MACCP));
+    rb_define_const(cWIN32OLE, "CP_THREAD_ACP",INT2FIX(CP_THREAD_ACP));
+    rb_define_const(cWIN32OLE, "CP_SYMBOL"    ,INT2FIX(CP_SYMBOL));
+    rb_define_const(cWIN32OLE, "CP_UTF7"      ,INT2FIX(CP_UTF7));
+    rb_define_const(cWIN32OLE, "CP_UTF8"      ,INT2FIX(CP_UTF8));
 
     mWIN32OLE_VARIANT = rb_define_module_under(cWIN32OLE, "VARIANT");
     rb_define_const(mWIN32OLE_VARIANT, "VT_I2", INT2FIX(VT_I2));

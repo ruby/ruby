@@ -1,3 +1,9 @@
+Sun Oct 31 16:58:12 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add WIN32OLE.codepage, WIN32OLE.codepage=.
+
+	* ext/win32ole/tests/testWIN32OLE.rb: ditto.
+
 Sun Oct 31 14:35:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: add "\075?UTF-8?Q?" for Gmail.
