@@ -4505,7 +4505,7 @@ cond0(node, logop)
       case NODE_DSTR:
       case NODE_STR:
 	if (logop) break;
-	warn("string literal in condition");
+	rb_warn("string literal in condition");
 	break;
 
       case NODE_DREGX:
