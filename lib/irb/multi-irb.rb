@@ -1,9 +1,9 @@
 #
-#   multi-irb.rb - multiple irb module
-#   	$Release Version: 0.6$
+#   irb/multi-irb.rb - multiple irb module(JP: 複数irb対応モジュール)
+#   	$Release Version: 0.7.3$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #
@@ -14,6 +14,7 @@ require "thread"
 
 module IRB
   # job management class
+  # (JP: job管理クラス)
   class JobManager
     @RCS_ID='-$Id$-'
 
@@ -23,7 +24,7 @@ module IRB
       @current_job = nil
     end
 
-    attr :current_job, true
+    attr_accessor :current_job
 
     def n_jobs
       @jobs.size
@@ -140,20 +141,16 @@ module IRB
     @JobManager
   end
 
-  # invoke multiple irb 
+  # invoke multi-irb 
+  # (JP: irb起動)
   def IRB.irb(file = nil, *main)
-    workspace = IRB.workspace_binding(*main)
-    if main.empty?
-      main = eval("self", workspace)
-    else
-      main = main[0]
-    end
+    workspace = WorkSpace.new(*main)
     parent_thread = Thread.current
     Thread.start do
       begin
-	irb = Irb.new(main, workspace, file)
+	irb = Irb.new(workspace, file)
       rescue 
-	print "Subirb can't start with context(self): ", main.inspect, "\n"
+	print "Subirb can't start with context(self): ", workspace.main.inspect, "\n"
 	print "return to main irb\n"
 	Thread.pass
 	Thread.main.wakeup
@@ -190,7 +187,7 @@ module IRB
   class Context
     def _=(value)
       @_ = value
-      eval "_ = IRB.JobManager.irb(Thread.current).context._", @bind
+      @workspace.evaluate "_ = IRB.JobManager.irb(Thread.current).context._"
     end
   end
 
@@ -198,7 +195,7 @@ module IRB
     def irb_context
       IRB.JobManager.irb(Thread.current).context
     end
-    alias conf irb_context
+#    alias conf irb_context
   end
 
   @CONF[:SINGLE_IRB_MODE] = false

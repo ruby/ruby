@@ -1,3 +1,12 @@
+Tue May  1 03:36:50 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* sample/irb.rb, lib/irb.rb, lib/irb/*, doc/irb/*: Merge from irb
+	0.7.3 and irb-tools 0.7.1.
+
+	* instruby.rb: Install help-message's too.
+
+	* lib/irb/main.rb: This file is not needed anymore.
+
 Thu Apr 26 22:36:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in:  don't use tzname on cygwin 1.3.1+.

@@ -1,9 +1,9 @@
 #
-#   irb-loader.rb - 
-#   	$Release Version: 0.6$
+#   irb/loader.rb - irb loader 
+#   	$Release Version: 0.7.3$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 # --
 #

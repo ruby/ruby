@@ -79,7 +79,7 @@ Dir.chdir CONFIG["srcdir"]
 File.install "sample/irb.rb", "#{bindir}/irb", 0755, true
 
 Find.find("lib") do |f|
-  next unless /\.rb$/ =~ f
+  next unless /\.rb$/ =~ f || /help-message$/ =~ f
   dir = rubylibdir+"/"+File.dirname(f[4..-1])
   File.makedirs dir, true unless File.directory? dir
   File.install f, dir, 0644, true

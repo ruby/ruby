@@ -1,19 +1,13 @@
 #!/usr/bin/env ruby
 #
 #   irb.rb - intaractive ruby
-#   	$Release Version: 0.6 $
+#   	$Release Version: 0.7.3 $
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
-#
-# --
-# Usage:
-#
-#   irb.rb [options] file_name opts
-#
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 
-require "irb/main"
+require "irb"
 
 if __FILE__ == $0
   IRB.start(__FILE__)

@@ -1,9 +1,9 @@
 #
-#   irb-slex.rb - symple lex analizer
-#   	$Release Version: 0.6$
+#   irb/slex.rb - symple lex analizer
+#   	$Release Version: 0.7.3$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishituska.com)
 #
 # --
 #
@@ -20,7 +20,7 @@ class SLex
   def_exception :ErrNodeAlreadyExists, "node already exists"
 
   class << self
-    attr :debug_level, TRUE
+    attr_accessor :debug_level
     def debug?
       debug_level > 0
     end
@@ -90,14 +90,15 @@ class SLex
   class Node
     # if postproc no exist, this node is abstract node.
     # if postproc isn't nil, this node is real node.
+    # (JP: postprocがなければ抽象ノード, nilじゃなければ具象ノード)
     def initialize(preproc = nil, postproc = nil)
       @Tree = {}
       @preproc = preproc
       @postproc = postproc
     end
 
-    attr :preproc, TRUE
-    attr :postproc, TRUE
+    attr_accessor :preproc
+    attr_accessor :postproc
     
     def search(chrs, opt = nil)
       return self if chrs.empty?
@@ -158,9 +159,11 @@ class SLex
 
     #
     # chrs: String
-    #       character array
+    #       character array (JP: 一文字づつのArray)
     #       io It must have getc()/ungetc(), and ungetc() can be
     #          called any number of times. 
+    #          (JP:だだし, getc/ungetcが備わっていなければならない.
+    #           さらに, ungetcは複数回可能でなくてはならない.)
     #
     def match(chrs, op = "")
       print "match>: ", chrs, "op:", op, "\n" if SLex.debug?
@@ -265,7 +268,7 @@ if $0 == __FILE__
     print "0: ", tr.inspect, "\n"
     tr.def_rule("=") {print "=\n"}
     print "1: ", tr.inspect, "\n"
-    tr.def_rule("==", proc{FALSE}) {print "==\n"}
+    tr.def_rule("==", proc{false}) {print "==\n"}
     print "2: ", tr.inspect, "\n"
     
     print "case 1:\n"
