@@ -1,3 +1,19 @@
+Fri Dec 20 16:20:04 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (do_block): split "do" block and tLBRACE_ARG block.
+
+	* parse.y (cmd_brace_block): new tLBRACE_ARG block rule
+
+	* parse.y (command): can take optional cmd_brace_block; use %prec
+	  to resolve shift/reduce conflict. (ruby-bugs-ja PR#372)
+
+	* eval.c (ruby_finalize): trace_func should be cleared here (after
+	  executing exit procs and finalizers).
+
+	* eval.c (rb_define_alloc_func): new allocation framework, based
+	  on Nobu's work [ruby-dev:19116].  "allocate" method is no longer
+	  used for object allocation.
+
 Fri Dec 20 05:06:49 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/README, lib/cgi/ftplib.rb, lib/telnet.rb: Delete ftplib.rb

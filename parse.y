@@ -248,7 +248,7 @@ static void top_local_setup();
 %type <node> mrhs mrhs_basic superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar
-%type <node> block_var opt_block_var brace_block do_block lhs none
+%type <node> block_var opt_block_var brace_block cmd_brace_block do_block lhs none
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fitem variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg
@@ -285,6 +285,9 @@ static void top_local_setup();
 /*
  *	precedence table
  */
+
+%nonassoc LOWEST
+%nonassoc tLBRACE_ARG
 
 %left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD
 %left  kOR kAND
@@ -613,21 +616,72 @@ block_command	: block_call
 		    }
 		;
 
-command		: operation command_args
+cmd_brace_block	: tLBRACE_ARG
+		    {
+			$<vars>$ = dyna_push();
+			$<num>1 = ruby_sourceline;
+		    }
+		  opt_block_var
+		  compstmt
+		  '}'
+		    {
+			$$ = NEW_ITER($3, 0, $4);
+			nd_set_line($$, $<num>1);
+			dyna_pop($<vars>2);
+		    }
+		;
+
+command		: operation command_args       %prec LOWEST
 		    {
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
 		   }
-		| primary_value '.' operation2 command_args
+		| operation command_args cmd_brace_block
+		    {
+			$$ = new_fcall($1, $2);
+			if ($3) {
+			    if (nd_type($$) == NODE_BLOCK_PASS) {
+				rb_compile_error("both block arg and actual block given");
+			    }
+			    $3->nd_iter = $$;
+			    $$ = $3;
+			}
+		        fixpos($$, $2);
+		   }
+		| primary_value '.' operation2 command_args %prec LOWEST
 		    {
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| primary_value tCOLON2 operation2 command_args
+		| primary_value '.' operation2 command_args cmd_brace_block
+		    {
+			$$ = new_call($1, $3, $4);
+			if ($5) {
+			    if (nd_type($$) == NODE_BLOCK_PASS) {
+				rb_compile_error("both block arg and actual block given");
+			    }
+			    $5->nd_iter = $$;
+			    $$ = $5;
+			}
+		        fixpos($$, $1);
+		   }
+		| primary_value tCOLON2 operation2 command_args %prec LOWEST
 		    {
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
+		| primary_value tCOLON2 operation2 command_args cmd_brace_block
+		    {
+			$$ = new_call($1, $3, $4);
+			if ($5) {
+			    if (nd_type($$) == NODE_BLOCK_PASS) {
+				rb_compile_error("both block arg and actual block given");
+			    }
+			    $5->nd_iter = $$;
+			    $$ = $5;
+			}
+		        fixpos($$, $1);
+		   }
 		| kSUPER command_args
 		    {
 			$$ = new_super($2);
@@ -1606,20 +1660,6 @@ do_block	: kDO_BLOCK
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    }
-		| tLBRACE_ARG
-		    {
-			$<vars>$ = dyna_push();
-			$<num>1 = ruby_sourceline;
-		    }
-		  opt_block_var
-		  compstmt
-		  '}'
-		    {
-			$$ = NEW_ITER($3, 0, $4);
-			nd_set_line($$, $<num>1);
-			dyna_pop($<vars>2);
-		    }
-
 		;
 
 block_call	: command do_block
@@ -1629,7 +1669,7 @@ block_call	: command do_block
 			}
 			$2->nd_iter = $1;
 			$$ = $2;
-		        fixpos($$, $2);
+		        fixpos($$, $1);
 		    }
 		| block_call '.' operation2 opt_paren_args
 		    {

@@ -1594,7 +1594,7 @@ Init_Regexp()
     rb_define_virtual_variable("$-K", kcode_getter, kcode_setter);
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
-    rb_define_singleton_method(rb_cRegexp, "allocate", rb_reg_s_alloc, 0);
+    rb_define_alloc_func(rb_cRegexp, rb_reg_s_alloc);
     rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, -1);
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, -1);
@@ -1624,7 +1624,7 @@ Init_Regexp()
 
     rb_cMatch  = rb_define_class("MatchData", rb_cObject);
     rb_define_global_const("MatchingData", rb_cMatch);
-    rb_define_singleton_method(rb_cMatch, "allocate", match_alloc, 0);
+    rb_define_alloc_func(rb_cMatch, match_alloc);
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
 
     rb_define_method(rb_cMatch, "copy_object", match_copy_object, 1);

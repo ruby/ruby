@@ -87,7 +87,7 @@ rb_ary_frozen_p(ary)
 }
 
 static VALUE
-rb_ary_s_alloc(klass)
+ary_alloc(klass)
     VALUE klass;
 {
     NEWOBJ(ary, struct RArray);
@@ -105,7 +105,7 @@ ary_new(klass, len)
     VALUE klass;
     long len;
 {
-    VALUE ary = rb_obj_alloc(klass);
+    VALUE ary = ary_alloc(klass);
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
@@ -275,7 +275,7 @@ rb_ary_s_create(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    VALUE ary = rb_obj_alloc(klass);
+    VALUE ary = ary_alloc(klass);
 
     if (argc < 0) {
 	rb_raise(rb_eArgError, "negative number of arguments");
@@ -480,7 +480,7 @@ rb_ary_subseq(ary, beg, len)
     if (len == 0) return ary_new(klass, 0);
 
     ary_make_shared(ary);
-    ary2 = rb_obj_alloc(klass);
+    ary2 = ary_alloc(klass);
     RARRAY(ary2)->ptr = RARRAY(ary)->ptr + beg;
     RARRAY(ary2)->len = len;
     RARRAY(ary2)->aux.shared = RARRAY(ary)->aux.shared;
@@ -1872,7 +1872,7 @@ Init_Array()
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cArray, "allocate", rb_ary_s_alloc, 0);
+    rb_define_alloc_func(rb_cArray, ary_alloc);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
     rb_define_method(rb_cArray, "to_s", rb_ary_to_s, 0);

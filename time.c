@@ -1397,7 +1397,7 @@ Init_Time()
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
-    rb_define_singleton_method(rb_cTime, "allocate", time_s_alloc, 0);
+    rb_define_alloc_func(rb_cTime, time_s_alloc);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);

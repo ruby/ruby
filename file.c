@@ -2653,7 +2653,7 @@ Init_File()
     rb_define_global_function("test", rb_f_test, -1);
 
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);
-    rb_define_singleton_method(rb_cStat, "allocate",  rb_stat_s_alloc, 0);
+    rb_define_alloc_func(rb_cStat,  rb_stat_s_alloc);
     rb_define_method(rb_cStat, "initialize", rb_stat_init, 1);
     rb_define_method(rb_cStat, "copy_object", rb_stat_copy_object, 1);
 

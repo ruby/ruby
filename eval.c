@@ -250,10 +250,33 @@ rb_add_method(klass, mid, node, noex)
     if (mid == init && !FL_TEST(klass, FL_SINGLETON) && node && nd_type(node) != NODE_ZSUPER) {
 	noex = NOEX_PRIVATE | (noex & NOEX_NOSUPER);
     }
+    else if (mid == alloc && FL_TEST(klass, FL_SINGLETON) && node && nd_type(node) == NODE_CFUNC) {
+	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
+		rb_class2name(rb_iv_get(klass, "__attached__")));
+	mid = ID_ALLOCATOR;
+    }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     rb_clear_cache_by_id(mid);
     body = NEW_METHOD(node, noex);
     st_insert(RCLASS(klass)->m_tbl, mid, body);
+}
+
+void
+rb_define_alloc_func(klass, func)
+    VALUE klass;
+    VALUE (*func) _((VALUE));
+{
+    Check_Type(klass, T_CLASS);
+    rb_add_method(CLASS_OF(klass), ID_ALLOCATOR, NEW_CFUNC(func, 0),
+		  NOEX_PRIVATE|NOEX_CFUNC);
+}
+
+void
+rb_undef_alloc_func(klass)
+    VALUE klass;
+{
+    Check_Type(klass, T_CLASS);
+    rb_add_method(CLASS_OF(klass), ID_ALLOCATOR, 0, NOEX_UNDEF);
 }
 
 static NODE*
@@ -336,13 +359,6 @@ remove_method(klass, mid)
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     if (mid == __id__ || mid == __send__ || mid == init) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
-    }
-    if (mid == alloc) {
-	if (klass == rb_cClass ||
-	    (FL_TEST(klass, FL_SINGLETON) &&
-	     rb_obj_is_kind_of(rb_iv_get(klass, "__attached__"), rb_cClass))) {
-	    rb_name_error(mid, "removing `%s'", rb_id2name(mid));
-	}
     }
     if (!st_delete(RCLASS(klass)->m_tbl, &mid, &body) || !body->nd_body) {
 	rb_name_error(mid, "method `%s' not defined in %s",
@@ -1229,6 +1245,8 @@ ruby_finalize()
 	rb_gc_call_finalizer_at_exit();
     }
     POP_TAG();
+    trace_func = 0;
+    tracing = 0;
 }
 
 int
@@ -1248,8 +1266,6 @@ ruby_cleanup(ex)
     }   
     POP_ITER();
 
-    trace_func = 0;
-    tracing = 0;
     ex = error_handle(ex);
     POP_TAG();
     ruby_finalize();
@@ -1649,7 +1665,7 @@ rb_undef(klass, id)
 	rb_raise(rb_eSecurityError, "Insecure: can't undef `%s'", rb_id2name(id));
     }
     rb_frozen_class_p(klass);
-    if (id == __id__ || id == __send__ || id == init || id == alloc) {
+    if (id == __id__ || id == __send__ || id == init) {
 	rb_warn("undefining `%s' may cause serious problem", rb_id2name(id));
     }
     body = search_method(klass, id, &origin);
@@ -1716,9 +1732,6 @@ rb_alias(klass, name, def)
     }
     if (FL_TEST(klass, FL_SINGLETON)) {
 	singleton = rb_iv_get(klass, "__attached__");
-	if (name == alloc && TYPE(singleton) == T_CLASS) {
-	    rb_raise(rb_eNameError, "cannot make alias named `allocate'");
-	}
     }
     body = orig->nd_body;
     orig->nd_cnt++;
@@ -3196,9 +3209,6 @@ rb_eval(self, n)
 	    if (NIL_P(ruby_class)) {
 		rb_raise(rb_eTypeError, "no class/module to add method");
 	    }
-	    if (ruby_class == rb_cClass && node->nd_mid == alloc) {
-		rb_raise(rb_eNameError, "redefining Class#allocate will cause infinite loop");
-	    }
 	    if (ruby_class == rb_cObject && node->nd_mid == init) {
 		rb_warn("redefining Object#initialize may cause infinite loop");
 	    }
@@ -4598,6 +4608,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    if (trace_func) {
 		int state;
 
+		if (id == ID_ALLOCATOR) id = alloc;
 		call_trace_func("c-call", ruby_current_node, recv, id, klass);
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
@@ -7260,7 +7271,7 @@ Init_Proc()
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cProc), "allocate");
+    rb_undef_alloc_func(rb_cProc);
     rb_define_singleton_method(rb_cProc, "new", proc_s_new, -1);
 
     rb_define_method(rb_cProc, "call", proc_call, -2);
@@ -7275,12 +7286,12 @@ Init_Proc()
     rb_define_global_function("lambda", rb_f_lambda, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
     rb_cBinding = rb_define_class("Binding", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cBinding), "allocate");
+    rb_undef_alloc_func(rb_cBinding);
     rb_undef_method(CLASS_OF(rb_cBinding), "new");
     rb_define_method(rb_cBinding, "clone", bind_clone, 0);
 
     rb_cMethod = rb_define_class("Method", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cMethod), "allocate");
+    rb_undef_alloc_func(rb_cMethod);
     rb_undef_method(CLASS_OF(rb_cMethod), "new");
     rb_define_method(rb_cMethod, "==", method_eq, 1);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
@@ -9454,7 +9465,7 @@ Init_Thread()
 
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
     rb_cThread = rb_define_class("Thread", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cThread), "allocate");
+    rb_undef_alloc_func(rb_cThread);
 
     rb_define_singleton_method(rb_cThread, "new", rb_thread_s_new, -1);
     rb_define_method(rb_cThread, "initialize", rb_thread_initialize, -2);
@@ -9506,13 +9517,13 @@ Init_Thread()
     curr_thread = main_thread->prev = main_thread->next = main_thread;
 
     rb_cCont = rb_define_class("Continuation", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cCont), "allocate");
+    rb_undef_alloc_func(rb_cCont);
     rb_undef_method(CLASS_OF(rb_cCont), "new");
     rb_define_method(rb_cCont, "call", rb_cont_call, -1);
     rb_define_global_function("callcc", rb_callcc, 0);
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
-    rb_define_singleton_method(cThGroup, "allocate", thgroup_s_alloc, 0);
+    rb_define_alloc_func(cThGroup, thgroup_s_alloc);
     rb_define_method(cThGroup, "list", thgroup_list, 0);
     rb_define_method(cThGroup, "add", thgroup_add, 1);
     rb_define_const(cThGroup, "Default", rb_obj_alloc(cThGroup));

@@ -37,7 +37,7 @@ VALUE rb_cString;
 VALUE rb_fs;
 
 static VALUE
-rb_str_s_alloc(klass)
+str_alloc(klass)
     VALUE klass;
 {
     NEWOBJ(str, struct RString);
@@ -62,7 +62,7 @@ str_new(klass, ptr, len)
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    str = rb_obj_alloc(klass);
+    str = str_alloc(klass);
     RSTRING(str)->len = len;
     RSTRING(str)->aux.capa = len;
     RSTRING(str)->ptr = ALLOC_N(char,len+1);
@@ -119,7 +119,7 @@ static VALUE
 str_new3(klass, str)
     VALUE klass, str;
 {
-    VALUE str2 = rb_obj_alloc(klass);
+    VALUE str2 = str_alloc(klass);
 
     RSTRING(str2)->len = RSTRING(str)->len;
     RSTRING(str2)->ptr = RSTRING(str)->ptr;
@@ -141,7 +141,7 @@ static VALUE
 str_new4(klass, str)
     VALUE klass, str;
 {
-    VALUE str2 = rb_obj_alloc(klass);
+    VALUE str2 = str_alloc(klass);
 
     RSTRING(str2)->len = RSTRING(str)->len;
     RSTRING(str2)->ptr = RSTRING(str)->ptr;
@@ -193,7 +193,7 @@ VALUE
 rb_str_buf_new(capa)
     long capa;
 {
-    VALUE str = rb_obj_alloc(rb_cString);
+    VALUE str = str_alloc(rb_cString);
 
     if (capa < STR_BUF_MIN_SIZE) {
 	capa = STR_BUF_MIN_SIZE;
@@ -281,7 +281,7 @@ VALUE
 rb_str_dup(str)
     VALUE str;
 {
-    VALUE dup = rb_str_s_alloc(rb_cString);
+    VALUE dup = str_alloc(rb_cString);
     rb_str_replace(dup, str);
     return dup;
 }
@@ -1629,7 +1629,7 @@ str_gsub(argc, argv, str, bang)
 	FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
     }
     else {
-	VALUE dup = rb_obj_alloc(rb_obj_class(str));
+	VALUE dup = str_alloc(rb_obj_class(str));
 
 	OBJ_INFECT(dup, str);
 	str = dup;
@@ -3190,7 +3190,7 @@ Init_String()
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
     rb_include_module(rb_cString, rb_mEnumerable);
-    rb_define_singleton_method(rb_cString, "allocate", rb_str_s_alloc, 0);
+    rb_define_alloc_func(rb_cString, str_alloc);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "copy_object", rb_str_replace, 1); 
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);

@@ -169,7 +169,7 @@ make_struct(name, member, klass)
     rb_iv_set(nstr, "__size__", LONG2NUM(RARRAY(member)->len));
     rb_iv_set(nstr, "__member__", member);
 
-    rb_define_singleton_method(nstr, "allocate", struct_alloc, 0);
+    rb_define_alloc_func(nstr, struct_alloc);
     rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members, 0);
@@ -588,7 +588,7 @@ Init_Struct()
     rb_cStruct = rb_define_class("Struct", rb_cObject);
     rb_include_module(rb_cStruct, rb_mEnumerable);
 
-    rb_undef_method(CLASS_OF(rb_cStruct), "allocate");
+    rb_undef_alloc_func(rb_cStruct);
     rb_define_singleton_method(rb_cStruct, "new", rb_struct_s_def, -1);
 
     rb_define_method(rb_cStruct, "initialize", rb_struct_initialize, -2);

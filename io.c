@@ -275,6 +275,18 @@ ruby_dup(orig)
     return fd;
 }
 
+static VALUE
+io_alloc(klass)
+    VALUE klass;
+{
+    NEWOBJ(io, struct RFile);
+    OBJSETUP(io, klass, T_FILE);
+
+    io->fptr = 0;
+
+    return (VALUE)io;
+}
+
 static void
 io_fflush(f, fptr)
     FILE *f;
@@ -1813,9 +1825,7 @@ VALUE
 rb_file_open(fname, mode)
     const char *fname, *mode;
 {
-    VALUE io = rb_obj_alloc(rb_cFile);
-
-    return rb_file_open_internal(io, fname, mode);
+    return rb_file_open_internal(io_alloc(rb_cFile), fname, mode);
 }
 
 static VALUE
@@ -1845,9 +1855,7 @@ rb_file_sysopen(fname, flags, mode)
     const char *fname;
     int flags, mode;
 {
-    VALUE io = rb_obj_alloc(rb_cFile);
-
-    return rb_file_sysopen_internal(io, fname, flags, mode);
+    return rb_file_sysopen_internal(io_alloc(rb_cFile));
 }
 
 #if defined (_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS)
@@ -1960,7 +1968,7 @@ pipe_open(pname, mode)
 
     if (!f) rb_sys_fail(pname);
     else {
-	VALUE port = rb_obj_alloc(rb_cIO);
+	VALUE port = io_alloc(rb_cIO);
 
 	MakeOpenFile(port, fptr);
 	fptr->finalize = pipe_finalize;
@@ -1990,7 +1998,7 @@ retry:
 	rb_sys_fail(pname);
     }
     else {
-        VALUE port = rb_obj_alloc(rb_cIO);
+        VALUE port = io_alloc(rb_cIO);
 
 	MakeOpenFile(port, fptr);
 	fptr->mode = modef;
@@ -2067,7 +2075,7 @@ retry:
       default:			/* parent */
 	if (pid < 0) rb_sys_fail(pname);
 	else {
-	    VALUE port = rb_obj_alloc(rb_cIO);
+	    VALUE port = io_alloc(rb_cIO);
 
 	    MakeOpenFile(port, fptr);
 	    fptr->mode = modef;
@@ -2758,7 +2766,7 @@ prep_stdio(f, mode, klass)
     VALUE klass;
 {
     OpenFile *fp;
-    VALUE io = rb_obj_alloc(klass);
+    VALUE io = io_alloc(klass);
 
     MakeOpenFile(io, fp);
     fp->f = f;
@@ -2777,18 +2785,6 @@ prep_path(io, path)
     GetOpenFile(io, fptr);
     if (fptr->path) rb_bug("illegal prep_path() call");
     fptr->path = strdup(path);
-}
-
-static VALUE
-rb_io_s_alloc(klass)
-    VALUE klass;
-{
-    NEWOBJ(io, struct RFile);
-    OBJSETUP(io, klass, T_FILE);
-
-    io->fptr = 0;
-
-    return (VALUE)io;
 }
 
 static VALUE
@@ -3903,7 +3899,7 @@ Init_IO()
     rb_cIO = rb_define_class("IO", rb_cObject);
     rb_include_module(rb_cIO, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cIO, "allocate", rb_io_s_alloc, 0);
+    rb_define_alloc_func(rb_cIO, io_alloc);
     rb_define_singleton_method(rb_cIO, "new", rb_io_s_new, -1);
     rb_define_singleton_method(rb_cIO, "open",  rb_io_s_open, -1);
     rb_define_singleton_method(rb_cIO, "sysopen",  rb_io_s_sysopen, -1);

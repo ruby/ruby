@@ -1698,7 +1698,7 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "step", num_step, -1);
 
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
-    rb_undef_method(CLASS_OF(rb_cInteger), "allocate");
+    rb_undef_alloc_func(rb_cInteger);
     rb_undef_method(CLASS_OF(rb_cInteger), "new");
 
     rb_define_method(rb_cInteger, "integer?", int_int_p, 0);
@@ -1761,7 +1761,7 @@ Init_Numeric()
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 
-    rb_undef_method(CLASS_OF(rb_cFloat), "allocate");
+    rb_undef_alloc_func(rb_cFloat);
     rb_undef_method(CLASS_OF(rb_cFloat), "new");
 
     rb_define_singleton_method(rb_cFloat, "induced_from", rb_flo_induced_from, 1);

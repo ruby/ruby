@@ -34,7 +34,6 @@ VALUE rb_cSymbol;
 static ID eq, eql;
 static ID inspect;
 static ID copy_obj;
-static ID alloc;
 
 VALUE
 rb_equal(obj1, obj2)
@@ -717,7 +716,7 @@ VALUE
 rb_obj_alloc(klass)
     VALUE klass;
 {
-    VALUE obj = rb_funcall(klass, alloc, 0, 0);
+    VALUE obj = rb_funcall(klass, ID_ALLOCATOR, 0, 0);
 
     if (rb_obj_class(obj) != rb_class_real(klass)) {
 	rb_raise(rb_eTypeError, "wrong instance allocation");
@@ -732,10 +731,7 @@ rb_class_allocate_instance(klass)
     if (FL_TEST(klass, FL_SINGLETON)) {
 	rb_raise(rb_eTypeError, "can't create instance of virtual class");
     }
-    if (rb_frame_last_func() != alloc) {
-	return rb_obj_alloc(klass);
-    }
-    else {
+    {
 	NEWOBJ(obj, struct RObject);
 	OBJSETUP(obj, klass, T_OBJECT);
 	return (VALUE)obj;
@@ -1271,8 +1267,6 @@ Init_Object()
 {
     VALUE metaclass;
 
-    alloc = rb_intern("allocate");
-
     rb_cObject = boot_defclass("Object", 0);
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
@@ -1283,6 +1277,7 @@ Init_Object()
 
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
+    rb_define_alloc_func(rb_cObject, rb_class_allocate_instance);
     rb_define_private_method(rb_cObject, "initialize", rb_obj_dummy, 0);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "included", rb_obj_dummy, 1);
@@ -1380,13 +1375,13 @@ Init_Object()
     rb_define_method(rb_cNilClass, "^", false_xor, 1);
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
-    rb_undef_method(CLASS_OF(rb_cNilClass), "allocate");
+    rb_undef_alloc_func(rb_cNilClass);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
     rb_define_global_const("NIL", Qnil);
 
     rb_cSymbol = rb_define_class("Symbol", rb_cObject);
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0);
-    rb_undef_method(CLASS_OF(rb_cSymbol), "allocate");
+    rb_undef_alloc_func(rb_cSymbol);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
 
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
@@ -1416,7 +1411,7 @@ Init_Object()
     rb_define_private_method(rb_cModule, "attr_writer", rb_mod_attr_writer, -1);
     rb_define_private_method(rb_cModule, "attr_accessor", rb_mod_attr_accessor, -1);
 
-    rb_define_singleton_method(rb_cModule, "allocate", rb_module_s_alloc, 0);
+    rb_define_alloc_func(rb_cModule, rb_module_s_alloc);
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1);
     rb_define_method(rb_cModule, "public_instance_methods", rb_class_public_instance_methods, -1);
@@ -1431,17 +1426,16 @@ Init_Object()
     rb_define_method(rb_cModule, "class_variables", rb_mod_class_variables, 0);
     rb_define_private_method(rb_cModule, "remove_class_variable", rb_mod_remove_cvar, 1);
 
-    rb_define_method(rb_cClass, "allocate", rb_class_allocate_instance, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
-    rb_undef_method(CLASS_OF(rb_cClass), "allocate");
+    rb_undef_alloc_func(rb_cClass);
     rb_define_singleton_method(rb_cClass, "new", rb_class_s_new, -1);
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
 
     rb_cData = rb_define_class("Data", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cData), "allocate");
+    rb_undef_alloc_func(rb_cData);
 
     ruby_top_self = rb_obj_alloc(rb_cObject);
     rb_global_variable(&ruby_top_self);
@@ -1452,7 +1446,7 @@ Init_Object()
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
-    rb_undef_method(CLASS_OF(rb_cTrueClass), "allocate");
+    rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
     rb_define_global_const("TRUE", Qtrue);
 
@@ -1461,7 +1455,7 @@ Init_Object()
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
-    rb_undef_method(CLASS_OF(rb_cFalseClass), "allocate");
+    rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
     rb_define_global_const("FALSE", Qfalse);
 

@@ -17,6 +17,8 @@
  * the kernel.
  */
 
+#define ID_ALLOCATOR 1
+
 /* array.c */
 void rb_mem_clear _((register VALUE*, register long));
 VALUE rb_assoc_new _((VALUE, VALUE));
@@ -144,6 +146,8 @@ VALUE rb_f_abort _((int,VALUE*));
 void rb_remove_method _((VALUE, const char*));
 void rb_disable_super _((VALUE, const char*));
 void rb_enable_super _((VALUE, const char*));
+void rb_define_alloc_func _((VALUE, VALUE (*)(VALUE)));
+void rb_undef_alloc_func _((VALUE));
 void rb_clear_cache _((void));
 void rb_alias _((VALUE, ID, ID));
 void rb_attr _((VALUE,ID,int,int,int));
