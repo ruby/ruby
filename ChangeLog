@@ -1,3 +1,19 @@
+Tue Dec 30 08:32:32 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method): 
+          Handle undoing nesting of yield parameters correctly for:
+
+	  def each_entry(&b) Dir.foreach(@path) {|f| yield P.new(f) } end
+
+
+Tue Dec 30 08:32:32 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method): Handle undoing
+	nesting of yield parameters correctly for:
+
+	  def each_entry(&block) Dir.foreach(@path) {|f| yield Pathname.new(f) } end
+
+
 Mon Dec 29 12:51:02 2003  Dave Thomas  <dave@pragprog.com>
 
 	* eval.c: Add RDoc for Kernel global functions.

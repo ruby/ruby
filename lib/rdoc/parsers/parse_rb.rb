@@ -1987,10 +1987,12 @@ module RDoc
       nest = 0
 
       loop do
-        puts("Param: #{tk}, #{@scanner.continue} " +
-          "#{@scanner.lex_state} #{nest}") if $DEBUG
+        puts("Param: #{tk.inspect}, #{@scanner.continue} " +
+          "#{@scanner.lex_state} #{nest}")  if $DEBUG
         case tk
         when TkSEMICOLON
+          break
+        when TkRBRACE
           break
         when TkLPAREN, TkfLPAREN
           nest += 1
