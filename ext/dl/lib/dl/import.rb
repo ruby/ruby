@@ -106,6 +106,29 @@ module DL
       end
 
       # example:
+      #  symbol "foo_value"
+      #  symbol "foo_func", "IIP"
+      #
+      def symbol(name, ty = nil)
+	sym = nil
+	@LIBS.each{|lib|
+	  begin
+	    if( ty )
+	      sym = lib[name, ty]
+	    else
+	      sym = lib[name]
+	    end
+	  rescue
+	    next
+	  end
+	}
+	if( !sym )
+	  raise(RuntimeError, "can't find the symbol `#{name}'")
+	end
+	return sym
+      end
+
+      # example:
       #   import("get_length", "int", ["void*", "int"])
       #
       def import(name, rettype, argtypes = nil)
@@ -116,46 +139,39 @@ module DL
 	ty,enc,dec = encode_types(argtypes)
 	symty = rty + ty
 
-	@LIBS.each{|lib|
-	  begin
-	    sym = lib[name, symty]
-	  rescue
-	    next
-	  end
+	sym = symbol(name, symty)
 
-	  mname = name.dup
-	  if( ?A <= mname[0] && mname[0] <= ?Z )
-	    mname[0,1] = mname[0,1].downcase
-	  end
-	  @SYM[mname] = [sym,rdec,enc,dec]
-	  
-	  module_eval [
-	    "def #{mname}(*args)",
-	    "  sym,rdec,enc,dec  = @SYM['#{mname}']",
-	    "  args = enc.call(args) if enc",
-	    if( $DEBUG )
-	      "  p \"[DL] call #{mname} with \#{args.inspect}\""
-	    else
-	      ""
-	    end,
-	    "  r,rs = sym.call(*args)",
-	    if( $DEBUG )
-	      "  p \"[DL] retval=\#{r.inspect} args=\#{rs.inspect}\""
-	    else
-	      ""
-	    end,
-	    "  r  = rdec.call(r) if rdec",
-	    "  rs = dec.call(rs) if dec",
-	    "  @retval = r",
-	    "  @args   = rs",
-	    "  return @retval",
-	    "end",
-	    "module_function :#{mname}",
-	  ].join("\n")
+	mname = name.dup
+	if( ?A <= mname[0] && mname[0] <= ?Z )
+	  mname[0,1] = mname[0,1].downcase
+	end
+	@SYM[mname] = [sym,rdec,enc,dec]
+	
+	module_eval [
+	  "def #{mname}(*args)",
+	  "  sym,rdec,enc,dec  = @SYM['#{mname}']",
+	  "  args = enc.call(args) if enc",
+	  if( $DEBUG )
+	    "  p \"[DL] call #{mname} with \#{args.inspect}\""
+	  else
+	    ""
+	  end,
+	  "  r,rs = sym.call(*args)",
+	  if( $DEBUG )
+	    "  p \"[DL] retval=\#{r.inspect} args=\#{rs.inspect}\""
+	  else
+	    ""
+	  end,
+	  "  r  = rdec.call(r) if rdec",
+	  "  rs = dec.call(rs) if dec",
+	  "  @retval = r",
+	  "  @args   = rs",
+	  "  return @retval",
+	  "end",
+	  "module_function :#{mname}",
+	].join("\n")
 
-	  return sym
-	}
-	raise(RuntimeError, "can't find #{name}.")
+	return sym
       end
 
       def _args_
