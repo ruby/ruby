@@ -2,7 +2,7 @@ require 'test/unit'
 require 'tempfile'
 require 'fileutils'
 
-require '../lib/csv.rb'
+require 'csv'
 
 class CSV
   class StreamBuf

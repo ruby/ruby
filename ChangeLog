@@ -1,3 +1,7 @@
+Thu May 27 11:25:03 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/csv/test_csv.rb: illegal require module name (../lib/csv.rb).
+
 Wed May 26 23:12:13 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/csv.rb (CSV.read, CSV.readlines): added.  works as IO.read and
