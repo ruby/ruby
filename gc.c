@@ -63,9 +63,8 @@ mem_error(mesg)
     rb_fatal(mesg);
 }
 
-#ifndef xmalloc
 void *
-xmalloc(size)
+ruby_xmalloc(size)
     size_t size;
 {
     void *mem;
@@ -95,7 +94,7 @@ xmalloc(size)
 }
 
 void *
-xcalloc(n, size)
+ruby_xcalloc(n, size)
     size_t n, size;
 {
     void *mem;
@@ -107,7 +106,7 @@ xcalloc(n, size)
 }
 
 void *
-xrealloc(ptr, size)
+ruby_xrealloc(ptr, size)
     void *ptr;
     size_t size;
 {
@@ -134,12 +133,11 @@ xrealloc(ptr, size)
 }
 
 void
-xfree(x)
+ruby_xfree(x)
     void *x;
 {
     if (x) free(x);
 }
-#endif
 
 extern int ruby_in_compile;
 static int dont_gc;
@@ -1220,3 +1218,38 @@ Init_GC()
     rb_gc_unregister_address(&rb_mObSpace);
     finalizers = rb_ary_new();
 }
+
+#undef xmalloc
+#undef xcalloc
+#undef xrealloc
+#undef xfree
+
+void*
+xmalloc(size)
+    size_t size;
+{
+    return ruby_xmalloc(size);
+}
+
+void*
+xcalloc(n,size)
+    size_t n,size;
+{
+    return ruby_xcalloc(n, size);
+}
+
+void*
+xrealloc(ptr,size)
+    void *ptr;
+    size_t size;
+{
+    return ruby_xrealloc(ptr, size);
+}
+
+void
+xfree(ptr)
+    void *ptr;
+{
+    return ruby_xfree(ptr);
+}
+

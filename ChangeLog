@@ -1,5 +1,10 @@
 Mon May 15 15:38:09 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* ruby.h: exported symbols should be for xmalloc etc. are now
+	  prefixed by 'ruby_', e.g. ruby_xmalloc().
+
+	* eval.c (rb_thread_select): remove busy wait for select.
+
 	* dir.c (glob): trailing path may be null, e.g. glob("**").
 
 Mon May 15 01:18:20 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>

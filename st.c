@@ -45,11 +45,18 @@ static struct st_hash_type type_strhash = {
     strhash,
 };
 
-#ifndef xmalloc
+#ifdef RUBY_PLATFORM
+#define xmalloc ruby_xmalloc
+#define xcalloc ruby_xcalloc
+#define xrealloc ruby_xrealloc
+#define xfree ruby_xfree
+
 void *xmalloc();
 void *xcalloc();
 void *xrealloc();
+void xfree();
 #endif
+
 static void rehash();
 
 #define alloc(type) (type*)xmalloc((unsigned)sizeof(type))

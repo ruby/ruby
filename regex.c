@@ -70,13 +70,16 @@ void rb_trap_exec _((void));
 # define CHECK_INTS if (!rb_prohibit_interrupt) {\
     if (rb_trap_pending) rb_trap_exec();\
 }
-#endif
 
-#ifndef xmalloc
+#define xmalloc ruby_xmalloc
+#define xcalloc ruby_xcalloc
+#define xrealloc ruby_xrealloc
+#define xfree ruby_xfree
+
 void *xmalloc _((size_t));
 void *xcalloc _((size_t,size_t));
 void *xrealloc _((void*,size_t));
-void free _((void*));
+void xfree _((void*));
 #endif
 
 #define	NO_ALLOCA	/* try it out for now */
@@ -125,8 +128,8 @@ char *alloca();
 
 #define FREE_VARIABLES()
 
-#define FREE_AND_RETURN_VOID(stackb)   do { free(stackb); return; } while(0)
-#define FREE_AND_RETURN(stackb,val)    do { free(stackb); return(val); } while(0)
+#define FREE_AND_RETURN_VOID(stackb)   do { xfree(stackb); return; } while(0)
+#define FREE_AND_RETURN(stackb,val)    do { xfree(stackb); return(val); } while(0)
 #define DOUBLE_STACK(stackx,stackb,len,type) do {			\
         stackx = (type*)xrealloc(stackb, 2 * len * sizeof(type));	\
 } while (0)
@@ -2410,18 +2413,18 @@ void
 re_free_pattern(bufp)
      struct re_pattern_buffer *bufp;
 {
-  free(bufp->buffer);
-  free(bufp->fastmap);
-  if (bufp->must_skip) free(bufp->must_skip);
+  xfree(bufp->buffer);
+  xfree(bufp->fastmap);
+  if (bufp->must_skip) xfree(bufp->must_skip);
 
-  free(bufp->regstart);
-  free(bufp->regend);
-  free(bufp->old_regstart);
-  free(bufp->old_regend);
-  free(bufp->best_regstart);
-  free(bufp->best_regend);
-  free(bufp->reg_info);
-  free(bufp);
+  xfree(bufp->regstart);
+  xfree(bufp->regend);
+  xfree(bufp->old_regstart);
+  xfree(bufp->old_regend);
+  xfree(bufp->best_regstart);
+  xfree(bufp->best_regend);
+  xfree(bufp->reg_info);
+  xfree(bufp);
 }
 
 /* Store a jump of the form <OPCODE> <relative address>.
@@ -4347,8 +4350,8 @@ re_free_registers(regs)
      struct re_registers *regs;
 {
   if (regs->allocated == 0) return;
-  if (regs->beg) free(regs->beg);
-  if (regs->end) free(regs->end);
+  if (regs->beg) xfree(regs->beg);
+  if (regs->end) xfree(regs->end);
 }
 
 /* Functions for multi-byte support.

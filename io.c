@@ -63,7 +63,7 @@ char *strdup();
 extern void Init_File _((void));
 
 #ifdef __BEOS__
-# ifdef NOFILE
+# ifndef NOFILE
 #  define NOFILE (OPEN_MAX)
 # endif
 #include <net/socket.h>
