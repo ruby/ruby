@@ -75,9 +75,8 @@ module Test
         end
 
         def collect_file(name, suites, already_gathered)
-          loadpath = $:.dup
           dir = File.dirname(File.expand_path(name))
-          $:.unshift(dir) unless $:.first == dir
+          $:.unshift(dir)
           if(@req)
             @req.require(name)
           else
@@ -85,7 +84,7 @@ module Test
           end
           find_test_cases(already_gathered).each{|t| add_suite(suites, t.suite)}
         ensure
-          $:.replace(loadpath)
+          $:.delete_at($:.rindex(dir)) if(dir)
         end
       end
     end

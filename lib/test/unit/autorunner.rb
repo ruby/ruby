@@ -5,14 +5,20 @@ require 'optparse'
 module Test
   module Unit
     class AutoRunner
-      def self.run(current_file=nil, default_dir=nil, argv=ARGV, &block)
-        if(!current_file || current_file == $0)
-          r = new(!current_file, &block)
-          if !r.process_args(argv) && default_dir
-            r.to_run << default_dir
-          end
-          r.run
+      def self.run(force_standalone=false, default_dir=nil, argv=ARGV, &block)
+        r = new(force_standalone || standalone?, &block)
+        if((!r.process_args(argv)) && default_dir)
+          r.to_run << default_dir
         end
+        r.run
+      end
+      
+      def self.standalone?
+        return false unless("-e" == $0)
+        ObjectSpace.each_object(Class) do |klass|
+          return false if(klass < TestCase)
+        end
+        true
       end
 
       RUNNERS = {

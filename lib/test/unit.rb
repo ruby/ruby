@@ -273,6 +273,6 @@ end
 
 at_exit do
   unless $! || Test::Unit.run?
-    exit Test::Unit::AutoRunner.run($0 != "-e" && $0)
+    exit Test::Unit::AutoRunner.run
   end
 end

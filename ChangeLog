@@ -1,3 +1,15 @@
+Thu Feb 17 13:46:00 2005  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+	* lib/test/unit/collector.rb (collect_file): now deletes paths added
+    	  to $LOAD_PATH instead of restoring it verbatim.
+
+	* lib/test/unit/autorunner.rb (AutoRunner.run): fixed so that
+	  'ruby -rtest/unit -rtest1 -rtest2 -e0' will use the objectspace
+	  collector again. Also tried to simplify the calling convention.
+
+	* test/runner.rb: adjusted for new AutoRunner semantics.
+
+	* lib/test/unit.rb: ditto.
+
 Thu Feb 17 00:31:21 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/test_drb.rb, ut_safe1.rb: port from 1.8
