@@ -79,7 +79,7 @@ VALUE rb_cFile;
 VALUE rb_mFileTest;
 static VALUE rb_cStat;
 
-static int
+static long
 apply2files(func, vargs, arg)
     void (*func)();
     VALUE vargs;
@@ -844,7 +844,7 @@ rb_file_s_size(klass, fname)
 
     if (rb_stat(fname, &st) < 0)
 	rb_sys_fail(RSTRING(fname)->ptr);
-    return rb_int2inum(st.st_size);
+    return OFFT2NUM(st.st_size);
 }
 
 static VALUE
@@ -994,14 +994,15 @@ rb_file_s_chmod(argc, argv)
 {
     VALUE vmode;
     VALUE rest;
-    int mode, n;
+    int mode;
+    long n;
 
     rb_secure(2);
     rb_scan_args(argc, argv, "1*", &vmode, &rest);
     mode = NUM2INT(vmode);
 
     n = apply2files(chmod_internal, rest, mode);
-    return INT2FIX(n);
+    return LONG2FIX(n);
 }
 
 static VALUE
@@ -1044,14 +1045,15 @@ rb_file_s_lchmod(argc, argv)
 {
     VALUE vmode;
     VALUE rest;
-    int mode, n;
+    int mode;
+    long n;
 
     rb_secure(2);
     rb_scan_args(argc, argv, "1*", &vmode, &rest);
     mode = NUM2INT(vmode);
 
     n = apply2files(lchmod_internal, rest, mode);
-    return INT2FIX(n);
+    return LONG2FIX(n);
 }
 #else
 static VALUE
@@ -1083,7 +1085,7 @@ rb_file_s_chown(argc, argv)
 {
     VALUE o, g, rest;
     struct chown_args arg;
-    int n;
+    long n;
 
     rb_secure(2);
     rb_scan_args(argc, argv, "2*", &o, &g, &rest);
@@ -1101,7 +1103,7 @@ rb_file_s_chown(argc, argv)
     }
 
     n = apply2files(chown_internal, rest, &arg);
-    return INT2FIX(n);
+    return LONG2FIX(n);
 }
 
 static VALUE
@@ -1141,7 +1143,7 @@ rb_file_s_lchown(argc, argv)
 {
     VALUE o, g, rest;
     struct chown_args arg;
-    int n;
+    long n;
 
     rb_secure(2);
     rb_scan_args(argc, argv, "2*", &o, &g, &rest);
@@ -1159,7 +1161,7 @@ rb_file_s_lchown(argc, argv)
     }
 
     n = apply2files(lchown_internal, rest, &arg);
-    return INT2FIX(n);
+    return LONG2FIX(n);
 }
 #else
 static VALUE
@@ -1191,7 +1193,7 @@ rb_file_s_utime(argc, argv)
 {
     VALUE atime, mtime, rest;
     struct timeval tvp[2];
-    int n;
+    long n;
 
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
@@ -1199,7 +1201,7 @@ rb_file_s_utime(argc, argv)
     tvp[1] = rb_time_timeval(mtime);
 
     n = apply2files(utime_internal, rest, tvp);
-    return INT2FIX(n);
+    return LONG2FIX(n);
 }
 
 #else
@@ -1237,7 +1239,7 @@ rb_file_s_utime(argc, argv)
     VALUE *argv;
 {
     VALUE atime, mtime, rest;
-    int n;
+    long n;
     struct timeval tv;
     struct utimbuf utbuf;
 
@@ -1249,7 +1251,7 @@ rb_file_s_utime(argc, argv)
     utbuf.modtime = tv.tv_sec;
 
     n = apply2files(utime_internal, rest, &utbuf);
-    return INT2FIX(n);
+    return LONG2FIX(n);
 }
 
 #endif
@@ -1322,11 +1324,11 @@ static VALUE
 rb_file_s_unlink(klass, args)
     VALUE klass, args;
 {
-    int n;
+    long n;
 
     rb_secure(2);
     n = apply2files(unlink_internal, args, 0);
-    return INT2FIX(n);
+    return LONG2FIX(n);
 }
 
 static VALUE
@@ -2266,10 +2268,10 @@ static VALUE
 rb_stat_s(obj)
     VALUE obj;
 {
-    int size = get_stat(obj)->st_size;
+    off_t size = get_stat(obj)->st_size;
 
     if (size == 0) return Qnil;
-    return INT2FIX(size);
+    return OFFT2NUM(size);
 }
 
 static VALUE

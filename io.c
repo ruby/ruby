@@ -555,7 +555,7 @@ rb_io_fread(ptr, len, f)
 
     while (n > 0) {
 #ifdef READ_DATA_PENDING_COUNT
-	int i = READ_DATA_PENDING_COUNT(f);
+	long i = READ_DATA_PENDING_COUNT(f);
 	if (i <= 0) {
 	    rb_thread_wait_fd(fileno(f));
 	    i = READ_DATA_PENDING_COUNT(f);
@@ -599,7 +599,6 @@ rb_io_fread(ptr, len, f)
 	*ptr++ = c;
 	n--;
     }
-
     return len - n;
 }
 
@@ -724,7 +723,7 @@ appendline(fptr, delim, strp)
 
     do {
 #ifdef READ_DATA_PENDING_PTR
-	int pending = READ_DATA_PENDING_COUNT(f);
+	long pending = READ_DATA_PENDING_COUNT(f);
 	if (pending > 0) {
 	    const char *p = READ_DATA_PENDING_PTR(f);
 	    const char *e = memchr(p, delim, pending);
@@ -798,7 +797,7 @@ swallow(fptr, term)
 
     do {
 #ifdef READ_DATA_PENDING_PTR
-	int cnt;
+	long cnt;
 	while ((cnt = READ_DATA_PENDING_COUNT(f)) > 0) {
 	    char buf[1024];
 	    const char *p = READ_DATA_PENDING_PTR(f);

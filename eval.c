@@ -1006,7 +1006,7 @@ error_print()
 	}
 	else {
 	    char *tail  = 0;
-	    int len = elen;
+	    long len = elen;
 
 	    if (RSTRING(epath)->ptr[0] == '#') epath = 0;
 	    if (tail = strchr(einfo, '\n')) {
@@ -3518,12 +3518,12 @@ rb_mod_method_defined(mod, mid)
     return Qfalse;
 }
 
-NORETURN(static void terminate_process _((int, const char*, int)));
+NORETURN(static void terminate_process _((int, const char*, long)));
 static void
 terminate_process(status, mesg, mlen)
     int status;
     const char *mesg;
-    int mlen;
+    long mlen;
 {
     VALUE exit = rb_exc_new(rb_eSystemExit, mesg, mlen);
 

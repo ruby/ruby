@@ -1016,7 +1016,7 @@ rb_str_succ(orig)
     VALUE str;
     char *sbeg, *s;
     int c = -1;
-    int n = 0;
+    long n = 0;
 
     str = rb_str_new5(orig,RSTRING(orig)->ptr, RSTRING(orig)->len);
     OBJ_INFECT(str, orig);
@@ -1216,7 +1216,7 @@ rb_str_subpat_set(str, re, nth, val)
     VALUE val;
 {
     VALUE match;
-    int start, end, len;
+    long start, end, len;
 
     if (rb_reg_search(re, str, 0, 0) < 0) {
 	rb_raise(rb_eIndexError, "regexp not matched");
@@ -2999,7 +2999,7 @@ rb_str_sum(argc, argv, str)
     VALUE str;
 {
     VALUE vbits;
-    int   bits;
+    int bits;
     char *p, *pend;
 
     if (rb_scan_args(argc, argv, "01", &vbits) == 0) {

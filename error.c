@@ -35,10 +35,10 @@ int ruby_nerrs;
 static void
 err_snprintf(buf, len, fmt, args)
     char *buf, *fmt;
-    int len;
+    long len;
     va_list args;
 {
-    int n;
+    long n;
 
     ruby_set_current_source();
     if (!ruby_sourcefile) {

@@ -777,7 +777,7 @@ rb_gc_mark_children(ptr)
 
       case T_ARRAY:
 	{
-	    int i, len = obj->as.array.len;
+	    long i, len = obj->as.array.len;
 	    VALUE *ptr = obj->as.array.ptr;
 
 	    for (i=0; i < len; i++)
@@ -839,7 +839,7 @@ rb_gc_mark_children(ptr)
 
       case T_STRUCT:
 	{
-	    int i, len = obj->as.rstruct.len;
+	    long i, len = obj->as.rstruct.len;
 	    VALUE *ptr = obj->as.rstruct.ptr;
 
 	    for (i=0; i < len; i++)

@@ -323,11 +323,11 @@ typedef unsigned int U32;
 #endif
 static char *toofew = "too few arguments";
 
-static void encodes _((VALUE,char*,int,int));
-static void qpencode _((VALUE,VALUE,int));
+static void encodes _((VALUE,char*,long,int));
+static void qpencode _((VALUE,VALUE,long));
 
 static int uv_to_utf8 _((char*,unsigned long));
-static unsigned long utf8_to_uv _((char*,int*));
+static unsigned long utf8_to_uv _((char*,long*));
 
 static VALUE
 pack_pack(ary, fmt)
@@ -431,7 +431,7 @@ pack_pack(ary, fmt)
 	      case 'b':
 		{
 		    int byte = 0;
-		    int i, j = 0;
+		    long i, j = 0;
 
 		    if (len > plen) {
 			j = (len - plen + 1)/2;
@@ -461,7 +461,7 @@ pack_pack(ary, fmt)
 	      case 'B':
 		{
 		    int byte = 0;
-		    int i, j = 0;
+		    long i, j = 0;
 
 		    if (len > plen) {
 			j = (len - plen + 1)/2;
@@ -490,7 +490,7 @@ pack_pack(ary, fmt)
 	      case 'h':
 		{
 		    int byte = 0;
-		    int i, j = 0;
+		    long i, j = 0;
 
 		    if (len > plen) {
 			j = (len - plen + 1)/2;
@@ -520,7 +520,7 @@ pack_pack(ary, fmt)
 	      case 'H':
 		{
 		    int byte = 0;
-		    int i, j = 0;
+		    long i, j = 0;
 
 		    if (len > plen) {
 			j = (len - plen + 1)/2;
@@ -800,7 +800,7 @@ pack_pack(ary, fmt)
 	    else
 		len = len / 3 * 3;
 	    while (plen > 0) {
-		int todo;
+		long todo;
 
 		if (plen > len)
 		    todo = len;
@@ -915,11 +915,11 @@ static void
 encodes(str, s, len, type)
     VALUE str;
     char *s;
-    int len;
+    long len;
     int type;
 {
     char *buff = ALLOCA_N(char, len * 4 / 3 + 6);
-    int i = 0;
+    long i = 0;
     char *trans = type == 'u' ? uu_table : b64_table;
     int padding;
 
@@ -959,10 +959,10 @@ static char hex_table[] = "0123456789ABCDEF";
 static void
 qpencode(str, from, len)
     VALUE str, from;
-    int len;
+    long len;
 {
     char buff[1024];
-    int i = 0, n = 0, prev = EOF;
+    long i = 0, n = 0, prev = EOF;
     unsigned char *s = (unsigned char*)RSTRING(from)->ptr;
     unsigned char *send = s + RSTRING(from)->len;
 
@@ -1136,7 +1136,7 @@ pack_unpack(str, fmt)
 	  case 'A':
 	    if (len > send - s) len = send - s;
 	    {
-		int end = len;
+		long end = len;
 		char *t = s + len - 1;
 
 		while (t >= s) {
@@ -1151,7 +1151,7 @@ pack_unpack(str, fmt)
 	  case 'Z':
 	    if (len > send - s) len = send - s;
 	    {
-		int end = len;
+		long end = len;
 		char *t = s + len - 1;
 
 		while (t >= s) {
@@ -1174,7 +1174,8 @@ pack_unpack(str, fmt)
 	    {
 		VALUE bitstr;
 		char *t;
-		int bits, i;
+		int bits;
+		long i;
 
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
@@ -1193,7 +1194,8 @@ pack_unpack(str, fmt)
 	    {
 		VALUE bitstr;
 		char *t;
-		int bits, i;
+		int bits;
+		long i;
 
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
@@ -1212,7 +1214,8 @@ pack_unpack(str, fmt)
 	    {
 		VALUE bitstr;
 		char *t;
-		int bits, i;
+		int bits;
+		long i;
 
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
@@ -1233,7 +1236,8 @@ pack_unpack(str, fmt)
 	    {
 		VALUE bitstr;
 		char *t;
-		int bits, i;
+		int bits;
+		long i;
 
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
@@ -1297,7 +1301,7 @@ pack_unpack(str, fmt)
 		int tmp;
 		memcpy(&tmp, s, sizeof(int));
 		s += sizeof(int);
-		rb_ary_push(ary, rb_int2inum(tmp));
+		rb_ary_push(ary, INT2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1308,7 +1312,7 @@ pack_unpack(str, fmt)
 		unsigned int tmp;
 		memcpy(&tmp, s, sizeof(unsigned int));
 		s += sizeof(unsigned int);
-		rb_ary_push(ary, rb_uint2inum(tmp));
+		rb_ary_push(ary, UINT2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1319,7 +1323,7 @@ pack_unpack(str, fmt)
 		long tmp = 0;
 		memcpy(OFF32(&tmp), s, NATINT_LEN(long,4));
 		s += NATINT_LEN(long,4);
-		rb_ary_push(ary, rb_int2inum(tmp));
+		rb_ary_push(ary, LONG2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1330,7 +1334,7 @@ pack_unpack(str, fmt)
 		unsigned long tmp = 0;
 		memcpy(OFF32(&tmp), s, NATINT_LEN(unsigned long,4));
 		s += NATINT_LEN(unsigned long,4);
-		rb_ary_push(ary, rb_uint2inum(tmp));
+		rb_ary_push(ary, ULONG2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1359,7 +1363,7 @@ pack_unpack(str, fmt)
 		unsigned short tmp = 0;
 		memcpy(OFF16B(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
-		rb_ary_push(ary, rb_uint2inum(ntohs(tmp)));
+		rb_ary_push(ary, UINT2NUM(ntohs(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1370,7 +1374,7 @@ pack_unpack(str, fmt)
 		unsigned long tmp = 0;
 		memcpy(OFF32B(&tmp), s, NATINT_LEN(unsigned long,4));
 		s += NATINT_LEN(unsigned long,4);
-		rb_ary_push(ary, rb_uint2inum(ntohl(tmp)));
+		rb_ary_push(ary, ULONG2NUM(ntohl(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1381,7 +1385,7 @@ pack_unpack(str, fmt)
 		unsigned short tmp = 0;
 		memcpy(OFF16(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
-		rb_ary_push(ary, rb_uint2inum(vtohs(tmp)));
+		rb_ary_push(ary, UINT2NUM(vtohs(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1392,7 +1396,7 @@ pack_unpack(str, fmt)
 		unsigned long tmp = 0;
 		memcpy(OFF32(&tmp), s, NATINT_LEN(long,4));
 		s += NATINT_LEN(long,4);
-		rb_ary_push(ary, rb_uint2inum(vtohl(tmp)));
+		rb_ary_push(ary, ULONG2NUM(vtohl(tmp)));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1480,12 +1484,12 @@ pack_unpack(str, fmt)
 	  case 'U':
 	    if (len > send - s) len = send - s;
 	    while (len > 0 && s < send) {
-		int alen = send - s;
+		long alen = send - s;
 		unsigned long l;
 
 		l = utf8_to_uv(s, &alen);
 		s += alen; len--;
-		rb_ary_push(ary, rb_uint2inum(l));
+		rb_ary_push(ary, ULONG2NUM(l));
 	    }
 	    break;
 
@@ -1508,7 +1512,7 @@ pack_unpack(str, fmt)
 		    }
 
 		    while (len > 0) {
-			int mlen = len > 3 ? 3 : len;
+			long mlen = len > 3 ? 3 : len;
 
 			if (s < send && *s >= ' ')
 			    a = (*s++ - ' ') & 077;
@@ -1718,7 +1722,7 @@ pack_unpack(str, fmt)
 		    ul <<= 7;
 		    ul |= (*s & 0x7f);
 		    if (!(*s++ & 0x80)) {
-			rb_ary_push(ary, rb_uint2inum(ul));
+			rb_ary_push(ary, ULONG2NUM(ul));
 			len--;
 			ul = 0;
 		    }
@@ -1814,11 +1818,11 @@ uv_to_utf8(buf, uv)
 static unsigned long
 utf8_to_uv(p, lenp)
     char *p;
-    int *lenp;
+    long *lenp;
 {
     int c = (*p++)&0xff;
     unsigned long uv;
-    int n = 1;
+    long n = 1;
 
     if (c < 0xc0) n = 1;
     else if (c < 0xe0) n = 2;

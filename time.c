@@ -1193,7 +1193,7 @@ time_utc_offset(time)
 #else
 	struct tm *u, *l;
 	time_t t;
-	int off;
+	long off;
 	l = &tobj->tm;
 	t = tobj->tv.tv_sec;
 	u = gmtime(&t);
@@ -1210,7 +1210,7 @@ time_utc_offset(time)
 	off = off * 24 + l->tm_hour - u->tm_hour;
 	off = off * 60 + l->tm_min - u->tm_min;
 	off = off * 60 + l->tm_sec - u->tm_sec;
-	return INT2FIX(off);
+	return LONG2FIX(off);
 #endif
     }
 }

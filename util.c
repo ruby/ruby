@@ -27,9 +27,9 @@ char *strchr _((char*,char));
 
 unsigned long
 scan_oct(start, len, retlen)
-const char *start;
-int len;
-int *retlen;
+    const char *start;
+    int len;
+    int *retlen;
 {
     register const char *s = start;
     register unsigned long retval = 0;
@@ -44,9 +44,9 @@ int *retlen;
 
 unsigned long
 scan_hex(start, len, retlen)
-const char *start;
-int len;
-int *retlen;
+    const char *start;
+    int len;
+    int *retlen;
 {
     static char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
     register const char *s = start;

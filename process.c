@@ -831,8 +831,7 @@ rb_f_system(argc, argv)
 
     if (status == 0) return Qtrue;
     return Qfalse;
-#else
-#ifdef DJGPP
+#elif defined(DJGPP)
     VALUE cmd;
     int status;
 
@@ -855,10 +854,8 @@ rb_f_system(argc, argv)
 
     if (status == 0) return Qtrue;
     return Qfalse;
-#else
-#if defined(__human68k__)
+#elif defined(__human68k__)
     VALUE prog = 0;
-    int i;
     int status;
 
     fflush(stdin);
@@ -885,8 +882,7 @@ rb_f_system(argc, argv)
     }
     last_status_set(status == -1 ? 127 : status);
     return status == 0 ? Qtrue : Qfalse;
-#else
-#if defined(__VMS)
+#elif defined(__VMS)
     VALUE cmd;
     int status;
 
@@ -962,10 +958,7 @@ rb_f_system(argc, argv)
     if (NUM2INT(rb_last_status) == 0)
 	return Qtrue;
     return Qfalse;
-#endif /* __VMS */
-#endif /* __human68k__ */
-#endif /* DJGPP */
-#endif /* NT */
+#endif
 }
 
 static VALUE

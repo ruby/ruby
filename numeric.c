@@ -1022,7 +1022,7 @@ int_succ(num)
 {
     if (FIXNUM_P(num)) {
 	long i = FIX2LONG(num) + 1;
-	return rb_int2inum(i);
+	return LONG2NUM(i);
     }
     return rb_funcall(num, '+', 1, INT2FIX(1));
 }
@@ -1083,7 +1083,7 @@ static VALUE
 fix_uminus(num)
     VALUE num;
 {
-    return rb_int2inum(-FIX2LONG(num));
+    return LONG2NUM(-FIX2LONG(num));
 }
 
 VALUE
@@ -1385,7 +1385,7 @@ fix_rev(num)
     long val = FIX2LONG(num);
 
     val = ~val;
-    return rb_int2inum(val);
+    return LONG2NUM(val);
 }
 
 static VALUE
@@ -1398,7 +1398,7 @@ fix_and(x, y)
 	return rb_big_and(y, x);
     }
     val = FIX2LONG(x) & NUM2LONG(y);
-    return rb_int2inum(val);
+    return LONG2NUM(val);
 }
 
 static VALUE
@@ -1411,7 +1411,7 @@ fix_or(x, y)
 	return rb_big_or(y, x);
     }
     val = FIX2LONG(x) | NUM2LONG(y);
-    return rb_int2inum(val);
+    return LONG2NUM(val);
 }
 
 static VALUE
@@ -1424,7 +1424,7 @@ fix_xor(x, y)
 	return rb_big_xor(y, x);
     }
     val = FIX2LONG(x) ^ NUM2LONG(y);
-    return rb_int2inum(val);
+    return LONG2NUM(val);
 }
 
 static VALUE fix_rshift _((VALUE, VALUE));
@@ -1444,7 +1444,7 @@ fix_lshift(x, y)
 	return rb_big_lshift(rb_int2big(val), y);
     }
     val = val << width;
-    return rb_int2inum(val);
+    return LONG2NUM(val);
 }
 
 static VALUE
@@ -1512,7 +1512,7 @@ fix_abs(fix)
 
     if (i < 0) i = -i;
 
-    return rb_int2inum(i);
+    return LONG2NUM(i);
 }
 
 static VALUE

@@ -26,7 +26,7 @@ remove_sign_bits(str, base)
     int base;
 {
     char *s, *t, *end;
-    int len;
+    unsigned long len;
     
     s = t = str;
     len = strlen(str);

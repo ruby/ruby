@@ -782,7 +782,7 @@ rb_reg_nth_match(nth, match)
     VALUE match;
 {
     VALUE str;
-    int start, end, len;
+    long start, end, len;
 
     if (NIL_P(match)) return Qnil;
     if (nth >= RMATCH(match)->regs->num_regs) {
@@ -1094,7 +1094,7 @@ VALUE
 rb_reg_match(re, str)
     VALUE re, str;
 {
-    int start;
+    long start;
 
     if (NIL_P(str)) {
 	rb_backref_set(Qnil);
@@ -1105,14 +1105,14 @@ rb_reg_match(re, str)
     if (start < 0) {
 	return Qnil;
     }
-    return INT2FIX(start);
+    return LONG2FIX(start);
 }
 
 VALUE
 rb_reg_match2(re)
     VALUE re;
 {
-    int start;
+    long start;
     VALUE line = rb_lastline_get();
 
     if (TYPE(line) != T_STRING) {
@@ -1124,7 +1124,7 @@ rb_reg_match2(re)
     if (start < 0) {
 	return Qnil;
     }
-    return INT2FIX(start);
+    return LONG2FIX(start);
 }
 
 static VALUE
