@@ -1,6 +1,6 @@
 Fri Sep 22 13:58:51 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
-	* ext/extmk.rb: don't use default $:
+	* ext/extmk.rb.in: don't use default $:
 
 Fri Sep 22 10:16:21 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
