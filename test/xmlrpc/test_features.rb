@@ -1,11 +1,7 @@
-$LOAD_PATH.unshift '../../lib'
 require 'test/unit'
 require "xmlrpc/create"
 require "xmlrpc/parser"
 require "xmlrpc/config"
-
-#XMLRPC::Config.const_set(ENABLE_NIL_CREATE, true)
-#XMLRPC::Config.const_set(ENABLE_NIL_PARSER, true)
 
 class Test_Features < Test::Unit::TestCase
 

@@ -1,29 +1,28 @@
-$LOAD_PATH.unshift '../../lib'
 require 'test/unit'
 require 'xmlrpc/datetime'
 require "xmlrpc/parser"
 
 module GenericParserTest
+  def datafile(base)
+    File.join(File.dirname(__FILE__), "data", base)
+  end
+ 
+  def load_data(name)
+    [File.read(datafile(name) + ".xml"), File.read(datafile(name) + ".expected").chomp]
+  end
+
   def setup
-    @xml1 = File.read("data/xml1.xml")
-    @expected1 = File.read("data/xml1.expected").chomp
+    @xml1, @expected1 = load_data('xml1')
+    @xml2, @expected2 = load_data('bug_covert') 
+    @xml3, @expected3 = load_data('bug_bool') 
+    @xml4, @expected4 = load_data('value') 
 
-    @xml2 = File.read("data/bug_covert.xml")
-    @expected2 = File.read("data/bug_covert.expected").chomp
+    @cdata_xml, @cdata_expected = load_data('bug_cdata')
 
-    @xml3 = File.read("data/bug_bool.xml")
-    @expected3 = File.read("data/bug_bool.expected").chomp
-
-    @xml4 = File.read("data/value.xml")
-    @expected4 = File.read("data/value.expected").chomp
-
-    @cdata_xml = File.read("data/bug_cdata.xml").chomp
-    @cdata_expected = File.read("data/bug_cdata.expected").chomp
-
-    @datetime_xml = File.read("data/datetime_iso8601.xml")
+    @datetime_xml = File.read(datafile('datetime_iso8601.xml'))
     @datetime_expected = XMLRPC::DateTime.new(2004, 11, 5, 1, 15, 23)
 
-    @fault_doc = File.read("data/fault.xml").to_s
+    @fault_doc = File.read(datafile('fault.xml'))
   end
 
   # test parseMethodResponse --------------------------------------------------
