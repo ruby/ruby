@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -18,6 +18,8 @@
 #include "node.h"
 #include "st.h"
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 /* hack for bison */
 #ifdef const
@@ -801,6 +803,10 @@ call_args	: command_call
 			value_expr($1);
 			$$ = NEW_LIST($1);
 		    }
+		| args ','
+		    {
+			$$ = $1;
+		    }
 		| args opt_block_arg
 		    {
 			$$ = arg_blk_pass($1, $2);
@@ -809,6 +815,10 @@ call_args	: command_call
 		    {
 			$$ = arg_add($1, $4);
 			$$ = arg_blk_pass($$, $5);
+		    }
+		| assocs ','
+		    {
+			$$ = NEW_LIST(NEW_HASH($1));
 		    }
 		| assocs opt_block_arg
 		    {
@@ -824,6 +834,10 @@ call_args	: command_call
 		    {
 			$$ = list_append($1, NEW_HASH($3));
 			$$ = arg_blk_pass($$, $4);
+		    }
+		| args ',' assocs ','
+		    {
+			$$ = list_append($1, NEW_HASH($3));
 		    }
 		| args ',' assocs ',' tSTAR arg opt_block_arg
 		    {
@@ -1745,6 +1759,10 @@ normalize_newline(line)
 	RSTRING(line)->ptr[RSTRING(line)->len-2] = '\n';
 	RSTRING(line)->len--;
     }
+#ifdef __MACOS__
+    else if (RSTRING(line)->ptr[RSTRING(line)->len-1] == '\r')
+	RSTRING(line)->ptr[RSTRING(line)->len-1] = '\n';
+#endif
 }
 
 static int
@@ -2011,8 +2029,10 @@ parse_regx(term, paren)
 		}
 		/* fall through */
 	      default:
-		if (c == paren) nest++;
-		if (c == term) nest--;
+		if (paren)  {
+		    if (c == paren) nest++;
+		    if (c == term) nest--;
+		}
 		if (c == '\n') {
 		    ruby_sourceline++;
 		}
@@ -2156,10 +2176,12 @@ parse_string(func, term, paren)
   	    }
 	    continue;
 	}
-	if (c == paren) nest++;
-	if (c == term) {
-	    nest--;
-	    if (nest == 0) break;
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term) {
+		nest--;
+		if (nest == 0) break;
+	    }
 	}
 	tokadd(c);
     }
@@ -2234,10 +2256,12 @@ parse_qstring(term, paren)
 		tokadd('\\');
 	    }
 	}
-	if (c == paren) nest++;
-	if (c == term) {
-	    nest--;
-	    if (nest == 0) break;
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term) {
+		nest--;
+		if (nest == 0) break;
+	    }
 	}
 	tokadd(c);
     }
@@ -2598,7 +2622,7 @@ retry:
 	return parse_string(c,c,c);
 
       case '\'':
-	return parse_qstring(c,c);
+	return parse_qstring(c,0);
 
       case '?':
 	if (lex_state == EXPR_END) {
@@ -2840,7 +2864,11 @@ retry:
 	    pushback(c);
 	    tokfix();
 	    if (is_float) {
-		yylval.val = rb_float_new(atof(tok()));
+		double d = strtod(tok(), 0);
+		if (errno == ERANGE) {
+		    yyerror("Float out of range");
+		}
+		yylval.val = rb_float_new(d);
 		return tFLOAT;
 	    }
 	    yylval.val = rb_str2inum(tok(), 10);
@@ -2985,7 +3013,7 @@ retry:
 		rb_compile_error("unterminated quoted string meets end of file");
 		return 0;
 	    }
-	    paren = term;
+	    paren = 0;
 	    if (term == '(') term = ')';
 	    else if (term == '[') term = ']';
 	    else if (term == '{') term = '}';
@@ -3423,7 +3451,7 @@ block_append(head, tail)
 	end = head->nd_end;
     }
 
-    if (RTEST(rb_verbose)) {
+    if (RTEST(ruby_verbose)) {
 	NODE *nd = end->nd_head;
       newline:
 	switch (nd_type(nd)) {

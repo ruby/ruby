@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Feb 10 15:17:05 JST 1994
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -14,11 +14,129 @@
 #include <sys/types.h>
 #include <ctype.h>
 
+#define define_swapx(x, xtype)		\
+static xtype				\
+TAKEN_PASTE(swap,x)(z)			\
+    xtype z;				\
+{					\
+    xtype r;				\
+    xtype *zp;				\
+    unsigned char *s, *t;		\
+    int i;				\
+					\
+    zp = (xtype *)malloc(sizeof(xtype));\
+    *zp = z;				\
+    s = (char *)zp;			\
+    t = (char *)malloc(sizeof(xtype));	\
+    for (i=0 ; i<sizeof(xtype); i++) {	\
+	t[sizeof(xtype)-i-1] = s[i];	\
+    }					\
+    r = *(xtype *)t;			\
+    free(t);				\
+    free(zp);				\
+    return r;				\
+}
+
+#if SIZEOF_SHORT == 2
 #define swaps(x)	((((x)&0xFF)<<8) + (((x)>>8)&0xFF))
+#else
+#if SIZEOF_SHORT == 4
+#define swaps(x)	((((x)&0xFF)<<24)	\
+			+(((x)>>24)&0xFF)	\
+			+(((x)&0x0000FF00)<<8)	\
+			+(((x)&0x00FF0000)>>8)	)
+#else
+define_swapx(s,short);
+#endif
+#endif
+
+#if SIZEOF_LONG == 4
 #define swapl(x)	((((x)&0xFF)<<24)	\
 			+(((x)>>24)&0xFF)	\
 			+(((x)&0x0000FF00)<<8)	\
 			+(((x)&0x00FF0000)>>8)	)
+#else
+#if SIZEOF_LONG == 8
+#define swapl(x)        ((((x)&0x00000000000000FF)<<56)	\
+			+(((x)&0xFF00000000000000)>>56)	\
+			+(((x)&0x000000000000FF00)<<40)	\
+			+(((x)&0x00FF000000000000)>>40)	\
+			+(((x)&0x0000000000FF0000)<<24)	\
+			+(((x)&0x0000FF0000000000)>>24)	\
+			+(((x)&0x00000000FF000000)<<8)	\
+			+(((x)&0x000000FF00000000)>>8)
+#else
+
+define_swapx(l,long);
+#endif
+#endif
+
+#if SIZEOF_FLOAT == 4
+#if SIZEOF_LONG == 4	/* SIZEOF_FLOAT == 4 == SIZEOF_LONG */
+#define swapf(x)	swapl(x)
+#define FLOAT_SWAPPER	unsigned long
+#else
+#if SIZEOF_SHORT == 4	/* SIZEOF_FLOAT == 4 == SIZEOF_SHORT */
+#define swapf(x)	swaps(x)
+#define FLOAT_SWAPPER	unsigned short
+#else	/* SIZEOF_FLOAT == 4 but undivide by known size of int */
+define_swapx(f,float);
+#endif	/* #if SIZEOF_SHORT == 4 */
+#endif	/* #if SIZEOF_LONG == 4 */
+#else	/* SIZEOF_FLOAT != 4 */
+define_swapx(f,float);
+#endif	/* #if SIZEOF_FLOAT == 4 */
+
+#if SIZEOF_DOUBLE == 8
+#if SIZEOF_LONG == 8	/* SIZEOF_DOUBLE == 8 == SIZEOF_LONG */
+#define swapd(x)	swapl(x)
+#define DOUBLE_SWAPPER	unsigned long
+#else
+#if SIZEOF_LONG == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_LONG */
+static double
+swapd(d)
+    const double d;
+{
+    double dtmp = d;
+    unsigned long utmp[2];
+    unsigned long utmp0;
+
+    utmp[0] = 0; utmp[1] = 0;
+    memcpy(utmp,&dtmp,sizeof(double));
+    utmp0 = utmp[0];
+    utmp[0] = swapl(utmp[1]);
+    utmp[1] = swapl(utmp0);
+    memcpy(&dtmp,utmp,sizeof(double));
+    return dtmp;
+}
+#else
+#if SIZEOF_SHORT == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_SHORT */
+static double
+swapd(d)
+    const double d;
+{
+    double dtmp = d;
+    unsigned short utmp[2];
+    unsigned short utmp0;
+
+    utmp[0] = 0; utmp[1] = 0;
+    memcpy(utmp,&dtmp,sizeof(double));
+    utmp0 = utmp[0];
+    utmp[0] = swaps(utmp[1]);
+    utmp[1] = swaps(utmp0);
+    memcpy(&dtmp,utmp,sizeof(double));
+    return dtmp;
+}
+#else	/* SIZEOF_DOUBLE == 8 but undivied by known size of int */
+define_swapx(d, double);
+#endif	/* #if SIZEOF_SHORT == 4 */
+#endif	/* #if SIZEOF_LONG == 4 */
+#endif	/* #if SIZEOF_LONG == 8 */
+#else	/* SIZEOF_DOUBLE != 8 */
+define_swapx(d, double);
+#endif	/* #if SIZEOF_DPOUBLE == 8 */
+
+#undef define_swapx
 
 #ifdef DYNAMIC_ENDIAN
 #ifdef ntohs
@@ -42,12 +160,20 @@ endian()
 
 #define ntohs(x) (endian()?(x):swaps(x))
 #define ntohl(x) (endian()?(x):swapl(x))
+#define ntohf(x) (endian()?(x):swapf(x))
+#define ntohd(x) (endian()?(x):swapd(x))
 #define htons(x) (endian()?(x):swaps(x))
 #define htonl(x) (endian()?(x):swapl(x))
+#define htonf(x) (endian()?(x):swapf(x))
+#define htond(x) (endian()?(x):swapd(x))
 #define htovs(x) (endian()?swaps(x):(x))
 #define htovl(x) (endian()?swapl(x):(x))
+#define htovf(x) (endian()?swapf(x):(x))
+#define htovd(x) (endian()?swapd(x):(x))
 #define vtohs(x) (endian()?swaps(x):(x))
 #define vtohl(x) (endian()?swapl(x):(x))
+#define vtohf(x) (endian()?swapf(x):(x))
+#define vtohd(x) (endian()?swapd(x):(x))
 #else
 #ifdef WORDS_BIGENDIAN
 #ifndef ntohs
@@ -56,22 +182,94 @@ endian()
 #define htons(x) (x)
 #define htonl(x) (x)
 #endif
+#define ntohf(x) (x)
+#define ntohd(x) (x)
+#define htonf(x) (x)
+#define htond(x) (x)
 #define htovs(x) swaps(x)
 #define htovl(x) swapl(x)
+#define htovf(x) swapf(x)
+#define htovd(x) swapd(x)
 #define vtohs(x) swaps(x)
 #define vtohl(x) swapl(x)
+#define vtohf(x) swapf(x)
+#define vtohd(x) swapd(x)
 #else /* LITTLE ENDIAN */
 #ifndef ntohs
+#undef ntohs
+#undef ntohl
+#undef htons
+#undef htonl
 #define ntohs(x) swaps(x)
 #define ntohl(x) swapl(x)
 #define htons(x) swaps(x)
 #define htonl(x) swapl(x)
 #endif
+#define ntohf(x) swapf(x)
+#define ntohd(x) swapd(x)
+#define htonf(x) swapf(x)
+#define htond(x) swapd(x)
 #define htovs(x) (x)
 #define htovl(x) (x)
+#define htovf(x) (x)
+#define htovd(x) (x)
 #define vtohs(x) (x)
 #define vtohl(x) (x)
+#define vtohf(x) (x)
+#define vtohd(x) (x)
 #endif
+#endif
+
+#ifdef FLOAT_SWAPPER
+#define FLOAT_CONVWITH(y)	FLOAT_SWAPPER y;
+#define HTONF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 x = htonf((FLOAT_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(float)),	\
+			 x)
+#define HTOVF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = htovf((FLOAT_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(float)),	\
+			 x)
+#define NTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = ntohf((FLOAT_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(float)),	\
+			 x)
+#define VTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = vtohf((FLOAT_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(float)),	\
+			 x)
+#else
+#define FLOAT_CONVWITH(y)
+#define HTONF(x,y)	htonf(x)
+#define HTOVF(x,y)	htovf(x)
+#define NTOHF(x,y)	ntohf(x)
+#define VTOHF(x,y)	vtohf(x)
+#endif
+
+#ifdef DOUBLE_SWAPPER
+#define DOUBLE_CONVWITH(y)	DOUBLE_SWAPPER y;
+#define HTOND(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 x = htond((DOUBLE_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(double)),	\
+			 x)
+#define HTOVD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = htovd((DOUBLE_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(double)),	\
+			 x)
+#define NTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = ntohd((DOUBLE_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(double)),	\
+			 x)
+#define VTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = vtohd((DOUBLE_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(double)),	\
+			 x)
+#else
+#define DOUBLE_CONVWITH(y)
+#define HTOND(x,y)	htond(x)
+#define HTOVD(x,y)	htovd(x)
+#define NTOHD(x,y)	ntohd(x)
+#define VTOHD(x,y)	vtohd(x)
 #endif
 
 static char *toofew = "too few arguments";
@@ -399,6 +597,48 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
+	  case 'e':
+	    while (len-- > 0) {
+		float f;
+		FLOAT_CONVWITH(ftmp);
+
+		from = NEXTFROM;
+		switch (TYPE(from)) {
+		  case T_FLOAT:
+		    f = RFLOAT(from)->value;
+		    break;
+		  case T_STRING:
+		    f = atof(RSTRING(from)->ptr);
+		  default:
+		    f = (float)NUM2INT(from);
+		    break;
+		}
+		f = HTOVF(f,ftmp);
+		rb_str_cat(res, (char*)&f, sizeof(float));
+	    }
+	    break;
+
+	  case 'E':
+	    while (len-- > 0) {
+		double d;
+		DOUBLE_CONVWITH(dtmp);
+
+		from = NEXTFROM;
+		switch (TYPE(from)) {
+		  case T_FLOAT:
+		    d = RFLOAT(from)->value;
+		    break;
+		  case T_STRING:
+		    d = atof(RSTRING(from)->ptr);
+		  default:
+		    d = (double)NUM2INT(from);
+		    break;
+		}
+		d = HTOVD(d,dtmp);
+		rb_str_cat(res, (char*)&d, sizeof(double));
+	    }
+	    break;
+
 	  case 'd':
 	  case 'D':
 	    while (len-- > 0) {
@@ -415,6 +655,48 @@ pack_pack(ary, fmt)
 		    d = (double)NUM2INT(from);
 		    break;
 		}
+		rb_str_cat(res, (char*)&d, sizeof(double));
+	    }
+	    break;
+
+	  case 'g':
+	    while (len-- > 0) {
+		float f;
+		FLOAT_CONVWITH(ftmp);
+
+		from = NEXTFROM;
+		switch (TYPE(from)) {
+		  case T_FLOAT:
+		    f = RFLOAT(from)->value;
+		    break;
+		  case T_STRING:
+		    f = atof(RSTRING(from)->ptr);
+		  default:
+		    f = (float)NUM2INT(from);
+		    break;
+		}
+		f = HTONF(f,ftmp);
+		rb_str_cat(res, (char*)&f, sizeof(float));
+	    }
+	    break;
+
+	  case 'G':
+	    while (len-- > 0) {
+		double d;
+		DOUBLE_CONVWITH(dtmp);
+
+		from = NEXTFROM;
+		switch (TYPE(from)) {
+		  case T_FLOAT:
+		    d = RFLOAT(from)->value;
+		    break;
+		  case T_STRING:
+		    d = atof(RSTRING(from)->ptr);
+		  default:
+		    d = (double)NUM2INT(from);
+		    break;
+		}
+		d = HTOND(d,dtmp);
 		rb_str_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
@@ -558,7 +840,7 @@ qpencode(str, from, len)
 {
     char buff[1024];
     int i = 0, n = 0, prev = EOF;
-    unsigned char *s = RSTRING(from)->ptr;
+    unsigned char *s = (unsigned char*)RSTRING(from)->ptr;
     unsigned char *send = s + RSTRING(from)->len;
 
     while (s < send) {
@@ -911,6 +1193,34 @@ pack_unpack(str, fmt)
 	    }
 	    break;
 
+	  case 'e':
+	    if (len >= (send - s) / sizeof(float))
+		len = (send - s) / sizeof(float);
+	    while (len-- > 0) {
+	        float tmp;
+		FLOAT_CONVWITH(ftmp);
+
+		memcpy(&tmp, s, sizeof(float));
+		s += sizeof(float);
+		tmp = VTOHF(tmp,ftmp);
+		rb_ary_push(ary, rb_float_new((double)tmp));
+	    }
+	    break;
+	    
+	  case 'E':
+	    if (len >= (send - s) / sizeof(double))
+		len = (send - s) / sizeof(double);
+	    while (len-- > 0) {
+		double tmp;
+		DOUBLE_CONVWITH(dtmp);
+
+		memcpy(&tmp, s, sizeof(double));
+		s += sizeof(double);
+		tmp = VTOHD(tmp,dtmp);
+		rb_ary_push(ary, rb_float_new(tmp));
+	    }
+	    break;
+	    
 	  case 'D':
 	  case 'd':
 	    if (len >= (send - s) / sizeof(double))
@@ -923,6 +1233,34 @@ pack_unpack(str, fmt)
 	    }
 	    break;
 
+	  case 'g':
+	    if (len >= (send - s) / sizeof(float))
+		len = (send - s) / sizeof(float);
+	    while (len-- > 0) {
+	        float tmp;
+		FLOAT_CONVWITH(ftmp;)
+
+		memcpy(&tmp, s, sizeof(float));
+		s += sizeof(float);
+		tmp = NTOHF(tmp,ftmp);
+		rb_ary_push(ary, rb_float_new((double)tmp));
+	    }
+	    break;
+	    
+	  case 'G':
+	    if (len >= (send - s) / sizeof(double))
+		len = (send - s) / sizeof(double);
+	    while (len-- > 0) {
+		double tmp;
+		DOUBLE_CONVWITH(dtmp);
+
+		memcpy(&tmp, s, sizeof(double));
+		s += sizeof(double);
+		tmp = NTOHD(tmp,dtmp);
+		rb_ary_push(ary, rb_float_new(tmp));
+	    }
+	    break;
+	    
 	  case 'u':
 	    {
 		VALUE str = rb_str_new(0, (send - s)*3/4);

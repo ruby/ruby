@@ -18,6 +18,10 @@ unsigned int _stklen = 0x100000;
 int _stacksize = 131072;
 #endif
 
+#if defined(__MACOS__) && defined(__MWERKS__)
+#include <console.h>
+#endif
+
 int
 main(argc, argv, envp)
     int argc;
@@ -25,6 +29,9 @@ main(argc, argv, envp)
 {
 #if defined(NT)
     NtInitialize(&argc, &argv);
+#endif
+#if defined(__MACOS__) && defined(__MWERKS__)
+	argc = ccommand(&argv);
 #endif
 
     ruby_init();

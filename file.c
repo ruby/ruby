@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 15 12:24:34 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -58,6 +58,7 @@ char *strrchr _((char*,char));
  #include "macruby_missing.h"
  extern int fileno(FILE *stream);
  extern int utimes();
+ char* strdup(char*);
 #endif
 
 VALUE rb_cFile;

@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 12:47:31 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -47,9 +47,8 @@ char *getenv();
 
 static int version, copyright;
 
-VALUE rb_debug = Qfalse;
-VALUE rb_verbose = Qfalse;
-int rb_tainting = Qfalse;
+VALUE ruby_debug = Qfalse;
+VALUE ruby_verbose = Qfalse;
 static int sflag = Qfalse;
 
 char *ruby_inplace_mode = Qfalse;
@@ -70,6 +69,46 @@ static char *script;
 
 static int origargc;
 static char **origargv;
+
+static void
+usage(name)
+    char *name;
+{
+    /* This message really ought to be max 23 lines.
+     * Removed -h because the user already knows that opton. Others? */
+
+    static char *usage_msg[] = {
+"-0[octal]       specify record separator (\\0, if no argument)",
+"-a              autosplit mode with -n or -p (splits $_ into $F)",
+"-c              check syntax only",
+"-d              set debugging flags (set $DEBUG to true)",
+"-e 'command'    one line of script. Several -e's allowed. Omit [programfile]",
+"-Fpattern       split() pattern for autosplit (-a)",
+"-i[extension]   edit ARGV files in place (make backup if extension supplied)",
+"-Idirectory     specify $LOAD_PATH directory (may be used more than once)",
+"-K[kcode]       specifies KANJI (Japanese) code-set",
+"-l              enable line ending processing",
+"-n              assume 'while gets; ...; end' loop around your script",
+"-p              assume loop like -n but print line also like sed",
+"-rlibrary       require the library, before executing your script",
+"-s              enable some switch parsing for switches after script name",
+"-S              look for the script using PATH environment variable",
+"-T[level]       turn on tainting checks",
+"-v              enables verbose mode",
+"-w              turn warnings on for compilation of your script",
+"-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
+"-X[directory]   cd to directory, before executing your script",
+"--copyright     print the copyright",
+"--version       print the version",
+"\n",
+NULL
+};
+    char **p = usage_msg;
+
+    printf("\nUsage: %s [switches] [--] [programfile] [arguments]", name);
+    while (*p)
+	printf("\n  %s", *p++);
+}
 
 #ifndef RUBY_LIB
 #define RUBY_LIB "/usr/local/lib/ruby"
@@ -193,8 +232,8 @@ proc_options(argcp, argvp)
 	    goto reswitch;
 
 	  case 'd':
-	    rb_debug = Qtrue;
-	    rb_verbose |= 1;
+	    ruby_debug = Qtrue;
+	    ruby_verbose |= 1;
 	    s++;
 	    goto reswitch;
 
@@ -205,9 +244,9 @@ proc_options(argcp, argvp)
 
 	  case 'v':
 	    ruby_show_version();
-	    rb_verbose = 2;
+	    ruby_verbose = 2;
 	  case 'w':
-	    rb_verbose |= 1;
+	    ruby_verbose |= 1;
 	    s++;
 	    goto reswitch;
 
@@ -221,6 +260,10 @@ proc_options(argcp, argvp)
 	    sflag = Qtrue;
 	    s++;
 	    goto reswitch;
+
+	  case 'h':
+	    usage(origargv[0]);
+	    exit(0);
 
 	  case 'l':
 	    do_line = Qtrue;
@@ -308,7 +351,6 @@ proc_options(argcp, argvp)
 		    if (numlen == 0) v = 1;
 		}
 		rb_set_safe_level(v);
-		rb_tainting = Qtrue;
 	    }
 	    break;
 
@@ -350,15 +392,21 @@ proc_options(argcp, argvp)
 	    if (strcmp("copyright", s) == 0)
 		copyright = 1;
 	    else if (strcmp("debug", s) == 0)
-		rb_debug = 1;
+		ruby_debug = 1;
 	    else if (strcmp("version", s) == 0)
 		version = 1;
 	    else if (strcmp("verbose", s) == 0)
-		rb_verbose = 2;
+		ruby_verbose = 2;
 	    else if (strcmp("yydebug", s) == 0)
 		yydebug = 1;
+	    else if (strcmp("help", s) == 0) {
+		usage(origargv[0]);
+		exit(0);
+	    }
 	    else {
-		rb_fatal("Unrecognized long option: --%s",s);
+		printf("%s: invalid option --%s  (-h will show valid options)\n",
+		       origargv[0], s);
+		exit(2);
 	    }
 	    break;
 
@@ -368,7 +416,9 @@ proc_options(argcp, argvp)
 	    break;
 
 	  default:
-	    rb_fatal("Unrecognized switch: -%s",s);
+	    printf("%s: invalid option -%c  (-h will show valid options)\n",
+		   origargv[0], *s);
+	    exit(2);
 
 	  case 0:
 	    break;
@@ -397,7 +447,7 @@ proc_options(argcp, argvp)
     Init_ext();		/* should be called here for some reason :-( */
     if (script_given == Qfalse) {
 	if (argc == 0) {	/* no more args */
-	    if (rb_verbose == 3) exit(0);
+	    if (ruby_verbose == 3) exit(0);
 	    script = "-";
 	    load_stdin();
 	}
@@ -425,8 +475,8 @@ proc_options(argcp, argvp)
 	    argc--; argv++;
 	}
     }
-    if (rb_verbose) rb_verbose = Qtrue;
-    if (rb_debug) rb_debug = Qtrue;
+    if (ruby_verbose) ruby_verbose = Qtrue;
+    if (ruby_debug) ruby_debug = Qtrue;
 
     xflag = Qfalse;
     *argvp = argv;
@@ -728,10 +778,10 @@ ruby_prog_init()
     init_ids();
 
     ruby_sourcefile = "ruby";
-    rb_define_variable("$VERBOSE", &rb_verbose);
-    rb_define_variable("$-v", &rb_verbose);
-    rb_define_variable("$DEBUG", &rb_debug);
-    rb_define_variable("$-d", &rb_debug);
+    rb_define_variable("$VERBOSE", &ruby_verbose);
+    rb_define_variable("$-v", &ruby_verbose);
+    rb_define_variable("$DEBUG", &ruby_debug);
+    rb_define_variable("$-d", &ruby_debug);
     rb_define_readonly_variable("$-p", &do_print);
     rb_define_readonly_variable("$-l", &do_line);
 
@@ -742,9 +792,6 @@ ruby_prog_init()
     addpath(RUBY_LIB);
 #if defined(_WIN32) || defined(DJGPP)
     addpath(ruby_libpath());
-#endif
-#ifdef __MACOS__
-    setup_macruby_libpath();
 #endif
 
 #ifdef RUBY_ARCHLIB

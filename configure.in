@@ -1,6 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(ruby.h)
 
+rb_version=`grep RUBY_VERSION $srcdir/version.h`
+MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
+MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
+TEENY=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.[0-9][0-9]*\.\([0-9][0-9]*\)"'`
+AC_SUBST(MAJOR)
+AC_SUBST(MINOR)
+AC_SUBST(TEENY)
 dnl checks for alternative programs
 AC_ARG_WITH(gcc, [--without-gcc             never use gcc], [
 	case $withval in
@@ -85,14 +92,18 @@ AC_PROG_RANLIB
 AC_SUBST(AR)
 AC_CHECK_PROGS(AR, ar aal, ar)
 AC_PROG_INSTALL
+AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 # checks for UNIX variants that set C preprocessor variables
 AC_MINIX
 
 AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(void*)
+AC_CHECK_SIZEOF(float)
+AC_CHECK_SIZEOF(double)
 
 AC_MSG_CHECKING(for prototypes)
 AC_CACHE_VAL(rb_cv_have_prototypes,
@@ -103,6 +114,12 @@ AC_MSG_RESULT($rb_cv_have_prototypes)
 if test "$rb_cv_have_prototypes" = yes; then
   AC_DEFINE(HAVE_PROTOTYPES)
 fi
+
+AC_MSG_CHECKING(token paste string)
+AC_TRY_COMPILE([#define paste(a,b) a##b],
+[ int xy = 1; return paste(x,y);],
+AC_DEFINE(TOKEN_PASTE(x,y),[x##y])   AC_MSG_RESULT(ANSI),
+AC_DEFINE(TOKEN_PASTE(x,y),[x/**/y]) AC_MSG_RESULT(KnR1))
 
 AC_MSG_CHECKING(for variable length prototypes and stdarg.h)
 AC_CACHE_VAL(rb_cv_stdarg,
@@ -297,7 +314,7 @@ AC_ARG_WITH(dln-a-out, [--with-dln-a-out          use dln_a_out if possible], [
 case "$host_os" in
     linux*)
   AC_MSG_CHECKING(whether ELF binaries are produced)
-  AC_CACHE_VAL(rb_cv_linux_elf,
+  AC_CACHE_VAL(rb_cv_binary_elf,
   [AC_TRY_RUN([
 /* Test for whether ELF binaries are produced */
 #include <fcntl.h>
@@ -315,13 +332,13 @@ main() {
 	exit(0); /* succeed (yes, it's ELF) */
 }
 ],
-	rb_cv_linux_elf=yes,
-	rb_cv_linux_elf=no,
+	rb_cv_binary_elf=yes,
+	rb_cv_binary_elf=no,
 	[:])])
-  AC_MSG_RESULT($rb_cv_linux_elf)
-  if test "$rb_cv_linux_elf" = no; then
+  AC_MSG_RESULT($rb_cv_binary_elf)
+  if test "$rb_cv_binary_elf" = no; then
     with_dln_a_out=yes
-    host_os=linux-a.out
+    host_os=${host_os}-a_out
   else
     LDFLAGS="-rdynamic"
   fi;;
@@ -346,14 +363,14 @@ if test "$with_dln_a_out" != yes; then
     rhapsody*)	;;
     human*)	;;
     cygwin*)	CCDLFLAGS=-DDLLIMPORT;;
-    *) CCDLFLAGS=-fpic;;
+    *) CCDLFLAGS=-fPIC;;
     esac
   else
     case "$host_os" in
 	hpux*)		CCDLFLAGS='+z';;
-	solaris*|irix*)	CCDLFLAGS='-K pic' ;;
-	sunos*)		CCDLFLAGS='-pic' ;;
-	esix*|uxpds*)   CCDLFLAGS='-Kpic' ;;
+	solaris*|irix*)	CCDLFLAGS='-K PIC' ;;
+	sunos*)		CCDLFLAGS='-PIC' ;;
+	esix*|uxpds*)   CCDLFLAGS='-KPIC' ;;
 	*)		CCDLFLAGS='' ;;
     esac
   fi
@@ -375,15 +392,12 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
 	linux*) 	LDSHARED="gcc -shared"
 			rb_cv_dlopen=yes ;;
-	freebsd3*)      LDSHARED="ld -Bshareable"   
-			LDFLAGS="-rdynamic"
-			rb_cv_dlopen=yes ;;
-	freebsd*) 	LDSHARED="ld -Bshareable"
+	freebsd*)       LDSHARED="gcc -shared"   
+			test -x /usr/bin/objformat && LDFLAGS="-rdynamic"
 			rb_cv_dlopen=yes ;;
 	netbsd*) 	LDSHARED="ld -Bshareable"
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
-			CCDLFLAGS=-fPIC
 			rb_cv_dlopen=yes ;;
 	nextstep*)	LDSHARED='cc -r'
 			LDFLAGS="-u libsys_s"
@@ -565,13 +579,14 @@ if test "$fat_binary" = yes ; then
   CFLAGS="$CFLAGS $ARCH_FLAG"
 fi
 
-LIBRUBY='libruby.a'
-LIBRUBYARG='libruby.a'
+LIBRUBY_A='lib$(RUBY_INSTALL_NAME).a'
+LIBRUBY='$(LIBRUBY_A)'
+LIBRUBYARG='$(LIBRUBY_A)'
 SOLIBS=
 if test "$host_os" = "beos"; then
   CFLAGS="$CFLAGS -relax_pointers"
-  LIBRUBY='libruby.so'
-  LIBRUBYARG='-lruby'
+  LIBRUBY='$(LIBRUBY_SO)'
+  LIBRUBYARG='-l$(RUBY_INSTALL_NAME)'
   SOLIBS='-lnet'
   echo creating ruby.def
   case "$host_cpu" in
@@ -585,9 +600,23 @@ if test "$host_os" = "beos"; then
   esac
 fi
 
+LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
+LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so'
 if test "$enable_shared" = 'yes'; then
-  LIBRUBY='libruby.so'
-  LIBRUBYARG='-L./ -lruby'
+  LIBRUBY='$(LIBRUBY_SO)'
+  LIBRUBYARG='-L./ -l$(RUBY_INSTALL_NAME)'
+  CFLAGS="$CFLAGS $CCDLFLAGS"
+  case "$host_os" in
+    freebsd2*|sunos4*|linux*)
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
+	;;
+    hpux*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).sl'
+	;;
+    *)
+	;;
+  esac
 fi
 
 case "$host_os" in
@@ -604,7 +633,10 @@ case "$host_os" in
 		;;	
 esac
 
-
+AC_SUBST(RUBY_INSTALL_NAME)
+AC_SUBST(LIBRUBY_A)
+AC_SUBST(LIBRUBY_SO)
+AC_SUBST(LIBRUBY_ALIASES)
 AC_SUBST(LIBRUBY)
 AC_SUBST(LIBRUBYARG)
 AC_SUBST(SOLIBS)
@@ -617,6 +649,7 @@ ri_suffix=
 test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
+LIBSUFFIX=$ri_suffix
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby")
