@@ -1112,7 +1112,7 @@ uninitialized_constant(klass, id)
 		      RSTRING(rb_class_path(klass))->ptr,
 		      rb_id2name(id));
     else {
-	rb_name_error(id, "uninitialized constant %s",rb_id2name(id));
+	rb_name_error(id, "uninitialized constant %s", rb_id2name(id));
     }
 }
 
@@ -1194,7 +1194,17 @@ rb_autoload_load(klass, id)
     ID id;
 {
     VALUE file, value;
+    ID tmp = id;
 
+    if (!st_delete(RCLASS(klass)->iv_tbl, &tmp, &value) || value != Qundef) {
+	if (klass != rb_cObject)
+	    rb_name_error(id, "not autoload constant %s::%s",
+			  RSTRING(rb_class_path(klass))->ptr,
+			  rb_id2name(id));
+	else {
+	    rb_name_error(id, "not autoload constant %s", rb_id2name(id));
+	}
+    }
     file = autoload_delete(klass, id);
     if (NIL_P(file)) {
 	uninitialized_constant(klass, id);
@@ -1330,7 +1340,10 @@ rb_mod_remove_const(mod, name)
     if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
 
     if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, &id, &val)) {
-	if (val == Qundef) autoload_delete(mod, id);
+	if (val == Qundef) {
+	    autoload_delete(mod, id);
+	    val = Qnil;
+	}
 	return val;
     }
     if (rb_const_defined_at(mod, id)) {

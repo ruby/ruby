@@ -1,3 +1,10 @@
+Fri May 30 06:21:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* variable.c (rb_autoload_load): should delete autoloaded
+	  symbol itself before load.  [ruby-core:01097]
+
+	* variable.c (rb_mod_remove_const): must not return Qundef.
+
 Thu May 29 14:59:10 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (_CRTIMP): redefine _CRTIMP on MinGW.
