@@ -22,7 +22,7 @@ module IRB
       _set_last_value(value)
 
       @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
-      if @eval_history #and !@eval_history_values.equal?(llv)
+      if (@eval_history ||= nil) #and !@eval_history_values.equal?(llv)
  	@eval_history_values.push @line_no, @last_value
  	@workspace.evaluate self, "__ = IRB.CurrentContext.instance_eval{@eval_history_values}"
       end
@@ -33,7 +33,7 @@ module IRB
     attr_reader :eval_history
     def eval_history=(no)
       if no
-	if @eval_history 
+	if (@eval_history ||= nil)
 	  @eval_history_values.size(no)
 	else
 	  @eval_history_values = History.new(no)

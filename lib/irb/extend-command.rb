@@ -203,6 +203,7 @@ module IRB
     def CE.def_extend_command(cmd_name, load_file, *aliases)
       Context.module_eval %[
         def #{cmd_name}(*opts, &b)
+	  Context.module_eval {remove_method(:#{cmd_name})}
 	  require "#{load_file}"
 	  send :#{cmd_name}, *opts, &b
 	end

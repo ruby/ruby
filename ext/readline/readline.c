@@ -19,6 +19,7 @@ static VALUE mReadline;
 
 #define COMPLETION_PROC "completion_proc"
 #define COMPLETION_CASE_FOLD "completion_case_fold"
+static ID completion_proc, completion_case_fold;
 
 #ifndef READLINE_42_OR_LATER
 # define rl_filename_completion_function filename_completion_function
@@ -87,7 +88,7 @@ readline_s_set_completion_proc(self, proc)
     rb_secure(4);
     if (!rb_respond_to(proc, rb_intern("call")))
 	rb_raise(rb_eArgError, "argument must respond to `call'");
-    return rb_iv_set(mReadline, COMPLETION_PROC, proc);
+    return rb_ivar_set(mReadline, completion_proc, proc);
 }
 
 static VALUE
@@ -95,7 +96,7 @@ readline_s_get_completion_proc(self)
     VALUE self;
 {
     rb_secure(4);
-    return rb_iv_get(mReadline, COMPLETION_PROC);
+    return rb_attr_get(mReadline, completion_proc);
 }
 
 static VALUE
@@ -104,7 +105,7 @@ readline_s_set_completion_case_fold(self, val)
     VALUE val;
 {
     rb_secure(4);
-    return rb_iv_set(mReadline, COMPLETION_CASE_FOLD, val);
+    return rb_ivar_set(mReadline, completion_case_fold, val);
 }
 
 static VALUE
@@ -112,7 +113,7 @@ readline_s_get_completion_case_fold(self)
     VALUE self;
 {
     rb_secure(4);
-    return rb_iv_get(mReadline, COMPLETION_CASE_FOLD);
+    return rb_attr_get(mReadline, completion_case_fold);
 }
 
 static char **
@@ -126,11 +127,11 @@ readline_attempted_completion_function(text, start, end)
     int case_fold;
     int i, matches;
 
-    proc = rb_iv_get(mReadline, COMPLETION_PROC);
+    proc = rb_attr_get(mReadline, completion_proc);
     if (NIL_P(proc))
 	return NULL;
     rl_attempted_completion_over = 1;
-    case_fold = RTEST(rb_iv_get(mReadline, COMPLETION_CASE_FOLD));
+    case_fold = RTEST(rb_attr_get(mReadline, completion_case_fold));
     ary = rb_funcall(proc, rb_intern("call"), 1, rb_tainted_str_new2(text));
     if (TYPE(ary) != T_ARRAY)
 	ary = rb_Array(ary);
@@ -696,6 +697,9 @@ Init_readline()
     rl_readline_name = "Ruby";
 
     using_history();
+
+    completion_proc = rb_intern(COMPLETION_PROC);
+    completion_case_fold = rb_intern(COMPLETION_CASE_FOLD);
 
     mReadline = rb_define_module("Readline");
     rb_define_module_function(mReadline, "readline",
