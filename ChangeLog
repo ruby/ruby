@@ -1,3 +1,9 @@
+Wed Dec 31 11:17:37 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Fix problem when
+	  a public method was aliased, but the alias is then
+	  made private, and hence doesn't appear in RDoc output.
+
 Wed Dec 31 01:33:05 2003  Dave Thomas  <dave@pragprog.com>
 
 	* array.c, error.c, eval.c, io.c, prec.c, range.c, re.c,
