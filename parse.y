@@ -137,6 +137,7 @@ static NODE *new_evstr();
 static NODE *call_op();
 static int in_defined = 0;
 
+static NODE *negate_lit();
 static NODE *ret_args();
 static NODE *arg_blk_pass();
 static NODE *new_call();
@@ -306,8 +307,9 @@ static void top_local_setup();
 %left  tLSHFT tRSHFT
 %left  '+' '-'
 %left  '*' '/' '%'
-%right '!' '~' tUPLUS tUMINUS
+%right tUMINUS_NUM
 %right tPOW
+%right '!' '~' tUPLUS tUMINUS
 
 %token tLAST_TOKEN
 
@@ -1022,26 +1024,15 @@ arg		: lhs '=' arg
 		    }
 		| arg tPOW arg
 		    {
-			int need_negate = Qfalse;
-
-			if ($1 && nd_type($1) == NODE_LIT) {
-
-			    switch (TYPE($1->nd_lit)) {
-			      case T_FIXNUM:
-			      case T_FLOAT:
-			      case T_BIGNUM:
-				if (RTEST(rb_funcall($1->nd_lit,'<',1,INT2FIX(0)))) {
-				    $1->nd_lit = rb_funcall($1->nd_lit,rb_intern("-@"),0,0);
-				    need_negate = Qtrue;
-				}
-			      default:
-				break;
-			    }
-			}
 			$$ = call_op($1, tPOW, 1, $3);
-			if (need_negate) {
-			    $$ = call_op($$, tUMINUS, 0, 0);
-			}
+		    }
+		| tUMINUS_NUM tINTEGER tPOW arg
+		    {
+			$$ = call_op(call_op($2, tPOW, 1, $4), tUMINUS);
+		    }
+		| tUMINUS_NUM tFLOAT tPOW arg
+		    {
+			$$ = call_op(call_op($2, tPOW, 1, $4), tUMINUS);
 		    }
 		| tUPLUS arg
 		    {
@@ -1054,15 +1045,7 @@ arg		: lhs '=' arg
 		    }
 		| tUMINUS arg
 		    {
-			if ($2 && nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
-			    long i = FIX2LONG($2->nd_lit);
-
-			    $2->nd_lit = LONG2NUM(-i);
-			    $$ = $2;
-			}
-			else {
-			    $$ = call_op($2, tUMINUS, 0, 0);
-			}
+			$$ = call_op($2, tUMINUS, 0, 0);
 		    }
 		| arg '|' arg
 		    {
@@ -2096,6 +2079,14 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 
 numeric		: tINTEGER
 		| tFLOAT
+		| tUMINUS_NUM tINTEGER	       %prec tLOWEST
+		    {
+			$$ = negate_lit($2);
+		    }
+		| tUMINUS_NUM tFLOAT	       %prec tLOWEST
+		    {
+			$$ = negate_lit($2);
+		    }
 		;
 
 variable	: tIDENTIFIER
@@ -3654,8 +3645,12 @@ yylex()
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    if (ISDIGIT(c)) {
+#if 0
 		c = '-';
 		goto start_num;
+#else
+		return tUMINUS_NUM;
+#endif
 	    }
 	    return tUMINUS;
 	}
@@ -5264,6 +5259,26 @@ ret_args(node)
     }
     if (node && nd_type(node) == NODE_RESTARY) {
 	nd_set_type(node, NODE_REXPAND);
+    }
+    return node;
+}
+
+static NODE*
+negate_lit(node)
+    NODE *node;
+{
+    switch (TYPE(node->nd_lit)) {
+      case T_FIXNUM:
+	node->nd_lit = LONG2FIX(-FIX2LONG(node->nd_lit));
+	break;
+      case T_BIGNUM:
+	node->nd_lit = rb_funcall(node->nd_lit,tUMINUS,0,0);
+	break;
+      case T_FLOAT:
+	RFLOAT(node->nd_lit)->value = -RFLOAT(node->nd_lit)->value;
+	break;
+      default:
+	break;
     }
     return node;
 }

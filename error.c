@@ -479,9 +479,12 @@ set_syserr(n, name)
     VALUE error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
-	error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);;
+	error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
 	rb_define_const(error, "Errno", INT2NUM(n));
 	st_add_direct(syserr_tbl, n, error);
+    }
+    else {
+	rb_define_const(rb_mErrno, name, error);
     }
     return error;
 }

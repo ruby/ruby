@@ -740,7 +740,7 @@ is_in_list(c, b)
     unsigned long c;
     const unsigned char *b;
 {
-  return is_in_list_sbc(c, b) || is_in_list_mbc(c, b);
+  return is_in_list_sbc(c, b) || (current_mbctype ? is_in_list_mbc(c, b) : 0);
 }
 
 static void
@@ -1689,7 +1689,7 @@ re_compile_pattern(pattern, size, bufp)
 	  SET_LIST_BIT(c);
 	  had_num_literal = 0;
 	}
-	else
+	else 
 	  set_list_bits(c, c, b);
 	had_mbchar = 0;
       }
@@ -3838,16 +3838,16 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	      MBC2WC(c, d);
 	      not = is_in_list_mbc(c, p);
 	      if (!not) {
-		part = not = is_in_list_sbc(cc, p);
+		part = not = is_in_list(cc, p);
 	      }
 	    } else {
-	      not = is_in_list_sbc(c, p);
+	      not = is_in_list(c, p);
 	    }
 	  }
 	  else {
 	    if (TRANSLATE_P())
 	      c = (unsigned char)translate[c];
-	    not = is_in_list_sbc(c, p);
+	    not = is_in_list(c, p);
 	  }
 
 	  if (*(p - 1) == (unsigned char)charset_not) {

@@ -236,11 +236,12 @@ time_arg(argc, argv, tm, usec)
     struct tm *tm;
     time_t *usec;
 {
-    VALUE v[7];
+    VALUE v[8];
     int i;
     long year;
 
     MEMZERO(tm, struct tm, 1);
+    *usec = 0;
     if (argc == 10) {
 	v[0] = argv[5];
 	v[1] = argv[4];
@@ -248,12 +249,13 @@ time_arg(argc, argv, tm, usec)
 	v[3] = argv[2];
 	v[4] = argv[1];
 	v[5] = argv[0];
-	*usec = 0;
 	tm->tm_isdst = RTEST(argv[8]) ? 1 : 0;
     }
     else {
-	rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
-	*usec = NIL_P(v[6]) ? 0 : obj2long(v[6]);
+	rb_scan_args(argc, argv, "17", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6],&v[7]);
+	/* v[6] may be usec or zone (parsedate) */
+	/* v[7] is wday (parsedate; ignored) */
+	tm->tm_wday = -1;
 	tm->tm_isdst = -1;
     }
 
@@ -275,25 +277,28 @@ time_arg(argc, argv, tm, usec)
     if (NIL_P(v[1])) {
 	tm->tm_mon = 0;
     }
-    else if (TYPE(v[1]) == T_STRING) {
-	tm->tm_mon = -1;
-	for (i=0; i<12; i++) {
-	    if (RSTRING(v[1])->len == 3 &&
-		strcasecmp(months[i], RSTRING(v[1])->ptr) == 0) {
-		tm->tm_mon = i;
-		break;
-	    }
-	}
-	if (tm->tm_mon == -1) {
-	    char c = RSTRING(v[1])->ptr[0];
-
-	    if ('0' <= c && c <= '9') {
-		tm->tm_mon = obj2long(v[1])-1;
-	    }
-	}
-    }
     else {
-	tm->tm_mon = obj2long(v[1]) - 1;
+	VALUE s = rb_check_string_type(v[1]);
+	if (!NIL_P(s)) {
+	    tm->tm_mon = -1;
+	    for (i=0; i<12; i++) {
+		if (RSTRING(s)->len == 3 &&
+		    strcasecmp(months[i], RSTRING(v[1])->ptr) == 0) {
+		    tm->tm_mon = i;
+		    break;
+		}
+	    }
+	    if (tm->tm_mon == -1) {
+		char c = RSTRING(s)->ptr[0];
+
+		if ('0' <= c && c <= '9') {
+		    tm->tm_mon = obj2long(s)-1;
+		}
+	    }
+	}
+	else {
+	    tm->tm_mon = obj2long(v[1])-1;
+	}
     }
     if (NIL_P(v[2])) {
 	tm->tm_mday = 1;
@@ -304,6 +309,14 @@ time_arg(argc, argv, tm, usec)
     tm->tm_hour = NIL_P(v[3])?0:obj2long(v[3]);
     tm->tm_min  = NIL_P(v[4])?0:obj2long(v[4]);
     tm->tm_sec  = NIL_P(v[5])?0:obj2long(v[5]);
+    if (!NIL_P(v[6])) {
+	if (argc == 8) {
+	    /* v[6] is timezone, but ignored */
+	}
+	else {
+	    *usec = obj2long(v[6]);
+	}
+    }
 
     /* value validation */
     if (
