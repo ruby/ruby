@@ -1,3 +1,9 @@
+Tue Feb 24 13:22:21 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/rdoc.rb (RDoc::RDoc::normalized_file_list): Attempt to get better
+	  heuristics on which files to include and exclude. Now only include
+	  non-standard files if they are explicitly named in ARGV.
+
 Tue Feb 24 07:23:30 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb: Deal with :stopdoc: when
