@@ -1,3 +1,10 @@
+Sun Nov 18 19:37:55 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y: needless conditional.
+
+	* parse.y (parse_regx): parse error at unterminated regex /#{.
+	  (ruby-bugs-ja:PR#142)
+
 Tue Nov 13 19:50:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: do not override CC if set.

@@ -683,9 +683,7 @@ arg		: lhs '=' arg
 			    }
 			    else {
 				$$ = $<node>3;
-				if ($$) {
-				    $$->nd_value = call_op(gettable($1),$2,1,$4);
-				}
+				$$->nd_value = call_op(gettable($1),$2,1,$4);
 			    }
 			    fixpos($$, $4);
 			}
@@ -2349,7 +2347,7 @@ parse_regx(term, paren)
 	switch (c) {
 	  case '#':
 	    list = str_extend(list, term);
-	    if (list == (NODE*)-1) return 0;
+	    if (list == (NODE*)-1) goto unterminated;
 	    continue;
 
 	  case '\\':
