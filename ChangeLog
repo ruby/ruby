@@ -1,3 +1,8 @@
+Tue Oct 16 13:18:47 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* object.c (rb_mod_initialize): optional block with
+	  Module.new. [new] (from 2001-10-10)
+
 Tue Oct 16 00:07:06 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yylex): disallow alpha-numeric and mbchar for
