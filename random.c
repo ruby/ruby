@@ -216,7 +216,7 @@ rand_init(vseed)
                    rb_obj_classname(vseed));
     }
     len = (len + 3) / 4; /* number of 32bit words */
-    buf = ALLOC_N(long, len); /* allocate longs for init_by_array */
+    buf = ALLOC_N(unsigned long, len); /* allocate longs for init_by_array */
     memset(buf, 0, len * sizeof(long));
     if (FIXNUM_P(seed)) {
         buf[0] = FIX2ULONG(seed) & 0xffffffff;
