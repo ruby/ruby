@@ -199,7 +199,7 @@ class Date
     def once(*ids)
       for id in ids
 	module_eval <<-"end;"
-	  alias_method :__#{id.to_i}__, #{id}
+	  alias_method :__#{id.to_i}__, #{id.inspect}
 	  def #{id.id2name}(*args, &block)
 	    def self.#{id.id2name}(*args, &block); @__#{id.to_i}__ end
 	    @__#{id.to_i}__ = __#{id.to_i}__(*args, &block)
