@@ -3271,6 +3271,8 @@ delete_slaves(ip)
     char *slave_name;
     int i, len;
 
+    DUMP2("delete slaves of ip(%lx)", ip);
+
     Tcl_Preserve(ip);
 
     if (Tcl_Eval(ip, "info slaves") == TCL_ERROR) {
@@ -3339,7 +3341,10 @@ ip_free(ptr)
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
 
+	DUMP2("IP ref_count = %d", ptr->ref_count);
+
 	if (!Tcl_InterpDeleted(ptr->ip)) {
+	    DUMP2("IP(%lx) is not deleted", ptr->ip);
 	    /* Tcl_Preserve(ptr->ip); */
 	    rbtk_preserve_ip(ptr);
 
@@ -3369,6 +3374,7 @@ ip_free(ptr)
 	}
 
 	rbtk_release_ip(ptr);
+	DUMP2("IP ref_count = %d", ptr->ref_count);
 
 	free(ptr);
 
@@ -3418,7 +3424,8 @@ ip_init(argc, argv, self)
 	rb_raise(rb_eRuntimeError, "fail to create a new Tk interpreter");
     }
 
-    rbtk_preserve_ip((ClientData)ptr->ip);
+    rbtk_preserve_ip(ptr);
+    DUMP2("IP ref_count = %d", ptr->ref_count);
     current_interp = ptr->ip;
 
     ptr->has_orig_exit 

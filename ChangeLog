@@ -1,3 +1,14 @@
+Thu Sep 30 00:50:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_init): bug fix
+
+	* ext/tk/tkutil.c (get_eval_string_core): accept a Regexp object
+
+	* ext/tk/lib/multi-tk.rb: fix bug on 'exit' operation
+
+	* ext/tk/lib/tk/text.rb: 'tksearch' accepts a Regexp object as a 
+	  matting pattern argument
+
 Wed Sep 29 10:58:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (sort_by_i): internally used object must not be changed

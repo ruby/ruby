@@ -31,6 +31,7 @@ static ID ID_path;
 static ID ID_at_path;
 static ID ID_to_eval;
 static ID ID_to_s;
+static ID ID_source;
 static ID ID_downcase;
 static ID ID_install_cmd;
 static ID ID_merge_tklist;
@@ -681,6 +682,9 @@ get_eval_string_core(obj, enc_flag, self)
     case T_NIL:
 	return rb_str_new2("");
 
+    case T_REGEXP:
+	return rb_funcall(obj, ID_source, 0, 0);
+
     default:
 	if (rb_obj_is_kind_of(obj, cTkObject)) {
 	    /* return rb_str_new3(rb_funcall(obj, ID_path, 0, 0)); */
@@ -1252,6 +1256,7 @@ Init_tkutil()
     ID_at_path = rb_intern("@path");
     ID_to_eval = rb_intern("to_eval");
     ID_to_s = rb_intern("to_s");
+    ID_source = rb_intern("source");
     ID_downcase = rb_intern("downcase");
     ID_install_cmd = rb_intern("install_cmd");
     ID_merge_tklist = rb_intern("_merge_tklist");

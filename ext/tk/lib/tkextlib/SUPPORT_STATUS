@@ -104,8 +104,10 @@ Tkgeomap    http://tkgeomap.sourceforge.net/index.html
 ===< not determined to supprt or not >========================================
 
 BLT         http://sourceforge.net/projects/blt
+                * see tcltk-ext library on RAA (http://raa.ruby-lang.org/)
 
 Tix         http://tixlibrary.sourceforge.net/
+                * see tcltk-ext library on RAA (http://raa.ruby-lang.org/)
 
 TkZinc      http://www.tkzinc.org/
 
