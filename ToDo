@@ -42,6 +42,7 @@ Standard Libraries
 - Dir.glob(pat){|f|...}
 - sprintf/printf's $ to specify argument order
 - Dir.glob("**/*.c") ala zsh
+* SyntaxError and NameError should not be subclasses of StandardError, maybe.
 * debugger for thread programming
 * Struct::new([name,]member,...) ??
 * String#scanf(?)

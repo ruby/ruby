@@ -735,7 +735,7 @@ r_object(arg)
 		VALUE value = r_object(arg);
 		rb_hash_aset(v, key, value);
 	    }
-	    if (type = TYPE_HASH_DEF) {
+	    if (type == TYPE_HASH_DEF) {
 		RHASH(v)->ifnone = r_object(arg);
 	    }
 	    return v;

@@ -266,11 +266,12 @@ process_sflag()
 
 	n = RARRAY(rb_argv)->len;
 	args = RARRAY(rb_argv)->ptr;
-	while (n--) {
-	    char *s = STR2CSTR(*args);
+	while (n > 0) {
+	    char *s = STR2CSTR(*args++);
 	    char *p;
 
-	    if (s[0] != '-') continue;
+	    if (s[0] != '-') break;
+	    n--;
 	    if (s[1] == '-' && s[2] == '\0') break;
 
 	    s[0] = '$';

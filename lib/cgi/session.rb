@@ -1,5 +1,5 @@
 
-require 'CGI'
+require 'cgi'
 require 'final'
 
 class CGI

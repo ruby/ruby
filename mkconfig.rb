@@ -75,15 +75,21 @@ end
 print v_fast, v_others
 print <<EOS
   CONFIG["compile_dir"] = "#{Dir.pwd}"
-  CONFIG.each_value do |val|
+  MAKEFILE_CONFIG = {}
+  CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
+  def Config::expand(val)
     val.gsub!(/\\$\\(([^()]+)\\)/) do |var|
       key = $1
       if CONFIG.key? key
-        "\#{CONFIG[\\\"\#{key}\\\"]}"
+        "\#{Config::expand(CONFIG[\\\"\#{key}\\\"])}"
       else
 	var
       end
     end
+    val
+  end
+  CONFIG.each_value do |val|
+    Config::expand(val)
   end
 end
 EOS
