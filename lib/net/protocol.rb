@@ -601,7 +601,7 @@ module Net
     BLOCK_SIZE = 1024 * 2
 
     def rbuf_fill
-      unless IO.select [@socket], nil, nil, @read_timeout then
+      until IO.select [@socket], nil, nil, @read_timeout do
         on_read_timeout
       end
       @rbuf << @socket.sysread(BLOCK_SIZE)
