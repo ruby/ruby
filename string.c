@@ -2092,6 +2092,7 @@ rb_str_capitalize_bang(str)
     int modify = 0;
 
     rb_str_modify(str);
+    if (RSTRING(str)->len == 0 || !RSTRING(str)->ptr) return Qnil;
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     if (ISLOWER(*s)) {
 	*s = toupper(*s);
