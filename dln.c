@@ -1229,11 +1229,7 @@ dln_load(file)
     /* Load the file as an object one */
     init_funcname(buf, file);
 
-#ifdef __CYGWIN32__
-    cygwin32_conv_to_win32_path(file, winfile);
-#else
     strcpy(winfile, file);
-#endif
 
     /* Load file */
     if ((handle =
@@ -1241,13 +1237,6 @@ dln_load(file)
         printf("LoadLibraryExA: %s\n", winfile);
 	goto failed;
     }
-
-#ifdef __CYGWIN32__
-    init_fct = (void(*)())GetProcAddress(handle, "impure_setup");
-
-    if (init_fct)
-	init_fct(_impure_ptr);
-#endif
 
     if ((init_fct = (void(*)())GetProcAddress(handle, buf)) == NULL) {
         printf("GetProcAddress %s\n", buf);
