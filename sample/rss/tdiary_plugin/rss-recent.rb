@@ -15,13 +15,15 @@ require "rss/rss"
 
 RSS_RECENT_FIELD_SEPARATOR = "\0"
 RSS_RECENT_ENTRY_SEPARATOR = "\1"
-RSS_RECENT_VERSION = "0.0.4"
+RSS_RECENT_VERSION = "0.0.5"
 RSS_RECENT_HTTP_HEADER = {
 	"User-Agent" => "tDiary RSS recent plugin version #{RSS_RECENT_VERSION}. " <<
 	"Using RSS parser version is #{::RSS::VERSION}.",
 }
 
 def rss_recent(url, max=5, cache_time=3600)
+	url.untaint
+
 	cache_file = "#{@cache_path}/rss-recent.#{CGI.escape(url)}"
 
 	rss_recent_cache_rss(url, cache_file, cache_time.to_i)
@@ -86,7 +88,7 @@ def rss_recent_cache_rss(url, cache_file, cache_time)
 
 			# pre processing
 			begin
-				rss.output_encoding = charset
+				rss.output_encoding = @conf.charset || charset
 			rescue ::RSS::UnknownConversionMethodError
 			end
 
