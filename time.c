@@ -26,18 +26,11 @@ struct timeval {
 #endif
 #endif /* NT */
 
-#ifdef HAVE_SYS_TIMES_H
-#include <sys/times.h>
-#endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
 VALUE rb_cTime;
-#if defined(HAVE_TIMES) || defined(NT)
-static VALUE S_Tms;
-#endif
 
 struct time_object {
     struct timeval tv;
@@ -953,25 +946,8 @@ static VALUE
 time_s_times(obj)
     VALUE obj;
 {
-#if defined(HAVE_TIMES) && !defined(__CHECKER__)
-#ifndef HZ
-# ifdef CLK_TCK
-#   define HZ CLK_TCK
-# else
-#   define HZ 60
-# endif
-#endif /* HZ */
-    struct tms buf;
-
-    if (times(&buf) == -1) rb_sys_fail(0);
-    return rb_struct_new(S_Tms,
-			 rb_float_new((double)buf.tms_utime / HZ),
-			 rb_float_new((double)buf.tms_stime / HZ),
-			 rb_float_new((double)buf.tms_cutime / HZ),
-			 rb_float_new((double)buf.tms_cstime / HZ));
-#else
-    rb_notimplement();
-#endif
+    rb_warn("obsolete method Time::times; use Process::times");
+    return rb_proc_times(obj);
 }
 
 static VALUE
@@ -1112,10 +1088,6 @@ Init_Time()
     rb_define_method(rb_cTime, "usec", time_usec, 0);
 
     rb_define_method(rb_cTime, "strftime", time_strftime, 1);
-
-#if defined(HAVE_TIMES) || defined(NT)
-    S_Tms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", 0);
-#endif
 
     /* methods for marshaling */
     rb_define_method(rb_cTime, "_dump", time_dump, -1);

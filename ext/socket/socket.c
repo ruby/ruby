@@ -895,16 +895,11 @@ tcp_s_open(argc, argv, class)
 			      &local_host, &local_serv);
 
     Check_SafeStr(remote_host);
-
   
     if (!NIL_P(local_host)) {
 	Check_SafeStr(local_host);
     }
 
-    if (NIL_P(local_serv)) {
-	local_serv = INT2NUM(0);
-    }
-      
     return open_inet(class, remote_host, remote_serv,
 		     local_host, local_serv, INET_CLIENT);
 }

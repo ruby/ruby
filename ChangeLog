@@ -1,3 +1,16 @@
+Fri Feb 16 01:44:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (set_outfile): f should be the FILE* from the assigning value.
+
+	* ext/socket/socket.c (tcp_s_open): should not give default value
+	  to local_host.
+
+	* time.c (time_s_times): move to Process::times.
+
+	* file.c (rb_file_s_lchmod): new method File::lchmod.
+
+	* file.c (rb_file_s_lchown): new method File::lchown.
+
 Thu Feb 15 11:33:49 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/cgi/session.rb (close): fixed reversed condition.
@@ -3271,7 +3284,7 @@ Sat Apr  1 22:50:28 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Sat Apr  1 21:30:53 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
-	* io.c(rb_io_printf, rb_f_printf): should use rb_io_write.
+	* io.c (rb_io_printf, rb_f_printf): should use rb_io_write.
 
 Sat Apr  1 00:16:05 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

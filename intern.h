@@ -260,6 +260,7 @@ void rb_lastline_set _((VALUE));
 /* process.c */
 int rb_proc_exec _((const char*));
 void rb_syswait _((int));
+VALUE rb_proc_times _((VALUE));
 /* range.c */
 VALUE rb_range_new _((VALUE, VALUE, int));
 VALUE rb_range_beg_len _((VALUE, long*, long*, long, int));

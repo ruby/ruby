@@ -951,6 +951,42 @@ rb_file_chmod(obj, vmode)
     return INT2FIX(0);
 }
 
+#if defined(HAVE_LCHMOD)
+static void
+lchmod_internal(path, mode)
+    const char *path;
+    int mode;
+{
+    if (lchmod(path, mode) == -1)
+	rb_sys_fail(path);
+}
+
+static VALUE
+rb_file_s_lchmod(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE vmode;
+    VALUE rest;
+    int mode, n;
+
+    rb_secure(2);
+    rb_scan_args(argc, argv, "1*", &vmode, &rest);
+    mode = NUM2INT(vmode);
+
+    n = apply2files(lchmod_internal, rest, mode);
+    return INT2FIX(n);
+}
+#else
+static VALUE
+rb_file_s_lchmod(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    rb_notimplement();
+}
+#endif
+
 struct chown_args {
     int owner, group;
 };
@@ -1011,6 +1047,53 @@ rb_file_chown(obj, owner, group)
 
     return INT2FIX(0);
 }
+
+#if defined(HAVE_LCHOWN)
+static void
+lchown_internal(path, args)
+    const char *path;
+    struct chown_args *args;
+{
+    if (lchown(path, args->owner, args->group) < 0)
+	rb_sys_fail(path);
+}
+
+static VALUE
+rb_file_s_lchown(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE o, g, rest;
+    struct chown_args arg;
+    int n;
+
+    rb_secure(2);
+    rb_scan_args(argc, argv, "2*", &o, &g, &rest);
+    if (NIL_P(o)) {
+	arg.owner = -1;
+    }
+    else {
+	arg.owner = NUM2INT(o);
+    }
+    if (NIL_P(g)) {
+	arg.group = -1;
+    }
+    else {
+	arg.group = NUM2INT(g);
+    }
+
+    n = apply2files(lchown_internal, rest, &arg);
+    return INT2FIX(n);
+}
+#else
+static VALUE
+rb_file_s_lchown(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    rb_notimplement();
+}
+#endif
 
 struct timeval rb_time_timeval();
 
@@ -2206,6 +2289,8 @@ Init_File()
     rb_define_singleton_method(rb_cFile, "utime", rb_file_s_utime, -1);
     rb_define_singleton_method(rb_cFile, "chmod", rb_file_s_chmod, -1);
     rb_define_singleton_method(rb_cFile, "chown", rb_file_s_chown, -1);
+    rb_define_singleton_method(rb_cFile, "lchmod", rb_file_s_lchmod, -1);
+    rb_define_singleton_method(rb_cFile, "lchown", rb_file_s_lchown, -1);
 
     rb_define_singleton_method(rb_cFile, "link", rb_file_s_link, 2);
     rb_define_singleton_method(rb_cFile, "symlink", rb_file_s_symlink, 2);

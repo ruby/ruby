@@ -49,6 +49,14 @@ struct timeval rb_time_interval _((VALUE));
 #undef HAVE_GETPGRP
 #endif
 
+#ifdef HAVE_SYS_TIMES_H
+#include <sys/times.h>
+#endif
+
+#if defined(HAVE_TIMES) || defined(NT)
+static VALUE S_Tms;
+#endif
+
 static VALUE
 get_pid()
 {
@@ -108,7 +116,16 @@ pst_bitand(st1, st2)
 }
 
 static VALUE
-pst_ifstopped(st)
+pst_rshift(st1, st2)
+    VALUE st1, st2;
+{
+    int status = NUM2INT(st1) >> NUM2INT(st2);
+
+    return INT2NUM(status);
+}
+
+static VALUE
+pst_wifstopped(st)
     VALUE st;
 {
     int status = NUM2INT(st);
@@ -120,7 +137,7 @@ pst_ifstopped(st)
 }
 
 static VALUE
-pst_stopsig(st)
+pst_wstopsig(st)
     VALUE st;
 {
     int status = NUM2INT(st);
@@ -129,7 +146,7 @@ pst_stopsig(st)
 }
 
 static VALUE
-pst_ifsignaled(st)
+pst_wifsignaled(st)
     VALUE st;
 {
     int status = NUM2INT(st);
@@ -141,7 +158,7 @@ pst_ifsignaled(st)
 }
 
 static VALUE
-pst_termsig(st)
+pst_wtermsig(st)
     VALUE st;
 {
     int status = NUM2INT(st);
@@ -150,7 +167,7 @@ pst_termsig(st)
 }
 
 static VALUE
-pst_ifexited(st)
+pst_wifexited(st)
     VALUE st;
 {
     int status = NUM2INT(st);
@@ -162,7 +179,7 @@ pst_ifexited(st)
 }
 
 static VALUE
-pst_exitstatus(st)
+pst_wexitstatus(st)
     VALUE st;
 {
     int status = NUM2INT(st);
@@ -171,7 +188,7 @@ pst_exitstatus(st)
 }
 
 static VALUE
-pst_coredump(st)
+pst_wcoredump(st)
     VALUE st;
 {
 #ifdef WCOREDUMP
@@ -1254,6 +1271,31 @@ proc_setegid(obj, egid)
     return egid;
 }
 
+VALUE
+rb_proc_times(obj)
+    VALUE obj;
+{
+#if defined(HAVE_TIMES) && !defined(__CHECKER__)
+#ifndef HZ
+# ifdef CLK_TCK
+#   define HZ CLK_TCK
+# else
+#   define HZ 60
+# endif
+#endif /* HZ */
+    struct tms buf;
+
+    if (times(&buf) == -1) rb_sys_fail(0);
+    return rb_struct_new(S_Tms,
+			 rb_float_new((double)buf.tms_utime / HZ),
+			 rb_float_new((double)buf.tms_stime / HZ),
+			 rb_float_new((double)buf.tms_cutime / HZ),
+			 rb_float_new((double)buf.tms_cstime / HZ));
+#else
+    rb_notimplement();
+#endif
+}
+
 VALUE rb_mProcess;
 
 void
@@ -1297,18 +1339,19 @@ Init_process()
 
     rb_define_method(rb_cProcStatus, "==", pst_equal, 1);
     rb_define_method(rb_cProcStatus, "&", pst_bitand, 1);
+    rb_define_method(rb_cProcStatus, ">>", pst_rshift, 1);
     rb_define_method(rb_cProcStatus, "to_i", pst_to_i, 0);
     rb_define_method(rb_cProcStatus, "to_int", pst_to_i, 0);
     rb_define_method(rb_cProcStatus, "to_s", pst_to_s, 0);
     rb_define_method(rb_cProcStatus, "inspect", pst_to_s, 0);
 
-    rb_define_method(rb_cProcStatus, "ifstopped?", pst_ifstopped, 0);
-    rb_define_method(rb_cProcStatus, "stopsig", pst_stopsig, 0);
-    rb_define_method(rb_cProcStatus, "ifsignaled?", pst_ifsignaled, 0);
-    rb_define_method(rb_cProcStatus, "termsig", pst_termsig, 0);
-    rb_define_method(rb_cProcStatus, "ifexited?", pst_ifexited, 0);
-    rb_define_method(rb_cProcStatus, "exitstatus", pst_exitstatus, 0);
-    rb_define_method(rb_cProcStatus, "coredump?", pst_coredump, 0);
+    rb_define_method(rb_cProcStatus, "stopped?", pst_wifstopped, 0);
+    rb_define_method(rb_cProcStatus, "stopsig", pst_wstopsig, 0);
+    rb_define_method(rb_cProcStatus, "signaled?", pst_wifsignaled, 0);
+    rb_define_method(rb_cProcStatus, "termsig", pst_wtermsig, 0);
+    rb_define_method(rb_cProcStatus, "exited?", pst_wifexited, 0);
+    rb_define_method(rb_cProcStatus, "exitstatus", pst_wexitstatus, 0);
+    rb_define_method(rb_cProcStatus, "coredump?", pst_wcoredump, 0);
 
     rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
     rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);
@@ -1338,4 +1381,10 @@ Init_process()
     rb_define_module_function(rb_mProcess, "euid=", proc_seteuid, 1);
     rb_define_module_function(rb_mProcess, "egid", proc_getegid, 0);
     rb_define_module_function(rb_mProcess, "egid=", proc_setegid, 1);
+
+    rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
+
+#if defined(HAVE_TIMES) || defined(NT)
+    S_Tms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", 0);
+#endif
 }

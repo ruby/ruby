@@ -248,7 +248,7 @@ AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd chroot\
 	      truncate chsize times utimes fcntl lockf lstat symlink readlink\
 	      setitimer setruid seteuid setreuid setresuid \
-	      setrgid setegid setregid setresgid pause\
+	      setrgid setegid setregid setresgid pause lchown lchmod\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority getrlimit\
 	      dlopen sigprocmask sigaction _setjmp setsid telldir seekdir fchmod)
 AC_STRUCT_TIMEZONE
