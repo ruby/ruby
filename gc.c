@@ -52,6 +52,16 @@ void *alloca ();
 # endif
 #endif
 
+#ifndef GC_MALLOC_LIMIT
+#if defined(MSDOS) || defined(__human68k__)
+#define GC_MALLOC_LIMIT 200000
+#else
+#define GC_MALLOC_LIMIT 8000000
+#endif
+#endif
+
+static unsigned long malloc_memories = 0;
+static unsigned long malloc_limit = GC_MALLOC_LIMIT;
 static void run_final();
 static VALUE nomem_error;
 
@@ -78,7 +88,11 @@ ruby_xmalloc(size)
 	rb_raise(rb_eNoMemError, "negative allocation size (or too big)");
     }
     if (size == 0) size = 1;
+    malloc_memories += size;
 
+    if (malloc_memories > malloc_limit) {
+	rb_gc();
+    }
     RUBY_CRITICAL(mem = malloc(size));
     if (!mem) {
 	rb_gc();
@@ -115,6 +129,7 @@ ruby_xrealloc(ptr, size)
     }
     if (!ptr) return xmalloc(size);
     if (size == 0) size = 1;
+    malloc_memories += size;
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
 	rb_gc();
@@ -843,12 +858,22 @@ rb_gc_mark_children(ptr)
 
 static void obj_free _((VALUE));
 
+static unsigned long
+size_of_table(tbl)
+    struct st_table *tbl;
+{
+    if (!tbl) return 0;
+    return tbl->num_bins * sizeof(struct st_table_entry *) +
+	tbl->num_entries * 4 * sizeof(VALUE);
+}
+
 static void
 gc_sweep()
 {
     RVALUE *p, *pend, *final_list;
     int freed = 0;
     int i, j;
+    unsigned long live = 0;
 
     if (ruby_in_compile && ruby_parser_stack_on_heap()) {
 	/* should not reclaim nodes during compilation
@@ -898,6 +923,32 @@ gc_sweep()
 	    }
 	    else {
 		RBASIC(p)->flags &= ~FL_MARK;
+		live += sizeof(VALUE);
+		switch (TYPE(p)) {
+		  case T_OBJECT:
+		    live += size_of_table(ROBJECT(p)->iv_tbl);
+		    break;
+		  case T_CLASS:
+		  case T_ICLASS:
+		    live += size_of_table(RCLASS(p)->iv_tbl);
+		    live += size_of_table(RCLASS(p)->m_tbl);
+		    break;
+		  case T_STRING:
+		    live += RSTRING(p)->len+1;
+		    break;
+		  case T_ARRAY:
+		    live += RARRAY(p)->len * sizeof(VALUE);
+		    break;
+		  case T_HASH:
+		    live += size_of_table(RHASH(p)->tbl);
+		    break;
+		  case T_BIGNUM:
+		    live += RBIGNUM(p)->len * sizeof(BDIGIT);
+		    break;
+		  case T_STRUCT:
+		    live += RSTRUCT(p)->len * sizeof(VALUE);
+		    break;
+		}
 	    }
 	    p++;
 	}
@@ -914,6 +965,8 @@ gc_sweep()
 	    freed += n;
 	}
     }
+    malloc_limit = live;
+    malloc_memories = 0;
     if (freed < FREE_MIN) {
 	add_heap();
     }

@@ -1,3 +1,11 @@
+Fri Oct 11 00:24:57 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* gc.c (ruby_xmalloc, ruby_xrealloc): restrict total allocation
+	  size according to memories consumed by live objects.
+	  [ruby-dev:18482]
+
+	* gc.c (gc_sweep): estimate how live objects consume memories.
+
 Thu Oct 10 17:26:12 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tcltklib/stubs.c (ruby_tcltk_stubs): fix memory leak.
