@@ -1,3 +1,12 @@
+Thu Jul 31 00:17:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (return_code): obsolete.
+
+	* lib/net/ftp.rb (last_response_code): new method. lastresp is now
+	alias to last_response_code.
+	
+	* lib/net/ftp.rb (last_response): new method.
+
 Wed Jul 30 22:35:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb (dir_config): allow multiple directories separated

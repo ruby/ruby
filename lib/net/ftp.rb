@@ -67,9 +67,6 @@ module Net
     # When +true+, the connection is in passive mode.  Default: false.
     attr_accessor :passive
 
-    # The ASCII code used to separate lines.
-    attr_accessor :return_code
-
     # When +true+, all traffic to and from the server is written
     # to +$stdout+.  Default: +false+.
     attr_accessor :debug_mode
@@ -81,8 +78,12 @@ module Net
     # The server's welcome message.
     attr_reader :welcome
 
+    # The server's last response code.
+    attr_reader :last_response_code
+    alias lastresp last_response_code
+
     # The server's last response.
-    attr_reader :lastresp
+    attr_reader :last_response
     
     #
     # A synonym for +FTP.new+, but with a mandatory host parameter.
@@ -112,7 +113,6 @@ module Net
       super()
       @binary = true
       @passive = false
-      @return_code = "\n"
       @debug_mode = false
       @resume = false
       if host
@@ -121,6 +121,15 @@ module Net
 	  login(user, passwd, acct)
 	end
       end
+    end
+
+    def return_code
+      $stderr.puts("warning: Net::FTP#return_code is obsolete and do nothing")
+      return "\n"
+    end
+
+    def return_code=(s)
+      $stderr.puts("warning: Net::FTP#return_code= is obsolete and do nothing")
     end
 
     def open_socket(host, port)
@@ -181,12 +190,7 @@ module Net
     
     def getline
       line = @sock.readline # if get EOF, raise EOFError
-      if line[-2, 2] == CRLF
-	line = line[0 .. -3]
-      elsif line[-1] == ?\r or
-	  line[-1] == ?\n
-	line = line[0 .. -2]
-      end
+      line.sub!(/(\r\n|\n|\r)\z/n, "")
       if @debug_mode
 	print "get: ", sanitize(line), "\n"
       end
@@ -209,18 +213,17 @@ module Net
     private :getmultiline
     
     def getresp
-      resp = getmultiline
-      @lastresp = resp[0, 3]
-      c = resp[0]
-      case c
-      when ?1, ?2, ?3
-	return resp
-      when ?4
-	raise FTPTempError, resp
-      when ?5
-	raise FTPPermError, resp
+      @last_response = getmultiline
+      @last_response_code = @last_response[0, 3]
+      case @last_response_code
+      when /\A[123]/
+	return @last_response
+      when /\A4/
+	raise FTPTempError, @last_response
+      when /\A5/
+	raise FTPPermError, @last_response
       else
-	raise FTPProtoError, resp
+	raise FTPProtoError, @last_response
       end
     end
     private :getresp
@@ -234,7 +237,7 @@ module Net
     private :voidresp
     
     #
-    # WRITEME or make private
+    # Sends a command and returns the response.
     #
     def sendcmd(cmd)
       synchronize do
@@ -244,7 +247,7 @@ module Net
     end
     
     #
-    # WRITEME or make private
+    # Sends a command and expect a response beginning with '2'.
     #
     def voidcmd(cmd)
       synchronize do
@@ -494,8 +497,7 @@ module Net
       f = open(localfile, "w")
       begin
 	retrlines("RETR " + remotefile) do |line|
-	  line = line + @return_code
-	  f.write(line)
+	  f.puts(line)
 	  yield(line) if block
 	end
       ensure
