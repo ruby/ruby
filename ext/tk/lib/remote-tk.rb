@@ -96,6 +96,8 @@ class RemoteTkIp
 
     @safe_level = [$SAFE]
 
+    @wait_on_mainloop = [true, false]
+
     @cmd_queue = Queue.new
 
 =begin
@@ -403,6 +405,12 @@ class RemoteTkIp
   def do_one_evant(flag = nil)
     fail RuntimeError, 'not support "do_one_event" on the remote interpreter'
   end
+  def mainloop_abort_on_exception
+    fail RuntimeError, 'not support "mainloop_abort_on_exception" on the remote interpreter'
+  end
+  def mainloop_abort_on_exception=(mode)
+    fail RuntimeError, 'not support "mainloop_abort_on_exception=" on the remote interpreter'
+  end
   def set_eventloop_tick(*args)
     fail RuntimeError, 'not support "set_eventloop_tick" on the remote interpreter'
   end
@@ -421,24 +429,24 @@ class RemoteTkIp
   def get_eventloop_weight
     fail RuntimeError, 'not support "get_eventloop_weight" on the remote interpreter'
   end
-  def mainloop_abort_on_exception
-    fail RuntimeError, 'not support "mainloop_abort_on_exception" on the remote interpreter'
-  end
-  def mainloop_abort_on_exception=(*args)
-    fail RuntimeError, 'not support "mainloop_abort_on_exception=" on the remote interpreter'
-  end
 end
 
 class << RemoteTkIp
-  def mainloop
+  def mainloop(*args)
     fail RuntimeError, 'not support "mainloop" on the remote interpreter'
   end
-  def mainloop_watchdog
+  def mainloop_watchdog(*args)
     fail RuntimeError, 'not support "mainloop_watchdog" on the remote interpreter'
   end
   def do_one_evant(flag = nil)
     fail RuntimeError, 'not support "do_one_event" on the remote interpreter'
   end
+  def mainloop_abort_on_exception
+    fail RuntimeError, 'not support "mainloop_abort_on_exception" on the remote interpreter'
+  end
+  def mainloop_abort_on_exception=(mode)
+    fail RuntimeError, 'not support "mainloop_abort_on_exception=" on the remote interpreter'
+  end
   def set_eventloop_tick(*args)
     fail RuntimeError, 'not support "set_eventloop_tick" on the remote interpreter'
   end
@@ -456,11 +464,5 @@ class << RemoteTkIp
   end
   def get_eventloop_weight
     fail RuntimeError, 'not support "get_eventloop_weight" on the remote interpreter'
-  end
-  def mainloop_abort_on_exception
-    fail RuntimeError, 'not support "mainloop_abort_on_exception" on the remote interpreter'
-  end
-  def mainloop_abort_on_exception=(*args)
-    fail RuntimeError, 'not support "mainloop_abort_on_exception=" on the remote interpreter'
   end
 end

@@ -40,8 +40,11 @@ ip.eval_proc{
 }
 
 # setup controller-ip window
-btns.each_with_index{|b, idx|
-  TkButton.new(:command=>proc{ip.eval_proc{b.flash}}, 
+btns.each_with_index{|btn, idx|
+  # The scope of the eval-block of 'eval_proc' method is different from 
+  # the enternal. If you want to pass local values to the eval-block, 
+  # use arguments of eval_proc method. They are passed to block-arguments.
+  TkButton.new(:command=>proc{ip.eval_proc(btn){|b| b.flash}}, 
 	       :text=>"flash button-#{idx}", 
 	       :padx=>10).pack(:padx=>10, :pady=>2)
 }

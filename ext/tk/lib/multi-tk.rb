@@ -106,9 +106,18 @@ class MultiTkIp
   def _check_and_return(thread, exception, wait=0)
     unless thread
       unless exception.kind_of?(MultiTkIp_OK) || safe?
+	msg = "#{exception.class}: #{exception.message}"
 	begin
-	  @interp._eval(@interp._merge_tklist('bgerror', "#{exception.class}: #{exception.message}"))
-	rescue Exception
+	  if @interp.deleted?
+	    warn('Warning: ' + msg)
+	  elsif @interp._eval_without_enc('info command bgerror').size != 0
+	    @interp._eval(@interp._merge_tklist('bgerror', msg))
+	  else
+	    warn('Warning: ' + msg)
+	  end
+	rescue Exception => e
+	    warn('Warning: ' + msg)
+	    warn('Warning: ' + e.message)
 	end
       end
       return nil
@@ -162,6 +171,17 @@ class MultiTkIp
     __getip.safe_level
   end
 
+  def wait_on_mainloop?
+    @wait_on_mainloop[0]
+  end
+  def wait_on_mainloop=(bool)
+    @wait_on_mainloop[0] = bool
+  end
+
+  def running_mainloop?
+    @wait_on_mainloop[1]
+  end
+
   def _destroy_slaves_of_slaveIP(ip)
     unless ip.deleted?
       ip._split_tklist(ip._invoke('interp', 'slaves')).each{|name|
@@ -200,11 +220,188 @@ class MultiTkIp
     end
   end
 
+  def _receiver_eval_proc_core(safe_level, thread, cmd, *args)
+    begin
+      #ret = proc{$SAFE = safe_level; cmd.call(*args)}.call
+      ret = cmd.call(safe_level, *args)
+
+    rescue SystemExit => e
+      # delete IP
+      unless @interp.deleted?
+	@slave_ip_tbl.each{|name, subip| 
+	  _destroy_slaves_of_slaveIP(subip)
+	  begin
+	    subip._eval_without_enc("foreach i [after info] {after cancel $i}")
+	  rescue Exception
+	  end
+=begin
+	  begin
+	    subip._invoke('destroy', '.') unless subip.deleted?
+	  rescue Exception
+	  end
+=end
+	  begin
+	    # safe_base?
+	    @interp._eval_without_enc("::safe::interpConfigure #{name}")
+	    @interp._eval_without_enc("::safe::interpDelete #{name}")
+	  rescue Exception
+	    if subip.respond_to?(:safe_base?) && subip.safe_base? && 
+		!subip.deleted?
+	      # do 'exit' to call the delete_hook procedure
+	      begin
+		subip._eval_without_enc('exit') 
+	      rescue Exception
+	      end
+	    else
+	      begin
+		subip.delete unless subip.deleted?
+	      rescue Exception
+	      end
+	    end
+	  end
+	}
+
+	begin
+	  @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
+	rescue Exception
+	end
+	begin
+	  @interp._invoke('destroy', '.') unless @interp.deleted?
+	rescue Exception
+	end
+	if @safe_base && !@interp.deleted?
+	  # do 'exit' to call the delete_hook procedure
+	  @interp._eval_without_enc('exit')
+	else
+	  @interp.delete unless @interp.deleted?
+	end
+      end
+
+      if e.backtrace[0] =~ /^(.+?):(\d+):in `(exit|exit!|abort)'/
+	_check_and_return(thread, MultiTkIp_OK.new($3 == 'exit'))
+      else
+	_check_and_return(thread, MultiTkIp_OK.new(nil))
+      end
+
+      if master? && !safe? && allow_ruby_exit?
+=begin
+	ObjectSpace.each_object(TclTkIp){|obj|
+	  obj.delete unless obj.deleted?
+	}
+=end
+	exit
+      end
+      # break
+
+    rescue SecurityError => e
+      # in 'exit', 'exit!', and 'abort' : security error --> delete IP
+      if e.backtrace[0] =~ /^(.+?):(\d+):in `(exit|exit!|abort)'/
+	ret = ($3 == 'exit')
+	unless @interp.deleted?
+	  @slave_ip_tbl.each_value{|subip|
+	    _destroy_slaves_of_slaveIP(subip)
+	    begin
+	      subip._eval_without_enc("foreach i [after info] {after cancel $i}")
+	    rescue Exception
+	    end
+=begin
+	    begin
+	      subip._invoke('destroy', '.') unless subip.deleted?
+	    rescue Exception
+	    end
+=end
+	    begin
+	      # safe_base?
+	      @interp._eval_without_enc("::safe::interpConfigure #{name}")
+	      @interp._eval_without_enc("::safe::interpDelete #{name}")
+	    rescue Exception
+	      if subip.respond_to?(:safe_base?) && subip.safe_base? && 
+		  !subip.deleted?
+		# do 'exit' to call the delete_hook procedure
+		begin
+		  subip._eval_without_enc('exit') 
+		rescue Exception
+		end
+	      else
+		begin
+		  subip.delete unless subip.deleted?
+		rescue Exception
+		end
+	      end
+	    end
+	  }
+
+	  begin
+	    @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
+	  rescue Exception
+	  end
+=begin
+	  begin
+	    @interp._invoke('destroy', '.') unless @interp.deleted?
+	  rescue Exception
+	  end
+=end
+	  if @safe_base && !@interp.deleted?
+	    # do 'exit' to call the delete_hook procedure
+	    @interp._eval_without_enc('exit')
+	  else
+	    @interp.delete unless @interp.deleted?
+	  end
+	end
+	_check_and_return(thread, MultiTkIp_OK.new(ret))
+	# break
+
+      else
+	# raise security error
+	_check_and_return(thread, e)
+      end
+
+    rescue Exception => e
+      # raise exception
+      _check_and_return(thread, e)
+
+    else
+      # no exception
+      _check_and_return(thread, MultiTkIp_OK.new(ret))
+    end
+  end
+
+  def _receiver_eval_proc(last_thread, safe_level, thread, cmd, *args)
+    if thread
+      Thread.new{
+	last_thread.join if last_thread
+	unless @interp.deleted?
+	  _receiver_eval_proc_core(safe_level, thread, cmd, *args)
+	end
+      }
+    else
+      Thread.new{
+	unless  @interp.deleted?
+	  _receiver_eval_proc_core(safe_level, thread, cmd, *args)
+	end
+      }
+      last_thread
+    end
+  end
+
+  private :_receiver_eval_proc, :_receiver_eval_proc_core
+
+  def _receiver_mainloop(check_root)
+    Thread.new{
+      while !@interp.deleted?
+	break if @interp._invoke_without_enc('info', 'command', '.').size == 0
+	sleep 0.5
+      end
+    }
+  end
+
   def _create_receiver_and_watchdog(lvl = $SAFE)
     lvl = $SAFE if lvl < $SAFE
 
     # command-procedures receiver
     receiver = Thread.new(lvl){|safe_level|
+      last_thread = nil
+
       loop do
 	break if @interp.deleted?
 	thread, cmd, *args = @cmd_queue.deq
@@ -216,154 +413,18 @@ class MultiTkIp
 	      safe_level = args[0] if safe_level < args[0] 
 	    rescue Exception
 	    end
+	  when 'call_mainloop'
+	    thread = args.shift
+	    _check_and_return(thread, 
+			      MultiTkIp_OK.new(_receiver_mainloop(*args)))
 	  else
 	    # ignore
 	  end
 
 	else
 	  # procedure
-	  begin
-	    #ret = proc{$SAFE = safe_level; cmd.call(*args)}.call
-	    ret = cmd.call(safe_level, *args)
-	  rescue SystemExit => e
-	    # delete IP
-	    unless @interp.deleted?
-	      @slave_ip_tbl.each{|name, subip| 
-		_destroy_slaves_of_slaveIP(subip)
-		begin
-		  subip._eval_without_enc("foreach i [after info] {after cancel $i}")
-		rescue Exception
-		end
-=begin
-		begin
-		  subip._invoke('destroy', '.') unless subip.deleted?
-		rescue Exception
-		end
-=end
-		begin
-		  # safe_base?
-		  @interp._eval_without_enc("::safe::interpConfigure #{name}")
-		  @interp._eval_without_enc("::safe::interpDelete #{name}")
-		rescue Exception
-		  if subip.respond_to?(:safe_base?) && subip.safe_base? && 
-		      !subip.deleted?
-		    # do 'exit' to call the delete_hook procedure
-		    begin
-		      subip._eval_without_enc('exit') 
-		    rescue Exception
-		    end
-		  else
-		    begin
-		      subip.delete unless subip.deleted?
-		    rescue Exception
-		    end
-		  end
-		end
-	      }
-
-	      begin
-		@interp._eval_without_enc("foreach i [after info] {after cancel $i}")
-	      rescue Exception
-	      end
-	      begin
-		@interp._invoke('destroy', '.') unless @interp.deleted?
-	      rescue Exception
-	      end
-	      if @safe_base && !@interp.deleted?
-		# do 'exit' to call the delete_hook procedure
-		@interp._eval_without_enc('exit')
-	      else
-		@interp.delete unless @interp.deleted?
-	      end
-	    end
-
-	    if e.backtrace[0] =~ /^(.+?):(\d+):in `(exit|exit!|abort)'/
-	      _check_and_return(thread, MultiTkIp_OK.new($3 == 'exit'))
-	    else
-	      _check_and_return(thread, MultiTkIp_OK.new(nil))
-	    end
-
-	    if master? && !safe? && allow_ruby_exit?
-=begin
-	      ObjectSpace.each_object(TclTkIp){|obj|
-		obj.delete unless obj.deleted?
-	      }
-=end
-	      exit
-	    end
-	    break
-
-	  rescue SecurityError => e
-	    # in 'exit', 'exit!', and 'abort' : security error --> delete IP
-	    if e.backtrace[0] =~ /^(.+?):(\d+):in `(exit|exit!|abort)'/
-	      ret = ($3 == 'exit')
-	      unless @interp.deleted?
-		@slave_ip_tbl.each_value{|subip|
-		  _destroy_slaves_of_slaveIP(subip)
-		  begin
-		    subip._eval_without_enc("foreach i [after info] {after cancel $i}")
-		  rescue Exception
-		  end
-=begin
-		  begin
-		    subip._invoke('destroy', '.') unless subip.deleted?
-		  rescue Exception
-		  end
-=end
-		  begin
-		    # safe_base?
-		    @interp._eval_without_enc("::safe::interpConfigure #{name}")
-		    @interp._eval_without_enc("::safe::interpDelete #{name}")
-		  rescue Exception
-		    if subip.respond_to?(:safe_base?) && subip.safe_base? && 
-			!subip.deleted?
-		      # do 'exit' to call the delete_hook procedure
-		      begin
-			subip._eval_without_enc('exit') 
-		      rescue Exception
-		      end
-		    else
-		      begin
-			subip.delete unless subip.deleted?
-		      rescue Exception
-		      end
-		    end
-		  end
-		}
-
-		begin
-		  @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
-		rescue Exception
-		end
-=begin
-		begin
-		  @interp._invoke('destroy', '.') unless @interp.deleted?
-		rescue Exception
-		end
-=end
-		if @safe_base && !@interp.deleted?
-		  # do 'exit' to call the delete_hook procedure
-		  @interp._eval_without_enc('exit')
-		else
-		  @interp.delete unless @interp.deleted?
-		end
-	      end
-	      _check_and_return(thread, MultiTkIp_OK.new(ret))
-	      break
-
-	    else
-	      # raise security error
-	      _check_and_return(thread, e)
-	    end
-
-	  rescue Exception => e
-	    # raise exception
-	    _check_and_return(thread, e)
-
-	  else
-	    # no exception
-	    _check_and_return(thread, MultiTkIp_OK.new(ret))
-	  end
+	  last_thread = _receiver_eval_proc(last_thread, safe_level, 
+					    thread, cmd, *args)
 	end
       end
     }
@@ -430,6 +491,8 @@ class MultiTkIp
     @ip_name = nil
 
     @system = Object.new
+
+    @wait_on_mainloop = [true, false]
 
     @threadgroup  = Thread.current.group
 
@@ -848,6 +911,8 @@ class MultiTkIp
 
     @system = Object.new
 
+    @wait_on_mainloop = [true, false]
+
     @threadgroup  = ThreadGroup.new
 
     @cmd_queue = Queue.new
@@ -1231,7 +1296,17 @@ class MultiTkIp
 
     # send cmd to the proc-queue
     unless req_val
-      @cmd_queue.enq([nil, cmd, *args])
+      begin
+	@cmd_queue.enq([nil, cmd, *args])
+      rescue Exception => e
+	# ignore
+	if $DEBUG || true
+	  warn("Warning: " + e.class.inspect + 
+	       ((e.message.length > 0)? ' "' + e.message + '"': '') +  
+	       " on " + self.inspect) 
+	end
+	return e
+      end
       return nil
     end
 
@@ -1289,6 +1364,9 @@ class MultiTkIp
   end
 =end
   def eval_proc(*args)
+    # The scope of the eval-block of 'eval_proc' method is different from 
+    # the enternal. If you want to pass local values to the eval-block, 
+    # use arguments of eval_proc method. They are passed to block-arguments.
     if block_given?
       cmd = Proc.new
     else
@@ -1304,6 +1382,26 @@ class MultiTkIp
   end
   alias call eval_proc
 
+  def bg_eval_proc(*args)
+    if block_given?
+      cmd = Proc.new
+    else
+      unless (cmd = args.shift)
+	fail ArgumentError, "A Proc or Method object is expected for 1st argument"
+      end
+    end
+    Thread.new{
+      eval_proc_core(false, 
+		     proc{|safe, *params| 
+		       $SAFE=safe; Thread.new(*params, &cmd).value
+		     },
+		     *args)
+    }
+  end
+  alias background_eval_proc bg_eval_proc
+  alias bg_call bg_eval_proc
+  alias background_call bg_eval_proc
+
   def eval_string(cmd, *eval_args)
     # cmd string ==> proc
     unless cmd.kind_of?(String)
@@ -1313,6 +1411,20 @@ class MultiTkIp
     eval_proc_core(true, proc{|safe| $SAFE=safe; Kernel.eval(cmd, *eval_args)})
   end
   alias eval_str eval_string
+
+  def bg_eval_string(*args)
+    # cmd string ==> proc
+    unless cmd.kind_of?(String)
+      raise RuntimeError, "A String object is expected for the 'cmd' argument"
+    end
+    Thread.new{
+      eval_proc_core(true, 
+		     proc{|safe| $SAFE=safe; Kernel.eval(cmd, *eval_args)})
+    }
+  end
+  alias background_eval_string bg_eval_string
+  alias bg_eval_str bg_eval_string
+  alias background_eval_str bg_eval_string
 end
 
 class << MultiTkIp
@@ -1582,11 +1694,50 @@ end
 # depend on TclTkIp
 class MultiTkIp
   def mainloop(check_root = true, restart_on_dead = false)
-    return self if self.slave?
+    #return self if self.slave?
+    #return self if self != @@DEFAULT_MASTER
+    if self != @@DEFAULT_MASTER
+      if @wait_on_mainloop[0]
+	begin
+	  @wait_on_mainloop[1] = true
+	  @cmd_queue.enq([@system, 'call_mainloop', 
+			   Thread.current, check_root])
+	  Thread.stop
+	rescue MultiTkIp_OK => ret
+	  # return value
+	  @wait_on_mainloop[1] = false
+	  return ret.value.value
+	rescue SystemExit
+	  # exit IP
+	  warn("Warning: " + $! + " on " + self.inspect) if $DEBUG
+	  @wait_on_mainloop[1] = false
+	  begin
+	    self._eval_without_enc('exit')
+	  rescue Exception
+	  end
+	  self.delete
+	rescue Exception => e
+	  if $DEBUG
+	    warn("Warning: " + e.class.inspect + 
+		 ((e.message.length > 0)? ' "' + e.message + '"': '') +  
+		 " on " + self.inspect) 
+	  end
+	  @wait_on_mainloop[1] = false
+	  return e
+	ensure
+	  @wait_on_mainloop[1] = false
+	end
+      end
+      return
+    end
+
     unless restart_on_dead
+      @wait_on_mainloop[1] = true
       @interp.mainloop(check_root)
+      @wait_on_mainloop[1] = false
     else
       begin
+	@wait_on_mainloop[1] = true
 	loop do
 	  break unless self.alive?
 	  if check_root
@@ -1605,6 +1756,8 @@ class MultiTkIp
 		       " exception (ignore) : ", $!.message, "\n");
 	end
 	retry
+      ensure
+	@wait_on_mainloop[1] = false
       end
     end
     self
@@ -2066,7 +2219,7 @@ end
 
 # Safe Base :: manipulating safe interpreter
 class MultiTkIp
-  def safeip_configure(slave, slot, value=None)
+  def safeip_configure(slot, value=None)
     # use for '-noStatics' option ==> {statics=>false}
     #     for '-nestedLoadOk' option ==> {nested=>true}
     if slot.kind_of?(Hash)
@@ -2111,22 +2264,22 @@ class MultiTkIp
     ret
   end
 
-  def safeip_delete(slave)
+  def safeip_delete
     ip = MultiTkIp.__getip
     ip._eval("::safe::interpDelete " + @ip_name)
   end
 
-  def safeip_add_to_access_path(slave, dir)
+  def safeip_add_to_access_path(dir)
     ip = MultiTkIp.__getip
     ip._eval("::safe::interpAddToAccessPath #{@ip_name} #{dir}")
   end
 
-  def safeip_find_in_access_path(slave, dir)
+  def safeip_find_in_access_path(dir)
     ip = MultiTkIp.__getip
     ip._eval("::safe::interpFindInAccessPath #{@ip_name} #{dir}")
   end
 
-  def safeip_set_log_cmd(slave, cmd = Proc.new)
+  def safeip_set_log_cmd(cmd = Proc.new)
     ip = MultiTkIp.__getip
     ip._eval("::safe::setLogCmd #{@ip_name} #{_get_eval_string(cmd)}")
   end
