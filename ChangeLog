@@ -1,3 +1,10 @@
+Wed Jan  1 15:44:55 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/dbm/extconf.rb (-DDBM_HDR): substitute ' with " to avoid
+	  a error on Win32.
+
+	* win32/win32.h: better MinGW support.
+
 Wed Jan 01 02:22:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dln.c (init_funcname): get rid of gcc-3 -O3 warning.

@@ -222,9 +222,11 @@ extern int gettimeofday(struct timeval *, struct timezone *);
 extern pid_t waitpid (pid_t, int *, int);
 extern int do_spawn(char *);
 extern int kill(int, int);
+
+#if !defined __MINGW32__ || defined __NO_ISOCEXT
 extern int isinf(double);
 extern int isnan(double);
-
+#endif
 
 #if !defined S_IRUSR && !defined __MINGW32__
 #define S_IRUSR 0400
