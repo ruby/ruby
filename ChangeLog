@@ -1,3 +1,11 @@
+Fri Nov 15 07:40:08 2002  NAKAMURA Hiroshi  <nakahiro@sarion.co.jp>
+
+	* observer.rb: raise NoMethodError instead of NameError.
+	  [ruby-dev:18788]
+
+	* ostruct.rb: ditto.  fix a bug in inspect which called String#+ with
+	  Symbol.  [ruby-dev:18788]
+
 Thu Nov 14 22:40:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (LIBRUBY_A): append -static.  [ruby-dev:18689]

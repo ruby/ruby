@@ -30,7 +30,7 @@ class OpenStruct
     elsif args.length == 0
       @table[mid]
     else
-      raise NameError, "undefined method `#{mname}'", caller(1)
+      raise NoMethodError, "undefined method `#{mname}'", caller(1)
     end
   end
 
@@ -42,7 +42,7 @@ class OpenStruct
     str = "<#{self.class}"
     for k,v in @table
       str += " "
-      str += k
+      str += k.to_s
       str += "="
       str += v.inspect
     end

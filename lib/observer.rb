@@ -6,7 +6,7 @@ module Observable
   def add_observer(observer)
     @observer_peers = [] unless defined? @observer_peers
     unless observer.respond_to? :update
-      raise NameError, "observer needs to respond to `update'" 
+      raise NoMethodError, "observer needs to respond to `update'" 
     end
     @observer_peers.push observer
   end
