@@ -9,7 +9,9 @@ class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
   def _regex_quote(str)
-    str.gsub(/[][\\]/, '\\\\\&')
+    str.gsub(/(\\[-\\])|\\(.)|([][\\])/) do
+      $1 || $2 || '\\' + $3
+    end
   end
   private :_regex_quote
 
@@ -95,15 +97,15 @@ class String
 
   def _expand_ch str
     a = []
-    str.scan(/(.)-(.)|(.)/m) do |r|
-      if $3
-	a.push $3
-      elsif $1.length != $2.length
- 	next
-      elsif $1.length == 1
- 	$1[0].upto($2[0]) { |c| a.push c.chr }
+    str.scan(/(?:\\([-\\]))|(.)-(.)|(.)/m) do
+      if s = $1 || $4
+	a.push s
+      elsif $2.length != $3.length
+	next
+      elsif $2.length == 1
+	$2[0].upto($3[0]) { |c| a.push c.chr }
       else
- 	$1.upto($2) { |c| a.push c }
+	$2.upto($3) { |c| a.push c }
       end
     end
     a
@@ -132,7 +134,7 @@ class String
       last = /.$/.match(to)[0]
       self.gsub!(pattern, last)
     else
-      h = HashCache[from + "::" + to] ||= expand_ch_hash(from, to)
+      h = HashCache[from + "1-0" + to] ||= expand_ch_hash(from, to)
       self.gsub!(pattern) do |c| h[c] end
     end
   end
@@ -166,12 +168,12 @@ class String
   def tr_s!(from, to)
     return self.delete!(from) if to.length == 0
 
-    pattern = SqueezePatternCache[from] ||= /([#{_regex_quote(from)}])\1+"/
+    pattern = SqueezePatternCache[from] ||= /([#{_regex_quote(from)}])\1+/
     if from[0] == ?^
       last = /.$/.match(to)[0]
       self.gsub!(pattern, last)
     else
-      h = HashCache[from + "::" + to] ||= expand_ch_hash(from, to)
+      h = HashCache[from + "1-0" + to] ||= expand_ch_hash(from, to)
       self.gsub!(pattern) do h[$1] end
     end
   end
