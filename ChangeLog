@@ -1,3 +1,7 @@
+Tue Feb 17 00:18:03 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb: import test_rinda.rb
+
 Tue Feb 17 00:14:30 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: avoid warning "Redefinition of macro

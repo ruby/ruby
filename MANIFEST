@@ -756,6 +756,7 @@ test/optparse/test_optparse.rb
 test/optparse/test_placearg.rb
 test/optparse/test_reqarg.rb
 test/ostruct/test_ostruct.rb
+test/rinda/test_rinda.rb
 test/ruby/beginmainend.rb
 test/ruby/endblockwarn.rb
 test/ruby/envutil.rb
