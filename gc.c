@@ -14,16 +14,14 @@
 #include "env.h"
 #include "st.h"
 #include <stdio.h>
+#include <setjmp.h>
 
 void *malloc();
 void *calloc();
 void *realloc();
 
-struct gc_list *GC_List = Qnil;
-static struct gc_list *Global_List = Qnil;
-static unsigned long bytes_alloc = 0, gc_threshold = 1000000;
-
-static mark_tbl();
+void gc();
+void gc_mark();
 
 void *
 xmalloc(size)
@@ -31,12 +29,10 @@ xmalloc(size)
 {
     void *mem;
 
-    bytes_alloc += size;
     if (size == 0) size = 1;
     mem = malloc(size);
     if (mem == Qnil) {
 	gc();
-	bytes_alloc += size;
 	mem = malloc(size);
 	if (mem == Qnil)
 	    Fatal("failed to allocate memory");
@@ -75,23 +71,41 @@ xrealloc(ptr, size)
     return mem;
 }
 
-void
-rb_global_variable(var)
-    VALUE *var;
-{
-    struct gc_list *tmp;
+/* The way of garbage collecting which allows use of the cstack is due to */
+/* Scheme In One Defun, but in C this time.
 
-    tmp = (struct gc_list*)xmalloc(sizeof(struct gc_list));
-    tmp->next = Global_List;
-    tmp->varptr = var;
-    tmp->n = 1;
-    Global_List = tmp;
-}
+ *			  COPYRIGHT (c) 1989 BY				    *
+ *	  PARADIGM ASSOCIATES INCORPORATED, CAMBRIDGE, MASSACHUSETTS.	    *
+ *			   ALL RIGHTS RESERVED				    *
 
-static struct RBasic *object_list = Qnil;
-static struct RBasic *literal_list = Qnil;
-static unsigned long fl_current = FL_MARK;
-static unsigned long fl_old = 0L;
+Permission to use, copy, modify, distribute and sell this software
+and its documentation for any purpose and without fee is hereby
+granted, provided that the above copyright notice appear in all copies
+and that both that copyright notice and this permission notice appear
+in supporting documentation, and that the name of Paradigm Associates
+Inc not be used in advertising or publicity pertaining to distribution
+of the software without specific, written prior permission.
+
+PARADIGM DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
+ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
+PARADIGM BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
+ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
+SOFTWARE.
+
+gjc@paradigm.com
+
+Paradigm Associates Inc		 Phone: 617-492-6079
+29 Putnam Ave, Suite 6
+Cambridge, MA 02138
+*/
+
+#ifdef sparc
+#define FLUSH_REGISTER_WINDOWS asm("ta 3")
+#else
+#define FLUSH_REGISTER_WINDOWS /* empty */
+#endif
 
 static int dont_gc;
 
@@ -113,23 +127,6 @@ Fgc_disable()
     return old;
 }
 
-VALUE
-Fgc_threshold(obj)
-    VALUE obj;
-{
-    return INT2FIX(gc_threshold);
-}
-
-VALUE
-Fgc_set_threshold(obj, val)
-    VALUE obj, val;
-{
-    int old = gc_threshold;
-
-    gc_threshold = NUM2INT(val);
-    return INT2FIX(old);
-}
-
 #include <sys/types.h>
 #include <sys/times.h>
 
@@ -145,140 +142,204 @@ static Fgc_end()
 
 VALUE M_GC;
 
-static ID start_hook, end_hook;
+static struct gc_list {
+    int n;
+    VALUE *varptr;
+    struct gc_list *next;
+} *Global_List = Qnil;
 
-struct RBasic *
-newobj(size)
-    unsigned long size;
+void
+rb_global_variable(var)
+    VALUE *var;
 {
-    struct RBasic *obj = Qnil;
+    struct gc_list *tmp;
 
-    if (bytes_alloc + size > gc_threshold) {
-	gc();
-    }
-    obj = (struct RBasic*)xmalloc(size);
-    obj->next = object_list;
-    object_list = obj;
-    obj->flags = fl_current;
-    obj->iv_tbl = Qnil;
-
-    return obj;
+    tmp = (struct gc_list*)xmalloc(sizeof(struct gc_list));
+    tmp->next = Global_List;
+    tmp->varptr = var;
+    tmp->n = 1;
+    Global_List = tmp;
 }
 
-literalize(obj)
-    struct RBasic *obj;
+struct RVALUE {
+    union {
+	struct {
+	    int flag;		/* alway 0 for freed obj */
+	    struct RVALUE *next;
+	} free;
+	struct RObject object;
+	struct RClass  class;
+	struct RFloat  flonum;
+	struct RString string;
+	struct RArray  array;
+	struct RRegexp regexp;
+	struct RDict   dict;
+	struct RData   data;
+	struct RStruct rstruct;
+	struct RBignum bignum;
+    } as;
+} *freelist = Qnil;
+
+struct heap_block {
+    struct heap_block *next;
+    struct RVALUE *beg;
+    struct RVALUE *end;
+    struct RVALUE body[1];
+} *heap_link = Qnil;
+
+#define SEG_SLOTS 4000
+#define SEG_SIZE  (SEG_SLOTS*sizeof(struct RVALUE))
+
+static int heap_size;
+
+static void
+add_heap()
 {
-    struct RBasic *ptr = object_list;
+    struct heap_block *block;
+    struct RVALUE *p, *pend;
 
-    if (NIL_P(obj) || FIXNUM_P(obj)) return;
-
-    FL_SET(obj, FL_LITERAL);
-    if (ptr == obj) {
-	object_list = ptr->next;
-	obj->next = literal_list;
-	literal_list = obj;
-
-	return;
+    block = (struct heap_block*)malloc(sizeof(*block) + SEG_SIZE);
+    if (block == Qnil) Fatal("cant alloc memory");
+    block->next = heap_link;
+    block->beg = &block->body[0];
+    block->end = block->beg + SEG_SLOTS;
+    p = block->beg; pend = block->end;
+    while (p < pend) {
+	p->as.free.flag = 0;
+	p->as.free.next = freelist;
+	freelist = p;
+	p++;
     }
+    heap_link = block;
+    heap_size += SEG_SLOTS;
+}
 
-    while (ptr && ptr->next) {
-	if (ptr->next == obj) {
-	    ptr->next = obj->next;
-	    obj->next = literal_list;
-	    literal_list = obj;
-
-	    return;
-	}
-	ptr = ptr->next;
+struct RBasic *
+newobj()
+{
+    struct RBasic *obj;
+    if (heap_link == Qnil) add_heap();
+    if (freelist) {
+      retry:
+	obj = (struct RBasic*)freelist;
+	freelist = freelist->as.free.next;
+	obj->flags = 0;
+	obj->iv_tbl = Qnil;
+	return obj;
     }
-    Bug("0x%x is not a object.", obj);
+    if (dont_gc) add_heap();
+    else gc();
+
+    goto retry;
+}
+
+VALUE
+newdata(size)
+    UINT size;
+{
+    extern VALUE C_Data;
+    struct RData *data = (struct RData*)newobj();
+
+    OBJSETUP(data, C_Data, T_DATA);
+    data->data = xmalloc(size);
+    return (VALUE)data;
+}
+
+static struct literal_list {
+    VALUE val;
+    struct literal_list *next;
+} *Literal_List = Qnil;
+
+void
+literalize(obj)
+    VALUE obj;
+{
+    struct literal_list *tmp;
+
+    tmp = (struct literal_list*)xmalloc(sizeof(struct literal_list));
+    tmp->next = Literal_List;
+    tmp->val = obj;
+    Literal_List = tmp;
 }
 
 void
 unliteralize(obj)
-    struct RBasic *obj;
+    VALUE obj;
 {
-    struct RBasic *ptr = literal_list;
+    struct literal_list *ptr = Literal_List, *tmp;
 
     if (NIL_P(obj) || FIXNUM_P(obj)) return;
 
     if (!FL_TEST(obj, FL_LITERAL)) return;
     FL_UNSET(obj, FL_LITERAL);
 
-    if (ptr == obj) {
-	literal_list = ptr->next;
-	goto unlit;
+    if (ptr->val == obj) {
+	Literal_List = ptr->next;
+	free(ptr);
+	return;
     }
 
     while (ptr->next) {
-	if (ptr->next == obj) {
-	    ptr->next = obj->next;
+	if (ptr->next->val == obj) {
+	    tmp = ptr->next;
+	    ptr->next = ptr->next->next;
+	    ptr = tmp;
+	    free(tmp);
+	    return;
 	}
 	ptr = ptr->next;
-	goto unlit;
     }
     Bug("0x%x is not a literal object.", obj);
-
-  unlit:
-    obj->next = object_list;
-    object_list = obj;
-    obj->flags &= ~FL_MARK;
-    obj->flags |= fl_current;
-    return;
 }
 
-extern st_table *rb_global_tbl;
 extern st_table *rb_class_tbl;
+static VALUE *stack_start_ptr;
 
-gc()
+static long
+looks_pointerp(p)
+    struct RVALUE *p;
 {
-    struct gc_list *list;
-    struct ENVIRON *env;
-    int i, max;
+    struct heap_block *heap = heap_link;
 
-    rb_funcall(M_GC, start_hook, 0, Qnil);
-
-    if (dont_gc) return;
-    dont_gc++;
-    fl_old = fl_current;
-    fl_current = ~fl_current & FL_MARK;
-
-    /* mark env stack */
-    for (env = the_env; env; env = env->prev) {
-	mark(env->self);
-	for (i=1, max=env->argc; i<max; i++) {
-	    mark(env->argv[i]);
-	}
-	if (env->local_vars) {
-	    for (i=0, max=env->local_tbl[0]; i<max; i++)
-		mark(env->local_vars[i]);
-	}
+    if (FIXNUM_P(p)) return FALSE;
+    while (heap) {
+	if (heap->beg <= p && p < heap->end
+	    && ((((char*)p) - ((char*)heap->beg)) % sizeof(struct RVALUE)) == 0)
+	    return TRUE;
+	heap = heap->next;
     }
+    return FALSE;
+}
 
-    /* mark protected C variables */
-    for (list=GC_List; list; list=list->next) {
-	VALUE *v = list->varptr;
-	for (i=0, max = list->n; i<max; i++) {
-	    mark(*v);
-	    v++;
-	}
+static void
+mark_locations_array(x, n)
+    VALUE *x;
+    long n;
+{
+    int j;
+    VALUE p;
+    for(j=0;j<n;++j)
+	{p = x[j];
+	 if (looks_pointerp(p)) {
+	     gc_mark(p);
+	 }
+     }
+}
+
+static void
+mark_locations(start, end)
+    VALUE *start, *end;
+{
+    VALUE *tmp;
+    long n;
+
+    if (start > end) {
+	tmp = start;
+	start = end;
+	end = tmp;
     }
-
-    /* mark protected global variables */
-    for (list = Global_List; list; list = list->next) {
-	mark(*list->varptr);
-    }
-
-    mark_global_tbl();
-    mark_tbl(rb_class_tbl);
-
-    mark_trap_list();
-
-    sweep();
-    bytes_alloc = 0;
-    dont_gc--;
-
-    rb_funcall(M_GC, end_hook, 0, Qnil);
+    n = end - start;
+    mark_locations_array(start,n);
 }
 
 static
@@ -286,7 +347,7 @@ mark_entry(key, value)
     ID key;
     VALUE value;
 {
-    mark(value);
+    gc_mark(value);
     return ST_CONTINUE;
 }
 
@@ -302,8 +363,8 @@ mark_dicentry(key, value)
     ID key;
     VALUE value;
 {
-    mark(key);
-    mark(value);
+    gc_mark(key);
+    gc_mark(value);
     return ST_CONTINUE;
 }
 
@@ -314,39 +375,35 @@ mark_dict(tbl)
     st_foreach(tbl, mark_dicentry, 0);
 }
 
-mark(obj)
+void
+gc_mark(obj)
     register struct RBasic *obj;
 {
     if (obj == Qnil) return;
     if (FIXNUM_P(obj)) return;
-    if ((obj->flags & FL_MARK) == fl_current) return;
+    if (obj->flags & FL_MARK) return;
 
-    obj->flags &= ~FL_MARK;
-    obj->flags |= fl_current;
+    obj->flags |= FL_MARK;
 
     switch (obj->flags & T_MASK) {
       case T_NIL:
       case T_FIXNUM:
-	Bug("mark() called for broken object");
+	Bug("gc_mark() called for broken object");
 	break;
     }
 
     if (obj->iv_tbl) mark_tbl(obj->iv_tbl);
+    gc_mark(obj->class);
     switch (obj->flags & T_MASK) {
-      case T_OBJECT:
-	mark(obj->class);
-	break;
       case T_ICLASS:
-	mark(RCLASS(obj)->super);
+	gc_mark(RCLASS(obj)->super);
 	if (RCLASS(obj)->c_tbl) mark_tbl(RCLASS(obj)->c_tbl);
-	mark_tbl(RCLASS(obj)->m_tbl);
 	break;
       case T_CLASS:
-	mark(RCLASS(obj)->super);
+	gc_mark(RCLASS(obj)->super);
       case T_MODULE:
 	if (RCLASS(obj)->c_tbl) mark_tbl(RCLASS(obj)->c_tbl);
-	mark_tbl(RCLASS(obj)->m_tbl);
-	mark(RBASIC(obj)->class);
+	gc_mark(RBASIC(obj)->class);
 	break;
       case T_ARRAY:
 	{
@@ -354,21 +411,21 @@ mark(obj)
 	    VALUE *ptr = RARRAY(obj)->ptr;
 
 	    for (i=0; i < len; i++)
-		mark(ptr[i]);
+		gc_mark(ptr[i]);
 	}
 	break;
       case T_DICT:
 	mark_dict(RDICT(obj)->tbl);
 	break;
       case T_STRING:
-	if (RSTRING(obj)->orig) mark(RSTRING(obj)->orig);
+	if (RSTRING(obj)->orig) gc_mark(RSTRING(obj)->orig);
 	break;
       case T_DATA:
 	if (RDATA(obj)->dmark) (*RDATA(obj)->dmark)(DATA_PTR(obj));
 	break;
+      case T_OBJECT:
       case T_REGEXP:
       case T_FLOAT:
-      case T_METHOD:
       case T_BIGNUM:
 	break;
       case T_STRUCT:
@@ -377,42 +434,77 @@ mark(obj)
 	    struct kv_pair *ptr = RSTRUCT(obj)->tbl;
 
 	    for (i=0; i < len; i++)
-		mark(ptr[i].value);
+		gc_mark(ptr[i].value);
 	}
 	break;
       default:
-	Bug("mark(): unknown data type %d", obj->flags & T_MASK);
+	Bug("gc_mark(): unknown data type %d", obj->flags & T_MASK);
     }
 }
 
-sweep()
+#define MIN_FREE_OBJ 512
+
+static void
+gc_sweep()
 {
-    register struct RBasic *link = object_list;
-    register struct RBasic *next;
+    struct heap_block *heap = heap_link;
+    int freed = 0;
 
-    if (link && (link->flags & FL_MARK) == fl_old) {
-	object_list = object_list->next;
-	obj_free(link);
-	link = object_list;
-    }
+    freelist = Qnil;
+    while (heap) {
+	struct RVALUE *p, *pend;
+	struct RVALUE *nfreelist;
+	int n = 0;
 
-    while (link && link->next) {
-	if ((link->next->flags & FL_MARK) == fl_old) {
-	    next = link->next->next;
-	    obj_free(link->next);
-	    link->next = next;
-	    continue;
+	nfreelist = freelist;
+	p = heap->beg; pend = heap->end;
+	while (p < pend) {
+	    
+	    if (!(RBASIC(p)->flags & FL_MARK)) {
+		if (RBASIC(p)->flags) obj_free(p);
+		p->as.free.flag = 0;
+		p->as.free.next = nfreelist;
+		nfreelist = p;
+		n++;
+	    }
+	    RBASIC(p)->flags &= ~FL_MARK;
+	    p++;
 	}
-	link = link->next;
+	if (n == SEG_SLOTS) {
+	    struct heap_block *link = heap_link;
+	    if (heap != link) {
+		while (link) {
+		    if (link->next && link->next == heap) {
+			link->next = heap->next;
+			break;
+		    }
+		    link = link->next;
+		}
+		if (link == Qnil) {
+		    Bug("non-existing heap at 0x%x", heap);
+		}
+	    }
+	    free(heap);
+	    heap_size -= SEG_SLOTS;
+	    heap = link;
+	}
+	else {
+	    freed += n;
+	    freelist = nfreelist;
+	}
+	heap = heap->next;
+    }
+    if (freed < heap_size/4) {
+	add_heap();
     }
 }
 
 static
 freemethod(key, body)
     ID key;
-    char *body;
+    void *body;
 {
-    freenode(body);
+    method_free(body);
     return ST_CONTINUE;
 }
 
@@ -432,6 +524,7 @@ obj_free(obj)
 	break;
       case T_MODULE:
       case T_CLASS:
+	rb_clear_cache2(obj);
 	st_foreach(RCLASS(obj)->m_tbl, freemethod);
 	st_free_table(RCLASS(obj)->m_tbl);
 	if (RCLASS(obj)->c_tbl)
@@ -452,13 +545,11 @@ obj_free(obj)
 	break;
       case T_DATA:
 	if (RDATA(obj)->dfree) (*RDATA(obj)->dfree)(DATA_PTR(obj));
+	free(DATA_PTR(obj));
 	break;
       case T_ICLASS:
 	/* iClass shares table with the module */
       case T_FLOAT:
-	break;
-      case T_METHOD:
-	freenode(RMETHOD(obj)->node);
 	break;
       case T_STRUCT:
 	free(RSTRUCT(obj)->name);
@@ -468,9 +559,69 @@ obj_free(obj)
 	free(RBIGNUM(obj)->digits);
 	break;
       default:
-	Bug("sweep(): unknown data type %d", obj->flags & T_MASK);
+	Bug("gc_sweep(): unknown data type %d", obj->flags & T_MASK);
     }
-    free(obj);
+}
+
+void
+gc()
+{
+    struct literal_list *lit;
+    struct gc_list *list;
+    struct ENVIRON *env;
+    int i, max;
+    jmp_buf save_regs_gc_mark;
+    VALUE stack_end;
+
+    if (dont_gc) return;
+    dont_gc++;
+
+    /* mark env stack */
+    for (env = the_env; env; env = env->prev) {
+	gc_mark(env->self);
+	if (env->argv)
+	    mark_locations_array(env->argv, env->argc);
+	if (env->local_vars)
+	    mark_locations_array(env->local_vars, env->local_tbl[0]);
+    }
+
+    FLUSH_REGISTER_WINDOWS;
+    /* This assumes that all registers are saved into the jmp_buf */
+    setjmp(save_regs_gc_mark);
+    mark_locations((VALUE*)save_regs_gc_mark,
+		   (VALUE*)(((char*)save_regs_gc_mark)+sizeof(save_regs_gc_mark)));
+    mark_locations((VALUE*)save_regs_gc_mark,
+		   sizeof save_regs_gc_mark/sizeof(VALUE));
+    mark_locations(stack_start_ptr, (VALUE*) &stack_end);
+#if defined(THINK_C)
+    mark_locations(((char*)stack_start_ptr + 2),
+		   ((char*)&stack_end + 2));
+#endif
+
+    /* mark protected global variables */
+    for (list = Global_List; list; list = list->next) {
+	gc_mark(*list->varptr);
+    }
+
+    /* mark literal objects */
+    for (lit = Literal_List; lit; lit = lit->next) {
+	gc_mark(lit->val);
+    }
+
+    gc_mark_global_tbl();
+    mark_tbl(rb_class_tbl);
+
+    gc_mark_trap_list();
+
+    gc_sweep();
+    dont_gc--;
+}
+
+Init_stack()
+{
+    VALUE start;
+
+    stack_start_ptr = &start;
 }
 
 Init_GC()
@@ -479,12 +630,5 @@ Init_GC()
     rb_define_single_method(M_GC, "start", gc, 0);
     rb_define_single_method(M_GC, "enable", Fgc_enable, 0);
     rb_define_single_method(M_GC, "disable", Fgc_disable, 0);
-    rb_define_single_method(M_GC, "threshold", Fgc_threshold, 0);
-    rb_define_single_method(M_GC, "threshold=", Fgc_set_threshold, 1);
-    rb_define_single_method(M_GC, "start_hook", Fgc_begin, 0);
-    rb_define_single_method(M_GC, "end_hook", Fgc_end, 0);
-    rb_define_func(M_GC, "garbage_collect", gc, 0);
-
-    start_hook = rb_intern("start_hook");
-    end_hook = rb_intern("end_hook");
+    rb_define_method(M_GC, "garbage_collect", gc, 0);
 }

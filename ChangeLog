@@ -1,3 +1,110 @@
+Wed Aug 10 15:54:46 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* variable.c: -vオプションが指定されている時は初期化されていない, 
+	  大域変数, インスタンス変数, ローカル変数を参照した時点でwarning
+	  を出すようにした.
+
+Tue Aug  9 11:50:48 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* bignum.c: 冪乗に関しても多倍長演算を行なうように. 特に浮動小数点
+	  数の範囲を越えた時の処理を的確に行なうように.
+
+	* eval.c: メソッド定義後は構文木から, メソッド定義部分を外す. 無駄
+	  な再定義が起こらないようにするためと2重にfree()されないため.
+
+	* array.c(Fary_aref): 引数が1つでFixnumの時, Range checkを行なわな
+	  いように修正.
+
+	* eval.c: 引数の数をコンパイル時に計算して若干の高速化.
+
+Mon Aug  8 13:06:24 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* object.c: nilによる比較連鎖をなくした.
+
+	* parse.y: bit演算子の優先順位を比較演算子よりも強くした.  Cとは異
+	  なることになるが, 直観には合致する.
+
+	* gc.c: クラスを解放する時, 個々のメソッド毎にキャッシュをクリアす
+	  るのではなく, クラス単位でクリアするように.
+
+Thu Aug  4 18:45:09 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* methods.c(method_free): 解放されたメソッドに関してキャッシュをク
+	  リアしておく必要があった.
+
+	* gc.c: Dataクラスのデータ部分をfree()し忘れていた.
+
+Wed Aug  3 09:58:14 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: def func .. end形式による関数メソッドの定義はなくなった.
+
+	* methods.c: func形式のメソッドをなくした. あっても, あまり意味が
+	  ないので.
+
+	* eval.c: $0への代入でps(1)の出力が変化するように.
+
+	* io.c(Fsyscall): syscall()を実現.
+
+Mon Aug  1 13:41:11 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: ダブルクォートで囲まれた文字列や正規表現中で"#{変数名}"
+	  または"#変数名"という形式で変数の内容を埋め込むことができるよう
+	  になった.
+
+	* io.c: 関数メソッドsystem2()はなくなった. 今はバッククォートがあ
+	  るからね.
+
+	* parse.y: `cmd`によってコマンドを文字列に展開することができるよう
+	  になった.
+
+	* parse.y: __FILE__, __LINE__を追加. それぞれファイル名(文字列), 
+	  行番号(整数)を値とする疑似変数.
+
+Fri Jul 29 13:16:07 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* methods.h: メソッドをオブジェクトとして扱うのをやめる. メソッド
+	  のメモリ管理にはリファレンスカウントを使うことにした. これでオブ
+	  ジェクトの数が減ってほんの少しだけGCが速くなる(かな).
+
+	* purifyによってメモリ関係のバグを検査した(見つかる,見つかる…).
+
+	* gc.c: GCをプログラマが変数をマークする形式から, スタックとレジス
+	  タからマークする方法に変更. 移植性が下がるような気もするが, siod
+	  やscmでも採用されているから多分大丈夫だろう. Linux on i486でも動
+	  作を確認した.
+
+Wed Jul 27 16:13:13 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(Eval): トップレベルでは構造木をfreeしないように. どうせ解
+	  放されるから時間の無駄である.
+
+	* array.c, dict.c: "=="を構造一致に変更.
+
+Fri Jul 22 10:14:09 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* error.c: 組み込みタイプの名前を登録し忘れていた.
+
+Thu Jul 21 14:06:48 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(freenode),eval.c(Eval): 解析木を解放し忘れていた.
+
+Mon Jul 18 10:19:15 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: 多重代入を処理するルールにバグがあって, 3要素以上の多重
+	  代入に失敗していた.
+
+	* eval.c(rb_eval): 多重代入で, 右辺が配列でない時には`to_a'メソッ
+	  ドで配列に変換して代入するようにした. 今までの仕様だと右辺値が第
+	  1要素にそのまま代入されていたが, structなど配列に変換できるもの
+	  は変換した方が嬉しい気がする. 
+
+	* dbm.c,dict.c(delete_if): メソッド追加.
+
+	* process.c(wait,waitpid): システムコールwaitpidまたはwait4がある
+	  時はそちらを使うように. configureもそれらをチェックするように変更.
+
+	* dbm.c, dict.c(clear): メソッド追加.
+
 Mon Jul 18 10:19:15 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 	* parse.y: 多重代入を処理するルールにバグがあって, 3要素以上の多重
@@ -31,27 +138,6 @@ Fri Jul 15 10:54:45 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* array.c: []/[]=でのインデックス関係を整理. 基本的に負のインデッ
 	  クスに代入しない限り例外は起きないように変更した. 必要に応じて適
 	  当に解釈して, 必要ならば領域を拡張するように.
-
-Thu Jul 14 11:18:07 1994  Yukihiro Matsumoto  (matz@ix-02)
-
-	* autoexec.c: 削除. autoload関係の機能は今後検討しよう.
-
-	* dict.c: 辞書クラスの正式名称をDictに変更した. 別名としてHashを用
-	  意した. 今までDictionaryなどと長い名前にしていたが誰も使っていな
-	  かったしね. *BACKWARD INCOMPATIBILITY*
-
-	* parse.y: Dictを生成する構文を追加. こちらを{..}にした.
-
-	* parse.y: 配列を生成する構文を[..]に変更した. 過去のRubyスクリプ
-	  トとの互換性が保てないが, Dictを生成する構文を導入するに当たり,
-	  perl5に合わせて(意識して), 変更する時期は今しかないと考えた. 
-	  *BACKWARD INCOMPATIBILITY*
-
-	* eval.c(Feval): eval()でメソッドを定義する時, 定義されるクラスを
-	  メソッドの所属するクラスにした. 今まではObjectクラスに定義されて
-	  いた.
-
-	* parse.y: ローカル引数がない時のeval()で落ちていた.
 
 Thu Jul 14 11:18:07 1994  Yukihiro Matsumoto  (matz@ix-02)
 
@@ -510,9 +596,6 @@ Sat May 28 23:08:18 1994  Yukihiro Matsumoto  (matz@dyna)
 	  成されるのだった.
 
 Fri May 27 11:42:00 1994  Yukihiro Matsumoto  (matz@ix-02)
-
-	* 正規表現の文字コードのデフォルトを漢字非対応にした. これによって
-	  若干の高速化が図れる.
 
 	* trから文字削除(delete), 文字圧縮(squeeze)を分離した. それにとも
 	  ないtrのオプション引数はなくなった.

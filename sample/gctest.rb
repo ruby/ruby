@@ -40,10 +40,7 @@ def print_int_list(x)
   end
 end
 
-GC.threshold = 1000000
-
 print("start\n")
-print("threshold: ", GC.threshold, "\n");
 
 a = ints(1, 100)
 print_int_list(a)

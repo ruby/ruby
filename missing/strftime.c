@@ -101,7 +101,9 @@ adddecl(static int iso8601wknum(const struct tm *timeptr);)
 
 #if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)
 extern char *tzname[2];
+# ifdef HAVE_DAYLIGHT
 extern int daylight;
+# endif
 #endif
 
 /* min --- return minimum of two numbers */
@@ -457,7 +459,7 @@ strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
 	    goto again;
 
 	case 'V':   /* week of year according ISO 8601 */
-#if defined(RUBY) && defined(VMS_EXT)
+#if defined(GAWK) && defined(VMS_EXT)
 	{
 	    extern int do_lint;
 	    extern void warning();

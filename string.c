@@ -126,13 +126,11 @@ Fstr_plus(str1, str2)
 {
     struct RString *str3;
 
-    GC_LINK;
-    GC_PRO3(str2, as_str(str2));
+    str2 = as_str(str2);
     str3 = (struct RString*)str_new(0, str1->len+str2->len);
     memcpy(str3->ptr, str1->ptr, str1->len);
     memcpy(str3->ptr+str1->len, str2->ptr, str2->len);
     str3->ptr[str3->len] = '\0';
-    GC_UNLINK;
 
     return (VALUE)str3;
 }
@@ -323,8 +321,7 @@ Fstr_next(orig)
     char *sbeg, *s;
     char c = -1;
 
-    GC_LINK;
-    GC_PRO3(str, (struct RString*)str_new(orig->ptr, orig->len));
+    str = (struct RString*)str_new(orig->ptr, orig->len);
     
     sbeg = str->ptr; s = sbeg + str->len - 1;
 
@@ -333,13 +330,12 @@ Fstr_next(orig)
 	s--;
     }
     if (s < sbeg && c != -1) {
-	GC_PRO3(str2, (struct RString*)str_new(0, str->len+1));
+	str2 = (struct RString*)str_new(0, str->len+1);
 	str2->ptr[0] = c;
 	memmove(str2->ptr+1, str->ptr, str->len);
 	obj_free(str);
 	str = str2;
     }
-    GC_UNLINK;
 
     return (VALUE)str;
 }
@@ -667,8 +663,6 @@ str_sub(str, pat, val, once)
     VALUE sub;
     int beg, end, offset, n;
 
-    GC_LINK;
-    GC_PRO2(sub);
     for (offset=0, n=0;
 	 (beg=research(pat, str, offset, ignorecase)) >= 0;
 	 offset=RREGEXP(pat)->ptr->regs.start[0]+STRLEN(val)) {
@@ -678,7 +672,6 @@ str_sub(str, pat, val, once)
 	n++;
 	if (once) break;
     }
-    GC_UNLINK;
     if (n == 0) return Qnil;
     return INT2FIX(n);
 }
@@ -1258,10 +1251,7 @@ Fstr_split(str, args)
 	}
     }
 
-    GC_LINK;
-    GC_PRO(spat);
-    GC_PRO3(result, ary_new());
-
+    result = ary_new();
     beg = 0;
     if (char_sep != 0) {
 	char *ptr = str->ptr;
@@ -1355,7 +1345,6 @@ Fstr_split(str, args)
 	Fary_push(result, str_new(0, 0));
     }
 
-    GC_UNLINK;
     return result;
 }
 
@@ -1420,8 +1409,6 @@ static VALUE
 Fstr_chop(str)
     struct RString *str;
 {
-    int result;
-
     str_modify(str);
 
     str->len--;
@@ -1545,8 +1532,8 @@ Init_String()
     rb_define_method(C_String, "each", Fstr_each, 0);
     rb_define_method(C_String, "each_byte", Fstr_each_byte, 0);
 
-    rb_define_func(C_Kernel, "sub", Fsub, 2);
-    rb_define_func(C_Kernel, "gsub", Fgsub, 2);
+    rb_define_method(C_Kernel, "sub", Fsub, 2);
+    rb_define_method(C_Kernel, "gsub", Fgsub, 2);
 
     pr_str = rb_intern("to_s");
 }

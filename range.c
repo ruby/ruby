@@ -79,14 +79,12 @@ Frng_each(obj)
 	}
     }
     else {
-	GC_LINK;
-	GC_PRO3(current, b);
+	current = b;
 	for (;;) {
 	    rb_yield(current);
 	    if (rb_funcall(current, eq, 1, e)) break;
 	    current = rb_funcall(current, next, 0);
 	}
-	GC_UNLINK;
     }
 
     return Qnil;
@@ -123,11 +121,9 @@ Frng_to_s(obj)
     beg = rb_iv_get(obj, "start");
     end = rb_iv_get(obj, "end");
 
-    GC_LINK;
-    GC_PRO3(fmt, str_new2("%d..%d"));
+    fmt = str_new2("%d..%d");
     args[0] = obj; args[1] = fmt; args[2]= beg; args[3] = end;
     str = Fsprintf(4, args);
-    GC_UNLINK;
 
     return str;
 }

@@ -24,12 +24,9 @@ ary_new2(len)
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, C_Array, T_ARRAY);
 
-    GC_LINK;
-    GC_PRO(ary);
     ary->len = 0;
     ary->capa = len;
     ary->ptr = ALLOC_N(VALUE, len);
-    GC_UNLINK;
 
     return (VALUE)ary;
 }
@@ -73,12 +70,9 @@ ary_new4(n, elts)
 {
     struct RArray* ary;
 
-    GC_LINK;
-    GC_PRO4(elts, n);
     ary = (struct RArray*)ary_new2(n);
     memcpy(ary->ptr, elts, sizeof(VALUE)*n);
     ary->len = n;
-    GC_UNLINK;
 
     return (VALUE)ary;
 }
@@ -89,13 +83,10 @@ assoc_new(elm1, elm2)
 {
     struct RArray *ary;
 
-    GC_LINK;
-    GC_PRO(elm1); GC_PRO(elm2);
     ary = (struct RArray*)ary_new2(2);
     ary->ptr[0] = elm1;
     ary->ptr[1] = elm2;
     ary->len = 2;
-    GC_UNLINK;
 
     return (VALUE)ary;
 }
@@ -107,12 +98,9 @@ Fary_new(class)
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, class, T_ARRAY);
 
-    GC_LINK;
-    GC_PRO(ary);
     ary->len = 0;
     ary->capa = ARY_DEFAULT_SIZE;
     ary->ptr = ALLOC_N(VALUE, ARY_DEFAULT_SIZE);
-    GC_UNLINK;
 
     return (VALUE)ary;
 }
@@ -131,10 +119,8 @@ astore(ary, idx, val)
 
     max = idx + 1;
     if (idx >= ary->capa) {
-	GC_LINK; GC_PRO(val);
 	ary->capa = max;
 	REALLOC_N(ary->ptr, VALUE, max);
-	GC_UNLINK;
     }
     if (idx >= ary->len) {
 	bzero(ary->ptr+ary->len, sizeof(VALUE)*(max-ary->len));
@@ -302,6 +288,11 @@ Fary_aref(ary, args)
 	return ary_subseq(ary, beg, len);
     }
 
+    /* special case - speeding up */
+    if (FIXNUM_P(arg1)) {
+	return ary_entry(ary, NUM2INT(arg1));
+    }
+
     /* check if idx is Range */
     if (obj_is_kind_of(arg1, C_Range)) {
 	int beg, len;
@@ -462,10 +453,6 @@ ary_join(ary, sep)
     else
 	result = obj_as_string(ary->ptr[0]);
 
-    GC_LINK;
-    GC_PRO(result);
-    GC_PRO2(tmp);
-
     for (i=1; i<ary->len; i++) {
 	int need_free = 1;
 	tmp = ary->ptr[i];
@@ -483,8 +470,6 @@ ary_join(ary, sep)
 	str_cat(result, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
 	if (need_free == 1) obj_free(tmp);
     }
-
-    GC_UNLINK;
 
     return result;
 }
@@ -523,15 +508,13 @@ Fary_inspect(ary)
     char *p;
 
     ary = (struct RArray*)Fary_clone(ary);
-    GC_LINK;
-    GC_PRO(ary);
 
     len = ary->len;
     for (i=0; i<len; i++) {
 	ary->ptr[i] = rb_funcall(ary->ptr[i], rb_intern("_inspect"), 0, Qnil);
     }
 
-    GC_PRO3(str, str_new2(", "));
+    str = str_new2(", ");
     str = ary_join(ary, str);
     if (str == Qnil) return str_new2("[]");
     len = RSTRING(str)->len;
@@ -540,8 +523,6 @@ Fary_inspect(ary)
     memmove(p+1, p, len);
     p[0] = '[';
     p[len+1] = ']';
-
-    GC_UNLINK;
 
     return str;
 }
@@ -699,10 +680,8 @@ Fary_plus(x, y)
 	break;
 
       default:
-	GC_LINK;
-	GC_PRO3(z, (struct RArray*)Fary_clone(x));
+	z = (struct RArray*)Fary_clone(x);
 	Fary_push(z, y);
-	GC_UNLINK;
 	break;
     }
     return (VALUE)z;
@@ -761,6 +740,21 @@ Fary_rassoc(ary, value)
     return Qnil;
 }
 
+static VALUE
+Fary_equal(ary1, ary2)
+    struct RArray *ary1, *ary2;
+{
+    int i;
+
+    if (TYPE(ary2) != T_ARRAY) return FALSE;
+    if (ary1->len != ary2->len) return FALSE;
+    for (i=0; i<ary1->len; i++) {
+	if (!rb_funcall(ary1->ptr[i], eq, 1, ary2->ptr[i]))
+	    return FALSE;
+    }
+    return TRUE;
+}
+
 extern VALUE C_Kernel;
 extern VALUE M_Enumerable;
 
@@ -774,6 +768,7 @@ Init_Array()
     rb_define_method(C_Array, "_inspect", Fary_inspect, 0);
     rb_define_method(C_Array, "to_a", Fary_to_a, 0);
 
+    rb_define_method(C_Array, "==", Fary_equal, 1);
     rb_define_method(C_Array, "[]", Fary_aref, -2);
     rb_define_method(C_Array, "[]=", Fary_aset, -2);
     rb_define_method(C_Array, "<<", Fary_append, 1);

@@ -128,11 +128,8 @@ Fnum_divmod(x, y)
 {
     VALUE div, mod;
 
-    GC_LINK;
-    GC_PRO3(div, rb_funcall(x, '/', 1, y)); 
-    GC_PRO3(mod, rb_funcall(x, '%', 1, y)); 
-    GC_UNLINK;
-
+    div = rb_funcall(x, '/', 1, y); 
+    mod = rb_funcall(x, '%', 1, y); 
     return assoc_new(div, mod);
 }
 
@@ -437,19 +434,17 @@ int
 num2int(val)
     VALUE val;
 {
-    int result;
-
     if (val == Qnil) return 0;
 
     switch (TYPE(val)) {
       case T_FIXNUM:
-	result = FIX2INT(val);
+	return FIX2INT(val);
 	break;
 
       case T_FLOAT:
 	if (RFLOAT(val)->value <= (double) LONG_MAX
 	    && RFLOAT(val)->value >= (double) LONG_MIN) {
-	    result = (int)RFLOAT(val)->value;
+	    return (int)RFLOAT(val)->value;
 	}
 	else {
 	    Fail("float %g out of rang of integer", RFLOAT(val)->value);
@@ -463,7 +458,6 @@ num2int(val)
 	Fail("failed to convert %s into int", rb_class2name(CLASS_OF(val)));
 	break;
     }
-    return result;
 }
 
 static VALUE
@@ -578,12 +572,7 @@ Ffix_plus(x, y)
 	    r = INT2FIX(c);
 
 	    if (FIX2INT(r) != c) {
-		VALUE big1, big2;
-		GC_LINK;
-		GC_PRO3(big1, int2big(a));
-		GC_PRO3(big2, int2big(b));
-		r = Fbig_plus(big1, big2);
-		GC_UNLINK;
+		r = Fbig_plus(int2big(a), int2big(b));
 	    }
 	    return r;
 	}
@@ -611,12 +600,7 @@ Ffix_minus(x, y)
 	    r = INT2FIX(c);
 
 	    if (FIX2INT(r) != c) {
-		VALUE big1, big2;
-		GC_LINK;
-		GC_PRO3(big1, int2big(a));
-		GC_PRO3(big2, int2big(b));
-		r = Fbig_minus(big1, big2);
-		GC_UNLINK;
+		r = Fbig_minus(int2big(a), int2big(b));
 	    }
 	    return r;
 	}
@@ -640,12 +624,7 @@ Ffix_mul(x, y)
 	    VALUE r = INT2FIX(c);
 
 	    if (FIX2INT(r) != c) {
-		VALUE big1, big2;
-		GC_LINK;
-		GC_PRO3(big1, int2big(a));
-		GC_PRO3(big2, int2big(b));
-		r = Fbig_mul(big1, big2);
-		GC_UNLINK;
+		r = Fbig_mul(int2big(a), int2big(b));
 	    }
 	    return r;
 	}
@@ -692,18 +671,22 @@ Ffix_pow(x, y)
     VALUE x, y;
 {
     extern double pow();
-    int result;
 
     if (FIXNUM_P(y)) {
-	result = pow((double)FIX2INT(x), (double)FIX2INT(y));
-	return int2inum(result);
+	int a, b;
+
+	b = FIX2INT(y);
+	if (b == 0) return INT2FIX(1);
+	a = FIX2INT(x);
+	if (b > 0) {
+	    return Fbig_pow(int2big(a), y);
+	}
+	return float_new(pow((double)a, (double)b));
     }
     else if (NIL_P(y)) {
 	return INT2FIX(1);
     }
-    else {
-	return num_coerce_bin(x, y);
-    }
+    return num_coerce_bin(x, y);
 }
 
 static VALUE
@@ -804,12 +787,7 @@ Ffix_lshift(x, y)
     width = NUM2INT(y);
     if (width > (sizeof(VALUE)*CHAR_BIT-1)
 	|| (unsigned)val>>(sizeof(VALUE)*CHAR_BIT-width) > 0) {
-	VALUE big;
-	GC_LINK;
-	GC_PRO3(big, int2big(val));
-	big = Fbig_lshift(big, y);
-	GC_UNLINK;
-	return big;
+	return Fbig_lshift(int2big(val), y);
     }
     val = val << width;
     return int2inum(val);

@@ -43,7 +43,7 @@
 
 #else	/* not emacs */
 
-#define RUBY
+#include "defines.h"
 #include <sys/types.h>
 
 #ifdef __STDC__

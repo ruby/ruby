@@ -9,7 +9,6 @@ end
 if path == nil
   path = ""
 elsif path !~ /\/$/
-  print(path, "/\n")
   path += "/"
 end
 

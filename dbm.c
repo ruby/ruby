@@ -81,10 +81,8 @@ Fdbm_open(class, args)
 	rb_sys_fail(RSTRING(file)->ptr);
     }
 
-    GC_LINK;
-    GC_PRO3(obj, obj_alloc(class));
+    obj = obj_alloc(class);
     MakeDBM(obj, dbm);
-    GC_UNLINK;
 
     return obj;
 }
@@ -149,8 +147,6 @@ Fdbm_delete_if(obj)
     VALUE keystr, valstr;
 
     GetDBM(obj, dbm);
-    GC_LINK;
-    GC_PRO2(keystr); GC_PRO2(valstr);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	keystr = str_new(key.dptr, key.dsize);
@@ -160,7 +156,6 @@ Fdbm_delete_if(obj)
 	    Fail("DBM delete failed");
 	}
     }
-    GC_UNLINK;
     return obj;
 }
 
@@ -261,8 +256,6 @@ Fdbm_each_pair(obj)
     VALUE keystr, valstr;
 
     GetDBM(obj, dbm);
-    GC_LINK;
-    GC_PRO2(keystr); GC_PRO2(valstr);
 
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
@@ -270,7 +263,6 @@ Fdbm_each_pair(obj)
 	valstr = str_new(val.dptr, val.dsize);
 	rb_yield(assoc_new(keystr, valstr));
     }
-    GC_UNLINK;
 
     return obj;
 }
@@ -283,13 +275,12 @@ Fdbm_keys(obj)
     DBM *dbm;
     VALUE ary;
 
-    GC_LINK;
-    GC_PRO3(ary, ary_new());
+    ary = ary_new();
     GetDBM(obj, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	Fary_push(ary, str_new(key.dptr, key.dsize));
     }
-    GC_UNLINK;
+
     return ary;
 }
 
@@ -301,14 +292,13 @@ Fdbm_values(obj)
     DBM *dbm;
     VALUE ary;
 
-    GC_LINK;
-    GC_PRO3(ary, ary_new());
+    ary = ary_new();
     GetDBM(obj, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	Fary_push(ary, str_new(val.dptr, val.dsize));
     }
-    GC_UNLINK;
+
     return ary;
 }
 
@@ -360,16 +350,13 @@ Fdbm_to_a(obj)
 
     GetDBM(obj, dbm);
 
-    GC_LINK;
-    GC_PRO3(ary, ary_new());
-
+    ary = ary_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	Fary_push(ary, assoc_new(str_new(key.dptr, key.dsize),
 				 str_new(val.dptr, val.dsize)));
     }
 
-    GC_UNLINK;
     return ary;
 }
 

@@ -142,13 +142,11 @@ obj_inspect(id, value, str)
     else {
 	str_cat(str, ", ", 2);
     }
-    GC_LINK;
     ivname = rb_id2name(id);
     str_cat(str, ivname, strlen(ivname));
     str_cat(str, "=", 1);
-    GC_PRO3(str2, rb_funcall(value, rb_intern("_inspect"), 0, Qnil));
+    str2 = rb_funcall(value, rb_intern("_inspect"), 0, Qnil);
     str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
-    GC_UNLINK;
 
     return ST_CONTINUE;
 }
@@ -162,12 +160,10 @@ Fobj_inspect(obj)
 
     if (FIXNUM_P(obj) || !obj->iv_tbl) return Fkrn_to_s(obj);
 
-    GC_LINK;
     sprintf(buf, "-<%s: ", rb_class2name(CLASS_OF(obj)));
-    GC_PRO3(str, str_new2(buf));
+    str = str_new2(buf);
     st_foreach(obj->iv_tbl, obj_inspect, str);
     str_cat(str, ">", 1);
-    GC_UNLINK;
 
     return str;
 }
@@ -224,13 +220,10 @@ Fobj_clone(obj)
     Check_Type(obj, T_OBJECT);
 
     clone = obj_alloc(RBASIC(obj)->class);
-    GC_LINK;
-    GC_PRO(clone);
     if (RBASIC(obj)->iv_tbl) {
 	RBASIC(clone)->iv_tbl = st_copy(RBASIC(obj)->iv_tbl);
     }
     RBASIC(clone)->class = single_class_clone(RBASIC(obj)->class);
-    GC_UNLINK;
 
     return clone;
 }
@@ -263,6 +256,7 @@ Fnil_plus(x, y)
     switch (TYPE(y)) {
       case T_FIXNUM:
       case T_FLOAT:
+      case T_BIGNUM:
       case T_STRING:
       case T_ARRAY:
 	return y;
@@ -399,14 +393,14 @@ Init_Object()
     rb_define_method(C_Kernel, "to_s", Fkrn_to_s, 0);
     rb_define_method(C_Kernel, "_inspect", Fkrn_inspect, 0);
 
-    rb_define_func(C_Kernel, "caller", Fcaller, -2);
-    rb_define_func(C_Kernel, "fail", Ffail, -2);
-    rb_define_func(C_Kernel, "exit", Fexit, -2);
-    rb_define_func(C_Kernel, "eval", Feval, 1);
-    rb_define_func(C_Kernel, "defined", Fdefined, 1);
-    rb_define_func(C_Kernel, "sprintf", Fsprintf, -1);
+    rb_define_method(C_Kernel, "caller", Fcaller, -2);
+    rb_define_method(C_Kernel, "fail", Ffail, -2);
+    rb_define_method(C_Kernel, "exit", Fexit, -2);
+    rb_define_method(C_Kernel, "eval", Feval, 1);
+    rb_define_method(C_Kernel, "defined", Fdefined, 1);
+    rb_define_method(C_Kernel, "sprintf", Fsprintf, -1);
     rb_define_alias(C_Kernel, "format", "sprintf");
-    rb_define_func(C_Kernel, "iterator_p", Fiterator_p, 0);
+    rb_define_method(C_Kernel, "iterator_p", Fiterator_p, 0);
 
     rb_define_method(C_Kernel, "apply", Fapply, -2);
 
@@ -422,7 +416,7 @@ Init_Object()
 
     rb_define_method(C_Module, "to_s", Fcls_to_s, 0);
     rb_define_method(C_Module, "clone", Fcant_clone, 0);
-    rb_define_func(C_Module, "attr", Fcls_attr, -2);
+    rb_define_method(C_Module, "attr", Fcls_attr, -2);
 
     rb_define_method(C_Class, "new", Fcls_new, -2);
 
@@ -434,12 +428,6 @@ Init_Object()
     rb_define_method(C_Nil, "is_nil", P_true, 0);
     rb_define_method(C_Nil, "!", P_true, 0);
 
-    /* for compare cascading. */
-    rb_define_method(C_Nil, ">", P_false, 1);
-    rb_define_alias(C_Nil, ">=", ">");
-    rb_define_alias(C_Nil, "<", ">");
-    rb_define_alias(C_Nil, "<=", ">");
-
     /* default addition */
     rb_define_method(C_Nil, "+", Fnil_plus, 1);
 
@@ -448,7 +436,7 @@ Init_Object()
     rb_define_method(C_Data, "class", Fdata_class, 0);
 
     C_Method = rb_define_class("Method", C_Kernel);
-    rb_define_method(C_Data, "clone", Fcant_clone, 0);
+    rb_define_method(C_Method, "clone", Fcant_clone, 0);
 
     eq = rb_intern("==");
     match = rb_intern("=~");

@@ -125,10 +125,8 @@ PROGRAM	      = ruby
 all:		$(PROGRAM)
 
 $(PROGRAM):     $(OBJS)
-		@echo -n "Loading $(PROGRAM) ... "
 		@rm -f $(PROGRAM)
-		@$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(PROGRAM)
-		@echo "done"
+		$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(PROGRAM)
 
 install: $(PROGMAM)
 	$(INSTALL_PROGRAM) $(PROGRAM) $(bindir)/$(PROGRAM)
@@ -148,7 +146,7 @@ parse.o : parse.y ruby.h defines.h env.h ident.h node.h st.h regex.h
 ###
 array.o : array.c ruby.h defines.h 
 bignum.o : bignum.c ruby.h defines.h 
-class.o : class.c ruby.h defines.h env.h node.h st.h 
+class.o : class.c ruby.h defines.h env.h node.h st.h methods.h 
 compar.o : compar.c ruby.h defines.h 
 dbm.o : dbm.c ruby.h defines.h 
 dict.o : dict.c ruby.h defines.h st.h 
@@ -160,10 +158,10 @@ etc.o : etc.c ruby.h defines.h
 eval.o : eval.c ruby.h defines.h env.h node.h ident.h st.h 
 file.o : file.c ruby.h defines.h io.h 
 gc.o : gc.c ruby.h defines.h env.h st.h 
-inits.o : inits.c 
+inits.o : inits.c ruby.h defines.h 
 io.o : io.c ruby.h defines.h io.h 
 math.o : math.c ruby.h defines.h 
-methods.o : methods.c ruby.h defines.h env.h node.h 
+methods.o : methods.c ruby.h defines.h ident.h env.h node.h methods.h 
 missing.o : missing.c ruby.h defines.h missing/memmove.c missing/strerror.c \
   missing/strtoul.c missing/strftime.c missing/strstr.c missing/getopt.h missing/getopt.c \
   missing/getopt1.c missing/mkdir.c 

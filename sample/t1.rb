@@ -1,12 +1,12 @@
 def test(a1, *a2)
  while 1
-  switch gets()
-  case nil
+  case gets()
+  when nil
     break
-  case /^-$/
+  when /^-$/
     print("-\n")
     return
-  case /^-help/
+  when /^-help/
     print("-help\n")
     break
   end

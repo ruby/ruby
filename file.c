@@ -33,8 +33,7 @@ file_open(fname, mode)
     VALUE port;
     OpenFile *fptr;
 
-    GC_LINK;
-    GC_PRO3(port, obj_alloc(C_File));
+    port = obj_alloc(C_File);
 
     MakeOpenFile(port, fptr);
     fptr->mode = io_mode_flags(mode);
@@ -51,8 +50,6 @@ file_open(fname, mode)
     }
 
     fptr->path = strdup(fname);
-
-    GC_UNLINK;
 
     return port;
 }
@@ -85,6 +82,7 @@ Ffile_seek(obj, offset, ptrname)
 
     pos = fseek(fptr->f, NUM2INT(offset), NUM2INT(ptrname));
     if (pos != 0) rb_sys_fail(Qnil);
+    clearerr(fptr->f);
 
     return obj;
 }
@@ -97,6 +95,7 @@ Ffile_rewind(obj)
 
     GetOpenFile(obj, fptr);
     if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(Qnil);
+    clearerr(fptr->f);
 
     return obj;
 }
@@ -137,16 +136,8 @@ static VALUE
 stat_new(st)
     struct stat *st;
 {
-    VALUE obj, data, atime, mtime, ctime, stat;
-
     if (st == Qnil) Bug("stat_new() called with nil");
-
-    GC_LINK;
-    GC_PRO3(atime, time_new(st->st_atime, 0));
-    GC_PRO3(mtime, time_new(st->st_mtime, 0));
-    GC_PRO3(ctime, time_new(st->st_ctime, 0));
-
-    stat = struct_new("stat",
+    return struct_new("stat",
 		      "dev", INT2FIX((int)st->st_dev),
 		      "ino", INT2FIX((int)st->st_ino),
 		      "mode", INT2FIX((int)st->st_mode),
@@ -169,13 +160,10 @@ stat_new(st)
 #else
 		      "blocks", INT2FIX(0),
 #endif
-		      "atime", atime,
-		      "mtime", mtime,
-		      "ctime", ctime,
+		      "atime", time_new(st->st_atime, 0),
+		      "mtime", time_new(st->st_mtime, 0),
+		      "ctime", time_new(st->st_ctime, 0),
 		      Qnil);
-    GC_UNLINK;
-
-    return stat;
 }
 
 static char lastpath[MAXPATHLEN];

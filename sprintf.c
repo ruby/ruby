@@ -36,8 +36,6 @@ Fsprintf(argc, argv)
     int width, prec, flags = FNONE;
     VALUE str;
 
-    GC_LINK;
-    GC_PRO2(str);
 
 #define CHECK(l) {\
     while (blen + (l) >= bsiz) {\
@@ -208,8 +206,6 @@ Fsprintf(argc, argv)
 		char fbuf[32], *s, *t, *end;
 		int v, base;
 
-		GC_LINK;
-		GC_PRO(val);
 	      bin_retry:
 		switch (TYPE(val)) {
 		  case T_FIXNUM:
@@ -285,7 +281,6 @@ Fsprintf(argc, argv)
 		sprintf(&buf[blen], fbuf, s);
 		blen += strlen(&buf[blen]);
 		obj_free(val);
-		GC_UNLINK;
 	    }
 	    break;
 	    
@@ -300,8 +295,6 @@ Fsprintf(argc, argv)
 		int v;
 
 		if (c == 'D') c = 'd';
-		GC_LINK;
-		GC_PRO(val);
 	      int_retry:
 		switch (TYPE(val)) {
 		  case T_FIXNUM:
@@ -351,7 +344,6 @@ Fsprintf(argc, argv)
 		    sprintf(&buf[blen], fbuf, v);
 		    blen += strlen(&buf[blen]);
 		}
-		GC_UNLINK;
 	    }
 	    break;
 
@@ -395,7 +387,6 @@ Fsprintf(argc, argv)
     }
 
   sprint_exit:
-    GC_UNLINK;
     if (verbose && argc > 1) {
 	Fail("too many argument for format string");
     }

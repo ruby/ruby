@@ -43,11 +43,7 @@ Fdic_new(class)
     NEWOBJ(dic, struct RDict);
     OBJSETUP(dic, class, T_DICT);
 
-    GC_LINK;
-    GC_PRO(dic);
-
     dic->tbl = st_init_table(rb_cmp, rb_hash);
-    GC_UNLINK;
 
     return (VALUE)dic;
 }
@@ -59,12 +55,7 @@ Fdic_clone(dic)
     NEWOBJ(dic2, struct RDict);
     CLONESETUP(dic2, dic);
 
-    GC_LINK;
-    GC_PRO(dic2);
-
     dic2->tbl = (st_table*)st_copy(dic->tbl);
-
-    GC_UNLINK;
 
     return (VALUE)dic2;
 }
@@ -210,10 +201,8 @@ Fdic_to_a(dic)
 {
     VALUE ary;
 
-    GC_LINK;
-    GC_PRO3(ary, ary_new());
+    ary = ary_new();
     st_foreach(dic->tbl, dic_to_a, ary);
-    GC_UNLINK;
 
     return ary;
 }
@@ -229,13 +218,11 @@ dic_inspect(key, value, str)
     if (str->len > 1) {
 	str_cat(str, ", ", 2);
     }
-    GC_LINK;
-    GC_PRO3(str2, rb_funcall(key, inspect, 0, Qnil));
+    str2 = rb_funcall(key, inspect, 0, Qnil);
     str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
     str_cat(str, "=>", 2);
     str2 = rb_funcall(value, inspect, 0, Qnil);
     str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
-    GC_UNLINK;
 
     return ST_CONTINUE;
 }
@@ -246,11 +233,9 @@ Fdic_inspect(dic)
 {
     VALUE str;
 
-    GC_LINK;
-    GC_PRO3(str, str_new2("{"));
+    str = str_new2("{");
     st_foreach(dic->tbl, dic_inspect, str);
     str_cat(str, "}", 1);
-    GC_UNLINK;
 
     return str;
 }
@@ -261,11 +246,8 @@ Fdic_to_s(dic)
 {
     VALUE str;
 
-    GC_LINK;
-    GC_PRO(dic);
     dic = Fdic_to_a(dic);
     str = Fary_to_s(dic);
-    GC_UNLINK;
 
     return str;
 }
@@ -284,10 +266,9 @@ Fdic_keys(dic)
 {
     VALUE ary;
 
-    GC_LINK;
-    GC_PRO3(ary, ary_new());
+    ary = ary_new();
     st_foreach(dic->tbl, dic_keys, ary);
-    GC_UNLINK;
+
     return ary;
 }
 
@@ -305,10 +286,9 @@ Fdic_values(dic)
 {
     VALUE ary;
 
-    GC_LINK;
-    GC_PRO3(ary, ary_new());
+    ary = ary_new();
     st_foreach(dic->tbl, dic_values, ary);
-    GC_UNLINK;
+
     return ary;
 }
 
@@ -326,7 +306,7 @@ Fdic_has_key(dic, key)
 
 static VALUE value_found;
 
-static
+static int
 dic_search_value(key, value, arg)
     VALUE key, value, arg;
 {
@@ -347,6 +327,46 @@ Fdic_has_value(dic, val)
     return value_found;
 }
 
+struct equal_data {
+    int result;
+    st_table *tbl;
+};
+
+static int
+dic_equal(key, val1, data)
+    VALUE key, val1;
+    struct equal_data *data;
+{
+    VALUE val2;
+
+    if (!st_lookup(data->tbl, key, &val2)) {
+	data->result = FALSE;
+	return ST_STOP;
+    }
+    if (!rb_funcall(val1, eq, 1, val2)) {
+	data->result = FALSE;
+	return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+static VALUE
+Fdic_equal(dic1, dic2)
+    struct RDict *dic1, *dic2;
+{
+    struct equal_data data;
+
+    if (TYPE(dic2) != T_DICT) return FALSE;
+    if (dic1->tbl->num_entries != dic2->tbl->num_entries)
+	return FALSE;
+
+    data.tbl = dic2->tbl;
+    data.result = TRUE;
+    st_foreach(dic1->tbl, dic_equal, &data);
+
+    return data.result;
+}
+
 char *index();
 extern VALUE rb_readonly_hook();
 
@@ -363,11 +383,9 @@ Fenv_each(dic)
 	VALUE var, val;
 	char *s = index(*env, '=');
 
-	GC_LINK;
-	GC_PRO3(var, str_new(*env, s-*env));
-	GC_PRO3(val, str_new2(s+1));
+	var = str_new(*env, s-*env);
+	val = str_new2(s+1);
 	rb_yield(assoc_new(var, val));
-	GC_UNLINK;
 	env++;
     }
     return dic;
@@ -481,6 +499,7 @@ Init_Dict()
     rb_define_method(C_Dict,"to_s",  Fdic_to_s, 0);
     rb_define_method(C_Dict,"_inspect",  Fdic_inspect, 0);
 
+    rb_define_method(C_Dict,"==",  Fdic_equal, 1);
     rb_define_method(C_Dict,"[]",  Fdic_aref, 1);
     rb_define_method(C_Dict,"[]=", Fdic_aset, 2);
     rb_define_method(C_Dict,"length", Fdic_length, 0);
@@ -512,6 +531,6 @@ Init_Dict()
     envtbl = obj_alloc(C_EnvDict);
     rb_define_variable("$ENV", &envtbl, Qnil, rb_readonly_hook);
 
-    rb_define_func(C_Kernel, "getenv", Fgetenv, 1);
-    rb_define_func(C_Kernel, "setenv", Fsetenv, 2);
+    rb_define_method(C_Kernel, "getenv", Fgetenv, 1);
+    rb_define_method(C_Kernel, "setenv", Fsetenv, 2);
 }

@@ -38,14 +38,11 @@ sock_new(class, fd)
     VALUE sock = obj_alloc(class);
     OpenFile *fp;
 
-    GC_LINK;
-    GC_PRO(sock);
     MakeOpenFile(sock, fp);
     fp->f = rb_fdopen(fd, "r");
     setbuf(fp->f, NULL);
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE|FMODE_SYNC;
-    GC_UNLINK;
 
     return sock;
 }
@@ -183,7 +180,7 @@ open_inet(class, h, serv, server)
     Check_Type(serv, T_STRING);
     servent = getservbyname(RSTRING(serv)->ptr, "tcp");
     if (servent == NULL) {
-	servport = strtol(RSTRING(serv)->ptr, Qnil, 0);
+	servport = strtoul(RSTRING(serv)->ptr, Qnil, 0);
 	if (servport == -1) Fail("no such servce %s", RSTRING(serv)->ptr);
       setup_servent:
 	_servent.s_port = servport;
@@ -315,11 +312,9 @@ open_unix(class, path, server)
 
     if (server) listen(fd, 5);
 
-    GC_LINK;
-    GC_PRO3(sock, sock_new(class, fd));
+    sock = sock_new(class, fd);
     GetOpenFile(sock, fptr);
     fptr->path = strdup(path->ptr);
-    GC_UNLINK;
 
     return sock;
 }
@@ -332,8 +327,7 @@ tcp_addr(sockaddr)
     VALUE ary;
     struct hostent *hostent;
 
-    GC_LINK;
-    GC_PRO3(family, str_new2("AF_INET"));
+    family = str_new2("AF_INET");
     hostent = gethostbyaddr((char*)&sockaddr->sin_addr.s_addr,
 			    sizeof(sockaddr->sin_addr),
 			    AF_INET);
@@ -346,10 +340,9 @@ tcp_addr(sockaddr)
 	sprintf(buf, "%d.%d.%d.%d", a[0], a[1], a[2], a[3]);
 	addr = str_new2(buf);
     }
-    GC_PRO(addr);
     port = INT2FIX(sockaddr->sin_port);
     ary = ary_new3(3, family, port, addr);
-    GC_UNLINK;
+
     return ary;
 }
 
@@ -432,15 +425,7 @@ static VALUE
 unix_addr(sockaddr)
     struct sockaddr_un *sockaddr;
 {
-    VALUE family, path;
-    VALUE ary;
-
-    GC_LINK;
-    GC_PRO3(family, str_new2("AF_UNIX"));
-    GC_PRO3(path, str_new2(sockaddr->sun_path));
-    ary = assoc_new(family, path);
-    GC_UNLINK;
-    return ary;
+    return assoc_new(str_new2("AF_UNIX"),str_new2(sockaddr->sun_path));
 }
 
 static VALUE
@@ -553,19 +538,12 @@ Fsock_socketpair(class, domain, type, protocol)
 {
     int fd;
     int d, t, sp[2];
-    VALUE sock1, sock2, pair;
 
     setup_domain_and_type(domain, &d, type, &t);
     if (socketpair(d, t, NUM2INT(protocol), sp) < 0)
 	rb_sys_fail("socketpair(2)");
 
-    GC_LINK;
-    GC_PRO3(sock1, sock_new(class, sp[0]));
-    GC_PRO3(sock2, sock_new(class, sp[1]));
-    pair = assoc_new(sock1, sock2);
-    GC_UNLINK;
-
-    return pair;
+    return assoc_new(sock_new(class, sp[0]), sock_new(class, sp[1]));
 }
 
 static VALUE
@@ -669,10 +647,8 @@ Fsock_recv(sock, len, flags)
     struct RString *str;
     char buf[1024];
     int fd, alen = sizeof buf;
-    VALUE addr, result;
 
-    GC_LINK;
-    GC_PRO3(str, (struct RString*)str_new(0, NUM2INT(len)));
+    str = (struct RString*)str_new(0, NUM2INT(len));
 
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
@@ -680,11 +656,7 @@ Fsock_recv(sock, len, flags)
 		 (struct sockaddr*)buf, &alen) < 0) {
 	rb_sys_fail("recv(2)");
     }
-    GC_PRO3(addr, str_new(buf, alen));
-    result = assoc_new(str, addr);
-    GC_UNLINK;
-
-    return result;
+    return assoc_new(str, str_new(buf, alen));
 }
 
 Init_Socket ()
@@ -699,31 +671,30 @@ Init_Socket ()
 
     C_TCPsocket = rb_define_class("TCPsocket", C_BasicSocket);
     rb_define_single_method(C_TCPsocket, "open", Ftcp_sock_open, 2);
-    rb_define_alias(C_TCPsocket, "new", "open");
+    rb_define_single_method(C_TCPsocket, "new", Ftcp_sock_open, 2);
     rb_define_method(C_TCPsocket, "addr", Ftcp_addr, 0);
     rb_define_method(C_TCPsocket, "peeraddr", Ftcp_peeraddr, 0);
 
     C_TCPserver = rb_define_class("TCPserver", C_TCPsocket);
     rb_define_single_method(C_TCPserver, "open", Ftcp_svr_open, -2);
-    rb_define_alias(C_TCPserver, "new", "open");
+    rb_define_single_method(C_TCPserver, "new", Ftcp_svr_open, -2);
     rb_define_method(C_TCPserver, "accept", Ftcp_accept, 0);
 
     C_UNIXsocket = rb_define_class("UNIXsocket", C_BasicSocket);
     rb_define_single_method(C_UNIXsocket, "open", Funix_sock_open, 1);
-    rb_define_alias(C_UNIXsocket, "new", "open");
+    rb_define_single_method(C_UNIXsocket, "new", Funix_sock_open, 1);
     rb_define_method(C_UNIXsocket, "path", Funix_path, 0);
     rb_define_method(C_UNIXsocket, "addr", Funix_addr, 0);
     rb_define_method(C_UNIXsocket, "peeraddr", Funix_peeraddr, 0);
 
     C_UNIXserver = rb_define_class("UNIXserver", C_UNIXsocket);
     rb_define_single_method(C_UNIXserver, "open", Funix_svr_open, 1);
-    rb_define_alias(C_UNIXserver, "new", "open");
     rb_define_single_method(C_UNIXserver, "new", Funix_svr_open, 1);
     rb_define_method(C_UNIXserver, "accept", Funix_accept, 0);
 
     C_Socket = rb_define_class("Socket", C_BasicSocket);
     rb_define_single_method(C_Socket, "open", Fsock_open, 3);
-    rb_define_alias(C_UNIXserver, "new", "open");
+    rb_define_single_method(C_Socket, "new", Fsock_open, 3);
 
     rb_define_method(C_Socket, "connect", Fsock_connect, 1);
     rb_define_method(C_Socket, "bind", Fsock_bind, 1);

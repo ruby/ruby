@@ -39,6 +39,7 @@ enum node_type {
     NODE_ZSUPER,
     NODE_ARRAY,
     NODE_ZARRAY,
+    NODE_QLIST,
     NODE_HASH,
     NODE_REDO,
     NODE_BREAK,
@@ -54,6 +55,10 @@ enum node_type {
     NODE_CONST,
     NODE_LIT,
     NODE_STR,
+    NODE_STR2,
+    NODE_XSTR,
+    NODE_XSTR2,
+    NODE_DREGX,
     NODE_ARGS,
     NODE_DEFN,
     NODE_DEFS,
@@ -78,7 +83,6 @@ typedef struct node {
 	VALUE value;
 	VALUE (*cfunc)();
 	ID *tbl;
-	enum mth_scope scope;
     } u1;
     union {
 	struct node *node;
@@ -135,7 +139,6 @@ typedef struct node {
 #define nd_mid   u2.id
 #define nd_args  u3.node
 
-#define nd_scope u1.scope
 #define nd_defn  u3.node
 
 #define nd_new   u1.id
@@ -155,7 +158,7 @@ typedef struct node {
 
 #define nd_rval  u3.node
 
-#define NEW_DEFN(i,d,m) newnode(NODE_DEFN,m,i,d)
+#define NEW_DEFN(i,d) newnode(NODE_DEFN,Qnil,i,d)
 #define NEW_DEFS(r,i,d) newnode(NODE_DEFS,r,i,d)
 #define NEW_CFUNC(f,c) newnode(NODE_CFUNC,f,c,Qnil)
 #define NEW_RFUNC(b1,b2) NEW_SCOPE(block_append(b1,b2))
@@ -177,6 +180,7 @@ typedef struct node {
 #define NEW_RET(s)  newnode(NODE_RETURN,s,Qnil,Qnil)
 #define NEW_YIELD(a) newnode(NODE_YIELD,a,Qnil,Qnil)
 #define NEW_LIST(a) NEW_ARRAY(a)
+#define NEW_QLIST(a) newnode(NODE_QLIST,a,Qnil,Qnil)
 #define NEW_ARRAY(a) newnode(NODE_ARRAY,a,Qnil,Qnil)
 #define NEW_ZARRAY() newnode(NODE_ZARRAY,Qnil,Qnil,Qnil)
 #define NEW_HASH(a) newnode(NODE_HASH,a,Qnil,Qnil)
@@ -194,6 +198,9 @@ typedef struct node {
 #define NEW_CVAR(v) newnode(NODE_CVAR,v,Qnil,Qnil)
 #define NEW_LIT(l) newnode(NODE_LIT,l,Qnil,Qnil)
 #define NEW_STR(s) newnode(NODE_STR,s,Qnil,Qnil)
+#define NEW_STR2(s) newnode(NODE_STR2,s,Qnil,Qnil)
+#define NEW_XSTR(s) newnode(NODE_XSTR,s,Qnil,Qnil)
+#define NEW_XSTR2(s) newnode(NODE_XSTR2,s,Qnil,Qnil)
 #define NEW_CALL(r,m,a) newnode(NODE_CALL,r,m,a)
 #define NEW_CALL2(r,m,a) newnode(NODE_CALL2,r,m,a)
 #define NEW_SUPER(a) newnode(NODE_SUPER,Qnil,Qnil,a)

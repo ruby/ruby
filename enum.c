@@ -52,12 +52,8 @@ Fenum_grep(obj, pat)
 	VALUE tmp, arg[2];
 
 	arg[0] = pat; arg[1] = tmp = ary_new();
-	GC_LINK;
-	GC_PRO(tmp);
-
 	rb_iterate(rb_each, obj, enum_grep, arg);
 
-	GC_UNLINK;
 	return tmp;
     }
 }
@@ -99,12 +95,9 @@ Fenum_find_all(obj)
 {
     VALUE tmp;
 
-    GC_LINK;
-    GC_PRO3(tmp, ary_new());
-
+    tmp = ary_new();
     rb_iterate(rb_each, obj, enum_find_all, Qnil);
 
-    GC_UNLINK;
     return tmp;
 }
 
@@ -114,14 +107,10 @@ enum_collect(i, tmp)
 {
     VALUE retval;
 
-    GC_LINK;
-    GC_PRO3(retval, rb_yield(i));
-
+    retval = rb_yield(i);
     if (retval) {
 	Fary_push(tmp, retval);
     }
-
-    GC_UNLINK;
 }
 
 static VALUE
@@ -130,12 +119,9 @@ Fenum_collect(obj)
 {
     VALUE tmp;
 
-    GC_LINK;
-    GC_PRO3(tmp, ary_new());
-
+    tmp = ary_new();
     rb_iterate(rb_each, obj, enum_collect, tmp);
 
-    GC_UNLINK;
     return tmp;
 }
 
@@ -152,12 +138,9 @@ Fenum_reverse(obj)
 {
     VALUE tmp;
 
-    GC_LINK;
-    GC_PRO3(tmp, ary_new());
-
+    tmp = ary_new();
     rb_iterate(rb_each, obj, enum_reverse, tmp);
 
-    GC_UNLINK;
     return tmp;
 }
 
@@ -174,10 +157,8 @@ Fenum_to_a(obj)
 {
     VALUE ary;
 
-    GC_LINK;
-    GC_PRO3(ary, ary_new());
+    ary = ary_new();
     rb_iterate(rb_each, obj, enum_all, ary);
-    GC_UNLINK;
 
     return ary;
 }
@@ -188,10 +169,8 @@ Fenum_sort(obj)
 {
     VALUE ary;
 
-    GC_LINK;
-    GC_PRO3(ary, Fenum_to_a(obj));
+    ary = Fenum_to_a(obj);
     Fary_sort(ary);
-    GC_UNLINK;
     return ary;
 }
 
@@ -214,12 +193,9 @@ static VALUE
 Fenum_min(obj)
     VALUE obj;
 {
-    VALUE min;
+    VALUE min = Qnil;
 
-    GC_LINK;
-    GC_PRO2(min);
     rb_iterate(rb_each, obj, enum_min, &min);
-    GC_UNLINK;
     return min;
 }
 
@@ -242,12 +218,9 @@ static VALUE
 Fenum_max(obj)
     VALUE obj;
 {
-    VALUE max;
+    VALUE max = Qnil;
 
-    GC_LINK;
-    GC_PRO2(max);
     rb_iterate(rb_each, obj, enum_max, &max);
-    GC_UNLINK;
     return max;
 }
 

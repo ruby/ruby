@@ -1,4 +1,4 @@
-#! ./ruby
+#! /usr/local/bin/ruby
 f = open("version.h", "r")
 f.gets()
 f.close

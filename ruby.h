@@ -102,9 +102,8 @@ extern VALUE C_Data;
 #define T_FIXNUM 0x9
 #define T_DICT   0xA
 #define T_DATA   0xB
-#define T_METHOD 0xC
-#define T_STRUCT 0xD
-#define T_BIGNUM 0xE
+#define T_STRUCT 0xC
+#define T_BIGNUM 0xD
 
 #define T_MASK   0xF
 
@@ -116,7 +115,7 @@ extern VALUE C_Data;
 VALUE num2fix();
 int   num2int();
 
-#define NEWOBJ(obj,type) type *obj = (type*)newobj(sizeof(type))
+#define NEWOBJ(obj,type) type *obj = (type*)newobj()
 #define OBJSETUP(obj,c,t) {\
     RBASIC(obj)->class = (c);\
     RBASIC(obj)->flags |= (t);\
@@ -126,7 +125,6 @@ int   num2int();
 				 
 struct RBasic {
     UINT flags;
-    struct RBasic *next;
     VALUE class;
     struct st_table *iv_tbl;
 };
@@ -176,10 +174,10 @@ struct RData {
     struct RBasic basic;
     void (*dmark)();
     void (*dfree)();
-    VALUE data[1];
+    VALUE *data;
 };
 
-#define DATA_PTR(dta) &(RDATA(dta)->data[0])
+#define DATA_PTR(dta) (RDATA(dta)->data)
 
 #define Get_Data_Struct(obj, iv, type, sval) {\
     VALUE _data_;\
@@ -190,22 +188,13 @@ struct RData {
 
 #define Make_Data_Struct(obj, iv, type, mark, free, sval) {\
     struct RData *_new_;\
-    _new_ = (struct RData*)newobj(sizeof(struct RData)+sizeof(type));\
-    OBJSETUP(_new_, C_Data, T_DATA);\
+    _new_ = (struct RData*)newdata(sizeof(type));\
     _new_->dmark = (void (*)())(mark);\
     _new_->dfree = (void (*)())(free);\
     sval = (type*)DATA_PTR(_new_);\
     bzero(sval, sizeof(type));\
     rb_iv_set(obj, iv, _new_);\
 }
-
-struct RMethod {
-    struct RBasic basic;
-    struct node *node;
-    struct RClass *origin;
-    ID id;
-    enum mth_scope { MTH_METHOD, MTH_FUNC, MTH_UNDEF } scope;
-};
 
 struct RStruct {
     struct RBasic basic;
@@ -234,7 +223,6 @@ struct RBignum {
 #define RARRAY(obj)  (R_CAST(RArray)(obj))
 #define RDICT(obj)   (R_CAST(RDict)(obj))
 #define RDATA(obj)   (R_CAST(RData)(obj))
-#define RMETHOD(obj) (R_CAST(RMethod)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 
@@ -244,33 +232,6 @@ struct RBignum {
 #define ALLOC(type) (type*)xmalloc(sizeof(type))
 #define REALLOC_N(var,type,n) (var)=(type*)xrealloc((char*)(var),sizeof(type)*(n))
 
-extern struct gc_list {
-    int n;
-    VALUE *varptr;
-    struct gc_list *next;
-} *GC_List;
-
-#define GC_LINK { struct gc_list *_oldgc = GC_List;
-
-#define GC_PRO(var) {\
-    struct gc_list *_tmp = (struct gc_list*)alloca(sizeof(struct gc_list));\
-    _tmp->next = GC_List;\
-    _tmp->varptr = (VALUE*)&(var);\
-    _tmp->n = 1;\
-    GC_List = _tmp;\
-}
-#define GC_PRO2(var) GC_PRO3((var),Qnil)
-#define GC_PRO3(var,init) {\
-    (var) = (init);\
-    GC_PRO(var);\
-}
-#define GC_PRO4(var,nelt) {\
-    GC_PRO(var[0]);\
-    GC_List->n = nelt;\
-}
-
-#define GC_UNLINK GC_List = _oldgc; }
-
 VALUE rb_define_class();
 VALUE rb_define_module();
 
@@ -278,7 +239,6 @@ void rb_define_variable();
 void rb_define_const();
 
 void rb_define_method();
-void rb_define_func();
 void rb_define_single_method();
 void rb_define_mfunc();
 void rb_undef_method();

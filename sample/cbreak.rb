@@ -27,8 +27,8 @@ def set_cbreak (on)
 end
 cbreak();
 
-print("this is echo line: ");
+print("this is no-echo line: ");
 readline().print
 cooked();
-print("this is non echo line: ");
-readline().print
+print("this is echo line: ");
+readline()

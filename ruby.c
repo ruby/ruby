@@ -19,7 +19,7 @@
 #include <signal.h>
 
 #ifdef HAVE_GETOPT_LONG
-#include "getopt.h"
+#include <getopt.h>
 #else
 #include "missing/getopt.h"
 #endif
@@ -66,7 +66,6 @@ proc_options(argcp, argvp)
     int argc = *argcp;
     char **argv = *argvp;
     extern VALUE rb_load_path;
-    extern long reg_syntax;
     extern char *optarg;
     extern int optind;
     int c, i, j, script_given, version, opt_index;
@@ -177,18 +176,18 @@ proc_options(argcp, argvp)
 	    break;
 
 	  case 'N':
-	    reg_syntax &= ~RE_MBCTYPE_MASK;
-	    re_set_syntax(reg_syntax);
+	    obscure_syntax &= ~RE_MBCTYPE_MASK;
+	    re_set_syntax(obscure_syntax);
 	    break;
 	  case 'E':
-	    reg_syntax &= ~RE_MBCTYPE_MASK;
-	    reg_syntax |= RE_MBCTYPE_EUC;
-	    re_set_syntax(reg_syntax);
+	    obscure_syntax &= ~RE_MBCTYPE_MASK;
+	    obscure_syntax |= RE_MBCTYPE_EUC;
+	    re_set_syntax(obscure_syntax);
 	    break;
 	  case 'S':
-	    reg_syntax &= ~RE_MBCTYPE_MASK;
-	    reg_syntax |= RE_MBCTYPE_SJIS;
-	    re_set_syntax(reg_syntax);
+	    obscure_syntax &= ~RE_MBCTYPE_MASK;
+	    obscure_syntax |= RE_MBCTYPE_SJIS;
+	    re_set_syntax(obscure_syntax);
 	    break;
 
 	  case 'I':
@@ -221,7 +220,6 @@ proc_options(argcp, argvp)
 
     if (sflag) {
 	char *s;
-	VALUE v;
 
 	argc = *argcp; argv = *argvp;
 	for (; argc > 0 && argv[0][0] == '-'; argc--,argv++) {
@@ -232,10 +230,7 @@ proc_options(argcp, argvp)
 	    argv[0][0] = '$';
 	    if (s = index(argv[0], '=')) {
 		*s++ = '\0';
-		GC_LINK;
-		GC_PRO3(v, str_new2(s));
-		rb_gvar_set2((*argvp)[0], v);
-		GC_UNLINK;
+		rb_gvar_set2((*argvp)[0], str_new2(s));
 	    }
 	    else {
 		rb_gvar_set2((*argvp)[0], TRUE);
@@ -261,9 +256,9 @@ readin(fd, fname)
 
     p = ptr = ALLOC_N(char, st.st_size+1);
     if (read(fd, ptr, st.st_size) != st.st_size) {
+	free(ptr);
 	rb_sys_fail(fname);
     }
-    p = ptr;
     pend = p + st.st_size;
     if (xflag) {
 	char *s = p;
@@ -286,6 +281,7 @@ readin(fd, fname)
 	    }
 	    p = s + 1;
 	}
+	free(ptr);
 	Fail("No Ruby script found in input");
     }
   start_read:

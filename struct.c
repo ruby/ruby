@@ -87,16 +87,12 @@ struct_new(name, va_alist)
     va_list args;
     char *mem;
 
-    GC_LINK;
-    GC_PRO3(st, struct_alloc(C_Struct,name));
+    st = struct_alloc(C_Struct,name);
     va_start(args);
-
     while (mem = va_arg(args, char*)) {
 	struct_add(st, mem, va_arg(args, VALUE));
     }
-
     va_end(vargs);
-    GC_UNLINK;
 
     return st;
 }
@@ -115,10 +111,7 @@ Fstruct_new(class, args)
     rb_scan_args(args, "1*", &name, &tbl);
     Check_Type(name, T_STRING);
 
-    GC_LINK;
-    GC_PRO(tbl);
-    GC_PRO3(st, struct_alloc(class, RSTRING(name)->ptr));
-
+    st = struct_alloc(class, RSTRING(name)->ptr);
     for (i=0, max=tbl->len; i<max; i++) {
 	VALUE assoc = tbl->ptr[i];
 
@@ -129,8 +122,6 @@ Fstruct_new(class, args)
 	Check_Type(ASSOC_KEY(assoc), T_STRING);
 	struct_add(st, RSTRING(ASSOC_KEY(assoc))->ptr, ASSOC_VAL(assoc));
     }
-
-    GC_UNLINK;
 
     return st;
 }
@@ -156,15 +147,14 @@ Fstruct_values(s)
     VALUE ary;
     struct kv_pair *t, *tend;
 
-    GC_LINK;
-    GC_PRO3(ary, ary_new());
+    ary = ary_new();
     t = s->tbl;
     tend = t + s->len;
     while (t < tend) {
 	Fary_push(ary, t->value);
 	t++;
     }
-    GC_UNLINK;
+
     return ary;
 }
 
@@ -207,10 +197,8 @@ Fstruct_inspect(s)
     int i;
     ID inspect = rb_intern("_inspect");
 
-    GC_LINK;
     sprintf(buf, "#<%s%s: ", HDR, s->name);
-    GC_PRO3(str, str_new2(buf));
-    GC_PRO2(str2);
+    str = str_new2(buf);
     for (i=0; i<s->len; i++) {
 	if (i > 0) {
 	    str_cat(str, ", ", 2);
@@ -222,7 +210,6 @@ Fstruct_inspect(s)
 	str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
     }
     str_cat(str, ">", 1);
-    GC_UNLINK;
 
     return str;
 }

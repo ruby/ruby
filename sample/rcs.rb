@@ -14,7 +14,7 @@ while gets()
   while xr < hdw
     x = xr * (1 + y) - y * w / 2
     i = (x / (1 + h) + sw /2)
-    c = if (0 < i < $_.length); $_[i, 1].to_i else 0 end
+    c = if (1 < i && i < $_.length); $_[i, 1].to_i else 0 end
     y = h - d * c
     xl = xr - w * y / (1 + y);
     if xl < -hdw || xl >= hdw || xl <= maxxl

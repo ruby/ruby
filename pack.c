@@ -65,9 +65,7 @@ Fpck_pack(ary, fmt)
 
     p = fmt->ptr;
     pend = fmt->ptr + fmt->len;
-    GC_LINK;
-    GC_PRO2(from);
-    GC_PRO3(res, str_new(0, 0));
+    res = str_new(0, 0);
 
     items = ary->len;
     idx = 0;
@@ -446,7 +444,6 @@ Fpck_pack(ary, fmt)
 	    break;
 	}
     }
-    GC_UNLINK;
 
     return res;
 }
@@ -499,8 +496,7 @@ Fpck_unpack(str, fmt)
     p = fmt->ptr;
     pend = p + fmt->len;
 
-    GC_LINK;
-    GC_PRO3(ary, ary_new());
+    ary = ary_new();
     while (p < pend) {
       retry:
 	type = *p++;
@@ -838,7 +834,6 @@ Fpck_unpack(str, fmt)
 	}
     }
 
-    GC_UNLINK;
     return ary;
 }
 

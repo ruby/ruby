@@ -24,11 +24,8 @@ if (FIXNUM_P(x)) {\
 }
 
 #define Need_Float2(x,y) {\
-    GC_LINK;\
-    GC_PRO(x);\
     Need_Float(x);\
     Need_Float(y);\
-    GC_UNLINK;\
 }
 
 static VALUE

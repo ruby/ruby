@@ -154,6 +154,9 @@ static char *builtin_types[] = {
     "Fixnum",
     "Dictionary",
     "Data",
+    "Method",
+    "Struct",
+    "Bignum",
 };
 
 WrongType(x, t)

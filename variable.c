@@ -57,17 +57,18 @@ struct global_entry {
     VALUE (*set_hook)();
 };
 
-static mark_global_entry(key, entry)
+static 
+mark_global_entry(key, entry)
     ID key;
     struct global_entry *entry;
 {
     switch (entry->mode) {
 	case GLOBAL_VAL:
-	mark(entry->v.val);	/* normal global value */
+	gc_mark(entry->v.val);	/* normal global value */
 	break;
       case GLOBAL_VAR:
 	if (entry->v.var)
-	    mark(*entry->v.var); /* c variable pointer */
+	    gc_mark(*entry->v.var); /* c variable pointer */
 	break;
       default:
 	break;
@@ -75,7 +76,7 @@ static mark_global_entry(key, entry)
     return ST_CONTINUE;
 }
 
-mark_global_tbl()
+gc_mark_global_tbl()
 {
     st_foreach(global_tbl, mark_global_entry, 0);
 }
@@ -194,6 +195,8 @@ rb_gvar_get(entry)
       default:
 	break;
     }
+    if (verbose)
+	Warning("global var %s not initialized", rb_id2name(entry->id));
     return Qnil;
 }
 
@@ -207,6 +210,8 @@ rb_ivar_get_1(obj, id)
 	return Qnil;
     if (st_lookup(obj->iv_tbl, id, &val))
 	return val;
+    if (verbose)
+	Warning("instance var %s not initialized", rb_id2name(id));
     return Qnil;
 }
 
@@ -224,6 +229,8 @@ rb_mvar_get(id)
     VALUE val;
 
     if (st_lookup(class_tbl, id, &val)) return val;
+    if (verbose)
+	Warning("local var %s not initialized", rb_id2name(id));
     return Qnil;
 }
 

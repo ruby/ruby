@@ -14,6 +14,9 @@
 #include "ident.h"
 #include "env.h"
 #include "node.h"
+#include "methods.h"
+
+void method_free();
 
 #define CACHE_SIZE 577
 #if 0
@@ -28,18 +31,18 @@ struct hash_entry {		/* method hash table. */
     ID mid;			/* method's id */
     struct RClass *class;	/* receiver's class */
     struct RClass *origin;	/* where method defined  */
-    struct RMethod *method;
-    enum mth_scope scope;
+    struct SMethod *method;
+    int undef;
 };
 
 static struct hash_entry cache[CACHE_SIZE];
 
-static struct RMethod*
+static struct SMethod*
 search_method(class, id, origin)
     struct RClass *class, **origin;
     ID id;
 {
-    struct RMethod *body;
+    struct SMethod *body;
     NODE *list;
 
     while (!st_lookup(class->m_tbl, id, &body)) {
@@ -55,21 +58,19 @@ search_method(class, id, origin)
 }
 
 NODE*
-rb_get_method_body(class, id, envset, scope)
+rb_get_method_body(class, id, envset)
     struct RClass *class;
     ID id;
     int envset;
-    enum mth_scope scope;
 {
     int pos, i;
-    int cscope;
-    struct RMethod *method;
+    struct SMethod *method;
 
     /* is it in the method cache? */
     pos = EXPR1(class, id) % CACHE_SIZE;
     if (cache[pos].class != class || cache[pos].mid != id) {
 	/* not in the cache */
-	struct RMethod *body;
+	struct SMethod *body;
 	struct RClass *origin;
 
 	if ((body = search_method(class, id, &origin)) == Qnil) {
@@ -80,13 +81,11 @@ rb_get_method_body(class, id, envset, scope)
 	cache[pos].class = class;
 	cache[pos].origin = origin;
 	cache[pos].method = body;
-	cache[pos].scope = body->scope;
+	cache[pos].undef = body->undef;
     }
 
-    cscope = cache[pos].scope;
     method = cache[pos].method;
-    if (cscope == MTH_UNDEF) return Qnil;
-    if (cscope == MTH_FUNC && scope == MTH_METHOD) return Qnil;
+    if (cache[pos].undef) return Qnil;
     if (envset) {
 	the_env->last_func = method->id;
 	the_env->last_class = cache[pos].origin;
@@ -99,21 +98,23 @@ rb_alias(class, name, def)
     struct RClass *class;
     ID name, def;
 {
-    struct RMethod *body;
+    struct SMethod *body;
 
     if (st_lookup(class->m_tbl, name, &body)) {
 	if (verbose) {
 	    Warning("redefine %s", rb_id2name(name));
 	}
-	unliteralize(body);
+	rb_clear_cache(body);
+	method_free(body);
     }
     body = search_method(class, def, &body);
+    body->count++;
     st_insert(class->m_tbl, name, body);
 }
 
 void
 rb_clear_cache(body)
-    struct RMethod *body;
+    struct SMethod *body;
 {
     int i;
 
@@ -129,17 +130,23 @@ void
 rb_clear_cache2(class)
     struct RClass *class;
 {
+    int i;
 
-    class = class->super;
-    while (class) {
-	int i;
-
-	for (i = 0; i< CACHE_SIZE; i++ ) {
-	    if (cache[i].origin == class) {
-		cache[i].class = Qnil;
-		cache[i].mid = Qnil;
-	    }
+    for (i = 0; i< CACHE_SIZE; i++ ) {
+	if (cache[i].origin == class) {
+	    cache[i].class = Qnil;
+	    cache[i].mid = Qnil;
 	}
-	class = class->super;
+    }
+}
+
+void
+method_free(body)
+    struct SMethod *body;
+{
+    body->count--;
+    if (body->count == 0) {
+	freenode(body->node);
+	free(body);
     }
 }

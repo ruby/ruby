@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/times.h>
+#include <math.h>
 
 static VALUE C_Time;
 extern VALUE M_Comparable;
@@ -41,14 +42,11 @@ Ftime_now(class)
     VALUE obj = obj_alloc(class);
     struct time_object *tobj;
 
-    GC_LINK;
-    GC_PRO(obj);
     MakeTimeval(obj, tobj);
 
     if (gettimeofday(&(tobj->tv), 0) == -1) {
 	rb_sys_fail("gettimeofday");
     }
-    GC_UNLINK;
 
     return obj;
 }
@@ -60,12 +58,9 @@ time_new_internal(class, sec, usec)
     VALUE obj = obj_alloc(class);
     struct time_object *tobj;
 
-    GC_LINK;
-    GC_PRO(obj);
     MakeTimeval(obj, tobj);
     tobj->tv.tv_sec = sec;
-    tobj->tv.tv_usec =usec;
-    GC_UNLINK;
+    tobj->tv.tv_usec = usec;
 
     return obj;
 }
@@ -95,7 +90,6 @@ time_timeval(time)
 
       case T_FLOAT:
 	{
-	    double floor();
 	    double seconds, microseconds;
 
 	    if (RFLOAT(time)->value < 0.0)
@@ -480,15 +474,13 @@ Ftime_strftime(time, format)
 	int l, total = 0;
 	char *p = RSTRING(format)->ptr, *pe = p + RSTRING(format)->len;
 
-	GC_LINK;
-	GC_PRO3(str, str_new(0, 0));
+	str = str_new(0, 0);
 	while (p < pe) {
 	    len = strftime(buf, 100, p, &(tobj->tm));
 	    str_cat(str, buf, len);
 	    l = strlen(p);
 	    p += l + 1;
 	}
-	GC_UNLINK;
 	return str;
     }
     len = strftime(buf, 100, RSTRING(format)->ptr, &(tobj->tm));
@@ -500,22 +492,14 @@ Ftime_times(obj)
     VALUE obj;
 {
     struct tms buf;
-    VALUE t1, t2, t3, t4, tm;
 
     if (times(&buf) == -1) rb_sys_fail(Qnil);
-    GC_LINK;
-    GC_PRO3(t1, float_new((double)buf.tms_utime / 60.0));
-    GC_PRO3(t2, float_new((double)buf.tms_stime / 60.0));
-    GC_PRO3(t3, float_new((double)buf.tms_cutime / 60.0));
-    GC_PRO3(t4, float_new((double)buf.tms_cstime / 60.0));
-
-    tm = struct_new("tms",
-		    "utime", t1, "stime", t2,
-		    "cutime", t3, "cstime", t4,
-		    Qnil);
-    GC_UNLINK;
-
-    return tm;
+    return struct_new("tms",
+		      "utime", float_new((double)buf.tms_utime / 60.0),
+		      "stime", float_new((double)buf.tms_stime / 60.0),
+		      "cutime", float_new((double)buf.tms_cutime / 60.0),
+		      "cstime", float_new((double)buf.tms_cstime / 60.0),
+		      Qnil);
 }
 
 Init_Time()

@@ -14,12 +14,12 @@
 #include "env.h"
 #include "node.h"
 #include "st.h"
+#include "methods.h"
 
 struct st_table *new_idhash();
 
 extern VALUE C_Class;
 extern VALUE C_Module;
-extern VALUE C_Method;
 
 VALUE
 class_new(super)
@@ -140,6 +140,7 @@ rb_include_module(class, module)
     struct RClass *class, *module;
 {
     struct RClass *p;
+    int added = FALSE;
 
     Check_Type(module, T_MODULE);
 
@@ -151,41 +152,43 @@ rb_include_module(class, module)
 	}
 
 	class->super = include_class_new(module, class->super);
+	added = TRUE;
 	class = class->super;
       ignore_module:
 	module = module->super;
     }
-    rb_clear_cache2(class);
+    if (added) {
+	rb_clear_cache2(class);
+    }
 }
 
 void
-rb_add_method(class, mid, node, scope)
+rb_add_method(class, mid, node, undef)
     struct RClass *class;
     ID mid;
     NODE *node;
-    enum mth_scope scope;
+    int undef;
 {
-    struct RMethod *body;
-    NEWOBJ(mth, struct RMethod);
-    OBJSETUP(mth, C_Method, T_METHOD);
+    struct SMethod *body;
 
     if (class == Qnil) class = (struct RClass*)C_Object;
     if (st_lookup(class->m_tbl, mid, &body)) {
 	if (verbose) {
 	    Warning("redefine %s", rb_id2name(mid));
 	}
-	unliteralize(body);
 	rb_clear_cache(body);
+	method_free(body);
     }
-    mth->node = node;
+    body = ALLOC(struct SMethod);
+    body->node = node;
     if (BUILTIN_TYPE(class) == T_MODULE)
-	mth->origin = Qnil;
+	body->origin = Qnil;
     else
-	mth->origin = class;
-    mth->id = mid;
-    mth->scope = scope;
-    literalize(mth);
-    st_insert(class->m_tbl, mid, mth);
+	body->origin = class;
+    body->id = mid;
+    body->undef = undef;
+    body->count = 1;
+    st_insert(class->m_tbl, mid, body);
 }
 
 void
@@ -197,19 +200,7 @@ rb_define_method(class, name, func, argc)
 {
     NODE *temp = NEW_CFUNC(func, argc);
 
-    rb_add_method(class, rb_intern(name), temp, MTH_METHOD);
-}
-
-void
-rb_define_func(class, name, func, argc)
-    struct RClass *class;
-    char *name;
-    VALUE (*func)();
-    int argc;
-{
-    NODE *temp = NEW_CFUNC(func, argc);
-
-    rb_add_method(class, rb_intern(name), temp, MTH_FUNC);
+    rb_add_method(class, rb_intern(name), temp, FALSE);
 }
 
 void
@@ -217,7 +208,7 @@ rb_undef_method(class, name)
     struct RClass *class;
     char *name;
 {
-    rb_add_method(class, rb_intern(name), Qnil, MTH_UNDEF);
+    rb_add_method(class, rb_intern(name), Qnil, TRUE);
 }
 
 VALUE
@@ -248,7 +239,7 @@ rb_define_single_method(obj, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_define_method(rb_single_class(obj), name, func, argc, MTH_METHOD);
+    rb_define_method(rb_single_class(obj), name, func, argc, FALSE);
 }
 
 void
@@ -258,7 +249,7 @@ rb_define_mfunc(class, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_define_func(class, name, func, argc);
+    rb_define_method(class, name, func, argc);
     rb_define_single_method(class, name, func, argc);
 }
 
@@ -285,11 +276,11 @@ rb_define_attr(class, name, pub)
     attreq = rb_intern(buf);
     sprintf(buf, "@%s", name);
     attriv = rb_intern(buf);
-    if (rb_get_method_body(class, attr, 0, MTH_METHOD) == Qnil) {
-	rb_add_method(class, attr, NEW_IVAR(attriv), MTH_METHOD);
+    if (rb_get_method_body(class, attr, 0) == Qnil) {
+	rb_add_method(class, attr, NEW_IVAR(attriv), TRUE);
     }
-    if (pub && rb_get_method_body(class, attreq, 0, MTH_METHOD) == Qnil) {
-	rb_add_method(class, attreq, NEW_ATTRSET(attriv), MTH_METHOD);
+    if (pub && rb_get_method_body(class, attreq, 0) == Qnil) {
+	rb_add_method(class, attreq, NEW_ATTRSET(attriv), TRUE);
     }
 }
 

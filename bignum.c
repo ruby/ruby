@@ -10,6 +10,7 @@
 
 #include "ruby.h"
 #include <ctype.h>
+#include <math.h>
 
 extern VALUE C_Integer;
 VALUE C_Bignum;
@@ -87,7 +88,10 @@ bignorm(x)
 
     while (len-- && !ds[len]) ;
     x->len = ++len;
-    if (len*sizeof(USHORT) <= sizeof(VALUE)) {
+    
+    if (len*sizeof(USHORT) < sizeof(VALUE) ||
+	(len*sizeof(USHORT) == sizeof(VALUE) &&
+	 ds[sizeof(VALUE)/sizeof(USHORT)-1] <= 0x3fff)) {
 	long num = 0;
 	while (len--) {
 	    num = BIGUP(num) + ds[len];
@@ -282,10 +286,9 @@ big2str(x, base)
 	Fail("bignum cannot treat base %d", base);
     }
 
-    GC_LINK;
-    GC_PRO3(t, Fbig_clone(x));
+    t = Fbig_clone(x);
     ds = BDIGITS(t);
-    GC_PRO3(ss, str_new(0, j));
+    ss = str_new(0, j);
     s = RSTRING(ss)->ptr;
 
     s[0] = x->sign ? '+' : '-';
@@ -310,7 +313,7 @@ big2str(x, base)
     RSTRING(ss)->len -= x->sign?j:j-1;
     memmove(x->sign?s:s+1, s+j, RSTRING(ss)->len);
     s[RSTRING(ss)->len] = '\0';
-    GC_UNLINK;
+
     return ss;
 }
 
@@ -363,20 +366,19 @@ dbl2big(d)
     VALUE z;
     double u = (d < 0)?-d:d;
 
-    while (0 != floor(u)) {
+    while (0 != (long)u) {
 	u /= BIGRAD;
 	i++;
     }
-    GC_LINK;
-    GC_PRO3(z, bignew(i, d>=0));
+    z = bignew(i, d>=0);
     digits = BDIGITS(z);
     while (i--) {
 	u *= BIGRAD;
-	c = floor(u);
+	c = (long)u;
 	u -= c;
 	digits[i] = c;
     }
-    GC_UNLINK;
+
     return bignorm(z);
 }
 
@@ -430,8 +432,6 @@ bigadd(x, y, sign)
     i = y->len;
     while (i--) zds[i] = BDIGITS(y)[i];
 
-    GC_LINK;
-    GC_PRO(z);
     i = 0; num = 0;
     if (x->sign == z->sign) {
 	do {
@@ -481,7 +481,7 @@ bigadd(x, y, sign)
 	    }
 	}
     }
-    GC_UNLINK;
+
     return bignorm(z);
 }
 
@@ -491,14 +491,12 @@ Fbig_plus(x, y)
 {
     VALUE z;
 
-    GC_LINK;
-    GC_PRO(y);
     if (FIXNUM_P(y)) y = int2big(FIX2INT(y));
     else {
 	Check_Type(x, T_BIGNUM);
     }
     z = bigadd(x, y, 1);
-    GC_UNLINK;
+
     return z;
 }
 
@@ -506,14 +504,11 @@ VALUE
 Fbig_minus(x, y)
     VALUE x, y;
 {
-    GC_LINK;
-    GC_PRO(y);
     if (FIXNUM_P(y)) y = int2big(FIX2INT(y));
     else {
 	Check_Type(y, T_BIGNUM);
     }
     x = bigadd(x, y, 0);
-    GC_UNLINK;
 
     return x;
 }
@@ -527,8 +522,7 @@ Fbig_mul(x, y)
     VALUE z;
     USHORT *zds;
 
-    GC_LINK;
-    GC_PRO(y);
+    if (FIXNUM_P(x)) x = (struct RBignum*)int2big(FIX2INT(x));
     if (FIXNUM_P(y)) y = (struct RBignum*)int2big(FIX2INT(y));
     else {
 	Check_Type(y, T_BIGNUM);
@@ -552,7 +546,6 @@ Fbig_mul(x, y)
 	    }
 	}
     } while (++i < x->len);
-    GC_UNLINK;
 
     return bignorm(z);
 }
@@ -579,8 +572,7 @@ bigdivmod(x, y, div, mod)
     xds = BDIGITS(x);
     if (ny == 1) {
 	dd = yds[0];
-	GC_LINK;
-	GC_PRO3(z, Fbig_clone(x));
+	z = Fbig_clone(x);
 	zds = BDIGITS(z);
 	t2 = 0; i = nx;
 	while(i--) {
@@ -593,16 +585,14 @@ bigdivmod(x, y, div, mod)
 	    if (!y->sign) t2 = -t2;
 	    *mod = FIX2INT(t2);
 	}
-	GC_UNLINK;
 	return;
     }
-    GC_LINK;
-    GC_PRO3(z, bignew(nx==ny?nx+2:nx+1, x->sign==y->sign));
+    z = bignew(nx==ny?nx+2:nx+1, x->sign==y->sign);
     zds = BDIGITS(z);
     if (nx==ny) zds[nx+1] = 0;
     while (!yds[ny-1]) ny--;
     if ((dd = BIGRAD/(yds[ny-1]+1)) != 1) {
-	GC_PRO3(y, (struct RBignum*)Fbig_clone(y));
+	y = (struct RBignum*)Fbig_clone(y);
 	tds = BDIGITS(y);
 	j = 0;
 	num = 0;
@@ -681,7 +671,6 @@ bigdivmod(x, y, div, mod)
 	RBIGNUM(*mod)->sign = y->sign;
 	*mod = bignorm(*mod);
     }
-    GC_UNLINK;
 }
 
 static VALUE
@@ -690,14 +679,12 @@ Fbig_div(x, y)
 {
     VALUE z;
 
-    GC_LINK;
-    GC_PRO(y);
     if (FIXNUM_P(y)) y = int2big(FIX2INT(y));
     else {
 	Check_Type(y, T_BIGNUM);
     }
     bigdivmod(x, y, &z, Qnil);
-    GC_UNLINK;
+
     return z;
 }
 
@@ -707,14 +694,12 @@ Fbig_mod(x, y)
 {
     VALUE z;
 
-    GC_LINK;
-    GC_PRO(y);
     if (FIXNUM_P(y)) y = int2big(FIX2INT(y));
     else {
 	Check_Type(y, T_BIGNUM);
     }
     bigdivmod(x, y, Qnil, &z);
-    GC_UNLINK;
+
     return z;
 }
 
@@ -724,38 +709,41 @@ Fbig_divmod(x, y)
 {
     VALUE div, mod;
 
-    GC_LINK;
-    GC_PRO(y);
     if (FIXNUM_P(y)) y = int2big(FIX2INT(y));
     else {
 	Check_Type(y, T_BIGNUM);
     }
     bigdivmod(x, y, &div, &mod);
-    GC_UNLINK;
 
     return assoc_new(div, mod);;
 }
 
-static VALUE
+VALUE
 Fbig_pow(x, y)
     VALUE x, y;
 {
-    extern double pow();
     double d1, d2;
+    VALUE z;
+    int n;
 
-    GC_LINK;
-    GC_PRO(y);
-    if (FIXNUM_P(y)) y = int2big(FIX2INT(y));
-    else {
-	Check_Type(y, T_BIGNUM);
+    if (TYPE(y) == T_FLOAT) {
+	return float_new(pow(big2dbl(x), RFLOAT(y)->value));
+    }
+    n = NUM2INT(y);
+    if (n == 0) return INT2FIX(1);
+    if (n < 0) {
+	return float_new(pow(big2dbl(x), (double)n));
     }
 
-    d1 = big2dbl(x);
-    d2 = big2dbl(y);
-    d1 = pow(d1, d2);
-    GC_UNLINK;
-
-    return dbl2big(d1);
+    z = x;
+    while (--n) {
+	while (!(n % 2)) {
+	    n = n /2;
+	    x = Fbig_mul(x, x);
+	}
+	z = Fbig_mul(z, x);
+    }
+    return z;
 }
 
 VALUE
@@ -774,14 +762,12 @@ Fbig_and(x, y)
 	Check_Type(y, T_BIGNUM);
     }
 
-    GC_LINK;
-    GC_PRO(y);
     if (!y->sign) {
 	y = (struct RBignum*)Fbig_clone(y);
 	big_2comp(y);
     }
     if (!x->sign) {
-	GC_PRO3(x, (struct RBignum*)Fbig_clone(x));
+	x = (struct RBignum*)Fbig_clone(x);
 	big_2comp(x);
     }
     if (x->len > y->len) {
@@ -808,7 +794,6 @@ Fbig_and(x, y)
 	zds[i] = sign?0:ds2[i];
     }
     if (!RBIGNUM(z)->sign) big_2comp(z);
-    GC_UNLINK;
     return bignorm(z);
 }
 
@@ -828,14 +813,12 @@ Fbig_or(x, y)
 	Check_Type(y, T_BIGNUM);
     }
 
-    GC_LINK;
-    GC_PRO(y);
     if (!y->sign) {
 	y = (struct RBignum*)Fbig_clone(y);
 	big_2comp(y);
     }
     if (!x->sign) {
-	GC_PRO3(x, (struct RBignum*)Fbig_clone(x));
+	x = (struct RBignum*)Fbig_clone(x);
 	big_2comp(x);
     }
     if (x->len > y->len) {
@@ -862,7 +845,7 @@ Fbig_or(x, y)
 	zds[i] = sign?ds2[i]:(BIGRAD-1);
     }
     if (!RBIGNUM(z)->sign) big_2comp(z);
-    GC_UNLINK;
+
     return bignorm(z);
 }
 
@@ -882,14 +865,12 @@ Fbig_xor(x, y)
 	Check_Type(y, T_BIGNUM);
     }
 
-    GC_LINK;
-    GC_PRO(y);
     if (!y->sign) {
 	y = (struct RBignum*)Fbig_clone(y);
 	big_2comp(y);
     }
     if (!x->sign) {
-	GC_PRO3(x, (struct RBignum*)Fbig_clone(x));
+	x = (struct RBignum*)Fbig_clone(x);
 	big_2comp(x);
     }
     if (x->len > y->len) {
@@ -918,7 +899,7 @@ Fbig_xor(x, y)
 	zds[i] = sign?ds2[i]:~ds2[i];
     }
     if (!RBIGNUM(z)->sign) big_2comp(z);
-    GC_UNLINK;
+
     return bignorm(z);
 }
 

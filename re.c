@@ -149,7 +149,7 @@ research(reg, str, start, ignorecase)
 	struct match *data;
 	int beg, i;
 
-	obj = (struct RData*)newobj(sizeof(struct RData)+sizeof(struct match));
+	obj = (struct RData*)newdata(sizeof(struct match));
 	OBJSETUP(obj, C_Data, T_DATA);
 	obj->dfree = free_match;
 	data = (struct match*)DATA_PTR(obj);
@@ -354,16 +354,16 @@ VALUE
 re_regsub(str)
     struct RString *str;
 {
-    VALUE val;
+    VALUE val = Qnil;
     char *p, *s, *e, c;
     int no, len;
 
     p = s = str->ptr;
     e = s + str->len;
 
-    GC_LINK;
-    GC_PRO2(val);
     while (s < e) {
+	char *ss = s;
+
 	c = *s++;
 	if (c == '&')
 	    no = 0;
@@ -372,12 +372,12 @@ re_regsub(str)
 	else
 	    no = -1;
 
-	if (no >= 0 || c == '\\') {
+	if (no >= 0) {
 	    if (val == Qnil) {
-		val = str_new(p, s-p-2);
+		val = str_new(p, ss-p);
 	    }
 	    else {
-		str_cat(val, p, s-p-2);
+		str_cat(val, p, ss-p);
 	    }
 	    p = s;
 	}
@@ -396,7 +396,6 @@ re_regsub(str)
 	    str_cat(val, match->ptr+BEG(no), END(no)-BEG(no));
 	}
     }
-    GC_UNLINK;
 
     if (val == Qnil) return (VALUE)str;
     if (RSTRING(val)->len == 0) {
@@ -406,14 +405,11 @@ re_regsub(str)
     return val;
 }
 
-long reg_syntax = RE_SYNTAX_POSIX_EXTENDED;
 VALUE rb_readonly_hook();
 
 void
 Init_Regexp()
 {
-    (void) re_set_syntax(reg_syntax);
-
     rb_define_variable("$~", last_match_data, Qnil, store_match_data);
 
     rb_define_variable("$&", Qnil, re_last_match, rb_readonly_hook);

@@ -42,7 +42,7 @@ static void
 free_dir(dir)
     DIR **dir;
 {
-    if (dir) closedir(*dir);
+    if (dir && *dir) closedir(*dir);
 }
 
 static VALUE
@@ -58,12 +58,9 @@ Fdir_open(dir_class, dirname)
     dirp = opendir(dirname->ptr);
     if (dirp == NULL) Fail("Can't open directory %s", dirname->ptr);
 
-    GC_LINK;
-    GC_PRO3(obj, obj_alloc(dir_class));
+    obj = obj_alloc(dir_class);
     Make_Data_Struct(obj, "dir", DIR*, Qnil, free_dir, d);
     *d = dirp;
-    /* use memcpy(d, dirp, sizeof(DIR)) if needed.*/
-    GC_UNLINK;
 
     return obj;
 }
@@ -248,10 +245,10 @@ Init_Dir()
 
     rb_define_single_method(C_Dir,"chdir", Fdir_chdir, -2);
     rb_define_single_method(C_Dir,"getwd", Fdir_getwd, 0);
-    rb_define_alias(C_Dir, "pwd", "getwd");
+    rb_define_single_method(C_Dir,"pwd", Fdir_getwd, 0);
     rb_define_single_method(C_Dir,"chroot", Fdir_chroot, 1);
     rb_define_single_method(C_Dir,"mkdir", Fdir_mkdir, -2);
     rb_define_single_method(C_Dir,"rmdir", Fdir_rmdir, 1);
-    rb_define_alias(C_Dir, "delete", "rmdir");
-    rb_define_alias(C_Dir, "unlink", "rmdir");
+    rb_define_single_method(C_Dir,"delete", Fdir_rmdir, 1);
+    rb_define_single_method(C_Dir,"unlink", Fdir_rmdir, 1);
 }

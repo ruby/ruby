@@ -22,6 +22,7 @@ static ID match, each;
 VALUE errstr, errat;
 extern NODE *eval_tree;
 
+extern VALUE TopSelf;
 struct ENVIRON *the_env, *top_env;
 
 #define PUSH_ENV() {\
@@ -57,7 +58,6 @@ static struct tag {
     struct tag *_oldtag = prot_tag;\
     &_oldtag;\
     _this.level= ++tag_level;\
-    _this.gclist= GC_List;\
     _this.env= the_env;\
     prot_tag = &_this;\
 
@@ -69,7 +69,6 @@ static struct tag {
 #define EXEC_TAG()    (setjmp(prot_tag->buf))
 #define JUMP_TAG(val) {\
     the_env = prot_tag->env;\
-    GC_List = prot_tag->gclist;\
     longjmp(prot_tag->buf,(val));\
 }
 
@@ -89,6 +88,7 @@ VALUE Feval();
 VALUE Argv;
 static VALUE rb_call();
 VALUE rb_apply();
+VALUE rb_xstring();
 
 static void asign();
 
@@ -123,12 +123,17 @@ error_print()
     exit(1);
 }
 
+static int origargc;
+static char **origargv;
+
 main(argc, argv)
     int argc;
     char *argv[];
 {
     int state;
 
+    origargc = argc; origargv = argv;
+    Init_stack();
     PUSH_ENV();
     top_env = the_env;
     PUSH_TAG();
@@ -174,21 +179,69 @@ main(argc, argv)
 
 VALUE rb_readonly_hook();
 
-VALUE Progname;
+static VALUE Progname;
 
 static VALUE
-Eval()
+Eval(toplevel)
+    int toplevel;
 {
-    int state;
+    VALUE result;
     NODE *tree;
+    int state;
 
     if (match == Qnil) match = rb_intern("=~");
     if (each == Qnil) each = rb_intern("each");
 
     tree = eval_tree;
     eval_tree = Qnil;
+    PUSH_TAG();
+    if ((state = EXEC_TAG()) == 0) {
+	result = rb_eval(tree);
+    }
+    POP_TAG();
+    /* you don't have to free at toplevel */
+    if (!toplevel) freenode(tree);
+    if (state) JUMP_TAG(state);
 
-    return rb_eval(tree);
+    return result;
+}
+
+static VALUE
+set_arg0(val, id)
+    VALUE val;
+    ID id;
+{
+    char *s;
+    int i;
+    static int len;
+
+    Check_Type(val, T_STRING);
+    if (len == 0) {
+	s = origargv[0];
+	s += strlen(s);
+	/* See if all the arguments are contiguous in memory */
+	for (i = 1; i < origargc; i++) {
+	    if (origargv[i] == s + 1)
+		s += strlen(++s);	/* this one is ok too */
+	}
+	len = s - origargv[0];
+    }
+    s = RSTRING(val)->ptr;
+    i = RSTRING(val)->len;
+    if (i > len) {
+	memcpy(origargv[0], s, len);
+	origargv[0][len] = '\0';
+    }
+    else {
+	memcpy(origargv[0], s, i);
+	s = origargv[0]+i;
+	*s++ = '\0';
+	while (++i < len)
+	    *s++ = ' ';
+    }
+    Progname = str_new2(origargv[0]);
+
+    return val;
 }
 
 VALUE
@@ -205,7 +258,7 @@ TopLevel(script, argc, argv)
     errat = Qnil;		/* clear for execution */
 
     Progname = str_new2(script);
-    rb_define_variable("$0", &Progname, Qnil, Qnil);
+    rb_define_variable("$0", &Progname, Qnil, set_arg0);
 
     rb_define_variable("$ARGV", &Argv, Qnil, Qnil);
     rb_define_variable("$*", &Argv, Qnil, Qnil);
@@ -213,7 +266,12 @@ TopLevel(script, argc, argv)
     for (i=0; i < argc; i++) {
 	Fary_push(Argv, str_new2(argv[i]));
     }
-    return Eval();
+#define PURIFY_D
+#ifdef PURIFY_D
+    return Eval(0);
+#else
+    return Eval(1);
+#endif
 }
 
 void
@@ -221,9 +279,10 @@ rb_trap_eval(cmd)
     VALUE cmd;
 {
     PUSH_ENV();
-    the_env->self = top_env->self;
+    the_env->self = TopSelf;
     the_env->current_module = top_env->current_module;
     the_env->local_vars = top_env->local_vars;
+    the_env->local_tbl = top_env->local_tbl;
     the_class = (struct RClass*)C_Object;
 
     Feval(Qself, cmd);
@@ -273,14 +332,10 @@ setup_arg_2(node, args, argc, argv)
 }
 
 #define SETUP_ARGS {\
-    VALUE args;\
-    GC_LINK;\
-    GC_PRO2(args);\
+    VALUE args = Qnil;\
     argc = setup_arg_1(node->nd_args, &args);\
     argv = (VALUE*)alloca(sizeof(VALUE)*argc);\
-    GC_PRO4(argv, argc);\
     setup_arg_2(node->nd_args, args, argc, argv);\
-    GC_UNLINK;\
 }
 
 static VALUE
@@ -365,9 +420,7 @@ rb_eval(node)
 	{
 	    VALUE val;
 
-	    GC_LINK;
-	    GC_PRO3(val, rb_eval(node->nd_head));
-
+	    val = rb_eval(node->nd_head);
 	    node = node->nd_body;
 	    while (node) {
 		if (node->type == NODE_WHEN) {
@@ -375,22 +428,18 @@ rb_eval(node)
 
 		    while (tag) {
 			if (rb_funcall(rb_eval(tag->nd_head), match, 1, val)){
-			    result = rb_eval(node->nd_body);
-			    goto exit_case;
+			    return rb_eval(node->nd_body);
 			}
 			tag = tag->nd_next;
 		    }
 		}
 		else {
-		    result = rb_eval(node);
-		    goto exit_case;
+		    return rb_eval(node);
 		}
 		node = node->nd_next;
 	    }	
-	  exit_case:
-	    GC_UNLINK;
 	}
-	return result;
+	return Qnil;
 
       case NODE_WHILE:
 	PUSH_TAG();
@@ -476,13 +525,9 @@ rb_eval(node)
 		else {
 		    VALUE recv;
 
-		    GC_LINK;
-		    GC_PRO2(recv);
 		    recv = rb_eval(node->nd_iter);
 		    the_env->iterator = 1;
-		    result = rb_call(CLASS_OF(recv), recv, each, 1, Qnil,
-				     MTH_METHOD);
-		    GC_UNLINK;
+		    result = rb_call(CLASS_OF(recv), recv, each, 1, Qnil, 0);
 		}
 	    }
 	    POP_TAG();
@@ -511,19 +556,13 @@ rb_eval(node)
 	{
 	    VALUE val;
 
-	    GC_LINK;
-	    GC_PRO3(val, rb_eval(node->nd_stts));
+	    val = rb_eval(node->nd_stts);
 	    result = rb_yield(val);
-	    GC_UNLINK;
 	}
 	return result;
 
       case NODE_PROT:
-	GC_LINK;
-	GC_PRO2(result);
-
 	PUSH_TAG();
-
 	switch (state = EXEC_TAG()) {
 	  case 0:
 	  retry_entry:
@@ -555,7 +594,6 @@ rb_eval(node)
 
 	/* ensure clause */
 	rb_eval(node->nd_ensr);
-	GC_UNLINK;
 
 	if (state != 0) {
 	    JUMP_TAG(state);
@@ -610,7 +648,6 @@ rb_eval(node)
 	{
 	    VALUE recv, *argv;
 	    int argc, last_iter;
-	    enum mth_scope scope;
 
 	    last_iter = the_env->iterator;
 	    the_env->iterator = 0;         /* recv & args are not iter. */
@@ -624,8 +661,7 @@ rb_eval(node)
 	    }
 	    the_env->iterator = last_iter; /* restore iter. level */
 
-	    scope = node->nd_recv?MTH_METHOD:MTH_FUNC;
-	    return rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,scope);
+	    return rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv);
 	}
 	break;
 
@@ -662,7 +698,7 @@ rb_eval(node)
 	    }
 
 	    result = rb_call(the_env->last_class->super, Qself,
-			     the_env->last_func, argc, argv, Qnil, MTH_FUNC);
+			     the_env->last_func, argc, argv, Qnil);
 	    the_env->iterator = last_iter;
 	}
 	return result;
@@ -699,8 +735,6 @@ rb_eval(node)
 	    NODE *list = node->nd_head;
 	    int i, len;
 
-	    GC_LINK;
-	    GC_PRO(val);
 	    if (TYPE(val) != T_ARRAY) {
 		val = rb_funcall(val, rb_intern("to_a"), 0, Qnil);
 		if (TYPE(val) != T_ARRAY) {
@@ -716,7 +750,6 @@ rb_eval(node)
 		asign(list->nd_head, Qnil);
 		list = list->nd_next;
 	    }
-	    GC_UNLINK;
 	    return val;
 	}
 
@@ -729,27 +762,24 @@ rb_eval(node)
 	{
 	    VALUE val;
 
-	    GC_LINK; GC_PRO3(val, rb_eval(node->nd_value));
+	    val = rb_eval(node->nd_value);
 	    rb_gvar_set(node->nd_entry, val);
-	    GC_UNLINK;
 	    return val;
 	}
       case NODE_IASGN:
 	{
 	    VALUE val;
 
-	    GC_LINK; GC_PRO3(val, rb_eval(node->nd_value));
+	    val = rb_eval(node->nd_value);
 	    rb_ivar_set(node->nd_vid, val);
-	    GC_UNLINK;
 	    return val;
 	}
       case NODE_CASGN:
 	{
 	    VALUE val;
 
-	    GC_LINK; GC_PRO3(val, rb_eval(node->nd_value));
+	    val = rb_eval(node->nd_value);
 	    rb_const_set(node->nd_vid, val);
-	    GC_UNLINK;
 	    return val;
 	}
 	break;
@@ -786,8 +816,6 @@ rb_eval(node)
 	    VALUE hash = Fdic_new(C_Dict);
 	    VALUE key, val;
 
-	    GC_LINK;
-	    GC_PRO(hash); GC_PRO2(key); GC_PRO2(val);
 	    list = node->nd_head;
 	    while (list) {
 		key = rb_eval(list->nd_head);
@@ -798,7 +826,6 @@ rb_eval(node)
 		list = list->nd_next;
 		Fdic_aset(hash, key, val);
 	    }
-	    GC_UNLINK;
 	    return hash;
 	}
 	break;
@@ -812,14 +839,12 @@ rb_eval(node)
 	    int i;
 	    NODE *list;
 
-	    GC_LINK;
 	    for (i=0, list=node; list; list=list->nd_next) i++;
-	    GC_PRO3(ary, ary_new2(i));
+	    ary = ary_new2(i);
 	    for (i=0;node;node=node->nd_next) {
 		RARRAY(ary)->ptr[i++] = rb_eval(node->nd_head);
 		RARRAY(ary)->len = i;
 	    }
-	    GC_UNLINK;
 
 	    return ary;
 	}
@@ -827,6 +852,39 @@ rb_eval(node)
 
       case NODE_STR:
 	return str_new3(node->nd_lit);
+
+      case NODE_STR2:
+      case NODE_XSTR2:
+      case NODE_DREGX:
+	{
+	    VALUE str, str2;
+	    NODE *list = node->nd_next;
+
+	    str = node->nd_lit;
+	    while (list) {
+		if (list->nd_head->type == NODE_STR) {
+		    str2 = list->nd_head->nd_lit;
+		}
+		else {
+		    str2 = rb_eval(list->nd_head);
+		}
+		if (str2) {
+		    str2 = obj_as_string(str2);
+		    str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+		}
+		list = list->nd_next;
+	    }
+	    if (node->type == NODE_DREGX) {
+		return regexp_new(RSTRING(str)->ptr, RSTRING(str)->len);
+	    }
+	    else if (node->type == NODE_XSTR2) {
+		return rb_xstring(str);
+	    }
+	    return str;
+	}
+
+      case NODE_XSTR:
+	return rb_xstring(node->nd_lit);
 
       case NODE_LIT:
 	return node->nd_lit;
@@ -841,10 +899,7 @@ rb_eval(node)
 	    NODE *local;
 	    int i, len;
 
-	    local = node->nd_frml;
-	    for (i=0; local; local=local->nd_next,i++)
-		;
-
+	    i = node->nd_cnt;
 	    len = the_env->argc - 1;
 	    if (i > len || (node->nd_rest == -1 && i < len))
 		Fail("Wrong # of arguments(%d for %d)", len, i);
@@ -869,26 +924,32 @@ rb_eval(node)
 
       case NODE_DEFN:
 	{
-	    rb_add_method(the_class,node->nd_mid,node->nd_defn,node->nd_scope);
+	    if (node->nd_defn) {
+		rb_add_method(the_class,node->nd_mid,node->nd_defn,0);
+		node->nd_defn = Qnil;
+	    }
 	}
 	return Qnil;
 
       case NODE_DEFS:
 	{
-	    VALUE recv = rb_eval(node->nd_recv);
+	    if (node->nd_defn) {
+		VALUE recv = rb_eval(node->nd_recv);
 
-	    if (recv == Qnil) {
-		Fail("Can't define method \"%s\" for nil",
-		     rb_id2name(node->nd_mid));
+		if (recv == Qnil) {
+		    Fail("Can't define method \"%s\" for nil",
+			 rb_id2name(node->nd_mid));
+		}
+		rb_add_method(rb_single_class(recv),
+			      node->nd_mid, node->nd_defn, 0);
+		node->nd_defn = Qnil;
 	    }
-	    rb_add_method(rb_single_class(recv),
-			  node->nd_mid, node->nd_defn, MTH_METHOD);
 	}
 	return Qnil;
 
       case NODE_UNDEF:
 	{
-	    rb_add_method(the_class, node->nd_mid, Qnil, MTH_UNDEF);
+	    rb_add_method(the_class, node->nd_mid, Qnil, 1);
 	}
 	return Qnil;
 
@@ -992,7 +1053,7 @@ obj_responds_to(obj, msg)
 	id = rb_intern(msg->ptr);
     }
 
-    if (rb_get_method_body(CLASS_OF(obj), id, 0, MTH_FUNC)) {
+    if (rb_get_method_body(CLASS_OF(obj), id, 0)) {
 	return TRUE;
     }
     return FALSE;
@@ -1187,8 +1248,7 @@ asign(lhs, val)
       case NODE_CALL:
 	{
 	    VALUE recv;
-	    GC_LINK;
-	    GC_PRO3(recv, rb_eval(lhs->nd_recv));
+	    recv = rb_eval(lhs->nd_recv);
 	    if (lhs->nd_args->nd_head == Qnil) {
 		/* attr set */
 		rb_funcall(recv, lhs->nd_mid, 1, val);
@@ -1197,11 +1257,10 @@ asign(lhs, val)
 		/* array set */
 		VALUE args;
 
-		GC_PRO3(args, rb_eval(lhs->nd_args));
+		args = rb_eval(lhs->nd_args);
 		RARRAY(args)->ptr[RARRAY(args)->len-1] = val;
 		rb_apply(recv, lhs->nd_mid, args);
 	    }
-	    GC_UNLINK;
 	}
 	break;
 
@@ -1319,8 +1378,6 @@ rb_ensure(b_proc, data1, e_proc, data2)
     int state;
     VALUE result;
 
-    GC_LINK;
-    GC_PRO2(result);
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	result = (*b_proc)(data1);
@@ -1331,7 +1388,6 @@ rb_ensure(b_proc, data1, e_proc, data2)
     if (state != 0) {
 	JUMP_TAG(state);
     }
-    GC_UNLINK;
     return result;
 }
 
@@ -1339,7 +1395,8 @@ struct st_table *new_idhash();
 
 static void
 rb_undefined(obj, id)
-    VALUE obj, id;
+    VALUE obj;
+    ID id;
 {
     VALUE desc = obj_as_string(obj);
 
@@ -1347,18 +1404,17 @@ rb_undefined(obj, id)
 	desc = Fkrn_to_s(obj);
     }
     Fail("undefined method `%s' for \"%s\"(%s)",
-	 rb_id2name(NUM2INT(id)),
+	 rb_id2name(id),
 	 RSTRING(desc)->ptr,
 	 rb_class2name(CLASS_OF(obj)));
 }
 
 static VALUE
-rb_call(class, recv, mid, argc, argv, scope)
+rb_call(class, recv, mid, argc, argv)
     struct RClass *class;
     VALUE recv, *argv;
     int argc;
     ID mid;
-    enum mth_scope scope;
 {
     int state;
     int go_out = 0;
@@ -1375,7 +1431,7 @@ rb_call(class, recv, mid, argc, argv, scope)
     if (argv) argv[0] = recv;
     if (the_env->iterator != 0) the_env->iterator++;
 
-    if ((body = rb_get_method_body(class, mid, 1, scope)) == Qnil) {
+    if ((body = rb_get_method_body(class, mid, 1)) == Qnil) {
 	rb_undefined(recv, mid);
     }
 
@@ -1541,7 +1597,7 @@ rb_apply(recv, mid, args)
 	argv[i] = RARRAY(args)->ptr[i-1];
     }
     argv[0] = Qnil;
-    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, MTH_FUNC);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv);
 }
 
 VALUE
@@ -1592,7 +1648,7 @@ rb_funcall(recv, mid, n, va_alist)
 	argv = Qnil;
     }
 
-    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, MTH_FUNC);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv);
 }
 
 VALUE
@@ -1622,12 +1678,10 @@ Fcaller(obj, args)
     }
     if (e->file == Qnil) Fail("initial frame");
 
-    GC_LINK;
-    GC_PRO3(file, str_new2(e->file));
-    GC_PRO3(ary, e->argv?ary_new4(e->argc, e->argv):ary_new3(1, Qself));
+    file = str_new2(e->file);
+    ary = e->argv?ary_new4(e->argc, e->argv):ary_new3(1, Qself);
     res = ary_new3(4, file, INT2FIX(e->line),
 		   str_new2(rb_id2name(e->last_func)), ary);
-    GC_UNLINK;
 
     return res;
 }
@@ -1663,9 +1717,9 @@ Feval(obj, src)
 	eval_tree = Qnil;
 	yyparse();
 	sourcefile = oldsrc;
-	if (nerrs == 0)
-	    result = Eval();
-	freenode(eval_tree);
+	if (nerrs == 0) {
+	    result = Eval(0);
+	}
     }
     eval_tree = node;
     POP_ENV();
@@ -1676,13 +1730,11 @@ Feval(obj, src)
     if (nerrs > 0) {
 	VALUE mesg;
 
-	GC_LINK;
-	GC_PRO3(mesg, errstr);
+	mesg = errstr;
 	nerrs = 0;
 	errstr = str_new2("syntax error in eval():\n");
 	str_cat(errstr, RSTRING(mesg)->ptr, RSTRING(mesg)->len);
 	rb_fail(errstr);
-	GC_UNLINK;
     }
 
     return result;
@@ -1702,9 +1754,6 @@ find_file(file)
 
     if (file[0] == '/') return file;
 
-    GC_LINK;
-    GC_PRO2(sep); GC_PRO2(vpath);
-
     if (rb_load_path) {
 	Check_Type(rb_load_path, T_ARRAY);
 	sep = str_new2(":");
@@ -1721,7 +1770,6 @@ find_file(file)
     if (found == Qnil) Fail("No such file to load -- %s", file);
     
     if (vpath) obj_free(vpath);
-    GC_UNLINK;
     
     return found;
 }
@@ -1731,9 +1779,7 @@ Fload(obj, fname)
     VALUE obj;
     struct RString *fname;
 {
-    extern VALUE TopSelf;
     int state;
-    VALUE result;
     NODE *node;
     char *file;
     
@@ -1763,18 +1809,17 @@ Fload(obj, fname)
     PUSH_ENV();
     the_class = (struct RClass*)C_Object;
     Qself = TopSelf;
+    the_env->current_module = top_env->current_module;
+    the_env->local_vars = top_env->local_vars;
+    the_env->local_tbl = top_env->local_tbl;
     the_env->in_eval = 1;
-    node = eval_tree;
     state = EXEC_TAG();
     if (state == 0) {
-	eval_tree = Qnil;
 	rb_load_file(file);
 	if (nerrs == 0) {
-	    result = Eval();
+	    Eval(0);
 	}
-	freenode(eval_tree);
     }
-    eval_tree = node;
     POP_ENV();
     POP_TAG();
     if (nerrs > 0) {
@@ -1853,6 +1898,6 @@ Init_load()
     addpath(getenv("RUBYLIB"));
     addpath(RUBY_LIB);
 
-    rb_define_func(C_Kernel, "load", Fload, 1);
-    rb_define_func(C_Kernel, "require", Frequire, 1);
+    rb_define_method(C_Kernel, "load", Fload, 1);
+    rb_define_method(C_Kernel, "require", Frequire, 1);
 }

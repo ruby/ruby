@@ -18,7 +18,6 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include "st.h"
-VALUE rb_readonly_hook();
 
 static VALUE
 get_pid()
@@ -472,13 +471,13 @@ static int trap_immediate;
 #endif
 
 void
-mark_trap_list()
+gc_mark_trap_list()
 {
     int i;
 
     for (i=0; i<NSIG; i++) {
 	if (trap_list[i])
-	    mark(trap_list[i]);
+	    gc_mark(trap_list[i]);
     }
 }
 
@@ -526,7 +525,7 @@ rb_trap_exec()
     }
 }
 
-#ifdef HAVE_SYSCALL_H
+#if defined(HAVE_SYSCALL) && defined(HAVE_SYSCALL_H)
 #include <syscall.h>
 
 #ifdef SYS_read
@@ -800,22 +799,24 @@ Fproc_seteuid(obj, euid)
     return euid;
 }
 
+VALUE rb_readonly_hook();
 VALUE M_Process;
+
 Init_process()
 {
     extern VALUE C_Kernel;
 
     rb_define_variable("$$", Qnil, get_pid, rb_readonly_hook);
     rb_define_variable("$?", &status, Qnil, rb_readonly_hook);
-    rb_define_func(C_Kernel, "exec", Fexec, 1);
-    rb_define_func(C_Kernel, "fork", Ffork, 0);
-    rb_define_func(C_Kernel, "_exit", Ffork, 1);
-    rb_define_func(C_Kernel, "wait", Fwait, 0);
-    rb_define_func(C_Kernel, "waitpid", Fwaitpid, 2);
-    rb_define_func(C_Kernel, "system", Fsystem, 1);
-    rb_define_func(C_Kernel, "kill", Fkill, -1);
-    rb_define_func(C_Kernel, "trap", Ftrap, -1);
-    rb_define_func(C_Kernel, "sleep", Fsleep, -1);
+    rb_define_method(C_Kernel, "exec", Fexec, 1);
+    rb_define_method(C_Kernel, "fork", Ffork, 0);
+    rb_define_method(C_Kernel, "_exit", Ffork, 1);
+    rb_define_method(C_Kernel, "wait", Fwait, 0);
+    rb_define_method(C_Kernel, "waitpid", Fwaitpid, 2);
+    rb_define_method(C_Kernel, "system", Fsystem, 1);
+    rb_define_method(C_Kernel, "kill", Fkill, -1);
+    rb_define_method(C_Kernel, "trap", Ftrap, -1);
+    rb_define_method(C_Kernel, "sleep", Fsleep, -1);
 
     M_Process = rb_define_module("Process");
 

@@ -17,6 +17,7 @@
 #include "env.h"
 #include "node.h"
 #include "st.h"
+#include <stdio.h>
 
 #include "ident.h"
 #define is_id_nonop(id) ((id)>LAST_TOKEN)
@@ -34,6 +35,9 @@ struct op_tbl {
 
 NODE *eval_tree = Qnil;
 static int in_regexp;
+
+char *sourcefile;		/* current source file */
+int   sourceline;		/* current line no. */
 
 enum {
     KEEP_STATE = 0,             /* don't change lex_state. */
@@ -57,6 +61,7 @@ static NODE *list_concat();
 static NODE *list_copy();
 static NODE *call_op();
 
+static NODE *gettable();
 static NODE *asignable();
 static NODE *aryset();
 static NODE *attrset();
@@ -82,7 +87,6 @@ static void setup_top_local();
 %token  CLASS
 	MODULE
 	DEF
-	FUNC
 	UNDEF
 	INCLUDE
 	IF
@@ -111,16 +115,19 @@ static void setup_top_local();
 	RETRY
 	SELF
 	NIL
+	_FILE_
+	_LINE_
 
-%token <id>  IDENTIFIER GVAR IVAR CONSTANT
-%token <val> INTEGER FLOAT STRING REGEXP
+%token <id>   IDENTIFIER GVAR IVAR CONSTANT
+%token <val>  INTEGER FLOAT STRING XSTRING REGEXP
+%token <node> STRING2 XSTRING2 DREGEXP
 
 %type <node> singleton inc_list
 %type <val>  literal numeric
 %type <node> compexpr exprs expr expr2 primary var_ref
 %type <node> if_tail opt_else cases resque ensure opt_using
 %type <node> call_args opt_args args f_arglist f_args f_arg
-%type <node> assoc_list assocs assoc
+%type <node> assoc_list assocs assoc regexp
 %type <node> mlhs mlhs_head mlhs_tail lhs
 %type <id>   superclass variable symbol
 %type <id>   fname fname0 op rest_arg end_mark
@@ -152,10 +159,10 @@ static void setup_top_local();
 %nonassoc DOT2 DOT3
 %left  OR
 %left  AND
-%left  '|' '^'
-%left  '&'
 %nonassoc  CMP EQ NEQ MATCH NMATCH
 %left  '>' GEQ '<' LEQ
+%left  '|' '^'
+%left  '&'
 %left  LSHFT RSHFT
 %left  '+' '-'
 %left  '*' '/' '%'
@@ -241,24 +248,7 @@ expr		: CLASS IDENTIFIER superclass
 			if ($7 && $7 != DEF) {
 			    Error("unmatched end keyword(expected `def')");
 			}
-			$$ = NEW_DEFN($2, NEW_RFUNC($4, $5), MTH_METHOD);
-		        pop_local();
-			cur_mid = Qnil;
-		    }
-		| DEF FUNC fname
-		    {
-			if (cur_mid || in_single)
-			    Error("nested method definition");
-			cur_mid = $3;
-			push_local();
-		    }
-		  f_arglist compexpr
-		  END end_mark
-		    {
-			if ($8 && $8 != DEF) {
-			    Error("unmatched end keyword(expected `def')");
-			}
-			$$ = NEW_DEFN($3, NEW_RFUNC($5, $6), MTH_FUNC);
+			$$ = NEW_DEFN($2, NEW_RFUNC($4, $5));
 		        pop_local();
 			cur_mid = Qnil;
 		    }
@@ -421,6 +411,14 @@ op		: COLON2	{ $$ = COLON2; }
 
 f_arglist	: '(' f_args rparen
 		    {
+			if ($2) {
+			    NODE *list = $2->nd_frml;
+			    int i;
+
+			    for (i=0; list; list=list->nd_next, i++)
+				;
+			    $2->nd_cnt = i;
+			}
 			$$ = $2;
 		    }
 		| term
@@ -457,7 +455,7 @@ f_arg		: IDENTIFIER
 		    {
 			if (!is_local_id($1))
 			    Error("formal argument must be local variable");
-			$$ = NEW_LIST(local_cnt($1));
+			$$ = NEW_QLIST(local_cnt($1));
 		    }
 		| f_arg comma IDENTIFIER
 		    {
@@ -887,25 +885,31 @@ args 		: expr2
 		    }
 
 primary		: var_ref
-		| '(' compexpr rparen
+		| literal
 		    {
-			$$ = $2;
+			literalize($1);
+			$$ = NEW_LIT($1);
 		    }
-
 		| STRING
 		    {
 			literalize($1);
 			$$ = NEW_STR($1);
 		    }
+		| STRING2
+		| XSTRING
+		    {
+			literalize($1);
+			$$ = NEW_XSTR($1);
+		    }
+		| XSTRING2
+		| '/' {in_regexp = 1;} regexp
+		    {
+			$$ = $3;
+		    }
 		| primary '[' args rbracket
 		    {
 			value_expr($1);
 			$$ = NEW_CALL($1, AREF, $3);
-		    }
-		| literal
-		    {
-			literalize($1);
-			$$ = NEW_LIT($1);
 		    }
 		| '[' opt_args rbracket
 		    {
@@ -949,16 +953,23 @@ primary		: var_ref
 			    Error("super called outside of method");
 			$$ = NEW_ZSUPER();
 		    }
+		| '(' compexpr rparen
+		    {
+			$$ = $2;
+		    }
 
 literal		: numeric
 		| '\\' symbol
 		    {
 			$$ = INT2FIX($2);
 		    }
-		| '/' {in_regexp = 1;} REGEXP
+
+regexp		: REGEXP
 		    {
-			$$ = $3;
+			literalize($1);
+			$$ = NEW_LIT($1);
 		    }
+		| DREGEXP
 
 symbol		: fname0
 		| IVAR
@@ -983,27 +994,7 @@ variable	: IDENTIFIER
 
 var_ref		: variable
 		    {
-			if ($1 == SELF) {
-			    $$ = NEW_SELF();
-			}
-			else if ($1 == NIL) {
-			    $$ = NEW_NIL();
-			}
-			else if (is_local_id($1)) {
-			    if (local_id($1))
-				$$ = NEW_LVAR($1);
-			    else
-				$$ = NEW_MVAR($1);
-			}
-			else if (is_global_id($1)) {
-			    $$ = NEW_GVAR($1);
-			}
-			else if (is_instance_id($1)) {
-			    $$ = NEW_IVAR($1);
-			}
-			else if (is_const_id($1)) {
-			    $$ = NEW_CVAR($1);
-			}
+			$$ = gettable($1);
 		    }
 
 assoc_list	: /* none */
@@ -1027,7 +1018,6 @@ assoc		: expr2 ASSOC expr2
 end_mark	: CLASS		{ $$ = CLASS; }
 		| MODULE	{ $$ = MODULE; }
 		| DEF		{ $$ = DEF; }
-		| FUNC		{ $$ = FUNC; }
 		| IF		{ $$ = IF; }
 		| UNLESS	{ $$ = UNLESS; }
 		| CASE		{ $$ = CASE; }
@@ -1054,7 +1044,6 @@ rbrace		: '}'		{ yyerrok; }
 comma		: ',' 		{ yyerrok; }
 %%
 
-#include <stdio.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include "regex.h"
@@ -1075,10 +1064,8 @@ char *strdup();
 #define EXPAND_B 1
 #define LEAVE_BS 2
 
+static NODE *var_extend();
 static void read_escape();
-
-char *sourcefile;		/* current source file */
-int   sourceline;		/* current line no. */
 
 static char *lex_p;
 static int lex_len;
@@ -1135,7 +1122,9 @@ static struct kwtable {
     int id;
     int state;
 } kwtable [] = {
-    "__END__",  0,             KEEP_STATE,
+    "__END__",  0,              KEEP_STATE,
+    "__FILE__", _FILE_,         EXPR_END,
+    "__LINE__", _LINE_,         EXPR_END,
     "break",	BREAK,		EXPR_END,
     "case",	CASE,		KEEP_STATE,
     "class",	CLASS,		KEEP_STATE,
@@ -1147,7 +1136,6 @@ static struct kwtable {
     "end",	END,		EXPR_END,
     "ensure",	ENSURE,		EXPR_BEG,
     "for", 	FOR,		KEEP_STATE,
-    "func", 	FUNC,		KEEP_STATE,
     "if",	IF,		KEEP_STATE,
     "in",	IN,		EXPR_BEG,
     "include",	INCLUDE,	EXPR_BEG,
@@ -1170,6 +1158,8 @@ static struct kwtable {
     "yield",	YIELD,		EXPR_BEG,
 };
 
+static int strstart;
+
 yylex()
 {
     register int c;
@@ -1179,6 +1169,7 @@ yylex()
     if (in_regexp) {
 	int in_brack = 0;
 	int re_start = sourceline;
+	NODE *list = Qnil;
 
 	in_regexp = 0;
 	newtok();
@@ -1190,6 +1181,12 @@ yylex()
 	      case ']':
 		in_brack = 0;
 		break;
+
+	      case '#':
+		list = var_extend(list, '/');
+		if (list == (NODE*)-1) return 0;
+		continue;
+
 	      case '\\':
 		if ((c = nextc()) == -1) {
 		    sourceline = re_start;
@@ -1213,9 +1210,21 @@ yylex()
 		    break;
 
 		tokfix();
-		yylval.val = regexp_new(tok(), toklen());
 		lex_state = EXPR_END;
-		return REGEXP;
+		if (list) {
+		    if (toklen() > 0) {
+			VALUE ss = str_new(tok(), toklen());
+			literalize(ss);
+			list_append(list, NEW_STR(ss));
+		    }
+		    list->type = NODE_DREGX;
+		    yylval.node = list;
+		    return DREGEXP;
+		}
+		else {
+		    yylval.val = regexp_new(tok(), toklen());
+		    return REGEXP;
+		}
 
 	      case -1:
 		Error("unterminated regexp");
@@ -1335,12 +1344,17 @@ retry:
 	return '>';
 
       case '"':
+      case '`':
 	{
-	    int strstart = sourceline;
+	    char term = c;
+	    NODE *list = Qnil;
+	    ID id;
 
+	    strstart = sourceline;
 	    newtok();
-	    while ((c = nextc()) != '"') {
+	    while ((c = nextc()) != term) {
 		if (c  == -1) {
+		  unterm_str:
 		    sourceline = strstart;
 		    Error("unterminated string meets end of file");
 		    return 0;
@@ -1352,12 +1366,17 @@ retry:
 		else if (c == '\n') {
 		    sourceline++;
 		}
+		else if (c == '#') {
+		    list = var_extend(list, term);
+		    if (list == (NODE*)-1) return 0;
+		    continue;
+		}
 		else if (c == '\\') {
 		    c = nextc();
 		    if (c == '\n') {
 			sourceline++;
 		    }
-		    else if (c == '"') {
+		    else if (c == term) {
 			tokadd(c);
 		    }
 		    else {
@@ -1369,22 +1388,34 @@ retry:
 		tokadd(c);
 	    }
 	    tokfix();
-	    yylval.val = str_new(tok(), toklen());
 	    lex_state = EXPR_END;
-	    return STRING;
+	    if (list == Qnil) {
+		yylval.val = str_new(tok(), toklen());
+		return (term == '"') ? STRING : XSTRING;
+	    }
+	    else {
+		if (toklen() > 0) {
+		    VALUE ss = str_new(tok(), toklen());
+		    literalize(ss);
+		    list_append(list, NEW_STR(ss));
+		}
+		yylval.node = list;
+		if (term == '"') {
+		    return STRING2;
+		}
+		else {
+		    list->type = NODE_XSTR2;
+		    return XSTRING2;
+		}
+	    }
 	}
 
       case '\'':
 	{
-	    int strstart = sourceline;
-
-	newtok();
+	    strstart = sourceline;
+	    newtok();
 	    while ((c = nextc()) != '\'') {
-		if (c  == -1) {
-		    sourceline = strstart;
-		    Error("unterminated string meets end of file");
-		    return 0;
-		}
+		if (c  == -1)  goto unterm_str;
 		if (ismbchar(c)) {
 		    tokadd(c);
 		    c = nextc();
@@ -1639,7 +1670,6 @@ retry:
 
       case ',':
       case ';':
-      case '`':
       case '[':
       case '(':
       case '{':
@@ -1763,6 +1793,103 @@ retry:
       default:
 	return IDENTIFIER;
     }
+}
+
+static NODE*
+var_extend(list, term)
+    NODE *list;
+    char term;
+{
+    int c, t;
+    VALUE ss;
+    ID id;
+
+    c = nextc();
+    switch (c) {
+      default:
+	tokadd('#');
+	pushback();
+	return list;
+      case '@': case '%':
+	t = nextc();
+	pushback();
+	if (!is_identchar(t)) {
+	    tokadd('#');
+	    tokadd(c);
+	    return list;
+	}
+      case '$':
+      case '{':
+	break;
+    }
+
+    ss = str_new(tok(), toklen());
+    if (list == Qnil) {
+	literalize(ss);
+	list = NEW_STR2(ss);
+    }
+    else if (toklen() > 0) {
+	literalize(ss);
+	list_append(list, NEW_STR(ss));
+    }
+    newtok();
+    if (c == '{') { 
+	while ((c = nextc()) != '}') {
+	    if (c == -1) {
+	      unterm_str:
+		sourceline = strstart;
+		Error("unterminated string meets end of file");
+		return (NODE*)-1;
+	    }
+	    if (isspace(c)) {
+		Error("Invalid variable name in string");
+		break;
+	    }
+	    if (c == term) {
+		Error("Inmature variable name in string");
+		pushback();
+		return list;
+	    }
+	    tokadd(c);
+	}
+    }
+    else {
+	switch (c) {
+	  case '$':
+	    tokadd(c);
+	    c = nextc();
+	    if (c == -1) goto unterm_str;
+	    if (!is_identchar(c)) {
+		tokadd(c);
+		goto fetch_id;
+	    }
+	    /* through */
+	  case '@': case '%':
+	    tokadd(c);
+	    c = nextc();
+	    break;
+	}
+	while (is_identchar(c)) {
+	    tokadd(c);
+	    if (ismbchar(c)) {
+		c = nextc();
+		tokadd(c);
+	    }
+	    c = nextc();
+	}
+	pushback();
+    }
+  fetch_id:
+    tokfix();
+    if (strcmp("__LINE__", tok()) == 0)
+	id = _LINE_;
+    else if (strcmp("__FILE__", tok()) == 0)
+	id = _FILE_;
+    else
+	id = rb_intern(tok());
+    list_append(list, gettable(id));
+    newtok();
+    return list;
 }
 
 static void
@@ -1890,6 +2017,7 @@ read_escape(flag)
 	if (flag & LEAVE_BS) {
 	    tokadd('\\');
 	}
+      case '#':
 	tokadd(c);
 	break;
     }
@@ -1957,11 +2085,12 @@ static NODE*
 list_append(head, tail)
     NODE *head, *tail;
 {
-    if (head == Qnil) return NEW_ARRAY(tail);
+    if (head == Qnil) return NEW_LIST(tail);
 
     if (head->nd_last == Qnil) head->nd_last = head;
-
-    head->nd_last->nd_next = NEW_ARRAY(tail);
+    
+    head->nd_last->nd_next =
+	head->type == NODE_QLIST?NEW_QLIST(tail):NEW_LIST(tail);
     head->nd_last = head->nd_last->nd_next;
     return head;
 }
@@ -2007,9 +2136,17 @@ void freenode(node)
       case NODE_BLOCK:
       case NODE_ARRAY:
 	freenode(node->nd_head);
+      case NODE_STR2:
+      case NODE_XSTR2:
+      case NODE_DREGX:
+      case NODE_QLIST:
 	freenode(node->nd_next);
 	break;
+      case NODE_HASH:
+	freenode(node->nd_head);
+	break;
       case NODE_IF:
+      case NODE_UNLESS:
       case NODE_WHEN:
       case NODE_PROT:
 	freenode(node->nd_cond);
@@ -2026,57 +2163,85 @@ void freenode(node)
 	break;
       case NODE_DO:
       case NODE_FOR:
+	freenode(node->nd_var);
 	freenode(node->nd_ibdy);
 	freenode(node->nd_iter);
 	break;
       case NODE_LASGN:
       case NODE_GASGN:
       case NODE_IASGN:
+      case NODE_CASGN:
 	freenode(node->nd_value);
+	break;
+      case NODE_MASGN:
+	freenode(node->nd_value);
+	freenode(node->nd_head);
 	break;
       case NODE_CALL:
       case NODE_SUPER:
 	freenode(node->nd_recv);
-      case NODE_CALL2:
 	freenode(node->nd_args);
+	break;
+      case NODE_CALL2:
+	{
+	    NODE *list = node->nd_next, *tmp;
+	    while (list) {
+		tmp = list;
+		list = list->nd_next;
+		free(tmp);
+	    }
+	}
 	break;
       case NODE_DEFS:
 	freenode(node->nd_recv);
+      case NODE_DEFN:
+	freenode(node->nd_defn);
 	break;
       case NODE_RETURN:
       case NODE_YIELD:
 	freenode(node->nd_stts);
 	break;
       case NODE_STR:
+      case NODE_XSTR:
       case NODE_LIT:
 	unliteralize(node->nd_lit);
-	break;
-      case NODE_CONST:
-	unliteralize(node->nd_cval);
 	break;
       case NODE_ARGS:
 	freenode(node->nd_frml);
 	break;
       case NODE_SCOPE:
-	free(node->nd_tbl);
+        if (node->nd_tbl) free(node->nd_tbl);
 	freenode(node->nd_body);
 	break;
-      case NODE_DEFN:
+      case NODE_DOT3:
+	freenode(node->nd_beg);
+	freenode(node->nd_end);
+	break;
+      case NODE_CLASS:
+      case NODE_MODULE:
+	freenode(node->nd_body);
+	break;
+      case NODE_ATTRSET:
+      case NODE_CVAR:
+      case NODE_CONST:
+      case NODE_ZSUPER:
       case NODE_ZARRAY:
       case NODE_CFUNC:
       case NODE_BREAK:
       case NODE_CONTINUE:
+      case NODE_REDO:
       case NODE_RETRY:
       case NODE_LVAR:
       case NODE_GVAR:
       case NODE_IVAR:
       case NODE_MVAR:
-      case NODE_CLASS:
-      case NODE_MODULE:
       case NODE_INC:
+      case NODE_UNDEF:
+      case NODE_ALIAS:
       case NODE_NIL:
+      case NODE_SELF:
 	break;
-      default:
+     default:
 	Bug("freenode: unknown node type %d", node->type);
 	break;
     }
@@ -2148,6 +2313,42 @@ call_op(recv, id, narg, arg1)
 }
 
 static NODE*
+gettable(id)
+    ID id;
+{
+    if (id == SELF) {
+	return NEW_SELF();
+    }
+    else if (id == NIL) {
+	return NEW_NIL();
+    }
+    else if (id == _LINE_) {
+	return NEW_LIT(INT2FIX(sourceline));
+    }
+    else if (id == _FILE_) {
+	VALUE s = str_new2(sourcefile);
+
+	literalize(s);
+	return NEW_STR(s);
+    }
+    else if (is_local_id(id)) {
+	if (local_id(id))
+	    return NEW_LVAR(id);
+	else
+	    return NEW_MVAR(id);
+    }
+    else if (is_global_id(id)) {
+	return NEW_GVAR(id);
+    }
+    else if (is_instance_id(id)) {
+	return NEW_IVAR(id);
+    }
+    else if (is_const_id(id)) {
+	return NEW_CVAR(id);
+    }
+}
+
+static NODE*
 asignable(id, val)
     ID id;
     NODE *val;
@@ -2161,6 +2362,9 @@ asignable(id, val)
     else if (id == NIL) {
 	lhs = Qnil;
 	Error("Can't asign to nil");
+    }
+    else if (id == _LINE_ || id == _FILE_) {
+	Error("Can't asign to special identifier");
     }
     else if (is_local_id(id)) {
 	lhs = NEW_LASGN(id, val);
@@ -2348,7 +2552,7 @@ setup_top_local()
 	    the_env->local_vars = ALLOC_N(VALUE, lvtbl->cnt);
 	    bzero(the_env->local_vars, lvtbl->cnt * sizeof(VALUE));
 	}
-	else {
+	else if (lvtbl->tbl[0] < lvtbl->cnt) {
 	    int i;
 
 	    REALLOC_N(the_env->local_vars, VALUE, lvtbl->cnt);

@@ -5,4 +5,6 @@ end
 if ($zzz)
   print("zzz = ", $zzz, "\n")
 end
-print($ARGV.join(", "), "\n")
+if ($ARGV.length > 0)
+  print($ARGV.join(", "), "\n")
+end

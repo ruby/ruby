@@ -174,9 +174,7 @@ read_all(port)
     }
     if (fptr->f == NULL) Fail("closed stream");
 
-    GC_LINK;
-    GC_PRO3(str, str_new(0, 0));
-
+    str = str_new(0, 0);
     for (;;) {
 	n = fread(buf, 1, BUFSIZ, fptr->f);
 	if (n == 0) {
@@ -185,8 +183,6 @@ read_all(port)
 	}
 	str_cat(str, buf, n);
     }
-
-    GC_UNLINK;
     return str;
 }
 
@@ -251,9 +247,6 @@ Fio_gets(obj)
     }
     f = fptr->f;
     if (f == NULL) Fail("closed stream");
-
-    GC_LINK;
-    GC_PRO2(str);
 
     if (RS) {
 	rslen = RSTRING(RS)->len;
@@ -329,8 +322,6 @@ Fio_gets(obj)
 	}
     }
 
-    GC_UNLINK;
-
     if (str) {
 	fptr->lineno++;
 	lineno = INT2FIX(fptr->lineno);
@@ -345,7 +336,6 @@ Fio_each(obj)
 {
     VALUE str;
 
-    GC_PRO2(str);
     while (str = Fio_gets(obj)) {
 	rb_yield(str);
     }
@@ -574,9 +564,7 @@ pipe_open(pname, mode)
     int pid, pr[2], pw[2];
     int doexec;
 
-    GC_LINK;
-    GC_PRO3(port, obj_alloc(C_IO));
-
+    port = obj_alloc(C_IO);
     MakeOpenFile(port, fptr);
     fptr->mode = io_mode_flags(mode);
 
@@ -631,8 +619,6 @@ pipe_open(pname, mode)
     if (fptr->mode & FMODE_READABLE) fptr->f  = rb_fdopen(pr[0], "r");
     if (fptr->mode & FMODE_WRITABLE) fptr->f2 = rb_fdopen(pw[1], "w");
 
-    GC_UNLINK;
-
     return port;
 }
 
@@ -672,13 +658,13 @@ Fprintf(argc, argv)
     int argc;
     VALUE argv[];
 {
-    VALUE out, str;
+    VALUE out;
 
     if (argc == 1) return Qnil;
     if (TYPE(argv[1]) == T_STRING) {
 	out = rb_defout;
     }
-    else if (rb_get_method_body(CLASS_OF(argv[1]), id_write, 0, MTH_FUNC)) {
+    else if (obj_responds_to(argv[1], INT2FIX(id_write))) {
 	out = argv[1];
 	argv++;
 	argc--;
@@ -687,12 +673,7 @@ Fprintf(argc, argv)
 	Fail("output must responds to `write'");
     }
 
-    GC_LINK;
-    GC_PRO3(str, Fsprintf(argc, argv));
-
-    rb_funcall(out, id_write, 1, str);
-
-    GC_UNLINK;
+    rb_funcall(out, id_write, 1, Fsprintf(argc, argv));
 
     return Qnil;
 }
@@ -740,12 +721,9 @@ prep_stdio(f, mode)
     VALUE obj = obj_alloc(C_IO);
     OpenFile *fp;
 
-    GC_LINK;
-    GC_PRO(obj);
     MakeOpenFile(obj, fp);
     fp->f = f;
     fp->mode = mode;
-    GC_UNLINK;
 
     return obj;
 }
@@ -874,15 +852,11 @@ Freadlines(obj)
 {
     VALUE line, ary;
 
-    GC_LINK;
-    GC_PRO2(line);
-    GC_PRO3(ary, ary_new());
-
+    ary = ary_new();
     while (line = Fgets(obj)) {
 	Fary_push(ary, line);
     }
 
-    GC_UNLINK;
     return ary;
 }
 
@@ -898,9 +872,8 @@ rb_check_str(val, id)
     return TRUE;
 }
 
-static VALUE
-Fsystem2(obj, str)
-    VALUE obj;
+VALUE
+rb_xstring(str)
     struct RString *str;
 {
     VALUE port, result;
@@ -908,10 +881,7 @@ Fsystem2(obj, str)
     int mask;
 
     Check_Type(str, T_STRING);
-    GC_LINK;
-    GC_PRO3(port, pipe_open(str->ptr, "r"));
-    GC_PRO2(result);
-
+    port = pipe_open(str->ptr, "r");
     result = read_all(port);
 
     GetOpenFile(port, fptr);
@@ -919,7 +889,6 @@ Fsystem2(obj, str)
     fptr->pid = 0;
 
     obj_free(port);
-    GC_UNLINK;
 
     return result;
 }
@@ -1026,8 +995,7 @@ Fselect(obj, args)
     }
     if (n == 0) return Qnil;
 
-    GC_LINK;
-    GC_PRO3(res, ary_new2(3));
+    res = ary_new2(3);
     RARRAY(res)->ptr[0] = rp?ary_new():Qnil;
     RARRAY(res)->len++;
     RARRAY(res)->ptr[1] = wp?ary_new():Qnil;
@@ -1075,7 +1043,6 @@ Fselect(obj, args)
 	}
     }
 
-    GC_UNLINK;
     return res;
 }
 
@@ -1141,6 +1108,100 @@ Fio_defset(obj, val)
     return rb_defout = val;
 }
 
+static VALUE
+Fsyscall(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+#ifdef HAVE_SYSCALL
+#ifdef atarist
+    unsigned long arg[14]; /* yes, we really need that many ! */
+#else
+    unsigned long arg[8];
+#endif
+    int retval = -1;
+    int i = 1;
+    int items = argc - 2;
+
+    /* This probably won't work on machines where sizeof(long) != sizeof(int)
+     * or where sizeof(long) != sizeof(char*).  But such machines will
+     * not likely have syscall implemented either, so who cares?
+     */
+    argv++;			/* skip SELF */
+    arg[0] = NUM2INT(argv[0]); argv++;
+    while (items--) {
+	if (FIXNUM_P(*argv)) {
+	    arg[i] = (unsigned long)NUM2INT(*argv); argv++;
+	}
+	else {
+	    Check_Type(*argv, T_STRING);
+	    str_modify(*argv);
+	    arg[i] = (unsigned long)RSTRING(*argv)->ptr; argv++;
+	}
+	i++;
+    }
+    switch (argc-1) {
+      case 0:
+	Fail("Too few args to syscall");
+      case 1:
+	retval = syscall(arg[0]);
+	break;
+      case 2:
+	retval = syscall(arg[0],arg[1]);
+	break;
+      case 3:
+	retval = syscall(arg[0],arg[1],arg[2]);
+	break;
+      case 4:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3]);
+	break;
+      case 5:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4]);
+	break;
+      case 6:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5]);
+	break;
+      case 7:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6]);
+	break;
+      case 8:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7]);
+	break;
+#ifdef atarist
+      case 9:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8]);
+	break;
+      case 10:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8], arg[9]);
+	break;
+      case 11:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8], arg[9], arg[10]);
+	break;
+      case 12:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8], arg[9], arg[10], arg[11]);
+	break;
+      case 13:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8], arg[9], arg[10], arg[11], arg[12]);
+	break;
+      case 14:
+	retval = syscall(arg[0],arg[1],arg[2],arg[3],arg[4],arg[5],arg[6],
+	  arg[7], arg[8], arg[9], arg[10], arg[11], arg[12], arg[13]);
+	break;
+#endif /* atarist */
+    }
+    if (retval == -1) rb_sys_fail(0);
+    return Qnil;
+#else
+    Fail("syscall() unimplemented");
+#endif
+}
+
 extern VALUE M_Enumerable;
 VALUE rb_readonly_hook();
 
@@ -1148,17 +1209,18 @@ Init_IO()
 {
     extern VALUE C_Kernel;
 
-    rb_define_func(C_Kernel, "open", Fopen, -2);
-    rb_define_func(C_Kernel, "printf", Fprintf, -1);
-    rb_define_method(C_Kernel, "print", Fprint, -1);
-    rb_define_func(C_Kernel, "gets", Fgets, 0);
-    rb_define_func(C_Kernel, "eof", Feof, 0);
-    rb_define_alias(C_Kernel,"readline", "gets");
-    rb_define_func(C_Kernel, "getc", Fgetc, 0);
-    rb_define_func(C_Kernel, "system2", Fsystem2, 1);
-    rb_define_func(C_Kernel, "select", Fselect, -2);
+    rb_define_method(C_Kernel, "syscall", Fsyscall, -1);
 
-    rb_define_func(C_Kernel, "readlines", Freadlines, 0);
+    rb_define_method(C_Kernel, "open", Fopen, -2);
+    rb_define_method(C_Kernel, "printf", Fprintf, -1);
+    rb_define_method(C_Kernel, "print", Fprint, -1);
+    rb_define_method(C_Kernel, "gets", Fgets, 0);
+    rb_define_method(C_Kernel, "eof", Feof, 0);
+    rb_define_alias(C_Kernel,"readline", "gets");
+    rb_define_method(C_Kernel, "getc", Fgetc, 0);
+    rb_define_method(C_Kernel, "select", Fselect, -2);
+
+    rb_define_method(C_Kernel, "readlines", Freadlines, 0);
 
     C_IO = rb_define_class("IO", C_Object);
     rb_include_module(C_IO, M_Enumerable);
@@ -1191,7 +1253,7 @@ Init_IO()
     rb_define_method(C_IO, "read",  Fio_read, -2);
     rb_define_method(C_IO, "write", Fio_write, 1);
     rb_define_method(C_IO, "gets",  Fio_gets, 0);
-    rb_define_alias(C_IO,  "readlines", "gets");
+    rb_define_alias(C_IO,  "readline", "gets");
     rb_define_method(C_IO, "getc",  Fio_getc, 0);
     rb_define_method(C_IO, "puts",  Fio_puts, 1);
     rb_define_method(C_IO, "<<",    Fio_puts, 1);

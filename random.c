@@ -75,6 +75,6 @@ Init_Random()
 {
     extern VALUE C_Kernel;
 
-    rb_define_func(C_Kernel, "srand", Fsrand, -2);
-    rb_define_func(C_Kernel, "rand", Frand, 1);
+    rb_define_method(C_Kernel, "srand", Fsrand, -2);
+    rb_define_method(C_Kernel, "rand", Frand, 1);
 }

@@ -1,1 +1,1 @@
-print(system2("echo foobar"))
+print(`echo foobar`)

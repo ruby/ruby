@@ -29,58 +29,34 @@ static VALUE
 setup_passwd(pwd)
     struct passwd *pwd;
 {
-    VALUE pw, name, passwd, gecos, dir, shell;
-#ifdef PW_CLASS
-    VALUE class;
-#endif
-#ifdef PW_COMMENT
-    VALUE comment;
-#endif
-
     if (pwd == Qnil) rb_sys_fail("/etc/passwd");
-    GC_LINK;
-    GC_PRO3(pw, str_new2(pwd->pw_name));
-    GC_PRO3(passwd, str_new2(pwd->pw_passwd));
-    GC_PRO3(gecos, str_new2(pwd->pw_gecos));
-    GC_PRO3(dir, str_new2(pwd->pw_dir));
-    GC_PRO3(shell, str_new2(pwd->pw_shell));
-#ifdef PW_CLASS
-    GC_PRO3(class, str_new2(pwd->pw_class));
-#endif
-#ifdef PW_COMMENT
-    GC_PRO3(comment, str_new2(pwd->pw_comment));
-#endif
-
-    pw = struct_new("passwd",
-		    "name", name,
-		    "passwd", passwd,
-		    "uid", INT2FIX(pwd->pw_uid),
-		    "gid", INT2FIX(pwd->pw_gid),
-		    "gecos", gecos,
-		    "dir", dir,
-		    "shell", shell,
+    return struct_new("passwd",
+		      "name", str_new2(pwd->pw_name),
+		      "passwd", str_new2(pwd->pw_passwd),
+		      "uid", INT2FIX(pwd->pw_uid),
+		      "gid", INT2FIX(pwd->pw_gid),
+		      "gecos", str_new2(pwd->pw_gecos),
+		      "dir", str_new2(pwd->pw_dir),
+		      "shell", str_new2(pwd->pw_shell),
 #ifdef PW_CHANGE
-		    "change", INT2FIX(pwd->pw_change),
+		      "change", INT2FIX(pwd->pw_change),
 #endif
 #ifdef PW_QUOTA
-		    "quota", INT2FIX(pwd->pw_quota),
+		      "quota", INT2FIX(pwd->pw_quota),
 #endif
 #ifdef PW_AGE
-		    "age", INT2FIX(pwd->pw_age),
+		      "age", INT2FIX(pwd->pw_age),
 #endif
 #ifdef PW_CLASS
-		    "class", class,
+		      "class", str_new2(pwd->pw_class),
 #endif
 #ifdef PW_COMMENT
-		    "comment", comment,
+		      "comment", str_new2(pwd->pw_comment),
 #endif
 #ifdef PW_EXPIRE
-		    "expire", INT2FIX(pwd->pw_expire),
+		      "expire", INT2FIX(pwd->pw_expire),
 #endif
-		    Qnil);
-    GC_UNLINK;
-
-    return pw;
+		      Qnil);
 }
 
 static VALUE
@@ -137,27 +113,21 @@ static VALUE
 setup_group(grp)
     struct group *grp;
 {
-    VALUE mem, obj, name, passwd;
+    VALUE mem;
     char **tbl;
 
-    GC_LINK;
-    GC_PRO3(mem, ary_new());
+    mem = ary_new();
     tbl = grp->gr_mem;
     while (*tbl) {
 	Fary_push(mem, str_new2(*tbl));
 	tbl++;
     }
-    GC_PRO3(name, str_new2(grp->gr_name));
-    GC_PRO3(passwd, str_new2(grp->gr_passwd));
-    obj = struct_new("group",
-		     "name", name, 
-		     "passwd", passwd,
-		     "gid", INT2FIX(grp->gr_gid),
-		     "mem", mem,
-		     Qnil);
-    GC_UNLINK;
-
-    return obj;
+    return struct_new("group",
+		      "name", str_new2(grp->gr_name),
+		      "passwd", str_new2(grp->gr_passwd),
+		      "gid", INT2FIX(grp->gr_gid),
+		      "mem", mem,
+		      Qnil);
 }
 
 static VALUE
