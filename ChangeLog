@@ -1,3 +1,9 @@
+Sun Mar 17 20:08:04 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/iconv/depend: added. 
+
+	* ext/stringio/depend: added. 
+
 Sat Mar 16 22:43:53 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* missing/fileblocks.c: add for autoconf.
