@@ -1,3 +1,8 @@
+Wed Feb 16 15:11:43 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::Nonblock#initialize):
+	  native win32 platform doesn't have F_GETFL.
+
 Wed Feb 16 02:47:45 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_read, ossl_ssl_write): should

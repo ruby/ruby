@@ -52,7 +52,8 @@ module OpenSSL
 
     module Nonblock
       def initialize(*args)
-        flag = @io.fcntl(Fcntl::F_GETFL) | File::NONBLOCK
+        flag = File::NONBLOCK
+        flag |= @io.fcntl(Fcntl::F_GETFL) if defined?(Fcntl::F_GETFL)
         @io.fcntl(Fcntl::F_SETFL, flag)
         super
       end
