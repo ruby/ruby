@@ -77,22 +77,6 @@ ary_new4(n, elts)
     return (VALUE)ary;
 }
 
-#if 0
-VALUE
-assoc_new(elm1, elm2)
-    VALUE elm1, elm2;
-{
-    struct RArray *ary;
-
-    ary = (struct RArray*)ary_new2(2);
-    ary->ptr[0] = elm1;
-    ary->ptr[1] = elm2;
-    ary->len = 2;
-
-    return (VALUE)ary;
-}
-#endif
-
 static VALUE
 Sary_new(class)
     VALUE class;
@@ -103,6 +87,23 @@ Sary_new(class)
     ary->len = 0;
     ary->capa = ARY_DEFAULT_SIZE;
     ary->ptr = ALLOC_N(VALUE, ARY_DEFAULT_SIZE);
+
+    return (VALUE)ary;
+}
+
+static VALUE
+Sary_create(argc, argv, class)
+    int argc;
+    VALUE *argv;
+    VALUE class;
+{
+    NEWOBJ(ary, struct RArray);
+    OBJSETUP(ary, class, T_ARRAY);
+
+    ary->len = argc;
+    ary->capa = argc;
+    ary->ptr = ALLOC_N(VALUE, argc);
+    MEMCPY(ary->ptr, argv, VALUE, argc);
 
     return (VALUE)ary;
 }
@@ -648,7 +649,10 @@ static int
 sort_2(a, b)
     VALUE *a, *b;
 {
-    VALUE retval = rb_funcall(*a, cmp, 1, *b);
+    VALUE retval;
+
+    if (!cmp) cmp = rb_intern("<=>");
+    retval = rb_funcall(*a, cmp, 1, *b);
     return NUM2INT(retval);
 }
 
@@ -936,6 +940,7 @@ Init_Array()
     rb_include_module(C_Array, M_Enumerable);
 
     rb_define_single_method(C_Array, "new", Sary_new, 0);
+    rb_define_single_method(C_Array, "[]", Sary_create, -1);
     rb_define_method(C_Array, "to_s", Fary_to_s, 0);
     rb_define_method(C_Array, "_inspect", Fary_inspect, 0);
     rb_define_method(C_Array, "to_a", Fary_to_a, 0);
@@ -976,6 +981,4 @@ Init_Array()
     rb_define_method(C_Array, "-", Fary_diff, 1);
     rb_define_method(C_Array, "&", Fary_and, 1);
     rb_define_method(C_Array, "|", Fary_or, 1);
-
-    cmp = rb_intern("<=>");
 }

@@ -3,7 +3,7 @@
   eval.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:34 $
+  $Date: 1995/01/12 08:54:45 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -52,7 +52,7 @@ search_method(class, id, origin)
 	if (class == Qnil) return Qnil;
     }
 
-    *origin = class;
+    if (origin) *origin = class;
     return body;
 }
 
@@ -389,6 +389,7 @@ ruby_init(argc, argv, envp)
     static struct ENVIRON env;
     the_env = top_env = &env;
 
+    init_heap();
     PUSH_SCOPE();
     the_scope->local_vars = Qnil;
     the_scope->local_tbl  = Qnil;
@@ -414,12 +415,13 @@ ruby_init(argc, argv, envp)
 VALUE rb_readonly_hook();
 
 static VALUE
-Eval(toplevel)
-    int toplevel;
+Eval()
 {
     VALUE result;
     NODE *tree;
     int   state;
+
+    if (!eval_tree) return Qnil;
 
     tree = eval_tree;
     eval_tree = Qnil;
@@ -441,7 +443,7 @@ ruby_run()
 
     if (nerrs > 0) exit(nerrs);
 
-    Init_stack();
+    init_stack();
     rb_define_variable("$!", &errstr, Qnil, Qnil, 0);
     errat = Qnil;		/* clear for execution */
 
@@ -449,7 +451,7 @@ ruby_run()
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
 	the_class = (struct RClass*)C_Object;
-	Eval(1);
+	Eval();
     }
     POP_ITER();
     POP_TAG();
@@ -486,6 +488,38 @@ ruby_run()
 	break;
     }
     exit(0);
+}
+
+static void
+syntax_error()
+{
+    VALUE mesg;
+
+    mesg = errstr;
+    nerrs = 0;
+    errstr = str_new2("syntax error in eval():\n");
+    str_cat(errstr, RSTRING(mesg)->ptr, RSTRING(mesg)->len);
+    rb_fail(errstr);
+}
+
+VALUE
+rb_eval_string(str)
+    char *str;
+{
+    char *oldsrc = sourcefile;
+    VALUE result;
+
+    lex_setsrc("(eval)", str, strlen(str));
+    eval_tree = Qnil;
+    yyparse();
+    sourcefile = oldsrc;
+    if (nerrs == 0) {
+	return Eval();
+    }
+    else {
+	syntax_error();
+    }
+    return Qnil;		/* not reached */
 }
 
 void
@@ -636,34 +670,9 @@ rb_eval(node)
 		    return rb_eval(node);
 		}
 		node = node->nd_next;
-	    }	
+	    }
 	}
 	return Qnil;
-
-      case NODE_EXNOT:
-	{
-	    VALUE res;
-
-	    PUSH_TAG();
-	    switch (state = EXEC_TAG()) {
-	      case 0:
-		res = rb_eval(node->nd_cond);
-		go_out = 0;
-		break;
-
-	      case TAG_FAIL:
-		res = Qnil;
-		go_out = 0;
-		break;
-
-	      default:
-		go_out = 1;
-	    }
-	    POP_TAG();
-	    if (go_out) JUMP_TAG(state);
-	    if (res) return FALSE;
-	    return TRUE;
-	}
 
       case NODE_WHILE:
 	PUSH_TAG();
@@ -828,6 +837,10 @@ rb_eval(node)
 	node = node->nd_2nd;
 	goto again;
 
+      case NODE_NOT:
+	if (rb_eval(node->nd_body)) return FALSE;
+	return TRUE;
+
       case NODE_DOT3:
 	if (node->nd_state == 0) {
 	    if (rb_eval(node->nd_beg)) {
@@ -943,7 +956,8 @@ rb_eval(node)
 	    val = rb_apply(recv, aref, args);
 	    val = rb_funcall(val, node->nd_mid, 1, rb_eval(rval));
 	    ary_push(args, val);
-	    return rb_apply(recv, aset, args);
+	    rb_apply(recv, aset, args);
+	    return val;
 	}
 
       case NODE_OP_ASGN2:
@@ -957,7 +971,8 @@ rb_eval(node)
 	    id |= ID_ATTRSET;
 
 	    val = rb_eval(node->nd_value);
-	    return rb_funcall(recv, id, 1, val);
+	    rb_funcall(recv, id, 1, val);
+	    return val;
 	}
 
       case NODE_MASGN:
@@ -1044,7 +1059,7 @@ rb_eval(node)
 		key = rb_eval(list->nd_head);
 		list = list->nd_next;
 		if (list == Qnil)
-		    Bug("odd number list for hash");
+		    Bug("odd number list for Dict");
 		val = rb_eval(list->nd_head);
 		list = list->nd_next;
 		Fdic_aset(hash, key, val);
@@ -1122,39 +1137,42 @@ rb_eval(node)
 	return rb_ivar_set(node->nd_vid, the_env->argv[0]);
 
       case NODE_DEFN:
-	{
-	    if (node->nd_defn) {
-		rb_add_method(the_class,node->nd_mid,node->nd_defn,
-			      node->nd_noex);
+	if (node->nd_defn) {
+	    NODE *body;
+	    VALUE origin;
+	    int noex;
+
+	    body = search_method(the_class, node->nd_mid, &origin);
+	    if (verbose && origin != (VALUE)the_class
+		&& body->nd_noex != node->nd_noex) {
+		Warning("change method %s's scope", rb_id2name(node->nd_mid));
 	    }
+
+	    if (body) noex = body->nd_noex;
+	    else      noex = node->nd_noex; /* default(1 for toplevel) */
+
+	    rb_add_method(the_class, node->nd_mid, node->nd_defn, noex);
 	}
 	return Qnil;
 
       case NODE_DEFS:
-	{
-	    if (node->nd_defn) {
-		VALUE recv = rb_eval(node->nd_recv);
+	if (node->nd_defn) {
+	    VALUE recv = rb_eval(node->nd_recv);
 
-		if (recv == Qnil) {
-		    Fail("Can't define method \"%s\" for nil",
-			 rb_id2name(node->nd_mid));
-		}
-		rb_add_method(rb_single_class(recv),
-			      node->nd_mid, node->nd_defn, 0);
+	    if (recv == Qnil) {
+		Fail("Can't define method \"%s\" for nil",
+		     rb_id2name(node->nd_mid));
 	    }
+	    rb_add_method(rb_single_class(recv),node->nd_mid,node->nd_defn,0);
 	}
 	return Qnil;
 
       case NODE_UNDEF:
-	{
-	    rb_add_method(the_class, node->nd_mid, Qnil, 0);
-	}
+	rb_add_method(the_class, node->nd_mid, Qnil, 0);
 	return Qnil;
 
       case NODE_ALIAS:
-	{
-	    rb_alias(the_class, node->nd_new, node->nd_old);
-	}
+	rb_alias(the_class, node->nd_new, node->nd_old);
 	return Qnil;
 
       case NODE_CLASS:
@@ -1492,7 +1510,7 @@ asign(lhs, val)
 	break;
 
       default:
-	Bug("bug in iterator variable asignment");
+	Bug("bug in variable asignment");
 	break;
     }
 }
@@ -1614,28 +1632,62 @@ rb_ensure(b_proc, data1, e_proc, data2)
     return result;
 }
 
-struct st_table *new_idhash();
+static int last_noex;
 
-static void
-rb_undefined(obj, id, noex)
+static VALUE
+Funknown(argc, argv, obj)
+    int argc;
+    VALUE *argv;
     VALUE obj;
-    ID    id;
-    int noex;
 {
-    VALUE desc = obj_as_string(obj);
+    VALUE desc;
+    ID    id;
     char *format;
+    struct ENVIRON *env;
 
+    id = FIX2INT(argv[0]);
+    argc--; argv++;
+
+    desc = obj_as_string(obj);
     if (RSTRING(desc)->len > 160) {
 	desc = Fkrn_to_s(obj);
     }
-    if (noex)
+    if (last_noex)
 	format = "method `%s' not available for \"%s\"(%s)";
     else
 	format = "undefined method `%s' for \"%s\"(%s)";
+
+    /* fake environment */
+    PUSH_ENV();
+    env = the_env->prev;
+    MEMCPY(the_env, the_env->prev->prev, struct ENVIRON, 1);
+    the_env->prev = env;
+
     Fail(format,
 	 rb_id2name(id),
 	 RSTRING(desc)->ptr,
 	 rb_class2name(CLASS_OF(obj)));
+    POP_ENV();
+}
+
+static VALUE
+rb_undefined(obj, id, argc, argv, noex)
+    VALUE obj;
+    ID    id;
+    int   argc;
+    VALUE*argv;
+    int   noex;
+{
+    VALUE *nargv;
+
+    argc;
+    nargv = ALLOCA_N(VALUE, argc+1);
+    nargv[0] = INT2FIX(id);
+    MEMCPY(nargv+1, argv, VALUE, argc);
+
+    last_noex = noex;
+
+    return rb_funcall2(obj, rb_intern("unknown"), argc+1, nargv);
 }
 
 static VALUE
@@ -1656,7 +1708,6 @@ rb_call(class, recv, mid, argc, argv, func)
     /* is it in the method cache? */
     ent = cache + EXPR1(class, mid);
     if (ent->mid == mid && ent->class == class) {
-	/* if (ent->method == Qnil) rb_undefined(recv, mid, 0); */
 	class = ent->origin;
 	mid   = ent->mid;
 	body  = ent->method;
@@ -1666,12 +1717,14 @@ rb_call(class, recv, mid, argc, argv, func)
 	ID id = mid;
 
 	if ((body = rb_get_method_body(&class, &id, &noex)) == Qnil) {
-	    rb_undefined(recv, mid, 0);
+	    return rb_undefined(recv, mid, argc, argv, 0);
 	}
 	mid = id;
     }
 
-    if (!func && noex) rb_undefined(recv, mid, 1);
+    if (!func && noex) {
+	return rb_undefined(recv, mid, argc, argv, 1);
+    }
 
     switch (iter->iter) {
       case ITER_PRE:
@@ -1691,7 +1744,7 @@ rb_call(class, recv, mid, argc, argv, func)
     the_env->argv = argv;
 
     switch (nd_type(body)) {
-      case NODE_CFUNC: 
+      case NODE_CFUNC:
 	{
 	    int len = body->nd_argc;
 
@@ -1806,6 +1859,8 @@ rb_call(class, recv, mid, argc, argv, func)
 	/* for attr get/set */
       case NODE_ATTRSET:
       case NODE_IVAR:
+	/* for exported method */
+      case NODE_ZSUPER:
 	return rb_eval(body);
 
       default:
@@ -1915,17 +1970,19 @@ Fapply(argc, argv, recv)
     VALUE *argv;
     VALUE recv;
 {
-    VALUE vid, rest;
+    VALUE vid;
     ID mid;
 
-    rb_scan_args(argc, argv, "1*", &vid, &rest);
+    if (argc == 0) Fail("no method name given");
+
+    vid = argv[0]; argc--; argv++;
     if (TYPE(vid) == T_STRING) {
 	mid = rb_intern(RSTRING(vid)->ptr);
     }
     else {
 	mid = NUM2INT(vid);
     }
-    return rb_apply(recv, mid, rest);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 1);
 }
 
 #include <varargs.h>
@@ -1956,6 +2013,16 @@ rb_funcall(recv, mid, n, va_alist)
     }
 
     return rb_call(CLASS_OF(recv), recv, mid, n, argv, 1);
+}
+
+VALUE
+rb_funcall2(recv, mid, argc, argv)
+    VALUE recv;
+    ID mid;
+    int argc;
+    VALUE *argv;
+{
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 1);
 }
 
 int rb_in_eval = 0;
@@ -1995,13 +2062,7 @@ Feval(obj, src)
     if (state) JUMP_TAG(state);
 
     if (nerrs > 0) {
-	VALUE mesg;
-
-	mesg = errstr;
-	nerrs = 0;
-	errstr = str_new2("syntax error in eval():\n");
-	str_cat(errstr, RSTRING(mesg)->ptr, RSTRING(mesg)->len);
-	rb_fail(errstr);
+	syntax_error();
     }
 
     return result;
@@ -2151,6 +2212,24 @@ addpath(path)
 
 extern VALUE C_Kernel;
 
+
+Init_eval()
+{
+    match = rb_intern("=~");
+    each = rb_intern("each");
+
+    aref = rb_intern("[]");
+    aset = rb_intern("[]=");
+
+    rb_global_variable(&top_scope);
+    rb_global_variable(&eval_tree);
+    rb_define_private_method(C_Kernel, "exit", Fexit, -1);
+    rb_define_private_method(C_Kernel, "eval", Feval, 1);
+    rb_define_private_method(C_Kernel, "iterator_p", Fiterator_p, 0);
+    rb_define_method(C_Kernel, "apply", Fapply, -1);
+    rb_define_method(C_Kernel, "unknown", Funknown, -1);
+}
+
 Init_load()
 {
     char *path;
@@ -2167,22 +2246,6 @@ Init_load()
 
     rb_define_private_method(C_Kernel, "load", Fload, 1);
     rb_define_private_method(C_Kernel, "require", Frequire, 1);
-}
-
-Init_eval()
-{
-    match = rb_intern("=~");
-    each = rb_intern("each");
-
-    aref = rb_intern("[]");
-    aset = rb_intern("[]=");
-
-    rb_global_variable(&top_scope);
-    rb_global_variable(&eval_tree);
-    rb_define_private_method(C_Kernel, "exit", Fexit, -1);
-    rb_define_private_method(C_Kernel, "eval", Feval, 1);
-    rb_define_private_method(C_Kernel, "iterator_p", Fiterator_p, 0);
-    rb_define_method(C_Kernel, "apply", Fapply, -1);
 }
 
 void
@@ -2239,11 +2302,12 @@ Sblk_new(class)
     if (the_block->block) return the_block->block;
     blk = obj_alloc(class);
 
+    if (!blkdata) blkdata = rb_intern("blk");
     Make_Data_Struct(blk, blkdata, struct BLOCK, Qnil, blk_free, data);
     MEMCPY(data, the_block, struct BLOCK, 1);
 
     data->env.argv = ALLOC_N(VALUE, data->env.argc);
-    MEMCPY(data->env.argv, the_block->env.argv, VALUE, data->env.argc); 
+    MEMCPY(data->env.argv, the_block->env.argv, VALUE, data->env.argc);
 
     scope_dup(data->scope);
 
@@ -2252,13 +2316,13 @@ Sblk_new(class)
 }
 
 VALUE
-blk_new()
+block_new()
 {
     return Sblk_new(C_Block);
 }
 
 static VALUE
-Fblk_do(blk, args)
+Fblk_call(blk, args)
     VALUE blk, args;
 {
     struct BLOCK *data;
@@ -2318,6 +2382,5 @@ Init_Block()
 
     rb_define_single_method(C_Block, "new", Sblk_new, 0);
 
-    rb_define_method(C_Block, "do", Fblk_do, -2);
-    blkdata = rb_intern("blk");
+    rb_define_method(C_Block, "call", Fblk_call, -2);
 }

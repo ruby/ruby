@@ -168,23 +168,30 @@ Fkill(argc, argv)
 {
     int sig;
     int i;
+    char *s;
 
     if (argc < 2)
 	Fail("wrong # of arguments -- kill(sig, pid...)");
     switch (TYPE(argv[0])) {
       case T_FIXNUM:
 	sig = FIX2UINT(argv[0]);
+	if (sig >= NSIG) {
+	    s = rb_id2name(sig);
+	    if (!s) Fail("Bad signal");
+	    goto str_signal;
+	}
 	break;
 
       case T_STRING:
 	{
 	    int negative = 0;
 
-	    char *s = RSTRING(argv[0])->ptr;
-	    if (*s == '-') {
+	    s = RSTRING(argv[0])->ptr;
+	    if (s[0] == '-') {
 		negative++;
 		s++;
 	    }
+	  str_signal:
 	    if (strncmp("SIG", s, 3) == 0)
 		s += 3;
 	    if((sig = signm2signo(s)) == 0)

@@ -3,7 +3,7 @@
   cons.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:22:24 $
+  $Date: 1995/01/10 10:30:37 $
   created at: Fri Jan  6 10:10:36 JST 1995
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -178,6 +178,7 @@ Fcons_hash(cons)
 {
     int key;
 
+    if (!hash) hash = rb_intern("hash");
     key = rb_funcall(cons->car, hash, 0, 0);
     key ^= rb_funcall(cons->cdr, hash, 0, 0);
     return INT2FIX(key);
@@ -253,7 +254,6 @@ Init_Cons()
 
     rb_define_method(C_Cons, "==", Fcons_equal, 1);
     rb_define_method(C_Cons, "hash", Fcons_hash, 0);
-    hash = rb_intern("hash");
     rb_define_method(C_Cons, "length", Fcons_length, 0);
 
     rb_define_method(C_Cons, "to_s", Fcons_to_s, 0);

@@ -3,7 +3,7 @@
   object.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:44 $
+  $Date: 1995/01/12 08:54:49 $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -12,7 +12,6 @@
 
 #include "ruby.h"
 #include "env.h"
-#include "node.h"
 #include "st.h"
 #include <stdio.h>
 
@@ -31,6 +30,7 @@ VALUE obj_responds_to();
 VALUE obj_alloc();
 
 static ID eq, match;
+static ID init_object;
 
 static VALUE
 P_true(obj)
@@ -73,26 +73,6 @@ Fkrn_id(obj)
     VALUE obj;
 {
     return obj | FIXNUM_FLAG;
-}
-
-static VALUE
-Fkrn_noteq(obj, other)
-    VALUE obj, other;
-{
-    if (rb_equal(obj, other)) {
-	return FALSE;
-    }
-    return TRUE;
-}
-
-static VALUE
-Fkrn_nmatch(obj, other)
-    VALUE obj, other;
-{
-    if (rb_funcall(obj, match, 1, other)) {
-	return FALSE;
-    }
-    return TRUE;
 }
 
 static VALUE
@@ -145,7 +125,7 @@ obj_inspect(id, value, str)
 
 static VALUE
 Fobj_inspect(obj)
-    struct RBasic *obj;
+    struct RObject *obj;
 {
     VALUE str;
     char buf[256];
@@ -212,12 +192,19 @@ Fobj_clone(obj)
     Check_Type(obj, T_OBJECT);
 
     clone = obj_alloc(RBASIC(obj)->class);
-    if (RBASIC(obj)->iv_tbl) {
-	RBASIC(clone)->iv_tbl = st_copy(RBASIC(obj)->iv_tbl);
+    if (ROBJECT(obj)->iv_tbl) {
+	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
     }
     RBASIC(clone)->class = single_class_clone(RBASIC(obj)->class);
 
     return clone;
+}
+
+static VALUE
+Fobj_init_object(obj)
+    VALUE obj;
+{
+    return Qnil;
 }
 
 static VALUE
@@ -282,7 +269,10 @@ Fcls_new(argc, argv, class)
     VALUE *argv;
     VALUE class;
 {
-    return obj_alloc(class);
+    VALUE obj = obj_alloc(class);
+
+    rb_funcall2(obj, init_object, argc, argv);
+    return obj;
 }
 
 static VALUE
@@ -377,6 +367,13 @@ Fdo()
     return rb_yield(Qnil);
 }
 
+Fforever()
+{
+    for (;;) {
+	rb_yield(Qnil);
+    }
+}
+
 VALUE TopSelf;
 VALUE TRUE = 1;
 
@@ -424,16 +421,14 @@ Init_Object()
      *   + All metaclasses are instances of the class `Class'.
      */
 
+
     rb_define_method(C_Kernel, "is_nil", P_false, 0);
-    rb_define_method(C_Kernel, "!", P_false, 0);
     rb_define_method(C_Kernel, "==", Fkrn_equal, 1);
     rb_define_alias(C_Kernel, "equal", "==");
     rb_define_method(C_Kernel, "hash", Fkrn_id, 0);
     rb_define_method(C_Kernel, "id", Fkrn_id, 0);
     rb_define_method(C_Kernel, "class", Fkrn_class, 0);
-    rb_define_method(C_Kernel, "!=", Fkrn_noteq, 1);
     rb_define_alias(C_Kernel, "=~", "==");
-    rb_define_method(C_Kernel, "!~", Fkrn_nmatch, 1);
 
     rb_define_method(C_Kernel, "to_a", Fkrn_to_a, 0);
     rb_define_method(C_Kernel, "to_s", Fkrn_to_s, 0);
@@ -443,8 +438,11 @@ Init_Object()
     rb_define_alias(C_Kernel, "format", "sprintf");
 
     rb_define_private_method(C_Kernel, "do", Fdo, 0);
+    rb_define_private_method(C_Kernel, "forever", Fforever, 0);
 
-    rb_define_method(C_Object, "_inspect", Fobj_inspect, 0);
+    rb_define_private_method(C_Object, "init_object", Fobj_init_object, -1);
+
+    rb_define_method(C_Object, "clone", Fobj_clone, 0);
 
     rb_define_method(C_Object, "responds_to", obj_responds_to, 1);
     rb_define_method(C_Object, "is_member_of", obj_is_member_of, 1);
@@ -465,7 +463,6 @@ Init_Object()
     rb_define_method(C_Nil, "class", Fnil_class, 0);
 
     rb_define_method(C_Nil, "is_nil", P_true, 0);
-    rb_define_method(C_Nil, "!", P_true, 0);
 
     /* default addition */
     rb_define_method(C_Nil, "+", Fnil_plus, 1);
@@ -475,7 +472,6 @@ Init_Object()
     rb_define_method(C_Data, "class", Fdata_class, 0);
 
     eq = rb_intern("==");
-    match = rb_intern("=~");
 
     Qself = TopSelf = obj_alloc(C_Object);
     rb_define_single_method(TopSelf, "to_s", Fmain_to_s, 0);
@@ -484,5 +480,6 @@ Init_Object()
     rb_define_single_method(TRUE, "to_s", Ftrue_to_s, 0);
     rb_define_const(C_Kernel, "%TRUE", TRUE);
     rb_define_const(C_Kernel, "%FALSE", FALSE);
-}
 
+    init_object = rb_intern("init_object");
+}

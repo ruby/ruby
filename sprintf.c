@@ -282,7 +282,7 @@ Fsprintf(argc, argv)
 		blen += strlen(&buf[blen]);
 	    }
 	    break;
-	    
+
 	  case 'd':
 	  case 'D':
 	  case 'O':

@@ -167,7 +167,7 @@ Fstruct_aref(s, idx)
 
     if (TYPE(idx) == T_STRING)
 	return struct_find(rb_intern(RSTRING(idx)->ptr));
-	
+
     i = NUM2INT(idx);
     if (s->len <= i)
 	Fail("offset %d too large for struct(size:%d)", i, s->len);

@@ -15,7 +15,7 @@
 VALUE M_Comparable;
 VALUE C_Range;
 
-static ID next, eq;
+static ID next;
 
 static VALUE
 Srng_new(class, start, end)
@@ -156,6 +156,5 @@ Init_Range()
     rb_define_method(C_Range, "end", Frng_end, 0);
     rb_define_method(C_Range, "to_s", Frng_to_s, 0);
 
-    eq = rb_intern("==");
     next = rb_intern("next");
 }

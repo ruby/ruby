@@ -58,7 +58,7 @@ int reorder_flag;
     tbl->grow_factor = grow_factor;
     tbl->reorder_flag = reorder_flag;
     tbl->num_bins = size;
-    tbl->bins = 
+    tbl->bins =
 	(st_table_entry **) Calloc((unsigned)size, sizeof(st_table_entry *));
     return tbl;
 }
@@ -122,11 +122,11 @@ char **value;
     hash_val = do_hash(key, table);
 
     FIND_ENTRY(table, ptr, hash_val);
-    
+
     if (ptr == nil(st_table_entry)) {
 	return 0;
     } else {
-	if (value != nil(char *))  *value = ptr->record; 
+	if (value != nil(char *))  *value = ptr->record;
 	return 1;
     }
 }
@@ -176,7 +176,7 @@ char *value;
 {
     int hash_val;
     st_table_entry *tbl;
-    
+
     hash_val = do_hash(key, table);
     ADD_DIRECT(table, key, value, hash_val, tbl);
 }
@@ -210,13 +210,13 @@ register st_table *table;
     int i, old_num_bins = table->num_bins, hash_val;
 
     table->num_bins = table->grow_factor*old_num_bins;
-    
+
     if (table->num_bins%2 == 0) {
 	table->num_bins += 1;
     }
-    
+
     table->num_entries = 0;
-    table->bins = 
+    table->bins =
       (st_table_entry **) Calloc((unsigned) table->num_bins,
 	    sizeof(st_table_entry *));
 
@@ -245,9 +245,9 @@ st_table *old_table;
     if (new_table == nil(st_table)) {
 	return nil(st_table);
     }
-    
+
     *new_table = *old_table;
-    new_table->bins = 
+    new_table->bins =
       (st_table_entry **) Calloc((unsigned) num_bins,
 		sizeof(st_table_entry *));
 
@@ -357,7 +357,7 @@ int modulus;
 {
     register int val = 0;
     register int c;
-    
+
     while ((c = *string++) != '\0') {
 	val = val*997 + c;
     }

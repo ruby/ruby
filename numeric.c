@@ -332,7 +332,7 @@ static VALUE
 Fflo_eq(x, y)
     struct RFloat *x, *y;
 {
-    switch (TYPE(y)) { 
+    switch (TYPE(y)) {
       case T_NIL:
 	return Qnil;
       case T_FIXNUM:
@@ -676,7 +676,7 @@ Ffix_equal(x, y)
     VALUE x, y;
 {
     if (FIXNUM_P(y)) {
-	return (FIX2INT(x) == FIX2INT(y))?TRUE:FALSE; 
+	return (FIX2INT(x) == FIX2INT(y))?TRUE:FALSE;
     }
     else if (NIL_P(y)) {
 	return Qnil;
@@ -692,7 +692,7 @@ Ffix_cmp(x, y)
 {
     if (FIXNUM_P(y)) {
 	int a = FIX2INT(x), b = FIX2INT(y);
-	
+
 	if (a == b) return INT2FIX(0);
 	if (a > b) return INT2FIX(1);
 	return INT2FIX(-1);
@@ -708,7 +708,7 @@ Ffix_gt(x, y)
 {
     if (FIXNUM_P(y)) {
 	int a = FIX2INT(x), b = FIX2INT(y);
-	
+
 	if (a > b) return TRUE;
 	return FALSE;
     }
@@ -723,7 +723,7 @@ Ffix_ge(x, y)
 {
     if (FIXNUM_P(y)) {
 	int a = FIX2INT(x), b = FIX2INT(y);
-	
+
 	if (a >= b) return TRUE;
 	return FALSE;
     }
@@ -738,7 +738,7 @@ Ffix_lt(x, y)
 {
     if (FIXNUM_P(y)) {
 	int a = FIX2INT(x), b = FIX2INT(y);
-	
+
 	if (a < b) return TRUE;
 	return FALSE;
     }
@@ -753,7 +753,7 @@ Ffix_le(x, y)
 {
     if (FIXNUM_P(y)) {
 	int a = FIX2INT(x), b = FIX2INT(y);
-	
+
 	if (a <= b) return TRUE;
 	return FALSE;
     }

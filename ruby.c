@@ -262,7 +262,7 @@ readin(fd, fname)
     if (xflag) {
 	char *s = p;
 
-	*pend = '\0'; 
+	*pend = '\0';
 	xflag = FALSE;
 	while (p < pend) {
 	    while (s < pend && *s != '\n') s++;

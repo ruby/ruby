@@ -3,7 +3,7 @@
   class.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:21 $
+  $Date: 1995/01/12 08:54:44 $
   created at: Tue Aug 10 15:05:44 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -29,7 +29,6 @@ class_new(super)
 
     cls->super = super;
     cls->m_tbl = new_idhash();
-    cls->c_tbl = Qnil;
 
     return (VALUE)cls;
 }
@@ -69,13 +68,12 @@ single_class_clone(class)
 	clone->super = class->super;
 	clone->m_tbl = new_idhash();
 	st_foreach(class->m_tbl, clone_method, clone->m_tbl);
-	clone->c_tbl = Qnil;
 	FL_SET(clone, FL_SINGLE);
 	return (VALUE)clone;
     }
 }
 
-VALUE 
+VALUE
 rb_define_class_id(id, super)
     ID id;
     struct RBasic *super;
@@ -90,7 +88,7 @@ rb_define_class_id(id, super)
     return (VALUE)cls;
 }
 
-VALUE 
+VALUE
 rb_define_class(name, super)
     char *name;
     VALUE super;
@@ -106,12 +104,11 @@ module_new()
 
     mdl->super = Qnil;
     mdl->m_tbl = new_idhash();
-    mdl->c_tbl = Qnil;
 
     return (VALUE)mdl;
 }
 
-VALUE 
+VALUE
 rb_define_module_id(id)
     ID id;
 {
@@ -121,7 +118,7 @@ rb_define_module_id(id)
     return (VALUE)mdl;
 }
 
-VALUE 
+VALUE
 rb_define_module(name)
     char *name;
 {
@@ -138,7 +135,7 @@ include_class_new(module, super)
     OBJSETUP(cls, C_Class, T_ICLASS);
 
     cls->m_tbl = module->m_tbl;
-    cls->c_tbl = module->c_tbl;
+    cls->iv_tbl = module->iv_tbl;
     cls->super = super;
     if (TYPE(module) == T_ICLASS) {
 	RBASIC(cls)->class = RBASIC(module)->class;
@@ -155,25 +152,29 @@ rb_include_module(class, module)
     struct RClass *class, *module;
 {
     struct RClass *p;
-    int added = FALSE;
+
+    if (!module) return;
 
     Check_Type(module, T_MODULE);
 
+    if (BUILTIN_TYPE(class) == T_CLASS) {
+	rb_clear_cache2(class);
+    }
+
     while (module) {
-	/* ignore if module included already in superclasses */
+	/* ignore if the module included already in superclasses */
 	for (p = class->super; p; p = p->super) {
 	    if (BUILTIN_TYPE(p) == T_ICLASS && p->m_tbl == module->m_tbl)
-		goto ignore_module;
+		return;
+	}
+
+	if (verbose) {
+	    rb_const_check(class, module);
 	}
 
 	class->super = include_class_new(module, class->super);
-	added = TRUE;
 	class = class->super;
-      ignore_module:
 	module = module->super;
-    }
-    if (added) {
-	rb_clear_cache2(class);
     }
 }
 

@@ -1,0 +1,10 @@
+MANIFEST
+alloca.c
+memmove.c
+mkdir.c
+strdup.c
+strerror.c
+strftime.c
+strstr.c
+strtol.c
+strtoul.c

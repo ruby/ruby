@@ -24,9 +24,6 @@ Ruby-C インターフェース
    変更する時は以後のselfの値そのものが変わってしまうので, 特別な事情
    がない限り代入してはならない.
 
-   注意: ヘッダファイル"env.h"をインクルードしていないファイルでは,
-   Qselfは定数であり, 代入は文法エラーとなる.
-
  TRUE
 
    定数: tオブジェクト(真のデフォルト値)
@@ -43,7 +40,7 @@ Ruby-C インターフェース
 
  VALUE rb_define_module(char *name)
 
-   Rubyモジュールを定義する.
+   新しいRubyモジュールを定義する.
 
  void rb_include_module(VALUE class, VALUE module)
 
@@ -67,8 +64,8 @@ Ruby-C インターフェース
 
  void rb_global_variable(VALUE *var)
 
-   GCのためRubyからはアクセスされないが, Rubyオブジェクトを含む大域変
-   数をマークする.
+   GCのため，Rubyプログラムからはアクセスされないが, Rubyオブジェクト
+   を含む大域変数をマークする.
 
  void rb_read_only_hook()
 
@@ -87,20 +84,21 @@ Ruby-C インターフェース
 
    メソッドを定義する. argcはselfを除く引数の数. argcが-1の時, 関数に
    は引数の数(selfを含まない)を第1引数, 引数の配列を第2引数とする形式
-   で与えられる. argcが-2の時, 引数はself, args(argsは引数を含むrubyの
-   配列)という形式で与えられる.
+   で与えられる(第3引数はself). argcが-2の時, 引数はself, args(argsは
+   引数を含むrubyの配列)という形式で与えられる.
 
  rb_define_single_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
    特異メソッドを定義する. 引数はrb_define_method()と同じ.
 
- rb_scan_args(VALUE args, char *fmt, ...)
+ rb_scan_args(int atgc, VALUE *argv, char *fmt, ...)
 
-   args形式で与えられた引数を分解する. fmtは必須引数の数, 付加引数の数, 
-   残りの引数があるかを指定する文字列で, "数字数字*"という形式である.
-   2 番目の数字と"*"はそれぞれ省略可能である. 第3引数以降は変数へのポ
-   インタで, 該当する要素がその変数に格納される. 付加引数に対応する引
-   数が与えられていない場合は変数にQnilが代入される.
+   argc,argv形式で与えられた引数を分解する. fmtは必須引数の数, 付加引
+   数の数, 残りの引数があるかを指定する文字列で, "数字数字*"という形式
+   である.  2 番目の数字と"*"はそれぞれ省略可能である. 必須引数が一つ
+   もない場合は0を指定する．第3引数以降は変数へのポインタで, 該当する
+   要素がその変数に格納される. 付加引数に対応する引数が与えられていな
+   い場合は変数にQnilが代入される.
 
 Rubyメソッド呼び出し
 
@@ -108,12 +106,13 @@ Rubyメソッド呼び出し
 
    メソッド呼び出し. 文字列からmidを得るためにはrb_intern()を使う.
 
- rb_call_super(VALUE args)
+ VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
 
-   スーパークラスのメソッドを呼び出す. argsは引数リストとなる配列. 
-   args がQnilの時は現在のメソッドの引数をそのまま引き継ぐ.
+   メソッド呼び出し. 引数をargc,argv形式で渡す．
 
-文字列 <-> ID変換
+ VALUE rb_eval_string(char *str)
+
+   文字列をrubyとスクリプトしてコンパイル・実行する．
 
  ID rb_intern(char *name)
 

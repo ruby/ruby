@@ -1,7 +1,7 @@
 # method definition by eval()
 # output:
 #	bar
-#	(eval):21: method `baz' not available for "#<foo: 0xbfc5c>"(foo)
+#	(eval):26: method `baz' not available for "#<foo: 0xbfc5c>"(foo)
 
 class foo
   def foo

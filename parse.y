@@ -3,7 +3,7 @@
   parse.y -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:45 $
+  $Date: 1995/01/12 08:54:50 $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -50,7 +50,7 @@ static enum lex_state {
 static ID cur_class = Qnil, cur_mid = Qnil;
 static int in_module, in_single;
 
-static void value_expr();
+static int value_expr();
 static NODE *cond();
 static NODE *cond2();
 
@@ -96,8 +96,6 @@ static void setup_top_local();
 	ELSE
 	CASE
 	WHEN
-	UNLESS
-	UNTIL
 	WHILE
 	FOR
 	IN
@@ -120,9 +118,7 @@ static void setup_top_local();
 	_FILE_
 	_LINE_
 	IF_MOD
-	UNLESS_MOD
 	WHILE_MOD
-	UNTIL_MOD
 	ALIAS
 
 %token <id>   IDENTIFIER GVAR IVAR CONSTANT
@@ -131,14 +127,14 @@ static void setup_top_local();
 
 %type <node> singleton inc_list
 %type <val>  literal numeric
-%type <node> compstmts stmts stmt stmt0 expr expr0 var_ref
+%type <node> compexpr exprs expr arg primary var_ref
 %type <node> if_tail opt_else case_body cases resque ensure
-%type <node> call_args call_args0 args args2 array
+%type <node> call_args call_args0 args args2 opt_args
 %type <node> f_arglist f_args assoc_list assocs assoc
 %type <node> mlhs mlhs_head mlhs_tail lhs iter_var opt_iter_var
 %type <id>   superclass variable symbol
 %type <id>   fname op rest_arg
-%type <num>  f_arg 
+%type <num>  f_arg
 %token UPLUS 		/* unary+ */
 %token UMINUS 		/* unary- */
 %token POW		/* ** */
@@ -156,11 +152,13 @@ static void setup_top_local();
 %token <id> OP_ASGN     /* +=, -=  etc. */
 %token ASSOC            /* => */
 %token LPAREN LBRACK LBRACE
+%token SYMBEG
 
 /*
  *	precedence table
  */
 
+%left  IF_MOD WHILE_MOD
 %left  OR
 %left  AND
 %left  YIELD RETURN FAIL
@@ -186,152 +184,42 @@ program		:  {
 			lex_state = EXPR_BEG;
                         init_top_local();
 		    }
-		  compstmts
+		  compexpr
 		    {
 			eval_tree = block_append(eval_tree, $2);
                         setup_top_local();
 		    }
 
-compstmts	: stmts opt_term
+compexpr	: exprs opt_term
 
-stmts		: /* none */
+exprs		: /* none */
 		    {
 			$$ = Qnil;
 		    }
-		| stmt
-		| stmts term stmt
+		| expr
+		| exprs term expr
 		    {
 			$$ = block_append($1, $3);
 		    }
-		| stmts error
+		| exprs error
 		    {
 			lex_state = EXPR_BEG;
 		    }
-		  stmt
+		  expr
 		    {
 			yyerrok;
 			$$ = block_append($1, $4);
 		    }
 
-stmt		: CLASS IDENTIFIER superclass
+expr		: mlhs '=' args2
 		    {
-			if (cur_class || cur_mid || in_single)
-			    Error("nested class definition");
-			cur_class = $2;
-			push_local();
-		    }
-		  compstmts
-		  END
-		    {
-		        $$ = NEW_CLASS($2, $5, $3);
-		        pop_local();
-		        cur_class = Qnil;
-		    }
-		| MODULE IDENTIFIER
-		    {
-			if (cur_class != Qnil)
-			    Error("nested module definition");
-			cur_class = $2;
-			in_module = 1;
-			push_local();
-		    }
-		  compstmts
-		  END
-		    {
-		        $$ = NEW_MODULE($2, $4);
-		        pop_local();
-		        cur_class = Qnil;
-			in_module = 0;
-		    }
-		| DEF fname
-		    {
-			if (cur_mid || in_single)
-			    Error("nested method definition");
-			cur_mid = $2;
-			push_local();
-		    }
-		  f_arglist
-		  compstmts
-		  END
-		    {
-			$$ = NEW_DEFN($2, NEW_RFUNC($4, $5), cur_class?0:1);
-		        pop_local();
-			cur_mid = Qnil;
-		    }
-		| DEF singleton '.' fname
-		    {
-			value_expr($2);
-			in_single++;
-			push_local();
-		    }
-		  f_arglist
-		  compstmts
-		  END
-		    {
-			$$ = NEW_DEFS($2, $4, NEW_RFUNC($6, $7));
-		        pop_local();
-			in_single--;
-		    }
-		| UNDEF fname
-		    {
-			$$ = NEW_UNDEF($2);
-		    }
-		| ALIAS fname {lex_state = EXPR_FNAME;} fname
-		    {
-		        $$ = NEW_ALIAS($2, $4);
-		    }
-		| INCLUDE inc_list
-		    {
-			if (cur_mid || in_single)
-			    Error("include appeared in method definition");
-			$$ = $2;
-		    }
-		| stmt0 IF_MOD stmt0
-		    {
-			$$ = NEW_IF(cond($3), $1, Qnil);
-		    }
-		| stmt0 UNLESS_MOD stmt0
-		    {
-			$$ = NEW_UNLESS(cond($3), $1, Qnil);
-		    }
-		| stmt0 WHILE_MOD stmt0
-		    {
-			$$ = NEW_WHILE2(cond($3), $1);
-		    }
-		| stmt0 UNTIL_MOD stmt0
-		    {
-			$$ = NEW_UNTIL2(cond($3), $1);
-		    }
-		| stmt AND stmt
-		    {
-			$$ = NEW_AND(cond($1), cond($3));
-		    }
-		| stmt OR stmt
-		    {
-			$$ = NEW_OR(cond($1), cond($3));
-		    }
-		| stmt0
-
-stmt0		: mlhs '=' args2
-		    {
+			value_expr($3);
 			$1->nd_value = $3;
 			$$ = $1;
 		    }
-		| REDO
+		| assocs
 		    {
-			$$ = NEW_REDO();
-		    }
-		| BREAK
-		    {
-			$$ = NEW_BREAK();
-		    }
-		| CONTINUE
-		    {
-			$$ = NEW_CONT();
-		    }
-		| RETRY
-		    {
-			$$ = NEW_RETRY();
+			$$ = NEW_HASH($1);
 		    }
 		| RETURN args2
 		    {
@@ -339,12 +227,6 @@ stmt0		: mlhs '=' args2
 			if (!cur_mid && !in_single)
 			    Error("return appeared outside of method");
 			$$ = NEW_RET($2);
-		    }
-		| RETURN
-		    {
-			if (!cur_mid && !in_single)
-			    Error("return appeared outside of method");
-			$$ = NEW_RET(Qnil);
 		    }
 		| FAIL args2
 		    {
@@ -360,7 +242,7 @@ stmt0		: mlhs '=' args2
 		    {
 			$$ = NEW_CALL(Qnil, $1, $2);
 		    }
-		| expr0 '.' IDENTIFIER call_args0
+		| primary '.' IDENTIFIER call_args0
 		    {
 			value_expr($1);
 			$$ = NEW_CALL($1, $3, $4);
@@ -371,15 +253,45 @@ stmt0		: mlhs '=' args2
 			    Error("super called outside of method");
 			$$ = NEW_SUPER($2);
 		    }
-		| expr
+		| UNDEF fname
+		    {
+			$$ = NEW_UNDEF($2);
+		    }
+		| ALIAS fname {lex_state = EXPR_FNAME;} fname
+		    {
+		        $$ = NEW_ALIAS($2, $4);
+		    }
+		| INCLUDE inc_list
+		    {
+			if (cur_mid || in_single)
+			    Error("include appeared in method definition");
+			$$ = $2;
+		    }
+		| expr IF_MOD expr
+		    {
+			$$ = NEW_IF(cond($3), $1, Qnil);
+		    }
+		| expr WHILE_MOD expr
+		    {
+			$$ = NEW_WHILE2(cond($3), $1);
+		    }
+		| expr AND expr
+		    {
+			$$ = NEW_AND(cond($1), cond($3));
+		    }
+		| expr OR expr
+		    {
+			$$ = NEW_OR(cond($1), cond($3));
+		    }
+		| arg
 
 mlhs		: mlhs_head
 		    {
-			$$ = NEW_MASGN(NEW_LIST($1),Qnil);
+			$$ = NEW_MASGN(NEW_LIST($1), Qnil);
 		    }
 		| mlhs_head '*' lhs
 		    {
-			$$ = NEW_MASGN(NEW_LIST($1),$3);
+			$$ = NEW_MASGN(NEW_LIST($1), $3);
 		    }
 		| mlhs_head mlhs_tail
 		    {
@@ -390,18 +302,7 @@ mlhs		: mlhs_head
 			$$ = NEW_MASGN(list_concat(NEW_LIST($1),$2),$5);
 		    }
 
-mlhs_head	: variable comma
-		    {
-			$$ = asignable($1, Qnil);
-		    }
-		| expr0 '[' args rbracket comma
-		    {
-			$$ = aryset($1, $3, Qnil);
-		    }
-		| expr0 '.' IDENTIFIER comma
-		    {
-			$$ = attrset($1, $3, Qnil);
-		    }
+mlhs_head	: lhs comma
 
 mlhs_tail	: lhs
 		    {
@@ -416,22 +317,13 @@ lhs		: variable
 		    {
 			$$ = asignable($1, Qnil);
 		    }
-		| expr0 '[' args rbracket
+		| primary '[' opt_args rbracket
 		    {
 			$$ = aryset($1, $3, Qnil);
 		    }
-		| expr0 '.' IDENTIFIER 
+		| primary '.' IDENTIFIER
 		    {
 			$$ = attrset($1, $3, Qnil);
-		    }
-
-superclass	: /* none */
-		    {
-			$$ = Qnil;
-		    }
-		| ':' IDENTIFIER
-		    {
-			$$ = $2;
 		    }
 
 inc_list	: IDENTIFIER
@@ -467,9 +359,7 @@ op		: COLON2	{ $$ = COLON2; }
 		| '&'		{ $$ = '&'; }
 		| CMP		{ $$ = CMP; }
 		| EQ		{ $$ = EQ; }
-		| NEQ		{ $$ = NEQ; }
 		| MATCH		{ $$ = MATCH; }
-		| NMATCH	{ $$ = NMATCH; }
 		| '>'		{ $$ = '>'; }
 		| GEQ		{ $$ = GEQ; }
 		| '<'		{ $$ = '<'; }
@@ -482,12 +372,586 @@ op		: COLON2	{ $$ = COLON2; }
 		| '/'		{ $$ = '/'; }
 		| '%'		{ $$ = '%'; }
 		| POW		{ $$ = POW; }
-		| '!'		{ $$ = '!'; }
 		| '~'		{ $$ = '~'; }
 		| UPLUS		{ $$ = UMINUS; }
 		| UMINUS	{ $$ = UPLUS; }
 		| AREF		{ $$ = AREF; }
 		| ASET		{ $$ = ASET; }
+
+arg		: variable '=' arg
+		    {
+			value_expr($3);
+			$$ = asignable($1, $3);
+		    }
+		| primary '[' opt_args rbracket '=' arg
+		    {
+			$$ = aryset($1, $3, $6);
+		    }
+		| primary '.' IDENTIFIER '=' arg
+		    {
+			$$ = attrset($1, $3, $5);
+		    }
+		| variable OP_ASGN arg
+		    {
+		  	NODE *val;
+
+			value_expr($3);
+			if (is_local_id($1)) {
+			    val = NEW_LVAR($1);
+			}
+			else if (is_global_id($1)) {
+			    val = NEW_GVAR($1);
+			}
+			else if (is_instance_id($1)) {
+			    val = NEW_IVAR($1);
+			}
+			else {
+			    val = NEW_CVAR($1);
+			}
+		  	$$ = asignable($1, call_op(val, $2, 1, $3));
+		    }
+		| primary '[' opt_args rbracket OP_ASGN arg
+		    {
+			NODE *args = NEW_LIST($6);
+
+			if ($3) list_concat(args, $3);
+			$$ = NEW_OP_ASGN1($1, $5, args);
+		    }
+		| primary '.' IDENTIFIER OP_ASGN arg
+		    {
+			$$ = NEW_OP_ASGN2($1, $4, $5);
+		    }
+		| arg DOT2 arg
+		    {
+			$$ = call_op($1, DOT2, 1, $3);
+		    }
+		| arg DOT3 arg
+		    {
+			$$ = NEW_DOT3(cond2($1), cond2($3));
+		    }
+		| arg '+' arg
+		    {
+			$$ = Qnil;
+			if ($1 && $3
+			    && (nd_type($3) == NODE_LIT
+				|| nd_type($3) == NODE_STR)
+			    && nd_type($1) == NODE_CALL && $1->nd_mid == '+') {
+			    if ($1->nd_args->nd_head == Qnil)
+				Bug("bad operand for `+'");
+			    if (nd_type($1->nd_args->nd_head) == NODE_LIT
+				|| nd_type($1->nd_args->nd_head) == NODE_STR) {
+				$1->nd_args->nd_head =
+				    expand_op($1->nd_args->nd_head, '+', $3);
+		                    $$ = $1;
+			    }
+			}
+			if ($$ == Qnil) {
+			    $$ = call_op($1, '+', 1, $3);
+			}
+		    }
+		| arg '-' arg
+		    {
+		        $$ = call_op($1, '-', 1, $3);
+		    }
+		| arg '*' arg
+		    {
+		        $$ = call_op($1, '*', 1, $3);
+		    }
+		| arg '/' arg
+		    {
+			$$ = call_op($1, '/', 1, $3);
+		    }
+		| arg '%' arg
+		    {
+			$$ = call_op($1, '%', 1, $3);
+		    }
+		| arg POW arg
+		    {
+			$$ = call_op($1, POW, 1, $3);
+		    }
+		| UPLUS arg
+		    {
+			$$ = call_op($2, UPLUS, 0);
+		    }
+		| UMINUS arg
+		    {
+		        $$ = call_op($2, UMINUS, 0);
+		    }
+		| arg '|' arg
+		    {
+		        $$ = call_op($1, '|', 1, $3);
+		    }
+		| arg '^' arg
+		    {
+			$$ = call_op($1, '^', 1, $3);
+		    }
+		| arg '&' arg
+		    {
+			$$ = call_op($1, '&', 1, $3);
+		    }
+		| arg CMP arg
+		    {
+			$$ = call_op($1, CMP, 1, $3);
+		    }
+		| arg '>' arg
+		    {
+			$$ = call_op($1, '>', 1, $3);
+		    }
+		| arg GEQ arg
+		    {
+			$$ = call_op($1, GEQ, 1, $3);
+		    }
+		| arg '<' arg
+		    {
+			$$ = call_op($1, '<', 1, $3);
+		    }
+		| arg LEQ arg
+		    {
+			$$ = call_op($1, LEQ, 1, $3);
+		    }
+		| arg EQ arg
+		    {
+			$$ = call_op($1, EQ, 1, $3);
+		    }
+		| arg NEQ arg
+		    {
+			$$ = NEW_NOT(call_op($1, EQ, 1, $3));
+		    }
+		| arg MATCH arg
+		    {
+			$$ = NEW_CALL($1, MATCH, NEW_LIST($3));
+		    }
+		| arg NMATCH arg
+		    {
+			$$ = NEW_NOT(NEW_CALL($1, MATCH, NEW_LIST($3)));
+		    }
+		| '!' arg
+		    {
+			$$ = NEW_NOT(cond($2));
+		    }
+		| '~' arg
+		    {
+			if ($2
+			    && (nd_type($2) == NODE_STR
+				|| (nd_type($2) == NODE_LIT
+				    && (TYPE($2->nd_lit) == T_REGEXP
+					|| TYPE($2->nd_lit) == T_STRING)))) {
+			    $$ = NEW_CALL($2, '~', Qnil);
+			}
+			else {
+			    $$ = call_op($2, '~', 0);
+			}
+		    }
+		| arg LSHFT arg
+		    {
+			$$ = call_op($1, LSHFT, 1, $3);
+		    }
+		| arg RSHFT arg
+		    {
+			$$ = call_op($1, RSHFT, 1, $3);
+		    }
+		| arg COLON2 arg
+		    {
+			$$ = call_op($1, COLON2, 1, $3);
+		    }
+		| arg ANDOP arg
+		    {
+			$$ = NEW_AND(cond($1), cond($3));
+		    }
+		| arg OROP arg
+		    {
+			$$ = NEW_OR(cond($1), cond($3));
+		    }
+		| primary
+		    {
+			$$ = $1;
+		    }
+
+call_args	: /* none */
+		    {
+			$$ = Qnil;
+		    }
+		| call_args0
+		| '*' arg
+		    {
+			$$ = $2;
+		    }
+
+call_args0	: args
+		| assocs
+		    {
+			$$ = NEW_LIST(NEW_HASH($1));
+		    }
+		| args comma assocs
+		    {
+			$$ = list_append($1, NEW_HASH($3));
+		    }
+		| args comma '*' arg
+		    {
+			$$ = call_op($1, '+', 1, $4);
+		    }
+
+opt_args	: /* none */
+		    {
+			$$ = Qnil;
+		    }
+		| args
+
+args 		: arg
+		    {
+			value_expr($1);
+			$$ = NEW_LIST($1);
+		    }
+		| args comma arg
+		    {
+			value_expr($3);
+			$$ = list_append($1, $3);
+		    }
+
+args2		: args
+		    {
+			if ($1 && $1->nd_next == Qnil) {
+			    $$ = $1->nd_head;
+			}
+			else {
+			    $$ = $1;
+			}
+		    }
+
+primary		: literal
+		    {
+			$$ = NEW_LIT($1);
+		    }
+		| STRING
+		    {
+			$$ = NEW_STR($1);
+		    }
+		| STRING2
+		| XSTRING
+		    {
+			$$ = NEW_XSTR($1);
+		    }
+		| XSTRING2
+		| DREGEXP
+		| DGLOB
+		| var_ref
+		| SUPER '(' call_args rparen
+		    {
+			if (!cur_mid && !in_single)
+			    Error("super called outside of method");
+			$$ = NEW_SUPER($3);
+		    }
+		| SUPER
+		    {
+			if (!cur_mid && !in_single)
+			    Error("super called outside of method");
+			$$ = NEW_ZSUPER();
+		    }
+		| primary '[' opt_args rbracket
+		    {
+			value_expr($1);
+			$$ = NEW_CALL($1, AREF, $3);
+		    }
+		| LBRACK opt_args rbracket
+		    {
+			if ($2 == Qnil)
+			    $$ = NEW_ZARRAY(); /* zero length array*/
+			else {
+			    $$ = $2;
+			}
+		    }
+		| LBRACE assoc_list rbrace
+		    {
+			$$ = NEW_HASH($2);
+		    }
+		| REDO
+		    {
+			$$ = NEW_REDO();
+		    }
+		| BREAK
+		    {
+			$$ = NEW_BREAK();
+		    }
+		| CONTINUE
+		    {
+			$$ = NEW_CONT();
+		    }
+		| RETRY
+		    {
+			$$ = NEW_RETRY();
+		    }
+		| RETURN
+		    {
+			if (!cur_mid && !in_single)
+			    Error("return appeared outside of method");
+			$$ = NEW_RET(Qnil);
+		    }
+		| FAIL '(' args2 ')'
+		    {
+			if (nd_type($3) == NODE_ARRAY) {
+			    Error("wrong number of argument to fail(0 or 1)");
+			}
+			value_expr($3);
+			$$ = NEW_FAIL($3);
+		    }
+		| FAIL '(' ')'
+		    {
+			$$ = NEW_FAIL(Qnil);
+		    }
+		| FAIL
+		    {
+			$$ = NEW_FAIL(Qnil);
+		    }
+		| YIELD '(' args2 ')'
+		    {
+			value_expr($3);
+			$$ = NEW_YIELD($3);
+		    }
+		| YIELD '(' ')'
+		    {
+			$$ = NEW_YIELD(Qnil);
+		    }
+		| YIELD
+		    {
+			$$ = NEW_YIELD(Qnil);
+		    }
+		| primary '{' opt_iter_var '|' compexpr rbrace
+		    {
+			if (nd_type($1) == NODE_LVAR
+		            || nd_type($1) == NODE_MVAR) {
+			    $1 = NEW_CALL(Qnil, $1->nd_vid, Qnil);
+			}
+			$$ = NEW_ITER($3, $1, $5);
+		    }
+		| IDENTIFIER '(' call_args rparen
+		    {
+			$$ = NEW_CALL(Qnil, $1, $3);
+		    }
+		| primary '.' IDENTIFIER '(' call_args rparen
+		    {
+			value_expr($1);
+			$$ = NEW_CALL($1, $3, $5);
+		    }
+		| primary '.' IDENTIFIER
+		    {
+			value_expr($1);
+			$$ = NEW_CALL($1, $3, Qnil);
+		    }
+		| IF expr then
+		  compexpr
+		  if_tail
+		  END
+		    {
+			$$ = NEW_IF(cond($2), $4, $5);
+		    }
+		| WHILE expr term compexpr END
+		    {
+			$$ = NEW_WHILE(cond($2), $4);
+		    }
+		| CASE compexpr
+		  case_body
+		  END
+		    {
+			value_expr($2);
+			$$ = NEW_CASE($2, $3);
+		    }
+		| FOR iter_var IN expr term
+		  compexpr
+		  END
+		    {
+			value_expr($4);
+			$$ = NEW_FOR($2, $4, $6);
+		    }
+		| PROTECT
+		  compexpr
+		  resque
+		  ensure
+		  END
+		    {
+			if ($3 == Qnil && $4 == Qnil) {
+			    Warning("useless protect clause");
+			    $$ = $2;
+			}
+			else {
+			    $$ = NEW_PROT($2, $3, $4);
+			}
+		    }
+		| LPAREN compexpr rparen
+		    {
+			$$ = $2;
+		    }
+		| CLASS IDENTIFIER superclass
+		    {
+			if (cur_class || cur_mid || in_single)
+			    Error("nested class definition");
+			cur_class = $2;
+			push_local();
+		    }
+		  compexpr
+		  END
+		    {
+		        $$ = NEW_CLASS($2, $5, $3);
+		        pop_local();
+		        cur_class = Qnil;
+		    }
+		| MODULE IDENTIFIER
+		    {
+			if (cur_class != Qnil)
+			    Error("nested module definition");
+			cur_class = $2;
+			in_module = 1;
+			push_local();
+		    }
+		  compexpr
+		  END
+		    {
+		        $$ = NEW_MODULE($2, $4);
+		        pop_local();
+		        cur_class = Qnil;
+			in_module = 0;
+		    }
+		| DEF fname
+		    {
+			if (cur_mid || in_single)
+			    Error("nested method definition");
+			cur_mid = $2;
+			push_local();
+		    }
+		  f_arglist
+		  compexpr
+		  END
+		    {
+			$$ = NEW_DEFN($2, NEW_RFUNC($4, $5), cur_class?0:1);
+		        pop_local();
+			cur_mid = Qnil;
+		    }
+		| DEF singleton '.' fname
+		    {
+			value_expr($2);
+			in_single++;
+			push_local();
+		    }
+		  f_arglist
+		  compexpr
+		  END
+		    {
+			$$ = NEW_DEFS($2, $4, NEW_RFUNC($6, $7));
+		        pop_local();
+			in_single--;
+		    }
+
+then		: term
+		| THEN
+		| term THEN
+
+if_tail		: opt_else
+		| ELSIF expr then
+		  compexpr
+		  if_tail
+		    {
+			$$ = NEW_IF(cond($2), $4, $5);
+		    }
+
+opt_else	: /* none */
+		    {
+			$$ = Qnil;
+		    }
+		| ELSE compexpr
+		    {
+			$$ = $2;
+		    }
+
+iter_var	: lhs
+		| mlhs
+
+opt_iter_var	: /* none */
+		    {
+			$$ = Qnil;
+		    }
+		| iter_var
+
+case_body	: WHEN args then
+		  compexpr
+		  cases
+		    {
+			$$ = NEW_WHEN($2, $4, $5);
+		    }
+
+cases		: opt_else
+		| WHEN args then
+		  compexpr
+		  cases
+		    {
+			$$ = NEW_WHEN($2, $4, $5);
+		    }
+
+resque		: /* none */
+		    {
+			$$ = Qnil;
+		    }
+		| RESQUE compexpr
+		    {
+			if ($2 == Qnil)
+			    $$ = (NODE*)1;
+			else
+			    $$ = $2;
+		    }
+
+ensure		: /* none */
+		    {
+			$$ = Qnil;
+		    }
+		| ENSURE compexpr
+		    {
+			$$ = $2;
+		    }
+
+literal		: numeric
+		| SYMBEG symbol
+		    {
+			$$ = INT2FIX($2);
+		    }
+		| REGEXP
+		| GLOB
+
+symbol		: fname
+		| IVAR
+		| GVAR
+		| CONSTANT
+
+numeric		: INTEGER
+		| FLOAT
+
+variable	: IDENTIFIER
+		| IVAR
+		| GVAR
+		| CONSTANT
+		| NIL
+		    {
+			$$ = NIL;
+		    }
+		| SELF
+		    {
+			$$ = SELF;
+		    }
+
+var_ref		: variable
+		    {
+			$$ = gettable($1);
+		    }
+
+superclass	: term
+		    {
+			$$ = Qnil;
+		    }
+		| colon
+		    {
+			lex_state = EXPR_BEG;
+		    }
+		  IDENTIFIER
+		    {
+			$$ = $3;
+		    }
 
 f_arglist	: '(' f_args rparen
 		    {
@@ -560,7 +1024,7 @@ singleton	: var_ref
 			    $$ = $1;
 			}
 		    }
-		| LPAREN compstmts rparen
+		| LPAREN compexpr rparen
 		    {
 			switch (nd_type($2)) {
 			  case NODE_STR:
@@ -579,490 +1043,18 @@ singleton	: var_ref
 			$$ = $2;
 		    }
 
-expr		: variable '=' expr
-		    {
-			value_expr($3);
-			$$ = asignable($1, $3);
-		    }
-		| expr0 '[' args rbracket '=' expr
-		    {
-			value_expr($6);
-			$$ = aryset($1, $3, $6);
-		    }
-		| expr0 '.' IDENTIFIER '=' expr
-		    {
-			value_expr($5);
-			$$ = attrset($1, $3, $5);
-		    }
-		| variable OP_ASGN expr
-		    {
-		  	NODE *val;
-
-			value_expr($3);
-			if (is_local_id($1)) {
-			    val = NEW_LVAR($1);
-			}
-			else if (is_global_id($1)) {
-			    val = NEW_GVAR($1);
-			}
-			else if (is_instance_id($1)) {
-			    val = NEW_IVAR($1);
-			}
-			else {
-			    val = NEW_CVAR($1);
-			}
-		  	$$ = asignable($1, call_op(val, $2, 1, $3));
-		    }
-		| expr0 '[' args rbracket OP_ASGN expr
-		    {
-			$$ = NEW_OP_ASGN1($1,$5,list_concat(NEW_LIST($6),$3));
-		    }
-		| expr0 '.' IDENTIFIER OP_ASGN expr
-		    {
-			$$ = NEW_OP_ASGN2($1, $4, $5);
-		    }
-		| expr DOT2 expr
-		    {
-			$$ = call_op($1, DOT2, 1, $3);
-		    }
-		| expr DOT3 expr
-		    {
-			$$ = NEW_DOT3(cond2($1), cond2($3));
-		    }
-		| expr '+' expr
-		    {
-			$$ = Qnil;
-			if ($1 && $3
-			    && (nd_type($3) == NODE_LIT || nd_type($3) == NODE_STR)
-			    && nd_type($1) == NODE_CALL && $1->nd_mid == '+') {
-			    if ($1->nd_args->nd_head == Qnil)
-				Bug("bad operand for `+'");
-			    if (nd_type($1->nd_args->nd_head) == NODE_LIT
-				|| nd_type($1->nd_args->nd_head) == NODE_STR) {
-				$1->nd_args->nd_head =
-				    expand_op($1->nd_args->nd_head, '+', $3);
-		                    $$ = $1;
-			    }
-			}
-			if ($$ == Qnil) {
-			    $$ = call_op($1, '+', 1, $3);
-			}
-		    }
-		| expr '-' expr
-		    {
-		        $$ = call_op($1, '-', 1, $3);
-		    }
-		| expr '*' expr
-		    {
-		        $$ = call_op($1, '*', 1, $3);
-		    }
-		| expr '/' expr
-		    {
-			$$ = call_op($1, '/', 1, $3);
-		    }
-		| expr '%' expr
-		    {
-			$$ = call_op($1, '%', 1, $3);
-		    }
-		| expr POW expr
-		    {
-			$$ = call_op($1, POW, 1, $3);
-		    }
-		| UPLUS expr
-		    {
-			$$ = call_op($2, UPLUS, 0);
-		    }
-		| UMINUS expr
-		    {
-		        $$ = call_op($2, UMINUS, 0);
-		    }
-		| expr '|' expr
-		    {
-		        $$ = call_op($1, '|', 1, $3);
-		    }
-		| expr '^' expr
-		    {
-			$$ = call_op($1, '^', 1, $3);
-		    }
-		| expr '&' expr
-		    {
-			$$ = call_op($1, '&', 1, $3);
-		    }
-		| expr CMP expr
-		    {
-			$$ = call_op($1, CMP, 1, $3);
-		    }
-		| expr '>' expr
-		    {
-			$$ = call_op($1, '>', 1, $3);
-		    }
-		| expr GEQ expr
-		    {
-			$$ = call_op($1, GEQ, 1, $3);
-		    }
-		| expr '<' expr
-		    {
-			$$ = call_op($1, '<', 1, $3);
-		    }
-		| expr LEQ expr
-		    {
-			$$ = call_op($1, LEQ, 1, $3);
-		    }
-		| expr EQ expr
-		    {
-			$$ = call_op($1, EQ, 1, $3);
-		    }
-		| expr NEQ expr
-		    {
-			$$ = call_op($1, NEQ, 1, $3);
-		    }
-		| expr MATCH expr
-		    {
-			$$ = NEW_CALL($1, MATCH, NEW_LIST($3));
-		    }
-		| expr NMATCH expr
-		    {
-			$$ = NEW_CALL($1, NMATCH, NEW_LIST($3));
-		    }
-		| '!' expr
-		    {
-			$$ = call_op($2, '!', 0);
-		    }
-		| '~' expr
-		    {
-			if ($2
-			    && (nd_type($2) == NODE_STR
-				|| (nd_type($2) == NODE_LIT
-				    && (TYPE($2->nd_lit) == T_REGEXP
-					|| TYPE($2->nd_lit) == T_STRING)))) {
-			    $$ = NEW_CALL($2, '~', Qnil);
-			}
-			else {
-			    $$ = call_op($2, '~', 0);
-			}
-		    }
-		| expr LSHFT expr
-		    {
-			$$ = call_op($1, LSHFT, 1, $3);
-		    }
-		| expr RSHFT expr
-		    {
-			$$ = call_op($1, RSHFT, 1, $3);
-		    }
-		| expr COLON2 expr
-		    {
-			$$ = call_op($1, COLON2, 1, $3);
-		    }
-		| expr ANDOP expr
-		    {
-			$$ = NEW_AND(cond($1), cond($3));
-		    }
-		| expr OROP expr
-		    {
-			$$ = NEW_OR(cond($1), cond($3));
-		    }
-		|expr0
-		    {
-			$$ = $1;
-		    }
-
-call_args	: /* none */
-		    {
-			$$ = Qnil;
-		    }
-		| call_args0
-		| '*' expr
-		    {
-			$$ = $2;
-		    }
-
-call_args0	: args
-		| args comma '*' expr
-		    {
-			$$ = call_op($1, '+', 1, $4);
-		    }
-
-args 		: expr
-		    {
-			value_expr($1);
-			$$ = NEW_LIST($1);
-		    }
-		| args comma expr
-		    {
-			value_expr($3);
-			$$ = list_append($1, $3);
-		    }
-
-args2		: args
-		    {
-			if ($1 && $1->nd_next == Qnil) {
-			    $$ = $1->nd_head;
-			}
-			else {
-			    $$ = $1;
-			}
-		    }
-
-expr0		: literal
-		    {
-			$$ = NEW_LIT($1);
-		    }
-		| STRING
-		    {
-			$$ = NEW_STR($1);
-		    }
-		| STRING2
-		| XSTRING
-		    {
-			$$ = NEW_XSTR($1);
-		    }
-		| XSTRING2
-		| DREGEXP
-		| DGLOB
-		| var_ref
-		| IDENTIFIER '(' call_args rparen
-		    {
-			$$ = NEW_CALL(Qnil, $1, $3);
-		    }
-		| SUPER '(' call_args rparen
-		    {
-			if (!cur_mid && !in_single)
-			    Error("super called outside of method");
-			$$ = NEW_SUPER($3);
-		    }
-		| SUPER
-		    {
-			if (!cur_mid && !in_single)
-			    Error("super called outside of method");
-			$$ = NEW_ZSUPER();
-		    }
-
-		| expr0 '[' args rbracket
-		    {
-			value_expr($1);
-			$$ = NEW_CALL($1, AREF, $3);
-		    }
-		| LBRACK array rbracket
-		    {
-			if ($2 == Qnil)
-			    $$ = NEW_ZARRAY(); /* zero length array*/
-			else {
-			    $$ = $2;
-			}
-		    }
-		| LBRACE assoc_list rbrace
-		    {
-			$$ = NEW_HASH($2);
-		    }
-		| FAIL '(' args2 ')'
-		    {
-			value_expr($3);
-			$$ = NEW_FAIL($3);
-		    }
-		| FAIL '(' ')'
-		    {
-			$$ = NEW_FAIL(Qnil);
-		    }
-		| FAIL
-		    {
-			$$ = NEW_FAIL(Qnil);
-		    }
-		| YIELD '(' args2 ')'
-		    {
-			value_expr($3);
-			$$ = NEW_YIELD($3);
-		    }
-		| YIELD '(' ')'
-		    {
-			$$ = NEW_YIELD(Qnil);
-		    }
-		| YIELD
-		    {
-			$$ = NEW_YIELD(Qnil);
-		    }
-		| expr0 '{' opt_iter_var '|' compstmts rbrace
-		    {
-			if (nd_type($1) == NODE_LVAR
-		            || nd_type($1) == NODE_MVAR) {
-			    $1 = NEW_CALL(Qnil, $1->nd_vid, Qnil);
-			}
-			$$ = NEW_ITER($3, $1, $5);
-		    }
-		| expr0 '.' IDENTIFIER '(' call_args rparen
-		    {
-			value_expr($1);
-			$$ = NEW_CALL($1, $3, $5);
-		    }
-		| expr0 '.' IDENTIFIER
-		    {
-			value_expr($1);
-			$$ = NEW_CALL($1, $3, Qnil);
-		    }
-		| IF stmt0 then
-		  compstmts
-		  if_tail
-		  END
-		    {
-			$$ = NEW_IF(cond($2), $4, $5);
-		    }
-		| UNLESS stmt0 then 
-		  compstmts opt_else END
-		    {
-		        $$ = NEW_UNLESS(cond($2), $4, $5);
-		    }
-		| WHILE stmt0 term compstmts END
-		    {
-			$$ = NEW_WHILE(cond($2), $4);
-		    }
-		| UNTIL stmt0 term compstmts END
-		    {
-			$$ = NEW_UNTIL(cond($2), $4);
-		    }
-		| CASE compstmts
-		  case_body
-		  END
-		    {
-			value_expr($2);
-			$$ = NEW_CASE($2, $3);
-		    }
-		| FOR iter_var IN stmt0 term
-		  compstmts
-		  END
-		    {
-			value_expr($4);
-			$$ = NEW_FOR($2, $4, $6);
-		    }
-		| PROTECT
-		  compstmts
-		  resque
-		  ensure
-		  END
-		    {
-			if ($3 == Qnil && $4 == Qnil) {
-			    Warning("useless protect clause");
-			    $$ = $2;
-			}
-			else {
-			    $$ = NEW_PROT($2, $3, $4);
-			}
-		    }
-		| LPAREN compstmts rparen
-		    {
-			$$ = $2;
-		    }
-
-then		: term
-		| THEN
-		| term THEN
-
-if_tail		: opt_else
-		| ELSIF stmt0 then
-		  compstmts
-		  if_tail
-		    {
-			$$ = NEW_IF(cond($2), $4, $5);
-		    }
-
-opt_else	: /* none */
-		    {
-			$$ = Qnil;
-		    }
-		| ELSE compstmts
-		    {
-			$$ = $2;
-		    }
-
-iter_var	: lhs
-		| mlhs
-
-opt_iter_var	: /* none */
-		    {
-			$$ = Qnil;
-		    }
-		| iter_var
-
-case_body	: WHEN args then
-		  compstmts
-		  cases
-		    {
-			$$ = NEW_WHEN($2, $4, $5);
-		    }
-
-cases		: opt_else
-		| WHEN args then
-		  compstmts
-		  cases
-		    {
-			$$ = NEW_WHEN($2, $4, $5);
-		    }
-
-resque		: /* none */
-		    {
-			$$ = Qnil;
-		    }
-		| RESQUE compstmts
-		    {
-			if ($2 == Qnil)
-			    $$ = (NODE*)1;
-			else
-			    $$ = $2;
-		    }
-
-ensure		: /* none */
-		    {
-			$$ = Qnil;
-		    }
-		| ENSURE compstmts
-		    {
-			$$ = $2;
-		    }
-
-array		: /* none */
-		    {
-			$$ = Qnil;
-		    }
-		| args
-
-literal		: numeric
-		| '\\' symbol
-		    {
-			$$ = INT2FIX($2);
-		    }
-		| REGEXP
-		| GLOB
-
-
-symbol		: fname
-		| IVAR
-		| GVAR
-		| CONSTANT
-
-numeric		: INTEGER
-		| FLOAT
-
-variable	: IDENTIFIER
-		| IVAR
-		| GVAR
-		| CONSTANT
-		| NIL
-		    {
-			$$ = NIL;
-		    }
-		| SELF
-		    {
-			$$ = SELF;
-		    }
-
-var_ref		: variable
-		    {
-			$$ = gettable($1);
-		    }
-
 assoc_list	: /* none */
 		    {
 			$$ = Qnil;
 		    }
 		| assocs
+		| args
+		    {
+			if ($1->nd_alen%2 != 0) {
+			    Error("odd number list for Dict");
+			}
+			$$ = $1;
+		    }
 
 assocs		: assoc
 		| assocs comma assoc
@@ -1070,11 +1062,10 @@ assocs		: assoc
 			$$ = list_concat($1, $3);
 		    }
 
-assoc		: expr ASSOC expr
+assoc		: arg ASSOC arg
 		    {
 			$$ = list_append(NEW_LIST($1), $3);
 		    }
-
 
 opt_term	: /* none */
 		| term
@@ -1084,6 +1075,9 @@ term		: sc
 
 sc		: ';'		{ yyerrok; }
 nl		: '\n'		{ yyerrok; }
+
+colon		: ':'
+		| SYMBEG
 
 rparen		: ')' 		{ yyerrok; }
 rbracket	: ']'		{ yyerrok; }
@@ -1195,10 +1189,6 @@ parse_regx()
 	    }
 	    else if (in_brack && c == 'b') {
 		tokadd('\b');
-	    }
-	    else if (isdigit(c)) {
-		tokadd('\\');
-		tokadd(c);
 	    }
 	    else {
 		pushback();
@@ -1348,8 +1338,6 @@ static struct kwtable {
     "super",	SUPER,		EXPR_END,
     "then",     THEN,           EXPR_BEG,
     "undef",	UNDEF,		EXPR_FNAME,
-    "unless",	UNLESS,		EXPR_BEG,
-    "until",	UNTIL,		EXPR_BEG,
     "when",	WHEN,		EXPR_BEG,
     "while",	WHILE,		EXPR_BEG,
     "yield",	YIELD,		EXPR_END,
@@ -1406,13 +1394,6 @@ retry:
 	return '*';
 
       case '!':
-	if (lex_state == EXPR_FNAME) {
-	    if ((c = nextc()) == '@') {
-		lex_state = EXPR_BEG;
-		return '!';
-	    }
-	    pushback();
-	}
 	lex_state = EXPR_BEG;
 	if ((c = nextc()) == '=') {
 	    return NEQ;
@@ -1737,12 +1718,15 @@ retry:
 	return c;
 
       case ':':
-	lex_state = EXPR_BEG;
-	if (nextc() == ':') {
+	c = nextc();
+	if (c == ':') {
+	    lex_state = EXPR_BEG;
 	    return COLON2;
 	}
 	pushback();
-	return ':';
+	if (isspace(c))
+	    return ':';
+	return SYMBEG;
 
       case '/':
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
@@ -1786,7 +1770,6 @@ retry:
 	return c;
 
       case '[':
-	
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID)
 	    c = LBRACK;
 	else if (lex_state == EXPR_FNAME) {
@@ -1811,8 +1794,10 @@ retry:
 
       case '\\':
 	c = nextc();
-	if (c == '\n') goto retry; /* skip \\n */
-	lex_state = EXPR_FNAME;
+	if (c == '\n') {
+	    sourceline++;
+	    goto retry; /* skip \\n */
+	}
 	pushback();
 	return '\\';
 
@@ -1910,9 +1895,7 @@ retry:
 	    lex_state = mid->state;
 	    if (state != EXPR_BEG) {
 		if (mid->id == IF) return IF_MOD;
-		if (mid->id == UNLESS) return UNLESS_MOD;
 		if (mid->id == WHILE) return WHILE_MOD;
-		if (mid->id == UNTIL) return UNTIL_MOD;
 	    }
 	    return mid->id;
 	}
@@ -2444,6 +2427,7 @@ aryset(recv, idx, val)
     NODE *recv, *idx, *val;
 {
     value_expr(recv);
+    value_expr(val);
     return NEW_CALL(recv, ASET, list_append(idx, val));
 }
 
@@ -2453,18 +2437,19 @@ attrset(recv, id, val)
     ID id;
 {
     value_expr(recv);
+    value_expr(val);
 
     id &= ~ID_SCOPE_MASK;
     id |= ID_ATTRSET;
 
-    return NEW_CALL(recv, id, NEW_ARRAY(val));
+    return NEW_CALL(recv, id, NEW_LIST(val));
 }
 
-static void
+static int
 value_expr(node)
     NODE *node;
 {
-    if (node == Qnil) return;
+    if (node == Qnil) return TRUE;
 
     switch (nd_type(node)) {
       case NODE_RETURN:
@@ -2472,25 +2457,29 @@ value_expr(node)
       case NODE_BREAK:
       case NODE_REDO:
       case NODE_RETRY:
+      case NODE_FAIL:
       case NODE_WHILE:
       case NODE_WHILE2:
       case NODE_INC:
       case NODE_CLASS:
       case NODE_MODULE:
+      case NODE_DEFN:
+      case NODE_DEFS:
 	Error("void value expression");
+	return FALSE;
 	break;
 
       case NODE_BLOCK:
 	while (node->nd_next) {
 	    node = node->nd_next;
 	}
-	if (node) {
-	    value_expr(node->nd_head);
-	}
-	break;
+	return value_expr(node->nd_head);
+
+      case NODE_IF:
+	return value_expr(node->nd_body) && value_expr(node->nd_else);
 
       default:
-	break;
+	return TRUE;
     }
 }
 
@@ -2635,8 +2624,8 @@ init_top_local()
 	lvtbl->cnt = 0;
     }
     if (lvtbl->cnt > 0) {
-	lvtbl->tbl = ALLOC_N(ID, lvtbl->cnt);
-	MEMCPY(lvtbl->tbl, the_scope->local_tbl, VALUE, lvtbl->cnt);
+	lvtbl->tbl = ALLOC_N(ID, lvtbl->cnt+1);
+	MEMCPY(lvtbl->tbl, the_scope->local_tbl, ID, lvtbl->cnt);
     }
     else {
 	lvtbl->tbl = Qnil;
@@ -2892,7 +2881,7 @@ rb_class2name(class)
 	Fail("0x%x is not a class/module", class);
     }
 
-    if (FL_TEST(class, FL_SINGLE)) {
+    while (FL_TEST(class, FL_SINGLE)) {
 	class = (struct RClass*)class->super;
     }
 
@@ -2905,4 +2894,24 @@ rb_class2name(class)
 	return rb_id2name((ID)find_ok);
     }
     Bug("class 0x%x not named", class);
+}
+
+static int
+const_check(id, val, class)
+    ID id;
+    VALUE val;
+    struct RClass *class;
+{
+    if (is_const_id(id) && rb_const_bound(class, id)) {
+	Warning("constant redefined for %s", rb_class2name(class));
+        return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+void
+rb_const_check(class, module)
+    struct RClass *class, *module;
+{
+    st_foreach(module->iv_tbl, const_check, class);
 }

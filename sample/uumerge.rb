@@ -8,7 +8,7 @@ while gets()
   end
 end
 
-fail "missing begin" unless $sawbegin;
+fail "missing begin" if !$sawbegin;
 OUT = open($file, "w") if $file != "";
 
 while gets()
@@ -18,10 +18,10 @@ while gets()
   end
   sub(/[a-z]+$/, ""); # handle stupid trailing lowercase letters
   continue if /[a-z]/
-  continue unless ((($_[0] - 32) & 077) + 2) / 3 == $_.length / 4
+  continue if !(((($_[0] - 32) & 077) + 2) / 3 == $_.length / 4)
   OUT << $_.unpack("u");
 end
 
-fail "missing end" unless $sawend;
+fail "missing end" if ! $sawend;
 File.chmod $mode.oct, $file;
 exit 0;

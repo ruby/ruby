@@ -3,14 +3,13 @@
   variable.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:43:03 $
+  $Date: 1995/01/12 08:54:53 $
   created at: Tue Apr 19 23:55:15 JST 1994
 
 ************************************************/
 
 #include "ruby.h"
 #include "env.h"
-#include "node.h"
 #include "ident.h"
 #include "st.h"
 
@@ -210,58 +209,6 @@ rb_gvar_get(entry)
 }
 
 VALUE
-rb_ivar_get_1(obj, id)
-    struct RBasic *obj;
-    ID id;
-{
-    VALUE val;
-
-    if (obj->iv_tbl == Qnil)
-	return Qnil;
-    if (st_lookup(obj->iv_tbl, id, &val))
-	return val;
-    if (verbose)
-	Warning("instance var %s not initialized", rb_id2name(id));
-    return Qnil;
-}
-
-VALUE
-rb_ivar_get(id)
-    ID id;
-{
-    return rb_ivar_get_1(Qself, id);
-}
-
-VALUE
-rb_mvar_get(id)
-    ID id;
-{
-    VALUE val;
-
-    if (st_lookup(class_tbl, id, &val)) return val;
-    if (verbose)
-	Warning("local var %s not initialized", rb_id2name(id));
-    return Qnil;
-}
-
-VALUE
-rb_const_get(id)
-    ID id;
-{
-    struct RClass *class = (struct RClass*)CLASS_OF(Qself);
-    VALUE value;
-
-    while (class) {
-	if (class->c_tbl && st_lookup(class->c_tbl, id, &value)) {
-	    return value;
-	}
-	class = class->super;
-    }
-    Fail("Uninitialized constant %s", rb_id2name(id));
-    /* not reached */
-}
-
-VALUE
 rb_gvar_set(entry, val)
     struct global_entry *entry;
     VALUE val;
@@ -301,13 +248,67 @@ rb_gvar_set2(name, val)
 }
 
 VALUE
+rb_mvar_get(id)
+    ID id;
+{
+    VALUE val;
+
+    if (st_lookup(class_tbl, id, &val)) return val;
+    if (verbose)
+	Warning("local var %s not initialized", rb_id2name(id));
+    return Qnil;
+}
+
+VALUE
+rb_ivar_get_1(obj, id)
+    struct RObject *obj;
+    ID id;
+{
+    VALUE val;
+
+    switch (TYPE(obj)) {
+      case T_OBJECT:
+      case T_CLASS:
+      case T_MODULE:
+	if (obj->iv_tbl && st_lookup(obj->iv_tbl, id, &val))
+	    return val;
+	return Qnil;
+      default:
+	Fail("class %s can not have instance variables",
+	     rb_class2name(CLASS_OF(obj)));
+	break;
+    }
+    if (verbose) {
+	Warning("instance var %s not initialized", rb_id2name(id));
+    }
+    return Qnil;
+}
+
+VALUE
+rb_ivar_get(id)
+    ID id;
+{
+    return rb_ivar_get_1(Qself, id);
+}
+
+VALUE
 rb_ivar_set_1(obj, id, val)
-    struct RBasic *obj;
+    struct RObject *obj;
     ID id;
     VALUE val;
 {
-    if (obj->iv_tbl == Qnil) obj->iv_tbl = new_idhash();
-    st_insert(obj->iv_tbl, id, val);
+    switch (TYPE(obj)) {
+      case T_OBJECT:
+      case T_CLASS:
+      case T_MODULE:
+	if (obj->iv_tbl == Qnil) obj->iv_tbl = new_idhash();
+	st_insert(obj->iv_tbl, id, val);
+	break;
+      default:
+	Fail("class %s can not have instance variables",
+	     rb_class2name(CLASS_OF(obj)));
+	break;
+    }
     return val;
 }
 
@@ -319,13 +320,30 @@ rb_ivar_set(id, val)
     return rb_ivar_set_1(Qself, id, val);
 }
 
-static VALUE
-const_bound(class, id)
+VALUE
+rb_const_get(id)
+    ID id;
+{
+    struct RClass *class = (struct RClass*)CLASS_OF(Qself);
+    VALUE value;
+
+    while (class) {
+	if (class->iv_tbl && st_lookup(class->iv_tbl, id, &value)) {
+	    return value;
+	}
+	class = class->super;
+    }
+    Fail("Uninitialized constant %s", rb_id2name(id));
+    /* not reached */
+}
+
+VALUE
+rb_const_bound(class, id)
     struct RClass *class;
     ID id;
 {
     while (class) {
-	if (class->c_tbl && st_lookup(class->c_tbl, id, Qnil)) {
+	if (class->iv_tbl && st_lookup(class->iv_tbl, id, Qnil)) {
 	    return TRUE;
 	}
 	class = class->super;
@@ -339,13 +357,11 @@ rb_const_set(class, id, val)
     ID id;
     VALUE val;
 {
-    if (const_bound(class, id))
+    if (rb_const_bound(class, id))
 	Fail("already initialized constnant");
 
-    if (class->c_tbl == Qnil)
-	class->c_tbl = new_idhash();
-
-    st_insert(class->c_tbl, id, val);
+    if (class->iv_tbl == Qnil) class->iv_tbl = new_idhash();
+    st_insert(class->iv_tbl, id, val);
 }
 
 void

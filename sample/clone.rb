@@ -3,7 +3,7 @@
 #	test2
 #	test
 #	test
-#	clone.rb:13: undefined method `test2' for "#<Object: 0xbfca4>"(Object)
+#	clone.rb:18: undefined method `test2' for "#<Object: 0xbfca4>"(Object)
 foo = Object.new
 def foo.test
   print("test\n")

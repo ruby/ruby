@@ -30,9 +30,13 @@ struct time_object {
 
 static ID id_tv;
 
-#define GetTimeval(obj, tobj) \
-    Get_Data_Struct(obj, id_tv, struct time_object, tobj)
+#define GetTimeval(obj, tobj) {\
+    if (!id_tv) id_tv = rb_intern("tv");\
+    Get_Data_Struct(obj, id_tv, struct time_object, tobj);\
+}
+
 #define MakeTimeval(obj,tobj) {\
+    if (!id_tv) id_tv = rb_intern("tv");\
     Make_Data_Struct(obj, id_tv, struct time_object, Qnil, Qnil, tobj);\
     tobj->tm_got=0;\
 }
@@ -118,7 +122,7 @@ time_timeval(time)
 static VALUE
 Stime_at(class, time)
     VALUE class, time;
-{ 
+{
    VALUE obj;
     int sec, usec;
     struct time_object *tobj;
@@ -557,6 +561,4 @@ Init_Time()
     rb_define_method(C_Time, "usec", Ftime_usec, 0);
 
     rb_define_method(C_Time, "strftime", Ftime_strftime, 1);
-
-    id_tv = rb_intern("tv");
 }

@@ -19,6 +19,7 @@ void
 rb_each(obj)
     VALUE obj;
 {
+    if (!id_each) id_each = rb_intern("each");
     rb_funcall(obj, id_each, 0, Qnil);
 }
 
@@ -26,6 +27,7 @@ static void
 enum_grep(i, arg)
     VALUE i, *arg;
 {
+    if (!id_match) id_match = rb_intern("=~");
     if (rb_funcall(arg[0], id_match, 1, i)) {
 	ary_push(arg[1], i);
     }
@@ -35,6 +37,7 @@ static void
 enum_grep2(i, pat)
     VALUE i, pat;
 {
+    if (!id_match) id_match = rb_intern("=~");
     if (rb_funcall(pat, id_match, 1, i)) {
 	rb_yield(i);
     }
@@ -150,7 +153,7 @@ enum_all(i, ary)
 {
     ary_push(ary, i);
 }
-    
+
 static VALUE
 Fenum_to_a(obj)
     VALUE obj;
@@ -183,6 +186,7 @@ enum_min(i, min)
     if (*min == Qnil)
 	*min = i;
     else {
+	if (!id_cmp) id_cmp   = rb_intern("<=>");
 	cmp = rb_funcall(i, id_cmp, 1, *min);
 	if (FIX2INT(cmp) < 0)
 	    *min = i;
@@ -208,6 +212,7 @@ enum_max(i, max)
     if (*max == Qnil)
 	*max = i;
     else {
+	if (!id_cmp) id_cmp   = rb_intern("<=>");
 	cmp = rb_funcall(i, id_cmp, 1, *max);
 	if (FIX2INT(cmp) > 0)
 	    *max = i;
@@ -316,8 +321,4 @@ Init_Enumerable()
     rb_define_method(M_Enumerable,"index", Fenum_index, 1);
     rb_define_method(M_Enumerable,"includes", Fenum_includes, 1);
     rb_define_method(M_Enumerable,"length", Fenum_length, 0);
-
-    id_each = rb_intern("each");
-    id_match = rb_intern("=~");
-    id_cmp   = rb_intern("<=>");
 }

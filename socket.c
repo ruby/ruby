@@ -82,7 +82,6 @@ Fbsock_setopt(sock, lev, optname, val)
     level = NUM2INT(lev);
     option = NUM2INT(optname);
     Check_Type(val, T_STRING);
-    
 
     GetOpenFile(sock, fptr);
     if (setsockopt(fileno(fptr->f), level, option, val->ptr, val->len) < 0)
@@ -104,7 +103,7 @@ Fbsock_getopt(sock, lev, optname)
     len = 256;
     val = (struct RString*)str_new(0, len);
     Check_Type(val, T_STRING);
-    
+
     GetOpenFile(sock, fptr);
     if (getsockopt(fileno(fptr->f), level, option, val->ptr, &len) < 0)
 	rb_sys_fail(fptr->path);
@@ -163,7 +162,7 @@ open_inet(class, h, serv, server)
 	if (hostent == NULL) {
 	    hostaddr = inet_addr(host);
 	    if (hostaddr == -1) {
-		if (server && !strlen(host)) 
+		if (server && !strlen(host))
 		    hostaddr = INADDR_ANY;
 		else
 		    rb_sys_fail(host);
@@ -193,9 +192,9 @@ open_inet(class, h, serv, server)
     }
     protoent = getprotobyname(servent->s_proto);
     if (protoent == NULL) Fail("no such proto %s", servent->s_proto);
-    
+
     fd = socket(PF_INET, SOCK_STREAM, protoent->p_proto);
-    
+
     sockaddr.sin_family = AF_INET;
     if (h == Qnil) {
 	sockaddr.sin_addr.s_addr = INADDR_ANY;
@@ -293,7 +292,7 @@ open_unix(class, path, server)
     char *syscall;
     VALUE sock;
     OpenFile *fptr;
-   
+
     Check_Type(path, T_STRING);
     fd = socket(PF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) rb_sys_fail("socket(2)");
@@ -361,7 +360,7 @@ Ftcp_addr(sock)
     int len = sizeof addr;
 
     GetOpenFile(sock, fptr);
-    
+
     if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     return tcp_addr(&addr);
@@ -376,7 +375,7 @@ Ftcp_peeraddr(sock)
     int len = sizeof addr;
 
     GetOpenFile(sock, fptr);
-    
+
     if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     return tcp_addr(&addr);
@@ -443,7 +442,7 @@ Funix_addr(sock)
     int len = sizeof addr;
 
     GetOpenFile(sock, fptr);
-    
+
     if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     return unix_addr(&addr);
@@ -458,7 +457,7 @@ Funix_peeraddr(sock)
     int len = sizeof addr;
 
     GetOpenFile(sock, fptr);
-    
+
     if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     return unix_addr(&addr);
@@ -642,7 +641,7 @@ Fsock_send(argc, argv, sock)
     fd = fileno(f);
     if (to) {
 	Check_Type(to, T_STRING);
-	n = sendto(fd, msg->ptr, msg->len, NUM2INT(flags), 
+	n = sendto(fd, msg->ptr, msg->len, NUM2INT(flags),
 		   (struct sockaddr*)to->ptr, to->len);
     }
     else {
@@ -678,7 +677,7 @@ sock_recv(sock, argc, argv, from)
 
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
-    if ((str->len = recvfrom(fd, str->ptr, str->len, flags, 
+    if ((str->len = recvfrom(fd, str->ptr, str->len, flags,
 			     (struct sockaddr*)buf, &alen)) < 0) {
 	rb_sys_fail("recvfrom(2)");
     }

@@ -31,6 +31,7 @@ closeddbm()
 
 #define GetDBM(obj, dbmp) {\
     DBM **_dbm;\
+    if (!id_dbm) id_dbm = rb_intern("dbm");\
     Get_Data_Struct(obj, id_dbm, DBM*, _dbm);\
     dbmp = *_dbm;\
     if (dbmp == Qnil) closeddbm();\
@@ -156,7 +157,7 @@ Fdbm_delete(obj, keystr)
     Check_Type(keystr, T_STRING);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
-    
+
     GetDBM(obj, dbm);
     if (dbm_delete(dbm, key)) {
 	Fail("dbm_delete failed");
@@ -338,7 +339,7 @@ Fdbm_has_key(obj, keystr)
     Check_Type(keystr, T_STRING);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
-    
+
     GetDBM(obj, dbm);
     val = dbm_fetch(dbm, key);
     if (val.dptr) return TRUE;
@@ -355,7 +356,7 @@ Fdbm_has_value(obj, valstr)
     Check_Type(valstr, T_STRING);
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
-    
+
     GetDBM(obj, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
@@ -412,7 +413,5 @@ Init_DBM()
     rb_define_method(C_DBM, "has_value", Fdbm_has_value, 1);
 
     rb_define_method(C_DBM, "to_a", Fdbm_to_a, 0);
-
-    id_dbm = rb_intern("dbm");
 }
 #endif				/* USE_DBM */

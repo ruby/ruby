@@ -1,10 +1,12 @@
+* Process Class
+* クラスライブラリの見直し(UNIX依存を減らす)
 * format機能
 * here document
 * perlのようなsetuid check
 * trからBSDコードを取り除く(またはcopyrightをはっきりさせる)
 * 適切なsignal handling
-* dlnのCOFF対応
+* dlnのCOFF対応(またはdlopen対応)
 * rubyで定義する変数hookの実現
 * write debugger for ruby
-* re-write regex code for speeding
+* re-write regex code for speed
 * byte code interpretor

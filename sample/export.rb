@@ -4,7 +4,7 @@
 #	foo
 
 class foo
-  export(\printf)
+  export :printf
 end
 
 def foobar
@@ -12,7 +12,7 @@ def foobar
 end
 
 f = foo.new
-#foo.unexport(\printf)
-foo.export(\foobar)
+#foo.unexport :printf
+foo.export :foobar
 f.foobar
 f.printf "%s\n", foo

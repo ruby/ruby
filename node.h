@@ -24,12 +24,12 @@ enum node_type {
     NODE_WHEN,
     NODE_WHILE,
     NODE_WHILE2,
-    NODE_EXNOT,
     NODE_ITER,
     NODE_FOR,
     NODE_PROT,
     NODE_AND,
     NODE_OR,
+    NODE_NOT,
     NODE_MASGN,
     NODE_LASGN,
     NODE_GASGN,
@@ -181,13 +181,10 @@ typedef struct RNode {
 #define NEW_BLOCK(a) newnode(NODE_BLOCK,a,1,Qnil)
 #define NEW_IF(c,t,e) newnode(NODE_IF,c,t,e)
 #define NEW_EXNOT(c) newnode(NODE_EXNOT,c,Qnil,Qnil)
-#define NEW_UNLESS(c,t,e) newnode(NODE_IF,NEW_EXNOT(c),t,e)
 #define NEW_CASE(h,b) newnode(NODE_CASE,h,b,Qnil)
 #define NEW_WHEN(c,t,e) newnode(NODE_WHEN,c,t,e)
 #define NEW_WHILE(c,b) newnode(NODE_WHILE,c,b,Qnil)
-#define NEW_UNTIL(c,b) newnode(NODE_WHILE,NEW_EXNOT(c),b,Qnil)
 #define NEW_WHILE2(c,b) newnode(NODE_WHILE2,c,b,Qnil)
-#define NEW_UNTIL2(c,b) newnode(NODE_WHILE2,NEW_EXNOT(c),b,Qnil)
 #define NEW_FOR(v,i,b) newnode(NODE_FOR,v,b,i)
 #define NEW_ITER(v,i,b) newnode(NODE_ITER,v,b,i)
 #define NEW_PROT(b,ex,en) newnode(NODE_PROT,b,ex,en)
@@ -204,6 +201,7 @@ typedef struct RNode {
 #define NEW_HASH(a) newnode(NODE_HASH,a,Qnil,Qnil)
 #define NEW_AND(a,b) newnode(NODE_AND,a,b,Qnil)
 #define NEW_OR(a,b)  newnode(NODE_OR,a,b,Qnil)
+#define NEW_NOT(a)   newnode(NODE_NOT,Qnil,a,Qnil)
 #define NEW_MASGN(l,r) newnode(NODE_MASGN,l,r,Qnil)
 #define NEW_GASGN(v,val) newnode(NODE_GASGN,v,val,rb_global_entry(v))
 #define NEW_LASGN(v,val) newnode(NODE_LASGN,v,val,local_cnt(v))

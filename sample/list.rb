@@ -1,19 +1,10 @@
 # Linked list example
 class MyElem
-  #クラスメソッド(相当)の定義
-  def MyElem.new(item)
-    # スーパークラスのメソッドの呼び出し(この場合はクラスClass)
-    elm = super   # 変数宣言は要らない
-    #elmに対するメソッドの呼び出し
-    elm.init(item)
-  end
-
-  # 通常のメソッド定義
-  def init(item)
+  # オブジェクト生成時に自動的に呼ばれるメソッド
+  def init_object(item)
     # @変数はインスタンス変数(宣言は要らない)
     @data = item
     @next = nil
-    self
   end
 
   def data
@@ -63,11 +54,7 @@ class MyList
 end
 
 class Point
-  def Point.new(x, y)
-    super.init(x, y)
-  end
-
-  def init(x, y)
+  def init_object(x, y)
     @x = x; @y = y
     self
   end

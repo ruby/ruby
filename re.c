@@ -76,7 +76,7 @@ str_cicmp(str1, str2)
 
     len = min(str1->len, str2->len);
     p1 = str1->ptr; p2 = str2->ptr;
-    
+
     for (i = 0; i < len; i++, p1++, p2++) {
 	if (casetable[*p1] != casetable[*p2])
 	    return casetable[*p1] - casetable[*p2];
@@ -97,7 +97,7 @@ int len;
 
     /* Build a copy of the string (in dest) with the
        escaped characters translated,  and generate the regex
-       from that.  
+       from that.
     */
 
     rp = ALLOC(Regexp);
@@ -194,7 +194,7 @@ re_match_post()
     struct match *match;
 
     if (last_match.regs.start[0] == -1) return Qnil;
-    return str_new(last_match.ptr+last_match.regs.end[0], 
+    return str_new(last_match.ptr+last_match.regs.end[0],
 		   last_match.len-last_match.regs.end[0]);
 }
 
@@ -401,6 +401,36 @@ Sreg_new(argc, argv, self)
 }
 
 static VALUE
+Sreg_quote(re, str)
+    VALUE re;
+    struct RString *str;
+{
+  char *s, *send, *t;
+  char *tmp;
+
+  Check_Type(str, T_STRING);
+
+  tmp = ALLOCA_N(char, str->len*2);
+
+  s = str->ptr; send = s + str->len;
+  t = tmp;
+
+  for (; s != send; s++) {
+      if (*s == '[' || *s == ']'
+	  || *s == '{' || *s == '}'
+	  || *s == '(' || *s == ')'
+	  || *s == '*' || *s == '.' || *s == '\\'
+	  || *s == '?' || *s == '+'
+	  || *s == '^' || *s == '$') {
+	  *t++ = '\\';
+      }
+      *t++ = *s;
+    }
+
+  return str_new(tmp, t - tmp);
+}
+
+static VALUE
 Freg_clone(re)
     struct RRegexp *re;
 {
@@ -549,6 +579,7 @@ Init_Regexp()
     C_Regexp  = rb_define_class("Regexp", C_Object);
     rb_define_single_method(C_Regexp, "new", Sreg_new, -1);
     rb_define_single_method(C_Regexp, "compile", Sreg_new, -1);
+    rb_define_single_method(C_Regexp, "quote", Sreg_quote, 1);
 
     rb_define_method(C_Regexp, "=~", Freg_match, 1);
     rb_define_method(C_Regexp, "~", Freg_match2, 0);

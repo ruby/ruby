@@ -225,7 +225,7 @@ stat_new(st)
 		      "blksize", INT2FIX(0),
 #endif
 #ifdef HAVE_ST_BLOCKS
-		      "blocks", INT2FIX((int)st->st_blocks), 
+		      "blocks", INT2FIX((int)st->st_blocks),
 #else
 		      "blocks", INT2FIX(0),
 #endif
@@ -721,7 +721,7 @@ Sfile_type(obj, fname)
 	t = "directory";
     } else if (S_ISCHR(st.st_mode)) {
 	t = "characterSpecial";
-    } 
+    }
 #ifdef S_ISBLK
     else if (S_ISBLK(st.st_mode)) {
 	t = "blockSpecial";
@@ -730,7 +730,7 @@ Sfile_type(obj, fname)
 #ifndef S_ISFIFO
     else if (S_ISFIFO(st.st_mode)) {
 	t = "fifo";
-    } 
+    }
 #endif
 #ifdef S_ISLNK
     else if (S_ISLNK(st.st_mode)) {

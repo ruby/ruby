@@ -41,11 +41,44 @@ static VALUE
 Sdic_new(class)
     VALUE class;
 {
-    int i, max;
     NEWOBJ(dic, struct RDict);
     OBJSETUP(dic, class, T_DICT);
 
     dic->tbl = st_init_table(rb_cmp, rb_hash);
+
+    return (VALUE)dic;
+}
+
+static VALUE Fdic_clone();
+
+static VALUE
+Sdic_create(argc, argv, class)
+    int argc;
+    VALUE *argv;
+    VALUE class;
+{
+    struct RDict *dic;
+    int i;
+
+    if (argc == 1 && TYPE(argv[0]) == T_DICT) {
+	if (class == CLASS_OF(argv[0])) return argv[0];
+	else {
+	    NEWOBJ(dic, struct RDict);
+	    OBJSETUP(dic, class, T_DICT);
+	    dic->tbl = (st_table*)st_copy(RDICT(argv[0])->tbl);
+
+	    return (VALUE)dic;
+	}
+    }
+
+    if (argc % 2 != 0) {
+	Fail("odd number args for Dict");
+    }
+    dic = (struct RDict*)Sdic_new(class);
+
+    for (i=0; i<argc; i+=2) {
+	st_insert(dic->tbl, argv[i], argv[i+1]);
+    }
 
     return (VALUE)dic;
 }
@@ -551,6 +584,7 @@ Init_Dict()
     rb_include_module(C_Dict, M_Enumerable);
 
     rb_define_single_method(C_Dict, "new", Sdic_new, 0);
+    rb_define_single_method(C_Dict, "[]", Sdic_create, -1);
 
     rb_define_method(C_Dict,"clone",  Fdic_clone, 0);
 

@@ -3,8 +3,8 @@
   version.c -
 
   $Author: matz $
-  $Revision: 1.4 $
-  $Date: 1994/12/19 08:30:17 $
+  $Revision: 1.5 $
+  $Date: 1995/01/12 08:54:54 $
   created at: Thu Sep 30 20:08:01 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto

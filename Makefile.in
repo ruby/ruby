@@ -160,7 +160,7 @@ io.o: io.c ruby.h config.h defines.h io.h
 main.o: main.c
 math.o: math.c ruby.h config.h defines.h
 numeric.o: numeric.c ruby.h config.h defines.h env.h
-object.o: object.c ruby.h config.h defines.h env.h node.h st.h
+object.o: object.c ruby.h config.h defines.h env.h st.h
 pack.o: pack.c ruby.h config.h defines.h
 process.o: process.c ruby.h config.h defines.h st.h
 random.o: random.c ruby.h config.h defines.h
@@ -174,5 +174,5 @@ st.o: st.c st.h
 string.o: string.c ruby.h config.h defines.h re.h regex.h
 struct.o: struct.c ruby.h config.h defines.h env.h
 time.o: time.c ruby.h config.h defines.h
-variable.o: variable.c ruby.h config.h defines.h env.h node.h ident.h st.h
+variable.o: variable.c ruby.h config.h defines.h env.h ident.h st.h
 version.o: version.c ruby.h config.h defines.h version.h

@@ -3,7 +3,7 @@
   gc.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:37 $
+  $Date: 1995/01/12 08:54:47 $
   created at: Tue Oct  5 09:44:46 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -164,7 +164,7 @@ rb_global_variable(var)
     Global_List = tmp;
 }
 
-struct RVALUE {
+typedef struct RVALUE {
     union {
 	struct {
 	    UINT flag;		/* always 0 for freed obj */
@@ -185,50 +185,53 @@ struct RVALUE {
 	struct RCons   cons;
 	struct SCOPE   scope;
     } as;
-} *freelist = Qnil;
+} RVALUE;
 
-struct heap_block {
-    struct heap_block *next;
-    struct RVALUE *beg;
-    struct RVALUE *end;
-    struct RVALUE body[1];
-} *heap_link = Qnil;
+RVALUE *freelist = Qnil;
 
-#define SEG_SLOTS 10000
-#define SEG_SIZE  (SEG_SLOTS*sizeof(struct RVALUE))
+#define HEAPS_INCREMENT 10
+static RVALUE **heaps;
+static int heaps_length = 0;
+static int heaps_used   = 0;
+
+#define HEAP_SLOTS 10000
 #define FREE_MIN  512
 
 static void
 add_heap()
 {
-    struct heap_block *block;
-    struct RVALUE *p, *pend;
+    RVALUE *p, *pend;
 
-    block = (struct heap_block*)malloc(sizeof(*block) + SEG_SIZE);
-    if (block == Qnil) Fatal("can't alloc memory");
-    block->next = heap_link;
-    block->beg = &block->body[0];
-    block->end = block->beg + SEG_SLOTS;
-    p = block->beg; pend = block->end;
+    if (heaps_used == heaps_length) {
+	/* Realloc heaps */
+	heaps_length += HEAPS_INCREMENT;
+	heaps = (heaps_used)?
+	    (RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE)):
+	    (RVALUE**)malloc(heaps_length*sizeof(RVALUE));
+	if (heaps == Qnil) Fatal("can't alloc memory");
+    }
+
+    p = heaps[heaps_used++] = (RVALUE*)malloc(sizeof(RVALUE)*HEAP_SLOTS);
+    if (p == Qnil) Fatal("can't alloc memory");
+    pend = p + HEAP_SLOTS;
+
     while (p < pend) {
 	p->as.free.flag = 0;
 	p->as.free.next = freelist;
 	freelist = p;
 	p++;
     }
-    heap_link = block;
 }
 
 struct RBasic *
 newobj()
 {
     struct RBasic *obj;
-    if (heap_link == Qnil) add_heap();
     if (freelist) {
       retry:
 	obj = (struct RBasic*)freelist;
 	freelist = freelist->as.free.next;
-	memset(obj, 0, sizeof(struct RVALUE));
+	memset(obj, 0, sizeof(RVALUE));
 	return obj;
     }
     if (dont_gc) add_heap();
@@ -259,16 +262,17 @@ static VALUE *stack_start_ptr;
 
 static long
 looks_pointerp(p)
-    struct RVALUE *p;
+    register RVALUE *p;
 {
-    struct heap_block *heap = heap_link;
+    register RVALUE *heap_org;
+    register long i, j, n;
 
-    if (FIXNUM_P(p)) return FALSE;
-    while (heap) {
-	if (heap->beg <= p && p < heap->end
-	    && ((((char*)p)-((char*)heap->beg))%sizeof(struct RVALUE)) == 0)
+    /* if p looks as a SCM pointer mark location */
+    for (i=0; i < heaps_used; i++) {
+	heap_org = heaps[i];
+	if (heap_org <= p && p < heap_org + HEAP_SLOTS
+	    && ((((char*)p)-((char*)heap_org))%sizeof(RVALUE)) == 0)
 	    return TRUE;
-	heap = heap->next;
     }
     return FALSE;
 }
@@ -349,11 +353,13 @@ gc_mark_maybe(obj)
 
 void
 gc_mark(obj)
-    register struct RVALUE *obj;
+    register RVALUE *obj;
 {
-    if (obj == Qnil) return;
-    if (FIXNUM_P(obj)) return;
-    if (obj->as.basic.flags & FL_MARK) return;
+  Top:
+    if (obj == Qnil) return;	/* nil not marked */
+    if (FIXNUM_P(obj)) return;	/* fixnum not marked */
+    if (obj->as.basic.flags == 0) return; /* free cell */
+    if (obj->as.basic.flags & FL_MARK) return; /* marked */
 
     obj->as.basic.flags |= FL_MARK;
 
@@ -362,21 +368,34 @@ gc_mark(obj)
       case T_FIXNUM:
 	Bug("gc_mark() called for broken object");
 	break;
+
+      case T_NODE:
+	if (looks_pointerp(obj->as.node.u1.node)) {
+	    gc_mark(obj->as.node.u1.node);
+	}
+	if (looks_pointerp(obj->as.node.u2.node)) {
+	    gc_mark(obj->as.node.u2.node);
+	}
+	if (looks_pointerp(obj->as.node.u3.node)) {
+	    obj = (RVALUE*)obj->as.node.u3.node;
+	    goto Top;
+	}
+	return;			/* no need to mark class. */
     }
 
+    gc_mark(obj->as.basic.class);
     switch (obj->as.basic.flags & T_MASK) {
       case T_ICLASS:
 	gc_mark(obj->as.class.super);
-	if (obj->as.class.c_tbl) mark_tbl(obj->as.class.c_tbl);
+	if (obj->as.class.iv_tbl) mark_tbl(obj->as.class.iv_tbl);
 	mark_tbl(obj->as.class.m_tbl);
 	break;
 
       case T_CLASS:
 	gc_mark(obj->as.class.super);
       case T_MODULE:
-	if (obj->as.class.c_tbl) mark_tbl(obj->as.class.c_tbl);
 	mark_tbl(obj->as.class.m_tbl);
-	gc_mark(obj->as.basic.class);
+	if (obj->as.class.iv_tbl) mark_tbl(obj->as.class.iv_tbl);
 	break;
 
       case T_ARRAY:
@@ -402,6 +421,9 @@ gc_mark(obj)
 	break;
 
       case T_OBJECT:
+	if (obj->as.object.iv_tbl) mark_tbl(obj->as.object.iv_tbl);
+	break;
+
       case T_REGEXP:
       case T_FLOAT:
       case T_BIGNUM:
@@ -427,20 +449,12 @@ gc_mark(obj)
 
       case T_CONS:
 	gc_mark(obj->as.cons.car);
-	gc_mark(obj->as.cons.cdr);
-	break;
-
-      case T_NODE:
-	gc_mark_maybe(obj->as.node.u1.node);
-	gc_mark_maybe(obj->as.node.u2.node);
-	gc_mark_maybe(obj->as.node.u3.node);
-	return;			/* no need to mark class & tbl */
+	obj = (RVALUE*)obj->as.cons.cdr;
+	goto Top;
 
       default:
 	Bug("gc_mark(): unknown data type %d", obj->as.basic.flags & T_MASK);
     }
-    if (obj->as.basic.iv_tbl) mark_tbl(obj->as.basic.iv_tbl);
-    gc_mark(obj->as.basic.class);
 }
 
 #define MIN_FREE_OBJ 512
@@ -450,19 +464,19 @@ static void obj_free();
 static void
 gc_sweep()
 {
-    struct heap_block *heap = heap_link;
     int freed = 0;
+    int  i;
 
     freelist = Qnil;
-    while (heap) {
-	struct RVALUE *p, *pend;
-	struct RVALUE *nfreelist;
+    for (i = 0; i < heaps_used; i++) {
+	RVALUE *p, *pend;
+	RVALUE *nfreelist;
 	int n = 0;
 
 	nfreelist = freelist;
-	p = heap->beg; pend = heap->end;
+	p = heaps[i]; pend = p + HEAP_SLOTS;
+
 	while (p < pend) {
-	    
 	    if (!(p->as.basic.flags & FL_MARK)) {
 		if (p->as.basic.flags) obj_free(p);
 		p->as.free.flag = 0;
@@ -470,31 +484,12 @@ gc_sweep()
 		nfreelist = p;
 		n++;
 	    }
-	    RBASIC(p)->flags &= ~FL_MARK;
+	    else
+		RBASIC(p)->flags &= ~FL_MARK;
 	    p++;
 	}
-	if (n == SEG_SLOTS) {
-	    struct heap_block *link = heap_link;
-	    if (heap != link) {
-		while (link) {
-		    if (link->next && link->next == heap) {
-			link->next = heap->next;
-			break;
-		    }
-		    link = link->next;
-		}
-		if (link == Qnil) {
-		    Bug("non-existing heap at 0x%x", heap);
-		}
-	    }
-	    free(heap);
-	    heap = link;
-	}
-	else {
-	    freed += n;
-	    freelist = nfreelist;
-	}
-	heap = heap->next;
+	freed += n;
+	freelist = nfreelist;
     }
     if (freed < FREE_MIN) {
 	add_heap();
@@ -503,7 +498,7 @@ gc_sweep()
 
 static void
 obj_free(obj)
-    struct RVALUE *obj;
+    RVALUE *obj;
 {
     switch (obj->as.basic.flags & T_MASK) {
       case T_NIL:
@@ -514,13 +509,13 @@ obj_free(obj)
 
     switch (obj->as.basic.flags & T_MASK) {
       case T_OBJECT:
+	if (obj->as.object.iv_tbl) st_free_table(obj->as.object.iv_tbl);
 	break;
       case T_MODULE:
       case T_CLASS:
 	rb_clear_cache2(obj);
 	st_free_table(obj->as.class.m_tbl);
-	if (obj->as.class.c_tbl)
-	    st_free_table(obj->as.class.c_tbl);
+	if (obj->as.object.iv_tbl) st_free_table(obj->as.object.iv_tbl);
 	break;
       case T_STRING:
 	if (obj->as.string.orig == Qnil) free(obj->as.string.ptr);
@@ -570,7 +565,6 @@ obj_free(obj)
       default:
 	Bug("gc_sweep(): unknown data type %d", obj->as.basic.flags & T_MASK);
     }
-    if (obj->as.basic.iv_tbl) st_free_table(obj->as.basic.iv_tbl);
 }
 
 void
@@ -626,11 +620,19 @@ gc()
     dont_gc--;
 }
 
-Init_stack()
+void
+init_stack()
 {
     VALUE start;
 
     stack_start_ptr = &start;
+}
+
+void
+init_heap()
+{
+    init_stack();
+    add_heap();
 }
 
 Init_GC()

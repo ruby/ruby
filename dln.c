@@ -238,7 +238,7 @@ dln_load_reloc(fd, hdrp, disp)
     int size;
 
     lseek(fd, disp + N_TXTOFF(*hdrp) + hdrp->a_text + hdrp->a_data, 0);
-  
+
     size = hdrp->a_trsize + hdrp->a_drsize;
     reloc = (struct relocation_info*)xmalloc(size);
     if (reloc == NULL) {
@@ -251,7 +251,7 @@ dln_load_reloc(fd, hdrp, disp)
 	free(reloc);
 	return NULL;
     }
-  
+
     return reloc;
 }
 
@@ -681,7 +681,7 @@ static int dln_load_1(fd, disp, need_init)
      */
     {
 	struct relocation_info * rel = reloc;
-	struct relocation_info * rel_beg = reloc + 
+	struct relocation_info * rel_beg = reloc +
 	    (hdr.a_trsize/sizeof(struct relocation_info));
 	struct relocation_info * rel_end = reloc +
 	    (hdr.a_trsize+hdr.a_drsize)/sizeof(struct relocation_info);
@@ -772,7 +772,7 @@ static int dln_load_1(fd, disp, need_init)
 	while (sym < end) {
 	    char *name = sym->n_un.n_name;
 	    if (name[0] == '_' && sym->n_value >= block
-		&& ((bcmp (name, "_Init_", 6) == 0 
+		&& ((bcmp (name, "_Init_", 6) == 0
 		     || bcmp (name, "_init_", 6) == 0) && name[6] != '_')) {
 		init_p = 1;
 		((int (*)())sym->n_value)();

@@ -3,7 +3,7 @@
 dirp = Dir.open(".")
 dirp.rewind
 for f in dirp
-  unless (~/^\./ || ~/~$/ || ~/\.o/)
+  if !(~/^\./ || ~/~$/ || ~/\.o/)
     print f, "\n"
   end
 end

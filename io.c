@@ -802,7 +802,7 @@ next_argv()
 	next_p = 0;
 	if (RARRAY(Argv)->len > 0) {
 	    filename = ary_shift(Argv);
-	    fn = RSTRING(filename)->ptr; 
+	    fn = RSTRING(filename)->ptr;
 	    if (RSTRING(filename)->len == 1 && fn[0] == '-') {
 		file = rb_stdin;
 		if (inplace) {
@@ -938,12 +938,12 @@ struct timeval *time_timeval();
 
 #ifdef STDSTDIO
 # define READ_PENDING(fp) ((fp)->_cnt != 0)
-#else 
+#else
 # ifdef __SLBF
 #  define READ_PENDING(fp) ((fp)->_r > 0)
 # else
 #  ifdef __linux__
-#   ifdef _other_gbase 
+#   ifdef _other_gbase
 #    define READ_PENDING(fp) ((fp)->_IO_read_ptr < (fp)->_IO_read_end)
 #   else
 #    define READ_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
@@ -1009,7 +1009,7 @@ Fselect(argc, argv, obj)
 	    FD_SET(fileno(fptr->f), wp);
 	    if (max > fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
-		FD_SET(fileno(fptr->f2), wp);	
+		FD_SET(fileno(fptr->f2), wp);
 		if (max < fileno(fptr->f2)) max = fileno(fptr->f2);
 	    }
 	}
@@ -1026,7 +1026,7 @@ Fselect(argc, argv, obj)
 	    FD_SET(fileno(fptr->f), ep);
 	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
-		FD_SET(fileno(fptr->f2), ep);	
+		FD_SET(fileno(fptr->f2), ep);
 		if (max > fileno(fptr->f2)) max = fileno(fptr->f2);
 	    }
 	}

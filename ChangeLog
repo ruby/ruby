@@ -1,4 +1,90 @@
+Wed Feb  1 19:48:24 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* string.c(str_replace): 置き換える文字列の長さが等しい時メモリコ
+	  ピーをしない．
+
+	* string.c(rindex): バグ修正．
+
+Mon Jan 30 11:23:05 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(value_expr): ifのチェックを追加．
+
+	* gc.c(gc_mark): free cellの扱いにバグ．
+
+	* parse.y: 文法の変更(よりシンプルに)．例外を減らした．
+
+Thu Jan 26 00:52:55 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* parse.y: 引数として連想配列を置くことができるように．この場合，
+	  連想配列リテラルが最終引数となる．
+
+	* parse.y: 配列参照の`[]'内が空でもよいことにした．
+
+Tue Jan 24 14:45:15 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* class.c(rb_include_module): `-v'を指定した時にはincludeしたモジュー
+	  ルとクラス定数が衝突していないかチェックする．
+
+Mon Jan 23 10:42:09 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(rb_class2name): メタクラスに関するbug fix.
+
+	* dict.c: Dict[..]で辞書の生成が出来るように．
+
+	* array.c: Array[..]で配列の生成が出来るように．
+
+	* parse.y: 辞書の表現として{a,b,..}という形式も許すように．
+
+Fri Jan 20 10:28:38 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* re.c(Regexp.quote): 正規表現をエスケープするメソッド．
+
+	* 無駄なrb_intern()を減らした．
+
+	* parse.y: `!', `!=', `!~'を特殊演算子にする．よってこれらは再定義
+	  できなくなった．
+
+Wed Jan 18 13:20:41 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: 文法の整理(unless,untilをなくした)．
+
+Tue Jan 17 11:11:27 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: defでメソッド再定義時にはスーパークラスのメソッドの可視
+	  性を継承する．最初の定義の時は今までと同じデフォルト(トップレベ
+	  ルで関数的，クラス定義内で通常メソッド)．
+
+	* object.c(Class::new): オブジェクトの生成時に関数的メ
+	  ソッドinit_objectが必ず呼ばれるように変更．
+
+	* eval.c: 未定義のメソッドに対してunknownメソッドが呼ばれるように
+	  なった．エラー表示が今までと同じになるようにenvを調節している．
+
+Fri Jan 13 14:40:30 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* gc.c: gcを若干書き換えて整理した．が，あまり変化はなかったようだ．
+
+	* parse.y(yylex): symbolを\symから:symに変更した．
+
+Thu Jan 12 01:39:28 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c: 新規関数 rb_eval_string()．
+
+	* gc.c: gc_mark()を一部非再帰化．
+
+	* variable.c(rb_ivar_{get,set}): インスタンス変数のアクセス周りで
+	  チェックが足りなかった．
+
+	* variable.c: クラス定数とインスタンス変数でハッシュテーブルを共有
+	  するようにした．
+
+	* ruby.h: iv_tblをRBasicからRObjectとRClassへ移動した．これにより，
+	  ObjectとClass,Moduleしかインスタンス変数を持てなくなる．が，メモ
+	  リ効率は若干向上する．
+
 Tue Jan 10 00:58:20 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* 0.64 released
 
 	* eval.c: レシーバと引数は常にiterではない．
 

@@ -2,11 +2,7 @@
 # using _inspect
 
 class Point
-  def Point.new(x, y)
-    super.init(x, y)
-  end
-
-  def init(x, y)
+  def init_object(x, y)
     @x = x; @y = y
     self
   end

@@ -55,11 +55,12 @@ Sdir_open(dir_class, dirname)
     DIR *dirp, **d;
 
     Check_Type(dirname, T_STRING);
-    
+
     dirp = opendir(dirname->ptr);
     if (dirp == NULL) Fail("Can't open directory %s", dirname->ptr);
 
     obj = obj_alloc(dir_class);
+    if (!id_dir) id_dir = rb_intern("dir");
     Make_Data_Struct(obj, id_dir, DIR*, Qnil, free_dir, d);
     *d = dirp;
 
@@ -74,6 +75,7 @@ closeddir()
 
 #define GetDIR(obj, dirp) {\
     DIR **_dp;\
+    if (!id_dir) id_dir = rb_intern("dir");\
     Get_Data_Struct(obj, id_dir, DIR*, _dp);\
     dirp = *_dp;\
     if (dirp == NULL) closeddir();\
@@ -260,6 +262,4 @@ Init_Dir()
     rb_define_single_method(C_Dir,"rmdir", Sdir_rmdir, 1);
     rb_define_single_method(C_Dir,"delete", Sdir_rmdir, 1);
     rb_define_single_method(C_Dir,"unlink", Sdir_rmdir, 1);
-
-    id_dir = rb_intern("dir");
 }

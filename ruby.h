@@ -1,13 +1,13 @@
 /************************************************
-  
+
   ruby.h -
-  
+
   $Author: matz $
-  $Date: 1995/01/10 10:42:52 $
+  $Date: 1995/01/12 08:54:52 $
   created at: Thu Jun 10 14:26:32 JST 1993
-  
+
   Copyright (C) 1994 Yukihiro Matsumoto
-  
+
 *************************************************/
 
 #ifndef RUBY_H
@@ -100,12 +100,11 @@ extern VALUE C_Data;
 #define T_DICT   0x0a
 #define T_STRUCT 0x0b
 #define T_BIGNUM 0x0c
-
-#define T_NODE   0x0d
-#define T_SCOPE  0x0e
 #define T_CONS   0x0f
-
 #define T_DATA   0x10
+
+#define T_SCOPE  0xfe
+#define T_NODE   0xff
 
 #define T_MASK   0xff
 
@@ -128,17 +127,17 @@ int   num2int();
 struct RBasic {
     UINT flags;
     VALUE class;
-    struct st_table *iv_tbl;
 };
 
 struct RObject {
     struct RBasic basic;
+    struct st_table *iv_tbl;
 };
 
 struct RClass {
     struct RBasic basic;
+    struct st_table *iv_tbl;
     struct st_table *m_tbl;
-    struct st_table *c_tbl;
     struct RClass *super;
 };
 
@@ -181,7 +180,7 @@ struct RData {
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
-VALUE data_new();				       
+VALUE data_new();
 VALUE rb_ivar_get_1();
 VALUE rb_ivar_set_1();
 
@@ -221,6 +220,9 @@ struct RCons {
     struct RBasic basic;
     VALUE car, cdr;
 };
+
+#define CAR(c) (RCONS(c)->car)
+#define CDR(c) (RCONS(c)->cdr)
 
 #define R_CAST(st) (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
@@ -291,7 +293,9 @@ void rb_define_attr();
 ID rb_intern();
 char *rb_id2name();
 
+VALUE rb_eval_string();
 VALUE rb_funcall();
+VALUE rb_funcall2();
 int rb_scan_args();
 
 VALUE rb_yield();

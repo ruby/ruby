@@ -82,7 +82,7 @@ Warning(fmt, va_alist)
     char *fmt;
     va_dcl
 {
-    char buf[BUFSIZ]; 
+    char buf[BUFSIZ];
     va_list args;
 
     sprintf(buf, "warning: %s", fmt);
@@ -108,7 +108,7 @@ Bug(fmt, va_alist)
     char *fmt;
     va_dcl
 {
-    char buf[BUFSIZ]; 
+    char buf[BUFSIZ];
     va_list args;
 
     sprintf(buf, "[BUG] %s", fmt);
@@ -124,7 +124,7 @@ Fail(fmt, va_alist)
     va_dcl
 {
     va_list args;
-    char buf[BUFSIZ]; 
+    char buf[BUFSIZ];
 
     va_start(args);
     vsprintf(buf, fmt, args);
@@ -132,7 +132,7 @@ Fail(fmt, va_alist)
 
     rb_fail(str_new2(buf));
 }
-    
+
 rb_sys_fail(mesg)
     char *mesg;
 {
@@ -164,8 +164,6 @@ static char *builtin_types[] = {
     "Method",
     "Struct",
     "Bignum",
-    "Node",
-    "Scope",
     "Cons",
     "Data",
 };

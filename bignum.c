@@ -88,7 +88,7 @@ bignorm(x)
 
     while (len-- && !ds[len]) ;
     x->len = ++len;
-    
+
     if (len*sizeof(USHORT) < sizeof(VALUE) ||
 	(len*sizeof(USHORT) == sizeof(VALUE) &&
 	 ds[sizeof(VALUE)/sizeof(USHORT)-1] <= 0x3fff)) {

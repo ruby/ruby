@@ -489,7 +489,7 @@ Fstr_rindex(argc, argv, str)
 
     Check_Type(sub, T_STRING);
     if (pos > str->len) return Qnil; /* substring longer than string */
-    sbeg = str->ptr; s = s + pos - sub->len;
+    sbeg = str->ptr; s = sbeg + pos - sub->len;
     t = sub->ptr;
     len = sub->len;
     while (sbeg <= s) {
@@ -535,7 +535,7 @@ Fstr_next(orig)
     char c = -1;
 
     str = (struct RString*)str_new(orig->ptr, orig->len);
-    
+
     sbeg = str->ptr; s = sbeg + str->len - 1;
 
     while (sbeg <= s) {
@@ -642,7 +642,9 @@ str_replace(str, beg, len, val)
 	REALLOC_N(str->ptr, char, str->len+val->len-len+1);
     }
 
-    memmove(str->ptr+beg+val->len, str->ptr+beg+len, str->len-(beg+len));
+    if (len != val->len) {
+	memmove(str->ptr+beg+val->len, str->ptr+beg+len, str->len-(beg+len));
+    }
     memcpy(str->ptr+beg, val->ptr, val->len);
     str->len += val->len - len;
     str->ptr[str->len] = '\0';
@@ -830,7 +832,7 @@ Fsub(obj, pat, val)
     Check_Type(rb_lastline, T_STRING);
     return Fstr_sub_internal(rb_lastline, pat, val, 1);
 }
-    
+
 static VALUE
 Fgsub(obj, pat, val)
     VALUE obj, pat, val;
