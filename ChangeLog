@@ -1,3 +1,13 @@
+Mon Dec 20 14:07:02 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: supports new features of Tcl/Tk8.5a2
+
+	* ext/tk/lib/tk/clock.rb: ditto
+
+	* ext/tk/lib/tk/text.rb: ditto
+
+	* ext/tk/lib/tk/panedwindow.rb: ditto
+
 Mon Dec 20 10:51:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (special_local_set): prevent the parser object from GC.
@@ -51,34 +61,34 @@ Fri Dec 17 16:28:12 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/event.rb: fix error on require process
 
-	* ext/tk/lib/font.rb: fix abnormal termination error on Windows
+	* ext/tk/lib/tk/font.rb: fix abnormal termination error on Windows
 
 	* ext/tk/lib/tk/virtevent.rb: TkVirtualEvent::PreDefVirtEvent.new()
 	  accepts event-sequence arguments
 
-	* ext/tk/lib/text.rb: fail to dump embedded images
+	* ext/tk/lib/tk/text.rb: fail to dump embedded images
 
-	* ext/tk/lib/text.rb: tag_nextrange and tag_prevrange returns wrong
+	* ext/tk/lib/tk/text.rb: tag_nextrange and tag_prevrange returns wrong
 	  types of values
 
-	* ext/tk/lib/texttag.rb: nextrange and prevrange returns wrong
+	* ext/tk/lib/tk/texttag.rb: nextrange and prevrange returns wrong
 	  types of values
 
-	* ext/tk/lib/text.rb: add TkText::IndexModMethods module and
+	* ext/tk/lib/tk/text.rb: add TkText::IndexModMethods module and
 	  TkText::IndexString class to treat text index modifiers
 
-	* ext/tk/lib/texttag.rb: use TkText::IndexModMethods module
+	* ext/tk/lib/tk/texttag.rb: use TkText::IndexModMethods module
 
-	* ext/tk/lib/textmark.rb: ditto
+	* ext/tk/lib/tk/textmark.rb: ditto
 
-	* ext/tk/lib/textimage.rb: ditto
+	* ext/tk/lib/tk/textimage.rb: ditto
 
-	* ext/tk/lib/textwindow.rb: ditto
+	* ext/tk/lib/tk/textwindow.rb: ditto
 
-	* ext/tk/lib/textimage.rb: wrong gravity of text mark for embedded
+	* ext/tk/lib/tk/textimage.rb: wrong gravity of text mark for embedded
 	  image
 
-	* ext/tk/lib/textwindow.rb: wrong gravity of text mark for
+	* ext/tk/lib/tk/textwindow.rb: wrong gravity of text mark for
 	  embedded window
 
 Fri Dec 17 13:33:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>

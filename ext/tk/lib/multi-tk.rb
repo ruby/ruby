@@ -2056,7 +2056,7 @@ class MultiTkIp
     elsif slave.kind_of?(String)
       slave
     else
-      cmd_name.to_s
+      slave.to_s
     end
   end
   private :_slavearg
@@ -2156,15 +2156,37 @@ class MultiTkIp
   end
 
   def invoke_hidden(slave, cmd, *args)
-    @interp._invoke('interp', 'invokehidden', _slavearg(slave), cmd, *args)
+    if args[-1].kind_of?(Hash)
+      keys = _symbolkey2str(args.pop)
+    else
+      keys = []
+    end
+    if Tk::TCL_MAJOR_VERSION > 8 ||
+        (Tk::TCL_MAJOR_VERSION == 8 && Tk::TCL_MINOR_VERSION >= 5) 
+      keys << '--'
+    end
+    keys << _slavearg(slave) << cmd
+    keys.concat(args)
+    @interp._invoke('interp', 'invokehidden', *keys)
   end
   def self.invoke_hidden(slave, cmd, *args)
     __getip.invoke_hidden(slave, cmd, *args)
   end
 
   def invoke_hidden_on_global(slave, cmd, *args)
-    @interp._invoke('interp', 'invokehidden', _slavearg(slave), 
-                    '-global', cmd, *args)
+    if args[-1].kind_of?(Hash)
+      keys = _symbolkey2str(args.pop)
+    else
+      keys = []
+    end
+    keys << '-global'
+    if Tk::TCL_MAJOR_VERSION > 8 ||
+        (Tk::TCL_MAJOR_VERSION == 8 && Tk::TCL_MINOR_VERSION >= 5) 
+      keys << '--'
+    end
+    keys << _slavearg(slave) << cmd
+    keys.concat(args)
+    @interp._invoke('interp', 'invokehidden', *keys)
   end
   def self.invoke_hidden_on_global(slave, cmd, *args)
     __getip.invoke_hidden_on_global(slave, cmd, *args)
@@ -2177,6 +2199,56 @@ class MultiTkIp
   def self.mark_trusted(slave = '')
     __getip.mark_trusted(slave)
     self
+  end
+
+  def set_bgerror_handler(cmd = Proc.new, slave = nil, &b)
+    unless TkComm._callback_entry?(cmd)
+      unless slave
+        slave = cmd
+        cmd = Proc.new(&b)
+      end
+    end
+    slave = '' unless slave
+
+    @interp._invoke('interp', 'bgerror', _slavearg(slave), cmd)
+  end
+  def self.bgerror(cmd = Proc.new, slave = nil, &b)
+    __getip.bgerror(cmd, slave, &b)
+  end
+
+  def get_bgerror_handler(slave = '')
+    procedure(@interp._invoke('interp', 'bgerror', _slavearg(slave)))
+  end
+  def self.bgerror(slave = '')
+    __getip.bgerror(slave)
+  end
+
+  def set_limit(limit_type, slave = '', opts = {})
+    @interp._invoke('interp', 'limit', _slavearg(slave), limit_type, opts)
+  end
+  def self.set_limit(limit_type, slave = '', opts = {})
+    __getip.set_limit(limit_type, slave, opts)
+  end
+
+  def get_limit(limit_type, slave = '', slot = nil)
+    if slot
+      num_or_str(@interp._invoke('interp', 'limit', _slavearg(slave), 
+                                 limit_type, slot))
+    else
+      l = @interp._split_tklist(@interp._invoke('interp', 'limit', 
+                                                _slavearg(slave), limit_type))
+      r = {}
+      until l.empty?
+        key = l.shift[1..-1]
+        val = l.shift
+        val = num_or_str(val) if val
+        r[key] = val
+      end
+      r
+    end
+  end
+  def self.get_limit(limit_type, slave = '', slot = nil)
+    __getip.get_limit(limit_type, slave, slot)
   end
 
   def recursion_limit(slave = '', limit = None)

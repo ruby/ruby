@@ -477,6 +477,11 @@ class TkText<TkTextWin
     info
   end
 
+  def peer_names()
+    # Tk8.5 feature
+    list(tk_send_without_enc('peer', 'names'))
+  end
+
   def replace(idx1, idx2, *opts)
     tk_send('replace', idx1, idx2, *opts)
     self
@@ -1372,4 +1377,26 @@ class TkText<TkTextWin
   def dump_image(*index, &block)
     dump(['image'], *index, &block)
   end
+end
+
+#######################################
+
+class TkText::Peer < TkText
+  # Tk8.5 feature
+  def initialize(text, parent=nil, keys={})
+    unless text.kind_of?(TkText)
+      fail ArgumentError, "TkText is expected for 1st argument"
+    end
+    @src_text = text
+    super(parent, keys)
+  end
+
+  def create_self(keys)
+    if keys and keys != None
+      tk_call_without_enc(@src_text.path, 'peer', 'create', @path)
+    else
+      tk_call_without_enc(@src_text.path, 'peer', 'create', @path)
+    end
+  end
+  private :create_self
 end
