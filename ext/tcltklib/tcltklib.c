@@ -3094,6 +3094,7 @@ ip_delete(self)
 {
     struct tcltkip *ptr = get_ip(self);
 
+    del_root(ptr->ip);
     Tcl_DeleteInterp(ptr->ip);
 
     return Qnil;
