@@ -119,6 +119,11 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
 
     Data_Get_Struct(self, SSL_CTX, ctx);
 
+    for(i = 0; i < numberof(ossl_sslctx_attrs); i++){
+	char buf[32];
+	snprintf(buf, sizeof(buf), "@%s", ossl_sslctx_attrs[i]);
+	rb_iv_set(self, buf, Qnil);
+    }
     if (rb_scan_args(argc, argv, "01", &ssl_method) == 0){
         return self;
     }

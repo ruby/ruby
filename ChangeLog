@@ -1,3 +1,8 @@
+Wed Jul 30 15:54:04 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_initialize): should initialize
+	  instance variables. [ruby-talk:77362]
+
 Wed Jul 30 15:10:02 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* error.c (rb_raise): snprintf() termination moved to
