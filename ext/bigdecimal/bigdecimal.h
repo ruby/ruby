@@ -150,11 +150,16 @@ VP_EXPORT void VpMidRound(Real *y, int f, int nf);
 VP_EXPORT void VpLeftRound(Real *y, int f, int nf);
 VP_EXPORT void VpFrac(Real *y,Real *x);
 VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
+
+/* VP constants */
+VP_EXPORT Real *VpOne();
+
+#ifdef ENABLE_TRIAL_METHOD
 VP_EXPORT void VpPi(Real *y);
 VP_EXPORT void VpExp1(Real *y);
 VP_EXPORT void VpExp(Real *y,Real *x);
 VP_EXPORT void VpSinCos(Real *psin,Real *pcos,Real *x);
-
+#endif /* ENABLE_TRIAL_METHOD */
 /*  
  *  ------------------
  *  MACRO definitions.

@@ -247,39 +247,35 @@ c ‚Ì¸“x‚É‚Â‚¢‚Ä‚Íu<A HREF="#PREC">ŒvŽZ¸“x‚É‚Â‚¢‚Ä</A>v‚ðŽQÆ‚µ‚Ä‚­‚¾‚³‚¢B
 
 </BLOCKQUOTE>
 
-<LI><B>add</B></LI><BLOCKQUOTE>
+<LI><B>add(b,n)</B></LI><BLOCKQUOTE>
 ˆÈ‰º‚Ì‚æ‚¤‚ÉŽg—p‚µ‚Ü‚·B<BR>
 c = a.add(b,n)<BR>
 c = a + b ‚ðÅ‘å‚Å n Œ…‚Ü‚ÅŒvŽZ‚µ‚Ü‚·B
 a + b ‚Ì¸“x‚ª n ‚æ‚è‘å‚«‚¢‚Æ‚«‚Í BigDecimal.mode ‚ÅŽw’è‚³‚ê‚½•û–@‚ÅŠÛ‚ß‚ç‚ê‚Ü‚·B
 
 </BLOCKQUOTE>
-<LI><B>sub</B></LI><BLOCKQUOTE>
+<LI><B>sub(b,n)</B></LI><BLOCKQUOTE>
 ˆÈ‰º‚Ì‚æ‚¤‚ÉŽg—p‚µ‚Ü‚·B<BR>
 c = a.sub(b,n)<BR>
 c = a - b ‚ðÅ‘å‚Å n Œ…‚Ü‚ÅŒvŽZ‚µ‚Ü‚·B
 a - b ‚Ì¸“x‚ª n ‚æ‚è‘å‚«‚¢‚Æ‚«‚Í BigDecimal.mode ‚ÅŽw’è‚³‚ê‚½•û–@‚ÅŠÛ‚ß‚ç‚ê‚Ü‚·B
 
 </BLOCKQUOTE>
-<LI><B>mult</B></LI><BLOCKQUOTE>
+<LI><B>mult(b,n)</B></LI><BLOCKQUOTE>
 ˆÈ‰º‚Ì‚æ‚¤‚ÉŽg—p‚µ‚Ü‚·B<BR>
 c = a.mult(b,n)<BR>
 c = a * b ‚ðÅ‘å‚Å n Œ…‚Ü‚ÅŒvŽZ‚µ‚Ü‚·B
 a * b ‚Ì¸“x‚ª n ‚æ‚è‘å‚«‚¢‚Æ‚«‚Í BigDecimal.mode ‚ÅŽw’è‚³‚ê‚½•û–@‚ÅŠÛ‚ß‚ç‚ê‚Ü‚·B
 
 </BLOCKQUOTE>
-<LI><B>div</B></LI><BLOCKQUOTE>
+<LI><B>div(b[,n])</B></LI><BLOCKQUOTE>
 ˆÈ‰º‚Ì‚æ‚¤‚ÉŽg—p‚µ‚Ü‚·B<BR>
 c = a.div(b,n)<BR>
 c = a / b ‚ðÅ‘å‚Å n Œ…‚Ü‚ÅŒvŽZ‚µ‚Ü‚·B
-a / b ‚Ì¸“x‚ª n ‚æ‚è‘å‚«‚¢‚Æ‚«‚Í BigDecimal.mode ‚ÅŽw’è‚³‚ê‚½•û–@‚ÅŠÛ‚ß‚ç‚ê‚Ü‚·B
+a / b ‚Ì¸“x‚ª n ‚æ‚è‘å‚«‚¢‚Æ‚«‚Í BigDecimal.mode ‚ÅŽw’è‚³‚ê‚½•û–@‚ÅŠÛ‚ß‚ç‚ê‚Ü‚·B<BR>
+n ‚ªÈ—ª‚³‚ê‚½‚Æ‚«‚Í Float#div ‚Æ“¯—l‚ÉŒ‹‰Ê‚ª®”(BigDecimal)‚É‚È‚è‚Ü‚·B
 </BLOCKQUOTE>
 
-<LI><B>%</B></LI><BLOCKQUOTE>
-r = a%b <BR>
-a/b ‚Ì—]‚è‚ðŒvŽZ‚µ‚Ü‚·BˆÈ‰º‚ÌŒvŽZ‚Æ“¯‚¶‚à‚Ì‚Å‚·B<BR>
-r = a-((a/b).floor)*b<BR>
-</BLOCKQUOTE>
 <LI><B>fix</B></LI><BLOCKQUOTE>
 a ‚Ì¬”“_ˆÈ‰º‚ÌØ‚èŽÌ‚ÄB<BR>
 c = a.fix
@@ -359,23 +355,7 @@ n ‚ª•‰‚Ì‚Æ‚«‚Í¬”“_ˆÈã n Œ…–Ú‚ð‚ð‘€ì‚µ‚Ü‚·(¬”“_ˆÊ’u‚©‚ç¶‚É­‚È‚­‚Æ‚à n ŒÂ‚
 c = BigDecimal("1.23456").truncate(4)   #  ==> 1.2345
 c = BigDecimal("15.23456").truncate(-1) #  ==> 10.0
 </PRE></CODE>
-
 </BLOCKQUOTE>
-<LI><B>divmod</B></LI><BLOCKQUOTE>
-¤‚Æè—]‚Ì”z—ñ‚ð•Ô‚µ‚Ü‚·B<BR>
-c,r = a.divmod(b) # a = c*b + r<BR>
-divmodƒƒ\ƒbƒh‚Í a = c * b + r ‚Æ‚È‚é a / b ‚Ì•‚“®¬”“_Œ^‚Ì¤ c ‚Æè—] r ‚ð
-ŒvŽZ‚µ‚Ü‚·B‚±‚±‚Å c ‚Í®”i­”•”•ª‚Ì‚È‚¢ŽÀ”j‚É‚È‚è‚Ü‚·B<BR>
-c = (a/b).floor <BR>
-r = a - c*b<BR>
-‚ÅŒvŽZ‚³‚ê‚Ü‚·B
-</BLOCKQUOTE>
-<LI><B>remainder</B></LI><BLOCKQUOTE>
-r=a.remainder(b)<BR>
-a/b ‚Ìè—] r ‚ðŒvŽZ‚µ‚Ü‚·B<BR>
-c = (a/b).fix <BR>
-r = a - c*b<BR>
-‚ÅŒvŽZ‚³‚ê‚Ü‚·B
 
 </BLOCKQUOTE>
 <LI><B>abs</B></LI><BLOCKQUOTE>
@@ -480,6 +460,10 @@ c = a.power(n)<BR>
 a‚Ì—LŒøŒ… n Œ…‚Ì•½•ûªin ‚Ì•½•ûª‚Å‚Í‚ ‚è‚Ü‚¹‚ñj‚ð
 ƒjƒ…[ƒgƒ“–@‚ÅŒvŽZ‚µ‚Ü‚·B<BR>
 c = a.sqrt(n)<BR>
+</BLOCKQUOTE>
+
+<LI><B>divmod,quo,modulo,%,remainder</B></LI><BLOCKQUOTE>
+Ú×‚Í‘Î‰ž‚·‚é Float ‚ÌŠeƒƒ\ƒbƒh‚ðŽQÆ‚µ‚Ä‰º‚³‚¢B
 </BLOCKQUOTE>
 
 <LI><B>&lt=&gt</B></LI><BLOCKQUOTE>

@@ -31,7 +31,6 @@
  *
  */
 
-#include "ruby.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +38,8 @@
 #include <errno.h>
 #include <float.h>
 #include <math.h>
+#include "ruby.h"
+#include "math.h"
 #include "version.h"
  
 /* #define ENABLE_NUMERIC_STRING */
@@ -720,6 +721,17 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     if(!b) return DoSomeOne(self,r);
     SAVE(b);
 
+    if(VpIsNaN(a) || VpIsNaN(b)) goto NaN;
+    if(VpIsInf(a) || VpIsInf(b)) goto NaN;
+    if(VpIsZero(b))              goto NaN;
+    if(VpIsZero(a)) {
+       GUARD_OBJ(c,VpCreateRbObject(1, "0"));
+       GUARD_OBJ(d,VpCreateRbObject(1, "0"));
+       *div = d;
+       *mod = c;
+       return (VALUE)0;
+    }
+
     mx = a->Prec;
     if(mx<b->Prec) mx = b->Prec;
     mx =(mx + 1) * VpBaseFig();
@@ -728,9 +740,23 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     VpDivd(c, res, a, b);
     mx = c->Prec *(VpBaseFig() + 1);
     GUARD_OBJ(d,VpCreateRbObject(mx, "0"));
-    VpActiveRound(d,c,VP_ROUND_FLOOR,0);
+    VpActiveRound(d,c,VP_ROUND_DOWN,0);
     VpMult(res,d,b);
     VpAddSub(c,a,res,-1);
+    if(!VpIsZero(c) && (VpGetSign(a)*VpGetSign(b)<0)) {
+        VpAddSub(res,d,VpOne(),-1);
+        VpAddSub(d  ,c,b,       1);
+        *div = res;
+        *mod = d;
+    } else {
+        *div = d;
+        *mod = c;
+    }
+    return (VALUE)0;
+
+NaN:
+    GUARD_OBJ(c,VpCreateRbObject(1, "NaN"));
+    GUARD_OBJ(d,VpCreateRbObject(1, "NaN"));
     *div = d;
     *mod = c;
     return (VALUE)0;
@@ -813,22 +839,32 @@ BigDecimal_divmod(VALUE self, VALUE r)
 }
 
 static VALUE
-BigDecimal_div2(VALUE self, VALUE b, VALUE n)
+BigDecimal_div2(int argc, VALUE *argv, VALUE self)
 {
     ENTER(10);
     VALUE obj;
-    Real *res=NULL;
-    Real *av=NULL, *bv=NULL, *cv=NULL;
-    U_LONG ix = (U_LONG)GetPositiveInt(n);
-    U_LONG mx = (ix+VpBaseFig()*2);
-    GUARD_OBJ(cv,VpCreateRbObject(mx,"0"));
-    GUARD_OBJ(av,GetVpValue(self,1));
-    GUARD_OBJ(bv,GetVpValue(b,1));
-    mx = cv->MaxPrec+1;
-    GUARD_OBJ(res,VpCreateRbObject((mx * 2 + 2)*VpBaseFig(), "#0"));
-    VpDivd(cv,res,av,bv);
-    VpLeftRound(cv,VpGetRoundMode(),ix);
-    return ToValue(cv);
+    VALUE b,n;
+    int na = rb_scan_args(argc,argv,"11",&b,&n);
+    if(na==1) { /* div in Float sense */
+       Real *div=NULL;
+       Real *mod;
+       obj = BigDecimal_DoDivmod(self,b,&div,&mod);
+       if(obj!=(VALUE)0) return obj;
+       return ToValue(div);
+    } else {    /* div in BigDecimal sense */
+       Real *res=NULL;
+       Real *av=NULL, *bv=NULL, *cv=NULL;
+       U_LONG ix = (U_LONG)GetPositiveInt(n);
+       U_LONG mx = (ix+VpBaseFig()*2);
+       GUARD_OBJ(cv,VpCreateRbObject(mx,"0"));
+       GUARD_OBJ(av,GetVpValue(self,1));
+       GUARD_OBJ(bv,GetVpValue(b,1));
+       mx = cv->MaxPrec+1;
+       GUARD_OBJ(res,VpCreateRbObject((mx * 2 + 2)*VpBaseFig(), "#0"));
+       VpDivd(cv,res,av,bv);
+       VpLeftRound(cv,VpGetRoundMode(),ix);
+       return ToValue(cv);
+    }
 }
 
 static VALUE
@@ -1318,10 +1354,11 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
     rb_define_method(rb_cBigDecimal, "sub", BigDecimal_sub2, 2);
     rb_define_method(rb_cBigDecimal, "mult", BigDecimal_mult2, 2);
-    rb_define_method(rb_cBigDecimal, "div",BigDecimal_div2, 2);
+    rb_define_method(rb_cBigDecimal, "div",BigDecimal_div2, -1);
     rb_define_method(rb_cBigDecimal, "hash", BigDecimal_hash, 0);
     rb_define_method(rb_cBigDecimal, "to_s", BigDecimal_to_s, -1);
     rb_define_method(rb_cBigDecimal, "to_i", BigDecimal_to_i, 0);
+    rb_define_method(rb_cBigDecimal, "to_int", BigDecimal_to_i, 0);
     rb_define_method(rb_cBigDecimal, "split", BigDecimal_split, 0);
     rb_define_method(rb_cBigDecimal, "+", BigDecimal_add, 1);
     rb_define_method(rb_cBigDecimal, "-", BigDecimal_sub, 1);
@@ -1329,6 +1366,7 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "-@", BigDecimal_neg, 0);
     rb_define_method(rb_cBigDecimal, "*", BigDecimal_mult, 1);
     rb_define_method(rb_cBigDecimal, "/", BigDecimal_div, 1);
+    rb_define_method(rb_cBigDecimal, "quo", BigDecimal_div, 1);
     rb_define_method(rb_cBigDecimal, "%", BigDecimal_mod, 1);
     rb_define_method(rb_cBigDecimal, "modulo", BigDecimal_mod, 1);
     rb_define_method(rb_cBigDecimal, "remainder", BigDecimal_remainder, 1);
@@ -1818,6 +1856,12 @@ VpInit(U_LONG BaseVal)
 #endif /* _DEBUG */
 
     return DBLE_FIG;
+}
+
+VP_EXPORT Real *
+VpOne()
+{
+    return VpConstOne;
 }
 
 /* If exponent overflows,then raise exception or returns 0 */
