@@ -1,3 +1,8 @@
+Fri Dec 27 21:41:57 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* bcc32/setup.mak, win32/setup.mak(-prologue-): move srcdir from
+	  CPP input or UNC path will be removed as a comment.
+
 Fri Dec 27 17:55:00 2002  Takaaki Uematsu  <mail@uema2.cjb.net>
 
 	* wince/config, wince/configure.bat: replace 1.7 with 1.8

@@ -30,17 +30,18 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 
 -prologue-: nul
 	@echo Creating $(MAKEFILE)
+	@type > $(MAKEFILE) &&|
+\#\#\# Makefile for ruby $(OS) \#\#\#
+srcdir = $(srcdir:\=/)
+|
 	@cpp32 -I$(srcdir) -P- -o$(MAKEFILE) > nul &&|
-\#define COMMENT \#
-COMMENT Makefile for ruby $(OS)
 \#include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
 TEENY = RUBY_VERSION_TEENY
 |
-	@copy $(MAKEFILE).i $(MAKEFILE) > nul
+	@type $(MAKEFILE).i >> $(MAKEFILE)
 	@del $(MAKEFILE).i
-	@$(APPEND) srcdir = $(srcdir:\=/)
 
 -generic-: nul
 !if defined(PROCESSOR_ARCHITECTURE) ||  defined(PROCESSOR_LEVEL)

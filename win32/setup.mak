@@ -29,14 +29,15 @@ i686-$(OS): -prologue- -i686- -epilogue-
 alpha-$(OS): -prologue- -alpha- -epilogue-
 
 -prologue-: nul
-	@cl -nologo -EP -I$(srcdir) <<"Creating $(MAKEFILE)" > $(MAKEFILE)
-#define COMMENT #
-COMMENT Makefile for ruby $(OS)
+	@type << > $(MAKEFILE)
+### Makefile for ruby $(OS) ###
+srcdir = $(srcdir:\=/)
+<<
+	@cl -nologo -EP -I$(srcdir) <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
 TEENY = RUBY_VERSION_TEENY
-srcdir = $(srcdir:\=/)
 <<
 
 -generic-: nul
