@@ -65,6 +65,7 @@ hash (str, len)
   return hval + asso_values[(unsigned char)str[len - 1]];
 }
 
+static
 #ifdef __GNUC__
 __inline
 #endif

@@ -1,3 +1,27 @@
+Mon Dec 17 16:52:20 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* intern.h: add prototypes.
+	  rb_gc_enable(), rb_gc_disable(), rb_gc_start(), rb_str_new5()
+	  rb_str_buf_append(), rb_str_buf_cat(), rb_str_buf_cat2(),
+	  rb_str_dup_frozen()
+
+	* ruby.h: added declaration.
+	  rb_defout, rb_stdin, rb_stdout, rb_stderr, ruby_errinfo
+
+	* rubyio.h: changed double include guard macro to RUBYIO_H.
+
+	* array.c (inspect_call): make static.
+
+	* eval.c (dvar_asgn): ditto.
+
+	* io.c (rb_io_close_read): ditto.
+
+	* lex.c (rb_reserved_word): ditto.
+
+	* ruby.c: (req_list_head, req_list_last): ditto.
+
+	* ruby.c (require_libraries): ditto.
+
 Mon Dec 17 15:19:32 2001  Tanaka Akira  <akr@m17n.org>
 
 	* time.c: new method `gmtoff', `gmt_offset' and `utc_offset'.

@@ -10,8 +10,8 @@
 
 **********************************************************************/
 
-#ifndef IO_H
-#define IO_H
+#ifndef RUBYIO_H
+#define RUBYIO_H
 
 #include <stdio.h>
 #include <errno.h>
