@@ -1,3 +1,7 @@
+Sun Mar 23 22:22:04 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/jcode.rb (tr!, delete!, szueeze!): add empty string checking.
+
 Sun Mar 23 19:55:32 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): use free() if dfree is -1.

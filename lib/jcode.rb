@@ -9,7 +9,7 @@ class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
   def _regex_quote(str)
-    str.gsub(/(\\[][\-\\])|\\(.)|([][\\])/) do
+    str.gsub(/(\\[\[\]\-\\])|\\(.)|([\[\]\\])/) do
       $1 || $2 || '\\' + $3
     end
   end
@@ -130,7 +130,8 @@ class String
   public
 
   def tr!(from, to)
-    return self.delete!(from) if to.length == 0
+    return nil if from == ""
+    return self.delete!(from) if to == ""
 
     pattern = TrPatternCache[from] ||= /[#{_regex_quote(from)}]/
     if from[0] == ?^
@@ -147,6 +148,7 @@ class String
   end
 
   def delete!(del)
+    return nil if del == ""
     self.gsub!(DeletePatternCache[del] ||= /[#{_regex_quote(del)}]+/, '')
   end
 
@@ -155,6 +157,7 @@ class String
   end
 
   def squeeze!(del=nil)
+    return nil if del == ""
     pattern =
       if del
 	SqueezePatternCache[del] ||= /([#{_regex_quote(del)}])\1+/
