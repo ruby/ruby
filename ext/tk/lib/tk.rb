@@ -3104,6 +3104,7 @@ class TkObject<TkKernel
     end
   end
 
+=begin
   def tk_trace_variable(v)
     unless v.kind_of?(TkVariable)
       fail(ArgumentError, "type error (#{v.class}); must be TkVariable object")
@@ -3111,9 +3112,10 @@ class TkObject<TkKernel
     v
   end
   private :tk_trace_variable
+=end
 
   def destroy
-    tk_call 'trace', 'vdelete', @tk_vn, 'w', @var_id if @var_id
+    #tk_call 'trace', 'vdelete', @tk_vn, 'w', @var_id if @var_id
   end
 end
 

@@ -20,6 +20,26 @@ module Tk
       k2c
     end
 
+    def __conv_vcmd_on_hash_kv(keys)
+      key2class = __get_validate_key2class
+
+      keys = _symbolkey2str(keys)
+      key2class.each{|key, klass|
+	if keys[key].kind_of?(Array)
+	  cmd, *args = keys[key]
+	  keys[key] = klass.new(cmd, args.join(' '))
+	elsif keys[key].kind_of? Proc
+	  keys[key] = klass.new(keys[key])
+	end
+      }
+      keys
+    end
+
+    def create_self(keys)
+      super(__conv_vcmd_on_hash_kv(keys))
+    end
+    private :create_self
+
     def configure(slot, value=TkComm::None)
       key2class = __get_validate_key2class
 
@@ -67,6 +87,21 @@ module Tk
       }
     end
 
+    def __conv_item_vcmd_on_hash_kv(keys)
+      key2class = __get_item_validate_key2class(tagid(tagOrId))
+
+      keys = _symbolkey2str(keys)
+      key2class.each{|key, klass|
+	if keys[key].kind_of?(Array)
+	  cmd, *args = keys[key]
+	  keys[key] = klass.new(cmd, args.join(' '))
+	elsif keys[key].kind_of? Proc
+	  keys[key] = klass.new(keys[key])
+	end
+      }
+      keys
+    end
+
     def itemconfigure(tagOrId, slot, value=TkComm::None)
       key2class = __get_item_validate_key2class(tagid(tagOrId))
 
@@ -100,12 +135,119 @@ module Tk
   end
 end
 
+class TkValidateCommand
+  include TkComm
+
+  class ValidateArgs < TkUtil::CallbackSubst
+    KEY_TBL = [
+      [ ?d, ?n, :action ], 
+      [ ?i, ?x, :index ], 
+      [ ?s, ?e, :current ], 
+      [ ?v, ?s, :type ], 
+      [ ?P, ?e, :value ], 
+      [ ?S, ?e, :string ], 
+      [ ?V, ?s, :triggered ], 
+      [ ?W, ?w, :widget ], 
+      nil
+    ]
+
+    PROC_TBL = [
+      [ ?n, TkComm.method(:number) ], 
+      [ ?s, TkComm.method(:string) ], 
+      [ ?w, TkComm.method(:window) ], 
+
+      [ ?e, proc{|val|
+	  enc = Tk.encoding
+	  if enc
+	    Tk.fromUTF8(TkComm::string(val), enc)
+	  else
+	    TkComm::string(val)
+	  end
+	}
+      ], 
+
+      [ ?x, proc{|val|
+	  idx = TkComm::number(val)
+	  if idx < 0
+	    nil
+	  else
+	    idx
+	  end
+	}
+      ], 
+
+      nil
+    ]
+
+    _setup_subst_table(KEY_TBL, PROC_TBL);
+
+    def self.ret_val(val)
+      (val)? '1': '0'
+    end
+
+    #def self._get_extra_args_tbl
+    #  # return an array of convert procs
+    #  []
+    #end
+  end
+
+  ###############################################
+
+  def self._config_keys
+    # array of config-option key (string or symbol)
+    ['vcmd', 'validatecommand', 'invcmd', 'invalidcommand']
+  end
+
+  def _initialize_for_cb_class(klass, cmd = Proc.new, *args)
+    extra_args_tbl = klass._get_extra_args_tbl
+
+    if args.compact.size > 0
+      args = args.join(' ')
+      keys = klass._get_subst_key(args)
+      if cmd.kind_of?(String)
+	id = cmd
+      elsif cmd.kind_of?(TkCallbackEntry)
+	@id = install_cmd(cmd)
+      else
+	@id = install_cmd(proc{|*arg|
+	     ex_args = []
+	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(args.pop)}
+	     klass.ret_val(cmd.call(
+               *(ex_args.concat(klass.scan_args(keys, arg)))
+             ))
+	}) + ' ' + args
+      end
+    else
+      keys, args = klass._get_all_subst_keys
+      if cmd.kind_of?(String)
+	id = cmd
+      elsif cmd.kind_of?(TkCallbackEntry)
+	@id = install_cmd(cmd)
+      else
+	@id = install_cmd(proc{|*arg|
+	     ex_args = []
+	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(args.pop)}
+	     klass.ret_val(cmd.call(
+               *(ex_args << klass.new(*klass.scan_args(keys,arg)))
+	     ))
+	}) + ' ' + args
+      end
+    end
+  end
+
+  def initialize(cmd = Proc.new, *args)
+    _initialize_for_cb_class(self.class::ValidateArgs, cmd, *args)
+  end
+
+  def to_eval
+    @id
+  end
+end
+
 module TkValidation
   include Tk::ValidateConfigure
 
-  class ValidateCmd
-    include TkComm
-
+  class ValidateCmd < TkValidateCommand
     module Action
       Insert = 1
       Delete = 0
@@ -114,111 +256,6 @@ module TkValidation
       Forced = -1
       Textvariable = -1
       TextVariable = -1
-    end
-
-    class ValidateArgs < TkUtil::CallbackSubst
-      KEY_TBL = [
-	[ ?d, ?n, :action ], 
-	[ ?i, ?x, :index ], 
-	[ ?s, ?e, :current ], 
-	[ ?v, ?s, :type ], 
-	[ ?P, ?e, :value ], 
-	[ ?S, ?e, :string ], 
-	[ ?V, ?s, :triggered ], 
-	[ ?W, ?w, :widget ], 
-	nil
-      ]
-
-      PROC_TBL = [
-	[ ?n, TkComm.method(:number) ], 
-	[ ?s, TkComm.method(:string) ], 
-	[ ?w, TkComm.method(:window) ], 
-
-	[ ?e, proc{|val|
-	    enc = Tk.encoding
-	    if enc
-	      Tk.fromUTF8(TkComm::string(val), enc)
-	    else
-	      TkComm::string(val)
-	    end
-	  }
-	], 
-
-	[ ?x, proc{|val|
-	    idx = TkComm::number(val)
-	    if idx < 0
-	      nil
-	    else
-	      idx
-	    end
-	  }
-	], 
-
-	nil
-      ]
-
-      _setup_subst_table(KEY_TBL, PROC_TBL);
-
-      def self.ret_val(val)
-	(val)? '1': '0'
-      end
-
-      #def self._get_extra_args_tbl
-      #  # return an array of convert procs
-      #  []
-      #end
-    end
-
-    ##############################
-
-    def self._config_keys
-      # array of config-option key (string or symbol)
-      ['vcmd', 'validatecommand', 'invcmd', 'invalidcommand']
-    end
-
-    def _initialize_for_cb_class(klass, cmd = Proc.new, *args)
-      extra_args_tbl = klass._get_extra_args_tbl
-
-      if args.compact.size > 0
-	args = args.join(' ')
-	keys = klass._get_subst_key(args)
-	if cmd.kind_of?(String)
-	  id = cmd
-	elsif cmd.kind_of?(TkCallbackEntry)
-	  @id = install_cmd(cmd)
-	else
-	  @id = install_cmd(proc{|*arg|
-	     ex_args = []
-	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(args.pop)}
-	     klass.ret_val(cmd.call(
-               *(ex_args.concat(klass.scan_args(keys, arg)))
-             ))
-	  }) + ' ' + args
-	end
-      else
-	keys, args = klass._get_all_subst_keys
-	if cmd.kind_of?(String)
-	  id = cmd
-	elsif cmd.kind_of?(TkCallbackEntry)
-	  @id = install_cmd(cmd)
-	else
-	  @id = install_cmd(proc{|*arg|
-	     ex_args = []
-	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(args.pop)}
-	     klass.ret_val(cmd.call(
-               *(ex_args << klass.new(*klass.scan_args(keys,arg)))
-	     ))
-	  }) + ' ' + args
-	end
-      end
-    end
-
-    def initialize(cmd = Proc.new, *args)
-      _initialize_for_cb_class(ValidateArgs, cmd, *args)
-    end
-
-    def to_eval
-      @id
     end
   end
 

@@ -130,6 +130,16 @@ lib/tkextlib/bwidget/spinbox.rb
 lib/tkextlib/bwidget/titleframe.rb
 lib/tkextlib/bwidget/tree.rb
 lib/tkextlib/bwidget/widget.rb
+lib/tkextlib/itcl.rb
+lib/tkextlib/itcl/incr_tcl.rb
+lib/tkextlib/itcl/setup.rb
+lib/tkextlib/itk.rb
+lib/tkextlib/itk/incr_tk.rb
+lib/tkextlib/itk/setup.rb
+lib/tkextlib/iwidgets.rb
+lib/tkextlib/iwidgets/buttonbox.rb
+lib/tkextlib/iwidgets/calendar.rb
+lib/tkextlib/iwidgets/setup.rb
 lib/tkextlib/tcllib.rb
 lib/tkextlib/tcllib/README
 lib/tkextlib/tcllib/autoscroll.rb
@@ -431,6 +441,8 @@ sample/tkextlib/bwidget/select.rb
 sample/tkextlib/bwidget/tmpldlg.rb
 sample/tkextlib/bwidget/tree.rb
 sample/tkextlib/bwidget/x1.xbm
+sample/tkextlib/iwidgets/sample/buttonbox.rb
+sample/tkextlib/iwidgets/sample/calendar.rb
 sample/tkextlib/tcllib/LICENSE.orig
 sample/tkextlib/tcllib/datefield.rb
 sample/tkextlib/tcllib/plotdemos1.rb

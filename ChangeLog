@@ -1,3 +1,12 @@
+Fri Jul  9 01:47:08 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib : bug fix
+	* ext/tk/lib/tkextlib/itcl : add [incr Tcl] support
+	* ext/tk/lib/tkextlib/itk  : add [incr Tk] support
+	* ext/tk/lib/tkextlib/iwidgets : midway point of [incr Widgets] support
+	* ext/tk/sample/tkextlib/iwidgets : very simple examples of 
+	  [incr Widgets] 
+
 Thu Jul  8 22:52:19 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/{rss,parser,0.9,1.0,2.0}.rb: supported RSS 0.9x/2.0

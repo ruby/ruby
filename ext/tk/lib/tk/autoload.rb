@@ -89,6 +89,8 @@ autoload :TkOptionMenubutton, 'tk/menu'
 
 autoload :TkMenubar,          'tk/menubar'
 
+autoload :TkMenuSpec,         'tk/menuspec'
+
 autoload :TkMessage,          'tk/message'
 
 autoload :TkManageFocus,      'tk/mngfocus'
