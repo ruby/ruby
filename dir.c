@@ -6,7 +6,7 @@
   $Date$
   created at: Wed Jan  5 09:51:01 JST 1994
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -199,12 +199,12 @@ static VALUE
 dir_s_getwd(dir)
     VALUE dir;
 {
-    extern char *getwd();
     char path[MAXPATHLEN];
 
 #ifdef HAVE_GETCWD
     if (getcwd(path, sizeof(path)) == 0) rb_sys_fail(path);
 #else
+    extern char *getwd();
     if (getwd(path) == 0) rb_sys_fail(path);
 #endif
 

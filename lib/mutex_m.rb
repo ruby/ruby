@@ -1,8 +1,8 @@
 #
 #   mutex_m.rb - 
 #   	$Release Version: 2.0$
-#   	$Revision: 1.2 $
-#   	$Date: 1997/07/25 02:43:21 $
+#   	$Revision: 1.7 $
+#   	$Date: 1998/02/27 04:28:57 $
 #       Original from mutex.rb
 #   	by Keiju ISHITSUKA(SHL Japan Inc.)
 #
@@ -18,21 +18,50 @@
 require "finalize"
 
 module Mutex_m
-  def Mutex_m.extend_object(obj)
+  def Mutex_m.extendable_module(obj)
     if Fixnum === obj or TRUE === obj or FALSE === obj or nil == obj
       raise TypeError, "Mutex_m can't extend to this class(#{obj.type})"
     else
       begin
-	eval "class << obj
-		@mu_locked
-	      end"
-	obj.extend(For_primitive_object)
+	obj.instance_eval "@mu_locked"
+	For_general_object
       rescue TypeError
-	obj.extend(For_general_object)
+	For_primitive_object
       end
     end
   end
   
+  def Mutex_m.includable_module(cl)
+    begin
+      dummy = cl.new
+      Mutex_m.extendable_module(dummy)
+    rescue NameError
+      # newが定義されていない時は, DATAとみなす.
+      For_primitive_object
+    end
+  end
+
+  def Mutex_m.extend_class(cl)
+    return super if cl.instance_of?(Module)
+    
+    # モジュールの時は何もしない. クラスの場合, 適切なモジュールの決定
+    # とaliasを行う.  
+    real = includable_module(cl)
+    cl.module_eval %q{
+      include real
+
+      alias locked? mu_locked?
+      alias lock mu_lock
+      alias unlock mu_unlock
+      alias try_lock mu_try_lock
+      alias synchronize mu_synchronize
+    }
+  end
+  
+  def Mutex_m.extend_object(obj)
+    obj.extend(Mutex_m.extendable_module(obj))
+  end
+
   def mu_extended
     unless (defined? locked? and
 	    defined? lock and
@@ -40,7 +69,7 @@ module Mutex_m
 	    defined? try_lock and
 	    defined? synchronize)
       eval "class << self
-	alias locked mu_locked?
+	alias locked? mu_locked?
 	alias lock mu_lock
 	alias unlock mu_unlock
 	alias try_lock mu_try_lock
@@ -49,6 +78,7 @@ module Mutex_m
     end
   end
   
+  # locking 
   def mu_synchronize
     begin
       mu_lock
@@ -58,6 +88,7 @@ module Mutex_m
     end
   end
   
+  # internal class
   module For_general_object
     include Mutex_m
     
@@ -118,8 +149,14 @@ module Mutex_m
     
     def For_primitive_object.extend_object(obj)
       super
+
       obj.mu_extended
       Finalizer.add(obj, For_primitive_object, :mu_finalize)
+    end
+    
+    def mu_extended
+      super
+      initialize
     end
     
     def For_primitive_object.mu_finalize(id)
@@ -146,7 +183,7 @@ module Mutex_m
 	ret = FALSE
       else
 	Mu_Locked[self.id] = []
-	Finalizer.set(self, For_primitive_object, :mu_delete_Locked)
+	Finalizer.add(self, For_primitive_object, :mu_finalize)
 	ret = TRUE
       end
       Thread.critical = FALSE
@@ -159,7 +196,7 @@ module Mutex_m
 	Thread.stop
       end
       Mu_Locked[self.id] = []
-      Finalizer.add(self, For_primitive_object, :mu_delete_Locked)
+      Finalizer.add(self, For_primitive_object, :mu_finalize)
       Thread.critical = FALSE
       self
     end
@@ -179,5 +216,4 @@ module Mutex_m
     end
   end
 end
-
 

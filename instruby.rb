@@ -33,5 +33,6 @@ IO.foreach 'MANIFEST' do |$_|
   File.install "config.h", archdir, 0644, TRUE
 end
 File.install "rbconfig.rb", archdir, 0644, TRUE
+File.makedirs mandir, TRUE
 File.install "ruby.1", mandir, 0644, TRUE
 # vi:set sw=2:

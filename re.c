@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 18:24:49 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -69,7 +69,7 @@ static char casetable[] = {
 >>> "You lose. You will need a translation table for your character set." <<<
 #endif
 
-#define min(a,b) (((a)>(b))?(b):(a))
+#define MIN(a,b) (((a)>(b))?(b):(a))
 
 int
 str_cicmp(str1, str2)
@@ -78,7 +78,7 @@ str_cicmp(str1, str2)
     int len, i;
     char *p1, *p2;
 
-    len = min(RSTRING(str1)->len, RSTRING(str2)->len);
+    len = MIN(RSTRING(str1)->len, RSTRING(str2)->len);
     p1 = RSTRING(str1)->ptr; p2 = RSTRING(str2)->ptr;
 
     for (i = 0; i < len; i++, p1++, p2++) {
@@ -570,7 +570,7 @@ match_to_a(match)
     int i;
 
     for (i=0; i<regs->num_regs; i++) {
-	if (regs->beg[0] == -1) ary_push(ary, Qnil);
+	if (regs->beg[i] == -1) ary_push(ary, Qnil);
 	else ary_push(ary, str_new(ptr+regs->beg[i],
 				   regs->end[i]-regs->beg[i]));
     }
@@ -625,8 +625,8 @@ Regexp *rp;
 VALUE cRegexp;
 
 static VALUE
-reg_new_1(class, s, len, flag)
-    VALUE class;
+reg_new_1(klass, s, len, flag)
+    VALUE klass;
     char *s;
     int len;
     int flag;			/* CASEFOLD  = 0x1 */
@@ -635,7 +635,7 @@ reg_new_1(class, s, len, flag)
 				/* CODE_SJIS = 0x6 */
 {
     NEWOBJ(re, struct RRegexp);
-    OBJSETUP(re, class, T_REGEXP);
+    OBJSETUP(re, klass, T_REGEXP);
 
     if (flag & 0x1) {
 	FL_SET(re, REG_IGNORECASE);
@@ -816,6 +816,11 @@ reg_s_quote(re, str)
   t = tmp;
 
   for (; s != send; s++) {
+      if (ismbchar(*s)) {
+	  *t++ = *s++;
+	  *t++ = *s;
+	  continue;
+      }
       if (*s == '[' || *s == ']'
 	  || *s == '{' || *s == '}'
 	  || *s == '(' || *s == ')'
@@ -929,7 +934,7 @@ reg_regsub(str, src, regs)
 	if (!val) val = str_new(p, e-p);
 	else      str_cat(val, p, e-p);
     }
-    if (!val) return (VALUE)str;
+    if (!val) return str;
 
     return val;
 }
@@ -969,17 +974,23 @@ reg_prepare_operation(re1, re2)
     return flag;
 }
 
-static VALUE
-kcode_getter()
+char*
+rb_get_kcode()
 {
     switch (reg_kcode) {
       case KCODE_SJIS:
-	return str_new2("SJIS");
+	return "SJIS";
       case KCODE_EUC:
-	return str_new2("EUC");
+	return "EUC";
       default:
-	return str_new2("NONE");
+	return "NONE";
     }
+}
+
+static VALUE
+kcode_getter()
+{
+    return str_new2(rb_get_kcode());
 }
 
 void

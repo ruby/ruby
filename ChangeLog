@@ -1,3 +1,306 @@
+Fri Feb 27 09:36:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (hash_delete_nil): needed to compare value to nil, since
+	  nil is the valid key for hashes.
+
+	* hash.c (hash_foreach_iter): rehashing causes IndexError.
+
+	* hash.c (hash_foreach_iter): rehash check by pointer comparison.
+
+Thu Feb 26 17:22:13 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (fname): convert reswords into symbols.
+
+	* parse.y (reswords): reserved words are now embedded in the
+ 	  syntax (sigh).
+
+	* parse.y: now reserved words can be method names safely.
+
+Wed Feb 25 15:50:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (mod_module_eval): clear the_scope's PRIVATE flag before
+	  calling eval().
+
+	* gc.c (gc_call_finalizer_at_exit): run finalizers before any data 
+	  object being freed.
+
+	* eval.c (rb_eval): needed to keep prot_tag->retval before
+	  evaluating the ensure clause.
+
+Tue Feb 24 11:16:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): reserved words can be appear as method names at
+ 	  right after 'def' and `.'(dot), like foo.next.
+
+	* eval.c (return_check): checks for return out of thread (formerly
+ 	  done in return_value).
+
+	* eval.c (POP_TAG): copy retval to outer level.
+
+	* eval.c (return_value): just set retval, no check, no unwinding.
+
+	* parse.y (nextc): line continuation by backslash at end of line.
+
+	* regex.c (re_compile_pattern): forgot to clear pending_exact on
+	  closing parentheses.
+
+	* parse.y (assignable): should not assign dyna_var to true, if it
+ 	  is already defined.
+
+Mon Feb 23 14:35:03 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (obj_is_kind_of): no longer accepts true/false/nil.
+
+	* object.c ({true,false,nil}_to_i): can be converted into integers.
+
+Mon Feb 23 12:11:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (reg_s_quote): needed to be mbchar aware.
+
+	* eval.c (proc_s_new): wrong iter mark.
+
+Sat Feb 21 22:59:30 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
+
+	* io.c (f_syscall): no argument check.
+
+Fri Feb 20 10:17:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1b8 released.
+
+	* ext/kconv/kconv.c (kconv_kconv): default output code now be
+	  determined according to the value of $KCODE.
+
+	* re.c (rb_get_kcode): can retrieve $KCODE from C code. 
+
+	* parse.y (stmt): if/unless modifiers returns nil, if condition is 
+	  not established.
+
+Thu Feb 19 11:06:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/kconv/kconv.c (kconv_kconv): charcode can be specified by
+	  code name (JIS, SJIS, EUC like value of $KCODE).
+
+	* regex.c (re_compile_pattern): forgot to fixup_jump for (?:..).
+
+	* regex.c (re_compile_pattern): needed to clear pending_exact on
+	  non-registering grouping (?:...).
+
+Wed Feb 18 19:54:21 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (here_document): needed to set lex_state to EXPR_END.
+
+Wed Feb 18 18:45:10 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* patches for cygwin32 applied.
+
+Wed Feb 18 00:41:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_sub_s): needed to be mbchar aware to increment one
+ 	  character.
+
+	* regex.c (re_match): \Z matches newline just before the end of
+	  the string.
+
+Tue Feb 17 00:04:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_arg): Time.gm and Time.local now understands
+ 	  Time#to_a format.
+
+	* string.c (str_sub_s): replace happened twice for null pattern.
+
+	* regex.c (re_search): null pattern should not match after newline 
+	  at the end of string.
+
+	* time.c (time_isdst): now returns boolean value.
+
+	* error.c (rb_check_type): treat special constants in messages.
+
+	* parse.y (yylex): new form `::Const' to see toplevel constants.
+
+	* parse.y (cond): SEGV on `if ()'.
+
+	* gc.c (obj_free): some data needed explicit free().
+
+Mon Feb 16 23:55:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (blk_free): release duplicated block informations.
+
+	* eval.c (blk_copy_prev): duplicate outer block information into
+ 	  the heap, when proc/binding created.
+
+Mon Feb 16 14:38:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_mon): now 1 for January and so on.
+
+	* time.c (time_year): year in 19xx (no + 1900 needed anymore).
+
+Mon Feb 16 13:28:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): need to fetch mbchar's second byte
+ 	  without translation.
+
+Mon Feb 16 12:29:27 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
+
+	* eval.c (f_pass_block): pass iterator block to other method.
+
+Fri Feb 13 08:16:11 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (parse_regx): handle \s before read_escape().
+
+	* parse.y (read_escape): `\s' in strings as space.
+
+Tue Feb 10 17:29:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1b7 released.
+
+	* string.c (str_aset): string insertion by `str[n] = str2'.
+
+	* string.c (str_oct): does recognize `0x'.
+
+ 	* sprintf.c (f_sprintf): use baes 10 for conversion from string to
+ 	  integer.
+
+Mon Feb  9 14:51:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (do_coerce): proper error message.
+
+	* string.c (str_sum): bug - masked by wrong value. (sigh..)
+
+Sat Feb  7 15:11:14 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_empty): new method
+
+Fri Feb  6 01:42:15 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_asctime): use asctime(3), not strftime(3).
+
+Thu Feb  5 18:58:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_fptr_close): do not free path on close().
+
+	* array.c (ary_filter): new method.
+
+	* enum.c (enum_each_with_index): new method.
+
+Thu Feb  5 14:10:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (primary): singleton class def can be appeared inside
+ 	  method bodies.
+
+	* hash.c (hash_replace): replace content.
+
+	* string.c (str_replace_method): replace content.
+
+	* array.c (ary_replace_method): replace elements.
+
+	* string.c (str_succ_bang): String#succ!
+
+Thu Feb  5 18:20:30 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* string.c (str_upcase_bang): multi byte character support.
+
+Wed Feb  4 13:55:26 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_reverse): SEGV on empty array reverse.
+
+Tue Feb  3 12:24:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (match_to_a): non matching element should be nil.
+
+	* ruby.c (ruby_load_script): load script after all initialization.
+
+	* bignum.c (str2inum): need to interpret prefix `0' of `0x'.
+
+Tue Feb  3 10:00:18 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* numeric.c (fix_rshift): use `sizeof(INT)*8' instead of 32.
+
+Mon Feb  2 14:09:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (set_arg0): grab environment region too.
+
+Thu Jan 29 18:36:25 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* process.c (rb_proc_exec): check `sh' to be exist.
+
+Thu Jan 29 18:18:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_stdio_set): assignment to $stdin or $stdout does
+	  reopen() as well as $stderr.
+
+Thu Jan 29 14:18:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* class.c (mod_ancestors): should not include singleton classes.
+
+	* object.c (obj_type): should not return internal class.
+
+	* io.c (io_reopen): unwillingly closes stdio streams.
+
+Thu Jan 29 11:50:35 1998  Toshihiko SHIMOKAWA  <toshi@csce.kyushu-u.ac.jp>
+
+	* ext/socket/socket.c (udp_addrsetup): forgot to use htons().
+
+Tue Jan 27 23:15:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* keywords: __FILE__, __LINE__ are available again.
+
+Fri Jan 23 14:19:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1b6 released.
+
+	* object.c (mod_to_s): need to duplicate classpath.
+
+	* error.c (exc_inspect): need to duplicate classpath.
+
+Thu Jan 22 00:37:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.h (STR2CSTR): new macro to retrieve char*.
+
+	* class.c (rb_define_method): `initialize' should always be
+	  private, even if it defined by C extensions.
+
+	* eval.c (rb_eval): `initialize' should always be private.
+
+Thu Jan 22 16:21:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): some singleton class def cause SEGV.
+
+	* eval.c (TMP_ALLOC): replace ALLOCA_N, where thread context
+ 	  switch may happen.
+
+Wed Jan 21 01:43:42 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (PUSH_FRAME): do not use ALLOCA_N().  crash on some
+	  platforms that use missing/alloca.c.
+
+	* regex.c (re_compile_pattern): too many pops for non register
+	  subexpr.
+
+	* parse.y (yylex): open parentheses after identifiers are argument 
+	  list, even if whitespaces have seen.
+
+Tue Jan 20 15:19:59 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (terms): quoted word list by %w(a b c).
+
+	* ext/tcltklib/extconf.rb: more accurate check for tcl/tk libs.
+
+	* file.c (rb_stat): most of the FileTest methods (and function
+ 	  `test') accept File objects as the argument.
+
+Tue Jan 19 18:19:24 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ext/extmk.rb.in (install): there should be no newline after install:
+
+	* re.c (MIN): renamed from min().  there's a local variable named
+ 	  min in the file, so that some cpp will raise an error.
+
+Mon Jan 19 16:30:05 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1b5 released.
+
+	* process.c (rb_syswait): no exception raised.
+
 Fri Jan 16 00:43:43 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.h (CLONESETUP): copies its singleton classes too.
@@ -26,6 +329,8 @@ Tue Jan 13 10:00:18 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* string.c (str_cmp): ignorecase($=) works wrong.
 
 Fri Jan  9 13:19:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1b4 released.
 
 	* eval.c (f_missing): class name omitted from the error message.
 

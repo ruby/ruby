@@ -14,16 +14,14 @@ if ENV['SERVER_SOFTWARE'] =~ /^Microsoft-/ then
   Dir.chdir ENV['PATH_TRANSLATED'].sub(/[^\\]+$/, '')
 end
 
-require "shellwords.rb"
-
 class CGI
-  include Shellwords
 
   attr("inputs")
 
   # original is CGI.pm
   def read_from_cmdline
-    words = shellwords(if not ARGV.empty? then
+    require "shellwords.rb"
+    words = Shellwords.shellwords(if not ARGV.empty? then
                          ARGV.join(' ')
                        else
                          print "(offline mode: enter name=value pairs on standard input)\n"
@@ -47,7 +45,7 @@ class CGI
   end
   module_function :escape, :unescape
 
-  def initialize
+  def initialize(input = $stdin)
     # exception messages should be printed to stdout.
     STDERR.reopen(STDOUT)
 
@@ -56,7 +54,7 @@ class CGI
     when "GET"
       ENV['QUERY_STRING'] or ""
     when "POST"
-      $stdin.read ENV['CONTENT_LENGTH'].to_i
+      input.read ENV['CONTENT_LENGTH'].to_i
     else
       read_from_cmdline
     end.split(/&/).each do |x|

@@ -2,11 +2,16 @@
 ;;;  ruby-mode.el -
 ;;;
 ;;;  $Author$
-;;;  Time-stamp: <97/03/21 01:16:05 matz>
+;;;  $Date$
 ;;;  created at: Fri Feb  4 14:49:13 JST 1994
 ;;;
 
-(defconst ruby-mode-version "1.0.7")
+(defconst ruby-mode-revision "$Revision$")
+
+(defconst ruby-mode-version
+  (progn
+   (string-match "[0-9.]+" ruby-mode-revision)
+   (substring ruby-mode-revision (match-beginning 0) (match-end 0))))
 
 (defconst ruby-block-beg-re
   "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin\\|do"
@@ -31,7 +36,7 @@
 (defconst ruby-block-end-re "end")
 
 (defconst ruby-delimiter
-  (concat "[?$/%(){}#\"'`]\\|\\[\\|\\]\\|\\<\\("
+  (concat "[?$/%(){}#\"'`.:]\\|\\[\\|\\]\\|\\<\\("
 	  ruby-block-beg-re
 	  "\\|" ruby-block-end-re
 	  "\\)\\>\\|^=begin")
@@ -79,8 +84,8 @@
   (modify-syntax-entry ?\` "\"" ruby-mode-syntax-table)
   (modify-syntax-entry ?# "<" ruby-mode-syntax-table)
   (modify-syntax-entry ?\n ">" ruby-mode-syntax-table)
-  (modify-syntax-entry ?\\ "'" ruby-mode-syntax-table)
-  (modify-syntax-entry ?$ "/" ruby-mode-syntax-table)
+  (modify-syntax-entry ?\\ "\\" ruby-mode-syntax-table)
+  (modify-syntax-entry ?$ "." ruby-mode-syntax-table)
   (modify-syntax-entry ?? "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?_ "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?< "." ruby-mode-syntax-table)
@@ -229,7 +234,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		(setq w (char-after (point)))
 		(cond
 		 ((and (not (eobp))
-		       (re-search-forward (format "[^\\]%c" w) indent-point t))
+		       (re-search-forward (format "[^\\]\\(\\\\\\\\\\)*%c" w) indent-point t))
 		  nil)
 		 (t
 		  (setq in-string (point))
@@ -271,7 +276,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	       ((looking-at "\\$")	;skip $char
 		(goto-char pnt)
 		(forward-char 1))
-	       ((looking-at "#")		;skip comment
+	       ((looking-at "#")	;skip comment
 		(forward-line 1)
 		(goto-char (point))
 		)
@@ -310,29 +315,41 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (setq nest (cdr nest))
 		  (setq depth (1- depth)))
 		(goto-char pnt))
+	       ((looking-at "def\\s *[^\n;]*\\(\\|$\\)")
+		(if (or (bolp)
+			(progn
+			  (forward-char -1)
+			  (not (eq ?_ (char-after (point))))))
+		    (progn
+		      (setq nest (cons (cons nil pnt) nest))
+		      (setq depth (1+ depth))))
+		(goto-char (match-end 0)))
 	       ((looking-at ruby-block-beg-re)
 		(and 
 		 (or (bolp)
 		     (progn
 		       (forward-char -1)
 		       (not (eq ?_ (char-after (point))))))
-		 (progn
-		   (goto-char pnt)
-		   (setq w (char-after (point)))
-		   (and (not (eq ?_ w))
-			(not (eq ?! w))
-			(not (eq ?? w))))
+		 (goto-char pnt)
+		 (setq w (char-after (point)))
+		 (not (eq ?_ w))
+		 (not (eq ?! w))
+		 (not (eq ?? w))
 		 (progn
 		   (goto-char (match-beginning 0))
 		   (if (looking-at ruby-modifier-re)
 		       (ruby-expr-beg)
 		     t))
-		 (progn
-		   (setq nest (cons (cons nil pnt) nest))
-		   (setq depth (1+ depth))))
-		(if (looking-at "def\\s *[/`]")
-		    (goto-char (match-end 0))
-		  (goto-char pnt)))
+		 (goto-char pnt)
+		 (setq nest (cons (cons nil pnt) nest))
+		 (setq depth (1+ depth)))
+		(goto-char pnt))
+	       ((looking-at ":\\([a-zA-Z_][a-zA-Z_0-9]*\\)?")
+		(goto-char (match-end 0)))
+	       ((or (looking-at "\\.\\.\\.?")
+		    (looking-at "\\.[0-9]+")
+		    (looking-at "\\.[a-zA-Z_0-9]+"))
+		(goto-char (match-end 0)))
 	       ((looking-at "^=begin")
 		(if (re-search-forward "^=end" indent-point t)
 		    (forward-line 1)
@@ -583,7 +600,7 @@ An end of a defun is found by moving forward from the beginning of one."
   (defvar ruby-font-lock-keywords
     (list
      (cons (concat
-	    "\\(^\\|[^_]\\)\\b\\("
+	    "\\(^\\|[^_:.]\\|\\.\\.\\)\\b\\("
 	    (mapconcat
 	     'identity
 	     '("alias"
@@ -632,10 +649,10 @@ An end of a defun is found by moving forward from the beginning of one."
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+[a-zA-Z0-9_]*\\)"
        2 font-lock-type-face)
      ;; functions
-     '("^\\s *def[ \t]+.*$"
-       0 font-lock-function-name-face))
+     '("^\\s *def[ \t]+[^ \t(]*"
+       0 font-lock-function-name-face t))
     "*Additional expressions to highlight in ruby mode.")
-  (if (and (>= (string-to-int emacs-version) 20)
+  (if (and (>= (string-to-int emacs-version) 19)
           (not (featurep 'xemacs)))
       (add-hook
        'ruby-mode-hook
@@ -645,5 +662,4 @@ An end of a defun is found by moving forward from the beginning of one."
               '((ruby-font-lock-keywords) nil nil ((?\_ . "w"))))))
     (add-hook 'ruby-mode-hook
              (lambda ()
-               (setq font-lock-keywords ruby-font-lock-keywords)
-               (font-lock-mode 1))))))
+               (setq font-lock-keywords ruby-font-lock-keywords))))))

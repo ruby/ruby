@@ -323,7 +323,7 @@ EXPORTS
 	reg_regsub
 	rb_set_kcode
 ; ruby.c
-	rb_require_modules
+	ruby_require_modules
 	rb_load_file
 	ruby_script
 	ruby_prog_init

@@ -6,19 +6,19 @@
   $Date$
   created at: Tue Jan 18 17:05:06 JST 1994
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
-
-#ifdef _AIX
-#pragma alloca
-#endif
 
 #include "config.h"
 #include "defines.h"
 #include "dln.h"
 
 char *dln_argv0;
+
+#ifdef _AIX
+#pragma alloca
+#endif
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
 #include <alloca.h>
@@ -1367,6 +1367,30 @@ dln_find_file(fname, path)
     return dln_find_1(fname, path, 0);
 }
 
+#if defined(__CYGWIN32__)
+char *
+conv_to_posix_path(win32, posix)
+    char *win32;
+    char *posix;
+{
+    char *first = win32;
+    char *p = win32;
+    char *dst = posix;
+
+    for (p = win32; *p; p++)
+	if (*p == ';') {
+	    *p = 0;
+	    cygwin32_conv_to_posix_path(first, posix);
+	    posix += strlen(posix);
+	    *posix++ = ':';
+	    first = p + 1;
+	    *p = ';';
+	}
+    cygwin32_conv_to_posix_path(first, posix);
+    return dst;
+}
+#endif
+
 static char fbuf[MAXPATHLEN];
 
 static char *
@@ -1380,6 +1404,11 @@ dln_find_1(fname, path, exe_flag)
     register char *bp;
     struct stat st;
 
+#if defined(__CYGWIN32__)
+    char rubypath[MAXPATHLEN];
+    conv_to_posix_path(path, rubypath);
+    path = rubypath;
+#endif
     if (fname[0] == '/') return fname;
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;

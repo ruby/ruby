@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jul 15 12:01:24 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -81,7 +81,7 @@ obj_type(obj)
 {
     VALUE cl = CLASS_OF(obj);
 
-    if (FL_TEST(cl, FL_SINGLETON)) {
+    while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
 	cl = RCLASS(cl)->super;
     }
     return cl;
@@ -96,12 +96,12 @@ obj_clone(obj)
     if (TYPE(obj) != T_OBJECT) {
 	TypeError("can't clone %s", rb_class2name(CLASS_OF(obj)));
     }
-    clone = obj_alloc(RBASIC(obj)->class);
+    clone = obj_alloc(RBASIC(obj)->klass);
     CLONESETUP(clone,obj);
     if (ROBJECT(obj)->iv_tbl) {
 	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
-    RBASIC(clone)->class = singleton_class_clone(RBASIC(obj)->class);
-    RBASIC(clone)->flags = RBASIC(obj)->flags;
+	RBASIC(clone)->klass = singleton_class_clone(RBASIC(obj)->klass);
+	RBASIC(clone)->flags = RBASIC(obj)->flags;
     }
 
     return clone;
@@ -212,7 +212,7 @@ obj_is_instance_of(obj, c)
     }
 
     cl = CLASS_OF(obj);
-    while (FL_TEST(cl, FL_SINGLETON)) {
+    while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
 	cl = RCLASS(cl)->super;
     }
     if (c == cl) return TRUE;
@@ -229,18 +229,6 @@ obj_is_kind_of(obj, c)
       case T_MODULE:
       case T_CLASS:
 	break;
-
-      case T_NIL:
-	if (NIL_P(obj)) return TRUE;
-	return FALSE;
-
-      case T_FALSE:
-	if (obj) return FALSE;
-	return TRUE;
-
-      case T_TRUE:
-	if (obj) return TRUE;
-	return FALSE;
 
       default:
 	TypeError("class or module required");
@@ -259,6 +247,13 @@ obj_dummy(obj)
     VALUE obj;
 {
     return Qnil;
+}
+
+static VALUE
+nil_to_i(obj)
+    VALUE obj;
+{
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -322,6 +317,13 @@ true_to_s(obj)
 }
 
 static VALUE
+true_to_i(obj)
+    VALUE obj;
+{
+    return INT2FIX(1);
+}
+
+static VALUE
 true_type(obj)
     VALUE obj;
 {
@@ -333,6 +335,13 @@ false_to_s(obj)
     VALUE obj;
 {
     return str_new2("false");
+}
+
+static VALUE
+false_to_i(obj)
+    VALUE obj;
+{
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -357,11 +366,11 @@ rb_false(obj)
 }
 
 VALUE
-obj_alloc(class)
-    VALUE class;
+obj_alloc(klass)
+    VALUE klass;
 {
     NEWOBJ(obj, struct RObject);
-    OBJSETUP(obj, class, T_OBJECT);
+    OBJSETUP(obj, klass, T_OBJECT);
     obj->iv_tbl = 0;
 
     return (VALUE)obj;
@@ -383,10 +392,10 @@ mod_clone(module)
 }
 
 static VALUE
-mod_to_s(class)
-    VALUE class;
+mod_to_s(klass)
+    VALUE klass;
 {
-    return rb_class_path(class);
+    return str_dup(rb_class_path(klass));
 }
 
 static VALUE
@@ -488,8 +497,8 @@ class_s_new(argc, argv)
     }
     klass = class_new(super);
     /* make metaclass */
-    RBASIC(klass)->class = singleton_class_new(RBASIC(super)->class);
-    singleton_class_attached(RBASIC(klass)->class, klass);
+    RBASIC(klass)->klass = singleton_class_new(RBASIC(super)->klass);
+    singleton_class_attached(RBASIC(klass)->klass, klass);
 
     return klass;
 }
@@ -501,10 +510,10 @@ VALUE class_instance_methods();
 VALUE class_private_instance_methods();
 
 static VALUE
-class_superclass(cl)
-    VALUE cl;
+class_superclass(klass)
+    VALUE klass;
 {
-    VALUE super = RCLASS(cl)->super;
+    VALUE super = RCLASS(klass)->super;
 
     while (TYPE(super) == T_ICLASS) {
 	super = RCLASS(super)->super;
@@ -527,56 +536,56 @@ rb_to_id(name)
 }
 
 static VALUE
-mod_attr(argc, argv, class)
+mod_attr(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE name, pub;
 
     rb_scan_args(argc, argv, "11", &name, &pub);
-    rb_define_attr(class, rb_to_id(name), 1, RTEST(pub));
+    rb_define_attr(klass, rb_to_id(name), 1, RTEST(pub));
     return Qnil;
 }
 
 static VALUE
-mod_attr_reader(argc, argv, class)
+mod_attr_reader(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_define_attr(class, rb_to_id(argv[i]), 1, 0);
+	rb_define_attr(klass, rb_to_id(argv[i]), 1, 0);
     }
     return Qnil;
 }
 
 static VALUE
-mod_attr_writer(argc, argv, class)
+mod_attr_writer(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_define_attr(class, rb_to_id(argv[i]), 0, 1);
+	rb_define_attr(klass, rb_to_id(argv[i]), 0, 1);
     }
     return Qnil;
 }
 
 static VALUE
-mod_attr_accessor(argc, argv, class)
+mod_attr_accessor(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_define_attr(class, rb_to_id(argv[i]), 1, 1);
+	rb_define_attr(klass, rb_to_id(argv[i]), 1, 1);
     }
     return Qnil;
 }
@@ -680,7 +689,7 @@ fail_to_flo(val)
 
 double big2dbl();
 
-static VALUE
+VALUE
 f_float(obj, arg)
     VALUE obj, arg;
 {
@@ -719,6 +728,15 @@ f_string(obj, arg)
     VALUE obj, arg;
 {
     return rb_funcall(arg, rb_intern("to_s"), 0);
+}
+
+char*
+str2cstr(str)
+    VALUE str;
+{
+    if (NIL_P(str)) return NULL;
+    Check_Type(str, T_STRING);
+    return RSTRING(str)->ptr;
 }
 
 VALUE
@@ -765,7 +783,7 @@ boot_defclass(name, super)
 
     rb_name_class(obj, id);
     st_add_direct(rb_class_tbl, id, obj);
-    return (VALUE)obj;
+    return obj;
 }
 
 VALUE
@@ -777,7 +795,7 @@ rb_class_of(obj)
     if (obj == FALSE) return cFalseClass;
     if (obj == TRUE) return cTrueClass;
 
-    return RBASIC(obj)->class;
+    return RBASIC(obj)->klass;
 }
 
 VALUE TopSelf;
@@ -791,11 +809,11 @@ Init_Object()
     cModule = boot_defclass("Module", cObject);
     cClass =  boot_defclass("Class",  cModule);
 
-    metaclass = RBASIC(cObject)->class = singleton_class_new(cClass);
+    metaclass = RBASIC(cObject)->klass = singleton_class_new(cClass);
     singleton_class_attached(metaclass, cObject);
-    metaclass = RBASIC(cModule)->class = singleton_class_new(metaclass);
+    metaclass = RBASIC(cModule)->klass = singleton_class_new(metaclass);
     singleton_class_attached(metaclass, cModule);
-    metaclass = RBASIC(cClass)->class = singleton_class_new(metaclass);
+    metaclass = RBASIC(cClass)->klass = singleton_class_new(metaclass);
     singleton_class_attached(metaclass, cClass);
 
     mKernel = rb_define_module("Kernel");
@@ -865,6 +883,7 @@ Init_Object()
 
     cNilClass = rb_define_class("NilClass", cObject);
     rb_define_method(cNilClass, "type", nil_type, 0);
+    rb_define_method(cNilClass, "to_i", nil_to_i, 0);
     rb_define_method(cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(cNilClass, "inspect", nil_inspect, 0);
@@ -922,12 +941,14 @@ Init_Object()
 
     cTrueClass = rb_define_class("TrueClass", cObject);
     rb_define_method(cTrueClass, "to_s", true_to_s, 0);
+    rb_define_method(cTrueClass, "to_i", true_to_i, 0);
     rb_define_method(cTrueClass, "type", true_type, 0);
     rb_undef_method(CLASS_OF(cTrueClass), "new");
     rb_define_global_const("TRUE", TRUE);
 
     cFalseClass = rb_define_class("FalseClass", cObject);
     rb_define_method(cFalseClass, "to_s", false_to_s, 0);
+    rb_define_method(cFalseClass, "to_i", false_to_i, 0);
     rb_define_method(cFalseClass, "type", false_type, 0);
     rb_undef_method(CLASS_OF(cFalseClass), "new");
     rb_define_global_const("FALSE", FALSE);

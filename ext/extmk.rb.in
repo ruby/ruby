@@ -276,7 +276,7 @@ realclean:	clean
 install:
 "
   if !$static
-    mfile.printf "
+    mfile.printf "\
 	@test -d $(libdir) || mkdir $(libdir)
 	$(INSTALL) $(TARGET) $(libdir)/$(TARGET)
 "

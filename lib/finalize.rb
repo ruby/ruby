@@ -1,8 +1,8 @@
 #
 #   finalizer.rb - 
-#   	$Release Version: 0.2$
-#   	$Revision: 1.3 $
-#   	$Date: 1998/01/09 08:09:49 $
+#   	$Release Version: 0.3$
+#   	$Revision: 1.4 $
+#   	$Date: 1998/02/27 05:34:33 $
 #   	by Keiju ISHITSUKA
 #
 # --
@@ -44,7 +44,7 @@
 #
 
 module Finalizer
-  RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/RCS/finalize.rb,v 1.3 1998/01/09 08:09:49 keiju Exp keiju $-'
+  RCS_ID='-$Id: finalize.rb,v 1.4 1998/02/27 05:34:33 keiju Exp keiju $-'
   
   # @dependency: {id => [[dependant, method, *opt], ...], ...}
   
@@ -91,7 +91,7 @@ module Finalizer
   # °ÍÂ¸´Ø·¸ R_method(*, dependant) ¤Îºï½ü
   def delete_by_dependant(dependant, method = :finalize)
     method = method.intern unless method.kind_of?(Integer)
-    for id in Dependency.keys
+    for id in @dependency.keys
       delete(id, dependant, method)
     end
   end
@@ -111,7 +111,7 @@ module Finalizer
     for assocs in @dependency[id]
       assocs.delete_if do
 	|d, m, *o|
-	d.send(m, *o) if ret = d == dependant && m == method
+	d.send(m, id, *o) if ret = d == dependant && m == method
 	ret
       end
       @dependency.delete(id) if assoc.empty?
@@ -126,7 +126,7 @@ module Finalizer
     for assoc in @dependency[id]
       assoc.delete_if do
 	|d, m, *o|
-	d.send(m, *o) if ret = d == dependant
+	d.send(m, id, *o) if ret = d == dependant
       end
       @dependency.delete(id) if assoc.empty?
     end

@@ -41,6 +41,7 @@ free_dbm(dbmp)
     struct dbmdata *dbmp;
 {
     if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
+    free(dbmp);
 }
 
 static VALUE
@@ -122,19 +123,19 @@ fdbm_fetch(obj, keystr)
 }
 
 static VALUE
-fdbm_indexes(obj, ag)
-    VALUE obj, ag;
+fdbm_indexes(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
-    VALUE *p, *pend;
     VALUE new;
-    int i = 0;
-    struct RArray *args = RARRAY(rb_Array(ag));
+    int i;
 
-    new = ary_new2(args->len);
-    p = args->ptr; pend = p + args->len;
-    while (p < pend) {
-	ary_push(new, fdbm_fetch(obj, *p++));
+    new = ary_new2(argc);
+    for (i=0; i<argc; i++) {
+	ary_push(new, fdbm_fetch(obj, argv[i]));
     }
+
     return new;
 }
 
@@ -489,7 +490,8 @@ Init_dbm()
     rb_define_method(cDBM, "close", fdbm_close, 0);
     rb_define_method(cDBM, "[]", fdbm_fetch, 1);
     rb_define_method(cDBM, "[]=", fdbm_store, 2);
-    rb_define_method(cDBM, "indexes",  fdbm_indexes, -2);
+    rb_define_method(cDBM, "indexes",  fdbm_indexes, -1);
+    rb_define_method(cDBM, "indices",  fdbm_indexes, -1);
     rb_define_method(cDBM, "length", fdbm_length, 0);
     rb_define_alias(cDBM,  "size", "length");
     rb_define_method(cDBM, "empty?", fdbm_empty_p, 0);

@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 22 18:51:18 JST 1993
 
-  Copyright (C) 1993-1997 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -14,16 +14,15 @@
 #include "st.h"
 #include "sig.h"
 
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifndef HAVE_STRING_H
 char *strchr();
 #endif
 
-#define HASH_DELETED  0x1
-#define HASH_REHASHED 0x2
-
 #define HASH_FREEZE   FL_USER1
+#define HASH_DELETED  FL_USER2
 
 static void
 hash_modify(hash)
@@ -130,10 +129,14 @@ hash_foreach_iter(key, value, arg)
     struct hash_foreach_arg *arg;
 {
     int status;
+    st_table *tbl = RHASH(arg->hash)->tbl;
+    st_table_entry **bins = tbl->bins;
 
     if (key == Qnil) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
-    if (RHASH(arg->hash)->status & HASH_REHASHED) return ST_STOP;
+    if (RHASH(arg->hash)->tbl != tbl || RHASH(arg->hash)->tbl->bins != bins){
+	IndexError("rehash occurred during iteration");
+    }
     return status;
 }
 
@@ -149,7 +152,7 @@ static int
 hash_delete_nil(key, value)
     VALUE key, value;
 {
-    if (key == Qnil) return ST_DELETE;
+    if (value == Qnil) return ST_DELETE;
     return ST_CONTINUE;
 }
 
@@ -160,10 +163,10 @@ hash_foreach_ensure(hash)
     RHASH(hash)->iter_lev--;
 
     if (RHASH(hash)->iter_lev == 0) {
-	if (RHASH(hash)->status & HASH_DELETED) {
+	if (FL_TEST(hash, HASH_DELETED)) {
 	    st_foreach(RHASH(hash)->tbl, hash_delete_nil, 0);
+	    FL_UNSET(hash, HASH_DELETED);
 	}
-	RHASH(hash)->status = 0;
     }
 }
 
@@ -179,20 +182,20 @@ hash_foreach(hash, func, farg)
     arg.hash = hash;
     arg.func = func;
     arg.arg  = farg;
-    return rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, (VALUE)hash);
+    return rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
 }
 
 static VALUE
-hash_s_new(argc, argv, class)
+hash_s_new(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE sz;
     int size;
 
     NEWOBJ(hash, struct RHash);
-    OBJSETUP(hash, class, T_HASH);
+    OBJSETUP(hash, klass, T_HASH);
 
     rb_scan_args(argc, argv, "01", &sz);
     if (NIL_P(sz)) size = 0;
@@ -207,10 +210,10 @@ hash_s_new(argc, argv, class)
 }
 
 static VALUE
-hash_new2(class)
-    VALUE class;
+hash_new2(klass)
+    VALUE klass;
 {
-    return hash_s_new(0, 0, class);
+    return hash_s_new(0, 0, klass);
 }
 
 VALUE
@@ -220,19 +223,19 @@ hash_new()
 }
 
 static VALUE
-hash_s_create(argc, argv, class)
+hash_s_create(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE hash;
     int i;
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	if (class == CLASS_OF(argv[0])) return argv[0];
+	if (klass == CLASS_OF(argv[0])) return argv[0];
 	else {
 	    NEWOBJ(hash, struct RHash);
-	    OBJSETUP(hash, class, T_HASH);
+	    OBJSETUP(hash, klass, T_HASH);
 	    
 	    hash->iter_lev = 0;
 	    hash->status = 0;
@@ -245,7 +248,7 @@ hash_s_create(argc, argv, class)
     if (argc % 2 != 0) {
 	ArgError("odd number args for Hash");
     }
-    hash = hash_new2(class);
+    hash = hash_new2(klass);
 
     for (i=0; i<argc; i+=2) {
 	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);
@@ -305,9 +308,8 @@ hash_rehash(hash)
     st_foreach(RHASH(hash)->tbl, hash_rehash_i, tbl);
     st_free_table(RHASH(hash)->tbl);
     RHASH(hash)->tbl = tbl;
-    if (RHASH(hash)->iter_lev > 0) RHASH(hash)->status |= HASH_REHASHED;
 
-    return (VALUE)hash;
+    return hash;
 }
 
 VALUE
@@ -346,9 +348,11 @@ hash_delete(hash, key)
     VALUE val;
 
     hash_modify(hash);
-    if (RHASH(hash)->iter_lev > 0
-	&& st_delete_safe(RHASH(hash)->tbl, &key, &val, Qnil))
+    if (RHASH(hash)->iter_lev > 0 &&
+	st_delete_safe(RHASH(hash)->tbl, &key, &val, Qnil)) {
+	FL_SET(hash, HASH_DELETED);
 	return val;
+    }
     else if (st_delete(RHASH(hash)->tbl, &key, &val))
 	return val;
     if (iterator_p()) rb_yield(key);
@@ -405,7 +409,7 @@ hash_delete_if(hash)
     hash_modify(hash);
     hash_foreach(hash, delete_if_i, 0);
 
-    return (VALUE)hash;
+    return hash;
 }
 
 static int
@@ -422,7 +426,7 @@ hash_clear(hash)
     hash_modify(hash);
     st_foreach(RHASH(hash)->tbl, clear_i);
 
-    return (VALUE)hash;
+    return hash;
 }
 
 VALUE
@@ -439,6 +443,25 @@ hash_aset(hash, key, val)
     }
     st_insert(RHASH(hash)->tbl, key, val);
     return val;
+}
+
+static int
+replace_i(key, val, hash)
+    VALUE key, val, hash;
+{
+    hash_aset(hash, key, val);
+    return ST_CONTINUE;
+}
+
+static VALUE
+hash_replace(hash, hash2)
+    VALUE hash, hash2;
+{
+    Check_Type(hash2, T_HASH);
+    hash_clear(hash);
+    st_foreach(RHASH(hash2)->tbl, replace_i, hash);
+
+    return hash;
 }
 
 static VALUE
@@ -471,7 +494,7 @@ hash_each_value(hash)
     VALUE hash;
 {
     hash_foreach(hash, each_value_i);
-    return (VALUE)hash;
+    return hash;
 }
 
 static int
@@ -488,7 +511,7 @@ hash_each_key(hash)
     VALUE hash;
 {
     hash_foreach(hash, each_key_i);
-    return (VALUE)hash;
+    return hash;
 }
 
 static int
@@ -505,7 +528,7 @@ hash_each_pair(hash)
     VALUE hash;
 {
     hash_foreach(hash, each_pair_i);
-    return (VALUE)hash;
+    return hash;
 }
 
 static int
@@ -1095,6 +1118,7 @@ Init_Hash()
     rb_define_method(cHash,"[]", hash_aref, 1);
     rb_define_method(cHash,"[]=", hash_aset, 2);
     rb_define_method(cHash,"indexes", hash_indexes, -1);
+    rb_define_method(cHash,"indices", hash_indexes, -1);
     rb_define_method(cHash,"length", hash_length, 0);
     rb_define_alias(cHash, "size", "length");
     rb_define_method(cHash,"empty?", hash_empty_p, 0);
@@ -1113,6 +1137,7 @@ Init_Hash()
     rb_define_method(cHash,"clear", hash_clear, 0);
     rb_define_method(cHash,"invert", hash_invert, 0);
     rb_define_method(cHash,"update", hash_update, 1);
+    rb_define_method(cHash,"replace", hash_replace, 1);
 
     rb_define_method(cHash,"include?", hash_has_key, 1);
     rb_define_method(cHash,"has_key?", hash_has_key, 1);
@@ -1135,6 +1160,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);
     rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);
     rb_define_singleton_method(envtbl,"indexes", env_indexes, -1);
+    rb_define_singleton_method(envtbl,"indices", env_indexes, -1);
     rb_define_singleton_method(envtbl,"length", env_size, 0);
     rb_define_singleton_method(envtbl,"empty?", env_empty_p, 0);
     rb_define_singleton_method(envtbl,"keys", env_keys, 0);

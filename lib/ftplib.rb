@@ -17,7 +17,7 @@ class FTPProtoError < FTPError; end
 
 class FTP
    
-  RCS_ID = '$Id: ftplib.rb,v 1.5 1997/09/16 08:03:31 shugo Exp $'
+  RCS_ID = %q$Id: ftplib.rb,v 1.5 1997/09/16 08:03:31 shugo Exp $
    
    FTP_PORT = 21
    CRLF = "\r\n"
@@ -551,6 +551,13 @@ class FTP
       resp
    end
    
+   def mdtm(filename)
+     resp = sendcmd("MDTM " + filename)
+     if resp[0, 3] == "213"
+       return resp[3 .. -1].strip
+     end
+   end
+
    def help(arg = nil)
       cmd = "HELP"
       if arg

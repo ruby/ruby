@@ -1,3 +1,4 @@
+Makefile
 parse.c
 newver.rb
 ruby

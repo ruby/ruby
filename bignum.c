@@ -24,13 +24,13 @@ VALUE cBignum;
 #define BIGLO(x) ((x) & (BIGRAD-1))
 
 static VALUE
-bignew_1(class, len, sign)
-    VALUE class;
+bignew_1(klass, len, sign)
+    VALUE klass;
     UINT len;
     char sign;
 {
     NEWOBJ(big, struct RBignum);
-    OBJSETUP(big, cBignum, T_BIGNUM);
+    OBJSETUP(big, klass, T_BIGNUM);
     big->sign = sign;
     big->len = len;
     BDIGITS(big) = ALLOC_N(USHORT, len);
@@ -195,12 +195,16 @@ str2inum(str, base)
 	    base = 10;
 	}
     }
-    len = strlen(str);
     if (base == 8) {
-	len = 3*len*sizeof(char);
+	while (str[0] == '0') str++;
+	len = 3*strlen(str)*sizeof(char);
     }
     else {			/* base == 10 or 16 */
-	len = 4*len*sizeof(char);
+	if (base == 16 && str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
+	    str += 2;
+	}
+	while (str[0] == '0') str++;
+	len = 4*strlen(str)*sizeof(char);
     }
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
@@ -1177,7 +1181,7 @@ big_abs(x)
 	x = big_clone(x);
 	RBIGNUM(x)->sign = 1;
     }
-    return (VALUE)x;
+    return x;
 }
 
 /* !!!warnig!!!!

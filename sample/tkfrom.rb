@@ -94,25 +94,31 @@ root.bind "space", proc{exit}
 
 $outcount = 0;
 for file in ARGV
-  next if !File.exist?(file)
+  next if File.exist?(file)
+  atime = File.atime(file)
+  mtime = File.mtime(file)
   f = open(file, "r")
-  while !f.eof
-    mail = Mail.new(f)
-    date =  mail.header['Date']
-    next if !date
-    from =  mail.header['From']
-    subj =  mail.header['Subject']
-    y = m = d = 0
-    y, m, d = parsedate(date) if date
-    from = "sombody@somewhere" if ! from
-    subj = "(nil)" if ! subj
-    from = decode_b(from)
-    subj = decode_b(subj)
-    list.insert 'end', format('%-02d/%02d/%02d [%-28.28s] %s',y,m,d,from,subj)
-    $outcount += 1
+  begin
+    until f.eof
+      mail = Mail.new(f)
+      date = mail.header['Date']
+      next unless date
+      from = mail.header['From']
+      subj = mail.header['Subject']
+      y = m = d = 0
+      y, m, d = parsedate(date) if date
+      from = "sombody@somewhere" unless from
+      subj = "(nil)" unless subj
+      from = decode_b(from)
+      subj = decode_b(subj)
+      list.insert 'end', format('%-02d/%02d/%02d [%-28.28s] %s',y,m,d,from,subj)
+      $outcount += 1
+    end
+  ensure
+    f.close
+    File.utime(atime, mtime, file)
+    list.see 'end'
   end
-  f.close
-  list.see 'end'
 end
 
 limit = 10000

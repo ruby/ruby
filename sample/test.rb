@@ -120,7 +120,7 @@ $bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
   if gsub!('vt100', 'VT100')
-    gsub!('VT100', 'Vt100')
+    p gsub!('VT100', 'Vt100')
     redo;
   end
   $bad = 1 if /vt100/;
@@ -765,6 +765,14 @@ ok(done)
   
 File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
 File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
+
+$bad = false
+for script in Dir["{lib,sample}/*.rb"]
+  unless `./ruby -c #{script}` == "Syntax OK\n"
+    $bad = true
+  end
+end
+ok(!$bad)
 
 check "const"
 TEST1 = 1
