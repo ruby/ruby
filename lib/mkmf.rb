@@ -234,7 +234,7 @@ end
 
 def libpathflag(libpath=$LIBPATH)
   libpath.map{|x|
-    (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % %["#{x}"]
+    (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % %['#{x}']
   }.join
 end
 
@@ -963,10 +963,10 @@ def init_mkmf(config = CONFIG)
   end
 
   $LOCAL_LIBS = ""
-  
+
   $cleanfiles = []
   $distcleanfiles = []
-  
+
   dir_config("opt")
 end
 
