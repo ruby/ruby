@@ -912,6 +912,7 @@ rb_str_rindex(str, sub, pos)
 	    }
 	    s--;
 	}
+	return -1;
     }
     else {
 	return pos;

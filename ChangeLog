@@ -1,3 +1,7 @@
+Tue Aug  6 15:19:39 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* string.c (rb_str_rindex): must return -1 if unmatched.
+
 Mon Aug  5 22:41:18 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* MANIFEST: add lib/racc/parser.rb.
