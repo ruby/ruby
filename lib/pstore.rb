@@ -13,7 +13,7 @@
 # end
 
 require "ftools"
-require "md5"
+require "digest/md5"
 
 class PStore
   class Error < StandardError
@@ -99,7 +99,7 @@ class PStore
 	content = file.read
 	@table = Marshal::load(content)
 	size = content.size
-	md5 = MD5.new(content).digest
+	md5 = Digest::MD5.digest(content)
 	content = nil		# unreference huge data
       else
 	@table = {}
@@ -115,7 +115,7 @@ class PStore
 	if !read_only && !@abort
 	  file.rewind
 	  content = Marshal::dump(@table)
-	  if !md5 || size != content.size || md5 != MD5.new(content).digest
+	  if !md5 || size != content.size || md5 != Digest::MD5.digest(content)
 	    File::copy @filename, backup
 	    begin
 	      file.write(content)

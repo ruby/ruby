@@ -2499,8 +2499,7 @@ module Net
 
       def hmac_md5(text, key)
 	if key.length > 64
-	  md5 = MD5.new(key)
-	  key = md5.digest
+	  key = Digest::MD5.digest(key)
 	end
 
 	k_ipad = key + "\0" * (64 - key.length)
@@ -2510,15 +2509,9 @@ module Net
 	  k_opad[i] ^= 0x5c
 	end
 
-	md5 = MD5.new
-	md5.update(k_ipad)
-	md5.update(text)
-	digest = md5.digest
+	digest = Digest::MD5.digest(k_ipad + text)
 
-	md5 = MD5.new
-	md5.update(k_opad)
-	md5.update(digest)
-	return md5.hexdigest
+	return Digest::MD5.hexdigest(k_opad + digest)
       end
     end
     add_authenticator "CRAM-MD5", CramMD5Authenticator
