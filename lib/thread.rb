@@ -1,6 +1,6 @@
 #
 #		thread.rb - thread support classes
-#			$Date: 1996/05/21 09:29:21 $
+#			$Date$
 #			by Yukihiro Matsumoto <matz@caelum.co.jp>
 #
 

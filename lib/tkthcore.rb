@@ -1,6 +1,6 @@
 #
 #		tkthcore.rb - Tk interface modue using thread
-#			$Date: 1996/11/09 22:49:15 $
+#			$Date$
 #			by Yukihiro Matsumoto <matz@caelum.co.jp>
 
 require "tkutil"

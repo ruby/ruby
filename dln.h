@@ -2,9 +2,9 @@
 
   dln.h -
 
-  $Author: matz $
-  $Revision: 1.2 $
-  $Date: 1996/12/25 04:47:17 $
+  $Author$
+  $Revision$
+  $Date$
   created at: Wed Jan 19 16:53:09 JST 1994
 
 ************************************************/

@@ -2,8 +2,8 @@
 
   parse.y -
 
-  $Author: matz $
-  $Date: 1996/12/25 08:54:50 $
+  $Author$
+  $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

@@ -2,7 +2,7 @@
 
   sig.h -
 
-  $Author: matz $
+  $Author$
   $Date$
   created at: Wed Aug 16 01:15:38 JST 1995
 

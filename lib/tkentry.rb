@@ -1,6 +1,6 @@
 #
 #		tkentry.rb - Tk entry classes
-#			$Date: 1995/12/07 15:01:10 $
+#			$Date$
 #			by Yukihiro Matsumoto <matz@caelum.co.jp>
 
 require 'tk.rb'

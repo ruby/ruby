@@ -1,8 +1,8 @@
 #
 #   sync.rb - カウント付2-フェーズロッククラス
 #   	$Release Version: 0.1$
-#   	$Revision: 1.3 $
-#   	$Date: 1997/08/18 07:17:08 $
+#   	$Revision$
+#   	$Date$
 #   	by Keiju ISHITSUKA
 #
 # --
@@ -39,7 +39,7 @@ end
 require "finalize.rb"
 
 module Sync_m
-  RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/RCS/sync.rb,v 1.3 1997/08/18 07:17:08 keiju Exp keiju $-'
+  RCS_ID='-$Header$-'
   
   UN = :UN
   SH = :SH

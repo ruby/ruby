@@ -2,8 +2,8 @@
 
   strdup.c -
 
-  $Author: matz $
-  $Date: 1994/12/09 09:47:57 $
+  $Author$
+  $Date$
   created at: Wed Dec  7 15:34:01 JST 1994
 
 ************************************************/

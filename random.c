@@ -2,8 +2,8 @@
 
   random.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 10:42:48 $
+  $Author$
+  $Date$
   created at: Fri Dec 24 16:39:21 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

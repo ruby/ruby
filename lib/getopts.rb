@@ -2,8 +2,8 @@
 #
 #		getopts.rb - 
 #			$Release Version: $
-#			$Revision: 1.1 $
-#			$Date: 1996/11/10 05:01:15 $
+#			$Revision$
+#			$Date$
 #			by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
@@ -11,7 +11,7 @@
 #	
 #
 
-$RCS_ID="$Header: /home/jammy/current/ruby/RCS/getopts.rb,v 1.1 1996/11/10 05:01:15 jammy Exp $"
+$RCS_ID="$Header$"
 
 def isSingle(lopt)
   if lopt.index(":")

@@ -2,9 +2,9 @@
 
   io.h -
 
-  $Author: matz $
-  $Revision: 1.3 $
-  $Date: 1996/12/25 11:06:42 $
+  $Author$
+  $Revision$
+  $Date$
   created at: Fri Nov 12 16:47:09 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

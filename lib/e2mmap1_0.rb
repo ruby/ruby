@@ -1,8 +1,8 @@
 #
 #   e2mmap.rb - 
 #   	$Release Version: 1.0$
-#   	$Revision: 1.4 $
-#   	$Date: 1997/08/18 07:12:12 $
+#   	$Revision$
+#   	$Date$
 #   	by Keiju ISHITSUKA
 #
 # --
@@ -10,7 +10,7 @@
 #
 
 module Exception2MessageMapper
-  RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/RCS/e2mmap.rb,v 1.4 1997/08/18 07:12:12 keiju Exp keiju $-'
+  RCS_ID='-$Header$-'
   E2MM = Exception2MessageMapper
   
   def E2MM.extend_to(b)

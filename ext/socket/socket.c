@@ -2,8 +2,8 @@
 
   socket.c -
 
-  $Author: matz $
-  $Date: 1995/01/10 10:42:55 $
+  $Author$
+  $Date$
   created at: Thu Mar 31 12:21:29 JST 1994
 
 ************************************************/

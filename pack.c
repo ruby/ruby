@@ -2,8 +2,8 @@
 
   pack.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 09:40:22 $
+  $Author$
+  $Date$
   created at: Thu Feb 10 15:17:05 JST 1994
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

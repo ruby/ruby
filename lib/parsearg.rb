@@ -2,8 +2,8 @@
 #
 #		parsearg.rb - parse arguments
 #			$Release Version: $
-#			$Revision: 1.3 $
-#			$Date: 1996/11/12 06:48:51 $
+#			$Revision$
+#			$Date$
 #			by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
@@ -11,7 +11,7 @@
 #	
 #
 
-$RCS_ID="$Header: /home/jammy/current/ruby/RCS/parsearg.rb,v 1.3 1996/11/12 06:48:51 jammy Exp $"
+$RCS_ID="$Header$"
 
 load("getopts.rb")
 

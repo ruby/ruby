@@ -23,7 +23,8 @@
 #define L_XTND 2
 
 
-#define	F_OK		0	/* does file exist */
+#define	F_OK		0	/* does file exist */
+
 #define	X_OK		1	/* is it executable by caller */
 #define	W_OK		2	/* is it writable by caller */
 #define	R_OK		4	/* is it readable by caller */

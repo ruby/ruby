@@ -2,8 +2,8 @@
 
   signal.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 10:42:53 $
+  $Author$
+  $Date$
   created at: Tue Dec 20 10:13:44 JST 1994
 
 ************************************************/

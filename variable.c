@@ -2,8 +2,8 @@
 
   variable.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 08:54:53 $
+  $Author$
+  $Date$
   created at: Tue Apr 19 23:55:15 JST 1994
 
 ************************************************/

@@ -5,7 +5,7 @@
  * in public domain. You can freely use, copy, modify, and redistribute
  * the whole contents, without this notice.
  * --------------------------------------------------------------------
- * $Id: _round.c,v 1.1 1994/11/27 13:05:36 mura Exp $
+ * $Id$
  */
 /* changed 1997.2.2 by K.Okabe */
 

@@ -2,9 +2,9 @@
 
   re.h -
 
-  $Author: matz $
-  $Revision: 1.2 $
-  $Date: 1996/12/25 09:47:52 $
+  $Author$
+  $Revision$
+  $Date$
   created at: Thu Sep 30 14:18:32 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

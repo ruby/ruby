@@ -2,8 +2,8 @@
 
   eval.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 08:54:45 $
+  $Author$
+  $Date$
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1993-1997 Yukihiro Matsumoto

@@ -5,7 +5,7 @@
  * in public domain. You can freely use, copy, modify, and redistribute
  * the whole contents, without this notice.
  * --------------------------------------------------------------------
- * $Id: fconvert.c,v 1.2 1994/11/27 13:06:19 mura Exp $
+ * $Id$
  */
 /* changed 1997.2.3 by K.Okabe */
 

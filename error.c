@@ -2,8 +2,8 @@
 
   error.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 10:42:31 $
+  $Author$
+  $Date$
   created at: Mon Aug  9 16:11:34 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

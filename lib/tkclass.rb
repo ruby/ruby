@@ -1,6 +1,6 @@
 #
 #		tkclass.rb - Tk classes
-#			$Date: 1995/11/11 19:17:15 $
+#			$Date$
 #			by Yukihiro Matsumoto <matz@caelum.co.jp>
 
 require "tk"

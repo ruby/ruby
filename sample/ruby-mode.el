@@ -1,7 +1,7 @@
 ;;;
 ;;;  ruby-mode.el -
 ;;;
-;;;  $Author: matz$
+;;;  $Author$
 ;;;  Time-stamp: <97/03/21 01:16:05 matz>
 ;;;  created at: Fri Feb  4 14:49:13 JST 1994
 ;;;

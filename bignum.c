@@ -2,8 +2,8 @@
 
   bignum.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 10:42:19 $
+  $Author$
+  $Date$
   created at: Fri Jun 10 00:48:55 JST 1994
 
 ************************************************/

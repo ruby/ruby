@@ -2,7 +2,7 @@
 
   md5init.c -
 
-  $Author: matz $
+  $Author$
   created at: Fri Aug  2 09:24:12 JST 1996
 
   Copyright (C) 1995 Yukihiro Matsumoto

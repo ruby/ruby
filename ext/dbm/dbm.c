@@ -2,8 +2,8 @@
 
   dbm.c -
 
-  $Author: matz $
-  $Date: 1995/01/10 10:42:24 $
+  $Author$
+  $Date$
   created at: Mon Jan 24 15:59:52 JST 1994
 
   Copyright (C) 1995 Yukihiro Matsumoto

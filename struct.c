@@ -2,8 +2,8 @@
 
   struct.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 10:43:02 $
+  $Author$
+  $Date$
   created at: Tue Mar 22 18:44:30 JST 1995
 
 ************************************************/

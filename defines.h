@@ -2,8 +2,8 @@
 
   defines.h -
 
-  $Author: matz $
-  $Date: 1996/12/25 10:42:25 $
+  $Author$
+  $Date$
   created at: Wed May 18 00:21:44 JST 1994
 
 ************************************************/

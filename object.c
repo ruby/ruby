@@ -2,8 +2,8 @@
 
   object.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 08:54:49 $
+  $Author$
+  $Date$
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

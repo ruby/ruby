@@ -2,9 +2,9 @@
 
   env.h -
 
-  $Author: matz $
-  $Revision: 1.8 $
-  $Date: 1996/12/25 10:42:30 $
+  $Author$
+  $Revision$
+  $Date$
   created at: Mon Jul 11 11:53:03 JST 1994
 
 ************************************************/

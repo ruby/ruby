@@ -2,8 +2,8 @@
 
   inits.c -
 
-  $Author: matz $
-  $Date: 1996/12/25 10:42:38 $
+  $Author$
+  $Date$
   created at: Tue Dec 28 16:01:58 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

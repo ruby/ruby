@@ -1,6 +1,6 @@
 #
 #		tk.rb - Tk interface for ruby
-#			$Date: 1995/11/03 08:17:15 $
+#			$Date$
 #			by Yukihiro Matsumoto <matz@caelum.co.jp>
 
 if defined? Thread and $tk_thread_safe

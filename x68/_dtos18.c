@@ -5,7 +5,7 @@
  * in public domain. You can freely use, copy, modify, and redistribute
  * the whole contents, without this notice.
  * --------------------------------------------------------------------
- * $Id: _dtos18.c,v 1.2 1994/11/27 13:05:20 mura Exp $
+ * $Id$
  */
 
 /* System headers */
