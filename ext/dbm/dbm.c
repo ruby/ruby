@@ -405,6 +405,8 @@ fdbm_invert(obj)
     return hash;
 }
 
+static VALUE each_pair _((VALUE));
+
 static VALUE
 each_pair(obj)
     VALUE obj;

@@ -729,8 +729,14 @@ Init_readline()
                     rb_str_new2("2.0 or before version"));
 #endif
 
+#if defined READLINE_42_OR_LATER
+    rl_attempted_completion_function
+	= (rl_completion_func_t *)readline_attempted_completion_function;
+    rl_event_hook = (rl_hook_func_t *)readline_event;
+#else
     rl_attempted_completion_function
 	= (CPPFunction *) readline_attempted_completion_function;
     rl_event_hook = readline_event;
+#endif
     rl_clear_signals();
 }
