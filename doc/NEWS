@@ -1,5 +1,9 @@
 Summary of the changes since 1.6.4:
 
+: Struct
+
+  Fixed to check frozen and taint status before modifying.
+
 : String#rindex
 
   Fixed with a bug when a regex is given. [ruby-dev:13843]
