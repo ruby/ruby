@@ -1,3 +1,4 @@
+MANIFEST
 extconf.rb
 sha2.c
 sha2.h

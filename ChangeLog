@@ -1,3 +1,7 @@
+Mon Dec  1 17:14:34 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* sample/optparse/opttest.rb: added.
+
 Mon Dec  1 16:10:52 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb: (etc) initial merge into main tree.
