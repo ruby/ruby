@@ -134,6 +134,7 @@ struct timezone {
 };
 #endif
 extern void   NtInitialize(int *, char ***);
+extern int    rb_w32_cmdvector(const char *, char ***);
 extern pid_t  rb_w32_pipe_exec(const char *, const char *, int, FILE **, FILE **);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_accept(int, struct sockaddr *, int *);
