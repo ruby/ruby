@@ -1,3 +1,14 @@
+Fri Jan 17 03:33:42 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* sprintf.c (rb_f_sprintf): Fix a bug caused by an uninitialized
+	  variable v, that a bignum unexpectedly gets converted into a
+	  string with its higher figures all filled with ./f/7/1,
+	  depending on the base.  This bug seems to have been introduced
+	  in rev.1.11.2.4, before the 1.6.8 release.
+
+	* sprintf.c (rb_f_sprintf): Use switch instead of a sequence of
+	  else-if's.
+
 Tue Jan 14 21:47:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_f_require): do not search adding .rb/.so suffixes if
