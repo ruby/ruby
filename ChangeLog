@@ -21,7 +21,6 @@ Sun Oct  5 02:12:00 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: exit from a thread using 'break'.
 
->>>>>>> 1.2257
 Sat Oct  4 21:49:14 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* gc.c (Init_stack): the type of space is changed to unsigned int
