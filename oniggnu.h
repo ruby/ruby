@@ -31,6 +31,10 @@
 
 #include "oniguruma.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MBCTYPE_ASCII         0
 #define MBCTYPE_EUC           1
 #define MBCTYPE_SJIS          2
@@ -106,5 +110,9 @@ ONIG_EXTERN
 void re_free_registers P_((struct re_registers*));
 ONIG_EXTERN
 int re_alloc_pattern P_((struct re_pattern_buffer**));  /* added */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ONIGGNU_H */
