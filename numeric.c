@@ -423,6 +423,14 @@ num_eql(x, y)
 }
 
 static VALUE
+num_cmp(x, y)
+    VALUE x, y;
+{
+    if (x == y) return INT2FIX(0);
+    return Qnil;
+}
+
+static VALUE
 num_equal(x, y)
     VALUE x, y;
 {
@@ -1559,8 +1567,8 @@ Init_Numeric()
 
     rb_define_method(rb_cNumeric, "+@", num_uplus, 0);
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);
-    rb_define_method(rb_cNumeric, "==", num_equal, 1);
     rb_define_method(rb_cNumeric, "===", num_equal, 1);
+    rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);

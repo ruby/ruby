@@ -1,3 +1,7 @@
+Fri Dec  6 14:13:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_cmp): define Numeric#<=>, remove Numeric#==.
+
 Tue Dec  3 01:48:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (backtrace): should ignore line 0 frame.
