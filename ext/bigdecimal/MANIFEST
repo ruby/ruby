@@ -1,0 +1,16 @@
+MANIFEST
+README
+bigdecimal.def
+bigdecimal.c
+bigdecimal.h
+depend
+extconf.rb
+bigdecimal_en.html
+bigdecimal_ja.html
+lib/nlsolve.rb
+lib/jacobian.rb
+lib/newton.rb
+lib/linear.rb
+lib/ludcmp.rb
+lib/pai.rb
+lib/bigdecimal-rational.rb
