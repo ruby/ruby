@@ -1,3 +1,7 @@
+Wed Jan 14 09:32:02 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* MANIFEST: add test/net/test_httpheader.rb. (commit miss?)
+
 Tue Jan 13 16:53:25 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c: omission of Date library code caused
