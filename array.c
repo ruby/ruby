@@ -1078,7 +1078,10 @@ ary_cmp(ary, ary2)
 	    return v;
 	}
     }
-    return INT2FIX(0);
+    len = RARRAY(ary)->len - RARRAY(ary2)->len;
+    if (len == 0) return INT2FIX(0);
+    if (len > 0) return INT2FIX(1);
+    return INT2FIX(-1);
 }
 
 static VALUE

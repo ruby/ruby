@@ -482,9 +482,11 @@ str_cmp(str1, str2)
     len = min(RSTRING(str1)->len, RSTRING(str2)->len);
     retval = memcmp(RSTRING(str1)->ptr, RSTRING(str2)->ptr, len);
     if (retval == 0) {
-	return RSTRING(str1)->ptr[len] - RSTRING(str2)->ptr[len];
+	retval = RSTRING(str1)->ptr[len] - RSTRING(str2)->ptr[len];
     }
-    return retval;
+    if (retval == 0) return 0;
+    if (retval > 0) return 1;
+    return -1;
 }
 
 static VALUE

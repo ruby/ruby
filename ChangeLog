@@ -1,4 +1,16 @@
+Tue Apr  7 18:50:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_08.
+
+Tue Apr  7 18:31:27 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* instruby.rb (mandir): dll installation for cygwin32
+
 Tue Apr  7 01:16:45 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* config.sub (maybe_os): TOWNS support?
+
+	* config.guess: too strict check for libc versions on linuxes.
 
 	* experimental release 1.1b9_07.
 
