@@ -1,3 +1,9 @@
+Mon Aug  9 15:03:20 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpservlet/erbhandler.rb
+	  (WEBrick::HTTPServlet::ERBHandler#do_GET): should select media type
+	  by suffix of script filename.
+
 Mon Aug  9 12:51:43 2004  Dave Thomas  <dave@pragprog.com>
 
 	* dir.c (dir_s_glob): Roll in Austin Ziegler's Dir.glob and
