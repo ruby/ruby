@@ -121,7 +121,7 @@ def parse_args()
   $dryrun = $OPT['n']
   $force_static = $OPT['extstatic'] == 'static'
   $destdir = $OPT['dest-dir'] || ''
-  $make = $OPT['make'] || $make
+  $make = $OPT['make'] || $make || 'make'
   make_flags = ($OPT['make-flags'] || '').strip
   mflags = ($OPT['mflags'] || '').strip
 
@@ -136,15 +136,24 @@ def parse_args()
   $make, *rest = Shellwords.shellwords($make)
   $mflags.unshift(*rest) unless rest.empty?
 
-  $mflags << '-n' if $dryrun
+  def $mflags.set?(flag)
+    # Only nmake puts flags together
+    if $nmake == ?m
+      grep(/^-(?!-).*#{'%c' % flag}/i) { return true }
+    else
+      include?('-%c' % flag)
+    end
+  end
+
+  if $mflags.set?(?n)
+    $dryrun = true
+  else
+    $mflags << '-n' if $dryrun
+  end
 
   $mflags << "DESTDIR=#{$destdir}"
 
-  # Most make implementations put each flag separated in MAKEFLAGS, so
-  # we can just search for an option with exact match.  Only nmake
-  # puts flags together, but nmake does not propagate -k via MAKEFLAGS
-  # anyway.
-  $continue = $mflags.include?('-k')
+  $continue = $mflags.set?(?k)
 end
 
 parse_args()

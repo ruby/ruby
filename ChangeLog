@@ -1,3 +1,9 @@
+Sun Jan 26 17:53:04 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* instruby.rb (parse_args), ext/extmk.rb (parse_args): Detect -n
+	  and emulate a dry run.  Use 'make' in case no --make argument is
+	  given.
+
 Sun Jan 26 07:18:42 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* instruby.rb: re-define individual methods verbosely rather than
