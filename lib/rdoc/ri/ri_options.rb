@@ -187,12 +187,14 @@ module RI
 
     # Parse command line options.
 
-    def parse
+    def parse(args)
     
       old_argv = ARGV.dup
-      if ENV["RI"]
-        ARGV.replace(ENV["RI"].split.concat(ARGV))
-      end
+#      if ENV["RI"]
+#        ARGV.replace(ENV["RI"].split.concat(ARGV))
+#      end
+
+     ARGV.replace(args)
 
       begin
 

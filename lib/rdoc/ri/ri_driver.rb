@@ -12,7 +12,14 @@ class  RiDriver
 
   def initialize
     @options = RI::Options.instance
-    @options.parse
+
+    args = ARGV
+    if ENV["RI"]
+      args = ENV["RI"].split.concat(ARGV)
+    end
+
+    @options.parse(args)
+
     paths = @options.paths || RI::Paths::PATH
     if paths.empty?
       $stderr.puts "No ri documentation found in:"

@@ -1,3 +1,8 @@
+Tue Aug 17 01:36:32 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/usage.rb: Remove extra indent. Tidy 'ri' option
+	  parsing so RDoc::usage plays better with OptionParser.
+
 Sat Aug 14 13:09:10 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: backport from CVS HEAD (rev1.44).
