@@ -1399,6 +1399,7 @@ rb_str_reverse_bang(str)
     char *s, *e;
     char c;
 
+    rb_str_modify(str);
     s = RSTRING(str)->ptr;
     e = s + RSTRING(str)->len - 1;
     while (s < e) {
