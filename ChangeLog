@@ -1,10 +1,15 @@
+Tue Feb 24 18:42:03  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (glob_helper): '**/' should not match leading period 
+	  unless File::FNM_DOTMATCH is set. (like '*/')
+
 Tue Feb 24 18:03:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_file.rb (test_fnmatch): test for dir.c:1.108.
 
 Tue Feb 24 17:07:17  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* dir.c (fnmatch): File.fnmatch with FNM_PATHNAME was broken
+	* dir.c (fnmatch): File.fnmatch with File::FNM_PATHNAME was broken
 	  for the pattern including '*' followed by '/'.
 
 Tue Feb 24 13:22:21 2004  Dave Thomas  <dave@pragprog.com>

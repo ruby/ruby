@@ -1188,7 +1188,8 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	    char *buf = join_path(path, dirsep, dp->d_name);
 
 	    enum answer new_isdir = UNKNOWN;
-	    if (recursive && strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0) {
+	    if (recursive && strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0
+		&& fnmatch("*", dp->d_name, flags) == 0) {
 #ifndef _WIN32
 		if (do_lstat(buf, &st) == 0)
 		    new_isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
