@@ -506,9 +506,21 @@ EOMF
     mfile.print "
 {$(srcdir)}.c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) -I$(<D) $(CPPFLAGS) -c $(<:/=\\)
-
 .c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) -I$(<D) $(CPPFLAGS) -c $(<:/=\\)
+
+{$(srcdir)}.cc{}.#{$OBJEXT}:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cc.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+{$(srcdir)}.cpp{}.#{$OBJEXT}:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cpp.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+{$(srcdir)}.cxx{}.#{$OBJEXT}:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cxx.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
 "
   else
     mfile.print "
@@ -516,6 +528,9 @@ EOMF
 
 .c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
+
+.cc.#{$OBJEXT} .cpp.#{$OBJEXT} .cxx.#{$OBJEXT} .C.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
 "
   end
 
