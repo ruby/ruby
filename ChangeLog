@@ -1,3 +1,8 @@
+Fri Nov 28 23:19:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark): explicitly check mark recursion levels, instead
+	  of unreliable stack length.
+
 Fri Nov 28 22:49:56 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb: fix TupleSpaceProxy#read, read_all.
@@ -107,6 +112,11 @@ Tue Nov 25 21:41:35 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* hash.c (env_has_value, env_index): don't ignore case of value.
 	  [ruby-dev:22048]
+
+Tue Nov 25 21:39:37 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (path_check_1): honor sticky bits always.
+	  [ruby-talk:86273]
 
 Tue Nov 25 20:02:14 2003  Minero Aoki  <aamine@loveruby.net>
 

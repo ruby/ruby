@@ -272,6 +272,7 @@ class Context
     while prompt and input = readline("(rdb:%d) "%thnum(), true)
       catch(:debug_error) do
 	if input == ""
+          next unless DEBUG_LAST_CMD[0]
 	  input = DEBUG_LAST_CMD[0]
 	  stdout.print input, "\n"
 	else

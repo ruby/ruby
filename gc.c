@@ -504,7 +504,8 @@ sweep_source_filename(key, value)
     }
 }
 
-static void rb_gc_mark_children _((VALUE ptr));
+static void gc_mark _((VALUE ptr, int lev));
+static void gc_mark_children _((VALUE ptr, int lev));
 
 static void
 gc_mark_all()
@@ -518,7 +519,7 @@ gc_mark_all()
 	while (p < pend) {
 	    if ((p->as.basic.flags & FL_MARK) &&
 		(p->as.basic.flags != FL_MARK)) {
-		rb_gc_mark_children((VALUE)p);
+		gc_mark_children((VALUE)p, 0);
 	    }
 	    p++;
 	}
@@ -537,7 +538,7 @@ gc_mark_rest()
     init_mark_stack();
     while(p != tmp_arry){
 	p--;
-	rb_gc_mark_children(*p);
+	gc_mark_children(*p, 0);
     }
 }
 
@@ -568,7 +569,7 @@ mark_locations_array(x, n)
 {
     while (n--) {
 	if (is_pointer_to_heap((void *)*x)) {
-	    rb_gc_mark(*x);
+	    gc_mark(*x, 0);
 	}
 	x++;
     }
@@ -586,38 +587,56 @@ rb_gc_mark_locations(start, end)
 }
 
 static int
-mark_entry(key, value)
+mark_entry(key, value, lev)
     ID key;
     VALUE value;
+    int lev;
 {
-    rb_gc_mark(value);
+    gc_mark(value, lev);
     return ST_CONTINUE;
+}
+
+void
+mark_tbl(tbl, lev)
+    st_table *tbl;
+    int lev;
+{
+    if (!tbl) return;
+    st_foreach(tbl, mark_entry, lev+1);
 }
 
 void
 rb_mark_tbl(tbl)
     st_table *tbl;
 {
-    if (!tbl) return;
-    st_foreach(tbl, mark_entry, 0);
+    mark_tbl(tbl, 0);
 }
 
 static int
-mark_keyvalue(key, value)
+mark_keyvalue(key, value, lev)
     VALUE key;
     VALUE value;
+    int lev;
 {
-    rb_gc_mark(key);
-    rb_gc_mark(value);
+    gc_mark(key, lev);
+    gc_mark(value, lev);
     return ST_CONTINUE;
+}
+
+void
+mark_hash(tbl, lev)
+    st_table *tbl;
+    int lev;
+{
+    if (!tbl) return;
+    st_foreach(tbl, mark_keyvalue, lev+1);
 }
 
 void
 rb_mark_hash(tbl)
     st_table *tbl;
 {
-    if (!tbl) return;
-    st_foreach(tbl, mark_keyvalue, 0);
+    mark_hash(tbl, 0);
 }
 
 void
@@ -625,13 +644,16 @@ rb_gc_mark_maybe(obj)
     VALUE obj;
 {
     if (is_pointer_to_heap((void *)obj)) {
-	rb_gc_mark(obj);
+	gc_mark(obj, 0);
     }
 }
 
+#define GC_LEVEL_MAX 250
+
 void
-rb_gc_mark(ptr)
+gc_mark(ptr, lev)
     VALUE ptr;
+    int lev;
 {
     int ret;
     register RVALUE *obj;
@@ -642,8 +664,7 @@ rb_gc_mark(ptr)
     if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
     obj->as.basic.flags |= FL_MARK;
 
-    CHECK_STACK(ret);
-    if (ret) {
+    if (lev > GC_LEVEL_MAX) {
 	if (!mark_stack_overflow) {
 	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
 		*mark_stack_ptr = ptr;
@@ -655,12 +676,20 @@ rb_gc_mark(ptr)
 	}
 	return;
     }
-    rb_gc_mark_children(ptr);
+    gc_mark_children(ptr, lev);
+}
+
+void
+rb_gc_mark(ptr)
+    VALUE ptr;
+{
+    gc_mark(ptr, 0);
 }
 
 static void
-rb_gc_mark_children(ptr)
+gc_mark_children(ptr, lev)
     VALUE ptr;
+    int lev;
 {
     register RVALUE *obj = RANY(ptr);
 
@@ -696,7 +725,7 @@ rb_gc_mark_children(ptr)
 	  case NODE_RESCUE:
 	  case NODE_RESBODY:
 	  case NODE_CLASS:
-	    rb_gc_mark((VALUE)obj->as.node.u2.node);
+	    gc_mark((VALUE)obj->as.node.u2.node, lev);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
 	  case NODE_ARRAY:
@@ -709,7 +738,7 @@ rb_gc_mark_children(ptr)
 	  case NODE_CALL:
 	  case NODE_DEFS:
 	  case NODE_OP_ASGN1:
-	    rb_gc_mark((VALUE)obj->as.node.u1.node);
+	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
@@ -733,7 +762,7 @@ rb_gc_mark_children(ptr)
 	  case NODE_OP_ASGN_OR:
 	  case NODE_OP_ASGN_AND:
 	  case NODE_MODULE:
-	    rb_gc_mark((VALUE)obj->as.node.u1.node);
+	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
 	  case NODE_NOT:
@@ -771,7 +800,7 @@ rb_gc_mark_children(ptr)
 	  case NODE_SCOPE:	/* 2,3 */
 	  case NODE_BLOCK_PASS:
 	  case NODE_CDECL:
-	    rb_gc_mark((VALUE)obj->as.node.u3.node);
+	    gc_mark((VALUE)obj->as.node.u3.node, lev);
 	    ptr = (VALUE)obj->as.node.u2.node;
 	    goto again;
 
@@ -809,25 +838,25 @@ rb_gc_mark_children(ptr)
 
 	  default:		/* unlisted NODE */
 	    if (is_pointer_to_heap(obj->as.node.u1.node)) {
-		rb_gc_mark((VALUE)obj->as.node.u1.node);
+		gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    }
 	    if (is_pointer_to_heap(obj->as.node.u2.node)) {
-		rb_gc_mark((VALUE)obj->as.node.u2.node);
+		gc_mark((VALUE)obj->as.node.u2.node, lev);
 	    }
 	    if (is_pointer_to_heap(obj->as.node.u3.node)) {
-		rb_gc_mark((VALUE)obj->as.node.u3.node);
+		gc_mark((VALUE)obj->as.node.u3.node, lev);
 	    }
 	}
 	return;			/* no need to mark class. */
     }
 
-    rb_gc_mark(obj->as.basic.klass);
+    gc_mark(obj->as.basic.klass, lev);
     switch (obj->as.basic.flags & T_MASK) {
       case T_ICLASS:
       case T_CLASS:
       case T_MODULE:
-	rb_mark_tbl(obj->as.klass.m_tbl);
-	rb_mark_tbl(obj->as.klass.iv_tbl);
+	mark_tbl(obj->as.klass.m_tbl, lev);
+	mark_tbl(obj->as.klass.iv_tbl, lev);
 	ptr = obj->as.klass.super;
 	goto again;
 
@@ -841,13 +870,13 @@ rb_gc_mark_children(ptr)
 	    VALUE *ptr = obj->as.array.ptr;
 
 	    for (i=0; i < len; i++) {
-		rb_gc_mark(*ptr++);
+		gc_mark(*ptr++, lev);
 	    }
 	}
 	break;
 
       case T_HASH:
-	rb_mark_hash(obj->as.hash.tbl);
+	mark_hash(obj->as.hash.tbl, lev);
 	ptr = obj->as.hash.ifnone;
 	goto again;
 
@@ -864,7 +893,7 @@ rb_gc_mark_children(ptr)
 	break;
 
       case T_OBJECT:
-	rb_mark_tbl(obj->as.object.iv_tbl);
+	mark_tbl(obj->as.object.iv_tbl, lev);
 	break;
 
       case T_FILE:
@@ -882,7 +911,7 @@ rb_gc_mark_children(ptr)
 	break;
 
       case T_VARMAP:
-	rb_gc_mark(obj->as.varmap.val);
+	gc_mark(obj->as.varmap.val, lev);
 	ptr = (VALUE)obj->as.varmap.next;
 	goto again;
 
@@ -892,7 +921,7 @@ rb_gc_mark_children(ptr)
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 
 	    while (n--) {
-		rb_gc_mark(*vars++);
+		gc_mark(*vars++, lev);
 	    }
 	}
 	break;
@@ -903,7 +932,7 @@ rb_gc_mark_children(ptr)
 	    VALUE *ptr = obj->as.rstruct.ptr;
 
 	    while (len--) {
-		rb_gc_mark(*ptr++);
+		gc_mark(*ptr++, lev);
 	    }
 	}
 	break;
@@ -932,7 +961,7 @@ gc_sweep()
 	    p = heaps[i].slot; pend = p + heaps[i].limit;
 	    while (p < pend) {
 		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
-		    rb_gc_mark((VALUE)p);
+		    gc_mark((VALUE)p, 0);
 		p++;
 	    }
 	}
@@ -1175,7 +1204,7 @@ rb_gc_mark_frame(frame)
     struct FRAME *frame;
 {
     mark_locations_array(frame->argv, frame->argc);
-    rb_gc_mark((VALUE)frame->node);
+    gc_mark((VALUE)frame->node, 0);
 }
 
 #ifdef __GNUC__
@@ -1251,10 +1280,10 @@ rb_gc()
 	    }
 	}
     }
-    rb_gc_mark((VALUE)ruby_scope);
-    rb_gc_mark((VALUE)ruby_dyna_vars);
+    gc_mark((VALUE)ruby_scope, 0);
+    gc_mark((VALUE)ruby_dyna_vars, 0);
     if (finalizer_table) {
-	rb_mark_tbl(finalizer_table);
+	mark_tbl(finalizer_table, 0);
     }
 
     FLUSH_REGISTER_WINDOWS;

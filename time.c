@@ -1010,6 +1010,16 @@ time_minus(time1, time2)
 }
 
 static VALUE
+time_succ(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    return rb_time_new(tobj->tv.tv_sec + 1, tobj->tv.tv_usec);
+}
+
+static VALUE
 time_sec(time)
     VALUE time;
 {
@@ -1471,6 +1481,7 @@ Init_Time()
     rb_define_method(rb_cTime, "+", time_plus, 1);
     rb_define_method(rb_cTime, "-", time_minus, 1);
 
+    rb_define_method(rb_cTime, "succ", time_succ, 0);
     rb_define_method(rb_cTime, "sec", time_sec, 0);
     rb_define_method(rb_cTime, "min", time_min, 0);
     rb_define_method(rb_cTime, "hour", time_hour, 0);
