@@ -1,4 +1,5 @@
-require 'test/unit'
+require 'test/unit/testsuite'
+require 'test/unit/testcase'
 require 'tempfile'
 require 'fileutils'
 
@@ -12,130 +13,16 @@ class CSV
   end
 end
 
-class TestCSV < Test::Unit::TestCase
 
-  class << self
-    def d(data, is_null = false)
-      CSV::Cell.new(data.to_s, is_null)
-    end
+module CSVTestSupport
+  def d(data, is_null = false)
+    CSV::Cell.new(data.to_s, is_null)
   end
+end
 
+
+class TestCSVCell < Test::Unit::TestCase
   @@colData = ['', nil, true, false, 'foo', '!' * 1000]
-  @@simpleCSVData = {
-    [nil] => '',
-    [''] => '""',
-    [nil, nil] => ',',
-    [nil, nil, nil] => ',,',
-    ['foo'] => 'foo',
-    [','] => '","',
-    [',', ','] => '",",","',
-    [';'] => ';',
-    [';', ';'] => ';,;',
-    ["\"\r", "\"\r"] => "\"\"\"\r\",\"\"\"\r\"",
-    ["\"\n", "\"\n"] => "\"\"\"\n\",\"\"\"\n\"",
-    ["\t"] => "\t",
-    ["\t", "\t"] => "\t,\t",
-    ['foo', 'bar'] => 'foo,bar',
-    ['foo', '"bar"', 'baz'] => 'foo,"""bar""",baz',
-    ['foo', 'foo,bar', 'baz'] => 'foo,"foo,bar",baz',
-    ['foo', '""', 'baz'] => 'foo,"""""",baz',
-    ['foo', '', 'baz'] => 'foo,"",baz',
-    ['foo', nil, 'baz'] => 'foo,,baz',
-    [nil, 'foo', 'bar'] => ',foo,bar',
-    ['foo', 'bar', nil] => 'foo,bar,',
-    ['foo', "\r", 'baz'] => "foo,\"\r\",baz",
-    ['foo', "\n", 'baz'] => "foo,\"\n\",baz",
-    ['foo', "\r\n\r", 'baz'] => "foo,\"\r\n\r\",baz",
-    ['foo', "\r\n", 'baz'] => "foo,\"\r\n\",baz",
-    ['foo', "\r.\n", 'baz'] => "foo,\"\r.\n\",baz",
-    ['foo', "\r\n\n", 'baz'] => "foo,\"\r\n\n\",baz",
-    ['foo', '"', 'baz'] => 'foo,"""",baz',
-  }
-
-  @@fullCSVData = {
-    [d('', true)] => '',
-    [d('')] => '""',
-    [d('', true), d('', true)] => ',',
-    [d('', true), d('', true), d('', true)] => ',,',
-    [d('foo')] => 'foo',
-    [d('foo'), d('bar')] => 'foo,bar',
-    [d('foo'), d('"bar"'), d('baz')] => 'foo,"""bar""",baz',
-    [d('foo'), d('foo,bar'), d('baz')] => 'foo,"foo,bar",baz',
-    [d('foo'), d('""'), d('baz')] => 'foo,"""""",baz',
-    [d('foo'), d(''), d('baz')] => 'foo,"",baz',
-    [d('foo'), d('', true), d('baz')] => 'foo,,baz',
-    [d('foo'), d("\r"), d('baz')] => "foo,\"\r\",baz",
-    [d('foo'), d("\n"), d('baz')] => "foo,\"\n\",baz",
-    [d('foo'), d("\r\n"), d('baz')] => "foo,\"\r\n\",baz",
-    [d('foo'), d("\r.\n"), d('baz')] => "foo,\"\r.\n\",baz",
-    [d('foo'), d("\r\n\n"), d('baz')] => "foo,\"\r\n\n\",baz",
-    [d('foo'), d('"'), d('baz')] => 'foo,"""",baz',
-  }
-
-  @@fullCSVDataArray = @@fullCSVData.collect { |key, value| key }
-
-  def ssv2csv(ssvStr)
-    sepConv(ssvStr, ?;, ?,)
-  end
-
-  def csv2ssv(csvStr)
-    sepConv(csvStr, ?,, ?;)
-  end
-
-  def tsv2csv(tsvStr)
-    sepConv(tsvStr, ?\t, ?,)
-  end
-
-  def csv2tsv(csvStr)
-    sepConv(csvStr, ?,, ?\t)
-  end
-
-  def sepConv(srcStr, srcSep, destSep)
-    rows = CSV::Row.new
-    cols, idx = CSV.parse_row(srcStr, 0, rows, srcSep)
-    destStr = ''
-    cols = CSV.generate_row(rows, rows.size, destStr, destSep)
-    destStr
-  end
-
-public
-
-  def setup
-    @tmpdir = File.join(Dir.tmpdir, "ruby_test_csv_tmp_#{$$}")
-    Dir.mkdir(@tmpdir)
-    @infile = File.join(@tmpdir, 'in.csv')
-    @infiletsv = File.join(@tmpdir, 'in.tsv')
-    @emptyfile = File.join(@tmpdir, 'empty.csv')
-    @outfile = File.join(@tmpdir, 'out.csv')
-    @bomfile = File.join(File.dirname(__FILE__), "bom.csv")
-
-    CSV.open(@infile, "w") do |writer|
-      @@fullCSVDataArray.each do |row|
-	writer.add_row(row)
-      end
-    end
-
-    CSV.open(@infiletsv, "w", ?\t) do |writer|
-      @@fullCSVDataArray.each do |row|
-	writer.add_row(row)
-      end
-    end
-
-    CSV.generate(@emptyfile) do |writer|
-      # Create empty file.
-    end
-  end
-
-  def teardown
-    FileUtils.rm_rf(@tmpdir)
-  end
-
-  def d(*arg)
-    TestCSV.d(*arg)
-  end
-
-
-  #### CSV::Cell unit test
 
   def test_Cell_EQUAL # '=='
     d1 = CSV::Cell.new('d', false)
@@ -206,9 +93,11 @@ public
     d3 = CSV::Cell.new(nil, false)
     assert_equal(d3.is_null, false, "Data: false.")
   end
+end
 
 
-  #### CSV::Row unit test
+class TestCSVRow < Test::Unit::TestCase
+  include CSVTestSupport
 
   def test_Row_s_match
     c1 = CSV::Row[d(1), d(2), d(3)]
@@ -267,7 +156,125 @@ public
     r = CSV::Row[]
     assert_equal([], r.to_a, 'Empty')
   end
+end
 
+
+class TestCSV < Test::Unit::TestCase
+  include CSVTestSupport
+
+  class << self
+    include CSVTestSupport
+  end
+
+  @@simpleCSVData = {
+    [nil] => '',
+    [''] => '""',
+    [nil, nil] => ',',
+    [nil, nil, nil] => ',,',
+    ['foo'] => 'foo',
+    [','] => '","',
+    [',', ','] => '",",","',
+    [';'] => ';',
+    [';', ';'] => ';,;',
+    ["\"\r", "\"\r"] => "\"\"\"\r\",\"\"\"\r\"",
+    ["\"\n", "\"\n"] => "\"\"\"\n\",\"\"\"\n\"",
+    ["\t"] => "\t",
+    ["\t", "\t"] => "\t,\t",
+    ['foo', 'bar'] => 'foo,bar',
+    ['foo', '"bar"', 'baz'] => 'foo,"""bar""",baz',
+    ['foo', 'foo,bar', 'baz'] => 'foo,"foo,bar",baz',
+    ['foo', '""', 'baz'] => 'foo,"""""",baz',
+    ['foo', '', 'baz'] => 'foo,"",baz',
+    ['foo', nil, 'baz'] => 'foo,,baz',
+    [nil, 'foo', 'bar'] => ',foo,bar',
+    ['foo', 'bar', nil] => 'foo,bar,',
+    ['foo', "\r", 'baz'] => "foo,\"\r\",baz",
+    ['foo', "\n", 'baz'] => "foo,\"\n\",baz",
+    ['foo', "\r\n\r", 'baz'] => "foo,\"\r\n\r\",baz",
+    ['foo', "\r\n", 'baz'] => "foo,\"\r\n\",baz",
+    ['foo', "\r.\n", 'baz'] => "foo,\"\r.\n\",baz",
+    ['foo', "\r\n\n", 'baz'] => "foo,\"\r\n\n\",baz",
+    ['foo', '"', 'baz'] => 'foo,"""",baz',
+  }
+
+  @@fullCSVData = {
+    [d('', true)] => '',
+    [d('')] => '""',
+    [d('', true), d('', true)] => ',',
+    [d('', true), d('', true), d('', true)] => ',,',
+    [d('foo')] => 'foo',
+    [d('foo'), d('bar')] => 'foo,bar',
+    [d('foo'), d('"bar"'), d('baz')] => 'foo,"""bar""",baz',
+    [d('foo'), d('foo,bar'), d('baz')] => 'foo,"foo,bar",baz',
+    [d('foo'), d('""'), d('baz')] => 'foo,"""""",baz',
+    [d('foo'), d(''), d('baz')] => 'foo,"",baz',
+    [d('foo'), d('', true), d('baz')] => 'foo,,baz',
+    [d('foo'), d("\r"), d('baz')] => "foo,\"\r\",baz",
+    [d('foo'), d("\n"), d('baz')] => "foo,\"\n\",baz",
+    [d('foo'), d("\r\n"), d('baz')] => "foo,\"\r\n\",baz",
+    [d('foo'), d("\r.\n"), d('baz')] => "foo,\"\r.\n\",baz",
+    [d('foo'), d("\r\n\n"), d('baz')] => "foo,\"\r\n\n\",baz",
+    [d('foo'), d('"'), d('baz')] => 'foo,"""",baz',
+  }
+
+  @@fullCSVDataArray = @@fullCSVData.collect { |key, value| key }
+
+  def ssv2csv(ssvStr, row_sep = nil)
+    sepConv(ssvStr, ?;, ?,, row_sep)
+  end
+
+  def csv2ssv(csvStr, row_sep = nil)
+    sepConv(csvStr, ?,, ?;, row_sep)
+  end
+
+  def tsv2csv(tsvStr, row_sep = nil)
+    sepConv(tsvStr, ?\t, ?,, row_sep)
+  end
+
+  def csv2tsv(csvStr, row_sep = nil)
+    sepConv(csvStr, ?,, ?\t, row_sep)
+  end
+
+  def sepConv(srcStr, srcSep, destSep, row_sep = nil)
+    rows = CSV::Row.new
+    cols, idx = CSV.parse_row(srcStr, 0, rows, srcSep, row_sep)
+    destStr = ''
+    cols = CSV.generate_row(rows, rows.size, destStr, destSep, row_sep)
+    destStr
+  end
+
+public
+
+  def setup
+    @tmpdir = File.join(Dir.tmpdir, "ruby_test_csv_tmp_#{$$}")
+    Dir.mkdir(@tmpdir)
+    @infile = File.join(@tmpdir, 'in.csv')
+    @infiletsv = File.join(@tmpdir, 'in.tsv')
+    @emptyfile = File.join(@tmpdir, 'empty.csv')
+    @outfile = File.join(@tmpdir, 'out.csv')
+    @bomfile = File.join(File.dirname(__FILE__), "bom.csv")
+    @macfile = File.join(File.dirname(__FILE__), "mac.csv")
+
+    CSV.open(@infile, "w") do |writer|
+      @@fullCSVDataArray.each do |row|
+	writer.add_row(row)
+      end
+    end
+
+    CSV.open(@infiletsv, "w", ?\t) do |writer|
+      @@fullCSVDataArray.each do |row|
+	writer.add_row(row)
+      end
+    end
+
+    CSV.generate(@emptyfile) do |writer|
+      # Create empty file.
+    end
+  end
+
+  def teardown
+    FileUtils.rm_rf(@tmpdir)
+  end
 
   #### CSV::Reader unit test
   
@@ -726,6 +733,11 @@ public
     assert_equal("\r\n", buf, "Extra boundary check.")
 
     buf = ''
+    cols = CSV.generate_row([], 0, buf, ?\t, ?|)
+    assert_equal(0, cols)
+    assert_equal("|", buf, "Extra boundary check.")
+
+    buf = ''
     cols = CSV.generate_row([d(1)], 2, buf)
     assert_equal('1,', buf)
 
@@ -735,6 +747,10 @@ public
 
     buf = ''
     cols = CSV.generate_row([d(1)], 2, buf, ?\t)
+    assert_equal("1\t", buf)
+
+    buf = ''
+    cols = CSV.generate_row([d(1)], 2, buf, ?\t, ?|)
     assert_equal("1\t", buf)
 
     buf = ''
@@ -748,6 +764,18 @@ public
     buf = ''
     cols = CSV.generate_row([d(1), d(2)], 1, buf, ?\t)
     assert_equal("1\r\n", buf)
+
+    buf = ''
+    cols = CSV.generate_row([d(1), d(2)], 1, buf, ?\t, ?\n)
+    assert_equal("1\n", buf)
+
+    buf = ''
+    cols = CSV.generate_row([d(1), d(2)], 1, buf, ?\t, ?\r)
+    assert_equal("1\r", buf)
+
+    buf = ''
+    cols = CSV.generate_row([d(1), d(2)], 1, buf, ?\t, ?|)
+    assert_equal("1|", buf)
 
     @@fullCSVData.each do |col, str|
       buf = ''
@@ -768,6 +796,22 @@ public
       cols = CSV.generate_row(col, col.size, buf, ?\t)
       assert_equal(col.size, cols)
       assert_equal(str + "\r\n", tsv2csv(buf))
+    end
+
+    # row separator
+    @@fullCSVData.each do |col, str|
+      buf = ''
+      cols = CSV.generate_row(col, col.size, buf, ?,, ?|)
+      assert_equal(col.size, cols)
+      assert_equal(str + "|", buf)
+    end
+
+    # col and row separator
+    @@fullCSVData.each do |col, str|
+      buf = ''
+      cols = CSV.generate_row(col, col.size, buf, ?\t, ?|)
+      assert_equal(col.size, cols)
+      assert_equal(str + "|", tsv2csv(buf, ?|))
     end
 
     buf = ''
@@ -805,6 +849,20 @@ public
       cols += CSV.generate_row(col, col.size, lineBuf, ?\t)
       buf << tsv2csv(lineBuf) << "\r\n"
       toBe << tsv2csv(lineBuf) << "\r\n"
+      colsToBe += col.size
+    end
+    assert_equal(colsToBe, cols)
+    assert_equal(toBe, buf)
+
+    buf = ''
+    toBe = ''
+    cols = 0
+    colsToBe = 0
+    @@fullCSVData.each do |col, str|
+      lineBuf = ''
+      cols += CSV.generate_row(col, col.size, lineBuf, ?|)
+      buf << tsv2csv(lineBuf, ?|)
+      toBe << tsv2csv(lineBuf, ?|)
       colsToBe += col.size
     end
     assert_equal(colsToBe, cols)
@@ -901,6 +959,16 @@ public
       assert_equal(cols, buf.size, "Reported size.")
       assert_equal(col.size, buf.size, "Size.")
       assert(buf.match(col))
+
+      # separator: |
+      buf = CSV::Row.new
+      cols, idx = CSV.parse_row(str + "|", 0, buf, ?,)
+      assert(!buf.match(col))
+      buf = CSV::Row.new
+      cols, idx = CSV.parse_row(str + "|", 0, buf, ?,, ?|)
+      assert_equal(cols, buf.size, "Reported size.")
+      assert_equal(col.size, buf.size, "Size.")
+      assert(buf.match(col))
     end
 
     @@fullCSVData.each do |col, str|
@@ -919,6 +987,15 @@ public
       assert_equal(cols, buf.size, "Reported size.")
       assert_equal(col.size, buf.size, "Size.")
       assert(buf.match(col))
+    end
+
+    @@fullCSVData.each do |col, str|
+      str = csv2tsv(str, ?|)
+      buf = CSV::Row.new
+      cols, idx = CSV.parse_row(str + "|", 0, buf, ?\t, ?|)
+      assert_equal(cols, buf.size, "Reported size.")
+      assert_equal(col.size, buf.size, "Size.")
+      assert(buf.match(col), str)
     end
 
     buf = CSV::Row.new
@@ -1086,6 +1163,24 @@ public
     assert_equal(toBe.size, parsedCols)
     assert_equal(toBe.size, parsed.size)
     assert(parsed.match(toBe))
+
+    buf = ''
+    toBe = []
+    @@fullCSVData.each do |col, str|
+      buf  << str << "|"
+      toBe.concat(col)
+    end
+    idx = 0
+    cols = 0
+    parsed = CSV::Row.new
+    parsedCols = 0
+    begin
+      cols, idx = CSV.parse_row(buf, idx, parsed, ?,, ?|)
+      parsedCols += cols
+    end while cols > 0
+    assert_equal(toBe.size, parsedCols)
+    assert_equal(toBe.size, parsed.size)
+    assert(parsed.match(toBe))
   end
 
   def test_utf8
@@ -1101,6 +1196,22 @@ public
       rows << row.to_a
     end
     assert_equal([["foo"], ["bar"]], rows)
+    file.close
+  end
+
+  def test_macCR
+    rows = []
+    CSV.open(@macfile, "r", ?,, ?\r) do |row|
+      rows << row.to_a
+    end
+    assert_equal([["Avenches", "aus Umgebung"], ["Bad Hersfeld", "Ausgrabung"]], rows)
+
+    rows = []
+    file = File.open(@macfile)
+    CSV::Reader.parse(file.read, ?,, ?\r) do |row|
+      rows << row.to_a
+    end
+    assert_equal([["Avenches", "aus Umgebung"], ["Bad Hersfeld", "Ausgrabung"]], rows)
     file.close
   end
 
@@ -1517,4 +1628,14 @@ public
     end
     assert_equal(csvStrTerminated, buf)
   end
+end
+
+
+if $0 == __FILE__
+  suite = Test::Unit::TestSuite.new('CSV')
+  ObjectSpace.each_object(Class) do |klass|
+    suite << klass.suite if (Test::Unit::TestCase > klass)
+  end
+  require 'test/unit/ui/console/testrunner'
+  Test::Unit::UI::Console::TestRunner.run(suite).passed?
 end

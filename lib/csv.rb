@@ -189,32 +189,32 @@ public
   #     writer << [nil, nil]
   #   end
   #
-  def CSV.open(filename, mode, col_sep = ?,, &block)
+  def CSV.open(filename, mode, col_sep = ?,, row_sep = nil, &block)
     if mode == 'r' or mode == 'rb'
-      open_reader(filename, col_sep, &block)
+      open_reader(filename, col_sep, row_sep, &block)
     elsif mode == 'w' or mode == 'wb'
-      open_writer(filename, col_sep, &block)
+      open_writer(filename, col_sep, row_sep, &block)
     else
       raise ArgumentError.new("'mode' must be 'r', 'rb', 'w', or 'wb'")
     end
   end
 
-  def CSV.parse(filename, col_sep = ?,, &block)
-    open_reader(filename, col_sep, &block)
+  def CSV.parse(filename, col_sep = ?,, row_sep = nil, &block)
+    open_reader(filename, col_sep, row_sep, &block)
   end
 
-  def CSV.generate(filename, col_sep = ?,, &block)
-    open_writer(filename, col_sep, &block)
+  def CSV.generate(filename, col_sep = ?,, row_sep = nil, &block)
+    open_writer(filename, col_sep, row_sep, &block)
   end
 
   # Private class methods.
   class << self
   private
-    def open_reader(filename, col_sep, &block)
+    def open_reader(filename, col_sep, row_sep, &block)
       file = File.open(filename, 'rb')
       if block
         begin
-          CSV::Reader.parse(file, col_sep) do |row|
+          CSV::Reader.parse(file, col_sep, row_sep) do |row|
             yield(row)
           end
         ensure
@@ -222,17 +222,17 @@ public
         end
         nil
       else
-        reader = CSV::Reader.create(file, col_sep)
+        reader = CSV::Reader.create(file, col_sep, row_sep)
         reader.close_on_terminate
         reader
       end
     end
 
-    def open_writer(filename, col_sep, &block)
+    def open_writer(filename, col_sep, row_sep, &block)
       file = File.open(filename, 'wb')
       if block
         begin
-          CSV::Writer.generate(file, col_sep) do |writer|
+          CSV::Writer.generate(file, col_sep, row_sep) do |writer|
             yield(writer)
           end
         ensure
@@ -240,7 +240,7 @@ public
         end
         nil
       else
-        writer = CSV::Writer.create(file, col_sep)
+        writer = CSV::Writer.create(file, col_sep, row_sep) 
         writer.close_on_terminate
         writer
       end
@@ -275,14 +275,14 @@ public
     # DESCRIPTION
     #   Create instance.  To get parse result, see CSV::Reader#each.
     #   
-    def Reader.create(str_or_readable, col_sep = ?,)
+    def Reader.create(str_or_readable, col_sep = ?,, row_sep = nil)
       case str_or_readable
       when IO
-        IOReader.new(str_or_readable, col_sep)
+        IOReader.new(str_or_readable, col_sep, row_sep)
       when String
-        StringReader.new(str_or_readable, col_sep)
+        StringReader.new(str_or_readable, col_sep, row_sep)
       else
-        IOReader.new(str_or_readable, col_sep)
+        IOReader.new(str_or_readable, col_sep, row_sep)
       end
     end
 
@@ -305,8 +305,8 @@ public
     #   Block value is always nil.  Rows are not cached for performance
     #   reason.
     #
-    def Reader.parse(str_or_readable, col_sep = ?,)
-      reader = create(str_or_readable, col_sep)
+    def Reader.parse(str_or_readable, col_sep = ?,, row_sep = nil)
+      reader = create(str_or_readable, col_sep, row_sep)
       reader.each do |row|
         yield(row)
       end
@@ -413,8 +413,9 @@ public
     # DESCRIPTION
     #   Create instance.  To get parse result, see CSV::Reader#each.
     #   
-    def initialize(string, col_sep = ?,)
+    def initialize(string, col_sep = ?,, row_sep = nil)
       @col_sep = col_sep
+      @row_sep = row_sep
       @dev = string
       @idx = 0
       if @dev[0, 3] == "\xef\xbb\xbf"
@@ -424,7 +425,7 @@ public
 
   private
     def get_row(row)
-      parsed_cells, next_idx = CSV.parse_row(@dev, @idx, row, @col_sep)
+      parsed_cells, next_idx = CSV.parse_row(@dev, @idx, row, @col_sep, @row_sep)
       if parsed_cells == 0 && next_idx == 0 && @idx != @dev.size
         raise IllegalFormatError.new
       end
@@ -460,9 +461,10 @@ public
     # DESCRIPTION
     #   Create instance.  To get parse result, see CSV::Reader#each.
     #   
-    def initialize(io, col_sep = ?,)
+    def initialize(io, col_sep = ?,, row_sep = nil)
       @io = io
       @col_sep = col_sep
+      @row_sep = row_sep
       @dev = CSV::IOBuf.new(@io)
       @idx = 0
       if @dev[0] == 0xef and @dev[1] == 0xbb and @dev[2] == 0xbf
@@ -487,7 +489,7 @@ public
 
   private
     def get_row(row)
-      parsed_cells, next_idx = CSV.parse_row(@dev, @idx, row, @col_sep)
+      parsed_cells, next_idx = CSV.parse_row(@dev, @idx, row, @col_sep, @row_sep)
       if parsed_cells == 0 && next_idx == 0 && !@dev.is_eos?
         raise IllegalFormatError.new
       end
@@ -549,8 +551,8 @@ public
     #   Create instance.  To add CSV data to generate CSV string, see
     #   CSV::Writer#<< or CSV::Writer#add_row.
     #   
-    def Writer.create(str_or_readable, col_sep = ?,)
-      BasicWriter.new(str_or_readable, col_sep)
+    def Writer.create(str_or_readable, col_sep = ?,, row_sep = nil)
+      BasicWriter.new(str_or_readable, col_sep, row_sep)
     end
 
     # SYNOPSIS
@@ -572,8 +574,8 @@ public
     #   To add CSV data to generate CSV string, see CSV::Writer#<< or
     #   CSV::Writer#add_row.
     #   
-    def Writer.generate(str_or_writable, col_sep = ?,)
-      writer = Writer.create(str_or_writable, col_sep)
+    def Writer.generate(str_or_writable, col_sep = ?,, row_sep = nil)
+      writer = Writer.create(str_or_writable, col_sep, row_sep)
       yield(writer)
       writer.close
       nil
@@ -602,7 +604,7 @@ public
           Cell.new(item.to_s, false)
         end
       }
-      CSV.generate_row(row, row.size, @dev, @col_sep)
+      CSV.generate_row(row, row.size, @dev, @col_sep, @row_sep)
       self
     end
 
@@ -621,7 +623,7 @@ public
     #   (Formar is 'c1' and latter is Null.)
     #   
     def add_row(row)
-      CSV.generate_row(row, row.size, @dev, @col_sep)
+      CSV.generate_row(row, row.size, @dev, @col_sep, @row_sep)
       self
     end
 
@@ -669,8 +671,9 @@ public
     #   Create instance.  To add CSV data to generate CSV string, see
     #   CSV::Writer#<< or CSV::Writer#add_row.
     #   
-    def initialize(str_or_writable, col_sep = ?,)
+    def initialize(str_or_writable, col_sep = ?,, row_sep = nil)
       @col_sep = col_sep
+      @row_sep = row_sep
       @dev = str_or_writable
       @close_on_terminate = false
     end
@@ -698,12 +701,14 @@ public
   end
 
   # SYNOPSIS
-  #   cells = CSV.parse_line(src, col_sep = ?,)
+  #   cells = CSV.parse_line(src, col_sep = ?,, row_sep = nil)
   #
   # ARGS
   #   src: a CSV String.
   #   col_sep: Column separator.  ?, by default.  If you want to separate
   #     fields with semicolon, give ?; here.
+  #   row_sep: Row separator.  nil by default.  nil means "\r\n or \n".  If you
+  #     want to separate records with \r, give ?\r here.
   #
   # RETURNS
   #   cells: an Array of parsed cells in first line.  Each cell is a String.
@@ -716,14 +721,14 @@ public
   #   If you don't know whether a target string to parse is exactly 1 line or
   #   not, use CSV.parse_row instead of this method.
   #   
-  def CSV.parse_line(src, col_sep = ?,)
+  def CSV.parse_line(src, col_sep = ?,, row_sep = nil)
     idx = 0
     res_type = :DT_COLSEP
     cells = Row.new
     begin
       while (res_type.equal?(:DT_COLSEP))
         cell = Cell.new
-        res_type, idx = parse_body(src, idx, cell, col_sep)
+        res_type, idx = parse_body(src, idx, cell, col_sep, row_sep)
         cells.push(cell.is_null ? nil : cell.data)
       end
     rescue IllegalFormatError
@@ -734,13 +739,15 @@ public
   
 
   # SYNOPSIS
-  #   str = CSV.generate_line(cells, col_sep = ?,)
+  #   str = CSV.generate_line(cells, col_sep = ?,, row_sep = nil)
   #
   # ARGS
   #   cells: an Array of cell to be converted to CSV string.  Each cell must 
   #     respond to 'to_s'.
   #   col_sep: Column separator.  ?, by default.  If you want to separate
   #     fields with semicolon, give ?; here.
+  #   row_sep: Row separator.  nil by default.  nil means "\r\n or \n".  If you
+  #     want to separate records with \r, give ?\r here.
   #
   # RETURNS
   #   str: a String of generated CSV string.
@@ -748,7 +755,7 @@ public
   # DESCRIPTION
   #   Create a line from cells.  Each cell is stringified by to_s.
   #   
-  def CSV.generate_line(cells, col_sep = ?,)
+  def CSV.generate_line(cells, col_sep = ?,, row_sep = nil)
     if (cells.size == 0)
       return ''
     end
@@ -761,18 +768,18 @@ public
         else
           Cell.new(cells[idx].to_s, false)
         end
-      generate_body(cell, result_str, col_sep)
+      generate_body(cell, result_str, col_sep, row_sep)
       idx += 1
       if (idx == cells.size)
         break
       end
-      generate_separator(:DT_COLSEP, result_str, col_sep)
+      generate_separator(:DT_COLSEP, result_str, col_sep, row_sep)
     end
     result_str
   end
   
   # SYNOPSIS
-  #   parsed_cells, idx = CSV.parse_row(src, idx, out_dev, col_sep = ?,)
+  #   parsed_cells, idx = CSV.parse_row(src, idx, out_dev, col_sep = ?,, row_sep = nil)
   #
   # ARGS
   #   src: a CSV data to be parsed.  Must respond '[](idx)'.
@@ -783,6 +790,8 @@ public
   #   out_dev: buffer for parsed cells.  Must respond '<<(CSV::Cell)'.
   #   col_sep: Column separator.  ?, by default.  If you want to separate
   #     fields with semicolon, give ?; here.
+  #   row_sep: Row separator.  nil by default.  nil means "\r\n or \n".  If you
+  #     want to separate records with \r, give ?\r here.
   #
   # RETURNS
   #   parsed_cells: num of parsed cells.
@@ -802,14 +811,14 @@ public
   #     p parsed
   #   end while parsed_cells > 0
   #   
-  def CSV.parse_row(src, idx, out_dev, col_sep = ?,)
+  def CSV.parse_row(src, idx, out_dev, col_sep = ?,, row_sep = nil)
     idx_backup = idx
     parsed_cells = 0
     res_type = :DT_COLSEP
     begin
       while (!res_type.equal?(:DT_ROWSEP))
         cell = Cell.new
-        res_type, idx = parse_body(src, idx, cell, col_sep)
+        res_type, idx = parse_body(src, idx, cell, col_sep, row_sep)
         if res_type.equal?(:DT_EOS)
           if idx == idx_backup #((parsed_cells == 0) && (cell.is_null))
             return 0, 0
@@ -826,7 +835,7 @@ public
   end
   
   # SYNOPSIS
-  #   parsed_cells = CSV.generate_row(src, cells, out_dev, col_sep = ?,)
+  #   parsed_cells = CSV.generate_row(src, cells, out_dev, col_sep = ?,, row_sep = nil)
   #
   # ARGS
   #   src: an Array of CSV::Cell to be converted to CSV string.  Must respond to
@@ -835,6 +844,8 @@ public
   #   out_dev: buffer for generated CSV string.  Must respond to '<<(string)'.
   #   col_sep: Column separator.  ?, by default.  If you want to separate
   #     fields with semicolon, give ?; here.
+  #   row_sep: Row separator.  nil by default.  nil means "\r\n or \n".  If you
+  #     want to separate records with \r, give ?\r here.
   #
   # RETURNS
   #   parsed_cells: num of converted cells.
@@ -859,27 +870,27 @@ public
   #   end
   #   p buf
   #   
-  def CSV.generate_row(src, cells, out_dev, col_sep = ?,)
+  def CSV.generate_row(src, cells, out_dev, col_sep = ?,, row_sep = nil)
     src_size = src.size
     if (src_size == 0)
       if cells == 0
-        generate_separator(:DT_ROWSEP, out_dev, col_sep)
+        generate_separator(:DT_ROWSEP, out_dev, col_sep, row_sep)
       end
       return 0
     end
     res_type = :DT_COLSEP
     parsed_cells = 0
-    generate_body(src[parsed_cells], out_dev, col_sep)
+    generate_body(src[parsed_cells], out_dev, col_sep, row_sep)
     parsed_cells += 1
     while ((parsed_cells < cells) && (parsed_cells != src_size))
-      generate_separator(:DT_COLSEP, out_dev, col_sep)
-      generate_body(src[parsed_cells], out_dev, col_sep)
+      generate_separator(:DT_COLSEP, out_dev, col_sep, row_sep)
+      generate_body(src[parsed_cells], out_dev, col_sep, row_sep)
       parsed_cells += 1
     end
     if (parsed_cells == cells)
-      generate_separator(:DT_ROWSEP, out_dev, col_sep)
+      generate_separator(:DT_ROWSEP, out_dev, col_sep, row_sep)
     else
-      generate_separator(:DT_COLSEP, out_dev, col_sep)
+      generate_separator(:DT_COLSEP, out_dev, col_sep, row_sep)
     end
     parsed_cells
   end
@@ -891,7 +902,8 @@ private
   class << self
   private
 
-    def parse_body(src, idx, cell, col_sep)
+    def parse_body(src, idx, cell, col_sep, row_sep)
+      row_sep_end = row_sep || ?\n
       cell.is_null = false
       state = :ST_START
       quoted = false
@@ -941,7 +953,7 @@ private
             quoted = true
             state = :ST_DATA
           end
-        elsif (c == ?\r)
+        elsif row_sep.nil? and c == ?\r
           if cr
             raise IllegalFormatError.new
           end
@@ -951,7 +963,7 @@ private
           else
             cr = true
           end
-        elsif (c == ?\n)
+        elsif c == row_sep_end
           if state.equal?(:ST_DATA)
             if cr
               state = :ST_END
@@ -1004,12 +1016,14 @@ private
       return :DT_EOS, idx
     end
   
-    def generate_body(cells, out_dev, col_sep)
+    def generate_body(cells, out_dev, col_sep, row_sep)
       row_data = cells.data.dup
       if (!cells.is_null)
         if (row_data.gsub!('"', '""') ||
             row_data.include?(col_sep) ||
-            (/[\r\n]/ =~ row_data) || (cells.data.empty?))
+	    (row_sep && row_data.index(row_sep)) ||
+	    (/[\r\n]/ =~ row_data) ||
+	    (cells.data.empty?))
           out_dev << '"' << row_data << '"'
         else
           out_dev << row_data
@@ -1017,12 +1031,12 @@ private
       end
     end
     
-    def generate_separator(type, out_dev, col_sep)
+    def generate_separator(type, out_dev, col_sep, row_sep)
       case type
       when :DT_COLSEP
         out_dev << col_sep.chr
       when :DT_ROWSEP
-        out_dev << "\r\n"
+        out_dev << (row_sep || "\r\n")
       end
     end
   end
