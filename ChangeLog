@@ -1,3 +1,7 @@
+Tue Nov 20 13:26:03 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/utf8tbl.c: original revision 1.7
+
 Tue Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: original nkf.c rev:1.40
