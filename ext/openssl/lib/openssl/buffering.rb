@@ -31,9 +31,6 @@ module Buffering
   def fill_rbuff
     @rbuffer = "" unless defined? @rbuffer
     begin
-      if self.respond_to?(:to_io)
-        IO.select([self.to_io], nil, nil)
-      end
       @rbuffer << self.sysread(BLOCK_SIZE)
     rescue EOFError
       @eof = true

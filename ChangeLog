@@ -1,3 +1,19 @@
+Sun Aug 22 16:27:38 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read):
+	  - should return an empty string if specified length to read is 0.
+	  - should check for pending data and wait for fd before reading.
+	  - call underlying IO's sysread if SSL session is not started.
+	  [ruby-dev:24072], [ruby-dev:24075]
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_write):
+	  - call underlying IO's syswrite if SSL session is not started.
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_pending): new method
+	  OpenSSL::SSL#pending.
+
+	* ext/openssl/lib/openssl/buffering.rb: should not use select.
+
 Sun Aug 22 01:10:36 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#proxy_connect):
