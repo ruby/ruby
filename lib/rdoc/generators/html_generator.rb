@@ -412,13 +412,17 @@ module Generators
               row["aref"]        = m.aref
               row["visibility"]  = m.visibility.to_s
 
-              unless m.aliases.empty?
-                row["aka"] = m.aliases.map do |other| 
-                  {
+              alias_names = []
+              m.aliases.each do |other|
+                if other.viewer   # won't be if the alias is private
+                  alias_names << {
                     'name' => other.name,
                     'aref'  => other.viewer.as_href(path)
                   } 
                 end
+              end
+              unless alias_names.empty?
+                row["aka"] = alias_names
               end
 
               if @options.inline_source
