@@ -205,7 +205,7 @@ class Shell
     #	  
     def rmdir(*path)
       for dir in path
-	Dir.rmdir(expand_path(path))
+	Dir.rmdir(expand_path(dir))
       end
     end
 

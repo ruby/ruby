@@ -128,8 +128,8 @@ extern unsigned long strtoul _((char *, char **, int));
 # else
 #  include <varargs.h>
 # endif
-extern snprintf __((char *, size_t n, char const *, ...));
-extern vsnprintf _((char *, size_t n, char const *, va_list));
+extern int snprintf __((char *, size_t n, char const *, ...));
+extern int vsnprintf _((char *, size_t n, char const *, va_list));
 #endif
 
 #endif /* MISSING_H */

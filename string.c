@@ -144,8 +144,14 @@ str_new4(klass, str)
 
     RSTRING(str2)->len = RSTRING(str)->len;
     RSTRING(str2)->ptr = RSTRING(str)->ptr;
-    RSTRING(str)->aux.shared = str2;
-    FL_SET(str, ELTS_SHARED);
+    if (FL_TEST(str, ELTS_SHARED) && !RSTRING(str)->aux.shared) {
+	/* ptr should be null_str */
+	FL_SET(str2, ELTS_SHARED);
+    }
+    else {
+	FL_SET(str, ELTS_SHARED);
+	RSTRING(str)->aux.shared = str2;
+    }
     OBJ_INFECT(str2, str);
 
     return str2;
