@@ -5,7 +5,7 @@ class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
   def _regex_quote(str)
-    str.gsub(/[][.\\|*?+{}()]/n){|s|
+    str.gsub(/[][.\\|*?+{}()]/){|s|
       if s == "\\" then "\\\\" else "\\\\#{s}" end
     }
   end

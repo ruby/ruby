@@ -1,3 +1,7 @@
+Mon Dec  4 13:44:01 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/jcode.rb: consider multibyte. not /n.
+
 Mon Nov 27 17:00:35 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): should not redefine builtin classes/modules
