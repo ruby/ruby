@@ -1,3 +1,15 @@
+Thu Dec 13 09:52:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_new_internal): avoid loop to calculate negative
+	  div, mod.
+
+	* time.c (time_cmp): should handle Bignums.
+
+Tue Dec 11 17:39:16 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* array.c (rb_ary_pop): should ELTS_SHARED flag check before
+	  REALLOC.
+
 Tue Dec 11 12:45:28 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_match_m): should convert an argument into

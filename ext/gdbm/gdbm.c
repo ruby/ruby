@@ -159,13 +159,13 @@ rb_gdbm_fetch(dbm, key)
     datum key;
 {
     datum val;
-    VALUE str = rb_obj_alloc(rb_cString);
+    VALUE str;
 
     val = gdbm_fetch(dbm, key);
     if (val.dptr == 0)
         return Qnil;
 
-    RSTRING(str)->ptr = 0;
+    str = rb_obj_alloc(rb_cString);
     RSTRING(str)->len = val.dsize;
     RSTRING(str)->aux.capa = val.dsize;
     RSTRING(str)->ptr = REALLOC_N(val.dptr,char,val.dsize+1);
@@ -206,13 +206,13 @@ rb_gdbm_firstkey(dbm)
     GDBM_FILE dbm;
 {
     datum key;
-    VALUE str = rb_obj_alloc(rb_cString);
+    VALUE str;
 
     key = gdbm_firstkey(dbm);
     if (key.dptr == 0)
         return Qnil;
 
-    RSTRING(str)->ptr = 0;
+    str = rb_obj_alloc(rb_cString);
     RSTRING(str)->len = key.dsize;
     RSTRING(str)->aux.capa = key.dsize;
     RSTRING(str)->ptr = REALLOC_N(key.dptr,char,key.dsize+1);
@@ -228,7 +228,7 @@ rb_gdbm_nextkey(dbm, keystr)
     VALUE keystr;
 {
     datum key, key2;
-    VALUE str = rb_obj_alloc(rb_cString);
+    VALUE str;
 
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
@@ -236,7 +236,7 @@ rb_gdbm_nextkey(dbm, keystr)
     if (key2.dptr == 0)
         return Qnil;
 
-    RSTRING(str)->ptr = 0;
+    str = rb_obj_alloc(rb_cString);
     RSTRING(str)->len = key2.dsize;
     RSTRING(str)->aux.capa = key2.dsize;
     RSTRING(str)->ptr = REALLOC_N(key2.dptr,char,key2.dsize+1);

@@ -60,6 +60,9 @@ time_s_now(klass)
     return obj;
 }
 
+#define NDIV(x,y) (-(-((x)+1)/(y))-1)
+#define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
+
 static VALUE
 time_new_internal(klass, sec, usec)
     VALUE klass;
@@ -68,13 +71,13 @@ time_new_internal(klass, sec, usec)
     VALUE obj;
     struct time_object *tobj;
 
-    if (usec >= 1000000) {	/* usec overflow */
+    if (usec >= 1000000) {	/* usec positive overflow */
 	sec += usec / 1000000;
 	usec %= 1000000;
     }
-    while (usec < 0) {		/* usec underflow */
-	sec--;
-	usec += 1000000;
+    if (usec < 0) {		/* usec negative overflow */
+	sec += NDIV(usec,1000000); /* negative div */
+	usec = NMOD(usec,1000000); /* negative mod */
     }
 #ifndef NEGATIVE_TIME_T
     if (sec < 0 || (sec == 0 && usec < 0))
@@ -642,6 +645,14 @@ time_cmp(time1, time2)
 	if (tobj1->tv.tv_sec > tobj2->tv.tv_sec) return INT2FIX(1);
 	return INT2FIX(-1);
     }
+    if (TYPE(time2) == T_BIGNUM) {
+	double a = (double)tobj1->tv.tv_sec+(double)tobj1->tv.tv_usec/1e6;
+	double b = rb_big2dbl(time2);
+
+	if (a == b) return INT2FIX(0);
+	if (a > b) return INT2FIX(1);
+	if (a < b) return INT2FIX(-1);
+    }
     i = NUM2LONG(time2);
     if (tobj1->tv.tv_sec == i) {
 	if (tobj1->tv.tv_usec == 0)
@@ -856,12 +867,15 @@ time_plus(time1, time2)
     }
     f = NUM2DBL(time2);
     sec = (time_t)f;
+    if (f != (double)sec) {
+	rb_raise(rb_eRangeError, "time + %f out of Time range", f);
+    }
     usec = tobj->tv.tv_usec + (time_t)((f - (double)sec)*1e6);
     sec = tobj->tv.tv_sec + sec;
 
 #ifdef NEGATIVE_TIME_T
-    if ((tobj->tv.tv_sec > 0 && f > 0 && sec < 0) ||
-	(tobj->tv.tv_sec < 0 && f < 0 && sec > 0)) {
+    if ((tobj->tv.tv_sec >= 0 && f >= 0 && sec < 0) ||
+	(tobj->tv.tv_sec <= 0 && f <= 0 && sec > 0)) {
 	rb_raise(rb_eRangeError, "time + %f out of Time range", f);
     }
 #endif
@@ -891,15 +905,16 @@ time_minus(time1, time2)
 
 	return rb_float_new(f);
     }
-    else {
-	f = NUM2DBL(time2);
-	sec = (time_t)f;
-	usec = tobj->tv.tv_usec - (time_t)((f - (double)sec)*1e6);
-	sec = tobj->tv.tv_sec - sec;
+    f = NUM2DBL(time2);
+    sec = (time_t)f;
+    if (f != (double)sec) {
+	rb_raise(rb_eRangeError, "time - %f out of Time range", f);
     }
+    usec = tobj->tv.tv_usec - (time_t)((f - (double)sec)*1e6);
+    sec = tobj->tv.tv_sec - sec;
 #ifdef NEGATIVE_TIME_T
-    if ((tobj->tv.tv_sec < 0 && f > 0 && sec > 0) ||
-	(tobj->tv.tv_sec > 0 && f < 0 && sec < 0)) {
+    if ((tobj->tv.tv_sec <= 0 && f >= 0 && sec > 0) ||
+	(tobj->tv.tv_sec >= 0 && f <= 0 && sec < 0)) {
 	rb_raise(rb_eRangeError, "time - %f out of Time range", f);
     }
 #endif
