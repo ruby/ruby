@@ -1,6 +1,6 @@
 class << File
 
-  TOO_BIG = 1024 * 1024 * 2 # 2MB
+  BUFSIZE = 8 * 1024
 
   def catname from, to
     if FileTest.directory? to
@@ -15,28 +15,16 @@ class << File
   def syscopy from, to
     to = catname(from, to)
 
-    fsize = size(from)
-    fsize = 1024 if fsize < 512
-    fsize = TOO_BIG if fsize > TOO_BIG
-
     fmode = stat(from).mode
     tpath = to
     not_exist = !exist?(tpath)
 
-    from = open(from, "r")
-    from.binmode
-    to = open(to, "w")
-    to.binmode
+    from = open(from, "rb")
+    to = open(to, "wb")
 
     begin
       while true
-	r = from.sysread(fsize)
-	rsize = r.size
-        w = 0
-	while w < rsize
-	  t = to.syswrite(r[w, rsize - w])
-	  w += t
-	end
+	to.syswrite from.sysread(BUFSIZE)
       end
     rescue EOFError
       ret = true
@@ -63,7 +51,7 @@ class << File
     to = catname(from, to)
     $stderr.print from, " -> ", to, "\n" if verbose
 
-    if RUBY_PLATFORM =~ /djgpp|cygwin|mswin32/ and FileTest.file? to
+    if RUBY_PLATFORM =~ /djgpp|(cyg|ms|bcc)win|mingw/ and FileTest.file? to
       unlink to
     end
     fstat = stat(from)
@@ -92,25 +80,22 @@ class << File
 
   def compare from, to, verbose = false
     $stderr.print from, " <=> ", to, "\n" if verbose
-    fsize = size(from)
-    fsize = 1024 if fsize < 512
-    fsize = TOO_BIG if fsize > TOO_BIG
 
-    from = open(from, "r")
-    from.binmode
-    to = open(to, "r")
-    to.binmode
+    from = open(from, "rb")
+    to = open(to, "rb")
 
     ret = false
     fr = tr = ''
 
+    return false if from.stat.size != to.stat.size
+
     begin
       while fr == tr
-	fr = from.read(fsize)
+	fr = from.read(BUFSIZE)
 	if fr
 	  tr = to.read(fr.size)
 	else
-	  ret = to.read(fsize)
+	  ret = to.read(BUFSIZE)
 	  ret = !ret || ret.length == 0
 	  break
 	end
