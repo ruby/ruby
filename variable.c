@@ -20,7 +20,7 @@
 
 static st_table *rb_global_tbl;
 st_table *rb_class_tbl;
-static ID autoload;
+static ID autoload, classpath, tmp_classpath;
 
 void
 Init_var_tables()
@@ -28,6 +28,8 @@ Init_var_tables()
     rb_global_tbl = st_init_numtable();
     rb_class_tbl = st_init_numtable();
     autoload = rb_intern("__autoload__");
+    classpath = rb_intern("__classpath__");
+    tmp_classpath = rb_intern("__tmp_classpath__");
 }
 
 struct fc_result {
@@ -49,7 +51,7 @@ fc_path(fc, name)
     while (fc) {
 	if (fc->track == rb_cObject) break;
 	if (ROBJECT(fc->track)->iv_tbl &&
-	    st_lookup(ROBJECT(fc->track)->iv_tbl, rb_intern("__classpath__"), &tmp)) {
+	    st_lookup(ROBJECT(fc->track)->iv_tbl, classpath, &tmp)) {
 	    tmp = rb_str_dup(tmp);
 	    rb_str_cat2(tmp, "::");
 	    rb_str_append(tmp, path);
@@ -131,7 +133,8 @@ find_class_path(klass)
 	if (!ROBJECT(klass)->iv_tbl) {
 	    ROBJECT(klass)->iv_tbl = st_init_numtable();
 	}
-	st_insert(ROBJECT(klass)->iv_tbl,rb_intern("__classpath__"),arg.path);
+	st_insert(ROBJECT(klass)->iv_tbl, classpath, arg.path);
+	st_delete(RCLASS(klass)->iv_tbl, &tmp_classpath, 0);
 	return arg.path;
     }
     return Qnil;
@@ -142,7 +145,6 @@ classname(klass)
     VALUE klass;
 {
     VALUE path = Qnil;
-    ID classpath = rb_intern("__classpath__");
 
     klass = rb_class_real(klass);
     if (!klass) klass = rb_cObject;
@@ -151,7 +153,7 @@ classname(klass)
 	    ID classid = rb_intern("__classid__");
 
 	    if (!st_lookup(ROBJECT(klass)->iv_tbl, classid, &path)) {
-		return Qnil;
+		return find_class_path(klass);
 	    }
 	    path = rb_str_new2(rb_id2name(SYM2ID(path)));
 	    st_insert(ROBJECT(klass)->iv_tbl, classpath, path);
@@ -162,7 +164,7 @@ classname(klass)
 	}
 	return path;
     }
-    return Qnil;
+    return find_class_path(klass);
 }
 
 VALUE
@@ -182,18 +184,12 @@ rb_class_path(klass)
     VALUE path = classname(klass);
 
     if (!NIL_P(path)) return path;
+    if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl,
+					   tmp_classpath, &path)) {
+	return path;
+    }
     else {
-	ID tmppath = rb_intern("__tmp_classpath__");
 	char *s = "Class";
-
-	path = find_class_path(klass);
-	if (!NIL_P(path)) {
-	    st_delete(RCLASS(klass)->iv_tbl, (st_data_t*)&tmppath, 0);
-	    return path;
-	}
-	if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, tmppath, &path)) {
-	    return path;
-	}
 
 	if (TYPE(klass) == T_MODULE) {
 	    if (rb_obj_class(klass) == rb_cModule) {
@@ -206,7 +202,7 @@ rb_class_path(klass)
 	path = rb_str_new(0, 2 + strlen(s) + 3 + 2 * SIZEOF_LONG + 1);
 	sprintf(RSTRING(path)->ptr, "#<%s:0x%lx>", s, klass);
 	RSTRING(path)->len = strlen(RSTRING(path)->ptr);
-	rb_iv_set(klass, "__tmp_classpath__", path);
+	rb_ivar_set(klass, tmp_classpath, path);
 
 	return path;
     }
@@ -227,7 +223,7 @@ rb_set_class_path(klass, under, name)
 	rb_str_cat2(str, "::");
 	rb_str_cat2(str, name);
     }
-    rb_iv_set(klass, "__classpath__", str);
+    rb_ivar_set(klass, classpath, str);
 }
 
 VALUE
@@ -255,8 +251,7 @@ rb_path2class(path)
 	}
 	if (!rb_const_defined(c, id)) {
 	  undefined_class:
-	    rb_raise(rb_eArgError, "undefined class/module %s", rb_id2name(id));
-	    rb_raise(rb_eArgError, "undefined class/module %s", path);
+	    rb_raise(rb_eArgError, "undefined class/module %.*s", p-path, path);
 	}
 	c = rb_const_get_at(c, id);
 	switch (TYPE(c)) {
