@@ -1,3 +1,17 @@
+Thu Mar 22 17:43:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h: better inline function support.
+
+	* configure.in (NO_C_INLINE): check if inline is available for the
+	  C compiler.
+
+Mon Mar 19 11:03:10 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* marshal.c (r_object): len calculation patch was wrong for
+	  machines SIZEOF_BDIGITS == SIZEOF_SHORT.
+
+	* gc.c: alloca prototype reorganized for C_ALLOCA machine.
+
 Wed Mar 21 23:07:45 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (win32_stat): WinNT/2k "//host/share" support.

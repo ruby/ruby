@@ -823,7 +823,11 @@ r_object(arg)
 	    OBJSETUP(big, rb_cBignum, T_BIGNUM);
 	    big->sign = (r_byte(arg) == '+');
 	    len = r_long(arg);
+#if SIZEOF_BDIGITS == SIZEOF_SHORT
+	    big->len = len;
+#else
 	    big->len = (len + 1) * sizeof(short) / sizeof(BDIGIT);
+#endif
 	    big->digits = digits = ALLOC_N(BDIGIT, big->len);
 	    while (len > 0) {
 #if SIZEOF_BDIGITS > SIZEOF_SHORT

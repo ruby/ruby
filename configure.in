@@ -321,10 +321,13 @@ main()
 ], rb_cv_func_strtod=yes, rb_cv_func_strtod=no, rb_cv_func_strtod=no)])
 test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
 
-AC_C_INLINE
 AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_CHAR_UNSIGNED
+AC_C_INLINE
+if test "$ac_cv_c_inline" = no; then
+  AC_DEFINE(NO_C_INLINE)
+fi
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_TRY_RUN([

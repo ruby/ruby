@@ -16,7 +16,7 @@
 #include "missing/file.h"
 #endif
 
-#define RUBY_NO_INLINE
+#define INLINE_DEFINE
 #include "ruby.h"
 
 #include "util.h"
