@@ -1,8 +1,14 @@
 Sat Feb 19 01:28:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* bigdecimal/newton.rb: resolve LoadError. [ruby-dev:25685]
+	* ext/bigdecimal/lib/bigdecimal/newton.rb: resolve LoadError.
+	  [ruby-dev:25685]
 
-	* bigdecimal/nlsolve.rb: ditto.
+	* ext/bigdecimal/sample/linear.rb: ditto.
+
+	* ext/bigdecimal/sample/nlsolve.rb: ditto.
+
+	* ext/bigdecimal/lib/bigdecimal/nlsolve.rb: removed because this file
+	  is sample script and same file exists in ext/bigdecimal/sample.
 
 Thu Feb 17 22:15:34 2005  K.Kosako <sndgk@ybb.ne.jp>
 
