@@ -2999,7 +2999,10 @@ tokadd_string(func, term, paren, nest)
 	    }
 	    switch (c) {
 	      case '\n':
-		continue;
+		if (func & STR_FUNC_QWORDS) break;
+		if (func & STR_FUNC_EXPAND) continue;
+		tokadd('\\');
+		break;
 
 	      case '\\':
 		if (func & STR_FUNC_ESCAPE) tokadd(c);

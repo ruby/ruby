@@ -1,3 +1,9 @@
+Thu Sep  4 23:59:40 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (tokadd_string): newlines have no special meanings in
+	  %w/%W, otherwise they are ignored only when interpolation is
+	  enabled.  [ruby-dev:21325]
+
 Wed Sep  4 19:38:25 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/io/wait/.cvsignore: added.
