@@ -1,3 +1,8 @@
+Fri Jan  7 21:12:29 2005  TAMURA Takashi  <sheepman@tcn.zaq.ne.jp>
+
+	* random.c (rand_init): use ALLOC_N instead of ALLOCA_N
+	  [ruby-dev:25426]
+
 Fri Jan  7 18:03:35 2005  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (mark_locations_array): avoid core dump with -O3.
