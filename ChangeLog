@@ -1,3 +1,7 @@
+Wed Sep  1 21:18:25 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/lib/tk/spinbox.rb: fix typo
+
 Tue Aug 31 18:24:04 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tkutil.c (cbsubst_init): fix memory leak
