@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" 
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+    xmlns:admin="http://webns.net/mvcb/"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:content="http://purl.org/rss/1.0/modules/content/">
+
+  <channel>
+    <title>dive into mark</title>
+    <link>http://diveintomark.org/</link>
+    <description>A lot of effort went into making this effortless.</description>
+    <dc:language>en-us</dc:language>
+    <dc:creator>f8dy@diveintomark.org</dc:creator>
+    <dc:rights>Copyright 2002</dc:rights>
+    <dc:date>2002-09-29T23:40:06-05:00</dc:date>
+    <admin:generatorAgent rdf:resource="http://www.movabletype.org/?v=2.21" />
+    <admin:errorReportsTo rdf:resource="mailto:f8dy@diveintomark.org"/>
+    <sy:updatePeriod>hourly</sy:updatePeriod>
+    <sy:updateFrequency>1</sy:updateFrequency>
+    <sy:updateBase>2000-01-01T12:00+00:00</sy:updateBase>
+
+
+    <item>
+      <title>Dooce</title>
+      <link>http://diveintomark.org/archives/2002/09/29.html#dooce</link>
+      <description>Reborn.</description>
+      <guid isPermaLink="false">1856@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><a href="http://www.dooce.com/">Reborn</a>.</p>]]></content:encoded>
+      <dc:subject></dc:subject>
+      <dc:date>2002-09-29T23:40:06-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Advanced CSS lists</title>
+      <link>http://diveintomark.org/archives/2002/09/27.html#advanced_css_lists</link>
+      <description>Mark Newhouse: CSS Design: Taming Lists.  &quot;I'll demonstrate how to use CSS to bring unwieldy lists under control. It's time for you to tell lists how to behave, instead of letting them run wild on your web page.&quot;</description>
+      <guid isPermaLink="false">1855@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><cite title="A List Apart">Mark Newhouse</cite>: <a href="http://www.alistapart.com/stories/taminglists/">CSS Design: Taming Lists</a>.  <q>I'll demonstrate how to use CSS to bring unwieldy lists under control. It's time for you to tell lists how to behave, instead of letting them run wild on your web page.</q></p>]]></content:encoded>
+      <dc:subject>CSS</dc:subject>
+      <dc:date>2002-09-27T23:22:56-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Pingback vs. Trackback</title>
+      <link>http://diveintomark.org/archives/2002/09/27.html#pingback_vs_trackback</link>
+      <description>Ian Hickson: Whitepaper: Pingback vs Trackback.  &quot;It seems pingback has caused quite a stir in the Web logging and syndication communities.&quot;</description>
+      <guid isPermaLink="false">1854@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><cite>Ian Hickson</cite>: <a href="http://ln.hixie.ch/?start=1033171507&amp;count=1">Whitepaper: Pingback vs Trackback</a>.  <q>It seems pingback has caused quite a stir in the Web logging and syndication communities! The spec is barely a week old and already I'm seeing pingbacks on sites of people I've never heard of, so implementations are spreading, which is great. It also seems pingback has acted a little like a kick in the backside to the trackback folk, causing them to work on the transparency side of trackback, which is good to see too.</q></p>]]></content:encoded>
+      <dc:subject></dc:subject>
+      <dc:date>2002-09-27T23:17:51-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Introduction</title>
+      <link>http://diveintomark.org/archives/2002/09/27.html#introduction</link>
+      <description>Jeffrey Zeldman: &quot;Welcome to zeldman.com, a poorly designed website that hides vital content from its many naive, first-time visitors.</description>
+      <guid isPermaLink="false">1853@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><cite>Jeffrey Zeldman</cite>: <q><a href="http://www.zeldman.com/daily/0902b.html#medesignprettyoneday">Welcome to zeldman.com</a>, a poorly designed website that hides vital content from its many naive, first-time visitors.</q></p>]]></content:encoded>
+      <dc:subject></dc:subject>
+      <dc:date>2002-09-27T18:16:54-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>It's Google's world, we just live in it</title>
+      <link>http://diveintomark.org/archives/2002/09/27.html#its_googles_world_we_just_live_in_it</link>
+      <description>Results of a Google search for &quot;It's so-and-so's world, we just live in it&quot;.</description>
+      <guid isPermaLink="false">1851@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p>A Google search for <a href="http://www.google.com/search?q=%22world+we+just+live+in+it%22">"world we just live in it"</a> reveals that:</p>
+
+<ul>
+<li><a href="http://www.cinepad.com/sinatra/sinatra.htm">It's Frank [Sinatra]'s world, we just live in it</a></li>
+<li><a href="http://www.poopoochoochoo.com/">It's Mandy's world, we just live in it</a></li>
+<li><a href="http://members.tripod.com/~cshel/elijah.html">It's Elijah [Jordan Wood]'s world, we just live in it</a></li>
+<li><a href="http://jerseybeat1.homestead.com/files/52601.html">It's 'N Sync's world, we just live in it</a></li>
+<li><a href="http://www.vh1.com/artists/news/1444632/06202001/aerosmith.jhtml">It's Aerosmith's world, we just live in it</a></li>
+<li><a href="http://www.biennaleofsydney.com.au/vidprog.asp#14">It's Jim's world, we just live in it</a></li>
+<li><a href="http://members.tripod.com/ddraven/psh/">It's Philip [Seymour Hoffman]'s world, we just live in it</a></li>
+<li><a href="http://espn.go.com/page2/s/wiley/001108.html">It's Jeet's [Derek Sanderson Jeter's] world, we just live in it</a></li>
+<li><a href="http://www.bcr.com/bcrmag/1998/11/p06.asp">It's the ILECs' world, we just live in it</a></li>
+<li><a href="http://www.business2.com/articles/mag/0,1640,37760,FF.html">It's Walmart's world, we just live in it</a></li>
+<li><a href="http://www.geocities.com/waltripworld/">It's Mikey's [Michael Waltrip's] world, we just live in it</a></li>
+<li><a href="http://www.angelfire.com/geek/BiancaBrandt/index.html">It's Bianca [Brandt]'s world, we just live in it</a></li>
+<li><a href="http://www.curtsandoval.com/family.htm">It's Tulip's world, we just live in it</a></li>
+<li><a href="http://www.chaseclub.com/news23.htm">It's Bill Gates' world, we just live in it</a></li>
+<li><a href="http://www.cnet.com/software/0-3227883-8-7614087-6.html">It's Microsoft's world, we just live in it</a></li>
+<li><a href="http://www.linux-mag.com/1999-05/linus_01.html">It's Linus [Torvalds]' world, we just live in it</a></li>
+<li><a href="http://www.geocities.com/michellebranchsworld/home.html">It's Michelle Branch's world, we just live in it</a></li>
+<li><a href="http://www.popmatters.com/music/reviews/g/guidedbyvoices-universal.shtml">It's Robert Pollard's world, we just live in it</a></li>
+<li><a href="http://www.theprimeone.com/archives/000067.html">It's Anna and Grace's world, we just live in it</a></li>
+<li><a href="http://www.salon.com/ent/tv/mill/1999/03/08mill.html">It's Mulder and Scully's world, we just live in it</a></li>
+<li><a href="http://www.brunching.com/gladiator.html">It's Russell Crowe's world, we just live in it</a></li>
+<li><a href="http://www.epinions.com/mvie-review-5B0-D8DF92D-38791117-prod1">It's Fellini's world, we just live in it</a></li>
+<li><a href="http://hometown.aol.com/radarama1/">It's Cairo's world, we just live in it</a></li>
+</ul>
+
+<p>And finally:</p>
+
+<ul>
+<li><a href="http://www.snopes.com/weddings/embarras/bothered.htm">It's the Bothered Bride [or Groom]'s world, we just live in it</a></li>
+</ul>
+
+<p></p>]]></content:encoded>
+      <dc:subject></dc:subject>
+      <dc:date>2002-09-27T15:43:02-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Semantic mapping of RSS elements</title>
+      <link>http://diveintomark.org/archives/2002/09/27.html#semantic_mapping_of_rss_elements</link>
+      <description>Sam Ruby has started a discussion of mapping core RSS elements to namespace-based equivalents.</description>
+      <guid isPermaLink="false">1850@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p>Sam Ruby has started a discussion of <a href="http://groups.yahoo.com/group/rss-dev/message/4124">mapping core RSS elements to namespace-based equivalents</a>.  This is useful for developers who want to consume RSS 2.0 feeds and want to know how to handle the new namespace-based elements.  Already support <code>language</code>?  Be on the lookout for <code>dc:language</code> as well.  And so forth.  The mapping isn't always that direct (some elements use different formats, like <code>pubDate</code> and <code>dc:date</code>), but it's a good start to an important discussion.</p>]]></content:encoded>
+      <dc:subject></dc:subject>
+      <dc:date>2002-09-27T13:40:34-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Repair</title>
+      <link>http://diveintomark.org/archives/2002/09/27.html#repair</link>
+      <description>Kevin Guilfoile: The Half-Assed Handyman.</description>
+      <guid isPermaLink="false">1849@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><cite title="The Morning News">Kevin Guilfoile</cite>: <a href="http://www.themorningnews.org/archives/stories/the_halfassed_handyman.shtml">The Half-Assed Handyman</a>.  <q>Once the Half-Assed Handyman decides on a course of repair he must remain committed to it by fixing the broken object the same way over and over, even though the method is clearly ineffective, or even nonsensical.</q></p>]]></content:encoded>
+      <dc:subject>Writers</dc:subject>
+      <dc:date>2002-09-27T13:30:01-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Rescued pictures</title>
+      <link>http://diveintomark.org/archives/2002/09/27.html#rescued_pictures</link>
+      <description>18 rescued pictures, from 1920, 1983, 1990, 2000, and 2001.</description>
+      <guid isPermaLink="false">1848@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><a href="http://diveintomark.org/pictures/rescued_pictures/">18 rescued pictures</a>, from 1920, 1983, 1990, 2000, and 2001.</p>]]></content:encoded>
+      <dc:subject>Personal</dc:subject>
+      <dc:date>2002-09-27T01:23:29-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Chicks dig that</title>
+      <link>http://diveintomark.org/archives/2002/09/27.html#chicks_dig_that</link>
+      <description>Slashdot: 37 Operating Systems, 1 PC.</description>
+      <guid isPermaLink="false">1846@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><a href="http://www.maximumpc.com/features/feature_2002-09-24.html">One PC, Six Hard Drives, 37 OSes</a>!  [via Slashdot: <a href="http://slashdot.org/article.pl?sid=02/09/26/1225200&amp;mode=nested&amp;tid=99&amp;threshold=3">37 Operating Systems, 1 PC</a>]</p>
+
+<blockquote>
+<p>Q: Were there any OSes you couldn't find?</p>
+<p>A: I couldn't find an OS that would tell me how to successfully deal with girls.</p>
+</blockquote>
+
+<p><a href="http://diveintomark.org/pictures/christmas_2001/86.html">Mac OS X, baby</a>.  <a href="http://diveintomark.org/pictures/christmas_2001/87.html">Mac OS X</a>.</p>]]></content:encoded>
+      <dc:subject></dc:subject>
+      <dc:date>2002-09-27T01:12:29-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>RSS 2.0 template</title>
+      <link>http://diveintomark.org/archives/2002/09/26.html#rss_20_template</link>
+      <description>RSS 2.0 template for Movable Type, ready to copy and paste over your existing RSS 0.91 template (index.xml).  There are several design decisions at work in this tempate that bear explaining.</description>
+      <guid isPermaLink="false">1844@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><a href="http://diveintomark.org/public/rss2.tmpl">RSS 2.0 template for Movable Type</a>, ready to copy and paste over your existing RSS 0.91 template (<code>index.xml</code>).  No modifications are required, unless your weblog is in a language other than English, in which case you'll need to change the <code>dc:language</code> tag to <a href="http://www.loc.gov/standards/iso639-2/englangn.html">your language code</a>.  (Use the 2-letter language code, unless there isn't one for your language, in which case, use the 3-letter language code.  And while you're at it, put the same language code <a href="http://diveintoaccessibility.org/day_7_identifying_your_language.html">in your <code>HTML</code> tag</a> in your normal page templates.  But I digress.)</p>
+
+<p><a href="http://diveintomark.org/xml/rss2.xml">Here's what the RSS 2.0 output looks like</a>.</p>
+
+<p>There are several design decisions at work in this template that bear explaining.  First of all, this template is designed to be backward-compatible with all existing aggregators, news readers, and RSS parsers, ranging from the super-smart XML parser built into .NET to the dumb, minimal, regular-expression-based parser that your downstairs neighbor banged out on a Friday night.  If you upgrade your existing <code>index.xml</code> right now, none of these parsers should crash, and none of your subscribers should scream bloody murder.  This is a good thing.</p>
+
+<p>Now then, if you look at the template, you'll notice a whole slew of lines at the top like <code>xmlns:dc="..."</code>.  These are namespaces.  Keven Hemenway has written an excellent primer on <a href="http://www.disobey.com/detergent/2002/extendingrss2/">extending RSS 2.0 with namespaces</a>, so I won't explain them here except to say that we use them, and you should get used to seeing them.  Most RSS 2.0 documents you see will use namespaces in some way, because they are the primary way of adding functionality beyond the basic title-link-description combination.  If all you want is title-link-description, stick with your existing RSS 0.91 template and stop reading now.</p>
+
+<p>Still here?  OK.  Now, the <a href="http://backend.userland.com/rss">RSS 2.0 specification</a> says nothing about how to actually use namespaces in RSS, just that you're allowed to.  So where did these particular namespaces come from?  Well, I didn't make them up.  They have been developed over the past two years by some smart people, most of whom hang out on the <a href="http://groups.yahoo.com/group/rss-dev/">RSS-DEV mailing list</a>.  The namespaces were originally developed for RSS 1.0, and most of them can be used without modification in RSS 2.0.  (There's a lot of stuff I'm skipping over here on purpose.  There will be a lot more documentation forthcoming in the next few months on exactly how to use various namespaces in RSS 2.0.  Some of it still needs to be worked out, but most of it just needs to be written down.  Please be patient.)</p>
+
+<p>So anyway, we use namespaces for a lot of stuff.  Most stuff, in fact.  In the template, you'll see title-link-description for <code>channel</code>, and title-link-description-guid for <code>item</code>.  <code>guid</code> is new in RSS 2.0, and it is used to uniquely identify an item, so even if the title or description changes, aggregators know that it's the same item; the end user can choose whether to re-display changed items, but first programs need to be able to track which items are which.  (<a href="http://radio.userland.com/">Radio Userland</a> already supports this.)  To create the <code>guid</code>, I've combined <code>MTEntryID</code> with <code>MTBlogURL</code> to generate a unique string for each item, and I've arranged them so there's no confusion about it possibly being a URL.  It's not a URL; it's just a unique string.  (Other systems have stricter format requirements for guids, but RSS 2.0 does not.  A guid is a unique string, and that's all.)</p>
+
+<p>Pretty much everything beyond title-link-description (and guid) uses namespaces.  This template makes use of all 3 of the <a href="http://purl.org/rss/1.0/modules/standard.html">standard RSS 1.0 namespaces</a>, but there are many other <a href="http://purl.org/rss/1.0/modules/proposed.html">proposed namespaces</a> that have a lot of good design behind them.  We use one (<code>admin</code>), which is already widely used; the rest may be useful to you, depending on your niche.  (If you think you need to design your own namespace, look through that list and make sure you're not re-inventing the wheel.)</p>
+
+<p>Back to the template.  Other than guid, the most important thing to note about this template is that the <code>title</code>, <code>link</code>, and <code>description</code> are all plain text.  (<code>description</code> is an excerpt; if you do not enter an excerpt manually for a post, Movable Type will auto-generate one.  You can control how long this auto-generated excerpt is by going to Blog Config, then Preferences, then <q>Number of words in excerpt</q>.)  <code>title</code> was always supposed to be plain text, but sticking to plain text in the <code>description</code> tag is an intentional compromise, to support parsers that can not handle HTML, or handle it improperly.  Never fear, the full HTML text of your post is still included; it's stored in the <code>content:encoded</code> element.  (<a href="http://bitworking.org/Aggie.html">Aggie</a> already supports this.)  This allows more robust news readers -- that can handle either text or HTML -- to offer the end user the choice of whether to see excerpts or full posts.  Some people use news aggregators to find things to read, others like reading everything directly in their aggregator.  RSS 0.9x made you (the author) choose one or the other; RSS 2.0 allows you to offer both, and pass the choice along to the end user.  This is a good thing.</p>
+
+<p>There's more good stuff in there, but the explanations will have to wait for another day.  If you're interested in learning how to extend RSS to suit your needs, your best bet is to read through the documentation of the existing RSS 1.0 namespaces.  If you have questions, your best bet is the <a href="http://groups.yahoo.com/group/rss-dev/">RSS-DEV mailing list</a>, where Kevin is currently <a href="http://groups.yahoo.com/group/rss-dev/message/4046">discussing his namespace primer</a>.  Archives are public and free, so no subscription is required, and lurking is encouraged.</p>
+
+<p>And watch this space.</p>]]></content:encoded>
+      <dc:subject>Weblogging</dc:subject>
+      <dc:date>2002-09-26T01:28:52-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>FOAF explorer</title>
+      <link>http://diveintomark.org/archives/2002/09/25.html#foaf_explorer</link>
+      <description>Morten Frederiksen has taken a first stab at a real-time social network explorer based on FOAF files.  It's heavy on tech details, but you can easily see the potential here.</description>
+      <guid isPermaLink="false">1843@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p>Morten Frederiksen has taken a first stab at a real-time social network explorer based on FOAF files.  You could <a href="http://xml.mfd-consult.dk/foaf/?foaf=http%3A%2F%2Fdiveintomark.org%2Fpublic%2Ffoaf.rdf">start on my profile</a> and explore from there, or enter the URL of your own FOAF file (at the bottom of the page).  It's heavy on tech details, but you can easily see the potential here.  (It's also a great way to debug your FOAF file, if you added anything manually.)  Now we need somebody to build a spider that follows <code>foaf:knows</code> links and draws pretty social network diagrams, so we can see the forest for the trees.</p>]]></content:encoded>
+      <dc:subject></dc:subject>
+      <dc:date>2002-09-25T18:18:53-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Maps</title>
+      <link>http://diveintomark.org/archives/2002/09/25.html#maps</link>
+      <description>Mark Tosczak @ Wired: A New Way to Read, Not See, Maps.</description>
+      <guid isPermaLink="false">1842@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><cite title="Wired News">Mark Tosczak</cite>: <a href="http://www.wired.com/news/school/0,1383,54916,00.html">A New Way to Read, Not See, Maps</a>.  <q>The map-navigation software, dubbed Blind Audio Tactile Mapping System ... takes digital map information and provides nonvisual feedback as a user moves a cursor across the map.</q></p>]]></content:encoded>
+      <dc:subject>Accessibility</dc:subject>
+      <dc:date>2002-09-25T10:45:15-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Plan</title>
+      <link>http://diveintomark.org/archives/2002/09/25.html#plan</link>
+      <description>Paul Ford: Falling Off a Truck.  &quot;In the last 4 days I fell off a truck and was dragged for 30 feet, and was interviewed by an NPR show. Those two facts are not related except that they both happened to me and made me queasy. I also wrote a short plan outlining the rest of my life.&quot;</description>
+      <guid isPermaLink="false">1841@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><cite>Paul Ford</cite>: <a href="http://ftrain.com/recent_update_etc.html">Falling Off a Truck</a>.  <q>In the last 4 days I fell off a truck and was dragged for 30 feet, and was interviewed by an NPR show. Those two facts are not related except that they both happened to me and made me queasy. I also wrote a short plan outlining the rest of my life.</q></p>]]></content:encoded>
+      <dc:subject>Writers</dc:subject>
+      <dc:date>2002-09-25T10:43:06-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>RSS revolt</title>
+      <link>http://diveintomark.org/archives/2002/09/25.html#rss_revolt</link>
+      <description>People appear to be sick of the syndication format wars.  Some are protesting, some are creating new formats with new names, others are simply boycotting.</description>
+      <guid isPermaLink="false">1840@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><cite>Anil Dash</cite>: <a href="http://www.dashes.com/anil/index.php?archives/003183.php">XML version 1.0</a>.  <q>Why isn't there a way to syndicate my words without butchering the way they look?</q>  Several people protested last week by changing their weblog templates to <a href="http://www.dashes.com/anil/xmlindex.php">something like this</a>.  <a href="http://q.queso.com/index.php?archives/001000.php">Jason Levine has more links</a> to those involved.  I spoke with one of the people who implemented it, and she claims it wasn't a protest as such, more of an inside joke.  Point taken: the entire point of an aggregator (and syndication in general) is to make everyone's words look the same.  Counterpoint: the default in most weblog systems is to only publish excerpts in RSS feeds; nobody's forcing you to publish full posts.  This would probably be a good place to insert a Zen quote about attachment, but my mind is too fuzzy to find it.</p>
+
+<p><cite>Timothy Appnel</cite>: <a href="http://www.mplode.com/tima/archives/000107.html">More FFKAR, RDF, and FOAF</a>.  FFKAR is <q>the format formerly known as RSS</q>.  <a href="http://www.intertwingly.net/blog/840.html">Sam has already implemented it</a>.</p>
+
+<p><cite>Nicholas Avenell</cite>: <a href="http://www.aquarionics.com/nodes/view.php?name=esf">ESF</a>.  <q>Are you also fed up with the continuing war between RSS 0.9* and 1.0 and 2.0 and whatever else they invent today? Me too. So today I invented the Epistula Syndication Format. ESF. It isn't XML. It isn't RDF. It's just data.</q>  <a href="http://www.intertwingly.net/blog/">Sam</a> would love it, then.  But <a href="http://www.movabletype.org/docs/mtmanual_tags.html#date tag formats">Movable Type doesn't support outputting dates in Unix timestamp format</a>, which could be an impediment to mainstream acceptance.</p>
+
+<p><cite>Shelley Powers</cite>: <a href="http://weblog.burningbird.net/archives/000544.php">Consumer Rights and RSS</a>.  <q>I'm not buying into RSS 0.9x. I'm not buying into RSS 2.0. I'm not buying into RSS 1.0. I changed my RSS 0.91 and RSS 1.0 templates to read the following:</q></p>
+
+<blockquote>
+<p><strong>RSS not supported here</strong></p>
+<p>This weblog does not support RSS 0.9x, RSS 2.0, or RSS 1.0. If you wish to view entries, may I suggest that you visit the weblog, and save your fast skimming for the New York Times and Wall Street Journal.</p>
+</blockquote>
+
+<p>I'm sure this is some sort of DMCA violation or something, but here goes:</p>
+
+<blockquote>
+<p><code>import urllib, re; print "&lt;rss&gt;&lt;channel&gt;\n &lt;title&gt;Burningbird&lt;/title&gt;\n &lt;link&gt;http://weblog.burningbird.net/&lt;/link&gt;\n &lt;language&gt;en-us&lt;/language&gt;\n &lt;/channel&gt;\n" + "\n".join(["&lt;item&gt;&lt;title&gt;%s&lt;/title&gt;&lt;link&gt;%s&lt;/link&gt;&lt;/item&gt;" % t for t in re.compile(r'dc:title="(.*?)"\s*dc:identifier="(.*?)"', re.DOTALL).findall(urllib.urlopen('http://weblog.burningbird.net/').read())]) + "&lt;/rss&gt;"</code></p>
+</blockquote>
+
+<p></p>]]></content:encoded>
+      <dc:subject></dc:subject>
+      <dc:date>2002-09-25T00:38:31-05:00</dc:date>
+    </item>
+
+    <item>
+      <title>Stark raving sane</title>
+      <link>http://diveintomark.org/archives/2002/09/24.html#stark_raving_sane</link>
+      <description>Sam Ruby is stark raving mad.</description>
+      <guid isPermaLink="false">1839@http://diveintomark.org/</guid>
+      <content:encoded><![CDATA[<p><cite>Sam Ruby</cite>: <a href="http://www.intertwingly.net/blog/844.html">Stark raving mad</a>.</p>
+
+<blockquote>
+<p>This post was entered in Radio, extracted using a batch file via some UserTalk, parsed using Perl, cleaned up by tidy and a C program of my own design, transferred to intertwingly using scp, and then ssh triggers unpacking on the destination site, where a shell script takes over: invokes indexing using Jakarta's Lucene, and then a python script pings weblogs.com and blo.gs.</p>
+</blockquote>
+
+<p>Tom Stoppard (<cite>Rosencrantz and Guildenstern are Dead</cite>):</p>
+
+<blockquote>
+<p>Guildenstern: <q>A man talking sense to himself is no madder than a man talking nonsense not to himself.</q><br />
+Rosencrantz: <q>Or just as mad.</q><br />
+Guildenstern: <q>Or just as mad.</q><br />
+Rosencrantz: <q>And he does both.</q><br />
+Guildenstern: <q>So there you are.</q><br />
+Rosencrantz: <q>Stark raving sane.</q></p>
+</blockquote>
+
+<p></p>]]></content:encoded>
+      <dc:subject></dc:subject>
+      <dc:date>2002-09-24T22:05:32-05:00</dc:date>
+    </item>
+
+
+  </channel>
+</rss>

@@ -1,0 +1,186 @@
+<?xml version='1.0' encoding='EUC-JP'?>
+<rdf:RDF
+	xmlns="http://purl.org/rss/1.0/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+	<channel rdf:about='http://bat/~gallery'>
+		<title>トップ</title>
+
+		<link>http://bat/~gallery</link>
+
+		<description>ギャラリートップ</description>
+
+		
+		<items>
+				<rdf:Seq>
+					<rdf:li resource="http://bat/~gallery/./momi/paris/%A5%D5%A5%E9%A5%F3%A5%B9%20%20%A5%D1%A5%EA.jpg" />
+
+					<rdf:li resource="http://bat/~gallery/./momi/paris/invalides.jpg" />
+
+					<rdf:li resource="http://bat/~gallery/./momi/paris/tour%2Deffel2.jpg" />
+
+					<rdf:li resource="http://bat/~gallery/./momi/paris/tour%2Deffel3.jpg" />
+
+					<rdf:li resource="http://bat/~gallery/./momi/paris/france_photo2_055.jpg" />
+
+					<rdf:li resource="http://bat/~gallery/./momi/paris/france_photo2_054.jpg" />
+
+					<rdf:li resource="http://bat/~gallery/./momi/paris/tour%2Deffel.jpg" />
+
+					<rdf:li resource="http://bat/~gallery/./wrudgef/SPANGLETRASH/101%2D0133_IMG.JPG" />
+
+					<rdf:li resource="http://bat/~gallery/./wrudgef/SPANGLETRASH/101%2D0137_IMG.JPG" />
+
+					<rdf:li resource="http://bat/~gallery/./wrudgef/SPANGLETRASH/101%2D0136_IMG.JPG" />
+
+					<rdf:li resource="http://bat/~gallery/./wrudgef/SPANGLETRASH/101%2D0134_IMG.JPG" />
+
+					<rdf:li resource="http://bat/~gallery/./wrudgef/BARROWGANG/100%2D0099_IMG.JPG" />
+
+
+
+				</rdf:Seq>			
+
+
+		</items>
+
+		
+
+	</channel>
+
+
+	<item rdf:about='http://bat/~gallery/./momi/paris/%A5%D5%A5%E9%A5%F3%A5%B9%20%20%A5%D1%A5%EA.jpg'>
+		<title>フランス  パリ</title>
+
+		
+		<description></description>
+
+		<dc:date>2003-06-11T00:13:33+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./momi/paris/invalides.jpg'>
+		<title>金ぴかドーム</title>
+
+		
+		<description>アンヴァリッドといいます。軍事博物館・解放勲章博物館・サン＝ルイ教会、そして、あのナポレオン１世の墓としての顔も持っています。</description>
+
+		<dc:date>2003-06-11T00:13:33+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./momi/paris/tour%2Deffel2.jpg'>
+		<title>下から激写</title>
+
+		
+		<description>エッフェルを下から見るとこんな感じです。</description>
+
+		<dc:date>2003-06-11T00:13:33+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./momi/paris/tour%2Deffel3.jpg'>
+		<title>今度は上から</title>
+
+		
+		<description>エッフェル塔は、１階・２階に登ることができます。これは１階からのショット。地上３０ｍ位でしょうか。パリが一望できます。</description>
+
+		<dc:date>2003-06-11T00:13:33+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./momi/paris/france_photo2_055.jpg'>
+		<title>どこだかわかりますか？</title>
+
+		
+		<description>シャンゼリゼと言えばわかりますよね。
+この画像じゃただの道ですが・・・</description>
+
+		<dc:date>2003-06-11T00:13:33+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./momi/paris/france_photo2_054.jpg'>
+		<title>凱旋門のようです</title>
+
+		
+		<description>メッカですからねぇ。足下はロータリーです。よくぶつからないものだと感心してしまいます。</description>
+
+		<dc:date>2003-06-11T00:13:33+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./momi/paris/tour%2Deffel.jpg'>
+		<title>エッフェル塔というやつです</title>
+
+		
+		<description>天気悪くて綺麗じゃないですね。できた当時は、鉄の塊にかなり批判的な声が多かったらしいですよ。今は観光名所ですけどね。</description>
+
+		<dc:date>2003-06-11T00:13:33+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./wrudgef/SPANGLETRASH/101%2D0133_IMG.JPG'>
+		<title>プリント半そでシャツ</title>
+
+		
+		<description>￥9.800　Ｍ　＜ピンク　ブルー　クロ＞
+背中にト音記号プリントの入ったシャツ。
+Ｔシャツやタンクトップの上に羽織ってロックに決めよう！</description>
+
+		<dc:date>2003-06-11T00:12:36+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./wrudgef/SPANGLETRASH/101%2D0137_IMG.JPG'>
+		<title>髑髏プリント半そでシャツ</title>
+
+		
+		<description>￥9.800　Ｍ　＜ボルドー　グレイ　クロ＞
+スパングルお得意のハードな髑髏プリントのシャツ。
+背中が主張しまくります。</description>
+
+		<dc:date>2003-06-11T00:12:36+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./wrudgef/SPANGLETRASH/101%2D0136_IMG.JPG'>
+		<title>髑髏プリント半そでシャツ</title>
+
+		
+		<description>￥9.800　Ｍ　＜ボルドー　グレイ　クロ＞
+スパングルお得意のハードな髑髏プリントのシャツ。
+背中が主張しまくります。</description>
+
+		<dc:date>2003-06-11T00:12:36+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./wrudgef/SPANGLETRASH/101%2D0134_IMG.JPG'>
+		<title>プリント半そでシャツ</title>
+
+		
+		<description>￥9.800　Ｍ　＜ピンク　ブルー　クロ＞
+背中にト音記号プリントの入ったシャツ。
+Ｔシャツやタンクトップの上に羽織ってロックに決めよう！</description>
+
+		<dc:date>2003-06-11T00:12:36+09:00</dc:date>
+
+	</item>
+
+	<item rdf:about='http://bat/~gallery/./wrudgef/BARROWGANG/100%2D0099_IMG.JPG'>
+		<title>あみあみスカート</title>
+
+		
+		<description>￥8.900　フリーサイズ　＜ベージュ＞
+綿であんだニットなので軽い印象です。
+ちょうどひざ上丈なので、パンツと重ねたりもできます。</description>
+
+		<dc:date>2003-06-11T00:09:25+09:00</dc:date>
+
+	</item>
+
+
+
+
+</rdf:RDF>

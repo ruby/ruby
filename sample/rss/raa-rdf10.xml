@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns="http://my.netscape.com/rdf/simple/0.9/">
+
+  <channel>
+    <title>Ruby App. Archive</title>
+    <link>http://raa.ruby-lang.org/</link>
+    <description>New 10 files in the Ruby Application Archive</description>
+  </channel>
+  <item>
+    <title>library: classes to manage versioned libraries</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=library</link>
+  </item>
+
+  <item>
+    <title>sys-host: hostname and ip address info via Ruby - C extension</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=sys-host</link>
+  </item>
+
+  <item>
+    <title>sys-uptime: 'uptime' information via Ruby - C extension</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=sys-uptime</link>
+  </item>
+
+  <item>
+    <title>hail_ruby: most of the ruby stuff from Hail packaged as an extension</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=hail_ruby</link>
+  </item>
+
+  <item>
+    <title>tiki: Tiki - WikiEngine</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=tiki</link>
+  </item>
+
+  <item>
+    <title>sys-cpu: Interface for cpu information</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=sys-cpu</link>
+  </item>
+
+  <item>
+    <title>btpgsql: Bi-Temporal PostgreSQL - manage data which changes over time</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=btpgsql</link>
+  </item>
+
+  <item>
+    <title>ynot2day_server: YNot2Day Server Templator</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=ynot2day_server</link>
+  </item>
+
+  <item>
+    <title>kwarts: kwa's Ruby Template System - a very fast template system</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=kwarts</link>
+  </item>
+
+  <item>
+    <title>exerb-win32: Exerb for Windows</title>
+    <link>http://raa.ruby-lang.org/list.rhtml?name=exerb-win32</link>
+  </item>
+</rdf:RDF>

@@ -1,0 +1,330 @@
+require "rss/rss"
+
+module RSS
+
+	class NotWellFormedError < Error
+		attr_reader :line, :element
+		def initialize(line=nil, element=nil)
+			message = "This is not well formed XML"
+			if element or line
+				message << "\nerror occurred"
+				message << " in #{element}" if element
+				message << " at about #{line} line" if line
+			end
+			message << "\n#{yield}" if block_given?
+			super(message)
+		end
+	end
+
+	class XMLParserNotFound < Error
+		def initialize
+			super("available XML parser does not found in " <<
+						"#{AVAILABLE_PARSERS.inspect}.")
+		end
+	end
+
+	class NSError < InvalidRSSError
+		attr_reader :tag, :prefix, :uri
+		def initialize(tag, prefix, require_uri)
+			@tag, @prefix, @uri = tag, prefix, require_uri
+			super("prefix <#{prefix}> doesn't associate uri " <<
+						"<#{require_uri}> in tag <#{tag}>")
+		end
+	end
+
+	class BaseParser
+
+		def initialize(rss)
+			@listener = Listener.new
+			@rss = rss
+		end
+
+		def rss
+			@listener.rss
+		end
+
+		def ignore_unknown_element
+			@listener.ignore_unknown_element
+		end
+
+		def ignore_unknown_element=(new_value)
+			@listener.ignore_unknown_element = new_value
+		end
+
+		def do_validate
+			@listener.do_validate
+		end
+
+		def do_validate=(new_value)
+			@listener.do_validate = new_value
+		end
+
+		def parse
+			if @listener.rss.nil?
+				_parse
+			end
+			@listener.rss
+		end
+
+		class << self
+			def parse(rss, do_validate=true, ignore_unknown_element=true)
+				parser = new(rss)
+				parser.do_validate = do_validate
+				parser.ignore_unknown_element = ignore_unknown_element
+				parser.parse
+			end
+		end
+		
+	end
+
+	class BaseListener
+
+		extend Utils
+
+		class << self
+
+			@@setter = {}
+			def install_setter(uri, tag_name, setter)
+				@@setter[uri] = {}  unless @@setter.has_key?(uri)
+				@@setter[uri][tag_name] = setter
+			end
+
+			def setter(uri, tag_name)
+				begin
+					@@setter[uri][tag_name]
+				rescue NameError
+					nil
+				end
+			end
+
+			def available_tags(uri)
+				begin
+					@@setter[uri].keys
+				rescue NameError
+					[]
+				end
+			end
+					
+			def install_get_text_element(name, uri, setter)
+				install_setter(uri, name, setter)
+				def_get_text_element(name, *get_file_and_line_from_caller(1))
+			end
+			
+			private
+
+			def def_get_text_element(name, file, line)
+				unless private_instance_methods(false).include?("start_#{name}")
+					module_eval(<<-EOT, file, line)
+					def start_#{name}(name, prefix, attrs, ns)
+						uri = ns[prefix]
+						if @do_validate
+							tags = self.class.available_tags(uri)
+							unless tags.include?(name)
+								raise UnknownTagError.new(name, uri)
+							end
+						end
+						start_get_text_element(name, prefix, ns, uri)
+					end
+					EOT
+				end
+				send("private", "start_#{name}")
+			end
+
+		end
+
+	end
+
+	module ListenerMixin
+
+		attr_reader :rss
+
+		attr_accessor :ignore_unknown_element
+		attr_accessor :do_validate
+
+		def initialize
+			@rss = nil
+			@ignore_unknown_element = true
+			@do_validate = true
+			@ns_stack = [{}]
+			@tag_stack = [[]]
+			@text_stack = ['']
+			@proc_stack = []
+			@last_element = nil
+			@version = @encoding = @standalone = nil
+		end
+		
+		def xmldecl(version, encoding, standalone)
+			@version, @encoding, @standalone = version, encoding, standalone
+		end
+
+		def tag_start(name, attributes)
+			@text_stack.push('')
+
+			ns = @ns_stack.last.dup
+			attrs = {}
+			attributes.each do |n, v|
+				if n =~ /\Axmlns:?/
+					ns[$'] = v # $' is post match 
+				else
+					attrs[n] = v
+				end
+			end
+			@ns_stack.push(ns)
+
+			prefix, local = split_name(name)
+			@tag_stack.last.push([ns[prefix], local])
+			@tag_stack.push([])
+			if respond_to?("start_#{local}", true)
+				send("start_#{local}", local, prefix, attrs, ns.dup)
+			else
+				start_else_element(local, prefix, attrs, ns.dup)
+			end
+		end
+
+		def tag_end(name)
+			if $DEBUG
+				p "end tag #{name}"
+				p @tag_stack
+			end
+			text = @text_stack.pop
+			tags = @tag_stack.pop
+			pr = @proc_stack.pop
+			pr.call(text, tags) unless pr.nil?
+		end
+
+		def text(data)
+			@text_stack.last << data
+		end
+
+		private
+
+		def start_RDF(tag_name, prefix, attrs, ns)
+			check_ns(tag_name, prefix, ns, RDF::URI)
+
+			@rss = RDF.new(@version, @encoding, @standalone)
+			@rss.do_validate = @do_validate
+			@last_element = @rss
+			@proc_stack.push Proc.new { |text, tags|
+				@rss.validate_for_stream(tags) if @do_validate
+			}
+		end
+
+		def start_else_element(local, prefix, attrs, ns)
+			class_name = local[0,1].upcase << local[1..-1]
+			current_class = @last_element.class
+			begin
+#			if current_class.const_defined?(class_name)
+				next_class = current_class.const_get(class_name)
+				start_have_something_element(local, prefix, attrs, ns, next_class)
+			rescue NameError
+#			else
+				if @ignore_unknown_element
+					@proc_stack.push(nil)
+				else
+					parent = "ROOT ELEMENT???"
+					begin
+						parent = current_class::TAG_NAME
+					rescue NameError
+					end
+					raise NotExceptedTagError.new(local, parent)
+				end
+			end
+		end
+
+		NAMESPLIT = /^(?:([\w:][-\w\d.]*):)?([\w:][-\w\d.]*)/
+		def split_name(name)
+			name =~ NAMESPLIT
+			[$1 || '', $2]
+		end
+
+		def check_ns(tag_name, prefix, ns, require_uri)
+			if @do_validate
+				if ns[prefix] == require_uri
+					#ns.delete(prefix)
+				else
+					raise NSError.new(tag_name, prefix, require_uri)
+				end
+			end
+		end
+
+		def start_get_text_element(tag_name, prefix, ns, required_uri)
+			@proc_stack.push Proc.new {|text, tags|
+				setter = self.class.setter(required_uri, tag_name)
+				setter ||= "#{tag_name}="
+				if @last_element.respond_to?(setter)
+					@last_element.send(setter, text.to_s)
+				else
+					if @do_validate and not @ignore_unknown_element
+						raise NotExceptedTagError.new(tag_name, @last_element.tag_name)
+					end
+				end
+			}
+		end
+
+		def start_have_something_element(tag_name, prefix, attrs, ns, klass)
+
+			check_ns(tag_name, prefix, ns, klass.required_uri)
+
+			args = []
+			
+			klass.get_attributes.each do |a_name, a_uri, required|
+
+				if a_uri
+					for prefix, uri in ns
+						if uri == a_uri
+							val = attrs["#{prefix}:#{a_name}"]
+							break if val
+						end
+					end
+				else
+					val = attrs[a_name]
+				end
+
+				if @do_validate and required and val.nil?
+					raise MissingAttributeError.new(tag_name, a_name)
+				end
+
+				args << val
+			end
+
+			previous = @last_element
+			next_element = klass.send(:new, *args)
+			next_element.do_validate = @do_validate
+			setter = ""
+			setter << "#{klass.required_prefix}_" if klass.required_prefix
+			setter << "#{tag_name}="
+			@last_element.send(setter, next_element)
+			@last_element = next_element
+			@proc_stack.push Proc.new { |text, tags|
+				p @last_element.class if $DEBUG
+				@last_element.content = text if klass.have_content?
+				@last_element.validate_for_stream(tags) if @do_validate
+				@last_element = previous
+			}
+		end
+
+	end
+
+	unless const_defined? :AVAILABLE_PARSERS
+		AVAILABLE_PARSERS = [
+			"rss/xmlparser",
+			"rss/xmlscanner",
+			"rss/rexmlparser",
+		]
+	end
+
+	loaded = false
+	AVAILABLE_PARSERS.each do |parser|
+		begin
+			require parser
+			loaded = true
+			break
+		rescue LoadError
+		end
+	end
+
+	unless loaded
+		raise XMLParserNotFound
+	end
+end
+

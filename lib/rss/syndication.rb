@@ -1,0 +1,81 @@
+require "rss/1.0"
+
+module RSS
+
+	SY_PREFIX = 'sy'
+	SY_URI = "http://purl.org/rss/1.0/modules/syndication/"
+
+	RDF.install_ns(SY_PREFIX, SY_URI)
+
+	module SyndicationModel
+		
+		extend BaseModel
+		
+		ELEMENTS = []
+		
+		%w(updatePeriod updateFrequency).each do |x|
+			install_text_element("#{SY_PREFIX}_#{x}")
+    end
+
+		%w(updateBase).each do |x|
+			install_date_element("#{SY_PREFIX}_#{x}", 'iso8601', x)
+    end
+
+		def sy_validate(tags)
+			counter = {}
+			ELEMENTS.each do |x|
+				counter[x] = 0
+			end
+
+			tags.each do |tag|
+				key = "#{SY_PREFIX}_#{tag}"
+				raise UnknownTagError.new(tag, SY_URI)  unless counter.has_key?(key)
+				counter[key] += 1
+				raise TooMuchTagError.new(tag, tag_name) if counter[key] > 1
+			end
+		end
+
+
+		alias_method(:_sy_updatePeriod=, :sy_updatePeriod=)
+		def sy_updatePeriod=(new_value)
+			new_value = new_value.strip
+			validate_sy_updatePeriod(new_value) if @do_validate
+			self._sy_updatePeriod = new_value
+		end
+		
+		alias_method(:_sy_updateFrequency=, :sy_updateFrequency=)
+		def sy_updateFrequency=(new_value)
+			new_value = new_value.strip
+			validate_sy_updateFrequency(new_value) if @do_validate
+			self._sy_updateFrequency = new_value.to_i
+		end
+		
+		private
+		SY_UPDATEPERIOD_AVAILABLE_VALUES = %w(hourly daily weekly monthly yearly)
+		def validate_sy_updatePeriod(value)
+			unless SY_UPDATEPERIOD_AVAILABLE_VALUES.include?(value)
+				raise NotAvailableValueError.new("updatePeriod", value)
+			end
+		end
+
+		SY_UPDATEFREQUENCY_AVAILABLE_RE = /\A\s*\+?\d+\s*\z/
+		def validate_sy_updateFrequency(value)
+			if SY_UPDATEFREQUENCY_AVAILABLE_RE !~ value
+				raise NotAvailableValueError.new("updateFrequency", value)
+			end
+		end
+
+	end
+
+	class RDF
+		class Channel; include SyndicationModel; end
+	end
+
+	if const_defined? :BaseListener
+		prefix_size = SY_PREFIX.size + 1
+		SyndicationModel::ELEMENTS.each do |x|
+			BaseListener.install_get_text_element(x[prefix_size..-1], SY_URI, "#{x}=")
+		end
+	end
+
+end

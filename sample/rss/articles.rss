@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<rdf:RDF
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ xmlns="http://purl.org/rss/1.0/"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+ xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"
+ xmlns:syn="http://purl.org/rss/1.0/modules/syndication/"
+>
+
+<channel rdf:about="http://slashdot.org/">
+<title>Slashdot: Articles</title>
+<link>http://slashdot.org/</link>
+<description>News for nerds, stuff that matters</description>
+<dc:language>en-us</dc:language>
+<dc:rights>Copyright &amp;copy; 1997-2001, OSDN</dc:rights>
+<dc:date>2003-03-16T06:13:51+00:00</dc:date>
+<dc:publisher>OSDN</dc:publisher>
+<dc:creator>pater@slashdot.org</dc:creator>
+<dc:subject>Technology</dc:subject>
+<syn:updatePeriod>hourly</syn:updatePeriod>
+<syn:updateFrequency>1</syn:updateFrequency>
+<syn:updateBase>1970-01-01T00:00+00:00</syn:updateBase>
+<items>
+ <rdf:Seq>
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/16/0414225" />
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/16/0131253" />
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/15/2233217" />
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/15/2059226" />
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/15/1734207" />
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/15/1711213" />
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/15/162202" />
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/15/147223" />
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/15/0237232" />
+  <rdf:li rdf:resource="http://slashdot.org/article.pl?sid=03/03/15/1328203" />
+ </rdf:Seq>
+</items>
+<image rdf:resource="http://images.slashdot.org/topics/topicslashdot.gif" />
+<textinput rdf:resource="http://slashdot.org/search.pl" />
+</channel>
+
+<image rdf:about="http://images.slashdot.org/topics/topicslashdot.gif">
+<title>Slashdot: Articles</title>
+<url>http://images.slashdot.org/topics/topicslashdot.gif</url>
+<link>http://slashdot.org/</link>
+</image>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/16/0414225">
+<title>Live Vorbis Streams Over 802.11b From SXSW.com</title>
+<link>http://slashdot.org/article.pl?sid=03/03/16/0414225</link>
+<description>chupacabra writes "SXSW.com in Austin, Texas has a group of computers in various music venues around town. The ices/icecast stream is sent over 802.11 to a ...</description>
+<dc:creator>timothy</dc:creator>
+<dc:subject>wireless</dc:subject>
+<dc:date>2003-03-16T04:19:46+00:00</dc:date>
+<slash:department>decent-exposure</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>50</slash:comments>
+<slash:hitparade>50,43,33,18,10,4,1</slash:hitparade>
+</item>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/16/0131253">
+<title>Music Companies Bemoan New High-Cap Portables</title>
+<link>http://slashdot.org/article.pl?sid=03/03/16/0131253</link>
+<description>An anonymous reader writes "New Scientist reports: 'The music industry this week condemned the launch of two recording systems that will let people copy ...</description>
+<dc:creator>timothy</dc:creator>
+<dc:subject>hardware</dc:subject>
+<dc:date>2003-03-16T02:09:34+00:00</dc:date>
+<slash:department>that's-a-lot-of-lake-woebegone-days</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>184</slash:comments>
+<slash:hitparade>184,170,134,89,41,27,23</slash:hitparade>
+</item>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/15/2233217">
+<title>New Social-Network Mapping Tools Compared</title>
+<link>http://slashdot.org/article.pl?sid=03/03/15/2233217</link>
+<description>Roland Piquepaille writes "There are many new visualization tools around us which try to map our social networks. In this column, I examined Inflow, a ...</description>
+<dc:creator>timothy</dc:creator>
+<dc:subject>software</dc:subject>
+<dc:date>2003-03-15T23:16:26+00:00</dc:date>
+<slash:department>useful-in-high-school-sex-ed-class</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>65</slash:comments>
+<slash:hitparade>65,62,48,32,14,11,8</slash:hitparade>
+</item>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/15/2059226">
+<title>AMD Opteron Due In April</title>
+<link>http://slashdot.org/article.pl?sid=03/03/15/2059226</link>
+<description>updog writes "Here's an article from Infoworld claiming that the new 64-bit AMD Opteron is ready to launch on April 22. Some of the notable features of the new ...</description>
+<dc:creator>timothy</dc:creator>
+<dc:subject>amd</dc:subject>
+<dc:date>2003-03-15T21:07:45+00:00</dc:date>
+<slash:department>grain-of-salt-please</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>244</slash:comments>
+<slash:hitparade>244,227,174,119,38,22,18</slash:hitparade>
+</item>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/15/1734207">
+<title>Clear Case Roundup</title>
+<link>http://slashdot.org/article.pl?sid=03/03/15/1734207</link>
+<description>The Cheat writes "Interested in making your computer the envy of all the other computers on the block? What visitors to oooh and ahhh when they enter your ...</description>
+<dc:creator>CowboyNeal</dc:creator>
+<dc:subject>hardware</dc:subject>
+<dc:date>2003-03-15T19:48:26+00:00</dc:date>
+<slash:department>classy-chassis</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>169</slash:comments>
+<slash:hitparade>169,163,115,68,29,18,14</slash:hitparade>
+</item>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/15/1711213">
+<title>Forbes on Lessig and Eldred</title>
+<link>http://slashdot.org/article.pl?sid=03/03/15/1711213</link>
+<description>scubacuda writes "In the Forbes editorial, Fact and Comment , Steve Forbes voices his support for Lessig and the Eldred case: 'Maybe Congress should just be ...</description>
+<dc:creator>timothy</dc:creator>
+<dc:subject>money</dc:subject>
+<dc:date>2003-03-15T18:40:21+00:00</dc:date>
+<slash:department>capitalist-tool</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>189</slash:comments>
+<slash:hitparade>189,183,158,115,44,30,19</slash:hitparade>
+</item>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/15/162202">
+<title>Modular Home Network PVR at CeBIT</title>
+<link>http://slashdot.org/article.pl?sid=03/03/15/162202</link>
+<description>Mackus Daddius writes "This ought to give the MPAA a conniption: 'The Lancaster system is modular, consisting of a TV tuner (analogue or digital), a hard disk ...</description>
+<dc:creator>CowboyNeal</dc:creator>
+<dc:subject>tv</dc:subject>
+<dc:date>2003-03-15T17:37:55+00:00</dc:date>
+<slash:department>different-kinds-of-tv-networks</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>75</slash:comments>
+<slash:hitparade>75,63,49,34,12,9,8</slash:hitparade>
+</item>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/15/147223">
+<title>EA, Eidos Have No Plans for Xbox Live</title>
+<link>http://slashdot.org/article.pl?sid=03/03/15/147223</link>
+<description>News for nerds writes "Eidos, maker of Tomb Raider, said it doesn't plan to make games for Xbox Live because Microsoft controls the system and manages ...</description>
+<dc:creator>CowboyNeal</dc:creator>
+<dc:subject>games</dc:subject>
+<dc:date>2003-03-15T15:24:48+00:00</dc:date>
+<slash:department>getting-connected</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>275</slash:comments>
+<slash:hitparade>275,266,192,109,45,26,17</slash:hitparade>
+</item>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/15/0237232">
+<title>Build Your Own Sherman Tank</title>
+<link>http://slashdot.org/article.pl?sid=03/03/15/0237232</link>
+<description>absolut.evil writes "OK, so admittedly it is only 1/5th scale, but still pretty cool.. especially if you're a kid. The thing comes complete with working ...</description>
+<dc:creator>Hemos</dc:creator>
+<dc:subject>toys</dc:subject>
+<dc:date>2003-03-15T14:36:49+00:00</dc:date>
+<slash:department>constructing-the-universe</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>216</slash:comments>
+<slash:hitparade>216,206,122,70,36,21,16</slash:hitparade>
+</item>
+
+<item rdf:about="http://slashdot.org/article.pl?sid=03/03/15/1328203">
+<title>Sony's Cashless Smart Card Catching on in Japan</title>
+<link>http://slashdot.org/article.pl?sid=03/03/15/1328203</link>
+<description>Spasemunki writes "The New York Times reports here on the success in Japan of an RF-based, cash replacement smart card developed by Sony. Used primarily by ...</description>
+<dc:creator>timothy</dc:creator>
+<dc:subject>money</dc:subject>
+<dc:date>2003-03-15T13:36:32+00:00</dc:date>
+<slash:department>are-they-tradeable</slash:department>
+<slash:section>articles</slash:section>
+<slash:comments>196</slash:comments>
+<slash:hitparade>196,192,152,77,27,15,10</slash:hitparade>
+</item>
+
+<textinput rdf:about="http://slashdot.org/search.pl">
+<title>Search Slashdot</title>
+<description>Search Slashdot stories</description>
+<name>query</name>
+<link>http://slashdot.org/search.pl</link>
+</textinput>
+
+</rdf:RDF>

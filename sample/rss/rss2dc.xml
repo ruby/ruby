@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<rdf:RDF 
+xmlns="http://purl.org/rss/1.0/"
+xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:sy="http://purl.org/rss/modules/syndication/"
+xml:lang="ja">
+<channel rdf:about="http://www.atmarkit.co.jp">
+<title>＠IT</title>
+<link>http://www.atmarkit.co.jp</link>
+<description>ITエンジニア対象の技術解説情報＆コミュニティサイト</description>
+<language>ja</language>
+<items>
+<rdf:Seq>
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fdotnet/dotnettips/index/index.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fxml/survey/survey09/xml09.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fjava/rensai2/jspservlet05/jspsevlet05_1.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fbiz/column/fl/reg117/01.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fsys/zunouhoudan/036zunou/emb_security.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fjava/devs/dstylefaq/uml/index/dstylefaquml_index.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fwin2k/verification/vpn03/vpn03_01.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fdotnet/insiderseye/20030522vs2003/vs2003.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fbiz/data/index.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fsecurity/rensai/unix_sec01/unix_sec01.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/flinux/rensai/linuxtips/tipsindex.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fwin2k/insiderseye/20030519ws2003an/ws2003an.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fdotnet/hybooks/vbnet01/vbnet01_01.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fnetwork/trend/20030405/sip.html" />
+<rdf:li rdf:resource="http://www.atmarkit.co.jp/fbiz/bookreview/itroi/index.html" />
+</rdf:Seq>
+</items>
+</channel>
+<item rdf:about="http://www.atmarkit.co.jp/fdotnet/dotnettips/index/index.html">
+<title>.NET TIPS -  .NET開発のテクニックとヒント集 -</title>
+<link>http://www.atmarkit.co.jp/fdotnet/dotnettips/index/index.html</link>
+<description>確実な終了処理を行うには？
+ピクセルの色をHTMLカラーへ変換するには？
+文字列を連結するには？</description>
+<category>Insider.NET</category>
+<dc:subject></dc:subject>
+<dc:creator>
+
+</dc:creator>
+<dc:date>2003-05-23T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fxml/survey/survey09/xml09.html">
+<title>読者のXMLとWebサービスの活用状況は？</title>
+<link>http://www.atmarkit.co.jp/fxml/survey/survey09/xml09.html</link>
+<description>2年半前の調査と比べてXMLの利用率は倍以上に。一方で現状はWebサービスを利用する予定がない、という読者の理由も明らかに</description>
+<category>XML &amp; Web Services</category>
+<dc:subject></dc:subject>
+<dc:creator>
+
+</dc:creator>
+<dc:date>2003-05-23T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fjava/rensai2/jspservlet05/jspsevlet05_1.html">
+<title>JSPの基本「暗黙オブジェクト」を使う</title>
+<link>http://www.atmarkit.co.jp/fjava/rensai2/jspservlet05/jspsevlet05_1.html</link>
+<description>暗黙オブジェクトはWebプログラミングになくてならない機能を集約しています。今回から2回に分けてその使い方を理解します</description>
+<category>Java Solution</category>
+<dc:subject></dc:subject>
+<dc:creator>
+山田祥寛
+</dc:creator>
+<dc:date>2003-05-23T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fbiz/column/fl/reg117/01.html">
+<title>新しいネット広告モデル「PPCSE」が開く未来</title>
+<link>http://www.atmarkit.co.jp/fbiz/column/fl/reg117/01.html</link>
+<description>　ひん死のインターネット広告業界に現れた救世主「PPC検索エンジン」。“広告”と“インターネット”はどのように“両立”するのか</description>
+<category>Business Computing</category>
+<dc:subject></dc:subject>
+<dc:creator>
+
+</dc:creator>
+<dc:date>2003-05-23T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fsys/zunouhoudan/036zunou/emb_security.html">
+<title>組み込み用途でもセキュリティが大注目？</title>
+<link>http://www.atmarkit.co.jp/fsys/zunouhoudan/036zunou/emb_security.html</link>
+<description>　SuicaやETCに代表されるような組み込み分野では認証が必須。こうした用途では、どのようにセキュリティを確保しているのだろうか？</description>
+<category>System Insider</category>
+<dc:subject></dc:subject>
+<dc:creator>
+Massa POP Izumida
+</dc:creator>
+<dc:date>2003-05-22T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fjava/devs/dstylefaq/uml/index/dstylefaquml_index.html">
+<title>Q）UMLの9種類のダイアグラムとは？</title>
+<link>http://www.atmarkit.co.jp/fjava/devs/dstylefaq/uml/index/dstylefaquml_index.html</link>
+<description>9種類のUMLダイアグラムがオブジェクト指向開発の各工程でどのような役割を果たすのか。ダイアグラムの基本を詳細に解説する</description>
+<category>Java Solution</category>
+<dc:subject></dc:subject>
+<dc:creator>
+羽生田栄一
+</dc:creator>
+<dc:date>2003-05-22T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fwin2k/verification/vpn03/vpn03_01.html">
+<title>PPTPサーバの構築</title>
+<link>http://www.atmarkit.co.jp/fwin2k/verification/vpn03/vpn03_01.html</link>
+<description>　今回からは実際にVPN環境を構築してみる。まずはActive Directoryドメインの導入とPPTPによるVPNサーバの導入方法について解説する</description>
+<category>Windows Server Insider</category>
+<dc:subject></dc:subject>
+<dc:creator>
+デジタルアドバンテージ
+</dc:creator>
+<dc:date>2003-05-22T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fdotnet/insiderseye/20030522vs2003/vs2003.html">
+<title>プログラマを.NETに誘うVS.NET 2003のラインアップ</title>
+<link>http://www.atmarkit.co.jp/fdotnet/insiderseye/20030522vs2003/vs2003.html</link>
+<description>　.NET Frameworkを搭載したWindowsサーバとともに、Visual Studio .NETの新版がいよいよ発売となる。.NETソリューションの普及は加速されるのか？</description>
+<category>Insider.NET</category>
+<dc:subject></dc:subject>
+<dc:creator>
+デジタルアドバンテージ
+</dc:creator>
+<dc:date>2003-05-22T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fbiz/data/index.html">
+<title>Business &amp; IT DataLinks（IT業界データ集）</title>
+<link>http://www.atmarkit.co.jp/fbiz/data/index.html</link>
+<description>−「ソリューション・サービス市場動向調査」&lt;br&gt;−「不正アクセス行為対策の実態調査」&lt;br&gt;など、5月10日までのデータを12件追加</description>
+<category>Business Computing</category>
+<dc:subject></dc:subject>
+<dc:creator>
+
+</dc:creator>
+<dc:date>2003-05-22T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fsecurity/rensai/unix_sec01/unix_sec01.html">
+<title>不要なサービスの停止こそ管理の第一歩</title>
+<link>http://www.atmarkit.co.jp/fsecurity/rensai/unix_sec01/unix_sec01.html</link>
+<description>　悩ましいのは停止できないサーバの管理。稼働サービスの停止を最小限に抑えた、セキュリティ向上の設定やツールを紹介</description>
+<category>Security&amp;Trust</category>
+<dc:subject></dc:subject>
+<dc:creator>
+
+</dc:creator>
+<dc:date>2003-05-22T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/flinux/rensai/linuxtips/tipsindex.html">
+<title>Linux Tips</title>
+<link>http://www.atmarkit.co.jp/flinux/rensai/linuxtips/tipsindex.html</link>
+<description>Red Hat LinuxでAPTを使うには
+sshでパスワードなしにログインするには
+Unicodeのテキストファイルをほかの文字コードに変換</description>
+<category>Linux Square</category>
+<dc:subject></dc:subject>
+<dc:creator>
+
+</dc:creator>
+<dc:date>2003-05-22T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fwin2k/insiderseye/20030519ws2003an/ws2003an.html">
+<title>Windows Server 2003日本語版がいよいよ登場</title>
+<link>http://www.atmarkit.co.jp/fwin2k/insiderseye/20030519ws2003an/ws2003an.html</link>
+<description>　次世代サーバ「Windows Server 2003」、最新開発環境、64bit対応のSQL 
+Serverが同日発表。.NET戦略は加速されるのか？</description>
+<category>Windows Server Insider</category>
+<dc:subject></dc:subject>
+<dc:creator>
+デジタルアドバンテージ
+</dc:creator>
+<dc:date>2003-05-21T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fdotnet/hybooks/vbnet01/vbnet01_01.html">
+<title>認証によるWebサービス・クライアントの識別</title>
+<link>http://www.atmarkit.co.jp/fdotnet/hybooks/vbnet01/vbnet01_01.html</link>
+<description>XML WebサービスをASP.NET＋VB.NETで構築する際に利用可能なセキュリティ制御について詳細に解説していく</description>
+<category>Insider.NET</category>
+<dc:subject></dc:subject>
+<dc:creator>
+
+</dc:creator>
+<dc:date>2003-05-21T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fnetwork/trend/20030405/sip.html">
+<title>SIP：マイクロソフトがIP電話を面白くする!?</title>
+<link>http://www.atmarkit.co.jp/fnetwork/trend/20030405/sip.html</link>
+<description>　IP網と電話網を統合させるVoIPの、基盤技術の1つ「SIP」。 MSの新サーバでも対応が始まった、この音声や画像などを扱うプロトコルはなぜ重要なのか</description>
+<category>Master of IP Network</category>
+<dc:subject></dc:subject>
+<dc:creator>
+鈴木淳也
+</dc:creator>
+<dc:date>2003-05-21T00:00:00+09:00</dc:date>
+</item>
+<item rdf:about="http://www.atmarkit.co.jp/fbiz/bookreview/itroi/index.html">
+<title>正しいIT投資を目指すための5冊</title>
+<link>http://www.atmarkit.co.jp/fbiz/bookreview/itroi/index.html</link>
+<description>　特集「いまから始めるIT投資効果測定」連動企画。いままさにITのROI測定へ取り組もうという方、具体策がわからず悩んでいる方にオススメの5冊を紹介</description>
+<category>Business Computing</category>
+<dc:subject></dc:subject>
+<dc:creator>
+
+</dc:creator>
+<dc:date>2003-05-21T00:00:00+09:00</dc:date>
+</item>
+</rdf:RDF>

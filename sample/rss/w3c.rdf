@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet href="http://www.w3.org/2000/08/w3c-synd/style.css" type="text/css"?>
+<rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:hr="http://www.w3.org/2000/08/w3c-synd/#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/">
+<channel rdf:about="http://www.w3.org/2000/08/w3c-synd/home.rss">
+<title>World Wide Web Consortium</title>
+<description>Leading the Web to its Full Potential...</description>
+<link>http://www.w3.org/</link>
+<dc:date>2003-03-11T00:11:20Z</dc:date>
+<items>
+<rdf:Seq>
+<rdf:li rdf:resource="http://www.w3.org/News/2003#item50"/>
+<rdf:li rdf:resource="http://www.w3.org/News/2003#item53"/>
+<rdf:li rdf:resource="http://www.w3.org/News/2003#item52"/>
+<rdf:li rdf:resource="http://www.w3.org/News/2003#item51"/>
+<rdf:li rdf:resource="http://www.w3.org/News/2003#item49"/>
+<rdf:li rdf:resource="http://www.w3.org/News/2003#item45"/>
+<rdf:li rdf:resource="http://www.w3.org/News/2003#item46"/>
+</rdf:Seq>
+</items>
+</channel>
+<item rdf:about="http://www.w3.org/News/2003#item50">
+<title>W3C Hosts Technical Plenary and All-Group Meeting</title>
+<description>3 March 2003: W3C holds its third annual Technical Plenary and All Working Group Meeting from 3-7 March in Cambridge, MA, USA. 30 W3C Working Groups and Interest Groups hold face-to-face meetings. Mid-week, many of the more than 400 participants attend the all day public plenary, by far the largest group in the event's history. If your organization would like to join W3C, please refer to the Membership page. (News archive)</description>
+<link>http://www.w3.org/News/2003#item50</link>
+<dc:date>2003-03-03</dc:date>
+</item>
+<item rdf:about="http://www.w3.org/News/2003#item53">
+<title>China International Forum on WWW's Development Announced</title>
+<description>10 March 2003: The China International Forum on WWW's Development 2003 will be held in Beijing, China on 16-17 April. W3C Team members Judy Brewer, Martin Dürst, Ivan Herman, Philipp Hoschka and Matt May present keynotes and tutorials. Attendees will participate in panels on accessibility, SVG, mobile Web, the Semantic Web, VoiceXML and internationalization. Registration is open. The event is co-organized by the China Computer Federation and the W3C Office in Hong Kong. (News archive)</description>
+<link>http://www.w3.org/News/2003#item53</link>
+<dc:date>2003-03-10</dc:date>
+</item>
+<item rdf:about="http://www.w3.org/News/2003#item52">
+<title>Call for Participation: W3C Teleconference on Collaboration</title>
+<description>4 March 2003: W3C is pleased to announce the first in a series of teleconferences on Web accessibility research. Researchers and practitioners in document collaboration, human-computer interaction, assistive technologies, disability studies, Web accessibility, and related fields are invited. The event is sponsored by the Web Accessibility Initiative's Research and Development Interest Group. The first telecon is tentatively 14 April. Position papers are due 21 March. Please refer to the call for papers. (News archive)</description>
+<link>http://www.w3.org/News/2003#item52</link>
+<dc:date>2003-03-04</dc:date>
+</item>
+<item rdf:about="http://www.w3.org/News/2003#item51">
+<title>Web Services Description Language (WSDL) 1.2 Working Draft Published</title>
+<description>3 March 2003: The Web Services Description Working Group has released an updated Working Draft of the Web Services Description Language (WSDL) Version 1.2. WSDL is a model and an XML format for describing Web services that allows separation of abstract functionality from concrete details. Read about Web Services. (News archive)</description>
+<link>http://www.w3.org/News/2003#item51</link>
+<dc:date>2003-03-03</dc:date>
+</item>
+<item rdf:about="http://www.w3.org/News/2003#item49">
+<title>W3C Team Talks in March</title>
+<description>1 March 2003: Browse upcoming W3C appearances and events. (News archive)</description>
+<link>http://www.w3.org/News/2003#item49</link>
+<dc:date>2003-03-01</dc:date>
+</item>
+<item rdf:about="http://www.w3.org/News/2003#item45">
+<title>W3C Co-Sponsors 23rd Internationalization &amp; Unicode Conference</title>
+<description>26 February 2003: Registration is open for the 23rd Internationalization &amp; Unicode Conference to be held 24-26 March in Prague, Czech Republic, near most major cities in Europe. Come and meet W3C Team members Martin Dürst, Richard Ishida, and Chris Lilley who are presenting. The event is the premier technical conference worldwide for software and Web internationalization. Read about Unicode and the W3C Internationalization Activity. (News archive)</description>
+<link>http://www.w3.org/News/2003#item45</link>
+<dc:date>2003-02-26</dc:date>
+</item>
+<item rdf:about="http://www.w3.org/News/2003#item46">
+<title>CSS3 Text Last Call Working Draft Published</title>
+<description>26 February 2003: The CSS Working Group has released a second Last Call Working Draft of the CSS3 module: Text incorporating all comments from the first Last Call. The group welcomes feedback through 5 March. The document is a set of text formatting properties. Many address international contexts, particularly East Asian and bidirectional text. Visit the CSS home page. (News archive)</description>
+<link>http://www.w3.org/News/2003#item46</link>
+<dc:date>2003-02-26</dc:date>
+</item>
+</rdf:RDF>

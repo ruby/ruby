@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns="http://purl.org/rss/1.0/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+>
+<channel rdf:about="http://www.php.net/">
+	<title>PHP: Hypertext Preprocessor</title>
+	<link>http://www.php.net/</link>
+	<description>The PHP scripting language web site</description>
+	<items>
+		<rdf:Seq>
+			<rdf:li rdf:resource="http://www.phparch.com" />
+			<rdf:li rdf:resource="http://www.php.net/echo" />
+			<rdf:li rdf:resource="http://phpconf.hu/" />
+			<rdf:li rdf:resource="http://www.php.net/release_4_3_1.php" />
+			<rdf:li rdf:resource="http://www.php-con.com/return.php?i=ph2" />
+			<rdf:li rdf:resource="http://www.linuxtag.org/2003/en/conferences/cfp.html" />
+			<rdf:li rdf:resource="http://phpconf.phpquebec.org/index.php" />
+			<rdf:li rdf:resource="http://www.phpconference.com/" />
+			<rdf:li rdf:resource="http://pear.php.net/" />
+			<rdf:li rdf:resource="http://www.derickrethans.nl/20021230.php" />
+			<rdf:li rdf:resource="http://www.php.net/downloads.php" />
+			<rdf:li rdf:resource="http://weblabor.hu/php-doc-chm" />
+			<rdf:li rdf:resource="http://www.mysql.com/events/uc2003/" />
+			<rdf:li rdf:resource="http://www.php.net/news.rss" />
+			<rdf:li rdf:resource="http://www.afup.org/" />
+			<rdf:li rdf:resource="http://www.phpmag.de/" />
+			<rdf:li rdf:resource="http://www.phparch.com/" />
+			<rdf:li rdf:resource="http://www.php.net/urlhowto.php" />
+			<rdf:li rdf:resource="http://www.linuxworldexpo.de" />
+		</rdf:Seq>
+	</items>
+</channel>
+<!-- RSS-Items -->
+
+<item rdf:about="http://www.phparch.com">
+	<title>Grant Program</title>
+	<link>http://www.phparch.com</link>
+	<description>    php|architect, is proud to announce the creation of the php|architect Grant Program, whose goal is to provide financial support to best-of-breed PHP-related projects.    Participation in the program is open to all open-source projects that are related to PHP (but not necessarily written in PHP). The program is accepting submissions now and will start distributing grants in June of 2003.    For more information, visit the program's website.  </description>
+	<dc:date>2003-03-06</dc:date>
+</item>
+
+<item rdf:about="http://www.php.net/echo">
+	<title>Set your own language preference</title>
+	<link>http://www.php.net/echo</link>
+	<description>    Starting from today, your browser's &quot;Accept Language&quot; setting is also honored on language sensitive pages on the php.net site. If you would like to get to the documentation page of echo for example, you can use the /echo shortcut on all mirror sites, if your browser is set to provide your language preference information to the server. This also makes the PHP error message links point to the documentation in your preferred language.    You can set your preferences under Edit/Preferences/Navigator/Languages in Mozilla, and under Tools/Internet Options/Languages in Internet Explorer. This will probably also enhance your web experience on sites providing translated content.  </description>
+	<dc:date>2003-03-01</dc:date>
+</item>
+
+<item rdf:about="http://phpconf.hu/">
+	<title>First Hungarian PHP Conference</title>
+	<link>http://phpconf.hu/</link>
+	<description>      The members of the Hungarian PHP community announce the first Hungarian PHP Conference which will take place in Budapest, on Saturday March 29th, sponsored by several international and local companies. The conference offers an entirely free one day activity with several presentations addressing basic and advanced topics, as well, exclusively in Hungarian. Moreover, a five kilobyte-limited PHP contest has been started to discover the most talented PHP programmers in our country. The programme includes the first session of the so-called PHP Division which will be established with the set purpose of representing the community itself and promoting their interests in any national business and official phorums.  </description>
+	<dc:date>2003-02-25</dc:date>
+</item>
+
+<item rdf:about="http://www.php.net/release_4_3_1.php">
+	<title>PHP 4.3.1 released in response to CGI vulnerability</title>
+	<link>http://www.php.net/release_4_3_1.php</link>
+	<description>    The PHP Group today announced the details of a serious CGI vulnerability in PHP version 4.3.0. A security update, PHP 4.3.1, fixes the issue. Everyone running affected version of PHP (as CGI) are encouraged to upgrade immediately. The new 4.3.1 release does not include any other changes, so upgrading from 4.3.0 is safe and painless.  </description>
+	<dc:date>2003-02-17</dc:date>
+</item>
+
+<item rdf:about="http://www.php-con.com/return.php?i=ph2">
+	<title>PHPCon East 2003 - (April 23-25, 2003)</title>
+	<link>http://www.php-con.com/return.php?i=ph2</link>
+	<description>     PHPCon announces PHPCon East 2003 in New York City. This conference features two days of technical learning with speakers such as Rasmus Lerdorf, Zeev Suraski, Michael Radwin, George Schlossnagle and Jeremy Zawodny. PHPCon East also adds a third, full day of tutorials offering practical, cogent PHP solutions and ideas including: MySQL and PHP; Building and Consuming Web Services with SOAP; Getting Started with PHP; High Performance PHP: Profiling and Benchmarking; and more  PHPCon East has discounts for early registration, students, non-profits, and Tutorial/Conference packages. Early Bird Deadline is March 31st. For more program information, visit the PHPCon website. </description>
+	<dc:date>2003-02-01</dc:date>
+</item>
+
+<item rdf:about="http://www.linuxtag.org/2003/en/conferences/cfp.html">
+	<title>LinuxTag, Karlsruhe, July 10th - 13th</title>
+	<link>http://www.linuxtag.org/2003/en/conferences/cfp.html</link>
+	<description>   LinuxTag e.V has once again put out a call for papers for this years conference event. Submit your ideas and proposals here. This year's theme  looks at discussions that promote new ideas, delivers a broad overview, introduces new users to linux, or  discusses the legal, moral and other implications of linux and free software.  </description>
+	<dc:date>2002-12-30</dc:date>
+</item>
+
+<item rdf:about="http://phpconf.phpquebec.org/index.php">
+	<title>Conf&amp;eacute;rence PHP Qu&amp;eacute;bec 2003 - (Montr&amp;eacute;al, March 20&amp;amp;21rst, 2003)</title>
+	<link>http://phpconf.phpquebec.org/index.php</link>
+	<description>     The PHP Qu&amp;eacute;bec association announces the Conf&amp;eacute;rence PHP Qu&amp;eacute;bec 2003. The conference will take place in the &amp;Eacute;cole Polytechnique de Montr&amp;eacute;al,  Qu&amp;eacute;bec, Canada.   The Conf&amp;eacute;rence PHP Qu&amp;eacute;bec features two days of conferences, with  outstanding customer cases from Canada, and cutting edge technical  sessions, hosted by international experts. An exhibitor room will showroom professional solutions.  Learn more about those exciting days at  phpconf.phpquebec.com. </description>
+	<dc:date>2003-01-28</dc:date>
+</item>
+
+<item rdf:about="http://www.phpconference.com/">
+	<title>International PHP Conference 2003 - Spring Edition (Amsterdam, May 8-9)</title>
+	<link>http://www.phpconference.com/</link>
+	<description>     Software &amp;amp; Support Verlag announced the International PHP Conference 2003 - Spring Edition - in Amsterdam. The dates for this event for PHP enthusiasts from all over the world will be May 8 and 9, 2003. The conference venue is the RAI conference center in Amsterdam.  Like the International PHP Conferences in Frankfurt this conference will offer a first class program  to an international audience of PHP enthusiasts. We are happy to ask you to submit your proposals for the session program.  The topics are General PHP, PHP &amp;amp; Business, PHP &amp;amp; Databases, PHP Design, PHP Extensions, PHP &amp;amp; XML and PHP-GTK. </description>
+	<dc:date>2003-01-13</dc:date>
+</item>
+
+<item rdf:about="http://pear.php.net/">
+	<title>PEAR Out of Beta!</title>
+	<link>http://pear.php.net/</link>
+	<description>   The PEAR development team is proud to announce that PEAR is finally out of its long beta period. As of PHP 4.3, the PEAR installer is installed by default. Unix support is considered stable, while Windows and Darwin are still of beta-quality.  </description>
+	<dc:date>2003-01-11</dc:date>
+</item>
+
+<item rdf:about="http://www.derickrethans.nl/20021230.php">
+	<title>PHP Look Back 2002</title>
+	<link>http://www.derickrethans.nl/20021230.php</link>
+	<description>   We are at the end of 2002, and it seemed appropriate to look back on the development issues of the past year. So starts the first PHP Look Back You can find it in on the non-official personal website of one of the PHP Developers here.   Happy New Year  </description>
+	<dc:date>2002-12-31</dc:date>
+</item>
+
+<item rdf:about="http://www.php.net/downloads.php">
+	<title>PHP 4.3.0 Released!</title>
+	<link>http://www.php.net/downloads.php</link>
+	<description>   The PHP developers are pleased to announce the immediate availability of PHP 4.3.0, the latest and greatest version of this extremely popular and widely used scripting language.    This release contains a multitude of changes, bug fixes and improvements over the previous one, PHP 4.2.3. It further elevates PHP's standing as a serious contender in the general purpose scripting language arena. Please see the full release announcement.  </description>
+	<dc:date>2002-12-27</dc:date>
+</item>
+
+<item rdf:about="http://weblabor.hu/php-doc-chm">
+	<title>New Release of the PHP Manual CHM Edition - Please Help Us</title>
+	<link>http://weblabor.hu/php-doc-chm</link>
+	<description>     The 11th sample of the CHM edition is available for download from today. The sample hopefully fixed the missing page bugs forever, introduces a new integration method (see documentation inside) and contains actual manual text, mirrors list and user notes. See the edition's page for download.    We also would like to ask you to help out in testing our new on-the-fly syntax highlighter, which would make the CHM significantly smaller, and would give you more options in displaying the pages. See the edition's page for more information.  </description>
+	<dc:date>2002-12-27</dc:date>
+</item>
+
+<item rdf:about="http://www.mysql.com/events/uc2003/">
+	<title>MySQL Users Conference and Expo 2003 in San Jose</title>
+	<link>http://www.mysql.com/events/uc2003/</link>
+	<description>     MySQL AB is proud to host the world's First Annual MySQL User Conference, to be held in the heart of Silicon Valley, April 10-12, 2003. This event promises to be the biggest gathering of MySQL database users ever in one location. Designed for both the MySQL developer and the corporate decision maker, this is the place to learn about the latest in MySQL technology, discover new business opportunities, take a pulse on industry direction and commune with like minds.  More information on the event's website.  </description>
+	<dc:date>2002-12-16</dc:date>
+</item>
+
+<item rdf:about="http://www.php.net/news.rss">
+	<title>PHP news feed available</title>
+	<link>http://www.php.net/news.rss</link>
+	<description>   The news of PHP.net is available now in RSS 1.0 format via our new news.rss file. You can add this file to any news reader or portal site to get the latest official PHP news. We strongly recommend you to cache the contents locally on your side, as the newsfeed is updated daily. The RSS file is available on every mirror site.  </description>
+	<dc:date>2002-12-01</dc:date>
+</item>
+
+<item rdf:about="http://www.afup.org/">
+	<title>Forum PHP 2002 in Paris, France</title>
+	<link>http://www.afup.org/</link>
+	<description>     The French PHP User Group AFUP invites you to the &quot;Forum PHP 2002&quot; in Paris, on December 9th and 10th. Designed to meet the needs of PHP aware companies and all the French PHP developper's community alike, this event will provided you with valuable and up-to-date information. For more information (in French) see the PHP Forum website.  </description>
+	<dc:date>2002-11-21</dc:date>
+</item>
+
+<item rdf:about="http://www.phpmag.de/">
+	<title>PHP Magazine - International Edition</title>
+	<link>http://www.phpmag.de/</link>
+	<description>   Software &amp;amp; Support Verlag GmbH is going to publish an International version of the PHP Magazin. This magazine was initiated after growing interest for an English magazine after the German version has been around for a few months.   PHP Magazine not only informs about the scripting language itself, but also about related technologies such as the Apache Web Server, database technologies, XML and other innovative internet technologies.  Different sections within the magazine are oriented towards the specific question areas with which a web developer is confronted in daily practice.   The first issue will be published in December and the frequency of issues is two months. You will be able to subscribe on the website which will open shortly.  </description>
+	<dc:date>2002-11-17</dc:date>
+</item>
+
+<item rdf:about="http://www.phparch.com/">
+	<title>New Monthly PHP Magazine Launched</title>
+	<link>http://www.phparch.com/</link>
+	<description>   php|architect, a new monthly magazine dedicated exclusively to PHP, has launched its website. php|a is published in PDF format and is available worldwide. It covers a variety of advanced topics ranging from day-to-day programming to the internals of PHP. A sample article on the creation of a web-based PDF converter is also available on the magazine website  </description>
+	<dc:date>2002-11-15</dc:date>
+</item>
+
+<item rdf:about="http://www.php.net/urlhowto.php">
+	<title>PHP Search Bars available for major browsers</title>
+	<link>http://www.php.net/urlhowto.php</link>
+	<description>   We added a new option to access our site's content quickly. In addition to URL shortcuts, keyboard shortcuts and browser specific magic you can now use our Search Bar from the major browsers. Please help us to test this new service, and provide feedback via the bug system (categorize your bug as a PHP.net website bug please).  </description>
+	<dc:date>2002-10-29</dc:date>
+</item>
+
+<item rdf:about="http://www.linuxworldexpo.de">
+	<title>PHP at the LinuxWorld Expo Oct. 29-31th in Frankfurt, Germany</title>
+	<link>http://www.linuxworldexpo.de</link>
+	<description>   For the first time the Open Source projects comprising the popular LAMP platform (Linux, Apache, MySQL and PHP) will be present at the  LinuxWorld Expo with its own booth.   At the booth, which is organized by the German PHP Association and the PHP Usergroup Frankfurt, fair visitors can experience and learn about Apache, MySQL, PHP and related projects.   Visitors can take LAMP home, too, since there will be a CD with the necessary software available at the booth.  </description>
+	<dc:date>2002-10-28</dc:date>
+</item>
+<!-- / RSS-Items PHP/RSS -->
+</rdf:RDF>
