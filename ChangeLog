@@ -1,3 +1,10 @@
+Tue Dec 28 13:35:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (rb_deflate_s_deflate, rb_inflate_s_inflate): ensure
+	  freeing internal zstreams.  fixed: [ruby-dev:25309]
+
+	* ext/zlib/zlib.c (rb_deflate_init_copy): replace rb_deflate_clone.
+
 Mon Dec 27 20:02:14 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix SEGV bug when deleting Tk interp

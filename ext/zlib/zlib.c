@@ -55,7 +55,7 @@ static void zstream_reset_input _((struct zstream*));
 static void zstream_passthrough_input _((struct zstream*));
 static VALUE zstream_detach_input _((struct zstream*));
 static void zstream_reset _((struct zstream*));
-static void zstream_end _((struct zstream*));
+static VALUE zstream_end _((struct zstream*));
 static void zstream_run _((struct zstream*, Bytef*, uInt, int));
 static VALUE zstream_sync _((struct zstream*, Bytef*, uInt));
 static void zstream_mark _((struct zstream*));
@@ -80,7 +80,8 @@ static VALUE rb_zstream_closed_p _((VALUE));
 
 static VALUE rb_deflate_s_allocate _((VALUE));
 static VALUE rb_deflate_initialize _((int, VALUE*, VALUE));
-static VALUE rb_deflate_clone _((VALUE));
+static VALUE rb_deflate_init_copy _((VALUE, VALUE));
+static VALUE deflate_run _((VALUE));
 static VALUE rb_deflate_s_deflate _((int, VALUE*, VALUE));
 static void do_deflate _((struct zstream*, VALUE, int));
 static VALUE rb_deflate_deflate _((int, VALUE*, VALUE));
@@ -89,6 +90,7 @@ static VALUE rb_deflate_flush _((int, VALUE*, VALUE));
 static VALUE rb_deflate_params _((VALUE, VALUE, VALUE));
 static VALUE rb_deflate_set_dictionary _((VALUE, VALUE));
 
+static VALUE inflate_run _((VALUE));
 static VALUE rb_inflate_s_allocate _((VALUE));
 static VALUE rb_inflate_initialize _((int, VALUE*, VALUE));
 static VALUE rb_inflate_s_inflate _((VALUE, VALUE));
@@ -670,7 +672,7 @@ zstream_reset(z)
     zstream_reset_input(z);
 }
 
-static void
+static VALUE
 zstream_end(z)
     struct zstream *z;
 {
@@ -695,6 +697,7 @@ zstream_end(z)
 	raise_zlib_error(err, z->stream.msg);
     }
     z->flags = 0;
+    return Qnil;
 }
 
 static void
@@ -1155,26 +1158,31 @@ rb_deflate_initialize(argc, argv, obj)
  * Duplicates the deflate stream.
  */
 static VALUE
-rb_deflate_clone(obj)
-    VALUE obj;
+rb_deflate_init_copy(self, orig)
+    VALUE self, orig;
 {
-    struct zstream *z = get_zstream(obj);
-    struct zstream *z2;
-    VALUE clone;
+    struct zstream *z1 = get_zstream(self);
+    struct zstream *z2 = get_zstream(orig);
     int err;
 
-    clone = zstream_deflate_new(rb_class_of(obj));
-    Data_Get_Struct(clone, struct zstream, z2);
-
-    err = deflateCopy(&z2->stream, &z->stream);
+    err = deflateCopy(&z1->stream, &z2->stream);
     if (err != Z_OK) {
 	raise_zlib_error(err, 0);
     }
+    z1->flags = z2->flags;
 
-    z2->flags = z->flags;
-    CLONESETUP(clone, obj);
-    OBJ_INFECT(clone, obj);
-    return clone;
+    return self;
+}
+
+static VALUE
+deflate_run(args)
+    VALUE args;
+{
+    struct zstream *z = (struct zstream *)((VALUE *)args)[0];
+    VALUE src = ((VALUE *)args)[1];
+
+    zstream_run(z, RSTRING(src)->ptr, RSTRING(src)->len, Z_FINISH);
+    return zstream_detach_buffer(z);
 }
 
 /*
@@ -1204,7 +1212,7 @@ rb_deflate_s_deflate(argc, argv, klass)
     VALUE klass;
 {
     struct zstream z;
-    VALUE src, level, dst;
+    VALUE src, level, dst, args[2];
     int err, lev;
 
     rb_scan_args(argc, argv, "11", &src, &level);
@@ -1218,9 +1226,9 @@ rb_deflate_s_deflate(argc, argv, klass)
     }
     ZSTREAM_READY(&z);
 
-    zstream_run(&z, RSTRING(src)->ptr, RSTRING(src)->len, Z_FINISH);
-    dst = zstream_detach_buffer(&z);
-    zstream_end(&z);
+    args[0] = (VALUE)&z;
+    args[1] = src;
+    dst = rb_ensure(deflate_run, (VALUE)args, zstream_end, (VALUE)&z);
 
     OBJ_INFECT(dst, src);
     return dst;
@@ -1433,6 +1441,18 @@ rb_inflate_initialize(argc, argv, obj)
     return obj;
 }
 
+static VALUE
+inflate_run(args)
+    VALUE args;
+{
+    struct zstream *z = (struct zstream *)((VALUE *)args)[0];
+    VALUE src = ((VALUE *)args)[1];
+
+    zstream_run(z, RSTRING(src)->ptr, RSTRING(src)->len, Z_SYNC_FLUSH);
+    zstream_run(z, "", 0, Z_FINISH);  /* for checking errors */
+    return zstream_detach_buffer(z);
+}
+
 /*
  * call-seq: Zlib::Inflate.inflate(string)
  *
@@ -1455,7 +1475,7 @@ rb_inflate_s_inflate(obj, src)
     VALUE obj, src;
 {
     struct zstream z;
-    VALUE dst;
+    VALUE dst, args[2];
     int err;
 
     StringValue(src);
@@ -1466,10 +1486,9 @@ rb_inflate_s_inflate(obj, src)
     }
     ZSTREAM_READY(&z);
 
-    zstream_run(&z, RSTRING(src)->ptr, RSTRING(src)->len, Z_SYNC_FLUSH);
-    zstream_run(&z, "", 0, Z_FINISH);  /* for checking errors */
-    dst = zstream_detach_buffer(&z);
-    zstream_end(&z);
+    args[0] = (VALUE)&z;
+    args[1] = src;
+    dst = rb_ensure(inflate_run, (VALUE)args, zstream_end, (VALUE)&z);
 
     OBJ_INFECT(dst, src);
     return dst;
@@ -3438,7 +3457,7 @@ void Init_zlib()
     rb_define_singleton_method(cDeflate, "deflate", rb_deflate_s_deflate, -1);
     rb_define_alloc_func(cDeflate, rb_deflate_s_allocate);
     rb_define_method(cDeflate, "initialize", rb_deflate_initialize, -1);
-    rb_define_method(cDeflate, "clone", rb_deflate_clone, 0);
+    rb_define_method(cDeflate, "initialize_copy", rb_deflate_init_copy, 0);
     rb_define_method(cDeflate, "deflate", rb_deflate_deflate, -1);
     rb_define_method(cDeflate, "<<", rb_deflate_addstr, 1);
     rb_define_method(cDeflate, "flush", rb_deflate_flush, -1);
