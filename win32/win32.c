@@ -3656,7 +3656,7 @@ rb_w32_fopen(const char *path, const char *mode)
 FILE *
 rb_w32_fdopen(int handle, const char *type)
 {
-    FILE *f = (errno = 0, _fdopen(handle, type));
+    FILE *f = (errno = 0, _fdopen(handle, (char *)type));
     if (f == NULL && errno == 0) {
 	if (handle < 0)
 	    errno = EBADF;
