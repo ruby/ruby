@@ -1,3 +1,7 @@
+Mon Sep  9 23:43:33 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.h (S_I?USR): define only if not mingw32.
+
 Mon Sep  9 20:41:03 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (do_spawn): fix the bug which the environment variables
