@@ -57,4 +57,18 @@ class TestBasicSocket < Test::Unit::TestCase
       }
     end
   end
+
+  def test_listen
+    s = nil
+    log = Object.new
+    class << log; self end.send(:define_method, :to_int) {
+      s.close
+      2
+    }
+    inet_stream do |s|
+      assert_raise(IOError) {
+        s.listen(log)
+      }
+    end
+  end
 end if defined?(Socket)

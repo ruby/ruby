@@ -2013,10 +2013,12 @@ sock_listen(sock, log)
     VALUE sock, log;
 {
     OpenFile *fptr;
+    int backlog;
 
     rb_secure(4);
+    backlog = NUM2INT(log);
     GetOpenFile(sock, fptr);
-    if (listen(fptr->fd, NUM2INT(log)) < 0)
+    if (listen(fptr->fd, backlog) < 0)
 	rb_sys_fail("listen(2)");
 
     return INT2FIX(0);

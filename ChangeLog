@@ -1,3 +1,8 @@
+Fri Dec 10 08:39:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_listen): get OpenFile just before calling
+	  listen(2).
+
 Thu Dec  9 16:28:35 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/sdbm/init.c (GetDBM): typo.
