@@ -74,7 +74,7 @@ module DL
 	init_types()
 	init_sym()
 
-	rty,_,rdec = @types.encode_type(ret)
+	rty,renc,rdec = @types.encode_type(ret)
 	ty,enc,dec = encode_types(args)
 	symty = rty + ty
 
@@ -84,7 +84,7 @@ module DL
 	  "  sym,rdec,enc,dec  = @SYM['#{func}']",
 	  "  args = enc.call(args) if enc",
 	  "  r,rs = #{func}(*args)",
-	  "  r  = rdec.call(r) if rdec",
+	  "  r  = renc.call(r) if rdec",
 	  "  rs = dec.call(rs) if dec",
 	  "  @retval = r",
 	  "  @args   = rs",
