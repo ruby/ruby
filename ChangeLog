@@ -1,3 +1,8 @@
+Fri Jul 16 15:21:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (return_jump, break_jump): raise unexpceted local jump
+	  exception directly.  [ruby-dev:23740]
+
 Fri Jul 16 11:31:49 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/test/unit/ui/{fox,gtk,gtk2}/testrunner.rb: remove
