@@ -183,7 +183,7 @@ class RubyLex
   end
   private :buf_input
 
-  def set_prompt(p, &block)
+  def set_prompt(p=nil, &block)
     p = block if block_given?
     if p.respond_to?(:call)
       @prompt = p
