@@ -1,3 +1,7 @@
+Thu Jan  9 23:28:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in: AC_MSG_FAILURE is a new macro in 2.54b or later.
+
 Thu Jan  9 18:31:45 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (io_write, rb_io_putc): set FMODE_WBUF flag unless flushed.

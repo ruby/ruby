@@ -514,7 +514,7 @@ fi
 if test "$cross_compiling" = no -a "$check_to_do_something_else" = yes; then
   RUBY_CHECK_IO_NEED(do something else, unexpected_stdio_behavior)
   if test "$unexpected_stdio_behavior" = yes; then
-    AC_MSG_FAILURE([unexpected stdio behavior])
+    AC_MSG_ERROR([unexpected stdio behavior])
   fi
 fi
 
