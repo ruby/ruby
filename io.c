@@ -1001,7 +1001,7 @@ pipe_open(pname, mode)
 	break;
 
       default:			/* parent */
-	if (pid > 0) rb_sys_fail(0);
+	if (pid < 0) rb_sys_fail(pname);
 	else {
 	    NEWOBJ(port, struct RFile);
 	    OBJSETUP(port, cIO, T_FILE);
