@@ -1,3 +1,8 @@
+Sun Feb  6 11:27:37 2005  Tanaka Akira  <akr@m17n.org>
+
+	* ext/dl/dl.c (Init_dl): function declaration should precede
+	  statements before C99.
+
 Sun Feb  6 03:24:20 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Resource::TXT): multiple strings was not

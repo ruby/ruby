@@ -69,12 +69,12 @@ rb_dl_value2ptr(VALUE self, VALUE val)
 void
 Init_dl()
 {
-    rbdl_id_cdecl = rb_intern("cdecl");
-    rbdl_id_stdcall = rb_intern("stdcall");
-
     void Init_dlhandle();
     void Init_dlcfunc();
     void Init_dlptr();
+
+    rbdl_id_cdecl = rb_intern("cdecl");
+    rbdl_id_stdcall = rb_intern("stdcall");
 
     rb_mDL = rb_define_module("DL");
     rb_eDLError = rb_define_class_under(rb_mDL, "DLError", rb_eStandardError);
