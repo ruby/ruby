@@ -1,8 +1,6 @@
 MANIFEST
 extconf.rb
 lib/net/ftptls.rb
-lib/net/https.rb
-lib/net/protocols.rb
 lib/net/telnets.rb
 lib/openssl.rb
 lib/openssl/bn.rb

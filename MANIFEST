@@ -16,6 +16,7 @@ array.c
 ascii.c
 bignum.c
 class.c
+common.mk
 compar.c
 config.guess
 config.sub
@@ -944,6 +945,7 @@ win32/configure.bat
 win32/dir.h
 win32/mkexports.rb
 win32/resource.rb
+win32/rm.bat
 win32/setup.mak
 win32/win32.c
 win32/win32.h
@@ -960,7 +962,6 @@ wince/errno.h
 wince/fcntl.h
 wince/io.h
 wince/io_wce.c
-wince/mkconfig_wce.rb
 wince/mkexports.rb
 wince/process.h
 wince/process_wce.c
