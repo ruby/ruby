@@ -1,4 +1,8 @@
-Wed Jun 23 21:48:27 2004  Michal Rokos  <michal@cvs-lang.org>
+Wed Jun 23 22:16:16 2004  Michal Rokos  <michal@ruby-lang.org>
+
+	* io.c: io_seek()'s retval should be checked [ruby-core:03045]
+
+Wed Jun 23 21:48:27 2004  Michal Rokos  <michal@ruby-lang.org>
 
 	* time.c: Fix indentation.
 

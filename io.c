@@ -161,7 +161,7 @@ extern int ReadDataPending();
 #define READ_CHECK(fp) do {\
     if (!READ_DATA_PENDING(fp)) {\
 	rb_thread_wait_fd(fileno(fp));\
-        rb_io_check_closed(fptr);\
+	rb_io_check_closed(fptr);\
      }\
 } while(0)
 
@@ -3176,8 +3176,12 @@ io_reopen(io, nfile)
 	}
 	rb_thread_fd_close(fd);
 	if ((orig->mode & FMODE_READABLE) && pos >= 0) {
-	    io_seek(fptr, pos, SEEK_SET);
-	    io_seek(orig, pos, SEEK_SET);
+	    if (io_seek(fptr, pos, SEEK_SET) < 0) {
+		rb_sys_fail(fptr->path);
+	    }
+	    if (io_seek(orig, pos, SEEK_SET) < 0) {
+		rb_sys_fail(orig->path);
+	    }
 	}
     }
 
