@@ -673,8 +673,8 @@ An end of a defun is found by moving forward from the beginning of one."
 
   (add-hook 'ruby-mode-hook
 	    '(lambda ()
-	       (make-local-variable 'font-lock-syntactic-keywords)
-	       (setq font-lock-syntactic-keywords
+	       (make-local-variable 'ruby-font-lock-syntactic-keywords)
+	       (setq ruby-font-lock-syntactic-keywords
 		     '(
 		       ;; #{ }, #$hoge, #@foo are not comments
 		       ("\\(#\\)[{$@]" 1 (1 . nil))

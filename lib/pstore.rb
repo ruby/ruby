@@ -85,11 +85,11 @@ class PStore
       value = nil
       backup = @filename+"~"
       if File::exist?(@filename)
-	file = File::open(@filename, "r+")
+	file = File::open(@filename, "rb+")
 	orig = true
       else
 	@table = {}
-	file = File::open(@filename, "w+")
+	file = File::open(@filename, "wb+")
 	Marshal::dump(@table, file)
       end
       file.flock(File::LOCK_EX)

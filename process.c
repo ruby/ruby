@@ -40,9 +40,6 @@ struct timeval rb_time_interval _((VALUE));
 #ifdef HAVE_GETPRIORITY
 # include <sys/resource.h>
 #endif
-#ifdef HAVE_VFORK_H
-#include <vfork.h>
-#endif
 #include "st.h"
 
 #ifdef __EMX__
@@ -727,7 +724,7 @@ rb_f_system(argc, argv)
 	Check_SafeStr(argv[i]);
     }
   retry:
-    switch (pid = vfork()) {
+    switch (pid = fork()) {
       case 0:
 	if (argc == 1 && prog == 0) {
 	    rb_proc_exec(RSTRING(argv[0])->ptr);

@@ -1264,7 +1264,6 @@ re_compile_pattern(pattern, size, bufp)
   bufp->fastmap_accurate = 0;
   bufp->must = 0;
   bufp->must_skip = 0;
-  bufp->stclass = 0;
 
   /* Initialize the syntax table.  */
   init_syntax_once();
@@ -2393,9 +2392,6 @@ re_compile_pattern(pattern, size, bufp)
 	p0 += mcnt+1;
 	mcnt = EXTRACT_UNSIGNED_AND_INCR(p0);
 	p0 += 8*mcnt;
-	if (*p0 == maybe_finalize_jump) {
-	  bufp->stclass = laststart;
-	}
       }
     }
   }
@@ -3287,30 +3283,6 @@ re_search(bufp, string, size, startpos, range, regs)
 	  range--;
 	  startpos++;
 	}
-      }
-      else if (fastmap && (bufp->stclass)) {
-	register unsigned char *p;
-	unsigned long c;
-	int irange = range;
-
-	p = (unsigned char*)string+startpos;
-	while (range > 0) {
-	  c = *p++;
-	  if (ismbchar(c) && fastmap[c] != 2) {
-	    MBC2WC(c, p);
-	  }
-	  else if (MAY_TRANSLATE())
-	    c = translate[c];
-	  if (*bufp->stclass == charset) {
-	    if (!is_in_list(c, bufp->stclass+1)) break;
-	  }
-	  else {
-	    if (is_in_list(c, bufp->stclass+1)) break;
-	  }
-	  range--;
-	  if (c > 256) range--;
-	}
-	startpos += irange - range;
       }
     }
 

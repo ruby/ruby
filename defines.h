@@ -49,11 +49,15 @@
 #define EXTERN extern
 #endif
 
-#ifdef sparc
-#define FLUSH_REGISTER_WINDOWS asm("ta 3")
-#else
-#define FLUSH_REGISTER_WINDOWS /* empty */
-#endif
+#if defined(sparc) || defined(__sparc__)
+# if defined(linux) || defined(__linux__)
+#define FLUSH_REGISTER_WINDOWS  asm("ta  0x83")
+# else /* Solaris, not sparc linux */
+#define FLUSH_REGISTER_WINDOWS  asm("ta  0x03")
+# endif /* trap always to flush register windows if we are on a Sparc system */
+#else /* Not a sparc, so */
+#define FLUSH_REGISTER_WINDOWS  /* empty -- nothing to do here */
+#endif 
 
 #if defined(MSDOS) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__)
 #define DOSISH 1

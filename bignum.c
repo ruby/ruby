@@ -252,8 +252,8 @@ rb_cstr2inum(str, base)
 
 	if (*end == '_') goto bigparse;
 	if (badcheck) {
-	    if (end == str) goto bad; /* no number */
 	    while (*end && ISSPACE(*end)) end++;
+	    if (end == str) goto bad; /* no number */
 	    if (*end) {		      /* trailing garbage */
 	      bad:
 		rb_raise(rb_eArgError, "invalid value for Integer: \"%s\"", s);

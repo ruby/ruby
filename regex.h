@@ -132,7 +132,6 @@ struct re_pattern_buffer
     char *must;	        /* Pointer to exact pattern which strings should have
 			   to be matched.  */
     int *must_skip;     /* Pointer to exact pattern skip table for bm_search */
-    char *stclass;      /* Pointer to character class list at top */
     long options;	/* Flags for options such as extended_pattern. */
     long re_nsub;	/* Number of subexpressions found by the compiler. */
     char fastmap_accurate;

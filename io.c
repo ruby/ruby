@@ -51,9 +51,6 @@ struct timeval {
 };
 #endif
 #endif
-#ifdef HAVE_VFORK_H
-#include <vfork.h>
-#endif
 
 #include <sys/stat.h>
 
@@ -1600,7 +1597,7 @@ pipe_open(pname, mode)
     }
 
   retry:
-    switch (pid = (doexec?vfork():fork())) {
+    switch ((pid = fork())) {
       case 0:			/* child */
 	if (modef & FMODE_READABLE) {
 	    close(pr[0]);

@@ -273,7 +273,6 @@ dnl Checks for library functions.
 AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL
 AC_FUNC_ALLOCA
-AC_FUNC_VFORK
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul crypt flock vsnprintf\
