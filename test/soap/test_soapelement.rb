@@ -1,6 +1,10 @@
 require 'test/unit'
 require 'soap/baseData'
 
+
+module SOAP
+
+
 class TestSOAPElement < Test::Unit::TestCase
   include SOAP
 
@@ -111,4 +115,7 @@ class TestSOAPElement < Test::Unit::TestCase
     source = nil
     assert_equal(nil, SOAPElement.from_obj(source).to_obj)
   end
+end
+
+
 end

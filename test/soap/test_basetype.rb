@@ -1,6 +1,10 @@
 require 'test/unit'
 require 'soap/baseData'
 
+
+module SOAP
+
+
 class TestSOAP < Test::Unit::TestCase
   def setup
     # Nothing to do.
@@ -948,4 +952,7 @@ class TestSOAP < Test::Unit::TestCase
       end
     end
   end
+end
+
+
 end

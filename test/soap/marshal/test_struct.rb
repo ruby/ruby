@@ -1,6 +1,11 @@
 require 'test/unit'
 require 'soap/marshal'
 
+
+module SOAP
+module Marshal
+
+
 Foo1 = Struct.new("Foo1", :m)
 Foo2 = Struct.new(:m)
 class Foo3
@@ -35,4 +40,8 @@ class TestStruct < Test::Unit::TestCase
   def convert(obj)
     SOAP::Marshal.unmarshal(SOAP::Marshal.marshal(obj))
   end
+end
+
+
+end
 end

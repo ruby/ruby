@@ -1,6 +1,11 @@
 require 'test/unit'
 require 'soap/marshal'
 
+
+module SOAP
+module Marshal
+
+
 class Node; include SOAP::Marshallable
   attr_reader :first, :second, :str
 
@@ -42,4 +47,8 @@ class TestDigraph < Test::Unit::TestCase
       File.unlink("digraph_marshalled_string.soap")
     end
   end
+end
+
+
+end
 end

@@ -1,3 +1,10 @@
+Mon Sep 27 03:32:37 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/soap/*, test/wsdl/*, test/xsd/*: move TestCase classes into
+	  each module namespace.  TestMarshal in
+	  test/soap/marshal/test_marshal.rb crashed with
+	  test/ruby/test_marshal.rb.
+
 Sat Sep 27 01:30:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): on win32, type of the 4th

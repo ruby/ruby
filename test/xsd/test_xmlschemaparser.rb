@@ -1,6 +1,10 @@
 require 'test/unit'
 require 'wsdl/xmlSchema/parser'
 
+
+module XSD
+
+
 class TestXMLSchemaParser < Test::Unit::TestCase
   def self.setup(filename)
     @@filename = filename
@@ -12,3 +16,6 @@ class TestXMLSchemaParser < Test::Unit::TestCase
 end
 
 TestXMLSchemaParser.setup(File.join(File.dirname(__FILE__), 'xmlschema.xml'))
+
+
+end

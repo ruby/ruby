@@ -1,6 +1,10 @@
 require 'test/unit'
 require 'xsd/datatypes'
 
+
+module XSD
+
+
 class TestXSD < Test::Unit::TestCase
   def setup
     # Nothing to do.
@@ -973,4 +977,7 @@ class TestXSD2 < Test::Unit::TestCase
       end
     end
   end
+end
+
+
 end

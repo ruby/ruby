@@ -6,6 +6,11 @@ $:.push(dir)
 require 'hw_s.rb'
 $:.delete(dir)
 
+
+module SOAP
+module HelloWorld
+
+
 class TestHelloWorld < Test::Unit::TestCase
   def setup
     @server = HelloWorldServer.new('hws', 'urn:hws', '0.0.0.0', 2000)
@@ -28,4 +33,8 @@ class TestHelloWorld < Test::Unit::TestCase
     assert_equal("Hello World, from NaHi", @client.hello_world("NaHi"))
     assert_equal("Hello World, from <&>", @client.hello_world("<&>"))
   end
+end
+
+
+end
 end

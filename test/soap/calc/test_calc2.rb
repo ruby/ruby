@@ -6,6 +6,11 @@ $:.push(dir)
 require 'server2.rb'
 $:.delete(dir)
 
+
+module SOAP
+module Calc
+
+
 class TestCalc2 < Test::Unit::TestCase
   def setup
     @server = CalcServer2.new('CalcServer', 'http://tempuri.org/calcService', '0.0.0.0', 7000)
@@ -40,4 +45,8 @@ class TestCalc2 < Test::Unit::TestCase
       @var / 0
     end
   end
+end
+
+
+end
 end

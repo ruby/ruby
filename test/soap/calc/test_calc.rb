@@ -6,6 +6,11 @@ $:.push(dir)
 require 'server.rb'
 $:.delete(dir)
 
+
+module SOAP
+module Calc
+
+
 class TestCalc < Test::Unit::TestCase
   def setup
     @server = CalcServer.new(self.class.name, nil, '0.0.0.0', 7000)
@@ -38,4 +43,8 @@ class TestCalc < Test::Unit::TestCase
       @calc.div(1, 0)
     end
   end
+end
+
+
+end
 end

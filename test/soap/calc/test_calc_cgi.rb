@@ -2,6 +2,11 @@ require 'test/unit'
 require 'soap/rpc/driver'
 require 'webrick'
 
+
+module SOAP
+module Calc
+
+
 class TestCalcCGI < Test::Unit::TestCase
   def setup
     @server = WEBrick::HTTPServer.new(
@@ -39,4 +44,8 @@ class TestCalcCGI < Test::Unit::TestCase
       @calc.div(1, 0)
     end
   end
+end
+
+
+end
 end

@@ -1,22 +1,18 @@
 require 'test/unit'
+require 'soap/marshal'
 
-dir = File.dirname(__FILE__)
-$:.push(dir)
-require 'cmarshal'
-$:.delete(dir)
 
-CMarshal.soap4r
+module SOAP
+module Marshal
 
 
 module MarshalTestLib
   def encode(o)
-    #self.class::MarshalClass.dump(o)
-    CMarshal.dump(o)
+    SOAPMarshal.dump(o)
   end
 
   def decode(s)
-    #self.class::MarshalClass.load(s)
-    CMarshal.load(s)
+    SOAPMarshal.load(s)
   end
 
   def marshaltest(o1)
@@ -298,4 +294,8 @@ end
 
 class TestMarshal < Test::Unit::TestCase
   include MarshalTestLib
+end
+
+
+end
 end

@@ -1,6 +1,10 @@
 require 'test/unit'
 require 'wsdl/parser'
 
+
+module WSDL
+
+
 class TestWSDL < Test::Unit::TestCase
   def self.setup(filename)
     @@filename = filename
@@ -12,3 +16,6 @@ class TestWSDL < Test::Unit::TestCase
 end
 
 TestWSDL.setup(File.join(File.dirname(__FILE__), 'emptycomplextype.wsdl'))
+
+
+end
