@@ -1,3 +1,7 @@
+Wed Feb 14 17:28:24 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: supports unknown resp_text_code.
+
 Wed Feb 14 00:44:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_s_glob): supprt backslash escape of metacharacters
