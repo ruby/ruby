@@ -629,7 +629,6 @@ ruby_strdup(str)
     int len = strlen(str) + 1;
 
     tmp = xmalloc(len);
-    if (tmp == NULL) return NULL;
     memcpy(tmp, str, len);
 
     return tmp;
@@ -643,7 +642,10 @@ ruby_getcwd()
     char *buf = xmalloc(size);
 
     while (!getcwd(buf, size)) {
-	if (errno != ERANGE) rb_sys_fail("getcwd");
+	if (errno != ERANGE) {
+	    free(buf);
+	    rb_sys_fail("getcwd");
+	}
 	size *= 2;
 	buf = xrealloc(buf, size);
     }
@@ -654,6 +656,7 @@ ruby_getcwd()
     char *buf = xmalloc(PATH_MAX+1);
 
     if (!getwd(buf)) {
+	free(buf);
 	rb_sys_fail("getwd");
     }
 #endif
