@@ -20,7 +20,7 @@
 # be accessed online at http://www.germane-software.com/software/rexml_doc
 # A tutorial is available in docs/tutorial.html
 module REXML
-	Copyright = 'Copyright #{Time.now.year} Sean Russell <ser@germane-software.com>'
-	Date = "@ANT_DATE@"
-	Version = "@ANT_VERSION@"
+	Copyright = "Copyright #{Time.now.year} Sean Russell <ser@germane-software.com>"
+	Date = "+2003/110"
+	Version = "2.7.0"
 end
