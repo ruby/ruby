@@ -1,3 +1,7 @@
+Wed Jul  9 16:12:13 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* instruby.rb: do not install shared libraries as man pages.
+
 Sat Jun 28 14:20:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/tcltklib/extconf.rb (find_tcl, find_tk): return true if

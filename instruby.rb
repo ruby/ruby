@@ -49,7 +49,7 @@ File.makedirs libdir, true
 if CONFIG["LIBRUBY"] != CONFIG["LIBRUBY_A"]
   for lib in [CONFIG["LIBRUBY"]]
     if File.exist? lib
-      File.install lib, libdir, 0555, true
+      File.install lib, libdir, 0755, true
     end
   end
 end
@@ -136,6 +136,8 @@ end
 File.install wdir+'/'+CONFIG['LIBRUBY_A'], archlibdir, 0644, true
 
 Dir.glob("*.[1-9]") do |mdoc|
+  next unless open(mdoc){|fh| fh.read(1) == '.'}
+
   section = mdoc[-1,1]
 
   mandestdir = mandir + section
