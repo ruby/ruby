@@ -310,15 +310,14 @@ require_libraries()
 {
     extern NODE *ruby_eval_tree;
     extern NODE *ruby_eval_tree_begin;
-    char *orig_sourcefile = ruby_sourcefile;
-    NODE *save[2];
+    NODE *save[3];
     struct req_list *list = req_list_head.next;
     struct req_list *tmp;
 
     Init_ext();		/* should be called here for some reason :-( */
-    ruby_sourcefile = 0;
     save[0] = ruby_eval_tree;
     save[1] = ruby_eval_tree_begin;
+    save[2] = NEW_NEWLINE(0);
     ruby_eval_tree = ruby_eval_tree_begin = 0;
     req_list_last = 0;
     while (list) {
@@ -331,7 +330,10 @@ require_libraries()
     req_list_head.next = 0;
     ruby_eval_tree = save[0];
     ruby_eval_tree_begin = save[1];
-    ruby_sourcefile = orig_sourcefile;
+    ruby_current_node = save[2];
+    ruby_set_current_source();
+    ruby_current_node = 0;
+    rb_gc_force_recycle((VALUE)save[2]);
 }
 
 static void

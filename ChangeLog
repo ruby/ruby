@@ -1,3 +1,7 @@
+Tue Aug 27 19:50:27 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ruby.c (require_libraries): prevent ruby_sorcefile from GC.
+
 Tue Aug 27 15:03:35 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (rb_find_file): $LOAD_PATH must not be empty.
