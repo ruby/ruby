@@ -115,7 +115,7 @@ class ThreadsWait
       @threads.delete(th = @wait_queue.pop(nonblock))
       th
     rescue ThreadError
-      ThreadsWait.fail ErrNoFinshedThread
+      ThreadsWait.fail ErrNoFinishedThread
     end
   end
   

@@ -1,3 +1,16 @@
+Wed Sep 20 14:01:45 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_provided): detect infnite load loop.
+
+	* eval.c (rb_provided): too weak filename comparison.
+
+	* eval.c (rb_thread_alloc): avoid recycling still referenced
+	  dvar structures. 
+
+	* eval.c (rb_callcc): ditto.
+
+	* eval.c (THREAD_ALLOC): fiil dyna_vars field by ruby_dyna_vars.
+
 Tue Sep 19 17:47:03 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.

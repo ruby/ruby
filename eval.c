@@ -3483,7 +3483,7 @@ rb_yield_0(val, self, klass, acheck)
     if ((block->flags & BLOCK_D_SCOPE) &&
 	!FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
 	struct RVarmap *vars = ruby_dyna_vars;
-	
+
 	while (vars && vars->id != 0) {
 	    rb_gc_force_recycle((VALUE)vars);
 	    vars = vars->next;
@@ -5043,7 +5043,9 @@ rb_provided(feature)
 	    if (strcmp(f+len, ".so") == 0) {
 		return Qtrue;
 	    }
-	    goto load_wait;
+	    if (strcmp(f+len, ".rb") == 0) {
+		goto load_wait;
+	    }
 	}
 	p++;
     }
@@ -5053,7 +5055,12 @@ rb_provided(feature)
     if (loading_tbl) {
 	char *ext = strrchr(f, '.');
 	if (strcmp(ext, ".rb") == 0) {
-	    while (st_lookup(loading_tbl, f, 0)) {
+	    rb_thread_t th;
+
+	    while (st_lookup(loading_tbl, f, &th)) {
+		if (th == curr_thread) {
+		    rb_raise(rb_eLoadError, "infinite load loop -- %s", f);
+		}
 		CHECK_INTS;
 		rb_thread_schedule();
 	    }
@@ -5186,7 +5193,8 @@ rb_f_require(obj, fname)
     if (!loading_tbl) {
 	loading_tbl = st_init_strtable();
     }
-    st_insert(loading_tbl, strdup(feature), 0);	/* partial state */
+    /* partial state */
+    st_insert(loading_tbl, strdup(feature), curr_thread);
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
@@ -5866,6 +5874,7 @@ rb_f_binding(self)
     }
 
     for (vars = data->d_vars; vars; vars = vars->next) {
+	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
 	FL_SET(vars, DVAR_DONT_RECYCLE);
     }
     scope_dup(data->scope);
@@ -5947,6 +5956,7 @@ proc_new(klass)
     data->flags |= BLOCK_DYNAMIC;
 
     for (vars = data->d_vars; vars; vars = vars->next) {
+	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
 	FL_SET(vars, DVAR_DONT_RECYCLE);
     }
     scope_dup(data->scope);
@@ -7617,7 +7627,7 @@ rb_thread_abort_exc_set(thread, val)
     th->scope = 0;\
     th->klass = 0;\
     th->wrapper = 0;\
-    th->dyna_vars = 0;\
+    th->dyna_vars = ruby_dyna_vars;\
     th->block = 0;\
     th->iter = 0;\
     th->tag = 0;\
@@ -7637,6 +7647,7 @@ rb_thread_alloc(klass)
     VALUE klass;
 {
     rb_thread_t th;
+    struct RVarmap *vars;
 
     THREAD_ALLOC(th);
     th->thread = Data_Wrap_Struct(klass, thread_mark, thread_free, th);
@@ -7654,6 +7665,10 @@ rb_thread_alloc(klass)
 	th->status = THREAD_RUNNABLE;
     }
 
+    for (vars = th->dyna_vars; vars; vars = vars->next) {
+	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
+	FL_SET(vars, DVAR_DONT_RECYCLE);
+    }
     return th;
 }
 
@@ -8140,6 +8155,7 @@ rb_callcc(self)
     volatile VALUE cont;
     rb_thread_t th;
     struct tag *tag;
+    struct RVarmap *vars;
 
     THREAD_ALLOC(th);
     cont = Data_Wrap_Struct(rb_cCont, thread_mark,
@@ -8151,6 +8167,12 @@ rb_callcc(self)
     }
     th->prev = th->next = 0;
     th->thread = curr_thread->thread;
+
+    for (vars = th->dyna_vars; vars; vars = vars->next) {
+	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
+	FL_SET(vars, DVAR_DONT_RECYCLE);
+    }
+
     if (THREAD_SAVE_CONTEXT(th)) {
 	return th->result;
     }

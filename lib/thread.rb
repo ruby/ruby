@@ -223,7 +223,7 @@ class SizedQueue<Queue
 
   def max=(max)
     Thread.critical = true
-    if @max >= max
+    if max >= @max
       @max = max
       Thread.critical = false
     else
