@@ -6,7 +6,7 @@
 #include	<fcntl.h>
 #include	<errno.h>
 #include	<pwd.h>
-#if !defined(HAVE_OPENPTY) && !defined(HAVE__GETPTY)
+#ifdef HAVE_SYS_IOCTL_H
 #include	<sys/ioctl.h>
 #endif
 #ifdef HAVE_LIBUTIL_H
@@ -229,6 +229,8 @@ establishShell(argc, argv, info)
     info->thread = rb_thread_current();
     currentPid = getpid();
     if((i = fork()) < 0) {
+	close(master);
+	close(slave);
 	rb_sys_fail("fork failed");
     }
 
