@@ -157,6 +157,10 @@ def parse_args()
     grep(/\A-(?!-).*#{'%c' % flag}/i) { return true }
     false
   end
+  def $mflags.defined?(var)
+    grep(/\A#{var}=(.*)/) {return $1}
+    false
+  end
 
   if $mflags.set?(?n)
     $dryrun = true
@@ -165,7 +169,10 @@ def parse_args()
   end
 
   $continue = $mflags.set?(?k)
-  $mflags |= ["DESTDIR=#{$destdir}"]
+  if !$destdir.to_s.empty?
+    $destdir = File.expand_path($destdir)
+    $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
+  end
 end
 
 parse_args()
