@@ -1,3 +1,9 @@
+Wed Feb 16 23:34:30 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: add lazy stop_service. ([druby-ja:109])
+
+	* lib/drb/extserv.rb: ditto.
+
 Wed Feb 16 17:07:57 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil.c: Follow the change of st.c (st_foreach)
