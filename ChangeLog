@@ -3,6 +3,7 @@ Thu Nov 25 18:06:37 2004  Tanaka Akira  <akr@m17n.org>
 	* configure.in: AC_CHECK_SIZEOF(rlim_t) to include stdio.h to fix
 	  problem with autoconf 2.52 or earlier.
 	  revert AC_PREREQ to 2.50.
+	  [ruby-core:3809]
 
 Thu Nov 25 07:59:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
