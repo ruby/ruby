@@ -1,0 +1,227 @@
+.\" socket.doc -  -*- Indented-Text -*- created at: Thu Mar 23 20:29:02 JST 1995
+
+** Socket(クラス)
+
+SuperClass: BasicSocket
+
+ソケットそのものに対するシステムコールレベルのアクセスを提供するクラス．
+Perlのソケットに対するアクセスと同レベルの機能を提供している．このクラ
+スではソケットアドレスはpackされた文字列で，指定する．UDPソケットはこ
+のクラスを使って利用する．
+
+Methods:
+
+   accept
+
+	新しい接続を受け付けて，新しい接続に対するソケットとアドレスの
+	ペアを返す．accept(2)を参照．
+
+   bind(addr)
+
+	bind(2)と同じ働きをする．addrはpackされたソケットアドレス構造
+	体である．
+
+   connect(addr)
+
+	connect(2)と同じ働きをする．addrはpackされたソケットアドレス構
+	造体である．
+
+   listen(backlog)
+
+	listen(2)と同じ働きをする．
+
+   recv(len[, flags])
+
+	ソケットからデータを受け取り，文字列として返す．lenは受け取る
+	最大の長さを指定する．flagsについてはrecv(2)を参照．flagsのデ
+	フォルト値は0である．
+
+   recvfrom(len[, flags])
+
+	recvと同様にソケットからデータを受け取るが，戻り値は文字列と相
+	手ソケットのアドレスのペアである．引数についてはrecvと同様．
+
+   send(mesg, flags[, to])
+
+	ソケットを介してデータを送る．flagsに関してはsend(2)を参照の事．
+	connectしていないソケットに対しては送り先であるtoを指定する必
+	要がある．実際に送ったデータの長さを返す．
+
+Single Methods:
+
+   open(domain, type, protocol)
+   new(domain, type, protocol)
+
+	新しいソケットを生成する．domain，type，protocolはインクルード
+	ファイルで定義されている定数値で指定する．domainとtypeに関して
+	は，文字列で指定できるが，すべてをカバーしている保証はない．
+
+   socketpair(domain, type, protocol)
+
+	ソケットのペアを返す．引数の指定は openと同じである．
+   
+** BasicSocket(クラス)
+
+ソケットを表す抽象クラス．具体的なソケット操作はサブクラスで定義される．
+例えばインターネットドメインの場合はTCPsocketを用いる．
+
+SuperClass: IO
+
+Methods:
+
+   getopt(level, optname)
+
+	ソケットのオプションを取得する．getsockopt(2)を参照のこと．取
+	得したオプションの内容を含む文字列を返す．
+
+   getpeername
+
+	接続の相手先のソケットの情報を得る．パックされたsockaddr構造体
+	をベタにダンプした文字列が返される．getpeername(2)を参照のこと．
+
+   getsockname
+
+	ソケットの情報を得る．パックされたsockaddr構造体をベタにダンプ
+	した文字列が返される．getsockname(2)を参照のこと．
+
+   setopt(level, optname, optval)
+
+	ソケットのオプションを設定する．setsockopt(2)を参照のこと．
+
+   shutdown(how)
+
+	ソケットの以降の接続を終了させる．howが0である時，以降の受信が，
+	howが1である時は，以降の送信が拒否される．howが2の時には，それ
+	以降の送信，受信ともに拒否される．shutdown(2)を参照．
+
+** TCPserver(クラス)
+
+TCP/IPストリーム型接続のサーバ側のソケットのクラス．このクラスによって
+簡単にソケットを利用したサーバのプログラミングができる．例えばechoサー
+バは以下のようになる．
+
+ gs = TCPserver.open(4444)
+ socks = [gs]
+
+ while TRUE
+   nsock = select(socks);
+   if nsock == nil; continue end
+   for s in nsock[0]
+     if s == gs
+       socks.push(s.accept)
+     else
+       if s.eof
+ 	 s.close
+	 socks.delete(s)
+       else
+	 str = s.gets
+	 s.write(str)
+       end
+     end
+   end
+ end
+
+SuperClass: TCPsocket
+
+Methods:
+
+   accept
+
+	クライアントからの接続要求を受け付け，接続したTCPsocketのイン
+	スタンスを返す．
+
+Single Methods:
+
+   new([host, ]service)
+   open([host, ]service)
+
+	serviceは/etc/services(またはNIS)に登録されているサービス名か
+	ポート番号で指定する．hostを指定した時は指定したホストからの接
+	続だけを受け付ける．省略時は全てのホストからの接続要求を受け付
+	ける．
+
+** TCPsocket
+
+インターネットドメインのストリーム型ソケットのクラス．通常のIOクラスの
+サブクラスと同様の入出力ができる．このクラスによってソケットを用いたク
+ライアントを簡単に記述できる．ユーザの入力をそのままサーバに転送するプ
+ログラムは以下のようになる．
+
+ s = TCPsocket("localhost", 4444)
+ while gets()
+   s.write($_)
+   print(s.read)
+ end
+
+SuperClass: BasicSocket
+
+Methods:
+
+   addr
+
+	ソケットの接続情報を表す配列を返す．その配列の各要素は第1要素
+	が文字列 "AF_INET"，第2要素がport番号，第3要素がホストを表す文
+	字列である．
+
+   peeraddr
+
+	接続相手先ソケットの情報を表す配列を返す．その配列の各要素は
+	addrメソッドが返す配列と同じである．
+
+Single Methods:
+
+   open(host, service)
+   new(host, service)
+
+	hostで指定したホストのserviceで指定したポートと接続したソケッ
+	トを返す．hostはホスト名，またはインターネットアドレスを示す文
+	字列，serviceは/etc/services(またはNIS)に登録されているサービ
+	ス名かポート番号である．
+
+** UNIXserver
+
+UNIXストリーム型接続のサーバ側のソケットのクラス．
+
+SuperClass: UNIXsocket
+
+Methods:
+
+   accept
+
+	クライアントからの接続要求を受け付け，接続したUNIXsocketのイン
+	スタンスを返す．
+
+** UNIXsocket
+
+UNIXドメインのストリーム型ソケットのクラス．通常のIOクラスのサブクラス
+と同様の入出力ができる．
+
+SuperClass: BasicSocket
+
+Methods:
+
+   addr
+
+	ソケットの接続情報を表す配列を返す．その配列の各要素は第1要素
+	が文字列 "AF_UNIX"，第2要素がpathである．
+
+   path
+
+	UNIXソケットのパスを返す．
+
+   peeraddr
+
+	接続相手先ソケットの情報を表す配列を返す．その配列の各要素は
+	addrメソッドが返す配列と同じである．
+
+Single Methods:
+
+   open(path)
+   new(path)
+
+	pathで指定したパス名を用いて接続したソケットを返す．
+
+-------------------------------------------------------
+Local variables:
+fill-column: 70
+end:

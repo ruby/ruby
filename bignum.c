@@ -13,7 +13,7 @@
 #include <math.h>
 
 extern VALUE C_Integer;
-VALUE C_Bignum;
+static VALUE C_Bignum;
 
 #define BDIGITS(x) RBIGNUM(x)->digits
 #define BITSPERDIG (sizeof(USHORT)*CHAR_BIT)

@@ -26,10 +26,10 @@ bindir = $(exec_prefix)/bin
 #### End of system configuration section. ####
 
 OBJS	      = array.o \
+		assoc.o \
 		bignum.o \
 		class.o \
 		compar.o \
-		cons.o \
 		dir.o \
 		dln.o \
 		enum.o \

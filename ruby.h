@@ -100,7 +100,7 @@ extern VALUE C_Data;
 #define T_HASH   0x0a
 #define T_STRUCT 0x0b
 #define T_BIGNUM 0x0c
-#define T_CONS   0x0f
+#define T_ASSOC  0x0f
 #define T_DATA   0x10
 
 #define T_SCOPE  0xfe
@@ -216,13 +216,13 @@ struct RBignum {
     USHORT *digits;
 };
 
-struct RCons {
+struct RAssoc {
     struct RBasic basic;
     VALUE car, cdr;
 };
 
-#define CAR(c) (RCONS(c)->car)
-#define CDR(c) (RCONS(c)->cdr)
+#define CAR(c) (RASSOC(c)->car)
+#define CDR(c) (RASSOC(c)->cdr)
 
 #define R_CAST(st) (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
@@ -236,7 +236,7 @@ struct RCons {
 #define RDATA(obj)   (R_CAST(RData)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
-#define RCONS(obj)   (R_CAST(RCons)(obj))
+#define RASSOC(obj)   (R_CAST(RAssoc)(obj))
 
 #define FL_SINGLE  (1<<8)
 #define FL_MARK    (1<<9)

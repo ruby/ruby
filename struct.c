@@ -97,8 +97,8 @@ struct_new(name, va_alist)
     return st;
 }
 
-#define ASSOC_KEY(a) RCONS(a)->car
-#define ASSOC_VAL(a) RCONS(a)->cdr
+#define ASSOC_KEY(a) RASSOC(a)->car
+#define ASSOC_VAL(a) RASSOC(a)->cdr
 
 static VALUE
 Sstruct_new(argc, argv, class)
@@ -117,7 +117,7 @@ Sstruct_new(argc, argv, class)
     for (i=0, max=tbl->len; i<max; i++) {
 	VALUE assoc = tbl->ptr[i];
 
-	Check_Type(assoc, T_CONS);
+	Check_Type(assoc, T_ASSOC);
 	Check_Type(ASSOC_KEY(assoc), T_STRING);
 	struct_add(st, RSTRING(ASSOC_KEY(assoc))->ptr, ASSOC_VAL(assoc));
     }

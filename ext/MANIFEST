@@ -1,0 +1,6 @@
+MANIFEST
+Makefile.in
+dbm.c
+dbm.doc
+socket.c
+socket.doc

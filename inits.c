@@ -23,13 +23,13 @@ rb_call_inits()
     Init_Enumerable();
     Init_Numeric();
     Init_Bignum();
+    Init_Assoc();
     Init_Array();
     Init_Hash();
     Init_Struct();
     Init_String();
     Init_Regexp();
     Init_pack();
-    Init_Cons();
     Init_Range();
     Init_IO();
     Init_Dir();

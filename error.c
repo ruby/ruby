@@ -171,7 +171,7 @@ static char *builtin_types[] = {
     "Method",
     "Struct",
     "Bignum",
-    "Cons",
+    "Assoc",
     "Data",
 };
 

@@ -46,8 +46,8 @@ rb_hash(a, mod)
     return rb_funcall(a, hash, 0) % mod;
 }
 
-#define ASSOC_KEY(a) RCONS(a)->car
-#define ASSOC_VAL(a) RCONS(a)->cdr
+#define ASSOC_KEY(a) RASSOC(a)->car
+#define ASSOC_VAL(a) RASSOC(a)->cdr
 
 static VALUE
 Shash_new(class)
@@ -169,6 +169,37 @@ Fhash_delete(hash, key)
     return Qnil;
 }
 
+struct shift_var {
+    int stop;
+    VALUE key;
+    VALUE val;
+};
+
+static
+hash_shift(key, value, var)
+    VALUE key, value;
+    struct shift_var *var;
+{
+    if (var->stop) return ST_STOP;
+    var->stop = 1;
+    var->key = key;
+    var->val = value;
+    return ST_DELETE;
+}
+
+static VALUE
+Fhash_shift(hash)
+    struct RHash *hash;
+{
+    struct shift_var var;
+
+    var.stop = 0;
+    st_foreach(hash->tbl, hash_shift, &var);
+
+    if (var.stop == 0) return Qnil;
+    return assoc_new(var.key, var.val);
+}
+
 static int
 hash_delete_if(key, value)
     VALUE key, value;
@@ -198,7 +229,7 @@ static VALUE
 Fhash_clear(hash)
     struct RHash *hash;
 {
-    st_foreach(hash->tbl, hash_clear, Qnil);
+    st_foreach(hash->tbl, hash_clear);
 
     return (VALUE)hash;
 }
@@ -616,6 +647,7 @@ Init_Hash()
     rb_define_method(C_Hash,"keys", Fhash_keys, 0);
     rb_define_method(C_Hash,"values", Fhash_values, 0);
 
+    rb_define_method(C_Hash,"shift", Fhash_shift, 0);
     rb_define_method(C_Hash,"delete", Fhash_delete, 1);
     rb_define_method(C_Hash,"delete_if", Fhash_delete_if, 0);
     rb_define_method(C_Hash,"clear", Fhash_clear, 0);

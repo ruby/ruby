@@ -55,7 +55,10 @@ AC_MSG_CHECKING(whether matz's dln works)
 cp confdefs.h config.h
 if test $ac_cv_header_a_out_h = yes; then
  AC_CACHE_VAL(rb_cv_mydln,
- [AC_TRY_COMPILE([#include "config.h"],
+ [AC_TRY_COMPILE([
+#define USE_MY_DLN
+#include "dln.c"
+],
 	        [], 
 	        rb_cv_mydln=yes,
 	        rb_cv_mydln=no)])

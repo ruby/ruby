@@ -1,3 +1,14 @@
+Mon Apr 10 18:36:06 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.73
+
+Fri Apr  7 13:51:08 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* cons.c->assoc.c: consの余計な機能は外してpairとしての機能だけを
+	  残した．enumerableをincludeするのもやめた．
+
+	* string.c(esub): 文字列置換イテレータ．perlのs///eの相当する．
+
 Wed Apr  5 11:35:21 1995  Yukihiro Matsumoto  (matz@ix-02)
 
 	* version 0.72

@@ -6,12 +6,12 @@ Makefile.in
 README
 ToDo
 array.c
+assoc.c
 bignum.c
 class.c
 compar.c
 configure
 configure.in
-cons.c
 defines.h
 dict.c
 dir.c

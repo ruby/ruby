@@ -1,0 +1,40 @@
+2SHELL = /bin/sh
+
+#### Start of system configuration section. ####
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+
+CFLAGS = -I.. @CCDLFLAGS@ @CFLAGS@
+LIBS = @LIBS@
+EXT = @EXT@
+
+prefix = @prefix@
+binprefix = 
+exec_prefix = @exec_prefix@
+bindir = $(exec_prefix)/bin
+
+#### End of system configuration section. ####
+
+.SUFFIXES: .so $(SUFFIXES)
+
+OBJS	      = dbm.$(EXT) \
+		socket.$(EXT)
+
+all:		$(OBJS)
+
+clean:;		@rm -f *.o *.so
+
+realclean:;	@rm -f *.o *.so
+		@rm -f core ruby *~ Makefile
+
+.o.so:
+	ld -o $*.so $*.o
+
+# Prevent GNU make v3 from overflowing arg limit on SysV.
+.NOEXPORT:
+###
+dbm.o: dbm.c ../ruby.h ../config.h ../defines.h
+socket.o: socket.c ../ruby.h ../config.h ../defines.h ../io.h

@@ -182,7 +182,7 @@ typedef struct RVALUE {
 	struct RStruct rstruct;
 	struct RBignum bignum;
 	struct RNode   node;
-	struct RCons   cons;
+	struct RAssoc  assoc;
 	struct SCOPE   scope;
     } as;
 } RVALUE;
@@ -447,9 +447,9 @@ gc_mark(obj)
 	}
 	break;
 
-      case T_CONS:
-	gc_mark(obj->as.cons.car);
-	obj = (RVALUE*)obj->as.cons.cdr;
+      case T_ASSOC:
+	gc_mark(obj->as.assoc.car);
+	obj = (RVALUE*)obj->as.assoc.cdr;
 	goto Top;
 
       default:
@@ -537,7 +537,7 @@ obj_free(obj)
       case T_ICLASS:
 	/* iClass shares table with the module */
       case T_FLOAT:
-      case T_CONS:
+      case T_ASSOC:
 	break;
       case T_STRUCT:
 	free(obj->as.rstruct.name);

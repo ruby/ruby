@@ -59,8 +59,11 @@ $ARGV[0] = '/usr/spool/mail/' + ENV['USER'] if $ARGV.length == 0
 
 $outcount = 0;
 def fromout(date, from, subj)
-  y, m, d = parsedate(date)
-  printf "%-2d/%02d/%02d [%.28s] %.40s\n", y, m, d, from, subj
+  y = m = d = 0
+  y, m, d = parsedate(date) if date
+  from = "sombody@somewhere" if ! from
+  subj = "(nil)" if ! subj
+  printf "%-2d/%02d/%02d [%-28.28s] %-40.40s\n", y, m, d, from, subj
   $outcount += 1
 end
   
@@ -83,7 +86,6 @@ while TRUE
   fromout fields['Date'], fields['From'], fields['Subject']
 
   while gets()
-#    print $_
     break if /^From /
   end
 

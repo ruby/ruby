@@ -803,8 +803,8 @@ Fary_assoc(ary, key)
 
     p = ary->ptr; pend = p + ary->len;
     while (p < pend) {
-	if (TYPE(*p) == T_CONS
-	    && rb_equal(RCONS(*p)->car, key))
+	if (TYPE(*p) == T_ASSOC
+	    && rb_equal(RASSOC(*p)->car, key))
 	    return *p;
     }
     return Qnil;
@@ -819,8 +819,8 @@ Fary_rassoc(ary, value)
 
     p = ary->ptr; pend = p + ary->len;
     while (p < pend) {
-	if (TYPE(*p) == T_CONS
-	    && rb_equal(RCONS(*p)->cdr, value))
+	if (TYPE(*p) == T_ASSOC
+	    && rb_equal(RASSOC(*p)->cdr, value))
 	    return *p;
     }
     return Qnil;

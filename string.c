@@ -674,15 +674,14 @@ str_sub(str, pat, val, once)
     VALUE val;
     int once;
 {
-    VALUE sub;
     int beg, end, offset, n;
 
     for (offset=0, n=0;
 	 (beg=research(pat, str, offset)) >= 0;
 	 offset=BEG(0)+STRLEN(val)) {
 	end = END(0)-1;
-	sub = re_regsub(val);
-	str_replace2(str, beg, end, sub);
+	val = re_regsub(val);
+	str_replace2(str, beg, END(0)-1, val);
 	n++;
 	if (once) break;
     }
@@ -811,6 +810,37 @@ Fstr_gsub(str, pat, val)
     return Fstr_sub_internal(str, pat, val, 0);
 }
 
+static VALUE
+Fstr_esub(str, pat)
+    VALUE str, pat;
+{
+    VALUE val;
+    int beg, end, offset, n;
+
+    str_modify(str);
+    switch (TYPE(pat)) {
+      case T_REGEXP:
+	break;
+
+      case T_STRING:
+	pat = re_regcomp(pat);
+	break;
+
+      default:
+	/* type failed */
+	Check_Type(pat, T_REGEXP);
+    }
+
+    offset=0;
+    while ((beg=research(pat, str, offset)) >= 0) {
+	val = rb_yield(re_nth_match(0));
+	val = obj_as_string(val);
+	str_replace2(str, beg, END(0)-1, val);
+	offset=BEG(0)+STRLEN(val);
+    }
+    return (VALUE)str;
+}
+
 extern VALUE rb_lastline;
 
 static VALUE
@@ -827,6 +857,14 @@ Fgsub(obj, pat, val)
 {
     Check_Type(rb_lastline, T_STRING);
     return Fstr_sub_internal(rb_lastline, pat, val, 0);
+}
+
+static VALUE
+Fesub(obj, pat)
+    VALUE obj, pat;
+{
+    Check_Type(rb_lastline, T_STRING);
+    return Fstr_esub(rb_lastline, pat);
 }
 
 static VALUE
@@ -1669,6 +1707,7 @@ Init_String()
 
     rb_define_method(C_String, "sub", Fstr_sub, 2);
     rb_define_method(C_String, "gsub", Fstr_gsub, 2);
+    rb_define_method(C_String, "esub", Fstr_esub, 1);
     rb_define_method(C_String, "chop", Fstr_chop, 0);
     rb_define_method(C_String, "strip", Fstr_strip, 0);
 
@@ -1684,6 +1723,7 @@ Init_String()
 
     rb_define_private_method(C_Kernel, "sub", Fsub, 2);
     rb_define_private_method(C_Kernel, "gsub", Fgsub, 2);
+    rb_define_private_method(C_Kernel, "esub", Fesub, 1);
 
     pr_str = rb_intern("to_s");
 }
