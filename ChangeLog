@@ -1,3 +1,10 @@
+Thu May  3 03:15:06 2001  SHIROYAMA Takayuki <psi@fortune.nest.or.jp>
+
+	* configure.in: get --enable-shared to work on MacOS X.
+
+	* Makefile.in: make $(LIBRUBY_SO) depend on miniruby properly.
+	Now `make -jN' should work without a problem.
+
 Thu May  3 02:07:45 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/config.h.in: add SIZEOF___INT64 definition.
