@@ -1741,7 +1741,7 @@ dln_find_1(fname, path, exe_flag)
 	    *bp = '\0';
 	    fprintf(stderr, "\tDirectory \"%s\"\n", fbuf);
 	    fprintf(stderr, "\tFile \"%s\"\n", fname);
-	    continue;
+	    goto next;
 	}
 	memcpy(bp, fname, i + 1);
 
@@ -1795,6 +1795,8 @@ dln_find_1(fname, path, exe_flag)
 #else
 		if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf))
 		    return mac_fullpath;
+
+      next:
 #endif
 	    }
 	}
