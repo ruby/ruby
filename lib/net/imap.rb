@@ -1288,7 +1288,7 @@ module Net
 	str = ""
 	token = match(T_LBRA)
 	str.concat(token.value)
-	token = match(T_ATOM)
+	token = match(T_ATOM, T_NUMBER)
 	str.concat(token.value)
 	token = lookahead
 	if token.symbol == T_SPACE
