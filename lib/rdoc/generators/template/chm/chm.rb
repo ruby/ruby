@@ -7,6 +7,7 @@ require "rdoc/generators/template/html/html"
 # tag, so...
 
 BODY.sub!(/<\?xml.*\?>/, '')
+SRC_PAGE.sub!(/<\?xml.*\?>/, '')
 
 HPP_FILE = %{
 [OPTIONS]
