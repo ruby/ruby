@@ -47,6 +47,10 @@ module DL
 	def to_ptr
 	  return @ptr
 	end
+
+	def size
+	  return @ptr.size
+	end
       end
 
       class Struct
@@ -60,6 +64,14 @@ module DL
 	  @tys  = ""
 	  @types = types
 	  parse(contents)
+	end
+
+	def size
+	  return @size
+	end
+
+	def members
+	  return @names
 	end
 
 	def new(size = nil)
