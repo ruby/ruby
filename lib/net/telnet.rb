@@ -467,8 +467,8 @@ module Net
         begin
           c = @sock.sysread(1024 * 1024)
           @dumplog.log_dump('<', c) if @options.has_key?("Dump_log")
-          c = rest + c
           if @options["Telnetmode"]
+            c = rest + c
             if Integer(c.rindex(/#{IAC}#{SE}/no)) <
                Integer(c.rindex(/#{IAC}#{SB}/no))
               buf = preprocess(c[0 ... c.rindex(/#{IAC}#{SB}/no)])
