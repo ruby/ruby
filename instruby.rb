@@ -51,7 +51,7 @@ arc = CONFIG["LIBRUBY_A"]
 
 makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir]
 
-ruby_bin = File.join(CONFIG["bindir"], ruby_install_name)
+ruby_bin = File.join(bindir, ruby_install_name)
 
 install ruby_install_name+exeext, ruby_bin+exeext, 0755
 if rubyw_install_name and !rubyw_install_name.empty?
@@ -76,6 +76,7 @@ end
 
 Dir.chdir CONFIG["srcdir"]
 
+ruby_shebang = File.join(CONFIG["bindir"], ruby_install_name)
 for src in Dir["bin/*"]
   next unless File.file?(src)
   next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
@@ -93,7 +94,7 @@ for src in Dir["bin/*"]
     shebang = f.gets
     body = f.read
 
-    if shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_bin}
+    if shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_shebang}
       f.rewind
       f.print shebang, body
       f.truncate(f.pos)
