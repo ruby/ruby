@@ -187,6 +187,13 @@ ossl_x509store_set_trust(VALUE self, VALUE trust)
 }
 
 static VALUE 
+ossl_x509store_set_time(VALUE self, VALUE time)
+{
+    rb_iv_set(self, "@time", time);
+    return time;
+}
+
+static VALUE 
 ossl_x509store_add_file(VALUE self, VALUE file)
 {
     X509_STORE *store;
@@ -329,6 +336,11 @@ ossl_x509stctx_alloc(VALUE klass)
     return obj;
 }
 
+static VALUE ossl_x509stctx_set_flags(VALUE, VALUE);
+static VALUE ossl_x509stctx_set_purpose(VALUE, VALUE);
+static VALUE ossl_x509stctx_set_trust(VALUE, VALUE);
+static VALUE ossl_x509stctx_set_time(VALUE, VALUE);
+
 static VALUE
 ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -350,10 +362,11 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     }
 #else
     X509_STORE_CTX_init(ctx, x509st, x509, x509s);
-    X509_STORE_CTX_set_flags(ctx, NUM2INT(rb_iv_get(store, "@flags")));
-    X509_STORE_CTX_set_purpose(ctx, NUM2INT(rb_iv_get(store, "@purpose")));
-    X509_STORE_CTX_set_trust(ctx, NUM2INT(rb_iv_get(store, "@trust")));
+    ossl_x509stctx_set_flags(self, rb_iv_get(store, "@flags"));
+    ossl_x509stctx_set_purpose(self, rb_iv_get(store, "@purpose"));
+    ossl_x509stctx_set_trust(self, rb_iv_get(store, "@trust"));
 #endif
+    ossl_x509stctx_set_time(self, rb_iv_get(store, "@time"));
     rb_iv_set(self, "@verify_callback", rb_iv_get(store, "@verify_callback"));
     rb_iv_set(self, "@cert", cert);
 
@@ -512,6 +525,18 @@ ossl_x509stctx_set_trust(VALUE self, VALUE trust)
     return trust;
 }
 
+static VALUE
+ossl_x509stctx_set_time(VALUE self, VALUE time)
+{
+    X509_STORE_CTX *store;
+
+    GetX509StCtx(self, store);
+    if(NIL_P(time)) store->flags &= ~X509_V_FLAG_USE_CHECK_TIME;
+    else X509_STORE_CTX_set_time(store, 0, NUM2LONG(rb_Integer(time)));
+
+    return time;
+}
+
 /*
  * INIT
  */
@@ -533,6 +558,7 @@ Init_ossl_x509store()
     rb_define_method(cX509Store, "flags=",       ossl_x509store_set_flags, 1);
     rb_define_method(cX509Store, "purpose=",     ossl_x509store_set_purpose, 1);
     rb_define_method(cX509Store, "trust=",       ossl_x509store_set_trust, 1);
+    rb_define_method(cX509Store, "time=",        ossl_x509store_set_time, 1);
     rb_define_method(cX509Store, "add_path",     ossl_x509store_add_path, 1);
     rb_define_method(cX509Store, "add_file",     ossl_x509store_add_file, 1);
     rb_define_method(cX509Store, "add_cert",     ossl_x509store_add_cert, 1);
@@ -555,5 +581,6 @@ Init_ossl_x509store()
     rb_define_method(x509stctx,"flags=",      ossl_x509stctx_set_flags, 1);
     rb_define_method(x509stctx,"purpose=",    ossl_x509stctx_set_purpose, 1);
     rb_define_method(x509stctx,"trust=",      ossl_x509stctx_set_trust, 1);
+    rb_define_method(x509stctx,"time=",       ossl_x509stctx_set_time, 1);
 
 }

@@ -1,3 +1,13 @@
+Fri Oct 15 18:07:08 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509store.c
+	  (ossl_x509stctx_initialize): setup OpenSSL::X509::StoreContext with
+	  ossl_x509stctx_* functions instead of X509_STORE_CTX_*.
+	  (ossl_x509store_set_time): add OpenSSL::X509::Store#time=.
+	  (ossl_x509stctx_set_time): add OpenSSL::X509::StoreContext#time=.
+
+	* test/openssl/ossl_x509store.rb: test certificate validity times.
+
 Fri Oct 15 18:04:35 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb: TkTimer.new(interval, loop){ ... } is

@@ -49,6 +49,8 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
                           ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
     ee3_cert = issue_cert(@ee2, @dsa512, 30, now-100, now-1, ee_exts,
                           ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
+    ee4_cert = issue_cert(@ee2, @dsa512, 40, now+1000, now+2000, ee_exts,
+                          ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
 
     revoke_info = []
     crl1   = issue_crl(revoke_info, 1, now, now+1800, [],
@@ -106,6 +108,36 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     assert_equal(@ca1.to_der, chain[2].subject.to_der)
     assert_equal(false, store.verify(ee3_cert))
     assert_match(/expire/i, store.error_string)
+    assert_equal(false, store.verify(ee4_cert))
+    assert_match(/not yet valid/i, store.error_string)
+
+    store = OpenSSL::X509::Store.new
+    store.add_cert(ca1_cert)
+    store.add_cert(ca2_cert)
+    store.time = now + 1500
+    assert_equal(true, store.verify(ca1_cert))
+    assert_equal(true, store.verify(ca2_cert))
+    assert_equal(true, store.verify(ee4_cert))
+    store.time = now + 1900
+    assert_equal(true, store.verify(ca1_cert))
+    assert_equal(false, store.verify(ca2_cert))
+    assert_match(/expire/i, store.error_string)
+    assert_equal(false, store.verify(ee4_cert))
+    assert_match(/expire/i, store.error_string)
+    store.time = now + 4000
+    assert_equal(false, store.verify(ee1_cert))
+    assert_match(/expire/i, store.error_string)
+    assert_equal(false, store.verify(ee4_cert))
+    assert_match(/expire/i, store.error_string)
+
+    # the underlying X509 struct caches the result of the last
+    # verification for signature and not-before. so the following code
+    # rebuilds new objects to avoid site effect.
+    store.time = Time.now - 4000
+    assert_equal(false, store.verify(OpenSSL::X509::Certificate.new(ca2_cert)))
+    assert_match(/not yet valid/i, store.error_string)
+    assert_equal(false, store.verify(OpenSSL::X509::Certificate.new(ee1_cert)))
+    assert_match(/not yet valid/i, store.error_string)
 
     return unless defined?(OpenSSL::X509::V_FLAG_CRL_CHECK)
 
