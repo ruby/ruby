@@ -15,11 +15,6 @@ module Test
         # Runs a Test::Unit::TestSuite on the console.
         class TestRunner
           extend TestRunnerUtilities
-          
-          # Creates a new TestRunner and runs the suite.
-          def self.run(suite, output_level=NORMAL)
-            return new(suite, output_level).start
-          end
 
           # Creates a new TestRunner for running the passed
           # suite. If quiet_mode is true, the output while

@@ -26,11 +26,6 @@ module Test
           
           RED_STYLE = FXRGBA(0xFF,0,0,0xFF) #0xFF000000
           GREEN_STYLE = FXRGBA(0,0xFF,0,0xFF) #0x00FF0000
-  
-          # Creates a new TestRunner and runs the suite.
-          def self.run(suite)
-            new(suite).start
-          end
 
           # Creates a new TestRunner for running the passed
           # suite.

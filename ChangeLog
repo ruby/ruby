@@ -1,6 +1,11 @@
+Tue Jan 13 14:27:13 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/test/unit/ui/testrunnerutilities.rb (TestRunnerUtilities):
+	  moved run method which allows output level.  [ruby-dev:22554]
+
 Tue Jan 13 04:29:52 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/ri/ri_driver.rb (RiDriver::report_method_stuff): 
+	* lib/rdoc/ri/ri_driver.rb (RiDriver::report_method_stuff):
 	  Show fully-qualified class names in class list.
 
 Tue Jan 13 01:04:37 2004  Dave Thomas  <dave@pragprog.com>

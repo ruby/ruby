@@ -21,11 +21,6 @@ module Test
         class TestRunner
           extend TestRunnerUtilities
 
-          # Creates a new TestRunner and runs the suite.
-          def self.run(suite)
-            new(suite).start
-          end
-
           # Creates a new TestRunner for running the passed
           # suite.
           def initialize(suite, output_level = NORMAL)
