@@ -1,3 +1,11 @@
+Tue Jan 20 04:41:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_marshal.rb (MarshalTestLib::test_exception): test
+	  for [ruby-dev:22604].
+
+	* test/ruby/test_marshal.rb (MarshalTestLibtest_singleton): test
+	  for [ruby-dev:22588].
+
 Tue Jan 20 02:49:22 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: add check for OpenSSL version.

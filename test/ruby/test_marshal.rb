@@ -58,6 +58,7 @@ module MarshalTestLib
   class MyException < Exception; def initialize(v, *args) super(*args); @v = v; end; attr_reader :v; end
   def test_exception
     marshal_equal(Exception.new('foo')) {|o| o.message}
+    marshal_equal(assert_raise(NoMethodError) {no_such_method()}) {|o| o.message}
   end
 
   def test_exception_subclass
@@ -227,14 +228,16 @@ module MarshalTestLib
   def test_singleton
     o = Object.new
     def o.m() end
-    assert_raises(TypeError) { marshaltest(o) }
+    assert_raises(TypeError) { encode(o) }
     o = Object.new
-    class << o
+    c = class << o
       @v = 1
+      class C; self; end
     end
-    assert_raises(TypeError) { marshaltest(o) }
-    assert_raises(TypeError) { marshaltest(ARGF) }
-    assert_raises(TypeError) { marshaltest(ENV) }
+    assert_raises(TypeError) { encode(o) }
+    assert_raises(TypeError) { encode(c) }
+    assert_raises(TypeError) { encode(ARGF) }
+    assert_raises(TypeError) { encode(ENV) }
   end
 
   module Mod1 end
