@@ -3102,14 +3102,14 @@ whole_match_p(eos, len, indent)
     int len, indent;
 {
     char *p = lex_pbeg;
+    int n;
 
     if (indent) {
 	while (*p && ISSPACE(*p)) p++;
     }
-    if (strncmp(eos, p, len) == 0) {
-	if (p[len] == '\n' || p[len] == '\r') return Qtrue;
-	if (p + len == lex_pend) return Qtrue;
-    }
+    n= lex_pend - (p + len);
+    if (n < 0 || n > 0 && p[len] != '\n' && p[len] != '\r') return Qfalse;
+    if (strncmp(eos, p, len) == 0) return Qtrue;
     return Qfalse;
 }
 
@@ -4206,6 +4206,15 @@ yylex()
 	}
 	break;
 
+      case '_':
+	if (lex_p - 1 == lex_pbeg && whole_match_p("__END__", 7, 0)) {
+	    ruby__end__seen = 1;
+	    lex_lastline = 0;
+	    return -1;
+	}
+	newtok();
+	break;
+
       default:
 	if (!is_identchar(c) || ISDIGIT(c)) {
 	    rb_compile_error("Invalid char `\\%03o' in expression", c);
@@ -4321,13 +4330,6 @@ yylex()
 	    }
 	}
 	tokfix();
-	if (strncmp(tok(), "__END__", 7) == 0 &&
-	    (lex_p - lex_pbeg == 7 || lex_p - lex_pbeg == 8) &&
-	    (lex_pend == lex_p || *lex_p == '\n' || *lex_p == '\r')) {
-	    ruby__end__seen = 1;
-	    lex_lastline = 0;
-	    return -1;
-	}
 	last_id = yylval.id = rb_intern(tok());
 	if ((dyna_in_block() && rb_dvar_defined(last_id)) || local_id(last_id)) {
 	    lex_state = EXPR_END;

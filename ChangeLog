@@ -1,3 +1,7 @@
+Tue Dec 31 01:30:29 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* parse.y (yylex): do not accept " __END__\n".  ([ruby-dev:19245])
+
 Mon Dec 30 21:10:59 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* parse.y (yylex): use strncmp instead of strcmp. 
