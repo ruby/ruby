@@ -3154,6 +3154,7 @@ VpSzMantissa(Real *a,char *psz)
             }
         }
         *psz = 0;
+        while(psz[-1]=='0') *(--psz) = 0;
     } else {
         if(VpIsPosZero(a)) sprintf(psz, "0");
         else      sprintf(psz, "-0");
@@ -3728,8 +3729,9 @@ VpMidRound(Real *y, int f, int nf)
             VpNmlz(y);
             VpRdup(y,0);
         } else {
+            S_INT s = VpGetSign(y);
             VpSetOne(y);
-            VpSetSign(y,VpGetSign(y));
+            VpSetSign(y,s);
         }
     } else {
         y->frac[ix] = div;
