@@ -2879,7 +2879,7 @@ static void rb_w32_call_handler(struct handler_arg_t* h)
 	rb_jump_tag(status);
     }
     h->finished = 1;
-    Sleep(INFINITE);		/* safe on Win95? */
+    yield_until(0);
 }
 
 static struct handler_arg_t* setup_handler(struct handler_arg_t *harg,
