@@ -130,14 +130,10 @@ module MonitorMixin
       t.wakeup if t
       @waiters.push(Thread.current)
 
-      preserved_exceptions = []
-      while true
-        begin
-          Thread.stop
-        rescue Timeout
-        rescue Exception => exception
-          preserved_exceptions << exception
-        end
+      begin
+	Thread.stop
+      rescue Timeout
+      ensure
 	Thread.critical = true
 	if timeout && timeout_thread.alive?
 	  Thread.kill(timeout_thread)
@@ -145,17 +141,15 @@ module MonitorMixin
 	if @waiters.include?(Thread.current)  # interrupted?
 	  @waiters.delete(Thread.current)
 	end
-
-        break if @monitor.mon_owner.nil? or @monitor.mon_owner == Thread.current
-        @monitor.mon_waiting_queue.delete(Thread.current)
-        @monitor.mon_waiting_queue.push(Thread.current)
-      end
-      @monitor.mon_owner = Thread.current
-      @monitor.mon_count = count
-      Thread.critical = false
-
-      unless preserved_exceptions.empty?
-        raise preserved_exceptions.first
+	while @monitor.mon_owner &&
+	    @monitor.mon_owner != Thread.current
+	  @monitor.mon_waiting_queue.push(Thread.current)
+	  Thread.stop
+	  Thread.critical = true
+	end
+	@monitor.mon_owner = Thread.current
+	@monitor.mon_count = count
+	Thread.critical = false
       end
     end
     
@@ -238,7 +232,6 @@ module MonitorMixin
   def mon_enter
     Thread.critical = true
     while mon_owner != nil && mon_owner != Thread.current
-      mon_entering_queue.delete(Thread.current)
       mon_entering_queue.push(Thread.current)
       Thread.stop
       Thread.critical = true

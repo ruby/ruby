@@ -1,3 +1,7 @@
+Wed Nov  5 09:14:23 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/monitor.rb: revert to the previous revision.
+
 Wed Nov  5 08:39:51 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/https.rb (HTTPRequest#parse): set @client_cert_chain.
