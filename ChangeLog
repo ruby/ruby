@@ -1,3 +1,7 @@
+Mon Jul  5 22:54:39 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/uri/common.rb (Kernel#URI): new global method for parsing URIs.
+
 Mon Jul  5 09:02:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_yield, rb_f_catch): 4th argument to rb_yield_0()
