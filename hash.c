@@ -171,9 +171,7 @@ rb_hash_new2(klass)
     NEWOBJ(hash, struct RHash);
     OBJSETUP(hash, klass, T_HASH);
 
-    hash->iter_lev = 0;
     hash->ifnone = Qnil;
-    hash->tbl = 0;		/* avoid GC crashing  */
     hash->tbl = st_init_table(&objhash);
 
     return (VALUE)hash;
@@ -225,9 +223,7 @@ rb_hash_s_create(argc, argv, klass)
 	NEWOBJ(hash, struct RHash);
 	OBJSETUP(hash, klass, T_HASH);
 	    
-	hash->iter_lev = 0;
 	hash->ifnone = Qnil;
-	hash->tbl = 0;	/* avoid GC crashing  */
 	hash->tbl = st_copy(RHASH(argv[0])->tbl);
 
 	return (VALUE)hash;
@@ -252,9 +248,7 @@ rb_hash_clone(hash)
     NEWOBJ(clone, struct RHash);
     CLONESETUP(clone, hash);
 
-    clone->iter_lev = 0;
     clone->ifnone = RHASH(hash)->ifnone;
-    clone->tbl = 0;		/* avoid GC crashing  */
     clone->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
 
     return (VALUE)clone;

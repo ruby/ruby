@@ -281,7 +281,6 @@ struct_alloc(argc, argv, klass)
     size = iv_get(klass, "__size__");
     n = FIX2LONG(size);
 
-    st->len = 0;		/* avoid GC crashing  */
     st->ptr = ALLOC_N(VALUE, n);
     rb_mem_clear(st->ptr, n);
     st->len = n;
@@ -408,7 +407,6 @@ rb_struct_clone(s)
 {
     NEWOBJ(clone, struct RStruct);
     CLONESETUP(clone, s);
-    clone->len = 0;		/* avoid GC crashing  */
     clone->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
     clone->len = RSTRUCT(s)->len;
     MEMCPY(clone->ptr, RSTRUCT(s)->ptr, VALUE, clone->len);

@@ -93,7 +93,6 @@ rb_obj_clone(obj)
 	rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(obj)));
     }
     clone = rb_obj_alloc(RBASIC(obj)->klass);
-    ROBJECT(clone)->iv_tbl = 0;	/* avoid GC crash */
     CLONESETUP(clone,obj);
     if (ROBJECT(obj)->iv_tbl) {
 	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
@@ -521,8 +520,6 @@ rb_mod_clone(module)
     CLONESETUP(clone, module);
 
     clone->super = RCLASS(module)->super;
-    clone->iv_tbl = 0;
-    clone->m_tbl = 0;		/* avoid GC crashing  */
     if (RCLASS(module)->iv_tbl) {
 	clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
     }

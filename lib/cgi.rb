@@ -939,7 +939,7 @@ convert string charset, and set language to "ja".
       start_pos = lines.rindex(/^\s*<#{element}/ni, end_pos)
       lines[start_pos ... end_pos] = "__" + lines[start_pos ... end_pos].gsub(/\n(?!\z)/n, "\n" + shift) + "__"
     end
-    lines.gsub(/^(\s*)__(?=<\/?\w)/n, '\1')
+    lines.gsub(/^((?:#{Regexp::quote(shift)})*)__(?=<\/?\w)/n, '\1')
   end
 
 

@@ -61,8 +61,8 @@ if RUBY_PLATFORM == "m68k-human"
 else
   CFLAGS = "@CFLAGS@"
 end
-LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s conftest.c %s %s @LIBS@"
-CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir %s %s conftest.c"
+LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
+CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir %s %s %s conftest.c"
 
 if FileTest.readable? 'nul'
   $null = open('nul', 'w')
@@ -91,7 +91,7 @@ def try_link0(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
+  xsystem(format(LINK, $CFLAGS, $CPPFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
 end
 
 def try_link(src, opt="")
@@ -107,7 +107,7 @@ def try_cpp(src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP, $CFLAGS, opt))
+    xsystem(format(CPP, $CFLAGS, $CPPFLAGS, opt))
   ensure
     rm_f "conftest*"
   end
@@ -118,7 +118,7 @@ def egrep_cpp(pat, src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP+"|egrep #{pat}", $CFLAGS, opt))
+    xsystem(format(CPP+"|egrep #{pat}", $CFLAGS, $CPPFLAGS, opt))
   ensure
     rm_f "conftest*"
   end
@@ -326,7 +326,7 @@ def dir_config(target)
     ldir = " -L"+dir if dir
   end
 
-  $CFLAGS += idir if idir
+  $CPPFLAGS += idir if idir
   $LDFLAGS += ldir if ldir
 end
 
@@ -375,7 +375,7 @@ DESTDIR =
 CC = @CC@
 
 CFLAGS   = %s #{CFLAGS} #$CFLAGS
-CPPFLAGS = -I$(topdir) -I$(hdrdir) -I@includedir@ %s
+CPPFLAGS = -I$(topdir) -I$(hdrdir) -I@includedir@ %s #$CPPFLAGS
 DLDFLAGS = #$DLDFLAGS #$LDFLAGS
 LDSHARED = @LDSHARED@ #{defflag}
 ", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
@@ -464,6 +464,11 @@ EOS
 {$(srcdir)}.c{}.obj:
  	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
 
+"
+  else
+    mfile.puts "
+.c.@OBJEXT@:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 "
   end
 

@@ -280,9 +280,9 @@ rb_newobj()
 
     if (!freelist) rb_gc();
 
-    if (freelist->as.free.next && freelist->as.free.next->as.free.flag != 0) abort();
     obj = (VALUE)freelist;
     freelist = freelist->as.free.next;
+    MEMZERO((void*)obj, RVALUE, 1);
     return obj;
 }
 

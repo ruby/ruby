@@ -386,7 +386,7 @@ hdrdir = #{$hdrdir}
 CC = #{CONFIG["CC"]}
 
 CFLAGS   = #{CONFIG["CCDLFLAGS"]} #{CFLAGS} #{$CFLAGS}
-CPPFLAGS = -I$(hdrdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")}
+  CPPFLAGS = -I$(hdrdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]}
 CXXFLAGS = $(CFLAGS)
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}
@@ -454,6 +454,11 @@ EOMF
 {$(srcdir)}.c.obj:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
+"
+  else
+    mfile.print "
+.c.#{$OBJEXT}:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 "
   end
 
