@@ -1,3 +1,8 @@
+Fri Sep 10 20:18:05 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tcltklib/tcltklib.c (lib_merge_tklist): fix suspicious
+	  pointer conversion.
+
 Fri Sep 10 19:16:24 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: bccwin32 port starts to use RTL dll.
