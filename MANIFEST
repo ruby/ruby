@@ -83,6 +83,7 @@ bcc32/setup.mak
 bin/erb
 bin/irb
 cygwin/GNUmakefile.in
+djgpp/GNUmakefile.in
 djgpp/README.djgpp
 djgpp/config.hin
 djgpp/config.sed
