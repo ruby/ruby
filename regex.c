@@ -1633,12 +1633,12 @@ re_compile_fastmap (bufp)
 #endif
 	{
 	case exactn:
-#if 0 /* The original was: */
+#if 1 /* The original was: */
 	  if (translate)
 	    fastmap[translate[p[1]]] = 1;
 	  else
 	    fastmap[p[1]] = 1;
-#else /* The compiled pattern has already been translated.  */
+#else /* The compiled pattern has already been translated. (not true for ruby) */
 	  fastmap[p[1]] = 1;
 #endif
 	  break;
@@ -1775,7 +1775,7 @@ re_compile_fastmap (bufp)
 	  for (j = *p++ * BYTEWIDTH - 1; j >= 0; j--)
 	    if (p[j / BYTEWIDTH] & (1 << (j % BYTEWIDTH)))
 	      {
-#if 0 /* The original was: */
+#if 1 /* The original was: */
 		if (translate)
 		  fastmap[translate[j]] = 1;
 		else
@@ -2911,7 +2911,9 @@ re_match_2 (pbufp, string1_arg, size1, string2_arg, size2, pos, regs, mstop)
 		      goto fail;
 		    continue;
 		  }
-		  if ((unsigned char) translate[c] != (unsigned char) *p++)
+		  /* compiled code translation needed for ruby */
+		  if ((unsigned char) translate[c]
+		      != (unsigned char) translate[*p++])
 		    goto fail;
 		}
 	      while (--mcnt);

@@ -15,7 +15,7 @@ end
 
 def set_cbreak (on)
   tty = "\0" * 256
-  $stdin.ioctl(TIOCGETP, tty)
+  STDIN.ioctl(TIOCGETP, tty)
   ttys = tty.unpack("C4 S")
   if on
     ttys[4] |= CBREAK
@@ -25,7 +25,7 @@ def set_cbreak (on)
     ttys[4] |= ECHO
   end
   tty = ttys.pack("C4 S")
-  $stdin.ioctl(TIOCSETP, tty)
+  STDIN.ioctl(TIOCSETP, tty)
 end
 cbreak();
 

@@ -7,7 +7,7 @@
   $Date: 1995/01/12 08:54:54 $
   created at: Thu Sep 30 20:08:01 JST 1993
 
-  Copyright (C) 1994 Yukihiro Matsumoto
+  Copyright (C) 1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -15,14 +15,11 @@
 #include "version.h"
 #include <stdio.h>
 
-static VALUE rb_version;
-
-VALUE rb_readonly_hook();
+extern VALUE C_Kernel;
 
 Init_version()
 {
-    rb_version = str_new2(RUBY_VERSION);
-    rb_define_variable("$VERSION", &rb_version, Qnil, rb_readonly_hook, 0);
+    rb_define_const(C_Kernel, "VERSION", str_new2(RUBY_VERSION));
 }
 
 show_version()
@@ -32,6 +29,6 @@ show_version()
 
 show_copyright()
 {
-    fprintf(stderr, "ruby - Copyright (C) 1994 Yukihiro Matsumoto\n");
+    fprintf(stderr, "ruby - Copyright (C) 1995 Yukihiro Matsumoto\n");
     exit(0);
 }

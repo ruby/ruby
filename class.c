@@ -6,7 +6,7 @@
   $Date: 1995/01/12 08:54:44 $
   created at: Tue Aug 10 15:05:44 JST 1993
 
-  Copyright (C) 1994 Yukihiro Matsumoto
+  Copyright (C) 1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -203,7 +203,7 @@ rb_include_module(class, module)
     Check_Type(module, T_MODULE);
 
     if (BUILTIN_TYPE(class) == T_CLASS) {
-	rb_clear_cache2(class);
+	rb_clear_cache(class);
     }
 
     while (module) {
@@ -221,24 +221,6 @@ rb_include_module(class, module)
 	class = class->super;
 	module = module->super;
     }
-}
-
-void
-rb_add_method(class, mid, node, noex)
-    struct RClass *class;
-    ID mid;
-    NODE *node;
-    int noex;
-{
-    NODE *body;
-
-    if (class == Qnil) class = (struct RClass*)C_Object;
-    if (st_lookup(class->m_tbl, mid, &body)) {
-	Warning("redefine %s", rb_id2name(mid));
-	rb_clear_cache(body);
-    }
-    body = NEW_METHOD(node, noex);
-    st_insert(class->m_tbl, mid, body);
 }
 
 void

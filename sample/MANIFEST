@@ -20,6 +20,7 @@ fib.pl
 fib.rb
 fib.scm
 freq.rb
+from.rb
 fullpath.pl
 fullpath.rb
 gctest.rb

@@ -1,7 +1,7 @@
 # IO test
 # usage: ruby io.rb file..
 
-home = getenv("HOME")
+home = ENV["HOME"]
 home.sub("m", "&&")
 print(home, "\n")
 print(home.reverse, "\n")

@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:51 $
   created at: Tue Aug 10 12:47:31 JST 1993
 
-  Copyright (C) 1994 Yukihiro Matsumoto
+  Copyright (C) 1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -420,8 +420,6 @@ ruby_init0(argc, argv, envp)
     int i;
 
     origargc = argc; origargv = argv; origenvp = envp;
-
-    rb_call_inits();
 
     rb_define_variable("$@", &errat, Qnil, Qnil, 0);
     errat = str_new2(argv[0]);

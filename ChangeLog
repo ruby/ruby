@@ -1,3 +1,35 @@
+Fri Feb 24 13:15:43 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.68
+
+Thu Feb 23 11:19:19 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: resque節のselfの値が間違っていた．
+
+	* eval.c(rb_clear_cache): キャッシュのクリアし忘れがあった．
+
+	* eval.c: 定数のスコープをクラス内の静的スコープに変更した．これに
+	  よって，特異メソッドからは参照される定数は，レシーバのクラスでは
+	  なく，定義されたスコープのクラスの定数となる．
+
+Wed Feb 22 00:51:38 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* regex.c: ignorecaseを正規表現のコンパイル前に指定しないと正しく
+	  動作しない．修正．
+
+	* string.c(toupper,tolower): bug fix.
+
+	* ENV,VERSION: readonly変数から定数へ．
+
+Tue Feb 21 18:56:56 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* io.c(STDIN, STDOUT, STDERR): 定数として定義．今までの$stdinなど
+	  は将来なくなるかも知れない．
+
+	* io.c(select): bug fix.
+
+	* version 0.67
+
 Mon Feb 20 16:10:14 1995  Yukihiro Matsumoto  (matz@ix-02)
 
 	* parse.y(yylex): 定数を`%識別子'から，第1文字が大文字の識別子に変
@@ -38,10 +70,14 @@ Fri Feb 10 16:30:00 1995  Yukihiro Matsumoto  (matz@ix-02)
 
 Thu Feb  9 16:18:37 1995  Yukihiro Matsumoto  (matz@ix-02)
 
+	* version 0.66
+
 	* parse.y: protectをbeginに変更．begin..endは例外処理だけでなく，
 	  文括弧としても働くことになった．
 
 Wed Feb  1 19:48:24 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.65
 
 	* string.c(str_replace): 置き換える文字列の長さが等しい時メモリコ
 	  ピーをしない．

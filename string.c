@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:43:01 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
-  Copyright (C) 1994 Yukihiro Matsumoto
+  Copyright (C) 1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -358,7 +358,6 @@ Fstr_cmp(str1, str2)
     return INT2FIX(result);
 }
 
-Regexp * make_regexp();
 VALUE Freg_match();
 
 extern VALUE C_Glob;
@@ -376,7 +375,7 @@ Fstr_match(x, y)
 
       case T_STRING:
 	reg = re_regcomp(y);
-	start = research(reg, x, 0, ignorecase);
+	start = research(reg, x, 0);
 	if (start == -1) {
 	    return FALSE;
 	}
@@ -403,7 +402,7 @@ Fstr_match2(str)
 	Fail("$_ is not a string");
 
     reg = re_regcomp(str);
-    start = research(reg, rb_lastline, 0, ignorecase);
+    start = research(reg, rb_lastline, 0);
     if (start == -1) {
 	return Qnil;
     }
@@ -451,7 +450,7 @@ Fstr_index(argc, argv, str)
 
     switch (TYPE(sub)) {
       case T_REGEXP:
-	pos = research(sub, str, pos, ignorecase);
+	pos = research(sub, str, pos);
 	break;
 
       case T_STRING:
@@ -684,7 +683,7 @@ str_sub(str, pat, val, once)
     int beg, end, offset, n;
 
     for (offset=0, n=0;
-	 (beg=research(pat, str, offset, ignorecase)) >= 0;
+	 (beg=research(pat, str, offset)) >= 0;
 	 offset=RREGEXP(pat)->ptr->regs.start[0]+STRLEN(val)) {
 	end = RREGEXP(pat)->ptr->regs.end[0]-1;
 	sub = re_regsub(val);
@@ -1034,14 +1033,14 @@ static VALUE
 Fstr_toupper(str)
     struct RString *str;
 {
-    return Fstr_upcase(str_new(str_new(str->ptr, str->len)));
+    return Fstr_upcase(str_new(str->ptr, str->len));
 }
 
 static VALUE
 Fstr_tolower(str)
     struct RString *str;
 {
-    return Fstr_downcase(str_new(str_new(str->ptr, str->len)));
+    return Fstr_downcase(str_new(str->ptr, str->len));
 }
 
 struct tr {
@@ -1343,7 +1342,7 @@ Fstr_split(argc, argv, str)
 #define LMATCH spat->ptr->regs.start
 #define RMATCH spat->ptr->regs.end
 
-	while ((end = research(spat, str, start, ignorecase)) >= 0) {
+	while ((end = research(spat, str, start)) >= 0) {
 	    if (start == end && LMATCH[0] == RMATCH[0]) {
 		if (last_null == 1) {
 		    if (ismbchar(str->ptr[beg]))

@@ -2,7 +2,9 @@
 # usage: ruby svr.rb
 
 gs = TCPserver.open(0)
-printf("server port is on %d\n", gs.port)
+addr = gs.addr
+addr.shift
+printf("server is on %d\n", addr.join(":"))
 socks = [gs]
 
 while TRUE
@@ -10,7 +12,9 @@ while TRUE
   if nsock == nil; continue end
   for s in nsock[0]
     if s == gs
-      socks.push(s.accept)
+      ns = s.accept
+      socks.push(ns)
+      print(s, " is accepted\n")
     else
       if s.eof
 	print(s, " is gone\n")

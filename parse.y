@@ -47,8 +47,9 @@ static enum lex_state {
     EXPR_FNAME,			/* ignore newline, +/- is a operator. */
 } lex_state;
 
-static ID cur_class = Qnil, cur_mid = Qnil;
-static int in_module, in_single;
+static int class_nest = 0;
+static int in_single = 0;
+static ID cur_mid = Qnil;
 
 static int value_expr();
 static NODE *cond();
@@ -66,16 +67,20 @@ static NODE *asignable();
 static NODE *aryset();
 static NODE *attrset();
 
-static void push_local();
-static void pop_local();
-static int local_cnt();
-static int local_id();
-static ID *local_tbl();
+static void local_push();
+static void local_pop();
+static int  local_cnt();
+static int  local_id();
+static ID  *local_tbl();
+
+#define cref_push() NEW_CREF(0)
+static void cref_pop();
+static NODE *cref_list;
 
 struct global_entry* rb_global_entry();
 
-static void init_top_local();
-static void setup_top_local();
+static void top_local_init();
+static void top_local_setup();
 %}
 
 %union {
@@ -182,12 +187,12 @@ static void setup_top_local();
 %%
 program		:  {
 			lex_state = EXPR_BEG;
-                        init_top_local();
+                        top_local_init();
 		    }
 		  compexpr
 		    {
 			eval_tree = block_append(eval_tree, $2);
-                        setup_top_local();
+                        top_local_setup();
 		    }
 
 compexpr	: exprs opt_term
@@ -719,6 +724,7 @@ primary		: literal
 		| primary '{' opt_iter_var '|' compexpr rbrace
 		    {
 			if (nd_type($1) == NODE_LVAR
+		            || nd_type($1) == NODE_LVAR2
 		            || nd_type($1) == NODE_CVAR) {
 			    $1 = NEW_CALL(Qnil, $1->nd_vid, Qnil);
 			}
@@ -787,59 +793,61 @@ primary		: literal
 			if (cur_mid || in_single)
 			    Error("class definition in method body");
 
-			cur_class = $2;
-			push_local();
+			class_nest++;
+			cref_push();
+			local_push();
 		    }
 		  compexpr
 		  END
 		    {
 		        $$ = NEW_CLASS($2, $5, $3);
-		        pop_local();
-		        cur_class = Qnil;
+		        local_pop();
+			cref_pop();
+			class_nest--;
 		    }
 		| MODULE CONSTANT
 		    {
 			if (cur_mid || in_single)
 			    Error("module definition in method body");
-			cur_class = $2;
-			in_module = 1;
-			push_local();
+			class_nest++;
+			cref_push();
+			local_push();
 		    }
 		  compexpr
 		  END
 		    {
 		        $$ = NEW_MODULE($2, $4);
-		        pop_local();
-		        cur_class = Qnil;
-			in_module = 0;
+		        local_pop();
+			cref_pop();
+			class_nest--;
 		    }
 		| DEF fname
 		    {
 			if (cur_mid || in_single)
 			    Error("nested method definition");
 			cur_mid = $2;
-			push_local();
+			local_push();
 		    }
 		  f_arglist
 		  compexpr
 		  END
 		    {
-			$$ = NEW_DEFN($2, NEW_RFUNC($4, $5), cur_class?0:1);
-		        pop_local();
+			$$ = NEW_DEFN($2, $4, $5, class_nest?1:0);
+		        local_pop();
 			cur_mid = Qnil;
 		    }
 		| DEF singleton '.' fname
 		    {
 			value_expr($2);
 			in_single++;
-			push_local();
+			local_push();
 		    }
 		  f_arglist
 		  compexpr
 		  END
 		    {
-			$$ = NEW_DEFS($2, $4, NEW_RFUNC($6, $7));
-		        pop_local();
+			$$ = NEW_DEFS($2, $4, $6, $7);
+		        local_pop();
 			in_single--;
 		    }
 
@@ -1084,7 +1092,6 @@ rbracket	: ']'		{ yyerrok; }
 rbrace		: '}'		{ yyerrok; }
 comma		: ',' 		{ yyerrok; }
 %%
-
 #include <ctype.h>
 #include <sys/types.h>
 #include "regex.h"
@@ -1221,8 +1228,7 @@ parse_regx()
 		return DREGEXP;
 	    }
 	    else {
-		yylval.val = regexp_new(tok(), toklen());
-		if (casefold) FL_SET(yylval.val, FL_USER1);
+		yylval.val = regexp_new(tok(), toklen(), casefold);
 		return REGEXP;
 	    }
 	  case -1:
@@ -1560,24 +1566,24 @@ retry:
 	return '|';
 
       case '+':
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    c = nextc();
-	    pushback();
-	    if (isdigit(c)) {
-		goto start_num;
-	    }
-	    lex_state = EXPR_BEG;
-	    return UPLUS;
-	}
-	else if (lex_state == EXPR_FNAME) {
+	if (lex_state == EXPR_FNAME) {
 	    if ((c = nextc()) == '@') {
 		return UPLUS;
 	    }
 	    pushback();
 	    return '+';
 	}
+	c = nextc();
+	if (lex_state != EXPR_END) {
+	    pushback();
+	    if (isdigit(c)) {
+		goto start_num;
+	    }
+	    lex_state = EXPR_BEG;
+	    return UMINUS;
+	}
 	lex_state = EXPR_BEG;
-	if ((c = nextc()) == '=') {
+	if (c == '=') {
 	    yylval.id = '+';
 	    return OP_ASGN;
 	}
@@ -1585,8 +1591,15 @@ retry:
 	return '+';
 
       case '-':
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    c = nextc();
+	if (lex_state == EXPR_FNAME) {
+	    if ((c = nextc()) == '@') {
+		return UMINUS;
+	    }
+	    pushback();
+	    return '-';
+	}
+	c = nextc();
+	if (lex_state != EXPR_END) {
 	    pushback();
 	    if (isdigit(c)) {
 		c = '-';
@@ -1595,15 +1608,8 @@ retry:
 	    lex_state = EXPR_BEG;
 	    return UMINUS;
 	}
-	else if (lex_state == EXPR_FNAME) {
-	    if ((c = nextc()) == '@') {
-		return UMINUS;
-	    }
-	    pushback();
-	    return '-';
-	}
 	lex_state = EXPR_BEG;
-	if ((c = nextc()) == '=') {
+	if (c == '=') {
 	    yylval.id = '-';
 	    return OP_ASGN;
 	}
@@ -2448,8 +2454,8 @@ attrset(recv, id, val)
 {
     value_expr(recv);
     value_expr(val);
-
-    id &= ~ID_SCOPE_MASK;
+ 
+   id &= ~ID_SCOPE_MASK;
     id |= ID_ATTRSET;
 
     return NEW_CALL(recv, id, NEW_LIST(val));
@@ -2555,7 +2561,7 @@ static struct local_vars {
 } *lvtbl;
 
 static void
-push_local()
+local_push()
 {
     struct local_vars *local;
 
@@ -2567,7 +2573,7 @@ push_local()
 }
 
 static void
-pop_local()
+local_pop()
 {
     struct local_vars *local = lvtbl;
 
@@ -2620,10 +2626,10 @@ local_id(id)
 }
 
 static void
-init_top_local()
+top_local_init()
 {
     if (lvtbl == Qnil) {
-	push_local();
+	local_push();
     }
     else if (the_scope->local_tbl) {
 	lvtbl->cnt = the_scope->local_tbl[0];
@@ -2638,10 +2644,11 @@ init_top_local()
     else {
 	lvtbl->tbl = Qnil;
     }
+    NEW_CREF0();		/* initialize constant c-ref */
 }
 
 static void
-setup_top_local()
+top_local_setup()
 {
     int len = lvtbl->cnt;
     int i;
@@ -2676,6 +2683,16 @@ setup_top_local()
 	    free(lvtbl->tbl);
 	}
     }
+    cref_list = Qnil;
+}
+
+static void
+cref_pop()
+{
+    NODE *cref = cref_list;
+
+    cref_list = cref_list->nd_next;
+    cref->nd_next = Qnil;
 }
 
 void
@@ -2758,6 +2775,7 @@ Init_sym()
     int strcmp();
 
     sym_tbl = st_init_table(strcmp, st_strhash);
+    rb_global_variable(&cref_list);
 }
 
 ID

@@ -2,7 +2,7 @@
 # usage: ruby clnt.rb [host] port
 host=(if $ARGV.length == 2; $ARGV.shift; else "localhost"; end)
 print("Trying ", host, " ...")
-$stdout.flush
+STDOUT.flush
 s = TCPsocket.open(host, $ARGV.shift)
 print(" done\n")
 print("addr: ", s.addr.join(":"), "\n")

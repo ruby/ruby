@@ -335,21 +335,28 @@ rb_ivar_set(id, val)
 }
 
 VALUE
-rb_const_get(id)
+rb_const_get(class, id)
+    struct RClass *class;
     ID id;
 {
-    struct RClass *class = (struct RClass*)CLASS_OF(Qself);
     VALUE value;
 
     while (class) {
 	if (class->iv_tbl && st_lookup(class->iv_tbl, id, &value)) {
 	    return value;
 	}
-	class = class->super;
+	if (BUILTIN_TYPE(class) == T_MODULE) {
+	    class = RCLASS(C_Object);
+	}
+	else {
+	    class = class->super;
+	}
     }
 
     /* pre-defined class */
     if (st_lookup(class_tbl, id, &value)) return value;
+
+    /* here comes autoload code in the future. */
 
     Fail("Uninitialized constant %s", rb_id2name(id));
     /* not reached */
@@ -366,6 +373,8 @@ rb_const_bound(class, id)
 	}
 	class = class->super;
     }
+    if (st_lookup(class_tbl, id, Qnil))
+	return TRUE;
     return FALSE;
 }
 

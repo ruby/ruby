@@ -6,7 +6,7 @@
   $Date: 1995/01/12 08:54:45 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
-  Copyright (C) 1994 Yukihiro Matsumoto
+  Copyright (C) 1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -19,7 +19,8 @@
 #include <setjmp.h>
 #include "st.h"
 
-void rb_clear_cache();
+static void rb_clear_cache_body();
+static void rb_clear_cache_entry();
 
 /* #define TEST	/* prints cache miss */
 #ifdef TEST
@@ -39,6 +40,27 @@ struct cache_entry {		/* method hash table. */
 };
 
 static struct cache_entry cache[CACHE_SIZE];
+
+void
+rb_add_method(class, mid, node, noex)
+    struct RClass *class;
+    ID mid;
+    NODE *node;
+    int noex;
+{
+    NODE *body;
+
+    if (class == Qnil) class = (struct RClass*)C_Object;
+    if (st_lookup(class->m_tbl, mid, &body)) {
+	Warning("redefine %s", rb_id2name(mid));
+	rb_clear_cache_body(body);
+    }
+    else {
+	rb_clear_cache_entry(class, mid);
+    }
+    body = NEW_METHOD(node, noex);
+    st_insert(class->m_tbl, mid, body);
+}
 
 static NODE*
 search_method(class, id, origin)
@@ -116,7 +138,10 @@ rb_alias(class, name, def)
 
     if (st_lookup(class->m_tbl, name, &old)) {
 	Warning("redefine %s", rb_id2name(name));
-	rb_clear_cache(old->nd_body);
+	rb_clear_cache_body(body);
+    }
+    else {
+	rb_clear_cache_entry(class, name);
     }
 
     st_insert(class->m_tbl, name,
@@ -158,8 +183,8 @@ rb_method_boundp(class, id)
     return FALSE;
 }
 
-void
-rb_clear_cache(body)
+static void
+rb_clear_cache_body(body)
     NODE *body;
 {
     struct cache_entry *ent, *end;
@@ -174,8 +199,23 @@ rb_clear_cache(body)
     }
 }
 
+static void
+rb_clear_cache_entry(class, mid)
+    struct RClass *class;
+    ID mid;
+{
+    struct cache_entry *ent;
+
+    /* is it in the method cache? */
+    ent = cache + EXPR1(class, mid);
+    if (ent->mid == mid && ent->class == class) {
+	ent->class = Qnil;
+	ent->mid = Qnil;
+    }
+}
+
 void
-rb_clear_cache2(class)
+rb_clear_cache(class)
     struct RClass *class;
 {
     struct cache_entry *ent, *end;
@@ -285,6 +325,7 @@ static struct tag {
 
 #define EXEC_TAG()    (setjmp(prot_tag->buf))
 #define JUMP_TAG(val) {			\
+    Qself = prot_tag->self;		\
     the_env = prot_tag->env;		\
     iter = prot_tag->iter;		\
     longjmp(prot_tag->buf,(val));	\
@@ -305,7 +346,7 @@ static struct tag {
 
 #define IN_BLOCK   0x08
 
-static struct RClass *the_class;
+struct RClass *the_class;
 struct class_link {
     struct RClass *class;
     struct class_link *prev;
@@ -337,6 +378,8 @@ static VALUE rb_call();
 VALUE rb_apply();
 VALUE rb_xstring();
 void rb_fail();
+
+static void module_setup();
 
 static VALUE masign();
 static void asign();
@@ -396,6 +439,8 @@ ruby_init(argc, argv, envp)
     PUSH_TAG();
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
+	rb_call_inits();
+	the_class = (struct RClass*)C_Object;
 	ruby_init0(argc, argv, envp);
     }
     POP_ITER();
@@ -448,7 +493,6 @@ ruby_run()
     PUSH_TAG();
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
-	the_class = (struct RClass*)C_Object;
 	Eval();
     }
     POP_ITER();
@@ -1038,8 +1082,9 @@ rb_eval(node)
 
       case NODE_CVAR:
 	{
-	    VALUE val = rb_const_get(node->nd_vid);
+	    VALUE val;
 
+	    val = rb_const_get(node->nd_rval->nd_clss, node->nd_vid);
 	    nd_set_type(node, NODE_CONST);
 	    node->nd_cval = val;
 	    return val;
@@ -1114,7 +1159,9 @@ rb_eval(node)
 		list = list->nd_next;
 	    }
 	    if (nd_type(node) == NODE_DREGX) {
-		return regexp_new(RSTRING(str)->ptr, RSTRING(str)->len);
+		VALUE re = regexp_new(RSTRING(str)->ptr, RSTRING(str)->len,
+				      node->nd_cflag);
+		return re;
 	    }
 	    if (nd_type(node) == NODE_XSTR2) {
 		return rb_xstring(str);
@@ -1195,17 +1242,8 @@ rb_eval(node)
 
 	    class = rb_define_class_id(node->nd_cname, super);
 	    rb_const_set(the_class, node->nd_cname, class);
-	    PUSH_CLASS();
-	    the_class = (struct RClass*)class;
-	    PUSH_SELF((VALUE)the_class);
-	    PUSH_TAG();
-	    if ((state = EXEC_TAG()) == 0) {
-		rb_eval(node->nd_body);
-	    }
-	    POP_TAG();
-	    POP_SELF();
-	    POP_CLASS();
-	    if (state) JUMP_TAG(state);
+
+	    module_setup(class, node->nd_body);
 	    return class;
 	}
 
@@ -1219,17 +1257,8 @@ rb_eval(node)
 
 	    module = rb_define_module_id(node->nd_cname);
 	    rb_const_set(the_class, node->nd_cname, module);
-	    PUSH_CLASS();
-	    the_class = (struct RClass*)module;
-	    PUSH_SELF((VALUE)the_class);
-	    PUSH_TAG();
-	    if ((state = EXEC_TAG()) == 0) {
-		rb_eval(node->nd_body);
-	    }
-	    POP_TAG();
-	    POP_SELF();
-	    POP_CLASS();
-	    if (state) JUMP_TAG(state);
+
+	    module_setup(module, node->nd_body);
 	    return module;
 	}
 
@@ -1237,7 +1266,7 @@ rb_eval(node)
 	{
 	    struct RClass *module;
 
-	    module = (struct RClass*)rb_const_get(node->nd_modl);
+	    module = (struct RClass*)rb_const_get(CLASS_OF(Qself), node->nd_modl);
 	    if (module == Qnil) {
 		Fail("undefined module %s", rb_id2name(node->nd_modl));
 	    }
@@ -1249,6 +1278,49 @@ rb_eval(node)
 	Bug("unknown node type %d", nd_type(node));
     }
     return Qnil;		/* not reached */
+}
+
+static void
+module_setup(module, node)
+    VALUE module;
+    NODE *node;
+{
+    int state;
+
+    /* fill c-ref */
+    node->nd_clss = module;
+    node = node->nd_body;
+
+    PUSH_CLASS();
+    the_class = (struct RClass*)module;
+    PUSH_SELF((VALUE)the_class);
+    PUSH_SCOPE();
+    PUSH_TAG();
+
+    if (node->nd_cnt > 0) {
+	the_scope->local_vars = ALLOCA_N(VALUE, node->nd_cnt);
+	MEMZERO(the_scope->local_vars, VALUE, node->nd_cnt);
+	the_scope->local_tbl = node->nd_tbl;
+    }
+    else {
+	the_scope->local_vars = Qnil;
+	the_scope->local_tbl  = Qnil;
+    }
+
+    if ((state = EXEC_TAG()) == 0) {
+	rb_eval(node->nd_body);
+    }
+
+    POP_TAG();
+    if (!(the_scope->flags & SCOPE_MALLOCED)) {
+	the_scope->local_vars = Qnil;
+	the_scope->local_tbl  = Qnil;
+    }
+    if (state != 0) JUMP_TAG(state);
+    POP_SCOPE();
+    POP_SELF();
+    POP_CLASS();
+    if (state) JUMP_TAG(state);
 }
 
 VALUE

@@ -1,5 +1,5 @@
 #! /usr/local/bin/ruby
-path = $ENV['PATH'].split(/:/)
+path = ENV['PATH'].split(/:/)
 
 for dir in path
   if File.d(dir)

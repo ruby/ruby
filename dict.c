@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:26 $
   created at: Mon Nov 22 18:51:18 JST 1993
 
-  Copyright (C) 1994 Yukihiro Matsumoto
+  Copyright (C) 1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -614,7 +614,6 @@ Init_Dict()
     rb_define_method(C_Dict,"has_key", Fdic_has_key, 1);
     rb_define_method(C_Dict,"has_value", Fdic_has_value, 1);
 
-
     envtbl = obj_alloc(C_Object);
     rb_define_single_method(envtbl,"[]", Fgetenv, 1);
     rb_define_single_method(envtbl,"[]=", Fsetenv, 2);
@@ -624,7 +623,5 @@ Init_Dict()
     rb_include_module(CLASS_OF(envtbl), M_Enumerable);
 
     rb_define_variable("$ENV", &envtbl, Qnil, rb_readonly_hook, 0);
-
-    rb_define_private_method(C_Kernel, "getenv", Fgetenv, 1);
-    rb_define_private_method(C_Kernel, "setenv", Fsetenv, 2);
+    rb_define_const(C_Kernel, "ENV", envtbl);
 }

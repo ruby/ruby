@@ -30,4 +30,6 @@ struct SCOPE {
 
 extern int rb_in_eval;
 
+extern struct RClass *the_class;
+
 #endif /* ENV_H */

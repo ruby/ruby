@@ -321,12 +321,12 @@ An end of a defun is found by moving forward from the beginning of one."
 
 (defun ruby-reindent-then-newline-and-indent ()
   (interactive "*")
-  (save-excursion
-    (delete-region (point) (progn (skip-chars-backward " \t") (point))))
   (insert ?\n)
   (save-excursion
     (forward-line -1)
-    (indent-according-to-mode))
+    (indent-according-to-mode)
+    (end-of-line)
+    (delete-region (point) (progn (skip-chars-backward " \t") (point))))
   (indent-according-to-mode))
 
 (defun ruby-encomment-region (beg end)

@@ -6,7 +6,7 @@
   $Date: 1995/01/12 08:54:47 $
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1994 Yukihiro Matsumoto
+  Copyright (C) 1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -513,7 +513,7 @@ obj_free(obj)
 	break;
       case T_MODULE:
       case T_CLASS:
-	rb_clear_cache2(obj);
+	rb_clear_cache(obj);
 	st_free_table(obj->as.class.m_tbl);
 	if (obj->as.object.iv_tbl) st_free_table(obj->as.object.iv_tbl);
 	break;

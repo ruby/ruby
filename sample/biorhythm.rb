@@ -76,9 +76,9 @@ end
 #
 parseArgs(0, nil, "vg", "D:", "sdate", "date:", "birthday:", "days:")
 
-printf($stderr, "\n")
-printf($stderr, "Biorhythm (c) 1987-1994 V3.0\n")
-printf($stderr, "\n")
+printf(STDERR, "\n")
+printf(STDERR, "Biorhythm (c) 1987-1994 V3.0\n")
+printf(STDERR, "\n")
 if ($OPT_D)
   dtmp = Time.now.strftime("%Y%m%d")
   jh = dtmp[0,4].to_i
@@ -94,11 +94,11 @@ else
   if ($OPT_birthday)
     dtmp = $OPT_birthday
   else
-    printf($stderr, "Birthday 			  (YYYYMMDD) : ")
-    dtmp = $stdin.gets.chop
+    printf(STDERR, "Birthday 			  (YYYYMMDD) : ")
+    dtmp = STDIN.gets.chop
   end
   if (dtmp.length != 8)
-    printf($stderr, "BAD Input Birthday!!\n")
+    printf(STDERR, "BAD Input Birthday!!\n")
     exit()
   end
   jg = dtmp[0,4].to_i
@@ -112,8 +112,8 @@ else
   elsif ($OPT_date)
     dtmp = $OPT_date
   else
-    printf($stderr, "Date	[<RETURN> for Systemdate] (YYYYMMDD) : ")
-    dtmp = $stdin.gets.chop
+    printf(STDERR, "Date	[<RETURN> for Systemdate] (YYYYMMDD) : ")
+    dtmp = STDIN.gets.chop
   end
   if (dtmp.length != 8)
     dtmp = Time.now.strftime("%Y%m%d")
@@ -127,8 +127,8 @@ else
   elsif ($OPT_g)
     ausgabeart = "g"
   else
-    printf($stderr, "Values for today or Graph  (v/g) [default g] : ")
-    ausgabeart = $stdin.gets.chop
+    printf(STDERR, "Values for today or Graph  (v/g) [default g] : ")
+    ausgabeart = STDIN.gets.chop
   end
 end
 if (ausgabeart == "v")
@@ -151,8 +151,8 @@ else
     if ($OPT_D)
       ktage = 9
     else
-      printf($stderr, "Graph for how many days 	[default 10] : ")
-      ktage = $stdin.gets.chop
+      printf(STDERR, "Graph for how many days 	[default 10] : ")
+      ktage = STDIN.gets.chop
       if (ktage == "")
 	ktage = 9
       else
