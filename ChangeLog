@@ -1,3 +1,7 @@
+Sun May  4 15:21:18 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: ESMTP -> SMTP transition wrongly fails.
+
 Sun May  4 15:06:37 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: APOP did not work.  [ruby-dev:20149]

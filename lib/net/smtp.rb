@@ -302,7 +302,7 @@ module Net
 
     def start( helo = 'localhost.localdomain',
                user = nil, secret = nil, authtype = nil )
-      raise IOError, 'SMTP session opened already' if @started
+      raise IOError, 'SMTP session already started' if @started
       if block_given?
         begin
           do_start(helo, user, secret, authtype)
@@ -330,7 +330,7 @@ module Net
       rescue ProtocolError
         if @esmtp
           @esmtp = false
-          @command.error_ok
+          @command = SMTPCommand.new(@socket)
           retry
         end
         raise
