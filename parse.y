@@ -3850,12 +3850,12 @@ yylex()
 	return c;
 
       case '{':
-	if (!IS_ARG()) {
-	    if (space_seen && lex_state == EXPR_ENDARG)
-		c = tLBRACE_ARG;
-	    if (lex_state != EXPR_END && lex_state != EXPR_ENDARG)
-		c = tLBRACE;
-	}
+	if (IS_ARG() || lex_state == EXPR_END)
+	    c = '{';          /* block (primary) */
+	else if (lex_state == EXPR_ENDARG)
+	    c = tLBRACE_ARG;  /* block (expr) */
+	else
+	    c = tLBRACE;      /* hash */
 	COND_PUSH(0);
 	CMDARG_PUSH(0);
 	lex_state = EXPR_BEG;

@@ -1,3 +1,7 @@
+Fri Jul 26 12:14:48 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (yylex): modify to accept a code like "m (a){...}".
+
 Thu Jul 25 09:05:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-delimiter): include here document.
