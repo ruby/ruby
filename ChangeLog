@@ -1,3 +1,7 @@
+Sun Dec  9 23:00:54 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
+	* matrix.rb: Vector#* bug. reported from Massimiliano Mirra
+	<info@chromatic-harp.com>. 
+
 Sun Dec  9 18:06:05 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: calls on_connect before conn_command
