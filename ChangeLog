@@ -1,3 +1,7 @@
+Thu Dec  9 16:31:02 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/sdbm/init.c (GetDBM): typo.
+
 Thu Dec  9 16:05:00 2004  Akiyoshi, Masamichi <akiyoshi@hp.com>
 
 	* defines.h: change path of vms.h

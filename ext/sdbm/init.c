@@ -31,7 +31,7 @@ closed_sdbm()
 
 #define GetDBM(obj, dbmp) {\
     Data_Get_Struct(obj, struct dbmdata, dbmp);\
-    if (dbmp == 0) closed_dbm();\
+    if (dbmp == 0) closed_sdbm();\
     if (dbmp->di_dbm == 0) closed_sdbm();\
 }
 
