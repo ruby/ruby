@@ -2334,9 +2334,9 @@ class TkButton<TkLabel
   end
 end
 
-class TkRadioButton<TkButton
+class TkRadiobutton<TkButton
   WidgetClassNames['Radiobutton'] = self
-  def TkRadioButton.to_eval
+  def TkRadiobutton.to_eval
     'Radiobutton'
   end
   def create_self
@@ -2352,10 +2352,11 @@ class TkRadioButton<TkButton
     configure 'variable', tk_trace_variable(v)
   end
 end
+tkRadioButton = TkRadiobutton
 
-class TkCheckButton<TkRadioButton
+class TkCheckbutton<TkRadiobutton
   WidgetClassNames['Checkbutton'] = self
-  def TkCheckButton.to_eval
+  def TkCheckbutton.to_eval
     'Checkbutton'
   end
   def create_self
@@ -2365,6 +2366,7 @@ class TkCheckButton<TkRadioButton
     tk_send 'toggle'
   end
 end
+TkCheckButton = TkCheckbutton
 
 class TkMessage<TkLabel
   WidgetClassNames['Message'] = self
