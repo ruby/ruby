@@ -528,7 +528,6 @@ rb_hash_select(argc, argv, hash)
     VALUE hash;
 {
     VALUE result;
-    long i;
 
     if (!rb_block_given_p()) {
 #if RUBY_VERSION_CODE < 181
@@ -1424,7 +1423,6 @@ env_select(argc, argv)
     VALUE *argv;
 {
     VALUE result;
-    long i;
     char **env;
 
     if (!rb_block_given_p()) {
@@ -1853,6 +1851,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"inspect", env_inspect, 0);
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);
     rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);
+    rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
     rb_define_singleton_method(envtbl,"index", env_index, 1);
     rb_define_singleton_method(envtbl,"indexes", env_indexes, -1);
     rb_define_singleton_method(envtbl,"indices", env_indexes, -1);

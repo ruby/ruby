@@ -96,7 +96,6 @@ VALUE rb_eIOError;
 
 VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout, rb_deferr;
 static VALUE orig_stdin, orig_stdout, orig_stderr;
-static int saved_fd[3] = {0, 1, 2};
 
 VALUE rb_output_fs;
 VALUE rb_rs;

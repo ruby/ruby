@@ -702,7 +702,6 @@ time_cmp(time1, time2)
     VALUE time1, time2;
 {
     struct time_object *tobj1, *tobj2;
-    long i;
 
     GetTimeval(time1, tobj1);
     if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {

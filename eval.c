@@ -4538,7 +4538,7 @@ rb_rescue(b_proc, data1, r_proc, data2)
     VALUE (*b_proc)(), (*r_proc)();
     VALUE data1, data2;
 {
-    return rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, 0);
+    return rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, (VALUE)0);
 }
 
 VALUE
@@ -7376,13 +7376,6 @@ method_unbind(obj)
 }
 
 static VALUE
-umethod_unbind(obj)
-    VALUE obj;
-{
-    return obj;
-}
-
-static VALUE
 rb_obj_method(obj, vid)
     VALUE obj;
     VALUE vid;
@@ -9937,7 +9930,6 @@ thgroup_enclose(group)
     VALUE group;
 {
     struct thgroup *data;
-    rb_thread_t th;
 
     Data_Get_Struct(group, struct thgroup, data);
     data->enclosed = 1;

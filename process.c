@@ -2227,7 +2227,7 @@ Init_process()
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
-    S_Tms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", 0);
+    S_Tms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", NULL);
 #endif
 
     SAVED_USER_ID = geteuid();
@@ -2261,7 +2261,7 @@ Init_process()
     rb_define_module_function(rb_mProcGID, "sid_available?", 
 			      p_gid_have_saved_id, 0);
     rb_define_module_function(rb_mProcUID, "switch", p_uid_switch, 0);
-    rb_define_module_function(rb_mProcGID, "switch", p_uid_switch, 0);
+    rb_define_module_function(rb_mProcGID, "switch", p_gid_switch, 0);
 
     rb_mProcID_Syscall = rb_define_module_under(rb_mProcess, "Sys");
 

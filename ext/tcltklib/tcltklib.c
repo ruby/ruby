@@ -532,7 +532,7 @@ ip_ruby(clientData, interp, argc, argv)
     rb_trap_immediate = 0;
     res = rb_rescue2(rb_eval_string, (VALUE)arg, 
                      ip_eval_rescue, (VALUE)&failed,
-                     rb_eStandardError, rb_eScriptError, 0);
+                     rb_eStandardError, rb_eScriptError, (VALUE)0);
     rb_trap_immediate = old_trapflg;
 
     Tcl_ResetResult(interp);

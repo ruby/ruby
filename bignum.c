@@ -314,7 +314,8 @@ rb_cstr_to_inum(str, base, badcheck)
 {
     const char *s = str;
     char *end;
-    char sign = 1, c, nondigit = 0;
+    char sign = 1, nondigit = 0;
+    int c;
     BDIGIT_DBL num;
     long len, blen = 1;
     long i;

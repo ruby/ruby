@@ -703,7 +703,7 @@ EOHELP
       frame_set_pos(file, line)
       if !@no_step or @frames.size == @no_step
 	@stop_next -= 1
-	@stop_next = 0 if @stop_next < 0
+	@stop_next = -1 if @stop_next < 0
       elsif @frames.size < @no_step
 	@stop_next = 0		# break here before leaving...
       else

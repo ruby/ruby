@@ -1136,8 +1136,6 @@ static struct st_table *
 check_autoload_table(av)
     VALUE av;
 {
-    struct st_table *tbl;
-
     Check_Type(av, T_DATA);
     if (RDATA(av)->dmark != (RUBY_DATA_FUNC)rb_mark_tbl ||
 	RDATA(av)->dfree != (RUBY_DATA_FUNC)st_free_table) {
@@ -1210,7 +1208,7 @@ rb_autoload_load(klass, id)
     VALUE klass;
     ID id;
 {
-    VALUE file, value;
+    VALUE file;
 
     file = autoload_delete(klass, id);
     if (NIL_P(file)) {

@@ -1234,7 +1234,7 @@ rb_file_s_utime(argc, argv)
 
 #endif
 
-NORETURN(static void syserr2 _((VALUE,VALUE)));
+NORETURN(static void sys_fail2 _((VALUE,VALUE)));
 static void
 sys_fail2(s1, s2)
     VALUE s1, s2;

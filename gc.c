@@ -899,15 +899,6 @@ rb_gc_mark_children(ptr)
 
 static void obj_free _((VALUE));
 
-static unsigned long
-size_of_table(tbl)
-    struct st_table *tbl;
-{
-    if (!tbl) return 0;
-    return tbl->num_bins * sizeof(struct st_table_entry *) +
-	tbl->num_entries * 4 * sizeof(VALUE);
-}
-
 static void
 gc_sweep()
 {

@@ -109,17 +109,6 @@ range_eq(range, obj)
 }
 
 static int
-r_eq(a, b)
-    VALUE a, b;
-{
-    if (a == b) return Qtrue;
-
-    if (rb_funcall(a, id_cmp, 1, b) == INT2FIX(0))
-	return Qtrue;
-    return Qfalse;
-}
-
-static int
 r_lt(a, b)
     VALUE a, b;
 {
@@ -141,17 +130,6 @@ r_le(a, b)
     return Qfalse;
 }
 
-
-static int
-r_gt(a,b)
-    VALUE a, b;
-{
-    VALUE r = rb_funcall(a, id_cmp, 1, b);
-
-    if (NIL_P(r)) return Qfalse;
-    if (rb_cmpint(r, a, b) > 0) return Qtrue;
-    return Qfalse;
-}
 
 static VALUE
 range_eql(range, obj)
@@ -383,7 +361,6 @@ rb_range_beg_len(range, begp, lenp, len, err)
     len = end - beg;
     if (len < 0) goto out_of_range;
 
-  length_set:
     *begp = beg;
     *lenp = len;
     return Qtrue;

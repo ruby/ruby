@@ -185,6 +185,7 @@ static int current_mbctype = MBCTYPE_ASCII;
 
 #ifdef RUBY
 #include "util.h"
+void rb_warn _((char*));
 # define re_warning(x) rb_warn(x)
 #endif
 

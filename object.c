@@ -656,7 +656,6 @@ static VALUE
 rb_mod_cmp(mod, arg)
     VALUE mod, arg;
 {
-    VALUE start = mod;
     VALUE cmp;
 
     if (mod == arg) return INT2FIX(0);

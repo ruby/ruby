@@ -1458,7 +1458,7 @@ rb_ary_transpose(ary)
     VALUE ary;
 {
     long elen = -1, alen, i, j;
-    VALUE tmp, result;
+    VALUE tmp, result = 0;
 
     alen = RARRAY(ary)->len;
     if (alen == 0) return rb_ary_dup(ary);

@@ -316,11 +316,11 @@ Init_etc()
 #ifdef HAVE_ST_PW_EXPIRE
 				"expire",
 #endif
-				0);
+				NULL);
     rb_global_variable(&sPasswd);
 
 #ifdef HAVE_GETGRENT
-    sGroup = rb_struct_define("Group", "name", "passwd", "gid", "mem", 0);
+    sGroup = rb_struct_define("Group", "name", "passwd", "gid", "mem", NULL);
     rb_global_variable(&sGroup);
 #endif
 }
