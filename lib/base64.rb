@@ -119,16 +119,13 @@ module Base64
   module Deprecated # :nodoc:
     include Base64
 
-    def _deprecated_base64(*args)
-      m0, m1 = caller(0)
-      m = m0[/\`(.*?)\'\z/, 1]
-      warn("#{m1}: #{m} is deprecated; use Base64.#{m} instead")
-      super
-    end
-    dep = instance_method(:_deprecated_base64)
-    remove_method(:_deprecated_base64)
     for m in Base64.private_instance_methods(false)
-      define_method(m, dep)
+      module_eval %{
+        def #{m}(*args)
+          warn("\#{caller(1)[0]}: #{m} is deprecated; use Base64.#{m} instead")
+          super
+        end
+      }
     end
   end
 end
