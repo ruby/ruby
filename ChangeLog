@@ -1,3 +1,8 @@
+Mon Feb 17 13:28:51 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (file_expand_path): strip last slash when path is
+	  root.
+
 Sun Feb 16 19:22:31 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (file_expand_path): buffer might be reallocated while
