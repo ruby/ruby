@@ -1,7 +1,12 @@
+Fri Sep  6 12:11:22 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (rb_gc_mark_parser): should mark ALL global variables
+	  defined in parse.y.
+
 Fri Sep  6 11:47:37 2002  Minero Aoki  <aamine@loveruby.net>
 
-	* parse.y (rb_gc_mark_parser): should mark parse.y global
-	  variables.
+	* parse.y (rb_gc_mark_parser): should mark global variables
+	  defined in parse.y.
 
 Fri Sep  6 10:34:32 2002  Minero Aoki  <aamine@loveruby.net>
 

@@ -5361,7 +5361,9 @@ rb_gc_mark_parser()
     rb_gc_mark_maybe((VALUE)yylval.node);
     rb_gc_mark((VALUE)ruby_eval_tree_begin);
     rb_gc_mark((VALUE)ruby_eval_tree);
-    rb_gc_mark((VALUE)lex_lastline);
+    rb_gc_mark(ruby_debug_lines);
+    rb_gc_mark(lex_lastline);
+    rb_gc_mark(lex_input);
     rb_gc_mark((VALUE)lex_strterm);
 }
 
