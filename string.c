@@ -4416,7 +4416,7 @@ rb_str_sum(argc, argv, str)
     ptr = p = RSTRING(str)->ptr;
     len = RSTRING(str)->len;
     pend = p + len;
-    if (bits > sizeof(long)*CHAR_BIT) {
+    if (bits >= sizeof(long)*CHAR_BIT) {
 	VALUE sum = INT2FIX(0);
 
 	while (p < pend) {

@@ -1,5 +1,11 @@
 Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* string.c (rb_str_sum): should use bignums when bits is greater
+	  than or equals to sizeof(long)*CHAR_BITS. [ruby-dev:24395]
+
+	* eval.c (specific_eval): defer pointer retrieval to prevent
+	  unsafe sourcefile string modification.  [ruby-dev:24382]
+
 	* string.c (rb_str_sum): wrong cast caused wrong result.
 	  [ruby-dev:24385]
 

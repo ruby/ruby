@@ -6322,10 +6322,10 @@ specific_eval(argc, argv, klass, self)
 			 rb_id2name(ruby_frame->last_func),
 			 rb_id2name(ruby_frame->last_func));
 	    }
+	    if (argc > 2) line = NUM2INT(argv[2]);
 	    if (argc > 1) {
 		file = StringValuePtr(argv[1]);
 	    }
-	    if (argc > 2) line = NUM2INT(argv[2]);
 	}
 	return eval_under(klass, self, argv[0], file, line);
     }
