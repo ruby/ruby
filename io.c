@@ -1405,7 +1405,7 @@ rb_io_getline(rs, fptr)
 	    swallow(fptr, '\n');
 	}
 	else if (rslen == 1) {
-	    return rb_io_getline_fast(fptr, RSTRING(rs)->ptr[0]);
+	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING(rs)->ptr[0]);
 	}
 	else {
 	    rsptr = RSTRING(rs)->ptr;

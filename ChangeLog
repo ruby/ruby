@@ -1,3 +1,8 @@
+Sat Oct  9 19:50:36 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_getline): should not treat char as negative value.
+	  [ruby-dev:24460]
+
 Fri Oct  8 21:36:56 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (fu_traverse): return value of Dir.entries is
@@ -19,12 +24,12 @@ Thu Oct  7 23:47:57 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/scrollbar.rb: When 'set' operation, a scrollbar
 	  cannot propagate view port information from the source widget
-	  (that calls 'set') to other assigned widgets. 
+	  (that calls 'set') to other assigned widgets.
 
 Thu Oct  7 17:36:25 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: When CHILDKILLED and so on, Tk.errorCode returns
-	  a Fixnum for 2nd element (it's pid) of the return value. 
+	  a Fixnum for 2nd element (it's pid) of the return value.
 
 Thu Oct  7 12:55:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
