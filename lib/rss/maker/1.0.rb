@@ -11,41 +11,22 @@ module RSS
         super("1.0")
       end
 
-      def to_rss
-        rss = RDF.new(@version, @encoding, @standalone)
-        setup_xml_stylesheets(rss)
+      private
+      def make_rss
+        RDF.new(@version, @encoding, @standalone)
+      end
+
+      def setup_elements(rss)
         setup_channel(rss)
         setup_image(rss)
         setup_items(rss)
         setup_textinput(rss)
-        setup_other_elements(rss)
-        if rss.channel
-          rss
-        else
-          nil
-        end
-      end
-
-      private
-      def setup_channel(rss)
-        @channel.to_rss(rss)
-      end
-
-      def setup_image(rss)
-        @image.to_rss(rss)
-      end
-
-      def setup_items(rss)
-        @items.to_rss(rss)
-      end
-
-      def setup_textinput(rss)
-        @textinput.to_rss(rss)
       end
 
       class Channel < ChannelBase
 
         def to_rss(rss)
+          set = false
           if @about
             channel = RDF::Channel.new(@about)
             set = setup_values(channel)
@@ -57,12 +38,16 @@ module RSS
               setup_other_elements(rss)
             end
           end
+
+          if (!@about or !set) and variable_is_set?
+            raise NotSetError.new("maker.channel", not_set_required_variables)
+          end
         end
 
         def have_required_values?
           @about and @title and @link and @description
         end
-        
+
         private
         def setup_items(rss)
           items = RDF::Channel::Items.new
@@ -86,6 +71,10 @@ module RSS
           end
         end
 
+        def required_variable_names
+          %w(about title link description)
+        end
+        
         class SkipDays < SkipDaysBase
           def to_rss(*args)
           end

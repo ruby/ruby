@@ -11,23 +11,15 @@ module RSS
         super
       end
       
-      def to_rss
-        rss = Rss.new(@rss_version, @version, @encoding, @standalone)
-        setup_xml_stylesheets(rss)
-        setup_channel(rss)
-        setup_other_elements(rss)
-        if rss.channel
-          rss
-        else
-          nil
-        end
-      end
-      
       private
-      def setup_channel(rss)
-        @channel.to_rss(rss)
+      def make_rss
+        Rss.new(@rss_version, @version, @encoding, @standalone)
       end
-      
+
+      def setup_elements(rss)
+        setup_channel(rss)
+      end
+
       class Channel < ChannelBase
         
         def to_rss(rss)
@@ -44,6 +36,8 @@ module RSS
             else
               nil
             end
+          elsif variable_is_set?
+            raise NotSetError.new("maker.channel", not_set_required_variables)
           end
         end
         
@@ -68,6 +62,10 @@ module RSS
           super + ["pubDate"]
         end
 
+        def required_variable_names
+          %w(title link description language)
+        end
+        
         class SkipDays < SkipDaysBase
           def to_rss(rss, channel)
             unless @days.empty?

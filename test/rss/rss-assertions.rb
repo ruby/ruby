@@ -95,6 +95,18 @@ module RSS
       end
     end
 
+    def assert_not_set_error(name, variables)
+      _wrap_assertion do
+        begin
+          yield
+          flunk("Not raise NotSetError")
+        rescue ::RSS::NotSetError => e
+          assert_equal(name, e.name)
+          assert_equal(variables.sort, e.variables.sort)
+        end
+      end
+    end
+    
     def assert_xml_declaration(version, encoding, standalone, rss)
       _wrap_assertion do
         assert_equal(version, rss.version)

@@ -105,6 +105,23 @@ module RSS
           name
         end
       end
+
+      def variable_is_set?
+        variables.find {|var| !__send__(var).nil?}
+      end
+
+      def not_set_required_variables
+        required_variable_names.find_all do |var|
+          __send__(var).nil?
+        end
+      end
+
+      def required_variables_are_set?
+        required_variable_names.each do |var|
+          return false if __send__(var).nil?
+        end
+        true
+      end
       
     end
 
@@ -117,9 +134,22 @@ module RSS
         end
       end
 
-      attr_reader :rss_version, :xml_stylesheets
-      attr_reader :channel, :image, :items, :textinput
+      %w(xml_stylesheets channel image items textinput).each do |element|
+        attr_reader element
+        add_need_initialize_variable(element, "make_#{element}")
+        module_eval(<<-EOC, __FILE__, __LINE__)
+          private
+          def setup_#{element}(rss)
+            @#{element}.to_rss(rss)
+          end
+
+          def make_#{element}
+            self.class::#{element[0,1].upcase}#{element[1..-1]}.new(self)
+          end
+EOC
+      end
       
+      attr_reader :rss_version
       attr_accessor :version, :encoding, :standalone
       
       def initialize(rss_version)
@@ -128,45 +158,37 @@ module RSS
         @version = "1.0"
         @encoding = "UTF-8"
         @standalone = nil
-        @xml_stylesheets = make_xml_stylesheets
-        @channel = make_channel
-        @image = make_image
-        @items = make_items
-        @textinput = make_textinput
       end
       
-      def make(&block)
-        block.call(self) if block
-        to_rss
+      def make
+        if block_given?
+          yield(self)
+          to_rss
+        else
+          nil
+        end
       end
 
+      def to_rss
+        rss = make_rss
+        setup_xml_stylesheets(rss)
+        setup_elements(rss)
+        setup_other_elements(rss)
+        if rss.channel
+          rss
+        else
+          nil
+        end
+      end
+      
       def current_element(rss)
         rss
       end
       
       private
+      undef make_xml_stylesheets
       def make_xml_stylesheets
         XMLStyleSheets.new(self)
-      end
-      
-      def make_channel
-        self.class::Channel.new(self)
-      end
-      
-      def make_image
-        self.class::Image.new(self)
-      end
-      
-      def make_items
-        self.class::Items.new(self)
-      end
-      
-      def make_textinput
-        self.class::Textinput.new(self)
-      end
-
-      def setup_xml_stylesheets(rss)
-        @xml_stylesheets.to_rss(rss)
       end
       
     end

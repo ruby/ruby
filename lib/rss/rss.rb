@@ -144,6 +144,15 @@ module RSS
     end
   end
 
+  class NotSetError < Error
+    attr_reader :name, :variables
+    def initialize(name, variables)
+      @name = name
+      @variables = variables
+      super("required variables of #{@name} are not set: #{@variables.join(', ')}")
+    end
+  end
+  
   module BaseModel
 
     include Utils

@@ -17,6 +17,10 @@ module RSS
           @title and @link and @description
         end
 
+        def required_variable_names
+          %w(title link description)
+        end
+        
         class SkipDays < RSS09::Channel::SkipDays
           class Day < RSS09::Channel::SkipDays::Day
           end

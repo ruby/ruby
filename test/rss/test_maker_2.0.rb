@@ -137,29 +137,32 @@ module RSS
       description = "fugafugafugafuga"
       language = "ja"
       
-      rss = RSS::Maker.make("2.0") do |maker|
-        # maker.channel.title = title
-        maker.channel.link = link
-        maker.channel.description = description
-        maker.channel.language = language
+      assert_not_set_error("maker.channel", %w(title)) do
+        RSS::Maker.make("2.0") do |maker|
+          # maker.channel.title = title
+          maker.channel.link = link
+          maker.channel.description = description
+          maker.channel.language = language
+        end
       end
-      assert_nil(rss)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        maker.channel.title = title
-        # maker.channel.link = link
-        maker.channel.description = description
-        maker.channel.language = language
+      assert_not_set_error("maker.channel", %w(link)) do
+        RSS::Maker.make("2.0") do |maker|
+          maker.channel.title = title
+          # maker.channel.link = link
+          maker.channel.description = description
+          maker.channel.language = language
+        end
       end
-      assert_nil(rss)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        maker.channel.title = title
-        maker.channel.link = link
-        # maker.channel.description = description
-        maker.channel.language = language
+      assert_not_set_error("maker.channel", %w(description)) do
+        RSS::Maker.make("2.0") do |maker|
+          maker.channel.title = title
+          maker.channel.link = link
+          # maker.channel.description = description
+          maker.channel.language = language
+        end
       end
-      assert_nil(rss)
 
       rss = RSS::Maker.make("2.0") do |maker|
         maker.channel.title = title
@@ -285,17 +288,18 @@ module RSS
       assert_equal(height, image.height)
       assert_equal(description, image.description)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        # setup_dummy_channel(maker)
-        maker.channel.link = link
+      assert_not_set_error("maker.channel", %w(title description)) do
+        RSS::Maker.make("2.0") do |maker|
+          # setup_dummy_channel(maker)
+          maker.channel.link = link
         
-        maker.image.title = title
-        maker.image.url = url
-        maker.image.width = width
-        maker.image.height = height
-        maker.image.description = description
+          maker.image.title = title
+          maker.image.url = url
+          maker.image.width = width
+          maker.image.height = height
+          maker.image.description = description
+        end
       end
-      assert_nil(rss)
     end
 
     def test_not_valid_image
@@ -318,18 +322,19 @@ module RSS
       end
       assert_nil(rss.image)
 
-      rss = RSS::Maker.make("2.0") do |maker|
-        setup_dummy_channel(maker)
-        # maker.channel.link = link
-        maker.channel.link = nil
+      assert_not_set_error("maker.channel", %w(link)) do
+        RSS::Maker.make("2.0") do |maker|
+          setup_dummy_channel(maker)
+          # maker.channel.link = link
+          maker.channel.link = nil
         
-        maker.image.title = title
-        maker.image.url = url
-        maker.image.width = width
-        maker.image.height = height
-        maker.image.description = description
+          maker.image.title = title
+          maker.image.url = url
+          maker.image.width = width
+          maker.image.height = height
+          maker.image.description = description
+        end
       end
-      assert_nil(rss)
 
       rss = RSS::Maker.make("2.0") do |maker|
         setup_dummy_channel(maker)
