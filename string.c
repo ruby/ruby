@@ -563,6 +563,7 @@ rb_str_cmp(str1, str2)
     return -1;
 }
 
+VALUE
 to_str(str)
     VALUE str;
 {
@@ -573,7 +574,7 @@ static VALUE
 str_or_nil(str)
     VALUE str;
 {
-    return rb_rescue(to_str, (VALUE)str, 0, 0);
+    return rb_rescue(to_str, str, 0, 0);
 }
 
 static VALUE
