@@ -617,6 +617,27 @@ def dir_config(target, idefault=nil, ldefault=nil)
   [idir, ldir]
 end
 
+def pkg_config(pkg)
+  unless defined?($PKGCONFIG)
+    if pkgconfig = with_config("pkg-config", !CROSS_COMPILING && "pkg-config")
+      find_executable0(pkgconfig) or pkgconfig = nil
+    end
+    $PKGCONFIG = pkgconfig
+  end
+  if $PKGCONFIG and system("#{$PKGCONFIG} --exists #{pkg}")
+    cflags = `#{$PKGCONFIG} --cflags #{pkg}`.chomp
+    ldflags = `#{$PKGCONFIG} --libs-only-L #{pkg}`.chomp
+    libs = `#{$PKGCONFIG} --libs-only-l #{pkg}`.chomp
+    $CFLAGS += " " << cflags
+    $LDFLAGS += " " << ldflags
+    $LIBS += " " << libs
+    Logging::message "package configuration for %s\n", pkg
+    Logging::message "cflags: %s\nldflags: %s\nlibs: %s\n\n",
+                     cflags, ldflags, libs
+    [cflags, ldflags, libs]
+  end
+end
+
 def with_destdir(dir)
   /^\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
 end

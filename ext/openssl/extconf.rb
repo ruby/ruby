@@ -18,7 +18,6 @@ require "mkmf"
 
 dir_config("openssl")
 dir_config("kerberos")
-pkgconfig = with_config("pkg-config", !CROSS_COMPILING && "pkg-config")
 
 message "=== OpenSSL for Ruby configurator ===\n"
 
@@ -51,13 +50,7 @@ result = have_header("openssl/ssl.h")
 result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "OpenSSL_add_all_digests")}
 result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_library_init")}
 if !result
-  if find_executable(pkgconfig) and system(pkgconfig, "--exists", "openssl")
-    $CFLAGS += " " << `#{pkgconfig} --cflags openssl`.chomp
-    $DLDFLAGS += " " << `#{pkgconfig} --libs-only-L openssl`.chomp
-    $LIBS += " " << `#{pkgconfig} --libs-only-l openssl`.chomp
-    result = have_header("openssl/ssl.h")
-  end
-  if !result
+  unless pkg_config("openssl") and have_header("openssl/ssl.h")
     message "=== Checking for required stuff failed. ===\n"
     message "Makefile wasn't created. Fix the errors above.\n"
     exit 1
