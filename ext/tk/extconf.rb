@@ -265,6 +265,7 @@ if mac_need_framework ||
     $LDFLAGS += ' -framework Tk -framework Tcl'
   end
 
+
   if stubs or pthread_check
     # create Makefile
 
@@ -276,78 +277,40 @@ if mac_need_framework ||
       $INSTALLFILES = []
     end
 
-    cleanings_bup = CLEANINGS.dup
-
-    if $objs
-      objs_bup = $objs.dup
-    else
-      objs_bup = nil
-      $objs = []
-    end
-
     # for SUPPORT_STATUS
     $INSTALLFILES << ["lib/tkextlib/SUPPORT_STATUS", "$(RUBYLIBDIR)", "lib"]
-
-    # for tcltklib.so
-    $objs << "stubs.o" << "tcltklib.o"
-
-    # for tkutil.so
-    mk_tkutil = "\n\n"
-    mk_tkutil << "OBJS2 = tkutil.#{$OBJEXT}\n"
-    mk_tkutil << "TARGET2 = tkutil\n"
-    mk_tkutil << "DLLIB2 = $(TARGET2).#{CONFIG['DLEXT']}\n"
-    mk_tkutil << "STATIC_LIB2 = $(TARGET2).#{$LIBEXT}\n"
-    mk_tkutil << "\n"
-    mk_tkutil << 'CLEANLIBS2 = "$(TARGET2).{lib,exp,il?,tds,map}" $(DLLIB2)'
-    mk_tkutil << "\n\n"
-    mk_tkutil << "all:  $(DLLIB2)\n"
-    mk_tkutil << "static:  $(STATIC_LIB2)\n"
-    mk_tkutil << "\n"
-
-    mk_tkutil << CLEANINGS.sub(/\$\(CLEANLIBS\)/, "$(CLEANLIBS) $(CLEANLIBS2)")
-    mk_tkutil << "\n\n"
-
-    DLDFLAGS2 = "#$LDFLAGS #$DLDFLAGS #$ARCH_FLAG".gsub(/\$\(DEFFILE\)/, '$(DEFFILE2)')
-    mk_tkutil << "DLDFLAGS2 = #{DLDFLAGS2}\n"
-    mk_tkutil << "DEFFILE2 = $(TARGET2)-$(arch).def\n" if EXPORT_PREFIX
-    mk_tkutil << "\n"
-
-    mk_tkutil << "$(DLLIB2): #{EXPORT_PREFIX ? '$(DEFFILE2) ':''}$(OBJS2)\n\t"
-    mk_tkutil << "@-$(RM) $@\n\t"
-    mk_tkutil << "@-$(RM) $(TARGET2).lib\n\t" if $mswin
-
-    LINK_SO2 = LINK_SO.gsub(/\$\(DLLIB\)/, '$(DLLIB2)').gsub(/\$\(OBJS\)/, '$(OBJS2)').gsub(/\$\(DLDFLAGS\)/, '$(DLDFLAGS2)').gsub(/\$\(DEFFILE\)/, '$(DEFFILE2)')
-    mk_tkutil << LINK_SO2
-
-    mk_tkutil << "\n\n"
-    unless $static.nil?
-      mk_tkutil << "$(STATIC_LIB2): $(OBJS2)\n\t"
-      mk_tkutil << "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS2)"
-      if ranlib = config_string('RANLIB')
-        mk_tkutil << "\n\t@-#{ranlib} $(DLLIB2) 2> /dev/null || true"
-      end
-    end
-    mk_tkutil << "\n\n"
-
-    if EXPORT_PREFIX
-      mk_tkutil << "$(DEFFILE2):\n"
-      mk_tkutil << %Q!\t$(RUBY) -e "puts 'EXPORTS', '#{EXPORT_PREFIX}Init_$(TARGET2)'" > $@\n!
-      mk_tkutil << "\n\n"
-    end
-    mk_tkutil << "\n"
-
-    mk_tkutil << "install: $(RUBYARCHDIR)/$(DLLIB2)\n"
-    mk_tkutil << "$(RUBYARCHDIR)/$(DLLIB2): $(DLLIB2) $(RUBYARCHDIR)\n"
-    mk_tkutil << "\t@$(INSTALL_PROG) $(DLLIB2) $(RUBYARCHDIR)\n"
-
-    CLEANINGS.replace(mk_tkutil)
 
     # create
     create_makefile("tcltklib")
 
     # reset
     $INSTALLFILES = installfiles_bup
-    CLEANINGS.replace(cleanings_bup)
-    $objs = objs_bup
+
+    # add rules for tkutil
+    File::open('Makefile', 'a'){|mfile|
+      File::open('make-tkutil', 'r'){|dfile|
+        mfile.print "\n###\n"
+        while line = dfile.gets()
+          mfile.print line
+        end
+      }
+    }
+
+    # create tkutil/Makefile
+    Dir.chdir 'tkutil'
+    if $extout || $extmk
+      $srcdir = '../' << $srcdir << '/tkutil'
+      $topdir = '../' << $topdir
+      $hdrdir = '../' << $hdrdir
+      $objs = nil
+      $defs = []
+      Config::CONFIG["srcdir"] = $srcdir
+    else
+      puts "entering directory `tkutil'"
+    end
+    rm_f './Makefile'
+    init_mkmf
+    load 'subconf.rb'
+    Dir.chdir '..'
   end
 end

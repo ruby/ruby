@@ -1,0 +1,43 @@
+all: all-tkutil
+all-tkutil: 
+	@(cd tkutil; $(MAKE) all)
+
+static: static-tkutil
+static-tkutil: 
+	@(cd tkutil; $(MAKE) static)
+
+clean: clean-tkutil
+clean-tkutil: 
+	@(cd tkutil; $(MAKE) clean)
+
+distclean: distclean-tkutil
+distclean-tkutil: 
+	@(cd tkutil; $(MAKE) distclean)
+
+realclean: realclean-tkutil
+realclean-tkutil: 
+	@(cd tkutil; $(MAKE) realclean)
+
+install: install-tkutil
+install-tkutil:
+	@(cd tkutil; $(MAKE) install)
+
+install-so: install-tkutil-so
+install-tkutil-so:
+	@(cd tkutil; $(MAKE) install-so)
+
+install-rb: install-tkutil-rb
+install-tkutil-rb:
+	@(cd tkutil; $(MAKE) install-rb)
+
+site-install: site-install-tkutil
+site-install-tkutil:
+	@(cd tkutil; $(MAKE) site-install)
+
+site-install-so: site-install-tkutil-so
+site-install-tkutil-so:
+	@(cd tkutil; $(MAKE) site-install-so)
+
+site-install-rb: site-install-tkutil-rb
+site-install-tkutil-rb:
+	@(cd tkutil; $(MAKE) site-install-rb)

@@ -1,3 +1,17 @@
+Mon Jan 31 13:16:39 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: add tkutil configuration step (remove old schema)
+
+	* ext/tk/depend: remove the information of tkutil
+
+	* ext/tk/make-tkutil: sub-part of Makefile to compile tkutil
+
+	* ext/tk/tkutil/tkutil.c: move tkutil.c to subdirectory
+
+	* ext/tk/tkutil/subconf.rb: configuration file for tkutil.c
+
+	* ext/tk/tkutil/depend: ditto
+
 Mon Jan 31 13:13:35 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: add invalid namespace check
