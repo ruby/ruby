@@ -1,8 +1,10 @@
-Wed May 19 18:00:44 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 19 23:45:43 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/inlinetest.rb (InlineTest::loadtest): requiring library with
 	  replaced $0 can make $0 == __FILE__ block be evaluated twice.
-	  [ruby-dev:23538]
+
+	* test/ruby/envutil.rb (EnvUtil::rubybin): give priority to
+	  environment variable.  [ruby-dev:23538]
 
 Wed May 19 11:08:10 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

@@ -1,5 +1,8 @@
 module EnvUtil
   def rubybin
+    if ruby = ENV["RUBY"]
+      return ruby
+    end
     miniruby = "miniruby"
     3.times do
       if File.exist? miniruby or File.exist? miniruby+".exe"
@@ -9,7 +12,6 @@ module EnvUtil
     end
     begin
       require "rbconfig"
-      ENV["RUBY"] or
       File.join(
         Config::CONFIG["bindir"],
 	Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
