@@ -4716,6 +4716,7 @@ rb_method_missing(argc, argv, obj)
     char *format = 0;
     char *desc = "";
     NODE *cnode = ruby_current_node;
+    int state;
 
     if (argc == 0 || !SYMBOL_P(argv[0])) {
 	rb_raise(rb_eArgError, "no id given");
@@ -4724,6 +4725,7 @@ rb_method_missing(argc, argv, obj)
     stack_check();
 
     id = SYM2ID(argv[0]);
+
 
     switch (TYPE(obj)) {
       case T_NIL:
@@ -4736,16 +4738,17 @@ rb_method_missing(argc, argv, obj)
 	desc = "false";
 	break;
       default:
-	if (rb_respond_to(obj, rb_intern("inspect")))
+	PUSH_TAG(PROT_NONE);
+	if ((state = EXEC_TAG()) == 0) {
 	    d = rb_inspect(obj);
-	else
+	}
+	POP_TAG();
+	if (!d || RSTRING(d)->len > 65) {
 	    d = rb_any_to_s(obj);
+	}
 	break;
     }
     if (d) {
-	if (RSTRING(d)->len > 65) {
-	    d = rb_any_to_s(obj);
-	}
 	desc = RSTRING(d)->ptr;
     }
 

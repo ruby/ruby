@@ -1,3 +1,8 @@
+Sat Oct 25 09:18:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_method_missing): protect exception from within
+	  "inspect".  (ruby-bugs PR#1204)
+
 Fri Oct 24 23:26:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_each): Hash#each should yield single value.
