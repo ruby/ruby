@@ -1,3 +1,8 @@
+Sun Dec 12 10:35:10 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/template/html/html.rb (RDoc::Page): Don't
+	  show an accessor's r/w flag if none was specified
+
 Sun Dec 12 10:14:03 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb (RDoc::RDoc::parse_files): Never exclude files
