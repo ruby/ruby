@@ -1,3 +1,9 @@
+Thu Oct 16 23:51:04 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: If $DEBUG == true and some exception is caused
+	  in a callback operation, Ruby/Tk shows a (verbose) backtrace
+	  information on the callback process. 
+
 Thu Oct 16 16:54:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_upto): ("a"..."a").to_a should return [].

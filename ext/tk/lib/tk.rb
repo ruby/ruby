@@ -772,7 +772,23 @@ module TkCore
     #_get_eval_string(TkUtil.eval_cmd(TkCore::INTERP.tk_cmd_tbl[arg.shift], 
     #  			     *arg))
     cb_obj = TkCore::INTERP.tk_cmd_tbl[arg.shift]
-    cb_obj.call(*arg)
+    unless $DEBUG
+      cb_obj.call(*arg)
+    else
+      begin
+	raise 'check backtrace'
+      rescue
+	# ignore backtrace before 'callback'
+	pos = -($!.backtrace.size)
+      end
+      begin
+	cb_obj.call(*arg)
+      rescue
+	trace = $!.backtrace
+	raise $!, "\n#{trace[0]}: #{$!.message} (#{$!.class})\n" + 
+	          "\tfrom #{trace[1..pos].join("\n\tfrom ")}"
+      end
+    end
   end
 
   def load_cmd_on_ip(tk_cmd)
