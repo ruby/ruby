@@ -1,3 +1,9 @@
+Mon Sep 29 02:31:44 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/utils.rb (Utils::su): use setgid and setuid to
+	  set real and effective IDs. and setup group access list by
+	  initgroups.
+
 Mon Sep 27 18:25:13 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/xsd/charset.rb: XSD::Charset.is_ces did return always true under

@@ -26,16 +26,16 @@ module WEBrick
     end
     module_function :set_close_on_exec
 
-    def su(user, group=nil)
+    def su(user)
       if defined?(Etc)
         pw = Etc.getpwnam(user)
-        gr = group ? Etc.getgrnam(group) : pw
-        Process::gid = gr.gid
-        Process::egid = gr.gid
-        Process::uid = pw.uid
-        Process::euid = pw.uid
-      end 
-    end   
+        Process::initgroups(user, pw.gid)
+        Process::Sys::setgid(pw.gid)
+        Process::Sys::setuid(pw.uid)
+      else
+        warn("WEBrick::Utils::su doesn't work on this platform")
+      end
+    end
     module_function :su
 
     def getservername
