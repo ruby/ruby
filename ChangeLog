@@ -1,3 +1,7 @@
+Mon Dec  8 15:03:30 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/syck.c (syck_io_str_read): get rid of buffer overflow.
+
 Mon Dec  8 13:02:11 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/uri/common.rb: new method URI.regexp. [ruby-dev:22121]
