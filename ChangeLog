@@ -1,3 +1,9 @@
+Sun Oct 31 23:12:10 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/*.rb: added RSS Maker.
+
+	* test/rss/test_maker_*.rb: added tests for RSS Maker.
+
 Sun Oct 31 16:58:12 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE.codepage, WIN32OLE.codepage=.

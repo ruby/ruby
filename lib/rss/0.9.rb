@@ -252,7 +252,7 @@ EOT
           install_get_attribute(name, uri, required)
         end
 
-        def initialize(domain, port, path, rp, protocol)
+        def initialize(domain=nil, port=nil, path=nil, rp=nil, protocol=nil)
           super()
           @domain = domain
           @port = port

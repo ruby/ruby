@@ -1,4 +1,3 @@
-# -*- tab-width: 2 -*- vim: ts=2
 module Test
   module Unit
     module Assertions
@@ -133,6 +132,30 @@ module RSS
       end
       pi_str = rdf.to_s.gsub(/<\?xml .*\n/, "").gsub(/\s*<rdf:RDF.*\z/m, "")
       assert_equal(xss_strs.join("\n"), pi_str)
+    end
+
+    def assert_dublin_core(elems, target)
+      elems.each do |name, value|
+        assert_equal(value, target.__send__("dc_#{name}"))
+      end
+    end
+    
+    def assert_syndication(elems, target)
+      elems.each do |name, value|
+        assert_equal(value, target.__send__("sy_#{name}"))
+      end
+    end
+    
+    def assert_content(elems, target)
+      elems.each do |name, value|
+        assert_equal(value, target.__send__("content_#{name}"))
+      end
+    end
+    
+    def assert_trackback(elems, target)
+      elems.each do |name, value|
+        assert_equal(value, target.__send__("trackback_#{name}"))
+      end
     end
     
   end
