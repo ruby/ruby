@@ -1,3 +1,13 @@
+Fri Dec  3 02:24:00 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+
+        * ext/nkf/nkf.c: add constant NKF::VERSION
+
+        * ext/nkf/nkf.c(guess): this becomes an alias of guess2
+
+        * ext/nkf/test.rb(mime_out2): add --no-cp932
+
+        * ext/nkf/nkf-utf8/nkf.c: original nkf2 revision 1.47
+
 Fri Dec  3 18:57:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/ostruct.rb: 1.9 marshaling support back-ported.
