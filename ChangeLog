@@ -1,3 +1,8 @@
+Thu Jun 20 21:09:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/readline/readline.c (readline_readline): get rid of
+	  libreadline's bug. (ruby-bugs-ja:PR#268)
+
 Thu Jun 20 17:10:27 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftool.rb (BUFSIZE): tuning, set buffer length to 8192.

@@ -1,6 +1,7 @@
 /* readline.c -- GNU Readline module
    Copyright (C) 1997-1998  Shugo Maeda */
 
+#include <errno.h>
 #include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -42,6 +43,9 @@ readline_readline(argc, argv, self)
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
 	prompt = STR2CSTR(tmp);
     }
+
+    if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "stdin closed");
+
     buff = readline(prompt);
     if (RTEST(add_hist) && buff) {
 	add_history(buff);
