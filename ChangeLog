@@ -1,3 +1,7 @@
+Fri Nov  5 13:17:54 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/text.rb: bug fix
+
 Fri Nov  5 08:34:43 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_gsub): should have removed rb_str_unlocktmp(str).
