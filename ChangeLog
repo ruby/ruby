@@ -1,6 +1,9 @@
-Sat Jun 19 13:24:15 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun 19 13:27:01 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (method_call): allow changing $SAFE.  [ruby-dev:23713]
+
+	* eval.c (proc_set_safe_level, proc_invoke, rb_mod_define_method): not
+	  set $SAFE for methods defined from Proc.  [ruby-dev:23697]
 
 Sat Jun 19 01:10:12 2004  Kouhei Sutou  <kou@cozmixng.org>
 

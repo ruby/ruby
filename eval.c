@@ -7877,8 +7877,11 @@ rb_f_binding(self)
 #define PROC_TSHIFT (FL_USHIFT+1)
 #define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
 #define PROC_TMAX   (PROC_TMASK >> PROC_TSHIFT)
+#define PROC_NOSAFE FL_USER4
 
 #define SAFE_LEVEL_MAX PROC_TMASK
+
+#define proc_safe_level_p(data) (!(RBASIC(data)->flags & PROC_NOSAFE))
 
 static void
 proc_save_safe_level(data)
@@ -7900,6 +7903,7 @@ static void
 proc_set_safe_level(data)
     VALUE data;
 {
+    if (!proc_safe_level_p(data)) return;
     ruby_safe_level = proc_get_safe_level(data);
 }
 
@@ -8081,7 +8085,7 @@ proc_invoke(proc, args, self, klass)
     ruby_block = old_block;
     ruby_wrapper = old_wrapper;
     ruby_dyna_vars = old_dvars;
-    ruby_safe_level = safe;
+    if (proc_safe_level_p(proc)) ruby_safe_level = safe;
 
     switch (state) {
       case 0:
@@ -8428,7 +8432,7 @@ block_pass(self, node)
     POP_TAG();
     POP_ITER();
     ruby_block = old_block;
-    ruby_safe_level = safe;
+    if (proc_safe_level_p(proc)) ruby_safe_level = safe;
 
     switch (state) {/* escape from orphan block */
       case 0:
@@ -9147,6 +9151,7 @@ rb_mod_define_method(argc, argv, mod)
 	struct BLOCK *block;
 
 	body = proc_clone(body);
+	RBASIC(body)->flags |= PROC_NOSAFE;
 	Data_Get_Struct(body, struct BLOCK, block);
 	block->frame.last_func = id;
 	block->frame.orig_func = id;
