@@ -173,22 +173,14 @@ class Queue
   alias enq push
 
   def pop(non_block=false)
-    Thread.critical = true
-    begin
-      loop do
-       if @que.empty?
-	  if non_block
-	    raise ThreadError, "queue empty"
-	  end
-	  @waiting.push Thread.current
-	  Thread.stop
-	else
-	  return @que.shift
-	end
-      end
-    ensure
-      Thread.critical = false
+    while (Thread.critical = true; @que.empty?)
+      raise ThreadError, "queue empty" if non_block
+      @waiting.push Thread.current
+      Thread.stop
     end
+    @que.shift
+  ensure
+    Thread.critical = false
   end
   alias shift pop
   alias deq pop
@@ -215,6 +207,7 @@ end
 
 class SizedQueue<Queue
   def initialize(max)
+    raise ArgumentError, "queue size must be positive" unless max > 0
     @max = max
     @queue_wait = []
     @queue_wait.taint		# enable tainted comunication
@@ -256,6 +249,7 @@ class SizedQueue<Queue
     super
   end
   alias << push
+  alias enq push
 
   def pop(*args)
     retval = super
@@ -276,6 +270,8 @@ class SizedQueue<Queue
     end
     retval
   end
+  alias shift pop
+  alias deq pop
 
   def num_waiting
     @waiting.size + @queue_wait.size

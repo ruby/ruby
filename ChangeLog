@@ -1,3 +1,14 @@
+Wed Sep 11 16:24:22 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/thread.rb: Merge from 1.7: Get rid of race condition in
+	  Queue#pop().
+
+	* lib/thread.rb: Merge from 1.7: SizedQueue: new(max) should not
+	  accept a value <= 0.
+
+	* lib/thread.rb: Merge from 1.7: SizedQueue: Properly override
+	  enq(), shift() and deq().
+
 Wed Sep 11 16:15:06 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb: Merge from 1.7: Add Tempfile#size.
