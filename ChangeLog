@@ -1,3 +1,7 @@
+Mon Aug 30 15:10:46 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (GNU/k*BSD): fixed FTBFS on GNU/k*BSD. [ruby-dev:24051]
+
 Mon Aug 30 11:29:35 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): strip trailing spaces. [ruby-dev:24143]
