@@ -1,3 +1,8 @@
+Thu Jul  3 23:41:30 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/timeout.rb: add optional exception argument for compatibility
+	  function.
+
 Thu Jul  3 14:22:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_values_at): extract common procedure from

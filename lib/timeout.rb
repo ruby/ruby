@@ -51,13 +51,16 @@ module Timeout
 end
 
 # compatible
-def timeout(n, &block)
-  Timeout::timeout(n, &block)
+def timeout(n, e=Timeout::Error, &block)
+  Timeout::timeout(n, e, &block)
 end
 TimeoutError = Timeout::Error
 
 if __FILE__ == $0
   p timeout(5) {
+    45
+  }
+  p timeout(5, TimeoutError) {
     45
   }
   p timeout(5) {
