@@ -3,7 +3,7 @@
 
 require "mkmf"
 
-$CFLAGS << " -DHAVE_CONFIG_H -I.."
+$CFLAGS << " -DHAVE_CONFIG_H -I$(srcdir)/.."
 
 $objs = [
   "md5.#{$OBJEXT}",

@@ -1,3 +1,8 @@
+Sat Jul 14 12:26:30 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/digest/*/extconf.rb: fix so that they build from any
+	  directory.
+
 Sat Jul 14 06:20:17 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: HTTP#proxy? did not worked.
