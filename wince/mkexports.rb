@@ -6,7 +6,7 @@ objs = ARGV.collect {|s| p s+'\n'; s.tr('/', '\\') }
 IO.foreach("|dumpbin -symbols " + objs.join(' ')) do |l|
   next if /^[0-9A-F]+ 0+ UNDEF / =~ l
   next unless l.sub!(/.*\sExternal\s+\|\s+/, '')
-  if ARGV[1]=="sh3"
+  if ARGV[1]=~/sh/
     if l.sub!(/^_/, '')
       next if /@.*@/ =~ l || /@[0-9a-f]{16}$/ =~ l
     elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')

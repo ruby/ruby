@@ -1,6 +1,16 @@
+Wed Oct 01 10:08:42 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
+
+	* wince/setup.mak: add sigmarionIII SDK support.
+
+	* wince/Makefile.sub: ditto.
+
+	* wince/mkexports.rb: fix linker error in SH4.
+
+	* wince/mkconfig_wce.rb: camouflage RUBY_PLATFORM for compiling ext.
+
 Wed Oct 01 08:02:52 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
 
-	*wince/time_wce.c (time): add zero check.
+	* wince/time_wce.c (time): add zero check.
 
 Tue Sep 30 11:29:23 2003  Tanaka Akira  <akr@m17n.org>
 

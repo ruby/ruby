@@ -37,10 +37,11 @@ arm-hpc2k-wince: -prologue- -arm- -hpc2k- -epilogue-
 arm-ppc-wince: -prologue- -arm- -ppc- -epilogue-
 arm-hpcpro-wince: -prologue- -arm- -hpcpro- -epilogue-
 sh3-ppc-wince: -prologue- -sh3- -ppc- -epilogue-
-sh3-hpcpro-wince: -prologue- -sh3- -hpcpro2- -epilogue-
-sh4-hpcpro-wince: -prologue- -sh4- -hpcpro2- -epilogue-
+sh3-hpcpro-wince: -prologue- -sh3- -hpcpro- -epilogue-
+sh4-hpcpro-wince: -prologue- -sh4- -hpcpro- -epilogue-
 armv4-.net41-wince: -prologue- -armv4- -.net41- -epilogue-
 armv4t-.net41-wince: -prologue- -armv4t- -.net41- -epilogue-
+armv4i-sig3-wince: -prologue- -armv4i- -sig3- -epilogue-
 
 -prologue-: nul
 	@type << > $(MAKEFILE)
@@ -88,10 +89,12 @@ $(CPU) = $(PROCESSOR_LEVEL)
 	@$(APPEND) CC = cl$(@:-=)
 -sh3- -sh4-::
 	@$(APPEND) CC = shcl
--armv4- -armv4t-::
+-armv4- -armv4i-::
 	@$(APPEND) CC = clarm
 	@$(APPEND) ARCHFOLDER = $(@:-=)
-
+-armv4t-::
+	@$(APPEND) CC = clthumb
+	@$(APPEND) ARCHFOLDER = $(@:-=)
 
 -arm-::
 	@$(APPEND) CECPUDEF = -DARM -D_ARM_
@@ -101,10 +104,11 @@ $(CPU) = $(PROCESSOR_LEVEL)
 	@$(APPEND) CECPUDEF = -DSHx -DSH3 -D_SH3_
 -sh4-::
 	@$(APPEND) CECPUDEF = -DSHx -DSH4 -D_SH4_
+	@$(APPEND) QSH4  = -Qsh4
 -armv4-::
 	@$(APPEND) CECPUDEF = -DARM -D_ARM_ -DARMV4
 	@$(APPEND) $(ARCH) = ARM
--armv4t-::
+-armv4t- -armv4i-::
 	@$(APPEND) CECPUDEF = -DARM -D_ARM_ -DARMV4T -DTHUMB -D_THUMB_
 	@$(APPEND) $(ARCH) = THUMB
 
@@ -156,12 +160,13 @@ PATH = $$(EMBEDDED_TOOLS_DIR)/common/evc/bin;$$(EMBEDDED_TOOLS_DIR)/EVC/WCE$$(SU
 -mswince-4.10: -mswince4-
 	@type << >>$(MAKEFILE)
 SUBSYSVERSION = $(@:-mswince-=)
+EXTLIBS = ws2.lib
 PATH = $$(EMBEDDED_TOOLS4_DIR)/common/evc/bin;$$(EMBEDDED_TOOLS4_DIR)/EVC/WCE$$(SUBSYSVERSION:.=)/bin
 <<
 
 -hpc2000- "-MS Pocket PC-": -mswince-3.00
 "-MS HPC Pro-" "-MS HPC Pro--": -mswince-2.11
--.net41-: -mswince-4.10
+-.net41- -sig3-: -mswince-4.10
 
 -hpc2000-:
 	@type << >>$(MAKEFILE)
@@ -192,6 +197,12 @@ INCLUDE = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/include/$$(ARCHFOLDER)
 LIB = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/lib/$$(ARCHFOLDER)
 <<
 
+-sig3-:
+	@type << >>$(MAKEFILE)
+SUBSYSTEM = windowsce,4.1
+INCLUDE = $$(CE_TOOLS4_DIR)/wce410/sigmarionIII SDK/include/$$(ARCHFOLDER)
+LIB = $$(CE_TOOLS4_DIR)/wce410/sigmarionIII SDK/lib/$$(ARCHFOLDER)
+<<
 
 -epilogue-: nul
 	@type << >>$(MAKEFILE)
@@ -210,7 +221,7 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -I$$(srcdir)/wince \
            $$(CECPUDEF) -DUNDER_CE -D_WIN32_WCE=$$(SUBSYSVERSION:.=) \
            -DFILENAME_MAX=MAX_PATH -DTLS_OUT_OF_INDEXES=0xFFFFFFFF \
-           -DBUFSIZ=512 -D_UNICODE -DUNICODE
+           -DBUFSIZ=512 -D_UNICODE -DUNICODE $$(QSH4)
 # STACK = 0x10000,0x1000
 # LDFLAGS = $$(CFLAGS) -Fm
 # XLDFLAGS = 
