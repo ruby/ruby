@@ -119,4 +119,39 @@ class TestEval < Test::Unit::TestCase
     assert_equal(5, p1.call)
     assert_nil(i7)
   end
+
+  def test_nil_instance_eval_cvar # [ruby-dev:24103]
+    def nil.test_binding
+      binding
+    end
+    bb = eval("nil.instance_eval \"binding\"", nil.test_binding)
+    assert_raise(NameError) { eval("@@a", bb) }
+    class << nil
+      remove_method :test_binding
+    end
+  end
+
+  def test_fixnum_instance_eval_cvar # [ruby-dev:24213]
+    assert_raise(NameError) { 1.instance_eval "@@a" }
+  end
+
+  def test_cvar_scope_with_instance_eval # [ruby-dev:24223]
+    Fixnum.class_eval "@@test_cvar_scope_with_instance_eval = 1" # depends on [ruby-dev:24229]
+    @@test_cvar_scope_with_instance_eval = 4
+    assert_equal(4, 1.instance_eval("@@test_cvar_scope_with_instance_eval"))
+    Fixnum.__send__(:remove_class_variable, :@@test_cvar_scope_with_instance_eval)
+  end
+
+  def test_eval_and_define_method # [ruby-dev:24228]
+    assert_nothing_raised {
+      def temporally_method_for_test_eval_and_define_method(&block)
+        lambda {
+          class << Object.new; self end.__send__(:define_method, :zzz, &block)
+        }
+      end
+      v = eval("temporally_method_for_test_eval_and_define_method {}")
+      {}[0] = {}
+      v.call
+    }
+  end
 end

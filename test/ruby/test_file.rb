@@ -47,4 +47,24 @@ class TestFile < Test::Unit::TestCase
     assert(true, File.fnmatch('\[1\]' , '[1]'))
     assert(true, File.fnmatch('*?', 'a'))
   end
+
+  def test_truncate_wbuf # [ruby-dev:24191]
+    f = Tempfile.new("test-truncate")
+    f.puts "abc"
+    f.truncate(0)
+    f.puts "def"
+    f.close
+    assert_equal("\0\0\0\0def\n", File.read(f.path))
+  end
+
+  def test_truncate_rbuf # [ruby-dev:24197]
+    f = Tempfile.new("test-truncate")
+    f.puts "abc"
+    f.puts "def"
+    f.close
+    f.open
+    assert_equal("abc\n", f.gets)
+    f.truncate(3)
+    assert_equal(nil, f.gets)
+  end
 end
