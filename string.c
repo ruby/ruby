@@ -2439,9 +2439,17 @@ rb_str_oct(str)
 {
     int base = 8;
 
-    if (RSTRING(str)->len > 2 && RSTRING(str)->ptr[0] == '0' &&
-	(RSTRING(str)->ptr[1] == 'x' || RSTRING(str)->ptr[1] == 'X')) {
-	base = 16;
+    if (RSTRING(str)->len > 2 && RSTRING(str)->ptr[0] == '0') {
+	switch (RSTRING(str)->ptr[1]) {
+	  case 'x':
+	  case 'X':
+	    base = 16;
+	    break;
+	  case 'b':
+	  case 'B':
+	    base = 2;
+	    break;
+	}
     }
     return rb_str2inum(RSTRING(str)->ptr, base);
 }

@@ -1179,11 +1179,10 @@ rb_const_set(klass, id, val)
 	RCLASS(klass)->iv_tbl = st_init_numtable();
     }
     else if (st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
-	rb_raise(rb_eNameError, "already initialized constant %s",
-		 rb_id2name(id));
+	rb_warn("already initialized constant %s", rb_id2name(id));
     }
 
-    st_add_direct(RCLASS(klass)->iv_tbl, id, val);
+    st_insert(RCLASS(klass)->iv_tbl, id, val);
 }
 
 void

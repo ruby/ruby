@@ -1,4 +1,79 @@
+Wed Jun  9 13:26:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_loading): modified to avoid nested race
+	  condition of require().
+
+	* ext/tcltklib/tcltklib.c (ip_invoke): queue invocation on non
+	  main threads.
+
+	* ext/tcltklib/tcltklib.c (lib_mainloop): flush invoke queues.
+
+	* version.c (ruby_show_version): now print the message to stdout.
+
+	* version.c (ruby_show_copyright): ditto.
+
+Tue Jun  8 00:00:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* pack.c (pack_unpack): append sentinel (NUL) to the string.
+
+	* ext/md5/md5init.c (md5_hexdigest): new method to obtain
+	  printable hash string.
+
+	* ext/md5/md5init.c (md5_update): should return self.
+
+	* pack.c (pack_pack): undocumented template 'U' for UTF8.
+
+	* pack.c (pack_unpack): ditto.
+
+	* marshal.c (r_byte): should replace getc() with rb_getc().
+
+	* io.c (rb_getc): getc() replacement uses READ_DATA_PENDING() and
+	  rb_thread_wait_fd().
+
+Mon Jun  7 23:23:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (rb_mod_clone): should call CLOSESETUP().
+
+	* eval.c (bind_clone): should call CLONESETUP() for new clone.
+
+Sat Jun  5 10:32:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_oct): binary (e.g. 0b10111) support.
+
+	* variable.c (rb_const_set): raise warning, not exception.
+
+	* parse.y (yycompile): initialize parser internal variables.
+
+	* parse.y (close_paren): set lex_state to EXPR_PAREN after closing
+	  parenthesis.
+
+	* parse.y (yylex): returns kDO for `do' right after method_call.
+
+Thu Jun  3 11:05:30 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* regex.c (read_backslash): should decode \b within class.
+
+Thu Jun  3 01:06:18 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* dln.c (dln_load): AIX improvement (aix_findmain removed).
+
+Wed Jun  2 00:41:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* pack.c (pack_unpack): new undocumented template Z which strips
+	  stuff after first null.
+
+	* pack.c (pack_pack): should preserve specified length of the
+	  resulting string.
+
 Tue Jun  1 15:29:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/socket.c (ruby_socket): retry after GC, if socket(2)
+	  failed on EMFILE or ENFILE.
+
+	* ext/socket/socket.c (sock_s_socketpair): ditto.
+
+	* eval.c (module_setup): need to add PUSH_VAR/POP_VAR to clear
+	  dyna vars link list.
 
 	* version.h (RUBY_RELEASE_CODE): integer macro contant for source
 	  version detection.

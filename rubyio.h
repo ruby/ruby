@@ -50,6 +50,7 @@ typedef struct OpenFile {
 
 FILE *rb_fopen _((const char*, const char*));
 FILE *rb_fdopen _((int, const char*));
+int rb_getc _((FILE*));
 int  rb_io_mode_flags _((const char*));
 void rb_io_check_writable _((OpenFile*));
 void rb_io_check_readable _((OpenFile*));

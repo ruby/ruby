@@ -306,10 +306,6 @@ rb_io_eof(io)
     rb_io_check_readable(fptr);
 
     if (READ_DATA_PENDING(fptr->f)) return Qfalse;
-#if 0
-    if (feof(fptr->f)) return Qtrue;
-    return Qfalse;
-#else
     READ_CHECK(fptr->f);
     TRAP_BEG;
     ch = getc(fptr->f);
@@ -320,7 +316,6 @@ rb_io_eof(io)
 	return Qfalse;
     }
     return Qtrue;
-#endif
 }
 
 static VALUE
@@ -809,6 +804,22 @@ rb_io_getc(io)
 	return Qnil;
     }
     return INT2FIX(c & 0xff);
+}
+
+int
+rb_getc(f)
+    FILE *f;
+{
+    int c;
+
+    if (!READ_DATA_PENDING(f)) {
+	rb_thread_wait_fd(fileno(f));
+    }
+    TRAP_BEG;
+    c = getc(f);
+    TRAP_END;
+
+    return c;
 }
 
 static VALUE

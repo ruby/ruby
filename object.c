@@ -460,7 +460,7 @@ rb_mod_clone(module)
     VALUE module;
 {
     NEWOBJ(clone, struct RClass);
-    OBJSETUP(clone, CLASS_OF(module), TYPE(module));
+    CLONESETUP(clone, module);
 
     clone->super = RCLASS(module)->super;
     clone->iv_tbl = 0;

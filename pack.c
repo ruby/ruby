@@ -14,8 +14,17 @@
 #include <sys/types.h>
 #include <ctype.h>
 
-#ifndef atof
-double strtod();
+#define SIZE16 2
+#define SIZE32 4
+
+#if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4
+# define NATINT_PACK
+#endif
+
+#ifdef NATINT_PACK
+# define NATINT_LEN(type,len) (natint?sizeof(type):(len))
+#else
+# define NATINT_LEN(type,len) sizeof(type)
 #endif
 
 #define define_swapx(x, xtype)		\
@@ -280,6 +289,9 @@ static char *toofew = "too few arguments";
 static void encodes _((VALUE,char*,int,int));
 static void qpencode _((VALUE,VALUE,int));
 
+static long uv_to_utf8 _((char*,long));
+static long utf8_to_uv _((char*,int*));
+
 static void
 pack_add_ptr(str, add)
     VALUE str, add;
@@ -304,9 +316,11 @@ pack_pack(ary, fmt)
     int items, len, idx;
     char *ptr;
     int plen;
-
+#ifdef NATINT_PACK
+    int natint;		/* native integer */
+#endif
     
-    p = rb_str2cstr(fmt, &plen);
+    p = str2cstr(fmt, &plen);
     pend = p + plen;
     res = rb_str_new(0, 0);
 
@@ -317,7 +331,24 @@ pack_pack(ary, fmt)
 
     while (p < pend) {
 	type = *p++;		/* get data type */
+#ifdef NATINT_PACK
+	natint = 0;
+#endif
 
+	if (ISSPACE(type)) continue;
+        if (*p == '_') {
+	    char *natstr = "sSiIlL";
+
+	    if (strchr(natstr, type)) {
+#ifdef NATINT_PACK
+		natint = 1;
+#endif
+		p++;
+	    }
+	    else {
+		rb_raise(rb_eArgError, "'_' allowed only after types %s", natstr);
+	    }
+	}
 	if (*p == '*') {	/* set data length */
 	    len = strchr("@Xxu", type) ? 0 : items;
             p++;
@@ -339,9 +370,7 @@ pack_pack(ary, fmt)
 		plen = 0;
 	    }
 	    else {
-		from = rb_obj_as_string(from);
-		ptr = RSTRING(from)->ptr;
-		plen = RSTRING(from)->len;
+		ptr = str2cstr(from, &plen);
 	    }
 
 	    if (p[-1] == '*')
@@ -350,6 +379,7 @@ pack_pack(ary, fmt)
 	    switch (type) {
 	      case 'a':
 	      case 'A':
+	      case 'Z':
 		if (plen >= len)
 		    rb_str_cat(res, ptr, len);
 		else {
@@ -366,8 +396,12 @@ pack_pack(ary, fmt)
 	      case 'b':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
 			if (*ptr & 1)
 			    byte |= 128;
@@ -385,14 +419,21 @@ pack_pack(ary, fmt)
 			c = byte & 0xff;
 			rb_str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    rb_str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 
 	      case 'B':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
 			byte |= *ptr & 1;
 			if (i & 7)
@@ -409,60 +450,73 @@ pack_pack(ary, fmt)
 			c = byte & 0xff;
 			rb_str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    rb_str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 
 	      case 'h':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
-			if (ISXDIGIT(*ptr)) {
-			    if (ISALPHA(*ptr))
-				byte |= (((*ptr & 15) + 9) & 15) << 4;
-			    else
-				byte |= (*ptr & 15) << 4;
-			    if (i & 1)
-				byte >>= 4;
-			    else {
-				char c = byte & 0xff;
-				rb_str_cat(res, &c, 1);
-				byte = 0;
-			    }
+			if (ISALPHA(*ptr))
+			    byte |= (((*ptr & 15) + 9) & 15) << 4;
+			else
+			    byte |= (*ptr & 15) << 4;
+			if (i & 1)
+			    byte >>= 4;
+			else {
+			    char c = byte & 0xff;
+			    rb_str_cat(res, &c, 1);
+			    byte = 0;
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
 			rb_str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    rb_str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 
 	      case 'H':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
-			if (ISXDIGIT(*ptr)) {
-			    if (ISALPHA(*ptr))
-				byte |= ((*ptr & 15) + 9) & 15;
-			    else
-				byte |= *ptr & 15;
-			    if (i & 1)
-				byte <<= 4;
-			    else {
-				char c = byte & 0xff;
-				rb_str_cat(res, &c, 1);
-				byte = 0;
-			    }
+			if (ISALPHA(*ptr))
+			    byte |= ((*ptr & 15) + 9) & 15;
+			else
+			    byte |= *ptr & 15;
+			if (i & 1)
+			    byte <<= 4;
+			else {
+			    char c = byte & 0xff;
+			    rb_str_cat(res, &c, 1);
+			    byte = 0;
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
 			rb_str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    rb_str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 	    }
@@ -492,7 +546,7 @@ pack_pack(ary, fmt)
 		else {
 		    s = NUM2INT(from);
 		}
-		rb_str_cat(res, (char*)&s, sizeof(short));
+		rb_str_cat(res, (char*)&s, NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -520,7 +574,7 @@ pack_pack(ary, fmt)
 		else {
 		    l = NUM2ULONG(from);
 		}
-		rb_str_cat(res, (char*)&l, sizeof(long));
+		rb_str_cat(res, (char*)&l, NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -534,7 +588,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htons(s);
-		rb_str_cat(res, (char*)&s, sizeof(short));
+		rb_str_cat(res, (char*)&s, NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -548,7 +602,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		l = htonl(l);
-		rb_str_cat(res, (char*)&l, sizeof(long));
+		rb_str_cat(res, (char*)&l, NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -562,7 +616,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htovs(s);
-		rb_str_cat(res, (char*)&s, sizeof(short));
+		rb_str_cat(res, (char*)&s, NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -576,7 +630,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		l = htovl(l);
-		rb_str_cat(res, (char*)&l, sizeof(long));
+		rb_str_cat(res, (char*)&l, NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -732,11 +786,24 @@ pack_pack(ary, fmt)
 	    rb_raise(rb_eArgError, "% may only be used in unpack");
 	    break;
 
+	  case 'U':
+	    while (len-- > 0) {
+		unsigned long l;
+		char buf[8];
+
+		from = NEXTFROM;
+		if (NIL_P(from)) l = 0;
+		else {
+		    l = NUM2ULONG(from);
+		}
+		l = uv_to_utf8(buf, l);
+		rb_str_cat(res, (char*)&buf, l);
+	    }
+	    break;
+
 	  case 'u':
 	  case 'm':
-	    from = rb_obj_as_string(NEXTFROM);
-	    ptr = RSTRING(from)->ptr;
-	    plen = RSTRING(from)->len;
+	    ptr = str2cstr(NEXTFROM, &plen);
 
 	    if (len <= 1)
 		len = 45;
@@ -914,7 +981,19 @@ hex2num(c)
     }
 }
 
-#define PACK_LENGTH_ADJUST(type) do {		\
+#ifdef NATINT_PACK
+#define PACK_LENGTH_ADJUST(type,sz) do {	\
+    int t__len = NATINT_LEN((type),(sz));	\
+    tmp = 0;					\
+    if (len > (send-s)/t__len) {		\
+        if (!star) {				\
+	    tmp = len-(send-s)/t__len;		\
+        }					\
+	len = (send-s)/t__len;			\
+    }						\
+} while (0)
+#else
+#define PACK_LENGTH_ADJUST(type,sz) do {	\
     tmp = 0;					\
     if (len > (send-s)/sizeof(type)) {		\
         if (!star) {				\
@@ -923,6 +1002,7 @@ hex2num(c)
 	len = (send-s)/sizeof(type);		\
     }						\
 } while (0)
+#endif
 
 #define PACK_ITEM_ADJUST() while (tmp--) rb_ary_push(ary, Qnil);
 
@@ -936,17 +1016,35 @@ pack_unpack(str, fmt)
     VALUE ary;
     char type;
     int len, tmp, star;
+#ifdef NATINT_PACK
+    int natint;		/* native integer */
+#endif
 
-    s = rb_str2cstr(str, &len);
+    s = str2cstr(str, &len);
     send = s + len;
-    p = rb_str2cstr(fmt, &len);
+    p = str2cstr(fmt, &len);
     pend = p + len;
 
     ary = rb_ary_new();
     while (p < pend) {
 	star = 0;
 	type = *p++;
-	if (*p == '*') {
+	if (*p == '_') {
+	    char *natstr = "sSiIlL";
+
+	    if (strchr(natstr, type)) {
+#ifdef NATINT_PACK
+		natint = 1;
+#endif
+		p++;
+	    }
+	    else {
+		rb_raise(rb_eArgError, "'_' allowed only after types %s", natstr);
+	    }
+	}
+	if (p >= pend)
+	    len = 1;
+	else if (*p == '*') {
 	    star = 1;
 	    len = send - s;
 	    p++;
@@ -971,8 +1069,22 @@ pack_unpack(str, fmt)
 
 		while (t >= s) {
 		    if (*t != ' ' && *t != '\0') break;
-		    t--;
-		    len--;
+		    t--; len--;
+		}
+		rb_ary_push(ary, rb_str_new(s, len));
+		s += end;
+	    }
+	    break;
+
+	  case 'Z':
+	    if (len > send - s) len = send - s;
+	    {
+		int end = len;
+		char *t = s + len - 1;
+
+		while (t >= s) {
+		    if (*t) break;
+		    t--; len--;
 		}
 		rb_ary_push(ary, rb_str_new(s, len));
 		s += end;
@@ -984,6 +1096,7 @@ pack_unpack(str, fmt)
 	    rb_ary_push(ary, rb_str_new(s, len));
 	    s += len;
 	    break;
+
 
 	  case 'b':
 	    {
@@ -1066,7 +1179,7 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'c':
-	    PACK_LENGTH_ADJUST(char);
+	    PACK_LENGTH_ADJUST(char,sizeof(char));
 	    while (len-- > 0) {
                 int c = *s++;
                 if (c > (char)127) c-=256;
@@ -1076,7 +1189,7 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'C':
-	    PACK_LENGTH_ADJUST(char);
+	    PACK_LENGTH_ADJUST(unsigned char,sizeof(unsigned char));
 	    while (len-- > 0) {
 		unsigned char c = *s++;
 		rb_ary_push(ary, INT2FIX(c));
@@ -1085,29 +1198,29 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 's':
-	    PACK_LENGTH_ADJUST(short);
+	    PACK_LENGTH_ADJUST(short,2);
 	    while (len-- > 0) {
 		short tmp;
-		memcpy(&tmp, s, sizeof(short));
-		s += sizeof(short);
+		memcpy(&tmp, s, NATINT_LEN(short,2));
+		s += NATINT_LEN(short,2);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'S':
-	    PACK_LENGTH_ADJUST(short);
+	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
 		unsigned short tmp;
-		memcpy(&tmp, s, sizeof(short));
-		s += sizeof(short);
+		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
+		s += NATINT_LEN(unsigned short,2);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'i':
-	    PACK_LENGTH_ADJUST(int);
+	    PACK_LENGTH_ADJUST(int,sizeof(int));
 	    while (len-- > 0) {
 		int tmp;
 		memcpy(&tmp, s, sizeof(int));
@@ -1118,44 +1231,44 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'I':
-	    PACK_LENGTH_ADJUST(int);
+	    PACK_LENGTH_ADJUST(unsigned int,sizeof(unsigned int));
 	    while (len-- > 0) {
 		unsigned int tmp;
-		memcpy(&tmp, s, sizeof(int));
-		s += sizeof(int);
+		memcpy(&tmp, s, sizeof(unsigned int));
+		s += sizeof(unsigned int);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'l':
-	    PACK_LENGTH_ADJUST(long);
+	    PACK_LENGTH_ADJUST(long,4);
 	    while (len-- > 0) {
 		long tmp;
-		memcpy(&tmp, s, sizeof(long));
-		s += sizeof(long);
+		memcpy(&tmp, s, NATINT_LEN(long,4));
+		s += NATINT_LEN(long,4);
 		rb_ary_push(ary, rb_int2inum(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'L':
-	    PACK_LENGTH_ADJUST(long);
+	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
 		unsigned long tmp;
-		memcpy(&tmp, s, sizeof(long));
-		s += sizeof(long);
+		memcpy(&tmp, s, NATINT_LEN(unsigned long,4));
+		s += NATINT_LEN(unsigned long,4);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'n':
-	    PACK_LENGTH_ADJUST(short);
+	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
 		unsigned short tmp;
-		memcpy(&tmp, s, sizeof(short));
-		s += sizeof(short);
+		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
+		s += NATINT_LEN(unsigned short,2);
 		tmp = ntohs(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
@@ -1163,11 +1276,11 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'N':
-	    PACK_LENGTH_ADJUST(long);
+	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
 		unsigned long tmp;
-		memcpy(&tmp, s, sizeof(long));
-		s += sizeof(long);
+		memcpy(&tmp, s, NATINT_LEN(unsigned long,4));
+		s += NATINT_LEN(unsigned long,4);
 		tmp = ntohl(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
@@ -1175,11 +1288,11 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'v':
-	    PACK_LENGTH_ADJUST(short);
+	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
 		unsigned short tmp;
-		memcpy(&tmp, s, sizeof(short));
-		s += sizeof(short);
+		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
+		s += NATINT_LEN(unsigned short,2);
 		tmp = vtohs(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
@@ -1187,11 +1300,11 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'V':
-	    PACK_LENGTH_ADJUST(long);
+	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
 		unsigned long tmp;
-		memcpy(&tmp, s, sizeof(long));
-		s += sizeof(long);
+		memcpy(&tmp, s, NATINT_LEN(long,4));
+		s += NATINT_LEN(long,4);
 		tmp = vtohl(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
@@ -1200,7 +1313,7 @@ pack_unpack(str, fmt)
 
 	  case 'f':
 	  case 'F':
-	    PACK_LENGTH_ADJUST(float);
+	    PACK_LENGTH_ADJUST(float,sizeof(float));
 	    while (len-- > 0) {
 		float tmp;
 		memcpy(&tmp, s, sizeof(float));
@@ -1211,7 +1324,7 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'e':
-	    PACK_LENGTH_ADJUST(float);
+	    PACK_LENGTH_ADJUST(float,sizeof(float));
 	    while (len-- > 0) {
 	        float tmp;
 		FLOAT_CONVWITH(ftmp);
@@ -1225,7 +1338,7 @@ pack_unpack(str, fmt)
 	    break;
 	    
 	  case 'E':
-	    PACK_LENGTH_ADJUST(double);
+	    PACK_LENGTH_ADJUST(double,sizeof(double));
 	    while (len-- > 0) {
 		double tmp;
 		DOUBLE_CONVWITH(dtmp);
@@ -1240,7 +1353,7 @@ pack_unpack(str, fmt)
 	    
 	  case 'D':
 	  case 'd':
-	    PACK_LENGTH_ADJUST(double);
+	    PACK_LENGTH_ADJUST(double,sizeof(double));
 	    while (len-- > 0) {
 		double tmp;
 		memcpy(&tmp, s, sizeof(double));
@@ -1251,7 +1364,7 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'g':
-	    PACK_LENGTH_ADJUST(float);
+	    PACK_LENGTH_ADJUST(float,sizeof(float));
 	    while (len-- > 0) {
 	        float tmp;
 		FLOAT_CONVWITH(ftmp;)
@@ -1265,7 +1378,7 @@ pack_unpack(str, fmt)
 	    break;
 	    
 	  case 'G':
-	    PACK_LENGTH_ADJUST(double);
+	    PACK_LENGTH_ADJUST(double,sizeof(double));
 	    while (len-- > 0) {
 		double tmp;
 		DOUBLE_CONVWITH(dtmp);
@@ -1278,6 +1391,18 @@ pack_unpack(str, fmt)
 	    PACK_ITEM_ADJUST();
 	    break;
 	    
+	  case 'U':
+	    if (len > send - s) len = send - s;
+	    while (len-- > 0 && s < send) {
+		int alen;
+		unsigned long l;
+
+		l = utf8_to_uv(s, &alen);
+		s += alen;
+		rb_ary_push(ary, INT2NUM(l));
+	    }
+	    break;
+
 	  case 'u':
 	    {
 		VALUE str = rb_str_new(0, (send - s)*3/4);
@@ -1327,6 +1452,8 @@ pack_unpack(str, fmt)
 		    else if (s < send && (s+1 == send || s[1] == '\n'))
 			s += 2;	/* possible checksum byte */
 		}
+		
+		RSTRING(str)->ptr[total] = '\0';
 		RSTRING(str)->len = total;
 		rb_ary_push(ary, str);
 	    }
@@ -1369,6 +1496,7 @@ pack_unpack(str, fmt)
 		    *ptr++ = a << 2 | b >> 4;
 		    *ptr++ = b << 4 | c >> 2;
 		}
+		*ptr = '\0';
 		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
 		rb_ary_push(ary, str);
 	    }
@@ -1395,6 +1523,7 @@ pack_unpack(str, fmt)
 		    }
 		    s++;
 		}
+		*ptr = '\0';
 		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
 		rb_ary_push(ary, str);
 	    }
@@ -1452,6 +1581,82 @@ pack_unpack(str, fmt)
     }
 
     return ary;
+}
+
+#define BYTEWIDTH 8
+
+static long
+uv_to_utf8(buf, uv)
+    char *buf;
+    long uv;
+{
+    if (uv < 0x80) {
+	buf[0] = (char)uv;
+	return 1;
+    }
+    if (uv < 0x7ff) {
+	buf[0] = ((uv>>6)&0xff)|0xc0;
+	buf[1] = uv&0x3f;
+	return 2;
+    }
+    if (uv < 0xffff) {
+	buf[0] = ((uv>>12)&0xff)|0xe0;
+	buf[1] = (uv>>6)&0x3f;
+	buf[2] = uv&0x3f;
+	return 3;
+    }
+    if (uv < 0x1fffff) {
+	buf[0] = ((uv>>18)&0xff)|0xf0;
+	buf[1] = (uv>>12)&0x3f;
+	buf[2] = (uv>>6)&0x3f;
+	buf[3] = uv&0x3f;
+	return 4;
+    }
+    if (uv < 0x3ffffff) {
+	buf[0] = ((uv>>24)&0xff)|0xf0;
+	buf[1] = (uv>>18)&0x3f;
+	buf[2] = (uv>>12)&0x3f;
+	buf[3] = (uv>>6)&0x3f;
+	buf[4] = uv&0x3f;
+	return 5;
+    }
+    if (uv < 0x7fffffff) {
+	buf[0] = ((uv>>30)&0xff)|0xfc;
+	buf[1] = (uv>>24)&0x3f;
+	buf[2] = (uv>>18)&0x3f;
+	buf[3] = (uv>>12)&0x3f;
+	buf[4] = (uv>>6)&0x3f;
+	buf[5] = uv&0x3f;
+	return 6;
+    }
+    buf[0] = uv>>BYTEWIDTH;
+    buf[1] = uv&0xff;
+    return 2;
+}
+
+static long
+utf8_to_uv(p, lenp)
+    char *p;
+    int *lenp;
+{
+    int c = (*p++)&0xff;
+    unsigned long uv;
+    int n = 1;
+
+    if (c < 0xc0) n = 1;
+    else if (c < 0xe0) n = 2;
+    else if (c < 0xf0) n = 3;
+    else if (c < 0xf8) n = 4;
+    else if (c < 0xfc) n = 5;
+    else if (c < 0xfe) n = 6;
+    *lenp = n--;
+
+    uv = c;
+    uv &= (1<<(BYTEWIDTH-2-n)) - 1;
+    while (n--) {
+	uv = uv << 6 | *p++ & ((1<<6)-1);
+    }
+    return uv;
 }
 
 void

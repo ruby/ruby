@@ -30,6 +30,8 @@ fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); }
 static VALUE eTkCallbackBreak;
 static VALUE eTkCallbackContinue;
 
+static VALUE ip_invoke_real _((int, VALUE*, VALUE));
+
 /* from tkAppInit.c */
 
 /*
@@ -42,54 +44,46 @@ int *tclDummyMathPtr = (int *) matherr;
 
 /*---- module TclTkLib ----*/
 
-/* Tk_ThreadTimer */
-typedef struct {
-    Tcl_TimerToken token;
-    int  flag;
-} Tk_TimerData;
+static VALUE main_thread;
 
-/* timer callback */
-static void
-_timer_for_tcl(clientData)
-    ClientData clientData;
-{
-    Tk_TimerData *timer = (Tk_TimerData*)clientData;
+struct invoke_queue {
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+    int done;
+    VALUE result;
+    VALUE thread;
+    struct invoke_queue *next;
+};
 
-    timer->flag = 0;
-    CHECK_INTS;
-
-    if (timer->flag) {
-      Tk_DeleteTimerHandler(timer->token);
-    }
-    timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
-					 (ClientData)timer);
-    timer->flag = 1;
-}
+static struct invoke_queue *iqueue;
 
 /* execute Tk_MainLoop */
 static VALUE
 lib_mainloop(self)
     VALUE self;
 {
-    Tk_TimerData *timer;
-
-    timer = (Tk_TimerData *)ALLOC(Tk_TimerData);
-    timer->flag = 0;
-    timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
-					 (ClientData)timer);
-    timer->flag = 1;
+    struct invoke_queue *q, *tmp;
+    VALUE thread;
 
     DUMP1("start Tk_Mainloop");
     while (Tk_GetNumMainWindows() > 0) {
-        Tcl_DoOneEvent(0);
+        Tcl_DoOneEvent(TCL_DONT_WAIT);
 	CHECK_INTS;
+	q = iqueue;
+	while (q) {
+	    tmp = q;
+	    q = q->next;
+	    if (!tmp->done) {
+		tmp->done = 1;
+		tmp->result = ip_invoke_real(tmp->argc, tmp->argv, tmp->obj);
+		thread = tmp->thread;
+		tmp = tmp->next;
+		rb_thread_run(thread);
+	    }
+	}
     }
     DUMP1("stop Tk_Mainloop");
-
-    if (timer->flag) {
-	Tk_DeleteTimerHandler(timer->token);
-    }
-    free(timer);
 
     return Qnil;
 }
@@ -206,11 +200,11 @@ ip_new(self)
     /* from Tcl_AppInit() */
     DUMP1("Tcl_Init");
     if (Tcl_Init(ptr->ip) == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, "Tcl_Init");
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
     DUMP1("Tk_Init");
     if (Tk_Init(ptr->ip) == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, "Tk_Init");
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
     DUMP1("Tcl_StaticPackage(\"Tk\")");
     Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init,
@@ -324,14 +318,13 @@ ip_fromUTF8(self, str, encodename)
 
 
 static VALUE
-ip_invoke(argc, argv, obj)
+ip_invoke_real(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
 {
     struct tcltkip *ptr;	/* tcltkip data struct */
     int i;
-    int object = 0;
     Tcl_CmdInfo info;
     char *cmd;
     char **av = (char **)NULL;
@@ -350,13 +343,10 @@ ip_invoke(argc, argv, obj)
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
 	rb_raise(rb_eNameError, "invalid command name `%s'", cmd);
     }
-#if TCL_MAJOR_VERSION >= 8
-    object = info.isNativeObjectProc;
-#endif
 
     /* memory allocation for arguments of this command */
-    if (object) {
 #if TCL_MAJOR_VERSION >= 8
+    if (info.isNativeObjectProc) {
 	/* object interface */
 	ov = (Tcl_Obj **)ALLOCA_N(Tcl_Obj *, argc+1);
 	for (i = 0; i < argc; ++i) {
@@ -365,8 +355,10 @@ ip_invoke(argc, argv, obj)
 	    Tcl_IncrRefCount(ov[i]);
 	}
 	ov[argc] = (Tcl_Obj *)NULL;
+    } 
+    else
 #endif
-    } else {
+    {
       /* string interface */
 	av = (char **)ALLOCA_N(char *, argc+1);
 	for (i = 0; i < argc; ++i) {
@@ -381,8 +373,8 @@ ip_invoke(argc, argv, obj)
     Tcl_ResetResult(ptr->ip);
 
     /* Invoke the C procedure */
-    if (object) {
 #if TCL_MAJOR_VERSION >= 8
+    if (info.isNativeObjectProc) {
 	int dummy;
 	ptr->return_value = (*info.objProc)(info.objClientData,
 					    ptr->ip, argc, ov);
@@ -395,9 +387,10 @@ ip_invoke(argc, argv, obj)
 	for (i=0; i<argc; i++) {
 	    Tcl_DecrRefCount(ov[i]);
 	}
-#endif
     }
-    else {
+    else
+#endif
+    {
 	ptr->return_value = (*info.proc)(info.clientData,
 					 ptr->ip, argc, av);
     }
@@ -408,6 +401,51 @@ ip_invoke(argc, argv, obj)
 
     /* pass back the result (as string) */
     return rb_str_new2(ptr->ip->result);
+}
+
+static VALUE
+ip_invoke(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    struct invoke_queue *tmp, *p;
+    VALUE result = rb_thread_current();
+
+    if (result == main_thread) {
+	return ip_invoke_real(argc, argv, obj);
+    }
+    tmp = ALLOC(struct invoke_queue);
+    tmp->obj = obj;
+    tmp->argc = argc;
+    tmp->argv = ALLOC_N(VALUE, argc);
+    MEMCPY(tmp->argv, argv, VALUE, argc);
+    tmp->thread = result;
+    tmp->done = 0;
+
+    tmp->next = iqueue;
+    iqueue = tmp;
+
+    rb_thread_stop();
+    result = tmp->result;
+    if (iqueue == tmp) {
+	iqueue = tmp->next;
+	free(tmp->argv);
+	free(tmp);
+	return result;
+    }
+
+    p = iqueue;
+    while (p->next) {
+	if (p->next == tmp) {
+	    p->next = tmp->next;
+	    free(tmp->argv);
+	    free(tmp);
+	    break;
+	}
+	p = p->next;
+    }
+    return result;
 }
 
 /* get return code from Tcl_Eval() */
@@ -454,6 +492,7 @@ Init_tcltklib()
     rb_define_method(ip, "_return_value", ip_retval, 0);
     rb_define_method(ip, "mainloop", lib_mainloop, 0);
 
+    main_thread = rb_thread_current();
 #ifdef __MACOS__
     _macinit();
 #endif

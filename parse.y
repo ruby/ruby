@@ -48,6 +48,7 @@ static enum lex_state {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
     EXPR_MID,			/* newline significant, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
+    EXPR_PAREN,			/* almost like EXPR_END, `do' works as `{'. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
@@ -139,6 +140,7 @@ static void top_local_setup();
 	kRETRY
 	kIN
 	kDO
+	kDO2
 	kRETURN
 	kYIELD
 	kSUPER
@@ -1264,6 +1266,19 @@ brace_block	: '{'
 		        fixpos($$, $3?$3:$4);
 			dyna_pop($<vars>2);
 		    }
+		| kDO2
+		    {
+		        $<vars>$ = dyna_push();
+		    }
+		  opt_block_var
+		  compstmt
+		  kEND
+		    {
+			$$ = NEW_ITER($3, 0, $4);
+		        fixpos($$, $3?$3:$4);
+			dyna_pop($<vars>2);
+		    }
+
 
 generic_call	: tIDENTIFIER
 		    {
@@ -1290,12 +1305,12 @@ block_call	: generic_call do_block
 		        fixpos($$, $2);
 		    }
 
-method_call	: operation '(' opt_call_args ')'
+method_call	: operation '(' opt_call_args close_paren
 		    {
 			$$ = new_fcall($1, $3);
 		        fixpos($$, $3);
 		    }
-		| primary '.' operation2 '(' opt_call_args ')'
+		| primary '.' operation2 '(' opt_call_args close_paren
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $5);
@@ -1307,7 +1322,7 @@ method_call	: operation '(' opt_call_args ')'
 			$$ = new_call($1, $3, 0);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 operation2 '(' opt_call_args ')'
+		| primary tCOLON2 operation2 '(' opt_call_args close_paren
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $5);
@@ -1318,7 +1333,7 @@ method_call	: operation '(' opt_call_args ')'
 			value_expr($1);
 			$$ = new_call($1, $3, 0);
 		    }
-		| kSUPER '(' opt_call_args ')'
+		| kSUPER '(' opt_call_args close_paren
 		    {
 			if (!compile_for_eval && !cur_mid &&
 		            !in_single && !in_defined)
@@ -1333,6 +1348,10 @@ method_call	: operation '(' opt_call_args ')'
 			$$ = NEW_ZSUPER();
 		    }
 
+close_paren	: ')'
+		    {
+			lex_state = EXPR_PAREN;
+		    }
 
 stmt_rhs	: block_call
 		| command_call
@@ -1701,6 +1720,9 @@ yycompile(f)
     n = yyparse();
     compile_for_eval = 0;
     ruby_in_compile = 0;
+    class_nest = 0;
+    in_single = 0;
+    cur_mid = 0;
     if (n == 0) return ruby_eval_tree;
 
     return 0;
@@ -1909,7 +1931,7 @@ read_escape()
 	return c;
 
       case 'b':	/* backspace */
-	return '\b';
+	return '\010';
 
       case 's':	/* space */
 	return ' ';
@@ -2540,7 +2562,8 @@ yylex()
       case '<':
 	c = nextc();
 	if (c == '<' &&
-	    lex_state != EXPR_END && lex_state != EXPR_CLASS &&
+	    lex_state != EXPR_END && lex_state != EXPR_PAREN && 
+	    lex_state != EXPR_CLASS &&
 	    (lex_state != EXPR_ARG || space_seen)) {
  	    int c2 = nextc();
 	    int indent = 0;
@@ -2599,7 +2622,7 @@ yylex()
 	return parse_qstring(c,0);
 
       case '?':
-	if (lex_state == EXPR_END) {
+	if (lex_state == EXPR_END || lex_state == EXPR_PAREN) {
 	    lex_state = EXPR_BEG;
 	    return '?';
 	}
@@ -2891,7 +2914,7 @@ yylex()
 	    return tCOLON2;
 	}
 	pushback(c);
-	if (lex_state == EXPR_END || ISSPACE(c)) {
+	if (lex_state == EXPR_END || lex_state == EXPR_PAREN || ISSPACE(c)) {
 	    lex_state = EXPR_BEG;
 	    return ':';
 	}
@@ -2973,7 +2996,9 @@ yylex()
 	return c;
 
       case '{':
-	if (lex_state != EXPR_END && lex_state != EXPR_ARG)
+	if (lex_state != EXPR_END &&
+	    lex_state != EXPR_PAREN &&
+	    lex_state != EXPR_ARG)
 	    c = tLBRACE;
 	lex_state = EXPR_BEG;
 	return c;
@@ -3185,6 +3210,9 @@ yylex()
 		    lex_state = kw->state;
 		    if (state == EXPR_FNAME) {
 			yylval.id = rb_intern(kw->name);
+		    }
+		    if (state == EXPR_PAREN && kw->id[0] == kDO) {
+			return kDO2;
 		    }
 		    return kw->id[state != EXPR_BEG];
 		}

@@ -19,6 +19,10 @@
 #include <sys/stropts.h>
 #endif
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #define	DEVICELEN	16
 
 #if !defined(HAVE_OPENPTY)

@@ -18,20 +18,29 @@
 void
 Init_version()
 {
-    rb_define_global_const("VERSION", rb_str_new2(RUBY_VERSION));
-    rb_define_global_const("RELEASE_DATE", rb_str_new2(RUBY_RELEASE_DATE));
-    rb_define_global_const("PLATFORM", rb_str_new2(RUBY_PLATFORM));
+    VALUE v = rb_str_new2(RUBY_VERSION);
+    VALUE d = rb_str_new2(RUBY_RELEASE_DATE);
+    VALUE p = rb_str_new2(RUBY_PLATFORM);
+
+    rb_define_global_const("RUBY_VERSION", v);
+    rb_define_global_const("RUBY_RELEASE_DATE", d);
+    rb_define_global_const("RUBY_PLATFORM", p);
+
+    /* obsolete constants */
+    rb_define_global_const("VERSION", v);
+    rb_define_global_const("RELEASE_DATE", d);
+    rb_define_global_const("PLATFORM", p);
 }
 
 void
 ruby_show_version()
 {
-    fprintf(stderr, "ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
+    printf("ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
 }
 
 void
 ruby_show_copyright()
 {
-    fprintf(stderr, "ruby - Copyright (C) 1993-1999 Yukihiro Matsumoto\n");
+    printf("ruby - Copyright (C) 1993-1999 Yukihiro Matsumoto\n");
     exit(0);
 }

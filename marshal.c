@@ -457,7 +457,7 @@ static int
 r_byte(arg)
     struct load_arg *arg;
 {
-    if (arg->fp) return getc(arg->fp);
+    if (arg->fp) return rb_getc(arg->fp);
     if (arg->ptr < arg->end) return *(unsigned char*)arg->ptr++;
     return EOF;
 }

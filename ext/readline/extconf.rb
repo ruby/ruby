@@ -16,6 +16,7 @@ if readline_dir
   $LDFLAGS = "-L#{readline_dir}"
 end
 
+have_library("user32", nil) if /cygwin/ === PLATFORM
 have_library("termcap", "tgetnum")
 have_library("curses", "tgetnum")
 if have_header("readline/readline.h") and

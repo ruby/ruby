@@ -285,8 +285,8 @@ class TkText<TkTextWin
       end
 
     else
-      if ( key == 'font' || key == 'kanjifont' \
-	  || key == 'latinfont' || key == 'asciifont' )
+      if  key == 'font' || key == 'kanjifont' ||
+	  key == 'latinfont' || key == 'asciifont'
 	tagfont_configure({key=>val})
       else
 	tk_send 'tag', 'configure', tag, "-#{key}", val
@@ -320,7 +320,7 @@ class TkText<TkTextWin
   end
 
   def tag_ranges(tag)
-    l = tk_split_list(tk_send('tag', 'ranges', tag))
+    l = tk_split_simplelist(tk_send('tag', 'ranges', tag))
     r = []
     while key=l.shift
       r.push [key, l.shift]
@@ -329,11 +329,11 @@ class TkText<TkTextWin
   end
 
   def tag_nextrange(tag, first, last=None)
-    tk_split_list(tk_send('tag', 'nextrange', tag, first, last))
+    tk_split_simplelist(tk_send('tag', 'nextrange', tag, first, last))
   end
 
   def tag_prevrange(tag, first, last=None)
-    tk_split_list(tk_send('tag', 'prevrange', tag, first, last))
+    tk_split_simplelist(tk_send('tag', 'prevrange', tag, first, last))
   end
 
   def search_with_length(pat,start,stop=None)
@@ -437,9 +437,19 @@ class TkTextTag<TkObject
     @path = @id = $tk_text_tag
     $tk_text_tag = $tk_text_tag.succ
     #tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
-    configure(keys) if keys
+    if args != [] then
+      keys = args.pop
+      if keys.kind_of? Hash then
+	add(*args) if args != []
+	configure(keys)
+      else
+	args.push keys
+	add(*args)
+      end
+    end
     @t._addtag id, self
   end
+
   def id
     return @id
   end
@@ -470,11 +480,11 @@ class TkTextTag<TkObject
   end
 
   def nextrange(first, last=None)
-    tk_split_list(tk_call(@t.path, 'tag', 'nextrange', @id, first, last))
+    tk_split_simplelist(tk_call(@t.path, 'tag', 'nextrange', @id, first, last))
   end
 
   def prevrange(first, last=None)
-    tk_split_list(tk_call(@t.path, 'tag', 'prevrange', @id, first, last))
+    tk_split_simplelist(tk_call(@t.path, 'tag', 'prevrange', @id, first, last))
   end
 
   def [](key)
@@ -631,6 +641,18 @@ class TkTextMarkCurrent<TkTextMark
   end
 end
 
+class TkTextMarkAnchor<TkTextMark
+  def initialize(parent,index=nil)
+    if not parent.kind_of?(TkText)
+      fail format("%s need to be TkText", parent.inspect)
+    end
+    @t = parent
+    @path = @id = 'anchor'
+    tk_call @t.path, 'mark', 'set', @id, index if index
+    @t._addtag id, self
+  end
+end
+
 class TkTextWindow<TkObject
   def initialize(parent, index, keys)
     if not parent.kind_of?(TkText)
@@ -725,6 +747,133 @@ class TkTextWindow<TkObject
 	conf
       }
     end
+  end
+
+  def _dump(type, *index)
+    str = tk_send('dump', type, *index)
+    result = []
+    sel = nil
+    i = 0
+    while i < str.size
+      # retrieve key
+      idx = str.index(/ /, i)
+      result.push str[i..(idx-1)]
+      i = idx + 1
+      
+      # retrieve value
+      case result[-1]
+      when 'text'
+	if str[i] == ?{
+	  # text formed as {...}
+	  val, i = _retrieve_braced_text(str, i)
+	  result.push val
+	else
+	  # text which may contain backslahes
+	  val, i = _retrieve_backslashed_text(str, i)
+	  result.push val
+	end
+      else
+	idx = str.index(/ /, i)
+	val = str[i..(idx-1)]
+	case result[-1]
+	when 'mark'
+	  case val
+	  when 'insert'
+	    result.push TkTextMarkInsert.new(self)
+	  when 'current'
+	    result.push TkTextMarkCurrent.new(self)
+	  when 'anchor'
+	    result.push TkTextMarkAnchor.new(self)
+	  else
+	    result.push tk_tcl2rb(val)
+	  end
+	when 'tagon'
+	  if val == 'sel'
+	    if sel
+	      result.push sel
+	    else
+	      result.push TkTextTagSel.new(self)
+	    end
+	  else
+	    result.push tk_tcl2rb val
+	  end
+	when 'tagoff'
+	    result.push tk_tcl2rb sel
+	when 'window'
+	  result.push tk_tcl2rb val
+	end
+	i = idx + 1
+      end
+
+      # retrieve index
+      idx = str.index(/ /, i)
+      if idx
+	result.push str[i..(idx-1)]
+	i = idx + 1
+      else
+	result.push str[i..-1]
+	break
+      end
+    end
+    
+    kvis = []
+    until result.empty?
+      kvis.push [result.shift, result.shift, result.shift]
+    end
+    kvis  # result is [[key1, value1, index1], [key2, value2, index2], ...]
+  end
+  private :_dump
+
+  def _retrieve_braced_text(str, i)
+    cnt = 0
+    idx = i
+    while idx < str.size
+      case str[idx]
+      when ?{
+	cnt += 1
+      when ?}
+	cnt -= 1
+	if cnt == 0
+	  break
+	end
+      end
+      idx += 1
+    end
+    return str[i+1..idx-1], idx + 2
+  end
+  private :_retrieve_braced_text
+
+  def _retrieve_backslashed_text(str, i)
+    j = i
+    idx = nil
+    loop {
+      idx = str.index(/ /, j)
+      if str[idx-1] == ?\\
+	j += 1
+      else
+	break
+      end
+    }
+    val = str[i..(idx-1)]
+    val.gsub!(/\\( |\{|\})/, '\1')
+    return val, idx + 1
+  end
+  private :_retrieve_backslashed_text
+
+  def dump_all(*index)
+    _dump('-all', *index)
+  end
+  def dump_mark(*index)
+    _dump('-mark', *index)
+  end
+  def dump_tag(*index)
+    _dump('-tag', *index)
+  end
+  def dump_text(*index)
+    _dump('-text', *index)
+  end
+  def dump_window(*index)
+    _dump('-window', *index)
   end
 end
 

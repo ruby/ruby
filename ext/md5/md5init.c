@@ -29,8 +29,9 @@ md5_update(obj, str)
     Data_Get_Struct(obj, MD5_CTX, md5);
     MD5Update(md5, str->ptr, str->len);
 
-    return Qnil;
+    return obj;
 }
+
 static VALUE
 md5_digest(obj)
     VALUE obj;
@@ -43,6 +44,26 @@ md5_digest(obj)
     MD5Final(digest, &ctx);
 
     return rb_str_new(digest, 16);
+}
+
+static VALUE
+md5_hexdigest(obj)
+    VALUE obj;
+{
+    MD5_CTX *md5, ctx;
+    unsigned char digest[16];
+    char buf[35];
+    char *p = buf;
+    int i;
+
+    Data_Get_Struct(obj, MD5_CTX, md5);
+    ctx = *md5;
+    MD5Final(digest, &ctx);
+
+    for (i=0; i<16; i++) {
+	sprintf(buf+i*2, "%x", digest[i]);
+    }
+    return rb_str_new(buf, 32);
 }
 
 static VALUE
@@ -90,5 +111,6 @@ Init_md5()
 
     rb_define_method(cMD5, "update", md5_update, 1);
     rb_define_method(cMD5, "digest", md5_digest, 0);
+    rb_define_method(cMD5, "hexdigest", md5_hexdigest, 0);
     rb_define_method(cMD5, "clone",  md5_clone, 0);
 }

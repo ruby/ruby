@@ -76,6 +76,7 @@ variable.c
 version.c
 version.h
 beos/ruby.def.in
+cygwin/GNUmakefile.in
 ext/Setup
 ext/Setup.dj
 ext/Setup.emx
@@ -85,6 +86,7 @@ ext/aix_mksym.rb
 ext/cygwin32_ld.rb
 ext/extmk.rb.in
 ext/extmk.rb.nt
+lib/CGI.rb
 lib/English.rb
 lib/Env.rb
 lib/README
@@ -171,6 +173,8 @@ sample/cbreak.rb
 sample/clnt.rb
 sample/dbmtest.rb
 sample/dir.rb
+sample/dualstack-fetch.rb
+sample/dualstack-httpd.rb
 sample/eval.rb
 sample/export.rb
 sample/exyacc.rb
@@ -204,6 +208,7 @@ sample/rbc.rb
 sample/rcs.awk
 sample/rcs.dat
 sample/rcs.rb
+sample/rd2html.rb
 sample/regx.rb
 sample/sieve.rb
 sample/svr.rb

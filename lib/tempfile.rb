@@ -28,15 +28,13 @@ class Tempfile < SimpleDelegator
     }
   end
 
-  def initialize(basename, tmpdir = nil)
+  def initialize(basename, tmpdir=ENV['TMPDIR']||ENV['TMP']||ENV['TEMP']||'/tmp')
     umask = File.umask(0177)
-    tmpname = lock = nil
     begin
       n = 0
       while true
 	begin
-	  tmpdir ||= ENV['TMPDIR'] || ENV['TMP'] || ENV['TEMP'] || '/tmp'
-	  tmpname = sprintf('%s/%s.%d.%d', tmpdir, basename, $$, n)
+	  tmpname = sprintf('%s/%s%d.%d', tmpdir, basename, $$, n)
 	  lock = tmpname + '.lock'
 	  unless File.exist?(tmpname) or File.exist?(lock)
 	    Dir.mkdir(lock)

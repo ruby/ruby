@@ -152,6 +152,15 @@ The variable ruby-indent-level controls the amount of indentation.
   (setq mode-name "Ruby")
   (setq major-mode 'ruby-mode)
   (ruby-mode-variables)
+  ;; for font-lock
+  (make-local-variable 'font-lock-syntactic-keywords)
+  (setq font-lock-syntactic-keywords
+	'(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
+	  ("\\(#\\)[{$@]" 1 (1 . nil))))
+  (make-local-variable 'font-lock-defaults)
+  (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
+  (setq font-lock-keywords ruby-font-lock-keywords)
+
   (run-hooks 'ruby-mode-hook))
 
 (defun ruby-current-indentation ()
@@ -627,8 +636,7 @@ An end of a defun is found by moving forward from the beginning of one."
      ("\\$\\(.\\|\\sw+\\)" nil type)
      ("[$@].[a-zA-Z_0-9]*" nil struct)
      ("^__END__" nil label))))
-
- ((featurep 'font-lock)
+ )
   (or (boundp 'font-lock-variable-name-face)
       (setq font-lock-variable-name-face font-lock-type-face))
   (defvar ruby-font-lock-keywords
@@ -687,15 +695,5 @@ An end of a defun is found by moving forward from the beginning of one."
      '("^\\s *def\\s *\\<\\(\\(\\w\\|\\s_\\)+\\.\\)?\\(\\(\\w\\|\\s_\\)+\\)\\>"
        3 font-lock-function-name-face t))
     "*Additional expressions to highlight in ruby mode.")
-  (add-hook
-   'ruby-mode-hook
-   (lambda ()
-     (make-local-variable 'font-lock-syntactic-keywords)
-     (setq font-lock-syntactic-keywords
-	   '(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
-	     ("\\(#\\)[{$@]" 1 (1 . nil))))
-     (make-local-variable 'font-lock-defaults)
-     (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
-     (setq font-lock-keywords ruby-font-lock-keywords)))))
 
 (provide 'ruby-mode)

@@ -83,7 +83,6 @@ extern const unsigned char *re_mbctab;
 #if defined(__STDC__)
 void re_mbcinit (int);
 #else
-extern unsigned char *re_mbctab;
 void re_mbcinit ();
 #endif
 

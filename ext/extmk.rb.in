@@ -324,6 +324,19 @@ def create_makefile(target)
     $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
   end
 
+  defflag = ''
+  if PLATFORM =~ /cygwin/ and not $static
+    if File.exist? target + ".def"
+      defflag = "--def=" + target + ".def"
+    end
+    if $libs
+      $libs = $libs + " @LIBRUBYARG@"
+    else
+      $libs = "@LIBRUBYARG@"
+    end
+    $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
+  end
+
   $srcdir = $top_srcdir + "/ext/" + $mdir
   mfile = open("Makefile", "w")
   mfile.printf "\
@@ -342,7 +355,7 @@ CC = @CC@
 prefix = @prefix@
 CFLAGS   = %s -I#{$topdir} -I#{$top_srcdir} -I@includedir@ #{CFLAGS} #$CFLAGS %s
 DLDFLAGS = #$DLDFLAGS #$LDFLAGS
-LDSHARED = @LDSHARED@
+LDSHARED = @LDSHARED@ #{defflag}
 ", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
 
   mfile.printf "\
@@ -367,7 +380,7 @@ archdir = $(pkglibdir)/@arch@
     $objs = []
     for f in Dir["#{$top_srcdir}/ext/#{$mdir}/*.{#{SRC_EXT.join(%q{,})}}"]
       f = File.basename(f)
-      f.sub!(/\.(c|cc)$/, ".o")
+      f.sub!(/(#{SRC_EXT.join(%q{|})})$/, "o")
       $objs.push f
     end
   end
@@ -418,23 +431,21 @@ $(DLLIB): $(OBJS)
 $(DLLIB): $(OBJS)
 	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
 "
-  elsif not SRC_EXT.detect{|ext| File.exist?(target + ext)}
-    if PLATFORM == "m68k-human"
-      mfile.printf "\
+  elsif PLATFORM == "m68k-human"
+    mfile.printf "\
 $(DLLIB): $(OBJS)
 	ar cru $(DLLIB) $(OBJS)
 "
-    elsif PLATFORM =~ "-nextstep" || PLATFORM =~ "-openstep" || PLATFORM =~ "-rhapsody"
-      mfile.printf "\
+  elsif PLATFORM =~ "-nextstep" || PLATFORM =~ "-openstep" || PLATFORM =~ "-rhapsody"
+    mfile.printf "\
 $(DLLIB): $(OBJS)
 	cc -r $(CFLAGS) -o $(DLLIB) $(OBJS)
 "
-    else
-      mfile.printf "\
+  else
+    mfile.printf "\
 $(DLLIB): $(OBJS)
 	ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)
 "
-    end
   end
 
   if File.exist?("depend")

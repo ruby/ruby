@@ -64,7 +64,7 @@ end
 
 print v_fast, v_others
 print <<EOS
-  CONFIG["compile_dir"] = "#{File.expand_path(File.dirname($0))}"
+  CONFIG["compile_dir"] = "#{Dir.pwd}"
   CONFIG.each_value do |val|
     val.gsub!(/\\$\\(([^()]+)\\)/) do |var|
       key = $1

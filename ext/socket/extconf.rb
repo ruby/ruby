@@ -6,8 +6,11 @@ case PLATFORM
 when /mswin32/
   test_func = "WSACleanup"
   have_library("wsock32", "WSACleanup")
-when /cygwin32/
+when /cygwin/
+  $LDFLAGS << " -L/usr/lib" if File.directory?("/usr/lib")
+  $CFLAGS << " -I/usr/include"
   test_func = "socket"
+  have_library("bind", "gethostbyaddr")
 when /beos/
   test_func = "socket"
   have_library("net", "socket")
@@ -252,8 +255,8 @@ if have_getaddrinfo
   $CFLAGS="-DHAVE_GETADDRINFO "+$CFLAGS
 else
   $CFLAGS="-I. "+$CFLAGS
-  $objs += "getaddrinfo.o"
-  $objs += "getnameinfo.o"
+  $objs += ["getaddrinfo.o"]
+  $objs += ["getnameinfo.o"]
   have_func("inet_ntop") or have_func("inet_ntoa")
   have_func("inet_pton") or have_func("inet_aton")
 end

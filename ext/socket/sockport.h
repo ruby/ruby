@@ -1,6 +1,6 @@
 /************************************************
 
-  sockcomm.h -
+  sockport.h -
 
   $Author$
   $Date$
@@ -8,8 +8,8 @@
 
 ************************************************/
 
-#ifndef SOCKCOMM_H
-#define SOCKCOMM_H
+#ifndef SOCKPORT_H
+#define SOCKPORT_H
 
 #ifndef SA_LEN
 # ifdef HAVE_SA_LEN

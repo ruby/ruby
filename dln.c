@@ -1158,35 +1158,6 @@ dln_strerror()
 
 
 #if defined(_AIX)
-static void *
-aix_findmain()
-{
-    struct ld_info *lp;
-    char *buf;
-    int size = 4 * 1024;
-    int rc;
-    void *ret;
-
-    if ((buf = xmalloc(size)) == NULL) {
-	return NULL;
-    }
-    while ((rc = loadquery(L_GETINFO, buf, size)) == -1 && errno == ENOMEM) {
-	free(buf);
-	size += 4 * 1024;
-	if ((buf = xmalloc(size)) == NULL) {
-	    return NULL;
-	}
-    }
-    if (rc == -1) {
-	free(buf);
-	return NULL;
-    }
-    lp = (struct ld_info *)buf;
-    ret = lp->ldinfo_dataorg;
-    free(buf);
-    return ret;
-}
-
 static void
 aix_loaderror(const char *pathname)
 {
@@ -1342,19 +1313,13 @@ dln_load(file)
 #if defined(_AIX)
 #define DLN_DEFINED
     {
-	static void *main_module = NULL;
 	void (*init_fct)();
 
-	if (main_module == NULL) {
-	    if ((main_module = aix_findmain()) == NULL) {
-		aix_loaderror(file);
-	    }
-	}
 	init_fct = (void(*)())load((char*)file, 1, 0);
 	if (init_fct == NULL) {
 	    aix_loaderror(file);
 	}
-	if (loadbind(0, main_module, (void*)init_fct) == -1) {
+	if (loadbind(0, (void*)dln_load, (void*)init_fct) == -1) {
 	    aix_loaderror(file);
 	}
 	(*init_fct)();
@@ -1372,7 +1337,7 @@ dln_load(file)
     Mi hisho@tasihara.nest.or.jp,
     and... Miss ARAI Akino(^^;)
  ----------------------------------------------------*/
-#if defined(NeXT) && ( NS_TARGET_MAJOR < 4 )/* NeXTSTEP rld functions */
+#if defined(NeXT) && (NS_TARGET_MAJOR < 4)/* NeXTSTEP rld functions */
 
     {
 	unsigned long init_address;
@@ -1409,7 +1374,7 @@ dln_load(file)
 	void (*init_fct)();
 
 
-	dyld_result = NSCreateObjectFileImageFromFile( file, &obj_file );
+	dyld_result = NSCreateObjectFileImageFromFile(file, &obj_file);
 
 	if (dyld_result != NSObjectFileImageSuccess) {
 	    rb_loaderror("Failed to load %.200s", file);
@@ -1419,12 +1384,12 @@ dln_load(file)
 
 	/* lookup the initial function */
 	/*NSIsSymbolNameDefined require function name without "_" */
-	if( NSIsSymbolNameDefined( buf + 1 ) ) {
+	if(NSIsSymbolNameDefined(buf + 1)) {
 	    rb_loaderror("Failed to lookup Init function %.200s",file);
 	}
 
 	/* NSLookupAndBindSymbol require function name with "_" !! */
-	init_fct = NSAddressOfSymbol( NSLookupAndBindSymbol( buf ) );
+	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
 	(*init_fct)();
 
 	return ;
@@ -1499,8 +1464,8 @@ dln_load(file)
       c2pstr(fullpath);
       (void)FSMakeFSSpec(0, 0, fullpath, &libspec);
       err = ResolveAliasFile(&libspec, 1, &isfolder, &didsomething);
-      if ( err ) {
-	rb_loaderror("Unresolved Alias - %s", file);
+      if (err) {
+	  rb_loaderror("Unresolved Alias - %s", file);
       }
 
       /* Load the fragment (or return the connID if it is already loaded */
@@ -1508,16 +1473,16 @@ dln_load(file)
       err = GetDiskFragment(&libspec, 0, 0, fragname, 
 			    kLoadCFrag, &connID, &mainAddr,
 			    errMessage);
-      if ( err ) {
-	p2cstr(errMessage);
-	rb_loaderror("%s - %s",errMessage , file);
+      if (err) {
+	  p2cstr(errMessage);
+	  rb_loaderror("%s - %s",errMessage , file);
       }
 
       /* Locate the address of the correct init function */
       c2pstr(buf);
       err = FindSymbol(connID, buf, &symAddr, &class);
-      if ( err ) {
-	rb_loaderror("Unresolved symbols - %s" , file);
+      if (err) {
+	  rb_loaderror("Unresolved symbols - %s" , file);
       }
 	
       init_fct = (void (*)())symAddr;

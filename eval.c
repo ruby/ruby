@@ -648,23 +648,23 @@ static VALUE ruby_wrapper;	/* security wrapper */
     scope_vmode = SCOPE_PUBLIC;
 
 #define SCOPE_DONT_RECYCLE FL_USER2
-#define POP_SCOPE() \
+#define POP_SCOPE() 			\
     if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE)) {\
 	FL_SET(_old, SCOPE_DONT_RECYCLE);\
-    }\
-    else {\
+    }					\
+    else {				\
 	if (ruby_scope->flag == SCOPE_ALLOCA) {\
-	    ruby_scope->local_vars = 0;\
-	    ruby_scope->local_tbl  = 0;\
+	    ruby_scope->local_vars = 0;	\
+	    ruby_scope->local_tbl  = 0;	\
 	    if (ruby_scope != top_scope)\
 		rb_gc_force_recycle((VALUE)ruby_scope);\
-	}\
-	else {\
+	}				\
+	else {				\
 	    ruby_scope->flag |= SCOPE_NOSTACK;\
-	}\
-    }\
-    ruby_scope = _old;\
-    scope_vmode = _vmode;\
+	}				\
+    }					\
+    ruby_scope = _old;			\
+    scope_vmode = _vmode;		\
 }
 
 static VALUE rb_eval _((VALUE,NODE*));
@@ -2871,6 +2871,7 @@ module_setup(module, node)
     PUSH_CLASS();
     ruby_class = module;
     PUSH_SCOPE();
+    PUSH_VARS();
 
     if (node->nd_rval) ruby_frame->cbase = node->nd_rval;
     if (node->nd_tbl) {
@@ -2894,6 +2895,7 @@ module_setup(module, node)
 	result = rb_eval(ruby_class, node->nd_next);
     }
     POP_TAG();
+    POP_VARS();
     POP_SCOPE();
     POP_CLASS();
 
@@ -4650,7 +4652,7 @@ rb_provided(feature)
 }
 
 static int rb_thread_loading _((const char*));
-static void rb_thread_loading_done _((void));
+static void rb_thread_loading_done _((const char*));
 
 void
 rb_provide(feature)
@@ -4677,6 +4679,7 @@ rb_f_require(obj, fname)
 {
     char *ext, *file, *feature, *buf; /* OK */
     volatile VALUE load;
+    int state;
 
     rb_secure(4);
     Check_SafeStr(fname);
@@ -4729,34 +4732,32 @@ rb_f_require(obj, fname)
 
   load_dyna:
     if (rb_thread_loading(feature)) return Qfalse;
-    else {
-	int state;
-	PUSH_TAG(PROT_NONE);
-	if ((state = EXEC_TAG()) == 0) {
-	    load = rb_str_new2(file);
-	    file = RSTRING(load)->ptr;
-	    dln_load(file);
-	    rb_provide(feature);
-	}
-	POP_TAG();
-	rb_thread_loading_done();
-	if (state) JUMP_TAG(state);
+
+    rb_provide(feature);
+    PUSH_TAG(PROT_NONE);
+    if ((state = EXEC_TAG()) == 0) {
+	load = rb_str_new2(file);
+	file = RSTRING(load)->ptr;
+	dln_load(file);
     }
+    POP_TAG();
+    rb_thread_loading_done(feature);
+    if (state) JUMP_TAG(state);
+
     return Qtrue;
 
   load_rb:
     if (rb_thread_loading(feature)) return Qfalse;
-    else {
-	int state;
-	PUSH_TAG(PROT_NONE);
-	if ((state = EXEC_TAG()) == 0) {
-	    rb_load(fname, 0);
-	    rb_provide(feature);
-	}
-	POP_TAG();
-	rb_thread_loading_done();
-	if (state) JUMP_TAG(state);
+    rb_provide(feature);
+
+    PUSH_TAG(PROT_NONE);
+    if ((state = EXEC_TAG()) == 0) {
+	rb_load(fname, 0);
     }
+    POP_TAG();
+    rb_thread_loading_done(feature);
+    if (state) JUMP_TAG(state);
+
     return Qtrue;
 }
 
@@ -5306,7 +5307,8 @@ bind_clone(self)
     VALUE bind;
 
     Data_Get_Struct(self, struct BLOCK, orig);
-    bind = Data_Make_Struct(self,struct BLOCK,blk_mark,blk_free,data);
+    bind = Data_Make_Struct(rb_cBinding,struct BLOCK,blk_mark,blk_free,data);
+    CLONESETUP(bind,self);
     MEMCPY(data, orig, struct BLOCK, 1);
     data->frame.argv = ALLOC_N(VALUE, orig->frame.argc);
     MEMCPY(data->frame.argv, orig->frame.argv, VALUE, orig->frame.argc);
@@ -6616,7 +6618,7 @@ rb_thread_main()
     return main_thread->thread;
 }
 
-static VALUE
+VALUE
 rb_thread_wakeup(thread)
     VALUE thread;
 {
@@ -6629,7 +6631,7 @@ rb_thread_wakeup(thread)
     return thread;
 }
 
-static VALUE
+VALUE
 rb_thread_run(thread)
     VALUE thread;
 {
@@ -6675,7 +6677,7 @@ rb_thread_pass()
     return Qnil;
 }
 
-static VALUE
+VALUE
 rb_thread_stop()
 {
     rb_thread_critical = 0;
@@ -7125,32 +7127,29 @@ rb_thread_raise(argc, argv, thread)
     return Qnil;		/* not reached */
 }
 
-static thread_t loading_thread;
-static int loading_nest;
+static st_table *loading_tbl;
 
 static int
 rb_thread_loading(feature)
     const char *feature;
 {
-    if (curr_thread != curr_thread->next && loading_thread) {
-	while (loading_thread != curr_thread) {
-	    rb_thread_schedule();
-	    CHECK_INTS;
-	}
-	if (rb_provided(feature)) return Qtrue; /* no need to load */
+    if (!rb_provided(feature)) return Qfalse; /* need to load */
+    if (!loading_tbl) {
+	loading_tbl = st_init_strtable();
     }
-
-    loading_thread = curr_thread;
-    loading_nest++;
-
-    return Qfalse;
+    while (st_lookup(loading_tbl, feature, 0)) {
+	CHECK_INTS;
+	rb_thread_schedule();
+    }
+    return Qtrue;
 }
 
 static void
-rb_thread_loading_done()
+rb_thread_loading_done(feature)
+    const char *feature;
 {
-    if (--loading_nest == 0) {
-	loading_thread = 0;
+    if (loading_tbl) {
+	st_delete(loading_tbl, feature, 0);
     }
 }
 

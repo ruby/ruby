@@ -5,6 +5,8 @@ cbreak.rb	no echo done by ioctl
 clnt.rb		socket client
 dbmtest.rb	test for dbm
 dir.rb		directory access
+dualstack-fetch.rb	IPv6 demo
+dualstack-httpd.rb	IPv6 demo
 dstore.rb	object database on dbm
 eval.rb		simple evaluator
 export.rb	method access example
@@ -40,6 +42,7 @@ rbc.rb		interactive ruby, to be removed by irb
 rcs.awk		random character stereogram (AWK)
 rcs.rb		random character stereogram (Ruby)
 rcs.dat		data for random character stereogram
+rd2html.rb	rd (Ruby Document) to HTML translator
 regx.rb		regular expression tester
 ruby-mode.el	ruby mode for emacs
 rubydb2x.el	ruby debugger support for emacs 19.2x or before
@@ -48,13 +51,6 @@ sieve.rb	sieve of Eratosthenes
 svr.rb		socket server
 test.rb		test suite used by `make test'
 time.rb		/usr/bin/time clone
-tkbiff.rb	mail notifier using Tk
-tkbrowse.rb	directory browser using Tk
-tkdialog.rb	dialog example
-tkfrom.rb	scan mail spool using Tk
-tkhello.rb	simple Tk example
-tkline.rb	simple Tk example
-tktimer.rb	stopwatch
 trojan.rb	simple tool to find file that may be trojan horse.
 tsvr.rb		socket server using thread
 uumerge.rb	merge files and uudecode them

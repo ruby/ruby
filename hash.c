@@ -1048,6 +1048,13 @@ ruby_setenv(name, value)
     SetEnvironmentVariable(name,value);
 #endif
 
+#elif defined __CYGWIN__
+#undef setenv
+#undef unsetenv
+    if (value)
+	setenv(name,value,1);
+    else
+	unsetenv(name);
 #else  /* WIN32 */
 
     int i=envix(name);		        /* where does it go? */

@@ -27,6 +27,8 @@
  * SUCH DAMAGE.
  */
 
+#ifndef ADDR_INFO_H
+#define ADDR_INFO_H
 #ifndef HAVE_GETADDRINFO
 
 /* special compatibility hack */
@@ -166,4 +168,5 @@ Standard C system should have one. */
 #define offsetof(p_type,field) ((size_t)&(((p_type *)0)->field))
 #endif
 
+#endif
 #endif

@@ -61,6 +61,12 @@
 #define YES 1
 #define NO  0
 
+struct sockinet {
+	u_char	si_len;
+	u_char	si_family;
+	u_short	si_port;
+};
+
 static struct afd {
 	int a_af;
 	int a_addrlen;
@@ -68,18 +74,18 @@ static struct afd {
 	int a_off;
 } afdl [] = {
 #ifdef INET6
-	{PF_INET6, sizeof(struct in6_addr), sizeof(struct sockaddr_in6),
-		offsetof(struct sockaddr_in6, sin6_addr)},
+#define N_INET6 0
+	{PF_INET6, sizeof(struct in6_addr),
+	 sizeof(struct sockaddr_in6),
+	 offsetof(struct sockaddr_in6, sin6_addr)},
+#define N_INET  1
+#else
+#define N_INET  0
 #endif
-	{PF_INET, sizeof(struct in_addr), sizeof(struct sockaddr_in),
-		offsetof(struct sockaddr_in, sin_addr)},
-	{0, 0, 0},
-};
-
-struct sockinet {
-	u_char	si_len;
-	u_char	si_family;
-	u_short	si_port;
+	{PF_INET, sizeof(struct in_addr),
+	 sizeof(struct sockaddr_in),
+	 offsetof(struct sockaddr_in, sin_addr)},
+	{0, 0, 0, 0},
 };
 
 #define ENI_NOSOCKET 	0

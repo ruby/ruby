@@ -442,7 +442,6 @@ re_set_syntax(syntax)
   do {									\
     if (current_mbctype == MBCTYPE_UTF8) {				\
       int n = mbclen(c) - 1;						\
-      int c1;								\
       c &= (1<<(BYTEWIDTH-2-n)) - 1;					\
       while (n--) {							\
 	c = c << 6 | *p++ & ((1<<6)-1);					\
@@ -1073,6 +1072,9 @@ read_backslash(c)
 
   case 'a':
     return '\007';
+
+  case 'b':
+    return '\010';
 
   case 'e':
     return '\033';
@@ -3597,8 +3599,7 @@ re_match(bufp, string_arg, size, pos, regs)
 
 	  not = is_in_list(c, p);
 	  if (!not && cc != c) {
-	      part = 1;
-	      not = is_in_list(cc, p);
+	      part = not = is_in_list(cc, p);
 	  }
 	  if (*(p - 1) == (unsigned char)charset_not) {
 	    not = !not;

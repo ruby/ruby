@@ -583,6 +583,21 @@ thread_write_select(fd)
 }
 
 static int
+ruby_socket(domain, type, proto)
+    int domain, type, proto;
+{
+    int fd;
+
+    fd = socket(domain, type, proto);
+    if (fd < 0) {
+	if (errno == EMFILE || errno == ENFILE) {
+	    rb_gc();
+	    fd = socket(domain, type, proto);
+	}
+    }
+}
+
+static int
 ruby_connect(fd, sockaddr, len, socks)
     int fd;
     struct sockaddr *sockaddr;
@@ -683,11 +698,12 @@ open_inet(class, h, serv, type)
 
     fd = -1;
     for (res = res0; res; res = res->ai_next) {
-	status = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	status = ruby_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
 	syscall = "socket(2)";
 	fd = status;
-	if (fd < 0)
+	if (fd < 0) {
 	    continue;
+	}
 	if (type == INET_SERVER) {
 	    status = 1;
 	    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
@@ -939,8 +955,10 @@ open_unix(class, path, server)
     OpenFile *fptr;
 
     Check_SafeStr(path);
-    fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (fd < 0) rb_sys_fail("socket(2)");
+    fd = ruby_socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) {
+	rb_sys_fail("socket(2)");
+    }
 
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
@@ -1017,11 +1035,17 @@ udp_s_open(argc, argv, class)
 {
     VALUE arg;
     int socktype = AF_INET;
+    int fd;
 
     if (rb_scan_args(argc, argv, "01", &arg) == 1) {
 	socktype = NUM2INT(arg);
     }
-    return sock_new(class, socket(socktype, SOCK_DGRAM, 0));
+    fd = ruby_socket(socktype, SOCK_DGRAM, 0);
+    if (fd < 0) {
+	rb_sys_fail("socket(2) - udp");
+    }
+
+    return sock_new(class, fd);
 }
 
 static VALUE
@@ -1312,7 +1336,7 @@ sock_s_open(class, domain, type, protocol)
     int d, t;
 
     setup_domain_and_type(domain, &d, type, &t);
-    fd = socket(d, t, NUM2INT(protocol));
+    fd = ruby_socket(d, t, NUM2INT(protocol));
     if (fd < 0) rb_sys_fail("socket(2)");
 
     return sock_new(class, fd);
@@ -1333,8 +1357,14 @@ sock_s_socketpair(class, domain, type, protocol)
     int d, t, sp[2];
 
     setup_domain_and_type(domain, &d, type, &t);
-    if (socketpair(d, t, NUM2INT(protocol), sp) < 0)
+  again:
+    if (socketpair(d, t, NUM2INT(protocol), sp) < 0) {
+	if (errno == EMFILE || errno == ENFILE) {
+	    rb_gc();
+	    goto again;
+	}
 	rb_sys_fail("socketpair(2)");
+    }
 
     return rb_assoc_new(sock_new(class, sp[0]), sock_new(class, sp[1]));
 #else
@@ -1920,6 +1950,8 @@ Init_socket()
 #endif
 #ifdef AF_INET6
     sock_define_const("AF_INET6", AF_INET6);
+#endif
+#ifdef PF_INET6
     sock_define_const("PF_INET6", PF_INET6);
 #endif
 

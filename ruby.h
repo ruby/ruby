@@ -19,12 +19,6 @@ extern "C" {
 #include "config.h"
 #include "defines.h"
 
-#if 0
-#ifndef RUBY_RENAME
-#include "rename2.h"
-#endif
-#endif
-
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
@@ -78,7 +72,7 @@ extern "C" {
 #endif
 
 #if defined(__CYGWIN32__)
-#if defined(DLLIMPORT)
+#if defined(USEIMPORTLIB)
 #include "import.h"
 #else
 #if !defined(__CYGWIN__)
@@ -181,7 +175,7 @@ void rb_secure _((int));
 
 long rb_num2long _((VALUE));
 unsigned long rb_num2ulong _((VALUE));
-#define NUM2LONG(x) (FIXNUM_P(x)?FIX2INT(x):rb_num2long((VALUE)x))
+#define NUM2LONG(x) (FIXNUM_P(x)?FIX2LONG(x):rb_num2long((VALUE)x))
 #define NUM2ULONG(x) rb_num2ulong((VALUE)x)
 #if SIZEOF_INT < SIZEOF_LONG
 int rb_num2int _((VALUE));
@@ -205,8 +199,8 @@ char *rb_str2cstr _((VALUE,int*));
 #define STR2CSTR(x) rb_str2cstr((VALUE)(x),0)
 
 #define NUM2CHR(x) (((TYPE(x) == T_STRING)&&(RSTRING(x)->len>=1))?\
-                     RSTRING(x)->ptr[0]:(char)NUM2INT(x))
-#define CHR2FIX(x) INT2FIX((int)x)
+                     RSTRING(x)->ptr[0]:(char)(NUM2INT(x)&0xff))
+#define CHR2FIX(x) INT2FIX((long)((x)&0xff))
 
 VALUE rb_newobj _((void));
 #define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()

@@ -148,6 +148,7 @@ openstep*)	;;
 rhapsody*)	;;
 human*)		;;
 beos*)		;;
+cygwin*)	;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)
@@ -379,7 +380,13 @@ if test "$with_dln_a_out" != yes; then
     openstep*)	;;
     rhapsody*)	;;
     human*)	;;
-    cygwin*)	CCDLFLAGS=-DDLLIMPORT;;
+    bsdi3*)	;;
+    cygwin*)	;;
+    netbsd*) CCDLFLAGS=-fpic
+     case "$host_cpu" in
+     mips*) CCDLFLAGS=-fPIC ;;
+     *) ;;
+     esac ;;
     *) CCDLFLAGS=-fPIC;;
     esac
   else
@@ -426,17 +433,15 @@ if test "$with_dln_a_out" != yes; then
 			  test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null || LDSHARED="ld -Bshareable"
 			fi
 			rb_cv_dlopen=yes ;;
-	netbsd*) 	LDSHARED="ld -Bshareable"
-			case "$host_cpu" in
-			alpha|mips)
-				LDFLAGS="-export-dynamic" ;;
-			*)
-				;;
-			esac
+	netbsd*)  	LDSHARED="ld -shared"
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
 			rb_cv_dlopen=yes ;;
-	nextstep*)	LDSHARED='cc -r'
+	bsdi3*) 	case "$CC" in
+			*shlicc*)	LDSHARED="$CC -r"
+					rb_cv_dlopen=yes ;;
+			esac ;;
+	nextstep*)	LDSHARED='cc -r -nostdlib'
 			LDFLAGS="-u libsys_s"
 			DLDFLAGS="$ARCH_FLAG" 
 			rb_cv_dlopen=yes ;;
@@ -470,7 +475,7 @@ if test "$with_dln_a_out" != yes; then
 			    DLDFLAGS="ruby.def -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
 			esac
 			rb_cv_dlopen=yes ;;
-	cygwin*)	LDSHARED='../../miniruby ../cygwin32_ld.rb'
+	cygwin*)	LDSHARED='dllwrap --export-all -s'
 			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac
@@ -502,15 +507,15 @@ if test "$dln_a_out_works" = yes; then
   else
     STATIC=-Bstatic
   fi
-  DLEXT=o
-  AC_DEFINE(DLEXT, ".o")
+  DLEXT=so
+  AC_DEFINE(DLEXT, ".so")
   CCDLFLAGS=
 else
   case "$host_os" in
     hpux*)	DLEXT=sl
 	 	AC_DEFINE(DLEXT, ".sl");;
-    nextstep*)	DLEXT=o
-	 	AC_DEFINE(DLEXT, ".o");;
+    nextstep*)	DLEXT=bundle
+	 	AC_DEFINE(DLEXT, ".bundle");;
     openstep*)	DLEXT=bundle
 	 	AC_DEFINE(DLEXT, ".bundle");;
     rhapsody*)	DLEXT=bundle
@@ -518,7 +523,7 @@ else
     cygwin*)	DLEXT=dll
 	 	AC_DEFINE(DLEXT, ".dll");;
     os2_emx)	DLEXT=o
-	 	AC_DEFINE(DLEXT, ".o");;
+	 	AC_DEFINE(DLEXT, ".so");;
     *)		DLEXT=so
     		AC_DEFINE(DLEXT, ".so");;
   esac
@@ -652,6 +657,7 @@ if test "$host_os" = "beos"; then
   esac
 fi
 
+FIRSTMAKEFILE=""
 LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
 LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
@@ -674,6 +680,14 @@ if test "$enable_shared" = 'yes'; then
 	    LIBRUBY_ALIASES=''
 	fi
 	;;
+    netbsd*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
+ 	case "$host_cpu" in
+	alpha|mipsel|mipseb|powerpc|sparc64)  # ELF platforms
+	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so' ;;
+ 	*) LIBRUBY_ALIASES= ;;  # a.out platforms
+	esac
+ 	;;
     hpux*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).sl'
@@ -689,6 +703,15 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBYARG='-L./ -Wl,lib$(RUBY_INSTALL_NAME).so'
 	SOLIBS='-lm -lc'
 	;;
+    cygwin*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).a'
+	LIBRUBY_ALIASES=''
+	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
+	LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
+	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
+	LIBOBJS="$LIBOBJS strftime.o"
+	CCDLFLAGS=-DUSEIMPORTLIB
+	    ;;
     *)
 	;;
   esac
@@ -755,4 +778,4 @@ AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH}/${arch}")
 echo "creating config.h"
 cat confdefs.h > config.h
 
-AC_OUTPUT(Makefile ext/extmk.rb)
+AC_OUTPUT($FIRSTMAKEFILE Makefile ext/extmk.rb)
