@@ -367,6 +367,14 @@ dir_seek(dir, pos)
 }
 
 static VALUE
+dir_set_pos(dir, pos)
+    VALUE dir, pos;
+{
+    dir_seek(dir, pos);
+    return dir;
+}
+
+static VALUE
 dir_rewind(dir)
     VALUE dir;
 {
@@ -840,6 +848,7 @@ dir_s_glob(dir, str)
     }
     if (buf != buffer)
 	free(buf);
+    if (!ary) return Qnil;
     return ary;
 }
 
@@ -883,7 +892,7 @@ Init_Dir()
     rb_define_method(rb_cDir,"tell", dir_tell, 0);
     rb_define_method(rb_cDir,"seek", dir_seek, 1);
     rb_define_method(rb_cDir,"pos", dir_tell, 0);
-    rb_define_method(rb_cDir,"pos=", dir_seek, 1);
+    rb_define_method(rb_cDir,"pos=", dir_set_pos, 1);
     rb_define_method(rb_cDir,"close", dir_close, 0);
 
     rb_define_singleton_method(rb_cDir,"chdir", dir_s_chdir, -1);

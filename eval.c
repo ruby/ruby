@@ -1166,6 +1166,8 @@ ruby_stop(ex)
     POP_ITER();
     POP_TAG();
 
+    trace_func = 0;
+    tracing = 0;
     ex = error_handle(ex);
     ruby_finalize();
     exit(ex);
@@ -6269,22 +6271,30 @@ proc_save_safe_level(data)
     }
 }
 
-static void
-proc_set_safe_level(data)
+static int
+proc_get_safe_level(data)
     VALUE data;
 {
     if (OBJ_TAINTED(data)) {
 	switch (RBASIC(data)->flags & PROC_TMASK) {
 	  case PROC_T3:
-	    ruby_safe_level = 3;
-	    break;
+	    return 3;
 	  case PROC_T4:
-	    ruby_safe_level = 4;
-	    break;
+	    return 4;
 	  case PROC_TMAX:
-	    ruby_safe_level = 5;
-	    break;
+	    return 5;
 	}
+	return 3;
+    }
+    return 0;
+}
+
+static void
+proc_set_safe_level(data)
+    VALUE data;
+{
+    if (OBJ_TAINTED(data)) {
+	ruby_safe_level = proc_get_safe_level(data);
     }
 }
 
@@ -6528,7 +6538,9 @@ block_pass(self, node)
     }
 
     if (rb_safe_level() >= 1 && OBJ_TAINTED(block)) {
-	rb_raise(rb_eSecurityError, "Insecure: tainted block value");
+	if (rb_safe_level() > proc_get_safe_level(block)) {
+	    rb_raise(rb_eSecurityError, "Insecure: tainted block value");
+	}
     }
 
     Data_Get_Struct(block, struct BLOCK, data);

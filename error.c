@@ -482,7 +482,7 @@ set_syserr(i, name)
    int ix, offset;
 #endif
     VALUE error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
-    rb_define_const(error, "Errno", INT2FIX(i));
+    rb_define_const(error, "Errno", INT2NUM(i));
 #ifdef __BEOS__
    if (i == B_ERROR) {
       syserr_error = error;
@@ -690,7 +690,7 @@ rb_sys_fail(mesg)
     }
 #endif
     ee = rb_exc_new2(ee, buf);
-    rb_iv_set(ee, "errno", INT2FIX(n));
+    rb_iv_set(ee, "errno", INT2NUM(n));
     rb_exc_raise(ee);
 }
 

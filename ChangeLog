@@ -1,3 +1,46 @@
+Mon Jan 21 08:25:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_stop): should not trace error handler.
+
+	* signal.c (install_sighandler): do not install sighandler unless
+	  the old value is SIG_DFL.
+
+	* io.c (io_write): should not raise exception on O_NONBLOCK io.
+
+	* dir.c (dir_set_pos): seek should return dir, pos= should not.
+
+Fri Jan 18 10:26:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_sys_fail): replace INT2FIX() by INT2NUM() since
+	  errno value may not fit in Fixnum size on Hurd.
+
+	* error.c (set_syserr): ditto.
+
+Fri Jan 18 02:27:48 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_s_glob): returns nil if block given.
+
+	* io.c (rb_io_each_byte): should return self.
+
+	* io.c (rb_io_close_m): close check added.
+
+	* dir.c (dir_seek): should return pos.
+
+Fri Jan 18 01:21:53 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+
+	* parse.y (fixpos): orig may be (NODE*)1, which should not be
+	  dereferenced.
+
+Thu Jan 17 16:21:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): should allow block argument relay even in
+	  the tainted mode.
+
+Wed Jan 16 18:25:08 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c: primes should be primes.
+
 Wed Jan 16 11:12:30 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* object.c (rb_Float): remove underscores between digits.

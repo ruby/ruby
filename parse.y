@@ -3938,6 +3938,7 @@ fixpos(node, orig)
 {
     if (!node) return;
     if (!orig) return;
+    if (orig == (NODE*)1) return;
     node->nd_file = orig->nd_file;
     nd_set_line(node, nd_line(orig));
 }
