@@ -45,11 +45,11 @@ class TestHash < Test::Unit::TestCase
 
     $x = Hash.new([])
     assert_equal([], $x[22])
-    assert($x[22].equal?($x[22]))
+    assert_same($x[22], $x[22])
 
     $x = Hash.new{[]}
     assert_equal([], $x[22])
-    assert(!$x[22].equal?($x[22]))
+    assert_not_same($x[22], $x[22])
 
     $x = Hash.new{|h,k| $z = k; h[k] = k*2}
     $z = 0

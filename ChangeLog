@@ -1,3 +1,7 @@
+Fri Sep  6 02:26:34 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_*.rb: assert_same, assert_match, and so on.
+
 Sat Sep  6 18:45:46 2003  Mauricio Fernandez <batsman.geo@yahoo.com>
 
 	* parse.y (assignable): call rb_compile_error(), not rb_bug().

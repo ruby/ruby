@@ -32,14 +32,11 @@ class TestVariable < Test::Unit::TestCase
   end
 
   def test_variable
-    assert($$.instance_of?(Fixnum))
-
+    assert_instance_of(Fixnum, $$)
+    
     # read-only variable
-    begin
+    assert_raises(NameError) do
       $$ = 5
-      assert false
-    rescue NameError
-      assert true
     end
 
     foobar = "foobar"

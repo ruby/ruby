@@ -13,7 +13,7 @@ class TestPack < Test::Unit::TestCase
 
     assert_equal(ary.length, ary2.length)
     assert_equal(ary.join(':'), ary2.join(':'))
-    assert($x =~ /def/)
+    assert_match(/def/, $x)
 
     $x = [-1073741825]
     assert_equal($x, $x.pack("q").unpack("q"))

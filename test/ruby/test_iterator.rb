@@ -252,7 +252,7 @@ class TestIterator < Test::Unit::TestCase
     assert_nothing_raised {Proc.new{|a,|}.call(1,2)}
   end
 
-  def return1_test	# !! test_return1 -> return1_test
+  def return1_test
     Proc.new {
       return 55
     }.call + 5
@@ -262,7 +262,7 @@ class TestIterator < Test::Unit::TestCase
     assert_equal(55, return1_test())
   end
 
-  def return2_test	# !! test_return2 -> return2_test
+  def return2_test
     lambda {
       return 55
     }.call + 5

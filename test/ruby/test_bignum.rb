@@ -72,17 +72,17 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(0, -a % b)
   end
 
+  def shift_test(a)
+    b = a / (2 ** 32)
+    c = a >> 32
+    assert_equal(b, c)
+
+    b = a * (2 ** 32)
+    c = a << 32
+    assert_equal(b, c)
+  end
+
   def test_shift
-    def shift_test(a)
-      b = a / (2 ** 32)
-      c = a >> 32
-      assert_equal(b, c)
-
-      b = a * (2 ** 32)
-      c = a << 32
-      assert_equal(b, c)
-    end
-
     shift_test(-4518325415524767873)
     shift_test(-0xfffffffffffffffff)
   end

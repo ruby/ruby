@@ -5,7 +5,7 @@ $KCODE = 'none'
 class TestStringchar < Test::Unit::TestCase
   def test_string
     assert_equal("abcd", "abcd")
-    assert("abcd" =~ /abcd/)
+    assert_match(/abcd/, "abcd")
     assert("abcd" === "abcd")
     # compile time string concatenation
     assert_equal("abcd", "ab" "cd")
