@@ -1,3 +1,7 @@
+Wed Sep 27 16:13:05 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* mkconfig.rb: variables should be expanded only if /\$\{?\w+\}?/.
+
 Tue Sep 26 18:09:51 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* string.c: include <math.h>
