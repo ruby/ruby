@@ -86,7 +86,6 @@ md5i_new(argc, argv, class)
     VALUE obj;
     md5_state_t *md5;
 
-    rb_scan_args(argc, argv, "01", &arg);
     obj = Data_Make_Struct(class, md5_state_t, 0, free, md5);
     md5_init(md5);
     if (argc == 1) {
