@@ -1,3 +1,9 @@
+Fri Dec 13 23:39:09 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/dbm/extconf.rb: backported from 1.7.
+
+	* ext/dbm/dbm.c: ditto.
+
 Thu Dec 12 16:26:31 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* marshal.c (r_object0): singleton class instance can't be loaded.

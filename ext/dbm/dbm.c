@@ -18,7 +18,7 @@
 #ifdef HAVE_SYS_CDEFS_H
 # include <sys/cdefs.h>
 #endif
-#include <ndbm.h>
+#include DBM_HDR
 #include <fcntl.h>
 #include <errno.h>
 
