@@ -121,7 +121,7 @@ fdbm_fetch(obj, keystr)
     if (value.dptr == 0) {
 	return Qnil;
     }
-    return rb_str_taint(rb_str_new(value.dptr, value.dsize));
+    return rb_tainted_str_new(value.dptr, value.dsize);
 }
 
 static VALUE
@@ -191,8 +191,8 @@ fdbm_shift(obj)
     val = dbm_fetch(dbm, key);
     dbm_delete(dbm, key);
 
-    keystr = rb_str_taint(rb_str_new(key.dptr, key.dsize));
-    valstr = rb_str_taint(rb_str_new(val.dptr, val.dsize));
+    keystr = rb_tainted_str_new(key.dptr, key.dsize);
+    valstr = rb_tainted_str_new(val.dptr, val.dsize);
     return rb_assoc_new(keystr, valstr);
 }
 
@@ -210,8 +210,8 @@ fdbm_delete_if(obj)
     dbm = dbmp->di_dbm;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	keystr = rb_str_taint(rb_str_new(key.dptr, key.dsize));
-	valstr = rb_str_taint(rb_str_new(val.dptr, val.dsize));
+	keystr = rb_tainted_str_new(key.dptr, key.dsize);
+	valstr = rb_tainted_str_new(val.dptr, val.dsize);
 	if (RTEST(rb_yield(rb_assoc_new(keystr, valstr)))) {
 	    if (dbm_delete(dbm, key)) {
 		rb_raise(rb_eRuntimeError, "dbm_delete failed");
@@ -255,8 +255,8 @@ fdbm_invert(obj)
     dbm = dbmp->di_dbm;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	keystr = rb_str_taint(rb_str_new(key.dptr, key.dsize));
-	valstr = rb_str_taint(rb_str_new(val.dptr, val.dsize));
+	keystr = rb_tainted_str_new(key.dptr, key.dsize);
+	valstr = rb_tainted_str_new(val.dptr, val.dsize);
 	rb_hash_aset(hash, valstr, keystr);
     }
     return obj;
@@ -396,7 +396,7 @@ fdbm_each_value(obj)
     dbm = dbmp->di_dbm;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	rb_yield(rb_str_taint(rb_str_new(val.dptr, val.dsize)));
+	rb_yield(rb_tainted_str_new(val.dptr, val.dsize));
     }
     return obj;
 }
@@ -412,7 +412,7 @@ fdbm_each_key(obj)
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
-	rb_yield(rb_str_taint(rb_str_new(key.dptr, key.dsize)));
+	rb_yield(rb_tainted_str_new(key.dptr, key.dsize));
     }
     return obj;
 }
@@ -431,8 +431,8 @@ fdbm_each_pair(obj)
 
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	keystr = rb_str_taint(rb_str_new(key.dptr, key.dsize));
-	valstr = rb_str_taint(rb_str_new(val.dptr, val.dsize));
+	keystr = rb_tainted_str_new(key.dptr, key.dsize);
+	valstr = rb_tainted_str_new(val.dptr, val.dsize);
 	rb_yield(rb_assoc_new(keystr, valstr));
     }
 
@@ -453,7 +453,7 @@ fdbm_keys(obj)
 
     ary = rb_ary_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
-	rb_ary_push(ary, rb_str_taint(rb_str_new(key.dptr, key.dsize)));
+	rb_ary_push(ary, rb_tainted_str_new(key.dptr, key.dsize));
     }
 
     return ary;
@@ -474,7 +474,7 @@ fdbm_values(obj)
     ary = rb_ary_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	rb_ary_push(ary, rb_str_taint(rb_str_new(val.dptr, val.dsize)));
+	rb_ary_push(ary, rb_tainted_str_new(val.dptr, val.dsize));
     }
 
     return ary;
@@ -537,8 +537,8 @@ fdbm_to_a(obj)
     ary = rb_ary_new();
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
-	rb_ary_push(ary, rb_assoc_new(rb_str_taint(rb_str_new(key.dptr, key.dsize)),
-				rb_str_taint(rb_str_new(val.dptr, val.dsize))));
+	rb_ary_push(ary, rb_assoc_new(rb_tainted_str_new(key.dptr, key.dsize),
+				rb_tainted_str_new(val.dptr, val.dsize)));
     }
 
     return ary;

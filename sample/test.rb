@@ -414,17 +414,6 @@ tt{|i| break if i == 5}
 ok(i == 5)
 
 # iterator break/redo/next/retry
-unless defined? loop
-  def loop
-    while true
-      yield
-    end
-  end
-  ok(false)
-else
-  ok(true)
-end
-
 done = true
 loop{
   break
@@ -685,10 +674,13 @@ ok(a == 1)
 a, *b = 1, 2, 3
 ok(a == 1 && b == [2, 3])
 
+a, (b, c), d = 1, [2, 3], 4
+ok(a == 1 && b == 2 && c == 3 && d == 4)
+
 *a = 1, 2, 3
 ok(a == [1, 2, 3])
 
-*a = 1..3
+*a = 1..3			# array conversion
 ok(a == [1, 2, 3])
 
 check "call"

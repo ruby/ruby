@@ -12,6 +12,7 @@ Hacking Interpreter
 * remove rb_eval() recursions
 * syntax tree -> bytecode ???
 * scrambled script, or script filter
+* regular expression bug /(?:\s+\d+){2}/  URGENT!!
 
 Extension Libraries
 

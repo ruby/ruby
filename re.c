@@ -428,12 +428,16 @@ rb_reg_search(reg, str, start, reverse)
     else if (reg_kcode != curr_kcode)
 	kcode_reset_option();
 
+#ifdef USE_THREAD
     if (rb_thread_scope_shared_p()) {
 	match = Qnil;
     }
     else {
 	match = rb_backref_get();
     }
+#else
+    match = rb_backref_get();
+#endif
     if (NIL_P(match)) {
 	if (matchcache) {
 	    match = matchcache;

@@ -144,9 +144,6 @@ memmove.o: @srcdir@/missing/memmove.c
 mkdir.o: @srcdir@/missing/mkdir.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/mkdir.c
 
-setenv.o: @srcdir@/missing/setenv.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/setenv.c
-
 vsnprintf.o: @srcdir@/missing/vsnprintf.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/vsnprintf.c
 

@@ -44,6 +44,12 @@
 #define FLUSH_REGISTER_WINDOWS /* empty */
 #endif
 
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__MACOS__)
+#define RUBY_LIB_SEP ";"
+#else
+#define RUBY_LIB_SEP ":"
+#endif
+
 #if defined(__human68k__) || defined(__CYGWIN32__)
 #undef HAVE_RANDOM
 #undef HAVE_SETITIMER

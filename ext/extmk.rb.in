@@ -135,26 +135,34 @@ def have_library(lib, func)
     end
   end
 
-  cfile = open("conftest.c", "w")
-  cfile.printf "\
+  if func && func != ""
+    cfile = open("conftest.c", "w")
+    cfile.printf "\
 int main() { return 0; }
 int t() { %s(); return 0; }
 ", func
-  cfile.close
+    cfile.close
 
-  begin
+    begin
+      if $libs
+	libs = "-l" + lib + " " + $libs 
+      else
+	libs = "-l" + lib
+      end
+      unless try_link(libs)
+	$lib_cache[lib] = 'no'
+	$cache_mod = TRUE
+	return FALSE
+      end
+    ensure
+      system "rm -f conftest*"
+    end
+  else
     if $libs
       libs = "-l" + lib + " " + $libs 
     else
       libs = "-l" + lib
     end
-    unless try_link(libs)
-      $lib_cache[lib] = 'no'
-      $cache_mod = TRUE
-      return FALSE
-    end
-  ensure
-    system "rm -f conftest*"
   end
 
   $libs = libs
@@ -299,7 +307,7 @@ archdir = $(pkglibdir)/@arch@
 #### End of system configuration section. ####
 
 "
-  mfile.printf "LOCAL_LIBS = %s\n", $local_libs if $local_libs
+  mfile.printf "LOCAL_LIBS = %s\n", $local_libs unless $local_libs == ""
   mfile.printf "LIBS = %s\n", $libs
   mfile.printf "OBJS = "
   if !$objs then
@@ -313,7 +321,7 @@ archdir = $(pkglibdir)/@arch@
   mfile.printf $objs.join(" ")
   mfile.printf "\n"
 
-  mfile.printf << EOS
+  mfile.printf <<EOS
 TARGET = #{target}.#{$static ? "a" : "@DLEXT@"}
 
 INSTALL = #{$dots}@INSTALL@
@@ -354,7 +362,7 @@ $(TARGET): $(OBJS)
   elsif "@DLEXT@" != "o"
     mfile.printf "\
 $(TARGET): $(OBJS)
-	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LOCAL_LIBS) $(LIBS)
+	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LIBS) $(LOCAL_LIBS)
 "
   elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc")
     if PLATFORM == "m68k-human"
@@ -410,9 +418,9 @@ def extmake(target)
 
   $objs = nil
   $libs = PLATFORM =~ /cygwin32|beos|openstep|nextstep|rhapsody/ ? nil : "-lc"
-  $local_libs = nil		# to be assigned in extconf.rb
-  $CFLAGS = nil
-  $LDFLAGS = nil
+  $local_libs = ""		# to be assigned in extconf.rb
+  $CFLAGS = ""
+  $LDFLAGS = ""
 
   begin
     system "mkdir", target unless File.directory?(target)
@@ -444,10 +452,10 @@ def extmake(target)
       end
     end
     if $static
-      $extlibs = "" unless $extlibs
-      $extlibs += " " + $LDFLAGS if $LDFLAGS
-      $extlibs += " " + $local_libs if $local_libs
+      $extlibs ||= ""
+      $extlibs += " " + $LDFLAGS unless $LDFLAGS == ""
       $extlibs += " " + $libs if $libs
+      $extlibs += " " + $local_libs unless $local_libs == ""
     end
   ensure
     Dir.chdir ".."

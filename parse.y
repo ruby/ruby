@@ -1679,6 +1679,7 @@ lex_get_str(s)
 
     beg = RSTRING(s)->ptr;
     if (lex_gets_ptr) {
+	if (RSTRING(s)->len == lex_gets_ptr) return Qnil;
 	beg += lex_gets_ptr;
     }
     pend = RSTRING(s)->ptr + RSTRING(s)->len;
@@ -2246,7 +2247,8 @@ here_document(term, indent)
     int c;
     char *eos, *p;
     int len;
-    VALUE str, line;
+    VALUE str;
+    volatile VALUE line;
     char *save_beg, *save_end, *save_lexp;
     NODE *list = 0;
     int linesave = ruby_sourceline;
@@ -2307,6 +2309,13 @@ here_document(term, indent)
 
 	lex_pbeg = lex_p = RSTRING(line)->ptr;
 	lex_pend = lex_p + RSTRING(line)->len;
+#if 0
+	if (indent) {
+	    while (*lex_p && *lex_p == '\t') {
+		lex_p++;
+	    }
+	}
+#endif
 	switch (parse_string(term, '\n', '\n')) {
 	  case tSTRING:
 	  case tXSTRING:

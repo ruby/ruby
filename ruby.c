@@ -81,12 +81,6 @@ static char **origargv;
 #define RUBY_SITE_LIB "/usr/local/lib/site_ruby"
 #endif
 
-#if defined(MSDOS) || defined(NT) || defined(__MACOS__)
-#define RUBY_LIB_SEP ';'
-#else
-#define RUBY_LIB_SEP ':'
-#endif
-
 extern VALUE rb_load_path;
 
 static FILE *e_fp;
@@ -96,6 +90,8 @@ static void
 addpath(path)
     char *path;
 {
+    const char sep = *RUBY_LIB_SEP;
+
     if (path == 0) return;
 #if defined(__CYGWIN32__)
     {
@@ -104,14 +100,14 @@ addpath(path)
 	path = rubylib;
     }
 #endif
-    if (strchr(path, RUBY_LIB_SEP)) {
+    if (strchr(path, sep)) {
 	char *p, *s;
 	VALUE ary = rb_ary_new();
 
 	p = path;
 	while (*p) {
-	    while (*p == RUBY_LIB_SEP) p++;
-	    if (s = strchr(p, RUBY_LIB_SEP)) {
+	    while (*p == sep) p++;
+	    if (s = strchr(p, sep)) {
 		rb_ary_push(ary, rb_str_new(p, (int)(s-p)));
 		p = s + 1;
 	    }
@@ -623,7 +619,7 @@ set_arg0(val, id)
 	len = s - origargv[0];
     }
 #endif
-    s = str2cstr(val, &i);
+    s = rb_str2cstr(val, &i);
 #ifndef __hpux
     if (i > len) {
 	memcpy(origargv[0], s, len);
@@ -650,7 +646,7 @@ set_arg0(val, id)
       j.pst_command = s;
       pstat(PSTAT_SETCMD, j, i, 0, 0);
     }
-    rb_progname = str_taint(str_new(s, i));
+    rb_progname = rb_tainted_str_new(s, i);
 #endif
 }
 

@@ -30,9 +30,9 @@ class Delegator
     for method in obj.methods
       next if preserved.include? method
       eval <<-EOS
-      def self.#{method}(*args, &block)
+	def self.#{method}(*args, &block)
 	  begin
-	    __getobj__.__send__(:#{method}, *args, &block)
+	    __getobj__.__send__(:{method}, *args, &block)
 	  rescue Exception
 	    c = -caller(0).size
 	    if /:in `__getobj__'$/ =~ $@[c-1]  #`
@@ -44,8 +44,8 @@ class Delegator
 	    $@[c,n] = nil
 	    raise
 	  end
-      end
-      EOS
+	end
+	EOS
     end
   end
 
@@ -88,18 +88,18 @@ def DelegateClass(superclass)
   EOS
   for method in methods
     klass.module_eval <<-EOS
-    def #{method}(*args, &block)
-      begin
-	@obj.__send__(:#{method}, *args, &block)
-      rescue
-	$@[0,2] = nil
-	raise
+	def #{method}(*args, &block)
+	  begin
+	    @obj.__send__(:{method}, *args, &block)
+	  rescue
+	    $@[0,2] = nil
+	    raise
+	  end
+	end
+	EOS
       end
-    end
-    EOS
+    return klass;
   end
-  return klass;
-end
 
 if __FILE__ == $0
   class ExtArray<DelegateClass(Array)

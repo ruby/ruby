@@ -612,7 +612,7 @@ rb_f_system(argc, argv)
 	}
 	argv[0] = RARRAY(argv[0])->ptr[0];
     }
-    cmd = rb_ary_join(ary_new4(argc, argv), rb_str_new2(" "));
+    cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 
     Check_SafeStr(cmd);
     state = do_spawn(RSTRING(cmd)->ptr);
@@ -631,7 +631,7 @@ rb_f_system(argc, argv)
 	}
 	argv[0] = RARRAY(argv[0])->ptr[0];
     }
-    cmd = rb_ary_join(ary_new4(argc, argv), rb_str_new2(" "));
+    cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 
     Check_SafeStr(cmd);
     state = system(RSTRING(cmd)->ptr);

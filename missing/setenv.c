@@ -10,7 +10,7 @@
 #ifndef NT
 extern char **environ;
 #endif
-extern char **origenviron;
+extern char **rb_origenviron;
 
 #ifndef NT
 char *strdup();
@@ -41,7 +41,7 @@ int n;
 {
     register int i=envix(nam);		/* where does it go? */
 
-    if (environ == origenviron) {	/* need we copy environment? */
+    if (environ == rb_origenviron) {	/* need we copy environment? */
 	int j;
 	int max;
 	char **tmpenv;

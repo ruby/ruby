@@ -61,6 +61,8 @@ struct timeval {
 #include <net/socket.h>
 #endif
 
+#include "util.h"
+
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
@@ -2278,7 +2280,7 @@ rb_io_ctl(io, req, arg, io_p)
 # endif
     TRAP_END;
 #else
-    if (!rb_io_p) {
+    if (!io_p) {
 	rb_notimplement();
     }
     TRAP_BEG;

@@ -60,14 +60,14 @@ rb_tainted_str_new(ptr, len)
     char *ptr;
     int len;
 {
-    return rb_str_new(ptr, len);
+    return rb_obj_taint(rb_str_new(ptr, len));
 }
 
 VALUE
 rb_tainted_str_new2(ptr)
     char *ptr;
 {
-    return rb_str_new2(ptr);
+    return rb_obj_taint(rb_str_new2(ptr));
 }
 
 VALUE
@@ -1095,7 +1095,7 @@ rb_str_gsub_bang(argc, argv, str)
 	else {
 	    val = rb_reg_regsub(repl, str, regs);
 	}
-	len = beg + RSTRING(val)->len + 3;
+	len = (bp - buf) + (beg - offset) + RSTRING(val)->len + 3;
 	if (blen < len) {
 	    while (blen < len) blen *= 2;
 	    len = bp - buf;

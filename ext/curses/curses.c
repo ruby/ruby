@@ -360,7 +360,7 @@ curses_getstr(obj)
 {
     char rtn[1024]; /* This should be big enough.. I hope */
     getstr(rtn);
-    return rb_str_taint(rb_str_new2(rtn));
+    return rb_tainted_str_new2(rtn);
 }
 
 /* def delch */
@@ -377,7 +377,9 @@ static VALUE
 curses_deleteln(obj)
     VALUE obj;
 {
+#ifdef HAVE_DELETELN
     deleteln();
+#endif
     return Qnil;
 }
 
@@ -729,7 +731,7 @@ window_getstr(obj)
     
     GetWINDOW(obj, winp);
     wgetstr(winp->window, rtn);
-    return rb_str_taint(rb_str_new2(rtn));
+    return rb_tainted_str_new2(rtn);
 }
 
 /* def delch */
@@ -749,10 +751,12 @@ static VALUE
 window_deleteln(obj)
     VALUE obj;
 {
+#ifdef HAVE_WDELETELN
     struct windata *winp;
     
     GetWINDOW(obj, winp);
     wdeleteln(winp->window);
+#endif
     return Qnil;
 }
 

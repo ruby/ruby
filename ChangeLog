@@ -1,3 +1,32 @@
+Tue Dec 22 18:01:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental version 1.1d1 released.
+
+Mon Dec 21 01:33:03 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (TMP_PROTECT): add volatile to ensure GC protection.
+
+	* string.c (rb_str_gsub_bang): calculate buffer size properly.
+
+	* parse.y (lex_get_str): needed to return Qnil at EOS.
+
+	* eval.c (find_file): check policy modified, raise exception
+	  immediately for tainted load_path.
+
+	* hash.c (rb_f_setenv): do not depend on setenv() nor putenv().
+
+Thu Dec 17 06:29:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/tk/tkutil.c (tk_s_new): use rb_obj_instance_eval(), instead
+	  of rb_yield_0().
+
+	* eval.c (rb_f_require): forgot to call find_file in some cases.
+
+	* eval.c (rb_f_require): `require "feature.so"' to load dynamic
+	  libraries.  old `require "feature.o"' is still OK.
+
+	* eval.c (rb_eval): yield without value dumped core.
+
 Wed Dec 16 16:28:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental version 1.1d0 (pre1.2) released.

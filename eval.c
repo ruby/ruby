@@ -45,12 +45,6 @@ char *strrchr _((char*,char));
 #endif
 #endif
 
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__MACOS__)
-#define RUBY_LIB_SEP ";"
-#else
-#define RUBY_LIB_SEP ":"
-#endif
-
 VALUE rb_cProc;
 static VALUE rb_cBinding;
 static VALUE proc_call _((VALUE,VALUE));
@@ -856,6 +850,7 @@ error_print()
 #if !defined(NT) && !defined(__MACOS__)
 extern char **environ;
 #endif
+char **rb_origenviron;
 
 void rb_call_inits _((void));
 void Init_stack _((void));
@@ -871,6 +866,12 @@ ruby_init()
 
     ruby_frame = top_frame = &frame;
     ruby_iter = &iter;
+
+#ifdef __MACOS__
+    rb_origenviron = 0;
+#else
+    rb_origenviron = environ;
+#endif
 
     Init_heap();
     PUSH_SCOPE();
@@ -1281,10 +1282,10 @@ rb_mod_alias_method(mod, newname, oldname)
 }
 
 #if defined(C_ALLOCA) && defined(USE_THREAD)
-# define TMP_PROTECT NODE *__protect_tmp=0
-# define TMP_ALLOC(type,n)						   \
-    (__protect_tmp = rb_node_newnode(NODE_ALLOCA,				   \
-			     rb_str_new(0,sizeof(type)*(n)),0,__protect_tmp), \
+# define TMP_PROTECT NODE * volatile __protect_tmp=0
+# define TMP_ALLOC(type,n) \
+    (__protect_tmp = rb_node_newnode(NODE_ALLOCA,\
+			     rb_str_new(0,sizeof(type)*(n)),0,__protect_tmp),\
      (void*)RSTRING(__protect_tmp->nd_head)->ptr)
 #else
 # define TMP_PROTECT typedef int foobazzz
@@ -1920,9 +1921,16 @@ rb_eval(self, node)
 	break;
 
       case NODE_YIELD:
-	result = rb_eval(self, node->nd_stts);
-	if (nd_type(node->nd_stts) == NODE_RESTARGS && RARRAY(result)->len == 1) {
-	    result = RARRAY(result)->ptr[0];
+	if (node->nd_stts) {
+	    result = rb_eval(self, node->nd_stts);
+	    if (nd_type(node->nd_stts) == NODE_RESTARGS &&
+		RARRAY(result)->len == 1)
+	    {
+		result = RARRAY(result)->ptr[0];
+	    }
+	}
+	else {
+	    result = Qnil;
 	}
 	result = rb_yield_0(result, 0, 0);
 	break;
@@ -4215,7 +4223,7 @@ yield_under(under, self)
     return exec_under(yield_under_i, under, self);
 }
 
-static VALUE
+VALUE
 rb_obj_instance_eval(argc, argv, self)
     int argc;
     VALUE *argv;
@@ -4307,7 +4315,6 @@ find_file(file)
     char *file;
 {
     extern VALUE rb_load_path;
-    VALUE vpath;
     char *path;
 
     if (is_absolute_path(file)) {
@@ -4319,6 +4326,7 @@ find_file(file)
     }
 
     if (rb_load_path) {
+	volatile VALUE vpath;
 	int i;
 
 	Check_Type(rb_load_path, T_ARRAY);
@@ -4328,8 +4336,8 @@ find_file(file)
 	vpath = rb_ary_join(rb_load_path, rb_str_new2(RUBY_LIB_SEP));
 	Check_SafeStr(vpath);
 	path = RSTRING(vpath)->ptr;
-	if (safe_level >= 2) {
-	    rb_path_check(path);
+	if (safe_level >= 2 && !rb_path_check(path)) {
+	    rb_raise(rb_eSecurityError, "loading from unsefe path %s", vpath);
 	}
     }
     else {
@@ -4454,7 +4462,7 @@ rb_provided(feature)
 	if (strcmp(f, feature) == 0) return Qtrue;
 	len = strlen(feature);
 	if (strncmp(f, feature, len) == 0
-	    && (strcmp(f+len, ".rb") == 0 ||strcmp(f+len, ".o") == 0)) {
+	    && (strcmp(f+len, ".rb") == 0 ||strcmp(f+len, ".so") == 0)) {
 	    return Qtrue;
 	}
 	p++;
@@ -4475,11 +4483,11 @@ rb_provide(feature)
 
     if (!rb_provided(feature)) {
 	ext = strrchr(feature, '.');
-	if (strcmp(DLEXT, ext) == 0) {
-	    buf = ALLOCA_N(char, strlen(feature)+1);
+	if (ext && strcmp(DLEXT, ext) == 0) {
+	    buf = ALLOCA_N(char, strlen(feature)+4);
 	    strcpy(buf, feature);
 	    ext = strrchr(buf, '.');
-	    strcpy(ext, ".o");
+	    strcpy(ext, ".so");
 	    feature = buf;
 	}
 	rb_ary_push(rb_features, rb_str_new2(feature));
@@ -4505,15 +4513,16 @@ rb_f_require(obj, fname)
 	    file = find_file(file);
 	    if (file) goto rb_load;
 	}
-	else if (strcmp(".o", ext) == 0) {
+	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
 	    file = feature = RSTRING(fname)->ptr;
-	    if (strcmp(".o", DLEXT) != 0) {
+	    if (strcmp(ext, DLEXT) != 0) {
 		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT)+1);
 		strcpy(buf, feature);
 		ext = strrchr(buf, '.');
 		strcpy(ext, DLEXT);
-		file = find_file(buf);
+		file = buf;
 	    }
+	    file = find_file(file);
 	    if (file) goto dyna_load;
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
@@ -6490,7 +6499,7 @@ catch_timer(sig)
     }
 }
 #else
-int thread_tick = rb_THREAD_TICK;
+int rb_thread_tick = THREAD_TICK;
 #endif
 
 static VALUE rb_thread_raise _((int, VALUE*, VALUE));

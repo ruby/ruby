@@ -1354,7 +1354,7 @@ dln_load(file)
 	return ;
     }
 #else/* OPENSTEP dyld functions */
-	{
+    {
 	int dyld_result ;
 	NSObjectFileImage obj_file ; /* handle, but not use it */
 	/* "file" is module file name .
@@ -1363,28 +1363,23 @@ dln_load(file)
 	void (*init_fct)();
 
 
-    dyld_result = NSCreateObjectFileImageFromFile( file, &obj_file );
+	dyld_result = NSCreateObjectFileImageFromFile( file, &obj_file );
 
-    if (dyld_result != NSObjectFileImageSuccess)
-    {
-	    LoadError("Failed to load %.200s", file);
-    }
+	if (dyld_result != NSObjectFileImageSuccess) {
+	    rb_loaderror("Failed to load %.200s", file);
+	}
 
-    NSLinkModule(obj_file, file, Qtrue);
-
+	NSLinkModule(obj_file, file, TRUE);
 
 	/* lookup the initial function */
-	 /*NSIsSymbolNameDefined require function name without "_" */
-    if( NSIsSymbolNameDefined( buf + 1 ) )
-    {
-	    LoadError("Failed to lookup Init function %.200s",file);
+	/*NSIsSymbolNameDefined require function name without "_" */
+	if( NSIsSymbolNameDefined( buf + 1 ) ) {
+	    rb_loaderror("Failed to lookup Init function %.200s",file);
 	}
 
 	/* NSLookupAndBindSymbol require function name with "_" !! */
-
 	init_fct = NSAddressOfSymbol( NSLookupAndBindSymbol( buf ) );
 	(*init_fct)();
-
 
 	return ;
     }

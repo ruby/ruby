@@ -109,6 +109,7 @@ VALUE rb_apply _((VALUE, ID, VALUE));
 VALUE rb_funcall2 _((VALUE, ID, int, VALUE*));
 void rb_backtrace _((void));
 ID rb_frame_last_func _((void));
+VALUE rb_obj_instance_eval _((int, VALUE*, VALUE));
 void rb_load _((VALUE, VALUE));
 void rb_provide _((char*));
 VALUE rb_f_require _((VALUE, VALUE));
@@ -149,7 +150,7 @@ VALUE rb_hash_new _((void));
 VALUE rb_hash_freeze _((VALUE));
 VALUE rb_hash_aref _((VALUE, VALUE));
 VALUE rb_hash_aset _((VALUE, VALUE, VALUE));
-void rb_path_check _((char *));
+int rb_path_check _((char *));
 int rb_env_path_tainted _((void));
 /* io.c */
 extern VALUE rb_fs;

@@ -25,19 +25,21 @@ File.install "ruby#{binsuffix}",
 for dll in Dir['*.dll']
   File.install dll, "#{bindir}/#{dll}", 0755, TRUE
 end
-File.makedirs "#{libdir}", TRUE
+File.makedirs libdir, TRUE
+File.makedirs archdir, TRUE
 for lib in ["libruby.so", "libruby.so.LIB"]
   if File.exist? lib
     File.install lib, "#{libdir}", 0644, TRUE
   end
 end
-File.makedirs libdir, TRUE
 Dir.chdir "ext"
 system "../miniruby#{binsuffix} extmk.rb install"
 Dir.chdir CONFIG["srcdir"]
 for f in Dir["lib/*.rb"]
   File.install f, "#{libdir}", 0644, TRUE
 end
+
+File.makedirs(archdir,TRUE)
 for f in Dir["*.h"]
   File.install f, "#{archdir}", 0644, TRUE
 end

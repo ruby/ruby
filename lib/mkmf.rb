@@ -326,7 +326,7 @@ EOMF
   if CONFIG["DLEXT"] != "o"
     mfile.printf <<EOMF
 $(TARGET): $(OBJS)
-	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LOCAL_LIBS) $(LIBS)
+	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LIBS) $(LOCAL_LIBS)
 EOMF
   elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc") or 
     mfile.print "$(TARGET): $(OBJS)\n"
@@ -385,9 +385,9 @@ EOMF
   end
 end
 
-$local_libs = nil
 $libs = PLATFORM =~ /cygwin32|beos/ ? nil : "-lc"
 $objs = nil
-$CFLAGS = nil
-$LDFLAGS = nil
+$local_libs = ""
+$CFLAGS = ""
+$LDFLAGS = ""
 $defs = []

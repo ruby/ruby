@@ -988,7 +988,7 @@ gdkgc_set_function(self, func)
   GdkFunction f;
   f = (GdkFunction) NUM2INT(func);
   if (f != GDK_COPY && f != GDK_INVERT && f != GDK_XOR)
-	ArgError("function out of range");
+	rb_raise(rb_eArgError, "function out of range");
   
   gdk_gc_set_function(get_gdkgc(self), f);
   return func;

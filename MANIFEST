@@ -103,6 +103,7 @@ lib/finalize.rb
 lib/ftplib.rb
 lib/ftools.rb
 lib/getopts.rb
+lib/getoptlong.rb
 lib/importenv.rb
 lib/jcode.rb
 lib/mailread.rb
@@ -135,7 +136,7 @@ misc/README
 misc/inf-ruby.el
 misc/ruby-mode.el
 misc/rubydb2x.el
-mics/rubydb3x.el
+misc/rubydb3x.el
 missing/alloca.c
 missing/crypt.c
 missing/dir.h
@@ -147,7 +148,6 @@ missing/memmove.c
 missing/mkdir.c
 missing/nt.c
 missing/nt.h
-missing/setenv.c
 missing/strcasecmp.c
 missing/strchr.c
 missing/strdup.c
@@ -193,6 +193,7 @@ sample/occur.rb
 sample/occur2.rb
 sample/philos.rb
 sample/pi.rb
+sample/rename.rb
 sample/rbc.rb
 sample/rcs.awk
 sample/rcs.dat

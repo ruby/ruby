@@ -823,12 +823,13 @@ rb_hash_update(hash1, hash2)
     return hash1;
 }
 
-#ifndef __MACOS__ /* environment variables nothing on MacOS. */
+#ifndef __MACOS__ /* no environment variables on MacOS. */
 static int path_tainted = -1;
 
 #ifndef NT
 extern char **environ;
 #endif
+static char **origenviron;
 
 static VALUE
 env_delete(obj, name)
@@ -838,9 +839,10 @@ env_delete(obj, name)
     char *nam, *val = 0;
 
     rb_secure(4);
-    nam = STR2CSTR(name);
-    len = strlen(nam);
+    Check_SafeStr(name);
+    nam = RSTRING(name)->ptr;
     if (strcmp(nam, "PATH") == 0) path_tainted = 0;
+    len = strlen(nam);
     for(i=0; environ[i]; i++) {
 	if (strncmp(environ[i], nam, len) == 0 && environ[i][len] == '=') {
 	    val = environ[i]+len+1;
@@ -895,7 +897,7 @@ path_check_1(path)
     char *s;
 
     for (;;) {
-	if (stat(path, &st) == 0 && (st.st_mode & 2)) {
+	if (stat(path, &st) == 0 && (st.st_mode & 002)) {
 	    return 0;
 	}
 	s = strrchr(path, '/');
@@ -906,19 +908,17 @@ path_check_1(path)
     }
 }
 
-void
+int
 rb_path_check(path)
     char *path;
 {
-    char *p = path;
-    char *pend = strchr(path, ':');
+    char *p, *pend;
+    const char sep = *RUBY_LIB_SEP;
 
-    if (!path) {
-	path_tainted = 0;
-    }
+    if (!path) return 1;
 
     p = path;
-    pend = strchr(path, ':');
+    pend = strchr(path, sep);
     
     for (;;) {
 	int safe;
@@ -926,24 +926,156 @@ rb_path_check(path)
 	if (pend) *pend = '\0';
 	safe = path_check_1(p);
 	if (!pend) break;
-	*pend = ':';
+	*pend = sep;
 	if (!safe) {
-	    path_tainted = 1;
-	    return;
+	    return 0;
 	}
 	p = pend + 1;
-	pend = strchr(p, ':');
+	pend = strchr(p, sep);
     }
-    path_tainted = 0;
+    return 1;
+}
+
+static void
+path_tainted_p(path)
+    char *path;
+{
+    path_tainted = rb_path_check(path)?0:1;
 }
 
 int
 rb_env_path_tainted()
 {
     if (path_tainted < 0) {
-	rb_path_check(getenv("PATH"));
+	path_tainted_p(getenv("PATH"));
     }
     return path_tainted;
+}
+
+static int
+envix(nam)
+char *nam;
+{
+    register int i, len = strlen(nam);
+
+    for (i = 0; environ[i]; i++) {
+	if (
+#ifdef WIN32
+	    strnicmp(environ[i],nam,len) == 0
+#else
+	    memcmp(environ[i],nam,len) == 0
+#endif
+	    && environ[i][len] == '=')
+	    break;			/* memcmp must come first to avoid */
+    }					/* potential SEGV's */
+    return i;
+}
+
+static void
+my_setenv(name, value)
+    char *name;
+    char *value;
+{
+#ifdef WIN32
+#ifdef USE_WIN32_RTL_ENV
+    register char *envstr;
+    STRLEN namlen = strlen(name);
+    STRLEN vallen;
+    char *oldstr = environ[envix(name)];
+
+    /* putenv() has totally broken semantics in both the Borland
+     * and Microsoft CRTLs.  They either store the passed pointer in
+     * the environment without making a copy, or make a copy and don't
+     * free it. And on top of that, they dont free() old entries that
+     * are being replaced/deleted.  This means the caller must
+     * free any old entries somehow, or we end up with a memory
+     * leak every time setenv() is called.  One might think
+     * one could directly manipulate environ[], like the UNIX code
+     * above, but direct changes to environ are not allowed when
+     * calling putenv(), since the RTLs maintain an internal
+     * *copy* of environ[]. Bad, bad, *bad* stink.
+     * GSAR 97-06-07
+     */
+
+    if (!value) {
+	if (!oldstr)
+	    return;
+	value = "";
+	vallen = 0;
+    }
+    else
+	vallen = strlen(val);
+    envstr = ALLOC_N(char, namelen + vallen + 3);
+    sprintf(envstr,"%s=%s",name,value);
+    putenv(envstr);
+    if (oldstr) free(oldstr);
+#ifdef _MSC_VER
+    free(envstr);		/* MSVCRT leaks without this */
+#endif
+
+#else /* !USE_WIN32_RTL_ENV */
+
+    /* The sane way to deal with the environment.
+     * Has these advantages over putenv() & co.:
+     *  * enables us to store a truly empty value in the
+     *    environment (like in UNIX).
+     *  * we don't have to deal with RTL globals, bugs and leaks.
+     *  * Much faster.
+     * Why you may want to enable USE_WIN32_RTL_ENV:
+     *  * environ[] and RTL functions will not reflect changes,
+     *    which might be an issue if extensions want to access
+     *    the env. via RTL.  This cuts both ways, since RTL will
+     *    not see changes made by extensions that call the Win32
+     *    functions directly, either.
+     * GSAR 97-06-07
+     */
+    SetEnvironmentVariable(name,value);
+#endif
+
+#else  /* WIN32 */
+
+    register int i=envix(name);		/* where does it go? */
+
+    if (environ == origenviron) {	/* need we copy environment? */
+	int j;
+	int max;
+	char **tmpenv;
+
+	for (max = i; environ[max]; max++) ;
+	tmpenv = ALLOC_N(char*, max+2);
+	for (j=0; j<max; j++)		/* copy environment */
+	    tmpenv[j] = strdup(environ[j]);
+	tmpenv[max] = 0;
+	environ = tmpenv;		/* tell exec where it is now */
+    }
+    if (!value) {
+	while (environ[i]) {
+	    environ[i] = environ[i+1];
+	    i++;
+	}
+	return;
+    }
+    if (!environ[i]) {			/* does not exist yet */
+	REALLOC_N(environ, char*, i+2);	/* just expand it a bit */
+	environ[i+1] = 0;	/* make sure it's null terminated */
+    }
+    else {
+	free(environ[i]);
+    }
+    environ[i] = ALLOC_N(char, strlen(name) + strlen(value) + 2);
+#ifndef MSDOS
+    sprintf(environ[i],"%s=%s",name,value); /* all that work just for this */
+#else
+    /* MS-DOS requires environment variable names to be in uppercase */
+    /* [Tom Dinger, 27 August 1990: Well, it doesn't _require_ it, but
+     * some utilities and applications may break because they only look
+     * for upper case strings. (Fixed strupr() bug here.)]
+     */
+    strcpy(environ[i],name); strupr(environ[i]);
+    sprintf(environ[i] + strlen(name),"=%s", value);
+#endif /* MSDOS */
+
+#endif /* WIN32 */
 }
 
 static VALUE
@@ -954,27 +1086,28 @@ rb_f_setenv(obj, name, value)
 	rb_raise(rb_eSecurityError, "cannot change environment variable");
     }
 
-    Check_SafeStr(name);
     if (NIL_P(value)) {
 	env_delete(obj, name);
 	return Qnil;
     }
 
+    Check_SafeStr(name);
     Check_SafeStr(value);
     if (strlen(RSTRING(name)->ptr) != RSTRING(name)->len)
 	rb_raise(rb_eArgError, "Bad environment name");
     if (strlen(RSTRING(value)->ptr) != RSTRING(value)->len)
 	rb_raise(rb_eArgError, "Bad environment value");
-    
-    setenv(RSTRING(name)->ptr, RSTRING(value)->ptr, 1);
+
+    my_setenv(RSTRING(name)->ptr, RSTRING(value)->ptr);
     if (strcmp(RSTRING(name)->ptr, "PATH") == 0) {
 	if (rb_obj_tainted(value)) {
 	    /* already tainted, no check */
 	    path_tainted = 1;
 	    return Qtrue;
 	}
-
-	rb_path_check(RSTRING(name)->ptr);
+	else {
+	    path_tainted_p(RSTRING(value)->ptr);
+	}
     }
     return Qtrue;
 }
@@ -1182,7 +1315,7 @@ env_to_hash(obj)
     return hash;
 }
 
-#endif  /* ifndef __MACOS__  environment variables nothing on MacOS. */
+#endif  /* ifndef __MACOS__  no environment variables on MacOS. */
 
 void
 Init_Hash()
@@ -1245,6 +1378,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"value?", rb_hash_has_value, 1);
 
 #ifndef __MACOS__ /* environment variables nothing on MacOS. */
+    origenviron = environ;
     envtbl = rb_obj_alloc(rb_cObject);
     rb_extend_object(envtbl, rb_mEnumerable);
 

@@ -20,7 +20,7 @@ LDFLAGS =  $(CFLAGS) -Fm
 #CFLAGS = -nologo -DNT=1 -Zi -MD 
 #LDFLAGS =  $(CFLAGS) -Fm -MD
 LIBS =  $(EXTLIBS)  advapi32.lib wsock32.lib
-MISSING = crypt.obj setenv.obj alloca.obj nt.obj
+MISSING = crypt.obj alloca.obj nt.obj
 
 prefix = 
 binprefix = 
@@ -156,9 +156,6 @@ memmove.obj: missing/memmove.c
 
 mkdir.obj: missing/mkdir.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/mkdir.c
-
-setenv.obj: missing/setenv.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/setenv.c
 
 strerror.obj: missing/strerror.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strerror.c
