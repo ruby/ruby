@@ -44,6 +44,7 @@ require 'shellwords'
 $topdir = File.expand_path(".")
 $top_srcdir = srcdir
 
+# avoid warning for $VERBOSE mode
 Object.class_eval do remove_method :create_makefile end
 
 def create_makefile(target)
@@ -64,6 +65,9 @@ def create_makefile(target)
   end
 
   $DLDFLAGS = CONFIG["DLDFLAGS"].dup
+  if /linux/ =~ RUBY_PLATFORM and $configure_args['--enable-shared'] and CONFIG["GNU_LD"] == "yes"
+    $DLDFLAGS << " -Wl,-no-undefined"
+  end
 
   if $configure_args['--enable-shared'] or CONFIG["LIBRUBY"] != CONFIG["LIBRUBY_A"]
     $libs = CONFIG["LIBRUBYARG"] + " " + $libs

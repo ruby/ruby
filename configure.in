@@ -32,6 +32,17 @@ AC_SUBST(CPPOUTFILE)
 rm -f conftest*])
 ])
 
+AC_DEFUN(RUBY_PROG_GNU_LD,
+[AC_CACHE_CHECK(whether the linker is GNU ld, rb_cv_prog_gnu_ld,
+[if `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null; then
+  rb_cv_prog_gnu_ld=yes
+else
+  rb_cv_prog_gnu_ld=no
+fi
+])
+GNU_LD=$rb_cv_prog_gnu_ld
+AC_SUBST(GNU_LD)])
+
 rb_version=`grep RUBY_VERSION $srcdir/version.h`
 MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
 MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
@@ -127,6 +138,7 @@ fi
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
 
+RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
 
 OUTFLAG='-o '
@@ -729,7 +741,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
 			   LDSHARED='$(CC) -Wl,-G'
-			   if `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null; then
+			   if test $rb_cv_prog_gnu_ld = yes; then
 	 		       LDFLAGS="-Wl,-E"
 			       LDSHARED="$LDSHARED -shared"
 			   fi

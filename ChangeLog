@@ -1,3 +1,10 @@
+Fri Oct  4 13:05:58 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (RUBY_PROG_GNU_LD): check whether the linker is GNU ld.
+
+	* ext/extmk.rb (create_makefile): add -Wl,-no-undefined to $DLDFLAGS
+	  on Linux if GNU ld is used and --enable-shared is specified.
+
 Thu Oct  3 20:22:11 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bcc32/mkexports.rb: to work on cygwin via telnet.
