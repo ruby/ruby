@@ -252,6 +252,19 @@ module MarshalTestLib
     marshal_equal(o) {|obj| class << obj; ancestors end}
   end
 
+  def test_extend_string
+    o = String.new
+    o.extend Mod1
+    marshal_equal(o) { |obj| obj.kind_of? Mod1 }
+    o = String.new
+    o.extend Module.new
+    assert_raises(TypeError) { marshaltest(o) }
+    o = String.new
+    o.extend Mod1
+    o.extend Mod2
+    marshal_equal(o) {|obj| class << obj; ancestors end}
+  end
+
   def test_anonymous
     c = Class.new
     assert_raises(TypeError) { marshaltest(c) }

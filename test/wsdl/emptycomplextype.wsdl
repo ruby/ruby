@@ -8,7 +8,6 @@
     xmlns:i2="http://www.winfessor.com/SoapBoxWebService/ExceptionDataSet.xsd"
     xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
     xmlns:i0="http://www.winfessor.com/SoapBoxWebService/MessageDataSet.xsd"
-    xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/"
     xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
     targetNamespace="http://www.winfessor.com/SoapBoxWebService/SoapBoxWebService"
     xmlns="http://schemas.xmlsoap.org/wsdl/">

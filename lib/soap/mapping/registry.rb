@@ -39,6 +39,8 @@ module MappedException; end
 
 
 RubyTypeName = XSD::QName.new(RubyTypeInstanceNamespace, 'rubyType')
+RubyExtendName = XSD::QName.new(RubyTypeInstanceNamespace, 'extends')
+RubyIVarName = XSD::QName.new(RubyTypeInstanceNamespace, 'ivars')
 
 
 # Inner class to pass an exception.
@@ -217,11 +219,11 @@ class Registry
     [::TrueClass,    ::SOAP::SOAPBoolean,    BasetypeFactory],
     [::FalseClass,   ::SOAP::SOAPBoolean,    BasetypeFactory],
     [::String,       ::SOAP::SOAPString,     StringFactory],
-    [::DateTime,     ::SOAP::SOAPDateTime,   BasetypeFactory],
-    [::Date,         ::SOAP::SOAPDateTime,   BasetypeFactory],
-    [::Date,         ::SOAP::SOAPDate,       BasetypeFactory],
-    [::Time,         ::SOAP::SOAPDateTime,   BasetypeFactory],
-    [::Time,         ::SOAP::SOAPTime,       BasetypeFactory],
+    [::DateTime,     ::SOAP::SOAPDateTime,   DateTimeFactory],
+    [::Date,         ::SOAP::SOAPDateTime,   DateTimeFactory],
+    [::Date,         ::SOAP::SOAPDate,       DateTimeFactory],
+    [::Time,         ::SOAP::SOAPDateTime,   DateTimeFactory],
+    [::Time,         ::SOAP::SOAPTime,       DateTimeFactory],
     [::Float,        ::SOAP::SOAPDouble,     BasetypeFactory,
       {:derived_class => true}],
     [::Float,        ::SOAP::SOAPFloat,      BasetypeFactory,
@@ -261,11 +263,11 @@ class Registry
     [::TrueClass,    ::SOAP::SOAPBoolean,    BasetypeFactory],
     [::FalseClass,   ::SOAP::SOAPBoolean,    BasetypeFactory],
     [::String,       ::SOAP::SOAPString,     StringFactory],
-    [::DateTime,     ::SOAP::SOAPDateTime,   BasetypeFactory],
-    [::Date,         ::SOAP::SOAPDateTime,   BasetypeFactory],
-    [::Date,         ::SOAP::SOAPDate,       BasetypeFactory],
-    [::Time,         ::SOAP::SOAPDateTime,   BasetypeFactory],
-    [::Time,         ::SOAP::SOAPTime,       BasetypeFactory],
+    [::DateTime,     ::SOAP::SOAPDateTime,   DateTimeFactory],
+    [::Date,         ::SOAP::SOAPDateTime,   DateTimeFactory],
+    [::Date,         ::SOAP::SOAPDate,       DateTimeFactory],
+    [::Time,         ::SOAP::SOAPDateTime,   DateTimeFactory],
+    [::Time,         ::SOAP::SOAPTime,       DateTimeFactory],
     [::Float,        ::SOAP::SOAPDouble,     BasetypeFactory,
       {:derived_class => true}],
     [::Float,        ::SOAP::SOAPFloat,      BasetypeFactory,
@@ -304,18 +306,18 @@ class Registry
     @config = config
     @map = Map.new(self)
     if @config[:allow_original_mapping]
-      allow_original_mapping = true
+      @allow_original_mapping = true
       @map.init(RubyOriginalMap)
     else
-      allow_original_mapping = false
+      @allow_original_mapping = false
       @map.init(SOAPBaseMap)
     end
 
-    allow_untyped_struct = @config.key?(:allow_untyped_struct) ?
+    @allow_untyped_struct = @config.key?(:allow_untyped_struct) ?
       @config[:allow_untyped_struct] : true
     @rubytype_factory = RubytypeFactory.new(
-      :allow_untyped_struct => allow_untyped_struct,
-      :allow_original_mapping => allow_original_mapping
+      :allow_untyped_struct => @allow_untyped_struct,
+      :allow_original_mapping => @allow_original_mapping
     )
     @default_factory = @rubytype_factory
     @excn_handler_obj2soap = nil
@@ -329,53 +331,20 @@ class Registry
 
   # This mapping registry ignores type hint.
   def obj2soap(klass, obj, type = nil)
-    ret = nil
-    if obj.is_a?(SOAPStruct) || obj.is_a?(SOAPArray)
-      obj.replace do |ele|
-        Mapping._obj2soap(ele, self)
-      end
-      return obj
-    elsif obj.is_a?(SOAPBasetype)
-      return obj
+    soap = _obj2soap(klass, obj, type)
+    if @allow_original_mapping
+      addextend2soap(soap, obj)
     end
-    begin 
-      ret = @map.obj2soap(klass, obj) ||
-        @default_factory.obj2soap(klass, obj, nil, self)
-    rescue MappingError
-    end
-    return ret if ret
-
-    if @excn_handler_obj2soap
-      ret = @excn_handler_obj2soap.call(obj) { |yield_obj|
-        Mapping._obj2soap(yield_obj, self)
-      }
-    end
-    return ret if ret
-
-    raise MappingError.new("Cannot map #{ klass.name } to SOAP/OM.")
+    soap
   end
 
   def soap2obj(klass, node)
-    if node.extraattr.key?(RubyTypeName)
-      conv, obj = @rubytype_factory.soap2obj(klass, node, nil, self)
-      return obj if conv
-    else
-      conv, obj = @map.soap2obj(klass, node)
-      return obj if conv
-      conv, obj = @default_factory.soap2obj(klass, node, nil, self)
-      return obj if conv
+    obj = _soap2obj(klass, node)
+    if @allow_original_mapping
+      addextend2obj(obj, node.extraattr[RubyExtendName])
+      addiv2obj(obj, node.extraattr[RubyIVarName])
     end
-
-    if @excn_handler_soap2obj
-      begin
-        return @excn_handler_soap2obj.call(node) { |yield_node|
-          Mapping._soap2obj(yield_node, self)
-        }
-      rescue Exception
-      end
-    end
-
-    raise MappingError.new("Cannot map #{ node.type.name } to Ruby object.")
+    obj
   end
 
   def default_factory=(factory)
@@ -397,6 +366,86 @@ class Registry
   def find_mapped_obj_class(soap_class)
     @map.find_mapped_obj_class(soap_class)
   end
+
+private
+
+  def _obj2soap(klass, obj, type)
+    ret = nil
+    if obj.is_a?(SOAPStruct) or obj.is_a?(SOAPArray)
+      obj.replace do |ele|
+        Mapping._obj2soap(ele, self)
+      end
+      return obj
+    elsif obj.is_a?(SOAPBasetype)
+      return obj
+    end
+    begin 
+      ret = @map.obj2soap(klass, obj) ||
+        @default_factory.obj2soap(klass, obj, nil, self)
+    rescue MappingError
+    end
+    return ret if ret
+    if @excn_handler_obj2soap
+      ret = @excn_handler_obj2soap.call(obj) { |yield_obj|
+        Mapping._obj2soap(yield_obj, self)
+      }
+    end
+    return ret if ret
+    raise MappingError.new("Cannot map #{ klass.name } to SOAP/OM.")
+  end
+
+  # Might return nil as a mapping result.
+  def _soap2obj(klass, node)
+    if node.extraattr.key?(RubyTypeName)
+      conv, obj = @rubytype_factory.soap2obj(klass, node, nil, self)
+      return obj if conv
+    else
+      conv, obj = @map.soap2obj(klass, node)
+      return obj if conv
+      conv, obj = @default_factory.soap2obj(klass, node, nil, self)
+      return obj if conv
+    end
+
+    if @excn_handler_soap2obj
+      begin
+        return @excn_handler_soap2obj.call(node) { |yield_node|
+	    Mapping._soap2obj(yield_node, self)
+	  }
+      rescue Exception
+      end
+    end
+    raise MappingError.new("Cannot map #{ node.type.name } to Ruby object.")
+  end
+
+  def addiv2obj(obj, attr)
+    return unless attr
+    vars = {}
+    attr.__getobj__.each do |name, value|
+      vars[name] = Mapping._soap2obj(value, self)
+    end
+    Mapping.set_instance_vars(obj, vars)
+  end
+
+  def addextend2obj(obj, attr)
+    return unless attr
+    attr.split(/ /).reverse_each do |mstr|
+      obj.extend(Mapping.class_from_name(mstr))
+    end
+  end
+
+  def addextend2soap(node, obj)
+    return if obj.is_a?(Symbol) or obj.is_a?(Fixnum)
+    list = (class << obj; self; end).ancestors - obj.class.ancestors
+    unless list.empty?
+      node.extraattr[RubyExtendName] = list.collect { |c|
+	if c.name.empty?
+  	  raise TypeError.new("singleton can't be dumped #{ obj }")
+   	end
+	c.name
+      }.join(" ")
+    end
+  end
+
 end
 
 

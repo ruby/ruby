@@ -223,7 +223,8 @@ class WSDLDriver
       @endpoint_url = nil
       @wiredump_dev = nil
       @wiredump_file_base = nil
-      @httpproxy = ENV['http_proxy'] || ENV['HTTP_PROXY']
+      name = 'http_proxy'
+      @httpproxy = ENV[name] || ENV[name.upcase]
 
       @wsdl_elements = @wsdl.collect_elements
       @wsdl_types = @wsdl.collect_complextypes

@@ -84,17 +84,17 @@ public
     end
   end
 
-  def encode(buf, ns, attrs = {}, indent = '')
+  def encode(generator, ns, attrs = {})
     SOAPGenerator.assign_ns(attrs, ns, EnvelopeNamespace)
     SOAPGenerator.assign_ns(attrs, ns, EncodingNamespace)
     attrs[ns.name(AttrEncodingStyleName)] = EncodingNamespace
     name = ns.name(@elename)
-    SOAPGenerator.encode_tag(buf, name, attrs, indent)
+    generator.encode_tag(name, attrs)
     yield(self.faultcode, false)
     yield(self.faultstring, false)
     yield(self.faultactor, false)
     yield(self.detail, false) if self.detail
-    SOAPGenerator.encode_tag_end(buf, name, indent, true)
+    generator.encode_tag_end(name, true)
   end
 end
 
@@ -112,9 +112,9 @@ public
     @is_fault = is_fault
   end
 
-  def encode(buf, ns, attrs = {}, indent = '')
+  def encode(generator, ns, attrs = {})
     name = ns.name(@elename)
-    SOAPGenerator.encode_tag(buf, name, attrs, indent)
+    generator.encode_tag(name, attrs)
     if @is_fault
       yield(@data, true)
     else
@@ -122,7 +122,7 @@ public
 	yield(data, true)
       end
     end
-    SOAPGenerator.encode_tag_end(buf, name, indent, true)
+    generator.encode_tag_end(name, true)
   end
 
   def root_node
@@ -160,7 +160,7 @@ public
     @encodingstyle = encodingstyle || LiteralNamespace
   end
 
-  def encode(buf, ns, attrs = {}, indent = '')
+  def encode(generator, ns, attrs = {})
     attrs.each do |key, value|
       @content.attr[key] = value
     end
@@ -185,13 +185,13 @@ class SOAPHeader < SOAPArray
     @encodingstyle = nil
   end
 
-  def encode(buf, ns, attrs = {}, indent = '')
+  def encode(generator, ns, attrs = {})
     name = ns.name(@elename)
-    SOAPGenerator.encode_tag(buf, name, attrs, indent)
+    generator.encode_tag(name, attrs)
     @data.each do |data|
       yield(data, true)
     end
-    SOAPGenerator.encode_tag_end(buf, name, indent, true)
+    generator.encode_tag_end(name, true)
   end
 
   def length
@@ -215,16 +215,16 @@ class SOAPEnvelope < XSD::NSDBase
     @body = body
   end
 
-  def encode(buf, ns, attrs = {}, indent = '')
+  def encode(generator, ns, attrs = {})
     SOAPGenerator.assign_ns(attrs, ns, EnvelopeNamespace,
       SOAPNamespaceTag)
     name = ns.name(@elename)
-    SOAPGenerator.encode_tag(buf, name, attrs, indent)
+    generator.encode_tag(name, attrs)
 
     yield(@header, true) if @header and @header.length > 0
     yield(@body, true)
 
-    SOAPGenerator.encode_tag_end(buf, name, indent, true)
+    generator.encode_tag_end(name, true)
   end
 end
 

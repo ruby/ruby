@@ -69,11 +69,11 @@ class Handler
   ## encode interface.
   #
   # Returns a XML instance as a string.
-  def encode_data(buf, ns, qualified, data, parent, indent)
+  def encode_data(generator, ns, qualified, data, parent)
     raise NotImplementError.new('Method encode_data must be defined in derived class.')
   end
 
-  def encode_data_end(buf, ns, qualified, data, parent, indent)
+  def encode_data_end(generator, ns, qualified, data, parent)
     raise NotImplementError.new('Method encode_data must be defined in derived class.')
   end
 

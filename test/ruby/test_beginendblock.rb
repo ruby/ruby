@@ -39,8 +39,7 @@ STDERR.reopen(File.open(errout, "w"))
 STDERR.sync = true
 Dir.chdir(#{q(DIR)})
 cmd = "\\"#{ruby}\\" \\"endblockwarn.rb\\""
-exec(cmd)
-exit!("must not reach here")
+system(cmd)
 EOF
     launcher.close
     launcherpath = launcher.path

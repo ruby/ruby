@@ -129,6 +129,16 @@ module Mapping
     return registry.soap2obj(node.class, node)
   end
 
+  def self.set_instance_vars(obj, values)
+    values.each do |name, value|
+      setter = name + "="
+      if obj.respond_to?(setter)
+	obj.__send__(setter, value)
+      else
+	obj.instance_eval("@#{ name } = value")
+      end
+    end
+  end
 
   # Allow only (Letter | '_') (Letter | Digit | '-' | '_')* here.
   # Caution: '.' is not allowed here.

@@ -7,6 +7,10 @@ module Marshal
 
 
 module MarshalTestLib
+
+  module Mod1; end
+  module Mod2; end
+
   def encode(o)
     SOAPMarshal.dump(o)
   end
@@ -23,19 +27,20 @@ module MarshalTestLib
     o2
   end
 
-  def marshal_equal(o1)
+  def marshal_equal(o1, msg = nil)
+    msg = msg ? msg + "(#{ caller[0] })" : caller[0]
     o2 = marshaltest(o1)
-    assert_equal(o1.class, o2.class, caller[0])
+    assert_equal(o1.class, o2.class, msg)
     iv1 = o1.instance_variables.sort
     iv2 = o2.instance_variables.sort
     assert_equal(iv1, iv2)
     val1 = iv1.map {|var| o1.instance_eval {eval var}}
     val2 = iv1.map {|var| o2.instance_eval {eval var}}
-    assert_equal(val1, val2, caller[0])
+    assert_equal(val1, val2, msg)
     if block_given?
-      assert_equal(yield(o1), yield(o2), caller[0])
+      assert_equal(yield(o1), yield(o2), msg)
     else
-      assert_equal(o1, o2, caller[0])
+      assert_equal(o1, o2, msg)
     end
   end
 
@@ -50,6 +55,30 @@ module MarshalTestLib
     marshal_equal(MyObject.new(2)) {|o| o.v}
   end
 
+  def test_object_extend
+    o1 = Object.new
+    o1.extend(Mod1)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+    o1.extend(Mod2)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+  end
+
+  def test_object_subclass_extend
+    o1 = MyObject.new(2)
+    o1.extend(Mod1)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+    o1.extend(Mod2)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+  end
+
   class MyArray < Array; def initialize(v, *args) super args; @v = v; end end
   def test_array
     marshal_equal([1,2,3])
@@ -57,6 +86,12 @@ module MarshalTestLib
 
   def test_array_subclass
     marshal_equal(MyArray.new(0, 1,2,3))
+  end
+
+  def test_array_ivar
+    o1 = Array.new
+    o1.instance_eval { @iv = 1 }
+    marshal_equal(o1) {|o| o.instance_eval { @iv }}
   end
 
   class MyException < Exception; def initialize(v, *args) super(*args); @v = v; end; attr_reader :v; end
@@ -94,6 +129,36 @@ module MarshalTestLib
     assert_raises(TypeError) { marshaltest(h) }
   end
 
+  def test_hash_ivar
+    o1 = Hash.new
+    o1.instance_eval { @iv = 1 }
+    marshal_equal(o1) {|o| o.instance_eval { @iv }}
+  end
+
+  def test_hash_extend
+    o1 = Hash.new
+    o1.extend(Mod1)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+    o1.extend(Mod2)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+  end
+
+  def test_hash_subclass_extend
+    o1 = MyHash.new(2)
+    o1.extend(Mod1)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+    o1.extend(Mod2)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+  end
+
   def test_bignum
     marshal_equal(-0x4000_0000_0000_0001)
     marshal_equal(-0x4000_0001)
@@ -122,6 +187,24 @@ module MarshalTestLib
     marshal_equal(-0.0) {|o| 1.0/o}
   end
 
+  def test_float_ivar
+    o1 = 1.23
+    o1.instance_eval { @iv = 1 }
+    marshal_equal(o1) {|o| o.instance_eval { @iv }}
+  end
+
+  def test_float_extend
+    o1 = 0.0/0.0
+    o1.extend(Mod1)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+    o1.extend(Mod2)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+  end
+
   class MyRange < Range; def initialize(v, *args) super(*args); @v = v; end end
   def test_range
     marshal_equal(1..2)
@@ -129,19 +212,17 @@ module MarshalTestLib
   end
 
   def test_range_subclass
-    STDERR.puts("test_range_subclass: known bug should be fixed.")
-    return
     marshal_equal(MyRange.new(4,5,8, false))
   end
 
   class MyRegexp < Regexp; def initialize(v, *args) super(*args); @v = v; end end
   def test_regexp
     marshal_equal(/a/)
+    marshal_equal(/A/i)
+    marshal_equal(/A/mx)
   end
 
   def test_regexp_subclass
-    STDERR.puts("test_regexp_subclass: known bug should be fixed.")
-    return
     marshal_equal(MyRegexp.new(10, "a"))
   end
 
@@ -150,8 +231,32 @@ module MarshalTestLib
     marshal_equal("abc")
   end
 
+  def test_string_ivar
+    o1 = String.new
+    o1.instance_eval { @iv = 1 }
+    marshal_equal(o1) {|o| o.instance_eval { @iv }}
+  end
+
   def test_string_subclass
     marshal_equal(MyString.new(10, "a"))
+  end
+
+  def test_string_subclass_cycle
+    str = MyString.new(10, "b")
+    str.instance_eval { @v = str }
+    marshal_equal(str) { |o|
+      assert_equal(o.__id__, o.instance_eval { @v }.__id__)
+      o.instance_eval { @v }
+    }
+  end
+
+  def test_string_subclass_extend
+    o = "abc"
+    o.extend(Mod1)
+    str = MyString.new(o, "c")
+    marshal_equal(str) { |o|
+      assert(o.instance_eval { @v }).kind_of?(Mod1)
+    }
   end
 
   MyStruct = Struct.new("MyStruct", :a, :b)
@@ -162,6 +267,24 @@ module MarshalTestLib
 
   def test_struct_subclass
     marshal_equal(MySubStruct.new(10,1,2))
+  end
+
+  def test_struct_ivar
+    o1 = MyStruct.new
+    o1.instance_eval { @iv = 1 }
+    marshal_equal(o1) {|o| o.instance_eval { @iv }}
+  end
+
+  def test_struct_subclass_extend
+    o1 = MyStruct.new
+    o1.extend(Mod1)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
+    o1.extend(Mod2)
+    marshal_equal(o1) { |o|
+      (class << self; self; end).ancestors
+    }
   end
 
   def test_symbol
@@ -201,14 +324,19 @@ module MarshalTestLib
   def test_time
     # once there was a bug caused by usec overflow.  try a little harder.
     10.times do
-      marshal_equal(Time.now)
+      t = Time.now
+      marshal_equal(t, t.usec.to_s)
     end
   end
 
   def test_time_subclass
-    STDERR.puts("test_time_subclass: known bug should be fixed.")
-    return
     marshal_equal(MyTime.new(10))
+  end
+
+  def test_time_ivar
+    o1 = Time.now
+    o1.instance_eval { @iv = 1 }
+    marshal_equal(o1) {|o| o.instance_eval { @iv }}
   end
 
   def test_true
@@ -250,15 +378,7 @@ module MarshalTestLib
     assert_raises(TypeError) { marshaltest(ENV) }
   end
 
-  module Mod1 end
-  module Mod2 end
   def test_extend
-    o = Object.new
-    o.extend Module.new
-    assert_raises(TypeError) { marshaltest(o) }
-
-    STDERR.puts("test_range_subclass: known bug should be fixed.")
-    return
     o = Object.new
     o.extend Mod1
     marshal_equal(o) { |obj| obj.kind_of? Mod1 }
@@ -266,6 +386,22 @@ module MarshalTestLib
     o.extend Mod1
     o.extend Mod2
     marshal_equal(o) {|obj| class << obj; ancestors end}
+    o = Object.new
+    o.extend Module.new
+    assert_raises(TypeError) { marshaltest(o) }
+  end
+
+  def test_extend_string
+    o = String.new
+    o.extend Mod1
+    marshal_equal(o) { |obj| obj.kind_of? Mod1 }
+    o = String.new
+    o.extend Mod1
+    o.extend Mod2
+    marshal_equal(o) {|obj| class << obj; ancestors end}
+    o = String.new
+    o.extend Module.new
+    assert_raises(TypeError) { marshaltest(o) }
   end
 
   def test_anonymous

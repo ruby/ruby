@@ -39,7 +39,6 @@ public
   attr_accessor :charset
   attr_accessor :default_encodingstyle
   attr_accessor :generate_explicit_type
-  attr_accessor :pretty
 
   def initialize(opt = {})
     @reftarget = nil
@@ -48,37 +47,38 @@ public
     @default_encodingstyle = opt[:default_encodingstyle] || EncodingNamespace
     @generate_explicit_type =
       opt.key?(:generate_explicit_type) ? opt[:generate_explicit_type] : true
-    @pretty = true # opt[:pretty]
+    @buf = @indent = @curr = nil
   end
 
   def generate(obj, io = nil)
+    @buf = io || ''
+    @indent = ''
+
     prologue
     @handlers.each do |uri, handler|
       handler.encode_prologue
     end
 
-    io = '' if io.nil?
-
     ns = XSD::NS.new
-    io << xmldecl
-    encode_data(io, ns, true, obj, nil, 0)
+    @buf << xmldecl
+    encode_data(ns, true, obj, nil)
 
     @handlers.each do |uri, handler|
       handler.encode_epilogue
     end
     epilogue
 
-    io
+    @buf
   end
 
-  def encode_data(buf, ns, qualified, obj, parent, indent)
+  def encode_data(ns, qualified, obj, parent)
     if obj.is_a?(SOAPEnvelopeElement)
-      encode_element(buf, ns, qualified, obj, parent, indent)
+      encode_element(ns, qualified, obj, parent)
       return
     end
 
     if @reftarget && !obj.precedents.empty?
-      @reftarget.add(obj.elename.name, obj)
+      add_reftarget(obj.elename.name, obj)
       ref = SOAPReference.new
       ref.elename.name = obj.elename.name
       ref.__setobj__(obj)
@@ -102,22 +102,29 @@ public
       raise FormatEncodeError.new("Element name not defined: #{ obj }.")
     end
 
-    indent_str = ' ' * indent
-    child_indent = @pretty ? indent + 2 : indent
-    handler.encode_data(buf, ns, qualified, obj, parent, indent_str) do |child, child_q|
-      encode_data(buf, ns.clone_ns, child_q, child, obj, child_indent)
+    handler.encode_data(self, ns, qualified, obj, parent) do |child, child_q|
+      indent_backup, @indent = @indent, @indent + '  '
+      encode_data(ns.clone_ns, child_q, child, obj)
+      @indent = indent_backup
     end
-    handler.encode_data_end(buf, ns, qualified, obj, parent, indent_str)
+    handler.encode_data_end(self, ns, qualified, obj, parent)
   end
 
-  def encode_element(buf, ns, qualified, obj, parent, indent)
-    indent_str = ' ' * indent
-    child_indent = @pretty ? indent + 2 : indent
+  def add_reftarget(name, node)
+    unless @reftarget
+      raise FormatEncodeError.new("Reftarget is not defined.")
+    end
+    @reftarget.add(name, node)
+  end
+
+  def encode_element(ns, qualified, obj, parent)
     attrs = {}
     if obj.is_a?(SOAPBody)
       @reftarget = obj
-      obj.encode(buf, ns, attrs, indent_str) do |child, child_q|
-        encode_data(buf, ns.clone_ns, child_q, child, obj, child_indent)
+      obj.encode(self, ns, attrs) do |child, child_q|
+	indent_backup, @indent = @indent, @indent + '  '
+        encode_data(ns.clone_ns, child_q, child, obj)
+	@indent = indent_backup
       end
       @reftarget = nil
     else
@@ -129,37 +136,36 @@ public
           SOAPGenerator.assign_ns(attrs, ns, XSD::Namespace, XSDNamespaceTag)
         end
       end
-      obj.encode(buf, ns, attrs, indent_str) do |child, child_q|
-        encode_data(buf, ns.clone_ns, child_q, child, obj, child_indent)
+      obj.encode(self, ns, attrs) do |child, child_q|
+	indent_backup, @indent = @indent, @indent + '  '
+        encode_data(ns.clone_ns, child_q, child, obj)
+	@indent = indent_backup
       end
     end
   end
 
-  def self.assign_ns(attrs, ns, namespace, tag = nil)
-    unless ns.assigned?(namespace)
-      tag = ns.assign(namespace, tag)
-      attrs['xmlns:' << tag] = namespace
-    end
-  end
-
-  def self.encode_tag(buf, elename, attrs = nil, indent = '')
+  def encode_tag(elename, attrs = nil)
     if attrs
-      buf << "\n#{ indent }<#{ elename }" <<
+      @buf << "\n#{ @indent }<#{ elename }" <<
         attrs.collect { |key, value|
           %Q[ #{ key }="#{ value }"]
         }.join <<
         '>'
     else
-      buf << "\n#{ indent }<#{ elename }>"
+      @buf << "\n#{ @indent }<#{ elename }>"
     end
   end
 
-  def self.encode_tag_end(buf, elename, indent = '', cr = nil)
+  def encode_tag_end(elename, cr = nil)
     if cr
-      buf << "\n#{ indent }</#{ elename }>"
+      @buf << "\n#{ @indent }</#{ elename }>"
     else
-      buf << "</#{ elename }>"
+      @buf << "</#{ elename }>"
     end
+  end
+
+  def encode_rawstring(str)
+    @buf << str
   end
 
   EncodeMap = {
@@ -171,8 +177,15 @@ public
     "\r" => '&#xd;'
   }
   EncodeCharRegexp = Regexp.new("[#{EncodeMap.keys.join}]")
-  def self.encode_str(str)
-    str.gsub(EncodeCharRegexp) { |c| EncodeMap[c] }
+  def encode_string(str)
+    @buf << str.gsub(EncodeCharRegexp) { |c| EncodeMap[c] }
+  end
+
+  def self.assign_ns(attrs, ns, namespace, tag = nil)
+    if namespace and !ns.assigned?(namespace)
+      tag = ns.assign(namespace, tag)
+      attrs['xmlns:' << tag] = namespace
+    end
   end
 
 private

@@ -41,9 +41,16 @@ end
 
 
 ###
+## Marker of SOAP/DM types.
+#
+module SOAPType; end
+
+
+###
 ## Mix-in module for SOAP base type instances.
 #
 module SOAPBasetype
+  include SOAPType
   include SOAP
 
   attr_accessor :encodingstyle
@@ -75,6 +82,7 @@ end
 ## Mix-in module for SOAP compound type instances.
 #
 module SOAPCompoundtype
+  include SOAPType
   include SOAP
 
   attr_accessor :encodingstyle
@@ -168,7 +176,7 @@ public
     d
   end
 
-  def SOAPReference.create_refid(obj)
+  def self.create_refid(obj)
     'id' << obj.__id__.to_s
   end
 end
@@ -597,7 +605,7 @@ public
     data = retrieve(idxary[0, idxary.size - 1])
     data[idxary.last] = value
 
-    if value.is_a?(SOAPBasetype) || value.is_a?(SOAPCompoundtype)
+    if value.is_a?(SOAPType)
       value.elename = value.elename.dup_name('item')
       
       # Sync type

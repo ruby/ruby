@@ -58,10 +58,10 @@ module Marshal
 
     def unmarshal(stream, mapping_registry = MarshalMappingRegistry)
       header, body = SOAP::Processor.unmarshal(stream)
+      #Mapping.soap2obj(body.root_node, mapping_registry)
       Mapping.soap2obj(body.root_node, mapping_registry)
     end
   end
-
 end
 
 

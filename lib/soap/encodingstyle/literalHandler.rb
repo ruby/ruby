@@ -37,7 +37,7 @@ class LiteralHandler < Handler
   ###
   ## encode interface.
   #
-  def encode_data(buf, ns, qualified, data, parent, indent = '')
+  def encode_data(generator, ns, qualified, data, parent)
     attrs = {}
     name = if qualified and data.elename.namespace
         SOAPGenerator.assign_ns(attrs, ns, data.elename.namespace)
@@ -48,31 +48,29 @@ class LiteralHandler < Handler
 
     case data
     when SOAPRawString
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
-      buf << data.to_s
+      generator.encode_tag(name, attrs)
+      generator.encode_rawstring(data.to_s)
     when XSD::XSDString
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
-      buf << SOAPGenerator.encode_str(@charset ?
-	XSD::Charset.encoding_to_xml(data.to_s, @charset) : data.to_s)
+      generator.encode_tag(name, attrs)
+      generator.encode_string(@charset ? XSD::Charset.encoding_to_xml(data.to_s, @charset) : data.to_s)
     when XSD::XSDAnySimpleType
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
-      buf << SOAPGenerator.encode_str(data.to_s)
+      generator.encode_tag(name, attrs)
+      generator.encode_string(data.to_s)
     when SOAPStruct
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
+      generator.encode_tag(name, attrs)
       data.each do |key, value|
 	value.elename.namespace = data.elename.namespace if !value.elename.namespace
         yield(value, true)
       end
     when SOAPArray
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
+      generator.encode_tag(name, attrs)
       data.traverse do |child, *rank|
 	data.position = nil
         yield(child, true)
       end
     when SOAPElement
-      SOAPGenerator.encode_tag(buf, name, attrs.update(data.extraattr),
-        indent)
-      buf << data.text if data.text
+      generator.encode_tag(name, attrs.update(data.extraattr))
+      generator.encode_rawstring(data.text) if data.text
       data.each do |key, value|
 	value.elename.namespace = data.elename.namespace if !value.elename.namespace
 	#yield(value, data.qualified)
@@ -83,13 +81,13 @@ class LiteralHandler < Handler
     end
   end
 
-  def encode_data_end(buf, ns, qualified, data, parent, indent)
+  def encode_data_end(generator, ns, qualified, data, parent)
     name = if qualified and data.elename.namespace
         ns.name(data.elename)
       else
         data.elename.name
       end
-    SOAPGenerator.encode_tag_end(buf, name, indent)
+    generator.encode_tag_end(name)
   end
 
 

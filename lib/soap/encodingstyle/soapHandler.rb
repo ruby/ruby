@@ -40,8 +40,8 @@ class SOAPHandler < Handler
   ###
   ## encode interface.
   #
-  def encode_data(buf, ns, qualified, data, parent, indent = '')
-    attrs = encode_attrs(ns, qualified, data, parent)
+  def encode_data(generator, ns, qualified, data, parent)
+    attrs = encode_attrs(generator, ns, data, parent)
 
     if parent && parent.is_a?(SOAPArray) && parent.position
       attrs[ns.name(AttrPositionName)] = '[' << parent.position.join(',') << ']'
@@ -55,32 +55,26 @@ class SOAPHandler < Handler
       name = data.elename.name
     end
 
-    if data.respond_to?(:encode)
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
-      return data.encode(buf, ns, attrs, indent)
-    end
-
     case data
     when SOAPReference
       attrs['href'] = '#' << data.refid
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
+      generator.encode_tag(name, attrs)
     when SOAPRawString
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
-      buf << data.to_s
+      generator.encode_tag(name, attrs)
+      generator.encode_rawstring(data.to_s)
     when XSD::XSDString
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
-      buf << SOAPGenerator.encode_str(@charset ?
-	XSD::Charset.encoding_to_xml(data.to_s, @charset) : data.to_s)
+      generator.encode_tag(name, attrs)
+      generator.encode_string(@charset ? XSD::Charset.encoding_to_xml(data.to_s, @charset) : data.to_s)
     when XSD::XSDAnySimpleType
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
-      buf << SOAPGenerator.encode_str(data.to_s)
+      generator.encode_tag(name, attrs)
+      generator.encode_string(data.to_s)
     when SOAPStruct
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
+      generator.encode_tag(name, attrs)
       data.each do |key, value|
 	yield(value, false)
       end
     when SOAPArray
-      SOAPGenerator.encode_tag(buf, name, attrs, indent)
+      generator.encode_tag(name, attrs)
       data.traverse do |child, *rank|
 	data.position = data.sparse ? rank : nil
 	yield(child, false)
@@ -91,14 +85,14 @@ class SOAPHandler < Handler
     end
   end
 
-  def encode_data_end(buf, ns, qualified, data, parent, indent = '')
+  def encode_data_end(generator, ns, qualified, data, parent)
     name = if qualified and data.elename.namespace
         ns.name(data.elename)
       else
         data.elename.name
       end
     cr = data.is_a?(SOAPCompoundtype)
-    SOAPGenerator.encode_tag_end(buf, name, indent, cr)
+    generator.encode_tag_end(name, cr)
   end
 
 
@@ -292,7 +286,7 @@ private
       content_typename(data.arytype.name) << '[' << data.size.join(',') << ']')
   end
 
-  def encode_attrs(ns, qualified, data, parent)
+  def encode_attrs(generator, ns, data, parent)
     return {} if data.is_a?(SOAPReference)
     attrs = {}
 
@@ -330,12 +324,23 @@ private
 
     data.extraattr.each do |key, value|
       SOAPGenerator.assign_ns(attrs, ns, key.namespace)
-      attrs[ns.name(key)] = value       # ns.name(value) ?
+      attrs[ns.name(key)] = encode_attr_value(generator, ns, key, value)
     end
     if data.id
       attrs['id'] = data.id
     end
     attrs
+  end
+
+  def encode_attr_value(generator, ns, qname, value)
+    if value.is_a?(SOAPType)
+      refid = SOAPReference.create_refid(value)
+      value.id = refid
+      generator.add_reftarget(qname.name, value)
+      '#' + refid
+    else
+      value.to_s
+    end
   end
 
   def decode_tag_by_wsdl(ns, elename, typestr, parent, arytypestr, extraattr)
@@ -423,11 +428,13 @@ private
     end
 
     if (klass = TypeMap[type])
-      klass.decode(elename)
-    else
-      # Unknown type... Struct or String
-      SOAPUnknown.new(self, elename, type, extraattr)
+      node = klass.decode(elename)
+      node.extraattr.update(extraattr)
+      return node
     end
+
+    # Unknown type... Struct or String
+    SOAPUnknown.new(self, elename, type, extraattr)
   end
 
   def decode_textbuf(node)
@@ -508,10 +515,20 @@ private
         id = value
         next
       end
-      extraattr[qname] = value
+      extraattr[qname] = decode_attr_value(ns, qname, value)
     end
 
     return is_nil, type, arytype, root, offset, position, href, id, extraattr
+  end
+
+  def decode_attr_value(ns, qname, value)
+    if /\A#/ =~ value
+      o = SOAPReference.new(value)
+      @refpool << o
+      o
+    else
+      value
+    end
   end
 
   def decode_arypos(position)
@@ -524,7 +541,7 @@ private
     while !@refpool.empty? && count > 0
       @refpool = @refpool.find_all { |ref|
 	o = @idpool.find { |item|
-	  ('#' << item.id == ref.refid)
+	  '#' + item.id == ref.refid
 	}
 	unless o
 	  raise EncodingStyleError.new("Unresolved reference: #{ ref.refid }.")

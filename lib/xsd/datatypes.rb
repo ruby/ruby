@@ -485,7 +485,7 @@ module XSDDateTimeImpl
 
   def to_time
     begin
-      if @data.of * SecInDay == Time.now.utc_offset
+      if @data.offset * SecInDay == Time.now.utc_offset
         d = @data
         usec = (d.sec_fraction * SecInDay * 1000000).to_f
         Time.local(d.year, d.month, d.mday, d.hour, d.min, d.sec, usec)
@@ -643,7 +643,7 @@ private
     s = format('%02d:%02d:%02d', @data.hour, @data.min, @data.sec)
     if @data.sec_fraction.nonzero?
       fr = @data.sec_fraction * SecInDay
-      shiftsize = fr.denominator.to_s.size
+      shiftsize = fr.denominator.to_s.size + 1
       fr_s = (fr * (10 ** shiftsize)).to_i.to_s
       s << '.' << '0' * (shiftsize - fr_s.size) << fr_s.sub(/0+$/, '')
     end

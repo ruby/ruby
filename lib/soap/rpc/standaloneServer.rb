@@ -50,6 +50,7 @@ class StandaloneServer < Logger::Application
 
   def initialize(app_name, namespace, host = "0.0.0.0", port = 8080)
     super(app_name)
+    self.level = Logger::Severity::INFO
     @namespace = namespace
     @host = host
     @port = port

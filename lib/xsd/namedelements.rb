@@ -60,6 +60,10 @@ class NamedElements
     @elements << rhs
     self
   end
+  
+  def delete(rhs)
+    @elements.delete(rhs)
+  end
 
   def +(rhs)
     o = NamedElements.new
