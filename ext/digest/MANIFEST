@@ -40,6 +40,5 @@ sha2/sha2.h
 sha2/sha2hl.c
 sha2/sha2init.c
 sha2/depend
-test.rb
 test.sh
 depend
