@@ -1,9 +1,21 @@
+#
+# = tuplespace: <i>???</i>
+#
+# <i>Overview of rinda/tuplespace.rb</i> 
+#
+# <i>Example(s)</i> 
+#
+
 require 'monitor'
 require 'thread'
 require 'drb/drb'
 require 'rinda/rinda'
 
 module Rinda
+  #
+  # A TupleEntry is a Tuple (i.e. a possible entry in some Tuplespace)
+  # together with expiry and cancellation data.
+  #
   class TupleEntry
     include DRbUndumped
 
@@ -23,8 +35,13 @@ module Rinda
       !canceled? && !expired?
     end
 
+    # Return the object which makes up the tuple itself: the Array
+    # or Hash.
     def value; @ary.value; end
+
     def canceled?; @cancel; end
+
+    # Has this tuple expired? (true/false).
     def expired?
       return true unless @expires
       return false if @expires > Time.now
@@ -34,11 +51,28 @@ module Rinda
       return @expires < Time.now
     end
 
+    # Reset the expiry data according to the supplied argument. If
+    # the argument is:
+    #
+    # +nil+::    it is set to expire in the far future.
+    # +false+::  it has epired.
+    # Numeric::  it will expire in that many seconds.
+    #
+    # Otherwise the argument refers to some kind of renewer object
+    # which will reset its expiry time. 
     def renew(sec_or_renewer)
       sec, @renewer = get_renewer(sec_or_renewer)
       @expires = make_expires(sec)
     end
     
+    # Create an expiry time. Called with:
+    #
+    # +true+:: the expiry time is the start of 1970 (i.e. expired).
+    # +nil+::  it is  Tue Jan 19 03:14:07 GMT Standard Time 2038 (i.e. when
+    #          UNIX clocks will die)
+    #
+    # otherwise it is +sec+ seconds into the
+    # future.
     def make_expires(sec=nil)
       case sec
       when Numeric
@@ -50,19 +84,25 @@ module Rinda
       end
     end
 
+    # Accessor method for the tuple.
     def [](key)
       @ary[key]
     end
 
+    # The size of the tuple.
     def size
       @ary.size
     end
     
+    # Create a new tuple from the supplied object (array-like).
     def make_tuple(ary)
       Rinda::Tuple.new(ary)
     end
     
     private
+    # Given +true+, +nil+, or +Numeric+, returns that (suitable input to
+    # make_epires) and +nil+ (no actual +renewer+), else it return the
+    # time data from the supplied +renewer+.
     def get_renewer(it)
       case it
       when Numeric, true, nil
@@ -77,6 +117,9 @@ module Rinda
     end
   end
 
+  #
+  # The same as a TupleEntry but with methods to do matching.
+  #
   class TemplateEntry < TupleEntry
     def initialize(ary, expires=nil)
       super(ary, expires)
@@ -87,15 +130,20 @@ module Rinda
       @template.match(tuple)
     end
 
+    # An alias for #match.
     def ===(tuple)
       match(tuple)
     end
 
+    # Create a new Template from the supplied object.
     def make_tuple(ary)
       Rinda::Template.new(ary)
     end
   end
 
+  #
+  # <i>Documenation?</i>
+  #
   class WaitTemplateEntry < TemplateEntry
     def initialize(place, ary, expires=nil)
       super(ary, expires)
@@ -126,6 +174,9 @@ module Rinda
     end
   end
 
+  #
+  # <i>Documenation?</i>
+  #
   class NotifyTemplateEntry < TemplateEntry
     def initialize(place, event, tuple, expires=nil)
       ary = [event, Rinda::Template.new(tuple)]
@@ -156,40 +207,52 @@ module Rinda
     end
   end
 
+  #
+  # TupleBag is an unordered collection of tuples. It is the basis
+  # of Tuplespace.
+  # 
   class TupleBag
     def initialize
       @hash = {}
     end
     
+    # Add the object to the TupleBag.
     def push(ary)
       size = ary.size
       @hash[size] ||= []
       @hash[size].push(ary)
     end
     
+    # Remove the object from the TupleBag.
     def delete(ary)
       size = ary.size
       @hash.fetch(size, []).delete(ary)
     end
 
+    # Finds all tuples that match the template and are alive.
     def find_all(template)
       @hash.fetch(template.size, []).find_all do |tuple|
 	tuple.alive? && template.match(tuple)
       end
     end
 
+    # Finds a template that matches and is alive.
     def find(template)
       @hash.fetch(template.size, []).find do |tuple|
 	tuple.alive? && template.match(tuple)
       end
     end
 
+    # Finds all tuples in the TupleBag which when treated as
+    # templates, match the supplied tuple and are alive.
     def find_all_template(tuple)
       @hash.fetch(tuple.size, []).find_all do |template|
 	template.alive? && template.match(tuple)
       end
     end
 
+    # Delete tuples which are not alive from the TupleBag. Returns
+    # the list of tuples so deleted.
     def delete_unless_alive
       deleted = []
       @hash.keys.each do |size|
@@ -207,20 +270,24 @@ module Rinda
     end
   end
 
+  # 
+  # The Tuplespace manages access to the tuples it contains,
+  # ensuring mutual exclusion requirments are met.
+  #
   class TupleSpace
     include DRbUndumped
     include MonitorMixin
-    def initialize(timeout=60)
+    def initialize(period=60)
       super()
       @bag = TupleBag.new
       @read_waiter = TupleBag.new
       @take_waiter = TupleBag.new
       @notify_waiter = TupleBag.new
-      @timeout = timeout
-      @period = timeout * 2
+      @period = period
       @keeper = keeper
     end
 
+    # Put a tuple into the tuplespace.
     def write(tuple, sec=nil)
       entry = TupleEntry.new(tuple, sec)
       synchronize do
@@ -244,6 +311,7 @@ module Rinda
       entry
     end
 
+    # Remove an entry from the Tuplespace.
     def take(tuple, sec=nil, &block)
       move(nil, tuple, sec, &block)
     end

@@ -89,6 +89,8 @@ Mon Feb 16 22:22:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 	* lib/generator.rb: corrected doc format
 	* lib/rinda/rinda.rb: added documentation (from Hugh Sasse)
 	* lib/rinda/tuplespace.rb: ditto
+	
+	[Note: rinda files actually committed Wed Feb 18 07:27:00 2004]
 
 Mon Feb 16 20:28:52 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
