@@ -1,4 +1,4 @@
-.\" sha1.doc -  -*- Indented-Text -*- created at: Thu Mat 17 06:51:50 JST 2001
+.\" sha1.doc -  -*- Indented-Text -*- created at: Thu May 17 06:51:50 JST 2001
 
 ** SHA1(Class)
 
