@@ -652,8 +652,8 @@ class_instance_method_list(argc, argv, mod, func)
  *     end
  *     
  *     A.instance_methods                #=> ["method1"]
- *     B.instance_methods                #=> ["method2"]
- *     C.instance_methods                #=> ["method3"]
+ *     B.instance_methods(false)         #=> ["method2"]
+ *     C.instance_methods(false)         #=> ["method3"]
  *     C.instance_methods(true).length   #=> 43
  */
 
@@ -756,8 +756,8 @@ rb_class_public_instance_methods(argc, argv, mod)
  *     end
  *     
  *     Single.singleton_methods    #=> ["four"]
- *     a.singleton_methods         #=> ["two", "one"]
- *     a.singleton_methods(true)   #=> ["two", "one", "three"]
+ *     a.singleton_methods(false)  #=> ["two", "one"]
+ *     a.singleton_methods         #=> ["two", "one", "three"]
  */
 
 VALUE
@@ -809,11 +809,7 @@ rb_define_method(klass, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    ID id = rb_intern(name);
-    int ex = NOEX_PUBLIC;
-
-
-    rb_add_method(klass, id, NEW_CFUNC(func, argc), ex);
+    rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PUBLIC);
 }
 
 void

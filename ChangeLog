@@ -1,3 +1,8 @@
+Wed Jun 16 23:05:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_freeze): prepare string representation before
+	  freezing. [ruby-talk:103646]
+
 Wed Jun 16 19:57:24 2004  Michal Rokos  <michal@ruby-lang.org>
 
 	* test/ruby/test_array.rb: extend testcase to check #first, #last,

@@ -1215,6 +1215,21 @@ rb_mod_to_s(klass)
 
 /*
  *  call-seq:
+ *     mod.freeze
+ *  
+ *  Prevents further modifications to <i>mod</i>.
+ */
+
+static VALUE
+rb_mod_freeze(mod)
+    VALUE mod;
+{
+    rb_mod_to_s(mod);
+    return rb_obj_freeze(mod);
+}
+
+/*
+ *  call-seq:
  *     mod === obj    => true or false
  *  
  *  Case Equality---Returns <code>true</code> if <i>anObject</i> is an
@@ -2597,6 +2612,7 @@ Init_Object()
     rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
 
+    rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
     rb_define_method(rb_cModule, "==", rb_obj_equal, 1);
     rb_define_method(rb_cModule, "<=>",  rb_mod_cmp, 1);
