@@ -7029,7 +7029,7 @@ proc_invoke(proc, args, self, klass)
 
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
-    PUSH_TAG(pcall ? PROT_PCALL : PROT_CALL);
+    PUSH_TAG((pcall || orphan) ? PROT_PCALL : PROT_CALL);
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);

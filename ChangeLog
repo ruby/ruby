@@ -1,3 +1,9 @@
+Thu Sep 18 22:43:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): should push PROT_PCALL tag for orphans.
+
+	* eval.c (proc_invoke): should update "result" for orphans.
+
 Thu Sep 18 20:30:17 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb: update document.
