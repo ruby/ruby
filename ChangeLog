@@ -1,3 +1,7 @@
+Mon Feb 25 13:32:13 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/shell.rb (Shell::expand_path): relative to @cwd.
+
 Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
 
         * lib/time.rb: fix unit tests before Unix Epoch.
