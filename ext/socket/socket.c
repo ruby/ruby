@@ -1129,9 +1129,9 @@ tcp_svr_init(argc, argv, sock)
     VALUE arg1, arg2;
 
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2)
-	return init_inetsock(sock, arg1, arg2, NULL, Qnil, INET_SERVER);
+	return init_inetsock(sock, arg1, arg2, Qnil, Qnil, INET_SERVER);
     else
-	return init_inetsock(sock, Qnil, arg1, NULL, Qnil, INET_SERVER);
+	return init_inetsock(sock, Qnil, arg1, Qnil, Qnil, INET_SERVER);
 }
 
 static VALUE
@@ -2334,7 +2334,7 @@ sock_s_unpack_sockaddr_in(self, addr)
 	rb_raise(rb_eTypeError, "sockaddr_in size differs - %ld required; %d given",
 		 RSTRING(addr)->len, sizeof(struct sockaddr_in));
     }
-    host = mkipaddr(sockaddr);
+    host = mkipaddr((struct sockaddr*)sockaddr);
     OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }

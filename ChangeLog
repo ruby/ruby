@@ -1,3 +1,11 @@
+Mon Dec 30 05:10:00 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/socket/socket.c (tcp_svr_init): local host to
+	  init_inetsock() is VALUE but not pointer.
+
+	* ext/socket/socket.c (sock_s_unpack_sockaddr_in): get rid of
+	  gcc-3 -O3 warning.
+
 Sun Dec 29 23:45:53 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* gc.c (gc_sweep): adjust GC trigger.
