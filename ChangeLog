@@ -1,3 +1,8 @@
+Fri Jul 26 18:32:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-expr-beg): wrong indent at modifiers
+	  after ?.
+
 Fri Jul 26 16:01:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in (create_makefile): use Regexp in gsub.
