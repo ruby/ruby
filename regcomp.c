@@ -29,6 +29,24 @@
 
 #include "regparse.h"
 
+OnigAmbigType OnigDefaultAmbigFlag =
+  (ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE |
+   ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE);
+
+extern OnigAmbigType
+onig_get_default_ambig_flag()
+{
+  return OnigDefaultAmbigFlag;
+}
+
+extern int
+onig_set_default_ambig_flag(OnigAmbigType ambig_flag)
+{
+  OnigDefaultAmbigFlag = ambig_flag;
+  return 0;
+}
+
+
 #ifndef PLATFORM_UNALIGNED_WORD_ACCESS
 static unsigned char PadBuf[WORD_ALIGNMENT_SIZE];
 #endif

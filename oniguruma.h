@@ -29,10 +29,14 @@
  * SUCH DAMAGE.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   3
-#define ONIGURUMA_VERSION_MINOR   5
-#define ONIGURUMA_VERSION_TEENY   4
+#define ONIGURUMA_VERSION_MINOR   6
+#define ONIGURUMA_VERSION_TEENY   0
 
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
@@ -82,6 +86,10 @@ typedef unsigned int   OnigDistance;
 #define ONIG_INFINITE_DISTANCE  ~((OnigDistance )0)
 
 /* ambiguous match flag */
+typedef unsigned int OnigAmbigType;
+
+ONIG_EXTERN OnigAmbigType OnigDefaultAmbigFlag;
+
 #define ONIGENC_AMBIGUOUS_MATCH_NONE                   0
 #define ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE            (1<<0)
 #define ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE         (1<<1)
@@ -96,12 +104,8 @@ typedef unsigned int   OnigDistance;
   ( ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE | \
     ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE | \
     ONIGENC_AMBIGUOUS_MATCH_COMPOUND )
-#define ONIGENC_AMBIGUOUS_MATCH_DEFAULT \
-    (ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE | \
-     ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE | \
-     ONIGENC_AMBIGUOUS_MATCH_COMPOUND )
+#define ONIGENC_AMBIGUOUS_MATCH_DEFAULT  OnigDefaultAmbigFlag
 
-typedef unsigned int OnigAmbigType;
 
 #define ONIGENC_MAX_COMP_AMBIG_CODE_LEN       3
 #define ONIGENC_MAX_COMP_AMBIG_CODE_ITEM_NUM  4
@@ -851,6 +855,10 @@ int onig_set_meta_char P_((OnigEncoding enc, unsigned int what, OnigCodePoint co
 ONIG_EXTERN
 void onig_copy_encoding P_((OnigEncoding to, OnigEncoding from));
 ONIG_EXTERN
+OnigAmbigType onig_get_default_ambig_flag P_(());
+ONIG_EXTERN
+int onig_set_default_ambig_flag P_((OnigAmbigType ambig_flag));
+ONIG_EXTERN
 unsigned int onig_get_match_stack_limit_size P_((void));
 ONIG_EXTERN
 int onig_set_match_stack_limit_size P_((unsigned int size));
@@ -860,5 +868,9 @@ ONIG_EXTERN
 const char* onig_version P_((void));
 ONIG_EXTERN
 const char* onig_copyright P_((void));
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ONIGURUMA_H */

@@ -1,3 +1,8 @@
+Sun Feb 13 10:53:08 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* oniggnu.h, oniguruma.h, regcomp.c, st.c: imported
+	  Oni Guruma 3.6.0.
+
 Sun Feb 13 01:33:19 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (ERB::Util.h, u): make it module_function.

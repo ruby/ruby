@@ -246,6 +246,7 @@ st_free_table(table)
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
+            table->type->key_free(ptr->key);
 	    free(ptr);
 	    ptr = next;
 	}
