@@ -71,9 +71,9 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
     if ( max_size >= 0 )
     {
         max_size -= skip;
-        if ( max_size < 0 ) max_size = 0;
+        if ( max_size <= 0 )  max_size = 0;
+        else                  str->ptr += max_size - 1;
 
-        str->ptr += max_size;
         if ( str->ptr > str->end )
         {
             str->ptr = str->end;

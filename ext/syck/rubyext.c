@@ -45,14 +45,10 @@ typedef struct {
 
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
 
-#ifndef StringValue
-#define StringValue(v)
-#endif
-
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_anchors, s_default_set;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_anchors, s_default_set;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
 VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
@@ -127,20 +123,20 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 
     ASSERT( str != NULL );
     max_size -= skip;
-    if ( max_size < 0 ) max_size = 0;
 
-    if ( max_size > 0 )
+    if ( max_size <= 0 ) max_size = 0;
+    else
     {
         /*
          * call io#read.
          */
         VALUE src = (VALUE)str->ptr;
         VALUE n = LONG2NUM(max_size);
-        VALUE str = rb_funcall2(src, s_read, 1, &n);
-        if (!NIL_P(str))
+        VALUE str2 = rb_funcall2(src, s_read, 1, &n);
+        if (!NIL_P(str2))
         {
-            len = RSTRING(str)->len;
-            memcpy( buf + skip, RSTRING(str)->ptr, len );
+            len = RSTRING(str2)->len;
+            memcpy( buf + skip, RSTRING(str2)->ptr, len );
         }
     }
     len += skip;
@@ -654,7 +650,8 @@ rb_syck_bad_anchor_handler(p, a)
     SyckParser *p;
     char *a;
 {
-    SyckNode *badanc = syck_new_map( rb_str_new2( "name" ), rb_str_new2( a ) );
+    VALUE anchor_name = rb_str_new2( a );
+    SyckNode *badanc = syck_new_map( rb_str_new2( "name" ), anchor_name );
     badanc->type_id = syck_strndup( "tag:ruby.yaml.org,2002:object:YAML::Syck::BadAlias", 53 );
     return badanc;
 }
@@ -733,6 +730,35 @@ syck_parser_initialize( self, options )
 {
 	rb_iv_set(self, "@options", options);
 	return self;
+}
+
+/*
+ * YAML::Syck::Parser.bufsize = Integer
+ */
+static VALUE
+syck_parser_bufsize_set( self, size )
+    VALUE self, size;
+{
+	SyckParser *parser;
+
+	Data_Get_Struct(self, SyckParser, parser);
+    if ( rb_respond_to( size, s_to_i ) ) {
+        parser->bufsize = NUM2INT(rb_funcall(size, s_to_i, 0));
+    }
+	return self;
+}
+
+/*
+ * YAML::Syck::Parser.bufsize => Integer
+ */
+static VALUE
+syck_parser_bufsize_get( self )
+    VALUE self;
+{
+	SyckParser *parser;
+
+	Data_Get_Struct(self, SyckParser, parser);
+	return INT2FIX( parser->bufsize );
 }
 
 /*
@@ -1333,6 +1359,7 @@ Init_syck()
     s_utc = rb_intern("utc");
     s_at = rb_intern("at");
     s_to_f = rb_intern("to_f");
+    s_to_i = rb_intern("to_i");
     s_read = rb_intern("read");
     s_anchors = rb_intern("anchors");
     s_binmode = rb_intern("binmode");
@@ -1373,6 +1400,8 @@ Init_syck()
     rb_define_method( cLoader, "add_builtin_type", syck_loader_add_builtin_type, -1 );
     rb_define_method( cLoader, "add_ruby_type", syck_loader_add_ruby_type, -1 );
     rb_define_method( cLoader, "add_private_type", syck_loader_add_private_type, -1 );
+    rb_define_method( cLoader, "bufsize=", syck_parser_bufsize_set, 1 );
+    rb_define_method( cLoader, "bufsize", syck_parser_bufsize_get, 0 );
     rb_define_method( cLoader, "detect_implicit", syck_loader_detect_implicit, 1 );
     rb_define_method( cLoader, "transfer", syck_loader_transfer, 2 );
 

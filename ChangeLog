@@ -1,3 +1,13 @@
+Wed Nov 26 04:48:42 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+	* ext/syck/token.c: removed YYTOKTMP references which
+	  were causing buffer overflows on large block scalars,
+	  comments, quoted scalars and plain scalars.
+
+	* ext/syck/rubyext.c: dynamic changing of buffer size.
+
+	* ext/syck/syck.h: default buffer size of 4k.
+
 Wed Nov 26 00:55:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpresponse.rb: add HTTPResponse#keep_alive=.

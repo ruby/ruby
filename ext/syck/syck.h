@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.41"
+#define SYCK_VERSION    "0.42"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -47,7 +47,7 @@ extern "C" {
 #endif
 
 #define ALLOC_CT 8
-#define SYCK_BUFFERSIZE 16384
+#define SYCK_BUFFERSIZE 4096
 #define S_ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
 #define S_ALLOC(type) (type*)malloc(sizeof(type))
 #define S_REALLOC_N(var,type,n) (var)=(type*)realloc((char*)(var),sizeof(type)*(n))
