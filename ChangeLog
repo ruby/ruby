@@ -1,3 +1,8 @@
+Sat Jul 24 13:32:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (rb_range_beg_len): returns Qnil only when "beg" points
+	  outside of a range.  No boundary check for "end".
+
 Fri Jul 23 16:40:25 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (define_final): should not disclose NODE* to Ruby world.

@@ -774,10 +774,8 @@ rb_ary_subseq(ary, beg, len)
  *  continuing for _length_ elements, or returns a subarray
  *  specified by _range_.
  *  Negative indices count backward from the end of the
- *  array (-1 is the last element). Returns nil if any indices
- *  are out of range unless the index equals the array size and a
- *  _length_ or _range_ parameter is given, in which case an
- *  empty array is returned.
+ *  array (-1 is the last element). Returns nil if the index
+ *  (or starting index) are out of range.
  *
  *     a = [ "a", "b", "c", "d", "e" ]
  *     a[2] +  a[0] + a[1]    #=> "cab"
