@@ -4905,6 +4905,8 @@ cond0(node)
 	else {
 	    rb_warning("literal in condition");
 	}
+      default:
+	break;
     }
     return node;
 }
