@@ -37,7 +37,9 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
 EXTSTATIC = $(EXTSTATIC)
+!if defined(RDOCTARGET)
 RDOCTARGET = $(RDOCTARGET)
+!endif
 |
 	@cpp32 -I$(srcdir) -P- -o$(MAKEFILE) > nul &&|
 \#include "version.h"
