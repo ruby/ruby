@@ -1,3 +1,13 @@
+Fri Feb 21 21:03:41 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: new method FileUtils#copy_stream.
+
+	* lib/fileutils.rb: new method FileUtils#compare_file.
+
+	* lib/fileutils.rb: new method FileUtils#compare_stream.
+
+	* lib/fileutils.rb: new method FileUtils#rmtree (alias of rm_rf).
+
 Fri Feb 21 17:19:27 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c (rb_f_require): do not need to abort if a DLEXT file

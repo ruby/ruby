@@ -14,7 +14,7 @@
 # 
 #   cd( dir, *options )
 #   cd( dir, *options ) {|dir| .... }
-#   uptodate?( newer, older_list, *options )
+#   pwd()
 #   mkdir( dir, *options )
 #   mkdir_p( dir, *options )
 #   rmdir( dir, *options )
@@ -32,7 +32,6 @@
 #   rm( list, *options )
 #   rm_r( list, *options )
 #   rm_rf( list, *options )
-#   cmp( file_a, file_b, *options )
 #   install( src, dest, mode = <src's>, *options )
 #   chmod( mode, list, *options )
 #   touch( list, *options )
@@ -45,6 +44,14 @@
 # All methods that have the concept of a "source" file or directory can take
 # either one file or a list of files in that argument.  See the method
 # documentation for examples.
+#
+# There are some `low level' methods, which does not accept any option:
+#
+#   uptodate?( file, cmp_list )
+#   copy_file( srcfilename, destfilename )
+#   copy_stream( srcstream, deststream )
+#   compare_file( file_a, file_b )
+#   compare_stream( stream_a, stream_b )
 #
 # == module FileUtils::Verbose
 # 
@@ -88,7 +95,7 @@ module FileUtils
   def cd( dir, *options, &block ) # :yield: dir
     noop, verbose, = fu_parseargs(options, :noop, :verbose)
     fu_output_message "cd #{dir}" if verbose
-    Dir.chdir dir, &block unless noop
+    Dir.chdir(dir, &block) unless noop
     fu_output_message 'cd -' if verbose and block
   end
 
@@ -380,19 +387,30 @@ module FileUtils
   end
   private :fu_preserve_attr
 
-  def copy_file( src, dest ) #:nodoc:
-    bsize = fu_blksize(File.stat(src).blksize)
+  #
+  # Copies file +src+ to +dest+.
+  # Both of +src+ and +dest+ must be a filename.
+  #
+  def copy_file( src, dest )
     File.open(src,  'rb') {|r|
     File.open(dest, 'wb') {|w|
-        begin
-          while true
-            w.syswrite r.sysread(bsize)
-          end
-        rescue EOFError
-        end
+        copy_stream r, w
     } }
   end
 
+  #
+  # Copies stream +src+ to +dest+.
+  # Both of +src+ and +dest+ must be a IO.
+  #
+  def copy_stream( src, dest )
+    bsize = fu_stream_blksize(src, dest)
+    begin
+      while true
+        dest.syswrite src.sysread(bsize)
+      end
+    rescue EOFError
+    end
+  end
 
   #
   # Options: noop verbose
@@ -521,6 +539,8 @@ module FileUtils
     rm_r list, :force, *options
   end
 
+  alias rmtree rm_rf
+
   def remove_file( fname, force = false ) #:nodoc:
     first_time_p = true
     begin
@@ -557,42 +577,40 @@ module FileUtils
 
 
   #
-  # Options: (none)
-  # 
   # Returns true if the contents of a file A and a file B are identical.
   # 
-  #   FileUtils.cmp 'somefile', 'somefile'  #=> true
-  #   FileUtils.cmp '/bin/cp', '/bin/mv'    #=> maybe false
+  #   FileUtils.compare_file('somefile', 'somefile')  #=> true
+  #   FileUtils.compare_file('/bin/cp', '/bin/mv')    #=> maybe false
   #
-  def cmp( filea, fileb, *options )
-    raise ArgumentError, 'cmp does not accept any option' unless options.empty?
-
-    sa = sb = nil
-    st = File.stat(filea)
-    bsize = fu_blksize(st.blksize)
-    return false unless File.size(fileb) == st.size
-
-    File.open(filea, 'rb') {|a|
-    File.open(fileb, 'rb') {|b|
-      begin
-        while sa == sb
-          sa = a.read(bsize)
-          sb = b.read(bsize)
-          unless sa and sb
-            if sa.nil? and sb.nil?
-              return true
-            end
-          end
-        end
-      rescue EOFError
-        ;
-      end
+  def compare_file( a, b )
+    return false unless File.size(a) == File.size(b)
+    File.open(a, 'rb') {|fa|
+    File.open(b, 'rb') {|fb|
+        return compare_stream(fa, fb)
     } }
+  end
 
+  alias identical? compare_file
+  alias cmp compare_file
+
+  #
+  # Returns true if the contents of a stream +a+ and +b+ are identical.
+  #
+  def compare_stream( a, b )
+    bsize = fu_stream_blksize(a, b)
+    sa = sb = nil
+    while sa == sb
+      sa = a.read(bsize)
+      sb = b.read(bsize)
+      unless sa and sb
+        if sa.nil? and sb.nil?
+          return true
+        end
+      end
+    end
     false
   end
 
-  alias identical? cmp
 
   #
   # Options: noop verbose
@@ -635,6 +653,7 @@ module FileUtils
     return if noop
     File.chmod mode, *list
   end
+
 
   #
   # Options: noop verbose
@@ -702,12 +721,13 @@ module FileUtils
     end
   end
 
-  def fu_blksize( size )
-    if size.nil? or size.zero?
-      2048
-    else
-      size
+  def fu_stream_blksize( *streams )
+    streams.each do |s|
+      next unless s.respond_to?(:stat)
+      size = s.stat.blksize
+      return size unless size.nil? and size.zero?
     end
+    1024
   end
 
 
@@ -729,11 +749,9 @@ module FileUtils
     'cd'           => %w( noop verbose ),
     'chdir'        => %w( noop verbose ),
     'chmod'        => %w( noop verbose ),
-    'cmp'          => %w(),
     'copy'         => %w( preserve noop verbose ),
     'cp'           => %w( preserve noop verbose ),
     'cp_r'         => %w( preserve noop verbose ),
-    'identical?'   => %w(),
     'install'      => %w( noop verbose ),
     'link'         => %w( force noop verbose ),
     'ln'           => %w( force noop verbose ),
@@ -750,11 +768,11 @@ module FileUtils
     'rm_f'         => %w( noop verbose ),
     'rm_r'         => %w( force noop verbose ),
     'rm_rf'        => %w( noop verbose ),
+    'rmtree'       => %w( noop verbose ),
     'rmdir'        => %w( noop verbose ),
     'safe_unlink'  => %w( noop verbose ),
     'symlink'      => %w( force noop verbose ),
-    'touch'        => %w( noop verbose ),
-    'uptodate?'    => %w()
+    'touch'        => %w( noop verbose )
   }
 
 
