@@ -1063,6 +1063,32 @@ module Net
       return thread_internal("UID THREAD", argorithm, search_keys, charset)
     end
 
+    def self.decode_utf7(s)
+      return s.gsub(/&(.*?)-/n) {
+	if $1.empty?
+	  "&"
+	else
+	  base64 = $1.tr(",", "/")
+	  x = base64.length % 4
+	  if x > 0
+	    base64.concat("=" * (4 - x))
+	  end
+	  u16tou8(base64.unpack("m")[0])
+	end
+      }
+    end
+
+    def self.encode_utf7(s)
+      return s.gsub(/(&)|([^\x20-\x25\x27-\x7e]+)/n) { |x|
+	if $1
+	  "&-"
+	else
+	  base64 = [u8tou16(x)].pack("m")
+	  "&" + base64.delete("=\n").tr("/", ",") + "-"
+	end
+      }
+    end
+
     private
 
     CRLF = "\r\n"
@@ -1351,6 +1377,125 @@ module Net
 	end
       end
     end
+
+    def self.u16tou8(s)
+      len = s.length
+      if len < 2
+	return ""
+      end
+      buf = ""
+      i = 0
+      while i < len
+	c = s[i] << 8 | s[i + 1]
+	i += 2
+	if c == 0xfeff
+	  next
+	elsif c < 0x0080
+	  buf.concat(c)
+	elsif c < 0x0800
+	  b2 = c & 0x003f
+	  b1 = c >> 6
+	  buf.concat(b1 | 0xc0)
+	  buf.concat(b2 | 0x80)
+	elsif c >= 0xdc00 && c < 0xe000
+	  raise "invalid surrogate detected"
+	elsif c >= 0xd800 && c < 0xdc00
+	  if i + 2 > len
+	    raise "invalid surrogate detected"
+	  end
+	  low = s[i] << 8 | s[i + 1]
+	  i += 2
+	  if low < 0xdc00 || low > 0xdfff
+	    raise "invalid surrogate detected"
+	  end
+	  c = (((c & 0x03ff)) << 10 | (low & 0x03ff)) + 0x10000
+	  b4 = c & 0x003f
+	  b3 = (c >> 6) & 0x003f
+	  b2 = (c >> 12) & 0x003f
+	  b1 = c >> 18;
+	  buf.concat(b1 | 0xf0)
+	  buf.concat(b2 | 0x80)
+	  buf.concat(b3 | 0x80)
+	  buf.concat(b4 | 0x80)
+	else # 0x0800-0xffff
+	  b3 = c & 0x003f
+	  b2 = (c >> 6) & 0x003f
+	  b1 = c >> 12
+	  buf.concat(b1 | 0xe0)
+	  buf.concat(b2 | 0x80)
+	  buf.concat(b3 | 0x80)
+	end
+      end
+      return buf
+    end
+    private_class_method :u16tou8
+
+    def self.u8tou16(s)
+      len = s.length
+      buf = ""
+      i = 0
+      while i < len
+	c = s[i]
+	if (c & 0x80) == 0
+	  buf.concat(0x00)
+	  buf.concat(c)
+	  i += 1
+	elsif (c & 0xe0) == 0xc0 &&
+	    inlen >= 2 &&
+	    (s[i + 1] & 0xc0) == 0x80
+	  if c == 0xc0 || c == 0xc1
+	    raise format("non-shortest UTF-8 sequence (%02x)", c)
+	  end
+	  u = ((c & 0x1f) << 6) | (s[i + 1] & 0x3f)
+	  buf.concat(u >> 8)
+	  buf.concat(u & 0x00ff)
+	  i += 2
+	elsif (c & 0xf0) == 0xe0 &&
+	    i + 2 < len &&
+	    (s[i + 1] & 0xc0) == 0x80 &&
+	    (s[i + 2] & 0xc0) == 0x80
+	  if c == 0xe0 && s[i + 1] < 0xa0
+	    raise format("non-shortest UTF-8 sequence (%02x)", c)
+	  end
+	  u = ((c & 0x0f) << 12) | ((s[i + 1] & 0x3f) << 6) | (s[i + 2] & 0x3f)
+	  # surrogate chars
+	  if u >= 0xd800 && u <= 0xdfff
+	    raise format("none-UTF-16 char detected (%04x)", u)
+	  end
+	  buf.concat(u >> 8)
+	  buf.concat(u & 0x00ff)
+	  i += 3
+	elsif (c & 0xf8) == 0xf0 &&
+	    i + 3 < len &&
+	    (s[i + 1] & 0xc0) == 0x80 &&
+	    (s[i + 2] & 0xc0) == 0x80 &&
+	    (s[i + 3] & 0xc0) == 0x80
+	  if c == 0xf0 && s[i + 1] < 0x90
+	    raise format("non-shortest UTF-8 sequence (%02x)", c)
+	  end
+	  u = ((c & 0x07) << 18) | ((s[i + 1] & 0x3f) << 12) |
+	    ((s[i + 2] & 0x3f) << 6) | (s[i + 3] & 0x3f)
+	  if u < 0x10000
+	    buf.concat(u >> 8)
+	    buf.concat(u & 0x00ff)
+	  elsif u < 0x110000
+	    high = ((u - 0x10000) >> 10) | 0xd800
+	    low = (u & 0x03ff) | 0xdc00
+	    buf.concat(high >> 8)
+	    buf.concat(high & 0x00ff)
+	    buf.concat(low >> 8)
+	    buf.concat(low & 0x00ff)
+	  else
+	    raise format("none-UTF-16 char detected (%04x)", u)
+	  end
+	  i += 4
+	else
+	  raise format("illegal UTF-8 sequence (%02x)", c)
+	end
+      end
+      return buf
+    end
+    private_class_method :u8tou16
 
     class RawData
       def format_data
