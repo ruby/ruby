@@ -1276,7 +1276,20 @@ module Generators
         end
       end
 
-      ref = @files[0].path unless ref
+      unless ref
+        for file in @files
+          if file.document_self
+            ref = file.path 
+            break
+          end
+        end
+      end
+
+      unless ref
+        $stderr.puts "Couldn't find anything to document"
+        $stderr.puts "Perhaps you've used :stopdoc: in all classes"
+        exit(1)
+      end
 
       ref
     end
