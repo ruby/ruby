@@ -151,13 +151,13 @@ def f; yield *[*[1,2]]; end; f {|*a| test_ok(a == [1,2])}
 def f; yield; end; f {|a,b,*c| test_ok([a,b,c] == [nil,nil,[]])}
 def f; yield nil; end; f {|a,b,*c| test_ok([a,b,c] == [nil,nil,[]])}
 def f; yield 1; end; f {|a,b,*c| test_ok([a,b,c] == [1,nil,[]])}
-def f; yield []; end; f {|a,b,*c| test_ok([a,b,c] == [nil,nil,[]])}
-def f; yield [1]; end; f {|a,b,*c| test_ok([a,b,c] == [1,nil,[]])}
-def f; yield [nil]; end; f {|a,b,*c| test_ok([a,b,c] == [nil,nil,[]])}
-def f; yield [[]]; end; f {|a,b,*c| test_ok([a,b,c] == [[],nil,[]])}
-def f; yield [*[]]; end; f {|a,b,*c| test_ok([a,b,c] == [nil,nil,[]])}
-def f; yield [*[1]]; end; f {|a,b,*c| test_ok([a,b,c] == [1,nil,[]])}
-def f; yield [*[1,2]]; end; f {|a,b,*c| test_ok([a,b,c] == [1,2,[]])}
+def f; yield []; end; f {|a,b,*c| test_ok([a,b,c] == [[],nil,[]])}
+def f; yield [1]; end; f {|a,b,*c| test_ok([a,b,c] == [[1],nil,[]])}
+def f; yield [nil]; end; f {|a,b,*c| test_ok([a,b,c] == [[nil],nil,[]])}
+def f; yield [[]]; end; f {|a,b,*c| test_ok([a,b,c] == [[[]],nil,[]])}
+def f; yield [*[]]; end; f {|a,b,*c| test_ok([a,b,c] == [[],nil,[]])}
+def f; yield [*[1]]; end; f {|a,b,*c| test_ok([a,b,c] == [[1],nil,[]])}
+def f; yield [*[1,2]]; end; f {|a,b,*c| test_ok([a,b,c] == [[1,2],nil,[]])}
 
 def f; yield *nil; end; f {|a,b,*c| test_ok([a,b,c] == [nil,nil,[]])}
 def f; yield *1; end; f {|a,b,*c| test_ok([a,b,c] == [1,nil,[]])}

@@ -1,3 +1,9 @@
+Tue Oct 28 11:24:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (new_yield): remove magic argument rule; "yield [1,2]"
+	  should yield single array of two elements, not two values.
+	  [ruby-dev:21726]
+
 Mon Oct 27 19:19:55 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_longjmp): ignore reentering error while warning.

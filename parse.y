@@ -5377,22 +5377,7 @@ static NODE *
 new_yield(node)
     NODE *node;
 {
-    long state = Qtrue;
-
-    if (node) {
-	no_blockarg(node);
-	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
-	    node = node->nd_head;
-	    state = Qfalse;
-	}
-	if (nd_type(node) == NODE_SPLAT) {
-	    state = Qtrue;
-	}
-    }
-    else {
-	state = Qfalse;
-    }
-    return NEW_YIELD(node, state);
+    return NEW_YIELD(node, node ? Qtrue : Qfalse);
 }
 
 static NODE*
