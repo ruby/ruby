@@ -1811,7 +1811,10 @@ rb_w32_fdclr(int fd, fd_set *set)
 int
 rb_w32_fdisset(int fd, fd_set *set)
 {
-       return __WSAFDIsSet(TO_SOCKET(fd), set);
+    SOCKET s = TO_SOCKET(fd);
+    if (!is_socket(s))
+        return 0;
+    return __WSAFDIsSet(s, set);
 }
 
 //
