@@ -2722,7 +2722,6 @@ rb_eval(self, n)
 	    rb_raise(rb_eTypeError, "no class/module to define class variable");
 	}
 	result = rb_eval(self, node->nd_value);
-	result = rb_eval(self, node->nd_value);
 	if (ruby_verbose && FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    rb_warn("declaring singleton class variable");
 	}
