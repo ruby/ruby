@@ -150,6 +150,7 @@ EXPORTS
 	myget_osfhandle
 	win32_getcwd
 	win32_getenv
+	myrename
 ;array.c
 	rb_mem_clear
 	rb_ary_freeze
