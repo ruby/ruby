@@ -1,6 +1,15 @@
+Fri Mar 19 01:55:57 2004  Mauricio Fernandez  <batsman.geo@yahoo.com>
+
+	* io.c (rb_io_sync): need not to check writable. [ruby-core:02674]
+
 Thu Mar 18 21:44:38 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: backport drb.rb 1.16.
+
+Thu Mar 18 16:22:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_eq): avoid false positive by using scope and
+	  dyna_vars.  no longer use frame.uniq.
 
 Wed Mar 17 14:44:43  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

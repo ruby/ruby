@@ -8243,7 +8243,8 @@ proc_eq(self, other)
     Data_Get_Struct(other, struct BLOCK, data2);
     if (data->body != data2->body) return Qfalse;
     if (data->var != data2->var) return Qfalse;
-    if (data->frame.uniq != data2->frame.uniq) return Qfalse;
+    if (data->scope != data2->scope) return Qfalse;
+    if (data->dyna_vars != data2->dyna_vars) return Qfalse;
     if (data->flags != data2->flags) return Qfalse;
 
     return Qtrue;
