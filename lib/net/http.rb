@@ -70,6 +70,12 @@ module Net
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   This method gives HTTPReadAdapter object to block.
 
+: head2( path, header = nil )
+  send HEAD request for "path".
+  "header" must be a Hash like { 'Accept' => '*/*', ... }.
+  The difference between "head" method is that
+  "head2" does not raise exceptions.
+
 : post2( path, data, header = nil ) {|adapter| .... }
   post "data"(must be String now) to "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
@@ -145,17 +151,10 @@ All "key" is case-insensitive.
       return resp, dest
     end
 
-    def get2( path, u_header = nil )
-      u_header = procheader( u_header )
-      resp = nil
-      connecting( u_header ) {
-        @command.get edit_path(path), u_header
-        tmp = HTTPReadAdapter.new( @command )
-        yield tmp
-        resp = tmp.off
+    def get2( path, u_header = nil, &block )
+      connecting( u_header, block ) {|uh|
+        @command.get edit_path(path), uh
       }
-
-      resp
     end
 
 
@@ -166,14 +165,10 @@ All "key" is case-insensitive.
     end
 
     def head2( path, u_header = nil )
-      u_header = procheader( u_header )
-      resp = nil
-      connecting( u_header ) {
-        @command.head( edit_path(path), u_header )
-        resp = @command.get_response_no_body
+      connecting( u_header, nil ) {|uh|
+        @command.head edit_path(path), uh
+        @command.get_response_no_body
       }
-
-      resp
     end
 
 
@@ -184,17 +179,10 @@ All "key" is case-insensitive.
       return resp, dest
     end
 
-    def post2( path, data, u_header = nil )
-      u_header = procheader( u_header )
-      resp = nil
-      connecting( u_header ) {
-        @command.post edit_path(path), u_header, data
-        tmp = HTTPReadAdapter.new( @command )
-        yield tmp
-        resp = tmp.off
+    def post2( path, data, u_header = nil, &block )
+      connecting( u_header, block ) {|uh|
+        @command.post edit_path(path), uh, data
       }
-
-      resp
     end
 
 
@@ -206,18 +194,10 @@ All "key" is case-insensitive.
       return resp, ret
     end
 
-    def put2( path, src, u_header = nil )
-      u_header = procheader( u_header )
-      ret = ''
-      resp = nil
-      connecting( u_header ) {
-        @command.put path, u_header, src, dest
-        tmp = HTTPReadAdapter.new( @command )
-        yield tmp
-        resp = tmp.off
+    def put2( path, src, u_header = nil, &block )
+      connecting( u_header, block ) {|uh|
+        @command.put path, uh, src
       }
-
-      resp
     end
 
 
@@ -227,38 +207,40 @@ All "key" is case-insensitive.
     # called when connecting
     def do_finish
       unless @socket.closed? then
-        begin
-          @command.head '/', { 'Connection' => 'Close' }
-        rescue EOFError
-        end
+        head2 '/', { 'Connection' => 'close' }
       end
     end
 
-    def connecting( u_header )
+    def connecting( u_header, ublock )
+      u_header = procheader( u_header )
       if not @socket then
-        u_header['Connection'] = 'Close'
+        u_header['Connection'] = 'close'
         start
       elsif @socket.closed? then
         @socket.reopen
       end
 
-      if iterator? then
-        ret = yield
-        ensure_termination u_header
-        ret
+      resp = yield( u_header )
+      if ublock then
+        adapter = HTTPReadAdapter.new( @command )
+        ublock.call adapter
+        resp = adapter.off
       end
-    end
-
-    def ensure_termination( u_header )
-      unless keep_alive? u_header and not @socket.closed? then
+      
+      unless keep_alive? u_header, resp then
         @socket.close
       end
-      @u_header = @response = nil
+
+      resp
     end
 
-    def keep_alive?( header )
-      if header.key? 'connection' then
-        if /\A\s*keep-alive/i === header['connection'] then
+    def keep_alive?( header, resp )
+      if resp.key? 'connection' then
+        if /keep-alive/i === resp['connection'] then
+          return true
+        end
+      elsif header.key? 'Connection' then
+        if /\A\s*keep-alive/i === header['Connection'] then
           return true
         end
       else
