@@ -7892,6 +7892,22 @@ rb_f_binding(self)
     return bind;
 }
 
+/*
+ *  call-seq:
+ *     binding.eval(string [, filename [,lineno]])  => obj
+ *
+ *  Evaluates the Ruby expression(s) in <em>string</em>, in the
+ *  <em>binding</em>'s context.  If the optional <em>filename</em> and
+ *  <em>lineno</em> parameters are present, they will be used when
+ *  reporting syntax errors.
+ *
+ *     def getBinding(param)
+ *       return binding
+ *     end
+ *     b = getBinding("hello")
+ *     b.eval("param")   #=> "hello"
+ */
+
 static VALUE
 bind_eval(argc, argv, bind)
     int argc;
