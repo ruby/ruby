@@ -25,7 +25,7 @@ module YAML
                 matches.each { |m|
                     result.push m.last
                 }
-                YamlNode.new( 'seq', result )
+                self.class.new( 'seq', result )
             end
         end
 
@@ -163,7 +163,7 @@ module YAML
             #puts "DEPTH: #{depth + 1}"
             deep_nodes = []
             match_nodes.each { |n|
-                if n[1].is_a? YamlNode
+                if n[1].is_a? BaseNode
                     match_deep = n[1].match_segment( ypath, depth + 1 )
                     if match_deep
                         match_deep.each { |m|

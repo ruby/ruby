@@ -147,7 +147,14 @@ rb_syck_mktime(str)
 
     // Millisecond 
     ptr += 2;
-    usec = INT2FIX( strtod( ptr, NULL ) * 1000000 );
+    if ( *ptr == '.' )
+    {
+        usec = INT2FIX( strtod( ptr, NULL ) * 1000000 );
+    }
+    else
+    {
+        usec = INT2FIX( 0 );
+    }
 
     // Make UTC time
     time = rb_funcall(rb_cTime, s_utc, 7, year, mon, day, hour, min, sec, usec);
@@ -156,9 +163,9 @@ rb_syck_mktime(str)
     while ( *ptr != 'Z' && *ptr != '+' && *ptr != '-' && *ptr != '\0' ) ptr++;
     if ( *ptr == '-' || *ptr == '+' )
     {
-        long tz_offset = 0;
+        double tz_offset = 0;
         double utc_time = 0;
-        tz_offset += strtol(ptr, NULL, 10) * 3600;
+        tz_offset += strtod(ptr, NULL) * 3600;
 
         while ( *ptr != ':' && *ptr != '\0' ) ptr++;
         if ( *ptr == ':' )
@@ -166,11 +173,11 @@ rb_syck_mktime(str)
             ptr += 1;
             if ( tz_offset < 0 )
             {
-                tz_offset -= strtol(ptr, NULL, 10) * 60;
+                tz_offset -= strtod(ptr, NULL) * 60;
             }
             else
             {
-                tz_offset += strtol(ptr, NULL, 10) * 60;
+                tz_offset += strtod(ptr, NULL) * 60;
             }
         }
 

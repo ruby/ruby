@@ -1,3 +1,14 @@
+Fri May 30 23:18:01 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/rubyext.c (rb_syck_mktime): seconds calculated wrong.
+
+    * ext/syck/gram.c: flexibility to anchors and transfer methods on
+      collections.
+
+    * ext/syck/token.c: hex escapes.
+
+    * lib/yaml/basenode.rb: YamlNode references changed to YAML::BaseNode.
+
 Fri May 30 22:28:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* numeric.c (rb_num2uint, rb_fix2int): new function to convert
@@ -7,7 +18,7 @@ Fri May 30 22:28:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Fri May 30 15:01:05 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-	* ext/syck/token.c: preserve any indentation passed an explicit
+	* ext/syck/token.c: preserve any indentation past an explicit
 	  indentation.
 
 Fri May 30 14:55:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
