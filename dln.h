@@ -29,5 +29,5 @@ char *dln_find_file _((const char*,const char*));
 extern char *dln_argv0;
 #endif
 
-void dln_load _((const char*));
+void *dln_load _((const char*));
 #endif

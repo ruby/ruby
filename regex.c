@@ -1438,6 +1438,10 @@ re_compile_pattern(pattern, size, bufp)
 	    EXTEND_BUFFER;
 	}
       range_retry:
+	if (range && had_char_class) {
+	  FREE_AND_RETURN(stackb, "invalid regular expression; can't use character class as a end value of range");
+	  goto invalid_pattern;
+	}
 	PATFETCH(c);
 
 	if (c == ']') {
@@ -1473,6 +1477,7 @@ re_compile_pattern(pattern, size, bufp)
 	    if (current_mbctype) {
 	      set_list_bits(0x80, 0xffffffff, b);
 	    }
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1483,6 +1488,7 @@ re_compile_pattern(pattern, size, bufp)
 		  !current_mbctype && SYNTAX(c) != Sword2))
 		SET_LIST_BIT(c);
 	    }
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1490,6 +1496,7 @@ re_compile_pattern(pattern, size, bufp)
 	    for (c = 0; c < 256; c++)
 	      if (ISSPACE(c))
 		SET_LIST_BIT(c);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1499,12 +1506,14 @@ re_compile_pattern(pattern, size, bufp)
 		SET_LIST_BIT(c);
 	    if (current_mbctype)
 	      set_list_bits(0x80, 0xffffffff, b);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
 	  case 'd':
 	    for (c = '0'; c <= '9'; c++)
 	      SET_LIST_BIT(c);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1514,6 +1523,7 @@ re_compile_pattern(pattern, size, bufp)
 		SET_LIST_BIT(c);
 	    if (current_mbctype)
 	      set_list_bits(0x80, 0xffffffff, b);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 

@@ -1,3 +1,8 @@
+Wed Apr 18 00:24:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): char class at either edge of range
+	  should be invalid.
+
 Tue Apr 17 16:54:39 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (safe_getter): should use INT2NUM().

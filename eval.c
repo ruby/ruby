@@ -5210,6 +5210,7 @@ rb_f_load(argc, argv)
     return Qtrue;
 }
 
+VALUE ruby_dln_librefs;
 static VALUE rb_features;
 static st_table *loading_tbl;
 
@@ -5377,9 +5378,12 @@ rb_f_require(obj, fname)
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
+	void *handle;
+
 	load = rb_str_new2(file);
 	file = RSTRING(load)->ptr;
-	dln_load(file);
+	handle = dln_load(file);
+	rb_ary_push(ruby_dln_librefs, INT2NUM((long)handle));
     }
     POP_TAG();
     if (state) JUMP_TAG(state);
@@ -5947,6 +5951,9 @@ Init_load()
     rb_define_global_function("require", rb_f_require, 1);
     rb_define_global_function("autoload", rb_f_autoload, 2);
     rb_global_variable(&ruby_wrapper);
+
+    ruby_dln_librefs = rb_ary_new();
+    rb_global_variable(&ruby_dln_librefs);
 }
 
 static void
