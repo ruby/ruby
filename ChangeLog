@@ -1,3 +1,13 @@
+Sun Aug  8 00:43:31 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/implicit.c: added sexagecimal float#base60.
+
+	* ext/syck/rubyext.c (yaml_org_handler): ditto.
+
+	* lib/token.c: indentation absolutely ignored when processing flow
+	  collections.  plain scalars are trimmed if indentation follows in
+	  an ambiguous flow collection.
+
 Sat Aug  7 00:50:01 2004  Tanaka Akira  <akr@m17n.org>
 
 	* ext/zlib/zlib.c: Zlib::GzipReader#read(0) returns "" instead of nil.
