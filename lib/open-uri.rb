@@ -163,11 +163,7 @@ module OpenURI
     while true
       redirect = catch(:open_uri_redirect) {
         buf = Buffer.new
-        if proxy_uri = find_proxy.call(uri)
-          proxy_uri.proxy_open(buf, uri, options)
-        else
-          uri.direct_open(buf, options)
-        end
+        uri.buffer_open(buf, find_proxy.call(uri), options)
         nil
       }
       if redirect
@@ -197,6 +193,81 @@ module OpenURI
     # However this is ad hoc.  It should be extensible/configurable.
     uri1.scheme.downcase == uri2.scheme.downcase ||
     (/\A(?:http|ftp)\z/i =~ uri1.scheme && /\A(?:http|ftp)\z/i =~ uri2.scheme)
+  end
+
+  def OpenURI.open_http(buf, target, proxy, options) # :nodoc:
+    if proxy
+      raise "Non-HTTP proxy URI: #{proxy}" if proxy.class != URI::HTTP
+    end
+
+    require 'net/http'
+    klass = Net::HTTP
+    if URI::HTTP === target
+      # HTTP or HTTPS
+      if proxy
+        klass = Net::HTTP::Proxy(proxy.host, proxy.port)
+      end
+      target_host = target.host
+      target_port = target.port
+      request_uri = target.request_uri
+    else
+      # FTP over HTTP proxy
+      target_host = proxy.host
+      target_port = proxy.port
+      request_uri = target.to_s
+    end
+
+    http = klass.new(target_host, target_port)
+    if target.class == URI::HTTPS
+      require 'net/https'
+      http.use_ssl = true
+      http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      store = OpenSSL::X509::Store.new
+      store.set_default_paths
+      http.cert_store = store
+    end
+
+    header = {}
+    options.each {|k, v| header[k] = v if String === k }
+
+    resp = nil
+    http.start {
+      req = Net::HTTP::Get.new(request_uri, header)
+      if options.include? :http_basic_authentication
+        user, pass = options[:http_basic_authentication]
+        req.basic_auth user, pass
+      end
+      http.request(req) {|response|
+        resp = response
+        if options[:content_length_proc] && Net::HTTPSuccess === resp
+          if resp.key?('Content-Length')
+            options[:content_length_proc].call(resp['Content-Length'].to_i)
+          else
+            options[:content_length_proc].call(nil)
+          end
+        end
+        resp.read_body {|str|
+          buf << str
+          if options[:progress_proc] && Net::HTTPSuccess === resp
+            options[:progress_proc].call(buf.size)
+          end
+        }
+      }
+    }
+    io = buf.io
+    io.rewind
+    io.status = [resp.code, resp.message]
+    resp.each {|name,value| buf.io.meta_add_field name, value }
+    case resp
+    when Net::HTTPSuccess
+    when Net::HTTPMovedPermanently, # 301
+         Net::HTTPFound, # 302
+         Net::HTTPSeeOther, # 303
+         Net::HTTPTemporaryRedirect # 307
+      throw :open_uri_redirect, URI.parse(resp['location'])
+    else
+      raise OpenURI::HTTPError.new(io.status.join(' '), io)
+    end
   end
 
   class HTTPError < StandardError
@@ -515,9 +586,6 @@ module URI
 
       if proxy_uri
         proxy_uri = URI.parse(proxy_uri)
-        unless URI::HTTP === proxy_uri
-          raise "Non-HTTP proxy URI: #{proxy_uri}"
-        end
         name = 'no_proxy'
         if no_proxy = ENV[name] || ENV[name.upcase]
           no_proxy.scan(/([^:,]*)(?::(\d+))?/) {|host, port|
@@ -536,76 +604,19 @@ module URI
   end
 
   class HTTP
-    def direct_open(buf, options) # :nodoc:
-      proxy_open(buf, request_uri, options)
-    end
-
-    def proxy_open(buf, uri, options) # :nodoc:
-      header = {}
-      options.each {|k, v| header[k] = v if String === k }
-
-      if uri.respond_to? :host
-        # According to RFC2616 14.23, Host: request-header field should be
-        # the origin server.
-        # But net/http wrongly set a proxy server if an absolute URI is
-        # specified as a request URI.
-        # So open-uri override it here explicitly.
-        header['host'] = uri.host
-        header['host'] += ":#{uri.port}" if uri.port
-      end
-
-      require 'net/http'
-      resp = nil
-      req = Net::HTTP::Get.new(uri.to_s, header)
-      if options.include? :http_basic_authentication
-        user, pass = options[:http_basic_authentication]
-        req.basic_auth user, pass
-      end
-      Net::HTTP.start(self.host, self.port) {|http|
-        http.request(req) {|response|
-          resp = response
-          if options[:content_length_proc] && Net::HTTPSuccess === resp
-            if resp.key?('Content-Length')
-              options[:content_length_proc].call(resp['Content-Length'].to_i)
-            else
-              options[:content_length_proc].call(nil)
-            end
-          end
-          resp.read_body {|str|
-            buf << str
-            if options[:progress_proc] && Net::HTTPSuccess === resp
-              options[:progress_proc].call(buf.size)
-            end
-          }
-        }
-      }
-      io = buf.io
-      io.rewind
-      io.status = [resp.code, resp.message]
-      resp.each {|name,value| buf.io.meta_add_field name, value }
-      case resp
-      when Net::HTTPSuccess
-      when Net::HTTPMovedPermanently, # 301
-           Net::HTTPFound, # 302
-           Net::HTTPSeeOther, # 303
-           Net::HTTPTemporaryRedirect # 307
-        throw :open_uri_redirect, URI.parse(resp['location'])
-      else
-        raise OpenURI::HTTPError.new(io.status.join(' '), io)
-      end
+    def buffer_open(buf, proxy, options) # :nodoc:
+      OpenURI.open_http(buf, self, proxy, options)
     end
 
     include OpenURI::OpenRead
   end
 
-  class HTTPS
-    def proxy_open(buf, uri, options) # :nodoc:
-      raise ArgumentError, "open-uri doesn't support https."
-    end
-  end
-
   class FTP
-    def direct_open(buf, options) # :nodoc:
+    def buffer_open(buf, proxy, options) # :nodoc:
+      if proxy
+        OpenURI.open_http(buf, self, proxy, options)
+        return
+      end
       require 'net/ftp'
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'
