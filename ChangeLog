@@ -1,3 +1,10 @@
+Wed Jul 14 12:20:05  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* util.c (ruby_strtod): should not convert string in the form of
+	  "-I.FE-X" which both "I" and "F" are ommitted. [ruby-dev:23883]
+
+	* test/ruby/test_float.rb (test_strtod): add test for bug fix.
+
 Wed Jul 14 01:20:21  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c: rdoc patch - unified margin.
