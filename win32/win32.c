@@ -2734,7 +2734,7 @@ rb_w32_stat(const char *path, struct stat *st)
 	    *end = '\0';
 	else if (*end != '\\')
 	    strcat(buf1, "\\");
-    } else if (*end == '\\' || *end == ':')
+    } else if (*end == '\\' || (buf1 + 1 == end && *end == ':'))
 	strcat(buf1, ".");
 
     ret = stat(buf1, st);
