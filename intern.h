@@ -204,7 +204,6 @@ VALUE rb_io_eof _((VALUE));
 VALUE rb_io_binmode _((VALUE));
 VALUE rb_file_open _((const char*, const char*));
 VALUE rb_gets _((void));
-void rb_str_setter _((VALUE, ID, VALUE*));
 /* numeric.c */
 void rb_num_zerodiv _((void));
 VALUE rb_num_coerce_bin _((VALUE, VALUE));
@@ -320,6 +319,7 @@ VALUE rb_str_upto _((VALUE, VALUE, int));
 VALUE rb_str_inspect _((VALUE));
 VALUE rb_str_split _((VALUE, const char*));
 void rb_str_associate _((VALUE, VALUE));
+void rb_str_setter _((VALUE, ID, VALUE*));
 /* struct.c */
 VALUE rb_struct_new __((VALUE, ...));
 VALUE rb_struct_define __((const char*, ...));

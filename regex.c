@@ -3550,7 +3550,7 @@ re_match(bufp, string_arg, size, pos, regs)
   stacke = &stackb[MAX_NUM_FAILURE_ITEMS * NFAILURES];
 
 #ifdef DEBUG_REGEX
-  fprintf(stderr, "Entering re_match(%s%s)\n", string1_arg, string2_arg);
+  fprintf(stderr, "Entering re_match(%s)\n", string_arg);
 #endif
 
   /* Initialize subexpression text positions to -1 to mark ones that no

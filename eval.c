@@ -3590,6 +3590,9 @@ assign(self, lhs, val, check)
 	break;
 
       case NODE_CVDECL:
+	rb_cvar_declare(ruby_cbase, lhs->nd_vid, val);
+	break;
+
       case NODE_CVASGN:
 	rb_cvar_set(ruby_cbase, lhs->nd_vid, val);
 	break;

@@ -1,3 +1,18 @@
+Fri Aug 25 15:24:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_cvar_get): should not follow __attached__.
+
+	* variable.c (mod_av_set): second class variable assignment at the
+	  toplevel shoule not give warning.
+
+Fri Aug 25 01:18:36 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (next_argv): prepare path for open file.
+
+	* string.c (rb_str_setter): moved from io.c.
+
+	* io.c (next_argv): filename should be "-" for refreshed ARGF.
+
 Thu Aug 24 15:27:39 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/socket/socketport.h: use `extern int h_errno' if needed.

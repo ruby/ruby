@@ -19,6 +19,14 @@
 #include <ctype.h>
 #include <errno.h>
 
+#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(NT) || defined(__human68k__) || defined(__EMX__)
+# define NO_SAFE_RENAME
+#endif
+
+#if defined(MSDOS) || defined(__CYGWIN__) || defined(NT)
+# define NO_LONG_FNAME
+#endif
+
 #include <sys/types.h>
 #if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
 #include <sys/ioctl.h>
@@ -2245,6 +2253,18 @@ prep_stdio(f, mode, klass)
 }
 
 static VALUE
+prep_path(io, path)
+    VALUE io;
+    char *path;
+{
+    OpenFile *fptr;
+
+    GetOpenFile(io, fptr);
+    if (fptr->path) rb_bug("illegal prep_path() call");
+    fptr->path = strdup(path);
+}
+
+static VALUE
 rb_io_s_new(argc, argv, klass)
     int argc;
     VALUE *argv;
@@ -2360,6 +2380,7 @@ next_argv()
 	else {
 	    next_p = -1;
 	    current_file = rb_stdin;
+	    filename = rb_str_new2("-");
 	}
 	init_p = 1;
 	first_p = 0;
@@ -2375,6 +2396,7 @@ next_argv()
 	    if (strlen(fn) == 1 && fn[0] == '-') {
 		current_file = rb_stdin;
 		if (ruby_inplace_mode) {
+		    rb_warn("Can't do inplace edit for stdio");
 		    rb_defout = rb_stdout;
 		}
 	    }
@@ -2392,12 +2414,12 @@ next_argv()
 		    fstat(fileno(fr), &st);
 		    if (*ruby_inplace_mode) {
 			str = rb_str_new2(fn);
-#if defined(MSDOS) || defined(__CYGWIN__) || defined(NT)
+#ifdef NO_LONG_FNAME
                         ruby_add_suffix(str, ruby_inplace_mode);
 #else
 			rb_str_cat2(str, ruby_inplace_mode);
 #endif
-#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(NT) || defined(__human68k__) || defined(__EMX__)
+#ifdef NO_SAFE_RENAME
 			(void)fclose(fr);
 			(void)unlink(RSTRING(str)->ptr);
 			(void)rename(fn, RSTRING(str)->ptr);
@@ -2412,19 +2434,19 @@ next_argv()
 #endif
 		    }
 		    else {
-#if !defined(MSDOS) && !defined(__BOW__) && !defined(__CYGWIN__) && !defined(NT) && !defined(__human68k__)
+#ifdef NO_SAFE_RENAME
+			rb_fatal("Can't do inplace edit without backup");
+#else
 			if (unlink(fn) < 0) {
 			    rb_warn("Can't remove %s: %s, skipping file",
 				    fn, strerror(errno));
 			    fclose(fr);
 			    goto retry;
 			}
-#else
-			rb_fatal("Can't do inplace edit without backup");
 #endif
 		    }
 		    fw = rb_fopen(fn, "w");
-#if !defined(MSDOS) && !defined(__CYGWIN__) && !(NT) && !defined(__human68k__) && !defined(__BEOS__) && !defined(__EMX__)
+#ifndef NO_SAFE_RENAME
 		    fstat(fileno(fw), &st2);
 		    fchmod(fileno(fw), st.st_mode);
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
@@ -2432,8 +2454,10 @@ next_argv()
 		    }
 #endif
 		    rb_defout = prep_stdio(fw, FMODE_WRITABLE, rb_cFile);
+		    prep_path(rb_defout, fn);
 		}
 		current_file = prep_stdio(fr, FMODE_READABLE, rb_cFile);
+		prep_path(current_file, fn);
 	    }
 	    if (binmode) rb_io_binmode(current_file);
 	}
@@ -2555,18 +2579,6 @@ rb_f_readlines(argc, argv)
     }
 
     return ary;
-}
-
-void
-rb_str_setter(val, id, var)
-    VALUE val;
-    ID id;
-    VALUE *var;
-{
-    if (!NIL_P(val) && TYPE(val) != T_STRING) {
-	rb_raise(rb_eTypeError, "value of %s must be String", rb_id2name(id));
-    }
-    *var = val;
 }
 
 static VALUE

@@ -1228,11 +1228,12 @@ rb_const_defined(klass, id)
 }
 
 static void
-rb_mod_av_set(klass, id, val, dest)
+mod_av_set(klass, id, val, dest, once)
     VALUE klass;
     ID id;
     VALUE val;
     char *dest;
+    int once;
 {
     if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
@@ -1240,7 +1241,7 @@ rb_mod_av_set(klass, id, val, dest)
     if (!RCLASS(klass)->iv_tbl) {
 	RCLASS(klass)->iv_tbl = st_init_numtable();
     }
-    else if (st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
+    else if (once && st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
 	rb_warn("already initialized %s %s", dest, rb_id2name(id));
     }
 
@@ -1253,7 +1254,7 @@ rb_const_set(klass, id, val)
     ID id;
     VALUE val;
 {
-    rb_mod_av_set(klass, id, val, "constant");
+    mod_av_set(klass, id, val, "constant", Qtrue);
 }
 
 void
@@ -1324,18 +1325,6 @@ rb_define_global_const(name, val)
 }
 
 void
-rb_cvar_declare(klass, id, val)
-    VALUE klass;
-    ID id;
-    VALUE val;
-{
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	klass = rb_iv_get(klass, "__attached__");
-    }
-    rb_mod_av_set(klass, id, val, "class variable");
-}
-
-void
 rb_cvar_set(klass, id, val)
     VALUE klass;
     ID id;
@@ -1345,9 +1334,6 @@ rb_cvar_set(klass, id, val)
 
     if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	klass = rb_iv_get(klass, "__attached__");
-    }
     tmp = klass;
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
@@ -1357,7 +1343,17 @@ rb_cvar_set(klass, id, val)
 	tmp = RCLASS(tmp)->super;
     }
 
-    rb_raise(rb_eNameError,"uninitialized class variable %s",rb_id2name(id));
+    rb_raise(rb_eNameError,"uninitialized class variable %s in %s",
+	     rb_id2name(id), rb_class2name(klass));
+}
+
+void
+rb_cvar_declare(klass, id, val)
+    VALUE klass;
+    ID id;
+    VALUE val;
+{
+    mod_av_set(klass, id, val, "class variable", Qfalse);
 }
 
 VALUE
@@ -1368,9 +1364,6 @@ rb_cvar_get(klass, id)
     VALUE value;
     VALUE tmp;
 
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	klass = rb_iv_get(klass, "__attached__");
-    }
     tmp = klass;
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
@@ -1379,7 +1372,8 @@ rb_cvar_get(klass, id)
 	tmp = RCLASS(tmp)->super;
     }
 
-    rb_raise(rb_eNameError,"uninitialized class variable %s",rb_id2name(id));
+    rb_raise(rb_eNameError,"uninitialized class variable %s in %s",
+	     rb_id2name(id), rb_class2name(klass));
     return Qnil;		/* not reached */
 }
 
@@ -1390,9 +1384,6 @@ rb_cvar_defined(klass, id)
 {
     VALUE tmp;
 
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	klass = rb_iv_get(klass, "__attached__");
-    }
     tmp = klass;
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
