@@ -94,10 +94,10 @@ class TkCanvas<TkWindow
   end
 
   def canvasx(x, *args)
-    tk_tcl2ruby(tk_send 'canvasx', x, *args)
+    tk_tcl2ruby(tk_send('canvasx', x, *args))
   end
   def canvasy(y, *args)
-    tk_tcl2ruby(tk_send 'canvasy', y, *args)
+    tk_tcl2ruby(tk_send('canvasy', y, *args))
   end
 
   def coords(tag, *args)
@@ -122,7 +122,7 @@ class TkCanvas<TkWindow
   end
 
   def find(mode, *args)
-    list(tk_send 'find', mode, *args).collect!{|id| 
+    list(tk_send('find', mode, *args)).collect!{|id| 
       TkcItem.id2obj(self, id)
     }
   end
@@ -191,7 +191,7 @@ class TkCanvas<TkWindow
     when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
       tk_send 'itemcget', tagid(tagOrId), "-#{option}"
     else
-      tk_tcl2ruby tk_send 'itemcget', tagid(tagOrId), "-#{option}"
+      tk_tcl2ruby tk_send('itemcget', tagid(tagOrId), "-#{option}")
     end
   end
 
@@ -231,8 +231,8 @@ class TkCanvas<TkWindow
     if key
       case key.to_s
       when 'dash', 'activedash', 'disableddash'
-	conf = tk_split_simplelist(tk_send 'itemconfigure', 
-				   tagid(tagOrId), "-#{key}")
+	conf = tk_split_simplelist(tk_send('itemconfigure', 
+					   tagid(tagOrId), "-#{key}"))
 	if conf[3] && conf[3] =~ /^[0-9]/
 	  conf[3] = list(conf[3])
 	end
@@ -240,17 +240,17 @@ class TkCanvas<TkWindow
 	  conf[4] = list(conf[4])
 	end
       when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
-	conf = tk_split_simplelist(tk_send 'itemconfigure', 
-				   tagid(tagOrId), "-#{key}")
+	conf = tk_split_simplelist(tk_send('itemconfigure', 
+					   tagid(tagOrId), "-#{key}"))
       else
-	conf = tk_split_list(tk_send 'itemconfigure', 
-			     tagid(tagOrId), "-#{key}")
+	conf = tk_split_list(tk_send('itemconfigure', 
+				     tagid(tagOrId), "-#{key}"))
       end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_simplelist(tk_send 'itemconfigure', 
-			  tagid(tagOrId)).collect{|conflist|
+      tk_split_simplelist(tk_send('itemconfigure', 
+				  tagid(tagOrId))).collect{|conflist|
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]
@@ -330,7 +330,7 @@ class TkCanvas<TkWindow
   end
 
   def itemtype(tag)
-    TkcItem.type2class(tk_send 'type', tagid(tag))
+    TkcItem.type2class(tk_send('type', tagid(tag)))
   end
 end
 
@@ -812,7 +812,7 @@ class TkPhotoImage<TkImage
     when 'data', 'file'
       tk_send 'cget', option
     else
-      tk_tcl2ruby tk_send 'cget', option
+      tk_tcl2ruby tk_send('cget', option)
     end
   end
 

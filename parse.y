@@ -233,7 +233,7 @@ static void top_local_setup();
 %type <node> words qwords word_list qword_list word
 %type <val>  literal numeric
 %type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
-%type <node> expr_value arg_value primary_value block_call_value
+%type <node> expr_value arg_value primary_value
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args when_args call_args call_args2 open_args paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
@@ -605,11 +605,11 @@ command_call	: command
 		;
 
 block_command	: block_call
-		| block_call_value '.' operation2 command_args
+		| block_call '.' operation2 command_args
 		    {
 			$$ = new_call($1, $3, $4);
 		    }
-		| block_call_value tCOLON2 operation2 command_args
+		| block_call tCOLON2 operation2 command_args
 		    {
 			$$ = new_call($1, $3, $4);
 		    }
@@ -1075,6 +1075,7 @@ arg_value	: arg
 aref_args	: none
 		| command opt_nl
 		    {
+		        rb_warn("parenthesize argument(s) for future version");
 			$$ = NEW_LIST($1);
 		    }
 		| args trailer
@@ -1107,10 +1108,12 @@ paren_args	: '(' none ')'
 		    }
 		| '(' block_call opt_nl ')'
 		    {
+		        rb_warn("parenthesize argument for future version");
 			$$ = NEW_LIST($2);
 		    }
 		| '(' args ',' block_call opt_nl ')'
 		    {
+		        rb_warn("parenthesize argument for future version");
 			$$ = list_append($2, $4);
 		    }
 		;
@@ -1121,6 +1124,7 @@ opt_paren_args	: none
 
 call_args	: command
 		    {
+		        rb_warn("parenthesize argument(s) for future version");
 			$$ = NEW_LIST($1);
 		    }
 		| args opt_block_arg
@@ -1623,20 +1627,13 @@ block_call	: command do_block
 			$$ = $2;
 		        fixpos($$, $2);
 		    }
-		| block_call_value '.' operation2 opt_paren_args
+		| block_call '.' operation2 opt_paren_args
 		    {
 			$$ = new_call($1, $3, $4);
 		    }
-		| block_call_value tCOLON2 operation2 opt_paren_args
+		| block_call tCOLON2 operation2 opt_paren_args
 		    {
 			$$ = new_call($1, $3, $4);
-		    }
-		;
-
-block_call_value : block_call
-		    {
-			value_expr($$);
-			$$ = $1;
 		    }
 		;
 

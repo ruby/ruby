@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
+#include <math.h>
 
 VALUE rb_mKernel;
 VALUE rb_cObject;
@@ -134,6 +135,7 @@ static VALUE
 rb_any_to_a(obj)
     VALUE obj;
 {
+    rb_warn("default `to_a' will be obsolete");
     return rb_ary_new3(1, obj);
 }
 
@@ -335,6 +337,13 @@ nil_to_i(obj)
     VALUE obj;
 {
     return INT2FIX(0);
+}
+
+static VALUE
+nil_to_f(obj)
+    VALUE obj;
+{
+    return rb_float_new(0.0);
 }
 
 static VALUE
@@ -917,6 +926,7 @@ rb_check_convert_type(val, type, tname, method)
     return v;
 }
 
+
 static VALUE
 rb_to_integer(val, method)
     VALUE val;
@@ -941,6 +951,8 @@ VALUE
 rb_Integer(val)
     VALUE val;
 {
+    VALUE v;
+
     switch (TYPE(val)) {
       case T_FLOAT:
 	if (RFLOAT(val)->value <= (double)FIXNUM_MAX
@@ -961,7 +973,13 @@ rb_Integer(val)
       default:
 	break;
     }
-    return rb_to_integer(val, "to_i");
+    
+    if (rb_respond_to(val, rb_intern("to_int"))) {
+	return rb_to_integer(val, "to_int");
+    }
+    else {
+	return rb_to_integer(val, "to_i");
+    }
 }
 
 static VALUE
@@ -1073,10 +1091,17 @@ rb_Float(val)
 	return rb_float_new(rb_str_to_dbl(val, Qtrue));
 
       case T_NIL:
-	return rb_float_new(0.0);
+	rb_raise(rb_eTypeError, "cannot convert nil into Float");
+	break;
 
       default:
-	return rb_convert_type(val, T_FLOAT, "Float", "to_f");
+      {
+	  VALUE f = rb_convert_type(val, T_FLOAT, "Float", "to_f");
+	  if (isnan(RFLOAT(f)->value)) {
+	      rb_raise(rb_eArgError, "invalid value for Float()");
+	  }
+	  return f;
+      }
     }
 }
 
@@ -1143,6 +1168,9 @@ rb_Array(val)
 {
     ID to_ary;
 
+    if (NIL_P(val)) {
+	rb_raise(rb_eTypeError, "cannot convert nil into Array");
+    }
     if (TYPE(val) == T_ARRAY) return val;
     to_ary = rb_intern("to_ary");
     if (rb_respond_to(val, to_ary)) {
@@ -1251,7 +1279,7 @@ Init_Object()
     rb_define_method(rb_mKernel, "freeze", rb_obj_freeze, 0);
     rb_define_method(rb_mKernel, "frozen?", rb_obj_frozen_p, 0);
 
-    rb_define_method(rb_mKernel, "to_a", rb_any_to_a, 0);
+    rb_define_method(rb_mKernel, "to_a", rb_any_to_a, 0); /* to be removed */
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
     rb_define_method(rb_mKernel, "methods", rb_obj_methods, 0);

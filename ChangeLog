@@ -22,6 +22,16 @@ Thu Jun 27 08:28:18 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* parse.y (literal_concat_string): non-string last expression in
 	  #{} was ignored when followed by literal.
 
+Thu Jun 27 03:42:04 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_expr_str): need to process backslashes properly.
+
+Wed Jun 26 17:33:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_any_to_a): declare Object#to_a to be obsolete.
+
+	* object.c (rb_Array): do not convert nil into [] automagically.
+
 Wed Jun 26 15:40:00 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (words, qwords): word list literal rules.
@@ -38,6 +48,17 @@ Tue Jun 25 18:53:34 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Tue Jun 25 19:24:38 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* dln.c: remove definition rb_loaderror().
+
+Tue Jun 25 00:34:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_Integer): use "to_int" instead of
+	  "to_i". [experimental]
+
+	* object.c (nil_to_f): new method.
+
+	* object.c (rb_Integer): Symbols and nil should cause error.
+
+	* object.c (rb_Float): nil should cause error.
 
 Tue Jun 25 00:21:00 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 

@@ -236,7 +236,14 @@ rb_reg_expr_str(str, s, len)
     else {
 	p = s; 
 	while (p<pend) {
-	    if (*p == '/' && (s == p || p[-1] != '\\')) {
+	    if (*p == '\\') {
+		rb_str_buf_cat(str, p, 1);
+		p++;
+	    	rb_str_buf_cat(str, p, mbclen(*p));
+		p += mbclen(*p);
+		continue;
+	    }
+	    else if (*p == '/') {
 		char c = '\\';
 		rb_str_buf_cat(str, &c, 1);
 		rb_str_buf_cat(str, p, 1);
@@ -244,6 +251,7 @@ rb_reg_expr_str(str, s, len)
 	    else if (ismbchar(*p)) {
 	    	rb_str_buf_cat(str, p, mbclen(*p));
 		p += mbclen(*p);
+		need_escape = 1;
 		continue;
 	    }
 	    else if (ISPRINT(*p)) {

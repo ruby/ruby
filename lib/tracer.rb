@@ -84,7 +84,7 @@ class Tracer
   
   def get_line(file, line)
     if p = @get_line_procs[file]
-      return p.call line
+      return p.call(line)
     end
 
     unless list = SCRIPT_LINES__[file]

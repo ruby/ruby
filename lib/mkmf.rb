@@ -452,7 +452,7 @@ def create_makefile(target, srcprefix = nil)
   elsif RUBY_PLATFORM =~ /cygwin|mingw/
     deffile = target + '.def'
     if not File.exist? deffile
-      if File.exist? File.join srcdir, deffile
+      if File.exist? File.join(srcdir, deffile)
 	deffile = File.join srcdir, deffile
       else
         open(deffile, 'wb') do |f|

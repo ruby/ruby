@@ -189,7 +189,7 @@ class TkText<TkTextWin
     when 'text', 'label', 'show', 'data', 'file'
       tk_call @path, 'tag', 'cget', tag, "-#{key}"
     else
-      tk_tcl2ruby tk_call @path, 'tag', 'cget', tag, "-#{key}"
+      tk_tcl2ruby tk_call(@path, 'tag', 'cget', tag, "-#{key}")
     end
   end
 
@@ -636,7 +636,7 @@ class TkTextTag<TkObject
     when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
     else
-      tk_tcl2ruby tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
+      tk_tcl2ruby tk_call(@t.path, 'tag', 'cget', @id, "-#{key}")
     end
   end
 
@@ -854,7 +854,7 @@ class TkTextWindow<TkObject
     when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
     else
-      tk_tcl2ruby tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
+      tk_tcl2ruby tk_call(@t.path, 'window', 'cget', @index, "-#{slot}")
     end
   end
 
@@ -904,17 +904,17 @@ class TkTextWindow<TkObject
     if slot
       case slot.to_s
       when 'text', 'label', 'show', 'data', 'file'
-	conf = tk_split_simplelist(tk_call @t.path, 'window', 'configure', 
-				   @index, "-#{slot}")
+	conf = tk_split_simplelist(tk_call(@t.path, 'window', 'configure', 
+					   @index, "-#{slot}"))
       else
-	conf = tk_split_list(tk_call @t.path, 'window', 'configure', 
-			     @index, "-#{slot}")
+	conf = tk_split_list(tk_call(@t.path, 'window', 'configure', 
+				     @index, "-#{slot}"))
       end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_simplelist(tk_call @t.path, 'window', 'configure', 
-			  @index).collect{|conflist|
+      tk_split_simplelist(tk_call(@t.path, 'window', 'configure', 
+				  @index)).collect{|conflist|
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]
@@ -976,7 +976,7 @@ class TkTextImage<TkObject
     when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
     else
-      tk_tcl2ruby tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
+      tk_tcl2ruby tk_call(@t.path, 'image', 'cget', @index, "-#{slot}")
     end
   end
 
@@ -1003,17 +1003,17 @@ class TkTextImage<TkObject
     if slot
       case slot.to_s
       when 'text', 'label', 'show', 'data', 'file'
-	conf = tk_split_simplelist(tk_call @t.path, 'image', 'configure', 
-				   @index, "-#{slot}")
+	conf = tk_split_simplelist(tk_call(@t.path, 'image', 'configure', 
+					   @index, "-#{slot}"))
       else
-	conf = tk_split_list(tk_call @t.path, 'image', 'configure', 
-			     @index, "-#{slot}")
+	conf = tk_split_list(tk_call(@t.path, 'image', 'configure', 
+				     @index, "-#{slot}"))
       end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_simplelist(tk_call @t.path, 'image', 'configure', 
-			  @index).collect{|conflist|
+      tk_split_simplelist(tk_call(@t.path, 'image', 'configure', 
+				  @index)).collect{|conflist|
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]

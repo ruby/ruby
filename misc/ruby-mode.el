@@ -782,6 +782,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	       (make-local-variable 'font-lock-defaults)
 	       (make-local-variable 'font-lock-keywords)
 	       (make-local-variable 'font-lock-syntax-table)
+	       (make-local-variable 'font-lock-syntactic-keywords)
 	       (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
 	       (setq font-lock-keywords ruby-font-lock-keywords)
 	       (setq font-lock-syntax-table ruby-font-lock-syntax-table)

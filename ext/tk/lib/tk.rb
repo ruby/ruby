@@ -995,7 +995,7 @@ module Tk
       tk_call 'wm', 'title', path, *args
     end
     def transient(*args)
-      window(tk_call 'wm', 'transient', path, *args)
+      window(tk_call('wm', 'transient', path, *args))
     end
     def withdraw
       tk_call 'wm', 'withdraw', path
@@ -1475,7 +1475,7 @@ module TkSelection
     TkSelection.handle self, func, type, format
   end
   def TkSelection.own(win=None, func=None)
-    window(tk_call 'selection', 'own', win, func)
+    window(tk_call('selection', 'own', win, func))
   end
   def own(func=None)
     TkSelection.own self, func
@@ -1617,7 +1617,7 @@ module TkWinfo
   include Tk
   extend Tk
   def TkWinfo.atom(name)
-    number(tk_call 'winfo', 'atom', name)
+    number(tk_call('winfo', 'atom', name))
   end
   def winfo_atom(name)
     TkWinfo.atom name
@@ -1899,7 +1899,7 @@ module TkWinfo
     TkWinfo.y self
   end
   def TkWinfo.viewable(window)
-    bool(tk_call 'winfo', 'viewable', window.path)
+    bool(tk_call('winfo', 'viewable', window.path))
   end
   def winfo_viewable
     TkWinfo.viewable self
@@ -2469,7 +2469,7 @@ class TkObject<TkKernel
     when 'text', 'label', 'show', 'data', 'file'
       tk_call path, 'cget', "-#{slot}"
     else
-      tk_tcl2ruby tk_call path, 'cget', "-#{slot}"
+      tk_tcl2ruby tk_call(path, 'cget', "-#{slot}")
     end
   end
 
@@ -2805,9 +2805,9 @@ class TkWindow<TkObject
     elsif args.length == 1
       case args[0]
       when 'global', :global
-	return(tk_call 'grab', 'set', '-global', path)
+	return(tk_call('grab', 'set', '-global', path))
       when 'release', :release
-	return(tk_call 'grab', 'release', path)
+	return tk_call('grab', 'release', path)
       else
 	val = tk_call('grab', args[0], path)
       end
@@ -3329,7 +3329,7 @@ class TkListbox<TkTextWin
     when 'text', 'label', 'show'
       tk_send 'itemcget', index, "-#{key}"
     else
-      tk_tcl2ruby tk_send 'itemcget', index, "-#{key}"
+      tk_tcl2ruby tk_send('itemcget', index, "-#{key}")
     end
   end
   def itemconfigure(index, key, val=None)
@@ -3468,7 +3468,7 @@ class TkMenu<TkWindow
     when 'text', 'label', 'show'
       tk_send 'entrycget', index, "-#{key}"
     else
-      tk_tcl2ruby tk_send 'entrycget', index, "-#{key}"
+      tk_tcl2ruby tk_send('entrycget', index, "-#{key}")
     end
   end
   def entryconfigure(index, key, val=None)

@@ -11,4 +11,4 @@ for i in 2 .. Math.sqrt(max)
     sieve[j] = nil
   end
 end
-puts sieve.compact.join ", "
+puts sieve.compact.join(", ")
