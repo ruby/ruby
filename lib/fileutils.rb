@@ -806,30 +806,8 @@ module FileUtils
   #
   # Options: noop verbose
   # 
-  # Changes permission bits on the named files and directories (in +list+)
-  # to the bit pattern represented by +mode+.
-  # 
-  #   FileUtils.chmod 0700, '/home/test/.ssh', :verbose => true
-  # 
-  def chmod_R(mode, list, options = {})
-    fu_check_options options, :noop, :verbose
-    list = fu_list(list)
-    fu_output_message sprintf('chmod -R %o %s',
-                              mode, list.join(' ')) if options[:verbose]
-    return if options[:noop]
-    list.each do |prefix|
-      Find.find(prefix) do |path|
-        File.chmod mode, path
-      end
-    end
-  end
-
-
-  #
-  # Options: noop verbose
-  # 
   # Changes owner and group on the named files (in +list+)
-  # to the user +user+ and the group +group.  +user+ and +group+
+  # to the user +user+ and the group +group+.  +user+ and +group+
   # may be an ID (Integer/String) or a name (String).
   # If +user+ or +group+ is nil, this method does not change
   # the attribute.
@@ -852,13 +830,13 @@ module FileUtils
   # Options: noop verbose
   # 
   # Changes owner and group on the named files (in +list+)
-  # to the user +user+ and the group +group.  +user+ and +group+
-  # may be an ID (Integer/String) or a name (String).
-  # If +user+ or +group+ is nil, this method does not change
-  # the attribute.
+  # to the user +user+ and the group +group+ recursively.
+  # +user+ and +group+ may be an ID (Integer/String) or
+  # a name (String).  If +user+ or +group+ is nil, this
+  # method does not change the attribute.
   # 
-  #   FileUtils.chmod_R 'www', 'www', '/var/www/htdocs'
-  #   FileUtils.chmod_R 'cvs', 'cvs', '/var/cvs', :verbose => true
+  #   FileUtils.chown_R 'www', 'www', '/var/www/htdocs'
+  #   FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', :verbose => true
   # 
   def chown_R(mode, list, options = {})
     fu_check_options options, :noop, :verbose
@@ -1038,7 +1016,6 @@ module FileUtils
     'cd'           => %w( noop verbose ),
     'chdir'        => %w( noop verbose ),
     'chmod'        => %w( noop verbose ),
-    'chmod_R'      => %w( noop verbose ),
     'chown'        => %w( noop verbose ),
     'chown_R'      => %w( noop verbose ),
     'copy'         => %w( noop verbose preserve ),

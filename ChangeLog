@@ -1,3 +1,12 @@
+Sat Dec  4 21:29:05 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: (In previous commit) new method chown.
+
+	* lib/fileutils.rb: (In previous commit) new method chown_R.
+
+	* lib/fileutils.rb: (In previous commit) new method chmod_R
+	  wrongly added.  Removed now.
+
 Sat Dec  4 20:45:52 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mkdir, mkdir_p): should chmod explicitly.

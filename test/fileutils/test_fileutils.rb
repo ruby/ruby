@@ -739,6 +739,15 @@ end
   end
 
   def test_chmod
+    # FIXME
+  end
+
+  def test_chown
+    # FIXME
+  end
+
+  def test_chown_R
+    # FIXME
   end
 
 end
