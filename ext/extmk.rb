@@ -205,7 +205,7 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
 	next
       end
       target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
-      $static_ext[target] = true
+      $static_ext[target] = $static_ext.size
     end
     MTIMES << f.mtime
     $setup = setup
@@ -218,10 +218,15 @@ FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
 ext_prefix = "#{$top_srcdir}/ext"
+$static_ext.sort_by {|t, i| i}.each do |t, i|
+  next unless File.exist?("#{ext_prefix}/#{t}/MANIFEST")
+  extmake(t) or abort
+end
 Dir.glob("#{ext_prefix}/*/**/MANIFEST") do |d|
   d = File.dirname(d)
   d.slice!(0, ext_prefix.length + 1)
-  extmake(d) or exit(1)
+  next if $static_ext[d]
+  extmake(d) or abort
 end
 
 if $ignore
@@ -233,11 +238,14 @@ if $extlist.size > 0
   $extinit ||= ""
   $extobjs ||= ""
   list = $extlist.dup
-  until list.empty?
-    s,t,i,r = list.shift
-    if r and list.any? {|l| r.include?(l[1])}
-      list << [s,t,i]
-      next
+  while e = list.shift
+    s,t,i,r = e
+    if r
+      l = list.size
+      if (while l > 0; break true if r.include?(list[l-=1][1]) end)
+        list.insert(l + 1, e)
+        next
+      end
     end
     f = format("%s/%s.%s", s, i, $LIBEXT)
     if File.exist?(f)

@@ -22,4 +22,6 @@ have_header("inttypes.h")
 
 have_header("unistd.h")
 
+$preload = %w[digest]
+
 create_makefile("digest/sha1")

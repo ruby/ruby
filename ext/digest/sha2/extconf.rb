@@ -17,6 +17,8 @@ have_header("inttypes.h")
 
 have_header("unistd.h")
 
+$preload = %w[digest]
+
 if try_cpp(<<SRC, $defs.join(' '))
 #include "defs.h"
 #ifdef NO_UINT64_T

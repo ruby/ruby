@@ -1,3 +1,12 @@
+Thu Jan  8 07:06:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: preserve order in Setup.  [ruby-dev:22503]
+
+	* ext/extmk.rb: move dependent libraries just after depended
+	  libraries.
+
+	* ext/digest/*/extconf.rb: depend on digest.
+
 Thu Jan  8 04:36:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI#initialize): should create
