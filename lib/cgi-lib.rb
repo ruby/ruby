@@ -216,10 +216,10 @@ class CGI < SimpleDelegator
 
   # make HTTP header string
   def CGI::header(*options)
-    if ENV['MOD_RUBY']
+    if defined?(MOD_RUBY)
       options.each{|option|
         option.sub(/(.*?): (.*)/){
-          Apache::request[$1] = $2
+          Apache::request.headers_out[$1] = $2
         }
       }
       Apache::request.send_http_header

@@ -1,3 +1,9 @@
+Tue May 21 04:48:37 2002  Sean Chittenden <sean@chittenden.org>
+
+	* lib/cgi-lib.rb: Checking for constant MOD_RUBY instead of
+	  environment variable. Remove a mod_ruby warning and use
+	  Apache::request.headers_out[] instead.
+
 Mon May 20 13:28:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (rb_io_clone): writing stream was not copied properly.
