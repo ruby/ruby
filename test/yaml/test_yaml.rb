@@ -1208,6 +1208,8 @@ EOY
       #
       # From Nobu Nakada [ruby-core:02311]
       #
+      t = 0..1
+      assert_equal( t, YAML.load( YAML.dump( t ) ) )
       t = "0".."1"
       assert_equal( t, YAML.load( YAML.dump( t ) ) )
       t = ".."..."..."
