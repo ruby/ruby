@@ -3,10 +3,7 @@
 require "test/unit"
 require "rss/parser"
 require "rss/1.0"
-dir = File.dirname(File.expand_path(__FILE__))
-$:.push(dir)
 require "common"
-$:.delete(dir)
 
 class TestParser < Test::Unit::TestCase
 	include TestRSSMixin

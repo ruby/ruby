@@ -1,5 +1,4 @@
 require 'test/unit'
-$:.replace([File.dirname(File.expand_path(__FILE__))] | $:)
 require 'envutil'
 
 $KCODE = 'none'

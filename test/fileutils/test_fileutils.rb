@@ -2,8 +2,6 @@
 # test/fileutils/test_fileutils.rb
 #
 
-$:.unshift File.dirname(__FILE__)
-
 require 'fileutils'
 require 'fileasserts'
 require 'pathname'

@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tempfile'
-$:.replace([File.dirname(File.expand_path(__FILE__))] | $:)
 require 'ut_eof'
 
 $KCODE = 'none'

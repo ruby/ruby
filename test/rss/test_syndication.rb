@@ -6,10 +6,7 @@ require "rexml/document"
 
 require "rss/parser"
 require "rss/syndication"
-dir = File.dirname(File.expand_path(__FILE__))
-$:.push(dir)
 require "common"
-$:.delete(dir)
 
 class TestSyndication < Test::Unit::TestCase
 	include TestRSSMixin

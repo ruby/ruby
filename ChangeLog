@@ -1,3 +1,8 @@
+Thu Jan 29 22:19:51 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/*: remove $: trick.  [ruby-dev:22763]  use test/runner.rb to
+	  run test.
+
 Thu Jan 29 19:28:16 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (Request#initialize): reject only when a path is

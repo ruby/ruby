@@ -1,10 +1,6 @@
 require 'test/unit'
 require 'soap/rpc/driver'
-
-dir = File.dirname(File.expand_path(__FILE__))
-$:.push(dir)
 require 'hw_s.rb'
-$:.delete(dir)
 
 
 module SOAP

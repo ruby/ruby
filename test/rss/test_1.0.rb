@@ -4,10 +4,7 @@ require "test/unit"
 require "rexml/document"
 
 require "rss/1.0"
-dir = File.dirname(File.expand_path(__FILE__))
-$:.push(dir)
 require "common"
-$:.delete(dir)
 
 class TestCore < Test::Unit::TestCase
 

@@ -6,10 +6,7 @@ require "rexml/document"
 
 require "rss/parser"
 require "rss/trackback"
-dir = File.dirname(File.expand_path(__FILE__))
-$:.push(dir)
 require "common"
-$:.delete(dir)
 
 class TestTrackBack < Test::Unit::TestCase
 	include TestRSSMixin
