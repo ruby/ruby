@@ -1,3 +1,11 @@
+Thu Mar 31 08:25:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUBYOPT): clear for the environment RubyGems installed.
+
+	* common.mk (clean-local): keep $(PREP) files till distclean.
+
+	* common.mk (check): do all tests.
+
 Thu Mar 31 06:00:20 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should not raise
@@ -6,7 +14,7 @@ Thu Mar 31 06:00:20 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Wed Mar 30 17:41:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/tcltklib.c: add TclTkIp#_create_console() method to create 
+	* ext/tk/tcltklib.c: add TclTkIp#_create_console() method to create
 	  a Tcl/Tk's console window.
 
 	* ext/tk/lib/multi-tk.rb: support TclTkIp#_create_console() method.
@@ -29,9 +37,9 @@ Tue Mar 29 22:20:49 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 Tue Mar 29 00:04:57 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: move method DRbObject#reinit to DRbObject.new_with.
-          extract method DRbObject.prepare_backtrace. add DRb.regist_server,
-          remove_server, fetch_server. change server in thread variable if
-          in-proc sesrver. [druby-ja:113]
+	  extract method DRbObject.prepare_backtrace. add DRb.regist_server,
+	  remove_server, fetch_server. change server in thread variable if
+	  in-proc sesrver. [druby-ja:113]
 
 	* lib/drb/gw.rb: ditto.
 

@@ -2,6 +2,8 @@ bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY);
 dll: $(LIBRUBY_SO);
 
+RUBYOPT       =
+
 EXTCONF       = extconf.rb
 RBCONFIG      = ./.rbconfig.time
 
@@ -125,7 +127,7 @@ post-install-doc:: PHONY
 clean: clean-ext clean-local
 clean-local::
 	@$(RM) $(OBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
-	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(PREP) $(ARCHFILE)
+	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE)
 clean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) clean
 
@@ -133,12 +135,14 @@ distclean: distclean-ext distclean-local
 distclean-local:: clean-local
 	@$(RM) $(MKFILES) config.h rbconfig.rb
 	@$(RM) config.cache config.log config.status
-	@$(RM) *~ *.bak *.stackdump core *.core gmon.out y.tab.c y.output ruby.imp
+	@$(RM) *~ *.bak *.stackdump core *.core gmon.out y.tab.c y.output $(PREP)
 distclean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean
 
 realclean:: distclean
 	@$(RM) parse.c lex.c
+
+check: test test-all
 
 test: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) $(srcdir)/rubytest.rb
