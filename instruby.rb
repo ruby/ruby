@@ -78,6 +78,7 @@ Dir.chdir CONFIG["srcdir"]
 
 for src in Dir["bin/*"]
   next unless File.file?(src)
+  next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
 
   name = ruby_install_name.sub(/ruby/, File.basename(src))
   dest = File.join(bindir, name)

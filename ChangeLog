@@ -1,3 +1,7 @@
+Tue Nov 19 05:16:23 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* instruby.rb: Do not install various working files under bin/.
+
 Tue Nov 19 02:34:18 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* bin/irb: Moved from sample/irb.rb.
