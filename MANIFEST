@@ -625,6 +625,7 @@ test/fileutils/test_nowrite.rb
 test/logger/test_logger.rb
 test/ostruct/test_ostruct.rb
 test/ruby/beginmainend.rb
+test/ruby/endblockwarn.rb
 test/ruby/envutil.rb
 test/ruby/test_alias.rb
 test/ruby/test_array.rb
