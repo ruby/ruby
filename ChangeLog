@@ -1,3 +1,8 @@
+Fri Sep 10 02:43:54 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/template/kilmer.rb: James Buck's
+	  patch for call-seq.
+
 Thu Sep  9 13:58:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_init): change flag value for setting 

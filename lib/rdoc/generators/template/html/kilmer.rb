@@ -261,7 +261,12 @@ START:methods
 <table width="100%" cellspacing = 0 cellpadding=5 border=0>
 <tr><td class="methodtitle">
 <a name="%aref%">
-<b>%name%</b>%params% 
+IF:callseq
+<b>%callseq%</b>
+ENDIF:callseq
+IFNOT:callseq
+ <b>%name%</b>%params%
+ENDIF:callseq
 IF:codeurl
 <a href="%codeurl%" target="source" class="srclink">src</a>
 ENDIF:codeurl
