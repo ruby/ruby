@@ -1,3 +1,8 @@
+Tue Nov  9 00:36:26 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/extservm.rb: add DRb::ExtServManager#uri=.
+	  [ruby-dev:24743]
+
 Mon Nov  8 22:20:19 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_class):

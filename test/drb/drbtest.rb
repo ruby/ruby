@@ -23,6 +23,7 @@ class DRbService
     add_service_command(nm)
   end
   @server = @@server = DRb::DRbServer.new(nil, @@manager, {})
+  @@manager.uri = @@server.uri
   def self.manager
     @@manager
   end

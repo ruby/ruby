@@ -25,8 +25,9 @@ module DRb
       @waiting = []
       @queue = Queue.new
       @thread = invoke_thread
+      @uri = nil
     end
-    attr_reader :server
+    attr_accessor :uri
 
     def service(name)
       while true
@@ -84,7 +85,8 @@ module DRb
 	return if @servers.include?(name)
 	@servers[name] = false
       end
-      Process.detach(Process.spawn("#{command} #{DRb.uri} #{name}"))
+      uri = @uri || DRb.uri
+      Process.detach(Process.spawn("#{command} #{uri} #{name}"))
       true
     end
   end
