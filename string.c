@@ -36,6 +36,17 @@ VALUE rb_cString;
 
 VALUE rb_fs;
 
+static inline void
+str_mod_check(s, p, len)
+    VALUE s;
+    char *p;
+    long len;
+{
+    if (RSTRING(s)->ptr != p || RSTRING(s)->len != len) {
+	rb_raise(rb_eRuntimeError, "string modified");
+    }
+}
+
 static VALUE str_alloc _((VALUE));
 static VALUE
 str_alloc(klass)
@@ -2008,7 +2019,7 @@ str_gsub(argc, argv, str, bang)
     VALUE str;
     int bang;
 {
-    VALUE pat, val, repl, match;
+    VALUE pat, val, repl, match, dest;
     struct re_registers *regs;
     long beg, n;
     long offset, blen, len;
@@ -2037,7 +2048,8 @@ str_gsub(argc, argv, str, bang)
     }
 
     blen = RSTRING(str)->len + 30; /* len + margin */
-    buf = ALLOC_N(char, blen);
+    dest = rb_str_new5(str, 0, blen);
+    buf = RSTRING(dest)->ptr;
     bp = buf;
     cp = RSTRING(str)->ptr;
 
@@ -2048,9 +2060,7 @@ str_gsub(argc, argv, str, bang)
 	if (iter) {
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
-	    if (RSTRING(str)->ptr == buf) {
-		rb_raise(rb_eRuntimeError, "gsub reentered");
-	    }
+	    str_mod_check(dest, buf, blen);
 	    rb_backref_set(match);
 	}
 	else {
@@ -2061,7 +2071,9 @@ str_gsub(argc, argv, str, bang)
 	if (blen < len) {
 	    while (blen < len) blen *= 2;
 	    len = bp - buf;
-	    REALLOC_N(buf, char, blen);
+	    RESIZE_CAPA(dest, blen);
+	    RSTRING(dest)->len = blen;
+	    buf = RSTRING(dest)->ptr;
 	    bp = buf + len;
 	}
 	len = beg - offset;	/* copy pre-match substr */
@@ -2087,30 +2099,32 @@ str_gsub(argc, argv, str, bang)
     }
     if (RSTRING(str)->len > offset) {
 	len = bp - buf;
-	if (blen - len < RSTRING(str)->len - offset + 1) {
-	    REALLOC_N(buf, char, len + RSTRING(str)->len - offset + 1);
+	if (blen - len < RSTRING(str)->len - offset) {
+	    blen = len + RSTRING(str)->len - offset;
+	    RESIZE_CAPA(dest, blen);
+	    buf = RSTRING(dest)->ptr;
 	    bp = buf + len;
 	}
 	memcpy(bp, cp, RSTRING(str)->len - offset);
 	bp += RSTRING(str)->len - offset;
     }
     rb_backref_set(match);
+    *bp = '\0';
     if (bang) {
 	if (str_independent(str)) {
 	    free(RSTRING(str)->ptr);
 	}
 	FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
+	RSTRING(str)->ptr = buf;
+	RSTRING(str)->aux.capa = blen;
+	RSTRING(dest)->ptr = 0;
+	RSTRING(dest)->len = 0;
     }
     else {
-	VALUE dup = str_alloc(rb_obj_class(str));
-
-	OBJ_INFECT(dup, str);
-	str = dup;
+	OBJ_INFECT(dest, str);
+	str = dest;
     }
-    RSTRING(str)->ptr = buf;
-    RSTRING(str)->len = len = bp - buf;
-    RSTRING(str)->ptr[len] = '\0';
-    RSTRING(str)->aux.capa = len;
+    RSTRING(str)->len = bp - buf;
 
     if (tainted) OBJ_TAINT(str);
     return str;
@@ -3590,18 +3604,6 @@ rb_f_split(argc, argv)
     VALUE *argv;
 {
     return rb_str_split_m(argc, argv, uscore_get());
-}
-
-
-static inline void
-str_mod_check(s, p, len)
-    VALUE s;
-    char *p;
-    long len;
-{
-    if (RSTRING(s)->ptr != p || RSTRING(s)->len != len) {
-	rb_raise(rb_eRuntimeError, "string modified");
-    }
 }
 
 /*

@@ -1,6 +1,11 @@
+Wed Oct 27 09:17:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_gsub): use a string object for exception safeness.
+	  [ruby-dev:24601]
+
 Tue Oct 26 23:30:39 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/code_objects.rb (RDoc::Context::add_class_or_module): 
+	* lib/rdoc/code_objects.rb (RDoc::Context::add_class_or_module):
 	  Restore correct :nopdoc: behavior with nested classes and modules.
 
 Mon Oct 25 18:35:39 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
