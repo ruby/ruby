@@ -126,6 +126,10 @@ class DateTime
     [@year, @month, @day, @hour, @min, @sec]
   end
 
+  def ==(o)
+    self.to_a == o.to_a
+  end
+
 end
 
 

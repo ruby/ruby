@@ -84,18 +84,32 @@ module XMLRPC
     end
 
     def self.dateTime(str)
-      if str =~ /^(-?\d\d\d\d)(\d\d)(\d\d)T(\d\d):(\d\d):(\d\d)$/ then
-        # TODO: Time.gm ??? .local ??? 
+      case str
+      when /^(-?\d\d\d\d)-?(\d\d)-?(\d\d)T(\d\d):(\d\d):(\d\d)(?:Z|([+-])(\d\d):?(\d\d))?$/
         a = [$1, $2, $3, $4, $5, $6].collect{|i| i.to_i}
-	  
+        if $7
+          ofs = $8.to_i*3600 + $9.to_i*60
+          ofs = -ofs if $7=='+'
+          utc = Time.utc(a.reverse) + ofs
+          a = [ utc.year, utc.month, utc.day, utc.hour, utc.min, utc.sec ]
+        end
         XMLRPC::DateTime.new(*a)
-        #if a[0] >= 1970 then
-        #  Time.gm(*a)
-        #else
-        #  Date.new(*a[0,3])
-        #end
+      when /^(-?\d\d)-?(\d\d)-?(\d\d)T(\d\d):(\d\d):(\d\d)(Z|([+-]\d\d):(\d\d))?$/
+        a = [$1, $2, $3, $4, $5, $6].collect{|i| i.to_i}
+        if a[0] < 70
+          a[0] += 2000
+        else
+          a[0] += 1900
+        end
+        if $7
+          ofs = $8.to_i*3600 + $9.to_i*60
+          ofs = -ofs if $7=='+'
+          utc = Time.utc(a.reverse) + ofs
+          a = [ utc.year, utc.month, utc.day, utc.hour, utc.min, utc.sec ]
+        end
+        XMLRPC::DateTime.new(*a)
       else
-        raise "wrong dateTime.iso8601 format"
+        raise "wrong dateTime.iso8601 format " + str
       end
     end
 
