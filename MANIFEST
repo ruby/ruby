@@ -477,8 +477,9 @@ sample/time.rb
 sample/trojan.rb
 sample/tsvr.rb
 sample/uumerge.rb
-test/csv/test_csv.rb
 test/csv/bom.csv
+test/csv/mac.csv
+test/csv/test_csv.rb
 test/ruby/test_alias.rb
 test/ruby/test_array.rb
 test/ruby/test_assignment.rb
