@@ -15,9 +15,19 @@ class TkEntry<TkLabel
   class ValidateCmd
     include TkComm
 
+    module Action
+      Insert = 1
+      Delete = 0
+      Others = -1
+      Focus  = -1
+      Forced = -1
+      Textvariable = -1
+      TextVariable = -1
+    end
+
     class ValidateArgs
       VARG_KEY  = 'disvPSVW'
-      VARG_TYPE = 'nnsssssw'
+      VARG_TYPE = 'nxsssssw'
 
       def self.scan_args(arg_str, arg_val)
 	arg_cnv = []
@@ -31,6 +41,13 @@ class TkEntry<TkLabel
 		arg_cnv << TkComm::string(arg_val[idx])
 	      when ?w
 		arg_cnv << TkComm::window(arg_val[idx])
+	      when ?x
+		idx = TkComm::number(arg_val[idx])
+		if idx < 0
+		  arg_cnv << nil
+		else
+		  arg_cnv << idx
+		end
 	      else
 		arg_cnv << arg_val[idx]
 	      end
@@ -68,16 +85,16 @@ class TkEntry<TkLabel
       if args
 	@id = 
 	  install_cmd(proc{|*arg|
-			TkUtil.eval_cmd(cmd, ValidateArgs.scan_args(args, arg))
+			TkUtil.eval_cmd(proc{|*v| (cmd.call(*v))? '1': '0'}, 
+					*ValidateArgs.scan_args(args, arg))
 		      }) + " " + args
       else
 	args = ' %d %i %s %v %P %S %V %W'
 	@id = 
 	  install_cmd(proc{|*arg|
-	    TkUtil.eval_cmd(
-		cmd, 
-		ValidateArgs.new(ValidateArgs.scan_args(args, arg))
-	    )
+			TkUtil.eval_cmd(proc{|*v| (cmd.call(*v))? '1': '0'}, 
+					ValidateArgs.new(*ValidateArgs \
+							 .scan_args(args,arg)))
 	  }) + args
       end
     end
@@ -88,10 +105,9 @@ class TkEntry<TkLabel
   end
 
   def create_self(keys)
+    tk_call 'entry', @path
     if keys and keys != None
-      tk_call 'entry', @path, *hash_kv(keys)
-    else
-      tk_call 'entry', @path
+      configure(keys)
     end
   end
 
@@ -193,28 +209,35 @@ class TkEntry<TkLabel
     self
   end
 
+  def invoke_validate
+    bool(tk_send('validate'))
+  end
   def validate(mode = nil)
     if mode
       configure 'validate', mode
     else
-      bool(tk_send('validate'))
+      invoke_validate
     end
   end
 
-  def validatecommand(cmd = ValidateCmd.new, args = nil)
+  def validatecommand(cmd = Proc.new, args = nil)
     if cmd.kind_of?(ValidateCmd)
       configure('validatecommand', cmd)
+    elsif args
+      configure('validatecommand', [cmd, args])
     else
-      configure('validatecommand', ValidateCmd.new(cmd, args))
+      configure('validatecommand', cmd)
     end
   end
   alias vcmd validatecommand
 
-  def invalidcommand(cmd = ValidateCmd.new, args = nil)
+  def invalidcommand(cmd = Proc.new, args = nil)
     if cmd.kind_of?(ValidateCmd)
       configure('invalidcommand', cmd)
+    elsif args
+      configure('invalidcommand', [cmd, args])
     else
-      configure('invalidcommand', ValidateCmd.new(cmd, args))
+      configure('invalidcommand', cmd)
     end
   end
   alias invcmd invalidcommand
@@ -234,10 +257,9 @@ class TkSpinbox<TkEntry
   WidgetClassNames[WidgetClassName] = self
 
   def create_self(keys)
+    tk_call 'spinbox', @path
     if keys and keys != None
-      tk_call 'spinbox', @path, *hash_kv(keys)
-    else
-      tk_call 'spinbox', @path
+      configure(keys)
     end
   end
 

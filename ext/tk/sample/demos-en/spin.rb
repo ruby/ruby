@@ -53,11 +53,10 @@ australianCities = [
 ]
 
 [
-  # Current version of Ruby/Tk (current is 1.8.0) is not enough 
-  # to support 'validate' option and related options. This problem 
-  # will be improved in the next or future version. 
   TkSpinbox.new($spin_demo, :from=>1, :to=>10, :width=>10, :validate=>:key, 
-		:validatecommand=>"string is integer %P"), 
+		:validatecommand=>[
+		  proc{|s| s == '' || /^[+-]?\d+$/ =~ s }, '%P'
+		]), 
   TkSpinbox.new($spin_demo, :from=>0, :to=>3, :increment=>0.5, 
 		:format=>'%05.2f', :width=>10), 
   TkSpinbox.new($spin_demo, :values=>australianCities, :width=>10)

@@ -57,11 +57,10 @@ australianCities = [
 ]
 
 [
-  # 現状の Ruby/Tk (現在のバージョンは 1.8.0) では、validate オプションや
-  # それに関連するオプションへのサポートを十分に達成できていません。この
-  # 問題については、次または将来のバージョンで改善する予定です。
   TkSpinbox.new($spin_demo, :from=>1, :to=>10, :width=>10, :validate=>:key, 
-		:validatecommand=>"string is integer %P"), 
+		:validatecommand=>[
+		  proc{|s| s == '' || /^[+-]?\d+$/ =~ s }, '%P'
+		]), 
   TkSpinbox.new($spin_demo, :from=>0, :to=>3, :increment=>0.5, 
 		:format=>'%05.2f', :width=>10), 
   TkSpinbox.new($spin_demo, :values=>australianCities, :width=>10)
