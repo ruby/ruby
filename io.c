@@ -2118,6 +2118,9 @@ rb_io_putc(io, ch)
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr->path);
     }
+    else {
+	fptr->mode |= FMODE_WBUF;
+    }
 
     return ch;
 }

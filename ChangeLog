@@ -1,5 +1,6 @@
-Thu Jan  9 18:25:30 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
-	* io.c (io_write): set FMODE_WBUF flag unless flushed.
+Thu Jan  9 18:31:45 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (io_write, rb_io_putc): set FMODE_WBUF flag unless flushed.
 
 Thu Jan  9 17:30:55 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
