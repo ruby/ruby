@@ -51,6 +51,11 @@ Mon Feb 26 16:20:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_s_open): returns the value from a block (if given).
 
+Mon Feb 26 14:29:04 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/extmk.rb.in, lib/mkmf.rb: add C++ rules in addition to C
+	rules.
+
 Mon Feb 26 00:04:52 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_call): should not modify ruby_block->frame.iter
