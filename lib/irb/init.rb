@@ -13,7 +13,7 @@
 module IRB
 
   # initialize config
-  def IRB.initialize(ap_path)
+  def IRB.setup(ap_path)
     IRB.init_config(ap_path)
     IRB.init_error
     IRB.parse_opts

@@ -16,6 +16,6 @@ else
   if /^-e$/ =~ $0
     IRB.start(__FILE__)
   else
-    IRB.initialize(__FILE__)
+    IRB.setup(__FILE__)
   end
 end
