@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.1.37
+= net/http.rb
 
 == このライブラリについて
 
@@ -204,15 +204,16 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
     プロクシ経由で接続する HTTP オブジェクトならプロクシのポート。
     そうでないなら nil。
 
-: get( path, header = nil, dest = '' )
+: get( path, header = nil )
 : get( path, header = nil ) {|str| .... }
-    サーバ上の path にあるエンティティを取得し、dest に << メソッドを
-    使って書きこみます。また header が nil でなければリクエストを送る
-    ときにその内容を HTTP ヘッダとして書きこみます。header はハッシュで、
-    「ヘッダ名 => 内容」のような形式でなければいけません。
+    サーバ上の path にあるエンティティを取得します。また header が nil
+    でなければ、リクエストを送るときにその内容を HTTP ヘッダとして書き
+    こみます。header はハッシュで、「ヘッダ名 => 内容」のような形式で
+    なければいけません。
 
-    返り値は、バージョン 1.1 では HTTPResponse と dest 二要素の配列です。
-    1.2 では HTTPResponse ただひとつのみです。
+    返り値は、バージョン 1.1 では HTTPResponse とエンティティボディ文字列の
+    二要素の配列です。1.2 では HTTPResponse ただひとつのみです。この場合、
+    エンティティボディは response.body で得られます。
 
     ブロックとともに呼ばれた時はエンティティボディを少しづつブロックに
     与えます。
@@ -237,10 +238,6 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
               f.write str
             end
         }
-        # same effect
-        File.open( 'save.txt', 'w' ) {|f|
-            http.get '/~foo/', nil, f
-        }
 
 : head( path, header = nil )
     サーバ上の path にあるエンティティのヘッダのみを取得します。
@@ -260,7 +257,7 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
         }
         p response['content-type']
 
-: post( path, data, header = nil, dest = '' )
+: post( path, data, header = nil )
 : post( path, data, header = nil ) {|str| .... }
     サーバ上の path にあるエンティティに対し文字列 data を
     送ります。レスポンスは << メソッドを使って dest に書き
@@ -275,55 +272,54 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
     一方 1.2 では全く例外を発生しません。
 
         # version 1.1
-        response, body = http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' )
+        response, body = http.post( '/cgi-bin/search.rb', 'query=subject&target=ruby' )
+
         # version 1.2
-        response = http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' )
-        # compatible for both version
-        response , = http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' )
+        response = http.post( '/cgi-bin/search.rb', 'query=subject&target=ruby' )
+
+        # compatible in both version
+        response , = http.post( '/cgi-bin/search.rb', 'query=subject&target=ruby' )
 
         # using block
         File.open( 'save.html', 'w' ) {|f|
-            http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' ) do |str|
+            http.post( '/cgi-bin/search.rb',
+                       'query=subject&target=ruby' ) do |str|
               f.write str
             end
         }
-        # same effect
-        File.open( 'save.html', 'w' ) {|f|
-            http.post '/cgi-bin/search.rb', 'querytype=subject&target=ruby', nil, f
-        }
 
-: get2( path, header = nil )
-: get2( path, header = nil ) {|response| .... }
+: request_get( path, header = nil )
+: request_get( path, header = nil ) {|response| .... }
     path にあるエンティティを取得します。HTTPResponse
     オブジェクトを返します。
 
     ブロックとともに呼び出されたときは、ブロック実行中は接続を
     維持したまま HTTPResponse オブジェクトをブロックに渡します。
 
-    このメソッドはステータスに関らず例外を発生させません。
+    このメソッドは HTTP プロトコルに関連した例外は発生させません。
 
         # example
-        response = http.get2( '/index.html' )
+        response = http.request_get( '/index.html' )
         p response['content-type']
         puts response.body          # body is already read
 
         # using block
-        http.get2( '/index.html' ) {|response|
+        http.request_get( '/index.html' ) {|response|
             p response['content-type']
             response.read_body do |str|   # read body now
               print str
             end
         }
 
-: post2( path, header = nil )
-: post2( path, header = nil ) {|response| .... }
+: request_post( path, data, header = nil )
+: request_post( path, data, header = nil ) {|response| .... }
     path にあるエンティティを取得します。HTTPResponse
     オブジェクトを返します。
 
     ブロックとともに呼び出されたときは、ボディを読みこむ前に
     HTTPResponse オブジェクトをブロックに渡します。
 
-    このメソッドはステータスに関らず例外を発生させません。
+    このメソッドは HTTP プロトコルに関連した例外は発生させません。
 
         # example
         response = http.post2( '/cgi-bin/nice.rb', 'datadatadata...' )

@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.1.37
+= net/http.rb
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -13,6 +13,8 @@ Ruby Distribute License or GNU General Public License.
 
 NOTE: You can find Japanese version of this document in
 the doc/net directory of the standard ruby interpreter package.
+
+$Id$
 
 == What is this module?
 
@@ -213,21 +215,22 @@ Yes, this is not thread-safe.
 : proxy_port
     port number of proxy host. If self does not use a proxy, nil.
 
-: get( path, header = nil, dest = '' )
+: get( path, header = nil )
 : get( path, header = nil ) {|str| .... }
     gets data from PATH on the connecting host.
     HEADER must be a Hash like { 'Accept' => '*/*', ... }.
-    Response body is written into DEST by using "<<" method.
 
-    This method returns Net::HTTPResponse object.
+    In version 1.1, this method returns a pair of objects,
+    a Net::HTTPResponse object and entity body string.
+    In version 1.2, this method returns a Net::HTTPResponse
+    object.
 
-    If called with block, gives entity body little by little
-    to the block (as String).
+    If called with block, gives entity body string to the block
+    little by little.
 
     In version 1.1, this method might raises exception for also
     3xx (redirect). On the case you can get a HTTPResponse object
     by "anException.response".
-
     In version 1.2, this method never raises exception.
 
         # version 1.1 (bundled with Ruby 1.6)
@@ -246,10 +249,6 @@ Yes, this is not thread-safe.
               f.write str
             end
         }
-        # same effect
-        File.open( 'save.txt', 'w' ) {|f|
-            http.get '/~foo/', nil, f
-        }
 
 : head( path, header = nil )
     gets only header from PATH on the connecting host.
@@ -260,6 +259,7 @@ Yes, this is not thread-safe.
     In version 1.1, this method might raises exception for also
     3xx (redirect). On the case you can get a HTTPResponse object
     by "anException.response".
+    In version 1.2, this method never raises exception.
 
         response = nil
         Net::HTTP.start( 'some.www.server', 80 ) {|http|
@@ -267,66 +267,69 @@ Yes, this is not thread-safe.
         }
         p response['content-type']
 
-: post( path, data, header = nil, dest = '' )
+: post( path, data, header = nil )
 : post( path, data, header = nil ) {|str| .... }
-    posts "data" (must be String) to "path".
-    If the body exists, also gets entity body.
-    Response body is written into "dest" by using "<<" method.
-    "header" must be a Hash like { 'Accept' => '*/*', ... }.
-    This method returns Net::HTTPResponse object.
+    posts DATA (must be String) to PATH. HEADER must be a Hash
+    like { 'Accept' => '*/*', ... }.
+
+    In version 1.1, this method returns a pair of objects, a
+    Net::HTTPResponse object and an entity body string.
+    In version 1.2, this method returns a Net::HTTPReponse object.
 
     If called with block, gives a part of entity body string.
 
     In version 1.1, this method might raises exception for also
     3xx (redirect). On the case you can get a HTTPResponse object
     by "anException.response".
+    In version 1.2, this method never raises exception.
 
         # version 1.1
-        response, body = http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' )
+        response, body = http.post( '/cgi-bin/search.rb', 'query=subject&target=ruby' )
+
         # version 1.2
-        response = http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' )
-        # compatible for both version
-        response , = http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' )
+        response = http.post( '/cgi-bin/search.rb', 'query=subject&target=ruby' )
+
+        # compatible in both version
+        response , = http.post( '/cgi-bin/search.rb', 'query=subject&target=ruby' )
 
         # using block
         File.open( 'save.html', 'w' ) {|f|
-            http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' ) do |str|
+            http.post( '/cgi-bin/search.rb',
+                       'query=subject&target=ruby' ) do |str|
               f.write str
             end
         }
-        # same effect
-        File.open( 'save.html', 'w' ) {|f|
-            http.post '/cgi-bin/search.rb', 'querytype=subject&target=ruby', nil, f
-        }
 
-: get2( path, header = nil )
-: get2( path, header = nil ) {|response| .... }
+: request_get( path, header = nil )
+: request_get( path, header = nil ) {|response| .... }
     gets entity from PATH. This method returns a HTTPResponse object.
 
     When called with block, keep connection while block is executed
     and gives a HTTPResponse object to the block.
 
-    This method never raise any ProtocolErrors.
+    This method never raises Net::* exceptions.
 
         # example
-        response = http.get2( '/index.html' )
+        response = http.request_get( '/index.html' )
         p response['content-type']
         puts response.body          # body is already read
 
         # using block
-        http.get2( '/index.html' ) {|response|
+        http.request_get( '/index.html' ) {|response|
             p response['content-type']
             response.read_body do |str|   # read body now
               print str
             end
         }
 
-: post2( path, header = nil )
-: post2( path, header = nil ) {|response| .... }
+: request_post( path, data, header = nil )
+: request_post( path, data, header = nil ) {|response| .... }
     posts data to PATH. This method returns a HTTPResponse object.
 
     When called with block, gives a HTTPResponse object to the block
     before reading entity body, with keeping connection.
+
+    This method never raises Net::* exceptions.
 
         # example
         response = http.post2( '/cgi-bin/nice.rb', 'datadatadata...' )
@@ -411,17 +414,39 @@ module Net
 
     def initialize( addr, port = nil )
       super
-
       @curr_http_version = HTTPVersion
       @seems_1_0_server = false
     end
 
     private
 
-    def conn_command( sock )
+    def do_start
+      conn_socket
     end
 
     def do_finish
+      disconn_socket
+    end
+
+
+    #
+    # short cut methods
+    #
+
+    def HTTP.get( addr, path, port = nil )
+      req = Get.new( path )
+      resp = nil
+      new( addr, port || HTTP.port ).start {|http|
+          resp = http.request( req )
+      }
+      resp.body
+    end
+
+    def HTTP.get_print( addr, path, port = nil )
+      new( addr, port || HTTP.port ).start {|http|
+          http.get path, nil, $stdout
+      }
+      nil
     end
 
 
@@ -430,7 +455,6 @@ module Net
     #
 
     public
-
 
     class << self
 
@@ -447,7 +471,7 @@ module Net
       def new( address, port = nil, p_addr = nil, p_port = nil )
         c = p_addr ? self::Proxy(p_addr, p_port) : self
         i = c.orig_new( address, port )
-        setvar i
+        setimplversion i
         i
       end
 
@@ -494,22 +518,26 @@ module Net
         mod = self
         klass = Class.new( HTTP )
         klass.module_eval {
-          include mod
-          @is_proxy_class = true
-          @proxy_address = p_addr
-          @proxy_port    = p_port
+            include mod
+            @is_proxy_class = true
+            @proxy_address = p_addr
+            @proxy_port    = p_port
         }
         klass
       end
 
       private
     
-      def conn_socket( addr, port )
-        super proxy_address, proxy_port
+      def conn_address
+        proxy_address()
+      end
+
+      def conn_port
+        proxy_port()
       end
 
       def edit_path( path )
-        'http://' + addr_port + path
+        'http://' + addr_port() + path
       end
     
     end   # module ProxyMod
@@ -541,7 +569,7 @@ module Net
 
       private
 
-      def setvar( obj )
+      def setimplversion( obj )
         f = @@newimpl
         obj.instance_eval { @newimpl = f }
       end
@@ -555,72 +583,92 @@ module Net
 
     public
 
-    def self.define_http_method_interface( nm, hasdest, hasdata )
-      name = nm.id2name.downcase
-      cname = nm.id2name
-      lineno = __LINE__ + 2
-      src = <<"      ----"
+    def get( path, initheader = nil, dest = nil, &block )
+      res = nil
+      request( Get.new(path,initheader) ) {|res|
+          res.read_body dest, &block
+      }
+      unless @newimpl then
+        res.value
+        return res, res.body
+      end
 
-        def #{name}( path, #{hasdata ? 'data,' : ''}
-                     u_header = nil #{hasdest ? ',dest = nil, &block' : ''} )
-          resp = nil
-          request(
-              #{cname}.new( path, u_header ) #{hasdata ? ',data' : ''}
-          ) do |resp|
-            resp.read_body( #{hasdest ? 'dest, &block' : ''} )
-          end
-          if @newimpl then
-            resp
-          else
-            resp.value
-            #{hasdest ? 'return resp, resp.body' : 'resp'}
-          end
-        end
-
-        def #{name}2( path, #{hasdata ? 'data,' : ''}
-                      u_header = nil, &block )
-          request( #{cname}.new(path, u_header),
-                   #{hasdata ? 'data,' : ''} &block )
-        end
-      ----
-      module_eval src, __FILE__, lineno
+      res
     end
 
-    define_http_method_interface :Get,  true,  false
-    define_http_method_interface :Head, false, false
-    define_http_method_interface :Post, true,  true
-    define_http_method_interface :Put,  false, true
+    def head( path, initheader = nil )
+      res = request( Head.new(path,initheader) )
+      @newimpl or res.value
+      res
+    end
+
+    def post( path, data, initheader = nil, dest = nil, &block )
+      res = nil
+      request( Post.new(path,initheader), data ) {|res|
+          res.read_body dest, &block
+      }
+      unless @newimpl then
+        res.value
+        return res, res.body
+      end
+
+      res
+    end
+
+    def put( path, data, initheader = nil )
+      res = request( Put.new(path,initheader), data )
+      @newimpl or res.value
+      res
+    end
+
+    def request_get( path, initheader = nil, &block )
+      request Get.new(path,initheader), &block
+    end
+
+    def request_head( path, initheader = nil, &block )
+      request Head.new(path,initheader), &block
+    end
+
+    def request_post( path, data, initheader = nil, &block )
+      request Post.new(path,initheader), data, &block
+    end
+
+    def request_put( path, data, initheader = nil, &block )
+      request Put.new(path,initheader), data, &block
+    end
+
+    alias get2   request_get
+    alias head2  request_head
+    alias post2  request_post
+    alias put2   request_put
+
+    def send_request( name, path, body = nil, header = nil )
+      r = HTTPGenericRequest.new( name, (body ? true : false), true,
+                                  path, header )
+      request r, body
+    end
 
     def request( req, body = nil, &block )
       unless active? then
         start {
-          req['connection'] = 'close'
-          return request(req, body, &block)
+            req['connection'] = 'close'
+            return request(req, body, &block)
         }
       end
         
       connecting( req ) {
-        req.__send__( :exec,
-                @socket, @curr_http_version, edit_path(req.path), body )
-        yield req.response if block_given?
+          req.__send__( :exec,
+                  @socket, @curr_http_version, edit_path(req.path), body )
+          yield req.response if block_given?
       }
       req.response
     end
 
-    def send_request( name, path, body = nil, header = nil )
-      r = ::Net::NetPrivate::HTTPGenericRequest.new(
-              name, (body ? true : false), true,
-              path, header )
-      request r, body
-    end
-
-
     private
-
 
     def connecting( req )
       if @socket.closed? then
-        re_connect
+        reconn_socket
       end
       if not req.body_exist? or @seems_1_0_server then
         req['connection'] = 'close'
@@ -664,25 +712,6 @@ module Net
     # utils
     #
 
-    public
-
-    def self.get( addr, path, port = nil )
-      req = Get.new( path )
-      resp = nil
-      new( addr, port || HTTP.port ).start {|http|
-        resp = http.request( req )
-      }
-      resp.body
-    end
-
-    def self.get_print( addr, path, port = nil )
-      new( addr, port || HTTP.port ).start {|http|
-        http.get path, nil, $stdout
-      }
-      nil
-    end
-
-
     private
 
     def addr_port
@@ -697,8 +726,6 @@ module Net
     end
 
   end
-
-  HTTPSession = HTTP
 
 
 
@@ -771,8 +798,6 @@ module Net
   ### header
   ###
 
-  net_private {
-
   module HTTPHeader
 
     def size
@@ -789,9 +814,11 @@ module Net
       @header[ key.downcase ] = val
     end
 
-    def each( &block )
+    def each_header( &block )
       @header.each( &block )
     end
+
+    alias each each_header
 
     def each_key( &block )
       @header.each_key( &block )
@@ -846,9 +873,7 @@ module Net
     end
 
     def range=( r, fin = nil )
-      if fin then
-        r = r ... r+fin
-      end
+      r = (r ... r + fin) if fin
 
       case r
       when Numeric
@@ -920,9 +945,9 @@ module Net
 
   class HTTPGenericRequest
 
-    include ::Net::NetPrivate::HTTPHeader
+    include HTTPHeader
 
-    def initialize( m, reqbody, resbody, path, uhead = nil )
+    def initialize( m, reqbody, resbody, path, initheader = nil )
       @method = m
       @request_has_body = reqbody
       @response_has_body = resbody
@@ -930,8 +955,8 @@ module Net
       @response = nil
 
       @header = tmp = {}
-      return unless uhead
-      uhead.each do |k,v|
+      return unless initheader
+      initheader.each do |k,v|
         key = k.downcase
         if tmp.key? key then
           $stderr.puts "WARNING: duplicated HTTP header: #{k}" if $VERBOSE
@@ -975,7 +1000,7 @@ module Net
         check_arg_n body
         sendreq_no_body sock, ver, path
       end
-      @response = r = get_response( sock )
+      @response = r = get_response(sock)
       r
     end
 
@@ -985,12 +1010,8 @@ module Net
     end
 
     def check_arg_b( data, block )
-      if data and block then
-        raise ArgumentError, 'both of data and block given'
-      end
-      unless data or block then
-        raise ArgumentError, 'str or block required'
-      end
+      (data and block) and raise ArgumentError, 'both of data and block given'
+      (data or block) or raise ArgumentError, 'str or block required'
     end
 
     def check_arg_n( data )
@@ -1013,6 +1034,11 @@ module Net
       @header['content-length'] = data.size.to_s
       @header.delete 'transfer-encoding'
 
+      unless @header['content-type'] then
+        $stderr.puts 'Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
+        @header['content-type'] = 'application/x-www-form-urlencoded'
+      end
+
       request sock, ver, path
       sock.write data
     end
@@ -1031,8 +1057,7 @@ module Net
 
     def get_response( sock )
       begin
-        resp = ::Net::NetPrivate::HTTPResponse.new_from_socket(sock,
-                                                response_body_permitted?)
+        resp = HTTPResponse.new_from_socket(sock, response_body_permitted?)
       end while ContinueCode === resp
       resp
     end
@@ -1042,11 +1067,11 @@ module Net
 
   class HTTPRequest < HTTPGenericRequest
 
-    def initialize( path, uhead = nil )
+    def initialize( path, initheader = nil )
       super type::METHOD,
             type::REQUEST_HAS_BODY,
             type::RESPONSE_HAS_BODY,
-            path, uhead
+            path, initheader
     end
 
   end
@@ -1075,30 +1100,28 @@ module Net
   
   end
 
-  }
-
 
   class HTTP
 
-    class Get < ::Net::NetPrivate::HTTPRequest
+    class Get < HTTPRequest
       METHOD = 'GET'
       REQUEST_HAS_BODY  = false
       RESPONSE_HAS_BODY = true
     end
 
-    class Head < ::Net::NetPrivate::HTTPRequest
+    class Head < HTTPRequest
       METHOD = 'HEAD'
       REQUEST_HAS_BODY = false
       RESPONSE_HAS_BODY = false
     end
 
-    class Post < ::Net::NetPrivate::HTTPRequest
+    class Post < HTTPRequest
       METHOD = 'POST'
       REQUEST_HAS_BODY = true
       RESPONSE_HAS_BODY = true
     end
 
-    class Put < ::Net::NetPrivate::HTTPRequest
+    class Put < HTTPRequest
       METHOD = 'PUT'
       REQUEST_HAS_BODY = true
       RESPONSE_HAS_BODY = true
@@ -1112,11 +1135,9 @@ module Net
   ### response
   ###
 
-  net_private {
-
   class HTTPResponse < Response
 
-    include ::Net::NetPrivate::HTTPHeader
+    include HTTPHeader
 
     CODE_CLASS_TO_OBJ = {
       '1' => HTTPInformationCode,
@@ -1178,7 +1199,7 @@ module Net
 
         while true do
           line = sock.readuntil( "\n", true )   # ignore EOF
-          line.sub!( /\s+\z/, '' )                 # don't use chop!
+          line.sub!( /\s+\z/, '' )              # don't use chop!
           break if line.empty?
 
           m = /\A([^:]+):\s*/.match( line )
@@ -1250,22 +1271,22 @@ module Net
     #
 
     def read_body( dest = nil, &block )
-      if @read and (dest or block) then
-        raise IOError, "#{type}\#read_body called twice with argument"
+      if @read then
+        (dest or block) and
+                raise IOError, "#{type}\#read_body called twice with argument"
+        return @body
       end
 
-      unless @read then
-        to = procdest( dest, block )
-        stream_check
+      to = procdest(dest, block)
+      stream_check
 
-        if @body_exist and code_type.body_exist? then
-          read_body_0 to
-          @body = to
-        else
-          @body = nil
-        end
-        @read = true
+      if @body_exist and code_type.body_exist? then
+        read_body_0 to
+        @body = to
+      else
+        @body = nil
       end
+      @read = true
 
       @body
     end
@@ -1273,9 +1294,7 @@ module Net
     alias body read_body
     alias entity read_body
 
-
     private
-
 
     def terminate
       read_body
@@ -1305,11 +1324,11 @@ module Net
 
       while true do
         line = @socket.readline
-        m = /[0-9a-fA-F]+/.match( line )
+        m = /[0-9a-fA-F]+/.match(line)
         m or raise HTTPBadResponse, "wrong chunk size line: #{line}"
         len = m[0].hex
         break if len == 0
-        @socket.read( len, dest ); total += len
+        @socket.read len, dest; total += len
         @socket.read 2   # \r\n
       end
       until @socket.readline.empty? do
@@ -1326,7 +1345,7 @@ module Net
         raise ArgumentError, 'both of arg and block are given for HTTP method'
       end
       if block then
-        ::Net::NetPrivate::ReadAdapter.new block
+        ReadAdapter.new block
       else
         dest || ''
       end
@@ -1334,10 +1353,18 @@ module Net
 
   end
 
-  }
 
+  # for backward compatibility
 
-  HTTPResponse         = NetPrivate::HTTPResponse
-  HTTPResponseReceiver = NetPrivate::HTTPResponse
+  HTTPSession = HTTP
+
+  module NetPrivate
+    HTTPResponse         = ::Net::HTTPResponse
+    HTTPGenericRequest   = ::Net::HTTPGenericRequest
+    HTTPRequest          = ::Net::HTTPRequest
+    Accumulator          = ::Net::Accumulator
+    HTTPHeader           = ::Net::HTTPHeader
+  end
+  HTTPResponceReceiver = HTTPResponse
 
 end   # module Net

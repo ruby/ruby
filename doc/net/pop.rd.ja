@@ -1,6 +1,6 @@
 =begin
 
-= net/pop.rb version 1.1.37
+= net/pop.rb
 
 == このライブラリについて
 
@@ -120,26 +120,20 @@ POP3#delete_all を使うとさらに #each_mail と m.delete を
 
 === APOP
 
-APOP 認証を使うには
-(1) POP3 クラスのかわりに APOP クラスを使う
-(2) POP3.start の第五引数に true を渡す
-の二通りの方法があります。
+Net::POP3 クラスのかわりに Net::APOP クラスを使うと、認証時に APOP を
+使うようになります。また動的にノーマル POP と APOP を選択するには、
+以下のように Net::POP3.APOP() メソッドを使うのが便利です。
 
-    # (1)
     require 'net/pop'
-    Net::APOP.start( 'apop.server.address', 110,
-                     'YourAccount', 'YourPassword' ) {|pop|
+
+    # use APOP authentication if $isapop == true
+    pop = Net::POP3.APOP($isapop).new( 'apop.server.address', 110 )
+    pop.start( YourAccount', 'YourPassword' ) {|pop|
         # Rest code is same.
     }
 
-    # (2)
-    require 'net/pop'
-    Net::POP3.start( 'apop.server.address', 110,
-                     'YourAccount', 'YourPassword',
-                     true   ####
-    ) {|pop|
-        # Rest code is same.
-    }
+この方法はクラス自体を変えるので、クラスメソッドの start や foreach、
+delete_all、auth_only なども APOP とともに使えます。
 
 == Net::POP3 class
 
@@ -160,6 +154,18 @@ APOP 認証を使うには
 	      file.write m.pop
 	      m.delete
 	    end
+        }
+
+: APOP( is_apop )
+    bool が真なら Net::APOP クラス、偽なら Net::POP3 クラスを返します。
+    以下の例のように使ってください。
+
+        # example 1
+        pop = Net::POP3::APOP($isapop).new( addr, port )
+
+        # example 2
+        Net::POP3::APOP($isapop).start( addr, port ) {|pop|
+            ....
         }
 
 : foreach( address, port = 110, account, password ) {|mail| .... }

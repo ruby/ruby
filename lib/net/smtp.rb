@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb version 1.1.37
+= net/smtp.rb
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -12,6 +12,8 @@ Ruby Distribute License or GNU General Public License.
 
 NOTE: You can find Japanese version of this document in
 the doc/net directory of the standard ruby interpreter package.
+
+$Id$
 
 == What is This Module?
 
@@ -90,17 +92,17 @@ like File and Array.
         }
     }
 
-=== Giving "Hello" Domain
+=== HELO domain
 
-If your machine does not have canonical host name, maybe you
-must designate the third argument of SMTP.start.
+In almost all situation, you must designate the third argument
+of SMTP.start/SMTP#start. It is the domain name which you are on
+(the host to send mail from). It is called "HELO domain".
+SMTP server will judge if he/she should send or reject
+the SMTP session by inspecting HELO domain.
 
     Net::SMTP.start( 'your.smtp.server', 25,
                      'mail.from.domain' ) {|smtp|
 
-This argument gives MAILFROM domain, the domain name that
-you send mail from. SMTP server might judge if he (or she?)
-send or reject SMTP session by this data.
 
 == class Net::SMTP
 
@@ -109,8 +111,8 @@ send or reject SMTP session by this data.
 : new( address, port = 25 )
     creates a new Net::SMTP object.
 
-: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
-: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
+: start( address, port = 25, helo_domain = 'localhost.localdomain', account = nil, password = nil, authtype = nil )
+: start( address, port = 25, helo_domain = 'localhost.localdomain', account = nil, password = nil, authtype = nil ) {|smtp| .... }
     is equal to
         Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
 
@@ -177,8 +179,9 @@ send or reject SMTP session by this data.
 
 : ready( from_addr, *to_addrs ) {|adapter| .... }
     This method stands by the SMTP object for sending mail and
-    give adapter object to the block. ADAPTER accepts only "write"
-    method.
+    gives adapter object to the block. ADAPTER has these 5 methods:
+
+        puts print printf write <<
 
     FROM_ADDR must be a String, representing source mail address.
     TO_ADDRS must be Strings or an Array of Strings, representing
@@ -186,11 +189,13 @@ send or reject SMTP session by this data.
 
         # example
         Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-	    smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) do |adapter|
-	      adapter.write str1
-	      adapter.write str2
-	      adapter.write str3
-	    end
+	    smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) {|f|
+                f.puts 'From: aamine@loveruby.net'
+                f.puts 'To: someone@somedomain.org'
+                f.puts 'Subject: test mail'
+                f.puts
+                f.puts 'This is test mail.'
+	    }
         }
 
 == Exceptions
@@ -213,12 +218,10 @@ require 'digest/md5'
 
 module Net
 
-
   class SMTP < Protocol
 
     protocol_param :port,         '25'
-    protocol_param :command_type, '::Net::NetPrivate::SMTPCommand'
-
+    protocol_param :command_type, '::Net::SMTPCommand'
 
     def initialize( addr, port = nil )
       super
@@ -227,49 +230,23 @@ module Net
 
     attr :esmtp
 
-    def send_mail( mailsrc, from_addr, *to_addrs )
-      do_ready from_addr, to_addrs.flatten
-      @command.write_mail mailsrc, nil
-    end
-
-    alias sendmail send_mail
-
-    def ready( from_addr, *to_addrs, &block )
-      do_ready from_addr, to_addrs.flatten
-      @command.write_mail nil, block
-    end
-
-
     private
 
-
-    def do_ready( from_addr, to_addrs )
-      if to_addrs.empty? then
-        raise ArgumentError, 'mail destination does not given'
-      end
-      @command.mailfrom from_addr
-      @command.rcpt to_addrs
-      @command.data
-    end
-
-    def do_start( helodom = nil,
+    def do_start( helo = 'localhost.localdomain',
                   user = nil, secret = nil, authtype = nil )
-      helodom ||= ::Socket.gethostname
-      unless helodom then
-        raise ArgumentError,
-          "cannot get localhost name; try 'smtp.start(local_host_name)'"
-      end
+      conn_socket
+      conn_command
 
       begin
         if @esmtp then
-          @command.ehlo helodom
+          command().ehlo helo
         else
-          @command.helo helodom
+          command().helo helo
         end
       rescue ProtocolError
         if @esmtp then
           @esmtp = false
-          @command.error_ok
+          command().error_ok
           retry
         else
           raise
@@ -281,112 +258,132 @@ module Net
             raise ArgumentError, 'both of account and password are required'
 
         mid = 'auth_' + (authtype || 'cram_md5').to_s
-        @command.respond_to? mid or
+        command().respond_to? mid or
             raise ArgumentError, "wrong auth type #{authtype.to_s}"
 
-        @command.__send__ mid, user, secret
+        command().__send__ mid, user, secret
       end
     end
 
+    def do_finish
+      disconn_command
+      disconn_socket
+    end
+
+
+    #
+    # SMTP operations
+    #
+
+    public
+
+    def send_mail( mailsrc, from_addr, *to_addrs )
+      do_ready from_addr, to_addrs.flatten
+      command().write_mail mailsrc, nil
+    end
+
+    alias sendmail send_mail
+
+    def ready( from_addr, *to_addrs, &block )
+      do_ready from_addr, to_addrs.flatten
+      command().write_mail nil, block
+    end
+
+    private
+
+    def do_ready( from_addr, to_addrs )
+      if to_addrs.empty? then
+        raise ArgumentError, 'mail destination does not given'
+      end
+      command().mailfrom from_addr
+      command().rcpt to_addrs
+      command().data
+    end
+
   end
-
-  SMTPSession = SMTP
-
-
-
-  module NetPrivate
 
 
   class SMTPCommand < Command
 
     def initialize( sock )
       super
-      critical {
-        check_reply SuccessCode
+      atomic {
+          check_reply SuccessCode
       }
     end
 
-
-    def helo( fromdom )
-      critical {
-        getok sprintf( 'HELO %s', fromdom )
+    def helo( domain )
+      atomic {
+          getok sprintf('HELO %s', domain)
       }
     end
 
-
-    def ehlo( fromdom )
-      critical {
-        getok sprintf( 'EHLO %s', fromdom )
+    def ehlo( domain )
+      atomic {
+          getok sprintf('EHLO %s', domain)
       }
     end
-
 
     # "PLAIN" authentication [RFC2554]
     def auth_plain( user, secret )
-      critical {
-        getok sprintf( 'AUTH PLAIN %s',
-                       ["\0#{user}\0#{secret}"].pack('m').chomp )
+      atomic {
+          getok sprintf('AUTH PLAIN %s',
+                        ["\0#{user}\0#{secret}"].pack('m').chomp)
       }
     end
 
     # "CRAM-MD5" authentication [RFC2195]
     def auth_cram_md5( user, secret )
-      critical {
-        rep = getok( 'AUTH CRAM-MD5', ContinueCode )
-        challenge = rep.msg.split(' ')[1].unpack('m')[0]
-        secret = Digest::MD5.digest( secret ) if secret.size > 64
+      atomic {
+          rep = getok( 'AUTH CRAM-MD5', ContinueCode )
+          challenge = rep.msg.split(' ')[1].unpack('m')[0]
+          secret = Digest::MD5.digest(secret) if secret.size > 64
 
-        isecret = secret + "\0" * (64 - secret.size)
-        osecret = isecret.dup
-        0.upto( 63 ) do |i|
-          isecret[i] ^= 0x36
-          osecret[i] ^= 0x5c
-        end
-        tmp = Digest::MD5.digest( isecret + challenge )
-        tmp = Digest::MD5.hexdigest( osecret + tmp )
+          isecret = secret + "\0" * (64 - secret.size)
+          osecret = isecret.dup
+          0.upto( 63 ) do |i|
+            isecret[i] ^= 0x36
+            osecret[i] ^= 0x5c
+          end
+          tmp = Digest::MD5.digest( isecret + challenge )
+          tmp = Digest::MD5.hexdigest( osecret + tmp )
 
-        getok [user + ' ' + tmp].pack('m').chomp
+          getok [user + ' ' + tmp].pack('m').chomp
       }
     end
-
 
     def mailfrom( fromaddr )
-      critical {
-        getok sprintf( 'MAIL FROM:<%s>', fromaddr )
+      atomic {
+          getok sprintf('MAIL FROM:<%s>', fromaddr)
       }
     end
-
 
     def rcpt( toaddrs )
       toaddrs.each do |i|
-        critical {
-          getok sprintf( 'RCPT TO:<%s>', i )
+        atomic {
+            getok sprintf('RCPT TO:<%s>', i)
         }
       end
     end
 
-
     def data
-      return unless begin_critical
+      return unless begin_atomic
       getok 'DATA', ContinueCode
     end
 
     def write_mail( mailsrc, block )
-      @socket.write_pendstr mailsrc, block
+      @socket.write_pendstr mailsrc, &block
       check_reply SuccessCode
-      end_critical
+      end_atomic
     end
 
-
     def quit
-      critical {
-        getok 'QUIT'
+      atomic {
+          getok 'QUIT'
       }
     end
 
-
     private
-
 
     def get_reply
       arr = read_reply
@@ -408,7 +405,6 @@ module Net
       Response.new( klass, stat, arr.join('') )
     end
 
-
     def read_reply
       arr = []
       while true do
@@ -424,6 +420,12 @@ module Net
   end
 
 
-  end   # module Net::NetPrivate
+  # for backward compatibility
+
+  SMTPSession = SMTP
+
+  module NetPrivate
+    SMTPCommand = ::Net::SMTPCommand
+  end
 
 end   # module Net

@@ -1,3 +1,22 @@
+Tue Jan 15 12:43:34 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: Protocol#start returns the return value of
+	  block.
+
+	* lib/net/protocol.rb: set timeout limit by default.
+
+	* lib/net/protocol.rb: new methods WriteAdapter#write, puts,
+	  print, printf.
+
+	* lib/net/protocol.rb: change template method scheme.
+
+	* lib/net/http.rb: rename HTTP#get2 to request_get, post2 to
+	  request_post ...
+
+	* lib/net/pop.rb: POP#auth_only did not work.
+
+	* lib/net/smtp.rb: should not resolve HELO domain automatically.
+
 Fri Jan 11 05:06:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* class.c (rb_make_metaclass): [new]

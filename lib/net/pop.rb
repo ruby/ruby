@@ -1,6 +1,6 @@
 =begin
 
-= net/pop.rb version 1.1.37
+= net/pop.rb
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -12,6 +12,8 @@ Ruby Distribute License or GNU General Public License.
 
 NOTE: You can find Japanese version of this document in
 the doc/net directory of the standard ruby interpreter package.
+
+$Id$
 
 == What is This Module?
 
@@ -123,25 +125,18 @@ This example does not create such one.
 
 === Using APOP
 
-net/pop also supports APOP authentication. There's two way to use APOP:
-(1) using APOP class instead of POP3
-(2) passing true for fifth argument of POP3.start
+The net/pop library supports APOP authentication.
+To use APOP, use Net::APOP class instead of Net::POP3 class.
+You can use utility method, Net::POP3.APOP(). Example:
 
-    # (1)
     require 'net/pop'
-    Net::APOP.start( 'apop.server.address', 110,
-                     'YourAccount', 'YourPassword' ) {|pop|
+
+    # use APOP authentication if $isapop == true
+    pop = Net::POP3.APOP($isapop).new( 'apop.server.address', 110 )
+    pop.start( YourAccount', 'YourPassword' ) {|pop|
         # Rest code is same.
     }
 
-    # (2)
-    require 'net/pop'
-    Net::POP3.start( 'apop.server.address', 110,
-                     'YourAccount', 'YourPassword',
-                     true   ####
-    ) {|pop|
-        # Rest code is same.
-    }
 
 == Net::POP3 class
 
@@ -160,6 +155,19 @@ net/pop also supports APOP authentication. There's two way to use APOP:
 	      file.write m.pop
 	      m.delete
 	    end
+        }
+
+: APOP( is_apop )
+    returns Net::APOP class object if IS_APOP is true.
+    returns Net::POP3 class object if false.
+    Use this method like:
+
+        # example 1
+        pop = Net::POP3::APOP($isapop).new( addr, port )
+
+        # example 2
+        Net::POP3::APOP($isapop).start( addr, port ) {|pop|
+            ....
         }
 
 : foreach( address, port = 110, account, password ) {|mail| .... }
@@ -326,13 +334,16 @@ module Net
 
   class POP3 < Protocol
 
-    protocol_param :port,         '110'
-    protocol_param :command_type, '::Net::NetPrivate::POP3Command'
-    protocol_param :apop_command_type, '::Net::NetPrivate::APOPCommand'
-
-    protocol_param :mail_type,    '::Net::POPMail'
+    protocol_param :port,              '110'
+    protocol_param :command_type,      '::Net::POP3Command'
+    protocol_param :apop_command_type, '::Net::APOPCommand'
+    protocol_param :mail_type,         '::Net::POPMail'
 
     class << self
+
+      def APOP( bool )
+        bool ? APOP : POP3
+      end
 
       def foreach( address, port = nil,
                    account = nil, password = nil, &block )
@@ -356,85 +367,95 @@ module Net
     end
 
 
+    def auth_only( account, password )
+      active? and raise IOError, 'opening already opened POP session'
+      start( account, password ) {
+          ;
+      }
+    end
+
+
+    #
+    # connection
+    #
+
     def initialize( addr, port = nil, apop = false )
       super addr, port
       @mails = nil
       @apop = false
     end
 
-    def auth_only( account, password )
-      begin
-        connect
-        @active = true
-        @command.auth address, port
-        @command.quit
-      ensure
-        @active = false
-        disconnect
-      end
+    private
+
+    def do_start( account, password )
+      conn_socket
+      @command = (@apop ? type.apop_command_type : type.command_type).new(socket())
+      @command.auth account, password
     end
 
-    attr :mails
+    def do_finish
+      @mails = nil
+      disconn_command
+      disconn_socket
+    end
+
+
+    #
+    # POP operations
+    #
+
+    public
+
+    def mails
+      return @mails if @mails
+
+      mails = []
+      mtype = type.mail_type
+      command().list.each_with_index do |size,idx|
+        mails.push mtype.new(idx, size, command()) if size
+      end
+      @mails = mails.freeze
+    end
 
     def each_mail( &block )
-      io_check
-      @mails.each( &block )
+      mails().each( &block )
     end
 
     alias each each_mail
 
     def delete_all
-      io_check
-      @mails.each do |m|
+      mails().each do |m|
         yield m if block_given?
         m.delete unless m.deleted?
       end
     end
 
     def reset
-      io_check
-      @command.rset
-      @mails.each do |m|
+      command().rset
+      mails().each do |m|
         m.instance_eval { @deleted = false }
       end
     end
 
 
-    private
-
-    def conn_command( sock )
-      @command =
-          (@apop ? type.apop_command_type : type.command_type).new(sock)
-    end
-
-    def do_start( account, password )
-      @command.auth account, password
-
-      mails = []
-      mtype = type.mail_type
-      @command.list.each_with_index do |size,idx|
-        mails.push mtype.new(idx, size, @command) if size
-      end
-      @mails = mails.freeze
+    def command
+      io_check
+      super
     end
 
     def io_check
-      (not @socket or @socket.closed?) and
-              raise IOError, 'pop session is not opened yet'
+      (not socket() or socket().closed?) and
+              raise IOError, 'POP session is not opened yet'
     end
 
   end
 
-  POP         = POP3
-  POPSession  = POP3
-  POP3Session = POP3
+  POP = POP3
 
 
   class APOP < POP3
-    protocol_param :command_type, 'Net::NetPrivate::APOPCommand'
+    protocol_param :command_type, '::Net::APOPCommand'
   end
-
-  APOPSession = APOP
 
 
   class POPMail
@@ -455,7 +476,7 @@ module Net
 
     def pop( dest = '', &block )
       if block then
-        dest = NetPrivate::ReadAdapter.new( block )
+        dest = ReadAdapter.new( block )
       end
       @command.retr( @num, dest )
     end
@@ -489,89 +510,84 @@ module Net
   end
 
 
-
-  module NetPrivate
-
-
   class POP3Command < Command
 
     def initialize( sock )
       super
-      critical {
-        check_reply SuccessCode
+      atomic {
+          check_reply SuccessCode
       }
     end
 
     def auth( account, pass )
-      critical {
-        @socket.writeline 'USER ' + account
-        check_reply_auth
+      atomic {
+          @socket.writeline 'USER ' + account
+          check_reply_auth
 
-        @socket.writeline 'PASS ' + pass
-        check_reply_auth
+          @socket.writeline 'PASS ' + pass
+          check_reply_auth
       }
     end
 
     def list
       arr = []
-      critical {
-        getok 'LIST'
-        @socket.read_pendlist do |line|
-          m = /\A(\d+)[ \t]+(\d+)/.match(line) or
-                  raise BadResponse, "illegal response: #{line}"
-          arr[ m[1].to_i ] = m[2].to_i
-        end
+      atomic {
+          getok 'LIST'
+          @socket.read_pendlist do |line|
+            m = /\A(\d+)[ \t]+(\d+)/.match(line) or
+                    raise BadResponse, "illegal response: #{line}"
+            arr[ m[1].to_i ] = m[2].to_i
+          end
       }
       arr
     end
 
     def rset
-      critical {
-        getok 'RSET'
+      atomic {
+          getok 'RSET'
       }
     end
 
 
     def top( num, lines = 0, dest = '' )
-      critical {
-        getok sprintf( 'TOP %d %d', num, lines )
-        @socket.read_pendstr dest
+      atomic {
+          getok sprintf( 'TOP %d %d', num, lines )
+          @socket.read_pendstr dest
       }
     end
 
     def retr( num, dest = '', &block )
-      critical {
-        getok sprintf('RETR %d', num)
-        @socket.read_pendstr dest, &block
+      atomic {
+          getok sprintf('RETR %d', num)
+          @socket.read_pendstr dest, &block
       }
     end
     
     def dele( num )
-      critical {
-        getok sprintf('DELE %d', num)
+      atomic {
+          getok sprintf('DELE %d', num)
       }
     end
 
     def uidl( num )
-      critical {
-        getok( sprintf('UIDL %d', num) ).msg.split(' ')[1]
+      atomic {
+          getok( sprintf('UIDL %d', num) ).msg.split(' ')[1]
       }
     end
 
     def quit
-      critical {
-        getok 'QUIT'
+      atomic {
+          getok 'QUIT'
       }
     end
-
 
     private
 
     def check_reply_auth
       begin
-        return check_reply( SuccessCode )
+        return check_reply(SuccessCode)
       rescue ProtocolError => err
-        raise ProtoAuthError.new( 'Fail to POP authentication', err.response )
+        raise ProtoAuthError.new('Fail to POP authentication', err.response)
       end
     end
 
@@ -591,25 +607,28 @@ module Net
   class APOPCommand < POP3Command
 
     def initialize( sock )
-      rep = super( sock )
-
-      m = /<.+>/.match( rep.msg ) or
-              raise ProtoAuthError.new( "not APOP server: cannot login", nil )
+      response = super(sock)
+      m = /<.+>/.match(response.msg) or
+              raise ProtoAuthError.new("not APOP server: cannot login", nil)
       @stamp = m[0]
     end
 
     def auth( account, pass )
-      critical {
-        @socket.writeline sprintf( 'APOP %s %s',
-                                   account,
-                                   Digest::MD5.hexdigest(@stamp + pass) )
-        check_reply_auth
+      atomic {
+          @socket.writeline sprintf('APOP %s %s',
+                                    account,
+                                    Digest::MD5.hexdigest(@stamp + pass))
+          check_reply_auth
       }
     end
 
   end
 
 
-  end   # module Net::NetPrivate
+  # for backward compatibility
+
+  POPSession  = POP3
+  POP3Session = POP3
+  APOPSession = APOP
 
 end   # module Net

@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb version 1.1.37
+= net/smtp.rb
 
 == このライブラリについて
 
@@ -76,17 +76,25 @@ each メソッドを持ったオブジェクトからならなんでも送ることができます。
         }
     }
 
-=== Hello ドメイン
+=== HELO ドメイン
 
-SMTP ではメールを送る側のホストの名前を要求されるのですが、
-ダイヤルアップなどの場合には自分のマシンに正式な名前がない場合が
-あります。そのような場合は適宜 SMTP サーバの名前などを与えてやら
-ないと配送を拒否されることがあります。SMTP.start あるいは SMTP#start
-の引数 helo_domain がそれです。
+SMTP ではメールを送る側のホストの名前 (HELO ドメインと呼ぶ) を要求
+されるのですが、Net::SMTP ではとりあえず localhost.localdomain と
+いう名前を送信しています。たいていの SMTP サーバはこの HELO ドメイン
+による認証はあまり真面目に行わないので (簡単に偽造できるからです)
+問題にならないことが多いのですが、まれにメールセッションを切られる
+こともあります。そういうときはとりあえず HELO ドメインを与えてみて
+ください。もちろんそれ以外の時も HELO ドメインはちゃんと渡すのが
+ベストです。
+
+HELO ドメインは SMTP.start/SMTP#start の第三引数 helo_domain に指定
+します。
 
     Net::SMTP.start( 'your.smtp.server', 25,
                      'mail.from.domain' ) {|smtp|
 
+よくあるダイヤルアップホストの場合、HELO ドメインには ISP のメール
+サーバのドメインを使っておけばたいてい通ります。
 
 == class Net::SMTP
 
@@ -96,8 +104,8 @@ SMTP ではメールを送る側のホストの名前を要求されるのですが、
     新しい SMTP オブジェクトを生成します。address はSMTPサーバーのFQDNで、
     port は接続するポート番号です。ただし、このメソッドではまだ接続はしません。
 
-: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
-: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
+: start( address, port = 25, helo_domain = 'localhost.localdomain', account = nil, password = nil, authtype = nil )
+: start( address, port = 25, helo_domain = 'localhost.localdomain', account = nil, password = nil, authtype = nil ) {|smtp| .... }
     以下と同じです。
         Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
 
@@ -161,11 +169,13 @@ SMTP ではメールを送る側のホストの名前を要求されるのですが、
 
         # example
         Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-	    smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) do |adapter|
-	      adapter.write str1
-	      adapter.write str2
-	      adapter.write str3
-	    end
+	    smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) {|f|
+                f.puts 'From: aamine@loveruby.net'
+                f.puts 'To: someone@somedomain.org'
+                f.puts 'Subject: test mail'
+                f.puts
+                f.puts 'This is test mail.'
+	    }
         }
 
 == 発生する例外
