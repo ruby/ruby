@@ -3720,7 +3720,8 @@ Mon Jan 19 06:49:07 2004  Tadayoshi Funaba  <tadf@dotrb.org>
 
 Mon Jan 19 01:08:39 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* variable.c (rb_set_class_path): do not set path if
+	* class.c, error.c, eval.c, intern.h, object.c, variable.c:
+	  do not set path if it is a singleton class.  [ruby-dev:22588]
 
 	* lib/cgi.rb (CGI::QueryExtension): give extended string, not a
 	  delegater object.
