@@ -79,7 +79,7 @@ PP#pp to print the object.
     PP.pp returns ((|out|)).
 
 --- PP.sharing_detection
-    returns the sharing detection flag as boolean value.
+    returns the sharing detection flag as a boolean value.
     It is false by default.
 
 --- PP.sharing_detection = boolean_value

@@ -21,7 +21,7 @@ non-string formatting, etc.
 --- PrettyPrint.new([output[, maxwidth[, newline]]]) [{|width| ...}]
     creates a buffer for pretty printing.
 
-    ((|output|)) is a output target.
+    ((|output|)) is an output target.
     If it is not specified, (({''})) is assumed.
     It should have a (({<<})) method which accepts
     the first argument ((|obj|)) of (({PrettyPrint#text})),
@@ -45,11 +45,18 @@ non-string formatting, etc.
     is a convenience method which is same as follows:
 
       begin
-        pp = PrettyPrint.format(output, maxwidth, newline, &genspace)
+        pp = PrettyPrint.new(output, maxwidth, newline, &genspace)
         ...
         pp.flush
         output
       end
+
+--- PrettyPrint.singleline_format([output[, maxwidth[, newline[, genspace]]]]) {|pp| ...}
+    is similar to (({PrettyPrint.format})) but the result has no breaks.
+
+    ((|maxwidth|)), ((|newline|)) and ((|genspace|)) are ignored.
+    The invocation of (({breakable})) in the block doesn't break a line and
+    treated as just an invocation of (({text})).
 
 == methods
 --- text(obj[, width])
@@ -110,7 +117,7 @@ Christian Lindig, Strictly Pretty, March 2000,
 ((<URL:http://www.gaertner.de/~lindig/papers/strictly-pretty.html>))
 
 Philip Wadler, A prettier printer, March 1998,
-((<URL:http://cm.bell-labs.com/cm/cs/who/wadler/topics/recent.html#prettier>))
+((<URL:http://www.research.avayalabs.com/user/wadler/topics/recent.html#prettier>))
 
 =end
 
@@ -119,6 +126,12 @@ class PrettyPrint
     pp = PrettyPrint.new(output, maxwidth, newline, &genspace)
     yield pp
     pp.flush
+    output
+  end
+
+  def PrettyPrint.singleline_format(output='', maxwidth=nil, newline=nil, genspace=nil)
+    pp = SingleLine.new(output)
+    yield pp
     output
   end
 
@@ -338,6 +351,42 @@ class PrettyPrint
 
     def delete(group)
       @queue[group.depth].delete(group)
+    end
+  end
+
+  class SingleLine
+    def initialize(output, maxwidth=nil, newline=nil)
+      @output = output
+      @first = [true]
+    end
+
+    def text(obj, width=nil)
+      @output << obj
+    end
+
+    def breakable(sep=' ', width=nil)
+      @output << sep
+    end
+
+    def nest(indent)
+      yield
+    end
+
+    def group(indent=nil, open_obj='', close_obj='', open_width=nil, close_width=nil)
+      @first.push true
+      @output << open_obj
+      yield
+      @output << close_obj
+      @first.pop
+    end
+
+    def flush
+    end
+
+    def first?
+      result = @first[-1]
+      @first[-1] = false
+      result
     end
   end
 end

@@ -1,3 +1,7 @@
+Tue Oct  8 10:55:23 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/prettyprint.rb (PrettyPrint.singleline_format): new method.
+
 Mon Oct  7 16:43:07 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigdivrem): bignum zero's len should not be 0.
