@@ -1623,7 +1623,7 @@ pack_unpack(str, fmt)
 	  case 'w':
 	    {
 		unsigned long ul = 0;
-		unsigned long ulmask = 0xfe << ((sizeof(unsigned long) - 1) * 8);
+		unsigned long ulmask = 0xfeL << ((sizeof(unsigned long) - 1) * 8);
 
 		while (len > 0 && s < send) {
 		    ul <<= 7;

@@ -589,7 +589,7 @@ glob(path, func, arg)
 	    else dir = base;
 
 	    magic = extract_elem(p);
-	    if (strcmp(magic, "**") == 0) {
+	    if (m && strcmp(magic, "**") == 0) {
 		recursive = 1;
 		buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
 		sprintf(buf, "%s%s%s", base, (*base)?"":".", m);

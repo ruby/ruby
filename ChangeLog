@@ -1,3 +1,11 @@
+Mon May 15 15:38:09 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (glob): trailing path may be null, e.g. glob("**").
+
+Mon May 15 01:18:20 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_s_popen): _exit after Proc execution.
+
 Sun May 14 18:05:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* Makefile.in: missing/nt.c -> win32/win32.c
@@ -31,6 +39,10 @@ Sun May 14 00:54:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* file.c: should check S_IXGRP, S_ISGID, not NT.
 
 	* io.c: should check _IOBIN, O_BINARY, not PLATFORMs.
+
+Sat May 13 14:21:15 2000  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* io.c (rb_io_s_popen): should check whether a block is given.
 
 Fri May 12 17:33:44 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -1592,12 +1592,15 @@ rb_io_s_popen(argc, argv, self)
     Check_SafeStr(pname);
     port = pipe_open(RSTRING(pname)->ptr, mode);
     if (NIL_P(port)) {
+	/* child */
 	if (!NIL_P(proc)) {
 	    rb_eval_cmd(proc, rb_ary_new2(0));
+	    _exit(0);
 	}
-	else {
-	    rb_yield(port);
+	else if (rb_iterator_p()) {
+	    rb_yield(Qnil);
 	}
+	return Qnil;
     }
     else if (rb_iterator_p()) {
 	return rb_ensure(rb_yield, port, rb_io_close, port);
