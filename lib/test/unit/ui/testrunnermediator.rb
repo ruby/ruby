@@ -20,14 +20,6 @@ module Test
         
         include Util::Observable
         
-        @@run = false
-
-        # Returns true if any TestRunnerMediator instances
-        # have been run.
-        def self.run?
-          return @@run
-        end
-
         # Creates a new TestRunnerMediator initialized to run
         # the passed suite.
         def initialize(suite)
@@ -37,7 +29,7 @@ module Test
         # Runs the suite the TestRunnerMediator was created
         # with.
         def run_suite
-          @@run = true
+          Unit.run = true
           begin_time = Time.now
           notify_listeners(RESET, @suite.size)
           result = create_result

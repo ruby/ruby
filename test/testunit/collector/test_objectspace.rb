@@ -37,45 +37,60 @@ module Test
           def @object_space.each_object(type)
             self[type].each{|item| yield(item) }
           end
+
+          @c = ObjectSpace.new(@object_space)
+        end
+
+        def full_suite(name=ObjectSpace::NAME)
+          expected = TestSuite.new(name)
+          expected << (TestSuite.new(@tc1.name) << @tc1.new('test_1') << @tc1.new('test_2'))
+          expected << (TestSuite.new(@tc2.name) << @tc2.new('test_0'))
+        end
+
+        def empty_suite
+          TestSuite.new(ObjectSpace::NAME)
         end
         
         def test_basic_collection
-          expected = TestSuite.new("name")
-          expected << (TestSuite.new(@tc1.name) << @tc1.new('test_1') << @tc1.new('test_2'))
-          expected << (TestSuite.new(@tc2.name) << @tc2.new('test_0'))
-          assert_equal(expected, ObjectSpace.new(@object_space).collect("name"))
+          assert_equal(full_suite("name"), @c.collect("name"))
 
-          c = ObjectSpace.new(@object_space)
-          c.filter = []
-          assert_equal(expected, c.collect("name"))
+          @c.filter = []
+          assert_equal(full_suite("name"), @c.collect("name"))
         end
         
         def test_filtered_collection
-          expected = TestSuite.new(ObjectSpace::NAME)
-          collector = ObjectSpace.new(@object_space)
-          collector.filter = proc{|test| false}
-          assert_equal(expected, collector.collect)
+          @c.filter = proc{false}
+          assert_equal(empty_suite, @c.collect)
 
+          @c.filter = proc{true}
+          assert_equal(full_suite, @c.collect)
+
+          @c.filter = proc{nil}
+          assert_equal(full_suite, @c.collect)
+
+          @c.filter = [proc{false}, proc{true}]
+          assert_equal(empty_suite, @c.collect)
+
+          @c.filter = [proc{true}, proc{false}]
+          assert_equal(full_suite, @c.collect)
+
+          @c.filter = [proc{nil}, proc{false}]
+          assert_equal(empty_suite, @c.collect)
+          
+          @c.filter = [proc{nil}, proc{true}]
+          assert_equal(full_suite, @c.collect)
+          
           expected = TestSuite.new(ObjectSpace::NAME)
-          expected << (TestSuite.new(@tc1.name) << @tc1.new('test_1') << @tc1.new('test_2'))
+          expected << (TestSuite.new(@tc1.name) << @tc1.new('test_1'))
           expected << (TestSuite.new(@tc2.name) << @tc2.new('test_0'))
-          collector = ObjectSpace.new(@object_space)
-          collector.filter = proc{|test| true}
-          assert_equal(expected, collector.collect)
+          @c.filter = proc{|test| ['test_1', 'test_0'].include?(test.method_name)}
+          assert_equal(expected, @c.collect)
 
           expected = TestSuite.new(ObjectSpace::NAME)
           expected << (TestSuite.new(@tc1.name) << @tc1.new('test_1'))
           expected << (TestSuite.new(@tc2.name) << @tc2.new('test_0'))
-          collector = ObjectSpace.new(@object_space)
-          collector.filter = proc{|test| ['test_1', 'test_0'].include?(test.method_name)}
-          assert_equal(expected, collector.collect)
-
-          expected = TestSuite.new(ObjectSpace::NAME)
-          expected << (TestSuite.new(@tc1.name) << @tc1.new('test_1'))
-          expected << (TestSuite.new(@tc2.name) << @tc2.new('test_0'))
-          collector = ObjectSpace.new(@object_space)
-          collector.filter = [proc{|test| test.method_name == 'test_1'}, proc{|test| test.method_name == 'test_0'}]
-          assert_equal(expected, collector.collect)
+          @c.filter = [proc{|t| t.method_name == 'test_1' ? true : nil}, proc{|t| t.method_name == 'test_0' ? true : nil}, proc{false}]
+          assert_equal(expected, @c.collect)
         end
       end
     end

@@ -1,3 +1,30 @@
+Wed Oct  8 22:19:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit.rb: removed installation instructions.
+
+	* lib/test/unit/ui/testrunnermediator.rb: moved the run flag to a more
+	  central location.
+
+	* lib/test/unit.rb: ditto.
+
+	* lib/test/unit.rb: extracted the running code in to AutoRunner.
+
+	* lib/test/unit/autorunner.rb: added.
+
+	* lib/test/unit/collector/objectspace.rb: extracted common test
+	  collection functionality in to a module.
+	  
+	* lib/test/unit/collector.rb: ditto; added.
+
+	* test/testunit/collector/test_objectspace.rb: ditto.
+
+	* lib/test/unit/collector/dir.rb: added. Supports collecting tests out
+	  of a directory structure.
+
+	* test/testunit/collector/test_dir.rb: added.
+
+	* test/runner.rb: simplified to use the new capabilities.
+
 Tue Oct  7 15:23:09 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_beginendblock.rb: add tests for nested BEGIN/END.
