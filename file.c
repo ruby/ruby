@@ -363,7 +363,7 @@ rb_file_s_lstat(klass, fname)
     if (lstat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
-    return stat_new_0(klass, &st);
+    return stat_new(klass, &st);
 #else
     return rb_file_s_stat(klass, fname);
 #endif
