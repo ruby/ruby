@@ -14,7 +14,7 @@ def mkfunc(rettype, fnum, argc)
 
   ret_code =
     if( DLTYPE[rettype][:c2rb] )
-      "  return #{DLTYPE[rettype][:rb2c][\"retval\"]};"
+      "  return #{DLTYPE[rettype][:rb2c]['retval']};"
     else
       "  /* no return value */"
     end

@@ -3068,29 +3068,14 @@ rb_eval(self, n)
 	    NODE *list = node->nd_next;
 
 	    str = rb_str_new3(node->nd_lit);
-	    if (!ruby_dyna_vars) rb_dvar_push(0, 0);
 	    while (list) {
 		if (list->nd_head) {
 		    switch (nd_type(list->nd_head)) {
 		      case NODE_STR:
 			str2 = list->nd_head->nd_lit;
 			break;
-		      case NODE_EVSTR:
-			result = ruby_errinfo;
-			ruby_errinfo = Qnil;
-			ruby_sourceline = nd_line(node);
-			ruby_in_eval++;
-			list->nd_head = compile(list->nd_head->nd_lit,
-						ruby_sourcefile,
-						ruby_sourceline);
-			ruby_eval_tree = 0;
-			ruby_in_eval--;
-			if (ruby_nerrs > 0) {
-			    compile_error("string expansion");
-			}
-			if (!NIL_P(result)) ruby_errinfo = result;
-			/* fall through */
 		      default:
+			ruby_sourceline = nd_line(list->nd_head);
 			str2 = rb_obj_as_string(rb_eval(self, list->nd_head));
 			break;
 		    }
@@ -5025,7 +5010,6 @@ eval(self, src, scope, file, line)
 	if (ruby_frame->prev) {
 	    ruby_frame->iter = ruby_frame->prev->iter;
 	}
-	if (!ruby_dyna_vars) rb_dvar_push(0, 0);
     }
     if (file == 0) {
 	file = ruby_sourcefile;

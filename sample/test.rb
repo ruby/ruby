@@ -1210,7 +1210,7 @@ else
 end
 
 def valid_syntax?(code, fname)
-  eval("BEGIN {return true}\n#{code}", nil, fname)
+  eval("BEGIN {return true}\n#{code}", nil, fname, 0)
 rescue Exception
   p $!
 ensure

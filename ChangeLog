@@ -1,3 +1,19 @@
+Mon Jun 24 16:16:59 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_eval): NODE_EVSTR is no longer used.
+
+	* eval.c (eval): not enforce to make assigned variables dynamic.
+
+	* parse.y (string): split rules to strings/xstring/regexp to allow
+	  arbitrary statements inside string interpolation.
+
+	* parse.y (here_document): splitted into three phases.
+
+	* parse.y (literall_append, literal_concat): added.
+	  append/concatinate string literals.
+
+	* sample/test.rb (valid_syntax): adjust line number for BEGIN.
+
 Sun Jun 23 00:19:10 2002  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb, sample/cal.rb, sample/goodfriday.rb:

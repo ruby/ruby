@@ -69,6 +69,8 @@ static enum lex_state {
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
 } lex_state;
+static NODE *lex_strterm;
+static int lex_strnest;
 
 #ifdef HAVE_LONG_LONG
 typedef unsigned LONG_LONG stack_type;
@@ -101,6 +103,10 @@ static int in_single = 0;
 static int in_def = 0;
 static int compile_for_eval = 0;
 static ID cur_mid = 0;
+static int quoted_term;
+#define quoted_term_char ((unsigned char)quoted_term)
+#define WHEN_QUOTED_TERM(x) ((quoted_term >= 0) && (x))
+#define QUOTED_TERM_P(c) WHEN_QUOTED_TERM((c) == quoted_term_char)
 
 static NODE *cond();
 static NODE *logop();
@@ -117,6 +123,8 @@ static NODE *list_append();
 static NODE *list_concat();
 static NODE *arg_concat();
 static NODE *arg_prepend();
+static NODE *literal_concat();
+static NODE *literal_append();
 static NODE *call_op();
 static int in_defined = 0;
 
@@ -148,6 +156,11 @@ static int dyna_in_block();
 
 static void top_local_init();
 static void top_local_setup();
+
+#define RE_OPTION_ONCE 0x80
+
+#define NODE_STRTERM NODE_ZARRAY	/* nothing to gc */
+#define NODE_HEREDOC NODE_ARRAY 	/* 1, 3 to gc */
 
 %}
 
@@ -208,10 +221,12 @@ static void top_local_setup();
 	k__FILE__
 
 %token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR
-%token <val>  tINTEGER tFLOAT tSTRING tXSTRING tREGEXP
-%token <node> tDSTRING tDXSTRING tDREGEXP tNTH_REF tBACK_REF tQWORDS
+%token <val>  tINTEGER tFLOAT tSTRING_CONTENT
+%token <node> tNTH_REF tBACK_REF tQWORDS
+%token <num>  tREGEXP_END
 
-%type <node> singleton string
+%type <node> singleton strings string string1 xstring regexp
+%type <node> string_contents xstring_contents string_content
 %type <val>  literal numeric
 %type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value block_call_value
@@ -224,8 +239,8 @@ static void top_local_setup();
 %type <node> block_var opt_block_var brace_block do_block lhs none
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fitem variable sym symbol operation operation2 operation3
-%type <id>   cname fname op f_rest_arg
-%type <num>  f_norm_arg f_arg
+%type <id>   cname fname op f_rest_arg string_dvar
+%type <num>  f_norm_arg f_arg term_push
 %token tUPLUS 		/* unary+ */
 %token tUMINUS 		/* unary- */
 %token tPOW		/* ** */
@@ -252,7 +267,8 @@ static void top_local_setup();
 %token tLBRACE_ARG	/* { */
 %token tSTAR		/* * */
 %token tAMPER		/* & */
-%token tSYMBEG
+%token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG
+%token tSTRING_DBEG tSTRING_DVAR tSTRING_END
 
 /*
  *	precedence table
@@ -1273,14 +1289,10 @@ primary		: literal
 		    {
 			$$ = NEW_LIT($1);
 		    }
-		| string
-		| tXSTRING
-		    {
-			$$ = NEW_XSTR($1);
-		    }
+		| strings
+		| xstring
+		| regexp
 		| tQWORDS
-		| tDXSTRING
-		| tDREGEXP
 		| var_ref
 		| backref
 		| tFID
@@ -1746,35 +1758,163 @@ literal		: numeric
 		    {
 			$$ = ID2SYM($1);
 		    }
-		| tREGEXP
 		;
 
-string		: tSTRING
+strings		: string
 		    {
-			$$ = NEW_STR($1);
-		    }
-		| tDSTRING
-		| string tSTRING
-		    {
-		        if (nd_type($1) == NODE_DSTR) {
-			    list_append($1, NEW_STR($2));
+			NODE *node = $1;
+			if (!node) {
+			    node = NEW_STR(rb_str_new(0, 0));
 			}
 			else {
-			    rb_str_concat($1->nd_lit, $2);
+			    switch (nd_type(node)) {
+			      case NODE_STR: case NODE_DSTR:
+				break;
+			      default:
+				node = rb_node_newnode(NODE_DSTR, rb_str_new(0, 0),
+						       1, NEW_LIST(node));
+				break;
+			    }
 			}
-			$$ = $1;
+			$$ = node;
 		    }
-		| string tDSTRING
+
+string		: string1
+		| string string1
 		    {
-		        if (nd_type($1) == NODE_STR) {
-			    $$ = NEW_DSTR($1->nd_lit);
+			$$ = literal_concat($1, $2);
+		    }
+		;
+
+string1		: tSTRING_BEG {lex_strnest = 0;} string_contents tSTRING_END
+		    {
+			$$ = $3;
+		    }
+		;
+
+xstring		: tXSTRING_BEG {lex_strnest = 0;} xstring_contents tSTRING_END
+		    {
+			NODE *node = $3;
+			if (!node) {
+			    node = NEW_XSTR(rb_str_new(0, 0));
 			}
 			else {
-			    $$ = $1;
+			    switch (nd_type(node)) {
+			      case NODE_STR:
+				nd_set_type(node, NODE_XSTR);
+				break;
+			      case NODE_DSTR:
+				nd_set_type(node, NODE_DXSTR);
+				break;
+			      default:
+				node = rb_node_newnode(NODE_DXSTR,
+						       rb_str_new(0, 0), 1, NEW_LIST(node));
+				break;
+			    }
 			}
-			$2->nd_head = NEW_STR($2->nd_lit);
-			nd_set_type($2, NODE_ARRAY);
-			list_concat($$, $2);
+			$$ = node;
+		    }
+		;
+
+regexp		: tREGEXP_BEG {lex_strnest = 0;} xstring_contents tREGEXP_END
+		    {
+			int options = $4;
+			NODE *node = $3;
+			if (!node) {
+			    node = NEW_LIT(rb_reg_new("", 0, options & ~RE_OPTION_ONCE));
+			}
+			else switch (nd_type(node)) {
+			  case NODE_STR:
+			    {
+				VALUE src = node->nd_lit;
+				nd_set_type(node, NODE_LIT);
+				node->nd_lit = rb_reg_new(RSTRING(src)->ptr,
+							  RSTRING(src)->len,
+							  options & ~RE_OPTION_ONCE);
+			    }
+			    break;
+			  default:
+			    node = rb_node_newnode(NODE_DSTR, rb_str_new(0, 0),
+						   1, NEW_LIST(node));
+			  case NODE_DSTR:
+			    if (options & RE_OPTION_ONCE) {
+				nd_set_type(node, NODE_DREGX_ONCE);
+			    }
+			    else {
+				nd_set_type(node, NODE_DREGX);
+			    }
+			    node->nd_cflag = options & ~RE_OPTION_ONCE;
+			    break;
+			}
+			$$ = node;
+		    }
+		;
+
+string_contents : /* none */
+		    {
+			$$ = 0;
+		    }
+		| string_contents string_content
+		    {
+			$$ = literal_concat($1, $2);
+		    }
+		;
+
+xstring_contents: /* none */
+		    {
+			$$ = 0;
+		    }
+		| xstring_contents string_content
+		    {
+			$$ = literal_append($1, $2);
+		    }
+		;
+
+string_content	: tSTRING_CONTENT {$$ = NEW_STR($1);}
+		| tSTRING_DVAR
+		    {
+			$<num>1 = lex_strnest;
+			$<node>$ = lex_strterm;
+			lex_strterm = 0;
+			lex_state = EXPR_BEG;
+		    }
+		  string_dvar
+		    {
+			lex_strnest = $<num>1;
+			lex_strterm = $<node>2;
+			$$ = gettable($3);
+		    }
+		| tSTRING_DBEG term_push
+		    {
+			$<num>1 = lex_strnest;
+			$<node>$ = lex_strterm;
+			lex_strterm = 0;
+			lex_state = EXPR_BEG;
+		    }
+		  compstmt '}'
+		    {
+			lex_strnest = $<num>1;
+			quoted_term = $2;
+			lex_strterm = $<node>3;
+			if (($$ = $4) && nd_type($$) == NODE_NEWLINE) {
+			    $$ = $$->nd_next;
+			    rb_gc_force_recycle((VALUE)$4);
+			}
+		    }
+		;
+
+string_dvar	: tGVAR
+		| tIVAR
+		| tCVAR
+		;
+
+term_push	: /* */
+		    {
+			if (($$ = quoted_term) == -1 &&
+			    nd_type(lex_strterm) == NODE_STRTERM &&
+			    !lex_strterm->u3.id) {
+			    quoted_term = lex_strterm->u2.id;
+			}
 		    }
 		;
 
@@ -2099,7 +2239,7 @@ none		: /* none */ {$$ = 0;}
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
 
-static NODE *str_extend _((NODE*,int,int));
+static int str_extend_p _((void));
 
 #define LEAVE_BS 1
 
@@ -2153,7 +2293,6 @@ yyerror(msg)
     return 0;
 }
 
-static int heredoc_end;
 static int command_start = Qtrue;
 
 int ruby_in_compile = 0;
@@ -2194,7 +2333,9 @@ yycompile(f, line)
 
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
-    heredoc_end = 0;
+    lex_strterm = 0;
+    lex_strnest = 0;
+    quoted_term = -1;
     ruby_sourcefile = rb_source_filename(f);
     ruby_in_compile = 1;
     n = yyparse();
@@ -2211,6 +2352,7 @@ yycompile(f, line)
 
     vp = ruby_dyna_vars;
     ruby_dyna_vars = vars;
+    lex_strterm = 0;
     while (vp && vp != vars) {
 	struct RVarmap *tmp = vp;
 	vp = vp->next;
@@ -2300,14 +2442,10 @@ nextc()
 	    VALUE v = lex_getline();
 
 	    if (NIL_P(v)) return -1;
-	    if (heredoc_end > 0) {
-		ruby_sourceline = heredoc_end;
-		heredoc_end = 0;
-	    }
 	    ruby_sourceline++;
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
 	    lex_pend = lex_p + RSTRING(v)->len;
-	    if (strncmp(lex_pbeg, "__END__", 7) == 0 &&
+	    if (!lex_strterm && strncmp(lex_pbeg, "__END__", 7) == 0 &&
 		(RSTRING(v)->len == 7 || lex_pbeg[7] == '\n' || lex_pbeg[7] == '\r')) {
 		ruby__end__seen = 1;
 		lex_lastline = 0;
@@ -2556,253 +2694,119 @@ tokadd_escape(term)
 }
 
 static int
-parse_regx(term, paren)
-    int term, paren;
+regx_options()
 {
-    register int c;
     char kcode = 0;
-    int once = 0;
-    int nest = 0;
     int options = 0;
-    int re_start = ruby_sourceline;
-    NODE *list = 0;
+    int c;
 
     newtok();
-    while ((c = nextc()) != -1) {
-	if (c == term && nest == 0) {
-	    goto regx_end;
-	}
-
+    while (c = nextc(), ISALPHA(c)) {
 	switch (c) {
-	  case '#':
-	    list = str_extend(list, term, paren);
-	    if (list == (NODE*)-1) goto unterminated;
-	    continue;
-
-	  case '\\':
-	    if (tokadd_escape(term) < 0)
-		return 0;
-	    continue;
-
-	  case -1:
-	    goto unterminated;
-
-	  default:
-	    if (paren)  {
-	      if (c == paren) nest++;
-	      if (c == term) nest--;
-	    }
-	    if (ismbchar(c)) {
-		int i, len = mbclen(c)-1;
-
-		for (i = 0; i < len; i++) {
-		    tokadd(c);
-		    c = nextc();
-		}
-	    }
+	  case 'i':
+	    options |= RE_OPTION_IGNORECASE;
 	    break;
-
-	  regx_end:
-	    for (;;) {
-		switch (c = nextc()) {
-		  case 'i':
-		    options |= RE_OPTION_IGNORECASE;
-		    break;
-		  case 'x':
-		    options |= RE_OPTION_EXTENDED;
-		    break;
-		  case 'm':
-		    options |= RE_OPTION_MULTILINE;
-		    break;
-		  case 'o':
-		    once = 1;
-		    break;
-		  case 'n':
-		    kcode = 16;
-		    break;
-		  case 'e':
-		    kcode = 32;
-		    break;
-		  case 's':
-		    kcode = 48;
-		    break;
-		  case 'u':
-		    kcode = 64;
-		    break;
-		  default:
-		    pushback(c);
-		    goto end_options;
-		}
-	    }
-
-	  end_options:
-	    tokfix();
-	    lex_state = EXPR_END;
-	    if (list) {
-		nd_set_line(list, re_start);
-		if (toklen() > 0) {
-		    VALUE ss = rb_str_new(tok(), toklen());
-		    list_append(list, NEW_STR(ss));
-		}
-		nd_set_type(list, once?NODE_DREGX_ONCE:NODE_DREGX);
-		list->nd_cflag = options | kcode;
-		yylval.node = list;
-		return tDREGEXP;
-	    }
-	    else {
-		yylval.val = rb_reg_new(tok(), toklen(), options | kcode);
-		return tREGEXP;
-	    }
+	  case 'x':
+	    options |= RE_OPTION_EXTENDED;
+	    break;
+	  case 'm':
+	    options |= RE_OPTION_MULTILINE;
+	    break;
+	  case 'o':
+	    options |= RE_OPTION_ONCE;
+	    break;
+	  case 'n':
+	    kcode = 16;
+	    break;
+	  case 'e':
+	    kcode = 32;
+	    break;
+	  case 's':
+	    kcode = 48;
+	    break;
+	  case 'u':
+	    kcode = 64;
+	    break;
+	  default:
+	    tokadd(c);
+	    break;
 	}
-	tokadd(c);
     }
-  unterminated:
-    ruby_sourceline = re_start;
-    rb_compile_error("unterminated regexp meets end of file");
-    return 0;
+    pushback(c);
+    if (toklen()) {
+	tokfix();
+	rb_compile_error("unknown regexp option%s - %s",
+			 toklen() > 1 ? "s" : "", tok());
+    }
+    return options | kcode;
 }
 
-static int parse_qstring _((int,int));
-
 static int
-parse_string(func, term, paren)
+tokadd_string(func, term, paren)
     int func, term, paren;
 {
     int c;
-    NODE *list = 0;
-    int strstart;
-    int nest = 0;
 
-    if (func == '\'') {
-	return parse_qstring(term, paren);
-    }
-    if (func == 0) {		/* read 1 line for heredoc */
-				/* -1 for chomp */
-	yylval.val = rb_str_new(lex_pbeg, lex_pend - lex_pbeg - 1);
-	lex_p = lex_pend;
-	return tSTRING;
-    }
-    strstart = ruby_sourceline;
-    newtok();
-    while ((c = nextc()) != term || nest > 0) {
-	if (c == -1) {
-	  unterm_str:
-	    ruby_sourceline = strstart;
-	    rb_compile_error("unterminated string meets end of file");
-	    return 0;
+    while ((c = nextc()) != -1) {
+	if (paren && c == paren) {
+	    lex_strnest++;
 	}
-	if (paren) {
-	    if (c == paren) nest++;
-	    if (c == term && nest-- == 0) break;
-	}
-	if (ismbchar(c)) {
-	    int i, len = mbclen(c)-1;
-
-	    for (i = 0; i < len; i++) {
-		tokadd(c);
-		c = nextc();
+	else if (c == term) {
+	    if (!lex_strnest) {
+		pushback(c);
+		break;
 	    }
+	    --lex_strnest;
 	}
-	else if (c == '#') {
-	    list = str_extend(list, term, paren);
-	    if (list == (NODE*)-1) goto unterm_str;
-	    continue;
-	}
-	else if (c == '\\') {
-	    c = nextc();
-	    if (c == '\n')
-		continue;
-	    if (c == term) {
-		tokadd(c);
-	    }
-	    else {
-                pushback(c);
-                if (func != '"') tokadd('\\');
-                tokadd(read_escape());
-  	    }
-	    continue;
-	}
-	tokadd(c);
-    }
-
-    tokfix();
-    lex_state = EXPR_END;
-
-    if (list) {
-	nd_set_line(list, strstart);
-	if (toklen() > 0) {
-	    VALUE ss = rb_str_new(tok(), toklen());
-	    list_append(list, NEW_STR(ss));
-	}
-	yylval.node = list;
-	if (func == '`') {
-	    nd_set_type(list, NODE_DXSTR);
-	    return tDXSTRING;
-	}
-	else {
-	    return tDSTRING;
-	}
-    }
-    else {
-	yylval.val = rb_str_new(tok(), toklen());
-	return (func == '`') ? tXSTRING : tSTRING;
-    }
-}
-
-static int
-parse_qstring(term, paren)
-    int term, paren;
-{
-    int strstart;
-    int c;
-    int nest = 0;
-
-    strstart = ruby_sourceline;
-    newtok();
-    while ((c = nextc()) != term || nest > 0) {
-	if (c == -1) {
-	    ruby_sourceline = strstart;
-	    rb_compile_error("unterminated string meets end of file");
-	    return 0;
-	}
-	if (paren) {
-	    if (c == paren) nest++;
-	    if (c == term && nest-- == 0) break;
-	}
-	if (ismbchar(c)) {
-	    int i, len = mbclen(c)-1;
-
-	    for (i = 0; i < len; i++) {
-		tokadd(c);
-		c = nextc();
+	else if (func != '\'' && c == '#' && lex_p < lex_pend) {
+	    int c2 = *lex_p;
+	    if (c2 == '$' || c2 == '@' || c2 == '{') {
+		pushback(c);
+		break;
 	    }
 	}
 	else if (c == '\\') {
 	    c = nextc();
+	    if (QUOTED_TERM_P(c)) {
+		pushback(c);
+		return c;
+	    }
 	    switch (c) {
 	      case '\n':
 		continue;
 
 	      case '\\':
-		c = '\\';
+		if (func == '/') tokadd(c);
 		break;
 
 	      default:
-		/* fall through */
-		if (c == term || (paren && c == paren)) {
-		    tokadd(c);
+		if (func == '/') {
+		    pushback(c);
+		    if (tokadd_escape(term) < 0)
+			return -1;
 		    continue;
 		}
-		tokadd('\\');
+		else if (func != '\'') {
+		    pushback(c);
+		    if (func != '"') tokadd('\\');
+		    c = read_escape();
+		}
+		else if (c != term && !(paren && c == paren)) {
+		    tokadd('\\');
+		}
+	    }
+	}
+	else if (ismbchar(c)) {
+	    int i, len = mbclen(c)-1;
+
+	    for (i = 0; i < len; i++) {
+		tokadd(c);
+		c = nextc();
 	    }
 	}
 	tokadd(c);
     }
-
-    tokfix();
-    yylval.val = rb_str_new(tok(), toklen());
-    lex_state = EXPR_END;
-    return tSTRING;
+    return c;
 }
 
 static int
@@ -2840,6 +2844,7 @@ parse_quotedwords(term, paren)
 	}
 	else if (c == '\\') {
 	    c = nextc();
+	    if (QUOTED_TERM_P(c)) break;
 	    switch (c) {
 	      case '\n':
 		continue;
@@ -2886,149 +2891,222 @@ parse_quotedwords(term, paren)
     return tQWORDS;
 }
 
+#define NEW_STRTERM(func, term, paren) \
+	rb_node_newnode(NODE_STRTERM, (func), (term), (paren))
+
 static int
-here_document(term, indent)
-    char term;
-    int indent;
+parse_string(quote)
+    NODE *quote;
 {
+    int func = quote->u1.id;
+    int term = quote->u2.id;
+    int paren = quote->u3.id;
     int c;
-    char *eos, *p;
-    int len;
-    VALUE str;
-    volatile VALUE line = 0;
-    VALUE lastline_save;
-    int offset_save;
-    NODE *list = 0;
-    int linesave = ruby_sourceline;
-    int firstline;
 
-    if (heredoc_end > 0) ruby_sourceline = heredoc_end;
-    firstline = ruby_sourceline;
-
+    if (func == -1) return tSTRING_END;
+    c = nextc();
+    if (c == term) {
+	if (!lex_strnest) {
+	  eos:
+	    if (func != '/') return tSTRING_END;
+	    yylval.num = regx_options();
+	    return tREGEXP_END;
+	}
+    }
+    if (c == '\\' && WHEN_QUOTED_TERM(peek(quoted_term_char))) {
+	if ((c = nextc()) == term) goto eos;
+    }
     newtok();
-    switch (term) {
+    if (func != '\'' && c == '#') {
+	switch (c = nextc()) {
+	  case '$':
+	  case '@':
+	    pushback(c);
+	    return tSTRING_DVAR;
+	  case '{':
+	    return tSTRING_DBEG;
+	}
+	tokadd('#');
+    }
+    pushback(c);
+    if (tokadd_string(func, term, paren) == -1) {
+	ruby_sourceline = nd_line(quote);
+	rb_compile_error("unterminated string meets end of file");
+	return tSTRING_END;
+    }
+
+    tokfix();
+    yylval.val = rb_str_new(tok(), toklen());
+    return tSTRING_CONTENT;
+}
+
+#define INDENTED_HEREDOC 0x20
+
+static int
+heredoc_identifier()
+{
+    int c = nextc(), term, indent = 0, len;
+
+    if (c == '-') {
+	c = nextc();
+	if (ISSPACE(c)) {
+	    pushback(c);
+	    pushback('-');
+	    return 0;
+	}
+	indent = INDENTED_HEREDOC;
+    }
+    else if (ISSPACE(c)) {
+      not_heredoc:
+	pushback(c);
+	return 0;
+    }
+    switch (c) {
       case '\'':
       case '"':
       case '`':
-	while ((c = nextc()) != term) {
-	    switch (c) {
-	      case -1:
-		rb_compile_error("unterminated here document identifier meets end of file");
-		return 0;
-	      case '\n':
-		rb_compile_error("unterminated here document identifier meets end of line");
-		return 0;
-	    }
-	    tokadd(c);
+	newtok();
+	tokadd(c ^ indent);
+	term = c;
+	while ((c = nextc()) != -1 && c != term) {
+	    len = mbclen(c);
+	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
 	}
-	if (term == '\'') term = 0;
+	if (c == -1) {
+	    rb_compile_error("unterminated here document identifier");
+	    return 0;
+	}
 	break;
 
       default:
-	c = term;
+	if (!is_identchar(c)) goto not_heredoc;
+	newtok();
 	term = '"';
-	if (!is_identchar(c)) {
-	    rb_warn("use of bare << to mean <<\"\" is deprecated");
-	    break;
-	}
-	while (is_identchar(c)) {
-	    tokadd(c);
-	    c = nextc();
-	}
+	tokadd(term ^ indent);
+	do {
+	    len = mbclen(c);
+	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
+	} while ((c = nextc()) != -1 && is_identchar(c));
 	pushback(c);
 	break;
     }
+
     tokfix();
-    lastline_save = lex_lastline;
-    offset_save = lex_p - lex_pbeg;
-    eos = strdup(tok());
-    len = strlen(eos);
+    len = lex_p - lex_pbeg;
+    lex_p = lex_pend;
+    lex_strterm = rb_node_newnode(NODE_HEREDOC,
+				  rb_str_new(tok(), toklen()),	/* nd_lit */
+				  len,				/* nd_nth */
+				  lex_lastline);		/* nd_orig */
+    return term == '`' ? tXSTRING_BEG : tSTRING_BEG;
+}
 
-    str = rb_str_new(0,0);
-    for (;;) {
-	lex_lastline = line = lex_getline();
-	if (NIL_P(line)) {
-	  error:
-	    ruby_sourceline = linesave;
-	    rb_compile_error("can't find string \"%s\" anywhere before EOF", eos);
-	    free(eos);
-	    return 0;
-	}
-	ruby_sourceline++;
-	p = RSTRING(line)->ptr;
-	if (indent) {
-	    while (*p && (*p == ' ' || *p == '\t')) {
-		p++;
-	    }
-	}
-	if (strncmp(eos, p, len) == 0) {
-	    if (p[len] == '\n' || p[len] == '\r')
-		break;
-	    if (len == RSTRING(line)->len)
-		break;
-	}
+static void
+heredoc_restore(here)
+    NODE *here;
+{
+    VALUE line = here->nd_orig;
+    lex_lastline = line;
+    lex_pbeg = RSTRING(line)->ptr;
+    lex_pend = lex_pbeg + RSTRING(line)->len;
+    lex_p = lex_pbeg + here->nd_nth;
+    rb_gc_force_recycle(here->nd_lit);
+    rb_gc_force_recycle((VALUE)here);
+}
 
-	lex_pbeg = lex_p = RSTRING(line)->ptr;
-	lex_pend = lex_p + RSTRING(line)->len;
-      retry:
-	switch (parse_string(term, '\n', 0)) {
-	  case tSTRING:
-	  case tXSTRING:
-	    rb_str_cat2(yylval.val, "\n");
-	    if (!list) {
-	        rb_str_append(str, yylval.val);
-	    }
-	    else {
-		list_append(list, NEW_STR(yylval.val));
-	    }
-	    break;
-	  case tDSTRING:
-	    if (!list) list = NEW_DSTR(str);
-	    /* fall through */
-	  case tDXSTRING:
-	    if (!list) list = NEW_DXSTR(str);
+static int
+whole_match_p(eos, len, indent)
+    char *eos;
+    int len, indent;
+{
+    char *p = lex_pbeg;
 
-	    list_append(yylval.node, NEW_STR(rb_str_new2("\n")));
-	    nd_set_type(yylval.node, NODE_STR);
-	    yylval.node = NEW_LIST(yylval.node);
-	    yylval.node->nd_next = yylval.node->nd_head->nd_next;
-	    list_concat(list, yylval.node);
-	    break;
-
-	  case 0:
-	    goto error;
-	}
-	if (lex_p != lex_pend) {
-	    goto retry;
-	}
+    if (indent) {
+	while (*p && ISSPACE(*p)) p++;
     }
-    free(eos);
-    lex_lastline = lastline_save;
-    lex_pbeg = RSTRING(lex_lastline)->ptr;
-    lex_pend = lex_pbeg + RSTRING(lex_lastline)->len;
-    lex_p = lex_pbeg + offset_save;
-
-    lex_state = EXPR_END;
-    heredoc_end = ruby_sourceline;
-    ruby_sourceline = linesave;
-
-    if (list) {
-	nd_set_line(list, firstline+1);
-	yylval.node = list;
+    if (strncmp(eos, p, len) == 0) {
+	if (p[len] == '\n' || p[len] == '\r') return Qtrue;
+	if (p + len == lex_pend) return Qtrue;
     }
-    switch (term) {
-      case '\0':
-      case '\'':
-      case '"':
-	if (list) return tDSTRING;
-	yylval.val = str;
-	return tSTRING;
-      case '`':
-	if (list) return tDXSTRING;
-	yylval.val = str;
-	return tXSTRING;
+    return Qfalse;
+}
+
+static int
+here_document(here)
+    NODE *here;
+{
+    int c, func, indent = 0;
+    char *eos, *p;
+    int len;
+    VALUE str = 0, line;
+
+    eos = RSTRING(here->nd_lit)->ptr;
+    len = RSTRING(here->nd_lit)->len - 1;
+    switch (func = *eos++) {
+      case '\'': case '"': case '`':
+	indent = 0;
+	break;
+      default:
+	func ^= INDENTED_HEREDOC;
+	indent = 1;
+	break;
     }
-    return 0;
+
+    if ((c = nextc()) == -1) {
+      error:
+	rb_compile_error("can't find string \"%s\" anywhere before EOF", eos);
+	heredoc_restore(lex_strterm);
+	lex_strterm = 0;
+	return 0;
+    }
+    if (lex_p - 1 == lex_pbeg && whole_match_p(eos, len, indent)) {
+	heredoc_restore(lex_strterm);
+	return tSTRING_END;
+    }
+
+    if (func == '\'') {
+	do {
+	    line = lex_lastline;
+	    if (str)
+		rb_str_cat(str, RSTRING(line)->ptr, RSTRING(line)->len);
+	    else
+		str = rb_str_new(RSTRING(line)->ptr, RSTRING(line)->len);
+	    lex_p = lex_pend;
+	    if (nextc() == -1) {
+		if (str) rb_gc_force_recycle(str);
+		goto error;
+	    }
+	} while (!whole_match_p(eos, len, indent));
+    }
+    else {
+	newtok();
+	if (c == '#') {
+	    switch (c = nextc()) {
+	      case '$':
+	      case '@':
+		pushback(c);
+		return tSTRING_DVAR;
+	      case '{':
+		return tSTRING_DBEG;
+	    }
+	    tokadd('#');
+	}
+	do {
+	    pushback(c);
+	    if ((c = tokadd_string(func, '\n', 0)) == -1) goto error;
+	    if (c != '\n') {
+		yylval.val = rb_str_new(tok(), toklen());
+		return tSTRING_CONTENT;
+	    }
+	    tokadd(nextc());
+	    if ((c = nextc()) == -1) goto error;
+	} while (!whole_match_p(eos, len, indent));
+	str = rb_str_new(tok(), toklen());
+    }
+    heredoc_restore(lex_strterm);
+    lex_strterm = NEW_STRTERM(-1, 0, 0);
+    yylval.val = str;
+    return tSTRING_CONTENT;
 }
 
 #include "lex.c"
@@ -3053,6 +3131,25 @@ yylex()
     int space_seen = 0;
     int cmd_state;
 
+    if (lex_strterm) {
+	int token;
+	if (nd_type(lex_strterm) == NODE_HEREDOC) {
+	    token = here_document(lex_strterm);
+	    if (token == tSTRING_END) {
+		lex_strterm = 0;
+		lex_state = EXPR_END;
+	    }
+	}
+	else {
+	    token = parse_string(lex_strterm);
+	    if (token == tSTRING_END || token == tREGEXP_END) {
+		rb_gc_force_recycle((VALUE)lex_strterm);
+		lex_strterm = 0;
+		lex_state = EXPR_END;
+	    }
+	}
+	return token;
+    }
     cmd_state = command_start;
     command_start = Qfalse;
   retry:
@@ -3188,19 +3285,8 @@ yylex()
 	    lex_state != EXPR_ENDARG && 
 	    lex_state != EXPR_CLASS &&
 	    (!IS_ARG() || space_seen)) {
- 	    int c2 = nextc();
-	    int indent = 0;
-	    if (c2 == '-') {
-		indent = 1;
-		c2 = nextc();
-	    }
-	    if (!ISSPACE(c2) && (strchr("\"'`", c2) || is_identchar(c2))) {
-		return here_document(c2, indent);
-	    }
-	    pushback(c2);
-	    if (indent) {
-		pushback('-');
-	    }
+	    int token = heredoc_identifier();
+	    if (token) return token;
 	}
 	switch (lex_state) {
 	  case EXPR_FNAME: case EXPR_DOT:
@@ -3250,7 +3336,8 @@ yylex()
 	return '>';
 
       case '"':
-	return parse_string(c,c,0);
+	lex_strterm = NEW_STRTERM('"', '"', 0);
+	return tSTRING_BEG;
 
       case '`':
 	if (lex_state == EXPR_FNAME) {
@@ -3264,10 +3351,12 @@ yylex()
 		lex_state = EXPR_ARG;
 	    return c;
 	}
-	return parse_string(c,c,0);
+	lex_strterm = NEW_STRTERM('`', '`', 0);
+	return tXSTRING_BEG;
 
       case '\'':
-	return parse_qstring(c,0);
+	lex_strterm = NEW_STRTERM('\'', '\'', 0);
+	return tSTRING_BEG;
 
       case '?':
 	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG) {
@@ -3305,7 +3394,11 @@ yylex()
 	    lex_state = EXPR_BEG;
 	    return '?';
 	}
-	if ((ISALNUM(c) || c == '_') && lex_p < lex_pend && is_identchar(*lex_p)) {
+	else if (ismbchar(c)) {
+	    rb_warn("multibyte character literal not supported yet; use ?\\%.3o", c);
+	    goto ternary;
+	}
+	else if ((ISALNUM(c) || c == '_') && lex_p < lex_pend && is_identchar(*lex_p)) {
 	    goto ternary;
 	}
 	else if (c == '\\') {
@@ -3664,7 +3757,8 @@ yylex()
 
       case '/':
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    return parse_regx('/', '/');
+	    lex_strterm = NEW_STRTERM('/', '/', 0);
+	    return tREGEXP_BEG;
 	}
 	if ((c = nextc()) == '=') {
 	    yylval.id = '/';
@@ -3675,7 +3769,8 @@ yylex()
 	if (IS_ARG() && space_seen) {
 	    if (!ISSPACE(c)) {
 		arg_ambiguous();
-		return parse_regx('/', '/');
+		lex_strterm = NEW_STRTERM('/', '/', 0);
+		return tREGEXP_BEG;
 	    }
 	}
 	switch (lex_state) {
@@ -3783,6 +3878,13 @@ yylex()
 	    goto retry; /* skip \\n */
 	}
 	pushback(c);
+	if (QUOTED_TERM_P(c)) {
+	    if (!(quoted_term & (1 << CHAR_BIT))) {
+		rb_warn("escaped terminator '%c' inside string interpolation", c);
+		quoted_term |= 1 << CHAR_BIT;
+	    }
+	    goto retry;
+	}
 	return '\\';
 
       case '%':
@@ -3792,6 +3894,14 @@ yylex()
 
 	    c = nextc();
 	  quotation:
+	    if (c == '\\' && WHEN_QUOTED_TERM(peek(quoted_term_char))) {
+		c = nextc();
+		if (!(quoted_term & (1 << CHAR_BIT))) {
+		    rb_warn("escaped terminator '%s%c' inside string interpolation",
+			    (c == '\'' ? "\\" : ""), c);
+		    quoted_term |= 1 << CHAR_BIT;
+		}
+	    }
 	    if (!ISALNUM(c)) {
 		term = c;
 		c = 'Q';
@@ -3816,19 +3926,23 @@ yylex()
 
 	    switch (c) {
 	      case 'Q':
-		return parse_string('"', term, paren);
+		lex_strterm = NEW_STRTERM('"', term, paren);
+		return tSTRING_BEG;
 
 	      case 'q':
-		return parse_qstring(term, paren);
+		lex_strterm = NEW_STRTERM('\'', term, paren);
+		return tSTRING_BEG;
 
 	      case 'w':
 		return parse_quotedwords(term, paren);
 
 	      case 'x':
-		return parse_string('`', term, paren);
+		lex_strterm = NEW_STRTERM('`', term, paren);
+		return tXSTRING_BEG;
 
 	      case 'r':
-		return parse_regx(term, paren);
+		lex_strterm = NEW_STRTERM('/', term, paren);
+		return tREGEXP_BEG;
 
 	      default:
 		yyerror("unknown type of %string");
@@ -4073,210 +4187,20 @@ yylex()
     }
 }
 
-static NODE*
-str_extend(list, term, paren)
-    NODE *list;
-    int term, paren;
+static int
+str_extend_p()
 {
-    int c;
-    int brace = -1;
-    VALUE ss;
-    NODE *node;
-    int brace_nest = 0;
-    int paren_nest = 0;
-
-    c = nextc();
+    int c = nextc(), t = 0;
     switch (c) {
       case '$':
       case '@':
+	t = tSTRING_DVAR;
       case '{':
-	break;
-      default:
-	tokadd('#');
-	pushback(c);
-	return list;
+	t = tSTRING_DBEG;
     }
-
-    ss = rb_str_new(tok(), toklen());
-    if (list == 0) {
-	list = NEW_DSTR(ss);
-    }
-    else if (toklen() > 0) {
-	list_append(list, NEW_STR(ss));
-    }
-    newtok();
-
-    switch (c) {
-      case '$':
-	tokadd('$');
-	c = nextc();
-	if (c == -1) return (NODE*)-1;
-	switch (c) {
-	  case '1': case '2': case '3':
-	  case '4': case '5': case '6':
-	  case '7': case '8': case '9':
-	    while (ISDIGIT(c)) {
-		tokadd(c);
-		c = nextc();
-	    }
-	    pushback(c);
-	    goto fetch_id;
-
-	  case '&': case '+':
-	  case '_': case '~':
-	  case '*': case '$': case '?':
-	  case '!': case '@': case ',':
-	  case '.': case '=': case ':':
-	  case '<': case '>': case '\\':
-	  case ';':
-	  refetch:
-	    tokadd(c);
-	    goto fetch_id;
-
-	  case '-':
-	    tokadd(c);
-	    c = nextc();
-	    if (!is_identchar(c)) {
-		pushback();
-		goto invalid_interporate;
-	    }
-	    tokadd(c);
-	    goto fetch_id;
-
-          default:
-	    if (c == term) {
-		list_append(list, NEW_STR(rb_str_new2("#$")));
-		pushback(c);
-		newtok();
-		return list;
-	    }
-	    switch (c) {
-	      case '\"':
-	      case '/':
-	      case '\'':
-	      case '`':
-		goto refetch;
-	    }
-	    if (!is_identchar(c)) {
-	      pushback(c);
-	      invalid_interporate:
-		{
-		    VALUE s = rb_str_new2("#");
-		    rb_str_cat(s, tok(), toklen());
-		    list_append(list, NEW_STR(s));
-		    newtok();
-		    return list;
-		}
-	    }
-	}
-
-	while (is_identchar(c)) {
-	    tokadd(c);
-	    if (ismbchar(c)) {
-		int i, len = mbclen(c)-1;
-
-		for (i = 0; i < len; i++) {
-		    c = nextc();
-		    tokadd(c);
-		}
-	    }
-	    c = nextc();
-	}
-	pushback(c);
-	break;
-
-      case '@':
-	tokadd(c);
-	c = nextc();
-        if (c == '@') {
-	    tokadd(c);
-	    c = nextc();
-        }
-	while (is_identchar(c)) {
-	    tokadd(c);
-	    if (ismbchar(c)) {
-		int i, len = mbclen(c)-1;
-
-		for (i = 0; i < len; i++) {
-		    c = nextc();
-		    tokadd(c);
-		}
-	    }
-	    c = nextc();
-	}
-	pushback(c);
-	if (toklen() == 1) {
-	    goto invalid_interporate;
-	}
-	break;
-
-      case '{':
-	if (c == '{') brace = '}';
-	brace_nest = 0;
-	do {
-	  loop_again:
-	    c = nextc();
-	    switch (c) {
-	      case -1:
-		if (brace_nest > 0) {
-		    yyerror("bad substitution in string");
-		    newtok();
-		    return list;
-		}
-		return (NODE*)-1;
-	      case '}':
-		if (c == brace) {
-		    if (brace_nest == 0) break;
-		    brace_nest--;
-		}
-		tokadd(c);
-		goto loop_again;
-	      case '\\':
-		c = nextc();
-		if (c == -1) return (NODE*)-1;
-		if (c == term) {
-		    tokadd(c);
-		}
-		else {
-		    tokadd('\\');
-		    tokadd(c);
-		}
-		goto loop_again;
-	      case '{':
-		if (brace != -1) brace_nest++;
-	      default:
-		if (c == paren) paren_nest++;
-		else if (c == term && (!paren || paren_nest-- == 0)) {
-		    pushback(c);
-		    list_append(list, NEW_STR(rb_str_new2("#{")));
-		    rb_warn("bad substitution in string");
-		    tokfix();
-		    list_append(list, NEW_STR(rb_str_new(tok(), toklen())));
-		    newtok();
-		    return list;
-		}
-		else if (ismbchar(c)) {
-		    int i, len = mbclen(c)-1;
-
-		    for (i = 0; i < len; i++) {
-			tokadd(c);
-			c = nextc();
-		    }
-		}
-	      case '\n':
-		tokadd(c);
-		break;
-	    }
-	} while (c != brace);
-    }
-
-  fetch_id:
-    tokfix();
-    node = NEW_EVSTR(tok(),toklen());
-    list_append(list, node);
-    newtok();
-
-    return list;
+    pushback(c);
+    pushback('#');
+    return t;
 }
 
 NODE*
@@ -4418,6 +4342,131 @@ list_concat(head, tail)
     head->nd_alen += tail->nd_alen;
 
     return head;
+}
+
+static NODE *
+literal_concat_string(head, tail, str)
+    NODE *head, *tail;
+    VALUE str;
+{
+    NODE *last = head, *last1 = 0;
+
+    for (;;) {
+	switch (nd_type(last)) {
+	  case NODE_NEWLINE:
+	    last = last->nd_next;
+	    break;
+	  case NODE_BLOCK:
+	  case NODE_DSTR:
+	    while (last->nd_next) {
+		last = last->nd_next;
+	    }
+	    if (!last1) last1 = last;
+	    last = last->nd_head;
+	    break;
+	  case NODE_STR:
+	    rb_str_concat(last->nd_lit, str);
+	    if (tail) rb_gc_force_recycle((VALUE)tail);
+	    return head;
+	  default:
+	    if (!last1) {
+		last1 = head;
+		head = NEW_DSTR(rb_str_new(0, 0));
+		head->nd_next = last1 = NEW_LIST(last1);
+		head->nd_alen += 1;
+	    }
+	    if (!tail) tail = NEW_STR(str);
+	    last1->nd_next = NEW_LIST(tail);
+	    head->nd_alen += 1;
+	    return head;
+	}
+    }
+}
+
+static NODE *
+literal_concat_dstr(head, tail)
+    NODE *head, *tail;
+{
+    NODE *last;
+
+    switch (nd_type(head)) {
+      case NODE_STR:
+	tail->nd_lit = head->nd_lit;
+	rb_gc_force_recycle((VALUE)head);
+	return tail;
+      case NODE_DSTR:
+	last = tail->nd_next;
+	last->nd_alen = tail->nd_alen;
+	rb_gc_force_recycle((VALUE)tail);
+	return list_concat(head, last);
+      default:
+	head = NEW_LIST(head);
+      case NODE_ARRAY:
+      case NODE_ZARRAY:
+	tail->nd_lit = 0;
+	tail->nd_alen += head->nd_alen;
+	tail->nd_next = list_concat(head, tail->nd_next);
+	return tail;
+    }
+}
+
+static NODE *
+literal_concat_list(head, tail)
+    NODE *head, *tail;
+{
+    tail = NEW_LIST(tail);
+    switch (nd_type(head)) {
+      case NODE_STR:
+	nd_set_type(head, NODE_DSTR);
+	head->nd_next = tail;
+	head->nd_alen = tail->nd_alen;
+	return head;
+      case NODE_DSTR:
+	return list_concat(head, tail);
+      default:
+	head = NEW_LIST(head);
+	return list_concat(NEW_DSTR(rb_str_new(0, 0)), list_concat(head, tail));
+    }
+}
+
+static NODE *
+literal_append(head, tail)
+    NODE *head, *tail;
+{
+    if (!head) return tail;
+    if (!tail) return head;
+
+    switch (nd_type(tail)) {
+      case NODE_STR:
+	if (nd_type(head) == NODE_STR) {
+	    rb_str_concat(head->nd_lit, tail->nd_lit);
+	    rb_gc_force_recycle((VALUE)tail);
+	    return head;
+	}
+
+      default:
+	return literal_concat_list(head, tail);
+    }
+}
+
+static NODE *
+literal_concat(head, tail)
+    NODE *head, *tail;
+{
+    if (!head) return tail;
+    if (!tail) return head;
+
+    switch (nd_type(tail)) {
+      case NODE_STR:
+	return literal_concat_string(head, tail, tail->nd_lit);
+
+      case NODE_DSTR:
+	head = literal_concat_string(head, 0, tail->nd_lit);
+	return literal_concat_dstr(head, tail);
+
+      default:
+	return literal_concat_list(head, tail);
+    }
 }
 
 static NODE *
@@ -5362,6 +5411,7 @@ Init_sym()
     sym_tbl = st_init_strtable_with_size(200);
     sym_rev_tbl = st_init_numtable_with_size(200);
     rb_global_variable((VALUE*)&lex_lastline);
+    rb_global_variable((VALUE*)&lex_strterm);
 }
 
 static ID last_id = LAST_TOKEN;
@@ -5550,8 +5600,6 @@ special_local_set(c, val)
     top_local_setup();
     ruby_scope->local_vars[cnt] = val;
 }
-
-VALUE *rb_svar _((int cnt));
 
 VALUE
 rb_backref_get()
