@@ -3831,17 +3831,21 @@ f_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE src, scope, vfile, line;
+    VALUE src, scope, vfile, vline;
     char *file = "(eval)";
+    int line = 0;
 
-    rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &line);
+    rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
     if (!NIL_P(vfile)) {
 	Check_Type(vfile, T_STRING);
 	file = RSTRING(vfile)->ptr;
     }
+    if (!NIL_P(vline)) {
+	line = NUM2INT(vline);
+    }
 
     Check_SafeStr(src);
-    return eval(self, src, scope, file, NUM2INT(line));
+    return eval(self, src, scope, file, line);
 }
 
 static VALUE

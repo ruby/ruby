@@ -44,6 +44,7 @@ str_new(ptr, len)
     if (rb_safe_level() >= 3) {
 	FL_SET(str, STR_TAINT);
     }
+    str->ptr = 0;
     str->len = len;
     str->orig = 0;
     str->ptr = ALLOC_N(char,len+1);
@@ -483,7 +484,9 @@ str_cmp(str1, str2)
     len = min(RSTRING(str1)->len, RSTRING(str2)->len);
     retval = memcmp(RSTRING(str1)->ptr, RSTRING(str2)->ptr, len);
     if (retval == 0) {
-	retval = RSTRING(str1)->ptr[len] - RSTRING(str2)->ptr[len];
+	if (RSTRING(str1)->len == RSTRING(str2)->len) return 0;
+	if (RSTRING(str1)->len > RSTRING(str2)->len) return 1;
+	return -1;
     }
     if (retval == 0) return 0;
     if (retval > 0) return 1;
@@ -2288,6 +2291,7 @@ str_chomp_bang(argc, argv, str)
 	}
 	if (len < RSTRING(str)->len) {
 	    RSTRING(str)->len = len;
+	    RSTRING(str)->ptr[len] = '\0';
 	    return str;
 	}
 	return Qnil;
@@ -2299,6 +2303,7 @@ str_chomp_bang(argc, argv, str)
 	(rslen <= 1 ||
 	 memcmp(RSTRING(rs)->ptr, p+len-rslen, rslen) == 0)) {
 	RSTRING(str)->len -= rslen;
+	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 	return str;
     }
     return Qnil;

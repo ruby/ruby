@@ -1,4 +1,16 @@
+Thu Apr  9 18:24:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_cmp): do not depend on sentinel at the end of the
+	  strings. 
+
+	* string.c (str_chomp_bang): forgot to set the sentinel.
+
 Wed Apr  8 00:59:13 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (big2int): converted int may be too big to fit in
+	  signed int.
+
+	* parse.y (arg): `foo += 1' should not cause an error.
 
 	* variable.c (rb_const_defined): returned false even if the
 	  constant is defined at the top level.

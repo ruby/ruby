@@ -49,10 +49,12 @@ xmalloc(size)
     void *mem;
 
     if (size == 0) size = 1;
+#if 0
     malloc_memories += size;
     if (malloc_memories > GC_MALLOC_LIMIT) {
 	gc_gc();
     }
+#endif
     mem = malloc(size);
     if (!mem) {
 	gc_gc();

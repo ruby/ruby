@@ -612,21 +612,16 @@ fail_to_integer(val)
 	      rb_class2name(CLASS_OF(val)));
 }
 
-int
+INT
 num2int(val)
     VALUE val;
 {
-    if (NIL_P(val)) return 0;
+    if (NIL_P(val)) {
+	TypeError("no implicit conversion from nil");
+    }
 
     switch (TYPE(val)) {
       case T_FIXNUM:
-	if (sizeof(int) < sizeof(INT)) {
-	    INT i = FIX2INT(val);
-	    if (INT_MIN < i && i < INT_MAX) {
-		return i;
-	    }
-	    TypeError("Fixnum too big to convert into `int'");
-	}
 	return FIX2INT(val);
 
       case T_FLOAT:
@@ -645,10 +640,6 @@ num2int(val)
 	TypeError("no implicit conversion from string");
 	return Qnil;		/* not reached */
 
-      case T_NIL:
-	TypeError("no implicit conversion from nil");
-	return Qnil;		/* not reached */
-
       default:
 	val = rb_rescue(to_integer, val, fail_to_integer, val);
 	if (!obj_is_kind_of(val, cInteger)) {
@@ -664,19 +655,12 @@ num2fix(val)
 {
     INT v;
 
-    if (NIL_P(val)) return INT2FIX(0);
-    switch (TYPE(val)) {
-      case T_FIXNUM:
-	return val;
+    if (FIXNUM_P(val)) return val;
 
-      case T_FLOAT:
-      case T_BIGNUM:
-      default:
-	v = num2int(val);
-	if (!FIXABLE(v))
-	    Fail("integer %d out of range of Fixnum", v);
-	return INT2FIX(v);
-    }
+    v = num2int(val);
+    if (!FIXABLE(v))
+	Fail("integer %d out of range of fixnum", v);
+    return INT2FIX(v);
 }
 
 static VALUE

@@ -350,13 +350,16 @@ big2int(x)
     UINT len = RBIGNUM(x)->len;
     USHORT *ds;
 
-    if (len > sizeof(long)/sizeof(USHORT))
-	ArgError("Bignum too big to convert into fixnum");
+    if (len > sizeof(INT)/sizeof(USHORT))
+	ArgError("bignum too big to convert into `int'");
     ds = BDIGITS(x);
     num = 0;
     while (len--) {
 	num = BIGUP(num);
 	num += ds[len];
+    }
+    if ((INT)num < 0) {
+	ArgError("bignum too big to convert into `int'");
     }
     if (!RBIGNUM(x)->sign) return -num;
     return num;

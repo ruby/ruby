@@ -570,10 +570,16 @@ arg		: variable '=' arg
 		| variable OP_ASGN arg
 		    {
 			value_expr($3);
-			if (is_local_id($1)&&!local_id($1)&&dyna_in_block())
-			    dyna_var_asgn($1, TRUE);
-		  	$$ = assignable($1, call_op(gettable($1), $2, 1, $3));
-		        fixpos($$, $3);
+			if (is_local_id($1)) {
+			    if (local_id($1)||!dyna_in_block()) {
+				local_cnt($1);
+			    }
+			    else if (!dyna_var_defined($1)) {
+				dyna_var_asgn($1, TRUE);
+			    }
+			}
+			$$ = assignable($1,call_op(gettable($1),$2,1,$3));
+			fixpos($$, $3);
 		    }
 		| primary '[' aref_args ']' OP_ASGN arg
 		    {

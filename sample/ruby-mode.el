@@ -110,19 +110,7 @@
 (defvar ruby-indent-level 2
   "*Indentation of ruby statements.")
 
-(defun ruby-mode ()
-  "Major mode for editing ruby scripts.
-\\[ruby-indent-command] properly indents subexpressions of multi-line
-class, module, def, if, while, for, do, and case statements, taking
-nesting into account.
-
-The variable ruby-indent-level controls the amount of indentation.
-\\{ruby-mode-map}"
-  (interactive)
-  (kill-all-local-variables)
-  (use-local-map ruby-mode-map)
-  (setq mode-name "ruby")
-  (setq major-mode 'ruby-mode)
+(defun ruby-mode-variables ()
   (set-syntax-table ruby-mode-syntax-table)
   (setq local-abbrev-table ruby-mode-abbrev-table)
   (make-local-variable 'indent-line-function)
@@ -138,7 +126,22 @@ The variable ruby-indent-level controls the amount of indentation.
   (make-variable-buffer-local 'comment-start-skip)
   (setq comment-start-skip "\\(^\\|\\s-\\);?#+ *")
   (make-local-variable 'parse-sexp-ignore-comments)
-  (setq parse-sexp-ignore-comments t)
+  (setq parse-sexp-ignore-comments t))
+
+(defun ruby-mode ()
+  "Major mode for editing ruby scripts.
+\\[ruby-indent-command] properly indents subexpressions of multi-line
+class, module, def, if, while, for, do, and case statements, taking
+nesting into account.
+
+The variable ruby-indent-level controls the amount of indentation.
+\\{ruby-mode-map}"
+  (interactive)
+  (kill-all-local-variables)
+  (use-local-map ruby-mode-map)
+  (setq mode-name "ruby")
+  (setq major-mode 'ruby-mode)
+  (ruby-mode-variable)
   (run-hooks 'ruby-mode-hook))
 
 (defun ruby-current-indentation ()
@@ -666,3 +669,5 @@ An end of a defun is found by moving forward from the beginning of one."
     (add-hook 'ruby-mode-hook
              (lambda ()
                (setq font-lock-keywords ruby-font-lock-keywords))))))
+
+(provide 'ruby-mode)
