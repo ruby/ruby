@@ -7520,7 +7520,7 @@ Init_eval()
     rb_define_global_function("catch", rb_f_catch, 1);
     rb_define_global_function("throw", rb_f_throw, -1);
     rb_define_global_function("global_variables", 
-			      rb_f_global_variables, 0); // in variable.c
+			      rb_f_global_variables, 0); /* in variable.c */
     rb_define_global_function("local_variables", rb_f_local_variables, 0);
 
     rb_define_method(rb_mKernel, "send", rb_f_send, -1);
@@ -7560,9 +7560,9 @@ Init_eval()
     rb_define_method(rb_mKernel, "extend", rb_obj_extend, -1);
 
     rb_define_global_function("trace_var", 
-			      rb_f_trace_var, -1); // in variable.c
+			      rb_f_trace_var, -1); /* in variable.c */
     rb_define_global_function("untrace_var", 
-			      rb_f_untrace_var, -1); // in variable.c
+			      rb_f_untrace_var, -1); /* in variable.c */
 
     rb_define_global_function("set_trace_func", set_trace_func, 1);
     rb_global_variable(&trace_func);

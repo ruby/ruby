@@ -1,3 +1,7 @@
+Thu Jan  8 11:20:01 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c, object.c, process.c, re.c: don't use C++ style comments.
+
 Thu Jan  8 08:46:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/rubyext.c (yaml_org_handler): lazy-load Date for
