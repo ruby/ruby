@@ -427,8 +427,8 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| var_lhs tOP_ASGN command_call
 		    {
-			ID vid = $1->nd_vid;
 			if ($1) {
+			    ID vid = $1->nd_vid;
 			    if ($2 == tOROP) {
 				$1->nd_value = $3;
 				$$ = NEW_OP_ASGN_OR(gettable(vid), $1);
@@ -772,8 +772,8 @@ arg		: lhs '=' arg
 		    }
 		| var_lhs tOP_ASGN arg
 		    {
-			ID vid = $1->nd_vid;
 			if ($1) {
+			    ID vid = $1->nd_vid;
 			    if ($2 == tOROP) {
 				$1->nd_value = $3;
 				$$ = NEW_OP_ASGN_OR(gettable(vid), $1);

@@ -1,3 +1,7 @@
+Thu Feb 14 17:38:35 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y: avoid SEGV at OP_ASIGN to pseudo variable.
+
 Thu Feb 14 14:13:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (Init_Struct): should undefine "allocate" for Struct
