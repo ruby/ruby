@@ -370,7 +370,7 @@ module TkComm
     end
   end
   private :install_bind, :tk_event_sequence, 
-          :_bind_core, :_bind, :_bind_append, ,:_bind_remove, :_bindinfo
+          :_bind_core, :_bind, :_bind_append, :_bind_remove, :_bindinfo
 
   def bind(tagOrClass, context, cmd=Proc.new, args=nil)
     _bind(["bind", tagOrClass], context, cmd, args)
