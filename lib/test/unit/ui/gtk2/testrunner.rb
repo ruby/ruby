@@ -1,5 +1,3 @@
-# :nodoc:
-#
 # Author:: Kenta MURATA.
 # Copyright:: Copyright (c) 2000-2002 Kenta MURATA. All rights reserved.
 # License:: Ruby license.
@@ -11,17 +9,17 @@ require "test/unit/ui/testrunnerutilities"
 module Test
   module Unit
     module UI
-      module GTK2 # :nodoc: all
+      module GTK2 all
 
         Gtk.init
 
-        class EnhancedLabel < Gtk::Label # :nodoc: all
+        class EnhancedLabel < Gtk::Label all
           def set_text(text)
             super(text.gsub(/\n\t/, "\n    "))
           end
         end
 
-        class FaultList < Gtk::TreeView # :nodoc: all
+        class FaultList < Gtk::TreeView all
           def initialize
             @faults = []
             @model = Gtk::ListStore.new(String, String)
@@ -56,7 +54,7 @@ module Test
         class TestRunner
           extend TestRunnerUtilities
 
-          def lazy_initialize(symbol) # :nodoc:
+          def lazy_initialize(symbol)
             if !instance_eval("defined?(@#{symbol})") then
               yield
             end
@@ -64,7 +62,7 @@ module Test
           end
           private :lazy_initialize
 
-          def status_entry # :nodoc:
+          def status_entry
             lazy_initialize(:status_entry) do
               @status_entry = Gtk::Entry.new
               @status_entry.editable = false
@@ -72,7 +70,7 @@ module Test
           end
           private :status_entry
 
-          def status_panel # :nodoc:
+          def status_panel
             lazy_initialize(:status_panel) do
               @status_panel = Gtk::HBox.new
               @status_panel.border_width = 10
@@ -81,7 +79,7 @@ module Test
           end
           private :status_panel
 
-          def fault_detail_label # :nodoc:
+          def fault_detail_label
             lazy_initialize(:fault_detail_label) do
               @fault_detail_label = EnhancedLabel.new("")
 #              style = Gtk::Style.new
@@ -95,7 +93,7 @@ module Test
           end
           private :fault_detail_label
 
-          def inner_detail_sub_panel # :nodoc:
+          def inner_detail_sub_panel
             lazy_initialize(:inner_detail_sub_panel) do
               @inner_detail_sub_panel = Gtk::HBox.new
               @inner_detail_sub_panel.pack_start(fault_detail_label, false, false, 0)
@@ -103,7 +101,7 @@ module Test
           end
           private :inner_detail_sub_panel
 
-          def outer_detail_sub_panel # :nodoc:
+          def outer_detail_sub_panel
             lazy_initialize(:outer_detail_sub_panel) do
               @outer_detail_sub_panel = Gtk::VBox.new
               @outer_detail_sub_panel.pack_start(inner_detail_sub_panel, false, false, 0)
@@ -111,7 +109,7 @@ module Test
           end
           private :outer_detail_sub_panel
 
-          def detail_scrolled_window # :nodoc:
+          def detail_scrolled_window
             lazy_initialize(:detail_scrolled_window) do
               @detail_scrolled_window = Gtk::ScrolledWindow.new
               @detail_scrolled_window.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
@@ -122,7 +120,7 @@ module Test
           end
           private :detail_scrolled_window
 
-          def detail_panel # :nodoc:
+          def detail_panel
             lazy_initialize(:detail_panel) do
               @detail_panel = Gtk::HBox.new
               @detail_panel.border_width = 10
@@ -131,14 +129,14 @@ module Test
           end
           private :detail_panel
 
-          def fault_list # :nodoc:
+          def fault_list
             lazy_initialize(:fault_list) do
               @fault_list = FaultList.new
             end
           end
           private :fault_list
 
-          def list_scrolled_window # :nodoc:
+          def list_scrolled_window
             lazy_initialize(:list_scrolled_window) do
               @list_scrolled_window = Gtk::ScrolledWindow.new
               @list_scrolled_window.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC)
@@ -149,7 +147,7 @@ module Test
           end
           private :list_scrolled_window
 
-          def list_panel # :nodoc:
+          def list_panel
             lazy_initialize(:list_panel) do
               @list_panel = Gtk::HBox.new
               @list_panel.border_width = 10
@@ -158,7 +156,7 @@ module Test
           end
           private :list_panel
 
-          def error_count_label # :nodoc:
+          def error_count_label
             lazy_initialize(:error_count_label) do
               @error_count_label = Gtk::Label.new("0")
               @error_count_label.justify = Gtk::JUSTIFY_LEFT
@@ -166,7 +164,7 @@ module Test
           end
           private :error_count_label
 
-          def failure_count_label # :nodoc:
+          def failure_count_label
             lazy_initialize(:failure_count_label) do
               @failure_count_label = Gtk::Label.new("0")
               @failure_count_label.justify = Gtk::JUSTIFY_LEFT
@@ -174,7 +172,7 @@ module Test
           end
           private :failure_count_label
 
-          def assertion_count_label # :nodoc:
+          def assertion_count_label
             lazy_initialize(:assertion_count_label) do
               @assertion_count_label = Gtk::Label.new("0")
               @assertion_count_label.justify = Gtk::JUSTIFY_LEFT
@@ -182,7 +180,7 @@ module Test
           end
           private :assertion_count_label
 
-          def run_count_label # :nodoc:
+          def run_count_label
             lazy_initialize(:run_count_label) do
               @run_count_label = Gtk::Label.new("0")
               @run_count_label.justify = Gtk::JUSTIFY_LEFT
@@ -190,7 +188,7 @@ module Test
           end
           private :run_count_label
           
-          def info_panel # :nodoc:
+          def info_panel
             lazy_initialize(:info_panel) do
               @info_panel = Gtk::HBox.new(false, 0)
               @info_panel.border_width = 10
@@ -206,7 +204,7 @@ module Test
           end # def info_panel
           private :info_panel
 
-          def green_style # :nodoc:
+          def green_style
             lazy_initialize(:green_style) do
               @green_style = Gtk::Style.new
               @green_style.set_bg(Gtk::STATE_PRELIGHT, 0x0000, 0xFFFF, 0x0000)
@@ -214,7 +212,7 @@ module Test
           end # def green_style
           private :green_style
           
-          def red_style # :nodoc:
+          def red_style
             lazy_initialize(:red_style) do
               @red_style = Gtk::Style.new
               @red_style.set_bg(Gtk::STATE_PRELIGHT, 0xFFFF, 0x0000, 0x0000)
@@ -222,7 +220,7 @@ module Test
           end # def red_style
           private :red_style
           
-          def test_progress_bar # :nodoc:
+          def test_progress_bar
             lazy_initialize(:test_progress_bar) {
               @test_progress_bar = Gtk::ProgressBar.new
               @test_progress_bar.fraction = 0.0
@@ -234,7 +232,7 @@ module Test
           end # def test_progress_bar
           private :test_progress_bar
           
-          def progress_panel # :nodoc:
+          def progress_panel
             lazy_initialize(:progress_panel) do
               @progress_panel = Gtk::HBox.new(false, 10)
               @progress_panel.border_width = 10
@@ -242,13 +240,13 @@ module Test
             end
           end # def progress_panel
 
-          def run_button # :nodoc:
+          def run_button
             lazy_initialize(:run_button) do
               @run_button = Gtk::Button.new("Run")
             end
           end # def run_button
 
-          def suite_name_entry # :nodoc:
+          def suite_name_entry
             lazy_initialize(:suite_name_entry) do
               @suite_name_entry = Gtk::Entry.new
               @suite_name_entry.editable = false
@@ -256,7 +254,7 @@ module Test
           end # def suite_name_entry
           private :suite_name_entry
 
-          def suite_panel # :nodoc:
+          def suite_panel
             lazy_initialize(:suite_panel) do
               @suite_panel = Gtk::HBox.new(false, 10)
               @suite_panel.border_width = 10
@@ -267,7 +265,7 @@ module Test
           end # def suite_panel
           private :suite_panel
 
-          def main_panel # :nodoc:
+          def main_panel
             lazy_initialize(:main_panel) do
               @main_panel = Gtk::VBox.new(false, 0)
               @main_panel.pack_start(suite_panel, false, false, 0)
@@ -280,7 +278,7 @@ module Test
           end # def main_panel
           private :main_panel
 
-          def main_window # :nodoc:
+          def main_window
             lazy_initialize(:main_window) do
               @main_window = Gtk::Window.new(Gtk::Window::TOPLEVEL)
               @main_window.set_title("Test::Unit TestRunner")
@@ -291,7 +289,7 @@ module Test
           end # def main_window
           private :main_window
 
-          def setup_ui # :nodoc:
+          def setup_ui
             main_window.signal_connect("destroy", nil) { stop }
             main_window.show_all
             fault_list.selection.signal_connect("changed", nil) do
@@ -305,33 +303,33 @@ module Test
           end # def setup_ui
           private :setup_ui
 
-          def output_status(string) # :nodoc:
+          def output_status(string)
             status_entry.set_text(string)
           end # def output_status(string)
           private :output_status
 
-          def finished(elapsed_time) # :nodoc:
+          def finished(elapsed_time)
             test_progress_bar.fraction = 1.0
             output_status("Finished in #{elapsed_time} seconds")
           end # def finished(elapsed_time)
           private :finished
 
-          def test_started(test_name) # :nodoc:
+          def test_started(test_name)
             output_status("Running #{test_name}...")
           end # def test_started(test_name)
           private :test_started
 
-          def started(result) # :nodoc:
+          def started(result)
             @result = result
             output_status("Started...")
           end # def started(result)
           private :started
 
-          def test_finished(result) # :nodoc:
+          def test_finished(result)
             test_progress_bar.fraction += 1.0 / @count
           end # def test_finished(result)
 
-          def result_changed(result) # :nodoc:
+          def result_changed(result)
             run_count_label.label = result.run_count.to_s
             assertion_count_label.label = result.assertion_count.to_s
             failure_count_label.label = result.failure_count.to_s
@@ -339,23 +337,23 @@ module Test
           end # def result_changed(result)
           private :result_changed
 
-          def clear_fault # :nodoc:
+          def clear_fault
             raw_show_fault("")
           end # def clear_fault
           private :clear_fault
 
-          def raw_show_fault(string) # :nodoc:
+          def raw_show_fault(string)
             fault_detail_label.set_text(string)
             outer_detail_sub_panel.queue_resize
           end # def raw_show_fault(string)
           private :raw_show_fault
 
-          def show_fault(fault) # :nodoc:
+          def show_fault(fault)
             raw_show_fault(fault.long_display)
           end # def show_fault(fault)
           private :show_fault
 
-          def add_fault(fault) # :nodoc:
+          def add_fault(fault)
             if not @red then
               test_progress_bar.style = red_style
               @red = true
@@ -364,7 +362,7 @@ module Test
           end # def add_fault(fault)
           private :add_fault
 
-          def reset_ui(count) # :nodoc:
+          def reset_ui(count)
             test_progress_bar.style = green_style
             test_progress_bar.fraction = 0.0
             @count = count + 1
@@ -379,7 +377,7 @@ module Test
           end # def reset_ui(count)
           private :reset_ui
 
-          def stop # :nodoc:
+          def stop
             Gtk.main_quit
           end # def stop
           private :stop
@@ -389,7 +387,7 @@ module Test
           end
           private :run_test
 
-          def start_ui # :nodoc
+          def start_ui
             @viewer.run
             running = false
             begin

@@ -1,5 +1,3 @@
-# :nodoc:
-#
 # Author:: Nathaniel Talbott.
 # Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
@@ -25,11 +23,11 @@ module Test
           @hash = a_proc.inspect.sub(/^(#<#{a_proc.class}:)/){''}.sub(/(>)$/){''}.hex
         end
 
-        def hash # :nodoc:
+        def hash
           return @hash
         end
 
-        def ==(other) # :nodoc:
+        def ==(other)
           case(other)
             when ProcWrapper
               return @a_proc == other.to_proc
@@ -39,7 +37,7 @@ module Test
         end
         alias :eql? :==
 
-        def to_proc # :nodoc:
+        def to_proc
           return @a_proc
         end
       end

@@ -1,5 +1,3 @@
-# :nodoc:
-#
 # Author:: Nathaniel Talbott.
 # Copyright:: Copyright (c) 2000-2003 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
@@ -7,8 +5,8 @@
 require 'test/unit/assertionfailederror'
 require 'test/unit/util/backtracefilter'
 
-module Test # :nodoc:
-  module Unit # :nodoc:
+module Test
+  module Unit
 
     # Contains all of the standard Test::Unit assertions. Mixed in
     # to Test::Unit::TestCase. To mix it in and use its
@@ -341,13 +339,13 @@ EOT
       end
 
       public
-      def build_message(head, template=nil, *arguments) # :nodoc:
+      def build_message(head, template=nil, *arguments)
         template &&= template.chomp
         return AssertionMessage.new(head, template, arguments)
       end
 
       private
-      def _wrap_assertion # :nodoc:
+      def _wrap_assertion
         @_assertion_wrapped ||= false
         unless (@_assertion_wrapped)
           @_assertion_wrapped = true
@@ -375,7 +373,7 @@ EOT
         AssertionMessage.use_pp = value
       end
       
-      class AssertionMessage # :nodoc: all
+      class AssertionMessage all
         @use_pp = true
         class << self
           attr_accessor :use_pp

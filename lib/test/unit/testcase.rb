@@ -1,5 +1,3 @@
-# :nodoc:
-#
 # Author:: Nathaniel Talbott.
 # Copyright:: Copyright (c) 2000-2003 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
@@ -109,22 +107,22 @@ module Test
       end
       private :passed?
 
-      def size # :nodoc:
+      def size
         1
       end
 
-      def add_assertion # :nodoc:
+      def add_assertion
         @_result.add_assertion
       end
       private :add_assertion
 
-      def add_failure(message, all_locations=caller()) # :nodoc:
+      def add_failure(message, all_locations=caller())
         @test_passed = false
         @_result.add_failure(Failure.new(name, filter_backtrace(all_locations), message))
       end
       private :add_failure
 
-      def add_error(exception) # :nodoc:
+      def add_error(exception)
         @test_passed = false
         @_result.add_error(Error.new(name, exception))
       end

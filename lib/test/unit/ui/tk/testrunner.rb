@@ -1,5 +1,3 @@
-# :nodoc:
-#
 # Original Author:: Nathaniel Talbott.
 # Author:: Kazuhiro NISHIYAMA.
 # Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
@@ -13,7 +11,7 @@ require 'test/unit/ui/testrunnerutilities'
 module Test
   module Unit
     module UI
-      module Tk # :nodoc:
+      module Tk
 
         # Runs a Test::Unit::TestSuite in a Tk UI. Obviously,
         # this one requires you to have Tk
@@ -52,7 +50,7 @@ module Test
           end
 
           private
-          def setup_mediator # :nodoc:
+          def setup_mediator
             @mediator = TestRunnerMediator.new(@suite)
             suite_name = @suite.to_s
             if ( @suite.kind_of?(Module) )
@@ -61,7 +59,7 @@ module Test
             @suite_name_entry.value = suite_name
           end
 
-          def attach_to_mediator # :nodoc:
+          def attach_to_mediator
             @run_button.command(method(:run_test))
             @fault_list.bind('ButtonPress-1', proc{|y|
               fault = @fault_detail_list[@fault_list.nearest(y)]
@@ -81,7 +79,7 @@ module Test
             @runner.raise(@restart_signal)
           end
 
-          def start_ui # :nodoc:
+          def start_ui
             @viewer.run
             running = false
             begin
@@ -101,11 +99,11 @@ module Test
             end
           end
 
-          def stop # :nodoc:
+          def stop
             ::Tk.exit
           end
 
-          def reset_ui(count) # :nodoc:
+          def reset_ui(count)
             @test_total_count = count.to_f
             @test_progress_bar.configure('background'=>'green')
             @test_progress_bar.place('relwidth'=>(count.zero? ? 0 : 0/count))
@@ -121,7 +119,7 @@ module Test
             clear_fault
           end
 
-          def add_fault(fault) # :nodoc:
+          def add_fault(fault)
             if ( ! @red )
               @test_progress_bar.configure('background'=>'red')
               @red = true
@@ -130,19 +128,19 @@ module Test
             @fault_list.insert('end', fault.short_display)
           end
 
-          def show_fault(fault) # :nodoc:
+          def show_fault(fault)
             raw_show_fault(fault.long_display)
           end
 
-          def raw_show_fault(string) # :nodoc:
+          def raw_show_fault(string)
             @detail_text.value = string
           end
 
-          def clear_fault # :nodoc:
+          def clear_fault
             raw_show_fault("")
           end
 
-          def result_changed(result) # :nodoc:
+          def result_changed(result)
             @test_count_label.value = result.run_count
             @test_progress_bar.place('relwidth'=>result.run_count/@test_total_count)
             @assertion_count_label.value = result.assertion_count
@@ -150,7 +148,7 @@ module Test
             @error_count_label.value = result.error_count
           end
 
-          def started(result) # :nodoc:
+          def started(result)
             @result = result
             output_status("Started...")
           end
@@ -163,11 +161,11 @@ module Test
             output_status("Finished in #{elapsed_time} seconds")
           end
 
-          def output_status(string) # :nodoc:
+          def output_status(string)
             @status_entry.value = string
           end
 
-          def setup_ui # :nodoc:
+          def setup_ui
             @status_entry = TkVariable.new
             l = TkLabel.new(nil, 'textvariable'=>@status_entry, 'relief'=>'sunken')
             l.pack('side'=>'bottom', 'fill'=>'x')
@@ -243,7 +241,7 @@ module Test
 	    end
           end
 
-          def create_count_label(parent, label) # :nodoc:
+          def create_count_label(parent, label)
             TkLabel.new(parent, 'text'=>label).pack('side'=>'left', 'expand'=>true)
             v = TkVariable.new(0)
             TkLabel.new(parent, 'textvariable'=>v).pack('side'=>'left', 'expand'=>true)

@@ -1,5 +1,3 @@
-# :nodoc:
-#
 # Author:: Nathaniel Talbott.
 # Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
@@ -10,7 +8,7 @@ require 'test/unit/testresult'
 
 module Test
   module Unit
-    module UI # :nodoc:
+    module UI
 
       # Provides an interface to write any given UI against,
       # hopefully making it easy to write new UIs.

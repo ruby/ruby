@@ -1,5 +1,3 @@
-# :nodoc:
-#
 # Author:: Nathaniel Talbott.
 # Copyright:: Copyright (c) 2000-2003 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
@@ -10,7 +8,7 @@ require 'test/unit/ui/testrunnerutilities'
 module Test
   module Unit
     module UI
-      module Console # :nodoc:
+      module Console
 
         # Runs a Test::Unit::TestSuite on the console.
         class TestRunner
@@ -42,7 +40,7 @@ module Test
           end
 
           private
-          def setup_mediator # :nodoc:
+          def setup_mediator
             @mediator = create_mediator(@suite)
             suite_name = @suite.to_s
             if ( @suite.kind_of?(Module) )
@@ -51,11 +49,11 @@ module Test
             output("Loaded suite #{suite_name}")
           end
           
-          def create_mediator(suite) # :nodoc:
+          def create_mediator(suite)
             return TestRunnerMediator.new(suite)
           end
           
-          def attach_to_mediator # :nodoc:
+          def attach_to_mediator
             @mediator.add_listener(TestResult::FAULT, &method(:add_fault))
             @mediator.add_listener(TestRunnerMediator::STARTED, &method(:started))
             @mediator.add_listener(TestRunnerMediator::FINISHED, &method(:finished))
@@ -63,11 +61,11 @@ module Test
             @mediator.add_listener(TestCase::FINISHED, &method(:test_finished))
           end
           
-          def start_mediator # :nodoc:
+          def start_mediator
             return @mediator.run_suite
           end
           
-          def add_fault(fault) # :nodoc:
+          def add_fault(fault)
             @faults << fault
             output_single(fault.single_character_display, PROGRESS_ONLY)
             @already_outputted = true

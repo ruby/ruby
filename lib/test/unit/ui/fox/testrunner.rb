@@ -1,5 +1,3 @@
-# :nodoc:
-#
 # Author:: Nathaniel Talbott.
 # Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
@@ -13,7 +11,7 @@ include Fox
 module Test
   module Unit
     module UI
-      module Fox # :nodoc:
+      module Fox
 
         # Runs a Test::Unit::TestSuite in a Fox UI. Obviously,
         # this one requires you to have Fox
@@ -49,7 +47,7 @@ module Test
             @result
           end
 
-          def setup_mediator # :nodoc:
+          def setup_mediator
             @mediator = TestRunnerMediator.new(@suite)
             suite_name = @suite.to_s
             if ( @suite.kind_of?(Module) )
@@ -58,7 +56,7 @@ module Test
             @suite_name_entry.text = suite_name
           end
           
-          def attach_to_mediator # :nodoc:
+          def attach_to_mediator
             @mediator.add_listener(TestRunnerMediator::RESET, &method(:reset_ui))
             @mediator.add_listener(TestResult::FAULT, &method(:add_fault))
             @mediator.add_listener(TestResult::CHANGED, &method(:result_changed))
@@ -67,7 +65,7 @@ module Test
             @mediator.add_listener(TestRunnerMediator::FINISHED, &method(:finished))
           end
   
-          def start_ui # :nodoc:
+          def start_ui
             @application.create
             @window.show(PLACEMENT_SCREEN)
             @application.addTimeout(1) do
@@ -76,11 +74,11 @@ module Test
             @application.run
           end
           
-          def stop # :nodoc:
+          def stop
             @application.exit(0)
           end
           
-          def reset_ui(count) # :nodoc:
+          def reset_ui(count)
             @test_progress_bar.barColor = GREEN_STYLE
             @test_progress_bar.total = count
             @test_progress_bar.progress = 0
@@ -94,7 +92,7 @@ module Test
             @fault_list.clearItems
           end
           
-          def add_fault(fault) # :nodoc:
+          def add_fault(fault)
             if ( ! @red )
               @test_progress_bar.barColor = RED_STYLE
               @red = true
@@ -103,19 +101,19 @@ module Test
             @fault_list.appendItem(item)
           end
           
-          def show_fault(fault) # :nodoc:
+          def show_fault(fault)
             raw_show_fault(fault.long_display)
           end
           
-          def raw_show_fault(string) # :nodoc:
+          def raw_show_fault(string)
             @detail_text.setText(string)
           end
           
-          def clear_fault # :nodoc:
+          def clear_fault
             raw_show_fault("")
           end
           
-          def result_changed(result) # :nodoc:
+          def result_changed(result)
             @test_progress_bar.progress = result.run_count
   
             @test_count_label.text = result.run_count.to_s
@@ -128,7 +126,7 @@ module Test
              @application.flush
           end
           
-          def started(result) # :nodoc:
+          def started(result)
             @result = result
             output_status("Started...")
           end
@@ -146,7 +144,7 @@ module Test
             @status_entry.repaint
           end
   
-          def setup_ui # :nodoc:
+          def setup_ui
             @application = create_application
             create_tooltip(@application)
 
@@ -180,7 +178,7 @@ module Test
             @detail_text = create_text(detail_panel)
           end
           
-          def create_application # :nodoc:
+          def create_application
             app = FXApp.new("TestRunner", "Test::Unit")
             app.init([])
             app
@@ -194,25 +192,25 @@ module Test
             FXTooltip.new(app)
           end
   
-          def create_main_panel(parent) # :nodoc:
+          def create_main_panel(parent)
             panel = FXVerticalFrame.new(parent, LAYOUT_FILL_X | LAYOUT_FILL_Y)
             panel.vSpacing = 10
             panel
           end
   
-          def create_suite_panel(parent) # :nodoc:
+          def create_suite_panel(parent)
             FXHorizontalFrame.new(parent, LAYOUT_SIDE_LEFT | LAYOUT_FILL_X)
           end
           
-          def create_button(parent, text, action) # :nodoc:
+          def create_button(parent, text, action)
             FXButton.new(parent, text).connect(SEL_COMMAND, &action)
           end
           
-          def create_progress_bar(parent) # :nodoc:
+          def create_progress_bar(parent)
             FXProgressBar.new(parent, nil, 0, PROGRESSBAR_NORMAL | LAYOUT_FILL_X)
           end
           
-          def create_info_panel(parent) # :nodoc:
+          def create_info_panel(parent)
             FXMatrix.new(parent, 1, MATRIX_BY_ROWS | LAYOUT_FILL_X)
           end
           
@@ -220,11 +218,11 @@ module Test
             FXLabel.new(parent, text, nil, JUSTIFY_CENTER_X | LAYOUT_FILL_COLUMN)
           end
           
-          def create_list_panel(parent) # :nodoc:
+          def create_list_panel(parent)
             FXHorizontalFrame.new(parent, LAYOUT_FILL_X | FRAME_SUNKEN | FRAME_THICK)
           end
           
-          def create_fault_list(parent) # :nodoc:
+          def create_fault_list(parent)
             list = FXList.new(parent, 10, nil, 0, LIST_SINGLESELECT | LAYOUT_FILL_X) #, 0, 0, 0, 150)
             list.connect(SEL_COMMAND) do |sender, sel, ptr|
               if sender.retrieveItem(sender.currentItem).selected?
@@ -236,22 +234,22 @@ module Test
             list
           end
           
-          def create_detail_panel(parent) # :nodoc:
+          def create_detail_panel(parent)
             FXHorizontalFrame.new(parent, LAYOUT_FILL_X | LAYOUT_FILL_Y | FRAME_SUNKEN | FRAME_THICK)
           end
           
-          def create_text(parent) # :nodoc:
+          def create_text(parent)
             FXText.new(parent, nil, 0, TEXT_READONLY | LAYOUT_FILL_X | LAYOUT_FILL_Y)
           end
           
-          def create_entry(parent) # :nodoc:
+          def create_entry(parent)
             entry = FXTextField.new(parent, 30, nil, 0, TEXTFIELD_NORMAL | LAYOUT_SIDE_BOTTOM | LAYOUT_FILL_X)
             entry.disable
             entry
           end
         end
   
-        class FaultListItem < FXListItem # :nodoc: all
+        class FaultListItem < FXListItem all
           attr_reader(:fault)
           def initialize(fault)
             super(fault.short_display)
