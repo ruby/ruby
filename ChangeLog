@@ -4,6 +4,10 @@ Wed Jan 10 16:15:08 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c, intern.h: ditto.
 
+	* djgpp/config.hin, win32/win32.h: ditto.
+
+	* configure.in: ditto.
+
 Wed Jan 10 13:54:53 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* process.c (proc_setuid): use setresuid() if available.
@@ -103,6 +107,10 @@ Fri Dec 29 11:05:41 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_join): join during critical section causes
 	  deadlock. 
+
+Fri Dec 29 00:38:46 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* m17n.c: new file - core functions of M17N.
 
 Tue Dec 26 18:46:41 2000  NAKAMURA Hiroshi  <nakahiro@sarion.co.jp>
 

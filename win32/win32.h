@@ -16,7 +16,7 @@
 #define EXTERN extern __declspec(dllexport)
 #endif
 
-#if defined _MSC_VER
+#if defined _MSC_VER && !defined NORETURN
 #define NORETURN(x) __declspec(noreturn) x
 #endif
 

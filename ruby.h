@@ -63,9 +63,7 @@ extern "C" {
 # define __(args) ()
 #endif
 
-#ifdef HAVE_ATTR_NORETURN
-# define NORETURN(x) x __attribute__ ((noreturn))
-#elif !defined NORETURN
+#ifndef NORETURN
 # define NORETURN(x) x
 #endif
 

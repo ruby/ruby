@@ -1,13 +1,16 @@
-#define USE_THREAD 1
 #define SIZEOF_INT 4
 #define SIZEOF_SHORT 2
 #define SIZEOF_LONG 4
+#define SIZEOF___INT64 0
 #define SIZEOF_VOIDP 4
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
 #define HAVE_PROTOTYPES 1
 #define TOKEN_PASTE(x,y) x##y
 #define HAVE_STDARG_PROTOTYPES 1
+#define NORETURN(x) x __attribute__ ((noreturn))
+#define HAVE_INLINE 1
+#define INLINE __inline__
 #define HAVE_ATTR_NORETURN 1
 #define HAVE_DIRENT_H 1
 #define STDC_HEADERS 1
@@ -61,7 +64,8 @@
 #define HAVE_SETSID 1
 #define POSIX_SIGNAL 1
 #define BSD_SETPGRP setpgrp
-#define RSHIFT(x,y) ((x)>>y)
+#define RSHIFT(x,y) ((x)>>(int)y)
+#define DEFAULT_KCODE KCODE_NONE
 #define FILE_COUNT _cnt
 #define DLEXT ".o"
 #define RUBY_LIB "/lib/ruby/@MAJOR@.@MINOR@"

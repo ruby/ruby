@@ -155,13 +155,25 @@ if test "$rb_cv_stdarg" = yes; then
   AC_DEFINE(HAVE_STDARG_PROTOTYPES)
 fi
 
-AC_CACHE_CHECK(for gcc attribute noreturn, rb_cv_have_attr_noreturn,
-  [AC_TRY_COMPILE([void exit(int x) __attribute__ ((noreturn));], [],
-	rb_cv_have_attr_noreturn=yes,
-	rb_cv_have_attr_noreturn=no)])
-if test "$rb_cv_have_attr_noreturn" = yes; then
-  AC_DEFINE(HAVE_ATTR_NORETURN)
-fi
+dnl AC_CACHE_CHECK(for gcc attribute noreturn, rb_cv_have_attr_noreturn,
+dnl   [AC_TRY_COMPILE([void exit(int x) __attribute__ ((noreturn));], [],
+dnl 	rb_cv_have_attr_noreturn=yes,
+dnl 	rb_cv_have_attr_noreturn=no)])
+dnl if test "$rb_cv_have_attr_noreturn" = yes; then
+dnl   AC_DEFINE(HAVE_ATTR_NORETURN)
+dnl fi
+
+AC_CACHE_CHECK([for noreturn], rb_cv_noreturn,
+[rb_cv_noreturn=no
+for mac in "x __attribute__ ((noreturn))" "__declspec(noreturn) x" x; do
+  AC_TRY_COMPILE(
+    [#define NORETURN(x) $mac
+NORETURN(void exit(int x));],
+    [],
+    [rb_cv_noreturn="$mac"; break])
+done])
+AC_DEFINE_UNQUOTED([NORETURN(x)], $rb_cv_noreturn)
+
 
 AC_MSG_CHECKING(for inline)
 AC_CACHE_VAL(rb_cv_inline,
