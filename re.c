@@ -349,6 +349,47 @@ rb_reg_inspect(re)
     return rb_reg_desc(RREGEXP(re)->str, RREGEXP(re)->len, re);
 }
 
+static VALUE
+rb_reg_to_s(re)
+    VALUE re;
+{
+    int all;
+    VALUE str = rb_str_buf_new2("(?");
+
+    rb_reg_check(re);
+
+    all = 1;
+    if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
+	rb_str_buf_cat2(str, "m");
+    else
+	all = 0;
+    if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
+	rb_str_buf_cat2(str, "i");
+    else
+	all = 0;
+    if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
+	rb_str_buf_cat2(str, "x");
+    else
+	all = 0;
+
+    if (!all) {
+	rb_str_buf_cat2(str, "-");
+	if (!(RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE))
+	    rb_str_buf_cat2(str, "m");
+	if (!(RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE))
+	    rb_str_buf_cat2(str, "i");
+	if (!(RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED))
+	    rb_str_buf_cat2(str, "x");
+    }
+
+    rb_str_buf_cat2(str, ":");
+    rb_reg_expr_str(str, RREGEXP(re)->str, RREGEXP(re)->len);
+    rb_str_buf_cat2(str, ")");
+
+    OBJ_INFECT(str, re);
+    return str;
+}
+
 static void
 rb_reg_raise(s, len, err, re)
     const char *s;
@@ -1455,7 +1496,7 @@ Init_Regexp()
     rb_define_method(rb_cRegexp, "===", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "~", rb_reg_match2, 0);
     rb_define_method(rb_cRegexp, "match", rb_reg_match_m, 1);
-    rb_define_method(rb_cRegexp, "to_s", rb_reg_inspect, 0);
+    rb_define_method(rb_cRegexp, "to_s", rb_reg_to_s, 0);
     rb_define_method(rb_cRegexp, "inspect", rb_reg_inspect, 0);
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
     rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
