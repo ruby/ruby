@@ -512,7 +512,7 @@ sym_inspect(sym)
     char *name;
 
     name = rb_id2name(SYM2ID(sym));
-    str = rb_str_new(0, strlen(name)+2);
+    str = rb_str_new(0, strlen(name)+1);
     RSTRING(str)->ptr[0] = ':';
     strcpy(RSTRING(str)->ptr+1, name);
     return str;

@@ -1428,7 +1428,7 @@ ev_const_defined(cref, id, self)
 {
     NODE *cbase = cref;
 
-    while (cbase && cbase->nd_clss != rb_cObject) {
+    while (cbase) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
 	if (NIL_P(klass)) return rb_const_defined(CLASS_OF(self), id);
@@ -1449,7 +1449,7 @@ ev_const_get(cref, id, self)
     NODE *cbase = cref;
     VALUE result;
 
-    while (cbase && cbase->nd_clss != rb_cObject) {
+    while (cbase) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
 	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);
@@ -1467,7 +1467,7 @@ rb_mod_nesting()
     NODE *cbase = RNODE(ruby_frame->cbase);
     VALUE ary = rb_ary_new();
 
-    while (cbase && cbase->nd_clss != rb_cObject) {
+    while (cbase) {
 	rb_ary_push(ary, cbase->nd_clss);
 	cbase = cbase->nd_next;
     }
@@ -1480,7 +1480,7 @@ rb_mod_s_constants()
     NODE *cbase = RNODE(ruby_frame->cbase);
     VALUE ary = rb_ary_new();
 
-    while (cbase && cbase->nd_clss != rb_cObject) {
+    while (cbase) {
 	rb_mod_const_at(cbase->nd_clss, ary);
 	cbase = cbase->nd_next;
     }

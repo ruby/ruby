@@ -1828,7 +1828,7 @@ sock_s_getservbyaname(argc, argv)
 
 	port = strtoul(s, &end, 0);
 	if (*end != '\0') {
-	    rb_raise(rb_eSocket, "no such servce %s/%s", s, proto);
+	    rb_raise(rb_eSocket, "no such service %s/%s", s, proto);
 	}
     }
     

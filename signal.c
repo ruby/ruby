@@ -252,7 +252,7 @@ rb_f_kill(argc, argv)
     else {
 	for (i=1; i<argc; i++) {
 	    Check_Type(argv[i], T_FIXNUM);
-	    if (kill(FIX2UINT(argv[i]), sig) < 0)
+	    if (kill(FIX2INT(argv[i]), sig) < 0)
 		rb_sys_fail(0);
 	}
     }

@@ -841,6 +841,9 @@ time_zone(time)
 	time_get_tm(time, tobj->gmt);
     }
 
+    if (tobj->gmt == 1) {
+	return rb_str_new2("UTC");
+    }
 #if defined(HAVE_TM_ZONE)
     return rb_str_new2(tobj->tm.tm_zone);
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)

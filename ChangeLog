@@ -6,11 +6,49 @@ Wed Mar 21 08:05:35 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* win32/win32.c: ditto.
 
+Wed Mar 21 01:26:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): sometimes confused symbol and reference.
+
 Tue Mar 20 23:09:33 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (win32_stat): UNC support.
 
 	* dir.c (extract_path): fix "./*" problem.
+
+Tue Mar 20 15:10:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (glob_helper): breaks loop after calling recusive
+	  glob_helper; all wild cards should be consumed; no need for
+	  further match.
+
+	* dir.c (dir_s_glob): gives warning if no match found.
+
+Tue Mar 20 14:13:45  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* object.c (sym_inspect): did allocate extra byte space.
+
+Mon Mar 19 19:14:47 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* marshal.c (shortlen): shortlen should return number of bytes
+	  written.
+
+Mon Mar 19 16:52:23 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (ev_const_defined): need not to check if cbase->nd_class
+	  is rb_cObject.
+
+	* eval.c (ev_const_get): ditto.
+
+Mon Mar 19 17:11:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_zone): return "UTC" for UTC time objects.
+
+Mon Mar 19 16:27:32 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (THREAD_ALLOC): flags should be initialized.
+
+	* signal.c (rb_f_kill): should use FIX2INT, not FIX2UINT.
 
 Mon Mar 19 10:55:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

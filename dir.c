@@ -62,7 +62,7 @@ char *strchr _((char*,char));
 #include <ctype.h>
 
 #ifndef HAVE_LSTAT
-#define lstat stat
+#define lstat rb_sys_stat
 #endif
 
 #define FNM_NOESCAPE	0x01
@@ -610,8 +610,6 @@ remove_backslashes(p)
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
 #endif
 
-#define GLOB_RECURSIVE 0x10
-
 static void
 glob_helper(path, flag, func, arg)
     char *path;
@@ -624,10 +622,10 @@ glob_helper(path, flag, func, arg)
 
     if (!has_magic(path, 0)) {
 	remove_backslashes(path);
-	if (stat(path, &st) == 0) {
+	if (rb_sys_stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
-	else if (!(flag & GLOB_RECURSIVE)) {
+	else if (errno != ENOENT) {
 	    /* In case stat error is other than ENOENT and
 	       we may want to know what is wrong. */
 	    rb_sys_warning(path);
@@ -655,8 +653,8 @@ glob_helper(path, flag, func, arg)
 	    else dir = base;
 
 	    magic = extract_elem(p);
-	    if (stat(dir, &st) < 0) {
-	        rb_sys_warning(dir);
+	    if (rb_sys_stat(dir, &st) < 0) {
+	        if (errno != ENOENT) rb_sys_warning(dir);
 	        free(base);
 	        break;
 	    }
@@ -665,7 +663,7 @@ glob_helper(path, flag, func, arg)
 		    recursive = 1;
 		    buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
 		    sprintf(buf, "%s%s", base, *base ? m : m+1);
-		    glob_helper(buf, flag|GLOB_RECURSIVE, func, arg);
+		    glob_helper(buf, flag, func, arg);
 		    free(buf);
 		}
 		dirp = opendir(dir);
@@ -693,13 +691,13 @@ glob_helper(path, flag, func, arg)
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
 		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (lstat(buf, &st) < 0) {
-		        rb_sys_warning(buf);
+			if (errno != ENOENT) rb_sys_warning(buf);
 			continue;
 		    }
 		    if (S_ISDIR(st.st_mode)) {
 		        strcat(buf, "/**");
 			strcat(buf, m);
-			glob_helper(buf, flag|GLOB_RECURSIVE, func, arg);
+			glob_helper(buf, flag, func, arg);
 		    }
 		    free(buf);
 		    continue;
@@ -721,25 +719,28 @@ glob_helper(path, flag, func, arg)
 	    closedir(dirp);
 	    free(base);
 	    free(magic);
-	    while (link) {
-		if (stat(link->path, &st) == 0) {
-		    if (S_ISDIR(st.st_mode)) {
-			int len = strlen(link->path);
-			int mlen = strlen(m);
-			char *t = ALLOC_N(char, len+mlen+1);
+	    if (link) {
+		while (link) {
+		    if (rb_sys_stat(link->path, &st) == 0) {
+			if (S_ISDIR(st.st_mode)) {
+			    int len = strlen(link->path);
+			    int mlen = strlen(m);
+			    char *t = ALLOC_N(char, len+mlen+1);
 
-			sprintf(t, "%s%s", link->path, m);
-			glob_helper(t, flag|GLOB_RECURSIVE, func, arg);
-			free(t);
+			    sprintf(t, "%s%s", link->path, m);
+			    glob_helper(t, flag, func, arg);
+			    free(t);
+			}
+			tmp = link;
+			link = link->next;
+			free(tmp->path);
+			free(tmp);
 		    }
-		    tmp = link;
-		    link = link->next;
-		    free(tmp->path);
-		    free(tmp);
+		    else {
+			rb_sys_warning(link->path);
+		    }
 		}
-		else {
-		    rb_sys_warning(link->path);
-		}
+		break;
 	    }
 	}
 	p = m;
@@ -756,7 +757,7 @@ rb_glob(path, func, arg)
 }
 
 void
-rb_iglob(path, func, arg)
+rb_globi(path, func, arg)
     char *path;
     void (*func)();
     VALUE arg;
@@ -886,6 +887,9 @@ dir_s_glob(dir, str)
     }
     if (buf != buffer)
 	free(buf);
+    if (ary && RARRAY(ary)->len == 0) {
+	rb_warning("no matches found: %s", RSTRING(str)->ptr);
+    }
     return ary;
 }
 
