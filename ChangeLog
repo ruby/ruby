@@ -1,3 +1,10 @@
+Thu May 17 06:31:30 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/md5/md5.txt: make wording fixes, and mention the newly added
+	method: "<<".
+
+	* ext/md5/md5.txt.jp: ditto.
+
 Wed May 16 18:05:52 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/md5/md5init.c: add an instance method "<<" as an alias for
