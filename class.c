@@ -529,17 +529,33 @@ method_entry(key, body, list)
 }
 
 static VALUE
-method_list(mod, recur, func)
+class_instance_method_list(argc, argv, mod, func)
+    int argc;
+    VALUE *argv;
     VALUE mod;
-    int recur;
-    int (*func)();
+    int (*func) _((ID, long, VALUE));
 {
+    VALUE ary;
+    int recur;
     st_table *list;
-    VALUE klass, ary;
+
+    if (argc == 0) {
+#if RUBY_VERSION_CODE < 181
+	rb_warn("%s: parameter will default to 'true' as of 1.8.1", rb_id2name(rb_frame_last_func()));
+	recur = Qfalse;
+#else
+	recur = Qtrue;
+#endif
+    }
+    else {
+	VALUE r;
+	rb_scan_args(argc, argv, "01", &r);
+	recur = RTEST(r);
+    }
 
     list = st_init_numtable();
-    for (klass = mod; klass; klass = RCLASS(klass)->super) {
-	st_foreach(RCLASS(klass)->m_tbl, method_entry, (st_data_t)list);
+    for (; mod; mod = RCLASS(mod)->super) {
+	st_foreach(RCLASS(mod)->m_tbl, method_entry, (st_data_t)list);
 	if (!recur) break;
     }
     ary = rb_ary_new();
@@ -547,26 +563,6 @@ method_list(mod, recur, func)
     st_free_table(list);
 
     return ary;
-}
-
-static VALUE
-class_instance_method_list(argc, argv, mod, func)
-    int argc;
-    VALUE *argv;
-    VALUE mod;
-    void (*func)();
-{
-    VALUE recur;
-
-    rb_scan_args(argc, argv, "01", &recur);
-    if (argc == 0) {
-#if RUBY_VERSION_CODE < 181
-	rb_warn("%s: parameter will default to 'true' as of 1.8.1", rb_id2name(rb_frame_last_func()));
-#else
-	recur = Qtrue;
-#endif
-    }
-    return method_list(mod, RTEST(recur), func);
 }
 
 VALUE
