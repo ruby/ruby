@@ -1,3 +1,7 @@
+Wed Jun 30 11:38:51 2004  Elven  <elven@elven.de>
+
+	* parse.y (primary): should not be NULL.  [ruby-core:03098]
+
 Wed Jun 30 02:41:10 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c (syck_emitter_new): set buffer after
