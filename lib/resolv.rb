@@ -751,7 +751,7 @@ class Resolv
             search, nameserver = Win32::Resolv.get_resolv_info
             config_hash = {}
             config_hash[:nameserver] = nameserver if nameserver
-            config_hash[:search] = [search] if search
+            config_hash[:search] = [search].flatten if search
           end
         end
         config_hash
