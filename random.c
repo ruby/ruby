@@ -144,6 +144,11 @@ genrand_real()
 #include <unistd.h>
 #endif
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 
 static int first = 1;
 
@@ -167,9 +172,22 @@ random_seed()
 {
     static int n = 0;
     struct timeval tv;
+    unsigned long result;
+    int fd;
+    unsigned long buf;
 
     gettimeofday(&tv, 0);
-    return tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
+    result = tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
+
+    result += (unsigned long)&result;
+
+    if ((fd = open("/dev/urandom", O_RDONLY)) >= 0) {
+        read(fd, &buf, sizeof(buf));
+        close(fd);
+        result ^= buf;
+    }
+
+    return result;
 }
 
 /*
