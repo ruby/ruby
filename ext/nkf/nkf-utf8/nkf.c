@@ -41,7 +41,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.4"
-#define NKF_RELEASE_DATE "2004-11-15"
+#define NKF_RELEASE_DATE "2004-12-01"
 #include "config.h"
 
 static char *CopyRight =
@@ -433,7 +433,7 @@ STATIC int cp932_f = TRUE;
 #define CP932_TABLE_BEGIN (0xfa)
 #define CP932_TABLE_END   (0xfc)
 
-STATIC int cp932inv_f = FALSE;
+STATIC int cp932inv_f = TRUE;
 #define CP932INV_TABLE_BEGIN (0xed)
 #define CP932INV_TABLE_END   (0xee)
 
@@ -647,7 +647,7 @@ main(argc, argv)
     FILE  *fin;
     unsigned char  *cp;
 
-    char *outfname;
+    char *outfname = NULL;
     char *origfname;
 
 #ifdef EASYWIN /*Easy Win */
@@ -723,8 +723,8 @@ main(argc, argv)
               return(-1);
           } else {
 #ifdef OVERWRITE
-              int fd;
-              int fd_backup;
+              int fd = 0;
+              int fd_backup = 0;
 #endif
 
 /* reopen file for stdout */
@@ -893,6 +893,8 @@ struct {
     {"katakana","h2"},
     {"katakana-hiragana","h3"},
     {"guess", "g"},
+    {"cp932", ""},
+    {"no-cp932", ""},
 #ifdef UTF8_OUTPUT_ENABLE
     {"utf8", "w"},
     {"utf16", "w16"},
@@ -917,7 +919,6 @@ struct {
     {"debug", ""},
 #endif
 #ifdef SHIFTJIS_CP932
-    {"no-cp932", ""},
     {"cp932inv", ""},
 #endif
 #ifdef EXEC_IO
@@ -934,7 +935,7 @@ options(cp)
      unsigned char *cp;
 {
     int i;
-    unsigned char *p;
+    unsigned char *p = NULL;
 
     if (option_mode==1)
 	return;
@@ -997,11 +998,27 @@ options(cp)
                     continue;
                 }
 #endif
+                if (strcmp(long_option[i].name, "cp932") == 0){
 #ifdef SHIFTJIS_CP932
-                if (strcmp(long_option[i].name, "no-cp932") == 0){
-                    cp932_f = FALSE;
+                    cp932_f = TRUE;
+                    cp932inv_f = TRUE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+                    ms_ucs_map_f = TRUE;
+#endif
                     continue;
                 }
+                if (strcmp(long_option[i].name, "no-cp932") == 0){
+#ifdef SHIFTJIS_CP932
+                    cp932_f = FALSE;
+                    cp932inv_f = FALSE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+                    ms_ucs_map_f = FALSE;
+#endif
+                    continue;
+                }
+#ifdef SHIFTJIS_CP932
                 if (strcmp(long_option[i].name, "cp932inv") == 0){
                     cp932inv_f = TRUE;
                     continue;
@@ -1660,21 +1677,17 @@ code_status(c)
     }
 }
 
-#ifdef PERL_XS
 #define STD_GC_BUFSIZE (256)
 int std_gc_buf[STD_GC_BUFSIZE];
 int std_gc_ndx;
-#endif
 
 int 
 std_getc(f)
 FILE *f;
 {
-#ifdef PERL_XS
     if (std_gc_ndx){
         return std_gc_buf[--std_gc_ndx];
     }
-#endif
     return getc(f);
 }
 
@@ -1683,14 +1696,11 @@ std_ungetc(c,f)
 int c;
 FILE *f;
 {
-#ifdef PERL_XS
     if (std_gc_ndx == STD_GC_BUFSIZE){
         return EOF;
     }
     std_gc_buf[std_gc_ndx++] = c;
     return c;
-#endif
-    return ungetc(c,f);
 }
 
 void 
@@ -2069,6 +2079,7 @@ kanji_convert(f)
             } else if ((c1 == NL || c1 == CR) && broken_f&4) {
                 input_mode = ASCII; set_iconv(FALSE, 0);
                 SEND;
+	    /*
 	    } else if (c1 == NL && mime_f && !mime_decode_mode ) {
 		if ((c1=(*i_getc)(f))!=EOF && c1 == SPACE) {
 		    i_ungetc(SPACE,f);
@@ -2095,6 +2106,7 @@ kanji_convert(f)
 		}
 		c1 = CR;
 		SEND;
+	    */
 	    } else 
                 SEND;
         }
@@ -4229,7 +4241,7 @@ reinit()
 #endif
 #ifdef SHIFTJIS_CP932
     cp932_f = TRUE;
-    cp932inv_f = FALSE;
+    cp932inv_f = TRUE;
 #endif
     {
         int i;
@@ -4240,6 +4252,7 @@ reinit()
 #ifdef UTF8_INPUT_ENABLE
     utf16_mode = UTF16LE_INPUT;
 #endif
+    mimeout_buf_count = 0;
     mimeout_mode = 0;
     base64_count = 0;
     f_line = 0;
@@ -4348,15 +4361,12 @@ usage()
     fprintf(stderr," --fj,--unix,--mac,--windows                        convert for the system\n");
     fprintf(stderr," --jis,--euc,--sjis,--utf8,--utf16,--mime,--base64  convert for the code\n");
     fprintf(stderr," --hiragana, --katakana    Hiragana/Katakana Conversion\n");
+    fprintf(stderr," --cp932, --no-cp932       CP932 compatible\n");
 #ifdef INPUT_OPTION
-    fprintf(stderr," --cap-input, --url-input  Convert hex after ':' or '%'\n");
+    fprintf(stderr," --cap-input, --url-input  Convert hex after ':' or '%%'\n");
 #endif
 #ifdef NUMCHAR_OPTION
     fprintf(stderr," --numchar-input   Convert Unicode Character Reference\n");
-#endif
-#ifdef SHIFTJIS_CP932
-    fprintf(stderr," --no-cp932        Don't convert Shift_JIS FAxx-FCxx to equivalnet CP932\n");
-    fprintf(stderr," --cp932inv        convert Shift_JIS EDxx-EFxx to equivalnet CP932 FAxx-FCxx\n");
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
     fprintf(stderr," --ms-ucs-map      Microsoft UCS Mapping Compatible\n");
