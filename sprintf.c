@@ -264,13 +264,15 @@ rb_f_sprintf(argc, argv)
 	    if (flags & FPREC) {
 		rb_raise(rb_eArgError, "precision given twice");
 	    }
+	    flags |= FPREC;
 
 	    prec = 0;
 	    p++;
 	    if (*p == '*') {
 		GETASTER(prec);
-		if (prec > 0)
-		    flags |= FPREC;
+		if (prec < 0) {	/* ignore negative precision */
+		    flags &= ~FPREC;
+		}
 		p++;
 		goto retry;
 	    }
@@ -281,8 +283,6 @@ rb_f_sprintf(argc, argv)
 	    if (p >= end) {
 		rb_raise(rb_eArgError, "malformed format string - %%.[0-9]");
 	    }
-	    if (prec > 0)
-		flags |= FPREC;
 	    goto retry;
 
 	  case '\n':

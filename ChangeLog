@@ -1,3 +1,8 @@
+Mon Jun 19 10:48:28 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_cvar_set): forgot to add security check for class
+	  variable assignment.
+
 Sun Jun 18 22:49:13 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: single quoted sitedir.
@@ -8,6 +13,33 @@ Sun Jun 18 22:49:13 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ruby.c (load_file): force binmode if fname includes ".exe"
 	  on DOSISH.
+
+Sat Jun 17 23:22:17 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (rb_f_sprintf): should ignore negative precision given
+	  by <%.*>.
+
+	* sprintf.c (rb_f_sprintf): should allow zero precision.
+
+Sat Jun 17 03:13:29 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_localtime): avoid unnecessary call of localtime.
+
+	* time.c (time_gmtime): avoid unnecessary call of gmtime.
+
+	* process.c (proc_wait2): new method.
+
+	* process.c (proc_waitpid): second argument made optional.
+
+	* process.c (proc_waitpid2): new method.
+
+Sat Jun 17 00:05:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_reg_clone): should initialize member fields.
+
+Fri Jun 16 22:49:34 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_rewind): set lineno to zero.
 
 Fri Jun 16 22:47:47 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
@@ -20,6 +52,16 @@ Fri Jun 16 21:23:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* configure.in: add pause(2) checking.
 
 	* eval.c: define pause() if missing.
+
+Fri Jun 16 18:41:58 2000  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* process.c (proc_setsid): BSD-style setpgrp() don't return 
+	  process group ID, but 0 or -1.
+
+Fri Jun 16 16:23:35 2000  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* file.c (rb_stat_inspect): gives detailed information;
+	  compatibility with ruby-1.4.x.
 
 Fri Jun 16 05:18:45 2000  Yasuhiro Fukuma  <yasuf@bsdclub.org>
 

@@ -334,6 +334,10 @@ rb_io_rewind(io)
     GetOpenFile(io, fptr);
     if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
+    if (io == current_file) {
+	gets_lineno -= fptr->lineno;
+    }
+    fptr->lineno = 0;
 
     return INT2FIX(0);
 }

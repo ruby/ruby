@@ -490,7 +490,7 @@ time_eql(time1, time2)
 }
 
 static VALUE
-time_gmt_p(time)
+time_utc_p(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -536,6 +536,9 @@ time_localtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
+    if (tobj->tm_got && !tobj->gmt) {
+	return time;
+    }
     t = tobj->tv.tv_sec;
     tm_tmp = localtime(&t);
     tobj->tm = *tm_tmp;
@@ -553,6 +556,9 @@ time_gmtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
+    if (tobj->tm_got && tobj->gmt) {
+	return time;
+    }
     t = tobj->tv.tv_sec;
     tm_tmp = gmtime(&t);
     tobj->tm = *tm_tmp;
@@ -1077,7 +1083,8 @@ Init_Time()
     rb_define_method(rb_cTime, "isdst", time_isdst, 0);
     rb_define_method(rb_cTime, "zone", time_zone, 0);
 
-    rb_define_method(rb_cTime, "gmt?", time_gmt_p, 0);
+    rb_define_method(rb_cTime, "utc?", time_utc_p, 0);
+    rb_define_method(rb_cTime, "gmt?", time_utc_p, 0);
 
     rb_define_method(rb_cTime, "tv_sec", time_to_i, 0);
     rb_define_method(rb_cTime, "tv_usec", time_usec, 0);

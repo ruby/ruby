@@ -1145,6 +1145,7 @@ rb_reg_clone(re)
     NEWOBJ(clone, struct RRegexp);
     CLONESETUP(clone, re);
     rb_reg_check(re);
+    clone->ptr = 0; clone->len = 0;
     rb_reg_initialize(clone, RREGEXP(re)->str, RREGEXP(re)->len,
 		      rb_reg_options(re));
     return (VALUE)re;

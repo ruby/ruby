@@ -46,6 +46,7 @@ Hacking Interpreter
 * performance tune for in-block (dynamic) local variables.
 * generational GC ?
 * give warnings to assign magic variables.
+* export rb_io_{addstr,printf,puts,print}
 
 Standard Libraries
 

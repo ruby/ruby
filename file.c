@@ -251,6 +251,53 @@ rb_stat_ctime(self)
     return rb_time_new(get_stat(self)->st_ctime, 0);
 }
 
+static VALUE
+rb_stat_inspect(self)
+    VALUE self;
+{
+    VALUE str;
+    int i;
+    struct {
+        char *name;
+        VALUE (*func)();
+    } member[] = {
+        {"dev",     rb_stat_dev},
+        {"ino",     rb_stat_ino},
+        {"mode",    rb_stat_mode},
+        {"nlink",   rb_stat_nlink},
+        {"uid",     rb_stat_uid},
+        {"gid",     rb_stat_gid},
+        {"rdev",    rb_stat_rdev},
+        {"size",    rb_stat_size},
+        {"blksize", rb_stat_blksize},
+        {"blocks",  rb_stat_blocks},
+        {"atime",   rb_stat_atime},
+        {"mtime",   rb_stat_mtime},
+        {"ctime",   rb_stat_ctime},
+    };
+
+    str = rb_str_new2("#<");
+    rb_str_cat2(str, rb_class2name(CLASS_OF(self)));
+    rb_str_cat2(str, " ");
+
+    for (i = 0; i < sizeof(member)/sizeof(member[0]); i++) {
+	VALUE str2;
+	char *p;
+
+	if (i > 0) {
+	    rb_str_cat2(str, ", ");
+	}
+	rb_str_cat2(str, member[i].name);
+	rb_str_cat2(str, "=");
+	str2 = rb_inspect((*member[i].func)(self));
+	rb_str_append(str, str2);
+    }
+    rb_str_cat2(str, ">");
+    OBJ_INFECT(str, self);
+
+    return str;
+}
+
 static int
 rb_stat(file, st)
     VALUE file;
@@ -2215,6 +2262,8 @@ Init_File()
     rb_define_method(rb_cStat, "atime", rb_stat_atime, 0);
     rb_define_method(rb_cStat, "mtime", rb_stat_mtime, 0);
     rb_define_method(rb_cStat, "ctime", rb_stat_ctime, 0);
+
+    rb_define_method(rb_cStat, "inspect", rb_stat_inspect, 0);
 
     rb_define_method(rb_cStat, "ftype", rb_stat_ftype, 0);
 

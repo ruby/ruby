@@ -1337,6 +1337,8 @@ rb_cvar_set(klass, id, val)
 {
     VALUE tmp;
 
+    if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
     if (FL_TEST(klass, FL_SINGLETON)) {
 	klass = rb_iv_get(klass, "__attached__");
     }

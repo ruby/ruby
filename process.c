@@ -186,18 +186,40 @@ proc_wait()
 }
 
 static VALUE
-proc_waitpid(obj, vpid, vflags)
-    VALUE obj, vpid, vflags;
+proc_wait2()
 {
+    VALUE pid = proc_wait();
+
+    return rb_assoc_new(pid, rb_last_status);
+}
+
+static VALUE
+proc_waitpid(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE vpid, vflags;
     int pid, flags, status;
 
-    if (NIL_P(vflags)) flags = 0;
-    else flags = NUM2UINT(vflags);
+    flags = 0;
+    rb_scan_args(argc, argv, "11", &vpid, &vflags);
+    if (argc == 2 && !NIL_P(vflags)) {
+	flags = NUM2UINT(vflags);
+    }
 
     if ((pid = rb_waitpid(NUM2INT(vpid), flags, &status)) < 0)
 	rb_sys_fail(0);
     if (pid == 0) return Qnil;
     return INT2FIX(pid);
+}
+
+static VALUE
+proc_waitpid2(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE pid = proc_waitpid2(argc, argv);
+    return rb_assoc_new(pid, rb_last_status);
 }
 
 char *strtok();
@@ -834,21 +856,26 @@ proc_setsid()
     if (pid < 0) rb_sys_fail(0);
     return INT2FIX(pid);
 #elif defined(HAVE_SETPGRP) && defined(TIOCNOTTY)
-  pid_t sid;
+  pid_t pid;
+  int ret;
 
+  rb_secure(2);
+  pid = getpid();
 #if defined(SETPGRP_VOID)
-  sid = setpgrp();
+  ret = setpgrp();
+  /* If `pid_t setpgrp(void)' is equivalent to setsid(),
+     `ret' will be the same value as `pid', and following open() will fail.
+     In Linux, `int setpgrp(void)' is equivalent to setpgid(0, 0). */
 #else
-  sid = setpgrp(0, getpid());
+  ret = setpgrp(0, pid);
 #endif
-  if (sid == -1) return -1;
+  if (ret == -1) rb_sys_fail(0);
 
   if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
     ioctl(fd, TIOCNOTTY, NULL);
     close(fd);
   }
-  return sid;
-}
+  return INT2FIX(pid);
 #else
     rb_notimplement();
 #endif
@@ -1046,7 +1073,9 @@ Init_process()
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
 #ifndef NT
     rb_define_module_function(rb_mProcess, "wait", proc_wait, 0);
-    rb_define_module_function(rb_mProcess, "waitpid", proc_waitpid, 2);
+    rb_define_module_function(rb_mProcess, "wait2", proc_wait2, 0);
+    rb_define_module_function(rb_mProcess, "waitpid", proc_waitpid, -1);
+    rb_define_module_function(rb_mProcess, "waitpid2", proc_waitpid2, -1);
 
     rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
     rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);
