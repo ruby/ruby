@@ -1,3 +1,11 @@
+Fri Mar 28 19:33:39 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* variable.c (rb_class_path): hold temporary class path in a
+	  instance variable to get rid of GC.  [ruby-dev:19932]
+
+	* variable.c (classname): remove temporary class path when exact
+	  name found.
+
 Thu Mar 27 12:10:15 2003  Tanaka Akira  <akr@m17n.org>
 
         * regex.c (re_compile_pattern): fix [:name:] handling.

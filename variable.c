@@ -156,9 +156,17 @@ classname(klass)
 	}
     }
     if (NIL_P(path)) {
+	ID tmppath = rb_intern("__tmp_classpath__");
+
 	path = find_class_path(klass);
 	if (NIL_P(path)) {
-	    return 0;
+	    if (!RCLASS(klass)->iv_tbl ||
+		!st_lookup(RCLASS(klass)->iv_tbl, tmppath, &path)) {
+		return 0;
+	    }
+	}
+	else if (RCLASS(klass)->iv_tbl) {
+	    st_delete(RCLASS(klass)->iv_tbl, &tmppath, 0);
 	}
 	return path;
     }
@@ -199,6 +207,7 @@ rb_class_path(klass)
 	str = rb_str_new(0, 2 + strlen(s) + 3 + 2 * SIZEOF_LONG + 1);
 	sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", s, klass);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+	rb_iv_set(klass, "__tmp_classpath__", str);
 
 	return str;
     }
