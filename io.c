@@ -1848,7 +1848,7 @@ retry:
 
 	if (modef & FMODE_READABLE) {
 	    fptr->f = fpr;
-    }
+	}
 	if (modef & FMODE_WRITABLE) {
 	    if (fptr->f) fptr->f2 = fpw;
 	    else fptr->f = fpw;
