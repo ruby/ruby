@@ -1,9 +1,21 @@
+Fri Aug 24 15:17:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_equal): check identiry equality first.
+
+	* string.c (rb_str_equal): ditto.
+
+	* struct.c (rb_struct_equal): ditto.
+
 Fri Aug 24 14:45:26 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* dln.c (dln_strerror): fix a bug that sometimes made null message on
 	  win32 (Tietew <tietew@tietew.net>'s patch).
 
 	* win32/win32.c (mystrerror): ditto.
+
+Fri Aug 24 03:15:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (Init_Numeric): undef Integer::new.
 
 Thu Aug 23 10:10:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

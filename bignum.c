@@ -1418,8 +1418,6 @@ Init_Bignum()
 {
     rb_cBignum = rb_define_class("Bignum", rb_cInteger);
 
-    rb_undef_method(CLASS_OF(rb_cBignum), "new");
-
     rb_define_method(rb_cBignum, "to_s", rb_big_to_s, 0);
     rb_define_method(rb_cBignum, "coerce", rb_big_coerce, 1);
     rb_define_method(rb_cBignum, "-@", rb_big_uminus, 0);

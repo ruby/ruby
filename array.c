@@ -1341,6 +1341,7 @@ rb_ary_equal(ary1, ary2)
 {
     long i;
 
+    if (ary1 == ary2) return Qtrue;
     if (TYPE(ary2) != T_ARRAY) return Qfalse;
     if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {

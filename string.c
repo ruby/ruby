@@ -565,6 +565,7 @@ static VALUE
 rb_str_equal(str1, str2)
     VALUE str1, str2;
 {
+    if (str1 == str2) return Qtrue;
     if (TYPE(str2) != T_STRING)
 	return Qfalse;
 

@@ -525,6 +525,7 @@ rb_struct_equal(s, s2)
 {
     long i;
 
+    if (s == s2) return Qtrue;
     if (TYPE(s2) != T_STRUCT) return Qfalse;
     if (CLASS_OF(s) != CLASS_OF(s2)) return Qfalse;
     if (RSTRUCT(s)->len != RSTRUCT(s2)->len) {
