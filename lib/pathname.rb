@@ -216,10 +216,13 @@ class Pathname
   # If self is the current working directory `.' or
   # the argument is absolute pathname,
   # the argument is just returned.
+  # If the argument is `.', self is returned.
   def +(other)
     other = Pathname.new(other) unless Pathname === other
     if @path == '.' || other.absolute?
       other
+    elsif other.to_s == '.'
+      self
     elsif %r{/\z} =~ @path
       Pathname.new(@path + other.to_s)
     else
@@ -685,5 +688,12 @@ if $0 == __FILE__
       assert_relpath_err(".", "..")
     end
 
+    def test_plus
+      assert_equal(Pathname.new('a/b'), Pathname.new('a') + Pathname.new('b'))
+      assert_equal(Pathname.new('a'), Pathname.new('a') + Pathname.new('.'))
+      assert_equal(Pathname.new('b'), Pathname.new('.') + Pathname.new('b'))
+      assert_equal(Pathname.new('.'), Pathname.new('.') + Pathname.new('.'))
+      assert_equal(Pathname.new('/b'), Pathname.new('a') + Pathname.new('/b'))
+    end
   end
 end

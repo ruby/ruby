@@ -1,6 +1,7 @@
-Fri Nov  7 11:06:57 2003  Tanaka Akira  <akr@m17n.org>
+Fri Nov  7 12:50:28 2003  Tanaka Akira  <akr@m17n.org>
 
-	* lib/pathname.rb (Pathname#+): return the argument if self is `.'.
+	* lib/pathname.rb (Pathname#+): if self or the argument is `.', return
+	  another.
 
 Fri Nov  7 10:23:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
