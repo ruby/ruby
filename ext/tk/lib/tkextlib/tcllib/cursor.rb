@@ -73,6 +73,7 @@ module Tk
     end
 
     module Cursor
+      extend TkCore
       def self.cursor_display(win=None)
         tk_call_without_enc('::cursor::display', win)
       end

@@ -17,6 +17,7 @@ TkPackage.require('shape')
 module Tk
   module TkDND
     module Shape
+      extend TkCore
 =begin
       def self.package_version
         begin

@@ -95,6 +95,9 @@ TkDND       http://sourceforge.net/projects/tkdnd       ==> tkDND
 
 ===< plan to support (alpha quality libraries may be included) >==============
 
+BLT         http://sourceforge.net/projects/blt
+                * see tcltk-ext library on RAA (http://raa.ruby-lang.org/)
+
 GraphViz    http://www.graphviz.org/
 
 Tkgeomap    http://tkgeomap.sourceforge.net/index.html
@@ -102,9 +105,6 @@ Tkgeomap    http://tkgeomap.sourceforge.net/index.html
 
 
 ===< not determined to supprt or not >========================================
-
-BLT         http://sourceforge.net/projects/blt
-                * see tcltk-ext library on RAA (http://raa.ruby-lang.org/)
 
 Tix         http://tixlibrary.sourceforge.net/
                 * see tcltk-ext library on RAA (http://raa.ruby-lang.org/)

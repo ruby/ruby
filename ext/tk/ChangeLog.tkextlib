@@ -1,6 +1,24 @@
+2004-11-03  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* SUPPORT_STATUS: BLT moves to 'plan to support' from 'not determined'
+
+	* itk/incr_tk.rb: __cget_cmd and __config_cmd are private methods
+
+	* tcllib/autoscroll.rb: extend TkCore
+
+	* tcllib/cursor.rb: ditto.
+
+	* tcllib/plotchart.rb: ditto.
+
+	* tcllib/style.rb: ditto.
+
+	* tile/style.rb: ditto.
+
+	* tkDND/shape.rb: ditto.
+
 2004-10-24  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/sample/tkextlib/bwidget/tree.rb: bug fix
+	* bwidget/tree.rb: bug fix on Windows
 
 2004-10-16  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

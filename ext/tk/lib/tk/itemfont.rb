@@ -33,11 +33,13 @@ module TkTreatItemFont
     if key
       pathname = [win, tag, key].join(';')
       TkFont.used_on(pathname) || 
-        TkFont.init_widget_font(pathname, *(__item_config_cmd(tagid(tagOrId))))
+        TkFont.init_widget_font(pathname, 
+                                *(__item_confinfo_cmd(tagid(tagOrId))))
     elsif optkeys.size == 1
       pathname = [win, tag, optkeys[0]].join(';')
       TkFont.used_on(pathname) || 
-        TkFont.init_widget_font(pathname, *(__item_config_cmd(tagid(tagOrId))))
+        TkFont.init_widget_font(pathname, 
+                                *(__item_confinfo_cmd(tagid(tagOrId))))
     else
       fonts = {}
       optkeys.each{|key|
@@ -45,7 +47,8 @@ module TkTreatItemFont
         pathname = [win, tag, key].join(';')
         fonts[key] = 
           TkFont.used_on(pathname) || 
-          TkFont.init_widget_font(pathname, *(__item_config_cmd(tagid(tagOrId))))
+          TkFont.init_widget_font(pathname, 
+                                  *(__item_confinfo_cmd(tagid(tagOrId))))
       }
       fonts
     end
