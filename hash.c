@@ -241,17 +241,23 @@ rb_hash_s_create(argc, argv, klass)
     VALUE hash;
     int i;
 
-    if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	NEWOBJ(hash, struct RHash);
-	OBJSETUP(hash, klass, T_HASH);
+    if (argc == 1) {
+	if (TYPE(argv[0]) == T_HASH) {
+	    NEWOBJ(hash, struct RHash);
+	    OBJSETUP(hash, klass, T_HASH);
 	    
-	hash->iter_lev = 0;
-	hash->ifnone = Qnil;
-	hash->tbl = 0;	/* avoid GC crashing  */
-	hash->tbl = (st_table*)st_copy(RHASH(argv[0])->tbl);
-	rb_obj_call_init((VALUE)hash, argc, argv);
+	    hash->iter_lev = 0;
+	    hash->ifnone = Qnil;
+	    hash->tbl = 0;	/* avoid GC crashing  */
+	    hash->tbl = st_copy(RHASH(argv[0])->tbl);
+	    rb_obj_call_init((VALUE)hash, argc, argv);
 
-	return (VALUE)hash;
+	    return (VALUE)hash;
+	}
+	else {
+	    VALUE a = rb_Array(argv[0]);
+	    return rb_hash_s_create(RARRAY(a)->len, RARRAY(a)->ptr, klass);
+	}
     }
 
     if (argc % 2 != 0) {

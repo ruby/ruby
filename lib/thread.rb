@@ -120,6 +120,7 @@ class Queue
     Thread.critical = false
     t.run if t
   end
+  alias enq push
 
   def pop non_block=false
     Thread.critical = true
@@ -139,6 +140,8 @@ class Queue
       Thread.critical = false
     end
   end
+  alias shift pop
+  alias deq pop
 
   def empty?
     @que.length == 0

@@ -2,7 +2,7 @@
 
 = simple telnet cliant library
 
-telnet.rb ver0.162 1999/03/18
+telnet.rb ver0.163 1999/04/11
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -29,6 +29,17 @@ if set "Telnetmode" option FALSE. not TELNET command interpretation.
 "Waittime" is time to confirm "Prompt". There is a possibility that
 the same character as "Prompt" is included in the data, and, when
 the network or the host is very heavy, the value is enlarged.
+
+=== status output
+
+	host = Telnet.new({"Hosh" => "localhost"){|c| print c }
+
+connection status output.
+
+example
+
+Trying localhost...
+Connected to localhost.
 
 
 == waitfor (wait for match)
@@ -132,6 +143,9 @@ of cource, set sync=TRUE or flush is necessary.
 
 
 = history
+
+ver0.163 1999/04/11
+STDOUT.write(message) --> yield(message) if iterator?
 
 ver0.162 1999/03/17
 add "Proxy" option
@@ -291,7 +305,7 @@ class Telnet < SimpleDelegator
       end
     else
       message = "Trying " + @options["Host"] + "...\n"
-      STDOUT.write(message)
+      yield(message) if iterator?
       @log.write(message) if @options.include?("Output_log")
       @dumplog.write(message) if @options.include?("Dump_log")
 
@@ -310,7 +324,7 @@ class Telnet < SimpleDelegator
       @sock.binmode
 
       message = "Connected to " + @options["Host"] + ".\n"
-      STDOUT.write(message)
+      yield(message) if iterator?
       @log.write(message) if @options.include?("Output_log")
       @dumplog.write(message) if @options.include?("Dump_log")
     end

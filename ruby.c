@@ -124,6 +124,63 @@ extern VALUE rb_load_path;
 static FILE *e_fp;
 static char *e_tmpname;
 
+#define STATIC_FILE_LENGTH 255
+
+#if defined(_WIN32) || defined(DJGPP)
+static char *
+rubylib_mangle(s, l)
+    char *s;
+    unsigned int l;
+{
+    static char *newp, *oldp;
+    static int newl, oldl, notfound;
+    static char ret[STATIC_FILE_LENGTH+1];
+    
+    if (!newp && !notfound) {
+	newp = getenv("RUBYLIB_PREFIX");
+	if (newp) {
+	    char *s;
+	    
+	    oldp = newp;
+	    while (*newp && !ISSPACE(*newp) && *newp != ';') {
+		newp++; oldl++;		/* Skip digits. */
+	    }
+	    while (*newp && (ISSPACE(*newp) || *newp == ';')) {
+		newp++;			/* Skip whitespace. */
+	    }
+	    newl = strlen(newp);
+	    if (newl == 0 || oldl == 0) {
+		Fatal("malformed RUBYLIB_PREFIX");
+	    }
+	    strcpy(ret, newp);
+	    s = ret;
+	    while (*s) {
+		if (*s == '\\') *s = '/';
+		s++;
+	    }
+	} else {
+	    notfound = 1;
+	}
+    }
+    if (!newp) {
+	return s;
+    }
+    if (l == 0) {
+	l = strlen(s);
+    }
+    if (l < oldl || strncasecmp(oldp, s, oldl) != 0) {
+	return s;
+    }
+    if (l + newl - oldl > STATIC_FILE_LENGTH || newl > STATIC_FILE_LENGTH) {
+	Fatal("malformed RUBYLIB_PREFIX");
+    }
+    strcpy(ret + newl, s + oldl);
+    return ret;
+}
+#else
+#define rubylib_mangle(s, l) (s)
+#endif
+
 static void
 addpath(path)
     const char *path;
@@ -146,18 +203,18 @@ addpath(path)
 	while (*p) {
 	    while (*p == sep) p++;
 	    if (s = strchr(p, sep)) {
-		rb_ary_push(ary, rb_str_new(p, (int)(s-p)));
+		rb_ary_push(ary, rb_str_new2(rubylib_mangle(p, (int)(s-p))));
 		p = s + 1;
 	    }
 	    else {
-		rb_ary_push(ary, rb_str_new2(p));
+		rb_ary_push(ary, rb_str_new2(rubylib_mangle(p, 0)));
 		break;
 	    }
 	}
 	rb_load_path = rb_ary_plus(ary, rb_load_path);
     }
     else {
-	rb_ary_unshift(rb_load_path, rb_str_new2(path));
+	rb_ary_unshift(rb_load_path, rb_str_new2(rubylib_mangle(path, 0)));
     }
 }
 

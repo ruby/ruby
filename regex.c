@@ -3102,14 +3102,15 @@ typedef union
     *stackp++ = (unsigned char*)0; /* non-greedy flag */		\
   } while(0)
 
+#define NON_GREEDY ((unsigned char*)1)
 
      /* This pops what PUSH_FAILURE_POINT pushes.  */
 
 #define POP_FAILURE_POINT()						\
   do {									\
-    int temp;								\
+    long temp;								\
     stackp -= NUM_NONREG_ITEMS;	/* Remove failure points (and flag). */	\
-    temp = (int)*--stackp;	/* How many regs pushed.  */	        \
+    temp = (long)*--stackp;	/* How many regs pushed.  */	        \
     temp *= NUM_REG_ITEMS;	/* How much to take off the stack.  */	\
     stackp -= temp; 		/* Remove the register info.  */	\
   } while(0)
@@ -3320,7 +3321,7 @@ re_match(bufp, string_arg, size, pos, regs)
     if (p == pend) {
       /* If not end of string, try backtracking.  Otherwise done.  */
       if (d != dend) {
-	while (stackp != stackb && (int)stackp[-1] == 1) {
+	while (stackp != stackb && stackp[-1] == NON_GREEDY) {
 	  if (best_regs_set) /* non-greedy, no need to backtrack */
 	    goto restore_best_regs;
 	  POP_FAILURE_POINT();
@@ -3462,7 +3463,7 @@ re_match(bufp, string_arg, size, pos, regs)
 		regstart[r] = old_regstart[r];
 
 		/* xx why this test?  */
-		if ((int)old_regend[r] >= (int)regstart[r])
+		if ((long)old_regend[r] >= (long)regstart[r])
 		  regend[r] = old_regend[r];
 	      }     
 	    }
@@ -3805,7 +3806,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	if (p + mcnt < pend) {
 	  PUSH_FAILURE_POINT(p, d);
-	  stackp[-1] = (unsigned char*)1;
+	  stackp[-1] = NON_GREEDY;
 	}
 	p += mcnt;
 	continue;
@@ -3814,7 +3815,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	POP_FAILURE_POINT();
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	PUSH_FAILURE_POINT(p + mcnt, d);
-	stackp[-1] = (unsigned char*)1;
+	stackp[-1] = NON_GREEDY;
 	continue;
 
       case finalize_push_n:
@@ -3831,7 +3832,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	  POP_FAILURE_POINT();
 	  EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	  PUSH_FAILURE_POINT(p + mcnt, d);
-	  stackp[-1] = (unsigned char*)1;
+	  stackp[-1] = NON_GREEDY;
 	  p += 2;		/* skip n */
 	}
 	/* If don't have to push any more, skip over the rest of command.  */
@@ -3967,10 +3968,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	SET_REGS_MATCHED;
 	break;
       }
-#if 0
-    while (stackp != stackb && (int)stackp[-1] == 1)
-      POP_FAILURE_POINT();
-#endif
     continue;  /* Successfully executed one pattern command; keep going.  */
 
     /* Jump here if any matching operation fails. */
@@ -3981,7 +3978,7 @@ re_match(bufp, string_arg, size, pos, regs)
 
       /* If this failure point is from a dummy_failure_point, just
 	 skip it.  */
-      if (stackp[-3] == 0 || (best_regs_set && (int)stackp[-1] == 1)) {
+      if (stackp[-3] == 0 || (best_regs_set && stackp[-1] == NON_GREEDY)) {
 	POP_FAILURE_POINT();
 	goto fail;
       }

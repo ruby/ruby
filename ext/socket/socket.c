@@ -535,14 +535,12 @@ thread_connect(fd, sockaddr, len, type)
 	}
 	if (status < 0) {
 	    switch (errno) {
-#ifdef EINPROGRESS
-	      case EINPROGRESS:
 #ifdef EAGAIN
 	      case EAGAIN:
+#ifdef EINPROGRESS
+	      case EINPROGRESS:
 #endif
-		FD_ZERO(&fds);
-		FD_SET(fd, &fds);
-		rb_thread_select(fd+1, 0, &fds, 0, 0);
+		rb_thread_fd_writable(fd);
 		continue;
 #endif
 

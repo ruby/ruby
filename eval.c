@@ -4252,7 +4252,7 @@ rb_f_eval(argc, argv, self)
     }
 
     Check_SafeStr(src);
-    return eval(self, src, scope, file, line-1);
+    return eval(self, src, scope, file, line);
 }
 
 static VALUE

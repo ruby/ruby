@@ -1,3 +1,28 @@
+Thu Apr 15 23:46:20 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ruby.c (rubylib_mangle): mangle path by RUBYLIB_PREFIX.
+
+Wed Apr 14 23:52:51 1999  SHIROYAMA Takayuki  <psi@tokyo.stellar.co.jp>
+
+	* node.h (NODE_LMASK): should be long to avoid overflow.
+
+Wed Apr 14 12:19:09 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/thread.rb: Queue#{enq,deq} added.
+
+Tue Apr 13 17:43:56 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (rb_hash_s_create): Hash::[] acts more like casting.
+
+Tue Apr 13 00:33:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_stdio_set): warning for assignment to the variables
+	  $std{in,out,err}.
+
+Mon Apr 12 23:12:32 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_reopen): check for reopening same IO.
+
 Fri Apr  9 17:45:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (rb_compile_string): bug for nested eval().

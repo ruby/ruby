@@ -1607,6 +1607,7 @@ rb_io_reopen(io, nfile)
     nfile = rb_io_get_io(nfile);
     GetOpenFile(nfile, orig);
 
+    if (fptr == orig) return io;
     if (orig->f2) {
 	fflush(orig->f2);
     }
@@ -1998,6 +1999,9 @@ rb_io_stdio_set(val, id, var)
 
     if (TYPE(val) != T_FILE) {
 	rb_raise(rb_eTypeError, "%s must be IO object", rb_id2name(id));
+    }
+    if (ruby_verbose) {
+	rb_warn("assignment for %s is done by reopen", rb_id2name(id));
     }
     GetOpenFile(*var, fptr);
     fd = fileno(fptr->f);
