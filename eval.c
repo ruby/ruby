@@ -3643,6 +3643,9 @@ rb_eval(self, n)
 		nd_set_type(node, NODE_LIT);
 		node->nd_lit = result;
 		break;
+              case NODE_LIT:
+                /* other thread may replace NODE_DREGX_ONCE to NODE_LIT */
+		goto again;
 	      case NODE_DXSTR:
 		result = rb_funcall(self, '`', 1, str);
 		break;
