@@ -151,7 +151,7 @@ AC_PROG_GCC_TRADITIONAL
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
 
-OUTFLAG='-o '
+: ${OUTFLAG='-o '}
 AC_SUBST(OUTFLAG)
 
 RUBY_MINGW32
@@ -174,11 +174,8 @@ cygwin*|mingw*)
 aix*)
     AC_CHECK_TOOL(NM, nm, /usr/ccs/bin/nm, /usr/ccs/bin:$PATH)
     ;;
-esac
-
-# by TOYODA Eizi <toyoda@npd.kishou.go.jp>
-case "$target_os" in
 hiuxmpp*)
+    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
     AC_DEFINE(__HIUX_MPP__)
     ;;
 esac
@@ -782,7 +779,7 @@ linux*)
 	with_dln_a_out=yes
 	target_os=${target_os}-a_out
     else
-	LDFLAGS="-rdynamic"
+	LDFLAGS="$LDFLAGS -rdynamic"
     fi;;
 netbsd*|openbsd*)
     if [[ "`$CC -dM -E - </dev/null | grep __ELF__`" != "" ]]
@@ -805,149 +802,149 @@ AC_SUBST(DLEXT2)dnl
 AC_SUBST(LIBEXT)dnl
 
 STATIC=
-LIBPATHFLAG=' -L%s'
-PATHFLAG=''
+: ${LIBPATHFLAG=' -L%s'}
+: ${PATHFLAG=''}
 
 if test "$with_dln_a_out" != yes; then
   rb_cv_dlopen=unknown
   AC_MSG_CHECKING(whether OS depend dynamic link works)
   if test "$GCC" = yes; then
     case "$target_os" in
-    nextstep*)	CCDLFLAGS=-fno-common;;
-    openstep*)	CCDLFLAGS=-fno-common;;
-    rhapsody*)	CCDLFLAGS=-fno-common;;
-    darwin*)	CCDLFLAGS=-fno-common;;
+    nextstep*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
+    openstep*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
+    rhapsody*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
+    darwin*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
     human*)	;;
     bsdi*)	;;
     beos*)	;;
     cygwin*)	;;
     mingw*)	;;
     aix*)	;;
-    netbsd*) CCDLFLAGS=-fPIC;;
-    *) CCDLFLAGS=-fPIC;;
+    netbsd*) CCDLFLAGS="$CCDLFLAGS -fPIC";;
+    *) CCDLFLAGS="$CCDLFLAGS -fPIC";;
     esac
   else
     case "$target_os" in
-	hpux*)		CCDLFLAGS='+Z';;
-	solaris*|irix*)	CCDLFLAGS='-KPIC' ;;
-	sunos*)		CCDLFLAGS='-PIC' ;;
-	esix*|uxpds*)   CCDLFLAGS='-KPIC' ;;
-	*)		CCDLFLAGS='' ;;
+	hpux*)		CCDLFLAGS="$CCDLFLAGS +Z";;
+	solaris*|irix*)	CCDLFLAGS="$CCDLFLAGS -KPIC" ;;
+	sunos*)		CCDLFLAGS="$CCDLFLAGS -PIC" ;;
+	esix*|uxpds*)   CCDLFLAGS="$CCDLFLAGS -KPIC" ;;
+	*)		: ${CCDLFLAGS=""} ;;
     esac
   fi
 
   case "$target_os" in
-	hpux*)		DLDFLAGS="-E"
-			LDSHARED='ld -b'
-			XLDFLAGS="-Wl,-E"
+	hpux*)		DLDFLAGS="$DLDFLAGS -E"
+			: ${LDSHARED='ld -b'}
+			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
-			   LDSHARED='$(CC) -Wl,-G'
+			   : ${LDSHARED='$(CC) -Wl,-G'}
 			   if test "$rb_cv_prog_gnu_ld" = yes; then
-	 		       LDFLAGS="-Wl,-E"
+	 		       LDFLAGS="$LDFLAGS -Wl,-E"
 			       LDSHARED="$LDSHARED -shared"
 			   fi
 			else
-			   LDSHARED='ld -G'
+			   : ${LDSHARED='ld -G'}
 			fi
 			rb_cv_dlopen=yes;;
-	sunos*) 	LDSHARED='ld -assert nodefinitions'
+	sunos*) 	: ${LDSHARED='ld -assert nodefinitions'}
 			rb_cv_dlopen=yes;;
-	irix*)		LDSHARED='ld -shared'
+	irix*)		: ${LDSHARED='ld -shared'}
 			rb_cv_dlopen=yes;;
-	sysv4*) 	LDSHARED='ld -G'
+	sysv4*) 	: ${LDSHARED='ld -G'}
 			rb_cv_dlopen=yes;;
-        nto-qnx*)       LDSHARED="qcc -shared"
+        nto-qnx*)       : ${LDSHARED="qcc -shared"}
                         rb_cv_dlopen=yes ;;
-	esix*|uxpds*) 	LDSHARED="ld -G"
+	esix*|uxpds*) 	: ${LDSHARED="ld -G"}
 			rb_cv_dlopen=yes ;;
-	osf*) 		LDSHARED="ld -shared -expect_unresolved \"*\""
+	osf*) 		: ${LDSHARED="ld -shared -expect_unresolved \"*\""}
 			rb_cv_dlopen=yes ;;
-	linux*) 	LDSHARED="$CC -shared"
+	linux*) 	: ${LDSHARED="$CC -shared"}
 			rb_cv_dlopen=yes ;;
-	gnu*)   	LDSHARED="$CC -shared"
+	gnu*)   	: ${LDSHARED="$CC -shared"}
 			rb_cv_dlopen=yes
-			LDFLAGS="-rdynamic" ;;
-	freebsd*)       LDSHARED="$CC -shared"
+			LDFLAGS="$LDFLAGS -rdynamic" ;;
+	freebsd*)       : ${LDSHARED="$CC -shared"}
 			if test "$rb_cv_binary_elf" = yes; then
-			    LDFLAGS="-rdynamic"
-			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
+			    LDFLAGS="$LDFLAGS -rdynamic"
+			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$(.TARGET)'
 			else
 			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED="ld -Bshareable"
 			fi
 			rb_cv_dlopen=yes ;;
-	netbsd*)	LDSHARED='${CC} -shared'
+	netbsd*)	: ${LDSHARED='${CC} -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
-			    LDFLAGS="-Wl,-export-dynamic"
+			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
 			    LIBPATHFLAG=' -L%1$-s'
 			    RPATHFLAG=' -Wl,-R%1$-s'
 			fi
 			rb_cv_dlopen=yes ;;
-	openbsd*) 	LDSHARED="\$(CC) -shared ${CCDLFLAGS}"
+	openbsd*) 	: ${LDSHARED="\$(CC) -shared ${CCDLFLAGS}"}
 			if test "$rb_cv_binary_elf" = yes; then
-			    LDFLAGS="-Wl,-E"
+			    LDFLAGS="$LDFLAGS -Wl,-E"
 			fi
 			rb_cv_dlopen=yes ;;
 	bsdi3*) 	case "$CC" in
-			*shlicc*)	LDSHARED="$CC -r"
+			*shlicc*)	: ${LDSHARED="$CC -r"}
 					rb_cv_dlopen=yes ;;
 			esac ;;
-	bsdi*)		LDSHARED="ld -shared"
-			LDFLAGS='-rdynamic -Wl,-rpath,$(libdir)/ruby/$(MAJOR).$(MINOR)/i386-bsdi4.0'
+	bsdi*)		: ${LDSHARED="ld -shared"}
+			LDFLAGS="$LDFLAGS "'-rdynamic -Wl,-rpath,$(libdir)/ruby/$(MAJOR).$(MINOR)/i386-bsdi4.0'
 			rb_cv_dlopen=yes ;;
-	nextstep*)	LDSHARED='cc -r -nostdlib'
-			LDFLAGS="-u libsys_s"
-			DLDFLAGS="$ARCH_FLAG" 
+	nextstep*)	: ${LDSHARED='cc -r -nostdlib'}
+			LDFLAGS="$LDFLAGS -u libsys_s"
+			DLDFLAGS="$DLDFLAGS $ARCH_FLAG" 
 			rb_cv_dlopen=yes ;;
-	openstep*)	LDSHARED='cc -dynamic -bundle -undefined suppress'
-			LDFLAGS=""
-			DLDFLAGS="$ARCH_FLAG"
+	openstep*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress'}
+			: ${LDFLAGS=""}
+			DLDFLAGS="$DLDFLAGS $ARCH_FLAG"
 			rb_cv_dlopen=yes ;;
-	rhapsody*)	LDSHARED='cc -dynamic -bundle -undefined suppress'
-			LDFLAGS=""
-			DLDFLAGS="$ARCH_FLAG"
+	rhapsody*)	: $LDSHARED='cc -dynamic -bundle -undefined suppress'}
+			: ${LDFLAGS=""}
+			DLDFLAGS="$DLDFLAGS $ARCH_FLAG"
 			rb_cv_dlopen=yes ;;
-	darwin*)	LDSHARED='cc -dynamic -bundle -undefined suppress -flat_namespace'
-			LDFLAGS=""
-			DLDFLAGS="$ARCH_FLAG"
+	darwin*)	: ${LDSHARED='cc -dynamic -bundle -undefined suppress -flat_namespace'}
+			: ${LDFLAGS=""}
+			DLDFLAGS="$DLDFLAGS $ARCH_FLAG"
 			rb_cv_dlopen=yes ;;
-	aix*)		LDSHARED='/usr/ccs/bin/ld'
-			XLDFLAGS='-Wl,-bE:ruby.imp'
-			DLDFLAGS='-brtl -eInit_$(TARGET) -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
-			LDFLAGS="-brtl"
-			ARCHFILE="ruby.imp"
+	aix*)		: ${LDSHARED='/usr/ccs/bin/ld'}
+			XLDFLAGS="$XLDFLAGS -Wl,-bE:ruby.imp"
+			DLDFLAGS="$DLDFLAGS "'-brtl -eInit_$(TARGET) -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
+			LDFLAGS="$LDFLAGS -brtl"
+			: ${ARCHFILE="ruby.imp"}
 			rb_cv_dlopen=yes ;;
 
-	human*)		DLDFLAGS=''
-			LDSHARED=''
-			LDFLAGS=''
-			LINK_SO='ar cru $@ $(OBJS)'
+	human*)		: ${DLDFLAGS=''}
+			: ${LDSHARED=''}
+			: ${LDFLAGS=''}
+			: ${LINK_SO='ar cru $@ $(OBJS)'}
 			rb_cv_dlopen=yes ;;
 	beos*) 		case "$target_cpu" in
 			  powerpc*)
-			    LDSHARED="ld -xms"
-			    DLDFLAGS='-export Init_$(TARGET) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
+			    : ${LDSHARED="ld -xms"}
+			    DLDFLAGS="$DLDFLAGS "'-export Init_$(TARGET) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
                             ;;
 			  i586*)
-			    LDSHARED="ld -shared"
-			    DLDFLAGS="-L/boot/develop/lib/x86 -lbe -lroot"
+			    : ${LDSHARED="ld -shared"}
+			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -lbe -lroot"
 			    ;;
 			esac
 			rb_cv_dlopen=yes ;;
-	nto-qnx*)	DLDFLAGS="-L/lib -L/usr/lib -L/usr/local/lib"
-			LDSHARED='ld -Bshareable -x'
-			LDFLAGS="-L/lib -L/usr/lib -L/usr/local/lib"
+	nto-qnx*)	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
+			: ${LDSHARED='ld -Bshareable -x'}
+			LDFLAGS="$LDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
 			rb_cv_dlopen=yes;;
 	cygwin*|mingw*)	: ${LDSHARED="${CC} -shared -s"}
-			XLDFLAGS='-Wl,--stack,0x02000000'
+			XLDFLAGS="$XLDFLAGS -Wl,--stack,0x02000000"
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-import,--export-all"
 			rb_cv_dlopen=yes ;;
-	hiuxmpp)	LDSHARED='ld -r' ;;
-	atheos*) 	LDSHARED="$CC -shared"
+	hiuxmpp)	: ${LDSHARED='ld -r'} ;;
+	atheos*) 	: ${LDSHARED="$CC -shared"}
 			rb_cv_dlopen=yes ;;
 	os2-emx*)	LDFLAGS="$LDFLAGS -Zbsd-signals"
 			;;
-	*) 		LDSHARED='ld' ;;
+	*) 		: ${LDSHARED='ld'} ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
 fi
@@ -1082,7 +1079,7 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
     fi
     AC_LIBOBJ([x68.o])
     CFLAGS="$CFLAGS -fansi-only"
-    XCFLAGS="-cc1-stack=262144 -cpp-stack=2694144"
+    XCFLAGS="$XCFLAGS -cc1-stack=262144 -cpp-stack=2694144"
     EXEEXT=.x
     OBJEXT=o
     setup=Setup.x68
@@ -1107,7 +1104,7 @@ if test "$prefix" = NONE; then
 fi
 
 if test "$fat_binary" != no ; then
-  XCFLAGS="$ARCH_FLAG"
+  CFLAGS="$CFLAGS $ARCH_FLAG"
 fi
 
 if test x"$cross_compiling" = xyes; then
@@ -1129,10 +1126,10 @@ SOLIBS=
 
 case "$target_os" in
   cygwin*|mingw*|beos*|openstep*|nextstep*|rhapsody*|darwin*|os2-emx*)
-    DLDLIBS=""
+    : ${DLDLIBS=""}
     ;;
   *)
-    DLDLIBS="-lc"
+    DLDLIBS="$DLDLIBS -lc"
     ;;
 esac
 
@@ -1191,10 +1188,10 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	;;
     solaris*)
-	XLDFLAGS='-R${libdir}'
+	XLDFLAGS="$XLDFLAGS "'-R${libdir}'
  	;;
     hpux*)
-	XLDFLAGS='-Wl,+s,+b,$(libdir)'
+	XLDFLAGS="$XLDFLAGS "'-Wl,+s,+b,$(libdir)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).sl'
 	;;

@@ -215,7 +215,6 @@ def link_command(ldflags, opt="", libpath=$LIBPATH)
 		 'INCFLAGS' => $INCFLAGS,
 		 'CPPFLAGS' => $CPPFLAGS,
 		 'CFLAGS' => "#$CFLAGS",
-		 'XCFLAGS' => "#$XCFLAGS",
 		 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
 		 'LIBPATH' => libpathflag(libpath),
 		 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
@@ -224,7 +223,7 @@ end
 
 def cc_command(opt="")
   "$(CC) -c #$INCFLAGS -I#{$hdrdir} " \
-  "#$CPPFLAGS #$CFLAGS #$XCFLAGS #{opt} #{CONFTEST_C}"
+  "#$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C}"
 end
 
 def cpp_command(outfile, opt="")
@@ -721,7 +720,7 @@ LIBRUBY_A = #{CONFIG['LIBRUBY_A']}
 LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
 LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 
-CFLAGS   = #{CONFIG['CCDLFLAGS'] unless $static} #{CONFIG['XCFLAGS']} #$CFLAGS
+CFLAGS   = #{CONFIG['CCDLFLAGS'] unless $static} #$CFLAGS
 CPPFLAGS = -I. -I$(topdir) -I$(hdrdir) -I$(srcdir) #{$defs.join(" ")} #{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
 DLDFLAGS = #$LDFLAGS #{CONFIG['DLDFLAGS']} #$DLDFLAGS
@@ -944,7 +943,6 @@ def init_mkmf(config = CONFIG)
   $enable_shared = config['ENABLE_SHARED'] == 'yes'
   $defs = []
   $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
-  $XCFLAGS = config['XCFLAGS'].dup
   $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
   $LDFLAGS = (with_config("ldflags") || "").dup
   $INCFLAGS = "-I#{$topdir}"

@@ -1,3 +1,13 @@
+Sun Nov 30 18:22:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: do not override CCDLDFLAGS, LDFLAGS, XLDFLAGS,
+	  DLDFLAGS and LDSHARED.
+
+	* configure.in: XCFLAGS for compiling ruby itself.  ARCH_FLAG is
+	  reflected in CFLAGS.
+
+	* lib/mkmf.rb: ditto.  do not import XCFLAGS from config.status.
+
 Sun Nov 30 17:37:36 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: bug fix [ruby-talk:86746]
