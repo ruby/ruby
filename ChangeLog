@@ -1,3 +1,11 @@
+Sun Feb  6 12:20:11 2005  Akinori MUSHA  <knu@iDaemons.org>
+
+	* bignum.c (rb_big2ulong_pack): One too many arguments are passed
+	  to big2ulong().
+
+	* re.c (_reg_init_copy, rb_reg_initialize_m): One too many
+	  arguments are passed to rb_reg_initialize().
+
 Sun Feb  6 03:24:20 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Resource::TXT): multiple strings was not 

@@ -1709,7 +1709,7 @@ rb_reg_initialize_m(argc, argv, self)
 	s = StringValuePtr(argv[0]);
 	len = RSTRING(argv[0])->len;
     }
-    rb_reg_initialize(self, s, len, flags, Qtrue);
+    rb_reg_initialize(self, s, len, flags);
     return self;
 }
 
@@ -1983,7 +1983,7 @@ rb_reg_init_copy(copy, re)
     }
     rb_reg_check(re);
     rb_reg_initialize(copy, RREGEXP(re)->str, RREGEXP(re)->len,
-		      rb_reg_options(re), Qfalse);
+		      rb_reg_options(re));
     return copy;
 }
 

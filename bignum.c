@@ -751,7 +751,7 @@ unsigned long
 rb_big2ulong_pack(x)   
     VALUE x;  
 {   
-    unsigned long num = big2ulong(x, "unsigned long", Qfalse);
+    unsigned long num = big2ulong(x, "unsigned long");
     if (!RBIGNUM(x)->sign) {
 	return -num;
     }
