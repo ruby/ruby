@@ -1564,6 +1564,14 @@ nextc()
 	    VALUE v = io_gets(lex_input);
 
 	    if (NIL_P(v)) return -1;
+	    while (RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
+		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\') {
+		VALUE v2 = io_gets(lex_input);
+
+		if (!NIL_P(v2)) {
+		    str_cat(v, RSTRING(v2)->ptr, RSTRING(v2)->len);
+		}
+	    }
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
 	    lex_pend = lex_p + RSTRING(v)->len;
 	    if (RSTRING(v)->len == 8 &&
@@ -3312,7 +3320,9 @@ assignable(id, val)
 	    lhs = NEW_LASGN(id, val);
 	}
 	else{
-	    dyna_var_asgn(id, TRUE);
+	    if (!dyna_var_defined(id)) {
+		dyna_var_asgn(id, TRUE);
+	    }
 	    lhs = NEW_DASGN(id, val);
 	}
     }

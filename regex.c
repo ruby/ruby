@@ -1420,6 +1420,7 @@ re_compile_pattern(pattern, size, bufp)
 	    case ':':
 	      if (fixup_jump)
 		store_jump(fixup_jump, jump, b);
+	      pending_exact = 0;
 	    default:
 	      break;
 	  }

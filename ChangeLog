@@ -1,3 +1,13 @@
+Tue Feb 24 11:16:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (nextc): line continuation by backslash at end of line.
+
+	* regex.c (re_compile_pattern): forgot to clear pending_exact on
+	  closing parentheses.
+
+	* parse.y (assignable): should not assign dyna_var to true, if it
+ 	  is already defined.
+
 Mon Feb 23 12:11:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* re.c (reg_s_quote): needed to be mbchar aware.
