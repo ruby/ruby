@@ -922,7 +922,7 @@ ary_fill(argc, argv, ary)
 	/* beg and len set already */
     }
     else {
-	beg = NUM2INT(arg1);
+	beg = NIL_P(arg1)?0:NUM2INT(arg1);
 	if (beg < 0) {
 	    beg = RARRAY(ary)->len + beg;
 	    if (beg < 0) beg = 0;
