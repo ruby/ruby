@@ -36,11 +36,11 @@ closed_dbm()
     rb_raise(rb_eRuntimeError, "closed GDBM file");
 }
 
-#define GetDBM(obj, dbmp) {\
+#define GetDBM(obj, dbmp) do {\
     Data_Get_Struct(obj, struct dbmdata, dbmp);\
     if (dbmp == 0) closed_dbm();\
     if (dbmp->di_dbm == 0) closed_dbm();\
-}
+} while (0)
 
 static void
 free_dbm(dbmp)
@@ -66,14 +66,12 @@ fgdbm_close(obj)
 }
 
 static VALUE
-fgdbm_s_new(argc, argv, klass)
+fgdbm_s_alloc(klass)
     int argc;
     VALUE *argv;
     VALUE klass;
 {
-    VALUE obj = Data_Wrap_Struct(klass, 0, free_dbm, 0);
-    rb_obj_call_init(obj, argc, argv);
-    return obj;
+    return Data_Wrap_Struct(klass, 0, free_dbm, 0);
 }
 
 static VALUE
@@ -125,6 +123,7 @@ fgdbm_initialize(argc, argv, obj)
     }
 
     dbmp = ALLOC(struct dbmdata);
+    free_dbm(DATA_PTR(obj));
     DATA_PTR(obj) = dbmp;
     dbmp->di_dbm = dbm;
     dbmp->di_size = -1;
@@ -924,7 +923,7 @@ Init_gdbm()
     rb_eGDBMFatalError = rb_define_class("GDBMFatalError", rb_eException);
     rb_include_module(rb_cGDBM, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cGDBM, "new", fgdbm_s_new, -1);
+    rb_define_singleton_method(rb_cGDBM, "allocate", fgdbm_s_alloc, 0);
     rb_define_singleton_method(rb_cGDBM, "open", fgdbm_s_open, -1);
 
     rb_define_method(rb_cGDBM, "initialize", fgdbm_initialize, -1);

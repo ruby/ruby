@@ -13,31 +13,27 @@
  * - Takaaki Tateishi (ttate@kt.jaist.ac.jp)
  */
 
-#ifdef HAVE_NCURSES_H
+#if defined(HAVE_NCURSES_H)
 # include <ncurses.h>
+#elif defined(HAVE_NCURSES_CURSES_H)
+# include <ncurses/curses.h>
+#elif defined(HAVE_CURSES_COLR_CURSES_H)
+# include <varargs.h>
+# include <curses_colr/curses.h>
 #else
-# ifdef HAVE_NCURSES_CURSES_H
-#  include <ncurses/curses.h>
-#else
-# ifdef HAVE_CURSES_COLR_CURSES_H
-#  include <varargs.h>
-#  include <curses_colr/curses.h>
-# else
-#  include <curses.h>
-#  if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_maxx)
-#   define _maxx maxx
-#  endif
-#  if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_maxy)
-#   define _maxy maxy
-#  endif
-#  if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_begx)
-#   define _begx begx
-#  endif
-#  if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_begy)
-#   define _begy begy
-#  endif
+# include <curses.h>
+# if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_maxx)
+#  define _maxx maxx
 # endif
-#endif
+# if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_maxy)
+#  define _maxy maxy
+# endif
+# if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_begx)
+#  define _begx begx
+# endif
+# if (defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)) && !defined(_begy)
+#  define _begy begy
+# endif
 #endif
 
 #ifdef HAVE_INIT_COLOR
@@ -49,7 +45,7 @@
 # define USE_MOUSE 1
 #endif
 
-#include "stdio.h"
+#include <stdio.h>
 #include "ruby.h"
 #include "rubyio.h"
 
@@ -78,12 +74,10 @@ no_window()
     rb_raise(rb_eRuntimeError, "already closed window");
 }
 
-
-#define GetWINDOW(obj, winp) {\
+#define GetWINDOW(obj, winp) do {\
     Data_Get_Struct(obj, struct windata, winp);\
     if (winp->window == 0) no_window();\
-}
-
+} while (0)
 
 static void
 free_window(winp)
@@ -596,19 +590,19 @@ static void
 no_mevent()
 {
   rb_raise(rb_eRuntimeError, "no such mouse event");
-};
+}
 
-#define GetMOUSE(obj, data) {\
+#define GetMOUSE(obj, data) do {\
     Data_Get_Struct(obj, struct mousedata, data);\
     if (data->mevent == 0) no_mevent();\
-}
+} while (0)
 
 static void
 curses_mousedata_free(struct mousedata *mdata)
 {
   if (mdata->mevent)
     free(mdata->mevent);
-};
+}
 
 static VALUE
 curses_getmouse(VALUE obj)
@@ -620,7 +614,7 @@ curses_getmouse(VALUE obj)
 			 0,curses_mousedata_free,mdata);
   mdata->mevent = (MEVENT*)malloc(sizeof(MEVENT));
   return (getmouse(mdata->mevent) == OK) ? val : Qnil;
-};
+}
 
 static VALUE
 curses_ungetmouse(VALUE obj, VALUE mevent)
@@ -629,19 +623,19 @@ curses_ungetmouse(VALUE obj, VALUE mevent)
 
   GetMOUSE(mevent,mdata);
   return (ungetmouse(mdata->mevent) == OK) ? Qtrue : Qfalse;
-};
+}
 
 static VALUE
 curses_mouseinterval(VALUE obj, VALUE interval)
 {
   return mouseinterval(NUM2INT(interval)) ? Qtrue : Qfalse;
-};
+}
 
 static VALUE
 curses_mousemask(VALUE obj, VALUE mask)
 {
   return INT2NUM(mousemask(NUM2UINT(mask),NULL));
-};
+}
 
 #define DEFINE_MOUSE_GET_MEMBER(func_name,mem) \
 static VALUE func_name (VALUE mouse) \
@@ -651,11 +645,11 @@ static VALUE func_name (VALUE mouse) \
   return (UINT2NUM(mdata->mevent -> mem)); \
 }
 
-DEFINE_MOUSE_GET_MEMBER(curs_mouse_id, id);
-DEFINE_MOUSE_GET_MEMBER(curs_mouse_x, x);
-DEFINE_MOUSE_GET_MEMBER(curs_mouse_y, y);
-DEFINE_MOUSE_GET_MEMBER(curs_mouse_z, z);
-DEFINE_MOUSE_GET_MEMBER(curs_mouse_bstate, bstate);
+DEFINE_MOUSE_GET_MEMBER(curs_mouse_id, id)
+DEFINE_MOUSE_GET_MEMBER(curs_mouse_x, x)
+DEFINE_MOUSE_GET_MEMBER(curs_mouse_y, y)
+DEFINE_MOUSE_GET_MEMBER(curs_mouse_z, z)
+DEFINE_MOUSE_GET_MEMBER(curs_mouse_bstate, bstate)
 #undef define_curs_mouse_member
 #endif /* USE_MOUSE */
 
@@ -832,18 +826,18 @@ window_maxy(obj)
     VALUE obj;
 {
     struct windata *winp;
-    int x, y;
 
     GetWINDOW(obj, winp);
-#ifdef getmaxy
+#if defined(getmaxy)
     return INT2FIX(getmaxy(winp->window));
-#else
-#ifdef getmaxyx
-    getmaxyx(winp->window, y, x);
-    return INT2FIX(y);
+#elif defined(getmaxyx)
+    {
+	int x, y;
+	getmaxyx(winp->window, y, x);
+	return INT2FIX(y);
+    }
 #else
     return INT2FIX(winp->window->_maxy+1);
-#endif
 #endif
 }
 
@@ -853,18 +847,18 @@ window_maxx(obj)
     VALUE obj;
 {
     struct windata *winp;
-    int x, y;
 
     GetWINDOW(obj, winp);
-#ifdef getmaxx
+#if defined(getmaxx)
     return INT2FIX(getmaxx(winp->window));
-#else
-#ifdef getmaxyx
-    getmaxyx(winp->window, y, x);
-    return INT2FIX(x);
+#elif defined(getmaxyx)
+    {
+	int x, y;
+	getmaxyx(winp->window, y, x);
+	return INT2FIX(x);
+    }
 #else
     return INT2FIX(winp->window->_maxx+1);
-#endif
 #endif
 }
 
@@ -916,7 +910,7 @@ window_box(argc, argv, self)
     GetWINDOW(self, winp);
     box(winp->window, NUM2CHR(vert), NUM2CHR(hor));
 
-    if( argc == 3 ){
+    if (!NIL_P(corn)) {
       int cur_x, cur_y, x, y;
       char c;
 
@@ -1096,7 +1090,6 @@ static VALUE
 window_idlok(VALUE obj, VALUE bf)
 {
   struct windata *winp;
-  int res;
 
   GetWINDOW(obj, winp);
   idlok(winp->window, RTEST(bf) ? TRUE : FALSE);
@@ -1113,7 +1106,7 @@ window_setscrreg(VALUE obj, VALUE top, VALUE bottom)
   res = wsetscrreg(winp->window, NUM2INT(top), NUM2INT(bottom));
   /* may have to raise exception on ERR */
   return (res == OK) ? Qtrue : Qfalse;
-};
+}
 
 static VALUE
 window_scroll(VALUE obj)
@@ -1142,7 +1135,7 @@ window_attroff(VALUE obj, VALUE attrs)
 
   GetWINDOW(obj,winp);
   return INT2FIX(wattroff(winp->window,NUM2INT(attrs)));
-};
+}
 
 static VALUE
 window_attron(VALUE obj, VALUE attrs)
@@ -1159,8 +1152,8 @@ window_attron(VALUE obj, VALUE attrs)
   }
   else{
     return val;
-  };
-};
+  }
+}
 
 static VALUE
 window_attrset(VALUE obj, VALUE attrs)
@@ -1229,7 +1222,7 @@ window_keypad(VALUE obj, VALUE val)
   return (keypad(winp->window,RTEST(val) ? TRUE : FALSE)) == OK ?
     Qtrue : Qfalse;
 #endif
-};
+}
 #endif /* HAVE_KEYPAD */
 
 /*------------------------- Initialization -------------------------*/
@@ -1537,8 +1530,8 @@ Init_curses()
 	rb_define_const(mCurses, c, INT2NUM(KEY_F(i)));
 	sprintf(c, "F%d", i);
 	rb_define_const(mKey, c, INT2NUM(KEY_F(i)));
-      };
-    };
+      }
+    }
 #endif
 #ifdef KEY_DL
     rb_curses_define_const(KEY_DL);
@@ -1878,7 +1871,7 @@ Init_curses()
       for( c = 'A'; c <= 'Z'; c++ ){
 	sprintf(name, "KEY_CTRL_%c", c);
 	rb_define_const(mCurses, name, INT2FIX(c - 'A' + 1));
-      };
+      }
     }
 #undef rb_curses_define_const
 
