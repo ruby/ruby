@@ -1,3 +1,7 @@
+Mon Dec  6 19:40:40 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* Makefile.in (.y.c): simplify the rule.
+
 Mon Dec  6 17:49:30 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (run_trap_eval): add prototype for Microsoft compiler.

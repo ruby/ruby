@@ -6,7 +6,7 @@ srcdir = @srcdir@
 VPATH = $(srcdir):$(srcdir)/missing
 
 CC = @CC@
-YACC = bison -y
+YACC = bison
 PURIFY =
 AUTOCONF = autoconf
 @SET_MAKE@
@@ -158,9 +158,7 @@ lex.c: keywords
 	cp "$(srcdir)/$@" .
 
 .y.c:
-	$(YACC) $(YFLAGS) $<
-	sed '/^#/s|y\.tab\.c|$@|' y.tab.c > $@
-	$(RM) y.tab.c
+	$(YACC) $(YFLAGS) -o $@ $<
 
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
