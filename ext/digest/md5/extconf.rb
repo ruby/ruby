@@ -13,7 +13,6 @@ if !with_config("bundled-md5") &&
     have_library("crypto") && have_header("openssl/md5.h")
   $objs << "md5ossl.#{$OBJEXT}"
 
-  $libs << " -lcrypto"
 else
   $objs << "md5.#{$OBJEXT}"
 end
