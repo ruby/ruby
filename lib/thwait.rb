@@ -96,7 +96,7 @@ class ThreadsWait
   
   # adds thread(s) to join, no wait.
   def join_nowait(*threads)
-    @threads.concat threads
+    @threads.concat threads.flatten
     for th in threads
       Thread.start do
 	th = th.join

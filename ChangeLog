@@ -1,3 +1,8 @@
+Wed Sep 20 23:21:38 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (load_file): two Ctrl-D was required to stop ruby at the
+	  beginning of stdin script read.
+
 Wed Sep 20 14:01:45 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_provided): detect infnite load loop.

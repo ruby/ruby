@@ -1880,6 +1880,7 @@ call_trace_func(event, file, line, self, id, klass)
     PUSH_FRAME();
     *ruby_frame = *prev;
     ruby_frame->prev = prev;
+    ruby_frame->iter = 0;	/* blocks not available anyway */
 
     if (file) {
 	ruby_frame->line = ruby_sourceline = line;
@@ -6022,7 +6023,7 @@ proc_call(proc, args)
     volatile int orphan;
     volatile int safe = ruby_safe_level;
 
-    if (rb_block_given_p()) {
+    if (rb_block_given_p() && ruby_frame->last_func) {
 	rb_warning("block for %s#%s is useless",
 		   rb_class2name(CLASS_OF(proc)),
 		   rb_id2name(ruby_frame->last_func));

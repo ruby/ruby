@@ -350,13 +350,11 @@ module Net
         @socket.reopen
       end
 
-      yield( u_header )
+      resp = yield( u_header )
       if ublock then
         adapter = HTTPReadAdapter.new( @command )
         ublock.call adapter
         resp = adapter.off
-      else
-	resp = @command.get_response
       end
       
       unless keep_alive? u_header, resp then
