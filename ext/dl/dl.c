@@ -635,6 +635,7 @@ Init_dl()
   rb_define_const(rb_mDL, "MAX_ARG", INT2NUM(MAX_ARG));
   rb_define_const(rb_mDL, "MAX_CBARG", INT2NUM(MAX_CBARG));
   rb_define_const(rb_mDL, "MAX_CBENT", INT2NUM(MAX_CBENT));
+  rb_define_const(rb_mDL, "DLSTACK", rb_tainted_str_new2(DLSTACK_METHOD));
 
   rb_define_module_function(rb_mDL, "dlopen", rb_dl_dlopen, -1);
   rb_define_module_function(rb_mDL, "set_callback", rb_dl_set_callback, -1);

@@ -101,7 +101,7 @@ rb_dlsym_new(void (*func)(), const char *name, const char *type)
     data->name = name ? strdup(name) : NULL;
     data->type = type ? strdup(type) : NULL;
     data->len  = type ? strlen(type) : 0;
-#if !(defined(USE_INLINE_ASM) || defined(USE_DLSTACK))
+#if !(defined(DLSTACK))
     if( data->len - 1 > MAX_ARG ){
       rb_raise(rb_eDLError, "maximum number of arguments is %d.", MAX_ARG);
     };
@@ -519,17 +519,11 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 
   func = sym->func;
 
-#if defined(USE_INLINE_ASM) || defined(USE_DLSTACK)
+#if defined(DLSTACK)
   {
-#if defined(USE_DLSTACK)
-#define DLSTACK_PROTO long,long,long,long,long,\
-                      long,long,long,long,long,\
-                      long,long,long,long,long
-#define DLSTACK_ARGS  stack[0],stack[1],stack[2],stack[3],stack[4],\
-                      stack[5],stack[6],stack[7],stack[8],stack[9],\
-                      stack[10],stack[11],stack[12],stack[13],stack[14]
+#if defined(DLSTACK_SIZE)
   int  stk_size;
-  long stack[15];
+  long stack[DLSTACK_SIZE];
   long *sp;
 
   sp = stack;
@@ -538,75 +532,72 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
     FREE_ARGS;
     rb_raise(rb_eDLTypeError, "unknown type '%c'.", -stk_size);
   }
-  else if( stk_size > (int)(sizeof(long) * 15) ){
+  else if( stk_size > (int)(DLSTACK_SIZE) ){
     FREE_ARGS;
     rb_raise(rb_eArgError, "too many arguments.");
   }
-#elif defined(USE_INLINE_ASM)
-#define DLSTACK_PROTO
-#define DLSTACK_ARGS
 #endif
 
-  ASM_START(sym);
+  DLSTACK_START(sym);
 
-#if defined(USE_DLSTACK)
-  for( i = 0; i <= sym->len -2; i++ )
-#else
+#if defined(DLSTACK_REVERSE)
   for( i = sym->len - 2; i >= 0; i-- )
+#else
+  for( i = 0; i <= sym->len -2; i++ )
 #endif
   {
     switch( sym->type[i+1] ){
     case 'p':
     case 'P':
-      ASM_PUSH_P(ANY2P(args[i]));
+      DLSTACK_PUSH_P(ANY2P(args[i]));
       break;
     case 'a':
     case 'A':
-      ASM_PUSH_P(ANY2P(args[i]));
+      DLSTACK_PUSH_P(ANY2P(args[i]));
       break;
     case 'C':
-      ASM_PUSH_C(ANY2C(args[i]));
+      DLSTACK_PUSH_C(ANY2C(args[i]));
       break;
     case 'c':
-      ASM_PUSH_P(ANY2P(args[i]));
+      DLSTACK_PUSH_P(ANY2P(args[i]));
       break;
     case 'H':
-      ASM_PUSH_H(ANY2H(args[i]));
+      DLSTACK_PUSH_H(ANY2H(args[i]));
       break;
     case 'h':
-      ASM_PUSH_P(ANY2P(args[i]));
+      DLSTACK_PUSH_P(ANY2P(args[i]));
       break;
     case 'I':
-      ASM_PUSH_I(ANY2I(args[i]));
+      DLSTACK_PUSH_I(ANY2I(args[i]));
       break;
     case 'i':
-      ASM_PUSH_P(ANY2P(args[i]));
+      DLSTACK_PUSH_P(ANY2P(args[i]));
       break;
     case 'L':
-      ASM_PUSH_L(ANY2L(args[i]));
+      DLSTACK_PUSH_L(ANY2L(args[i]));
       break;
     case 'l':
-      ASM_PUSH_P(ANY2P(args[i]));
+      DLSTACK_PUSH_P(ANY2P(args[i]));
       break;
     case 'F':
-      ASM_PUSH_F(ANY2F(args[i]));
+      DLSTACK_PUSH_F(ANY2F(args[i]));
       break;
     case 'f':
-      ASM_PUSH_P(ANY2P(args[i]));
+      DLSTACK_PUSH_P(ANY2P(args[i]));
       break;
     case 'D':
-      ASM_PUSH_D(ANY2D(args[i]));
+      DLSTACK_PUSH_D(ANY2D(args[i]));
       break;
     case 'd':
-      ASM_PUSH_P(ANY2P(args[i]));
+      DLSTACK_PUSH_P(ANY2P(args[i]));
       break;
     case 'S':
     case 's':
-      ASM_PUSH_P(ANY2S(args[i]));
+      DLSTACK_PUSH_P(ANY2S(args[i]));
       break;
     };
   }
-  ASM_END(sym->type);
+  DLSTACK_END(sym->type);
 
   {
     switch( sym->type[0] ){
@@ -678,14 +669,14 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
     }
   }
   }
-#else
+#else /* defined(DLSTACK) */
   switch(ftype){
 #include "call.func"
   default:
     FREE_ARGS;
     rb_raise(rb_eDLTypeError, "unsupported function type `%s'", sym->type);
   };
-#endif
+#endif /* defined(DLSTACK) */
 
   switch( sym->type[0] ){
   case '0':

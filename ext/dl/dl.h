@@ -8,9 +8,9 @@
 #include <ruby.h>
 #include <dlconfig.h>
 
-#define DL_VERSION     "1.1.0"
+#define DL_VERSION     "1.2.0"
 #define DL_MAJOR_VERSION 1
-#define DL_MINOR_VERSION 1
+#define DL_MINOR_VERSION 2
 #define DL_PATCH_VERSION 0
 
 #if defined(HAVE_DLFCN_H)
@@ -142,32 +142,48 @@
 
 #if defined(USE_INLINE_ASM)
 # if defined(__i386__) && defined(__GNUC__)
-#   define ASM_START(sym)
-#   define ASM_END(sym)
-#   define ASM_PUSH_C(x) asm volatile ("pushl %0" :: "g" (x));
-#   define ASM_PUSH_H(x) asm volatile ("pushl %0" :: "g" (x));
-#   define ASM_PUSH_I(x) asm volatile ("pushl %0" :: "g" (x));
-#   define ASM_PUSH_L(x) asm volatile ("pushl %0" :: "g" (x));
-#   define ASM_PUSH_P(x) asm volatile ("pushl %0" :: "g" (x));
-#   define ASM_PUSH_F(x) asm volatile ("flds %0"::"g"(x));\
-                         asm volatile ("subl $4,%esp");\
-                         asm volatile ("fstps (%esp)");
-#   define ASM_PUSH_D(x) asm volatile ("fldl %0"::"g"(x));\
-                         asm volatile ("subl $8,%esp");\
-                         asm volatile ("fstpl (%esp)")
+#   define DLSTACK
+#   define DLSTACK_METHOD "asm"
+#   define DLSTACK_REVERSE
+#   define DLSTACK_PROTO
+#   define DLSTACK_ARGS
+#   define DLSTACK_START(sym)
+#   define DLSTACK_END(sym)
+#   define DLSTACK_PUSH_C(x) asm volatile ("pushl %0" :: "g" (x));
+#   define DLSTACK_PUSH_H(x) asm volatile ("pushl %0" :: "g" (x));
+#   define DLSTACK_PUSH_I(x) asm volatile ("pushl %0" :: "g" (x));
+#   define DLSTACK_PUSH_L(x) asm volatile ("pushl %0" :: "g" (x));
+#   define DLSTACK_PUSH_P(x) asm volatile ("pushl %0" :: "g" (x));
+#   define DLSTACK_PUSH_F(x) asm volatile ("flds %0"::"g"(x));\
+                             asm volatile ("subl $4,%esp");\
+                             asm volatile ("fstps (%esp)");
+#   define DLSTACK_PUSH_D(x) asm volatile ("fldl %0"::"g"(x));\
+                             asm volatile ("subl $8,%esp");\
+                             asm volatile ("fstpl (%esp)")
 # else
 # error --with-asm is not supported on this machine
 # endif
 #elif defined(USE_DLSTACK)
-# define ASM_START(sym)
-# define ASM_END(sym)
-# define ASM_PUSH_C(x)  {long v=(long)x; memcpy(sp,&v,sizeof(long)); sp++;}
-# define ASM_PUSH_H(x)  {long v=(long)x; memcpy(sp,&v,sizeof(long)); sp++;}
-# define ASM_PUSH_I(x)  {long v=(long)x; memcpy(sp,&v,sizeof(long)); sp++;}
-# define ASM_PUSH_L(x)  memcpy(sp,&x,sizeof(long)); sp++;
-# define ASM_PUSH_P(x)  memcpy(sp,&x,sizeof(void*)); sp++;
-# define ASM_PUSH_F(x)  memcpy(sp,&x,sizeof(float)); sp+=sizeof(float)/sizeof(long);
-# define ASM_PUSH_D(x)  memcpy(sp,&x,sizeof(double)); sp+=sizeof(double)/sizeof(long);
+# define DLSTACK
+# define DLSTACK_METHOD "dl"
+# define DLSTACK_PROTO long,long,long,long,long,\
+                       long,long,long,long,long,\
+                       long,long,long,long,long
+# define DLSTACK_ARGS  stack[0],stack[1],stack[2],stack[3],stack[4],\
+                       stack[5],stack[6],stack[7],stack[8],stack[9],\
+                       stack[10],stack[11],stack[12],stack[13],stack[14]
+# define DLSTACK_SIZE  (sizeof(long)*15)
+# define DLSTACK_START(sym)
+# define DLSTACK_END(sym)
+# define DLSTACK_PUSH_C(x)  {long v=(long)x; memcpy(sp,&v,sizeof(long)); sp++;}
+# define DLSTACK_PUSH_H(x)  {long v=(long)x; memcpy(sp,&v,sizeof(long)); sp++;}
+# define DLSTACK_PUSH_I(x)  {long v=(long)x; memcpy(sp,&v,sizeof(long)); sp++;}
+# define DLSTACK_PUSH_L(x)  memcpy(sp,&x,sizeof(long)); sp++;
+# define DLSTACK_PUSH_P(x)  memcpy(sp,&x,sizeof(void*)); sp++;
+# define DLSTACK_PUSH_F(x)  memcpy(sp,&x,sizeof(float)); sp+=sizeof(float)/sizeof(long);
+# define DLSTACK_PUSH_D(x)  memcpy(sp,&x,sizeof(double)); sp+=sizeof(double)/sizeof(long);
+#else
+# define DLSTACK_METHOD "none"
 #endif
 
 extern VALUE rb_mDL;
