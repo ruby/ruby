@@ -68,7 +68,7 @@ sitelibdir = destdir+CONFIG["sitelibdir"]
 sitearchlibdir = destdir+CONFIG["sitearchdir"]
 mandir = destdir+CONFIG["mandir"] + "/man1"
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
-enable_shared = configure_args.include?('--enable-shared')
+enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO"]
 lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
