@@ -1,3 +1,8 @@
+Fri Feb  6 18:26:00 2004  akira yamada  <akira@ruby-lang.org>
+
+	* test/ruby/test_proc.rb (TestProc::test_eq): added tests for
+	  Proc#==.
+
 Fri Feb  6 10:12:06 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (bsock_do_not_reverse_lookup): control reverse
