@@ -1185,9 +1185,13 @@ ruby_init()
 	_macruby_init();
 #endif
 	ruby_prog_init();
+	ALLOW_INTS;
     }
     POP_TAG();
-    if (state) error_print();
+    if (state) {
+	error_print();
+	exit(1);
+    }
     POP_SCOPE();
     ruby_scope = top_scope;
 }

@@ -930,13 +930,35 @@ inspect_call(arg)
 }
 
 static VALUE
+get_inspect_tbl(create)
+    int create;
+{
+    VALUE inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
+
+    if (create && NIL_P(inspect_tbl)) {
+      tbl_init:
+	inspect_tbl = rb_ary_new();
+	rb_thread_local_aset(rb_thread_current(), inspect_key, inspect_tbl);
+    }
+    else if (TYPE(inspect_tbl) != T_ARRAY) {
+	rb_warn("invalid inspect_tbl value");
+	if (create) goto tbl_init;
+	rb_thread_local_aset(rb_thread_current(), inspect_key, Qnil);
+	return Qnil;
+    }
+    return inspect_tbl;
+}
+
+static VALUE
 inspect_ensure(obj)
     VALUE obj;
 {
     VALUE inspect_tbl;
 
-    inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
-    rb_ary_pop(inspect_tbl);
+    inspect_tbl = get_inspect_tbl(Qfalse);
+    if (!NIL_P(inspect_tbl)) {
+	rb_ary_pop(inspect_tbl);
+    }
     return 0;
 }
 
@@ -949,11 +971,7 @@ rb_protect_inspect(func, obj, arg)
     VALUE inspect_tbl;
     VALUE id;
 
-    inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
-    if (NIL_P(inspect_tbl)) {
-	inspect_tbl = rb_ary_new();
-	rb_thread_local_aset(rb_thread_current(), inspect_key, inspect_tbl);
-    }
+    inspect_tbl = get_inspect_tbl(Qtrue);
     id = rb_obj_id(obj);
     if (rb_ary_includes(inspect_tbl, id)) {
 	return (*func)(obj, arg);
@@ -972,7 +990,7 @@ rb_inspecting_p(obj)
 {
     VALUE inspect_tbl;
 
-    inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
+    inspect_tbl = get_inspect_tbl(Qfalse);
     if (NIL_P(inspect_tbl)) return Qfalse;
     return rb_ary_includes(inspect_tbl, rb_obj_id(obj));
 }

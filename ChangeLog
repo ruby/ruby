@@ -11,6 +11,23 @@ Mon May 19 08:08:51 2003  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* sample/cal.rb: ditto.
 
+Sat May 17 12:02:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (get_inspect_tbl): check whether inspect_tbl value is a
+	  valid array. (ruby-bugs-ja PR#65)
+
+	* array.c (inspect_ensure,rb_protect_inspect,rb_inspecting_p):
+	  use get_inspect_tbl().
+
+Sat May 17 11:50:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_abort): call exit(1) if exception is raised.  This
+	  patch was made by Nobuyoshi Nakada <nobu.nokada@softhome.net> on
+	  2002-05-30.  (ruby-bugs-ja PR#236)
+
+	* signal.c: disable Ruby's interrupt handler at the beginning.
+	  (ruby-bugs-ja PR#236)
+
 Sat May 17 02:17:42 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/rational.rb (Integer::denominator): fixed typo.

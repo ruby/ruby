@@ -271,7 +271,7 @@ static VALUE trap_list[NSIG];
 static rb_atomic_t trap_pending_list[NSIG];
 rb_atomic_t rb_trap_pending;
 rb_atomic_t rb_trap_immediate;
-int rb_prohibit_interrupt;
+int rb_prohibit_interrupt = 1;
 
 void
 rb_gc_mark_trap_list()
