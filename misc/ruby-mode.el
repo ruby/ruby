@@ -175,6 +175,7 @@
   (make-local-variable 'paragraph-ignore-fill-prefix)
   (setq paragraph-ignore-fill-prefix t))
 
+;;;###autoload
 (defun ruby-mode ()
   "Major mode for editing ruby scripts.
 \\[ruby-indent-command] properly indents subexpressions of multi-line
