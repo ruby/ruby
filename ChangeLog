@@ -1,10 +1,12 @@
-Tue Feb  1 00:19:13 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Feb  1 00:20:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, configure.in: made EXTOUT configurable.
 
 	* ext/extmk.rb (extmake), lib/mkmf.rb: keep topdir as relative style.
 
 	* lib/mkmf.rb: make extensions in depth order.  [ruby-dev:25522]
+
+	* configure.in (aix): fix linker flags on AIX.  [ruby-talk:125460]
 
 Mon Jan 31 13:16:39 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
