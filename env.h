@@ -22,9 +22,13 @@ extern struct FRAME {
     char *file;
     int line;
     int iter;
+    int flags;
 } *ruby_frame;
 
 void rb_gc_mark_frame _((struct FRAME *));
+
+#define FRAME_ALLOCA 0
+#define FRAME_MALLOC 1
 
 extern struct SCOPE {
     struct RBasic super;

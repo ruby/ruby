@@ -98,7 +98,7 @@ struct timeval rb_time_interval _((VALUE));
 
 static VALUE filename, current_file;
 static int gets_lineno;
-static int init_p = 0, next_p = 0;
+static int init_p = 0, next_p = 0, first_p = 1;
 static VALUE lineno;
 
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
@@ -2274,6 +2274,7 @@ next_argv()
 	    current_file = rb_stdin;
 	}
 	init_p = 1;
+	first_p = 0;
 	gets_lineno = 0;
     }
 
@@ -3084,8 +3085,13 @@ argf_readchar()
 static VALUE
 argf_eof()
 {
+    int first = first_p;
+
     if (init_p == 0 && !next_argv())
 	return Qtrue;
+    if (!first && next_p == -1) {
+	return Qtrue;
+    }
     if (TYPE(current_file) != T_FILE) {
 	return argf_forward();
     }

@@ -1,3 +1,21 @@
+Tue Aug 15 17:30:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (frame_dup): should set flag FRAME_MALLOC after
+	  argv allocation.
+
+	* eval.c (blk_free): should not free argv if GC was called before
+	  frame_dup.
+
+Tue Aug 15 01:45:28 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_eof): should return true at the end of ARGF without
+	  checking stdout if arguments are given.
+
+Mon Aug 14 10:34:32 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_status): status should return false for normal
+	  termination, nil for termination by exception.
+
 Wed Aug  9 13:24:25 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* win32/win32.[ch]: emulate rename(2).

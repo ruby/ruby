@@ -203,6 +203,7 @@ module Net
 	  raise FTPReplyError, resp
 	end
 	conn = sock.accept
+	sock.close
       end
       return conn
     end
