@@ -726,7 +726,12 @@ module URI
     #   # =>  #<URI::HTTP:0x2021f3b0 URL:http://my.rubysite.com/main.rbx?page=1>
     #
     def merge(oth)
-      base, rel = merge0(oth)
+      begin
+        base, rel = merge0(oth)
+      rescue
+        raise $!.class, $!.message
+      end
+
       if base == rel
         return base
       end
@@ -734,7 +739,7 @@ module URI
       authority = rel.userinfo || rel.host || rel.port
 
       # RFC2396, Section 5.2, 2)
-      if rel.path.empty? && !authority && !rel.query
+      if (rel.path.nil? || rel.path.empty?) && !authority && !rel.query
         base.set_fragment(rel.fragment) if rel.fragment
         return base
       end
@@ -744,10 +749,10 @@ module URI
 
       # RFC2396, Section 5.2, 4)
       if !authority
-        base.set_path(merge_path(base.path, rel.path))
+        base.set_path(merge_path(base.path, rel.path)) if base.path && rel.path
       else
         # RFC2396, Section 5.2, 4)
-        base.set_path(rel.path)
+        base.set_path(rel.path) if rel.path
       end
 
       # RFC2396, Section 5.2, 7)
@@ -783,14 +788,6 @@ module URI
         #  "both URI are absolute"
         # hmm... should return oth for usability?
         return oth, oth
-      end
-
-      if !self.hierarchical?
-        raise BadURIError, 
-          "not hierarchical URI: #{self}"
-      elsif !oth.hierarchical?
-        raise BadURIError, 
-          "not hierarchical URI: #{oth}"
       end
 
       if self.absolute?
@@ -861,12 +858,8 @@ module URI
           "relative URI: #{oth}"
       end
 
-      if !self.hierarchical? || !oth.hierarchical?
-        return self, self.dup
-      end
-
       if self.scheme != oth.scheme
-        return oth, oth.dup
+        return self, self.dup
       end
       rel = URI::Generic.new(nil, # it is relative URI
                              self.userinfo, self.host, self.port, 
@@ -876,6 +869,9 @@ module URI
       if rel.userinfo != oth.userinfo ||
           rel.host.to_s.downcase != oth.host.to_s.downcase ||
           rel.port != oth.port
+	if self.userinfo.nil? && self.host.nil?
+	  return self, self.dup
+	end
         rel.set_port(nil) if rel.port == oth.default_port
         return rel, rel
       end
@@ -883,8 +879,12 @@ module URI
       rel.set_host(nil)
       rel.set_port(nil)
 
-      if rel.path == oth.path
+      if rel.path && rel.path == oth.path
         rel.set_path('')
+        rel.set_query(nil) if rel.query == oth.query
+        return rel, rel
+      elsif rel.opaque && rel.opaque == oth.opaque
+        rel.set_opaque('')
         rel.set_query(nil) if rel.query == oth.query
         return rel, rel
       end
@@ -913,7 +913,11 @@ module URI
     #
     def route_from(oth)
       # you can modify `rel', but can not `oth'.
-      oth, rel = route_from0(oth)
+      begin
+        oth, rel = route_from0(oth)
+      rescue
+        raise $!.class, $!.message
+      end
       if oth == rel
         return rel
       end
@@ -1043,6 +1047,14 @@ module URI
       else
         false
       end
+    end
+
+    def hash
+      self.component_ary.hash
+    end
+
+    def eql?(oth)
+      self.component_ary.eql?(oth.component_ary)
     end
 
 =begin

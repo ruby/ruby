@@ -158,6 +158,11 @@ class TestGeneric < Test::Unit::TestCase
     assert_equal('http://foo/bar/', u.to_s)
     assert(nil != u.merge!("../baz"))
     assert_equal('http://foo/baz', u.to_s)
+
+    # [ruby-dev:23628]
+    u0 = URI.parse('mailto:foo@example.com')
+    u1 = URI.parse('mailto:foo@example.com#bar')
+    assert_equal(uri_to_ary(u0 + '#bar'), uri_to_ary(u1))
   end
 
   def test_route
@@ -179,6 +184,15 @@ class TestGeneric < Test::Unit::TestCase
     assert_equal('//MOGE/b/', url.to_s)
 
     url = URI.parse('file:///a/b/').route_to('file:///a/b/')
+    assert_equal('', url.to_s)
+
+    url = URI.parse('mailto:foo@example.com').route_to('mailto:foo@example.com#bar')
+    assert_equal('#bar', url.to_s)
+
+    url = URI.parse('mailto:foo@example.com#bar').route_to('mailto:foo@example.com')
+    assert_equal('', url.to_s)
+
+    url = URI.parse('mailto:foo@example.com').route_to('mailto:foo@example.com')
     assert_equal('', url.to_s)
   end
 
