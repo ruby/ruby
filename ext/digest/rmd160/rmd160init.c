@@ -2,7 +2,11 @@
 /* $Id$ */
 
 #include "digest.h"
+#if defined(HAVE_OPENSSL_RIPEMD_H)
+#include "rmd160ossl.h"
+#else
 #include "rmd160.h"
+#endif
 
 static algo_t rmd160 = {
     RMD160_DIGEST_LENGTH,

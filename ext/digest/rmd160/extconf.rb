@@ -5,11 +5,17 @@ require "mkmf"
 
 $CFLAGS << " -DHAVE_CONFIG_H -I#{File.dirname(__FILE__)}/.."
 
-$objs = [
-  "rmd160.#{$OBJEXT}",
-  "rmd160hl.#{$OBJEXT}",
-  "rmd160init.#{$OBJEXT}",
-]
+$objs = [ "rmd160init.#{$OBJEXT}" ]
+
+dir_config("openssl")
+
+if !with_config("bundled-rmd160") &&
+    have_library("crypto") && have_header("openssl/ripemd.h")
+  $objs << "rmd160ossl.#{$OBJEXT}"
+  $libs << " -lcrypto"
+else
+  $objs << "rmd160.#{$OBJEXT}" << "rmd160hl.#{$OBJEXT}"
+end
 
 have_header("sys/cdefs.h")
 
