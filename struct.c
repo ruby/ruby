@@ -132,7 +132,7 @@ rb_struct_set(obj, val)
 
     member = rb_struct_iv_get(rb_obj_class(obj), "__member__");
     if (NIL_P(member)) {
-	rb_bug("non-initialized struct");
+	rb_bug("uninitialized struct");
     }
     rb_struct_modify(obj);
     for (i=0; i<RARRAY(member)->len; i++) {
@@ -568,6 +568,7 @@ Init_Struct()
     rb_cStruct = rb_define_class("Struct", rb_cObject);
     rb_include_module(rb_cStruct, rb_mEnumerable);
 
+    rb_undef_method(CLASS_OF(rb_cStruct), "allocate");
     rb_define_singleton_method(rb_cStruct, "new", rb_struct_s_def, -1);
 
     rb_define_method(rb_cStruct, "initialize", rb_struct_initialize, -2);

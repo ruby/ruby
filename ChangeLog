@@ -1,3 +1,8 @@
+Thu Feb 14 14:13:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (Init_Struct): should undefine "allocate" for Struct
+	  class (it's redefined in the subclasses).
+
 Wed Feb 13 17:58:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (stmt): local variable declaration order was changed

@@ -881,7 +881,6 @@ arg		: lhs '=' arg
 			int need_negate = Qfalse;
 
 			if (nd_type($1) == NODE_LIT) {
-
 			    switch (TYPE($1->nd_lit)) {
 			      case T_FIXNUM:
 			      case T_FLOAT:
