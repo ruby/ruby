@@ -268,6 +268,10 @@ io_write(io, str)
 #endif
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr->path);
+	fptr->mode &= ~FMODE_WBUF;
+    }
+    else {
+	fptr->mode |= FMODE_WBUF;
     }
 
     return INT2FIX(n);
@@ -300,6 +304,7 @@ rb_io_flush(io)
     f = GetWriteFile(fptr);
     
     io_fflush(f, fptr->path);
+    fptr->mode &= ~FMODE_WBUF;
 
     return io;
 }
@@ -451,6 +456,7 @@ rb_io_fsync(io)
     f = GetWriteFile(fptr);
     
     io_fflush(f, fptr->path);
+    fptr->mode &= ~FMODE_WBUF;
     if (fsync(fileno(f)) < 0)
 	rb_sys_fail(fptr->path);
     return INT2FIX(0);
@@ -1103,13 +1109,18 @@ fptr_finalize(fptr, fin)
     if (fptr->f2) {
 	f2 = fileno(fptr->f2);
 	n2 = fclose(fptr->f2);
+	fptr->f2 = 0;
 	if (n2 < 0) e = errno;
     }
-    if (fptr->f && fptr->f != fptr->f2) {
+    if (fptr->f) {
 	f1 = fileno(fptr->f);
 	n1 = fclose(fptr->f);
-	if (n1 < 0 && (e = errno) == EBADF && f1 == f2)
-	    n1 = 0;
+	fptr->f = 0;
+	if (n1 < 0 && errno == EBADF) {
+	    if (f1 == f2 || !(fptr->mode & FMODE_WBUF)) {
+		n1 = 0;
+	    }
+	}
     }
     if (!fin && (n1 < 0 || n2 < 0)) {
 	if (n1 == 0) errno = e;
@@ -1128,7 +1139,6 @@ rb_io_fptr_cleanup(fptr, fin)
     else {
 	fptr_finalize(fptr, fin);
     }
-    fptr->f = fptr->f2 = 0;
 
     if (fptr->path) {
 	free(fptr->path);
@@ -1259,6 +1269,9 @@ rb_io_syswrite(io, str)
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
+    if (fptr->mode & FMODE_WBUF) {
+	rb_warn("syswrite for buffered IO");
+    }
     if (!rb_thread_fd_writable(fileno(f))) {
         rb_io_check_closed(fptr);
     }
@@ -1975,6 +1988,7 @@ io_reopen(io, nfile)
     else if (orig->mode & FMODE_WRITABLE) {
 	io_fflush(orig->f, orig->path);
     }
+    orig->mode &= ~FMODE_WBUF;
     rb_thread_fd_close(fileno(fptr->f));
 
     /* copy OpenFile structure */
@@ -2104,6 +2118,7 @@ rb_io_clone(io)
     else if (orig->mode & FMODE_WRITABLE) {
 	io_fflush(orig->f, orig->path);
     }
+    orig->mode &= ~FMODE_WBUF;
 
     /* copy OpenFile structure */
     fptr->mode = orig->mode;
@@ -2228,8 +2243,13 @@ rb_io_putc(io, ch)
 
     if (fputc(c, f) == EOF)
 	rb_sys_fail(fptr->path);
+    fptr->mode |= FMODE_WBUF;
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr->path);
+	fptr->mode &= ~FMODE_WBUF;
+    }
+    else {
+	fptr->mode |= FMODE_WBUF;
     }
 
     return ch;

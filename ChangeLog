@@ -1,3 +1,10 @@
+Thu Feb  7 00:18:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_write): flag when buffered write is done.
+
+	* io.c (fptr_finalize): do not raise error on EBADF if write
+	  buffer is empty.
+
 Wed Feb  6 17:18:54 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* configure.in: keep old config.h unless changed.
