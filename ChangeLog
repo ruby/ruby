@@ -1,3 +1,7 @@
+Thu Jan 30 08:27:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (rb_file_s_expand_path): removed a sludge.
+
 Tue Jan 28 04:45:03 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* instruby.rb (parse_args), ext/extmk.rb (parse_args): Prepend a

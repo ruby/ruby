@@ -1464,12 +1464,15 @@ rb_file_s_expand_path(argc, argv)
 	    }
 	    BUFCHECK(strlen(dir) > buflen);
 	    strcpy(buf, dir);
-	    for (p = buf; p < buf + strlen(dir); p = CharNext(p)) {
-		if (isdirsep(*p)) {
+#ifdef DOSISH
+	    for (p = buf; *p; p = CharNext(p)) {
+		if (*p == '\\') {
 		    *p = '/';
 		}
 	    }
+#else
 	    p = buf + strlen(dir);
+#endif
 	    s++;
 	    tainted = 1;
 	}
