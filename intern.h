@@ -98,6 +98,7 @@ void rb_disable_super _((VALUE, char *));
 void rb_enable_super _((VALUE, char *));
 void rb_clear_cache _((void));
 void rb_alias _((VALUE, ID, ID));
+void rb_attr _((VALUE,ID,int,int,int));
 int rb_method_boundp _((VALUE, ID, int));
 VALUE dyna_var_defined _((ID));
 VALUE dyna_var_ref _((ID));

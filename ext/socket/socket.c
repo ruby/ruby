@@ -85,6 +85,7 @@ sock_new(class, fd)
     NEWOBJ(sock, struct RFile);
     OBJSETUP(sock, class, T_FILE);
 
+    rb_secure(4);
     MakeOpenFile(sock, fp);
     fp->f = rb_fdopen(fd, "r");
 #ifdef NT
@@ -107,6 +108,7 @@ bsock_shutdown(argc, argv, sock)
     int how;
     OpenFile *fptr;
 
+    rb_secure(4);
     rb_scan_args(argc, argv, "01", &howto);
     if (howto == Qnil)
 	how = 2;

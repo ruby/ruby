@@ -48,8 +48,8 @@ static VALUE method_proc _((VALUE));
 #define SCOPE_PUBLIC    0
 #define SCOPE_PRIVATE   FL_USER4
 #define SCOPE_PROTECTED FL_USER5
-#define SCOPE_MODFUNC   (FL_USER4|FL_USER4)
-#define SCOPE_MASK      (FL_USER4|FL_USER4)
+#define SCOPE_MODFUNC   (FL_USER4|FL_USER5)
+#define SCOPE_MASK      (FL_USER4|FL_USER5)
 #define SCOPE_SET(x,f)  do {FL_UNSET(x,SCOPE_MASK);FL_SET(x,(f))} while(0)
 
 #define CACHE_SIZE 0x200
@@ -309,6 +309,46 @@ rb_method_boundp(klass, id, ex)
     if (method_boundp(klass, id, ex))
 	return TRUE;
     return FALSE;
+}
+
+void
+rb_attr(klass, id, read, write, ex)
+    VALUE klass;
+    ID id;
+    int read, write, ex;
+{
+    char *name;
+    char *buf;
+    ID attr, attreq, attriv;
+    int noex;
+
+    if (!ex) noex = NOEX_PUBLIC;
+    else {
+	if (FL_TEST(the_scope, SCOPE_PRIVATE)) {
+	    noex = NOEX_PRIVATE;
+	    Warning("private attribute?");
+	}
+	else if (FL_TEST(the_scope, SCOPE_PROTECTED)) {
+	    noex = NOEX_PROTECTED;
+	}
+	else {
+	    noex = NOEX_PUBLIC;
+	}
+    }
+
+    name = rb_id2name(id);
+    attr = rb_intern(name);
+    buf = ALLOCA_N(char,strlen(name)+2);
+    sprintf(buf, "%s=", name);
+    attreq = rb_intern(buf);
+    sprintf(buf, "@%s", name);
+    attriv = rb_intern(buf);
+    if (read) {
+	rb_add_method(klass, attr, NEW_IVAR(attriv), noex);
+    }
+    if (write) {
+	rb_add_method(klass, attreq, NEW_ATTRSET(attriv), noex);
+    }
 }
 
 static ID init, eqq, each, aref, aset, match;
@@ -633,7 +673,7 @@ extern int   sourceline;
 extern char *sourcefile;
 
 static VALUE trace_func = 0;
-static void call_trace_func();
+static void call_trace_func _((char*,char*,int,VALUE,ID));
 
 static void
 error_pos()
@@ -828,14 +868,14 @@ eval_node(self)
 int rb_in_eval;
 
 #ifdef THREAD
-static void thread_cleanup();
-static void thread_wait_other_threads();
-static VALUE thread_current();
+static void thread_cleanup _((void));
+static void thread_wait_other_threads _((void));
+static VALUE thread_current _((void));
 #endif
 
 static int exit_status;
 
-static void exec_end_proc();
+static void exec_end_proc _((void));
 
 void
 ruby_run()
@@ -1384,8 +1424,7 @@ is_defined(self, node, buf)
     return 0;
 }
 
-static int handle_rescue();
-VALUE rb_yield_0();
+static int handle_rescue _((VALUE,NODE*));
 
 static void blk_free();
 
@@ -2575,7 +2614,7 @@ rb_iter_break()
 static volatile voidfn rb_longjmp;
 #endif
 
-static VALUE make_backtrace();
+static VALUE make_backtrace _((void));
 
 static VALUE
 check_errat(val)
@@ -3835,8 +3874,6 @@ mod_module_eval(mod, src)
 
 VALUE rb_load_path;
 
-char *dln_find_file();
-
 static char*
 find_file(file)
     char *file;
@@ -4303,6 +4340,33 @@ errat_setter(val, id, var)
 }
 
 VALUE f_global_variables();
+VALUE f_instance_variables();
+
+VALUE
+f_local_variables()
+{
+    ID *tbl;
+    int n, i;
+    VALUE ary = ary_new();
+    struct RVarmap *vars;
+
+    tbl = the_scope->local_tbl;
+    if (tbl) {
+	n = *tbl++;
+	for (i=2; i<n; i++) {	/* skip first 2 ($_ and $~) */
+	    ary_push(ary, str_new2(rb_id2name(tbl[i])));
+	}
+    }
+
+    vars = the_dyna_vars;
+    while (vars) {
+	ary_push(ary, str_new2(rb_id2name(vars->id)));
+	vars = vars->next;
+    }
+
+    return ary;
+}
+
 static VALUE f_catch();
 static VALUE f_throw();
 
@@ -4402,6 +4466,7 @@ Init_eval()
     rb_define_global_function("catch", f_catch, 1);
     rb_define_global_function("throw", f_throw, -1);
     rb_define_global_function("global_variables", f_global_variables, 0);
+    rb_define_global_function("local_variables", f_local_variables, 0);
 
     rb_define_method(mKernel, "send", f_send, -1);
     rb_define_method(mKernel, "__send__", f_send, -1);

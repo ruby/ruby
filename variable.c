@@ -640,12 +640,12 @@ rb_gvar_defined(entry)
 }
 
 static int
-gvar_i(key, entry, ary)
+var_i(key, entry, ary)
     ID key;
     struct global_entry *entry;
     VALUE ary;
 {
-    ary_push(ary, str_new2(rb_id2name(entry->id)));
+    ary_push(ary, str_new2(rb_id2name(key)));
     return ST_CONTINUE;
 }
 
@@ -653,13 +653,15 @@ VALUE
 f_global_variables()
 {
     VALUE ary = ary_new();
-    char buf[3];
-    char *s = "^&`'+123456789";
+    char buf[4];
+    char *s = "&`'+123456789";
 
-    st_foreach(global_tbl, gvar_i, ary);
-    while (*s) {
-	sprintf(buf, "$%c", *s++);
-	ary_push(ary, str_new2(buf));
+    st_foreach(global_tbl, var_i, ary);
+    if (!NIL_P(backref_get())) {
+	while (*s) {
+	    sprintf(buf, "$%c", *s++);
+	    ary_push(ary, str_new2(buf));
+	}
     }
     return ary;
 }
@@ -746,36 +748,23 @@ rb_ivar_defined(obj, id)
     return FALSE;
 }
 
-static int
-ivar_i(key, value, hash)
-    ID key;
-    VALUE value;
-    VALUE hash;
-{
-    if (rb_is_instance_id(key)) {
-	hash_aset(hash, str_new2(rb_id2name(key)), value);
-    }
-    return ST_CONTINUE;
-}
-
 VALUE
 obj_instance_variables(obj)
     VALUE obj;
 {
-    VALUE hash = hash_new();
+    VALUE ary;
 
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+	ary = ary_new();
 	if (ROBJECT(obj)->iv_tbl) {
-	    st_foreach(ROBJECT(obj)->iv_tbl, ivar_i, hash);
+	    st_foreach(ROBJECT(obj)->iv_tbl, var_i, ary);
 	}
-	break;
-      default:
-       break;
+	return ary;
     }
-    return hash;
+    return Qnil;
 }
 
 VALUE

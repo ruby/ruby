@@ -545,7 +545,7 @@ mod_attr(argc, argv, klass)
     VALUE name, pub;
 
     rb_scan_args(argc, argv, "11", &name, &pub);
-    rb_define_attr(klass, rb_to_id(name), 1, RTEST(pub));
+    rb_attr(klass, rb_to_id(name), 1, RTEST(pub), TRUE);
     return Qnil;
 }
 
@@ -558,7 +558,7 @@ mod_attr_reader(argc, argv, klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_define_attr(klass, rb_to_id(argv[i]), 1, 0);
+	rb_attr(klass, rb_to_id(argv[i]), 1, 0, TRUE);
     }
     return Qnil;
 }
@@ -572,7 +572,7 @@ mod_attr_writer(argc, argv, klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_define_attr(klass, rb_to_id(argv[i]), 0, 1);
+	rb_attr(klass, rb_to_id(argv[i]), 0, 1, TRUE);
     }
     return Qnil;
 }
@@ -586,7 +586,7 @@ mod_attr_accessor(argc, argv, klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_define_attr(klass, rb_to_id(argv[i]), 1, 1);
+	rb_attr(klass, rb_to_id(argv[i]), 1, 1, TRUE);
     }
     return Qnil;
 }
@@ -855,6 +855,7 @@ Init_Object()
 
     rb_define_method(mKernel, "hash", obj_id, 0);
     rb_define_method(mKernel, "id", obj_id, 0);
+    rb_define_method(mKernel, "__id__", obj_id, 0);
     rb_define_method(mKernel, "type", obj_type, 0);
 
     rb_define_method(mKernel, "clone", obj_clone, 0);

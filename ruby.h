@@ -385,7 +385,7 @@ void rb_define_global_function _((char *, VALUE (*)(), int));
 
 void rb_undef_method _((VALUE,char*));
 void rb_define_alias _((VALUE,char*,char*));
-void rb_define_attr _((VALUE,ID,int,int));
+void rb_define_attr _((VALUE,char*,int,int));
 
 ID rb_intern _((char*));
 char *rb_id2name _((ID));

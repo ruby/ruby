@@ -503,28 +503,12 @@ rb_define_alias(klass, name1, name2)
 }
 
 void
-rb_define_attr(klass, id, read, write)
+rb_define_attr(klass, name, read, write)
     VALUE klass;
-    ID id;
+    char *name;
     int read, write;
 {
-    char *name;
-    char *buf;
-    ID attr, attreq, attriv;
-
-    name = rb_id2name(id);
-    attr = rb_intern(name);
-    buf = ALLOCA_N(char,strlen(name)+2);
-    sprintf(buf, "%s=", name);
-    attreq = rb_intern(buf);
-    sprintf(buf, "@%s", name);
-    attriv = rb_intern(buf);
-    if (read) {
-	rb_add_method(klass, attr, NEW_IVAR(attriv), 0);
-    }
-    if (write) {
-	rb_add_method(klass, attreq, NEW_ATTRSET(attriv), 0);
-    }
+    rb_attr(klass, rb_intern(name), read, write, FALSE);
 }
 
 #include <varargs.h>

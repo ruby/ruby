@@ -1,3 +1,16 @@
+Sat Mar 28 00:47:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (ruby_prog_init): `site_ruby' added to load_path.
+
+	* eval.c (f_local_variables): new method to return an array of
+ 	  local variable names.
+
+	* variable.c (obj_instance_variables): now returns an array of
+	  variable names, as described in the reference.
+
+	* eval.c (rb_attr): honors default method visibility of the
+	  current scope.
+
 Fri Mar 27 13:49:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.c (ruby_prog_init): load-path order changed.  Paths in

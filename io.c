@@ -725,6 +725,14 @@ io_close(io)
     return Qnil;
 }
 
+VALUE
+io_close_method(io)
+    VALUE io;
+{
+    rb_secure(4);
+    return io_close(io);
+}
+
 static VALUE
 io_closed(io)
     VALUE io;
@@ -2446,7 +2454,7 @@ Init_IO()
     rb_define_method(cIO, "eof", io_eof, 0);
     rb_define_method(cIO, "eof?", io_eof, 0);
 
-    rb_define_method(cIO, "close", io_close, 0);
+    rb_define_method(cIO, "close", io_close_method, 0);
     rb_define_method(cIO, "closed?", io_closed, 0);
 
     rb_define_method(cIO, "isatty", io_isatty, 0);
