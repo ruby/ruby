@@ -1,3 +1,21 @@
+Mon May 28 23:20:43 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: remove unnecessary AC_CANONICAL_BUILD
+
+	* defins.h: #define HAVE_SETITIMER on Cygwin(bug fixed).
+
+	* ruby.c: use relative path from LIBRUBY_SO.
+
+	* ruby.c: don't use -mwin32 option on Cygwin.
+
+	* cygwin/GNUmakefile.in: ditto.
+
+	* ext/sdbm/_sdbm: ditto.
+
+	* ext/tcltklib/extconf.rb: ditto.
+
+	* ext/tcltklib/stubs.c: ditto.
+
 Mon May 28 22:12:01 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/extconf.rb.in: make the priority of the make rule of .c

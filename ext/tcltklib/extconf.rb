@@ -67,5 +67,6 @@ if have_header("tcl.h") && have_header("tk.h") &&
     find_tcl(tcllib, stubs) &&
     find_tk(tklib, stubs)
   $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
+  $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
   create_makefile("tcltklib")
 end

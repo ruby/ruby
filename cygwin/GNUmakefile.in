@@ -5,6 +5,8 @@ ENABLE_SHARED=@ENABLE_SHARED@
 ifneq (,$(findstring no, $(ENABLE_SHARED)))
   EXTOBJS = $(RUBY_INSTALL_NAME).exp
   LIBRUBYARG = $(LIBRUBY_A)
+else
+  CPPFLAGS += -DLIBRUBY_SO=\"$(LIBRUBY_SO)\"
 endif
 
 ifneq (,$(findstring ruby, $(RUBY_INSTALL_NAME)))
@@ -21,7 +23,7 @@ $(LIBRUBY_SO): $(RUBYDEF) $(LIBRUBY_SO).res.@OBJEXT@
 $(LIBRUBY): $(LIBRUBY_SO)
 
 %.res.@OBJEXT@: %.rc
-	@WINDRES@ --preprocessor '$(CC) -E -xc-header -DRC_INVOKE @MWIN32@' --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
+	@WINDRES@ --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
 
 $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(LIBRUBY_SO).rc: rbconfig.rb
 	@@MINIRUBY@ $(srcdir)/win32/resource.rb \

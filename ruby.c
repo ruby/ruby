@@ -12,7 +12,7 @@
 
 **********************************************************************/
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
 #endif
 #include "ruby.h"
@@ -106,7 +106,7 @@ extern VALUE rb_load_path;
 
 #define STATIC_FILE_LENGTH 255
 
-#if defined(_WIN32) || defined(DJGPP)
+#if defined _WIN32 || defined __CYGWIN__ || defined __DJGPP__
 static char *
 rubylib_mangle(s, l)
     char *s;
@@ -172,7 +172,7 @@ ruby_incpush(path)
     const char sep = PATH_SEP_CHAR;
 
     if (path == 0) return;
-#if defined(__CYGWIN32__)
+#if defined(__CYGWIN__)
     {
 	char rubylib[FILENAME_MAX];
 	conv_to_posix_path(path, rubylib, FILENAME_MAX);
@@ -202,15 +202,24 @@ ruby_incpush(path)
     }
 }
 
+#if defined _WIN32 || defined __CYGWIN__ || defined __DJGPP__ || defined __EMX__
+#define LOAD_RELATIVE 1
+#endif
+
 void
 ruby_init_loadpath()
 {
-#if defined(_WIN32) || defined(DJGPP) || defined(__EMX__)
+#if defined LOAD_RELATIVE
     char libpath[FILENAME_MAX+1];
     char *p;
     int rest;
-#if defined(_WIN32)
-    GetModuleFileName(NULL, libpath, sizeof libpath);
+#if defined _WIN32 || defined __CYGWIN__
+# if defined LIBRUBY_SO
+    HMODULE libruby = GetModuleHandle(LIBRUBY_SO);
+# else
+    HMODULE libruby = NULL;
+# endif
+    GetModuleFileName(libruby, libpath, sizeof libpath);
 #elif defined(DJGPP)
     extern char *__dos_argv0;
     strncpy(libpath, __dos_argv0, FILENAME_MAX);
