@@ -112,6 +112,7 @@ EXTERN int ruby_nerrs;
 VALUE rb_exc_new _((VALUE, const char*, long));
 VALUE rb_exc_new2 _((VALUE, const char*));
 VALUE rb_exc_new3 _((VALUE, VALUE));
+void rb_stack_check _((void));
 NORETURN(void rb_loaderror __((const char*, ...)));
 NORETURN(void rb_name_error __((VALUE id, const char*, ...)));
 void rb_compile_error __((const char*, ...));
