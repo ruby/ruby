@@ -1,3 +1,18 @@
+Thu Oct  2 00:21:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/logger/test_logger.rb: unlinking file before close causes
+	  problem under win32 box.
+
+	* lib/xsd/datatypes.rb(XSDFloat, XSDDouble): add +/- sign explicitly
+	  when stringified and embedded into XML instance.  Ruby's sprintf may
+	  format -0.0 as "0.0" (no minus sign) depending on underlying C
+	  sprintf implementation.
+
+	* test/xsd/test_xsd.rb, test/soap/test_basetype.rb: follow above change.
+
+	* test/soap/calc/*: give httpd config param "CGIInterpreter".
+	  "/usr/bin/env ruby" thing does not work under non-Unix boxes.
+
 Thu Oct  2 00:25:21 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (ruby_signal_name): adjust to the prototype.
@@ -130,13 +145,6 @@ Mon Sep 29 02:31:44 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  set real and effective IDs. and setup group access list by
 	  initgroups.
 
-Mon Sep 27 18:25:13 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
-
-	* lib/xsd/charset.rb: XSD::Charset.is_ces did return always true under
-	  $KCODE = "NONE" environment.  check added.
-
-	* test/xsd/test_xsd.rb: add tests for above fix.
-
 Sun Sep 28 11:14:19 2003  Koji Arai  <jca02266@nifty.ne.jp>
 
 	* ext/digest/digest.c (Init_digest): `copy_object' was deprecated.
@@ -144,7 +152,14 @@ Sun Sep 28 11:14:19 2003  Koji Arai  <jca02266@nifty.ne.jp>
 
 	* ext/stringio/stringio.c (Init_stringio): ditto.
 
-Mon Sep 27 15:58:50 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Sat Sep 27 18:25:13 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/xsd/charset.rb: XSD::Charset.is_ces did return always true under
+	  $KCODE = "NONE" environment.  check added.
+
+	* test/xsd/test_xsd.rb: add tests for above fix.
+
+Sat Sep 27 15:58:50 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/rpc/cgistub.rb: make logging severity threshold higher.
 
@@ -161,7 +176,7 @@ Sat Sep 27 09:44:18 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_nowrite.rb: ditto.
 
-Mon Sep 27 04:57:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Sat Sep 27 04:57:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_file.rb: new file.  only asserts unlink-before-close
 	  behaviour now.
@@ -169,7 +184,7 @@ Mon Sep 27 04:57:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	* test/soap/marshal/test_digraph.rb: should close before unlink.
 	  unlink-before-close pattern is not needed here.
 
-Mon Sep 27 03:32:37 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Sat Sep 27 03:32:37 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/*, test/wsdl/*, test/xsd/*: move TestCase classes into
 	  each module namespace.  TestMarshal in
@@ -185,7 +200,7 @@ Fri Sep 26 18:35:40 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv-replace.rb: 1.8 compliance.  [ruby-talk:82946]
 
-Mon Sep 26 17:39:27 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Fri Sep 26 17:39:27 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_marshal.rb: add test for ruby's objects.
 
@@ -197,7 +212,7 @@ Fri Sep 26 09:52:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/mkmf.rb (xsystem): use system directly to honor shell meta
 	  charaters.
 
-Mon Sep 26 00:10:13 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Fri Sep 26 00:10:13 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/README: updated.
 
@@ -225,7 +240,7 @@ Thu Sep 25 00:23:22 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST: add SOAP4R.
 
-Mon Sep 25 00:13:15 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Thu Sep 25 00:13:15 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/* (29 files): SOAP4R added.
 
@@ -248,7 +263,7 @@ Wed Sep 24 02:08:11 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* lib/webrick/httpservlet/cgihandler.rb: conform to mswin32.
 	  [ruby-talk:82735], [ruby-talk:82748], [ruby-talk:82818]
 
-Mon Sep 23 23:10:16 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Tue Sep 23 23:10:16 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb: add Logger#<<(msg) for writing msg without any
 	  formatting.
@@ -286,7 +301,7 @@ Sun Sep 21 04:12:36 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509ext.c (ossl_x509ext_set_value): ditto.
 
-Mon Sep 20 11:49:05 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Sat Sep 20 11:49:05 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb: typo fixed.
 
@@ -329,7 +344,7 @@ Thu Sep 18 20:30:17 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb: update document.
 
-Mon Sep 18 15:27:05 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Thu Sep 18 15:27:05 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb: new file.  Logger, formerly called devel-logger or
 	  Devel::Logger.
@@ -405,7 +420,7 @@ Wed Sep 17 18:03:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/x509.c (X509::ExtensionFactory): refine all.
 
-Mon Sep 16 22:25:06 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Tue Sep 16 22:25:06 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: add negative tests of row_sep.
 
@@ -566,7 +581,7 @@ Sun Sep  7 16:08:28 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/*.rb : Ruby/Tk works at $SAFE == 4
 
-Fri Sep  6 02:26:34 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Sat Sep  6 02:26:34 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_*.rb: assert_same, assert_match, and so on.
 
@@ -679,7 +694,7 @@ Fri Sep  5 03:00:04 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/ruby/test_iterator.rb (test_ljump): uncomment LocalJumpError
 	  test.
 
-Wed Sep  5 01:10:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Fri Sep  5 01:10:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby: tests for ruby itself.
 
@@ -689,7 +704,7 @@ Wed Sep  5 01:10:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	* test/csv/test_csv.rb: should require 'csv', not '../lib/csv'.  test
 	  runner should set load path correctly.
 
-Wed Sep  5 01:03:59 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Fri Sep  5 01:03:59 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: close opened files for CSV::IOBuf explicitly.
 	  opened file cannot be removed under win32 box.
@@ -700,20 +715,20 @@ Thu Sep  4 23:59:40 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  %w/%W, otherwise they are ignored only when interpolation is
 	  enabled.  [ruby-dev:21325]
 
-Wed Sep  4 19:38:25 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Thu Sep  4 19:38:25 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* ext/io/wait/.cvsignore: added.
 
 	* ext/openssl/.cvsignore: added.
 
-Wed Sep  4 19:28:24 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Thu Sep  4 19:28:24 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* sample/openssl: added.  Sample of standard distribution library
 	  should be locate in sample/{module_name}/*.
 
 	* ext/openssl/sample/*: removed.  move to sample/openssl/*.
 
-Wed Sep  4 18:02:15 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Thu Sep  4 18:02:15 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: use remove_const to reduce warnings.  use
 	  Dir.tmpdir to locate working files.
@@ -730,7 +745,7 @@ Thu Sep  4 17:41:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  call `ruby-here-doc-end-match' unless `ruby-here-doc-beg-re'
 	  matched.
 
-Wed Sep  4 15:40:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+Thu Sep  4 15:40:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: run on test/unit original layer.
 

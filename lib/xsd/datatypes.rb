@@ -329,7 +329,7 @@ private
     elsif @data.infinite? == -1
       '-INF'
     else
-      sprintf("%.10g", @data)
+      sprintf("%+.10g", @data)
     end
   end
 
@@ -397,7 +397,7 @@ private
     elsif @data.infinite? == -1
       '-INF'
     else
-      sprintf("%.16g", @data)
+      sprintf("%+.16g", @data)
     end
   end
 end

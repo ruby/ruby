@@ -2,6 +2,7 @@ require 'test/unit'
 require 'soap/rpc/driver'
 require 'logger'
 require 'webrick'
+require 'rbconfig'
 
 
 module SOAP
@@ -9,6 +10,8 @@ module Calc
 
 
 class TestCalcCGI < Test::Unit::TestCase
+  # This test shuld be run after installing ruby.
+  RUBYBIN = File.join(Config::CONFIG["bindir"], Config::CONFIG["ruby_install_name"])
   def setup
     logger = Logger.new(STDERR)
     logger.level = Logger::Severity::FATAL
@@ -18,7 +21,8 @@ class TestCalcCGI < Test::Unit::TestCase
       :Port => 8808,
       :AccessLog => [],
       :DocumentRoot => File.dirname(File.expand_path(__FILE__)),
-      :CGIPathEnv => ENV['PATH']
+      :CGIPathEnv => ENV['PATH'],
+      :CGIInterpreter => RUBYBIN
     )
     @t = Thread.new {
       @server.start

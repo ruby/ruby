@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 require 'soap/rpc/cgistub'
 
 class CalcServer < SOAP::RPC::CGIStub

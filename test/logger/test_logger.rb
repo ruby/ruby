@@ -247,6 +247,7 @@ class TestLogDevice < Test::Unit::TestCase
       assert(logdev.dev.sync)
       assert_equal(filename, logdev.filename)
     ensure
+      logdev.close
       File.unlink(filename)
     end
   end
