@@ -1,3 +1,7 @@
+Thu Dec  4 16:41:17 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (exc_list): allow expanding list.  [ruby-dev:22134]
+
 Thu Dec  4 14:09:24 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb (test_cp): test if the error is
@@ -16,7 +20,7 @@ Thu Dec  4 13:17:45 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 Thu Dec  4 13:04:44 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/soap.rb: add SOAP::Env module for environment repository
-          such as HTTP_PROXY.
+	  such as HTTP_PROXY.
 
 	* lib/soap/property.rb: property implementation.
 

@@ -1859,7 +1859,11 @@ opt_rescue	: kRESCUE exc_list exc_var then
 		| none
 		;
 
-exc_list	: args
+exc_list	: arg_value
+		    {
+			$$ = NEW_LIST($1);
+		    }
+		| mrhs
 		| none
 		;
 
