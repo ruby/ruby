@@ -1,6 +1,12 @@
+Thu May 20 12:22:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_type): do not check pointer to incomplete type,
+	  which always get compiled.
+	  [ruby-list:39683]
+
 Wed May 19 11:09:00 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: change permition of TkObject#tk_send from 
+	* ext/tk/lib/tk.rb: change permition of TkObject#tk_send from
 	  private to public
 
 Tue May 18 14:00:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
