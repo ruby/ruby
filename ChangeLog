@@ -1,3 +1,7 @@
+Tue Jun 17 21:28:27 2003  Ariff Abdullah <skywizard@time.net.my>
+
+	* win32/win32.c (rb_w32_opendir): need to set errno. [ruby-talk:73761]
+
 Mon Jun 16 19:01:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c: remove rb_cBlock.
