@@ -98,6 +98,7 @@ Standard Libraries
 * remove dependency on MAXPATHLEN.
 * pointer share mechanism similar to one in String for Array.
 * deprecate Array#indexes, and Array#indices.
+* require "1.6" etc. by /usr/lib/ruby/1.6/1.6.rb ;-)
 
 Extension Libraries
 

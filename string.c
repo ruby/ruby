@@ -195,13 +195,6 @@ rb_str_to_str(str)
     return rb_convert_type(str, T_STRING, "String", "to_str");
 }
 
-VALUE
-rb_string_value(ptr)
-    volatile VALUE *ptr;
-{
-    return *ptr = rb_str_to_str(*ptr);
-}
-
 static void
 rb_str_become(str, str2)
     VALUE str, str2;
@@ -428,6 +421,48 @@ rb_str_format(str, arg)
     return rb_f_sprintf(2, argv);
 }
 
+static int
+str_independent(str)
+    VALUE str;
+{
+    if (OBJ_FROZEN(str)) rb_error_frozen("string");
+    if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
+    if (!FL_TEST(str, ELTS_SHARED)) return 1;
+    return 0;
+}
+
+static void
+str_make_independent(str)
+    VALUE str;
+{
+    char *ptr;
+
+    ptr = ALLOC_N(char, RSTRING(str)->len+1);
+    if (RSTRING(str)->ptr) {
+	memcpy(ptr, RSTRING(str)->ptr, RSTRING(str)->len);
+    }
+    ptr[RSTRING(str)->len] = 0;
+    RSTRING(str)->ptr = ptr;
+    RSTRING(str)->aux.capa = RSTRING(str)->len;
+    FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
+}
+
+void
+rb_str_modify(str)
+    VALUE str;
+{
+    if (str_independent(str)) return;
+    str_make_independent(str);
+}
+
+VALUE
+rb_string_value(ptr)
+    volatile VALUE *ptr;
+{
+    return *ptr = rb_str_to_str(*ptr);
+}
+
 VALUE
 rb_str_substr(str, beg, len)
     VALUE str;
@@ -453,34 +488,6 @@ rb_str_substr(str, beg, len)
     OBJ_INFECT(str2, str);
 
     return str2;
-}
-
-static int
-str_independent(str)
-    VALUE str;
-{
-    if (OBJ_FROZEN(str)) rb_error_frozen("string");
-    if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
-    if (!FL_TEST(str, ELTS_SHARED)) return 1;
-    return 0;
-}
-
-void
-rb_str_modify(str)
-    VALUE str;
-{
-    char *ptr;
-
-    if (str_independent(str)) return;
-    ptr = ALLOC_N(char, RSTRING(str)->len+1);
-    if (RSTRING(str)->ptr) {
-	memcpy(ptr, RSTRING(str)->ptr, RSTRING(str)->len);
-    }
-    ptr[RSTRING(str)->len] = 0;
-    RSTRING(str)->ptr = ptr;
-    RSTRING(str)->aux.capa = RSTRING(str)->len;
-    FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
 }
 
 VALUE
@@ -1610,7 +1617,7 @@ rb_str_replace(str, str2)
 	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
     }
 
-    OBJ_INFECT(str2, str);
+    OBJ_INFECT(str, str2);
     return str;
 }
 

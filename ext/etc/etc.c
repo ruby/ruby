@@ -117,7 +117,7 @@ etc_getpwnam(obj, nam)
 #ifdef HAVE_GETPWENT
     struct passwd *pwd;
 
-    Check_Type(nam, T_STRING);
+    StringValue(nam);
     pwd = getpwnam(RSTRING(nam)->ptr);
     if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %s", RSTRING(nam)->ptr);
     return setup_passwd(pwd);
@@ -194,7 +194,7 @@ etc_getgrnam(obj, nam)
 #ifdef HAVE_GETGRENT
     struct group *grp;
 
-    Check_Type(nam, T_STRING);
+    StringValue(nam);
     grp = getgrnam(RSTRING(nam)->ptr);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %s", RSTRING(nam)->ptr);
     return setup_group(grp);

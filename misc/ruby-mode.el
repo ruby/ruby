@@ -680,22 +680,22 @@ An end of a defun is found by moving forward from the beginning of one."
 		       ("\\(#\\)[{$@]" 1 (1 . nil))
 		       ;; the last $' in the string ,'...$' is not variable 
 		       ;; the last ?' in the string ,'...?' is not ascii code 
-		       ("\\(^\\|[[\\s <+(,=]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[\\?\\$]\\('\\)"
+		       ("\\(^\\|[[\\s <+(,=]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[?$]\\('\\)"
 			(2 (7 . nil))
 			(4 (7 . nil)))	
 		       ;; the last $` in the string ,`...$` is not variable
 		       ;; the last ?` in the string ,`...?` is not ascii code
-		       ("\\(^\\|[[\\s <+(,=]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[\\?\\$]\\(`\\)"
+		       ("\\(^\\|[[\\s <+(,=]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[?$]\\(`\\)"
 			(2 (7 . nil))
 			(4 (7 . nil)))
 		       ;; the last $" in the string ,"...$" is not variable
 		       ;; the last ?" in the string ,"...?" is not ascii code
-		       ("\\(^\\|[[\\s <+(,=]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[\\?\\$]\\(\"\\)"
+		       ("\\(^\\|[[\\s <+(,=]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[?$]\\(\"\\)"
 			(2 (7 . nil))
 			(4 (7 . nil)))
 		       ;; $' $" $` .... are variables
 		       ;; ?' ?" ?` are ascii codes
-		       ("[\\?\\$][#\"'`]" 0 (1 . nil))
+		       ("[?$][#\"'`]" 0 (1 . nil))
 		       ;; regexps 
 		       ("\\(^\\|[=(,~?:;]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
 			(4 (7 . ?/))

@@ -7732,7 +7732,7 @@ rb_thread_schedule()
 	    next = th;
 	    break;
 	}
-	if (th->status == THREAD_RUNNABLE) {
+	if (th->status == THREAD_RUNNABLE && th->stk_ptr) {
 	    if (!next || next->priority < th->priority) 
 	       next = th;
 	}

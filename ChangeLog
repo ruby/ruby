@@ -1,3 +1,12 @@
+Mon Dec 17 18:53:49 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* string.c (rb_str_replace): swap arguments of OBJ_INFECT.
+
+Tue Dec 18 01:02:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): should not select a thread which is
+	  not yet initialized.
+
 Mon Dec 17 16:52:20 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* intern.h: add prototypes.
@@ -21,6 +30,12 @@ Mon Dec 17 16:52:20 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* ruby.c: (req_list_head, req_list_last): ditto.
 
 	* ruby.c (require_libraries): ditto.
+
+Mon Dec 17 15:41:24 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_plus): wrong boundary check.
+
+	* time.c (time_minus): ditto.
 
 Mon Dec 17 15:19:32 2001  Tanaka Akira  <akr@m17n.org>
 
@@ -49,8 +64,16 @@ Mon Dec 17 15:19:32 2001  Tanaka Akira  <akr@m17n.org>
 
 	* missing/strftime.c: fix overflow by tm_year + 1900.
 
+Mon Dec 17 00:02:04 2001  Guy Decoux  <ts@moulon.inra.fr>
+
+<<<<<<< ChangeLog
+	* variable.c (find_class_path): should initialize iv_tbl if it's
+	  NULL.
+
+=======
 	* lib/time.rb: use Time#utc_offset.
 
+>>>>>>> 1.655
 Fri Dec 14 04:23:36 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: new method Net::POP3.APOP
@@ -65,6 +88,17 @@ Fri Dec 14 04:23:36 2001  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/pop.rb: ditto.
 
 	* lib/net/http.rb: ditto.
+
+Fri Dec 14 00:16:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_define_class): should return the existing class if
+	  the class is already defined and its superclass is ideintical to
+	  the specified superclass.
+
+	* class.c (rb_define_class_under): ditto.
+
+	* class.c (rb_define_module): should return the existing module if
+	  the module is already defined.
 
 Thu Dec 13 09:52:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -174,7 +174,7 @@ time_s_at(argc, argv, klass)
 
     if (rb_scan_args(argc, argv, "11", &time, &t) == 2) {
 	tv.tv_sec = NUM2LONG(time);
-	tv.tv_usec = NUM2INT(t);
+	tv.tv_usec = NUM2LONG(t);
     }
     else {
 	tv = rb_time_timeval(time);
@@ -925,7 +925,7 @@ time_plus(time1, time2)
 {
     struct time_object *tobj;
     time_t sec, usec;
-    double f;
+    double f, d;
 
     GetTimeval(time1, tobj);
 
@@ -934,10 +934,11 @@ time_plus(time1, time2)
     }
     f = NUM2DBL(time2);
     sec = (time_t)f;
-    if (f != (double)sec) {
+    d = f - (double)sec;
+    if (d >= 1.0 || d <= -1.0) {
 	rb_raise(rb_eRangeError, "time + %f out of Time range", f);
     }
-    usec = tobj->tv.tv_usec + (time_t)((f - (double)sec)*1e6);
+    usec = tobj->tv.tv_usec + (time_t)(d*1e6);
     sec = tobj->tv.tv_sec + sec;
 
 #ifdef NEGATIVE_TIME_T
@@ -960,7 +961,7 @@ time_minus(time1, time2)
 {
     struct time_object *tobj;
     time_t sec, usec;
-    double f;
+    double f, d;
 
     GetTimeval(time1, tobj);
     if (rb_obj_is_kind_of(time2, rb_cTime)) {
@@ -974,10 +975,11 @@ time_minus(time1, time2)
     }
     f = NUM2DBL(time2);
     sec = (time_t)f;
-    if (f != (double)sec) {
+    d = f - (double)sec;
+    if (d >= 1.0 || d <= -1.0) {
 	rb_raise(rb_eRangeError, "time - %f out of Time range", f);
     }
-    usec = tobj->tv.tv_usec - (time_t)((f - (double)sec)*1e6);
+    usec = tobj->tv.tv_usec - (time_t)(d*1e6);
     sec = tobj->tv.tv_sec - sec;
 #ifdef NEGATIVE_TIME_T
     if ((tobj->tv.tv_sec <= 0 && f >= 0 && sec > 0) ||

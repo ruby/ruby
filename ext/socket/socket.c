@@ -561,7 +561,7 @@ ip_addrsetup(host, port)
     else {
 	char *name;
 
-	Check_SafeStr(host);
+	SafeStringValue(host);
 	name = RSTRING(host)->ptr;
 	if (*name == 0) {
 	    mkinetaddr(INADDR_ANY, hbuf, sizeof(hbuf));
@@ -793,7 +793,7 @@ load_addr_info(h, serv, type, res)
     int error;
 
     if (!NIL_P(h)) {
-	Check_SafeStr(h);
+	SafeStringValue(h);
 	host = RSTRING(h)->ptr;
     }
     else {
@@ -804,7 +804,7 @@ load_addr_info(h, serv, type, res)
 	portp = pbuf;
     }
     else {
-	Check_SafeStr(serv);
+	SafeStringValue(serv);
 	if (RSTRING(serv)->len >= sizeof(pbuf))
 	    rb_raise(rb_eArgError, "servicename too long (%d)", RSTRING(serv)->len);
 	strcpy(pbuf, RSTRING(serv)->ptr);
@@ -918,10 +918,9 @@ tcp_s_open(argc, argv, class)
 			      &remote_host, &remote_serv,
 			      &local_host, &local_serv);
 
-    Check_SafeStr(remote_host);
-
+    SafeStringValue(remote_host);
     if (!NIL_P(local_host)) {
-	Check_SafeStr(local_host);
+	SafeStringValue(local_host);
     }
 
     return open_inet(class, remote_host, remote_serv,
@@ -940,7 +939,7 @@ socks_s_open(class, host, serv)
 	init = 1;
     }
 
-    Check_SafeStr(host);
+    SafeStringValue(host);
     return open_inet(class, host, serv, Qnil, Qnil, INET_SOCKS);
 }
 
@@ -1150,7 +1149,7 @@ tcp_accept(sock)
 static VALUE
 open_unix(class, path, server)
     VALUE class;
-    struct RString *path;
+    VALUE path;
     int server;
 {
     struct sockaddr_un sockaddr;
@@ -1158,7 +1157,7 @@ open_unix(class, path, server)
     VALUE sock;
     OpenFile *fptr;
 
-    Check_SafeStr(path);
+    SafeStringValue(path);
     fd = ruby_socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) {
 	rb_sys_fail("socket(2)");
@@ -1166,7 +1165,7 @@ open_unix(class, path, server)
 
     MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
-    strncpy(sockaddr.sun_path, path->ptr, sizeof(sockaddr.sun_path)-1);
+    strncpy(sockaddr.sun_path, RSTRING(path)->ptr, sizeof(sockaddr.sun_path)-1);
     sockaddr.sun_path[sizeof(sockaddr.sun_path)-1] = '\0';
 
     if (server) {
@@ -1189,7 +1188,7 @@ open_unix(class, path, server)
 
     sock = sock_new(class, fd);
     GetOpenFile(sock, fptr);
-    fptr->path = strdup(path->ptr);
+    fptr->path = strdup(RSTRING(path)->ptr);
 
     return sock;
 }
@@ -1466,7 +1465,7 @@ setup_domain_and_type(domain, dv, type, tv)
     char *ptr;
 
     if (TYPE(domain) == T_STRING) {
-	Check_SafeStr(domain);
+	SafeStringValue(domain);
 	ptr = RSTRING(domain)->ptr;
 	if (strcmp(ptr, "AF_INET") == 0)
 	    *dv = AF_INET;
@@ -1515,7 +1514,7 @@ setup_domain_and_type(domain, dv, type, tv)
 	*dv = NUM2INT(domain);
     }
     if (TYPE(type) == T_STRING) {
-	Check_SafeStr(type);
+	SafeStringValue(type);
 	ptr = RSTRING(type)->ptr;
 	if (strcmp(ptr, "SOCK_STREAM") == 0)
 	    *tv = SOCK_STREAM;
@@ -1597,7 +1596,7 @@ sock_connect(sock, addr)
     OpenFile *fptr;
     int fd;
 
-    Check_Type(addr, T_STRING);
+    StringValue(addr);
     rb_str_modify(addr);
 
     GetOpenFile(sock, fptr);
@@ -1615,7 +1614,7 @@ sock_bind(sock, addr)
 {
     OpenFile *fptr;
 
-    Check_Type(addr, T_STRING);
+    StringValue(addr);
     rb_str_modify(addr);
 
     GetOpenFile(sock, fptr);

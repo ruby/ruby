@@ -1908,7 +1908,7 @@ rb_stat_init(obj, fname)
 {
     struct stat st, *nst;
 
-    Check_SafeStr(fname);
+    SafeStringValue(fname);
 
     if (stat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);

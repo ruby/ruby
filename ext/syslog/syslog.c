@@ -62,7 +62,7 @@ static VALUE cSyslog_open(int argc, VALUE *argv, VALUE self)
         fac = INT2NUM(LOG_USER);
     }
 
-    Check_SafeStr(ident);
+    SafeStringValue(ident);
     syslog_ident = ident;
     syslog_options = opt;
     syslog_facility = fac;

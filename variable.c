@@ -129,6 +129,9 @@ find_class_path(klass)
 	st_foreach(rb_class_tbl, fc_i, &arg);
     }
     if (arg.path) {
+	if (!ROBJECT(klass)->iv_tbl) {
+	    ROBJECT(klass)->iv_tbl = st_init_numtable();
+	} 
 	st_insert(ROBJECT(klass)->iv_tbl,rb_intern("__classpath__"),arg.path);
 	return arg.path;
     }
