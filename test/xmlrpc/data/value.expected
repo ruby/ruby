@@ -1,1 +1,7 @@
-["Test", ["Hallo Leute", "   Hallo   ", "", "   "]]
+--- 
+- Test
+- 
+  - Hallo Leute
+  - "   Hallo   "
+  - ''
+  - "   "

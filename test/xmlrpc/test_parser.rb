@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'xmlrpc/datetime'
 require "xmlrpc/parser"
+require 'yaml'
 
 module GenericParserTest
   def datafile(base)
@@ -8,7 +9,7 @@ module GenericParserTest
   end
  
   def load_data(name)
-    [File.read(datafile(name) + ".xml"), File.read(datafile(name) + ".expected").chomp]
+    [File.read(datafile(name) + ".xml"), YAML.load(File.read(datafile(name) + ".expected"))]
   end
 
   def setup
@@ -28,19 +29,19 @@ module GenericParserTest
   # test parseMethodResponse --------------------------------------------------
   
   def test_parseMethodResponse1
-    assert_equal(@expected1, @p.parseMethodResponse(@xml1).inspect)
+    assert_equal(@expected1, @p.parseMethodResponse(@xml1))
   end
 
   def test_parseMethodResponse2
-    assert_equal(@expected2, @p.parseMethodResponse(@xml2).inspect)
+    assert_equal(@expected2, @p.parseMethodResponse(@xml2))
   end
 
   def test_parseMethodResponse3
-    assert_equal(@expected3, @p.parseMethodResponse(@xml3).inspect)
+    assert_equal(@expected3, @p.parseMethodResponse(@xml3))
   end
 
   def test_cdata
-    assert_equal(@cdata_expected, @p.parseMethodResponse(@cdata_xml).inspect)
+    assert_equal(@cdata_expected, @p.parseMethodResponse(@cdata_xml))
   end
 
   def test_dateTime
@@ -50,7 +51,7 @@ module GenericParserTest
   # test parseMethodCall ------------------------------------------------------
 
   def test_parseMethodCall
-    assert_equal(@expected4, @p.parseMethodCall(@xml4).inspect)
+    assert_equal(@expected4, @p.parseMethodCall(@xml4))
   end
 
   # test fault ----------------------------------------------------------------
