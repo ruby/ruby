@@ -774,10 +774,10 @@ rb_reg_initialize(obj, s, len, options)
     int options;		/* CASEFOLD  = 1 */
 				/* EXTENDED  = 2 */
 				/* MULTILINE = 4 */
-				/* CODE_NONE = 8 */
-				/* CODE_EUC  = 16 */
-				/* CODE_SJIS = 24 */
-				/* CODE_UTF8 = 32 */
+				/* CODE_NONE = 16 */
+				/* CODE_EUC  = 32 */
+				/* CODE_SJIS = 48 */
+				/* CODE_UTF8 = 64 */
 {
     struct RRegexp *re = RREGEXP(obj);
 
@@ -786,7 +786,7 @@ rb_reg_initialize(obj, s, len, options)
     re->ptr = 0;
     re->str = 0;
 
-    switch (options & ~0x7) {
+    switch (options & ~0xf) {
       case 0:
       default:
 	FL_SET(re, reg_kcode);
@@ -950,16 +950,16 @@ rb_reg_initialize_m(argc, argv, self)
 
 	switch (kcode[0]) {
 	  case 'n': case 'N':
-	    flag |= 8;
-	    break;
-	  case 'e': case 'E':
 	    flag |= 16;
 	    break;
+	  case 'e': case 'E':
+	    flag |= 32;
+	    break;
 	  case 's': case 'S':
-	    flag |= 24;
+	    flag |= 48;
 	    break;
 	  case 'u': case 'U':
-	    flag |= 32;
+	    flag |= 64;
 	    break;
 	  default:
 	    break;
@@ -988,6 +988,7 @@ rb_reg_s_new(argc, argv, klass)
 {
     NEWOBJ(re, struct RRegexp);
     OBJSETUP(re, klass, T_REGEXP);
+    re->ptr = 0; re->len = 0;
     rb_obj_call_init((VALUE)re, argc, argv);
     return (VALUE)re;
 }
@@ -1063,13 +1064,13 @@ rb_reg_get_kcode(re)
 
     switch (RBASIC(re)->flags & KCODE_MASK) {
       case KCODE_NONE:
-	kcode |= 4; break;
-      case KCODE_EUC:
-	kcode |= 8; break;
-      case KCODE_SJIS:
-	kcode |= 12; break;
-      case KCODE_UTF8:
 	kcode |= 16; break;
+      case KCODE_EUC:
+	kcode |= 32; break;
+      case KCODE_SJIS:
+	kcode |= 48; break;
+      case KCODE_UTF8:
+	kcode |= 64; break;
       default:
 	break;
     }
