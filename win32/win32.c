@@ -1373,6 +1373,7 @@ rb_w32_opendir(const char *filename)
 
     fh = FindFirstFile(scanname, &fd);
     if (fh == INVALID_HANDLE_VALUE) {
+	errno = map_errno(GetLastError());
 	return NULL;
     }
 
