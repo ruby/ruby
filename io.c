@@ -589,9 +589,6 @@ rb_io_fread(ptr, len, f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 		  case EWOULDBLOCK:
 #endif
-#ifdef __BORLANDC__
-		  case EPIPE:
-#endif
 		    return len - n;
 		}
 		return 0;

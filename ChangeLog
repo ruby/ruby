@@ -1,3 +1,9 @@
+Tue Aug 20 21:47 2002  KONISHI Hiromasa  <konishih@fd6.so-net.ne.jp>
+
+	* io.c          (rb_io_fread): remove case EPIPE on bcc32 .
+
+	* win32/win32.c (rb_w32_getc): clear EPIPE error on bcc32.
+
 Tue Aug 20 19:39:03 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* file.c (rb_file_s_expand_path): accept drive letter on Cygwin.

@@ -2761,6 +2761,12 @@ int rb_w32_getc(FILE* stream)
     }
     else {
 	c = _filbuf(stream);
+#ifdef __BORLANDC__
+        if( ( c == EOF )&&( errno == EPIPE ) )
+        {
+          clearerr(stream);
+        }
+#endif
 	rb_trap_immediate = trap_immediate;
 	catch_interrupt();
     }
