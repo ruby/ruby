@@ -4453,6 +4453,10 @@ class TkRoot<TkWindow
   def path
     "."
   end
+
+  def TkRoot.destroy
+    TkCore::INTERP._invoke('destroy', '.')
+  end
 end
 
 class TkToplevel<TkWindow
