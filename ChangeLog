@@ -1,9 +1,8 @@
-Thu Aug  8 08:29:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
-
-	* lib/optparse.rb (OptionParser::Switch::parse_arg): require block
-	  always.
+Thu Aug  8 09:37:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb (NilClass): must provide conversion block.
+
+	* lib/optparse.rb (String): ditto.
 
 Wed Aug  7 22:12:54 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
