@@ -486,12 +486,12 @@ All "key" is case-insensitive.
         line = @socket.readline
         break if line.empty?
 
-        m = /\A([^:]+):\s*(.*)/p.match( line )
+        m = /\A([^:]+):\s*/.match( line )
         unless m then
           raise HTTPBadResponse, 'wrong header line format'
         end
         nm = m[1]
-        line = m[2]
+        line = m.post_match
         if resp.key? nm then
           resp[nm] << ', ' << line
         else
