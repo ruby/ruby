@@ -24,7 +24,7 @@ class Delegator
       preserved |= t.instance_methods
       break if t == Delegator
     end
-    preserved -= ["__getobj__","to_s","to_a","inspect","hash","eql?","==","=~","==="]
+    preserved -= ["to_s","to_a","inspect","hash","eql?","==","=~","==="]
     for method in obj.methods
       next if preserved.include? method
       eval <<EOS

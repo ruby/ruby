@@ -66,10 +66,10 @@ get_ppid()
 
 VALUE last_status = Qnil;
 
-#if !defined(HAVE_WAITPID) && !defined(HAVE_WAIT4)
-static st_table *pid_tbl;
-#else
+#if defined(HAVE_WAITPID) || defined(HAVE_WAIT4)
 # define WAIT_CALL
+#else
+static st_table *pid_tbl;
 #endif
 
 static int
@@ -79,16 +79,20 @@ rb_waitpid(pid, flags, st)
     int *st;
 {
     int result;
-#if defined(THREAD) && (defined(HAVE_WAITPID) || defined(HAVE_WAIT4))
+#ifdef WAIT_CALL
+#if defined(THREAD)
     int oflags = flags;
     if (!thread_alone()) {	/* there're other threads to run */
 	flags |= WNOHANG;
     }
 #endif
 
-#ifdef HAVE_WAITPID
   retry:
+#ifdef HAVE_WAITPID
     result = waitpid(pid, st, flags);
+#else  /* HAVE_WAIT4 */
+    result = wait4(pid, st, flags, NULL);
+#endif
     if (result < 0) {
 	if (errno == EINTR) {
 #ifdef THREAD
@@ -106,26 +110,7 @@ rb_waitpid(pid, flags, st)
 	goto retry;
     }
 #endif
-#else
-#ifdef HAVE_WAIT4
-  retry:
-
-    result = wait4(pid, st, flags, NULL);
-    if (result < 0) {
-	if (errno == EINTR) {
-	    goto retry;
-	}
-	return -1;
-    }
-#ifdef THREAD
-    if (result == 0) {
-	if (oflags & WNOHANG) return 0;
-	thread_schedule();
-	if (thread_alone()) flags = oflags;
-	goto retry;
-    }
-#endif
-#else
+#else  /* WAIT_CALL */
     if (pid_tbl && st_lookup(pid_tbl, pid, st)) {
 	last_status = INT2FIX(*st);
 	st_delete(pid_tbl, &pid, NULL);
@@ -153,8 +138,10 @@ rb_waitpid(pid, flags, st)
 	if (!pid_tbl)
 	    pid_tbl = st_init_numtable();
 	st_insert(pid_tbl, pid, st);
-    }
+#ifdef THREAD
+	if (!thread_alone()) thread_schedule();
 #endif
+    }
 #endif
     last_status = INT2FIX(*st);
     return result;
@@ -192,19 +179,21 @@ f_wait()
 	last_status = data.status;
 	return INT2FIX(data.pid);
     }
-#endif
 
     while ((pid = wait(&state)) < 0) {
-	if (errno == EINTR) {
+        if (errno == EINTR) {
 #ifdef THREAD
-	    thread_schedule();
+            thread_schedule();
 #endif
-	    continue;
-	}
-	if (errno == ECHILD) return Qnil;
-	rb_sys_fail(0);
+            continue;
+        }
+        rb_sys_fail(0);
     }
     last_status = INT2FIX(state);
+#else
+    if ((pid = rb_waitpid(-1, 0, &state)) < 0)
+	rb_sys_fail(0);
+#endif
     return INT2FIX(pid);
 }
 
