@@ -1,11 +1,15 @@
+Sat Feb 21 11:12:15 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/os2.c, missing/x68.c: typo fix.  pointed out by greentea.
+
 Thu Feb 19 23:24:16 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/html_generator.rb (Generators::HtmlClass::build_attribute_list): 
+	* lib/rdoc/generators/html_generator.rb (Generators::HtmlClass::build_attribute_list):
 	  Support visibility modifiers for attributes
 
 Thu Feb 19 23:24:16 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/html_generator.rb (Generators::HtmlClass::build_attribute_list): 
+	* lib/rdoc/generators/html_generator.rb (Generators::HtmlClass::build_attribute_list):
 	  Support visibility modifiers for attributes
 
 Thu Feb 19 22:39:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
@@ -31,7 +35,7 @@ Thu Feb 19 02:30:34 2004  Minero Aoki  <aamine@loveruby.net>
 
 Thu Feb 19 00:11:05 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::handle): 
+	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::handle):
 	  Strip extraneous space from filenames in :include:
 
 Wed Feb 18 22:52:00 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
@@ -89,7 +93,7 @@ Tue Feb 17 00:18:03 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 Tue Feb 17 00:14:30 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: avoid warning "Redefinition of macro
-          'HAVE_GETLOGIN'".
+	  'HAVE_GETLOGIN'".
 
 	* vms/config.h_in: ditto.
 
