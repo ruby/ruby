@@ -41,8 +41,8 @@ VALUE eHMACError;
 static void
 ossl_hmac_free(HMAC_CTX *ctx)
 {
-	HMAC_CTX_cleanup(ctx);
-	free(ctx);
+    HMAC_CTX_cleanup(ctx);
+    free(ctx);
 }
 
 static VALUE
@@ -52,6 +52,7 @@ ossl_hmac_alloc(VALUE klass)
     VALUE obj;
 
     MakeHMAC(obj, klass, ctx);
+    HMAC_CTX_init(ctx);
 	
     return obj;
 }
@@ -63,8 +64,8 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
 
     GetHMAC(self, ctx);
     StringValue(key);
-    HMAC_CTX_init(ctx);
-    HMAC_Init(ctx, RSTRING(key)->ptr, RSTRING(key)->len, GetDigestPtr(digest));
+    HMAC_Init_ex(ctx, RSTRING(key)->ptr, RSTRING(key)->len,
+		 GetDigestPtr(digest), NULL);
 
     return self;
 }
@@ -107,6 +108,7 @@ hmac_final(HMAC_CTX *ctx, char **buf, int *buf_len)
 	ossl_raise(eHMACError, NULL);
     }
     if (!(*buf = OPENSSL_malloc(HMAC_size(&final)))) {
+	HMAC_CTX_cleanup(&final);
 	OSSL_Debug("Allocating %d mem", HMAC_size(&final));
 	ossl_raise(eHMACError, "Cannot allocate memory for hmac");
     }

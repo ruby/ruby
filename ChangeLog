@@ -1,3 +1,43 @@
+Wed Jun 30 19:48:09 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: check for EVP_CIPHER_CTX_copy, ENGINE_add,
+	  EVP_CIPHER_CTX_set_padding, EVP_CipherFinal_ex, EVP_CipherInit_ex,
+	  EVP_DigestFinal_ex and EVP_DigestInit_ex.
+
+	* ext/openssl/openssl_missing.c (EVP_CIPHER_CTX_copy): new function.
+
+	* ext/openssl/openssl_missing.h (EVP_DigestInit_ex, EVP_DigestFinal_ex,
+	  EVP_CipherInit_ex, EVP_CipherFinal_ex, HMAC_Init_ex): new macro for
+	  OpenSSL 0.9.6.
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_alloc, ossl_cipher_initialize,
+	  ossl_cipher_copy, ossl_cipher_reset, ossl_cipher_encrypt,
+	  ossl_cipher_decrypt, ossl_cipher_final, ossl_cipher_set_key,
+	  ossl_cipher_set_iv): replace all EVP_CipherInit and 
+	  EVP_CipherFinal into EVP_CipherInit_ex and EVP_CipherFinal_ex.
+	  and EVP_CIPHER_CTX_init should only be called once.
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_set_padding): check for
+	  EVP_CIPHER_CTX_set_padding.
+
+	* ext/openssl/ossl_cipher.c (Init_ossl_cipher): Cipher#<< is deprecated.
+
+	* ext/openssl/ossl_digest.c: replace all EVP_DigestInit and 
+	  EVP_DigestFinal into EVP_DigestInit_ex and EVP_DigestFinal_ex.
+	  and EVP_MD_CTX_init should only be called once.
+
+	* ext/openssl/ossl_digest.c (digest_final): should call
+	  EVP_MD_CTX_cleanup to avoid memory leak.
+
+	* ext/openssl/ossl_hmac.c (ossl_hmac_initialize): repalce HMAC_init
+	  into HMAC_init_ex. and HMAC_CTX_init is moved to ossl_hmac_alloc.
+
+	* ext/openssl/ossl_hmac.c (hmac_final): should call
+	  HMAC_CTX_cleanup to avoid memory leak.
+
+	* test/openssl/test_cipher.rb, test/openssl/test_digest.rb,
+	  test/openssl/test_hmac.rb: new file.
+
 Wed Jun 30 16:59:39  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_file.rb (test_fnmatch): some tests for File.fnmatch

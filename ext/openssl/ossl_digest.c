@@ -52,7 +52,7 @@ ossl_digest_new(const EVP_MD *md)
     ret = ossl_digest_alloc(cDigest);
     GetDigest(ret, ctx);
     EVP_MD_CTX_init(ctx);
-    EVP_DigestInit(ctx, md);
+    EVP_DigestInit_ex(ctx, md, NULL);
    
     return ret;
 }
@@ -69,6 +69,7 @@ ossl_digest_alloc(VALUE klass)
     ctx = EVP_MD_CTX_create();
     if (ctx == NULL)
 	ossl_raise(rb_eRuntimeError, "EVP_MD_CTX_create() failed");
+    EVP_MD_CTX_init(ctx);
     obj = Data_Wrap_Struct(klass, 0, EVP_MD_CTX_destroy, ctx);
 	
     return obj;
@@ -94,8 +95,7 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
     if (!md) {
 	ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
     }
-    EVP_MD_CTX_init(ctx);
-    EVP_DigestInit(ctx, md);
+    EVP_DigestInit_ex(ctx, md, NULL);
     
     if (!NIL_P(data)) return ossl_digest_update(self, data);
     return self;
@@ -124,7 +124,7 @@ ossl_digest_reset(VALUE self)
     EVP_MD_CTX *ctx;
 
     GetDigest(self, ctx);
-    EVP_DigestInit(ctx, EVP_MD_CTX_md(ctx));
+    EVP_DigestInit_ex(ctx, EVP_MD_CTX_md(ctx), NULL);
 
     return self;
 }
@@ -150,9 +150,10 @@ digest_final(EVP_MD_CTX *ctx, char **buf, int *buf_len)
 	ossl_raise(eDigestError, NULL);
     }
     if (!(*buf = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
+	EVP_MD_CTX_cleanup(&final);
 	ossl_raise(eDigestError, "Cannot allocate mem for digest");
     }
-    EVP_DigestFinal(&final, *buf, buf_len);
+    EVP_DigestFinal_ex(&final, *buf, buf_len);
     EVP_MD_CTX_cleanup(&final);
 }
 
