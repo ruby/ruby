@@ -1,5 +1,8 @@
 Sat Oct 23 00:20:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* ext/zlib/zlib.c (zstream_append_input): clear klass for z->input
+	  to avoid potential vulnerability.
+
 	* ext/zlib/zlib.c (zstream_run): always use zstream_append_input()
 	  to avoid SEGV.  [ruby-dev:24568]
 

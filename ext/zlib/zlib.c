@@ -592,6 +592,7 @@ zstream_append_input(z, src, len)
     if (NIL_P(z->input)) {
 	z->input = rb_str_buf_new(len);
 	rb_str_buf_cat(z->input, src, len);
+	RBASIC(z->input)->klass = 0;
     }
     else {
 	rb_str_buf_cat(z->input, src, len);
@@ -641,6 +642,7 @@ zstream_detach_input(z)
 
     dst = NIL_P(z->input) ? rb_str_new(0, 0) : z->input;
     z->input = Qnil;
+    RBASIC(dst)->klass = rb_cString;
     return dst;
 }
 
@@ -699,9 +701,15 @@ zstream_run(z, src, len, flush)
     uInt n;
     int err;
 
-    zstream_append_input(z, src, len);
-    z->stream.next_in = RSTRING(z->input)->ptr;
-    z->stream.avail_in = RSTRING(z->input)->len;
+    if (len == 0) {
+	z->stream.next_in = "";
+	z->stream.avail_in = 0;
+    }
+    else {
+	zstream_append_input(z, src, len);
+	z->stream.next_in = RSTRING(z->input)->ptr;
+	z->stream.avail_in = RSTRING(z->input)->len;
+    }
 
     if (z->stream.avail_out == 0) {
 	zstream_expand_buffer(z);
