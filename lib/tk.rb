@@ -910,15 +910,26 @@ class TkWindow<TkObject
     ilist = list(tk_call('place', 'info', epath))
     info = {}
     while key = ilist.shift
-      info[key[1,-1]] = ilist.shift
+      info[key[1..-1]] = ilist.shift
+    end
+    return info
+  end
+
+  def pack_slaves()
+    list(tk_call('pack', 'slaves', epath))
+  end
+
+  def pack_info()
+    ilist = list(tk_call('pack', 'info', epath))
+    info = {}
+    while key = ilist.shift
+      info[key[1..-1]] = ilist.shift
     end
     return info
   end
 
   def place_slaves()
-    list(tk_call('place', 'slaves', epath)).collect { |w|
-      window(w)
-    }
+    list(tk_call('place', 'slaves', epath))
   end
 
   def focus

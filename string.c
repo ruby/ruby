@@ -1708,7 +1708,7 @@ trnext(t)
     for (;;) {
 	if (!t->gen) {
 	    if (t->p == t->pend) return -1;
-	    t->now = *t->p++;
+	    t->now = *(USTR)t->p++;
 	    if (t->p < t->pend && *t->p == '-') {
 		t->p++;
 		if (t->p < t->pend) {

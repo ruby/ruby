@@ -1,3 +1,11 @@
+Wed Jun  3 18:07:54 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (reg_raise): check rb_in_compile, not rb_in_eval.
+
+Mon Jun  1 05:26:06 1998  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* string.c (trnext): casting to signed char* needed.
+
 Tue Jun  2 16:00:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/socket/socket.c (udp_addrsetup): error check enhanced.

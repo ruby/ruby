@@ -1,5 +1,5 @@
 # date.rb: Written by Tadayoshi Funaba 1998
-# $Id: date.rb,v 1.3 1998/03/08 09:43:54 tadf Exp $
+# $Id: date.rb,v 1.4 1998/06/01 12:52:33 tadf Exp $
 
 class Date
 
@@ -11,8 +11,8 @@ class Date
   DAYNAMES = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
     'Friday', 'Saturday' ]
 
-  GREGORY = 2299161	# Oct 15, 1582
-  ENGLAND = 2361222	# Sept 14, 1752
+  ITALY   = 2299161 # Oct 15, 1582
+  ENGLAND = 2361222 # Sept 14, 1752
 
   def Date.civil_to_jd(y, m, d, gs = true)
     if m <= 2 then
@@ -20,16 +20,15 @@ class Date
       m += 12
     end
     a = (y / 100).to_i
-    b = (a / 4).to_i
-    c = 2 - a + b
-    e = (365.25 * (y + 4716)).to_i
-    f = (30.6001 * (m + 1)).to_i
-    jd = c + d + e + f - 1524
+    b = 2 - a + (a / 4).to_i
+    jd = (365.25 * (y + 4716)).to_i +
+      (30.6001 * (m + 1)).to_i +
+      d + b - 1524
     unless
       (if gs.kind_of? Numeric then jd >= gs else gs end) then
-      jd -= c
+      jd -= b
     end
-    return jd
+    jd
   end
 
   def Date.jd_to_civil(jd, gs = true)
@@ -37,27 +36,22 @@ class Date
       (if gs.kind_of? Numeric then jd >= gs else gs end) then
       a = jd
     else
-      w = ((jd - 1867216.25) / 36524.25).to_i
-      x = (w / 4).to_i
-      a = jd + 1 + w - x
+      x = ((jd - 1867216.25) / 36524.25).to_i
+      a = jd + 1 + x - (x / 4).to_i
     end
     b = a + 1524
     c = ((b - 122.1) / 365.25).to_i
     d = (365.25 * c).to_i
     e = ((b - d) / 30.6001).to_i
-    f = (30.6001 * e).to_i
-    day = b - d - f
+    dom = b - d - (30.6001 * e).to_i
     if e <= 13 then
       m = e - 1
+      y = c - 4716
     else
       m = e - 13
-    end
-    if m <= 2 then
       y = c - 4715
-    else
-      y = c - 4716
     end
-    return y, m, day
+    return y, m, dom
   end
 
   def Date.mjd_to_jd(mjd)
@@ -76,22 +70,38 @@ class Date
     jd - 2440000.5
   end
 
-  def initialize(jd = 0, gs = GREGORY)
-    @jd = jd
-    @gs = gs
+  def Date.julian_leap? (y)
+    y % 4 == 0
   end
 
-  def Date.new3(y = -4712, m = 1, d = 1, gs = GREGORY)
+  def Date.gregorian_leap? (y)
+    y % 4 == 0 and y % 100 != 0 or y % 400 == 0
+  end
+
+  def Date.leap? (y)
+    Date.gregorian_leap?(y)
+  end
+
+  def initialize(jd = 0, gs = ITALY)
+    @jd, @gs = jd, gs
+  end
+
+  def Date.exist? (y, m, d, gs = true)
     jd = Date.civil_to_jd(y, m, d, gs)
-    y2, m2, d2 = Date.jd_to_civil(jd, gs)
-    unless y == y2 and m == m2 and d == d2 then
-      raise ArgumentError, 'invalid date'
+    if [y, m, d] == Date.jd_to_civil(jd, gs) then
+      jd
+    end
+  end
+
+  def Date.new3(y = -4712, m = 1, d = 1, gs = ITALY)
+    unless jd = Date.exist?(y, m, d, gs) then
+      fail ArgumentError, 'invalid date'
     end
     Date.new(jd, gs)
   end
 
-  def Date.today(gs = GREGORY)
-    Date.new3(*(Time.now.to_a[3..5].reverse << gs))
+  def Date.today(gs = ITALY)
+    Date.new(Date.civil_to_jd(*(Time.now.to_a[3..5].reverse << gs)), gs)
   end
 
   def jd
@@ -99,48 +109,63 @@ class Date
   end
 
   def mjd
-    Date.jd_to_mjd(@jd)
+    def self.mjd; @mjd end
+    @mjd = Date.jd_to_mjd(@jd)
   end
 
   def tjd
-    Date.jd_to_tjd(@jd)
+    def self.tjd; @tjd end
+    @tjd = Date.jd_to_tjd(@jd)
   end
 
+  def civil
+    def self.year; @year end
+    def self.mon; @mon end
+    def self.mday; @mday end
+    @year, @mon, @mday = Date.jd_to_civil(@jd, @gs)
+  end
+
+  private :civil
+
   def year
-    Date.jd_to_civil(@jd, @gs)[0]
+    civil
+    @year
   end
 
   def yday
-    gs = if @gs.kind_of? Numeric then @jd >= @gs else @gs end
-    jd = Date.civil_to_jd(year - 1, 12, 31, gs)
-    @jd - jd
+    def self.yday; @yday end
+    ns = if @gs.kind_of? Numeric then @jd >= @gs else @gs end
+    jd = Date.civil_to_jd(year - 1, 12, 31, ns)
+    @yday = @jd - jd
   end
 
   def mon
-    Date.jd_to_civil(@jd, @gs)[1]
+    civil
+    @mon
   end
 
   def mday
-    Date.jd_to_civil(@jd, @gs)[2]
+    civil
+    @mday
   end
 
   def wday
-    k = (@jd + 1) % 7
-    k += 7 if k < 0
-    k
+    def self.wday; @wday end
+    @wday = (@jd + 1) % 7
   end
 
   def leap?
-    gs = if @gs.kind_of? Numeric then @jd >= @gs else @gs end
-    jd = Date.civil_to_jd(year, 2, 28, gs)
-    Date.jd_to_civil(jd + 1, gs)[1] == 2
+    def self.leap?; @leap_p end
+    ns = if @gs.kind_of? Numeric then @jd >= @gs else @gs end
+    jd = Date.civil_to_jd(year, 2, 28, ns)
+    @leap_p = Date.jd_to_civil(jd + 1, ns)[1] == 2
   end
 
   def + (other)
     if other.kind_of? Numeric then
       return Date.new(@jd + other, @gs)
     end
-    raise TypeError, 'expected numeric'
+    fail TypeError, 'expected numeric'
   end
 
   def - (other)
@@ -149,7 +174,7 @@ class Date
     elsif other.kind_of? Date then
       return @jd - other.jd
     end
-    raise TypeError, 'expected numeric or date'
+    fail TypeError, 'expected numeric or date'
   end
 
   def <=> (other)
@@ -158,7 +183,7 @@ class Date
     elsif other.kind_of? Date then
       return @jd <=> other.jd
     end
-    raise TypeError, 'expected numeric or date'
+    fail TypeError, 'expected numeric or date'
   end
 
   def downto(min)
@@ -188,7 +213,7 @@ class Date
   end
 
   def to_s
-    format('%04d-%02d-%02d', *Date.jd_to_civil(@jd, @gs))
+    format('%04d-%02d-%02d', year, mon, mday)
   end
 
 end
