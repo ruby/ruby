@@ -341,6 +341,12 @@ def create_makefile(target)
   print "creating Makefile\n"
   rm_f "conftest*"
   STDOUT.flush
+  if target.rindex(%r!/!)
+    target = $'
+    target_prefix = "/"+$`
+  else
+    target_prefix = ""
+  end
   if CONFIG["DLEXT"] == $OBJEXT
     libs = $libs.split
     for lib in libs
@@ -402,10 +408,10 @@ RUBY_SO_NAME = #{CONFIG["RUBY_SO_NAME"]}
 DESTDIR =
 prefix = $(DESTDIR)#{CONFIG["prefix"]}
 exec_prefix = $(DESTDIR)#{CONFIG["exec_prefix"]}
-libdir = $(DESTDIR)#{$libdir}
-archdir = $(DESTDIR)#{$archdir}
-sitelibdir = $(DESTDIR)#{$sitelibdir}
-sitearchdir = $(DESTDIR)#{$sitearchdir}
+libdir = $(DESTDIR)#{$libdir}#{target_prefix}
+archdir = $(DESTDIR)#{$archdir}#{target_prefix}
+sitelibdir = $(DESTDIR)#{$sitelibdir}#{target_prefix}
+sitearchdir = $(DESTDIR)#{$sitearchdir}#{target_prefix}
 
 #### End of system configuration section. ####
 

@@ -49,7 +49,6 @@ enum node_type {
     NODE_GASGN,
     NODE_IASGN,
     NODE_CDECL,
-    NODE_CVASGN,
     NODE_CVASGN2,
     NODE_CVASGN3,
     NODE_CVDECL,
@@ -270,7 +269,6 @@ typedef struct RNode {
 #define NEW_DASGN_CURR(v,val) rb_node_newnode(NODE_DASGN_CURR,v,val,0);
 #define NEW_IASGN(v,val) rb_node_newnode(NODE_IASGN,v,val,0)
 #define NEW_CDECL(v,val) rb_node_newnode(NODE_CDECL,v,val,0)
-#define NEW_CVASGN(v,val) rb_node_newnode(NODE_CVASGN,v,val,0)
 #define NEW_CVASGN2(v,val) rb_node_newnode(NODE_CVASGN2,v,val,0)
 #define NEW_CVASGN3(v,val) rb_node_newnode(NODE_CVASGN3,v,val,0)
 #define NEW_CVDECL(v,val) rb_node_newnode(NODE_CVDECL,v,val,0)

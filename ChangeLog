@@ -1,3 +1,9 @@
+Tue Aug 29 02:02:14 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): handles create_makefile("a/b").
+
+	* ext/extmk.rb.in (create_makefile): ditto
+
 Mon Aug 28 18:43:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (is_defined): now handles class variables.
@@ -9,7 +15,8 @@ Mon Aug 28 18:43:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (gettable): ditto.
 
 	* regex.c (PUSH_FAILURE_COUNT): push/pop interval count on failure
-	  stack.
+	  stack.  this fix is inspired by the Emacs21 patch from Stefan
+	  Monnier <monnier@cs.yale.edu>.
 
 Fri Aug 25 15:24:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

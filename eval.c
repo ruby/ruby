@@ -1719,7 +1719,6 @@ is_defined(self, node, buf)
       case NODE_GASGN:
       case NODE_CDECL:
       case NODE_CVDECL:
-      case NODE_CVASGN:
       case NODE_CVASGN2:
       case NODE_CVASGN3:
 	return "assignment";
@@ -2581,14 +2580,6 @@ rb_eval(self, n)
 	}
 	result = rb_eval(self, node->nd_value);
 	rb_const_set(ruby_class, node->nd_vid, result);
-	break;
-
-      case NODE_CVASGN:
-	if (NIL_P(ruby_cbase)) {
-	    rb_raise(rb_eTypeError, "no class/module to define class variable");
-	}
-	result = rb_eval(self, node->nd_value);
-	rb_cvar_set(ruby_cbase, node->nd_vid, result);
 	break;
 
       case NODE_CVASGN2:
@@ -3618,10 +3609,6 @@ assign(self, lhs, val, check)
 
       case NODE_CVDECL:
 	rb_cvar_declare(ruby_cbase, lhs->nd_vid, val);
-	break;
-
-      case NODE_CVASGN:
-	rb_cvar_set(ruby_cbase, lhs->nd_vid, val);
 	break;
 
       case NODE_CVASGN2:
@@ -5058,7 +5045,7 @@ rb_f_require(obj, fname)
     volatile int safe = ruby_safe_level;
 
     Check_SafeStr(fname);
-    if (rb_thread_loading(RSTRING(fname)->ptr)) return Qfalse;
+    if (rb_provided(RSTRING(fname)->ptr)) return Qfalse;
 
     ext = strrchr(RSTRING(fname)->ptr, '.');
     if (ext) {

@@ -3945,9 +3945,8 @@ gettable(id)
     }
     else if (is_class_id(id)) {
 	if (in_single) return NEW_CVAR3(id);
-	if (class_nest ==0 && cur_mid)
-	    return NEW_CVAR2(id);
-	else return NEW_CVAR(id);
+	if (cur_mid) return NEW_CVAR2(id);
+	return NEW_CVAR(id);
     }
     rb_bug("invalid id for gettable");
     return 0;
@@ -4005,11 +4004,7 @@ assignable(id, val)
     }
     else if (is_class_id(id)) {
 	if (in_single) return NEW_CVASGN3(id, val);
-	if (cur_mid) {
-	    if (class_nest == 0)
-		return NEW_CVASGN2(id, val);
-	    return NEW_CVASGN(id, val);
-	}
+	if (cur_mid) return NEW_CVASGN2(id, val);
 	return NEW_CVDECL(id, val);
     }
     else {
@@ -4098,7 +4093,6 @@ node_assign(lhs, rhs)
       case NODE_DASGN_CURR:
       case NODE_MASGN:
       case NODE_CDECL:
-      case NODE_CVASGN:
       case NODE_CVDECL:
 	lhs->nd_value = rhs;
 	break;

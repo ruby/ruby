@@ -483,7 +483,6 @@ rb_gc_mark(ptr)
 	  case NODE_IASGN:
 	  case NODE_CDECL:
 	  case NODE_CVDECL:
-	  case NODE_CVASGN:
 	  case NODE_CVASGN2:
 	  case NODE_CVASGN3:
 	  case NODE_MODULE:
