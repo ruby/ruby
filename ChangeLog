@@ -1,3 +1,14 @@
+Fri Aug 13 12:55:20 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.parse_range_header):
+	  fix regex for range-spec.
+
+	* lib/webrick/httpservlet/filehandler.rb
+	  (WEBrick::HTTPServlet::DefaultFileHandler#make_partial_content):
+	  multipart/byteranges response was broken.
+
+	* lib/xmlrpc/server.rb: refine example code.
+
 Thu Aug 12 10:54:17 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* rubyio.h (rb_eof_error): should mark as NORETURN.
