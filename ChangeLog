@@ -1,3 +1,8 @@
+Fri Aug  1 13:45:14 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_call_super): propagate previous block if a block is
+	  given.  [ruby-talk:77577]
+
 Fri Aug  1 09:54:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (BEGIN_CALLARGS): should not always  reset ruby_iter,

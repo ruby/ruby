@@ -5235,7 +5235,7 @@ rb_call_super(argc, argv)
 	klass = k;
     }
 
-    PUSH_ITER(ruby_iter->iter?ITER_PRE:ITER_NOT);
+    PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
     result = rb_call(RCLASS(klass)->super, self, ruby_frame->orig_func, argc, argv, 3);
     POP_ITER();
 
