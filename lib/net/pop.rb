@@ -1,6 +1,6 @@
 =begin
 
-= net/pop.rb version 1.2.1
+= net/pop.rb version 1.2.2
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 

@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.2.1
+= net/http.rb version 1.2.2
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -565,7 +565,7 @@ module Net
 
     public
 
-    def self.def_http_method( nm, hasdest, hasdata )
+    def self.define_http_method_interface( nm, hasdest, hasdata )
       name = nm.id2name.downcase
       cname = nm.id2name
       lineno = __LINE__ + 2
@@ -596,25 +596,32 @@ module Net
       module_eval src, __FILE__, lineno
     end
 
-    def_http_method :Get,  true,  false
-    def_http_method :Head, false, false
-    def_http_method :Post, true,  true
-    def_http_method :Put,  false, true
+    define_http_method_interface :Get,  true,  false
+    define_http_method_interface :Head, false, false
+    define_http_method_interface :Post, true,  true
+    define_http_method_interface :Put,  false, true
 
-    def request( req, *args )
-      common_oper( req ) {
+    def request( req, body = nil )
+      connecting( req ) {
         req.__send__( :exec,
-                @socket, @curr_http_version, edit_path(req.path), *args )
+                @socket, @curr_http_version, edit_path(req.path), body )
         yield req.response if block_given?
       }
       req.response
+    end
+
+    def request_by_name( name, path, header, body = nil )
+      r = ::Net::NetPrivate::HTTPGenericRequest.new(
+              name, body ? true : false, true,
+              path, header )
+      request r, body
     end
 
 
     private
 
 
-    def common_oper( req )
+    def connecting( req )
       req['connection'] ||= 'keep-alive'
       if not @socket then
         start
@@ -644,8 +651,6 @@ module Net
         D 'Conn close'
         @socket.close
       end
-
-      req.response
     end
 
     def keep_alive?( req, res )
@@ -836,9 +841,9 @@ module Net
 
         d1 = m[1].to_i
         d2 = m[2].to_i
-        if    m[1] and m[2] then arr.push  d1..d2
-        elsif m[1]          then arr.push  d1..-1
-        elsif          m[2] then arr.push -d2..-1
+        if    m[1] and m[2] then arr.push(  d1..d2 )
+        elsif m[1]          then arr.push(  d1..-1 )
+        elsif          m[2] then arr.push( -d2..-1 )
         else
           raise HTTPHeaderSyntaxError, 'range is not specified'
         end
@@ -915,21 +920,22 @@ module Net
 
   end
 
-  }
-
 
   ###
   ### request
   ###
 
-  net_private {
-
-  class HTTPRequest
+  class HTTPGenericRequest
 
     include ::Net::NetPrivate::HTTPHeader
 
-    def initialize( path, uhead = nil )
+    def initialize( m, reqbody, resbody, path, uhead = nil )
+      @method = m
+      @request_has_body = reqbody
+      @response_has_body = resbody
       @path = path
+      @response = nil
+
       @header = tmp = {}
       return unless uhead
       uhead.each do |k,v|
@@ -940,11 +946,9 @@ module Net
         tmp[ key ] = v.strip
       end
       tmp['accept'] ||= '*/*'
-
-      @socket = nil
-      @response = nil
     end
 
+    attr_reader :method
     attr_reader :path
     attr_reader :response
 
@@ -952,9 +956,15 @@ module Net
       "\#<#{type}>"
     end
 
-    def body_exist?
-      type::HAS_BODY
+    def request_body_permitted?
+      @request_has_body
     end
+
+    def response_body_permitted?
+      @response_has_body
+    end
+
+    alias body_exist? response_body_permitted?
 
 
     private
@@ -963,110 +973,89 @@ module Net
     # write
     #
 
-    def exec( sock, ver, path )
-      ready( sock ) {
-        request ver, path
-      }
-      @response
-    end
-
-    def ready( sock )
-      @response = nil
-      @socket = sock
-      yield
-      @response = get_response
-      @socket = nil
-    end
-
-    def request( ver, path )
-      @socket.writeline sprintf('%s %s HTTP/%s', type::METHOD, path, ver)
-      canonical_each do |k,v|
-        @socket.writeline k + ': ' + v
+    def exec( sock, ver, path, body, &block )
+      if body then
+        check_body_premitted
+        check_arg_b body, block
+        sendreq_with_body sock, ver, path, body, &block
+      else
+        check_arg_n body
+        sendreq_no_body sock, ver, path
       end
-      @socket.writeline ''
+      @response = r = get_response( sock )
+      r
+    end
+
+    def check_body_premitted
+      request_body_permitted? or
+          raise ArgumentError, 'HTTP request body is not premitted'
+    end
+
+    def check_arg_b( data, block )
+      if data and block then
+        raise ArgumentError, 'both of data and block given'
+      end
+      unless data or block then
+        raise ArgumentError, 'str or block required'
+      end
+    end
+
+    def check_arg_n( data )
+      data and raise ArgumentError, "data is not permitted for #{@method}"
+    end
+
+
+    def sendreq_no_body( sock, ver, path )
+      request sock, ver, path
+    end
+
+    def sendreq_with_body( sock, ver, path, body )
+      if block_given? then
+        ac = Accumulator.new
+        yield ac              # must be yield, DO NOT USE block.call
+        data = ac.terminate
+      else
+        data = body
+      end
+      @header['content-length'] = data.size.to_s
+      @header.delete 'transfer-encoding'
+
+      request sock, ver, path
+      sock.write data
+    end
+
+    def request( sock, ver, path )
+      sock.writeline sprintf('%s %s HTTP/%s', @method, path, ver)
+      canonical_each do |k,v|
+        sock.writeline k + ': ' + v
+      end
+      sock.writeline ''
     end
 
     #
     # read
     #
 
-    def get_response
+    def get_response( sock )
       begin
-        resp = read_response
+        resp = ::Net::NetPrivate::HTTPResponse.new_from_socket(sock,
+                                                response_body_permitted?)
       end while ContinueCode === resp
       resp
-    end
-
-    def read_response
-      resp = get_resline
-
-      while true do
-        line = @socket.readuntil( "\n", true )   # ignore EOF
-        line.sub!( /\s+\z/, '' )                 # don't use chop!
-        break if line.empty?
-
-        m = /\A([^:]+):\s*/.match( line )
-        m or raise HTTPBadResponse, 'wrong header line format'
-        nm = m[1]
-        line = m.post_match
-        if resp.key? nm then
-          resp[nm] << ', ' << line
-        else
-          resp[nm] = line
-        end
-      end
-
-      resp
-    end
-
-    def get_resline
-      str = @socket.readline
-      m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/i.match( str )
-      m or raise HTTPBadResponse, "wrong status line: #{str}"
-      httpver = m[1]
-      status  = m[2]
-      discrip = m[3]
-      
-      ::Net::NetPrivate::HTTPResponse.new(
-              status, discrip, @socket, type::HAS_BODY, httpver )
     end
   
   end
 
 
-  class HTTPRequestWithBody < HTTPRequest
-  
-    private
+  class HTTPRequest < HTTPGenericRequest
 
-    def exec( sock, ver, path, str = nil )
-      check_arg str, block_given?
-
-      if block_given? then
-        ac = Accumulator.new
-        yield ac              # must be yield, DO NOT USE block.call
-        data = ac.terminate
-      else
-        data = str
-      end
-      @header['content-length'] = data.size.to_s
-      @header.delete 'transfer-encoding'
-
-      ready( sock ) {
-        request ver, path
-        @socket.write data
-      }
-      @response
+    def initialize( path, uhead = nil )
+      super type::METHOD,
+            type::REQUEST_HAS_BODY,
+            type::RESPONSE_HAS_BODY,
+            path, uhead
     end
 
-    def check_arg( data, blkp )
-      if data and blkp then
-        raise ArgumentError, 'both of data and block given'
-      end
-      unless data or blkp then
-        raise ArgumentError, 'str or block required'
-      end
-    end
-  
   end
 
 
@@ -1099,23 +1088,27 @@ module Net
   class HTTP
 
     class Get < ::Net::NetPrivate::HTTPRequest
-      HAS_BODY = true
       METHOD = 'GET'
+      REQUEST_HAS_BODY  = false
+      RESPONSE_HAS_BODY = true
     end
 
     class Head < ::Net::NetPrivate::HTTPRequest
-      HAS_BODY = false
       METHOD = 'HEAD'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = false
     end
 
-    class Post < ::Net::NetPrivate::HTTPRequestWithBody
-      HAS_BODY = true
+    class Post < ::Net::NetPrivate::HTTPRequest
       METHOD = 'POST'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
     end
 
-    class Put < ::Net::NetPrivate::HTTPRequestWithBody
-      HAS_BODY = true
+    class Put < ::Net::NetPrivate::HTTPRequest
       METHOD = 'PUT'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
     end
 
   end
@@ -1183,6 +1176,45 @@ module Net
       '504' => HTTPGatewayTimeOut,
       '505' => HTTPVersionNotSupported
     }
+
+
+    class << self
+
+      def new_from_socket( sock, hasbody )
+        resp = readnew( sock, hasbody )
+
+        while true do
+          line = sock.readuntil( "\n", true )   # ignore EOF
+          line.sub!( /\s+\z/, '' )                 # don't use chop!
+          break if line.empty?
+
+          m = /\A([^:]+):\s*/.match( line )
+          m or raise HTTPBadResponse, 'wrong header line format'
+          nm = m[1]
+          line = m.post_match
+          if resp.key? nm then
+            resp[nm] << ', ' << line
+          else
+            resp[nm] = line
+          end
+        end
+
+        resp
+      end
+
+      private
+
+      def readnew( sock, hasbody )
+        str = sock.readline
+        m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match( str )
+        m or raise HTTPBadResponse, "wrong status line: #{str}"
+        discard, httpv, stat, desc = *m.to_a
+        
+        new( stat, desc, sock, hasbody, httpv )
+      end
+
+    end
+
 
     def initialize( stat, msg, sock, be, hv )
       code = CODE_TO_OBJ[stat] ||

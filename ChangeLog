@@ -1,3 +1,9 @@
+Wed Jul  4 03:17:31 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: new method HTTP#request_by_name (test)
+
+	* lib/net/http.rb: new class HTTPGenericRequest
+
 Tue Jul  3 23:58:29 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb: distclean should remove mkmf.log as well.
