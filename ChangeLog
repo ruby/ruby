@@ -1,3 +1,8 @@
+Fri Dec 17 18:07:01 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/readline/test_readline.rb: fix for BSD. Thanks, GOTOU Yuuzou.
+	  fixed: [ruby-dev:25218]
+
 Fri Dec 17 16:28:12 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fix bug on setting up system encoding
