@@ -2,7 +2,8 @@
 
 = net/http.rb
 
-Copyright (c) 1999-2002 Yukihiro Matsumoto
+Copyright (c) 1999-2003 Yukihiro Matsumoto
+Copyright (c) 1999-2003 Minero Aoki
 
 written & maintained by Minero Aoki <aamine@loveruby.net>.
 This file is derived from "http-access.rb".
@@ -1170,11 +1171,12 @@ module Net
     end
 
     def request( sock, ver, path )
-      sock.writeline sprintf('%s %s HTTP/%s', @method, path, ver)
+      buf = "#{@method} #{path} HTTP/#{ver}\r\n"
       canonical_each do |k,v|
-        sock.writeline k + ': ' + v
+        buf << k + ': ' + v + "\r\n"
       end
-      sock.writeline ''
+      buf << "\r\n"
+      sock.write buf
     end
   
   end

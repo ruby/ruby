@@ -1,3 +1,8 @@
+Tue Mar 11 20:07:01 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: speeding up by avoiding extra flush.
+	  (suggested by Brian Candler <B.Candler@pobox.com> [ruby-talk:66516])
+
 Tue Mar 11 04:30:12 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (massign): remove unnecessary array unpacking; it should
