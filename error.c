@@ -166,10 +166,11 @@ static VALUE
 rb_warn_m(self, mesg)
     VALUE self, mesg;
 {
-    if (NIL_P(ruby_verbose)) return;
-    rb_io_write(rb_stderr, mesg);
-    rb_io_write(rb_stderr, rb_default_rs);
-    return mesg;
+    if (!NIL_P(ruby_verbose)) {
+	rb_io_write(rb_stderr, mesg);
+	rb_io_write(rb_stderr, rb_default_rs);
+    }
+    return Qnil;
 }
 
 void

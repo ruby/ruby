@@ -51,32 +51,47 @@ time_s_alloc(klass)
 
     obj = Data_Make_Struct(klass, struct time_object, 0, time_free, tobj);
     tobj->tm_got=0;
-    if (gettimeofday(&tobj->tv, 0) < 0) {
-	rb_sys_fail("gettimeofday");
-    }
+    tobj->tv.tv_sec = 0;
+    tobj->tv.tv_usec = 0;
 
     return obj;
 }
 
-static VALUE
-time_s_now(klass)
-    VALUE klass;
+static void
+time_modify(time)
+    VALUE time;
 {
-    return rb_obj_alloc(klass);
+    rb_check_frozen(time);
+    if (!OBJ_TAINTED(time) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify Time");
 }
 
+static VALUE
+time_init(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+
+    time_modify(time);
+    GetTimeval(time, tobj);
+    tobj->tm_got=0;
+    tobj->tv.tv_sec = 0;
+    tobj->tv.tv_usec = 0;
+    if (gettimeofday(&tobj->tv, 0) < 0) {
+	rb_sys_fail("gettimeofday");
+    }
+
+    return time;
+}
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 
-static VALUE
-time_new_internal(klass, sec, usec)
-    VALUE klass;
+void
+time_overflow_p(sec, usec)
     time_t sec, usec;
 {
-    VALUE obj;
     time_t tmp;
-    struct time_object *tobj;
 
     if (usec >= 1000000) {	/* usec positive overflow */
 	tmp = sec + usec / 1000000;
@@ -98,13 +113,22 @@ time_new_internal(klass, sec, usec)
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
 #endif
+}
 
-    obj = Data_Make_Struct(klass, struct time_object, 0, time_free, tobj);
-    tobj->tm_got = 0;
+static VALUE
+time_new_internal(klass, sec, usec)
+    VALUE klass;
+    time_t sec, usec;
+{
+    VALUE time = time_s_alloc(klass);
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    time_overflow_p(sec, usec);
     tobj->tv.tv_sec = sec;
     tobj->tv.tv_usec = usec;
 
-    return obj;
+    return time;
 }
 
 VALUE
@@ -757,15 +781,6 @@ time_hash(time)
     return LONG2FIX(hash);
 }
 
-static void
-time_modify(time)
-    VALUE time;
-{
-    rb_check_frozen(time);
-    if (!OBJ_TAINTED(time) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify Time");
-}
-
 static VALUE
 time_init_copy(copy, time)
     VALUE copy, time;
@@ -1293,12 +1308,9 @@ time_s_times(obj)
 }
 
 static VALUE
-time_dump(argc, argv, time)
-    int argc;
-    VALUE *argv;
+time_mdump(time)
     VALUE time;
 {
-    VALUE dummy;
     struct time_object *tobj;
     struct tm *tm;
     unsigned long p, s;
@@ -1306,7 +1318,6 @@ time_dump(argc, argv, time)
     time_t t;
     int i;
 
-    rb_scan_args(argc, argv, "01", &dummy);
     GetTimeval(time, tobj);
 
     t = tobj->tv.tv_sec;
@@ -1337,15 +1348,29 @@ time_dump(argc, argv, time)
 }
 
 static VALUE
-time_load(klass, str)
-    VALUE klass, str;
+time_dump(argc, argv, time)
+    int argc;
+    VALUE *argv;
+    VALUE time;
 {
+    VALUE dummy;
+
+    rb_scan_args(argc, argv, "01", &dummy);
+    return time_mdump(time);
+}
+
+static VALUE
+time_mload(time, str)
+    VALUE time, str;
+{
+    struct time_object *tobj;
     unsigned long p, s;
     time_t sec, usec;
     unsigned char *buf;
     struct tm tm;
     int i;
 
+    time_modify(time);
     StringValue(str);
     buf = (unsigned char *)RSTRING(str)->ptr;
     if (RSTRING(str)->len != 8) {
@@ -1361,21 +1386,43 @@ time_load(klass, str)
     }
 
     if ((p & (1<<31)) == 0) {
-	return time_new_internal(klass, p, s);
+	sec = p;
+	usec = s;
     }
-    p &= ~(1<<31);
-    tm.tm_year = (p >> 14) & 0x1ffff;
-    tm.tm_mon  = (p >> 10) & 0xf;
-    tm.tm_mday = (p >>  5) & 0x1f;
-    tm.tm_hour =  p        & 0x1f;
-    tm.tm_min  = (s >> 26) & 0x3f;
-    tm.tm_sec  = (s >> 20) & 0x3f;
-    tm.tm_isdst = 0;
+    else {
+	p &= ~(1<<31);
+	tm.tm_year = (p >> 14) & 0x1ffff;
+	tm.tm_mon  = (p >> 10) & 0xf;
+	tm.tm_mday = (p >>  5) & 0x1f;
+	tm.tm_hour =  p        & 0x1f;
+	tm.tm_min  = (s >> 26) & 0x3f;
+	tm.tm_sec  = (s >> 20) & 0x3f;
+	tm.tm_isdst = 0;
 
-    sec = make_time_t(&tm, Qtrue);
-    usec = (time_t)(s & 0xfffff);
+	sec = make_time_t(&tm, Qtrue);
+	usec = (time_t)(s & 0xfffff);
+    }
+    time_overflow_p(sec, usec);
 
-    return time_new_internal(klass, sec, usec);
+    GetTimeval(time, tobj);
+    tobj->tm_got = 0;
+    tobj->tv.tv_sec = sec;
+    tobj->tv.tv_usec = usec;
+    return time;
+}
+
+static VALUE
+time_load(klass, str)
+    VALUE klass, str;
+{
+    VALUE time = time_s_alloc(klass);
+
+    if (FL_TEST(str, FL_EXIVAR)) {
+	rb_copy_generic_ivar(time, str);
+	FL_SET(time, FL_EXIVAR);
+    }
+    time_mload(time, str);
+    return time;
 }
 
 void
@@ -1384,8 +1431,8 @@ Init_Time()
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);
 
-    rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
     rb_define_alloc_func(rb_cTime, time_s_alloc);
+    rb_define_singleton_method(rb_cTime, "now", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);
@@ -1446,4 +1493,9 @@ Init_Time()
     /* methods for marshaling */
     rb_define_method(rb_cTime, "_dump", time_dump, -1);
     rb_define_singleton_method(rb_cTime, "_load", time_load, 1);
+#if 0
+    /* Time will support marshal_dump and marshal_load in the future (1.9 maybe) */
+    rb_define_method(rb_cTime, "marshal_dump", time_mdump, 0);
+    rb_define_method(rb_cTime, "marshal_load", time_mload, 1);
+#endif
 }

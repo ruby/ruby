@@ -10187,7 +10187,19 @@ rb_catch(tag, func, data)
     VALUE (*func)();
     VALUE data;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))catch_i, ID2SYM(rb_intern(tag)), func, data);
+    int state;
+    VALUE val = Qnil;		/* OK */
+
+    PUSH_TAG(PROT_NONE);
+    PUSH_SCOPE();
+    if ((state = EXEC_TAG()) == 0) {
+	val = rb_iterate((VALUE(*)_((VALUE)))catch_i, ID2SYM(rb_intern(tag)), func, data);
+    }
+    POP_SCOPE();
+    POP_TAG();
+    if (state) JUMP_TAG(state);
+
+    return val;
 }
 
 static VALUE

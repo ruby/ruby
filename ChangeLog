@@ -1,3 +1,8 @@
+Thu Oct  2 17:22:37 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_load): restore instance variables (if any) before
+	  loading from marshaled data.
+
 Thu Oct  2 14:19:15 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_fail): now yield erred substring, and
@@ -36,6 +41,21 @@ Thu Oct  2 11:17:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 Thu Oct  2 03:25:01 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* eval.c (rb_thread_raise): prototype; avoid VC++ warning.
+
+Thu Oct  2 01:37:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_mdump): new marshal dumper. _dump is still
+	  available for compatibility.
+
+	* time.c (time_mload): new marshal loader.
+
+	* marshal.c (w_object): preserve instance variables for objects
+	  with marshal_dump.
+
+	* marshal.c (r_object0): restore instance variables before calling
+	  marshal_load.
+
+	* error.c (rb_warn_m): always return nil.
 
 Thu Oct  2 01:32:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
