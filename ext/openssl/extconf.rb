@@ -16,6 +16,8 @@
 
 require "mkmf"
 
+dir_config("openssl")
+
 if RUBY_PLATFORM =~ /mswin32/
   CRYPTOLIB="libeay32"
   SSLLIB="ssleay32"

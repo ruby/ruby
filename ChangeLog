@@ -1,3 +1,7 @@
+Thu Jul 24 11:09:10 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/openssl/extconf.rb: revert use of dir_config.
+
 Thu Jul 24 09:58:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/Win32API/lib/win32/resolv.rb: added.
