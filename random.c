@@ -275,7 +275,10 @@ random_seed()
     memset(digits, 0, big->len * SIZEOF_BDIGITS);
 
 #ifdef S_ISCHR
-    if ((fd = open("/dev/urandom", O_RDONLY|O_NONBLOCK
+    if ((fd = open("/dev/urandom", O_RDONLY
+#ifdef O_NONBLOCK
+            |O_NONBLOCK
+#endif
 #ifdef O_NOCTTY
             |O_NOCTTY
 #endif
