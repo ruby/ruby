@@ -1,7 +1,8 @@
 # You need RubyUnit and MS Excel and MSI to run this test script 
 
+require 'test/unit'
 require 'runit/testcase'
-require 'runit/cui/testrunner'
+# require 'runit/cui/testrunner'
 
 require 'win32ole'
 require 'oleserver'
@@ -40,7 +41,7 @@ class TestWin32OLE < RUNIT::TestCase
     exc = assert_exception(WIN32OLERuntimeError) {
       WIN32OLE.new("{000}")
     }
-    assert_match(/Unknown OLE server : `\{000\}'/, exc.message)
+    assert_match(/Unknown OLE server `\{000\}'/, exc.message)
   end
   def test_s_connect
     excel2 = WIN32OLE.connect('Excel.Application')
@@ -220,6 +221,12 @@ class TestWin32OLE < RUNIT::TestCase
     assert(add_info.params[0].optional?)
     assert_equal('VARIANT', add_info.params[0].ole_type)
   end
+
+  def test_ole_typelib
+    tlib = @excel.ole_typelib
+    assert_equal(tlib.name, MS_EXCEL_TYPELIB);
+  end
+
   def teardown
     @excel.quit
     @excel = nil
@@ -227,7 +234,8 @@ class TestWin32OLE < RUNIT::TestCase
   end
 end
 
-class TestWin32OLE_WITH_MSI < RUNIT::TestCase
+# class TestWin32OLE_WITH_MSI < RUNIT::TestCase
+class TestWin32OLE_WITH_MSI < Test::Unit::TestCase
   def setup
     installer = WIN32OLE.new("WindowsInstaller.Installer")
     @record = installer.CreateRecord(2)
@@ -287,26 +295,4 @@ class TestMyExcel < TestWin32OLE
 # so, hide the test.
 #
   private :test_s_const_load
-end
-
-if $0 == __FILE__
-  puts "Now Test Win32OLE version #{WIN32OLE::VERSION}"
-  if ARGV.size == 0
-	suite = RUNIT::TestSuite.new
-	suite.add_test(TestWin32OLE.suite)
-	suite.add_test(TestMyExcel.suite)
-    begin
-      installer = WIN32OLE.new("WindowsInstaller.Installer")
-      suite.add_test(TestWin32OLE_WITH_MSI.suite)
-    rescue
-      puts "Skip some test with MSI"
-    end
-  else
-    suite = RUNIT::TestSuite.new
-    ARGV.each do |testmethod|
-      suite.add_test(TestWin32OLE.new(testmethod))
-    end
-  end
-  RUNIT::CUI::TestRunner.quiet_mode = true
-  RUNIT::CUI::TestRunner.run(suite)
 end

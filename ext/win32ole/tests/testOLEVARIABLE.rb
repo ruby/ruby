@@ -22,7 +22,9 @@ class TestOLEVARIABLE < RUNIT::TestCase
     assert(var_names.include?('xl3DColumn'))
   end
   def test_ole_type
-    classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
+    tlib = WIN32OLE_TYPELIB.new(MS_EXCEL_TYPELIB)
+    classes = tlib.ole_classes
+    # classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
     chart = classes.find {|c| c.name == 'XlChartType'}
     var = chart.variables.find {|m| m.name == 'xl3DColumn'}
     assert_equal('INT', var.ole_type)

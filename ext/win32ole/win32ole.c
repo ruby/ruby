@@ -18,6 +18,7 @@
 
 #include "ruby.h"
 #include "st.h"
+#include <ctype.h>
 #include <windows.h>
 #include <ocidl.h>
 #include <olectl.h>
@@ -72,13 +73,13 @@
 #define OLEData_Get_Struct(obj, pole) {\
     Data_Get_Struct(obj, struct oledata, pole);\
     if(!pole->pDispatch) {\
-        rb_raise(rb_eRuntimeError, "failed to get Dispatch Interface");\
+        rb_raise(rb_eRuntimeError, "Failed to get Dispatch Interface");\
     }\
 }
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.5.9"
+#define WIN32OLE_VERSION "0.6.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -137,6 +138,7 @@ typedef struct tagIEVENTSINKOBJ {
 }IEVENTSINKOBJ, *PIEVENTSINKOBJ;
 
 VALUE cWIN32OLE;
+VALUE cWIN32OLE_TYPELIB;
 VALUE cWIN32OLE_TYPE;
 VALUE cWIN32OLE_VARIABLE;
 VALUE cWIN32OLE_METHOD;
@@ -457,7 +459,7 @@ date2time_str(date)
     char szTime[20];
     double2time(date, &y, &m, &d, &hh, &mm, &ss);
     sprintf(szTime,
-            "%4.4d/%02.2d/%02.2d %02.2d:%02.2d:%02.2d",
+            "%04d/%02d/%02d %02d:%02d:%02d",
             y, m, d, hh, mm, ss);
     return rb_str_new2(szTime);
 }
@@ -603,7 +605,7 @@ ole_initialize()
     if(gOLEInitialized == Qfalse) {
         hr = OleInitialize(NULL);
         if(FAILED(hr)) {
-            ole_raise(hr, rb_eRuntimeError, "Fail : OLE initialize");
+            ole_raise(hr, rb_eRuntimeError, "Fail: OLE initialize");
         }
         gOLEInitialized = Qtrue;
         /*
@@ -896,7 +898,7 @@ ole_variant2val(pvar)
         long *pID, *pLB, *pUB;
         VARIANT variant;
         VALUE val;
-        VALUE val2;
+        VALUE val2 = Qnil;
 
         int dim = SafeArrayGetDim(psa);
         VariantInit(&variant);
@@ -1144,7 +1146,6 @@ typelib_file_from_clsid(ole)
     LONG err;
     VALUE typelib;
     VALUE vclsid;
-    char *pclsid = NULL;
 
     pbuf  = ole_mb2wc(StringValuePtr(ole), -1);
     hr = CLSIDFromProgID(pbuf, &clsid);
@@ -1364,7 +1365,7 @@ ole_create_dcom(argc, argv, self)
     if (!gole32)
         gole32 = LoadLibrary("OLE32");
     if (!gole32)
-        rb_raise(rb_eRuntimeError, "failed to load OLE32.");
+        rb_raise(rb_eRuntimeError, "Failed to load OLE32");
     if (!gCoCreateInstanceEx)
         gCoCreateInstanceEx = (FNCOCREATEINSTANCEEX*)
             GetProcAddress(gole32, "CoCreateInstanceEx");
@@ -1381,7 +1382,7 @@ ole_create_dcom(argc, argv, self)
     SysFreeString(pbuf);
     if (FAILED(hr))
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "Unknown OLE server : `%s'",
+                  "Unknown OLE server: `%s'",
                   StringValuePtr(ole));
     memset(&serverinfo, 0, sizeof(COSERVERINFO));    
     serverinfo.pwszName = ole_mb2wc(StringValuePtr(host), -1);
@@ -1391,7 +1392,7 @@ ole_create_dcom(argc, argv, self)
     SysFreeString(serverinfo.pwszName);
     if (FAILED(hr))
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "failed to create DCOM server : `%s' in `%s'",
+                  "Failed to create DCOM server `%s' in `%s'",
                   StringValuePtr(ole),
                   StringValuePtr(host));
 
@@ -1418,7 +1419,7 @@ ole_bind_obj(moniker, argc, argv, self)
     hr = CreateBindCtx(0, &pBindCtx);
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "failed to create bind context");
+                  "Failed to create bind context");
     }
 
     pbuf  = ole_mb2wc(StringValuePtr(moniker), -1);
@@ -1427,7 +1428,7 @@ ole_bind_obj(moniker, argc, argv, self)
     if(FAILED(hr)) {
         OLE_RELEASE(pBindCtx);
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR,
-                  "Faile to parse display name of moniker:%s",
+                  "Failed to parse display name of moniker `%s'",
                   StringValuePtr(moniker));
     }
     hr = pMoniker->lpVtbl->BindToObject(pMoniker, pBindCtx, NULL, 
@@ -1438,17 +1439,20 @@ ole_bind_obj(moniker, argc, argv, self)
 
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR,
-                  "Faile to bind moniker:%s",
+                  "Failed to bind moniker `%s'",
                   StringValuePtr(moniker));
     }
     return create_win32ole_object(self, pDispatch, argc, argv);
 }
 
 /*
- * WIN32OLE.connect( ole ) --> aWIN32OLE
- * ----
- * Returns running OLE Automation object or WIN32OLE object from moniker.
- * 1st argument should be OLE program id or class id or moniker.
+ *  call-seq:
+ *     WIN32OLE.connect( ole ) --> aWIN32OLE
+ * 
+ *  Returns running OLE Automation object or WIN32OLE object from moniker.
+ *  1st argument should be OLE program id or class id or moniker.
+ *     
+ *     WIN32OLE.connect('Excel.Application') # => WIN32OLE object which represents running Excel.
  */
 static VALUE
 fole_s_connect(argc, argv, self)
@@ -1488,14 +1492,14 @@ fole_s_connect(argc, argv, self)
     hr = GetActiveObject(&clsid, 0, &pUnknown);
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "Not Running OLE server : `%s'", StringValuePtr(svr_name));
+                  "OLE server `%s' not running", StringValuePtr(svr_name));
     }
     hr = pUnknown->lpVtbl->QueryInterface(pUnknown, &IID_IDispatch,
                                              (void **)&pDispatch);
     if(FAILED(hr)) {
         OLE_RELEASE(pUnknown);
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "failed to create WIN32OLE server : `%s'", 
+                  "Failed to create WIN32OLE server `%s'", 
                   StringValuePtr(svr_name));
     }
 
@@ -1505,10 +1509,27 @@ fole_s_connect(argc, argv, self)
 }
 
 /* 
- * WIN32OLE.const_load( ole, mod = WIN32OLE)
- * ----
- * Defines the constants of OLE Automation server as mod's constants.
- * If 2nd argument is omitted, the default is WIN32OLE.
+ *  call-seq:
+ *     WIN32OLE.const_load( ole, mod = WIN32OLE)
+ * 
+ *  Defines the constants of OLE Automation server as mod's constants.
+ *  If 2nd argument is omitted, the default is WIN32OLE.
+ *  The first letter of Ruby's constant variable name is upper case,
+ *  so constant variable name of WIN32OLE object is capitalized.
+ *  For example, the 'xlTop' constant of Excel is changed to 'XlTop' 
+ *  in WIN32OLE.
+ *  If the first letter of constant variabl is not [A-Z], then
+ *  the constant is defined as CONSTANTS hash element.
+ *
+ *     module EXCEL_CONST
+ *     end
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     WIN32OLE.const_load(excel, EXCEL_CONST)
+ *     puts EXCEL_CONST::XlTop # => -4160
+ *     puts EXCEL_CONST::CONSTANTS['_xlDialogChartSourceData'] # => 541
+ *     
+ *     WIN32OLE.const_load(excel)
+ *     puts WIN32OLE::XlTop # => -4160
  */
 static VALUE
 fole_s_const_load(argc, argv, self)
@@ -1539,12 +1560,12 @@ fole_s_const_load(argc, argv, self)
         hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                   0, lcid, &pTypeInfo);
         if(FAILED(hr)) {
-            ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+            ole_raise(hr, rb_eRuntimeError, "Failed to GetTypeInfo");
         }
         hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
         if(FAILED(hr)) {
             OLE_RELEASE(pTypeInfo);
-            ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+            ole_raise(hr, rb_eRuntimeError, "Failed to GetContainingTypeLib");
         }
         OLE_RELEASE(pTypeInfo);
         if(TYPE(klass) != T_NIL) {
@@ -1564,7 +1585,7 @@ fole_s_const_load(argc, argv, self)
         hr = LoadTypeLibEx(pBuf, REGKIND_NONE, &pTypeLib);
         SysFreeString(pBuf);
         if (FAILED(hr))
-          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx");
+          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to LoadTypeLibEx");
         if(TYPE(klass) != T_NIL) {
             ole_const_load(pTypeLib, klass, self);
         }
@@ -1626,11 +1647,12 @@ reference_count(pole)
 }
 
 /*
- * WIN32OLE.ole_reference_count(aWIN32OLE) --> number
- * ----
- * Returns reference counter of Dispatch interface of WIN32OLE object. 
- * You should not use this method because this method
- * exists only for debugging WIN32OLE.
+ *  call-seq:
+ *     WIN32OLE.ole_reference_count(aWIN32OLE) --> number
+ * 
+ *  Returns reference counter of Dispatch interface of WIN32OLE object. 
+ *  You should not use this method because this method
+ *  exists only for debugging WIN32OLE.
  */
 static VALUE
 fole_s_reference_count(self, obj)
@@ -1643,12 +1665,13 @@ fole_s_reference_count(self, obj)
 }
 
 /*
- * WIN32OLE.ole_free(aWIN32OLE) --> number
- * ----
- * Invokes Release method of Dispatch interface of WIN32OLE object. 
- * You should not use this method because this method
- * exists only for debugging WIN32OLE.
- * The return value is reference counter of OLE object.
+ *  call-seq:
+ *     WIN32OLE.ole_free(aWIN32OLE) --> number
+ * 
+ *  Invokes Release method of Dispatch interface of WIN32OLE object. 
+ *  You should not use this method because this method
+ *  exists only for debugging WIN32OLE.
+ *  The return value is reference counter of OLE object.
  */
 static VALUE
 fole_s_free(self, obj)
@@ -1690,10 +1713,15 @@ ole_show_help(helpfile, helpcontext)
 }
 
 /*
- * WIN32OLE.ole_show_help(obj [,helpcontext])
- * ----
- * Displays helpfile. The 1st argument specifies WIN32OLE_TYPE
- * object or WIN32OLE_METHOD object or helpfile.
+ *  call-seq:
+ *     WIN32OLE.ole_show_help(obj [,helpcontext])
+ * 
+ *  Displays helpfile. The 1st argument specifies WIN32OLE_TYPE
+ *  object or WIN32OLE_METHOD object or helpfile.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     typeobj = excel.ole_obj_help
+ *     WIN32OLE.ole_show_help(typeobj)
  */
 static VALUE
 fole_s_show_help(argc, argv, self)
@@ -1724,7 +1752,7 @@ fole_s_show_help(argc, argv, self)
     }
     hwnd = ole_show_help(helpfile, helpcontext);
     if(hwnd == 0) {
-        rb_raise(rb_eRuntimeError, "failed to open help file:%s",
+        rb_raise(rb_eRuntimeError, "Failed to open help file `%s'",
                  StringValuePtr(helpfile));
     }
     return Qnil;
@@ -1733,7 +1761,7 @@ fole_s_show_help(argc, argv, self)
 /*
  * Document-class: WIN32OLE
  *
- *   <code>WIN32OLE</code> objects represent OLE Automation object in the Ruby.
+ *   <code>WIN32OLE</code> objects represent OLE Automation object in Ruby.
  */
 
 /*
@@ -1746,7 +1774,8 @@ fole_s_show_help(argc, argv, self)
  *  If second argument host specified, then returns OLE Automation 
  *  object on host. 
  *
- *      WIN32OLE.new('Excel.Application') #=> Excel OLE Automation object.
+ *      WIN32OLE.new('Excel.Application') # => Excel OLE Automation WIN32OLE object.
+ *      WIN32OLE.new('{00024500-0000-0000-C000-000000000046}') # => Excel OLE Automation WIN32OLE object.
  */
 static VALUE
 fole_initialize(argc, argv, self)
@@ -1787,7 +1816,7 @@ fole_initialize(argc, argv, self)
     SysFreeString(pBuf);
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "Unknown OLE server : `%s'",
+                  "Unknown OLE server `%s'",
                   StringValuePtr(svr_name));
     }
 
@@ -1796,7 +1825,7 @@ fole_initialize(argc, argv, self)
                           &IID_IDispatch, (void**)&pDispatch);
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR,
-                  "failed to create WIN32OLE object from `%s'",
+                  "Failed to create WIN32OLE object from `%s'",
                   StringValuePtr(svr_name));
     }
     
@@ -1897,7 +1926,7 @@ ole_invoke(argc, argv, self, wFlags)
     rb_scan_args(argc, argv, "1*", &cmd, &paramS);
     OLEData_Get_Struct(self, pole);
     if(!pole->pDispatch) {
-        rb_raise(rb_eRuntimeError, "failed to get dispatch interface.");
+        rb_raise(rb_eRuntimeError, "Failed to get dispatch interface");
     }
     wcmdname = ole_mb2wc(StringValuePtr(cmd), -1);
     hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
@@ -1905,7 +1934,7 @@ ole_invoke(argc, argv, self, wFlags)
     SysFreeString(wcmdname);
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "Unknown property or method : `%s'",
+                  "Unknown property or method: `%s'",
                   StringValuePtr(cmd));
     }
 
@@ -1942,7 +1971,7 @@ ole_invoke(argc, argv, self, wFlags)
                 VariantClear(&op.dp.rgvarg[i]);
             }
             ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                      "FAIL to get named argument info : `%s'",
+                      "Failed to get named argument info: `%s'",
                       StringValuePtr(cmd));
         }
         op.dp.rgdispidNamedArgs = &(pDispID[1]);
@@ -2043,9 +2072,12 @@ ole_invoke(argc, argv, self, wFlags)
  *     WIN32OLE#invoke(method, [arg1,...])  => return value of method.
  *
  *  Runs OLE method. 
- *
  *  The first argument specifies the method name of OLE Automation object.
  *  The others specify argument of the <i>method</i>.
+ *  If you can not execute <i>method</i> directly, then use this method instead.
+ *
+ *    excel = WIN32OLE.new('Excel.Application')
+ *    excel.invoke('Quit')  # => same as excel.Quit
  *
  */
 static VALUE
@@ -2252,12 +2284,16 @@ ole_invoke2(self, dispid, args, types, dispkind)
 }
 
 /*
- * WIN32OLE#_invoke(dispid, args, types)
- * ----
- * Runs the early binding method.
- * The 1st argument specifies dispatch ID, 
- * the 2nd argument specifies the array of arguments,
- * the 3rd argument specifies the array of the type of arguments.
+ *   call-seq:
+ *      WIN32OLE#_invoke(dispid, args, types)
+ * 
+ *   Runs the early binding method.
+ *   The 1st argument specifies dispatch ID, 
+ *   the 2nd argument specifies the array of arguments,
+ *   the 3rd argument specifies the array of the type of arguments.
+ *
+ *      excel = WIN32OLE.new('Excel.Application')
+ *      excel._invoke(302, [], []) #  same effect as excel.Quit
  */
 static VALUE
 fole_invoke2(self, dispid, args, types)
@@ -2270,12 +2306,16 @@ fole_invoke2(self, dispid, args, types)
 }
 
 /*
- * WIN32OLE#_getproperty(dispid, args, types)
- * ----
- * Runs the early binding method to get property.
- * The 1st argument specifies dispatch ID, 
- * the 2nd argument specifies the array of arguments,
- * the 3rd argument specifies the array of the type of arguments.
+ *  call-seq:
+ *     WIN32OLE#_getproperty(dispid, args, types)
+ * 
+ *  Runs the early binding method to get property.
+ *  The 1st argument specifies dispatch ID, 
+ *  the 2nd argument specifies the array of arguments,
+ *  the 3rd argument specifies the array of the type of arguments.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     puts excel._getproperty(558, [], []) # same effect as puts excel.visible
  */
 static VALUE
 fole_getproperty2(self, dispid, args, types)
@@ -2288,12 +2328,16 @@ fole_getproperty2(self, dispid, args, types)
 }
 
 /*
- * WIN32OLE#_setproperty(dispid, args, types)
- * ----
- * Runs the early binding method to set property.
- * The 1st argument specifies dispatch ID, 
- * the 2nd argument specifies the array of arguments,
- * the 3rd argument specifies the array of the type of arguments.
+ *   call-seq:
+ *      WIN32OLE#_setproperty(dispid, args, types)
+ * 
+ *   Runs the early binding method to set property.
+ *   The 1st argument specifies dispatch ID, 
+ *   the 2nd argument specifies the array of arguments,
+ *   the 3rd argument specifies the array of the type of arguments.
+ *
+ *      excel = WIN32OLE.new('Excel.Application')
+ *      excel._setproperty(558, [true], [WIN32OLE::VARIANT::VT_BOOL]) # same effect as excel.visible = true
  */
 static VALUE
 fole_setproperty2(self, dispid, args, types)
@@ -2306,12 +2350,18 @@ fole_setproperty2(self, dispid, args, types)
 }
 
 /*
- * WIN32OLE['property']=val 
+ *  call-seq:
+ *     WIN32OLE['property']=val 
+ *     WIN32OLE.setproperty('property', [arg1, arg2,...] val)
+ * 
+ *  Sets property of OLE object.
+ *  When you want to set property with argument, you can use this method.
  *
- * WIN32OLE.setproperty('property', [arg1, arg2,] val)
- * -----
- * Sets property of OLE object.
- * When you want to set property with argument, you can use setproperty method.
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     excel['Visible'] = true
+ *     book = excel.workbooks.add
+ *     sheet = book.worksheets(1)
+ *     sheet.setproperty('Cells', 1, 2, 10) # => The B1 cell value is 10.
  */
 static VALUE
 fole_setproperty(argc, argv, self)
@@ -2323,9 +2373,13 @@ fole_setproperty(argc, argv, self)
 }
 
 /*
- * WIN32OLE['property'] 
- * -----
- * Returns property of OLE object.
+ *  call-seq:
+ *     WIN32OLE['property'] 
+ * 
+ *  Returns property of OLE object.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     puts excel['Visible'] # => false
  */
 static VALUE
 fole_getproperty(self, property)
@@ -2371,7 +2425,7 @@ ole_propertyput(self, property, value)
 
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "Unknown property or method : `%s'",
+                  "Unknown property or method: `%s'",
                   StringValuePtr(property));
     }
     /* set property value */
@@ -2438,9 +2492,18 @@ ole_ienum_free(pEnumV)
 }
 
 /*
- * WIN32OLE#each {|i|...}
- * -----
- * Iterates over each item of OLE collection which has IEnumVARIANT interface.
+ *  call-seq:
+ *     WIN32OLE#each {|i|...}
+ * 
+ *  Iterates over each item of OLE collection which has IEnumVARIANT interface.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     book = excel.workbooks.add
+ *     sheets = book.worksheets(1)
+ *     cells = sheets.cells("A1:A5")
+ *     cells.each do |cell|
+ *       cell.value = 10
+ *     end
  */
 static VALUE
 fole_each(self)
@@ -2473,7 +2536,7 @@ fole_each(self)
 
     if (FAILED(hr)) {
         VariantClear(&result);
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to get IEnum Interface");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to get IEnum Interface");
     }
 
     if (V_VT(&result) == VT_UNKNOWN)
@@ -2486,7 +2549,7 @@ fole_each(self)
                                                          (void**)&pEnum);
     if (FAILED(hr) || !pEnum) {
         VariantClear(&result);
-        ole_raise(hr, rb_eRuntimeError, "failed to get IEnum Interface");
+        ole_raise(hr, rb_eRuntimeError, "Failed to get IEnum Interface");
     }
 
     VariantClear(&result);
@@ -2495,9 +2558,10 @@ fole_each(self)
 }
 
 /*
- * WIN32OLE#method_missing(id [,arg1, arg2, ...])
- * ----
- * Calls WIN32OLE#invoke method.
+ *  call-seq:
+ *     WIN32OLE#method_missing(id [,arg1, arg2, ...])
+ * 
+ *  Calls WIN32OLE#invoke method.
  */
 static VALUE
 fole_missing(argc, argv, self)
@@ -2511,7 +2575,7 @@ fole_missing(argc, argv, self)
     id = rb_to_id(argv[0]);
     mname = rb_id2name(id);
     if(!mname) {
-        rb_raise(rb_eRuntimeError, "Fail : Unknown method or property");
+        rb_raise(rb_eRuntimeError, "Fail: unknown method or property");
     }
     n = strlen(mname);
     if(mname[n-1] == '=') {
@@ -2541,7 +2605,7 @@ ole_method_sub(self, pOwnerTypeInfo, pTypeInfo, name)
     VALUE method = Qnil;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetTypeAttr");
     }
     for(i = 0; i < pTypeAttr->cFuncs && method == Qnil; i++) {
         hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
@@ -2580,7 +2644,7 @@ olemethod_from_typeinfo(self, pTypeInfo, name)
     VALUE method = Qnil;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetTypeAttr");
     }
     method = ole_method_sub(self, 0, pTypeInfo, name);
     if (method != Qnil) {
@@ -2616,7 +2680,7 @@ ole_methods_sub(pOwnerTypeInfo, pTypeInfo, methods, mask)
     WORD i;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetTypeAttr");
     }
     for(i = 0; i < pTypeAttr->cFuncs; i++) {
         pstr = NULL;
@@ -2657,7 +2721,7 @@ ole_methods_from_typeinfo(pTypeInfo, mask)
     VALUE methods = rb_ary_new();
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetTypeAttr");
     }
 
     ole_methods_sub(0, pTypeInfo, methods, mask);
@@ -2690,7 +2754,7 @@ typeinfo_from_ole(pole, ppti)
     HRESULT hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                       0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, rb_eRuntimeError, "Failed to GetTypeInfo");
     }
     hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo,
                                              -1,
@@ -2700,7 +2764,7 @@ typeinfo_from_ole(pole, ppti)
     hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &i);
     OLE_RELEASE(pTypeInfo);
     if (FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+        ole_raise(hr, rb_eRuntimeError, "Failed to GetContainingTypeLib");
     }
     count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
     for (i = 0; i < count; i++) {
@@ -2740,9 +2804,15 @@ ole_methods(self,mask)
 }
 
 /*
- * WIN32OLE#ole_methods
- * ----
- * Returns OLE methods
+ *  call-seq:
+ *     WIN32OLE#ole_methods
+ * 
+ *  Returns the array of WIN32OLE_METHOD object. 
+ *  The element is OLE method of WIN32OLE object.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     methods = excel.ole_methods
+ *     
  */
 static VALUE
 fole_methods( self )
@@ -2752,9 +2822,14 @@ fole_methods( self )
 }
 
 /*
- * WIN32OLE#ole_get_methods
- * ----
- * Returns get properties.
+ *  call-seq:
+ *     WIN32OLE#ole_get_methods
+ * 
+ *  Returns the array of WIN32OLE_METHOD object .
+ *  The element of the array is property (gettable) of WIN32OLE object.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     properties = excel.ole_get_methods
  */
 static VALUE
 fole_get_methods( self )
@@ -2764,9 +2839,14 @@ fole_get_methods( self )
 }
 
 /*
- * WIN32OLE#ole_put_methods
- * ----
- * Returns put properties.
+ *  call-seq:
+ *     WIN32OLE#ole_put_methods
+ * 
+ *  Returns the array of WIN32OLE_METHOD object .
+ *  The element of the array is property (settable) of WIN32OLE object.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     properties = excel.ole_put_methods
  */
 static VALUE
 fole_put_methods( self )
@@ -2776,9 +2856,15 @@ fole_put_methods( self )
 }
 
 /*
- * WIN32OLE#ole_func_methods
- * ---
- * Returns OLE func methods.
+ *  call-seq:
+ *     WIN32OLE#ole_func_methods
+ * 
+ *  Returns the array of WIN32OLE_METHOD object .
+ *  The element of the array is property (settable) of WIN32OLE object.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     properties = excel.ole_func_methods
+ *
  */
 static VALUE
 fole_func_methods( self )
@@ -2788,9 +2874,13 @@ fole_func_methods( self )
 }
 
 /*
- * WIN32OLE#ole_obj_help
- * ----
- * Returns WIN32OLE_TYPE object.
+ *   call-seq:
+ *      WIN32OLE#ole_obj_help
+ * 
+ *   Returns WIN32OLE_TYPE object.
+ *
+ *      excel = WIN32OLE.new('Excel.Application')
+ *      tobj = excel.ole_obj_help
  */
 static VALUE
 fole_obj_help( self )
@@ -2809,12 +2899,12 @@ fole_obj_help( self )
 
     hr = pole->pDispatch->lpVtbl->GetTypeInfo( pole->pDispatch, 0, lcid, &pTypeInfo );
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, rb_eRuntimeError, "Failed to GetTypeInfo");
     }
     hr = pTypeInfo->lpVtbl->GetContainingTypeLib( pTypeInfo, &pTypeLib, &index );
     if(FAILED(hr)) {
         OLE_RELEASE(pTypeInfo);
-        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+        ole_raise(hr, rb_eRuntimeError, "Failed to GetContainingTypeLib");
     }
     hr = pTypeLib->lpVtbl->GetDocumentation( pTypeLib, index,
                                              &bstr, NULL, NULL, NULL);
@@ -2826,6 +2916,76 @@ fole_obj_help( self )
     OLE_RELEASE(pTypeInfo);
 
     return type;
+}
+
+static VALUE
+make_oletypelib_obj(guid, major_version, minor_version)
+    VALUE guid;
+    VALUE major_version;
+    VALUE minor_version;
+{
+    VALUE args = rb_ary_new();
+    rb_ary_push(args, guid);
+    rb_ary_push(args, major_version);
+    rb_ary_push(args, minor_version);
+    return rb_apply(cWIN32OLE_TYPELIB, rb_intern("new"), args);
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE#ole_typelib -> The WIN32OLE_TYPELIB object 
+ *
+ *  Returns the WIN32OLE_TYPELIB object. The object represents the
+ *  type library which contains the WIN32OLE object.
+ *
+ *     excel = WIN32OLE.new('Excel.Application')
+ *     tlib = excel.ole_typelib
+ *     puts tlib.name  # -> 'Microsoft Excel 9.0 Object Library'
+ */
+static VALUE
+fole_typelib(self)
+    VALUE self;
+{
+    struct oledata *pole;
+    HRESULT hr;
+    ITypeInfo *pTypeInfo;
+    ITypeLib *pTypeLib;
+    TLIBATTR *pTLibAttr;
+    unsigned int index;
+    OLECHAR bstr[80];
+    int len;
+    VALUE guid = Qnil;
+    VALUE major;
+    VALUE minor;
+    LCID  lcid = LOCALE_SYSTEM_DEFAULT;
+
+    OLEData_Get_Struct(self, pole);
+    hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
+                                              0, lcid, &pTypeInfo);
+    if(FAILED(hr)) {
+        ole_raise(hr, rb_eRuntimeError, "Failed to GetTypeInfo");
+    }
+    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
+    if(FAILED(hr)) {
+        OLE_RELEASE(pTypeInfo);
+        ole_raise(hr, rb_eRuntimeError, "Failed to GetContainingTypeLib");
+    }
+    OLE_RELEASE(pTypeInfo);
+
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+
+    len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
+    if (len > 3) {
+        guid = ole_wc2vstr(bstr, FALSE);
+    }
+    major = INT2NUM(pTLibAttr->wMajorVerNum);
+    minor = INT2NUM(pTLibAttr->wMinorVerNum);
+    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+    OLE_RELEASE(pTypeLib);
+    if (guid == Qnil) {
+        rb_raise(eWIN32OLE_RUNTIME_ERROR, "Fail to get typelib");
+    }
+    return make_oletypelib_obj(guid, major, minor);
 }
 
 static HRESULT
@@ -3027,10 +3187,15 @@ ole_typedesc2val(pTypeInfo, pTypeDesc, typedetails)
 }
 
 /*
- * WIN32OLE#ole_method_help(method)
- * -----
- * Returns WIN32OLE_METHOD object corresponding with method 
- * specified by 1st argument.
+ *   call-seq:
+ *      WIN32OLE#ole_method_help(method)
+ * 
+ *   Returns WIN32OLE_METHOD object corresponding with method 
+ *   specified by 1st argument.
+ *
+ *      excel = WIN32OLE.new('Excel.Application')
+ *      method = excel.ole_method_help('Quit')
+ *
  */
 static VALUE
 fole_method_help( self, cmdname )
@@ -3041,13 +3206,12 @@ fole_method_help( self, cmdname )
     HRESULT hr;
     struct oledata *pole;
     VALUE method, obj;
-    LCID    lcid = LOCALE_SYSTEM_DEFAULT;
 
     Check_SafeStr(cmdname);
     OLEData_Get_Struct(self, pole);
     hr = typeinfo_from_ole(pole, &pTypeInfo);
     if(FAILED(hr))
-        ole_raise(hr, rb_eRuntimeError, "failed to get ITypeInfo");
+        ole_raise(hr, rb_eRuntimeError, "Failed to get ITypeInfo");
     method = folemethod_s_allocate(cWIN32OLE_METHOD);
     obj = olemethod_from_typeinfo(method, pTypeInfo, cmdname);
     OLE_RELEASE(pTypeInfo);
@@ -3058,9 +3222,11 @@ fole_method_help( self, cmdname )
 }
 
 /*
- * WIN32OLE.ole_classes(typelibrary)
- * ----
- * Returns array of WIN32OLE_TYPE objects defined by type library.
+ *   call-seq:
+ *      WIN32OLE_TYPE.ole_classes(typelib)
+ * 
+ *   Returns array of WIN32OLE_TYPE objects defined by the <i>typelib</i> type library.
+ *   This method will be OBSOLETE. Use WIN32OLE_TYPELIB.new(typelib).ole_classes instead.
  */
 static VALUE
 foletype_s_ole_classes(self, typelib)
@@ -3072,6 +3238,11 @@ foletype_s_ole_classes(self, typelib)
     ITypeLib *pTypeLib;
     HRESULT hr;
 
+    /*
+    rb_warn("%s is obsolete; use %s instead.",
+            "WIN32OLE_TYPE.ole_classes",
+            "WIN32OLE_TYPELIB.new(typelib).ole_classes");
+    */
     rb_secure(4);
     classes = rb_ary_new();
     if(TYPE(typelib) == T_STRING) {
@@ -3082,7 +3253,7 @@ foletype_s_ole_classes(self, typelib)
         pbuf = ole_mb2wc(StringValuePtr(file), -1);
         hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
         if (FAILED(hr))
-          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx");
+          ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to LoadTypeLibEx");
         SysFreeString(pbuf);
         ole_classes_from_typelib(pTypeLib, classes);
         OLE_RELEASE(pTypeLib);
@@ -3093,9 +3264,12 @@ foletype_s_ole_classes(self, typelib)
 }
 
 /*
- * WIN32OLE_TYPE.typelibs
- * ----
- * Returns array of type libraries.
+ *  call-seq:
+ *     WIN32OLE_TYPE.typelibs
+ * 
+ *  Returns array of type libraries.
+ *  This method will be OBSOLETE. Use WIN32OLE_TYPELIB.typelibs.collect{|t| t.name} instead.
+ *
  */
 static VALUE
 foletype_s_typelibs(self)
@@ -3110,6 +3284,11 @@ foletype_s_typelibs(self)
     VALUE v = Qnil;
     VALUE typelibs = rb_ary_new();
 
+    /*
+    rb_warn("%s is obsolete. use %s instead.",
+            "WIN32OLE_TYPE.typelibs",
+            "WIN32OLE_TYPELIB.typelibs.collect{t|t.name}");
+    */
     err = reg_open_key(HKEY_CLASSES_ROOT, "TypeLib", &htypelib);
     if(err != ERROR_SUCCESS) {
         return typelibs;
@@ -3140,9 +3319,10 @@ foletype_s_typelibs(self)
 }
 
 /*
- * WIN32OLE_TYPE.progids
- * ---
- * Returns array of ProgID.
+ *  call-seq:
+ *     WIN32OLE_TYPE.progids
+ * 
+ *  Returns array of ProgID.
  */
 static VALUE
 foletype_s_progids(self)
@@ -3238,6 +3418,438 @@ oleclass_from_typelib(self, pTypeLib, oleclass)
 }
 
 /*
+ * Document-class: WIN32OLE_TYPELIB
+ *
+ *   <code>WIN32OLE_TYPELIB</code> objects represent OLE tyblib information.
+ */
+
+
+static VALUE
+oletypelib_set_member(self, typelib, guid, version) 
+    VALUE self;
+    VALUE typelib;
+    VALUE guid;
+    VALUE version;
+{
+    rb_ivar_set(self, rb_intern("name"), typelib);
+    rb_ivar_set(self, rb_intern("guid"), guid);
+    rb_ivar_set(self, rb_intern("version"), version);
+    return self;
+}
+
+/*
+ *  call-seq:
+ *
+ *     WIN32OLE_TYPELIB.typelibs
+ *
+ *  Returns the array of WIN32OLE_TYPELIB object.
+ *
+ *     tlibs = WIN32OLE_TYPELIB.typelibs
+ *
+ */
+static VALUE
+foletypelib_s_typelibs(self)
+    VALUE self;
+{
+    HKEY htypelib, hguid;
+    DWORD i, j;
+    LONG err;
+    VALUE guid;
+    VALUE version;
+    VALUE name = Qnil;
+    VALUE typelibs = rb_ary_new();
+    VALUE typelib = Qnil;
+
+    err = reg_open_key(HKEY_CLASSES_ROOT, "TypeLib", &htypelib);
+    if(err != ERROR_SUCCESS) {
+        return typelibs;
+    }
+    for(i = 0; ; i++) {
+        guid = reg_enum_key(htypelib, i);
+        if (guid == Qnil)
+            break;
+        err = reg_open_vkey(htypelib, guid, &hguid);
+        if (err != ERROR_SUCCESS)
+            continue;
+        for(j = 0; ; j++) {
+            version = reg_enum_key(hguid, j);
+            if (version == Qnil)
+                break;
+            if ( (name = reg_get_val(hguid, StringValuePtr(version))) != Qnil ) {
+                typelib = rb_funcall(cWIN32OLE_TYPELIB, rb_intern("allocate"), 0);
+                oletypelib_set_member(typelib, name, guid, version);
+                rb_ary_push(typelibs, typelib);
+            }
+        }
+        RegCloseKey(hguid);
+    }
+    RegCloseKey(htypelib);
+    return typelibs;
+}
+
+static VALUE
+make_version_str(major, minor)
+    VALUE major;
+    VALUE minor;
+{
+    VALUE version_str = Qnil;
+    VALUE minor_str = Qnil;
+    if (major == Qnil) {
+        return Qnil;
+    }
+    version_str = rb_String(major);
+    if (minor != Qnil) {
+        minor_str = rb_String(minor);
+        rb_str_cat2(version_str, ".");
+        rb_str_append(version_str, minor_str);
+    }
+    return version_str;
+}
+
+static VALUE
+oletypelib_search_registry2(self, args)
+    VALUE self;
+    VALUE args;
+{
+    HKEY htypelib, hguid, hversion;
+    double fver;
+    DWORD j;
+    LONG err;
+    VALUE found = Qfalse;
+    VALUE tlib;
+    VALUE ver;
+    VALUE version_str;
+    VALUE version = Qnil;
+    VALUE typelib = Qnil;
+
+    VALUE guid = rb_ary_entry(args, 0);
+    version_str = make_version_str(rb_ary_entry(args, 1), rb_ary_entry(args, 2));
+
+    err = reg_open_key(HKEY_CLASSES_ROOT, "TypeLib", &htypelib);
+    if(err != ERROR_SUCCESS) {
+        return Qfalse;
+    }
+    err = reg_open_vkey(htypelib, guid, &hguid);
+    if (err != ERROR_SUCCESS) {
+        RegCloseKey(htypelib);
+        return Qfalse;
+    }
+    if (version_str != Qnil) {
+        err = reg_open_vkey(hguid, version_str, &hversion);
+        if (err == ERROR_SUCCESS) {
+            tlib = reg_get_val(hversion, NULL);
+            if (tlib != Qnil) {
+                typelib = tlib;
+                version = version_str;
+            }
+        }
+        RegCloseKey(hversion);
+    } else {
+        fver = 0.0;
+	    for(j = 0; ;j++) {
+	        ver = reg_enum_key(hguid, j);
+	        if (ver == Qnil)
+	            break;
+	        err = reg_open_vkey(hguid, ver, &hversion);
+	        if (err != ERROR_SUCCESS) 
+	            continue;
+	        tlib = reg_get_val(hversion, NULL);
+	        if (tlib == Qnil) {
+	             RegCloseKey(hversion);
+	             continue;
+	        }
+	        if (fver < atof(StringValuePtr(ver))) {
+	            fver = atof(StringValuePtr(ver));
+	            version = ver;
+	            typelib = tlib;
+	        }
+	        RegCloseKey(hversion);
+	    }
+    }
+    RegCloseKey(hguid);
+    RegCloseKey(htypelib);
+    if (typelib != Qnil) {
+        found = Qtrue;
+        oletypelib_set_member(self, typelib, guid, version);
+    }
+    return found;
+}
+
+static VALUE
+oletypelib_search_registry(self, typelib)
+    VALUE self;
+    VALUE typelib;
+{
+    HKEY htypelib, hguid, hversion;
+    DWORD i, j;
+    LONG err;
+    VALUE found = Qfalse;
+    VALUE tlib;
+    VALUE guid;
+    VALUE ver;
+
+    err = reg_open_key(HKEY_CLASSES_ROOT, "TypeLib", &htypelib);
+    if(err != ERROR_SUCCESS) {
+        return Qfalse;
+    }
+    for(i = 0; !found; i++) {
+        guid = reg_enum_key(htypelib, i);
+        if (guid == Qnil)
+            break;
+        err = reg_open_vkey(htypelib, guid, &hguid);
+        if (err != ERROR_SUCCESS)
+            continue;
+        for(j = 0; found == Qfalse; j++) {
+            ver = reg_enum_key(hguid, j);
+            if (ver == Qnil)
+                break;
+            err = reg_open_vkey(hguid, ver, &hversion);
+            if (err != ERROR_SUCCESS) 
+                continue;
+            tlib = reg_get_val(hversion, NULL);
+            if (tlib == Qnil) {
+                RegCloseKey(hversion);
+                continue;
+            }
+            if (rb_str_cmp(typelib, tlib) == 0) {
+                oletypelib_set_member(self, typelib, guid, ver);
+                found = Qtrue;
+            }
+            RegCloseKey(hversion);
+        }
+        RegCloseKey(hguid);
+    }
+    RegCloseKey(htypelib);
+    return  found;
+}
+
+/*
+ * call-seq:
+ *    WIN32OLE_TYPELIB.new(typelib [, version1, version2]) -> WIN32OLE_TYPELIB object
+ *
+ * Returns a new WIN32OLE_TYPELIB object.
+ *
+ * The first argument <i>typelib</i>  specifies OLE type library name or GUID.
+ * The second argument is major version or version of the type library.
+ * The third argument is minor version.
+ * The second argument and third argument are optional.
+ * If the first argument is type library name, then the second and third argument
+ * are ignored.
+ *
+ *     tlib1 = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library') 
+ *     tlib2 = WIN32OLE_TYPELIB.new('{00020813-0000-0000-C000-000000000046}')
+ *     tlib3 = WIN32OLE_TYPELIB.new('{00020813-0000-0000-C000-000000000046}', 1.3)
+ *     tlib4 = WIN32OLE_TYPELIB.new('{00020813-0000-0000-C000-000000000046}', 1, 3)
+ *     puts tlib1.name  # -> 'Microsoft Excel 9.0 Object Library'
+ *     puts tlib2.name  # -> 'Microsoft Excel 9.0 Object Library'
+ *     puts tlib3.name  # -> 'Microsoft Excel 9.0 Object Library'
+ *     puts tlib4.name  # -> 'Microsoft Excel 9.0 Object Library'
+ *
+ */
+static VALUE
+foletypelib_initialize(self, args)
+    VALUE self;
+    VALUE args;
+{
+    VALUE found = Qfalse;
+    VALUE typelib = Qnil;
+    int len = 0;
+
+    len = RARRAY(args)->len;
+    if (len < 1 || len > 3) {
+        rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..3)", len);
+    }
+
+    typelib = rb_ary_entry(args, 0);
+
+    Check_SafeStr(typelib);
+
+    found = oletypelib_search_registry(self, typelib);
+    if (found == Qfalse) {
+        found = oletypelib_search_registry2(self, args);
+    }
+
+    if (found == Qfalse) {
+        rb_raise(eWIN32OLE_RUNTIME_ERROR, "Not found type library `%s`",
+                 StringValuePtr(typelib));
+    }
+    return self;
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#guid -> The guid string.
+ *
+ *  Returns guid string which specifies type library.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     guid = tlib.guid # -> '{00020813-0000-0000-C000-000000000046}'
+ */
+static VALUE
+foletypelib_guid(self)
+    VALUE self;
+{
+    return rb_ivar_get(self, rb_intern("guid"));
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#name -> The type library name
+ *
+ *  Returns the type library name.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     name = tlib.name # -> 'Microsoft Excel 9.0 Object Library'
+ */
+static VALUE
+foletypelib_name(self)
+    VALUE self;
+{
+    return rb_ivar_get(self, rb_intern("name"));
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#version -> The type library version. 
+ *
+ *  Returns the type library version.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     puts tlib.version #-> 1.3
+ */
+static VALUE
+foletypelib_version(self)
+    VALUE self;
+{
+    VALUE ver = rb_ivar_get(self, rb_intern("version"));
+    return rb_Float(ver);
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#major_version -> The type library major version. 
+ *
+ *  Returns the type library major version.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     puts tlib.major_version # -> 1
+ */
+static VALUE
+foletypelib_major_version(self)
+    VALUE self;
+{
+    VALUE ver = rb_ivar_get(self, rb_intern("version"));
+    VALUE ary = rb_str_split(ver, ".");
+    return rb_Integer(rb_ary_entry(ary, 0));
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#minor_version -> The type library minor version. 
+ *
+ *  Returns the type library minor version.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     puts tlib.minor_version # -> 3
+ */
+static VALUE
+foletypelib_minor_version(self)
+    VALUE self;
+{
+    VALUE ver = rb_ivar_get(self, rb_intern("version"));
+    VALUE ary = rb_str_split(ver, ".");
+    return rb_Integer(rb_ary_entry(ary, 1));
+}
+
+static VALUE
+oletypelib_path(guid, version)
+    VALUE guid;
+    VALUE version;
+{
+    int k;
+    LONG err;
+    HKEY hkey;
+    HKEY hlang;
+    VALUE lang;
+    VALUE path = Qnil;
+
+    VALUE key = rb_str_new2("TypeLib\\");
+    rb_str_concat(key, guid);
+    rb_str_cat2(key, "\\");
+    rb_str_concat(key, version);
+
+    err = reg_open_vkey(HKEY_CLASSES_ROOT, key, &hkey);
+    if (err != ERROR_SUCCESS) {
+        return Qnil;
+    }
+    for(k = 0; path == Qnil; k++) {
+        lang = reg_enum_key(hkey, k);
+        if (lang == Qnil)
+            break;
+        err = reg_open_vkey(hkey, lang, &hlang);
+        if (err == ERROR_SUCCESS) {
+            path = reg_get_val(hlang, "win32");
+            RegCloseKey(hlang);
+        }
+    }
+    RegCloseKey(hkey);
+    return path;
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#path -> The type library file path. 
+ *
+ *  Returns the type library file path.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     puts tlib.path #-> 'C:\...\EXCEL9.OLB'
+ */
+static VALUE
+foletypelib_path(self)
+    VALUE self;
+{
+    VALUE guid = rb_ivar_get(self, rb_intern("guid"));
+    VALUE version = rb_ivar_get(self, rb_intern("version"));
+    return oletypelib_path(guid, version);
+}
+
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#ole_classes -> The array of WIN32OLE_TYPE object included the type library.
+ *
+ *  Returns the type library file path.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     classes = tlib.ole_classes.collect{|k| k.name} # -> ['AddIn', 'AddIns' ...] 
+ */
+static VALUE
+foletypelib_ole_classes(self)
+    VALUE self;
+{
+    OLECHAR * pbuf;
+    HRESULT hr;
+    ITypeLib *pTypeLib;
+    VALUE path = Qnil;
+    VALUE classes = rb_ary_new();
+    path = rb_funcall(self, rb_intern("path"), 0);
+    if (path != Qnil) {
+        pbuf = ole_mb2wc(StringValuePtr(path), -1);
+        hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
+        SysFreeString(pbuf);
+        if (FAILED(hr))
+            ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to LoadTypeLibEx");
+        ole_classes_from_typelib(pTypeLib, classes);
+        OLE_RELEASE(pTypeLib);
+    } else {
+        rb_raise(eWIN32OLE_RUNTIME_ERROR, "fail to get type library path");
+    }
+    return classes;
+}
+
+
+/*
  * Document-class: WIN32OLE_TYPE
  *
  *   <code>WIN32OLE_TYPE</code> objects represent OLE type libarary information.
@@ -3251,8 +3863,8 @@ oleclass_from_typelib(self, pTypeLib, oleclass)
  *  The first argument <i>typelib</i> specifies OLE type library name.
  *  The second argument specifies OLE class name.
  *
- *      WIN32OLE.new('Microsoft Excel 9.0 Object Library', 'Application') 
- *          #=> WIN32OLE_TYPE object of Application class of Excel. 
+ *      WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application') 
+ *          # => WIN32OLE_TYPE object of Application class of Excel. 
  */
 static VALUE
 foletype_initialize(self, typelib, oleclass)
@@ -3274,7 +3886,7 @@ foletype_initialize(self, typelib, oleclass)
     pbuf = ole_mb2wc(StringValuePtr(file), -1);
     hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to LoadTypeLibEx");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to LoadTypeLibEx");
     SysFreeString(pbuf);
     if (oleclass_from_typelib(self, pTypeLib, oleclass) == Qfalse) {
         OLE_RELEASE(pTypeLib);
@@ -3290,6 +3902,8 @@ foletype_initialize(self, typelib, oleclass)
  *    WIN32OLE_TYPE#name #=> OLE type name
  *
  * Returns OLE type name.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application') 
+ *    puts tobj.name  # => Application
  */
 static VALUE
 foletype_name(self)
@@ -3350,6 +3964,8 @@ ole_ole_type(pTypeInfo)
  *     WIN32OLE_TYPE#ole_type #=> OLE type string.
  * 
  *  returns type of OLE class.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application') 
+ *    puts tobj.ole_type  # => Class
  */
 static VALUE
 foletype_ole_type(self)
@@ -3385,6 +4001,8 @@ ole_type_guid(pTypeInfo)
  *     WIN32OLE_TYPE#guid  #=> GUID
  * 
  *  Returns GUID.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application') 
+ *    puts tobj.guid  # => {00024500-0000-0000-C000-000000000046}
  */
 static VALUE
 foletype_guid(self)
@@ -3415,9 +4033,11 @@ ole_type_progid(pTypeInfo)
 
 /*
  * call-seq:
- *   WIN32OLE_TYPE#progid  #=> ProgID
+ *    WIN32OLE_TYPE#progid  #=> ProgID
  * 
  * Returns ProgID if it exists. If not found, then returns nil.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')
+ *    puts tobj.progid  # =>   Excel.Application.9
  */
 static VALUE
 foletype_progid(self)
@@ -3453,6 +4073,8 @@ ole_type_visible(pTypeInfo)
  *    WIN32OLE_TYPE#visible  #=> true or false
  * 
  *  Returns true if the OLE class is public.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')
+ *    puts tobj.visible  # => true
  */
 static VALUE
 foletype_visible(self)
@@ -3472,7 +4094,7 @@ ole_type_major_version(pTypeInfo)
     HRESULT hr;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetTypeAttr");
     ver = INT2FIX(pTypeAttr->wMajorVerNum);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return ver;
@@ -3483,6 +4105,8 @@ ole_type_major_version(pTypeInfo)
  *     WIN32OLE_TYPE#major_version
  * 
  *  Returns major version.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Word 10.0 Object Library', 'Documents')
+ *     puts tobj.major_version # => 8
  */
 static VALUE
 foletype_major_version(self)
@@ -3502,7 +4126,7 @@ ole_type_minor_version(pTypeInfo)
     HRESULT hr;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetTypeAttr");
     ver = INT2FIX(pTypeAttr->wMinorVerNum);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return ver;
@@ -3513,6 +4137,8 @@ ole_type_minor_version(pTypeInfo)
  *    WIN32OLE_TYPE#minor_version #=> OLE minor version
  * 
  *  Returns minor version.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Word 10.0 Object Library', 'Documents')
+ *     puts tobj.minor_version # => 2
  */
 static VALUE
 foletype_minor_version(self)
@@ -3532,7 +4158,7 @@ ole_type_typekind(pTypeInfo)
     HRESULT hr;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetTypeAttr");
     typekind = INT2FIX(pTypeAttr->typekind);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return typekind;
@@ -3543,6 +4169,9 @@ ole_type_typekind(pTypeInfo)
  *    WIN32OLE_TYPE#typekind #=> number of type.
  * 
  *  Returns number which represents type.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Word 10.0 Object Library', 'Documents')
+ *    puts tobj.typekind # => 4
+ *
  */
 static VALUE 
 foletype_typekind(self)
@@ -3571,6 +4200,8 @@ ole_type_helpstring(pTypeInfo)
  *    WIN32OLE_TYPE#helpstring #=> help string.
  * 
  *  Returns help string.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', 'IWebBrowser')
+ *    puts tobj.helpstring # => Web Browser interface
  */
 static VALUE 
 foletype_helpstring(self)
@@ -3687,7 +4318,7 @@ ole_variables(pTypeInfo)
     VALUE variables = rb_ary_new();
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetTypeAttr");
     }
     
     for(i = 0; i < pTypeAttr->cVars; i++) {
@@ -3763,7 +4394,8 @@ folevariable_name(self)
     return rb_ivar_get(self, rb_intern("name"));
 }
 
-static ole_variable_ole_type(pTypeInfo, var_index)
+static VALUE
+ole_variable_ole_type(pTypeInfo, var_index)
     ITypeInfo *pTypeInfo;
     UINT var_index;
 {
@@ -3772,16 +4404,17 @@ static ole_variable_ole_type(pTypeInfo, var_index)
     VALUE type;
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetVarDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetVarDesc");
     type = ole_typedesc2val(pTypeInfo, &(pVarDesc->elemdescVar.tdesc), Qnil);
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     return type;
 }
 
 /*
- * WIN32OLE_VARIABLE#ole_type
- * ----
- * Returns type.
+ *   call-seq:
+ *      WIN32OLE_VARIABLE#ole_type
+ * 
+ *   Returns OLE type.
  */
 static VALUE
 folevariable_ole_type(self)
@@ -3792,7 +4425,8 @@ folevariable_ole_type(self)
     return ole_variable_ole_type(pvar->pTypeInfo, pvar->index);
 }
 
-static ole_variable_ole_type_detail(pTypeInfo, var_index)
+static VALUE
+ole_variable_ole_type_detail(pTypeInfo, var_index)
     ITypeInfo *pTypeInfo;
     UINT var_index;
 {
@@ -3801,16 +4435,17 @@ static ole_variable_ole_type_detail(pTypeInfo, var_index)
     VALUE type = rb_ary_new();
     hr = pTypeInfo->lpVtbl->GetVarDesc(pTypeInfo, var_index, &pVarDesc);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetVarDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetVarDesc");
     ole_typedesc2val(pTypeInfo, &(pVarDesc->elemdescVar.tdesc), type);
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
     return type;
 }
 
 /*
- * WIN32OLE_VARIABLE#ole_type_detail
- * ---
- * Returns detail information of type. The information is array of type.
+ *  call-seq:
+ *     WIN32OLE_VARIABLE#ole_type_detail
+ * 
+ *  Returns detail information of type. The information is array of type.
  */
 static VALUE
 folevariable_ole_type_detail(self)
@@ -3821,7 +4456,8 @@ folevariable_ole_type_detail(self)
     return ole_variable_ole_type_detail(pvar->pTypeInfo, pvar->index);
 }
 
-static ole_variable_value(pTypeInfo, var_index)
+static VALUE
+ole_variable_value(pTypeInfo, var_index)
     ITypeInfo *pTypeInfo;
     UINT var_index;
 {
@@ -3838,10 +4474,11 @@ static ole_variable_value(pTypeInfo, var_index)
 }
 
 /*
- * WIN32OLE_VARIABLE#value
- * ----
- * Returns value if value is exists. If the value does not exist, 
- * this method returns nil.
+ *  call-seq:
+ *     WIN32OLE_VARIABLE#value
+ * 
+ *  Returns value if value is exists. If the value does not exist, 
+ *  this method returns nil.
  */    
 static VALUE
 folevariable_value(self)
@@ -3852,7 +4489,8 @@ folevariable_value(self)
     return ole_variable_value(pvar->pTypeInfo, pvar->index);
 }
 
-static ole_variable_visible(pTypeInfo, var_index)
+static VALUE
+ole_variable_visible(pTypeInfo, var_index)
     ITypeInfo *pTypeInfo;
     UINT var_index;
 {
@@ -3872,9 +4510,10 @@ static ole_variable_visible(pTypeInfo, var_index)
 }
 
 /*
- * WIN32OLE_VARIABLE#visible?
- * ----
- * Returns true if the variable is public.
+ *  call-seq:
+ *     WIN32OLE_VARIABLE#visible?
+ * 
+ *  Returns true if the variable is public.
  */
 static VALUE
 folevariable_visible(self)
@@ -3917,9 +4556,10 @@ ole_variable_kind(pTypeInfo, var_index)
 }
 
 /*
- * WIN32OLE_VARIABLE#variable_kind
- * ----
- * Returns variable kind string.
+ * call-seq:
+ *   WIN32OLE_VARIABLE#variable_kind
+ * 
+ *   Returns variable kind string.
  */
 static VALUE
 folevariable_variable_kind(self)
@@ -4050,7 +4690,7 @@ ole_method_return_type(pTypeInfo, method_index)
 
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr)) 
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetFuncDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetFuncDesc");
     
     type = ole_typedesc2val(pTypeInfo, &(pFuncDesc->elemdescFunc.tdesc), Qnil);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
@@ -4082,7 +4722,7 @@ ole_method_return_vtype(pTypeInfo, method_index)
 
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr)) 
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetFuncDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetFuncDesc");
     
     vt = INT2FIX(pFuncDesc->elemdescFunc.tdesc.vt);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
@@ -4146,7 +4786,7 @@ ole_method_invkind(pTypeInfo, method_index)
     VALUE invkind;
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if(FAILED(hr)) 
-        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "failed to GetFuncDesc");
+        ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to GetFuncDesc");
     invkind = INT2FIX(pFuncDesc->invkind);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return invkind;
@@ -4238,7 +4878,8 @@ folemethod_visible(self)
     return ole_method_visible(pmethod->pTypeInfo, pmethod->index);
 }
 
-static ole_method_event(pTypeInfo, method_index, method_name)
+static VALUE
+ole_method_event(pTypeInfo, method_index, method_name)
     ITypeInfo *pTypeInfo;
     WORD method_index;
     VALUE method_name;
@@ -5409,11 +6050,11 @@ fev_initialize(argc, argv, self)
     pDispatch = pole->pDispatch;
     hr = pDispatch->lpVtbl->QueryInterface(pDispatch,
                                            &IID_IConnectionPointContainer,
-                                           (void**)&pContainer);
+                                           (void **)&pContainer);
     if (FAILED(hr)) {
         OLE_RELEASE(pTypeInfo);
         ole_raise(hr, rb_eRuntimeError,
-                  "failed to query IConnectionPointContainer");
+                  "Failed to query IConnectionPointContainer");
     }
 
     hr = pContainer->lpVtbl->FindConnectionPoint(pContainer,
@@ -5422,7 +6063,7 @@ fev_initialize(argc, argv, self)
     OLE_RELEASE(pContainer);
     if (FAILED(hr)) {
         OLE_RELEASE(pTypeInfo);
-        ole_raise(hr, rb_eRuntimeError, "failed to query IConnectionPoint");
+        ole_raise(hr, rb_eRuntimeError, "Failed to query IConnectionPoint");
     }
     pIEV = EVENTSINK_Constructor();
     pIEV->m_iid = iid;
@@ -5554,7 +6195,6 @@ Init_win32ole()
     rb_define_singleton_method(cWIN32OLE, "ole_reference_count", fole_s_reference_count, 1);
     rb_define_singleton_method(cWIN32OLE, "ole_show_help", fole_s_show_help, -1);
 
-
     rb_define_method(cWIN32OLE, "invoke", fole_invoke, -1);
     rb_define_method(cWIN32OLE, "[]", fole_getproperty, 1);
     rb_define_method(cWIN32OLE, "_invoke", fole_invoke2, 3);
@@ -5580,6 +6220,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE, "ole_method", fole_method_help, 1);
     rb_define_alias(cWIN32OLE, "ole_method_help", "ole_method");
     rb_define_method(cWIN32OLE, "ole_obj_help", fole_obj_help, 0);
+    rb_define_method(cWIN32OLE, "ole_typelib", fole_typelib, 0);
 
     rb_define_const(cWIN32OLE, "VERSION", rb_str_new2(WIN32OLE_VERSION));
     rb_define_const(cWIN32OLE, "ARGV", rb_ary_new());
@@ -5607,6 +6248,18 @@ Init_win32ole()
     rb_define_const(mWIN32OLE_VARIANT, "VT_UINT", INT2FIX(VT_UINT));
     rb_define_const(mWIN32OLE_VARIANT, "VT_ARRAY", INT2FIX(VT_ARRAY));
     rb_define_const(mWIN32OLE_VARIANT, "VT_BYREF", INT2FIX(VT_BYREF));
+
+    cWIN32OLE_TYPELIB = rb_define_class("WIN32OLE_TYPELIB", rb_cObject);
+    rb_define_singleton_method(cWIN32OLE_TYPELIB, "typelibs", foletypelib_s_typelibs, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "initialize", foletypelib_initialize, -2);
+    rb_define_method(cWIN32OLE_TYPELIB, "guid", foletypelib_guid, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "name", foletypelib_name, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "version", foletypelib_version, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "major_version", foletypelib_major_version, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "minor_version", foletypelib_minor_version, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "path", foletypelib_path, 0);
+    rb_define_method(cWIN32OLE_TYPELIB, "ole_classes", foletypelib_ole_classes, 0);
+    rb_define_alias(cWIN32OLE_TYPELIB, "to_s", "name");
     
     cWIN32OLE_TYPE = rb_define_class("WIN32OLE_TYPE", rb_cObject);
     rb_define_singleton_method(cWIN32OLE_TYPE, "ole_classes", foletype_s_ole_classes, 1);

@@ -1,3 +1,10 @@
+Sat Oct 30 15:24:41 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add WIN32OLE_TYPELIB class. add 
+	  WIN32OLE#ole_typelib method.
+
+	* ext/win32ole/tests/testOLETYPELIB.rb: add WIN32OLE_TYPELIB class.
+
 Fri Oct 29 21:27:51 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_check_initialized): new function to check uninitialized
