@@ -1,3 +1,9 @@
+Sun Jul 22 21:23:00 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/extmk.rb.in, lib/mkmf.rb: introduce a couple of new make
+	  variables: CLEANFILES and DISTCLEANFILES.  They'd typically be
+	  defined in a file "depend".
+
 Sat Jul 21 00:19:54 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* gc.c (ruby_xrealloc): fix a dangling bug which led memory
