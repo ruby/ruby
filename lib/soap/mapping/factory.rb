@@ -220,6 +220,20 @@ class Base64Factory_ < Factory
   end
 end
 
+class URIFactory_ < Factory
+  def obj2soap(soap_class, obj, info, map)
+    soap_obj = soap_class.new(obj)
+    mark_marshalled_obj(obj, soap_obj) if soap_obj
+    soap_obj
+  end
+
+  def soap2obj(obj_class, node, info, map)
+    obj = node.data
+    mark_unmarshalled_obj(node, obj)
+    return true, obj
+  end
+end
+
 class ArrayFactory_ < Factory
   def initialize(allow_original_mapping = false)
     super()
