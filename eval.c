@@ -6998,6 +6998,14 @@ umcall(args, method)
     return umethod_call(0, 0, method);
 }
 
+VALUE
+rb_proc_new(func, val)
+    VALUE (*func)(ANYARGS);	/* VALUE yieldarg[, VALUE procarg] */
+    VALUE val;
+{
+    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, func, val);
+}
+
 static VALUE
 method_proc(method)
     VALUE method;

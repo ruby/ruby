@@ -1,3 +1,9 @@
+Fri Apr 26 09:35:47 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_proc_new): make Proc from C function. [new]
+
+	* intern.h (rb_proc_new): prototype.
+
 Wed Apr 24 14:56:46 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (proc_to_proc): return self. [new]
