@@ -501,9 +501,12 @@ ole_hresult2msg(hr)
                             NULL, hr, LOCALE_SYSTEM_DEFAULT,
                             (LPTSTR)&p_msg, 0, NULL);
     if (dwCount > 0) {
-	term = strrchr(p_msg, '\r');
-	if (term) {
-	    *term = '\0';
+	term = p_msg + strlen(p_msg);
+	while (p_msg < term) {
+	    term--;
+	    if (*term == '\r' || *term == '\n')
+	        *term = '\0';
+	    else break;
 	}
         if (p_msg[0] != '\0') {
             rb_str_cat2(msg, p_msg);
