@@ -19,8 +19,8 @@ For example, when you install ActiveTcl-8.4.x to '/usr/local/ActiveTcl',
 
    configure --with-tcl-dir=/usr/local/ActiveTcl/  \
              --with-tk-dir=/usr/local/ActiveTcl/   \
-             --with-tcllib=tcl8.4                  \
-             --with-tklib=tk8.4                    \
+             --with-tcllib=tclstub8.4              \
+             --with-tklib=tkstub8.4                \
              --enable-tcltk-stubs
 
 It depends on your environment that you have to add the directory of 

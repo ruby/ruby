@@ -112,18 +112,32 @@ class MultiTkIp
   ######################################
 
   def set_safe_level(safe)
+    @safe_level[0] = safe
     @cmd_queue.enq([@system, 'set_safe_level', safe])
     self
+  end
+  def safe_level=(safe)
+    set_safe_level(safe)
   end
   def self.set_safe_level(safe)
     __getip.set_safe_level(safe)
     self
   end
+  def self.safe_level=(safe)
+    self.set_safe_level(safe)
+  end
+  def safe_level
+    @safe_level[0]
+  end
+  def self.safe_level
+    __getip.safe_level
+  end
 
-  def _create_receiver_and_watchdog()
+  def _create_receiver_and_watchdog(lvl = $SAFE)
+    lvl = $SAFE if lvl < $SAFE
+
     # command-procedures receiver
-    receiver = Thread.new{
-      safe_level = $SAFE
+    receiver = Thread.new(lvl){|safe_level|
       loop do
 	thread, cmd, *args = @cmd_queue.deq
 	if thread == @system
@@ -143,17 +157,88 @@ class MultiTkIp
 	  # procedure
 	  begin
 	    ret = proc{$SAFE = safe_level; cmd.call(*args)}.call
-	  rescue SystemExit
+	  rescue SystemExit => e
 	    # delete IP
 	    unless @interp.deleted?
-	      # if @interp._invoke('info', 'command', '.') != ""
-	      #   @interp._invoke('destroy', '.')
-	      # end
-	      # @interp.delete
-	      @interp._eval_without_enc('exit')
+	      @slave_ip_tbl.each_value{|subip|
+		unless subip.deleted?
+		  begin
+		    subip._invoke('destroy', '.') 
+		  rescue Exception
+		  end
+		  subip.delete
+		  # subip._invoke('exit') 
+		  # subip._eval_without_enc('exit') 
+		end
+	      }
+	      begin
+		@interp._invoke('destroy', '.')
+	      rescue Exception
+	      end
+	      if safe?
+		# do 'exit' to call the delete_hook procedure
+		@interp._eval_without_enc('exit')
+	      else
+		@interp.delete
+	      end
 	    end
-	    _check_and_return(thread, MultiTkIp_OK.new(nil))
+	    if e.backtrace[0] =~ /\`exit'/
+	      _check_and_return(thread, MultiTkIp_OK.new(true))
+	    elsif e.backtrace[0] =~ /\`(exit!|abort)'/
+	      _check_and_return(thread, MultiTkIp_OK.new(false))
+	    else
+	      _check_and_return(thread, MultiTkIp_OK.new(nil))
+	    end
 	    break
+	  rescue SecurityError => e
+	    # ignore security error in 'exit', 'exit!', and 'abort'
+	    if e.backtrace[0] =~ /\`exit'/
+	      unless @interp.deleted?
+		@slave_ip_tbl.each_value{|subip|
+		  unless subip.deleted?
+		    begin
+		      subip._invoke('destroy', '.') 
+		    rescue Exception
+		    end
+		    subip.delete 
+		    # subip._invoke('exit') 
+		    # subip._eval_without_enc('exit') 
+		  end
+		}
+		begin
+		  @interp._invoke('destroy', '.')
+		rescue Exception
+		end
+		# @interp.delete
+		@interp._eval_without_enc('exit')
+	      end
+	      _check_and_return(thread, MultiTkIp_OK.new(true))
+	      break
+	    elsif e.backtrace[0] =~ /\`(exit!|abort)'/
+	      unless @interp.deleted?
+		@slave_ip_tbl.each_value{|subip|
+		  unless subip.deleted?
+		    begin
+		      subip._invoke('destroy', '.') 
+		    rescue Exception
+		    end
+		    subip.delete 
+		    # subip._invoke('exit') 
+		    # subip._eval_without_enc('exit') 
+		  end
+		}
+		begin
+		  @interp._invoke('destroy', '.')
+		rescue Exception
+		end
+		# @interp.delete
+		@interp._eval_without_enc('exit')
+	      end
+	      _check_and_return(thread, MultiTkIp_OK.new(false))
+	      break
+	    else
+	      _check_and_return(thread, e)
+	    end
 	  rescue Exception => e
 	    # raise exception
 	    _check_and_return(thread, e)
@@ -230,9 +315,11 @@ class MultiTkIp
 
     @threadgroup  = Thread.current.group
 
+    @safe_level = [$SAFE]
+
     @cmd_queue = Queue.new
 
-    @cmd_receiver, @receiver_watchdog = _create_receiver_and_watchdog()
+    @cmd_receiver, @receiver_watchdog = _create_receiver_and_watchdog(@safe_level[0])
 
     @threadgroup.add @cmd_receiver
     @threadgroup.add @receiver_watchdog
@@ -535,17 +622,37 @@ class MultiTkIp
 
     name, safe, safe_opts, tk_opts = _parse_slaveopts(keys)
 
+    safe = 4 if safe && !safe.kind_of?(Fixnum)
+
     if safeip == nil
       # create master-ip
       @interp = TclTkIp.new(name, _keys2opts(tk_opts))
       @ip_name = nil
+      if safe
+	safe = $SAFE if safe < $SAFE
+	@safe_level = [safe]
+      else
+	@safe_level = [$SAFE]
+      end
     else
       # create slave-ip
       if safeip || master.safe?
 	@interp, @ip_name = master.__create_safe_slave_obj(safe_opts, 
 							   name, tk_opts)
+	if safe
+	  safe = master.safe_level if safe < master.safe_level
+	  @safe_level = [safe]
+	else
+	  @safe_level = [4]
+	end
       else
 	@interp, @ip_name = master.__create_trusted_slave_obj(name, tk_opts)
+	if safe
+	  safe = master.safe_level if safe < master.safe_level
+	  @safe_level = [safe]
+	else
+	  @safe_level = [master.safe_level]
+	end
       end
       @set_alias_proc = proc{|name| 
 	master._invoke('interp', 'alias', @ip_name, name, '', name)
@@ -558,7 +665,7 @@ class MultiTkIp
 
     @cmd_queue = Queue.new
 
-    @cmd_receiver, @receiver_watchdog = _create_receiver_and_watchdog()
+    @cmd_receiver, @receiver_watchdog = _create_receiver_and_watchdog(@safe_level[0])
 
     @threadgroup.add @cmd_receiver
     @threadgroup.add @receiver_watchdog
@@ -634,24 +741,25 @@ class << MultiTkIp
   alias __new new
   private :__new
 
-  def new_master(keys={}, &b)
+
+  def new_master(keys={})
     ip = __new(__getip, nil, keys)
-    ip.eval_proc(&b) if b
+    ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
     ip
   end
 
   alias new new_master
 
-  def new_slave(keys={}, &b)
+  def new_slave(keys={})
     ip = __new(__getip, false, keys)
-    ip.eval_proc(&b) if b
+    ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
     ip
   end
   alias new_trusted_slave new_slave
 
-  def new_safe_slave(keys={},&b)
+  def new_safe_slave(keys={})
     ip = __new(__getip, true, keys)
-    ip.eval_proc(&b) if b
+    ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
     ip
   end
   alias new_safeTk new_safe_slave
@@ -857,12 +965,15 @@ class MultiTkIp
     if cmd.kind_of?(String)
       xcmd  = cmd
       xargs = args
-      cmd = proc{ TkComm._get_eval_string(eval(xcmd, *xargs)) }
+      cmd = proc{ 
+	$SAFE=@safe_level[0]
+	TkComm._get_eval_string(eval(xcmd, *xargs))
+      }
       args = []
     end
 
     # check
-    unless cmd.kind_of?(Proc)
+    unless cmd.kind_of?(Proc) || cmd.kind_of?(Method)
       raise RuntimeError, "A Proc object is expected for the 'cmd' argument"
     end
 
@@ -919,11 +1030,11 @@ class MultiTkIp
   end
   private :eval_proc_core
 
-  def eval_callback(cmd = Proc.new, *args)
+  def eval_callback(cmd = proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
     eval_proc_core(false, cmd, *args)
   end
 
-  def eval_proc(cmd = Proc.new, *args)
+  def eval_proc(cmd = proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
     eval_proc_core(true, cmd, *args)
   end
   alias call eval_proc
@@ -931,7 +1042,7 @@ class MultiTkIp
 end
 class << MultiTkIp
   # class method
-  def eval_proc(cmd = Proc.new, *args)
+  def eval_proc(cmd = proc{$SAFE=__getip.safe_level; Proc.new}.call, *args)
     # class ==> interp object
     __getip.eval_proc(cmd, *args)
   end
@@ -992,6 +1103,10 @@ class << MultiTkIp
 
   def safe?
     __getip.safe?
+  end
+
+  def exit(st = 0)
+    __getip.exit(st)
   end
 
   def restart(app_name = nil, keys = {})
@@ -1187,15 +1302,34 @@ class MultiTkIp
   end
 
   def delete
+    @slave_ip_tbl.each_value{|subip|
+      unless subip.deleted?
+	begin
+	  subip._invoke('destroy', '.') 
+	rescue Exception
+	end
+	subip.delete 
+	#subip._invoke('exit') 
+      end
+    }
     if safe?
       # do 'exit' to call the delete_hook procedure
       @interp._eval_without_enc('exit')
     end
-    @interp.delete
+    @interp.delete unless @interp.deleted?
   end
 
   def deleted?
     @interp.deleted?
+  end
+
+  def exit(st = 0)
+    if master?
+      Kernel.exit(st)
+    else
+      delete
+      st
+    end
   end
 
   def restart(app_name = nil, keys = {})

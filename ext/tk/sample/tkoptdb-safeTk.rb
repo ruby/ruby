@@ -26,10 +26,29 @@ else
 						File.dirname(__FILE__)))
 end
 file = File.expand_path('tkoptdb.rb', File.dirname(__FILE__))
-MultiTkIp.new_safeTk{
-  ent.each{|pat, val| TkOptionDB.add(pat, val)}
+
+ip = MultiTkIp.new_safeTk{
+  # When a block is given to 'new_safeTk' method, 
+  # the block is evaluated on $SAFE==4.
+  ent.each{|pat, val| Tk.tk_call('option', 'add', pat, val)}
+}
+
+=begin
+ip.eval_proc{
+  # When a block is given to 'eval_proc' method, 
+  # the block is evaluated on the IP's current safe level.
+  # So, the followings raises exceptions. 
   load file
 }
+=end
+
+ip.eval_proc(proc{
+  # When a Procedure object is given to 'eval_proc' method as an argument, 
+  # the proc is evaluated on the proc's binding.
+  # So, the followings are evaluated on $SAFE==0
+  load file
+})
+
 # Tk.mainloop is ignored on the slave-IP
 
 Tk.mainloop
