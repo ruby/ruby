@@ -133,7 +133,7 @@ ossl_buf2str(char *buf, int len)
     int status = 0;
 
     str = rb_protect((VALUE(*)_(()))ossl_str_new, len, &status);
-    memcpy(RSTRING(str)->ptr, buf, len);
+    if(!NIL_P(str)) memcpy(RSTRING(str)->ptr, buf, len);
     OPENSSL_free(buf);
     if(status) rb_jump_tag(status);
 
