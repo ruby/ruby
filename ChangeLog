@@ -1,3 +1,8 @@
+Thu Nov 11 01:52:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (syserr_initialize): use stringified object.
+	  [ruby-dev:24768]
+
 Wed Nov 10 22:49:01 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (SimpleDelegator::dup): wrong number of
