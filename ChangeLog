@@ -1,3 +1,9 @@
+Mon Jun 23 23:28:14 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* MANIFEST: add wince files.
+
+	* ext/tk/MANIFEST: add sample/tkmenubutton.rb.
+
 Mon Jun 23 17:40:58 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dir.c (find_dirsep): get rid of warnings.
