@@ -1,3 +1,8 @@
+Fri Jan 21 00:31:36 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/rubyext.c (syck_parser_bufsize_set): avoid VC++ warning
+	  "local variable 'size' used without having been initialized".
+
 Thu Jan 20 19:03:24 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): shoudn't set $extflags on mswin32.
