@@ -42,6 +42,40 @@ empty_cond.signal.
 
 =end
   
+
+#
+# Adds monitor functionality to an arbitrary object by mixing the module with
+# +include+.  For example:
+#
+#    require 'monitor.rb'
+#    
+#    buf = []
+#    buf.extend(MonitorMixin)
+#    empty_cond = buf.new_cond
+#    
+#    # consumer
+#    Thread.start do
+#      loop do
+#        buf.synchronize do
+#          empty_cond.wait_while { buf.empty? }
+#          print buf.shift
+#        end
+#      end
+#    end
+#    
+#    # producer
+#    while line = ARGF.gets
+#      buf.synchronize do
+#        buf.push(line)
+#        empty_cond.signal
+#      end
+#    end
+# 
+# The consumer thread waits for the producer thread to push a line
+# to buf while buf.empty?, and the producer thread (main thread)
+# reads a line from ARGF and push it to buf, then call
+# empty_cond.signal.
+#
 module MonitorMixin
   module Accessible
   protected
@@ -59,6 +93,12 @@ module MonitorMixin
     end
   end
   
+  #
+  # FIXME: This isn't documented in Nutshell.
+  #
+  # Since MonitorMixin.new_cond returns a ConditionVariable, and the example
+  # above calls while_wait and signal, this class should be documented.
+  #
   class ConditionVariable
     class Timeout < Exception; end
     
@@ -169,6 +209,9 @@ module MonitorMixin
     obj.mon_initialize
   end
   
+  #
+  # Attempts to enter exclusive section.  Returns +false+ if lock fails.
+  #
   def try_mon_enter
     result = false
     Thread.critical = true
@@ -183,6 +226,9 @@ module MonitorMixin
     return result
   end
 
+  #
+  # Enters exlusive section.
+  #
   def mon_enter
     Thread.critical = true
     while mon_owner != nil && mon_owner != Thread.current
@@ -195,6 +241,9 @@ module MonitorMixin
     Thread.critical = false
   end
   
+  #
+  # Leaves exclusive section.
+  #
   def mon_exit
     if mon_owner != Thread.current
       raise ThreadError, "current thread not owner"
@@ -214,6 +263,11 @@ module MonitorMixin
     Thread.pass
   end
 
+  #
+  # Enters exclusive section and executes the block.  Leaves the exclusive
+  # section automatically when the block exits.  See example under
+  # +MonitorMixin+.
+  #
   def mon_synchronize
     mon_enter
     begin
@@ -224,6 +278,9 @@ module MonitorMixin
   end
   alias synchronize mon_synchronize
   
+  #
+  # FIXME: This isn't documented in Nutshell.
+  #
   def new_cond
     return ConditionVariable.new(self)
   end
@@ -242,6 +299,25 @@ class Monitor
   alias exit mon_exit
   alias owner mon_owner
 end
+
+
+# Documentation comments:
+#  - All documentation comes from Nutshell.
+#  - MonitorMixin.new_cond appears in the example, but is not documented in
+#    Nutshell.
+#  - All the internals (internal modules Accessible and Initializable, class
+#    ConditionVariable) appear in RDoc.  It might be good to hide them, by
+#    making them private, or marking them :nodoc:, etc.
+#  - The entire example from the RD section at the top is replicated in the RDoc
+#    comment for MonitorMixin.  Does the RD section need to remain?
+#  - RDoc doesn't recognise aliases, so we have mon_synchronize documented, but
+#    not synchronize.
+#  - mon_owner is in Nutshell, but appears as an accessor in a separate module
+#    here, so is hard/impossible to RDoc.  Some other useful accessors
+#    (mon_count and some queue stuff) are also in this module, and don't appear
+#    directly in the RDoc output.
+#  - in short, it may be worth changing the code layout in this file to make the
+#    documentation easier
 
 # Local variables:
 # mode: Ruby
