@@ -1,3 +1,9 @@
+Sat Dec 22 22:52:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_timeval): wrong cast to time_t.
+
+	* time.c (time_plus): ditto.
+
 Fri Dec 21 20:33:34 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* parse.y (str_extend): make up "#$;" handling.

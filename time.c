@@ -140,7 +140,7 @@ time_timeval(time, interval)
 	    if (f != t.tv_sec) {
 		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT(time)->value);
 	    }
-	    t.tv_usec = (time_t)d*1e6;
+	    t.tv_usec = (time_t)(d*1e6);
 	}
 	break;
 
@@ -953,7 +953,7 @@ time_plus(time1, time2)
     v = NUM2DBL(time2);
     d = modf(v, &f);
     sec = (time_t)f;
-    if (f != (double)sec || d >= 1.0 || d <= -1.0) {
+    if (f != (double)sec) {
 	rb_raise(rb_eRangeError, "time + %f out of Time range", v);
     }
 #ifndef NEGATIVE_TIME_T
@@ -961,7 +961,7 @@ time_plus(time1, time2)
 	rb_raise(rb_eArgError, "time must be positive");
     }
 #endif
-    usec = tobj->tv.tv_usec + (time_t)d*1e6;
+    usec = tobj->tv.tv_usec + (time_t)(d*1e6);
     sec = tobj->tv.tv_sec + (time_t)f;
 
 #ifdef NEGATIVE_TIME_T
@@ -1000,7 +1000,7 @@ time_minus(time1, time2)
     v = NUM2DBL(time2);
     d = modf(v, &f);
     sec = (time_t)f;
-    if (f != (double)sec || d >= 1.0 || d <= -1.0) {
+    if (f != (double)sec) {
 	rb_raise(rb_eRangeError, "time - %f out of Time range", v);
     }
 #ifndef NEGATIVE_TIME_T
@@ -1401,7 +1401,7 @@ time_load(klass, str)
     tm.tm_isdst = 0;
 
     sec = make_time_t(&tm, Qtrue);
-    usec = (time_t) s & 0xfffff;
+    usec = (time_t)(s & 0xfffff);
 
     return time_new_internal(klass, sec, usec);
 }
