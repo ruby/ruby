@@ -1,3 +1,9 @@
+Fri Mar  7 00:30:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/Win32API/Win32API.c: no longer use inline-asms.
+
+	* ext/Win32API/extconf.rb: no need to add gcc options.
+
 Fri Feb 28 22:53:55 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (flock): maps error code.
