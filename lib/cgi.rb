@@ -496,8 +496,13 @@ status:
     }
 
     if defined?(MOD_RUBY)
+      table = Apache::request.headers_out
       buf.scan(/([^:]+): (.+)#{EOL}/n){
-        Apache::request[$1] = $2
+        if $1 == 'Set-Cookie'
+	  table.add($1, $2)
+	else
+	  table.set($1, $2)
+	end
       }
       Apache::request.send_http_header
       ''

@@ -1,3 +1,8 @@
+Wed Jan 24 14:58:08 2001  Akinori MUSHA  <knu@ruby-lang.org>
+
+	* lib/cgi.rb: fix the problem that when running under mod_ruby
+	header() outputs only one Set-Cookie line.
+
 Tue Jan 23 18:51:57 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): should finalize objects in
