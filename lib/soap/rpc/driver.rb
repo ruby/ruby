@@ -82,12 +82,6 @@ class Driver
     @servant = Servant__.new(self, endpoint_url, namespace)
     @servant.soapaction = soapaction
     @proxy = @servant.proxy
-    if env_httpproxy = ::SOAP::Env::HTTP_PROXY
-      @servant.options["protocol.http.proxy"] = env_httpproxy
-    end
-    if env_no_proxy = ::SOAP::Env::NO_PROXY
-      @servant.options["protocol.http.no_proxy"] = env_no_proxy
-    end
   end
 
   def inspect
@@ -144,8 +138,7 @@ private
       @mapping_registry = nil
       @soapaction = nil
       @wiredump_file_base = nil
-      @options = ::SOAP::Property.new
-      set_options
+      @options = setup_options
       @streamhandler = HTTPPostStreamHandler.new(endpoint_url,
 	@options["protocol.http"] ||= ::SOAP::Property.new)
       @proxy = Proxy.new(@streamhandler, @soapaction)
@@ -244,14 +237,21 @@ private
       end
     end
 
-    def set_options
-      @options.add_hook("protocol.mandatorycharset") do |key, value|
+    def setup_options
+      if opt = Property.loadproperty(::SOAP::PropertyName)
+	opt = opt["client"]
+      end
+      opt ||= Property.new
+      opt.add_hook("protocol.mandatorycharset") do |key, value|
 	@proxy.mandatorycharset = value
       end
-      @options.add_hook("protocol.wiredump_file_base") do |key, value|
+      opt.add_hook("protocol.wiredump_file_base") do |key, value|
 	@wiredump_file_base = value
       end
-      @options["protocol.http.charset"] = XSD::Charset.encoding_label
+      opt["protocol.http.charset"] ||= XSD::Charset.encoding_label
+      opt["protocol.http.proxy"] ||= Env::HTTP_PROXY
+      opt["protocol.http.no_proxy"] ||= Env::NO_PROXY
+      opt
     end
   end
 end

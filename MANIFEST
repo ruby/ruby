@@ -743,7 +743,9 @@ test/soap/marshal/test_digraph.rb
 test/soap/marshal/test_marshal.rb
 test/soap/marshal/test_struct.rb
 test/soap/test_basetype.rb
+test/soap/test_property.rb
 test/soap/test_soapelement.rb
+test/soap/test_streamhandler.rb
 test/stringio/test_stringio.rb
 test/strscan/test_stringscanner.rb
 test/testunit/collector/test_dir.rb

@@ -14,6 +14,7 @@ module SOAP
 
 
 Version = '1.5.2'
+PropertyName = 'soap/property'
 
 EnvelopeNamespace = 'http://schemas.xmlsoap.org/soap/envelope/'
 EncodingNamespace = 'http://schemas.xmlsoap.org/soap/encoding/'

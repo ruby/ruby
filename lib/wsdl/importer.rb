@@ -9,6 +9,7 @@
 require 'wsdl/info'
 require 'wsdl/parser'
 require 'soap/soap'
+require 'soap/property'
 
 
 module WSDL
@@ -29,15 +30,15 @@ class Importer
       content = File.open(location).read
     else
       client = web_client.new(nil, "WSDL4R")
-      if env_httpproxy = ::SOAP::Env::HTTP_PROXY
-	client.proxy = env_httpproxy
+      if opt = ::SOAP::Property.loadproperty(::SOAP::PropertyName)
+	client.proxy = opt["client.protocol.http.proxy"]
+	client.no_proxy = opt["client.protocol.http.no_proxy"]
       end
-      if env_no_proxy = ::SOAP::Env::NO_PROXY
-	client.no_proxy = env_no_proxy
-      end
+      client.proxy ||= ::SOAP::Env::HTTP_PROXY
+      client.no_proxy ||= ::SOAP::Env::NO_PROXY
       content = client.get_content(location)
     end
-    opt = {}	# charset?
+    opt = {}
     begin
       WSDL::Parser.new(opt).parse(content)
     rescue WSDL::Parser::ParseError => orgexcn

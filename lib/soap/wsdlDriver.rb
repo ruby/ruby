@@ -132,12 +132,6 @@ class WSDLDriver
 
   def initialize(wsdl, port, logdev)
     @servant = Servant__.new(self, wsdl, port, logdev)
-    if env_httpproxy = ::SOAP::Env::HTTP_PROXY
-      @servant.options["protocol.http.proxy"] = env_httpproxy
-    end
-    if env_httpproxy = ::SOAP::Env::NO_PROXY
-      @servant.options["protocol.http.no_proxy"] = env_httpproxy
-    end
   end
 
   def inspect
@@ -171,8 +165,7 @@ class WSDLDriver
       @port = port
       @logdev = logdev
 
-      @options = ::SOAP::Property.new
-      set_options
+      @options = setup_options
       @mapping_registry = nil		# for rpc unmarshal
       @wsdl_mapping_registry = nil	# for rpc marshal
       @default_encodingstyle = EncodingNamespace
@@ -189,7 +182,7 @@ class WSDLDriver
       @doc_mapper = Mapper.new(@wsdl_elements, @wsdl_types)
       endpoint_url = @port.soap_address.location
       @streamhandler = HTTPPostStreamHandler.new(endpoint_url,
-	@options["protocol.http"] ||= ::SOAP::Property.new)
+	@options["protocol.http"] ||= Property.new)
       # Convert a map which key is QName, to a Hash which key is String.
       @operations = {}
       @port.inputoperation_map.each do |op_name, op_info|
@@ -402,14 +395,21 @@ class WSDLDriver
       @logdev.add(sev, nil, self.class) { yield } if @logdev
     end
 
-    def set_options
-      @options.add_hook("protocol.mandatorycharset") do |key, value|
+    def setup_options
+      if opt = Property.loadproperty(::SOAP::PropertyName)
+	opt = opt["client"]
+      end
+      opt ||= Property.new
+      opt.add_hook("protocol.mandatorycharset") do |key, value|
 	@mandatorycharset = value
       end
-      @options.add_hook("protocol.wiredump_file_base") do |key, value|
+      opt.add_hook("protocol.wiredump_file_base") do |key, value|
 	@wiredump_file_base = value
       end
-      @options["protocol.http.charset"] = XSD::Charset.encoding_label
+      opt["protocol.http.charset"] ||= XSD::Charset.encoding_label
+      opt["protocol.http.proxy"] ||= Env::HTTP_PROXY
+      opt["protocol.http.no_proxy"] ||= Env::NO_PROXY
+      opt
     end
 
     class Mapper

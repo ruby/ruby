@@ -21,7 +21,7 @@ class NetHttpClient
       false
     end
 
-  attr_accessor :proxy
+  attr_reader :proxy
   attr_accessor :no_proxy
   attr_accessor :debug_dev
   attr_accessor :ssl_config		# ignored for now.
@@ -34,21 +34,30 @@ class NetHttpClient
     @session_manager = SessionManager.new
     @no_proxy = nil
   end
+  
+  def proxy=(proxy_str)
+    if proxy_str.nil?
+      @proxy = nil
+    else
+      @proxy = URI.parse(proxy_str)
+    end
+  end
 
   def set_basic_auth(uri, user_id, passwd)
-    # ignored for now.
+    # net/http does not handle url.
+    @basic_auth = [user_id, passwd]
   end
 
   def set_cookie_store(filename)
-    # ignored for now.
+    # ignored.
   end
 
   def reset(url)
-    # ignored for now.
+    # no persistent connection.  ignored.
   end
 
   def reset_all
-    # ignored for now.
+    # no persistent connection.  ignored.
   end
 
   def post(url, req_body, header = {})

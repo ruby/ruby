@@ -1,3 +1,17 @@
+Fri Dec  5 22:23:04 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/netHttpClient.rb: proxy support did not work.  fixed.
+
+	* lib/soap/property.rb: add class methods for loading property from
+	  stream/file/propertyfile.  propertyfile is a file which is located at
+	  somedir in $:.
+
+	* lib/soap/soap.rb, lib/soap/wsdlDriver.rb, lib/soap/rpc/driver.rb,
+	  lib/wsdl/importer.rb: load property from propertyfile 'soap/property'
+	  e.g. /usr/local/lib/ruby/site_ruby/1.8/soap/property.
+
+	* test/soap/test_property.rb, test/soap/test_streamhandler.rb: new file.
+
 Fri Dec  5 17:26:23 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_exec_end_proc): maintain tmp_end_procs.
