@@ -18,16 +18,17 @@ multibyte characters which has columns diffrent to number of bytes,
 non-string formatting, etc.
 
 == class methods
---- PrettyPrint.new(output[, maxwidth[, newline]]) [{|width| ...}]
+--- PrettyPrint.new([output[, maxwidth[, newline]]]) [{|width| ...}]
     creates a buffer for pretty printing.
 
-    ((|output|)) is a output target.  It should have a (({<<})) method 
-    which accepts
+    ((|output|)) is a output target.
+    If it is not specified, (({''})) is assumed.
+    It should have a (({<<})) method which accepts
     the first argument ((|obj|)) of (({PrettyPrint#text})),
     the first argument ((|sep|)) of (({PrettyPrint#breakable})),
     the first argument ((|newline|)) of (({PrettyPrint.new})),
     and
-    the result of a given block for (({PrettyPrint.new})). 
+    the result of a given block for (({PrettyPrint.new})).
 
     ((|maxwidth|)) specifies maximum line length.
     If it is not specified, 79 is assumed.
@@ -39,6 +40,16 @@ non-string formatting, etc.
 
     The block is used to generate spaces.
     (({{|width| ' ' * width}})) is used if it is not given.
+
+--- PrettyPrint.format([output[, maxwidth[, newline[, genspace]]]]) {|pp| ...}
+    is a convenience method which is same as follows:
+
+      begin
+        pp = PrettyPrint.format(output, maxwidth, newline, &genspace)
+        ...
+        pp.flush
+        output
+      end
 
 == methods
 --- text(obj[, width])
@@ -61,16 +72,37 @@ non-string formatting, etc.
     increases left margin after newline with ((|indent|)) for line breaks added
     in the block.
 
---- group {...}
+--- group([indent[, open_obj[, close_obj[, open_width[, close_width]]]]]) {...}
     groups line break hints added in the block.
     The line break hints are all to be breaked or not.
+
+    If ((|indent|)) is specified, the method call is regarded as nested by
+    (({nest(((|indent|))) { ... }})).
+
+    If ((|open_obj|)) is specified, (({text open_obj, open_width})) is called
+    at first.
+    If ((|close_obj|)) is specified, (({text close_obj, close_width})) is
+    called at last.
 
 --- flush
     outputs buffered data.
 
-== Bugs
-* Current API is for minimalists.  More useful methods are required.
+--- first?
+    is a predicate to test the call is a first call to (({first?})) with
+    current group.
+    It is useful to format comma separated values as:
 
+      pp.group(1, '[', ']') {
+        xxx.each {|yyy|
+          unless pp.first?
+            pp.text ','
+            pp.breakable
+          end
+          ... pretty printing yyy ...
+        }
+      }
+
+== Bugs
 * Box based formatting?  Other (better) model/algorithm?
 
 == References
@@ -83,7 +115,14 @@ Philip Wadler, A prettier printer, March 1998,
 =end
 
 class PrettyPrint
-  def initialize(output, maxwidth=79, newline="\n", &genspace)
+  def PrettyPrint.format(output='', maxwidth=79, newline="\n", genspace=lambda {|n| ' ' * n})
+    pp = PrettyPrint.new(output, maxwidth, newline, &genspace)
+    yield pp
+    pp.flush
+    output
+  end
+
+  def initialize(output='', maxwidth=79, newline="\n", &genspace)
     @output = output
     @maxwidth = maxwidth
     @newline = newline
@@ -105,18 +144,22 @@ class PrettyPrint
     @group_stack.last
   end
 
+  def first?
+    current_group.first?
+  end
+
   def break_outmost_groups
     while @maxwidth < @output_width + @buffer_width
       return unless group = @group_queue.deq
       until group.breakables.empty?
-	data = @buffer.shift
-	@output_width = data.output(@output, @output_width)
-	@buffer_width -= data.width
+        data = @buffer.shift
+        @output_width = data.output(@output, @output_width)
+        @buffer_width -= data.width
       end
       while !@buffer.empty? && Text === @buffer.first
-	text = @buffer.shift
-	@output_width = text.output(@output, @output_width)
-	@buffer_width -= text.width
+        text = @buffer.shift
+        @output_width = text.output(@output, @output_width)
+        @buffer_width -= text.width
       end
     end
   end
@@ -129,12 +172,16 @@ class PrettyPrint
       text = @buffer.last
       unless Text === text
         text = Text.new
-	@buffer << text
+        @buffer << text
       end
       text.add(obj, width)
       @buffer_width += width
       break_outmost_groups
     end
+  end
+
+  def fill_breakable(sep=' ', width=sep.length)
+    group { breakable sep, width }
   end
 
   def breakable(sep=' ', width=sep.length)
@@ -152,7 +199,17 @@ class PrettyPrint
     end
   end
 
-  def group
+  def group(indent=0, open_obj='', close_obj='', open_width=open_obj.length, close_width=close_obj.length)
+    text open_obj, open_width
+    group_sub {
+      nest(indent) {
+        yield
+      }
+    }
+    text close_obj, close_width
+  end
+
+  def group_sub
     group = Group.new(@group_stack.last.depth + 1)
     @group_stack.push group
     @group_queue.enq group
@@ -215,13 +272,13 @@ class PrettyPrint
     def output(out, output_width)
       @group.breakables.shift
       if @group.break?
-	out << @pp.newline
-	out << @pp.genspace.call(@indent)
-	@indent
+        out << @pp.newline
+        out << @pp.genspace.call(@indent)
+        @indent
       else
-	@pp.group_queue.delete @group if @group.breakables.empty?
-	out << @obj
-	output_width + @width
+        @pp.group_queue.delete @group if @group.breakables.empty?
+        out << @obj
+        output_width + @width
       end
     end
   end
@@ -241,6 +298,15 @@ class PrettyPrint
     def break?
       @break
     end
+
+    def first?
+      if defined? @first
+        false
+      else
+        @first = false
+        true
+      end
+    end
   end
 
   class GroupQueue
@@ -257,15 +323,15 @@ class PrettyPrint
 
     def deq
       @queue.each {|gs|
-	(gs.length-1).downto(0) {|i|
-	  unless gs[i].breakables.empty?
-	    group = gs.slice!(i, 1).first
-	    group.break
-	    return group
-	  end
-	}
-	gs.each {|group| group.break}
-	gs.clear
+        (gs.length-1).downto(0) {|i|
+          unless gs[i].breakables.empty?
+            group = gs.slice!(i, 1).first
+            group.break
+            return group
+          end
+        }
+        gs.each {|group| group.break}
+        gs.clear
       }
       return nil
     end
@@ -283,27 +349,29 @@ if __FILE__ == $0
   class WadlerExample < RUNIT::TestCase
     def setup
       @tree = Tree.new("aaaa", Tree.new("bbbbb", Tree.new("ccc"),
-						 Tree.new("dd")),
-			       Tree.new("eee"),
-			       Tree.new("ffff", Tree.new("gg"),
-						Tree.new("hhh"),
-						Tree.new("ii")))
+                                                 Tree.new("dd")),
+                               Tree.new("eee"),
+                               Tree.new("ffff", Tree.new("gg"),
+                                                Tree.new("hhh"),
+                                                Tree.new("ii")))
     end
 
     def hello(width)
-      out = ''
-      hello = PrettyPrint.new(out, width)
-      hello.group {
-	hello.group {
-	  hello.group {
-	    hello.group {
-	      hello.text 'hello'
-	      hello.breakable; hello.text 'a'}
-	    hello.breakable; hello.text 'b'}
-	  hello.breakable; hello.text 'c'}
-	hello.breakable; hello.text 'd'}
-      hello.flush
-      out
+      PrettyPrint.format('', width) {|hello|
+        hello.group {
+          hello.group {
+            hello.group {
+              hello.group {
+                hello.text 'hello'
+                hello.breakable; hello.text 'a'
+              }
+              hello.breakable; hello.text 'b'
+            }
+            hello.breakable; hello.text 'c'
+          }
+          hello.breakable; hello.text 'd'
+        }
+      }
     end
 
     def test_hello_00_06
@@ -356,11 +424,7 @@ End
     end
 
     def tree(width)
-      out = ''
-      pp = PrettyPrint.new(out, width)
-      @tree.show(pp)
-      pp.flush
-      out
+      PrettyPrint.format('', width) {|pp| @tree.show(pp)}
     end
 
     def test_tree_00_19
@@ -405,11 +469,7 @@ End
     end
 
     def tree_alt(width)
-      out = ''
-      pp = PrettyPrint.new(out, width)
-      @tree.altshow(pp)
-      pp.flush
-      out
+      PrettyPrint.format('', width) {|pp| @tree.altshow(pp)}
     end
 
     def test_tree_alt_00_18
@@ -469,55 +529,55 @@ End
     class Tree
       def initialize(string, *children)
         @string = string
-	@children = children
+        @children = children
       end
 
       def show(pp)
-	pp.group {
-	  pp.text @string
-	  pp.nest(@string.length) {
-	    unless @children.empty?
-	      pp.text '['
-	      pp.nest(1) {
-		first = true
-		@children.each {|t|
-		  if first
-		    first = false
-		  else
-		    pp.text ','
-		    pp.breakable
-		  end
-		  t.show(pp)
-		}
-	      }
-	      pp.text ']'
-	    end
-	  }
-	}
+        pp.group {
+          pp.text @string
+          pp.nest(@string.length) {
+            unless @children.empty?
+              pp.text '['
+              pp.nest(1) {
+                first = true
+                @children.each {|t|
+                  if first
+                    first = false
+                  else
+                    pp.text ','
+                    pp.breakable
+                  end
+                  t.show(pp)
+                }
+              }
+              pp.text ']'
+            end
+          }
+        }
       end
 
       def altshow(pp)
-	pp.group {
-	  pp.text @string
-	  unless @children.empty?
-	    pp.text '['
-	    pp.nest(2) {
-	      pp.breakable
-	      first = true
-	      @children.each {|t|
-		if first
-		  first = false
-		else
-		  pp.text ','
-		  pp.breakable
-		end
-		t.altshow(pp)
-	      }
-	    }
-	    pp.breakable
-	    pp.text ']'
-	  end
-	}
+        pp.group {
+          pp.text @string
+          unless @children.empty?
+            pp.text '['
+            pp.nest(2) {
+              pp.breakable
+              first = true
+              @children.each {|t|
+                if first
+                  first = false
+                else
+                  pp.text ','
+                  pp.breakable
+                end
+                t.altshow(pp)
+              }
+            }
+            pp.breakable
+            pp.text ']'
+          end
+        }
       end
 
     end
@@ -525,31 +585,29 @@ End
 
   class StrictPrettyExample < RUNIT::TestCase
     def prog(width)
-      out = ''
-      pp = PrettyPrint.new(out, width)
-      pp.group {
-	pp.group {pp.nest(2) {
-		     pp.text "if"; pp.breakable;
-		     pp.group {
-		       pp.nest(2) {
-			 pp.group {pp.text "a"; pp.breakable; pp.text "=="}
-			 pp.breakable; pp.text "b"}}}}
-	pp.breakable
-	pp.group {pp.nest(2) {
-		     pp.text "then"; pp.breakable;
-		     pp.group {
-		       pp.nest(2) {
-			 pp.group {pp.text "a"; pp.breakable; pp.text "<<"}
-			 pp.breakable; pp.text "2"}}}}
-	pp.breakable
-	pp.group {pp.nest(2) {
-		     pp.text "else"; pp.breakable;
-		     pp.group {
-		       pp.nest(2) {
-			 pp.group {pp.text "a"; pp.breakable; pp.text "+"}
-			 pp.breakable; pp.text "b"}}}}}
-      pp.flush
-      out
+      PrettyPrint.format('', width) {|pp|
+        pp.group {
+          pp.group {pp.nest(2) {
+                       pp.text "if"; pp.breakable;
+                       pp.group {
+                         pp.nest(2) {
+                           pp.group {pp.text "a"; pp.breakable; pp.text "=="}
+                           pp.breakable; pp.text "b"}}}}
+          pp.breakable
+          pp.group {pp.nest(2) {
+                       pp.text "then"; pp.breakable;
+                       pp.group {
+                         pp.nest(2) {
+                           pp.group {pp.text "a"; pp.breakable; pp.text "<<"}
+                           pp.breakable; pp.text "2"}}}}
+          pp.breakable
+          pp.group {pp.nest(2) {
+                       pp.text "else"; pp.breakable;
+                       pp.group {
+                         pp.nest(2) {
+                           pp.group {pp.text "a"; pp.breakable; pp.text "+"}
+                           pp.breakable; pp.text "b"}}}}}
+      }
     end
 
     def test_00_04
@@ -672,34 +730,31 @@ End
 
   class TailGroup < RUNIT::TestCase
     def test_1
-      out = ''
-      pp = PrettyPrint.new(out, 10)
-      pp.group {
-	pp.group {
-	  pp.text "abc"
-	  pp.breakable
-	  pp.text "def"
-	}
-	pp.group {
-	  pp.text "ghi"
-	  pp.breakable
-	  pp.text "jkl"
-	}
+      out = PrettyPrint.format('', 10) {|pp|
+        pp.group {
+          pp.group {
+            pp.text "abc"
+            pp.breakable
+            pp.text "def"
+          }
+          pp.group {
+            pp.text "ghi"
+            pp.breakable
+            pp.text "jkl"
+          }
+        }
       }
-      pp.flush
       assert_equal("abc defghi\njkl", out)
     end
   end
 
   class NonString < RUNIT::TestCase
     def format(width)
-      out = []
-      pp = PrettyPrint.new(out, width, 'newline') {|n| "#{n} spaces"}
-      pp.text(3, 3)
-      pp.breakable(1, 1)
-      pp.text(3, 3)
-      pp.flush
-      out
+      PrettyPrint.format([], width, 'newline', lambda {|n| "#{n} spaces"}) {|pp|
+        pp.text(3, 3)
+        pp.breakable(1, 1)
+        pp.text(3, 3)
+      }
     end
 
     def test_6
@@ -714,25 +769,23 @@ End
 
   class Fill < RUNIT::TestCase
     def format(width)
-      out = ''
-      pp = PrettyPrint.new(out, width)
-      pp.group {
-        pp.text 'abc'
-	pp.group { pp.breakable }
-        pp.text 'def'
-	pp.group { pp.breakable }
-        pp.text 'ghi'
-	pp.group { pp.breakable }
-        pp.text 'jkl'
-	pp.group { pp.breakable }
-        pp.text 'mno'
-	pp.group { pp.breakable }
-        pp.text 'pqr'
-	pp.group { pp.breakable }
-        pp.text 'stu'
+      PrettyPrint.format('', width) {|pp|
+        pp.group {
+          pp.text 'abc'
+          pp.fill_breakable
+          pp.text 'def'
+          pp.fill_breakable
+          pp.text 'ghi'
+          pp.fill_breakable
+          pp.text 'jkl'
+          pp.fill_breakable
+          pp.text 'mno'
+          pp.fill_breakable
+          pp.text 'pqr'
+          pp.fill_breakable
+          pp.text 'stu'
+        }
       }
-      pp.flush
-      out
     end
 
     def test_00_06

@@ -1,3 +1,7 @@
+Thu Jun 27 20:57:45 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/prettyprint.rb, lib/pp.rb: convenience methods added.
+
 Thu Jun 27 15:22:18 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/prettyprint.rb: re-implemented for incremental output to handle

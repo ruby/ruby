@@ -88,9 +88,21 @@ PP#pp to print the object.
     Object#pretty_print_cycled is used when ((|obj|)) is already
     printed, a.k.a the object reference chain has a cycle.
 
+--- object_group(obj) { ... }
+    is a convenience method which is same as follows:
+
+      group(1, '#<' + obj.class.name, '>') { ... }
+
+--- comma_breakable
+    is a convenience method which is same as follows:
+
+      text ','
+      breakable
+
 = Object
 --- pretty_print(pp)
     is a default pretty printing method for general objects.
+    It calls (({pretty_print_instance_variables})) to list instance variables.
 
     If (({self})) has a customized (redefined) (({inspect})) method,
     the result of (({self.inspect})) is used but it obviously has no
@@ -102,6 +114,13 @@ PP#pp to print the object.
 --- pretty_print_cycled(pp)
     is a default pretty printing method for general objects that are
     detected as part of a cycle.
+
+--- pretty_print_instance_variables
+    is a method to list instance variables used by the default implementation
+    of (({pretty_print})).
+
+    This method should return an array of names of instance variables as symbols or strings as:
+    (({[:@a, :@b]})).
 =end
 
 require 'prettyprint'
@@ -172,60 +191,45 @@ class PP < PrettyPrint
     end
   end
 
+  def object_group(obj, &block)
+    group(1, '#<' + obj.class.name, '>', &block)
+  end
+
+  def comma_breakable
+    text ','
+    breakable
+  end
+
   def pp_object(obj)
-    group {
-      text '#<'
-      nest(1) {
-	text obj.class.name
-	text ':'
-	text sprintf('0x%x', obj.__id__)
-	first = true
-	obj.instance_variables.sort.each {|v|
-	  if first
-	    first = false
-	  else
-	    text ','
-	  end
-	  breakable
-	  group {
-	    text v
-	    text '='
-	    nest(1) {
-	      breakable ''
-	      pp(obj.instance_eval v)
-	    }
-	  }
+    object_group(obj) {
+      text sprintf(':0x%x', obj.__id__)
+      obj.pretty_print_instance_variables.each {|v|
+	v = v.to_s if Symbol === v
+	text ',' unless first?
+	breakable
+	text v
+	text '='
+	group(1) {
+	  breakable ''
+	  pp(obj.instance_eval v)
 	}
       }
-      text '>'
     }
   end
 
   def pp_hash(obj)
-    group {
-      text '{'
-      nest(1) {
-	first = true
-	obj.each {|k, v|
-	  if first
-	    first = false
-	  else
-	    text ","
-	    breakable
-	  end
-	  group {
-	    pp k
-	    text '=>'
-	    nest(1) {
-	      group {
-		breakable ''
-		pp v
-	      }
-	    }
+    group(1, '{', '}') {
+      obj.each {|k, v|
+	comma_breakable unless first?
+	group {
+	  pp k
+	  text '=>'
+	  group(1) {
+	    breakable ''
+	    pp v
 	  }
 	}
       }
-      text '}'
     }
   end
 
@@ -271,6 +275,10 @@ class PP < PrettyPrint
       pp.breakable
       pp.text sprintf("...>")
     end
+
+    def pretty_print_instance_variables
+      instance_variables.sort
+    end
   end
 end
 
@@ -284,20 +292,12 @@ end
 
 class Array
   def pretty_print(pp)
-    pp.text "["
-    pp.nest(1) {
-      first = true
+    pp.group(1, '[', ']') {
       self.each {|v|
-	if first
-	  first = false
-	else
-	  pp.text ","
-	  pp.breakable
-	end
+	pp.comma_breakable unless pp.first?
 	pp.pp v
       }
     }
-    pp.text "]"
   end
 
   def pretty_print_cycled(pp)
@@ -323,27 +323,18 @@ end
 
 class Struct
   def pretty_print(pp)
-    pp.text sprintf("#<%s", self.class.name)
-    pp.nest(1) {
-      first = true
+    pp.object_group(self) {
       self.members.each {|member|
-	if first
-	  first = false
-	else
-	  pp.text ","
-	end
+	pp.text "," unless pp.first?
 	pp.breakable
-	pp.group {
-	  pp.text member.to_s
-	  pp.text '='
-	  pp.nest(1) {
-	    pp.breakable ''
-	    pp.pp self[member]
-	  }
+	pp.text member.to_s
+	pp.text '='
+	pp.group(1) {
+	  pp.breakable ''
+	  pp.pp self[member]
 	}
       }
     }
-    pp.text ">"
   end
 
   def pretty_print_cycled(pp)
@@ -365,12 +356,10 @@ class File
   class Stat
     def pretty_print(pp)
       require 'etc.so'
-      pp.nest(1) {
-	pp.text "#<"
-	pp.text self.class.name
-	pp.breakable; pp.text sprintf("dev=0x%x", self.dev); pp.text ','
-	pp.breakable; pp.text "ino="; pp.pp self.ino; pp.text ','
+      pp.object_group(self) {
 	pp.breakable
+	pp.text sprintf("dev=0x%x", self.dev); pp.comma_breakable
+	pp.text "ino="; pp.pp self.ino; pp.comma_breakable
 	pp.group {
 	  m = self.mode
 	  pp.text sprintf("mode=0%o", m)
@@ -389,10 +378,9 @@ class File
 	    (m & 0002 == 0 ? ?- : ?w),
 	    (m & 0001 == 0 ? (m & 01000 == 0 ? ?- : ?T) :
 	                     (m & 01000 == 0 ? ?x : ?t)))
-	  pp.text ','
 	}
-	pp.breakable; pp.text "nlink="; pp.pp self.nlink; pp.text ','
-	pp.breakable
+	pp.comma_breakable
+	pp.text "nlink="; pp.pp self.nlink; pp.comma_breakable
 	pp.group {
 	  pp.text "uid="; pp.pp self.uid
 	  begin
@@ -400,9 +388,8 @@ class File
 	    pp.breakable; pp.text "(#{name})"
 	  rescue ArgumentError
 	  end
-	  pp.text ','
 	}
-	pp.breakable
+	pp.comma_breakable
 	pp.group {
 	  pp.text "gid="; pp.pp self.gid
 	  begin
@@ -410,39 +397,34 @@ class File
 	    pp.breakable; pp.text "(#{name})"
 	  rescue ArgumentError
 	  end
-	  pp.text ','
 	}
-	pp.breakable
+	pp.comma_breakable
 	pp.group {
 	  pp.text sprintf("rdev=0x%x", self.rdev)
 	  pp.breakable
 	  pp.text sprintf('(%d, %d)', self.rdev_major, self.rdev_minor)
-	  pp.text ','
 	}
-	pp.breakable; pp.text "size="; pp.pp self.size; pp.text ','
-	pp.breakable; pp.text "blksize="; pp.pp self.blksize; pp.text ','
-	pp.breakable; pp.text "blocks="; pp.pp self.blocks; pp.text ','
-	pp.breakable
+	pp.comma_breakable
+	pp.text "size="; pp.pp self.size; pp.comma_breakable
+	pp.text "blksize="; pp.pp self.blksize; pp.comma_breakable
+	pp.text "blocks="; pp.pp self.blocks; pp.comma_breakable
 	pp.group {
 	  t = self.atime
 	  pp.text "atime="; pp.pp t
 	  pp.breakable; pp.text "(#{t.tv_sec})"
-	  pp.text ','
 	}
-	pp.breakable
+	pp.comma_breakable
 	pp.group {
 	  t = self.mtime
 	  pp.text "mtime="; pp.pp t
 	  pp.breakable; pp.text "(#{t.tv_sec})"
-	  pp.text ','
 	}
-	pp.breakable
+	pp.comma_breakable
 	pp.group {
 	  t = self.ctime
 	  pp.text "ctime="; pp.pp t
 	  pp.breakable; pp.text "(#{t.tv_sec})"
 	}
-	pp.text ">"
       }
     end
   end
