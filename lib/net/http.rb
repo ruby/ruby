@@ -284,9 +284,10 @@ module Net
       class << self
 
         def create_proxy_class( p_addr, p_port )
+          mod = self
           klass = Class.new( HTTP )
           klass.module_eval {
-            include HTTPProxy
+            include mod
             @proxy_address = p_addr
             @proxy_port    = p_port
           }
@@ -1030,18 +1031,6 @@ module Net
       else
         dest or ''
       end
-    end
-
-  end
-
-
-  class Dummy
-
-    def initialize( *args )
-    end
-
-    def critical?
-      false
     end
 
   end
