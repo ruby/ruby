@@ -94,6 +94,9 @@ rb_obj_clone(obj)
 {
     VALUE clone;
 
+    if (rb_special_const_p(obj)) {
+        rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(obj)));
+    }
     clone = rb_obj_alloc(RBASIC(obj)->klass);
     CLONESETUP(clone,obj);
     if (TYPE(clone) == T_OBJECT && ROBJECT(obj)->iv_tbl) {
@@ -587,10 +590,12 @@ rb_mod_cmp(mod, arg)
 }
 
 static VALUE
-rb_mod_initialize(argc, argv)
+rb_mod_initialize(argc, argv, module)
     int argc;
     VALUE *argv;
+    VALUE module;
 {
+    rb_mod_module_eval(0, 0, module);
     return Qnil;
 }
 

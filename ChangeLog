@@ -1,3 +1,15 @@
+Wed Oct 10 03:11:47 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_stat_clone): should copy internal data too.
+
+	* numeric.c (num_clone): Numeric should not be copied by clone.
+
+	* object.c (rb_obj_clone): should check immediate values.
+
+	* parse.y (command): `yield' should take command_args.
+
+	* parse.y (parse_quotedwords): %w(...) is not a string.
+
 Tue Oct  9 18:40:35 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* process.c (Init_process): activate the case NT.

@@ -208,7 +208,7 @@ static void top_local_setup();
 
 %token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR
 %token <val>  tINTEGER tFLOAT tSTRING tXSTRING tREGEXP
-%token <node> tDSTRING tDXSTRING tDREGEXP tNTH_REF tBACK_REF
+%token <node> tDSTRING tDXSTRING tDREGEXP tNTH_REF tBACK_REF tQWORDS
 
 %type <node> singleton string
 %type <val>  literal numeric
@@ -510,7 +510,7 @@ command		: operation command_args
 			$$ = new_super($2);
 		        fixpos($$, $2);
 		    }
-		| kYIELD call_args
+		| kYIELD command_args
 		    {
 			$$ = NEW_YIELD(ret_args($2));
 		        fixpos($$, $2);
@@ -1163,6 +1163,7 @@ primary		: literal
 		    {
 			$$ = NEW_XSTR($1);
 		    }
+		| tQWORDS
 		| tDXSTRING
 		| tDREGEXP
 		| var_ref
@@ -2742,7 +2743,7 @@ parse_quotedwords(term, paren)
     if (!qwords) qwords = NEW_ZARRAY();
     yylval.node = qwords;
     lex_state = EXPR_END;
-    return tDSTRING;
+    return tQWORDS;
 }
 
 static int

@@ -91,8 +91,9 @@ static VALUE
 num_clone(x)
     VALUE x;
 {
-    /* Numerics are immutable values, which need not to copy */
-    return x;
+    /* Numerics are immutable values, which should not be copied */
+    rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(x)));
+    return Qnil;		/* not reached */
 }
 
 static VALUE

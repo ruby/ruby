@@ -141,6 +141,7 @@ VALUE rb_apply _((VALUE, ID, VALUE));
 void rb_backtrace _((void));
 ID rb_frame_last_func _((void));
 VALUE rb_obj_instance_eval _((int, VALUE*, VALUE));
+VALUE rb_mod_module_eval _((int, VALUE*, VALUE));
 void rb_load _((VALUE, int));
 void rb_load_protect _((VALUE, int, int*));
 NORETURN(void rb_jump_tag _((int)));

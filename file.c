@@ -395,7 +395,11 @@ group_member(gid)
 
 # ifdef HAVE_GETGROUPS
 #  ifndef NGROUPS
+#   ifdef NGROUPS_MAX
+#    define NGROUPS NGROUPS_MAX
+#   else
 #    define NGROUPS 32
+#   endif
 #  endif
     {
 	GETGROUPS_T gary[NGROUPS];
@@ -1909,6 +1913,25 @@ rb_stat_init(obj, fname)
 }
 
 static VALUE
+rb_stat_clone(obj)
+    VALUE obj;
+{
+    struct stat st, *nst;
+
+    VALUE clone;
+
+    clone = rb_obj_alloc(RBASIC(obj)->klass);
+    CLONESETUP(clone,obj);
+    if (DATA_PTR(obj)) {
+	nst = ALLOC(struct stat);
+	*nst = *(struct stat*)DATA_PTR(obj);
+	DATA_PTR(clone) = nst;
+    }
+
+    return clone;
+}
+
+static VALUE
 rb_stat_ftype(obj)
     VALUE obj;
 {
@@ -2509,6 +2532,7 @@ Init_File()
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);
     rb_define_singleton_method(rb_cStat, "allocate",  rb_stat_s_alloc, 0);
     rb_define_method(rb_cStat, "initialize", rb_stat_init, 1);
+    rb_define_method(rb_cStat, "clone", rb_stat_clone, 0);
 
     rb_include_module(rb_cStat, rb_mComparable);
 

@@ -5232,7 +5232,7 @@ rb_obj_instance_eval(argc, argv, self)
     return specific_eval(argc, argv, klass, self);
 }
 
-static VALUE
+VALUE
 rb_mod_module_eval(argc, argv, mod)
     int argc;
     VALUE *argv;
