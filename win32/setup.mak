@@ -36,8 +36,8 @@ COMMENT Makefile for ruby $(OS)
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
 TEENY = RUBY_VERSION_TEENY
+srcdir = $(srcdir:\=/)
 <<
-	@$(APPEND) srcdir = $(srcdir:\=/)
 
 -generic-: nul
 !if defined($(ARCH)) || defined($(CPU))
