@@ -23,7 +23,7 @@ def find_tcl(tcllib, stubs)
   if tcllib
     find_library(tcllib, func, *paths)
   elsif find_library("tcl", func, *paths)
-    # ok
+    true
   else
     %w[8.4 8.3 8.2 8.0 7.6].find { |ver|
       find_library("tcl#{ver}", func, *paths) or
@@ -38,7 +38,7 @@ def find_tk(tklib, stubs)
   if tklib
     find_library(tklib, func, *paths)
   elsif find_library("tk", func, *paths)
-    # ok
+    true
   else
     %w[8.4 8.3 8.2 8.0 4.2].find { |ver|
       find_library("tk#{ver}", func, *paths) or

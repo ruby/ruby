@@ -1,3 +1,8 @@
+Sat Jun 28 14:20:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/tcltklib/extconf.rb (find_tcl, find_tk): return true if
+	  non-versioned found.  [ruby-dev:19759]
+
 Sat Jun 28 12:28:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* gc.c (rb_gc_mark_locations): remove margin.  [ruby-dev:20462]
