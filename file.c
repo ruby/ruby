@@ -97,10 +97,10 @@ file_s_open(argc, argv, klass)
     file = file_open(RSTRING(fname)->ptr, mode);
 
     RBASIC(file)->klass = klass;
-    if (iterator_p()) {
-	rb_ensure(rb_yield, file, io_close, file);
-    }
     obj_call_init(file);
+    if (iterator_p()) {
+	return rb_ensure(rb_yield, file, io_close, file);
+    }
 
     return file;
 }

@@ -1,3 +1,10 @@
+Tue May 26 11:39:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_23.
+
+	* parse.y (yylex): no UPLUS/UMINUS for 1st argument if
+	  parenthesises are omitted.
+
 Tue May 26 01:09:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): (?XI) for turns off the

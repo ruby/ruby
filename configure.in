@@ -360,10 +360,10 @@ if test "$with_dln_a_out" != yes; then
 	beos*) 		LDSHARED="ld -xms"
 			case "$host_cpu" in
 			  powerpc*)
-			    DLDFLAGS="-f ruby.def -lbe -lroot -ldll"
+			    DLDFLAGS="-f ruby.exp -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
                             ;;
 			  *)
-			    DLDFLAGS="ruby.def -lbe -lroot /boot/develop/lib/x86/glue-noinit.a"
+			    DLDFLAGS="ruby.def -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
 			    ;;
 			esac
 			rb_cv_dlopen=yes ;;
@@ -513,7 +513,7 @@ if test "$host_os" = "beos"; then
   echo creating ruby.def
   case "$host_cpu" in
     powerpc*)
-      cp beos/ruby.def.in ruby.def
+      cp beos/ruby.def.in ruby.exp
       ;;
     *)
       echo EXPORTS > ruby.def

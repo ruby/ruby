@@ -866,6 +866,7 @@ calculate_must_string(start, end)
 	  mcnt = *p;
 	  if (mcnt > max) {
 	    must = p;
+	    max = mcnt;
 	  }
 	  p += mcnt+1;
           break;
@@ -878,6 +879,8 @@ calculate_must_string(start, end)
 
 	case casefold_on:
 	case casefold_off:
+	  return 0;		/* should not check must_string */
+
 	case start_paren:
 	case start_nowidth:
 	case stop_nowidth:
@@ -2225,13 +2228,17 @@ re_compile_fastmap(bufp)
 	{
 	case exactn:
 	  if (p[1] == 0xff) {
-	      if (TRANSLATE_P())
-		fastmap[translate[p[2]]] = 2;
-	      else
-		fastmap[p[2]] = 2;
+	    if (TRANSLATE_P()) {
+	      fastmap[translate[p[2]]] = 2;
+	      bufp->options |= RE_MAY_IGNORECASE;
+	    }
+	    else
+	      fastmap[p[2]] = 2;
 	  }
-	  else if (TRANSLATE_P())
+	  else if (TRANSLATE_P()) {
 	    fastmap[translate[p[1]]] = 1;
+	    bufp->options |= RE_MAY_IGNORECASE;
+	  }
 	  else
 	    fastmap[p[1]] = 1;
 	  break;
@@ -2245,13 +2252,18 @@ re_compile_fastmap(bufp)
 	case wordend:
 	case pop_and_fail:
 	case start_paren:
+	  continue;
+
 	case casefold_on:
 	case casefold_off:
+	  options ^= RE_OPTION_IGNORECASE;
 	  continue;
 
 	case endline:
-	  if (TRANSLATE_P())
+	  if (TRANSLATE_P()) {
 	    fastmap[translate['\n']] = 1;
+	    bufp->options |= RE_MAY_IGNORECASE;
+	  }
 	  else
 	    fastmap['\n'] = 1;
 
@@ -2374,8 +2386,10 @@ re_compile_fastmap(bufp)
 	  for (j = *p++ * BYTEWIDTH - 1; j >= 0; j--)
 	    if (p[j / BYTEWIDTH] & (1 << (j % BYTEWIDTH)))
 	      {
-		if (TRANSLATE_P())
+		if (TRANSLATE_P()) {
 		  fastmap[translate[j]] = 1;
+		  bufp->options |= RE_MAY_IGNORECASE;
+		}
 		else
 		  fastmap[j] = 1;
 	      }
@@ -2526,15 +2540,16 @@ re_search(bufp, string, size, startpos, range, regs)
       break;
     }
   }
-#if 1
+
   if (range > 0
       && bufp->must
       && !must_instr(bufp->must+1, bufp->must[0],
 		     string+startpos, size-startpos,
-		     (TRANSLATE_P())?translate:0)) {
+		     (bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE))?
+		     translate:0)) {
     return -1;
   }
-#endif
+
   /* Update the fastmap now if not correct already.  */
   if (fastmap && !bufp->fastmap_accurate) {
       re_compile_fastmap(bufp);
@@ -2569,7 +2584,8 @@ re_search(bufp, string, size, startpos, range, regs)
 		    break;
 		}
 		else 
-		  if (fastmap[(TRANSLATE_P()) ? translate[c] : c])
+		  if (fastmap[(bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE))?
+			     translate[c] : c])
 		    break;
 		range--;
 	      }
@@ -2581,7 +2597,8 @@ re_search(bufp, string, size, startpos, range, regs)
 
 	      c = string[startpos];
               c &= 0xff;
-	      if ((TRANSLATE_P()) ? !fastmap[translate[c]] : !fastmap[c])
+	      if ((bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE)) ?
+		  !fastmap[translate[c]] : !fastmap[c])
 		goto advance;
 	    }
 	}

@@ -1365,6 +1365,14 @@ dln_load(file)
       err_stat = get_image_symbol(img_id, buf,
 				  B_SYMBOL_TYPE_TEXT, &init_fct);
 
+      if (err_stat != B_NO_ERROR) {
+	    char real_name[1024];
+	    strcpy(real_name, buf);
+	    strcat(real_name, "__Fv");
+        err_stat = get_image_symbol(img_id, real_name,
+				  B_SYMBOL_TYPE_TEXT, &init_fct);
+      }
+
       if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {
 	unload_add_on(img_id);
 	LoadError("Failed to lookup Init function %.200s", file);

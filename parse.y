@@ -57,7 +57,7 @@ static enum lex_state {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
     EXPR_MID,			/* newline significant, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
-    EXPR_ARG,			/* newline significant, +/- may be a sign. */
+    EXPR_ARG,			/* newline significant, +/- is a operator. */
     EXPR_FNAME,			/* ignore newline, +/- is a operator, no reserved words. */
     EXPR_DOT,			/* immediate after `.', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
@@ -2498,15 +2498,7 @@ retry:
 	    yylval.id = '+';
 	    return tOP_ASGN;
 	}
-	if (lex_state == EXPR_ARG) {
-	    if (space_seen && !ISSPACE(c)) {
-		arg_ambiguous();
-	    }
-	    else {
-		lex_state = EXPR_END;
-	    }
-	}
-	if (lex_state != EXPR_END) {
+	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
  	    if (ISDIGIT(c)) {
 		goto start_num;
 	    }
@@ -2532,15 +2524,7 @@ retry:
 	    yylval.id = '-';
 	    return tOP_ASGN;
 	}
-	if (lex_state == EXPR_ARG) {
-	    if (space_seen && !ISSPACE(c)) {
-		arg_ambiguous();
-	    }
-	    else {
-		lex_state = EXPR_END;
-	    }
-	}
-	if (lex_state != EXPR_END) {
+	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
 	    if (ISDIGIT(c)) {
 		pushback(c);
 		c = '-';

@@ -164,8 +164,9 @@ extern long re_syntax_options;
                         | RE_NO_BK_REFS | RE_NO_EMPTY_RANGES 		   \
                         | RE_NO_HYPHEN_RANGE_END)
 
-#define RE_OPTION_IGNORECASE (1L<<0)
-#define RE_OPTION_EXTENDED   (1L<<1)
+#define RE_OPTION_EXTENDED   (1L<<0)
+#define RE_OPTION_IGNORECASE (1L<<1)
+#define RE_MAY_IGNORECASE (1L<<2)
 
 /* For multi-byte char support */
 #define MBCTYPE_ASCII 0

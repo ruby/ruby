@@ -356,8 +356,13 @@ $(TARGET): $(OBJS)
   mfile.close
   
   if PLATFORM =~ /beos/
+    if PLATFORM =~ /^powerpc/ then
+      deffilename = "ruby.exp"
+    else
+      deffilename = "ruby.def"
+    end
     print "creating ruby.def\n"
-    open("ruby.def", "w") do |file|
+    open(deffilename, "w") do |file|
       file.print("EXPORTS\n") if PLATFORM =~ /^i/
       file.print("Init_#{target}\n")
     end
