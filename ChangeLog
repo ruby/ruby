@@ -1,3 +1,10 @@
+Tue Dec 21 12:42:34 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_traverse, ossl_asn1_decode):
+	  use rb_str_new4 to avoid SEGV. fix [ruby-dev:25261]
+
+	* test/openssl/test_asn1.rb: add tests for OpenSSL::ASN1.
+
 Tue Dec 21 12:10:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/grid.rb: rescue bug of 'grid configure' on Tcl/Tk8.3-

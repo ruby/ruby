@@ -815,11 +815,11 @@ ossl_asn1_traverse(VALUE self, VALUE obj)
     long offset = 0;
 
     obj = ossl_to_der_if_possible(obj);
-    StringValue(obj);
+    obj = rb_str_new4(StringValue(obj));
     p = RSTRING(obj)->ptr;
     ossl_asn1_decode0(&p, RSTRING(obj)->len, &offset, 0, 0, 1);
 
-    return obj;
+    return Qnil;
 }
 
 static VALUE
@@ -830,7 +830,7 @@ ossl_asn1_decode(VALUE self, VALUE obj)
     long offset = 0;
 
     obj = ossl_to_der_if_possible(obj);
-    StringValue(obj);
+    obj = rb_str_new4(StringValue(obj));
     p = RSTRING(obj)->ptr;
     ary = ossl_asn1_decode0(&p, RSTRING(obj)->len, &offset, 0, 1, 0);
     ret = rb_ary_entry(ary, 0);
