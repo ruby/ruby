@@ -68,7 +68,7 @@ class NetHttpClient
     extra = header.dup
     extra['User-Agent'] = @agent if @agent
     res = start(url) { |http|
-	http.post(url.instance_eval('path_query'), req_body, extra)
+	http.post(url.request_uri, req_body, extra)
       }
     Response.new(res)
   end
@@ -78,7 +78,7 @@ class NetHttpClient
     extra = header.dup
     extra['User-Agent'] = @agent if @agent
     res = start(url) { |http|
-	http.get(url.instance_eval('path_query'), extra)
+	http.get(url.request_uri, extra)
       }
     res.body
   end
