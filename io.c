@@ -111,7 +111,7 @@ void
 io_check_closed(fptr)
     OpenFile *fptr;
 {
-    if (fptr->f == NULL)
+    if (fptr->f == NULL && fptr->f2 == NULL)
 	Raise(eIOError, "closed stream");
 }
 
@@ -691,7 +691,7 @@ static void
 io_fptr_close(fptr)
     OpenFile *fptr;
 {
-    if (fptr->f == NULL) return;
+    if (fptr->f == NULL && fptr->f2 == NULL) return;
 
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
@@ -886,7 +886,7 @@ rb_fdopen(fd, mode)
     return f;
 }
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__) || 1
 static struct pipe_list {
     OpenFile *fptr;
     struct pipe_list *next;
@@ -2500,7 +2500,7 @@ Init_IO()
 
     rb_define_virtual_variable("$-i", opt_i_get, opt_i_set);
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__) || 1
     atexit(pipe_atexit);
 #endif
 

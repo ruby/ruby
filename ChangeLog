@@ -1,9 +1,28 @@
+Mon Mar 16 13:23:53 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* io.c (io_check_closed): check for `fptr->f2 == NULL'.
+
+	* io.c (io_fptr_close): ditto.
+
+Mon Mar 16 14:11:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* class.c (ins_methods_i): needed to consider NOEX_UNDEF.
+
 Fri Mar 13 13:49:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_02.
 
 	* object.c (mod_clone): need to dups constants and instance
 	  variables.
 
 	* eval.c (rb_eval): forgot to initialize body for NODE_DEFS.
+
+	* eval.c (rb_eval): retrieve self from calling frame, since self
+	  changes sometimes.
+
+	* env.h (FRAME): need to save self in the calling frame.
+
+	* io.c (f_gets_method): rs should be initialized by RS.
 
 Thu Mar 12 15:33:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
