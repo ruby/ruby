@@ -340,13 +340,20 @@ rb_cstr_to_inum(str, base, badcheck)
     }
     if (base <= 0) {
 	if (str[0] == '0') {
-	    if (str[1] == 'x' || str[1] == 'X') {
+	    switch (str[1]) {
+	      case 'x': case 'X':
 		base = 16;
-	    }
-	    else if (str[1] == 'b' || str[1] == 'B') {
+		break;
+	      case 'b': case 'B':
 		base = 2;
-	    }
-	    else {
+		break;
+	      case 'o': case 'O':
+		base = 8;
+		break;
+	      case 'd': case 'D':
+		base = 10;
+		break;
+	      default:
 		base = 8;
 	    }
 	}
@@ -357,17 +364,31 @@ rb_cstr_to_inum(str, base, badcheck)
 	    base = 10;
 	}
     }
-    if (base == 8) {
+    switch (base) {
+      case 2:
+	len = 1;
+	if (str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
+	    str += 2;
+	}
+	break;
+      case 8:
 	len = 3;
-    }
-    else {			/* base == 10, 2 or 16 */
-	if (base == 16 && str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
+	if (str[0] == '0' && (str[1] == 'o'||str[1] == 'O')) {
 	    str += 2;
 	}
-	else if (base == 2 && str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
-	    str += 2;
-	}
+	break;
+      case 10:
 	len = 4;
+	if (str[0] == '0' && (str[1] == 'd'||str[1] == 'D')) {
+	    str += 2;
+	}
+	break;
+      case 16:
+	len = 4;
+	if (str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
+	    str += 2;
+	}
+	break;
     }
     if (*str == '0') {		/* squeeze preceeding 0s */
 	while (*++str == '0');

@@ -1,3 +1,7 @@
+Fri Aug 16 15:37:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* bignum.c (rb_cstr_to_inum): new decimal and octal string.
+
 Fri Aug 16 11:47:24 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (rb_io_fread): renamed from io_fread and made extern.
