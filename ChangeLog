@@ -1,3 +1,8 @@
+Sat Jan  5 13:18:11 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* range.c (range_member): beginning check was
+	  wrong. [ruby-talk:30252]
+
 Fri Jan  4 17:23:49 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* misc/ruby-mode.el (ruby-forward-string): forward a string. [new]

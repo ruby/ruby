@@ -538,7 +538,7 @@ range_member(range, val)
     beg = rb_ivar_get(range, id_beg);
     end = rb_ivar_get(range, id_end);
 
-    if (r_lt(beg, val)) return Qtrue;
+    if (r_gt(beg, val)) return Qfalse;
     if (EXCL(range)) {
 	if (r_lt(val, end)) return Qtrue;
     }
