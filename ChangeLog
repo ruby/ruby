@@ -1,3 +1,11 @@
+Thu Nov 20 17:50:58 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/tkballoonhelp.rb: new sample script
+
+	* ext/tk/sample/tkmultilistbox.rb: ditto
+
+	* ext/tk/sample/tktextframe.rb: ditto
+
 Thu Nov 20 13:37:34 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ruby.h: define is_ruby_native_thread() for no native thread 
