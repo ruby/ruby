@@ -642,7 +642,7 @@ read_all(fptr, siz)
     VALUE str;
     long bytes = 0;
     long n;
-    long pos = 0;
+    off_t pos = 0;
 
     if (feof(fptr->f)) return Qnil;
     READ_CHECK(fptr->f);

@@ -1,3 +1,7 @@
+Thu Aug 29 13:36:42 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (read_all): should use off_t instead of long.
+
 Thu Aug 29 00:55:55 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* marshal.c (r_object): yield loaded objects, not intermediates.
