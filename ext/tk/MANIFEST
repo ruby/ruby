@@ -117,6 +117,8 @@ sample/tktextframe.rb
 sample/tktimer.rb
 sample/tktimer2.rb
 sample/tktimer3.rb
+sample/tktree.rb
+sample/tktree.tcl
 sample/demos-en/ChangeLog
 sample/demos-en/ChangeLog.prev
 sample/demos-en/README
