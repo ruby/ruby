@@ -889,7 +889,7 @@ strio_read(argc, argv, self)
 	long rest = RSTRING(ptr->string)->len - ptr->pos;
 	if (len > rest) len = rest;
 	rb_str_resize(str, len);
-	MEMCPY(RSTRING(str)->ptr, RSTRING(ptr->string)->ptr, char, len);
+	MEMCPY(RSTRING(str)->ptr, RSTRING(ptr->string)->ptr + ptr->pos, char, len);
     }
     if (NIL_P(str)) {
 	if (!(ptr->flags & STRIO_EOF)) str = rb_str_new(0, 0);
