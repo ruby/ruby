@@ -1,6 +1,6 @@
-Sat May 11 23:24:52 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+Mon May 13 14:38:33 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* ext/dl: enable dl's stack emulation for constructing function call.
+	* djgpp/config.hin, djgpp/config.sed: catch up with the latest change.
 
 Sun May 12 03:01:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -11,6 +11,10 @@ Sun May 12 03:01:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* Makefile.in: add the dependency of missing.h by gcc -MM.
 
 	* MANIFEST: add missing.h
+
+Sat May 11 23:24:52 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+
+	* ext/dl: enable dl's stack emulation for constructing function call.
 
 Sat May 11 10:52:09 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

@@ -57,6 +57,7 @@ s%@SOLIBS@%%g
 s%@arch@%i386-msdosdjgpp%g
 ;s%/bin/rm%rm%
 s%@DLDLIBS@%-lc%g
+s%@MAINLIBS@%%g
 s%@PREP@%%
 s%@RUBY_INSTALL_NAME@%ruby%g
 s%@RUBY_SO_NAME@%%g
@@ -73,8 +74,8 @@ s%@archlib@%/lib/ruby/i386-msdosdjgpp%
 ;/^config.status/ {
 ;    N;N;N;N;N;d
 ;}
-;s%mv -f y\.tab\.c%if exist parse.c del parse.c\
-	ren y_tab.c%
-;s%y\.tab\.c%y_tab.c%
+#;s%mv -f y\.tab\.c%if exist parse.c del parse.c\
+#	ren y_tab.c%
+#;s%y\.tab\.c%y_tab.c%
 /^,THIS_IS_DUMMY_PATTERN_/i\
 ac_given_srcdir=.
