@@ -1,3 +1,7 @@
+Mon Dec 22 21:59:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (map_charset): always ensure code is a String.
+
 Mon Dec 22 21:15:29 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_mod_init_copy): always copy singleton class.

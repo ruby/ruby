@@ -113,14 +113,10 @@ map_charset
 	VALUE key = rb_funcall2(val, rb_intern("downcase"), 0, 0);
 	StringValuePtr(key);
 	if (st_lookup(RHASH(charset_map)->tbl, key, &val)) {
-	    StringValuePtr(val);
 	    *code = val;
 	}
     }
-    else {
-	StringValuePtr(val);
-    }
-    return RSTRING(val)->ptr;
+    return StringValuePtr(*code);
 }
 
 static iconv_t
