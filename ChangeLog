@@ -1,3 +1,31 @@
+Sat Jan  6 00:55:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): template "m2" or "u2" caused inifinite loop.
+
+Fri Jan  5 01:02:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_finalize): should enclosed by PUSH_TAG/POP_TAG.
+
+Sun Dec 31 01:39:16 2000  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* eval.c (rb_mod_define_method): wrong comparison for blocks.
+
+Sat Dec 30 19:28:50 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): should handle Symbol too.
+
+	* gc.c (id2ref): should print original ptr value
+
+Sat Dec 30 03:14:22 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_iterate): NODE_CFUNC does not protect its data
+	  (nd_tval), so create new node NODE_IFUNC for iteration C
+	  function. 
+
+	* eval.c (rb_yield_0): use NODE_IFUNC.
+
+	* gc.c (rb_gc_mark): support NODE_IFUNC.
+
 Fri Dec 29 11:41:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (mem_error): prohibit recursive mem_error().

@@ -1122,9 +1122,13 @@ void rb_exec_end_proc _((void));
 void
 ruby_finalize()
 {
-    rb_trap_exit();
-    rb_exec_end_proc();
-    rb_gc_call_finalizer_at_exit();
+    PUSH_TAG(PROT_NONE);
+    if (EXEC_TAG() == 0) {
+	rb_trap_exit();
+	rb_exec_end_proc();
+	rb_gc_call_finalizer_at_exit();
+    }
+    POP_TAG();
 }
 
 void
@@ -3526,7 +3530,7 @@ rb_yield_0(val, self, klass, acheck)
 	if (!node) {
 	    result = Qnil;
 	}
-	else if (nd_type(node) == NODE_CFUNC) {
+	else if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
 	    if (val == Qundef) val = rb_ary_new2(0);
 	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
 	}
@@ -3744,7 +3748,7 @@ rb_iterate(it_proc, data1, bl_proc, data2)
 {
     int state;
     volatile VALUE retval = Qnil;
-    NODE *node = NEW_CFUNC(bl_proc, data2);
+    NODE *node = NEW_IFUNC(bl_proc, data2);
     VALUE self = ruby_top_self;
 
   iter_retry:
@@ -5980,7 +5984,7 @@ static VALUE
 rb_f_binding(self)
     VALUE self;
 {
-    struct BLOCK *data;
+    struct BLOCK *data, *p;
     struct RVarmap *vars;
     VALUE bind;
 
@@ -6003,9 +6007,11 @@ rb_f_binding(self)
 	data->prev = 0;
     }
 
-    for (vars = data->dyna_vars; vars; vars = vars->next) {
-	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
-	FL_SET(vars, DVAR_DONT_RECYCLE);
+    for (p = data; p; p = p->prev) {
+	for (vars = p->dyna_vars; vars; vars = vars->next) {
+	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
+	    FL_SET(vars, DVAR_DONT_RECYCLE);
+	}
     }
     scope_dup(data->scope);
     POP_BLOCK();
@@ -6063,7 +6069,7 @@ proc_new(klass)
     VALUE klass;
 {
     volatile VALUE proc;
-    struct BLOCK *data;
+    struct BLOCK *data, *p;
     struct RVarmap *vars;
 
     if (!rb_block_given_p() && !rb_f_block_given_p()) {
@@ -6085,9 +6091,11 @@ proc_new(klass)
     }
     data->flags |= BLOCK_DYNAMIC;
 
-    for (vars = data->dyna_vars; vars; vars = vars->next) {
-	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
-	FL_SET(vars, DVAR_DONT_RECYCLE);
+    for (p = data; p; p = p->prev) {
+	for (vars = p->dyna_vars; vars; vars = vars->next) {
+	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
+	    FL_SET(vars, DVAR_DONT_RECYCLE);
+	}
     }
     scope_dup(data->scope);
     proc_save_safe_level(proc);
@@ -6630,7 +6638,7 @@ rb_mod_define_method(argc, argv, mod)
     if (RDATA(body)->dmark == (RUBY_DATA_FUNC)bm_mark) {
 	rb_add_method(mod, id, NEW_DMETHOD(method_unbind(body)), NOEX_PUBLIC);
     }
-    else if (RDATA(body)->dmark != (RUBY_DATA_FUNC)blk_mark) {
+    else if (RDATA(body)->dmark == (RUBY_DATA_FUNC)blk_mark) {
 	rb_add_method(mod, id, NEW_BMETHOD(body), NOEX_PUBLIC);
     }
     else {

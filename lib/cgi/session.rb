@@ -1,3 +1,4 @@
+# Copyright (C) 2001  Yukihiro "Matz" Matsumoto
 # Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -15,14 +16,14 @@ class CGI
       }
     end
 
-    def create_new_id
+    def Session::create_new_id
       require 'md5'
       md5 = MD5::new
       md5.update(String(Time::now))
       md5.update(String(rand(0)))
       md5.update(String($$))
       md5.update('foobar')
-      @session_id = md5.hexdigest[0,16]
+      md5.hexdigest[0,16]
     end
     private :create_new_id
 
@@ -31,7 +32,7 @@ class CGI
       id, = option['session_id']
       unless id
 	if option['new_session']
-	  id = create_new_id
+	  id = Session::create_new_id
 	end
       end
       unless id
@@ -43,7 +44,7 @@ class CGI
 	  if option.key?('new_session') and not option['new_session']
 	    raise ArgumentError, "session_key `%s' should be supplied"%session_key
 	  end
-	  id = create_new_id
+	  id = Session::create_new_id
 	end
       end
       @session_id = id
@@ -54,9 +55,9 @@ class CGI
 	@output_cookies =  [
           Cookie::new("name" => session_key,
 		      "value" => id,
-                     "path" => if ENV["PATH_INFO"] then
-                                 File::dirname(ENV["PATH_INFO"])
-                               elsif ENV["SCRIPT_NAME"] then
+		      "path" => if option['session_path'] then
+				  option['session_path']
+		                elsif ENV["SCRIPT_NAME"] then
 				  File::dirname(ENV["SCRIPT_NAME"])
 				else
 				  ""
@@ -134,12 +135,14 @@ class CGI
       end
 
       def close
+	return unless @f.closed?
 	update
 	@f.close
       end
 
       def delete
 	path = @f.path
+	return unless @f.closed?
 	@f.close
 	File::unlink path
       end

@@ -315,10 +315,7 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
-#if defined(__GNUC__) && __GNUC__ >= 2
-__inline__
-#endif
-static int
+static INLINE int
 is_pointer_to_heap(ptr)
     void *ptr;
 {
@@ -483,6 +480,7 @@ rb_gc_mark(ptr)
 	  case NODE_OP_ASGN_AND:
 	    rb_gc_mark(obj->as.node.u1.node);
 	    /* fall through */
+	  case NODE_IFUNC:
 	  case NODE_METHOD:	/* 2 */
 	  case NODE_NOT:
 	  case NODE_GASGN:
@@ -1262,21 +1260,22 @@ static VALUE
 id2ref(obj, id)
     VALUE obj, id;
 {
-    unsigned long ptr;
+    unsigned long ptr, p0;
 
     rb_secure(4);
-    ptr = NUM2UINT(id);
+    p0 = ptr = NUM2UINT(id);
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
+    if (SYMBOL_P(ptr)) return (VALUE)ptr;
     if (ptr == Qtrue) return Qtrue;
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
 
     ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
     if (!is_pointer_to_heap(ptr)) {
-	rb_raise(rb_eRangeError, "0x%x is not id value", ptr);
+	rb_raise(rb_eRangeError, "0x%x is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0) {
-	rb_raise(rb_eRangeError, "0x%x is recycled object", ptr);
+	rb_raise(rb_eRangeError, "0x%x is recycled object", p0);
     }
     return (VALUE)ptr;
 }
