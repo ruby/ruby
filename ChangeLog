@@ -1,3 +1,14 @@
+Sat Apr 12 20:59:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-beginning-of-arg): substitute
+	  ruby-backward-arg.
+
+	* misc/ruby-mode.el (ruby-calculate-indent): fixed wrong
+	  indentation in brace block and parentheses.
+
+	* misc/ruby-mode.el (ruby-forward-sexp, ruby-backward-sexp):
+	  support special char literal, and negative arguments.
+
 Fri Apr 11 19:00:14 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (rb_w32_stat): check arguments.  [ruby-dev:20007]
