@@ -97,18 +97,15 @@ class PStore
       new_file = @filename + ".new"
 
       content = nil
-      file = File.open(@filename, File::RDWR | File::CREAT)
       unless read_only
+        file = File.open(@filename, File::RDWR | File::CREAT)
         file.flock(File::LOCK_EX)
         commit_new(file) if FileTest.exist?(new_file)
         content = file.read()
       else
+        file = File.open(@filename, File::RDONLY)
         file.flock(File::LOCK_SH)
-        if FileTest.exist?(new_file)
-          File.open(new_file) {|fp| content = fp.read()}
-        else
-          content = file.read()
-        end
+        content = (File.read(new_file) rescue file.read())
       end
 
       if content != ""

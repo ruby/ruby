@@ -1,3 +1,8 @@
+Thu Jul  1 18:31:31 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pstore.rb (PStore#transaction): get rid of opening in write mode
+	  when read only transaction.  [ruby-dev:23842]
+
 Thu Jul  1 00:44:42 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_cipher.c (ossl_cipher_encrypt, ossl_cipher_decrypt):
@@ -24,7 +29,7 @@ Wed Jun 30 19:48:09 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/ossl_cipher.c (ossl_cipher_alloc, ossl_cipher_initialize,
 	  ossl_cipher_copy, ossl_cipher_reset, ossl_cipher_encrypt,
 	  ossl_cipher_decrypt, ossl_cipher_final, ossl_cipher_set_key,
-	  ossl_cipher_set_iv): replace all EVP_CipherInit and 
+	  ossl_cipher_set_iv): replace all EVP_CipherInit and
 	  EVP_CipherFinal into EVP_CipherInit_ex and EVP_CipherFinal_ex.
 	  and EVP_CIPHER_CTX_init should only be called once.
 
@@ -33,7 +38,7 @@ Wed Jun 30 19:48:09 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_cipher.c (Init_ossl_cipher): Cipher#<< is deprecated.
 
-	* ext/openssl/ossl_digest.c: replace all EVP_DigestInit and 
+	* ext/openssl/ossl_digest.c: replace all EVP_DigestInit and
 	  EVP_DigestFinal into EVP_DigestInit_ex and EVP_DigestFinal_ex.
 	  and EVP_MD_CTX_init should only be called once.
 
