@@ -1238,9 +1238,19 @@ void Init_ext _((void));
 #ifdef HAVE_NATIVETHREAD
 static rb_nativethread_t ruby_thid;
 int
-is_ruby_native_thread() {
+is_ruby_native_thread()
+{
     return NATIVETHREAD_EQUAL(ruby_thid, NATIVETHREAD_CURRENT());
 }
+
+# ifdef HAVE_NATIVETHREAD_KILL
+void
+ruby_native_thread_kill(sig)
+    int sig;
+{
+    NATIVETHREAD_KILL(ruby_thid, sig);
+}
+# endif
 #endif
 
 NORETURN(static void rb_thread_start_1 _((void)));

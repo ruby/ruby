@@ -436,6 +436,29 @@ signal_exec(sig)
     }
 }
 
+static void
+sigsend_to_ruby_thread(sig)
+    int sig;
+{
+#ifdef HAVE_NATIVETHREAD_KILL
+# ifdef HAVE_SIGPROCMASK
+    sigset_t mask, old_mask;
+# else
+    int mask, old_mask;
+# endif
+
+#ifdef HAVE_SIGPROCMASK
+    sigfillset(&mask);
+    sigprocmask(SIG_BLOCK, &mask, &old_mask);
+#else
+    mask = sigblock(~0);
+    sigsetmask(mask);
+#endif
+
+    ruby_native_thread_kill(sig);
+#endif
+}
+
 static RETSIGTYPE sighandler _((int));
 static RETSIGTYPE
 sighandler(sig)
@@ -450,9 +473,9 @@ sighandler(sig)
 	rb_bug("trap_handler: Bad signal %d", sig);
     }
 
-#ifdef HAVE_NATIVETHREAD
+#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
     if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
-        /* ignore signals on non-Ruby native thread */
+        sigsend_to_ruby_thread(sig);
         return;
     }
 #endif
@@ -481,9 +504,9 @@ static RETSIGTYPE
 sigbus(sig)
     int sig;
 {
-#ifdef HAVE_NATIVETHREAD
+#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
     if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
-        /* ignore signals on non-Ruby native thread */
+        sigsend_to_ruby_thread(sig);
         return;
     }
 #endif
@@ -498,9 +521,9 @@ static RETSIGTYPE
 sigsegv(sig)
     int sig;
 {
-#ifdef HAVE_NATIVETHREAD
+#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
     if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
-        /* ignore signals on non-Ruby native thread */
+        sigsend_to_ruby_thread(sig);
         return;
     }
 #endif
@@ -570,9 +593,9 @@ static RETSIGTYPE
 sigexit(sig)
     int sig;
 {
-#ifdef HAVE_NATIVETHREAD
+#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
     if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
-        /* ignore signals on non-Ruby native thread */
+        sigsend_to_ruby_thread(sig);
         return;
     }
 #endif

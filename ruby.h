@@ -694,6 +694,9 @@ typedef pthread_t rb_nativethread_t;
 # define NATIVETHREAD_CURRENT() pthread_self()
 # define NATIVETHREAD_EQUAL(t1,t2) pthread_equal((t1),(t2))
 # define HAVE_NATIVETHREAD
+
+# define NATIVETHREAD_KILL(th,sig) pthread_kill((th),(sig))
+# define HAVE_NATIVETHREAD_KILL
 #elif defined(_WIN32) || defined(_WIN32_WCE)
 typedef DWORD rb_nativethread_t;
 # define NATIVETHREAD_CURRENT() GetCurrentThreadId()
@@ -701,9 +704,12 @@ typedef DWORD rb_nativethread_t;
 # define HAVE_NATIVETHREAD
 #endif
 #ifdef HAVE_NATIVETHREAD
-RUBY_EXTERN int is_ruby_native_thread();
+int is_ruby_native_thread _((void));
 #else
 #define is_ruby_native_thread() (1)
+#endif
+#ifdef HAVE_NATIVETHREAD_KILL
+void ruby_native_thread_kill _((int));
 #endif
 
 #if defined(__cplusplus)

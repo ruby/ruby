@@ -1,3 +1,14 @@
+Wed Mar  2 16:59:50 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* eval.c (ruby_native_thread_kill): call pthread_kill() to send a 
+	  signal to ruby's native thread
+
+	* ruby.h: add definition of ruby_native_thread_kill()
+
+	* signal.c (sigsend_to_ruby_thread): send the signal to ruby's
+	  native thread ([ruby-dev:25744], [ruby-dev:25754]), and set
+	  signal mask to the current native thread
+
 Wed Mar  2 16:03:08 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: enforce thread-check and exception-handling to
