@@ -23,6 +23,7 @@ lib/tktext.rb
 lib/tkvirtevent.rb
 lib/tkwinpkg.rb
 sample/safe-tk.rb
+sample/tkalignbox.rb
 sample/tkballoonhelp.rb
 sample/tkbiff.rb
 sample/tkbrowse.rb
