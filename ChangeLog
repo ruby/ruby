@@ -1,3 +1,7 @@
+Fri Jun  1 17:26:24 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* hash.c (replace_i): ignore when key == Qundef.
+
 Fri Jun  1 16:50:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (call_args2): confusion with list_append() and

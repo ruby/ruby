@@ -510,7 +510,10 @@ static int
 replace_i(key, val, hash)
     VALUE key, val, hash;
 {
-    rb_hash_aset(hash, key, val);
+    if (key != Qundef) {
+	rb_hash_aset(hash, key, val);
+    }
+
     return ST_CONTINUE;
 }
 
