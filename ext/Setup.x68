@@ -2,8 +2,6 @@ option nodynamic
 
 #Win32API
 bigdecimal
-bigdecimal/lib
-bigdecimal/sample
 #curses
 dbm
 digest
