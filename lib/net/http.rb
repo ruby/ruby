@@ -19,7 +19,7 @@ class HTTPBadResponse < HTTPError; end
 
 class HTTPSession < Session
 
-  Version = '1.1.0'
+  Version = '1.1.1'
 
   session_setvar :port,         '80'
   session_setvar :command_type, 'HTTPCommand'
@@ -61,8 +61,8 @@ class HTTPCommand < Command
     @in_header = {}
     @in_header[ 'Host' ]       = sock.addr
     #@in_header[ 'User-Agent' ] = "Ruby http version #{HTTPSession::Version}"
-    #@in_header[ 'Connection' ] = 'Keep-Alive'
-    #@in_header[ 'Accept' ]     = '*/*'
+    @in_header[ 'Connection' ] = 'Keep-Alive'
+    @in_header[ 'Accept' ]     = '*/*'
 
     super sock
   end
@@ -75,7 +75,13 @@ class HTTPCommand < Command
     write_header u_header
     check_reply SuccessCode
     header = read_header
-    @socket.read content_length( header ), ret
+    if chunked? header then
+      clen = read_chunked_body( ret )
+      header.delete 'transfer-encoding'
+      header[ 'content-length' ] = "Content-Length: #{clen}"
+    else
+      @socket.read content_length( header ), ret
+    end
     @socket.close unless keep_alive? header
 
     return header, ret
@@ -140,7 +146,7 @@ class HTTPCommand < Command
     unless str = header[ 'content-length' ] then
       raise HTTPBadResponce, "content-length not given"
     end
-    unless /content-length:\s*(\d+)/i === str then
+    unless /\Acontent-length:\s*(\d+)/i === str then
       raise HTTPBadResponce, "content-length format error"
     end
     $1.to_i
@@ -148,11 +154,21 @@ class HTTPCommand < Command
 
   def keep_alive?( header )
     if str = header[ 'connection' ] then
-      if /connection:\s*keep-alive/i === str then
+      if /\Aconnection:\s*keep-alive/i === str then
         return true
       end
     else
       if @http_version == '1.1' then
+        return true
+      end
+    end
+
+    false
+  end
+
+  def chunked?( header )
+    if str = header[ 'transfer-encoding' ] then
+      if /\Atransfer-encoding:\s*chunked/i === str then
         return true
       end
     end
@@ -192,6 +208,29 @@ class HTTPCommand < Command
     else
       false
     end
+  end
+
+  def read_chunked_body( ret )
+    line = nil
+    len = nil
+    total = 0
+
+    while true do
+      line = @socket.readline
+      unless /[0-9a-hA-H]+/ === line then
+        raise HTTPBadResponce, "chunk size not given"
+      end
+      len = $&.hex
+      break if len == 0
+      @socket.read( len, ret ); total += len
+      @socket.read 2   # \r\n
+    end
+    while true do
+      line = @socket.readline
+      break if line.empty?
+    end
+
+    total
   end
 
 end

@@ -52,6 +52,8 @@ Net::Session
 
   class POP3Session < Session
 
+    Version = '1.1.1'
+
     session_setvar :port,         '110'
     session_setvar :command_type, 'POP3Command'
 

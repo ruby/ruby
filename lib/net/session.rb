@@ -1,6 +1,6 @@
 =begin
 
-= net/session.rb version 1.1.0
+= net/session.rb version 1.1.1
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -30,7 +30,7 @@ Object
 
 : Version
 
-  The version of Session class. It is a string like "1.1.0".
+  The version of Session class. It is a string like "1.1.1".
 
 
 === Class Methods
@@ -77,7 +77,7 @@ Object
 
   class Session
 
-    Version = '1.1.0'
+    Version = '1.1.1'
 
     class << self
 

@@ -58,7 +58,7 @@ Net::Session
 
   class SMTPSession < Session
 
-    Version = '1.1.0'
+    Version = '1.1.1'
 
     session_setvar :port,         '25'
     session_setvar :command_type, 'SMTPCommand'
