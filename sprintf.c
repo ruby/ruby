@@ -3,7 +3,7 @@
   sprintf.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:23 $
+  $Date: 1995/01/10 10:42:59 $
   created at: Fri Oct 15 10:39:26 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -46,7 +46,7 @@ Fsprintf(argc, argv)
 
 #define PUSH(s, l) { \
     CHECK(l);\
-    memmove(&buf[blen], s, l);\
+    memcpy(&buf[blen], s, l);\
     blen += (l);\
 }
 

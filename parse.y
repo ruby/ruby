@@ -3,7 +3,7 @@
   parse.y -
 
   $Author: matz $
-  $Date: 1994/12/20 05:07:09 $
+  $Date: 1995/01/10 10:42:45 $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -123,6 +123,7 @@ static void setup_top_local();
 	UNLESS_MOD
 	WHILE_MOD
 	UNTIL_MOD
+	ALIAS
 
 %token <id>   IDENTIFIER GVAR IVAR CONSTANT
 %token <val>  INTEGER FLOAT STRING XSTRING REGEXP GLOB
@@ -131,8 +132,8 @@ static void setup_top_local();
 %type <node> singleton inc_list
 %type <val>  literal numeric
 %type <node> compstmts stmts stmt stmt0 expr expr0 var_ref
-%type <node> if_tail opt_else cases resque ensure
-%type <node> call_args call_args0 opt_args args args2
+%type <node> if_tail opt_else case_body cases resque ensure
+%type <node> call_args call_args0 args args2 array
 %type <node> f_arglist f_args assoc_list assocs assoc
 %type <node> mlhs mlhs_head mlhs_tail lhs iter_var opt_iter_var
 %type <id>   superclass variable symbol
@@ -275,9 +276,9 @@ stmt		: CLASS IDENTIFIER superclass
 		    {
 			$$ = NEW_UNDEF($2);
 		    }
-		| DEF fname fname
+		| ALIAS fname {lex_state = EXPR_FNAME;} fname
 		    {
-		        $$ = NEW_ALIAS($2, $3);
+		        $$ = NEW_ALIAS($2, $4);
 		    }
 		| INCLUDE inc_list
 		    {
@@ -563,6 +564,11 @@ singleton	: var_ref
 		    {
 			switch (nd_type($2)) {
 			  case NODE_STR:
+			  case NODE_STR2:
+			  case NODE_XSTR:
+			  case NODE_XSTR2:
+			  case NODE_DREGX:
+			  case NODE_DGLOB:
 			  case NODE_LIT:
 			  case NODE_ARRAY:
 			  case NODE_ZARRAY:
@@ -609,29 +615,11 @@ expr		: variable '=' expr
 		    }
 		| expr0 '[' args rbracket OP_ASGN expr
 		    {
-			NODE *rval, *args;
-			value_expr($1);
-			value_expr($6);
-
-			args = list_copy($3);
-			rval = NEW_CALL($1, AREF, args);
-
-			args = list_append($3, call_op(rval, $5, 1, $6));
-			$$ = NEW_CALL($1, ASET, args);
+			$$ = NEW_OP_ASGN1($1,$5,list_concat(NEW_LIST($6),$3));
 		    }
 		| expr0 '.' IDENTIFIER OP_ASGN expr
 		    {
-			ID id = $3;
-			NODE *rval;
-
-			value_expr($1);
-			value_expr($5);
-
-			id &= ~ID_SCOPE_MASK;
-			id |= ID_ATTRSET;
-
-			rval = call_op(NEW_CALL($1, $3, Qnil), $4, 1, $5);
-			$$ = NEW_CALL($1, id, NEW_LIST(rval));
+			$$ = NEW_OP_ASGN2($1, $4, $5);
 		    }
 		| expr DOT2 expr
 		    {
@@ -730,11 +718,11 @@ expr		: variable '=' expr
 		    }
 		| expr MATCH expr
 		    {
-			$$ = call_op($1, MATCH, 1, $3);
+			$$ = NEW_CALL($1, MATCH, NEW_LIST($3));
 		    }
 		| expr NMATCH expr
 		    {
-			$$ = call_op($1, NMATCH, 1, $3);
+			$$ = NEW_CALL($1, NMATCH, NEW_LIST($3));
 		    }
 		| '!' expr
 		    {
@@ -794,12 +782,6 @@ call_args0	: args
 			$$ = call_op($1, '+', 1, $4);
 		    }
 
-opt_args	: /* none */
-		    {
-			$$ = Qnil;
-		    }
-		| args
-
 args 		: expr
 		    {
 			value_expr($1);
@@ -813,8 +795,6 @@ args 		: expr
 
 args2		: args
 		    {
-			NODE *rhs;
-
 			if ($1 && $1->nd_next == Qnil) {
 			    $$ = $1->nd_head;
 			}
@@ -862,7 +842,7 @@ expr0		: literal
 			value_expr($1);
 			$$ = NEW_CALL($1, AREF, $3);
 		    }
-		| LBRACK opt_args rbracket
+		| LBRACK array rbracket
 		    {
 			if ($2 == Qnil)
 			    $$ = NEW_ZARRAY(); /* zero length array*/
@@ -900,29 +880,11 @@ expr0		: literal
 		    {
 			$$ = NEW_YIELD(Qnil);
 		    }
-		| expr0 lbrace opt_iter_var '|' compstmts rbrace
+		| expr0 '{' opt_iter_var '|' compstmts rbrace
 		    {
-			switch (nd_type($1)) {
-			  case NODE_CALL:
-			    nd_set_type($1, NODE_ICALL);
-			    break;
-			  case NODE_YIELD:
-			    nd_set_type($1, NODE_IYIELD);
-			    break;
-			  case NODE_BLOCK:
-			    {
-				NODE *tmp = $1;
-				while (tmp) {
-				    if (nd_type(tmp->nd_head) == NODE_YIELD) {
-					nd_set_type(tmp->nd_head, NODE_IYIELD);
-				    }
-				    else if (nd_type(tmp->nd_head) == NODE_CALL) {
-					nd_set_type(tmp->nd_head, NODE_ICALL);
-				    }
-				    tmp = tmp->nd_next;
-				}
-			    }
-			    break;
+			if (nd_type($1) == NODE_LVAR
+		            || nd_type($1) == NODE_MVAR) {
+			    $1 = NEW_CALL(Qnil, $1->nd_vid, Qnil);
 			}
 			$$ = NEW_ITER($3, $1, $5);
 		    }
@@ -956,12 +918,12 @@ expr0		: literal
 		    {
 			$$ = NEW_UNTIL(cond($2), $4);
 		    }
-		| CASE stmt0 opt_term
-		  cases
+		| CASE compstmts
+		  case_body
 		  END
 		    {
 			value_expr($2);
-			$$ = NEW_CASE($2, $4);
+			$$ = NEW_CASE($2, $3);
 		    }
 		| FOR iter_var IN stmt0 term
 		  compstmts
@@ -1019,6 +981,13 @@ opt_iter_var	: /* none */
 		    }
 		| iter_var
 
+case_body	: WHEN args then
+		  compstmts
+		  cases
+		    {
+			$$ = NEW_WHEN($2, $4, $5);
+		    }
+
 cases		: opt_else
 		| WHEN args then
 		  compstmts
@@ -1047,6 +1016,12 @@ ensure		: /* none */
 		    {
 			$$ = $2;
 		    }
+
+array		: /* none */
+		    {
+			$$ = Qnil;
+		    }
+		| args
 
 literal		: numeric
 		| '\\' symbol
@@ -1097,8 +1072,7 @@ assocs		: assoc
 
 assoc		: expr ASSOC expr
 		    {
-			$$ = NEW_LIST($1);
-			$$ = list_append($$, $3);
+			$$ = list_append(NEW_LIST($1), $3);
 		    }
 
 
@@ -1113,7 +1087,6 @@ nl		: '\n'		{ yyerrok; }
 
 rparen		: ')' 		{ yyerrok; }
 rbracket	: ']'		{ yyerrok; }
-lbrace		: '{'
 rbrace		: '}'		{ yyerrok; }
 comma		: ',' 		{ yyerrok; }
 %%
@@ -1347,6 +1320,7 @@ static struct kwtable {
     "__END__",  0,              EXPR_BEG,
     "__FILE__", _FILE_,         EXPR_END,
     "__LINE__", _LINE_,         EXPR_END,
+    "alias",	ALIAS,		EXPR_FNAME,
     "and",	AND,		EXPR_BEG,
     "break",	BREAK,		EXPR_END,
     "case",	CASE,		EXPR_BEG,
@@ -1373,7 +1347,7 @@ static struct kwtable {
     "self",	SELF,		EXPR_END,
     "super",	SUPER,		EXPR_END,
     "then",     THEN,           EXPR_BEG,
-    "undef",	UNDEF,		EXPR_BEG,
+    "undef",	UNDEF,		EXPR_FNAME,
     "unless",	UNLESS,		EXPR_BEG,
     "until",	UNTIL,		EXPR_BEG,
     "when",	WHEN,		EXPR_BEG,
@@ -2292,8 +2266,10 @@ list_concat(head, tail)
 {
     NODE *last;
 
+#if 0
     if (nd_type(head) != NODE_ARRAY || nd_type(tail) != NODE_ARRAY)
 	Bug("list_concat() called with non-list");
+#endif
 
     last = head;
     while (last->nd_next) {
@@ -2370,6 +2346,8 @@ expand_op(recv, id, arg)
     return result;
 }
 
+#define NODE_IS_CONST(n) (nd_type(n) == NODE_LIT || nd_type(n) == NODE_STR)
+
 static NODE *
 call_op(recv, id, narg, arg1)
     NODE *recv;
@@ -2382,8 +2360,7 @@ call_op(recv, id, narg, arg1)
 	value_expr(arg1);
     }
 
-    if ((nd_type(recv) == NODE_LIT || nd_type(recv) == NODE_STR)
-	&& (narg == 0 || (nd_type(arg1) == NODE_LIT || nd_type(arg1) == NODE_STR))) {
+    if (NODE_IS_CONST(recv) && (narg == 0 || NODE_IS_CONST(arg1))) {
 	return expand_op(recv, id, (narg == 1)?arg1:Qnil);
     }
     return NEW_CALL(recv, id, narg==1?NEW_LIST(arg1):Qnil);
@@ -2620,10 +2597,13 @@ local_cnt(id)
 	if (lvtbl->tbl[cnt+1] == id) return cnt;
     }
 
-    if (lvtbl->tbl == Qnil)
+    if (lvtbl->tbl == Qnil) {
 	lvtbl->tbl = ALLOC_N(ID, 2);
-    else
+	lvtbl->tbl[0] = 0;
+    }
+    else {
 	REALLOC_N(lvtbl->tbl, ID, lvtbl->cnt+2);
+    }
 
     lvtbl->tbl[lvtbl->cnt+1] = id;
     return lvtbl->cnt++;
@@ -2654,42 +2634,50 @@ init_top_local()
     else {
 	lvtbl->cnt = 0;
     }
-    lvtbl->tbl = the_scope->local_tbl;
+    if (lvtbl->cnt > 0) {
+	lvtbl->tbl = ALLOC_N(ID, lvtbl->cnt);
+	MEMCPY(lvtbl->tbl, the_scope->local_tbl, VALUE, lvtbl->cnt);
+    }
+    else {
+	lvtbl->tbl = Qnil;
+    }
 }
 
 static void
 setup_top_local()
 {
-    if (lvtbl->cnt > 0) {
-	if (the_scope->local_vars == Qnil) {
-	    the_scope->var_ary = ary_new2(lvtbl->cnt);
-	    the_scope->local_vars = RARRAY(the_scope->var_ary)->ptr;
-	    memset(the_scope->local_vars, 0, lvtbl->cnt * sizeof(VALUE));
-	    RARRAY(the_scope->var_ary)->len = lvtbl->cnt;
-	}
-	else if (lvtbl->tbl[0] < lvtbl->cnt) {
-	    int i, len;
+    int len = lvtbl->cnt;
+    int i;
 
-	    if (the_scope->var_ary) {
-		for (i=0, len=lvtbl->cnt-lvtbl->tbl[0];i<len;i++) {
-		    ary_push(the_scope->var_ary, Qnil);
-		}
+    if (len > 0) {
+	i = lvtbl->tbl[0];
+
+	if (i < len) {
+	    if (the_scope->flags & SCOPE_MALLOCED) {
+		VALUE *vars = the_scope->local_vars;
+
+		REALLOC_N(the_scope->local_vars, VALUE, len);
+		MEMZERO(the_scope->local_vars+i, VALUE, len-i);
+		free(the_scope->local_tbl);
 	    }
 	    else {
 		VALUE *vars = the_scope->local_vars;
-
-		the_scope->var_ary = ary_new2(lvtbl->cnt);
-		the_scope->local_vars = RARRAY(the_scope->var_ary)->ptr;
-		memcpy(the_scope->local_vars, vars, sizeof(VALUE)*lvtbl->cnt);
-		memset(the_scope->local_vars+i, 0, lvtbl->cnt-i);
-		RARRAY(the_scope->var_ary)->len = lvtbl->cnt;
+		the_scope->local_vars = ALLOC_N(VALUE, len);
+		if (vars) {
+		    MEMCPY(the_scope->local_vars, vars, VALUE, i);
+		    MEMZERO(the_scope->local_vars+i, VALUE, len-i);
+		}
+		else {
+		    MEMZERO(the_scope->local_vars, VALUE, len);
+		}
 	    }
+	    lvtbl->tbl[0] = len;
+	    the_scope->local_tbl = lvtbl->tbl;
+	    the_scope->flags |= SCOPE_MALLOCED;
 	}
-	lvtbl->tbl[0] = lvtbl->cnt;
-	the_scope->local_tbl = lvtbl->tbl;
-    }
-    else {
-	the_scope->local_vars = Qnil;
+	else if (lvtbl->tbl) {
+	    free(lvtbl->tbl);
+	}
     }
 }
 
@@ -2819,7 +2807,7 @@ rb_intern(name)
 	last = strlen(name)-1;
 	if (name[last] == '=') {
 	    /* attribute asignment */
-	    char *buf = (char*)alloca(last+1);
+	    char *buf = ALLOCA_N(char,last+1);
 
 	    strncpy(buf, name, last);
 	    buf[last] = '\0';
@@ -2874,7 +2862,7 @@ rb_id2name(id)
 	res = rb_id2name(id2);
 
 	if (res) {
-	    char *buf = (char*)alloca(strlen(res)+2);
+	    char *buf = ALLOCA_N(char,strlen(res)+2);
 
 	    strcpy(buf, res);
 	    strcat(buf, "=");
@@ -2918,4 +2906,3 @@ rb_class2name(class)
     }
     Bug("class 0x%x not named", class);
 }
-

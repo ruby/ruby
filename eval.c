@@ -3,7 +3,7 @@
   eval.c -
 
   $Author: matz $
-  $Date: 1994/12/20 05:07:05 $
+  $Date: 1995/01/10 10:42:34 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -26,16 +26,9 @@ void rb_clear_cache();
 #include <stdio.h>
 #endif
 
-#if 1
 #define CACHE_SIZE 0x200
 #define CACHE_MASK 0x1ff
 #define EXPR1(c,m) ((((int)(c)>>3)^(m))&CACHE_MASK)
-
-#else
-
-#define CACHE_SIZE 577
-#define EXPR1(c,m) (((int)(c)^(m))%CACHE_SIZE)
-#endif
 
 struct cache_entry {		/* method hash table. */
     ID mid;			/* method's id */
@@ -79,6 +72,7 @@ rb_get_method_body(classp, idp, noexp)
     if ((body = search_method(class, id, &origin)) == Qnil) {
 	return Qnil;
     }
+    if (body->nd_body == Qnil) return Qnil;
 
     ent = cache + EXPR1(class, id);
 #ifdef TEST
@@ -87,19 +81,20 @@ rb_get_method_body(classp, idp, noexp)
     }
 #endif
     /* store in cache */
-    ent->mid    = id;
     ent->class  = class;
-    ent->origin = origin;
-    ent->method = body->nd_body;
     ent->noex   = body->nd_noex;
     body = body->nd_body;
-
-    if (body == Qnil) return Qnil;
     if (nd_type(body) == NODE_FBODY) {
-	*idp = body->nd_mid;
-	body = body->nd_head;
+	*classp = ent->origin = (struct RClass*)body->nd_orig;
+	*idp = ent->mid = body->nd_mid;
+	body = ent->method = body->nd_head;
     }
-    *classp = origin;
+    else {
+	*classp = ent->origin = origin;
+	ent->mid = id;
+	ent->method = body;
+    }
+
     if (noexp) *noexp = ent->noex;
     return body;
 }
@@ -114,7 +109,7 @@ rb_alias(class, name, def)
 
     if (name == def) return;
     body = search_method(class, def, &origin);
-    if (body == Qnil) {
+    if (body == Qnil || body->nd_body == Qnil) {
 	Fail("undefined method `%s' for class `%s'",
 	     rb_id2name(def), rb_class2name(class));
     }
@@ -126,8 +121,9 @@ rb_alias(class, name, def)
 	rb_clear_cache(old->nd_body);
     }
 
-    st_insert(class->m_tbl, name, NEW_METHOD(NEW_FBODY(body->nd_body, name),
-					     body->nd_noex));
+    st_insert(class->m_tbl, name,
+	      NEW_METHOD(NEW_FBODY(body->nd_body, def, origin),
+			 body->nd_noex));
 }
 
 void
@@ -196,7 +192,7 @@ rb_clear_cache2(class)
     }
 }
 
-static ID match, each;
+static ID match, each, aref, aset;
 VALUE errstr, errat;
 extern NODE *eval_tree;
 extern int nerrs;
@@ -214,18 +210,18 @@ struct ENVIRON *the_env, *top_env;
 struct SCOPE   *the_scope, *top_scope;
 
 #define PUSH_ENV() {			\
-    struct ENVIRON _this;		\
-    _this.prev = the_env;		\
-    the_env = &_this;			\
+    struct ENVIRON _env;		\
+    _env.prev = the_env;		\
+    the_env = &_env;			\
 
-#define POP_ENV()  the_env = the_env->prev; }
+#define POP_ENV()  the_env = _env.prev; }
 
 struct BLOCK {
     NODE *var;
     NODE *body;
     VALUE self;
     struct ENVIRON env;
-    struct SCOPE scope;
+    struct SCOPE *scope;
     int level;
     VALUE block;
     int iter;
@@ -233,16 +229,16 @@ struct BLOCK {
 } *the_block;
 
 #define PUSH_BLOCK(v,b) {		\
-    struct BLOCK _this;			\
-    _this.level = tag_level;		\
-    _this.var=v;			\
-    _this.body = b;			\
-    _this.self = Qself;			\
-    _this.env = *the_env;		\
-    _this.scope = *the_scope;		\
-    _this.block = Qnil;			\
-    _this.prev = the_block;		\
-    the_block = &_this;			\
+    struct BLOCK _block;		\
+    _block.level = tag_level;		\
+    _block.var=v;			\
+    _block.body = b;			\
+    _block.self = Qself;		\
+    _block.env = *the_env;		\
+    _block.scope = the_scope;		\
+    _block.block = Qnil;		\
+    _block.prev = the_block;		\
+    the_block = &_block;		\
 
 #define PUSH_BLOCK2(b) {		\
     b->prev = the_block;		\
@@ -255,14 +251,18 @@ static struct iter {
     struct iter *prev;
 } *iter;
 
-#define PUSH_ITER(i) {\
-    struct iter __iter__;\
-    __iter__.prev = iter;\
-    __iter__.iter = (i);\
-    iter = &__iter__;\
+#define ITER_NOT 0
+#define ITER_PRE 1
+#define ITER_CUR 2
 
-#define POP_ITER() \
-    iter = iter->prev;\
+#define PUSH_ITER(i) {			\
+    struct iter _iter;			\
+    _iter.prev = iter;			\
+    _iter.iter = (i);			\
+    iter = &_iter;			\
+
+#define POP_ITER()			\
+    iter = _iter.prev;			\
 }
 
 static int tag_level, target_level;
@@ -277,13 +277,13 @@ static struct tag {
 } *prot_tag;
 
 #define PUSH_TAG() {			\
-    struct tag _this;			\
-    _this.level= ++tag_level;		\
-    _this.self = Qself;			\
-    _this.env = the_env;		\
-    _this.iter = iter;			\
-    _this.prev = prot_tag;		\
-    prot_tag = &_this;			\
+    struct tag _tag;			\
+    _tag.level= ++tag_level;		\
+    _tag.self = Qself;			\
+    _tag.env = the_env;			\
+    _tag.iter = iter;			\
+    _tag.prev = prot_tag;		\
+    prot_tag = &_tag;			\
 
 #define EXEC_TAG()    (setjmp(prot_tag->buf))
 #define JUMP_TAG(val) {			\
@@ -294,7 +294,7 @@ static struct tag {
 
 #define POP_TAG()			\
     tag_level--;			\
-    prot_tag = prot_tag->prev;		\
+    prot_tag = _tag.prev;		\
 }
 
 #define TAG_RETURN	1
@@ -321,15 +321,16 @@ struct class_link {
 
 #define POP_CLASS()			\
 	the_class = class_link->class;	\
-	class_link = class_link->prev; }
+	class_link = _link.prev; }
 
 #define PUSH_SCOPE() {			\
-    struct SCOPE _scope;		\
-    _scope = *the_scope;		\
-    _scope.prev = the_scope;		\
-    the_scope = &_scope;		\
+    struct SCOPE *_old;			\
+    NEWOBJ(_scope, struct SCOPE);	\
+    OBJSETUP(_scope, Qnil, T_SCOPE);	\
+    _old = the_scope;			\
+    the_scope = _scope;			\
 
-#define POP_SCOPE() the_scope = the_scope->prev; }
+#define POP_SCOPE() the_scope = _old; }
 
 static VALUE rb_eval();
 static VALUE Feval();
@@ -386,15 +387,23 @@ ruby_init(argc, argv, envp)
 {
     int state;
     static struct ENVIRON env;
-    static struct SCOPE scope;
     the_env = top_env = &env;
-    the_scope = top_scope = &scope;
-    
+
+    PUSH_SCOPE();
+    the_scope->local_vars = Qnil;
+    the_scope->local_tbl  = Qnil;
+    top_scope = the_scope;
+
     PUSH_TAG();
+    PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
 	ruby_init0(argc, argv, envp);
     }
+    POP_ITER();
     POP_TAG();
+    POP_SCOPE();
+    the_scope = top_scope;
+
     if (state) {
 	PUSH_TAG();
 	error_print();
@@ -411,9 +420,6 @@ Eval(toplevel)
     VALUE result;
     NODE *tree;
     int   state;
-
-    if (match == Qnil) match = rb_intern("=~");
-    if (each == Qnil) each = rb_intern("each");
 
     tree = eval_tree;
     eval_tree = Qnil;
@@ -440,10 +446,12 @@ ruby_run()
     errat = Qnil;		/* clear for execution */
 
     PUSH_TAG();
+    PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
 	the_class = (struct RClass*)C_Object;
 	Eval(1);
     }
+    POP_ITER();
     POP_TAG();
 
     switch (state) {
@@ -484,29 +492,51 @@ void
 rb_trap_eval(cmd)
     VALUE cmd;
 {
-    int state, go_out;
+    int state;
+    struct SCOPE *saved_scope;
 
     PUSH_SELF(TopSelf);
     PUSH_CLASS();
     PUSH_TAG();
-    PUSH_SCOPE();
-    if ((state = EXEC_TAG()) == 0) {
-	the_class = (struct RClass*)C_Object;
-	the_scope->local_vars = top_scope->local_vars;
-	the_scope->local_tbl = top_scope->local_tbl;
+    saved_scope = the_scope;
+    the_scope = top_scope;
 
+    the_class = (struct RClass*)C_Object;
+
+    if ((state = EXEC_TAG()) == 0) {
 	Feval(Qself, cmd);
-	go_out = 0;
     }
-    else {
-	go_out = 1;
-    }
-    POP_SCOPE();
+
+    the_scope = saved_scope;
     POP_TAG();
     POP_CLASS();
     POP_SELF();
 
-    if (go_out) JUMP_TAG(state);
+    switch (state) {
+      case 0:
+	break;
+      case TAG_RETURN:
+	Fatal("unexpected return");
+	break;
+      case TAG_CONTINUE:
+	Fatal("unexpected continue");
+	break;
+      case TAG_BREAK:
+	Fatal("unexpected break");
+	break;
+      case TAG_REDO:
+	Fatal("unexpected redo");
+	break;
+      case TAG_RETRY:
+	Fatal("retry outside of protect clause");
+	break;
+      default:
+#ifdef SAFE_SIGHANDLE
+	trap_immediate = 0;
+#endif
+	JUMP_TAG(state);
+	break;
+    }
 }
 
 #define SETUP_ARGS {\
@@ -515,12 +545,12 @@ rb_trap_eval(cmd)
 	argc = 0;\
 	argv = Qnil;\
     }\
-    else if (nd_type(n) == NODE_ARRAY) {\
+    else if (/*nd_type(n) == NODE_LIST ||*/ nd_type(n) == NODE_ARRAY) {\
 	argc=n->nd_alen;\
         if (argc > 0) {\
             int i;\
 	    n = node->nd_args;\
-	    argv = (VALUE*)alloca(sizeof(VALUE)*argc);\
+	    argv = ALLOCA_N(VALUE,argc);\
 	    for (i=0;i<argc;i++) {\
 		argv[i] = rb_eval(n->nd_head);\
 		n=n->nd_next;\
@@ -528,10 +558,12 @@ rb_trap_eval(cmd)
         }\
     }\
     else {\
-        argc = -2;\
-	argv = (VALUE*)rb_eval(n);\
-	if (TYPE(argv) != T_ARRAY)\
-	    argv = (VALUE*)rb_to_a(argv);\
+        VALUE args = rb_eval(n);\
+	if (TYPE(args) != T_ARRAY)\
+	    args = rb_to_a(args);\
+        argc = RARRAY(args)->len;\
+	argv = ALLOCA_N(VALUE, argc);\
+	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
     }\
 }
 
@@ -694,13 +726,17 @@ rb_eval(node)
 	    state = EXEC_TAG();
 	    if (state == 0) {
 		if (nd_type(node) == NODE_ITER) {
+		    PUSH_ITER(ITER_PRE);
 		    result = rb_eval(node->nd_iter);
+		    POP_ITER();
 		}
 		else {
 		    VALUE recv;
 
 		    recv = rb_eval(node->nd_iter);
-		    result = rb_call(CLASS_OF(recv),recv,each,0,Qnil,0,1);
+		    PUSH_ITER(ITER_PRE);
+		    result = rb_call(CLASS_OF(recv),recv,each,0,Qnil,0);
+		    POP_ITER();
 		}
 	    }
 	    POP_TAG();
@@ -740,17 +776,6 @@ rb_eval(node)
 
 	    val = rb_eval(node->nd_stts);
 	    result = rb_yield(val);
-	}
-	return result;
-
-      case NODE_IYIELD:
-	{
-	    VALUE val;
-
-	    val = rb_eval(node->nd_stts);
-	    PUSH_ITER(1);
-	    result = rb_yield(val);
-	    POP_ITER();
 	}
 	return result;
 
@@ -841,16 +866,16 @@ rb_eval(node)
 	break;
 
       case NODE_CALL:
-      case NODE_ICALL:
 	{
 	    VALUE recv;
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
-	    VALUE buf[3];
 
+	    PUSH_ITER(ITER_NOT);
 	    recv = node->nd_recv?rb_eval(node->nd_recv):Qself;
 	    SETUP_ARGS;
+	    POP_ITER();
 	    return rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,
-			   node->nd_recv?0:1, nd_type(node)==NODE_ICALL);
+			   node->nd_recv?0:1);
 	}
 	break;
 
@@ -865,11 +890,15 @@ rb_eval(node)
 		argv = the_env->argv;
 	    }
 	    else {
+		PUSH_ITER(ITER_NOT);
 		SETUP_ARGS;
+		POP_ITER();
 	    }
 
+	    PUSH_ITER(iter->iter?ITER_PRE:ITER_NOT);
 	    result = rb_call(the_env->last_class->super, Qself,
-			     the_env->last_func, argc, argv, 1, iter->iter);
+			     the_env->last_func, argc, argv, 1);
+	    POP_ITER();
 	}
 	return result;
 
@@ -880,9 +909,8 @@ rb_eval(node)
 	    PUSH_SCOPE();
 	    PUSH_TAG();
 	    if (node->nd_cnt > 0) {
-		the_scope->local_vars = (VALUE*)
-		    alloca(sizeof(VALUE)*node->nd_cnt);
-		memset(the_scope->local_vars, 0, sizeof(VALUE)*node->nd_cnt);
+		the_scope->local_vars = ALLOCA_N(VALUE, node->nd_cnt);
+		MEMZERO(the_scope->local_vars, VALUE, node->nd_cnt);
 		the_scope->local_tbl = node->nd_tbl;
 	    }
 	    else {
@@ -893,10 +921,43 @@ rb_eval(node)
 		result = rb_eval(node->nd_body);
 	    }
 	    POP_TAG();
+	    if (!(the_scope->flags & SCOPE_MALLOCED)) {
+		the_scope->local_vars = Qnil;
+		the_scope->local_tbl  = Qnil;
+	    }
 	    POP_SCOPE();
 	    if (state != 0) JUMP_TAG(state);
 
 	    return result;
+	}
+
+      case NODE_OP_ASGN1:
+	{
+	    VALUE recv, args, val;
+	    NODE *rval;
+
+	    recv = rb_eval(node->nd_recv);
+	    rval = node->nd_args->nd_head;
+
+	    args = rb_eval(node->nd_args->nd_next);
+	    val = rb_apply(recv, aref, args);
+	    val = rb_funcall(val, node->nd_mid, 1, rb_eval(rval));
+	    ary_push(args, val);
+	    return rb_apply(recv, aset, args);
+	}
+
+      case NODE_OP_ASGN2:
+	{
+	    ID id = node->nd_aid;
+	    VALUE recv, val;
+
+	    recv = rb_funcall(rb_eval(node->nd_recv), id, 0);
+
+	    id &= ~ID_SCOPE_MASK;
+	    id |= ID_ATTRSET;
+
+	    val = rb_eval(node->nd_value);
+	    return rb_funcall(recv, id, 1, val);
 	}
 
       case NODE_MASGN:
@@ -946,6 +1007,18 @@ rb_eval(node)
       case NODE_IVAR:
 	return rb_ivar_get(node->nd_vid);
       case NODE_MVAR:
+	if (the_scope->flags & SCOPE_MALLOCED) {
+	    ID id = node->nd_vid, *tbl = the_scope->local_tbl;
+	    int i, len = tbl[0];
+
+	    tbl++;
+	    for (i=0; i<len; i++) {
+		if (id == tbl[i]) break;
+	    }
+	    if (i<len) {
+		return the_scope->local_vars[i];
+	    }
+	}
 	return rb_mvar_get(node->nd_vid);
 
       case NODE_CVAR:
@@ -1193,12 +1266,14 @@ rb_exit(status)
 }
 
 static VALUE
-Fexit(obj, args)
-    VALUE obj, args;
+Fexit(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE status;
 
-    if (rb_scan_args(args, "01", &status) == 1) {
+    if (rb_scan_args(argc, argv, "01", &status) == 1) {
 	Need_Fixnum(status);
     }
     else {
@@ -1270,25 +1345,26 @@ Fiterator_p()
     return FALSE;
 }
 
-
 VALUE
 rb_yield(val)
     VALUE val;
 {
     struct BLOCK *block;
     NODE *node;
-    int   state, go_out;
+    int   state;
     VALUE result;
+    struct ENVIRON *old_env;
+    struct SCOPE   *old_scope;
 
     if (!iterator_p()) {
 	Fail("yield called out of iterator");
     }
 
     block = the_block;
-    block->env.prev = the_env;
+    old_env = the_env;
     the_env = &(block->env);
-    block->scope.prev = the_scope;
-    the_scope = &(block->scope);
+    old_scope = the_scope;
+    the_scope = block->scope;
     the_block = block->prev;
     if (block->var) {
 	if (nd_type(block->var) == NODE_MASGN)
@@ -1298,6 +1374,7 @@ rb_yield(val)
     }
 
     PUSH_ITER(block->iter);
+    PUSH_SELF(block->self);
     PUSH_TAG();
     node = block->body;
     switch (state = EXEC_TAG()) {
@@ -1309,28 +1386,26 @@ rb_yield(val)
 	else {
 	    result = rb_eval(node);
 	}
-	go_out = 0;
 	break;
       case TAG_REDO:
 	goto redo;
       case TAG_CONTINUE:
-	go_out = 0;
+	state = 0;
 	break;
       case TAG_RETRY:
       case TAG_BREAK:
       case TAG_RETURN:
 	target_level = block->level;
 	state = IN_BLOCK|state;
-      default:
-	go_out = 1;
 	break;
     }
     POP_TAG();
+    POP_SELF();
     POP_ITER();
     the_block = block;
-    the_env = the_env->prev;
-    the_scope = the_scope->prev;
-    if (go_out) JUMP_TAG(state);
+    the_env = old_env;
+    the_scope = old_scope;
+    if (state) JUMP_TAG(state);
 
     return result;
 }
@@ -1359,12 +1434,12 @@ masign(node, val)
 		asign(node->nd_args, ary_new4(len-i, RARRAY(val)->ptr+i));
 	    }
 	    else {
-		asign(node->nd_args, ary_new());
+		asign(node->nd_args, Qnil);
 	    }
 	}
     }
     else if (node->nd_args) {
-	asign(node->nd_args, ary_new());
+	asign(node->nd_args, Qnil);
     }
     while (list) {
 	asign(list->nd_head, Qnil);
@@ -1432,7 +1507,7 @@ rb_iterate(it_proc, data1, bl_proc, data2)
     NODE *node = NEW_CFUNC(bl_proc, data2);
     struct BLOCK block;
 
-    PUSH_ITER(1);
+    PUSH_ITER(ITER_PRE);
     PUSH_BLOCK(Qnil, node);
     PUSH_TAG();
 
@@ -1564,23 +1639,24 @@ rb_undefined(obj, id, noex)
 }
 
 static VALUE
-rb_call(class, recv, mid, argc, argv, func, itr)
+rb_call(class, recv, mid, argc, argv, func)
     struct RClass *class;
     VALUE recv;
     ID    mid;
     int argc;
     VALUE *argv;
-    int func, itr;
+    int func;
 {
     NODE  *body;
     int    noex;
     VALUE  result;
     struct cache_entry *ent;
+    int itr;
 
     /* is it in the method cache? */
     ent = cache + EXPR1(class, mid);
-    if (ent->class == class && ent->mid == mid) {
-	if (ent->method == Qnil) rb_undefined(recv, mid, 0);
+    if (ent->mid == mid && ent->class == class) {
+	/* if (ent->method == Qnil) rb_undefined(recv, mid, 0); */
 	class = ent->origin;
 	mid   = ent->mid;
 	body  = ent->method;
@@ -1597,206 +1673,224 @@ rb_call(class, recv, mid, argc, argv, func, itr)
 
     if (!func && noex) rb_undefined(recv, mid, 1);
 
+    switch (iter->iter) {
+      case ITER_PRE:
+	itr = ITER_CUR;
+	break;
+      case ITER_CUR:
+      default:
+	itr = ITER_NOT;
+	break;
+    }
     PUSH_ITER(itr);
     PUSH_SELF(recv);
     PUSH_ENV();
     the_env->last_func = mid;
     the_env->last_class = class;
-
-    if (argc < 0) {
-	the_env->arg_ary = (VALUE)argv;
-	argc = RARRAY(argv)->len;
-	argv = RARRAY(argv)->ptr;
-    }
-    else {
-	the_env->arg_ary = Qnil;
-    }
     the_env->argc = argc;
     the_env->argv = argv;
 
-    if (nd_type(body) == NODE_CFUNC) {
-	int len = body->nd_argc;
+    switch (nd_type(body)) {
+      case NODE_CFUNC: 
+	{
+	    int len = body->nd_argc;
 
-	if (len >= 0 && argc != len) {
-	    Fail("Wrong # of arguments(%d for %d)", argc, body->nd_argc);
-	}
+	    if (len >= 0 && argc != len) {
+		Fail("Wrong # of arguments(%d for %d)", argc, len);
+	    }
 
-	switch (len) {
-	  case -2:
-	    result = (*body->nd_cfnc)(recv, ary_new4(argc, argv));
-	    break;
-	  case -1:
-	    result = (*body->nd_cfnc)(argc, argv);
-	    break;
-	  case 0:
+	    switch (len) {
+	      case -2:
+		result = (*body->nd_cfnc)(recv, ary_new4(argc, argv));
+		break;
+	      case -1:
+		result = (*body->nd_cfnc)(argc, argv, recv);
+		break;
+	      case 0:
 	    result = (*body->nd_cfnc)(recv);
-	    break;
-	  case 1:
-	    result = (*body->nd_cfnc)(recv, argv[0]);
-	    break;
-	  case 2:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1]);
-	    break;
-	  case 3:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2]);
-	    break;
-	  case 4:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3]);
-	    break;
-	  case 5:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4]);
-	    break;
-	  case 6:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5]);
-	    break;
-	  case 7:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5],
-				      argv[6]);
-	    break;
-	  case 8:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5],
-				      argv[6], argv[7]);
-	    break;
-	  case 9:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5],
-				      argv[6], argv[7], argv[8]);
-	    break;
-	  case 10:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5],
-				      argv[6], argv[7], argv[8],
-				      argv[6], argv[7], argv[8],
-				      argv[9]);
-	    break;
-	  case 11:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5],
-				      argv[6], argv[7], argv[8],
-				      argv[6], argv[7], argv[8],
-				      argv[9], argv[10]);
-	    break;
-	  case 12:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5],
-				      argv[6], argv[7], argv[8],
-				      argv[6], argv[7], argv[8],
-				      argv[9], argv[10], argv[11]);
-	    break;
-	  case 13:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5],
-				      argv[6], argv[7], argv[8],
-				      argv[6], argv[7], argv[8],
-				      argv[9], argv[10], argv[11],
-				      argv[12]);
-	    break;
-	  case 14:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5],
-				      argv[6], argv[7], argv[8],
-				      argv[6], argv[7], argv[8],
-				      argv[9], argv[10], argv[11],
-				      argv[12], argv[13]);
-	    break;
-	  case 15:
-	    result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
-				      argv[3], argv[4], argv[5],
-				      argv[6], argv[7], argv[8],
-				      argv[6], argv[7], argv[8],
-				      argv[9], argv[10], argv[11],
-				      argv[12], argv[13], argv[14]);
-	    break;
-	  default:
-	    if (len < 0) {
-		Bug("bad argc(%d) specified for `%s(%s)'",
-		    len, rb_class2name(class), rb_id2name(mid));
+		break;
+	      case 1:
+		result = (*body->nd_cfnc)(recv, argv[0]);
+		break;
+	      case 2:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1]);
+		break;
+	      case 3:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2]);
+		break;
+	      case 4:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3]);
+		break;
+	      case 5:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4]);
+		break;
+	      case 6:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5]);
+		break;
+	      case 7:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5],
+					  argv[6]);
+		break;
+	      case 8:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5],
+					  argv[6], argv[7]);
+		break;
+	      case 9:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5],
+					  argv[6], argv[7], argv[8]);
+		break;
+	      case 10:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5],
+					  argv[6], argv[7], argv[8],
+					  argv[6], argv[7], argv[8],
+					  argv[9]);
+		break;
+	      case 11:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5],
+					  argv[6], argv[7], argv[8],
+					  argv[6], argv[7], argv[8],
+					  argv[9], argv[10]);
+		break;
+	      case 12:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5],
+					  argv[6], argv[7], argv[8],
+					  argv[6], argv[7], argv[8],
+					  argv[9], argv[10], argv[11]);
+		break;
+	      case 13:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5],
+					  argv[6], argv[7], argv[8],
+					  argv[6], argv[7], argv[8],
+					  argv[9], argv[10], argv[11],
+					  argv[12]);
+		break;
+	      case 14:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5],
+					  argv[6], argv[7], argv[8],
+					  argv[6], argv[7], argv[8],
+					  argv[9], argv[10], argv[11],
+					  argv[12], argv[13]);
+		break;
+	      case 15:
+		result = (*body->nd_cfnc)(recv, argv[0], argv[1], argv[2],
+					  argv[3], argv[4], argv[5],
+					  argv[6], argv[7], argv[8],
+					  argv[6], argv[7], argv[8],
+					  argv[9], argv[10], argv[11],
+					  argv[12], argv[13], argv[14]);
+		break;
+	      default:
+		if (len < 0) {
+		    Bug("bad argc(%d) specified for `%s(%s)'",
+			len, rb_class2name(class), rb_id2name(mid));
+		}
+		else {
+		    Fail("too many arguments(%d)", len);
+		}
+		break;
+	    }
+	}
+	break;
+
+	/* for attr get/set */
+      case NODE_ATTRSET:
+      case NODE_IVAR:
+	return rb_eval(body);
+
+      default:
+	{
+	    int    state;
+	    VALUE *local_vars;
+
+	    sourcefile = body->file;
+	    PUSH_SCOPE();
+	    PUSH_TAG();
+
+	    if (body->nd_cnt > 0) {
+		local_vars = ALLOCA_N(VALUE, body->nd_cnt);
+		MEMZERO(local_vars, VALUE, body->nd_cnt);
+		the_scope->local_tbl = body->nd_tbl;
+		the_scope->local_vars = local_vars;
 	    }
 	    else {
-		Fail("too many arguments(%d)", len);
+		local_vars = the_scope->local_vars = Qnil;
+		the_scope->local_tbl  = Qnil;
 	    }
-	    break;
-	}
-    }
-    else {
-	int    state;
-	VALUE *local_vars;
+	    body = body->nd_body;
 
-	sourcefile = body->file;
-	PUSH_SCOPE();
-	PUSH_TAG();
-	if (body->nd_cnt > 0) {
-	    local_vars = (VALUE*)alloca(sizeof(VALUE)*body->nd_cnt);
-	    memset(local_vars, 0, sizeof(VALUE)*body->nd_cnt);
-	    the_scope->local_tbl = body->nd_tbl;
-	    the_scope->local_vars = local_vars;
-	}
-	else {
-	    local_vars = the_scope->local_vars = Qnil;
-	    the_scope->local_tbl  = Qnil;
-	}
-	body = body->nd_body;
-	if (nd_type(body) == NODE_BLOCK) {
-	    NODE *node = body->nd_head;
-	    NODE *local;
-	    int i;
+	    if (nd_type(body) == NODE_BLOCK) {
+		NODE *node = body->nd_head;
+		NODE *local;
+		int i;
 
-	    if (nd_type(node) != NODE_ARGS) {
-		Bug("no argument-node");
-	    }
+		if (nd_type(node) != NODE_ARGS) {
+		    Bug("no argument-node");
+		}
 
-	    body = body->nd_next;
-	    i = node->nd_cnt;
-	    if (i > argc || (node->nd_rest == -1 && i < argc))
-		Fail("Wrong # of arguments(%d for %d)", argc, i);
+		body = body->nd_next;
+		i = node->nd_cnt;
+		if (i > argc || (node->nd_rest == -1 && i < argc))
+		    Fail("Wrong # of arguments(%d for %d)", argc, i);
 
-	    if (local_vars) {
-		memcpy(local_vars, argv, argc*sizeof(VALUE));
-		if (node->nd_rest >= 0) {
-		    if (argc == 0)
-			local_vars[node->nd_rest] = ary_new();
-		    else
-			local_vars[node->nd_rest] = ary_new4(argc-i, argv+i);
+		if (local_vars) {
+		    if (i > 0) {
+			MEMCPY(local_vars, argv, VALUE, i);
+		    }
+		    if (node->nd_rest >= 0) {
+			if (argc == 0)
+			    local_vars[node->nd_rest] = ary_new();
+			else
+			    local_vars[node->nd_rest] = ary_new4(argc-i, argv+i);
+		    }
 		}
 	    }
-	}
-	state = EXEC_TAG();
-	if (state == 0) {
-	    result = rb_eval(body);
-	}
-	POP_TAG();
-	POP_SCOPE();
-	switch (state) {
-	  case 0:
-	    break;
-	  case TAG_CONTINUE:
-	    Fatal("unexpected continue");
-	    break;
-	  case TAG_BREAK:
-	    Fatal("unexpected break");
-	    break;
-	  case TAG_REDO:
-	    Fatal("unexpected redo");
-	    break;
-	  case TAG_RETRY:
-	    Fatal("retry outside of protect clause");
-	    break;
-	  case TAG_RETURN:
-	    result = last_val;
-	    break;
-	  default:
-	    JUMP_TAG(state);
+	    state = EXEC_TAG();
+	    if (state == 0) {
+		result = rb_eval(body);
+	    }
+	    POP_TAG();
+	    if (!(the_scope->flags & SCOPE_MALLOCED)) {
+		the_scope->local_vars = Qnil;
+		the_scope->local_tbl  = Qnil;
+	    }
+	    POP_SCOPE();
+	    switch (state) {
+	      case 0:
+		break;
+	      case TAG_CONTINUE:
+		Fatal("unexpected continue");
+		break;
+	      case TAG_BREAK:
+		Fatal("unexpected break");
+		break;
+	      case TAG_REDO:
+		Fatal("unexpected redo");
+		break;
+	      case TAG_RETRY:
+		Fatal("retry outside of protect clause");
+		break;
+	      case TAG_RETURN:
+		result = last_val;
+		break;
+	      default:
+		JUMP_TAG(state);
+	    }
 	}
     }
     POP_ENV();
     POP_SELF();
     POP_ITER();
-
     return result;
 }
 
@@ -1806,17 +1900,25 @@ rb_apply(recv, mid, args)
     struct RArray *args;
     ID mid;
 {
-    return rb_call(CLASS_OF(recv), recv, mid, -2, (VALUE*)args, 1, 0);
+    int argc;
+    VALUE *argv;
+
+    argc = RARRAY(args)->len;
+    argv = ALLOCA_N(VALUE, argc);
+    MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 1);
 }
 
 static VALUE
-Fapply(recv, args)
-    VALUE recv, args;
+Fapply(argc, argv, recv)
+    int argc;
+    VALUE *argv;
+    VALUE recv;
 {
     VALUE vid, rest;
     ID mid;
 
-    rb_scan_args(args, "1*", &vid, &rest);
+    rb_scan_args(argc, argv, "1*", &vid, &rest);
     if (TYPE(vid) == T_STRING) {
 	mid = rb_intern(RSTRING(vid)->ptr);
     }
@@ -1841,7 +1943,7 @@ rb_funcall(recv, mid, n, va_alist)
     if (n > 0) {
 	int i;
 
-	argv = (VALUE*)alloca(sizeof(VALUE)*n);
+	argv = ALLOCA_N(VALUE, n);
 
 	va_start(ar);
 	for (i=0;i<n;i++) {
@@ -1853,7 +1955,7 @@ rb_funcall(recv, mid, n, va_alist)
 	argv = Qnil;
     }
 
-    return rb_call(CLASS_OF(recv), recv, mid, n, argv, 1, 0);
+    return rb_call(CLASS_OF(recv), recv, mid, n, argv, 1);
 }
 
 int rb_in_eval = 0;
@@ -1932,7 +2034,7 @@ find_file(file)
 
     found = dln_find_file(file, path);
     if (found == Qnil) Fail("No such file to load -- %s", file);
-    
+
     return found;
 }
 
@@ -1944,7 +2046,7 @@ Fload(obj, fname)
     int state, in_eval = rb_in_eval;
     NODE *node;
     char *file;
-    
+
     Check_Type(fname, T_STRING);
     file = find_file(fname->ptr);
 
@@ -1953,15 +2055,15 @@ Fload(obj, fname)
 	static int rb_dln_init = 0;
 	extern char *rb_dln_argv0;
 	int len = strlen(file);
-	
+
 	if (len > 2 && file[len-1] == 'o' && file[len-2] == '.') {
 	    if (rb_dln_init == 0 && dln_init(rb_dln_argv0) == -1) {
 		Fail("%s: %s", rb_dln_argv0, dln_strerror());
 	    }
-	    
+
 	    if (dln_load(file) == -1)
 		Fail(dln_strerror());
-	    
+
 	    return TRUE;
 	}
     }
@@ -2069,11 +2171,37 @@ Init_load()
 
 Init_eval()
 {
+    match = rb_intern("=~");
+    each = rb_intern("each");
+
+    aref = rb_intern("[]");
+    aset = rb_intern("[]=");
+
+    rb_global_variable(&top_scope);
     rb_global_variable(&eval_tree);
-    rb_define_private_method(C_Kernel, "exit", Fexit, -2);
+    rb_define_private_method(C_Kernel, "exit", Fexit, -1);
     rb_define_private_method(C_Kernel, "eval", Feval, 1);
     rb_define_private_method(C_Kernel, "iterator_p", Fiterator_p, 0);
-    rb_define_method(C_Kernel, "apply", Fapply, -2);
+    rb_define_method(C_Kernel, "apply", Fapply, -1);
+}
+
+void
+scope_dup(scope)
+    struct SCOPE *scope;
+{
+    ID *tbl;
+    VALUE *vars;
+
+    if (scope->flags & SCOPE_MALLOCED) return;
+    if (!scope->local_tbl) return;
+
+    tbl = scope->local_tbl;
+    scope->local_tbl = ALLOC_N(ID, tbl[0]+1);
+    MEMCPY(scope->local_tbl, tbl, ID, tbl[0]+1);
+    vars = scope->local_vars;
+    scope->local_vars = ALLOC_N(VALUE, tbl[0]);
+    MEMCPY(scope->local_vars, vars, VALUE, tbl[0]);
+    scope->flags |= SCOPE_MALLOCED;
 }
 
 VALUE C_Block;
@@ -2083,8 +2211,8 @@ static void
 blk_mark(data)
     struct BLOCK *data;
 {
-    gc_mark_scope(&data->scope);
-    gc_mark(data->env.arg_ary);
+    gc_mark_env(&data->env);
+    gc_mark(data->scope);
     gc_mark(data->var);
     gc_mark(data->body);
     gc_mark(data->self);
@@ -2094,8 +2222,7 @@ static void
 blk_free(data)
     struct BLOCK *data;
 {
-    free(data->scope.local_tbl);
-    free(data->scope.local_vars);
+    free(data->env.argv);
 }
 
 static VALUE
@@ -2104,8 +2231,6 @@ Sblk_new(class)
     VALUE blk;
     struct BLOCK *data;
     struct SCOPE *scope;
-    ID *tbl;
-    int len;
 
     if (!iterator_p() && !Fiterator_p()) {
 	Fail("tryed to create Block out of iterator");
@@ -2115,30 +2240,12 @@ Sblk_new(class)
     blk = obj_alloc(class);
 
     Make_Data_Struct(blk, blkdata, struct BLOCK, Qnil, blk_free, data);
-    memcpy(data, the_block, sizeof(struct BLOCK));
-    scope = the_scope;
-    tbl = data->scope.local_tbl;
-    len = tbl ? tbl[0] : 0;
-    
-    while (scope && scope->local_tbl != tbl)
-	scope = scope->prev;
+    MEMCPY(data, the_block, struct BLOCK, 1);
 
-    if (!scope) {
-	Bug("non-existing scope");
-    }
-    if (scope->var_ary == Qnil) {
-	scope->var_ary = ary_new4(len, scope->local_vars);
-	scope->local_vars = RARRAY(scope->var_ary)->ptr;
-    }
-    data->scope.local_vars = scope->local_vars;
-    data->scope.var_ary = scope->var_ary;
+    data->env.argv = ALLOC_N(VALUE, data->env.argc);
+    MEMCPY(data->env.argv, the_block->env.argv, VALUE, data->env.argc); 
 
-    if (len > 0) {
-	len++;
-	tbl = ALLOC_N(ID, len);
-	memcpy(tbl, data->scope.local_tbl, sizeof(ID)*len);
-	data->scope.local_tbl = tbl;
-    }
+    scope_dup(data->scope);
 
     the_block->block = blk;
     return blk;
@@ -2171,7 +2278,7 @@ Fblk_do(blk, args)
 
     /* PUSH BLOCK from data */
     PUSH_BLOCK2(data);
-    PUSH_ITER(1);
+    PUSH_ITER(ITER_CUR);
     PUSH_TAG();
 
     state = EXEC_TAG();

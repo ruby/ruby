@@ -3,7 +3,7 @@
   socket.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:18 $
+  $Date: 1995/01/10 10:42:55 $
   created at: Thu Mar 31 12:21:29 JST 1994
 
 ************************************************/
@@ -48,14 +48,16 @@ sock_new(class, fd)
 }
 
 static VALUE
-Fbsock_shutdown(sock, args)
-    VALUE sock, args;
+Fbsock_shutdown(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
 {
     VALUE howto;
     int how;
     OpenFile *fptr;
 
-    rb_scan_args(args, "01", &howto);
+    rb_scan_args(argc, argv, "01", &howto);
     if (howto == Qnil)
 	how = 2;
     else {
@@ -235,12 +237,14 @@ Stcp_sock_open(class, host, serv)
 }
 
 static VALUE
-Stcp_svr_open(class, args)
-    VALUE class, args;
+Stcp_svr_open(argc, argv, class)
+    int argc;
+    VALUE *argv;
+    VALUE class;
 {
     VALUE arg1, arg2;
 
-    if (rb_scan_args(args, "11", &arg1, &arg2) == 2)
+    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2)
 	return open_inet(class, arg1, arg2, 1);
     else
 	return open_inet(class, Qnil, arg1, 1);
@@ -618,8 +622,10 @@ Fsock_accept(sock)
 }
 
 static VALUE
-Fsock_send(sock, args)
-    VALUE sock, args;
+Fsock_send(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
 {
     struct RString *msg, *to;
     VALUE flags;
@@ -627,7 +633,7 @@ Fsock_send(sock, args)
     FILE *f;
     int fd, n;
 
-    rb_scan_args(args, "21", &msg, &flags, &to);
+    rb_scan_args(argc, argv, "21", &msg, &flags, &to);
 
     Check_Type(msg, T_STRING);
 
@@ -649,8 +655,10 @@ Fsock_send(sock, args)
 }
 
 static VALUE
-sock_recv(sock, args, from)
-    VALUE sock, args;
+sock_recv(sock, argc, argv, from)
+    VALUE sock;
+    int argc;
+    VALUE *argv;
     int from;
 {
     OpenFile *fptr;
@@ -661,7 +669,7 @@ sock_recv(sock, args, from)
     VALUE len, flg;
     int flags;
 
-    rb_scan_args(args, "11", &len, &flg);
+    rb_scan_args(argc, argv, "11", &len, &flg);
 
     if (flg == Qnil) flags = 0;
     else             flags = NUM2INT(flg);
@@ -682,24 +690,28 @@ sock_recv(sock, args, from)
 }
 
 static VALUE
-Fsock_recv(sock, args)
-    VALUE sock, args;
+Fsock_recv(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
 {
-    return sock_recv(sock, args, 0);
+    return sock_recv(sock, argc, argv, 0);
 }
 
 static VALUE
-Fsock_recvfrom(sock, args)
-    VALUE sock, args;
+Fsock_recvfrom(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
 {
-    return sock_recv(sock, args, 1);
+    return sock_recv(sock, argc, argv, 1);
 }
 
 Init_Socket ()
 {
     C_BasicSocket = rb_define_class("BasicSocket", C_IO);
     rb_undef_method(C_BasicSocket, "new");
-    rb_define_method(C_BasicSocket, "shutdown", Fbsock_shutdown, -2);
+    rb_define_method(C_BasicSocket, "shutdown", Fbsock_shutdown, -1);
     rb_define_method(C_BasicSocket, "setopt", Fbsock_setopt, 3);
     rb_define_method(C_BasicSocket, "getopt", Fbsock_getopt, 2);
     rb_define_method(C_BasicSocket, "getsockname", Fbsock_getsockname, 0);
@@ -712,8 +724,8 @@ Init_Socket ()
     rb_define_method(C_TCPsocket, "peeraddr", Ftcp_peeraddr, 0);
 
     C_TCPserver = rb_define_class("TCPserver", C_TCPsocket);
-    rb_define_single_method(C_TCPserver, "open", Stcp_svr_open, -2);
-    rb_define_single_method(C_TCPserver, "new", Stcp_svr_open, -2);
+    rb_define_single_method(C_TCPserver, "open", Stcp_svr_open, -1);
+    rb_define_single_method(C_TCPserver, "new", Stcp_svr_open, -1);
     rb_define_method(C_TCPserver, "accept", Ftcp_accept, 0);
 
     C_UNIXsocket = rb_define_class("UNIXsocket", C_BasicSocket);
@@ -738,9 +750,9 @@ Init_Socket ()
     rb_define_method(C_Socket, "listen", Fsock_listen, 1);
     rb_define_method(C_Socket, "accept", Fsock_accept, 0);
 
-    rb_define_method(C_Socket, "send", Fsock_send, -2);
-    rb_define_method(C_Socket, "recv", Fsock_recv, -2);
-    rb_define_method(C_Socket, "recvfrom", Fsock_recv, -2);
+    rb_define_method(C_Socket, "send", Fsock_send, -1);
+    rb_define_method(C_Socket, "recv", Fsock_recv, -1);
+    rb_define_method(C_Socket, "recvfrom", Fsock_recv, -1);
 
     rb_define_single_method(C_Socket, "socketpair", Ssock_socketpair, 3);
 }

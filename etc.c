@@ -3,7 +3,7 @@
   etc.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:29:57 $
+  $Date: 1995/01/10 10:42:32 $
   created at: Tue Mar 22 18:39:19 JST 1994
 
 ************************************************/
@@ -60,14 +60,16 @@ setup_passwd(pwd)
 }
 
 static VALUE
-Fetc_getpwuid(obj, args)
-    VALUE obj, args;
+Fetc_getpwuid(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE id;
     int uid;
     struct passwd *pwd;
 
-    if (rb_scan_args(args, "01", &id) == 1) {
+    if (rb_scan_args(argc, argv, "01", &id) == 1) {
 	uid = NUM2INT(id);
     }
     else {
@@ -180,7 +182,7 @@ Init_Etc()
 
     rb_define_module_function(M_Etc, "getlogin", Fetc_getlogin, 0);
 
-    rb_define_module_function(M_Etc, "getpwuid", Fetc_getpwuid, -2);
+    rb_define_module_function(M_Etc, "getpwuid", Fetc_getpwuid, -1);
     rb_define_module_function(M_Etc, "getpwnam", Fetc_getpwnam, 1);
     rb_define_module_function(M_Etc, "passwd", Fetc_passwd, 0);
 

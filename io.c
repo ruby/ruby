@@ -3,7 +3,7 @@
   io.c -
 
   $Author: matz $
-  $Date: 1994/12/19 08:30:05 $
+  $Date: 1995/01/10 10:42:39 $
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -110,7 +110,10 @@ Fio_eof(obj)
 	return FALSE;		/* this is the most usual case */
 #endif
 
+    TRAP_BEG;
     ch = getc(fptr->f);
+    TRAP_END;
+
     if (ch != EOF) {
 	(void)ungetc(ch, fptr->f);
 	return FALSE;
@@ -178,7 +181,9 @@ read_all(port)
 
     str = str_new(0, 0);
     for (;;) {
+	TRAP_BEG;
 	n = fread(buf, 1, BUFSIZ, fptr->f);
+	TRAP_END;
 	if (n == 0) {
 	    if (feof(fptr->f)) break;
 	    rb_sys_fail(Qnil);
@@ -189,14 +194,16 @@ read_all(port)
 }
 
 static VALUE
-Fio_read(obj, args)
-    VALUE obj, args;
+Fio_read(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     OpenFile *fptr;
     int n, lgt;
     VALUE len, str;
 
-    if (rb_scan_args(args, "01", &len) == 0) {
+    if (rb_scan_args(argc, argv, "01", &len) == 0) {
 	return read_all(obj);
     }
 
@@ -209,7 +216,9 @@ Fio_read(obj, args)
 
     str = str_new(0, lgt);
 
+    TRAP_BEG;
     n = fread(RSTRING(str)->ptr, 1, RSTRING(str)->len, fptr->f);
+    TRAP_END;
     if (n == 0) {
 	if (feof(fptr->f)) return Qnil;
 	rb_sys_fail(Qnil);
@@ -257,7 +266,9 @@ Fio_gets(obj)
 
     if (rslen == 0 && c == '\n') {
 	do {
+	    TRAP_BEG;
 	    c = getc(f);
+	    TRAP_END;
 	    if (c != '\n') {
 		ungetc(c,f);
 		break;
@@ -273,8 +284,11 @@ Fio_gets(obj)
 
       again:
 	bp = buf;
+
+	TRAP_BEG;
 	while ((c = getc(f)) != EOF && (*bp++ = c) != newline && bp < bpe)
 	    ;
+	TRAP_END;
 
 	if (c == EOF && !append && bp == buf) {
 	    str = Qnil;
@@ -307,7 +321,9 @@ Fio_gets(obj)
   return_gets:
     if (rslen == 0 && c == '\n') {
 	while (c != EOF) {
+	    TRAP_BEG;
 	    c = getc(f);
+	    TRAP_END;
 	    if (c != '\n') {
 		ungetc(c, f);
 		break;
@@ -350,7 +366,11 @@ Fio_each_byte(obj)
     f = fptr->f;
     if (f == NULL) Fail("closed stream");
 
-    while ((c = getc(f)) != EOF) {
+    for (;;) {
+	TRAP_BEG;
+	c = getc(f);
+	TRAP_END;
+	if (c == EOF) break;
 	rb_yield(INT2FIX(c & 0xff));
     }
     if (ferror(f) != 0) rb_sys_fail(Qnil);
@@ -372,7 +392,10 @@ Fio_getc(obj)
     f = fptr->f;
     if (f == NULL) Fail("closed stream");
 
+    TRAP_BEG;
     c = getc(f);
+    TRAP_END;
+
     if (c == EOF) {
 	if (ferror(f) != 0) rb_sys_fail(Qnil);
 	return Qnil;
@@ -458,7 +481,9 @@ Fio_sysread(obj, len)
 
     str = str_new(0, ilen);
 
+    TRAP_BEG;
     n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
+    TRAP_END;
 
     if (n == -1) rb_sys_fail(Qnil);
     if (n == 0) return Qnil;	/* EOF */
@@ -630,15 +655,17 @@ io_open(fname, mode)
 }
 
 static VALUE
-Fopen(self, args)
-    VALUE self, args;
+Fopen(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
     char *mode;
     VALUE port;
     int pipe = 0;
     VALUE pname, pmode;
 
-    rb_scan_args(args, "11", &pname, &pmode);
+    rb_scan_args(argc, argv, "11", &pname, &pmode);
     Check_Type(pname, T_STRING);
     if (pmode == Qnil) {
 	mode = "r";
@@ -671,22 +698,22 @@ Fprintf(argc, argv)
     else {
 	Fail("output must responds to `write'");
     }
-
     rb_funcall(out, id_write, 1, Fsprintf(argc, argv));
 
     return Qnil;
 }
 
 static VALUE
-Fprint(argc, argv)
+Fprint(argc, argv, self)
     int argc;
-    VALUE argv[];
+    VALUE *argv;
+    VALUE self;
 {
     int i;
 
     /* if no argument given, print recv */
     if (argc == 0) {
-	rb_funcall(Qself, id_print_on, 1, rb_defout);
+	rb_funcall(self, id_print_on, 1, rb_defout);
     }
     else {
 	for (i=0; i<argc; i++) {
@@ -928,8 +955,10 @@ struct timeval *time_timeval();
 #endif
 
 static VALUE
-Fselect(obj, args)
-    VALUE obj, args;
+Fselect(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE read, write, except, timeout, res, list;
     fd_set rset, wset, eset, pset;
@@ -939,7 +968,7 @@ Fselect(obj, args)
     int i, max = 0, n;
     int interrupt = 0;
 
-    rb_scan_args(args, "13", &read, &write, &except, &timeout);
+    rb_scan_args(argc, argv, argv, "13", &read, &write, &except, &timeout);
     if (timeout) {
 	tp = time_timeval(timeout);
     }
@@ -1008,7 +1037,10 @@ Fselect(obj, args)
     max++;
 
   retry:
-    if ((n = select(max, rp, wp, ep, tp)) < 0) {
+    TRAP_BEG;
+    n = select(max, rp, wp, ep, tp);
+    TRAP_END;
+    if (n < 0) {
 	if (errno == EINTR) {
 	    if (tp == NULL) goto retry;
 	    interrupt = 1;
@@ -1042,10 +1074,10 @@ Fselect(obj, args)
 	    list = RARRAY(res)->ptr[1];
 	    for (i=0; i< RARRAY(write)->len; i++) {
 		GetOpenFile(RARRAY(write)->ptr[i], fptr);
-		if (FD_ISSET(fileno(fptr->f), rp)) {
+		if (FD_ISSET(fileno(fptr->f), wp)) {
 		    ary_push(list, RARRAY(write)->ptr[i]);
 		}
-		else if (fptr->f2 && FD_ISSET(fileno(fptr->f2), rp)) {
+		else if (fptr->f2 && FD_ISSET(fileno(fptr->f2), wp)) {
 		    ary_push(list, RARRAY(write)->ptr[i]);
 		}
 	    }
@@ -1055,10 +1087,10 @@ Fselect(obj, args)
 	    list = RARRAY(res)->ptr[2];
 	    for (i=0; i< RARRAY(except)->len; i++) {
 		GetOpenFile(RARRAY(except)->ptr[i], fptr);
-		if (FD_ISSET(fileno(fptr->f), rp)) {
+		if (FD_ISSET(fileno(fptr->f), ep)) {
 		    ary_push(list, RARRAY(except)->ptr[i]);
 		}
-		else if (fptr->f2 && FD_ISSET(fileno(fptr->f2), rp)) {
+		else if (fptr->f2 && FD_ISSET(fileno(fptr->f2), ep)) {
 		    ary_push(list, RARRAY(except)->ptr[i]);
 		}
 	    }
@@ -1220,7 +1252,7 @@ Farg_read(obj)
     for (;;) {
       retry:
 	if (!next_argv()) return Qnil;
-	str2 = Fio_read(file, Qnil);
+	str2 = Fio_read(0, Qnil, file);
 	if (str2 == Qnil && next_p != -1) {
 	    Fio_close(file);
 	    next_p = 1;
@@ -1297,13 +1329,13 @@ Init_IO()
 
     rb_define_private_method(C_Kernel, "syscall", Fsyscall, -1);
 
-    rb_define_private_method(C_Kernel, "open", Fopen, -2);
+    rb_define_private_method(C_Kernel, "open", Fopen, -1);
     rb_define_private_method(C_Kernel, "printf", Fprintf, -1);
     rb_define_private_method(C_Kernel, "gets", Fgets, 0);
     rb_define_alias(C_Kernel,"readline", "gets");
     rb_define_private_method(C_Kernel, "eof", Feof, 0);
     rb_define_private_method(C_Kernel, "getc", Fgetc, 0);
-    rb_define_private_method(C_Kernel, "select", Fselect, -2);
+    rb_define_private_method(C_Kernel, "select", Fselect, -1);
 
     rb_define_private_method(C_Kernel, "readlines", Freadlines, 0);
 

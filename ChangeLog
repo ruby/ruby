@@ -1,3 +1,80 @@
+Tue Jan 10 00:58:20 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c: レシーバと引数は常にiterではない．
+
+	* cons.c(aref,aset): negative offset対応．
+
+Mon Jan  9 14:40:39 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: foo{..}の形式において，fooをローカル変数やクラス名では
+	  なく，引数なしの関数型メソッド呼び出しとみなすようにした．
+
+	* list.c -> cons.c: 名称変更(クラス名も)．
+
+	* list.c: a::b::c::nilをリスト(a b c)とみなすlisp形式から，a::b::c
+	  をリスト(a b c)とみなすruby形式に変更．[], []=, eachもそれに会わ
+	  せた仕様とする．
+
+	* list.c: consペアとしての機能を強調．仕様変更．
+
+Sat Jan  7 01:26:26 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c: 自己代入の不具合修正．
+
+	* eval.c(masign): 多重代入が配列もリストもとれるようにした．
+
+	* list.c: assocを2要素の配列からList(CONSペア)に変更した．
+
+Fri Jan  6 13:42:12 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: a[b]+=cやa.b+=cなどの自己代入形式で，aやbを2度評価しな
+	  くなった．
+
+	* eval.c: iterator設定のバグフィックス．
+
+	* list.c: Listクラスを新設．
+
+Thu Jan  5 13:55:00 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: SCOPEのメモリリークをなくした．
+
+	* eval.c: built-inメソッドへの引数の引き渡し方を変更して，配列の生
+	  成数を減らした．
+
+	* re.c: match-dataを毎回生成することをやめた．`$~'をアクセスした時
+	  にon-demandで生成する．
+
+	* string.c etc: 不必要なmemmoveをmemcpyに置換．
+
+	* parse.y: =~, !~は副作用があるのでコンパイル時に展開できない．
+
+Tue Jan  3 02:04:36 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c: rest引数のbug fix.
+
+	* eval.c,gc.c: scopeをオブジェクトにした．
+
+	* eval.c: envとscopeの扱いを変更した．
+
+Wed Dec 28 09:46:57 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: evalでローカル変数が追加された場合に対応した．
+
+	* parse.y: 演算子を含むaliasのbug fix.
+
+Tue Dec 27 16:45:20 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: def A Bをalias A Bに変更．
+
+	* eval.c: alias関係のbug修正．nodeをオブジェクト化した時にenbugし
+	  たようだ．
+
+	* signal.c: システムコールの再定義を止めた．
+
+	* io.c(select): write/exceptのフラグ設定にバグ．
+
+	* Makefile.in: static link用オプションをMake変数として独立させた．
+
 Tue Dec 20 00:46:19 1994  Yukihiro Matsumoto  (matz@dyna)
 
 	* 0.63 released

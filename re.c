@@ -3,7 +3,7 @@
   re.c -
 
   $Author: matz $
-  $Date: 1994/12/19 08:30:12 $
+  $Date: 1995/01/10 10:42:49 $
   created at: Mon Aug  9 18:24:49 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -101,7 +101,7 @@ int len;
     */
 
     rp = ALLOC(Regexp);
-    memset((char *)rp, 0, sizeof(Regexp));
+    MEMZERO((char *)rp, Regexp, 1);
     rp->pat.buffer = ALLOC_N(char, 16);
     rp->pat.allocated = 16;
     rp->pat.fastmap = ALLOC_N(char, 256);
@@ -117,14 +117,7 @@ struct match {
     struct re_registers regs;
 };
 
-static void
-free_match(data)
-    struct match *data;
-{
-    free(data->ptr);
-}
-
-VALUE last_match_data;
+struct match last_match;
 
 int
 research(reg, str, start, ignorecase)
@@ -148,20 +141,16 @@ research(reg, str, start, ignorecase)
 		       start, str->len - start, &(reg->ptr->regs));
 
     if (result >= 0) {
-	struct RData *obj;
-	struct match *data;
-	int beg, i;
-
-	data = ALLOC(struct match);
-	obj = (struct RData*)data_new(data, free_match, Qnil);
-
-	data->len = str->len;
-	data->ptr = ALLOC_N(char, str->len+1);
-	memcpy(data->ptr, str->ptr, data->len);
-	data->ptr[data->len] = '\0';
-	data->regs = reg->ptr->regs;
-
-	last_match_data = (VALUE)obj;
+	last_match.len = str->len;
+	if (last_match.ptr == Qnil) {
+	    last_match.ptr = ALLOC_N(char, str->len+1);
+	}
+	else {
+	    REALLOC_N(last_match.ptr, char, str->len+1);
+	}
+	memcpy(last_match.ptr, str->ptr, last_match.len);
+	last_match.ptr[last_match.len] = '\0';
+	last_match.regs = reg->ptr->regs;
     }
 
     return result;
@@ -171,21 +160,16 @@ static VALUE
 nth_match(nth)
     int nth;
 {
-    if (nth >= RE_NREGS) {
-	Fail("argument out of range %d, %d", nth, RE_NREGS);
-    }
-    if (last_match_data) {
-	int start, end, len;
-	struct match *match;
+    int start, end, len;
 
-	match = (struct match*)DATA_PTR(last_match_data);
-	start = match->regs.start[nth];
-	if (start == -1) return Qnil;
-	end   = match->regs.end[nth];
-	len = end - start;
-	return str_new(match->ptr + start, len);
+    if (nth >= RE_NREGS) {
+	Fail("match out of range %d, %d", nth, RE_NREGS);
     }
-    return Qnil;
+    start = last_match.regs.start[nth];
+    if (start == -1) return Qnil;
+    end = last_match.regs.end[nth];
+    len = end - start;
+    return str_new(last_match.ptr + start, len);
 }
 
 VALUE
@@ -200,10 +184,8 @@ re_match_pre()
 {
     struct match *match;
 
-    if (!last_match_data) return Qnil;
-
-    match = (struct match*)DATA_PTR(last_match_data);
-    return str_new(match->ptr, match->regs.start[0]);
+    if (last_match.regs.start[0] == -1) return Qnil;
+    return str_new(last_match.ptr, last_match.regs.start[0]);
 }
 
 static VALUE
@@ -211,10 +193,9 @@ re_match_post()
 {
     struct match *match;
 
-    if (!last_match_data) return Qnil;
-
-    match = (struct match*)DATA_PTR(last_match_data);
-    return str_new(match->ptr+match->regs.end[0], match->ptr+match->len);
+    if (last_match.regs.start[0] == -1) return Qnil;
+    return str_new(last_match.ptr+last_match.regs.end[0], 
+		   last_match.len-last_match.regs.end[0]);
 }
 
 static VALUE
@@ -223,14 +204,13 @@ re_match_last()
     struct match *match;
     int i;
 
-    if (!last_match_data) return Qnil;
+    if (last_match.regs.start[0] == -1) return Qnil;
 
-    match = (struct match*)DATA_PTR(last_match_data);
     for (i=0; i<RE_NREGS; i++) {
-	if (match->regs.start[i] == -1) break;
+	if (last_match.regs.start[i] == -1) break;
     }
-    i--;
-    return nth_match(i);
+    if (i == RE_NREGS) return Qnil;
+    return nth_match(i-1);
 }
 
 static VALUE
@@ -241,11 +221,55 @@ get_match_data(id, nth)
     return nth_match(nth);
 }
 
+static void
+free_match(data)
+    struct match *data;
+{
+    free(data->ptr);
+}
+
 static VALUE
-store_match_data(val)
+get_match()
+{
+    struct match *data;
+    int beg, i;
+
+    data = ALLOC(struct match);
+
+    data->len = last_match.len;
+    data->ptr = ALLOC_N(char, last_match.len+1);
+    memcpy(data->ptr, last_match.ptr, data->len+1);
+    data->regs = last_match.regs;
+
+    return data_new(data, free_match, Qnil);
+}
+
+static VALUE
+set_match(val)
     struct RArray *val;
 {
+    struct match *match;
+
     Check_Type(val, T_DATA);
+    match = (struct match*)DATA_PTR(val);
+    last_match.len = match->len;
+    if (last_match.len == 0) {
+	if (last_match.ptr) {
+	    free(last_match.ptr);
+	    last_match.ptr = Qnil;
+	}
+    }
+    else {
+	if (last_match.ptr == Qnil) {
+	    last_match.ptr = ALLOC_N(char, match->len+1);
+	}
+	else {
+	    REALLOC_N(last_match.ptr, char, match->len+1);
+	}
+    }
+    memcpy(last_match.ptr, match->ptr, last_match.len+1);
+    last_match.regs = match->regs;
+
     return (VALUE)val;
 }
 
@@ -340,9 +364,10 @@ Freg_match2(re)
 }
 
 static VALUE
-Sreg_new(argc, argv)
+Sreg_new(argc, argv, self)
     int argc;
     VALUE *argv;
+    VALUE self;
 {
     VALUE src, reg;
 
@@ -353,10 +378,10 @@ Sreg_new(argc, argv)
     src = argv[0];
     switch (TYPE(src)) {
       case T_STRING:
-	reg = regexp_new_1(Qself, RREGEXP(src)->ptr, RREGEXP(src)->len);
+	reg = regexp_new_1(self, RREGEXP(src)->ptr, RREGEXP(src)->len);
 
       case T_REGEXP:
-	reg = regexp_new_1(Qself, RREGEXP(src)->str, RREGEXP(src)->len);
+	reg = regexp_new_1(self, RREGEXP(src)->str, RREGEXP(src)->len);
 
       default:
 	Check_Type(src, T_STRING);
@@ -417,15 +442,13 @@ re_regsub(str)
 	if (no < 0) {   /* Ordinary character. */
 	    if (c == '\\' && (*s == '\\' || *s == '&'))
 		p = ++s;
-	} else if (last_match_data) {
-	    struct match *match;
+	} else {
 
-#define BEG(no) match->regs.start[no]
-#define END(no) match->regs.end[no]
+#define BEG(no) last_match.regs.start[no]
+#define END(no) last_match.regs.end[no]
 
-	    match = (struct match*)DATA_PTR(last_match_data);
 	    if (BEG(no) == -1) continue;
-	    str_cat(val, match->ptr+BEG(no), END(no)-BEG(no));
+	    str_cat(val, last_match.ptr+BEG(no), END(no)-BEG(no));
 	}
     }
 
@@ -491,12 +514,18 @@ kanji_var_set(val)
 void
 Init_Regexp()
 {
+    int i;
+
     obscure_syntax = RE_NO_BK_PARENS | RE_NO_BK_VBAR
 	| RE_CONTEXT_INDEP_OPS | RE_INTERVALS
 	| RE_NO_BK_CURLY_BRACES
 	| RE_MBCTYPE_EUC;
 
-    rb_define_variable("$~", last_match_data, Qnil, store_match_data, 0);
+    for (i=0; i<RE_NREGS; i++) {
+	last_match.regs.start[i] = last_match.regs.end[i] = -1;
+    }
+
+    rb_define_variable("$~", Qnil, get_match, set_match, 0);
 
     rb_define_variable("$&", Qnil, re_last_match, Qnil, 0);
     rb_define_variable("$`", Qnil, re_match_pre,  Qnil, 0);

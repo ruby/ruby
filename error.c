@@ -3,7 +3,7 @@
   error.c -
 
   $Author: matz $
-  $Date: 1994/11/22 01:22:31 $
+  $Date: 1995/01/10 10:42:31 $
   created at: Mon Aug  9 16:11:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -159,11 +159,15 @@ static char *builtin_types[] = {
     "Regexp",
     "Array",
     "Fixnum",
-    "Dictionary",
+    "Dict",
     "Data",
     "Method",
     "Struct",
     "Bignum",
+    "Node",
+    "Scope",
+    "Cons",
+    "Data",
 };
 
 WrongType(x, t)

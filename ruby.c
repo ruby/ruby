@@ -3,7 +3,7 @@
   ruby.c -
 
   $Author: matz $
-  $Date: 1994/12/19 08:30:13 $
+  $Date: 1995/01/10 10:42:51 $
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -13,7 +13,7 @@
 #include "ruby.h"
 #include "re.h"
 #include <stdio.h>
-#include <sys/fcntl.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>

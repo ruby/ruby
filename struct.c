@@ -3,7 +3,7 @@
   struct.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:26 $
+  $Date: 1995/01/10 10:43:02 $
   created at: Tue Mar 22 18:44:30 JST 1994
 
 ************************************************/
@@ -97,28 +97,27 @@ struct_new(name, va_alist)
     return st;
 }
 
-#define ASSOC_KEY(a) RARRAY(a)->ptr[0]
-#define ASSOC_VAL(a) RARRAY(a)->ptr[1]
+#define ASSOC_KEY(a) RCONS(a)->car
+#define ASSOC_VAL(a) RCONS(a)->cdr
 
 static VALUE
-Sstruct_new(class, args)
-    VALUE class, args;
+Sstruct_new(argc, argv, class)
+    int argc;
+    VALUE *argv;
+    VALUE class;
 {
     VALUE name, st;
     struct RArray *tbl;
     int i, max;
 
-    rb_scan_args(args, "1*", &name, &tbl);
+    rb_scan_args(argc, argv, "1*", &name, &tbl);
     Check_Type(name, T_STRING);
 
     st = struct_alloc(class, RSTRING(name)->ptr);
     for (i=0, max=tbl->len; i<max; i++) {
 	VALUE assoc = tbl->ptr[i];
 
-	Check_Type(assoc, T_ARRAY);
-	if (RARRAY(assoc)->len != 2) {
-	    Fail("args must be pairs");
-	}
+	Check_Type(assoc, T_CONS);
 	Check_Type(ASSOC_KEY(assoc), T_STRING);
 	struct_add(st, RSTRING(ASSOC_KEY(assoc))->ptr, ASSOC_VAL(assoc));
     }
@@ -183,7 +182,7 @@ Fstruct_to_s(s)
 {
     char *buf;
 
-    buf = (char*)alloca(strlen(s->name) + sizeof(HDR) + 1);
+    buf = ALLOCA_N(char, strlen(s->name)+sizeof(HDR)+1);
     sprintf(buf, "%s%s", HDR, s->name);
     return str_new2(buf);
 }
@@ -238,7 +237,7 @@ Fstruct_clone(s)
     CLONESETUP(st, s);
     st->len = s->len;
     st->tbl = ALLOC_N(struct kv_pair, s->len);
-    memcpy(st->tbl, s->tbl, sizeof(struct kv_pair) * st->len);
+    MEMCPY(st->tbl, s->tbl, struct kv_pair, st->len);
     RBASIC(st)->class = single_class_clone(RBASIC(s)->class);
     return (VALUE)st;
 }
@@ -248,7 +247,7 @@ Init_Struct()
     C_Struct = rb_define_class("Struct", C_Object);
     rb_include_module(C_Struct, M_Enumerable);
 
-    rb_define_single_method(C_Struct, "new", Sstruct_new, -2);
+    rb_define_single_method(C_Struct, "new", Sstruct_new, -1);
     rb_define_method(C_Struct, "clone", Fstruct_clone, 0);
 
     rb_define_method(C_Struct, "to_s", Fstruct_to_s, 0);

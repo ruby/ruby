@@ -3,7 +3,7 @@
   enum.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:29:56 $
+  $Date: 1995/01/10 10:42:29 $
   created at: Fri Oct  1 15:15:19 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -13,7 +13,7 @@
 #include "ruby.h"
 
 VALUE M_Enumerable;
-static ID id_each, id_match, id_equal, id_cmp;
+static ID id_each, id_match, id_cmp;
 
 void
 rb_each(obj)
@@ -235,7 +235,7 @@ enum_index(item, iv)
     VALUE item;
     struct i_v_pair *iv;
 {
-    if (rb_funcall(item, id_equal, 1, iv->v)) {
+    if (rb_equal(item, 1, iv->v)) {
 	iv->found = 1;
 	rb_break();
     }
@@ -263,7 +263,7 @@ enum_includes(item, iv)
     VALUE item;
     struct i_v_pair *iv;
 {
-    if (rb_funcall(item, id_equal, 1, iv->v)) {
+    if (rb_equal(item, iv->v)) {
 	iv->i = 1;
 	rb_break();
     }
@@ -282,6 +282,24 @@ Fenum_includes(obj, val)
     return FALSE;
 }
 
+static void
+enum_length(i, length)
+    VALUE i;
+    int *length;
+{
+    (*length)++;
+}
+
+static VALUE
+Fenum_length(obj)
+    VALUE obj;
+{
+    int length = 0;
+
+    rb_iterate(rb_each, obj, enum_length, &length);
+    return INT2FIX(length);
+}
+
 Init_Enumerable()
 {
     M_Enumerable = rb_define_module("Enumerable");
@@ -297,9 +315,9 @@ Init_Enumerable()
     rb_define_method(M_Enumerable,"max", Fenum_max, 0);
     rb_define_method(M_Enumerable,"index", Fenum_index, 1);
     rb_define_method(M_Enumerable,"includes", Fenum_includes, 1);
+    rb_define_method(M_Enumerable,"length", Fenum_length, 0);
 
     id_each = rb_intern("each");
     id_match = rb_intern("=~");
-    id_equal = rb_intern("==");
     id_cmp   = rb_intern("<=>");
 }

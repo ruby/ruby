@@ -3,7 +3,7 @@
   dbm.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:29:52 $
+  $Date: 1995/01/10 10:42:24 $
   created at: Mon Jan 24 15:59:52 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -15,7 +15,7 @@
 #ifdef USE_DBM
 
 #include <ndbm.h>
-#include <sys/fcntl.h>
+#include <fcntl.h>
 #include <errno.h>
 
 VALUE C_DBM;
@@ -50,15 +50,17 @@ free_dbm(dbmp)
 }
 
 static VALUE
-Sdbm_open(class, args)
-    VALUE class, args;
+Sdbm_open(argc, argv, class)
+    int argc;
+    VALUE *argv;
+    VALUE class;
 {
     VALUE file, vmode;
     DBM *dbm, **dbm2;
     int mode;
     VALUE obj;
 
-    if (rb_scan_args(args, "11", &file, &vmode) == 1) {
+    if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
 	mode = 0666;		/* default value */
     }
     else if (NIL_P(vmode)) {
@@ -389,7 +391,7 @@ Init_DBM()
     C_DBM = rb_define_class("DBM", C_Object);
     rb_include_module(C_DBM, M_Enumerable);
 
-    rb_define_single_method(C_DBM, "open", Sdbm_open, -2);
+    rb_define_single_method(C_DBM, "open", Sdbm_open, -1);
     rb_define_method(C_DBM, "close", Fdbm_close, 0);
     rb_define_method(C_DBM, "[]", Fdbm_fetch, 1);
     rb_define_method(C_DBM, "[]=", Fdbm_store, 2);

@@ -3,7 +3,7 @@
   variable.c -
 
   $Author: matz $
-  $Date: 1994/12/20 05:07:14 $
+  $Date: 1995/01/10 10:43:03 $
   created at: Tue Apr 19 23:55:15 JST 1994
 
 ************************************************/
@@ -47,7 +47,7 @@ rb_name_class(class, id)
 }
 
 struct global_entry {
-    enum { GLOBAL_VAL, GLOBAL_VAR, GLOBAL_SYSVAR, GLOBAL_UNDEF } mode;
+    enum { GLOBAL_VAL, GLOBAL_VAR, GLOBAL_UNDEF } mode;
     ID id;
     union {
 	VALUE val;
@@ -68,7 +68,6 @@ mark_global_entry(key, entry)
 	gc_mark(entry->v.val);	/* normal global value */
 	break;
       case GLOBAL_VAR:
-      case GLOBAL_SYSVAR:
 	if (entry->v.var)
 	    gc_mark(*entry->v.var); /* c variable pointer */
 	break;
@@ -117,14 +116,14 @@ rb_define_variable(name, var, get_hook, set_hook, data)
 
     if (name[0] == '$') id = rb_intern(name);
     else {
-	char *buf = (char*)alloca(strlen(name)+2);
+	char *buf = ALLOCA_N(char, strlen(name)+2);
 	buf[0] = '$';
 	strcpy(buf+1, name);
 	id = rb_intern(buf);
     }
 
     entry = rb_global_entry(id);
-    entry->mode = GLOBAL_SYSVAR;
+    entry->mode = GLOBAL_VAR;
     entry->v.var = var;
     entry->get_hook = get_hook;
     entry->set_hook = set_hook;
@@ -143,7 +142,7 @@ rb_define_varhook(name, get_hook, set_hook, data)
 
     if (name[0] == '$') id = rb_intern(name);
     else {
-	char *buf = (char*)alloca(strlen(name)+2);
+	char *buf = ALLOCA_N(char, strlen(name)+2);
 	buf[0] = '$';
 	strcpy(buf+1, name);
 	id = rb_intern(buf);
@@ -199,7 +198,6 @@ rb_gvar_get(entry)
 	return entry->v.val;
 
       case GLOBAL_VAR:
-      case GLOBAL_SYSVAR:
 	if (entry->v.var == Qnil) return val;
 	return *entry->v.var;
 
@@ -271,17 +269,18 @@ rb_gvar_set(entry, val)
     if (entry->set_hook)
 	(*entry->set_hook)(val, entry->id, entry->data);
 
-    if (entry->mode == GLOBAL_VAR || entry->mode == GLOBAL_SYSVAR) {
-	if (entry->v.var == Qnil) {
-	    rb_readonly_hook(val, entry->id);
+    if (entry->mode == GLOBAL_VAR) {
+	if (entry->v.var) {
+	    *entry->v.var = val;
 	}
-	return *entry->v.var = val;
     }
     else {
-	if (entry->mode == GLOBAL_UNDEF)
+	if (entry->mode == GLOBAL_UNDEF) {
 	    entry->mode = GLOBAL_VAL;
-	return entry->v.val = val;
+	}
+	entry->v.val = val;
     }
+    return val;
 }
 
 VALUE
@@ -377,54 +376,4 @@ rb_iv_set(obj, name, val)
     ID id = rb_intern(name);
 
     return rb_ivar_set_1(obj, id, val);
-}
-
-VALUE
-Fdefined(obj, name)
-    VALUE obj;
-    struct RString *name;
-{
-    ID id;
-    struct global_entry *entry;
-
-    if (FIXNUM_P(name)) {
-	id = FIX2INT(name);
-    }
-    else {
-	Check_Type(name, T_STRING);
-	id = rb_intern(name->ptr);
-    }
-
-    if (id == rb_intern("nil") || id == rb_intern("self")) return TRUE;
-
-    switch (id & ID_SCOPE_MASK) {
-      case ID_GLOBAL:
-	if (st_lookup(global_tbl, id, &entry) && entry->mode != GLOBAL_UNDEF)
-	    return TRUE;
-	break;
-
-      case ID_INSTANCE:
-	if (TYPE(Qself) != T_OBJECT || instance_tbl == Qnil) break;
-	if (st_lookup(instance_tbl, id, Qnil)) return TRUE;
-	break;
-
-      case ID_CONST:
-	return const_bound(CLASS_OF(Qself), id);
-	break;
-
-      default:
-	{
-	    int i, max;
-
-	    if (the_scope->local_tbl) {
-		for (i=1, max=the_scope->local_tbl[0]+1; i<max; i++) {
-		    if (the_scope->local_tbl[i] == id) return TRUE;
-		}
-	    }
-	}
-	if (st_lookup(class_tbl, id, Qnil)) return TRUE;
-	break;
-    }
-    return FALSE;
-
 }

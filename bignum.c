@@ -3,7 +3,7 @@
   bignum.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:29:49 $
+  $Date: 1995/01/10 10:42:19 $
   created at: Fri Jun 10 00:48:55 JST 1994
 
 ************************************************/
@@ -58,7 +58,7 @@ big_clone(x)
 {
     VALUE z = bignew_1(CLASS_OF(x), x->len, x->sign);
 
-    memcpy(BDIGITS(z), BDIGITS(x), x->len*sizeof(USHORT));
+    MEMCPY(BDIGITS(z), BDIGITS(x), USHORT, x->len);
     return (VALUE)z;
 }
 

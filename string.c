@@ -3,7 +3,7 @@
   string.c -
 
   $Author: matz $
-  $Date: 1994/12/09 09:40:28 $
+  $Date: 1995/01/10 10:43:01 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -105,7 +105,7 @@ Sstr_new(class, str)
 	str2->len = str->len;
 	str2->ptr = ALLOC_N(char, str->len+1);
 	if (str2->ptr) {
-	    memmove(str2->ptr, str->ptr, str->len);
+	    memcpy(str2->ptr, str->ptr, str->len);
 	}
 	str2->ptr[str->len] = '\0';
 	str2->orig = Qnil;
@@ -147,7 +147,7 @@ Fstr_times(str, times)
 
     str2 = (struct RString*)str_new(0, str->len*times);
     for (i=0; i<times; i++) {
-	memmove(str2->ptr+(i*str->len), str->ptr, str->len);
+	memcpy(str2->ptr+(i*str->len), str->ptr, str->len);
     }
     str2->ptr[str2->len] = '\0';
 
@@ -269,7 +269,7 @@ str_cat(str, ptr, len)
     if (len > 0) {
 	REALLOC_N(str->ptr, char, str->len + len + 1);
 	if (ptr)
-	    memmove(str->ptr + str->len, ptr, len);
+	    memcpy(str->ptr + str->len, ptr, len);
 	str->len += len;
 	str->ptr[str->len] = '\0'; /* sentinel */
     }
@@ -435,15 +435,16 @@ str_index(str, sub, offset)
 }
 
 static VALUE
-Fstr_index(str, args)
+Fstr_index(argc, argv, str)
+    int argc;
+    VALUE *argv;
     struct RString *str;
-    VALUE args;
 {
     struct RString *sub;
     VALUE initpos;
     int pos;
 
-    if (rb_scan_args(args, "11", &sub, &initpos) == 2) {
+    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
 	pos = NUM2INT(initpos);
     }
     else {
@@ -468,16 +469,17 @@ Fstr_index(str, args)
 }
 
 static VALUE
-Fstr_rindex(str, args)
+Fstr_rindex(argc, argv, str)
+    int argc;
+    VALUE *argv;
     struct RString *str;
-    VALUE args;
 {
     struct RString *sub;
     VALUE initpos;
     int pos, len;
     char *s, *sbeg, *t;
 
-    if (rb_scan_args(args, "11", &sub, &initpos) == 2) {
+    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
 	pos = NUM2INT(initpos);
 	if (pos >= str->len) pos = str->len;
     }
@@ -543,7 +545,7 @@ Fstr_next(orig)
     if (s < sbeg && c != -1) {
 	str2 = (struct RString*)str_new(0, str->len+1);
 	str2->ptr[0] = c;
-	memmove(str2->ptr+1, str->ptr, str->len);
+	memcpy(str2->ptr+1, str->ptr, str->len);
 	str = str2;
     }
 
@@ -617,13 +619,14 @@ Fstr_aref_internal(str, indx)
 }
 
 static VALUE
-Fstr_aref(str, args)
+Fstr_aref(argc, argv, str)
+    int argc;
+    VALUE *argv;
     struct RString *str;
-    VALUE args;
 {
     VALUE arg1, arg2;
 
-    if (rb_scan_args(args, "11", &arg1, &arg2) == 2) {
+    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
 	return str_substr(str, NUM2INT(arg1), NUM2INT(arg2));
     }
     return Fstr_aref_internal(str, arg1);
@@ -640,7 +643,7 @@ str_replace(str, beg, len, val)
     }
 
     memmove(str->ptr+beg+val->len, str->ptr+beg+len, str->len-(beg+len));
-    memmove(str->ptr+beg, val->ptr, val->len);
+    memcpy(str->ptr+beg, val->ptr, val->len);
     str->len += val->len - len;
     str->ptr[str->len] = '\0';
 }
@@ -752,15 +755,16 @@ Fstr_aset_internal(str, indx, val)
 }
 
 static VALUE
-Fstr_aset(str, args)
+Fstr_aset(argc, argv, str)
+    int argc;
+    VALUE *argv;
     struct RString *str;
-    VALUE args;
 {
     VALUE arg1, arg2, arg3;
 
     str_modify(str);
 
-    if (rb_scan_args(args, "21", &arg1, &arg2, &arg3) == 3) {
+    if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
 	int beg, len;
 
 	Check_Type(arg3, T_STRING);
@@ -1222,13 +1226,14 @@ tr_squeeze(str1, str2)
 }
 
 static VALUE
-Fstr_squeeze(str1, args)
+Fstr_squeeze(argc, argv, str1)
+    int argc;
+    VALUE *argv;
     VALUE str1;
-    VALUE *args;
 {
     VALUE str2;
 
-    rb_scan_args(args, "01", &str2);
+    rb_scan_args(argc, argv, "01", &str2);
     if (str2) {
 	Check_Type(str2, T_STRING);
     }
@@ -1247,9 +1252,10 @@ Fstr_tr_s(str, src, repl)
 }
 
 static VALUE
-Fstr_split(str, args)
+Fstr_split(argc, argv, str)
+    int argc;
+    VALUE *argv;
     struct RString *str;
-    VALUE args;
 {
     extern VALUE FS;
     struct RRegexp *spat;
@@ -1258,7 +1264,7 @@ Fstr_split(str, args)
     int beg, end, lim, i;
     VALUE result, tmp;
 
-    rb_scan_args(args, "02", &spat, &limit);
+    rb_scan_args(argc, argv, "02", &spat, &limit);
     if (limit) {
 	lim = NUM2INT(limit);
 	i = 1;
@@ -1523,15 +1529,16 @@ Fstr_intern(str)
 }
 
 static VALUE
-Fstr_sum(str, args)
+Fstr_sum(argc, argv, str)
+    int argc;
+    VALUE *argv;
     struct RString *str;
-    VALUE args;
 {
     VALUE vbits;
     int   bits;
     char *p, *pend;
 
-    rb_scan_args(args, "01", &vbits);
+    rb_scan_args(argc, argv, "01", &vbits);
     if (vbits == Qnil) bits = 16;
     else bits = NUM2INT(vbits);
 
@@ -1640,16 +1647,16 @@ Init_String()
     rb_define_method(C_String, "+", Fstr_plus, 1);
     rb_define_method(C_String, "*", Fstr_times, 1);
     rb_define_method(C_String, "..", Fstr_dot2, 1);
-    rb_define_method(C_String, "[]", Fstr_aref, -2);
-    rb_define_method(C_String, "[]=", Fstr_aset, -2);
+    rb_define_method(C_String, "[]", Fstr_aref, -1);
+    rb_define_method(C_String, "[]=", Fstr_aset, -1);
     rb_define_method(C_String, "length", Fstr_length, 0);
     rb_define_alias(C_String,  "size", "length");
     rb_define_method(C_String, "=~", Fstr_match, 1);
     rb_define_method(C_String, "~", Fstr_match2, 0);
     rb_define_method(C_String, "next", Fstr_next, 0);
     rb_define_method(C_String, "upto", Fstr_next, 1);
-    rb_define_method(C_String, "index", Fstr_index, -2);
-    rb_define_method(C_String, "rindex", Fstr_rindex, -2);
+    rb_define_method(C_String, "index", Fstr_index, -1);
+    rb_define_method(C_String, "rindex", Fstr_rindex, -1);
 
     rb_define_method(C_String, "to_i", Fstr_to_i, 0);
     rb_define_method(C_String, "to_f", Fstr_to_f, 0);
@@ -1666,7 +1673,7 @@ Init_String()
 
     rb_define_method(C_String, "hex", Fstr_hex, 0);
     rb_define_method(C_String, "oct", Fstr_oct, 0);
-    rb_define_method(C_String, "split", Fstr_split, -2);
+    rb_define_method(C_String, "split", Fstr_split, -1);
     rb_define_method(C_String, "reverse", Fstr_reverse, 0);
     rb_define_method(C_String, "concat", Fstr_concat, 1);
     rb_define_method(C_String, "crypt", Fstr_crypt, 1);
@@ -1684,12 +1691,12 @@ Init_String()
     rb_define_method(C_String, "tr", Fstr_tr, 2);
     rb_define_method(C_String, "tr_s", Fstr_tr_s, 2);
     rb_define_method(C_String, "delete", Fstr_delete, 1);
-    rb_define_method(C_String, "squeeze", Fstr_squeeze, -2);
+    rb_define_method(C_String, "squeeze", Fstr_squeeze, -1);
 
     rb_define_method(C_String, "each", Fstr_each, 0);
     rb_define_method(C_String, "each_byte", Fstr_each_byte, 0);
 
-    rb_define_method(C_String, "sum", Fstr_sum, -2);
+    rb_define_method(C_String, "sum", Fstr_sum, -1);
 
     rb_define_private_method(C_Kernel, "sub", Fsub, 2);
     rb_define_private_method(C_Kernel, "gsub", Fgsub, 2);

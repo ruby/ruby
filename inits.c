@@ -3,7 +3,7 @@
   inits.c -
 
   $Author: matz $
-  $Date: 1994/12/16 00:59:24 $
+  $Date: 1995/01/10 10:42:38 $
   created at: Tue Dec 28 16:01:58 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -30,6 +30,7 @@ rb_call_inits()
     Init_Regexp();
     Init_Glob();
     Init_pack();
+    Init_Cons();
     Init_Range();
     Init_IO();
     Init_Dir();

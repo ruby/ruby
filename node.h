@@ -3,7 +3,7 @@
   node.h -
 
   $Author: matz $
-  $Date: 1994/12/16 03:10:04 $
+  $Date: 1995/01/10 10:42:41 $
   created at: Fri May 28 15:14:02 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -35,13 +35,13 @@ enum node_type {
     NODE_GASGN,
     NODE_IASGN,
     NODE_CASGN,
+    NODE_OP_ASGN1,
+    NODE_OP_ASGN2,
     NODE_CALL,
-    NODE_ICALL,
     NODE_SUPER,
     NODE_ZSUPER,
     NODE_ARRAY,
     NODE_ZARRAY,
-    NODE_QLIST,
     NODE_HASH,
     NODE_REDO,
     NODE_BREAK,
@@ -50,7 +50,6 @@ enum node_type {
     NODE_RETRY,
     NODE_FAIL,
     NODE_YIELD,
-    NODE_IYIELD,
     NODE_LVAR,
     NODE_GVAR,
     NODE_IVAR,
@@ -106,9 +105,9 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-#define nd_type(n) (((n)->flags>>11)&0x3f)
+#define nd_type(n) (((RNODE(n))->flags>>10)&0xff)
 #define nd_set_type(n,t) \
-    (n)->flags=(((n)->flags&~FL_UMASK)|(((t)<<11)&FL_UMASK))
+    RNODE(n)->flags=((RNODE(n)->flags&~FL_UMASK)|(((t)<<10)&FL_UMASK))
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
@@ -118,6 +117,8 @@ typedef struct RNode {
 #define nd_body  u2.node
 #define nd_else  u3.node
 #define nd_break u3.state
+
+#define nd_orig  u3.value
 
 #define nd_resq  u2.node
 #define nd_ensr  u3.node
@@ -140,6 +141,7 @@ typedef struct RNode {
 #define nd_iter  u3.node
 
 #define nd_value u2.node
+#define nd_aid   u3.id
 
 #define nd_lit   u1.value
 
@@ -170,7 +172,7 @@ typedef struct RNode {
 #define nd_rval  u3.node
 
 #define NEW_METHOD(n,x) newnode(NODE_METHOD,x,n,Qnil)
-#define NEW_FBODY(n,i) newnode(NODE_FBODY,n,i,Qnil)
+#define NEW_FBODY(n,i,o) newnode(NODE_FBODY,n,i,o)
 #define NEW_DEFN(i,d,p) newnode(NODE_DEFN,p,i,d)
 #define NEW_DEFS(r,i,d) newnode(NODE_DEFS,r,i,d)
 #define NEW_CFUNC(f,c) newnode(NODE_CFUNC,f,c,Qnil)
@@ -207,6 +209,8 @@ typedef struct RNode {
 #define NEW_LASGN(v,val) newnode(NODE_LASGN,v,val,local_cnt(v))
 #define NEW_IASGN(v,val) newnode(NODE_IASGN,v,val,Qnil)
 #define NEW_CASGN(v,val) newnode(NODE_CASGN,v,val,Qnil)
+#define NEW_OP_ASGN1(p,id,a) newnode(NODE_OP_ASGN1,p,id,a)
+#define NEW_OP_ASGN2(r,i,val) newnode(NODE_OP_ASGN1,r,val,i)
 #define NEW_GVAR(v) newnode(NODE_GVAR,v,Qnil,rb_global_entry(v))
 #define NEW_LVAR(v) newnode(NODE_LVAR,v,Qnil,local_cnt(v))
 #define NEW_IVAR(v) newnode(NODE_IVAR,v,Qnil,Qnil)

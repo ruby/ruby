@@ -3,12 +3,12 @@
   ruby.h -
   
   $Author: matz $
-  $Date: 1994/12/19 08:30:14 $
+  $Date: 1995/01/10 10:42:52 $
   created at: Thu Jun 10 14:26:32 JST 1993
   
   Copyright (C) 1994 Yukihiro Matsumoto
   
-  ************************************************/
+*************************************************/
 
 #ifndef RUBY_H
 #define RUBY_H
@@ -102,9 +102,10 @@ extern VALUE C_Data;
 #define T_BIGNUM 0x0c
 
 #define T_NODE   0x0d
-#define T_CONS   0x0e
+#define T_SCOPE  0x0e
+#define T_CONS   0x0f
 
-#define T_DATA   0xff
+#define T_DATA   0x10
 
 #define T_MASK   0xff
 
@@ -237,16 +238,17 @@ struct RCons {
 
 #define FL_SINGLE  (1<<8)
 #define FL_MARK    (1<<9)
-#define FL_LITERAL (1<<10)
 
+#define FL_USER0   (1<<10)
 #define FL_USER1   (1<<11)
 #define FL_USER2   (1<<12)
 #define FL_USER3   (1<<13)
 #define FL_USER4   (1<<14)
 #define FL_USER5   (1<<15)
 #define FL_USER6   (1<<16)
+#define FL_USER7   (1<<17)
 
-#define FL_UMASK   (0x3f<<11)
+#define FL_UMASK   (0xff<<10)
 
 #define FL_ABLE(x) (!(FIXNUM_P(x)||NIL_P(x)))
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
@@ -259,6 +261,20 @@ extern VALUE Qself;
 #define ALLOC_N(type,n) (type*)xmalloc(sizeof(type)*(n))
 #define ALLOC(type) (type*)xmalloc(sizeof(type))
 #define REALLOC_N(var,type,n) (var)=(type*)xrealloc((char*)(var),sizeof(type)*(n))
+
+#define ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
+
+#define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
+#define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
+
+#ifdef SAFE_SIGHANDLE
+extern int trap_immediate;
+# define TRAP_BEG (trap_immediate=1)
+# define TRAP_END (trap_immediate=0)
+#else
+# define TRAP_BEG
+# define TRAP_END
+#endif
 
 VALUE rb_define_class();
 VALUE rb_define_module();

@@ -3,7 +3,7 @@
   array.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:29:47 $
+  $Date: 1995/01/10 10:42:18 $
   created at: Fri Aug  6 09:46:12 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -13,8 +13,6 @@
 #include "ruby.h"
 
 VALUE C_Array;
-
-static ID eq;
 
 VALUE rb_to_a();
 
@@ -73,12 +71,13 @@ ary_new4(n, elts)
     struct RArray* ary;
 
     ary = (struct RArray*)ary_new2(n);
-    memcpy(ary->ptr, elts, sizeof(VALUE)*n);
+    MEMCPY(ary->ptr, elts, VALUE, n);
     ary->len = n;
 
     return (VALUE)ary;
 }
 
+#if 0
 VALUE
 assoc_new(elm1, elm2)
     VALUE elm1, elm2;
@@ -92,6 +91,7 @@ assoc_new(elm1, elm2)
 
     return (VALUE)ary;
 }
+#endif
 
 static VALUE
 Sary_new(class)
@@ -121,8 +121,8 @@ astore(ary, idx, val)
 	ary->capa = idx + ary->capa/5;
 	REALLOC_N(ary->ptr, VALUE, ary->capa);
     }
-    if (idx >= ary->len) {
-	memset(ary->ptr+ary->len, 0, sizeof(VALUE)*(idx-ary->len+1));
+    if (idx > ary->len) {
+	MEMZERO(ary->ptr+ary->len, VALUE, idx-ary->len+1);
     }
 
     if (idx >= ary->len) {
@@ -137,7 +137,7 @@ ary_push(ary, item)
     VALUE item;
 {
     astore(ary, ary->len, item);
-    return item;
+    return (VALUE)ary;
 }
 
 static VALUE
@@ -232,7 +232,7 @@ ary_subseq(ary, beg, len)
     }
 
     ary2 = (struct RArray*)ary_new2(len);
-    memmove(ary2->ptr, ary->ptr+beg, sizeof(VALUE)*len);
+    MEMCPY(ary2->ptr, ary->ptr+beg, VALUE, len);
     ary2->len = len;
 
     return (VALUE)ary2;
@@ -270,13 +270,14 @@ range_beg_end(range, begp, lenp, len)
 }
 
 static VALUE
-Fary_aref(ary, args)
+Fary_aref(argc, argv, ary)
+    int argc;
+    VALUE *argv;
     struct RArray *ary;
-    VALUE args;
 {
     VALUE arg1, arg2;
 
-    if (rb_scan_args(args, "11", &arg1, &arg2) == 2) {
+    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
 	int beg, len;
 
 	beg = NUM2INT(arg1);
@@ -311,7 +312,7 @@ Fary_index(ary, val)
     int i;
 
     for (i=0; i<ary->len; i++) {
-	if (rb_funcall(ary->ptr[i], eq, 1, val))
+	if (rb_equal(ary->ptr[i], val))
 	    return INT2FIX(i);
     }
     return Qnil;
@@ -340,15 +341,16 @@ Fary_indexes(ary, args)
 }
 
 static VALUE
-Fary_aset(ary, args)
+Fary_aset(argc, argv, ary)
+    int argc;
+    VALUE *argv;
     struct RArray *ary;
-    VALUE args;
 {
     VALUE arg1, arg2;
     struct RArray *arg3;
     int offset;
 
-    if (rb_scan_args(args, "21", &arg1, &arg2, &arg3) == 3) {
+    if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
 	int beg, len;
 
 	beg = NUM2INT(arg1);
@@ -367,8 +369,8 @@ Fary_aset(ary, args)
 		ary->capa=len;
 		REALLOC_N(ary->ptr, VALUE, ary->capa);
 	    }
-	    memset(ary->ptr+ary->len, 0, sizeof(VALUE)*(beg-ary->len));
-	    memcpy(ary->ptr+beg, arg3->ptr, sizeof(VALUE)*arg3->len);
+	    MEMZERO(ary->ptr+ary->len, VALUE, beg-ary->len);
+	    MEMCPY(ary->ptr+beg, arg3->ptr, VALUE, arg3->len);
 	    ary->len = len;
 	}
 	else {
@@ -390,7 +392,7 @@ Fary_aset(ary, args)
 
 	    memmove(ary->ptr+beg+arg3->len, ary->ptr+beg+len,
 		    sizeof(VALUE)*(ary->len-(beg+len)));
-	    memmove(ary->ptr+beg, arg3->ptr, sizeof(VALUE)*arg3->len);
+	    memcpy(ary->ptr+beg, arg3->ptr, sizeof(VALUE)*arg3->len);
 	    ary->len = alen;
 	}
 	return (VALUE)arg3;
@@ -408,9 +410,8 @@ Fary_aset(ary, args)
 		ary->capa=len;
 		REALLOC_N(ary->ptr, VALUE, ary->capa);
 	    }
-	    memset(ary->ptr+ary->len, 0, sizeof(VALUE)*(beg-ary->len));
-	    memcpy(ary->ptr+beg, RARRAY(arg2)->ptr,
-		   sizeof(VALUE)*RARRAY(arg2)->len);
+	    MEMZERO(ary->ptr+ary->len, VALUE, beg-ary->len);
+	    MEMCPY(ary->ptr+beg, RARRAY(arg2)->ptr, VALUE, RARRAY(arg2)->len);
 	    ary->len = len;
 	}
 	else {
@@ -424,7 +425,7 @@ Fary_aset(ary, args)
 
 	    memmove(ary->ptr+beg+RARRAY(arg2)->len, ary->ptr+beg+len,
 		    sizeof(VALUE)*(ary->len-(beg+len)));
-	    memmove(ary->ptr+beg, RARRAY(arg2)->ptr,
+	    memcpy(ary->ptr+beg, RARRAY(arg2)->ptr,
 		    sizeof(VALUE)*RARRAY(arg2)->len);
 	    ary->len = alen;
 	}
@@ -480,7 +481,7 @@ ary_clone(ary)
     VALUE ary2 = ary_new2(ary->len);
 
     CLONESETUP(ary2, ary);
-    memcpy(RARRAY(ary2)->ptr, ary->ptr, sizeof(VALUE)*ary->len);
+    MEMCPY(RARRAY(ary2)->ptr, ary->ptr, VALUE, ary->len);
     RARRAY(ary2)->len = ary->len;
     return ary2;
 }
@@ -520,13 +521,14 @@ ary_join(ary, sep)
 }
 
 static VALUE
-Fary_join(ary, args)
+Fary_join(argc, argv, ary)
+    int argc;
+    VALUE *argv;
     struct RArray *ary;
-    VALUE args;
 {
     VALUE sep;
 
-    rb_scan_args(args, "01", &sep);
+    rb_scan_args(argc, argv, "01", &sep);
     if (sep == Qnil) sep = OFS;
 
     if (sep != Qnil)
@@ -666,7 +668,7 @@ Fary_delete(ary, item)
     int i1, i2;
 
     for (i1 = i2 = 0; i1 < ary->len; i1++) {
-	if (rb_funcall(ary->ptr[i1], eq, 1, item)) continue;
+	if (rb_equal(ary->ptr[i1], item)) continue;
 	if (i1 != i2) {
 	    ary->ptr[i2] = ary->ptr[i1];
 	}
@@ -704,15 +706,16 @@ Fary_clear(ary)
 }
 
 static VALUE
-Fary_fill(ary, args)
+Fary_fill(argc, argv, ary)
+    int argc;
+    VALUE *argv;
     struct RArray *ary;
-    VALUE args;
 {
     VALUE item, arg1, arg2;
     int beg, len, end;
     VALUE *p, *pend;
 
-    rb_scan_args(args, "12", &item, &arg1, &arg2);
+    rb_scan_args(argc, argv, "12", &item, &arg1, &arg2);
     if (arg2 == Qnil && obj_is_kind_of(arg1, C_Range)) {
 	range_beg_end(arg1, &beg, &len, ary->len);
     }
@@ -736,7 +739,7 @@ Fary_fill(ary, args)
 	    REALLOC_N(ary->ptr, VALUE, ary->capa);
 	}
 	if (beg > ary->len) {
-	    memset(ary->ptr+ary->len, 0, sizeof(VALUE)*(end-ary->len));
+	    MEMZERO(ary->ptr+ary->len, VALUE, end-ary->len);
 	}
 	ary->len = end;
     }
@@ -757,8 +760,8 @@ Fary_plus(x, y)
     switch (TYPE(y)) {
       case T_ARRAY:
 	z = (struct RArray*)ary_new2(x->len + y->len);
-	memcpy(z->ptr, x->ptr, x->len*sizeof(VALUE));
-	memcpy(z->ptr+x->len, y->ptr, y->len*sizeof(VALUE));
+	MEMCPY(z->ptr, x->ptr, VALUE, x->len);
+	MEMCPY(z->ptr+x->len, y->ptr, VALUE, y->len);
 	z->len = x->len + RARRAY(y)->len;
 	break;
 
@@ -783,7 +786,7 @@ Fary_times(ary, times)
     ary2->len = len;
 
     for (i=0; i<len; i+=ary->len) {
-	memcpy(ary2->ptr+i, ary->ptr, ary->len*sizeof(VALUE));
+	MEMCPY(ary2->ptr+i, ary->ptr, VALUE, ary->len);
     }
 
     return (VALUE)ary2;
@@ -798,9 +801,8 @@ Fary_assoc(ary, key)
 
     p = ary->ptr; pend = p + ary->len;
     while (p < pend) {
-	if (TYPE(*p) == T_ARRAY
-	    && RARRAY(*p)->len == 2
-	    && rb_funcall(RARRAY(*p)->ptr[0], eq, 1, key))
+	if (TYPE(*p) == T_CONS
+	    && rb_equal(RCONS(*p)->car, key))
 	    return *p;
     }
     return Qnil;
@@ -815,9 +817,8 @@ Fary_rassoc(ary, value)
 
     p = ary->ptr; pend = p + ary->len;
     while (p < pend) {
-	if (TYPE(*p) == T_ARRAY
-	    && RARRAY(*p)->len == 2
-	    && rb_funcall(RARRAY(*p)->ptr[1], eq, 1, value))
+	if (TYPE(*p) == T_CONS
+	    && rb_equal(RCONS(*p)->cdr, value))
 	    return *p;
     }
     return Qnil;
@@ -832,7 +833,7 @@ Fary_equal(ary1, ary2)
     if (TYPE(ary2) != T_ARRAY) return FALSE;
     if (ary1->len != ary2->len) return FALSE;
     for (i=0; i<ary1->len; i++) {
-	if (!rb_funcall(ary1->ptr[i], eq, 1, ary2->ptr[i]))
+	if (!rb_equal(ary1->ptr[i], ary2->ptr[i]))
 	    return FALSE;
     }
     return TRUE;
@@ -860,7 +861,7 @@ Fary_includes(ary, item)
 {
     int i;
     for (i=0; i<ary->len; i++) {
-	if (rb_funcall(ary->ptr[i], eq, 1, item)) {
+	if (rb_equal(ary->ptr[i], item)) {
 	    return TRUE;
 	}
     }
@@ -943,8 +944,8 @@ Init_Array()
 
     rb_define_method(C_Array, "==", Fary_equal, 1);
     rb_define_method(C_Array, "hash", Fary_hash, 0);
-    rb_define_method(C_Array, "[]", Fary_aref, -2);
-    rb_define_method(C_Array, "[]=", Fary_aset, -2);
+    rb_define_method(C_Array, "[]", Fary_aref, -1);
+    rb_define_method(C_Array, "[]=", Fary_aset, -1);
     rb_define_method(C_Array, "<<", Fary_append, 1);
     rb_define_method(C_Array, "push", ary_push, 1);
     rb_define_method(C_Array, "pop", ary_pop, 0);
@@ -957,13 +958,13 @@ Init_Array()
     rb_define_method(C_Array, "index", Fary_index, 1);
     rb_define_method(C_Array, "indexes", Fary_indexes, -2);
     rb_define_method(C_Array, "clone", ary_clone, 0);
-    rb_define_method(C_Array, "join", Fary_join, -2);
+    rb_define_method(C_Array, "join", Fary_join, -1);
     rb_define_method(C_Array, "reverse", Fary_reverse, 0);
     rb_define_method(C_Array, "sort", Fary_sort, 0);
     rb_define_method(C_Array, "delete", Fary_delete, 1);
     rb_define_method(C_Array, "delete_if", Fary_delete_if, 0);
     rb_define_method(C_Array, "clear", Fary_clear, 0);
-    rb_define_method(C_Array, "fill", Fary_fill, -2);
+    rb_define_method(C_Array, "fill", Fary_fill, -1);
     rb_define_method(C_Array, "includes", Fary_includes, 1);
 
     rb_define_method(C_Array, "assoc", Fary_assoc, 1);
@@ -977,7 +978,4 @@ Init_Array()
     rb_define_method(C_Array, "|", Fary_or, 1);
 
     cmp = rb_intern("<=>");
-    eq = rb_intern("==");
-
-    rb_define_method(C_Kernel, "::", assoc_new, 1);
 }

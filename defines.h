@@ -3,7 +3,7 @@
   defines.h -
 
   $Author: matz $
-  $Date: 1994/12/09 01:28:22 $
+  $Date: 1995/01/10 10:42:25 $
   created at: Wed May 18 00:21:44 JST 1994
 
 ************************************************/
@@ -30,9 +30,6 @@
 /* define USE_DBM to use dbm class. */
 #define USE_DBM
 
-#ifdef HAVE_SYSCALL_H
-/* define SAFE_SIGHANDLE to override syscall for trap. */
 #define SAFE_SIGHANDLE
-#endif
 
 #endif

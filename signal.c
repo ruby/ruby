@@ -3,7 +3,7 @@
   signal.c -
 
   $Author: matz $
-  $Date: 1994/12/20 05:15:42 $
+  $Date: 1995/01/10 10:42:53 $
   created at: Tue Dec 20 10:13:44 JST 1994
 
 ************************************************/
@@ -226,7 +226,7 @@ static VALUE trap_list[NSIG];
 #ifdef SAFE_SIGHANDLE
 static int trap_pending_list[NSIG];
 int trap_pending;
-static int trap_immediate;
+int trap_immediate;
 #endif
 
 void
@@ -252,8 +252,9 @@ sighandle(sig)
 #endif
 
 #ifdef SAFE_SIGHANDLE
-    if (trap_immediate)
+    if (trap_immediate) {
 	rb_trap_eval(trap_list[sig]);
+    }
     else {
 	trap_pending++;
 	trap_pending_list[sig]++;
@@ -270,7 +271,7 @@ rb_trap_exit()
 	rb_trap_eval(trap_list[0]);
 }
 
-#if defined(SAFE_SIGHANDLE)
+#ifdef SAFE_SIGHANDLE
 rb_trap_exec()
 {
     int i;
@@ -283,74 +284,7 @@ rb_trap_exec()
 	}
     }
 }
-
-#if defined(HAVE_SYSCALL) && defined(HAVE_SYSCALL_H)
-#include <syscall.h>
-
-#ifdef SYS_read
-int
-read(fd, buf, nbytes)
-    int fd, nbytes;
-    char *buf;
-{
-    int res;
-
-    trap_immediate++;
-    res = syscall(SYS_read, fd, buf, nbytes);
-    trap_immediate = 0;
-    return res;
-}
-#endif /* SYS_read */
-
-#ifdef SYS_wait
-int
-wait(status)
-    union wait *status;
-{
-    int res;
-
-    trap_immediate++;
-    res = syscall(SYS_wait, status);
-    trap_immediate =0;
-    return res;
-}
-#endif /* SYS_wait */
-
-#ifdef SYS_sigpause
-int
-sigpause(mask)
-    int mask;
-{
-    int res;
-
-    trap_immediate++;
-    res = syscall(SYS_sigpause, mask);
-    trap_immediate =0;
-    return res;
-}
-#endif /* SYS_sigpause */
-
-/* linux syscall(select) doesn't work file. */
-#if defined(SYS_select) && !defined(linux)
-#include <sys/types.h>
-
-int
-select(nfds, readfds, writefds, exceptfds, timeout)
-    int nfds;
-    fd_set *readfds, *writefds, *exceptfds;
-    struct timeval *timeout;
-{
-    int res;
-
-    trap_immediate++;
-    res = syscall(SYS_select, nfds, readfds, writefds, exceptfds, timeout);
-    trap_immediate =0;
-    return res;
-}
-#endif /* SYS_select */
-
-#endif /* HAVE_SYSCALL_H */
-#endif /* SAFE_SIGHANDLE */
+#endif
 
 static VALUE
 Ftrap(argc, argv)

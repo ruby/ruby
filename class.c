@@ -3,7 +3,7 @@
   class.c -
 
   $Author: matz $
-  $Date: 1994/12/16 00:59:42 $
+  $Date: 1995/01/10 10:42:21 $
   created at: Tue Aug 10 15:05:44 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -285,7 +285,7 @@ rb_define_attr(class, name, pub)
     ID attr, attreq, attriv;
 
     attr = rb_intern(name);
-    buf = (char*)alloca(strlen(name) + 2);
+    buf = ALLOCA_N(char,strlen(name)+2);
     sprintf(buf, "%s=", name);
     attreq = rb_intern(buf);
     sprintf(buf, "@%s", name);
@@ -311,41 +311,32 @@ rb_define_single_attr(obj, name, pub)
 #include <ctype.h>
 
 int
-rb_scan_args(args, fmt, va_alist)
-    VALUE args;
+rb_scan_args(argc, argv, fmt, va_alist)
+    int argc;
+    VALUE *argv;
     char *fmt;
     va_dcl
 {
-    int n, i, len;
+    int n, i;
     char *p = fmt;
     VALUE *var;
     va_list vargs;
-
-    if (NIL_P(args)) {
-	len = 0;
-	args = ary_new();
-    }
-    else {
-	Check_Type(args, T_ARRAY);
-	len = RARRAY(args)->len;
-    }
 
     va_start(vargs);
 
     if (*p == '*') {
 	var = va_arg(vargs, VALUE*);
-	*var = args;
-	return len;
+	*var = ary_new4(argc, argv);
+	return argc;
     }
 
     if (isdigit(*p)) {
 	n = *p - '0';
-	if (n > len)
-	    Fail("Wrong number of arguments for %s",
-		 rb_id2name(the_env->last_func));
+	if (n > argc)
+	    Fail("Wrong number of arguments (%d for %d)", argc, n);
 	for (i=0; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
-	    *var = ary_entry(args, i);
+	    *var = argv[i];
 	}
 	p++;
     }
@@ -357,8 +348,8 @@ rb_scan_args(args, fmt, va_alist)
 	n = i + *p - '0';
 	for (; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
-	    if (len > i) {
-		*var = ary_entry(args, i);
+	    if (argc > i) {
+		*var = argv[i];
 	    }
 	    else {
 		*var = Qnil;
@@ -369,16 +360,16 @@ rb_scan_args(args, fmt, va_alist)
 
     if(*p == '*') {
 	var = va_arg(vargs, VALUE*);
-	if (len > i) {
-	    *var = ary_new4(RARRAY(args)->len-i, RARRAY(args)->ptr+i);
+	if (argc > i) {
+	    *var = ary_new4(argc-i, argv+i);
 	}
 	else {
 	    *var = ary_new();
 	}
     }
     else if (*p == '\0') {
-	if (len > i) {
-	    Fail("Wrong # of arguments(%d for %d)", len, i);
+	if (argc > i) {
+	    Fail("Wrong # of arguments(%d for %d)", argc, i);
 	}
     }
     else {
@@ -386,7 +377,7 @@ rb_scan_args(args, fmt, va_alist)
     }
 
     va_end(vargs);
-    return len;
+    return argc;
 
   error:
     Fail("bad scan arg format: %s", fmt);

@@ -3,7 +3,7 @@
   random.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:18 $
+  $Date: 1995/01/10 10:42:48 $
   created at: Fri Dec 24 16:39:21 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -16,15 +16,17 @@ static int first = 1;
 static char state[256];
 
 static VALUE
-Fsrand(obj, args)
-    VALUE obj, args;
+Fsrand(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     int seed, old;
 #ifdef HAVE_RANDOM
     static int saved_seed;
 #endif
 
-    if (rb_scan_args(args, "01", &seed) == 0) {
+    if (rb_scan_args(argc, argv, "01", &seed) == 0) {
 	seed = time(0);
     }
     else {
@@ -75,6 +77,6 @@ Init_Random()
 {
     extern VALUE C_Kernel;
 
-    rb_define_private_method(C_Kernel, "srand", Fsrand, -2);
+    rb_define_private_method(C_Kernel, "srand", Fsrand, -1);
     rb_define_private_method(C_Kernel, "rand", Frand, 1);
 }

@@ -3,7 +3,7 @@
   numeric.c -
 
   $Author: matz $
-  $Date: 1994/12/06 09:30:05 $
+  $Date: 1995/01/10 10:42:42 $
   created at: Fri Aug 13 18:33:09 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -924,7 +924,7 @@ Init_Numeric()
     C_Numeric = rb_define_class("Numeric", C_Object);
 
     rb_undef_method(CLASS_OF(C_Numeric), "new");
-    rb_undef_method(CLASS_OF(C_Numeric), "clone");
+    rb_undef_method(C_Numeric, "clone");
 
     rb_include_module(C_Numeric, M_Comparable);
     rb_define_method(C_Numeric, "+@", Fnum_uplus, 0);

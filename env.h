@@ -3,8 +3,8 @@
   env.h -
 
   $Author: matz $
-  $Revision: 1.7 $
-  $Date: 1994/12/19 08:30:01 $
+  $Revision: 1.8 $
+  $Date: 1995/01/10 10:42:30 $
   created at: Mon Jul 11 11:53:03 JST 1994
 
 ************************************************/
@@ -14,18 +14,19 @@
 extern struct ENVIRON {
     int argc;
     VALUE *argv;
-    VALUE arg_ary;
     ID last_func;
     struct RClass *last_class;
     struct ENVIRON *prev;
 } *the_env;
 
-extern struct SCOPE {
+struct SCOPE {
+    struct RBasic super;
     ID *local_tbl;
     VALUE *local_vars;
-    VALUE var_ary;
-    struct SCOPE *prev;
+    int flags;
 } *the_scope;
+
+#define SCOPE_MALLOCED (1<<0)
 
 extern int rb_in_eval;
 

@@ -4,7 +4,7 @@
   file.c -
 
   $Author: matz $
-  $Date: 1994/12/09 09:40:19 $
+  $Date: 1995/01/10 10:42:36 $
   created at: Mon Nov 15 12:24:34 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -837,15 +837,17 @@ chmod_internal(path, mode)
 }
 
 static VALUE
-Sfile_chmod(obj, args)
-    VALUE obj, args;
+Sfile_chmod(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE vmode;
     VALUE rest;
     int mode, n;
     VALUE path;
 
-    rb_scan_args(args, "1*", &vmode, &rest);
+    rb_scan_args(argc, argv, "1*", &vmode, &rest);
     mode = NUM2INT(vmode);
 
     n = apply2files(chmod_internal, rest, mode);
@@ -882,14 +884,16 @@ chown_internal(path, args)
 }
 
 static VALUE
-Sfile_chown(obj, args)
-    VALUE obj, args;
+Sfile_chown(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE o, g, rest;
     struct chown_args arg;
     int n;
 
-    rb_scan_args(args, "2*", &o, &g, &rest);
+    rb_scan_args(argc, argv, "2*", &o, &g, &rest);
     if (o == Qnil) {
 	arg.owner = -1;
     }
@@ -932,14 +936,16 @@ utime_internal(path, tvp)
 }
 
 static VALUE
-Sfile_utime(obj, args)
-    VALUE obj, args;
+Sfile_utime(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE atime, mtime, rest;
     struct timeval tvp[2];
     int n;
 
-    rb_scan_args(args, "2*", &atime, &mtime, &rest);
+    rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
     tvp[0] = *time_timeval(atime);
     tvp[1] = *time_timeval(mtime);
@@ -1134,9 +1140,9 @@ Init_File()
     rb_define_single_method(C_File, "mtime", Sfile_mtime, 1);
     rb_define_single_method(C_File, "ctime", Sfile_ctime, 1);
 
-    rb_define_single_method(C_File, "utime", Sfile_utime, -2);
-    rb_define_single_method(C_File, "chmod", Sfile_chmod, -2);
-    rb_define_single_method(C_File, "chown", Sfile_chown, -2);
+    rb_define_single_method(C_File, "utime", Sfile_utime, -1);
+    rb_define_single_method(C_File, "chmod", Sfile_chmod, -1);
+    rb_define_single_method(C_File, "chown", Sfile_chown, -1);
 
     rb_define_single_method(C_File, "link", Sfile_link, 2);
     rb_define_single_method(C_File, "symlink", Sfile_symlink, 2);

@@ -3,7 +3,7 @@
   gc.c -
 
   $Author: matz $
-  $Date: 1994/12/19 08:39:19 $
+  $Date: 1995/01/10 10:42:37 $
   created at: Tue Oct  5 09:44:46 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -170,6 +170,7 @@ struct RVALUE {
 	    UINT flag;		/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
+	struct RBasic  basic;
 	struct RObject object;
 	struct RClass  class;
 	struct RFloat  flonum;
@@ -181,6 +182,8 @@ struct RVALUE {
 	struct RStruct rstruct;
 	struct RBignum bignum;
 	struct RNode   node;
+	struct RCons   cons;
+	struct SCOPE   scope;
     } as;
 } *freelist = Qnil;
 
@@ -193,8 +196,7 @@ struct heap_block {
 
 #define SEG_SLOTS 10000
 #define SEG_SIZE  (SEG_SLOTS*sizeof(struct RVALUE))
-
-static int heap_size;
+#define FREE_MIN  512
 
 static void
 add_heap()
@@ -203,7 +205,7 @@ add_heap()
     struct RVALUE *p, *pend;
 
     block = (struct heap_block*)malloc(sizeof(*block) + SEG_SIZE);
-    if (block == Qnil) Fatal("cant alloc memory");
+    if (block == Qnil) Fatal("can't alloc memory");
     block->next = heap_link;
     block->beg = &block->body[0];
     block->end = block->beg + SEG_SLOTS;
@@ -215,7 +217,6 @@ add_heap()
 	p++;
     }
     heap_link = block;
-    heap_size += SEG_SLOTS;
 }
 
 struct RBasic *
@@ -227,8 +228,7 @@ newobj()
       retry:
 	obj = (struct RBasic*)freelist;
 	freelist = freelist->as.free.next;
-	obj->flags = 0;
-	obj->iv_tbl = Qnil;
+	memset(obj, 0, sizeof(struct RVALUE));
 	return obj;
     }
     if (dont_gc) add_heap();
@@ -349,40 +349,40 @@ gc_mark_maybe(obj)
 
 void
 gc_mark(obj)
-    register struct RBasic *obj;
+    register struct RVALUE *obj;
 {
     if (obj == Qnil) return;
     if (FIXNUM_P(obj)) return;
-    if (obj->flags & FL_MARK) return;
+    if (obj->as.basic.flags & FL_MARK) return;
 
-    obj->flags |= FL_MARK;
+    obj->as.basic.flags |= FL_MARK;
 
-    switch (obj->flags & T_MASK) {
+    switch (obj->as.basic.flags & T_MASK) {
       case T_NIL:
       case T_FIXNUM:
 	Bug("gc_mark() called for broken object");
 	break;
     }
 
-    switch (obj->flags & T_MASK) {
+    switch (obj->as.basic.flags & T_MASK) {
       case T_ICLASS:
-	gc_mark(RCLASS(obj)->super);
-	if (RCLASS(obj)->c_tbl) mark_tbl(RCLASS(obj)->c_tbl);
-	mark_tbl(RCLASS(obj)->m_tbl);
+	gc_mark(obj->as.class.super);
+	if (obj->as.class.c_tbl) mark_tbl(obj->as.class.c_tbl);
+	mark_tbl(obj->as.class.m_tbl);
 	break;
 
       case T_CLASS:
-	gc_mark(RCLASS(obj)->super);
+	gc_mark(obj->as.class.super);
       case T_MODULE:
-	if (RCLASS(obj)->c_tbl) mark_tbl(RCLASS(obj)->c_tbl);
-	mark_tbl(RCLASS(obj)->m_tbl);
-	gc_mark(RBASIC(obj)->class);
+	if (obj->as.class.c_tbl) mark_tbl(obj->as.class.c_tbl);
+	mark_tbl(obj->as.class.m_tbl);
+	gc_mark(obj->as.basic.class);
 	break;
 
       case T_ARRAY:
 	{
-	    int i, len = RARRAY(obj)->len;
-	    VALUE *ptr = RARRAY(obj)->ptr;
+	    int i, len = obj->as.array.len;
+	    VALUE *ptr = obj->as.array.ptr;
 
 	    for (i=0; i < len; i++)
 		gc_mark(ptr[i]);
@@ -390,15 +390,15 @@ gc_mark(obj)
 	break;
 
       case T_DICT:
-	mark_dict(RDICT(obj)->tbl);
+	mark_dict(obj->as.dict.tbl);
 	break;
 
       case T_STRING:
-	if (RSTRING(obj)->orig) gc_mark(RSTRING(obj)->orig);
+	if (obj->as.string.orig) gc_mark(obj->as.string.orig);
 	break;
 
       case T_DATA:
-	if (RDATA(obj)->dmark) (*RDATA(obj)->dmark)(DATA_PTR(obj));
+	if (obj->as.data.dmark) (*obj->as.data.dmark)(DATA_PTR(obj));
 	break;
 
       case T_OBJECT:
@@ -409,30 +409,38 @@ gc_mark(obj)
 
       case T_STRUCT:
 	{
-	    int i, len = RSTRUCT(obj)->len;
-	    struct kv_pair *ptr = RSTRUCT(obj)->tbl;
+	    int i, len = obj->as.rstruct.len;
+	    struct kv_pair *ptr = obj->as.rstruct.tbl;
 
 	    for (i=0; i < len; i++)
 		gc_mark(ptr[i].value);
 	}
 	break;
 
+      case T_SCOPE:
+	{
+	    struct SCOPE *scope = (struct SCOPE*)obj;
+	    if (scope->local_vars)
+		mark_locations_array(scope->local_vars, scope->local_tbl[0]);
+	}
+	break;
+
       case T_CONS:
-	gc_mark(RCONS(obj)->car);
-	gc_mark(RCONS(obj)->cdr);
+	gc_mark(obj->as.cons.car);
+	gc_mark(obj->as.cons.cdr);
 	break;
 
       case T_NODE:
-	gc_mark_maybe(RNODE(obj)->u1.node);
-	gc_mark_maybe(RNODE(obj)->u2.node);
-	gc_mark_maybe(RNODE(obj)->u3.node);
+	gc_mark_maybe(obj->as.node.u1.node);
+	gc_mark_maybe(obj->as.node.u2.node);
+	gc_mark_maybe(obj->as.node.u3.node);
 	return;			/* no need to mark class & tbl */
 
       default:
-	Bug("gc_mark(): unknown data type %d", obj->flags & T_MASK);
+	Bug("gc_mark(): unknown data type %d", obj->as.basic.flags & T_MASK);
     }
-    if (obj->iv_tbl) mark_tbl(obj->iv_tbl);
-    gc_mark(obj->class);
+    if (obj->as.basic.iv_tbl) mark_tbl(obj->as.basic.iv_tbl);
+    gc_mark(obj->as.basic.class);
 }
 
 #define MIN_FREE_OBJ 512
@@ -455,8 +463,8 @@ gc_sweep()
 	p = heap->beg; pend = heap->end;
 	while (p < pend) {
 	    
-	    if (!(RBASIC(p)->flags & FL_MARK)) {
-		if (RBASIC(p)->flags) obj_free(p);
+	    if (!(p->as.basic.flags & FL_MARK)) {
+		if (p->as.basic.flags) obj_free(p);
 		p->as.free.flag = 0;
 		p->as.free.next = nfreelist;
 		nfreelist = p;
@@ -480,7 +488,6 @@ gc_sweep()
 		}
 	    }
 	    free(heap);
-	    heap_size -= SEG_SLOTS;
 	    heap = link;
 	}
 	else {
@@ -489,78 +496,88 @@ gc_sweep()
 	}
 	heap = heap->next;
     }
-    if (freed < heap_size/4) {
+    if (freed < FREE_MIN) {
 	add_heap();
     }
 }
 
 static void
 obj_free(obj)
-    struct RBasic *obj;
+    struct RVALUE *obj;
 {
-    switch (obj->flags & T_MASK) {
+    switch (obj->as.basic.flags & T_MASK) {
       case T_NIL:
       case T_FIXNUM:
 	Bug("obj_free() called for broken object");
 	break;
     }
 
-    switch (obj->flags & T_MASK) {
+    switch (obj->as.basic.flags & T_MASK) {
       case T_OBJECT:
 	break;
       case T_MODULE:
       case T_CLASS:
 	rb_clear_cache2(obj);
-	st_free_table(RCLASS(obj)->m_tbl);
-	if (RCLASS(obj)->c_tbl)
-	    st_free_table(RCLASS(obj)->c_tbl);
+	st_free_table(obj->as.class.m_tbl);
+	if (obj->as.class.c_tbl)
+	    st_free_table(obj->as.class.c_tbl);
 	break;
       case T_STRING:
-	if (RSTRING(obj)->orig == Qnil) free(RSTRING(obj)->ptr);
+	if (obj->as.string.orig == Qnil) free(obj->as.string.ptr);
 	break;
       case T_ARRAY:
-	free(RARRAY(obj)->ptr);
+	free(obj->as.array.ptr);
 	break;
       case T_DICT:
-	st_free_table(RDICT(obj)->tbl);
+	st_free_table(obj->as.dict.tbl);
 	break;
       case T_REGEXP:
-	reg_free(RREGEXP(obj)->ptr);
-	free(RREGEXP(obj)->str);
+	reg_free(obj->as.regexp.ptr);
+	free(obj->as.regexp.str);
 	break;
       case T_DATA:
-	if (RDATA(obj)->dfree) (*RDATA(obj)->dfree)(DATA_PTR(obj));
+	if (obj->as.data.dfree) (*obj->as.data.dfree)(DATA_PTR(obj));
 	free(DATA_PTR(obj));
 	break;
       case T_ICLASS:
 	/* iClass shares table with the module */
       case T_FLOAT:
+      case T_CONS:
 	break;
       case T_STRUCT:
-	free(RSTRUCT(obj)->name);
-	free(RSTRUCT(obj)->tbl);
+	free(obj->as.rstruct.name);
+	free(obj->as.rstruct.tbl);
 	break;
       case T_BIGNUM:
-	free(RBIGNUM(obj)->digits);
+	free(obj->as.bignum.digits);
 	break;
       case T_NODE:
-	if (nd_type(obj) == NODE_SCOPE && RNODE(obj)->nd_tbl) {
-	    free(RNODE(obj)->nd_tbl);
+	if (nd_type(obj) == NODE_SCOPE && obj->as.node.nd_tbl) {
+	    free(obj->as.node.nd_tbl);
 	}
 	return;			/* no need to free iv_tbl */
+
+      case T_SCOPE:
+	{
+	    struct SCOPE *scope = (struct SCOPE*)obj;
+	    if (scope->local_vars)
+		free(scope->local_vars);
+	    if (scope->local_tbl)
+		free(scope->local_tbl);
+	}
+	break;
+
       default:
-	Bug("gc_sweep(): unknown data type %d", obj->flags & T_MASK);
+	Bug("gc_sweep(): unknown data type %d", obj->as.basic.flags & T_MASK);
     }
-    if (obj->iv_tbl) st_free_table(obj->iv_tbl);
+    if (obj->as.basic.iv_tbl) st_free_table(obj->as.basic.iv_tbl);
 }
 
 void
-gc_mark_scope(scope)
-    struct SCOPE *scope;
+gc_mark_env(env)
+    struct ENVIRON *env;
 {
-    if (scope->local_vars && scope->var_ary == Qnil)
-	mark_locations_array(scope->local_vars, scope->local_tbl[0]);
-    gc_mark(scope->var_ary);
+    mark_locations_array(env->argv, env->argc);
 }
 
 void
@@ -568,7 +585,6 @@ gc()
 {
     struct gc_list *list;
     struct ENVIRON *env;
-    struct SCOPE *scope;
     int i, max;
     jmp_buf save_regs_gc_mark;
     VALUE stack_end;
@@ -576,9 +592,13 @@ gc()
     if (dont_gc) return;
     dont_gc++;
 
-    /* mark scope stack */
-    for (scope = the_scope; scope; scope = scope->prev) {
-	gc_mark_scope(scope);
+#ifdef C_ALLOCA
+    alloca(0);
+#endif
+
+    /* mark env stack */
+    for (env = the_env; env; env = env->prev) {
+	gc_mark_env(env);
     }
 
     FLUSH_REGISTER_WINDOWS;

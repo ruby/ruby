@@ -3,7 +3,7 @@
   dir.c -
 
   $Author: matz $
-  $Date: 1994/12/09 09:40:18 $
+  $Date: 1995/01/10 10:42:28 $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -146,13 +146,15 @@ Fdir_close(dir)
 char *getenv();
 
 static VALUE
-Sdir_chdir(obj, args)
-    VALUE obj, args;
+Sdir_chdir(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE path;
     char *dist = "";
 
-    rb_scan_args(args, "01", args, &path);
+    rb_scan_args(argc, argv, "01", &path);
     if (path) {
 	Check_Type(path, T_STRING);
 	dist = RSTRING(path)->ptr;
@@ -199,13 +201,15 @@ Sdir_chroot(dir, path)
 }
 
 static VALUE
-Sdir_mkdir(obj, args)
-    VALUE obj, args;
+Sdir_mkdir(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE path, vmode;
     int mode;
 
-    if (rb_scan_args(args, "11", &path, &vmode) == 2) {
+    if (rb_scan_args(argc, argv, "11", &path, &vmode) == 2) {
 	mode = NUM2INT(vmode);
     }
     else {
@@ -248,11 +252,11 @@ Init_Dir()
     rb_define_method(C_Dir,"seek", Fdir_seek, 1);
     rb_define_method(C_Dir,"close", Fdir_close, 0);
 
-    rb_define_single_method(C_Dir,"chdir", Sdir_chdir, -2);
+    rb_define_single_method(C_Dir,"chdir", Sdir_chdir, -1);
     rb_define_single_method(C_Dir,"getwd", Sdir_getwd, 0);
     rb_define_single_method(C_Dir,"pwd", Sdir_getwd, 0);
     rb_define_single_method(C_Dir,"chroot", Sdir_chroot, 1);
-    rb_define_single_method(C_Dir,"mkdir", Sdir_mkdir, -2);
+    rb_define_single_method(C_Dir,"mkdir", Sdir_mkdir, -1);
     rb_define_single_method(C_Dir,"rmdir", Sdir_rmdir, 1);
     rb_define_single_method(C_Dir,"delete", Sdir_rmdir, 1);
     rb_define_single_method(C_Dir,"unlink", Sdir_rmdir, 1);

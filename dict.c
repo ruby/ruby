@@ -3,7 +3,7 @@
   dict.c -
 
   $Author: matz $
-  $Date: 1994/12/19 08:30:00 $
+  $Date: 1995/01/10 10:42:26 $
   created at: Mon Nov 22 18:51:18 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -16,14 +16,14 @@
 VALUE C_Dict;
 
 static VALUE envtbl;
-static ID hash, eq;
+static ID hash;
 VALUE Fgetenv(), Fsetenv();
 
 static VALUE
 rb_cmp(a, b)
     VALUE a, b;
 {
-    return rb_funcall(a, eq, 1, b)?0:1;
+    return rb_equal(a, b)?0:1;
 }
 
 static VALUE
@@ -34,8 +34,8 @@ rb_hash(a, mod)
     return rb_funcall(a, hash, 0) % mod;
 }
 
-#define ASSOC_KEY(a) RARRAY(a)->ptr[0]
-#define ASSOC_VAL(a) RARRAY(a)->ptr[1]
+#define ASSOC_KEY(a) RCONS(a)->car
+#define ASSOC_VAL(a) RCONS(a)->cdr
 
 static VALUE
 Sdic_new(class)
@@ -342,7 +342,7 @@ static int
 dic_search_value(key, value, data)
     VALUE key, value, *data;
 {
-    if (rb_funcall(value, eq, 1, data[1])) {
+    if (rb_equal(value, data[1])) {
 	data[0] = TRUE;
 	return ST_STOP;
     }
@@ -378,7 +378,7 @@ dic_equal(key, val1, data)
 	data->result = FALSE;
 	return ST_STOP;
     }
-    if (!rb_funcall(val1, eq, 1, val2)) {
+    if (!rb_equal(val1, val2)) {
 	data->result = FALSE;
 	return ST_STOP;
     }
@@ -544,7 +544,6 @@ Init_Dict()
     extern VALUE M_Enumerable;
 
     hash = rb_intern("hash");
-    eq   = rb_intern("==");
 
     C_Dict = rb_define_class("Dict", C_Object);
     rb_name_class(C_Dict, rb_intern("Hash")); /* alias */

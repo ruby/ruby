@@ -25,6 +25,7 @@ AC_HAVE_LIBRARY(m, [LIBS="$LIBS -lm"])
 AC_HAVE_LIBRARY(dbm, [LIBS="$LIBS -ldbm"])
 AC_HAVE_LIBRARY(socket, [LIBS="$LIBS -lsocket"])
 AC_HAVE_LIBRARY(crypt, [LIBS="$LIBS -lcrypt"])
+AC_VFORK
 AC_REPLACE_FUNCS(memmove mkdir strerror strftime\
 		 strstr strtol strtoul strdup)
 AC_HAVE_FUNCS(fmod killpg socket random wait4 waitpid syscall getcwd\

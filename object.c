@@ -3,7 +3,7 @@
   object.c -
 
   $Author: matz $
-  $Date: 1994/12/20 05:01:01 $
+  $Date: 1995/01/10 10:42:44 $
   created at: Thu Jul 15 12:01:24 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -26,7 +26,6 @@ VALUE C_Data;
 struct st_table *new_idhash();
 
 VALUE Fsprintf();
-VALUE Fdefined();
 
 VALUE obj_responds_to();
 VALUE obj_alloc();
@@ -47,11 +46,18 @@ P_false(obj)
     return FALSE;
 }
 
-static VALUE
-Fkrn_equal(obj, other)
-    VALUE obj, other;
+VALUE
+rb_equal(obj1, obj2)
+    VALUE obj1, obj2;
 {
-    if (obj == other) return TRUE;
+    return rb_funcall(obj1, eq, 1, obj2);
+}
+
+static VALUE
+Fkrn_equal(obj1, obj2)
+    VALUE obj1, obj2;
+{
+    if (obj1 == obj2) return TRUE;
     return FALSE;
 }
 
@@ -73,7 +79,7 @@ static VALUE
 Fkrn_noteq(obj, other)
     VALUE obj, other;
 {
-    if (rb_funcall(obj, eq, 1, other)) {
+    if (rb_equal(obj, other)) {
 	return FALSE;
     }
     return TRUE;
@@ -271,8 +277,10 @@ obj_alloc(class)
 }
 
 static VALUE
-Fcls_new(class, args)
-    VALUE class, args;
+Fcls_new(argc, argv, class)
+    int argc;
+    VALUE *argv;
+    VALUE class;
 {
     return obj_alloc(class);
 }
@@ -285,12 +293,14 @@ Fcls_to_s(class)
 }
 
 static VALUE
-Fcls_attr(class, args)
-    VALUE class, args;
+Fcls_attr(argc, argv, class)
+    int argc;
+    VALUE *argv;
+    VALUE class;
 {
     VALUE name, pub;
 
-    rb_scan_args(args, "11", &name, &pub);
+    rb_scan_args(argc, argv, "11", &name, &pub);
     Check_Type(name, T_STRING);
     rb_define_attr(class, RSTRING(name)->ptr, pub);
     return Qnil;
@@ -351,7 +361,8 @@ Fdata_class(data)
     return C_Data;
 }
 
-static VALUE boot_defclass(name, super)
+static
+VALUE boot_defclass(name, super)
     char *name;
     VALUE super;
 {
@@ -359,6 +370,11 @@ static VALUE boot_defclass(name, super)
 
     rb_name_class(obj, rb_intern(name));
     return (VALUE)obj;
+}
+
+Fdo()
+{
+    return rb_yield(Qnil);
 }
 
 VALUE TopSelf;
@@ -423,10 +439,10 @@ Init_Object()
     rb_define_method(C_Kernel, "to_s", Fkrn_to_s, 0);
     rb_define_method(C_Kernel, "_inspect", Fkrn_inspect, 0);
 
-    rb_define_private_method(C_Kernel, "defined", Fdefined, 1);
-
     rb_define_private_method(C_Kernel, "sprintf", Fsprintf, -1);
     rb_define_alias(C_Kernel, "format", "sprintf");
+
+    rb_define_private_method(C_Kernel, "do", Fdo, 0);
 
     rb_define_method(C_Object, "_inspect", Fobj_inspect, 0);
 
@@ -437,11 +453,11 @@ Init_Object()
 
     rb_define_method(C_Module, "to_s", Fcls_to_s, 0);
     rb_define_method(C_Module, "clone", Fcant_clone, 0);
-    rb_define_private_method(C_Module, "attr", Fcls_attr, -2);
+    rb_define_private_method(C_Module, "attr", Fcls_attr, -1);
     rb_define_method(C_Module, "export", Fcls_export, -1);
     rb_define_method(C_Module, "unexport", Fcls_unexport, -1);
 
-    rb_define_method(C_Class, "new", Fcls_new, -2);
+    rb_define_method(C_Class, "new", Fcls_new, -1);
 
     C_Nil = rb_define_class("Nil", C_Kernel);
     rb_define_method(C_Nil, "to_s", Fnil_to_s, 0);

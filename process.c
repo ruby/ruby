@@ -3,7 +3,7 @@
   process.c -
 
   $Author: matz $
-  $Date: 1994/12/20 05:07:11 $
+  $Date: 1995/01/10 10:42:47 $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1994 Yukihiro Matsumoto
@@ -17,6 +17,9 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#ifdef HAVE_VFORK_H
+#include <vfork.h>
+#endif
 #include "st.h"
 
 static VALUE
@@ -142,8 +145,8 @@ rb_proc_exec(str)
 	    return -1;
 	}
     }
-    a = argv = (char**)alloca(((s - str)/2+2)*sizeof(char*));
-    s = (char*)alloca(s - str + 1);
+    a = argv = ALLOCA_N(char*, (s-str)/2+2);
+    s = ALLOCA_N(char, s-str+1);
     strcpy(s, str);
     if (*a++ = strtok(s, " \t")) {
 	while (t = strtok(NULL, " \t")) {
@@ -278,13 +281,15 @@ Fsleep(argc, argv)
 }
 
 static VALUE
-Fproc_getpgrp(obj, args)
-    VALUE obj, args;
+Fproc_getpgrp(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE vpid;
     int pid, pgrp;
 
-    rb_scan_args(args, "01", &vpid);
+    rb_scan_args(argc, argv, "01", &vpid);
     if (vpid == Qnil) {
 	pid = 0;
     }
@@ -497,7 +502,7 @@ Init_process()
     rb_define_module_function(M_Process, "pid", get_pid, 0);
     rb_define_module_function(M_Process, "ppid", get_ppid, 0);
 
-    rb_define_module_function(M_Process, "getpgrp", Fproc_getpgrp, -2);
+    rb_define_module_function(M_Process, "getpgrp", Fproc_getpgrp, -1);
     rb_define_module_function(M_Process, "setpgrp", Fproc_setpgrp, 2);
 
     rb_define_module_function(M_Process, "getpriority", Fproc_getpriority, 2);
