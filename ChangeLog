@@ -1,3 +1,7 @@
+Tue Apr 28 15:27:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_16.
+
 Tue Apr 28 00:07:38 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (obj_is_proc): type check predicate.
@@ -10,6 +14,10 @@ Mon Apr 27 16:59:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  comsuming CPU too much.
 
 	* lib/tk.rb: use tcltklib#_invoke instead of `_eval'.
+
+Mon Apr 27 16:59:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_sort): use dup, not clone.
 
 Mon Apr 27 13:46:27 1998  Tadahiro Maebashi  <maebashi@iij.ad.jp>
 
