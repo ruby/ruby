@@ -1,3 +1,8 @@
+Thu Oct  9 23:50:21 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0): prevent thread from GC.
+	  [ruby-dev:21572]
+
 Thu Oct  9 19:11:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_start_0): non-volatile should be restored from

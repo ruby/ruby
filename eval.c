@@ -9385,6 +9385,7 @@ rb_thread_start_0(fn, arg, th)
     rb_thread_t th;
 {
     volatile rb_thread_t th_save = th;
+    volatile VALUE thread = th->thread;
     struct BLOCK *volatile saved_block = 0, *block;
     enum thread_status status;
     int state;
@@ -9408,7 +9409,7 @@ rb_thread_start_0(fn, arg, th)
 #endif
 
     if (THREAD_SAVE_CONTEXT(curr_thread)) {
-	return th_save->thread;
+	return thread;
     }
 
     if (ruby_block) {		/* should nail down higher blocks */
