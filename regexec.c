@@ -163,8 +163,6 @@ onig_region_clear(OnigRegion* region)
 extern int
 onig_region_resize(OnigRegion* region, int n)
 {
-  int i;
-
   region->num_regs = n;
 
   if (n < ONIG_NREGION)
@@ -189,17 +187,36 @@ onig_region_resize(OnigRegion* region, int n)
     region->allocated = n;
   }
 
-  for (i = 0; i < region->num_regs; i++) {
-    region->beg[i] = region->end[i] = ONIG_REGION_NOTPOS;
-  }
-
-#ifdef USE_CAPTURE_HISTORY
-  history_root_free(region);
-#endif
   return 0;
 }
 
-static void
+extern int
+onig_region_resize_clear(OnigRegion* region, int n)
+{
+  int r;
+  
+  r = onig_region_resize(region, n);
+  if (r != 0) return r;
+  onig_region_clear(region);
+  return 0;
+}
+    
+extern int
+onig_region_set(OnigRegion* region, int at, int beg, int end)
+{
+  if (at < 0) return ONIGERR_INVALID_ARGUMENT;
+
+  if (at >= region->allocated) {
+    int r = onig_region_resize(region, at + 1);
+    if (r < 0) return r;
+  }
+  
+  region->beg[at] = beg;
+  region->end[at] = end;
+  return 0;
+}
+
+extern void
 onig_region_init(OnigRegion* region)
 {
   region->num_regs     = 0;
@@ -344,7 +361,7 @@ typedef struct {
   int   stack_n;
   OnigOptionType options;
   OnigRegion*    region;
-  UChar* start;   /* search start position (for \G: BEGIN_POSITION) */
+  const UChar* start;   /* search start position (for \G: BEGIN_POSITION) */
 } MatchArg;
 
 #define MATCH_ARG_INIT(msa, arg_option, arg_region, arg_start) do {\
@@ -1127,7 +1144,7 @@ onig_print_statistics(FILE* f)
 #endif
 
 extern int
-onig_is_in_code_range(UChar* p, OnigCodePoint code)
+onig_is_in_code_range(const UChar* p, OnigCodePoint code)
 {
   OnigCodePoint n, *data;
   OnigCodePoint low, high, x;
@@ -1180,7 +1197,7 @@ typedef struct {
 /* match data(str - end) from position (sstart). */
 /* if sstart == str then set sprev to NULL. */
 static int
-match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
+match_at(regex_t* reg, const UChar* str, const UChar* end, const UChar* sstart,
 	 UChar* sprev, MatchArg* msa)
 {
   static UChar FinishCode[] = { OP_FINISH };
@@ -1226,7 +1243,7 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
 
   STACK_PUSH_ENSURED(STK_ALT, FinishCode);  /* bottom stack */
   best_len = ONIG_MISMATCH;
-  s = sstart;
+  s = (UChar* )sstart;
   while (1) {
 #ifdef ONIG_DEBUG_MATCH
     {
@@ -1318,7 +1335,7 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
 
               stkp = stk_base;
               r = make_capture_history_tree(region->history_root, &stkp,
-                                            stk, str, reg);
+                                            stk, (UChar* )str, reg);
               if (r < 0) {
                 best_len = r; /* error code */
                 goto finish;
@@ -1669,7 +1686,7 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
 
 	if (s + mb_len > end) {
           DATA_ENSURE(1);
-	  s = end;
+	  s = (UChar* )end;
 	  p += tlen;
 	  goto cc_mb_not_success;
 	}
@@ -2466,9 +2483,9 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
 
     case OP_LOOK_BEHIND:  STAT_OP_IN(OP_LOOK_BEHIND);
       GET_LENGTH_INC(tlen, p);
-      s = ONIGENC_STEP_BACK(encode, str, s, (int )tlen);
+      s = (UChar* )ONIGENC_STEP_BACK(encode, str, s, (int )tlen);
       if (IS_NULL(s)) goto fail;
-      sprev = onigenc_get_prev_char_head(encode, str, s);
+      sprev = (UChar* )onigenc_get_prev_char_head(encode, str, s);
       STAT_OP_OUT;
       continue;
       break;
@@ -2476,7 +2493,7 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
     case OP_PUSH_LOOK_BEHIND_NOT:  STAT_OP_IN(OP_PUSH_LOOK_BEHIND_NOT);
       GET_RELADDR_INC(addr, p);
       GET_LENGTH_INC(tlen, p);
-      q = ONIGENC_STEP_BACK(encode, str, s, (int )tlen);
+      q = (UChar* )ONIGENC_STEP_BACK(encode, str, s, (int )tlen);
       if (IS_NULL(q)) {
 	/* too short case -> success. ex. /(?<!XXX)a/.match("a")
 	   If you want to change to fail, replace following line. */
@@ -2486,7 +2503,7 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
       else {
 	STACK_PUSH_LOOK_BEHIND_NOT(p + addr, s, sprev);
 	s = q;
-	sprev = onigenc_get_prev_char_head(encode, str, s);
+	sprev = (UChar* )onigenc_get_prev_char_head(encode, str, s);
       }
       STAT_OP_OUT;
       continue;
@@ -2559,15 +2576,16 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
 
 static UChar*
 slow_search(OnigEncoding enc, UChar* target, UChar* target_end,
-	    UChar* text, UChar* text_end, UChar* text_range)
+	    const UChar* text, const UChar* text_end, UChar* text_range)
 {
   UChar *t, *p, *s, *end;
 
-  end = text_end - (target_end - target) + 1;
+  end = (UChar* )text_end;
+  end -= target_end - target - 1;
   if (end > text_range)
     end = text_range;
 
-  s = text;
+  s = (UChar* )text;
 
   while (s < end) {
     if (*s == *target) {
@@ -2589,10 +2607,13 @@ slow_search(OnigEncoding enc, UChar* target, UChar* target_end,
 
 static int
 str_lower_case_match(OnigEncoding enc, int ambig_flag,
-                     UChar* t, UChar* tend, UChar* p, UChar* end)
+                     const UChar* t, const UChar* tend,
+		     const UChar* p, const UChar* end)
 {
   int lowlen;
-  UChar *q, *tsave, *psave, lowbuf[ONIGENC_MBC_NORMALIZE_MAXLEN];
+  UChar *q, lowbuf[ONIGENC_MBC_NORMALIZE_MAXLEN];
+  const UChar* tsave;
+  const UChar* psave;
 
   tsave = t;
   psave = p;
@@ -2622,15 +2643,16 @@ str_lower_case_match(OnigEncoding enc, int ambig_flag,
 static UChar*
 slow_search_ic(OnigEncoding enc, int ambig_flag,
 	       UChar* target, UChar* target_end,
-	       UChar* text, UChar* text_end, UChar* text_range)
+	       const UChar* text, const UChar* text_end, UChar* text_range)
 {
   UChar *s, *end;
 
-  end = text_end - (target_end - target) + 1;
+  end = (UChar* )text_end;
+  end -= target_end - target - 1;
   if (end > text_range)
     end = text_range;
 
-  s = text;
+  s = (UChar* )text;
 
   while (s < end) {
     if (str_lower_case_match(enc, ambig_flag, target, target_end, s, text_end))
@@ -2644,13 +2666,15 @@ slow_search_ic(OnigEncoding enc, int ambig_flag,
 
 static UChar*
 slow_search_backward(OnigEncoding enc, UChar* target, UChar* target_end,
-	     UChar* text, UChar* adjust_text, UChar* text_end, UChar* text_start)
+		     const UChar* text, const UChar* adjust_text,
+		     const UChar* text_end, const UChar* text_start)
 {
   UChar *t, *p, *s;
 
-  s = text_end - (target_end - target);
+  s = (UChar* )text_end;
+  s -= (target_end - target);
   if (s > text_start)
-    s = text_start;
+    s = (UChar* )text_start;
   else
     s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, adjust_text, s);
 
@@ -2666,7 +2690,7 @@ slow_search_backward(OnigEncoding enc, UChar* target, UChar* target_end,
       if (t == target_end)
 	return s;
     }
-    s = onigenc_get_prev_char_head(enc, adjust_text, s);
+    s = (UChar* )onigenc_get_prev_char_head(enc, adjust_text, s);
   }
 
   return (UChar* )NULL;
@@ -2674,15 +2698,16 @@ slow_search_backward(OnigEncoding enc, UChar* target, UChar* target_end,
 
 static UChar*
 slow_search_backward_ic(OnigEncoding enc, int ambig_flag,
-			UChar* target,UChar* target_end,
-			UChar* text, UChar* adjust_text,
-			UChar* text_end, UChar* text_start)
+			UChar* target, UChar* target_end,
+			const UChar* text, const UChar* adjust_text,
+			const UChar* text_end, const UChar* text_start)
 {
   UChar *s;
 
-  s = text_end - (target_end - target);
+  s = (UChar* )text_end;
+  s -= (target_end - target);
   if (s > text_start)
-    s = text_start;
+    s = (UChar* )text_start;
   else
     s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, adjust_text, s);
 
@@ -2691,18 +2716,19 @@ slow_search_backward_ic(OnigEncoding enc, int ambig_flag,
                              target, target_end, s, text_end))
       return s;
 
-    s = onigenc_get_prev_char_head(enc, adjust_text, s);
+    s = (UChar* )onigenc_get_prev_char_head(enc, adjust_text, s);
   }
 
   return (UChar* )NULL;
 }
 
 static UChar*
-bm_search_notrev(regex_t* reg, UChar* target, UChar* target_end,
-		 UChar* text, UChar* text_end, UChar* text_range)
+bm_search_notrev(regex_t* reg, const UChar* target, const UChar* target_end,
+		 const UChar* text, const UChar* text_end,
+		 const UChar* text_range)
 {
-  UChar *s, *t, *p, *end;
-  UChar *tail;
+  const UChar *s, *t, *p, *end;
+  const UChar *tail;
   int skip;
 
 #ifdef ONIG_DEBUG_SEARCH
@@ -2728,7 +2754,7 @@ bm_search_notrev(regex_t* reg, UChar* target, UChar* target_end,
       while (t >= target && *p == *t) {
 	p--; t--;
       }
-      if (t < target) return p + 1;
+      if (t < target) return (UChar* )(p + 1);
 
       skip = reg->map[*s];
       p = s + 1;
@@ -2748,7 +2774,7 @@ bm_search_notrev(regex_t* reg, UChar* target, UChar* target_end,
       while (t >= target && *p == *t) {
 	p--; t--;
       }
-      if (t < target) return p + 1;
+      if (t < target) return (UChar* )(p + 1);
 
       skip = reg->int_map[*s];
       p = s + 1;
@@ -2765,11 +2791,11 @@ bm_search_notrev(regex_t* reg, UChar* target, UChar* target_end,
 }
 
 static UChar*
-bm_search(regex_t* reg, UChar* target, UChar* target_end,
-	  UChar* text, UChar* text_end, UChar* text_range)
+bm_search(regex_t* reg, const UChar* target, const UChar* target_end,
+	  const UChar* text, const UChar* text_end, const UChar* text_range)
 {
-  UChar *s, *t, *p, *end;
-  UChar *tail;
+  const UChar *s, *t, *p, *end;
+  const UChar *tail;
 
   end = text_range + (target_end - target) - 1;
   if (end > text_end)
@@ -2784,7 +2810,7 @@ bm_search(regex_t* reg, UChar* target, UChar* target_end,
       while (t >= target && *p == *t) {
 	p--; t--;
       }
-      if (t < target) return p + 1;
+      if (t < target) return (UChar* )(p + 1);
       s += reg->map[*s];
     }
   }
@@ -2795,7 +2821,7 @@ bm_search(regex_t* reg, UChar* target, UChar* target_end,
       while (t >= target && *p == *t) {
 	p--; t--;
       }
-      if (t < target) return p + 1;
+      if (t < target) return (UChar* )(p + 1);
       s += reg->int_map[*s];
     }
   }
@@ -2824,10 +2850,11 @@ set_bm_backward_skip(UChar* s, UChar* end, OnigEncoding enc, int** skip)
 }
 
 static UChar*
-bm_search_backward(regex_t* reg, UChar* target, UChar* target_end, UChar* text,
-		   UChar* adjust_text, UChar* text_end, UChar* text_start)
+bm_search_backward(regex_t* reg, const UChar* target, const UChar* target_end,
+		   const UChar* text, const UChar* adjust_text,
+		   const UChar* text_end, const UChar* text_start)
 {
-  UChar *s, *t, *p;
+  const UChar *s, *t, *p;
 
   s = text_end - (target_end - target);
   if (text_start < s)
@@ -2842,7 +2869,7 @@ bm_search_backward(regex_t* reg, UChar* target, UChar* target_end, UChar* text,
       p++; t++;
     }
     if (t == target_end)
-      return s;
+      return (UChar* )s;
 
     s -= reg->int_map_backward[*s];
     s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, adjust_text, s);
@@ -2852,12 +2879,13 @@ bm_search_backward(regex_t* reg, UChar* target, UChar* target_end, UChar* text,
 }
 
 static UChar*
-map_search(OnigEncoding enc, UChar map[], UChar* text, UChar* text_range)
+map_search(OnigEncoding enc, UChar map[],
+	   const UChar* text, const UChar* text_range)
 {
-  UChar *s = text;
+  const UChar *s = text;
 
   while (s < text_range) {
-    if (map[*s]) return s;
+    if (map[*s]) return (UChar* )s;
 
     s += enc_len(enc, s);
   }
@@ -2866,12 +2894,13 @@ map_search(OnigEncoding enc, UChar map[], UChar* text, UChar* text_range)
 
 static UChar*
 map_search_backward(OnigEncoding enc, UChar map[],
-		    UChar* text, UChar* adjust_text, UChar* text_start)
+		    const UChar* text, const UChar* adjust_text,
+		    const UChar* text_start)
 {
-  UChar *s = text_start;
+  const UChar *s = text_start;
 
   while (s >= text) {
-    if (map[*s]) return s;
+    if (map[*s]) return (UChar* )s;
 
     s = onigenc_get_prev_char_head(enc, adjust_text, s);
   }
@@ -2879,7 +2908,7 @@ map_search_backward(OnigEncoding enc, UChar map[],
 }
 
 extern int
-onig_match(regex_t* reg, UChar* str, UChar* end, UChar* at, OnigRegion* region,
+onig_match(regex_t* reg, const UChar* str, const UChar* end, const UChar* at, OnigRegion* region,
 	    OnigOptionType option)
 {
   int r;
@@ -2912,13 +2941,13 @@ onig_match(regex_t* reg, UChar* str, UChar* end, UChar* at, OnigRegion* region,
       && !IS_POSIX_REGION(option)
 #endif
       ) {
-    r = onig_region_resize(region, reg->num_mem + 1);
+    r = onig_region_resize_clear(region, reg->num_mem + 1);
   }
   else
     r = 0;
 
   if (r == 0) {
-    prev = onigenc_get_prev_char_head(reg->enc, str, at);
+    prev = (UChar* )onigenc_get_prev_char_head(reg->enc, str, at);
     r = match_at(reg, str, end, at, prev, &msa);
   }
 
@@ -2928,7 +2957,7 @@ onig_match(regex_t* reg, UChar* str, UChar* end, UChar* at, OnigRegion* region,
 }
 
 static int
-forward_search_range(regex_t* reg, UChar* str, UChar* end, UChar* s,
+forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 		     UChar* range, UChar** low, UChar** high, UChar** low_prev)
 {
   UChar *p, *pprev = (UChar* )NULL;
@@ -2995,7 +3024,7 @@ forward_search_range(regex_t* reg, UChar* str, UChar* end, UChar* s,
 
       case ANCHOR_END_LINE:
 	if (ON_STR_END(p)) {
-	  prev = onigenc_get_prev_char_head(reg->enc,
+	  prev = (UChar* )onigenc_get_prev_char_head(reg->enc,
 					    (pprev ? pprev : str), p);
 	  if (prev && ONIGENC_IS_MBC_NEWLINE(reg->enc, prev, end))
 	    goto retry_gate;
@@ -3021,7 +3050,7 @@ forward_search_range(regex_t* reg, UChar* str, UChar* end, UChar* s,
 	*low = p - reg->dmax;
 	if (*low > s) {
 	  *low = onigenc_get_right_adjust_char_head_with_prev(reg->enc, s,
-							  *low, low_prev);
+							      *low, (const UChar** )low_prev);
 	  if (low_prev && IS_NULL(*low_prev))
 	    *low_prev = onigenc_get_prev_char_head(reg->enc,
 						   (pprev ? pprev : s), *low);
@@ -3053,8 +3082,9 @@ static int set_bm_backward_skip P_((UChar* s, UChar* end, OnigEncoding enc,
 #define BM_BACKWARD_SEARCH_LENGTH_THRESHOLD   100
 
 static int
-backward_search_range(regex_t* reg, UChar* str, UChar* end, UChar* s,
-		      UChar* range, UChar* adjrange, UChar** low, UChar** high)
+backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
+		      UChar* s, const UChar* range, UChar* adjrange,
+		      UChar** low, UChar** high)
 {
   int r;
   UChar *p;
@@ -3151,8 +3181,8 @@ backward_search_range(regex_t* reg, UChar* str, UChar* end, UChar* s,
 
 
 extern int
-onig_search(regex_t* reg, UChar* str, UChar* end,
-	     UChar* start, UChar* range, OnigRegion* region, OnigOptionType option)
+onig_search(regex_t* reg, const UChar* str, const UChar* end,
+	    const UChar* start, const UChar* range, OnigRegion* region, OnigOptionType option)
 {
   int r;
   UChar *s, *prev;
@@ -3178,8 +3208,9 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
 #endif /* USE_MULTI_THREAD_SYSTEM */
 
 #ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "onig_search (entry point): str: %d, end: %d, start: %d, range: %d\n",
-	  (int )str, (int )(end - str), (int )(start - str), (int )(range - str));
+  fprintf(stderr,
+     "onig_search (entry point): str: %d, end: %d, start: %d, range: %d\n",
+     (int )str, (int )(end - str), (int )(start - str), (int )(range - str));
 #endif
 
   if (region
@@ -3187,7 +3218,7 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
       && !IS_POSIX_REGION(option)
 #endif
       ) {
-    r = onig_region_resize(region, reg->num_mem + 1);
+    r = onig_region_resize_clear(region, reg->num_mem + 1);
     if (r) goto finish_no_msa;
   }
 
@@ -3228,7 +3259,7 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
       }
     }
     else if (reg->anchor & ANCHOR_END_BUF) {
-      semi_end = end;
+      semi_end = (UChar* )end;
 
     end_buf:
       if ((OnigDistance )(semi_end - str) < reg->anchor_dmin)
@@ -3270,7 +3301,7 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
 	}
       }
       else {
-	semi_end = end;
+	semi_end = (UChar* )end;
 	goto end_buf;
       }
     }
@@ -3279,14 +3310,15 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
     }
   }
   else if (str == end) { /* empty string */
-    static UChar* address_for_empty_string = "";
+    static const UChar* address_for_empty_string = "";
 
 #ifdef ONIG_DEBUG_SEARCH
     fprintf(stderr, "onig_search: empty string.\n");
 #endif
 
     if (reg->threshold_len == 0) {
-      s = start = end = str = address_for_empty_string;
+      start = end = str = address_for_empty_string;
+      s = (UChar* )start;
       prev = (UChar* )NULL;
 
       MATCH_ARG_INIT(msa, option, region, start);
@@ -3303,7 +3335,7 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
 
   MATCH_ARG_INIT(msa, option, region, start);
 
-  s = start;
+  s = (UChar* )start;
   if (range > start) {   /* forward search */
     if (s > str)
       prev = onigenc_get_prev_char_head(reg->enc, str, s);
@@ -3313,13 +3345,13 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
     if (reg->optimize != ONIG_OPTIMIZE_NONE) {
       UChar *sch_range, *low, *high, *low_prev;
 
-      sch_range = range;
+      sch_range = (UChar* )range;
       if (reg->dmax != 0) {
 	if (reg->dmax == ONIG_INFINITE_DISTANCE)
-	  sch_range = end;
+	  sch_range = (UChar* )end;
 	else {
 	  sch_range += reg->dmax;
-	  if (sch_range > end) sch_range = end;
+	  if (sch_range > end) sch_range = (UChar* )end;
 	}
       }
       if (reg->dmax != ONIG_INFINITE_DISTANCE &&
@@ -3368,13 +3400,13 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
       if (range < end)
 	adjrange = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, str, range);
       else
-	adjrange = end;
+	adjrange = (UChar* )end;
 
       if (reg->dmax != ONIG_INFINITE_DISTANCE &&
 	  (end - range) >= reg->threshold_len) {
 	do {
 	  sch_start = s + reg->dmax;
-	  if (sch_start > end) sch_start = end;
+	  if (sch_start > end) sch_start = (UChar* )end;
 	  if (backward_search_range(reg, str, end, sch_start, range, adjrange,
 				    &low, &high) <= 0)
 	    goto mismatch;
@@ -3396,10 +3428,10 @@ onig_search(regex_t* reg, UChar* str, UChar* end,
 	sch_start = s;
 	if (reg->dmax != 0) {
 	  if (reg->dmax == ONIG_INFINITE_DISTANCE)
-	    sch_start = end;
+	    sch_start = (UChar* )end;
 	  else {
 	    sch_start += reg->dmax;
-	    if (sch_start > end) sch_start = end;
+	    if (sch_start > end) sch_start = (UChar* )end;
 	    else
 	      sch_start = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc,
 						    start, sch_start);

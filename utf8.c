@@ -2,7 +2,7 @@
   utf8.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,13 +60,13 @@ static int EncLen_UTF8[] = {
 };
 
 static int
-utf8_mbc_enc_len(UChar* p)
+utf8_mbc_enc_len(const UChar* p)
 {
   return EncLen_UTF8[*p];
 }
 
 static OnigCodePoint
-utf8_mbc_to_code(UChar* p, UChar* end)
+utf8_mbc_to_code(const UChar* p, const UChar* end)
 {
   int c, len;
   OnigCodePoint n;
@@ -195,9 +195,9 @@ utf8_code_to_mbc(OnigCodePoint code, UChar *buf)
 }
 
 static int
-utf8_mbc_to_normalize(OnigAmbigType flag, UChar** pp, UChar* end, UChar* lower)
+utf8_mbc_to_normalize(OnigAmbigType flag, const UChar** pp, const UChar* end, UChar* lower)
 {
-  UChar* p = *pp;
+  const UChar* p = *pp;
 
   if (ONIGENC_IS_MBC_ASCII(p)) {
     if (end > p + 1 &&
@@ -260,9 +260,9 @@ utf8_mbc_to_normalize(OnigAmbigType flag, UChar** pp, UChar* end, UChar* lower)
 }
 
 static int
-utf8_is_mbc_ambiguous(OnigAmbigType flag, UChar** pp, UChar* end)
+utf8_is_mbc_ambiguous(OnigAmbigType flag, const UChar** pp, const UChar* end)
 {
-  UChar* p = *pp;
+  const UChar* p = *pp;
 
   if (ONIGENC_IS_MBC_ASCII(p)) {
     if (end > p + 1 &&
@@ -3696,15 +3696,15 @@ utf8_is_code_ctype(OnigCodePoint code, unsigned int ctype)
 }
 
 static UChar*
-utf8_left_adjust_char_head(UChar* start, UChar* s)
+utf8_left_adjust_char_head(const UChar* start, const UChar* s)
 {
-  UChar *p;
+  const UChar *p;
 
-  if (s <= start) return s;
+  if (s <= start) return (UChar* )s;
   p = s;
 
   while (!utf8_islead(*p) && p > start) p--;
-  return p;
+  return (UChar* )p;
 }
 
 OnigEncodingType OnigEncodingUTF8 = {

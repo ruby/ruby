@@ -58,7 +58,7 @@ OnigSyntaxType OnigSyntaxRuby = {
 
 OnigSyntaxType*  OnigDefaultSyntax = ONIG_SYNTAX_RUBY;
 
-extern void onig_null_warn(char* s) { }
+extern void onig_null_warn(const char* s) { }
 
 #ifdef DEFAULT_WARN_FUNCTION
 static OnigWarnFunc onig_warn = (OnigWarnFunc )DEFAULT_WARN_FUNCTION;
@@ -198,7 +198,7 @@ bitset_copy(BitSetRef dest, BitSetRef bs)
 }
 
 extern int
-onig_strncmp(UChar* s1, UChar* s2, int n)
+onig_strncmp(const UChar* s1, const UChar* s2, int n)
 {
   int x;
 
@@ -210,7 +210,7 @@ onig_strncmp(UChar* s1, UChar* s2, int n)
 }
 
 static void
-k_strcpy(UChar* dest, UChar* src, UChar* end)
+k_strcpy(UChar* dest, const UChar* src, const UChar* end)
 {
   int len = end - src;
   if (len > 0) {
@@ -259,7 +259,7 @@ strdup_with_null(OnigEncoding enc, UChar* s, UChar* end)
 #define PPEEK_IS(c)  (PPEEK == (OnigCodePoint )c)
 
 static UChar*
-k_strcat_capa(UChar* dest, UChar* dest_end, UChar* src, UChar* src_end,
+k_strcat_capa(UChar* dest, UChar* dest_end, const UChar* src, const UChar* src_end,
 	      int capa)
 {
   UChar* r;
@@ -277,7 +277,7 @@ k_strcat_capa(UChar* dest, UChar* dest_end, UChar* src, UChar* src_end,
 /* dest on static area */
 static UChar*
 strcat_capa_from_static(UChar* dest, UChar* dest_end,
-			UChar* src, UChar* src_end, int capa)
+			const UChar* src, const UChar* src_end, int capa)
 {
   UChar* r;
 
@@ -382,7 +382,7 @@ onig_names_free(regex_t* reg)
 }
 
 static NameEntry*
-name_find(regex_t* reg, UChar* name, UChar* name_end)
+name_find(regex_t* reg, const UChar* name, const UChar* name_end)
 {
   NameEntry* e;
   NameTable* t = (NameTable* )reg->name_table;
@@ -395,7 +395,7 @@ name_find(regex_t* reg, UChar* name, UChar* name_end)
 }
 
 typedef struct {
-  int (*func)(UChar*,UChar*,int,int*,regex_t*,void*);
+  int (*func)(const UChar*, const UChar*,int,int*,regex_t*,void*);
   regex_t* reg;
   void* arg;
   int ret;
@@ -420,8 +420,8 @@ i_names(UChar* key, NameEntry* e, INamesArg* arg)
 
 extern int
 onig_foreach_name(regex_t* reg,
-		   int (*func)(UChar*,UChar*,int,int*,regex_t*,void*),
-		   void* arg)
+	   int (*func)(const UChar*, const UChar*,int,int*,regex_t*,void*),
+	   void* arg)
 {
   INamesArg narg;
   NameTable* t = (NameTable* )reg->name_table;
@@ -585,8 +585,8 @@ name_find(regex_t* reg, UChar* name, UChar* name_end)
 
 extern int
 onig_foreach_name(regex_t* reg,
-		   int (*func)(UChar*,UChar*,int,int*,regex_t*,void*),
-		   void* arg)
+	   int (*func)(const UChar*, const UChar*,int,int*,regex_t*,void*),
+	   void* arg)
 {
   int i, r;
   NameEntry* e;
@@ -725,8 +725,8 @@ name_add(regex_t* reg, UChar* name, UChar* name_end, int backref, ScanEnv* env)
 }
 
 extern int
-onig_name_to_group_numbers(regex_t* reg, UChar* name, UChar* name_end,
-			    int** nums)
+onig_name_to_group_numbers(regex_t* reg, const UChar* name,
+			   const UChar* name_end, int** nums)
 {
   NameEntry* e;
 
@@ -747,8 +747,8 @@ onig_name_to_group_numbers(regex_t* reg, UChar* name, UChar* name_end,
 }
 
 extern int
-onig_name_to_backref_number(regex_t* reg, UChar* name, UChar* name_end,
-			     OnigRegion *region)
+onig_name_to_backref_number(regex_t* reg, const UChar* name,
+			    const UChar* name_end, OnigRegion *region)
 {
   int i, n, *nums;
 
@@ -773,23 +773,23 @@ onig_name_to_backref_number(regex_t* reg, UChar* name, UChar* name_end,
 #else /* USE_NAMED_GROUP */
 
 extern int
-onig_name_to_group_numbers(regex_t* reg, UChar* name, UChar* name_end,
-			    int** nums)
+onig_name_to_group_numbers(regex_t* reg, const UChar* name,
+			   const UChar* name_end, int** nums)
 {
   return ONIG_NO_SUPPORT_CONFIG;
 }
 
 extern int
-onig_name_to_backref_number(regex_t* reg, UChar* name, UChar* name_end,
-			     OnigRegion* region)
+onig_name_to_backref_number(regex_t* reg, const UChar* name,
+			    const UChar* name_end, OnigRegion* region)
 {
   return ONIG_NO_SUPPORT_CONFIG;
 }
 
 extern int
 onig_foreach_name(regex_t* reg,
-		   int (*func)(UChar*,UChar*,int,int*,regex_t*,void*),
-		   void* arg)
+	   int (*func)(const UChar*, const UChar*,int,int*,regex_t*,void*),
+	   void* arg)
 {
   return ONIG_NO_SUPPORT_CONFIG;
 }
@@ -1248,7 +1248,7 @@ node_new_option(OnigOptionType option)
 }
 
 extern int
-onig_node_str_cat(Node* node, UChar* s, UChar* end)
+onig_node_str_cat(Node* node, const UChar* s, const UChar* end)
 {
   int addlen = end - s;
 
@@ -1318,7 +1318,7 @@ onig_node_str_clear(Node* node)
 }
 
 static Node*
-node_new_str(UChar* s, UChar* end)
+node_new_str(const UChar* s, const UChar* end)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
@@ -1336,7 +1336,7 @@ node_new_str(UChar* s, UChar* end)
 }
 
 extern Node*
-onig_node_new_str(UChar* s, UChar* end)
+onig_node_new_str(const UChar* s, const UChar* end)
 {
   return node_new_str(s, end);
 }
@@ -1367,7 +1367,7 @@ node_new_str_raw_char(UChar c)
 static Node*
 str_node_split_last_char(StrNode* sn, OnigEncoding enc)
 {
-  UChar *p;
+  const UChar *p;
   Node* n = NULL_NODE;
 
   if (sn->end > sn->s) {
@@ -1376,7 +1376,7 @@ str_node_split_last_char(StrNode* sn, OnigEncoding enc)
       n = node_new_str(p, sn->end);
       if ((sn->flag & NSTR_RAW) != 0)
 	NSTRING_SET_RAW(n);
-      sn->end = p;
+      sn->end = (UChar* )p;
     }
   }
   return n;
@@ -1392,7 +1392,7 @@ str_node_can_be_split(StrNode* sn, OnigEncoding enc)
 }
 
 extern int
-onig_scan_unsigned_number(UChar** src, UChar* end, OnigEncoding enc)
+onig_scan_unsigned_number(UChar** src, const UChar* end, OnigEncoding enc)
 {
   unsigned int num, val;
   OnigCodePoint c;
@@ -3541,7 +3541,7 @@ parse_posix_bracket(CClassNode* cc, UChar** src, UChar* end, ScanEnv* env)
 
   for (pb = PBS; IS_NOT_NULL(pb->name); pb++) {
     if (onigenc_with_ascii_strncmp(enc, p, end, pb->name, pb->len) == 0) {
-      p = onigenc_step(enc, p, end, pb->len);
+      p = (UChar* )onigenc_step(enc, p, end, pb->len);
       if (onigenc_with_ascii_strncmp(enc, p, end, ":]", 2) != 0)
 	return ONIGERR_INVALID_POSIX_BRACKET_TYPE;
 
@@ -5068,7 +5068,7 @@ parse_regexp(Node** top, UChar** src, UChar* end, ScanEnv* env)
 }
 
 extern int
-onig_parse_make_tree(Node** root, UChar* pattern, UChar* end, regex_t* reg,
+onig_parse_make_tree(Node** root, const UChar* pattern, const UChar* end, regex_t* reg,
 		      ScanEnv* env)
 {
   int r;
@@ -5083,13 +5083,13 @@ onig_parse_make_tree(Node** root, UChar* pattern, UChar* end, regex_t* reg,
   env->ambig_flag  = reg->ambig_flag;
   env->enc         = reg->enc;
   env->syntax      = reg->syntax;
-  env->pattern     = pattern;
-  env->pattern_end = end;
+  env->pattern     = (UChar* )pattern;
+  env->pattern_end = (UChar* )end;
   env->reg         = reg;
 
   *root = NULL;
-  p = pattern;
-  r = parse_regexp(root, &p, end, env);
+  p = (UChar* )pattern;
+  r = parse_regexp(root, &p, (UChar* )end, env);
   reg->num_mem = env->num_mem;
   return r;
 }

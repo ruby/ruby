@@ -291,21 +291,21 @@ extern int    onig_renumber_name_table P_((regex_t* reg, GroupNumRemap* map));
 #endif
 
 extern int    onig_is_code_in_cc P_((OnigEncoding enc, OnigCodePoint code, CClassNode* cc));
-extern int    onig_strncmp P_((UChar* s1, UChar* s2, int n));
+extern int    onig_strncmp P_((const UChar* s1, const UChar* s2, int n));
 extern void   onig_scan_env_set_error_string P_((ScanEnv* env, int ecode, UChar* arg, UChar* arg_end));
-extern int    onig_scan_unsigned_number P_((UChar** src, UChar* end, OnigEncoding enc));
+extern int    onig_scan_unsigned_number P_((UChar** src, const UChar* end, OnigEncoding enc));
 extern void   onig_reduce_nested_qualifier P_((Node* pnode, Node* cnode));
 extern void   onig_node_conv_to_str_node P_((Node* node, int raw));
-extern int    onig_node_str_cat P_((Node* node, UChar* s, UChar* end));
+extern int    onig_node_str_cat P_((Node* node, const UChar* s, const UChar* end));
 extern void   onig_node_free P_((Node* node));
 extern Node*  onig_node_new_effect P_((int type));
 extern Node*  onig_node_new_anchor P_((int type));
-extern Node*  onig_node_new_str P_((UChar* s, UChar* end));
+extern Node*  onig_node_new_str P_((const UChar* s, const UChar* end));
 extern Node*  onig_node_new_list P_((Node* left, Node* right));
 extern void   onig_node_str_clear P_((Node* node));
 extern int    onig_free_node_list();
 extern int    onig_names_free P_((regex_t* reg));
-extern int    onig_parse_make_tree P_((Node** root, UChar* pattern, UChar* end, regex_t* reg, ScanEnv* env));
+extern int    onig_parse_make_tree P_((Node** root, const UChar* pattern, const UChar* end, regex_t* reg, ScanEnv* env));
 
 #ifdef ONIG_DEBUG
 #ifdef USE_NAMED_GROUP

@@ -4726,7 +4726,7 @@ static void print_tree P_((FILE* f, Node* node));
 #endif
 
 extern int
-onig_compile(regex_t* reg, UChar* pattern, UChar* pattern_end,
+onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 	      OnigErrorInfo* einfo)
 {
 #define COMPILE_INIT_SIZE  20
@@ -4877,7 +4877,7 @@ onig_compile(regex_t* reg, UChar* pattern, UChar* pattern_end,
 }
 
 extern int
-onig_recompile(regex_t* reg, UChar* pattern, UChar* pattern_end,
+onig_recompile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
 	    OnigOptionType option, OnigEncoding enc, OnigSyntaxType* syntax,
 	    OnigErrorInfo* einfo)
 {
@@ -4939,7 +4939,7 @@ onig_alloc_init(regex_t** reg, OnigOptionType option, OnigAmbigType ambig_flag,
 }
 
 extern int
-onig_new(regex_t** reg, UChar* pattern, UChar* pattern_end,
+onig_new(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
 	  OnigOptionType option, OnigEncoding enc, OnigSyntaxType* syntax,
 	  OnigErrorInfo* einfo)
 {

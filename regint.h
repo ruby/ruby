@@ -785,7 +785,7 @@ extern char* onig_error_code_to_format P_((int code));
 extern void  onig_snprintf_with_pattern PV_((char buf[], int bufsize, OnigEncoding enc, char* pat, char* pat_end, char *fmt, ...));
 extern int  onig_bbuf_init P_((BBuf* buf, int size));
 extern int  onig_alloc_init P_((regex_t** reg, OnigOptionType option, OnigAmbigType ambig_flag, OnigEncoding enc, OnigSyntaxType* syntax));
-extern int  onig_compile P_((regex_t* reg, UChar* pattern, UChar* pattern_end, OnigErrorInfo* einfo));
+extern int  onig_compile P_((regex_t* reg, const UChar* pattern, const UChar* pattern_end, OnigErrorInfo* einfo));
 extern void onig_chain_reduce P_((regex_t* reg));
 extern void onig_chain_link_add P_((regex_t* to, regex_t* add));
 extern void onig_transfer P_((regex_t* to, regex_t* from));

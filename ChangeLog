@@ -1,3 +1,10 @@
+Wed Feb 23 21:45:29 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* ascii.c, euc_jp.c, oniggnu.h, oniguruma.h, regcomp.c,
+	regenc.c, regenc.h, regerror.c, regexec.c, regint.h,
+	regparse.c, regparse.h, sjis.c, utf8.c: imported Oni Guruma
+	3.7.0.
+
 Thu Feb 23 15:04:32 2005  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (split_userinfo): should split ":pass" into ""
