@@ -549,23 +549,33 @@ method_list(mod, recur, func)
     return ary;
 }
 
-VALUE
-rb_class_instance_methods(argc, argv, mod)
+static VALUE
+class_instance_method_list(argc, argv, mod, func)
     int argc;
     VALUE *argv;
     VALUE mod;
+    void (*func)();
 {
     VALUE recur;
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
 #if RUBY_VERSION_CODE < 181
-	rb_warn("instance_methods parameter will default to 'true' after 1.8.1");
+	rb_warn("%s: parameter will default to 'true' as of 1.8.1", rb_id2name(rb_frame_last_func()));
 #else
 	recur = Qtrue;
 #endif
     }
-    return method_list(mod, RTEST(recur), ins_methods_i);
+    return method_list(mod, RTEST(recur), func);
+}
+
+VALUE
+rb_class_instance_methods(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
+{
+    return class_instance_method_list(argc, argv, mod, ins_methods_i);
 }
 
 VALUE
@@ -574,17 +584,7 @@ rb_class_protected_instance_methods(argc, argv, mod)
     VALUE *argv;
     VALUE mod;
 {
-    VALUE recur;
-
-    rb_scan_args(argc, argv, "01", &recur);
-    if (argc == 0) {
-#if RUBY_VERSION_CODE < 181
-	rb_warn("protected_instance_methods parameter will default to 'true' after 1.8.1");
-#else
-	recur = Qtrue;
-#endif
-    }
-    return method_list(mod, RTEST(recur), ins_methods_prot_i);
+    return class_instance_method_list(argc, argv, mod, ins_methods_prot_i);
 }
 
 VALUE
@@ -593,17 +593,7 @@ rb_class_private_instance_methods(argc, argv, mod)
     VALUE *argv;
     VALUE mod;
 {
-    VALUE recur;
-
-    rb_scan_args(argc, argv, "01", &recur);
-    if (argc == 0) {
-#if RUBY_VERSION_CODE < 181
-	rb_warn("private_instance_methods parameter will default to 'true' after 1.8.1");
-#else
-	recur = Qtrue;
-#endif
-    }
-    return method_list(mod, RTEST(recur), ins_methods_priv_i);
+    return class_instance_method_list(argc, argv, mod, ins_methods_priv_i);
 }
 
 VALUE
@@ -612,17 +602,7 @@ rb_class_public_instance_methods(argc, argv, mod)
     VALUE *argv;
     VALUE mod;
 {
-    VALUE recur;
-
-    rb_scan_args(argc, argv, "01", &recur);
-    if (argc == 0) {
-#if RUBY_VERSION_CODE < 181
-	rb_warn("public_instance_methods parameter will default to 'true' after 1.8.1");
-#else
-	recur = Qtrue;
-#endif
-    }
-    return method_list(mod, RTEST(recur), ins_methods_pub_i);
+    return class_instance_method_list(argc, argv, mod, ins_methods_pub_i);
 }
 
 VALUE
@@ -637,7 +617,7 @@ rb_obj_singleton_methods(argc, argv, obj)
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
 #if RUBY_VERSION_CODE < 181
-	rb_warn("singleton_methods parameter will default to 'true' after 1.8.1");
+	rb_warn("singleton_methods: parameter will default to 'true' as of 1.8.1");
 #else
 	recur = Qtrue;
 #endif

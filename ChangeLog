@@ -1,3 +1,9 @@
+Wed Jun 25 12:52:58 2003  Matthew Dempsky  <jivera@flame.org>
+
+	* class.c (rb_generic_class_instance_methods): merge argument
+	  check (and warning) into one function; following DRY principle.
+	  [ruby-core:01193]
+
 Wed Jun 25 00:14:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (autoload_delete): should delete Qundef from iv_tbl.
