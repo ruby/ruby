@@ -19,6 +19,7 @@
 #   ruby -run -e install -- [OPTION] SOURCE DEST
 #   ruby -run -e chmod -- [OPTION] OCTAL-MODE FILE
 #   ruby -run -e touch -- [OPTION] FILE
+#   ruby -run -e help [COMMAND]
 
 require 'fileutils'
 require 'getopts'
@@ -50,7 +51,7 @@ def setup(options = "")
   yield ARGV, options, $OPT
 end
 
-#
+##
 # Copy SOURCE to DEST, or multiple SOURCE(s) to DIRECTORY
 #
 #   ruby -run -e cp -- [OPTION] SOURCE DEST
@@ -59,6 +60,7 @@ end
 #   -r		copy recursively
 #   -v		verbose
 #
+
 def cp
   setup("pr") do |argv, options, opt|
     cmd = "cp"
@@ -69,7 +71,7 @@ def cp
   end
 end
 
-#
+##
 # Create a link to the specified TARGET with LINK_NAME.
 #
 #   ruby -run -e ln -- [OPTION] TARGET LINK_NAME
@@ -78,6 +80,7 @@ end
 #   -f		remove existing destination files
 #   -v		verbose
 #
+
 def ln
   setup("sf") do |argv, options, opt|
     cmd = "ln"
@@ -88,13 +91,14 @@ def ln
   end
 end
 
-#
+##
 # Rename SOURCE to DEST, or move SOURCE(s) to DIRECTORY.
 #
-#   ruby -run -e mv SOURCE DEST
+#   ruby -run -e mv -- [OPTION] SOURCE DEST
 #
 #   -v		verbose
 #
+
 def mv
   setup do |argv, options|
     dest = argv.pop
@@ -103,7 +107,7 @@ def mv
   end
 end
 
-#
+##
 # Remove the FILE
 #
 #   ruby -run -e rm -- [OPTION] FILE
@@ -112,6 +116,7 @@ end
 #   -r		remove the contents of directories recursively
 #   -v		verbose
 #
+
 def rm
   setup("fr") do |argv, options, opt|
     cmd = "rm"
@@ -120,7 +125,7 @@ def rm
   end
 end
 
-#
+##
 # Create the DIR, if they do not already exist.
 #
 #   ruby -run -e mkdir -- [OPTION] DIR
@@ -128,6 +133,7 @@ end
 #   -p		no error if existing, make parent directories as needed
 #   -v		verbose
 #
+
 def mkdir
   setup("p") do |argv, options, opt|
     cmd = "mkdir"
@@ -136,20 +142,21 @@ def mkdir
   end
 end
 
-#
+##
 # Remove the DIR.
 #
-#   ruby -run -e rmdir DIR
+#   ruby -run -e rmdir -- [OPTION] DIR
 #
 #   -v		verbose
 #
+
 def rmdir
   setup do |argv, options|
     FileUtils.rmdir argv, options
   end
 end
 
-#
+##
 # Copy SOURCE to DEST.
 #
 #   ruby -run -e install -- [OPTION] SOURCE DEST
@@ -159,6 +166,7 @@ end
 #   -m		set permission mode (as in chmod), instead of 0755
 #   -v		verbose
 #
+
 def install
   setup("pm:") do |argv, options, opt|
     options[:mode] = opt["m"] ? opt["m"].oct : 0755
@@ -168,13 +176,14 @@ def install
   end
 end
 
-#
+##
 # Change the mode of each FILE to OCTAL-MODE.
 #
-#   ruby -run -e chmod OCTAL-MODE FILE
+#   ruby -run -e chmod -- [OPTION] OCTAL-MODE FILE
 #
 #   -v		verbose
 #
+
 def chmod
   setup do |argv, options|
     mode = argv.shift.oct
@@ -182,15 +191,37 @@ def chmod
   end
 end
 
-#
+##
 # Update the access and modification times of each FILE to the current time.
 #
-#   ruby -run -e touch FILE
+#   ruby -run -e touch -- [OPTION] FILE
 #
 #   -v		verbose
 #
+
 def touch
   setup do |argv, options|
     FileUtils.touch argv, options
+  end
+end
+
+##
+# Display help message.
+#
+#   ruby -run -e help [COMMAND]
+#
+
+def help
+  setup do |argv,|
+    all = argv.empty?
+    open(__FILE__) do |me|
+      while me.gets("##\n")
+	if help = me.gets("\n\n")
+	  if all or argv.delete help[/-e \w+/].sub(/-e /, "")
+	    print help.gsub(/^# ?/, "")
+	  end
+	end
+      end
+    end
   end
 end

@@ -2,6 +2,8 @@ Sun Aug  3 18:03:44 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* regex.h (re_mbctab): should refer to RUBY_EXPORT.  [ruby-ext:02199]
 
+	* lib/un.h (help): new.  % ruby -run -e help cp
+
 Sun Aug  3 02:45:06 2003  Koji Arai  <jca02266@nifty.ne.jp>
 
 	* numeric.c (flo_to_s): get rid of buffer overflow.
