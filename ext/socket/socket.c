@@ -888,6 +888,8 @@ open_inet_internal(arg)
 	rb_sys_fail(syscall);
     }
 
+    arg->fd = -1;
+
     if (type == INET_SERVER)
 	listen(fd, 5);
 
