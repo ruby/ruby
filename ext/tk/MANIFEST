@@ -2,6 +2,7 @@ MANIFEST
 extconf.rb
 depend
 tkutil.c
+lib/README
 lib/tk.rb
 lib/tkafter.rb
 lib/tkbgerror.rb
