@@ -33,15 +33,51 @@ int *tclDummyMathPtr = (int *) matherr;
 
 /*---- module TclTkLib ----*/
 
+/* Tk_ThreadTimer */
+typedef struct {
+    Tcl_TimerToken token;
+    int  flag;
+} Tk_ThreadTimerData;
+
+/* timer callback */
+void _timer_for_thread (ClientData clientData)
+{
+    Tk_ThreadTimerData *timer = (Tk_ThreadTimerData *) clientData;
+
+    timer->flag = 0;
+    CHECK_INTS;
+#ifdef THREAD 
+    if (!thread_critical) thread_schedule();
+#endif
+
+    timer->token = Tk_CreateTimerHandler(200, _timer_for_thread, 
+					 (ClientData) timer);
+    timer->flag = 1;
+}
+
 /* execute Tk_MainLoop */
 static VALUE
 lib_mainloop(VALUE self)
 {
+    Tk_ThreadTimerData *timer;
+
+    timer = (Tk_ThreadTimerData *) ckalloc(sizeof(Tk_ThreadTimerData));
+    timer->flag = 0;
+    timer->token = Tk_CreateTimerHandler(200, _timer_for_thread, 
+					 (ClientData) timer);
+    timer->flag = 1;
+
     DUMP1("start Tk_Mainloop");
     while (Tk_GetNumMainWindows() > 0) {
         Tcl_DoOneEvent(0);
     }
     DUMP1("stop Tk_Mainloop");
+
+#ifdef THREAD
+    if (timer->flag) {
+      Tk_DeleteTimerHandler(timer->token);
+    }
+#endif
 
     return Qnil;
 }

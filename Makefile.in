@@ -89,11 +89,14 @@ clean:;		@rm -f $(OBJS) $(LIBRUBY) $(MAINOBJ) rbconfig.rb
 			./miniruby$(binsuffix) -Xext extmk.rb clean; \
 		fi
 
-realclean:	clean
-		@rm -f Makefile ext/extmk.rb ext/config.cache
-		@rm -f config.cache config.h config.log config.status
-		@rm -f parse.c lex.c *~ core *.core gmon.out
+distclean:	clean
+		@rm -f Makefile ext/extmk.rb config.h
+		@rm -f ext/config.cache config.cache config.log config.status
+		@rm -f parse.c *~ core *.core gmon.out y.tab.c y.output
 		@rm -f ruby$(binsuffix) miniruby$(binsuffix)
+
+realclean:	distclean
+		@rm -f lex.c
 
 test:		miniruby$(binsuffix)
 		@./miniruby$(binsuffix) $(srcdir)/rubytest.rb

@@ -1412,6 +1412,19 @@ file_truncate(obj, len)
     return INT2FIX(0);
 }
 
+# ifndef LOCK_SH
+#  define LOCK_SH 1
+# endif
+# ifndef LOCK_EX
+#  define LOCK_EX 2
+# endif
+# ifndef LOCK_NB
+#  define LOCK_NB 4
+# endif
+# ifndef LOCK_UN
+#  define LOCK_UN 8
+# endif
+
 #if defined(THREAD) && defined(EWOULDBLOCK)
 static int
 thread_flock(fd, op)
@@ -1712,19 +1725,6 @@ Init_File()
     rb_define_method(cFile, "eof?", file_eof, 0);
 
     rb_define_method(cFile, "flock", file_flock, 1);
-
-# ifndef LOCK_SH
-#  define LOCK_SH 1
-# endif
-# ifndef LOCK_EX
-#  define LOCK_EX 2
-# endif
-# ifndef LOCK_NB
-#  define LOCK_NB 4
-# endif
-# ifndef LOCK_UN
-#  define LOCK_UN 8
-# endif
 
     mConst = rb_define_module_under(cFile, "Constants");
     rb_define_const(cFile, "LOCK_SH", INT2FIX(LOCK_SH));

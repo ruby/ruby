@@ -1,6 +1,18 @@
+Fri Apr 17 11:58:30 1998  NAGAI Hidetoshi  <nagai@dumbo.ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (lib_mainloop): thread and interrupt check.
+
 Fri Apr 17 11:06:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* struct.c (struct_aset): struct member can be set by member name.
+
+Fri Apr 17 00:47:19 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ext/extmk.rb.in: added m68k-human support
+
+	* file.c (LOCK_SH): defines moved.
+
+	* array.c (ary_flatten_bang): simplified loop.
 
 Thu Apr 16 16:52:01 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

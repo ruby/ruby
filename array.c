@@ -1242,22 +1242,13 @@ ary_flatten_bang(ary)
     int mod = 0;
 
     ary_modify(ary);
-    for (;;) {
-	int lmod = 0;
-
-	for (i=0; i<RARRAY(ary)->len; i++) {
-	    if (TYPE(RARRAY(ary)->ptr[i]) == T_ARRAY) {
-		VALUE ary2 = RARRAY(ary)->ptr[i];
-
-		ary_replace(ary, i, RARRAY(ary2)->len, ary2);
-		i += RARRAY(ary2)->len - 1;
-		lmod++;
-	    }
+    for (i=0; i<RARRAY(ary)->len; i++) {
+	VALUE ary2 = RARRAY(ary)->ptr[i];
+	if (TYPE(ary2) == T_ARRAY) {
+	    ary_replace(ary, i--, 1, ary2);
+	    mod = 1;
 	}
-	if (lmod == 0) break;
-	mod = lmod;
     }
-
     if (mod == 0) return Qnil;
     return ary;
 }

@@ -67,7 +67,7 @@ LINK = "@CC@ -o conftest -I#{$topdir} " + CFLAGS + " %s @LDFLAGS@ %s conftest.c 
 CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} " + CFLAGS + " %s conftest.c"
 end
 
-if /win32|djgpp|mingw32/i =~ PLATFORM
+if /win32|djgpp|mingw32|m68k-human/i =~ PLATFORM
   $null = open("nul", "w")
 else
   $null = open("/dev/null", "w")
