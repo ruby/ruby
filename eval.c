@@ -33,10 +33,6 @@
 #include "st.h"
 #include "dln.h"
 
-#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
-#include <pthread.h>
-#endif
-
 #ifdef __APPLE__
 #include <crt_externs.h>
 #endif
@@ -1161,6 +1157,14 @@ void Init_stack _((void*));
 void Init_heap _((void));
 void Init_ext _((void));
 
+#ifdef HAVE_NATIVETHREAD
+static rb_nativethread_t ruby_thid;
+int 
+is_ruby_native_thread() {
+    return NATIVETHREAD_EQUAL(ruby_thid, NATIVETHREAD_CURRENT());
+}
+#endif
+
 void
 ruby_init()
 {
@@ -1172,6 +1176,9 @@ ruby_init()
     if (initialized)
 	return;
     initialized = 1;
+#ifdef HAVE_NATIVETHREAD
+    ruby_thid = NATIVETHREAD_CURRENT();
+#endif
 
     ruby_frame = top_frame = &frame;
     ruby_iter = &iter;
@@ -8647,11 +8654,6 @@ find_bad_fds(dst, src, max)
     return test;
 }
 
-#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
-static pthread_t thid;
-static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
 void
 rb_thread_schedule()
 {
@@ -8668,10 +8670,12 @@ rb_thread_schedule()
     int n, max;
     int need_select = 0;
     int select_timeout = 0;
-#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
-    int st;
-#endif
 
+#ifdef HAVE_NATIVETHREAD
+    if (!is_ruby_native_thread()) {
+	rb_bug("cross-thread violation on rb_thread_schedule()");
+    }
+#endif
     rb_thread_pending = 0;
     if (curr_thread == curr_thread->next
 	&& curr_thread->status == THREAD_RUNNABLE)
@@ -8679,16 +8683,6 @@ rb_thread_schedule()
 
     next = 0;
     curr = curr_thread;		/* starting thread */
-
-#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
-    if ((st = pthread_mutex_trylock(&mtx)) == EBUSY) {
-	if (pthread_self() != thid) {
-	    return;
-	}
-    } else {
-	thid = pthread_self();
-    }
-#endif
 
     while (curr->status == THREAD_KILLED) {
 	curr = curr->prev;
@@ -8887,22 +8881,12 @@ rb_thread_schedule()
     }
     next->wait_for = 0;
     if (next->status == THREAD_RUNNABLE && next == curr_thread) {
-#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
-	if (st != EBUSY) {
-	    pthread_mutex_unlock(& mtx);
-	}
-#endif
 	return;
     }
 
     /* context switch */
     if (curr == curr_thread) {
 	if (THREAD_SAVE_CONTEXT(curr)) {
-#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
-	    if (st != EBUSY) {
-		pthread_mutex_unlock(& mtx);
-	    }
-#endif
 	    return;
 	}
     }
@@ -8912,19 +8896,9 @@ rb_thread_schedule()
 	if (!(next->flags & THREAD_TERMINATING)) {
 	    next->flags |= THREAD_TERMINATING;
 	    /* terminate; execute ensure-clause if any */
-#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
-	    if (st != EBUSY) {
-		pthread_mutex_unlock(& mtx);
-	    }
-#endif
 	    rb_thread_restore_context(next, RESTORE_FATAL);
 	}
     }
-#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
-    if (st != EBUSY) {
-	pthread_mutex_unlock(& mtx);
-    }
-#endif
     rb_thread_restore_context(next, RESTORE_NORMAL);
 }
 

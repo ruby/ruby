@@ -1216,6 +1216,11 @@ rb_gc()
     jmp_buf save_regs_gc_mark;
     SET_STACK_END;
 
+#ifdef HAVE_NATIVETHREAD
+    if (!is_ruby_native_thread()) {
+	rb_bug("cross-thread violation on rb_gc()");
+    }
+#endif
     if (dont_gc || during_gc) {
 	if (!freelist) {
 	    add_heap();

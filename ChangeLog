@@ -1,3 +1,13 @@
+Thu Nov 20 12:42:47 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* configure.in: always check existence of the pthread library
+
+	* ruby.h: define macros for ruby's native thread check
+
+	* eval.c: add ruby's native thread check
+
+	* gc.c: ditto
+
 Wed Nov 19 14:45:18 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (to_ary): print more friendly warning message.
