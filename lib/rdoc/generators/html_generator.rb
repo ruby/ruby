@@ -380,10 +380,18 @@ module Generators
       res = []
       array.each do |i|
         ref = AllReferences[i.name] 
-        if !ref && @context.parent
-          name = @context.parent.name + "::" + i.name
-          ref = AllReferences[name] 
-        end
+#         if !ref
+#           container = @context.parent
+#           while !ref && container
+#             name = container.name + "::" + i.name
+#             ref = AllReferences[name] 
+#             container = container.parent
+#           end
+#         end
+
+        ref = @context.find_symbol(i.name)
+        ref = ref.viewer if ref
+
         if !ref && block_given?
           possibles = yield(i.name)
           while !ref and !possibles.empty?
