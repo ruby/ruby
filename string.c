@@ -563,13 +563,28 @@ rb_str_cmp(str1, str2)
     return -1;
 }
 
+to_str(str)
+    VALUE str;
+{
+    return rb_funcall(str, rb_intern("to_str"), 0);
+}
+
+static VALUE
+str_or_nil(str)
+    VALUE str;
+{
+    return rb_rescue(to_str, (VALUE)str, 0, 0);
+}
+
 static VALUE
 rb_str_equal(str1, str2)
     VALUE str1, str2;
 {
     if (str1 == str2) return Qtrue;
-    if (TYPE(str2) != T_STRING)
-	return Qfalse;
+    if (TYPE(str2) != T_STRING) {
+	str2 = str_or_nil(str2);
+	if (NIL_P(str2)) return Qfalse;
+    }
 
     if (RSTRING(str1)->len == RSTRING(str2)->len
 	&& rb_str_cmp(str1, str2) == 0) {

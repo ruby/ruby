@@ -6,6 +6,17 @@ Mon Dec  3 16:06:04 2001  Usaku Nakamura <usa@ruby-lang.org>
 
 	* configure.in: not use X11BASE, since it's not always set.
 
+Mon Dec  3 09:59:08 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_new_internal): round usec overflow and underflow
+	  here. 
+
+	* time.c (time_plus): remove overflow/underflow check.
+
+	* time.c (time_minus): ditto.
+
+	* time.c (time_cmp): should consider tv_usec too.
+
 Mon Dec  3 03:29:17 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* configure.in: apply patch from NetBSD's pkgsrc (patch-aa).
@@ -21,11 +32,21 @@ Sat Dec  1 23:23:57 2001  Akinori MUSHA  <knu@iDaemons.org>
 	* ext/Setup*, ext/syslog/*: import the "syslog" module from the
 	  rough ruby project.
 
+Sat Dec  1 12:13:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_gmtime): time_modify() should be called even if tm
+	  struct is not calculated yet.
+
 Fri Nov 30 00:30:00 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* README.EXT: Appendix B is duplicated.
 
 	* README.EXT.ja: ditto.
+
+Thu Nov 29 00:28:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_equal): object with to_str must be treated as a
+	  string.
 
 Wed Nov 28 18:46:28 2001  Ville Mattila  <mulperi@iki.fi>
 

@@ -87,6 +87,14 @@ time_new_internal(klass, sec, usec)
     VALUE obj;
     struct time_object *tobj;
 
+    if (usec >= 1000000) {	/* usec overflow */
+	sec += usec / 1000000;
+	usec %= 1000000;
+    }
+    if (usec < 0) {		/* usec underflow */
+	sec -= (-usec) / 1000000;
+	usec %= 1000000;
+    }
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
 
@@ -459,7 +467,13 @@ time_cmp(time1, time2)
     switch (TYPE(time2)) {
       case T_FIXNUM:
 	i = FIX2LONG(time2);
-	if (tobj1->tv.tv_sec == i) return INT2FIX(0);
+	if (tobj1->tv.tv_sec == i) {
+	    if (tobj1->tv.tv_usec == 0)
+		return INT2FIX(0);
+	    if (tobj1->tv.tv_usec > 0)
+		return INT2FIX(1);
+	    return INT2FIX(-1);
+	}
 	if (tobj1->tv.tv_sec > i) return INT2FIX(1);
 	return INT2FIX(-1);
 	
@@ -564,8 +578,11 @@ time_localtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got) {
-	if (!tobj->gmt) return time;
+    if (!tobj->gmt) {
+	if (tobj->tm_got)
+	    return time;
+    }
+    else {
 	time_modify(time);
     }
     t = tobj->tv.tv_sec;
@@ -585,8 +602,11 @@ time_gmtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got) {
-	if (tobj->gmt) return time;
+    if (tobj->gmt) {
+	if (tobj->tm_got)
+	    return time;
+    }
+    else {
 	time_modify(time);
     }
     t = tobj->tv.tv_sec;
@@ -662,14 +682,6 @@ time_plus(time1, time2)
     usec = tobj->tv.tv_usec + (time_t)((f - (double)sec)*1e6);
     sec = tobj->tv.tv_sec + sec;
 
-    if (usec >= 1000000) {	/* usec overflow */
-	sec++;
-	usec -= 1000000;
-    }
-    if (usec < 0) {		/* usec underflow */
-	sec--;
-	usec += 1000000;
-    }
     time2 = rb_time_new(sec, usec);
     if (tobj->gmt) {
 	GetTimeval(time2, tobj);
@@ -703,14 +715,6 @@ time_minus(time1, time2)
 	sec = tobj->tv.tv_sec - sec;
     }
 
-    if (usec >= 1000000) {	/* usec overflow */
-	sec++;
-	usec -= 1000000;
-    }
-    if (usec < 0) {		/* usec underflow */
-	sec--;
-	usec += 1000000;
-    }
     time2 = rb_time_new(sec, usec);
     if (tobj->gmt) {
 	GetTimeval(time2, tobj);
