@@ -38,7 +38,7 @@ module REXML
 				self.name = first
 				@value = second
 			else
-				raise "illegal argument #{first.type} to Attribute constructor"
+				raise "illegal argument #{first.class.name} to Attribute constructor"
 			end
 		end
 

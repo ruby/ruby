@@ -113,11 +113,6 @@ module REXML
 
 			when :node
 				return nodeset
-				#n = nodeset.clone
-				#n.delete_if do |node|
-				#	!node.node?
-				#end
-				#return n
 			
 			# FIXME:  I suspect the following XPath will fail:
 			# /a/*/*[1]
@@ -351,7 +346,7 @@ module REXML
 				right = Predicate( predicate.shift, node )
 				return equality_relational_compare( left, eq, right )
 
-			when :div, :mod, :mult, :plus, :minus, :union
+			when :div, :mod, :mult, :plus, :minus
 				op = predicate.shift
 				left = Predicate( predicate.shift, node )
 				right = Predicate( predicate.shift, node )
@@ -368,9 +363,13 @@ module REXML
 					return left + right
 				when :minus
 					return left - right
-				when :union
-					return (left | right)
 				end
+
+      when :union
+        predicate.shift
+				left = Predicate( predicate.shift, node )
+				right = Predicate( predicate.shift, node )
+        return (left | right)
 
 			when :neg
 				predicate.shift
@@ -426,11 +425,16 @@ module REXML
 		end
 
 		def equality_relational_compare( set1, op, set2 )
-			#puts "EQ_REL_COMP: #{set1.to_s}, #{op}, #{set2.to_s}"
+      #puts "EQ_REL_COMP: #{set1.to_s}, #{op}, #{set2.to_s}"
+      #puts "#{set1.class.name} #{op} #{set2.class.name}"
 			if set1.kind_of? Array and set2.kind_of? Array
+        #puts "#{set1.size} & #{set2.size}"
 				if set1.size == 1 and set2.size == 1
 					set1 = set1[0]
 					set2 = set2[0]
+        elsif set1.size == 0 or set2.size == 0
+          nd = set1.size==0 ? set2 : set1
+          nd.each { |il| return true if compare( il, op, nil ) }
 				else
 					set1.each do |i1| 
 						i1 = i1.to_s
@@ -442,7 +446,7 @@ module REXML
 					return false
 				end
 			end
-			#puts "COMPARING VALUES"
+      #puts "COMPARING VALUES"
 			# If one is nodeset and other is number, compare number to each item
 			# in nodeset s.t. number op number(string(item))
 			# If one is nodeset and other is string, compare string to each item
@@ -450,7 +454,7 @@ module REXML
 			# If one is nodeset and other is boolean, compare boolean to each item
 			# in nodeset s.t. boolean op boolean(item)
 			if set1.kind_of? Array or set2.kind_of? Array
-				#puts "ISA ARRAY"
+        #puts "ISA ARRAY"
 				if set1.kind_of? Array
 					a = set1
 					b = set2.to_s
@@ -510,12 +514,14 @@ module REXML
 					end
 				end
 				#puts "EQ_REL_COMP: #{set1} #{op} #{set2}"
+        #puts ">>> #{compare( set1, op, set2 )}"
 				return compare( set1, op, set2 )
 			end
 			return false
 		end
 
 		def compare a, op, b
+      #puts "COMPARE #{a.to_s} #{op} #{b.to_s}"
 			case op
 			when :eq
 				a == b
