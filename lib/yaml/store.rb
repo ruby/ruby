@@ -3,6 +3,7 @@
 #
 require 'yaml'
 require 'pstore'
+require 'fileutils'
 
 module YAML
 
@@ -40,7 +41,7 @@ module YAML
 				end
 				file.flock(File::LOCK_EX)
 				if orig
-					File::copy @filename, backup
+					FileUtils::copy @filename, backup
 					@table = YAML::load( file )
 				end
 				begin
