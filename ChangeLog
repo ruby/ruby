@@ -1,7 +1,7 @@
 Mon Feb 10 20:55:15 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb (parse_args): add '-n' to $mflags BEFORE "--".
-	  do not add DESTDIR if already included in $fmlags.
+	  do not add DESTDIR if already included in $mflags.
 
 Mon Feb 10 19:54:30 2003  Minero Aoki  <aamine@loveruby.net>
 
