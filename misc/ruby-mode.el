@@ -141,7 +141,7 @@
 Also ignores spaces after parenthesis when 'space."
   :group 'ruby)
 
-(defcustom ruby-deep-indent-paren '(?\( ?\[ t)
+(defcustom ruby-deep-indent-paren '(?\( t)
   "*Deep indent lists in parenthesis when non-nil. t means continuous line.
 Also ignores spaces after parenthesis when 'space."
   :group 'ruby)
@@ -281,17 +281,23 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (indent-to x)
 	  (move-to-column (+ x shift))))))
 
+(defun ruby-special-char-p (&optional pnt)
+  (let ((c (char-before pnt)))
+  (cond ((or (eq c ??) (eq c ?$)))
+	((eq c ?\\)
+	 (eq (char-before (1- (or pnt (point)))) ??)))))
+
 (defun ruby-expr-beg (&optional option)
   (save-excursion
     (store-match-data nil)
     (let ((space (skip-chars-backward " \t")))
       (cond
        ((bolp) t)
-       ((let (c)
+       ((progn
 	  (forward-char -1)
 	  (and (looking-at "\\?")
-	       (setq c (char-before (point)))
-	       (or (eq c ?$) (eq c ??) (eq (char-syntax c) ?w))))
+	       (or (ruby-special-char-p)
+		   (eq (char-syntax (char-before (point)) ?w)))))
 	nil)
        ((or (looking-at ruby-operator-re)
 	    (looking-at "[\\[({,;]")
@@ -349,8 +355,7 @@ The variable ruby-indent-level controls the amount of indentation.
       (cond
        ((and (memq (char-before) '(?@ ?$)) (looking-at "\\sw"))
 	(goto-char pnt))
-       ((or (looking-at "\"")		;skip string
-	    (looking-at "`"))
+       ((looking-at "[\"`]")		;skip string
 	(cond
 	 ((and (not (eobp))
 	       (ruby-forward-string (buffer-substring (point) (1+ (point))) end t t))
@@ -405,7 +410,7 @@ The variable ruby-indent-level controls the amount of indentation.
        ((looking-at "\\?")		;skip ?char
 	(cond
 	 ((and (ruby-expr-beg)
-	       (looking-at "?\\(\\\\C-\\|\\\\M-\\)*."))
+	       (looking-at "?\\(\\\\C-\\|\\\\M-\\)*\\\\?."))
 	  (goto-char (match-end 0)))
 	 (t
 	  (goto-char pnt))))
@@ -418,10 +423,10 @@ The variable ruby-indent-level controls the amount of indentation.
 	)
        ((looking-at "[\\[{(]")
 	(let ((deep (ruby-deep-indent-paren-p (char-after))))
-	  (if deep
+	  (if (and deep (or (not (eq (char-after) ?\{)) (ruby-expr-beg)))
 	      (progn
-		(and (eq deep 'space) (looking-at ".\\s +")
-		     (setq pnt (match-end 0)))
+		(and (eq deep 'space) (looking-at ".\\s +[^# \t\n]")
+		     (setq pnt (1- (match-end 0))))
 		(setq nest (cons (cons (char-after (point)) pnt) nest))
 		(setq pcol (cons (cons pnt depth) pcol))
 		(setq depth 0))
@@ -539,6 +544,30 @@ The variable ruby-indent-level controls the amount of indentation.
 (defun ruby-indent-size (pos nest)
   (+ pos (* (or nest 1) ruby-indent-level)))
 
+(defconst ruby-assign-re "\\s *\\(&&\\|||\\|<<\\|>>[-+*/%&|^]\\)?=\\s *")
+
+(defun ruby-backward-arg (limit depth)
+  (let ((indent (ruby-indent-size 0 depth))
+	beg pnt (last (point)))
+    (when limit
+      (goto-char limit)
+      (ruby-forward-sexp)
+      (setq limit (point)))
+    (goto-char last)
+    (setq pnt (point))
+    (ruby-backward-sexp)
+    (while (and
+	    (not (bobp))
+	    (setq beg (point))
+	    (progn
+	      (ruby-backward-sexp)
+	      (or (looking-at ruby-block-hanging-re)
+		  (save-excursion
+		    (ruby-forward-sexp)
+		    (looking-at ruby-assign-re)))))
+      (setq last beg))
+    (goto-char last)))
+
 (defun ruby-calculate-indent (&optional parse-start)
   (save-excursion
     (beginning-of-line)
@@ -558,7 +587,11 @@ The variable ruby-indent-level controls the amount of indentation.
 	(cond
 	 ((nth 0 state)			; within string
 	  (setq indent nil))		;  do nothing
-	 ((car (nth 1 state))		; in paren
+	 ((and (car (nth 1 state))	; in paren
+	       (or (not (eq (car (nth 1 state)) ?\{))
+		   (save-excursion
+		     (goto-char (1- (cdr (nth 1 state))))
+		     (or (ruby-expr-beg) (setq paren nil)))))
 	  (goto-char (cdr (nth 1 state)))
 	  (if (ruby-deep-indent-paren-p (car (nth 1 state)))
 	      (let ((s (ruby-parse-region (point) indent-point)))
@@ -568,7 +601,10 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (forward-word -1)
 		  (setq indent (ruby-indent-size (current-column) (nth 2 state))))
 		 (t
-		  (setq indent (current-column)))))
+		  (setq indent (current-column))
+		  (cond (paren (setq indent (1- indent)))
+			((eq (car (nth 1 state)) ?\())
+			(t (setq indent (ruby-indent-size (1- indent) 1)))))))
 	    (cond
 	     ((nth 3 state)
 	      (goto-char (nth 3 state))
@@ -594,19 +630,21 @@ The variable ruby-indent-level controls the amount of indentation.
 	      (back-to-indentation)
 	      (setq indent (ruby-indent-size (current-column) (nth 2 state))))))
 	   (t
+	    (goto-char (1- (cdr (nth 1 state))))
+	    (ruby-backward-sexp)
 	    (setq indent (+ (current-column) ruby-indent-level)))))
 
 	 ((and (nth 2 state) (< (nth 2 state) 0)) ; in negative nest
 	  (setq indent (ruby-indent-size (current-column) (nth 2 state)))))
 
-	(cond
-	 (indent
+	(when indent
 	  (goto-char indent-point)
 	  (end-of-line)
 	  (setq eol (point))
 	  (beginning-of-line)
 	  (cond
-	   ((re-search-forward ruby-negative eol t)
+	   ((and (not (ruby-deep-indent-paren-p paren))
+		 (re-search-forward ruby-negative eol t))
 	    (and (not (eq ?_ (char-after (match-end 0))))
 		 (setq indent (- indent ruby-indent-level))))
 	   ;;operator terminated lines
@@ -614,12 +652,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	     (save-excursion
 	       (beginning-of-line)
 	       (not (bobp)))
-	     (or (null (car (nth 1 state))) ;not in parens
-		 (and (eq (car (nth 1 state)) ?\{)
-		      (save-excursion	;except non-block braces
-			(goto-char (cdr (nth 1 state)))
-			(or (bobp) (forward-char -1))
-			(not (ruby-expr-beg))))))
+	     (null (car (nth 1 state))))
 	    ;; goto beginning of non-empty no-comment line
 	    (let (end done)
 	      (while (not done)
@@ -634,7 +667,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (skip-chars-backward " \t")
 	    (let ((pos (point)))
 	      (while (and (re-search-backward "#" bol t)
-			  (eq (char-before) ??))
+			  (ruby-special-char-p))
 		(forward-char -1))
 	      (skip-chars-backward " \t")
 	      (and
@@ -670,8 +703,14 @@ The variable ruby-indent-level controls the amount of indentation.
 				     (not (looking-at "do\\>[^_]")))))
 			     (t t))))))
 	     (setq indent
-		   (if (and (ruby-deep-indent-paren-p t) (not (bobp)))
-		       (progn (ruby-backward-sexp) (current-column))
+		   (cond
+		    ((and
+		      (not (looking-at ruby-block-hanging-re))
+		      (ruby-deep-indent-paren-p t)
+		      (not (bobp)))
+		     (ruby-backward-arg (cdr (nth 1 state)) (nth 2 state))
+		     (current-column))
+		    (t
 		     (+ indent ruby-indent-level))))))))
 	indent)))
 

@@ -1,3 +1,16 @@
+Mon Mar 03 01:42:35 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-expr-beg): escaped char syntax.
+
+	* misc/ruby-mode.el (ruby-parse-partial): ditto.
+
+	* misc/ruby-mode.el (ruby-parse-partial): no deep indent for
+	  block.
+
+	* misc/ruby-mode.el (ruby-backward-arg): skip arguments backward.
+
+	* misc/ruby-mode.el (ruby-calculate-indent): too deep indentation.
+
 Fri Feb 28 23:50:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (map_errno): map OS error to errno. [new]
