@@ -182,7 +182,7 @@ rb_mod_name(mod)
     VALUE path = classname(mod);
 
     if (path) return rb_str_dup(path);
-    return rb_str_new(0,0);
+    return rb_str_dup(rb_class_path(mod));
 }
 
 VALUE
@@ -1112,7 +1112,7 @@ rb_obj_remove_instance_variable(obj, name)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     if (OBJ_FROZEN(obj)) rb_error_frozen("object");
     if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not an instance variable", rb_id2name(id));
+	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
 
     switch (TYPE(obj)) {
@@ -1232,7 +1232,7 @@ rb_mod_remove_const(mod, name)
     VALUE val;
 
     if (!rb_is_const_id(id)) {
-	rb_name_error(id, "`%s' is not constant", rb_id2name(id));
+	rb_name_error(id, "`%s' is not allowed as a constant name", rb_id2name(id));
     }
     if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");

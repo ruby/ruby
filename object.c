@@ -945,7 +945,7 @@ rb_obj_ivar_get(obj, iv)
     ID id = rb_to_id(iv);
 
     if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not an instance variable name", rb_id2name(id));
+	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
     return rb_ivar_get(obj, id);
 }
@@ -957,7 +957,7 @@ rb_obj_ivar_set(obj, iv, val)
     ID id = rb_to_id(iv);
 
     if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not an instance variable name", rb_id2name(id));
+	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
     }
     return rb_ivar_set(obj, id, val);
 }

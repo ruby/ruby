@@ -1,3 +1,8 @@
+Thu Apr 10 03:22:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_mod_name): search module path if classname is not
+	  set yet. (ruby-bugs-ja PR#424)
+
 Thu Apr 10 01:52:24 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_obj_is_method): indefinite return value.
