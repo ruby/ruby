@@ -381,7 +381,7 @@ module Net
       @sock = TCPSocket.open(host, port)
       @responses = Hash.new([].freeze)
       @greeting = get_response
-      if @greeting.name == "BYE"
+      if /\ABYE\z/ni =~ @greeting.name
 	@sock.close
 	raise ByeResponseError, resp[0]
       end
@@ -423,21 +423,21 @@ module Net
 	end
 	if resp.prefix == tag
 	  case resp.name
-	  when "NO"
+	  when /\ANO\z/ni
 	    raise NoResponseError, resp[0]
-	  when "BAD"
+	  when /\ABAD\z/ni
 	    raise BadResponseError, resp[0]
 	  else
 	    return resp
 	  end
 	else
 	  if resp.prefix == "*"
-	    if resp.name == "BYE" &&
+	    if /\ABYE\z/ni =~ resp.name &&
 		cmd != "LOGOUT"
 	      raise ByeResponseError, resp[0]
 	    end
 	    record_response(resp.name, resp.data)
-	    if /\A(OK|NO|BAD)\z/n =~ resp.name &&
+	    if /\A(OK|NO|BAD)\z/ni =~ resp.name &&
 		resp[0].instance_of?(Array)
 	      record_response(resp[0][0], resp[0][1..-1])
 	    end
@@ -468,6 +468,7 @@ module Net
     end
 
     def record_response(name, data)
+      name = name.upcase
       unless @responses.has_key?(name)
 	@responses[name] = []
       end
@@ -898,7 +899,7 @@ module Net
 	      @token.value = $+.to_i
 	      @token.symbol = T_NUMBER
 	    elsif $3
-	      @token.value = $+.upcase
+	      @token.value = $+
 	      @token.symbol = T_ATOM
 	    elsif $4
 	      @token.value = $+.gsub(/\\(["\\])/n, "\\1")
@@ -952,7 +953,7 @@ module Net
 	      @token.value = $+.to_i
 	      @token.symbol = T_NUMBER
 	    elsif $2
-	      @token.value = $+.upcase
+	      @token.value = $+
 	      @token.symbol = T_ATOM
 	    elsif $3
 	      @token.value = $+[1..-1].capitalize.intern
