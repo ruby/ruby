@@ -12,7 +12,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(294, "abc".sum)
     check_sum("abc")
     check_sum("\x80")
-    8.upto(70) {|bits|
+    0.upto(70) {|bits|
       check_sum("xyz", bits)
     }
   end
