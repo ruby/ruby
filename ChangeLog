@@ -1,3 +1,7 @@
+Thu Mar 22 22:15:45 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/Win32API/extconf.rb: add -fno-omit-frame-pointer.
+
 Thu Mar 22 18:17:36 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_mod_nesting): should not include Object at the
