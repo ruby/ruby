@@ -143,7 +143,7 @@ module RSS
       end
 
       def setup_xml_stylesheets(rss)
-        rss.xml_stylesheets = @xml_stylesheets.normalize
+        @xml_stylesheets.to_rss(rss)
       end
       
     end
@@ -153,22 +153,41 @@ module RSS
 
       extend Forwardable
 
-      def_delegators(:@xml_stylesheets, :<<, :[], :[]=)
+      def_delegators(:@xml_stylesheets, :<<, :[], :[]=, :first, :last)
+      def_delegators(:@xml_stylesheets, :push, :pop, :shift, :unshift)
 
       def initialize(maker)
         super
         @xml_stylesheets = []
       end
-      
-      def normalize
-        @xml_stylesheets.collect do |info|
-          make_xml_stylesheet(info)
+
+      def to_rss(rss)
+        @xml_stylesheets.each do |xss|
+          xss.to_rss(rss)
         end
       end
 
-      private
-      def make_xml_stylesheet(info)
-        RSS::XMLStyleSheet.new(*info)
+      def new_xml_stylesheet
+        xss = XMLStyleSheet.new(@maker)
+        @xml_stylesheets << xss
+        xss
+      end
+
+      class XMLStyleSheet
+        include Base
+
+        ::RSS::XMLStyleSheet::ATTRIBUTES.each do |attribute|
+          attr_accessor attribute
+          add_need_initialize_variable(attribute)
+        end
+        
+        def to_rss(rss)
+          xss = ::RSS::XMLStyleSheet.new
+          set = setup_values(xss)
+          if set
+            rss.xml_stylesheets << xss
+          end
+        end
       end
     end
     

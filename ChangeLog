@@ -1,3 +1,14 @@
+Mon Nov  1 22:25:56 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/base.rb: changed xml-stylesheet's API of RSS Maker
+	  like item's one.
+
+	* lib/rss/xml-stylesheet.rb (RSS::XMLStyleSheet#guess_type): fixed
+	  regular expression bug.
+
+	* test/rss/test_maker_xml-stylesheet.rb: updated tests for
+	  xml-stylesheet.
+
 Mon Nov  1 13:59:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb (MANIFEST): do not use anymore, use extconf.rb instead.

@@ -86,7 +86,7 @@ module RSS
 
     private
     def guess_type(filename)
-      /\.([^.]+)/ =~ filename
+      /\.([^.]+)$/ =~ filename
       GUESS_TABLE[$1]
     end
 

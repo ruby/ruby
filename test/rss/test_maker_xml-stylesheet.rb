@@ -14,14 +14,13 @@ module RSS
       alternate = 'yes'
 
       rss = RSS::Maker.make("1.0") do |maker|
-        maker.xml_stylesheets << {
-          :href => href,
-          :type => type,
-          :title => title,
-          :media => media,
-          :charset => charset,
-          :alternate => alternate,
-        }
+        xss = maker.xml_stylesheets.new_xml_stylesheet
+        xss.href = href
+        xss.type = type
+        xss.title = title
+        xss.media = media
+        xss.charset = charset
+        xss.alternate = alternate
         
         setup_dummy_channel(maker)
       end
@@ -33,6 +32,20 @@ module RSS
       assert_equal(media, xss.media)
       assert_equal(charset, xss.charset)
       assert_equal(alternate, xss.alternate)
+
+      
+      href = 'http://example.com/index.xsl'
+      type = 'text/xsl'
+      rss = RSS::Maker.make("1.0") do |maker|
+        xss = maker.xml_stylesheets.new_xml_stylesheet
+        xss.href = href
+        
+        setup_dummy_channel(maker)
+      end
+
+      xss = rss.xml_stylesheets.first
+      assert_equal(href, xss.href)
+      assert_equal(type, xss.type)
     end
     
   end
