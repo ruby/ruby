@@ -11,6 +11,20 @@ You can freely distribute/modify this library.
 
 Net::IMAP implements Internet Message Access Protocol (IMAP) clients.
 
+Net::IMAP supports multiple commands. For example,
+
+  imap = Net::IMAP.new("imap.foo.net", "imap2")
+  imap.authenticate("cram-md5", "bar", "password")
+  imap.select("inbox")
+  t = Thread.start {
+    p imap.fetch(1..-1, "UID")
+  }
+  p imap.search(["BODY", "hello"])
+  t.join
+  imap.disconnect
+
+This script invokes the FETCH command and the SEARCH command concurrently.
+
 === Super Class
 
 Object
@@ -210,14 +224,26 @@ Object
         p imap.sort(["DATE"], ["SUBJECT", "hello"], "US-ASCII")
         #=> [6, 7, 8, 1]
 
+: add_response_handler(handler = Proc.new)
+      Adds a response handler.
+
+: remove_response_handler(handler)
+      Removes the response handler.
+
+: response_handlers
+      Returns all response handlers.
+
 =end
 
 require "socket"
+require "monitor"
 require "md5"
 
 module Net
   class IMAP
-    attr_reader :greeting, :responses
+    include MonitorMixin
+
+    attr_reader :greeting, :responses, :response_handlers
 
     def self.debug
       return @@debug
@@ -232,12 +258,16 @@ module Net
     end
 
     def disconnect
+      @sock.shutdown
+      @receiver_thread.join
       @sock.close
     end
 
     def capability
-      send_command("CAPABILITY")
-      return @responses.delete("CAPABILITY")[-1]
+      synchronize do
+	send_command("CAPABILITY")
+	return @responses.delete("CAPABILITY")[-1]
+      end
     end
 
     def noop
@@ -268,13 +298,17 @@ module Net
     end
 
     def select(mailbox)
-      @responses.clear
-      send_command("SELECT", mailbox)
+      synchronize do
+	@responses.clear
+	send_command("SELECT", mailbox)
+      end
     end
 
     def examine(mailbox)
-      @responses.clear
-      send_command("EXAMINE", mailbox)
+      synchronize do
+	@responses.clear
+	send_command("EXAMINE", mailbox)
+      end
     end
 
     def create(mailbox)
@@ -298,18 +332,24 @@ module Net
     end
 
     def list(refname, mailbox)
-      send_command("LIST", refname, mailbox)
-      return @responses.delete("LIST")
+      synchronize do
+	send_command("LIST", refname, mailbox)
+	return @responses.delete("LIST")
+      end
     end
 
     def lsub(refname, mailbox)
-      send_command("LSUB", refname, mailbox)
-      return @responses.delete("LSUB")
+      synchronize do
+	send_command("LSUB", refname, mailbox)
+	return @responses.delete("LSUB")
+      end
     end
 
     def status(mailbox, attr)
-      send_command("STATUS", mailbox, attr)
-      return @responses.delete("STATUS")[-1][1]
+      synchronize do
+	send_command("STATUS", mailbox, attr)
+	return @responses.delete("STATUS")[-1][1]
+      end
     end
 
     def append(mailbox, message, flags = nil, date_time = nil)
@@ -331,8 +371,10 @@ module Net
     end
 
     def expunge
-      send_command("EXPUNGE")
-      return @responses.delete("EXPUNGE")
+      synchronize do
+	send_command("EXPUNGE")
+	return @responses.delete("EXPUNGE")
+      end
     end
 
     def search(keys, charset = nil)
@@ -375,6 +417,14 @@ module Net
       return sort_internal("UID SORT", sort_keys, search_keys, charset)
     end
 
+    def add_response_handler(handler = Proc.new)
+      @response_handlers.push(handler)
+    end
+
+    def remove_response_handler(handler)
+      @response_handlers.delete(handler)
+    end
+
     private
 
     CRLF = "\r\n"
@@ -384,6 +434,7 @@ module Net
     @@authenticators = {}
 
     def initialize(host, port = PORT)
+      super()
       @host = host
       @port = port
       @tag_prefix = "RUBY"
@@ -391,69 +442,54 @@ module Net
       @parser = ResponseParser.new
       @sock = TCPSocket.open(host, port)
       @responses = Hash.new([].freeze)
+      @tagged_responses = {}
+      @response_handlers = []
+      @tag_arrival = new_cond
+
       @greeting = get_response
       if /\ABYE\z/ni =~ @greeting.name
 	@sock.close
 	raise ByeResponseError, resp[0]
       end
+
+      @receiver_thread = Thread.start {
+	receive_responses
+      }
     end
 
-    def send_command(cmd, *args, &block)
-      tag = generate_tag
-      data = args.collect {|i| format_data(i)}.join(" ")
-      if data.length > 0
-	put_line(tag + " " + cmd + " " + data)
-      else
-	put_line(tag + " " + cmd)
-      end
-      return get_all_responses(tag, cmd, &block)
-    end
-
-    def generate_tag
-      @tagno += 1
-      return format("%s%04d", @tag_prefix, @tagno)
-    end
-
-    def send_data(*args)
-      data = args.collect {|i| format_data(i)}.join(" ")
-      put_line(data)
-    end
-
-    def put_line(line)
-      line = line + CRLF
-      @sock.print(line)
-      if @@debug
-        $stderr.print(line.gsub(/^/n, "C: "))
-      end
-    end
-
-    def get_all_responses(tag, cmd, &block)
+    def receive_responses
       while resp = get_response
-	if @@debug
-	  $stderr.printf("R: %s\n", resp.inspect)
-	end
-	case resp
-	when TaggedResponse
-	  case resp.name
-	  when /\A(?:NO)\z/ni
-	    raise NoResponseError, resp.data.text
-	  when /\A(?:BAD)\z/ni
-	    raise BadResponseError, resp.data.text
-	  else
-	    return resp
+	synchronize do
+	  case resp
+	  when TaggedResponse
+	    @tagged_responses[resp.tag] = resp
+	    @tag_arrival.broadcast
+	  when UntaggedResponse
+	    record_response(resp.name, resp.data)
+	    if resp.data.instance_of?(ResponseText) &&
+		(code = resp.data.code)
+	      record_response(code.name, code.data)
+	    end
 	  end
-	when UntaggedResponse
-	  if /\ABYE\z/ni =~ resp.name &&
-	      cmd != "LOGOUT"
-	    raise ByeResponseError, resp.data.text
-	  end
-	  record_response(resp.name, resp.data)
-	  if resp.data.instance_of?(ResponseText) &&
-	      (code = resp.data.code)
-	    record_response(code.name, code.data)
+	  @response_handlers.each do |handler|
+	    handler.call(resp)
 	  end
 	end
-	block.call(resp) if block
+      end
+    end
+
+    def get_tagged_response(tag, cmd)
+      until @tagged_responses.key?(tag)
+	@tag_arrival.wait
+      end
+      resp = @tagged_responses.delete(tag)
+      case resp.name
+      when /\A(?:NO)\z/ni
+	raise NoResponseError, resp.data.text
+      when /\A(?:BAD)\z/ni
+	raise BadResponseError, resp.data.text
+      else
+	return resp
       end
     end
 
@@ -482,6 +518,46 @@ module Net
 	@responses[name] = []
       end
       @responses[name].push(data)
+    end
+
+    def send_command(cmd, *args, &block)
+      synchronize do
+	tag = generate_tag
+	data = args.collect {|i| format_data(i)}.join(" ")
+	if data.length > 0
+	  put_line(tag + " " + cmd + " " + data)
+	else
+	  put_line(tag + " " + cmd)
+	end
+	if block
+	  add_response_handler(block)
+	end
+	begin
+	  return get_tagged_response(tag, cmd)
+	ensure
+	  if block
+	    remove_response_handler(block)
+	  end
+	end
+      end
+    end
+
+    def generate_tag
+      @tagno += 1
+      return format("%s%04d", @tag_prefix, @tagno)
+    end
+
+    def send_data(*args)
+      data = args.collect {|i| format_data(i)}.join(" ")
+      put_line(data)
+    end
+
+    def put_line(line)
+      line = line + CRLF
+      @sock.print(line)
+      if @@debug
+        $stderr.print(line.gsub(/^/n, "C: "))
+      end
     end
 
     def format_data(data)
@@ -550,30 +626,36 @@ module Net
       else
 	normalize_searching_criteria(keys)
       end
-      if charset
-	send_command(cmd, "CHARSET", charset, *keys)
-      else
-	send_command(cmd, *keys)
+      synchronize do
+	if charset
+	  send_command(cmd, "CHARSET", charset, *keys)
+	else
+	  send_command(cmd, *keys)
+	end
+	return @responses.delete("SEARCH")[-1]
       end
-      return @responses.delete("SEARCH")[-1]
     end
 
     def fetch_internal(cmd, set, attr)
       if attr.instance_of?(String)
 	attr = RawData.new(attr)
       end
-      @responses.delete("FETCH")
-      send_command(cmd, MessageSet.new(set), attr)
-      return @responses.delete("FETCH")
+      synchronize do
+	@responses.delete("FETCH")
+	send_command(cmd, MessageSet.new(set), attr)
+	return @responses.delete("FETCH")
+      end
     end
 
     def store_internal(cmd, set, attr, flags)
       if attr.instance_of?(String)
 	attr = RawData.new(attr)
       end
-      @responses.delete("FETCH")
-      send_command(cmd, MessageSet.new(set), attr, flags)
-      return @responses.delete("FETCH")
+      synchronize do
+	@responses.delete("FETCH")
+	send_command(cmd, MessageSet.new(set), attr, flags)
+	return @responses.delete("FETCH")
+      end
     end
 
     def copy_internal(cmd, set, mailbox)
@@ -587,8 +669,10 @@ module Net
 	normalize_searching_criteria(search_keys)
       end
       normalize_searching_criteria(search_keys)
-      send_command(cmd, sort_keys, charset, *search_keys)
-      return @responses.delete("SORT")[-1]
+      synchronize do
+	send_command(cmd, sort_keys, charset, *search_keys)
+	return @responses.delete("SORT")[-1]
+      end
     end
 
     def normalize_searching_criteria(keys)

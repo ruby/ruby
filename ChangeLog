@@ -1,3 +1,7 @@
+Mon Mar 26 21:16:56 2001  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: supports response handlers and multiple commands.
+
 Mon Mar 26 17:21:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c: remove TMP_PROTECT_END to prevent C_ALLOCA crash.
