@@ -1,3 +1,8 @@
+Wed Mar 27 14:47:32 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (READ_DATA_PENDING): configure.in has supported for uClibc,
+	  so remove uClibc stuff.
+
 Wed Mar 27 13:14:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_sysseek): new method based on a patch from Aristarkh

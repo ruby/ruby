@@ -143,10 +143,6 @@ static VALUE lineno;
 #  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_READEND - (fp)->FILE_READPTR)
 #elif defined(__BEOS__)
 #  define READ_DATA_PENDING(fp) (fp->_state._eof == 0)
-#elif defined(__UCLIBC__)
-#  define READ_DATA_PENDING(fp) ((fp)->bufpos < (fp)->bufend)
-#  define READ_DATA_PENDING_COUNT(fp) ((fp)->bufend - (fp)->bufpos)
-#  define READ_DATA_PENDING_PTR(fp) ((fp)->bufpos)
 #elif defined(__VMS)
 #  define READ_DATA_PENDING(fp) (((unsigned int)((*(fp))->_flag) & _IOEOF) == 0)
 #else
