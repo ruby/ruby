@@ -1,3 +1,7 @@
+Tue Dec  3 01:13:41 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (PP.singleline_pp): new method.
+
 Sun Dec  1 23:04:03 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb (OptionParser::new): same as OptionParser#on but

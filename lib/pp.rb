@@ -78,6 +78,12 @@ PP#pp to print the object.
 
     PP.pp returns ((|out|)).
 
+--- PP.singleline_pp(obj[, out])
+    outputs ((|obj|)) to ((|out|)) like (({PP.pp})) but with no indent and
+    newline.
+
+    PP.singleline_pp returns ((|out|)).
+
 --- PP.sharing_detection
     returns the sharing detection flag as a boolean value.
     It is false by default.
@@ -148,96 +154,102 @@ class PP < PrettyPrint
     out << "\n"
   end
 
-  @@sharing_detection = false
-  def PP.sharing_detection
-    return @@sharing_detection
+  def PP.singleline_pp(obj, out=$>)
+    pp = SingleLine.new(out)
+    pp.guard_inspect_key {pp.pp obj}
+    pp.flush
+    out
   end
 
-  def PP.sharing_detection=(val)
-    @@sharing_detection = val
+  @sharing_detection = false
+  class << self
+    attr_accessor :sharing_detection
   end
 
-  def initialize(out, width=79)
-    super
-    @sharing_detection = @@sharing_detection
-  end
+  module PPMethods
+    InspectKey = :__inspect_key__
 
-  InspectKey = :__inspect_key__
+    def guard_inspect_key
+      if Thread.current[InspectKey] == nil
+        Thread.current[InspectKey] = []
+      end
 
-  def guard_inspect_key
-    if Thread.current[InspectKey] == nil
-      Thread.current[InspectKey] = []
+      save = Thread.current[InspectKey]
+
+      begin
+        Thread.current[InspectKey] = []
+        yield
+      ensure
+        Thread.current[InspectKey] = save
+      end
     end
 
-    save = Thread.current[InspectKey]
+    def pp(obj)
+      id = obj.__id__
 
-    begin
-      Thread.current[InspectKey] = []
-      yield
-    ensure
-      Thread.current[InspectKey] = save
-    end
-  end
+      if Thread.current[InspectKey].include? id
+        group {obj.pretty_print_cycle self}
+        return
+      end
 
-  def pp(obj)
-    id = obj.__id__
-
-    if Thread.current[InspectKey].include? id
-      group {obj.pretty_print_cycle self}
-      return
+      begin
+        Thread.current[InspectKey] << id
+        group {obj.pretty_print self}
+      ensure
+        Thread.current[InspectKey].pop unless PP.sharing_detection
+      end
     end
 
-    begin
-      Thread.current[InspectKey] << id
-      group {obj.pretty_print self}
-    ensure
-      Thread.current[InspectKey].pop unless @sharing_detection
+    def object_group(obj, &block)
+      group(1, '#<' + obj.class.name, '>', &block)
     end
-  end
 
-  def object_group(obj, &block)
-    group(1, '#<' + obj.class.name, '>', &block)
-  end
+    def object_address_group(obj, &block)
+      group(1, sprintf('#<%s:0x%x', obj.class.name, obj.__id__ * 2), '>', &block)
+    end
 
-  def object_address_group(obj, &block)
-    group(1, sprintf('#<%s:0x%x', obj.class.name, obj.__id__ * 2), '>', &block)
-  end
+    def comma_breakable
+      text ','
+      breakable
+    end
 
-  def comma_breakable
-    text ','
-    breakable
-  end
-
-  def pp_object(obj)
-    object_address_group(obj) {
-      obj.pretty_print_instance_variables.each {|v|
-        v = v.to_s if Symbol === v
-        text ',' unless first?
-        breakable
-        text v
-        text '='
-        group(1) {
-          breakable ''
-          pp(obj.instance_eval(v))
-        }
-      }
-    }
-  end
-
-  def pp_hash(obj)
-    group(1, '{', '}') {
-      obj.each {|k, v|
-        comma_breakable unless first?
-        group {
-          pp k
-          text '=>'
+    def pp_object(obj)
+      object_address_group(obj) {
+        obj.pretty_print_instance_variables.each {|v|
+          v = v.to_s if Symbol === v
+          text ',' unless first?
+          breakable
+          text v
+          text '='
           group(1) {
             breakable ''
-            pp v
+            pp(obj.instance_eval(v))
           }
         }
       }
-    }
+    end
+
+    def pp_hash(obj)
+      group(1, '{', '}') {
+        obj.each {|k, v|
+          comma_breakable unless first?
+          group {
+            pp k
+            text '=>'
+            group(1) {
+              breakable ''
+              pp v
+            }
+          }
+        }
+      }
+    end
+  end
+
+  include PPMethods
+
+  class SingleLine < PrettyPrint::SingleLine
+    include PPMethods
   end
 
   module ObjectMixin
