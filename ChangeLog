@@ -1,3 +1,7 @@
+Wed May 29 13:45:15 2002  Wakou Aoyama  <wakou@ruby-lang.org>
+
+	* lib/cgi.rb: not use const if GET, HEAD. check multipart form head.
+
 Tue May 28 12:13:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (scope_node): trick to keep the node has a scope.

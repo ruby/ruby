@@ -8,7 +8,7 @@ Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 
 Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
-Wakou Aoyama <wakou@fsinet.or.jp>
+Wakou Aoyama <wakou@ruby-lang.org>
 
 
 
@@ -505,7 +505,9 @@ status:
         when /^content-encoding$/ni
           Apache::request.content_encoding = value
         when /^location$/ni
-          Apache::request.status = 302
+	  if Apache::request.status == 200
+	    Apache::request.status = 302
+	  end
           Apache::request.headers_out[name] = value
         else
           Apache::request.headers_out[name] = value
@@ -773,10 +775,6 @@ convert string charset, and set language to "ja".
       @params.update(hash)
     end
 
-    def param(name)
-      @params[name].join("\0")
-    end
-
     def read_multipart(boundary, content_length)
       params = Hash.new([])
       boundary = "--" + boundary
@@ -790,6 +788,8 @@ convert string charset, and set language to "ja".
       status = stdinput.read(boundary_size)
       if nil == status
         raise EOFError, "no content body"
+      elsif boundary + EOL != status
+        raise EOFError, "bad content body"
       end
 
       require "tempfile"
@@ -1890,13 +1890,27 @@ The hash keys are case sensitive. Ask the samples.
 
   def initialize(type = "query")
     extend QueryExtension
-    if defined?(CGI_PARAMS)
-      @params  = CGI_PARAMS.nil?  ? nil : CGI_PARAMS.dup
-      @cookies = CGI_COOKIES.nil? ? nil : CGI_COOKIES.dup
-    else
+    if "POST" != env_table['REQUEST_METHOD']
       initialize_query()  # set @params, @cookies
-      eval "CGI_PARAMS  = @params.nil?  ? nil : @params.dup"
-      eval "CGI_COOKIES = @cookies.nil? ? nil : @cookies.dup"
+    else
+      if defined?(CGI_PARAMS)
+        @params  = CGI_PARAMS.nil?  ? nil : CGI_PARAMS.dup
+        @cookies = CGI_COOKIES.nil? ? nil : CGI_COOKIES.dup
+      else
+        initialize_query()  # set @params, @cookies
+        eval "CGI_PARAMS  = @params.nil?  ? nil : @params.dup"
+        eval "CGI_COOKIES = @cookies.nil? ? nil : @cookies.dup"
+        if defined?(MOD_RUBY) and (RUBY_VERSION < "1.4.3")
+          raise "Please, use ruby1.4.3 or later."
+        else
+          at_exit() do
+            if defined?(CGI_PARAMS)
+              remove_const(:CGI_PARAMS)
+              remove_const(:CGI_COOKIES)
+            end
+          end
+        end
+      end
     end
     @output_cookies = nil
     @output_hidden = nil
@@ -1923,17 +1937,6 @@ The hash keys are case sensitive. Ask the samples.
     end
 
   end
-
-  if defined?(MOD_RUBY) and (RUBY_VERSION < "1.4.3")
-    raise "Please, use ruby1.4.3 or later."
-  else
-    at_exit() do
-      if defined?(CGI_PARAMS)
-        remove_const(:CGI_PARAMS)
-        remove_const(:CGI_COOKIES)
-      end
-    end
-  end
 end
 
 
@@ -1945,3 +1948,5 @@ delete. see cvs log.
 
 
 =end
+
+# vi:set tw=0:
