@@ -1,3 +1,8 @@
+Wed Jul 30 16:17:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): marshal_dump should not take any
+	  argument.
+
 Wed Jul 30 15:54:04 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_initialize): should initialize

@@ -483,7 +483,7 @@ w_object(obj, arg, limit)
 	if (rb_respond_to(obj, s_mdump)) {
 	    VALUE v;
 
-	    v = rb_funcall(obj, s_mdump, 1, INT2NUM(limit));
+	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    w_class(TYPE_USRMARSHAL, obj, arg);
 	    w_object(v, arg, limit);
 	    if (ivtbl) w_ivar(ivtbl, &c_arg);
