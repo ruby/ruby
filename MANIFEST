@@ -201,6 +201,7 @@ lib/optparse/date.rb
 lib/optparse/shellwords.rb
 lib/optparse/time.rb
 lib/optparse/uri.rb
+lib/optparse/version.rb
 lib/ostruct.rb
 lib/parsearg.rb
 lib/parsedate.rb
