@@ -1091,8 +1091,6 @@ int ruby_in_eval;
 static void rb_thread_cleanup _((void));
 static void rb_thread_wait_other_threads _((void));
 
-static int exit_status;
-
 static int
 error_handle(ex)
     int ex;
@@ -1130,7 +1128,8 @@ error_handle(ex)
       case TAG_RAISE:
       case TAG_FATAL:
 	if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
-	    ex = exit_status;
+	    VALUE st = rb_iv_get(ruby_errinfo, "status");
+	    ex = NUM2INT(st);
 	}
 	else {
 	    error_print();
@@ -3453,17 +3452,25 @@ rb_mod_method_defined(mod, mid)
     return Qfalse;
 }
 
+NORETURN(static void terminate_process _((int, const char*, int)));
+static void
+terminate_process(status, mesg, mlen)
+    int status;
+    const char *mesg;
+    int mlen;
+{
+    VALUE exit = rb_exc_new(rb_eSystemExit, mesg, mlen);
+
+    rb_iv_set(exit, "status", INT2NUM(status));
+    rb_exc_raise(exit);
+}
+
 void
 rb_exit(status)
     int status;
 {
     if (prot_tag) {
-	VALUE exit;
-
-	exit_status = status;
-	exit = rb_exc_new2(rb_eSystemExit, "exit");
-	rb_iv_set(exit, "status", INT2NUM(status));
-	rb_exc_raise(exit);
+	terminate_process(status, "exit", 4);
     }
     ruby_finalize();
     exit(status);
@@ -3489,15 +3496,6 @@ rb_f_exit(argc, argv, obj)
     return Qnil;		/* not reached */
 }
 
-static void
-rb_abort()
-{
-    if (!NIL_P(ruby_errinfo)) {
-	error_print();
-    }
-    rb_exit(1);
-}
-
 static VALUE
 rb_f_abort(argc, argv)
     int argc;
@@ -3505,14 +3503,18 @@ rb_f_abort(argc, argv)
 {
     rb_secure(4);
     if (argc == 0) {
-	rb_abort();
+	if (!NIL_P(ruby_errinfo)) {
+	    error_print();
+	}
+	rb_exit(1);
     }
     else {
 	VALUE mesg;
 
-	rb_scan_args(argc, argv, "01", &mesg);
+	rb_scan_args(argc, argv, "1", &mesg);
+	StringValue(argv[0]);
 	rb_io_puts(argc, argv, rb_stderr);
-	rb_exit(1);
+	terminate_process(1, RSTRING(argv[0])->ptr, RSTRING(argv[0])->len);
     }
     return Qnil;		/* not reached */
 }

@@ -212,9 +212,9 @@ static void top_local_setup();
 
 %type <node> singleton string
 %type <val>  literal numeric
-%type <node> compstmt stmts stmt expr arg primary command command_call method_call
+%type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value block_call_value
-%type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
+%type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args when_args call_args call_args2 open_args paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> mrhs mrhs_basic superclass block_call block_command
@@ -304,12 +304,34 @@ program		:  {
 			class_nest = 0;
 		        ruby_dyna_vars = $<vars>1;
 		    }
+		;
+
+bodystmt	: compstmt
+		  opt_rescue
+		  opt_else
+		  opt_ensure
+		    {
+		        $$ = $1;
+			if ($2) {
+			    $$ = NEW_RESCUE($1, $2, $3);
+			}
+			else if ($3) {
+			    rb_warn("else without rescue is useless");
+			    $$ = block_append($$, $4);
+			}
+			if ($4) {
+			    $$ = NEW_ENSURE($$, $4);
+			}
+			fixpos($$, $1);
+		    }
+		;
 
 compstmt	: stmts opt_terms
 		    {
 			void_stmts($1);
-			$$ = $1;
+		        $$ = $1;
 		    }
+		;
 
 stmts		: none
 		| stmt
@@ -324,6 +346,7 @@ stmts		: none
 		    {
 			$$ = $2;
 		    }
+		;
 
 stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
@@ -510,6 +533,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = $1;
 		    }
 		| expr
+		;
 
 expr		: kRETURN call_args
 		    {
@@ -543,15 +567,18 @@ expr		: kRETURN call_args
 			$$ = NEW_NOT(cond($2));
 		    }
 		| arg
+		;
 
 expr_value	: expr
 		    {
 			value_expr($$);
 			$$ = $1;
 		    }
+		;
 
 command_call	: command
 		| block_command
+		;
 
 block_command	: block_call
 		| block_call_value '.' operation2 command_args
@@ -562,6 +589,7 @@ block_command	: block_call
 		    {
 			$$ = new_call($1, $3, $4);
 		    }
+		;
 
 command		: operation command_args
 		    {
@@ -590,18 +618,21 @@ command		: operation command_args
 			$$ = NEW_YIELD(ret_args($2));
 		        fixpos($$, $2);
 		    }
+		;
 
 mlhs		: mlhs_basic
 		| tLPAREN mlhs_entry ')'
 		    {
 			$$ = $2;
 		    }
+		;
 
 mlhs_entry	: mlhs_basic
 		| tLPAREN mlhs_entry ')'
 		    {
 			$$ = NEW_MASGN(NEW_LIST($2), 0);
 		    }
+		;
 
 mlhs_basic	: mlhs_head
 		    {
@@ -627,12 +658,14 @@ mlhs_basic	: mlhs_head
 		    {
 			$$ = NEW_MASGN(0, -1);
 		    }
+		;
 
 mlhs_item	: mlhs_node
 		| tLPAREN mlhs_entry ')'
 		    {
 			$$ = $2;
 		    }
+		;
 
 mlhs_head	: mlhs_item ','
 		    {
@@ -642,6 +675,7 @@ mlhs_head	: mlhs_item ','
 		    {
 			$$ = list_append($1, $2);
 		    }
+		;
 
 mlhs_node	: variable
 		    {
@@ -668,6 +702,7 @@ mlhs_node	: variable
 		        rb_backref_error($1);
 			$$ = 0;
 		    }
+		;
 
 lhs		: variable
 		    {
@@ -694,12 +729,14 @@ lhs		: variable
 		        rb_backref_error($1);
 			$$ = 0;
 		    }
+		;
 
 cname		: tIDENTIFIER
 		    {
 			yyerror("class/module name must be CONSTANT");
 		    }
 		| tCONSTANT
+		;
 
 fname		: tIDENTIFIER
 		| tCONSTANT
@@ -714,9 +751,11 @@ fname		: tIDENTIFIER
 			lex_state = EXPR_END;
 			$$ = $<id>1;
 		    }
+		;
 
 fitem		: fname
 		| symbol
+		;
 
 undef_list	: fitem
 		    {
@@ -726,6 +765,7 @@ undef_list	: fitem
 		    {
 			$$ = block_append($1, NEW_UNDEF($4));
 		    }
+		;
 
 op		: '|'		{ $$ = '|'; }
 		| '^'		{ $$ = '^'; }
@@ -753,6 +793,7 @@ op		: '|'		{ $$ = '|'; }
 		| tAREF		{ $$ = tAREF; }
 		| tASET		{ $$ = tASET; }
 		| '`'		{ $$ = '`'; }
+		;
 
 reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
 		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
@@ -761,6 +802,7 @@ reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
 		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
 		| kTHEN | kTRUE | kUNDEF | kUNLESS_MOD | kUNTIL_MOD | kWHEN
 		| kWHILE_MOD | kYIELD | kRESCUE_MOD
+		;
 
 arg		: lhs '=' arg
 		    {
@@ -1007,12 +1049,14 @@ arg		: lhs '=' arg
 		    {
 			$$ = $1;
 		    }
+		;
 
 arg_value	: arg
 		    {
 			value_expr($1);
 			$$ = $1;
 		    }
+		;
 
 aref_args	: none
 		| command opt_nl
@@ -1037,6 +1081,7 @@ aref_args	: none
 			value_expr($2);
 			$$ = NEW_RESTARY($2);
 		    }
+		;
 
 paren_args	: '(' none ')'
 		    {
@@ -1054,9 +1099,11 @@ paren_args	: '(' none ')'
 		    {
 			$$ = list_append($2, $4);
 		    }
+		;
 
 opt_paren_args	: none
 		| paren_args
+		;
 
 call_args	: command
 		    {
@@ -1097,6 +1144,7 @@ call_args	: command
 			$$ = arg_blk_pass(NEW_RESTARGS($2), $3);
 		    }
 		| block_arg
+		;
 
 call_args2	: arg_value ',' args opt_block_arg
 		    {
@@ -1151,6 +1199,7 @@ call_args2	: arg_value ',' args opt_block_arg
 			$$ = arg_blk_pass(NEW_RESTARGS($2), $3);
 		    }
 		| block_arg
+		;
 
 command_args	:  {
 			$<num>$ = cmdarg_stack;
@@ -1162,6 +1211,7 @@ command_args	:  {
 		        cmdarg_stack = $<num>1;
 			$$ = $2;
 		    }
+		;
 
 open_args	: call_args
 		| tLPAREN_ARG  {lex_state = EXPR_ENDARG;} ')'
@@ -1176,17 +1226,20 @@ open_args	: call_args
 		                   rb_id2name($<id>1));
 			$$ = $2;
 		    }
+		;
 
 block_arg	: tAMPER arg_value
 		    {
 			$$ = NEW_BLOCK_PASS($2);
 		    }
+		;
 
 opt_block_arg	: ',' block_arg
 		    {
 			$$ = $2;
 		    }
 		| none
+		;
 
 args 		: arg_value
 		    {
@@ -1196,6 +1249,7 @@ args 		: arg_value
 		    {
 			$$ = list_append($1, $3);
 		    }
+		;
 
 mrhs		: arg_value
 		    {
@@ -1205,6 +1259,7 @@ mrhs		: arg_value
 		    {
 			$$ = NEW_REXPAND($1);
 		    }
+		;
 
 mrhs_basic	: args ',' arg_value
 		    {
@@ -1218,6 +1273,7 @@ mrhs_basic	: args ',' arg_value
 		    {
 			$$ = $2;
 		    }
+		;
 
 primary		: literal
 		    {
@@ -1238,24 +1294,10 @@ primary		: literal
 			$$ = NEW_VCALL($1);
 		    }
 		| kBEGIN
-		  compstmt
-		  rescue
-		  opt_else
-		  ensure
+		  bodystmt
 		  kEND
 		    {
-			if (!$3 && !$4 && !$5)
-			    $$ = NEW_BEGIN($2);
-			else {
-			    if ($3) $2 = NEW_RESCUE($2, $3, $4);
-			    else if ($4) {
-				rb_warn("else without rescue is useless");
-				$2 = block_append($2, $4);
-			    }
-			    if ($5) $2 = NEW_ENSURE($2, $5);
-			    $$ = $2;
-			}
-		        fixpos($$, $2);
+			$$ = NEW_BEGIN($2);
 		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} ')'
 		    {
@@ -1385,7 +1427,7 @@ primary		: literal
 			local_push(0);
 		        $<num>$ = ruby_sourceline;
 		    }
-		  compstmt
+		  bodystmt
 		  kEND
 		    {
 		        $$ = NEW_CLASS($2, $5, $3);
@@ -1405,7 +1447,7 @@ primary		: literal
 			class_nest++;
 			local_push(0);
 		    }
-		  compstmt
+		  bodystmt
 		  kEND
 		    {
 		        $$ = NEW_SCLASS($3, $7);
@@ -1423,7 +1465,7 @@ primary		: literal
 			local_push(0);
 		        $<num>$ = ruby_sourceline;
 		    }
-		  compstmt
+		  bodystmt
 		  kEND
 		    {
 		        $$ = NEW_MODULE($2, $4);
@@ -1441,19 +1483,9 @@ primary		: literal
 			local_push(0);
 		    }
 		  f_arglist
-		  compstmt
-		  rescue
-		  opt_else
-		  ensure
+		  bodystmt
 		  kEND
 		    {
-		        if ($6) $5 = NEW_RESCUE($5, $6, $7);
-			else if ($7) {
-			    rb_warn("else without rescue is useless");
-			    $5 = block_append($5, $7);
-			}
-			if ($8) $5 = NEW_ENSURE($5, $8);
-
 		        /* NOEX_PRIVATE for toplevel */
 			$$ = NEW_DEFN($2, $4, $5, class_nest?NOEX_PUBLIC:NOEX_PRIVATE);
 			if (is_attrset_id($2)) $$->nd_noex = NOEX_PUBLIC;
@@ -1469,19 +1501,9 @@ primary		: literal
 		        lex_state = EXPR_END; /* force for args */
 		    }
 		  f_arglist
-		  compstmt
-		  rescue
-		  opt_else
-		  ensure
+		  bodystmt
 		  kEND
 		    {
-		        if ($9) $8 = NEW_RESCUE($8, $9, $10);
-			else if ($10) {
-			    rb_warn("else without rescue is useless");
-			    $8 = block_append($8, $10);
-			}
-			if ($11) $8 = NEW_ENSURE($8, $11);
-
 			$$ = NEW_DEFS($2, $5, $7, $8);
 		        fixpos($$, $2);
 		        local_pop();
@@ -1503,19 +1525,23 @@ primary		: literal
 		    {
 			$$ = NEW_RETRY();
 		    }
+		;
 
 primary_value 	: primary
 		    {
 			value_expr($1);
 			$$ = $1;
 		    }
+		;
 
 then		: term
 		| kTHEN
 		| term kTHEN
+		;
 
 do		: term
 		| kDO_COND
+		;
 
 if_tail		: opt_else
 		| kELSIF expr_value then
@@ -1525,15 +1551,18 @@ if_tail		: opt_else
 			$$ = NEW_IF(cond($2), $4, $5);
 		        fixpos($$, $2);
 		    }
+		;
 
 opt_else	: none
 		| kELSE compstmt
 		    {
 			$$ = $2;
 		    }
+		;
 
 block_var	: lhs
 		| mlhs
+		;
 
 opt_block_var	: none
 		| '|' /* none */ '|'
@@ -1548,6 +1577,7 @@ opt_block_var	: none
 		    {
 			$$ = $2;
 		    }
+		;
 
 do_block	: kDO_BLOCK
 		    {
@@ -1571,6 +1601,7 @@ do_block	: kDO_BLOCK
 			dyna_pop($<vars>2);
 		    }
 
+		;
 
 block_call	: command do_block
 		    {
@@ -1589,12 +1620,14 @@ block_call	: command do_block
 		    {
 			$$ = new_call($1, $3, $4);
 		    }
+		;
 
 block_call_value : block_call
 		    {
 			value_expr($$);
 			$$ = $1;
 		    }
+		;
 
 method_call	: operation paren_args
 		    {
@@ -1629,6 +1662,7 @@ method_call	: operation paren_args
 			    yyerror("super called outside of method");
 			$$ = NEW_ZSUPER();
 		    }
+		;
 
 brace_block	: '{'
 		    {
@@ -1652,6 +1686,7 @@ brace_block	: '{'
 		        fixpos($$, $4);
 			dyna_pop($<vars>2);
 		    }
+		;
 
 case_body	: kWHEN when_args then
 		  compstmt
@@ -1659,6 +1694,7 @@ case_body	: kWHEN when_args then
 		    {
 			$$ = NEW_WHEN($2, $4, $5);
 		    }
+		;
 
 when_args	: args
 		| args ',' tSTAR arg_value
@@ -1669,22 +1705,15 @@ when_args	: args
 		    {
 			$$ = NEW_LIST(NEW_WHEN($2, 0, 0));
 		    }
+		;
 
 cases		: opt_else
 		| case_body
+		;
 
-exc_list	: none
-		| args
-
-exc_var		: tASSOC lhs
-		    {
-			$$ = $2;
-		    }
-		| none
-
-rescue		: kRESCUE exc_list exc_var then
+opt_rescue	: kRESCUE exc_list exc_var then
 		  compstmt
-		  rescue
+		  opt_rescue
 		    {
 		        if ($3) {
 		            $3 = node_assign($3, NEW_GVAR(rb_intern("$!")));
@@ -1694,9 +1723,20 @@ rescue		: kRESCUE exc_list exc_var then
 		        fixpos($$, $2?$2:$5);
 		    }
 		| none
+		;
 
-ensure		: none
-		| kENSURE compstmt
+exc_list	: args
+		| none
+		;
+
+exc_var		: tASSOC lhs
+		    {
+			$$ = $2;
+		    }
+		| none
+		;
+
+opt_ensure	: kENSURE compstmt
 		    {
 			if ($2)
 			    $$ = $2;
@@ -1704,6 +1744,8 @@ ensure		: none
 			    /* place holder */
 			    $$ = NEW_NIL();
 		    }
+		| none
+		;
 
 literal		: numeric
 		| symbol
@@ -1711,6 +1753,7 @@ literal		: numeric
 			$$ = ID2SYM($1);
 		    }
 		| tREGEXP
+		;
 
 string		: tSTRING
 		    {
@@ -1739,20 +1782,24 @@ string		: tSTRING
 			nd_set_type($2, NODE_ARRAY);
 			list_concat($$, $2);
 		    }
+		;
 
 symbol		: tSYMBEG sym
 		    {
 		        lex_state = EXPR_END;
 			$$ = $2;
 		    }
+		;
 
 sym		: fname
 		| tIVAR
 		| tGVAR
 		| tCVAR
+		;
 
 numeric		: tINTEGER
 		| tFLOAT
+		;
 
 variable	: tIDENTIFIER
 		| tIVAR
@@ -1765,19 +1812,23 @@ variable	: tIDENTIFIER
 		| kFALSE {$$ = kFALSE;}
 		| k__FILE__ {$$ = k__FILE__;}
 		| k__LINE__ {$$ = k__LINE__;}
+		;
 
 var_ref		: variable
 		    {
 			$$ = gettable($1);
 		    }
+		;
 
 var_lhs		: variable
 		    {
 			$$ = assignable($1, 0);
 		    }
+		;
 
 backref		: tNTH_REF
 		| tBACK_REF
+		;
 
 superclass	: term
 		    {
@@ -1792,6 +1843,7 @@ superclass	: term
 			$$ = $3;
 		    }
 		| error term {yyerrok; $$ = 0;}
+		;
 
 f_arglist	: '(' f_args opt_nl ')'
 		    {
@@ -1802,6 +1854,7 @@ f_arglist	: '(' f_args opt_nl ')'
 		    {
 			$$ = $1;
 		    }
+		;
 
 f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    {
@@ -1839,6 +1892,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    {
 			$$ = NEW_ARGS(0, 0, -1);
 		    }
+		;
 
 f_norm_arg	: tCONSTANT
 		    {
@@ -1865,12 +1919,14 @@ f_norm_arg	: tCONSTANT
 			local_cnt($1);
 			$$ = 1;
 		    }
+		;
 
 f_arg		: f_norm_arg
 		| f_arg ',' f_norm_arg
 		    {
 			$$ += 1;
 		    }
+		;
 
 f_opt		: tIDENTIFIER '=' arg_value
 		    {
@@ -1880,6 +1936,7 @@ f_opt		: tIDENTIFIER '=' arg_value
 			    yyerror("duplicate optional argument name");
 			$$ = assignable($1, $3);
 		    }
+		;
 
 f_optarg	: f_opt
 		    {
@@ -1890,6 +1947,7 @@ f_optarg	: f_opt
 		    {
 			$$ = block_append($1, $3);
 		    }
+		;
 
 f_rest_arg	: tSTAR tIDENTIFIER
 		    {
@@ -1903,6 +1961,7 @@ f_rest_arg	: tSTAR tIDENTIFIER
 		    {
 			$$ = -2;
 		    }
+		;
 
 f_block_arg	: tAMPER tIDENTIFIER
 		    {
@@ -1912,12 +1971,14 @@ f_block_arg	: tAMPER tIDENTIFIER
 			    yyerror("duplicate block argument name");
 			$$ = NEW_BLOCK_ARG($2);
 		    }
+		;
 
 opt_f_block_arg	: ',' f_block_arg
 		    {
 			$$ = $2;
 		    }
 		| none
+		;
 
 singleton	: var_ref
 		    {
@@ -1947,6 +2008,7 @@ singleton	: var_ref
 			}
 			$$ = $3;
 		    }
+		;
 
 assoc_list	: none
 		| assocs trailer
@@ -1960,54 +2022,64 @@ assoc_list	: none
 			}
 			$$ = $1;
 		    }
+		;
 
 assocs		: assoc
 		| assocs ',' assoc
 		    {
 			$$ = list_concat($1, $3);
 		    }
+		;
 
 assoc		: arg_value tASSOC arg_value
 		    {
 			$$ = list_append(NEW_LIST($1), $3);
 		    }
+		;
 
 operation	: tIDENTIFIER
 		| tCONSTANT
 		| tFID
+		;
 
 operation2	: tIDENTIFIER
 		| tCONSTANT
 		| tFID
 		| op
+		;
 
 operation3	: tIDENTIFIER
 		| tFID
 		| op
+		;
 
 dot_or_colon	: '.'
 		| tCOLON2
+		;
 
 opt_terms	: /* none */
 		| terms
+		;
 
 opt_nl		: /* none */
 		| '\n'
+		;
 
 trailer		: /* none */
 		| '\n'
 		| ','
+		;
 
 term		: ';' {yyerrok;}
 		| '\n'
+		;
 
 terms		: term
 		| terms ';' {yyerrok;}
+		;
 
-none		: /* none */
-		    {
-			$$ = 0;
-		    }
+none		: /* none */ {$$ = 0;}
+		;
 %%
 #include "regex.h"
 #include "util.h"

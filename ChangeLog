@@ -1,3 +1,30 @@
+Tue Mar 26 01:56:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (primary): while/until statement modifiers to "begin"
+	  statement now work as "do .. while" even when begin statement
+	  has "rescue" or "ensure" [new].
+
+	* parse.y (bodystmt): rescue/ensure is allowed at every bodies,
+	  i.e. method bodies, begin bodies, class bodies[new], and module
+	  bodies[new].
+
+Mon Mar 25 22:10:04 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_addrinfo): should specify ai_socktype
+	  for getaddrinfo hints.
+
+Mon Mar 25 17:18:48 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* dir.c (rb_push_glob): local variable 'maxnest' was
+	  uninitialized.
+
+Mon Mar 25 16:53:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_abort): embed aborting message into exception
+	  object [new].
+
+	* eval.c (terminate_process): utility function for exit and abort.
+
 Tue Mar 26 14:04:47 2002  okabe katsuyuki <HGC02147@nifty.ne.jp>
 
 	* win32/mkexports.rb: support VC++.NET.

@@ -591,6 +591,7 @@ sock_addrinfo(host, port, flags)
 
     MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = flags;
     error = getaddrinfo(hostp, portp, &hints, &res);
     if (error) {
