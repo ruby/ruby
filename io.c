@@ -60,17 +60,6 @@
 # define ftello  ftell
 #endif
 
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#else
-#ifndef NT
-struct timeval {
-        long    tv_sec;         /* seconds */
-        long    tv_usec;        /* and microseconds */
-};
-#endif
-#endif
-
 #include <sys/stat.h>
 
 /* EMX has sys/param.h, but.. */

@@ -12,23 +12,12 @@
 
 #include "ruby.h"
 #include <sys/types.h>
-
 #include <time.h>
-#ifndef NT
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#else
-#define time_t long
-struct timeval {
-        time_t tv_sec;		/* seconds */
-        time_t tv_usec;		/* and microseconds */
-};
-#endif
-#endif /* NT */
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
 #include <math.h>
 
 VALUE rb_cTime;

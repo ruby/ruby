@@ -1,6 +1,7 @@
 /************************************************
 
-  missing.h - prototype for *.c in ./missing
+  missing.h - prototype for *.c in ./missing, and
+  	      for missing timeval struct
 
   $Author$
   $Date$
@@ -10,6 +11,16 @@
 
 #ifndef MISSING_H
 #define MISSING_H
+
+#if defined(HAVE_SYS_TIME_H)
+#  include <sys/time.h>
+#elif !defined(NT)
+#  define time_t long
+struct timeval {
+    time_t tv_sec;	/* seconds */
+    time_t tv_usec;	/* microseconds */
+};
+#endif
 
 #ifndef HAVE_ACOSH
 extern double acosh _((double));

@@ -22,16 +22,6 @@
 #endif
 
 #include <time.h>
-#ifndef NT
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#else
-struct timeval {
-        long    tv_sec;         /* seconds */
-        long    tv_usec;        /* and microseconds */
-};
-#endif
-#endif /* NT */
 #include <ctype.h>
 
 struct timeval rb_time_interval _((VALUE));
