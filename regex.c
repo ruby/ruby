@@ -48,13 +48,6 @@
 # include <sys/types.h>
 #endif
 
-#if defined(STDC_HEADERS)
-# include <stddef.h>
-#else
-/* We need this for `regex.h', and perhaps for the Emacs include files.  */
-# include <sys/types.h>
-#endif
-
 #ifndef __STDC__
 # define volatile
 #endif
