@@ -1,3 +1,7 @@
+Wed Dec 11 23:35:43 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb.in (create_makefile): -no-undefined -> --no-undefined.
+
 Wed Dec 11 20:48:03 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/getoptlong.rb (GetoptLong::Error): provide a common ancestor

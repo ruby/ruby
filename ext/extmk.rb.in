@@ -378,7 +378,7 @@ def create_makefile(target)
 
   $DLDFLAGS = '@DLDFLAGS@'
   if /linux/ =~ RUBY_PLATFORM and $configure_args['--enable-shared'] and "@GNU_LD@" == "yes"
-    $DLDFLAGS << " -Wl,-no-undefined"
+    $DLDFLAGS << " -Wl,--no-undefined"
   end
 
   if $configure_args['--enable-shared'] or "@LIBRUBY@" != "@LIBRUBY_A@"
