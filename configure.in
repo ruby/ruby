@@ -413,10 +413,21 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
 	linux*) 	LDSHARED="gcc -shared"
 			rb_cv_dlopen=yes ;;
-	freebsd*)       LDSHARED="gcc -shared"   
-			test -x /usr/bin/objformat && LDFLAGS="-rdynamic"
+	freebsd*)       LDSHARED="gcc -shared"
+			if test -x /usr/bin/objformat -a \
+				`/usr/bin/objformat` = "elf" ; then
+			    LDFLAGS="-rdynamic"
+			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
+			    rb_cv_freebsd_elf=yes
+			fi
 			rb_cv_dlopen=yes ;;
 	netbsd*) 	LDSHARED="ld -Bshareable"
+			case "$host_cpu" in
+			alpha|mips)
+				LDFLAGS="-export-dynamic" ;;
+			*)
+				;;
+			esac
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
 			rb_cv_dlopen=yes ;;
@@ -624,8 +635,15 @@ if test "$enable_shared" = 'yes'; then
   LIBRUBYARG='-L./ -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   case "$host_os" in
-    freebsd2*|sunos4*|linux*)
+    sunos4*|linux*)
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
+	;;
+    freebsd*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
+	if test "$rb_cv_freebsd_elf" != "yes" ; then
+	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
+	    LIBRUBY_ALIASES=''
+	fi
 	;;
     hpux*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
@@ -666,30 +684,26 @@ ri_suffix=
 test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
-LIBSUFFIX=$ri_suffix
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
-AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby")
+RUBY_LIB_PATH="${prefix}/lib/${RUBY_INSTALL_NAME}/${MAJOR}.${MINOR}"
+AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_LIB_PATH}/site_ruby")
 AC_SUBST(arch)dnl
 
 if test "$fat_binary" = yes ; then
     arch="fat-${host_os}"
 
     AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB,
-                 "${prefix}/lib/${RUBY_INSTALL_NAME}/" __ARCHITECTURE__ "-${host_os}" )
+                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}" )
 
     AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB,
-                 "${prefix}/lib/${RUBY_INSTALL_NAME}/" __ARCHITECTURE__ "-${host_os}" )
-
-    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM,  __ARCHITECTURE__ "-${host_os}" )
+                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}" )
 else
     arch="${host_cpu}-${host_os}"
-    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
+AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_LIB_PATH}/site_ruby/${arch}")
+AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 
 echo "creating config.h"
 cat confdefs.h > config.h

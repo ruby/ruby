@@ -2,9 +2,11 @@
   Win32API - Ruby Win32 API Import Facility
 */
 
+#ifndef _MSC_VER
 #define  WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
+#endif
 
 #define _T_VOID     0
 #define _T_NUMBER   1

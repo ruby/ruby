@@ -191,6 +191,10 @@ rb_str2inum(str, base)
 		str++;
 		base = 16;
 	    }
+	    else if (*str == 'b' || *str == 'B') {
+		str++;
+		base = 2;
+	    }
 	    else {
 		base = 8;
 	    }
@@ -204,8 +208,11 @@ rb_str2inum(str, base)
 	while (str[0] == '0') str++;
 	len = 3*strlen(str)*sizeof(char);
     }
-    else {			/* base == 10 or 16 */
+    else {			/* base == 10, 2 or 16 */
 	if (base == 16 && str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
+	    str += 2;
+	}
+	if (base == 2 && str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
 	    str += 2;
 	}
 	while (str[0] == '0') str++;

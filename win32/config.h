@@ -46,3 +46,9 @@
 #define RUBY_ARCHLIB "/usr/local/lib/ruby/i386-mswin32"
 #define RUBY_PLATFORM "i386-mswin32"
 
+#define SIZEOF_INT   4
+#define SIZEOF_SHORT 2
+#define SIZEOF_LONG  4
+#define SIZEOF_VOIDP 4
+#define SIZEOF_FLOAT 4
+#define SIZEOF_DOUBLE 8

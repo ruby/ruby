@@ -22,6 +22,10 @@
 #include <unistd.h>
 #endif
 
+#ifndef atof
+double strtod();
+#endif
+
 VALUE rb_cString;
 
 #define STR_FREEZE FL_USER1
@@ -60,14 +64,20 @@ rb_tainted_str_new(ptr, len)
     char *ptr;
     int len;
 {
-    return rb_obj_taint(rb_str_new(ptr, len));
+    VALUE str = rb_str_new(ptr, len);
+
+    FL_SET(str, FL_TAINT);
+    return str;
 }
 
 VALUE
 rb_tainted_str_new2(ptr)
     char *ptr;
 {
-    return rb_obj_taint(rb_str_new2(ptr));
+    VALUE str = rb_str_new2(ptr);
+
+    FL_SET(str, FL_TAINT);
+    return str;
 }
 
 VALUE
@@ -102,7 +112,7 @@ rb_str_new4(orig)
 	str->ptr = RSTRING(orig)->ptr;
 	RSTRING(orig)->orig = (VALUE)str;
 	str->orig = 0;
-	if (rb_safe_level() >= 3) {
+	if (FL_TEST(str, FL_TAINT)) {
 	    FL_SET(str, FL_TAINT);
 	}
 	return (VALUE)str;
@@ -1028,7 +1038,10 @@ rb_str_sub_bang(argc, argv, str)
 	regs = RMATCH(match)->regs;
 
 	if (iter) {
+	    rb_match_busy(match, Qtrue);
 	    repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	    rb_match_busy(match, Qfalse);
+	    rb_backref_set(match);
 	}
 	else {
 	    repl = rb_reg_regsub(repl, str, regs);
@@ -1102,7 +1115,10 @@ rb_str_gsub_bang(argc, argv, str)
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
 	if (iter) {
+	    rb_match_busy(match, Qtrue);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	    rb_match_busy(match, Qfalse);
+	    rb_backref_set(match);
 	}
 	else {
 	    val = rb_reg_regsub(repl, str, regs);
@@ -1313,7 +1329,7 @@ static VALUE
 rb_str_to_f(str)
     VALUE str;
 {
-    double f = atof(RSTRING(str)->ptr);
+    double f = strtod(RSTRING(str)->ptr, 0);
 
     return rb_float_new(f);
 }

@@ -14,6 +14,10 @@
 #include <sys/types.h>
 #include <ctype.h>
 
+#ifndef atof
+double strtod();
+#endif
+
 #define define_swapx(x, xtype)		\
 static xtype				\
 TOKEN_PASTE(swap,x)(z)			\
@@ -587,7 +591,7 @@ pack_pack(ary, fmt)
 		    f = RFLOAT(from)->value;
 		    break;
 		  case T_STRING:
-		    f = atof(RSTRING(from)->ptr);
+		    f = strtod(RSTRING(from)->ptr, 0);
 		  default:
 		    f = (float)NUM2INT(from);
 		    break;
@@ -607,7 +611,7 @@ pack_pack(ary, fmt)
 		    f = RFLOAT(from)->value;
 		    break;
 		  case T_STRING:
-		    f = atof(RSTRING(from)->ptr);
+		    f = strtod(RSTRING(from)->ptr, 0);
 		  default:
 		    f = (float)NUM2INT(from);
 		    break;
@@ -628,7 +632,7 @@ pack_pack(ary, fmt)
 		    d = RFLOAT(from)->value;
 		    break;
 		  case T_STRING:
-		    d = atof(RSTRING(from)->ptr);
+		    d = strtod(RSTRING(from)->ptr, 0);
 		  default:
 		    d = (double)NUM2INT(from);
 		    break;
@@ -649,7 +653,7 @@ pack_pack(ary, fmt)
 		    d = RFLOAT(from)->value;
 		    break;
 		  case T_STRING:
-		    d = atof(RSTRING(from)->ptr);
+		    d = strtod(RSTRING(from)->ptr, 0);
 		  default:
 		    d = (double)NUM2INT(from);
 		    break;
@@ -669,7 +673,7 @@ pack_pack(ary, fmt)
 		    f = RFLOAT(from)->value;
 		    break;
 		  case T_STRING:
-		    f = atof(RSTRING(from)->ptr);
+		    f = strtod(RSTRING(from)->ptr, 0);
 		  default:
 		    f = (float)NUM2INT(from);
 		    break;
@@ -690,7 +694,7 @@ pack_pack(ary, fmt)
 		    d = RFLOAT(from)->value;
 		    break;
 		  case T_STRING:
-		    d = atof(RSTRING(from)->ptr);
+		    d = strtod(RSTRING(from)->ptr, 0);
 		  default:
 		    d = (double)NUM2INT(from);
 		    break;

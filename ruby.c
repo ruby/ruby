@@ -279,7 +279,11 @@ proc_options(argcp, argvp)
 
 	  case 'e':
 	    forbid_setid("-e");
-	    if (!argv[1]) {
+	    if (!*++s) {
+		s = argv[1];
+		argc--,argv++;
+	    }
+	    if (!s) {
 		fprintf(stderr, "%s: no code specified for -e\n", origargv[0]);
 		exit(2);
 	    }
@@ -292,9 +296,8 @@ proc_options(argcp, argvp)
 		}
 		if (script == 0) script = e_tmpname;
 	    }
-	    fputs(argv[1], e_fp);
+	    fputs(s, e_fp);
 	    putc('\n', e_fp);
-	    argc--, argv++;
 	    break;
 
 	  case 'r':

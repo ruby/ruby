@@ -142,9 +142,9 @@ VALUE rb_thread_main _((void));
 VALUE rb_thread_local_aref _((VALUE, ID));
 VALUE rb_thread_local_aset _((VALUE, ID, VALUE));
 /* file.c */
-VALUE rb_file_open _((char*, char*));
 int eaccess _((char*, int));
 VALUE rb_file_s_expand_path _((int, VALUE *));
+void rb_file_const _((char*, VALUE));
 /* gc.c */
 void rb_global_variable _((VALUE*));
 void rb_gc_mark_locations _((VALUE*, VALUE*));
@@ -176,8 +176,7 @@ VALUE rb_io_ungetc _((VALUE, VALUE));
 VALUE rb_io_close _((VALUE));
 VALUE rb_io_eof _((VALUE));
 VALUE rb_io_binmode _((VALUE));
-int rb_io_mode_flags _((char*));
-VALUE rb_io_reopen _((VALUE, VALUE));
+VALUE rb_file_open _((char*, char*));
 VALUE rb_gets _((void));
 void rb_str_setter _((VALUE, ID, VALUE*));
 /* numeric.c */
@@ -272,7 +271,6 @@ VALUE rb_str_times _((VALUE, VALUE));
 VALUE rb_str_substr _((VALUE, int, int));
 void rb_str_modify _((VALUE));
 VALUE rb_str_freeze _((VALUE));
-VALUE rb_str_dup_frozen _((VALUE));
 VALUE rb_str_resize _((VALUE, int));
 VALUE rb_str_cat _((VALUE, char*, int));
 VALUE rb_str_concat _((VALUE, VALUE));

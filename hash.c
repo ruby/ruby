@@ -504,7 +504,7 @@ rb_hash_aset(hash, key, val)
 	st_insert(RHASH(hash)->tbl, key, val);
     }
     else {
-	st_add_direct(RHASH(hash)->tbl, rb_str_dup_frozen(key), val);
+	st_add_direct(RHASH(hash)->tbl, rb_str_new4(key), val);
     }
     return val;
 }

@@ -72,6 +72,8 @@ class Complex < Numeric
   end
   
   def initialize(a, b = 0)
+    raise "non numeric 1st arg `#{a.inspect}'" if !a.kind_of? Numeric
+    raise "non numeric 2nd arg `#{b.inspect}'" if !b.kind_of? Numeric
     @real = a
     @image = b
   end
@@ -84,7 +86,7 @@ class Complex < Numeric
     elsif Complex.generic?(other)
       Complex(@real + other, @image)
     else
-      x , y = a.coerce(self)
+      x , y = other.coerce(self)
       x + y
     end
   end
@@ -97,7 +99,7 @@ class Complex < Numeric
     elsif Complex.generic?(other)
       Complex(@real - other, @image)
     else
-      x , y = a.coerce(self)
+      x , y = other.coerce(self)
       x - y
     end
   end
@@ -110,7 +112,7 @@ class Complex < Numeric
     elsif Complex.generic?(other)
       Complex(@real * other, @image * other)
     else
-      x , y = a.coerce(self)
+      x , y = other.coerce(self)
       x * y
     end
   end
@@ -121,7 +123,7 @@ class Complex < Numeric
     elsif Complex.generic?(other)
       Complex(@real / other, @image / other)
     else
-      x , y = a.coerce(self)
+      x , y = other.coerce(self)
       x / y
     end
   end
@@ -163,7 +165,7 @@ class Complex < Numeric
       r, theta = polar
       Complex.polar(r.power!(other), theta * other)
     else
-      x , y = a.coerce(self)
+      x , y = other.coerce(self)
       x / y
     end
   end
@@ -174,7 +176,7 @@ class Complex < Numeric
     elsif Complex.generic?(other)
       Complex(@real % other, @image % other)
     else
-      x , y = a.coerce(self)
+      x , y = other.coerce(self)
       x % y
     end
   end
@@ -187,7 +189,7 @@ class Complex < Numeric
     elsif Complex.generic?(other)
       Complex(@real.divmod(other), @image.divmod(other))
     else
-      x , y = a.coerce(self)
+      x , y = other.coerce(self)
       x.divmod(y)
     end
   end
@@ -222,7 +224,7 @@ class Complex < Numeric
     elsif Complex.generic?(other)
       @real == other and @image == 0
     else
-      x , y = a.coerce(self)
+      x , y = other.coerce(self)
       x == y
     end
   end

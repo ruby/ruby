@@ -109,25 +109,21 @@ bugs.
 
 1.4 Convert C data into VALUE
 
-VALUEの実際の構造は
+To convert C data to the values of Ruby:
 
-  * FIXNUMの場合
+  * FIXNUM
 
-    1bit右シフトして，LSBを立てる．
+    right shift 1 bit, and turn on LSB.
 
-  * その他のポインタの場合
+  * Other pointer values
 
-    そのままVALUEにキャストする．
+    cast to VALUE.
 
-となっています．よって，LSBをチェックすればVALUEがFIXNUMかど
-うかわかるわけです(ポインタのLSBが立っていないことを仮定して
-いる)．
+You can determine whether VALUE is pointer or not, by checking LSB.  
 
-ですから，FIXNUM以外のRubyのオブジェクトの構造体は単にVALUE
-にキャストするだけでVALUEに変換出来ます．ただし，任意の構造
-体がVALUEにキャスト出来るわけではありません．キャストするの
-はRubyの知っている構造体(ruby.hで定義されているstruct RXxxx
-のもの)だけにしておいてください．
+Notice Ruby does not allow arbitrary pointer value to be VALUE.  They
+should be pointers to the structures which Ruby knows.  The known
+structures are defined in <ruby.h>.
 
 To convert C numbers to Ruby value, use these macros.
 
@@ -356,9 +352,8 @@ Ruby nil in C scope.
 
 3.2 Global variables shared between C and Ruby
 
-CとRubyで大域変数を使って情報を共有できます．共有できる大域
-変数にはいくつかの種類があります．そのなかでもっとも良く使わ
-れると思われるのはrb_define_variable()です．
+Information can be shared between two worlds, using shared global
+variables.  To define them, you can use functions listed below:
 
   void rb_define_variable(char *name, VALUE *var)
 
@@ -371,28 +366,21 @@ function below.
 
   void rb_define_readonly_variable(char *name, VALUE *var)
 
-これら変数の他にhookをつけた大域変数を定義できます．hook付き
-の大域変数は以下の関数を用いて定義します．hook付き大域変数の
-値の参照や設定はhookで行う必要があります．
+You can defined hooked variables.  The accessor functions (getter and
+setter) are called on access to the hooked variables.
 
   void rb_define_hooked_variable(char *name, VALUE *var,
 				 VALUE (*getter)(), VALUE (*setter)())
 
-この関数はCの関数によってhookのつけられた大域変数を定義しま
-す．変数が参照された時には関数getterが，変数に値がセットされ
-た時には関数setterが呼ばれる．hookを指定しない場合はgetterや
-setterに0を指定します．
-
-# getterもsetterも0ならばrb_define_variable()と同じになる．
-
-それから，Cの関数によって実現されるRubyの大域変数を定義する
-関数があります．
+If you need to supply either setter or getter, just supply 0 for the
+hook you don't need.  If both hooks are 0, rb_define_hooked_variable()
+works just like rb_define_variable().
 
   void rb_define_virtual_variable(char *name,
 				  VALUE (*getter)(), VALUE (*setter)())
 
-この関数によって定義されたRubyの大域変数が参照された時には
-getterが，変数に値がセットされた時にはsetterが呼ばれます．
+This function defines the Ruby global variable without corresponding C
+variable.  The value of the variable will be set/get only by hooks.
 
 The prototypes of the getter and setter functions are as following:
 
@@ -401,34 +389,25 @@ The prototypes of the getter and setter functions are as following:
 
 3.3 Encapsulate C data into Ruby object
 
-Cの世界で定義されたデータ(構造体)をRubyのオブジェクトとして
-取り扱いたい場合がありえます．このような場合には，Dataという
-RubyオブジェクトにCの構造体(へのポインタ)をくるむことでRuby
-オブジェクトとして取り扱えるようになります．
-
-To wrapping and objectify the C pointer, use Data_Wrap_Struct().
+To wrapping and objectify the C pointer as Ruby object (so called
+DATA), use Data_Wrap_Struct().
 
   Data_Wrap_Struct(class,mark,free,ptr)
 
-Data_Wrap_Struct() returns a created Data object.
+Data_Wrap_Struct() returns a created DATA object.  The class argument
+is the class for the DATA object.  The mark argument is the function
+to mark Ruby objects pointed by this data.  The free argument is the
+function to free the pointer allocation.  The functions, mark and
+free, will be called from garbage collector.
 
-classはこのDataオブジェクトのクラスです．ptrはカプセル化する
-Cの構造体へのポインタです．markはこの構造体がRubyのオブジェ
-クトへの参照がある時に使う関数です．そのような参照を含まない
-時には0を指定します．
-
-# そのような参照は勧められません．
-
-freeはこの構造体がもう不要になった時に呼ばれる関数です．この
-関数がガーベージコレクタから呼ばれます．
-
-Cの構造体の割当とDataオブジェクトの生成を同時に行うマクロと
-して以下のものが提供されています．
+You can allocate and wrap the structure in one step.
 
   Data_Make_Struct(class, type, mark, free, sval)
 
 This macro returns an allocated Data object, wrapping the pointer to
-the structure, which is also allocated.
+the structure, which is also allocated.  This macro works like:
+
+  (sval = ALLOC(type), Data_Wrap_Struct(class, mark, free, sval))
 
 Arguments, class, mark, free, works like thier counterpart of
 Data_Wrap_Struct().  The pointer to allocated structure will be
@@ -445,9 +424,9 @@ See example below for detail.
 
 4．Example - Create dbm module
 
-ここまでの説明でとりあえず拡張ライブラリは作れるはずです．
-Rubyのextディレクトリにすでに含まれているdbmモジュールを例に
-して段階的に説明します．
+OK, here's the example to make extension library.  This is the
+extension to access dbm.  The full source is included in ext/
+directory in the Ruby's source tree.
 
 (1) make the directory
 

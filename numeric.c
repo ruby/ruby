@@ -794,14 +794,32 @@ static VALUE
 rb_int_induced_from(klass, x)
     VALUE klass, x;
 {
-    return rb_funcall(x, rb_intern("to_i"), 0);
+    switch (TYPE(x)) {
+    case T_FIXNUM:
+    case T_BIGNUM:
+       return x;
+    case T_FLOAT:
+       return rb_funcall(x, rb_intern("to_i"), 0);
+    default:
+       rb_raise(rb_eTypeError, "failed to convert %s into Integer",
+                rb_class2name(CLASS_OF(x)));
+    }
 }
 
 static VALUE
 rb_flo_induced_from(klass, x)
     VALUE klass, x;
 {
-    return rb_funcall(x, rb_intern("to_f"), 0);
+    switch (TYPE(x)) {
+    case T_FIXNUM:
+    case T_BIGNUM:
+       return rb_funcall(x, rb_intern("to_f"), 0);
+    case T_FLOAT:
+       return x;
+    default:
+       rb_raise(rb_eTypeError, "failed to convert %s into Float",
+                rb_class2name(CLASS_OF(x)));
+    }
 }
 
 static VALUE

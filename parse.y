@@ -2465,7 +2465,7 @@ retry:
 		for (i = 0; i < len; i++) {
 		    c = nextc();
 		    if (c == '\n') {
-			ruby_sourceline++;
+			pushback(c);
 			break;
 		    }
 		}
@@ -2778,23 +2778,44 @@ retry:
 		c = nextc();
 		if (c == 'x' || c == 'X') {
 		    /* hexadecimal */
-		    while (c = nextc()) {
+		    c = nextc();
+		    if (!ISXDIGIT(c)) {
+			yyerror("hexadecimal number without hex-digits");
+		    }
+		    do {
 			if (c == '_') continue;
 			if (!ISXDIGIT(c)) break;
 			tokadd(c);
-		    }
+		    } while (c = nextc());
 		    pushback(c);
 		    tokfix();
 		    yylval.val = rb_str2inum(tok(), 16);
 		    return tINTEGER;
 		}
-		else if (c >= '0' && c <= '7') {
-		    /* octal */
+		if (c == 'b' || c == 'B') {
+		    /* binary */
+		    c = nextc();
+		    if (c != '0' && c != '1') {
+			yyerror("numeric constant with no digits");
+		    }
 		    do {
+			if (c == '_') continue;
+			if (c != '0'&& c != '1') break;
 			tokadd(c);
-			while ((c = nextc()) == '_')
-			    ;
-		    } while (c >= '0' && c <= '9');
+		    } while (c = nextc());
+		    pushback(c);
+		    tokfix();
+		    yylval.val = rb_str2inum(tok(), 2);
+		    return tINTEGER;
+		}
+		else if (c >= '0' && c <= '7' || c == '_') {
+		    /* octal */
+		    tokadd(c);
+	            do {
+			if (c  == '_') continue;
+			if (c < '0' || c > '7') break;
+			tokadd(c);
+		    } while (c = nextc());
 		    pushback(c);
 		    tokfix();
 		    yylval.val = rb_str2inum(tok(), 8);

@@ -2537,7 +2537,7 @@ rb_eval(self, node)
 	    body = search_method(ruby_class, node->nd_mid, &origin);
 	    if (body) {
 		if (origin == ruby_class) {
-		    if (safe_level >= 3) {
+		    if (safe_level >= 4) {
 			rb_raise(rb_eSecurityError, "re-defining method prohibited");
 		    }
 		    if (RTEST(ruby_verbose)) {
@@ -2604,7 +2604,7 @@ rb_eval(self, node)
 	    }
 	    klass = rb_singleton_class(recv);
 	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, &body)) {
-		if (safe_level >= 3) {
+		if (safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "re-defining method prohibited");
 		}
 		if (RTEST(ruby_verbose)) {
@@ -2709,7 +2709,7 @@ rb_eval(self, node)
 				 rb_id2name(node->nd_cname));
 		    }
 		}
-		if (safe_level >= 3) {
+		if (safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "extending class prohibited");
 		}
 		rb_clear_cache();
@@ -2751,7 +2751,7 @@ rb_eval(self, node)
 		    rb_raise(rb_eTypeError, "%s is not a module",
 			     rb_id2name(node->nd_cname));
 		}
-		if (safe_level >= 3) {
+		if (safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "extending module prohibited");
 		}
 	    }
@@ -5852,6 +5852,7 @@ thread_mark(th)
     rb_gc_mark(th->errinfo);
     rb_gc_mark(th->last_line);
     rb_gc_mark(th->last_match);
+    rb_mark_tbl(th->locals);
 
     /* mark data in copied stack */
     if (th->status == THREAD_KILLED) return;
@@ -5878,7 +5879,6 @@ thread_mark(th)
 	}
 	block = block->prev;
     }
-    rb_mark_tbl(th->locals);
 }
 
 void
@@ -7008,13 +7008,11 @@ rb_thread_local_aset(thread, id, val)
     ID id;
     VALUE val;
 {
-    thread_t th;
-
+    thread_t th = rb_thread_check(thread);
 
     if (safe_level >= 4 && !FL_TEST(thread, FL_TAINT))
 	rb_raise(rb_eSecurityError, "Insecure: can't modify thread values");
 
-    th = rb_thread_check(thread);
     if (!th->locals) {
 	th->locals = st_init_numtable();
     }

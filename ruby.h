@@ -525,7 +525,11 @@ rb_type(VALUE obj)
 extern __inline__ int
 rb_special_const_p(VALUE obj)
 {
-    return (FIXNUM_P(obj)||obj == Qnil||obj == Qfalse||obj == Qtrue)?Qtrue:Qfalse;
+    if (FIXNUM_P(obj)) return Qtrue;
+    if (obj == Qnil) return Qtrue;
+    if (obj == Qfalse) return Qtrue;
+    if (obj == Qtrue) return Qtrue;;
+    return Qfalse;
 }
 
 extern __inline__ int

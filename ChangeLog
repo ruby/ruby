@@ -1,3 +1,39 @@
+Tue Feb  9 01:22:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): do not ignore newlines in mbchars.
+
+	* io.c (rb_file_s_open): mode can be specified by flags like
+	  open(2), e.g. File::open(path, File::CREAT|File::WRONLY).
+
+	* io.c (rb_f_open): bit-wise mode flags for pipes
+
+	* io.c (Init_IO): bit flags for open.
+
+Sat Feb  6 22:56:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_sub_bang): should not overwrite match data by
+	  regexp match within the block.
+
+	* string.c (rb_str_gsub_bang): ditto.
+
+Sat Feb  6 03:06:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (match_getter): accessng $~ without matching caused SEGV.
+
+Fri Feb  5 22:11:08 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* parse.y (yylex): binary literal support, like 0b01001.
+
+	* parse.y (yylex): octal numbers can contain `_'s.
+
+	* parse.y (yylex): warns if non-octal number follows immediately
+	  after octal literal.
+
+	* parse.y (yylex): now need at least one digit after prefix such
+	  as 0x, or 0b.
+
+	* bignum.c (rb_str2inum): recognize binary numbers like 0b0101.
+
 Fri Feb  5 03:26:56 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
 
 	* ruby.c (proc_options): -e without program prints error.

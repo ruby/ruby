@@ -42,10 +42,10 @@ static void run_final();
 #if defined(MSDOS) || defined(__human68k__)
 #define GC_MALLOC_LIMIT 100000
 #else
-#define GC_MALLOC_LIMIT 200000
+#define GC_MALLOC_LIMIT 400000
 #endif
 #endif
-#define GC_NEWOBJ_LIMIT 1000
+#define GC_NEWOBJ_LIMIT 10000
 
 static unsigned long malloc_memories = 0;
 static unsigned long alloc_objects = 0;

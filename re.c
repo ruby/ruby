@@ -392,6 +392,21 @@ match_clone(orig)
     return (VALUE)match;
 }
 
+#define MATCH_BUSY FL_USER2
+
+void
+rb_match_busy(match, busy)
+    VALUE match;
+    int busy;
+{
+    if (busy) {
+	FL_SET(match, MATCH_BUSY);
+    }
+    else {
+	FL_UNSET(match, MATCH_BUSY);
+    }
+}
+
 int ruby_ignorecase;
 static int may_need_recompile;
 static VALUE matchcache;
@@ -462,7 +477,7 @@ rb_reg_search(reg, str, start, reverse)
 #else
     match = rb_backref_get();
 #endif
-    if (NIL_P(match)) {
+    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
 	if (matchcache) {
 	    match = matchcache;
 	    matchcache = 0;
@@ -481,7 +496,6 @@ rb_reg_search(reg, str, start, reverse)
     }
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
 		       start, range, regs);
-
     if (FL_TEST(reg, KCODE_FIXED))
 	kcode_reset_option();
 
@@ -1102,7 +1116,10 @@ ignorecase_setter(val)
 static VALUE
 match_getter()
 {
-    return match_clone(rb_backref_get());
+    VALUE match = rb_backref_get();
+
+    if (NIL_P(match)) return Qnil;
+    return match_clone(match);
 }
 
 static void

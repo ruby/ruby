@@ -13,6 +13,10 @@
 #include "ruby.h"
 #include <ctype.h>
 
+#ifndef atof
+double strtod();
+#endif
+
 #ifdef USE_CWGUSI
 static void fmt_setup();
 #else
@@ -570,7 +574,7 @@ rb_f_sprintf(argc, argv)
 		    fval = rb_big2dbl(val);
 		    break;
 		  case T_STRING:
-		    fval = atof(RSTRING(val)->ptr);
+		    fval = strtod(RSTRING(val)->ptr, 0);
 		    break;
 		  default:
 		    Check_Type(val, T_FLOAT);

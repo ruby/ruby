@@ -761,7 +761,7 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
      if (t < 0)                 {mmswap(L,l); l = L; goto loopB;}  /*535-5*/
    }
    
-   loopA: eq_l = 1; eq_r = 1;  /* splitting type A */ /* left <= median < right±¦*/
+   loopA: eq_l = 1; eq_r = 1;  /* splitting type A */ /* left <= median < right */
    for (;;) {
      for (;;) {
        if ((l += size) == r)

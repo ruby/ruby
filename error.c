@@ -337,7 +337,10 @@ static VALUE
 exc_backtrace(exc)
     VALUE exc;
 {
-    return rb_iv_get(exc, "bt");
+    ID bt = rb_intern("bt");
+
+    if (!rb_ivar_defined(exc, bt)) return Qnil;
+    return rb_ivar_get(exc, bt);
 }
 
 static VALUE

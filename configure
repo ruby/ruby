@@ -3798,10 +3798,21 @@ echo "configure:3765: checking whether OS depend dynamic link works" >&5
 			rb_cv_dlopen=yes ;;
 	linux*) 	LDSHARED="gcc -shared"
 			rb_cv_dlopen=yes ;;
-	freebsd*)       LDSHARED="gcc -shared"   
-			test -x /usr/bin/objformat && LDFLAGS="-rdynamic"
+	freebsd*)       LDSHARED="gcc -shared"
+			if test -x /usr/bin/objformat -a \
+				`/usr/bin/objformat` = "elf" ; then
+			    LDFLAGS="-rdynamic"
+			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
+			    rb_cv_freebsd_elf=yes
+			fi
 			rb_cv_dlopen=yes ;;
 	netbsd*) 	LDSHARED="ld -Bshareable"
+			case "$host_cpu" in
+			alpha|mips)
+				LDFLAGS="-export-dynamic" ;;
+			*)
+				;;
+			esac
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
 			rb_cv_dlopen=yes ;;
@@ -3843,12 +3854,12 @@ if test "$ac_cv_header_a_out_h" = yes; then
   if test "$with_dln_a_out" = yes || test "$rb_cv_dlopen" = unknown; then
     cat confdefs.h > config.h
     echo $ac_n "checking whether matz's dln works""... $ac_c" 1>&6
-echo "configure:3847: checking whether matz's dln works" >&5
+echo "configure:3858: checking whether matz's dln works" >&5
 if eval "test \"`echo '$''{'rb_cv_dln_a_out'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 3852 "configure"
+#line 3863 "configure"
 #include "confdefs.h"
 
 #define USE_DLN_A_OUT
@@ -3858,7 +3869,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:3862: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:3873: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   rb_cv_dln_a_out=yes
 else
@@ -3960,7 +3971,7 @@ fi
 case "$host_os" in
   human*)
     echo $ac_n "checking for _harderr in -lsignal""... $ac_c" 1>&6
-echo "configure:3964: checking for _harderr in -lsignal" >&5
+echo "configure:3975: checking for _harderr in -lsignal" >&5
 ac_lib_var=`echo signal'_'_harderr | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -3968,7 +3979,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lsignal  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 3972 "configure"
+#line 3983 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -3979,7 +3990,7 @@ int main() {
 _harderr()
 ; return 0; }
 EOF
-if { (eval echo configure:3983: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:3994: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -4007,7 +4018,7 @@ else
 fi
 
     echo $ac_n "checking for hmemset in -lhmem""... $ac_c" 1>&6
-echo "configure:4011: checking for hmemset in -lhmem" >&5
+echo "configure:4022: checking for hmemset in -lhmem" >&5
 ac_lib_var=`echo hmem'_'hmemset | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -4015,7 +4026,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lhmem  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 4019 "configure"
+#line 4030 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -4026,7 +4037,7 @@ int main() {
 hmemset()
 ; return 0; }
 EOF
-if { (eval echo configure:4030: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:4041: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -4056,12 +4067,12 @@ fi
     for ac_func in select
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
-echo "configure:4060: checking for $ac_func" >&5
+echo "configure:4071: checking for $ac_func" >&5
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 4065 "configure"
+#line 4076 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -4084,7 +4095,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:4088: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:4099: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -4109,7 +4120,7 @@ fi
 done
 
     echo $ac_n "checking whether PD libc _dtos18 fail to convert big number""... $ac_c" 1>&6
-echo "configure:4113: checking whether PD libc _dtos18 fail to convert big number" >&5
+echo "configure:4124: checking whether PD libc _dtos18 fail to convert big number" >&5
 if eval "test \"`echo '$''{'rb_cv_missing__dtos18'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -4117,7 +4128,7 @@ else
   rb_cv_missing__dtos18=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 4121 "configure"
+#line 4132 "configure"
 #include "confdefs.h"
 
 #include <stdio.h>
@@ -4129,7 +4140,7 @@ main ()
 }
 
 EOF
-if { (eval echo configure:4133: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:4144: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   rb_cv_missing__dtos18=yes
 else
@@ -4151,7 +4162,7 @@ EOF
 
     fi
     echo $ac_n "checking whether PD libc fconvert fail to round""... $ac_c" 1>&6
-echo "configure:4155: checking whether PD libc fconvert fail to round" >&5
+echo "configure:4166: checking whether PD libc fconvert fail to round" >&5
 if eval "test \"`echo '$''{'rb_cv_missing_fconvert'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -4159,7 +4170,7 @@ else
   rb_cv_missing_fconvert=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 4163 "configure"
+#line 4174 "configure"
 #include "confdefs.h"
 
 #include <stdio.h>
@@ -4172,7 +4183,7 @@ main ()
 }
 
 EOF
-if { (eval echo configure:4176: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:4187: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   rb_cv_missing_fconvert=yes
 else
@@ -4249,8 +4260,15 @@ if test "$enable_shared" = 'yes'; then
   LIBRUBYARG='-L./ -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   case "$host_os" in
-    freebsd2*|sunos4*|linux*)
+    sunos4*|linux*)
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
+	;;
+    freebsd*)
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
+	if test "$rb_cv_freebsd_elf" != "yes" ; then
+	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
+	    LIBRUBY_ALIASES=''
+	fi
 	;;
     hpux*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
@@ -4293,12 +4311,13 @@ test "$program_suffix" != NONE &&
 
 LIBSUFFIX=$ri_suffix
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
+RUBY_LIB_PATH="${prefix}/lib/${RUBY_INSTALL_NAME}/${MAJOR}.${MINOR}"
 cat >> confdefs.h <<EOF
-#define RUBY_LIB "${prefix}/lib/${RUBY_INSTALL_NAME}"
+#define RUBY_LIB "${RUBY_LIB_PATH}"
 EOF
 
 cat >> confdefs.h <<EOF
-#define RUBY_SITE_LIB "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby"
+#define RUBY_SITE_LIB "${RUBY_LIB_PATH}/site_ruby"
 EOF
 
 
@@ -4306,42 +4325,29 @@ if test "$fat_binary" = yes ; then
     arch="fat-${host_os}"
 
     cat >> confdefs.h <<EOF
-#define RUBY_THIN_ARCHLIB "${prefix}/lib/${RUBY_INSTALL_NAME}/" __ARCHITECTURE__ "-${host_os}" 
+#define RUBY_THIN_ARCHLIB "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}" 
 EOF
 
 
     cat >> confdefs.h <<EOF
-#define RUBY_SITE_THIN_ARCHLIB "${prefix}/lib/${RUBY_INSTALL_NAME}/" __ARCHITECTURE__ "-${host_os}" 
-EOF
-
-
-    cat >> confdefs.h <<EOF
-#define RUBY_ARCHLIB "${prefix}/lib/${RUBY_INSTALL_NAME}/${arch}"
-EOF
-
-    cat >> confdefs.h <<EOF
-#define RUBY_SITE_ARCHLIB "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby/${arch}"
-EOF
-
-    cat >> confdefs.h <<EOF
-#define RUBY_PLATFORM __ARCHITECTURE__ "-${host_os}" 
+#define RUBY_SITE_THIN_ARCHLIB "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}" 
 EOF
 
 else
     arch="${host_cpu}-${host_os}"
-    cat >> confdefs.h <<EOF
-#define RUBY_ARCHLIB "${prefix}/lib/${RUBY_INSTALL_NAME}/${arch}"
+fi
+cat >> confdefs.h <<EOF
+#define RUBY_ARCHLIB "${RUBY_LIB_PATH}/${arch}"
 EOF
 
-    cat >> confdefs.h <<EOF
-#define RUBY_SITE_ARCHLIB "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby/${arch}"
+cat >> confdefs.h <<EOF
+#define RUBY_SITE_ARCHLIB "${RUBY_LIB_PATH}/site_ruby/${arch}"
 EOF
 
-    cat >> confdefs.h <<EOF
+cat >> confdefs.h <<EOF
 #define RUBY_PLATFORM "${arch}"
 EOF
 
-fi
 
 echo "creating config.h"
 cat confdefs.h > config.h
