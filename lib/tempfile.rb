@@ -1,7 +1,7 @@
 #
 # $Id$
 # Copyright (C) 1998 akira yamada. All rights reserved. 
-# This file can be distributed under the terms the Ruby.
+# This file can be distributed under the terms of the Ruby.
 
 # The class for temporary files.
 #  o creates a temporary file, which name is "basename.pid.n" with mode "w+".

@@ -81,6 +81,7 @@ ext/extmk.rb.in
 ext/extmk.rb.nt
 ext/aix_ld.rb
 lib/English.rb
+lib/Env.rb
 lib/base64.rb
 lib/cgi-lib.rb
 lib/complex.rb
