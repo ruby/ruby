@@ -364,10 +364,9 @@ module RSS
       previous = @last_element
       next_element = klass.send(:new, *args)
       next_element.do_validate = @do_validate
-      setter = ""
-      setter << "#{klass.required_prefix}_" if klass.required_prefix
-      setter << "#{tag_name}="
-      @last_element.send(setter, next_element)
+      prefix = ""
+      prefix << "#{klass.required_prefix}_" if klass.required_prefix
+      previous.__send__(:set_next_element, prefix, tag_name, next_element)
       @last_element = next_element
       @proc_stack.push Proc.new { |text, tags|
         p(@last_element.class) if DEBUG

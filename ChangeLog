@@ -1,3 +1,9 @@
+Sat Dec  4 18:49:09 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (RSS::VERSION): 0.1.1 -> 0.1.2
+
+	* lib/rss/rss.rb: #item=/#set_item and so on are obsolete.
+
 Sat Dec  4 14:28:56 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/code_objects.rb (RDoc::Context::Section::set_comment):

@@ -58,7 +58,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.1.1"
+  VERSION = "0.1.2"
 
   URI = "http://purl.org/rss/1.0/"
 
@@ -176,6 +176,7 @@ EOC
     def install_have_children_element(name, plural_name=nil)
       plural_name ||= "#{name}s"
       add_have_children_element(name, plural_name)
+      add_plural_form(name, plural_name)
       
       def_children_accessor(name, plural_name)
       install_element(name, "s") do |n, elem_name|
@@ -312,8 +313,12 @@ EOC
           @#{accessor_name}.send("[]", *args)
         end
       end
-        
+
       def #{accessor_name}=(*args)
+        warn("Warning:\#{caller.first.sub(/:in `.*'\z/, '')}: " \
+             "Don't use `#{accessor_name} = XXX'/`set_#{accessor_name}(XXX)'. " \
+             "Those APIs are not sense of Ruby. " \
+             "Use `#{plural_name} << XXX' instead of them.")
         if args.size == 1
           @#{accessor_name}.push(args[0])
         else
@@ -428,6 +433,16 @@ EOC
           @@need_initialize_variables
         end
 
+        @@plural_forms = {}
+        
+        def self.add_plural_form(singular, plural)
+          @@plural_forms[singular] = plural
+        end
+        
+        def self.plural_forms
+          @@plural_forms
+        end
+        
         EOC
       end
 
@@ -602,6 +617,18 @@ EOC
             elem.__send__("setup_maker", target)
           end
         end
+      end
+    end
+
+    def set_next_element(prefix, tag_name, next_element)
+      klass = next_element.class
+      prefix = ""
+      prefix << "#{klass.required_prefix}_" if klass.required_prefix
+      if self.class.plural_forms.has_key?(tag_name)
+        ary = __send__("#{prefix}#{self.class.plural_forms[tag_name]}")
+        ary << next_element
+      else
+        __send__("#{prefix}#{tag_name}=", next_element)
       end
     end
     

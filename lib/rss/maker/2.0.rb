@@ -59,7 +59,7 @@ module RSS
               category = Rss::Channel::Category.new
               set = setup_values(category)
               if set
-                channel.category = category
+                channel.categories << category
                 setup_other_elements(rss)
               end
             end
@@ -145,7 +145,7 @@ module RSS
                 category = Rss::Channel::Item::Category.new
                 set = setup_values(category)
                 if set
-                  item.category = category
+                  item.categories << category
                   setup_other_elements(rss)
                 end
               end
