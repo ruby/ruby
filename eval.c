@@ -11652,7 +11652,7 @@ rb_thread_start_0(fn, arg, th)
 	new_thread.proc = rb_block_proc();
 	new_thread.arg = (VALUE)arg;
 	th->anchor = ip;
-	longjmp(ip->tag->buf, TAG_THREAD);
+	longjmp((prot_tag = ip->tag)->buf, TAG_THREAD);
     }
 
     if (ruby_block) {		/* should nail down higher blocks */

@@ -1,6 +1,10 @@
+Sun Feb 13 23:12:47 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0): restore prot_tag before rewinding.
+
 Sun Feb 13 16:56:52 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* lib/webrick/cgi.rb (WEBrick::CGI.start): should set reason-phrase 
+	* lib/webrick/cgi.rb (WEBrick::CGI.start): should set reason-phrase
 	  to the value of status header field. ([ruby-dev:40617])
 
 Sun Feb 13 11:38:40 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
