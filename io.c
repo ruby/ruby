@@ -167,6 +167,15 @@ rb_read_pending(fp)
     return READ_DATA_PENDING(fp);
 }
 
+void
+rb_read_check(fp)
+    FILE *fp;
+{
+    if (!READ_DATA_PENDING(fp)) {
+	rb_thread_wait_fd(fileno(fp));
+    }
+}
+
 /* writing functions */
 static VALUE
 io_write(io, str)

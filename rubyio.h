@@ -58,5 +58,6 @@ void rb_io_synchronized _((OpenFile*));
 void rb_io_check_closed _((OpenFile*));
 void rb_eof_error _((void));
 
+void rb_read_check _((FILE*));
 int rb_read_pending _((FILE*));
 #endif
