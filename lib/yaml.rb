@@ -105,7 +105,7 @@ module YAML
 	end
 
 	#
-	# Load the first document from the current _io_ stream.
+	# Load a document from the current _io_ stream.
 	#
     #   File.open( 'animals.yaml' ) { |yf| YAML::load( yf ) }
     #      #=> ['badger', 'elephant', 'tiger']
@@ -118,6 +118,18 @@ module YAML
 	def YAML.load( io )
 		yp = @@parser.new.load( io )
 	end
+
+    #
+    # Load a document from the file located at _filepath_.
+    #
+    #   YAML.load_file( 'animals.yaml' )
+    #      #=> ['badger', 'elephant', 'tiger']
+    #
+    def YAML.load_file( filepath )
+        File.open( filepath ) do |f|
+            load( f )
+        end
+    end
 
 	#
 	# Parse the first document from the current _io_ stream
@@ -149,6 +161,32 @@ module YAML
 	def YAML.parse( io )
 		yp = @@parser.new( :Model => :Generic ).load( io )
 	end
+
+    #
+    # Parse a document from the file located at _filepath_.
+    #
+    #   YAML.parse_file( 'animals.yaml' )
+    #      #=> #<YAML::Syck::Node:0x82ccce0
+    #           @kind=:seq,
+    #           @value=
+    #            [#<YAML::Syck::Node:0x82ccd94
+    #              @kind=:scalar,
+    #              @type_id="str",
+    #              @value="badger">,
+    #             #<YAML::Syck::Node:0x82ccd58
+    #              @kind=:scalar,
+    #              @type_id="str",
+    #              @value="elephant">,
+    #             #<YAML::Syck::Node:0x82ccd1c
+    #              @kind=:scalar,
+    #              @type_id="str",
+    #              @value="tiger">]>
+    #
+    def YAML.parse_file( filepath )
+        File.open( filepath ) do |f|
+            parse( f )
+        end
+    end
 
 	#
 	# Calls _block_ with each consecutive document in the YAML

@@ -1,3 +1,18 @@
+Sat Jul 31 05:47:37 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml.rb (YAML::load_file, YAML::parse_file): added.
+
+	* lib/yaml/rubytypes.rb: exceptions were using an older
+	  YAML.object_maker. [ruby-core:03080]
+
+	* ext/syck/token.c (sycklex_yaml_utf8): using newline_len to
+	  handline CR-LFs.  "\000" was showing up on folded blocks which
+	  stopped at EOF.
+
+	* ext/syck/token.c: re2c compiled with bit vectors now.
+	* ext/syck/implicit.c: ditto.
+	* ext/syck/bytecode.c: ditto.
+
 Fri Jul 30 16:10:54 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (lib_fromUTF8_core): raise ArgumentError when
