@@ -1460,6 +1460,7 @@ primary		: literal
 			    $$ = NEW_FCALL(tAREF, $3);
 			else
 			    $$ = NEW_CALL($1, tAREF, $3);
+			fixpos($$, $1);
 		    }
 		| tLBRACK aref_args ']'
 		    {
@@ -1499,6 +1500,7 @@ primary		: literal
 		    {
 			$2->nd_iter = NEW_FCALL($1, 0);
 			$$ = $2;
+			fixpos($2->nd_iter, $2);
 		    }
 		| method_call
 		| method_call brace_block
