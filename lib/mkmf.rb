@@ -354,6 +354,8 @@ def dir_config(target, idefault=nil, ldefault=nil)
 end
 
 def create_makefile(target, srcdir = File.dirname($0))
+  save_libs = $libs.dup
+  save_libpath = $LIBPATH.dup
   print "creating Makefile\n"
   rm_f "conftest*"
   STDOUT.flush
@@ -540,6 +542,8 @@ EOMF
     dfile.close
   end
   mfile.close
+  $libs = save_libs
+  $LIBPATH = save_libpath
 end
 
 $OBJEXT = CONFIG["OBJEXT"]

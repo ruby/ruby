@@ -1,3 +1,7 @@
+Mon Mar 12 18:59:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): save/restore $libs and $LIBPATH.
+
 Sun Mar 11 00:55:31 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (install_rb): fix handling of destination path.
