@@ -59,6 +59,5 @@ if __FILE__ == $0
 
   DRb.start_service(nil, DRbEx4.new)
   puts DRb.uri
-  puts '[return] to exit'
-  gets
+  DRb.thread.join
 end

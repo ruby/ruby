@@ -8,6 +8,5 @@ require 'drb/drb'
 
 DRb.start_service(nil, Queue.new)
 puts DRb.uri
-puts '[return] to exit'
-gets
+DRb.thread.join
 

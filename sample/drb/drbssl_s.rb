@@ -28,5 +28,4 @@ end
 
 DRb.start_service(here, HelloWorld.new, config)
 puts DRb.uri
-$stdin.gets
-DRb.stop_service
+DRb.thread.join

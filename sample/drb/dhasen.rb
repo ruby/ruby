@@ -37,7 +37,6 @@ end
 if __FILE__ == $0
   DRb.start_service(nil, Dhasen.new)
   puts DRb.uri
-  puts '[return] to exit.'
-  gets
+  DRb.thread.join
 end
 

@@ -26,5 +26,5 @@ ts.read_all([:name, :RingEcho, nil, nil]).each do |tuple|
 end
 ts.write([:name, :RingEcho, RingEcho.new(DRb.uri), ''], renewer)
 
-$stdin.gets
+DRb.thread.join
 

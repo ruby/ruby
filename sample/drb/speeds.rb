@@ -28,6 +28,4 @@ when /^druby:/
   DRb.start_service(uri, Foo.new)
 end
 
-puts '[enter] to exit'
-gets
-  
+DRb.thread.join
