@@ -14,6 +14,14 @@
 #define UTIL_H
 
 #ifndef _
+#ifdef __cplusplus
+# ifndef  HAVE_PROTOTYPES
+#  define HAVE_PROTOTYPES 1
+# endif
+# ifndef  HAVE_STDARG_PROTOTYPES
+#  define HAVE_STDARG_PROTOTYPES 1
+# endif
+#endif
 #ifdef HAVE_PROTOTYPES
 # define _(args) args
 #else
