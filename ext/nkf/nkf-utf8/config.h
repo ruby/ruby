@@ -24,6 +24,9 @@
 /* --debug, --no-output オプション */
 #define CHECK_OPTION
 
+/* JIS X0212 */
+#define X0212_ENABLE
+
 /* --exec-in, --exec-out オプション
  * pipe, fork, execvp あたりが無いと動きません。
  * MS-DOS, MinGW などでは undef にしてください
