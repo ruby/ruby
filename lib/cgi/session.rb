@@ -17,8 +17,8 @@ class CGI
     end
 
     def Session::create_new_id
-      require 'md5'
-      md5 = MD5::new
+      require 'digest/md5'
+      md5 = Digest::MD5::new
       md5.update(String(Time::now))
       md5.update(String(rand(0)))
       md5.update(String($$))

@@ -288,7 +288,7 @@ A class of mail which exists on POP server.
 =end
 
 require 'net/protocol'
-require 'md5'
+require 'digest/md5'
 
 
 module Net
@@ -572,7 +572,7 @@ module Net
       critical {
         @socket.writeline sprintf( 'APOP %s %s',
                                    account,
-                                   MD5.new(@stamp + pass).hexdigest )
+                                   Digest::MD5.hexdigest(@stamp + pass) )
         check_reply_auth
       }
     end
