@@ -1577,6 +1577,17 @@ file_expand_path(fname, dname, result)
 	tainted = 1;
 	getcwd(buf, MAXPATHLEN);
 	p = &buf[2];
+	if (!isdirsep(*p)) {
+	    while (*p && !isdirsep(*p)) {
+		p = CharNext(p);
+	    }
+	    if (*p) {
+		p++;
+		while (*p && !isdirsep(*p)) {
+		    p = CharNext(p);
+		}
+	    }
+	}
 	b = s;
 	while (*s && !isdirsep(*s)) {
 	    s = CharNext(s);
@@ -1598,15 +1609,18 @@ file_expand_path(fname, dname, result)
 	    strcpy(buf, dir);
 	    free(dir);
 	}
-	p = chompdirsep(skiproot(buf));
+	p = skiproot(buf);
+	if (*p)
+	    p = chompdirsep(p);
+	else
+	    --p;
     }
     else {
-	while (*s && isdirsep(*s)) {
-	    *p++ = '/';
-	    BUFCHECK(p >= pend);
-	    s++;
-	}
-	if (p > buf && *s) p--;
+	b = s;
+	do s++; while (isdirsep(*s));
+	p = buf + (s - b) - 1;
+	BUFCHECK(p >= pend);
+	memset(buf, '/', p - buf);
     }
     *p = '/';
 
@@ -1667,16 +1681,7 @@ file_expand_path(fname, dname, result)
 	memcpy(++p, b, s-b);
 	p += s-b;
     }
-#ifdef DOSISH_DRIVE_LETTER
-    else if (ISALPHA(buf[0]) && (buf[1] == ':') && isdirsep(buf[2])) {
-	/* root directory needs a trailing backslash,
-	   otherwise it mean the current directory of the drive */
-	if (p == (buf+2)) p++;
-    }
-    else if (isdirsep(buf[0]) && isdirsep(buf[1])) {
-	if (p == (buf+1)) p++;
-    }
-#endif
+    if (p == skiproot(buf) - 1) p++;
 
     if (tainted) OBJ_TAINT(result);
     RSTRING(result)->len = p - buf;

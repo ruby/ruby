@@ -1671,6 +1671,19 @@ test_ok(File.dirname("a/b/c") == "a/b")
 test_ok(File.dirname("/a/b/c") == "/a/b")
 test_ok(File.dirname("/a/b/") == "/a")
 test_ok(File.dirname("/a/b///") == "/a")
+case Dir.pwd
+when %r'\A\w:'
+  test_ok(/\A\w:\/\z/ =~ File.expand_path(".", "/"))
+  test_ok(/\A\w:\/a\z/ =~ File.expand_path("a", "/"))
+when %r'\A//'
+  test_ok(%r'\A//[^/]+/[^/]+\z' =~ File.expand_path(".", "/"))
+  test_ok(%r'\A//[^/]+/[^/]+/a\z' =~ File.expand_path(".", "/"))
+else
+  test_ok(File.expand_path(".", "/") == "/")
+  test_ok(File.expand_path("sub", "/") == "/sub")
+end
+test_ok(File.expand_path(".", "//") == "//")
+test_ok(File.expand_path("sub", "//") == "//sub")
 
 test_check "gc"
 begin

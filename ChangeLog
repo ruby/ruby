@@ -1,3 +1,8 @@
+Sat Feb 15 01:01:45 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (file_expand_path): fix surplus path separators while
+	  expanding at root directory.  [ruby-dev:19572]
+
 Fri Feb 14 14:25:24 2003  akira yamada  <akira@arika.org>
 
 	* lib/uri/generic.rb, lib/uri/ldap.rb, lib/uri/mailto.ldap: all foo=()
