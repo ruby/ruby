@@ -460,11 +460,7 @@ module Net
     # for backward compatibility
     #
 
-    if RUBY_VERSION  <= '1.6' then
-      @@newimpl = false
-    else
-      @@newimpl = true
-    end
+    @@newimpl = true
 
     def HTTP.version_1_2
       @@newimpl = true
@@ -492,7 +488,7 @@ module Net
     def HTTP.get( addr, path, port = nil )
       req = Get.new( path )
       resp = nil
-      new( addr, port || HTTP.port ).start {|http|
+      new( addr, port || HTTP.default_port ).start {|http|
           resp = http.request( req )
       }
       resp.body
@@ -776,7 +772,7 @@ module Net
     private
 
     def addr_port
-      address + (port == HTTP.port ? '' : ":#{port}")
+      address + (port == HTTP.default_port ? '' : ":#{port}")
     end
 
     def D( msg )
@@ -848,25 +844,19 @@ module Net
     end
 
     def range
-      s = @header['range']
-      s or return nil
-
-      arr = []
-      s.split(',').each do |spec|
-        m = /bytes\s*=\s*(\d+)?\s*-\s*(\d+)?/i.match( spec )
-        m or raise HTTPHeaderSyntaxError, "wrong Range: #{spec}"
-
-        d1 = m[1].to_i
-        d2 = m[2].to_i
-        if    m[1] and m[2] then arr.push(  d1..d2 )
-        elsif m[1]          then arr.push(  d1..-1 )
-        elsif          m[2] then arr.push( -d2..-1 )
-        else
-          raise HTTPHeaderSyntaxError, 'range is not specified'
-        end
-      end
-
-      return arr
+      s = @header['range'] or return nil
+      s.split(',').collect {|spec|
+          m = /bytes\s*=\s*(\d+)?\s*-\s*(\d+)?/i.match(spec) or
+                  raise HTTPHeaderSyntaxError, "wrong Range: #{spec}"
+          d1 = m[1].to_i
+          d2 = m[2].to_i
+          if    m[1] and m[2] then  d1..d2
+          elsif m[1]          then  d1..-1
+          elsif          m[2] then -d2..-1
+          else
+            raise HTTPHeaderSyntaxError, 'range is not specified'
+          end
+      }
     end
 
     def range=( r, fin = nil )
@@ -1279,19 +1269,26 @@ module Net
     class << self
 
       def read_new( sock, hasbody )
-        httpv, code, msg = read_response_status(sock)
+        httpv, code, msg = read_status_line(sock)
         res = response_class(code).new( httpv, code, msg, sock, hasbody )
-        read_response_header sock, res
+        each_response_header(sock) do |k,v|
+          if res.key? k then
+            res[k] << ', ' << v
+          else
+            res[k] = v
+          end
+        end
+
         res
       end
 
       private
 
-      def read_response_status( sock )
+      def read_status_line( sock )
         str = sock.readline
         m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match(str) or
                 raise HTTPBadResponse, "wrong status line: #{str.dump}"
-        return m.to_a[1,3]
+        m.to_a[1,3]
       end
 
       def response_class( code )
@@ -1300,7 +1297,7 @@ module Net
         HTTPUnknownResponse
       end
 
-      def read_response_header( sock, res )
+      def each_response_header( sock, res )
         while true do
           line = sock.readuntil( "\n", true )   # ignore EOF
           line.sub!( /\s+\z/, '' )              # don't use chop!
@@ -1308,13 +1305,7 @@ module Net
 
           m = /\A([^:]+):\s*/.match(line) or
                   raise HTTPBadResponse, 'wrong header line format'
-          name = m[1]
-          line = m.post_match
-          if res.key? name then
-            res[name] << ', ' << line
-          else
-            res[name] = line
-          end
+          yield m[1], m.post_match
         end
       end
 

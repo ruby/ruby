@@ -1,3 +1,14 @@
+Fri Feb 22 21:20:53 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: set read_timeout dynamically.
+
+	* lib/net/http.rb: @@newimpl is always true in the main trunk.
+
+	* lib/net/http.rb: HTTP.port -> default_port
+
+	* lib/net/http.rb: HTTPResponse.read_response_status ->
+	  read_status_line
+
 Fri Feb 22 19:56:15 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/config.status.in: set LIBRUBY_SO.
