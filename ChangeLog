@@ -1,3 +1,7 @@
+Mon May 20 13:28:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (rb_io_clone): writing stream was not copied properly.
+
 Sat May 18 21:38:11 2002  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb, lib/parsedate.rb:
