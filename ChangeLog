@@ -1,3 +1,25 @@
+Mon Mar 11 14:44:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): module inclusion using extend() should
+	  also be detected.
+
+	* eval.c (rb_eval_cmd): cbase should not be NULL; it should be
+	  either ruby_wrapper or Object.
+
+Sun Mar 10 02:18:22 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* enum.c (enum_each_with_index): should return self.
+
+	* process.c (proc_setpgrp): should return value for non-void function.
+
+	* process.c (proc_getpgid): should raise exception if getpgid() return -1.
+
+	* string.c (rb_str_ljust): should return a duplicated string.
+
+	* string.c (rb_str_rjust): ditto.
+
+	* string.c (rb_str_center): ditto.
+
 Sat Mar  9 08:45:58 2002  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/extconf.rb (have_struct_member): don't print checked
@@ -52,7 +74,7 @@ Wed Mar  6 16:50:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* class.c (rb_mod_clone): should not call rb_obj_clone(), since
 	  Module does not provide "allocate".
 
-	* class.c (rb_singleton_class): should crate new singleton class
+	* class.c (rb_singleton_class): should create new singleton class
 	  if obj is a class or module and attached object is different,
 	  which means metaclass of singleton class is sought.
 

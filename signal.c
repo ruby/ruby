@@ -217,26 +217,33 @@ rb_f_kill(argc, argv)
 	goto str_signal;
 
       case T_STRING:
-        {
-	    s = RSTRING(argv[0])->ptr;
-	    if (s[0] == '-') {
-		negative++;
-		s++;
-	    }
-	  str_signal:
-	    if (strncmp("SIG", s, 3) == 0)
-		s += 3;
-	    if((sig = signm2signo(s)) == 0)
-		rb_raise(rb_eArgError, "unrecognized signal name `%s'", s);
-
-	    if (negative)
-		sig = -sig;
+	s = RSTRING(argv[0])->ptr;
+	if (s[0] == '-') {
+	    negative++;
+	    s++;
 	}
+      str_signal:
+	if (strncmp("SIG", s, 3) == 0)
+	    s += 3;
+	if((sig = signm2signo(s)) == 0)
+	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", s);
+
+	if (negative)
+	    sig = -sig;
 	break;
 
       default:
-	rb_raise(rb_eArgError, "bad signal type %s",
-		 rb_class2name(CLASS_OF(argv[0])));
+        {
+	    VALUE str;
+
+	    str = rb_check_convert_type(argv[0], T_STRING, "String", "to_str");
+	    if (!NIL_P(str)) {
+		s = RSTRING(str)->ptr;
+		goto str_signal;
+	    }
+	    rb_raise(rb_eArgError, "bad signal type %s",
+		     rb_class2name(CLASS_OF(argv[0])));
+	}
 	break;
     }
 

@@ -3050,7 +3050,7 @@ rb_str_ljust(str, w)
     VALUE res;
     char *p, *pend;
 
-    if (width < 0 || RSTRING(str)->len >= width) return str;
+    if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
     res = rb_str_new5(str, 0, width);
     memcpy(RSTRING(res)->ptr, RSTRING(str)->ptr, RSTRING(str)->len);
     p = RSTRING(res)->ptr + RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
@@ -3070,7 +3070,7 @@ rb_str_rjust(str, w)
     VALUE res;
     char *p, *pend;
 
-    if (width < 0 || RSTRING(str)->len >= width) return str;
+    if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
     res = rb_str_new5(str, 0, width);
     p = RSTRING(res)->ptr; pend = p + width - RSTRING(str)->len;
     while (p < pend) {
@@ -3091,7 +3091,7 @@ rb_str_center(str, w)
     char *p, *pend;
     long n;
 
-    if (width < 0 || RSTRING(str)->len >= width) return str;
+    if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
     res = rb_str_new5(str, 0, width);
     n = (width - RSTRING(str)->len)/2;
     p = RSTRING(res)->ptr; pend = p + n;

@@ -998,6 +998,7 @@ proc_setpgrp()
     rb_notimplement();
 # endif
 #endif
+    return INT2FIX(0);
 }
 
 static VALUE
@@ -1008,6 +1009,7 @@ proc_getpgid(obj, pid)
     int i;
 
     i = getpgid(NUM2INT(pid));
+    if (i < 0) rb_sys_fail(0);
     return INT2NUM(i);
 #else
     rb_notimplement();

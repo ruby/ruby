@@ -1148,6 +1148,7 @@ rb_const_get(klass, id)
 		      RSTRING(rb_class_path(klass))->ptr);
     }
     else {
+      global_uninitialized:
 	rb_name_error(id, "uninitialized constant %s",rb_id2name(id));
     }
     return Qnil;		/* not reached */

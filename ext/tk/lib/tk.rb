@@ -945,8 +945,8 @@ module Tk
     def sizefrom(*args)
       tk_call('wm', 'sizefrom', path, *args)
     end
-    def state
-      tk_call 'wm', 'state', path
+    def state(state=None)
+      tk_call 'wm', 'state', path, state
     end
     def title(*args)
       tk_call 'wm', 'title', path, *args
