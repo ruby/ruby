@@ -537,7 +537,7 @@ extract_path(p, pend)
     memcpy(alloc, p, len);
     if (len > 1 && pend[-1] == '/'
 #if defined DOSISH
-    && len > 2 && pend[-2] != ':'
+    && pend[-2] != ':'
 #endif
     ) {
 	alloc[len-1] = 0;

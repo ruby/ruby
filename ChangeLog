@@ -1,3 +1,9 @@
+Tue Mar 20 23:09:33 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c (win32_stat): UNC support.
+
+	* dir.c (extract_path): fix "./*" problem.
+
 Mon Mar 19 16:52:23 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (ev_const_defined): need not to check if cbase->nd_class

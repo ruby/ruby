@@ -2597,21 +2597,29 @@ myrename(const char *oldpath, const char *newpath)
 int
 win32_stat(const char *path, struct stat *st)
 {
-    const char *p = path;
+    const char *p;
+    char *buf1 = ALLOCA_N(char, strlen(path) + 1);
+    char *buf2 = ALLOCA_N(char, MAXPATHLEN);
+    char *s;
+    int len;
 
-    if ((isdirsep(*p) && (p++, TRUE)) || /* absolute path or UNC */
-	(ISALPHA(*p) && p[1] == ':' && (p += 2, TRUE))) { /* has drive */
-	if (isdirsep(*p)) p++;
+    for (p = path, s = buf1; *p; p++, s++) {
+	if (*p == '/')
+	    *s = '\\';
+	else
+	    *s = *p;
     }
-    if (*p && (p = CharPrev(p, p + strlen(p)), isdirsep(*p))) {
-	/* Win95/2000 fail with trailing path separator? */
-	int len = p - path;
-	char *s = ALLOCA_N(char, len + 1);
-	memcpy(s, path, len);
-	s[len] = '\0';
-	path = s;
-    }
-    return stat(path, st);
+    *s = '\0';
+    len = strlen(buf1);
+    p = CharPrev(buf1, buf1 + len);
+    if (*p == '\\' || *p == ':')
+	strcat(buf1, ".");
+    else if (buf1[0] == '\\' && buf1[1] == '\\')
+	strcat(buf1, "\\.");
+    if (_fullpath(buf2, buf1, MAXPATHLEN))
+	return stat(buf2, st);
+    else
+	return -1;
 }
 
 static long
