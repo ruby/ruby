@@ -181,10 +181,10 @@ end
 Dir.glob("*.[1-9]") do |mdoc|
   section = mdoc[-1,1]
 
-  $destdir = mandir + section
-  destfile = File.join($destdir, mdoc.sub(/ruby/, ruby_install_name))
+  destdir = mandir + section
+  destfile = File.join(destdir, mdoc.sub(/ruby/, ruby_install_name))
 
-  makedirs $destdir
+  makedirs destdir
 
   if $mantype == "doc"
     install mdoc, destfile, 0644
