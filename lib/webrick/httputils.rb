@@ -296,6 +296,7 @@ module WEBrick
     def parse_form_data(io, boundary)
       boundary_regexp = /\A--#{boundary}(--)?#{CRLF}\z/
       form_data = Hash.new
+      return form_data unless io
       data = nil
       io.each{|line|
         if boundary_regexp =~ line
