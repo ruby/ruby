@@ -847,13 +847,14 @@ module TkCore
     args.flatten!
     print "=> ", args.join(" ").inspect, "\n" if $DEBUG
     begin
-      res = INTERP._invoke(*args)
+      # res = INTERP._invoke(*args).taint
+      res = INTERP._invoke(*args)   # _invoke returns a TAITED string
     rescue NameError
       err = $!
       begin
         args.unshift "unknown"
-        #res = INTERP._invoke(*args)
-        res = INTERP._invoke(*args).taint
+        #res = INTERP._invoke(*args).taint 
+        res = INTERP._invoke(*args)   # _invoke returns a TAITED string
       rescue
 	fail unless /^invalid command/ =~ $!
 	fail err

@@ -635,7 +635,8 @@ ip_eval(self, str)
     DUMP2("(TCL_Eval result) %d", ptr->return_value);
 
     /* pass back the result (as string) */
-    return(rb_str_new2(ptr->ip->result));
+    /* return(rb_str_new2(ptr->ip->result)); */
+    return(rb_tainted_str_new2(ptr->ip->result));
 }
 
 
@@ -665,7 +666,8 @@ ip_toUTF8(self, str, encodename)
     Tcl_DStringInit(&dstr);
     Tcl_DStringFree(&dstr);
     Tcl_ExternalToUtfDString(encoding,buf,strlen(buf),&dstr);
-    str = rb_str_new2(Tcl_DStringValue(&dstr));
+    /* str = rb_str_new2(Tcl_DStringValue(&dstr)); */
+    str = rb_tainted_str_new2(Tcl_DStringValue(&dstr));
 
     Tcl_FreeEncoding(encoding);
     Tcl_DStringFree(&dstr);
@@ -699,7 +701,8 @@ ip_fromUTF8(self, str, encodename)
     Tcl_DStringInit(&dstr);
     Tcl_DStringFree(&dstr);
     Tcl_UtfToExternalDString(encoding,buf,strlen(buf),&dstr);
-    str = rb_str_new2(Tcl_DStringValue(&dstr));
+    /* str = rb_str_new2(Tcl_DStringValue(&dstr)); */
+    str = rb_tainted_str_new2(Tcl_DStringValue(&dstr));
 
     Tcl_FreeEncoding(encoding);
     Tcl_DStringFree(&dstr);
@@ -796,7 +799,8 @@ ip_invoke_real(argc, argv, obj)
     }
 
     /* pass back the result (as string) */
-    return rb_str_new2(ptr->ip->result);
+    /* return rb_str_new2(ptr->ip->result); */
+    return rb_tainted_str_new2(ptr->ip->result);
 }
 
 VALUE
