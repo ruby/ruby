@@ -1,3 +1,11 @@
+Wed Sep 17 18:52:36 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/fileassertions.rb: new file.
+
+	* test/fileutils/test_fileutils.rb: new file.
+
+	* test/fileutils/test_nowrite.rb: new file.
+
 Wed Sep 17 18:51:02 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/strscan/test_stringscanner.rb: require test/unit.

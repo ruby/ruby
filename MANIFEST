@@ -480,6 +480,9 @@ sample/uumerge.rb
 test/csv/bom.csv
 test/csv/mac.csv
 test/csv/test_csv.rb
+test/fileutils/fileassertions.rb
+test/fileutils/test_fileutils.rb
+test/fileutils/test_nowrite.rb
 test/ruby/test_alias.rb
 test/ruby/test_array.rb
 test/ruby/test_assignment.rb
