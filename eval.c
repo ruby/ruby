@@ -6077,8 +6077,7 @@ rb_require_safe(fname, safe)
 		    }
 		    /* partial state */
 		    ftptr = ruby_strdup(RSTRING(feature)->ptr);
-		    st_insert(loading_tbl, (st_data_t)ftptr,
-			      (st_data_t)(mutex = rb_thread_mutex_new(Qtrue)));
+		    st_insert(loading_tbl, (st_data_t)ftptr, (st_data_t)curr_thread);
 		    if (feature == fname && !OBJ_FROZEN(feature)) {
 			feature = rb_str_dup(feature);
 			OBJ_FREEZE(feature);
