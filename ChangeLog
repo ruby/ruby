@@ -1,3 +1,8 @@
+Wed Oct 15 23:04:25 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/jcode.rb: Merge from 1.8: use Regexp.new()'s extra arguments
+	  correctly.
+
 Wed Oct 15 22:51:17 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_s_new): Zero the newly
