@@ -1427,7 +1427,6 @@ rb_f_system(argc, argv)
 	if (RARRAY(argv[0])->len != 2) {
 	    rb_raise(rb_eArgError, "wrong first argument");
 	}
- *     Kernel.fork  [{ block }]   => fixnum or nil
 	prog = RARRAY(argv[0])->ptr[0];
 	argv[0] = RARRAY(argv[0])->ptr[1];
     }
