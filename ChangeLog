@@ -1,4 +1,9 @@
-Mon Feb  2 00:28:54 2004  Tanaka Akira  <akr@m17n.org>
+Mon Feb  2 01:54:00 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (Struct#pretty_print): make it 1.8 style.
+	  (Numeric#pretty_print, FalseClass#pretty_print)
+	  (TrueClass#pretty_print, Module#pretty_print): fix pp for objects
+	  with instance variables.  [ruby-talk:91157]
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): return nil on loopback
 	  address.
@@ -22,7 +27,7 @@ Sun Feb  1 05:30:06 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): warn HTTP_PROXY.
 	 raise an errror on non-http proxy URI.
-	 (OpenURI::Buffer#<<): make a tempfile binmode.
+	 (OpenURI::Buffer#<<): make a tempfile binmode.  [ruby-talk:90792]
 
 Sun Feb  1 00:57:41 2004  Kouhei Sutou  <kou@cozmixng.org>
 

@@ -309,7 +309,7 @@ end
 
 class Struct
   def pretty_print(q)
-    q.object_group(self) {
+    q.group(1, '#<struct ' + self.class.name, '>') {
       self.members.each {|member|
         q.text "," unless q.first?
         q.breakable
@@ -440,6 +440,14 @@ end
   }
 }
 
+[Numeric, FalseClass, TrueClass, Module].each {|c|
+  c.class_eval {
+    def pretty_print(q)
+      q.text inspect
+    end
+  }
+}
+
 if __FILE__ == $0
   require 'test/unit'
 
@@ -534,6 +542,10 @@ if __FILE__ == $0
       result = PP.pp(a, '')
       assert_equal("#{a.inspect}\n", result)
       assert_match(/\A#<Object.*>\n\z/m, result)
+      a = 1
+      a.instance_eval { @a = nil }
+      result = PP.pp(a, '')
+      assert_equal("#{a.inspect}\n", result)
     end
     
     def test_to_s_without_iv
@@ -562,7 +574,7 @@ if __FILE__ == $0
     def test_struct
       a = S.new(1,2)
       a.b = a
-      assert_equal("#<Struct::S a=1, b=#<Struct::S:...>>\n", PP.pp(a, ''))
+      assert_equal("#<struct Struct::S a=1, b=#<Struct::S:...>>\n", PP.pp(a, ''))
     end
 
     def test_object
