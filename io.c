@@ -3185,10 +3185,11 @@ io_reopen(io, nfile)
 	}
 	else {
 	    FILE *f2 = fptr->f2;
+	    int m = fptr->mode;
 	    fclose(fptr->f);
 	    fptr->f = f2;
 	    fptr->f2 = NULL;
-	    fptr->mode &= ~FMODE_READABLE;
+	    fptr->mode &= (m & FMODE_READABLE) ? ~FMODE_READABLE : ~FMODE_WRITABLE;
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
 	    if (f2) {
@@ -3198,7 +3199,7 @@ io_reopen(io, nfile)
 	    else {
 		fptr->f = rb_fdopen(fd, mode);
 	    }
-	    fptr->mode |= FMODE_READABLE;
+	    fptr->mode = m;
 	}
 	rb_thread_fd_close(fd);
 	if ((orig->mode & FMODE_READABLE) && pos >= 0) {
