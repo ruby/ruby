@@ -624,11 +624,11 @@ EOF
 			objdump --private-headers dummy | \
 			  grep ld.so.1 > /dev/null
 			if test "$?" = 0 ; then
-				LIBC="libc1"
+				LIBC="-libc1"
 			fi
 		fi	
 		rm -f dummy.s dummy
-		echo ${UNAME_MACHINE}-unknown-linux-gnu${LIBC} ; exit 0
+		echo ${UNAME_MACHINE}-unknown-linux${LIBC} ; exit 0
 	elif test "${UNAME_MACHINE}" = "mips" ; then
 	  cat >dummy.c <<EOF
 main(argc, argv)

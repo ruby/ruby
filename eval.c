@@ -4509,7 +4509,7 @@ rb_load(fname, wrap)
 	VALUE *vars = TMP_ALLOC(len);
 	*vars++ = 0;
 	MEMCPY(tbl, top_scope->local_tbl, ID, len);
-	MEMCPY(vars, top_scope->local_vars, ID, len-1);
+	MEMCPY(vars, top_scope->local_vars, VALUE, len-1);
 	ruby_scope->local_tbl = tbl;   /* copy toplevel scope */
 	ruby_scope->local_vars = vars; /* will not alter toplevel variables */
     }
