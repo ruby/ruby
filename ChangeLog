@@ -1,3 +1,18 @@
+Thu Oct 10 15:20:18 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (ruby_init): Init_stack() with local location.
+	  (ruby-bugs-ja:PR#277)
+
+	* gc.c (Init_stack): prefer address of argument rather than local
+	  variable to initialize rb_gc_stack_start.
+
+	* lib/weakref.rb (WeakRef::@@final): use Hash#delete.
+
+	* lib/weakref.rb (WeakRef::__getobj__): examin if alive or not by
+	  ID_REV_MAP to deal with recycled object.  [ruby-dev:18472]
+
+	* lib/weakref.rb (WeakRef::weakref_alive?): ditto.
+
 Mon Oct  7 16:43:07 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigdivrem): bignum zero's len should not be 0.

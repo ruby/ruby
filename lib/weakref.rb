@@ -25,15 +25,15 @@ class WeakRef<Delegator
       rids = ID_MAP[id]
       if rids
 	for rid in rids
-	  ID_REV_MAP[rid] = nil
+	  ID_REV_MAP.delete(rid)
 	end
-	ID_MAP[id] = nil
+	ID_MAP.delete(id)
       end
       rid = ID_REV_MAP[id]
       if rid
-	ID_REV_MAP[id] = nil
+	ID_REV_MAP.delete(id)
 	ID_MAP[rid].delete(id)
-	ID_MAP[rid] = nil if ID_MAP[rid].empty?
+	ID_MAP.delete(rid) if ID_MAP[rid].empty?
       end
     ensure
       Thread.critical = __old_status
@@ -53,11 +53,11 @@ class WeakRef<Delegator
       Thread.critical = __old_status
     end
     ID_MAP[@__id].push self.__id__
-    ID_REV_MAP[self.id] = @__id
+    ID_REV_MAP[self.__id__] = @__id
   end
 
   def __getobj__
-    unless ID_MAP[@__id]
+    unless ID_REV_MAP[self.__id__] == @__id
       raise RefError, "Illegal Reference - probably recycled", caller(2)
     end
     begin
@@ -68,11 +68,7 @@ class WeakRef<Delegator
   end
 
   def weakref_alive?
-    if ID_MAP[@__id]
-      true
-    else
-      false
-    end
+    ID_REV_MAP[self.__id__] == @__id
   end
 end
 

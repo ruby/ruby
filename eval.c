@@ -1032,7 +1032,7 @@ ruby_init()
     rb_origenviron = environ;
 #endif
 
-    Init_stack(0);
+    Init_stack(&state);
     Init_heap();
     PUSH_SCOPE();
     ruby_scope->local_vars = 0;
