@@ -93,6 +93,7 @@ struct dump_call_arg {
     VALUE obj;
     struct dump_arg *arg;
     int limit;
+    int weak;
 };
 
 static void w_long _((long, struct dump_arg*));
@@ -332,26 +333,15 @@ w_unique(s, arg)
     w_symbol(rb_intern(s), arg);
 }
 
-static void w_object _((VALUE,struct dump_arg*,int));
+static void w_object _((VALUE,struct dump_arg*,int,int));
 
 static int
 hash_each(key, value, arg)
     VALUE key, value;
     struct dump_call_arg *arg;
 {
-    w_object(key, arg->arg, arg->limit);
-    w_object(value, arg->arg, arg->limit);
-    return ST_CONTINUE;
-}
-
-static int
-obj_each(id, value, arg)
-    ID id;
-    VALUE value;
-    struct dump_call_arg *arg;
-{
-    w_symbol(id, arg->arg);
-    w_object(value, arg->arg, arg->limit);
+    w_object(key, arg->arg, arg->limit, arg->weak);
+    w_object(value, arg->arg, arg->limit, arg->weak);
     return ST_CONTINUE;
 }
 
@@ -407,6 +397,17 @@ w_uclass(obj, base_klass, arg)
     }
 }
 
+static int
+w_obj_each(id, value, arg)
+    ID id;
+    VALUE value;
+    struct dump_call_arg *arg;
+{
+    w_symbol(id, arg->arg);
+    w_object(value, arg->arg, arg->limit, arg->weak);
+    return ST_CONTINUE;
+}
+
 static void
 w_ivar(tbl, arg)
     st_table *tbl;
@@ -414,7 +415,7 @@ w_ivar(tbl, arg)
 {
     if (tbl) {
 	w_long(tbl->num_entries, arg->arg);
-	st_foreach(tbl, obj_each, (st_data_t)arg);
+	st_foreach(tbl, w_obj_each, (st_data_t)arg);
     }
     else {
 	w_long(0, arg->arg);
@@ -422,10 +423,11 @@ w_ivar(tbl, arg)
 }
 
 static void
-w_object(obj, arg, limit)
+w_object(obj, arg, limit, weak)
     VALUE obj;
     struct dump_arg *arg;
     int limit;
+    int weak;
 {
     struct dump_call_arg c_arg;
     st_table *ivtbl = 0;
@@ -437,6 +439,7 @@ w_object(obj, arg, limit)
     limit--;
     c_arg.limit = limit;
     c_arg.arg = arg;
+    c_arg.weak = Qfalse;
 
     if (ivtbl = rb_generic_ivar_table(obj)) {
 	w_byte(TYPE_IVAR, arg);
@@ -460,7 +463,7 @@ w_object(obj, arg, limit)
 	    w_long(FIX2LONG(obj), arg);
 	}
 	else {
-	    w_object(rb_int2big(FIX2LONG(obj)), arg, limit);
+	    w_object(rb_int2big(FIX2LONG(obj)), arg, limit, weak);
 	}
 #endif
     }
@@ -489,7 +492,8 @@ w_object(obj, arg, limit)
 	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    w_byte(TYPE_USRMARSHAL, arg);
 	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
-	    w_object(v, arg, limit);
+	    w_object(v, arg, limit, Qtrue);
+	    c_arg.weak = Qtrue;
 	    if (ivtbl) w_ivar(ivtbl, &c_arg);
 	    return;
 	}
@@ -502,6 +506,7 @@ w_object(obj, arg, limit)
 	    }
 	    w_class(TYPE_USERDEF, obj, arg);
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
+	    c_arg.weak = Qtrue;
 	    if (ivtbl) w_ivar(ivtbl, &c_arg);
 	    return;
 	}
@@ -588,7 +593,7 @@ w_object(obj, arg, limit)
 
 		w_long(len, arg);
 		while (len--) {
-		    w_object(*ptr, arg, limit);
+		    w_object(*ptr, arg, limit, weak);
 		    ptr++;
 		}
 	    }
@@ -609,7 +614,7 @@ w_object(obj, arg, limit)
 	    w_long(RHASH(obj)->tbl->num_entries, arg);
 	    st_foreach(RHASH(obj)->tbl, hash_each, (st_data_t)&c_arg);
 	    if (!NIL_P(RHASH(obj)->ifnone)) {
-		w_object(RHASH(obj)->ifnone, arg, limit);
+		w_object(RHASH(obj)->ifnone, arg, limit, weak);
 	    }
 	    break;
 
@@ -627,7 +632,7 @@ w_object(obj, arg, limit)
 		}
 		for (i=0; i<len; i++) {
 		    w_symbol(SYM2ID(RARRAY(mem)->ptr[i]), arg);
-		    w_object(RSTRUCT(obj)->ptr[i], arg, limit);
+		    w_object(RSTRUCT(obj)->ptr[i], arg, limit, weak);
 		}
 	    }
 	    break;
@@ -648,11 +653,15 @@ w_object(obj, arg, limit)
 			     rb_obj_classname(obj));
 		}
 		v = rb_funcall(obj, s_dump_data, 0);
-		w_object(v, arg, limit);
+		w_object(v, arg, limit, weak);
 	    }
 	    break;
 
 	  default:
+	    if (weak) {
+		w_byte(TYPE_NIL, arg);
+		return;
+	    }
 	    rb_raise(rb_eTypeError, "can't dump %s",
 		     rb_obj_classname(obj));
 	    break;
@@ -667,7 +676,7 @@ static VALUE
 dump(arg)
     struct dump_call_arg *arg;
 {
-    w_object(arg->obj, arg->arg, arg->limit);
+    w_object(arg->obj, arg->arg, arg->limit, arg->weak);
     if (arg->arg->dest) {
 	rb_io_write(arg->arg->dest, arg->arg->str);
 	rb_str_resize(arg->arg->str, 0);

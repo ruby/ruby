@@ -30,6 +30,23 @@ Sat Oct  4 17:52:59 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/runner.rb: give testsuite name.
 
+Sat Oct  4 15:16:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): instance variable dump do not cause error
+	  for objects that cannot be dumped, if they traversed from
+	  marshal_dump.  they are just ignored.
+
+	* gc.c (Init_stack): cast "space" (doble value) into unsigned
+	  int.  should run on PowerPC.
+
+	* eval.c (rb_eval): should not execute else part if any exception
+	  is caught. [ruby-dev:21482]
+
+	* parse.y (f_args): should allow unparenthesized block argument.
+
+	* parse.y (f_rest_arg): should allow unparenthesized rest
+	  argument.
+
 Sat Oct  4 14:59:51 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (initialize): raise ArgumentError if argument has
@@ -122,6 +139,11 @@ Fri Oct  3 13:02:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
 	  tests to be excluded when the filter was set to an empty array.
 
 	* test/testunit/collector/test_objectspace.rb: ditto.
+
+Fri Oct  3 08:14:32 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb (RubyLex::identify_identifier): support
+	  'class ::Foo' syntax. [ruby-talk:83514]
 
 Fri Oct  3 08:01:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
 

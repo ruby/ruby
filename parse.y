@@ -2267,7 +2267,11 @@ f_optarg	: f_opt
 		    }
 		;
 
-f_rest_arg	: tSTAR tIDENTIFIER
+restarg_mark	: '*'
+		| tSTAR
+		;
+
+f_rest_arg	: restarg_mark tIDENTIFIER
 		    {
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
@@ -2275,13 +2279,17 @@ f_rest_arg	: tSTAR tIDENTIFIER
 			    yyerror("duplicate rest argument name");
 			$$ = local_cnt($2);
 		    }
-		| tSTAR
+		| restarg_mark
 		    {
 			$$ = -2;
 		    }
 		;
 
-f_block_arg	: tAMPER tIDENTIFIER
+blkarg_mark	: '&'
+		| tAMPER
+		;
+
+f_block_arg	: blkarg_mark tIDENTIFIER
 		    {
 			if (!is_local_id($2))
 			    yyerror("block argument must be local variable");

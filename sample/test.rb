@@ -884,6 +884,18 @@ rescue Exception
 end
 test_ok($x)
 
+def tt4 &block
+  tt2(raise(ArgumentError,""),&block)
+end
+$x = false
+begin
+  tt4{}
+rescue ArgumentError
+  $x = true
+rescue Exception
+end
+test_ok($x)
+
 # iterator break/redo/next/retry
 done = true
 loop{

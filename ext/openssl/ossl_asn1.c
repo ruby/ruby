@@ -788,6 +788,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, long depth,
 		    break;
 		default:
 		    /* use original value */
+		    break;
 		}
 	    }
 	    asn1data = rb_funcall(klass, rb_intern("new"), 1, value);
