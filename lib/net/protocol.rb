@@ -15,7 +15,7 @@ require 'socket'
 
 module Net
 
-  Version = '1.1.7'
+  Version = '1.1.8'
 
 =begin
 
@@ -219,27 +219,6 @@ Object
   Session = Protocol
 
 
-=begin
-
-== Net::Command
-
-=== Super Class
-
-Object
-
-=== Class Methods
-
-: new( socket )
-  This method create new Command object. 'socket' must be ProtocolSocket.
-  This method is abstract class.
-
-
-=== Methods
-
-: quit
-  This method dispatch command which ends the protocol.
-
-=end
 
   class Command
 
@@ -317,9 +296,25 @@ Object
     def initialize( cod, mes )
       @code = cod
       @msg  = mes
+      @data = nil
     end
 
     attr_reader :code, :msg
+
+    def []( key )
+      if @data then
+        @data[key]
+      else
+        nil
+      end
+    end
+
+    def []=( key, val )
+      unless h = @data then
+        @data = h = {}
+      end
+      h[key] = val
+    end
 
 
     def error!( sending )
@@ -369,78 +364,6 @@ MES
     error_type ProtoUnknownError
   end
 
-
-=begin
-
-== Net::ProtocolSocket
-
-=== Super Class
-
-Object
-
-=== Class Methods
-
-: new( address = 'localhost', port = nil )
-  This create new ProtocolSocket object, and connect to server.
-
-
-=== Methods
-
-: close
-  This method closes socket.
-
-: address, addr
-  a FQDN address of server
-
-: ip_address, ipaddr
-  an IP address of server
-
-: port
-  connecting port number.
-
-: closed?
-  true if ProtocolSokcet have been closed already
-
-
-: read( length )
-  This method read 'length' bytes and return the string.
-
-: readuntil( target )
-  This method read until find 'target'. Returns read string.
-
-: readline
-  read until "\r\n" and returns it without "\r\n".
-
-: read_pendstr
-  This method read until "\r\n.\r\n".
-  At the same time, delete period at line head and final line ("\r\n.\r\n").
-
-: read_pendlist
-: read_pendlist{|line| .... }
-  This method read until "\r\n.\r\n". This method resembles to 'read_pendstr',
-  but 'read_pendlist' don't check period at line head, and returns array which
-  each element is one line.
-
-  When this method was called with block, evaluate it for each reading a line.
-
-
-: write( src )
-  This method send 'src'. ProtocolSocket read strings from 'src' by 'each'
-  iterator. This method returns written bytes.
-
-: writebin( src )
-  This method send 'src'. ProtocolSokcet read string from 'src' by 'each'
-  iterator. This method returns written bytes.
-
-: writeline( str )
-  This method writes 'str'. There has not to be bare "\r" or "\n" in 'str'.
-
-: write_pendstr( src )
-  This method writes 'src' as a mail.
-  ProtocolSocket reads strings from 'src' by 'each' iterator.
-  This returns written bytes.
-
-=end
 
 
   class WriteAdapter
@@ -639,6 +562,13 @@ Object
     public
 
 
+    def write( str )
+      do_write_beg
+      do_write_do str
+      do_write_fin
+    end
+
+
     def writeline( str )
       do_write_beg
       do_write_do str
@@ -647,27 +577,15 @@ Object
     end
 
 
-    def writebin( src )
+    def write_bin( src, block = nil )
       do_write_beg
-      if iterator? then
-        yield WriteAdapter.new( self, :do_write_do )
+      if block then
+        block.call WriteAdapter.new( self, :do_write_do )
       else
         src.each do |bin|
           do_write_do bin
         end
       end
-      do_write_fin
-    end
-
-
-    def write( src )
-      do_write_beg
-      if iterator? then
-        yield WriteAdapter.new( self, :write_inner )
-      else
-        write_inner src
-      end
-      each_crlf_line2( :i_w )
       do_write_fin
     end
 

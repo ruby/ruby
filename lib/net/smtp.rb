@@ -74,15 +74,14 @@ Net::Protocol
     protocol_param :command_type, '::Net::SMTPCommand'
 
 
-    def sendmail( mailsrc, fromaddr, toaddrs, &block )
-      @command.mailfrom fromaddr
-      @command.rcpt toaddrs
-      @command.data
-      @command.write_mail( mailsrc, &block )
+    def sendmail( mailsrc, fromaddr, toaddrs )
+      do_ready fromaddr, toaddrs
+      @command.write_mail mailsrc
     end
 
     def ready( fromaddr, toaddrs, &block )
-      sendmail nil, fromaddr, toaddrs, &block
+      do_ready fromaddr, toaddrs
+      @command.write_mail( &block )
     end
 
 
@@ -91,6 +90,12 @@ Net::Protocol
 
     private
 
+
+    def do_ready
+      @command.mailfrom fromaddr
+      @command.rcpt toaddrs
+      @command.data
+    end
 
     def do_start( helodom = ENV['HOSTNAME'] )
       unless helodom then
@@ -111,48 +116,6 @@ Net::Protocol
   SMTPSession = SMTP
 
 
-=begin
-
-== Net::SMTPCommand
-
-=== Super Class
-
-Net::Command
-
-=== Class Methods
-
-: new( socket )
-  This method creates new SMTPCommand object, and open SMTP.
-
-
-=== Methods
-
-: helo( helo_domain )
-  This method send "HELO" command and start SMTP.
-  helo_domain is localhost's FQDN.
-
-: mailfrom( from_addr )
-  This method sends "MAIL FROM" command.
-  from_addr is your mail address (xxxx@xxxx)
-
-: rcpt( to_addrs )
-  This method sends "RCPT TO" command.
-  to_addrs is array of mail address (xxxx@xxxx) of destination.
-
-: data
-  This method sends "DATA" command.
-
-: write_mail( mailsrc )
-: write_mail {|socket| ... }
-  send 'mailsrc' as mail.
-  SMTPCommand reads strings from 'mailsrc' by calling 'each' iterator. 
-  When iterator, SMTPCommand only stand by socket and pass it.
-  (The socket will accepts only 'in_write' method in the block)
-
-: quit
-  This method sends "QUIT" command and ends SMTP session.
-
-=end
 
   class SMTPCommand < Command
 
@@ -189,7 +152,7 @@ Net::Command
     end
 
 
-    def write_mail( mailsrc, &block )
+    def write_mail( mailsrc = nil, &block )
       @socket.write_pendstr mailsrc, &block
       check_reply SuccessCode
     end
