@@ -1170,5 +1170,20 @@ if $0 == __FILE__
       assert_not_same(str, obj.to_s)
       assert_not_same(obj.to_s, obj.to_s)
     end
+
+    def test_kernel_open
+      count = 0
+      stat1 = File.stat(__FILE__)
+      result = Kernel.open(Pathname.new(__FILE__)) {|f|
+        stat2 = f.stat
+        assert_equal(stat1.dev, stat2.dev)
+        assert_equal(stat1.ino, stat2.ino)
+        assert_equal(stat1.size, stat2.size)
+        count += 1
+        2
+      }
+      assert_equal(1, count)
+      assert_equal(2, result)
+    end
   end
 end
