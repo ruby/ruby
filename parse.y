@@ -3422,9 +3422,16 @@ rb_str_extend(list, term)
 		tokadd(c);
 		goto loop_again;
 	      case '\\':
-		c = read_escape();
-		tokadd(c);
-		goto loop_again;
+		c = nextc();
+		if (c == -1) return (NODE*)-1;
+		if (c == term) {
+		    tokadd(c);
+		}
+		else {
+		    tokadd('\\');
+		    tokadd(c);
+		}
+		break;
 	      case '{':
 		if (brace != -1) nest++;
 	      case '\"':

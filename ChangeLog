@@ -1,3 +1,22 @@
+Wed Mar  8 02:08:43 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y: escape expansion too early.
+
+	* regex.c (re_compile_pattern): support \cX et al.
+
+Mon Mar  6 12:28:37 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/socket.c (ip_addrsetup): should check length of hostname.
+
+	* ext/socket/socket.c (ip_addrsetup): check newline at the end of
+	  hostname.  These fixes suggested by Muvaw Pnazte <bugathlon@yahoo.com>.
+
+Sun Mar  5 20:35:45 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): should call
+	  LoadLibrary() everytime and should assign the hdll to Win32API
+	  object(protect the hdll from GC).
+
 Sat Feb 26 22:39:31 2000  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
 	* Fix String#* with huge string.

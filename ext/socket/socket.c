@@ -522,6 +522,9 @@ ip_addrsetup(host, port)
 	else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
 	    mkinetaddr(INADDR_BROADCAST, hbuf, sizeof(hbuf));
 	}
+	else if (strlen(name) > sizeof(hbuf)-1) {
+	    rb_raise(rb_eSocket, "hostname too long (%d)", strlen(name));
+	}
 	else {
 	    strcpy(hbuf, name);
 	}
@@ -543,6 +546,9 @@ ip_addrsetup(host, port)
     hints.ai_socktype = SOCK_DGRAM;
     error = getaddrinfo(hostp, portp, &hints, &res);
     if (error) {
+	if (hostp && hostp[strlen(hostp)-1] == '\n') {
+	    rb_raise(rb_eSocket, "newline at the end of hostname");
+	}
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
 

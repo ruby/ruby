@@ -1048,7 +1048,7 @@ calculate_must_string(start, end)
   return must;
 }
 
-static int
+static unsigned int
 read_backslash(c)
      int c;
 {
@@ -1078,6 +1078,47 @@ read_backslash(c)
     return '\033';
   }
   return c;
+}
+
+static unsigned int
+read_special(p, pend, pp)
+     const char *p, *pend, **pp;
+{
+  int c;
+
+  PATFETCH_RAW(c);
+  switch (c) {
+  case 'M':
+    PATFETCH_RAW(c);
+    if (c != '-') return -1;
+    PATFETCH_RAW(c);
+    *pp = p;
+    if (c == '\\') {
+      return read_special(p, pend, pp) | 0x80;
+    }
+    else if (c == -1) return ~0;
+    else {
+      return ((c & 0xff) | 0x80);
+    }
+
+  case 'C':
+    PATFETCH_RAW(c);
+    if (c != '-') return ~0;
+  case 'c':
+    PATFETCH_RAW(c);
+    *pp = p;
+    if (c == '\\') {
+      c = read_special(p, pend, pp);
+    }
+    else if (c == '?') return 0177;
+    else if (c == -1) return ~0;
+    return c & 0x9f;
+  default:
+    return read_backslash(c);
+  }
+
+ end_of_pattern:
+  return ~0;
 }
 
 /* re_compile_pattern takes a regular-expression string
@@ -1448,6 +1489,16 @@ re_compile_pattern(pattern, size, bufp)
 	    PATUNFETCH;
 	    c = scan_oct(p, 3, &numlen);
 	    p += numlen;
+	    had_num_literal = 1;
+	    break;
+
+	  case 'M':
+	  case 'C':
+	  case 'c':
+	    p0 = --p;
+	    c = read_special(p, pend, &p0);
+	    if (c > 255) goto invalid_escape;
+	    p = p0;
 	    had_num_literal = 1;
 	    break;
 
@@ -2137,6 +2188,16 @@ re_compile_pattern(pattern, size, bufp)
 	BUFPUSH(c1);
 	break;
 
+      case 'M':
+      case 'C':
+      case 'c':
+	p0 = --p;
+	c = read_special(p, pend, &p0);
+	if (c > 255) goto invalid_escape;
+	p = p0;
+	had_num_literal = 1;
+	goto numeric_char;
+
       default:
 	c = read_backslash(c);
 	goto normal_char;
@@ -2299,6 +2360,9 @@ re_compile_pattern(pattern, size, bufp)
 
  nested_meta:
   FREE_AND_RETURN(stackb, "nested *?+ in regexp");
+
+ invalid_escape:
+  FREE_AND_RETURN(stackb, "Invalid escape character syntax");
 }
 
 void

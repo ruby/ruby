@@ -4170,6 +4170,27 @@ rb_funcall3(recv, mid, argc, argv)
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0);
 }
 
+VALUE
+rb_call_super(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE result;
+
+    if (ruby_frame->last_class == 0) {	
+	rb_raise(rb_eNameError, "superclass method `%s' must be enabled by rb_enable_super()",
+		 rb_id2name(ruby_frame->last_func));
+    }
+
+    PUSH_ITER(ruby_iter->iter?ITER_PRE:ITER_NOT);
+    result = rb_call(RCLASS(ruby_frame->last_class)->super,
+		     ruby_frame->self, ruby_frame->last_func,
+		     argc, argv, 3);
+    POP_ITER();
+
+    return result;
+}
+
 static VALUE
 backtrace(lev)
     int lev;
