@@ -67,7 +67,6 @@
             (x) = 0;\
         }\
     }\
-    CoFreeUnusedLibraries();\
 }
 
 #define OLEData_Get_Struct(obj, pole) {\
@@ -79,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.5.6"
+#define WIN32OLE_VERSION "0.5.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -488,7 +487,8 @@ ole_hresult2msg(hr)
     HRESULT hr;
 {
     VALUE msg = Qnil;
-    char *p_msg;
+    char *p_msg = NULL;
+    char *term = NULL;
     DWORD dwCount;
 
     char strhr[100];
@@ -501,15 +501,15 @@ ole_hresult2msg(hr)
                             NULL, hr, LOCALE_SYSTEM_DEFAULT,
                             (LPTSTR)&p_msg, 0, NULL);
     if (dwCount > 0) {
-        /* remove dots and CRs/LFs */
-        while (dwCount > 0 &&
-               (p_msg[dwCount-1] < ' ' || p_msg[dwCount-1] == '.')) {
-            p_msg[--dwCount] = '\0';
-        }
+	term = strrchr(p_msg, '\r');
+	if (term) {
+	    *term = '\0';
+	}
         if (p_msg[0] != '\0') {
             rb_str_cat2(msg, p_msg);
         }
     }
+    LocalFree(p_msg);
     return msg;
 }
 
@@ -5341,7 +5341,6 @@ ole_event_free(poleev)
             pcp->lpVtbl->Unadvise(pcp, poleev->pEvent->m_dwCookie);
             OLE_RELEASE(pcp);
         }
-        CoFreeUnusedLibraries();
     }
 }
 

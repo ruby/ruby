@@ -1,3 +1,13 @@
+Tue Jun 22 21:11:36 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (OLE_FREE): should not call CoFreeUnuse-
+	  dLibraries().
+
+	* ext/win32ole/win32ole.c (ole_event_free): ditto.
+
+	* ext/win32ole/win32ole.c (ole_hresult2msg): truncate error message
+	  before CR.
+
 Tue Jun 22 19:24:59 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): unify output of NaN, Inf and -Inf with
