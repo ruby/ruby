@@ -35,6 +35,8 @@ ossl_ns_spki.c
 ossl_ns_spki.h
 ossl_ocsp.c
 ossl_ocsp.h
+ossl_pkcs12.c
+ossl_pkcs12.h
 ossl_pkcs7.c
 ossl_pkcs7.h
 ossl_pkey.c

@@ -37,6 +37,8 @@ extern "C" {
 #include <openssl/asn1_mac.h>
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>
+#include <openssl/pkcs12.h>
+#include <openssl/pkcs7.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/conf.h>
@@ -196,6 +198,7 @@ void ossl_debug(const char *, ...);
 #include "ossl_hmac.h"
 #include "ossl_ns_spki.h"
 #include "ossl_ocsp.h"
+#include "ossl_pkcs12.h"
 #include "ossl_pkcs7.h"
 #include "ossl_pkey.h"
 #include "ossl_rand.h"

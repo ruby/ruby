@@ -425,6 +425,7 @@ Init_openssl()
     Init_ossl_digest();
     Init_ossl_hmac();
     Init_ossl_ns_spki();
+    Init_ossl_pkcs12();
     Init_ossl_pkcs7();
     Init_ossl_pkey();
     Init_ossl_rand();

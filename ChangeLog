@@ -1,3 +1,11 @@
+Thu Dec 11 21:24:43 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_pkcs12.[ch]: new files. add OpenSSL::PKCS12.
+
+	* ext/openssl/ossl_ossl.[ch]: ditto.
+
+	* ext/openssl/MANIFEST: add ossl_pkcs12.[ch].
+
 Thu Dec 11 20:54:28 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mkdir_p): remove trailing `/' befere mkdir(2).
