@@ -3844,9 +3844,7 @@ str_extend(list, term)
 		break;
 	      case '{':
 		if (brace != -1) nest++;
-	      case '\"':
-	      case '/':
-	      case '`':
+	      default:
 		if (c == term) {
 		    pushback(c);
 		    list_append(list, NEW_STR(rb_str_new2("#")));
@@ -3856,7 +3854,6 @@ str_extend(list, term)
 		    newtok();
 		    return list;
 		}
-	      default:
 		tokadd(c);
 		break;
 	    }

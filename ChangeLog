@@ -1,3 +1,7 @@
+Mon Nov 19 14:14:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): term can be any character.
+
 Mon Nov 19 04:58:42 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb (header): support for Apache. thanks to

@@ -831,7 +831,7 @@ rb_str_succ(orig)
 	}
     }
     if (s < sbeg) {
-	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len + 1);
+	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len + 2);
 	s = RSTRING(str)->ptr + n;
 	memmove(s+1, s, RSTRING(str)->len - n);
 	*s = c;
