@@ -750,6 +750,10 @@ An end of a defun is found by moving forward from the beginning of one."
 	     "\\|")
 	    "\\)\\>\\([^_]\\|$\\)")
 	   2)
+     ;; regexps
+     '("/\\(\\(\\\\/\\|[^/\n]\\)*\\)/\\([iop]*\\)"
+       (1 font-lock-string-face)
+       (3 font-lock-constant-face))
      ;; variables
      '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\b\\([^_]\\|$\\)"
        2 font-lock-variable-name-face)

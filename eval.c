@@ -2001,13 +2001,43 @@ call_trace_func(event, file, line, self, id, klass)
 }
 
 static VALUE
-svalue_to_mvalue(v)
+svalue_to_avalue(v)
     VALUE v;
 {
     if (NIL_P(v)) return rb_ary_new2(0);
     if (TYPE(v) == T_ARRAY) {
 	if (RARRAY(v)->len > 1) return v;
 	return rb_ary_new3(1, v);
+    }
+    else {
+	v = rb_ary_to_ary(v);
+    }
+    return v;
+}
+
+static VALUE
+avalue_to_svalue(v)
+    VALUE v;
+{
+    if (TYPE(v) != T_ARRAY) {
+	v = rb_ary_to_ary(v);
+    }
+    if (RARRAY(v)->len == 0) {
+	return Qnil;
+    }
+    if (RARRAY(v)->len == 1) {
+	return RARRAY(v)->ptr[0];
+    }
+    return v;
+}
+
+static VALUE
+svalue_to_mvalue(v)
+    VALUE v;
+{
+    if (NIL_P(v)) return rb_ary_new2(0);
+    if (TYPE(v) == T_ARRAY) {
+	return v;
     }
     else {
 	v = rb_ary_to_ary(v);
@@ -2025,7 +2055,7 @@ mvalue_to_svalue(v)
     if (RARRAY(v)->len == 0) {
 	return Qnil;
     }
-    if (RARRAY(v)->len == 1) {
+    if (RARRAY(v)->len == 1 && TYPE(RARRAY(v)->ptr[0]) != T_ARRAY) {
 	return RARRAY(v)->ptr[0];
     }
     return v;
@@ -2379,17 +2409,13 @@ rb_eval(self, n)
 	result = rb_ary_to_ary(rb_eval(self, node->nd_head));
 	break;
 
-      case NODE_SVALUE:
-	result = mvalue_to_svalue(rb_eval(self, node->nd_head));
-	break;
-
-      case NODE_MVALUE:
-	result = svalue_to_mvalue(rb_eval(self, node->nd_head));
+      case NODE_REXPAND:
+	result = avalue_to_svalue(rb_eval(self, node->nd_head));
 	break;
 
       case NODE_YIELD:
 	if (node->nd_stts) {
-	    result = mvalue_to_svalue(rb_eval(self, node->nd_stts));
+	    result = avalue_to_svalue(rb_eval(self, node->nd_stts));
 	}
 	else {
 	    result = Qnil;
@@ -2532,7 +2558,7 @@ rb_eval(self, n)
 
       case NODE_RETURN:
 	if (node->nd_stts) {
- 	    return_value(mvalue_to_svalue(rb_eval(self, node->nd_stts)));
+ 	    return_value(avalue_to_svalue(rb_eval(self, node->nd_stts)));
  	}
 	else {
 	    return_value(Qnil);
@@ -3630,12 +3656,16 @@ rb_yield_0(val, self, klass, pcall)
 		    massign(self, block->var, val, pcall);
 		}
 		else {
+		    if (pcall) val = avalue_to_svalue(val);
 		    assign(self, block->var, val, pcall);
 		}
 	    }
 	}
 	POP_TAG();
 	if (state) goto pop_state;
+    }
+    else if (pcall) {
+	val = avalue_to_svalue(val);
     }
 
     PUSH_ITER(block->iter);
@@ -3738,7 +3768,9 @@ massign(self, node, val, pcall)
     NODE *list;
     int i = 0, len;
 
-    val = svalue_to_mvalue(val);
+    if (!pcall) {
+	val = svalue_to_mvalue(val);
+    }
     len = RARRAY(val)->len;
     list = node->nd_head;
     for (i=0; list && i<len; i++) {
@@ -6339,7 +6371,9 @@ proc_invoke(proc, args, pcall)
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
 
-    args = mvalue_to_svalue(args);
+    if (!pcall) {
+	args = avalue_to_svalue(args);
+    }
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
@@ -6811,7 +6845,7 @@ static VALUE
 bmcall(args, method)
     VALUE args, method;
 {
-    args = svalue_to_mvalue(args);
+    args = svalue_to_avalue(args);
     return method_call(RARRAY(args)->len, RARRAY(args)->ptr, method);
 }
 

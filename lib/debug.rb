@@ -195,7 +195,7 @@ class DEBUGGER__
 
       when /^\s*i(?:nstance)?\s+/
 	obj = debug_eval($', binding)
-	var_list(obj.instance_variables, binding)
+	var_list(obj.instance_variables, obj.instance_eval{binding()})
 
       when /^\s*c(?:onst(?:ant)?)?\s+/
 	obj = debug_eval($', binding)
