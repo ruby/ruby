@@ -1,3 +1,7 @@
+Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
+
+        * lib/time.rb: fix unit tests before Unix Epoch.
+
 Sun Feb 24 17:20:50 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/*/*.h: Merge from rough.
