@@ -389,7 +389,7 @@ rb_cstr_to_inum(str, base, badcheck)
 	if (str[0] == '0' && (str[1] == 'd'||str[1] == 'D')) {
 	    str += 2;
 	}
-      case 11: case 12: case 13: case 14: case 15:
+      case 9: case 11: case 12: case 13: case 14: case 15:
 	len = 4;
 	break;
       case 16:

@@ -1,3 +1,8 @@
+Mon Apr 21 18:36:28 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* bignum.c (rb_cstr_to_inum): unnecessarily long buffer was used
+	  for radix 9.  [ruby-dev:20057]
+
 Mon Apr 21 17:44:34 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (block_append, value_expr0, assign_in_cond,
