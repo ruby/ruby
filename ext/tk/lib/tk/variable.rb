@@ -235,7 +235,8 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
   end
 
   def ref(*idxs)
-    "#{@id}(#{idxs.collect{|idx| _get_eval_string(idx)}.join(',')})"
+    # "#{@id}(#{idxs.collect{|idx| _get_eval_string(idx)}.join(',')})"
+    TkVarAccess.new("#{@id}(#{idxs.collect{|idx| _get_eval_string(idx)}.join(',')})")
   end
 
   def is_hash?

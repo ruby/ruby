@@ -1,3 +1,7 @@
+Sat Jul 17 23:54:59 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/variable.rb: TkVariable#ref returns a TkVariable object
+
 Sat Jul 17 22:04:44  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/ldap.rb: method hierarchical? should be in URI::LDAP.
