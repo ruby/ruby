@@ -1,3 +1,8 @@
+Wed Dec 22 08:34:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/sym.c (rb_dlsym_initialize): extract internal pointers after
+	  all argument conversion.  fixed: [ruby-dev:25271]
+
 Tue Dec 21 16:15:21 2004  Michael Neumann  <mneumann@ruby-lang.org>
 
 	* lib/xmlrpc/client.rb: use "" instead of "." if prefix argument is
