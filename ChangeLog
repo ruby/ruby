@@ -1,3 +1,9 @@
+Sun Nov 16 13:26:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): prepend error position in evaluating string to
+	  "mesg" attribute string only when it's available and is a
+	  string.
+
 Sun Nov 16 12:16:10 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: logging response body. [experimental]

@@ -5582,10 +5582,12 @@ eval(self, src, scope, file, line)
 	    if (strcmp(file, "(eval)") == 0) {
 		VALUE mesg, errat;
 
-		errat = get_backtrace(ruby_errinfo);
-		mesg  = rb_obj_as_string(ruby_errinfo);
-		rb_str_update(mesg, 0, 0, RARRAY(errat)->ptr[0]);
-		RARRAY(errat)->ptr[0] = RARRAY(backtrace(-2))->ptr[0];
+		mesg  = rb_attr_get(ruby_errinfo, rb_intern("mesg"));
+		if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
+		    errat = get_backtrace(ruby_errinfo);
+		    rb_str_update(mesg, 0, 0, RARRAY(errat)->ptr[0]);
+		    RARRAY(errat)->ptr[0] = RARRAY(backtrace(-2))->ptr[0];
+		}
 	    }
 	    rb_exc_raise(ruby_errinfo);
 	}
