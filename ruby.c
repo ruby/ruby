@@ -678,6 +678,11 @@ proc_options(argc, argv)
 	ruby_show_copyright();
     }
 
+    if (rb_safe_level() >= 4) {
+      OBJ_TAINT(rb_argv);
+      OBJ_TAINT(rb_load_path);
+    }
+
     if (!e_script && argc == 0) { /* no more args */
 	if (verbose) exit(0);
 	script = "-";
@@ -723,6 +728,11 @@ proc_options(argc, argv)
 
     process_sflag();
     xflag = 0;
+
+    if (rb_safe_level() >= 4) {
+      FL_UNSET(rb_argv, FL_TAINT);
+      FL_UNSET(rb_load_path, FL_TAINT);
+    }
 }
 
 extern int ruby__end__seen;

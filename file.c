@@ -1168,6 +1168,7 @@ rb_file_s_unlink(klass, args)
 {
     int n;
 
+    rb_secure(2);
     n = apply2files(unlink_internal, args, 0);
     return INT2FIX(n);
 }

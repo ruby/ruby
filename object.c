@@ -286,10 +286,12 @@ rb_obj_taint(obj)
     VALUE obj;
 {
     rb_secure(4);
-    if (OBJ_FROZEN(obj)) {
-	rb_error_frozen("object");
+    if (!OBJ_TAINTED(obj)) {
+	if (OBJ_FROZEN(obj)) {
+	    rb_error_frozen("object");
+	}
+	OBJ_TAINT(obj);
     }
-    OBJ_TAINT(obj);
     return obj;
 }
 
@@ -298,7 +300,12 @@ rb_obj_untaint(obj)
     VALUE obj;
 {
     rb_secure(3);
-    FL_UNSET(obj, FL_TAINT);
+    if (OBJ_TAINTED(obj)) {
+	if (OBJ_FROZEN(obj)) {
+	    rb_error_frozen("object");
+	}
+	FL_UNSET(obj, FL_TAINT);
+    }
     return obj;
 }
 
