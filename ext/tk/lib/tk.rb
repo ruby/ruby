@@ -5058,7 +5058,7 @@ class TkScale<TkWindow
   end
 
   def set(val)
-    tk_send "set", val
+    tk_send("set", val)
   end
 
   def value
@@ -5066,7 +5066,7 @@ class TkScale<TkWindow
   end
 
   def value= (val)
-    set val
+    set(val)
   end
 end
 

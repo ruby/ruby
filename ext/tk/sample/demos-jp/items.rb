@@ -255,9 +255,9 @@ TkEntry.new(cvs, 'width'=>20, 'relief'=>'sunken') {|e|
 		'window'=>e, 'anchor'=>'nw', 'tags'=>$tag_item)
 }
 TkScale.new(cvs, 'from'=>0, 'to'=>100, 'length'=>'6c', 'sliderlength'=>'.4c', 
-	    'width'=>'.5c', 'tickinterval'=>0 ) {|s|
+	    'width'=>'.5c', 'tickinterval'=>0 ) {|scl|
   TkcWindow.new(cvs, '28.5c','17.5c', 
-		'window'=>s, 'anchor'=>'n', 'tags'=>$tag_item)
+		'window'=>scl, 'anchor'=>'n', 'tags'=>$tag_item)
 }
 TkcText.new(cvs, '21c', '17.9c', 'text'=>'ボタン:', 'anchor'=>'sw')
 TkcText.new(cvs, '21c', '20.9c', 'text'=>'エントリ:', 'anchor'=>'sw')
