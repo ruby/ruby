@@ -332,6 +332,7 @@ lib/rexml/parsers/baseparser.rb
 lib/rexml/parsers/lightparser.rb
 lib/rexml/parsers/pullparser.rb
 lib/rexml/parsers/sax2parser.rb
+lib/rexml/parsers/treeparser.rb
 lib/rexml/parsers/streamparser.rb
 lib/rexml/parsers/ultralightparser.rb
 lib/rexml/parsers/xpathparser.rb
