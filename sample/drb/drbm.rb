@@ -54,6 +54,7 @@ if __FILE__ == $0
 
   puts "#{s1.uri} #{s2.uri}"
 
-  gets
+  s1.thread.join
+  s2.thread.join
 end
 

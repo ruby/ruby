@@ -66,6 +66,5 @@ if __FILE__ == $0
   here = ARGV.shift
   DRb.start_service(here, ChatServer.new)
   puts DRb.uri
-  puts '[return] to exit.'
-  gets
+  DRb.thread.join
 end

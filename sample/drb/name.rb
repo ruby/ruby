@@ -112,7 +112,6 @@ if __FILE__ == $0
   DRb.install_id_conv(name_conv)
   DRb.start_service(uri, Front.new)
   puts DRb.uri
-  puts '[return] to exit'
-  gets
+  DRb.thread.join
 end
 
