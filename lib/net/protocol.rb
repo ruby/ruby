@@ -402,9 +402,9 @@ module Net
     def critical
       return if @critical
       @critical = true
-      r = yield
+      ret = yield
       @critical = false
-      r
+      ret
     end
 
     def critical?
@@ -420,6 +420,11 @@ module Net
     def end_critical
       @critical = false
     end
+
+    def critical_ok
+      @critical = false
+    end
+    public :critical_ok
 
   end
 

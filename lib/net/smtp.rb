@@ -146,6 +146,7 @@ module Net
       rescue ProtocolError
         if @esmtp then
           @esmtp = false
+          @command.critical_ok
           retry
         else
           raise

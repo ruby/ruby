@@ -1,3 +1,9 @@
+Thu Oct 26 02:42:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb: Command#critical_ok
+
+	* lib/net/smtp.rb: clear critical flag before go to SMTP
+
 Wed Oct 25 12:30:19 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_concat): replacing array might be the receiver
