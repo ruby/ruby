@@ -15,7 +15,7 @@ require "kconv"
 module Base64
   module_function
 
-  # Returns the Base64-decoded version of \obj{str}.
+  # Returns the Base64-decoded version of _str_.
   #
   #   require 'base64'
   #   str = 'VGhpcyBpcyBsaW5lIG9uZQpUaGlzIG' +
@@ -85,7 +85,8 @@ module Base64
     end
   end 
 
-  module Deprecated
+
+  module Deprecated # :nodoc:
     include Base64
 
     def _deprecated_base64(*args)
