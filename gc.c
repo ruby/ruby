@@ -427,26 +427,23 @@ init_mark_stack()
 
 #define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
             
-static int mark_all;
-
 static void rb_gc_mark_children(VALUE ptr);
+
 static void
 gc_mark_all()
 {
     RVALUE *p, *pend;
     int i;
-    mark_all = 0;
-    while(!mark_all){
-	mark_all = 1;
-	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i]; pend = p + heaps_limits[i];
-	    while (p < pend) {
-		if ((p->as.basic.flags & FL_MARK) &&
-		    (p->as.basic.flags != FL_MARK)) {
-		    rb_gc_mark_children((VALUE)p);
-		}
-		p++;
+
+    init_mark_stack();
+    for (i = 0; i < heaps_used; i++) {
+	p = heaps[i]; pend = p + heaps_limits[i];
+	while (p < pend) {
+	    if ((p->as.basic.flags & FL_MARK) &&
+		(p->as.basic.flags != FL_MARK)) {
+		rb_gc_mark_children((VALUE)p);
 	    }
+	    p++;
 	}
     }
 }
@@ -464,7 +461,7 @@ gc_mark_rest()
     
     while(p != tmp_arry){
 	p--;
-	rb_gc_mark(*p);
+	rb_gc_mark_children(*p);
     }
 }
 
@@ -565,32 +562,28 @@ void
 rb_gc_mark(ptr)
     VALUE ptr;
 {
+    int ret;
     register RVALUE *obj = RANY(ptr);
 
     if (rb_special_const_p(ptr)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return;       /* free cell */
     if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
 
-    if (!mark_stack_overflow){
-	int ret;
-	CHECK_STACK(ret);
-	if (ret) {
+    obj->as.basic.flags |= FL_MARK;
+
+    CHECK_STACK(ret);
+    if (ret) {
+	if (!mark_stack_overflow) {
 	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
 		*mark_stack_ptr = ptr;
-		mark_stack_ptr++;
-		return;
-	    }else{
+		mark_stack_ptr++;		
+	    }
+	    else {
 		mark_stack_overflow = 1;
 	    }
 	}
     }
-
-    obj->as.basic.flags |= FL_MARK;
-
-    if (mark_stack_overflow){
-	mark_all &= 0;
-	return;
-    }else{
+    else {
 	rb_gc_mark_children(ptr);
     }
 }
@@ -1175,8 +1168,8 @@ rb_gc()
     while (!MARK_STACK_EMPTY){
 	if (mark_stack_overflow){
 	    gc_mark_all();
-	    break;
-	}else{
+	}
+	else {
 	    gc_mark_rest();
 	}
     }

@@ -7614,6 +7614,9 @@ rb_thread_schedule()
 	    copy_fds(&exceptfds, &th->exceptfds, th->fd);
 	    if (max < th->fd) max = th->fd;
 	    need_select = 1;
+	    if (th->wait_for & WAIT_TIME) {
+		need_select = 2;
+	    }
 	    th->select_value = 0;
 	}
 	if (th->wait_for & WAIT_TIME) {
@@ -7669,6 +7672,18 @@ rb_thread_schedule()
 			th->select_value = n;
 			n = max;
 		    }
+		}
+	    }
+	    END_FOREACH_FROM(curr, th);
+	}
+	if (n == 0 && need_select == 2) {
+	    if (now < 0.0) now = timeofday();
+	    FOREACH_THREAD_FROM(curr, th) {
+		if ((th->wait_for & (WAIT_SELECT|WAIT_TIME)) && th->delay < now) {
+		    th->status = THREAD_RUNNABLE;
+		    th->wait_for = 0;
+		    th->select_value = 0;
+		    found = 1;
 		}
 	    }
 	    END_FOREACH_FROM(curr, th);

@@ -1087,6 +1087,26 @@ rb_ary_sort(ary)
 }
 
 static VALUE
+sort_inplace(ary)
+    VALUE ary;
+{
+    qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE),sort_2);
+    return ary;
+}
+
+VALUE
+rb_ary_sort_inplace(ary)
+    VALUE ary;
+{
+    rb_ary_modify(ary);
+    if (RARRAY(ary)->len <= 1) return ary;
+
+    FL_SET(ary, ARY_TMPLOCK);	/* prohibit modification during sort */
+    rb_ensure(sort_inplace, ary, sort_unlock, ary);
+    return ary;
+}
+
+static VALUE
 rb_ary_collect(ary)
     VALUE ary;
 {
@@ -1493,7 +1513,9 @@ rb_ary_cmp(ary, ary2)
 {
     long i, len;
 
-    ary2 = to_ary(ary2);
+    if (TYPE(ary2) != T_ARRAY) {
+	ary2 = to_ary(ary2);
+    }
     len = RARRAY(ary)->len;
     if (len > RARRAY(ary2)->len) {
 	len = RARRAY(ary2)->len;

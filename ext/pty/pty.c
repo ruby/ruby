@@ -349,7 +349,7 @@ getDevice(master,slave)
     int	 i,j;
     char MasterName[DEVICELEN];
 
-#ifdef HAVE_DEV_PTMX
+#ifdef HAVE_PTSNAME
     char *pn;
     void (*s)();
 
@@ -364,7 +364,7 @@ getDevice(master,slave)
 	    if(unlockpt(i) != -1) {
 		if((pn = ptsname(i)) != NULL) {
 		    if((j = open(pn, O_RDWR, 0)) != -1) {
-#if defined I_PUSH
+#if defined I_PUSH && !defined linux
 			if(ioctl(j, I_PUSH, "ptem") != -1) {
 			    if(ioctl(j, I_PUSH, "ldterm") != -1) {
 #endif
@@ -372,7 +372,7 @@ getDevice(master,slave)
 				*slave = j;
 				strcpy(SlaveName, pn);
 				return;
-#if defined I_PUSH
+#if defined I_PUSH && !defined linux
 			    }
 			}
 #endif
@@ -385,10 +385,10 @@ getDevice(master,slave)
     rb_raise(rb_eRuntimeError, "Cannot get Master/Slave device");
 #else
     for (p = deviceNo; *p != NULL; p++) {
-	sprintf(MasterName ,MasterDevice,*p);
+	sprintf(MasterName,MasterDevice,*p);
 	if ((i = open(MasterName,O_RDWR,0)) >= 0) {
 	    *master = i;
-	    sprintf(SlaveName ,SlaveDevice,*p);
+	    sprintf(SlaveName,SlaveDevice,*p);
 	    if ((j = open(SlaveName,O_RDWR,0)) >= 0) {
 		*slave = j;
 		chown(SlaveName, getuid(), getgid());

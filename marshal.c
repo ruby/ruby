@@ -194,6 +194,10 @@ w_float(d, arg)
     else if (isnan(d)) {
 	strcpy(buf, "nan");
     }
+    else if (d == 0.0) {
+	if (1.0/d < 0) strcpy(buf, "-0");
+	else           strcpy(buf, "0");
+    }
     else {
 	/* xxx: should not use system's sprintf(3) */
 	sprintf(buf, "%.16g", d);

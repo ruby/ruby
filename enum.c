@@ -208,7 +208,23 @@ sort_by_i(i, memo)
     VALUE i;
     NODE *memo;
 {
-    VALUE e = rb_ary_new3(3, rb_yield(i), INT2NUM(memo->u3.cnt), i);
+    VALUE v, e;
+
+    v = rb_yield(i);
+    if (TYPE(v) == T_ARRAY) {
+	int j, len = RARRAY(v)->len;
+
+	e = rb_ary_new2(len+2);
+	for (j=0; j<len; j++) {
+	    RARRAY(e)->ptr[j] = RARRAY(v)->ptr[j];
+	}
+	RARRAY(e)->ptr[j++] = INT2NUM(memo->u3.cnt);
+	RARRAY(e)->ptr[j] = i;
+	RARRAY(e)->len = len + 2;
+    }
+    else {
+	e = rb_ary_new3(3, v, INT2NUM(memo->u3.cnt), i);
+    }
     rb_ary_push(memo->u1.value, e);
     memo->u3.cnt++;
     return Qnil;
@@ -225,16 +241,16 @@ static VALUE
 enum_sort_by(obj)
     VALUE obj;
 {
-    VALUE ary = rb_ary_new();
+    VALUE ary = rb_ary_new2(2000);
     NODE *memo = rb_node_newnode(NODE_MEMO, ary, 0, 0);
     long i;
 
     rb_iterate(rb_each, obj, sort_by_i, (VALUE)memo);
     rb_gc_force_recycle((VALUE)memo);
-    rb_iterate(rb_ary_sort_bang, ary, sort_by_sort_body, 0);
+    rb_ary_sort_inplace(ary);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	VALUE e = RARRAY(ary)->ptr[i];
-	RARRAY(ary)->ptr[i] = rb_ary_entry(e, 2);
+	RARRAY(ary)->ptr[i] = RARRAY(e)->ptr[2];
     }
 
     return ary;
