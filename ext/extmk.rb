@@ -95,7 +95,7 @@ def extmake(target)
       f.print dummy_makefile($srcdir)
       return true
     end
-    args = sysquote($mflags)
+    args = sysquote($mflags.map {|m| /\Aextout_prefix=\z/ =~ m ? m + $extout_prefix : m})
     if $static
       args += ["static"]
       $extlist.push [$static, $target, File.basename($target), $preload]
@@ -146,7 +146,7 @@ def parse_args()
   end
   $destdir = $OPT['dest-dir'] || ''
   if opt = $OPT['extout'] and !opt.empty?
-    $extout = File.expand_path(opt, $topdir)
+    $extout = opt
   end
   $make = $OPT['make'] || $make || 'make'
   mflags = ($OPT['make-flags'] || '').strip
@@ -180,8 +180,12 @@ def parse_args()
     $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
   end
   if $extout
-    $mflags << "extout=#{$extout.sub(/#{Regexp.quote($topdir)}/, '$(topdir)')}"
-    $mflags << "extout_prefix=#{$extout_prefix}"
+    $absextout = File.expand_path(Config::expand($extout.dup), $topdir)
+    $extout = '$(topdir)/'+$extout
+    unless Config::expand($extout.dup) == $absextout
+      $extout = $absextout
+    end
+    $mflags << ("extout=" << $extout) << "extout_prefix="
   end
 
   $message = $OPT['message']
@@ -271,11 +275,11 @@ exts |= Dir.glob("#{ext_prefix}/*/**/MANIFEST").collect {|d|
 if $extout
   if $install
     Config.expand(dest = "#{$destdir}#{$rubylibdir}")
-    FileUtils.cp_r($extout+"/.", dest, :verbose => true, :noop => $dryrun)
+    FileUtils.cp_r($absextout+"/.", dest, :verbose => true, :noop => $dryrun)
     exit
   end
   unless $ignore
-    FileUtils.mkpath($extout)
+    FileUtils.mkpath($absextout)
   end
 end
 

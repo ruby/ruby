@@ -868,7 +868,7 @@ DEFFILE = #{deffile}
 CLEANFILES = #{$cleanfiles.join(' ')}
 DISTCLEANFILES = #{$distcleanfiles.join(' ')}
 
-extout = #{$extout.sub(/#{Regexp.quote($topdir)}/, '$(topdir)') if $extout}
+extout = #{$extout}
 extout_prefix = #{$extout_prefix}
 target_prefix = #{target_prefix}
 LOCAL_LIBS = #{$LOCAL_LIBS}
@@ -898,7 +898,7 @@ RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
 }
   end
   mfile.print %{
-CLEANLIBS     = #{$extout_prefix}$(TARGET).*
+CLEANLIBS     = #{$extout_prefix}$(TARGET).{#{CONFIG['DLEXT']},#{$LIBEXT},exp,il?,tds,map}
 CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.bak
 
 all:		#{target ? $extout ? "install" : "$(DLLIB)" : "Makefile"}

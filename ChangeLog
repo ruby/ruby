@@ -1,3 +1,11 @@
+Tue Feb 17 12:12:47 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (parse_args): delay expanding $(extout) until invoking
+	  make.
+
+	* lib/mkmf.rb (CLEANLIBS): should remove files have specific
+	  extensions.
+
 Tue Feb 17 11:33:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rss/rexmlparser.rb: REXML version may be 4 digits.
