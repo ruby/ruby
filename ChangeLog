@@ -1,3 +1,14 @@
+Wed Jul 30 22:35:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb (dir_config): allow multiple directories separated
+	  by File::PATH_SEPARATOR.
+
+	* lib/mkmf.rb (create_makefile): DLDFLAGS include $LDFLAGS again.
+	  [ruby-talk:76894]
+
+	* lib/mkmf.rb (init_mkmf): not default $LDFLAGS to LDFLAGS for
+	  ruby itself, but default $DLDFLAGS to DLDFLAGS.
+
 Wed Jul 30 16:17:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_object): marshal_dump should not take any

@@ -587,23 +587,32 @@ end
 
 def dir_config(target, idefault=nil, ldefault=nil)
   if dir = with_config(target + "-dir", (idefault unless ldefault))
-    idefault = dir + "/include"
-    ldefault = dir + "/lib"
+    defaults = dir.split(File::PATH_SEPARATOR)
+    idefault = ldefault = nil
   end
 
   idir = with_config(target + "-include", idefault)
   ldir = with_config(target + "-lib", ldefault)
 
-  if idir
-    idircflag = "-I" + idir
-    unless Shellwords.shellwords($CPPFLAGS).include?(idircflag)
-      $CPPFLAGS = idircflag + " " + $CPPFLAGS
+  idirs = idir ? idir.split(File::PATH_SEPARATOR) : []
+  if defaults
+    idirs.concat(defaults.collect {|dir| dir + "/include"})
+    idir = ([idir] + idirs).compact.join(File::PATH_SEPARATOR)
+  end
+  unless idirs.empty?
+    idirs.collect! {|dir| "-I" + dir}
+    idirs -= Shellwords.shellwords($CPPFLAGS)
+    unless idirs.empty?
+      $CPPFLAGS = (idirs << $CPPFLAGS).join(" ")
     end
   end
 
-  if ldir
-    $LIBPATH.concat [ldir] unless $LIBPATH.include?(ldir)
+  ldirs = ldir ? ldir.split(File::PATH_SEPARATOR) : []
+  if defaults
+    ldirs.concat(defaults.collect {|dir| dir + "/lib"})
+    ldir = ([ldir] + ldirs).compact.join(File::PATH_SEPARATOR)
   end
+  $LIBPATH |= ldirs
 
   [idir, ldir]
 end
@@ -651,7 +660,7 @@ LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 CFLAGS   = #{CONFIG['CCDLFLAGS'] unless $static} #$CFLAGS
 CPPFLAGS = -I. -I$(topdir) -I$(hdrdir) -I$(srcdir) #{$defs.join(" ")} #{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
-DLDFLAGS = #{CONFIG['DLDFLAGS']} #$DLDFLAGS
+DLDFLAGS = #$LDFLAGS #{CONFIG['DLDFLAGS']} #$DLDFLAGS
 LDSHARED = #{CONFIG['LDSHARED']}
 AR = #{CONFIG['AR']}
 EXEEXT = #{CONFIG['EXEEXT']}
@@ -871,9 +880,9 @@ def init_mkmf(config = CONFIG)
   $defs = []
   $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
   $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
-  $LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", config["LDFLAGS"])).dup
+  $LDFLAGS = (with_config("ldflags") || "").dup
   $INCFLAGS = "-I#{$topdir}"
-  $DLDFLAGS = ""
+  $DLDFLAGS = (arg_config("DLDFLAGS") || "").dup
   $LIBEXT = config['LIBEXT'].dup
   $OBJEXT = config["OBJEXT"].dup
   $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
