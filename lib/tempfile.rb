@@ -85,6 +85,15 @@ class Tempfile < SimpleDelegator
   def path
     @tmpname
   end
+
+  def size
+    if @tmpfile
+      @tmpfile.flush
+      @tmpfile.stat.size
+    else
+      0
+    end
+  end
 end
 
 if __FILE__ == $0

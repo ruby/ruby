@@ -65,7 +65,7 @@ module Singleton
             #  This catches ill advisted inclusions of Singleton in
             #  singletons types (sounds like an oxymoron) and 
             #  helps out people counting on transitive mixins
-            unless mod.instance_of? (Class)
+            unless mod.instance_of?(Class)
                 raise TypeError, "Inclusion of the OO-Singleton module in module #{mod}"
             end 
             unless (class << mod; self end) <= (class << Object; self end)
@@ -73,7 +73,7 @@ module Singleton
             end
             super
         end
-        def included (klass)
+        def included(klass)
             #  remove build in copying methods
             klass.class_eval do 
 	      define_method(:clone) {raise TypeError, "can't clone singleton #{self.type}"}
@@ -87,7 +87,7 @@ module Singleton
                 private  :new, :allocate
                 
                 #  declare the self modifying klass#instance method
-                define_method (:instance, Singleton::FirstInstanceCall) 
+                define_method(:instance, Singleton::FirstInstanceCall) 
                  
                 #  simple waiting loop hook - should do in most cases
                 #  note the pre/post-conditions of a thread-critical state
@@ -109,7 +109,7 @@ module Singleton
                     super
                     sub_klass.instance_eval do @__instance__ = nil end
                     class << sub_klass
-                        define_method (:instance, Singleton::FirstInstanceCall) 
+                        define_method(:instance, Singleton::FirstInstanceCall) 
                     end
                 end 
                 
@@ -120,7 +120,7 @@ module Singleton
                     res = super
                     res.instance_eval do @__instance__ = nil end
                     class << res
-                        define_method (:instance, Singleton::FirstInstanceCall)
+                        define_method(:instance, Singleton::FirstInstanceCall)
                     end
                     res
                 end
@@ -215,7 +215,7 @@ class Ups < SomeSingletonClass
             @__instance__
         end
         def __sleep
-            sleep (rand(0.08))
+            sleep(rand(0.08))
         end 
         def allocate
             __sleep

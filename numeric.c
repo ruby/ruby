@@ -640,7 +640,8 @@ flo_zero_p(num)
     return Qfalse;
 }
 
-static VALUE flo_is_nan_p(num)
+static VALUE
+flo_is_nan_p(num)
      VALUE num;
 {     
 
@@ -649,19 +650,21 @@ static VALUE flo_is_nan_p(num)
   return isnan(value) ? Qtrue : Qfalse;
 }
 
-static VALUE flo_is_infinite_p(num)
+static VALUE
+flo_is_infinite_p(num)
      VALUE num;
 {     
   double value = RFLOAT(num)->value;
 
   if (isinf(value)) {
-    return INT2FIX( value < 0 ? -1 : +1 );
+    return INT2FIX( value < 0 ? -1 : 1 );
   }
 
   return Qnil;
 }
 
-static VALUE flo_is_finite_p(num)
+static VALUE
+flo_is_finite_p(num)
      VALUE num;
 {     
   double value = RFLOAT(num)->value;

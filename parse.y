@@ -281,7 +281,6 @@ static void top_local_setup();
 
 %%
 program		:  {
-		        $<vars>$ = ruby_dyna_vars;
 			lex_state = EXPR_BEG;
                         top_local_init();
 			if ((VALUE)ruby_class == rb_cObject) class_nest = 0;
@@ -303,7 +302,6 @@ program		:  {
 			ruby_eval_tree = block_append(ruby_eval_tree, $2);
                         top_local_setup();
 			class_nest = 0;
-		        ruby_dyna_vars = $<vars>1;
 		    }
 		;
 
@@ -2170,6 +2168,7 @@ yycompile(f, line)
 {
     int n;
     NODE *node = 0;
+    struct RVarmap *vp, *vars = ruby_dyna_vars;
 
     if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
@@ -2210,6 +2209,13 @@ yycompile(f, line)
     in_def = 0;
     cur_mid = 0;
 
+    vp = ruby_dyna_vars;
+    ruby_dyna_vars = vars;
+    while (vp && vp != vars) {
+	struct RVarmap *tmp = vp;
+	vp = vp->next;
+	rb_gc_force_recycle((VALUE)tmp);
+    }
     if (n == 0) node = ruby_eval_tree;
     return node;
 }

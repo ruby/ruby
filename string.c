@@ -1307,9 +1307,10 @@ rb_str_aset(str, indx, val)
 
       case T_STRING:
 	beg = rb_str_index(str, indx, 0);
-	if (beg != -1) {
-	    rb_str_update(str, beg, RSTRING(indx)->len, val);
+	if (beg < 0) {
+	    rb_raise(rb_eIndexError, "string not matched");
 	}
+	rb_str_update(str, beg, RSTRING(indx)->len, val);
 	return val;
 
       default:

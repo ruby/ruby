@@ -62,7 +62,7 @@ else
 end
 
 $ipv6 = false
-if enable_config("ipv6", false)
+if enable_config("ipv6", true)
   if try_link(<<EOF)
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -226,7 +226,7 @@ have_struct_member('struct msghdr', 'msg_control', header=['sys/types.h', 'sys/s
 have_struct_member('struct msghdr', 'msg_accrights', header=['sys/types.h', 'sys/socket.h'])
 
 $getaddr_info_ok = false
-if not enable_config("wide-getaddrinfo", false) and try_run(<<EOF)
+if !enable_config("wide-getaddrinfo", false) and try_run(<<EOF)
 #include <sys/types.h>
 #include <netdb.h>
 #include <string.h>
@@ -322,6 +322,7 @@ if $ipv6 and not $getaddr_info_ok
 Fatal: --enable-ipv6 is specified, and your OS seems to support IPv6 feature.
 But your getaddrinfo() and getnameinfo() are appeared to be broken.  Sorry,
 you cannot compile IPv6 socket classes with broken these functions.
+You can try --enable-wide-getaddrinfo.
 EOS
   exit
 end

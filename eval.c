@@ -840,7 +840,6 @@ static NODE *top_cref;
 #define PUSH_CREF(c) ruby_cref = rb_node_newnode(NODE_CREF,(c),0,ruby_cref)
 #define POP_CREF() ruby_cref = ruby_cref->nd_next
 
-#define scope_node super.klass
 #define PUSH_SCOPE() do {		\
     volatile int _vmode = scope_vmode;	\
     struct SCOPE * volatile _old;	\
@@ -2784,7 +2783,6 @@ rb_eval(self, n)
 		ruby_cref = (NODE*)node->nd_rval;
 		ruby_frame->cbase = node->nd_rval;
 	    }
-	    ruby_scope->scope_node = (VALUE)node;
 	    if (node->nd_tbl) {
 		VALUE *vars = ALLOCA_N(VALUE, node->nd_tbl[0]+1);
 		*vars++ = (VALUE)node;
@@ -3064,6 +3062,7 @@ rb_eval(self, n)
 	    NODE *list = node->nd_next;
 
 	    str = rb_str_new3(node->nd_lit);
+	    if (!ruby_dyna_vars) rb_dvar_push(0, 0);
 	    while (list) {
 		if (list->nd_head) {
 		    switch (nd_type(list->nd_head)) {
@@ -3075,18 +3074,9 @@ rb_eval(self, n)
 			ruby_errinfo = Qnil;
 			ruby_sourceline = nd_line(node);
 			ruby_in_eval++;
-			rb_dvar_push(0, 0);
 			list->nd_head = compile(list->nd_head->nd_lit,
 						ruby_sourcefile,
 						ruby_sourceline);
-			if (ruby_scope->local_tbl) {
-			    NODE *body = (NODE *)ruby_scope->scope_node;
-			    if (body && body->nd_tbl != ruby_scope->local_tbl) {
-				if (body->nd_tbl) free(body->nd_tbl);
-				ruby_scope->local_vars[-1] =
-				    (VALUE)(body->nd_tbl = ruby_scope->local_tbl);
-			    }
-			}
 			ruby_eval_tree = 0;
 			ruby_in_eval--;
 			if (ruby_nerrs > 0) {
@@ -3424,7 +3414,6 @@ module_setup(module, n)
     PUSH_SCOPE();
     PUSH_VARS();
 
-    ruby_scope->scope_node = (VALUE)node;
     if (node->nd_tbl) {
 	VALUE *vars = TMP_ALLOC(node->nd_tbl[0]+1);
 	*vars++ = (VALUE)node;
@@ -4564,7 +4553,6 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 		ruby_cref = (NODE*)body->nd_rval;
 		ruby_frame->cbase = body->nd_rval;
 	    }
-	    ruby_scope->scope_node = (VALUE)body;
 	    if (body->nd_tbl) {
 		local_vars = TMP_ALLOC(body->nd_tbl[0]+1);
 		*local_vars++ = (VALUE)body;
@@ -5031,6 +5019,7 @@ eval(self, src, scope, file, line)
 	if (ruby_frame->prev) {
 	    ruby_frame->iter = ruby_frame->prev->iter;
 	}
+	if (!ruby_dyna_vars) rb_dvar_push(0, 0);
     }
     if (file == 0) {
 	file = ruby_sourcefile;

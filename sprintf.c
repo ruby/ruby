@@ -349,8 +349,8 @@ rb_f_sprintf(argc, argv)
 		    v = FIX2LONG(val);
 		    break;
 		  default:
-		    v = NUM2LONG(val);
-		    break;
+		    val = rb_Integer(val);
+		    goto bin_retry;
 		}
 
 		if (*p == 'u' || *p == 'd' || *p == 'i') base = 10;

@@ -23,9 +23,21 @@ Mon Jun  3 07:07:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* parse.y (yylex): should pushback proper char after '**'.
 	  (ruby-bugs-ja:PR#240)
 
+Mon Jun  3 05:56:17 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_aset): should raise error if an indexing string
+	  is not found in the receiver.
+
+	* sprintf.c (rb_f_sprintf): "%d" should convert objects into
+	  integers using Integer().
+
 Sat Jun  1 19:20:07 2002  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole: merge from rough.
+
+Fri May 31 17:11:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile::size): added.
 
 Thu May 30 12:52:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
