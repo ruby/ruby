@@ -437,6 +437,7 @@ VALUE rb_class_path _((VALUE));
 void rb_set_class_path _((VALUE, VALUE, const char*));
 VALUE rb_path2class _((const char*));
 void rb_name_class _((VALUE, ID));
+VALUE rb_class_name _((VALUE));
 void rb_autoload _((VALUE, ID, const char*));
 void rb_autoload_load _((VALUE, ID));
 VALUE rb_autoload_p _((VALUE, ID));

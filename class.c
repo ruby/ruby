@@ -175,7 +175,6 @@ rb_define_class_id(id, super)
 
     if (!super) super = rb_cObject;
     klass = rb_class_new(super);
-    rb_name_class(klass, id);
     rb_make_metaclass(klass, RBASIC(super)->klass);
 
     return klass;
@@ -226,6 +225,7 @@ rb_define_class(name, super)
     }
     klass = rb_define_class_id(id, super);
     st_add_direct(rb_class_tbl, id, klass);
+    rb_name_class(klass, id);
     rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
 
@@ -630,7 +630,7 @@ class_instance_method_list(argc, argv, mod, func)
 
 /*
  *  call-seq:
- *     mod.instance_methods(include_super=false)   => array
+ *     mod.instance_methods(include_super=true)   => array
  *  
  *  Returns an array containing the names of public instance methods in
  *  the receiver. For a module, these are the public methods; for a
@@ -650,8 +650,8 @@ class_instance_method_list(argc, argv, mod, func)
  *     end
  *     
  *     A.instance_methods                #=> ["method1"]
- *     B.instance_methods                #=> ["method2"]
- *     C.instance_methods                #=> ["method3"]
+ *     B.instance_methods(false)         #=> ["method2"]
+ *     C.instance_methods(false)         #=> ["method3"]
  *     C.instance_methods(true).length   #=> 43
  */
 
@@ -666,7 +666,7 @@ rb_class_instance_methods(argc, argv, mod)
 
 /*
  *  call-seq:
- *     mod.protected_instance_methods(include_super=false)   => array
+ *     mod.protected_instance_methods(include_super=true)   => array
  *  
  *  Returns a list of the protected instance methods defined in
  *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
@@ -684,7 +684,7 @@ rb_class_protected_instance_methods(argc, argv, mod)
 
 /*
  *  call-seq:
- *     mod.private_instance_methods(include_super=false)    => array
+ *     mod.private_instance_methods(include_super=true)    => array
  *  
  *  Returns a list of the private instance methods defined in
  *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
@@ -710,7 +710,7 @@ rb_class_private_instance_methods(argc, argv, mod)
 
 /*
  *  call-seq:
- *     mod.public_instance_methods(include_super=false)   => array
+ *     mod.public_instance_methods(include_super=true)   => array
  *  
  *  Returns a list of the public instance methods defined in <i>mod</i>.
  *  If the optional parameter is not <code>false</code>, the methods of
@@ -728,7 +728,7 @@ rb_class_public_instance_methods(argc, argv, mod)
 
 /*
  *  call-seq:
- *     obj.singleton_methods(all=false)    => array
+ *     obj.singleton_methods(all=true)    => array
  *  
  *  Returns an array of the names of singleton methods for <i>obj</i>.
  *  If the optional <i>all</i> parameter is true, the list will include
@@ -745,17 +745,17 @@ rb_class_public_instance_methods(argc, argv, mod)
  *     a = Single.new
  *     
  *     def a.one()
+ *     end
  *     
  *     class << a
- *     end
  *       include Other
  *       def two()
+ *       end
  *     end
  *     
- *       end
  *     Single.singleton_methods    #=> ["four"]
- *     a.singleton_methods         #=> ["two", "one"]
- *     a.singleton_methods(true)   #=> ["two", "one", "three"]
+ *     a.singleton_methods(false)  #=> ["two", "one"]
+ *     a.singleton_methods         #=> ["two", "one", "three"]
  */
 
 VALUE

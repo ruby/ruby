@@ -146,7 +146,6 @@ classname(klass)
 {
     VALUE path = Qnil;
 
-    klass = rb_class_real(klass);
     if (!klass) klass = rb_cObject;
     if (ROBJECT(klass)->iv_tbl) {
 	if (!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
@@ -281,11 +280,18 @@ rb_name_class(klass, id)
     rb_iv_set(klass, "__classid__", ID2SYM(id));
 }
 
+VALUE
+rb_class_name(klass)
+    VALUE klass;
+{
+    return rb_class_path(rb_class_real(klass));
+}
+
 char *
 rb_class2name(klass)
     VALUE klass;
 {
-    return RSTRING(rb_class_path(klass))->ptr;
+    return RSTRING(rb_class_name(klass))->ptr;
 }
 
 char *
@@ -1193,7 +1199,7 @@ uninitialized_constant(klass, id)
 {
     if (klass && klass != rb_cObject)
 	rb_name_error(id, "uninitialized constant %s::%s",
-		      RSTRING(rb_class_path(klass))->ptr,
+		      rb_class2name(klass),
 		      rb_id2name(id));
     else {
 	rb_name_error(id, "uninitialized constant %s", rb_id2name(id));

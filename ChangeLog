@@ -1,3 +1,12 @@
+Thu Jul 15 20:29:15  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* class.c, error.c, eval.c, intern.h, object.c, variable.c:
+	  do not set path if it is a singleton class.  [ruby-dev:22588]
+	  (backport from 1.9)
+
+variable.c (rb_set_class_path): do not set path if it is a singleton
+>  class.  [ruby-dev:22588]
+
 Thu Jul 15 10:15:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/, ext/tcltklib/: bug fix

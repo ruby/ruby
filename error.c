@@ -400,7 +400,7 @@ exc_to_s(exc)
 {
     VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
 
-    if (NIL_P(mesg)) return rb_class_path(CLASS_OF(exc));
+    if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
     if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
     return mesg;
 }
@@ -439,11 +439,11 @@ exc_inspect(exc)
     klass = CLASS_OF(exc);
     exc = rb_obj_as_string(exc);
     if (RSTRING(exc)->len == 0) {
-	return rb_str_dup(rb_class_path(klass));
+	return rb_str_dup(rb_class_name(klass));
     }
 
     str = rb_str_buf_new2("#<");
-    klass = rb_class_path(klass);
+    klass = rb_class_name(klass);
     rb_str_buf_append(str, klass);
     rb_str_buf_cat(str, ": ", 2);
     rb_str_buf_append(str, exc);
@@ -645,7 +645,7 @@ name_err_to_s(exc)
 {
     VALUE mesg = rb_attr_get(exc, rb_intern("mesg")), str = mesg;
 
-    if (NIL_P(mesg)) return rb_class_path(CLASS_OF(exc));
+    if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
     StringValue(str);
     if (str != mesg) {
 	rb_iv_set(exc, "mesg", mesg = str);

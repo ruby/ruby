@@ -1142,7 +1142,7 @@ error_print()
     else {
 	VALUE epath;
 
-	epath = rb_class_path(eclass);
+	epath = rb_class_name(eclass);
 	if (elen == 0) {
 	    warn_print(": ");
 	    warn_print2(RSTRING(epath)->ptr, RSTRING(epath)->len);
