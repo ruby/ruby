@@ -205,7 +205,7 @@ module MarshalTestLib
     marshal_equal(1.0/0.0)
     marshal_equal(-1.0/0.0)
     marshal_equal(0.0/0.0) {|o| o.nan?}
-    marshal_equal(-0.0) {|o| 1.0/o}
+    marshal_equal(-1.0 / (1.0 / 0.0)) {|o| 1.0/o}	# -0.0
   end
 
   def test_float_ivar

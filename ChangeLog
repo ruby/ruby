@@ -1,3 +1,9 @@
+Wed Dec 24 23:48:04 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/soap/test_basetype.rb, test/soap/marshal/test_marshal.rb
+	  test/xsd/test_xsd.rb: use "(-1.0 / (1.0 / 0.0))" instead of "-0.0"
+	  to express -0.0.  [ruby-talk:88786]
+
 Wed Dec 24 23:29:30 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/tsort.rb (test_orphaned_break): removed.

@@ -6,6 +6,8 @@ module XSD
 
 
 class TestXSD < Test::Unit::TestCase
+  NegativeZero = (-1.0 / (1.0 / 0.0))
+
   def setup
   end
 
@@ -222,7 +224,7 @@ class TestXSD < Test::Unit::TestCase
     end
 
     assert_equal("+0", XSD::XSDFloat.new(+0.0).to_s)
-    assert_equal("-0", XSD::XSDFloat.new(-0.0).to_s)
+    assert_equal("-0", XSD::XSDFloat.new(NegativeZero).to_s)
     assert(XSD::XSDFloat.new(0.0/0.0).data.nan?)
     assert_equal("INF", XSD::XSDFloat.new(1.0/0.0).to_s)
     assert_equal(1, XSD::XSDFloat.new(1.0/0.0).data.infinite?)
@@ -287,7 +289,7 @@ class TestXSD < Test::Unit::TestCase
     end
 
     assert_equal("+0", XSD::XSDFloat.new(+0.0).to_s)
-    assert_equal("-0", XSD::XSDFloat.new(-0.0).to_s)
+    assert_equal("-0", XSD::XSDFloat.new(NegativeZero).to_s)
     assert_equal("NaN", XSD::XSDDouble.new(0.0/0.0).to_s)
     assert(XSD::XSDDouble.new(0.0/0.0).data.nan?)
     assert_equal("INF", XSD::XSDDouble.new(1.0/0.0).to_s)

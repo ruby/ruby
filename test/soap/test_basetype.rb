@@ -6,6 +6,8 @@ module SOAP
 
 
 class TestSOAP < Test::Unit::TestCase
+  NegativeZero = (-1.0 / (1.0 / 0.0))
+
   def setup
     # Nothing to do.
   end
@@ -189,7 +191,7 @@ class TestSOAP < Test::Unit::TestCase
     end
 
     assert_equal("+0", SOAP::SOAPFloat.new(+0.0).to_s)
-    assert_equal("-0", SOAP::SOAPFloat.new(-0.0).to_s)
+    assert_equal("-0", SOAP::SOAPFloat.new(NegativeZero).to_s)
     assert(SOAP::SOAPFloat.new(0.0/0.0).data.nan?)
     assert_equal("INF", SOAP::SOAPFloat.new(1.0/0.0).to_s)
     assert_equal(1, SOAP::SOAPFloat.new(1.0/0.0).data.infinite?)
@@ -254,7 +256,7 @@ class TestSOAP < Test::Unit::TestCase
     end
 
     assert_equal("+0", SOAP::SOAPFloat.new(+0.0).to_s)
-    assert_equal("-0", SOAP::SOAPFloat.new(-0.0).to_s)
+    assert_equal("-0", SOAP::SOAPFloat.new(NegativeZero).to_s)
     assert_equal("NaN", SOAP::SOAPDouble.new(0.0/0.0).to_s)
     assert(SOAP::SOAPDouble.new(0.0/0.0).data.nan?)
     assert_equal("INF", SOAP::SOAPDouble.new(1.0/0.0).to_s)
