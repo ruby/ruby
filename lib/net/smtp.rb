@@ -55,8 +55,6 @@ Net::Protocol
 
   class SMTP < Protocol
 
-    Version = '1.1.3'
-
     protocol_param :port,         '25'
     protocol_param :command_type, '::Net::SMTPCommand'
 

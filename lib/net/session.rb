@@ -1,6 +1,6 @@
 =begin
 
-= net/session.rb version 1.1.3
+= net/session.rb
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -15,6 +15,7 @@ require 'socket'
 
 module Net
 
+  Version = '1.1.4'
 
 =begin
 
@@ -29,7 +30,7 @@ Object
 === Constants
 
 : Version
-  The version of Session class. It is a string like "1.1.3".
+  The version of Session class. It is a string like "1.1.4".
 
 
 === Class Methods
@@ -72,8 +73,6 @@ Object
 =end
 
   class Protocol
-
-    Version = '1.1.3'
 
     class << self
 
@@ -470,7 +469,7 @@ Object
     def reopen
       unless closed? then
         @socket.close
-        flush_rbuf
+        @buffer = ''
       end
       @socket = TCPsocket.new( @addr, @port )
     end
@@ -511,15 +510,31 @@ Object
       @pipe << "reading #{len} bytes...\n" if pre = @pipe ; @pipe = nil
 
       rsize = 0
-
       while rsize + @buffer.size < len do
-        rsize += @buffer.size
-        ret << fetch_rbuf( @buffer.size )
+        rsize += writeinto( ret, @buffer.size )
         fill_rbuf
       end
-      ret << fetch_rbuf( len - rsize )
+      writeinto( ret, len - rsize )
 
       @pipe << "read #{len} bytes\n" if @pipe = pre
+      ret
+    end
+
+
+    def read_all( ret = '' )
+      @pipe << "reading all...\n" if pre = @pipe; @pipe = nil
+
+      rsize = 0
+      begin
+        while true do
+          rsize += writeinto( ret, @buffer.size )
+          fill_rbuf
+        end
+      rescue EOFError
+        ;
+      end
+
+      @pipe << "read #{rsize} bytes\n" if @pipe = pre
       ret
     end
 
@@ -529,7 +544,9 @@ Object
         fill_rbuf
       end
 
-      fetch_rbuf( idx + target.size )
+      ret = ''
+      writeinto( ret, idx + target.size )
+      ret
     end
 
         
@@ -583,17 +600,13 @@ Object
       @buffer << @socket.sysread( READ_BLOCK )
     end
 
-    def fetch_rbuf( len )
+    def writeinto( ret, len )
       bsi = @buffer.size
-      ret = @buffer[ 0, len ]
+      ret << @buffer[ 0, len ]
       @buffer = @buffer[ len, bsi - len ]
 
       @pipe << %{read  "#{Net.quote ret}"\n} if @pipe
-      ret
-    end
-
-    def flush_rbuf
-      @buffer = ''
+      len
     end
 
 

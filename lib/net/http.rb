@@ -57,8 +57,6 @@ class HTTPBadResponse < HTTPError; end
 
   class HTTP < Protocol
 
-    Version = '1.1.3'
-
     protocol_param :port,         '80'
     protocol_param :command_type, '::Net::HTTPCommand'
 
@@ -143,7 +141,7 @@ class HTTPBadResponse < HTTPError; end
 
       @in_header = {}
       @in_header[ 'Host' ]       = sock.addr
-      @in_header[ 'Connection' ] = 'keep-alive'
+      @in_header[ 'Connection' ] = 'Keep-Alive'
       @in_header[ 'Accept' ]     = '*/*'
 
       super sock
@@ -161,7 +159,11 @@ class HTTPBadResponse < HTTPError; end
         header.delete 'transfer-encoding'
         header[ 'content-length' ] = "Content-Length: #{clen}"
       else
-        @socket.read content_length( header ), ret
+        if clen = content_length( header ) then
+          @socket.read clen, ret
+        else
+          @socket.read_all ret
+        end
       end
 
       header
@@ -229,10 +231,10 @@ class HTTPBadResponse < HTTPError; end
     
     def content_length( header )
       unless str = header[ 'content-length' ] then
-        raise HTTPBadResponce, "content-length not given"
+        return nil
       end
       unless /\Acontent-length:\s*(\d+)/i === str then
-        raise HTTPBadResponce, "content-length format error"
+        raise HTTPBadResponse, "content-length format error"
       end
       $1.to_i
     end
@@ -289,7 +291,7 @@ class HTTPBadResponse < HTTPError; end
       while true do
         line = @socket.readline
         unless /[0-9a-hA-H]+/ === line then
-          raise HTTPBadResponce, "chunk size not given"
+          raise HTTPBadResponse, "chunk size not given"
         end
         len = $&.hex
         break if len == 0
