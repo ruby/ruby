@@ -1,3 +1,8 @@
+Sat Sep  4 01:14:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (cvar_cbase): class variables cause SEGV in
+	  instance_eval() for fixnums and symbols. [ruby-dev:24213]
+
 Fri Sep  3 17:47:58 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (make_struct): remove redefining constant when
