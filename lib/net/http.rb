@@ -352,9 +352,11 @@ All "key" is case-insensitive.
       super( code_type, code, msg )
       @data = {}
       @http_body_exist = bexist
+      @body = nil
     end
 
     attr_reader :http_body_exist
+    attr_accessor :body
 
     def []( key )
       @data[ key.downcase ]
@@ -523,6 +525,8 @@ All "key" is case-insensitive.
     end
 
     def get_body( resp, dest )
+      resp.body = dest
+
       if resp.http_body_exist then
         if chunked? resp then
           read_chunked( dest, resp )
