@@ -7034,11 +7034,8 @@ Init_Proc()
 }
 
 /* Windows SEH refers data on the stack. */
+#undef SAVE_WIN32_EXCEPTION_LIST
 #if defined _WIN32 || defined __CYGWIN__
-# if !(defined _M_IX86 || defined __i386__)
-#   error unsupported processor
-# endif
-
 #if defined __CYGWIN__
 typedef unsigned long DWORD;
 #endif
@@ -7049,18 +7046,19 @@ win32_get_exception_list()
     DWORD p;
 # if defined _MSC_VER
 #   ifdef _M_IX86
+#   define SAVE_WIN32_EXCEPTION_LIST
     __asm mov eax, fs:[0];
     __asm mov p, eax;
 #   endif
 # elif defined __GNUC__
 #   ifdef __i386__
+#   define SAVE_WIN32_EXCEPTION_LIST
     __asm__("movl %%fs:0,%0" : "=r"(p));
 #   endif
 # elif defined __BORLANDC__
+#   define SAVE_WIN32_EXCEPTION_LIST
     __emit__(0x64, 0xA1, 0, 0, 0, 0); /* mov eax, fs:[0] */
     p = _EAX;
-# else
-#   error unsupported compiler
 # endif
     return p;
 }
@@ -7083,6 +7081,10 @@ win32_set_exception_list(p)
     __emit__(0x64, 0xA3, 0, 0, 0, 0); /* mov fs:[0], eax */
 # endif
 }
+
+#ifndef SAVE_WIN32_EXCEPTION_LIST
+# error unsupported platform
+#endif
 #endif
 
 static VALUE rb_eThreadError;
@@ -7114,7 +7116,7 @@ enum thread_status {
 struct thread {
     struct thread *next, *prev;
     jmp_buf context;
-#if defined _WIN32 || defined __CYGWIN__
+#ifdef SAVE_WIN32_EXCEPTION_LIST
     DWORD win32_exception_list;
 #endif
 
@@ -7365,7 +7367,7 @@ rb_thread_save_context(th)
     th->stk_len = len;
     FLUSH_REGISTER_WINDOWS; 
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
-#ifdef _WIN32
+#ifdef SAVE_WIN32_EXCEPTION_LIST
     th->win32_exception_list = win32_get_exception_list();
 #endif
 
@@ -7484,7 +7486,7 @@ rb_thread_restore_context(th, exit)
     ruby_sourcefile = th->file;
     ruby_sourceline = th->line;
 
-#ifdef _WIN32
+#ifdef SAVE_WIN32_EXCEPTION_LIST
     win32_set_exception_list(th->win32_exception_list);
 #endif
     tmp = th;
