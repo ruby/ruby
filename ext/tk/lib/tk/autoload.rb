@@ -63,6 +63,8 @@ autoload :TkImage,            'tk/image'
 autoload :TkBitmapImage,      'tk/image'
 autoload :TkPhotoImage,       'tk/image'
 
+autoload :TkItemConfigMethod, 'tk/itemconfig'
+
 autoload :TkTreatItemFont,    'tk/itemfont'
 
 autoload :TkKinput,           'tk/kinput'
@@ -150,6 +152,7 @@ autoload :TkToplevel,         'tk/toplevel'
 autoload :TkTextWin,          'tk/txtwin_abst'
 
 autoload :TkValidation,       'tk/validation'
+
 autoload :TkVariable,         'tk/variable'
 autoload :TkVarAccess,        'tk/variable'
 
@@ -167,8 +170,12 @@ autoload :TkXIM,              'tk/xim'
 # sub-module of Tk
 module Tk
   autoload :Clock,            'tk/clock'
+  autoload :OptionObj,        'tk/optionobj'
   autoload :Scrollable,       'tk/scrollable'
   autoload :Wm,               'tk/wm'
+
+  autoload :ValidateConfigure,     'tk/validation'
+  autoload :ItemValidateConfigure, 'tk/validation'
 
   autoload :EncodedString,    'tk/encodedstr'
   def Tk.EncodedString(str, enc = nil); Tk::EncodedString.new(str, enc); end

@@ -49,6 +49,14 @@ class TkTextTag<TkObject
     @id
   end
 
+  def exist?
+    if ( tk_split_simplelist(_fromUTF8(tk_call_without_enc(@t.path, 'tag', 'names'))).find{|id| id == @id } )
+      true
+    else
+      false
+    end
+  end
+
   def first
     @id + '.first'
   end
@@ -100,6 +108,10 @@ class TkTextTag<TkObject
   end
 
   def cget(key)
+    @t.tag_cget @id, key
+  end
+=begin
+  def cget(key)
     case key.to_s
     when 'text', 'label', 'show', 'data', 'file'
       _fromUTF8(tk_call_without_enc(@t.path, 'tag', 'cget', @id, "-#{key}"))
@@ -121,6 +133,7 @@ class TkTextTag<TkObject
 						@id, "-#{key}")))
     end
   end
+=end
 
   def configure(key, val=None)
     @t.tag_configure @id, key, val

@@ -7,16 +7,16 @@
 #
 require 'tk'
 require 'tk/canvastag'
-require 'tk/itemfont'
+require 'tk/itemconfig'
 require 'tk/scrollable'
 
-module TkTreatCItemFont
-  include TkTreatItemFont
+module TkCanvasItemConfig
+  include TkItemConfigMethod
 
-  ItemCMD = ['itemconfigure'.freeze, TkComm::None].freeze
-  def __conf_cmd(idx)
-    ItemCMD[idx]
+  def __item_methodcall_optkeys(id)
+    {'coords'=>'coords'}
   end
+  private :__item_methodcall_optkeys
 
   def __item_pathname(tagOrId)
     if tagOrId.kind_of?(TkcItem) || tagOrId.kind_of?(TkcTag)
@@ -25,12 +25,11 @@ module TkTreatCItemFont
       self.path + ';' + tagOrId.to_s
     end
   end
-
-  private :__conf_cmd, :__item_pathname
+  private :__item_pathname
 end
 
 class TkCanvas<TkWindow
-  include TkTreatCItemFont
+  include TkCanvasItemConfig
   include Scrollable
 
   TkCommandNames = ['canvas'.freeze].freeze
@@ -130,6 +129,7 @@ class TkCanvas<TkWindow
       tk_split_list(tk_send_without_enc('coords', tagid(tag)))
     else
       tk_send_without_enc('coords', tagid(tag), *(args.flatten))
+      self
     end
   end
 
@@ -217,6 +217,7 @@ class TkCanvas<TkWindow
     self
   end
 
+=begin
   def itemcget(tagOrId, option)
     case option.to_s
     when 'dash', 'activedash', 'disableddash'
@@ -453,6 +454,7 @@ class TkCanvas<TkWindow
       ret
     end
   end
+=end
 
   def lower(tag, below=nil)
     if below
@@ -523,6 +525,8 @@ end
 class TkcItem<TkObject
   extend Tk
   include TkcTagAccess
+  extend TkItemFontOptkeys
+  extend TkItemConfigOptkeys
 
   CItemTypeName = nil
   CItemTypeToClass = {}
@@ -543,6 +547,7 @@ class TkcItem<TkObject
   ########################################
   def self._parse_create_args(args)
     fontkeys = {}
+    methodkeys = {}
     if args[-1].kind_of? Hash
       keys = _symbolkey2str(args.pop)
       if args.size == 0
@@ -552,11 +557,30 @@ class TkcItem<TkObject
 	end
       end
 
-      ['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
-	fontkeys[key] = keys.delete(key) if keys.key?(key)
+      #['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
+      #  fontkeys[key] = keys.delete(key) if keys.key?(key)
+      #}
+      __item_font_optkeys(nil).each{|key|
+	fkey = key.to_s
+	fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+
+	fkey = "kanji#{key}"
+	fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+
+	fkey = "latin#{key}"
+	fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+
+	fkey = "ascii#{key}"
+	fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
       }
 
-      args = args.flatten.concat(hash_kv(keys))
+      __item_methodcall_optkeys(nil).each{|key|
+	key = key.to_s
+	methodkeys[key] = keys.delete(key) if keys.key?(key)
+      }
+
+      #args = args.flatten.concat(hash_kv(keys))
+      args = args.flatten.concat(itemconfig_hash_kv(nil, keys))
     else
       args = args.flatten
     end
@@ -595,6 +619,14 @@ class TkcItem<TkObject
 
   def id
     @id
+  end
+
+  def exist?
+    if @c.find_withtag(@id)
+      true
+    else
+      false
+    end
   end
 
   def delete

@@ -4,32 +4,66 @@
 #			by Yukihiro Matsumoto <matz@caelum.co.jp>
 require 'tk'
 require 'tk/itemfont'
+require 'tk/itemconfig'
 require 'tk/scrollable'
 require 'tk/txtwin_abst'
 
-module TkTreatTextTagFont
+module TkTextTagConfig
   include TkTreatItemFont
+  include TkItemConfigMethod
 
-  ItemCMD = ['tag'.freeze, 'configure'.freeze].freeze
-  def __conf_cmd(idx)
-    ItemCMD[idx]
+  def __item_cget_cmd(id)  # id := [ type, tagOrId ]
+    [self.path, id[0], 'cget', id[1]]
   end
+  private :__item_cget_cmd
 
-  def __item_pathname(tagOrId)
-    if tagOrId.kind_of?(TkTextTag)
-      self.path + ';' + tagOrId.id
-    else
-      self.path + ';' + tagOrId
+  def __item_config_cmd(id)  # id := [ type, tagOrId ]
+    [self.path, id[0], 'configure', id[1]]
+  end
+  private :__item_config_cmd
+
+  def __item_pathname(id)
+    if id.kind_of?(Array)
+      id = tagid(id[1])
     end
+    [self.path, id].join(';')
+  end
+  private :__item_pathname
+
+  def tag_cget(tagOrId, option)
+    itemcget(['tag', tagOrId], option)
+  end
+  def tag_configure(tagOrId, slot, value=None)
+    itemconfigure(['tag', tagOrId], slot, value)
+  end
+  def tag_configinfo(tagOrId, slot=nil)
+    itemconfigure(['tag', tagOrId], slot)
+  end
+  def current_tag_configinfo(tagOrId, slot=nil)
+    itemconfigure(['tag', tagOrId], slot)
   end
 
-  private :__conf_cmd, :__item_pathname
-end
+  def window_cget(tagOrId, option)
+    itemcget(['window', tagOrId], option)
+  end
+  def window_configure(tagOrId, slot, value=None)
+    itemconfigure(['window', tagOrId], slot, value)
+  end
+  def window_configinfo(tagOrId, slot=nil)
+    itemconfigure(['window', tagOrId], slot)
+  end
+  def current_window_configinfo(tagOrId, slot=nil)
+    itemconfigure(['window', tagOrId], slot)
+  end
 
+  private :itemcget, :itemconfigure
+  private :itemconfiginfo, :current_itemconfiginfo
+end
 
 class TkText<TkTextWin
   ItemConfCMD = ['tag'.freeze, 'configure'.freeze].freeze
-  include TkTreatTextTagFont
+  #include TkTreatTextTagFont
+  include TkTextTagConfig
   include Scrollable
 
   TkCommandNames = ['text'.freeze].freeze
@@ -89,6 +123,18 @@ class TkText<TkTextWin
   def _addtag(name, obj)
     @tags[name] = obj
   end
+
+  def tagid(tag)
+    if tag.kind_of?(TkTextTag) \
+      || tag.kind_of?(TkTextMark) \
+      || tag.kind_of?(TkTextImage) \
+      || tag.kind_of?(TkTextWindow)
+      tag.id
+    else
+      tag
+    end
+  end
+  private :tagid
 
   def tagid2obj(tagid)
     if @tags[tagid]
@@ -482,6 +528,7 @@ class TkText<TkTextWin
     _bindinfo([@path, 'tag', 'bind', tag], context)
   end
 
+=begin
   def tag_cget(tag, key)
     case key.to_s
     when 'text', 'label', 'show', 'data', 'file'
@@ -655,6 +702,7 @@ class TkText<TkTextWin
       ret
     end
   end
+=end
 
   def tag_raise(tag, above=None)
     tk_send_without_enc('tag', 'raise', _get_eval_enc_str(tag), 
@@ -698,6 +746,7 @@ class TkText<TkTextWin
 				      _get_eval_enc_str(last)))
   end
 
+=begin
   def window_cget(index, slot)
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
@@ -732,7 +781,7 @@ class TkText<TkTextWin
 	if slot['create']
 	  p_create = slot['create']
 	  if p_create.kind_of? Proc
-=begin
+#=begin
 	    slot['create'] = install_cmd(proc{
 					   id = p_create.call
 					   if id.kind_of?(TkWindow)
@@ -741,7 +790,7 @@ class TkText<TkTextWin
 					     id
 					   end
 					 })
-=end
+#=end
 	    slot['create'] = install_cmd(proc{_epath(p_create.call)})
 	  end
 	end
@@ -757,7 +806,7 @@ class TkText<TkTextWin
 	if slot == 'create' || slot == :create
 	  p_create = value
 	  if p_create.kind_of? Proc
-=begin
+#=begin
 	    value = install_cmd(proc{
 				  id = p_create.call
 				  if id.kind_of?(TkWindow)
@@ -766,7 +815,7 @@ class TkText<TkTextWin
 				    id
 				  end
 				})
-=end
+#=end
 	    value = install_cmd(proc{_epath(p_create.call)})
 	  end
 	end
@@ -879,6 +928,7 @@ class TkText<TkTextWin
       ret
     end
   end
+=end
 
   def window_names
     tk_split_simplelist(_fromUTF8(tk_send_without_enc('window', 'names'))).collect{|elt|

@@ -2,27 +2,21 @@
 # tk/listbox.rb : treat listbox widget
 #
 require 'tk'
+require 'tk/itemconfig'
 require 'tk/scrollable'
 require 'tk/txtwin_abst'
 
-module TkTreatListItemFont
-  include TkTreatItemFont
+module TkListItemConfig
+  include TkItemConfigMethod
 
-  ItemCMD = ['itemconfigure'.freeze, TkComm::None].freeze
-  def __conf_cmd(idx)
-    ItemCMD[idx]
+  def __item_listval_optkeys(id)
+    []
   end
-
-  def __item_pathname(tagOrId)
-    self.path + ';' + tagOrId.to_s
-  end
-
-  private :__conf_cmd, :__item_pathname
+  private :__item_listval_optkeys
 end
 
-
 class TkListbox<TkTextWin
-  include TkTreatListItemFont
+  include TkListItemConfig
   include Scrollable
 
   TkCommandNames = ['listbox'.freeze].freeze
@@ -37,6 +31,10 @@ class TkListbox<TkTextWin
     end
   end
   private :create_self
+
+  def tagid(id)
+    id.to_s
+  end
 
   def activate(y)
     tk_send_without_enc('activate', y)
@@ -78,6 +76,7 @@ class TkListbox<TkTextWin
     tk_send_without_enc('index', index).to_i
   end
 
+=begin
   def itemcget(index, key)
     case key.to_s
     when 'text', 'label', 'show'
@@ -249,4 +248,5 @@ class TkListbox<TkTextWin
       ret
     end
   end
+=end
 end

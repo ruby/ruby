@@ -1,3 +1,9 @@
+Thu Jul  1 18:36:08 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tcltklib : bug fix
+
+	* ext/tk/lib/tk : bug fix and add Tcl/Tk extension support libraries
+
 Thu Jul  1 18:31:31 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pstore.rb (PStore#transaction): get rid of opening in write mode

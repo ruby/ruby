@@ -3,7 +3,106 @@
 #
 require 'tk'
 
+module Tk
+  module ValidateConfigure
+    def __validation_class_list
+      # maybe need to override
+      []
+    end
+
+    def __get_validate_key2class
+      k2c = {}
+      __validation_class_list.each{|klass|
+	klass._config_keys.each{|key|
+	  k2c[key.to_s] = klass
+	}
+      }
+      k2c
+    end
+
+    def configure(slot, value=TkComm::None)
+      key2class = __get_validate_key2class
+
+      if slot.kind_of?(Hash)
+	slot = _symbolkey2str(slot)
+	key2class.each{|key, klass|
+	  if slot[key].kind_of?(Array)
+	    cmd, *args = slot[key]
+	    slot[key] = klass.new(cmd, args.join(' '))
+	  elsif slot[key].kind_of? Proc
+	    slot[key] = klass.new(slot[key])
+	  end
+	}
+	super(slot)
+
+      else
+	slot = slot.to_s
+	if (klass = key2class[slot])
+	  if value.kind_of? Array
+	    cmd, *args = value
+	    value = klass.new(cmd, args.join(' '))
+	  elsif value.kind_of? Proc
+	    value = klass.new(value)
+	  end
+	end
+	super(slot, value)
+      end
+
+      self
+    end
+  end
+
+  module ItemValidateConfigure
+    def __item_validation_class_list(id)
+      # maybe need to override
+      []
+    end
+
+    def __get_item_validate_key2class(id)
+      k2c = {}
+      __item_validation_class_list(id).each{|klass|
+	klass._config_keys.each{|key|
+	  k2c[key.to_s] = klass
+	}
+      }
+    end
+
+    def itemconfigure(tagOrId, slot, value=TkComm::None)
+      key2class = __get_item_validate_key2class(tagid(tagOrId))
+
+      if slot.kind_of?(Hash)
+	slot = _symbolkey2str(slot)
+	key2class.each{|key, klass|
+	  if slot[key].kind_of?(Array)
+	    cmd, *args = slot[key]
+	    slot[key] = klass.new(cmd, args.join(' '))
+	  elsif slot[key].kind_of? Proc
+	    slot[key] = klass.new(slot[key])
+	  end
+	}
+	super(slot)
+
+      else
+	slot = slot.to_s
+	if (klass = key2class[slot])
+	  if value.kind_of? Array
+	    cmd, *args = value
+	    value = klass.new(cmd, args.join(' '))
+	  elsif value.kind_of? Proc
+	    value = klass.new(value)
+	  end
+	end
+	super(slot, value)
+      end
+
+      self
+    end
+  end
+end
+
 module TkValidation
+  include Tk::ValidateConfigure
+
   class ValidateCmd
     include TkComm
 
@@ -18,7 +117,7 @@ module TkValidation
     end
 
     class ValidateArgs < TkUtil::CallbackSubst
-      key_tbl = [
+      KEY_TBL = [
 	[ ?d, ?n, :action ], 
 	[ ?i, ?x, :index ], 
 	[ ?s, ?e, :current ], 
@@ -30,7 +129,7 @@ module TkValidation
 	nil
       ]
 
-      proc_tbl = [
+      PROC_TBL = [
 	[ ?n, TkComm.method(:number) ], 
 	[ ?s, TkComm.method(:string) ], 
 	[ ?w, TkComm.method(:window) ], 
@@ -58,24 +157,31 @@ module TkValidation
 	nil
       ]
 
-      _setup_subst_table(key_tbl, proc_tbl);
+      _setup_subst_table(KEY_TBL, PROC_TBL);
     end
 
-    def initialize(cmd = Proc.new, *args)
+    ##############################
+
+    def self._config_keys
+      # array of config-option key (string or symbol)
+      ['vcmd', 'validatecommand', 'invcmd', 'invalidcommand']
+    end
+
+    def _initialize_for_cb_class(klass, cmd = Proc.new, *args)
       if args.compact.size > 0
 	args = args.join(' ')
-	keys = ValidateArgs._get_subst_key(args)
+	keys = klass._get_subst_key(args)
 	if cmd.kind_of?(String)
 	  id = cmd
 	elsif cmd.kind_of?(TkCallbackEntry)
 	  @id = install_cmd(cmd)
 	else
 	  @id = install_cmd(proc{|*arg|
-	     (cmd.call(*ValidateArgs.scan_args(keys, arg)))? '1':'0'
+	     (cmd.call(*klass.scan_args(keys, arg)))? '1':'0'
 	  }) + ' ' + args
 	end
       else
-	keys, args = ValidateArgs._get_all_subst_keys
+	keys, args = klass._get_all_subst_keys
 	if cmd.kind_of?(String)
 	  id = cmd
 	elsif cmd.kind_of?(TkCallbackEntry)
@@ -83,11 +189,15 @@ module TkValidation
 	else
 	  @id = install_cmd(proc{|*arg|
 	     (cmd.call(
-                ValidateArgs.new(*ValidateArgs.scan_args(keys,arg)))
+                klass.new(*klass.scan_args(keys,arg)))
              )? '1': '0'
 	  }) + ' ' + args
 	end
       end
+    end
+
+    def initialize(cmd = Proc.new, *args)
+      _initialize_for_cb_class(ValidateArgs, cmd, *args)
     end
 
     def to_eval
@@ -97,49 +207,8 @@ module TkValidation
 
   #####################################
 
-  def configure(slot, value=TkComm::None)
-    if slot.kind_of? Hash
-      slot = _symbolkey2str(slot)
-      if slot['vcmd'].kind_of? Array
-	cmd, *args = slot['vcmd']
-	slot['vcmd'] = ValidateCmd.new(cmd, args.join(' '))
-      elsif slot['vcmd'].kind_of? Proc
-	slot['vcmd'] = ValidateCmd.new(slot['vcmd'])
-      end
-      if slot['validatecommand'].kind_of? Array
-	cmd, *args = slot['validatecommand']
-	slot['validatecommand'] = ValidateCmd.new(cmd, args.join(' '))
-      elsif slot['validatecommand'].kind_of? Proc
-	slot['validatecommand'] = ValidateCmd.new(slot['validatecommand'])
-      end
-      if slot['invcmd'].kind_of? Array
-	cmd, *args = slot['invcmd']
-	slot['invcmd'] = ValidateCmd.new(cmd, args.join(' '))
-      elsif slot['invcmd'].kind_of? Proc
-	slot['invcmd'] = ValidateCmd.new(slot['invcmd'])
-      end
-      if slot['invalidcommand'].kind_of? Array
-	cmd, *args = slot['invalidcommand']
-	slot['invalidcommand'] = ValidateCmd.new(cmd, args.join(' '))
-      elsif slot['invalidcommand'].kind_of? Proc
-	slot['invalidcommand'] = ValidateCmd.new(slot['invalidcommand'])
-      end
-      super(slot)
-    else
-      if (slot == 'vcmd' || slot == :vcmd || 
-          slot == 'validatecommand' || slot == :validatecommand || 
-	  slot == 'invcmd' || slot == :invcmd || 
-          slot == 'invalidcommand' || slot == :invalidcommand)
-	if value.kind_of? Array
-	  cmd, *args = value
-	  value = ValidateCmd.new(cmd, args.join(' '))
-	elsif value.kind_of? Proc
-	  value = ValidateCmd.new(value)
-	end
-      end
-      super(slot, value)
-    end
-    self
+  def __validation_class_list
+    super << ValidateCmd
   end
 
   def validatecommand(cmd = Proc.new, args = nil)

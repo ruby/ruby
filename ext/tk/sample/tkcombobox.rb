@@ -62,6 +62,9 @@ EOD
     delegate('relief', @frame)
     delegate('borderwidth', @frame)
 
+    delegate_alias('arrowrelief', 'relief', @up_arrow, @down_arrow)
+    delegate_alias('arrowborderwidth', 'borderwidth', @up_arrow, @down_arrow)
+
     scrollbar(keys.delete('scrollbar')){false}
 
     configure keys unless keys.empty?
@@ -324,6 +327,9 @@ EOD
     delegate('relief', @frame)
     delegate('borderwidth', @frame)
 
+    delegate('arrowrelief', @lst)
+    delegate('arrowborderwidth', @lst)
+
     if mode = keys.delete('scrollbar')
       scrollbar(mode)
     end
@@ -391,6 +397,7 @@ end
 if __FILE__ == $0
   v = TkVariable.new
   e = TkCombobox.new(:height=>7, :scrollbar=>true, :textvariable=>v, 
+		     :arrowrelief=>:flat, :arrowborderwidth=>0, 
 		     :startwait=>400, :interval=>200).pack
   e.values(%w(aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu))
   #e.see(e.list_index('end') - 2)

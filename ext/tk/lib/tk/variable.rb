@@ -84,6 +84,14 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     end
   end
 
+  def self.new_hash(val = {})
+    if val.kind_of?(Hash)
+      self.new(val)
+    else
+      fail ArgumentError, 'Hash is expected'
+    end
+  end
+
   def initialize(val="")
     # @id = Tk_VARIABLE_ID.join('')
     @id = Tk_VARIABLE_ID.join(TkCore::INTERP._ip_id_)
@@ -103,6 +111,12 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     INTERP._invoke_without_enc('global', @id)
     #INTERP._invoke('global', @id)
 
+    # create and init
+    if val.kind_of?(Hash)
+      # assoc-array variable
+      self[''] = 0
+      self.clear
+    end
     self.value = val
 
 =begin
@@ -185,7 +199,7 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
 
   def is_hash?
     #ITNERP._eval("global #{@id}; array exist #{@id}") == '1'
-    ITNERP._invoke_without_enc('array', 'exist', @id) == '1'
+    INTERP._invoke_without_enc('array', 'exist', @id) == '1'
   end
 
   def is_scalar?
@@ -197,7 +211,23 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
       fail RuntimeError, 'cannot get keys from a scalar variable'
     end
     #tk_split_simplelist(INTERP._eval("global #{@id}; array get #{@id}"))
-    tk_split_simplelist(INTERP._fromUTF8(INTERP._invoke_without_enc('array', 'get', @id)))
+    tk_split_simplelist(INTERP._fromUTF8(INTERP._invoke_without_enc('array', 'names', @id)))
+  end
+
+  def clear
+    if (is_scalar?)
+      fail RuntimeError, 'cannot clear a scalar variable'
+    end
+    keys.each{|k| unset(k)}
+    self
+  end
+
+  def update(hash)
+    if (is_scalar?)
+      fail RuntimeError, 'cannot update a scalar variable'
+    end
+    hash.each{|k,v| self[k] = v}
+    self
   end
 
 
@@ -222,10 +252,11 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
 
   def value=(val)
     if val.kind_of?(Hash)
+      self.clear
       val.each{|k, v|
 	#INTERP._set_global_var2(@id, _toUTF8(_get_eval_string(k)), 
 	#			_toUTF8(_get_eval_string(v)))
-	INTERP._set_global_var2(@id, __get_eval_string(k, true), 
+	INTERP._set_global_var2(@id, _get_eval_string(k, true), 
 				_get_eval_string(v, true))
       }
       self.value
@@ -260,7 +291,7 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
 
   def unset(elem=nil)
     if elem
-      INTERP._unset_global_var2(@id, tk_tcl2ruby(elem))
+      INTERP._unset_global_var2(@id, _get_eval_string(elem, true))
     else
       INTERP._unset_global_var(@id)
     end
@@ -359,7 +390,7 @@ else
   def unset(elem=nil)
     if elem
       INTERP._eval(Kernel.format('global %s; unset %s(%s)', 
-                                 @id, @id, tk_tcl2ruby(elem)))
+                                 @id, @id, _get_eval_string(elem)))
       #INTERP._eval(Kernel.format('unset %s(%s)', @id, tk_tcl2ruby(elem)))
       #INTERP._eval('unset ' + @id + '(' + _get_eval_string(elem) + ')')
     else
@@ -385,6 +416,29 @@ end
       raise ArgumentError, "Numeric is expected"
     end
     val
+  end
+
+  def bool
+    # see Tcl_GetBoolean man-page
+    case value.downcase
+    when '0', 'false', 'no', 'off'
+      false
+    else
+      true
+    end
+  end
+
+  def bool=(val)
+    if ! val
+      self.value = '0'
+    else
+      case val.to_s.downcase
+      when 'false', '0', 'no', 'off'
+	self.value = '0'
+      else
+	self.value = '1'
+      end
+    end
   end
 
   def to_i
@@ -570,7 +624,8 @@ end
 
   def trace(opts, cmd = Proc.new)
     @trace_var = [] if @trace_var == nil
-    opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
+    #opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
+    opts = ['r','w','u'].find_all{|c| opts.to_s.index(c)}.join('')
     @trace_var.unshift([opts,cmd])
     if @trace_opts == nil
       TkVar_CB_TBL[@id] = self
@@ -619,7 +674,8 @@ end
   def trace_element(elem, opts, cmd = Proc.new)
     @trace_elem = {} if @trace_elem == nil
     @trace_elem[elem] = [] if @trace_elem[elem] == nil
-    opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
+    #opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
+    opts = ['r','w','u'].find_all{|c| opts.to_s.index(c)}.join('')
     @trace_elem[elem].unshift([opts,cmd])
     if @trace_opts == nil
       TkVar_CB_TBL[@id] = self
@@ -678,7 +734,8 @@ end
 
   def trace_vdelete(opts,cmd)
     return self unless @trace_var.kind_of? Array
-    opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
+    #opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
+    opts = ['r','w','u'].find_all{|c| opts.to_s.index(c)}.join('')
     idx = -1
     newopts = ''
     @trace_var.each_with_index{|e,i| 
@@ -702,7 +759,8 @@ end
       }
     }
 
-    newopts = ['r','w','u'].find_all{|c| newopts.index(c)}.join('')
+    #newopts = ['r','w','u'].find_all{|c| newopts.index(c)}.join('')
+    newopts = ['r','w','u'].find_all{|c| newopts.to_s.index(c)}.join('')
     if newopts != @trace_opts
       Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 'rb_var')
 =begin
@@ -739,7 +797,8 @@ end
   def trace_vdelete_for_element(elem,opts,cmd)
     return self unless @trace_elem.kind_of? Hash
     return self unless @trace_elem[elem].kind_of? Array
-    opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
+    # opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
+    opts = ['r','w','u'].find_all{|c| opts.to_s.index(c)}.join('')
     idx = -1
     @trace_elem[elem].each_with_index{|e,i| 
       if idx < 0 && e[0] == opts && e[1] == cmd
@@ -765,7 +824,8 @@ end
       }
     }
 
-    newopts = ['r','w','u'].find_all{|c| newopts.index(c)}.join('')
+    #newopts = ['r','w','u'].find_all{|c| newopts.index(c)}.join('')
+    newopts = ['r','w','u'].find_all{|c| newopts.to_s.index(c)}.join('')
     if newopts != @trace_opts
       Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 'rb_var')
 =begin
@@ -807,6 +867,15 @@ class TkVarAccess<TkVariable
     super(name, *args)
   end
 
+  def self.new_hash(name, *args)
+    return TkVar_ID_TBL[name] if TkVar_ID_TBL[name]
+    if args.empty? && INTERP._invoke_without_enc('array', 'exist', name) == '0'
+      self.new(name, {})  # force creating
+    else
+      self.new(name, *args)
+    end
+  end
+
   def initialize(varname, val=nil)
     @id = varname
     TkVar_ID_TBL[@id] = self
@@ -815,6 +884,11 @@ class TkVarAccess<TkVariable
     INTERP._invoke_without_enc('global', @id)
 
     if val
+      if val.kind_of?(Hash)
+	# assoc-array variable
+	self[''] = 0
+	self.clear
+      end
       #s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"' #"
       #s = '"' + _get_eval_string(val).gsub(/[\[\]$"\\]/, '\\\\\&') + '"' #"
       #INTERP._eval(Kernel.format('global %s; set %s %s', @id, @id, s))

@@ -41,6 +41,7 @@ class TkScrollbar<TkWindow
 	w.yscrollcommand proc{|first, last| self.set(first, last)}
       end
     }
+    Tk.update  # avoid scrollbar trouble
     self
   end
 
@@ -50,6 +51,12 @@ class TkScrollbar<TkWindow
     rescue Exception
     end
     fail RuntimeError, "not depend on the assigned_list"
+  end
+
+  def configure(*args)
+    ret = super(*args)
+    # Tk.update  # avoid scrollbar trouble
+    ret
   end
 
   #def delta(deltax=None, deltay=None)

@@ -1,6 +1,17 @@
 README		this file
 multi-tk.rb	multiple Tk interpreter (included safe-Tk) support
+remotei-tk.rb	control remote Tk interpreter on the other process support
 tk.rb		Tk interface
+
+tk/             library files construct Ruby/Tk
+
+tkextlib/       non-standard Tcl/Tk extension support libraries
+
+*********************************************************************
+***  The followings exists for backward compatibility only.
+***  The only thing which they work is that requires current 
+***  library files ( tk/*.rb ). 
+*********************************************************************
 tkafter.rb	handles Tcl after
 tkbgerror.rb	Tk error module
 tkcanvas.rb	Tk canvas interface
