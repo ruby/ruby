@@ -412,7 +412,7 @@ module Net
       line = line + CRLF
       @sock.print(line)
       if @@debug
-        $stderr.print(line.gsub(/^/, "C: "))
+        $stderr.print(line.gsub(/^/n, "C: "))
       end
     end
 
@@ -437,7 +437,7 @@ module Net
 	      raise ByeResponseError, resp[0]
 	    end
 	    record_response(resp.name, resp.data)
-	    if /\A(OK|NO|BAD)\z/ =~ resp.name &&
+	    if /\A(OK|NO|BAD)\z/n =~ resp.name &&
 		resp[0].instance_of?(Array)
 	      record_response(resp[0][0], resp[0][1..-1])
 	    end
@@ -453,7 +453,7 @@ module Net
 	s = @sock.gets(CRLF)
 	break unless s
 	buff.concat(s)
-	if /\{(\d+)\}\r\n/ =~ s
+	if /\{(\d+)\}\r\n/n =~ s
 	  s = @sock.read($1.to_i)
 	  buff.concat(s)
 	else
@@ -462,7 +462,7 @@ module Net
       end
       return nil if buff.length == 0
       if @@debug
-        $stderr.print(buff.gsub(/^/, "S: "))
+        $stderr.print(buff.gsub(/^/n, "S: "))
       end
       return @parser.parse(buff)
     end
@@ -497,12 +497,12 @@ module Net
       case str
       when ""
 	return '""'
-      when /[\r\n]/
+      when /[\r\n]/n
 	# literal
 	return "{" + str.length.to_s + "}" + CRLF + str
-      when /[(){ \x00-\x1f\x7f%*"\\]/
+      when /[(){ \x00-\x1f\x7f%*"\\]/n
 	# quoted string
-	return '"' + str.gsub(/["\\]/, "\\\\\\&") + '"'
+	return '"' + str.gsub(/["\\]/n, "\\\\\\&") + '"'
       else
 	# atom
 	return str
@@ -596,7 +596,7 @@ module Net
 
     class QuotedString
       def format_data
-	return '"' + @data.gsub(/["\\]/, "\\\\\\&") + '"'
+	return '"' + @data.gsub(/["\\]/n, "\\\\\\&") + '"'
       end
 
       private
@@ -735,7 +735,7 @@ module Net
 (?# 8:	RPAREN	)(\))|\
 (?# 9:	STAR	)(\*)|\
 (?# 10:	CRLF	)(\r\n)|\
-(?# 11:	EOF	)(\z))/i
+(?# 11:	EOF	)(\z))/ni
 
       CODE_REGEXP = /\G *(?:\
 (?# 1:	NUMBER	)(\d+)|\
@@ -744,14 +744,14 @@ module Net
 (?# 4:	LPAREN	)(\()|\
 (?# 5:	RPAREN	)(\))|\
 (?# 6:	LBRA	)(\[)|\
-(?# 7:	RBRA	)(\]))/i
+(?# 7:	RBRA	)(\]))/ni
 
       CODE_TEXT_REGEXP = /\G *(?:\
-(?# 1:	TEXT	)([^\r\n\]]*))/i
+(?# 1:	TEXT	)([^\r\n\]]*))/ni
 
       TEXT_REGEXP = /\G *(?:\
 (?# 1:	LBRA	)(\[)|\
-(?# 2:	TEXT	)([^\r\n]*))/i
+(?# 2:	TEXT	)([^\r\n]*))/ni
 
       Token = Struct.new("Token", :symbol, :value)
 
@@ -798,16 +798,16 @@ module Net
 	token = match_token(T_ATOM)
 	val.push(token.value)
 	case token.value
-	when /\A(ALERT|PARSE|READ-ONLY|READ-WRITE|TRYCREATE)\z/
+	when /\A(ALERT|PARSE|READ-ONLY|READ-WRITE|TRYCREATE)\z/n
 	  # do nothing
-	when /\A(PERMANENTFLAGS)\z/
+	when /\A(PERMANENTFLAGS)\z/n
 	  token = get_token
 	  if token.symbol != T_LPAREN
 	    parse_error('unexpected token %s (expected "(")',
 			token.symbol.id2name)
 	  end
 	  val.push(parse_parenthesized_list)
-	when /\A(UIDVALIDITY|UIDNEXT|UNSEEN)\z/
+	when /\A(UIDVALIDITY|UIDNEXT|UNSEEN)\z/n
 	  token = match_token(T_NUMBER)
 	  val.push(token.value)
 	else
@@ -828,7 +828,7 @@ module Net
       def parse_response_data
 	token = get_token
 	if token.symbol == T_ATOM &&
-	    /\A(OK|NO|BAD|PREAUTH|BYE)\z/ =~ token.value
+	    /\A(OK|NO|BAD|PREAUTH|BYE)\z/n =~ token.value
 	  return parse_response_cond
 	else
 	  return parse_data_list
@@ -901,7 +901,7 @@ module Net
 	      @token.value = $+.upcase
 	      @token.symbol = T_ATOM
 	    elsif $4
-	      @token.value = $+.gsub(/\\(["\\])/, "\\1")
+	      @token.value = $+.gsub(/\\(["\\])/n, "\\1")
 	      @token.symbol = T_QUOTED
 	    elsif $5
 	      len = $+.to_i
@@ -988,14 +988,15 @@ module Net
 	else
 	  parse_error("illegal @lex_state - %s", @lex_state.inspect)
 	end
-	@str.index(/\S*/, @pos)
+	@str.index(/\S*/n, @pos)
 	parse_error("unknown token - %s", $&.dump)
       end
 
       def parse_error(fmt, *args)
-	if @@debug
+	if IMAP.debug
 	  $stderr.printf("@str: %s\n", @str.dump)
 	  $stderr.printf("@pos: %d\n", @pos)
+	  $stderr.printf("@lex_state: %s\n", @lex_state.inspect)
 	  if @token.symbol
 	    $stderr.printf("@token.symbol: %s\n", @token.symbol.id2name)
 	    $stderr.printf("@token.value: %s\n", @token.value.inspect)
