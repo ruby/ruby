@@ -5052,9 +5052,14 @@ ruby_parser_stack_on_heap()
 void
 rb_gc_mark_parser()
 {
-    if (ruby_in_compile) {
-        rb_gc_mark_maybe(yylval.val);
-    }
+    if (!ruby_in_compile) return;
+
+    rb_gc_mark_maybe(yylval.val);
+    rb_gc_mark((VALUE)ruby_eval_tree_begin);
+    rb_gc_mark((VALUE)ruby_eval_tree);
+    rb_gc_mark(ruby_debug_lines);
+    rb_gc_mark(lex_lastline);
+    rb_gc_mark(lex_input);
 }
 
 void
@@ -5140,7 +5145,6 @@ Init_sym()
 {
     sym_tbl = st_init_strtable_with_size(200);
     sym_rev_tbl = st_init_numtable_with_size(200);
-    rb_global_variable((VALUE*)&lex_lastline);
 }
 
 ID
