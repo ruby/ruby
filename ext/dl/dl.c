@@ -28,7 +28,7 @@ rb_dl_scan_callback_args(long stack[], const char *proto,
     case 'C':
       {
 	char v;
-	memcpy(&v, sp, sizeof(long));
+	v = (char)(*sp);
 	sp++;
 	val = INT2NUM(v);
       }
@@ -36,7 +36,7 @@ rb_dl_scan_callback_args(long stack[], const char *proto,
     case 'H':
       {
 	short v;
-	memcpy(&v, sp, sizeof(long));
+	v = (short)(*sp);
 	sp++;
 	val = INT2NUM(v);
       }
@@ -44,7 +44,7 @@ rb_dl_scan_callback_args(long stack[], const char *proto,
     case 'I':
       {
 	int v;
-	memcpy(&v, sp, sizeof(long));
+	v = (int)(*sp);
 	sp++;
 	val = INT2NUM(v);
       }
@@ -52,7 +52,7 @@ rb_dl_scan_callback_args(long stack[], const char *proto,
     case 'L':
       {
 	long v;
-	memcpy(&v, sp, sizeof(long));
+	v = (long)(*sp);
 	sp++;
 	val = INT2NUM(v);
       }
