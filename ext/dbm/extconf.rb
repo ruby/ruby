@@ -10,6 +10,7 @@ $dbm_conf_headers = {
   "db2" => ["db2/db.h", "db2.h", "db.h"],
   "dbm" => ["ndbm.h"],
   "gdbm" => ["gdbm-ndbm.h", "ndbm.h"],
+  "gdbm_compat" => ["gdbm-ndbm.h", "ndbm.h"],
 }
 
 def db_check(db)
@@ -23,6 +24,9 @@ def db_check(db)
     hsearch = "-DDB_DBM_HSEARCH "
   when "gdbm"
     $dbm_conf_have_gdbm = true
+  when "gdbm_compat"
+    $dbm_conf_have_gdbm = true
+    have_library("gdbm") or return false
   end
 
   if have_library(db, db_prefix("dbm_open")) || have_func(db_prefix("dbm_open"))

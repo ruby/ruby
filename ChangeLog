@@ -1,3 +1,9 @@
+Sat Dec 14 01:51:29 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/dbm/extconf.rb (rb_check): support for GNU dbm 1.8.3.
+	  (-with-dbm-type=gdbm_compat). link against -lgdbm_compat
+	  and -lgdbm.
+
 Fri Dec 13 23:42:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/dbm/extconf.rb (db_check): check existence of the function
