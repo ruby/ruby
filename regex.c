@@ -469,7 +469,7 @@ re_set_syntax(syntax)
  ((current_mbctype != MBCTYPE_UTF8) ? ((c<0x100) ? (c) : (((c)>>8)&0xff)) : utf8_firstbyte(c))
 
 typedef unsigned int (*mbc_startpos_func_t) _((const char *string, unsigned int pos));
-const mbc_startpos_func_t mbc_startpos_func[];
+static const mbc_startpos_func_t mbc_startpos_func[];
 #define mbc_startpos(start, pos) (*mbc_startpos_func[current_mbctype])((start), (pos))
 
 static unsigned int
@@ -4573,7 +4573,7 @@ utf8_startpos(string, pos)
   return i + w;
 }
 
-const mbc_startpos_func_t mbc_startpos_func[4] = {
+static const mbc_startpos_func_t mbc_startpos_func[4] = {
   asc_startpos, euc_startpos, sjis_startpos, utf8_startpos
 };
 

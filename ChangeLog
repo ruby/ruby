@@ -1,3 +1,7 @@
+Mon Mar 25 10:04:59 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* regex.c (mbc_startpos_func): shoud be static.
+
 Sun Mar 24 00:46:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* util.c (push_element): avoid warning for djgpp.
