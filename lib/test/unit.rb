@@ -1,3 +1,6 @@
+require 'test/unit/testcase'
+require 'test/unit/autorunner'
+
 # = Test::Unit - Ruby Unit Testing Framework
 # 
 # == Introduction
@@ -255,12 +258,8 @@
 # missing points, etc., in this document (or any other).
 
 
-
-
-require 'test/unit/testcase'
-require 'test/unit/autorunner'
-
 module Test
+  # For documentation, see module Test
   module Unit
     def self.run=(flag)
       @run = flag

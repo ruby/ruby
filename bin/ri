@@ -28,7 +28,7 @@ class  RiDisplay
   def initialize
     @options = RI::Options.instance
     @options.parse
-    paths = RI::Paths::PATH
+    paths = @options.paths || RI::Paths::PATH
     if paths.empty?
       $stderr.puts "No ri documentation found in:"
       [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR].each do |d|

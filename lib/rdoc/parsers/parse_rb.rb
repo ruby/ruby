@@ -1999,6 +1999,10 @@ module RDoc
           break
         when TkLBRACE
           nest += 1
+        when TkLBRACE
+          nest += 1
+        when TkLBRACE
+          nest += 1
         when TkRBRACE
           nest -= 1
           break if nest <= 0
@@ -2041,7 +2045,8 @@ module RDoc
           "#{@scanner.lex_state} #{nest}") if $DEBUG
         case tk
         when TkSEMICOLON
-          break
+          nest -= 1
+          break if nest <= 0
         when TkLPAREN, TkfLPAREN
           nest += 1
         when TkDO
@@ -2112,7 +2117,8 @@ module RDoc
           "#{@scanner.lex_state} #{nest}") if $DEBUG
         case tk
         when TkSEMICOLON
-          break
+          nest -= 1
+          break if nest <= 0
         when TkLPAREN, TkfLPAREN
           nest += 1
         when end_token
