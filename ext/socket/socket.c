@@ -30,6 +30,7 @@
 # include <net/socket.h>
 #else
 # include <sys/socket.h>
+# define pseudo_AF_FTIP pseudo_AF_RTIP	/* workaround for NetBSD and etc. */
 #endif
 #include <netinet/in.h>
 #ifdef HAVE_NETINET_IN_SYSTM_H
