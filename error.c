@@ -542,10 +542,16 @@ syserr_initialize(argc, argv, self)
     char *err;
     char *buf;
     VALUE error, mesg;
+    VALUE klass = rb_obj_class(self);
 
-    if (rb_scan_args(argc, argv, "11", &mesg, &error) == 1 && FIXNUM_P(mesg)) {
+    rb_scan_args(argc, argv, klass == rb_eSystemCallError ? "11" : "02",
+		 &mesg, &error);
+    if (argc == 1 && FIXNUM_P(mesg)) {
 	error = mesg;
 	mesg = Qnil;
+    }
+    if (klass != rb_eSystemCallError && NIL_P(error)) {
+	error = rb_const_get_at(klass, rb_intern("Errno"));
     }
     err = strerror(NUM2LONG(error));
     if (!err) err = "Unknown error";

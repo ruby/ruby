@@ -1,3 +1,8 @@
+Tue May 20 17:15:55 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* error.c (syserr_initialize): use Errno constants as default
+	  errno for subclasses.  [ruby-dev:20241]
+
 Tue May 20 15:26:25 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* st.h: define ST_DATA_T_DEFINED for portability.
@@ -20,7 +25,7 @@ Tue May 20 13:29:04 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 Tue May 20 10:51:26 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_f_missing): create exception instance by ordinal
-	  method.
+	  method.  [ruby-dev:20033]
 
 	* error.c (rb_name_error, rb_sys_fail): ditto.
 
