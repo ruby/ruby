@@ -1,3 +1,11 @@
+Thu Jun 29 07:45:33 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/socket.c (udp_send): destination may be packed
+	  struct sockaddr.
+
+	* object.c (rb_Integer): Integer(nil) should be invalid, on the
+	  other hand, nil.to_i is OK.
+
 Wed Jun 28 17:26:06 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/socket/socket.c (ip_recvfrom): udp_recvfrom and tcp_recvfrom

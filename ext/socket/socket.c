@@ -104,7 +104,7 @@ struct sockaddr_storage {
 };
 #endif
 
-#if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET))
+#if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET6))
 #define LOOKUP_ORDERS		3
 static int lookup_order_table[LOOKUP_ORDERS] = {
 #if defined(LOOKUP_ORDER_HACK_INET)
@@ -381,7 +381,7 @@ bsock_send(argc, argv, sock)
   retry:
     rb_thread_fd_writable(fd);
     m = rb_str2cstr(msg, &mlen);
-    if (RTEST(to)) {
+    if (!NIL_P(to)) {
 	t = rb_str2cstr(to, &tlen);
 	n = sendto(fd, m, mlen, NUM2INT(flags),
 		   (struct sockaddr*)t, tlen);
@@ -609,15 +609,6 @@ ip_addrsetup(host, port)
     }
 
     return res;
-}
-
-static VALUE
-ip_recvfrom(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
-{
-    return s_recvfrom(sock, argc, argv, RECV_IP);
 }
 
 static void
@@ -1168,6 +1159,15 @@ ip_peeraddr(sock)
 }
 
 static VALUE
+ip_recvfrom(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
+{
+    return s_recvfrom(sock, argc, argv, RECV_IP);
+}
+
+static VALUE
 ip_s_getaddress(obj, host)
     VALUE obj, host;
 {
@@ -1259,7 +1259,7 @@ udp_send(argc, argv, sock)
     int mlen;
     struct addrinfo *res0, *res;
 
-    if (argc == 2) {
+    if (argc == 2 || argc == 3) {
 	return bsock_send(argc, argv, sock);
     }
     rb_secure(4);

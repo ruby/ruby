@@ -893,8 +893,8 @@ rb_Integer(val)
       case T_STRING:
 	return rb_str2inum(val, 0);
 
-      case T_NIL:
-	return INT2FIX(0);
+      case T_FIXNUM:
+	return val;
 
       default:
 	break;
