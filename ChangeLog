@@ -1,3 +1,7 @@
+Wed Nov  8 08:12:17 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.8 release candidate.
+
 Mon Nov  4 04:04:32 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/getopts.rb: Do not choke on characters that cannot be used
