@@ -2,24 +2,25 @@ include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
 
-ifneq (,$(findstring no, $(ENABLE_SHARED)))
-  EXTOBJS = $(RUBY_INSTALL_NAME).exp
-  LIBRUBYARG = $(LIBRUBY_A)
-else
+ifeq ($(ENABLE_SHARED),yes)
   CPPFLAGS += -DLIBRUBY_SO=\"$(LIBRUBY_SO)\"
+else
+  RUBY_EXP = $(RUBY_INSTALL_NAME).exp
+  EXTOBJS = $(RUBY_EXP)
+  LIBRUBYARG = $(LIBRUBY_A)
 endif
 
-ifneq (,$(findstring ruby, $(RUBY_INSTALL_NAME)))
-  RUBYW_INSTALL_NAME = $(subst ruby,rubyw,$(RUBY_INSTALL_NAME))
-else
+ifeq ($(RUBY_INSTALL_NAME),ruby)
   RUBYW_INSTALL_NAME = $(RUBY_INSTALL_NAME)w
+else
+  RUBYW_INSTALL_NAME = $(subst ruby,rubyw,$(RUBY_INSTALL_NAME))
 endif
 WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 RUBYDEF = $(RUBY_INSTALL_NAME).def
 SOLIBS := $(LIBRUBY_SO).res.@OBJEXT@ $(SOLIBS)
 EXTOBJS += $(@:$(EXEEXT)=.res.@OBJEXT@)
 
-$(LIBRUBY_SO): $(RUBYDEF) $(LIBRUBY_SO).res.@OBJEXT@
+$(LIBRUBY_SO): $(RUBYDEF) $(LIBRUBY_SO).res.@OBJEXT@ $(RUBY_EXP)
 $(LIBRUBY): $(LIBRUBY_SO)
 
 %.res.@OBJEXT@: %.rc
@@ -41,3 +42,7 @@ $(RUBYDEF): $(LIBRUBY_A)
 	echo EXPORTS > $(RUBYDEF)
 	@NM@ --extern-only --defined-only $(LIBRUBY_A) | \
 	  @MINIRUBY@ -ne 'puts $$1 if / [CDT] _(.*)$$/' >> $(RUBYDEF)
+$(RUBY_EXP): $(RUBYDEF)
+	@DLLWRAP@ --output-exp=$(RUBY_EXP) --output-lib=$(LIBRUBY) \
+	  --def=$(RUBYDEF) $(LIBRUBY_A) $(LIBS) -o $(PROGRAM)
+	rm $(PROGRAM)

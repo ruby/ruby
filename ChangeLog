@@ -1,3 +1,10 @@
+Tue Jun 11 19:20:34 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (LIBRUBY): rename to lib$(LIBRUBY_SO).a on Cygwin/MinGW.
+
+	* configure.in, cygwin/GNUmakefile: use dllwrap when --disable-shared
+	  is specified.
+
 Tue Jun 11 13:18:47 2002  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (noop): new method.

@@ -104,6 +104,7 @@ case "$target_os" in
 cygwin*|mingw*)
     AC_CHECK_TOOL(NM, nm)
     AC_CHECK_TOOL(WINDRES, windres)
+    AC_CHECK_TOOL(DLLWRAP, dllwrap)
     target_cpu=`echo $target_cpu | sed s/i.86/i386/`
     : ${enable_shared=yes}
     ;;
@@ -1044,13 +1045,14 @@ case "$target_os" in
 	if test x"$enable_shared" = xyes; then
 	    LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 	    LIBRUBY_DLDFLAGS='-Wl,--out-implib=$(LIBRUBY) $(RUBYDEF)'
+	    LIBRUBY='lib$(LIBRUBY_SO).a'
 	else
 	    LIBRUBY_SO=dummy
-	    LIBRUBY_DLDFLAGS='-Wl,--output-exp=$(RUBY_INSTALL_NAME).exp,--out-implib=$(LIBRUBY) $(RUBYDEF)'
+	    LIBRUBY_DLDFLAGS=''
+	    LIBRUBY='lib$(RUBY_SO_NAME).a'
 	fi
 	LIBRUBY_ALIASES=''
 	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
-	LIBRUBY='lib$(RUBY_SO_NAME).a'
 	LIBRUBYARG='-L. -l$(RUBY_SO_NAME)'
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	SOLIBS='$(LIBS)'
