@@ -848,7 +848,7 @@ rb_str_index(str, sub, offset)
     if (RSTRING(str)->len - offset < RSTRING(sub)->len) return -1;
     if (RSTRING(sub)->len == 0) return offset;
     pos = rb_memsearch(RSTRING(sub)->ptr, RSTRING(sub)->len,
-			RSTRING(str)->ptr+offset, RSTRING(str)->len-offset);
+		       RSTRING(str)->ptr+offset, RSTRING(str)->len-offset);
     if (pos < 0) return pos;
     return pos + offset;
 }
