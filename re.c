@@ -943,7 +943,10 @@ rb_reg_match(re, str)
 {
     int start;
 
-    if (NIL_P(str)) return Qnil;
+    if (NIL_P(str)) {
+	rb_backref_set(Qnil);
+	return Qnil;
+    }
     str = rb_str_to_str(str);
     start = rb_reg_search(re, str, 0, 0);
     if (start < 0) {
@@ -959,8 +962,10 @@ rb_reg_match2(re)
     int start;
     VALUE line = rb_lastline_get();
 
-    if (TYPE(line) != T_STRING)
+    if (TYPE(line) != T_STRING) {
+	rb_backref_set(Qnil);
 	return Qnil;
+    }
 
     start = rb_reg_search(re, line, 0, 0);
     if (start < 0) {
