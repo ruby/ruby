@@ -2321,13 +2321,19 @@ rb_io_sysread(argc, argv, io)
     if (READ_DATA_BUFFERED(fptr->f)) {
 	rb_raise(rb_eIOError, "sysread for buffered IO");
     }
+    rb_str_locktmp(str);
+
     n = fileno(fptr->f);
     rb_thread_wait_fd(fileno(fptr->f));
     rb_io_check_closed(fptr);
+    if (RSTRING(str)->len != ilen) {
+	rb_raise(rb_eRuntimeError, "buffer string modified");
+    }
     TRAP_BEG;
-    n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
+    n = read(fileno(fptr->f), RSTRING(str)->ptr, ilen);
     TRAP_END;
 
+    rb_str_unlocktmp(str);
     if (n == -1) {
 	rb_str_resize(str, 0);
 	rb_sys_fail(fptr->path);

@@ -1,3 +1,7 @@
+Tue Nov 30 00:49:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_sysread): use temporary lock.  [ruby-dev:24992]
+
 Tue Nov 30 00:12:57 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regparse.c: now handles many alternatives (over 500000)
@@ -7,6 +11,13 @@ Mon Nov 29 16:06:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_write): insufficiently filled string
 	  being extended when overwriting.  [ruby-core:03836]
+
+Mon Nov 29 15:59:05 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct::method_missing): check method
+	  duplication for -d.
+
+	* lib/ostruct.rb (OpenStruct::initialize): ditto.
 
 Mon Nov 29 15:22:28 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
