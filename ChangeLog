@@ -1,3 +1,11 @@
+Fri Dec 21 01:17:57 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/mkmf.rb (with_destdir): new.
+
+	* lib/mkmf.rb: prefix target directories with $(DESTDIR) all.
+
+	* lib/mkmf.rb: no need to mkdir $(libdir)
+
 Thu Dec 20 10:37:32 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* intern.h: added prototypes: rb_cv_set(), rb_cv_get(),

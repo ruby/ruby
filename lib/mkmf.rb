@@ -360,6 +360,10 @@ def dir_config(target, idefault=nil, ldefault=nil)
   [idir, ldir]
 end
 
+def with_destdir(dir)
+  /^\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
+end
+
 def create_makefile(target, srcdir = File.dirname($0))
   save_libs = $libs.dup
   save_libpath = $LIBPATH.dup
@@ -451,14 +455,14 @@ else
   ""
 end
 }
-prefix = $(DESTDIR)#{CONFIG["prefix"].sub(drive, '')}
-exec_prefix = #{CONFIG["exec_prefix"].sub(drive, '')}
-libdir = #{$libdir.sub(drive, '')}
-rubylibdir = #{$rubylibdir.sub(drive, '')}
-archdir = #{$archdir.sub(drive, '')}
-sitedir = #{$sitedir.sub(drive, '')}
-sitelibdir = #{$sitelibdir.sub(drive, '')}
-sitearchdir = #{$sitearchdir.sub(drive, '')}
+prefix = #{with_destdir CONFIG["prefix"].sub(drive, '')}
+exec_prefix = #{with_destdir CONFIG["exec_prefix"].sub(drive, '')}
+libdir = #{with_destdir $libdir.sub(drive, '')}
+rubylibdir = #{with_destdir $rubylibdir.sub(drive, '')}
+archdir = #{with_destdir $archdir.sub(drive, '')}
+sitedir = #{with_destdir $sitedir.sub(drive, '')}
+sitelibdir = #{with_destdir $sitelibdir.sub(drive, '')}
+sitearchdir = #{with_destdir $sitearchdir.sub(drive, '')}
 target_prefix = #{target_prefix}
 
 #### End of system configuration section. ####
@@ -499,7 +503,7 @@ EOMF
 
   mfile.printf <<EOMF
 $(sitearchdir)$(target_prefix)/$(DLLIB): $(DLLIB)
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(sitearchdir)$(target_prefix)
+	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(sitearchdir)$(target_prefix)
 	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(sitearchdir)$(target_prefix)/$(DLLIB)
 EOMF
   install_rb(mfile, "$(sitelibdir)$(target_prefix)", srcdir)
