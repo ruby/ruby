@@ -6445,11 +6445,10 @@ yylex(p)
     t = parser_yylex(parser);
 #ifdef RIPPER
     parser->current_t = 0;
-    if (t != 0) {
+    if (t != 0)
 	ripper_dispatch_scan_event(parser, t);
-	if (t == '\n' && !parser->in_heredoc)
-	    ripper_dispatch_delayed_events(parser);
-    }
+    if ((t == '\n' && !parser->in_heredoc) || (t == 0))
+        ripper_dispatch_delayed_events(parser);
 #endif
 
     return t;
