@@ -1,6 +1,19 @@
+Tue Jan 23 18:51:57 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): should finalize objects in
+	  deferred_final_list too.
+
 Mon Jan 22 16:33:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* mkconfig.rb: autoconf 2.49 support.
+
+Sat Jan 20 03:54:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): fixed serious syntax misbehavior.  do's
+	  preceding was too high.  a block in `foo bar do .. end' should
+	  be passed to `foo', not `bar'.
+
+	* parse.y (block_call): syntax restructure.
 
 Fri Jan 19 04:04:31 2001  Akinori MUSHA  <knu@iDaemons.org>
 

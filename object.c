@@ -537,12 +537,12 @@ rb_mod_clone(module)
 }
 
 static VALUE
-rb_mod_dup(module)
-    VALUE module;
+rb_mod_dup(mod)
+    VALUE mod;
 {
-    VALUE dup = rb_mod_clone(module);
-    OBJSETUP(dup, RBASIC(module)->klass, BUILTIN_TYPE(module));
-    if (FL_TEST(module, FL_SINGLETON)) {
+    VALUE dup = rb_mod_clone(mod);
+    OBJSETUP(dup, RBASIC(mod)->klass, BUILTIN_TYPE(mod));
+    if (FL_TEST(mod, FL_SINGLETON)) {
 	FL_SET(dup, FL_SINGLETON);
     }
     return dup;

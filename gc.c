@@ -719,7 +719,7 @@ gc_sweep()
     during_gc = 0;
 
     /* clear finalization list */
-    if (need_call_final && final_list) {
+    if (final_list) {
 	RVALUE *tmp;
 
 	if (rb_prohibit_interrupt || ruby_in_compile) {
@@ -1214,9 +1214,9 @@ run_final(obj)
 	args[0] = RARRAY(finalizers)->ptr[i];
 	rb_protect(run_single_final, (VALUE)args, &status);
     }
-    if (finalizer_table && st_lookup(finalizer_table, obj, &table)) {
-	st_delete(finalizer_table, &obj, 0);
+    if (finalizer_table && st_delete(finalizer_table, &obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
+	    printf("n finals=>%d\n", finalizer_table->num_entries);
 	    args[0] = RARRAY(table)->ptr[i];
 	    rb_protect(run_single_final, (VALUE)args, &status);
 	}
@@ -1230,15 +1230,26 @@ rb_gc_call_finalizer_at_exit()
     int i;
 
     /* run finalizers */
-    for (i = 0; i < heaps_used; i++) {
-	p = heaps[i]; pend = p + HEAP_SLOTS;
-	while (p < pend) {
-	    if (FL_TEST(p, FL_FINALIZE)) {
-		FL_UNSET(p, FL_FINALIZE);
-		p->as.basic.klass = 0;
-		run_final((VALUE)p);
+    if (need_call_final) {
+	if (deferred_final_list) {
+	    p = deferred_final_list;
+	    while (p) {
+		RVALUE *tmp = p;
+		p = p->as.free.next;
+		run_final((VALUE)tmp);
 	    }
-	    p++;
+	}
+	for (i = 0; i < heaps_used; i++) {
+	    p = heaps[i]; pend = p + HEAP_SLOTS;
+	    while (p < pend) {
+		if (FL_TEST(p, FL_FINALIZE)) {
+		    FL_UNSET(p, FL_FINALIZE);
+		    p->as.basic.klass = 0;
+		    printf("%p\n", p);
+		    run_final((VALUE)p);
+		}
+		p++;
+	    }
 	}
     }
     /* run data object's finaliers */

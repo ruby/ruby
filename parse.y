@@ -49,7 +49,6 @@ static int yyerror();
 static enum lex_state {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
-    EXPR_PAREN,			/* almost like EXPR_END, `do' works as `{'. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
     EXPR_MID,			/* newline significant, +/- is a operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
@@ -67,7 +66,7 @@ static unsigned long cond_stack = 0;
     cond_nest--;\
     cond_stack >>= 1;\
 } while (0)
-#define IN_COND (cond_nest > 0 && (cond_stack&1))
+#define COND_P() (cond_nest > 0 && (cond_stack&1))
 
 static int class_nest = 0;
 static int in_single = 0;
@@ -184,11 +183,11 @@ static void top_local_setup();
 
 %type <node> singleton string
 %type <val>  literal numeric
-%type <node> compstmt stmts stmt expr arg primary command_call method_call
+%type <node> compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
-%type <node> opt_call_args call_args ret_args args when_args
-%type <node> aref_args opt_block_arg block_arg stmt_rhs
-%type <node> mrhs mrhs_basic superclass generic_call block_call var_ref
+%type <node> args ret_args when_args call_args paren_args opt_paren_args
+%type <node> aref_args opt_block_arg block_arg var_ref
+%type <node> mrhs mrhs_basic superclass generic_call block_call call_block
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
@@ -295,8 +294,7 @@ stmts		: none
 			$$ = $2;
 		    }
 
-stmt		: block_call
-		| kALIAS fitem {lex_state = EXPR_FNAME;} fitem
+stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			if (cur_mid || in_single)
 			    yyerror("alias within method");
@@ -396,12 +394,12 @@ stmt		: block_call
 
 			$$ = NEW_ITER(0, NEW_POSTEXE(), $3);
 		    }
-		| lhs '=' stmt_rhs
+		| lhs '=' command_call
 		    {
 			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
-		| mlhs '=' stmt_rhs
+		| mlhs '=' command_call
 		    {
 			value_expr($3);
 			$1->nd_value = $3;
@@ -445,7 +443,22 @@ expr		: mlhs '=' mrhs
 		    }
 		| arg
 
-command_call	: operation call_args
+command_call	: command
+		| block_call
+
+block_call	: call_block
+		| call_block '.' operation2 call_args
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, $4);
+		    }
+		| call_block tCOLON2 operation2 call_args
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, $4);
+		    }
+
+command		:  operation call_args
 		    {
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
@@ -897,14 +910,6 @@ aref_args	: none
 		    {
 			$$ = list_append($1, $3);
 		    }
-		| block_call opt_nl
-		    {
-			$$ = NEW_LIST($1);
-		    }
-		| args ',' block_call opt_nl
-		    {
-			$$ = list_append($1, $3);
-		    }
 		| args trailer
 		    {
 			$$ = $1;
@@ -924,22 +929,31 @@ aref_args	: none
 			$$ = NEW_RESTARGS($2);
 		    }
 
-opt_call_args	: none
-		| call_args opt_nl
-		| block_call opt_nl
+paren_args	: '(' none ')'
 		    {
-			$$ = NEW_LIST($1);
+			$$ = $2;
 		    }
-		| args ',' block_call
+		| '(' call_args opt_nl ')'
 		    {
-			$$ = list_append($1, $3);
+			$$ = $2;
+		    }
+		| '(' block_call opt_nl ')'
+		    {
+			$$ = NEW_LIST($2);
+		    }
+		| '(' args ',' block_call opt_nl ')'
+		    {
+			$$ = list_append($2, $4);
 		    }
 
-call_args	: command_call
+opt_paren_args	: none
+		| paren_args
+
+call_args	: command
 		    {
 			$$ = NEW_LIST($1);
 		    }
-		| args ',' command_call
+		| args ',' command
 		    {
 			$$ = list_append($1, $3);
 		    }
@@ -952,10 +966,6 @@ call_args	: command_call
 			value_expr($4);
 			$$ = arg_concat($1, $4);
 			$$ = arg_blk_pass($$, $5);
-		    }
-		| assocs ','
-		    {
-			$$ = NEW_LIST(NEW_HASH($1));
 		    }
 		| assocs opt_block_arg
 		    {
@@ -972,10 +982,6 @@ call_args	: command_call
 		    {
 			$$ = list_append($1, NEW_HASH($3));
 			$$ = arg_blk_pass($$, $4);
-		    }
-		| args ',' assocs ','
-		    {
-			$$ = list_append($1, NEW_HASH($3));
 		    }
 		| args ',' assocs ',' tSTAR arg opt_block_arg
 		    {
@@ -1341,7 +1347,7 @@ then		: term
 		| term kTHEN
 
 do		: term
-		| kDO
+		| kDO2
 
 if_tail		: opt_else
 		| kELSIF expr then
@@ -1401,19 +1407,6 @@ brace_block	: '{'
 		        fixpos($$, $4);
 			dyna_pop($<vars>2);
 		    }
-		| kDO2
-		    {
-		        $<vars>$ = dyna_push();
-		    }
-		  opt_block_var
-		  compstmt
-		  kEND
-		    {
-			$$ = NEW_ITER($3, 0, $4);
-		        fixpos($$, $4);
-			dyna_pop($<vars>2);
-		    }
-
 
 generic_call	: tIDENTIFIER
 		    {
@@ -1430,7 +1423,8 @@ generic_call	: tIDENTIFIER
 		| method_call
 		| command_call
 
-block_call	: generic_call do_block
+
+call_block	: generic_call do_block
 		    {
 			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
 			    rb_compile_error("both block arg and actual block given");
@@ -1439,28 +1433,32 @@ block_call	: generic_call do_block
 			$$ = $2;
 		        fixpos($$, $2);
 		    }
+		| call_block '.' operation2 opt_paren_args
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, $4);
+		    }
+		| call_block tCOLON2 operation2 opt_paren_args
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, $4);
+		    }
 
-method_call	: operation '(' opt_call_args close_paren
+method_call	: operation paren_args
 		    {
-			$$ = new_fcall($1, $3);
-		        fixpos($$, $3);
+			$$ = new_fcall($1, $2);
+		        fixpos($$, $2);
 		    }
-		| primary '.' operation2 '(' opt_call_args close_paren
+		| primary '.' operation2 opt_paren_args
 		    {
 			value_expr($1);
-			$$ = new_call($1, $3, $5);
+			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| primary '.' operation2
+		| primary tCOLON2 operation2 paren_args
 		    {
 			value_expr($1);
-			$$ = new_call($1, $3, 0);
-		        fixpos($$, $1);
-		    }
-		| primary tCOLON2 operation2 '(' opt_call_args close_paren
-		    {
-			value_expr($1);
-			$$ = new_call($1, $3, $5);
+			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
 		| primary tCOLON2 operation3
@@ -1468,12 +1466,12 @@ method_call	: operation '(' opt_call_args close_paren
 			value_expr($1);
 			$$ = new_call($1, $3, 0);
 		    }
-		| kSUPER '(' opt_call_args close_paren
+		| kSUPER paren_args
 		    {
 			if (!compile_for_eval && !cur_mid &&
 		            !in_single && !in_defined)
 			    yyerror("super called outside of method");
-			$$ = new_super($3);
+			$$ = new_super($2);
 		    }
 		| kSUPER
 		    {
@@ -1482,14 +1480,6 @@ method_call	: operation '(' opt_call_args close_paren
 			    yyerror("super called outside of method");
 			$$ = NEW_ZSUPER();
 		    }
-
-close_paren	: ')'
-		    {
-			if (!IN_COND) lex_state = EXPR_PAREN;
-		    }
-
-stmt_rhs	: block_call
-		| command_call
 
 case_body	: kWHEN when_args then
 		  compstmt
@@ -2794,7 +2784,7 @@ arg_ambiguous()
     rb_warning("ambiguous first argument; make sure");
 }
 
-#ifndef strtod
+#if !defined(strtod) && !defined(HAVE_STDLIB_H)
 double strtod ();
 #endif
 
@@ -2919,8 +2909,7 @@ yylex()
       case '<':
 	c = nextc();
 	if (c == '<' &&
-	    lex_state != EXPR_END && lex_state != EXPR_PAREN && 
-	    lex_state != EXPR_CLASS &&
+	    lex_state != EXPR_END && lex_state != EXPR_CLASS &&
 	    (lex_state != EXPR_ARG || space_seen)) {
  	    int c2 = nextc();
 	    int indent = 0;
@@ -2979,7 +2968,7 @@ yylex()
 	return parse_qstring(c,0);
 
       case '?':
-	if (lex_state == EXPR_END || lex_state == EXPR_PAREN) {
+	if (lex_state == EXPR_END) {
 	    lex_state = EXPR_BEG;
 	    return '?';
 	}
@@ -3306,7 +3295,7 @@ yylex()
 	    return tCOLON2;
 	}
 	pushback(c);
-	if (lex_state == EXPR_END || lex_state == EXPR_PAREN || ISSPACE(c)) {
+	if (lex_state == EXPR_END || ISSPACE(c)) {
 	    lex_state = EXPR_BEG;
 	    return ':';
 	}
@@ -3391,7 +3380,6 @@ yylex()
 
       case '{':
 	if (lex_state != EXPR_END &&
-	    lex_state != EXPR_PAREN &&
 	    lex_state != EXPR_ARG)
 	    c = tLBRACE;
 	lex_state = EXPR_BEG;
@@ -3616,9 +3604,7 @@ yylex()
 		    if (state == EXPR_FNAME) {
 			yylval.id = rb_intern(kw->name);
 		    }
-		    if (kw->id[0] == kDO &&
-			(state == EXPR_PAREN ||
-			 (!IN_COND && state == EXPR_ARG))) {
+		    if (kw->id[0] == kDO && COND_P()) {
 			return kDO2;
 		    }
 		    return kw->id[state != EXPR_BEG];
