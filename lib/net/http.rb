@@ -719,9 +719,9 @@ module Net
 
         d1 = m[1].to_i
         d2 = m[2].to_i
-        if    m[1] and m[2] then arr.push d1 .. d2
-        elsif m[1]          then arr.push d1 .. -1
-        elsif          m[2] then arr.push -d2 .. -1
+        if    m[1] and m[2] then arr.push (d1 .. d2)
+        elsif m[1]          then arr.push (d1 .. -1)
+        elsif          m[2] then arr.push (-d2 .. -1)
         else
           raise HTTPHeaderSyntaxError, 'range is not specified'
         end
@@ -793,7 +793,8 @@ module Net
     end
 
     def basic_auth( acc, pass )
-      @header['authorization'] = ["#{acc}:#{pass}"].pack('m').gsub(/\s+/, '')
+      @header['authorization'] =
+              'Basic ' + ["#{acc}:#{pass}"].pack('m').gsub(/\s+/, '')
     end
 
   end

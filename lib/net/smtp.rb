@@ -151,12 +151,15 @@ module Net
         end
       end
 
-      if user and secret then
+      if user or secret then
+        (user and secret) or
+            raise ArgumentError, 'both of account and password are required'
+
         mid = 'auth_' + (authtype || 'cram_md5').to_s
-        unless @command.respond_to? mid then
-          raise ArgumentError, "wrong auth type #{authtype.to_s}"
-        end
-        @command.send mid, user, secret
+        @command.respond_to? mid or
+            raise ArgumentError, "wrong auth type #{authtype.to_s}"
+
+        @command.__send__ mid, user, secret
       end
     end
 
