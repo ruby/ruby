@@ -28,6 +28,11 @@
 	* ext/tk/sample/tkHTML/ss.rb: local variable scope bug fix
           [ruby-dev:25479]
 
+	* ext/tk/sample/vu/vu_demo.rb: rename from vu.rb; avoid the bug on
+	  Windows version of Tcl/Tk. The trouble based on the bug occurs when
+	  the script name (without extension) is a same name as a Tcl/Tk's
+	  library file name (without extension) required in the script.
+
 2004-12-24  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* add BLT extension support
