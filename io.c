@@ -1302,13 +1302,21 @@ io_readpartial(argc, argv, io)
 
 /*
  *  call-seq:
- *     ios.read([integer [, buffer]])    => string, buffer, or nil
+ *     ios.read([length [, buffer]])    => string, buffer, or nil
  *
- *  Reads at most <i>integer</i> bytes from the I/O stream, or to the
- *  end of file if <i>integer</i> is omitted or is <code>nil</code>.
+ *  Reads at most <i>length</i> bytes from the I/O stream, or to the
+ *  end of file if <i>length</i> is omitted or is <code>nil</code>.
+ *  <i>length</i> must be a non-negative integer or nil.
  *  If the optional <i>buffer</i> argument is present, it must reference
- *  a String, which will receive the data. Returns <code>nil</code>
- *  if called at end of file.
+ *  a String, which will receive the data.
+ *
+ *  At end of file, it returns <code>nil</code> or <code>""</code>
+ *  depend on <i>length</i>.
+ *  <code><i>ios</i>.read()</code> and
+ *  <code><i>ios</i>.read(nil)</code> returns <code>""</code>.
+ *  <code><i>ios</i>.read(<i>positive-integer</i>)</code> returns nil.
+ *
+ *  <code><i>ios</i>.read(0)</code> returns <code>""</code>.
  *
  *     f = File.new("testfile")
  *     f.read(16)   #=> "This is line one"
