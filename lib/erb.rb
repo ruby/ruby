@@ -6,48 +6,192 @@ class ERB
   Revision = '$Date$' 	#'
 
   def self.version
-    "erb.rb [2.0.2 #{ERB::Revision.split[1]}]"
+    "erb.rb [2.0.4 #{ERB::Revision.split[1]}]"
   end
 end
 
 # ERB::Compiler
 class ERB
   class Compiler
-    class ParcentLine
-      def initialize(compiler, str)
+    class Scanner
+      SplitRegexp = /(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
+
+      def initialize(compiler, src)
 	@compiler = compiler
-	@line = str
+	@src = src
+	@stag = nil
+      end
+      attr_accessor :stag
+
+      def scan; end
+    end
+
+    class TrimScanner < Scanner
+      def initialize(compiler, src)
+	super(compiler, src)
+	@trim_mode = compiler.trim_mode
+	@percent = compiler.percent
+	if @trim_mode
+	  @scan_line = self.method(:trim_line)
+	else
+	  @scan_line = self.method(:scan_line)
+	end
+      end
+      attr_accessor :stag
+      
+      def scan(&block)
+	@stag = nil
+	if @percent
+	  @src.each do |line|
+	    percent_line(line, &block)
+	  end
+	else
+	  @src.each do |line|
+	    trim_line(line, &block)
+	  end
+	end
+	nil
       end
 
-      def expand(list)
-	str = @line.dup
-	str[0] = ''
-	if /^%%/ === @line
-	  list.unshift("\n")
-	  list.unshift(str)
-	else
-	  list.unshift('%>')
-	  list.unshift(str)
-	  list.unshift('<%')
+      def percent_line(line, &block)
+	if @stag || line[0] != ?%
+	  return @scan_line.call(line, &block)
 	end
-	list
+
+	line[0] = ''
+	if line[0] == ?%
+	  @scan_line.call(line, &block)
+	else
+	  yield('<%')
+	  yield(' ' +line.chomp)
+	  yield('%>')
+	end
+      end
+
+      def scan_line(line)
+	line.split(SplitRegexp).each do |token|
+	  next if token.empty?
+	  yield(token)
+	end
+      end
+
+      def trim_line(line)
+	head = nil
+	last = nil
+	line.split(SplitRegexp).each do |token|
+	  next if token.empty?
+	  head = token unless head
+	  if token == "\n" && last == '%>'
+	    next if @trim_mode == '>' 
+	    next if @trim_mode == '<>' && is_erb_stag?(head)
+	    yield("\n")
+	    break
+	  end
+	  yield(token)
+	  last = token
+	end
+      end
+
+      ERB_STAG = %w(<%= <%# <%)
+      def is_erb_stag?(s)
+	ERB_STAG.member?(s)
+      end
+    end
+
+    class SimpleScanner < Scanner
+      def scan
+	@src.each do |line|
+	  line.split(SplitRegexp).each do |token|
+	    next if token.empty?
+	    yield(token)
+	  end
+	end
+      end
+    end
+
+    class Buffer
+      def initialize(compiler)
+	@compiler = compiler
+	@line = []
+	@script = ""
+	@compiler.pre_cmd.each do |x|
+	  push(x)
+	end
+      end
+      attr_reader :script
+
+      def push(cmd)
+	@line << cmd
       end
       
-      def expand_in_script(list)
-	ary = []
-	@compiler.push_line(ary, @line)
-	ary.reverse_each do |x|
-	  list.unshift(x)
+      def cr
+	@script << (@line.join('; '))
+	@line = []
+	@script << "\n"
+      end
+      
+      def close
+	return unless @line
+	@compiler.post_cmd.each do |x|
+	  push(x)
 	end
+	@script << (@line.join('; '))
+	@line = nil
       end
     end
 
-    ERbTag = "<%% %%> <%= <%# <% %>".split
-    def is_erb_tag?(s)
-      ERbTag.member?(s)
-    end
+    def compile(s)
+      out = Buffer.new(self)
 
-    SplitRegexp = /(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
+      content = ''
+      scanner = make_scanner(s)
+      scanner.scan do |token|
+	if scanner.stag.nil?
+	  case token
+	  when '<%', '<%=', '<%#'
+	    scanner.stag = token
+	    out.push("#{@put_cmd} #{content.dump}") if content.size > 0
+	    content = ''
+	  when "\n"
+	    content << "\n"
+	    out.push("#{@put_cmd} #{content.dump}")
+	    out.cr
+	    content = ''
+	  when '<%%'
+	    content << '<%'
+	  else
+	    content << token
+	  end
+	else
+	  case token
+	  when '%>'
+	    case scanner.stag
+	    when '<%'
+	      if content[-1] == ?\n
+		content.chop!
+		out.push(content)
+		out.cr
+	      else
+		out.push(content)
+	      end
+	    when '<%='
+	      out.push("#{@put_cmd}((#{content}).to_s)")
+	    when '<%#'
+	      # out.push("# #{content.dump}")
+	    end
+	    scanner.stag = nil
+	    content = ''
+	  when '%%>'
+	    content << '%>'
+	  else
+	    content << token
+	  end
+	end
+      end
+      out.push("#{@put_cmd} #{content.dump}") if content.size > 0
+      out.close
+      out.script
+    end
 
     def prepare_trim_mode(mode)
       case mode
@@ -71,128 +215,22 @@ class ERB
       end
     end
 
-    def pre_compile(s)
-      re = SplitRegexp
-      if @trim_mode.nil? && !@perc
-	list = s.split(re)
+    def make_scanner(src)
+      if @percent || @trim_mode
+	TrimScanner.new(self, src)
       else
-	list = []
-	has_cr = (s[-1] == ?\n)
-	s.each do |line|
-	  line = line.chomp
-	  if @perc && (/^%/ =~ line)
-	    list.push(ParcentLine.new(self, line))
-	  else
-	    push_line(list, line)
-	  end
-	end
-	list.pop if list[-1] == "\n" && !has_cr
+	SimpleScanner.new(self, src)
       end
-      list
-    end
-
-    def push_line(list, line)
-      re = SplitRegexp
-      line = line.split(re)
-      line.shift if line[0]==''
-      list.concat(line)
-      unless ((@trim_mode == '>' && line[-1] == '%>') ||
-	      (@trim_mode == '<>' && (is_erb_tag?(line[0])) && 
-	       line[-1] == '%>'))
-	list.push("\n") 
-      end
-    end
-
-    def compile(s)
-      list = pre_compile(s)
-      cmd = []
-      cmd.concat(@pre_cmd)
-
-      stag = nil
-      content = []
-      while (token = list.shift) 
-	if token == '<%%'
-	  token = '<'
-	  list.unshift '%'
-	elsif token == '%%>'
-	  token = '%'
-	  list.unshift '>'
-	end
-	if stag.nil?
-	  if ['<%', '<%=', '<%#'].include?(token)
-	    stag = token
-	    str = content.join('')
-	    if str.size > 0
-	      cmd.push("#{@put_cmd} #{str.dump}")
-	    end
-	    content = []
-	  elsif token == "\n"
-	    content.push("\n")
-	    cmd.push("#{@put_cmd} #{content.join('').dump}")
-	    cmd.push(:cr)
-	    content = []
-	  elsif ParcentLine === token
-	    token.expand(list)
-	    next
-	  else
-	    content.push(token)
-	  end
-	else
-	  if token == '%>'
-	    case stag
-	    when '<%'
-	      str = content.join('')
-	      if str[-1] == ?\n
-		str.chop!
-		cmd.push(str)
-		cmd.push(:cr)
-	      else
-		cmd.push(str)
-	      end
-	    when '<%='
-	      cmd.push("#{@put_cmd}((#{content.join('')}).to_s)")
-	    when '<%#'
-	      # cmd.push("# #{content.dump}")
-	    end
-	    stag = nil
-	    content = []
-	  elsif ParcentLine === token
-	    token.expand_in_script(list)
-	    next
-	  else
-	    content.push(token)
-	  end
-	end
-      end
-      if content.size > 0
-	cmd.push("#{@put_cmd} #{content.join('').dump}")
-      end
-      cmd.push(:cr)
-      cmd.concat(@post_cmd)
-
-      ary = []
-      cmd.each do |x|
-	if x == :cr
-	  ary.pop
-	  ary.push("\n")
-	else
-	  ary.push(x)
-	  ary.push('; ')
-	end
-      end
-      ary.join('')
     end
 
     def initialize(trim_mode)
-      @perc, @trim_mode = prepare_trim_mode(trim_mode)
+      @percent, @trim_mode = prepare_trim_mode(trim_mode)
       @put_cmd = 'print'
       @pre_cmd = []
       @post_cmd = []
     end
-
-    attr_accessor(:put_cmd)
-    attr_accessor(:pre_cmd)
-    attr_accessor(:post_cmd)
+    attr_reader :percent, :trim_mode
+    attr_accessor :put_cmd, :pre_cmd, :post_cmd
   end
 end
 

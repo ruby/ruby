@@ -1,3 +1,7 @@
+Wed Jul 23 18:43:00 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb: import erb-2.0.4b1.
+
 Wed Jul 23 18:21:52 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/io/wait: imported.
