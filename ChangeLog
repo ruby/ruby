@@ -1,9 +1,27 @@
+Tue Nov  6 14:38:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (security): always give warning for insecure PATH.
+
+	* dir.c (my_getcwd): do not rely on MAXPATHLEN.
+
+	* file.c (rb_file_s_readlink): ditto.
+
+	* file.c (path_check_1): ditto.
+
 Tue Nov  6 14:17:14 2001  Amos Gouaux <amos+ruby@utdallas.edu>
 
 	* lib/net/imap.rb (getquota_response): use astring for mailbox
 	names.
 
 	* lib/net/imap.rb (getacl_response): ditto.
+
+Mon Nov  5 17:09:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): should not call rb_f_block_given_p().
+
+Sat Nov  3 23:33:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_chomp_bang): should terminate string by NUL.
 
 Sat Nov  3 22:28:51 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 
@@ -12,6 +30,10 @@ Sat Nov  3 22:28:51 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 	
 	* forwardable.rb: change raise to Kernel::raise
 	
+Sat Nov  3 10:11:57 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): better error message.
+
 Thu Nov  1 14:08:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_aref): idx may be a Bignum.
