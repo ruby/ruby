@@ -1,3 +1,8 @@
+Tue Jan 27 02:26:31 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httputils.rb (WEBrick:HTTPUtils::parse_header):
+	  refine regex for header-name.
+
 Mon Jan 26 22:53:04 2004  Dave Thomas  <dave@pragprog.com>
 
 	* io.c: Remove documentation references to $defout.
