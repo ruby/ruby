@@ -1,3 +1,7 @@
+Sat Mar  5 16:50:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+
+        * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.65
+
 Sat Mar  5 16:29:26 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: freeze callback-entry objects
