@@ -71,6 +71,14 @@ module Tk::TkTable::ConfigMethod
     itemcget(['window', tagid(tagOrId)], option)
   end
   def window_configure(tagOrId, slot, value=None)
+    if slot == :window || slot == 'window'
+      value = _epath(value)
+    elsif slot.kind_of?(Hash)
+      if slot.key?(:window) || slot.key?('window')
+        slot = _symbolkey2str(slot)
+        slot['window'] = _epath(slot['window'])
+      end
+    end
     itemconfigure(['window', tagid(tagOrId)], slot, value)
   end
   def window_configinfo(tagOrId, slot=nil)

@@ -439,7 +439,7 @@ class TkOptionMenubutton<TkMenubutton
 
     install_win(if parent then parent.path end)
     @menu = OptionMenu.new(tk_call('tk_optionMenu', 
-				   @path, @variable.id, *args))
+                                   @path, @variable.id, *args))
 
     configure(keys) if keys
   end
