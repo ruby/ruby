@@ -1,3 +1,15 @@
+Mon Dec 30 19:10:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/extmk.rb: split --make argument contains options, assume
+	  the first word of --make-flags is always options even unless
+	  preceeded by -, and ignore letter-case of options if nmake.
+
+	* instruby.rb: extract -n option also from --make and
+	  --make-flags.
+
+	* bcc32/Makefile.sub, win32/Makefile.sub: not prepend - to
+	  $(MFLAGS)
+
 Mon Dec 30 16:44:14 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* string.c (rb_str_substr): should share the shared string if
