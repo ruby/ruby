@@ -8215,6 +8215,7 @@ proc_eq(self, other)
     if (CLASS_OF(self) != CLASS_OF(other)) return Qfalse;
     Data_Get_Struct(self, struct BLOCK, data);
     Data_Get_Struct(other, struct BLOCK, data2);
+    if (data->dyna_vars != data2->dyna_vars) return Qfalse;
     if (data->body == data2->body) return Qtrue;
     return Qfalse;
 }
