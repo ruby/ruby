@@ -198,7 +198,7 @@ min_i(i, min)
 	*min = i;
     else {
 	cmp = rb_funcall(i, id_cmp, 1, *min);
-	if (FIX2LONG(cmp) < 0)
+	if (NUM2LONG(cmp) < 0)
 	    *min = i;
     }
     return Qnil;
@@ -214,7 +214,7 @@ min_ii(i, min)
 	*min = i;
     else {
 	cmp = rb_yield(rb_assoc_new(i, *min));
-	if (FIX2LONG(cmp) < 0)
+	if (NUM2LONG(cmp) < 0)
 	    *min = i;
     }
     return Qnil;
@@ -240,7 +240,7 @@ max_i(i, max)
 	*max = i;
     else {
 	cmp = rb_funcall(i, id_cmp, 1, *max);
-	if (FIX2LONG(cmp) > 0)
+	if (NUM2LONG(cmp) > 0)
 	    *max = i;
     }
     return Qnil;
@@ -256,7 +256,7 @@ max_ii(i, max)
 	*max = i;
     else {
 	cmp = rb_yield(rb_assoc_new(i, *max));
-	if (FIX2LONG(cmp) > 0)
+	if (NUM2LONG(cmp) > 0)
 	    *max = i;
     }
     return Qnil;
