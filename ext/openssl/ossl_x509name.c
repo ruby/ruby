@@ -185,13 +185,13 @@ ossl_x509name_to_a(VALUE self)
     const char *short_name;
     VALUE ary, ret;
 	
+    GetX509Name(self, name);
     entries = X509_NAME_entry_count(name);
     if (entries < 0) {
 	OSSL_Debug("name entries < 0!");
 	return rb_ary_new();
     }
     ret = rb_ary_new2(entries);
-    GetX509Name(self, name);
     for (i=0; i<entries; i++) {
 	if (!(entry = X509_NAME_get_entry(name, i))) {
 	    ossl_raise(eX509NameError, NULL);
