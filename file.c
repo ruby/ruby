@@ -2278,6 +2278,8 @@ rb_find_file_noext(filep)
 	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
+	f = STR2CSTR(fname);
+	*filep = fname;
     }
 
     if (is_absolute_path(f)) {
@@ -2323,10 +2325,11 @@ rb_find_file(path)
     struct stat st;
 
     if (f[0] == '~') {
-	tmp = rb_file_s_expand_path(1, &path);
-	if (rb_safe_level() >= 2 && OBJ_TAINTED(tmp)) {
+	path = rb_file_s_expand_path(1, &path);
+	if (rb_safe_level() >= 2 && OBJ_TAINTED(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
+	f = STR2CSTR(path);
     }
 
 #if defined(__MACOS__) || defined(riscos)
