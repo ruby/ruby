@@ -451,7 +451,7 @@ module Benchmark
   end
 
   def bm(label_width = 0, *labels)
-    benchmark(" "*label_width + CAPTION, label_width, FMTSTR, *labels){|*x|yield *x}
+    benchmark(" "*label_width + CAPTION, label_width, FMTSTR, *labels){|*x|yield(*x)}
   end
 
   def bmbm(width = 0)

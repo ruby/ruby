@@ -1,3 +1,8 @@
+Fri Apr 11 10:51:08 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/benchmark.rb (Benchmark::bm): get rid of warning.
+	  [ruby-talk:69124]
+
 Fri Apr 11 02:41:35 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (set_stdin): assigned value must respond to "read" and
