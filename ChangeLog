@@ -1,3 +1,9 @@
+Sat Jun 23 19:25:08 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/thread.rb: Synchronize with HEAD.  The last change
+	  (rev.1.9.2.2) against SizedQueue#max= was wrong and didn't fix
+	  the bug in question.
+
 Fri Jun 22 23:17:28 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): workaround for the setup of

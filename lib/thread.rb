@@ -3,6 +3,7 @@
 #			$Date$
 #			by Yukihiro Matsumoto <matz@netlab.co.jp>
 #
+# Copyright (C) 2001  Yukihiro Matsumoto
 # Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 #
@@ -168,9 +169,8 @@ class Queue
     rescue ThreadError
     end
   end
-  def enq(obj)
-    push(obj)
-  end
+  alias << push
+  alias enq push
 
   def pop(non_block=false)
     Thread.critical = true
@@ -198,7 +198,7 @@ class Queue
   end
 
   def clear
-    @que.replace([])
+    @que.clear
   end
 
   def length
@@ -231,7 +231,7 @@ class SizedQueue<Queue
       @max = max
       Thread.critical = false
     else
-      diff = @max - max
+      diff = max - @max
       @max = max
       Thread.critical = false
       diff.times do
@@ -255,6 +255,7 @@ class SizedQueue<Queue
     end
     super
   end
+  alias << push
 
   def pop(*args)
     retval = super
