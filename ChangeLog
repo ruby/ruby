@@ -1,3 +1,9 @@
+Sat Aug  5 16:43:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* lib/ftools.rb (compare, safe_unlink, chmod): avoid warnings.
+
+	* lib/ftools.rb (move): typo. not `tpath', but `to'.
+
 Sat Jul 29 23:42:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* dir.c (dir_each): should check whether dir is closed during the
