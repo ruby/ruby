@@ -196,11 +196,12 @@ Options are:
 [<tt>--quiet</tt>]
     do not display progress messages
 
-[<tt>--ri</tt> _and_ <tt>--ri-site</tt>]
+[<tt>--ri</tt>, <tt>--ri-site</tt>, _and_ <tt>--ri-system</tt>]
     generate output than can be read by the _ri_ command-line tool.
-    By default --ri places its output in ~/.rdoc, and --ri-site in
-    $datadir/ri/<ver>/site. Both can be overridden with a subsequent
-    --op option. Both default directories are in ri's default search
+    By default --ri places its output in ~/.rdoc, --ri-site in
+    $datadir/ri/<ver>/site, and --ri-system in
+    $datadir/ri/<ver>/system. All can be overridden with a subsequent
+    --op option. All default directories are in ri's default search
     path.
 
 [<tt>--show-hash</tt>]

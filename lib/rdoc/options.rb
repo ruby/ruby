@@ -198,6 +198,12 @@ class Options
        "stored in a site-wide directory, making them accessible\n"+
        "to others, so special privileges are needed." ],
 
+      [ "--ri-system",     "-Y",   nil,
+       "generate output for use by 'ri.' The files are\n" +
+       "stored in a system-level directory, making them accessible\n"+
+       "to others, so special privileges are needed. This option\n"+
+       "is intended to be used during Ruby installations" ],
+
       [ "--show-hash",     "-H",   nil,
         "A name of the form #name in a comment\n" +
         "is a possible hyperlink to an instance\n" +
@@ -431,9 +437,14 @@ class Options
         when "--include"   
           @rdoc_include.concat arg.split(/\s*,\s*/)
 
-        when "--ri", "--ri-site"
+        when "--ri", "--ri-site", "--ri-system"
           @generator_name = "ri"
-          @op_dir = opt == "--ri" ? RI::Paths::HOMEDIR : RI::Paths::SITEDIR
+          @op_dir = case opt
+                    when "--ri" then RI::Paths::HOMEDIR 
+                    when "--ri-site" then RI::Paths::SITEDIR
+                    when "--ri-system" then RI::Paths::SYSDIR
+                    else fail opt
+                    end
           setup_generator(generators)
 
         when "--tab-width"

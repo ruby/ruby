@@ -1,3 +1,8 @@
+Tue Jan  6 00:04:40 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_or_yield_parameters): 
+	  fix parsing if there are braces in a method parameter list
+
 Fri Jan  2 14:54:11 2004  Dave Thomas  <dave@pragprog.com>
 	
 	* bin/ri: Add new --classes option, and arrange for
