@@ -1,3 +1,7 @@
+Fri Dec 27 13:28:14 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* instruby.rb: fileutils.rb accepts only one argument.
+
 Fri Dec 27 13:23:29 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (fu_parseargs): reject illegal options

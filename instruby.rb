@@ -47,7 +47,7 @@ dll = CONFIG["LIBRUBY_SO"]
 lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
 
-makedirs bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir, mandir
+makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir, mandir]
 
 install ruby_install_name+exeext, File.join(bindir, ruby_install_name+exeext), 0755
 if rubyw_install_name and !rubyw_install_name.empty?
