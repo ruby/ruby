@@ -1,3 +1,7 @@
+Sat Jul 31 23:08:00 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): stupid mistakes fixed. [ruby-dev:24006]
+	
 Sat Jul 31 17:39:47 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-expr-beg, ruby-parse-partial,

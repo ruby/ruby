@@ -2240,8 +2240,8 @@ is_defined(self, node, buf, noeval)
 	val = self;
 	if (node->nd_recv == (NODE *)1) goto check_bound;
       case NODE_CALL:
-	if (noeval) return ex;
 	if (!is_defined(self, node->nd_recv, buf, Qtrue)) return 0;
+	if (noeval) return ex;
 	val = rb_eval(self, node->nd_recv);
       check_bound:
 	{
@@ -2333,8 +2333,9 @@ is_defined(self, node, buf, noeval)
 	break;
 
       case NODE_COLON2:
-	if (noeval) return ex;
 	if (!is_defined(self, node->nd_recv, buf, Qtrue)) return 0;
+	if (noeval) return ex;
+	val = rb_eval(self, node->nd_recv);
 	switch (TYPE(val)) {
 	  case T_CLASS:
 	  case T_MODULE:
