@@ -1,3 +1,7 @@
+Tue Oct 19 08:46:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_upto): method result must be checked.  [ruby-dev:24504]
+
 Mon Oct 18 23:37:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_object0): check inheritance by the internal function.

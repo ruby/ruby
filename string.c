@@ -1408,6 +1408,7 @@ rb_str_upto(beg, end, excl)
 	rb_yield(current);
 	if (!excl && rb_str_equal(current, end)) break;
 	current = rb_funcall(current, succ, 0, 0);
+	StringValue(current);
 	if (excl && rb_str_equal(current, end)) break;
 	if (RSTRING(current)->len > RSTRING(end)->len)
 	    break;
