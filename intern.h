@@ -327,6 +327,7 @@ VALUE rb_str_concat _((VALUE, VALUE));
 int rb_str_hash _((VALUE));
 int rb_str_cmp _((VALUE, VALUE));
 VALUE rb_str_upto _((VALUE, VALUE, int));
+void rb_str_update _((VALUE, long, long, VALUE));
 VALUE rb_str_inspect _((VALUE));
 VALUE rb_str_split _((VALUE, const char*));
 void rb_str_associate _((VALUE, VALUE));

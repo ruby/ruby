@@ -103,6 +103,7 @@ Init_md5()
     rb_define_singleton_method(cMD5, "md5", md5i_new, -1);
 
     rb_define_method(cMD5, "update", md5i_update, 1);
+    rb_define_method(cMD5, "<<", md5i_update, 1);
     rb_define_method(cMD5, "digest", md5i_digest, 0);
     rb_define_method(cMD5, "hexdigest", md5i_hexdigest, 0);
     rb_define_method(cMD5, "clone",  md5i_clone, 0);

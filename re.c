@@ -11,6 +11,7 @@
 
 #include "ruby.h"
 #include "re.h"
+#include <ctype.h>
 
 static VALUE rb_eRegexpError;
 
@@ -776,9 +777,6 @@ match_aref(argc, argv, match)
     VALUE match;
 {
     VALUE idx, rest;
-    struct re_registers *regs;
-    char *ptr;
-    int i;
 
     rb_scan_args(argc, argv, "11", &idx, &rest);
 
@@ -1103,8 +1101,6 @@ static int
 rb_reg_get_kcode(re)
     VALUE re;
 {
-    int kcode;
-
     switch (RBASIC(re)->flags & KCODE_MASK) {
       case KCODE_NONE:
 	return 16;

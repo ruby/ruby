@@ -893,7 +893,6 @@ rb_f_getenv(obj, name)
     VALUE obj, name;
 {
     char *nam, *env;
-    int len;
 
     StringValue(name);
     nam = RSTRING(name)->ptr;
@@ -1105,7 +1104,6 @@ rb_f_setenv(obj, nm, val)
     VALUE obj, nm, val;
 {
     char *name, *value;
-    int nlen, vlen;
 
     if (rb_safe_level() >= 4) {
 	rb_raise(rb_eSecurityError, "cannot change environment variable");

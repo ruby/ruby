@@ -19,6 +19,7 @@
 #include "st.h"
 #include <stdio.h>
 #include <errno.h>
+#include <ctype.h>
 
 #define ID_SCOPE_SHIFT 3
 #define ID_SCOPE_MASK 0x07

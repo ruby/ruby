@@ -328,8 +328,6 @@ make_time_t(tptr, utc_p)
     guess += (tptr->tm_sec - tm->tm_sec);
 #ifndef NEGATIVE_TIME_T
     if (guess < 0) goto out_of_range;
-#else
-    if (oguess > 365 * 24 * 3600 && guess < 0) goto out_of_range;
 #endif
 
     if (!utc_p) {	/* localtime zone adjust */
@@ -362,17 +360,32 @@ make_time_t(tptr, utc_p)
 	tm = localtime(&guess);
 	if (!tm) goto error;
 	if (lt.tm_isdst != tm->tm_isdst || tptr->tm_hour != tm->tm_hour) {
-	    oguess = guess - 3600;
-	    tm = localtime(&oguess);
+	    time_t tmp = guess - 3600;
+	    tm = localtime(&tmp);
 	    if (!tm) goto error;
 	    if (tptr->tm_hour == tm->tm_hour) {
-		guess = oguess;
+		guess = tmp;
 	    }
+	    else if (lt.tm_isdst == tm->tm_isdst) {
+		tmp = guess + 3600;
+		tm = localtime(&tmp);
+		if (!tm) goto error;
+		if (tptr->tm_hour == tm->tm_hour) {
+		    guess = tmp;
+		}
+	    }
+	}
+	if (tptr->tm_min != tm->tm_min) {
+	    guess += (tptr->tm_min - tm->tm_min) * 60;
 	}
 #ifndef NEGATIVE_TIME_T
 	if (guess < 0) goto out_of_range;
 #endif
     }
+#ifdef NEGATIVE_TIME_T
+    if (oguess > 365 * 24 * 3600 && guess < 0) goto out_of_range;
+    if (guess > 365 * 24 * 3600 && oguess < 0) goto out_of_range;
+#endif
 
     return guess;
 

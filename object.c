@@ -16,6 +16,7 @@
 #include "st.h"
 #include <stdio.h>
 #include <errno.h>
+#include <ctype.h>
 
 VALUE rb_mKernel;
 VALUE rb_cObject;

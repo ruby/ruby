@@ -344,8 +344,6 @@ rb_io_seek_m(argc, argv, io)
 {
     VALUE offset, ptrname;
     int whence;
-    OpenFile *fptr;
-    long pos;
 
     rb_scan_args(argc, argv, "11", &offset, &ptrname);
     if (argc == 1) whence = SEEK_SET;
@@ -1959,7 +1957,6 @@ static VALUE
 rb_io_clone(io)
     VALUE io;
 {
-    VALUE klass;
     OpenFile *fptr, *orig;
     int fd;
     char *mode;
@@ -3082,7 +3079,7 @@ rb_io_s_pipe()
 {
 #ifndef __human68k__
     int pipes[2];
-    VALUE r, w, ary;
+    VALUE r, w;
 
 #ifdef NT
     if (_pipe(pipes, 1024, O_BINARY) == -1)

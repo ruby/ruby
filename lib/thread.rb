@@ -3,6 +3,7 @@
 #			$Date$
 #			by Yukihiro Matsumoto <matz@netlab.co.jp>
 #
+# Copyright (C) 2001  Yukihiro Matsumoto
 # Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 #
@@ -74,7 +75,10 @@ class Mutex
       retry
     end
     Thread.critical = false
-    t.run if t
+    begin
+      t.run if t
+    rescue ThreadError
+    end
     self
   end
 
@@ -160,17 +164,19 @@ class Queue
     ensure
       Thread.critical = false
     end
-    t.run if t
+    begin
+      t.run if t
+    rescue ThreadError
+    end
   end
-  def enq(obj)
-    push(obj)
-  end
+  alias << push
+  alias enq push
 
   def pop(non_block=false)
     Thread.critical = true
     begin
       loop do
-	if @que.length == 0
+       if @que.empty?
 	  if non_block
 	    raise ThreadError, "queue empty"
 	  end
@@ -184,17 +190,15 @@ class Queue
       Thread.critical = false
     end
   end
-  def shift(non_block=false)
-    pop(non_block)
-  end
-  alias deq shift
+  alias shift pop
+  alias deq pop
 
   def empty?
-    @que.length == 0
+    @que.empty?
   end
 
   def clear
-    @que.replace([])
+    @que.clear
   end
 
   def length
@@ -223,7 +227,7 @@ class SizedQueue<Queue
 
   def max=(max)
     Thread.critical = true
-    if max >= @max
+    if max <= @max
       @max = max
       Thread.critical = false
     else
@@ -251,8 +255,10 @@ class SizedQueue<Queue
     end
     super
   end
+  alias << push
 
   def pop(*args)
+    retval = super
     Thread.critical = true
     if @que.length < @max
       begin
@@ -263,9 +269,12 @@ class SizedQueue<Queue
       ensure
 	Thread.critical = false
       end
-      t.run if t
+      begin
+	t.run if t
+      rescue ThreadError
+      end
     end
-    super
+    retval
   end
 
   def num_waiting

@@ -112,7 +112,7 @@ static int
 new_size(size)
     int size;
 {
-    int i, newsize;
+    int i;
 
 #if 1
     for (i=3; i<31; i++) {

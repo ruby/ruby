@@ -716,7 +716,6 @@ rb_f_exec(argc, argv)
     VALUE *argv;
 {
     VALUE prog = 0;
-    int i;
 
     if (argc == 0) {
 	rb_raise(rb_eArgError, "wrong # of arguments");

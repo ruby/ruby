@@ -598,8 +598,7 @@ remove_backslashes(p)
 
     while (p < pend) {
 	if (*p == '\\') {
-	    *p++;
-	    if (p == pend) break;
+	    if (++p == pend) break;
 	}
 	*t++ = *p++;
     }

@@ -1501,6 +1501,7 @@ dln_load(file)
   failed:
     rb_loaderror("%s - %s", dln_strerror(), file);
 #endif
+    return 0;			/* dummy return */
 }
 
 static char *dln_find_1();

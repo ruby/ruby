@@ -739,11 +739,26 @@ inspect_join(ary, arg)
     return rb_ary_join(arg[0], arg[1]);
 }
 
+static long
+str_cpy(str, idx, str2)
+    VALUE str;
+    long idx;
+    VALUE str2;
+{
+    long len = idx + RSTRING(str2)->len;
+
+    if (RSTRING(str)->len < len) {
+	rb_str_resize(str, len);
+    }
+    memcpy(RSTRING(str)->ptr+idx, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    return len;
+}
+
 VALUE
 rb_ary_join(ary, sep)
     VALUE ary, sep;
 {
-    long i;
+    long len, i, j;
     int taint = 0;
     VALUE result, tmp;
 
@@ -751,30 +766,21 @@ rb_ary_join(ary, sep)
     if (OBJ_TAINTED(ary)) taint = 1;
     if (OBJ_TAINTED(sep)) taint = 1;
 
-    tmp = RARRAY(ary)->ptr[0];
-    if (OBJ_TAINTED(tmp)) taint = 1;
-    switch (TYPE(tmp)) {
-      case T_STRING:
-	result = rb_str_dup(tmp);
-	break;
-      case T_ARRAY:
-	if (rb_inspecting_p(tmp)) {
-	    result = rb_str_new2("[...]");
+    len = 1;
+    for (i=0; i<RARRAY(ary)->len; i++) {
+	if (TYPE(RARRAY(ary)->ptr[i]) == T_STRING) {
+	    len += RSTRING(RARRAY(ary)->ptr[i])->len;
 	}
 	else {
-	    VALUE args[2];
-
-	    args[0] = tmp;
-	    args[1] = sep;
-	    result = rb_protect_inspect(inspect_join, ary, (VALUE)args);
+	    len += 10;
 	}
-	break;
-      default:
-	result = rb_str_dup(rb_obj_as_string(tmp));
-	break;
     }
+    if (!NIL_P(sep) && TYPE(sep) == T_STRING) {
+	len += RSTRING(sep)->len * RARRAY(ary)->len - 1;
+    }
+    result = rb_str_new(0, len);
 
-    for (i=1; i<RARRAY(ary)->len; i++) {
+    for (i=0, j=0; i<RARRAY(ary)->len; i++) {
 	tmp = RARRAY(ary)->ptr[i];
 	switch (TYPE(tmp)) {
 	  case T_STRING:
@@ -794,10 +800,11 @@ rb_ary_join(ary, sep)
 	  default:
 	    tmp = rb_obj_as_string(tmp);
 	}
-	if (!NIL_P(sep)) rb_str_append(result, sep);
-	rb_str_append(result, tmp);
+	if (i > 0 && !NIL_P(sep)) j = str_cpy(result, j, sep);
+	j = str_cpy(result, j, tmp);
 	if (OBJ_TAINTED(tmp)) taint = 1;
     }
+    rb_str_resize(result, j);
 
     if (taint) OBJ_TAINT(result);
     return result;
@@ -1291,8 +1298,6 @@ VALUE
 rb_ary_concat(x, y)
     VALUE x, y;
 {
-    long ylen;
-
     y = to_ary(y);
     if (RARRAY(y)->len > 0) {
 	rb_ary_update(x, RARRAY(x)->len, 0, y);
@@ -1498,7 +1503,7 @@ rb_ary_and(ary1, ary2)
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	VALUE v = RARRAY(ary1)->ptr[i];
 	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
-	    rb_ary_push(ary3, v);
+	    rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
 	}
     }
 
@@ -1520,13 +1525,13 @@ rb_ary_or(ary1, ary2)
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	v = RARRAY(ary1)->ptr[i];
 	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
-	    rb_ary_push(ary3, v);
+	    rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
 	}
     }
     for (i=0; i<RARRAY(ary2)->len; i++) {
 	v = RARRAY(ary2)->ptr[i];
 	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
-	    rb_ary_push(ary3, v);
+	    rb_ary_push(ary3, RARRAY(ary2)->ptr[i]);
 	}
     }
 
@@ -1548,10 +1553,11 @@ rb_ary_uniq_bang(ary)
     p = q = RARRAY(ary)->ptr;
     end = p + RARRAY(ary)->len;
     while (p < end) {
-	VALUE v = *p++;
+	VALUE v = *p;
 	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
-	    *q++ = v;
+	    *q++ = *p;
 	}
+	p++;
     }
     RARRAY(ary)->len = (q - RARRAY(ary)->ptr);
 

@@ -428,14 +428,16 @@ rb_str_resize(str, len)
     VALUE str;
     long len;
 {
-    rb_str_modify(str);
+    if (len != RSTRING(str)->len) {
+	rb_str_modify(str);
 
-    if (len >= 0) {
-	if (RSTRING(str)->len < len || RSTRING(str)->len - len > 1024) {
-	    REALLOC_N(RSTRING(str)->ptr, char, len + 1);
+	if (len >= 0) {
+	    if (RSTRING(str)->len < len || RSTRING(str)->len - len > 1024) {
+		REALLOC_N(RSTRING(str)->ptr, char, len + 1);
+	    }
+	    RSTRING(str)->len = len;
+	    RSTRING(str)->ptr[len] = '\0';	/* sentinel */
 	}
-	RSTRING(str)->len = len;
-	RSTRING(str)->ptr[len] = '\0';	/* sentinel */
     }
     return str;
 }
@@ -956,7 +958,7 @@ rb_str_aref_m(argc, argv, str)
     return rb_str_aref(str, argv[0]);
 }
 
-static void
+void
 rb_str_update(str, beg, len, val)
     VALUE str;
     long beg;
@@ -1515,9 +1517,7 @@ VALUE
 rb_str_inspect(str)
     VALUE str;
 {
-    long len;
     char *p, *pend;
-    char *q, *qend;
     VALUE result = rb_str_new2("\"");
     char s[5];
 

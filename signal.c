@@ -163,6 +163,9 @@ static struct signals {
 #ifdef SIGSOUND
     "SOUND", SIGSOUND,
 #endif
+#ifdef SIGINFO
+    "INFO", SIGINFO,
+#endif
     NULL, 0,
 };
 

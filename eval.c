@@ -4004,9 +4004,9 @@ rb_ensure(b_proc, data1, e_proc, data2)
 	result = (*b_proc)(data1);
     }
     POP_TAG();
-    retval = prot_tag->retval;	/* save retval */
+    retval = prot_tag ? prot_tag->retval : Qnil;	/* save retval */
     (*e_proc)(data2);
-    return_value(retval);
+    if (prot_tag) return_value(retval);
 
     if (state) JUMP_TAG(state);
     return result;
@@ -7551,6 +7551,7 @@ rb_thread_schedule()
 	next->gid = 0;
 	rb_thread_ready(next);
 	next->status = THREAD_TO_KILL;
+	rb_thread_save_context(curr_thread);
 	rb_thread_deadlock();
     }
     next->wait_for = 0;
@@ -8338,8 +8339,20 @@ rb_thread_stop_p(thread)
 static void
 rb_thread_wait_other_threads()
 {
+    rb_thread_t th;
+    int found;
+
     /* wait other threads to terminate */
     while (curr_thread != curr_thread->next) {
+	found = 0;
+	FOREACH_THREAD(th) {
+	    if (th != curr_thread && th->status != THREAD_STOPPED) {
+		found = 1;
+		break;
+	    }
+	}
+	END_FOREACH(th);
+	if (!found) return;
 	rb_thread_schedule();
     }
 }
