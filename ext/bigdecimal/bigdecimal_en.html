@@ -118,7 +118,10 @@ but the resulting digits obtained may differ in future version.
 </BLOCKQUOTE>
 
 <LI><B>mode</B></LI><BLOCKQUOTE>
-mode method controls BigDecimal computation.Following usage are defined.<BR>
+f = BigDecimal.mode(s[,v])<BR>
+mode method controls BigDecimal computation. If the second argument is not given or is nil,then the value
+of current setting is returned.
+Following usage are defined.<BR>
 <P><B>[EXCEPTION control]</B><P>
 Actions when computation results NaN or Infinity can be defined as follows.
 <P>
@@ -175,13 +178,12 @@ use truncate/round/ceil/floor/add/sub/mult/div mthods for each instance instead.
 </BLOCKQUOTE>
 
 <LI><B>limit[(n)]</B></LI><BLOCKQUOTE>
-Limits the maximum digits that the newly created BigDecimal objects can hold
-never exceed n+? (Currently,? can not be determined beforehand,but not so big).
+Limits the maximum digits that the newly created BigDecimal objects can hold never exceed n.
 This means the rounding operation specified by BigDecimal.mode is 
 performed if necessary.
-limit returns maximum value before set.
+limit returns the value before set if n is nil or is not specified.
 Zero,the default value,means no upper limit.<BR>
-Except for zero,the limit has more priority than instance methods such as truncate,round,ceil,floor,add,sub,mult,and div. <BR>
+The limit has no more priority than instance methods such as truncate,round,ceil,floor,add,sub,mult,and div. <BR>
 mf = BigDecimal::limit(n)<BR>
 </BLOCKQUOTE>
 

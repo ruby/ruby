@@ -208,6 +208,7 @@ VP_EXPORT void VpSinCos(Real *psin,Real *pcos,Real *x);
 #define VpSetPosInf(a)  ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_POSITIVE_INFINITE)
 #define VpSetNegInf(a)  ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_NEGATIVE_INFINITE)
 #define VpSetInf(a,s)   ( ((s)>0)?VpSetPosInf(a):VpSetNegInf(a) )
+#define VpHasVal(a)     (a->frac[0])
 #define VpIsOne(a)      ((a->Prec==1)&&(a->frac[0]==1)&&(a->exponent==1))
 #define VpExponent(a)   (a->exponent)
 #ifdef _DEBUG

@@ -1,3 +1,7 @@
+Wed Aug 13 23:31:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
+
+	* ext/bigdecimal.c .h .html: Ambiguity of BigDecimal::limit removed.
+
 Wed Aug 13 19:21:34 2003  Christian Neukirchen  <chneukirchen@yahoo.de>
 
 	* lib/webrick/https.rb (HTTPServer#run): should set syncing-mode

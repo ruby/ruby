@@ -126,7 +126,10 @@ BigDecimal("1",10) / BigDecimal("3",10) # => 0.3333333333 3333333333 33333333E0
 </BLOCKQUOTE>
 
 <LI><B>mode</B></LI><BLOCKQUOTE>
-BigDecimalの実行結果を制御します。以下の使用方法が定義されています。
+f = BigDecimal.mode(s[,v])<BR>
+BigDecimalの実行結果を制御します。第２引数を省略、または nil を指定すると
+現状の設定値が戻ります。<BR>
+以下の使用方法が定義されています。
 <P>
 <B>[例外処理]</B><P>
 計算結果が非数(NaN)やゼロによる除算になったときの処理を定義することができます。
@@ -159,8 +162,7 @@ EXCEPTION_INFINITY、EXCEPTION_OVERFLOW、EXCEPTION_ZERODIVIDE
 は今のところ同じです。<BR>
 戻り値は、設定後の値です。「値」の意味は、例えば
 BigDecimal::EXCEPTION_NaNと「値」の & が ゼロ以外ならば
-EXCEPTION_NaNが設定されているという意味です。<BR>
-第２引数に nil を指定すると、現状の設定値が返ります。
+EXCEPTION_NaNが設定されているという意味です。
 
 <P>
 <B>[丸め処理指定]</B><P>
@@ -183,20 +185,18 @@ f = BigDecimal::mode(BigDecimal::ROUND_MODE,flag)
 戻り値は指定後の flag の値です。
 第２引数に nil を指定すると、現状の設定値が返ります。
 mode メソッドでは丸め操作の位置をユーザが指定することはできません。
-丸め操作と位置を自分で制御したい場合は truncate/round/ceil/floor や 
+丸め操作と位置を自分で制御したい場合は BigDecimal::limit や truncate/round/ceil/floor、
 add/sub/mult/div といったインスタンスメソッドを使用して下さい。
 </BLOCKQUOTE>
 <LI><B>limit([n])</B></LI><BLOCKQUOTE>
 生成されるBigDecimalオブジェクトの最大桁数をn桁に制限します。
 戻り値は設定する前の値です。設定値のデフォルト値は０で、桁数無制限という意味です。
-n を指定しない場合は、現状の最大桁数が返ります。<BR>
+n を指定しない、または n が nil の場合は、現状の最大桁数が返ります。<BR>
 計算を続行する間に、数字の桁数が無制限に増えてしまうような場合
  limit で予め桁数を制限できます。この場合 BigDecimal.mode で指定された
 丸め処理が実行されます。
-ただし、実際には n より若干大きい
-桁数が確保されます。また、limit による桁数制限は(無制限を除いて)、
-インスタンスメソッド (truncate/round/ceil/floor/add/sub/mult/div) より
-優先されるので注意が必要です。<BR>
+ただし、インスタンスメソッド (truncate/round/ceil/floor/add/sub/mult/div) の
+桁数制限は limit より優先されます。<BR>
 mf = BigDecimal::limit(n)<BR>
 </BLOCKQUOTE>
 
