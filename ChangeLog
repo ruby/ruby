@@ -1,6 +1,6 @@
 Thu Dec 19 22:35:20 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* eval.c (assign): avoid SEGV at multiple attribute assignment.
+	* eval.c (assign): avoid [BUG] at multiple attribute assignment.
 
 Thu Dec 19 01:00:09 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
