@@ -994,7 +994,14 @@ class << MultiTkIp
     __getip.safe?
   end
 
-  def restart
+  def restart(app_name = nil, keys = {})
+    init_ip_internal
+
+    __getip._invoke('set', 'argv0', app_name) if app_name
+    if keys.kind_of?(Hash)
+      __getip._invoke('set', 'argv', _keys2opts(keys))
+    end
+
     __getip.restart
   end
 
@@ -1127,8 +1134,8 @@ class << TclTkLib
   def get_eventloop_weight
     MultiTkIp.get_eventloop_weight
   end
-  def restart
-    MultiTkIp.restart
+  def restart(*args)
+    MultiTkIp.restart(*args)
   end
 
   def _merge_tklist(*args)
@@ -1191,7 +1198,14 @@ class MultiTkIp
     @interp.deleted?
   end
 
-  def restart
+  def restart(app_name = nil, keys = {})
+    _init_ip_internal(@@INIT_IP_ENV, @@ADD_TK_PROCS)
+
+    @interp._invoke('set', 'argv0', app_name) if app_name
+    if keys.kind_of?(Hash)
+      @interp._invoke('set', 'argv', _keys2opts(keys))
+    end
+
     @interp.restart
   end
 
@@ -1559,8 +1573,7 @@ class MultiTkIp
     #     for '-nestedLoadOk' option ==> {nested=>true}
     if slot.kind_of?(Hash)
       ip = MultiTkIp.__getip
-      ip._eval('::safe::interpConfigure ' + @ip_name + ' ' + 
-	       hash_kv(slot).join(' '))
+      ip._eval('::safe::interpConfigure ' + @ip_name + ' ' + _keys2opts(slot))
     else
       ip._eval('::safe::interpConfigure ' + @ip_name + ' ' + 
 	       "-#{slot} #{_get_eval_string(value)}")

@@ -1,3 +1,7 @@
+Mon Aug 30 22:40:30 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: 'restart' method accepts arguments
+
 Mon Aug 30 21:50:14 2004  Dave Thomas  <dave@pragprog.com>
 
 	* object.c: Add RDoc for Module.included.
