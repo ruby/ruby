@@ -660,6 +660,10 @@ if test "$with_dln_a_out" != yes; then
 			    ;;
 			esac
 			rb_cv_dlopen=yes ;;
+	nto-qnx*)	DLDFLAGS="-L/lib -L/usr/lib -L/usr/local/lib"
+			LDSHARED='ld -Bshareable -x'
+			LDFLAGS="-L/lib -L/usr/lib -L/usr/local/lib"
+			rb_cv_dlopen=yes;;
 	cygwin*|mingw*)	: ${LDSHARED="${DLLWRAP} --target=${target_os} --as=${AS} --dlltool-name=${DLLTOOL} --driver-name=${CC} --export-all -s"}
 			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;

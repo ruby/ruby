@@ -275,6 +275,7 @@ void rb_lastline_set _((VALUE));
 VALUE rb_sym_all_symbols _((void));
 /* process.c */
 int rb_proc_exec _((const char*));
+int rb_waitpid _((int,int*,int));
 void rb_syswait _((int));
 VALUE rb_proc_times _((VALUE));
 /* range.c */

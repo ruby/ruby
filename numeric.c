@@ -17,8 +17,7 @@
 #include <floatingpoint.h>
 #endif
 
-static ID coerce;
-static ID to_i;
+static ID id_coerce, id_to_i, id_div;
 
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
@@ -47,7 +46,7 @@ static VALUE
 coerce_body(x)
     VALUE *x;
 {
-    return rb_funcall(x[1], coerce, 1, x[0]);
+    return rb_funcall(x[1], id_coerce, 1, x[0]);
 }
 
 static VALUE
@@ -119,7 +118,7 @@ static VALUE
 num_div(x, y)
     VALUE x, y;
 {
-    return rb_funcall(x, '/', 1, y);
+    return rb_funcall(x, id_div, 1, y);
 }
 
 static VALUE
@@ -128,7 +127,7 @@ num_divmod(x, y)
 {
     VALUE div, mod;
 
-    div = rb_funcall(x, '/', 1, y);
+    div = rb_funcall(x, div, 1, y);
     if (TYPE(div) == T_FLOAT) {
 	double d = floor(RFLOAT(div)->value);
 
@@ -1535,8 +1534,9 @@ Init_Numeric()
     /* allow divide by zero -- Inf */
     fpsetmask(fpgetmask() & ~(FP_X_DZ|FP_X_INV|FP_X_OFL));
 #endif
-    coerce = rb_intern("coerce");
-    to_i = rb_intern("to_i");
+    id_coerce = rb_intern("coerce");
+    id_to_i = rb_intern("to_i");
+    id_div = rb_intern("div");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
@@ -1550,7 +1550,7 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);
     rb_define_method(rb_cNumeric, "===", num_equal, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
-    rb_define_method(rb_cNumeric, "div", num_div, 1);
+    rb_define_method(rb_cNumeric, "/", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);
     rb_define_method(rb_cNumeric, "remainder", num_remainder, 1);
@@ -1675,3 +1675,4 @@ Init_Numeric()
     rb_define_method(rb_cFloat, "infinite?", flo_is_infinite_p, 0);
     rb_define_method(rb_cFloat, "finite?",   flo_is_finite_p, 0);
 }
+

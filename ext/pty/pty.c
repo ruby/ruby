@@ -94,10 +94,6 @@ char	SlaveName[DEVICELEN];
 
 extern int errno;
 
-#define MAX_PTY 16
-static int n_pty,last_pty;
-static int chld_pid[MAX_PTY];
-
 #ifndef HAVE_SETEUID
 # ifdef HAVE_SETREUID
 #  define seteuid(e)	setreuid(-1, (e))
@@ -116,88 +112,44 @@ struct pty_info {
 };
 
 static void
-set_signal_action(action)
-    RETSIGTYPE (*action)();
-{
-#ifdef __hpux
-    struct sigvec sv;
-    /*
-     * signal SIGCHLD should be delivered on stop of the child
-     */
-    sv.sv_handler = action;
-    sv.sv_mask = sigmask(SIGCHLD);
-    sv.sv_flags = SV_BSDSIG;
-    sigvector(SIGCHLD, &sv, (struct sigvec *) 0);
-#else	/* not HPUX */
-#if defined(SA_NOCLDSTOP)
-    struct sigaction sa;
-    /*
-     * signal SIGCHLD should be delivered on stop of the child
-     * (for SVR4)
-     */
-    sa.sa_handler = action;
-    sigemptyset(&sa.sa_mask);
-    sigaddset(&sa.sa_mask, SIGCHLD);
-    sa.sa_flags = 0;	/* SA_NOCLDSTOP flag is removed */
-    sigaction(SIGCHLD, &sa, (struct sigaction *) 0);
-#else
-    signal(SIGCHLD,action);
-#endif
-#endif /* not HPUX */
-
-}
-
-static void
-reset_signal_action()
-{
-    set_signal_action(SIG_DFL);
-}
-
-static RETSIGTYPE
-chld_changed()
-{
+pty_raise(cpid)
     int cpid;
-    int i,n = -1;
-    int statusp;
+{
+    char buf[1024];
 
-    for (;;) {
-#ifdef HAVE_WAITPID
-	cpid = waitpid(-1, &statusp, WUNTRACED|WNOHANG);
-#else
-	cpid = wait3(&statusp, WUNTRACED|WNOHANG, 0);
-#endif
-	if (cpid == 0 || cpid == -1)
-	    return;
-        for (i = 0; i < last_pty; i++) {
-	    if (chld_pid[i] == cpid) {
-		n = i;
-		goto catched;
-	    }
-	}
-        rb_raise(rb_eRuntimeError, "fork: %d", cpid);
-    }
-  catched:
+    snprintf(buf, sizeof(buf),
+	     "eval %%Q{Thread.main.raise 'pty - stopped: %d'}, nil, \"%s\", %d",
+	     cpid, ruby_sourcefile, ruby_sourceline);
+    rb_eval_string(buf);
+}
+
+static VALUE
+pty_syswait(pid)
+    int pid;
+{
+    int cpid, status;
+
+    cpid = rb_waitpid(pid, &status, WUNTRACED);
+
+    printf("PTY command (%d) finished (%d:%d)\n", pid, cpid, status);
+    if (cpid == 0 || cpid == -1)
+	return Qnil;
 
 #ifdef IF_STOPPED
-    if (IF_STOPPED(statusp)) { /* suspend */
-	rb_raise(rb_eRuntimeError, "Stopped: %d",cpid);
+    if (IF_STOPPED(status)) { /* suspend */
+	pty_raise(cpid);
     }
 #else
 #ifdef WIFSTOPPED
-    if (WIFSTOPPED(statusp)) { /* suspend */
-	rb_raise(rb_eRuntimeError, "Stopped: %d",cpid);
+    if (WIFSTOPPED(status)) { /* suspend */
+	pty_raise(cpid);
     }
 #else
 ---->> Either IF_STOPPED or WIFSTOPPED is needed <<----
 #endif /* WIFSTOPPED */
 #endif /* IF_STOPPED */
-    if (n >= 0) {
-	chld_pid[n] = 0;
-	n_pty--;
-	if (n_pty == 0)
-	    reset_signal_action();
-    }
-    rb_raise(rb_eRuntimeError, "Child_changed: %d",cpid);
+    
+    return Qnil;
 }
 
 static void getDevice _((int*, int*));
@@ -227,7 +179,6 @@ establishShell(shellname, info)
     getDevice(&master,&slave);
 
     currentPid = getpid();
-    set_signal_action(chld_changed);
     if((i = vfork()) < 0) {
 	rb_sys_fail("fork failed");
     }
@@ -304,19 +255,6 @@ establishShell(shellname, info)
 
     close(slave);
 
-    if (n_pty == last_pty) {
-	chld_pid[n_pty] = i;
-	n_pty++;
-	last_pty++;
-    }
-    else {
-	for (j = 0; j < last_pty; j++) {
-	    if (chld_pid[j] == 0) {
-		chld_pid[j] = i;
-		n_pty++;
-	    }
-	}
-    }
     info->child_pid = i;
     info->fd = master;
 }
@@ -426,16 +364,12 @@ static VALUE
 pty_getpty(self, shell)
     VALUE self, shell;
 {
-    VALUE res;
+    VALUE res, th;
     struct pty_info info;
     OpenFile *wfptr,*rfptr;
     NEWOBJ(rport, struct RFile);
     NEWOBJ(wport, struct RFile);
   
-    if (n_pty == MAX_PTY+1) {
-	rb_raise(rb_eRuntimeError, "Too many ptys are open");
-    }
-
     OBJSETUP(rport, rb_cFile, T_FILE);
     MakeOpenFile(rport, rfptr);
 
@@ -457,32 +391,34 @@ pty_getpty(self, shell)
     rb_ary_store(res,1,(VALUE)wport);
     rb_ary_store(res,2,INT2FIX(info.child_pid));
 
+    printf("start watching PTY command (%d)\n", info.child_pid);
+    th = rb_thread_create(pty_syswait, (void*)info.child_pid);
     if (rb_block_given_p()) {
-	rb_yield((VALUE)res);
-	reset_signal_action();
-	return Qnil;
+	res = rb_yield((VALUE)res);
+	rb_funcall(th, rb_intern("kill"), 0, 0);
+	return res;
     }
     else {
 	return (VALUE)res;
     }
 }
 
-/* ruby function: protect_signal */
+/* ruby function: protect_signal - obsolete */
 static VALUE
 pty_protect(self)
     VALUE self;
 {
-    reset_signal_action();
+    rb_warn("PTY::protect_signal is no longer needed");
     rb_yield(Qnil);
-    set_signal_action(chld_changed);
     return self;
 }
 
+/* ruby function: reset_signal - obsolete */
 static VALUE
 pty_reset_signal(self)
     VALUE self;
 {
-    reset_signal_action();
+    rb_warn("PTY::reset_signal is no longer needed");
     return self;
 }
 

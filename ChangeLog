@@ -1,8 +1,57 @@
+Mon Aug  6 03:29:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_lstrip_bang): new method.
+
+	* string.c (rb_str_rstrip_bang): new method.
+
+Sun Aug  5 19:28:39 2001  Nobuyoshi Nakada <nobu.nakada@nifty.ne.jp>
+
+	* string.c (rb_str_associate): should consider STR_ASSOC too.
+
+Sun Aug  5 07:46:18 2001  Nobuyoshi Nakada <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_undefined): do not recurse if method_missing is
+	  undefined.
+
+Thu Aug  2 21:37:32 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_waitpid): now all arguments are optional.
+
+	* process.c (Init_process): waitpid is now alias to wait.
+
+	* process.c (Init_process): waitpid2 is now alias to wait2.
+
+	* process.c (rb_waitpid): made public.
+
+	* ext/pty/pty.c (pty_getpty): avoid disturbing SIGCHLD using
+	  thread and rb_waitpid.
+
+Thu Aug  2 11:23:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_getpgrp): now takes no argument on all
+	  platforms.
+
+	* process.c (proc_setpgrp): ditto.
+
 Thu Aug  2 01:29:42 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* file.c (strrdirsep): removed meaningless code.
 
 	* file.c (rb_file_s_expand_path): reverted to 1.66.
+
+Wed Aug  1 16:17:47 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_in): added
+	  Socket::pack_sockaddr_in(). [new]
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): added
+	  Socket::pack_sockaddr_un(). [new]
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_in): added
+	  Socket::unpack_sockaddr_in(). [new]
+
+	* ext/socket/socket.c (sock_s_pack_sockaddr_un): added
+	  Socket::unpack_sockaddr_un(). [new]
 
 Wed Aug  1 15:42:16 2001  Usaku Nakamura  <usa@ruby-lang.org>
 

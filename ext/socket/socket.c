@@ -1562,7 +1562,7 @@ static VALUE
 sock_s_socketpair(class, domain, type, protocol)
     VALUE class, domain, type, protocol;
 {
-#if !defined(NT) && !defined(__BEOS__) && !defined(__EMX__)
+#if !defined(NT) && !defined(__BEOS__) && !defined(__EMX__) && !defined(__QNXNTO__)
     int d, t, sp[2];
 
     setup_domain_and_type(domain, &d, type, &t);
@@ -1806,11 +1806,20 @@ sock_s_gethostbyaddr(argc, argv)
 {
     VALUE addr, type;
     struct hostent *h;
+    struct sockaddr *sa;
+    int t = AF_INET;
 
     rb_scan_args(argc, argv, "11", &addr, &type);
-    StringValue(addr);
-    h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len,
-		      NIL_P(type)?AF_INET:NUM2INT(type));
+    sa = (struct sockaddr*)StringValuePtr(addr);
+    if (!NIL_P(type)) {
+	t = NUM2INT(type);
+    }
+#ifdef INET6
+    else if (RSTRING(addr)->len == 16) {
+	t = AF_INET6;
+    }
+#endif
+    h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len, t);
 
     return mkhostent(h);
 }
@@ -2055,6 +2064,57 @@ sock_s_getnameinfo(argc, argv)
     rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
 }
 
+static VALUE
+sock_s_pack_sockaddr_in(self, port, host)
+    VALUE self, port, host;
+{
+    struct addrinfo *res = ip_addrsetup(host, port);
+    VALUE addr = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
+
+    freeaddrinfo(res);
+    OBJ_INFECT(addr, port);
+    OBJ_INFECT(addr, host);
+
+    return addr;
+}
+
+static VALUE
+sock_s_pack_sockaddr_un(self, path)
+    VALUE self, path;
+{
+    struct sockaddr_un sockaddr;
+    VALUE addr;
+
+    MEMZERO(&sockaddr, struct sockaddr_un, 1);
+    sockaddr.sun_family = AF_UNIX;
+    strncpy(sockaddr.sun_path, StringValuePtr(path), sizeof(sockaddr.sun_path)-1);
+    addr = rb_str_new((char*)&sockaddr, sizeof(sockaddr));
+    OBJ_INFECT(addr, path);
+
+    return addr;
+}
+
+static VALUE
+sock_s_unpack_sockaddr_in(self, addr)
+    VALUE self, addr;
+{
+    struct sockaddr_in * sockaddr;
+
+    sockaddr = (struct sockaddr_in*)StringValuePtr(addr);
+    return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), mkipaddr(sockaddr));
+}
+
+static VALUE
+sock_s_unpack_sockaddr_un(self, addr)
+    VALUE self, addr;
+{
+    struct sockaddr_un * sockaddr;
+
+    sockaddr = (struct sockaddr_un*)StringValuePtr(addr);
+    /* xxx: should I check against sun_path size? */
+    return rb_tainted_str_new2(sockaddr->sun_path);
+}
+
 static VALUE mConst;
 
 static void
@@ -2164,6 +2224,12 @@ Init_socket()
     rb_define_singleton_method(rb_cSocket, "getservbyname", sock_s_getservbyaname, -1);
     rb_define_singleton_method(rb_cSocket, "getaddrinfo", sock_s_getaddrinfo, -1);
     rb_define_singleton_method(rb_cSocket, "getnameinfo", sock_s_getnameinfo, -1);
+    rb_define_singleton_method(rb_cSocket, "sockaddr_in", sock_s_pack_sockaddr_in, 2);
+    rb_define_singleton_method(rb_cSocket, "sockaddr_un", sock_s_pack_sockaddr_un, 1);
+    rb_define_singleton_method(rb_cSocket, "pack_sockaddr_in", sock_s_pack_sockaddr_in, 2);
+    rb_define_singleton_method(rb_cSocket, "pack_sockaddr_un", sock_s_pack_sockaddr_un, 1);
+    rb_define_singleton_method(rb_cSocket, "unpack_sockaddr_in", sock_s_unpack_sockaddr_in, 1);
+    rb_define_singleton_method(rb_cSocket, "unpack_sockaddr_un", sock_s_unpack_sockaddr_un, 1);
 
     /* constants */
     mConst = rb_define_module_under(rb_cSocket, "Constants");

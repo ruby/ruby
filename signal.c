@@ -292,7 +292,7 @@ posix_signal(signum, handler)
     sigact.sa_handler = handler;
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
-#ifdef SA_RESTART
+#if defined(SA_RESTART)
     sigact.sa_flags |= SA_RESTART; /* SVR4, 4.3+BSD */
 #endif
 #ifdef SA_NOCLDWAIT

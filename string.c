@@ -202,7 +202,7 @@ void
 rb_str_associate(str, add)
     VALUE str, add;
 {
-    if (!FL_TEST(str, STR_NO_ORIG)) {
+    if (FL_TEST(str, STR_NO_ORIG|STR_ASSOC) != (STR_NO_ORIG|STR_ASSOC)) {
 	if (RSTRING(str)->orig) {
 	    rb_str_modify(str);
 	}
@@ -216,7 +216,7 @@ VALUE
 rb_str_associated(str)
     VALUE str;
 {
-    if (!FL_TEST(str, STR_NO_ORIG|STR_ASSOC)) {
+    if (FL_TEST(str, STR_NO_ORIG|STR_ASSOC) != (STR_NO_ORIG|STR_ASSOC)) {
 	return Qfalse;
     }
     return RSTRING(str)->orig;
@@ -2648,7 +2648,7 @@ rb_f_chomp(argc, argv)
 }
 
 static VALUE
-rb_str_strip_bang(str)
+rb_str_lstrip_bang(str)
     VALUE str;
 {
     char *s, *t, *e;
@@ -2659,27 +2659,63 @@ rb_str_strip_bang(str)
     /* remove spaces at head */
     while (s < t && ISSPACE(*s)) s++;
 
+    RSTRING(str)->len = t-s;
+    if (s > RSTRING(str)->ptr) {
+	memmove(RSTRING(str)->ptr, s, RSTRING(str)->len);
+	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
+	return str;
+    }
+}
+
+static VALUE
+rb_str_lstrip(str)
+    VALUE str;
+{
+    str = rb_str_dup(str);
+    rb_str_lstrip_bang(str);
+    return str;
+}
+
+static VALUE
+rb_str_rstrip_bang(str)
+    VALUE str;
+{
+    char *s, *t, *e;
+
+    rb_str_modify(str);
+    s = RSTRING(str)->ptr;
+    e = t = s + RSTRING(str)->len;
+
     /* remove trailing spaces */
     t--;
     while (s <= t && ISSPACE(*t)) t--;
     t++;
 
     RSTRING(str)->len = t-s;
-    if (s > RSTRING(str)->ptr) { 
-	char *p = RSTRING(str)->ptr;
-
-	RSTRING(str)->ptr = ALLOC_N(char, RSTRING(str)->len+1);
-	memcpy(RSTRING(str)->ptr, s, RSTRING(str)->len);
+    if (t < e) {
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
-	free(p);
+	return str;
     }
-    else if (t < e) {
-	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
-    }
-    else {
-	return Qnil;
-    }
+    return Qnil;
+}
 
+static VALUE
+rb_str_rstrip(str)
+    VALUE str;
+{
+    str = rb_str_dup(str);
+    rb_str_rstrip_bang(str);
+    return str;
+}
+
+static VALUE
+rb_str_strip_bang(str)
+    VALUE str;
+{
+    VALUE l = rb_str_lstrip_bang(str);
+    VALUE r = rb_str_rstrip_bang(str);
+
+    if (NIL_P(l) && NIL_P(r)) return Qnil;
     return str;
 }
 
@@ -3015,12 +3051,17 @@ Init_String()
     rb_define_method(rb_cString, "chop", rb_str_chop, 0);
     rb_define_method(rb_cString, "chomp", rb_str_chomp, -1);
     rb_define_method(rb_cString, "strip", rb_str_strip, 0);
+    rb_define_method(rb_cString, "lstrip", rb_str_lstrip, 0);
+    rb_define_method(rb_cString, "rstrip", rb_str_rstrip, 0);
 
     rb_define_method(rb_cString, "sub!", rb_str_sub_bang, -1);
     rb_define_method(rb_cString, "gsub!", rb_str_gsub_bang, -1);
     rb_define_method(rb_cString, "strip!", rb_str_strip_bang, 0);
     rb_define_method(rb_cString, "chop!", rb_str_chop_bang, 0);
     rb_define_method(rb_cString, "chomp!", rb_str_chomp_bang, -1);
+    rb_define_method(rb_cString, "strip!", rb_str_strip_bang, 0);
+    rb_define_method(rb_cString, "lstrip!", rb_str_lstrip_bang, 0);
+    rb_define_method(rb_cString, "rstrip!", rb_str_rstrip_bang, 0);
 
     rb_define_method(rb_cString, "tr", rb_str_tr, 2);
     rb_define_method(rb_cString, "tr_s", rb_str_tr_s, 2);

@@ -12,7 +12,7 @@ class CGI
 
     def Session::callback(dbman)
       lambda{
-	dbman.close
+	dbman[0].close unless dbman.empty?
       }
     end
 
@@ -63,7 +63,8 @@ class CGI
 				end)
         ]
       end
-      ObjectSpace::define_finalizer(self, Session::callback(@dbman))
+      @dbprot = [@dbman]
+      ObjectSpace::define_finalizer(self, Session::callback(@dbprot))
     end
 
     def [](key)
@@ -89,10 +90,12 @@ class CGI
 
     def close
       @dbman.close
+      @dbprot.clear
     end
 
     def delete
       @dbman.delete
+      @dbprot.clear
     end
 
     class FileStore

@@ -735,6 +735,7 @@ rb_ary_dup(ary)
     OBJSETUP(dup, rb_obj_type(ary), T_ARRAY);
     MEMCPY(RARRAY(dup)->ptr, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
     RARRAY(dup)->len = RARRAY(ary)->len;
+    OBJ_INFECT(dup, ary);
     return dup;
 }
 
@@ -1736,7 +1737,7 @@ Init_Array()
     rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "indices", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "clone", rb_ary_clone, 0);
-    rb_define_method(rb_cArray, "clone", rb_ary_dup, 0);
+    rb_define_method(rb_cArray, "dup", rb_ary_dup, 0);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse_bang, 0);

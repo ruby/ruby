@@ -227,11 +227,11 @@ pst_wcoredump(st)
 static st_table *pid_tbl;
 #endif
 
-static int
-rb_waitpid(pid, flags, st)
+int
+rb_waitpid(pid, st, flags)
     int pid;
-    int flags;
     int *st;
+    int flags;
 {
     int result;
 #ifndef NO_WAITPID
@@ -326,50 +326,7 @@ waitall_each(key, value, data)
 #endif
 
 static VALUE
-proc_wait()
-{
-    int pid, status;
-#ifdef NO_WAITPID
-    struct wait_data data;
-
-    if (pid_tbl) {
-	data.status = -1;
-	st_foreach(pid_tbl, wait_each, &data);
-	if (data.status != -1) {
-	    last_status_set(data.status);
-	    return INT2FIX(data.pid);
-	}
-    }
-
-    while (1) {
-	TRAP_BEG;
-	pid = wait(&status);
-	TRAP_END;
-	if (pid >= 0) break;
-        if (errno == EINTR) {
-            rb_thread_schedule();
-            continue;
-        }
-        rb_sys_fail(0);
-    }
-    last_status_set(status);
-#else
-    if ((pid = rb_waitpid(-1, 0, &status)) < 0)
-	rb_sys_fail(0);
-#endif
-    return INT2FIX(pid);
-}
-
-static VALUE
-proc_wait2()
-{
-    VALUE pid = proc_wait();
-
-    return rb_assoc_new(pid, rb_last_status);
-}
-
-static VALUE
-proc_waitpid(argc, argv)
+proc_wait(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -377,12 +334,17 @@ proc_waitpid(argc, argv)
     int pid, flags, status;
 
     flags = 0;
-    rb_scan_args(argc, argv, "11", &vpid, &vflags);
-    if (argc == 2 && !NIL_P(vflags)) {
-	flags = NUM2UINT(vflags);
+    rb_scan_args(argc, argv, "02", &vpid, &vflags);
+    if (argc == 0) {
+	pid = -1;
     }
-
-    if ((pid = rb_waitpid(NUM2INT(vpid), flags, &status)) < 0)
+    else {
+	pid = NUM2INT(vpid);
+	if (argc == 2 && !NIL_P(vflags)) {
+	    flags = NUM2UINT(vflags);
+	}
+    }
+    if ((pid = rb_waitpid(pid, &status, flags)) < 0)
 	rb_sys_fail(0);
     if (pid == 0) {
 	rb_last_status = Qnil;
@@ -392,11 +354,11 @@ proc_waitpid(argc, argv)
 }
 
 static VALUE
-proc_waitpid2(argc, argv)
+proc_wait2(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE pid = proc_waitpid(argc, argv);
+    VALUE pid = proc_wait(argc, argv);
     if (NIL_P(pid)) return Qnil;
     return rb_assoc_new(pid, rb_last_status);
 }
@@ -430,7 +392,7 @@ proc_waitall()
 #else
     rb_last_status = Qnil;
     for (pid = -1;;) {
-	pid = rb_waitpid(-1, 0, &status);
+	pid = rb_waitpid(-1, &status, 0);
 	if (pid == -1) {
 	    if (errno == ECHILD)
 		break;
@@ -816,7 +778,7 @@ rb_syswait(pid)
     ifunc = signal(SIGINT, SIG_IGN);
 
     do {
-	i = rb_waitpid(pid, 0, &status);
+	i = rb_waitpid(pid, &status, 0);
     } while (i == -1 && errno == EINTR);
 
 #ifdef SIGHUP
@@ -994,52 +956,36 @@ rb_f_sleep(argc, argv)
 }
 
 static VALUE
-proc_getpgrp(argc, argv)
-    int argc;
-    VALUE *argv;
+proc_getpgrp()
 {
-#ifdef HAVE_GETPGRP
     int pgrp;
-#ifndef GETPGRP_VOID
-    VALUE vpid;
-    int pid;
 
-    rb_scan_args(argc, argv, "01", &vpid);
-    pid = NIL_P(vpid)?0:NUM2INT(vpid);
-    pgrp = getpgrp(pid);
-#else
-    rb_scan_args(argc, argv, "0");
+#if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)
     pgrp = getpgrp();
-#endif
     if (pgrp < 0) rb_sys_fail(0);
     return INT2FIX(pgrp);
 #else
+# ifdef HAVE_GETPGID
+    pgrp = getpgid(0);
+    if (pgrp < 0) rb_sys_fail(0);
+    return INT2FIX(pgrp);
+# else
     rb_notimplement();
+# endif
 #endif
 }
 
 static VALUE
-proc_setpgrp(argc, argv)
-    int argc;
-    VALUE *argv;
+proc_setpgrp()
 {
-#ifdef HAVE_SETPGRP
-#ifndef SETPGRP_VOID
-    VALUE pid, pgrp;
-    int ipid, ipgrp;
-
-    rb_scan_args(argc, argv, "02", &pid, &pgrp);
-
-    ipid = NIL_P(pid)?0:NUM2INT(pid);
-    ipgrp = NIL_P(pgrp)?0:NUM2INT(pgrp);
-    if (setpgrp(ipid, ipgrp) < 0) rb_sys_fail(0);
-#else
-    rb_scan_args(argc, argv, "0");
+#if defined(HAVE_SETPGRP) && defined(SETPGRP_VOID)
     if (setpgrp() < 0) rb_sys_fail(0);
-#endif
-    return INT2FIX(0);
 #else
+# ifdef HAVE_SETPGID
+    if (setpgid(0, 0) < 0) rb_sys_fail(0);
+# else
     rb_notimplement();
+# endif
 #endif
 }
 
@@ -1328,11 +1274,11 @@ Init_process()
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
 #ifndef NT
-    rb_define_module_function(rb_mProcess, "wait", proc_wait, 0);
-    rb_define_module_function(rb_mProcess, "wait2", proc_wait2, 0);
+    rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
+    rb_define_module_function(rb_mProcess, "wait2", proc_wait2, -1);
+    rb_define_module_function(rb_mProcess, "waitpid", proc_wait, -1);
+    rb_define_module_function(rb_mProcess, "waitpid2", proc_wait2, -1);
     rb_define_module_function(rb_mProcess, "waitall", proc_waitall, 0);
-    rb_define_module_function(rb_mProcess, "waitpid", proc_waitpid, -1);
-    rb_define_module_function(rb_mProcess, "waitpid2", proc_waitpid2, -1);
 
     rb_cProcStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cProcStatus), "new");
@@ -1357,8 +1303,8 @@ Init_process()
     rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);
 #endif /* ifndef NT */
 
-    rb_define_module_function(rb_mProcess, "getpgrp", proc_getpgrp, -1);
-    rb_define_module_function(rb_mProcess, "setpgrp", proc_setpgrp, -1);
+    rb_define_module_function(rb_mProcess, "getpgrp", proc_getpgrp, 0);
+    rb_define_module_function(rb_mProcess, "setpgrp", proc_setpgrp, 0);
     rb_define_module_function(rb_mProcess, "getpgid", proc_getpgid, 1);
     rb_define_module_function(rb_mProcess, "setpgid", proc_setpgid, 2);
 

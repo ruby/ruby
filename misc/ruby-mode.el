@@ -707,6 +707,9 @@ An end of a defun is found by moving forward from the beginning of one."
 
   (defvar ruby-font-lock-keywords
     (list
+     ;; trick
+     '("\\s-+" 0 nil t)
+     '("\\S-+" 0 nil t)
      (cons (concat
 	    "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\("
 	    (mapconcat
@@ -750,16 +753,14 @@ An end of a defun is found by moving forward from the beginning of one."
 	     "\\|")
 	    "\\)\\>\\([^_]\\|$\\)")
 	   2)
-     ;; regexps
-     '("/\\(\\(\\\\/\\|[^/\n]\\)*\\)/\\([iop]*\\)"
-       (1 font-lock-string-face)
-       (3 font-lock-constant-face))
      ;; variables
      '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\b\\([^_]\\|$\\)"
        2 font-lock-variable-name-face)
      ;; variables
-     '("[$@].\\(\\w\\|_\\)*"
-       0 font-lock-variable-name-face)
+     '("\\(\\$\\(\\W\\|[0-9]\\)\\)\\W"
+       1 font-lock-variable-name-face t)     
+     '("\\($\\|@\\|@@\\)\\(\\w\\(\\w\\|_\\)*\\|#{\\)"
+       0 font-lock-variable-name-face t)
      ;; embedded document
      '(ruby-font-lock-docs
        0 font-lock-comment-face t)
@@ -772,8 +773,36 @@ An end of a defun is found by moving forward from the beginning of one."
      '("^\\s *def\\s +\\([^( ]+\\)"
        1 font-lock-function-name-face)
      ;; symbols
-     '("\\(^\\|[^:]\\)\\(:\\([-+/%&|^~`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|\\[\\]\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b\\)\\)\\)"
-       2 font-lock-reference-face))
+     '("\\(^\\|[^:]\\)\\(:\\([-+/%&|^~`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|\\[\\]\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b\\)\\|#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}\\)\\)"
+       2 font-lock-reference-face)
+     ;; strings
+     ;; %Q!   !
+     '("[[\\s <+(,]%[rqQ]?\\(\\([^a-zA-Z0-9 \n]\\)[^\\2\n\\\\]*\\(\\\\.[^\\2\n\\\\]*\\)*\\2\\)" 
+       1 font-lock-string-face t)
+     ;; '...'
+     '("[[\\s <+(,]\\('[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*'\\)" 
+       1 font-lock-string-face t)
+     ;; "..."
+     '("[[\\s <+(,]\\(\"[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*\"\\)" 
+       1 font-lock-string-face t)
+     ;; `...`
+     '("[\\s <+(,]\\(`[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*`\\)" 
+       1 font-lock-warning-face t)
+     ;; %x!...!
+     '("[\\s <+(,]%x\\(\\([^a-zA-Z0-9 \n]\\)[^\\2\n\\]*\\(\\\\.[^\\2\n\\]*\\)*\\2\\)" 
+       1 font-lock-warning-face t)
+     ;; regexps
+     '("\\(^\\|[=(,~?:]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|\\.g?sub!?\\)\\s *\\(/[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*/\\([iop]*\\)\\)"  
+       (4 font-lock-string-face t)
+       (6 font-lock-constant-face t))
+     '("\\(/[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*/\\)\\s *[=!][=~]"
+       1 font-lock-string-face t)
+     ;; expression expansion
+     '("#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}" 
+       0 font-lock-variable-name-face t)
+    ;; comment
+     '("^\\s *\\([^#\n'\"%/]\\|'[^'\n\\]*\\(\\\\.[^'\n\\]*\\)*'\\|\"[^\"\n\\]*\\(\\\\.[^\"\n\\]*\\)*\"\\|%[rqQx]?\\([^a-zA-Z0-9 \n]\\)[^\\4\n\\]*\\(\\\\.[^\\4\n\\]*\\)*\\4\\|/[^/\n\\]*\\(\\\\.[^/\n\\]\\)*/\\|#{[^}\\\\]*\\(\\\\.[^}\\\\]*\\)*}\\)*\\(#\\([^{\n].*\\|$\\)\\)"
+       8 font-lock-comment-face t))
     "*Additional expressions to highlight in ruby mode."))
 
  ((featurep 'hilit19)

@@ -4597,10 +4597,11 @@ cond0(node, logop)
     enum node_type type = nd_type(node);
 
     assign_in_cond(node);
+    if (logop) return node;
+
     switch (type) {
       case NODE_DSTR:
       case NODE_STR:
-	if (logop) break;
 	rb_warn("string literal in condition");
 	break;
 

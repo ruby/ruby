@@ -31,6 +31,10 @@
 # define USE_SETVBUF
 #endif
 
+#ifdef __QNXNTO__
+#include "unix.h"
+#endif
+
 #include <sys/types.h>
 #if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
 #include <sys/ioctl.h>

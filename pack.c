@@ -331,7 +331,7 @@ pack_pack(ary, fmt)
     static char *nul10 = "\0\0\0\0\0\0\0\0\0\0";
     static char *spc10 = "          ";
     char *p, *pend;
-    VALUE res, from, associates = 0;
+    VALUE res, from;
     char type;
     int items, len, idx;
     char *ptr;
@@ -872,10 +872,7 @@ pack_pack(ary, fmt)
 		    StringValue(from);
 		    t = RSTRING(from)->ptr;
 		}
-		if (!associates) {
-		    associates = rb_ary_new();
-		}
-		rb_ary_push(associates, from);
+		rb_str_associate(res, from);
 		rb_str_buf_cat(res, (char*)&t, sizeof(char*));
 	    }
 	    break;
@@ -929,10 +926,6 @@ pack_pack(ary, fmt)
 	  default:
 	    break;
 	}
-    }
-
-    if (associates) {
-	rb_str_associate(res, associates);
     }
     return res;
 }
@@ -1677,13 +1670,12 @@ pack_unpack(str, fmt)
 		    s += sizeof(char *);
 
 		    if (t) {
-			VALUE a, tmp;
-			VALUE *p, *pend;
+			VALUE a, *p, *pend;
 
-			p = RARRAY(a)->ptr;
 			if (!(a = rb_str_associated(str))) {
 			    rb_raise(rb_eArgError, "no associated pointer");
 			}
+			p = RARRAY(a)->ptr;
 			pend = p + RARRAY(a)->len;
 			while (p < pend) {
 			    if (TYPE(*p) == T_STRING && RSTRING(*p)->ptr == t) {

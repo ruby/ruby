@@ -1,3 +1,11 @@
+: Socket::pack_sockaddr_in(), Socket::unpack_sockaddr_in()
+
+  Added.  Utility for direct Socket access.
+
+: Socket::pack_sockaddr_un(), Socket::unpack_sockaddr_un()
+
+  Added.  Utility for direct Socket access.
+
 : String#casecmp
 
   Added.  This is a case insensitive version of String#<=>.
