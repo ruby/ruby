@@ -528,7 +528,7 @@ module Net
 
         
     def readline
-      ret = readuntil( "\r\n" )
+      ret = readuntil( "\n" )
       ret.chop!
       ret
     end
@@ -538,7 +538,6 @@ module Net
       @pipe << "reading text...\n" if @pipe; pipeoff
 
       rsize = 0
-
       while (str = readuntil("\r\n")) != ".\r\n" do
         rsize += str.size
         str.gsub!( /\A\./, '' )
@@ -557,9 +556,9 @@ module Net
       str = nil
       i = 0
       while (str = readuntil("\r\n")) != ".\r\n" do
+        i += 1
         str.chop!
         yield str
-        i += 1
       end
 
       @pipe << "read #{i} items\n" if pipeon

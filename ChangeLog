@@ -1,3 +1,7 @@
+Sat Nov 18 14:07:20 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: Socket#readline() reads until "\n", not "\r\n"
+
 Fri Nov 17 14:55:18 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* string.c (rb_str_succ): output should be NUL terminated.
