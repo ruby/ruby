@@ -9,7 +9,7 @@
 ************************************************/
 
 #include "ruby.h"
-#include "sig.h"
+#include "rubysig.h"
 #include <gtk/gtk.h>
 #include <signal.h>
 
@@ -6051,7 +6051,7 @@ Init_gtk()
     rb_define_method(gWidget, "draw_default", widget_draw_default, 0);
     rb_define_method(gWidget, "draw_children", widget_draw_children, 0);
     rb_define_method(gWidget, "size_request", widget_size_request, 1);
-    rb_define_method(gWidget, "size_alocate", widget_size_allocate, 1);
+    rb_define_method(gWidget, "size_allocate", widget_size_allocate, 1);
     rb_define_method(gWidget, "install_accelerator", widget_inst_accel, 4);
     rb_define_method(gWidget, "remove_accelerator", widget_rm_accel, 4);
     rb_define_method(gWidget, "event", widget_event, 1);
@@ -6208,7 +6208,7 @@ Init_gtk()
     rb_define_method(gBBox, "set_child_ipadding", bbox_set_child_ipadding, 2);
 
     /* CList */
-    rb_define_method(gCList, "initialize", clist_initialize, -1);
+    rb_define_method(gCList, "initialize", clist_initialize, 1);
     rb_define_method(gCList, "set_border", clist_set_border, 1);
     rb_define_method(gCList, "set_selection_mode", clist_set_sel_mode, 1);
     rb_define_method(gCList, "set_policy", clist_set_policy, 2);
