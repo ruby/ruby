@@ -902,9 +902,9 @@ class Vector
       els = @elements.collect{|e| e * x}
       Vector.elements(els, false)
     when Matrix
-      self.covector * x
+      Matrix.column_vector(self) * x
     else
-      s, x = X.coerce(self)
+      s, x = x.coerce(self)
       s * x
     end
   end
