@@ -1330,6 +1330,7 @@ ruby_cleanup(ex)
 {
     int state;
 
+    ruby_safe_level = 0;
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {

@@ -983,6 +983,24 @@ extern char **environ;
 #endif
 
 static VALUE
+env_str_new(ptr, len)
+    const char *ptr;
+    long len;
+{
+    VALUE str = rb_tainted_str_new(ptr, len);
+
+    rb_obj_freeze(str);
+    return str;
+}
+
+static VALUE
+env_str_new2(ptr)
+    const char *ptr;
+{
+    return env_str_new(ptr, strlen(ptr));
+}
+
+static VALUE
 env_delete(obj, name)
     VALUE obj, name;
 {
@@ -996,7 +1014,7 @@ env_delete(obj, name)
     }
     val = getenv(nam);
     if (val) {
-	VALUE value = rb_tainted_str_new2(val);
+	VALUE value = env_str_new2(val);
 
 	ruby_setenv(nam, 0);
 #ifdef __BORLANDC__
@@ -1040,8 +1058,13 @@ rb_f_getenv(obj, name)
 #else
 	if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
 #endif
-	    return rb_str_new2(env);
-	return rb_tainted_str_new2(env);
+	{
+	    VALUE str = rb_str_new2(env);
+
+	    rb_obj_freeze(str);
+	    return str;
+	}
+	return env_str_new2(env);
     }
     return Qnil;
 }
@@ -1079,7 +1102,7 @@ env_fetch(argc, argv)
     if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
 #endif
 	return rb_str_new2(env);
-    return rb_tainted_str_new2(env);
+    return env_str_new2(env);
 }
 
 static void
@@ -1259,7 +1282,7 @@ env_keys()
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_ary_push(ary, rb_tainted_str_new(*env, s-*env));
+	    rb_ary_push(ary, env_str_new(*env, s-*env));
 	}
 	env++;
     }
@@ -1277,7 +1300,7 @@ env_each_key(hash)
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_yield(rb_tainted_str_new(*env, s-*env));
+	    rb_yield(env_str_new(*env, s-*env));
 	}
 	env++;
     }
@@ -1295,7 +1318,7 @@ env_values()
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_ary_push(ary, rb_tainted_str_new2(s+1));
+	    rb_ary_push(ary, env_str_new2(s+1));
 	}
 	env++;
     }
@@ -1313,7 +1336,7 @@ env_each_value(hash)
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_yield(rb_tainted_str_new2(s+1));
+	    rb_yield(env_str_new2(s+1));
 	}
 	env++;
     }
@@ -1331,8 +1354,8 @@ env_each(hash)
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_yield_values(2, rb_tainted_str_new(*env, s-*env),
-			       rb_tainted_str_new2(s+1));
+	    rb_yield_values(2, env_str_new(*env, s-*env),
+			       env_str_new2(s+1));
 	}
 	env++;
     }
@@ -1410,8 +1433,8 @@ env_select(argc, argv)
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    VALUE k = rb_tainted_str_new(*env, s-*env);
-	    VALUE v = rb_tainted_str_new2(s+1);
+	    VALUE k = env_str_new(*env, s-*env);
+	    VALUE v = env_str_new2(s+1);
 	    if (RTEST(rb_yield_values(2, k, v))) {
 		rb_ary_push(result, rb_assoc_new(k, v));
 	    }
@@ -1491,8 +1514,8 @@ env_to_a()
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_ary_push(ary, rb_assoc_new(rb_tainted_str_new(*env, s-*env),
-					  rb_tainted_str_new2(s+1)));
+	    rb_ary_push(ary, rb_assoc_new(env_str_new(*env, s-*env),
+					  env_str_new2(s+1)));
 	}
 	env++;
     }
@@ -1581,7 +1604,7 @@ env_index(dmy, value)
 	char *s = strchr(*env, '=')+1;
 	if (s) {
 	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
-		str = rb_tainted_str_new(*env, s-*env-1);
+		str = env_str_new(*env, s-*env-1);
 		FREE_ENVIRON(environ);
 		return str;
 	    }
@@ -1608,7 +1631,7 @@ env_indexes(argc, argv)
 	    v = getenv(RSTRING(argv[i])->ptr);
 	}
 	if (v) {
-	    RARRAY(indexes)->ptr[i] = rb_tainted_str_new2(v);
+	    RARRAY(indexes)->ptr[i] = env_str_new2(v);
 	}
 	else {
 	    RARRAY(indexes)->ptr[i] = Qnil;
@@ -1629,8 +1652,8 @@ env_to_hash()
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    rb_hash_aset(hash, rb_tainted_str_new(*env, s-*env),
-			       rb_tainted_str_new2(s+1));
+	    rb_hash_aset(hash, env_str_new(*env, s-*env),
+			       env_str_new2(s+1));
 	}
 	env++;
     }
@@ -1653,8 +1676,8 @@ env_shift()
     if (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
-	    VALUE key = rb_tainted_str_new(*env, s-*env);
-	    VALUE val = rb_tainted_str_new2(getenv(RSTRING(key)->ptr));
+	    VALUE key = env_str_new(*env, s-*env);
+	    VALUE val = env_str_new2(getenv(RSTRING(key)->ptr));
 	    env_delete(Qnil, key);
 	    return rb_assoc_new(key, val);
 	}

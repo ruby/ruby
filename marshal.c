@@ -1284,7 +1284,6 @@ marshal_load(argc, argv)
     int major, minor;
     VALUE v;
     struct load_arg arg;
-    volatile VALUE hash;	/* protect from GC */
 
     rb_scan_args(argc, argv, "11", &port, &proc);
     if (rb_respond_to(port, rb_intern("to_str"))) {
@@ -1319,7 +1318,7 @@ marshal_load(argc, argv)
     }
 
     arg.symbol = st_init_numtable();
-    arg.data   = hash = rb_hash_new();
+    arg.data   = rb_hash_new();
     if (NIL_P(proc)) arg.proc = 0;
     else             arg.proc = proc;
     v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);

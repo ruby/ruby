@@ -411,12 +411,12 @@ io_write(io, str)
     rb_secure(4);
     if (TYPE(str) != T_STRING)
 	str = rb_obj_as_string(str);
-    if (RSTRING(str)->len == 0) return INT2FIX(0);
 
     if (TYPE(io) != T_FILE) {
 	/* port is not IO, call write method for it. */
 	return rb_funcall(io, id_write, 1, str);
     }
+    if (RSTRING(str)->len == 0) return INT2FIX(0);
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
