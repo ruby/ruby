@@ -1,3 +1,7 @@
+Mon Jul 10 15:27:16 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* io.c (pipe_finalize): should set rb_last_status when pclose().
+
 Mon Jul 10 09:07:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* error.c (rb_bug): print version number and such too.

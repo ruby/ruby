@@ -1475,13 +1475,16 @@ pipe_finalize(fptr)
     OpenFile *fptr;
 {
 #if !defined (__CYGWIN__)
+    extern VALUE rb_last_status;
+    int status;
     if (fptr->f) {
-	pclose(fptr->f);
+	status = pclose(fptr->f);
     }
     if (fptr->f2) {
-	pclose(fptr->f2);
+	status = pclose(fptr->f2);
     }
     fptr->f = fptr->f2 = 0;
+    rb_last_status = INT2FIX(status);
 #else
     fptr_finalize(fptr);
 #endif
