@@ -4595,9 +4595,9 @@ void_expr0(node)
     char *useless = 0;
 
     if (!RTEST(ruby_verbose)) return;
-    if (!node) return;
 
   again:
+    if (!node) return;
     switch (nd_type(node)) {
       case NODE_NEWLINE:
 	node = node->nd_next;
