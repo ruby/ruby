@@ -165,6 +165,7 @@ make_struct(name, member, klass)
 
     if (NIL_P(name)) {
 	nstr = rb_class_new(klass);
+	rb_class_inherited(klass, nstr);
     }
     else {
 	char *cname = STR2CSTR(name);

@@ -628,11 +628,9 @@ rb_class_s_new(argc, argv)
 	rb_raise(rb_eTypeError, "can't make subclass of virtual class");
     }
     klass = rb_class_new(super);
-    /* make metaclass */
-    RBASIC(klass)->klass = rb_singleton_class_new(RBASIC(super)->klass);
-    rb_singleton_class_attached(RBASIC(klass)->klass, klass);
+    rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_obj_call_init(klass, argc, argv);
-    rb_funcall(super, rb_intern("inherited"), 1, klass);
+    rb_class_inherited(super, klass);
 
     return klass;
 }
@@ -1096,12 +1094,9 @@ Init_Object()
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
 
-    metaclass = RBASIC(rb_cObject)->klass = rb_singleton_class_new(rb_cClass);
-    rb_singleton_class_attached(metaclass, rb_cObject);
-    metaclass = RBASIC(rb_cModule)->klass = rb_singleton_class_new(metaclass);
-    rb_singleton_class_attached(metaclass, rb_cModule);
-    metaclass = RBASIC(rb_cClass)->klass = rb_singleton_class_new(metaclass);
-    rb_singleton_class_attached(metaclass, rb_cClass);
+    metaclass = rb_make_metaclass(rb_cObject, rb_cClass);
+    metaclass = rb_make_metaclass(rb_cModule, metaclass);
+    metaclass = rb_make_metaclass(rb_cClass, metaclass);
 
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);

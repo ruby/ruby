@@ -121,6 +121,16 @@ rb_singleton_class_attached(klass, obj)
 }
 
 VALUE
+rb_make_metaclass(obj, klass)
+    VALUE obj, klass;
+{
+    klass = rb_singleton_class_new(klass);
+    RBASIC(obj)->klass = klass;
+    rb_singleton_class_attached(klass, obj);
+    return klass;
+}
+
+VALUE
 rb_define_class_id(id, super)
     ID id;
     VALUE super;
@@ -130,12 +140,16 @@ rb_define_class_id(id, super)
     if (!super) super = rb_cObject;
     klass = rb_class_new(super);
     rb_name_class(klass, id);
-    /* make metaclass */
-    RBASIC(klass)->klass = rb_singleton_class_new(RBASIC(super)->klass);
-    rb_singleton_class_attached(RBASIC(klass)->klass, klass);
-    rb_funcall(super, rb_intern("inherited"), 1, klass);
+    rb_make_metaclass(klass, RBASIC(super)->klass);
 
     return klass;
+}
+
+VALUE
+rb_class_inherited(super, klass)
+    VALUE super, klass;
+{
+    return rb_funcall(super, rb_intern("inherited"), 1, klass);
 }
 
 VALUE
@@ -158,6 +172,7 @@ rb_define_class(name, super)
 	return klass;
     }
     klass = rb_define_class_id(id, super);
+    rb_class_inherited(super, klass);
 
     st_add_direct(rb_class_tbl, id, klass);
 
@@ -185,8 +200,9 @@ rb_define_class_under(outer, name, super)
 	return klass;
     }
     klass = rb_define_class_id(id, super);
-    rb_const_set(outer, id, klass);
     rb_set_class_path(klass, outer, name);
+    rb_class_inherited(super, klass);
+    rb_const_set(outer, id, klass);
 
     return klass;
 }
@@ -602,9 +618,7 @@ rb_singleton_class(obj)
 	klass = RBASIC(obj)->klass;
     }
     else {
-	klass = rb_singleton_class_new(RBASIC(obj)->klass);
-	RBASIC(obj)->klass = klass;
-	rb_singleton_class_attached(klass, obj);
+	klass = rb_make_metaclass(obj, RBASIC(obj)->klass);
     }
     if (OBJ_TAINTED(obj)) {
 	OBJ_TAINT(klass);

@@ -84,6 +84,8 @@ VALUE rb_mod_dup _((VALUE));
 VALUE rb_singleton_class_new _((VALUE));
 VALUE rb_singleton_class_clone _((VALUE));
 void rb_singleton_class_attached _((VALUE,VALUE));
+VALUE rb_make_metaclass _((VALUE, VALUE));
+VALUE rb_class_inherited _((VALUE, VALUE));
 VALUE rb_define_class_id _((ID, VALUE));
 VALUE rb_module_new _((void));
 VALUE rb_define_module_id _((ID));

@@ -3092,8 +3092,9 @@ rb_eval(self, n)
 	      override_class:
 		if (!super) super = rb_cObject;
 		klass = rb_define_class_id(node->nd_cname, super);
-		rb_const_set(ruby_class, node->nd_cname, klass);
 		rb_set_class_path(klass,ruby_class,rb_id2name(node->nd_cname));
+		rb_class_inherited(super, klass);
+		rb_const_set(ruby_class, node->nd_cname, klass);
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(klass, ruby_wrapper);
