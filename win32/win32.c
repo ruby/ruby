@@ -852,15 +852,17 @@ char **argv;
 }
 
 static struct ChildRecord *
-CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, HANDLE hError)
+CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
+	    HANDLE hInput, HANDLE hOutput, HANDLE hError)
 {
     BOOL fRet;
     DWORD  dwCreationFlags;
     STARTUPINFO aStartupInfo;
     PROCESS_INFORMATION aProcessInformation;
     SECURITY_ATTRIBUTES sa;
-    char *shell;
+    const char *shell;
     struct ChildRecord *child;
+    char *p = NULL;
 
     if (!cmd && !prog) {
 	errno = EFAULT;
@@ -908,7 +910,9 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
     if (prog) {
-	shell = prog;
+	if (!(p = dln_find_exe(prog, NULL))) {
+	    shell = prog;
+	}
     }
     else {
 	int redir = -1;
@@ -938,15 +942,45 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
 	    cmd = tmp;
 	}
 	else {
-	    char *tmp = ALLOCA_N(char, len + 1);
-	    sprintf(tmp, "%.*s", len, cmd);
-	    cmd = tmp;
 	    shell = NULL;
+	    prog = cmd;
+	    for (;;) {
+		if (!*prog) {
+		    p = dln_find_exe(cmd, NULL);
+		    break;
+		}
+		if (strchr(".:*?\"/\\", *prog)) {
+		    if (cmd[len]) {
+			char *tmp = ALLOCA_N(char, len + 1);
+			memcpy(tmp, cmd, len);
+			tmp[len] = 0;
+			cmd = tmp;
+		    }
+		    break;
+		}
+		if (ISSPACE(*prog) || strchr("<>|", *prog)) {
+		    len = prog - cmd;
+		    p = ALLOCA_N(char, len + 1);
+		    memcpy(p, cmd, len);
+		    p[len] = 0;
+		    p = dln_find_exe(p, NULL);
+		    break;
+		}
+		prog++;
+	    }
+	}
+    }
+    if (p) {
+	shell = p;
+	while (*p) {
+	    if ((unsigned char)*p == '/')
+		*p = '\\';
+	    p = CharNext(p);
 	}
     }
 
     RUBY_CRITICAL({
-	fRet = CreateProcess(shell, cmd, psa, psa,
+	fRet = CreateProcess(shell, (char *)cmd, psa, psa,
 			     psa->bInheritHandle, dwCreationFlags, NULL, NULL,
 			     &aStartupInfo, &aProcessInformation);
 	errno = map_errno(GetLastError());
