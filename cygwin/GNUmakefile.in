@@ -27,6 +27,7 @@ endif
 WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 EXTOBJS += $(@:$(EXEEXT)=.res.@OBJEXT@)
+RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc
 
 rubyw: $(WPROGRAM)
 
@@ -36,7 +37,7 @@ $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
 %.res.@OBJEXT@: %.rc
 	@WINDRES@ --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
 
-$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc: $(RBCONFIG)
+$(RCFILES): $(RBCONFIG)
 	@$(MINIRUBY) $(srcdir)/win32/resource.rb \
 	  -ruby_name=$(RUBY_INSTALL_NAME) -rubyw_name=$(RUBYW_INSTALL_NAME) \
 	  -so_name=$(DLL_BASE_NAME) \
@@ -68,3 +69,9 @@ cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR).dll: $(LIBRUBY_A)
 	@DLLWRAP@ -s --def=rubydll.def -o $@
 	@rm -f rubydll.def
 endif
+
+clean-local::
+	@$(RM) $(RUBY_EXP) $(RCFILES:.rc=.res.@OBJEXT@)
+
+distclean-local::
+	@$(RM) $(RCFILES)

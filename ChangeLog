@@ -1,3 +1,10 @@
+Sun Mar 28 16:25:37 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (clean-local, distclean-local): remove
+	  work files.
+
+	* win32/Makefile.sub (clean-local): ditto.
+
 Sun Mar 28 14:23:02 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: def m( arg ) -> def m(arg).
@@ -26,7 +33,7 @@ Sat Mar 27 01:47:09 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 Thu Mar 25 23:15:24 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/ri/ri_options.rb (RI::Options::show_version): 
+	* lib/rdoc/ri/ri_options.rb (RI::Options::show_version):
 	  Add --version option
 
 Thu Mar 25 21:45:00 2004  Shigeo Kobayashi <shigek@ruby-lang.org>
