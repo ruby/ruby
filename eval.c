@@ -2520,7 +2520,7 @@ rb_eval(self, n)
 
       case NODE_ARGSCAT:
 	result = rb_ary_concat(rb_eval(self, node->nd_head),
-			       rb_eval(self, node->nd_body));
+			       rb_Array(rb_eval(self, node->nd_body)));
 	break;
 
       case NODE_ARGSPUSH:
@@ -6599,6 +6599,27 @@ mnew(klass, obj, id, mklass)
 }
 
 static VALUE
+method_eq(method, other)
+    VALUE method, other;
+{
+    struct METHOD *m1, *m2;
+
+    if (TYPE(other) != T_DATA || RDATA(other)->dmark != (RUBY_DATA_FUNC)bm_mark)
+	return Qfalse;
+    if (CLASS_OF(method) != CLASS_OF(other))
+	return Qfalse;
+
+    Data_Get_Struct(method, struct METHOD, m1);
+    Data_Get_Struct(other, struct METHOD, m2);
+
+    if (m1->klass != m2->klass || m1->oklass != m2->oklass ||
+	m1->recv != m2->recv || m1->body != m2->body)
+	return Qfalse;
+
+    return Qtrue;
+}
+
+static VALUE
 method_unbind(obj)
     VALUE obj;
 {
@@ -6608,7 +6629,7 @@ method_unbind(obj)
     Data_Get_Struct(obj, struct METHOD, orig);
     method = Data_Make_Struct(rb_cUnboundMethod, struct METHOD, bm_mark, free, data);
     data->klass = orig->klass;
-    data->recv = obj;
+    data->recv = 0;
     data->id = orig->id;
     data->body = orig->body;
     data->oklass = orig->oklass;
@@ -6649,7 +6670,7 @@ method_clone(self)
     struct METHOD *orig, *data;
 
     Data_Get_Struct(self, struct METHOD, orig);
-    clone = Data_Make_Struct(CLASS_OF(self),struct METHOD,bm_mark,free,data);
+    clone = Data_Make_Struct(CLASS_OF(self),struct METHOD, bm_mark, free, data);
     CLONESETUP(clone, self);
     *data = *orig;
 
@@ -6709,7 +6730,7 @@ umethod_bind(method, recv)
 	    rb_raise(rb_eTypeError, "method `%s' overridden", rb_id2name(data->oid));
 	}
 	if (!rb_obj_is_instance_of(recv, data->oklass)) {
-	    rb_raise(rb_eTypeError, "first argument must be an instance of %s",
+	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
 		     rb_class2name(data->oklass));
 	}
     }
@@ -6891,6 +6912,7 @@ Init_Proc()
 
     rb_cMethod = rb_define_class("Method", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cMethod), "new");
+    rb_define_method(rb_cMethod, "==", method_eq, 1);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
     rb_define_method(rb_cMethod, "call", method_call, -1);
     rb_define_method(rb_cMethod, "[]", method_call, -1);

@@ -3,9 +3,28 @@ Tue Jun 12 14:21:28 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* lib/mkmf.rb: target_prefix is only for installation, not for
 	  build.
 
+Tue Jun 12 00:41:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (method_eq): new method Method#==. [new]
+
 Mon Jun 11 14:29:41 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* confgure.in: add RUBY_CANONICAL_BUILD.
+
+Sun Jun 10 17:31:47 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* gc.c (STR_NO_ORIG): STR_NO_ORIG value was different between
+	  string.c and gc.c
+
+Sat Jun  9 22:10:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should convert *non-array at the end of
+	  arguments by using Array().
+
+Sat Jun  9 17:04:30 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* hash.c (ruby_setenv): readline library leaves their environment
+	  strings uncopied.  "free" check revised.
 
 Sat Jun  9 16:31:03 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
