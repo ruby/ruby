@@ -314,7 +314,7 @@ make_time_t(tptr, utc_or_local)
     if (!utc_or_local) {	/* localtime zone adjust */
 #if defined(HAVE_TM_ZONE)
 	tm = localtime(&guess);
-	guess += tm->tm_gmtoff;
+	guess -= tm->tm_gmtoff;
 #else
 	struct tm gt, lt;
 	long tzsec;

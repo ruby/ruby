@@ -1,3 +1,7 @@
+Wed Jun 14 14:50:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (make_time_t): opposite timezone shift (should be negative).
+
 Wed Jun 14 14:07:38 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* io.c: typo(ig/if).
