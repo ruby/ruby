@@ -49,6 +49,9 @@ module WEBrick
     module_function :getservername
 
     def create_listeners(address, port, logger=nil)
+      unless port
+        raise ArgumentError, "must specify port"
+      end
       res = Socket::getaddrinfo(address, port,
                                 Socket::AF_UNSPEC,   # address family
                                 Socket::SOCK_STREAM, # socket type
@@ -58,8 +61,9 @@ module WEBrick
       sockets = []
       res.each{|ai|
         begin
-          logger.debug("TCPServer.new(#{ai[3]}, #{ai[1]})") if logger
-          sock = TCPServer.new(ai[3], ai[1])
+          logger.debug("TCPServer.new(#{ai[3]}, #{port})") if logger
+          sock = TCPServer.new(ai[3], port)
+          port = sock.addr[1] if port == 0
           Utils::set_close_on_exec(sock)
           sockets << sock
         rescue => ex

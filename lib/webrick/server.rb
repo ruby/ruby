@@ -61,6 +61,9 @@ module WEBrick
           warn(":Listen option is deprecated; use GenericServer#listen")
         end
         listen(@config[:BindAddress], @config[:Port])
+        if @config[:Port] == 0
+          @config[:Port] = @listeners[0].addr[1]
+        end
       end
     end
 
