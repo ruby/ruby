@@ -1652,7 +1652,7 @@ re_compile_pattern(pattern, size, bufp)
 	int negative = 0;
 	PATFETCH_RAW(c);
 	switch (c) {
-	case 'x': case 'p': case 'i': case '-':
+	case 'x': case 'p': case 'm': case 'i': case '-':
 	  for (;;) {
 	    switch (c) {
 	    case '-':
