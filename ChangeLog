@@ -1,6 +1,14 @@
+Wed Jun  6 16:11:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_load): should check if tainted even when wrap is
+	  specified.
+
 Wed Jun  6 14:34:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* parse.y (aref_args): "*arg" should always be expanded by REXPAND.
+	* parse.y (mrhs_basic): "*arg" should always be expanded by REXPAND.
+
+	* regex.c (re_compile_pattern): too much optimization for the
+	  cases like /(.|a)b/.
 
 Tue Jun  5 23:58:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

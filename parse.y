@@ -1147,7 +1147,7 @@ mrhs_basic	: args ',' arg
 		| tSTAR arg
 		    {
 			value_expr($2);
-			$$ = NEW_RESTARGS($2);
+			$$ = NEW_REXPAND($2);
 		    }
 
 primary		: literal
