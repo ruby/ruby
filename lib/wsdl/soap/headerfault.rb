@@ -38,13 +38,13 @@ class HeaderFault < Info
     when MessageAttrName
       @message = value
     when PartAttrName
-      @part = value
+      @part = value.source
     when UseAttrName
-      @use = value
+      @use = value.source
     when EncodingStyleAttrName
-      @encodingstyle = value
+      @encodingstyle = value.source
     when NamespaceAttrName
-      @namespace = value
+      @namespace = value.source
     else
       nil
     end

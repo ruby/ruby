@@ -13,6 +13,7 @@ require 'wsdl/xmlSchema/simpleType'
 require 'wsdl/xmlSchema/simpleRestriction'
 require 'wsdl/xmlSchema/complexType'
 require 'wsdl/xmlSchema/complexContent'
+require 'wsdl/xmlSchema/simpleContent'
 require 'wsdl/xmlSchema/any'
 require 'wsdl/xmlSchema/element'
 require 'wsdl/xmlSchema/all'
@@ -39,6 +40,7 @@ ImportName = XSD::QName.new(XSD::Namespace, 'import')
 RestrictionName = XSD::QName.new(XSD::Namespace, 'restriction')
 SequenceName = XSD::QName.new(XSD::Namespace, 'sequence')
 SchemaName = XSD::QName.new(XSD::Namespace, 'schema')
+SimpleContentName = XSD::QName.new(XSD::Namespace, 'simpleContent')
 SimpleTypeName = XSD::QName.new(XSD::Namespace, 'simpleType')
 UniqueName = XSD::QName.new(XSD::Namespace, 'unique')
 
@@ -56,6 +58,7 @@ MixedAttrName = XSD::QName.new(nil, 'mixed')
 NameAttrName = XSD::QName.new(nil, 'name')
 NamespaceAttrName = XSD::QName.new(nil, 'namespace')
 NillableAttrName = XSD::QName.new(nil, 'nillable')
+ProcessContentsAttrName = XSD::QName.new(nil, 'processContents')
 RefAttrName = XSD::QName.new(nil, 'ref')
 SchemaLocationAttrName = XSD::QName.new(nil, 'schemaLocation')
 TargetNamespaceAttrName = XSD::QName.new(nil, 'targetNamespace')

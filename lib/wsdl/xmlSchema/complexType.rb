@@ -19,7 +19,8 @@ module XMLSchema
 class ComplexType < Info
   attr_accessor :name
   attr_accessor :complexcontent
-  attr_accessor :content
+  attr_accessor :simplecontent
+  attr_reader :content
   attr_accessor :final
   attr_accessor :mixed
   attr_reader :attributes
@@ -28,6 +29,7 @@ class ComplexType < Info
     super()
     @name = name
     @complexcontent = nil
+    @simplecontent = nil
     @content = nil
     @final = nil
     @mixed = false
@@ -35,13 +37,13 @@ class ComplexType < Info
   end
 
   def targetnamespace
-    parent.targetnamespace
+    parent.is_a?(WSDL::XMLSchema::Element) ? nil : parent.targetnamespace
   end
  
   AnyAsElement = Element.new(XSD::QName.new(nil, 'any'), XSD::AnyTypeName)
   def each_element
-    if @content
-      @content.elements.each do |element|
+    if content
+      content.elements.each do |element|
         if element.is_a?(Any)
           yield(AnyAsElement)
         else
@@ -52,8 +54,8 @@ class ComplexType < Info
   end
 
   def find_element(name)
-    if @content
-      @content.elements.each do |element|
+    if content
+      content.elements.each do |element|
         if element.is_a?(Any)
           return AnyAsElement if name == AnyAsElement.name
         else
@@ -65,8 +67,8 @@ class ComplexType < Info
   end
 
   def find_element_by_name(name)
-    if @content
-      @content.elements.each do |element|
+    if content
+      content.elements.each do |element|
         if element.is_a?(Any)
           return AnyAsElement if name == AnyAsElement.name.name
         else
@@ -95,16 +97,14 @@ class ComplexType < Info
     case element
     when AllName
       @content = All.new
-      @content
     when SequenceName
       @content = Sequence.new
-      @content
     when ChoiceName
       @content = Choice.new
-      @content
     when ComplexContentName
       @complexcontent = ComplexContent.new
-      @complexcontent
+    when SimpleContentName
+      @simplecontent = SimpleContent.new
     when AttributeName
       o = Attribute.new
       @attributes << o
@@ -117,11 +117,11 @@ class ComplexType < Info
   def parse_attr(attr, value)
     case attr
     when FinalAttrName
-      @final = value
+      @final = value.source
     when MixedAttrName
-      @mixed = (value == 'true')
+      @mixed = (value.source == 'true')
     when NameAttrName
-      @name = XSD::QName.new(targetnamespace, value)
+      @name = XSD::QName.new(targetnamespace, value.source)
     else
       nil
     end

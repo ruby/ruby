@@ -25,8 +25,8 @@ class Enumeration < Info
   def parse_attr(attr, value)
     case attr
     when ValueAttrName
-      parent.enumeration << value
-      value
+      parent.enumeration << value.source
+      value.source
     end
   end
 end

@@ -25,6 +25,7 @@ class Importer
   end
 
   def import(location)
+    STDERR.puts("importing: #{location}") if $DEBUG
     content = nil
     if FileTest.exist?(location)
       content = File.open(location).read
@@ -42,12 +43,8 @@ class Importer
     begin
       WSDL::Parser.new(opt).parse(content)
     rescue WSDL::Parser::ParseError => orgexcn
-      begin
-	require 'wsdl/xmlSchema/parser'
-	WSDL::XMLSchema::Parser.new(opt).parse(content)
-      rescue
-	raise orgexcn
-      end
+      require 'wsdl/xmlSchema/parser'
+      WSDL::XMLSchema::Parser.new(opt).parse(content)
     end
   end
 

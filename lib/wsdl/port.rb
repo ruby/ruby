@@ -71,7 +71,7 @@ class Port < Info
   def parse_attr(attr, value)
     case attr
     when NameAttrName
-      @name = XSD::QName.new(targetnamespace, value)
+      @name = XSD::QName.new(targetnamespace, value.source)
     when BindingAttrName
       @binding = value
     else

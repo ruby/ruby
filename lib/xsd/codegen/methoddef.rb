@@ -22,7 +22,7 @@ class MethodDef
 
   def initialize(name, *params)
     unless safemethodname?(name)
-      raise ArgumentError.new("#{name} seems to be unsafe")
+      raise ArgumentError.new("name '#{name}' seems to be unsafe")
     end
     @name = name
     @params = params

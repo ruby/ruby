@@ -1,3 +1,34 @@
+Mon Dec 20 23:22:26 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* added files:
+	  * lib/soap/mapping/wsdl*.rb
+	  * lib/wsdl/soap/element.rb
+	  * lib/wsdl/xmlSchema/simpleContent.rb
+
+	* modified files:
+	  * lib/soap/*
+	  * lib/wsdl/*
+	  * lib/xsd/*
+	  * test/soap/*
+	  * test/wsdl/*
+	  * test/xsd/*
+	  * sample/soap/*
+	  * sample/sdl/*
+
+	* summary
+	  * imported from the soap4r repository.  Version: 1.5.3-ruby1.8.2
+
+	  * added several XSD basetype support: nonPositiveInteger,
+	    negativeInteger, nonNegativeInteger, unsignedLong, unsignedInt,
+	    unsignedShort, unsignedByte, positiveInteger
+
+	  * HTTP client connection/send/receive timeout support.
+
+	  * HTTP client/server gzipped content encoding support.
+
+	  * improved WSDL schema definition support; still is far from
+	    complete, but is making step by step improovement.
+
 Mon Dec 20 22:56:39 2004  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (stack_end_address): gcc noinline attribute is available since 

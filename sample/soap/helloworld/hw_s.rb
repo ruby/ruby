@@ -13,5 +13,8 @@ end
 
 if $0 == __FILE__
   server = HelloWorldServer.new('hws', 'urn:hws', '0.0.0.0', 2000)
+  trap(:INT) do 
+    server.shutdown
+  end
   server.start
 end

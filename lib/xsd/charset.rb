@@ -103,7 +103,11 @@ public
   end
 
   def Charset.charset_str(label)
-    CharsetMap.index(label.downcase)
+    if CharsetMap.respond_to?(:key)
+      CharsetMap.key(label.downcase)
+    else
+      CharsetMap.index(label.downcase)
+    end
   end
 
   # us_ascii = '[\x00-\x7F]'

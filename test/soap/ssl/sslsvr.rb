@@ -47,10 +47,18 @@ if $0 == __FILE__
     :SSLClientCA => cert('ca.cert'),
     :SSLCertName => nil
   )
-  trap(:INT) do
-    $server.shutdown if $server
+  t = Thread.new {
+    Thread.current.abort_on_exception = true
+    $server.start
+  }
+  while $server.status != :Running
+    sleep 0.1
+    unless t.alive?
+      t.join
+      raise
+    end
   end
   STDOUT.sync = true
-  STDOUT.puts $$
-  $server.start
+  puts $$
+  t.join
 end

@@ -6,6 +6,8 @@ module SOAP
 
 
 class TestProperty < Test::Unit::TestCase
+  FrozenError = (RUBY_VERSION >= "1.9.0") ? RuntimeError : TypeError
+
   def setup
     @prop = ::SOAP::Property.new
   end
@@ -67,7 +69,7 @@ __EOP__
     prop["foo.bar"].lock
     prop.load("foo.bar.baz = 123")
     assert(hooked)
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       prop.load("foo.bar.qux = 123")
     end
     prop.load("foo.baz = 456")
@@ -130,7 +132,7 @@ __EOP__
     tag = Object.new
     tested = false
     @prop.add_hook("foo.bar") do |key, value|
-      assert_raise(TypeError) do
+      assert_raise(FrozenError) do
 	key << "baz"
       end
       tested = true
@@ -266,37 +268,37 @@ __EOP__
     @prop.lock
     assert(@prop.locked?)
     assert_instance_of(::SOAP::Property, @prop["a"])
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["b"]
     end
     #
     @prop["a"].lock
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a"]
     end
     assert_instance_of(::SOAP::Property, @prop["a.b"])
     #
     @prop["a.b"].lock
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a.b"]
     end
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a"]
     end
     #
     @prop["a.b.c.d"].lock
     assert_instance_of(::SOAP::Property, @prop["a.b.c"])
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a.b.c.d"]
     end
     assert_instance_of(::SOAP::Property, @prop["a.b.d"])
     #
     branch["e"].lock
     assert_instance_of(::SOAP::Property, @prop["a.b.d"])
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a.b.d.e"]
     end
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       branch["e"]
     end
   end
@@ -310,26 +312,26 @@ __EOP__
     assert_equal(nil, @prop["a.a"])
     assert_equal(1, @prop["a.b.c"])
     assert_equal(false, @prop["b"])
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["c"]
     end
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["c"] = 2
     end
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a.b.R"]
     end
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop.add_hook do
 	assert(false)
       end
     end
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop.add_hook("c") do
 	assert(false)
       end
     end
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop.add_hook("a.c") do
 	assert(false)
       end
@@ -364,7 +366,7 @@ __EOP__
     @prop["a.b.c"] = 5
     assert(tested)
     assert_equal(5, @prop["a.b.c"])
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a.b.d"] = 5
     end
   end
@@ -383,28 +385,28 @@ __EOP__
     assert_equal(branch, @prop[:a][:b][:d])
     @prop.lock(true)
     # split error 1
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a.b"]
     end
     # split error 2
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a"]
     end
     @prop["a.b.c"] = 2
     assert_equal(2, @prop["a.b.c"])
     # replace error
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a.b.c"] = ::SOAP::Property.new
     end
     # override error
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a.b"] = 1
     end
     #
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       @prop["a.b.d"] << 1
     end
-    assert_raises(TypeError) do
+    assert_raises(FrozenError) do
       branch << 1
     end
     branch.unlock(true)

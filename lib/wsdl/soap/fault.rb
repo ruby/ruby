@@ -34,13 +34,13 @@ class Fault < Info
   def parse_attr(attr, value)
     case attr
     when NameAttrName
-      @name = value
+      @name = XSD::QName.new(targetnamespace, value.source)
     when UseAttrName
-      @use = value
+      @use = value.source
     when EncodingStyleAttrName
-      @encodingstyle = value
+      @encodingstyle = value.source
     when NamespaceAttrName
-      @namespace = value
+      @namespace = value.source
     else
       nil
     end

@@ -318,7 +318,7 @@ private
     case node.type
     when TYPE_HASH
       klass = rubytype ? Mapping.class_from_name(rubytype) : Hash
-      obj = create_empty_object(klass)
+      obj = Mapping.create_empty_object(klass)
       mark_unmarshalled_obj(node, obj)
       node.each do |key, value|
         next unless key == 'item'
@@ -330,14 +330,14 @@ private
       end
     when TYPE_REGEXP
       klass = rubytype ? Mapping.class_from_name(rubytype) : Regexp
-      obj = create_empty_object(klass)
+      obj = Mapping.create_empty_object(klass)
       mark_unmarshalled_obj(node, obj)
       source = node['source'].string
       options = node['options'].data || 0
       Regexp.instance_method(:initialize).bind(obj).call(source, options)
     when TYPE_RANGE
       klass = rubytype ? Mapping.class_from_name(rubytype) : Range
-      obj = create_empty_object(klass)
+      obj = Mapping.create_empty_object(klass)
       mark_unmarshalled_obj(node, obj)
       first = Mapping._soap2obj(node['begin'], map)
       last = Mapping._soap2obj(node['end'], map)
@@ -358,7 +358,7 @@ private
       unless klass <= ::Struct
         return false
       end
-      obj = create_empty_object(klass)
+      obj = Mapping.create_empty_object(klass)
       mark_unmarshalled_obj(node, obj)
       node['member'].each do |name, value|
         obj[Mapping.elename2name(name)] = Mapping._soap2obj(value, map)
@@ -378,7 +378,7 @@ private
       obj = klass.new
       mark_unmarshalled_obj(node, obj)
       node.each do |name, value|
-        obj.__set_property(name, Mapping._soap2obj(value, map))
+        obj.__soap_set_property(name, Mapping._soap2obj(value, map))
       end
       return true, obj
     else
@@ -414,7 +414,7 @@ private
     end
     klass_type = Mapping.class2qname(klass)
     return nil unless node.type.match(klass_type)
-    obj = create_empty_object(klass)
+    obj = Mapping.create_empty_object(klass)
     mark_unmarshalled_obj(node, obj)
     setiv2obj(obj, node, map)
     obj
@@ -423,7 +423,7 @@ private
   def exception2obj(klass, node, map)
     message = Mapping._soap2obj(node['message'], map)
     backtrace = Mapping._soap2obj(node['backtrace'], map)
-    obj = create_empty_object(klass)
+    obj = Mapping.create_empty_object(klass)
     obj = obj.exception(message)
     mark_unmarshalled_obj(node, obj)
     obj.set_backtrace(backtrace)
@@ -433,7 +433,7 @@ private
   # Only creates empty array.  Do String#replace it with real string.
   def array2obj(node, map, rubytype)
     klass = rubytype ? Mapping.class_from_name(rubytype) : Array
-    obj = create_empty_object(klass)
+    obj = Mapping.create_empty_object(klass)
     mark_unmarshalled_obj(node, obj)
     obj
   end
@@ -441,7 +441,7 @@ private
   # Only creates empty string.  Do String#replace it with real string.
   def string2obj(node, map, rubytype)
     klass = rubytype ? Mapping.class_from_name(rubytype) : String
-    obj = create_empty_object(klass)
+    obj = Mapping.create_empty_object(klass)
     mark_unmarshalled_obj(node, obj)
     obj
   end

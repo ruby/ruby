@@ -46,10 +46,30 @@ AnyURILiteral = 'anyURI'
 QNameLiteral = 'QName'
 
 NormalizedStringLiteral = 'normalizedString'
+#3.3.2 token
+#3.3.3 language
+#3.3.4 NMTOKEN
+#3.3.5 NMTOKENS
+#3.3.6 Name
+#3.3.7 NCName
+#3.3.8 ID
+#3.3.9 IDREF
+#3.3.10 IDREFS
+#3.3.11 ENTITY
+#3.3.12 ENTITIES
 IntegerLiteral = 'integer'
+NonPositiveIntegerLiteral = 'nonPositiveInteger'
+NegativeIntegerLiteral = 'negativeInteger'
 LongLiteral = 'long'
 IntLiteral = 'int'
 ShortLiteral = 'short'
+ByteLiteral = 'byte'
+NonNegativeIntegerLiteral = 'nonNegativeInteger'
+UnsignedLongLiteral = 'unsignedLong'
+UnsignedIntLiteral = 'unsignedInt'
+UnsignedShortLiteral = 'unsignedShort'
+UnsignedByteLiteral = 'unsignedByte'
+PositiveIntegerLiteral = 'positiveInteger'
 
 AttrTypeName = QName.new(InstanceNamespace, AttrType)
 AttrNilName = QName.new(InstanceNamespace, NilLiteral)
@@ -78,7 +98,10 @@ class NSDBase
   end
 
   def initialize
-    @type = nil
+  end
+
+  def init(type)
+    @type = type
   end
 end
 
@@ -96,11 +119,7 @@ class XSDAnySimpleType < NSDBase
   attr_accessor :is_nil
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    @data = nil
-    @is_nil = true
-    set(value) if value
+    init(Type, value)
   end
 
   # true or raise
@@ -115,6 +134,7 @@ class XSDAnySimpleType < NSDBase
     if value.nil?
       @is_nil = true
       @data = nil
+      _set(nil)
     else
       @is_nil = false
       _set(screen_data(value))
@@ -131,6 +151,11 @@ class XSDAnySimpleType < NSDBase
   end
 
 private
+
+  def init(type, value)
+    super(type)
+    set(value)
+  end
 
   # raises ValueSpaceError if check failed
   def screen_data(value)
@@ -151,9 +176,7 @@ class XSDNil < XSDAnySimpleType
   Value = 'true'
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value)
+    init(Type, value)
   end
 end
 
@@ -165,9 +188,7 @@ class XSDString < XSDAnySimpleType
   Type = QName.new(Namespace, StringLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -184,9 +205,7 @@ class XSDBoolean < XSDAnySimpleType
   Type = QName.new(Namespace, BooleanLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value)
+    init(Type, value)
   end
 
 private
@@ -211,12 +230,7 @@ class XSDDecimal < XSDAnySimpleType
   Type = QName.new(Namespace, DecimalLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    @sign = ''
-    @number = ''
-    @point = 0
-    set(value) if value
+    init(Type, value)
   end
 
   def nonzero?
@@ -256,8 +270,12 @@ private
     [sign, point, number]
   end
 
-  def _set(pair)
-    @sign, @point, @number = pair
+  def _set(data)
+    if data.nil?
+      @sign = @point = @number = @data = nil
+      return
+    end
+    @sign, @point, @number = data
     @data = _to_s
     @data.freeze
   end
@@ -286,9 +304,7 @@ class XSDFloat < XSDAnySimpleType
   Type = QName.new(Namespace, FloatLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -354,9 +370,7 @@ class XSDDouble < XSDAnySimpleType
   Type = QName.new(Namespace, DoubleLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -417,16 +431,7 @@ class XSDDuration < XSDAnySimpleType
   attr_accessor :sec
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    @sign = nil
-    @year = nil
-    @month = nil
-    @day = nil
-    @hour = nil
-    @min = nil
-    @sec = nil
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -450,8 +455,12 @@ private
     [sign, year, month, day, hour, min, sec]
   end
 
-  def _set(ary)
-    @sign, @year, @month, @day, @hour, @min, @sec = ary
+  def _set(data)
+    if data.nil?
+      @sign = @year = @month = @day = @hour = @min = @sec = @data = nil
+      return
+    end
+    @sign, @year, @month, @day, @hour, @min, @sec = data
     @data = _to_s
     @data.freeze
   end
@@ -554,10 +563,7 @@ class XSDDateTime < XSDAnySimpleType
   Type = QName.new(Namespace, DateTimeLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    @secfrac = nil
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -591,8 +597,12 @@ private
     [data, secfrac]
   end
 
-  def _set(pair)
-    @data, @secfrac = pair
+  def _set(data)
+    if data.nil?
+      @data = @secfrac = nil
+      return
+    end
+    @data, @secfrac = data
   end
 
   def _to_s
@@ -616,10 +626,7 @@ class XSDTime < XSDAnySimpleType
   Type = QName.new(Namespace, TimeLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    @secfrac = nil
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -642,8 +649,12 @@ private
     [data, secfrac]
   end
 
-  def _set(pair)
-    @data, @secfrac = pair
+  def _set(data)
+    if data.nil?
+      @data = @secfrac = nil
+      return
+    end
+    @data, @secfrac = data
   end
 
   def _to_s
@@ -665,9 +676,7 @@ class XSDDate < XSDAnySimpleType
   Type = QName.new(Namespace, DateLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -699,9 +708,7 @@ class XSDGYearMonth < XSDAnySimpleType
   Type = QName.new(Namespace, GYearMonthLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -732,9 +739,7 @@ class XSDGYear < XSDAnySimpleType
   Type = QName.new(Namespace, GYearLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -764,9 +769,7 @@ class XSDGMonthDay < XSDAnySimpleType
   Type = QName.new(Namespace, GMonthDayLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -793,9 +796,7 @@ class XSDGDay < XSDAnySimpleType
   Type = QName.new(Namespace, GDayLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -821,9 +822,7 @@ class XSDGMonth < XSDAnySimpleType
   Type = QName.new(Namespace, GMonthLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -849,9 +848,7 @@ class XSDHexBinary < XSDAnySimpleType
 
   # String in Ruby could be a binary.
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
   def set_encoded(value)
@@ -878,9 +875,7 @@ class XSDBase64Binary < XSDAnySimpleType
 
   # String in Ruby could be a binary.
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
   def set_encoded(value)
@@ -906,9 +901,7 @@ class XSDAnyURI < XSDAnySimpleType
   Type = QName.new(Namespace, AnyURILiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -926,9 +919,7 @@ class XSDQName < XSDAnySimpleType
   Type = QName.new(Namespace, QNameLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -943,8 +934,12 @@ private
     [prefix, localpart]
   end
 
-  def _set(pair)
-    @prefix, @localpart = pair
+  def _set(data)
+    if data.nil?
+      @prefix = @localpart = @data = nil
+      return
+    end
+    @prefix, @localpart = data
     @data = _to_s
     @data.freeze
   end
@@ -966,9 +961,7 @@ class XSDNormalizedString < XSDString
   Type = QName.new(Namespace, NormalizedStringLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -985,9 +978,7 @@ class XSDInteger < XSDDecimal
   Type = QName.new(Namespace, IntegerLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
@@ -996,6 +987,9 @@ private
     begin
       data = Integer(str)
     rescue ArgumentError
+      raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
+    end
+    unless validate(data)
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
     data
@@ -1008,39 +1002,78 @@ private
   def _to_s()
     @data.to_s
   end
+
+  def validate(v)
+    max = maxinclusive
+    min = mininclusive
+    (max.nil? or v <= max) and (min.nil? or v >= min)
+  end
+
+  def maxinclusive
+    nil
+  end
+
+  def mininclusive
+    nil
+  end
+
+  PositiveMinInclusive = 1
+  def positive(v)
+    PositiveMinInclusive <= v
+  end
+end
+
+class XSDNonPositiveInteger < XSDInteger
+  Type = QName.new(Namespace, NonPositiveIntegerLiteral)
+
+  def initialize(value = nil)
+    init(Type, value)
+  end
+
+private
+
+  def maxinclusive
+    0
+  end
+
+  def mininclusive
+    nil
+  end
+end
+
+class XSDNegativeInteger < XSDNonPositiveInteger
+  Type = QName.new(Namespace, NegativeIntegerLiteral)
+
+  def initialize(value = nil)
+    init(Type, value)
+  end
+
+private
+
+  def maxinclusive
+    -1
+  end
+
+  def mininclusive
+    nil
+  end
 end
 
 class XSDLong < XSDInteger
   Type = QName.new(Namespace, LongLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
 
-  def screen_data_str(str)
-    begin
-      data = Integer(str)
-    rescue ArgumentError
-      raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
-    end
-    unless validate(data)
-      raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
-    end
-    data
+  def maxinclusive
+    +9223372036854775807
   end
 
-  def _set(value)
-    @data = value
-  end
-
-  MaxInclusive = +9223372036854775807
-  MinInclusive = -9223372036854775808
-  def validate(v)
-    ((MinInclusive <= v) && (v <= MaxInclusive))
+  def mininclusive
+    -9223372036854775808
   end
 end
 
@@ -1048,33 +1081,17 @@ class XSDInt < XSDLong
   Type = QName.new(Namespace, IntLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
 
-  def screen_data_str(str)
-    begin
-      data = Integer(str)
-    rescue ArgumentError
-      raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
-    end
-    unless validate(data)
-      raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
-    end
-    data
+  def maxinclusive
+    +2147483647
   end
 
-  def _set(value)
-    @data = value
-  end
-
-  MaxInclusive = +2147483647
-  MinInclusive = -2147483648
-  def validate(v)
-    ((MinInclusive <= v) && (v <= MaxInclusive))
+  def mininclusive
+    -2147483648
   end
 end
 
@@ -1082,33 +1099,143 @@ class XSDShort < XSDInt
   Type = QName.new(Namespace, ShortLiteral)
 
   def initialize(value = nil)
-    super()
-    @type = Type
-    set(value) if value
+    init(Type, value)
   end
 
 private
 
-  def screen_data_str(str)
-    begin
-      data = Integer(str)
-    rescue ArgumentError
-      raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
-    end
-    unless validate(data)
-      raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
-    end
-    data
+  def maxinclusive
+    +32767
   end
 
-  def _set(value)
-    @data = value
+  def mininclusive
+    -32768
+  end
+end
+
+class XSDByte < XSDShort
+  Type = QName.new(Namespace, ByteLiteral)
+
+  def initialize(value = nil)
+    init(Type, value)
   end
 
-  MaxInclusive = +32767
-  MinInclusive = -32768
-  def validate(v)
-    ((MinInclusive <= v) && (v <= MaxInclusive))
+private
+
+  def maxinclusive
+    +127
+  end
+
+  def mininclusive
+    -128
+  end
+end
+
+class XSDNonNegativeInteger < XSDInteger
+  Type = QName.new(Namespace, NonNegativeIntegerLiteral)
+
+  def initialize(value = nil)
+    init(Type, value)
+  end
+
+private
+
+  def maxinclusive
+    nil
+  end
+
+  def mininclusive
+    0
+  end
+end
+
+class XSDUnsignedLong < XSDNonNegativeInteger
+  Type = QName.new(Namespace, UnsignedLongLiteral)
+
+  def initialize(value = nil)
+    init(Type, value)
+  end
+
+private
+
+  def maxinclusive
+    +18446744073709551615
+  end
+
+  def mininclusive
+    0
+  end
+end
+
+class XSDUnsignedInt < XSDUnsignedLong
+  Type = QName.new(Namespace, UnsignedIntLiteral)
+
+  def initialize(value = nil)
+    init(Type, value)
+  end
+
+private
+
+  def maxinclusive
+    +4294967295
+  end
+
+  def mininclusive
+    0
+  end
+end
+
+class XSDUnsignedShort < XSDUnsignedInt
+  Type = QName.new(Namespace, UnsignedShortLiteral)
+
+  def initialize(value = nil)
+    init(Type, value)
+  end
+
+private
+
+  def maxinclusive
+    +65535
+  end
+
+  def mininclusive
+    0
+  end
+end
+
+class XSDUnsignedByte < XSDUnsignedShort
+  Type = QName.new(Namespace, UnsignedByteLiteral)
+
+  def initialize(value = nil)
+    init(Type, value)
+  end
+
+private
+
+  def maxinclusive
+    +255
+  end
+
+  def mininclusive
+    0
+  end
+end
+
+class XSDPositiveInteger < XSDNonNegativeInteger
+  Type = QName.new(Namespace, PositiveIntegerLiteral)
+
+  def initialize(value = nil)
+    init(Type, value)
+  end
+
+private
+
+  def maxinclusive
+    nil
+  end
+
+  def mininclusive
+    1
   end
 end
 

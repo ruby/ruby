@@ -59,15 +59,15 @@ class Header < Info
   def parse_attr(attr, value)
     case attr
     when MessageAttrName
-      @message = value
+      @message = XSD::QName.new(targetnamespace, value.source)
     when PartAttrName
-      @part = value
+      @part = value.source
     when UseAttrName
-      @use = value
+      @use = value.source
     when EncodingStyleAttrName
-      @encodingstyle = value
+      @encodingstyle = value.source
     when NamespaceAttrName
-      @namespace = value
+      @namespace = value.source
     else
       nil
     end

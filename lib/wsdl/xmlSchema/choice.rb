@@ -20,8 +20,8 @@ class Choice < Info
 
   def initialize
     super()
-    @minoccurs = 1
-    @maxoccurs = 1
+    @minoccurs = '1'
+    @maxoccurs = '1'
     @elements = []
   end
 
@@ -51,9 +51,9 @@ class Choice < Info
   def parse_attr(attr, value)
     case attr
     when MaxOccursAttrName
-      @maxoccurs = value
+      @maxoccurs = value.source
     when MinOccursAttrName
-      @minoccurs = value
+      @minoccurs = value.source
     else
       nil
     end

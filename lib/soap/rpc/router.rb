@@ -9,6 +9,7 @@
 require 'soap/soap'
 require 'soap/processor'
 require 'soap/mapping'
+require 'soap/mapping/wsdlliteralregistry'
 require 'soap/rpc/rpc'
 require 'soap/rpc/element'
 require 'soap/streamHandler'
@@ -27,25 +28,47 @@ class Router
   attr_accessor :allow_unqualified_element
   attr_accessor :default_encodingstyle
   attr_accessor :mapping_registry
+  attr_accessor :literal_mapping_registry
   attr_reader :headerhandler
 
   def initialize(actor)
     @actor = actor
-    @receiver = {}
-    @method_name = {}
-    @method = {}
     @allow_unqualified_element = false
     @default_encodingstyle = nil
     @mapping_registry = nil
     @headerhandler = Header::HandlerSet.new
+    @literal_mapping_registry = ::SOAP::Mapping::WSDLLiteralRegistry.new
+    @operation = {}
   end
 
-  def add_method(receiver, qname, soapaction, name, param_def)
-    fqname = fqname(qname)
-    @receiver[fqname] = receiver
-    @method_name[fqname] = name
-    @method[fqname] = RPC::SOAPMethodRequest.new(qname, param_def, soapaction)
+  def add_rpc_method(receiver, qname, soapaction, name, param_def, opt = {})
+    opt[:request_style] ||= :rpc
+    opt[:response_style] ||= :rpc
+    opt[:request_use] ||= :encoded
+    opt[:response_use] ||= :encoded
+    add_operation(qname, soapaction, receiver, name, param_def, opt)
   end
+
+  def add_document_method(receiver, qname, soapaction, name, param_def, opt = {})
+    opt[:request_style] ||= :document
+    opt[:response_style] ||= :document
+    opt[:request_use] ||= :encoded
+    opt[:response_use] ||= :encoded
+    if opt[:request_style] == :document
+      inputdef = param_def.find { |inout, paramname, typeinfo| inout == "input" }
+      klass, nsdef, namedef = inputdef[2]
+      qname = ::XSD::QName.new(nsdef, namedef)
+    end
+    add_operation(qname, soapaction, receiver, name, param_def, opt)
+  end
+
+  def add_operation(qname, soapaction, receiver, name, param_def, opt)
+    @operation[fqname(qname)] = Operation.new(qname, soapaction, receiver,
+      name, param_def, opt)
+  end
+
+  # add_method is for shortcut of typical use="encoded" method definition.
+  alias add_method add_rpc_method
 
   def route(conn_data)
     soap_response = nil
@@ -55,33 +78,17 @@ class Router
 	raise ArgumentError.new("Illegal SOAP marshal format.")
       end
       receive_headers(env.header)
-      soap_request = env.body.request
-      unless soap_request.is_a?(SOAPStruct)
-	raise RPCRoutingError.new("Not an RPC style.")
+      request = env.body.request
+      op = @operation[fqname(request.elename)]
+      unless op
+        raise RPCRoutingError.new("Method: #{request.elename} not supported.")
       end
-      soap_response = dispatch(soap_request)
+      soap_response = op.call(request, @mapping_registry, @literal_mapping_registry)
     rescue Exception
       soap_response = fault($!)
       conn_data.is_fault = true
     end
-
-    opt = options
-    opt[:external_content] = nil
-    header = call_headers
-    body = SOAPBody.new(soap_response)
-    env = SOAPEnvelope.new(header, body)
-    response_string = Processor.marshal(env, opt)
-    conn_data.send_string = response_string
-    if ext = opt[:external_content]
-      mime = MIMEMessage.new
-      ext.each do |k, v|
-      	mime.add_attachment(v.data)
-      end
-      mime.add_part(conn_data.send_string + "\r\n")
-      mime.close
-      conn_data.send_string = mime.content_str
-      conn_data.send_contenttype = mime.headers['content-type'].str
-    end
+    marshal(conn_data, op, soap_response)
     conn_data
   end
 
@@ -118,9 +125,9 @@ private
     else
       h = ::SOAP::SOAPHeader.new
       headers.each do |header|
-      h.add(header.elename.name, header)
-    end
-    h
+        h.add(header.elename.name, header)
+      end
+      h
     end
   end
 
@@ -153,32 +160,28 @@ private
     env
   end
 
-  # Create new response.
-  def create_response(qname, result)
-    name = fqname(qname)
-    if (@method.key?(name))
-      method = @method[name]
-    else
-      raise RPCRoutingError.new("Method: #{ name } not defined.")
+  def marshal(conn_data, op, soap_response)
+    response_opt = options
+    response_opt[:external_content] = nil
+    if op and !conn_data.is_fault and op.response_use == :document
+      response_opt[:default_encodingstyle] =
+        ::SOAP::EncodingStyle::ASPDotNetHandler::Namespace
     end
-
-    soap_response = method.create_method_response
-    if soap_response.have_outparam?
-      unless result.is_a?(Array)
-	raise RPCRoutingError.new("Out parameter was not returned.")
+    header = call_headers
+    body = SOAPBody.new(soap_response)
+    env = SOAPEnvelope.new(header, body)
+    response_string = Processor.marshal(env, response_opt)
+    conn_data.send_string = response_string
+    if ext = response_opt[:external_content]
+      mime = MIMEMessage.new
+      ext.each do |k, v|
+      	mime.add_attachment(v.data)
       end
-      outparams = {}
-      i = 1
-      soap_response.each_param_name('out', 'inout') do |outparam|
-	outparams[outparam] = Mapping.obj2soap(result[i], @mapping_registry)
-	i += 1
-      end
-      soap_response.set_outparam(outparams)
-      soap_response.retval = Mapping.obj2soap(result[0], @mapping_registry)
-    else
-      soap_response.retval = Mapping.obj2soap(result, @mapping_registry)
+      mime.add_part(conn_data.send_string + "\r\n")
+      mime.close
+      conn_data.send_string = mime.content_str
+      conn_data.send_contenttype = mime.headers['content-type'].str
     end
-    soap_response
   end
 
   # Create fault response.
@@ -189,31 +192,6 @@ private
       SOAPString.new(e.to_s),
       SOAPString.new(@actor),
       Mapping.obj2soap(detail, @mapping_registry))
-  end
-
-  # Dispatch to defined method.
-  def dispatch(soap_method)
-    request_struct = Mapping.soap2obj(soap_method, @mapping_registry)
-    values = soap_method.collect { |key, value| request_struct[key] }
-    method = lookup(soap_method.elename, values)
-    unless method
-      raise RPCRoutingError.new(
-	"Method: #{ soap_method.elename } not supported.")
-    end
-
-    result = method.call(*values)
-    create_response(soap_method.elename, result)
-  end
-
-  # Method lookup
-  def lookup(qname, values)
-    name = fqname(qname)
-    # It may be necessary to check all part of method signature...
-    if @method.member?(name)
-      @receiver[name].method(@method_name[name].intern)
-    else
-      nil
-    end
   end
 
   def fqname(qname)
@@ -227,6 +205,87 @@ private
       opt[:allow_unqualified_element] = true
     end
     opt
+  end
+
+  class Operation
+    attr_reader :receiver
+    attr_reader :name
+    attr_reader :soapaction
+    attr_reader :request_style
+    attr_reader :response_style
+    attr_reader :request_use
+    attr_reader :response_use
+    
+    def initialize(qname, soapaction, receiver, name, param_def, opt)
+      @soapaction = soapaction
+      @receiver = receiver
+      @name = name
+      @request_style = opt[:request_style]
+      @response_style = opt[:response_style]
+      @request_use = opt[:request_use]
+      @response_use = opt[:response_use]
+      if @response_style == :rpc
+        @rpc_response_factory =
+          RPC::SOAPMethodRequest.new(qname, param_def, @soapaction)
+      else
+        outputdef = param_def.find { |inout, paramname, typeinfo| inout == "output" }
+        klass, nsdef, namedef = outputdef[2]
+        @document_response_qname = ::XSD::QName.new(nsdef, namedef)
+      end
+    end
+
+    def call(request, mapping_registry, literal_mapping_registry)
+      if @request_style == :rpc
+        param = Mapping.soap2obj(request, mapping_registry)
+        result = rpc_call(request, param)
+      else
+        param = Mapping.soap2obj(request, literal_mapping_registry)
+        result = document_call(request, param)
+      end
+      if @response_style == :rpc
+        rpc_response(result, mapping_registry)
+      else
+        document_response(result, literal_mapping_registry)
+      end
+    end
+
+  private
+
+    def rpc_call(request, param)
+      unless request.is_a?(SOAPStruct)
+        raise RPCRoutingError.new("Not an RPC style.")
+      end
+      values = request.collect { |key, value| param[key] }
+      @receiver.method(@name.intern).call(*values)
+    end
+
+    def document_call(request, param)
+      @receiver.method(@name.intern).call(param)
+    end
+
+    def rpc_response(result, mapping_registry)
+      soap_response = @rpc_response_factory.create_method_response
+      if soap_response.have_outparam?
+        unless result.is_a?(Array)
+          raise RPCRoutingError.new("Out parameter was not returned.")
+        end
+        outparams = {}
+        i = 1
+        soap_response.each_param_name('out', 'inout') do |outparam|
+          outparams[outparam] = Mapping.obj2soap(result[i], mapping_registry)
+          i += 1
+        end
+        soap_response.set_outparam(outparams)
+        soap_response.retval = Mapping.obj2soap(result[0], mapping_registry)
+      else
+        soap_response.retval = Mapping.obj2soap(result, mapping_registry)
+      end
+      soap_response
+    end
+
+    def document_response(result, literal_mapping_registry)
+      literal_mapping_registry.obj2soap(result, @document_response_qname)
+    end
   end
 end
 

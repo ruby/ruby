@@ -898,6 +898,99 @@ class TestXSD2 < Test::Unit::TestCase
     end
   end
 
+  def test_XSDNonPositiveInteger
+    o = XSD::XSDNonPositiveInteger.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::NonPositiveIntegerLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      0,
+      -9999999999,
+      -1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789,
+    ]
+    targets.each do |int|
+      assert_equal(int, XSD::XSDNonPositiveInteger.new(int).data)
+    end
+
+    targets = [
+      "0",
+      "-9999999999",
+      "-1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDNonPositiveInteger.new(str).to_s)
+    end
+
+    targets = [
+      ["-0", "0"],
+      ["-000123", "-123"],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDNonPositiveInteger.new(data).to_s)
+    end
+
+    targets = [
+      "0.0",
+      "-5.2",
+      "0.000000000000a",
+      "+-5",
+      "-12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890."
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDNonPositiveInteger.new(d)
+      end
+    end
+  end
+
+  def test_XSDNegativeInteger
+    o = XSD::XSDNegativeInteger.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::NegativeIntegerLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      -1,
+      -9999999999,
+      -1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789,
+    ]
+    targets.each do |int|
+      assert_equal(int, XSD::XSDNegativeInteger.new(int).data)
+    end
+
+    targets = [
+      "-1",
+      "-9999999999",
+      "-1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDNegativeInteger.new(str).to_s)
+    end
+
+    targets = [
+      ["-000123", "-123"],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDNegativeInteger.new(data).to_s)
+    end
+
+    targets = [
+      "-0.0",
+      "-5.2",
+      "-0.000000000000a",
+      "+-5",
+      "-12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890."
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDNegativeInteger.new(d)
+      end
+    end
+  end
+
   def test_XSDLong
     o = XSD::XSDLong.new
     assert_equal(XSD::Namespace, o.type.namespace)
@@ -1002,6 +1095,407 @@ class TestXSD2 < Test::Unit::TestCase
     targets.each do |d|
       assert_raises(XSD::ValueSpaceError) do
 	XSD::XSDInt.new(d)
+      end
+    end
+  end
+
+  def test_XSDShort
+    o = XSD::XSDShort.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::ShortLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      0,
+      123,
+      -123,
+      32767,
+      -32768,
+    ]
+    targets.each do |lng|
+      assert_equal(lng, XSD::XSDShort.new(lng).data)
+    end
+
+    targets = [
+      "0",
+      "123",
+      "-123",
+      "32767",
+      "-32768",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDShort.new(str).to_s)
+    end
+
+    targets = [
+      ["-0", "0"],
+      ["+0", "0"],
+      ["000123", "123"],
+      ["-000123", "-123"],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDShort.new(data).to_s)
+    end
+
+    targets = [
+      32768,
+      -32769,
+      "0.0",
+      "-5.2",
+      "0.000000000000a",
+      "+-5",
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDShort.new(d)
+      end
+    end
+  end
+
+  def test_XSDByte
+    o = XSD::XSDByte.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::ByteLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      0,
+      123,
+      -123,
+      127,
+      -128,
+    ]
+    targets.each do |lng|
+      assert_equal(lng, XSD::XSDByte.new(lng).data)
+    end
+
+    targets = [
+      "0",
+      "123",
+      "-123",
+      "127",
+      "-128",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDByte.new(str).to_s)
+    end
+
+    targets = [
+      ["-0", "0"],
+      ["+0", "0"],
+      ["000123", "123"],
+      ["-000123", "-123"],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDByte.new(data).to_s)
+    end
+
+    targets = [
+      128,
+      -129,
+      "0.0",
+      "-5.2",
+      "0.000000000000a",
+      "+-5",
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDByte.new(d)
+      end
+    end
+  end
+
+  def test_XSDNonNegativeInteger
+    o = XSD::XSDNonNegativeInteger.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::NonNegativeIntegerLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      0,
+      1000000000,
+      12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890,
+    ]
+    targets.each do |int|
+      assert_equal(int, XSD::XSDNonNegativeInteger.new(int).data)
+    end
+
+    targets = [
+      "0",
+      "1000000000",
+      "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDNonNegativeInteger.new(str).to_s)
+    end
+
+    targets = [
+      ["-0", "0"],
+      ["+0", "0"],
+      ["000123", "123"],
+      [
+	"+12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+	"12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
+     ],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDNonNegativeInteger.new(data).to_s)
+    end
+
+    targets = [
+      "0.0",
+      "0.000000000000a",
+      "+-5",
+      "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890."
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDNonNegativeInteger.new(d)
+      end
+    end
+  end
+
+  def test_XSDUnsignedLong
+    o = XSD::XSDUnsignedLong.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::UnsignedLongLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      0,
+      1000000000,
+      18446744073709551615,
+    ]
+    targets.each do |int|
+      assert_equal(int, XSD::XSDUnsignedLong.new(int).data)
+    end
+
+    targets = [
+      "0",
+      "1000000000",
+      "18446744073709551615",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDUnsignedLong.new(str).to_s)
+    end
+
+    targets = [
+      ["-0", "0"],
+      ["+0", "0"],
+      ["000123", "123"],
+      ["+18446744073709551615", "18446744073709551615"],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDUnsignedLong.new(data).to_s)
+    end
+
+    targets = [
+      "0.0",
+      "0.000000000000a",
+      "+-5",
+      "18446744073709551615."
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDUnsignedLong.new(d)
+      end
+    end
+  end
+
+  def test_XSDUnsignedInt
+    o = XSD::XSDUnsignedInt.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::UnsignedIntLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      0,
+      1000000000,
+      4294967295,
+    ]
+    targets.each do |int|
+      assert_equal(int, XSD::XSDUnsignedInt.new(int).data)
+    end
+
+    targets = [
+      "0",
+      "1000000000",
+      "4294967295",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDUnsignedInt.new(str).to_s)
+    end
+
+    targets = [
+      ["-0", "0"],
+      ["+0", "0"],
+      ["000123", "123"],
+      ["+4294967295", "4294967295"],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDUnsignedInt.new(data).to_s)
+    end
+
+    targets = [
+      "0.0",
+      "0.000000000000a",
+      "+-5",
+      "4294967295."
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDUnsignedInt.new(d)
+      end
+    end
+  end
+
+  def test_XSDUnsignedShort
+    o = XSD::XSDUnsignedShort.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::UnsignedShortLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      0,
+      10000,
+      65535,
+    ]
+    targets.each do |int|
+      assert_equal(int, XSD::XSDUnsignedShort.new(int).data)
+    end
+
+    targets = [
+      "0",
+      "1000",
+      "65535",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDUnsignedShort.new(str).to_s)
+    end
+
+    targets = [
+      ["-0", "0"],
+      ["+0", "0"],
+      ["000123", "123"],
+      ["+65535", "65535"],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDUnsignedShort.new(data).to_s)
+    end
+
+    targets = [
+      "0.0",
+      "0.000000000000a",
+      "+-5",
+      "65535."
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDUnsignedShort.new(d)
+      end
+    end
+  end
+
+  def test_XSDUnsignedByte
+    o = XSD::XSDUnsignedByte.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::UnsignedByteLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      0,
+      10,
+      255,
+    ]
+    targets.each do |int|
+      assert_equal(int, XSD::XSDUnsignedByte.new(int).data)
+    end
+
+    targets = [
+      "0",
+      "10",
+      "255",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDUnsignedByte.new(str).to_s)
+    end
+
+    targets = [
+      ["-0", "0"],
+      ["+0", "0"],
+      ["000123", "123"],
+      ["+255", "255"],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDUnsignedByte.new(data).to_s)
+    end
+
+    targets = [
+      "0.0",
+      "0.000000000000a",
+      "+-5",
+      "255."
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDUnsignedByte.new(d)
+      end
+    end
+  end
+
+  def test_XSDPositiveInteger
+    o = XSD::XSDPositiveInteger.new
+    assert_equal(XSD::Namespace, o.type.namespace)
+    assert_equal(XSD::PositiveIntegerLiteral, o.type.name)
+    assert_equal(nil, o.data)
+    assert_equal(true, o.is_nil)
+
+    targets = [
+      1,
+      1000000000,
+      12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890,
+    ]
+    targets.each do |int|
+      assert_equal(int, XSD::XSDPositiveInteger.new(int).data)
+    end
+
+    targets = [
+      "1",
+      "1000000000",
+      "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+    ]
+    targets.each do |str|
+      assert_equal(str, XSD::XSDPositiveInteger.new(str).to_s)
+    end
+
+    targets = [
+      ["+1", "1"],
+      ["000123", "123"],
+      [
+	"+12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+	"12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
+     ],
+    ]
+    targets.each do |data, expected|
+      assert_equal(expected, XSD::XSDPositiveInteger.new(data).to_s)
+    end
+
+    targets = [
+      "1.0",
+      "1.000000000000a",
+      "+-5",
+      "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890."
+    ]
+    targets.each do |d|
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDPositiveInteger.new(d)
       end
     end
   end

@@ -12,14 +12,16 @@ module XSD
 class QName
   attr_accessor :namespace
   attr_accessor :name
+  attr_accessor :source
 
   def initialize(namespace = nil, name = nil)
     @namespace = namespace
     @name = name
+    @source = nil
   end
 
   def dup_name(name)
-    ::XSD::QName.new(@namespace, name)
+    XSD::QName.new(@namespace, name)
   end
 
   def match(rhs)

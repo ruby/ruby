@@ -30,9 +30,18 @@ TypeMap = {
   XSD::XSDAnyURI::Type => SOAPAnyURI,
   XSD::XSDQName::Type => SOAPQName,
   XSD::XSDInteger::Type => SOAPInteger,
+  XSD::XSDNonPositiveInteger::Type => SOAPNonPositiveInteger,
+  XSD::XSDNegativeInteger::Type => SOAPNegativeInteger,
   XSD::XSDLong::Type => SOAPLong,
   XSD::XSDInt::Type => SOAPInt,
   XSD::XSDShort::Type => SOAPShort,
+  XSD::XSDByte::Type => SOAPByte,
+  XSD::XSDNonNegativeInteger::Type => SOAPNonNegativeInteger,
+  XSD::XSDUnsignedLong::Type => SOAPUnsignedLong,
+  XSD::XSDUnsignedInt::Type => SOAPUnsignedInt,
+  XSD::XSDUnsignedShort::Type => SOAPUnsignedShort,
+  XSD::XSDUnsignedByte::Type => SOAPUnsignedByte,
+  XSD::XSDPositiveInteger::Type => SOAPPositiveInteger,
 
   SOAP::SOAPBase64::Type => SOAPBase64,
 }

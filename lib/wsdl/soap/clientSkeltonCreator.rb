@@ -62,7 +62,7 @@ __EOD__
 
   def dump_input_init(input)
     result = input.find_message.parts.collect { |part|
-      "#{ uncapitalize(part.name) }"
+      safevarname(part.name)
     }.join(" = ")
     if result.empty?
       ""

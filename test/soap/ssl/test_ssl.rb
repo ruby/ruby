@@ -33,12 +33,8 @@ class TestSSL < Test::Unit::TestCase
     teardown_server
   end
 
-  def streamhandler
-    @client.instance_eval("@servant").instance_eval("@streamhandler").client
-  end
-
   def test_options
-    cfg = streamhandler.ssl_config
+    cfg = @client.streamhandler.client.ssl_config
     assert_nil(cfg.client_cert)
     assert_nil(cfg.client_key)
     assert_nil(cfg.client_ca)
@@ -192,11 +188,14 @@ private
   end
 
   def teardown_server
-    Process.kill('INT', @serverpid)
+    if @serverpid
+      Process.kill('KILL', @serverpid)
+      Process.waitpid(@serverpid)
+    end
   end
 
   def teardown_client
-    @client.reset_stream
+    @client.reset_stream if @client
   end
 
   def verify_callback(ok, cert)

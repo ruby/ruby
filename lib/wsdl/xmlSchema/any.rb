@@ -21,8 +21,8 @@ class Any < Info
 
   def initialize
     super()
-    @maxoccurs = 1
-    @minoccurs = 1
+    @maxoccurs = '1'
+    @minoccurs = '1'
     @namespace = '##any'
     @process_contents = 'strict'
   end
@@ -38,13 +38,13 @@ class Any < Info
   def parse_attr(attr, value)
     case attr
     when MaxOccursAttrName
-      @maxoccurs = value
+      @maxoccurs = value.source
     when MinOccursAttrName
-      @minoccurs = value
+      @minoccurs = value.source
     when NamespaceAttrName
-      @namespace = value
+      @namespace = value.source
     when ProcessContentsAttrName
-      @process_contents = value
+      @process_contents = value.source
     else
       nil
     end

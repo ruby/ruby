@@ -163,16 +163,16 @@ private
     @response = WEBrick::HTTPResponse.new({:HTTPVersion => httpversion})
     conn_data = nil
     begin
-      log(INFO) { "Received a request from '#{ @remote_user }@#{ @remote_host }'." }
+      @log.info { "Received a request from '#{ @remote_user }@#{ @remote_host }'." }
       # SOAP request parsing.
       @request = SOAPRequest.new.init
       @response['Status'] = 200
       conn_data = ::SOAP::StreamHandler::ConnectionData.new
       conn_data.receive_string = @request.dump
       conn_data.receive_contenttype = @request.contenttype
-      log(DEBUG) { "XML Request: #{conn_data.receive_string}" }
+      @log.debug { "XML Request: #{conn_data.receive_string}" }
       conn_data = route(conn_data)
-      log(DEBUG) { "XML Response: #{conn_data.send_string}" }
+      @log.debug { "XML Response: #{conn_data.send_string}" }
       if conn_data.is_fault
 	@response['Status'] = 500
       end
@@ -189,7 +189,7 @@ private
       buf = ''
       @response.send_response(buf)
       buf.sub!(/^[^\r]+\r\n/, '')       # Trim status line.
-      log(DEBUG) { "SOAP CGI Response:\n#{ buf }" }
+      @log.debug { "SOAP CGI Response:\n#{ buf }" }
       print buf
       epilogue
     end

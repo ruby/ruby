@@ -63,7 +63,7 @@ class Param < Info
     when MessageAttrName
       @message = value
     when NameAttrName
-      @name = XSD::QName.new(targetnamespace, value)
+      @name = XSD::QName.new(targetnamespace, value.source)
     else
       nil
     end

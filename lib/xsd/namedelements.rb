@@ -23,6 +23,10 @@ class NamedElements
     o
   end
 
+  def empty?
+    size == 0
+  end
+
   def size
     @elements.size
   end

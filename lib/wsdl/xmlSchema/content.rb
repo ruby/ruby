@@ -67,9 +67,9 @@ class Content < Info
   def parse_attr(attr, value)
     case attr
     when FinalAttrName
-      @final = value
+      @final = value.source
     when MixedAttrName
-      @mixed = (value == 'true')
+      @mixed = (value.source == 'true')
     else
       nil
     end

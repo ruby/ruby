@@ -37,7 +37,7 @@ class Part < Info
   def parse_attr(attr, value)
     case attr
     when NameAttrName
-      @name = value
+      @name = value.source
     when ElementAttrName
       @element = value
     when TypeAttrName
