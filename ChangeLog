@@ -1,3 +1,7 @@
+Tue Aug 20 12:12:25 2002  Tietew <tietew@tietew.net>
+
+	* io.c (rb_io_putc): output via rb_io_write().
+
 Mon Aug 19 19:01:55 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/inf-ruby.el (inf-ruby-keys): ruby-send-definition
@@ -10,6 +14,11 @@ Mon Aug 19 19:01:55 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/inf-ruby.el (ruby-send-terminator): added to make unique
 	  terminator.
+
+Mon Aug 19 17:08:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_initialize_m): frozen check should be moved here
+	  from rb_reg_initialize().
 
 Mon Aug 19 15:38:44 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

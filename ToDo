@@ -35,6 +35,7 @@ Language Spec.
 * selector namespace - something like generic-flet in CLOS, to help RubyBehevior
 * private instance variable (as in Python?) @_foo in class Foo => @_Foo_foo
 * warn/error "bare word" method, like "foo",  you should type "foo()"
+* clarify evaluation order of operator argument (=~, .., ...)
 
 Hacking Interpreter
 

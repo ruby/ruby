@@ -2381,24 +2381,10 @@ static VALUE
 rb_io_putc(io, ch)
     VALUE io, ch;
 {
-    OpenFile *fptr;
-    FILE *f;
-    int c = NUM2CHR(ch);
-
-    rb_secure(4);
-    GetOpenFile(io, fptr);
-    rb_io_check_writable(fptr);
-    f = GetWriteFile(fptr);
-
-    if (fputc(c, f) == EOF)
-	rb_sys_fail(fptr->path);
-    if (fptr->mode & FMODE_SYNC) {
-	io_fflush(f, fptr);
-    }
-    else {
-	fptr->mode |= FMODE_WBUF;
-    }
-
+    char c[2];
+    c[0] = NUM2CHR(ch);
+    c[1] = '\0';
+    rb_io_write(io, rb_str_new(c, 1));
     return ch;
 }
 
