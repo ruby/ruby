@@ -197,8 +197,8 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
     f = rb_dlsym2csym(sym);
     break;
   default:
-    rb_bug("rb_dlptr_s_new");
-  };
+    rb_bug("rb_dlptr_initialize");
+  }
 
   if( p ){
     Data_Get_Struct(self, struct ptr_data, data);
@@ -230,8 +230,8 @@ rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
     f = rb_dlsym2csym(sym);
     break;
   default:
-    rb_bug("rb_dlptr_s_new");
-  };
+    rb_bug("rb_dlptr_s_malloc");
+  }
 
   obj = rb_dlptr_malloc(s,f);
 

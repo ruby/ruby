@@ -174,7 +174,7 @@ the class Handle keeps a handle to opened library.
 
 == PtrData class
 
-* ptr = PtrData.new(addr, [free = nil])
+* ptr = PtrData.new(addr, [size = 0, free = nil])
   * returns the PtrData object representing the pointer which indicates the
     address addr. GC frees the memory using the free function.
 
