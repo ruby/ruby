@@ -104,7 +104,6 @@ emx_mblen(p)
 #else /* multi byte environment */
 # define Inc(p) ((p) = Next(p))
 # define Compare(p1, p2) (CompareImpl(p1, p2, nocase))
-# ifndef _WIN32
 static int
 CompareImpl(p1, p2, nocase)
     const char *p1;
@@ -113,14 +112,39 @@ CompareImpl(p1, p2, nocase)
 {
     const int len1 = Next(p1) - p1;
     const int len2 = Next(p2) - p2;
+#ifdef _WIN32
+    char buf1[10], buf2[10]; /* large enough? */
+#endif
 
     if (len1 < 0 || len2 < 0) {
-	rb_fatal("No-win32 CompareImpl: negative len");
+	rb_fatal("CompareImpl: negative len");
     }
 
     if (len1 == 0) return  len2;
     if (len2 == 0) return -len1;
 
+#ifdef _WIN32
+    if (nocase) {
+	if (len1 > 1) {
+	    if (len1 >= sizeof(buf1)) {
+		rb_fatal("CompareImpl: too large len");
+	    }
+	    memcpy(buf1, p1, len1);
+	    buf1[len1] = '\0';
+	    CharLower(buf1);
+	    p1 = buf1; /* trick */
+	}
+	if (len2 > 1) {
+	    if (len2 >= sizeof(buf2)) {
+		rb_fatal("CompareImpl: too large len");
+	    }
+	    memcpy(buf2, p2, len2);
+	    buf2[len2] = '\0';
+	    CharLower(buf2);
+	    p2 = buf2; /* trick */
+	}
+    }
+#endif
     if (len1 == 1)
 	if (len2 == 1)
 	    return compare(downcase(*p1), downcase(*p2));
@@ -138,40 +162,6 @@ CompareImpl(p1, p2, nocase)
 	    return ret ? ret : len1 - len2;
 	}
 }
-# else
-static int
-CompareImpl(p1, p2, nocase)
-    const char *p1;
-    const char *p2;
-    int nocase;
-{
-    int ret;
-
-    const int len1 = Next(p1) - p1;
-    const int len2 = Next(p2) - p2;
-
-    char buf1[10], buf2[10]; /* large enough? */
-
-    if (len1 < 0 || len2 < 0) {
-	rb_fatal("Win32 CompareImpl: negative len");
-    }
-
-    if (len1 >= sizeof(buf1) || len2 >= sizeof(buf2)) {
-	rb_fatal("Win32 CompareImpl: too large len");
-    }
-
-    memcpy(buf1, p1, len1); buf1[len1] = '\0';
-    memcpy(buf2, p2, len2); buf2[len2] = '\0';
-
-    if (nocase) {
-	CharLower(buf1);
-	CharLower(buf2);
-    }
-
-    ret = memcmp(buf1, buf2, len1 < len2 ? len1 : len2);
-    return ret ? ret : len1 - len2;
-}
-# endif
 #endif /* environment */
 
 #if defined DOSISH
