@@ -1,17 +1,8 @@
 require 'mkmf'
 
 def etc_grep_header(field)
-  f = open("conftest.c", "w")
-  f.print <<EOF
-#include <pwd.h>
-EOF
-  f.close
-  begin
-    if xsystem("#{CPP} | egrep #{field}")
-      $defs.push(format("-D%s", field.upcase))
-    end
-  ensure
-    system "rm -f conftest.c"
+  if egrep_cpp(field, "#include <pwd.h>\n")
+    $defs.push(format("-D%s", field.upcase))
   end
 end
 

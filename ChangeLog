@@ -1,3 +1,7 @@
+Tue Jun  5 13:41:13 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/etc/extconf.rb: use egrep_cpp.
+
 Tue Jun  5 12:44:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (r_object): wrong type check for modules.
