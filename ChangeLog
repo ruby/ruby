@@ -1,3 +1,8 @@
+Tue Mar  1 21:16:54 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+
+	* regcomp.c (optimize_node_left): uninitialized member
+	  (OptEnv.backrefed_status) was used. [ruby-dev:25778]
+
 Tue Mar  1 00:40:35 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb (Rinda::TupleSpace): improved keeper thread.
