@@ -36,6 +36,7 @@ Which coding systems are available, it depends on the platform.
 #include <errno.h>
 #include <iconv.h>
 #include <assert.h>
+#include "st.h"
 #include "intern.h"
 
 /* Invalid value for iconv_t is -1 but 0 for VALUE, I hope VALUE is
@@ -63,6 +64,7 @@ static VALUE iconv_failure_success _((VALUE self));
 static VALUE iconv_failure_failed _((VALUE self));
 
 static iconv_t iconv_create _((VALUE to, VALUE from));
+static void iconv_dfree _((void *cd));
 static VALUE iconv_free _((VALUE cd));
 static VALUE iconv_try _((iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *outlen));
 static VALUE rb_str_derive _((VALUE str, const char* ptr, int len));
@@ -88,6 +90,34 @@ static VALUE iconv_iconv _((int argc, VALUE *argv, VALUE self));
 == Iconv
 =end
 */
+static VALUE charset_map;
+
+static VALUE charset_map_get _((void))
+{
+    return charset_map;
+}
+
+static char *
+map_charset
+#ifdef HAVE_PROTOTYPES
+    (VALUE *code)
+#else /* HAVE_PROTOTYPES */
+    (code)
+    VALUE *code;
+#endif /* HAVE_PROTOTYPES */
+{
+    VALUE val = *code;
+
+    StringValuePtr(val);
+    if (RHASH(charset_map)->tbl && RHASH(charset_map)->tbl->num_entries) {
+	if (st_lookup(RHASH(charset_map)->tbl, val, &val)) {
+	    StringValuePtr(val);
+	    *code = val;
+	}
+    }
+    return RSTRING(val)->ptr;
+}
+
 static iconv_t
 iconv_create
 #ifdef HAVE_PROTOTYPES
@@ -98,8 +128,8 @@ iconv_create
     VALUE from;
 #endif /* HAVE_PROTOTYPES */
 {
-    const char* tocode = StringValuePtr(to);
-    const char* fromcode = StringValuePtr(from);
+    const char* tocode = map_charset(&to);
+    const char* fromcode = map_charset(&from);
 
     iconv_t cd = iconv_open(tocode, fromcode);
 
@@ -122,6 +152,20 @@ iconv_create
     return cd;
 }
 
+static void
+iconv_dfree
+#ifdef HAVE_PROTOTYPES
+(void *cd)
+#else /* HAVE_PROTOTYPES */
+    (cd)
+    void *cd;
+#endif /* HAVE_PROTOTYPES */
+{
+    iconv_close(VALUE2ICONV(cd));
+}
+
+#define ICONV_FREE iconv_dfree
+
 static VALUE
 iconv_free
 #ifdef HAVE_PROTOTYPES
@@ -135,8 +179,6 @@ iconv_free
 	rb_sys_fail("iconv_close");
     return Qnil;
 }
-
-#define ICONV_FREE (RUBY_DATA_FUNC)iconv_free
 
 static VALUE
 iconv_try
@@ -188,7 +230,7 @@ iconv_failure_initialize
     struct iconv_env_t *env;
 #endif /* HAVE_PROTOTYPES */
 {
-    if (!rb_ivar_defined(error, rb_mesg) || NIL_P(rb_ivar_get(error, rb_mesg)))
+    if (NIL_P(rb_attr_get(error, rb_mesg)))
 	rb_ivar_set(error, rb_mesg, rb_inspect(failed));
     if (env) {
 	success = rb_funcall3(env->ret, rb_inserter, 1, &success);
@@ -478,6 +520,24 @@ iconv_s_iconv
     return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
 }
 
+static VALUE
+iconv_s_conv
+#ifdef HAVE_PROTOTYPES
+    (VALUE self, VALUE to, VALUE from, VALUE str)
+#else /* HAVE_PROTOTYPES */
+    (self, to, from, str)
+    VALUE self, to, from, str;
+#endif /* HAVE_PROTOTYPES */
+{
+    struct iconv_env_t arg;
+
+    arg.argc = 1;
+    arg.argv = &str;
+    arg.ret = rb_str_new(0, 0);
+    arg.cd = iconv_create(to, from);
+    return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
+}
+
 
 /*
 =begin
@@ -690,9 +750,12 @@ void
 Init_iconv _((void))
 {
     VALUE rb_cIconv = rb_define_class("Iconv", rb_cData);
+    VALUE metaclass = RBASIC(rb_cIconv)->klass;
+
     rb_define_alloc_func(rb_cIconv, iconv_s_allocate);
     rb_define_singleton_method(rb_cIconv, "open", iconv_s_open, 2);
     rb_define_singleton_method(rb_cIconv, "iconv", iconv_s_iconv, -1);
+    rb_define_singleton_method(rb_cIconv, "conv", iconv_s_conv, 3);
     rb_define_method(rb_cIconv, "initialize", iconv_initialize, 2);
     rb_define_method(rb_cIconv, "close", iconv_finish, 0);
     rb_define_method(rb_cIconv, "iconv", iconv_iconv, -1);
@@ -713,6 +776,10 @@ Init_iconv _((void))
     rb_success = rb_intern("success");
     rb_failed = rb_intern("failed");
     rb_mesg = rb_intern("mesg");
+
+    charset_map = rb_hash_new();
+    rb_gc_register_address(&charset_map);
+    rb_define_singleton_method(rb_cIconv, "charset_map", charset_map_get, 0);
 }
 
 

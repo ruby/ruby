@@ -1,3 +1,16 @@
+Sat Jul 19 04:50:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/iconv/charset_alias.rb, ext/iconv/extconf.rb: make wrapper
+	  script which maps charset names.  [ruby-dev:20625]
+
+	* ext/iconv/iconv.c (charset_map): charset name map.
+
+	* ext/iconv/iconv.c (iconv_dfree): no exception while
+	  finalization.
+
+	* ext/iconv/iconv.c (iconv_s_conv): new method Iconv.conv.
+	  [ruby-dev:20588]
+
 Sat Jul 19 03:09:18 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/Win32API/lib/win32/registry.rb (Win32::Registry::Error):
