@@ -1,3 +1,7 @@
+Tue Nov 25 15:18:28 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* configure.in: change default value of --enable-pthread (default: no)
+
 Tue Nov 25 07:31:16 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): allow newlines just before right argument
