@@ -1,3 +1,8 @@
+Tue Mar  2 12:32:59 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub, wince/Makefile.sub (config.h): shouldn't check
+	  defined? NORETURN. [ruby-dev:23100]
+
 Mon Mar  1 12:24:10 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_alias):
