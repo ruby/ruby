@@ -1,3 +1,7 @@
+Thu Feb 12 21:45:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/ftools.rb: documented
+
 Thu Feb 12 21:25:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/base64.rb: backported from HEAD (modularised and documented)
