@@ -33,17 +33,14 @@ end
 class BigDecimal < Numeric
   # to "nnnnnn.mmm" form digit string
   def to_digits
-     if self.nan? || self.infinite?
+     if self.nan? || self.infinite? || self.zero?
         self.to_s
      else
-       s,i,y,z = self.fix.split
+       i       = self.to_i.to_s
        s,f,y,z = self.frac.split
-       if s > 0
-         s = ""
-       else
-         s = "-"
-       end
-       s + i + "." + f
+       f = f.gsub(/0+$/,"")
+       f = "0" if f==""
+       i + "." + ("0"*(-z)) + f
      end
   end
 
