@@ -72,16 +72,6 @@ void rb_trap_exec _((void));
 # define CHECK_INTS if (!rb_prohibit_interrupt) {\
     if (rb_trap_pending) rb_trap_exec();\
 }
-
-#define xmalloc ruby_xmalloc
-#define xcalloc ruby_xcalloc
-#define xrealloc ruby_xrealloc
-#define xfree ruby_xfree
-
-void *xmalloc _((long));
-void *xcalloc _((long,long));
-void *xrealloc _((void*,long));
-void xfree _((void*));
 #endif
 
 /* Make alloca work the best possible way.  */
