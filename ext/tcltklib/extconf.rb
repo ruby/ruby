@@ -2,8 +2,8 @@
 
 require 'mkmf'
 
+have_library("nsl", "t_open")
 have_library("socket", "socket")
-have_library("nsl", "gethostbyname")
 have_library("dl", "dlopen")
 have_library("m", "log") 
 

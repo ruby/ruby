@@ -12,7 +12,7 @@ when /beos/
 else
   test_func = "socket"
   have_library("inet", "gethostbyname")
-  have_library("nsl", "gethostbyname")
+  have_library("nsl", "t_open")
   have_library("socket", "socket")
 end
 have_header("sys/un.h")
