@@ -1,3 +1,8 @@
+Thu Nov 11 16:56:10 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file.rb (test_truncate_wbuf): we want to test
+	  only File#truncate, not behavior of seek(2).
+
 Thu Nov 11 01:52:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (syserr_initialize): use stringified object.

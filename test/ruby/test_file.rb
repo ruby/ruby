@@ -228,11 +228,11 @@ class TestFile < Test::Unit::TestCase
 
   def test_truncate_wbuf # [ruby-dev:24191]
     f = Tempfile.new("test-truncate")
-    f.puts "abc"
+    f.print "abc"
     f.truncate(0)
-    f.puts "def"
+    f.print "def"
     f.close
-    assert_equal("\0\0\0\0def\n", File.read(f.path))
+    assert_equal("\0\0\0def", File.read(f.path))
   end
 
   def test_truncate_rbuf # [ruby-dev:24197]
