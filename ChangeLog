@@ -1,3 +1,7 @@
+Mon Jun 14 18:23:27 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/remote-tk.rb: bug fix
+
 Sun Jun 13 00:23:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/extconf.rb: [EXPERIMENTAL] MacOS X (darwin) support
