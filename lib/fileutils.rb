@@ -717,7 +717,7 @@ module FileUtils
   end
 
   def fu_list(arg)
-    Array(arg).map {|path| path.to_str }
+    [arg].flatten.map {|path| path.to_str }
   end
 
   def fu_each_src_dest(src, dest)
