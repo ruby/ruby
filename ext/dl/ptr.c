@@ -202,6 +202,10 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
 
   if( p ){
     Data_Get_Struct(self, struct ptr_data, data);
+    if( data->ptr && data->free ){
+      /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
+      (*(data->free))(data->ptr);
+    }
     data->ptr  = p;
     data->size = s;
     data->free = f;

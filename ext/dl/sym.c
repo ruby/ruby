@@ -158,6 +158,8 @@ rb_dlsym_initialize(int argc, VALUE argv[], VALUE self)
 
   if( saddr ){
     Data_Get_Struct(self, struct sym_data, data);
+    if( data->name ) free(data->name);
+    if( data->type ) free(data->type);
     data->func = saddr;
     data->name = sname ? strdup(sname) : 0;
     data->type = stype ? strdup(stype) : 0;

@@ -75,6 +75,9 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
   };
 #endif
   Data_Get_Struct(self, struct dl_handle, dlhandle);
+  if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
+    dlclose(dlhandle->ptr);
+  }
   dlhandle->ptr = ptr;
   dlhandle->open = 1;
   dlhandle->enable_close = 0;
