@@ -529,8 +529,10 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
                       stack[5],stack[6],stack[7],stack[8],stack[9],\
                       stack[10],stack[11],stack[12],stack[13],stack[14]
   int  stk_size;
-  long *stack, *sp;
+  long stack[15];
+  long *sp;
 
+  sp = stack;
   stk_size = stack_size(sym);
   if( stk_size < 0 ){
     FREE_ARGS;
@@ -539,10 +541,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
   else if( stk_size > (int)(sizeof(long) * 15) ){
     FREE_ARGS;
     rb_raise(rb_eArgError, "too many arguments.");
-    stk_size = sizeof(long) * 15;
   }
-  stack = (long*)alloca(stk_size);
-  sp = stack;
 #elif defined(USE_INLINE_ASM)
 #define DLSTACK_PROTO
 #define DLSTACK_ARGS

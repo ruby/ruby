@@ -161,9 +161,9 @@
 #elif defined(USE_DLSTACK)
 # define ASM_START(sym)
 # define ASM_END(sym)
-# define ASM_PUSH_C(x)  memcpy(sp,&x,1); sp++;
-# define ASM_PUSH_H(x)  memcpy(sp,&x,sizeof(short)); sp++;
-# define ASM_PUSH_I(x)  memcpy(sp,&x,sizeof(int)); sp++;
+# define ASM_PUSH_C(x)  {long v=(long)x; memcpy(sp,&v,sizeof(long)); sp++;}
+# define ASM_PUSH_H(x)  {long v=(long)x; memcpy(sp,&v,sizeof(long)); sp++;}
+# define ASM_PUSH_I(x)  {long v=(long)x; memcpy(sp,&v,sizeof(long)); sp++;}
 # define ASM_PUSH_L(x)  memcpy(sp,&x,sizeof(long)); sp++;
 # define ASM_PUSH_P(x)  memcpy(sp,&x,sizeof(void*)); sp++;
 # define ASM_PUSH_F(x)  memcpy(sp,&x,sizeof(float)); sp+=sizeof(float)/sizeof(long);
