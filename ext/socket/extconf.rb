@@ -319,7 +319,7 @@ end
 
 $objs = ["socket.#{$OBJEXT}"]
     
-if $getaddr_info_ok and have_func("getaddrinfo") and have_func("getnameinfo")
+if $getaddr_info_ok and have_func("getaddrinfo", "netdb.h") and have_func("getnameinfo", "netdb.h")
   have_getaddrinfo = true
 else
   if try_link(<<EOF)

@@ -58,7 +58,7 @@ module IRB
 
       case input_method
       when nil
-	if (defined? (ReadlineInputMethod) &&
+	if (defined?(ReadlineInputMethod) &&
             (use_readline? || IRB.conf[:PROMPT_MODE] != :INF_RUBY && STDIN.tty?))
 	  @io = ReadlineInputMethod.new
 	else

@@ -4029,7 +4029,8 @@ yylex()
 		c = tLPAREN_ARG;
 	    }
 	    else if (lex_state == EXPR_ARG) {
-		c = tLPAREN_ARG;
+		rb_warn("don't put space before argument parentheses");
+		c = '(';
 	    }
 	}
 	COND_PUSH(0);

@@ -483,8 +483,7 @@ w_object(obj, arg, limit)
 	    VALUE v;
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
-	    w_byte(TYPE_USRMARSHAL, arg);
-	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
+	    w_class(TYPE_USRMARSHAL, obj, arg);
 	    w_object(v, arg, limit);
 	    if (ivtbl) w_ivar(0, &c_arg);
 	    return;
@@ -953,10 +952,11 @@ path2module(path)
 }
 
 static VALUE
-r_object0(arg, proc, ivp)
+r_object0(arg, proc, ivp, extended)
     struct load_arg *arg;
     VALUE proc;
     int *ivp;
+    VALUE extended;
 {
     VALUE v = Qnil;
     int type = r_byte(arg);
@@ -975,7 +975,7 @@ r_object0(arg, proc, ivp)
         {
 	    int ivar = Qtrue;
 
-	    v = r_object0(arg, 0, &ivar);
+	    v = r_object0(arg, 0, &ivar, extended);
 	    if (ivar) r_ivar(v, arg);
 	}
 	break;
@@ -984,8 +984,14 @@ r_object0(arg, proc, ivp)
 	{
 	    VALUE m = path2module(r_unique(arg));
 
-	    v = r_object0(arg, 0, 0);
-	    rb_extend_object(v, m);
+            if (NIL_P(extended)) extended = rb_ary_new2(0);
+            rb_ary_push(extended, m);
+
+	    v = r_object0(arg, 0, 0, extended);
+            while (RARRAY(extended)->len > 0) {
+                m = rb_ary_pop(extended);
+                rb_extend_object(v, m);
+            }
 	}
 	break;
 
@@ -996,7 +1002,7 @@ r_object0(arg, proc, ivp)
 	    if (FL_TEST(c, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError, "singleton can't be loaded");
 	    }
-	    v = r_object0(arg, 0, 0);
+	    v = r_object0(arg, 0, 0, extended);
 	    if (rb_special_const_p(v) || TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS) {
 	      format_error:
 		rb_raise(rb_eArgError, "dump format error (user class)");
@@ -1200,6 +1206,12 @@ r_object0(arg, proc, ivp)
 	    VALUE data;
 
 	    v = rb_obj_alloc(klass);
+            if (! NIL_P(extended)) {
+                while (RARRAY(extended)->len > 0) {
+                    VALUE m = rb_ary_pop(extended);
+                    rb_extend_object(v, m);
+                }
+            }
 	    if (!rb_respond_to(v, s_mload)) {
 		rb_raise(rb_eTypeError, "instance of %s needs to have method `marshal_load'",
 			 rb_class2name(klass));
@@ -1246,7 +1258,7 @@ r_object0(arg, proc, ivp)
                         "class %s needs to have instance method `_load_data'",
                         rb_class2name(klass));
            }
-           rb_funcall(v, s_load_data, 1, r_object0(arg, 0, 0));
+           rb_funcall(v, s_load_data, 1, r_object0(arg, 0, 0, extended));
        }
        break;
 
@@ -1298,7 +1310,7 @@ static VALUE
 r_object(arg)
     struct load_arg *arg;
 {
-    return r_object0(arg, arg->proc, 0);
+    return r_object0(arg, arg->proc, 0, Qnil);
 }
 
 static VALUE

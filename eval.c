@@ -1332,7 +1332,7 @@ ruby_finalize_0(ex)
 void
 ruby_finalize()
 {
-    ruby_finalize_0(0);
+    ruby_finalize_0(EXIT_SUCCESS);
 }
 
 int

@@ -394,7 +394,7 @@ def install_files(mfile, ifiles, map = nil, srcprefix = nil)
   path = Hash.new {|h, i| h[i] = dirs.push([i])[-1]}
   ifiles.each do |files, dir, prefix|
     dir = map_dir(dir, map)
-    prefix = %r"\A#{Regexp.quote(prefix)}/?" if prefix
+    prefix = %r|\A#{Regexp.quote(prefix)}/?| if prefix
     if( files[0,2] == "./" )
       # install files which are in current working directory.
       files = files[2..-1]

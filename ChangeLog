@@ -1,3 +1,11 @@
+Wed Oct 15 11:23:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): dump extended modules as well.
+
+	* marshal.c (r_object0): TYPE_USRMARSHAL should restore extended
+	  modules before invoking marshal_load.  these two fixes are done
+	  by Masatoshi Seki <m_seki@mva.biglobe.ne.jp>.
+
 Wed Oct 15 09:30:34 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/enumerator/enumerator.c (enumerator_each): avoid VC++ warning.
@@ -44,6 +52,11 @@ Wed Oct 15 03:53:20 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fixed trouble on auto-load Tcl commands (enbug
 	  on the last commit).
+
+Wed Oct 15 00:25:00 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): argument parentheses preceded by spaces should
+	  be warned; not error.  [ruby-talk:84103]
 
 Wed Oct 15 00:20:15 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
