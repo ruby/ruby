@@ -644,7 +644,7 @@ rb_f_system(argc, argv)
     fflush(stderr);
     if (argc == 0) {
 	rb_last_status = INT2FIX(0);
-	return INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
@@ -675,7 +675,7 @@ rb_f_system(argc, argv)
     fflush(stderr);
     if (argc == 0) {
 	rb_last_status = INT2FIX(0);
-	return INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {

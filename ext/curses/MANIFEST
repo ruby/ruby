@@ -1,5 +1,6 @@
 MANIFEST
 curses.c
+depend
 extconf.rb
 hello.rb
 rain.rb

@@ -13,6 +13,10 @@
 #ifndef NODE_H
 #define NODE_H
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 enum node_type {
     NODE_METHOD,
     NODE_FBODY,
@@ -330,5 +334,9 @@ struct global_entry *rb_global_entry _((ID));
 VALUE rb_gvar_get _((struct global_entry *));
 VALUE rb_gvar_set _((struct global_entry *, VALUE));
 VALUE rb_gvar_defined _((struct global_entry *));
+
+#if defined(__cplusplus)
+}  /* extern "C" { */
+#endif
 
 #endif

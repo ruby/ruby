@@ -82,7 +82,7 @@ VALUE rb_singleton_class _((VALUE));
 /* enum.c */
 VALUE rb_enum_length _((VALUE));
 /* error.c */
-extern int ruby_nerrs;
+EXTERN int ruby_nerrs;
 VALUE rb_exc_new _((VALUE, const char*, long));
 VALUE rb_exc_new2 _((VALUE, const char*));
 VALUE rb_exc_new3 _((VALUE, VALUE));
