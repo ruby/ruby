@@ -448,9 +448,11 @@ if test "$with_dln_a_out" != yes; then
 			LDFLAGS=""
 			DLDFLAGS="$ARCH_FLAG"
 			rb_cv_dlopen=yes ;;
-	aix*)		LDSHARED='../../miniruby ../aix_ld.rb $(TARGET)'
-			XLDFLAGS="-Wl,-bE:ext/ruby.imp"
+	aix*)		LDSHARED='/usr/ccs/bin/ld'
+			XLDFLAGS="-Wl,-bE:ruby.imp"
+			DLDFLAGS="-eInit_$(TARGET) -bI:$(ruby_inc)/ruby.imp -bM:SRE -T512 -H512 -lc"
 			rb_cv_dlopen=yes ;;
+
 	human*)		DLDFLAGS=''
 			LDSHARED=''
 			LDFLAGS=''

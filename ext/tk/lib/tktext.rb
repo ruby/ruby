@@ -247,11 +247,11 @@ class TkText<TkTextWin
   private :_tag_bind_core
 
   def tag_bind(tag, seq, cmd=Proc.new, args=nil)
-    _tag_bind_core('', tag, seq, cmd=Proc.new, args=nil)
+    _tag_bind_core('', tag, seq, cmd, args=nil)
   end
 
   def tag_bind_append(tag, seq, cmd=Proc.new, args=nil)
-    _tag_bind_core('+', tag, seq, cmd=Proc.new, args=nil)
+    _tag_bind_core('+', tag, seq, cmd, args=nil)
   end
 
   def tag_bindinfo(tag, context=nil)

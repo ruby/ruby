@@ -702,7 +702,7 @@ lineno_setter(val, id, var)
 }
 
 static VALUE
-arg_set_lineno(argf, val)
+argf_set_lineno(argf, val)
     VALUE argf, val;
 {
     gets_lineno = NUM2INT(val);
@@ -710,7 +710,7 @@ arg_set_lineno(argf, val)
 }
 
 static VALUE
-arg_lineno()
+argf_lineno()
 {
     return lineno;
 }
@@ -2065,6 +2065,16 @@ rb_io_s_new(argc, argv, klass)
     return prep_stdio(rb_fdopen(NUM2INT(fnum), m), rb_io_mode_flags(m), klass);
 }
 
+static int binmode = 0;
+
+static VALUE
+argf_binmode()
+{
+    rb_io_binmode(file);
+    binmode = 1;
+    return argf;
+}
+
 static int
 next_argv()
 {
@@ -2153,6 +2163,7 @@ next_argv()
 		}
 		file = prep_stdio(fr, FMODE_READABLE, rb_cFile);
 	    }
+	    rb_io_binmode(file);
 	}
 	else {
 	    init_p = 0;
@@ -2741,13 +2752,13 @@ rb_io_s_readlines(argc, argv, io)
 }
 
 static VALUE
-arg_tell()
+argf_tell()
 {
     return rb_io_tell(file);
 }
 
 static VALUE
-arg_seek(self, offset, ptrname)
+argf_seek(self, offset, ptrname)
      VALUE self, offset, ptrname;
 {
     if (!next_argv()) {
@@ -2758,7 +2769,7 @@ arg_seek(self, offset, ptrname)
 }
 
 static VALUE
-arg_set_pos(self, offset)
+argf_set_pos(self, offset)
      VALUE self, offset;
 {
     if (!next_argv()) {
@@ -2769,25 +2780,25 @@ arg_set_pos(self, offset)
 }
 
 static VALUE
-arg_rewind()
+argf_rewind()
 {
     return rb_io_rewind(file);
 }
 
 static VALUE
-arg_fileno()
+argf_fileno()
 {
     return rb_io_fileno(file);
 }
 
 static VALUE
-arg_to_io()
+argf_to_io()
 {
     return file;
 }
 
 static VALUE
-arg_read(argc, argv)
+argf_read(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -2821,7 +2832,7 @@ arg_read(argc, argv)
 }
 
 static VALUE
-arg_getc()
+argf_getc()
 {
     VALUE byte;
 
@@ -2838,7 +2849,7 @@ arg_getc()
 }
 
 static VALUE
-arg_readchar()
+argf_readchar()
 {
     VALUE c = rb_io_getc(file);
 
@@ -2849,7 +2860,7 @@ arg_readchar()
 }
 
 static VALUE
-arg_eof()
+argf_eof()
 {
     if (init_p == 0 && !next_argv())
 	return Qtrue;
@@ -2864,11 +2875,11 @@ static VALUE
 rb_f_eof()
 {
     rb_warn("eof? is obsolete; use ARGF.eof? instead");
-    return arg_eof();
+    return argf_eof();
 }
 
 static VALUE
-arg_each_line(argc, argv)
+argf_each_line(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -2881,30 +2892,30 @@ arg_each_line(argc, argv)
 }
 
 static VALUE
-arg_each_byte()
+argf_each_byte()
 {
     VALUE byte;
 
-    while (!NIL_P(byte = arg_getc())) {
+    while (!NIL_P(byte = argf_getc())) {
 	rb_yield(byte);
     }
     return Qnil;
 }
 
 static VALUE
-arg_filename()
+argf_filename()
 {
     return filename;
 }
 
 static VALUE
-arg_file()
+argf_file()
 {
     return file;
 }
 
 static VALUE
-arg_skip()
+argf_skip()
 {
     if (next_p != -1) {
 	rb_io_close(file);
@@ -2914,7 +2925,7 @@ arg_skip()
 }
 
 static VALUE
-arg_close()
+argf_close()
 {
     rb_io_close(file);
     if (next_p != -1) {
@@ -2925,7 +2936,7 @@ arg_close()
 }
 
 static VALUE
-arg_closed()
+argf_closed()
 {
     return rb_io_closed(file);
 }
@@ -3081,37 +3092,38 @@ Init_IO()
     rb_define_readonly_variable("$<", &argf);
     rb_define_global_const("ARGF", argf);
 
-    rb_define_singleton_method(argf, "fileno", arg_fileno, 0);
-    rb_define_singleton_method(argf, "to_i", arg_fileno, 0);
-    rb_define_singleton_method(argf, "to_io", arg_to_io, 0);
-    rb_define_singleton_method(argf, "each",  arg_each_line, -1);
-    rb_define_singleton_method(argf, "each_line",  arg_each_line, -1);
-    rb_define_singleton_method(argf, "each_byte",  arg_each_byte, 0);
+    rb_define_singleton_method(argf, "fileno", argf_fileno, 0);
+    rb_define_singleton_method(argf, "to_i", argf_fileno, 0);
+    rb_define_singleton_method(argf, "to_io", argf_to_io, 0);
+    rb_define_singleton_method(argf, "each",  argf_each_line, -1);
+    rb_define_singleton_method(argf, "each_line",  argf_each_line, -1);
+    rb_define_singleton_method(argf, "each_byte",  argf_each_byte, 0);
 
-    rb_define_singleton_method(argf, "read",  arg_read, -1);
+    rb_define_singleton_method(argf, "read",  argf_read, -1);
     rb_define_singleton_method(argf, "readlines", rb_f_readlines, -1);
     rb_define_singleton_method(argf, "to_a", rb_f_readlines, -1);
     rb_define_singleton_method(argf, "gets", rb_f_gets, -1);
     rb_define_singleton_method(argf, "readline", rb_f_readline, -1);
-    rb_define_singleton_method(argf, "getc", arg_getc, 0);
-    rb_define_singleton_method(argf, "readchar", arg_readchar, 0);
-    rb_define_singleton_method(argf, "tell", arg_tell, 0);
-    rb_define_singleton_method(argf, "seek", arg_seek, 2);
-    rb_define_singleton_method(argf, "rewind", arg_rewind, 0);
-    rb_define_singleton_method(argf, "pos", arg_tell, 0);
-    rb_define_singleton_method(argf, "pos=", arg_set_pos, 1);
-    rb_define_singleton_method(argf, "eof", arg_eof, 0);
-    rb_define_singleton_method(argf, "eof?", arg_eof, 0);
+    rb_define_singleton_method(argf, "getc", argf_getc, 0);
+    rb_define_singleton_method(argf, "readchar", argf_readchar, 0);
+    rb_define_singleton_method(argf, "tell", argf_tell, 0);
+    rb_define_singleton_method(argf, "seek", argf_seek, 2);
+    rb_define_singleton_method(argf, "rewind", argf_rewind, 0);
+    rb_define_singleton_method(argf, "pos", argf_tell, 0);
+    rb_define_singleton_method(argf, "pos=", argf_set_pos, 1);
+    rb_define_singleton_method(argf, "eof", argf_eof, 0);
+    rb_define_singleton_method(argf, "eof?", argf_eof, 0);
+    rb_define_singleton_method(argf, "binmode", argf_binmode, 0);
 
-    rb_define_singleton_method(argf, "to_s", arg_filename, 0);
-    rb_define_singleton_method(argf, "filename", arg_filename, 0);
-    rb_define_singleton_method(argf, "file", arg_file, 0);
-    rb_define_singleton_method(argf, "skip", arg_skip, 0);
-    rb_define_singleton_method(argf, "close", arg_close, 0);
-    rb_define_singleton_method(argf, "closed?", arg_closed, 0);
+    rb_define_singleton_method(argf, "to_s", argf_filename, 0);
+    rb_define_singleton_method(argf, "filename", argf_filename, 0);
+    rb_define_singleton_method(argf, "file", argf_file, 0);
+    rb_define_singleton_method(argf, "skip", argf_skip, 0);
+    rb_define_singleton_method(argf, "close", argf_close, 0);
+    rb_define_singleton_method(argf, "closed?", argf_closed, 0);
 
-    rb_define_singleton_method(argf, "lineno",   arg_lineno, 0);
-    rb_define_singleton_method(argf, "lineno=",  arg_set_lineno, 1);
+    rb_define_singleton_method(argf, "lineno",   argf_lineno, 0);
+    rb_define_singleton_method(argf, "lineno=",  argf_set_lineno, 1);
 
     file = rb_stdin;
     rb_global_variable(&file);

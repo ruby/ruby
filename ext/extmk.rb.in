@@ -1,7 +1,6 @@
 #! /usr/local/bin/ruby
 
 $".push 'mkmf.rb' #"
-load '@top_srcdir@/lib/find.rb'
 
 if ARGV[0] == 'static'
   $force_static = TRUE
@@ -31,6 +30,9 @@ if $topdir !~ "^/"
   # get absolute path
   $topdir = File.expand_path($topdir)
 end
+$ruby_inc = "@top_srcdir@"
+
+load '@top_srcdir@/lib/find.rb'
 
 ## drive letter
 if PLATFORM == "i386-os2_emx" then
@@ -302,6 +304,7 @@ libdir = @libdir@
 #pkglibdir = $(libdir)/$(RUBY_INSTALL_NAME)/@MAJOR@.@MINOR@
 pkglibdir = $(libdir)/ruby/@MAJOR@.@MINOR@
 archdir = $(pkglibdir)/@arch@
+ruby_inc = #{$ruby_inc}
 @SET_MAKE@
 
 #### End of system configuration section. ####
@@ -322,14 +325,15 @@ archdir = $(pkglibdir)/@arch@
   mfile.printf "\n"
 
   mfile.printf <<EOS
-TARGET = #{target}.#{$static ? "a" : "@DLEXT@"}
+TARGET = #{target}
+DLLIB = $(TARGET).#{$static ? "a" : "@DLEXT@"}
 
 INSTALL = #{$dots}@INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 
 binsuffix = @binsuffix@
 
-all:		$(TARGET)
+all:		$(DLLIB)
 
 clean:;		@rm -f *.o *.a *.so *.sl
 		@rm -f Makefile extconf.h conftest.*
@@ -347,7 +351,7 @@ install:
 EOS
   if !$static
     mfile.printf "\
-	$(INSTALL) $(TARGET) $(DESTDIR)$(archdir)/$(TARGET)
+	$(INSTALL) $(DLLIB) $(DESTDIR)$(archdir)/$(DLLIB)
 "
   end
   install_rb(mfile)
@@ -355,30 +359,30 @@ EOS
 
   if $static
       mfile.printf "\
-$(TARGET): $(OBJS)
-	@AR@ cru $(TARGET) $(OBJS)
-	@-@RANLIB@ $(TARGET) 2> /dev/null || true
+$(DLLIB): $(OBJS)
+	@AR@ cru $(DLLIB) $(OBJS)
+	@-@RANLIB@ $(DLLIB) 2> /dev/null || true
 "
   elsif "@DLEXT@" != "o"
     mfile.printf "\
-$(TARGET): $(OBJS)
-	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LIBS) $(LOCAL_LIBS)
+$(DLLIB): $(OBJS)
+	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
 "
   elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc")
     if PLATFORM == "m68k-human"
       mfile.printf "\
-$(TARGET): $(OBJS)
-	ar cru $(TARGET) $(OBJS)
+$(DLLIB): $(OBJS)
+	ar cru $(DLLIB) $(OBJS)
 "
     elsif PLATFORM =~ "-nextstep" || PLATFORM =~ "-openstep" || PLATFORM =~ "-rhapsody"
       mfile.printf "\
-$(TARGET): $(OBJS)
-	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
+$(DLLIB): $(OBJS)
+	cc -r $(CFLAGS) -o $(DLLIB) $(OBJS)
 "
     else
       mfile.printf "\
-$(TARGET): $(OBJS)
-	ld $(DLDFLAGS) -r -o $(TARGET) $(OBJS)
+$(DLLIB): $(OBJS)
+	ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)
 "
     end
   end
@@ -493,6 +497,9 @@ for d in Dir["#{$top_srcdir}/ext/*"]
     print "cleaning ", d, "\n"
   else
     print "compiling ", d, "\n"
+    if PLATFORM =~ /ibm-aix/
+      load './aix_mksym.rb'
+    end
   end
   extmake(d)
 end

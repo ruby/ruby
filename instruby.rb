@@ -60,6 +60,9 @@ Find.find("lib") do |f|
   File.install f, dir, 0644, true
 end
 
+if PLATFORM =~ /ibm-aix/
+  File.install "ruby.imp", archdir, 0644, true
+end
 for f in Dir["*.h"]
   File.install f, archdir, 0644, true
 end

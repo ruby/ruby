@@ -1,3 +1,21 @@
+Mon Apr 26 16:46:59 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (rb_f_sprintf): should allocate proper sized buffer
+	  for float numbers.
+
+Sat Apr 24 00:00:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (operation): syntax like `a.[]=(1,2)' is allowed.
+
+Fri Apr 23 23:54:09 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (argf_binmode): binmode method added to ARGF.
+
+Fri Apr 23 13:55:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_f_chomp): should assign the result to $_.  or maybe
+	  sub/gsub/chop/chomp should NOT assign $_ altogether.
+
 Thu Apr 22 16:50:54 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_callcc): call scope_dup() for all scopes in

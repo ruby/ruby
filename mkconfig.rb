@@ -63,7 +63,7 @@ File.foreach "config.status" do |$_|
 end
 
 print v_fast, v_others
-print "  CONFIG[\"compile_dir\"] = \"#{File.expand_path($0)}\"\n"
+print "  CONFIG[\"compile_dir\"] = \"#{File.expand_path(File.dirname($0))}\"\n"
 print "end\n"
 config.close
 # vi:set sw=2:

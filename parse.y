@@ -54,8 +54,7 @@ static enum lex_state {
     EXPR_MID,			/* newline significant, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
-    EXPR_FNAME,			/* ignore newline, +/- is a operator, no reserved words. */
-    EXPR_DOT,			/* immediate after `.', no reserved words. */
+    EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
 } lex_state;
 
@@ -180,7 +179,7 @@ static void top_local_setup();
 %type <node> array assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
 %type <node> mlhs mlhs_head mlhs_tail mlhs_basic mlhs_entry mlhs_item mlhs_node
-%type <id>   variable symbol operation operation2
+%type <id>   variable symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg
 %type <num>  f_arg
 %token tUPLUS 		/* unary+ */
@@ -420,13 +419,13 @@ command_call	: operation call_args
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
 		   }
-		| primary '.' operation call_args
+		| primary '.' operation2 call_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 operation call_args
+		| primary tCOLON2 operation2 call_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
@@ -543,11 +542,6 @@ fname		: tIDENTIFIER
 			lex_state = EXPR_END;
 			$$ = $1;
 		    }
-		| reswords
-		    {
-			lex_state = EXPR_END;
-			$$ = $<id>1;
-		    }
 
 undef_list	: fname
 		    {
@@ -585,14 +579,6 @@ op		: tDOT2		{ $$ = tDOT2; }
 		| tAREF		{ $$ = tAREF; }
 		| tASET		{ $$ = tASET; }
 		| '`'		{ $$ = '`'; }
-
-reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
-		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
-		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
-		| kFOR | kIF_MOD | kIN | kMODULE | kNEXT | kNIL | kNOT
-		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
-		| kTHEN | kTRUE | kUNDEF | kUNLESS_MOD | kUNTIL_MOD | kWHEN
-		| kWHILE_MOD | kYIELD
 
 arg		: lhs '=' arg
 		    {
@@ -1288,25 +1274,25 @@ method_call	: operation '(' opt_call_args ')'
 			$$ = new_fcall($1, $3);
 		        fixpos($$, $3);
 		    }
-		| primary '.' operation '(' opt_call_args ')'
+		| primary '.' operation2 '(' opt_call_args ')'
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $5);
 		        fixpos($$, $1);
 		    }
-		| primary '.' operation
+		| primary '.' operation2
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, 0);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 operation '(' opt_call_args ')'
+		| primary tCOLON2 operation2 '(' opt_call_args ')'
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $5);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 operation2
+		| primary tCOLON2 operation3
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, 0);
@@ -1370,6 +1356,7 @@ ensure		: none
 literal		: numeric
 		| tSYMBEG symbol
 		    {
+		        lex_state = EXPR_END;
 			$$ = INT2FIX($2);
 		    }
 		| tREGEXP
@@ -1571,7 +1558,13 @@ operation	: tIDENTIFIER
 		| tFID
 
 operation2	: tIDENTIFIER
+		| tCONSTANT
 		| tFID
+		| op
+
+operation3	: tIDENTIFIER
+		| tFID
+		| op
 
 dot_or_colon	: '.'
 		| tCOLON2
@@ -2421,7 +2414,6 @@ yylex()
 	switch (lex_state) {
 	  case EXPR_BEG:
 	  case EXPR_FNAME:
-	  case EXPR_DOT:
 	    goto retry;
 	  default:
 	    break;
@@ -2695,7 +2687,7 @@ yylex()
 	}
 	pushback(c);
 	if (!ISDIGIT(c)) {
-	    lex_state = EXPR_DOT;
+	    lex_state = EXPR_FNAME;
 	    return '.';
 	}
 	c = '.';
@@ -2854,7 +2846,7 @@ yylex()
 		lex_state = EXPR_BEG;
 		return tCOLON3;
 	    }
-	    lex_state = EXPR_DOT;
+	    lex_state = EXPR_FNAME;
 	    return tCOLON2;
 	}
 	pushback(c);
@@ -3144,14 +3136,11 @@ yylex()
 	    result = tIVAR;
 	    break;
 	  default:
-	    if (lex_state != EXPR_DOT) {
+	    if (lex_state != EXPR_FNAME) {
 		/* See if it is a reserved word.  */
 		kw = rb_reserved_word(tok(), toklen());
 		if (kw) {
 		    enum lex_state state = lex_state;
-		    if (lex_state == EXPR_FNAME) {
-			yylval.id = rb_intern(kw->name);
-		    }
 		    lex_state = kw->state;
 		    return kw->id[state != EXPR_BEG];
 		}
@@ -3165,7 +3154,7 @@ yylex()
 	    } else {
 		result = tIDENTIFIER;
 		if (lex_state == EXPR_FNAME) {
-		    lex_state = EXPR_END;
+		    /* lex_state = EXPR_END; */
 		    if ((c = nextc()) == '=') {
 			tokadd(c);
 		    }
@@ -3175,7 +3164,7 @@ yylex()
 		}
 	    }
 	    if (lex_state == EXPR_BEG ||
-		lex_state == EXPR_DOT ||
+		lex_state == EXPR_FNAME ||
 		lex_state == EXPR_ARG){
 		lex_state = EXPR_ARG;
 	    }

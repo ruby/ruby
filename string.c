@@ -2186,7 +2186,7 @@ rb_f_chop()
     VALUE str = rb_str_dup(uscore_get());
     VALUE val = rb_str_chop_bang(str);
 
-    if (NIL_P(str)) return str;
+    if (NIL_P(val)) return str;
     rb_lastline_set(val);
     return val;
 }
@@ -2261,6 +2261,9 @@ rb_f_chomp(argc, argv)
 {
     VALUE str = rb_str_dup(uscore_get());
     VALUE val = rb_str_chomp_bang(argc, argv, str);
+
+    if (NIL_P(val)) return str;
+    rb_lastline_set(val);
     return val;
 }
 
