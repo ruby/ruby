@@ -51,6 +51,18 @@ def have_hardlink?
   HAVE_HARDLINK
 end
 
+begin
+  Dir.mkdir("\n")
+  Dir.rmdir("\n")
+  def lf_in_path_allowed?
+    true
+  end
+rescue
+  def lf_in_path_allowed?
+    false
+  end
+end
+
 Dir.chdir prevdir
 Dir.rmdir tmproot
 
@@ -531,6 +543,12 @@ end
     assert_directory 'tmp/tmp'
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
     Dir.rmdir 'tmp/tmp'
+
+if lf_in_path_allowed?
+      mkdir "tmp-first-line\ntmp-second-line"
+      assert_directory "tmp-first-line\ntmp-second-line"
+      Dir.rmdir "tmp-first-line\ntmp-second-line"
+end
 
     # pathname
     assert_nothing_raised {

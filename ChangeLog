@@ -1,3 +1,10 @@
+Fri May  7 21:03:51 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (fu_list): Array() breaks pathes including "\n".
+	  [ruby-core:02843]
+
+	* test/fileutils/test_fileutils.rb (mkdir): test "\n" in path.
+
 Fri May  7 11:17:27  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* util.c (ruby_strtod): 0.0000000000000000001 == 0.0 should be false.
