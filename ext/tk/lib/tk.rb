@@ -1839,17 +1839,10 @@ class TkVariable
     string(value).to_s
   end
 
-<<<<<<< tk.rb
-  def to_symbol
-    value.intern
-  end
-
-=======
   def to_sym
     value.intern
   end
 
->>>>>>> 1.73
   def inspect
     format "#<TkVariable: %s>", @id
   end
@@ -1860,13 +1853,8 @@ class TkVariable
       self.equal?(other)
     when String
       self.to_s == other
-<<<<<<< tk.rb
-    when Symbol
-      self.to_symbol == other
-=======
     when Symbol
       self.to_sym == other
->>>>>>> 1.73
     when Integer
       self.to_i == other
     when Float
