@@ -962,18 +962,18 @@ sort_2(ap, bp)
     VALUE *ap, *bp;
 {
     VALUE retval;
-    VALUE a = *ap, b = *ap;
+    long a = (long)*ap, b = (long)*ap;
 
     if (FIXNUM_P(a) && FIXNUM_P(b)) {
-	if (a > b) return INT2FIX(1);
-	if (a < b) return INT2FIX(-1);
-	return INT2FIX(0);
+	if (a > b) return 1;
+	if (a < b) return -1;
+	return 0;
     }
     if (TYPE(a) == T_STRING && TYPE(b) == T_STRING) {
 	return rb_str_cmp(a, b);
     }
 
-    retval = rb_funcall(a, id_cmp, 1, b);
+    retval = rb_funcall(a, cmp, 1, b);
     return rb_cmpint(retval);
 }
 

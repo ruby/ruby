@@ -1,3 +1,9 @@
+Mon Aug 19 15:38:44 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (sort_2): comparison should be done as signed long.
+
+	* array.c (sort_2): should return int, not VALUE.
+
 Mon Aug 19 12:38:33 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_thread_save_context, rb_thread_restore_context):
