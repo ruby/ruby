@@ -7771,9 +7771,10 @@ NODE*
 rb_parser_append_print(node)
     NODE *node;
 {
-    NODE *prelude = (nd_type(node) == NODE_PRELUDE) ? node : 0;
+    NODE *prelude = 0;
 
-    if (prelude) {
+    if (node && (nd_type(node) == NODE_PRELUDE)) {
+	prelude = node;
 	node = node->nd_body;
     }
     node = block_append(node,
@@ -7791,9 +7792,10 @@ rb_parser_while_loop(node, chop, split)
     NODE *node;
     int chop, split;
 {
-    NODE *prelude = (nd_type(node) == NODE_PRELUDE) ? node : 0;
+    NODE *prelude = 0;
 
-    if (prelude) {
+    if (node && (nd_type(node) == NODE_PRELUDE)) {
+	prelude = node;
 	node = node->nd_body;
     }
     if (split) {

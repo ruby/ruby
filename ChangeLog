@@ -1,3 +1,8 @@
+Fri Oct 29 11:35:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_parser_append_print, rb_parser_while_loop): body node
+	  can be empty.  [ruby-dev:24628]
+
 Fri Oct 29 10:00:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): ruby_finalize_1 may cause exception,
