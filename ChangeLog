@@ -1,3 +1,8 @@
+Sat Aug  9 10:36:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): do not dump generic instance variable when
+	  marshal_dump is defined.
+
 Sat Aug  9 00:35:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal.c: F style output(like 1234.56789) implemented

@@ -486,7 +486,7 @@ w_object(obj, arg, limit)
 	    w_byte(TYPE_USRMARSHAL, arg);
 	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
 	    w_object(v, arg, limit);
-	    if (ivtbl) w_ivar(ivtbl, &c_arg);
+	    if (ivtbl) w_ivar(0, &c_arg); /* do not dump generic_ivar */
 	    return;
 	}
 	if (rb_respond_to(obj, s_dump)) {
@@ -498,7 +498,7 @@ w_object(obj, arg, limit)
 	    }
 	    w_class(TYPE_USERDEF, obj, arg);
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
-	    if (ivtbl) w_ivar(ivtbl, &c_arg);
+	    if (ivtbl) w_ivar(0, &c_arg);
 	    return;
 	}
 
