@@ -1,3 +1,8 @@
+Tue Feb 17 01:35:28 2004  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (rb_eval): care that another thread replace NODE_DREGX_ONCE
+	  to NODE_LIT.  [ruby-dev:22920]
+
 Tue Feb 17 01:24:35 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: backport from 1.9 - configure. (Thanks Nakada)
