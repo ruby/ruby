@@ -13,7 +13,6 @@
 #
 # Complex numbers can be created in the following manner:
 # - <tt>Complex(a, b)</tt>
-# - <tt>Complex.new(a, b)</tt>
 # - <tt>Complex.polar(radius, theta)</tt>
 #   
 # Additionally, note the following:
@@ -66,7 +65,8 @@ class Complex < Numeric
   def Complex.polar(r, theta)
     Complex(r*Math.cos(theta), r*Math.sin(theta))
   end
-  
+
+  private_class_method :new
   #
   # Creates a +Complex+ number <tt>a</tt>+<tt>b</tt><i>i</i>.
   #

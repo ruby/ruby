@@ -957,7 +957,9 @@ END
     end
 
     def [](key)
-      Value.new(@params[key][0])
+      value = @params[key][0]
+      value ||= ""
+      Value.new(value)
     end
 
     def keys(*args)

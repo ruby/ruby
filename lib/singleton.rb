@@ -142,7 +142,7 @@ module Singleton
                 @__instance__ = new
             ensure
                 if @__instance__
-                    def self.instance() @__instance__ end
+		    define_method(:instance) {@__instance__}
                 else
                     @__instance__ = nil #  failed instance creation
                 end

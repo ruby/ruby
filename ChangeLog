@@ -1,3 +1,8 @@
+Wed Apr 23 13:31:10 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::[]): always return Value
+	  object.
+
 Wed Apr 23 08:39:27 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/zlib/extconf.rb: bccwin32 is win32 too.
@@ -5,7 +10,7 @@ Wed Apr 23 08:39:27 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Tue Apr 22 20:58:00 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* ruby.c: don't call VirtualQuery in ruby_init_loadpath()
-	          on mswince.
+	  on mswince.
 
 Tue Apr 22 19:08:53 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -17,6 +22,7 @@ Tue Apr 22 09:20:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (arg_ambiguous): hopefully better message.
 
 	* lib/cgi.rb (CGI::QueryExtension::initialize_query): to_ary
+	  removed.
 
 Tue Apr 22 06:06:22 2003  Tanaka Akira  <akr@m17n.org>
 
