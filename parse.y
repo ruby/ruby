@@ -4468,7 +4468,7 @@ rb_compile_file(f, file, start)
     int start;
 {
     struct parser_params *parser = parser_new();
-    volatile VALUE p = parser->value;		  
+    volatile VALUE p = parser->value;
 
     lex_gets = lex_io_gets;
     lex_input = file;
@@ -8098,6 +8098,7 @@ special_local_set(c, val)
 {
     int cnt;
     struct parser_params *parser = parser_new();
+    volatile VALUE p = parser->value;
 
     top_local_init();
     cnt = local_cnt(c);

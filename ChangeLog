@@ -1,3 +1,8 @@
+Mon Dec 20 10:51:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (special_local_set): prevent the parser object from GC.
+	  fixed: [ruby-dev:25252]
+
 Mon Dec 20 03:30:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi/session.rb (CGI::Session#initialize): empty session id was
