@@ -1,3 +1,8 @@
+Wed Oct 15 22:51:17 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/digest.c (rb_digest_base_s_new): Zero the newly
+	  allocated buffer to avoid letting ALGO_Equal() fail.
+
 Sun Aug  3 15:56:27 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 
 	* math.c (math_log): nan takes a dummy argument on Cygwin 1.5.0.

@@ -72,7 +72,8 @@ rb_digest_base_s_new(argc, argv, class)
 
     algo = get_digest_base_metadata(class);
 
-    pctx = xmalloc(algo->ctx_size);
+    /* XXX: An uninitialized buffer leads ALGO_Equal() to fail */
+    pctx = xcalloc(algo->ctx_size, 1);
     algo->init_func(pctx);
 
     obj = Data_Wrap_Struct(class, 0, free, pctx);
