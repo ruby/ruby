@@ -1,3 +1,8 @@
+Tue Dec 14 14:03:57 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl.c (ossl_raise): avoid buffer overrun.
+	  [ruby-dev:25187]
+
 Mon Dec 13 18:13:52 2004  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (stack_end_address): new function to obtain stack end address.

@@ -285,17 +285,17 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 	va_start(args, fmt);
 	len = vsnprintf(buf, BUFSIZ, fmt, args);
 	va_end(args);
-	len += snprintf(buf+len, BUFSIZ-len, ": ");
     }
-    if (e) {
+    if (len < BUFSIZ && e) {
 	if (dOSSL == Qtrue) /* FULL INFO */
 	    msg = ERR_error_string(e, NULL);
 	else
 	    msg = ERR_reason_error_string(e);
 	ERR_clear_error();
-	len += snprintf(buf+len, BUFSIZ-len, "%s", msg);
+	len += snprintf(buf+len, BUFSIZ-len, ": %s", msg);
     }
 
+    if(len > BUFSIZ) len = strlen(buf);
     rb_exc_raise(rb_exc_new(exc, buf, len));
 }
 
