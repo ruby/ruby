@@ -1,3 +1,10 @@
+Sat Aug 14 01:25:48 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/token.c: re2c no longer compiled with bit vectors.  caused
+	  problems for non-ascii characters. [ruby-core:03280]
+	* ext/syck/implicit.c: ditto.
+	* ext/syck/bytecode.c: ditto.
+
 Fri Aug 13 12:55:20 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.parse_range_header):
