@@ -1,3 +1,9 @@
+Thu Nov 28 12:08:30 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mkmf.rb: Avoid the use of "clean::" in favor of "clean:" in
+	  order not to let make(1) choke if there is another dependency on
+	  the target added in a depend file.
+
 Thu Nov 28 02:40:42 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb: Make sure to dig the destination directory before

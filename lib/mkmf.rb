@@ -686,11 +686,10 @@ RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
 }
   end
   mfile.print %{
-all:		$(DLLIB)
+CLEANLIBS     = "$(TARGET).{lib,exp,il?,tds,map}" $(DLLIB)
+CLEANOBJS     = "*.{#{$OBJEXT},#{$LIBEXT},s[ol],pdb,bak}"
 
-clean::
-		@$(RM) "$(TARGET).{lib,exp,il?,tds,map}" $(DLLIB)
-		@$(RM) "*.{#{$OBJEXT},#{$LIBEXT},s[ol],pdb,bak}"
+all:		$(DLLIB)
 }
   mfile.print CLEANINGS
   dirs = []
@@ -848,12 +847,12 @@ LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
 LIBARG = config_string('LIBARG') || '-l%s'
 
 CLEANINGS = "
-clean::
-		@$(RM) $(CLEANFILES)
+clean:
+		@$(RM) $(CLEANLIBS) $(CLEANOBJS) $(CLEANFILES)
 
-distclean::	clean
+distclean:	clean
 		@$(RM) Makefile extconf.h conftest.* mkmf.log
 		@$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES)
 
-realclean::	distclean
+realclean:	distclean
 "
