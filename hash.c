@@ -1147,13 +1147,13 @@ rb_f_setenv(obj, nm, val)
 	if (OBJ_TAINTED(val)) {
 	    /* already tainted, no check */
 	    path_tainted = 1;
-	    return Qtrue;
+	    return val;
 	}
 	else {
 	    path_tainted_p(value);
 	}
     }
-    return Qtrue;
+    return val;
 }
 
 static VALUE

@@ -1,3 +1,8 @@
+Sun Feb 24 17:20:50 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/*/*.h: Merge from rough.
+	  - Avoid namespace pollution. (MD5_* -> rb_Digest_MD5_*, etc.)
+
 Fri Feb 22 22:00:08 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: set read_timeout dynamically.
