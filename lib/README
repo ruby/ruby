@@ -61,6 +61,7 @@ thread.rb	thread support
 thwait.rb	thread syncronization class
 timeout.rb	provides timeout
 tracer.rb	execution tracer
+tsort.rb	topological sorting
 uri.rb		URI support
 uri/ftp.rb	ftp scheme support
 uri/http.rb	http scheme support

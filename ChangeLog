@@ -1,3 +1,7 @@
+Mon Mar 11 23:08:48 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/tsort.rb: new file.
+
 Mon Mar 11 21:03:37 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/stringio: new.

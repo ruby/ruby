@@ -188,6 +188,7 @@ lib/thwait.rb
 lib/time.rb
 lib/timeout.rb
 lib/tracer.rb
+lib/tsort.rb
 lib/uri.rb
 lib/uri/common.rb
 lib/uri/ftp.rb
