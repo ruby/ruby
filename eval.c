@@ -2862,6 +2862,7 @@ rb_eval(self, n)
 		}
 		else if (state != TAG_RAISE) {
 		    ruby_errinfo = e_info;
+		    result = prot_tag->retval;
 		}
 	    }
 	    else if (state == TAG_RAISE) {
@@ -2880,8 +2881,14 @@ rb_eval(self, n)
 		    resq = resq->nd_head; /* next rescue */
 		}
 	    }
+	    else {
+		result = prot_tag->retval;
+	    }
 	    POP_TAG();
-	    if (state) JUMP_TAG(state);
+	    if (state) {
+		if (state == TAG_NEXT) prot_tag->retval = result;
+		JUMP_TAG(state);
+	    }
 	    /* no exception raised */
 	    if (!rescuing && (node = node->nd_else)) { /* else clause given */
 		goto again;
