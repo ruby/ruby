@@ -439,8 +439,6 @@ AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL
 AC_FUNC_ALLOCA
 AC_FUNC_MEMCMP
-AC_FUNC_FSEEKO
-AC_CHECK_FUNCS(ftello)
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul crypt flock vsnprintf\
 		 isnan finite isinf hypot acosh erf)
@@ -655,69 +653,6 @@ else
     fi
   fi
 fi
-
-AC_DEFUN(RUBY_CHECK_IO_NEED,
-[AC_CACHE_CHECK(whether need to [$1], [$2],
-    [AC_TRY_RUN([
-#include <stdio.h>
-#ifndef SEEK_SET
-#define SEEK_SET 0
-#endif
-#ifndef SEEK_CUR
-#define SEEK_CUR 1
-#endif
-#define before_seek(f) ]ifelse(index($2,flush_before_seek),-1,[fflush(f)],[(f,0)])[
-#define reset_rw(f) ]ifelse(index($2,seek_between_rw),-1,[do_seek(f,SEEK_CUR)],[(f,0)])[
-#define do_seek(f, w) (before_seek(f), fseek(f,0,w))
-
-char *fn = "conftest.dat";
-char *wombat = "wombat\n";
-char *koara = "koara\n";
-char *kangaroo = "kangaroo\n";
-
-int main()
-{
-    char buf[BUFSIZ];
-    FILE *f;
-    int r = 1;
-
-    if (!(f = fopen(fn, "w+"))) return 1;
-    fputs(wombat, f);
-    do_seek(f, SEEK_SET);
-    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
-    reset_rw(f);
-    fputs(koara, f);
-    fputs(kangaroo, f);
-    do_seek(f, SEEK_SET);
-    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
-    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, koara)) goto fail;
-    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, kangaroo)) goto fail;
-    do_seek(f, SEEK_SET);
-    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
-    reset_rw(f);
-    fputc('X', f);
-    reset_rw(f);
-    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, koara+1)) goto fail;
-    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, kangaroo)) goto fail;
-    do_seek(f, SEEK_SET);
-    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
-    if (!fgets(buf, BUFSIZ, f) || buf[0] != 'X' || strcmp(buf+1, koara+1)) goto fail;
-    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, kangaroo)) goto fail;
-    r = 0;
-  fail:
-    fclose(f);
-    unlink(fn);
-    return r;
-}
-], [$2]=no, [$2]=yes, [$2]=[$3])])])
-RUBY_CHECK_IO_NEED(seek between R/W, rb_cv_need_io_seek_between_rw, yes)
-if test "$rb_cv_need_io_seek_between_rw" = yes; then
-  AC_DEFINE(NEED_IO_SEEK_BETWEEN_RW, 1)
-fi
-dnl RUBY_CHECK_IO_NEED(flush before seek, rb_cv_need_io_flush_before_seek, no)
-dnl if test "$rb_cv_need_io_flush_before_seek" = yes; then
-dnl   AC_DEFINE(NEED_IO_FLUSH_BEFORE_SEEK, 1)
-dnl fi
 
 AC_CACHE_CHECK([whether st_ino is huge], rb_cv_huge_st_ino,
 [AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([

@@ -67,9 +67,6 @@ char *strrchr _((const char*,const char));
 #ifndef HAVE_LSTAT
 #define lstat(path,st) stat(path,st)
 #endif
-#if !HAVE_FSEEKO && !defined(fseeko)
-# define fseeko  fseek
-#endif
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;

@@ -99,29 +99,18 @@ NORETURN(void rb_eof_error _((void)));
 void rb_io_read_check _((OpenFile*));
 int rb_io_read_pending _((OpenFile*));
 
-int rb_getc _((FILE*))
 #ifdef __GNUC__
-  __attribute__ ((deprecated))
+# if ( __GNUC__ == 3 && __GNUC_MINOR__ > 0 ) || __GNUC__ > 3
+#  define DEPRECATED(x) x __attribute__ ((deprecated))
+# endif
 #endif
-  ;
-long rb_io_fread _((char *, long, FILE *))
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
+#ifndef DEPRECATED
+# define DEPRECATED(x) x
 #endif
-  ;
-long rb_io_fwrite _((const char *, long, FILE *))
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-  ;
-void rb_read_check _((FILE*))
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-  ;
-int rb_read_pending _((FILE*))
-#ifdef __GNUC__
-  __attribute__ ((deprecated))
-#endif
-  ;
+
+DEPRECATED(int rb_getc _((FILE*)));
+DEPRECATED(long rb_io_fread _((char *, long, FILE *)));
+DEPRECATED(long rb_io_fwrite _((const char *, long, FILE *)));
+DEPRECATED(void rb_read_check _((FILE*)));
+DEPRECATED(int rb_read_pending _((FILE*)));
 #endif

@@ -57,12 +57,6 @@
 #if !HAVE_OFF_T && !defined(off_t)
 # define off_t  long
 #endif
-#if !HAVE_FSEEKO && !defined(fseeko)
-# define fseeko  fseek
-#endif
-#if !HAVE_FTELLO && !defined(ftello)
-# define ftello  ftell
-#endif
 
 #include <sys/stat.h>
 
@@ -475,7 +469,7 @@ io_fwrite(str, fptr)
         (fptr->wbuf && fptr->wbuf_capa <= fptr->wbuf_len + len) ||
         ((fptr->mode & FMODE_LINEBUF) && memchr(RSTRING(str)->ptr+offset, '\n', len))) {
         /* xxx: use writev to avoid double write if available */
-        if (fptr->wbuf_len+len <= fptr->wbuf_capa) {
+        if (fptr->wbuf_len && fptr->wbuf_len+len <= fptr->wbuf_capa) {
             if (fptr->wbuf_capa < fptr->wbuf_off+fptr->wbuf_len+len) {
                 MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
                 fptr->wbuf_off = 0;
@@ -488,7 +482,9 @@ io_fwrite(str, fptr)
             return -1L;
         if (n == 0)
             return len;
-	if (!rb_thread_fd_writable(fptr->fd)) {
+        /* avoid context switch between "a" and "\n" in STDERR.puts "a".
+           [ruby-dev:25080] */
+	if (fptr->f != stderr && !rb_thread_fd_writable(fptr->fd)) {
 	    rb_io_check_closed(fptr);
 	}
       retry:

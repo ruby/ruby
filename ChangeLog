@@ -1,3 +1,12 @@
+Tue Dec  7 15:40:38 2004  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (io_fwrite): avoid context switch before writing to stderr.
+	  [ruby-dev:25080]
+
+	* rubyio.h: refine deprecated declaration.
+
+	* configure.in, file.c, io.c: remove useless check: fseeko, etc.
+
 Tue Dec  7 13:42:07 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c (dir_s_mkdir): win32 special processing doesn't need any
