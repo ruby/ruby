@@ -2674,8 +2674,8 @@ proc_setmaxgroups(obj, val)
 
 /*
  *  call-seq:
- *     Process.daemon()			   => fixnum
- *     Process.daemon(nochdir=0,noclose=0) => fixnum
+ *     Process.daemon()                        => fixnum
+ *     Process.daemon(nochdir=nil,noclose=nil) => fixnum
  *
  *  Detach the process from controlling terminal and run in
  *  the background as system daemon.  Unless the argument

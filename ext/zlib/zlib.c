@@ -107,6 +107,8 @@ static VALUE gzfile_new _((VALUE, const struct zstream_funcs*, void (*) _((struc
 static void gzfile_reset _((struct gzfile*));
 static void gzfile_close _((struct gzfile*, int));
 static void gzfile_write_raw _((struct gzfile*));
+static VALUE gzfile_read_raw_partial _((VALUE));
+static VALUE gzfile_read_raw_rescue _((VALUE));
 static VALUE gzfile_read_raw _((struct gzfile*));
 static int gzfile_read_raw_ensure _((struct gzfile*, int));
 static char *gzfile_read_raw_until_zero _((struct gzfile*, long));
@@ -1664,7 +1666,7 @@ rb_inflate_set_dictionary(obj, dic)
 #define OS_CODE  OS_UNIX
 #endif
 
-static ID id_write, id_read, id_flush, id_seek, id_close;
+static ID id_write, id_read, id_readpartial, id_flush, id_seek, id_close;
 static VALUE cGzError, cNoFooter, cCRCError, cLengthError;
 
 
@@ -1787,16 +1789,39 @@ gzfile_write_raw(gz)
 }
 
 static VALUE
+gzfile_read_raw_partial(arg)
+    VALUE arg;
+{
+    struct gzfile *gz = (struct gzfile *)arg;
+    VALUE str;
+
+    str = rb_funcall(gz->io, id_readpartial, 1, INT2FIX(GZFILE_READ_SIZE));
+    Check_Type(str, T_STRING);
+    return str;
+}
+
+static VALUE
+gzfile_read_raw_rescue(arg)
+    VALUE arg;
+{
+    struct gzfile *gz = (struct gzfile *)arg;
+    VALUE str = Qnil;
+    if (rb_obj_is_kind_of(ruby_errinfo, rb_eNoMethodError)) {
+        str = rb_funcall(gz->io, id_read, 1, INT2FIX(GZFILE_READ_SIZE));
+        if (!NIL_P(str)) {
+            Check_Type(str, T_STRING);
+        }
+    }
+    return str; /* return nil when EOFError */
+}
+
+static VALUE
 gzfile_read_raw(gz)
     struct gzfile *gz;
 {
-    VALUE str;
-
-    str = rb_funcall(gz->io, id_read, 1, INT2FIX(GZFILE_READ_SIZE));
-    if (!NIL_P(str)) {
-	Check_Type(str, T_STRING);
-    }
-    return str;
+    return rb_rescue2(gzfile_read_raw_partial, (VALUE)gz,
+                      gzfile_read_raw_rescue, (VALUE)gz,
+                      rb_eEOFError, rb_eNoMethodError, (VALUE)0);
 }
 
 static int
@@ -2050,7 +2075,7 @@ static long
 gzfile_read_more(gz)
     struct gzfile *gz;
 {
-    VALUE str;
+    volatile VALUE str;
 
     while (!ZSTREAM_IS_FINISHED(&gz->z)) {
 	str = gzfile_read_raw(gz);
@@ -2110,6 +2135,54 @@ gzfile_read(gz, len)
 
     OBJ_TAINT(dst);  /* for safe */
     return dst;
+}
+
+static VALUE
+gzfile_readpartial(gz, len, outbuf)
+    struct gzfile *gz;
+    int len;
+    VALUE outbuf;
+{
+    VALUE dst;
+
+    if (len < 0)
+        rb_raise(rb_eArgError, "negative length %d given", len);
+
+    if (!NIL_P(outbuf))
+            OBJ_TAINT(outbuf);
+
+    if (len == 0) {
+        if (NIL_P(outbuf))
+            return rb_str_new(0, 0);
+        else {
+            rb_str_resize(outbuf, 0);
+            return outbuf;
+        }
+    }
+    while (!ZSTREAM_IS_FINISHED(&gz->z) && gz->z.buf_filled == 0) {
+	gzfile_read_more(gz);
+    }
+    if (GZFILE_IS_FINISHED(gz)) {
+	if (!(gz->z.flags & GZFILE_FLAG_FOOTER_FINISHED)) {
+	    gzfile_check_footer(gz);
+	}
+        if (!NIL_P(outbuf))
+            rb_str_resize(outbuf, 0);
+	rb_raise(rb_eEOFError, "End of file reached");
+    }
+
+    dst = zstream_shift_buffer(&gz->z, len);
+    gzfile_calc_crc(gz, dst);
+
+    if (NIL_P(outbuf)) {
+        OBJ_TAINT(dst);  /* for safe */
+        return dst;
+    }
+    else {
+        rb_str_resize(outbuf, RSTRING(dst)->len);
+        memcpy(RSTRING(outbuf)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len);
+        return outbuf;
+    }
 }
 
 static VALUE
@@ -2937,6 +3010,37 @@ rb_gzreader_read(argc, argv, obj)
 }
 
 /*
+ *  call-seq:
+ *     gzipreader.readpartial(maxlen [, outbuf]) => string, outbuf
+ *
+ *  Reads at most <i>maxlen</i> bytes from the gziped stream but
+ *  it blocks only if <em>gzipreader</em> has no data immediately available.
+ *  If the optional <i>outbuf</i> argument is present,
+ *  it must reference a String, which will receive the data.
+ *  It raises <code>EOFError</code> on end of file.
+ */
+static VALUE
+rb_gzreader_readpartial(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    struct gzfile *gz = get_gzfile(obj);
+    VALUE vlen, outbuf;
+    int len;
+
+    rb_scan_args(argc, argv, "11", &vlen, &outbuf);
+
+    len = NUM2INT(vlen);
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative length %d given", len);
+    }
+    if (!NIL_P(outbuf))
+        Check_Type(outbuf, T_STRING);
+    return gzfile_readpartial(gz, len, outbuf);
+}
+
+/*
  * See Zlib::GzipReader documentation for a description.
  */
 static VALUE
@@ -3340,6 +3444,7 @@ void Init_zlib()
 #if GZIP_SUPPORT
     id_write = rb_intern("write");
     id_read = rb_intern("read");
+    id_readpartial = rb_intern("readpartial");
     id_flush = rb_intern("flush");
     id_seek = rb_intern("seek");
     id_close = rb_intern("close");
@@ -3398,6 +3503,7 @@ void Init_zlib()
     rb_define_method(cGzipReader, "rewind", rb_gzreader_rewind, 0);
     rb_define_method(cGzipReader, "unused", rb_gzreader_unused, 0);
     rb_define_method(cGzipReader, "read", rb_gzreader_read, -1);
+    rb_define_method(cGzipReader, "readpartial", rb_gzreader_readpartial, -1);
     rb_define_method(cGzipReader, "getc", rb_gzreader_getc, 0);
     rb_define_method(cGzipReader, "readchar", rb_gzreader_readchar, 0);
     rb_define_method(cGzipReader, "each_byte", rb_gzreader_each_byte, 0);

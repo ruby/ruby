@@ -1,3 +1,8 @@
+Mon Sep 20 03:37:59 2004  Tanaka Akira  <akr@m17n.org>
+
+	* ext/zlib/zlib.c (gzfile_read_raw): call readpartial at first.
+	  (Zlib::GzipReader#readpartial): new method.
+
 Fri Sep 17 20:29:33 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y: add prototypes for Microsoft compiler.

@@ -1044,15 +1044,15 @@ read_all(fptr, siz, str)
 
 /*
  *  call-seq:
- *     ios.readpartial(integer[, outbuf])    => string, outbuf
+ *     ios.readpartial(maxlen[, outbuf])    => string, outbuf
  *
- *  Reads at most <i>integer</i> bytes from the I/O stream but
+ *  Reads at most <i>maxlen</i> bytes from the I/O stream but
  *  it blocks only if <em>ios</em> has no data immediately available.
  *  If the optional <i>outbuf</i> argument is present,
  *  it must reference a String, which will receive the data.
  *  It raises <code>EOFError</code> on end of file.
  *
- *  readpartial is designed for streams such as pipe, socket, etc.
+ *  readpartial is designed for streams such as pipe, socket, tty, etc.
  *  It blocks only when no data immediately available.
  *  This means that it blocks only when following all conditions hold.
  *  * the stdio buffer in the IO object is empty.
