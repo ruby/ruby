@@ -480,6 +480,7 @@ strio_set_pos(self, pos)
 	error_inval(0);
     }
     ptr->pos = p;
+    ptr->flags &= ~STRIO_EOF;
     return pos;
 }
 

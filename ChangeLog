@@ -1,3 +1,8 @@
+Fri Jan 21 23:58:42 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_set_pos): clear EOF flag.
+	  [ruby-talk:127511]
+
 Fri Jan 21 20:07:02 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Config.resolv): don't raise ResolvError.
