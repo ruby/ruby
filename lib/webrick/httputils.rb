@@ -261,8 +261,7 @@ module WEBrick
       def list
         ret = []
         each_data{|data|
-          data.next_data = nil
-          ret << data
+          ret << data.to_s
         }
         ret
       end

@@ -1,3 +1,8 @@
+Fri Aug  8 03:22:28 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httputils.rb (FormData#list): should not take
+	  a side effect for the receiver.
+
 Thu Aug  7 14:40:37 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* cygwin/GNUmakefile: better --disbale-shared option support.
