@@ -315,6 +315,8 @@ The variable ruby-indent-level controls the amount of indentation.
     (let ((pnt (point)) w re expand)
       (goto-char (match-beginning 0))
       (cond
+       ((and (memq (char-before) '(?@ ?$)) (looking-at "\\sw"))
+	(goto-char pnt))
        ((or (looking-at "\"")		;skip string
 	    (looking-at "`"))
 	(cond

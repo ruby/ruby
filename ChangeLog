@@ -1,3 +1,8 @@
+Sat Dec 21 07:27:24 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-parse-partial): keywords must not be
+	  preceded by @ or $.
+
 Fri Dec 20 20:29:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/curses/curses.c, ext/dbm/dbm.c, ext/digest/digest.c,
