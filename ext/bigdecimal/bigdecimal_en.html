@@ -91,12 +91,17 @@ In 32 bits integer system,every 4 digits(in decimal) are computed simultaneously
 This means the number of significant digits in BigDecimal is always a multiple of 4.
 <P>
 Some more methods are available in Ruby code (not C code). 
-To use them,just require util.rb as:
+Functions such as sin,cos ...,are in math.rb in bigdecimal directory.
+To use them,require math.rb as:
+<CODE><PRE>
+require "bigdecimal/math.rb"
+</PRE></CODE>
+For details,see the math.rb code and comments.
+Other utility methods are in util.rb.
+To use util.rb, require it as:
 <CODE><PRE>
 require "bigdecimal/util.rb"
 </PRE></CODE>
-String to BigDecimal conversion, BigDecimal to String conversion 
-(in "nnnnnn.mmmm" form not in "0.xxxxxEn" form) etc are defined.
 For details,see the util.rb code.
 
 <H4><U>Class methods</U></H4>

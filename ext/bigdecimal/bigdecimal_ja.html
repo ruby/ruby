@@ -98,9 +98,15 @@ c=a+b
 内部の「有効桁数」は４の倍数となっています。
 <P>
 以下のメソッド以外にも、(C ではない) Ruby ソースの形で
-提供されているものもあります。例えば、文字列から BigDecimal への
-変換や、"0.xxxxxEn" という形式ではなく "nnnnn.mmmm" の形式の文字列
-へ変換するメソッド等があります。利用するには
+提供されているものもあります。例えば、
+<CODE><PRE>
+require "bigdecimal/math.rb"
+</PRE></CODE>
+とすることで、sin や cos といった関数が使用できるようになります。
+使用方法など、詳細は math.rb の内容を参照して下さい。
+
+その他、Float との相互変換などのメソッドが util.rb でサポートされています。
+利用するには
 <CODE><PRE>
 require "bigdecimal/util.rb"
 </PRE></CODE>
