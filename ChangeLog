@@ -1,3 +1,7 @@
+Thu Jan 29 23:56:00 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* util.c (mblen): fix overrun.  [ruby-dev:22672]
+
 Thu Jan 29 15:33:23 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509hame.c (ossl_x509name_initialize): change
