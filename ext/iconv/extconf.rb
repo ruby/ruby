@@ -24,14 +24,14 @@ test(iconv_t cd, char **inptr, size_t *inlen, char **outptr, size_t *outlen)
   if conf
     prefix = '$(srcdir)'
     prefix =  $nmake ? "{#{prefix}}" : "#{prefix}/"
-    $INSTALLFILES = [["./iconv.rb", "$(RUBYLIBDIR)"]]
+    wrapper = "./iconv.rb"
+    $INSTALLFILES = [[wrapper, "$(RUBYARCHDIR)"]]
     if String === conf
       require 'uri'
       scheme = URI.parse(conf).scheme
     else
       conf = prefix + "config.charset"
     end
-    wrapper = "iconv.rb"
     $cleanfiles << wrapper
   end
   create_makefile("iconv")

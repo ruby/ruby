@@ -1,3 +1,7 @@
+Wed Jan 14 13:30:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/extconf.rb: wrapper iconv.rb is dependent on platform.
+
 Wed Jan 14 09:32:02 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* MANIFEST: add test/net/test_httpheader.rb. (commit miss?)
