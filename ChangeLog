@@ -1,3 +1,8 @@
+Mon Jan 19 16:30:53 2004  akira yamada  <akira@ruby-lang.org>
+
+	* test/ruby/test_time.rb: added tests for [ruby-dev:22614] and
+	  [ruby-dev:22617].
+
 Mon Jan 19 13:09:21 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/extmk.rb, win32/Makefile.sub, win32/configure.bat,
