@@ -198,7 +198,8 @@ rb_syck_mktime(str)
 {
     VALUE time;
     char *ptr = str;
-    VALUE year, mon, day, hour, min, sec, usec;
+    VALUE year, mon, day, hour, min, sec;
+    long usec;
 
     /* Year*/
     ptr[4] = '\0';
@@ -233,23 +234,23 @@ rb_syck_mktime(str)
     ptr += 2;
     if ( *ptr == '.' )
     {
-        usec = INT2FIX( strtod( ptr, NULL ) * 1000000 );
+        char *padded = syck_strndup( "000000", 6 );
+        char *end = ptr + 1;
+        while ( isdigit( *end ) ) end++;
+        MEMCPY(padded, ptr + 1, char, end - (ptr + 1));
+        usec = strtol(padded, NULL, 10);
     }
     else
     {
-        usec = INT2FIX( 0 );
+        usec = 0;
     }
-
-    /* Make UTC time*/
-    time = rb_funcall(rb_cTime, s_utc, 7, year, mon, day, hour, min, sec, usec);
 
     /* Time Zone*/
     while ( *ptr != 'Z' && *ptr != '+' && *ptr != '-' && *ptr != '\0' ) ptr++;
     if ( *ptr == '-' || *ptr == '+' )
     {
-        double tz_offset = 0;
-        double utc_time = 0;
-        tz_offset += strtod(ptr, NULL) * 3600;
+        time_t tz_offset = strtol(ptr, NULL, 10) * 3600;                                                                           
+        time_t tmp;
 
         while ( *ptr != ':' && *ptr != '\0' ) ptr++;
         if ( *ptr == ':' )
@@ -257,21 +258,25 @@ rb_syck_mktime(str)
             ptr += 1;
             if ( tz_offset < 0 )
             {
-                tz_offset -= strtod(ptr, NULL) * 60;
+                tz_offset -= strtol(ptr, NULL, 10) * 60;
             }
             else
             {
-                tz_offset += strtod(ptr, NULL) * 60;
+                tz_offset += strtol(ptr, NULL, 10) * 60;
             }
         }
 
         /* Make TZ time*/
-        utc_time = NUM2DBL(rb_funcall(time, s_to_f, 0));
-        utc_time -= tz_offset;
-        time = rb_funcall(rb_cTime, s_at, 1, rb_float_new(utc_time));
-    }
+        time = rb_funcall(rb_cTime, s_utc, 6, year, mon, day, hour, min, sec);                                                     
+        tmp = NUM2LONG(rb_funcall(time, s_to_i, 0)) - tz_offset;                                                                   
+        return rb_funcall(rb_cTime, s_at, 2, LONG2NUM(tmp), LONG2NUM(usec));                                                       
+    }                                                                                                                              
+    else                                                                                                                           
+    {                                                                                                                              
+        /* Make UTC time*/                                                                                                         
+        return rb_funcall(rb_cTime, s_utc, 7, year, mon, day, hour, min, sec, LONG2NUM(usec));                                     
 
-    return time;
+    }
 }
 
 /*

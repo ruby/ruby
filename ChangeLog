@@ -1,3 +1,11 @@
+Thu Jan 29 01:56:02 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/rubyext.c: usec round-tripping skew. [ruby-core:2305]
+
+	* lib/yaml/rubytypes.rb: character Range now round-trips. [ruby-core:2306]
+
+	* test/yaml/test_yaml.rb: add Time and Range tests.
+
 Thu Jan 29 00:00:46 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss: rss/parser.rb is always required.
