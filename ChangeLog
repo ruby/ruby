@@ -2,6 +2,10 @@ Thu Apr  2 18:31:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (obj_call_init): every object call `initialize'.
 
+Wed Apr  1 08:51:53 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* parse.y (stmt): UNTIL_MOD should be for stmt, not only for expr.
+
 Wed Apr  1 01:20:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* object.c (true_and): boolean operators &, | and ^.
@@ -28,15 +32,13 @@ Mon Mar 30 11:12:29 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (Init_eval): `class_eval': alias to the module_eval.
 
-Mon Mar 30 14:07:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
-
-	* string.c (str_intern): typo in error message.
-
-Mon Mar 30 14:06:19 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+Mon Mar 30 18:50:42 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
 
 	* string.c (str_capitalize_bang): did not check string modification.
 
 	* string.c (str_delete_bang): wrong conversion.
+
+	* string.c (str_intern): typo in error message.
 
 Mon Mar 30 01:44:13 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

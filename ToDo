@@ -1,3 +1,5 @@
+* call `initialize' for built-in classes.
+* 0 as flase value
 * non-blocking open/write for thread
 * package or access control for global variables
 * format

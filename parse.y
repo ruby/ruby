@@ -332,7 +332,7 @@ stmt		: iterator iter_do_block
 			    $$ = NEW_WHILE(cond($3), $1, 1);
 			}
 		    }
-		| expr kUNTIL_MOD expr
+		| stmt kUNTIL_MOD expr
 		    {
 			value_expr($3);
 			if (nd_type($1) == NODE_BEGIN) {

@@ -1,3 +1,5 @@
+require "kconv"
+
 def decode64(str)
   string = ''
   for line in str.split("\n")
@@ -10,30 +12,18 @@ def decode64(str)
   return string
 end
 
-def j2e(str)
-  while str =~ /\033\$B([^\033]*)\033\(B/
-    s = $1
-    pre, post = $`, $'
-    s.gsub!(/./) { |ch|
-      (ch[0]|0x80).chr
-    }
-    str = pre + s + post
- end
-#  str.gsub!(/\033\$B([^\033]*)\033\(B/) {
-#    $1.gsub!(/./) { |ch|
-#      (ch[0]|0x80).chr
-#    }
-#  }
-  str
-end
-
 def decode_b(str)
   str.gsub!(/=\?ISO-2022-JP\?B\?([!->@-~]+)\?=/i) {
     decode64($1)
   }
+  str = Kconv::toeuc(str)
+  str.gsub!(/=\?SHIFT_JIS\?B\?([!->@-~]+)\?=/i) {
+    decode64($1)
+  }
+  str = Kconv::toeuc(str)
   str.gsub!(/\n/, ' ') 
   str.gsub!(/\0/, '')
-  j2e(str)
+  str
 end
 
 def encode64(bin)
