@@ -45,6 +45,44 @@ class TestStringScanner < Test::Unit::TestCase
     }
   end
 
+  def test_dup
+    s = StringScanner.new('test string')
+    d = s.dup
+    assert_equal s.inspect, d.inspect
+    assert_equal s.string, d.string
+    assert_equal s.pos, d.pos
+    assert_equal s.matched?, d.matched?
+    assert_equal s.eos?, d.eos?
+
+    s = StringScanner.new('test string')
+    s.scan(/test/)
+    d = s.dup
+    assert_equal s.inspect, d.inspect
+    assert_equal s.string, d.string
+    assert_equal s.pos, d.pos
+    assert_equal s.matched?, d.matched?
+    assert_equal s.eos?, d.eos?
+
+    s = StringScanner.new('test string')
+    s.scan(/test/)
+    s.scan(/NOT MATCH/)
+    d = s.dup
+    assert_equal s.inspect, d.inspect
+    assert_equal s.string, d.string
+    assert_equal s.pos, d.pos
+    assert_equal s.matched?, d.matched?
+    assert_equal s.eos?, d.eos?
+
+    s = StringScanner.new('test string')
+    s.terminate
+    d = s.dup
+    assert_equal s.inspect, d.inspect
+    assert_equal s.string, d.string
+    assert_equal s.pos, d.pos
+    assert_equal s.matched?, d.matched?
+    assert_equal s.eos?, d.eos?
+  end
+
   def test_const_Version
     assert_instance_of String, StringScanner::Version
     assert_equal true, StringScanner::Version.frozen?
@@ -483,5 +521,28 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 0, s.pos
     s.reset
     assert_equal 0, s.pos
+  end
+
+  def test_matched_size
+    s = StringScanner.new('test string')
+    assert_nil s.matched_size
+    s.scan(/test/)
+    assert_equal 4, s.matched_size
+    assert_equal 4, s.matched_size
+    s.scan(//)
+    assert_equal 0, s.matched_size
+    s.scan(/x/)
+    assert_nil s.matched_size
+    assert_nil s.matched_size
+    s.terminate
+    assert_nil s.matched_size
+
+    # obsolete
+    s = StringScanner.new('test string')
+    assert_nil s.matchedsize
+    s.scan(/test/)
+    assert_equal 4, s.matched_size
+    s.terminate
+    assert_nil s.matched_size
   end
 end

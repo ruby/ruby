@@ -73,10 +73,12 @@ static VALUE infect _((VALUE str, struct strscanner *p));
 static VALUE extract_range _((struct strscanner *p, long beg_i, long end_i));
 static VALUE extract_beg_len _((struct strscanner *p, long beg_i, long len));
 
+void check_strscan _((VALUE obj));
 static void strscan_mark _((struct strscanner *p));
 static void strscan_free _((struct strscanner *p));
 static VALUE strscan_s_allocate _((VALUE klass));
 static VALUE strscan_initialize _((int argc, VALUE *argv, VALUE self));
+static VALUE strscan_init_copy _((VALUE vself, VALUE vorig));
 
 static VALUE strscan_s_mustc _((VALUE self));
 static VALUE strscan_terminate _((VALUE self));
@@ -215,6 +217,38 @@ strscan_initialize(argc, argv, self)
     p->str = str;
 
     return self;
+}
+
+void
+check_strscan(obj)
+    VALUE obj;
+{
+    if (TYPE(obj) != T_DATA || RDATA(obj)->dmark != (RUBY_DATA_FUNC)strscan_mark) {
+        rb_raise(rb_eTypeError,
+                 "wrong argument type %s (expected StringScanner)",
+                 rb_obj_classname(obj));
+    }
+}
+
+/*
+ * call-seq:
+ *   dup
+ *   clone
+ *
+ * Duplicates a StringScanner object.
+ */
+static VALUE
+strscan_init_copy(vself, vorig)
+    VALUE vself, vorig;
+{
+    struct strscanner *self, *orig;
+
+    Data_Get_Struct(vself, struct strscanner, self);
+    check_strscan(vorig);
+    Data_Get_Struct(vorig, struct strscanner, orig);
+    memmove(self, orig, sizeof(struct strscanner));
+
+    return vself;
 }
 
 
@@ -1291,6 +1325,7 @@ Init_strscan()
     
     rb_define_alloc_func(StringScanner, strscan_s_allocate);
     rb_define_private_method(StringScanner, "initialize", strscan_initialize, -1);
+    rb_define_private_method(StringScanner, "initialize_copy", strscan_init_copy, 1);
     rb_define_singleton_method(StringScanner, "must_C_version", strscan_s_mustc, 0);
     rb_define_method(StringScanner, "reset",       strscan_reset,       0);
     rb_define_method(StringScanner, "terminate",   strscan_terminate,   0);

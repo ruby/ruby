@@ -1,3 +1,10 @@
+Fri Mar  5 20:10:57 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: new method StringScanner#initialize_copy
+	  to allow #dup and #clone.
+
+	* test/strscan/test_strscan.rb: test StringScanner#dup.
+
 Fri Mar  5 19:42:09 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (HTTPResponse#to_ary): should return an object
@@ -6,7 +13,7 @@ Fri Mar  5 19:42:09 2004  Minero Aoki  <aamine@loveruby.net>
 
 Fri Mar  5 00:51:35 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/test/unit.rb: MOve RDoc documentation so that you can 
+	* lib/test/unit.rb: Move RDoc documentation so that you can 
 	  now say 'ri Test::Unit'
 
 Thu Mar  4 22:31:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
