@@ -2010,7 +2010,6 @@ rb_big_rand(max, rand_buf)
 	return rb_float_new(rand_buf[0]);
     }
     v = bignew(len,1);
-    RBIGNUM(v)->sign = RBIGNUM(max)->sign;
     len--;
     BDIGITS(v)[len] = BDIGITS(max)[len] * rand_buf[len];    
     while (len--) {
