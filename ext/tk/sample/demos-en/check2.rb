@@ -76,31 +76,31 @@ TkCheckButton.new($check2_demo, :text=>'Safety Check', :variable=>safety,
 # tristate check
 in_check = false
 tristate_check = proc{|n1,n2,op|
-  return if in_check
-
-  in_check = true
-  begin
-    if n1 == safety
-      if safety == 'none'
-        wipers.value = 0
-        brakes.value = 0
-        sober.value  = 0
-      elsif safety == 'all'
-        wipers.value = 1
-        brakes.value = 1
-        sober.value  = 1
-      end
-    else
-      if wipers == 1 && brakes == 1 && sober == 1
-        safety.value = 'all'
-      elsif wipers == 1 || brakes == 1 || sober == 1
-        safety.value = 'partial'
+  unless in_check
+    in_check = true
+    begin
+      if n1 == safety
+        if safety == 'none'
+          wipers.value = 0
+          brakes.value = 0
+          sober.value  = 0
+        elsif safety == 'all'
+          wipers.value = 1
+          brakes.value = 1
+          sober.value  = 1
+        end
       else
-        safety.value = 'none'
+        if wipers == 1 && brakes == 1 && sober == 1
+          safety.value = 'all'
+        elsif wipers == 1 || brakes == 1 || sober == 1
+          safety.value = 'partial'
+        else
+          safety.value = 'none'
+        end
       end
+    ensure
+      in_check = false
     end
-  ensure
-    in_check = false
   end
 }
 

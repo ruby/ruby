@@ -400,6 +400,10 @@ class RemoteTkIp
     @interp._conv_listelement(str)
   end
 
+  def _create_console
+    fail RuntimeError, 'not support "_create_console" on the remote interpreter'
+  end
+
   def mainloop
     fail RuntimeError, 'not support "mainloop" on the remote interpreter'
   end

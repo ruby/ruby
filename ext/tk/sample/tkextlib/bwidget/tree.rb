@@ -119,7 +119,7 @@ module DemoTree
                        Tk.root.bind_remove('Unmap')
                        Tk.root.bind_remove('Map')
                        Tk.root.bind_remove('Configure')
-                       return true
+                       true
                      })
   end
 

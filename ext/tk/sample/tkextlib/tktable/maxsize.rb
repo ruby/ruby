@@ -28,7 +28,7 @@ table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary,
                         :titlerows=>1, :titlecols=>1, 
                         :coltagcommand=>proc{|col|
                           col = Integer(col)
-                          return 'OddCol' if col>0 && col%2 == 1
+                          (col>0 && col%2 == 1)? 'OddCol': ''
                         }, 
                         :selectmode=>:extended, 
                         :colstretch=>:unset, :rowstretch=>:unset, 

@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-03-10"
+#define TCLTKLIB_RELEASE_DATE "2005-03-30"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -21,6 +21,12 @@
 #include <string.h>
 #include <tcl.h>
 #include <tk.h>
+
+#ifndef TCL_ALPHA_RELEASE
+#define TCL_ALPHA_RELEASE       0
+#define TCL_BETA_RELEASE        1
+#define TCL_FINAL_RELEASE       2
+#endif
 
 #ifdef __MACOS__
 # include <tkMac.h>
@@ -4945,6 +4951,84 @@ ip_create_slave(argc, argv, self)
     return retval;
 }
 
+#if defined(MAC_TCL) || defined(__WIN32__)
+#if TCL_MAJOR_VERSION < 8 \
+    || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0) \
+    || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 1 \
+        && (TCL_RELEASE_LEVEL == TCL_ALPHA_RELEASE \
+           || (TCL_RELEASE_LEVEL == TCL_BETA_RELEASE \
+               && TCL_RELEASE_SERIAL < 2) ) )
+EXTERN void TkConsoleCreate _((void));
+#endif
+#if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 1 \
+    && ( (TCL_RELEASE_LEVEL == TCL_FINAL_RELEASE \
+          && TCL_RELEASE_SERIAL == 0) \
+       || (TCL_RELEASE_LEVEL == TCL_BETA_RELEASE \
+           && TCL_RELEASE_SERIAL >= 2) )
+EXTERN void TkConsoleCreate_ _((void));
+#endif
+#endif
+static VALUE
+ip_create_console_core(interp, argc, argv)
+    VALUE interp;
+    int   argc;   /* dummy */
+    VALUE *argv;  /* dummy */
+{
+    struct tcltkip *ptr = get_ip(interp);
+
+    if (Tcl_GetVar(ptr->ip,"tcl_interactive",TCL_GLOBAL_ONLY) == (char*)NULL) {
+        Tcl_SetVar(ptr->ip, "tcl_interactive", "0", TCL_GLOBAL_ONLY);
+    }
+
+
+#if TCL_MAJOR_VERSION > 8 \
+    || (TCL_MAJOR_VERSION == 8 \
+        && (TCL_MINOR_VERSION > 1 \
+            || (TCL_MINOR_VERSION == 1 \
+                 && TCL_RELEASE_LEVEL == TCL_FINAL_RELEASE \
+                 && TCL_RELEASE_SERIAL >= 1) ) )
+    Tk_InitConsoleChannels(ptr->ip);
+
+    if (Tk_CreateConsoleWindow(ptr->ip) != TCL_OK) {
+        rb_raise(rb_eRuntimeError, "fail to create console-window");
+    }
+#else
+#if defined(MAC_TCL) || defined(__WIN32__)
+#if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 1 \
+    && ( (TCL_RELEASE_LEVEL == TCL_FINAL_RELEASE && TCL_RELEASE_SERIAL == 0) \
+        || (TCL_RELEASE_LEVEL == TCL_BETA_RELEASE && TCL_RELEASE_SERIAL >= 2) )
+    TkConsoleCreate_();
+#else
+    TkConsoleCreate();
+#endif
+
+    if (TkConsoleInit(ptr->ip) != TCL_OK) {
+        rb_raise(rb_eRuntimeError, "fail to create console-window");
+    }
+#else
+    rb_notimplement();
+#endif
+#endif
+
+    return interp;
+}
+
+static VALUE
+ip_create_console(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+    
+    /* ip is deleted? */
+    if (ptr == (struct tcltkip *)NULL || ptr->ip == (Tcl_Interp*)NULL 
+        || Tcl_InterpDeleted(ptr->ip)) {
+        DUMP1("ip is deleted");
+        rb_raise(rb_eRuntimeError, "interpreter is deleted");
+    }
+
+    return tk_funcall(ip_create_console_core, 0, (VALUE*)NULL, self);
+}
+
 /* make ip "safe" */
 static VALUE
 ip_make_safe_core(interp, argc, argv)
@@ -8348,6 +8432,8 @@ Init_tcltklib()
     rb_define_method(ip, "_thread_tkwait", ip_thread_tkwait, 2);
     rb_define_method(ip, "_invoke", ip_invoke, -1);
     rb_define_method(ip, "_return_value", ip_retval, 0);
+
+    rb_define_method(ip, "_create_console", ip_create_console, 0);
 
     /* --------------------------------------------------------------- */
 

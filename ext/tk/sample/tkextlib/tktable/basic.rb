@@ -29,11 +29,11 @@ table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary,
                         :rowstretchmode=>:last, :colstretchmode=>:last,
                         :rowtagcommand=>proc{|row|
                           row = Integer(row)
-                          return 'OddRow' if row>0 && row%2 == 1
+                          (row>0 && row%2 == 1)? 'OddRow': ''
                         }, 
                         :coltagcommand=>proc{|col|
                           col = Integer(col)
-                          return 'OddCol' if col>0 && col%2 == 1
+                          (col>0 && col%2 == 1)? 'OddCol': ''
                         }, 
                         :selectmode=>:extended, :sparsearray=>false)
 

@@ -111,6 +111,7 @@ class TkTreeCtrl_demo
       [['File']]
     ]
     if Tk::PLATFORM['platform'] != 'unix'
+      TkConsole.create
       TkConsole.eval('.console conf -height 8')
       menuspec[0] << ['Console', proc{
           if TkComm.bool(TkConsole.eval('winfo ismapped .'))

@@ -1787,6 +1787,10 @@ class << MultiTkIp
   def _conv_listelement(arg)
     __getip._conv_listelement(arg)
   end
+
+  def _create_console
+    __getip._create_console
+  end
 end
 
 
