@@ -1,3 +1,18 @@
+Tue Oct 19 17:24:11 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): block string buffer modification during
+	  rb_io_fread() by freezing it temporarily. [ruby-dev:24479]
+
+	* dir.c (rb_push_glob): block call at once the end of method.
+	  [ruby-dev:24487]
+
+	* ext/enumerator/enumerator.c (enum_each_slice): remove
+	  rb_gc_force_recycle() to prevent potential SEGV.
+	  [ruby-dev:24499]
+
+	* ext/zlib/zlib.c (zstream_expand_buffer): hide internal string
+	  buffer by clearing klass.  [ruby-dev:24510]
+
 Tue Oct 19 16:12:18 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil.c: backport from CVS HEAD
@@ -157,6 +172,14 @@ Thu Oct  7 12:55:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  switch. [ruby-dev:24442]
 
 	* pack.c (pack_unpack): string conversion should at the top of the
+Mon Oct 18 00:42:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_getservbyaname): protocol string
+	  might be altered.  [ruby-dev:24503]
+
+	* string.c (rb_str_upto): check if return value from succ is a
+	  string.  [ruby-dev:24504]
+
 	  method.  [ruby-dev:24439]
 
 	* io.c (io_read): buffer should be frozen only after the length
@@ -246,6 +269,24 @@ Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  [ruby-dev:24383]
 
 	* string.c (rb_str_sum): string may be altered.  [ruby-dev:24381]
+Mon Oct 11 17:51:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_popen): get mode string via rb_io_flags_mode() to
+	  avoid mode string modification.  [ruby-dev:24454]
+
+	* io.c (rb_io_getline_fast): should take delim as unsigned char to
+	  distinguish EOF and '\377'.  [ruby-dev:24460]
+
+	* io.c (rb_io_getline): add check for RS modification.
+	  [ruby-dev:24461]
+
+	* enum.c (enum_sort_by): use qsort() directly instead using
+	  rb_iterate().  [ruby-dev:24462]
+
+	* enum.c (enum_each_with_index): remove rb_gc_force_recycle() to
+	  prevent access to recycled object (via continuation for
+	  example).  [ruby-dev:24463]
+
 
 Fri Oct  1 11:40:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -276,6 +317,11 @@ Fri Oct  1 11:25:20 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/place.rb: revive TkPlace.place
 
 Thu Sep 30 00:50:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+Sat Oct  9 00:25:39 2004  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_io_fread): rb_thread_wait_fd() was lost.
+	  [ruby-dev:24457]
 
 	* ext/tcltklib/tcltklib.c (ip_init): bug fix
 

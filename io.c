@@ -941,6 +941,7 @@ rb_io_fread(ptr, len, f)
 		    if (len > n) {
 			clearerr(f);
 		    }
+        rb_thread_wait_fd(fileno(f));
 		}
 		if (len == n) return 0;
 	    }
@@ -994,7 +995,6 @@ read_all(fptr, siz, str)
     long bytes = 0;
     long n;
 
-    READ_CHECK(fptr->f);
     if (siz == 0) siz = BUFSIZ;
     if (NIL_P(str)) {
 	str = rb_tainted_str_new(0, siz);
@@ -1004,7 +1004,10 @@ read_all(fptr, siz, str)
 	rb_str_resize(str, siz);
     }
     for (;;) {
+	FL_SET(str, FL_FREEZE);
+	READ_CHECK(fptr->f);
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
+	FL_UNSET(str, FL_FREEZE);
 	if (n == 0 && bytes == 0) {
 	    rb_str_resize(str,0);
 	    if (!fptr->f) break;
@@ -1232,7 +1235,7 @@ swallow(fptr, term)
 static VALUE
 rb_io_getline_fast(fptr, delim)
     OpenFile *fptr;
-    int delim;
+    unsigned char delim;
 {
     VALUE str = Qnil;
     int c;
@@ -1246,6 +1249,17 @@ rb_io_getline_fast(fptr, delim)
     }
 
     return str;
+}
+
+static int
+rscheck(rsptr, rslen, rs)
+    char *rsptr;
+    long rslen;
+    VALUE rs;
+{
+    if (RSTRING(rs)->ptr != rsptr && RSTRING(rs)->len != rslen)
+	rb_raise(rb_eRuntimeError, "rs modified");
+    return 1;
 }
 
 static VALUE
@@ -1287,6 +1301,7 @@ rb_io_getline(rs, fptr)
 
 	while ((c = appendline(fptr, newline, &str)) != EOF &&
 	       (c != newline || RSTRING(str)->len < rslen ||
+		(rspara || rscheck(rsptr,rslen,rs)) ||
 		memcmp(RSTRING(str)->ptr+RSTRING(str)->len-rslen,rsptr,rslen)));
 
 	if (rspara) {
@@ -2148,9 +2163,8 @@ rb_io_binmode(io)
 }
 
 char*
-rb_io_flags_mode(flags, mode)
+rb_io_flags_mode(flags)
     int flags;
-    char *mode;
 {
 #ifdef O_BINARY
 # define MODE_BINMODE(a,b) ((flags & FMODE_BINMODE) ? (b) : (a))
@@ -2233,6 +2247,9 @@ rb_io_modenum_flags(mode)
 
     if (mode & O_APPEND) {
 	flags |= FMODE_APPEND;
+    }
+    if (mode & O_CREAT) {
+	flags |= FMODE_CREATE;
     }
 #ifdef O_BINARY
     if (mode & O_BINARY) {
@@ -2407,13 +2424,12 @@ rb_file_open_internal(io, fname, mode)
     const char *fname, *mode;
 {
     OpenFile *fptr;
-    char mbuf[MODENUM_MAX];
 
     MakeOpenFile(io, fptr);
 
     fptr->mode = rb_io_mode_flags(mode);
     fptr->path = strdup(fname);
-    fptr->f = rb_fopen(fptr->path, rb_io_flags_mode(fptr->mode, mbuf));
+    fptr->f = rb_fopen(fptr->path, rb_io_flags_mode(fptr->mode));
 
     return io;
 }
@@ -2708,7 +2724,6 @@ rb_io_popen(str, argc, argv, klass)
 {
     char *mode;
     VALUE pname, pmode, port;
-    char mbuf[MODENUM_MAX];
 
     if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
 	mode = "r";
@@ -2717,9 +2732,7 @@ rb_io_popen(str, argc, argv, klass)
 	mode = rb_io_modenum_mode(FIX2INT(pmode));
     }
     else {
-	strncpy(mbuf, StringValuePtr(pmode), sizeof(mbuf) - 1);
-	mbuf[sizeof(mbuf) - 1] = 0;
-	mode = mbuf;
+	mode = rb_io_flags_mode(rb_io_mode_flags(StringValuePtr(pmode)));
     }
     SafeStringValue(pname);
     port = pipe_open(str, mode);
@@ -3982,7 +3995,7 @@ next_argv()
 	    if (binmode) rb_io_binmode(current_file);
 	}
 	else {
-	    init_p = 0;
+	    next_p = 1;
 	    return Qfalse;
 	}
     }
@@ -4945,7 +4958,6 @@ argf_read(argc, argv)
 
   retry:
     if (!next_argv()) {
-	if (NIL_P(str)) return rb_str_new(0,0);
 	return str;
     }
     if (TYPE(current_file) != T_FILE) {

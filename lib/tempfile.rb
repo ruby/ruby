@@ -111,8 +111,14 @@ class Tempfile < DelegateClass(File)
   # file.
   def unlink
     # keep this order for thread safeness
-    File.unlink(@tmpname) if File.exist?(@tmpname)
-    @@cleanlist.delete(@tmpname) if @@cleanlist
+    begin
+      File.unlink(@tmpname) if File.exist?(@tmpname)
+      @@cleanlist.delete(@tmpname)
+      @data = @tmpname = nil
+      ObjectSpace.undefine_finalizer(self)
+    rescue Errno::EACCESS
+      # may not be able to unlink on Windows; just ignore
+    end
   end
   alias delete unlink
 

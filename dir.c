@@ -1119,14 +1119,7 @@ push_pattern(path, ary)
     const char *path;
     VALUE ary;
 {
-    VALUE str = rb_tainted_str_new2(path);
-
-    if (ary) {
-	rb_ary_push(ary, str);
-    }
-    else {
-	rb_yield(str);
-    }
+    rb_ary_push(ary, rb_tainted_str_new2(path));
 }
 
 static int
@@ -1209,11 +1202,7 @@ rb_push_glob(str, flags)
     int noescape = flags & FNM_NOESCAPE;
     VALUE ary;
 
-    if (rb_block_given_p())
-	ary = 0;
-    else
-	ary = rb_ary_new();
-
+    ary = rb_ary_new();
     SafeStringValue(str);
     buf = xmalloc(RSTRING(str)->len + 1);
 
@@ -1248,6 +1237,10 @@ rb_push_glob(str, flags)
 
     if (status) rb_jump_tag(status);
 
+    if (rb_block_given_p()) {
+	rb_ary_each(ary);
+	return Qnil;
+    }
     return ary;
 }
 
