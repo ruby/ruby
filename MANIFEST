@@ -415,6 +415,7 @@ lib/uri/mailto.rb
 lib/weakref.rb
 lib/webrick.rb
 lib/webrick/accesslog.rb
+lib/webrick/cgi.rb
 lib/webrick/compat.rb
 lib/webrick/config.rb
 lib/webrick/cookie.rb
