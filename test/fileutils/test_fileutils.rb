@@ -76,13 +76,18 @@ class TestFileUtils
     end
   end
 
+  def mymkdir(path)
+    Dir.mkdir path
+    File.chown nil, Process.gid, path if have_file_perm?
+  end
+
   def setup
     @prevdir = Dir.pwd
     tmproot = TMPROOT
-    Dir.mkdir tmproot unless File.directory?(tmproot)
+    mymkdir tmproot unless File.directory?(tmproot)
     Dir.chdir tmproot
-    my_rm_rf 'data'; Dir.mkdir 'data'
-    my_rm_rf 'tmp';  Dir.mkdir 'tmp'
+    my_rm_rf 'data'; mymkdir 'data'
+    my_rm_rf 'tmp';  mymkdir 'tmp'
     prepare_data_file
     prepare_time_data
   end

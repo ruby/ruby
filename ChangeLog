@@ -1,3 +1,11 @@
+Thu Jan 27 00:15:29 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb (setup): support BSD-style
+	  directory group inheritance. (backport from HEAD, rev 1.32)
+
+	* test/fileutils/fileasserts.rb (assert_same_entry): show entry
+	  difference. (backport from HEAD, rev 1.4)
+
 Wed Jan 26 23:09:11 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb (WriteAdapter#puts): should append \n, not
