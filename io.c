@@ -394,8 +394,11 @@ rb_io_fwrite(ptr, len, f)
 	}
     } while (--n > 0);
 #else
-    while (ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
+    while (errno = 0, ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
 	if (ferror(f)) {
+#ifdef __hpux
+	    if (!errno) errno = EAGAIN;
+#endif
 	    if (rb_io_wait_writable(fileno(f))) {
 		clearerr(f);
 		continue;
@@ -4939,7 +4942,7 @@ argf_read(argc, argv)
 	tmp = io_read(argc, argv, current_file);
     }
     if (NIL_P(str)) str = tmp;
-    else rb_str_append(str, tmp);
+    else if (!NIL_P(tmp)) rb_str_append(str, tmp);
     if (NIL_P(tmp) || NIL_P(length)) {
 	if (next_p != -1) {
 	    argf_close(current_file);

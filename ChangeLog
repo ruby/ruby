@@ -1,3 +1,10 @@
+Thu Jan 15 12:58:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_read): do not append EOF.  (ruby-bugs-ja:PR#585)
+
+	* io.c (rb_io_fwrite): ad-hockery hack to get rid of HP-UX stdio
+	  weird behavior.  [ruby-dev:22424]
+
 Wed Jan 14 21:13:06 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/inlinetest.rb (InlineTest::eval_part): eval under the top
