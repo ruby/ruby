@@ -20,7 +20,7 @@ s,@PACKAGE_STRING@,,;t t
 s,@PACKAGE_BUGREPORT@,,;t t
 s,@exec_prefix@,${prefix},;t t
 s,@prefix@,/dev/env/DJDIR,;t t
-s,@program_transform_name@,s:^::,;t t
+s%@program_transform_name@%s,^,,%;t t
 s,@bindir@,${exec_prefix}/bin,;t t
 s,@sbindir@,${exec_prefix}/sbin,;t t
 s,@libexecdir@,${exec_prefix}/libexec,;t t

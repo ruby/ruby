@@ -1,3 +1,7 @@
+Mon Oct 28 01:27:17 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* djgpp/config.sed (@program_transform_name@): use `%', not `,'.
+
 Sun Oct 27 22:59:50 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* ext/extmk.rb(78) : The unnecessary error when installing by bccwin32
