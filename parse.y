@@ -2067,20 +2067,10 @@ read_escape()
 
       case 'x':	/* hex constant */
 	{
-	    char buf[2];
-	    int i;
+	    int numlen;
 
-	    for (i=0; i<2; i++) {
-		int cc = nextc();
-
-		if (cc == -1) goto eof;
-		buf[i] = cc;
-		if (!ISXDIGIT(buf[i])) {
-		    pushback(buf[i]);
-		    break;
-		}
-	    }
-	    c = scan_hex(buf, i, &i);
+	    c = scan_hex(lex_p, 2, &numlen);
+	    lex_p += numlen;
 	}
 	return c;
 
@@ -3595,9 +3585,16 @@ str_extend(list, term)
 		tokadd(c);
 		goto loop_again;
 	      case '\\':
-		c = read_escape();
-		tokadd(c);
-		goto loop_again;
+		c = nextc();
+		if (c == -1) return (NODE*)-1;
+		if (c == term) {
+		    tokadd(c);
+		}
+		else {
+		    tokadd('\\');
+		    tokadd(c);
+		}
+		break;
 	      case '{':
 		if (brace != -1) nest++;
 	      case '\"':

@@ -497,7 +497,13 @@ static VALUE
 sym_to_s(sym)
     VALUE sym;
 {
-    return rb_str_new2(rb_id2name(SYM2ID(sym)));
+    char *name, *buf;
+
+    name = rb_id2name(SYM2ID(sym));
+    buf = ALLOCA_N(char, strlen(name)+2);
+    sprintf(buf, ":%s", name);
+
+    return rb_str_new2(buf);
 }
 
 static VALUE
@@ -1100,7 +1106,7 @@ Init_Object()
     rb_define_global_const("NIL", Qnil);
 
     rb_cSymbol = rb_define_class("Symbol", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cNilClass), "new");
+    rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_method(rb_cSymbol, "type", sym_type, 0);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);

@@ -340,7 +340,7 @@ rb_disable_super(klass, name)
     }
     else {
 	rb_clear_cache_by_id(mid);
-	rb_add_method(ruby_class, mid, 0, NOEX_UNDEF);
+	rb_add_method(klass, mid, 0, NOEX_UNDEF);
     }
 }
 
@@ -4302,7 +4302,7 @@ rb_call_super(argc, argv)
     VALUE result;
 
     if (ruby_frame->last_class == 0) {	
-	rb_raise(rb_eNameError, "superclass method `%s' disabled",
+	rb_raise(rb_eNameError, "superclass method `%s' must be enabled by rb_enable_super()",
 		 rb_id2name(ruby_frame->last_func));
     }
 

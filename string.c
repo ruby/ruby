@@ -2484,6 +2484,13 @@ rb_str_scan(str, pat)
 }
 
 static VALUE
+rb_f_scan(self, pat)
+    VALUE self, pat;
+{
+    return rb_str_scan(uscore_get(), pat);
+}
+
+static VALUE
 rb_str_hex(str)
     VALUE str;
 {
@@ -2755,6 +2762,7 @@ Init_String()
     rb_define_global_function("chomp!", rb_f_chomp_bang, -1);
 
     rb_define_global_function("split", rb_f_split, -1);
+    rb_define_global_function("scan", rb_f_scan, 1);
 
     rb_define_method(rb_cString, "slice", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "slice!", rb_str_slice_bang, -1);

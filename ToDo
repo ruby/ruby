@@ -4,9 +4,9 @@ Language Spec.
 - compile time string concatenation, "hello" "world" => "helloworld"
 - rescue modifier; a rescue b => begin a rescue; b end
 - %w(a\ b\ c abc) => ["a b c", "abc"]
-* class variable (prefix @@?) ??
+- objectify symbols
+- class variable (prefix @@) - still need work for singletons
 * operator !! for rescue. ???
-* objectify symbols
 * objectify characters
 * ../... outside condition invokes operator method too.
 * ... inside condition turns off just before right condition.???
@@ -58,6 +58,8 @@ Standard Libraries
 - regexp: (?>..), \G
 - Struct::new([name,]member,...)
 - IO#reopen accepts path as well
+- Kernel#scan
+- call initialize for builtin class too (not yet: Regexp, IO, etc)
 * String#scanf(?)
 * Object#fmt(?)
 * Integer#{bin,oct,hex,heX}
@@ -69,7 +71,6 @@ Standard Libraries
 * optional stepsize argument for succ()
 * performance tune for String's non-bang methods.
 * Ruby module -- Ruby::Version, Ruby::Interpreter
-* call initialize for builtin class too
 
 Extension Libraries
 

@@ -1,3 +1,11 @@
+Wed Mar  8 02:08:43 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y: escape expansion too early.
+
+	* string.c (rb_f_scan): Kernel#scan added.
+
+	* regex.c (re_compile_pattern): support \cX et al.
+
 Tue Mar  7 01:44:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (set_stdin): simplified procedure, allows $stdin = DATA;
@@ -6,7 +14,7 @@ Tue Mar  7 01:44:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* io.c (set_outfile): ditto.
 
 	* re.c (Init_Regexp): new method Regexp#last_match added; it's a
-	  replacement for $~.
+	  alternative for $~.
 
 	* configure.in (DEFAULT_KCODE): KCODE_NONE should be the default.
 
