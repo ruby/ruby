@@ -2,6 +2,8 @@ Mon Mar  1 19:42:05  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/setup.mak: configure's default is "--enable-install-doc"
 
+	* win32/setup.mak: ditto.
+
 Mon Mar  1 12:24:10 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_alias):
