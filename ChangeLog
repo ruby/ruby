@@ -13,6 +13,19 @@ Tue Nov  9 14:27:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Officious): moved from DefaultList.
 
+Tue Nov  9 01:05:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (rb_glob2): do not allocate buffer from heap to avoid
+	  memory leaks.  use string object for buffering instead.
+	  [ruby-dev:24738]
+
+	* dir.c (join_path): ditto.
+
+	* io.c (io_read): external input buffer may be modified even after
+	  rb_str_locktmp().  [ruby-dev:24735]
+
+	* dir.c (fnmatch): p or s may be NULL.  [ruby-dev:24749]
+
 Tue Nov  9 00:53:53 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* regex.c (slow_match): avoid GCC 3.4.x warnings.
@@ -59,6 +72,11 @@ Sat Nov  6 14:58:44 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  ruby 1.9 feature)
 
 Sat Nov  6 11:31:04 2004  Tadayoshi Funaba  <tadf@dotrb.org>
+Sat Nov  6 00:46:27 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_locktmp): check STR_TMPLOCK flag before
+	  locking.  [ruby-dev:24727]
+
 
 	* lib/date.rb (_parse): checks whether zone was given.
 
@@ -88,6 +106,10 @@ Fri Nov  5 13:22:58 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Fri Nov  5 13:17:54 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/text.rb: bug fix
+
+Fri Nov  5 08:52:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark): stricter GC stack check.
 
 Fri Nov  5 08:52:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

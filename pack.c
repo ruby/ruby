@@ -24,8 +24,6 @@
 #ifdef NATINT_PACK
 # define OFF16B(p) ((char*)(p) + (natint?0:(sizeof(short) - SIZE16)))
 # define OFF32B(p) ((char*)(p) + (natint?0:(sizeof(long) - SIZE32)))
-# define NATINT_I32(x) (natint?NUM2LONG(x):(NUM2I32(x)))
-# define NATINT_U32(x) (natint?NUM2ULONG(x):(NUM2U32(x)))
 # define NATINT_LEN(type,len) (natint?sizeof(type):(len))
 # ifdef WORDS_BIGENDIAN
 #   define OFF16(p) OFF16B(p)
@@ -36,8 +34,6 @@
 # define NATINT_HTONS(x) (natint?htons(x):hton16(x))
 # define NATINT_HTONL(x) (natint?htonl(x):hton32(x))
 #else
-# define NATINT_I32(x) NUM2I32(x)
-# define NATINT_U32(x) NUM2U32(x)
 # define NATINT_LEN(type,len) sizeof(type)
 # define NATINT_HTOVS(x) htovs(x)
 # define NATINT_HTOVL(x) htovl(x)
@@ -179,7 +175,7 @@ define_swapx(d, double)
 #endif	/* #if SIZEOF_LONG == 8 */
 #else	/* SIZEOF_DOUBLE != 8 */
 define_swapx(d, double)
-#endif	/* #if SIZEOF_DPOUBLE == 8 */
+#endif	/* #if SIZEOF_DOUBLE == 8 */
 
 #undef define_swapx
 
@@ -252,7 +248,7 @@ endian()
 #define hton32(x) (x)
 # endif
 #else /* LITTLE ENDIAN */
-#ifndef ntohs
+#ifdef ntohs
 #undef ntohs
 #undef ntohl
 #undef htons
@@ -515,7 +511,7 @@ pack_pack(ary, fmt)
 	    continue;
 	}
         if (*p == '_' || *p == '!') {
-	    char *natstr = "sSiIlL";
+	    const char *natstr = "sSiIlL";
 
 	    if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
@@ -708,10 +704,7 @@ pack_pack(ary, fmt)
 		char c;
 
 		from = NEXTFROM;
-		if (NIL_P(from)) c = 0;
-		else {
-		    c = NUM2INT(from);
-		}
+		c = NUM2I32(from);
 		rb_str_buf_cat(res, &c, sizeof(char));
 	    }
 	    break;
@@ -722,10 +715,7 @@ pack_pack(ary, fmt)
 		short s;
 
 		from = NEXTFROM;
-		if (NIL_P(from)) s = 0;
-		else {
-		    s = NUM2INT(from);
-		}
+		s = NUM2I32(from);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
@@ -736,13 +726,7 @@ pack_pack(ary, fmt)
 		long i;
 
 		from = NEXTFROM;
-		if (NIL_P(from)) i = 0;
-		else if (type == 'i') {
-		    i = NATINT_I32(from);
-		}
-		else {
-		    i = NATINT_U32(from);
-		}
+		i = NUM2I32(from);
 		rb_str_buf_cat(res, OFF32(&i), NATINT_LEN(int,4));
 	    }
 	    break;
@@ -753,13 +737,7 @@ pack_pack(ary, fmt)
 		long l;
 
 		from = NEXTFROM;
-		if (NIL_P(from)) l = 0;
-		else if (type == 'l') {
-		    l = NATINT_I32(from);
-		}
-		else {
-		    l = NATINT_U32(from);
-		}
+		l = NUM2I32(from);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
@@ -770,7 +748,6 @@ pack_pack(ary, fmt)
 		char tmp[QUAD_SIZE];
 
 		from = NEXTFROM;
-		if (NIL_P(from)) from = INT2FIX(0);
 		rb_quad_pack(tmp, from);
 		rb_str_buf_cat(res, (char*)&tmp, QUAD_SIZE);
 	    }
@@ -781,10 +758,7 @@ pack_pack(ary, fmt)
 		unsigned short s;
 
 		from = NEXTFROM;
-		if (NIL_P(from)) s = 0;
-		else {
-		    s = NUM2INT(from);
-		}
+		s = NUM2I32(from);
 		s = NATINT_HTONS(s);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
@@ -795,10 +769,7 @@ pack_pack(ary, fmt)
 		unsigned long l;
 
 		from = NEXTFROM;
-		if (NIL_P(from)) l = 0;
-		else {
-		    l = NATINT_U32(from);
-		}
+		l = NUM2I32(from);
 		l = NATINT_HTONL(l);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
@@ -809,10 +780,7 @@ pack_pack(ary, fmt)
 		unsigned short s;
 
 		from = NEXTFROM;
-		if (NIL_P(from)) s = 0;
-		else {
-		    s = NUM2INT(from);
-		}
+		s = NUM2I32(from);
 		s = NATINT_HTOVS(s);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
@@ -823,10 +791,7 @@ pack_pack(ary, fmt)
 		unsigned long l;
 
 		from = NEXTFROM;
-		if (NIL_P(from)) l = 0;
-		else {
-		    l = NATINT_U32(from);
-		}
+		l = NUM2I32(from);
 		l = NATINT_HTOVL(l);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
@@ -938,9 +903,10 @@ pack_pack(ary, fmt)
 		int le;
 
 		from = NEXTFROM;
-		if (NIL_P(from)) l = 0;
-		else {
-		    l = NUM2UINT(from);
+		from = rb_to_int(from);
+		l = NUM2INT(from);
+		if (l < 0) {
+		    rb_raise(rb_eRangeError, "pack(U): value out of range");
 		}
 		le = uv_to_utf8(buf, l);
 		rb_str_buf_cat(res, (char*)buf, le);
@@ -1024,8 +990,7 @@ pack_pack(ary, fmt)
 		    }
 		}
 
-		if (NIL_P(from)) ul = 0;
-		else {
+		{
 		    long l = NUM2LONG(from);
 		    if (l < 0) {
 			rb_raise(rb_eArgError, "cannot compress negative numbers");

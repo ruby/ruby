@@ -1903,8 +1903,6 @@ sock_connect(sock, addr)
     int fd;
 
     StringValue(addr);
-    rb_str_modify(addr);
-
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
     if (ruby_connect(fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len, 0) < 0) {
@@ -1921,8 +1919,6 @@ sock_bind(sock, addr)
     OpenFile *fptr;
 
     StringValue(addr);
-    rb_str_modify(addr);
-
     GetOpenFile(sock, fptr);
     if (bind(fileno(fptr->f), (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len) < 0)
 	rb_sys_fail("bind(2)");
