@@ -1,5 +1,7 @@
 Thu Apr  9 18:24:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* experimental release 1.1b9_09.
+
 	* string.c (str_cmp): do not depend on sentinel at the end of the
 	  strings. 
 
