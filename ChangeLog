@@ -1,3 +1,13 @@
+Mon Aug  2 11:53:06 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/code_objects.rb (RDoc::Context::find_symbol): Fix infinite recursion
+	  looking up some top level symbols (batsman)
+
+Mon Aug  2 11:48:29 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_methods): Allow '.'s in
+	  variable names to support SWIG generated files (Hans Fugal)
+
 Sat Jul 31 23:08:00 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (is_defined): stupid mistakes fixed. [ruby-dev:24006]

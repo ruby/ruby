@@ -254,7 +254,8 @@ module RDoc
         handle_class_module(var_name, "module", class_name, nil, nil)
       end
       
-      @body.scan(/(\w+)\s* = \s*rb_define_class
+      # The '.' lets us handle SWIG-generated files
+      @body.scan(/([\w\.]+)\s* = \s*rb_define_class
                 \( 
                    \s*"(\w+)",
                    \s*(\w+)\s*
@@ -280,7 +281,7 @@ module RDoc
         handle_class_module(var_name, "module", class_name, nil, in_module)
       end
       
-      @body.scan(/(\w+)\s* = \s*rb_define_class_under
+      @body.scan(/([\w\.]+)\s* = \s*rb_define_class_under
                 \( 
                    \s*(\w+),
                    \s*"(\w+)",
@@ -304,7 +305,7 @@ module RDoc
                         module_function  |
                         private_method
                      )
-                     \(\s*(\w+),
+                     \(\s*([\w\.]+),
                        \s*"([^"]+)",
                        \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
                        \s*(-?\w+)\s*\)
