@@ -1,3 +1,7 @@
+Wed Jan 16 18:25:08 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c: primes should be primes.
+
 Wed Jan 16 12:29:14 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/timeout.rb (timeout): new optional argument to specify an
@@ -14,6 +18,19 @@ Wed Jan 16 11:12:30 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* class.c (rb_class_inherited): should use Object when no super
 	  class.
+
+Tue Jan 15 01:11:44 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): method defined? check should honor
+	  protected too.
+
+Mon Jan 14 13:06:02 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): should not pass tainted block, if $SAFE > 0.
+
+Sun Jan 13 09:31:41 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* variable.c (rb_mod_remove_cvar): should pass the char*.
 
 Fri Jan 11 05:06:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

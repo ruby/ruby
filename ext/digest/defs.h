@@ -10,7 +10,8 @@
 
 #if defined(HAVE_SYS_CDEFS_H)
 # include <sys/cdefs.h>
-#else
+#endif
+#if !defined(__BEGIN_DECLS)
 # define __BEGIN_DECLS
 # define __END_DECLS
 #endif

@@ -1801,7 +1801,23 @@ is_defined(self, node, buf)
 	    return 0;
 	}
       check_bound:
-	if (rb_method_boundp(val, node->nd_mid, nd_type(node)== NODE_CALL)) {
+	{
+	    int call = nd_type(node)== NODE_CALL;
+	    if (call) {
+		int noex;
+		ID id = node->nd_mid;
+
+		if (!rb_get_method_body(&val, &id, &noex))
+		    break;
+		if ((noex & NOEX_PRIVATE))
+		    break;
+		if ((noex & NOEX_PROTECTED) &&
+		    !rb_obj_is_kind_of(self, rb_class_real(val)))
+		    break;
+		}
+	    }
+	    else if (!rb_method_boundp(val, node->nd_mid, call))
+		break;
 	    return arg_defined(self, node->nd_args, buf, "method");
 	}
 	break;
@@ -4634,10 +4650,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 
 	/* self must be kind of a specified form for private method */
 	if ((noex & NOEX_PROTECTED)) {
-	    VALUE defined_class = klass;
-	    while (TYPE(defined_class) == T_ICLASS)
-		defined_class = RBASIC(defined_class)->klass;
-	    if (!rb_obj_is_kind_of(ruby_frame->self, defined_class))
+	    if (!rb_obj_is_kind_of(ruby_frame->self, rb_class_real(klass)))
 		return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);
 	}
     }
@@ -6562,6 +6575,10 @@ block_pass(self, node)
     else if (!rb_obj_is_proc(block)) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc)",
 		 rb_class2name(CLASS_OF(block)));
+    }
+
+    if (rb_safe_level() >= 1 && OBJ_TAINTED(block)) {
+	rb_raise(rb_eSecurityError, "Insecure: tainted block value");
     }
 
     Data_Get_Struct(block, struct BLOCK, data);
