@@ -111,7 +111,7 @@ new_size(size)
 {
     int i, newsize;
 
-#if 0
+#if 1
     for (i = 0, newsize = MINSIZE;
 	 i < sizeof(primes)/sizeof(primes[0]);
 	 i++, newsize <<= 1)
