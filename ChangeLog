@@ -1,6 +1,7 @@
 Mon May 19 13:51:50 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* re.c (rb_reg_quote): \n \r \f \v quoting was wrong.
+	  [ruby-dev:20203]
 
 	* re.c (rb_reg_quote): rb_reg_quote(" ") should be "\\ ", not
 	  "\\s".
