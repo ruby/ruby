@@ -66,6 +66,7 @@ Standard Libraries
 * String#{pred,prev}, String#downto
 * optional stepsize argument for succ()
 * performance tune for String's non-bang methods.
+* Ruby module -- Ruby::Version, Ruby::Interpreter
 
 Extension Libraries
 

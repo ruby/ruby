@@ -9,25 +9,25 @@ class Mail
     @header = {}
     @body = []
     begin
-      while f.gets()
-	$_.chop!
-	next if /^From /	# skip From-line
-	break if /^$/		# end of header
+      while line = f.gets()
+	line.chop!
+	next if /^From /=~line	# skip From-line
+	break if /^$/=~line	# end of header
 
-	if /^(\S+):\s*(.*)/
+	if /^(\S+):\s*(.*)/=~line
 	  (attr = $1).capitalize!
 	  @header[attr] = $2
 	elsif attr
-	  sub!(/^\s*/, '')
-	  @header[attr] += "\n" + $_
+	  line.sub!(/^\s*/, '')
+	  @header[attr] += "\n" + line
 	end
       end
   
-      return unless $_
+      return unless line
 
-      while f.gets()
-	break if /^From /
-	@body.push($_)
+      while line = f.gets()
+	break if /^From /=~line
+	@body.push(line)
       end
     ensure
       f.close if opened

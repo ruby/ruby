@@ -62,7 +62,7 @@ static void rehash();
 #define EQUAL(table, x, y) ((*table->type->compare)(x, y) == 0)
 
 #define do_hash(key, table) (unsigned int)(*(table)->type->hash)((key))
-#define do_hash_bin(key, table) (do_hash(key, table)%(table)->num_bins)
+#define do_hash_bin(key, table) (do_hash(key, table)&(table)->num_bins)
 
 /*
  * MINSIZE is the minimum size of a dictionary.
@@ -112,6 +112,11 @@ new_size(size)
     int i, newsize;
 
 #if 1
+    for (i=3; i<31; i++) {
+	if ((1<<i) > size) return 1<<i;
+    }
+    return -1;
+#else
     for (i = 0, newsize = MINSIZE;
 	 i < sizeof(primes)/sizeof(primes[0]);
 	 i++, newsize <<= 1)
@@ -120,14 +125,10 @@ new_size(size)
     }
     /* Ran out of polynomials */
     return -1;			/* should raise exception */
-#else
-    for (i=3; i<31; i++) {
-	if ((1<<i) > size) return 1<<i;
-    }
-    return -1;
 #endif
 }
 
+#ifdef HASH_LOG
 static int collision = 0;
 static int init_st = 0;
 
@@ -138,6 +139,7 @@ stat_col()
     fprintf(f, "collision: %d\n", collision);
     fclose(f);
 }
+#endif
 
 st_table*
 st_init_table_with_size(type, size)
@@ -146,7 +148,7 @@ st_init_table_with_size(type, size)
 {
     st_table *tbl;
 
-#if 0
+#ifdef HASH_LOG
     if (init_st == 0) {
 	init_st = 1;
 	atexit(stat_col);
@@ -158,7 +160,7 @@ st_init_table_with_size(type, size)
     tbl = alloc(st_table);
     tbl->type = type;
     tbl->num_entries = 0;
-    tbl->num_bins = size;
+    tbl->num_bins = size-1;
     tbl->bins = (st_table_entry **)Calloc(size, sizeof(st_table_entry*));
 
     return tbl;
@@ -204,7 +206,7 @@ st_free_table(table)
     register st_table_entry *ptr, *next;
     int i;
 
-    for(i = 0; i < table->num_bins; i++) {
+    for(i = 0; i <= table->num_bins; i++) {
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
@@ -219,11 +221,17 @@ st_free_table(table)
 #define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
 ((ptr) != 0 && (ptr->hash != (hash_val) || !EQUAL((table), (key), (ptr)->key)))
 
+#ifdef HASH_LOG
+#define COLLISION collision++
+#else
+#define COLLISION
+#endif
+
 #define FIND_ENTRY(table, ptr, hash_val, bin_pos) \
-bin_pos = hash_val%(table)->num_bins;\
+bin_pos = hash_val&(table)->num_bins;\
 ptr = (table)->bins[bin_pos];\
 if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {\
-    collision++;\
+    COLLISION;\
     while (PTR_NOT_EQUAL(table, ptr->next, hash_val, key)) {\
 	ptr = ptr->next;\
     }\
@@ -253,9 +261,9 @@ st_lookup(table, key, value)
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
 {\
     st_table_entry *entry;\
-    if (table->num_entries/table->num_bins > ST_DEFAULT_MAX_DENSITY) {\
+    if (table->num_entries/(table->num_bins+1) > ST_DEFAULT_MAX_DENSITY) {\
 	rehash(table);\
-        bin_pos = hash_val % table->num_bins;\
+        bin_pos = hash_val & table->num_bins;\
     }\
     \
     entry = alloc(st_table_entry);\
@@ -298,7 +306,7 @@ st_add_direct(table, key, value)
     unsigned int hash_val, bin_pos;
 
     hash_val = do_hash(key, table);
-    bin_pos = hash_val % table->num_bins;
+    bin_pos = hash_val & table->num_bins;
     ADD_DIRECT(table, key, value, hash_val, bin_pos);
 }
 
@@ -310,14 +318,15 @@ rehash(table)
     int i, old_num_bins = table->num_bins, new_num_bins;
     unsigned int hash_val;
 
-    new_num_bins = new_size(old_num_bins);
+    new_num_bins = new_size(old_num_bins+1);
     new_bins = (st_table_entry**)Calloc(new_num_bins, sizeof(st_table_entry*));
 
-    for(i = 0; i < old_num_bins; i++) {
+    new_num_bins--;
+    for(i = 0; i <= old_num_bins; i++) {
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
-	    hash_val = ptr->hash % new_num_bins;
+	    hash_val = ptr->hash & new_num_bins;
 	    ptr->next = new_bins[hash_val];
 	    new_bins[hash_val] = ptr;
 	    ptr = next;
@@ -334,7 +343,7 @@ st_copy(old_table)
 {
     st_table *new_table;
     st_table_entry *ptr, *entry;
-    int i, num_bins = old_table->num_bins;
+    int i, num_bins = old_table->num_bins+1;
 
     new_table = alloc(st_table);
     if (new_table == 0) {
@@ -471,7 +480,7 @@ st_foreach(table, func, arg)
     enum st_retval retval;
     int i;
 
-    for(i = 0; i < table->num_bins; i++) {
+    for(i = 0; i <= table->num_bins; i++) {
 	last = 0;
 	for(ptr = table->bins[i]; ptr != 0;) {
 	    retval = (*func)(ptr->key, ptr->record, arg);
@@ -501,14 +510,35 @@ static int
 strhash(string)
     register char *string;
 {
-    register int val = 0;
     register int c;
+
+#ifdef HASH_ELFHASH
+    register unsigned int h = 0, g;
+
+    while ((c = *string++) != '\0') {
+	h = ( h << 4 ) + c;
+	if ( g = h & 0xF0000000 )
+	    h ^= g >> 24;
+	h &= ~g;
+    }
+    return h;
+#elif HASH_PERL
+    register int val = 0;
+
+    while ((c = *string++) != '\0') {
+	val = val*33 + c;
+    }
+
+    return val + (val>>5);
+#else
+    register int val = 0;
 
     while ((c = *string++) != '\0') {
 	val = val*997 + c;
     }
 
-    return val;
+    return val + (val>>5);
+#endif
 }
 
 static int

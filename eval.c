@@ -6603,7 +6603,8 @@ rb_thread_schedule()
 			    th->wait_for &= ~WAIT_TIME;
 			    th->status = THREAD_RUNNABLE;
 			    num_waiting_on_timer--;
-			    next = th;
+			    if (!next || next->priority < th->priority)
+				next = th;
 			} else if (th->delay < delay) {
 			    delay = th->delay;
 			}
@@ -7216,7 +7217,7 @@ rb_thread_start_timer()
 
     if (!thread_init) return;
     tval.it_interval.tv_sec = 0;
-    tval.it_interval.tv_usec = 50000;
+    tval.it_interval.tv_usec = 10000;
     tval.it_value = tval.it_interval;
     setitimer(ITIMER_VIRTUAL, &tval, NULL);
 }

@@ -89,23 +89,7 @@ rb_any_hash(a)
 	break;
 
       case T_STRING:
-#if 0
 	hval = rb_str_hash(a);
-#else
-	{
-	    register const char *p = RSTRING(a)->ptr;
-	    register int len = RSTRING(a)->len;
-	    register unsigned int h = 0, g;
-
-	    while (len--) {
-		h = ( h << 4 ) + *p++;
-		if ( g = h & 0xF0000000 )
-		    h ^= g >> 24;
-		h &= ~g;
-	    }
-	    hval = h;
-	}
-#endif
 	break;
 
       default:

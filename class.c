@@ -605,6 +605,8 @@ rb_scan_args(argc, argv, fmt, va_alist)
 
     va_init_list(vargs, fmt);
 
+    if (*p == '*') goto rest_arg;
+
     if (ISDIGIT(*p)) {
 	n = *p - '0';
 	if (n > argc)
@@ -634,6 +636,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
     }
 
     if(*p == '*') {
+      rest_arg:
 	var = va_arg(vargs, VALUE*);
 	if (argc > i) {
 	    if (var) *var = rb_ary_new4(argc-i, argv+i);

@@ -421,7 +421,29 @@ rb_str_hash(str)
     register char *p = RSTRING(str)->ptr;
     register int key = 0;
 
-#if 0
+#ifdef HASH_ELFHASH
+    register unsigned int g;
+
+    while (len--) {
+	key = (key << 4) + *p++;
+	if (g = key & 0xF0000000)
+	    key ^= g >> 24;
+	key &= ~g;
+    }
+#elif HASH_PERL
+    if (ruby_ignorecase) {
+	while (len--) {
+	    key = key*33 + toupper(*p);
+	    p++;
+	}
+    }
+    else {
+	while (len--) {
+	    key = key*33 + *p++;
+	}
+    }
+    key = key + (key>>5);
+#else
     if (ruby_ignorecase) {
 	while (len--) {
 	    key = key*65599 + toupper(*p);
@@ -432,18 +454,6 @@ rb_str_hash(str)
 	while (len--) {
 	    key = key*65599 + *p;
 	    p++;
-	}
-    }
-#else
-    if (ruby_ignorecase) {
-	while (len--) {
-	    key = key*33 + toupper(*p);
-	    p++;
-	}
-    }
-    else {
-	while (len--) {
-	    key = key*33 + *p++;
 	}
     }
     key = key + (key>>5);
@@ -943,16 +953,13 @@ rb_str_aset_m(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE arg1, arg2, arg3;
-
     rb_str_modify(str);
-
-    if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
+    if (argc == 3) {
 	int beg, len;
 
-	if (TYPE(arg3) != T_STRING) arg3 = rb_str_to_str(arg3);
-	beg = NUM2INT(arg1);
-	len = NUM2INT(arg2);
+	if (TYPE(argv[2]) != T_STRING) argv[2] = rb_str_to_str(argv[2]);
+	beg = NUM2INT(argv[0]);
+	len = NUM2INT(argv[1]);
 	if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
 	if (beg < 0) {
 	    beg += RSTRING(str)->len;
@@ -966,10 +973,10 @@ rb_str_aset_m(argc, argv, str)
 	if (beg + len > RSTRING(str)->len) {
 	    len = RSTRING(str)->len - beg;
 	}
-	rb_str_replace(str, beg, len, arg3);
-	return arg3;
+	rb_str_replace(str, beg, len, argv[2]);
+	return argv[2];
     }
-    return rb_str_aset(str, arg1, arg2);
+    return rb_str_aset(str, argv[0], argv[1]);
 }
 
 static VALUE

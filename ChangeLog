@@ -1,3 +1,12 @@
+Fri Feb 25 12:50:20 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_start_timer): interval made 10ms from 50ms.
+
+Thu Feb 24 16:53:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_schedule): priority check for sleep expired
+	  threads needed.
+
 Wed Feb 23 14:22:32 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* array.c (rb_ary_join): forgot to initialize a local variable
