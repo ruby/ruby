@@ -114,7 +114,7 @@ RDOCTARGET = install-doc
 
 OUTFLAG       = -o
 !ifndef CFLAGS
-CFLAGS = -q $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
+CFLAGS = -q -tWR -tWC $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
 !endif
 !ifndef CPPFLAGS
 CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)missing
@@ -128,7 +128,7 @@ RFLAGS = $(iconinc)
 !ifndef EXTLIBS
 EXTLIBS =
 !endif
-LIBS = cw32.lib import32.lib ws2_32.lib $(EXTLIBS)
+LIBS = cw32i.lib import32.lib ws2_32.lib $(EXTLIBS)
 MISSING = acosh.obj crypt.obj erf.obj win32.obj
 
 !ifndef STACK

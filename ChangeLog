@@ -1,3 +1,10 @@
+Fri Sep 10 19:16:24 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: bccwin32 port starts to use RTL dll.
+	  (need to rebuild all) [ruby-dev:24138]
+
+	* win32/win32.{h,c}: ditto.
+
 Fri Sep 10 15:55:59 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mkdir_p): should pass mode argument to

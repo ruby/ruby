@@ -3305,7 +3305,13 @@ rb_w32_getpid(void)
 {
     pid_t pid;
 
+#ifndef __BORLANDC__
     pid = _getpid();
+#else
+#undef getpid
+    pid = getpid();
+#endif
+
     if (IsWin95()) pid = -pid;
 
     return pid;
