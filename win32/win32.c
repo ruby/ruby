@@ -2540,10 +2540,30 @@ kill(int pid, int sig)
     }
 
     if (IsWin95()) pid = -pid;
-    if ((unsigned int)pid == GetCurrentProcessId() && sig != SIGKILL)
+    if ((unsigned int)pid == GetCurrentProcessId() &&
+	(sig != 0 && sig != SIGKILL))
 	return raise(sig);
 
     switch (sig) {
+      case 0:
+	RUBY_CRITICAL({
+	    HANDLE hProc =
+		OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, (DWORD)pid);
+	    if (hProc == NULL || hProc == INVALID_HANDLE_VALUE) {
+		if (GetLastError() == ERROR_INVALID_PARAMETER) {
+		    errno = ESRCH;
+		}
+		else {
+		    errno = EPERM;
+		}
+		ret = -1;
+	    }
+	    else {
+		CloseHandle(hProc);
+	    }
+	});
+	break;
+
       case SIGINT:
 	RUBY_CRITICAL({
 	    if (!GenerateConsoleCtrlEvent(CTRL_C_EVENT, (DWORD)pid)) {
@@ -2576,7 +2596,7 @@ kill(int pid, int sig)
 	});
 	break;
 
-      define:
+      default:
 	errno = EINVAL;
 	ret = -1;
 	break;

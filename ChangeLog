@@ -1,11 +1,15 @@
+Thu May 15 09:32:25 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c (kill): fix typo and add signal 0 support.
+
 Wed May 14 20:09:26 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/gram.c: sequence-in-map shortcut, transfer methods on
-      sequence-in-sequence, memory leak in mapping merge.
+	* ext/syck/gram.c: sequence-in-map shortcut, transfer methods on
+	  sequence-in-sequence, memory leak in mapping merge.
 
-    * ext/syck/syck.c: memory leak in domain anchoring.
+	* ext/syck/syck.c: memory leak in domain anchoring.
 
-    * lib/yaml/rubytypes.rb, lib/yaml/types.rb: eliminated 1.6.x code.
+	* lib/yaml/rubytypes.rb, lib/yaml/types.rb: eliminated 1.6.x code.
 
 Wed May 14 19:56:43 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
