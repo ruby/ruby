@@ -46,12 +46,12 @@ module URI
     # hname      =  *urlc
     # hvalue     =  *urlc
     # header     =  hname "=" hvalue
-    header_pattern = "(?:[^?=&]*=[^?=&]*)"
+    HEADER_PATTERN = "(?:[^?=&]*=[^?=&]*)"
     HEADER_REGEXP = /#{header_pattern}/
     # headers    =  "?" header *( "&" header )
     # to         =  #mailbox
     # mailtoURL  =  "mailto:" [ to ] [ headers ]
-    mailbox_pattern = "(?:[^(),%?=&]|#{PATTERN::ESCAPED})"
+    MAILBOX_PATTERN = "(?:[^(),%?=&]|#{PATTERN::ESCAPED})"
     MAILBOX_REGEXP = /#{mailbox_pattern}/
     MAILTO_REGEXP = Regexp.new("
       \\A
@@ -155,7 +155,7 @@ module URI
       return true unless v
       return true if v.size == 0
 
-      if OPAQUE !~ v || /\A#{MAILBOX_REGEXP}*\z/o !~ v
+      if OPAQUE !~ v || /\A#{MAILBOX_PATTERN}*\z/o !~ v
 	raise InvalidComponentError,
 	  "bad component(expected opaque component): #{v}"
       end
@@ -191,7 +191,7 @@ module URI
       return true if v.size == 0
 
       if OPAQUE !~ v || 
-	  /\A(#{HEADER_REGEXP}(?:\&#{HEADER_REGEXP})*)\z/o !~ v
+	  /\A(#{HEADER_PATTERN}(?:\&#{HEADER_PATTERN})*)\z/o !~ v
 	raise InvalidComponentError,
 	  "bad component(expected opaque component): #{v}"
       end

@@ -4036,7 +4036,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	  else
 	    break;
 	}
-	if ((enum regexpcode)*p1 == jump)
+	if (p1 < pend && (enum regexpcode)*p1 == jump)
 	  p[-1] = unused;
 	else
 	  PUSH_FAILURE_POINT(0, 0);

@@ -1,3 +1,7 @@
+Wed Sep 25 16:14:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_match): p1 may exceed pend limit.
+
 Mon Sep 23 02:46:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (ruby_run): should set toplevel visibility again here. 

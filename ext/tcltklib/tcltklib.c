@@ -729,8 +729,8 @@ invoke_queue_handler(evPtr, flags)
 
     /* check safe-level */
     if (rb_safe_level() != q->safe_level) {
-      *(q->result) = rb_funcall(rb_proc_new(ivq_safelevel_handler, 
-					    Data_Wrap_Struct(rb_cData,0,0,q)), 
+      *(q->result) = rb_funcall(rb_iterate(rb_f_lambda, 0, ivq_safelevel_handler, 
+					   Data_Wrap_Struct(rb_cData,0,0,q)), 
 				rb_intern("call"), 0);
     } else {
       *(q->result) = ip_invoke_real(q->argc, q->argv, q->obj);
