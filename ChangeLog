@@ -1,3 +1,8 @@
+Tue Mar  8 10:48:53 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (rb_exec_recursive): declaration should precede statements
+	  before C99. 
+
 Tue Mar  8 10:05:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (errno_missing): Errno.const_missing to allow references
@@ -8,8 +13,8 @@ Tue Mar  8 10:05:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Mar  8 01:19:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.66
-          fixed: [ruby-dev:25828]
+	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.66
+	  fixed: [ruby-dev:25828]
 
 Mon Mar  7 21:29:40 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 

@@ -13057,10 +13057,10 @@ rb_exec_recursive(func, obj, arg)
 	return (*func)(obj, arg, Qtrue);
     }
     else {
-	recursive_push(obj);
 	VALUE result;
 	int state;
 
+	recursive_push(obj);
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    result = (*func)(obj, arg, Qfalse);
