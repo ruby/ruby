@@ -1,3 +1,33 @@
+Thu Dec 16 16:03:50 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/bindtag.rb: bug fix [ruby-talk: 123667]
+
+	* ext/tk/lib/tk/timer.rb: accept :idle for the interval argument
+
+	* ext/tk/lib/tk.rb: add TkComm._callback_entry?()
+
+	* ext/tk/lib/multi-tk.rb: add MultiTkIp.cb_entry_class
+
+	* ext/tk/lib/tk/canvas.rb: use TkComm._callback_entry?()
+
+	* ext/tk/lib/tk/canvastag.rb: ditto
+
+	* ext/tk/lib/tk/dialog.rb: ditto
+
+	* ext/tk/lib/tk/optiondb.rb: ditto
+
+	* ext/tk/lib/tk/text.rb: ditto
+
+	* ext/tk/lib/tk/texttag.rb: ditto
+
+	* ext/tk/lib/tk/textwindow.rb: ditto
+
+	* ext/tk/lib/tk/timer.rb: ditto
+
+	* ext/tk/lib/tk/validation.rb: ditto
+
+	* ext/tk/lib/tkextlib/*: ditto
+
 Thu Dec 16 04:02:28 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/extconf.rb: bison is not needed if ripper.c exists.
