@@ -34,6 +34,7 @@ Hacking Interpreter
 * syntax tree -> bytecode ???
 * scrambled script, or script filter
 * setuid ruby
+* freeze all object
 
 Standard Libraries
 

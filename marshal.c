@@ -224,7 +224,7 @@ w_object(obj, arg, limit)
     int limit;
 {
     struct dump_call_arg c_arg;
-    st_table *ivtbl = 0;;
+    st_table *ivtbl = 0;
 
     if (limit == 0) {
 	rb_raise(rb_eRuntimeError, "exceed depth limit");
@@ -397,7 +397,7 @@ w_object(obj, arg, limit)
 		}
 		path = rb_class2name(klass);
 		w_unique(path, arg);
-		w_ivar(ROBJECT(obj)->iv_tbl);
+		w_ivar(ROBJECT(obj)->iv_tbl, &c_arg);
 	    }
 	    break;
 

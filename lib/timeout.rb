@@ -25,8 +25,6 @@
 class TimeoutError<StandardError
 end
 
-Thread.abort_on_exception = true
-
 def timeout(sec)
   begin
     x = Thread.current

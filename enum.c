@@ -11,6 +11,7 @@
 ************************************************/
 
 #include "ruby.h"
+#include "node.h"
 
 VALUE rb_mEnumerable;
 static ID id_each, id_eqq, id_cmp;
@@ -58,19 +59,14 @@ enum_grep(obj, pat)
     return tmp;
 }
 
-struct find_arg {
-    int found;
-    VALUE val;
-};
-    
 static VALUE
-find_i(i, arg)
+find_i(i, memo)
     VALUE i;
-    struct find_arg *arg;
+    NODE *memo;
 {
     if (RTEST(rb_yield(i))) {
-	arg->found = Qtrue;
-	arg->val = i;
+	memo->u2.value = Qtrue;
+	memo->u1.value = i;
 	rb_iter_break();
     }
     return Qnil;
@@ -82,18 +78,19 @@ enum_find(argc, argv, obj)
     VALUE* argv;
     VALUE obj;
 {
-    struct find_arg arg;
+    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, Qfalse, 0);
     VALUE if_none;
 
     rb_scan_args(argc, argv, "01", &if_none);
-    arg.found = Qfalse;
-    rb_iterate(rb_each, obj, find_i, (VALUE)&arg);
-    if (arg.found) {
-	return arg.val;
+    rb_iterate(rb_each, obj, find_i, (VALUE)memo);
+    if (memo->u2.value) {
+	rb_gc_force_recycle((VALUE)memo);
+	return memo->u1.value;
     }
     if (!NIL_P(if_none)) {
 	rb_eval_cmd(if_none, Qnil);
     }
+    rb_gc_force_recycle((VALUE)memo);
     return Qnil;
 }
 
@@ -189,33 +186,35 @@ enum_sort(obj)
 }
 
 static VALUE
-min_i(i, min)
-    VALUE i, *min;
+min_i(i, memo)
+    VALUE i;
+    NODE *memo;
 {
     VALUE cmp;
 
-    if (NIL_P(*min))
-	*min = i;
+    if (NIL_P(memo->u1.value))
+	memo->u1.value = i;
     else {
-	cmp = rb_funcall(i, id_cmp, 1, *min);
+	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
 	if (NUM2LONG(cmp) < 0)
-	    *min = i;
+	    memo->u1.value = i;
     }
     return Qnil;
 }
 
 static VALUE
-min_ii(i, min)
-    VALUE i, *min;
+min_ii(i, memo)
+    VALUE i;
+    NODE *memo;
 {
     VALUE cmp;
 
-    if (NIL_P(*min))
-	*min = i;
+    if (NIL_P(memo->u1.value))
+	memo->u1.value = i;
     else {
-	cmp = rb_yield(rb_assoc_new(i, *min));
+	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
 	if (NUM2LONG(cmp) < 0)
-	    *min = i;
+	    memo->u1.value = i;
     }
     return Qnil;
 }
@@ -224,40 +223,43 @@ static VALUE
 enum_min(obj)
     VALUE obj;
 {
-    VALUE min = Qnil;
+    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
-    rb_iterate(rb_each, obj, rb_iterator_p()?min_ii:min_i, (VALUE)&min);
-    return min;
+    rb_iterate(rb_each, obj, rb_iterator_p()?min_ii:min_i, (VALUE)memo);
+    rb_gc_force_recycle((VALUE)memo);
+    return memo->u1.value;
 }
 
 static VALUE
-max_i(i, max)
-    VALUE i, *max;
+max_i(i, memo)
+    VALUE i;
+    NODE *memo;
 {
     VALUE cmp;
 
-    if (NIL_P(*max))
-	*max = i;
+    if (NIL_P(memo->u1.value))
+	memo->u1.value = i;
     else {
-	cmp = rb_funcall(i, id_cmp, 1, *max);
+	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
 	if (NUM2LONG(cmp) > 0)
-	    *max = i;
+	    memo->u1.value = i;
     }
     return Qnil;
 }
 
 static VALUE
-max_ii(i, max)
-    VALUE i, *max;
+max_ii(i, memo)
+    VALUE i;
+    NODE *memo;
 {
     VALUE cmp;
 
-    if (NIL_P(*max))
-	*max = i;
+    if (NIL_P(memo->u1.value))
+	memo->u1.value = i;
     else {
-	cmp = rb_yield(rb_assoc_new(i, *max));
+	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
 	if (NUM2LONG(cmp) > 0)
-	    *max = i;
+	    memo->u1.value = i;
     }
     return Qnil;
 }
@@ -266,54 +268,20 @@ static VALUE
 enum_max(obj)
     VALUE obj;
 {
-    VALUE max = Qnil;
+    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
 
-    rb_iterate(rb_each, obj, rb_iterator_p()?max_ii:max_i, (VALUE)&max);
-    return max;
+    rb_iterate(rb_each, obj, rb_iterator_p()?max_ii:max_i, (VALUE)memo);
+    rb_gc_force_recycle((VALUE)memo);
+    return memo->u1.value;
 }
 
-struct i_v_pair {
-    int i;
-    VALUE v;
-    int found;
-};
-
 static VALUE
-index_i(item, iv)
+member_i(item, memo)
     VALUE item;
-    struct i_v_pair *iv;
+    NODE *memo;
 {
-    if (rb_equal(item, iv->v)) {
-	iv->found = 1;
-	rb_iter_break();
-    }
-    else {
-	iv->i++;
-    }
-    return Qnil;
-}
-
-static VALUE
-enum_index(obj, val)
-    VALUE obj, val;
-{
-    struct i_v_pair iv;
-
-    iv.i = 0;
-    iv.v = val;
-    iv.found = 0;
-    rb_iterate(rb_each, obj, index_i, (VALUE)&iv);
-    if (iv.found) return INT2FIX(iv.i);
-    return Qnil;		/* not found */
-}
-
-static VALUE
-member_i(item, iv)
-    VALUE item;
-    struct i_v_pair *iv;
-{
-    if (rb_equal(item, iv->v)) {
-	iv->i = 1;
+    if (rb_equal(item, memo->u1.value)) {
+	memo->u2.value = Qtrue;
 	rb_iter_break();
     }
     return Qnil;
@@ -323,26 +291,23 @@ static VALUE
 enum_member(obj, val)
     VALUE obj, val;
 {
-    struct i_v_pair iv;
+    VALUE result;
 
-    iv.i = 0;
-    iv.v = val;
-    rb_iterate(rb_each, obj, member_i, (VALUE)&iv);
-    if (iv.i) return Qtrue;
-    return Qfalse;
+    NODE *memo = rb_node_newnode(NODE_MEMO, val, Qfalse, 0);
+
+    rb_iterate(rb_each, obj, member_i, (VALUE)memo);
+    result = memo->u2.value;
+    rb_gc_force_recycle((VALUE)memo);
+    return result;
 }
 
 static VALUE
-each_with_index_i(val, indexp)
+each_with_index_i(val, memo)
     VALUE val;
-    int *indexp;
+    NODE *memo;
 {
-#if 1
-    rb_yield(rb_assoc_new(val, INT2FIX(*indexp)));
-#else
-    rb_yield(rb_ary_concat(rb_Array(val), INT2FIX(*indexp)));
-#endif
-    (*indexp)++;
+    rb_yield(rb_assoc_new(val, INT2FIX(memo->u3.cnt)));
+    memo->u3.cnt++;
     return Qnil;
 }
 
@@ -350,9 +315,10 @@ static VALUE
 enum_each_with_index(obj)
     VALUE obj;
 {
-    int index = 0;
+    NODE *memo = rb_node_newnode(NODE_MEMO, 0, 0, 0);
 
-    rb_iterate(rb_each, obj, each_with_index_i, (VALUE)&index);
+    rb_iterate(rb_each, obj, each_with_index_i, (VALUE)memo);
+    rb_gc_force_recycle((VALUE)memo);
     return Qnil;
 }
 
@@ -374,7 +340,6 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
-    rb_define_method(rb_mEnumerable,"index", enum_index, 1);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, 0);

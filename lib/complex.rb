@@ -20,7 +20,7 @@
 #   Complex::/
 #   Complex::**
 #   Complex::%
-#   Complex::divmod
+#   Complex::divmod -- obsolete
 #   Complex::abs
 #   Complex::abs2
 #   Complex::arg
@@ -51,6 +51,12 @@
 def Complex(a, b = 0)
   if a.kind_of?(Complex) and b == 0
     a
+  elsif b.kind_of?(Complex)
+    if a.kind_of?(Complex)
+      Complex(a.real-b.image, a.image + b.real)
+    else
+      Complex(a-b.image, b.real)
+    end
   elsif b == 0 and defined? Complex::Unify
     a
   else
@@ -181,18 +187,18 @@ class Complex < Numeric
     end
   end
   
-  def divmod(other)
-    if other.kind_of?(Complex)
-      rdiv, rmod = @real.divmod(other.real)
-      idiv, imod = @image.divmod(other.image)
-      return Complex(rdiv, idiv), Complex(rmod, rdiv)
-    elsif Complex.generic?(other)
-      Complex(@real.divmod(other), @image.divmod(other))
-    else
-      x , y = other.coerce(self)
-      x.divmod(y)
-    end
-  end
+#    def divmod(other)
+#      if other.kind_of?(Complex)
+#        rdiv, rmod = @real.divmod(other.real)
+#        idiv, imod = @image.divmod(other.image)
+#        return Complex(rdiv, idiv), Complex(rmod, rmod)
+#      elsif Complex.generic?(other)
+#        Complex(@real.divmod(other), @image.divmod(other))
+#      else
+#        x , y = other.coerce(self)
+#        x.divmod(y)
+#      end
+#    end
   
   def abs
     Math.sqrt!((@real*@real + @image*@image).to_f)

@@ -84,6 +84,7 @@ enum node_type {
     NODE_DREGX_ONCE,
     NODE_ARGS,
     NODE_ARGSCAT,
+    NODE_ARGSPUSH,
     NODE_RESTARGS,
     NODE_BLOCK_ARG,
     NODE_BLOCK_PASS,
@@ -114,6 +115,7 @@ enum node_type {
 #ifdef C_ALLOCA
     NODE_ALLOCA,
 #endif
+    NODE_MEMO,
 };
 
 typedef struct RNode {
@@ -290,6 +292,7 @@ typedef struct RNode {
 #define NEW_ZSUPER() rb_node_newnode(NODE_ZSUPER,0,0,0)
 #define NEW_ARGS(f,o,r) rb_node_newnode(NODE_ARGS,o,r,f)
 #define NEW_ARGSCAT(a,b) rb_node_newnode(NODE_ARGSCAT,a,b,0)
+#define NEW_ARGSPUSH(a,b) rb_node_newnode(NODE_ARGSPUSH,a,b,0)
 #define NEW_RESTARGS(a) rb_node_newnode(NODE_RESTARGS,a,0,0)
 #define NEW_BLOCK_ARG(v) rb_node_newnode(NODE_BLOCK_ARG,v,0,local_cnt(v))
 #define NEW_BLOCK_PASS(b) rb_node_newnode(NODE_BLOCK_PASS,0,b,0)

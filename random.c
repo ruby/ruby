@@ -76,8 +76,8 @@ void srand48 _((long));
 
 #endif /* not HAVE_DRAND48 */
 
-#ifdef HAVE_RANDOM
 static int first = 1;
+#if !defined HAVE_DRAND48 && defined HAVE_RANDOM
 static char state[256];
 #endif
 
@@ -88,15 +88,15 @@ rand_init(seed)
     int old;
     static unsigned int saved_seed;
 
-#ifdef HAVE_RANDOM
+#if !defined HAVE_DRAND48 && defined HAVE_RANDOM
     if (first == 1) {
 	initstate(1, state, sizeof state);
-	first = 0;
     }
     else {
 	setstate(state);
     }
 #endif
+    first = 0;
 
     SRANDOM(seed);
     old = saved_seed;
@@ -134,8 +134,6 @@ rb_f_rand(obj, vmax)
     VALUE obj, vmax;
 {
     long val, max;
-
-    static initialized = 0;
 
     if (first) {
 	struct timeval tv;

@@ -373,10 +373,14 @@ s_recv(sock, argc, argv, from)
     if (flg == Qnil) flags = 0;
     else             flags = NUM2INT(flg);
 
+    GetOpenFile(sock, fptr);
+    if (rb_read_pending(fptr->f)) {
+	rb_raise(rb_eIOError, "recv for buffered IO");
+    }
+    fd = fileno(fptr->f);
+
     str = rb_str_new(0, NUM2INT(len));
 
-    GetOpenFile(sock, fptr);
-    fd = fileno(fptr->f);
     rb_thread_wait_fd(fd);
     TRAP_BEG;
   retry:

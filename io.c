@@ -160,13 +160,11 @@ rb_io_check_writable(fptr)
     }
 }
 
-void
-rb_read_check(fp)
+int
+rb_read_pending(fp)
     FILE *fp;
 {
-    if (!READ_DATA_PENDING(fp)) {
-	rb_thread_wait_fd(fileno(fp));
-    }
+    return READ_DATA_PENDING(fp);
 }
 
 /* writing functions */
@@ -1076,6 +1074,9 @@ rb_io_sysread(io, len)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
+    if (READ_DATA_PENDING(fptr->f)) {
+	rb_raise(rb_eIOError, "sysread for buffered IO");
+    }
     str = rb_str_new(0, ilen);
 
     rb_thread_wait_fd(fileno(fptr->f));

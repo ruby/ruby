@@ -863,7 +863,7 @@ rb_str_replace(str, beg, len, val)
     if (RSTRING(str)->len < beg && len < 0) {
 	MEMZERO(RSTRING(str)->ptr + RSTRING(str)->len, char, -len);
     }
-    memcpy(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
+    memmove(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
     RSTRING(str)->len += RSTRING(val)->len - len;
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 }
@@ -2193,32 +2193,6 @@ rb_str_each_line(argc, argv, str)
     return str;
 }
 
-#ifdef STR_TO_A_USE_EACH
-static VALUE
-to_a_push(str, ary)
-    VALUE str, ary;
-{
-    return rb_ary_push(ary, str);
-}
-#endif
-
-static VALUE
-rb_str_to_a(str)
-    VALUE str;
-{
-#ifdef STR_TO_A_USE_EACH
-    VALUE ary;
-
-    if (RSTRING(str)->len == 0) return rb_ary_new3(1, str);
-    ary = rb_ary_new();
-    rb_iterate(rb_each, str, to_a_push, ary);
-
-    return ary;
-#else
-    return rb_ary_new3(1, str);
-#endif
-}
-
 static VALUE
 rb_str_each_byte(str)
     VALUE str;
@@ -2652,7 +2626,6 @@ Init_String()
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, 0);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);
-    rb_define_method(rb_cString, "to_a", rb_str_to_a, 0);
     rb_define_method(rb_cString, "to_s", rb_str_to_s, 0);
     rb_define_method(rb_cString, "to_str", rb_str_to_s, 0);
     rb_define_method(rb_cString, "inspect", rb_str_inspect, 0);

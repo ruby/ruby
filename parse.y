@@ -3007,11 +3007,8 @@ yylex()
       case ':':
 	c = nextc();
 	if (c == ':') {
-	    if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-		lex_state = EXPR_BEG;
-		return tCOLON3;
-	    }
-	    if (lex_state == EXPR_ARG && space_seen) {
+	    if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
+		(lex_state == EXPR_ARG && space_seen)) {
 		lex_state = EXPR_BEG;
 		return tCOLON3;
 	    }
@@ -3284,7 +3281,7 @@ yylex()
     tokfix();
 
     {
-	int result;
+	int result = 0;
 
 	switch (tok()[0]) {
 	  case '$':
@@ -3312,21 +3309,24 @@ yylex()
 		}
 	    }
 
-	    if (ISUPPER(tok()[0])) {
-		result = tCONSTANT;
-	    }
-	    else if (toklast() == '!' || toklast() == '?') {
+	    if (toklast() == '!' || toklast() == '?') {
 		result = tFID;
 	    }
 	    else {
-		result = tIDENTIFIER;
 		if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
 		    if ((c = nextc()) == '=' && !peek('=')) {
+			result = tIDENTIFIER;
 			tokadd(c);
 		    }
 		    else {
 			pushback(c);
 		    }
+		}
+		if (result == 0 && ISUPPER(tok()[0])) {
+		    result = tCONSTANT;
+		}
+		else {
+		    result = tIDENTIFIER;
 		}
 	    }
 	    if (lex_state == EXPR_BEG ||
@@ -3841,6 +3841,7 @@ arg_concat(node1, node2)
     NODE *node1;
     NODE *node2;
 {
+    if (!node2) return node1;
     return NEW_ARGSCAT(node1, node2);
 }
 
@@ -3854,7 +3855,7 @@ arg_add(node1, node2)
 	return list_append(node1, node2);
     }
     else {
-	return NEW_ARGSCAT(node1, node2);
+	return NEW_ARGSPUSH(node1, node2);
     }
 }
 

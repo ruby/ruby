@@ -239,6 +239,7 @@ search_method(klass, id, origin)
 {
     NODE *body;
 
+    if (!klass) return 0;
     while (!st_lookup(RCLASS(klass)->m_tbl, id, &body)) {
 	klass = RCLASS(klass)->super;
 	if (!klass) return 0;
@@ -2284,6 +2285,11 @@ rb_eval(self, node)
 			       rb_eval(self, node->nd_body));
 	break;
 
+      case NODE_ARGSPUSH:
+	result = rb_ary_push(rb_eval(self, node->nd_head),
+			     rb_eval(self, node->nd_body));
+	break;
+
       case NODE_CALL:
 	{
 	    VALUE recv;
@@ -3333,10 +3339,13 @@ rb_yield_0(val, self, klass, acheck)
 	!FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
 	struct RVarmap *vars = ruby_dyna_vars;
 	
-	do {
+	while (vars && vars->id != 0) {
 	    rb_gc_force_recycle((VALUE)vars);
 	    vars = vars->next;
-	} while (vars && vars->id != 0);
+	}
+	if (ruby_dyna_vars->id == 0) {
+	    rb_gc_force_recycle((VALUE)ruby_dyna_vars);
+	}
     }
     POP_VARS();
     ruby_block = block;
@@ -3379,7 +3388,10 @@ massign(self, node, val, check)
 
     if (val) {
 	if (TYPE(val) != T_ARRAY) {
-	    val = rb_Array(val);
+	    if (NIL_P(val))
+		val = rb_ary_new2(0);
+	    else
+		val = rb_ary_new3(1, val);
 	}
 	len = RARRAY(val)->len;
 	for (i=0; list && i<len; i++) {

@@ -1245,7 +1245,7 @@ rb_file_s_expand_path(argc, argv)
 	p = &buf[strlen(buf)];
 	while (p > buf && *(p - 1) == '/') p--;
     }
-    else if (isdirsep(*s)) {
+    else {
 	while (*s && isdirsep(*s)) {
 	    *p++ = '/';
 	    s++;
@@ -1267,7 +1267,8 @@ rb_file_s_expand_path(argc, argv)
 		    }
 		    else {
 			*++p = '.';
-			*++p = '.';
+			do *++p = '.'; while (*++s == '.');
+			--s;
 		    }
 		    break;
 		  case '/':
