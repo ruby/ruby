@@ -262,13 +262,13 @@ module FileUtils
   alias chdir cd
 
 
-  def uptodate?( new, *args )
-    verbose, = fu_parseargs(args, :verbose)
-    fu_output_message "newest? #{args.join ' '}" if verbose
+  def uptodate?( new, old_list, *options )
+    verbose, = fu_parseargs(options, :verbose)
+    fu_output_message "uptodate? #{new} #{old_list.join ' '}" if verbose
 
     return false unless FileTest.exist? new
     new_time = File.ctime(new)
-    args.each do |old|
+    old_list.each do |old|
       if FileTest.exist? old
         return false unless new_time > File.mtime(old)
       end
@@ -385,24 +385,23 @@ module FileUtils
   end
 
   def fu_copy_dir( src, dest, rel, preserve )
-    fu_preserve_attr( preserve, "#{src}/#{rel}",
-                                "#{dest}/#{rel}" ) {|s,d|
+    fu_preserve_attr(preserve, "#{src}/#{rel}", "#{dest}/#{rel}") {|s,d|
         dir = File.expand_path(d)   # to remove '/./'
         Dir.mkdir dir unless FileTest.directory? dir
     }
-    Dir.entries( "#{src}/#{rel}" ).each do |fn|
-      if FileTest.directory? File.join(src,rel,fn)
-        next if /\A\.\.?\z/ === fn
-        fu_copy_dir src, dest, "#{rel}/#{fn}", preserve
+    Dir.entries("#{src}/#{rel}").each do |fname|
+      if FileTest.directory? File.join(src,rel,fname)
+        next if /\A\.\.?\z/ === fname
+        fu_copy_dir src, dest, "#{rel}/#{fname}", preserve
       else
-        fu_p_copy File.join(src,rel,fn), File.join(dest,rel,fn), preserve
+        fu_p_copy File.join(src,rel,fname), File.join(dest,rel,fname), preserve
       end
     end
   end
   private :fu_copy_dir
 
   def fu_p_copy( src, dest, really )
-    fu_preserve_attr( really, src, dest ) {
+    fu_preserve_attr(really, src, dest) {
         copy_file src, dest
     }
   end
@@ -523,22 +522,20 @@ module FileUtils
     rm_r list, :force, *options
   end
 
-  def remove_file( fn, force = false )
-    first = true
+  def remove_file( fname, force = false )
+    first_time_p = true
     begin
-      File.unlink fn
+      File.unlink fname
     rescue Errno::ENOENT
-      force or raise
+      raise unless force
     rescue
-      # rescue dos?
-      begin
-        if first
-          first = false
-          File.chmod 0777, fn
-          retry
-        end
-      rescue
+      if first_time_p
+        # try once more for Windows
+        first_time_p = false
+        File.chmod 0777, fname
+        retry
       end
+      raise
     end
   end
 
@@ -546,14 +543,16 @@ module FileUtils
     Dir.foreach(dir) do |file|
       next if /\A\.\.?\z/ === file
       path = "#{dir}/#{file}"
-      if FileTest.directory? path then remove_dir path, force
-                                  else remove_file path, force
+      if FileTest.directory? path
+        remove_dir path, force
+      else
+        remove_file path, force
       end
     end
     begin
       Dir.rmdir dir
     rescue Errno::ENOENT
-      force or raise
+      raise unless force
     end
   end
 
@@ -565,7 +564,7 @@ module FileUtils
     sa = sb = nil
     st = File.stat(filea)
     bsize = fu_blksize(st.blksize)
-    File.size(fileb) == st.size or return true
+    return true unless File.size(fileb) == st.size
 
     File.open(filea, 'rb') {|a|
     File.open(fileb, 'rb') {|b|
@@ -591,10 +590,10 @@ module FileUtils
 
   def install( src, dest, mode, *options )
     noop, verbose, = fu_parseargs(options, :noop, :verbose)
-    fu_output_message "install #{[src,dest].flatten.join ' '}#{mode ? ' %o'%mode : ''}" if verbose
+    fu_output_message "install#{mode ? ' %o'%mode : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
 
-    fu_each_src_dest( src, dest ) do |s,d|
+    fu_each_src_dest(src, dest) do |s,d|
       unless FileTest.exist? d and cmp(s,d)
         remove_file d, true
         copy_file s, d
@@ -631,19 +630,19 @@ module FileUtils
 
   private
 
-  def fu_parseargs( opts, *flagdecl )
-    tab = {}
-    if opts.last == true or opts.last == false
-      tab[:verbose] = opts.pop
+  def fu_parseargs( optargs, *optdecl )
+    table = Hash.new(false)
+    if optargs.last == true or optargs.last == false
+      table[:verbose] = optargs.pop
     end
-    while Symbol === opts.last
-      tab[opts.pop] = true
+    optargs.each do |opt|
+      table[opt] = true
     end
 
-    flags = flagdecl.collect {|s| tab.delete(s) }
-    tab.empty? or raise ArgumentError, "wrong option :#{tab.keys.join(' :')}"
+    option_list = optdecl.map {|s| table.delete(s) }
+    raise ArgumentError, "wrong option #{table.keys.map {|o|o.inspect}.join(' ')}" unless table.empty?
 
-    flags
+    option_list
   end
 
 
@@ -658,8 +657,8 @@ module FileUtils
       dir = dest
       # FileTest.directory? dir or raise ArgumentError, "must be dir: #{dir}"
       dir += (dir[-1,1] == '/') ? '' : '/'
-      src.each do |fn|
-        yield fn, dir + File.basename(fn)
+      src.each do |fname|
+        yield fname, dir + File.basename(fname)
       end
     end
   end
@@ -737,7 +736,7 @@ module FileUtils
 
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include? 'verbose'
-      module_eval <<-End, __FILE__, __LINE__ + 1
+      module_eval(<<-End, __FILE__, __LINE__ + 1)
           def #{name}( *args )
             unless defined? @fileutils_verbose
               @fileutils_verbose = true
@@ -763,7 +762,7 @@ module FileUtils
 
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include? 'noop'
-      module_eval <<-End, __FILE__, __LINE__ + 1
+      module_eval(<<-End, __FILE__, __LINE__ + 1)
           def #{name}( *args )
             unless defined? @fileutils_nowrite
               @fileutils_nowrite = true
@@ -796,8 +795,8 @@ module FileUtils
     attr_accessor :preserve
 
     FileUtils::OPT_TABLE.each do |name, opts|
-      s = opts.collect {|i| "args.unshift :#{i} if @#{i}" }.join(' '*10+"\n")
-      module_eval <<-End, __FILE__, __LINE__ + 1
+      s = opts.map {|i| "args.unshift :#{i} if @#{i}" }.join(' '*10+"\n")
+      module_eval(<<-End, __FILE__, __LINE__ + 1)
           def #{name}( *args )
             #{s}
             super(*args)
