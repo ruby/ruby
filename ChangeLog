@@ -3,7 +3,7 @@ Thu Nov 18 18:41:08 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 	* test/ruby/test_stringchar.rb (test_bang): added.
 
 	* string.c (rb_str_upcase_bang, rb_str_capitalize_bang)
-	(rb_str_swapcase_bang): missing rb_str_modify().
+	(rb_str_swapcase_bang): missing rb_str_modify().  [ruby-dev:24915]
 
 Tue Nov 20 13:26:03 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
