@@ -5294,6 +5294,7 @@ parser_yylex(parser)
             if (!fallthru) {
                 ripper_dispatch_scan_event(parser, tIGNORED_NL);
             }
+            fallthru = Qfalse;
 #endif
 	    goto retry;
 	  default:
