@@ -783,6 +783,9 @@ case $os in
 		;;
 	-human)
 		;;
+	-beos)
+	        os=-beos
+		;;
 	-none)
 		;;
 	*)

@@ -14,6 +14,10 @@
 #include "node.h"
 #include "st.h"
 
+#ifdef USE_CWGUSI
+#include <stdio.h>
+#endif
+
 struct st_table *new_idhash();
 extern st_table *rb_class_tbl;
 
@@ -561,22 +565,32 @@ rb_define_attr(klass, name, read, write)
     rb_attr(klass, rb_intern(name), read, write, FALSE);
 }
 
+#ifdef __STDC__
+#include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
 #include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
 #include <ctype.h>
 
 int
+#ifdef __STDC__
+rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
+#else
 rb_scan_args(argc, argv, fmt, va_alist)
     int argc;
     VALUE *argv;
     char *fmt;
     va_dcl
+#endif
 {
     int n, i;
     char *p = fmt;
     VALUE *var;
     va_list vargs;
 
-    va_start(vargs);
+    va_init_list(vargs, fmt);
 
     if (*p == '*') {
 	var = va_arg(vargs, VALUE*);

@@ -23,6 +23,17 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+#ifdef __MWERKS__
+#include "node.h"
+void show_version();
+void show_copyright();
+#endif
+
+#ifdef USE_CWGUSI
+#include "macruby_missing.h"
+#endif
+
 #ifndef HAVE_STRING_H
 char *strchr();
 char *strrchr();
@@ -73,7 +84,7 @@ extern char *sourcefile;
 #define RUBY_SITE_LIB "/usr/local/lib/site_ruby"
 #endif
 
-#if defined(MSDOS) || defined(NT)
+#if defined(MSDOS) || defined(NT) || defined(__MACOS__)
 #define RUBY_LIB_SEP ';'
 #else
 #define RUBY_LIB_SEP ':'
@@ -529,7 +540,9 @@ load_file(fname, script)
 			argv = origargv;
 		    }
 		    argv[0] = path;
+#ifndef USE_CWGUSI
 		    execv(path, argv);
+#endif
 		    sourcefile = fname;
 		    sourceline = 1;
 		    Fatal("Can't exec %s", path);
@@ -721,6 +734,9 @@ ruby_prog_init()
     addpath(RUBY_LIB);
 #if defined(_WIN32) || defined(DJGPP)
     addpath(ruby_libpath());
+#endif
+#ifdef __MACOS__
+    setup_macruby_libpath();
 #endif
 
 #ifdef RUBY_ARCHLIB

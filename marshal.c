@@ -445,7 +445,7 @@ marshal_dump(argc, argv)
     w_byte(MARSHAL_MAJOR, &arg);
     w_byte(MARSHAL_MINOR, &arg);
 
-    rb_ensure(dump, &c_arg, dump_ensure, &arg);
+    rb_ensure(dump, (VALUE)&c_arg, dump_ensure, (VALUE)&arg);
 
     return port;
 }
@@ -846,7 +846,7 @@ marshal_load(argc, argv)
 	arg.data   = st_init_numtable();
 	if (NIL_P(proc)) arg.proc = 0;
 	else             arg.proc = proc;
-	v = rb_ensure(load, &arg, load_ensure, &arg);
+	v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);
     }
     else {
 	TypeError("Old marshal file format (can't read)");

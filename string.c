@@ -29,8 +29,6 @@ VALUE cString;
 #define STR_FREEZE FL_USER1
 #define STR_TAINT  FL_USER2
 #define STR_NO_ORIG FL_USER3
-void reg_prepare_re _((VALUE));
-void kcode_reset_option _((void));
 
 extern VALUE RS;
 

@@ -22,6 +22,13 @@
 #include <sys/un.h>
 #endif
 
+#ifdef USE_CWGUSI
+extern int fileno(FILE *stream); /* <unix.mac.h> */
+extern int thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /* thread.c */
+# include <sys/errno.h>
+# include <GUSI.h>
+#endif
+
 #if defined(THREAD) && defined(HAVE_FCNTL)
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
@@ -168,6 +175,7 @@ static VALUE
 bsock_getsockopt(sock, lev, optname)
     VALUE sock, lev, optname;
 {
+#if !defined(__BEOS__)
     int level, option, len;
     char *buf;
     OpenFile *fptr;
@@ -182,6 +190,9 @@ bsock_getsockopt(sock, lev, optname)
 	rb_sys_fail(fptr->path);
 
     return str_new(buf, len);
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -401,7 +412,11 @@ thread_connect(fd, sockaddr, len, type)
 #endif
 		FD_ZERO(&fds);
 		FD_SET(fd, &fds);
+#ifndef USE_CWGUSI
 		thread_select(fd+1, 0, &fds, 0, 0, 0);
+#else
+		thread_select(fd+1, 0, &fds, 0, 0);
+#endif
 		continue;
 #endif
 
@@ -446,7 +461,11 @@ open_inet(class, h, serv, type)
 	host = RSTRING(h)->ptr;
 	hostent = gethostbyname(host);
 	if (hostent == NULL) {
+#ifndef USE_CWGUSI
 	    hostaddr = inet_addr(host);
+#else
+	    hostaddr = inet_addr(host).s_addr;
+#endif
 	    if (hostaddr == -1) {
 		if (type == INET_SERVER && !strlen(host))
 		    hostaddr = INADDR_ANY;
@@ -484,12 +503,16 @@ open_inet(class, h, serv, type)
  	_servent.s_proto = "tcp";
 	servent = &_servent;
     }
+#ifdef __BEOS__
+    fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+#else
     protoent = getprotobyname(servent->s_proto);
     if (protoent == NULL) {
 	Raise(eSocket, "no such proto %s", servent->s_proto);
     }
 
     fd = socket(AF_INET, SOCK_STREAM, protoent->p_proto);
+#endif
 
     memset(&sockaddr, 0, sizeof(sockaddr));
     sockaddr.sin_family = AF_INET;
@@ -1060,8 +1083,10 @@ setup_domain_and_type(domain, dv, type, tv)
 	else if (strcmp(ptr, "AF_IMPLINK") == 0)
 	    *dv = AF_IMPLINK;
 #endif
+#ifdef PF_INET
 	else if (strcmp(ptr, "PF_INET") == 0)
 	    *dv = PF_INET;
+#endif
 #ifdef PF_UNIX
 	else if (strcmp(ptr, "PF_UNIX") == 0)
 	    *dv = PF_UNIX;
@@ -1474,7 +1499,9 @@ Init_socket()
     mConst = rb_define_module_under(cSocket, "Constants");
     sock_define_const("SOCK_STREAM", SOCK_STREAM);
     sock_define_const("SOCK_DGRAM", SOCK_DGRAM);
+#ifdef SOCK_RAW
     sock_define_const("SOCK_RAW", SOCK_RAW);
+#endif
 #ifdef SOCK_RDM
     sock_define_const("SOCK_RDM", SOCK_RDM);
 #endif
@@ -1486,7 +1513,9 @@ Init_socket()
 #endif
 
     sock_define_const("AF_INET", AF_INET);
+#ifdef PF_INET
     sock_define_const("PF_INET", PF_INET);
+#endif
 #ifdef AF_UNIX
     sock_define_const("AF_UNIX", AF_UNIX);
     sock_define_const("PF_UNIX", PF_UNIX);
@@ -1505,8 +1534,12 @@ Init_socket()
 #endif
 
     sock_define_const("MSG_OOB", MSG_OOB);
+#ifdef MSG_PEEK
     sock_define_const("MSG_PEEK", MSG_PEEK);
+#endif
+#ifdef MSG_DONTROUTE
     sock_define_const("MSG_DONTROUTE", MSG_DONTROUTE);
+#endif
 
     sock_define_const("SOL_SOCKET", SOL_SOCKET);
 #ifdef SOL_IP
@@ -1550,7 +1583,9 @@ Init_socket()
 #ifdef SO_RCVBUF
     sock_define_const("SO_RCVBUF", SO_RCVBUF);
 #endif
+#ifdef SO_KEEPALIVE
     sock_define_const("SO_KEEPALIVE", SO_KEEPALIVE);
+#endif
 #ifdef SO_OOBINLINE
     sock_define_const("SO_OOBINLINE", SO_OOBINLINE);
 #endif
@@ -1560,7 +1595,9 @@ Init_socket()
 #ifdef SO_PRIORITY
     sock_define_const("SO_PRIORITY", SO_PRIORITY);
 #endif
+#ifdef SO_LINGER
     sock_define_const("SO_LINGER", SO_LINGER);
+#endif
 
 #ifdef SOPRI_INTERACTIVE
     sock_define_const("SOPRI_INTERACTIVE", SOPRI_INTERACTIVE);

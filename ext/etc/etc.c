@@ -52,7 +52,9 @@ setup_passwd(pwd)
 		      str_new2(pwd->pw_passwd),
 		      INT2FIX(pwd->pw_uid),
 		      INT2FIX(pwd->pw_gid),
+#ifdef PW_GECOS
 		      str_new2(pwd->pw_gecos),
+#endif
 		      str_new2(pwd->pw_dir),
 		      str_new2(pwd->pw_shell),
 #ifdef PW_CHANGE

@@ -36,7 +36,9 @@ void *xrealloc();
 
 #include <stdio.h>
 #ifndef NT
-#include <sys/file.h>
+# ifndef USE_CWGUSI
+#  include <sys/file.h>
+# endif
 #else
 #include "missing/file.h"
 #endif
@@ -56,6 +58,16 @@ void *xrealloc();
 #ifndef NT
 char *strdup();
 char *getenv();
+#endif
+
+#ifdef __MACOS__
+# include <TextUtils.h>
+# include <CodeFragments.h>
+# include <Aliases.h>
+#endif
+
+#ifdef __BEOS__
+# include <image.h>
 #endif
 
 int eaccess();
@@ -81,7 +93,11 @@ init_funcname(buf, file)
 
     /* Load the file as an object one */
     for (p = file, slash = p-1; *p; p++) /* Find position of last '/' */
+#ifdef __MACOS__
+	if (*p == ':') slash = p;
+#else
 	if (*p == '/') slash = p;
+#endif
 
     sprintf(buf, FUNCNAME_PATTERN, slash + 1);
     for (p = buf; *p; p++) {         /* Delete suffix it it exists */
@@ -1327,6 +1343,93 @@ dln_load(file)
     }
 #endif
 
+#ifdef __BEOS__
+# define DLN_DEFINED
+    {
+      status_t err_stat;  /* BeOS error status code */
+      image_id img_id;    /* extention module unique id */
+      void (*init_fct)(); /* initialize function for extention module */
+
+      /* load extention module */
+      img_id = load_add_on(file);
+      if (img_id <= 0) {
+	LoadError("Failed to load %.200s", file);
+      }
+      
+      /* find symbol for module initialize function. */
+	  /* The Be Book KernelKit Images section described to use
+		 B_SYMBOL_TYPE_TEXT for symbol of function, not
+		 B_SYMBOL_TYPE_CODE. Why ? */
+	  /* strcat(init_fct_symname, "__Fv"); */  /* parameter nothing. */
+	  /* "__Fv" dont need! The Be Book Bug ? */
+      err_stat = get_image_symbol(img_id, buf,
+				  B_SYMBOL_TYPE_TEXT, &init_fct);
+
+      if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {
+	unload_add_on(img_id);
+	LoadError("Failed to lookup Init function %.200s", file);
+      }
+      else if (B_NO_ERROR != err_stat) {
+	char errmsg[] = "Internal of BeOS version. %.200s (symbol_name = %s)";
+	unload_add_on(img_id);
+	LoadError(errmsg, strerror(err_stat), buf);
+      }
+
+      /* call module initialize function. */
+      (*init_fct)();
+      return;
+    }
+#endif /* __BEOS__*/
+
+#ifdef __MACOS__
+# define DLN_DEFINED
+    {
+      OSErr err;
+      FSSpec libspec;
+      CFragConnectionID connID;
+      Ptr mainAddr;
+      char errMessage[1024];
+      Boolean isfolder, didsomething;
+      Str63 fragname;
+      Ptr symAddr;
+      CFragSymbolClass class;
+      void (*init_fct)();
+      char fullpath[MAXPATHLEN];
+      extern LoadError();
+
+      strcpy(fullpath, file);
+
+      /* resolve any aliases to find the real file */
+      c2pstr(fullpath);
+      (void)FSMakeFSSpec(0, 0, fullpath, &libspec);
+      err = ResolveAliasFile(&libspec, 1, &isfolder, &didsomething);
+      if ( err ) {
+	LoadError("Unresolved Alias - %s", file);
+      }
+
+      /* Load the fragment (or return the connID if it is already loaded */
+      fragname[0] = 0;
+      err = GetDiskFragment(&libspec, 0, 0, fragname, 
+			    kLoadCFrag, &connID, &mainAddr,
+			    errMessage);
+      if ( err ) {
+	p2cstr(errMessage);
+	LoadError("%s - %s",errMessage , file);
+      }
+
+      /* Locate the address of the correct init function */
+      c2pstr(buf);
+      err = FindSymbol(connID, buf, &symAddr, &class);
+      if ( err ) {
+	LoadError("Unresolved symbols - %s" , file);
+      }
+	
+      init_fct = (void (*)())symAddr;
+      (*init_fct)();
+      return;
+    }
+#endif /* __MACOS__ */
+
 #ifndef DLN_DEFINED
     rb_notimplement("dynamic link not supported");
 #endif
@@ -1409,6 +1512,7 @@ dln_find_1(fname, path, exe_flag)
     conv_to_posix_path(path, rubypath);
     path = rubypath;
 #endif
+#ifndef __MACOS__
     if (fname[0] == '/') return fname;
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;
@@ -1418,6 +1522,7 @@ dln_find_1(fname, path, exe_flag)
     if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
       return fname;
 #endif
+#endif /* __MACOS__ */
 
     for (dp = path;; dp = ++ep) {
 	register int l;
@@ -1425,7 +1530,7 @@ dln_find_1(fname, path, exe_flag)
 	int fspace;
 
 	/* extract a component */
-#if !defined(MSDOS)  && !defined(NT) && !defined(__human68k__)
+#if !defined(MSDOS)  && !defined(NT) && !defined(__human68k__) && !defined(__MACOS__)
 	ep = strchr(dp, ':');
 #else
 	ep = strchr(dp, ';');
@@ -1473,7 +1578,11 @@ dln_find_1(fname, path, exe_flag)
 
 	    /* add a "/" between directory and filename */
 	    if (ep[-1] != '/')
+#ifdef __MACOS__
+		*bp++ = ':';
+#else
 		*bp++ = '/';
+#endif
 	}
 
 	/* now append the file name */

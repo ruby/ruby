@@ -13,6 +13,11 @@
 #include "ruby.h"
 #include <sys/types.h>
 
+#ifdef USE_CWGUSI
+int gettimeofday(struct timeval*, struct timezone*);
+int strcasecmp(char*, char*);
+#endif
+
 #include <time.h>
 #ifndef NT
 #ifdef HAVE_SYS_TIME_H

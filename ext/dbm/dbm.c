@@ -15,6 +15,9 @@
 #include <ndbm.h>
 #include <fcntl.h>
 #include <errno.h>
+#ifdef USE_CWGUSI
+# include <sys/errno.h>
+#endif
 
 VALUE cDBM;
 
@@ -331,7 +334,7 @@ fdbm_store(obj, keystr, valstr)
 #ifdef HAVE_DBM_CLAERERR
 	dbm_clearerr(dbm);
 #endif
-	if (errno == EPERM) rb_sys_fail(Qnil);
+	if (errno == EPERM) rb_sys_fail(0);
 	Fail("dbm_store failed");
     }
 

@@ -728,6 +728,15 @@ EOF
 	        echo mips-unknown-sysv${UNAME_RELEASE}
 	fi
         exit 0 ;;
+    DS/90*:*:*:V20*)
+  	echo sparc-fujitsu-uxpds
+  	exit 0 ;;
+    BeBox:BeOS:*:*)
+        echo powerpc-be-beos
+	exit 0 ;;
+    BeMac:BeOS:*:*)
+        echo powerpc-apple-beos
+	exit 0 ;;
 esac
 
 #echo '(No uname command or uname output not recognized.)' 1>&2

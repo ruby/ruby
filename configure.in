@@ -76,6 +76,7 @@ dnl Checks for libraries.
 case "$host_os" in
 nextstep*)	;;
 human*)		;;
+beos*)		;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)
@@ -87,7 +88,8 @@ AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_CHECK_HEADERS(stdlib.h unistd.h limits.h sys/file.h sys/ioctl.h pwd.h \
 		 sys/select.h sys/time.h sys/times.h sys/param.h sys/wait.h\
-		 syscall.h a.out.h string.h utime.h memory.h)
+		 syscall.h a.out.h string.h utime.h memory.h\
+		 varargs.h stdarg.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -114,7 +116,7 @@ AC_CHECK_FUNCS(fmod killpg random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
 	      setpgrp2 getpgid getgroups getpriority\
-	      dlopen sigprocmask sigaction _setjmp)
+	      dlopen sigprocmask sigaction _setjmp setpgrp)
 if test "$ac_cv_func_strftime" = no; then
     AC_STRUCT_TIMEZONE
     AC_TRY_LINK([],
@@ -207,6 +209,7 @@ fi
 
 if test "$ac_cv_func_getpwent" = yes; then
   AC_MSG_CHECKING(struct passwd)
+  AC_EGREP_HEADER(pw_gecos, pwd.h, AC_DEFINE(PW_GECOS))
   AC_EGREP_HEADER(pw_change, pwd.h, AC_DEFINE(PW_CHANGE))
   AC_EGREP_HEADER(pw_quota, pwd.h, AC_DEFINE(PW_QUOTA))
   AC_EGREP_HEADER(pw_age, pwd.h, AC_DEFINE(PW_AGE))
@@ -316,6 +319,9 @@ if test "$with_dln_a_out" != yes; then
 	human*)		DLDFLAGS=''
 			LDSHARED=''
 			LDFLAGS='' ;;
+	beos*) 		LDSHARED="mwld -xms"
+			DLDFLAGS="-f ruby.exp"
+			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
@@ -449,6 +455,10 @@ fi
 
 if test "$fat_binary" = yes ; then
   CFLAGS="$CFLAGS -pipe $ARCH_FLAG"
+fi
+
+if test "$host_os" = "beos"; then
+  CFLAGS="$CFLAGS -relax_pointers"
 fi
 
 ri_prefix=

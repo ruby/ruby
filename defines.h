@@ -13,7 +13,7 @@
 #define RUBY
 
 /* define EUC/SJIS for default kanji-code */
-#if defined(MSDOS) || defined(__CYGWIN32__) || defined(__human68k__)
+#if defined(MSDOS) || defined(__CYGWIN32__) || defined(__human68k__) || defined(__MACOS__)
 #undef EUC
 #define SJIS
 #else

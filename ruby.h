@@ -13,6 +13,10 @@
 #ifndef RUBY_H
 #define RUBY_H
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "config.h"
 
 #include "defines.h"
@@ -27,6 +31,10 @@
 # include <strings.h>
 #endif
 
+#if defined(__MWERKS__) && defined(__cplusplus)
+# define NEED_PROTO
+#endif
+
 #ifndef __STDC__
 # define volatile
 # ifdef __GNUC__
@@ -34,9 +42,13 @@
 # else
 #  define const
 # endif
-# define _(args) ()
 #else
+# define NEED_PROTO
+#endif
+#ifdef NEED_PROTO
 # define _(args) args
+#else
+# define _(args) ()
 #endif
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
@@ -102,11 +114,13 @@ VALUE int2inum _((long));
 #define FIXABLE(f) (POSFIXABLE(f) && NEGFIXABLE(f))
 
 /* special contants - i.e. non-zero and non-fixnum constants */
-#undef FALSE 
-#undef TRUE
-#define FALSE  0
-#define TRUE   2
-#define NIL    4
+#ifndef MACRUBY_PUBLIC_INTERFACE
+# undef FALSE 
+# undef TRUE
+# define FALSE  0
+# define TRUE   2
+# define NIL    4
+#endif
 #define Qfalse 0
 #define Qtrue  2
 #define Qnil   4
@@ -114,7 +128,11 @@ VALUE int2inum _((long));
 # define RTEST(v) rb_test_false_or_nil((VALUE)(v))
 #define NIL_P(v) ((VALUE)(v) == Qnil)
 
+#ifdef __MACOS__ /* name conflict, AERegistory.h */
+extern VALUE cRubyObject;
+#else
 extern VALUE cObject;
+#endif
 
 VALUE rb_class_of _((VALUE));
 #define CLASS_OF(v) rb_class_of((VALUE)(v))
@@ -334,22 +352,36 @@ rb_type(VALUE obj)
 {
     if (FIXNUM_P(obj)) return T_FIXNUM;
     if (obj == Qnil) return T_NIL;
+#ifdef MACRUBY_PUBLIC_INTERFACE
+    if (obj == RubyFALSE) return T_FALSE;
+    if (obj == RubyTRUE) return T_TRUE;
+#else
     if (obj == FALSE) return T_FALSE;
     if (obj == TRUE) return T_TRUE;
-
+#endif
     return BUILTIN_TYPE(obj);
 }
 
 extern __inline__ int
 rb_special_const_p(VALUE obj)
 {
+#ifdef MACRUBY_PUBLIC_INTERFACE
+    return (FIXNUM_P(obj)||obj == Qnil||obj == RubyFALSE||obj == RubyTRUE)?RubyTRUE:RubyFALSE;
+#else
     return (FIXNUM_P(obj)||obj == Qnil||obj == FALSE||obj == TRUE)?TRUE:FALSE;
+#endif
 }
 
 extern __inline__ int
 rb_test_false_or_nil(VALUE v)
 {
+#ifdef MACRUBY_PUBLIC_INTERFACE
+    return (v != Qnil) && (v != RubyFALSE);
+    return (v != Qnil) && (v != RubyFALSE);
+#else
     return (v != Qnil) && (v != FALSE);
+    return (v != Qnil) && (v != FALSE);
+#endif
 }
 #else
 int rb_type _((VALUE));
@@ -403,8 +435,8 @@ char *rb_class2name _((VALUE));
 void rb_p _((VALUE));
 
 VALUE rb_eval_string _((char*));
-VALUE rb_funcall();
-int rb_scan_args();
+VALUE rb_funcall _((VALUE, ID, int, ...));
+int rb_scan_args _((int, VALUE*, char*, ...));
 
 VALUE rb_iv_get _((VALUE, char *));
 VALUE rb_iv_set _((VALUE, char *, VALUE));
@@ -419,41 +451,27 @@ extern VALUE verbose, debug;
 int rb_safe_level _((void));
 void rb_set_safe_level _((int));
 
-#ifdef __GNUC__
-typedef void voidfn ();
-volatile voidfn Raise;
-volatile voidfn Fail;
-volatile voidfn Fatal;
-volatile voidfn Bug;
-volatile voidfn rb_sys_fail;
-volatile voidfn rb_iter_break;
-volatile voidfn rb_exit;
-volatile voidfn rb_fatal;
-volatile voidfn rb_raise;
-volatile voidfn rb_notimplement;
-#else
-void Raise();
-void Fail();
-void Fatal();
-void Bug();
+void Raise _((VALUE, char*, ...));
+void Fail _((char*, ...));
+void Fatal _((char*, ...));
+void Bug _((char*, ...));
 void rb_sys_fail _((char *));
 void rb_iter_break _((void));
 void rb_exit _((int));
 void rb_raise _((VALUE));
 void rb_fatal _((VALUE));
 void rb_notimplement _((void));
-#endif
 
-void Error();
-void Warn();
-void Warning();			/* reports if `-w' specified */
+void Error _((char*, ...));
+void Warn _((char*, ...));
+void Warning _((char*, ...));		/* reports if `-w' specified */
 
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));
 int iterator_p _((void));
-VALUE rb_iterate();
-VALUE rb_rescue();
-VALUE rb_ensure();
+VALUE rb_iterate _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
+VALUE rb_rescue _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
+VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 
 #include "intern.h"
 
@@ -462,4 +480,8 @@ VALUE rb_ensure();
 static char *libs_to_be_linked[] = { EXTLIB, 0 };
 #endif
 
+#endif
+
+#if defined(__cplusplus)
+}  /* extern "C" { */
 #endif

@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 #include <math.h>
+#include <stdio.h>
 
 static ID coerce;
 static ID to_i;
@@ -42,12 +43,14 @@ num_coerce(x, y)
     return assoc_new(rb_Float(x), rb_Float(y));
 }
 
+static VALUE
 coerce_body(x)
     VALUE *x;
 {
     return rb_funcall(x[1], coerce, 1, x[0]);
 }
 
+static VALUE
 coerce_rescue(x)
     VALUE *x;
 {
@@ -66,7 +69,7 @@ do_coerce(x, y)
     VALUE a[2];
 
     a[0] = *x; a[1] = *y;
-    ary = rb_rescue(coerce_body, a, coerce_rescue, a);
+    ary = rb_rescue(coerce_body, (VALUE)a, coerce_rescue, (VALUE)a);
     if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
 	TypeError("coerce must return [x, y]");
     }

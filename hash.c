@@ -156,7 +156,7 @@ hash_delete_nil(key, value)
     return ST_CONTINUE;
 }
 
-static void
+static VALUE
 hash_foreach_ensure(hash)
     VALUE hash;
 {
@@ -774,6 +774,8 @@ hash_update(hash1, hash2)
     return hash1;
 }
 
+#ifndef __MACOS__ /* environment variables nothing on MacOS. */
+
 int env_path_tainted();
 static int path_tainted = -1;
 
@@ -1131,6 +1133,8 @@ env_to_hash(obj)
     return hash;
 }
 
+#endif  /* ifndef __MACOS__  environment variables nothing on MacOS. */
+
 void
 Init_Hash()
 {
@@ -1188,6 +1192,7 @@ Init_Hash()
     rb_define_method(cHash,"key?", hash_has_key, 1);
     rb_define_method(cHash,"value?", hash_has_value, 1);
 
+#ifndef __MACOS__ /* environment variables nothing on MacOS. */
     envtbl = obj_alloc(cObject);
     rb_extend_object(envtbl, mEnumerable);
 
@@ -1216,4 +1221,8 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"to_hash", env_to_hash, 0);
 
     rb_define_global_const("ENV", envtbl);
+#else /* __MACOS__ */
+	envtbl = hash_s_new(0, NULL, cHash);
+    rb_define_global_const("ENV", envtbl);
+#endif  /* ifndef __MACOS__  environment variables nothing on MacOS. */
 }

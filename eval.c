@@ -28,11 +28,27 @@ char *strrchr _((char*,char));
 #include <unistd.h>
 #endif
 
+#ifdef __BEOS__
+#include <net/socket.h>
+#endif
+
+#ifdef USE_CWGUSI
+#include <sys/stat.h>
+#include <sys/errno.h>
+#include <compat.h>
+#endif
+
 #ifndef setjmp
 #ifdef HAVE__SETJMP
 #define setjmp(env) _setjmp(env)
 #define longjmp(env,val) _longjmp(env,val)
 #endif
+#endif
+
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__MACOS__)
+#define RUBY_LIB_SEP ";"
+#else
+#define RUBY_LIB_SEP ":"
 #endif
 
 VALUE cProc;
@@ -800,7 +816,7 @@ error_print()
     }
 }
 
-#ifndef NT
+#if !defined(NT) && !defined(__MACOS__)
 extern char **environ;
 #endif
 char **origenviron;
@@ -821,7 +837,11 @@ ruby_init()
     the_frame = top_frame = &frame;
     the_iter = &iter;
 
+#ifdef __MACOS__
+    origenviron = 0;
+#else
     origenviron = environ;
+#endif
 
     init_heap();
     PUSH_SCOPE();
@@ -2664,10 +2684,6 @@ rb_iter_break()
     JUMP_TAG(TAG_BREAK);
 }
 
-#ifdef __GNUC__
-static volatile voidfn rb_longjmp;
-#endif
-
 static VALUE make_backtrace _((void));
 
 static void
@@ -3085,7 +3101,7 @@ rb_rescue(b_proc, data1, r_proc, data2)
 VALUE
 rb_ensure(b_proc, data1, e_proc, data2)
     VALUE (*b_proc)();
-    void (*e_proc)();
+    VALUE (*e_proc)();
     VALUE data1, data2;
 {
     int state;
@@ -3589,14 +3605,24 @@ f_send(argc, argv, recv)
 }
 
 
+#ifdef __STDC__
+#include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
 #include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
 
 VALUE
+#ifdef __STDC__
+rb_funcall(VALUE recv, ID mid, int n, ...)
+#else
 rb_funcall(recv, mid, n, va_alist)
     VALUE recv;
     ID mid;
     int n;
     va_dcl
+#endif
 {
     va_list ar;
     VALUE *argv;
@@ -3606,7 +3632,7 @@ rb_funcall(recv, mid, n, va_alist)
 
 	argv = ALLOCA_N(VALUE, n);
 
-	va_start(ar);
+	va_init_list(ar, n);
 	for (i=0;i<n;i++) {
 	    argv[i] = va_arg(ar, VALUE);
 	}
@@ -3993,10 +4019,10 @@ is_absolute_path(path)
     char *path;
 {
     if (path[0] == '/') return 1;
-#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+# if defined(MSDOS) || defined(NT) || defined(__human68k__)
     if (path[0] == '\\') return 1;
     if (strlen(path) > 2 && path[1] == ':') return 1;
-#endif
+# endif
     return 0;
 }
 
@@ -4023,11 +4049,7 @@ find_file(file)
 	for (i=0;i<RARRAY(rb_load_path)->len;i++) {
 	    Check_SafeStr(RARRAY(rb_load_path)->ptr[i]);
 	}
-#if !defined(MSDOS) && !defined(NT) && !defined(__human68k__)
-	vpath = ary_join(rb_load_path, str_new2(":"));
-#else
-	vpath = ary_join(rb_load_path, str_new2(";"));
-#endif
+	vpath = ary_join(rb_load_path, str_new2(RUBY_LIB_SEP));
 	Check_SafeStr(vpath);
 	path = RSTRING(vpath)->ptr;
     }
@@ -4048,9 +4070,11 @@ f_load(obj, fname)
     TMP_PROTECT;
 
     Check_SafeStr(fname);
+#ifndef __MACOS__
     if (RSTRING(fname)->ptr[0] == '~') {
 	fname = file_s_expand_path(0, fname);
     }
+#endif
     file = find_file(RSTRING(fname)->ptr);
     if (!file) LoadError("No such file to load -- %s", RSTRING(fname)->ptr);
 
@@ -6498,3 +6522,4 @@ return_check()
     }
 #endif
 }
+

@@ -39,7 +39,7 @@ range_s_new(klass, first, last)
     VALUE args[2];
 
     args[0] = first; args[1] = last;
-    rb_rescue(range_check, args, range_failed, 0);
+    rb_rescue(range_check, (VALUE)args, range_failed, 0);
 
     obj = obj_alloc(klass);
 
@@ -111,7 +111,7 @@ range_each(obj)
 	data.first = b;
 	data.last = e;
 
-	rb_iterate(range_upto, &data, rb_yield, 0);
+	rb_iterate(range_upto, (VALUE)&data, rb_yield, 0);
     }
 
     return Qnil;

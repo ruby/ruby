@@ -61,6 +61,9 @@ md5_clone(obj)
 
 static VALUE
 md5_new(argc, argv, class)
+    int argc;
+    VALUE* argv;
+    VALUE class;
 {
     int i;
     VALUE arg, obj;

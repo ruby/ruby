@@ -81,12 +81,22 @@ ary_new()
     return ary_new2(ARY_DEFAULT_SIZE);
 }
 
+#ifdef __STDC__
+#include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
 #include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
 
 VALUE
+#ifdef __STDC__
+ary_new3(int n, ...)
+#else
 ary_new3(n, va_alist)
     int n;
     va_dcl
+#endif
 {
     va_list ar;
     VALUE ary;
@@ -97,7 +107,7 @@ ary_new3(n, va_alist)
     }
     ary = ary_new2(n<ARY_DEFAULT_SIZE?ARY_DEFAULT_SIZE:n);
 
-    va_start(ar);
+    va_init_list(ar, n);
     for (i=0; i<n; i++) {
 	RARRAY(ary)->ptr[i] = va_arg(ar, VALUE);
     }

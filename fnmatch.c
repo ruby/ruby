@@ -20,6 +20,10 @@ Cambridge, MA 02139, USA.  */
 #include <errno.h>
 #include "fnmatch.h"
 
+#ifdef USE_CWGUSI
+#include <sys/errno.h>
+#endif
+
 #if !defined (__GNU_LIBRARY__) && !defined (STDC_HEADERS)
 #  if !defined (errno)
 extern int errno;

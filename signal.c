@@ -13,12 +13,21 @@
 #include <signal.h>
 #include <stdio.h>
 
-#ifndef NSIG
-#ifdef DJGPP
-#define NSIG SIGMAX
-#else
-#define NSIG (_SIGMAX + 1)      /* For QNX */
+#ifdef __BEOS__
+#undef SIGBUS
 #endif
+
+#ifndef NSIG
+# ifdef DJGPP
+#  define NSIG SIGMAX
+# else
+#  define NSIG (_SIGMAX + 1)      /* For QNX */
+# endif
+#endif
+
+#ifdef USE_CWGUSI
+# undef NSIG
+# define NSIG __signal_max
 #endif
 
 static struct signals {
@@ -175,6 +184,9 @@ f_kill(argc, argv)
     int argc;
     VALUE *argv;
 {
+#ifdef USE_CWGUSI
+    rb_notimplement();
+#else
     int sig;
     int i;
     char *s;
@@ -237,6 +249,7 @@ f_kill(argc, argv)
 	}
     }
     return INT2FIX(i-1);
+#endif /* USE_CWGUSI */
 }
 
 static VALUE trap_list[NSIG];
@@ -248,12 +261,14 @@ int prohibit_interrupt;
 void
 gc_mark_trap_list()
 {
+#ifndef MACOS_UNUSE_SIGNAL
     int i;
 
     for (i=0; i<NSIG; i++) {
 	if (trap_list[i])
 	    gc_mark(trap_list[i]);
     }
+#endif /* MACOS_UNUSE_SIGNAL */
 }
 
 #ifdef POSIX_SIGNAL
@@ -322,13 +337,16 @@ sigsegv(sig)
 void
 rb_trap_exit()
 {
+#ifndef MACOS_UNUSE_SIGNAL
     if (trap_list[0])
 	rb_eval_cmd(trap_list[0], ary_new3(1, INT2FIX(0)));
+#endif
 }
 
 void
 rb_trap_exec()
 {
+#ifndef MACOS_UNUSE_SIGNAL
     int i;
 
     for (i=0; i<NSIG; i++) {
@@ -341,11 +359,12 @@ rb_trap_exec()
 	    rb_trap_eval(trap_list[i], i);
 	}
     }
+#endif /* MACOS_UNUSE_SIGNAL */
     trap_pending = 0;
 }
 
 struct trap_arg {
-#ifndef NT
+#if !defined(NT) && !defined(USE_CWGUSI)
 # ifdef HAVE_SIGPROCMASK
     sigset_t mask;
 # else
@@ -458,7 +477,7 @@ trap(arg)
 
     trap_list[sig] = command;
     /* enable at least specified signal. */
-#ifndef NT
+#if !defined(NT) && !defined(USE_CWGUSI)
 #ifdef HAVE_SIGPROCMASK
     sigdelset(&arg->mask, sig);
 #else
@@ -468,8 +487,8 @@ trap(arg)
     return old;
 }
 
-#ifndef NT
-static void
+#if !defined(NT) && !defined(USE_CWGUSI)
+static VALUE
 trap_ensure(arg)
     struct trap_arg *arg;
 {
@@ -515,7 +534,7 @@ f_trap(argc, argv)
 	arg.cmd = argv[1];
     }
 
-#ifndef NT
+#if !defined(NT) && !defined(USE_CWGUSI)
     /* disable interrupt */
 # ifdef HAVE_SIGPROCMASK
     sigfillset(&arg.mask);
@@ -524,7 +543,7 @@ f_trap(argc, argv)
     arg.mask = sigblock(~0);
 # endif
 
-    return rb_ensure(trap, &arg, trap_ensure, &arg);
+    return rb_ensure(trap, (VALUE)&arg, trap_ensure, (VALUE)&arg);
 #else
     return trap(&arg);
 #endif
@@ -533,6 +552,7 @@ f_trap(argc, argv)
 void
 Init_signal()
 {
+#ifndef MACOS_UNUSE_SIGNAL
     extern VALUE mKernel;
 
     rb_define_global_function("trap", f_trap, -1);
@@ -547,4 +567,5 @@ Init_signal()
 #ifdef SIGSEGV
     signal(SIGSEGV, sigsegv);
 #endif
+#endif /* MACOS_UNUSE_SIGNAL */
 }

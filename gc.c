@@ -19,6 +19,9 @@
 #include <stdio.h>
 #include <setjmp.h>
 
+void re_free_registers _((struct re_registers*));
+void io_fptr_finalize _((struct OpenFile*));
+
 #ifndef setjmp
 #ifdef HAVE__SETJMP
 #define setjmp(env) _setjmp(env)

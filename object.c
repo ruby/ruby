@@ -15,7 +15,11 @@
 #include <stdio.h>
 
 VALUE mKernel;
+#ifdef __MACOS__ /* name conflict AERegistory.h */
+VALUE cRubyObject;
+#else
 VALUE cObject;
+#endif
 VALUE cModule;
 VALUE cClass;
 extern VALUE cFixnum;
@@ -776,7 +780,7 @@ rb_convert_type(val, type, tname, method)
     arg1.val = arg2.val = val;
     arg1.s = method;
     arg2.s = tname;
-    val = rb_rescue(to_type, &arg1, fail_to_type, &arg2);
+    val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
     Check_Type(val, type);
     return val;
 }

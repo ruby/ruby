@@ -11,6 +11,11 @@
 #include <tcl.h>
 #include <tk.h>
 
+#ifdef __MACOS__
+# include <tkMac.h>
+# include <Quickdraw.h>
+#endif
+
 /* for debug */
 
 #define DUMP1(ARG1) if (debug) { fprintf(stderr, "tcltklib: %s\n", ARG1);}
@@ -112,7 +117,7 @@ ip_ruby(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
     DUMP2("rb_eval_string(%s)", argv[1]);
     old_trapflg = trap_immediate;
     trap_immediate = 0;
-    res = rb_rescue(rb_eval_string, argv[1], ip_eval_rescue, &failed);
+    res = rb_rescue(rb_eval_string, (VALUE)argv[1], ip_eval_rescue, (VALUE)&failed);
     trap_immediate = old_trapflg;
 
     if (failed) {
@@ -253,6 +258,15 @@ ip_retval(VALUE self)
     return (INT2FIX(ptr->return_value));
 }
 
+#ifdef __MACOS__
+static void
+_macinit()
+{
+  tcl_macQdPtr = &qd; /* setup QuickDraw globals */
+  Tcl_MacSetEventProc(TkMacConvertEvent); /* setup event handler */
+}
+#endif
+
 /*---- initialization ----*/
 void Init_tcltklib()
 {
@@ -268,6 +282,10 @@ void Init_tcltklib()
     rb_define_method(ip, "_invoke", ip_invoke, -1);
     rb_define_method(ip, "_return_value", ip_retval, 0);
     rb_define_method(ip, "mainloop", lib_mainloop, 0);
+
+#ifdef __MACOS__
+    _macinit();
+#endif
 
     /*---- initialize tcl/tk libraries ----*/
     /* from Tk_Main() */

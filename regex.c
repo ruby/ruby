@@ -32,6 +32,10 @@
 #include <ctype.h>
 #include <sys/types.h>
 
+#ifdef __MWERKS__
+#include "ruby.h"
+#endif
+
 #include "config.h"
 #include "defines.h"
 

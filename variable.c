@@ -13,6 +13,10 @@
 #include "node.h"
 #include "st.h"
 
+#ifdef USE_CWGUSI
+char* strdup(char*);
+#endif
+
 static st_table *rb_global_tbl;
 st_table *rb_class_tbl;
 #define global_tbl rb_global_tbl
@@ -590,7 +594,7 @@ struct trace_data {
     VALUE val;
 };
     
-static void
+static VALUE
 trace_ev(data)
     struct trace_data *data;
 {
@@ -602,7 +606,7 @@ trace_ev(data)
     }
 }
 
-static void
+static VALUE
 trace_en(entry)
     struct global_entry *entry;
 {
@@ -627,7 +631,7 @@ rb_gvar_set(entry, val)
 	entry->block_trace = 1;
 	trace.trace = entry->trace;
 	trace.val = val;
-	rb_ensure(trace_ev, &trace, trace_en, entry);
+	rb_ensure(trace_ev, (VALUE)&trace, trace_en, (VALUE)entry);
     }
     return val;
 }

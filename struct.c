@@ -10,6 +10,10 @@
 
 #include "ruby.h"
 
+#ifdef USE_CWGUSI
+#include <stdio.h>
+#endif
+
 ID rb_frame_last_func();
 VALUE cStruct;
 extern VALUE mEnumerable;
@@ -161,12 +165,22 @@ make_struct(name, member, klass)
     return nstr;
 }
 
+#ifdef __STDC__
+#include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
 #include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
 
 VALUE
+#ifdef __STDC__
+struct_define(char *name, ...)
+#else
 struct_define(name, va_alist)
     char *name;
     va_dcl
+#endif
 {
     va_list ar;
     VALUE nm, ary;
@@ -175,7 +189,7 @@ struct_define(name, va_alist)
     nm = str_new2(name);
     ary = ary_new();
 
-    va_start(ar);
+    va_init_list(ar, name);
     while (mem = va_arg(ar, char*)) {
 	ID slot = rb_intern(mem);
 	ary_push(ary, INT2FIX(slot));
@@ -235,9 +249,13 @@ struct_alloc(klass, values)
 }
 
 VALUE
+#ifdef __STDC__
+struct_new(VALUE klass, ...)
+#else
 struct_new(klass, va_alist)
     VALUE klass;
     va_dcl
+#endif
 {
     VALUE val, mem;
     int size;
@@ -246,7 +264,7 @@ struct_new(klass, va_alist)
     val = rb_iv_get(klass, "__size__");
     size = FIX2INT(val); 
     mem = ary_new();
-    va_start(args);
+    va_init_list(args, klass);
     while (size--) {
 	val = va_arg(args, VALUE);
 	ary_push(mem, val);

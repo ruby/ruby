@@ -6,6 +6,10 @@ static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible";
 #include <stdio.h>
 #include "st.h"
 
+#ifdef USE_CWGUSI
+#include <stdlib.h>
+#endif
+
 #define ST_DEFAULT_MAX_DENSITY 5
 #define ST_DEFAULT_INIT_TABLE_SIZE 11
 

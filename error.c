@@ -13,7 +13,18 @@
 #include "ruby.h"
 #include "env.h"
 #include <stdio.h>
+#ifdef __STDC__
+#include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
 #include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
+
+#ifdef USE_CWGUSI
+#include <sys/errno.h>
+int sys_nerr = 256;
+#endif
 
 extern char *sourcefile;
 extern int   sourceline;
@@ -34,28 +45,7 @@ err_sprintf(buf, fmt, args)
     }
 }
 
-static void
-err_append(s)
-    char *s;
-{
-    extern VALUE errinfo;
-
-    if (rb_in_eval) {
-	if (NIL_P(errinfo)) {
-	    errinfo = str_new2(s);
-	}
-	else {
-	    str_cat(errinfo, "\n", 1);
-	    str_cat(errinfo, s, strlen(s));
-	}
-    }
-    else {
-	fputs(s, stderr);
-	fputs("\n", stderr);
-	fflush(stderr);
-    }
-}
-
+static void err_append _((char*));
 static void
 err_print(fmt, args)
     char *fmt;
@@ -68,52 +58,68 @@ err_print(fmt, args)
 }
 
 void
+#ifdef __STDC__
+Error(char *fmt, ...)
+#else
 Error(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     va_list args;
 
-    va_start(args);
+    va_init_list(args, fmt);
     err_print(fmt, args);
     va_end(args);
     nerrs++;
 }
 
 void
+#ifdef __STDC__
+Error_Append(char *fmt, ...)
+#else
 Error_Append(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     va_list args;
     char buf[BUFSIZ];
 
-    va_start(args);
+    va_init_list(args, fmt);
     vsprintf(buf, fmt, args);
     va_end(args);
     err_append(buf);
 }
 
 void
+#ifdef __STDC__
+Warn(char *fmt, ...)
+#else
 Warn(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     char buf[BUFSIZ];
     va_list args;
 
     sprintf(buf, "warning: %s", fmt);
 
-    va_start(args);
+    va_init_list(args, fmt);
     err_print(buf, args);
     va_end(args);
 }
 
 /* Warning() reports only in verbose mode */
 void
+#ifdef __STDC__
+Warning(char *fmt, ...)
+#else
 Warning(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     char buf[BUFSIZ];
     va_list args;
@@ -122,15 +128,19 @@ Warning(fmt, va_alist)
 
     sprintf(buf, "warning: %s", fmt);
 
-    va_start(args);
+    va_init_list(args, fmt);
     err_print(buf, args);
     va_end(args);
 }
 
 void
+#ifdef __STDC__
+Bug(char *fmt, ...)
+#else
 Bug(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     char buf[BUFSIZ];
     va_list args;
@@ -138,7 +148,7 @@ Bug(fmt, va_alist)
     sprintf(buf, "[BUG] %s", fmt);
     rb_in_eval = 0;
 
-    va_start(args);
+    va_init_list(args, fmt);
     err_print(buf, args);
     va_end(args);
     abort();
@@ -172,7 +182,9 @@ static struct types {
     -1,		0,
 };
 
+#ifndef __STDC__
 extern void TypeError();
+#endif
 
 void
 rb_check_type(x, t)
@@ -369,7 +381,6 @@ exception(argc, argv)
     int argc;
     VALUE *argv;
 {
-    void ArgError();
     VALUE v = Qnil;
     VALUE etype = eStandardError;
     int i;
@@ -403,7 +414,60 @@ exception(argc, argv)
     return v;
 }
 
+#ifdef __BEOS__
+typedef struct {
+   VALUE *list;
+   size_t n;
+} syserr_list_entry;
+
+typedef struct {
+   int ix;
+   size_t n;
+} syserr_index_entry;
+
+static VALUE syserr_list_b_general[16+1];
+static VALUE syserr_list_b_os0[2+1];
+static VALUE syserr_list_b_os1[5+1];
+static VALUE syserr_list_b_os2[2+1];
+static VALUE syserr_list_b_os3[3+1];
+static VALUE syserr_list_b_os4[1+1];
+static VALUE syserr_list_b_app[15+1];
+static VALUE syserr_list_b_interface[0+1];
+static VALUE syserr_list_b_media[8+1];
+static VALUE syserr_list_b_midi[0+1];
+static VALUE syserr_list_b_storage[15+1];
+static VALUE syserr_list_b_posix[38+1];
+static VALUE syserr_list_b_mail[8+1];
+static VALUE syserr_list_b_print[1+1];
+static VALUE syserr_list_b_device[14+1];
+
+# define SYSERR_LIST_B(n) {(n), sizeof(n)/sizeof(VALUE)}
+static const syserr_list_entry syserr_list[] = {
+   SYSERR_LIST_B(syserr_list_b_general),
+   SYSERR_LIST_B(syserr_list_b_os0),
+   SYSERR_LIST_B(syserr_list_b_os1),
+   SYSERR_LIST_B(syserr_list_b_os2),
+   SYSERR_LIST_B(syserr_list_b_os3),
+   SYSERR_LIST_B(syserr_list_b_os4),
+   SYSERR_LIST_B(syserr_list_b_app),
+   SYSERR_LIST_B(syserr_list_b_interface),
+   SYSERR_LIST_B(syserr_list_b_media),
+   SYSERR_LIST_B(syserr_list_b_midi),
+   SYSERR_LIST_B(syserr_list_b_storage),
+   SYSERR_LIST_B(syserr_list_b_posix),
+   SYSERR_LIST_B(syserr_list_b_mail),
+   SYSERR_LIST_B(syserr_list_b_print),
+   SYSERR_LIST_B(syserr_list_b_device),
+};
+# undef SYSERR_LIST_B
+
+static const syserr_index_entry syserr_index[]= {
+     {0, 1},  {1, 5},  {6, 1},  {7, 1}, {8, 1}, {9, 1}, {10, 1}, {11, 1},
+     {12, 1}, {13, 1}, {14, 1}, {0, 0},
+};
+#else
 static VALUE *syserr_list;
+#endif
 
 #ifndef NT
 extern int sys_nerr;
@@ -465,64 +529,84 @@ Init_Exception()
     rb_define_global_function("Exception", exception, -1);
 }
 
-#define RAISE_ERROR(klass) {\
+#define RAISE_ERROR(klass,fmt) {\
     va_list args;\
     char buf[BUFSIZ];\
-\
-    va_start(args);\
-    vsprintf(buf, fmt, args);\
-    va_end(args);\
-\
+    va_init_list(args,fmt);\
     rb_raise(exc_new2(klass, buf));\
 }
 
 void
+#ifdef __STDC__
+Raise(VALUE exc, char *fmt, ...)
+#else
 Raise(exc, fmt, va_alist)
     VALUE exc;
     char *fmt;
     va_dcl
+#endif
 {
-    RAISE_ERROR(exc);
+    RAISE_ERROR(exc, fmt);
 }
 
 void
+#ifdef __STDC__
+TypeError(char *fmt, ...)
+#else
 TypeError(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
-    RAISE_ERROR(eTypeError);
+    RAISE_ERROR(eTypeError, fmt);
 }
 
 void
+#ifdef __STDC__
+ArgError(char *fmt, ...)
+#else
 ArgError(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
-    RAISE_ERROR(eArgError);
+    RAISE_ERROR(eArgError, fmt);
 }
 
 void
+#ifdef __STDC__
+NameError(char *fmt, ...)
+#else
 NameError(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
-    RAISE_ERROR(eNameError);
+    RAISE_ERROR(eNameError, fmt);
 }
 
 void
+#ifdef __STDC__
+IndexError(char *fmt, ...)
+#else
 IndexError(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
-    RAISE_ERROR(eIndexError);
+    RAISE_ERROR(eIndexError, fmt);
 }
 
 void
+#ifdef __STDC__
+Fail(char *fmt, ...)
+#else
 Fail(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
-    RAISE_ERROR(eRuntimeError);
+    RAISE_ERROR(eRuntimeError, fmt);
 }
 
 void
@@ -534,22 +618,30 @@ rb_notimplement()
 }
 
 void
+#ifdef __STDC__
+LoadError(char *fmt, ...)
+#else
 LoadError(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
-    RAISE_ERROR(eLoadError);
+    RAISE_ERROR(eLoadError, fmt);
 }
 
 void
+#ifdef __STDC__
+Fatal(char *fmt, ...)
+#else
 Fatal(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     va_list args;
     char buf[BUFSIZ];
 
-    va_start(args);
+    va_init_list(args, fmt);
     vsprintf(buf, fmt, args);
     va_end(args);
 
@@ -581,6 +673,26 @@ rb_sys_fail(mesg)
     }
 
     errno = 0;
+#ifdef __BEOS__
+    ee = get_syserr(n);
+    if (!ee) {
+	char name[6];
+      
+	sprintf(name, "E%03d", n);
+	ee = set_syserr(n, name);
+   }
+#else
+# ifdef USE_CWGUSI
+    if (n < 0) {
+	int macoserr_index = sys_nerr - 1;
+	if (!syserr_list[macoserr_index]) {
+	    char name[6];
+	    sprintf(name, "E%03d", macoserr_index);
+	    ee = set_syserr(macoserr_index, name);
+	}
+    }
+    else
+#endif /* USE_CWGUSI */
     if (n > sys_nerr || !syserr_list[n]) {
 	char name[6];
 
@@ -591,6 +703,7 @@ rb_sys_fail(mesg)
 	ee = syserr_list[n];
     }
     ee = exc_new2(ee, buf);
+#endif
     rb_iv_set(ee, "errno", INT2FIX(n));
     rb_raise(ee);
 }
@@ -971,4 +1084,29 @@ init_syserr()
 #ifdef EDQUOT
     set_syserr(EDQUOT, "EDQUOT");
 #endif
+}
+
+static void
+err_append(s)
+    char *s;
+{
+    extern VALUE errinfo;
+
+    if (rb_in_eval) {
+	if (NIL_P(errinfo)) {
+	    errinfo = exc_new2(eSyntaxError, s);
+	}
+	else {
+	    VALUE str = str_to_str(errinfo);
+
+	    str_cat(str, "\n", 1);
+	    str_cat(str, s, strlen(s));
+	    errinfo = exc_new3(eSyntaxError, str);
+	}
+    }
+    else {
+	fputs(s, stderr);
+	fputs("\n", stderr);
+	fflush(stderr);
+    }
 }

@@ -558,6 +558,18 @@ bigadd(x, y, sign)
 	if (RBIGNUM(y)->sign == sign) return bigsub(y, x);
 	return bigsub(x, y);
     }
+    else if (sign == 0) {
+      /* x - y */
+      if ((RBIGNUM(x)->sign == 0) && (RBIGNUM(y)->sign == 1)) {
+	/* x is negative and y is positive. */
+	/* return -(abs(x) + y) */
+	VALUE ret;
+	RBIGNUM(x)->sign = 1;   /* x = abs(x) */
+	ret = bigadd(x, y, 1);  /* ret = x + y  (recursive call) */
+	RBIGNUM(ret)->sign = 0; /* ret = -ret */
+	return ret;
+      }
+    }
 
     if (RBIGNUM(x)->len > RBIGNUM(y)->len) {
 	len = RBIGNUM(x)->len + 1;

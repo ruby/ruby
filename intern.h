@@ -7,9 +7,10 @@ void memclear _((register VALUE*, register int));
 VALUE assoc_new _((VALUE, VALUE));
 VALUE ary_new _((void));
 VALUE ary_new2 _((int));
-VALUE ary_new3();
-VALUE ary_new4 _((int, VALUE*));
+VALUE ary_new3 _((int,...));
+VALUE ary_new4 _((int, VALUE *));
 VALUE ary_freeze _((VALUE));
+VALUE ary_aref(int, VALUE*, VALUE);
 void ary_store _((VALUE, int, VALUE));
 VALUE ary_push _((VALUE, VALUE));
 VALUE ary_pop _((VALUE));
@@ -83,19 +84,11 @@ VALUE enum_length _((VALUE));
 VALUE exc_new _((VALUE, char*, unsigned int));
 VALUE exc_new2 _((VALUE, char*));
 VALUE exc_new3 _((VALUE, VALUE));
-#ifdef __GNUC__
-volatile voidfn TypeError;
-volatile voidfn ArgError;
-volatile voidfn NameError;
-volatile voidfn IndexError;
-volatile voidfn LoadError;
-#else
-void TypeError();
-void ArgError();
-void NameError();
-void IndexError();
-void LoadError();
-#endif
+void TypeError _((char*, ...));
+void ArgError _((char*, ...));
+void NameError _((char*, ...));
+void IndexError _((char*, ...));
+void LoadError _((char*, ...));
 /* eval.c */
 void rb_remove_method _((VALUE, char*));
 void rb_disable_super _((VALUE, char*));
@@ -267,8 +260,8 @@ VALUE str_upto _((VALUE, VALUE));
 VALUE str_inspect _((VALUE));
 VALUE str_split _((VALUE, char*));
 /* struct.c */
-VALUE struct_new();
-VALUE struct_define();
+VALUE struct_new _((VALUE, ...));
+VALUE struct_define _((char*, ...));
 VALUE struct_alloc _((VALUE, VALUE));
 VALUE struct_aref _((VALUE, VALUE));
 VALUE struct_aset _((VALUE, VALUE, VALUE));

@@ -53,6 +53,17 @@ struct timeval {
 #include <unistd.h>
 #endif
 
+#ifdef USE_CWGUSI
+ #include <sys/errno.h>
+ #include <unix.mac.h>
+ #include <compat.h>
+ extern void Init_File();
+#endif
+
+#ifdef __BEOS__
+#include <net/socket.h>
+#endif
+
 VALUE rb_ad_string();
 
 VALUE cIO;
@@ -87,8 +98,14 @@ struct timeval time_timeval();
 #  ifdef FILE_COUNT
 #    define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #  else
+#    if defined(__BEOS__)
+#      define ReadDataPending(fp) (fp->state._eof == 0)
+#    elif defined(USE_CWGUSI)
+#      define ReadDataPending(fp) (fp->state.eof == 0)
+#    else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
+#    endif
 #    define READ_DATA_PENDING(fp) ReadDataPending(fp)
 #  endif
 #endif
@@ -354,7 +371,12 @@ read_all(port)
     GetOpenFile(port, fptr);
     io_readable(fptr);
 
+#ifdef __BEOS__
+    if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)
+		&& (st.st_dev > 3)) {
+#else	
     if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)) {
+#endif
 	if (st.st_size == 0) return Qnil;
 	else {
 	    int pos = ftell(fptr->f);
@@ -866,7 +888,7 @@ VALUE
 io_binmode(io)
     VALUE io;
 {
-#if defined(NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
+#if defined(NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__) || defined(USE_CWGUSI)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
@@ -876,10 +898,17 @@ io_binmode(io)
     if (fptr->f2)
 	fmode(fptr->f2, _IOBIN);
 #else
+# ifndef USE_CWGUSI
     if (fptr->f && setmode(fileno(fptr->f), O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
     if (fptr->f2 && setmode(fileno(fptr->f2), O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
+# else  /* USE_CWGUSI */
+	if (fptr->f)
+		fptr->f->mode.binary_io = 1;
+	if (fptr->f2)
+		fptr->f2->mode.binary_io = 1;
+# endif /* USE_CWGUSI */
 #endif
 
     fptr->mode |= FMODE_BINMODE;
@@ -1046,6 +1075,7 @@ static VALUE
 pipe_open(pname, mode)
     char *pname, *mode;
 {
+#ifndef USE_CWGUSI
     int modef = io_mode_flags(mode);
     OpenFile *fptr;
 
@@ -1158,6 +1188,9 @@ pipe_open(pname, mode)
 	    return (VALUE)port;
 	}
     }
+#endif
+#else /* USE_CWGUSI */
+	rb_notimplement();  
 #endif
 }
 
@@ -1717,16 +1750,17 @@ next_argv()
 #endif
 		    }
 		    fw = rb_fopen(fn, "w");
-#if !defined(MSDOS) && !defined(__CYGWIN32__) && !(NT) && !defined(__human68k__)
+#if !defined(MSDOS) && !defined(__CYGWIN32__) && !(NT) && !defined(__human68k__)\
+ && !defined(USE_CWGUSI) && !defined(__BEOS__)
 		    fstat(fileno(fw), &st2);
 		    fchmod(fileno(fw), st.st_mode);
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
 			fchown(fileno(fw), st.st_uid, st.st_gid);
 		    }
 #endif
-		    rb_defout = prep_stdio(fw, FMODE_WRITABLE, cIO);
+		    rb_defout = prep_stdio(fw, FMODE_WRITABLE, cFile);
 		}
-		file = prep_stdio(fr, FMODE_READABLE, cIO);
+		file = prep_stdio(fr, FMODE_READABLE, cFile);
 	    }
 	}
 	else {
@@ -2107,7 +2141,11 @@ io_ctl(io, req, arg, io_p)
     }
     fd = fileno(fptr->f);
 #ifdef HAVE_FCNTL
+# ifdef USE_CWGUSI
+    retval = io_p?ioctl(fd, cmd, (void*) narg):fcntl(fd, cmd, narg);
+# else
     retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
+# endif
 #else
     if (!io_p) {
 	rb_notimplement();
@@ -2306,7 +2344,7 @@ io_s_foreach(argc, argv, io)
 
     arg.argc = argc - 1;
     arg.io = io_open(RSTRING(fname)->ptr, "r");
-    return rb_ensure(io_foreach_line, &arg, io_close, arg.io);
+    return rb_ensure(io_foreach_line, (VALUE)&arg, io_close, arg.io);
 }
 
 static VALUE
@@ -2337,7 +2375,7 @@ io_s_readlines(argc, argv, io)
 
     arg.argc = argc - 1;
     arg.io = io_open(RSTRING(fname)->ptr, "r");
-    return rb_ensure(io_readline_line, &arg, io_close, arg.io);
+    return rb_ensure(io_readline_line, (VALUE)&arg, io_close, arg.io);
 }
 
 static VALUE

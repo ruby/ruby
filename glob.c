@@ -52,7 +52,7 @@
 #  endif /* !USG */
 #endif /* !HAVE_DIRENT_H */
 
-#if defined (_POSIX_SOURCE) || defined(DJGPP)
+#if defined (_POSIX_SOURCE) || defined(DJGPP) || defined(USE_CWGUSI)
 /* Posix does not require that the d_ino field be present, and some
    systems do not provide it. */
 #  define REAL_DIR_ENTRY(dp) 1

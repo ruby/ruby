@@ -356,6 +356,7 @@ enum_length(obj)
     return INT2FIX(length);
 }
 
+static VALUE
 each_with_index_i(val, indexp)
     VALUE val;
     int *indexp;

@@ -54,6 +54,12 @@ char *strdup();
 char *getenv();
 #endif
 
+#ifdef USE_CWGUSI
+ #include "macruby_missing.h"
+ extern int fileno(FILE *stream);
+ extern int utimes();
+#endif
+
 extern VALUE cIO;
 VALUE cFile;
 VALUE mFileTest;
@@ -190,7 +196,9 @@ file_path(obj)
 }
 
 #ifndef NT
-#include <sys/file.h>
+# ifndef USE_CWGUSI
+#  include <sys/file.h>
+# endif
 #else
 #include "missing/file.h"
 #endif
@@ -309,7 +317,7 @@ static int
 group_member(gid)
     GETGROUPS_T gid;
 {
-#ifndef NT
+#if !defined(NT) && !defined(USE_CWGUSI)
     if (getgid() ==  gid || getegid() == gid)
 	return TRUE;
 
@@ -853,7 +861,7 @@ file_chmod(obj, vmode)
     mode = NUM2INT(vmode);
 
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(NT)
+#if defined(DJGPP) || defined(NT) || defined(USE_CWGUSI) || defined(__BEOS__)
     if (chmod(fptr->path, mode) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -912,7 +920,7 @@ file_chown(obj, owner, group)
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT)
+#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(USE_CWGUSI)
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -1004,12 +1012,16 @@ static VALUE
 file_s_link(obj, from, to)
     VALUE obj, from, to;
 {
+#if defined(USE_CWGUSI)
+        rb_notimplement();
+#else
     Check_SafeStr(from);
     Check_SafeStr(to);
 
     if (link(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
 	rb_sys_fail(RSTRING(from)->ptr);
     return INT2FIX(0);
+#endif /* USE_CWGUSI */
 }
 
 static VALUE
@@ -1083,6 +1095,9 @@ file_s_umask(argc, argv)
     int argc;
     VALUE *argv;
 {
+#ifdef USE_CWGUSI
+    rb_notimplement();
+#else
     int omask = 0;
 
     if (argc == 0) {
@@ -1096,6 +1111,7 @@ file_s_umask(argc, argv)
 	ArgError("wrong # of argument");
     }
     return INT2FIX(omask);
+#endif /* USE_CWGUSI */
 }
 
 VALUE
@@ -1378,6 +1394,9 @@ file_flock(obj, operation)
     VALUE obj;
     VALUE operation;
 {
+#ifdef USE_CWGUSI
+    rb_notimplement();
+#else
     OpenFile *fptr;
 
     rb_secure(2);
@@ -1392,6 +1411,7 @@ file_flock(obj, operation)
 	rb_sys_fail(fptr->path);
     }
     return INT2FIX(0);
+#endif /* USE_CWGUSI */
 }
 #undef flock
 

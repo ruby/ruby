@@ -50,6 +50,10 @@
 char *getenv();
 #endif
 
+#ifdef USE_CWGUSI
+# include <sys/errno.h>
+#endif
+
 static VALUE cDir;
 
 static void
@@ -144,7 +148,7 @@ dir_tell(dir)
     DIR *dirp;
     int pos;
 
-#if !defined(__CYGWIN32__)
+#if !defined(__CYGWIN32__) && !defined(__BEOS__)
     GetDIR(dir, dirp);
     pos = telldir(dirp);
     return int2inum(pos);
@@ -159,7 +163,7 @@ dir_seek(dir, pos)
 {
     DIR *dirp;
 
-#if !defined(__CYGWIN32__)
+#if !defined(__CYGWIN32__) && !defined(__BEOS__)
     GetDIR(dir, dirp);
     seekdir(dirp, NUM2INT(pos));
     return dir;
@@ -241,7 +245,7 @@ static VALUE
 dir_s_chroot(dir, path)
     VALUE dir, path;
 {
-#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
+#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__)
     rb_secure(2);
     Check_SafeStr(path);
 
@@ -272,7 +276,7 @@ dir_s_mkdir(argc, argv, obj)
     }
 
     Check_SafeStr(path);
-#ifndef NT
+#if !defined(NT) && !defined(USE_CWGUSI)
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
 #else

@@ -1545,6 +1545,7 @@ yyerror(msg)
 {
     UCHAR *p, *pe, *buf;
     int len, i;
+    void Error_Append();
 
     Error("%s", msg);
     p = lex_p;
