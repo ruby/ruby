@@ -17,6 +17,7 @@ tests/testOLEEVENT.rb
 tests/testOLEMETHOD.rb
 tests/testOLEPARAM.rb
 tests/testOLETYPE.rb
+tests/testOLETYPELIB.rb
 tests/testOLEVARIABLE.rb
 tests/testVARIANT.rb
 tests/testWIN32OLE.rb
