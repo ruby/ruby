@@ -1,3 +1,8 @@
+Mon Oct  4 14:03:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_file_open_internal, rb_io_reopen): fname might be altered
+	  while GC.  [ruby-dev:24408]
+
 Mon Oct  4 12:53:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/optiondb.rb: support definition of command

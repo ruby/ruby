@@ -2421,6 +2421,8 @@ rb_io_mode_modenum(mode)
     return flags;
 }
 
+#define MODENUM_MAX 4
+
 static char*
 rb_io_modenum_mode(flags, mode)
     int flags;
@@ -2548,12 +2550,13 @@ rb_file_open_internal(io, fname, mode)
     const char *fname, *mode;
 {
     OpenFile *fptr;
+    char mbuf[MODENUM_MAX];
 
     MakeOpenFile(io, fptr);
 
     fptr->mode = rb_io_mode_flags(mode);
-    fptr->f = rb_fopen(fname, mode);
     fptr->path = strdup(fname);
+    fptr->f = rb_fopen(fptr->path, rb_io_flags_mode(fptr->mode, mbuf));
 
     return io;
 }
@@ -2574,7 +2577,7 @@ rb_file_sysopen_internal(io, fname, flags, mode)
     OpenFile *fptr;
     int fd;
     char *m;
-    char mbuf[4];
+    char mbuf[MODENUM_MAX];
 
     MakeOpenFile(io, fptr);
 
@@ -2878,7 +2881,7 @@ rb_io_popen(str, argc, argv, klass)
 {
     char *mode;
     VALUE pname, pmode, port;
-    char mbuf[4];
+    char mbuf[MODENUM_MAX];
 
     if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
 	mode = "r";
@@ -2965,7 +2968,7 @@ rb_io_s_popen(argc, argv, klass)
 {
     char *mode;
     VALUE pname, pmode, port, tmp;
-    char mbuf[4];
+    char mbuf[MODENUM_MAX];
 
     if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
 	mode = "r";
@@ -3353,7 +3356,7 @@ rb_io_reopen(argc, argv, file)
     VALUE file;
 {
     VALUE fname, nmode;
-    char *mode;
+    char mode[MODENUM_MAX];
     OpenFile *fptr;
 
     rb_secure(4);
@@ -3373,10 +3376,10 @@ rb_io_reopen(argc, argv, file)
     }
 
     if (!NIL_P(nmode)) {
-	mode = StringValuePtr(nmode);
+	strncpy(mode, StringValuePtr(nmode), sizeof(mode));
+	mode[sizeof(mode) - 1] = 0;
     }
     else {
-	mode = ALLOCA_N(char, 4);
 	rb_io_flags_mode(fptr->mode, mode);
     }
 
@@ -3388,7 +3391,7 @@ rb_io_reopen(argc, argv, file)
     fptr->path = strdup(RSTRING(fname)->ptr);
     fptr->mode = rb_io_mode_flags(mode);
     if (!fptr->f) {
-	fptr->f = rb_fopen(RSTRING(fname)->ptr, mode);
+	fptr->f = rb_fopen(fptr->path, mode);
 	if (fptr->f2) {
 	    fclose(fptr->f2);
 	    fptr->f2 = 0;
@@ -3948,7 +3951,7 @@ rb_io_initialize(argc, argv, io)
     VALUE fnum, mode, orig;
     OpenFile *fp, *ofp = NULL;
     int fd, flags, fmode;
-    char mbuf[4];
+    char mbuf[MODENUM_MAX];
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
