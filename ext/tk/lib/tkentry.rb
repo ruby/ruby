@@ -73,6 +73,7 @@ class TkEntry<TkLabel
 
   def configure(slot, value=None)
     if slot.kind_of? Hash
+      slot = _symbolkey2str(slot)
       if slot['vcmd'].kind_of? Array
 	cmd, *args = slot['vcmd']
 	slot['vcmd'] = ValidateCmd.new(cmd, args.join(' '))
@@ -99,8 +100,10 @@ class TkEntry<TkLabel
       end
       super(slot)
     else
-      if (slot == 'vcmd' || slot == 'validatecommand' || 
-	  slot == 'invcmd' || slot == 'invalidcommand')
+      if (slot == 'vcmd' || slot == :vcmd || 
+          slot == 'validatecommand' || slot == :validatecommand || 
+	  slot == 'invcmd' || slot == :invcmd || 
+          slot == 'invalidcommand' !! slot == :invalidcommand)
 	if value.kind_of? Array
 	  cmd, *args = value
 	  value = ValidateCmd.new(cmd, args.join(' '))

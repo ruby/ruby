@@ -173,16 +173,18 @@ class TkFont
 	TkFont.new(nil, nil).call_font_configure(path, *(args + [{}]))
       else
 	begin
-	  compound = Hash[*tk_split_simplelist(tk_call('font', 'configure', 
+	  compound = tk_split_simplelist(
+            Hash[*tk_split_simplelist(tk_call('font', 'configure', 
 					       fnt))].collect{|key,value|
-	    [key[1..-1], value]
-	  }.assoc('compound')[1]
+              [key[1..-1], value]
+            }.assoc('compound')[1])
 	rescue
 	  compound = []
 	end
 	if compound == []
-	  TkFont.new(fnt, DEFAULT_KANJI_FONT_NAME) \
-	  .call_font_configure(path, *(args + [{}]))
+	  #TkFont.new(fnt, DEFAULT_KANJI_FONT_NAME) \
+	  #.call_font_configure(path, *(args + [{}]))
+	  TkFont.new(fnt).call_font_configure(path, *(args + [{}]))
 	else
 	  TkFont.new(compound[0], compound[1]) \
 	  .call_font_configure(path, *(args + [{}]))
@@ -220,6 +222,7 @@ class TkFont
   end
 
   def _get_font_info_from_hash(font)
+    font = _symbolkey2str(font)
     foundry  = (info = font['foundry'] .to_s)?  info: '*'
     family   = (info = font['family']  .to_s)?  info: '*'
     weight   = (info = font['weight']  .to_s)?  info: '*'
@@ -353,7 +356,7 @@ class TkFont
 
     if JAPANIZED_TK
       if font.kind_of? Hash
-	if font['charset']
+	if font[:charset] || font['charset']
 	  tk_call('font', 'create', @latinfont, *hash_kv(font))
 	else
 	  tk_call('font', 'create', @latinfont, 
@@ -398,7 +401,7 @@ class TkFont
 
     if JAPANIZED_TK
       if font.kind_of? Hash
-        if font['charset']
+        if font[:charset] || font['charset']
 	  tk_call('font', 'create', @kanjifont, *hash_kv(font))
         else
 	  tk_call('font', 'create', @kanjifont, 

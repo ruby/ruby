@@ -1,6 +1,7 @@
 #
 #   tkafter.rb : methods for Tcl/Tk after command
-#                     2000/08/01 by Hidetoshi Nagai <nagai@ai.kyutech.ac.jp>
+#
+#   $Id$
 #
 require 'tk'
 
@@ -11,18 +12,16 @@ class TkAfter
   Tk_CBID = [0]
   Tk_CBTBL = {}
 
-  INTERP._invoke("proc", "rb_after", "args", "ruby [format \"TkAfter.callback %%Q!%s!\" $args]")
+  INTERP._invoke("proc", "rb_after", "id", "ruby [format \"TkAfter.callback %%Q!%s!\" $id]")
 
   ###############################
   # class methods
   ###############################
-  def TkAfter.callback(arg)
+  def TkAfter.callback(obj_id)
     @after_id = nil
-    arg = Array(tk_split_list(arg))
-    obj_id = arg.shift
     ex_obj = Tk_CBTBL[obj_id]
     return nil if ex_obj == nil; # canceled
-    _get_eval_string(ex_obj.do_callback(*arg))
+    _get_eval_string(ex_obj.do_callback)
   end
 
   def TkAfter.info
@@ -35,10 +34,10 @@ class TkAfter
   ###############################
   # instance methods
   ###############################
-  def do_callback(*args)
+  def do_callback
     @in_callback = true
     begin
-      ret = @current_proc.call(*args)
+      @return_value = @current_proc.call(self)
     rescue StandardError, NameError
       if @cancel_on_exception
 	cancel
@@ -48,21 +47,22 @@ class TkAfter
       end
     end
     if @set_next
-      set_next_callback(*args)
+      set_next_callback(@current_args)
     else
       @set_next = true
     end
     @in_callback = false
-    ret
+    @return_value
   end
 
   def set_callback(sleep, args=nil)
-    @after_script = "rb_after #{@id} #{_get_eval_string(args)}"
+    @after_script = "rb_after #{@id}"
     @after_id = tk_call('after', sleep, @after_script)
+    @current_args = args
     @current_script = [sleep, @after_script]
   end
 
-  def set_next_callback(*args)
+  def set_next_callback(args)
     if @running == false || @proc_max == 0 || @do_loop == 0
       Tk_CBTBL[@id] = nil ;# for GC
       @running = false
@@ -81,7 +81,7 @@ class TkAfter
     @current_args = args
 
     if @sleep_time.kind_of? Proc
-      sleep = @sleep_time.call(*args)
+      sleep = @sleep_time.call(self)
     else
       sleep = @sleep_time
     end
@@ -91,15 +91,7 @@ class TkAfter
     @current_pos += 1
     @current_proc = cmd
 
-    if cmd_args[0].kind_of? Proc
-      #c = cmd_args.shift
-      #cb_args = c.call(*(cmd_args + args))
-      cb_args = cmd_args[0].call(*args)
-    else
-      cb_args = cmd_args
-    end
-
-    set_callback(sleep, cb_args)
+    set_callback(sleep, cmd_args)
   end
 
   def initialize(*args)
@@ -115,6 +107,7 @@ class TkAfter
     @current_script = []
     @current_proc = nil
     @current_args = nil
+    @return_value = nil
 
     @sleep_time = 0
     @current_sleep = 0
@@ -137,7 +130,10 @@ class TkAfter
   attr :after_id
   attr :after_script
   attr :current_proc
+  attr :current_args
   attr :current_sleep
+  alias :current_interval :current_sleep
+  attr :return_value
 
   attr_accessor :loop_exec
 
@@ -257,7 +253,7 @@ class TkAfter
       set_callback(sleep, @init_args)
       @set_next = false if @in_callback
     else
-      set_next_callback(*@init_args)
+      set_next_callback(@init_args)
     end
 
     self

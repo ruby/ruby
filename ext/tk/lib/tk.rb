@@ -132,6 +132,13 @@ module TkComm
   end
   private :tk_tcl2ruby, :tk_split_list, :tk_split_simplelist
 
+  def _symbolkey2str(keys)
+    h = {}
+    keys.each{|key,value| h[key.to_s] = value}
+    h
+  end
+  private :_symbolkey2str
+
   def hash_kv(keys)
     conf = []
     if keys and keys != None
@@ -204,6 +211,8 @@ module TkComm
     return nil if str == None
     if str.kind_of?(String)
       # do nothing
+    elsif str.kind_of?(Symbol)
+      str = str.id2name
     elsif str.kind_of?(Hash)
       str = hash_kv(str).join(" ")
     elsif str.kind_of?(Array)
@@ -259,13 +268,15 @@ module TkComm
   end
   private :install_cmd, :uninstall_cmd
 
-  def install_win(ppath)
-    id = format("w%.4d", Tk_IDs[1])
-    Tk_IDs[1] += 1
+  def install_win(ppath,name=nil)
+    if !name or name == ''
+      name = format("w%.4d", Tk_IDs[1])
+      Tk_IDs[1] += 1
+    end
     if !ppath or ppath == "."
-      @path = format(".%s", id);
+      @path = format(".%s", name);
     else
-      @path = format("%s.%s", ppath, id)
+      @path = format("%s.%s", ppath, name)
     end
     Tk_WINDOWS[@path] = self
   end
@@ -483,6 +494,8 @@ module TkCore
     }
   EOL
 
+  EventFlag = TclTkLib::EventFlag
+
   def callback_break
     fail TkCallbackBreak, "Tk callback returns 'break' status"
   end
@@ -616,12 +629,42 @@ module TkCore
     tk_call('info', *args)
   end
 
-  def mainloop
-    TclTkLib.mainloop
+  def mainloop(check_root = true)
+    TclTkLib.mainloop(check_root)
   end
 
-  def restart
+  def mainloop_watchdog(check_root = true)
+    TclTkLib.mainloop_watchdog(check_root)
+  end
+
+  def do_one_event(flag = 0)
+    TclTkLib.do_one_event(flag)
+  end
+
+  def set_eventloop_tick(timer_tick)
+    TclTkLib.set_eventloop_tick(timer_tick)
+  end
+
+  def get_eventloop_tick()
+    TclTkLib.get_eventloop_tick
+  end
+
+  def set_eventloop_weight(loop_max, no_event_tick)
+    TclTkLib.set_eventloop_weight(loop_max, no_event_tick)
+  end
+
+  def get_eventloop_weight()
+    TclTkLib.get_eventloop_weight
+  end
+
+  def restart(app_name = nil, use = nil)
+    tk_call('set', 'argv0', app_name) if app_name
+    if use
+      tk_call('set', 'argc', 2)
+      tk_call('set', 'argv', "-use #{use}")
+    end
     TkCore::INTERP.restart
+    TkComm::Tk_CMDTBL.clear
     TkComm::Tk_WINDOWS.clear
     nil
   end
@@ -2077,12 +2120,87 @@ module TkOption
     tk_call 'option', 'clear'
   end
   def get win, name, klass
-    tk_call 'option', 'get', win ,name, klass
+    tk_call('option', 'get', win ,name, klass).taint
   end
   def readfile file, pri=None
     tk_call 'option', 'readfile', file, pri
   end
   module_function :add, :clear, :get, :readfile
+
+  # support procs on the resource database
+  @@resource_proc_class = Class.new
+  class << @@resource_proc_class
+    private :new
+
+    CARRIER    = '.'.freeze
+    METHOD_TBL = {}
+    ADD_METHOD = false
+    SAFE_MODE  = 4
+
+    def __check_proc_string__(str)
+      # If you want to check the proc_string, do it in this method.
+      str
+    end
+
+    def method_missing(id, *args)
+      res_proc = self::METHOD_TBL[id]
+      unless res_proc.kind_of? Proc
+        if id == :new || (!self::METHOD_TBL.has_key?(id) && !self::ADD_METHOD)
+          raise NoMethodError, 
+                "not support resource-proc '#{id.id2name}' for #{self.name}"
+        end
+        proc_str = TkOption.get(self::CARRIER, id.id2name, '')
+        proc_str = '{' + proc_str + '}' unless /\A\{.*\}\Z/ =~ proc_str
+        proc_str = __check_proc_string__(proc_str)
+        res_proc = eval 'Proc.new' + proc_str
+        self::METHOD_TBL[id] = res_proc
+      end
+      proc{
+         $SAFE = self::SAFE_MODE
+         res_proc.call(*args)
+      }.call
+    end
+
+    private :__check_proc_string__, :method_missing
+  end
+
+  def new_proc_class(klass, func, safe = 4, add = false, parent = nil)
+    klass = klass.to_s if klass.kind_of? Symbol
+    unless (?A..?Z) === klass[0]
+      fail ArgumentError, "bad string '#{klass}' for class name"
+    end
+    unless func.kind_of? Array
+      fail ArgumentError, "method-list must be Array"
+    end
+    func_str = func.join(' ')
+    if parent == nil
+      install_win(parent)
+    elsif parent <= @@resource_proc_class
+      install_win(parent::CARRIER)
+    else
+      fail ArgumentError, "parent must be Resource-Proc class"
+    end
+    carrier = Tk.tk_call('frame', @path, '-class', klass)
+
+    body = <<-"EOD"
+      class #{klass} < TkOption.module_eval('@@resource_proc_class')
+        CARRIER    = '#{carrier}'.freeze
+        METHOD_TBL = {}
+        ADD_METHOD = #{add}
+        SAFE_MODE  = #{safe}
+        %w(#{func_str}).each{|f| METHOD_TBL[f.intern] = nil }
+      end
+    EOD
+
+    if parent.kind_of?(Class) && parent <= @@resource_proc_class
+      parent.class_eval body
+      eval parent.name + '::' + klass
+    else
+      eval body
+      eval 'TkOption::' + klass
+    end
+  end
+  module_function :new_proc_class
 end
 
 module TkTreatFont
@@ -2096,6 +2214,7 @@ module TkTreatFont
   alias fontobj font_configinfo
 
   def font_configure(slot)
+    slot = _symbolkey2str(slot)
     if (fnt = slot.delete('font'))
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(self.path, self.path,'configure',slot)
@@ -2203,6 +2322,7 @@ module TkTreatItemFont
 
   def tagfont_configure(tagOrId, slot)
     pathname = __item_pathname(tagOrId)
+    slot = _symbolkey2str(slot)
     if (fnt = slot.delete('font'))
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(pathname, self.path, 
@@ -2345,7 +2465,7 @@ class TkObject<TkKernel
   end
 
   def cget(slot)
-    case slot
+    case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
       tk_call path, 'cget', "-#{slot}"
     else
@@ -2355,16 +2475,20 @@ class TkObject<TkKernel
 
   def configure(slot, value=None)
     if slot.kind_of? Hash
-      if (slot['font'] || slot['kanjifont'] ||
-	  slot['latinfont'] || slot['asciifont'] )
-	font_configure(slot.dup)
+      if (slot['font'] || slot[:font] || 
+          slot['kanjifont'] || slot[:kanjifont] || 
+	  slot['latinfont'] || slot[:latinfont] || 
+          slot['asciifont'] || slot[:asciifont] )
+	font_configure(slot)
       else
 	tk_call path, 'configure', *hash_kv(slot)
       end
 
     else
-      if (slot == 'font' || slot == 'kanjifont' ||
-	  slot == 'latinfont' || slot == 'asciifont')
+      if (slot == 'font' || slot == :font || 
+          slot == 'kanjifont' || slot == :kanjifont || 
+	  slot == 'latinfont' || slot == :latinfont || 
+          slot == 'asciifont' || slot == :asciifont )
 	if value == None
 	  fontobj
 	else
@@ -2381,11 +2505,12 @@ class TkObject<TkKernel
   end
 
   def configinfo(slot = nil)
-    if slot == 'font' || slot == 'kanjifont'
+    if slot == 'font' || slot == :font || 
+       slot == 'kanjifont' || slot == :kanjifont
       fontobj
     else
       if slot
-	case slot
+	case slot.to_s
 	when 'text', 'label', 'show', 'data', 'file'
 	  conf = tk_split_simplelist(tk_send('configure', "-#{slot}") )
 	else
@@ -2455,7 +2580,19 @@ class TkWindow<TkObject
   extend TkBindCore
 
   def initialize(parent=nil, keys=nil)
-    install_win(if parent then parent.path end)
+    if parent.kind_of? Hash
+      keys = _symbolkey2str(parent)
+      keydup = true
+      parent = keys.delete('parent')
+      widgetname = keys.delete('widgetname')
+      install_win(if parent then parent.path end, widgetname)
+    elsif keys
+      keys = _symbolkey2str(keys)
+      widgetname = keys.delete('widgetname')
+      install_win(if parent then parent.path end, widgetname)
+    else
+      install_win(if parent then parent.path end)
+    end
     if self.method(:create_self).arity == 0
       p 'create_self has no arg' if $DEBUG
       create_self
@@ -2464,10 +2601,9 @@ class TkWindow<TkObject
 	configure(keys)
       end
     else
-      p 'create_self has an arg' if $DEBUG
+      p 'create_self has args' if $DEBUG
       fontkeys = {}
       if keys
-	keys = keys.dup
 	['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
 	  fontkeys[key] = keys.delete(key) if keys.key?(key)
 	}
@@ -2668,17 +2804,17 @@ class TkWindow<TkObject
       tk_call 'grab', 'set', path
     elsif args.length == 1
       case args[0]
-      when 'global'
+      when 'global', :global
 	return(tk_call 'grab', 'set', '-global', path)
-      when 'release'
+      when 'release', :release
 	return(tk_call 'grab', 'release', path)
       else
 	val = tk_call('grab', args[0], path)
       end
       case args[0]
-      when 'current'
+      when 'current', :current
 	return window(val)
-      when 'status'
+      when 'status', :status
 	return val
       end
     else
@@ -2811,15 +2947,27 @@ class TkToplevel<TkWindow
 #################
 
   def initialize(parent=nil, screen=nil, classname=nil, keys=nil)
+    if parent.kind_of? Hash
+      keys = _symbolkey2str(parent)
+      @screen    = keys['screen']
+      @classname = keys['class']
+      @colormap  = keys['colormap']
+      @container = keys['container']
+      @screen    = keys['screen']
+      @use       = keys['use']
+      @visual    = keys['visual']
+      super(keys)
+      return
+    end
     if screen.kind_of? Hash
-      keys = screen
+      keys = _symbolkey2str(screen)
     else
       @screen = screen
     end
     @classname = classname
     if keys.kind_of? Hash
-      if keys.key?('classname')
-	keys = keys.dup
+      keys = _symbolkey2str(keys)
+      if keys.key?(:classname) || keys.key?('classname')
 	keys['class'] = keys.delete('classname')
       end
       @classname = keys['class']
@@ -2875,17 +3023,24 @@ class TkFrame<TkWindow
 #################
 
   def initialize(parent=nil, keys=nil)
-    if keys.kind_of? Hash
-      if keys.key?('classname')
-	keys = keys.dup
-	keys['class'] = keys.delete('classname')
+    if parent.kind_of? Hash
+      keys = _symbolkey2str(parent)
+    else
+      if keys
+        keys = _symbolkey2str(keys)
+        keys['parent'] = parent
+      else
+        keys = {'parent'=>parent}
       end
-      @classname = keys['class']
-      @colormap  = keys['colormap']
-      @container = keys['container']
-      @visual    = keys['visual']
     end
-    super(parent, keys)
+    if keys.key?('classname')
+       keys['class'] = keys.delete('classname')
+    end
+    @classname = keys['class']
+    @colormap  = keys['colormap']
+    @container = keys['container']
+    @visual    = keys['visual']
+    super(keys)
   end
 
   def create_self(keys)
@@ -3170,7 +3325,7 @@ class TkListbox<TkTextWin
   end
 
   def itemcget(index, key)
-    case key
+    case key.to_s
     when 'text', 'label', 'show'
       tk_send 'itemcget', index, "-#{key}"
     else
@@ -3179,16 +3334,20 @@ class TkListbox<TkTextWin
   end
   def itemconfigure(index, key, val=None)
     if key.kind_of? Hash
-      if (key['font'] || key['kanjifont'] ||
-	  key['latinfont'] || key['asciifont'])
-	tagfont_configure(index, key.dup)
+      if (key['font'] || key[:font] || 
+          key['kanjifont'] || key[:kanjifont] || 
+	  key['latinfont'] || key[:latinfont] || 
+          key['asciifont'] || key[:asciifont] )
+	tagfont_configure(index, _symbolkey2str(key))
       else
 	tk_send 'itemconfigure', index, *hash_kv(key)
       end
 
     else
-      if (key == 'font' || key == 'kanjifont' ||
-	  key == 'latinfont' || key == 'asciifont' )
+      if (key == 'font' || key == :font || 
+          key == 'kanjifont' || key == :kanjifont || 
+	  key == 'latinfont' || key == :latinfont || 
+          key == 'asciifont' || key == :asciifont )
 	tagfont_configure(index, {key=>val})
       else
 	tk_call 'itemconfigure', index, "-#{key}", val
@@ -3198,7 +3357,7 @@ class TkListbox<TkTextWin
 
   def itemconfiginfo(index, key=nil)
     if key
-      case key
+      case key.to_s
       when 'text', 'label', 'show'
 	conf = tk_split_simplelist(tk_send('itemconfigure',index,"-#{key}"))
       else
@@ -3305,7 +3464,7 @@ class TkMenu<TkWindow
     number(tk_send('yposition', index))
   end
   def entrycget(index, key)
-    case key
+    case key.to_s
     when 'text', 'label', 'show'
       tk_send 'entrycget', index, "-#{key}"
     else
@@ -3314,16 +3473,20 @@ class TkMenu<TkWindow
   end
   def entryconfigure(index, key, val=None)
     if key.kind_of? Hash
-      if (key['font'] || key['kanjifont'] ||
-	  key['latinfont'] || key['asciifont'])
-	tagfont_configure(index, key.dup)
+      if (key['font'] || key[:font] || 
+          key['kanjifont'] || key[:kanjifont] || 
+	  key['latinfont'] || key[:latinfont] || 
+          key['asciifont'] || key[:asciifont])
+	tagfont_configure(index, _symbolkey2str(key))
       else
 	tk_send 'entryconfigure', index, *hash_kv(key)
       end
 
     else
-      if (key == 'font' || key == 'kanjifont' ||
-	  key == 'latinfont' || key == 'asciifont' )
+      if (key == 'font' || key == :font || 
+          key == 'kanjifont' || key == :kanjifont || 
+	  key == 'latinfont' || key == :latinfont || 
+          key == 'asciifont' || key == :asciifont )
 	tagfont_configure({key=>val})
       else
 	tk_call 'entryconfigure', index, "-#{key}", val
@@ -3333,7 +3496,7 @@ class TkMenu<TkWindow
 
   def entryconfiginfo(index, key=nil)
     if key
-      case key
+      case key.to_s
       when 'text', 'label', 'show'
 	conf = tk_split_simplelist(tk_send('entryconfigure',index,"-#{key}"))
       else
@@ -3371,17 +3534,28 @@ end
 
 class TkMenuClone<TkMenu
   def initialize(parent, type=None)
+    widgetname = nil
+    if parent.kind_of? Hash
+      keys = _symbolkey2str(parent)
+      parent = keys.delete('parent')
+      widgetname = keys.delete('widgetname')
+      type = keys.delete('type'); type = None unless type
+    end
     unless parent.kind_of?(TkMenu)
       fail ArgumentError, "parent must be TkMenu"
     end
     @parent = parent
-    install_win(@parent.path)
+    install_win(@parent.path, widgetname)
     tk_call @parent.path, 'clone', @path, type
   end
 end
 
 module TkSystemMenu
   def initialize(parent, keys=nil)
+    if parent.kind_of? Hash
+      keys = _symbolkey2str(parent)
+      parent = keys.delete('parent')
+    end
     fail unless parent.kind_of? TkMenu
     @path = format("%s.%s", parent.path, self.type::SYSMENU_NAME)
     TkComm::Tk_WINDOWS[@path] = self
@@ -3437,6 +3611,12 @@ class TkOptionMenubutton<TkMenubutton
   end
 
   def initialize(parent=nil, var=TkVariable.new, firstval=nil, *vals)
+    if parent.kind_of Hash
+       keys = _symbolkey2str(parent)
+       parent = keys['parent']
+       var = keys['variable'] if keys['variable']
+       firstval, *vals = keys['values']
+    end
     fail unless var.kind_of? TkVariable
     @variable = var
     firstval = @variable.value unless firstval
@@ -3498,9 +3678,17 @@ module TkComposite
   extend Tk
 
   def initialize(parent=nil, *args)
-    @frame = TkFrame.new(parent)
-    @path = @epath = @frame.path
-    initialize_composite(*args)
+    if parent.kind_of? Hash
+      keys = _symbolkey2str(parent)
+      parent = keys['parent']
+      keys['parent'] = @frame = TkFrame.new(parent)
+      @path = @epath = @frame.path
+      initialize_composite(keys)
+    else
+      @frame = TkFrame.new(parent)
+      @path = @epath = @frame.path
+      initialize_composite(*args)
+    end
   end
 
   def epath

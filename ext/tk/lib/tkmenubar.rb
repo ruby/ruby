@@ -66,8 +66,14 @@ class TkMenubar<TkFrame
   include TkComposite
   
   def initialize(parent = nil, spec = nil, options = nil)
-    super(parent, options)
-    
+    if parent.kind_of? Hash
+      options = _symbolkey2str(parent)
+      spec = options.delete('spec')
+      super(options)
+    else
+      super(parent, options)
+    end
+
     @menus = []
     
     if spec

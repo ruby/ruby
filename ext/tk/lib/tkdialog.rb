@@ -23,6 +23,7 @@ class TkDialog < TkWindow
     @button_configs = proc{|num| button_configs num}
 
     if keys.kind_of? Hash
+      keys = _symbolkey2str(keys)
       @title   = keys['title'] if keys['title']
       @message = keys['message'] if keys['message']
       @bitmap  = keys['bitmap'] if keys['bitmap']

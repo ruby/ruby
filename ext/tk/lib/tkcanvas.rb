@@ -1,4 +1,4 @@
-
+#
 #		tkcanvas.rb - Tk canvas classes
 #			$Date$
 #			by Yukihiro Matsumoto <matz@caelum.co.jp>
@@ -180,7 +180,7 @@ class TkCanvas<TkWindow
   end
 
   def itemcget(tagOrId, option)
-    case option
+    case option.to_s
     when 'dash', 'activedash', 'disableddash'
       conf = tk_send('itemcget', tagid(tagOrId), "-#{option}")
       if conf =~ /^[0-9]/
@@ -197,6 +197,7 @@ class TkCanvas<TkWindow
 
   def itemconfigure(tagOrId, key, value=None)
     if key.kind_of? Hash
+      key = _symbolkey2str(key)
       if ( key['font'] || key['kanjifont'] \
 	  || key['latinfont'] || key['asciifont'] )
 	tagfont_configure(tagOrId, key.dup)
@@ -205,8 +206,10 @@ class TkCanvas<TkWindow
       end
 
     else
-      if ( key == 'font' || key == 'kanjifont' \
-	  || key == 'latinfont' || key == 'asciifont' )
+      if ( key == 'font' || key == :font || 
+           key == 'kanjifont' || key == :kanjifont || 
+	   key == 'latinfont' || key == :latinfont || 
+           key == 'asciifont' || key == :asciifont )
 	tagfont_configure(tagid(tagOrId), {key=>value})
       else
 	tk_send 'itemconfigure', tagid(tagOrId), "-#{key}", value
@@ -226,7 +229,7 @@ class TkCanvas<TkWindow
 
   def itemconfiginfo(tagOrId, key=nil)
     if key
-      case key
+      case key.to_s
       when 'dash', 'activedash', 'disableddash'
 	conf = tk_split_simplelist(tk_send 'itemconfigure', 
 				   tagid(tagOrId), "-#{key}")
@@ -433,7 +436,7 @@ module TkcTagAccess
     @c.itemtype @id
   end
 
-  # Followings operators supports logical expressions of canvas tags
+  # Following operators support logical expressions of canvas tags
   # (for Tk8.3+).
   # If tag1.path is 't1' and tag2.path is 't2', then
   #      ltag = tag1 & tag2; ltag.path => "(t1)&&(t2)"
@@ -473,6 +476,7 @@ class TkcTag<TkObject
   include TkcTagAccess
 
   CTagID_TBL = {}
+  Tk_CanvasTag_ID = ['ctag0000']
 
   def TkcTag.id2obj(canvas, id)
     cpath = canvas.path
@@ -480,7 +484,6 @@ class TkcTag<TkObject
     CTagID_TBL[cpath][id]? CTagID_TBL[cpath][id]: id
   end
 
-  Tk_CanvasTag_ID = ['ctag0000']
   def initialize(parent, mode=nil, *args)
     if not parent.kind_of?(TkCanvas)
       fail format("%s need to be TkCanvas", parent.inspect)
@@ -501,7 +504,7 @@ class TkcTag<TkObject
 
   def delete
     @c.delete @id
-    CTagID_TBL[@path][@id] = nil if CTagID_TBL[@path]
+    CTagID_TBL[@cpath][@id] = nil if CTagID_TBL[@cpath]
   end
   alias remove  delete
   alias destroy delete
@@ -565,6 +568,7 @@ class TkcTagString<TkcTag
     end
   end
 end
+TkcNamedTag = TkcTagString
 
 class TkcTagAll<TkcTag
   def initialize(parent)
@@ -643,9 +647,16 @@ class TkcItem<TkObject
     @parent = @c = parent
     @path = parent.path
     fontkeys = {}
+    if args.size == 1 && args[0].kind_of?(Hash)
+      args[0] = _symbolkey2str(args[0])
+      coords = args[0].delete('coords')
+      if not coords.kind_of?(Array)
+        fail "coords parameter must be given by an Array"
+      end
+      args[0,0] = coords.flatten
+    end
     if args[-1].kind_of? Hash
-      args = args.dup
-      keys = args.pop
+      keys = _symbolkey2str(args.pop)
       ['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
 	fontkeys[key] = keys.delete(key) if keys.key?(key)
       }
@@ -797,7 +808,7 @@ class TkPhotoImage<TkImage
   end
 
   def cget(option)
-    case option
+    case option.to_s
     when 'data', 'file'
       tk_send 'cget', option
     else

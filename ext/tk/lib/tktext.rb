@@ -185,7 +185,7 @@ class TkText<TkTextWin
   end
 
   def tag_cget(tag, key)
-    case key
+    case key.to_s
     when 'text', 'label', 'show', 'data', 'file'
       tk_call @path, 'tag', 'cget', tag, "-#{key}"
     else
@@ -195,16 +195,19 @@ class TkText<TkTextWin
 
   def tag_configure(tag, key, val=None)
     if key.kind_of? Hash
+      key = _symbolkey2str(key)
       if ( key['font'] || key['kanjifont'] \
 	  || key['latinfont'] || key['asciifont'] )
-	tagfont_configure(tag, key.dup)
+	tagfont_configure(tag, key)
       else
 	tk_send 'tag', 'configure', tag, *hash_kv(key)
       end
 
     else
-      if  key == 'font' || key == 'kanjifont' ||
-	  key == 'latinfont' || key == 'asciifont'
+      if  key == 'font' || key == :font || 
+          key == 'kanjifont' || key == :kanjifont ||
+	  key == 'latinfont' || key == :latinfont || 
+          key == 'asciifont' || key == :asciifont
 	tagfont_configure(tag, {key=>val})
       else
 	tk_send 'tag', 'configure', tag, "-#{key}", val
@@ -214,7 +217,7 @@ class TkText<TkTextWin
 
   def tag_configinfo(tag, key=nil)
     if key
-      case key
+      case key.to_s
       when 'text', 'label', 'show', 'data', 'file'
 	conf = tk_split_simplelist(tk_send('tag','configure',tag,"-#{key}"))
       else
@@ -549,14 +552,25 @@ end
 class TkTextTag<TkObject
   include TkTreatTagFont
 
+  TTagID_TBL = {}
   Tk_TextTag_ID = ['tag0000']
+
+  def TkTextTag.id2obj(text, id)
+    tpath = text.path
+    return id unless TTagID_TBL[tpath]
+    TTagID_TBL[tpath][id]? TTagID_TBL[tpath][id]: id
+  end
 
   def initialize(parent, *args)
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
     @parent = @t = parent
+    @tpath = parent.path
     @path = @id = Tk_TextTag_ID[0]
+    TTagID_TBL[@id] = self
+    TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
+    TTagID_TBL[@tpath][@id] = self
     Tk_TextTag_ID[0] = Tk_TextTag_ID[0].succ
     #tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
     if args != [] then
@@ -618,7 +632,7 @@ class TkTextTag<TkObject
   end
 
   def cget(key)
-    case key
+    case key.to_s
     when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
     else
@@ -671,6 +685,31 @@ class TkTextTag<TkObject
 
   def destroy
     tk_call @t.path, 'tag', 'delete', @id
+    TTagID_TBL[@tpath][@id] = nil if CTagID_TBL[@tpath]
+  end
+end
+
+class TkTextNamedTag<TkTextTag
+  def self.new(parent, name, *args)
+    if TTagID_TBL[parent.path] && TTagID_TBL[parent.path][name]
+      return TTagID_TBL[parent.path][name]
+    else
+      super(parent, name, *args)
+    end
+  end
+
+  def initialize(parent, name, *args)
+    if not parent.kind_of?(TkText)
+      fail format("%s need to be TkText", parent.inspect)
+    end
+    @t = parent
+    @tpath = parent.path
+    @path = @id = name
+    TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
+    TTagID_TBL[@tpath][@id] = self
+    if mode
+      tk_call @t.path, "addtag", @id, *args
+    end
   end
 end
 
@@ -792,6 +831,7 @@ class TkTextWindow<TkObject
     end
     @path.gravity = 'left'
     @index = @path.path
+    keys = _symbolkey2str(keys)
     @id = keys['window']
     if keys['create']
       @p_create = keys['create']
@@ -810,7 +850,7 @@ class TkTextWindow<TkObject
   end
 
   def cget(slot)
-    case slot
+    case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
     else
@@ -820,6 +860,7 @@ class TkTextWindow<TkObject
 
   def configure(slot, value=None)
     if slot.kind_of? Hash
+      slot = _symbolkey2str(slot)
       @id = slot['window'] if slot['window']
       if slot['create']
 	self.create=value
@@ -829,8 +870,8 @@ class TkTextWindow<TkObject
 	tk_call @t.path, 'window', 'configure', @index, *hash_kv(slot)
       end
     else
-      @id = value if slot == 'window'
-      if slot == 'create'
+      @id = value if slot == 'window' || slot == :window
+      if slot == 'create' || slot == :create
 	self.create=value
       else
 	tk_call @t.path, 'window', 'configure', @index, "-#{slot}", value
@@ -861,7 +902,7 @@ class TkTextWindow<TkObject
 
   def configinfo(slot = nil)
     if slot
-      case slot
+      case slot.to_s
       when 'text', 'label', 'show', 'data', 'file'
 	conf = tk_split_simplelist(tk_call @t.path, 'window', 'configure', 
 				   @index, "-#{slot}")
@@ -931,7 +972,7 @@ class TkTextImage<TkObject
   end
 
   def cget(slot)
-    case slot
+    case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
     else
@@ -960,7 +1001,7 @@ class TkTextImage<TkObject
 
   def configinfo(slot = nil)
     if slot
-      case slot
+      case slot.to_s
       when 'text', 'label', 'show', 'data', 'file'
 	conf = tk_split_simplelist(tk_call @t.path, 'image', 'configure', 
 				   @index, "-#{slot}")
