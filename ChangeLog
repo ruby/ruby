@@ -1,3 +1,8 @@
+Wed May 12 14:37:27 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509name.c: attribute value of DC (short name of
+	  domainComponent) should be IA5String.
+
 Wed May 12 13:20:19 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/composite.rb: improve configure methods (based on 
