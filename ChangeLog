@@ -224,7 +224,7 @@ Sat Dec 25 01:28:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dln.c: use <dlfcn.h> for NetBSD.  [ruby-dev:25313]
 
-	* io.c (rb_f_select): [ruby-dev:25312]
+	* io.c (rb_f_select): IO list could be altered.  [ruby-dev:25312]
 
 Fri Dec 24 23:51:48 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
@@ -1035,7 +1035,8 @@ Mon Nov 29 15:22:28 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Nov 29 03:08:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* object.c (convert_type): [ruby-core:03845]
+	* object.c (convert_type): direct call conversion methods for the
+	  performance.  [ruby-core:03845]
 
 	* eval.c (rb_funcall_rescue): new function.
 
@@ -1045,7 +1046,8 @@ Mon Nov 29 03:08:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (reduce_nodes): empty body should return nil.
 
-	* string.c (rb_str_aset): [ruby-dev:24981]
+	* string.c (rb_str_aset): the original string should not be
+	  affected by modifying duplicated string.  [ruby-dev:24981]
 
 Mon Nov 29 13:57:38 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -1079,7 +1081,8 @@ Sat Nov 27 21:43:39 2004  Tanaka Akira  <akr@m17n.org>
 
 Sat Nov 27 14:44:15 2004  Kent Sibilev  <ksibilev@bellsouth.net>
 
-	* lib/cgi/session.rb (CGI::Session::initialize): [ruby-core:03832]
+	* lib/cgi/session.rb (CGI::Session::initialize): create_new_id is
+	  now a instance method.  [ruby-core:03832]
 
 Sat Nov 27 09:41:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1156,7 +1159,8 @@ Tue Nov 23 00:10:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_seek): use NUM2OFFT().
 
-	* misc/ruby-mode.el (ruby-non-block-do-re): [ruby-core:03719]
+	* misc/ruby-mode.el (ruby-non-block-do-re): should not match words
+	  start with block keyword and underscore.  [ruby-core:03719]
 
 Mon Nov 22 22:33:02 2004  Dave Thomas  <dave@pragprog.com>
 
