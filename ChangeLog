@@ -1,3 +1,35 @@
+Fri Feb 12 16:16:47 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* string.c (rb_str_inspect): wrong mbc position.
+
+Fri Feb 12 16:21:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_fd_close): 
+
+	* io.c (rb_io_fptr_close): tell scheduler that fd is closed.
+
+	* io.c (rb_io_reopen): ditto.
+
+	* io.c (READ_CHECK): check if closed after thread context switch.
+
+	* ext/socket/socket.c (bsock_close_read): do not check
+	  the return value from shutdown(2).
+
+	* ext/socket/socket.c (bsock_close_write): ditto.
+
+	* ext/socket/socket.c (sock_new): need to dup(fd) for close_read
+	  and close_write.
+
+	* parse.y (here_document): handle newlines within #{}.
+
+	* regex.h: should replace symbols for ruby.
+
+Fri Feb 12 00:46:28 1999  Shugo Maeda  <shugo@netlab.co.jp>
+
+	* marshal.c (r_object): should update the method name in message.
+
+	* marshal.c (w_object): limit should be converted into Fixnum.
+
 Wed Feb 10 15:20:03 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_match): empty pattern should not cause infinite

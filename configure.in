@@ -416,7 +416,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
 	freebsd*)       LDSHARED="gcc -shared"
 			if test -x /usr/bin/objformat && \
-				test `/ust/bin/objformat` = "elf" ; then
+			   test `/usr/bin/objformat` = "elf" ; then
 			    LDFLAGS="-rdynamic"
 			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
 			    rb_cv_freebsd_elf=yes
@@ -681,7 +681,7 @@ ri_prefix=
 test "$program_prefix" != NONE &&
   ri_prefix=$program_prefix
 
-ri_suffix=
+ri_suffix="${MAJOR}.${MINOR}"
 test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 

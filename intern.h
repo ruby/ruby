@@ -127,7 +127,7 @@ void rb_thread_start_timer _((void));
 void rb_thread_stop_timer _((void));
 void rb_thread_schedule _((void));
 void rb_thread_wait_fd _((int));
-void rb_thread_fd_writable _((int));
+int rb_thread_fd_writable _((int));
 int rb_thread_alone _((void));
 void rb_thread_sleep _((int));
 void rb_thread_sleep_forever _((void));

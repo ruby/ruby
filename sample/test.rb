@@ -867,21 +867,21 @@ ok(i6 == nil)
 
 check "system"
 ok(`echo foobar` == "foobar\n")
-ok(`./ruby -e 'print "foobar"'` == 'foobar')
+ok(`./miniruby -e 'print "foobar"'` == 'foobar')
 
 tmp = open("script_tmp", "w")
 tmp.print "print $zzz\n";
 tmp.close
 
-ok(`./ruby -s script_tmp -zzz` == 'true')
-ok(`./ruby -s script_tmp -zzz=555` == '555')
+ok(`./miniruby -s script_tmp -zzz` == 'true')
+ok(`./miniruby -s script_tmp -zzz=555` == '555')
 
 tmp = open("script_tmp", "w")
 tmp.print "#! /usr/local/bin/ruby -s\n";
 tmp.print "print $zzz\n";
 tmp.close
 
-ok(`./ruby script_tmp -zzz=678` == '678')
+ok(`./miniruby script_tmp -zzz=678` == '678')
 
 tmp = open("script_tmp", "w")
 tmp.print "this is a leading junk\n";
@@ -891,8 +891,8 @@ tmp.print "__END__\n";
 tmp.print "this is a trailing junk\n";
 tmp.close
 
-ok(`./ruby -x script_tmp` == 'nil')
-ok(`./ruby -x script_tmp -zzz=555` == '555')
+ok(`./miniruby -x script_tmp` == 'nil')
+ok(`./miniruby -x script_tmp -zzz=555` == '555')
 
 tmp = open("script_tmp", "w")
 for i in 1..5
@@ -900,7 +900,7 @@ for i in 1..5
 end
 tmp.close
 
-`./ruby -i.bak -pe 'sub(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
+`./miniruby -i.bak -pe 'sub(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
 done = true
 tmp = open("script_tmp", "r")
 while tmp.gets
@@ -917,7 +917,7 @@ File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
 $bad = false
 for script in Dir["{lib,sample}/*.rb"]
-  unless `./ruby -c #{script}`.chomp == "Syntax OK"
+  unless `./miniruby -c #{script}`.chomp == "Syntax OK"
     $bad = true
   end
 end

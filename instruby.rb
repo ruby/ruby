@@ -24,7 +24,7 @@ mandir = destdir+CONFIG["mandir"] + "/man1"
 wdir = Dir.getwd
 
 File.makedirs bindir, true
-File.install "ruby#{binsuffix}",
+File.install ruby_install_name+binsuffix,
   "#{bindir}/#{ruby_install_name}#{binsuffix}", 0755, true
 for dll in Dir['*.dll']
   File.install dll, "#{bindir}/#{dll}", 0755, true

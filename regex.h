@@ -17,10 +17,23 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Multi-byte extension added May, 1993 by t^2 (Takahiro Tanimoto)
    Last change: May 21, 1993 by t^2  */
-/* modifis for Ruby by matz@caelum.co.jp */
+/* modified for Ruby by matz@netlab.co.jp */
 
 #ifndef __REGEXP_LIBRARY
 #define __REGEXP_LIBRARY
+
+/* symbol mangling for ruby */
+#ifdef RUBY
+# define re_compile_fastmap rb_re_compile_fastmap
+# define re_compile_pattern rb_re_compile_pattern
+# define re_copy_registers rb_re_copy_registers
+# define re_free_pattern rb_re_free_pattern
+# define re_free_registers rb_re_free_registers
+# define re_match rb_re_match
+# define re_mbcinit rb_re_mbcinit
+# define re_search rb_re_search
+# define re_set_casetable rb_re_set_casetable
+#endif
 
 #include <stddef.h>
 

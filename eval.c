@@ -2054,9 +2054,6 @@ rb_eval(self, node)
       case NODE_DOT2:
       case NODE_DOT3:
 	result = rb_range_new(rb_eval(self, node->nd_beg), rb_eval(self, node->nd_end));
-#if 0
-	break;
-#else
 	result = rb_range_new(rb_eval(self, node->nd_beg), rb_eval(self, node->nd_end));
 	if (node->nd_state) break;
 	if (nd_type(node->nd_beg) == NODE_LIT && FIXNUM_P(node->nd_beg->nd_lit) &&
@@ -2068,7 +2065,6 @@ rb_eval(self, node)
 	else {
 	    node->nd_state = 1;
 	}
-#endif
 	break;
 
       case NODE_FLIP2:		/* like AWK */
@@ -5974,6 +5970,12 @@ static int   th_raise_line;
 static VALUE th_cmd;
 static int   th_sig;
 
+#define RESTORE_NORMAL		0 
+#define RESTORE_FATAL		1
+#define RESTORE_INTERRUPT	2
+#define RESTORE_TRAP		3
+#define RESTORE_RAISE		4 
+
 static void
 rb_thread_restore_context(th, exit)
     thread_t th;
@@ -6022,26 +6024,27 @@ rb_thread_restore_context(th, exit)
     rb_backref_set(tmp->last_match);
 
     switch (ex) {
-      case 1:
+      case RESTORE_FATAL:
 	JUMP_TAG(TAG_FATAL);
 	break;
 
-      case 2:
+      case RESTORE_INTERRUPT:
 	rb_interrupt();
 	break;
 
-      case 3:
+      case RESTORE_TRAP:
 	rb_trap_eval(th_cmd, th_sig);
 	errno = EINTR;
 	break;
 
-      case 4:
+      case RESTORE_RAISE:
 	ruby_frame->last_func = 0;
 	ruby_sourcefile = th_raise_file;
 	ruby_sourceline = th_raise_line;
 	rb_f_raise(th_raise_argc, th_raise_argv);
 	break;
 
+      case RESTORE_NORMAL:
       default:
 	longjmp(tmp->context, 1);
     }
@@ -6081,15 +6084,69 @@ rb_thread_dead(th)
     return th->status == THREAD_KILLED;
 }
 
+void
+rb_thread_fd_close(fd)
+    int fd;
+{
+    thread_t th;
+
+    FOREACH_THREAD(th) {
+	if ((th->wait_for & WAIT_FD) && th->fd == fd) {
+	    th_raise_argc = 1;
+	    th_raise_argv[0] = rb_exc_new2(rb_eIOError, "stream closed");
+	    th_raise_file = ruby_sourcefile;
+	    th_raise_line = ruby_sourceline;
+	    curr_thread = th;
+	    rb_thread_restore_context(main_thread, RESTORE_RAISE);
+	}
+    }
+    END_FOREACH(th);
+}
+
+static void
+rb_thread_badf()
+{
+    thread_t th;
+    int max;
+    struct timeval delay_tv;
+    fd_set readfds;
+
+    delay_tv.tv_sec = 0;
+    delay_tv.tv_usec = 0;
+    FOREACH_THREAD(th) {
+	if (th->wait_for & WAIT_FD) {
+	    FD_ZERO(&readfds);
+	    FD_SET(th->fd, &readfds);
+	    if (select(th->fd+1, &readfds, 0, 0, &delay_tv) < 0 &&
+		errno == EBADF) {
+		rb_thread_ready(th);
+		th->status = THREAD_TO_KILL;
+	    }
+	}
+    }
+    END_FOREACH(th);
+}
+
 static void
 rb_thread_deadlock()
 {
+    static int invoked = 0;
+
+    if (invoked) return;
+    invoked = 1;
     curr_thread = main_thread;
+#if 0
     th_raise_argc = 1;
     th_raise_argv[0] = rb_exc_new2(rb_eFatal, "Thread: deadlock");
     th_raise_file = ruby_sourcefile;
     th_raise_line = ruby_sourceline;
+    rb_thread_restore_context(main_thread, RESTORE_RAISE);
+#else
+    rb_prohibit_interrupt = 1;
+    ruby_errinfo = rb_exc_new2(rb_eFatal, "Thread: deadlock");
+    set_backtrace(ruby_errinfo, make_backtrace());
     rb_abort();
+#endif
 }
 
 void
@@ -6191,7 +6248,15 @@ rb_thread_schedule()
 		n = select(max+1, &readfds, 0, 0, delay_ptr);
 		if (n < 0) {
 		    if (rb_trap_pending) rb_trap_exec();
-		    goto select_err;
+		    switch (errno) {
+		      case EBADF:
+			rb_thread_badf();
+		      case ENOMEM:
+			n = 0;
+			break;
+		      default:
+			goto select_err;
+		    }
 		}
 		if (n > 0) {
 		    /* Some descriptors are ready. 
@@ -6223,10 +6288,15 @@ rb_thread_schedule()
 	    fprintf(stderr, "%s:%d:deadlock 0x%x: %d:%d %s\n", 
 		    th->file, th->line, th->thread, th->status,
 		    th->wait_for, th==main_thread?"(main)":"");
+	    if (th->status == THREAD_STOPPED) {
+		next = th;
+	    }
 	}
 	END_FOREACH_FROM(curr, th);
 	/* raise fatal error to main thread */
 	rb_thread_deadlock();
+	rb_thread_ready(next);
+	next->status = THREAD_TO_KILL;
     }
     if (next->status == THREAD_RUNNABLE && next == curr_thread) {
 	return;
@@ -6243,9 +6313,9 @@ rb_thread_schedule()
     curr_thread = next;
     if (next->status == THREAD_TO_KILL) {
 	/* execute ensure-clause if any */
-	rb_thread_restore_context(next, 1);
+	rb_thread_restore_context(next, RESTORE_FATAL);
     }
-    rb_thread_restore_context(next, 0);
+    rb_thread_restore_context(next, RESTORE_NORMAL);
 }
 
 void
@@ -6261,20 +6331,20 @@ rb_thread_wait_fd(fd)
     rb_thread_schedule();
 }
 
-void
+int
 rb_thread_fd_writable(fd)
     int fd;
 {
     struct timeval zero;
     fd_set fds;
 
-    if (curr_thread == curr_thread->next) return;
+    if (curr_thread == curr_thread->next) return 1;
 
     zero.tv_sec = zero.tv_usec = 0;
     for (;;) {
 	FD_ZERO(&fds);
 	FD_SET(fd, &fds);
-	if (select(fd+1, 0, &fds, 0, &zero) == 1) break;
+	if (select(fd+1, 0, &fds, 0, &zero) == 1) return 0;
 	rb_thread_schedule();
     }
 }
@@ -6895,7 +6965,7 @@ rb_thread_interrupt()
 	return;
     }
     curr_thread = main_thread;
-    rb_thread_restore_context(curr_thread, 2);
+    rb_thread_restore_context(curr_thread, RESTORE_INTERRUPT);
 }
 
 void
@@ -6917,7 +6987,7 @@ rb_thread_trap_eval(cmd, sig)
     th_cmd = cmd;
     th_sig = sig;
     curr_thread = main_thread;
-    rb_thread_restore_context(curr_thread, 3);
+    rb_thread_restore_context(curr_thread, RESTORE_TRAP);
 }
 
 static VALUE
@@ -6946,7 +7016,7 @@ rb_thread_raise(argc, argv, thread)
     th_raise_argc = argc;
     th_raise_file = ruby_sourcefile;
     th_raise_line = ruby_sourceline;
-    rb_thread_restore_context(curr_thread, 4);
+    rb_thread_restore_context(curr_thread, RESTORE_RAISE);
     return Qnil;		/* not reached */
 }
 
@@ -7086,7 +7156,7 @@ rb_continuation_call(argc, argv, cont)
 	th->result = rb_ary_new4(argc, argv);
 	break;
     }
-    rb_thread_restore_context(th, 0);
+    rb_thread_restore_context(th, RESTORE_NORMAL);
     return Qnil;
 }
 

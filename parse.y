@@ -2293,7 +2293,7 @@ here_document(term, indent)
     char *eos, *p;
     int len;
     VALUE str;
-    volatile VALUE line;
+    volatile VALUE line = 0;
     VALUE lastline_save;
     int offset_save;
     NODE *list = 0;
@@ -2332,15 +2332,15 @@ here_document(term, indent)
 
     str = rb_str_new(0,0);
     for (;;) {
-	line = (*lex_gets)(lex_input);
+	lex_lastline = line = (*lex_gets)(lex_input);
 	if (NIL_P(line)) {
 	  error:
 	    ruby_sourceline = linesave;
 	    rb_compile_error("can't find string \"%s\" anywhere before EOF", eos);
-	    free(eos);
-	    return 0;
+		free(eos);
+		return 0;
 	}
-        normalize_newline(line);
+	normalize_newline(line);
 	ruby_sourceline++;
 	p = RSTRING(line)->ptr;
 	if (indent) {
@@ -2361,6 +2361,7 @@ here_document(term, indent)
 	    }
 	}
 #endif
+      retry:
 	switch (parse_string(term, '\n', '\n')) {
 	  case tSTRING:
 	  case tXSTRING:
@@ -2384,6 +2385,10 @@ here_document(term, indent)
 
 	  case 0:
 	    goto error;
+	}
+	if (lex_lastline != line) {
+	    line = lex_lastline;
+	    goto retry;
 	}
     }
     free(eos);

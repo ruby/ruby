@@ -1365,11 +1365,11 @@ rb_str_inspect(str)
     while (p < pend) {
 	char c = *p++;
 	if (ismbchar(c) && p < pend) {
-	    int len = mbclen(c)-1;
+	    int len = mbclen(c);
 
 	    CHECK(len);
 	    *b++ = c;
-	    while (len--) {
+	    while (--len) {
 		*b++ = *p++;
 	    }
 	}

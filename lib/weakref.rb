@@ -60,10 +60,11 @@ class WeakRef<Delegator
 end
 
 if __FILE__ == $0
+  require 'thread'
   foo = Object.new
-  p foo.hash			# original's hash value
+  p foo.to_s			# original's class
   foo = WeakRef.new(foo)
-  p foo.hash			# should be same hash value
+  p foo.to_s			# should be same class
   ObjectSpace.garbage_collect
-  p foo.hash			# should raise exception (recycled)
+  p foo.to_s			# should raise exception (recycled)
 end

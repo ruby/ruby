@@ -111,7 +111,10 @@ extern int ReadDataPending();
 # define READ_CHECK(fp) 0
 #else
 # define READ_CHECK(fp) do {\
-    if (!READ_DATA_PENDING(fp)) rb_thread_wait_fd(fileno(fp));\
+    if (!READ_DATA_PENDING(fp)) {\
+	rb_thread_wait_fd(fileno(fp));\
+        rb_io_check_closed(fptr);\
+     }\
 } while(0)
 #endif
 
@@ -841,7 +844,13 @@ static void
 rb_io_fptr_close(fptr)
     OpenFile *fptr;
 {
+    int fd;
+
     if (fptr->f == NULL && fptr->f2 == NULL) return;
+
+#ifdef USE_THREAD
+    rb_thread_fd_close(fileno(fptr->f));
+#endif
 
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
@@ -954,7 +963,9 @@ rb_io_syswrite(io, str)
     f = GetWriteFile(fptr);
 
 #ifdef USE_THREAD
-    rb_thread_fd_writable(fileno(f));
+    if (!rb_thread_fd_writable(fileno(f))) {
+        rb_io_check_closed(fptr);
+    }
 #endif
     n = write(fileno(f), RSTRING(str)->ptr, RSTRING(str)->len);
 
@@ -1588,6 +1599,9 @@ rb_io_reopen(io, nfile)
     else if (orig->mode & FMODE_WRITABLE) {
 	fflush(orig->f);
     }
+#ifdef USE_THREAD
+    rb_thread_fd_close(fileno(fptr->f));
+#endif
 
     /* copy OpenFile structure */
     fptr->mode = orig->mode;

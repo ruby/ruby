@@ -1302,8 +1302,9 @@ rb_file_truncate(obj, len)
 
 #if defined(USE_THREAD) && defined(EWOULDBLOCK)
 static int
-rb_thread_flock(fd, op)
+rb_thread_flock(fd, op, fptr)
     int fd, op;
+    OpenFile *fptr;
 {
     if (rb_thread_alone() || (op & LOCK_NB)) {
 	return flock(fd, op);
@@ -1314,6 +1315,7 @@ rb_thread_flock(fd, op)
 	  case EINTR:		/* can be happen? */
 	  case EWOULDBLOCK:
 	    rb_thread_schedule();	/* busy wait */
+	    rb_io_check_closed(fptr);
 	    break;
 	  default:
 	    return -1;
@@ -1321,7 +1323,7 @@ rb_thread_flock(fd, op)
     }
     return 0;
 }
-#define flock rb_thread_flock
+#define flock(fd, op) rb_thread_flock(fd, op, fptr)
 #endif
 
 static VALUE

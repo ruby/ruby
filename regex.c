@@ -43,6 +43,9 @@
 #endif
 
 #include "config.h"
+#ifdef RUBY_PLATFORM
+# define RUBY
+#endif
 
 void *xmalloc P((unsigned long));
 void *xcalloc P((unsigned long,unsigned long));

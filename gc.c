@@ -389,10 +389,10 @@ rb_gc_mark(ptr)
     register RVALUE *obj = RANY(ptr);
 
   Top:
-    if (FIXNUM_P(obj)) return;	/* fixnum not marked */
+    if (FIXNUM_P(obj)) return;	                /* fixnum not marked */
     if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
-    if (obj->as.basic.flags == 0) return; /* free cell */
-    if (obj->as.basic.flags & FL_MARK) return; /* already marked */
+    if (obj->as.basic.flags == 0) return;       /* free cell */
+    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */
 
     obj->as.basic.flags |= FL_MARK;
 
@@ -770,10 +770,10 @@ obj_free(obj)
 	}
 	break;
       case T_MATCH:
-	if (RANY(obj)->as.match.regs)
+	if (RANY(obj)->as.match.regs) {
 	    re_free_registers(RANY(obj)->as.match.regs);
-	if (RANY(obj)->as.match.regs)
 	    free(RANY(obj)->as.match.regs);
+	}
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
