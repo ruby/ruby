@@ -22,7 +22,9 @@ end
 
 f = Foo.new
 #Foo.private :printf
-Foo.public :foobar
+class Foo			# redefines foobar's scope
+  public :foobar
+end
 f.foobar
 f.printf "%s\n", Foo
 

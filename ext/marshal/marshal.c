@@ -50,7 +50,7 @@ static ID s_dump, s_load;
 struct dump_arg {
     VALUE obj;
     FILE *fp;
-    struct RString *str;
+    VALUE str;
     st_table *symbol;
     st_table *data;
 };
@@ -69,7 +69,7 @@ w_byte(c, arg)
     struct dump_arg *arg;
 {
     if (arg->fp) putc(c, arg->fp);
-    else str_cat(arg->str, &c, 1);
+    else str_cat(arg->str, (UCHAR*)&c, 1);
 }
 
 static void
@@ -92,8 +92,11 @@ w_short(x, arg)
     int x;
     struct dump_arg *arg;
 {
-    w_byte( x      & 0xff, arg);
-    w_byte((x>> 8) & 0xff, arg);
+    int i;
+
+    for (i=0; i<sizeof(USHORT); i++) {
+	w_byte((x >> (i*8)) & 0xff, arg);
+    }
 }
 
 static void
@@ -225,10 +228,19 @@ w_object(obj, arg, limit)
 	w_byte(TYPE_FALSE, arg);
     }
     else if (FIXNUM_P(obj)) {
-	if (sizeof(long) == 4) {
+#if SIZEOF_LONG <= 4
+	w_byte(TYPE_FIXNUM, arg);
+	w_long(FIX2INT(obj), arg);
+#else
+	if (RSHIFT(obj, 32) == 0 || RSHIFT(obj, 32) == -1) {
 	    w_byte(TYPE_FIXNUM, arg);
 	    w_long(FIX2INT(obj), arg);
 	}
+	else {
+	    obj = int2big(FIX2INT(obj));
+	    goto write_bignum;
+	}
+#endif
     }
     else {
 	int num;
@@ -268,6 +280,7 @@ w_object(obj, arg, limit)
 	    return;
 
 	  case T_BIGNUM:
+	  write_bignum:
 	    w_byte(TYPE_BIGNUM, arg);
 	    {
 		char sign = RBIGNUM(obj)->sign?'+':'-';
@@ -419,7 +432,7 @@ marshal_dump(argc, argv)
     else {
 	arg.fp = 0;
 	port = str_new(0, 0);
-	arg.str = RSTRING(port);
+	arg.str = port;
     }
 
     arg.symbol = st_init_numtable();
@@ -452,14 +465,18 @@ r_byte(arg)
     return EOF;
 }
 
-static int
+static USHORT
 r_short(arg)
     struct load_arg *arg;
 {
-    register short x;
-    x = r_byte(arg);
-    x |= r_byte(arg) << 8;
-    /* XXX If your short is > 16 bits, add sign-extension here!!! */
+    USHORT x;
+    int i;
+
+    x = 0;
+    for (i=0; i<sizeof(USHORT); i++) {
+	x |= r_byte(arg)<<(i*8);
+    }
+
     return x;
 }
 
@@ -475,7 +492,7 @@ static long
 r_long(arg)
     struct load_arg *arg;
 {
-    char c = r_byte(arg), i;
+    int c = r_byte(arg), i;
     register long x;
 
     if (c == 0) return 0;
@@ -499,7 +516,7 @@ r_long(arg)
 }
 
 #define r_bytes(s, arg) \
-  (s = (char*)r_long(arg), r_bytes0(&s,ALLOCA_N(char,(int)s),(int)s,arg))
+  (s = (char*)r_long(arg), r_bytes0(&s,ALLOCA_N(char,(long)s),(long)s,arg))
 
 static int
 r_bytes0(sp, s, len, arg)
@@ -582,7 +599,7 @@ r_object(arg)
 
     switch (type) {
       case EOF:
-	eof_error("EOF read where object expected");
+	eof_error();
 	return Qnil;
 
       case TYPE_LINK:
@@ -643,7 +660,11 @@ r_object(arg)
 	    while (len--) {
 		*digits++ = r_short(arg);
 	    }
-	    return r_regist(big, arg);
+	    big = RBIGNUM(big_norm((VALUE)big));
+	    if (TYPE(big) == T_BIGNUM) {
+		r_regist(big, arg);
+	    }
+	    return (VALUE)big;
 	}
 
       case TYPE_STRING:
@@ -688,7 +709,6 @@ r_object(arg)
 	    int i, len;
 	    int num = arg->data->num_entries;
 
-	    st_insert(arg->data, num, 15); /* temp reg. */
 	    class = rb_path2class(r_unique(arg));
 	    mem = rb_ivar_get(class, rb_intern("__member__"));
 	    if (mem == Qnil) {

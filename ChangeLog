@@ -1,3 +1,17 @@
+Tue Oct 21 13:31:29 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.0-971021
+
+Mon Oct 20 12:18:29 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ruby.c (load_file): wrong condition for #! check with -x.
+
+	* file.c (file_s_dirname): did return "" for "/a".
+
+Fri Oct 17 14:29:09 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (bigadd): some undefined side effect order assumed.
+
 Wed Oct 15 18:08:37 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.0-971015

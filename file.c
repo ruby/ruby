@@ -1375,6 +1375,8 @@ file_s_dirname(obj, fname)
     if (!p) {
 	return str_new2(".");
     }
+    if (p == fname->ptr)
+	p++;
     return str_taint(str_new(fname->ptr, p - fname->ptr));
 }
 

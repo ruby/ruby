@@ -436,8 +436,8 @@ load_file(fname, script)
 	    while (!NIL_P(line = io_gets(f))) {
 		line_start++;
 		if (RSTRING(line)->len > 2
-		    || RSTRING(line)->ptr[0] != '#'
-		    || RSTRING(line)->ptr[1] != '!') {
+		    && RSTRING(line)->ptr[0] == '#'
+		    && RSTRING(line)->ptr[1] == '!') {
 		    if (strstr(RSTRING(line)->ptr, "ruby")) {
 			goto start_read;
 		    }
@@ -453,8 +453,7 @@ load_file(fname, script)
 	    line_start++;
 
 	    if (RSTRING(line)->len > 2
-		|| RSTRING(line)->ptr[0] != '#'
-		|| RSTRING(line)->ptr[1] != '!') {
+		&& RSTRING(line)->ptr[0] == '!') {
 
 		char *p;
 

@@ -101,6 +101,13 @@ bignorm(x)
 }
 
 VALUE
+big_norm(x)
+    VALUE x;
+{
+    return bignorm(x);
+}
+
+VALUE
 uint2big(n)
     UINT n;
 {
@@ -514,7 +521,8 @@ bigsub(x, y)
 	num = BIGDN(num);
     }
     while (i < x->len) {
-	zds[i++] = BDIGITS(x)[i];
+	zds[i] = BDIGITS(x)[i];
+	i++;
     }
     
     return bignorm(z);
@@ -555,7 +563,8 @@ bigadd(x, y, sign)
 	num = BIGDN(num);
     }
     while (i < y->len) {
-	BDIGITS(z)[i++] = BDIGITS(y)[i];
+	BDIGITS(z)[i] = BDIGITS(y)[i];
+	i++;
     }
     BDIGITS(z)[i] = num;
 
