@@ -10,7 +10,7 @@ module YAML
             @segments = []
             @predicates = []
             @flags = nil
-            while str =~ /^\/?(\/|[^\/[]+)(?:\[([^\]]+)\])?/
+            while str =~ /^\/?(\/|[^\/\[]+)(?:\[([^\]]+)\])?/
                 @segments.push $1
                 @predicates.push $2
                 str = $'
