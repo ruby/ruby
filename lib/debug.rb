@@ -297,12 +297,9 @@ class DEBUGGER__
 	      stdout.print "Trace off.\n"
 	    end
 
-	  when /^\s*b(?:reak)?\s+((?:.*?+:)?.+)$/
-	    pos = $1
-	    if pos.index(":")
-	      file, pos = pos.split(":")
-	    end
-	    file = File.basename(file)
+   	  when /^\s*b(?:reak)?\s+(?:(.+):)?(.+)$/
+     	    pos = $2
+       	    file = File.basename($1 || file)
 	    if pos =~ /^\d+$/
 	      pname = pos
 	      pos = pos.to_i
