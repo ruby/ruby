@@ -480,7 +480,6 @@ rb_gc_mark(ptr)
 	  case NODE_OP_ASGN_AND:
 	    rb_gc_mark(obj->as.node.u1.node);
 	    /* fall through */
-	  case NODE_IFUNC:
 	  case NODE_METHOD:	/* 2 */
 	  case NODE_NOT:
 	  case NODE_GASGN:
@@ -1232,7 +1231,8 @@ rb_gc_call_finalizer_at_exit()
 	p = heaps[i]; pend = p + HEAP_SLOTS;
 	while (p < pend) {
 	    if (FL_TEST(p, FL_FINALIZE)) {
-		p->as.free.flag = 0;
+		FL_UNSET(p, FL_FINALIZE);
+		p->as.basic.klass = 0;
 		run_final((VALUE)p);
 	    }
 	    p++;
