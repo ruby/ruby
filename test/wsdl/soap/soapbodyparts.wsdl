@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<definitions
+    name="soapbodyparts"
+    targetNamespace="urn:www.example.com:soapbodyparts:v1"
+    xmlns:tns="urn:www.example.com:soapbodyparts:v1"
+    xmlns="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+
+  <types>
+    <schema xmlns="http://www.w3.org/2001/XMLSchema"
+	targetNamespace="urn:www.example.com:soapbodyparts:v1">
+      <import namespace = "http://schemas.xmlsoap.org/soap/encoding/"/>
+      <complexType name="StringArray">
+ 	<complexContent>
+	  <restriction base="soapenc:Array">
+	    <attribute ref="soapenc:arrayType" wsdl:arrayType="string[]"/>
+  	  </restriction>
+  	</complexContent>
+      </complexType>
+    </schema>
+  </types>
+
+  <message name="fooRequest">
+    <part name="param1" type="xsd:string"/>
+    <part name="param2" type="xsd:string"/>
+    <part name="param3" type="xsd:string"/>
+  </message>
+
+  <message name="fooResponse">
+    <part name="return" type="tns:StringArray"/>
+  </message>
+
+  <portType name="FooServicePortType">
+    <operation name="foo"
+	parameterOrder="param3 param2 param1">
+      <input message="tns:fooRequest"/>
+      <output message="tns:fooResponse"/>
+    </operation>
+    <operation name="bar"
+	parameterOrder="param1 param2 param3">
+      <input message="tns:fooRequest"/>
+      <output message="tns:fooResponse"/>
+    </operation>
+    <operation name="baz">
+      <input message="tns:fooRequest"/>
+      <output message="tns:fooResponse"/>
+    </operation>
+  </portType>
+
+  <binding name="FooServicePortBinding" type="tns:FooServicePortType">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="foo">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    parts="param1 param3"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:www.example.com:soapbodyparts:v1"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:www.example.com:soapbodyparts:v1"/>
+      </output>
+    </operation>
+    <operation name="bar">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    parts="param3 param2"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:www.example.com:soapbodyparts:v1"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:www.example.com:soapbodyparts:v1"/>
+      </output>
+    </operation>
+    <operation name="baz">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:www.example.com:soapbodyparts:v1"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:www.example.com:soapbodyparts:v1"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service name="FooService">
+    <port name="FooServicePort" binding="tns:FooServicePortBinding">
+      <soap:address location="http://raa.ruby-lang.org/soap/1.0.2/"/>
+    </port>
+  </service>
+</definitions>
