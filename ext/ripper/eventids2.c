@@ -9,8 +9,6 @@
 #define k__END__         (tLAST_TOKEN + 9)
 #define tCHAR            (tLAST_TOKEN + 10)
 
-static ID ripper_id_scan;
-
 static ID ripper_id_backref;
 static ID ripper_id_backtick;
 static ID ripper_id_comma;
@@ -59,52 +57,50 @@ static ID ripper_id_CHAR;
 static void
 ripper_init_eventids2()
 {
-    ripper_id_scan = rb_intern("on__scan");
+    ripper_id_backref = rb_intern("on_backref");
+    ripper_id_backtick = rb_intern("on_backtick");
+    ripper_id_comma = rb_intern("on_comma");
+    ripper_id_const = rb_intern("on_const");
+    ripper_id_cvar = rb_intern("on_cvar");
+    ripper_id_embexpr_beg = rb_intern("on_embexpr_beg");
+    ripper_id_embexpr_end = rb_intern("on_embexpr_end");
+    ripper_id_embvar = rb_intern("on_embvar");
+    ripper_id_float = rb_intern("on_float");
+    ripper_id_gvar = rb_intern("on_gvar");
+    ripper_id_ident = rb_intern("on_ident");
+    ripper_id_int = rb_intern("on_int");
+    ripper_id_ivar = rb_intern("on_ivar");
+    ripper_id_kw = rb_intern("on_kw");
+    ripper_id_lbrace = rb_intern("on_lbrace");
+    ripper_id_lbracket = rb_intern("on_lbracket");
+    ripper_id_lparen = rb_intern("on_lparen");
+    ripper_id_nl = rb_intern("on_nl");
+    ripper_id_op = rb_intern("on_op");
+    ripper_id_period = rb_intern("on_period");
+    ripper_id_rbrace = rb_intern("on_rbrace");
+    ripper_id_rbracket = rb_intern("on_rbracket");
+    ripper_id_rparen = rb_intern("on_rparen");
+    ripper_id_semicolon = rb_intern("on_semicolon");
+    ripper_id_symbeg = rb_intern("on_symbeg");
+    ripper_id_tstring_beg = rb_intern("on_tstring_beg");
+    ripper_id_tstring_content = rb_intern("on_tstring_content");
+    ripper_id_tstring_end = rb_intern("on_tstring_end");
+    ripper_id_words_beg = rb_intern("on_words_beg");
+    ripper_id_qwords_beg = rb_intern("on_qwords_beg");
+    ripper_id_words_sep = rb_intern("on_words_sep");
+    ripper_id_regexp_beg = rb_intern("on_regexp_beg");
+    ripper_id_regexp_end = rb_intern("on_regexp_end");
 
-    ripper_id_backref = rb_intern("on__backref");
-    ripper_id_backtick = rb_intern("on__backtick");
-    ripper_id_comma = rb_intern("on__comma");
-    ripper_id_const = rb_intern("on__const");
-    ripper_id_cvar = rb_intern("on__cvar");
-    ripper_id_embexpr_beg = rb_intern("on__embexpr_beg");
-    ripper_id_embexpr_end = rb_intern("on__embexpr_end");
-    ripper_id_embvar = rb_intern("on__embvar");
-    ripper_id_float = rb_intern("on__float");
-    ripper_id_gvar = rb_intern("on__gvar");
-    ripper_id_ident = rb_intern("on__ident");
-    ripper_id_int = rb_intern("on__int");
-    ripper_id_ivar = rb_intern("on__ivar");
-    ripper_id_kw = rb_intern("on__kw");
-    ripper_id_lbrace = rb_intern("on__lbrace");
-    ripper_id_lbracket = rb_intern("on__lbracket");
-    ripper_id_lparen = rb_intern("on__lparen");
-    ripper_id_nl = rb_intern("on__nl");
-    ripper_id_op = rb_intern("on__op");
-    ripper_id_period = rb_intern("on__period");
-    ripper_id_rbrace = rb_intern("on__rbrace");
-    ripper_id_rbracket = rb_intern("on__rbracket");
-    ripper_id_rparen = rb_intern("on__rparen");
-    ripper_id_semicolon = rb_intern("on__semicolon");
-    ripper_id_symbeg = rb_intern("on__symbeg");
-    ripper_id_tstring_beg = rb_intern("on__tstring_beg");
-    ripper_id_tstring_content = rb_intern("on__tstring_content");
-    ripper_id_tstring_end = rb_intern("on__tstring_end");
-    ripper_id_words_beg = rb_intern("on__words_beg");
-    ripper_id_qwords_beg = rb_intern("on__qwords_beg");
-    ripper_id_words_sep = rb_intern("on__words_sep");
-    ripper_id_regexp_beg = rb_intern("on__regexp_beg");
-    ripper_id_regexp_end = rb_intern("on__regexp_end");
-
-    ripper_id_ignored_nl = rb_intern("on__ignored_nl");
-    ripper_id_comment = rb_intern("on__comment");
-    ripper_id_embdoc_beg = rb_intern("on__embdoc_beg");
-    ripper_id_embdoc = rb_intern("on__embdoc");
-    ripper_id_embdoc_end = rb_intern("on__embdoc_end");
-    ripper_id_sp = rb_intern("on__sp");
-    ripper_id_heredoc_beg = rb_intern("on__heredoc_beg");
-    ripper_id_heredoc_end = rb_intern("on__heredoc_end");
-    ripper_id___end__ = rb_intern("on____end__");
-    ripper_id_CHAR = rb_intern("on__CHAR");
+    ripper_id_ignored_nl = rb_intern("on_ignored_nl");
+    ripper_id_comment = rb_intern("on_comment");
+    ripper_id_embdoc_beg = rb_intern("on_embdoc_beg");
+    ripper_id_embdoc = rb_intern("on_embdoc");
+    ripper_id_embdoc_end = rb_intern("on_embdoc_end");
+    ripper_id_sp = rb_intern("on_sp");
+    ripper_id_heredoc_beg = rb_intern("on_heredoc_beg");
+    ripper_id_heredoc_end = rb_intern("on_heredoc_end");
+    ripper_id___end__ = rb_intern("on___end__");
+    ripper_id_CHAR = rb_intern("on_CHAR");
 }
 
 static struct token_assoc {

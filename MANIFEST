@@ -735,6 +735,8 @@ sample/rcs.awk
 sample/rcs.dat
 sample/rcs.rb
 sample/regx.rb
+sample/ripper/colorize.rb
+sample/ripper/strip-comment.rb
 sample/rss/list_description.rb
 sample/rss/rss_recent.rb
 sample/rss/tdiary_plugin/rss-recent.rb

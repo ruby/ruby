@@ -19,7 +19,7 @@ header
         id, arity = line.split
         arity = arity.to_i
         puts
-        puts "  def on__#{id}#{paramdecl(arity)}"
+        puts "  def on_#{id}#{paramdecl(arity)}"
         puts "    #{arity == 0 ? 'nil' : 'a'}"
         puts "  end"
       end
@@ -28,7 +28,7 @@ header
         id, arity = line.split
         arity = arity.to_i
         puts
-        puts "  def on__#{id}(token)"
+        puts "  def on_#{id}(token)"
         puts "    token"
         puts "  end"
       end

@@ -146,7 +146,6 @@ class Ripper
 
   # This table contains name of scanner events and its arity
   # (arity is always 1 for all scanner events).
-  # on__scan is NOT a scanner event.
   SCANNER_EVENT_TABLE = {
     :CHAR => 1,
     :__end__ => 1,
@@ -196,7 +195,7 @@ class Ripper
   # This array contains name of scanner events.
   SCANNER_EVENTS = SCANNER_EVENT_TABLE.keys
 
-  # This table contains name of all ripper events, except on__scan.
+  # This table contains name of all ripper events.
   EVENTS = PARSER_EVENTS + SCANNER_EVENTS
 
   ###                ###
@@ -218,483 +217,483 @@ class Ripper
   # Parser Events
   #
 
-  def on__BEGIN(a)
+  def on_BEGIN(a)
     a
   end
 
-  def on__END(a)
+  def on_END(a)
     a
   end
 
-  def on__alias(a, b)
+  def on_alias(a, b)
     a
   end
 
-  def on__alias_error(a)
+  def on_alias_error(a)
     a
   end
 
-  def on__aref(a, b)
+  def on_aref(a, b)
     a
   end
 
-  def on__aref_field(a, b)
+  def on_aref_field(a, b)
     a
   end
 
-  def on__arg_ambiguous
+  def on_arg_ambiguous
     nil
   end
 
-  def on__arg_paren(a)
+  def on_arg_paren(a)
     a
   end
 
-  def on__arglist_add(a, b)
+  def on_arglist_add(a, b)
     a
   end
 
-  def on__arglist_add_block(a, b)
+  def on_arglist_add_block(a, b)
     a
   end
 
-  def on__arglist_add_star(a, b)
+  def on_arglist_add_star(a, b)
     a
   end
 
-  def on__arglist_new
+  def on_arglist_new
     nil
   end
 
-  def on__arglist_prepend(a, b)
+  def on_arglist_prepend(a, b)
     a
   end
 
-  def on__array(a)
+  def on_array(a)
     a
   end
 
-  def on__assign(a, b)
+  def on_assign(a, b)
     a
   end
 
-  def on__assign_error(a)
+  def on_assign_error(a)
     a
   end
 
-  def on__assoc_new(a, b)
+  def on_assoc_new(a, b)
     a
   end
 
-  def on__assoclist_from_args(a)
+  def on_assoclist_from_args(a)
     a
   end
 
-  def on__bare_assoc_hash(a)
+  def on_bare_assoc_hash(a)
     a
   end
 
-  def on__begin(a)
+  def on_begin(a)
     a
   end
 
-  def on__binary(a, b, c)
+  def on_binary(a, b, c)
     a
   end
 
-  def on__blockvar_add_block(a, b)
+  def on_blockvar_add_block(a, b)
     a
   end
 
-  def on__blockvar_add_star(a, b)
+  def on_blockvar_add_star(a, b)
     a
   end
 
-  def on__blockvar_new(a)
+  def on_blockvar_new(a)
     a
   end
 
-  def on__bodystmt(a, b, c, d)
+  def on_bodystmt(a, b, c, d)
     a
   end
 
-  def on__brace_block(a, b)
+  def on_brace_block(a, b)
     a
   end
 
-  def on__break(a)
+  def on_break(a)
     a
   end
 
-  def on__call(a, b, c)
+  def on_call(a, b, c)
     a
   end
 
-  def on__case(a, b)
+  def on_case(a, b)
     a
   end
 
-  def on__class(a, b, c)
+  def on_class(a, b, c)
     a
   end
 
-  def on__class_name_error(a)
+  def on_class_name_error(a)
     a
   end
 
-  def on__command(a, b)
+  def on_command(a, b)
     a
   end
 
-  def on__command_call(a, b, c, d)
+  def on_command_call(a, b, c, d)
     a
   end
 
-  def on__const_ref(a)
+  def on_const_ref(a)
     a
   end
 
-  def on__constpath_field(a, b)
+  def on_constpath_field(a, b)
     a
   end
 
-  def on__constpath_ref(a, b)
+  def on_constpath_ref(a, b)
     a
   end
 
-  def on__def(a, b, c)
+  def on_def(a, b, c)
     a
   end
 
-  def on__defined(a)
+  def on_defined(a)
     a
   end
 
-  def on__defs(a, b, c, d, e)
+  def on_defs(a, b, c, d, e)
     a
   end
 
-  def on__do_block(a, b)
+  def on_do_block(a, b)
     a
   end
 
-  def on__dot2(a, b)
+  def on_dot2(a, b)
     a
   end
 
-  def on__dot3(a, b)
+  def on_dot3(a, b)
     a
   end
 
-  def on__dyna_symbol(a)
+  def on_dyna_symbol(a)
     a
   end
 
-  def on__else(a)
+  def on_else(a)
     a
   end
 
-  def on__elsif(a, b, c)
+  def on_elsif(a, b, c)
     a
   end
 
-  def on__ensure(a)
+  def on_ensure(a)
     a
   end
 
-  def on__fcall(a)
+  def on_fcall(a)
     a
   end
 
-  def on__field(a, b, c)
+  def on_field(a, b, c)
     a
   end
 
-  def on__for(a, b, c)
+  def on_for(a, b, c)
     a
   end
 
-  def on__hash(a)
+  def on_hash(a)
     a
   end
 
-  def on__if(a, b, c)
+  def on_if(a, b, c)
     a
   end
 
-  def on__if_mod(a, b)
+  def on_if_mod(a, b)
     a
   end
 
-  def on__ifop(a, b, c)
+  def on_ifop(a, b, c)
     a
   end
 
-  def on__iter_block(a, b)
+  def on_iter_block(a, b)
     a
   end
 
-  def on__massign(a, b)
+  def on_massign(a, b)
     a
   end
 
-  def on__method_add_arg(a, b)
+  def on_method_add_arg(a, b)
     a
   end
 
-  def on__mlhs_add(a, b)
+  def on_mlhs_add(a, b)
     a
   end
 
-  def on__mlhs_add_star(a, b)
+  def on_mlhs_add_star(a, b)
     a
   end
 
-  def on__mlhs_new
+  def on_mlhs_new
     nil
   end
 
-  def on__mlhs_paren(a)
+  def on_mlhs_paren(a)
     a
   end
 
-  def on__module(a, b)
+  def on_module(a, b)
     a
   end
 
-  def on__mrhs_add(a, b)
+  def on_mrhs_add(a, b)
     a
   end
 
-  def on__mrhs_add_star(a, b)
+  def on_mrhs_add_star(a, b)
     a
   end
 
-  def on__mrhs_new
+  def on_mrhs_new
     nil
   end
 
-  def on__mrhs_new_from_arglist(a)
+  def on_mrhs_new_from_arglist(a)
     a
   end
 
-  def on__next(a)
+  def on_next(a)
     a
   end
 
-  def on__opassign(a, b, c)
+  def on_opassign(a, b, c)
     a
   end
 
-  def on__param_error(a)
+  def on_param_error(a)
     a
   end
 
-  def on__params(a, b, c, d)
+  def on_params(a, b, c, d)
     a
   end
 
-  def on__paren(a)
+  def on_paren(a)
     a
   end
 
-  def on__parse_error(a)
+  def on_parse_error(a)
     a
   end
 
-  def on__program(a)
+  def on_program(a)
     a
   end
 
-  def on__qwords_add(a, b)
+  def on_qwords_add(a, b)
     a
   end
 
-  def on__qwords_new
+  def on_qwords_new
     nil
   end
 
-  def on__redo
+  def on_redo
     nil
   end
 
-  def on__regexp_literal(a)
+  def on_regexp_literal(a)
     a
   end
 
-  def on__rescue(a, b, c, d)
+  def on_rescue(a, b, c, d)
     a
   end
 
-  def on__rescue_mod(a, b)
+  def on_rescue_mod(a, b)
     a
   end
 
-  def on__restparam(a)
+  def on_restparam(a)
     a
   end
 
-  def on__retry
+  def on_retry
     nil
   end
 
-  def on__return(a)
+  def on_return(a)
     a
   end
 
-  def on__return0
+  def on_return0
     nil
   end
 
-  def on__sclass(a, b)
+  def on_sclass(a, b)
     a
   end
 
-  def on__space(a)
+  def on_space(a)
     a
   end
 
-  def on__stmts_add(a, b)
+  def on_stmts_add(a, b)
     a
   end
 
-  def on__stmts_new
+  def on_stmts_new
     nil
   end
 
-  def on__string_add(a, b)
+  def on_string_add(a, b)
     a
   end
 
-  def on__string_concat(a, b)
+  def on_string_concat(a, b)
     a
   end
 
-  def on__string_content
+  def on_string_content
     nil
   end
 
-  def on__string_dvar(a)
+  def on_string_dvar(a)
     a
   end
 
-  def on__string_embexpr(a)
+  def on_string_embexpr(a)
     a
   end
 
-  def on__string_literal(a)
+  def on_string_literal(a)
     a
   end
 
-  def on__super(a)
+  def on_super(a)
     a
   end
 
-  def on__symbol(a)
+  def on_symbol(a)
     a
   end
 
-  def on__symbol_literal(a)
+  def on_symbol_literal(a)
     a
   end
 
-  def on__topconst_field(a)
+  def on_topconst_field(a)
     a
   end
 
-  def on__topconst_ref(a)
+  def on_topconst_ref(a)
     a
   end
 
-  def on__unary(a, b)
+  def on_unary(a, b)
     a
   end
 
-  def on__undef(a)
+  def on_undef(a)
     a
   end
 
-  def on__unless(a, b, c)
+  def on_unless(a, b, c)
     a
   end
 
-  def on__unless_mod(a, b)
+  def on_unless_mod(a, b)
     a
   end
 
-  def on__until(a, b)
+  def on_until(a, b)
     a
   end
 
-  def on__until_mod(a, b)
+  def on_until_mod(a, b)
     a
   end
 
-  def on__var_alias(a, b)
+  def on_var_alias(a, b)
     a
   end
 
-  def on__var_field(a)
+  def on_var_field(a)
     a
   end
 
-  def on__var_ref(a)
+  def on_var_ref(a)
     a
   end
 
-  def on__void_stmt
+  def on_void_stmt
     nil
   end
 
-  def on__when(a, b, c)
+  def on_when(a, b, c)
     a
   end
 
-  def on__while(a, b)
+  def on_while(a, b)
     a
   end
 
-  def on__while_mod(a, b)
+  def on_while_mod(a, b)
     a
   end
 
-  def on__word_add(a, b)
+  def on_word_add(a, b)
     a
   end
 
-  def on__word_new
+  def on_word_new
     nil
   end
 
-  def on__words_add(a, b)
+  def on_words_add(a, b)
     a
   end
 
-  def on__words_new
+  def on_words_new
     nil
   end
 
-  def on__xstring_add(a, b)
+  def on_xstring_add(a, b)
     a
   end
 
-  def on__xstring_literal(a)
+  def on_xstring_literal(a)
     a
   end
 
-  def on__xstring_new
+  def on_xstring_new
     nil
   end
 
-  def on__yield(a)
+  def on_yield(a)
     a
   end
 
-  def on__yield0
+  def on_yield0
     nil
   end
 
-  def on__zsuper
+  def on_zsuper
     nil
   end
 
@@ -702,178 +701,177 @@ class Ripper
   # Lexer Events
   #
 
-  def on__scan(event, token)
-  end
-
-  def on__CHAR(token)
+  def on_CHAR(token)
     token
   end
 
-  def on____end__(token)
+  def on___end__(token)
     token
   end
 
-  def on__backref(token)
+  def on_backref(token)
     token
   end
 
-  def on__backtick(token)
+  def on_backtick(token)
     token
   end
 
-  def on__comma(token)
+  def on_comma(token)
     token
   end
 
-  def on__comment(token)
+  def on_comment(token)
     token
   end
 
-  def on__const(token)
+  def on_const(token)
     token
   end
 
-  def on__cvar(token)
+  def on_cvar(token)
     token
   end
 
-  def on__embdoc(token)
+  def on_embdoc(token)
     token
   end
 
-  def on__embdoc_beg(token)
+  def on_embdoc_beg(token)
     token
   end
 
-  def on__embdoc_end(token)
+  def on_embdoc_end(token)
     token
   end
 
-  def on__embexpr_beg(token)
+  def on_embexpr_beg(token)
     token
   end
 
-  def on__embexpr_end(token)
+  def on_embexpr_end(token)
     token
   end
 
-  def on__embvar(token)
+  def on_embvar(token)
     token
   end
 
-  def on__float(token)
+  def on_float(token)
     token
   end
 
-  def on__gvar(token)
+  def on_gvar(token)
     token
   end
 
-  def on__heredoc_beg(token)
+  def on_heredoc_beg(token)
     token
   end
 
-  def on__heredoc_end(token)
+  def on_heredoc_end(token)
     token
   end
 
-  def on__ident(token)
+  def on_ident(token)
     token
   end
 
-  def on__ignored_nl(token)
+  def on_ignored_nl(token)
     token
   end
 
-  def on__int(token)
+  def on_int(token)
     token
   end
 
-  def on__ivar(token)
+  def on_ivar(token)
     token
   end
 
-  def on__kw(token)
+  def on_kw(token)
     token
   end
 
-  def on__lbrace(token)
+  def on_lbrace(token)
     token
   end
 
-  def on__lbracket(token)
+  def on_lbracket(token)
     token
   end
 
-  def on__lparen(token)
+  def on_lparen(token)
     token
   end
 
-  def on__nl(token)
+  def on_nl(token)
     token
   end
 
-  def on__op(token)
+  def on_op(token)
     token
   end
 
-  def on__period(token)
+  def on_period(token)
     token
   end
 
-  def on__qwords_beg(token)
+  def on_qwords_beg(token)
     token
   end
 
-  def on__rbrace(token)
+  def on_rbrace(token)
     token
   end
 
-  def on__rbracket(token)
+  def on_rbracket(token)
     token
   end
 
-  def on__regexp_beg(token)
+  def on_regexp_beg(token)
     token
   end
 
-  def on__regexp_end(token)
+  def on_regexp_end(token)
     token
   end
 
-  def on__rparen(token)
+  def on_rparen(token)
     token
   end
 
-  def on__semicolon(token)
+  def on_semicolon(token)
     token
   end
 
-  def on__sp(token)
+  def on_sp(token)
     token
   end
 
-  def on__symbeg(token)
+  def on_symbeg(token)
     token
   end
 
-  def on__tstring_beg(token)
+  def on_tstring_beg(token)
     token
   end
 
-  def on__tstring_content(token)
+  def on_tstring_content(token)
     token
   end
 
-  def on__tstring_end(token)
+  def on_tstring_end(token)
     token
   end
 
-  def on__words_beg(token)
+  def on_words_beg(token)
     token
   end
 
-  def on__words_sep(token)
+  def on_words_sep(token)
     token
   end
 end
+
+require 'ripper/tokenizer'

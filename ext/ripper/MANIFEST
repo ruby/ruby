@@ -6,6 +6,7 @@ eventids2.c
 extconf.rb
 ripper.rb.in
 lib/ripper.rb
+lib/ripper/filter.rb
 lib/ripper/tokenizer.rb
 test/check-event-arity.rb
 test/check-event-coverage.sh

@@ -17,7 +17,7 @@ def main
 end
 
 def extract_ids(f)
-  (f.read.scan(/ripper_id_(\w+)/).flatten - ['scan']).uniq
+  f.read.scan(/ripper_id_(\w+)/).flatten.uniq
 end
 
 main

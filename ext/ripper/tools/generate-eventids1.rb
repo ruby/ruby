@@ -11,6 +11,6 @@ puts 'static void'
 puts 'ripper_init_eventids1()'
 puts '{'
 ids.each do |id|
-  puts %Q[    ripper_id_#{id} = rb_intern("on__#{id}");]
+  puts %Q[    ripper_id_#{id} = rb_intern("on_#{id}");]
 end
 puts '}'

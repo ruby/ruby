@@ -1,3 +1,23 @@
+Wed Sep 22 14:21:54 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y [ripper]: on__scan event removed.
+
+	* parse.y [ripper]: event name is changed: on__XXX -> on_XXX.
+
+	* ext/ripper/eventids2.c: ditto.
+
+	* ext/ripper/ripper.rb.in: ditto.
+
+	* ext/ripper/lib/ripper.rb: sync with ripper.rb.in.
+
+	* ext/ripper/lib/ripper/tokenizer: ditto.
+
+	* ext/ripper/lib/ripper/filter: new file.
+
+	* sample/ripper/colorize.rb: new file.
+
+	* sample/ripper/strip-comment.rb: new file.
+
 Wed Sep 22 13:50:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (hash_alloc): was using tbl pointer without

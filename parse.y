@@ -4203,14 +4203,11 @@ ripper_dispatch_scan_event(parser, t)
     int t;
 {
     VALUE str;
-    ID event;
 
     if (lex_p < parser->tokp) rb_raise(rb_eRuntimeError, "lex_p < tokp");
     if (lex_p == parser->tokp) return;
     str = rb_str_new(parser->tokp, lex_p - parser->tokp);
-    event = ripper_token2eventid(t);
-    ripper_dispatch2(parser, ripper_id_scan, ID2SYM(event), rb_str_dup(str));
-    yylval.val = ripper_dispatch1(parser, event, str);
+    yylval.val = ripper_dispatch1(parser, ripper_token2eventid(t), str);
     ripper_flush(parser);
 }
 
@@ -4221,13 +4218,10 @@ ripper_dispatch_delayed_token(parser, t)
 {
     int saved_line = ruby_sourceline;
     char *saved_tokp = parser->tokp;
-    ID event = ripper_token2eventid(t);
-    VALUE str = parser->delayed;
 
     ruby_sourceline = parser->delayed_line;
     parser->tokp = lex_pbeg + parser->delayed_col;
-    ripper_dispatch2(parser, ripper_id_scan, ID2SYM(event), rb_str_dup(str));
-    yylval.val = ripper_dispatch1(parser, event, str);
+    yylval.val = ripper_dispatch1(parser, ripper_token2eventid(t), parser->delayed);
     parser->delayed = Qnil;
     ruby_sourceline = saved_line;
     parser->tokp = saved_tokp;
