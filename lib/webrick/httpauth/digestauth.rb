@@ -16,7 +16,6 @@ require 'webrick/httpstatus'
 require 'webrick/httpauth/authenticator'
 require 'digest/md5'
 require 'digest/sha1'
-require 'base64'
 
 module WEBrick
   module HTTPAuth
@@ -254,7 +253,7 @@ module WEBrick
       def generate_next_nonce(req)
         now = "%012d" % req.request_time.to_i
         pk  = hexdigest(now, @instance_key)[0,32]
-        nonce = Base64.encode64(now + ":" + pk).chop # it has 60 length of chars.
+        nonce = [now + ":" + pk].pack("m*").chop # it has 60 length of chars.
         nonce
       end
 
@@ -262,7 +261,7 @@ module WEBrick
         username = auth_req['username']
         nonce = auth_req['nonce']
 
-        pub_time, pk = Base64.decode64(nonce).split(":", 2)
+        pub_time, pk = nonce.unpack("m*")[0].split(":", 2)
         if (!pub_time || !pk)
           error("%s: empty nonce is given", username)
           return false

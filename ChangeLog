@@ -1,3 +1,10 @@
+Sat Dec 18 15:09:02 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/webrick/httpauth.rb,
+	  lib/webrick/httpauth/{basicauth.rb,digestauth.rb}: use
+	  pack/unpack-template char "m" instead of lib/base64.rb to do base64
+	  encoding/decoding.
+
 Fri Dec 17 16:44:26 2004  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in (ac_cv_sizeof_rlim_t): set 8 for BSD/OS.

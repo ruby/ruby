@@ -10,7 +10,6 @@
 require 'webrick/config'
 require 'webrick/httpstatus'
 require 'webrick/httpauth/authenticator'
-require 'base64'
 
 module WEBrick
   module HTTPAuth
