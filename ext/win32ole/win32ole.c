@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.1"
+#define WIN32OLE_VERSION "0.6.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1137,6 +1137,18 @@ reg_get_val(hkey, subkey)
 }
 
 static VALUE
+reg_get_typelib_file_path(hkey)
+    HKEY hkey;
+{
+    VALUE path = Qnil;
+    path = reg_get_val(hkey, "win32");
+    if (path == Qnil) {
+        path = reg_get_val(hkey, "win16");
+    }
+    return path;
+}
+
+static VALUE
 typelib_file_from_clsid(ole)
     VALUE ole;
 {
@@ -1216,7 +1228,7 @@ typelib_file_from_typelib(ole)
                         break;
                     err = reg_open_vkey(hversion, lang, &hlang);
                     if (err == ERROR_SUCCESS) {
-                        if ((file = reg_get_val(hlang, "win32")) != Qnil) 
+                        if ((file = reg_get_typelib_file_path(hlang)) != Qnil) 
                             found = TRUE;
                         RegCloseKey(hlang);
                     }
@@ -3237,6 +3249,19 @@ ole_typedesc2val(pTypeInfo, pTypeDesc, typedetails)
         if(typedetails != Qnil)
             rb_ary_push(typedetails, rb_str_new2("DISPATCH"));
         return rb_str_new2("DISPATCH");
+    case VT_ERROR:
+        if(typedetails != Qnil)
+            rb_ary_push(typedetails, rb_str_new2("ERROR"));
+        return rb_str_new2("ERROR");
+
+    case VT_LPWSTR:
+        if(typedetails != Qnil)
+            rb_ary_push(typedetails, rb_str_new2("LPWSTR"));
+        return rb_str_new2("LPWSTR");
+    case VT_LPSTR:
+        if(typedetails != Qnil)
+            rb_ary_push(typedetails, rb_str_new2("LPSTR"));
+        return rb_str_new2("LPSTR");
     default:
         str = rb_str_new2("Unknown Type ");
         rb_str_concat(str, rb_fix2str(INT2FIX(pTypeDesc->vt), 10));
@@ -3846,7 +3871,7 @@ oletypelib_path(guid, version)
             break;
         err = reg_open_vkey(hkey, lang, &hlang);
         if (err == ERROR_SUCCESS) {
-            path = reg_get_val(hlang, "win32");
+            path = reg_get_typelib_file_path(hlang);
             RegCloseKey(hlang);
         }
     }
@@ -3897,11 +3922,12 @@ foletypelib_ole_classes(self)
         hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
         SysFreeString(pbuf);
         if (FAILED(hr))
-            ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to LoadTypeLibEx");
+            ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Failed to LoadTypeLibEx from `%s'",
+                      StringValuePtr(path));
         ole_classes_from_typelib(pTypeLib, classes);
         OLE_RELEASE(pTypeLib);
     } else {
-        rb_raise(eWIN32OLE_RUNTIME_ERROR, "fail to get type library path");
+        rb_raise(eWIN32OLE_RUNTIME_ERROR, "Failed to get type library path");
     }
     return classes;
 }
