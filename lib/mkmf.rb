@@ -469,7 +469,7 @@ case RUBY_PLATFORM
 when /cygwin|beos|openstep|nextstep|rhapsody/
   $libs = ""
 when /mswin32/
-  $libs = ""
+  $libs = "RubyCRT.lib"
   $local_flags = "rubymw.lib -link /LIBPATH:$(topdir) /EXPORT:Init_$(TARGET)"
 end
 $LOCAL_LIBS = ""

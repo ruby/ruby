@@ -12,13 +12,13 @@ AUTOCONF = autoconf
 
 
 prefix = 
-CFLAGS = -nologo -DNT=1 -Ox -I. -I./missing
+CFLAGS = -nologo -DNT=1 -MD -Ox -I. -I./missing
 LDFLAGS = $(CFLAGS) -Fm
 #CFLAGS = -nologo -DNT=1 -Zi -I. -I./missing
 #LDFLAGS = $(CFLAGS) -Fm
 XLDFLAGS = 
 #EXTLIBS = 
-LIBS = user32.lib advapi32.lib wsock32.lib $(EXTLIBS)
+LIBS = RubyCRT.lib user32.lib advapi32.lib wsock32.lib $(EXTLIBS)
 MISSING = crypt.obj alloca.obj win32.obj isinf.obj isnan.obj
 LDSHARED = 
 DLDFLAGS = 
@@ -94,7 +94,7 @@ miniruby$(EXEEXT):	$(OBJS) $(MAINOBJ) $(EXTOBJS)
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(OBJS) $(LIBS) -o $@
 
 $(PROGRAM):	$(LIBRUBY) $(MAINOBJ) $(LIBRUBY_SO)
-		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) -o $@ $(LIBRUBYARG) -link /STACK:$(STACK)
+		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) -o $@ $(LIBRUBYARG) $(LIBS) -link /STACK:$(STACK)
 
 $(LIBRUBY_A):	$(OBJS) dmyext.obj
 		lib -nologo /OUT:$@ $(OBJS) dmyext.obj

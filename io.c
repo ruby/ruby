@@ -2272,6 +2272,7 @@ next_argv()
 	else {
 	    next_p = -1;
 	    current_file = rb_stdin;
+	    filename = rb_str_new2("-");
 	}
 	init_p = 1;
 	first_p = 0;

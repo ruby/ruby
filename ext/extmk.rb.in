@@ -507,7 +507,7 @@ def extmake(target)
     $libs = ""
   when /mswin32/
     $LIBEXT = "lib"
-    $libs = ""
+    $libs = "RubyCRT.lib"
     $local_flags = "$(topdir)/rubymw.lib -link /EXPORT:Init_$(TARGET)"
   else
     $libs = "-lc"
