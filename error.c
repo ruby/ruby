@@ -28,8 +28,9 @@ int ruby_nerrs;
 
 static void
 err_snprintf(buf, len, fmt, args)
-    char *buf, *fmt;
+    char *buf;
     long len;
+    const char *fmt;
     va_list args;
 {
     long n;
@@ -400,6 +401,22 @@ exc_set_backtrace(exc, bt)
 }
 
 static VALUE
+exit_initialize(argc, argv, exc)
+    int argc;
+    VALUE *argv;
+    VALUE exc;
+{
+    VALUE status = INT2NUM(0);
+    if (argc > 0 && FIXNUM_P(argv[0])) {
+	status = *argv++;
+	--argc;
+    }
+    exc_initialize(argc, argv, exc);
+    rb_iv_set(exc, "status", status);
+    return exc;
+}
+
+static VALUE
 exit_status(exc)
     VALUE exc;
 {
@@ -530,6 +547,7 @@ Init_Exception()
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
 
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
+    rb_define_method(rb_eSystemExit, "initialize", exit_initialize, -1);
     rb_define_method(rb_eSystemExit, "status", exit_status, 0);
 
     rb_eFatal  	    = rb_define_class("fatal", rb_eException);

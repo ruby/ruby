@@ -1181,7 +1181,7 @@ error_handle(ex)
       case TAG_FATAL:
 	if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
 	    VALUE st = rb_iv_get(ruby_errinfo, "status");
-	    ex = NIL_P(st) ? 1 : NUM2INT(st);
+	    ex = NUM2INT(st);
 	}
 	else {
 	    error_print();
@@ -3562,17 +3562,19 @@ rb_mod_protected_method_defined(mod, mid)
     return Qfalse;
 }
 
-NORETURN(static void terminate_process _((int, const char*, long)));
-static void
-terminate_process(status, mesg, mlen)
+#define terminate_process(status, mesg, mlen) rb_exc_raise(system_exit(status, mesg, mlen))
+
+static VALUE
+system_exit(status, mesg, mlen)
     int status;
     const char *mesg;
     long mlen;
 {
-    VALUE exit = rb_exc_new(rb_eSystemExit, mesg, mlen);
+    VALUE args[2];
+    args[0] = INT2NUM(status);
+    args[1] = rb_str_new(mesg, mlen);
 
-    rb_iv_set(exit, "status", INT2NUM(status));
-    rb_exc_raise(exit);
+    return rb_class_new_instance(2, args, rb_eSystemExit);
 }
 
 void
@@ -8869,7 +8871,7 @@ rb_thread_start_0(fn, arg, th_arg)
 	    }
 	}
 	else if (th->safe < 4 && (thread_abort || th->abort || RTEST(ruby_debug))) {
-	    VALUE err = rb_exc_new(rb_eSystemExit, 0, 0);
+	    VALUE err = system_exit(1, 0, 0);
 	    error_print();
 	    /* exit on main_thread */
 	    rb_thread_raise(1, &err, main_thread);

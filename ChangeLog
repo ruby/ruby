@@ -1,3 +1,14 @@
+Wed Nov 27 06:43:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* error.c (exit_initialize): add SystemExit#initialize to set
+	  instance variable status.  (ruby-bugs-ja:PR#362)
+
+	* eval.c (error_handle): now SystemExit have status always.
+
+	* eval.c (system_exit): just instantiate SystemExit without raise.
+
+	* eval.c (rb_thread_start_0): initialize SystemExit properly.
+
 Mon Nov 25 19:55:38 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): return true if not dynamic and not static.
