@@ -55,7 +55,7 @@ end
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 
     f.print("#include <windows.h>\n")
-    f.print("#include <winver.h>\n") if $wce_ver=="2.11"
+    f.print("#include <winver.h>\n") if $wce_ver=="2.11" or $wce_ver=="3.00"
 
     f.print <<EOF
 

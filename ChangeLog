@@ -1,3 +1,9 @@
+Sat Jun 21 13:56:09 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
+
+	* wince/Makefile.sub: undefine HAVE__SETJMP.
+
+	* wince/resource.rb: include winver.h in wince3.0.
+
 Fri Jun 20 23:28:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): should not propagate TAG_BREAK and
