@@ -256,11 +256,20 @@ class << Tk::BLT::Table
     container
   end
 
-  def add(container, win=nil, *args)
-    if win
-      tk_call('::blt::table', container, _epath(win), *args)
-    else
+  def add(container, *args)
+    if args.empty?
       tk_call('::blt::table', container)
+    else
+      args = args.collect{|arg|
+        if arg.kind_of?(TkWindow)
+          _epath(arg)
+        elsif arg.kind_of?(Array)  # index
+          arg.join(',')
+        else
+          arg
+        end
+      }
+      tk_call('::blt::table', container, *args)
     end
   end
 

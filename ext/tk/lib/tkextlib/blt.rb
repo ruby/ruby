@@ -105,6 +105,47 @@ module Tk
 
     ####################################################
 
+    def self.active_legend(graph)
+      tk_call_without_enc('Blt_ActiveLegend', graph)
+    end
+    def self.crosshairs(graph)
+      tk_call_without_enc('Blt_Crosshairs', graph)
+    end
+    def self.zoom_stack(graph)
+      tk_call_without_enc('Blt_ZoomStack', graph)
+    end
+    def self.print_key(graph)
+      tk_call_without_enc('Blt_PrintKey', graph)
+    end
+    def self.closest_point(graph)
+      tk_call_without_enc('Blt_ClosestPoint', graph)
+    end
+
+    module GraphCommand
+      def active_legend
+        tk_call_without_enc('Blt_ActiveLegend', @path)
+        self
+      end
+      def crosshairs
+        tk_call_without_enc('Blt_Crosshairs', @path)
+        self
+      end
+      def zoom_stack
+        tk_call_without_enc('Blt_ZoomStack', @path)
+        self
+      end
+      def print_key
+        tk_call_without_enc('Blt_PrintKey', @path)
+        self
+      end
+      def closest_point
+        tk_call_without_enc('Blt_ClosestPoint', @path)
+        self
+      end
+    end
+
+    ####################################################
+
     autoload :PlotComponent,'tkextlib/blt/component.rb'
 
     autoload :Barchart,     'tkextlib/blt/barchart.rb'

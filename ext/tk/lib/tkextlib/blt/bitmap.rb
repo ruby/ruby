@@ -42,26 +42,41 @@ module Tk::BLT
       alias _new new
 
       def new(data, keys={})
-        _new(:data, data, keys)
+        _new(:data, nil, data, keys)
       end
       alias define new
 
+      def new_with_name(name, data, keys={})
+        _new(:data, name, data, keys)
+      end
+      alias define_with_name new_with_name
+
       def compose(text, keys={})
-        _new(:text, text, keys)
+        _new(:text, nil, text, keys)
+      end
+
+      def compose_with_name(name, text, keys={})
+        _new(:text, name, text, keys)
       end
     end
 
-    def initialize(type, data, keys = {})
-      @id = BITMAP_ID.join(TkCore::INTERP._ip_id_)
-      BITMAP_ID[1].succ!
-      BITMAP_ID_TBL[@id] = self
+    def initialize(type, name, data, keys = {})
+      if name
+        @id = name
+      else
+        @id = BITMAP_ID.join(TkCore::INTERP._ip_id_)
+        BITMAP_ID[1].succ!
+        BITMAP_ID_TBL[@id] = self
+      end
 
       @path = @id
 
-      if type == :text
-        tk_call('::blt::bitmap', 'compose', @id, *hash_kv(keys))
-      else # :data
-        tk_call('::blt::bitmap', 'define', @id, *hash_kv(keys))
+      unless bool(tk_call('::blt::bitmap', 'exists', @id))
+        if type == :text
+          tk_call('::blt::bitmap', 'compose', @id, data, *hash_kv(keys))
+        else # :data
+          tk_call('::blt::bitmap', 'define', @id, data, *hash_kv(keys))
+        end
       end
     end
 

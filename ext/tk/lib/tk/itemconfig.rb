@@ -6,6 +6,8 @@ require 'tkutil'
 require 'tk/itemfont.rb'
 
 module TkItemConfigOptkeys
+  include TkUtil
+
   def __item_numval_optkeys(id)
     []
   end
@@ -119,7 +121,12 @@ module TkItemConfigMethod
   ################################################
 
   def itemcget(tagOrId, option)
+    orig_opt = option
     option = option.to_s
+
+    if option.length == 0
+      fail ArgumentError, "Invalid option `#{orig_opt.inspect}'"
+    end
 
     if ( method = _symbolkey2str(__item_methodcall_optkeys(tagid(tagOrId)))[option] )
       return self.__send__(method, tagOrId)
@@ -204,7 +211,12 @@ module TkItemConfigMethod
       end
 
     else
+      orig_slot = slot
       slot = slot.to_s
+      if slot.length == 0
+        fail ArgumentError, "Invalid option `#{orig_slot.inspect}'"
+      end
+
       if ( conf = __item_keyonly_optkeys(tagid(tagOrId)).find{|k, v| k.to_s == slot } )
         defkey, undefkey = conf
         if value
@@ -229,7 +241,7 @@ module TkItemConfigMethod
 
   def itemconfiginfo(tagOrId, slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
-      if (slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
+      if (slot && slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
         fontkey  = $2
         conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
         conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
@@ -487,7 +499,7 @@ module TkItemConfigMethod
       end
 
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
-      if (slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
+      if (slot && slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
         fontkey  = $2
         conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
         conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 

@@ -17,6 +17,8 @@ TkPackage.require('treectrl')
 
 module Tk
   class TreeCtrl < TkWindow
+    BindTag_FileList = TkBindTag.new_by_name('TreeCtrlFileList')
+
     def self.package_version
       begin
         TkPackage.require('treectrl')
@@ -24,6 +26,9 @@ module Tk
         ''
       end
     end
+
+    HasColumnCreateCommand = 
+      (TkPackage.vcompare(self.package_version, '1.1') >= 0)
 
     # dummy :: 
     #  pkgIndex.tcl of TreeCtrl-1.0 doesn't support auto_load for 
@@ -146,7 +151,7 @@ module Tk::TreeCtrl::ConfigMethod
       None
 
     when 'dragimage'
-      obj
+      None
 
     when 'element'
       obj
@@ -155,7 +160,7 @@ module Tk::TreeCtrl::ConfigMethod
       obj
 
     when 'marquee'
-      obj
+      None
 
     when 'notify'
       obj
@@ -171,6 +176,10 @@ module Tk::TreeCtrl::ConfigMethod
   def tagid(mixed_id)
     if mixed_id == 'debug'
       ['debug', None]
+    elsif mixed_id == 'dragimage'
+      ['dragimage', None]
+    elsif mixed_id == 'marquee'
+      ['marquee', None]
     elsif mixed_id.kind_of?(Array)
       [mixed_id[0], treectrl_tagid(*mixed_id)]
     else
@@ -237,6 +246,17 @@ module Tk::TreeCtrl::ConfigMethod
   end
   private :__item_configinfo_struct
 
+
+  def __item_font_optkeys(id)
+    if id.kind_of?(Array) && (id[0] == 'element' || 
+                              (id[0].kind_of?(Array) && id[0][1] == 'element'))
+      []
+    else
+      ['font']
+    end
+  end
+  private :__item_font_optkeys
+
   def __item_numstrval_optkeys(id)
     if id == 'debug'
       ['displaydelay']
@@ -249,14 +269,28 @@ module Tk::TreeCtrl::ConfigMethod
   def __item_boolval_optkeys(id)
     if id == 'debug'
       ['data', 'display', 'enable']
+    elsif id == 'dragimage'
+      ['visible']
+    elsif id == 'marquee'
+      ['visible']
     elsif id.kind_of?(Array)
       case id[0]
+      when 'item'
+        ['button', 'visible']
       when 'column'
         ['button', 'expand', 'squeeze', 'sunken', 'visible', 'widthhack']
       when 'element'
         ['filled', 'showfocus']
+      when 'notify'
+        ['active']
+      when 'style'
+        ['detach']
       else
-        super(id)
+        if id[0].kind_of?(Array) && id[0][1] == 'element'
+          ['filled', 'showfocus']
+        else
+          super(id)
+        end
       end
     else
       super(id)
@@ -280,8 +314,14 @@ module Tk::TreeCtrl::ConfigMethod
         ['itembackground']
       when 'element'
         ['relief']
+      when 'style'
+        ['union']
       else
-        []
+        if id[0].kind_of?(Array) && id[0][1] == 'element'
+          ['relief']
+        else
+          []
+        end
       end
     else
       []
@@ -328,17 +368,17 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo('debug', slot)
   end
 
-  def dragimage_cget(tagOrId, option)
-    itemcget(['dragimage', tagOrId], option)
+  def dragimage_cget(option)
+    itemcget('dragimage', option)
   end
-  def dragimage_configure(tagOrId, slot, value=None)
-    itemconfigure(['dragimage', tagOrId], slot, value)
+  def dragimage_configure(slot, value=None)
+    itemconfigure('dragimage', slot, value)
   end
-  def dragimage_configinfo(tagOrId, slot=nil)
-    itemconfiginfo(['dragimage', tagOrId], slot)
+  def dragimage_configinfo(slot=nil)
+    itemconfiginfo('dragimage', slot)
   end
-  def current_dragimage_configinfo(tagOrId, slot=nil)
-    current_itemconfiginfo(['dragimage', tagOrId], slot)
+  def current_dragimage_configinfo(slot=nil)
+    current_itemconfiginfo('dragimage', slot)
   end
 
   def element_cget(tagOrId, option)
@@ -380,17 +420,17 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo([['item', 'element'], [item, column, elem]], slot)
   end
 
-  def marquee_cget(tagOrId, option)
-    itemcget(['marquee', tagOrId], option)
+  def marquee_cget(option)
+    itemcget('marquee', option)
   end
-  def marquee_configure(tagOrId, slot, value=None)
-    itemconfigure(['marquee', tagOrId], slot, value)
+  def marquee_configure(slot, value=None)
+    itemconfigure('marquee', slot, value)
   end
-  def marquee_configinfo(tagOrId, slot=nil)
-    itemconfiginfo(['marquee', tagOrId], slot)
+  def marquee_configinfo(slot=nil)
+    itemconfiginfo('marquee', slot)
   end
-  def current_marquee_configinfo(tagOrId, slot=nil)
-    current_itemconfiginfo(['marquee', tagOrId], slot)
+  def current_marquee_configinfo(slot=nil)
+    current_itemconfiginfo('marquee', slot)
   end
 
   def notify_cget(win, pattern, option)
@@ -757,17 +797,20 @@ class Tk::TreeCtrl
   end
   alias item_first_child item_firstchild
 
-  def item_hashbutton(item, st=None)
+  def item_hasbutton(item, st=None)
     if st == None
-      bool(tk_send('item', 'hashbutton'))
+      bool(tk_send('item', 'hasbutton'))
     else
-      tk_send('item', 'hashbutton', st)
+      tk_send('item', 'hasbutton', st)
       self
     end
   end
-  def item_hashbutton?(item)
-    item_hashbutton(item)
+  alias item_has_button item_hasbutton
+
+  def item_hasbutton?(item)
+    item_hasbutton(item)
   end
+  alias item_has_button? item_hasbutton?
 
   def item_index(item)
     list(tk_send('item', 'index', item))
@@ -811,8 +854,8 @@ class Tk::TreeCtrl
   end
   alias item_next_sibling item_nextsibling
 
-  def item_numchildren()
-    number(tk_send('item', 'numchildren'))
+  def item_numchildren(item)
+    number(tk_send('item', 'numchildren', item))
   end
   alias item_num_children  item_numchildren
   alias item_children_size item_numchildren
@@ -850,10 +893,10 @@ class Tk::TreeCtrl
     opts = opts.collect{|param|
       if param.kind_of?(Hash)
         param = _symbolkey2str(param)
-        if param.key('column')
+        if param.key?('column')
           key = '-column'
           desc = param.delete('column')
-        elsif param.key('element')
+        elsif param.key?('element')
           key = '-element'
           desc = param.delete('element')
         else
@@ -863,7 +906,7 @@ class Tk::TreeCtrl
         if param.empty?
           param = None
         else
-          param = __conv_item_keyonly_opts(item, param).to_a
+          param = hash_kv(__conv_item_keyonly_opts(item, param))
         end
 
         if key
@@ -874,7 +917,7 @@ class Tk::TreeCtrl
 
       elsif param.kind_of?(Array)
         if param[2].kind_of?(Hash)
-          param[2] = __conv_item_keyonly_opts(item, param[2]).to_a
+          param[2] = hash_kv(__conv_item_keyonly_opts(item, param[2]))
         end
         param
 
@@ -898,17 +941,15 @@ class Tk::TreeCtrl
   end
   private :_item_sort_core
 
+  def item_sort(item, *opts)
+    _item_sort_core(true, item, *opts)
+  end
   def item_sort_not_really(item, *opts)
     _item_sort_core(false, item, *opts)
   end
 
-  def item_sort(item, *opts)
-    _item_sort_core(true, item, *opts)
-  end
-
   def item_state_forcolumn(item, column, *args)
     tk_send('item', 'state', 'forcolumn', item, column, *args)
-    self
   end
   alias item_state_for_column item_state_forcolumn
 
@@ -922,7 +963,6 @@ class Tk::TreeCtrl
 
   def item_state_set(item, *args)
     tk_send('item', 'state', 'set', item, *args)
-    self
   end
 
   def item_style_elements(item, column)
@@ -1230,7 +1270,8 @@ class Tk::TreeCtrl
   def _conv_style_layout_val(sty, val)
     case sty.to_s
     when 'padx', 'pady', 'ipadx', 'ipady'
-      number(val)
+      lst = list(val)
+      (lst.size == 1)? lst[0]: lst
     when 'detach'
       bool(val)
     when 'union'
@@ -1256,6 +1297,7 @@ class Tk::TreeCtrl
     else
       ret = Hash.new
       Hash[*simplelist(tk_send('style', 'layout', style, elem))].each{|k, v|
+        k = k[1..-1]
         ret[k] = _conv_style_layout_val(k, v)
       }
       ret
@@ -1599,18 +1641,20 @@ class Tk::TreeCtrl::Item < TkObject
   end
   alias first_child firstchild
 
-  def hashbutton(st=None)
+  def hasbutton(st=None)
     if st == None
-      @tree.item_hashbutton(@id)
+      @tree.item_hasbutton(@id)
     else
-      @tree.item_hashbutton(@id, st)
+      @tree.item_hasbutton(@id, st)
       self
     end
   end
+  alias has_button hasbutton
 
-  def hashbutton?
-    @tree.item_hashbutton(@id)
+  def hasbutton?
+    @tree.item_hasbutton(@id)
   end
+  alias has_button? hasbutton?
 
   def index
     @tree.item_index(@id)
@@ -1684,6 +1728,10 @@ class Tk::TreeCtrl::Item < TkObject
 
   def sort(*opts)
     @tree.item_sort(@id, *opts)
+  end
+  def sort_not_really(*opts)
+    @tree.item_sort_not_really(@id, *opts)
+    self
   end
 
   def state_forcolumn(column, *args)
@@ -1827,5 +1875,151 @@ class Tk::TreeCtrl::Style < TkObject
     else
       @tree.style_layout(@id, elem, keys)
     end
+  end
+end
+
+module Tk::TreeCtrl::BindCallback
+  include Tk
+  extend Tk
+end
+
+class << Tk::TreeCtrl::BindCallback
+  def cursorCheck(w, x, y)
+    tk_call('::TreeCtrl::CursorCheck', w, x, y)
+  end
+  def cursorCheckAux(w)
+    tk_call('::TreeCtrl::CursorCheckAux', w)
+  end
+  def cursorCancel(w)
+    tk_call('::TreeCtrl::CursorCancel', w)
+  end
+  def buttonPress1(w, x, y)
+    tk_call('::TreeCtrl::ButtonPress1', w, x, y)
+  end
+  def doubleButton1(w, x, y)
+    tk_call('::TreeCtrl::DoubleButton1', w, x, y)
+  end
+  def motion1(w, x, y)
+    tk_call('::TreeCtrl::Motion1', w, x, y)
+  end
+  def leave1(w, x, y)
+    tk_call('::TreeCtrl::Leave1', w, x, y)
+  end
+  def release1(w, x, y)
+    tk_call('::TreeCtrl::Release1', w, x, y)
+  end
+  def beginSelect(w, el)
+    tk_call('::TreeCtrl::BeginSelect', w, el)
+  end
+  def motion(w, le)
+    tk_call('::TreeCtrl::Motion', w, el)
+  end
+  def beginExtend(w, el)
+    tk_call('::TreeCtrl::BeginExtend', w, el)
+  end
+  def beginToggle(w, el)
+    tk_call('::TreeCtrl::BeginToggle', w, el)
+  end
+  def cancelRepeat
+    tk_call('::TreeCtrl::CancelRepeat')
+  end
+  def autoScanCheck(w, x, y)
+    tk_call('::TreeCtrl::AutoScanCheck', w, x, y)
+  end
+  def autoScanCheckAux(w)
+    tk_call('::TreeCtrl::AutoScanCheckAux', w)
+  end
+  def autoScanCancel(w)
+    tk_call('::TreeCtrl::AutoScanCancel', w)
+  end
+  def up_down(w, n)
+    tk_call('::TreeCtrl::UpDown', w, n)
+  end
+  def left_right(w, n)
+    tk_call('::TreeCtrl::LeftRight', w, n)
+  end
+  def setActiveItem(w, idx)
+    tk_call('::TreeCtrl::SetActiveItem', w, idx)
+  end
+  def extendUpDown(w, amount)
+    tk_call('::TreeCtrl::ExtendUpDown', w, amount)
+  end
+  def dataExtend(w, el)
+    tk_call('::TreeCtrl::DataExtend', w, el)
+  end
+  def cancel(w)
+    tk_call('::TreeCtrl::Cancel', w)
+  end
+  def selectAll(w)
+    tk_call('::TreeCtrl::selectAll', w)
+  end
+  def marqueeBegin(w, x, y)
+    tk_call('::TreeCtrl::MarqueeBegin', w, x, y)
+  end
+  def marqueeUpdate(w, x, y)
+    tk_call('::TreeCtrl::MarqueeUpdate', w, x, y)
+  end
+  def marqueeEnd(w, x, y)
+    tk_call('::TreeCtrl::MarqueeEnd', w, x, y)
+  end
+  def scanMark(w, x, y)
+    tk_call('::TreeCtrl::ScanMark', w, x, y)
+  end
+  def scanDrag(w, x, y)
+    tk_call('::TreeCtrl::ScanDrag', w, x, y)
+  end
+
+  # filelist-bindings
+  def fileList_button1(w, x, y)
+    tk_call('::TreeCtrl::FileListButton1', w, x, y)
+  end
+  def fileList_motion1(w, x, y)
+    tk_call('::TreeCtrl::FileListMotion1', w, x, y)
+  end
+  def fileList_motion(w, x, y)
+    tk_call('::TreeCtrl::FileListMotion', w, x, y)
+  end
+  def fileList_leave1(w, x, y)
+    tk_call('::TreeCtrl::FileListLeave1', w, x, y)
+  end
+  def fileList_release1(w, x, y)
+    tk_call('::TreeCtrl::FileListRelease1', w, x, y)
+  end
+  def fileList_edit(w, i, s, e)
+    tk_call('::TreeCtrl::FileListEdit', w, i, s, e)
+  end
+  def fileList_editCancel(w)
+    tk_call('::TreeCtrl::FileListEditCancel', w)
+  end
+  def fileList_autoScanCheck(w, x, y)
+    tk_call('::TreeCtrl::FileListAutoScanCheck', w, x, y)
+  end
+  def fileList_autoScanCheckAux(w)
+    tk_call('::TreeCtrl::FileListAutoScanCheckAux', w)
+  end
+
+  def entryOpen(w, item, col, elem)
+    tk_call('::::TreeCtrl::EntryOpen', w, item, col, elem)
+  end
+  def entryExpanderOpen(w, item, col, elem)
+    tk_call('::TreeCtrl::EntryExpanderOpen', w, item, col, elem)
+  end
+  def entryClose(w, accept)
+    tk_call('::TreeCtrl::EntryClose', w, accept)
+  end
+  def entryExpanderKeypress(w)
+    tk_call('::TreeCtrl::EntryExpanderKeypress', w)
+  end
+  def textOpen(w, item, col, elem, width=0, height=0)
+    tk_call('::TreeCtrl::TextOpen', w, item, col, elem, width, height)
+  end
+  def textExpanderOpen(w, item, col, elem, width)
+    tk_call('::TreeCtrl::TextOpen', w, item, col, elem, width)
+  end
+  def textClose(w, accept)
+    tk_call('::TreeCtrl::TextClose', w, accept)
+  end
+  def textExpanderKeypress(w)
+    tk_call('::TreeCtrl::TextExpanderKeypress', w)
   end
 end

@@ -13,6 +13,27 @@ module Tk::BLT
     extend TkItemConfigMethod
 
     TkCommandNames = ['::blt::busy'.freeze].freeze
+
+    ###########################
+
+    class Shield < TkWindow
+      def self.shield_path(win)
+        win = window(win) unless win.kind_of?(TkWindow)
+        if win.kind_of?(TkToplevel)
+          win.path + '._Busy'
+        else
+          win.path + '_Busy'
+        end
+      end
+
+      def initialize(win)
+        @path = self.class.shield_path(win)
+      end
+    end
+
+    def self.shield_path(win)
+      Tk::BLT::Busy::Shield.shield_path(win)
+    end
   end
 end
 
@@ -27,27 +48,6 @@ class << Tk::BLT::Busy
   alias configinfo itemconfiginfo
   alias current_configinfo current_itemconfiginfo
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
-
-  ##################################
-
-  class Shield < TkWindow
-    def self.shield_path(win)
-      win = window(win) unless win.kind_of?(TkWindow)
-      if win.kind_of?(TkToplevel)
-        win.path + '._Busy'
-      else
-        win.path + '_Busy'
-      end
-    end
-
-    def initialize(win)
-      @path = self.class.shield_path(win)
-    end
-  end
-
-  def shield_path(win)
-    Tk::BLT::Busy::Shield.shield_path(win)
-  end
 
   ##################################
 

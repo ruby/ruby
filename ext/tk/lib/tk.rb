@@ -448,7 +448,7 @@ end
 
   private_class_method :tk_split_escstr, :tk_split_sublist
   private_class_method :tk_split_list, :tk_split_simplelist
-  private_class_method :array2tk_list
+#  private_class_method :array2tk_list
 
 =begin
   ### --> definition is moved to TkUtil module
@@ -582,6 +582,12 @@ end
   end
   private :_toUTF8, :_fromUTF8
   module_function :_toUTF8, :_fromUTF8
+
+  def _callback_entry_class?(cls)
+    cls <= Proc || cls <= Method || cls <= TkCallbackEntry
+  end
+  private :_callback_entry_class?
+  module_function :_callback_entry_class?
 
   def _callback_entry?(obj)
     obj.kind_of?(Proc) || obj.kind_of?(Method) || obj.kind_of?(TkCallbackEntry)
@@ -1299,6 +1305,10 @@ module TkCore
     Thread.critical = crit_bup
 
     tk_call_without_enc('after','idle',cmdid)
+  end
+
+  def after_cancel(afterId)
+    tk_call_without_enc('after','cancel',afterId)
   end
 
   def windowingsystem
@@ -2612,7 +2622,12 @@ module TkConfigMethod
   end
 
   def cget(slot)
+    orig_slot = slot
     slot = slot.to_s
+ 
+   if slot.length == 0
+      fail ArgumentError, "Invalid option `#{orig_slot.inspect}'"
+    end
 
     if ( method = _symbolkey2str(__methodcall_optkeys)[slot] )
       return self.__send__(method)
@@ -2698,7 +2713,12 @@ module TkConfigMethod
       end
 
     else
+      orig_slot = slot
       slot = slot.to_s
+      if slot.length == 0
+        fail ArgumentError, "Invalid option `#{orig_slot.inspect}'"
+      end
+
       if ( conf = __keyonly_optkeys.find{|k, v| k.to_s == slot} )
         defkey, undefkey = conf
         if value
@@ -2727,7 +2747,8 @@ module TkConfigMethod
 
   def configinfo(slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
-      if (slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
+      if (slot && 
+          slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
         fontkey  = $2
         conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{fontkey}"))))
         conf[__configinfo_struct[:key]] = 
@@ -2984,7 +3005,8 @@ module TkConfigMethod
       end
 
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
-      if (slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
+      if (slot && 
+          slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
         fontkey  = $2
         conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{fontkey}"))))
         conf[__configinfo_struct[:key]] = 
@@ -4002,7 +4024,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-03-14'.freeze
+  RELEASE_DATE = '2005-03-26'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
