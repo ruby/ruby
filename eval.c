@@ -4163,14 +4163,6 @@ top_public(argc, argv)
 }
 
 static VALUE
-top_protected(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    return mod_protected(argc, argv, cObject);
-}
-
-static VALUE
 top_private(argc, argv)
     int argc;
     VALUE *argv;
@@ -4436,7 +4428,6 @@ Init_eval()
 
     rb_define_singleton_method(TopSelf, "include", top_include, -1);
     rb_define_singleton_method(TopSelf, "public", top_public, -1);
-    rb_define_singleton_method(TopSelf, "protected", top_protected, -1);
     rb_define_singleton_method(TopSelf, "private", top_private, -1);
 
     rb_define_method(mKernel, "extend", obj_extend, -1);

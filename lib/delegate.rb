@@ -20,7 +20,7 @@ class Delegator
     end
     for method in obj.methods
       next if preserved.include? method
-      eval "def self.#{method}(*args); __getobj__.__send__(:#{method}, *args){|x|yield}; end"
+      eval "def self.#{method}(*args,&block); __getobj__.__send__(:#{method}, *args,&block); end"
     end
   end
 

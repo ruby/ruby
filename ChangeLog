@@ -1,3 +1,9 @@
+Fri Mar 27 13:49:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (ruby_prog_init): load-path order changed.  Paths in
+ 	  the RUBYLIB environment variable comes first in non-tainted
+ 	  mode.
+
 Thu Mar 26 11:51:09 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_call): new feature: `protected' methods.
@@ -17,9 +23,9 @@ Wed Mar 25 08:12:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
  	  float value.
 
 	* eval.c (f_eval): optional third and fourth argument to specify
-	  file name and line number.
+	  file-name and line-number.
 
-	* eval.c (eval): filename and linenumber set properly.
+	* eval.c (eval): file-name and line-number set properly.
 
 	* parse.y (assign_in_cond): literal assignment is now warning, not 
 	  compile error.

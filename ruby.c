@@ -636,6 +636,8 @@ forbid_setid(s)
         Fatal("No %s allowed while running setuid", s);
     if (egid != gid)
         Fatal("No %s allowed while running setgid", s);
+    if (rb_safe_level() > 0)
+        Fatal("No %s allowed in tainted mode", s);
 }
 
 #if defined(_WIN32) || defined(DJGPP)
@@ -689,22 +691,21 @@ ruby_prog_init()
 	addpath(".");
     }
 
+    addpath(RUBY_LIB);
 #if defined(_WIN32) || defined(DJGPP)
     addpath(ruby_libpath());
-#endif
-
-    if (rb_safe_level() == 0) {
-	addpath(getenv("RUBYLIB"));
-    }
-
-#ifdef RUBY_THIN_ARCHLIB
-    addpath(RUBY_THIN_ARCHLIB);
 #endif
 
 #ifdef RUBY_ARCHLIB
     addpath(RUBY_ARCHLIB);
 #endif
-    addpath(RUBY_LIB);
+#ifdef RUBY_THIN_ARCHLIB
+    addpath(RUBY_THIN_ARCHLIB);
+#endif
+
+    if (rb_safe_level() == 0) {
+	addpath(getenv("RUBYLIB"));
+    }
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
 
