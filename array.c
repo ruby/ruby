@@ -915,7 +915,7 @@ rb_ary_to_ary(obj)
 	return obj;
     }
     if (rb_respond_to(obj, rb_intern("to_ary"))) {
-	return rb_convert_type(obj, T_ARRAY, "Array", "to_ary");
+	return to_ary(obj);
     }
     return rb_ary_new3(1, obj);
 }

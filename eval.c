@@ -2598,34 +2598,6 @@ avalue_splat(v)
     return v;
 }
 
-#if 1
-VALUE
-rb_Array(val)
-    VALUE val;
-{
-    VALUE tmp = rb_check_array_type(val);
-
-    if (NIL_P(tmp)) {
-	/* hack to avoid invoke Object#to_a */
-	VALUE origin;
-	ID id = rb_intern("to_a");
-
-	if (search_method(CLASS_OF(val), id, &origin) &&
-	    RCLASS(origin)->m_tbl != RCLASS(rb_mKernel)->m_tbl) { /* exclude Kernel#to_a */
-	    val = rb_funcall(val, id, 0);
-	    if (TYPE(val) != T_ARRAY) {
-		rb_raise(rb_eTypeError, "`to_a' did not return Array");
-	    }
-	    return val;
-	}
-	else {
-	    return rb_ary_new3(1, val);
-	}
-    }
-    return tmp;
-}
-#endif
-
 static VALUE
 splat_value(v)
     VALUE v;

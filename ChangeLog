@@ -1,3 +1,12 @@
+Thu Mar 18 15:27:25 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c: remove specialized version of rb_Array().  use simple
+	  one defined in object.c.
+
+	* object.c (Init_Object): remove Kernel#to_a.
+
+	* enum.c (enum_zip): use "to_a" instead of "to_ary".
+
 Wed Mar 17 00:22:03 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* oniguruma.h: imported Oniguruma 2.2.5.

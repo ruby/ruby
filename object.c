@@ -178,7 +178,6 @@ rb_obj_type(obj)
     return rb_class_real(CLASS_OF(obj));
 }
 
-
 /*
  *  call-seq:
  *     obj.class    => class
@@ -315,30 +314,6 @@ rb_obj_init_copy(obj, orig)
     }
     return obj;
 }
-
-/*
- *  call-seq:
- *     obj.to_a -> anArray
- *  
- *  Returns an array representation of <i>obj</i>. For objects of class
- *  <code>Object</code> and others that don't explicitly override the
- *  method, the return value is an array containing <code>self</code>. 
- *  However, this latter behavior will soon be obsolete.
- *     
- *     self.to_a       #=> -:1: warning: default `to_a' will be obsolete
- *     "hello".to_a    #=> ["hello"]
- *     Time.new.to_a   #=> [39, 54, 8, 9, 4, 2003, 3, 99, true, "CDT"]
- */
-
-
-static VALUE
-rb_any_to_a(obj)
-    VALUE obj;
-{
-    rb_warn("default `to_a' will be obsolete");
-    return rb_ary_new3(1, obj);
-}
-
 
 /*
  *  call-seq:
@@ -2322,7 +2297,6 @@ rb_f_string(obj, arg)
     return rb_String(arg);
 }
 
-#if 0
 VALUE
 rb_Array(val)
     VALUE val;
@@ -2345,7 +2319,6 @@ rb_Array(val)
     }
     return tmp;
 }
-#endif
 
 /*
  *  call-seq:
@@ -2507,7 +2480,6 @@ Init_Object()
     rb_define_method(rb_mKernel, "freeze", rb_obj_freeze, 0);
     rb_define_method(rb_mKernel, "frozen?", rb_obj_frozen_p, 0);
 
-    rb_define_method(rb_mKernel, "to_a", rb_any_to_a, 0); /* to be removed */
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
     rb_define_method(rb_mKernel, "methods", rb_obj_methods, -1);

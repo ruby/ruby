@@ -71,7 +71,7 @@ module RSS
 	class UnknownConversionMethodError < Error
 		attr_reader :to, :from
 		def initialize(to, from)
-			@to = from
+			@to = to
 			@from = from
 			super("can't convert to #{to} from #{from}.")
 		end
@@ -83,7 +83,7 @@ module RSS
 		attr_reader :string, :to, :from
 		def initialize(string, to, from)
 			@string = string
-			@to = from
+			@to = to
 			@from = from
 			super("can't convert #{@string} to #{to} from #{from}.")
 		end
