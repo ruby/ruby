@@ -1,3 +1,7 @@
+Thu May 27 20:02:09  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* io.c (rb_io_fwrite): check all case errno != 0 [ruby-dev:23648]
+
 Thu May 27 15:54:02 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (MDTM_REGEXP): fix for demon's ftp server.
@@ -8,7 +12,7 @@ Thu May 27 14:53:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* io.c (rb_io_fwrite): workaround for bcc32's fwrite bug.
 	  add errno checking.  [ruby-dev:23627]
 
-	* io.c (rb_io_fwrite): should check if errnro == ENOENT, too.
+	* io.c (rb_io_fwrite): should check if errno == ENOENT, too.
 
 Thu May 27 11:25:03 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 

@@ -411,7 +411,7 @@ rb_io_fwrite(ptr, len, f)
     while (errno = 0, ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
 	if (ferror(f)
 #if defined __BORLANDC__
-	    || errno == EBADF || errno == ENOENT
+	    || errno
 #endif
 	) {
 #ifdef __hpux
