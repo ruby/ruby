@@ -913,9 +913,12 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
 	aix*)		: ${LDSHARED='/usr/ccs/bin/ld'}
 			XLDFLAGS="$XLDFLAGS -Wl,-bE:ruby.imp"
-			DLDFLAGS="$DLDFLAGS "'-brtl -eInit_$(TARGET) -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
-			: LDFLAGS="$LDFLAGS -brtl"
+			DLDFLAGS='-brtl -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 '"$DLDFLAGS"
+			ARCH_FLAGS='-eInit_$(TARGET)'
+			: LDFLAGS="-brtl $LDFLAGS"
 			: ${ARCHFILE="ruby.imp"}
+			TRY_LINK='$(CC) $(DLDFLAGS) -oconftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS) $(CFLAGS)'
+			TRY_LINK="$TRY_LINK"' $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
 			: ${LIBPATHENV=SHLIB_PATH}
 			rb_cv_dlopen=yes ;;
 
