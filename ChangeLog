@@ -1,3 +1,8 @@
+Fri Dec  5 17:26:23 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_exec_end_proc): maintain tmp_end_procs.
+	  [ruby-dev:22154]
+
 Fri Dec  5 13:36:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_exec_end_proc): should not clear end_procs and

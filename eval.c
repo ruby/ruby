@@ -6626,7 +6626,7 @@ rb_exec_end_proc()
 		error_handle(status);
 	    }
 	    tmp = link;
-	    link = link->next;
+	    tmp_end_procs = link = link->next;
 	    free(tmp);
 	}
     }
@@ -6644,11 +6644,10 @@ rb_exec_end_proc()
 		error_handle(status);
 	    }
 	    tmp = link;
-	    link = link->next;
+	    tmp_end_procs = link = link->next;
 	    free(tmp);
 	}
     }
-    tmp_end_procs = 0;
     ruby_safe_level = safe;
 }
 
