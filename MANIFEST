@@ -255,6 +255,7 @@ lib/thread.rb
 lib/thwait.rb
 lib/time.rb
 lib/timeout.rb
+lib/tmpdir.rb
 lib/tracer.rb
 lib/tsort.rb
 lib/uri.rb
