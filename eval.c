@@ -3797,8 +3797,8 @@ rb_yield_0(val, self, klass, pcall)
 	}
     }
     POP_TAG();
-  pop_state:
     POP_ITER();
+  pop_state:
     POP_CLASS();
     if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
 	!FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
