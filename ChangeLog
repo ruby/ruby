@@ -1,10 +1,14 @@
+Wed Dec 24 09:38:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (arg): should return 0 after error.  [ruby-dev:22360]
+
 Wed Dec 24 00:56:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (read_all): do not return nil at the end of file.
 	  [ruby-dev:22334]
 
 	* io.c (argf_read): do not depend on nil at eof behavior of
-	  IO#read(). 
+	  IO#read().
 
 	* eval.c (rb_thread_join): dup exception before re-raising it.
 

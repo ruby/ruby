@@ -1038,10 +1038,12 @@ arg		: lhs '=' arg
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg
 		    {
 			yyerror("constant re-assignment");
+			$$ = 0;
 		    }
 		| tCOLON3 tCONSTANT tOP_ASGN arg
 		    {
 			yyerror("constant re-assignment");
+			$$ = 0;
 		    }
 		| backref tOP_ASGN arg
 		    {
