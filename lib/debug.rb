@@ -30,6 +30,7 @@ class Mutex
   end
 
   def lock
+    return if Thread.critical
     return if @locker == Thread.current
     while (Thread.critical = true; @locked)
       @waiting.push Thread.current
@@ -42,6 +43,7 @@ class Mutex
   end
 
   def unlock
+    return if Thread.critical
     return unless @locked
     unless @locker == Thread.current
       raise RuntimeError, "unlocked by other"
@@ -115,6 +117,7 @@ class Context
   end
 
   def check_suspend
+    return if Thread.critical
     while (Thread.critical = true; @suspend_next)
       DEBUGGER__.waiting.push Thread.current
       @suspend_next = false
@@ -775,12 +778,13 @@ class << DEBUGGER__
   end
 
   def set_trace( arg )
+    saved_crit = Thread.critical
     Thread.critical = true
     make_thread_list
     for th in @thread_list
       context(th[0]).set_trace arg
     end
-    Thread.critical = false
+    Thread.critical = saved_crit
     arg
   end
 
@@ -789,18 +793,20 @@ class << DEBUGGER__
   end
 
   def suspend
+    saved_crit = Thread.critical
     Thread.critical = true
     make_thread_list
     for th in @thread_list
       next if th[0] == Thread.current
       context(th[0]).set_suspend
     end
-    Thread.critical = false
+    Thread.critical = saved_crit
     # Schedule other threads to suspend as soon as possible.
-    Thread.pass
+    Thread.pass unless Thread.critical
   end
 
   def resume
+    saved_crit = Thread.critical
     Thread.critical = true
     make_thread_list
     for th in @thread_list
@@ -811,7 +817,7 @@ class << DEBUGGER__
       th.run
     end
     waiting.clear
-    Thread.critical = false
+    Thread.critical = saved_crit
     # Schedule other threads to restart as soon as possible.
     Thread.pass
   end

@@ -276,6 +276,13 @@ test_ok(a == 1)
 a,=*[[[1]]]
 test_ok(a == [1])
 
+x, (y, z) = 1, 2, 3
+test_ok([1,2,nil] == [x,y,z])
+x, (y, z) = 1, [2,3]
+test_ok([1,2,3] == [x,y,z])
+x, (y, z) = 1, [2]
+test_ok([1,2,nil] == [x,y,z])
+
 a = loop do break; end; test_ok(a == nil)
 a = loop do break nil; end; test_ok(a == nil)
 a = loop do break 1; end; test_ok(a == 1)
