@@ -83,6 +83,11 @@ public
     @options = options
     set_options
     @client.debug_dev = @wiredump_dev
+    @cookie_store = nil
+  end
+
+  def test_loopback_response
+    @client.test_loopback_response
   end
 
   def inspect
@@ -95,6 +100,7 @@ public
 
   def reset
     @client.reset(@endpoint_url)
+    @client.save_cookie_store if @cookie_store
   end
 
 private
@@ -118,10 +124,6 @@ private
     @options.add_hook("cookie_store_file") do |key, value|
       set_cookie_store_file(value)
     end
-    set_ssl_config(@options["ssl_config"])
-    @options.add_hook("ssl_config") do |key, value|
-      set_ssl_config(@options["ssl_config"])
-    end
     @charset = @options["charset"] || XSD::Charset.charset_label($KCODE)
     @options.add_hook("charset") do |key, value|
       @charset = value
@@ -131,12 +133,18 @@ private
       @wiredump_dev = value
       @client.debug_dev = @wiredump_dev
     end
+    ssl_config = @options["ssl_config"] ||= ::SOAP::Property.new
+    set_ssl_config(ssl_config)
+    ssl_config.add_hook(true) do |key, value|
+      set_ssl_config(ssl_config)
+    end
     basic_auth = @options["basic_auth"] ||= ::SOAP::Property.new
     set_basic_auth(basic_auth)
     basic_auth.add_hook do |key, value|
       set_basic_auth(basic_auth)
     end
     @options.lock(true)
+    ssl_config.unlock
     basic_auth.unlock
   end
 
@@ -147,13 +155,62 @@ private
   end
 
   def set_cookie_store_file(value)
-    return unless value
-    raise NotImplementedError.new
+    @cookie_store = value
+    @client.set_cookie_store(@cookie_store) if @cookie_store
   end
 
-  def set_ssl_config(value)
-    return unless value
-    raise NotImplementedError.new
+  def set_ssl_config(ssl_config)
+    ssl_config.each do |key, value|
+      cfg = @client.ssl_config
+      case key
+      when 'client_cert'
+	cfg.client_cert = cert_from_file(value)
+      when 'client_key'
+	cfg.client_key = key_from_file(value)
+      when 'client_ca'
+	cfg.client_ca = value
+      when 'ca_path'
+	cfg.set_trust_ca(value)
+      when 'ca_file'
+	cfg.set_trust_ca(value)
+      when 'crl'
+	cfg.set_crl(value)
+      when 'verify_mode'
+	cfg.verify_mode = ssl_config_int(value)
+      when 'verify_depth'
+	cfg.verify_depth = ssl_config_int(value)
+      when 'options'
+	cfg.options = value
+      when 'ciphers'
+	cfg.ciphers = value
+      when 'verify_callback'
+	cfg.verify_callback = value
+      when 'cert_store'
+	cfg.cert_store = value
+      else
+	raise ArgumentError.new("unknown ssl_config property #{key}")
+      end
+    end
+  end
+
+  def ssl_config_int(value)
+    if value.nil? or value.empty?
+      nil
+    else
+      begin
+        Integer(value)
+      rescue ArgumentError
+        ::SOAP::Property::Util.const_from_name(value)
+      end
+    end
+  end
+
+  def cert_from_file(filename)
+    OpenSSL::X509::Certificate.new(File.open(filename) { |f| f.read })
+  end
+
+  def key_from_file(filename)
+    OpenSSL::PKey::RSA.new(File.open(filename) { |f| f.read })
   end
 
   def send_post(conn_data, soapaction, charset)

@@ -2,13 +2,7 @@ require 'test/unit'
 require 'soap/rpc/driver'
 require 'logger'
 require 'webrick'
-begin
-  loadpath = $:.dup
-  $:.replace($: | [File.expand_path("../../ruby", File.dirname(__FILE__))])
-  require 'envutil'
-ensure
-  $:.replace(loadpath)
-end
+require 'rbconfig'
 
 
 module SOAP
@@ -16,7 +10,11 @@ module Calc
 
 
 class TestCalcCGI < Test::Unit::TestCase
-  RUBYBIN = EnvUtil.rubybin
+  # This test shuld be run after installing ruby.
+  RUBYBIN = File.join(
+    Config::CONFIG["bindir"],
+    Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
+  )
   RUBYBIN << " -d" if $DEBUG
 
   Port = 17171

@@ -43,8 +43,7 @@ class Definitions < Info
   end
 
   def inspect
-    name = @name || '(unnamed)'
-    "#<#{self.class}:#{name}>"
+    sprintf("#<%s:0x%x %s>", self.class.name, __id__, @name || '(unnamed)')
   end
 
   def targetnamespace=(targetnamespace)
@@ -58,7 +57,7 @@ class Definitions < Info
     result = XSD::NamedElements.new
     if @types
       @types.schemas.each do |schema|
-	result.concat(schema.elements)
+	result.concat(schema.collect_elements)
       end
     end
     @imports.each do |import|
@@ -71,7 +70,7 @@ class Definitions < Info
     result = @anontypes.dup
     if @types
       @types.schemas.each do |schema|
-	result.concat(schema.complextypes)
+	result.concat(schema.collect_complextypes)
       end
     end
     @imports.each do |import|
@@ -80,6 +79,20 @@ class Definitions < Info
     result
   end
 
+  def collect_simpletypes
+    result = XSD::NamedElements.new
+    if @types
+      @types.schemas.each do |schema|
+	result.concat(schema.collect_simpletypes)
+      end
+    end
+    @imports.each do |import|
+      result.concat(import.content.collect_simpletypes)
+    end
+    result
+  end
+
+  # ToDo: simpletype must be accepted...
   def add_type(complextype)
     @anontypes << complextype
   end

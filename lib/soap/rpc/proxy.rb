@@ -1,5 +1,5 @@
 # SOAP4R - RPC Proxy library.
-# Copyright (C) 2000, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000, 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -112,9 +112,9 @@ public
     unmarshal(conn_data, opt)
   end
 
-  def call(headers, name, *values)
+  def call(req_header, name, *values)
     req = create_request(name, *values)
-    invoke(headers, req.method, req.method.soapaction || @soapaction)
+    invoke(req_header, req.method, req.method.soapaction || @soapaction)
   end
 
   def check_fault(body)

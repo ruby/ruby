@@ -18,6 +18,7 @@ require 'soap/mapping/wsdlRegistry'
 require 'soap/rpc/rpc'
 require 'soap/rpc/element'
 require 'soap/processor'
+require 'soap/header/handlerset'
 require 'logger'
 
 
@@ -92,6 +93,8 @@ class WSDLDriver
   end
 
   __attr_proxy :options
+  __attr_proxy :headerhandler
+  __attr_proxy :test_loopback_response
   __attr_proxy :endpoint_url, true
   __attr_proxy :mapping_registry, true		# for RPC unmarshal
   __attr_proxy :wsdl_mapping_registry, true	# for RPC marshal
@@ -152,6 +155,7 @@ class WSDLDriver
 
     attr_reader :options
     attr_reader :streamhandler
+    attr_reader :headerhandler
     attr_reader :port
 
     attr_accessor :mapping_registry
@@ -176,7 +180,7 @@ class WSDLDriver
       @mandatorycharset = nil
 
       @wsdl_elements = @wsdl.collect_elements
-      @wsdl_types = @wsdl.collect_complextypes
+      @wsdl_types = @wsdl.collect_complextypes + @wsdl.collect_simpletypes
       @rpc_decode_typemap = @wsdl_types +
 	@wsdl.soap_rpc_complextypes(port.find_binding)
       @wsdl_mapping_registry = Mapping::WSDLRegistry.new(@rpc_decode_typemap)
@@ -184,6 +188,7 @@ class WSDLDriver
       endpoint_url = @port.soap_address.location
       @streamhandler = HTTPPostStreamHandler.new(endpoint_url,
 	@options["protocol.http"] ||= Property.new)
+      @headerhandler = Header::HandlerSet.new
       # Convert a map which key is QName, to a Hash which key is String.
       @operations = {}
       @port.inputoperation_map.each do |op_name, op_info|
@@ -201,13 +206,17 @@ class WSDLDriver
       @streamhandler.reset
     end
 
+    def test_loopback_response
+      @streamhandler.test_loopback_response
+    end
+
     def rpc_send(method_name, *params)
       log(INFO) { "call: calling method '#{ method_name }'." }
       log(DEBUG) { "call: parameters '#{ params.inspect }'." }
 
       op_info = @operations[method_name]
       method = create_method_struct(op_info, params)
-      req_header = nil
+      req_header = call_headers
       req_body = SOAPBody.new(method)
       req_env = SOAPEnvelope.new(req_header, req_body)
 
@@ -220,10 +229,11 @@ class WSDLDriver
 	opt = create_options
 	opt[:decode_typemap] = @rpc_decode_typemap
 	res_env = invoke(req_env, op_info, opt)
+	receive_headers(res_env.header)
 	if res_env.body.fault
-	  raise SOAP::FaultError.new(res_env.body.fault)
+	  raise ::SOAP::FaultError.new(res_env.body.fault)
 	end
-      rescue SOAP::FaultError => e
+      rescue ::SOAP::FaultError => e
 	Mapping.fault2exception(e)
       end
 
@@ -251,7 +261,7 @@ class WSDLDriver
       opt = create_options
       res_env = invoke(req_env, op_info, opt)
       if res_env.body.fault
-	raise SOAP::FaultError.new(res_env.body.fault)
+	raise ::SOAP::FaultError.new(res_env.body.fault)
       end
       res_body_obj = res_env.body.response ?
 	Mapping.soap2obj(res_env.body.response, @mapping_registry) : nil
@@ -259,6 +269,23 @@ class WSDLDriver
     end
 
   private
+
+    def call_headers
+      headers = @headerhandler.on_outbound
+      if headers.empty?
+	nil
+      else
+	h = ::SOAP::SOAPHeader.new
+	headers.each do |header|
+	  h.add(header.elename.name, header)
+	end
+	h
+      end
+    end
+
+    def receive_headers(headers)
+      @headerhandler.on_inbound(headers) if headers
+    end
 
     def create_method_struct(op_info, params)
       parts_names = op_info.bodyparts.collect { |part| part.name }
@@ -349,9 +376,9 @@ class WSDLDriver
       else
 	header = SOAPHeader.new()
 	op_info.headerparts.each do |part|
-	  child = obj[part.elename.name]
+	  child = Mapper.find_attribute(obj, part.name)
 	  ele = headeritem_from_obj(child, part.element || part.eletype)
-	  header.add(ele)
+	  header.add(part.name, ele)
 	end
 	header
       end
@@ -383,7 +410,7 @@ class WSDLDriver
       else
 	body = SOAPBody.new
 	op_info.bodyparts.each do |part|
-	  child = obj[part.elename.name]
+	  child = Mapper.find_attribute(obj, part.name)
 	  ele = bodyitem_from_obj(child, part.element || part.type)
 	  body.add(ele.elename.name, ele)
 	end
@@ -461,6 +488,7 @@ class WSDLDriver
       opt
     end
 
+    class MappingError < StandardError; end
     class Mapper
       def initialize(elements, types)
 	@elements = elements
@@ -473,12 +501,22 @@ class WSDLDriver
 	elsif type = @types[name]
 	  obj2type(obj, type)
 	else
-	  raise RuntimeError.new("Cannot find name #{name} in schema.")
+	  raise MappingError.new("Cannot find name #{name} in schema.")
 	end
       end
 
       def ele2obj(ele, *arg)
 	raise NotImplementedError.new
+      end
+
+      def Mapper.find_attribute(obj, attr_name)
+	if obj.respond_to?(attr_name)
+	  obj.__send__(attr_name)
+	elsif obj.is_a?(Hash)
+	  obj[attr_name] || obj[attr_name.intern]
+	else
+	  obj.instance_eval("@#{ attr_name }")
+	end
       end
 
     private
@@ -491,25 +529,47 @@ class WSDLDriver
 	  elsif type = TypeMap[ele.type]
 	    o = base2soap(obj, type)
 	  else
-	    raise RuntimeError.new("Cannot find type #{ele.type}.")
+	    raise MappingError.new("Cannot find type #{ele.type}.")
 	  end
 	  o.elename = ele.name
 	elsif ele.local_complextype
 	  o = SOAPElement.new(ele.name)
-	  ele.local_complextype.each_element do |child_name, child_ele|
-	    o.add(_obj2ele(find_attribute(obj, child_name.name), child_ele))
+	  ele.local_complextype.each_element do |child_ele|
+            o.add(_obj2ele(Mapper.find_attribute(obj, child_ele.name.name),
+              child_ele))
 	  end
 	else
-	  raise RuntimeError.new("Illegal schema?")
+	  raise MappingError.new("Illegal schema?")
 	end
 	o
       end
 
       def obj2type(obj, type)
-	o = SOAPElement.new(type.name)
-	type.each_element do |child_name, child_ele|
-	  o.add(_obj2ele(find_attribute(obj, child_name.name), child_ele))
-	end
+        if type.is_a?(::WSDL::XMLSchema::SimpleType)
+          simple2soap(obj, type)
+        else
+          complex2soap(obj, type)
+        end
+      end
+
+      def simple2soap(obj, type)
+        o = base2soap(obj, TypeMap[type.base])
+        if type.restriction.enumeration.empty?
+          STDERR.puts("#{type.name}: simpleType which is not enum type not supported.")
+          return o
+        end
+        if type.restriction.enumeration.include?(o)
+	  raise MappingError.new("#{o} is not allowed for #{type.name}")
+        end
+        o
+      end
+
+      def complex2soap(obj, type)
+        o = SOAPElement.new(type.name)
+        type.each_element do |child_ele|
+          o.add(_obj2ele(Mapper.find_attribute(obj, child_ele.name.name),
+            child_ele))
+        end
 	o
       end
 
@@ -521,21 +581,12 @@ class WSDLDriver
 	soap_obj = nil
 	if type <= XSD::XSDString
 	  soap_obj = type.new(XSD::Charset.is_ces(obj, $KCODE) ?
-	    XSD::Charset.encoding_conv(obj, $KCODE, XSD::Charset.encoding) : obj)
+	    XSD::Charset.encoding_conv(obj, $KCODE, XSD::Charset.encoding) :
+	    obj)
 	else
 	  soap_obj = type.new(obj)
 	end
 	soap_obj
-      end
-
-      def find_attribute(obj, attr_name)
-	if obj.respond_to?(attr_name)
-	  obj.__send__(attr_name)
-	elsif obj.is_a?(Hash)
-	  obj[attr_name] || obj[attr_name.intern]
-	else
-	  obj.instance_eval("@#{ attr_name }")
-	end
       end
     end
   end

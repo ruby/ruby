@@ -12,5 +12,9 @@ class SampleStructServer < SOAP::RPC::StandaloneServer
 end
 
 if $0 == __FILE__
-  status = SampleStructServer.new('SampleStructServer', SampleStructServiceNamespace, '0.0.0.0', 7000).start
+  server = SampleStructServer.new('SampleStructServer', SampleStructServiceNamespace, '0.0.0.0', 7000)
+  trap(:INT) do
+    server.shutdown
+  end
+  server.start
 end

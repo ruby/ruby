@@ -70,6 +70,7 @@ class Factory
   end
 
   def setiv2soap(node, obj, map)
+    # should we sort instance_variables?
     obj.instance_variables.each do |var|
       name = var.sub(/^@/, '')
       node.add(Mapping.name2elename(name),

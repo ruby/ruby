@@ -117,7 +117,13 @@ public
     encodingstyle = find_encodingstyle(ns, attrs)
 
     # Children's encodingstyle is derived from its parent.
-    encodingstyle ||= parent_encodingstyle || @default_encodingstyle
+    if encodingstyle.nil?
+      if parent.node.is_a?(SOAPHeader)
+        encodingstyle = LiteralNamespace
+      else
+        encodingstyle = parent_encodingstyle || @default_encodingstyle
+      end
+    end
 
     node = decode_tag(ns, name, attrs, parent, encodingstyle)
 

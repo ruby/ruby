@@ -2,7 +2,8 @@ require 'AmazonSearch.rb'
 
 require 'soap/rpc/driver'
 
-class AmazonSearchPort < SOAP::RPC::Driver
+class AmazonSearchPort < ::SOAP::RPC::Driver
+  DefaultEndpointUrl = "http://soap.amazon.com/onca/soap3"
   MappingRegistry = ::SOAP::Mapping::Registry.new
 
   MappingRegistry.set(
@@ -331,165 +332,189 @@ class AmazonSearchPort < SOAP::RPC::Driver
   )
   
   Methods = [
-    ["KeywordSearchRequest", "keywordSearchRequest", [
-      ["in", "KeywordSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "KeywordRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["TextStreamSearchRequest", "textStreamSearchRequest", [
-      ["in", "TextStreamSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "TextStreamRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["PowerSearchRequest", "powerSearchRequest", [
-      ["in", "PowerSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "PowerRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["BrowseNodeSearchRequest", "browseNodeSearchRequest", [
-      ["in", "BrowseNodeSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "BrowseNodeRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["AsinSearchRequest", "asinSearchRequest", [
-      ["in", "AsinSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "AsinRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["BlendedSearchRequest", "blendedSearchRequest", [
-      ["in", "BlendedSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "BlendedRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPArray, "http://soap.amazon.com", "ProductLine"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["UpcSearchRequest", "upcSearchRequest", [
-      ["in", "UpcSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "UpcRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["SkuSearchRequest", "skuSearchRequest", [
-      ["in", "SkuSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "SkuRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["AuthorSearchRequest", "authorSearchRequest", [
-      ["in", "AuthorSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "AuthorRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["ArtistSearchRequest", "artistSearchRequest", [
-      ["in", "ArtistSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ArtistRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["ActorSearchRequest", "actorSearchRequest", [
-      ["in", "ActorSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ActorRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["ManufacturerSearchRequest", "manufacturerSearchRequest", [
-      ["in", "ManufacturerSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ManufacturerRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["DirectorSearchRequest", "directorSearchRequest", [
-      ["in", "DirectorSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "DirectorRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["ListManiaSearchRequest", "listManiaSearchRequest", [
-      ["in", "ListManiaSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ListManiaRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["WishlistSearchRequest", "wishlistSearchRequest", [
-      ["in", "WishlistSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "WishlistRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["ExchangeSearchRequest", "exchangeSearchRequest", [
-      ["in", "ExchangeSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ExchangeRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ListingProductDetails"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["MarketplaceSearchRequest", "marketplaceSearchRequest", [
-      ["in", "MarketplaceSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "MarketplaceRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "MarketplaceSearch"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["SellerProfileSearchRequest", "sellerProfileSearchRequest", [
-      ["in", "SellerProfileSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "SellerProfileRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "SellerProfile"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["SellerSearchRequest", "sellerSearchRequest", [
-      ["in", "SellerSearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "SellerRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "SellerSearch"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["SimilaritySearchRequest", "similaritySearchRequest", [
-      ["in", "SimilaritySearchRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "SimilarityRequest"]],
-      ["retval", "return",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["GetShoppingCartRequest", "getShoppingCartRequest", [
-      ["in", "GetShoppingCartRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "GetShoppingCartRequest"]],
-      ["retval", "ShoppingCart",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["ClearShoppingCartRequest", "clearShoppingCartRequest", [
-      ["in", "ClearShoppingCartRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ClearShoppingCartRequest"]],
-      ["retval", "ShoppingCart",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["AddShoppingCartItemsRequest", "addShoppingCartItemsRequest", [
-      ["in", "AddShoppingCartItemsRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "AddShoppingCartItemsRequest"]],
-      ["retval", "ShoppingCart",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["RemoveShoppingCartItemsRequest", "removeShoppingCartItemsRequest", [
-      ["in", "RemoveShoppingCartItemsRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "RemoveShoppingCartItemsRequest"]],
-      ["retval", "ShoppingCart",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["ModifyShoppingCartItemsRequest", "modifyShoppingCartItemsRequest", [
-      ["in", "ModifyShoppingCartItemsRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ModifyShoppingCartItemsRequest"]],
-      ["retval", "ShoppingCart",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"],
-    ["GetTransactionDetailsRequest", "getTransactionDetailsRequest", [
-      ["in", "GetTransactionDetailsRequest",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "GetTransactionDetailsRequest"]],
-      ["retval", "GetTransactionDetailsResponse",
-       [::SOAP::SOAPStruct, "http://soap.amazon.com", "GetTransactionDetailsResponse"]]],
-     "http://soap.amazon.com", "http://soap.amazon.com"]
+    ["KeywordSearchRequest", "keywordSearchRequest",
+      [
+        ["in", "KeywordSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "KeywordRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["TextStreamSearchRequest", "textStreamSearchRequest",
+      [
+        ["in", "TextStreamSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "TextStreamRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["PowerSearchRequest", "powerSearchRequest",
+      [
+        ["in", "PowerSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "PowerRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["BrowseNodeSearchRequest", "browseNodeSearchRequest",
+      [
+        ["in", "BrowseNodeSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "BrowseNodeRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["AsinSearchRequest", "asinSearchRequest",
+      [
+        ["in", "AsinSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "AsinRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["BlendedSearchRequest", "blendedSearchRequest",
+      [
+        ["in", "BlendedSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "BlendedRequest"]],
+        ["retval", "return", [::SOAP::SOAPArray, "http://soap.amazon.com", "ProductLine"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["UpcSearchRequest", "upcSearchRequest",
+      [
+        ["in", "UpcSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "UpcRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["SkuSearchRequest", "skuSearchRequest",
+      [
+        ["in", "SkuSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "SkuRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["AuthorSearchRequest", "authorSearchRequest",
+      [
+        ["in", "AuthorSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "AuthorRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["ArtistSearchRequest", "artistSearchRequest",
+      [
+        ["in", "ArtistSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ArtistRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["ActorSearchRequest", "actorSearchRequest",
+      [
+        ["in", "ActorSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ActorRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["ManufacturerSearchRequest", "manufacturerSearchRequest",
+      [
+        ["in", "ManufacturerSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ManufacturerRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["DirectorSearchRequest", "directorSearchRequest",
+      [
+        ["in", "DirectorSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "DirectorRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["ListManiaSearchRequest", "listManiaSearchRequest",
+      [
+        ["in", "ListManiaSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ListManiaRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["WishlistSearchRequest", "wishlistSearchRequest",
+      [
+        ["in", "WishlistSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "WishlistRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["ExchangeSearchRequest", "exchangeSearchRequest",
+      [
+        ["in", "ExchangeSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ExchangeRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ListingProductDetails"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["MarketplaceSearchRequest", "marketplaceSearchRequest",
+      [
+        ["in", "MarketplaceSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "MarketplaceRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "MarketplaceSearch"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["SellerProfileSearchRequest", "sellerProfileSearchRequest",
+      [
+        ["in", "SellerProfileSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "SellerProfileRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "SellerProfile"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["SellerSearchRequest", "sellerSearchRequest",
+      [
+        ["in", "SellerSearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "SellerRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "SellerSearch"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["SimilaritySearchRequest", "similaritySearchRequest",
+      [
+        ["in", "SimilaritySearchRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "SimilarityRequest"]],
+        ["retval", "return", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ProductInfo"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["GetShoppingCartRequest", "getShoppingCartRequest",
+      [
+        ["in", "GetShoppingCartRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "GetShoppingCartRequest"]],
+        ["retval", "ShoppingCart", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["ClearShoppingCartRequest", "clearShoppingCartRequest",
+      [
+        ["in", "ClearShoppingCartRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ClearShoppingCartRequest"]],
+        ["retval", "ShoppingCart", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["AddShoppingCartItemsRequest", "addShoppingCartItemsRequest",
+      [
+        ["in", "AddShoppingCartItemsRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "AddShoppingCartItemsRequest"]],
+        ["retval", "ShoppingCart", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["RemoveShoppingCartItemsRequest", "removeShoppingCartItemsRequest",
+      [
+        ["in", "RemoveShoppingCartItemsRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "RemoveShoppingCartItemsRequest"]],
+        ["retval", "ShoppingCart", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["ModifyShoppingCartItemsRequest", "modifyShoppingCartItemsRequest",
+      [
+        ["in", "ModifyShoppingCartItemsRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ModifyShoppingCartItemsRequest"]],
+        ["retval", "ShoppingCart", [::SOAP::SOAPStruct, "http://soap.amazon.com", "ShoppingCart"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ],
+    ["GetTransactionDetailsRequest", "getTransactionDetailsRequest",
+      [
+        ["in", "GetTransactionDetailsRequest", [::SOAP::SOAPStruct, "http://soap.amazon.com", "GetTransactionDetailsRequest"]],
+        ["retval", "GetTransactionDetailsResponse", [::SOAP::SOAPStruct, "http://soap.amazon.com", "GetTransactionDetailsResponse"]]
+      ],
+      "http://soap.amazon.com", "http://soap.amazon.com"
+    ]
   ]
-
-  DefaultEndpointUrl = "http://soap.amazon.com/onca/soap3"
 
   def initialize(endpoint_url = nil)
     endpoint_url ||= DefaultEndpointUrl
@@ -498,7 +523,7 @@ class AmazonSearchPort < SOAP::RPC::Driver
     init_methods
   end
 
-private 
+private
 
   def init_methods
     Methods.each do |name_as, name, params, soapaction, namespace|

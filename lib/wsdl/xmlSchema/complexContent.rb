@@ -28,6 +28,10 @@ class ComplexContent < Info
     @attributes = XSD::NamedElements.new
   end
 
+  def targetnamespace
+    parent.targetnamespace
+  end
+
   def parse_element(element)
     case element
     when RestrictionName, ExtensionName

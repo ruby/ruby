@@ -1,5 +1,5 @@
 # XSD4R - XML QName definition.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002, 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -19,7 +19,7 @@ class QName
   end
 
   def dup_name(name)
-    self.class.new(@namespace, name)
+    ::XSD::QName.new(@namespace, name)
   end
 
   def match(rhs)
@@ -53,6 +53,11 @@ class QName
   
   def to_s
     "{#{ namespace }}#{ name }"
+  end
+
+  def inspect
+    sprintf("#<%s:0x%x %s>", self.class.name, __id__,
+      "{#{ namespace }}#{ name }")
   end
 
   NormalizedNameRegexp = /^\{([^}]*)\}(.*)$/

@@ -38,7 +38,7 @@ class RubytypeFactory < Factory
   def obj2soap(soap_class, obj, info, map)
     param = nil
     case obj
-    when String
+    when ::String
       unless @allow_original_mapping
         return nil
       end
@@ -47,7 +47,7 @@ class RubytypeFactory < Factory
         param.extraattr[RubyTypeName] = obj.class.name
       end
       addiv2soapattr(param, obj, map)
-    when Time
+    when ::Time
       unless @allow_original_mapping
         return nil
       end
@@ -56,7 +56,7 @@ class RubytypeFactory < Factory
         param.extraattr[RubyTypeName] = obj.class.name
       end
       addiv2soapattr(param, obj, map)
-    when Array
+    when ::Array
       unless @allow_original_mapping
         return nil
       end
@@ -65,19 +65,19 @@ class RubytypeFactory < Factory
         param.extraattr[RubyTypeName] = obj.class.name
       end
       addiv2soapattr(param, obj, map)
-    when NilClass
+    when ::NilClass
       unless @allow_original_mapping
         return nil
       end
       param = @basetype_factory.obj2soap(SOAPNil, obj, info, map)
       addiv2soapattr(param, obj, map)
-    when FalseClass, TrueClass
+    when ::FalseClass, ::TrueClass
       unless @allow_original_mapping
         return nil
       end
       param = @basetype_factory.obj2soap(SOAPBoolean, obj, info, map)
       addiv2soapattr(param, obj, map)
-    when Integer
+    when ::Integer
       unless @allow_original_mapping
         return nil
       end
@@ -85,7 +85,7 @@ class RubytypeFactory < Factory
       param ||= @basetype_factory.obj2soap(SOAPInteger, obj, info, map)
       param ||= @basetype_factory.obj2soap(SOAPDecimal, obj, info, map)
       addiv2soapattr(param, obj, map)
-    when Float
+    when ::Float
       unless @allow_original_mapping
         return nil
       end
@@ -94,7 +94,7 @@ class RubytypeFactory < Factory
         param.extraattr[RubyTypeName] = obj.class.name
       end
       addiv2soapattr(param, obj, map)
-    when Hash
+    when ::Hash
       unless @allow_original_mapping
         return nil
       end
@@ -114,7 +114,7 @@ class RubytypeFactory < Factory
       end
       param.add('default', Mapping._obj2soap(obj.default, map))
       addiv2soapattr(param, obj, map)
-    when Regexp
+    when ::Regexp
       unless @allow_original_mapping
         return nil
       end
@@ -150,7 +150,7 @@ class RubytypeFactory < Factory
       end
       param.add('options', SOAPInt.new(options))
       addiv2soapattr(param, obj, map)
-    when Range
+    when ::Range
       unless @allow_original_mapping
         return nil
       end
@@ -163,29 +163,29 @@ class RubytypeFactory < Factory
       param.add('end', Mapping._obj2soap(obj.end, map))
       param.add('exclude_end', SOAP::SOAPBoolean.new(obj.exclude_end?))
       addiv2soapattr(param, obj, map)
-    when Class
+    when ::Class
       unless @allow_original_mapping
         return nil
       end
       if obj.to_s[0] == ?#
-        raise TypeError.new("Can't dump anonymous class #{ obj }.")
+        raise TypeError.new("can't dump anonymous class #{ obj }")
       end
       param = SOAPStruct.new(TYPE_CLASS)
       mark_marshalled_obj(obj, param)
       param.add('name', SOAPString.new(obj.name))
       addiv2soapattr(param, obj, map)
-    when Module
+    when ::Module
       unless @allow_original_mapping
         return nil
       end
       if obj.to_s[0] == ?#
-        raise TypeError.new("Can't dump anonymous module #{ obj }.")
+        raise TypeError.new("can't dump anonymous module #{ obj }")
       end
       param = SOAPStruct.new(TYPE_MODULE)
       mark_marshalled_obj(obj, param)
       param.add('name', SOAPString.new(obj.name))
       addiv2soapattr(param, obj, map)
-    when Symbol
+    when ::Symbol
       unless @allow_original_mapping
         return nil
       end
@@ -193,28 +193,37 @@ class RubytypeFactory < Factory
       mark_marshalled_obj(obj, param)
       param.add('id', SOAPString.new(obj.id2name))
       addiv2soapattr(param, obj, map)
-    when Struct
+    when ::Struct
       unless @allow_original_mapping
-        return nil
+        # treat it as an user defined class. [ruby-talk:104980]
+        #param = unknownobj2soap(soap_class, obj, info, map)
+        param = SOAPStruct.new(XSD::AnyTypeName)
+        mark_marshalled_obj(obj, param)
+        obj.members.each do |member|
+          param.add(Mapping.name2elename(member),
+            Mapping._obj2soap(obj[member], map))
+        end
+      else
+        param = SOAPStruct.new(TYPE_STRUCT)
+        mark_marshalled_obj(obj, param)
+        param.add('type', ele_type = SOAPString.new(obj.class.to_s))
+        ele_member = SOAPStruct.new
+        obj.members.each do |member|
+          ele_member.add(Mapping.name2elename(member),
+            Mapping._obj2soap(obj[member], map))
+        end
+        param.add('member', ele_member)
+        addiv2soapattr(param, obj, map)
       end
-      param = SOAPStruct.new(TYPE_STRUCT)
-      mark_marshalled_obj(obj, param)
-      param.add('type', ele_type = SOAPString.new(obj.class.to_s))
-      ele_member = SOAPStruct.new
-      obj.members.each do |member|
-        ele_member.add(Mapping.name2elename(member),
-          Mapping._obj2soap(obj[member], map))
-      end
-      param.add('member', ele_member)
-      addiv2soapattr(param, obj, map)
-    when IO, Binding, Continuation, Data, Dir, File::Stat, MatchData, Method,
-        Proc, Thread, ThreadGroup # from 1.8: Process::Status, UnboundMethod
+    when ::IO, ::Binding, ::Continuation, ::Data, ::Dir, ::File::Stat,
+        ::MatchData, Method, ::Proc, ::Thread, ::ThreadGroup
+        # from 1.8: Process::Status, UnboundMethod
       return nil
     when ::SOAP::Mapping::Object
       param = SOAPStruct.new(XSD::AnyTypeName)
       mark_marshalled_obj(obj, param)
       addiv2soapattr(param, obj, map)
-    when Exception
+    when ::Exception
       typestr = Mapping.name2elename(obj.class.to_s)
       param = SOAPStruct.new(XSD::QName.new(RubyTypeNamespace, typestr))
       mark_marshalled_obj(obj, param)
@@ -249,7 +258,7 @@ private
 
   def unknownobj2soap(soap_class, obj, info, map)
     if obj.class.name.empty?
-      raise TypeError.new("Can't dump anonymous class #{ obj }.")
+      raise TypeError.new("can't dump anonymous class #{ obj }")
     end
     singleton_class = class << obj; self; end
     if !singleton_methods_true(obj).empty? or
@@ -369,7 +378,7 @@ private
       obj = klass.new
       mark_unmarshalled_obj(node, obj)
       node.each do |name, value|
-        obj.set_property(name, Mapping._soap2obj(value, map))
+        obj.__set_property(name, Mapping._soap2obj(value, map))
       end
       return true, obj
     else

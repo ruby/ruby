@@ -119,7 +119,7 @@ private
       return parts.dup
     end
     if parts.length != result.length
-      raise RuntimeError.new("Incomplete parameter order list.")
+      raise RuntimeError.new("Incomplete prarmeterOrder list.")
     end
     result
   end

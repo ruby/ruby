@@ -1,5 +1,5 @@
 # SOAP4R - SOAP RPC driver
-# Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000, 2001, 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -13,6 +13,7 @@ require 'soap/rpc/proxy'
 require 'soap/rpc/element'
 require 'soap/streamHandler'
 require 'soap/property'
+require 'soap/header/handlerset'
 
 
 module SOAP
@@ -41,6 +42,8 @@ class Driver
   end
 
   __attr_proxy :options
+  __attr_proxy :headerhandler
+  __attr_proxy :test_loopback_response
   __attr_proxy :endpoint_url, true
   __attr_proxy :mapping_registry, true
   __attr_proxy :soapaction, true
@@ -82,6 +85,12 @@ class Driver
     @servant = Servant__.new(self, endpoint_url, namespace)
     @servant.soapaction = soapaction
     @proxy = @servant.proxy
+  end
+
+  def loadproperty(propertyname)
+    unless options.loadproperty(propertyname)
+      raise LoadError.new("No such property to load -- #{propertyname}")
+    end
   end
 
   def inspect
@@ -130,6 +139,7 @@ private
   class Servant__
     attr_reader :options
     attr_reader :streamhandler
+    attr_reader :headerhandler
     attr_reader :proxy
 
     def initialize(host, endpoint_url, namespace)
@@ -141,6 +151,7 @@ private
       @options = setup_options
       @streamhandler = HTTPPostStreamHandler.new(endpoint_url,
 	@options["protocol.http"] ||= ::SOAP::Property.new)
+      @headerhandler = Header::HandlerSet.new
       @proxy = Proxy.new(@streamhandler, @soapaction)
       @proxy.allow_unqualified_element = true
     end
@@ -178,6 +189,10 @@ private
       @proxy.default_encodingstyle = encodingstyle
     end
 
+    def test_loopback_response
+      @streamhandler.test_loopback_response
+    end
+
     def invoke(headers, body)
       set_wiredump_file_base(body.elename.name)
       env = @proxy.invoke(headers, body)
@@ -192,19 +207,19 @@ private
       set_wiredump_file_base(name)
       # Convert parameters: params array => SOAPArray => members array
       params = Mapping.obj2soap(params, @mapping_registry).to_a
-      env = @proxy.call(nil, name, *params)
+      env = @proxy.call(call_headers, name, *params)
       raise EmptyResponseError.new("Empty response.") unless env
-      header, body = env.header, env.body
+      receive_headers(env.header)
       begin
-	@proxy.check_fault(body)
+	@proxy.check_fault(env.body)
       rescue SOAP::FaultError => e
 	Mapping.fault2exception(e)
       end
 
-      ret = body.response ?
-	Mapping.soap2obj(body.response, @mapping_registry) : nil
-      if body.outparams
-	outparams = body.outparams.collect { |outparam|
+      ret = env.body.response ?
+	Mapping.soap2obj(env.body.response, @mapping_registry) : nil
+      if env.body.outparams
+	outparams = env.body.outparams.collect { |outparam|
 	  Mapping.soap2obj(outparam)
 	}
 	return [ret].concat(outparams)
@@ -233,9 +248,27 @@ private
       	  @servant.call(#{ name.dump }#{ callparam })
        	end
       EOS
+      @host.method(name)
     end
 
   private
+
+    def call_headers
+      headers = @headerhandler.on_outbound
+      if headers.empty?
+	nil
+      else
+	h = ::SOAP::SOAPHeader.new
+	headers.each do |header|
+	  h.add(header.elename.name, header)
+	end
+	h
+      end
+    end
+
+    def receive_headers(headers)
+      @headerhandler.on_inbound(headers) if headers
+    end
 
     def set_wiredump_file_base(name)
       if @wiredump_file_base

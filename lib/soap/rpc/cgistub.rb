@@ -1,5 +1,5 @@
 # SOAP4R - CGI stub library
-# Copyright (C) 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2001, 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -94,15 +94,21 @@ class CGIStub < Logger::Application
     on_init
   end
   
-  def add_servant(obj, namespace = @default_namespace, soapaction = nil)
+  def add_rpc_servant(obj, namespace = @default_namespace, soapaction = nil)
     RPC.defined_methods(obj).each do |name|
       qname = XSD::QName.new(namespace, name)
       param_size = obj.method(name).arity.abs
-      params = (1..param_size).collect { |i| "p#{ i }" }
+      params = (1..param_size).collect { |i| "p#{i}" }
       param_def = SOAP::RPC::SOAPMethod.create_param_def(params)
       @router.add_method(obj, qname, soapaction, name, param_def)
     end
   end
+  alias add_servant add_rpc_servant
+
+  def add_rpc_headerhandler(obj)
+    @router.headerhandler << obj
+  end
+  alias add_headerhandler add_rpc_headerhandler
 
   def on_init
     # Override this method in derived class to call 'add_method' to add methods.

@@ -103,6 +103,12 @@ class XSDAnySimpleType < NSDBase
     set(value) if value
   end
 
+  # true or raise
+  def check_lexical_format(value)
+    screen_data(value)
+    true
+  end
+
   # set accepts a string which follows lexical space (ex. String: "+123"), or
   # an object which follows canonical space (ex. Integer: 123).
   def set(value)
@@ -111,7 +117,7 @@ class XSDAnySimpleType < NSDBase
       @data = nil
     else
       @is_nil = false
-      _set(value)
+      _set(screen_data(value))
     end
   end
 
@@ -125,6 +131,11 @@ class XSDAnySimpleType < NSDBase
   end
 
 private
+
+  # raises ValueSpaceError if check failed
+  def screen_data(value)
+    value
+  end
 
   def _set(value)
     @data = value
@@ -144,12 +155,6 @@ class XSDNil < XSDAnySimpleType
     @type = Type
     set(value)
   end
-
-private
-
-  def _set(value)
-    @data = value
-  end
 end
 
 
@@ -167,11 +172,11 @@ class XSDString < XSDAnySimpleType
 
 private
 
-  def _set(value)
+  def screen_data(value)
     unless XSD::Charset.is_ces(value, XSD::Charset.encoding)
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
-    @data = value
+    value
   end
 end
 
@@ -186,18 +191,18 @@ class XSDBoolean < XSDAnySimpleType
 
 private
 
-  def _set(value)
+  def screen_data(value)
     if value.is_a?(String)
       str = value.strip
       if str == 'true' || str == '1'
-	@data = true
+	true
       elsif str == 'false' || str == '0'
-	@data = false
+	false
       else
 	raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
       end
     else
-      @data = value ? true : false
+      value ? true : false
     end
   end
 end
@@ -220,38 +225,39 @@ class XSDDecimal < XSDAnySimpleType
 
 private
 
-  def _set(d)
+  def screen_data(d)
     if d.is_a?(String)
       # Integer("00012") => 10 in Ruby.
       d.sub!(/^([+\-]?)0*(?=\d)/, "\\1")
     end
-    set_str(d)
+    screen_data_str(d)
   end
 
-  def set_str(str)
+  def screen_data_str(str)
     /^([+\-]?)(\d*)(?:\.(\d*)?)?$/ =~ str.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
-
-    @sign = $1 || '+'
+    sign = $1 || '+'
     int_part = $2
     frac_part = $3
-
     int_part = '0' if int_part.empty?
     frac_part = frac_part ? frac_part.sub(/0+$/, '') : ''
-    @point = - frac_part.size
-    @number = int_part + frac_part
-
+    point = - frac_part.size
+    number = int_part + frac_part
     # normalize
-    if @sign == '+'
-      @sign = ''
-    elsif @sign == '-'
-      if @number == '0'
-	@sign = ''
+    if sign == '+'
+      sign = ''
+    elsif sign == '-'
+      if number == '0'
+	sign = ''
       end
     end
+    [sign, point, number]
+  end
 
+  def _set(pair)
+    @sign, @point, @number = pair
     @data = _to_s
     @data.freeze
   end
@@ -272,7 +278,7 @@ module FloatConstants
   NEGATIVE_INF = -1.0/0.0
   POSITIVE_ZERO = +1.0/POSITIVE_INF
   NEGATIVE_ZERO = -1.0/POSITIVE_INF
-  MIN_POSITIVE_SINGLE = 2 ** -149
+  MIN_POSITIVE_SINGLE = 2.0 ** -149
 end
 
 class XSDFloat < XSDAnySimpleType
@@ -287,20 +293,18 @@ class XSDFloat < XSDAnySimpleType
 
 private
 
-  def _set(value)
+  def screen_data(value)
     # "NaN".to_f => 0 in some environment.  libc?
     if value.is_a?(Float)
-      @data = narrow32bit(value)
-      return
+      return narrow32bit(value)
     end
-
     str = value.to_s.strip
     if str == 'NaN'
-      @data = NaN
+      NaN
     elsif str == 'INF'
-      @data = POSITIVE_INF
+      POSITIVE_INF
     elsif str == '-INF'
-      @data = NEGATIVE_INF
+      NEGATIVE_INF
     else
       if /^[+\-\.\deE]+$/ !~ str
 	raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
@@ -308,7 +312,7 @@ private
       # Float("-1.4E") might fail on some system.
       str << '0' if /e$/i =~ str
       begin
-  	@data = narrow32bit(Float(str))
+  	return narrow32bit(Float(str))
       rescue ArgumentError
   	raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
       end
@@ -357,28 +361,26 @@ class XSDDouble < XSDAnySimpleType
 
 private
 
-  def _set(value)
+  def screen_data(value)
     # "NaN".to_f => 0 in some environment.  libc?
     if value.is_a?(Float)
-      @data = value
-      return
+      return value
     end
-
     str = value.to_s.strip
     if str == 'NaN'
-      @data = NaN
+      NaN
     elsif str == 'INF'
-      @data = POSITIVE_INF
+      POSITIVE_INF
     elsif str == '-INF'
-      @data = NEGATIVE_INF
+      NEGATIVE_INF
     else
       begin
-	@data = Float(str)
+	return Float(str)
       rescue ArgumentError
 	# '1.4e' cannot be parsed on some architecture.
 	if /e\z/i =~ str
 	  begin
-	    @data = Float(str + '0')
+	    return Float(str + '0')
 	  rescue ArgumentError
 	    raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
 	  end
@@ -429,24 +431,27 @@ class XSDDuration < XSDAnySimpleType
 
 private
 
-  def _set(value)
+  def screen_data(value)
     /^([+\-]?)P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/ =~ value.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
-
     if ($5 and ((!$2 and !$3 and !$4) or (!$6 and !$7 and !$8)))
       # Should we allow 'PT5S' here?
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
+    sign = $1
+    year = $2.to_i
+    month = $3.to_i
+    day = $4.to_i
+    hour = $6.to_i
+    min = $7.to_i
+    sec = $8 ? XSDDecimal.new($8) : 0
+    [sign, year, month, day, hour, min, sec]
+  end
 
-    @sign = $1
-    @year = $2.to_i
-    @month = $3.to_i
-    @day = $4.to_i
-    @hour = $6.to_i
-    @min = $7.to_i
-    @sec = $8 ? XSDDecimal.new($8) : 0
+  def _set(ary)
+    @sign, @year, @month, @day, @hour, @min, @sec = ary
     @data = _to_s
     @data.freeze
   end
@@ -524,18 +529,18 @@ module XSDDateTimeImpl
     end
   end
 
-  def _set(t)
-    set_datetime_init(t)
+  def screen_data(t)
     if (t.is_a?(Date))
-      @data = t
+      t
     elsif (t.is_a?(Time))
       sec, min, hour, mday, month, year = t.to_a[0..5]
       diffday = t.usec.to_r / 1000000 / SecInDay
       of = t.utc_offset.to_r / SecInDay
-      @data = DateTime.civil(year, month, mday, hour, min, sec, of)
-      @data += diffday
+      data = DateTime.civil(year, month, mday, hour, min, sec, of)
+      data += diffday
+      data
     else
-      set_str(t)
+      screen_data_str(t)
     end
   end
 
@@ -557,11 +562,7 @@ class XSDDateTime < XSDAnySimpleType
 
 private
 
-  def set_datetime_init(t)
-    @secfrac = nil
-  end
-
-  def set_str(t)
+  def screen_data_str(t)
     /^([+\-]?\d{4,})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d(?:\.(\d*))?)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
@@ -569,7 +570,6 @@ private
     if $1 == '0000'
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
-
     year = $1.to_i
     if year < 0
       year += 1
@@ -581,22 +581,18 @@ private
     sec = $6.to_i
     secfrac = $7
     zonestr = $8
-
-    @data = DateTime.civil(year, mon, mday, hour, min, sec, tz2of(zonestr))
-    @secfrac = secfrac
-
+    data = DateTime.civil(year, mon, mday, hour, min, sec, tz2of(zonestr))
     if secfrac
       diffday = secfrac.to_i.to_r / (10 ** secfrac.size) / SecInDay
-      # jd = @data.jd
-      # day_fraction = @data.day_fraction + diffday
-      # @data = DateTime.new0(DateTime.jd_to_rjd(jd, day_fraction,
-      #   @data.offset), @data.offset)
-      #
-      # Thanks to Funaba-san, above code can be simply written as below.
-      @data += diffday
+      data += diffday
       # FYI: new0 and jd_to_rjd are not necessary to use if you don't have
       # exceptional reason.
     end
+    [data, secfrac]
+  end
+
+  def _set(pair)
+    @data, @secfrac = pair
   end
 
   def _to_s
@@ -607,7 +603,8 @@ private
       if @secfrac
   	s << ".#{ @secfrac }"
       else
-	s << sprintf("%.16f", (@data.sec_fraction * SecInDay).to_f).sub(/^0/, '').sub(/0*$/, '')
+	s << sprintf("%.16f",
+          (@data.sec_fraction * SecInDay).to_f).sub(/^0/, '').sub(/0*$/, '')
       end
     end
     add_tz(s)
@@ -627,29 +624,26 @@ class XSDTime < XSDAnySimpleType
 
 private
 
-  def set_datetime_init(t)
-    @secfrac = nil
-  end
-
-  def set_str(t)
+  def screen_data_str(t)
     /^(\d\d):(\d\d):(\d\d(?:\.(\d*))?)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
-
     hour = $1.to_i
     min = $2.to_i
     sec = $3.to_i
     secfrac = $4
     zonestr = $5
-
-    @data = DateTime.civil(1, 1, 1, hour, min, sec, tz2of(zonestr))
-    @secfrac = secfrac
-
+    data = DateTime.civil(1, 1, 1, hour, min, sec, tz2of(zonestr))
     if secfrac
       diffday = secfrac.to_i.to_r / (10 ** secfrac.size) / SecInDay
-      @data += diffday
+      data += diffday
     end
+    [data, secfrac]
+  end
+
+  def _set(pair)
+    @data, @secfrac = pair
   end
 
   def _to_s
@@ -658,7 +652,8 @@ private
       if @secfrac
   	s << ".#{ @secfrac }"
       else
-	s << sprintf("%.16f", (@data.sec_fraction * SecInDay).to_f).sub(/^0/, '').sub(/0*$/, '')
+	s << sprintf("%.16f",
+          (@data.sec_fraction * SecInDay).to_f).sub(/^0/, '').sub(/0*$/, '')
       end
     end
     add_tz(s)
@@ -677,15 +672,11 @@ class XSDDate < XSDAnySimpleType
 
 private
 
-  def set_datetime_init(t)
-  end
-
-  def set_str(t)
+  def screen_data_str(t)
     /^([+\-]?\d{4,})-(\d\d)-(\d\d)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
-
     year = $1.to_i
     if year < 0
       year += 1
@@ -693,8 +684,7 @@ private
     mon = $2.to_i
     mday = $3.to_i
     zonestr = $4
-
-    @data = DateTime.civil(year, mon, mday, 0, 0, 0, tz2of(zonestr))
+    DateTime.civil(year, mon, mday, 0, 0, 0, tz2of(zonestr))
   end
 
   def _to_s
@@ -716,23 +706,18 @@ class XSDGYearMonth < XSDAnySimpleType
 
 private
 
-  def set_datetime_init(t)
-  end
-
-  def set_str(t)
+  def screen_data_str(t)
     /^([+\-]?\d{4,})-(\d\d)(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
-
     year = $1.to_i
     if year < 0
       year += 1
     end
     mon = $2.to_i
     zonestr = $3
-
-    @data = DateTime.civil(year, mon, 1, 0, 0, 0, tz2of(zonestr))
+    DateTime.civil(year, mon, 1, 0, 0, 0, tz2of(zonestr))
   end
 
   def _to_s
@@ -754,22 +739,17 @@ class XSDGYear < XSDAnySimpleType
 
 private
 
-  def set_datetime_init(t)
-  end
-
-  def set_str(t)
+  def screen_data_str(t)
     /^([+\-]?\d{4,})(Z|(?:([+\-])(\d\d):(\d\d))?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
-
     year = $1.to_i
     if year < 0
       year += 1
     end
     zonestr = $2
-
-    @data = DateTime.civil(year, 1, 1, 0, 0, 0, tz2of(zonestr))
+    DateTime.civil(year, 1, 1, 0, 0, 0, tz2of(zonestr))
   end
 
   def _to_s
@@ -791,20 +771,15 @@ class XSDGMonthDay < XSDAnySimpleType
 
 private
 
-  def set_datetime_init(t)
-  end
-
-  def set_str(t)
+  def screen_data_str(t)
     /^(\d\d)-(\d\d)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
-
     mon = $1.to_i
     mday = $2.to_i
     zonestr = $3
-
-    @data = DateTime.civil(1, mon, mday, 0, 0, 0, tz2of(zonestr))
+    DateTime.civil(1, mon, mday, 0, 0, 0, tz2of(zonestr))
   end
 
   def _to_s
@@ -825,19 +800,14 @@ class XSDGDay < XSDAnySimpleType
 
 private
 
-  def set_datetime_init(t)
-  end
-
-  def set_str(t)
+  def screen_data_str(t)
     /^(\d\d)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
-
     mday = $1.to_i
     zonestr = $2
-
-    @data = DateTime.civil(1, 1, mday, 0, 0, 0, tz2of(zonestr))
+    DateTime.civil(1, 1, mday, 0, 0, 0, tz2of(zonestr))
   end
 
   def _to_s
@@ -858,19 +828,14 @@ class XSDGMonth < XSDAnySimpleType
 
 private
 
-  def set_datetime_init(t)
-  end
-
-  def set_str(t)
+  def screen_data_str(t)
     /^(\d\d)(Z|(?:[+\-]\d\d:\d\d)?)?$/ =~ t.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ t }'.")
     end
-
     mon = $1.to_i
     zonestr = $2
-
-    @data = DateTime.civil(1, mon, 1, 0, 0, 0, tz2of(zonestr))
+    DateTime.civil(1, mon, 1, 0, 0, 0, tz2of(zonestr))
   end
 
   def _to_s
@@ -903,9 +868,8 @@ class XSDHexBinary < XSDAnySimpleType
 
 private
 
-  def _set(value)
-    @data = value.unpack("H*")[0]
-    @data.tr!('a-f', 'A-F')
+  def screen_data(value)
+    value.unpack("H*")[0].tr('a-f', 'A-F')
   end
 end
 
@@ -933,8 +897,8 @@ class XSDBase64Binary < XSDAnySimpleType
 
 private
 
-  def _set(value)
-    @data = [value].pack("m").strip
+  def screen_data(value)
+    [value].pack("m").strip
   end
 end
 
@@ -949,9 +913,9 @@ class XSDAnyURI < XSDAnySimpleType
 
 private
 
-  def _set(value)
+  def screen_data(value)
     begin
-      @data = URI.parse(value.to_s.strip)
+      URI.parse(value.to_s.strip)
     rescue URI::InvalidURIError
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
@@ -969,14 +933,18 @@ class XSDQName < XSDAnySimpleType
 
 private
 
-  def _set(value)
+  def screen_data(value)
     /^(?:([^:]+):)?([^:]+)$/ =~ value.to_s.strip
     unless Regexp.last_match
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
+    prefix = $1
+    localpart = $2
+    [prefix, localpart]
+  end
 
-    @prefix = $1
-    @localpart = $2
+  def _set(pair)
+    @prefix, @localpart = pair
     @data = _to_s
     @data.freeze
   end
@@ -1005,7 +973,7 @@ class XSDNormalizedString < XSDString
 
 private
 
-  def _set(value)
+  def screen_data(value)
     if /[\t\r\n]/ =~ value
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ value }'.")
     end
@@ -1024,12 +992,17 @@ class XSDInteger < XSDDecimal
 
 private
 
-  def set_str(str)
+  def screen_data_str(str)
     begin
-      @data = Integer(str)
+      data = Integer(str)
     rescue ArgumentError
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
+    data
+  end
+
+  def _set(value)
+    @data = value
   end
 
   def _to_s()
@@ -1048,15 +1021,20 @@ class XSDLong < XSDInteger
 
 private
 
-  def set_str(str)
+  def screen_data_str(str)
     begin
-      @data = Integer(str)
+      data = Integer(str)
     rescue ArgumentError
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
-    unless validate(@data)
+    unless validate(data)
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
+    data
+  end
+
+  def _set(value)
+    @data = value
   end
 
   MaxInclusive = +9223372036854775807
@@ -1077,15 +1055,20 @@ class XSDInt < XSDLong
 
 private
 
-  def set_str(str)
+  def screen_data_str(str)
     begin
-      @data = Integer(str)
+      data = Integer(str)
     rescue ArgumentError
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
-    unless validate(@data)
+    unless validate(data)
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
+    data
+  end
+
+  def _set(value)
+    @data = value
   end
 
   MaxInclusive = +2147483647
@@ -1106,15 +1089,20 @@ class XSDShort < XSDInt
 
 private
 
-  def set_str(str)
+  def screen_data_str(str)
     begin
-      @data = Integer(str)
+      data = Integer(str)
     rescue ArgumentError
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
-    unless validate(@data)
+    unless validate(data)
       raise ValueSpaceError.new("#{ type }: cannot accept '#{ str }'.")
     end
+    data
+  end
+
+  def _set(value)
+    @data = value
   end
 
   MaxInclusive = +32767

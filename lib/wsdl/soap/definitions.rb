@@ -75,7 +75,35 @@ class Definitions < Info
     types + self.class.soap_rpc_complextypes
   end
 
+  def collect_faulttypes
+    result = []
+    collect_fault_messages.each do |message|
+      parts = message(message).parts
+      if parts.size != 1
+	raise RuntimeError.new("Expecting fault message to have only 1 part.")
+      end
+      if result.index(parts[0].type).nil?
+	result << parts[0].type
+      end
+    end
+    result
+  end
+
 private
+
+  def collect_fault_messages
+    result = []
+    porttypes.each do |porttype|
+      porttype.operations.each do |operation|
+	operation.fault.each do |fault|
+	  if result.index(fault.message).nil?
+	    result << fault.message
+	  end
+	end
+      end
+    end
+    result
+  end
 
   def rpc_operation_complextypes(binding)
     types = XSD::NamedElements.new

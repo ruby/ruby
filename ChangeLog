@@ -1,3 +1,93 @@
+Sat Jul  3 22:25:27 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* added files:
+	  * lib/soap/header/*
+	  * lib/soap/rpc/httpserver.rb
+	  * lib/wsdl/soap/cgiStubCreator.rb
+	  * lib/wsdl/soap/classDefCreator.rb
+	  * lib/wsdl/soap/classDefCreatorSupport.rb
+	  * lib/wsdl/soap/clientSkeltonCreator.rb
+	  * lib/wsdl/soap/driverCreator.rb
+	  * lib/wsdl/soap/mappingRegistryCreator.rb
+	  * lib/wsdl/soap/methodDefCreator.rb
+	  * lib/wsdl/soap/servantSkeltonCreator.rb
+	  * lib/wsdl/soap/standaloneServerStubCreator.rb
+	  * lib/wsdl/xmlSchema/enumeration.rb
+	  * lib/wsdl/xmlSchema/simpleRestriction.rb
+	  * lib/wsdl/xmlSchema/simpleType.rb
+	  * lib/xsd/codegen/*
+	  * lib/xsd/codegen.rb
+	  * sample/soap/authheader/*
+	  * sample/soap/raa2.4/*
+	  * sample/soap/ssl/*
+	  * sample/soap/swa/*
+	  * sample/soap/whois.rb
+	  * sample/wsdl/raa2.4/*
+	  * test/soap/header/*
+	  * test/soap/ssl/*
+	  * test/soap/struct/*
+	  * test/soap/swa/*
+	  * test/soap/wsdlDriver/*
+	  * test/wsdl/multiplefault.wsdl
+	  * test/wsdl/simpletype/*
+	  * test/wsdl/test_multiplefault.rb
+
+	* modified files:
+	  * lib/soap/baseData.rb
+	  * lib/soap/element.rb
+	  * lib/soap/generator.rb
+	  * lib/soap/netHttpClient.rb
+	  * lib/soap/parser.rb
+	  * lib/soap/property.rb
+	  * lib/soap/soap.rb
+	  * lib/soap/streamHandler.rb
+	  * lib/soap/wsdlDriver.rb
+	  * lib/soap/encodingstyle/handler.rb
+	  * lib/soap/encodingstyle/literalHandler.rb
+	  * lib/soap/encodingstyle/soapHandler.rb
+	  * lib/soap/mapping/factory.rb
+	  * lib/soap/mapping/mapping.rb
+	  * lib/soap/mapping/registry.rb
+	  * lib/soap/mapping/rubytypeFactory.rb
+	  * lib/soap/mapping/wsdlRegistry.rb
+	  * lib/soap/rpc/cgistub.rb
+	  * lib/soap/rpc/driver.rb
+	  * lib/soap/rpc/proxy.rb
+	  * lib/soap/rpc/router.rb
+	  * lib/soap/rpc/soaplet.rb
+	  * lib/soap/rpc/standaloneServer.rb
+	  * lib/wsdl/data.rb
+	  * lib/wsdl/definitions.rb
+	  * lib/wsdl/operation.rb
+	  * lib/wsdl/parser.rb
+	  * lib/wsdl/soap/definitions.rb
+	  * lib/wsdl/xmlSchema/complexContent.rb
+	  * lib/wsdl/xmlSchema/complexType.rb
+	  * lib/wsdl/xmlSchema/data.rb
+	  * lib/wsdl/xmlSchema/parser.rb
+	  * lib/wsdl/xmlSchema/schema.rb
+	  * lib/xsd/datatypes.rb
+	  * lib/xsd/qname.rb
+	  * sample/soap/sampleStruct/server.rb
+	  * sample/wsdl/amazon/AmazonSearch.rb
+	  * sample/wsdl/amazon/AmazonSearchDriver.rb
+	  * test/soap/test_property.rb
+	  * test/soap/calc/test_calc_cgi.rb
+	  * test/wsdl/test_emptycomplextype.rb
+
+	* summary
+	  * add SOAP Header mustUnderstand support.
+
+	  * add HTTP client SSL configuration and Cookies support (works
+	    completely with http-access2).
+
+	  * add header handler for handling sending/receiving SOAP Header.
+
+	  * map Ruby's anonymous Struct to common SOAP Struct in SOAP Object
+	    Model.  it caused error.
+	  
+	  * add WSDL simpleType support to restrict lexical value space.
+
 Sat Jul  3 17:19:44 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tk/lib/tkextlib/tkDND.rb: fix syntax error.

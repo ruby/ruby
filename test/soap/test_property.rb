@@ -59,7 +59,7 @@ __EOP__
     prop = Property.new
     hooked = false
     prop.add_hook("foo.bar.baz") do |name, value|
-      assert_equal("foo.bar.baz", name)
+      assert_equal(["foo", "bar", "baz"], name)
       assert_equal("123", value)
       hooked = true
     end
@@ -126,11 +126,24 @@ __EOP__
     end
   end
 
+  def test_hook_name
+    tag = Object.new
+    tested = false
+    @prop.add_hook("foo.bar") do |key, value|
+      assert_raise(TypeError) do
+	key << "baz"
+      end
+      tested = true
+    end
+    @prop["foo.bar"] = tag
+    assert(tested)
+  end
+
   def test_value_hook
     tag = Object.new
     tested = false
     @prop.add_hook("FOO.BAR.BAZ") do |key, value|
-      assert_equal("foo.bar.baz", key)
+      assert_equal(["Foo", "baR", "baZ"], key)
       assert_equal(tag, value)
       tested = true
     end
@@ -141,32 +154,65 @@ __EOP__
     assert_equal(1, @prop["foo.bar"])
   end
 
-  def test_key_hook
+  def test_key_hook_no_cascade
     tag = Object.new
     tested = 0
-    @prop.add_hook("foo") do |key, value|
-      assert_equal("foo.bar.baz.qux", key)
-      assert_equal(tag, value)
-      tested += 1
+    @prop.add_hook do |key, value|
+      assert(false)
     end
-    @prop.add_hook("foo.bar") do |key, value|
-      assert_equal("foo.bar.baz.qux", key)
-      assert_equal(tag, value)
-      tested += 1
+    @prop.add_hook(false) do |key, value|
+      assert(false)
+    end
+    @prop.add_hook("foo") do |key, value|
+      assert(false)
+    end
+    @prop.add_hook("foo.bar", false) do |key, value|
+      assert(false)
     end
     @prop.add_hook("foo.bar.baz") do |key, value|
-      assert_equal("foo.bar.baz.qux", key)
-      assert_equal(tag, value)
-      tested += 1
+      assert(false)
     end
-    @prop.add_hook("foo.bar.baz.qux") do |key, value|
-      assert_equal("foo.bar.baz.qux", key)
+    @prop.add_hook("foo.bar.baz.qux", false) do |key, value|
+      assert_equal(["foo", "bar", "baz", "qux"], key)
       assert_equal(tag, value)
       tested += 1
     end
     @prop["foo.bar.baz.qux"] = tag
     assert_equal(tag, @prop["foo.bar.baz.qux"])
-    assert_equal(4, tested)
+    assert_equal(1, tested)
+  end
+
+  def test_key_hook_cascade
+    tag = Object.new
+    tested = 0
+    @prop.add_hook(true) do |key, value|
+      assert_equal(["foo", "bar", "baz", "qux"], key)
+      assert_equal(tag, value)
+      tested += 1
+    end
+    @prop.add_hook("foo", true) do |key, value|
+      assert_equal(["foo", "bar", "baz", "qux"], key)
+      assert_equal(tag, value)
+      tested += 1
+    end
+    @prop.add_hook("foo.bar", true) do |key, value|
+      assert_equal(["foo", "bar", "baz", "qux"], key)
+      assert_equal(tag, value)
+      tested += 1
+    end
+    @prop.add_hook("foo.bar.baz", true) do |key, value|
+      assert_equal(["foo", "bar", "baz", "qux"], key)
+      assert_equal(tag, value)
+      tested += 1
+    end
+    @prop.add_hook("foo.bar.baz.qux", true) do |key, value|
+      assert_equal(["foo", "bar", "baz", "qux"], key)
+      assert_equal(tag, value)
+      tested += 1
+    end
+    @prop["foo.bar.baz.qux"] = tag
+    assert_equal(tag, @prop["foo.bar.baz.qux"])
+    assert_equal(5, tested)
   end
 
   def test_keys
@@ -310,7 +356,7 @@ __EOP__
   def test_hook_then_lock
     tested = false
     @prop.add_hook("a.b.c") do |name, value|
-      assert_equal("a.b.c", name)
+      assert_equal(["a", "b", "c"], name)
       tested = true
     end
     @prop["a.b"].lock

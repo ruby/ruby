@@ -12,7 +12,7 @@ class TestWSDL < Test::Unit::TestCase
 
   def test_wsdl
     @wsdl = WSDL::Parser.new.parse(File.open(@file) { |f| f.read })
-    assert_equal("#<WSDL::Definitions:{urn:jp.gr.jin.rrr.example.emptycomplextype}emptycomplextype>", @wsdl.inspect)
+    assert(/\{urn:jp.gr.jin.rrr.example.emptycomplextype\}emptycomplextype/ =~ @wsdl.inspect)
   end
 end
 

@@ -6,6 +6,7 @@
 # either the dual license version in 2003, or any later version.
 
 
+require 'xsd/qname'
 require 'wsdl/documentation'
 require 'wsdl/definitions'
 require 'wsdl/types'

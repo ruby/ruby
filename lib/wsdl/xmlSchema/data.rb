@@ -6,8 +6,11 @@
 # either the dual license version in 2003, or any later version.
 
 
+require 'xsd/datatypes'
 require 'wsdl/xmlSchema/schema'
 require 'wsdl/xmlSchema/import'
+require 'wsdl/xmlSchema/simpleType'
+require 'wsdl/xmlSchema/simpleRestriction'
 require 'wsdl/xmlSchema/complexType'
 require 'wsdl/xmlSchema/complexContent'
 require 'wsdl/xmlSchema/any'
@@ -17,7 +20,7 @@ require 'wsdl/xmlSchema/choice'
 require 'wsdl/xmlSchema/sequence'
 require 'wsdl/xmlSchema/attribute'
 require 'wsdl/xmlSchema/unique'
-
+require 'wsdl/xmlSchema/enumeration'
 
 module WSDL
 module XMLSchema
@@ -30,6 +33,7 @@ ChoiceName = XSD::QName.new(XSD::Namespace, 'choice')
 ComplexContentName = XSD::QName.new(XSD::Namespace, 'complexContent')
 ComplexTypeName = XSD::QName.new(XSD::Namespace, 'complexType')
 ElementName = XSD::QName.new(XSD::Namespace, 'element')
+EnumerationName = XSD::QName.new(XSD::Namespace, 'enumeration')
 ExtensionName = XSD::QName.new(XSD::Namespace, 'extension')
 ImportName = XSD::QName.new(XSD::Namespace, 'import')
 RestrictionName = XSD::QName.new(XSD::Namespace, 'restriction')
@@ -57,6 +61,7 @@ SchemaLocationAttrName = XSD::QName.new(nil, 'schemaLocation')
 TargetNamespaceAttrName = XSD::QName.new(nil, 'targetNamespace')
 TypeAttrName = XSD::QName.new(nil, 'type')
 UseAttrName = XSD::QName.new(nil, 'use')
+ValueAttrName = XSD::QName.new(nil, 'value')
 
 
 end

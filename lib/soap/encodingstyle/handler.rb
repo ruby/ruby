@@ -44,8 +44,8 @@ class Handler
 
   attr_reader :charset
   attr_accessor :generate_explicit_type
-  def decode_typemap=(complextypes)
-    @decode_typemap = complextypes
+  def decode_typemap=(definedtypes)
+    @decode_typemap = definedtypes
   end
 
   def initialize(charset)

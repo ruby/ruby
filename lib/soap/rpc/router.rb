@@ -13,6 +13,7 @@ require 'soap/rpc/rpc'
 require 'soap/rpc/element'
 require 'soap/streamHandler'
 require 'soap/mimemessage'
+require 'soap/header/handlerset'
 
 
 module SOAP
@@ -26,6 +27,7 @@ class Router
   attr_accessor :allow_unqualified_element
   attr_accessor :default_encodingstyle
   attr_accessor :mapping_registry
+  attr_reader :headerhandler
 
   def initialize(actor)
     @actor = actor
@@ -35,6 +37,7 @@ class Router
     @allow_unqualified_element = false
     @default_encodingstyle = nil
     @mapping_registry = nil
+    @headerhandler = Header::HandlerSet.new
   end
 
   def add_method(receiver, qname, soapaction, name, param_def)
@@ -44,12 +47,6 @@ class Router
     @method[fqname] = RPC::SOAPMethodRequest.new(qname, param_def, soapaction)
   end
 
-  def add_header_handler
-    raise NotImplementedError.new
-  end
-
-  # Routing...
-  #def route(soap_string, charset = nil)
   def route(conn_data)
     soap_response = nil
     begin
@@ -57,7 +54,7 @@ class Router
       if env.nil?
 	raise ArgumentError.new("Illegal SOAP marshal format.")
       end
-      # So far, header is omitted...
+      receive_headers(env.header)
       soap_request = env.body.request
       unless soap_request.is_a?(SOAPStruct)
 	raise RPCRoutingError.new("Not an RPC style.")
@@ -70,7 +67,7 @@ class Router
 
     opt = options
     opt[:external_content] = nil
-    header = SOAPHeader.new
+    header = call_headers
     body = SOAPBody.new(soap_response)
     env = SOAPEnvelope.new(header, body)
     response_string = Processor.marshal(env, opt)
@@ -114,13 +111,30 @@ class Router
 
 private
 
+  def call_headers
+    headers = @headerhandler.on_outbound
+    if headers.empty?
+      nil
+    else
+      h = ::SOAP::SOAPHeader.new
+      headers.each do |header|
+      h.add(header.elename.name, header)
+    end
+    h
+    end
+  end
+
+  def receive_headers(headers)
+    @headerhandler.on_inbound(headers) if headers
+  end
+
   def unmarshal(conn_data)
     opt = options
     contenttype = conn_data.receive_contenttype
     if /#{MIMEMessage::MultipartContentType}/i =~ contenttype
       opt[:external_content] = {}
       mime = MIMEMessage.parse("Content-Type: " + contenttype,
-	conn_data.receive_string)
+      conn_data.receive_string)
       mime.parts.each do |part|
 	value = Attachment.new(part.content)
 	value.contentid = part.contentid

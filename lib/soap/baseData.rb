@@ -1,5 +1,5 @@
 # soap/baseData.rb: SOAP4R - Base type library
-# Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000, 2001, 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -30,20 +30,10 @@ end
 
 
 ###
-## Marker of SOAP/DM types.
+## for SOAP type(base and compound)
 #
-module SOAPType; end
-
-
-###
-## Mix-in module for SOAP base type instances.
-#
-module SOAPBasetype
-  include SOAPType
-  include SOAP
-
+module SOAPType
   attr_accessor :encodingstyle
-
   attr_accessor :elename
   attr_accessor :id
   attr_reader :precedents
@@ -51,17 +41,18 @@ module SOAPBasetype
   attr_accessor :parent
   attr_accessor :position
   attr_reader :extraattr
+  attr_accessor :definedtype
 
-public
-
-  def initialize(*vars)
-    super(*vars)
+  def initialize(*arg)
+    super(*arg)
     @encodingstyle = nil
     @elename = XSD::QName.new
     @id = nil
     @precedents = []
+    @root = false
     @parent = nil
     @position = nil
+    @definedtype = nil
     @extraattr = {}
   end
 
@@ -76,38 +67,27 @@ end
 
 
 ###
-## Mix-in module for SOAP compound type instances.
+## for SOAP base type
+#
+module SOAPBasetype
+  include SOAPType
+  include SOAP
+
+  def initialize(*arg)
+    super(*arg)
+  end
+end
+
+
+###
+## for SOAP compound type
 #
 module SOAPCompoundtype
   include SOAPType
   include SOAP
 
-  attr_accessor :encodingstyle
-
-  attr_accessor :elename
-  attr_accessor :id
-  attr_reader :precedents
-  attr_accessor :root
-  attr_accessor :parent
-  attr_accessor :position
-  attr_reader :extraattr
-
-  attr_accessor :definedtype
-
-public
-
-  def initialize(type)
-    super()
-    @type = type
-    @encodingstyle = nil
-    @elename = XSD::QName.new
-    @id = nil
-    @precedents = []
-    @root = false
-    @parent = nil
-    @position = nil
-    @definedtype = nil
-    @extraattr = {}
+  def initialize(*arg)
+    super(*arg)
   end
 end
 
@@ -122,18 +102,11 @@ class SOAPReference < XSD::NSDBase
 public
 
   attr_accessor :refid
-  attr_accessor :elename
 
   # Override the definition in SOAPBasetype.
   def initialize(obj = nil)
     super()
     @type = XSD::QName.new
-    @encodingstyle = nil
-    @elename = XSD::QName.new
-    @id = nil
-    @precedents = []
-    @root = false
-    @parent = nil
     @refid = nil
     @obj = nil
     __setobj__(obj) if obj
@@ -198,11 +171,6 @@ class SOAPExternalReference < XSD::NSDBase
   def initialize
     super()
     @type = XSD::QName.new
-    @encodingstyle = nil
-    @elename = XSD::QName.new
-    @precedents = []
-    @root = false
-    @parent = nil
   end
 
   def referred
@@ -377,7 +345,8 @@ class SOAPStruct < XSD::NSDBase
 public
 
   def initialize(type = nil)
-    super(type || XSD::QName.new)
+    super()
+    @type = type || XSD::QName.new
     @array = []
     @data = []
   end
@@ -459,7 +428,7 @@ private
 end
 
 
-# SOAPElement is not typed so it does not derive NSDBase.
+# SOAPElement is not typed so it is not derived from NSDBase.
 class SOAPElement
   include Enumerable
 
@@ -534,7 +503,7 @@ class SOAPElement
     else
       hash = {}
       each do |k, v|
-	hash[k] = v.to_obj
+	hash[k] = v.is_a?(SOAPElement) ? v.to_obj : v.to_s
       end
       hash
     end
@@ -547,8 +516,7 @@ class SOAPElement
   end
 
   def self.decode(elename)
-    o = SOAPElement.new
-    o.elename = elename
+    o = SOAPElement.new(elename)
     o
   end
 
@@ -557,7 +525,7 @@ class SOAPElement
     if hash_or_string.is_a?(Hash)
       hash_or_string.each do |k, v|
 	child = self.from_obj(v)
-	child.elename = XSD::QName.new(nil, k)
+	child.elename = k.is_a?(XSD::QName) ? k : XSD::QName.new(nil, k.to_s)
 	o.add(child)
       end
     else
@@ -616,7 +584,8 @@ public
   attr_reader :arytype
 
   def initialize(type = nil, rank = 1, arytype = nil)
-    super(type || XSD::QName.new)
+    super()
+    @type = type || XSD::QName.new
     @rank = rank
     @data = Array.new
     @sparse = false
