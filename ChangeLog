@@ -1,3 +1,7 @@
+Sat Jan  5 00:19:12 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (yycompile): strdup()'ed twice.
+
 Wed Jan  2 23:34:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): add -I. to CPPFLAGS.
