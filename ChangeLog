@@ -1,3 +1,11 @@
+Fri May  2 15:10:41 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: use hashes to pass options.
+
+	* lib/fileutils.rb: new option mkdir(:mode), mkdir_p(:mode).
+
+	* instruby.rb: follow fileutils.rb feature change.
+
 Thu May  1 08:24:00 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_match_exec): $ _always_ matches at the end of string.

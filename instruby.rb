@@ -9,7 +9,7 @@ require 'shellwords'
 require 'getopts'
 require 'tempfile'
 
-File.umask(0022)
+File.umask(0)
 
 def parse_args()
   getopts('n', 'dest-dir:',
@@ -55,7 +55,7 @@ include FileUtils::NoWrite if $dryrun
 @fileutils_label = ''
 alias makelink ln_sf
 class << self
-  body = proc {|*args|super(*args<<:verbose)}
+  body = proc {|*args|super(*fu_update_option(args,:verbose=>true))}
   for func in [:install, :makelink]
     define_method(func, body)
   end
@@ -69,7 +69,7 @@ def makedirs(dirs)
       File.directory?(dir)
     end
   end
-  super(dirs, :verbose) unless dirs.empty?
+  super(dirs, :mode => 0755, :verbose => true) unless dirs.empty?
 end
 
 exeext = CONFIG["EXEEXT"]
@@ -95,18 +95,18 @@ makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir]
 
 ruby_bin = File.join(bindir, ruby_install_name)
 
-install ruby_install_name+exeext, ruby_bin+exeext, 0755
+install ruby_install_name+exeext, ruby_bin+exeext, :mode => 0755
 if rubyw_install_name and !rubyw_install_name.empty?
-  install rubyw_install_name+exeext, bindir, 0755
+  install rubyw_install_name+exeext, bindir, :mode => 0755
 end
-install dll, bindir, 0755 if enable_shared and dll != lib
-install lib, libdir, 0555 unless lib == arc
-install arc, libdir, 0644
-install "config.h", archlibdir, 0644
-install "rbconfig.rb", archlibdir, 0644
+install dll, bindir, :mode => 0755 if enable_shared and dll != lib
+install lib, libdir, :mode => 0555 unless lib == arc
+install arc, libdir, :mode => 0644
+install "config.h", archlibdir, :mode => 0644
+install "rbconfig.rb", archlibdir, :mode => 0644
 if CONFIG["ARCHFILE"]
   for file in CONFIG["ARCHFILE"].split
-    install file, archlibdir, 0644
+    install file, archlibdir, :mode => 0644
   end
 end
 
@@ -126,7 +126,7 @@ for src in Dir["bin/*"]
   name = ruby_install_name.sub(/ruby/, File.basename(src))
   dest = File.join(bindir, name)
 
-  install src, dest, 0755
+  install src, dest, :mode => 0755
 
   next if $dryrun
 
@@ -166,16 +166,16 @@ end
 Dir.glob("lib/**/*{.rb,help-message}") do |f|
   dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
   makedirs dir
-  install f, dir, 0644
+  install f, dir, :mode => 0644
 end
 
 Dir.glob("*.h") do |f|
-  install f, archlibdir, 0644
+  install f, archlibdir, :mode => 0644
 end
 
 if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
   makedirs File.join(archlibdir, "win32")
-  install "win32/win32.h", File.join(archlibdir, "win32"), 0644
+  install "win32/win32.h", File.join(archlibdir, "win32"), :mode => 0644
 end
 
 Dir.glob("*.[1-9]") do |mdoc|
@@ -187,7 +187,7 @@ Dir.glob("*.[1-9]") do |mdoc|
   makedirs destdir
 
   if $mantype == "doc"
-    install mdoc, destfile, 0644
+    install mdoc, destfile, :mode => 0644
   else
     require 'mdoc2man.rb'
 
@@ -199,7 +199,7 @@ Dir.glob("*.[1-9]") do |mdoc|
 
     w.close
 
-    install w.path, destfile, 0644
+    install w.path, destfile, :mode => 0644
   end
 end
 
