@@ -2,8 +2,8 @@
 # 
 # URL: http://www.germane-software.com/software/rexml
 # Author: Sean Russell <ser@germane-software.com>
-# Version: @ANT_VERSION@
-# Date: @ANT_DATE@
+# Version: 3.0.1
+# Date: +2004/093
 
 
 
@@ -21,6 +21,6 @@
 # A tutorial is available in docs/tutorial.html
 module REXML
 	Copyright = "Copyright © 2001, 2002, 2003, 2004 Sean Russell <ser@germane-software.com>"
-	Date = "+2004/088"
-	Version = "3.0.0"
+	Date = "+2004/093"
+	Version = "3.0.1"
 end

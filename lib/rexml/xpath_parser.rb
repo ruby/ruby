@@ -321,7 +321,7 @@ module REXML
         node_idx = [] 
         np = node.node_type == :attribute ? node.element : node
         while np.parent and np.parent.node_type == :element
-          node_idx << np.parent.children.index( np )
+          node_idx << np.parent.index( np )
           np = np.parent
         end
         new_arry << [ node_idx.reverse.join, node ]
