@@ -7406,6 +7406,14 @@ enum thread_status {
 /* +infty, for this purpose */
 #define DELAY_INFTY 1E30
 
+#if !defined HAVE_PAUSE
+# if defined _WIN32 && !defined __CYGWIN__
+#  define pause() Sleep(INFINITE)
+# else
+#  define pause() sleep(0x7fffffff)
+# endif
+#endif
+
 /* typedef struct thread * rb_thread_t; */
 
 struct thread {
@@ -8641,14 +8649,6 @@ rb_thread_sleep(sec)
     }
     rb_thread_wait_for(rb_time_timeval(INT2FIX(sec)));
 }
-
-#if !defined HAVE_PAUSE
-# if defined _WIN32 && !defined __CYGWIN__
-#  define pause() Sleep(INFINITE)
-# else
-#  define pause() sleep(0x7fffffff)
-# endif
-#endif
 
 void
 rb_thread_sleep_forever()
