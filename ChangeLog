@@ -1,3 +1,13 @@
+Fri Oct 10 01:19:00 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_initialize): add
+	  optional argument to specify the DirectoryString type
+	  (ASN1::UTF8STRING by default). RFC3280 deprecates PrintableString
+	  for DirectoryString, and strongly requires to use UTF8String for
+	  all certificates issued after December, 31 2003.
+
+	* ext/openssl/lib/openssl/x509.rb (X509::Name::parse): ditto.
+
 Thu Oct  9 23:50:21 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_start_0): prevent thread from GC.

@@ -64,9 +64,9 @@ module OpenSSL
     end # Extension
     
     class Name
-      def self.parse(str)
+      def self.parse(str, type=ASN1::UTF8STRING)
         ary = str.scan(/\s*([^\/,]+)\s*/).collect{|i| i[0].split("=") }
-        self.new(ary)
+        self.new(ary, type)
       end
     end # Name
 

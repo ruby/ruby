@@ -9,7 +9,6 @@
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
-#include "st.h" /* For st_foreach -- ST_CONTINUE */
 
 #define WrapX509Name(klass, obj, name) do { \
     if (!name) { \
@@ -88,13 +87,13 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 {
     X509_NAME *name;
     int i, type;
-    VALUE arg, item, key, value;
+    VALUE arg, str_type, item, key, value;
 
     GetX509Name(self, name);
-    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
+    if (rb_scan_args(argc, argv, "02", &arg, &str_type) == 0) {
 	return self;
     }
-    if (rb_respond_to(arg, ossl_s_to_der)){
+    if (argc == 1 && rb_respond_to(arg, ossl_s_to_der)){
 	unsigned char *p;
 	VALUE str = rb_funcall(arg, ossl_s_to_der, 0);
 	StringValue(str);
@@ -104,6 +103,7 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
         return self;
     }
     Check_Type(arg, T_ARRAY);
+    type = NIL_P(str_type) ? V_ASN1_UTF8STRING : NUM2INT(str_type);
     for (i=0; i<RARRAY(arg)->len; i++) {
 	item = RARRAY(arg)->ptr[i];
 	Check_Type(item, T_ARRAY);
@@ -114,7 +114,6 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	value = RARRAY(item)->ptr[1];
 	StringValue(key);
 	StringValue(value);
-	type = ASN1_PRINTABLE_type(RSTRING(value)->ptr, -1);
 	if (!X509_NAME_add_entry_by_txt(name, RSTRING(key)->ptr, type,
 			RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
 	    ossl_raise(eX509NameError, NULL);
