@@ -1,3 +1,10 @@
+Wed Jan  7 13:00:18 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_driver.rb: Fix problem where ri was
+	  being too eager to find matches of ambiguous method
+	  names (such as "ri Thread.join" would return both
+	  Thread.join and ThreadsWait.join)
+
 Wed Jan  7 12:35:41 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/debug.rb: revert command parse regexps.  [ruby-list:39014] by
