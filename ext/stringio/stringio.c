@@ -15,8 +15,7 @@
 #include "ruby.h"
 #include "rubyio.h"
 
-#define STRIO_APPEND 4
-#define STRIO_EOF 8
+#define STRIO_EOF FMODE_SYNC
 
 struct StringIO {
     VALUE string;
@@ -220,7 +219,7 @@ strio_initialize(argc, argv, self)
 	}
 	switch (*m) {
 	  case 'a':
-	    ptr->flags |= STRIO_APPEND;
+	    ptr->flags |= FMODE_APPEND;
 	    break;
 	  case 'w':
 	    rb_str_resize(string, 0);
@@ -779,7 +778,7 @@ strio_write(self, str)
     if (!len) return INT2FIX(0);
     check_modifiable(ptr);
     olen = RSTRING(ptr->string)->len;
-    if (ptr->flags & STRIO_APPEND) {
+    if (ptr->flags & FMODE_APPEND) {
 	ptr->pos = olen;
     }
     if (ptr->pos == olen) {
@@ -814,7 +813,7 @@ strio_putc(self, ch)
     int c = NUM2CHR(ch);
 
     check_modifiable(ptr);
-    if (ptr->flags & STRIO_APPEND) {
+    if (ptr->flags & FMODE_APPEND) {
 	ptr->pos = RSTRING(ptr->string)->len;
     }
     if (ptr->pos >= RSTRING(ptr->string)->len) {
