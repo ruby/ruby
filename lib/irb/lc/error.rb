@@ -16,7 +16,7 @@ module IRB
   # exceptions
   extend Exception2MessageMapper
   def_exception :UnrecognizedSwitch, "Unrecognized switch: %s"
-  def_exception :NotImplementError, "Need to define `%s'"
+  def_exception :NotImplementedError, "Need to define `%s'"
   def_exception :CantReturnToNormalMode, "Can't return to normal mode."
   def_exception :IllegalParameter, "Illegal parameter(%s)."
   def_exception :IrbAlreadyDead, "Irb is already dead."

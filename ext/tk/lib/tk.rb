@@ -2302,10 +2302,10 @@ end
 
 module TkTreatItemFont
   def __conf_cmd(idx)
-    raise NotImplementError, "need to define `__conf_cmd'"
+    raise NotImplementedError, "need to define `__conf_cmd'"
   end
   def __item_pathname(tagOrId)
-    raise NotImplementError, "need to define `__item_pathname'"
+    raise NotImplementedError, "need to define `__item_pathname'"
   end
   private :__conf_cmd, :__item_pathname
 

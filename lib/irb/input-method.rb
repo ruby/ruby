@@ -28,7 +28,7 @@ module IRB
     attr_accessor :prompt
     
     def gets
-      IRB.fail NotImplementError, "gets"
+      IRB.fail NotImplementedError, "gets"
     end
     public :gets
 

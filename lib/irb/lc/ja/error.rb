@@ -15,7 +15,7 @@ module IRB
   # exceptions
   extend Exception2MessageMapper
   def_exception :UnrecognizedSwitch, 'スイッチ(%s)が分りません'
-  def_exception :NotImplementError, '`%s\'の定義が必要です'
+  def_exception :NotImplementedError, '`%s\'の定義が必要です'
   def_exception :CantReturnToNormalMode, 'Normalモードに戻れません.'
   def_exception :IllegalParameter, 'パラメータ(%s)が間違っています.'
   def_exception :IrbAlreadyDead, 'Irbは既に死んでいます.'

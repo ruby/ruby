@@ -13,11 +13,6 @@
 #   $Id$
 #
 
-unless defined? NotImplementedError then
-  NotImplementedError = NotImplementError
-end
-
-
 module Racc
   class ParseError < StandardError; end
 end

@@ -48,7 +48,7 @@ class Delegator
   end
 
   def __getobj__
-    raise NotImplementError, "need to define `__getobj__'"
+    raise NotImplementedError, "need to define `__getobj__'"
   end
 
 end
