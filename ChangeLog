@@ -1,3 +1,8 @@
+Mon Mar  5 17:19:56 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c (gettimeofday): use GetLocalTime() instead of ftime()
+	  for high-resolution timing.
+
 Sun Mar  4 20:45:20 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: add C++ rules in addition to C

@@ -2426,13 +2426,23 @@ waitpid (pid_t pid, int *stat_loc, int options)
 int _cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {                                
-    struct timeb tb;
+    SYSTEMTIME st;
+    time_t t;
+    struct tm tm;
 
-    ftime(&tb);
-    tv->tv_sec = tb.time;
-    tv->tv_usec = tb.millitm * 1000;
+    GetLocalTime(&st);
+    tm.tm_sec = st.wSecond;
+    tm.tm_min = st.wMinute;
+    tm.tm_hour = st.wHour;
+    tm.tm_mday = st.wDay;
+    tm.tm_mon = st.wMonth - 1;
+    tm.tm_year = st.wYear - 1900;
+    tm.tm_isdst = -1;
+    t = mktime(&tm);
+    tv->tv_sec = t;
+    tv->tv_usec = st.wMilliseconds * 1000;
 
-	return 0;
+    return 0;
 }
 
 char *
