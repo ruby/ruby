@@ -5,6 +5,10 @@ Thu Jan 31 20:45:33 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* lib/mkmf.rb (arg_config): avoid special variables for
 	  font-lock-mode.
 
+Wed Jan 30 13:37:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_search): should set regs.allocated.
+
 Mon Jan 28 18:33:18 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yylex): strict check for numbers.

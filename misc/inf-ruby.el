@@ -15,7 +15,7 @@
 ;;;     for example :
 ;;;
 ;;;    (autoload 'ruby-mode "ruby-mode"
-;;;      "Mode for editing ruby source files")
+;;;      "Mode for editing ruby source files" t)
 ;;;    (setq auto-mode-alist
 ;;;          (append '(("\\.rb$" . ruby-mode)) auto-mode-alist))
 ;;;    (setq interpreter-mode-alist (append '(("ruby" . ruby-mode))
@@ -35,9 +35,12 @@
 ;;; HISTORY
 ;;; senda -  8 Apr 1998: Created.
 ;;;	 $Log$
+;;;	 Revision 1.3.2.1  2002/02/01 06:01:51  matz
+;;;	 * re.c (rb_reg_search): should set regs.allocated.
+;;;
 ;;;	 Revision 1.3  1999/12/01 09:24:18  matz
 ;;;	 19991201
-;;;
+;;;	
 ;;;	 Revision 1.2  1999/08/13 05:45:18  matz
 ;;;	 1.4.0
 ;;;	
