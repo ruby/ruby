@@ -1,3 +1,11 @@
+Tue Nov 16 13:35:54 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::options): add
+	  new option --exclude (-x) to skip some tests.
+
+	* lib/test/unit/collector/dir.rb (Test::Unit::Collector::Dir.exclude):
+	  ditto.
+
 Tue Nov 16 11:19:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::options): use

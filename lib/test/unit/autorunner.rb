@@ -56,12 +56,13 @@ module Test
           c = Collector::Dir.new
           c.filter = r.filters
           c.pattern = r.pattern if(r.pattern)
+          c.exclude = r.exclude if(r.exclude)
           c.collect(*(r.to_run.empty? ? ['.'] : r.to_run))
         end,
       }
 
       attr_reader :suite
-      attr_accessor :output_level, :filters, :to_run, :pattern
+      attr_accessor :output_level, :filters, :to_run, :pattern, :exclude
       attr_writer :runner, :collector
 
       def initialize(standalone)
@@ -111,6 +112,11 @@ module Test
             o.on('-p', '--pattern=PATTERN', Regexp,
                  "Match files to collect against PATTERN.") do |e|
               @pattern = e
+            end
+
+            o.on('-x', '--exclude=PATTERN', Regexp,
+                 "Ignore files to collect against PATTERN.") do |e|
+              @exclude = e
             end
           end
 

@@ -7,7 +7,7 @@ module Test
       class Dir
         include Collector
 
-        attr_writer :pattern
+        attr_writer :pattern, :exclude
 
         def initialize(dir=::Dir, file=::File, object_space=::ObjectSpace, req=nil)
           super()
@@ -16,6 +16,7 @@ module Test
           @object_space = object_space
           @req = req
           @pattern = /\Atest_.*\.rb\Z/m
+          @exclude = nil
         end
 
         def collect(*from)
@@ -55,6 +56,7 @@ module Test
                 sub_suites << sub_suite unless(sub_suite.empty?)
               else
                 (next unless(@pattern =~ e)) if(@pattern)
+                (next if(@exclude =~ e)) if(@exclude)
                 collect_file(e_name, sub_suites, already_gathered)
               end
             end
