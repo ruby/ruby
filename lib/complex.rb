@@ -265,8 +265,7 @@ class Complex < Numeric
     elsif Complex.generic?(other)
       @real == other and @image == 0
     else
-      x , y = other.coerce(self)
-      x == y
+      other == self
     end
   end
 

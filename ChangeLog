@@ -1,3 +1,10 @@
+Thu Feb  6 17:43:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/complex.rb (Complex#==): should not raise error by type
+	  mismatch.
+
+	* lib/rational.rb (Rational#==): ditto.
+
 Thu Feb  6 11:44:40 2003  MoonWolf  <moonwolf@moonwolf.com>
 
 	* re.c (rb_reg_initialize_m): 3rd argument was ignored.
