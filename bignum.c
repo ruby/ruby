@@ -77,7 +77,7 @@ get2comp(x, carry)		/* get 2's complement */
     } while (i < RBIGNUM(x)->len);
     if (!carry) return;
     if ((ds[RBIGNUM(x)->len-1] & (1<<(BITSPERDIG-1))) == 0) {
-	REALLOC_N(RBIGNUM(x)->digits, BDIGIT, RBIGNUM(x)->len++);
+	REALLOC_N(RBIGNUM(x)->digits, BDIGIT, ++RBIGNUM(x)->len);
 	ds = BDIGITS(x);
 	ds[RBIGNUM(x)->len-1] = ~0;
     }
@@ -826,11 +826,12 @@ rb_big_cmp(x, y)
 
       case T_FLOAT:
         {
-	  double d = rb_big2dbl(x);
+	    double d = rb_big2dbl(x);
 
-	  if (d == RFLOAT(y)->value) return INT2FIX(0);
-	  if (d > RFLOAT(y)->value) return INT2FIX(1);
-	  if (d < RFLOAT(y)->value) return INT2FIX(-1);
+	    if (d == RFLOAT(y)->value) return INT2FIX(0);
+	    if (d > RFLOAT(y)->value) return INT2FIX(1);
+	    if (d < RFLOAT(y)->value) return INT2FIX(-1);
+	    rb_raise(rb_eFloatDomainError, "comparing NaN");
 	}
 	break;
 
