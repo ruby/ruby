@@ -1,3 +1,17 @@
+Wed Aug 28 15:00:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_delete_bang): should check if str->ptr is 0.
+
+	* string.c (rb_str_squeeze_bang): ditto.
+
+	* string.c (rb_str_count): ditto.
+
+	* string.c (rb_str_lstrip_bang): ditto.
+
+	* string.c (rb_str_rstrip_bang): ditto.
+
+	* string.c (rb_str_intern): ditto.
+
 Wed Aug 28 11:37:35 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.h: define SIGINT and SIGKILL if not defined.

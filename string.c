@@ -2133,6 +2133,7 @@ tr_trans(str, src, repl, sflag)
     rb_str_modify(str);
     StringValue(src);
     StringValue(repl);
+    if (RSTRING(str)->len == 0 || !RSTRING(str)->ptr) return Qnil;
     trsrc.p = RSTRING(src)->ptr; trsrc.pend = trsrc.p + RSTRING(src)->len;
     if (RSTRING(src)->len >= 2 && RSTRING(src)->ptr[0] == '^') {
 	cflag++;
@@ -2288,6 +2289,7 @@ rb_str_delete_bang(argc, argv, str)
 
     rb_str_modify(str);
     s = t = RSTRING(str)->ptr;
+    if (!s || RSTRING(str)->len == 0) return Qnil;
     send = s + RSTRING(str)->len;
     while (s < send) {
 	if (squeez[*s & 0xff])
@@ -2342,8 +2344,8 @@ rb_str_squeeze_bang(argc, argv, str)
     }
 
     rb_str_modify(str);
-
     s = t = RSTRING(str)->ptr;
+    if (!s || RSTRING(str)->len == 0) return Qnil;
     send = s + RSTRING(str)->len;
     save = -1;
     while (s < send) {
@@ -2412,6 +2414,7 @@ rb_str_count(argc, argv, str)
     }
 
     s = RSTRING(str)->ptr;
+    if (!s || RSTRING(str)->len == 0) return Qnil;
     send = s + RSTRING(str)->len;
     i = 0;
     while (s < send) {
@@ -2795,6 +2798,7 @@ rb_str_lstrip_bang(str)
 
     rb_str_modify(str);
     s = RSTRING(str)->ptr;
+    if (!s || RSTRING(str)->len == 0) return Qnil;
     e = t = s + RSTRING(str)->len;
     /* remove spaces at head */
     while (s < t && ISSPACE(*s)) s++;
@@ -2825,6 +2829,7 @@ rb_str_rstrip_bang(str)
 
     rb_str_modify(str);
     s = RSTRING(str)->ptr;
+    if (!s || RSTRING(str)->len == 0) return Qnil;
     e = t = s + RSTRING(str)->len;
 
     /* remove trailing spaces */
@@ -2958,12 +2963,15 @@ rb_str_crypt(str, salt)
 {
     extern char *crypt();
     VALUE result;
+    char *s;
 
     StringValue(salt);
     if (RSTRING(salt)->len < 2)
 	rb_raise(rb_eArgError, "salt too short(need >=2 bytes)");
 
-    result = rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
+    if (RSTRING(str)->ptr) s = RSTRING(str)->ptr;
+    else s = "";
+    result = rb_str_new2(crypt(s, RSTRING(salt)->ptr));
     OBJ_INFECT(result, str);
     OBJ_INFECT(result, salt);
     return result;
@@ -2975,6 +2983,9 @@ rb_str_intern(str)
 {
     ID id;
 
+    if (!RSTRING(str)->ptr || RSTRING(str)->len == 0) {
+	rb_raise(rb_eArgError, "interning empty string");
+    }
     if (strlen(RSTRING(str)->ptr) != RSTRING(str)->len)
 	rb_raise(rb_eArgError, "string contains `\\0'");
     id = rb_intern(RSTRING(str)->ptr);
