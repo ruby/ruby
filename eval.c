@@ -8574,6 +8574,7 @@ rb_thread_create(fn, arg)
     VALUE (*fn)();
     void *arg;
 {
+    Init_stack((VALUE*)&arg);
     return rb_thread_start_0(fn, arg, rb_thread_alloc(rb_cThread));
 }
 

@@ -1083,6 +1083,18 @@ gc_start()
     return Qnil;
 }
 
+#if !defined(__human68k__)
+static int
+stack_growup_p(addr)
+    VALUE *addr;
+{
+    VALUE dummy;
+
+    if (&dummy > addr) return Qtrue;
+    return Qfalse;
+}
+#endif
+
 void
 Init_stack(addr)
     VALUE *addr;
@@ -1092,6 +1104,17 @@ Init_stack(addr)
     rb_gc_stack_start = _SEND;
 #else
     if (!addr) addr = (VALUE *)&addr;
+    if (rb_gc_stack_start) {
+	if (stack_growup_p(addr)) {
+	    if (rb_gc_stack_start > addr)
+		rb_gc_stack_start = addr;
+	}
+	else {
+	    if (rb_gc_stack_start < addr)
+		rb_gc_stack_start = addr;
+	}
+	return;
+    }
     rb_gc_stack_start = addr;
 #endif
 }

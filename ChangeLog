@@ -1,3 +1,11 @@
+Sat Feb 22 02:45:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_create): may called from place higher than
+	  rb_gc_stack_start.
+
+	* gc.c (Init_stack): update rb_gc_stack_start if it is lower (or
+	  higher if stack grows down) than the previous value.
+
 Fri Feb 21 17:19:27 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c (rb_f_require): do not need to abort if a DLEXT file
