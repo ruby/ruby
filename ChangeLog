@@ -1,8 +1,8 @@
-Sun Dec  7 20:36:42 2003  Tanaka Akira  <akr@m17n.org>
+Sun Dec  7 20:54:17 2003  Tanaka Akira  <akr@m17n.org>
 
 	* ext/iconv/iconv.c (map_charset): make case sensitive.
 	  ext/iconv/charset_alias.rb (charset_alias): don't ignore
-	  config.charset's information.
+	  config.charset's information.  sort aliases.
 
 Sat Dec  6 22:58:03 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 

@@ -29,7 +29,7 @@ def charset_alias(config_charset, mapfile, target = OS)
     f.puts
     f.puts(comments)
     f.puts("class Iconv")
-    map.each {|can, sys| f.puts("  charset_map['#{can}'.freeze] = '#{sys}'.freeze")}
+    map.keys.sort.each {|can| f.puts("  charset_map['#{can}'.freeze] = '#{map[can]}'.freeze")}
     f.puts("end")
   end
 end
