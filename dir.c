@@ -601,7 +601,7 @@ rb_glob_helper(path, sub, flags, func, arg)
 
     p = sub ? sub : path;
     if (!has_magic(p, 0, flags)) {
-	if (rb_sys_stat(path, &st) == 0) {
+	if (lstat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
 	return;
