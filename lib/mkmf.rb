@@ -542,6 +542,7 @@ LIBPATH = #{libpath}
 RUBY_INSTALL_NAME = #{CONFIG["RUBY_INSTALL_NAME"]}
 RUBY_SO_NAME = #{CONFIG["RUBY_SO_NAME"]}
 arch = #{CONFIG["arch"]}
+sitearch = #{CONFIG["sitearch"]}
 ruby_version = #{Config::CONFIG["ruby_version"]}
 EOMF
   if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?

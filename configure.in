@@ -1045,7 +1045,17 @@ case "$target_os" in
 	esac
 	;;
     cygwin*|mingw*)
-	RUBY_SO_NAME=$target_os-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
+	case "$target_os" in
+	cygwin*)
+	    RUBY_SO_NAME=$target_os-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
+	    AC_LIBOBJ([strftime])
+	    CCDLFLAGS=-DUSEIMPORTLIB ;;
+	mingw*)
+	    RUBY_SO_NAME=msvcrt-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
+	    AC_LIBOBJ([win32])
+	    CFLAGS="-DNT -D__NO_ISOCEXT $CFLAGS"
+	    CCDLFLAGS=-DIMPORT ;;
+	esac
 	if test x"$enable_shared" = xyes; then
 	    LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 	    LIBRUBY_DLDFLAGS='-Wl,--out-implib=$(LIBRUBY) $(RUBYDEF)'
@@ -1060,18 +1070,9 @@ case "$target_os" in
 	LIBRUBYARG='-L. -l$(RUBY_SO_NAME)'
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
 	SOLIBS='$(LIBS)'
-	case "$target_os" in
-	cygwin*)
-	    AC_LIBOBJ([strftime])
-	    CCDLFLAGS=-DUSEIMPORTLIB ;;
-	mingw*)
-	    AC_LIBOBJ([win32])
-	    CFLAGS="-DNT -D__NO_ISOCEXT $CFLAGS"
-	    CCDLFLAGS=-DIMPORT ;;
-	esac
 	;;
     *)
-	;;	
+	;;
 esac
 
 AC_SUBST(LIBRUBY_LDSHARED)
@@ -1126,6 +1127,7 @@ AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB2, "${RUBY_SITE_LIB_PATH2}")
 
 AC_SUBST(arch)dnl
+AC_SUBST(sitearch)dnl
 AC_SUBST(sitedir)dnl
 
 configure_args=$ac_configure_args
@@ -1145,8 +1147,13 @@ else
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
 
+case "$target_os" in
+  mingw*) sitearch="i386-msvcrt" ;;
+  *) sitearch="${arch}" ;;
+esac
+
 AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH2}/${arch}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH2}/${sitearch}")
 
 AC_ARG_WITH(search-path,
 		[  --with-search-path=DIR specify the additional search path],

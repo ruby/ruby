@@ -1,3 +1,13 @@
+Fri Aug 23 17:06:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: RUBY_SO_NAME is msvcrt-rubyXX on mswin32/mingw32.
+
+	* configure.in (sitearch): new var.
+
+	* mkconfig.rb, lib/mkmf.rb (sitearch): ditto.
+
+	* win32/Makefile.sub, win32/setup.mak (sitearch): ditto.
+
 Wed Aug 21 16:53:00 2002  Michal Rokos  <michal@ruby-lang.org>
 
 	* *.c: int, long types cleanup.

@@ -8,6 +8,7 @@ srcdir = $(WIN32DIR:/win32=)
 srcdir = $(WIN32DIR)/..
 !ENDIF
 OS = mswin32
+RT = msvcrt
 
 all: ext
 all: Makefile
@@ -17,7 +18,7 @@ Makefile:
 	@echo ### makefile for ruby $(OS) ###> $@
 	@echo srcdir = $(srcdir:\=/)>> $@
 	@echo RUBY_INSTALL_NAME = ruby>> $@
-	@echo RUBY_SO_NAME = $(OS)-$$(RUBY_INSTALL_NAME)17>> $@
+	@echo RUBY_SO_NAME = $(RT)-$$(RUBY_INSTALL_NAME)17>> $@
 	@echo prefix = /usr>> $@
 	@echo CFLAGS = -nologo -MD -DNT=1 $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)>> $@
 	@echo CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\">> $@

@@ -60,6 +60,7 @@ DEBUGFLAGS = -Zi
 OPTFLAGS = -O2b2xg-
 !endif
 OS = mswin32
+RT = msvcrt
 
 !if !defined(prefix)
 prefix = /usr
@@ -252,7 +253,7 @@ config.h: Makefile $(srcdir)/win32/Makefile.sub
 #define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/1.7"
 #define RUBY_PLATFORM "$(ARCH)-$(OS)"
 #define RUBY_ARCHLIB "/lib/ruby/1.7/$(ARCH)-$(OS)"
-#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.7/$(ARCH)-$(OS)"
+#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.7/$(ARCH)-$(RT)"
 <<KEEP
 
 config.status: Makefile $(srcdir)/win32/Makefile.sub $(MINIRUBY)
@@ -331,6 +332,7 @@ s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
+s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
 s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t

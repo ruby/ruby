@@ -93,7 +93,7 @@ print <<EOS
   CONFIG["rubylibdir"] = "$(libdir)/ruby/$(ruby_version)"
   CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
   CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
-  CONFIG["sitearchdir"] = "$(sitelibdir)/$(arch)"
+  CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"
   CONFIG["compile_dir"] = "#{Dir.pwd}"
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
