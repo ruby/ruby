@@ -421,17 +421,19 @@ rb_struct_to_a(s)
 }
 
 static VALUE
-rb_struct_become(clone, s)
-    VALUE clone, s;
+rb_struct_become(copy, s)
+    VALUE copy, s;
 {
-    if (!rb_obj_is_instance_of(s, rb_obj_class(clone))) {
+    if (copy == s) return copy;
+    rb_check_frozen(copy);
+    if (!rb_obj_is_instance_of(s, rb_obj_class(copy))) {
 	rb_raise(rb_eTypeError, "wrong argument class");
     }
-    RSTRUCT(clone)->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
-    RSTRUCT(clone)->len = RSTRUCT(s)->len;
-    MEMCPY(RSTRUCT(clone)->ptr, RSTRUCT(s)->ptr, VALUE, RSTRUCT(clone)->len);
+    RSTRUCT(copy)->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
+    RSTRUCT(copy)->len = RSTRUCT(s)->len;
+    MEMCPY(RSTRUCT(copy)->ptr, RSTRUCT(s)->ptr, VALUE, RSTRUCT(copy)->len);
 
-    return clone;
+    return copy;
 }
 
 static VALUE

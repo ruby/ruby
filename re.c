@@ -527,6 +527,23 @@ match_alloc(klass)
 }
 
 static VALUE
+match_clone(match)
+    VALUE match;
+{
+    NEWOBJ(clone, struct RMatch);
+    CLONESETUP(clone, match);
+
+    clone->str = RMATCH(match)->str;
+    clone->regs = 0;
+
+    clone->regs = ALLOC(struct re_registers);
+    clone->regs->allocated = 0;
+    re_copy_registers(clone->regs, RMATCH(match)->regs);
+
+    return (VALUE)clone;
+}
+
+static VALUE
 match_become(obj, orig)
     VALUE obj, orig;
 {
@@ -1158,9 +1175,7 @@ rb_reg_initialize_m(argc, argv, self)
 	}
     }
 
-    if (OBJ_FROZEN(self)) {
-	rb_error_frozen("Regexp");
-    }
+    rb_check_frozen(self);
     src = argv[0];
     if (TYPE(src) == T_REGEXP) {
 	rb_reg_check(src);
@@ -1311,20 +1326,22 @@ rb_reg_options(re)
 }
 
 static VALUE
-rb_reg_become(clone, re)
+rb_reg_become(copy, re)
     VALUE re;
 {
+    if (copy == re) return copy;
+    rb_check_frozen(copy);
     /* need better argument type check */
-    if (!rb_obj_is_instance_of(re, rb_obj_class(clone))) {
+    if (!rb_obj_is_instance_of(re, rb_obj_class(copy))) {
 	rb_raise(rb_eTypeError, "wrong argument type");
     }
-    RREGEXP(clone)->ptr = 0;
-    RREGEXP(clone)->len = 0;
-    RREGEXP(clone)->str = 0;
+    RREGEXP(copy)->ptr = 0;
+    RREGEXP(copy)->len = 0;
+    RREGEXP(copy)->str = 0;
     rb_reg_check(re);
-    rb_reg_initialize(clone, RREGEXP(re)->str, RREGEXP(re)->len,
+    rb_reg_initialize(copy, RREGEXP(re)->str, RREGEXP(re)->len,
 		      rb_reg_options(re));
-    return clone;
+    return copy;
 }
 
 VALUE

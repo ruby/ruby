@@ -213,7 +213,7 @@ rb_str_to_str(str)
 }
 
 static void
-rb_str_become(str, str2)
+rb_str_shared_replace(str, str2)
     VALUE str, str2;
 {
     if (str == str2) return;
@@ -1071,7 +1071,7 @@ rb_str_succ_bang(str)
     VALUE str;
 {
     rb_str_modify(str);
-    rb_str_become(str, rb_str_succ(str));
+    rb_str_shared_replace(str, rb_str_succ(str));
 
     return str;
 }

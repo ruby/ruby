@@ -795,22 +795,6 @@ rb_ary_empty_p(ary)
     return Qfalse;
 }
 
-static VALUE
-rb_ary_become(copy, orig)
-    VALUE copy, orig;
-{
-    orig = to_ary(orig);
-    ary_make_shared(orig);
-    if (RARRAY(copy)->ptr && !FL_TEST(copy, ELTS_SHARED))
-	free(RARRAY(copy)->ptr);
-    RARRAY(copy)->ptr = RARRAY(orig)->ptr;
-    RARRAY(copy)->len = RARRAY(orig)->len;
-    RARRAY(copy)->aux.shared = RARRAY(orig)->aux.shared;
-    FL_SET(copy, ELTS_SHARED);
-
-    return copy;
-}
-
 VALUE
 rb_ary_dup(ary)
     VALUE ary;
@@ -1316,13 +1300,21 @@ rb_ary_delete_if(ary)
 }
 
 static VALUE
-rb_ary_replace(ary, ary2)
-    VALUE ary, ary2;
+rb_ary_replace(copy, orig)
+    VALUE copy, orig;
 {
-    if (ary == ary2) return ary;
-    ary2 = to_ary(ary2);
-    rb_ary_update(ary, 0, RARRAY(ary)->len, ary2);
-    return ary;
+    rb_ary_modify(copy);
+    orig = to_ary(orig);
+    if (copy == orig) return copy;
+    ary_make_shared(orig);
+    if (RARRAY(copy)->ptr && !FL_TEST(copy, ELTS_SHARED))
+	free(RARRAY(copy)->ptr);
+    RARRAY(copy)->ptr = RARRAY(orig)->ptr;
+    RARRAY(copy)->len = RARRAY(orig)->len;
+    RARRAY(copy)->aux.shared = RARRAY(orig)->aux.shared;
+    FL_SET(copy, ELTS_SHARED);
+
+    return copy;
 }
 
 VALUE
@@ -1857,7 +1849,7 @@ Init_Array()
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, 1);
     rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "indices", rb_ary_indexes, -1);
-    rb_define_method(rb_cArray, "become", rb_ary_become, 1);
+    rb_define_method(rb_cArray, "become", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse_bang, 0);

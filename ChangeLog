@@ -14,9 +14,19 @@ Mon Sep  2 21:21:46 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* intern.h (ruby_parser_stack_on_heap): added.
 
+Mon Sep  2 18:45:07 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_copy_generic_ivar): remove old generic instance
+	  variable table if it existes.
+
 Sun Sep  1 15:54:33 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* config.guess: fixed for Linux/PPC.
+
+Sat Aug 31 09:38:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_make_metaclass): metaclass of a metaclass is a
+	  metaclass itself.
 
 Fri Aug 30 22:45:16 2002  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -44,6 +54,37 @@ Fri Aug 30 19:40:28 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  ditto.
 
 	* ext/tcltklib/tcltklib.c (ip_toUTF8, ip_fromUTF8): ditto.
+
+Fri Aug 30 01:32:17 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_singleton_class): superclass of a metaclass
+	  should be a metaclass of superclass.
+
+	* range.c (range_eq): two instances must belong to a same class to
+	  be equal.
+
+	* range.c (range_eql): ditto.
+
+	* io.c (rb_io_taint_check): frozen check added.
+
+	* file.c (rb_stat_become): frozen check added.
+
+	* object.c (rb_obj_become): ditto.
+
+	* re.c (rb_reg_become): ditto.
+
+	* struct.c (rb_struct_become): ditto.
+
+	* time.c (time_become): ditto.
+
+	* array.c (rb_ary_become): should call rb_ary_modify().
+
+	* hash.c (rb_hash_become): should call rb_hash_modify().
+
+	* compar.c (cmp_equal): should not use NUM2LONG(), since <=> may
+	  return bignum.
+
+	* compar.c (cmp_gt, cmp_ge, cmp_lt, cmp_le, cmp_between): ditto.
 
 Thu Aug 29 23:34:42 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 

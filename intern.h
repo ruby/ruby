@@ -95,7 +95,6 @@ VALUE rb_class_boot _((VALUE));
 VALUE rb_class_new _((VALUE));
 VALUE rb_mod_clone _((VALUE));
 VALUE rb_mod_dup _((VALUE));
-VALUE rb_singleton_class_new _((VALUE));
 VALUE rb_singleton_class_clone _((VALUE));
 void rb_singleton_class_attached _((VALUE,VALUE));
 VALUE rb_make_metaclass _((VALUE, VALUE));

@@ -278,7 +278,7 @@ VALUE rb_newobj _((void));
     if (rb_safe_level() >= 3) FL_SET(obj, FL_TAINT);\
 } while (0)
 #define CLONESETUP(clone,obj) do {\
-    OBJSETUP(clone,rb_singleton_class_clone(RBASIC(obj)->klass),RBASIC(obj)->flags);\
+    OBJSETUP(clone,rb_singleton_class_clone((VALUE)obj),RBASIC(obj)->flags);\
     rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);\
     if (FL_TEST(obj, FL_EXIVAR)) rb_copy_generic_ivar((VALUE)clone,(VALUE)obj);\
 } while (0)

@@ -41,16 +41,17 @@ static ID id_metadata;
  */
 
 static algo_t *
-get_digest_base_metadata(class)
-    VALUE class;
+get_digest_base_metadata(klass)
+    VALUE klass;
 {
     VALUE obj;
     algo_t *algo;
 
-    if (rb_cvar_defined(class, id_metadata) == Qfalse)
+    if (rb_cvar_defined(klass, id_metadata) == Qfalse) {
 	rb_notimplement();
+    }
 
-    obj = rb_cvar_get(class, id_metadata);
+    obj = rb_cvar_get(klass, id_metadata);
 
     Data_Get_Struct(obj, algo_t, algo);
 
@@ -58,54 +59,42 @@ get_digest_base_metadata(class)
 }
 	
 static VALUE
-rb_digest_base_s_new(argc, argv, class)
-    int argc;
-    VALUE* argv;
-    VALUE class;
+rb_digest_base_alloc(klass)
+    VALUE klass;
 {
     algo_t *algo;
     VALUE obj;
     void *pctx;
 
-    if (class == cDigest_Base)
+    if (klass == cDigest_Base) {
 	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
+    }
 
-    algo = get_digest_base_metadata(class);
+    algo = get_digest_base_metadata(klass);
 
     pctx = xmalloc(algo->ctx_size);
     algo->init_func(pctx);
 
-    obj = Data_Wrap_Struct(class, 0, free, pctx);
-
-    rb_obj_call_init(obj, argc, argv);
+    obj = Data_Wrap_Struct(klass, 0, free, pctx);
 
     return obj;
 }
 
 static VALUE
-rb_digest_base_s_digest(class, str)
-    VALUE class;
+rb_digest_base_s_digest(klass, str)
+    VALUE klass;
     VALUE str;
 {
     algo_t *algo;
     void *pctx;
     size_t len;
     unsigned char *digest;
-    VALUE obj;
+    VALUE obj = rb_digest_base_alloc(klass);
 
-    if (class == cDigest_Base)
-	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
+    algo = get_digest_base_metadata(klass);
+    Data_Get_Struct(obj, void, pctx);
 
-#ifdef StringValue
     StringValue(str);
-#else
-    Check_Type(str, T_STRING);
-#endif
-
-    algo = get_digest_base_metadata(class);
-
-    pctx = xmalloc(algo->ctx_size);
-    algo->init_func(pctx);
     algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
 
     len = algo->digest_len;
@@ -122,26 +111,18 @@ rb_digest_base_s_digest(class, str)
 }
 
 static VALUE
-rb_digest_base_s_hexdigest(class, str)
-    VALUE class;
+rb_digest_base_s_hexdigest(klass, str)
+    VALUE klass;
     VALUE str;
 {
     algo_t *algo;
     void *pctx;
     size_t len;
     unsigned char *hexdigest;
-    VALUE obj;
+    VALUE obj = rb_digest_base_alloc(klass);
 
-    if (class == cDigest_Base)
-	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
-
-#ifdef StringValue
     StringValue(str);
-#else
-    Check_Type(str, T_STRING);
-#endif
-
-    algo = get_digest_base_metadata(class);
+    algo = get_digest_base_metadata(klass);
 
     pctx = xmalloc(algo->ctx_size);
     algo->init_func(pctx);
@@ -161,21 +142,25 @@ rb_digest_base_s_hexdigest(class, str)
 }
 
 static VALUE
-rb_digest_base_clone(self)
-    VALUE self;
+rb_digest_base_become(copy, obj)
+    VALUE copy, obj;
 {
     algo_t *algo;
     void *pctx1, *pctx2;
-    VALUE class;
+    VALUE klass;
 
-    class = CLASS_OF(self);
-    algo = get_digest_base_metadata(class);
-    Data_Get_Struct(self, void, pctx1);
-
-    pctx2 = xmalloc(algo->ctx_size);
+    printf("Digest::Base::bacome\n");
+    if (copy = obj) return copy;
+    rb_check_frozen(copy);
+    algo = get_digest_base_metadata(CLASS_OF(klass));
+    if (algo != get_digest_base_metadata(CLASS_OF(obj))) {
+	rb_raise(rb_eTypeError, "wrong argument class");
+    }
+    Data_Get_Struct(copy, void, pctx1);
+    Data_Get_Struct(copy, void, pctx2);
     memcpy(pctx2, pctx1, algo->ctx_size);
 
-    return Data_Wrap_Struct(class, 0, free, pctx2);
+    return copy;
 }
 
 static VALUE
@@ -185,12 +170,7 @@ rb_digest_base_update(self, str)
     algo_t *algo;
     void *pctx;
 
-#ifdef StringValue
     StringValue(str);
-#else
-    Check_Type(str, T_STRING);
-#endif
-
     algo = get_digest_base_metadata(CLASS_OF(self));
     Data_Get_Struct(self, void, pctx);
 
@@ -281,13 +261,13 @@ rb_digest_base_equal(self, other)
     VALUE self, other;
 {
     algo_t *algo;
-    VALUE class;
+    VALUE klass;
     VALUE str1, str2;
 
-    class = CLASS_OF(self);
-    algo = get_digest_base_metadata(class);
+    klass = CLASS_OF(self);
+    algo = get_digest_base_metadata(klass);
 
-    if (CLASS_OF(other) == class) {
+    if (CLASS_OF(other) == klass) {
 	void *pctx1, *pctx2;
 
 	Data_Get_Struct(self, void, pctx1);
@@ -296,11 +276,7 @@ rb_digest_base_equal(self, other)
 	return algo->equal_func(pctx1, pctx2) ? Qtrue : Qfalse;
     }
 
-#ifdef StringValue
     StringValue(other);
-#else
-    Check_Type(other, T_STRING);
-#endif
     str2 = other;
 
     if (RSTRING(str2)->len == algo->digest_len)
@@ -326,12 +302,13 @@ Init_digest()
 
     cDigest_Base = rb_define_class_under(mDigest, "Base", rb_cObject);
 
-    rb_define_singleton_method(cDigest_Base, "new", rb_digest_base_s_new, -1);
+    printf("Init_digest\n");
+    rb_define_singleton_method(cDigest_Base, "allocate", rb_digest_base_alloc, 0);
     rb_define_singleton_method(cDigest_Base, "digest", rb_digest_base_s_digest, 1);
     rb_define_singleton_method(cDigest_Base, "hexdigest", rb_digest_base_s_hexdigest, 1);
 
     rb_define_method(cDigest_Base, "initialize", rb_digest_base_init, -1);
-    rb_define_method(cDigest_Base, "clone",  rb_digest_base_clone, 0);
+    rb_define_method(cDigest_Base, "become",  rb_digest_base_become, 1);
     rb_define_method(cDigest_Base, "update", rb_digest_base_update, 1);
     rb_define_method(cDigest_Base, "<<", rb_digest_base_update, 1);
     rb_define_method(cDigest_Base, "digest", rb_digest_base_digest, 0);

@@ -90,23 +90,43 @@ rb_obj_class(obj)
     return rb_class_real(CLASS_OF(obj));
 }
 
+static void
+copy_object(dest, obj)
+    VALUE dest, obj;
+{
+    RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR|FL_TAINT);
+    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
+    if (FL_TEST(obj, FL_EXIVAR)) {
+	rb_copy_generic_ivar(dest, obj);
+    }
+    switch (TYPE(obj)) {
+      case T_OBJECT:
+      case T_CLASS:
+      case T_MODULE:
+	if (ROBJECT(dest)->iv_tbl) {
+	    st_free_table(ROBJECT(dest)->iv_tbl);
+	    ROBJECT(dest)->iv_tbl = 0;
+	}
+	if (ROBJECT(obj)->iv_tbl) {
+	    ROBJECT(dest)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
+	}
+    }
+}
+
 VALUE
 rb_obj_clone(obj)
     VALUE obj;
 {
     VALUE clone;
-    int frozen;
 
     if (rb_special_const_p(obj)) {
         rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(obj)));
     }
-    clone = rb_obj_alloc(rb_class_real(RBASIC(obj)->klass));
-    CLONESETUP(clone, obj);
-    frozen = OBJ_FROZEN(obj);
-    FL_UNSET(clone, FL_FREEZE);	   /* temporarily remove frozen flag */
+    clone = rb_obj_alloc(rb_obj_class(obj));
+    RBASIC(clone)->klass = rb_singleton_class_clone(obj);
+    copy_object(clone, obj);
     rb_funcall(clone, become, 1, obj);
-    if (frozen) OBJ_FREEZE(clone); /* restore frozen status */
-    OBJ_INFECT(clone, obj);
+    RBASIC(clone)->flags = RBASIC(obj)->flags;
 
     return clone;
 }
@@ -120,10 +140,9 @@ rb_obj_dup(obj)
     if (rb_special_const_p(obj)) {
         rb_raise(rb_eTypeError, "can't dup %s", rb_class2name(CLASS_OF(obj)));
     }
-    dup = rb_obj_alloc(rb_class_real(RBASIC(obj)->klass));
-    DUPSETUP(dup, obj);
+    dup = rb_obj_alloc(rb_obj_class(obj));
+    copy_object(dup, obj);
     rb_funcall(dup, become, 1, obj);
-    OBJ_INFECT(dup, obj);
 
     return dup;
 }
@@ -132,17 +151,10 @@ VALUE
 rb_obj_become(obj, orig)
     VALUE obj, orig;
 {
-    long type;
-
-    if ((type = TYPE(obj)) != TYPE(orig) ||
-	rb_obj_class(obj) != rb_obj_class(orig)) {
+    if (obj == orig) return obj;
+    rb_check_frozen(obj);
+    if (TYPE(obj) != TYPE(orig) || rb_obj_class(obj) != rb_obj_class(orig)) {
 	rb_raise(rb_eTypeError, "become should take same class object");
-    }
-    if (type == T_OBJECT) {
-	if (ROBJECT(obj)->iv_tbl) st_free_table(ROBJECT(obj)->iv_tbl);
-	if (ROBJECT(orig)->iv_tbl) {
-	    ROBJECT(obj)->iv_tbl = st_copy(ROBJECT(orig)->iv_tbl);
-	}
     }
     return obj;
 }

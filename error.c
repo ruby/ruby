@@ -813,6 +813,13 @@ rb_error_frozen(what)
     rb_raise(rb_eTypeError, "can't modify frozen %s", what);
 }
 
+void
+rb_check_frozen(obj)
+    VALUE obj;
+{
+    if (OBJ_FROZEN(obj)) rb_error_frozen(rb_class2name(CLASS_OF(obj)));
+}
+
 static void
 init_syserr()
 {

@@ -177,6 +177,7 @@ rb_io_taint_check(io)
 {
     if (!OBJ_TAINTED(io) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: operation on untainted IO");
+    rb_check_frozen(io);
     return io;
 }
 
@@ -2270,6 +2271,7 @@ rb_io_become(clone, io)
     char *mode;
 
     io = rb_io_get_io(io);
+    if (clone == io) return clone;
     GetOpenFile(io, orig);
     MakeOpenFile(clone, fptr);
 

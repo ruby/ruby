@@ -793,12 +793,23 @@ time_hash(time)
     return LONG2FIX(hash);
 }
 
+static void
+time_modify(time)
+    VALUE time;
+{
+    rb_check_frozen(time);
+    if (!OBJ_TAINTED(time) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify Time");
+}
+
 static VALUE
 time_become(copy, time)
     VALUE copy, time;
 {
     struct time_object *tobj, *tcopy;
 
+    if (copy == time) return copy;
+    time_modify(copy);
     if (TYPE(time) != T_DATA || RDATA(time)->dfree != time_free) {
 	rb_raise(rb_eTypeError, "wrong argument type");
     }
@@ -816,15 +827,6 @@ time_dup(time)
     VALUE dup = time_s_alloc(rb_cTime);
     time_become(dup, time);
     return dup;
-}
-
-static void
-time_modify(time)
-    VALUE time;
-{
-    if (OBJ_FROZEN(time)) rb_error_frozen("Time");
-    if (!OBJ_TAINTED(time) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify Time");
 }
 
 static VALUE

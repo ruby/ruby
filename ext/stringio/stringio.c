@@ -148,7 +148,7 @@ static VALUE strio_closed _((VALUE));
 static VALUE strio_closed_read _((VALUE));
 static VALUE strio_closed_write _((VALUE));
 static VALUE strio_eof _((VALUE));
-static VALUE strio_clone _((VALUE));
+static VALUE strio_become _((VALUE, VALUE));
 static VALUE strio_get_lineno _((VALUE));
 static VALUE strio_set_lineno _((VALUE, VALUE));
 static VALUE strio_get_pos _((VALUE));
@@ -405,14 +405,17 @@ strio_eof(self)
 }
 
 static VALUE
-strio_clone(self)
-    VALUE self;
+strio_become(copy, orig)
+    VALUE copy, orig;
 {
-    struct StringIO *ptr = StringIO(self);
-    VALUE clone = rb_call_super(0, 0);
-    DATA_PTR(clone) = ptr;
+    struct StringIO *ptr = StringIO(orig);
+
+    if (DATA_PTR(copy)) {
+	strio_free(DATA_PTR(ptr));
+    }
+    DATA_PTR(copy) = ptr;
     ++ptr->count;
-    return self;
+    return copy;
 }
 
 static VALUE
@@ -883,8 +886,7 @@ Init_stringio()
     rb_define_singleton_method(StringIO, "open", strio_s_open, -1);
     rb_define_method(StringIO, "initialize", strio_initialize, -1);
     rb_enable_super(StringIO, "initialize");
-    rb_define_method(StringIO, "clone", strio_clone, 0);
-    rb_enable_super(StringIO, "clone");
+    rb_define_method(StringIO, "become", strio_become, 1);
     rb_define_method(StringIO, "reopen", strio_reopen, -1);
 
     rb_define_method(StringIO, "string", strio_get_string, 0);

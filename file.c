@@ -2024,26 +2024,28 @@ rb_stat_init(obj, fname)
 }
 
 static VALUE
-rb_stat_become(obj, orig)
-    VALUE obj, orig;
+rb_stat_become(copy, orig)
+    VALUE copy, orig;
 {
     struct stat *nst;
 
+    if (copy == orig) return orig;
+    rb_check_frozen(copy);
     /* need better argument type check */
-    if (!rb_obj_is_instance_of(orig, rb_obj_class(obj))) {
+    if (!rb_obj_is_instance_of(orig, rb_obj_class(copy))) {
 	rb_raise(rb_eTypeError, "wrong argument class");
     }
-    if (DATA_PTR(obj)) {
-	free(DATA_PTR(obj));
-	DATA_PTR(obj) = 0;
+    if (DATA_PTR(copy)) {
+	free(DATA_PTR(copy));
+	DATA_PTR(copy) = 0;
     }
     if (DATA_PTR(orig)) {
 	nst = ALLOC(struct stat);
 	*nst = *(struct stat*)DATA_PTR(orig);
-	DATA_PTR(obj) = nst;
+	DATA_PTR(copy) = nst;
     }
 
-    return obj;
+    return copy;
 }
 
 static VALUE

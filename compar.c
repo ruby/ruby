@@ -23,7 +23,10 @@ cmp_equal(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (NUM2LONG(c) == 0) return Qtrue;
+    if (c == INT2FIX(0)) return Qtrue;
+    if (TYPE(c) == T_BIGNUM) {
+	if (rb_big_norm(c) == INT2FIX(0)) return Qtrue;
+    }
     return Qfalse;
 }
 
@@ -34,7 +37,11 @@ cmp_gt(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (NUM2LONG(c) > 0) return Qtrue;
+    if (FIXNUM_P(c) && FIX2INT(c) > 0) return Qtrue;
+    if (TYPE(c) == T_BIGNUM) {
+	if (rb_big_norm(x) == INT2FIX(0)) return Qfalse;
+	if (RBIGNUM(c)->sign) return Qtrue;
+    }
     return Qfalse;
 }
 
@@ -45,7 +52,11 @@ cmp_ge(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (NUM2LONG(c) >= 0) return Qtrue;
+    if (FIXNUM_P(c) && FIX2INT(c) >= 0) return Qtrue;
+    if (TYPE(c) == T_BIGNUM) {
+	if (rb_big_norm(x) == INT2FIX(0)) return Qtrue;
+	if (RBIGNUM(c)->sign) return Qtrue;
+    }
     return Qfalse;
 }
 
@@ -55,8 +66,11 @@ cmp_lt(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (NIL_P(c)) return Qfalse;
-    if (NUM2LONG(c) < 0) return Qtrue;
+    if (FIXNUM_P(c) && FIX2INT(c) < 0) return Qtrue;
+    if (TYPE(c) == T_BIGNUM) {
+	if (rb_big_norm(x) == INT2FIX(0)) return Qfalse;
+	if (!RBIGNUM(c)->sign) return Qtrue;
+    }
     return Qfalse;
 }
 
@@ -67,7 +81,11 @@ cmp_le(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (NUM2LONG(c) <= 0) return Qtrue;
+    if (FIXNUM_P(c) && FIX2INT(c) <= 0) return Qtrue;
+    if (TYPE(c) == T_BIGNUM) {
+	if (rb_big_norm(x) == INT2FIX(0)) return Qtrue;
+	if (!RBIGNUM(c)->sign) return Qtrue;
+    }
     return Qfalse;
 }
 
@@ -75,14 +93,8 @@ static VALUE
 cmp_between(x, min, max)
     VALUE x, min, max;
 {
-    VALUE c = rb_funcall(x, cmp, 1, min);
-
-    if (NIL_P(c)) return Qfalse;
-    if (NUM2LONG(c) < 0) return Qfalse;
-
-    c = rb_funcall(x, cmp, 1, max);
-    if (NIL_P(c)) return Qfalse;
-    if (NUM2LONG(c) > 0) return Qfalse;
+    if (cmp_lt(x, min)) return Qfalse;
+    if (cmp_gt(x, max)) return Qfalse;
     return Qtrue;
 }
 

@@ -924,7 +924,15 @@ rb_copy_generic_ivar(clone, obj)
 
     if (!generic_iv_tbl) return;
     if (st_lookup(generic_iv_tbl, obj, &tbl)) {
-	st_add_direct(generic_iv_tbl, clone, st_copy(tbl));
+	st_table *old;
+
+	if (st_lookup(generic_iv_tbl, clone, &old)) {
+	    st_free_table(old);
+	    st_insert(generic_iv_tbl, clone, st_copy(tbl));
+	}
+	else {
+	    st_add_direct(generic_iv_tbl, clone, st_copy(tbl));
+	}
     }
 }
 
