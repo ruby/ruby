@@ -1,3 +1,8 @@
+Tue Jul 17 11:22:01 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (NUM_FAILURE_ITEMS): was confusing NUM_REG_ITEMS and
+	  NUM_NONREG_ITEMS, which have happened to be same value.
+
 Tue Jul 17 11:18:42 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* ext/extmk.rb.in: modify RM macro because command.com/cmd.exe don't
