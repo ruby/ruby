@@ -27,13 +27,30 @@ class_of(obj)
 }
 
 static VALUE
+iv_get(obj, name)
+    VALUE obj;
+    char *name;
+{
+    ID id;
+
+    id = rb_intern(name);
+    for (;;) {
+	if (rb_ivar_defined(obj, id))
+	    return rb_ivar_get(obj, id);
+	obj = RCLASS(obj)->super;
+	if (obj == 0 || obj == cStruct)
+	    return Qnil;
+    }
+}
+
+static VALUE
 struct_s_members(obj)
     VALUE obj;
 {
     VALUE member, ary;
     VALUE *p, *pend;
 
-    member = rb_iv_get(obj, "__member__");
+    member = iv_get(obj, "__member__");
     if (NIL_P(member)) {
 	Bug("non-initialized struct");
     }
@@ -62,7 +79,7 @@ struct_getmember(obj, id)
     VALUE member, slot;
     int i;
 
-    member = rb_iv_get(class_of(obj), "__member__");
+    member = iv_get(class_of(obj), "__member__");
     if (NIL_P(member)) {
 	Bug("non-initialized struct");
     }
@@ -114,7 +131,7 @@ struct_set(obj, val)
     VALUE member, slot;
     int i;
 
-    member = rb_iv_get(class_of(obj), "__member__");
+    member = iv_get(class_of(obj), "__member__");
     if (NIL_P(member)) {
 	Fatal("non-initialized struct");
     }
@@ -228,7 +245,7 @@ struct_alloc(klass, values)
     VALUE size;
     int n;
 
-    size = rb_iv_get(klass, "__size__");
+    size = iv_get(klass, "__size__");
     n = FIX2INT(size);
     if (n < RARRAY(values)->len) {
 	ArgError("struct size differs");
@@ -261,7 +278,7 @@ struct_new(klass, va_alist)
     int size;
     va_list args;
 
-    val = rb_iv_get(klass, "__size__");
+    val = iv_get(klass, "__size__");
     size = FIX2INT(val); 
     mem = ary_new();
     va_init_list(args, klass);
@@ -306,7 +323,7 @@ struct_inspect(s)
     VALUE str, member;
     int i;
 
-    member = rb_iv_get(CLASS_OF(s), "__member__");
+    member = iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
 	Fatal("non-initialized struct");
     }
@@ -362,7 +379,7 @@ struct_aref_id(s, id)
     VALUE member;
     int i, len;
 
-    member = rb_iv_get(CLASS_OF(s), "__member__");
+    member = iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
 	Bug("non-initialized struct");
     }
@@ -403,7 +420,7 @@ struct_aset_id(s, id, val)
     VALUE member;
     int i, len;
 
-    member = rb_iv_get(CLASS_OF(s), "__member__");
+    member = iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
 	Bug("non-initialized struct");
     }

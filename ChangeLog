@@ -1,3 +1,14 @@
+Wed May 12 14:19:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* struct.c (iv_get): in case of inheritance of generated struct
+	  class, __member__ and __size__ should also be inherited.
+	  Thanks for Pros Yeboah <yeboah@tu-harburg.de>.
+
+Mon May 10 13:21:01 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (tr_squeeze): should not set modify flag to be honest,
+	  if the string is not modified.
+
 Mon Apr 26 16:46:59 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* sprintf.c (rb_f_sprintf): should allocate proper sized buffer

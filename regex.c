@@ -2854,7 +2854,8 @@ re_search(bufp, string, size, startpos, range, regs)
 #endif /* NO_ALLOCA */
 
       if (range > 0) {
-	if (anchor && startpos < size && startpos > 0 && string[startpos-1] != '\n') {
+	if (anchor && startpos < size &&
+	    (startpos < 1 || string[startpos-1] != '\n')) {
 	  while (range > 0 && string[startpos] != '\n') {
 	    range--;
 	    startpos++;

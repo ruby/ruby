@@ -206,8 +206,7 @@ ary_s_create(argc, argv, klass)
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, klass, T_ARRAY);
 
-    ary->len = argc;
-    ary->capa = argc;
+    ary->len = ary->capa = 0;
     if (argc == 0) {
 	ary->ptr = 0;
     }
@@ -215,6 +214,7 @@ ary_s_create(argc, argv, klass)
 	ary->ptr = ALLOC_N(VALUE, argc);
 	MEMCPY(ary->ptr, argv, VALUE, argc);
     }
+    ary->len = ary->capa = argc;
 
     return (VALUE)ary;
 }

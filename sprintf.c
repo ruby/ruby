@@ -578,7 +578,7 @@ f_sprintf(argc, argv)
 		}
 
 		fmt_setup(fbuf, *p, flags, width, prec);
-#if 1
+
 		need = 0;
 		if (*p != 'e' && *p != 'E') {
 		    i = INT_MIN;
@@ -590,8 +590,8 @@ f_sprintf(argc, argv)
 		if ((flags&FWIDTH) && need < width)
 		    need = width;
 		need += 20;
+
 		CHECK(need);
-#endif
 		sprintf(&buf[blen], fbuf, fval);
 		blen += strlen(&buf[blen]);
 	    }

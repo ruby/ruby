@@ -744,8 +744,6 @@ rb_ivar_defined(obj, id)
     VALUE obj;
     ID id;
 {
-    if (!rb_is_instance_id(id)) return FALSE;
-
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:

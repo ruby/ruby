@@ -2,8 +2,7 @@
 
 = simple telnet cliant library
 
-telnet.rb ver0.163 1999/04/11
-
+telnet.rb ver0.17 1999/04/30
 Wakou Aoyama <wakou@fsinet.or.jp>
 
 
@@ -143,6 +142,10 @@ of cource, set sync=TRUE or flush is necessary.
 
 
 = history
+
+ver0.17 1999/04/30
+bug fix
+$! + "\n"  -->  $!.to_s + "\n"
 
 ver0.163 1999/04/11
 STDOUT.write(message) --> yield(message) if iterator?
@@ -316,8 +319,8 @@ class Telnet < SimpleDelegator
       rescue TimeoutError
         raise TimeOut, "timed-out; opening of the host"
       rescue
-        @log.write($! + "\n") if @options.include?("Output_log")
-        @dumplog.write($! + "\n") if @options.include?("Dump_log")
+        @log.write($!.to_s + "\n") if @options.include?("Output_log")
+        @dumplog.write($!.to_s + "\n") if @options.include?("Dump_log")
         raise
       end
       @sock.sync = TRUE
@@ -400,11 +403,15 @@ class Telnet < SimpleDelegator
     waittime = @options["Waittime"]
 
     if options.kind_of?(Hash)
-      prompt   = options["Prompt"]   if options.include?("Prompt")
+      prompt   = if options.include?("Match")
+                   options["Match"]   
+                 elsif options.include?("Prompt")
+                   options["Prompt"]
+                 elsif options.include?("String")
+                   Regexp.new( Regexp.quote(options["String"]) )
+                 end
       time_out = options["Timeout"]  if options.include?("Timeout")
       waittime = options["Waittime"] if options.include?("Waittime")
-      prompt   = Regexp.new( Regexp.quote(options["String"]) ) if
-        options.include?("String")
     else
       prompt = options
     end
