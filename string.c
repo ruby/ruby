@@ -795,8 +795,8 @@ VALUE
 rb_str_append(str, str2)
     VALUE str, str2;
 {
-    rb_str_modify(str);
     StringValue(str2);
+    rb_str_modify(str);
     if (RSTRING(str2)->len > 0) {
 	if (FL_TEST(str, STR_ASSOC)) {
 	    long len = RSTRING(str)->len+RSTRING(str2)->len;
@@ -1640,6 +1640,7 @@ rb_str_splice(str, beg, len, val)
     }
 
     StringValue(val);
+    rb_str_modify(str);
     if (len < RSTRING(val)->len) {
 	/* expand string */
 	RESIZE_CAPA(str, RSTRING(str)->len + RSTRING(val)->len - len + 1);
@@ -1649,6 +1650,7 @@ rb_str_splice(str, beg, len, val)
 	memmove(RSTRING(str)->ptr + beg + RSTRING(val)->len,
 		RSTRING(str)->ptr + beg + len,
 		RSTRING(str)->len - (beg + len));
+    rb_str_modify(str);
     }
     if (RSTRING(str)->len < beg && len < 0) {
 	MEMZERO(RSTRING(str)->ptr + RSTRING(str)->len, char, -len);
@@ -1669,7 +1671,6 @@ rb_str_update(str, beg, len, val)
     long beg, len;
     VALUE val;
 {
-    rb_str_modify(str);
     rb_str_splice(str, beg, len, val);
 }
 
@@ -1703,7 +1704,6 @@ rb_str_subpat_set(str, re, nth, val)
     }
     end = RMATCH(match)->END(nth);
     len = end - start;
-    rb_str_modify(str);
     rb_str_splice(str, start, len, val);
 }
 
@@ -1796,7 +1796,6 @@ rb_str_aset_m(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    rb_str_modify(str);
     if (argc == 3) {
 	if (TYPE(argv[0]) == T_REGEXP) {
 	    rb_str_subpat_set(str, argv[0], NUM2INT(argv[1]), argv[2]);
@@ -1835,7 +1834,6 @@ rb_str_insert(str, idx, str2)
 {
     long pos = NUM2LONG(idx);
 
-    rb_str_modify(str);
     if (pos == -1) {
 	pos = RSTRING(str)->len;
     }
@@ -2088,7 +2086,7 @@ str_gsub(argc, argv, str, bang)
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
 	    str_mod_check(str, sp, slen);
-	    str_frozen_check(str);
+	    if (bang) str_frozen_check(str);
 	    rb_backref_set(match);
 	}
 	else {
@@ -2727,7 +2725,6 @@ rb_str_upcase_bang(str)
     char *s, *send;
     int modify = 0;
 
-    rb_str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
@@ -2752,6 +2749,7 @@ rb_str_upcase_bang(str)
  *  Returns a copy of <i>str</i> with all lowercase letters replaced with their
  *  uppercase counterparts. The operation is locale insensitive---only
  *  characters ``a'' to ``z'' are affected.
+	    rb_str_modify(str);
  *     
  *     "hEllO".upcase   #=> "HELLO"
  */
@@ -2840,7 +2838,6 @@ rb_str_capitalize_bang(str)
     char *s, *send;
     int modify = 0;
 
-    rb_str_modify(str);
     if (RSTRING(str)->len == 0 || !RSTRING(str)->ptr) return Qnil;
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     if (ISLOWER(*s)) {
@@ -2898,7 +2895,6 @@ rb_str_swapcase_bang(str)
     char *s, *send;
     int modify = 0;
 
-    rb_str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
@@ -3864,8 +3860,8 @@ rb_str_chomp_bang(argc, argv, str)
 	rs = rb_rs;
 	if (rs == rb_default_rs) {
 	  smart_chomp:
+	    rb_str_modify(str);
 	    if (RSTRING(str)->ptr[len-1] == '\n') {
-		rb_str_modify(str);
 		RSTRING(str)->len--;
 		if (RSTRING(str)->len > 0 &&
 		    RSTRING(str)->ptr[RSTRING(str)->len-1] == '\r') {
@@ -3873,7 +3869,6 @@ rb_str_chomp_bang(argc, argv, str)
 		}
 	    }
 	    else if (RSTRING(str)->ptr[len-1] == '\r') {
-		rb_str_modify(str);
 		RSTRING(str)->len--;
 	    }
 	    else {

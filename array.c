@@ -270,7 +270,6 @@ rb_ary_initialize(argc, argv, ary)
     long len;
     VALUE size, val;
 
-    rb_ary_modify(ary);
     if (rb_scan_args(argc, argv, "02", &size, &val) == 0) {
 	RARRAY(ary)->len = 0;
 	if (rb_block_given_p()) {
@@ -294,6 +293,7 @@ rb_ary_initialize(argc, argv, ary)
     if (len > 0 && len * (long)sizeof(VALUE) <= len) {
 	rb_raise(rb_eArgError, "array size too big");
     }
+    rb_ary_modify(ary);
     if (len > RARRAY(ary)->aux.capa) {
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, len);
 	RARRAY(ary)->aux.capa = len;
@@ -352,7 +352,6 @@ rb_ary_store(ary, idx, val)
     long idx;
     VALUE val;
 {
-    rb_ary_modify(ary);
     if (idx < 0) {
 	idx += RARRAY(ary)->len;
 	if (idx < 0) {
@@ -361,6 +360,7 @@ rb_ary_store(ary, idx, val)
 	}
     }
 
+    rb_ary_modify(ary);
     if (idx >= RARRAY(ary)->aux.capa) {
 	long new_capa = RARRAY(ary)->aux.capa / 2;
 
@@ -938,7 +938,7 @@ rb_ary_to_ary(obj)
 }
 
 static void
-rb_ary_update(ary, beg, len, rpl)
+rb_ary_splice(ary, beg, len, rpl)
     VALUE ary;
     long beg, len;
     VALUE rpl;
@@ -1045,7 +1045,7 @@ rb_ary_aset(argc, argv, ary)
 	if (SYMBOL_P(argv[1])) {
 	    rb_raise(rb_eTypeError, "Symbol as subarray length");
 	}
-	rb_ary_update(ary, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
+	rb_ary_splice(ary, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
 	return argv[2];
     }
     if (argc != 2) {
@@ -1060,7 +1060,7 @@ rb_ary_aset(argc, argv, ary)
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY(ary)->len, 1)) {
 	/* check if idx is Range */
-	rb_ary_update(ary, beg, len, argv[1]);
+	rb_ary_splice(ary, beg, len, argv[1]);
 	return argv[1];
     }
 
@@ -1102,7 +1102,7 @@ rb_ary_insert(argc, argv, ary)
     }
 
     if (argc == 1) return ary;
-    rb_ary_update(ary, pos, 0, rb_ary_new4(argc - 1, argv + 1));
+    rb_ary_splice(ary, pos, 0, rb_ary_new4(argc - 1, argv + 1));
     return ary;
 }
 
@@ -1849,7 +1849,6 @@ rb_ary_delete(ary, item)
 {
     long i1, i2;
 
-    rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
 	VALUE e = RARRAY(ary)->ptr[i1];
 
@@ -1866,6 +1865,7 @@ rb_ary_delete(ary, item)
 	return Qnil;
     }
 
+    rb_ary_modify(ary);
     if (RARRAY(ary)->len > i2) {
 	RARRAY(ary)->len = i2;
 	if (i2 * 2 < RARRAY(ary)->aux.capa &&
@@ -1886,13 +1886,13 @@ rb_ary_delete_at(ary, pos)
     long i, len = RARRAY(ary)->len;
     VALUE del;
 
-    rb_ary_modify(ary);
     if (pos >= len) return Qnil;
     if (pos < 0) {
 	pos += len;
 	if (pos < 0) return Qnil;
     }
 
+    rb_ary_modify(ary);
     del = RARRAY(ary)->ptr[pos];
     for (i = pos + 1; i < len; i++, pos++) {
 	RARRAY(ary)->ptr[pos] = RARRAY(ary)->ptr[i];
@@ -1957,7 +1957,6 @@ rb_ary_slice_bang(argc, argv, ary)
     VALUE arg1, arg2;
     long pos, len;
 
-    rb_ary_modify(ary);
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
 	pos = NUM2LONG(arg1);
 	len = NUM2LONG(arg2);
@@ -1966,7 +1965,7 @@ rb_ary_slice_bang(argc, argv, ary)
 	    pos = RARRAY(ary)->len + pos;
 	}
 	arg2 = rb_ary_subseq(ary, pos, len);
-	rb_ary_update(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
+	rb_ary_splice(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
 	return arg2;
     }
 
@@ -2338,7 +2337,7 @@ rb_ary_concat(x, y)
 {
     y = to_ary(y);
     if (RARRAY(y)->len > 0) {
-	rb_ary_update(x, RARRAY(x)->len, 0, y);
+	rb_ary_splice(x, RARRAY(x)->len, 0, y);
     }
     return x;
 }
@@ -2754,8 +2753,6 @@ rb_ary_uniq_bang(ary)
     VALUE hash, v, vv;
     long i, j;
 
-    rb_ary_modify(ary); 
-
     hash = ary_make_hash(ary, 0);
 
     if (RARRAY(ary)->len == RHASH(hash)->tbl->num_entries) {
@@ -2886,7 +2883,7 @@ flatten(ary, idx, ary2, memo)
 	rb_raise(rb_eArgError, "tried to flatten recursive array");
     }
     rb_ary_push(memo, id);
-    rb_ary_update(ary, idx, 1, ary2);
+    rb_ary_splice(ary, idx, 1, ary2);
     while (i < lim) {
 	VALUE tmp;
 
@@ -2924,7 +2921,6 @@ rb_ary_flatten_bang(ary)
     int mod = 0;
     VALUE memo = Qnil;
 
-    rb_ary_modify(ary);
     while (i<RARRAY(ary)->len) {
 	VALUE ary2 = RARRAY(ary)->ptr[i];
 	VALUE tmp;

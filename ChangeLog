@@ -1,3 +1,15 @@
+Thu Nov 18 00:21:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_getpgrp): prohibit for $SAFE=2.
+	  [ruby-dev:24899]
+
+	* process.c (get_pid): ditto.  [ruby-dev:24904]
+
+	* process.c (get_ppid): ditto.
+
+	* array.c (rb_ary_delete): defer rb_ary_modify() until actual
+	  modification.  [ruby-dev:24901]
+
 Thu Nov 18 10:10:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c, rubyio.h (rb_io_modenum_flags): exported.
@@ -9,6 +21,15 @@ Wed Nov 17 23:42:40 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/ruby/test_settracefunc.rb: added.  [ruby-dev:24884]
 
+Wed Nov 17 13:56:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (newline_node): should not use FL_SET. [ruby-dev:24874]
+
+	* parse.y (string_content): should not use FL_UNSET.
+
+	* node.h (NODE_NEWLINE): remove unused bit to utilize flag field
+	  in nodes.
+
 Wed Nov 17 13:09:40 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32,wince}/Makefile.sub (test): should build ruby.exe
@@ -19,6 +40,11 @@ Wed Nov 17 04:33:01 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* pack.c: all features are backport from 1.9. [ruby-dev:24826]
 
 	* bignum.c (rb_big2ulong_pack): new function to pack Bignums.
+
+Wed Nov 17 03:42:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_splice): move rb_str_modify() after
+	  StringValue(), which may alter the receiver.  [ruby-dev:24878]
 
 Tue Nov 16 23:45:07 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
