@@ -3,6 +3,7 @@
 # Author:: Tanaka Akira <akr@m17n.org>
 
 # Pathname represents a pathname which locates a file in a filesystem.
+# It supports only Unix style pathnames.
 #
 # Pathname is immutable.  It has no method for destructive update.
 #
