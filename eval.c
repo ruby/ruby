@@ -8450,7 +8450,6 @@ rb_thread_schedule()
     rb_thread_t curr;
     int found = 0;
 
-    if (ruby_in_compile) abort();
     fd_set readfds;
     fd_set writefds;
     fd_set exceptfds;
@@ -8459,6 +8458,8 @@ rb_thread_schedule()
     int n, max;
     int need_select = 0;
     int select_timeout = 0;
+
+    if (ruby_in_compile) abort();
 
     rb_thread_pending = 0;
     if (curr_thread == curr_thread->next
