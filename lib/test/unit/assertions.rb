@@ -373,7 +373,7 @@ EOT
         AssertionMessage.use_pp = value
       end
       
-      class AssertionMessage all
+      class AssertionMessage
         @use_pp = true
         class << self
           attr_accessor :use_pp
