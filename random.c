@@ -88,7 +88,7 @@ rand_init(seed)
     int old;
     static unsigned int saved_seed;
 
-#ifdef HAVE_RANDOM
+#if defined HAVE_RANDOM && !defined __UCLIBC__
     if (first == 1) {
 	initstate(1, state, sizeof state);
     }

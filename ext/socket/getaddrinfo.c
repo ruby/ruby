@@ -191,7 +191,7 @@ if (pai->ai_flags & AI_CANONNAME) {\
 
 #define ERR(err) { error = (err); goto bad; }
 
-char *
+const char *
 gai_strerror(ecode)
 	int ecode;
 {
