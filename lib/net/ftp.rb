@@ -563,6 +563,15 @@ module Net
     def quit
       voidcmd("QUIT")
     end
+
+    def noop
+      voidcmd("NOOP")
+    end
+
+    def site(arg)
+      cmd = "SITE " + arg
+      voidcmd(cmd)
+    end
     
     def close
       @sock.close if @sock and not @sock.closed?

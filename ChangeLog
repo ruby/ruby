@@ -1,3 +1,9 @@
+Tue Jun 11 13:18:47 2002  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (noop): new method.
+
+	* lib/net/ftp.rb (site): ditto.
+
 Tue Jun 11 13:15:41 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub: set PROCESSOR_LEVEL to 6 if it's too big value.
