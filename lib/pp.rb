@@ -549,6 +549,11 @@ if __FILE__ == $0
       assert_equal(a.inspect + "\n", PP.pp(a, ''))
     end
 
+    def test_anonymous
+      a = Class.new.new
+      assert_equal(a.inspect + "\n", PP.pp(a, ''))
+    end
+
     def test_withinspect
       a = []
       a << HasInspect.new(a)
