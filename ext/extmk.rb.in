@@ -27,8 +27,7 @@ end
 # get absolute path
 $topdir = File.expand_path("..")
 
-$:.push $top_srcdir
-$:.push $top_srcdir+"/lib"
+$:.replace [$top_srcdir, $top_srcdir+"/lib", "."]
 
 require 'find'
 

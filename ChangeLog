@@ -1,3 +1,7 @@
+Fri Sep 22 13:58:51 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/extmk.rb: don't use default $:
+
 Fri Sep 22 10:16:21 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* win32/config.h.in: add HAVE_TELLDIR, HAVE_SEEKDIR
