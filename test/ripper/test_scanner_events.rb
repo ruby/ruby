@@ -9,7 +9,7 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
 
   def scan(target, str)
     sym = "on_#{target}".intern
-    Ripper.scan(str).select {|_,type,_| type == sym }.map {|_,_,tok| tok }
+    Ripper.lex(str).select {|_,type,_| type == sym }.map {|_,_,tok| tok }
   end
 
   def test_tokenize
@@ -29,13 +29,13 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  Ripper.tokenize("\#\n\n\#\n\nnil\n")
   end
 
-  def test_scan
+  def test_lex
     assert_equal [],
-                 Ripper.scan('')
+                 Ripper.lex('')
     assert_equal [[[1,0], :on_ident, "a"]],
-                 Ripper.scan('a')
+                 Ripper.lex('a')
     assert_equal [[[1, 0], :on_kw, "nil"]],
-                 Ripper.scan("nil")
+                 Ripper.lex("nil")
     assert_equal [[[1, 0], :on_kw, "def"],
                   [[1, 3], :on_sp, " "],
                   [[1, 4], :on_ident, "m"],
@@ -43,18 +43,18 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                   [[1, 6], :on_ident, "a"],
                   [[1, 7], :on_rparen, ")"],
                   [[1, 8], :on_kw, "end"]],
-                 Ripper.scan("def m(a)end")
+                 Ripper.lex("def m(a)end")
     assert_equal [[[1, 0], :on_int, "1"],
                   [[1, 1], :on_nl, "\n"],
                   [[2, 0], :on_int, "2"],
                   [[2, 1], :on_nl, "\n"],
                   [[3, 0], :on_int, "3"]],
-                 Ripper.scan("1\n2\n3")
+                 Ripper.lex("1\n2\n3")
     assert_equal [[[1, 0], :on_heredoc_beg, "<<EOS"],
                   [[1, 5], :on_nl, "\n"],
                   [[2, 0], :on_tstring_content, "heredoc\n"],
                   [[3, 0], :on_heredoc_end, "EOS"]],
-                 Ripper.scan("<<EOS\nheredoc\nEOS")
+                 Ripper.lex("<<EOS\nheredoc\nEOS")
   end
 
   def test_location
@@ -81,7 +81,7 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
 
   def validate_location(src)
     buf = ''
-    Ripper.scan(src).each do |pos, type, tok|
+    Ripper.lex(src).each do |pos, type, tok|
       line, col = *pos
       assert_equal buf.count("\n") + 1, line,
           "wrong lineno: #{tok.inspect} (#{type}) [#{line}:#{col}]"
