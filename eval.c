@@ -4669,10 +4669,12 @@ rb_call(klass, recv, mid, argc, argv, scope)
 
 	/* self must be kind of a specified form for private method */
 	if ((noex & NOEX_PROTECTED)) {
-	    if (TYPE(klass) == T_ICLASS) {
-		klass = RBASIC(klass)->klass;
+	    VALUE defined_class = klass;
+
+	    if (TYPE(defined_class) == T_ICLASS) {
+		defined_class = RBASIC(defined_class)->klass;
 	    }
-	    if (!rb_obj_is_kind_of(ruby_frame->self, rb_class_real(klass)))
+	    if (!rb_obj_is_kind_of(ruby_frame->self, rb_class_real(defined_class)))
 		return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);
 	}
     }

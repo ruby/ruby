@@ -534,7 +534,6 @@ io_fread(ptr, len, f)
 		switch (errno) {
 		  case EINTR:
 		    continue;
-
 		  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 		  case EWOULDBLOCK:
@@ -650,32 +649,78 @@ io_read(argc, argv, io)
 }
 
 static VALUE
-rb_io_gets_internal(argc, argv, io)
-    int argc;
-    VALUE *argv;
-    VALUE io;
-{
+rb_io_getline_fast(fptr)
     OpenFile *fptr;
+{
+    FILE *f = fptr->f;
+    VALUE str = Qnil;
+    int c;
+    char buf[8192];
+    char *bp, *bpe = buf + sizeof buf - 3;
+    int cnt;
+    int append = 0;
+
+  again:
+    bp = buf;
+    for (;;) {
+	READ_CHECK(f);
+	TRAP_BEG;
+	c = getc(f);
+	TRAP_END;
+	if (c == EOF) {
+	    if (ferror(f)) {
+		if (errno == EINTR) continue;
+		rb_sys_fail(fptr->path);
+	    }
+	    break;
+	}
+	if ((*bp++ = c) == '\n') break;
+	if (bp == bpe) break;
+    }
+    cnt = bp - buf;
+
+    if (c == EOF && !append && cnt == 0) {
+	str = Qnil;
+	goto return_gets;
+    }
+
+    if (append)
+	rb_str_cat(str, buf, cnt);
+    else
+	str = rb_str_new(buf, cnt);
+
+    if (c != EOF && RSTRING(str)->ptr[RSTRING(str)->len-1] != '\n') {
+	append = 1;
+	goto again;
+    }
+
+  return_gets:
+    if (!NIL_P(str)) {
+	fptr->lineno++;
+	lineno = INT2FIX(fptr->lineno);
+	OBJ_TAINT(str);
+    }
+
+    return str;
+}
+
+static VALUE
+rb_io_getline(rs, fptr)
+    VALUE rs;
+    OpenFile *fptr;
+{
     FILE *f;
     VALUE str = Qnil;
     int c, newline;
     char *rsptr;
     int rslen, rspara = 0;
-    VALUE rs;
-
-    if (argc == 0) {
-	rs = rb_rs;
-    }
-    else {
-	rb_scan_args(argc, argv, "1", &rs);
-    }
 
     if (NIL_P(rs)) {
 	rsptr = 0;
 	rslen = 0;
     }
     else if (rs == rb_default_rs) {
-	return rb_io_gets(io);
+	return rb_io_getline_fast(fptr);
     }
     else {
 	StringValue(rs);
@@ -686,17 +731,14 @@ rb_io_gets_internal(argc, argv, io)
 	    rspara = 1;
 	}
 	else if (rslen == 1 && RSTRING(rs)->ptr[0] == '\n') {
-	    return rb_io_gets(io);
+	    return rb_io_getline_fast(fptr);
 	}
 	else {
 	    rsptr = RSTRING(rs)->ptr;
 	}
     }
 
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
     f = fptr->f;
-
     if (rspara) {
 	do {
 	    READ_CHECK(f);
@@ -797,60 +839,10 @@ rb_io_gets(io)
     VALUE io;
 {
     OpenFile *fptr;
-    FILE *f;
-    VALUE str = Qnil;
-    int c;
-    char buf[8192];
-    char *bp, *bpe = buf + sizeof buf - 3;
-    int cnt;
-    int append = 0;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    f = fptr->f;
-
-  again:
-    bp = buf;
-    for (;;) {
-	READ_CHECK(f);
-	TRAP_BEG;
-	c = getc(f);
-	TRAP_END;
-	if (c == EOF) {
-	    if (ferror(f)) {
-		if (errno == EINTR) continue;
-		rb_sys_fail(fptr->path);
-	    }
-	    break;
-	}
-	if ((*bp++ = c) == '\n') break;
-	if (bp == bpe) break;
-    }
-    cnt = bp - buf;
-
-    if (c == EOF && !append && cnt == 0) {
-	str = Qnil;
-	goto return_gets;
-    }
-
-    if (append)
-	rb_str_cat(str, buf, cnt);
-    else
-	str = rb_str_new(buf, cnt);
-
-    if (c != EOF && RSTRING(str)->ptr[RSTRING(str)->len-1] != '\n') {
-	append = 1;
-	goto again;
-    }
-
-  return_gets:
-    if (!NIL_P(str)) {
-	fptr->lineno++;
-	lineno = INT2FIX(fptr->lineno);
-	OBJ_TAINT(str);
-    }
-
-    return str;
+    return rb_io_getline_fast(fptr);
 }
 
 static VALUE
@@ -859,7 +851,18 @@ rb_io_gets_m(argc, argv, io)
     VALUE *argv;
     VALUE io;
 {
-    VALUE str = rb_io_gets_internal(argc, argv, io);
+    VALUE rs, str;
+    OpenFile *fptr;
+
+    if (argc == 0) {
+	rs = rb_rs;
+    }
+    else {
+	rb_scan_args(argc, argv, "1", &rs);
+    }
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+    str = rb_io_getline(rs, fptr);
 
     if (!NIL_P(str)) {
 	rb_lastline_set(str);
@@ -936,9 +939,19 @@ rb_io_readlines(argc, argv, io)
     VALUE io;
 {
     VALUE line, ary;
+    VALUE rs, str;
+    OpenFile *fptr;
 
+    if (argc == 0) {
+	rs = rb_rs;
+    }
+    else {
+	rb_scan_args(argc, argv, "1", &rs);
+    }
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
     ary = rb_ary_new();
-    while (!NIL_P(line = rb_io_gets_internal(argc, argv, io))) {
+    while (!NIL_P(line = rb_io_getline(rs, fptr))) {
 	rb_ary_push(ary, line);
     }
     return ary;
@@ -951,8 +964,18 @@ rb_io_each_line(argc, argv, io)
     VALUE io;
 {
     VALUE str;
+    OpenFile *fptr;
+    VALUE rs;
 
-    while (!NIL_P(str = rb_io_gets_internal(argc, argv, io))) {
+    if (argc == 0) {
+	rs = rb_rs;
+    }
+    else {
+	rb_scan_args(argc, argv, "1", &rs);
+    }
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+    while (!NIL_P(str = rb_io_getline(rs, fptr))) {
 	rb_yield(str);
     }
     return io;
@@ -2665,7 +2688,7 @@ any_close(file)
 }
 
 static VALUE
-rb_f_gets_internal(argc, argv)
+argf_getline(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -2680,7 +2703,18 @@ rb_f_gets_internal(argc, argv)
 	line = rb_io_gets(current_file);
     }
     else {
-	line = rb_io_gets_internal(argc, argv, current_file);
+	VALUE rs;
+	OpenFile *fptr;
+
+	if (argc == 0) {
+	    rs = rb_rs;
+	}
+	else {
+	    rb_scan_args(argc, argv, "1", &rs);
+	}
+	GetOpenFile(current_file, fptr);
+	rb_io_check_readable(fptr);
+	line = rb_io_getline(rs, fptr);
     }
     if (NIL_P(line) && next_p != -1) {
 	any_close(current_file);
@@ -2698,7 +2732,7 @@ rb_f_gets(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE line = rb_f_gets_internal(argc, argv);
+    VALUE line = argf_getline(argc, argv);
 
     rb_lastline_set(line);
     return line;
@@ -2759,7 +2793,7 @@ rb_f_readlines(argc, argv)
     VALUE line, ary;
 
     ary = rb_ary_new();
-    while (!NIL_P(line = rb_f_gets_internal(argc, argv))) {
+    while (!NIL_P(line = argf_getline(argc, argv))) {
 	rb_ary_push(ary, line);
     }
 
@@ -3178,6 +3212,7 @@ struct foreach_arg {
     int argc;
     VALUE sep;
     VALUE io;
+    OpenFile *fptr;
 };
 
 static VALUE
@@ -3186,28 +3221,33 @@ io_s_foreach(arg)
 {
     VALUE str;
 
-    while (!NIL_P(str = rb_io_gets_internal(arg->argc, &arg->sep, arg->io))) {
+    while (!NIL_P(str = rb_io_getline(arg->sep, arg->fptr))) {
 	rb_yield(str);
     }
     return Qnil;
 }
 
 static VALUE
-rb_io_s_foreach(argc, argv, io)
+rb_io_s_foreach(argc, argv)
     int argc;
     VALUE *argv;
-    VALUE io;
 {
-    VALUE fname;
+    VALUE fname, io;
+    OpenFile *fptr;
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
     SafeStringValue(fname);
 
-    arg.argc = argc - 1;
-    arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
-    if (NIL_P(arg.io)) return Qnil;
-    return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
+    if (argc == 1) {
+	arg.sep = rb_default_rs;
+    }
+    io = rb_io_open(RSTRING(fname)->ptr, "r");
+    if (NIL_P(io)) return Qnil;
+    GetOpenFile(io, fptr);
+    arg.fptr = fptr;
+
+    return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, io);
 }
 
 static VALUE
@@ -3435,7 +3475,7 @@ argf_each_line(argc, argv)
 {
     VALUE str;
 
-    while (RTEST(str = rb_f_gets_internal(argc, argv))) {
+    while (RTEST(str = argf_getline(argc, argv))) {
 	rb_yield(str);
     }
     return argf;

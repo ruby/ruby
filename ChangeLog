@@ -5,6 +5,16 @@ Wed Feb  6 13:28:53 2002  Amos Gouaux  <amos+ruby@utdallas.edu>
 	* lib/net/imap.rb (setquota): unset quota if the second argument
 	is nil.
 
+Wed Feb  6 13:05:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_readlines): avoid calling GetOpenFile() repeatedly.
+
+	* io.c (rb_io_each_line): ditto.
+
+	* io.c (argf_getline): ditto.
+
+	* process.c: should include <time.h> to get proper CLK_TCK.
+
 Wed Feb  6 02:10:30 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* io.c (fptr_finalize): ignore EBADF when f and f2 use same
