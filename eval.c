@@ -2299,7 +2299,7 @@ splat_value(v)
 	    }
 	}
 #endif
-	return avalue_splat(rb_Array(v));
+	return rb_Array(v);
 }
 
 static VALUE
@@ -2686,7 +2686,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_SPLAT:
-	result = splat_value(rb_eval(self, node->nd_head));
+	result = avalue_splat(splat_value(rb_eval(self, node->nd_head)));
 	break;
 
       case NODE_SVALUE:

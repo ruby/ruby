@@ -1,3 +1,10 @@
+Fri Apr 25 18:19:03 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (splat_value): split splat_value() and avalue_splat().
+
+	* io.c: there's no way to set non-IO value to current_file, thus
+	  no need for argf_forward().
+
 Fri Apr 25 02:03:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): Proc#yield should pass through retry and

@@ -2912,13 +2912,6 @@ rb_io_s_for_fd(argc, argv, klass)
 
 static int binmode = 0;
 
-static VALUE
-argf_forward()
-{
-    return rb_funcall3(current_file, ruby_frame->last_func,
-		       ruby_frame->argc, ruby_frame->argv);
-}
-
 static int
 next_argv()
 {
@@ -3659,10 +3652,6 @@ argf_tell()
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to tell");
     }
-
-    if (TYPE(current_file) != T_FILE) {
-	return argf_forward();
-    }
     return rb_io_tell(current_file);
 }
 
@@ -3675,10 +3664,6 @@ argf_seek_m(argc, argv, self)
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to seek");
     }
-
-    if (TYPE(current_file) != T_FILE) {
-	return argf_forward();
-    }
     return rb_io_seek_m(argc, argv, current_file);
 }
 
@@ -3689,10 +3674,6 @@ argf_set_pos(self, offset)
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to set position");
     }
-
-    if (TYPE(current_file) != T_FILE) {
-	return argf_forward();
-    }
     return rb_io_set_pos(current_file, offset);
 }
 
@@ -3702,9 +3683,6 @@ argf_rewind()
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to rewind");
     }
-    if (TYPE(current_file) != T_FILE) {
-	return argf_forward();
-    }
     return rb_io_rewind(current_file);
 }
 
@@ -3713,9 +3691,6 @@ argf_fileno()
 {
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream");
-    }
-    if (TYPE(current_file) != T_FILE) {
-	return argf_forward();
     }
     return rb_io_fileno(current_file);
 }
@@ -3740,13 +3715,7 @@ argf_read(argc, argv)
 
   retry:
     if (!next_argv()) return str;
-    if (TYPE(current_file) != T_FILE) {
-	tmp = argf_forward();
-	StringValue(tmp);
-    }
-    else {
-	tmp = io_read(argc, argv, current_file);
-    }
+    tmp = io_read(argc, argv, current_file);
     if (NIL_P(tmp) && next_p != -1) {
 	io_close(current_file);
 	next_p = 1;
@@ -3807,9 +3776,6 @@ argf_eof()
     if (next_p == 1) {
 	return Qtrue;
     }
-    if (TYPE(current_file) != T_FILE) {
-	return argf_forward();
-    }
     if (rb_io_eof(current_file)) {
 	next_p = 1;
 	return Qtrue;
@@ -3860,12 +3826,7 @@ argf_binmode()
 {
     binmode = 1;
     next_argv();
-    if (TYPE(current_file) != T_FILE) {
-	argf_forward();
-    }
-    else {
-	rb_io_binmode(current_file);
-    }
+    rb_io_binmode(current_file);
     return argf;
 }
 
@@ -3893,9 +3854,6 @@ argf_close()
 static VALUE
 argf_closed()
 {
-    if (TYPE(current_file) != T_FILE) {
-	return argf_forward();
-    }
     return rb_io_closed(current_file);
 }
 
