@@ -552,7 +552,7 @@ rb_ary_each(ary)
     for (i=0; i<RARRAY(ary)->len; i++) {
 	rb_yield(RARRAY(ary)->ptr[i]);
     }
-    return Qnil;
+    return ary;
 }
 
 static VALUE
@@ -564,7 +564,7 @@ rb_ary_each_index(ary)
     for (i=0; i<RARRAY(ary)->len; i++) {
 	rb_yield(INT2NUM(i));
     }
-    return Qnil;
+    return ary;
 }
 
 static VALUE
@@ -576,7 +576,7 @@ rb_ary_reverse_each(ary)
     while (len--) {
 	rb_yield(RARRAY(ary)->ptr[len]);
     }
-    return Qnil;
+    return ary;
 }
 
 static VALUE
@@ -922,7 +922,7 @@ rb_ary_delete(ary, item)
 	if (rb_iterator_p()) {
 	    return rb_yield(item);
 	}
-	return Qnil;
+	return ary;
     }
     else {
 	RARRAY(ary)->len = i2;

@@ -1,3 +1,80 @@
+Tue Jul 20 02:28:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_gets): $_ should be nil, when get returns nil.
+
+	* io.c (rb_f_gets): ditto.
+
+Mon Jul 19 17:13:09 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_fastmap): should continue fastmap compile
+	  for anychar_repeat, for it's repeat anyway.
+
+Mon Jul 19 01:57:28 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/mkmf.rb: no longer use install program.
+
+	* ext/extmk.rb.in: use miniruby to install programs.
+
+Sat Jul 17 00:06:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/socket.c (ipaddr): don't do reverse lookup if
+	  attribute do_not_reverse_lookup is set for socket classes.
+	  Experimental.  Note this is a global attribute.
+
+Fri Jul 16 22:18:29 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_eof): use feof() to check EOF already met.
+
+	* io.c (read_all): should return nil at EOF.
+
+Fri Jul 16 13:39:42 1999  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/telnet.rb: version 0.231.
+
+Fri Jul 16 10:58:22 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* regex.c (re_match): debug print removed.
+
+Fri Jul 16 09:58:15 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* many files: clean up unsed variables found by gcc -Wall.
+
+	* lib/mkmf.rb: better cygwin support etc.
+
+	* ext/extmk.rb.in: ditto.
+
+	* instruby.rb: ditto.
+
+Fri Jul 16 01:37:50 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* string.c (rb_str_squeeze_bang): the type of local variable `c'
+	  should be int, not char.
+
+	* string.c (rb_str_reverse): should always return copy.
+
+Thu Jul 15 23:25:57 1999  NAKAMURA Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/debug.rb: better display & frame treatment.
+
+Thu Jul 15 21:16:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_each): returns self for normal termination;
+	  returns nil for break.
+
+	* string.c: non bang methods (e.g. String#sub) should always
+	  return copy of the receiver.
+
+Thu Jul 15 21:09:15 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* eval.c (find_file): do not add empty string to the path.
+
+	* configure.in (with-search-path): should not add empty string if
+	  the option is not supplied.
+
+Thu Jul 15 17:49:08 1999  Ryo HAYASAKA  <hayasaka@univ21.u-aizu.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: move `#include "ruby.h"' forward.
+
 Thu Jul 15 16:54:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.3.5 - version 1.4 alpha

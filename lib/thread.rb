@@ -62,10 +62,10 @@ class Mutex
 
   def unlock
     return unless @locked
-    Thread.critical = TRUE
+    Thread.critical = true
     t = @waiting.shift
-    @locked = FALSE
-    Thread.critical = FALSE
+    @locked = false
+    Thread.critical = false
     t.run if t
     self
   end
@@ -192,14 +192,14 @@ class SizedQueue<Queue
   end
 
   def max=(max)
-    Thread.critical = TRUE
+    Thread.critical = true
     if @max >= max
       @max = max
-      Thread.critical = FALSE
+      Thread.critical = false
     else
       diff = max - @max
       @max = max
-      Thread.critical = FALSE
+      Thread.critical = false
       diff.times do
 	t = @queue_wait.shift
 	t.run if t

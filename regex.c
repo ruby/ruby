@@ -2746,6 +2746,9 @@ re_compile_fastmap(bufp)
 	}
 	/* Don't return; check the alternative paths
 	   so we can set can_be_null if appropriate.  */
+	if ((enum regexpcode)p[-1] == anychar_repeat) {
+	    continue;
+	}
 	break;
 
       case wordchar:
@@ -2852,7 +2855,7 @@ re_compile_fastmap(bufp)
 	}
 	{
 	  unsigned short size;
-	  unsigned long c, beg, end;
+	  unsigned long c, beg;
 
 	  p += p[-1] + 2;
 	  size = EXTRACT_UNSIGNED(&p[-2]);
@@ -3539,7 +3542,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	}
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	STORE_NUMBER(p+mcnt, stackp - stackb);
-	printf("%d\n", stackp - stackb);
 	continue;
 
       case stop_nowidth:

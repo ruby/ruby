@@ -52,7 +52,11 @@ File.makedirs archdir, true
 File.makedirs pkglibdir+"/site_ruby", true
 File.makedirs pkglibdir+"/site_ruby/"+CONFIG["arch"], true
 
-if PLATFORM =~ /-aix/
+if RUBY_PLATFORM =~ /cygwin/ and File.exist? "import.h"
+  File.install "import.h", archdir, 0644, true
+end
+
+if RUBY_PLATFORM =~ /-aix/
   File.install "ruby.imp", archdir, 0644, true
 end
 

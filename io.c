@@ -317,6 +317,7 @@ rb_io_eof(io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
+    if (feof(fptr->f)) return Qtrue;
     if (READ_DATA_PENDING(fptr->f)) return Qfalse;
     READ_CHECK(fptr->f);
     TRAP_BEG;
@@ -397,13 +398,17 @@ read_all(port)
     GetOpenFile(port, fptr);
     rb_io_check_readable(fptr);
 
+    if (feof(fptr->f)) return Qnil;
     if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)
 #ifdef __BEOS__
 	&& (st.st_dev > 3)
 #endif
 	)
     {
-	if (st.st_size == 0) return rb_str_new(0, 0);
+	if (st.st_size == 0) {
+	    getc(fptr->f);	/* force EOF */
+	    return rb_str_new(0, 0);
+	}
 	else {
 	    long pos = ftell(fptr->f);
 	    if (st.st_size > pos && pos >= 0) {
@@ -417,9 +422,8 @@ read_all(port)
 	TRAP_BEG;
 	n = fread(RSTRING(str)->ptr+bytes, 1, siz-bytes, fptr->f);
 	TRAP_END;
-	if (n <= 0) {
-	    if (ferror(fptr->f)) rb_sys_fail(fptr->path);
-	    return rb_str_new(0,0);
+	if (n < 0) {
+	    rb_sys_fail(fptr->path);
 	}
 	bytes += n;
 	if (bytes < siz) break;
@@ -452,15 +456,15 @@ io_read(argc, argv, io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
+    if (feof(fptr->f)) return Qtrue;
     str = rb_str_new(0, len);
 
     READ_CHECK(fptr->f);
     TRAP_BEG;
     n = fread(RSTRING(str)->ptr, 1, len, fptr->f);
     TRAP_END;
-    if (n <= 0) {
-	if (ferror(fptr->f)) rb_sys_fail(fptr->path);
-	return Qnil;
+    if (n < 0) {
+	rb_sys_fail(fptr->path);
     }
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';
@@ -767,7 +771,7 @@ rb_io_each_line(argc, argv, io)
     while (!NIL_P(str = rb_io_gets_internal(argc, argv, io))) {
 	rb_yield(str);
     }
-    return Qnil;
+    return io;
 }
 
 static VALUE
@@ -2319,7 +2323,7 @@ rb_f_gets(argc, argv)
 {
     VALUE line = rb_f_gets_internal(argc, argv);
 
-    if (!NIL_P(line)) rb_lastline_set(line);
+    rb_lastline_set(line);
     return line;
 }
 
@@ -2340,8 +2344,8 @@ rb_gets()
 	next_p = 1;
 	goto retry;
     }
+    rb_lastline_set(line);
     if (!NIL_P(line)) {
-	rb_lastline_set(line);
 	gets_lineno++;
 	lineno = INT2FIX(gets_lineno);
     }
@@ -2997,7 +3001,7 @@ argf_each_line(argc, argv)
     while (RTEST(str = rb_f_gets_internal(argc, argv))) {
 	rb_yield(str);
     }
-    return Qnil;
+    return argf;
 }
 
 static VALUE

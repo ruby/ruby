@@ -23,7 +23,7 @@ module Observable
       0
     end
   end
-  def changed(state=TRUE)
+  def changed(state=true)
     @observer_state = state
   end
   def changed?
@@ -36,7 +36,7 @@ module Observable
 	  i.update(*arg)
 	end
       end
-      @observer_state = FALSE
+      @observer_state = false
     end
   end
 end

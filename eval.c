@@ -4490,10 +4490,15 @@ find_file(file)
 	int i;
 
 	Check_Type(rb_load_path, T_ARRAY);
+	vpath = rb_ary_new();
 	for (i=0;i<RARRAY(rb_load_path)->len;i++) {
-	    Check_SafeStr(RARRAY(rb_load_path)->ptr[i]);
+	    VALUE str = RARRAY(rb_load_path)->ptr[i];
+	    Check_SafeStr(str);
+	    if (RSTRING(str)->len > 0) {
+		rb_ary_push(vpath, str);
+	    }
 	}
-	vpath = rb_ary_join(rb_load_path, rb_str_new2(RUBY_PATH_SEP));
+	vpath = rb_ary_join(vpath, rb_str_new2(RUBY_PATH_SEP));
 	path = STR2CSTR(vpath);
 	if (safe_level >= 2 && !rb_path_check(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsefe path %s", path);
@@ -6258,7 +6263,7 @@ rb_thread_schedule()
     }
 
     if (num_waiting_on_fd > 0 || num_waiting_on_timer > 0) {
-	fd_set readfds, writefds, exceptfds;
+	fd_set readfds;
 	struct timeval delay_tv, *delay_ptr;
 	double delay, now;	/* OK */
 
@@ -6574,7 +6579,9 @@ rb_thread_join(thread)
 	VALUE oldbt = get_backtrace(th->errinfo);
 	VALUE errat = make_backtrace();
 
-	rb_ary_unshift(errat, rb_ary_entry(oldbt, 0));
+	if (TYPE(oldbt) == T_ARRAY) {
+	    rb_ary_unshift(errat, rb_ary_entry(oldbt, 0));
+	}
 	set_backtrace(th->errinfo, errat);
 	rb_exc_raise(th->errinfo);
     }
@@ -6707,19 +6714,19 @@ rb_thread_sleep_forever()
     rb_thread_schedule();
 }
 
-static int rb_thread_abort;
+static int thread_abort;
 
 static VALUE
 rb_thread_s_abort_exc()
 {
-    return rb_thread_abort?Qtrue:Qfalse;
+    return thread_abort?Qtrue:Qfalse;
 }
 
 static VALUE
 rb_thread_s_abort_exc_set(self, val)
     VALUE self, val;
 {
-    rb_thread_abort = RTEST(val);
+    thread_abort = RTEST(val);
     return val;
 }
 
@@ -6898,7 +6905,7 @@ rb_thread_create_0(fn, arg, klass)
 	    /* delegate exception to main_thread */
 	    rb_thread_raise(1, &ruby_errinfo, main_thread->thread);
 	}
-	else if (rb_thread_abort || curr_thread->abort || RTEST(ruby_debug)) {
+	else if (thread_abort || curr_thread->abort || RTEST(ruby_debug)) {
 	    VALUE err = rb_exc_new(rb_eSystemExit, 0, 0);
 	    error_print();
 	    /* exit on main_thread */

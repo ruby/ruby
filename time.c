@@ -104,7 +104,6 @@ struct timeval
 rb_time_interval(time)
     VALUE time;
 {
-    struct time_object *tobj;
     struct timeval t;
 
     switch (TYPE(time)) {

@@ -46,6 +46,8 @@ extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /*
 #endif
 #include "sockport.h"
 
+static int do_not_reverse_lookup = 0;
+
 VALUE rb_cBasicSocket;
 VALUE rb_cIPSocket;
 VALUE rb_cTCPSocket;
@@ -423,6 +425,19 @@ bsock_recv(argc, argv, sock)
     return s_recv(sock, argc, argv, RECV_RECV);
 }
 
+static VALUE
+bsock_do_not_rev_lookup()
+{
+    return do_not_reverse_lookup?Qtrue:Qfalse;
+}
+
+static VALUE
+bsock_do_not_rev_lookup_set(self, val)
+{
+    do_not_reverse_lookup = RTEST(val);
+    return val;
+}
+
 static void
 mkipaddr0(addr, buf, len)
     struct sockaddr *addr;
@@ -476,7 +491,6 @@ ip_addrsetup(host, port)
 	hostp = NULL;
     }
     else if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	struct sockaddr_in sin;
 	long i = NUM2LONG(host);
 
 	mkinetaddr(htonl(i), hbuf, sizeof(hbuf));
@@ -535,7 +549,6 @@ ipaddr(sockaddr)
 {
     VALUE family, port, addr1, addr2;
     VALUE ary;
-    struct addrinfo hints, *res;
     int error;
     char hbuf[1024], pbuf[1024];
 
@@ -552,18 +565,23 @@ ipaddr(sockaddr)
 	family = 0;
 	break;
     }
-    error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
-			NULL, 0, 0);
-    if (error) {
-	rb_raise(rb_eSocket, "%s", gai_strerror(error));
+    if (!do_not_reverse_lookup) {
+	error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
+			    NULL, 0, 0);
+	if (error) {
+	    rb_raise(rb_eSocket, "%s", gai_strerror(error));
+	}
+	addr1 = rb_str_new2(hbuf);
     }
-    addr1 = rb_str_new2(hbuf);
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
     addr2 = rb_str_new2(hbuf);
+    if (do_not_reverse_lookup) {
+	addr1 = addr2;
+    }
     port = INT2FIX(atoi(pbuf));
     ary = rb_ary_new3(4, family, port, addr1, addr2);
 
@@ -665,7 +683,6 @@ open_inet(class, h, serv, type)
     struct addrinfo hints, *res, *res0;
     int fd, status;
     char *syscall;
-    VALUE sock;
     char pbuf[1024], *portp;
     char *host;
     int error;
@@ -1434,7 +1451,7 @@ sock_accept(sock)
    VALUE sock;
 {
     OpenFile *fptr;
-    VALUE addr, sock2;
+    VALUE sock2;
     char buf[1024];
     int len = sizeof buf;
 
@@ -1519,7 +1536,6 @@ static VALUE
 mkaddrinfo(res0)
     struct addrinfo *res0;
 {
-    char **pch;
     VALUE base, ary;
     struct addrinfo *res;
 
@@ -1817,6 +1833,7 @@ sock_define_const(name, value)
     rb_define_const(mConst, name, INT2FIX(value));
 }
 
+void
 Init_socket()
 {
     rb_eSocket = rb_define_class("SocketError", rb_eStandardError);
@@ -1824,6 +1841,12 @@ Init_socket()
     rb_cBasicSocket = rb_define_class("BasicSocket", rb_cIO);
     rb_undef_method(CLASS_OF(rb_cBasicSocket), "new");
     rb_undef_method(CLASS_OF(rb_cBasicSocket), "open");
+
+    rb_define_singleton_method(rb_cBasicSocket, "do_not_reverse_lookup",
+			       bsock_do_not_rev_lookup, 0);
+    rb_define_singleton_method(rb_cBasicSocket, "do_not_reverse_lookup=",
+			       bsock_do_not_rev_lookup_set, 1);
+
     rb_define_method(rb_cBasicSocket, "close_read", bsock_close_read, 0);
     rb_define_method(rb_cBasicSocket, "close_write", bsock_close_write, 0);
     rb_define_method(rb_cBasicSocket, "shutdown", bsock_shutdown, -1);

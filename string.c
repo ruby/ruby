@@ -769,7 +769,7 @@ rb_str_upto(beg, end, excl)
 	    break;
     }
 
-    return Qnil;
+    return beg;
 }
 
 static VALUE
@@ -1041,7 +1041,7 @@ rb_str_sub(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_sub_bang(argc, argv, rb_str_dup(str));
+    VALUE val = rb_str_sub_bang(argc, argv, str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1148,7 +1148,7 @@ rb_str_gsub(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_gsub_bang(argc, argv, rb_str_dup(str));
+    VALUE val = rb_str_gsub_bang(argc, argv, str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1196,7 +1196,7 @@ rb_f_sub(argc, argv)
     VALUE line, v;
 
     line = uscore_get();
-    v = rb_str_sub_bang(argc, argv, rb_str_dup(line));
+    v = rb_str_sub_bang(argc, argv, line = rb_str_dup(line));
     if (NIL_P(v)) return line;
     rb_lastline_set(v);
     return v;
@@ -1218,7 +1218,7 @@ rb_f_gsub(argc, argv)
     VALUE line, v;
 
     line = uscore_get();
-    v = rb_str_gsub_bang(argc, argv, rb_str_dup(line));
+    v = rb_str_gsub_bang(argc, argv, line = rb_str_dup(line));
     if (NIL_P(v)) return line;
     rb_lastline_set(v);
     return v;
@@ -1249,7 +1249,7 @@ rb_str_reverse(str)
     VALUE obj;
     char *s, *e, *p;
 
-    if (RSTRING(str)->len <= 1) return str;
+    if (RSTRING(str)->len <= 1) return rb_str_dup(str);
 
     obj = rb_str_new(0, RSTRING(str)->len);
     s = RSTRING(str)->ptr; e = s + RSTRING(str)->len - 1;
@@ -1522,7 +1522,7 @@ static VALUE
 rb_str_upcase(str)
     VALUE str;
 {
-    VALUE val = rb_str_upcase_bang(rb_str_dup(str));
+    VALUE val = rb_str_upcase_bang(str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1556,7 +1556,7 @@ static VALUE
 rb_str_downcase(str)
     VALUE str;
 {
-    VALUE val = rb_str_downcase_bang(rb_str_dup(str));
+    VALUE val = rb_str_downcase_bang(str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1592,7 +1592,7 @@ static VALUE
 rb_str_capitalize(str)
     VALUE str;
 {
-    VALUE val = rb_str_capitalize_bang(rb_str_dup(str));
+    VALUE val = rb_str_capitalize_bang(str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1630,7 +1630,7 @@ static VALUE
 rb_str_swapcase(str)
     VALUE str;
 {
-    VALUE val = rb_str_swapcase_bang(rb_str_dup(str));
+    VALUE val = rb_str_swapcase_bang(str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1781,7 +1781,7 @@ static VALUE
 rb_str_tr(str, src, repl)
     VALUE str, src, repl;
 {
-    VALUE val = tr_trans(rb_str_dup(str), src, repl, 0);
+    VALUE val = tr_trans(str = rb_str_dup(str), src, repl, 0);
 
     if (NIL_P(val)) return str;
     return val;
@@ -1865,7 +1865,7 @@ rb_str_delete(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_delete_bang(argc, argv, rb_str_dup(str));
+    VALUE val = rb_str_delete_bang(argc, argv, str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1879,7 +1879,7 @@ rb_str_squeeze_bang(argc, argv, str)
 {
     char squeez[256];
     char *s, *send, *t;
-    char c, save, modify = 0;
+    int c, save, modify = 0;
     int init = 1;
     int i;
 
@@ -1906,7 +1906,7 @@ rb_str_squeeze_bang(argc, argv, str)
     save = -1;
     while (s < send) {
 	c = *s++ & 0xff;
-	if (c != save || !squeez[c & 0xff]) {
+	if (c != save || !squeez[c]) {
 	    *t++ = save = c;
 	}
     }
@@ -1926,7 +1926,7 @@ rb_str_squeeze(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_squeeze_bang(argc, argv, rb_str_dup(str));
+    VALUE val = rb_str_squeeze_bang(argc, argv, str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -1943,7 +1943,7 @@ static VALUE
 rb_str_tr_s(str, src, repl)
     VALUE str, src, repl;
 {
-    VALUE val = tr_trans(rb_str_dup(str), src, repl, 1);
+    VALUE val = tr_trans(str = rb_str_dup(str), src, repl, 1);
 
     if (NIL_P(val)) return str;
     return val;
@@ -2160,9 +2160,11 @@ rb_str_each_line(argc, argv, str)
 
     if (NIL_P(rs)) {
 	rb_yield(str);
-	return Qnil;
+	return str;
     }
-    if (TYPE(rs) != T_STRING) rs = rb_str_to_str(rs);
+    if (TYPE(rs) != T_STRING) {
+	rs = rb_str_to_str(rs);
+    }
 
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
@@ -2194,19 +2196,19 @@ rb_str_each_line(argc, argv, str)
 	rb_yield(line);
     }
 
-    return Qnil;
+    return str;
 }
 
 static VALUE
 rb_str_each_byte(str)
-    struct RString* str;
+    VALUE str;
 {
     int i;
 
     for (i=0; i<RSTRING(str)->len; i++) {
 	rb_yield(INT2FIX(RSTRING(str)->ptr[i] & 0xff));
     }
-    return Qnil;
+    return str;
 }
 
 static VALUE
@@ -2232,7 +2234,7 @@ static VALUE
 rb_str_chop(str)
     VALUE str;
 {
-    VALUE val = rb_str_chop_bang(rb_str_dup(str));
+    VALUE val = rb_str_chop_bang(str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -2249,7 +2251,7 @@ static VALUE
 rb_f_chop()
 {
     VALUE str = uscore_get();
-    VALUE val = rb_str_chop_bang(rb_str_dup(str));
+    VALUE val = rb_str_chop_bang(str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     rb_lastline_set(val);
@@ -2305,7 +2307,7 @@ rb_str_chomp(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_chomp_bang(argc, argv, rb_str_dup(str));
+    VALUE val = rb_str_chomp_bang(argc, argv, str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -2325,7 +2327,7 @@ rb_f_chomp(argc, argv)
     VALUE *argv;
 {
     VALUE str = uscore_get();
-    VALUE val = rb_str_chomp_bang(argc, argv, rb_str_dup(str));
+    VALUE val = rb_str_chomp_bang(argc, argv, str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     rb_lastline_set(val);
@@ -2372,7 +2374,7 @@ static VALUE
 rb_str_strip(str)
     VALUE str;
 {
-    VALUE val = rb_str_strip_bang(rb_str_dup(str));
+    VALUE val = rb_str_strip_bang(str = rb_str_dup(str));
 
     if (NIL_P(val)) return str;
     return val;
@@ -2432,7 +2434,7 @@ rb_str_scan(str, pat)
     while (!NIL_P(result = scan_once(str, pat, &start))) {
 	rb_yield(result);
     }
-    return Qnil;
+    return str;
 }
 
 static VALUE

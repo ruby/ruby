@@ -446,7 +446,9 @@ getaddrinfo(hostname, servname, hints, res)
 	for (i = 0; afdl[i].a_af; i++) {
 		if (inet_pton(afdl[i].a_af, hostname, pton)) {
 			u_long v4a;
+#ifdef INET6
 			u_char pfx;
+#endif
 
 			switch (afdl[i].a_af) {
 			case AF_INET:
@@ -521,8 +523,11 @@ get_name(addr, afd, res, numaddr, pai, port0)
 	u_short port = port0 & 0xffff;
 	struct hostent *hp;
 	struct addrinfo *cur;
-	int error = 0, h_error;
-	
+	int error = 0;
+#ifdef INET6
+	int h_error;
+#endif
+
 #ifdef INET6
 	hp = getipnodebyaddr(addr, afd->a_addrlen, afd->a_af, &h_error);
 #else

@@ -4,12 +4,12 @@
  *		Oct. 24, 1997	Y. Matsumoto
  */
 
-#include "ruby.h"
-#include "rubysig.h"
 #include <stdio.h>
 #include <string.h>
 #include <tcl.h>
 #include <tk.h>
+#include "ruby.h"
+#include "rubysig.h"
 
 #ifdef __MACOS__
 # include <tkMac.h>

@@ -67,7 +67,7 @@ class << File
     to = catname(from, to)
     $stderr.print from, " -> ", to, "\n" if verbose
 
-    if PLATFORM =~ /djgpp|cygwin|mswin32/ and FileTest.file? to
+    if RUBY_PLATFORM =~ /djgpp|cygwin|mswin32/ and FileTest.file? to
       unlink to
     end
     fstat = stat(from)

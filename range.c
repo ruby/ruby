@@ -148,7 +148,7 @@ range_each(range)
 	}
     }
 
-    return Qnil;
+    return range;
 }
 
 static VALUE

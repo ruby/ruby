@@ -325,7 +325,7 @@ rb_struct_each(s)
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	rb_yield(RSTRUCT(s)->ptr[i]);
     }
-    return Qnil;
+    return s;
 }
 
 static VALUE

@@ -208,7 +208,6 @@ establishShell(shellname, info)
     struct pty_info *info;
 {	
     static int		i,j,master,slave,currentPid;
-    static char		procName[32];
     char		*p,*getenv();
     struct passwd	*pwent;
     RETSIGTYPE		chld_changed();

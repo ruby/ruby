@@ -363,11 +363,11 @@ int need;
 	char twin[PBLKSIZ];
 #ifdef MSDOS
 	char zer[PBLKSIZ];
+	long oldtail;
 #endif
 	char *pag = db->pagbuf;
 	char *new = twin;
 	register int smax = SPLTMAX;
-	long oldtail;
 
 	do {
 /*

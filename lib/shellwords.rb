@@ -17,7 +17,7 @@ module Shellwords
     words = []
     while line != ''
       field = ''
-      while TRUE
+      while true
 	if line.sub! /^"(([^"\\]|\\.)*)"/, '' then #"
 	  snippet = $1
 	  snippet.gsub! /\\(.)/, '\1'

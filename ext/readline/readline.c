@@ -268,7 +268,7 @@ hist_each(self)
     for (i = 0; i < state->length; i++) {
 	rb_yield(rb_str_new2(state->entries[i]->line));
     }
-    return Qnil;
+    return self;
 }
 
 static VALUE

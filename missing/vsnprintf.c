@@ -223,9 +223,7 @@ static BSD__sfvwrite(fp, uio)
 	register size_t len;
 	register char *p;
 	register struct __siov *iov;
-	register int w, s;
-	char *nl;
-	int nlknown, nldist;
+	register int w;
 
 	if ((len = uio->uio_resid) == 0)
 		return (0);

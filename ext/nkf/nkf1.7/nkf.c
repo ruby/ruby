@@ -1571,7 +1571,7 @@ mime_begin(f)
 FILE *f;
 {
     int c1;
-    int i,j,k;
+    int i,j;
     int r[MAXRECOVER];    /* recovery buffer, max mime pattern lenght */
 
     mime_mode = FALSE;

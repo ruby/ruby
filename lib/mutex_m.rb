@@ -67,33 +67,33 @@ module Mutex_m
   end
   
   def mu_try_lock
-    result = FALSE
-    Thread.critical = TRUE
+    result = false
+    Thread.critical = true
     unless @mu_locked
-      @mu_locked = TRUE
-      result = TRUE
+      @mu_locked = true
+      result = true
     end
-    Thread.critical = FALSE
+    Thread.critical = false
     result
   end
   
   def mu_lock
-    while (Thread.critical = TRUE; @mu_locked)
+    while (Thread.critical = true; @mu_locked)
       @mu_waiting.push Thread.current
       Thread.stop
     end
-    @mu_locked = TRUE
-    Thread.critical = FALSE
+    @mu_locked = true
+    Thread.critical = false
     self
   end
   
   def mu_unlock
     return unless @mu_locked
-    Thread.critical = TRUE
+    Thread.critical = true
     wait = @mu_waiting
     @mu_waiting = []
-    @mu_locked = FALSE
-    Thread.critical = FALSE
+    @mu_locked = false
+    Thread.critical = false
     for w in wait
       w.run
     end
@@ -105,7 +105,7 @@ module Mutex_m
   def initialize(*args)
     ret = super
     @mu_waiting = []
-    @mu_locked = FALSE;
+    @mu_locked = false;
     return ret
   end
 end

@@ -3,21 +3,21 @@
 $".push 'mkmf.rb'
 
 if ARGV[0] == 'static'
-  $force_static = TRUE
+  $force_static = true
   ARGV.shift
 elsif ARGV[0] == 'install'
-  $install = TRUE
+  $install = true
   $destdir = ARGV[1] || ''
   ARGV.shift
 elsif ARGV[0] == 'clean'
-  $clean = TRUE
+  $clean = true
   ARGV.shift
 end
 
 SRC_EXT = ["c", "cc", "cxx", "C"]
 $extlist = []
 
-$cache_mod = FALSE;
+$cache_mod = false
 $lib_cache = {}
 $func_cache = {}
 $hdr_cache = {}
@@ -30,13 +30,6 @@ end
 $topdir = File.expand_path("..")
 
 load "#{$top_srcdir}/lib/find.rb"
-
-## drive letter
-if PLATFORM == "i386-os2_emx" then
-  $dots = ""
-else
-  $dots = if "@INSTALL@" =~ /^\// then "" else "#{$topdir}/ext/" end
-end
 
 if File.exist?("config.cache") then
   f = open("config.cache", "r")
@@ -66,7 +59,7 @@ def older(file1, file2)
   return false
 end
 
-if PLATFORM == "m68k-human"
+if RUBY_PLATFORM == "m68k-human"
 CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
 else
 CFLAGS = "@CFLAGS@"
@@ -74,7 +67,7 @@ end
 LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} @LDFLAGS@ %s %s conftest.c %s %s @LIBS@"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s %s conftest.c"
 
-if /cygwin|mswin32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ PLATFORM
+if /cygwin|mswin32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ RUBY_PLATFORM
   $null = open("nul", "w")
 else
   $null = open("/dev/null", "w")
@@ -147,8 +140,9 @@ def try_run(src, opt="")
   end
 end
 
-def install_rb(mfile, srcdir)
-  libdir = srcdir + "/lib"
+def install_rb(mfile, srcdir = nil)
+  libdir = "lib"
+  libdir = srcdir + "/" + libdir if srcdir
   path = []
   dir = []
   Find.find(libdir) do |f|
@@ -159,21 +153,17 @@ def install_rb(mfile, srcdir)
   end
   for f in dir
     next if f == "."
-    mfile.printf "\t@test -d $(DESTDIR)$(pkglibdir)/%s || mkdir $(DESTDIR)$(pkglibdir)/%s\n", f, f
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(DESTDIR)$(pkglibdir)/%s\n", f
   end
   for f in path
-    mfile.printf "\t$(INSTALL_DATA) $(srcdir)/lib/%s $(DESTDIR)$(pkglibdir)/%s\n", f, f
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' $(srcdir)/lib/%s $(DESTDIR)$(pkglibdir)/%s\n", f, f
   end
 end
 
 def have_library(lib, func="main")
   if $lib_cache[lib]
     if $lib_cache[lib] == "yes"
-      if $libs
-        $libs = "-l" + lib + " " + $libs 
-      else
-	$libs = "-l" + lib
-      end
+      $libs = "-l" + lib + " " + $libs 
       return true
     else
       return false
@@ -181,11 +171,7 @@ def have_library(lib, func="main")
   end
 
   if func && func != ""
-    if $libs
-      libs = "-l" + lib + " " + $libs 
-    else
-      libs = "-l" + lib
-    end
+    libs = "-l" + lib + " " + $libs 
     unless try_link(<<"SRC", libs)
 int main() { return 0; }
 int t() { #{func}(); return 0; }
@@ -195,11 +181,7 @@ SRC
       return false
     end
   else
-    if $libs
-      libs = "-l" + lib + " " + $libs 
-    else
-      libs = "-l" + lib
-    end
+    libs = "-l" + lib + " " + $libs 
   end
 
   $libs = libs
@@ -219,7 +201,6 @@ def have_func(func)
   end
 
   libs = $libs
-  libs = "" if libs == nil
 
   unless try_link(<<"SRC", libs)
 char #{func}();
@@ -306,7 +287,7 @@ end
 
 def create_makefile(target)
   system "rm -f conftest*"
-  if $libs and "@DLEXT@" == "o"
+  if "@DLEXT@" == "o"
     libs = $libs.split
     for lib in libs
       lib.sub!(/-l(.*)/, '"lib\1.a"')
@@ -316,25 +297,17 @@ def create_makefile(target)
 
   $DLDFLAGS = '@DLDFLAGS@'
 
-  if PLATFORM =~ /beos/
-    if $libs
-      $libs = $libs + " -lruby"
-    else
-      $libs = "-lruby"
-    end
+  if RUBY_PLATFORM =~ /beos/
+    $libs = $libs + " -lruby"
     $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
   end
 
   defflag = ''
-  if PLATFORM =~ /cygwin/ and not $static
+  if RUBY_PLATFORM =~ /cygwin/ and not $static
     if File.exist? target + ".def"
       defflag = "--def=" + target + ".def"
     end
-    if $libs
-      $libs = $libs + " @LIBRUBYARG@"
-    else
-      $libs = "@LIBRUBYARG@"
-    end
+    $libs = $libs + " @LIBRUBYARG@"
     $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
   end
 
@@ -354,7 +327,6 @@ DESTDIR =
 
 CC = @CC@
 
-prefix = @prefix@
 CFLAGS   = %s -I$(topdir) -I$(hdrdir) -I@includedir@ #{CFLAGS} #$CFLAGS %s
 DLDFLAGS = #$DLDFLAGS #$LDFLAGS
 LDSHARED = @LDSHARED@ #{defflag}
@@ -393,15 +365,13 @@ archdir = $(pkglibdir)/@arch@
 TARGET = #{target}
 DLLIB = $(TARGET).#{$static ? "a" : "@DLEXT@"}
 
-INSTALL = #{$dots}@INSTALL@
-INSTALL_DLLIB = @INSTALL_DLLIB@
-INSTALL_DATA = @INSTALL_DATA@
+RUBY = ../../miniruby@binsuffix@
 
 binsuffix = @binsuffix@
 
 all:		$(DLLIB)
 
-clean:;		@rm -f *.o *.a *.so *.sl *.a
+clean:;		@rm -f *.o *.so *.sl *.a $(DLLIB)
 		@rm -f Makefile extconf.h conftest.*
 		@rm -f core ruby$(binsuffix) *~
 
@@ -411,20 +381,18 @@ EOS
   mfile.printf <<EOS
 
 install:
-	@test -d $(DESTDIR)$(libdir) || mkdir $(DESTDIR)$(libdir)
-	@test -d $(DESTDIR)$(pkglibdir) || mkdir $(DESTDIR)$(pkglibdir)
-	@test -d $(DESTDIR)$(archdir) || mkdir $(DESTDIR)$(archdir)
+	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(DESTDIR)$(libdir) $(DESTDIR)$(pkglibdir) $(DESTDIR)$(archdir)
 EOS
-  if !$static
+  unless $static
     mfile.printf "\
-	$(INSTALL_DLLIB) $(DLLIB) $(DESTDIR)$(archdir)/$(DLLIB)
+	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(DESTDIR)$(archdir)/$(DLLIB)
 "
   end
   install_rb(mfile, $srcdir)
   mfile.printf "\n"
 
   if $static
-      mfile.printf "\
+    mfile.printf "\
 $(DLLIB): $(OBJS)
 	@AR@ cru $(DLLIB) $(OBJS)
 	@-@RANLIB@ $(DLLIB) 2> /dev/null || true
@@ -434,7 +402,7 @@ $(DLLIB): $(OBJS)
 $(DLLIB): $(OBJS)
 	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
 "
-  elsif PLATFORM == "m68k-human"
+  elsif RUBY_PLATFORM == "m68k-human"
     mfile.printf "\
 $(DLLIB): $(OBJS)
 	ar cru $(DLLIB) $(OBJS)
@@ -456,15 +424,15 @@ $(DLLIB): $(OBJS)
   end
   mfile.close
   
-  if PLATFORM =~ /beos/
-    if PLATFORM =~ /^powerpc/ then
+  if RUBY_PLATFORM =~ /beos/
+    if RUBY_PLATFORM =~ /^powerpc/ then
       deffilename = "ruby.exp"
     else
       deffilename = "ruby.def"
     end
-    print "creating ruby.def\n"
+    print "creating #{deffilename}\n"
     open(deffilename, "w") do |file|
-      file.print("EXPORTS\n") if PLATFORM =~ /^i/
+      file.print("EXPORTS\n") if RUBY_PLATFORM =~ /^i/
       file.print("Init_#{target}\n")
     end
   end
@@ -474,13 +442,13 @@ def extmake(target)
   if $force_static or $static_ext[target]
     $static = target
   else
-    $static = FALSE
+    $static = false
   end
 
   return if $nodynamic and not $static
 
   $objs = nil
-  $libs = PLATFORM =~ /cygwin|beos|openstep|nextstep|rhapsody/ ? nil : "-lc"
+  $libs = RUBY_PLATFORM =~ /cygwin|beos|openstep|nextstep|rhapsody/ ? "" : "-lc"
   $LOCAL_LIBS = ""		# to be assigned in extconf.rb
   $CFLAGS = ""
   $LDFLAGS = ""
@@ -499,7 +467,7 @@ def extmake(target)
       if File.exist?("#{$top_srcdir}/ext/#{target}/extconf.rb")
 	load "#{$top_srcdir}/ext/#{target}/extconf.rb"
       else
-	create_makefile(target);
+	create_makefile(target)
       end
     end
     if File.exist?("./Makefile")
@@ -517,7 +485,7 @@ def extmake(target)
     if $static
       $extlibs ||= ""
       $extlibs += " " + $LDFLAGS unless $LDFLAGS == ""
-      $extlibs += " " + $libs if $libs
+      $extlibs += " " + $libs unless $libs == ""
       $extlibs += " " + $LOCAL_LIBS unless $LOCAL_LIBS == ""
     end
   ensure
@@ -539,10 +507,10 @@ for setup in ["@setup@", "#{$top_srcdir}/ext/@setup@"]
       sub!(/#.*$/, '')
       next if /^\s*$/
       if /^option +nodynamic/
-	$nodynamic = TRUE
+	$nodynamic = true
 	next
       end
-      $static_ext[$_.split[0]] = TRUE
+      $static_ext[$_.split[0]] = true
     end
     f.close
     break
@@ -560,7 +528,7 @@ for d in Dir["#{$top_srcdir}/ext/*"]
     print "cleaning ", d, "\n"
   else
     print "compiling ", d, "\n"
-    if PLATFORM =~ /-aix/ and older("../ruby.imp", "../miniruby")
+    if RUBY_PLATFORM =~ /-aix/ and older("../ruby.imp", "../miniruby")
       load "#{$top_srcdir}/ext/aix_mksym.rb"
     end
   end
@@ -600,7 +568,7 @@ if $extlist.size > 0
       $extobjs += f
       $extobjs += " "
     else
-      FALSE
+      false
     end
   end
 
@@ -628,7 +596,7 @@ if $extlist.size > 0
   else
     $extobjs = "ext/extinit.o "
   end
-  if PLATFORM =~ /m68k-human|beos/
+  if RUBY_PLATFORM =~ /m68k-human|beos/
     $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
   end
   system format(%[#{$make} #{ruby} EXTOBJS="%s" EXTLIBS="%s"], $extobjs, $extlibs)

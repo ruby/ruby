@@ -73,9 +73,6 @@ AC_PROG_YACC
 AC_PROG_RANLIB
 AC_SUBST(AR)
 AC_CHECK_PROGS(AR, ar aal, ar)
-AC_PROG_INSTALL
-test -z "$INSTALL_DLLIB" && INSTALL_DLLIB='${INSTALL} -m 555'
-AC_SUBST(INSTALL_DLLIB)
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -323,6 +320,9 @@ AC_ARG_WITH(dln-a-out,
 	yes) with_dln_a_out=yes;;
 	*)   with_dln_a_out=no;;
 	esac], [with_dln_a_out=no])
+
+AC_EXEEXT
+AC_OBJEXT
 
 AC_SUBST(XLDFLAGS)dnl
 
@@ -781,7 +781,9 @@ AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH}/${arch}")
 AC_ARG_WITH(search-path,
 		[--with-search-path	  specify the additional search path],
 		[search_path=$withval])
-AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path")
+if test "$search_path" != ""; then
+    AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path")
+fi
 
 echo "creating config.h"
 cat confdefs.h > config.h

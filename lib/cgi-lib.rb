@@ -246,7 +246,7 @@ class CGI < SimpleDelegator
         CGI::tag("BODY"){ message }
       }
     }
-    TRUE
+    true
   end
 
   # print error message to $> and exit

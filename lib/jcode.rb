@@ -1,6 +1,6 @@
 # jcode.rb - ruby code to handle japanese (EUC/SJIS) string
 
-$vsave, $VERBOSE = $VERBOSE, FALSE
+$vsave, $VERBOSE = $VERBOSE, false
 class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
@@ -58,7 +58,10 @@ class String
     return nil
   end
 
+  ExpandChCache = {}
+
   def _expand_ch
+    return ExpandChCache[self] if ExpandChCache.key? self
     a = []
     self.scan(/(.|\n)-(.|\n)|(.|\n)/) do |r|
       if $3
@@ -71,6 +74,7 @@ class String
  	$1.upto($2) { |c| a.push c }
       end
     end
+    ExpandChCache[self] = a
     a
   end
 
@@ -78,7 +82,7 @@ class String
     return self.delete!(from) if to.length == 0
 
     if from =~ /^\^/
-      comp=TRUE
+      comp=true
       from = $'
     end
     afrom = from._expand_ch
@@ -109,7 +113,7 @@ class String
 
   def delete!(del)
     if del =~ /^\^/
-      comp=TRUE
+      comp=true
       del = $'
     end
     adel = del._expand_ch
@@ -133,7 +137,7 @@ class String
   def squeeze!(del=nil)
     if del
       if del =~ /^\^/
-	comp=TRUE
+	comp=true
 	del = $'
       end
       adel = del._expand_ch
@@ -161,7 +165,7 @@ class String
   def tr_s!(from, to)
     return self.delete!(from) if to.length == 0
     if from =~ /^\^/
-      comp=TRUE
+      comp=true
       from = $'
     end
     afrom = from._expand_ch

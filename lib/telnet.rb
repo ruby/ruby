@@ -1,33 +1,33 @@
 =begin
-$Date: 1999/06/29 09:08:51 $
+$Date: 1999/07/16 13:39:42 $
 
 == SIMPLE TELNET CLIANT LIBRARY
 
 telnet.rb
 
-Version 0.22
+Version 0.231
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
 
 === MAKE NEW TELNET OBJECT
 
-	host = Telnet.new({"Binmode" => FALSE,           # default: FALSE
+	host = Telnet.new({"Binmode" => false,           # default: false
 	                   "Host" => "localhost",        # default: "localhost"
 	                   "Output_log" => "output_log", # default: not output
 	                   "Dump_log" => "dump_log",     # default: not output
 	                   "Port" => 23,                 # default: 23
 	                   "Prompt" => /[$%#>] \z/n,     # default: /[$%#>] \z/n
-	                   "Telnetmode" => TRUE,         # default: TRUE
+	                   "Telnetmode" => true,         # default: true
 	                   "Timeout" => 10,              # default: 10
-	                     # if ignore timeout then set "Timeout" to FALSE.
+	                     # if ignore timeout then set "Timeout" to false.
 	                   "Waittime" => 0,              # default: 0
 	                   "Proxy" => proxy})            # default: nil
                                     # proxy is Telnet or TCPsocket object
 
 Telnet object has socket class methods.
 
-if set "Telnetmode" option FALSE. not TELNET command interpretation.
+if set "Telnetmode" option to false. not telnet command interpretation.
 "Waittime" is time to confirm "Prompt". There is a possibility that
 the same character as "Prompt" is included in the data, and, when
 the network or the host is very heavy, the value is enlarged.
@@ -50,9 +50,9 @@ example
 	line = host.waitfor({"Match"   => /match/,
 	                     "String"  => "string",
 	                     "Timeout" => secs})
-	                       # if ignore timeout then set "Timeout" to FALSE.
+	                       # if ignore timeout then set "Timeout" to false.
 
-if set "String" option. Match = Regexp.new(quote(string))
+if set "String" option, then Match == Regexp.new(quote("string"))
 
 
 ==== REALTIME OUTPUT
@@ -62,7 +62,7 @@ if set "String" option. Match = Regexp.new(quote(string))
 	              "String"  => "string",
 	              "Timeout" => secs}){|c| print c}
 
-of cource, set sync=TRUE or flush is necessary.
+of cource, set sync=true or flush is necessary.
 
 
 === SEND STRING AND WAIT PROMPT
@@ -80,7 +80,7 @@ of cource, set sync=TRUE or flush is necessary.
 	          "Prompt" => /[$%#>] \z/n,
 	          "Timeout" => 10}){|c| print c }
 
-of cource, set sync=TRUE or flush is necessary.
+of cource, set sync=true or flush is necessary.
 
 
 === SEND STRING
@@ -91,15 +91,15 @@ of cource, set sync=TRUE or flush is necessary.
 === TURN TELNET COMMAND INTERPRETATION
 
 	host.telnetmode        # turn on/off
-	host.telnetmode(TRUE)  # on
-	host.telnetmode(FALSE) # off
+	host.telnetmode(true)  # on
+	host.telnetmode(false) # off
 
 
 === TOGGLE NEWLINE TRANSLATION
 
-	host.binmode        # turn TRUE/FALSE
-	host.binmode(TRUE)  # no translate newline
-	host.binmode(FALSE) # translate newline
+	host.binmode        # turn true/false
+	host.binmode(true)  # no translate newline
+	host.binmode(false) # translate newline
 
 
 === LOGIN
@@ -119,7 +119,7 @@ of cource, set sync=TRUE or flush is necessary.
 	            "Prompt" => /[$%#>] \z/n,
 	            "Timeout" => 10}){|c| print c }
 
-of cource, set sync=TRUE or flush is necessary.
+of cource, set sync=true or flush is necessary.
 
 
 == EXAMPLE
@@ -138,7 +138,7 @@ of cource, set sync=TRUE or flush is necessary.
 
 	pop = Telnet.new({"Host" => "your_destination_host_here",
 	                  "Port" => 110,
-	                  "Telnetmode" => FALSE,
+	                  "Telnetmode" => false,
 	                  "Prompt" => /^\+OK/n})
 	pop.cmd("user " + "your_username_here"){|c| print c}
 	pop.cmd("pass " + "your_password_here"){|c| print c}
@@ -147,11 +147,23 @@ of cource, set sync=TRUE or flush is necessary.
 
 == HISTORY
 
+=== Version 0.231
+
+1999/07/16 13:39:42
+
+- TRUE --> true, FALSE --> false
+
+=== Version 0.23
+
+1999/07/15 22:32:09
+
+- waitfor: if end of file reached, then return nil.
+
 === Version 0.22
 
 1999/06/29 09:08:51
 
-- new, waitfor, cmd: {"Timeout" => FALSE}  # ignore timeout
+- new, waitfor, cmd: {"Timeout" => false}  # ignore timeout
 
 === Version 0.21
 
@@ -350,31 +362,31 @@ class Telnet < SimpleDelegator
   EOL  = CR + LF
 v = $-v
 $-v = false
-  VERSION = "0.22"
-  RELEASE_DATE = "$Date: 1999/06/29 09:08:51 $"
+  VERSION = "0.231"
+  RELEASE_DATE = "$Date: 1999/07/16 13:39:42 $"
 $-v = v
 
   def initialize(options)
     @options = options
-    @options["Binmode"]    = FALSE         unless @options.key?("Binmode")
+    @options["Binmode"]    = false         unless @options.key?("Binmode")
     @options["Host"]       = "localhost"   unless @options.key?("Host")
     @options["Port"]       = 23            unless @options.key?("Port")
     @options["Prompt"]     = /[$%#>] \z/n  unless @options.key?("Prompt")
-    @options["Telnetmode"] = TRUE          unless @options.key?("Telnetmode")
+    @options["Telnetmode"] = true          unless @options.key?("Telnetmode")
     @options["Timeout"]    = 10            unless @options.key?("Timeout")
     @options["Waittime"]   = 0             unless @options.key?("Waittime")
 
-    @telnet_option = { "SGA" => FALSE, "BINARY" => FALSE }
+    @telnet_option = { "SGA" => false, "BINARY" => false }
 
     if @options.key?("Output_log")
       @log = File.open(@options["Output_log"], 'a+')
-      @log.sync = TRUE
+      @log.sync = true
       @log.binmode
     end
 
     if @options.key?("Dump_log")
       @dumplog = File.open(@options["Dump_log"], 'a+')
-      @dumplog.sync = TRUE
+      @dumplog.sync = true
       @dumplog.binmode
     end
 
@@ -393,7 +405,7 @@ $-v = v
       @dumplog.write(message) if @options.key?("Dump_log")
 
       begin
-        if @options["Timeout"] == FALSE
+        if @options["Timeout"] == false
           @sock = TCPsocket.open(@options["Host"], @options["Port"])
         else
           timeout(@options["Timeout"]){
@@ -407,7 +419,7 @@ $-v = v
         @dumplog.write($!.to_s + "\n") if @options.key?("Dump_log")
         raise
       end
-      @sock.sync = TRUE
+      @sock.sync = true
       @sock.binmode
 
       message = "Connected to " + @options["Host"] + ".\n"
@@ -423,17 +435,17 @@ $-v = v
 
   def telnetmode(mode = 'turn')
     if 'turn' == mode
-      @options["Telnetmode"] = @options["Telnetmode"] ? FALSE : TRUE
+      @options["Telnetmode"] = @options["Telnetmode"] ? false : true
     else
-      @options["Telnetmode"] = mode ? TRUE : FALSE
+      @options["Telnetmode"] = mode ? true : false
     end
   end
 
   def binmode(mode = 'turn')
     if 'turn' == mode
-      @options["Binmode"] = @options["Binmode"] ? FALSE : TRUE
+      @options["Binmode"] = @options["Binmode"] ? false : true
     else
-      @options["Binmode"] = mode ? TRUE : FALSE
+      @options["Binmode"] = mode ? true : false
     end
   end
 
@@ -449,7 +461,7 @@ $-v = v
     # respond to "IAC DO x"
     str.gsub!(/([^#{IAC}]?)#{IAC}#{DO}([#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}])/no){
       if OPT_BINARY == $2
-        @telnet_option["BINARY"] = TRUE
+        @telnet_option["BINARY"] = true
         @sock.write(IAC + WILL + OPT_BINARY)
       else
         @sock.write(IAC + WONT + $2)
@@ -468,7 +480,7 @@ $-v = v
       if OPT_ECHO == $2
         @sock.write(IAC + DO + OPT_ECHO)
       elsif OPT_SGA == $2
-        @telnet_option["SGA"] = TRUE
+        @telnet_option["SGA"] = true
         @sock.write(IAC + DO + OPT_SGA)
       end
       $1
@@ -479,7 +491,7 @@ $-v = v
       if OPT_ECHO == $2
         @sock.write(IAC + DONT + OPT_ECHO)
       elsif OPT_SGA == $2
-        @telnet_option["SGA"] = FALSE
+        @telnet_option["SGA"] = false
         @sock.write(IAC + DONT + OPT_SGA)
       end
       $1
@@ -514,7 +526,7 @@ $-v = v
       prompt = options
     end
 
-    if time_out == FALSE
+    if time_out == false
       time_out = nil
     end
 
@@ -524,19 +536,27 @@ $-v = v
       unless IO::select([@sock], nil, nil, time_out)
         raise TimeOut, "timed-out; wait for the next data"
       end
-      c = @sock.sysread(1024 * 1024)
-      @dumplog.print(c) if @options.key?("Dump_log")
-      buf.concat c
-      if @options["Telnetmode"]
-        buf = preprocess(buf) 
-        if /#{IAC}.?\z/no === buf
-          next
+      begin
+        c = @sock.sysread(1024 * 1024)
+        @dumplog.print(c) if @options.key?("Dump_log")
+        buf.concat c
+        if @options["Telnetmode"]
+          buf = preprocess(buf) 
+          if /#{IAC}.?\z/no === buf
+            next
+          end 
         end 
-      end 
-      @log.print(buf) if @options.key?("Output_log")
-      yield buf if iterator?
-      line.concat(buf)
-      buf = ''
+        @log.print(buf) if @options.key?("Output_log")
+        yield buf if iterator?
+        line.concat(buf)
+        buf = ''
+      rescue EOFError # End of file reached
+        if line == ''
+          line = nil
+          yield nil if iterator?
+        end
+        break
+      end
     end
     line
   end
@@ -575,7 +595,7 @@ $-v = v
     end
 
     IO::select(nil, [@sock])
-    print(string)
+    self.print(string)
     if iterator?
       waitfor({"Prompt" => match, "Timeout" => time_out}){|c| yield c }
     else

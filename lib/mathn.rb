@@ -121,7 +121,7 @@ class Bignum
 end
 
 class Rational
-  Unify = TRUE
+  Unify = true
   
   alias power! **
 
@@ -304,6 +304,6 @@ module Math
 end
 
 class Complex
-  Unify = TRUE
+  Unify = true
 end
 
