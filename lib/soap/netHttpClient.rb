@@ -26,6 +26,7 @@ module SOAP
 class NetHttpClient
 
   attr_accessor :proxy
+  attr_accessor :no_proxy
   attr_accessor :debug_dev
   attr_reader :session_manager
 
@@ -54,6 +55,8 @@ class NetHttpClient
     @agent = agent
     @debug_dev = nil
     @session_manager = SessionManager.new
+    name = 'no_proxy'
+    @no_proxy = ENV[name] || ENV[name.upcase]
   end
 
   def reset(url)
@@ -83,8 +86,11 @@ class NetHttpClient
 private
 
   def start(url)
-    proxy_host = @proxy ? @proxy.host : nil
-    proxy_port = @proxy ? @proxy.port : nil
+    proxy_host = proxy_port = nil
+    unless no_proxy?(url)
+      proxy_host = @proxy.host
+      proxy_port = @proxy.port
+    end
     response = nil
     Net::HTTP::Proxy(proxy_host, proxy_port).start(url.host, url.port) { |http|
       if http.respond_to?(:set_debug_output)
@@ -94,6 +100,24 @@ private
       http.finish
     }
     response
+  end
+
+  NO_PROXY_HOSTS = ['localhost']
+
+  def no_proxy?(uri)
+    if !@proxy or NO_PROXY_HOSTS.include?(uri.host)
+      return true
+    end
+    if @no_proxy
+      @no_proxy.scan(/([^:,]*)(?::(\d+))?/) do |host, port|
+  	if /(\A|\.)#{Regexp.quote(host)}\z/i =~ uri.host &&
+	    (!port || uri.port == port.to_i)
+	  return true
+	end
+      end
+    else
+      false
+    end
   end
 end
 

@@ -172,6 +172,7 @@ private
       log(INFO) { "Received a request from '#{ @remote_user }@#{ @remote_host }'." }
       # SOAP request parsing.
       @request = SOAPRequest.new.init
+      @response['Status'] = 200
       req_charset = @request.charset
       req_string = @request.dump
       log(DEBUG) { "XML Request: #{req_string}" }
@@ -185,14 +186,14 @@ private
 	@response['content-type'] = @mediatype
       end
       if is_fault
-	@response.status = WEBrick::HTTPStatus::RC_INTERNAL_SERVER_ERROR
+	@response['Status'] = 500
       end
       @response.body = res_string
     rescue Exception
       res_string = create_fault_response($!)
       @response['Cache-Control'] = 'private'
       @response['content-type'] = @mediatype
-      @response.status = WEBrick::HTTPStatus::RC_INTERNAL_SERVER_ERROR
+      @response['Status'] = 500
     ensure
       buf = ''
       @response.send_response(buf)

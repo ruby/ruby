@@ -1,3 +1,16 @@
+Sat Oct  4 17:52:59 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/netHttpClient.rb: follow http-access2.  hosts which matches
+	  ENV['no_proxy'] or ENV['NO_PROXY'] is not proxyed.
+	  - [,:] separated. ("ruby-lang.org:rubyist.net")
+	  - no regexp. (give "ruby-lang.org", not "*.ruby-lang.org")
+	  - if you want specify hot by IP address, give full address.
+	    ("192.168.1.1, 192.168.1.2")
+
+	* lib/soap/rpc/cgistub.rb: return "Status: XXX MMM" line.
+
+	* test/runner.rb: give testsuite name.
+
 Sat Oct  4 14:59:51 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (initialize): raise ArgumentError if argument has

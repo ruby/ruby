@@ -8,7 +8,7 @@ Release = rcsid[3].freeze
 
 class BulkTestSuite < Test::Unit::TestSuite
   def self.suite
-    suite = Test::Unit::TestSuite.new
+    suite = Test::Unit::TestSuite.new(self.name)
     ObjectSpace.each_object(Class) do |klass|
       suite << klass.suite if (Test::Unit::TestCase > klass)
     end
