@@ -1,3 +1,8 @@
+Mon Dec 27 16:54:05 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509name.c (Init_ossl_x509name): should use
+	  rb_hash_new to get exactly a Hash. fix [ruby-dev:25325].
+
 Mon Dec 27 15:29:12 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb (cp_r): tested wrong file name.

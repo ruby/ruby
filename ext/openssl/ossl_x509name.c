@@ -326,7 +326,8 @@ Init_ossl_x509name()
     ptrstr = INT2NUM(V_ASN1_PRINTABLESTRING);
     ia5str = INT2NUM(V_ASN1_IA5STRING);
     rb_define_const(cX509Name, "DEFAULT_OBJECT_TYPE", utf8str);
-    hash = rb_funcall(rb_cHash, rb_intern("new"), 1, DEFAULT_OBJECT_TYPE);
+    hash = rb_hash_new();
+    RHASH(hash)->ifnone = utf8str;
     rb_hash_aset(hash, rb_str_new2("C"), ptrstr);
     rb_hash_aset(hash, rb_str_new2("countryName"), ptrstr);
     rb_hash_aset(hash, rb_str_new2("serialNumber"), ptrstr);
