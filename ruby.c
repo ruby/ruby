@@ -726,7 +726,7 @@ proc_options(argc, argv)
 		    script = dln_find_file(argv[0], path);
 		}
 		if (!script) {
-		    script = dln_find_file(argv[0], getenv("PATH"));
+		    script = dln_find_file(argv[0], getenv(PATH_ENV));
 		}
 		if (!script) script = argv[0];
 	    }

@@ -1591,11 +1591,7 @@ dln_find_exe(fname, path)
     const char *path;
 {
     if (!path) {
-#if defined(__human68k__)
-	path = getenv("path");
-#else
-	path = getenv("PATH");
-#endif
+	path = getenv(PATH_ENV);
     }
 
     if (!path) {

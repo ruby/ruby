@@ -166,6 +166,16 @@ flush_register_windows(void)
 #define PATH_SEP_CHAR PATH_SEP[0]
 
 #if defined(__human68k__)
+#define PATH_ENV "path"
+#else
+#define PATH_ENV "PATH"
+#endif
+
+#if defined(DOSISH) || !defined(__human68k__)
+#define ENV_IGNORECASE
+#endif
+
+#if defined(__human68k__)
 #undef HAVE_RANDOM
 #undef HAVE_SETITIMER
 #endif

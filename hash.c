@@ -1017,10 +1017,10 @@ env_delete(obj, name)
 	VALUE value = env_str_new2(val);
 
 	ruby_setenv(nam, 0);
-#ifdef DOSISH
-	if (strcasecmp(nam, "PATH") == 0) {
+#ifdef ENV_IGNORECASE
+	if (strcasecmp(nam, PATH_ENV) == 0) {
 #else
-	if (strcmp(nam, "PATH") == 0) {
+	if (strcmp(nam, PATH_ENV) == 0) {
 #endif
 	    path_tainted = 0;
 	}
@@ -1053,10 +1053,10 @@ rb_f_getenv(obj, name)
     }
     env = getenv(nam);
     if (env) {
-#ifdef DOSISH
-	if (strcasecmp(nam, "PATH") == 0 && !rb_env_path_tainted())
+#ifdef ENV_IGNORECASE
+	if (strcasecmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #else
-	if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
+	if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #endif
 	{
 	    VALUE str = rb_str_new2(env);
@@ -1096,10 +1096,10 @@ env_fetch(argc, argv)
 	}
 	return if_none;
     }
-#ifdef DOSISH
-    if (strcasecmp(nam, "PATH") == 0 && !rb_env_path_tainted())
+#ifdef ENV_IGNORECASE
+    if (strcasecmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #else
-    if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
+    if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #endif
 	return rb_str_new2(env);
     return env_str_new2(env);
@@ -1116,7 +1116,7 @@ int
 rb_env_path_tainted()
 {
     if (path_tainted < 0) {
-	path_tainted_p(getenv("PATH"));
+	path_tainted_p(getenv(PATH_ENV));
     }
     return path_tainted;
 }
@@ -1131,8 +1131,8 @@ envix(nam)
     env = GET_ENVIRON(environ);
     for (i = 0; env[i]; i++) {
 	if (
-#ifdef WIN32
-	    strnicmp(env[i],nam,len) == 0
+#ifdef ENV_IGNORECASE
+	    strncasecmp(env[i],nam,len) == 0
 #else
 	    memcmp(env[i],nam,len) == 0
 #endif
@@ -1148,7 +1148,7 @@ ruby_setenv(name, value)
     const char *name;
     const char *value;
 {
-#if defined(WIN32) && !defined(__CYGWIN32__)
+#if defined(_WIN32)
     /* The sane way to deal with the environment.
      * Has these advantages over putenv() & co.:
      *  * enables us to store a truly empty value in the
@@ -1259,7 +1259,11 @@ env_aset(obj, nm, val)
 	rb_raise(rb_eArgError, "bad environment variable value");
 
     ruby_setenv(name, value);
-    if (strcmp(name, "PATH") == 0) {
+#ifdef ENV_IGNORECASE
+    if (strcasecmp(name, PATH_ENV) == 0) {
+#else
+    if (strcmp(name, PATH_ENV) == 0) {
+#endif
 	if (OBJ_TAINTED(val)) {
 	    /* already tainted, no check */
 	    path_tainted = 1;
@@ -1580,7 +1584,11 @@ env_has_value(dmy, value)
     while (*env) {
 	char *s = strchr(*env, '=')+1;
 	if (s) {
+#ifdef ENV_IGNORECASE
+	    if (strncasecmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
+#else
 	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
+#endif
 		FREE_ENVIRON(environ);
 		return Qtrue;
 	    }
@@ -1603,7 +1611,11 @@ env_index(dmy, value)
     while (*env) {
 	char *s = strchr(*env, '=')+1;
 	if (s) {
+#ifdef ENV_IGNORECASE
+	    if (strncasecmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
+#else
 	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
+#endif
 		str = env_str_new(*env, s-*env-1);
 		FREE_ENVIRON(environ);
 		return str;
