@@ -931,7 +931,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 	    if (ISSPACE(*prog)) {
 		len = prog - cmd;
 		do ++prog; while (ISSPACE(*prog));
-		if (!*prog) break;
+		if (!*prog--) break;
 	    }
 	    else {
 		len = 0;

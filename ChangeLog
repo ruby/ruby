@@ -1,3 +1,8 @@
+Mon Nov 29 13:13:13 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (CreateChild): push back the last space before next
+	  loop because CharNext() eats it.
+
 Mon Nov 29 01:18:18 2004  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (rb_io_check_writable): call io_seek regardless of
