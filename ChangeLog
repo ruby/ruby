@@ -1,3 +1,10 @@
+Sun Nov 18 19:37:55 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y: needless conditionals.
+
+	* parse.y (parse_regx): parse error at unterminated regex /#{.
+	  (ruby-bugs-ja:PR#142)
+
 Thu Nov 15 15:29:39 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* array.c (rb_ary_join): non-nil separator must be converted to

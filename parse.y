@@ -442,9 +442,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    }
 			    else {
 				$$ = n;
-				if ($$) {
-				    $$->nd_value = call_op(gettable($1),$2,1,$3);
-				}
+				$$->nd_value = call_op(gettable($1),$2,1,$3);
 			    }
 			    fixpos($$, $3);
 			}
@@ -789,9 +787,7 @@ arg		: lhs '=' arg
 			    }
 			    else {
 				$$ = n;
-				if ($$) {
-				    $$->nd_value = call_op(gettable($1),$2,1,$3);
-				}
+				$$->nd_value = call_op(gettable($1),$2,1,$3);
 			    }
 			    fixpos($$, $3);
 			}
@@ -2518,7 +2514,7 @@ parse_regx(term, paren)
 	switch (c) {
 	  case '#':
 	    list = str_extend(list, term);
-	    if (list == (NODE*)-1) return 0;
+	    if (list == (NODE*)-1) goto unterminated;
 	    continue;
 
 	  case '\\':
