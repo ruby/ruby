@@ -1261,7 +1261,7 @@ rb_gc()
 	ucontext_t ctx;
 	VALUE *top, *bot;
 	getcontext(&ctx);
-	rb_gc_mark_locations((VALUE*)&ctx.uc_mcontext,
+	mark_locations_array((VALUE*)&ctx.uc_mcontext,
 			     ((size_t)(sizeof(VALUE)-1 + sizeof ctx.uc_mcontext)/sizeof(VALUE)));
 	bot = (VALUE*)__libc_ia64_register_backing_store_base;
 	top = (VALUE*)ctx.uc_mcontext.sc_ar_bsp;
