@@ -20,6 +20,8 @@ module Buffering
   BLOCK_SIZE = 1024*16
 
   def initialize(*args)
+    @eof = false
+    @rbuffer = ""
     @sync = @io.sync
   end
 
@@ -29,7 +31,6 @@ module Buffering
   private
 
   def fill_rbuff
-    @rbuffer = "" unless defined? @rbuffer
     begin
       @rbuffer << self.sysread(BLOCK_SIZE)
     rescue Errno::EAGAIN
@@ -40,7 +41,7 @@ module Buffering
   end
 
   def consume_rbuff(size=nil)
-    if @rbuffer.size == 0
+    if @rbuffer.empty?
       nil
     else
       size = @rbuffer.size unless size
@@ -61,8 +62,6 @@ module Buffering
         return ""
       end
     end
-    fill_rbuff unless defined? @rbuffer
-    @eof ||= nil
     until @eof
       break if size && size <= @rbuffer.size
       fill_rbuff
@@ -84,7 +83,7 @@ module Buffering
         return ""
       end
     end
-    if !defined?(@rbuffer) || @rbuffer.size == 0
+    if @rbuffer.empty?
       begin
         return sysread(maxlen, buf)
       rescue Errno::EAGAIN
@@ -101,9 +100,7 @@ module Buffering
   end
 
   def gets(eol=$/)
-    fill_rbuff unless defined? @rbuffer
     idx = @rbuffer.index(eol)
-    @eof ||= nil
     until @eof
       break if idx
       fill_rbuff
@@ -158,9 +155,8 @@ module Buffering
   end
 
   def eof?
-    @eof ||= nil
-    fill_rbuff if !@eof && (!defined?(@rbuffer) || @rbuffer.size == 0)
-    @eof && @rbuffer.size == 0
+    fill_rbuff if !@eof && @rbuffer.empty?
+    @eof && @rbuffer.empty?
   end
   alias eof eof?
 
