@@ -95,6 +95,8 @@ $LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest %s -I#{$hdrdir} %s #{CFLAGS} %s #{CO
 $CC = "#{CONFIG['CC']} -c #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} %s #{CFLAGS} %s %s conftest.c"
 $CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} %s #{CFLAGS} %s %s %s conftest.c"
 
+$INSTALLFILES = nil unless defined? $INSTALLFILES
+
 def rm_f(*files)
   targets = []
   for file in files
