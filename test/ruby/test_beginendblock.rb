@@ -48,7 +48,7 @@ EOF
     erroutpath = errout.path
     system("#{q(ruby)} #{q(launcherpath)} #{q(erroutpath)}")
     expected = <<EOW
-endblockwarn.rb:16: warning: END in method; use at_exit
+endblockwarn.rb:2: warning: END in method; use at_exit
 (eval):2: warning: END in method; use at_exit
 EOW
     assert_equal(expected, File.read(erroutpath))
