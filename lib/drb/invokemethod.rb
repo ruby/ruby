@@ -1,4 +1,3 @@
-
 # for ruby-1.8.0
 
 module DRb
@@ -6,10 +5,6 @@ module DRb
     module InvokeMethod18Mixin
       def block_yield(x)
         block_value = @block.call(*x)
-      end
-      
-      def rescue_break(err)
-        return :break, err.exit_value
       end
       
       def perform_with_block
@@ -21,12 +16,11 @@ module DRb
             jump_error = $!
           end
           if jump_error
-            reason, jump_value = rescue_local_jump(jump_error)
-            case reason
+            case jump_error.reason
             when :retry
               retry
             when :break
-              break(jump_value)
+              break(jump_error.exit_value)
             else
               raise jump_error
             end
