@@ -57,14 +57,12 @@ fsdbm_close(obj)
 }
 
 static VALUE
-fsdbm_s_new(argc, argv, klass)
+fsdbm_alloc(argc, argv, klass)
     int argc;
     VALUE *argv;
     VALUE klass;
 {
-    VALUE obj = Data_Wrap_Struct(klass, 0, free_sdbm, 0);
-    rb_obj_call_init(obj, argc, argv);
-    return obj;
+    return Data_Wrap_Struct(klass, 0, free_sdbm, 0);
 }
 
 static VALUE
@@ -719,7 +717,7 @@ Init_sdbm()
     rb_eDBMError = rb_define_class("SDBMError", rb_eStandardError);
     rb_include_module(rb_cDBM, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cDBM, "new", fsdbm_s_new, -1);
+    rb_define_alloc_func(rb_cDBM, fsdbm_alloc);
     rb_define_singleton_method(rb_cDBM, "open", fsdbm_s_open, -1);
 
     rb_define_method(rb_cDBM, "initialize", fsdbm_initialize, -1);

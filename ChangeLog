@@ -1,10 +1,10 @@
-Fri Dec 20 20:19:49 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Fri Dec 20 20:29:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* ext/curses/curses.c, ext/digest/digest.c, ext/dl/handle.c,
-	  ext/dl/ptr.c, ext/dl/sym.c, ext/gdbm/gdbm.c, ext/iconv/iconv.c,
-	  ext/stringio/stringio.c, ext/strscan/strscan.c,
-	  ext/tcltklib/tcltklib.c, ext/win32ole/win32ole.c:
-	  use rb_define_alloc_func().
+	* ext/curses/curses.c, ext/dbm/dbm.c, ext/digest/digest.c,
+	  ext/dl/handle.c, ext/dl/ptr.c, ext/dl/sym.c, ext/gdbm/gdbm.c,
+	  ext/iconv/iconv.c, ext/sdbm/init.c, ext/stringio/stringio.c,
+	  ext/strscan/strscan.c, ext/tcltklib/tcltklib.c,
+	  ext/win32ole/win32ole.c: use rb_define_alloc_func().
 
 Fri Dec 20 18:29:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
