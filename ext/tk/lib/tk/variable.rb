@@ -961,6 +961,13 @@ class TkVarAccess<TkVariable
     @id = varname
     TkVar_ID_TBL[@id] = self
 
+    @def_default = false
+    @default_val = nil
+
+    @trace_var  = nil
+    @trace_elem = nil
+    @trace_opts = nil
+
     # teach Tk-ip that @id is global var
     INTERP._invoke_without_enc('global', @id)
 
