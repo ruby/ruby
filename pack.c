@@ -1855,25 +1855,56 @@ utf8_to_uv(p, lenp)
     char *p;
     long *lenp;
 {
-    int c = (*p++)&0xff;
-    unsigned long uv;
-    long n = 1;
+    int c = *p++ & 0xff;
+    unsigned long uv = c;
+    long n;
 
-    if (c < 0xc0) n = 1;
-    else if (c < 0xe0) n = 2;
-    else if (c < 0xf0) n = 3;
-    else if (c < 0xf8) n = 4;
-    else if (c < 0xfc) n = 5;
-    else if (c < 0xfe) n = 6;
-    else if (c == 0xfe) n = 7;
-    if (n > *lenp) return 0;
+    if (!(uv & 0x80)) {
+	*lenp = 1;
+        return uv;
+    }
+    if (!(uv & 0x40)) {
+	rb_warning("malformed UTF-8 character");
+	*lenp = 1;
+        return uv;
+    }
+
+    if      (!(uv & 0x20)) { n = 2; uv &= 0x1f; }
+    else if (!(uv & 0x10)) { n = 3; uv &= 0x0f; }
+    else if (!(uv & 0x08)) { n = 4; uv &= 0x07; }
+    else if (!(uv & 0x04)) { n = 5; uv &= 0x03; }
+    else if (!(uv & 0x02)) { n = 6; uv &= 0x01; }
+    else if (!(uv & 0x01)) { n = 7;  uv = 0; }
+    else                   { n = 13; uv = 0; }
+    if (n > *lenp) {
+	rb_warning("malformed UTF-8 character (expected %d bytes, given %d bytes)",
+		   n, *lenp);
+	return 0xfffd;
+    }
     *lenp = n--;
 
-    uv = c;
     if (n != 0) {
-	uv &= (1<<(BYTEWIDTH-2-n)) - 1;
 	while (n--) {
-	    uv = uv << 6 | (*p++ & ((1<<6)-1));
+	    c = *p++ & 0xff;
+	    if ((c & 0xc0) != 0x80) {
+		rb_warning("malformed UTF-8 character");
+		*lenp -= n + 1;
+		return 0xfffd;
+	    }
+	    else {
+		c &= 0x3f;
+		if (uv == 0 && c == 0) {
+		    int i;
+
+		    for (i=0; n-i>0 && (p[i] & 0x3f) == 0; i++)
+			;
+		    rb_warning("redundant UTF-8 sequence (skip %d bytes)", i+1);
+		    n -= i;
+		    p += i;
+		    continue;
+		}
+		uv = uv << 6 | c;
+	    }
 	}
     }
     return uv;

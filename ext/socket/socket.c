@@ -2922,4 +2922,19 @@ Init_socket()
 #ifdef NI_DGRAM
     sock_define_const("NI_DGRAM", NI_DGRAM);
 #endif
+#ifdef SHUT_RD
+    sock_define_const("SHUT_RD", SHUT_RD);
+#else
+    sock_define_const("SHUT_RD", 0);
+#endif
+#ifdef SHUT_WR
+    sock_define_const("SHUT_WR", SHUT_WR);
+#else
+    sock_define_const("SHUT_WR", 1);
+#endif
+#ifdef SHUT_RDWR
+    sock_define_const("SHUT_RDWR", SHUT_RDWR);
+#else
+    sock_define_const("SHUT_RDWR", 2);
+#endif
 }
