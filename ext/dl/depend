@@ -1,0 +1,13 @@
+DISTCLEANFILES = $(srcdir)/callback.h
+
+cfunc.o: cfunc.c dl.h
+
+cptr.o: cptr.c dl.h
+
+handle.o: handle.c dl.h
+
+dl.o: dl.c dl.h callback.h
+
+callback.h: $(srcdir)/mkcallback.rb dl.h
+	@echo "generating callback.h"
+	@$(RUBY) $(srcdir)/mkcallback.rb $(srcdir)/dl.h > $@
