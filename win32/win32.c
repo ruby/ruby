@@ -1828,8 +1828,17 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR)
+    if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR) {
 	errno = WSAGetLastError();
+	switch (errno) {
+	case WSAEINTR:
+	    errno = EINTR;
+	    break;
+	case WSAENOTSOCK:
+	    errno = EBADF;
+	    break;
+	}
+    }
     return r;
 }
 

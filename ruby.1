@@ -33,14 +33,14 @@ ruby - Interpreted object-oriented scripting language
 .BI -e "command"\c
  ]  [ \c
 .BI -F "pattern"\c
- ] 
+ ]
        [ \c
 .BI -i "[extension]"\c
  ]  [ \c
 .BI -I "dir"\c
  ] [ \c
 .BI -r "library"\c
- ]  
+ ]
        [ \c
 .BI -S \c
  ]  [ \c
@@ -49,19 +49,19 @@ ruby - Interpreted object-oriented scripting language
 .BI -x "[directory]"\c
  ]  [ \c
 .BI -X "directory"\c
- ]  [ \c
-.BI -y \c
-]
+ ]
        [ \c
+.BI -y \c
+] [ \c
 .BI -- \c
  ] [ programfile ]  [ argument ] ...
-                                       
+
 .SH PREFACE
 Ruby is an interpreted scripting language for quick and easy
 object-oriented programming.  It has many features to process text
 files and to do system management tasks (as in Perl).  It is simple,
 straight-forward, and extensible.
-.PP   
+.PP
 If you want a language for easy object-oriented programming, or you
 don't like the Perl ugliness, or you do like the concept of lisp, but
 don't like too much parentheses, Ruby may be the language of your
@@ -136,7 +136,7 @@ interpreter on-the-fly.
 .SH COMMAND LINE OPTIONS
 Ruby interpreter accepts following command-line options (switches).
 They are quite similar to those of Perl.
-.TP   
+.TP
 .B -0[octal]
 specifies the input record separator ($/) as an octal number. If no
 digit is given, the null character is taken as the separator.  Other
@@ -149,7 +149,7 @@ turns on auto-split mode when used with -n or -p. In auto-split
 mode, Ruby executes
 .nf
 .ne 1
-\&    $F = $_.split 
+\&    $F = $_.split
 at beginning of each loop.
 .fi
 .TP
@@ -165,7 +165,7 @@ prints the copyright notice.
 turns on debug mode. $DEBUG will set true.
 .TP
 .B -e command
-specifies script from command-line while telling Ruby to not 
+specifies script from command-line while telling Ruby to not
 search argv for script filenames.
 .TP
 .B -F pattern
@@ -206,7 +206,7 @@ causes Ruby to assume the following loop around your script,
 which makes it iterate over filename arguments somewhat like
 sed -n or awk.
 .nf
-.ne 3          
+.ne 3
 \&    while gets
 \&      ...
 \&    end
@@ -232,7 +232,7 @@ any filename arguments (or before a --). Any switches found there are
 removed from ARGV and set the corresponding variable in the script.
 example:
 .nf
-.ne 3          
+.ne 3
 \&    #! /usr/local/bin/ruby -s
 \&    # prints "true" if invoked with `-xyz' switch.
 \&    print "true\en" if $xyz
@@ -244,7 +244,7 @@ script, unless if its name begins with a slash. This is used to
 emulate #! on machines that don't support it, in the following
 manner:
 .nf
-.ne 2          
+.ne 2
 \&    #! /usr/local/bin/ruby
 \&    # This line makes the next one a comment in ruby \e
 \&      exec /usr/local/bin/ruby -S $0 $*
@@ -262,7 +262,7 @@ messages if this variable is true. If this switch is given, and no
 other switches are present, Ruby quits after printing its version.
 .TP
 .B -T[level]
-turns on taint checks at the specified level (default 1).  
+turns on taint checks at the specified level (default 1).
 .TP
 .B --version
 prints the version of Ruby interpreter.
@@ -274,7 +274,7 @@ beginning. It set the `$VERBOSE' variable to true.
 .B -x[directory]
 tells Ruby that the script is embedded in a message. Leading garbage
 will be discarded until the first that starts with "#!"  and contains
-the string, "ruby". Any meaningful switches on that line will applied. 
+the string, "ruby". Any meaningful switches on that line will applied.
 The end of script must be specified with either EOF, ^D (control-D),
 ^Z (control-Z), or reserved word __END__.If the directory name is
 specified, Ruby will switch to that directory before executing script.

@@ -2186,7 +2186,7 @@ re_compile_pattern(pattern, size, bufp)
 	pending_exact = b;
 	BUFPUSH(0);
       }
-      if (had_num_literal && current_mbctype) {
+      if (had_num_literal || c == 0xff) {
 	BUFPUSH(0xff);
 	(*pending_exact)++;
 	had_num_literal = 0;

@@ -36,7 +36,7 @@ You can get it by anonymous CVS.  How to check out is:
 There is a mailing list to talk about Ruby.
 To subscribe this list, please send the following phrase
 
-        subscribe Your-Last-Name Your-First-Name 
+	subscribe YourFirstName YourFamilyName
 e.g.
         subscribe Joseph Smith
 

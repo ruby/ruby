@@ -1,11 +1,11 @@
 =begin
-$Date: 1999/09/14 23:09:05 $
+$Date: 1999/09/17 17:41:41 $
 
 == SIMPLE TELNET CLIANT LIBRARY
 
 telnet.rb
 
-Version 0.30
+Version 0.40
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -153,6 +153,12 @@ of cource, set sync=true or flush is necessary.
 
 
 == HISTORY
+
+=== Version 0.40
+
+1999/09/17 17:41:41
+
+- bug fix: preprocess method
 
 === Version 0.30
 
@@ -392,8 +398,8 @@ class Telnet < SimpleDelegator
   EOL  = CR + LF
 v = $-v
 $-v = false
-  VERSION = "0.30"
-  RELEASE_DATE = "$Date: 1999/09/14 23:09:05 $"
+  VERSION = "0.40"
+  RELEASE_DATE = "$Date: 1999/09/17 17:41:41 $"
 $-v = v
 
   def initialize(options)
@@ -488,52 +494,46 @@ $-v = v
     # combine EOL into "\n"
     str.gsub!(/#{EOL}/no, "\n") unless @options["Binmode"]
 
-    # respond to "IAC DO x"
-    str.gsub!(/([^#{IAC}]?)#{IAC}#{DO}([#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}])/no){
-      if OPT_BINARY == $2
-        @telnet_option["BINARY"] = true
-        @sock.write(IAC + WILL + OPT_BINARY)
-      else
-        @sock.write(IAC + WONT + $2)
+    str.gsub!(/#{IAC}(
+                 #{IAC}|
+                 #{AYT}|
+                 [#{DO}#{DONT}#{WILL}#{WONT}]
+                   [#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}]
+               )/xno){
+      if    IAC == $1         # handle escaped IAC characters
+        IAC
+      elsif AYT == $1         # respond to "IAC AYT" (are you there)
+        @sock.write("nobody here but us pigeons" + EOL)
+        ''
+      elsif DO[0] == $1[0]    # respond to "IAC DO x"
+        if OPT_BINARY[0] == $1[1]
+          @telnet_option["BINARY"] = true
+          @sock.write(IAC + WILL + OPT_BINARY)
+        else
+          @sock.write(IAC + WONT + $1[1..1])
+        end
+        ''
+      elsif DONT[0] == $1[0]  # respond to "IAC DON'T x" with "IAC WON'T x"
+        @sock.write(IAC + WONT + $1[1..1])
+        ''
+      elsif WILL[0] == $1[0]  # respond to "IAC WILL x"
+        if    OPT_ECHO[0] == $1[1]
+          @sock.write(IAC + DO + OPT_ECHO)
+        elsif OPT_SGA[0]  == $1[1]
+          @telnet_option["SGA"] = true
+          @sock.write(IAC + DO + OPT_SGA)
+        end
+        ''
+      elsif WONT[0] == $1[0]  # respond to "IAC WON'T x"
+        if    OPT_ECHO[0] == $1[1]
+          @sock.write(IAC + DONT + OPT_ECHO)
+        elsif OPT_SGA[0]  == $1[1]
+          @telnet_option["SGA"] = false
+          @sock.write(IAC + DONT + OPT_SGA)
+        end
+        ''
       end
-      $1
     }
-
-    # respond to "IAC DON'T x" with "IAC WON'T x"
-    str.gsub!(/([^#{IAC}]?)#{IAC}#{DONT}([#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}])/no){
-      @sock.write(IAC + WONT + $2)
-      $1
-    }
-
-    # respond to "IAC WILL x"
-    str.gsub!(/([^#{IAC}]?)#{IAC}#{WILL}([#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}])/no){
-      if OPT_ECHO == $2
-        @sock.write(IAC + DO + OPT_ECHO)
-      elsif OPT_SGA == $2
-        @telnet_option["SGA"] = true
-        @sock.write(IAC + DO + OPT_SGA)
-      end
-      $1
-    }
-
-    # respond to "IAC WON'T x"
-    str.gsub!(/([^#{IAC}]?)#{IAC}#{WONT}([#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}])/no){
-      if OPT_ECHO == $2
-        @sock.write(IAC + DONT + OPT_ECHO)
-      elsif OPT_SGA == $2
-        @telnet_option["SGA"] = false
-        @sock.write(IAC + DONT + OPT_SGA)
-      end
-      $1
-    }
-
-    # respond to "IAC AYT" (are you there)
-    str.gsub!(/([^#{IAC}]?)#{IAC}#{AYT}/no){
-      @sock.write("nobody here but us pigeons" + EOL)
-      $1
-    }
-
-    str.gsub!(/#{IAC}#{IAC}/no, IAC) # handle escaped IAC characters
 
     str
   end # preprocess

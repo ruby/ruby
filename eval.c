@@ -3592,6 +3592,8 @@ rb_f_missing(argc, argv, obj)
     char *file = ruby_sourcefile;
     int   line = ruby_sourceline;
 
+    if (argc == 0) rb_raise(rb_eArgError, "no id given");
+
     id = FIX2INT(argv[0]);
     argc--; argv++;
 

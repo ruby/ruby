@@ -1,6 +1,15 @@
-Fri Sep 17 01:04:25 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Sat Sep 18 13:45:43 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* stable version 1.4.2 released.
+
+Fri Sep 17 23:24:17 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* eval.c (rb_f_missing): dumped core if no argument given.
+
+Fri Sep 17 23:21:06 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (myselect): translate WSAEINTR, WSAENOTSOCK into
+	  UNIX errno constants.
 
 Fri Sep 17 00:52:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -177,7 +177,7 @@ module Exception2MessageMapper
   def E2MM.e2mm_message(klass, exp)
     for c in klass.ancestors
       if mes = @MessageMap[[c,exp]]
-	p mes
+	#p mes
 	m = klass.instance_eval('"' + mes + '"')
 	return m
       end
