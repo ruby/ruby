@@ -1,3 +1,8 @@
+Wed Dec 31 11:20:34 2003    <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_methods): Make
+	  file referenced in "// in sss.c" relative to current file.
+
 Wed Dec 31 11:17:37 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb: Fix problem when

@@ -133,6 +133,7 @@ module RDoc
       @options = options
       @top_level = top_level
       @classes = Hash.new
+	  @file_dir = File.dirname(file_name)
     end
 
     # Extract the classes/modules and methods from a C file
@@ -326,7 +327,8 @@ module RDoc
         end
 
         if source_file
-          body = (@@known_bodies[source_file] ||= File.read(source_file))
+		  file_name = File.join(@file_dir, source_file)
+          body = (@@known_bodies[source_file] ||= File.read(file_name))
         else
           body = @body
         end
