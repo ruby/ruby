@@ -2067,6 +2067,7 @@ is_absolute_path(path)
     return 0;
 }
 
+#ifndef DOSISH
 static int
 path_check_1(path)
     char *path;
@@ -2091,7 +2092,7 @@ path_check_1(path)
     for (;;) {
 	if (stat(path, &st) == 0 && (st.st_mode & 002)) {
            if (p) *p = '/';
-	    return 0;
+	   return 0;
 	}
 	s = strrchr(path, '/');
 	if (p) *p = '/';
@@ -2100,11 +2101,13 @@ path_check_1(path)
 	*p = '\0';
     }
 }
+#endif
 
 int
 rb_path_check(path)
     char *path;
 {
+#ifndef DOSISH
     char *p, *pend;
     const char sep = PATH_SEP_CHAR;
 
@@ -2127,6 +2130,7 @@ rb_path_check(path)
 	p = pend + 1;
 	pend = strchr(p, sep);
     }
+#endif
     return 1;
 }
 

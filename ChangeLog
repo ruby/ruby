@@ -1,3 +1,8 @@
+Fri Sep  6 05:48:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (rb_path_check): nothing to check under DOSISH.
+	  [ruby-list:35772]
+
 Fri Sep  6 05:11:48 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* gc.c (rb_gc): should mark parser.
