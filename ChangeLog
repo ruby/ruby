@@ -1,4 +1,7 @@
-Mon Mar 25 17:18:48 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Mon Mar 25 17:49:41 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* regex.c (mbc_startpos_func): VC6 seems to be unable to
+	  understand forward declaration for static variables.
 
 	* dir.c (rb_push_glob): local variable 'maxnest' was
 	  uninitialized.

@@ -469,7 +469,16 @@ re_set_syntax(syntax)
  ((current_mbctype != MBCTYPE_UTF8) ? ((c<0x100) ? (c) : (((c)>>8)&0xff)) : utf8_firstbyte(c))
 
 typedef unsigned int (*mbc_startpos_func_t) _((const char *string, unsigned int pos));
-static const mbc_startpos_func_t mbc_startpos_func[];
+
+static unsigned int asc_startpos _((const char *string, unsigned int pos));
+static unsigned int euc_startpos _((const char *string, unsigned int pos));
+static unsigned int sjis_startpos _((const char *string, unsigned int pos));
+static unsigned int utf8_startpos _((const char *string, unsigned int pos));
+
+static const mbc_startpos_func_t mbc_startpos_func[4] = {
+  asc_startpos, euc_startpos, sjis_startpos, utf8_startpos
+};
+
 #define mbc_startpos(start, pos) (*mbc_startpos_func[current_mbctype])((start), (pos))
 
 static unsigned int
@@ -4499,7 +4508,6 @@ re_mbcinit(mbctype)
 #define mbc_isfirst(t, c) (t)[(unsigned char)(c)]
 #define mbc_len(t, c)     ((t)[(unsigned char)(c)]+1)
 
-static unsigned int asc_startpos _((const char *string, unsigned int pos));
 static unsigned int
 asc_startpos(string, pos)
      const char *string;
@@ -4510,7 +4518,6 @@ asc_startpos(string, pos)
 
 #define euc_islead(c)  ((unsigned char)((c) - 0xa1) > 0xfe - 0xa1)
 #define euc_mbclen(c)  mbc_len(mbctab_euc, (c))
-static unsigned int euc_startpos _((const char *string, unsigned int pos));
 static unsigned int
 euc_startpos(string, pos)
      const char *string;
@@ -4531,7 +4538,6 @@ euc_startpos(string, pos)
 #define sjis_isfirst(c) mbc_isfirst(mbctab_sjis, (c))
 #define sjis_istrail(c) mbctab_sjis_trail[(unsigned char)(c)]
 #define sjis_mbclen(c)  mbc_len(mbctab_sjis, (c))
-static unsigned int sjis_startpos _((const char *string, unsigned int pos));
 static unsigned int
 sjis_startpos(string, pos)
      const char *string;
@@ -4556,7 +4562,6 @@ sjis_startpos(string, pos)
 
 #define utf8_islead(c)  ((unsigned char)((c) & 0xc0) != 0x80)
 #define utf8_mbclen(c)  mbc_len(mbctab_utf8, (c))
-static unsigned int utf8_startpos _((const char *string, unsigned int pos));
 static unsigned int
 utf8_startpos(string, pos)
      const char *string;
@@ -4572,10 +4577,6 @@ utf8_startpos(string, pos)
   }
   return i + w;
 }
-
-static const mbc_startpos_func_t mbc_startpos_func[4] = {
-  asc_startpos, euc_startpos, sjis_startpos, utf8_startpos
-};
 
 /*
   vi: sw=2 ts=8

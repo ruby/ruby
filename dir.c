@@ -909,7 +909,7 @@ rb_push_glob(str, flags)
     char *p, *pend;
     char *buf;
     char *t;
-    int nest, maxnest = 0;
+    int nest, maxnest;
     int noescape = flags & FNM_NOESCAPE;
     VALUE ary;
 
@@ -926,7 +926,7 @@ rb_push_glob(str, flags)
 
     while (p < pend) {
 	t = buf;
-	nest = 0;
+	nest = maxnest = 0;
 	while (p < pend && isdelim(*p)) p++;
 	while (p < pend && !isdelim(*p)) {
 	    if (*p == '{') nest++, maxnest++;
