@@ -290,7 +290,7 @@ class Complex < Numeric
   end
   
   def hash
-    @real ^ @image
+    @real.hash ^ @image.hash
   end
   
   def inspect

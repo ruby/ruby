@@ -1,5 +1,6 @@
 Language Spec.
 
+- Class#allocate - basicNew
 * operator !! for rescue. ???
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -25,11 +26,13 @@ Language Spec.
 * unify == and eql? again
 * to_i returns nil if str contains no digit.
 * raise exception by `` error
-* jar like combined library package.
+* jar like combined library package. -> RubyGems?
 * resumable Exception via Exception#resume.
 * method combination, e.g. before, after, around, etc.
 * .. or something like defadvice in Emacs.
-* Class#allocate - basicNew
+* property - for methods, or for objects in general.
+* in modifier, to annotate, or to encourage assertion.
+* selector namespace - something like generic-flet in CLOS, to help RubyBehevior
 
 Hacking Interpreter
 
@@ -49,6 +52,7 @@ Hacking Interpreter
 * warn for inconsistent local variable usage (lv m and method m at the same time). 
 * MicroRuby
 * Built-in Interactive Ruby.
+* Parser API
 * trap every method invocation, which can be enabled by e.g. trap_call :method.
 * unify Errno exceptions of same errno, or new exception comparison scheme.
 * 2.times{|i| if i==0 then a = 15 else puts eval("a") end} should print nil.
@@ -89,6 +93,7 @@ Standard Libraries
 * warning framework (warn, warning for Ruby level)
 * marshal should not depend on sprintf/strtod (works bad for locale).
 * ternary arg pow: a.pow(b,c) == a**b%c
+* new caller(), e.g. call_stack; needs better name.
 
 Extension Libraries
 

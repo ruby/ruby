@@ -595,7 +595,9 @@ rb_mod_initialize(argc, argv, module)
     VALUE *argv;
     VALUE module;
 {
-    rb_mod_module_eval(0, 0, module);
+    if (rb_block_given_p()) {
+	rb_mod_module_eval(0, 0, module);
+    }
     return Qnil;
 }
 

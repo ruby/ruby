@@ -1231,10 +1231,6 @@ rb_io_sysread(io, len)
 
     n = fileno(fptr->f);
     rb_thread_wait_fd(fileno(fptr->f));
-    if (fptr->f == 0) {
-	fprintf(stderr, "bingo\n");
-	exit(1);
-    }
     TRAP_BEG;
     n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
     TRAP_END;

@@ -86,10 +86,11 @@ rb_ary_s_alloc(klass)
 }
 
 VALUE
-rb_ary_new2(len)
+rb_ary_new0(klass, len)
+    VALUE klass;
     long len;
 {
-    VALUE ary = rb_obj_alloc(rb_cArray);
+    VALUE ary = rb_obj_alloc(klass);
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
@@ -103,6 +104,14 @@ rb_ary_new2(len)
 
     return ary;
 }
+
+VALUE
+rb_ary_new2(len)
+    long len;
+{
+    return rb_ary_new0(rb_cArray, len);
+}
+
 
 VALUE
 rb_ary_new()
@@ -408,7 +417,7 @@ rb_ary_subseq(ary, beg, len)
     VALUE ary;
     long beg, len;
 {
-    VALUE ary2;
+    VALUE klass, ary2;
 
     if (beg > RARRAY(ary)->len) return Qnil;
     if (beg < 0 || len < 0) return Qnil;
@@ -419,12 +428,12 @@ rb_ary_subseq(ary, beg, len)
     if (len < 0) {
 	len = 0;
     }
-    if (len == 0) return rb_ary_new2(0);
+    klass = rb_obj_class(ary);
+    if (len == 0) return rb_ary_new0(klass,0);
 
-    ary2 = rb_ary_new2(len);
+    ary2 = rb_ary_new0(klass, len);
     MEMCPY(RARRAY(ary2)->ptr, RARRAY(ary)->ptr+beg, VALUE, len);
     RARRAY(ary2)->len = len;
-    RBASIC(ary2)->klass = rb_obj_class(ary);
 
     return ary2;
 }
@@ -1218,6 +1227,15 @@ rb_ary_reject_bang(ary)
 }
 
 static VALUE
+rb_ary_reject(ary)
+    VALUE ary;
+{
+    ary = rb_ary_dup(ary);
+    rb_ary_reject_bang(ary);
+    return ary;
+}
+
+static VALUE
 rb_ary_delete_if(ary)
     VALUE ary;
 {
@@ -1340,14 +1358,13 @@ rb_ary_times(ary, times)
     }
     len *= RARRAY(ary)->len;
 
-    ary2 = rb_ary_new2(len);
+    ary2 = rb_ary_new0(rb_obj_class(ary), len);
     RARRAY(ary2)->len = len;
 
     for (i=0; i<len; i+=RARRAY(ary)->len) {
 	MEMCPY(RARRAY(ary2)->ptr+i, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
     }
     OBJ_INFECT(ary2, ary);
-    RBASIC(ary2)->klass = rb_obj_class(ary);
 
     return ary2;
 }
@@ -1760,6 +1777,7 @@ Init_Array()
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
+    rb_define_method(rb_cArray, "reject", rb_ary_reject, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
     rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
