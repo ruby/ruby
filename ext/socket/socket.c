@@ -825,8 +825,11 @@ wait_connectable(fd)
 	else if (FD_ISSET(fd, &fds_e)) {
 	    sockerrlen = sizeof(sockerr);
 	    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr,
-			   &sockerrlen))
+			   &sockerrlen) == 0) {
+		if (sockerr == 0)
+		    continue;	/* workaround for winsock */
 		errno = sockerr;
+	    }
 	    return -1;
 	}
     }
