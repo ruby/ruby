@@ -343,14 +343,7 @@ module URI
 
     def split_userinfo(ui)
       return nil, nil unless ui
-      tmp = ui.index(':')
-      if tmp
-        user     = ui[0..tmp - 1]
-        password = ui[tmp + 1..-1]
-      else
-        user     = ui
-        password = nil
-      end
+      user, password = ui.split(/:/, 2)
 
       return user, password
     end
