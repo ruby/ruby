@@ -223,7 +223,7 @@ Individual switch class.
     def parse(arg, *val)
       if block
 	val = conv.call(*val) if conv
-	return arg, block, *val
+	return arg, block, val
       else
 	return arg, nil
       end
@@ -1122,8 +1122,8 @@ Default options, which never appear in option summary.
 	    raise $!.set_option(arg, true)
 	  end
 	  begin
-	    opt, sw, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-	    sw.call(*val) if sw
+	    opt, sw, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
+	    sw.call(val) if sw
 	  rescue ParseError
 	    raise $!.set_option(arg, rest)
 	  end
@@ -1149,10 +1149,10 @@ Default options, which never appear in option summary.
 	    raise $!.set_option(arg, true)
 	  end
 	  begin
-	    opt, sw, *val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
+	    opt, sw, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
 	    raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
 	    argv.unshift(opt) if opt and (opt = opt.sub(/\A-*/, '-')) != '-'
-	    sw.call(*val) if sw
+	    sw.call(val) if sw
 	  rescue ParseError
 	    raise $!.set_option(arg, has_arg)
 	  end
