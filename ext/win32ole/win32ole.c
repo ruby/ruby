@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.5.2"
+#define WIN32OLE_VERSION "0.5.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1323,10 +1323,15 @@ fole_s_connect(argc, argv, self)
     IDispatch *pDispatch;
     IUnknown *pUnknown;
 
+    rb_secure(4);
     /* initialize to use OLE */
     ole_initialize();
 
     rb_scan_args(argc, argv, "1*", &svr_name, &others);
+    if (ruby_safe_level > 0 && OBJ_TAINTED(svr_name)) {
+	rb_raise(rb_eSecurityError, "Insecure Object Connection - %s",
+		 StringValuePtr(svr_name));
+    }
 
     /* get CLSID from OLE server name */
     pBuf  = ole_mb2wc(StringValuePtr(svr_name), -1);
@@ -1381,6 +1386,7 @@ fole_s_const_load(argc, argv, self)
     VALUE file;
     LCID    lcid = LOCALE_SYSTEM_DEFAULT;
     
+    rb_secure(4);
     rb_scan_args(argc, argv, "11", &ole, &klass);
     if (TYPE(klass) != T_CLASS &&
         TYPE(klass) != T_MODULE &&
@@ -1445,6 +1451,7 @@ ole_classes_from_typelib(pTypeLib, classes)
     ITypeInfo *pTypeInfo;
     VALUE type;
   
+    rb_secure(4);
     count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
     for (i = 0; i < count; i++) {
         hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, i,
@@ -1596,11 +1603,21 @@ fole_initialize(argc, argv, self)
     OLECHAR *pBuf;
     IDispatch *pDispatch;
 
+    rb_secure(4);
     rb_call_super(0, 0);
     rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
 
-    if (!NIL_P(host))
+    if (ruby_safe_level > 0 && OBJ_TAINTED(svr_name)) {
+	rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
+		 StringValuePtr(svr_name));
+    }
+    if (!NIL_P(host)) {
+	if (ruby_safe_level > 0 && OBJ_TAINTED(host)) {
+	    rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
+		     StringValuePtr(svr_name));
+	}
         return ole_create_dcom(argc, argv, self);
+    }
 
     /* get CLSID from OLE server name */
     pBuf  = ole_mb2wc(StringValuePtr(svr_name), -1);
@@ -2203,6 +2220,7 @@ fole_free(self)
     VALUE self;
 {
     struct oledata *pole;
+    rb_secure(4);
     OLEData_Get_Struct(self, pole);
     OLE_FREE(pole->pDispatch);
     pole->pDispatch = NULL;
@@ -2876,6 +2894,7 @@ foletype_s_ole_classes(self, typelib)
     ITypeLib *pTypeLib;
     HRESULT hr;
 
+    rb_secure(4);
     classes = rb_ary_new();
     if(TYPE(typelib) == T_STRING) {
         file = typelib_file(typelib);
@@ -5103,6 +5122,7 @@ fev_initialize(argc, argv, self)
     DWORD dwCookie;
     struct oleeventdata *poleev;
 
+    rb_secure(4);
     rb_scan_args(argc, argv, "11", &ole, &itf);
 
     if (!rb_obj_is_kind_of(ole, cWIN32OLE)) {
@@ -5110,6 +5130,10 @@ fev_initialize(argc, argv, self)
     }
 
     if(TYPE(itf) != T_NIL) {
+	if (ruby_safe_level > 0 && OBJ_TAINTED(itf)) {
+	    rb_raise(rb_eSecurityError, "Insecure Event Creation - %s",
+		     StringValuePtr(itf));
+	}
         Check_SafeStr(itf);
         pitf = StringValuePtr(itf);
         hr = find_iid(ole, pitf, &iid, &pTypeInfo);
