@@ -70,6 +70,9 @@ class CGI
 	  @hash = {}
 	end
 	@p = ::PStore.new(path)
+	@p.transaction do |p|
+	  File.chmod(0600, p.path)
+	end
       end
 
       # Restore session state from the session's PStore file.

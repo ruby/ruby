@@ -395,7 +395,7 @@ class CGI
       def update
 	return unless @hash
         begin
-	  f = File.open(@path, 'w')
+	  f = File.open(@path, File::CREAT|File::TRUNC|File::RDWR, 0600)
 	  f.flock File::LOCK_EX
    	  for k,v in @hash
 	    f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(v))
