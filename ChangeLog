@@ -1,3 +1,11 @@
+Sun Aug 10 10:43:05 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/buffering.rb: increase BLOCK_SIZE
+	  from 1k to 16k bytes. [ruby-talk:78603]
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_s_alloc): enable
+	  partial write to allow interruption in SSLSocket#sysread.
+
 Sun Aug 10 00:34:16 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* cygwin/GNUmakefile: remove unnecessary '--drive-name=$(CC)'

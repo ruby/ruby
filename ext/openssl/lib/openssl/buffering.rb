@@ -17,7 +17,7 @@
 module Buffering
   include Enumerable
   attr_accessor :sync
-  BLOCK_SIZE = 1024
+  BLOCK_SIZE = 1024*16
 
   #
   # for reading.

@@ -103,6 +103,7 @@ ossl_sslctx_s_alloc(VALUE klass)
     if (!ctx) {
         ossl_raise(eSSLError, "SSL_CTX_new:");
     }
+    SSL_CTX_set_mode(ctx, SSL_MODE_ENABLE_PARTIAL_WRITE);
     SSL_CTX_set_options(ctx, SSL_OP_ALL);
     return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
 }
