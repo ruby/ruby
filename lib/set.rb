@@ -48,7 +48,7 @@ class Set
   #
   # If a block is given, the elements of enum are preprocessed by the
   # given block.
-  def initialize(enum = nil, &block)
+  def initialize(enum = nil, &block) # :yields: o
     @hash ||= Hash.new
 
     enum.nil? and return
@@ -322,10 +322,10 @@ class Set
   #   require 'set'
   #   files = Set.new(Dir.glob("*.rb"))
   #   hash = files.classify { |f| File.mtime(f).year }
-  #   p hash    #=> {2000=>#<Set: {"a.rb", "b.rb"}>,
-  #             #    2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
-  #             #    2002=>#<Set: {"f.rb"}>}
-  def classify
+  #   p hash    # => {2000=>#<Set: {"a.rb", "b.rb"}>,
+  #             #     2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
+  #             #     2002=>#<Set: {"f.rb"}>}
+  def classify # :yields: o
     h = {}
 
     each { |i|
@@ -348,10 +348,10 @@ class Set
   #   require 'set'
   #   numbers = Set[1, 3, 4, 6, 9, 10, 11]
   #   set = numbers.divide { |i,j| (i - j).abs == 1 }
-  #   p set     #=> #<Set: {#<Set: {1}>,
-  #             #           #<Set: {11, 9, 10}>,
-  #             #           #<Set: {3, 4}>,
-  #             #           #<Set: {6}>}>
+  #   p set     # => #<Set: {#<Set: {1}>,
+  #             #            #<Set: {11, 9, 10}>,
+  #             #            #<Set: {3, 4}>,
+  #             #            #<Set: {6}>}>
   def divide(&func)
     if func.arity == 2
       require 'tsort'
