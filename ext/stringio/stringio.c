@@ -934,10 +934,14 @@ strio_truncate(self, len)
 {
     VALUE string = writable(StringIO(self))->string;
     long l = NUM2LONG(len);
+    long plen = RSTRING(string)->len;
     if (l < 0) {
 	error_inval("negative legnth");
     }
     rb_str_resize(string, l);
+    if (plen < l) {
+	MEMZERO(RSTRING(string)->ptr + plen, char, l - plen);
+    }
     return len;
 }
 

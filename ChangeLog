@@ -1,3 +1,8 @@
+Wed Feb  2 23:52:53 2005  sheepman  <sheepman@tcn.zaq.ne.jp>
+
+	* ext/stringio/stringio.c (strio_truncate): should MEMZERO an extended
+	  part.  [ruby-dev:25618]
+
 Wed Feb  2 21:56:01 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::Element#convert): added.
@@ -5,11 +10,11 @@ Wed Feb  2 21:56:01 2005  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss/rss.rb: convert -> need_convert.
 
 	* lib/rss/1.0.rb: ditto.
-	
+
 	* lib/rss/0.9.rb: ditto.
-	
+
 	* lib/rss/2.0.rb: ditto.
-	
+
 	* lib/rss/trackback.rb: ditto.
 
 Wed Feb  2 03:30:58 2005  Minero Aoki  <aamine@loveruby.net>
