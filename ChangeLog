@@ -1,3 +1,7 @@
+Tue Oct  2 08:04:52 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* marshal.c (r_object): TYPE_UCLASS check should be inversed.
+
 Wed Sep 26 19:02:39 2001  Guy Decoux  <ts@moulon.inra.fr>
 
 	* parse.y: allow 'primary[] = arg'

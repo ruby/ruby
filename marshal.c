@@ -798,7 +798,7 @@ r_object(arg)
 	    VALUE c = rb_path2class(r_unique(arg));
 	    v = r_object(arg);
 	    if (rb_special_const_p(v) ||
-		!RTEST(rb_funcall(c, rb_intern("==="), 1, v))) {
+		!RTEST(rb_funcall(c, '<', 1, RBASIC(v)->klass))) {
 		rb_raise(rb_eArgError, "dump format error (user class)");
 	    }
 	    RBASIC(v)->klass = c;
