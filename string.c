@@ -474,8 +474,18 @@ rb_str_substr(str, beg, len)
     }
     if (len == 0) return rb_str_new5(str,0,0);
 
-    str2 = rb_str_new5(str,RSTRING(str)->ptr+beg, len);
-    OBJ_INFECT(str2, str);
+    if (len > sizeof(struct RString)/2 &&
+	beg + len == RSTRING(str)->len &&
+	!FL_TEST(str, STR_ASSOC)) {
+	if (!FL_TEST(str, ELTS_SHARED)) str = rb_str_new4(str);
+	str2 = rb_str_new3(str);
+	RSTRING(str2)->ptr += beg;
+	RSTRING(str2)->len = len;
+    }
+    else {
+	str2 = rb_str_new5(str, RSTRING(str)->ptr+beg, len);
+	OBJ_INFECT(str2, str);
+    }
 
     return str2;
 }

@@ -123,6 +123,7 @@ enum node_type {
     NODE_MEMO,
     NODE_IFUNC,
     NODE_DSYM,
+    NODE_ATTRASGN,
     NODE_LAST
 };
 
@@ -332,6 +333,7 @@ typedef struct RNode {
 #define NEW_POSTEXE() rb_node_newnode(NODE_POSTEXE,0,0,0)
 #define NEW_DMETHOD(b) rb_node_newnode(NODE_DMETHOD,0,0,b)
 #define NEW_BMETHOD(b) rb_node_newnode(NODE_BMETHOD,0,0,b)
+#define NEW_ATTRASGN(r,m,a) rb_node_newnode(NODE_ATTRASGN,r,m,a)
 
 #define NOEX_PUBLIC    0
 #define NOEX_NOSUPER   1

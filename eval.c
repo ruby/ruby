@@ -1881,6 +1881,7 @@ is_defined(self, node, buf)
 	goto check_bound;
 
       case NODE_CALL:
+      case NODE_ATTRASGN:
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_eval(self, node->nd_recv);
@@ -2740,6 +2741,23 @@ rb_eval(self, n)
       case NODE_ARGSPUSH:
 	result = rb_ary_push(rb_ary_dup(rb_eval(self, node->nd_head)),
 			     rb_eval(self, node->nd_body));
+	break;
+
+      case NODE_ATTRASGN:
+	{
+	    VALUE recv;
+	    int argc; VALUE *argv; /* used in SETUP_ARGS */
+	    TMP_PROTECT;
+
+	    BEGIN_CALLARGS;
+	    recv = rb_eval(self, node->nd_recv);
+	    SETUP_ARGS(node->nd_args);
+	    END_CALLARGS;
+
+	    SET_CURRENT_SOURCE();
+	    rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,0);
+	    result = argv[argc-1];
+	}
 	break;
 
       case NODE_CALL:

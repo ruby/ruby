@@ -4705,7 +4705,7 @@ attrset(recv, id)
     ID id;
 {
     value_expr(recv);
-    return NEW_CALL(recv, rb_id_attrset(id), 0);
+    return NEW_ATTRASGN(recv, rb_id_attrset(id), 0);
 }
 
 static void
@@ -4765,6 +4765,7 @@ node_assign(lhs, rhs)
 	lhs->nd_value = rhs;
 	break;
 
+      case NODE_ATTRASGN:
       case NODE_CALL:
 	lhs->nd_args = arg_add(lhs->nd_args, rhs);
 	break;
