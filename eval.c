@@ -3530,7 +3530,7 @@ rb_yield_0(val, self, klass, acheck)
 	ruby_dyna_vars = block->dyna_vars;
     }
     ruby_class = klass?klass:block->klass;
-    if (!self) self = block->self;
+    if (!klass) self = block->self;
     node = block->body;
 
     if (block->var) {
