@@ -121,11 +121,14 @@ extern "C++" {
 #undef fsopen
 #define fsopen(p, m, sh)	rb_w32_fsopen(p, m, sh)
 #endif
+
 #define fsync(h)		_commit(h)
 #undef stat
 #define stat(path,st)		rb_w32_stat(path,st)
 #undef execv
 #define execv(path,argv)	rb_w32_aspawn(P_OVERLAY,path,argv)
+#undef isatty
+#define isatty(h)		rb_w32_isatty(h)
 
 #ifdef __MINGW32__
 struct timezone {
@@ -185,6 +188,7 @@ extern int rb_w32_aspawn(int, const char *, char *const *);
 extern int kill(int, int);
 extern int fcntl(int, int, ...);
 extern pid_t rb_w32_getpid(void);
+extern int rb_w32_isatty(int);
 
 #ifdef __BORLANDC__
 extern int rb_w32_fstat(int, struct stat *);

@@ -1,3 +1,8 @@
+Thu Nov 18 20:47:24 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.[ch] (rb_w32_isatty): new function to replace MSVCRT's
+	  isatty because it never sets errno.
+
 Thu Nov 18 17:05:01 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_rest_arg): store rest args into invisible local variabe
@@ -204,7 +209,7 @@ Fri Nov 12 15:15:06 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* eval.c (ruby_options): now we cannot call rb_glob() before
 	  ruby_init(), so call rb_w32_cmdvector() at ruby_options().
 
-	* win32.{c,h} (rb_w32_cmdvector): rename make_cmdvector() and
+	* win32/win32.{c,h} (rb_w32_cmdvector): rename make_cmdvector() and
 	  export it.
 
 Fri Nov 12 14:08:01 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
