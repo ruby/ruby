@@ -132,14 +132,21 @@ module WEBrick
 
     def virtual_host(server)
       @virtual_hosts << server
+      @virtual_hosts = @virtual_hosts.sort_by{|s|
+        num = 0
+        num -= 4 if s[:BindAddress]
+        num -= 2 if s[:Port]
+        num -= 1 if s[:ServerName]
+        num
+      }
     end
 
     def lookup_server(req)
       @virtual_hosts.find{|s|
-        (s[:Port].nil?        || req.port == s[:Port])           &&
         (s[:BindAddress].nil? || req.addr[3] == s[:BindAddress]) &&
+        (s[:Port].nil?        || req.port == s[:Port])           &&
         ((s[:ServerName].nil?  || req.host == s[:ServerName]) ||
-         (s[:ServerAlias].nil? || s[:ServerAlias].find{|h| h === req.host}))
+         (!s[:ServerAlias].nil? && s[:ServerAlias].find{|h| h === req.host}))
       }
     end
 

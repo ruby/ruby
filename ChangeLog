@@ -1,3 +1,11 @@
+Sun Mar 21 22:17:35 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#virtual_host):
+	  sort @virtual_hosts in address, port, host order.
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#lookup_server):
+	  hostname should not be match if :ServerAlias is not given.
+
 Sun Mar 21 21:11:16 2004  Keiju Ishitsuka  <keiju@ishitsuka.com>
 
 	* lib/shell/*: bug fix for Shell#system(command_line_string).
