@@ -2627,7 +2627,7 @@ rb_io_ctl(io, req, arg, io_p)
     int io_p;
 {
 #if !defined(MSDOS) && !defined(__human68k__)
-    int cmd = NUM2INT(req);
+    int cmd = NUM2ULONG(req);
     OpenFile *fptr;
     int len = 0;
     int fd;

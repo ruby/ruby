@@ -26,6 +26,10 @@
 int sys_nerr = 256;
 #endif
 
+#if defined __CYGWIN__ && defined _sys_nerr
+#define sys_nerr _sys_nerr
+#endif
+
 int ruby_nerrs;
 
 static void
