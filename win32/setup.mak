@@ -1,58 +1,82 @@
 # -*- makefile -*-
 
-!IF "$(WIN32DIR)" == "win32"
+!if "$(srcdir)" != ""
+WIN32DIR = $(srcdir)/win32
+!elseif "$(WIN32DIR)" == "win32"
 srcdir = .
-!ELSEIF "$(WIN32DIR)" == "$(WIN32DIR:/win32=)/win32"
+!elseif "$(WIN32DIR)" == "$(WIN32DIR:/win32=)/win32"
 srcdir = $(WIN32DIR:/win32=)
-!ELSE
+!else
 srcdir = $(WIN32DIR)/..
-!ENDIF
+!endif
 OS = mswin32
 RT = msvcrt
 INCLUDE = !include
-MAKEFILE = $(WIN32DIR)/setup.mak
-
-!if "$(target)" == ""
-all: Makefile
-	@echo type `$(MAKE)' to make ruby for $(OS).
+APPEND = echo>>$(MAKEFILE)
+!ifdef MAKEFILE
+MAKE = $(MAKE) -f $(MAKEFILE)
 !else
-all: $(target)
+MAKEFILE = Makefile
 !endif
+ARCH = PROCESSOR_ARCHITECTURE
+CPU = PROCESSOR_LEVEL
 
-i386-$(OS):
-	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
-		PROCESSOR_ARCHITECTURE=x86 PROCESSOR_LEVEL=3
-i486-$(OS):
-	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
-		PROCESSOR_ARCHITECTURE=x86 PROCESSOR_LEVEL=4
-i586-$(OS):
-	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
-		PROCESSOR_ARCHITECTURE=x86 PROCESSOR_LEVEL=5
-i686-$(OS):
-	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
-		PROCESSOR_ARCHITECTURE=x86 PROCESSOR_LEVEL=6
-alpha-$(OS):
-	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
-		PROCESSOR_ARCHITECTURE=alpha PROCESSOR_LEVEL=
+all: -prologue- -generic- -epilogue-
+i386-$(OS): -prologue- -i386- -epilogue-
+i486-$(OS): -prologue- -i486- -epilogue-
+i586-$(OS): -prologue- -i586- -epilogue-
+i686-$(OS): -prologue- -i686- -epilogue-
+alpha-$(OS): -prologue- -alpha- -epilogue-
 
-Makefile:
-	@echo Creating <<$@
+-prologue-: nul
+	@echo Creating <<$(MAKEFILE)
 ### Makefile for ruby $(OS) ###
 srcdir = $(srcdir:\=/)
-!if defined(PROCESSOR_ARCHITECTURE)
-PROCESSOR_ARCHITECTURE = $(PROCESSOR_ARCHITECTURE)
-!endif
-!if defined(PROCESSOR_LEVEL)
-PROCESSOR_LEVEL = $(PROCESSOR_LEVEL)
-!endif
-RUBY_INSTALL_NAME = ruby
-RUBY_SO_NAME = $(RT)-$$(RUBY_INSTALL_NAME)17
-prefix = /usr
-CFLAGS = -nologo -MD -DNT=1 $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
-CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
-LDFLAGS = $$(CFLAGS) -Fm
-XLDFLAGS = 
-RFLAGS = -r
-EXTLIBS =
-$(INCLUDE) $$(srcdir)/win32/Makefile.sub
+
 <<KEEP
+
+-generic-: nul
+!if defined($(ARCH)) || defined($(CPU))
+	@type << >>$(MAKEFILE)
+!if defined($(ARCH))
+$(ARCH) = $(PROCESSOR_ARCHITECTURE)
+!endif
+!if defined($(CPU))
+$(CPU) = $(PROCESSOR_LEVEL)
+!endif
+
+<<
+!endif
+
+-alpha-: nul
+	@$(APPEND) $(ARCH) = alpha
+-ix86-: nul
+	@$(APPEND) $(ARCH) = x86
+
+-i386-: -ix86-
+	@$(APPEND) $(CPU) = 3
+-i486-: -ix86-
+	@$(APPEND) $(CPU) = 4
+-i586-: -ix86-
+	@$(APPEND) $(CPU) = 5
+-i686-: -ix86-
+	@$(APPEND) $(CPU) = 6
+
+-epilogue-: nul
+	@type << >>$(MAKEFILE)
+# OS = $(OS)
+# RT = $(RT)
+# RUBY_INSTALL_NAME = ruby
+# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)17
+# prefix = /usr
+# CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
+# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
+# STACK = 0x2000000
+# LDFLAGS = $$(CFLAGS) -Fm
+# XLDFLAGS = 
+# RFLAGS = -r
+# EXTLIBS =
+
+$(INCLUDE) $$(srcdir)/win32/Makefile.sub
+<<
+	@echo type `$(MAKE)' to make ruby for $(OS).

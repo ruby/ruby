@@ -2,7 +2,6 @@
 # invoke like: ruby -r mkmf extconf.rb
 
 require 'rbconfig'
-require 'find'
 require 'shellwords'
 
 CONFIG = Config::MAKEFILE_CONFIG
@@ -50,23 +49,25 @@ $mingw = /mingw/ =~ RUBY_PLATFORM
 $cygwin = /cygwin/ =~ RUBY_PLATFORM
 $human = /human/ =~ RUBY_PLATFORM
 $netbsd = /netbsd/ =~ RUBY_PLATFORM
+$os2 = /os2/ =~ RUBY_PLATFORM
 
 def dir_re(dir)
   Regexp.new('\$(?:\('+dir+'\)|\{'+dir+'\})(?:\$\(target_prefix\)|\{target_prefix\})?')
 end
-commondir = dir_re('commondir')
 
 INSTALL_DIRS = [
-  [commondir, "$(rubylibdir)"],
-  [dir_re('sitelibdir'), "$(rubylibdir)$(target_prefix)"],
-  [dir_re('sitearchdir'), "$(archdir)$(target_prefix)"]
+  [dir_re('commondir'), "$(RUBYCOMMONDIR)"],
+  [dir_re("sitedir"), "$(RUBYCOMMONDIR)"],
+  [dir_re('rubylibdir'), "$(RUBYLIBDIR)"],
+  [dir_re('archdir'), "$(RUBYARCHDIR)"],
+  [dir_re('sitelibdir'), "$(RUBYLIBDIR)"],
+  [dir_re('sitearchdir'), "$(RUBYARCHDIR)"]
 ]
 
-SITEINSTALL_DIRS = [
-  [commondir, "$(sitedir)$(target_prefix)"],
-  [dir_re('rubylibdir'), "$(sitelibdir)$(target_prefix)"],
-  [dir_re('archdir'), "$(sitearchdir)$(target_prefix)"]
-]
+def map_dir(dir, map = nil)
+  map ||= INSTALL_DIRS
+  map.inject(dir) {|dir, (orig, new)| dir.gsub(orig, new)}
+end
 
 if not $extmk and File.exist? Config::CONFIG["archdir"] + "/ruby.h"
   $hdrdir = $archdir
@@ -78,20 +79,23 @@ else
 end
 $topdir = $hdrdir
 
-CFLAGS = CONFIG["CFLAGS"]
-if $human
-  CFLAGS.gsub!(/-c..-stack=[0-9]+ */, '')
-elsif RUBY_PLATFORM =~ /-nextstep|-rhapsody|-darwin/
-  CFLAGS.gsub!( /-arch\s\w*/, '' )
-end
-
 OUTFLAG = CONFIG['OUTFLAG']
 CPPOUTFILE = CONFIG['CPPOUTFILE']
 
-LIBPATHFLAG = $mswin ? ' -libpath:' : ' -L'
 CONFTEST_C = "conftest.c"
 
 $INSTALLFILES ||= nil
+
+class String
+  def quote
+    /\s/ =~ self ? "\"#{self}\"" : self
+  end
+end
+class Array
+  def quote
+    map {|s| s.quote}
+  end
+end
 
 def rm_f(*files)
   targets = []
@@ -104,17 +108,17 @@ def rm_f(*files)
   end
 end
 
-def older(file1, file2)
-  if !File.exist?(file1) then
-    return true
+def older(target, *files)
+  mtime = proc do |f|
+    break f if Time === f
+    break f.mtime if f.respond_to?(:mtime)
+    File.mtime(f) rescue nil
   end
-  if !File.exist?(file2) then
-    return false
+  t = mtime[target] or return true
+  for f in files
+    return true if t < (mtime[f] or next)
   end
-  if File.mtime(file1) < File.mtime(file2)
-    return true
-  end
-  return false
+  false
 end
 
 module Logging
@@ -150,8 +154,9 @@ end
 def xsystem command
   Config.expand(command)
   Logging::open do
-    puts command
-    system(command)
+    command = Shellwords.shellwords(command)
+    puts command.quote.join(' ')
+    system(*command)
   end
 end
 
@@ -191,40 +196,35 @@ ensure
   log_src(src)
 end
 
-def link_command(ldflags, opt="")
-#  ldflags = "-link " + ldflags if $mswin
-  "$(CC) #{OUTFLAG}conftest #$INCFLAGS -I#{$hdrdir} " \
-  "#$CPPFLAGS $(CFLAGS) #$CFLAGS #{CONFTEST_C} #{opt} " \
-  "#$LOCAL_LIBS $(LIBS) #{ldflags} $(LDFLAGS) #$LDFLAGS"
+def link_command(ldflags, opt="", libpath=$LIBPATH)
+  Config::expand(TRY_LINK.dup,
+		 'hdrdir' => $hdrdir,
+		 'src' => CONFTEST_C,
+		 'INCFLAGS' => $INCFLAGS,
+		 'CPPFLAGS' => $CPPFLAGS,
+		 'CFLAGS' => "#$CFLAGS #{opt}",
+		 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
+		 'LIBPATH' => libpathflag(libpath),
+		 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
+		 'LIBS' => "#$LIBRUBYARG #$LIBS")
 end
 
 def cc_command(opt="")
-  "$(CC) -c $(CPPFLAGS) #$INCFLAGS -I#{$hdrdir} " \
-  "#$CPPFLAGS $(CFLAGS) #$CFLAGS #{opt} #{CONFTEST_C}"
+  "$(CC) -c #$INCFLAGS -I#{$hdrdir} " \
+  "#$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C}"
 end
 
 def cpp_command(outfile, opt="")
-  "$(CPP) $(CPPFLAGS) #$INCFLAGS -I#{$hdrdir} " \
-  "#$CPPFLAGS $(CFLAGS) #$CFLAGS #{outfile} #{opt} #{CONFTEST_C}"
+  "$(CPP) #$INCFLAGS -I#{$hdrdir} " \
+  "#$CPPFLAGS #$CFLAGS #{outfile} #{opt} #{CONFTEST_C}"
 end
 
-def libpathflag
-  if $mswin
-    ENV['LIB'] = ($LIBPATH + [ORIG_LIBPATH]).join(';')
-    begin
-      yield ""
-    ensure
-      ENV['LIB'] = ORIG_LIBPATH
-    end
-  else
-    yield $LIBPATH.map{|x| %Q[#{LIBPATHFLAG}"#{x}"]}.join
-  end
+def libpathflag(libpath=$LIBPATH)
+  libpath.map{|x| LIBPATHFLAG % %["#{x}"]}.join
 end
 
 def try_link0(src, opt="")
-  libpathflag do |flag|
-    try_do(src, link_command(flag, opt))
-  end
+  try_do(src, link_command("", opt))
 end
 
 def try_link(src, opt="")
@@ -243,6 +243,30 @@ def try_cpp(src, opt="")
   try_do(src, cpp_command(CPPOUTFILE, opt))
 ensure
   rm_f "conftest*"
+end
+
+def cpp_include(header)
+  if header
+    header = [header] unless header.kind_of? Array
+    header.map {|h| "#include <#{h}>\n"}.join
+  else
+    ""
+  end
+end
+
+def try_func(func, libs, headers = nil)
+  headers = cpp_include(headers)
+  try_link(<<"SRC", libs) or try_link(<<"SRC", libs)
+#{COMMON_HEADERS}
+#{headers}
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+#{COMMON_HEADERS}
+#{headers}
+int main() { return 0; }
+int t() { void ((*volatile p)()); p = (void ((*)()))#{func}; return 0; }
+SRC
 end
 
 def egrep_cpp(pat, src, opt="")
@@ -290,41 +314,34 @@ ensure
   rm_f "conftest*"
 end
 
-def install_files(mfile, ifiles, map = INSTALL_DIRS, srcprefix = nil)
+def install_files(mfile, ifiles, map = nil, srcprefix = nil)
   ifiles or return
   srcprefix ||= '$(srcdir)'
   Config::expand(srcdir = srcprefix.dup)
   dirs = []
   path = Hash.new {|h, i| h[i] = dirs.push([i])[-1]}
   ifiles.each do |files, dir, prefix|
-    dir = map.inject(dir) {|dir, (orig, new)| dir.gsub(orig, new)} if map
+    dir = map_dir(dir, map)
     prefix = %r"\A#{Regexp.quote(prefix)}/?" if prefix
     if( files[0,2] == "./" )
       # install files which are in current working directory.
-      Dir.glob(files) do |f|
-	d = File.dirname(f)
-	d.sub!(prefix, "") if prefix
-	d = (d.empty? || d == ".") ? dir : File.join(dir,d)
-	path[d] << f
-      end
+      files = files[2..-1]
+      len = nil
     else
       # install files which are under the $(srcdir).
-      Dir.glob(File.join(srcdir,files)) do |f|
-	f[0..srcdir.size] = ""
-	d = File.dirname(f)
-	d.sub!(prefix, "") if prefix
-	d = (d.empty? || d == ".") ? dir : File.join(dir, d)
-	path[d] << (srcprefix ? File.join(srcprefix, f) : f)
-      end
+      files = File.join(srcdir, files)
+      len = srcdir.size
+    end
+    Dir.glob(files) do |f|
+      f[0..len] = "" if len
+      d = File.dirname(f)
+      d.sub!(prefix, "") if prefix
+      d = (d.empty? || d == ".") ? dir : File.join(dir, d)
+      f = File.join(srcprefix, f) if len
+      path[d] << f
     end
   end
-
-  dirs.each do |dir, *files|
-    mfile.printf("\t@$(MAKEDIRS) %s\n", dir)
-    files.each do |f|
-      mfile.printf("\t@$(INSTALL_DATA) %s %s\n", f, dir)
-    end
-  end
+  dirs
 end
 
 def install_rb(mfile, dest, srcdir = nil)
@@ -332,11 +349,7 @@ def install_rb(mfile, dest, srcdir = nil)
 end
 
 def append_library(libs, lib)
-  if /mswin32|bccwin32/ =~ RUBY_PLATFORM
-    lib + ".lib " + libs
-  else
-    "-l" + lib + " " + libs
-  end
+  format(LIBARG, lib) + " " + libs
 end
 
 def message(*s)
@@ -346,186 +359,101 @@ def message(*s)
   end
 end
 
+def checking_for(m)
+  f = caller[0][/in \`(.*)\'$/, 1] and f << ": "
+  m = "checking for #{m}... "
+  message m
+  Logging::message "#{f}#{m}\n"
+  r = yield
+  message(r ? "yes\n" : "no\n")
+  r
+end
+
 def have_library(lib, func="main")
-  message "checking for #{func}() in -l#{lib}... "
-  Logging::message"have_library: checking for #{func}() in -l#{lib}\n"
-
-  if func && func != ""
+  checking_for "#{func}() in -l#{lib}" do
     libs = append_library($libs, lib)
-    if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
-      if lib == 'm'
-	message "yes\n"
-	return true
-      end
-      r = try_link(<<"SRC", libs)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <winsock.h>
-int main() { return 0; }
-int t() { #{func}(); return 0; }
-SRC
-      unless r
-        r = try_link(<<"SRC", libs)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <winsock.h>
-int main() { return 0; }
-int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
-SRC
-      end
+    if func && func != "" && COMMON_LIBS.include?(lib)
+      true
+    elsif try_func(func, libs)
+      $libs = libs
+      true
     else
-      r = try_link(<<"SRC", libs)
-int main() { return 0; }
-int t() { #{func}(); return 0; }
-SRC
+      false
     end
-    unless r
-      message "no\n"
-      return false
-    end
-  else
-    libs = append_library($libs, lib)
   end
-
-  $libs = libs
-  message "yes\n"
-  return true
 end
 
 def find_library(lib, func, *paths)
-  message "checking for #{func}() in -l#{lib}... "
-  Logging::message"find_library: checking for #{func}() in -l#{lib}\n"
-
-  libpath = $LIBPATH
-  libs = append_library($libs, lib)
-  until try_link(<<"SRC", libs)
-int main() { return 0; }
-int t() { #{func}(); return 0; }
-SRC
-    if paths.size == 0
-      $LIBPATH = libpath
-      message "no\n"
-      return false
+  checking_for "#{func}() in -l#{lib}" do
+    libpath = $LIBPATH
+    libs = append_library($libs, lib)
+    begin
+      until r = try_func(func, libs) or paths.empty?
+	$LIBPATH = libpath | [paths.shift]
+      end
+      if r
+	$libs = libs
+	libpath = nil
+      end
+    ensure
+      $LIBPATH = libpath if libpath
     end
-    $LIBPATH = libpath | [paths.shift]
+    r
   end
-  $libs = libs
-  message "yes\n"
-  return true
 end
 
 def have_func(func, header=nil)
-  message "checking for #{func}()... "
-  Logging::message"have_func: checking for #{func}()\n"
-
-  libs = $libs
-  src = 
-    if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
-      r = <<"SRC"
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <winsock.h>
-SRC
+  checking_for "#{func}()" do
+    if try_func(func, $libs, header)
+      $defs.push(format("-DHAVE_%s", func.upcase))
+      true
     else
-      ""
+      false
     end
-  unless header.nil?
-  src << <<"SRC"
-#include <#{header}>
-SRC
   end
-  r = try_link(src + <<"SRC", libs)
-int main() { return 0; }
-int t() { #{func}(); return 0; }
-SRC
-  unless r
-    r = try_link(src + <<"SRC", libs)
-int main() { return 0; }
-int t() { void ((*volatile p)()); p = (void ((*)()))#{func}; return 0; }
-SRC
-  end
-  unless r
-    message "no\n"
-    return false
-  end
-  $defs.push(format("-DHAVE_%s", func.upcase))
-  message "yes\n"
-  return true
 end
 
 def have_header(header)
-  message "checking for #{header}... "
-  Logging::message"have_header: checking for #{header}\n"
-
-  unless try_cpp(<<"SRC")
-#include <#{header}>
-SRC
-    message "no\n"
-    return false
+  checking_for header do
+    if try_cpp(cpp_include(header))
+      $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
+      true
+    else
+      false
+    end
   end
-  $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
-  message "yes\n"
-  return true
 end
 
 def have_struct_member(type, member, header=nil)
-  message "checking for #{type}.#{member}... "
-  Logging::message "have_struct_member: checking for #{type}.#{member}\n"
-
-  src = 
-    if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
-      r = <<"SRC"
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <winsock.h>
-SRC
-    else
-      ""
-    end
-  unless header.nil?
-    header = [header] unless header.kind_of? Array
-    header.each {|h|
-      src << <<"SRC"
-#include <#{h}>
-SRC
-    }
-  end
-  src << <<"SRC"
+  checking_for "#{type}.#{member}" do
+    if try_compile(<<"SRC")
+#{COMMON_HEADERS}
+#{cpp_include(header)}
 int main() { return 0; }
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
 SRC
-  r = try_compile(src)
-  unless r
-    message "no\n"
-    return false
+      $defs.push(format("-DHAVE_ST_%s", member.upcase))
+      true
+    else
+      false
+    end
   end
-  $defs.push(format("-DHAVE_ST_%s", member.upcase))
-  message "yes\n"
-  return true
+end
+
+def find_executable0(bin, path = nil)
+  path = (path || ENV['PATH']).split(File::PATH_SEPARATOR)
+  bin += Config::CONFIG['EXEEXT']
+  file = nil
+  path.each do |dir|
+    return file if File.executable?(file = File.join(dir, bin))
+  end
+  nil
 end
 
 def find_executable(bin, path = nil)
-  message "checking for #{bin}... "
-  Logging::message "find_executable: checking for #{bin}\n"
-
-  if path.nil?
-    path = ENV['PATH'].split(Config::CONFIG['PATH_SEPARATOR'])
-  else
-    path = path.split(Config::CONFIG['PATH_SEPARATOR'])
+  checking_for bin do
+    find_executable0(bin, path)
   end
- 
-  bin += Config::CONFIG['EXEEXT']
-  for dir in path
-    file = File.join(dir, bin)
-    if FileTest.executable?(file)
-      message "yes\n"
-      return file
-    else
-      next
-    end
-  end
-  message "no\n"
-  return nil
 end
 
 def arg_config(config, default=nil)
@@ -549,14 +477,21 @@ def enable_config(config, default=nil)
   end
 end
 
-def create_header()
-  message "creating extconf.h\n"
+def create_header(header = "extconf.h")
+  message "creating #{header}\n"
   if $defs.length > 0
-    open("extconf.h", "w") do |hfile|
+    sym = header.tr("a-z./\055", "A-Z___")
+    open(header, "w") do |hfile|
+      hfile.print "#ifndef #{sym}\n#define #{sym}\n"
       for line in $defs
-	line =~ /^-D(.*)/
-	hfile.printf "#define %s 1\n", $1
+	case line
+	when /^-D(.*)(?:=(.*))?/
+	  hfile.print "#define #$1 #{$2 || 1}\n"
+	when /^-U(.*)/
+	  hfile.print "#undef #$1\n"
+	end
       end
+      hfile.print "#endif\n"
     end
   end
 end
@@ -590,81 +525,9 @@ def winsep(s)
   s.tr('/', '\\')
 end
 
-def create_makefile(target, srcprefix = nil)
-  save_libs = $libs.dup
-  save_libpath = $LIBPATH.dup
-  message "creating Makefile\n"
-  rm_f "conftest*"
-  if target.include?('/')
-    target_prefix, target = File.split(target)
-    target_prefix[0,0] = '/'
-  else
-    target_prefix = ""
-  end
-  if CONFIG["DLEXT"] == $OBJEXT
-    libs = $libs.split
-    for lib in libs
-      lib.sub!(/-l(.*)/, '"lib\1.a"')
-    end
-    $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
-  end
-  $DLDFLAGS = CONFIG["DLDFLAGS"]
-
-  $libs = CONFIG["LIBRUBYARG"] + " " + $libs + " " + CONFIG["LIBS"]
-  $configure_args['--enable-shared'] or $LIBPATH |= [$topdir]
-  $LIBPATH |= [CONFIG["libdir"]]
-
-  srcprefix ||= '$(srcdir)'
-  Config::expand(srcdir = srcprefix.dup)
-  defflag = ''
-  if RUBY_PLATFORM =~ /bccwin32/
-    deffile = target + '.def'
-    if not File.exist? deffile
-      open(deffile, 'wb') do |f|
-        f.print "EXPORTS\n", "_Init_", target, "\n"
-      end
-    end
-  elsif RUBY_PLATFORM =~ /cygwin|mingw/
-    deffile = target + '.def'
-    if not File.exist? deffile
-      if File.exist? File.join(srcdir, deffile)
-	deffile = File.join srcdir, deffile
-      else
-        open(deffile, 'wb') do |f|
-          f.print "EXPORTS\n", "Init_", target, "\n"
-        end
-      end
-    end
-    defflag = deffile
-  end
-
-  if RUBY_PLATFORM =~ /mswin32|bccwin32/
-    libpath = $LIBPATH.join(';')
-  else
-    $LIBPATH.each {|d| $DLDFLAGS << " -L" << d}
-    if /netbsdelf/ =~ RUBY_PLATFORM
-      $LIBPATH.each {|d| $DLDFLAGS << " -Wl,-R" + d}
-    end
-  end
-  drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
-
-  unless $objs then
-    $objs = []
-    for f in Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
-      f = File.basename(f)
-      f.sub!(/(#{SRC_EXT.join(%q{|})})$/, $OBJEXT)
-      $objs.push f
-    end
-  else
-    for i in $objs
-      i.sub!(/\.o\z/, ".#{$OBJEXT}")
-    end
-  end
-  $objs = $objs.join(" ")
-
-  mfile = open("Makefile", "w")
-  mfile.binmode if /mingw/ =~ RUBY_PLATFORM
-  mfile.print  <<EOMF
+def configuration(srcdir)
+  mk = []
+  mk << %{
 SHELL = /bin/sh
 
 #### Start of system configuration section. ####
@@ -673,224 +536,279 @@ srcdir = #{srcdir}
 topdir = #{$topdir}
 hdrdir = #{$hdrdir}
 VPATH = $(srcdir)
-
-CC = #{CONFIG["CC"]}
-
-CFLAGS   = #{CONFIG["CCDLFLAGS"]} #{CFLAGS} #{$CFLAGS}
-CPPFLAGS = -I. -I$(hdrdir) -I$(srcdir) #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]} #{$CPPFLAGS}
-CXXFLAGS = $(CFLAGS)
-#{
-if /bccwin32/ =~ RUBY_PLATFORM
-  "DLDFLAGS = #$LDFLAGS -L\"$(libdir:/=\\);$(topdir:/=\\)\"\n" +
-  "LDSHARED = #{CONFIG['LDSHARED']}\n"
-else
-  "DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}\n" +
-  "LDSHARED = #{CONFIG['LDSHARED']} #{defflag}\n"
-end
 }
-LIBPATH = #{libpath}
-
-RUBY_INSTALL_NAME = #{CONFIG["RUBY_INSTALL_NAME"]}
-RUBY_SO_NAME = #{CONFIG["RUBY_SO_NAME"]}
-arch = #{CONFIG["arch"]}
-sitearch = #{CONFIG["sitearch"]}
-ruby_version = #{Config::CONFIG["ruby_version"]}
-EOMF
+  drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
   if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?
-    mfile.print "\nDESTDIR = ", destdir, "\n"
+    mk << "\nDESTDIR = #{destdir}\n"
   end
   CONFIG.each do |key, var|
     next unless /prefix$/ =~ key
-    mfile.print key, " = ", with_destdir(var.sub(drive, '')), "\n"
+    mk << "#{key} = #{with_destdir(var.sub(drive, ''))}\n"
   end
   CONFIG.each do |key, var|
+    next if /^abs_/ =~ key
     next unless /^(?:src|top|(.*))dir$/ =~ key and $1
-    mfile.print key, " = ", with_destdir(var.sub(drive, '')), "\n"
+    mk << "#{key} = #{with_destdir(var.sub(drive, ''))}\n"
   end
-  mfile.print  <<EOMF
-target_prefix = #{target_prefix}
+  mk << %{
+CC = #{CONFIG['CC']}
 
-#### End of system configuration section. ####
+CFLAGS   = #{CONFIG['CCDLFLAGS'] unless $static} #$CFLAGS
+CPPFLAGS = -I. -I$(topdir) -I$(hdrdir) -I$(srcdir) #{$defs.join(" ")} #{$CPPFLAGS}
+CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
+DLDFLAGS = #$LDFLAGS #{CONFIG['DLDFLAGS']} #$DLDFLAGS
+LDSHARED = #{CONFIG['LDSHARED']}
+AR = #{CONFIG['AR']}
+EXEEXT = #{CONFIG['EXEEXT']}
 
-LOCAL_LIBS = #{$LOCAL_LIBS} #{$local_flags}
-LIBS = #{$libs}
-OBJS = #{$objs}
-
-TARGET = #{target}
-DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
-
-RUBY = #{CONFIG["ruby_install_name"]}
+RUBY_INSTALL_NAME = #{CONFIG['RUBY_INSTALL_NAME']}
+RUBY_SO_NAME = #{CONFIG['RUBY_SO_NAME']}
+arch = #{CONFIG['arch']}
+sitearch = #{CONFIG['sitearch']}
+ruby_version = #{Config::CONFIG['ruby_version']}
+RUBY = #{$ruby}
 RM = $(RUBY) -rftools -e "File::rm_f(*ARGV.map do|x|Dir[x]end.flatten.uniq)"
 MAKEDIRS = $(RUBY) -r ftools -e 'File::makedirs(*ARGV)'
 INSTALL_PROG = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)'
 INSTALL_DATA = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)'
 
-EXEEXT = #{CONFIG["EXEEXT"]}
+#### End of system configuration section. ####
 
+}
+end
+
+def makerules(target, target_prefix = "")
+  mk = []
+  if target
+    mk << %{
+target_prefix = #{target_prefix}
+LOCAL_LIBS = #{$LOCAL_LIBS}
+LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
+OBJS = #{$objs}
+TARGET = #{target}
+DLLIB = $(TARGET).#{$static ? $LIBEXT : CONFIG['DLEXT']}
+}
+    if $extmk
+      mk << %{
+RUBYCOMMONDIR = $(rubylibdir)
+RUBYLIBDIR    = $(rubylibdir)$(target_prefix)
+RUBYARCHDIR   = $(archdir)$(target_prefix)
+}
+    else
+      mk << %{
+RUBYCOMMONDIR = $(sitedir)$(target_prefix)
+RUBYLIBDIR    = $(sitelibdir)$(target_prefix)
+RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
+}
+    end
+    mk << %{
 all:		$(DLLIB)
 
 clean:
-		@$(RM) *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
-#{
-if /bccwin32/ =~ RUBY_PLATFORM
-   "		@$(RM) $(TARGET).lib $(TARGET).def $(TARGET).ilc $(TARGET).ild $(TARGET).ilf $(TARGET).ils $(TARGET).tds $(TARGET).map $(CLEANFILES)\n"+
-   "		@if exist $(target).def.org ren $(target).def.org $(target).def"
-else
-   "		@$(RM) $(TARGET).lib $(TARGET).exp $(TARGET).ilk *.pdb $(CLEANFILES)"
-end
+		@$(RM) $(TARGET).lib $(TARGET).exp $(TARGET).il? $(TARGET).tds $(TARGET).map
 }
-                
+  else
+    mk << %{
+all:		Makefile
+
+clean:
+}
+  end
+  mk << %{\
+		@$(RM) *.#{$OBJEXT} *.so *.sl *.#{$LIBEXT} $(DLLIB)
+		@$(RM) *.pdb *.bak $(CLEANFILES)
+
 distclean:	clean
 		@$(RM) Makefile extconf.h conftest.* mkmf.log
 		@$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES)
 
 realclean:	distclean
 
-install:	$(archdir)$(target_prefix)/$(DLLIB)
+}
+end
 
-site-install:	$(sitearchdir)$(target_prefix)/$(DLLIB)
-
-$(archdir)$(target_prefix)/$(DLLIB): $(DLLIB)
-	@$(MAKEDIRS) $(rubylibdir) $(archdir)$(target_prefix)
-	@$(INSTALL_PROG) $(DLLIB) $(archdir)$(target_prefix)/$(DLLIB)
-
-$(sitearchdir)$(target_prefix)/$(DLLIB): $(DLLIB)
-	@$(MAKEDIRS) $(sitearchdir)$(target_prefix)
-	@$(INSTALL_PROG) $(DLLIB) $(sitearchdir)$(target_prefix)/$(DLLIB)
-
-EOMF
-  mfile.print "install:\n"
-  install_rb(mfile, "$(rubylibdir)$(target_prefix)", srcprefix)
-  install_files(mfile, $INSTALLFILES, INSTALL_DIRS, srcprefix)
-  mfile.print "\n"
-  mfile.print "site-install:\n"
-  install_rb(mfile, "$(sitelibdir)$(target_prefix)", srcprefix)
-  install_files(mfile, $INSTALLFILES, SITEINSTALL_DIRS, srcprefix)
-
-  unless /mswin32/ =~ RUBY_PLATFORM
-    if /bccwin32/ =~ RUBY_PLATFORM
-      src = '$(<:\\=/)'
-    else
-      src = '$<'
+def create_makefile(target, srcprefix = nil)
+  $target = target
+  libpath = $LIBPATH
+  message "creating Makefile\n"
+  rm_f "conftest*"
+  if CONFIG["DLEXT"] == $OBJEXT
+    for lib in $libs.split
+      lib.sub!(/-l(.*)/, %%"lib\\1.#{$LIBEXT}"%)
     end
-    copt = cxxopt = ''
-  else
-    if /nmake/i =~ $make
-      src = '$(<:\\=/)'
-    else
-      src = '$(subst /,\\\\,$<)'
-    end
-    copt = '-Tc'
-    cxxopt = '-Tp'
+    $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
+
+  if target.include?('/')
+    target_prefix, target = File.split(target)
+    target_prefix[0,0] = '/'
+  else
+    target_prefix = ""
+  end
+
+  srcprefix ||= '$(srcdir)'
+  Config::expand(srcdir = srcprefix.dup)
+
+  cleanfiles = []
+  if EXPORT_PREFIX
+    origdef = target + '.def'
+    deffile = EXPORT_PREFIX + origdef
+    unless File.exist? deffile
+      if File.exist? File.join(srcdir, deffile)
+	deffile = File.join srcdir, deffile
+      elsif !EXPORT_PREFIX.empty? and File.exist?(origdef = File.join(srcdir, origdef))
+	open(origdef) do |d|
+	  open(deffile, 'wb') do |f|
+	    d.each do |l|
+	      f.print l
+	      break if /^EXPORTS$/i =~ l
+	    end
+	    d.each do |l|
+	      f.print l.sub(/\S/, EXPORT_PREFIX+'\&')
+	    end
+	  end
+	end
+	cleanfiles << deffile
+      else
+	open(deffile, 'wb') do |f|
+	  f.print "EXPORTS\n", EXPORT_PREFIX, "Init_", target, "\n"
+	end
+	cleanfiles << deffile
+      end
+    end
+  end
+
+  libpath = libpathflag(libpath)
+
+  unless $objs then
+    $objs = []
+    for f in Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
+      $objs.push(File.basename(f, ".*") << "." << $OBJEXT)
+    end
+  else
+    for i in $objs
+      i.sub!(/\.o\z/, ".#{$OBJEXT}")
+    end
+  end
+  $objs = $objs.join(" ")
+
+  mfile = open("Makefile", "wb")
+  mfile.print configuration(srcdir)
+  mfile.print %{
+LIBPATH = #{libpath}
+DEFFILE = #{deffile}
+
+CLEANFILES = #{cleanfiles.join(' ')}
+DISTCLEANFILES =
+}
+  mfile.print makerules(target, target_prefix)
+  dirs = []
+  unless $static
+    dirs << (dir = "$(RUBYARCHDIR)")
+    mfile.print("install: #{dir}\n")
+    f = "$(DLLIB)"
+    dest = "#{dir}/#{f}"
+    mfile.print "install: #{dest}\n"
+    mfile.print "#{dest}: #{f}\n\t@$(INSTALL_PROG) #{f} #{dir}\n"
+  end
+  for i in [[["lib/**/*.rb", "$(RUBYLIBDIR)", "lib"]], $INSTALLFILES]
+    files = install_files(mfile, i, nil, srcprefix) or next
+    for dir, *files in files
+      unless dirs.include?(dir)
+	dirs << dir
+	mfile.print("install: #{dir}\n")
+      end
+      files.each do |f|
+	dest = "#{dir}/#{File.basename(f)}"
+	mfile.print("install: #{dest}\n")
+	mfile.print("#{dest}: #{f}\n\t@$(INSTALL_DATA) #{f} #{dir}\n")
+      end
+    end
+  end
+  if dirs.empty?
+    mfile.print("install:\n")
+  else
+    dirs.each {|dir| mfile.print "#{dir}:\n\t@$(MAKEDIRS) #{dir}\n"}
+  end
+  
+  mfile.print "\n"
 
   mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
-  unless /nmake/i =~ $make
-    if /bccwin32/ =~ RUBY_PLATFORM
-    mfile.print "
-{$(srcdir)}.cc{}.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-{$(srcdir)}.cpp{}.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-{$(srcdir)}.cxx{}.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-{$(srcdir)}.c{}.@OBJEXT@:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
-"
+  mfile.print "\n"
+
+  %w[cc cpp cxx C].each do |ext|
+    COMPILE_RULES.each do |rule|
+      mfile.printf(rule, ext, $OBJEXT)
+      mfile.printf("\n\t%s\n\n", COMPILE_CXX)
     end
-    mfile.puts "
-.cc.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-.cpp.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-.cxx.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-.C.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-.c.#{$OBJEXT}:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
-"
-  else
-    mfile.print "
-{$(srcdir)}.c{}.#{$OBJEXT}:
-	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
-.c.#{$OBJEXT}:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
-{$(srcdir)}.cc{}.#{$OBJEXT}:
-	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-.cc.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-{$(srcdir)}.cpp{}.#{$OBJEXT}:
-	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-.cpp.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-{$(srcdir)}.cxx{}.#{$OBJEXT}:
-	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-.cxx.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
-"
+  end
+  %w[c].each do |ext|
+    COMPILE_RULES.each do |rule|
+      mfile.printf(rule, ext, $OBJEXT)
+      mfile.printf("\n\t%s\n\n", COMPILE_C)
+    end
   end
 
-  if CONFIG["DLEXT"] != $OBJEXT
-    mfile.print "$(DLLIB): $(OBJS)\n"
-    if /bccwin32/ =~ RUBY_PLATFORM
-      mfile.print "\t$(LDSHARED) $(DLDFLAGS) C0D32.OBJ $(OBJS), $@,, CW32.LIB IMPORT32.LIB WS2_32.LIB $(LIBS), #{deffile}\n"
-    else
-      if /mswin32|bccwin32/ =~ RUBY_PLATFORM
-        if /nmake/i =~ $make
-          mfile.print "\tset LIB=$(LIBPATH:/=\\);$(LIB)\n"
-        else
-          mfile.print "\tenv LIB='$(subst /,\\\\,$(LIBPATH));$(LIB)' \\\n"
-        end
-      end
-      mfile.print "\t$(LDSHARED) $(DLDFLAGS) #{OUTFLAG}$(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)\n"
+  mfile.print "$(DLLIB): $(OBJS)\n\t"
+  if $static
+    mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$(DLLIB) $(OBJS)"
+    if ranlib = config_string('RANLIB')
+      mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
     end
-  elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc")
-    mfile.print "$(DLLIB): $(OBJS)\n"
-    case RUBY_PLATFORM
-    when "m68k-human"
-      mfile.printf "ar cru $(DLLIB) $(OBJS)\n"
-    else
-      mfile.printf "ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)\n"
-    end
+  else
+    mfile.print LINK_SO
   end
+  mfile.print "\n\n"
 
   depend = File.join(srcdir, "depend")
   if File.exist?(depend)
-    dfile = open(depend, "r")
-    mfile.printf "###\n"
-    while line = dfile.gets()
-      line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-      line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if /nmake/i =~ $make
-      mfile.printf "%s", line
+    open(depend, "r") do |dfile|
+      mfile.printf "###\n"
+      while line = dfile.gets()
+	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
+	line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if $nmake
+	line.gsub!(/\$\(hdrdir\)\/config.h/, $config_h) if $config_h
+	mfile.print line
+      end
     end
-    dfile.close
   end
   mfile.close
-  $libs = save_libs
-  $LIBPATH = save_libpath
 end
 
-$OBJEXT = CONFIG["OBJEXT"]
-$objs = nil
-$libs = CONFIG["DLDLIBS"]
-$local_flags = ""
-case RUBY_PLATFORM
-when /mswin32/
-  $local_flags = "-link /INCREMENTAL:no /EXPORT:Init_$(TARGET)"
+def init_mkmf(config = CONFIG)
+  $defs = []
+  $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
+  $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
+  $LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", config["LDFLAGS"])).dup
+  $INCFLAGS = "-I#{$topdir}"
+  $DLDFLAGS = ""
+  $LIBEXT = config['LIBEXT'].dup
+  $OBJEXT = config["OBJEXT"].dup
+  $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
+  $LIBRUBYARG = config['LIBRUBYARG']
+
+  $objs = nil
+  $libs = ""
+  if $configure_args['--enable-shared'] or config["LIBRUBY"] != config["LIBRUBY_A"]
+  $LIBPATH = ["$(topdir)"]
+    $LIBPATH << "$(libdir)" unless $extmk or defined? CROSS_COMPILING
+  end
+  $LIBPATH << "$(archdir)"
+
+  $LOCAL_LIBS = ""
 end
-$LOCAL_LIBS = ""
-$defs = []
+
+init_mkmf
+dir_config("opt")
 
 $make = with_config("make-prog", ENV["MAKE"] || "make")
-
-$CFLAGS = with_config("cflags", arg_config("CFLAGS", ""))
-$CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", ""))
-$LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", ""))
-$LIBPATH = []
-$INCFLAGS = ""
-
-dir_config("opt")
+$nmake = nil
+case
+when $mswin
+  $nmake = ?m if /nmake/i =~ $make
+when $bccwin
+  $nmake = ?b if /\bbcc/i =~ $make or /\bbcc/i =~ find_executable0($make)
+end
 
 Config::CONFIG["srcdir"] = CONFIG["srcdir"] =
   $srcdir = arg_config("--srcdir", File.dirname($0))
@@ -898,3 +816,43 @@ $configure_args["--topsrcdir"] ||= $srcdir
 Config::CONFIG["topdir"] = CONFIG["topdir"] =
   $curdir = arg_config("--curdir", Dir.pwd)
 $configure_args["--topdir"] ||= $curdir
+$ruby = arg_config("--ruby", CONFIG["ruby_install_name"])
+
+def config_string(key)
+  return unless s = CONFIG[key] and !s.empty?
+  return s unless block_given?
+  yield s
+end
+
+split = Shellwords.method(:shellwords).to_proc
+
+EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
+
+hdr = []
+config_string('COMMON_MACROS') do |s|
+  Shellwords.shellwords(s).each do |s|
+    /(.*?)(?:=(.*))/ =~ s
+    hdr << "#define #$1 #$2"
+  end
+end
+config_string('COMMON_HEADERS') do |s|
+  Shellwords.shellwords(s).each {|s| hdr << "#include <#{s}>"}
+end
+COMMON_HEADERS = (hdr.join("\n") unless hdr.empty?)
+COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
+
+COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
+COMPILE_C = config_string('COMPILE_C') || '$(CC) $(CFLAGS) $(CPPFLAGS) -c $<'
+COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<'
+TRY_LINK = config_string('TRY_LINK') ||
+  "$(CC) #{OUTFLAG}conftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS) " \
+  "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(LOCAL_LIBS) $(LIBS)"
+LINK_SO = config_string('LINK_SO') ||
+  if CONFIG["DLEXT"] == $OBJEXT
+    "ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)\n"
+  else
+    "$(LDSHARED) $(DLDFLAGS) $(LIBPATH) #{OUTFLAG}$(DLLIB) " \
+    "$(OBJS) $(LOCAL_LIBS) $(LIBS)"
+  end
+LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
+LIBARG = config_string('LIBARG') || '-l%s'

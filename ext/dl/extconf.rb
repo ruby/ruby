@@ -33,19 +33,25 @@ else
 end
 $with_dlstack = ! $with_asm
 
-$with_type_int = try_run(<<EOF)
-int main(){ return sizeof(int) == sizeof(long); }
+$with_type_int = try_cpp(<<EOF)
+#include "config.h"
+#if SIZEOF_INT == SIZEOF_LONG
+#error int not needed
+#endif
 EOF
 
-$with_type_float = try_run(<<EOF)
-int main(){ return sizeof(float) == sizeof(double); }
+$with_type_float = try_cpp(<<EOF)
+#include "config.h"
+#if SIZEOF_FLOAT == SIZEOF_DOUBLE
+#error float not needed
+#endif
 EOF
 
-$with_type_voidp = try_run(<<EOF)
-int main(){
-  return (sizeof(void *) == sizeof(long))
-         || (sizeof(void *) == sizeof(int));
-}
+$with_type_voidp = try_cpp(<<EOF)
+#include "config.h"
+#if SIZEOF_VOIDP == SIZEOF_INT || SIZEOF_VOIDP == SIZEOF_LONG
+#error void* not needed
+#endif
 EOF
 
 $with_type_char  = DLTYPE[CHAR][:sym]
@@ -175,21 +181,6 @@ $INSTALLFILES = [
   ["./dlconfig.h", "$(archdir)$(target_prefix)", "."],
   ["dl.h", "$(archdir)$(target_prefix)", ""],
 ]
-
-if /bccwin32/ =~ RUBY_PLATFORM
-  srcdir = $top_srcdir + "/ext/dl/"
-  if !FileTest.exist?( srcdir+"dl.def.org" )
-    File.copy( srcdir+"dl.def", srcdir+"dl.def.org" )
-    open( srcdir+"dl.def.org" ){ |f|
-      open( "dl.def", "w" ) { |g|
-        g.print f.gets
-        while line = f.gets
-          g.print "_", line
-        end
-      }
-    }
-  end
-end
 
 create_makefile('dl')
 rescue SystemExit
