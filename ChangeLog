@@ -5,6 +5,11 @@ Fri Mar  4 11:17:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_rb_threadUpdateCommand): ditto.
 
+Fri Mar  4 10:15:30 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/set.rb (SortedSet::setup): a hack to shut up warning.
+	  [ruby-talk:132866]
+
 Thu Mar  4 07:07:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
         * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.63
