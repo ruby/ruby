@@ -1,3 +1,11 @@
+Tue Oct 12 22:29:04 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_read): length may be 0 or negative.
+
+Tue Oct 12 13:26:27 1999  Jun-ichiro itojun Hagino  <itojun@itojun.org>
+
+	* signal.c (posix_signal): RETSIGTYPE may be void.
+
 Mon Oct 11 17:42:25 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (rb_intern): should generate distinct ID_ATTRSET symbols

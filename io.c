@@ -482,11 +482,15 @@ io_read(argc, argv, io)
     }
 
     len = NUM2INT(length);
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative length %d given", len);
+    }
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
     if (feof(fptr->f)) return Qnil;
     str = rb_str_new(0, len);
+    if (len == 0) return str;
 
     READ_CHECK(fptr->f);
     n = io_fread(RSTRING(str)->ptr, len, fptr->f);
