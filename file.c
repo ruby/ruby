@@ -1463,7 +1463,7 @@ rb_file_s_expand_path(argc, argv)
 #endif
 	}
     }
-#if defined DOSISH
+#if defined DOSISH || defined __CYGWIN__
     /* skip drive letter */
     else if (ISALPHA(s[0]) && s[1] == ':' && isdirsep(s[2])) {
 	b = s;
@@ -1561,7 +1561,7 @@ rb_file_s_expand_path(argc, argv)
 	memcpy(++p, b, s-b);
 	p += s-b;
     }
-#if defined(DOSISH)
+#if defined DOSISH || defined __CYGWIN__
     else if (ISALPHA(buf[0]) && (buf[1] == ':') && isdirsep(buf[2])) {
 	/* root directory needs a trailing backslash,
 	   otherwise it mean the current directory of the drive */
@@ -2318,10 +2318,11 @@ static int
 is_absolute_path(path)
     const char *path;
 {
-#ifdef DOSISH
+#if defined DOSISH || defined __CYGWIN__
     if (ISALPHA(path[0]) && path[1] == ':' && isdirsep(path[2])) return 1;
     if (isdirsep(path[0]) && isdirsep(path[1])) return 1;
-#else
+#endif
+#ifndef DOSISH
     if (path[0] == '/') return 1;
 #endif
     return 0;

@@ -1,3 +1,9 @@
+Tue Aug 20 19:39:03 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* file.c (rb_file_s_expand_path): accept drive letter on Cygwin.
+
+	* file.c (is_absolute_path): ditto.
+
 Tue Aug 20 12:12:25 2002  Tietew <tietew@tietew.net>
 
 	* io.c (rb_io_putc): output via rb_io_write().
