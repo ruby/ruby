@@ -1,3 +1,14 @@
+Sat Jul 12 01:21:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (avalue_to_svalue): typo.
+
+	* eval.c (rb_load): rb_prohibit_interrupt should not underflow.
+
+Sat Jul 12 01:21:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (NODE_STRTERM, tokadd_string, parse_string): moved string
+	  nest level from a static variable to NODE_STRTERM.
+
 Fri Jul 11 22:37:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (aix): needs ruby.imp even with gcc.

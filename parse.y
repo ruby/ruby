@@ -76,7 +76,6 @@ static enum lex_state {
     EXPR_CLASS,			/* immediate after `class', no here document. */
 } lex_state;
 static NODE *lex_strterm;
-static int lex_strnest;
 
 #ifdef HAVE_LONG_LONG
 typedef unsigned LONG_LONG stack_type;
@@ -175,9 +174,16 @@ static void top_local_setup();
 
 #define NODE_STRTERM NODE_ZARRAY	/* nothing to gc */
 #define NODE_HEREDOC NODE_ARRAY 	/* 1, 3 to gc */
+#define ESCAPED_TERM (1 << CHAR_BIT)
+#define SIGN_EXTEND(x,n) (((1<<(n))-1-((x)&~(~0<<(n))))^~(~0<<(n)))
 #define nd_func u1.id
-#define nd_term u2.id
-#define nd_paren u3.id
+#if SIZEOF_SHORT == 2
+#define nd_term(node) ((signed short)(node)->u2.id)
+#else
+#define nd_term(node) SIGN_EXTEND((node)->u2.id, CHAR_BIT*2)
+#endif
+#define nd_paren(node) (char)((node)->u2.id >> CHAR_BIT*2)
+#define nd_nest u3.id
 
 %}
 
@@ -1961,7 +1967,6 @@ words		: tWORDS_BEG ' ' tSTRING_END
 
 word_list	: /* none */
 		    {
-			lex_strnest = 0;
 			$$ = 0;
 		    }
 		| word_list word ' '
@@ -1989,7 +1994,6 @@ qwords		: tQWORDS_BEG ' ' tSTRING_END
 
 qword_list	: /* none */
 		    {
-			lex_strnest = 0;
 			$$ = 0;
 		    }
 		| qword_list tSTRING_CONTENT ' '
@@ -2000,7 +2004,6 @@ qword_list	: /* none */
 
 string_contents : /* none */
 		    {
-			lex_strnest = 0;
 			$$ = 0;
 		    }
 		| string_contents string_content
@@ -2011,7 +2014,6 @@ string_contents : /* none */
 
 xstring_contents: /* none */
 		    {
-			lex_strnest = 0;
 			$$ = 0;
 		    }
 		| xstring_contents string_content
@@ -2023,27 +2025,23 @@ xstring_contents: /* none */
 string_content	: tSTRING_CONTENT
 		| tSTRING_DVAR
 		    {
-			$<num>1 = lex_strnest;
 			$<node>$ = lex_strterm;
 			lex_strterm = 0;
 			lex_state = EXPR_BEG;
 		    }
 		  string_dvar
 		    {
-			lex_strnest = $<num>1;
 			lex_strterm = $<node>2;
 		        $$ = NEW_EVSTR($3);
 		    }
 		| tSTRING_DBEG term_push
 		    {
-			$<num>1 = lex_strnest;
 			$<node>$ = lex_strterm;
 			lex_strterm = 0;
 			lex_state = EXPR_BEG;
 		    }
 		  compstmt '}'
 		    {
-			lex_strnest = $<num>1;
 			quoted_term = $2;
 			lex_strterm = $<node>3;
 			if (($$ = $4) && nd_type($$) == NODE_NEWLINE) {
@@ -2064,8 +2062,8 @@ term_push	: /* none */
 		    {
 			if (($$ = quoted_term) == -1 &&
 			    nd_type(lex_strterm) == NODE_STRTERM &&
-			    !lex_strterm->nd_paren) {
-			    quoted_term = lex_strterm->nd_term;
+			    !nd_paren(lex_strterm)) {
+			    quoted_term = nd_term(lex_strterm);
 			}
 		    }
 		;
@@ -2521,7 +2519,6 @@ yycompile(f, line)
     ruby_eval_tree = 0;
     heredoc_end = 0;
     lex_strterm = 0;
-    lex_strnest = 0;
     quoted_term = -1;
     ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
@@ -2955,21 +2952,21 @@ dispose_string(str)
 }
 
 static int
-tokadd_string(func, term, paren)
-    int func, term, paren;
+tokadd_string(func, term, paren, nest)
+    int func, term, paren, *nest;
 {
     int c;
 
     while ((c = nextc()) != -1) {
 	if (paren && c == paren) {
-	    lex_strnest++;
+	    ++*nest;
 	}
 	else if (c == term) {
-	    if (!lex_strnest) {
+	    if (!nest || !*nest) {
 		pushback(c);
 		break;
 	    }
-	    --lex_strnest;
+	    --*nest;
 	}
 	else if ((func & STR_FUNC_EXPAND) && c == '#' && lex_p < lex_pend) {
 	    int c2 = *lex_p;
@@ -3035,15 +3032,15 @@ tokadd_string(func, term, paren)
 }
 
 #define NEW_STRTERM(func, term, paren) \
-	rb_node_newnode(NODE_STRTERM, (func), (term), (paren))
+	rb_node_newnode(NODE_STRTERM, (func), (term) | ((paren) << (CHAR_BIT * 2)), 0)
 
 static int
 parse_string(quote)
     NODE *quote;
 {
     int func = quote->nd_func;
-    int term = quote->nd_term;
-    int paren = quote->nd_paren;
+    int term = nd_term(quote);
+    int paren = nd_paren(quote);
     int c, space = 0;
 
     if (func == -1) return tSTRING_END;
@@ -3052,7 +3049,7 @@ parse_string(quote)
 	do {c = nextc();} while (ISSPACE(c));
 	space = 1;
     }
-    if ((c == term && !lex_strnest) ||
+    if ((c == term && !quote->nd_nest) ||
 	(c == '\\' && WHEN_QUOTED_TERM(peek(quoted_term_char)) &&
 	 (c = nextc()) == term)) {
 	if (func & STR_FUNC_QWORDS) {
@@ -3080,7 +3077,7 @@ parse_string(quote)
 	tokadd('#');
     }
     pushback(c);
-    if (tokadd_string(func, term, paren) == -1) {
+    if (tokadd_string(func, term, paren, &quote->nd_nest) == -1) {
 	ruby_sourceline = nd_line(quote);
 	rb_compile_error("unterminated string meets end of file");
 	return tSTRING_END;
@@ -3249,7 +3246,7 @@ here_document(here)
 	}
 	do {
 	    pushback(c);
-	    if ((c = tokadd_string(func, '\n', 0)) == -1) goto error;
+	    if ((c = tokadd_string(func, '\n', 0, NULL)) == -1) goto error;
 	    if (c != '\n') {
 		yylval.node = NEW_STR(rb_str_new(tok(), toklen()));
 		return tSTRING_CONTENT;
@@ -4080,9 +4077,9 @@ yylex()
 	}
 	pushback(c);
 	if (QUOTED_TERM_P(c)) {
-	    if (!(quoted_term & (1 << CHAR_BIT))) {
+	    if (!(quoted_term & ESCAPED_TERM)) {
 		rb_warn("escaped terminator '%c' inside string interpolation", c);
-		quoted_term |= 1 << CHAR_BIT;
+		quoted_term |= ESCAPED_TERM;
 	    }
 	    goto retry;
 	}
@@ -4097,10 +4094,10 @@ yylex()
 	  quotation:
 	    if (c == '\\' && WHEN_QUOTED_TERM(peek(quoted_term_char))) {
 		c = nextc();
-		if (!(quoted_term & (1 << CHAR_BIT))) {
+		if (!(quoted_term & ESCAPED_TERM)) {
 		    rb_warn("escaped terminator '%s%c' inside string interpolation",
 			    (c == '\'' ? "\\" : ""), c);
-		    quoted_term |= 1 << CHAR_BIT;
+		    quoted_term |= ESCAPED_TERM;
 		}
 	    }
 	    if (!ISALNUM(c)) {

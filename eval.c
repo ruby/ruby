@@ -2289,7 +2289,7 @@ avalue_to_svalue(v)
     VALUE tmp, top;
 
     tmp = rb_check_array_type(v);
-    if (NIL_P(v)) {
+    if (NIL_P(tmp)) {
 	return v;
     }
     if (RARRAY(tmp)->len == 0) {
@@ -5761,7 +5761,6 @@ rb_load(fname, wrap)
 	rb_load_file(RSTRING(fname)->ptr);
 	ruby_in_eval--;
 	node = ruby_eval_tree;
-	ALLOW_INTS;
 	rb_thread_critical = critical;
 	if (ruby_nerrs == 0) {
 	    eval_node(self, node);
