@@ -127,7 +127,7 @@ class DateTime
   end
 
   def ==(o)
-    self.to_a == o.to_a
+    Array(self) == Array(o)
   end
 
 end

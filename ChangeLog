@@ -5,6 +5,9 @@ Fri Nov 19 11:10:16 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* test/testunit/collector/test_dir.rb: ditto.
 
+	* lib/xmlrpc/datetime.rb (XMLRPC::DateTime#==): should use Array()
+	  instead of to_a.
+
 Fri Nov 19 10:32:36 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_s_set_completion_append_character):
