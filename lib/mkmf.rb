@@ -912,8 +912,7 @@ CLEANLIBS     = #{n}#{CONFIG['DLEXT']} #{n}il? #{n}tds #{n}map
 CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.exp *.bak
 
 all:		#{target ? $extout ? "install" : "$(DLLIB)" : "Makefile"}
-static:		$(STATIC_LIB)
-
+static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
 }
   mfile.print CLEANINGS
   dirs = []
