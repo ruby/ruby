@@ -428,15 +428,9 @@ class TkText<TkTextWin
     rsearch_with_length(pat,start,stop)[0]
   end
 
-  def dump(type_info, *index)
-    args = type_info.collect{|inf|
-                 if inf.kind_of? Array
-                   inf[0] = '-' + inf[0]
-                   inf
-                 else
-                   '-' + inf
-                 end
-               }.flatten
+  def dump(type_info, *index, &block)
+    args = type_info.collect{|inf| '-' + inf}
+    args << '-command' << Proc.new(&block) if iterator?
     str = tk_send('dump', *(args + index))
     result = []
     sel = nil
@@ -546,26 +540,23 @@ class TkText<TkTextWin
   end
   private :_retrieve_backslashed_text
 
-  def dump_all(*index)
-    dump(['all'], *index)
+  def dump_all(*index, &block)
+    dump(['all'], *index, &block)
   end
-  def dump_command(cmd, *index)
-    dump([['command', cmd]], *index)
+  def dump_mark(*index, &block)
+    dump(['mark'], *index, &block)
   end
-  def dump_mark(*index)
-    dump(['mark'], *index)
+  def dump_tag(*index, &block)
+    dump(['tag'], *index, &block)
   end
-  def dump_tag(*index)
-    dump(['tag'], *index)
+  def dump_text(*index, &block)
+    dump(['text'], *index, &block)
   end
-  def dump_text(*index)
-    dump(['text'], *index)
+  def dump_window(*index, &block)
+    dump(['window'], *index, &block)
   end
-  def dump_window(*index)
-    dump(['window'], *index)
-  end
-  def dump_image(*index)
-    dump(['image'], *index)
+  def dump_image(*index, &block)
+    dump(['image'], *index, &block)
   end
 end
 

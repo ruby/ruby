@@ -37,6 +37,6 @@ int rb_kcode _((void));
 
 extern int ruby_ignorecase;
 
-int rb_mbclen2 _((unsigned char, VALUE));
+int rb_mbclen2 _((unsigned int, VALUE));
 #define mbclen2(c,re) rb_mbclen2((c),(re))
 #endif

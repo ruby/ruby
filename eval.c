@@ -3326,34 +3326,27 @@ massign(self, node, val, check)
 
     list = node->nd_head;
 
-    if (val) {
-	if (TYPE(val) != T_ARRAY) {
-	    val = rb_Array(val);
-	}
-	len = RARRAY(val)->len;
-	for (i=0; list && i<len; i++) {
-	    assign(self, list->nd_head, RARRAY(val)->ptr[i], check);
-	    list = list->nd_next;
-	}
-	if (check && list) goto arg_error;
-	if (node->nd_args) {
-	    if (node->nd_args == (NODE*)-1) {
-		/* ignore rest args */
-	    }
-	    else if (!list && i<len) {
-		assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), check);
-	    }
-	    else {
-		assign(self, node->nd_args, rb_ary_new2(0), check);
-	    }
-	}
-	else if (check && i<len) goto arg_error;
+    if (TYPE(val) != T_ARRAY) {
+	val = rb_Array(val);
     }
-    else if (node->nd_args && node->nd_args != (NODE*)-1) {
-	assign(self, node->nd_args, Qnil, check);
+    len = RARRAY(val)->len;
+    for (i=0; list && i<len; i++) {
+	assign(self, list->nd_head, RARRAY(val)->ptr[i], check);
+	list = list->nd_next;
+    }
+    if (check && list) goto arg_error;
+    if (node->nd_args) {
+	if (node->nd_args == (NODE*)-1) {
+	    /* ignore rest args */
+	}
+	else if (!list && i<len) {
+	    assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), check);
+	}
+	else {
+	    assign(self, node->nd_args, rb_ary_new2(0), check);
+	}
     }
 
-    if (check && list) goto arg_error;
     while (list) {
 	i++;
 	assign(self, list->nd_head, Qnil, check);
@@ -6159,7 +6152,9 @@ struct thread {
 
 #define THREAD_RAISED 0x200
 
+static thread_t main_thread;
 static thread_t curr_thread = 0;
+
 static int num_waiting_on_fd = 0;
 static int num_waiting_on_timer = 0;
 static int num_waiting_on_join = 0;
@@ -6178,8 +6173,6 @@ timeofday()
     gettimeofday(&tv, NULL);
     return (double)tv.tv_sec + (double)tv.tv_usec * 1e-6;
 }
-
-static thread_t main_thread;
 
 #define STACK(addr) (th->stk_pos<(VALUE*)(addr) && (VALUE*)(addr)<th->stk_pos+th->stk_len)
 #define ADJ(addr) (void*)(STACK(addr)?(((VALUE*)(addr)-th->stk_pos)+th->stk_ptr):(VALUE*)(addr))
@@ -6647,6 +6640,7 @@ rb_thread_schedule()
 	rb_thread_ready(next);
 	next->status = THREAD_TO_KILL;
     }
+    printf("<0x%x>\n", next);
     if (next->status == THREAD_RUNNABLE && next == curr_thread) {
 	return;
     }
@@ -7375,7 +7369,7 @@ rb_thread_raise(argc, argv, thread)
 	rb_f_raise(argc, argv);
     }
 
-    if (!curr_thread->status != THREAD_KILLED)
+    if (curr_thread->status != THREAD_KILLED)
 	rb_thread_save_context(curr_thread);
     if (thread_switch(setjmp(curr_thread->context))) {
 	return thread;

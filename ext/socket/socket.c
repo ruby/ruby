@@ -259,7 +259,8 @@ bsock_getsockopt(sock, lev, optname)
     VALUE sock, lev, optname;
 {
 #if !defined(__BEOS__)
-    int level, option, len;
+    int level, option;
+    socklen_t len;
     char *buf;
     OpenFile *fptr;
 
@@ -283,7 +284,7 @@ bsock_getsockname(sock)
    VALUE sock;
 {
     char buf[1024];
-    int len = sizeof buf;
+    socklen_t len = sizeof buf;
     OpenFile *fptr;
 
     GetOpenFile(sock, fptr);
@@ -297,7 +298,7 @@ bsock_getpeername(sock)
    VALUE sock;
 {
     char buf[1024];
-    int len = sizeof buf;
+    socklen_t len = sizeof buf;
     OpenFile *fptr;
 
     GetOpenFile(sock, fptr);
@@ -377,9 +378,9 @@ s_recv(sock, argc, argv, from)
     OpenFile *fptr;
     VALUE str;
     char buf[1024];
-    int fd, alen = sizeof buf;
+    socklen_t alen = sizeof buf;
     VALUE len, flg;
-    int flags;
+    int fd, flags;
 
     rb_scan_args(argc, argv, "11", &len, &flg);
 
@@ -960,7 +961,7 @@ s_accept(class, fd, sockaddr, len)
     VALUE class;
     int fd;
     struct sockaddr *sockaddr;
-    int *len;
+    socklen_t *len;
 {
     int fd2;
 
@@ -993,7 +994,7 @@ tcp_accept(sock)
 {
     OpenFile *fptr;
     struct sockaddr_storage from;
-    int fromlen;
+    socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
@@ -1065,7 +1066,7 @@ ip_addr(sock)
 {
     OpenFile *fptr;
     struct sockaddr_storage addr;
-    int len = sizeof addr;
+    socklen_t len = sizeof addr;
 
     GetOpenFile(sock, fptr);
 
@@ -1080,7 +1081,7 @@ ip_peeraddr(sock)
 {
     OpenFile *fptr;
     struct sockaddr_storage addr;
-    int len = sizeof addr;
+    socklen_t len = sizeof addr;
 
     GetOpenFile(sock, fptr);
 
@@ -1239,7 +1240,7 @@ unix_path(sock)
     GetOpenFile(sock, fptr);
     if (fptr->path == 0) {
 	struct sockaddr_un addr;
-	int len = sizeof(addr);
+	socklen_t len = sizeof(addr);
 	if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	    rb_sys_fail(0);
 	fptr->path = strdup(addr.sun_path);
@@ -1269,7 +1270,7 @@ unix_accept(sock)
 {
     OpenFile *fptr;
     struct sockaddr_un from;
-    int fromlen;
+    socklen_t fromlen;
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(struct sockaddr_un);
@@ -1290,7 +1291,7 @@ unix_addr(sock)
 {
     OpenFile *fptr;
     struct sockaddr_un addr;
-    int len = sizeof addr;
+    socklen_t len = sizeof addr;
 
     GetOpenFile(sock, fptr);
 
@@ -1305,7 +1306,7 @@ unix_peeraddr(sock)
 {
     OpenFile *fptr;
     struct sockaddr_un addr;
-    int len = sizeof addr;
+    socklen_t len = sizeof addr;
 
     GetOpenFile(sock, fptr);
 
@@ -1508,7 +1509,7 @@ sock_accept(sock)
     OpenFile *fptr;
     VALUE sock2;
     char buf[1024];
-    int len = sizeof buf;
+    socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
     sock2 = s_accept(rb_cSocket,fileno(fptr->f),(struct sockaddr*)buf,&len);

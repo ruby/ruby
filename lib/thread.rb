@@ -71,6 +71,7 @@ class Mutex
       retry
     end
     Thread.critical = false
+    t.run if t
     self
   end
 

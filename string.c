@@ -721,29 +721,36 @@ rb_str_succ(orig)
     VALUE str, str2;
     char *sbeg, *s;
     int c = -1;
+    int n = 0;
 
     str = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
+    if (OBJ_TAINTED(orig)) OBJ_TAINT(str);
+    if (RSTRING(str)->len == 0) return str;
 
     sbeg = RSTRING(str)->ptr; s = sbeg + RSTRING(str)->len - 1;
 
     while (sbeg <= s) {
-	if (ISALNUM(*s) && (c = succ_char(s)) == 0) break;
+	if (ISALNUM(*s)) {
+	    if ((c = succ_char(s)) == 0) break;
+	    n = s - sbeg;
+	}
 	s--;
     }
-    if (s < sbeg) {
-	if (c == -1 && RSTRING(str)->len > 0) {
-	    RSTRING(str)->ptr[RSTRING(str)->len-1] += 1;
-	}
-	else {
-	    str2 = rb_str_new(0, RSTRING(str)->len+1);
-	    RSTRING(str2)->ptr[0] = c;
-	    memcpy(RSTRING(str2)->ptr+1, RSTRING(str)->ptr, RSTRING(str)->len);
-	    str = str2;
+    if (c == -1) {		/* str contains no alnum */
+	sbeg = RSTRING(str)->ptr; s = sbeg + RSTRING(str)->len - 1;
+	c = '\001';
+	while (sbeg <= s) {
+	    *s += 1;
+	    if (*s-- != 0) break;
 	}
     }
-
-    if (OBJ_TAINTED(orig)) {
-	OBJ_TAINT(str);
+    if (s < sbeg) {
+	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len + 1);
+	s = RSTRING(str)->ptr + n;
+	memmove(s+1, s, RSTRING(str)->len - n);
+	*s = c;
+	RSTRING(str)->len += 1;
+	
     }
 
     return str;

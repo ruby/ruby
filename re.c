@@ -184,7 +184,7 @@ kcode_reset_option()
 
 int
 rb_mbclen2(c, re)
-    unsigned char c;
+    unsigned int c;
     VALUE re;
 {
     int len;

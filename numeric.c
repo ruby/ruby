@@ -13,7 +13,7 @@
 #include "ruby.h"
 #include <math.h>
 #include <stdio.h>
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && __FreeBSD__ < 4
 #include <floatingpoint.h>
 #endif
 
@@ -1410,7 +1410,7 @@ fix_zero_p(num)
 void
 Init_Numeric()
 {
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) && __FreeBSD__ < 4
     /* allow divide by zero -- Inf */
     fpsetmask(fpgetmask() & ~(FP_X_DZ|FP_X_INV|FP_X_OFL));
 #endif

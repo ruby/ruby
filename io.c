@@ -2850,7 +2850,7 @@ rb_io_s_pipe()
 	rb_sys_fail(0);
 
     r = prep_stdio(rb_fdopen(pipes[0], "r"), FMODE_READABLE, rb_cIO);
-    w = prep_stdio(rb_fdopen(pipes[1], "w"), FMODE_WRITABLE, rb_cIO);
+    w = prep_stdio(rb_fdopen(pipes[1], "w"), FMODE_WRITABLE|FMODE_SYNC, rb_cIO);
 
     ary = rb_ary_new2(2);
     rb_ary_push(ary, r);

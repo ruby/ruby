@@ -1,3 +1,25 @@
+Wed Apr 26 15:23:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_succ): insert carrying character just before
+	  the leftmost alpha numeric character.
+
+	* string.c (rb_str_succ): proper behavior for "".succ and "\377".succ.
+
+	* string.c (rb_str_succ): use realloc and memmove.
+
+Sat Apr 22 23:14:41 2000  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
+
+	* configure.in: MacOS X support.
+
+Fri Apr 21 21:44:34 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* io.c (rb_io_s_pipe): should set FMODE_SYNC.
+
+Thu Apr 20 16:59:22 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (massign): `*lvalue = false' should assign `[false]' to
+	  lvalue.
+
 Mon Apr 17 15:16:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_io_close): to detect some exceptional status, writable

@@ -876,7 +876,7 @@ Returns the name of the class.
 
   int rb_respond_to(VALUE object, ID id)
 
-Returns true if the object reponds to the message specified by id.
+Returns true if the object responds to the message specified by id.
 
 ** Instance Variables
 
