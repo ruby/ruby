@@ -365,7 +365,7 @@ def message(*s)
 end
 
 def checking_for(m)
-  f = caller[0][/in \`(.*)\'$/, 1] and f << ": "
+  f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim
   m = "checking for #{m}... "
   message m
   Logging::message "#{f}#{m}\n"
@@ -579,7 +579,7 @@ ruby_version = #{Config::CONFIG['ruby_version']}
 RUBY = #{$ruby}
 RM = $(RUBY) -rftools -e "File::rm_f(*ARGV.map do|x|Dir[x]end.flatten.uniq)"
 MAKEDIRS = $(RUBY) -r ftools -e 'File::makedirs(*ARGV)'
-INSTALL_PROG = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)'
+INSTALL_PROG = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0755, true)'
 INSTALL_DATA = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)'
 
 #### End of system configuration section. ####
@@ -613,9 +613,23 @@ def create_makefile(target, srcprefix = nil)
   srcprefix ||= '$(srcdir)'
   Config::expand(srcdir = srcprefix.dup)
 
+  unless $objs then
+    $objs = []
+    for f in Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
+      $objs.push(File.basename(f, ".*") << "." << $OBJEXT)
+    end
+  else
+    for i in $objs
+      i.sub!(/\.o\z/, ".#{$OBJEXT}")
+    end
+  end
+  $objs = $objs.join(" ")
+
+  target = nil if $objs == ""
+
   cleanfiles = []
   distcleanfiles = []
-  if EXPORT_PREFIX
+  if target and EXPORT_PREFIX
     origdef = target + '.def'
     deffile = EXPORT_PREFIX + origdef
     unless File.exist? deffile
@@ -644,18 +658,7 @@ def create_makefile(target, srcprefix = nil)
 
   libpath = libpathflag(libpath)
 
-  unless $objs then
-    $objs = []
-    for f in Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
-      $objs.push(File.basename(f, ".*") << "." << $OBJEXT)
-    end
-  else
-    for i in $objs
-      i.sub!(/\.o\z/, ".#{$OBJEXT}")
-    end
-  end
-  $objs = $objs.join(" ")
-
+  dllib = target ? "$(TARGET).#{$static ? $LIBEXT : CONFIG['DLEXT']}" : ""
   mfile = open("Makefile", "wb")
   mfile.print configuration(srcdir)
   mfile.print %{
@@ -670,7 +673,7 @@ LOCAL_LIBS = #{$LOCAL_LIBS}
 LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
 OBJS = #{$objs}
 TARGET = #{target}
-DLLIB = $(TARGET).#{$static ? $LIBEXT : CONFIG['DLEXT']}
+DLLIB = #{dllib}
 }
   if $extmk
     mfile.print %{
@@ -689,11 +692,11 @@ RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
 CLEANLIBS     = "$(TARGET).{lib,exp,il?,tds,map}" $(DLLIB)
 CLEANOBJS     = "*.{#{$OBJEXT},#{$LIBEXT},s[ol],pdb,bak}"
 
-all:		$(DLLIB)
+all:		#{target ? "$(DLLIB)" : "Makefile"}
 }
   mfile.print CLEANINGS
   dirs = []
-  unless $static
+  if not $static and target
     dirs << (dir = "$(RUBYARCHDIR)")
     mfile.print("install: #{dir}\n")
     f = "$(DLLIB)"
@@ -722,6 +725,8 @@ all:		$(DLLIB)
   end
 
   mfile.print "\nsite-install: install\n\n"
+
+  return unless target
 
   mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
   mfile.print "\n"
@@ -763,6 +768,7 @@ all:		$(DLLIB)
       end
     end
   end
+ensure
   mfile.close
 end
 

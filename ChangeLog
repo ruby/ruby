@@ -1,3 +1,7 @@
+Sun Dec 22 00:36:43 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): accept pure ruby libraries.
+
 Sat Dec 21 07:27:24 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-parse-partial): keywords must not be
