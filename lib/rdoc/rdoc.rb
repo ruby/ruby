@@ -166,7 +166,7 @@ module RDoc
         next if options.exclude && options.exclude =~ rel_file_name
         case type = File.stat(rel_file_name).ftype
         when "file"
-          file_list << rel_file_name if force_doc || ParserFactory.can_parse(rel_file_name)
+          file_list << rel_file_name.sub(/^\.\//, '') if force_doc || ParserFactory.can_parse(rel_file_name)
         when "directory"
           next if rel_file_name == "CVS" || rel_file_name == ".svn"
           dot_doc = File.join(rel_file_name, DOT_DOC_FILENAME)

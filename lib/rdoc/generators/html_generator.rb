@@ -61,7 +61,7 @@ module Generators
 
   class AllReferences
     @@refs = {}
-
+    
     def AllReferences::reset
       @@refs = {}
     end
