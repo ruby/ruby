@@ -1,3 +1,13 @@
+Fri Aug 16 11:47:24 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (rb_io_fread): renamed from io_fread and made extern.
+
+	* marshal.c (r_bytes0): check if successfully read, use
+	  rb_io_fread() instead of fread() to be preemptive.
+	  (ruby-bugs-ja:PR#294, 295)
+
+	* rubyio.h (rb_io_fread): added.
+
 Fri Aug 16 07:57:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (compile_error): must not clear ruby_sourcefile here.

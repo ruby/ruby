@@ -712,11 +712,14 @@ r_bytes0(s, len, arg)
     struct load_arg *arg;
 {
     if (arg->fp) {
-	len = fread(s, 1, len, arg->fp);
+	if (rb_io_fread(s, len, arg->fp) != len) {
+	  too_short:
+	    rb_raise(rb_eArgError, "marshal data too short");
+	}
     }
     else {
 	if (arg->ptr + len > arg->end) {
-	    len = arg->end - arg->ptr;
+	    goto too_short;
 	}
 	memcpy(s, arg->ptr, len);
 	arg->ptr += len;

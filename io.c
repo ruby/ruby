@@ -542,8 +542,8 @@ rb_io_to_io(io)
 
 /* reading functions */
 
-static long
-io_fread(ptr, len, f)
+long
+rb_io_fread(ptr, len, f)
     char *ptr;
     long len;
     FILE *f;
@@ -650,7 +650,7 @@ read_all(fptr, siz)
     if (!siz) siz = BUFSIZ;
     str = rb_tainted_str_new(0, siz);
     for (;;) {
-	n = io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
+	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
 	if (n == 0 && bytes == 0) {
 	    if (feof(fptr->f)) return Qnil;
 	    rb_sys_fail(fptr->path);
@@ -694,7 +694,7 @@ io_read(argc, argv, io)
     if (len == 0) return str;
 
     READ_CHECK(fptr->f);
-    n = io_fread(RSTRING(str)->ptr, len, fptr->f);
+    n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
     if (n == 0) {
 	if (feof(fptr->f)) return Qnil;
 	rb_sys_fail(fptr->path);
