@@ -13,6 +13,7 @@ debug.rb	ruby debugger
 delegate.rb	delegates messages to other object
 e2mmap.rb	exception utilities
 eregex.rb	extended regular expression (just a proof of concept)
+fileutils.rb	file utilities
 final.rb	adds finalizer to the object (simple)
 finalize.rb	adds finalizer to the object
 find.rb		traverses directory tree
@@ -34,7 +35,7 @@ net/ftp.rb	ftp access
 net/http.rb	HTTP access
 net/imap.rb	IMAP4 access
 net/pop.rb	POP3 access
-net/protocol.rb	abstract class for net library
+net/protocol.rb	abstract class for net library (DO NOT USE)
 net/smtp.rb	SMTP access
 net/telnet.rb	telnet library
 observer.rb	observer desing pattern library (provides Observable)

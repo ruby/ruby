@@ -22,9 +22,13 @@
 
     Dir.glob("makefile", File::FNM_CASEFOLD) #=> ['Makefile', 'makefile']
 
+: fileutils module
+
+  Imported.  File utility library.
+
 : racc runtime module
 
-  Imported. Racc runtime library (Racc is a parser generator for ruby).
+  Imported.  Racc runtime library. (Racc is a parser generator for ruby)
 
 : tsort module
 
