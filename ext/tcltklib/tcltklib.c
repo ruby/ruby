@@ -1087,7 +1087,7 @@ lib_eventloop_core(check_root, update_flag, check_var)
                     if (NIL_P(ruby_errinfo)) {
                         rb_exc_raise(rb_exc_new2(rb_eFatal, "FATAL"));
                     } else {
-                        rb_exc_faise(ruby_errinfo);
+                        rb_exc_raise(ruby_errinfo);
                     }
                 }
             }
