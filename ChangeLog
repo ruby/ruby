@@ -1,9 +1,11 @@
 Fri Feb 20 10:17:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* version 1.1b8 released.
+
 	* ext/kconv/kconv.c (kconv_kconv): default output code now be
 	  determined according to the value of $KCODE.
 
-	* re.c (rb_get_kcode): can retrieve $KCODE from C. 
+	* re.c (rb_get_kcode): can retrieve $KCODE from C code. 
 
 	* parse.y (stmt): if/unless modifiers returns nil, if condition is 
 	  not established.
