@@ -1,3 +1,8 @@
+Wed Apr 24 01:16:14 2002  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): should print depend file when
+	  make is other than nmake.
+
 Wed Apr 24 00:42:41 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/extmk.rb.in (create_makefile): use `{$(srcdir)}' directive instead
