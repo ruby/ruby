@@ -176,6 +176,7 @@ NORETURN(void rb_jump_tag _((int)));
 int rb_provided _((const char*));
 void rb_provide _((const char*));
 VALUE rb_f_require _((VALUE, VALUE));
+VALUE rb_require_safe _((VALUE, int));
 void rb_obj_call_init _((VALUE, int, VALUE*));
 VALUE rb_class_new_instance _((int, VALUE*, VALUE));
 VALUE rb_block_proc _((void));

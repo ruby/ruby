@@ -1147,7 +1147,7 @@ rb_autoload(mod, id, file)
     ID id;
     const char *file;
 {
-    VALUE av;
+    VALUE av, fn;
     struct st_table *tbl;
 
     if (!rb_is_const_id(id)) {
@@ -1170,21 +1170,25 @@ rb_autoload(mod, id, file)
 	st_add_direct(tbl, autoload, av);
 	DATA_PTR(av) = tbl = st_init_numtable();
     }
-    st_insert(tbl, id, rb_str_new2(file));
+    fn = rb_str_new2(file);
+    FL_UNSET(fn, FL_TAINT);
+    OBJ_FREEZE(fn);
+    st_insert(tbl, id, (st_data_t)rb_node_newnode(NODE_MEMO, fn, ruby_safe_level, 0));
 }
 
-static VALUE
+static NODE*
 autoload_delete(mod, id)
     VALUE mod;
     ID id;
 {
-    VALUE val, file = Qnil;
+    VALUE val;
+    st_data_t load = 0;
 
     st_delete(RCLASS(mod)->iv_tbl, (st_data_t*)&id, 0);
     if (st_lookup(RCLASS(mod)->iv_tbl, autoload, &val)) {
 	struct st_table *tbl = check_autoload_table(val);
 
-	if (!st_delete(tbl, (st_data_t*)&id, &file)) file = Qnil;
+	st_delete(tbl, (st_data_t*)&id, &load);
 
 	if (tbl->num_entries == 0) {
 	    DATA_PTR(val) = 0;
@@ -1196,7 +1200,7 @@ autoload_delete(mod, id)
 	}
     }
 
-    return file;
+    return (NODE *)load;
 }
 
 void
@@ -1205,13 +1209,12 @@ rb_autoload_load(klass, id)
     ID id;
 {
     VALUE file;
+    NODE *load = autoload_delete(klass, id);
 
-    file = autoload_delete(klass, id);
-    if (NIL_P(file) || rb_provided(RSTRING(file)->ptr)) {
+    if (!load || !(file = load->nd_lit) || rb_provided(RSTRING(file)->ptr)) {
 	const_missing(klass, id);
     }
-    FL_UNSET(file, FL_TAINT);
-    rb_f_require(Qnil, file);
+    rb_require_safe(file, load->nd_nth);
 }
 
 static VALUE
@@ -1221,11 +1224,13 @@ autoload_file(mod, id)
 {
     VALUE val, file;
     struct st_table *tbl;
+    st_data_t load;
 
     if (!st_lookup(RCLASS(mod)->iv_tbl, autoload, &val) ||
-	!(tbl = check_autoload_table(val)) || !st_lookup(tbl, id, &file)) {
+	!(tbl = check_autoload_table(val)) || !st_lookup(tbl, id, &load)) {
 	return Qnil;
     }
+    file = ((NODE *)load)->nd_lit;
     Check_Type(file, T_STRING);
     if (!RSTRING(file)->ptr) {
 	rb_raise(rb_eArgError, "empty file name");

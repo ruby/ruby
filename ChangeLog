@@ -1,3 +1,19 @@
+Mon Oct 13 23:57:29 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_feature_p): match by classified suffix.
+
+	* eval.c (rb_require_safe): require library in the specified safe
+	  level.
+
+	* variable.c (rb_autoload, rb_autoload_load): restore safe level
+	  when autoload was called.  [ruby-dev:21338]
+
+	* intern.h: prototypes; rb_require_safe.
+
+Mon Oct 13 23:57:29 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/runner.rb: accept non-option arguments.
+
 Mon Oct 13 20:49:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_new4): should not preserve FL_TAINT status in the
@@ -35,7 +51,7 @@ Sat Oct 11 16:08:41 2003  Tanaka Akira  <akr@m17n.org>
 Sat Oct 11 10:19:39 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/monitor.rb: handle exceptions correctly. Thanks, Gennady
-	Bystritsky.
+	  Bystritsky.
 
 Fri Oct 10 07:50:54 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

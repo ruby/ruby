@@ -5739,6 +5739,8 @@ rb_mod_module_eval(argc, argv, mod)
 
 VALUE rb_load_path;
 
+NORETURN(static void load_failed _((VALUE)));
+
 void
 rb_load(fname, wrap)
     VALUE fname;
@@ -5761,7 +5763,7 @@ rb_load(fname, wrap)
     }
     tmp = rb_find_file(fname);
     if (!tmp) {
-	rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
+	load_failed(fname);
     }
     fname = tmp;
 
@@ -5871,49 +5873,47 @@ VALUE ruby_dln_librefs;
 static VALUE rb_features;
 static st_table *loading_tbl;
 
-static int
-rb_feature_p(feature, wait)
-    const char *feature;
-    int wait;
+#define IS_SOEXT(e) (strcmp(e, ".so") == 0 || strcmp(e, ".o") == 0)
+#ifdef DLEXT2
+#define IS_DLEXT(e) (strcmp(e, DLEXT) == 0 || strcmp(e, DLEXT2) == 0)
+#else
+#define IS_DLEXT(e) (strcmp(e, DLEXT) == 0)
+#endif
+
+static char *
+rb_feature_p(feature, ext, rb)
+    const char *feature, *ext;
+    int rb;
 {
     VALUE v;
-    char *f;
-    long i, len = strlen(feature);
+    char *f, *e;
+    long i, len, elen;
 
+    if (ext) {
+	len = ext - feature;
+	elen = strlen(ext);
+    }
+    else {
+	len = strlen(feature);
+	elen = 0;
+    }
     for (i = 0; i < RARRAY(rb_features)->len; ++i) {
 	v = RARRAY(rb_features)->ptr[i];
 	f = StringValuePtr(v);
-	if (strcmp(f, feature) == 0) {
-	    goto load_wait;
+	if (strncmp(f, feature, len) != 0) continue;
+	if (!*(e = f + len)) {
+	    if (ext) continue;
+	    return e;
 	}
-	if (strncmp(f, feature, len) == 0) {
-	    if (strcmp(f+len, ".so") == 0) {
-		return Qtrue;
-	    }
-	    if (strcmp(f+len, ".rb") == 0) {
-		if (wait) goto load_wait;
-		return Qtrue;
-	    }
+	if (*e != '.') continue;
+	if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
+	    return e;
 	}
-    }
-    return Qfalse;
-
-  load_wait:
-    if (loading_tbl) {
-	char *ext = strrchr(f, '.');
-	if (ext && strcmp(ext, ".rb") == 0) {
-	    rb_thread_t th;
-
-	    while (st_lookup(loading_tbl, (st_data_t)f, (st_data_t *)&th)) {
-		if (th == curr_thread) {
-		    return Qtrue;
-		}
-		CHECK_INTS;
-		rb_thread_schedule();
-	    }
+	if ((rb || !ext) && (strcmp(e, ".rb") == 0)) {
+	    return e;
 	}
     }
-    return Qtrue;
+    return 0;
 }
 
 static const char *const loadable_ext[] = {
@@ -5928,14 +5928,7 @@ int
 rb_provided(feature)
     const char *feature;
 {
-    VALUE f = rb_str_new2(feature);
-
-    if (strrchr(feature, '.') == 0) {
-	if (rb_find_file_ext(&f, loadable_ext) == 0) {
-	    return rb_feature_p(feature, Qfalse);
-	}
-    }
-    return rb_feature_p(RSTRING(f)->ptr, Qfalse);
+    return rb_feature_p(feature, 0, Qfalse) ? Qtrue : Qfalse;
 }
 
 static void
@@ -5952,76 +5945,83 @@ rb_provide(feature)
     rb_provide_feature(rb_str_new2(feature));
 }
 
-NORETURN(static void load_failed _((VALUE)));
-static VALUE load_dyna _((VALUE, VALUE));
-static VALUE load_rb _((VALUE, VALUE));
+static void
+load_wait(ftptr)
+    char *ftptr;
+{
+    st_data_t th;
+
+    if (!loading_tbl) return;
+    if (!st_lookup(loading_tbl, (st_data_t)ftptr, &th)) return;
+    if ((rb_thread_t)th == curr_thread) return;
+    do {
+	CHECK_INTS;
+	rb_thread_schedule();
+    } while (st_lookup(loading_tbl, (st_data_t)ftptr, &th));
+}
 
 VALUE
 rb_f_require(obj, fname)
     VALUE obj, fname;
 {
-    VALUE feature, tmp;
-    char *ext; /* OK */
+    return rb_require_safe(fname, ruby_safe_level);
+}
 
-    if (OBJ_TAINTED(fname)) {
-	rb_check_safe_obj(fname);
-    }
-    StringValue(fname);
-    ext = strrchr(RSTRING(fname)->ptr, '.');
-    if (ext && strchr(ext, '/')) ext = 0;
-    if (ext) {
+static int
+search_required(fname, featurep, path)
+    VALUE fname, *featurep, *path;
+{
+    VALUE tmp;
+    char *ext, *ftptr;
+
+    *featurep = fname;
+    *path = 0;
+    ext = strrchr(ftptr = RSTRING(fname)->ptr, '.');
+    if (ext && !strchr(ext, '/')) {
 	if (strcmp(".rb", ext) == 0) {
-	    feature = rb_str_dup(fname);
-	    tmp = rb_find_file(fname);
-	    if (tmp) {
-		return load_rb(feature, tmp);
-	    }
-	    load_failed(fname);
+	    if (rb_feature_p(ftptr, ext, Qtrue)) return 'r';
+	    if (*path = rb_find_file(fname)) return 'r';
+	    return 0;
 	}
-	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
+	else if (IS_SOEXT(ext)) {
+	    if (rb_feature_p(ftptr, ext, Qfalse)) return 's';
 	    tmp = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
+	    *featurep = tmp;
 #ifdef DLEXT2
 	    if (rb_find_file_ext(&tmp, loadable_ext+1)) {
-		return load_dyna(tmp, rb_find_file(tmp));
+		*path = rb_find_file(tmp);
+		return 's';
 	    }
 #else
-	    feature = tmp;
 	    rb_str_cat2(tmp, DLEXT);
-	    tmp = rb_find_file(tmp);
-	    if (tmp) {
-		return load_dyna(feature, tmp);
+	    if (*path = rb_find_file(tmp)) {
+		return 's';
 	    }
 #endif
 	}
-	else if (strcmp(DLEXT, ext) == 0) {
-	    tmp = rb_find_file(fname);
-	    if (tmp) {
-		return load_dyna(fname, tmp);
-	    }
+	else if (IS_DLEXT(ext)) {
+	    if (rb_feature_p(ftptr, ext, Qfalse)) return 's';
+	    if (*path = rb_find_file(fname)) return 's';
 	}
-#ifdef DLEXT2
-	else if (strcmp(DLEXT2, ext) == 0) {
-	    tmp = rb_find_file(fname);
-	    if (tmp) {
-		return load_dyna(fname, tmp);
-	    }
-	}
-#endif
+    }
+    if ((ext = rb_feature_p(ftptr, 0, Qfalse)) != 0) {
+	return strcmp(ext, ".rb") == 0 ? 'r' : 's';
     }
     tmp = fname;
     switch (rb_find_file_ext(&tmp, loadable_ext)) {
       case 0:
-	break;
+	return 0;
 
       case 1:
-	return load_rb(tmp, tmp);
+	*featurep = tmp;
+	*path = rb_find_file(tmp);
+	return 'r';
 
       default:
-	return load_dyna(tmp, rb_find_file(tmp));
+	*featurep = tmp;
+	*path = rb_find_file(tmp);
+	return 's';
     }
-    if (!rb_feature_p(RSTRING(fname)->ptr, Qfalse))
-	load_failed(fname);
-    return Qfalse;
 }
 
 static void
@@ -6031,85 +6031,101 @@ load_failed(fname)
     rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
 }
 
-static VALUE
-load_dyna(feature, fname)
-    VALUE feature, fname;
+VALUE
+rb_require_safe(fname, safe)
+    VALUE fname;
+    int safe;
 {
+    VALUE result = Qnil;
     int state;
-    volatile int safe = ruby_safe_level;
+    struct {
+	NODE *node;
+	ID func;
+	int vmode, safe;
+    } volatile saved;
+    char *volatile ftptr = 0;
 
-    if (rb_feature_p(RSTRING(feature)->ptr, Qfalse))
-	return Qfalse;
-    rb_provide_feature(feature);
-    {
-	volatile int old_vmode = scope_vmode;
-	NODE *const volatile old_node = ruby_current_node;
-	const volatile ID old_func = ruby_frame->last_func;
-
-	ruby_safe_level = 0;
-	ruby_current_node = 0;
-	ruby_sourcefile = rb_source_filename(RSTRING(fname)->ptr);
-	ruby_sourceline = 0;
-	ruby_frame->last_func = 0;
-	PUSH_TAG(PROT_NONE);
-	if ((state = EXEC_TAG()) == 0) {
-	    void *handle;
-
-	    SCOPE_SET(SCOPE_PUBLIC);
-	    handle = dln_load(RSTRING(fname)->ptr);
-	    rb_ary_push(ruby_dln_librefs, LONG2NUM((long)handle));
-	}
-	POP_TAG();
-	ruby_current_node = old_node;
-	ruby_set_current_source();
-	ruby_frame->last_func = old_func;
-	SCOPE_SET(old_vmode);
+    if (OBJ_TAINTED(fname)) {
+	rb_check_safe_obj(fname);
     }
-    ruby_safe_level = safe;
-    if (state) JUMP_TAG(state);
-    ruby_errinfo = Qnil;
-
-    return Qtrue;
-}
-
-static VALUE
-load_rb(feature, fname)
-    VALUE feature, fname;
-{
-    int state;
-    char *ftptr;
-    volatile int safe = ruby_safe_level;
-
-    if (rb_feature_p(RSTRING(feature)->ptr, Qtrue))
-	return Qfalse;
-    ruby_safe_level = 0;
-    rb_provide_feature(feature);
-    /* loading ruby library should be serialized. */
-    if (!loading_tbl) {
-	loading_tbl = st_init_strtable();
-    }
-    /* partial state */
-    ftptr = ruby_strdup(RSTRING(feature)->ptr);
-    st_insert(loading_tbl, (st_data_t)ftptr, (st_data_t)curr_thread);
-
+    StringValue(fname);
+    saved.vmode = scope_vmode;
+    saved.node = ruby_current_node;
+    saved.func = ruby_frame->last_func;
+    saved.safe = ruby_safe_level;
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	rb_load(fname, 0);
+	VALUE feature, path;
+	long handle;
+	int found;
+
+	ruby_safe_level = safe;
+	found = search_required(fname, &feature, &path);
+	if (found) {
+	    ftptr = RSTRING(feature)->ptr;
+	    if (!path) {
+		load_wait(ftptr);
+		result = Qfalse;
+	    }
+	    else {
+		ruby_safe_level = 0;
+		rb_provide_feature(feature);
+		switch (found) {
+		  case 'r':
+		    /* loading ruby library should be serialized. */
+		    if (!loading_tbl) {
+			loading_tbl = st_init_strtable();
+		    }
+		    /* partial state */
+		    st_insert(loading_tbl,
+			      (st_data_t)(ftptr = ruby_strdup(ftptr)),
+			      (st_data_t)curr_thread);
+		    if (feature == fname && !OBJ_FROZEN(feature)) {
+			feature = rb_str_dup(feature);
+			OBJ_FREEZE(feature);
+		    }
+		    rb_load(path, 0);
+		    break;
+
+		  case 's':
+		    ruby_current_node = 0;
+		    ruby_sourcefile = rb_source_filename(RSTRING(path)->ptr);
+		    ruby_sourceline = 0;
+		    ruby_frame->last_func = 0;
+		    SCOPE_SET(SCOPE_PUBLIC);
+		    handle = (long)dln_load(RSTRING(path)->ptr);
+		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+		    break;
+		}
+		result = Qtrue;
+	    }
+	}
     }
     POP_TAG();
-    st_delete(loading_tbl, (st_data_t *)&ftptr, 0); /* loading done */
-    free(ftptr);
-    ruby_safe_level = safe;
+    ruby_current_node = saved.node;
+    ruby_set_current_source();
+    ruby_frame->last_func = saved.func;
+    SCOPE_SET(saved.vmode);
+    ruby_safe_level = saved.safe;
+    if (ftptr) {
+	if (st_delete(loading_tbl, (st_data_t *)&ftptr, 0)) { /* loading done */
+	    free(ftptr);
+	}
+    }
     if (state) JUMP_TAG(state);
+    if (NIL_P(result)) {
+	load_failed(fname);
+    }
+    ruby_errinfo = Qnil;
 
-    return Qtrue;
+    return result;
 }
 
 VALUE
 rb_require(fname)
     const char *fname;
 {
-    return rb_f_require(Qnil, rb_str_new2(fname));
+    return rb_require_safe(rb_str_new2(fname), ruby_safe_level);
 }
 
 static void
