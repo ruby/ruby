@@ -1,3 +1,11 @@
+Thu Feb  3 23:42:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_close, strio_close_read, strio_close_write):
+	  should return nil instead of self as well as IO.  [ruby-dev:25623]
+
+	* ext/stringio/stringio.c (strio_extend, strio_putc): fill with zero
+	  extended portion.  [ruby-dev:25626]
+
 Wed Feb  2 23:52:53 2005  sheepman  <sheepman@tcn.zaq.ne.jp>
 
 	* ext/stringio/stringio.c (strio_truncate): should MEMZERO an extended
