@@ -1,3 +1,8 @@
+Sun Jun 30 17:05:29 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (seekdir, telldir): add ac_cv_func_telldir=yes,
+	  ac_cv_func_seekdir=yes for MinGW.
+
 Fri Jun 28 00:51:19 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_stat): fix buffer overflow. (ruby-bugs:PR#329)
