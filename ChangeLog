@@ -1,3 +1,12 @@
+Fri Feb 27 09:36:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (hash_delete_nil): needed to compare value to nil, since
+	  nil is the valid key for hashes.
+
+	* hash.c (hash_foreach_iter): rehashing causes IndexError.
+
+	* hash.c (hash_foreach_iter): rehash check by pointer comparison.
+
 Thu Feb 26 17:22:13 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (fname): convert reswords into symbols.
