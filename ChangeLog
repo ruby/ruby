@@ -1,7 +1,7 @@
 Sat Aug 23 18:56:53 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_putchar): should use rb_str_resize() to just
-	resize a string, rb_str_cat() disallows NULL.  [ruby-dev:21237]
+	  resize a string, rb_str_cat() disallows NULL.  [ruby-dev:21237]
 
 Sat Aug 23 16:48:41 2003  Keiju Ishitsuka <keiju@ishitsuka.com>
 
