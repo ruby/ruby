@@ -1,3 +1,12 @@
+Sat Oct  2 20:34:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (local_vars): moved to struct parser_params.
+	  [ruby-dev:24391]
+
+	* parser.y (stmts): remove suspicious NODE_BEGIN.  [ruby-dev:24390]
+
+	* node.h (NEW_DVAR): extra semicolon.
+
 Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_sum): should use bignums when bits is greater
@@ -53,7 +62,7 @@ Thu Sep 30 00:50:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: fix bug on 'exit' operation
 
-	* ext/tk/lib/tk/text.rb: 'tksearch' accepts a Regexp object as a 
+	* ext/tk/lib/tk/text.rb: 'tksearch' accepts a Regexp object as a
 	  matting pattern argument
 
 Wed Sep 29 10:58:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>

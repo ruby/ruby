@@ -96,6 +96,15 @@ union tmpyystype {
     struct RVarmap *vars;
 };
 
+struct local_vars {
+    ID *tbl;
+    int nofree;
+    int cnt;
+    int dlev;
+    struct RVarmap* dyna_vars;
+    struct local_vars *prev;
+};
+
 /*
     Structure of Lexer Buffer:
 
@@ -140,6 +149,7 @@ struct parser_params {
     /*VALUE parser_ruby_debug_lines;*/
     int parser_lex_gets_ptr;
     VALUE (*parser_lex_gets) _((struct parser_params*,VALUE));
+    struct local_vars *parser_lvtbl;
 #ifdef RIPPER
     int parser_ruby__end__seen;
     int parser_ruby_sourceline;
@@ -183,6 +193,7 @@ static int parser_yyerror _((struct parser_params*, const char*));
 /*#define ruby_debug_lines	(parser->parser_ruby_debug_lines)*/
 #define lex_gets_ptr		(parser->parser_lex_gets_ptr)
 #define lex_gets		(parser->parser_lex_gets)
+#define lvtbl			(parser->parser_lvtbl)
 #ifdef RIPPER
 #define ruby__end__seen		(parser->parser_ruby__end__seen)
 #define ruby_sourceline		(parser->parser_ruby_sourceline)
@@ -234,7 +245,8 @@ static NODE *new_fcall();
 static NODE *new_super();
 static NODE *new_yield();
 
-static NODE *gettable();
+static NODE *gettable_gen _((struct parser_params*,ID));
+#define gettable(id) gettable_gen(parser,id)
 static NODE *assignable_gen _((struct parser_params*,ID,NODE*));
 #define assignable(id,node) assignable_gen(parser, id, node)
 static NODE *aryset_gen _((struct parser_params*,NODE*,NODE*));
@@ -249,22 +261,38 @@ static NODE *node_assign_gen _((struct parser_params*,NODE*,NODE*));
 static NODE *match_op_gen _((struct parser_params*,NODE*,NODE*));
 #define match_op(node1,node2) match_op_gen(parser, node1, node2)
 
-static void local_push();
-static void local_pop();
-static int  local_append();
-static int  local_cnt();
-static int  local_id();
-static ID  *local_tbl();
-static ID   internal_id();
+static void local_push_gen _((struct parser_params*,int));
+#define local_push(top) local_push_gen(parser,top)
+static void local_pop_gen _((struct parser_params*));
+#define local_pop() local_pop_gen(parser)
+static int  local_append_gen _((struct parser_params*, ID));
+#define local_append(id) local_append_gen(parser, id)
+static int  local_cnt_gen _((struct parser_params*, ID));
+#define local_cnt(id) local_cnt_gen(parser, id)
+static int  local_id_gen _((struct parser_params*, ID));
+#define local_id(id) local_id_gen(parser, id)
+static ID  *local_tbl_gen _((struct parser_params*));
+#define local_tbl() local_tbl_gen(parser)
+static ID   internal_id _((void));
 
-static struct RVarmap *dyna_push();
-static void dyna_pop();
-static int dyna_in_block();
-static NODE *dyna_init();
+static struct RVarmap *dyna_push_gen _((struct parser_params*));
+#define dyna_push() dyna_push_gen(parser)
+static void dyna_pop_gen _((struct parser_params*, struct RVarmap*));
+#define dyna_pop(vars) dyna_pop_gen(parser, vars)
+static int dyna_in_block_gen _((struct parser_params*));
+#define dyna_in_block() dyna_in_block_gen(parser)
+static NODE *dyna_init_gen _((struct parser_params*, NODE*, struct RVarmap *));
+#define dyna_init(node, pre) dyna_init_gen(parser, node, pre)
 
-static void top_local_init();
-static void top_local_setup();
+static void top_local_init_gen _((struct parser_params*));
+#define top_local_init() top_local_init_gen(parser)
+static void top_local_setup_gen _((struct parser_params*));
+#define top_local_setup() top_local_setup_gen(parser)
+#else
+#define remove_begin(node) (node)
 #endif /* !RIPPER */
+static int lvar_defined_gen _((struct parser_params*, ID));
+#define lvar_defined(id) lvar_defined_gen(parser, id)
 
 #define RE_OPTION_ONCE 0x80
 
@@ -623,7 +651,7 @@ stmts		: none
 		| stmt
 		    {
 		    /*%%%*/
-			$$ = newline_node($1);
+			$$ = newline_node(remove_begin($1));
 		    /*%
 			$$ = dispatch2(stmts_add, dispatch0(stmts_new), $1);
 		    %*/
@@ -631,14 +659,14 @@ stmts		: none
 		| stmts terms stmt
 		    {
 		    /*%%%*/
-			$$ = block_append($1, newline_node($3));
+			$$ = block_append($1, newline_node(remove_begin($3)));
 		    /*%
 			$$ = dispatch2(stmts_add, $1, $3);
 		    %*/
 		    }
 		| error stmt
 		    {
-			$$ = $2;
+			$$ = remove_begin($2);
 		    }
 		;
 
@@ -3291,11 +3319,7 @@ exc_var		: tASSOC lhs
 opt_ensure	: kENSURE compstmt
 		    {
 		    /*%%%*/
-			if ($2)
-			    $$ = $2;
-			else
-			    /* place holder */
-			    $$ = NEW_NIL();
+			$$ = $2;
 		    /*%
 			$$ = dispatch1(ensure, $2);
 		    %*/
@@ -4800,7 +4824,7 @@ static void
 dispose_string(str)
     VALUE str;
 {
-    free(RSTRING(str)->ptr);
+    xfree(RSTRING(str)->ptr);
     rb_gc_force_recycle(str);
 }
 
@@ -5170,7 +5194,8 @@ ripper_arg_ambiguous(parser)
 #endif
 
 static int
-lvar_defined(id)
+lvar_defined_gen(parser, id)
+    struct parser_params *parser;
     ID id;
 {
 #ifndef RIPPER
@@ -6510,6 +6535,10 @@ block_append(head, tail)
     switch (nd_type(h)) {
       case NODE_LIT:
       case NODE_STR:
+      case NODE_SELF:
+      case NODE_TRUE:
+      case NODE_FALSE:
+      case NODE_NIL:
 	parser_warning(h, "unused literal ignored");
 	return tail;
       default:
@@ -6730,7 +6759,8 @@ match_op_gen(parser, node1, node2)
 }
 
 static NODE*
-gettable(id)
+gettable_gen(parser, id)
+    struct parser_params *parser;
     ID id;
 {
     if (id == kSELF) {
@@ -7526,17 +7556,9 @@ new_super(a)
     return NEW_SUPER(a);
 }
 
-static struct local_vars {
-    ID *tbl;
-    int nofree;
-    int cnt;
-    int dlev;
-    struct RVarmap* dyna_vars;
-    struct local_vars *prev;
-} *lvtbl;
-
 static void
-local_push(top)
+local_push_gen(parser, top)
+    struct parser_params *parser;
     int top;
 {
     struct local_vars *local;
@@ -7557,28 +7579,31 @@ local_push(top)
 }
 
 static void
-local_pop()
+local_pop_gen(parser)
+    struct parser_params *parser;
 {
     struct local_vars *local = lvtbl->prev;
 
     if (lvtbl->tbl) {
-	if (!lvtbl->nofree) free(lvtbl->tbl);
+	if (!lvtbl->nofree) xfree(lvtbl->tbl);
 	else lvtbl->tbl[0] = lvtbl->cnt;
     }
     ruby_dyna_vars = lvtbl->dyna_vars;
-    free(lvtbl);
+    xfree(lvtbl);
     lvtbl = local;
 }
 
 static ID*
-local_tbl()
+local_tbl_gen(parser)
+    struct parser_params *parser;
 {
     lvtbl->nofree = 1;
     return lvtbl->tbl;
 }
 
 static int
-local_append(id)
+local_append_gen(parser, id)
+    struct parser_params *parser;
     ID id;
 {
     if (lvtbl->tbl == 0) {
@@ -7599,7 +7624,8 @@ local_append(id)
 }
 
 static int
-local_cnt(id)
+local_cnt_gen(parser, id)
+    struct parser_params *parser;
     ID id;
 {
     int cnt, max;
@@ -7613,7 +7639,8 @@ local_cnt(id)
 }
 
 static int
-local_id(id)
+local_id_gen(parser, id)
+    struct parser_params *parser;
     ID id;
 {
     int i, max;
@@ -7626,7 +7653,8 @@ local_id(id)
 }
 
 static void
-top_local_init()
+top_local_init_gen(parser)
+    struct parser_params *parser;
 {
     local_push(1);
     lvtbl->cnt = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
@@ -7644,7 +7672,8 @@ top_local_init()
 }
 
 static void
-top_local_setup()
+top_local_setup_gen(parser)
+    struct parser_params *parser;
 {
     int len = lvtbl->cnt;
     int i;
@@ -7674,7 +7703,7 @@ top_local_setup()
 		rb_mem_clear(ruby_scope->local_vars+i, len-i);
 	    }
 	    if (ruby_scope->local_tbl && ruby_scope->local_vars[-1] == 0) {
-		free(ruby_scope->local_tbl);
+		xfree(ruby_scope->local_tbl);
 	    }
 	    ruby_scope->local_vars[-1] = 0;
 	    ruby_scope->local_tbl = local_tbl();
@@ -7684,7 +7713,8 @@ top_local_setup()
 }
 
 static struct RVarmap*
-dyna_push()
+dyna_push_gen(parser)
+    struct parser_params *parser;
 {
     struct RVarmap* vars = ruby_dyna_vars;
 
@@ -7694,7 +7724,8 @@ dyna_push()
 }
 
 static void
-dyna_pop(vars)
+dyna_pop_gen(parser, vars)
+    struct parser_params *parser;
     struct RVarmap* vars;
 {
     lvtbl->dlev--;
@@ -7702,13 +7733,15 @@ dyna_pop(vars)
 }
 
 static int
-dyna_in_block()
+dyna_in_block_gen(parser)
+    struct parser_params *parser;
 {
     return (lvtbl->dlev > 0);
 }
 
 static NODE *
-dyna_init(node, pre)
+dyna_init_gen(parser, node, pre)
+    struct parser_params *parser;
     NODE *node;
     struct RVarmap *pre;
 {
@@ -8035,6 +8068,7 @@ special_local_set(c, val)
     VALUE val;
 {
     int cnt;
+    struct parser_params *parser = parser_new();
 
     top_local_init();
     cnt = local_cnt(c);
@@ -8118,6 +8152,7 @@ parser_initialize(parser)
     parser->parser_lex_pbeg = 0;
     parser->parser_lex_p = 0;
     parser->parser_lex_pend = 0;
+    parser->parser_lvtbl = 0;
 #ifdef RIPPER
     parser->parser_ruby_sourcefile = Qnil;
     parser->delayed = Qnil;
@@ -8150,11 +8185,18 @@ parser_free(ptr)
     void *ptr;
 {
     struct parser_params *p = (struct parser_params*)ptr;
+    struct local_vars *local, *prev;
 
     if (p->parser_tokenbuf) {
-        free(p->parser_tokenbuf);
+        xfree(p->parser_tokenbuf);
     }
-    free(p);
+    for (local = p->parser_lvtbl; local; local = prev) {
+	if (local->tbl && !local->nofree)
+	    xfree(local->tbl);
+	prev = local->prev;
+	xfree(local);
+    }
+    xfree(p);
 }
 
 #ifndef RIPPER

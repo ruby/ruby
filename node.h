@@ -287,7 +287,7 @@ typedef struct RNode {
 #define NEW_OP_ASGN_AND(i,val) NEW_NODE(NODE_OP_ASGN_AND,i,val,0)
 #define NEW_GVAR(v) NEW_NODE(NODE_GVAR,v,0,rb_global_entry(v))
 #define NEW_LVAR(v) NEW_NODE(NODE_LVAR,v,0,local_cnt(v))
-#define NEW_DVAR(v) NEW_NODE(NODE_DVAR,v,0,0);
+#define NEW_DVAR(v) NEW_NODE(NODE_DVAR,v,0,0)
 #define NEW_IVAR(v) NEW_NODE(NODE_IVAR,v,0,0)
 #define NEW_CONST(v) NEW_NODE(NODE_CONST,v,0,0)
 #define NEW_CVAR(v) NEW_NODE(NODE_CVAR,v,0,0)
