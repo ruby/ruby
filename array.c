@@ -1961,8 +1961,7 @@ rb_ary_delete(ary, item)
 
 	if (rb_equal(e, item)) continue;
 	if (i1 != i2) {
-	    if (RARRAY(ary)->len < i2) break;
-	    RARRAY(ary)->ptr[i2] = e;
+	    rb_ary_store(ary, i2, e);
 	}
 	i2++;
     }
@@ -1973,12 +1972,13 @@ rb_ary_delete(ary, item)
 	return Qnil;
     }
 
-    if (RARRAY(ary)->len > i2)
+    if (RARRAY(ary)->len > i2) {
 	RARRAY(ary)->len = i2;
-    if (i2 * 2 < RARRAY(ary)->aux.capa &&
+	if (i2 * 2 < RARRAY(ary)->aux.capa &&
 	    RARRAY(ary)->aux.capa > ARY_DEFAULT_SIZE) {
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, i2 * 2);
-	RARRAY(ary)->aux.capa = i2 * 2;
+	    REALLOC_N(RARRAY(ary)->ptr, VALUE, i2 * 2);
+	    RARRAY(ary)->aux.capa = i2 * 2;
+	}
     }
 
     return item;
@@ -2276,8 +2276,8 @@ rb_ary_replace(copy, orig)
     shared = ary_make_shared(orig);
     if (RARRAY(copy)->ptr && !FL_TEST(copy, ELTS_SHARED))
 	free(RARRAY(copy)->ptr);
-    RARRAY(copy)->ptr = RARRAY(shared)->ptr;
-    RARRAY(copy)->len = RARRAY(shared)->len;
+    RARRAY(copy)->ptr = RARRAY(orig)->ptr;
+    RARRAY(copy)->len = RARRAY(orig)->len;
     RARRAY(copy)->aux.shared = shared;
     FL_SET(copy, ELTS_SHARED);
 
@@ -2386,7 +2386,7 @@ rb_ary_fill(argc, argv, ary)
 	VALUE v;
 	long i;
 
-	for (i=beg; i<RARRAY(ary)->len; i++) {
+	for (i=beg; i<end; i++) {
 	    v = rb_yield(LONG2NUM(i));
 	    if (i>=RARRAY(ary)->len) break;
 	    RARRAY(ary)->ptr[i] = v;
@@ -2996,7 +2996,7 @@ flatten(ary, idx, ary2, memo)
     while (i < lim) {
 	VALUE tmp;
 
-	tmp = rb_check_array_type(RARRAY(ary)->ptr[i]);
+	tmp = rb_check_array_type(rb_ary_elt(ary, i));
 	if (!NIL_P(tmp)) {
 	    n = flatten(ary, i, tmp, memo);
 	    i += n; lim += n;

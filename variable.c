@@ -124,10 +124,10 @@ find_class_path(klass)
     arg.track = rb_cObject;
     arg.prev = 0;
     if (RCLASS(rb_cObject)->iv_tbl) {
-	st_foreach(RCLASS(rb_cObject)->iv_tbl, fc_i, (st_data_t)&arg);
+	st_foreach_safe(RCLASS(rb_cObject)->iv_tbl, fc_i, (st_data_t)&arg);
     }
     if (arg.path == 0) {
-	st_foreach(rb_class_tbl, fc_i, (st_data_t)&arg);
+	st_foreach_safe(rb_class_tbl, fc_i, (st_data_t)&arg);
     }
     if (arg.path) {
 	if (!ROBJECT(klass)->iv_tbl) {
@@ -467,7 +467,7 @@ mark_global_entry(key, entry)
 void
 rb_gc_mark_global_tbl()
 {
-    st_foreach(rb_global_tbl, mark_global_entry, 0);
+    st_foreach_safe(rb_global_tbl, mark_global_entry, 0);
 }
 
 static ID
@@ -777,7 +777,7 @@ rb_f_global_variables()
     char buf[4];
     char *s = "&`'+123456789";
 
-    st_foreach(rb_global_tbl, gvar_i, ary);
+    st_foreach_safe(rb_global_tbl, gvar_i, ary);
     if (!NIL_P(rb_backref_get())) {
 	while (*s) {
 	    sprintf(buf, "$%c", *s++);
@@ -948,7 +948,7 @@ givar_i(obj, tbl)
     st_table *tbl;
 {
     if (rb_special_const_p(obj)) {
-	st_foreach(tbl, givar_mark_i, 0);
+	st_foreach_safe(tbl, givar_mark_i, 0);
     }
     return ST_CONTINUE;
 }
@@ -958,7 +958,7 @@ rb_mark_generic_ivar_tbl()
 {
     if (!generic_iv_tbl) return;
     if (special_generic_ivar == 0) return;
-    st_foreach(generic_iv_tbl, givar_i, 0);
+    st_foreach_safe(generic_iv_tbl, givar_i, 0);
 }
 
 void
@@ -1120,7 +1120,7 @@ rb_obj_instance_variables(obj)
       case T_CLASS:
       case T_MODULE:
 	if (ROBJECT(obj)->iv_tbl) {
-	    st_foreach(ROBJECT(obj)->iv_tbl, ivar_i, ary);
+	    st_foreach_safe(ROBJECT(obj)->iv_tbl, ivar_i, ary);
 	}
 	break;
       default:
@@ -1129,7 +1129,7 @@ rb_obj_instance_variables(obj)
 	    st_table *tbl;
 
 	    if (st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) {
-		st_foreach(tbl, ivar_i, ary);
+		st_foreach_safe(tbl, ivar_i, ary);
 	    }
 	}
 	break;
@@ -1513,7 +1513,7 @@ rb_mod_const_at(mod, data)
 	tbl = st_init_numtable();
     }
     if (RCLASS(mod)->iv_tbl) {
-	st_foreach(RCLASS(mod)->iv_tbl, sv_i, (st_data_t)tbl);
+	st_foreach_safe(RCLASS(mod)->iv_tbl, sv_i, (st_data_t)tbl);
     }
     return tbl;
 }
@@ -1551,7 +1551,7 @@ rb_const_list(data)
 
     if (!tbl) return rb_ary_new2(0);
     ary = rb_ary_new2(tbl->num_entries);
-    st_foreach(tbl, list_i, ary);
+    st_foreach_safe(tbl, list_i, ary);
     st_free_table(tbl);
 
     return ary;
@@ -1819,7 +1819,7 @@ rb_mod_class_variables(obj)
     VALUE ary = rb_ary_new();
 
     if (RCLASS(obj)->iv_tbl) {
-	st_foreach(RCLASS(obj)->iv_tbl, cv_i, ary);
+	st_foreach_safe(RCLASS(obj)->iv_tbl, cv_i, ary);
     }
     return ary;
 }

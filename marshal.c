@@ -437,7 +437,7 @@ w_ivar(tbl, arg)
 {
     if (tbl) {
 	w_long(tbl->num_entries, arg->arg);
-	st_foreach(tbl, w_obj_each, (st_data_t)arg);
+	st_foreach_safe(tbl, w_obj_each, (st_data_t)arg);
     }
     else {
 	w_long(0, arg->arg);
@@ -621,7 +621,7 @@ w_object(obj, arg, limit)
 		w_byte(TYPE_HASH_DEF, arg);
 	    }
 	    w_long(RHASH(obj)->tbl->num_entries, arg);
-	    st_foreach(RHASH(obj)->tbl, hash_each, (st_data_t)&c_arg);
+	    rb_hash_foreach(obj, hash_each, (st_data_t)&c_arg);
 	    if (!NIL_P(RHASH(obj)->ifnone)) {
 		w_object(RHASH(obj)->ifnone, arg, limit);
 	    }

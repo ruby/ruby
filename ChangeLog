@@ -22,16 +22,30 @@ Mon Sep 27 13:46:45 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, r_object0): use accessors.
 
+Mon Sep 27 09:14:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_delete): comparison may change the capacity.
+	  [ruby-dev:24348]
+
+	* array.c (rb_ary_fill): fill should honor length argument.
+	  [ruby-dev:24346]
+
+	* array.c (rb_ary_replace): should not use ptr from shared array.
+	  [ruby-dev:24345]
+
+	* ext/socket/socket.c (s_accept): don't retry for EWOULDBLOCK.
+	  [ruby-talk:113807]
+
 Sun Sep 26 08:05:10 2004  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: provides {Time,Date,DateTime}#to_{time,date,datetime}.
 
 	* sample/cal.rb: uses getoptlong instead of getopts.
 
-Sat Sep 25 04:04:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Sep 25 18:39:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* hash.c: iterator functions for hash_foreach() should return enum
-	  st_retval.
+	* array.c (flatten): element size might change during comparison.
+	  [ruby-dev:24343]
 
 Sat Sep 25 01:52:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

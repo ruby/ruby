@@ -1250,6 +1250,8 @@ s_accept(klass, fd, sockaddr, len)
 	    rb_gc();
 	    retry = 1;
 	    goto retry;
+	  case EWOULDBLOCK:
+	    break;
 	  default:
 	    if (!rb_io_wait_readable(fd)) break;
 	    retry = 0;
