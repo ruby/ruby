@@ -1,3 +1,22 @@
+Sat Mar 29 09:48:35 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (avalue_to_svalue): use rb_check_array_type() again.
+	  Clarify how "to_ary" and "to_a" work. [ruby-talk:68155]
+
+	* eval.c (svalue_to_avalue): ditto.
+
+	* eval.c (svalue_to_mrhs): ditto.
+
+	* eval.c (rb_eval): unary splat to use to_a, but we need a hack to
+	  exclude Object#to_a until it's removed.
+
+	* object.c (rb_Array): check obj.respond_to?("to_a").  Currently
+	  all object respond_to "to_a", but Object#to_a will be removed.
+
+	* range.c (Init_Range): undefine to_ary.
+
+	* re.c (Init_Regexp): ditto.
+
 Sat Mar 29 09:47:52 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* MANIFEST (ext/aix_mksym.rb): remove obsolete file.
@@ -9,6 +28,11 @@ Fri Mar 28 19:33:39 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* variable.c (classname): remove temporary class path when exact
 	  name found.
+
+Fri Mar 28 18:29:23 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): do not warn if "-" is at the top
+	  or last of character class.
 
 Thu Mar 27 12:10:15 2003  Tanaka Akira  <akr@m17n.org>
 

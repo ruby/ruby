@@ -2201,42 +2201,47 @@ static VALUE
 avalue_to_svalue(v)
     VALUE v;
 {
-    if (TYPE(v) != T_ARRAY) {
+    VALUE tmp, top;
+
+    tmp = rb_check_array_type(v);
+    if (NIL_P(v)) {
 	return v;
     }
-    if (RARRAY(v)->len == 0) {
+    if (RARRAY(tmp)->len == 0) {
 	return Qundef;
     }
-    if (RARRAY(v)->len == 1) {
-	VALUE tmp = RARRAY(v)->ptr[0];
-	if (TYPE(tmp) != T_ARRAY) {
-	    return tmp;
+    if (RARRAY(tmp)->len == 1) {
+	top = rb_check_array_type(RARRAY(tmp)->ptr[0]);
+	if (NIL_P(top)) {
+	    return RARRAY(tmp)->ptr[0];
 	}
-	if (RARRAY(tmp)->len > 1) {
+	if (RARRAY(top)->len > 1) {
 	    return v;
 	}
-	return tmp;
+	return top;
     }
-    return v;
+    return tmp;
 }
 
 static VALUE
 svalue_to_avalue(v)
     VALUE v;
 {
-    VALUE tmp;
+    VALUE tmp, top;
 
     if (v == Qundef) return rb_ary_new2(0);
-    if (TYPE(v) != T_ARRAY) {
+    tmp = rb_check_array_type(v);
+    if (NIL_P(tmp)) {
 	return rb_ary_new3(1, v);
     }
-    if (RARRAY(v)->len == 1) {
-	tmp = RARRAY(v)->ptr[0];
-	if (TYPE(tmp) == T_ARRAY && RARRAY(tmp)->len > 1)
+    if (RARRAY(tmp)->len == 1) {
+	top = rb_check_array_type(RARRAY(tmp)->ptr[0]);
+	if (!NIL_P(top) && RARRAY(top)->len > 1) {
 	    return v;
+	}
 	return rb_ary_new3(1, v);
     }
-    return v;
+    return tmp;
 }
 
 static VALUE
@@ -2257,15 +2262,18 @@ svalue_to_mrhs(v, lhs)
     VALUE v;
     NODE *lhs;
 {
+    VALUE tmp;
+
     if (v == Qundef) return rb_ary_new2(0);
-    if (TYPE(v) != T_ARRAY) {
+    tmp = rb_check_array_type(v);
+    if (NIL_P(tmp)) {
 	return rb_ary_new3(1, v);
     }
     /* no lhs means splat lhs only */
-    if (!lhs && RARRAY(v)->len <= 1) {
+    if (!lhs && RARRAY(tmp)->len <= 1) {
 	return rb_ary_new3(1, v);
     }
-    return v;
+    return tmp;
 }
 
 static VALUE
@@ -2652,15 +2660,31 @@ rb_eval(self, n)
 	break;
 
       case NODE_SPLAT:
-        {
-	    VALUE tmp;
+#if 0
+	/* simplified version after Object#to_a removed */
+	result = rb_eval(self, node->nd_head);
+	if (NIL_P(result)) result = rb_ary_new3(1, Qnil);
+	result = avalue_splat(rb_Array(result));
+#else
+	result = rb_eval(self, node->nd_head);
+	if (NIL_P(result)) result = rb_ary_new3(1, Qnil);
+	if (TYPE(result) != T_ARRAY) {
+	    VALUE tmp = rb_check_array_type(result);
+	    if (NIL_P(tmp)) {
+		VALUE origin;
+		ID id = rb_intern("to_a");
 
-	    result = rb_eval(self, node->nd_head);
-	    tmp = rb_check_array_type(result);
-	    if (!NIL_P(tmp)) {
-		result = avalue_splat(tmp);
+		if (search_method(CLASS_OF(result), id, &origin) &&
+		    origin != RCLASS(rb_cObject)->super) { /* exclude Object#to_a */
+		    result = rb_funcall(result, id, 0);
+		}
+		else {
+		    result = rb_ary_new3(1, result);
+		}
 	    }
 	}
+	result = avalue_splat(rb_Array(result));
+#endif
 	break;
 
       case NODE_SVALUE:

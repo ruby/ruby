@@ -1713,7 +1713,6 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "begin", match_begin, 1);
     rb_define_method(rb_cMatch, "end", match_end, 1);
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
-    rb_define_method(rb_cMatch, "to_ary", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "select", match_select, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);

@@ -330,7 +330,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
   long ftype;
   void *func;
 
-  rb_secure(2);
+  rb_secure_update(self);
   Data_Get_Struct(self, struct sym_data, sym);
   DEBUG_CODE({
     printf("rb_dlsym_call(): type = '%s', func = 0x%x\n", sym->type, sym->func);

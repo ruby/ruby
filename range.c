@@ -497,7 +497,6 @@ Init_Range()
     rb_define_method(rb_cRange, "end", range_last, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
-    rb_define_alias(rb_cRange,  "to_ary", "to_a");
 
     rb_define_method(rb_cRange, "exclude_end?", range_exclude_end_p, 0);
 

@@ -1270,10 +1270,16 @@ rb_Array(val)
 	val = rb_funcall(val, to_ary, 0);
     }
     else {
-	val = rb_funcall(val, rb_intern("to_a"), 0);
+	to_ary = rb_intern("to_a");
+	if (rb_respond_to(val, to_ary)) {
+	    val = rb_funcall(val, to_ary, 0);
+	}
+	else {
+	    val = rb_ary_new3(1, val);
+	}
     }
     if (TYPE(val) != T_ARRAY) {
-	rb_raise(rb_eTypeError, "`to_a' did not return Array");
+	rb_raise(rb_eTypeError, "`%s' did not return Array", rb_id2name(to_ary));
     }
     return val;
 }

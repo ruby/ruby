@@ -1487,7 +1487,7 @@ re_compile_pattern(pattern, size, bufp)
 	}
 	had_char_class = 0;
 
-	if (c == '-')
+	if (c == '-' && p != p0 + 1 && *p != ']')
           re_warning("character class has `-' without escape");
         if (c == '[' && *p != ':')
           re_warning("character class has `[' without escape");

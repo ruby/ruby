@@ -138,7 +138,7 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
   const char *name, *stype;
   const char *err;
 
-  rb_secure(4);
+  rb_secure(2);
   if (rb_scan_args(argc, argv, "11", &sym, &type) == 2) {
     SafeStringValue(type);
     stype = StringValuePtr(type);
@@ -159,9 +159,8 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
     name = StringValuePtr(sym);
   }
 
-
   Data_Get_Struct(self, struct dl_handle, dlhandle);
-  if (! dlhandle->open) {
+  if (!dlhandle->open) {
     rb_raise(rb_eRuntimeError, "Closed handle.");
   }
   handle = dlhandle->ptr;
