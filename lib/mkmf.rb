@@ -1183,7 +1183,7 @@ Provided configuration options:
 MESSAGE
 
 def mkmf_failed(path)
-  unless $makefile_created
+  unless $makefile_created or File.exist?("Makefile")
     opts = $arg_config.collect {|t, n| "\t#{t}#{"=#{n}" if n}\n"}
     abort "*** #{path} failed ***\n" + FailedMessage + opts.join
   end
