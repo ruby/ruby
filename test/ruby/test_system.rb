@@ -60,4 +60,8 @@ class TestSystem < Test::Unit::TestCase
       end
     end
   end
+
+  def test_empty_evstr # [ruby-dev:25113]
+    assert_equal("", eval('"#{}"', nil, __FILE__, __LINE__))
+  end
 end

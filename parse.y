@@ -3599,7 +3599,7 @@ string_content	: tSTRING_CONTENT
 			COND_LEXPOP();
 			CMDARG_LEXPOP();
 		    /*%%%*/
-		        $3->flags &= ~NODE_NEWLINE;
+		        if ($3) $3->flags &= ~NODE_NEWLINE;
 			$$ = new_evstr($3);
 		    /*%
 			$$ = dispatch1(string_embexpr, $3);

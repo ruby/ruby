@@ -1,3 +1,8 @@
+Wed Dec  8 11:46:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (string_content): get rid of segfault at empty evstr.
+	  fixed: [ruby-dev:25113]
+
 Wed Dec  8 03:26:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_bio.c (ossl_obj2bio): should not use fptr->f.
