@@ -43,6 +43,10 @@ module DL
 	    ].join("\n")
 	  }
 	end
+
+	def to_ptr
+	  return @ptr
+	end
       end
 
       class Struct
