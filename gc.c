@@ -405,6 +405,11 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
+#ifdef DJGPP
+/* set stack size (http://www.delorie.com/djgpp/v2faq/faq15_9.html) */
+unsigned int _stklen = 0x180000; /* 1.5 kB */
+#endif
+
 #if defined(DJGPP) || defined(_WIN32_WCE)
 static unsigned int STACK_LEVEL_MAX = 65535;
 #elif defined(__human68k__)

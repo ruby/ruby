@@ -1,3 +1,7 @@
+Fri Jun 25 18:07:15 2004  Michal Rokos  <michal@ruby-lang.org>
+
+	* gc.c: bring back _stklen for DJGPP [ruby-core:3084]
+
 Fri Jun 25 15:33:01 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/extconf.rb: check stricter.  [ruby-talk:104501]
