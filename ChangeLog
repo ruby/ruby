@@ -1,6 +1,6 @@
 Mon Sep 25 13:31:45 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
-	* dir.c (rb_glob): DOSISH support.
+	* win32/win32.c (NtCmdGlob): substitute '\\' with '/'.
 
 Mon Sep 25 00:35:01 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 

@@ -511,11 +511,9 @@ has_magic(s, send)
 		return Qtrue;
 	    continue;
 
-#if !defined DOSISH
 	  case '\\':
 	    if (*p++ == '\0')
 		return Qfalse;
-#endif
 	}
 
 	if (send && p >= send) break;
@@ -533,7 +531,7 @@ extract_path(p, pend)
     len = pend - p;
     alloc = ALLOC_N(char, len+1);
     memcpy(alloc, p, len);
-    if (len > 1 && isdirsep(pend[-1])) {
+    if (len > 1 && pend[-1] == '/') {
 	alloc[len-1] = 0;
     }
     else {
@@ -549,7 +547,7 @@ extract_elem(path)
 {
     char *pend;
 
-    pend = find_dirsep(path);
+    pend = strchr(path, '/');
     if (!pend) pend = path + strlen(path);
 
     return extract_path(path, pend);
@@ -577,8 +575,8 @@ rb_glob(path, func, arg)
 
     p = path;
     while (p) {
-	if (isdirsep(*p)) p++;
-	m = find_dirsep(p);
+	if (*p == '/') p++;
+	m = strchr(p, '/');
 	if (has_magic(p, m)) {
 	    char *dir, *base, *magic, *buf;
 	    DIR *dirp;
@@ -607,7 +605,7 @@ rb_glob(path, func, arg)
 		free(base);
 		break;
 	    }
-#define BASE (*base && !(isdirsep(*base) && !base[1]))
+#define BASE (*base && !(*base == '/' && !base[1]))
 
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 		if (recursive) {

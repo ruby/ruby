@@ -873,13 +873,18 @@ NtCmdGlob (NtCmdLineElement *patt)
 {
     ListInfo listinfo;
     char buffer[MAXPATHLEN], *buf = buffer;
+    char *p, *pend, *pb;
 
     listinfo.head = listinfo.tail = 0;
 
     if (patt->len >= MAXPATHLEN)
 	buf = ruby_xmalloc(patt->len + 1);
 
-    strncpy(buf, patt->str, patt->len);
+    p = patt->str;
+    pend = p + patt->len;
+    pb = buf;
+    for (; p < pend; p = CharNext(p))
+	*pb++ = *p == '\\' ? '/' : *p;
     buf[patt->len] = 0;
     rb_glob(buf, insert, (VALUE)&listinfo);
     if (buf != buffer)
