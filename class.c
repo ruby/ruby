@@ -459,6 +459,7 @@ ins_methods_i(key, body, ary)
     NODE *body;
     VALUE ary;
 {
+    if (key == ID_ALLOCATOR) return ST_CONTINUE;
     if (!body->nd_body) {
 	rb_ary_push(ary, Qnil);
 	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
@@ -483,6 +484,7 @@ ins_methods_prot_i(key, body, ary)
     NODE *body;
     VALUE ary;
 {
+    if (key == ID_ALLOCATOR) return ST_CONTINUE;
     if (!body->nd_body) {
 	rb_ary_push(ary, Qnil);
 	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
@@ -507,6 +509,7 @@ ins_methods_priv_i(key, body, ary)
     NODE *body;
     VALUE ary;
 {
+    if (key == ID_ALLOCATOR) return ST_CONTINUE;
     if (!body->nd_body) {
 	rb_ary_push(ary, Qnil);
 	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
@@ -531,6 +534,7 @@ ins_methods_pub_i(key, body, ary)
     NODE *body;
     VALUE ary;
 {
+    if (key == ID_ALLOCATOR) return ST_CONTINUE;
     if (!body->nd_body) {
 	rb_ary_push(ary, Qnil);
 	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));

@@ -122,7 +122,7 @@ module IRB
 
 	gv = eval "global_variables", bind
 	lv = eval "local_variables", bind
-	cv = eval "type.constants", bind
+	cv = eval "self.type.constants", bind
 	
 	if (gv | lv | cv).include?(receiver)
 	  # foo.func and foo is local var.

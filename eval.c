@@ -230,7 +230,7 @@ rb_clear_cache_by_class(klass)
     }
 }
 
-static ID init, alloc, eqq, each, aref, aset, match, missing;
+static ID init, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
 static ID __id__, __send__;
 
@@ -247,10 +247,13 @@ rb_add_method(klass, mid, node, noex)
     if (ruby_safe_level >= 4 && (klass == rb_cObject || !OBJ_TAINTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
-    if (mid == init && !FL_TEST(klass, FL_SINGLETON) && node && nd_type(node) != NODE_ZSUPER) {
+    if (!FL_TEST(klass, FL_SINGLETON) &&
+	node && nd_type(node) != NODE_ZSUPER &&
+	mid == rb_intern("initialize")) {
 	noex = NOEX_PRIVATE | (noex & NOEX_NOSUPER);
     }
-    else if (mid == alloc && FL_TEST(klass, FL_SINGLETON) && node && nd_type(node) == NODE_CFUNC) {
+    else if (FL_TEST(klass, FL_SINGLETON) && node && nd_type(node) == NODE_CFUNC &&
+	     mid == rb_intern("allocate")) {
 	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
 		rb_class2name(rb_iv_get(klass, "__attached__")));
 	mid = ID_ALLOCATOR;
@@ -2105,6 +2108,7 @@ call_trace_func(event, node, self, id, klass)
     if (!trace_func) return;
     if (tracing) return;
     if (ruby_in_compile) return;
+    if (id == ID_ALLOCATOR) return;
 
     node_save[0] = ruby_last_node;
     if (!(node_save[1] = ruby_current_node)) {
@@ -4408,7 +4412,7 @@ rb_f_missing(argc, argv, obj)
     if (last_call_status & CSTAT_PRIV) {
 	format = "private method `%s' called for %s%s%s";
     }
-    if (last_call_status & CSTAT_PROT) {
+    else if (last_call_status & CSTAT_PROT) {
 	format = "protected method `%s' called for %s%s%s";
     }
     else if (last_call_status & CSTAT_VCALL) {
@@ -4459,6 +4463,9 @@ rb_undefined(obj, id, argc, argv, call_status)
 	PUSH_FRAME();
 	rb_f_missing(argc, argv, obj);
 	POP_FRAME();
+    }
+    else if (id == ID_ALLOCATOR) {
+	rb_fatal("allocator undefined for %s", rb_class2name(obj));
     }
 
     nargv = ALLOCA_N(VALUE, argc+1);
@@ -4608,7 +4615,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    if (trace_func) {
 		int state;
 
-		if (id == ID_ALLOCATOR) id = alloc;
 		call_trace_func("c-call", ruby_current_node, recv, id, klass);
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
@@ -6160,7 +6166,6 @@ void
 Init_eval()
 {
     init = rb_intern("initialize");
-    alloc = rb_intern("allocate");
     eqq = rb_intern("===");
     each = rb_intern("each");
 
