@@ -1189,9 +1189,6 @@ push_braces(ary, str, flags)
 
     if (lbrace && rbrace) {
 	int len = strlen(s);
-	buf = rb_str_new(0, len+1);
-	memcpy(RSTRING(buf)->ptr, s, lbrace-s);
-	b = RSTRING(buf)->ptr + (lbrace-s);
 	p = lbrace;
 	while (*p != '}') {
 	    t = p + 1;
@@ -1199,6 +1196,9 @@ push_braces(ary, str, flags)
 		/* skip inner braces */
 		if (*p == '{') while (*p!='}') p++;
 	    }
+	    buf = rb_str_new(0, len+1);
+	    memcpy(RSTRING(buf)->ptr, s, lbrace-s);
+	    b = RSTRING(buf)->ptr + (lbrace-s);
 	    memcpy(b, t, p-t);
 	    strcpy(b+(p-t), rbrace+1);
 	    status = push_braces(ary, buf, flags);
