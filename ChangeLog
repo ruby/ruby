@@ -1,4 +1,6 @@
-Mon Jun  9 13:27:13 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Mon Jun  9 19:02:33 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in: checks presence of grp.h and setgroups().
 
 	* process.c (proc_getgroups, proc_setgroups): raise
 	  NotImplementedError unless available.  [ruby-talk:73014]

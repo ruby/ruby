@@ -45,7 +45,7 @@ struct timeval rb_time_interval _((VALUE));
 #include <sys/times.h>
 #endif
 
-#ifdef HAVE_GETGROUPS
+#ifdef HAVE_GRP_H
 #include <grp.h>
 #endif
 
@@ -1255,7 +1255,7 @@ proc_getgroups(VALUE obj)
 static VALUE
 proc_setgroups(VALUE obj, VALUE ary)
 {
-#ifdef HAVE_GETGROUPS
+#ifdef HAVE_SETGROUPS
     size_t ngroups;
     gid_t *groups;
     int i;
