@@ -50,7 +50,7 @@ syck_io_file_read( char *buf, SyckIoFile *file, long max_size, long skip )
     ASSERT( file != NULL );
 
     max_size -= skip;
-    len = fread( buf + skip, max_size, sizeof( char ), file->ptr );
+    len = fread( buf + skip, sizeof( char ), max_size, file->ptr );
     len += skip;
     buf[len] = '\0';
 
@@ -181,7 +181,7 @@ syck_add_sym( SyckParser *p, char *data )
     {
         p->syms = st_init_numtable();
     }
-    id = p->syms->num_entries;
+    id = p->syms->num_entries + 1;
     st_insert( p->syms, id, (st_data_t)data );
     return id;
 }

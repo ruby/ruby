@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.38"
+#define SYCK_VERSION    "0.39"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -152,8 +152,28 @@ enum syck_level_status {
 };
 
 /*
- * Parser struct
+ * Parser structs
  */
+struct _syck_file {
+    /* File pointer */
+    FILE *ptr;
+    /* Function which FILE -> buffer */
+    SyckIoFileRead read;
+};
+
+struct _syck_str {
+    /* String buffer pointers */
+    char *beg, *ptr, *end;
+    /* Function which string -> buffer */
+    SyckIoStrRead read;
+};
+
+struct _syck_level {
+    int spaces;
+    char *domain;
+    enum syck_level_status status;
+};
+
 struct _syck_parser {
     /* Root node */
     SYMID root, root_on_error;
@@ -180,25 +200,15 @@ struct _syck_parser {
     /* EOF flag */
     int eof;
     union {
-        struct _syck_file {
-            FILE *ptr;
-            SyckIoFileRead read;
-        } *file;
-        struct _syck_str {
-            char *beg, *ptr, *end;
-            SyckIoStrRead read;
-        } *str;
+        SyckIoFile *file;
+        SyckIoStr *str;
     } io;
     /* Symbol table for anchors */
     st_table *anchors, *bad_anchors;
     /* Optional symbol table for SYMIDs */
     st_table *syms;
     /* Levels of indentation */
-    struct _syck_level {
-        int spaces;
-        char *domain;
-        enum syck_level_status status;
-    } *levels;
+    SyckLevel *levels;
     int lvl_idx;
     int lvl_capa;
     void *bonus;
