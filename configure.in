@@ -795,8 +795,11 @@ case "$target_os" in
     openstep*)
     	CFLAGS="$CFLAGS -pipe"
 	;;
-    rhasody*)
+    rhapsody*)
     	CFLAGS="$CFLAGS -pipe -no-precomp"
+	;;
+    os2_emx)
+    	CFLAGS="$CFLAGS -DOS2"
 	;;
     osf*)
 	if test "$without_gcc" = "no" ; then

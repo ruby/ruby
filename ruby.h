@@ -525,17 +525,19 @@ EXTERN VALUE rb_eEOFError;
 EXTERN VALUE rb_eIndexError;
 EXTERN VALUE rb_eRangeError;
 EXTERN VALUE rb_eIOError;
-EXTERN VALUE rb_eLoadError;
-EXTERN VALUE rb_eNameError;
 EXTERN VALUE rb_eRuntimeError;
 EXTERN VALUE rb_eSecurityError;
-EXTERN VALUE rb_eSyntaxError;
 EXTERN VALUE rb_eSystemCallError;
 EXTERN VALUE rb_eTypeError;
 EXTERN VALUE rb_eZeroDivError;
 EXTERN VALUE rb_eNotImpError;
 EXTERN VALUE rb_eNoMemError;
 EXTERN VALUE rb_eFloatDomainError;
+
+EXTERN VALUE rb_eScriptError;
+EXTERN VALUE rb_eNameError;
+EXTERN VALUE rb_eSyntaxError;
+EXTERN VALUE rb_eLoadError;
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
 extern __inline__ VALUE rb_class_of _((VALUE));

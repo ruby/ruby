@@ -321,12 +321,11 @@ dir_each(dir)
 {
     DIR *dirp;
     struct dirent *dp;
-    VALUE file;
 
     GetDIR(dir, dirp);
     for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-	file = rb_tainted_str_new(dp->d_name, NAMLEN(dp));
-	rb_yield(file);
+	rb_yield(rb_tainted_str_new(dp->d_name, NAMLEN(dp)));
+	if (DATA_PTR(dir) == NULL) dir_closed();
     }
     return dir;
 }

@@ -34,6 +34,13 @@ cmp_failed()
 }
 
 static VALUE
+cmp_eq2(a)
+    VALUE *a;
+{
+    return rb_rescue(cmp_eq, (VALUE)a, cmp_failed, 0);
+}
+
+static VALUE
 cmp_equal(x, y)
     VALUE x, y;
 {
@@ -42,7 +49,7 @@ cmp_equal(x, y)
     if (x == y) return Qtrue;
 
     a[0] = x; a[1] = y;
-    return rb_rescue(cmp_eq, (VALUE)a, cmp_failed, 0);
+    return rb_rescue2(cmp_eq2, (VALUE)a, rb_eScriptError, cmp_failed, 0);
 }
 
 static VALUE
