@@ -6,6 +6,13 @@ require 'tcltklib'
 require 'thread'
 
 ################################################
+# ignore exception on the mainloop
+
+# TclTkLib.mainloop_abort_on_exception = false
+TclTkLib.mainloop_abort_on_exception = nil
+
+
+################################################
 # exceptiopn to treat the return value from IP
 class MultiTkIp_OK < Exception
   def self.send(thred, ret=nil)
@@ -22,17 +29,11 @@ class MultiTkIp_OK < Exception
 end
 MultiTkIp_OK.freeze
 
+
 ################################################
 # methods for construction
 class MultiTkIp
-
-  # ignore exception on the mainloop
-  #TclTkLib.mainloop_abort_on_exception = false
-  TclTkLib.mainloop_abort_on_exception = nil
-
-  ######################################
-
-  SLAVE_IP_ID = ['slave'.freeze, '00000']
+  SLAVE_IP_ID = ['slave'.freeze, '0']
 
   @@IP_TABLE = {}
 
@@ -827,6 +828,32 @@ end
 
 # depend on TclTkIp
 class MultiTkIp
+  def mainloop(check_root = true, restart_on_dead = true)
+    unless restart_on_dead
+      @interp.mainloop(check_root)
+    else
+      begin
+	loop do
+	  @interp.mainloop(check_root)
+	  if check_root
+	    begin
+	      break if @interp._invoke('winfo', 'exists?', '.') == "1"
+	    rescue Exception
+	      break
+	    end
+	  end
+	end
+      rescue StandardError
+	if TclTkLib.mainloop_abort_on_exception != nil
+	  STDERR.print("warning: Tk mainloop on ", @interp.inspect, 
+		       " receives ", $!.class.inspect, 
+		       " exception (ignore) : ", $!.message, "\n");
+	end
+	retry
+      end
+    end
+  end
+
   def make_safe
     @interp.make_safe
   end

@@ -114,7 +114,14 @@ class TkTimer
     @id = Tk_CBID.join
     Tk_CBID[1].succ!
 
-    @cb_cmd = TkCore::INTERP.get_cb_entry(self.method(:do_callback))
+    # @cb_cmd = TkCore::INTERP.get_cb_entry(self.method(:do_callback))
+    @cb_cmd = TkCore::INTERP.get_cb_entry(proc{
+					    begin
+					      self.do_callback
+					    rescue
+					      self.cancel
+					    end
+					  })
 
     @set_next = true
 

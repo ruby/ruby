@@ -50,28 +50,27 @@ module TkComm
 
     if ruby_class = WidgetClassNames[tk_class]
       ruby_class_name = ruby_class.name
-      gen_class_name = ruby_class_name + 'GeneratedOnTk'
+      # gen_class_name = ruby_class_name + 'GeneratedOnTk'
+      gen_class_name = ruby_class_name
       classname_def = ''
     elsif Object.const_defined?('Tk' + tk_class)
       ruby_class_name = 'Tk' + tk_class
-      gen_class_name = ruby_class_name + 'GeneratedOnTk'
+      # gen_class_name = ruby_class_name + 'GeneratedOnTk'
+      gen_class_name = ruby_class_name
       classname_def = ''
     else
       ruby_class_name = 'TkWindow'
-      gen_class_name = ruby_class_name + tk_class + 'GeneratedOnTk'
+      # gen_class_name = ruby_class_name + tk_class + 'GeneratedOnTk'
+      gen_class_name = 'TkWidget_' + tk_class
       classname_def = "WidgetClassName = '#{tk_class}'.freeze"
     end
     unless Object.const_defined? gen_class_name
       Object.class_eval "class #{gen_class_name}<#{ruby_class_name}
                            #{classname_def}
-                           def initialize(path)
-                             @path=path
-                             #Tk_WINDOWS[@path] = self
-			     TkCore::INTERP.tk_windows[@path] = self
-                           end
                          end"
     end
-    Object.class_eval "#{gen_class_name}.new('#{path}')"
+    Object.class_eval "#{gen_class_name}.new('widgetname'=>'#{path}', 
+                                             'without_creating'=>true)"
   end
   private :_genobj_for_tkwidget
   module_function :_genobj_for_tkwidget
@@ -889,11 +888,34 @@ module TkCore
     tk_call('info', *args)
   end
 
-  def mainloop(check_root = true)
-    TclTkLib.mainloop(check_root)
+  def mainloop(check_root = true, restart_on_dead = true)
+    unless restart_on_dead
+      TclTkLib.mainloop(check_root)
+    else
+      begin
+	loop do
+	  TclTkLib.mainloop(check_root)
+	  if check_root
+	    begin
+	      break if TkWinfo.exist?('.')
+	    rescue Exception
+	      break
+	    end
+	  end
+	end
+      rescue StandardError
+	if TclTkLib.mainloop_abort_on_exception != nil
+	  STDERR.print("warning: Tk mainloop on ", TkCore::INTERP.inspect, 
+		       " receives ", $!.class.inspect, 
+		       " exception (ignore) : ", $!.message, "\n");
+	end
+	retry
+      end
+    end
   end
 
   def mainloop_watchdog(check_root = true)
+    # watchdog restarts mainloop when mainloop is dead
     TclTkLib.mainloop_watchdog(check_root)
   end
 
@@ -3739,12 +3761,12 @@ class TkWindow<TkObject
   def destroy
     super
     _destroy_children
-    tk_call 'destroy', epath
     if defined?(@cmdtbl)
       for id in @cmdtbl
 	uninstall_cmd id
       end
     end
+    tk_call 'destroy', epath
     uninstall_win
   end
 
@@ -4392,10 +4414,44 @@ class TkScale<TkWindow
 
   def create_self(keys)
     if keys and keys != None
+      if keys.key?('command')
+	cmd = keys.delete('command')
+	keys['command'] = proc{|val| cmd.call(val.to_f)}
+      end
       tk_call 'scale', @path, *hash_kv(keys)
     else
       tk_call 'scale', @path
     end
+  end
+
+  def _wrap_command_arg(cmd)
+    proc{|val|
+      if val.kind_of?(String)
+	cmd.call(number(val))
+      else
+	cmd.call(val)
+      end
+    }
+  end
+  private :_wrap_command_arg
+
+  def configure_cmd(slot, value)
+    configure(slot=>value)
+  end
+
+  def configure(slot, value=None)
+    if (slot == 'command' || slot == :command)
+      configure('command'=>value)
+    elsif slot.kind_of?(Hash) && 
+	(slot.key?('command') || slot.key?(:command))
+      slot = _symbolkey2str(slot)
+      slot['command'] = __wrap_command_arg(slot.delete('command'))
+    end
+    super(slot, value)
+  end
+
+  def command(cmd=Proc.new)
+    configure('command'=>cmd)
   end
 
   def get(x=None, y=None)
@@ -5098,10 +5154,11 @@ TkBindTag::ALL.bind(TkVirtualEvent.new('Destroy'), proc{|widget|
 		      else
 			w = widget.to_s
 		      end
-		      if widget.respond_to?(:__destroy_hook__) &&
-			  TkCore::INTERP._invoke('winfo','exist',w) == '1'
+		      if widget.respond_to?(:__destroy_hook__)
 			begin
-			  widget.__destroy_hook__
+			  if TkCore::INTERP._invoke('winfo','exist',w) == '1'
+			    widget.__destroy_hook__
+			  end
 			rescue Exception
 			end
 		      end

@@ -55,6 +55,8 @@ safe_slave1.eval_proc(cmd, 'safe1')      # label -> .w00016
 safe_slave2.eval_proc(cmd, 'safe2')      # label -> .w00020
 cmd.call('master')                       # label -> .w00024
 
+#second_master = MultiTkIp.new(&cmd)
+
 TkTimer.new(2000, -1, proc{p ['safe1', safe_slave1.deleted?]}).start
 TkTimer.new(2000, -1, proc{p ['safe2', safe_slave2.deleted?]}).start
 TkTimer.new(2000, -1, proc{p ['trusted', trusted_slave.deleted?]}).start
