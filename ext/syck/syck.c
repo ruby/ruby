@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ruby.h"
 #include "syck.h"
+#include "ruby.h"
 
 void syck_parser_pop_level( SyckParser * );
 
@@ -88,7 +88,7 @@ syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
     }
     if ( beg < str->ptr )
     {
-        len = str->ptr - beg;
+        len = ( str->ptr - beg ) + 1;
         S_MEMCPY( buf + skip, beg, char, len );
     }
     len += skip;

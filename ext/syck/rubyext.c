@@ -35,7 +35,19 @@ typedef struct RVALUE {
     } as;
 } RVALUE;
 
+typedef struct {
+   long hash;
+   char *buffer;
+   long length;
+   long remaining;
+   int  printed;
+} bytestring_t;
+
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
+
+#ifndef StringValue
+#define StringValue(v)
+#endif
 
 /*
  * symbols and constants
@@ -70,6 +82,40 @@ struct parser_xtra {
     VALUE proc;
     int taint;
 };
+
+/*
+ * Convert YAML to bytecode
+ */
+VALUE
+rb_syck_compile(self, port)
+	VALUE self, port;
+{
+    SYMID oid;
+    int taint;
+    char *ret;
+    VALUE bc;
+    bytestring_t *sav; 
+
+    SyckParser *parser = syck_new_parser();
+	taint = syck_parser_assign_io(parser, port);
+    syck_parser_handler( parser, syck_yaml2byte_handler );
+    syck_parser_error_handler( parser, NULL );
+    syck_parser_implicit_typing( parser, 0 );
+    syck_parser_taguri_expansion( parser, 0 );
+    oid = syck_parse( parser );
+    syck_lookup_sym( parser, oid, (char **)&sav );
+
+    ret = S_ALLOC_N( char, strlen( sav->buffer ) + 3 );
+    ret[0] = '\0';
+    strcat( ret, "D\n" );
+    strcat( ret, sav->buffer );
+
+    syck_free_parser( parser );
+
+    bc = rb_str_new2( ret );
+    if ( taint )      OBJ_TAINT( bc );
+    return bc;
+}
 
 /*
  * read from io.
@@ -1278,6 +1324,7 @@ Init_syck()
     VALUE rb_yaml = rb_define_module( "YAML" );
     VALUE rb_syck = rb_define_module_under( rb_yaml, "Syck" );
     rb_define_const( rb_syck, "VERSION", rb_str_new2( SYCK_VERSION ) );
+    rb_define_module_function( rb_syck, "compile", rb_syck_compile, 1 );
 
 	/*
 	 * Global symbols

@@ -17,6 +17,7 @@
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
+#include <ctype.h>
 #include "st.h"
 
 #if defined(__cplusplus)
@@ -355,6 +356,8 @@ long syck_parser_readlen( SyckParser *, long );
 void syck_parser_init( SyckParser *, int );
 SYMID syck_parse( SyckParser * );
 void syck_default_error_handler( SyckParser *, char * );
+SYMID syck_yaml2byte_handler( SyckParser *, SyckNode * );
+char *syck_yaml2byte( char * );
 
 /*
  * Allocation prototypes

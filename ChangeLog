@@ -1,3 +1,16 @@
+Sat Oct 18 05:48:59 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+	* ext/syck/rubyext.c: YAML::Syck::compile method.
+
+	* ext/syck/syck.c: Buffer edge bug.
+
+	* ext/syck/yaml2byte.c: YAML to bytecode converter.
+
+	* ext/syck/bytecode.c: Bytecode parser fixes to empty collections
+	  and empty strings.
+
+	* ext/syck/token.c: Ditto.
+
 Fri Oct 17 23:07:38 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/enumerator/enumerator.c, ext/enumerator/enumerator.txt:
