@@ -1827,7 +1827,12 @@ rb_w32_fdclr(int fd, fd_set *set)
 int
 rb_w32_fdisset(int fd, fd_set *set)
 {
-       return __WSAFDIsSet(TO_SOCKET(fd), set);
+    int ret;
+    SOCKET s = TO_SOCKET(fd);
+    if (s == (SOCKET)INVALID_HANDLE_VALUE)
+        return 0;
+    RUBY_CRITICAL(ret = __WSAFDIsSet(s, set));
+    return ret;
 }
 
 //
