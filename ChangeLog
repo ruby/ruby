@@ -1,3 +1,8 @@
+Sun Jul 20 11:03:25 2003  UENO Katsuhiro  <katsu@blue.sky.or.jp>
+
+	* ext/zlib/zlib.c (gzfile_read_header): gz->z.input may be nil after
+	finishing reading a gzip header.
+
 Sat Jul 19 22:25:47 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_match2): add warning to "~string".

@@ -1697,7 +1697,7 @@ gzfile_read_header(gz)
 	zstream_discard_input(&gz->z, len + 1);
     }
 
-    if (RSTRING(gz->z.input)->len > 0) {
+    if (gz->z.input != Qnil && RSTRING(gz->z.input)->len > 0) {
 	zstream_run(&gz->z, 0, 0, Z_SYNC_FLUSH);
     }
 }
