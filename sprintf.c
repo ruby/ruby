@@ -62,11 +62,13 @@ remove_sign_bits(str, base)
 #define FWIDTH 32
 #define FPREC  64
 
-#define CHECK(l) \
+#define CHECK(l) do {\
     while (blen + (l) >= bsiz) {\
-	REALLOC_N(buf, char, bsiz*2);\
 	bsiz*=2;\
-    }
+    }\
+    rb_str_resize(result, bsiz);\
+    buf = RSTRING(result)->ptr;\
+} while (0)
 
 #define PUSH(s, l) do { \
     CHECK(l);\
@@ -74,8 +76,18 @@ remove_sign_bits(str, base)
     blen += (l);\
 } while (0)
 
-#define GETARG() \
-    ((nextarg >= argc) ? (rb_raise(rb_eArgError, "too few argument."), 0) : argv[nextarg++])
+#define GETARG() (nextvalue != Qundef ? nextvalue : \
+    posarg < 0 ? \
+    (rb_raise(rb_eArgError, "unnumbered(%d) mixed with numbered", nextarg), 0) : \
+    (posarg = nextarg++, GETNTHARG(posarg)))
+
+#define GETPOSARG(n) (posarg > 0 ? \
+    (rb_raise(rb_eArgError, "numbered(%d) after unnumbered(%d)", n, posarg), 0) : \
+    ((n < 1) ? (rb_raise(rb_eArgError, "invalid index - %d$", n), 0) : \
+	       (posarg = -1, GETNTHARG(n))))
+
+#define GETNTHARG(nth) \
+    ((nth >= argc) ? (rb_raise(rb_eArgError, "too few argument."), 0) : argv[nth])
 
 #define GETASTER(val) do { \
     t = p++; \
@@ -87,10 +99,7 @@ remove_sign_bits(str, base)
 	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]"); \
     } \
     if (*p == '$') { \
-	int curarg = nextarg; \
-	nextarg = n; \
-	tmp = GETARG(); \
-	nextarg = curarg; \
+	tmp = GETPOSARG(n); \
     } \
     else { \
 	tmp = GETARG(); \
@@ -110,19 +119,22 @@ rb_f_sprintf(argc, argv)
     VALUE result;
 
     int width, prec, flags = FNONE;
-    int nextarg = 0;
+    int nextarg = 1;
+    int posarg = 0;
     int tainted = 0;
+    VALUE nextvalue;
     VALUE tmp;
     VALUE str;
 
-    fmt = GETARG();
+    fmt = GETNTHARG(0);
     if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
     p = RSTRING(fmt)->ptr;
     end = p + RSTRING(fmt)->len;
     blen = 0;
     bsiz = 120;
-    buf = ALLOC_N(char, bsiz);
+    result = rb_str_buf_new(bsiz);
+    buf = RSTRING(result)->ptr;
 
     for (; p < end; p++) {
 	char *t;
@@ -137,6 +149,7 @@ rb_f_sprintf(argc, argv)
 	p = t + 1;		/* skip `%' */
 
 	width = prec = -1;
+	nextvalue = Qundef;
       retry:
 	switch (*p) {
 	  default:
@@ -181,7 +194,10 @@ rb_f_sprintf(argc, argv)
 		rb_raise(rb_eArgError, "malformed format string - %%[0-9]");
 	    }
 	    if (*p == '$') {
-		nextarg = n;
+		if (nextvalue != Qundef) {
+		    rb_raise(rb_eArgError, "value given twice - %d$", n);
+		}
+		nextvalue = GETPOSARG(n);
 		p++;
 		goto retry;
 	    }
@@ -579,8 +595,7 @@ rb_f_sprintf(argc, argv)
 	rb_raise(rb_eArgError, "too many argument for format string");
     }
 #endif
-    result = rb_str_new(buf, blen);
-    free(buf);
+    rb_str_resize(result, blen);
 
     if (tainted) OBJ_TAINT(result);
     return result;

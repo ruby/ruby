@@ -1,3 +1,9 @@
+Wed Oct 16 22:35:53 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* sprintf.c (rb_f_sprintf): disallow mixed usage of numbered and
+	  unnumbered arguments.  [ruby-dev:18531]
+	  get rid of memory leak at exception.  [ruby-core:00460]
+
 Wed Oct 16 13:36:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* variable.c (rb_global_entry): not add global entry until
