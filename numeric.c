@@ -1148,11 +1148,10 @@ static VALUE
 fix_lshift(x, y)
     VALUE x, y;
 {
-    long val;
-    int width;
+    long val, width;
 
     val = NUM2LONG(x);
-    width = NUM2INT(y);
+    width = NUM2LONG(y);
     if (width > (sizeof(VALUE)*CHAR_BIT-1)
 	|| ((unsigned long)val)>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
 	return rb_big_lshift(rb_int2big(val), y);
@@ -1170,6 +1169,11 @@ fix_rshift(x, y)
     i = NUM2LONG(y);
     if (i < 0)
 	return fix_lshift(x, INT2FIX(-i));
+    if (i == 0) return x;
+    if (i >= sizeof(long)*CHAR_BIT-1) {
+	if (i < 0) return INT2FIX(-1);
+	return INT2FIX(0);
+    }
     val = RSHIFT(FIX2LONG(x), i);
     return INT2FIX(val);
 }
@@ -1179,7 +1183,7 @@ fix_aref(fix, idx)
     VALUE fix, idx;
 {
     unsigned long val = FIX2LONG(fix);
-    int i = FIX2LONG(idx);
+    int i = NUM2INT(idx);
 
     if (i < 0 || sizeof(VALUE)*CHAR_BIT-1 < i)
 	return INT2FIX(0);

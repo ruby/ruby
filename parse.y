@@ -419,7 +419,6 @@ expr		: mlhs '=' mrhs
 		    }
 		| '!' command_call
 		    {
-			value_expr($2);
 			$$ = NEW_NOT(cond($2));
 		    }
 		| arg
@@ -868,7 +867,6 @@ opt_call_args	: none
 
 call_args	: command_call
 		    {
-			value_expr($1);
 			$$ = NEW_LIST($1);
 		    }
 		| args ','

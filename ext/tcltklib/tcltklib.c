@@ -4,12 +4,13 @@
  *		Oct. 24, 1997	Y. Matsumoto
  */
 
+#include "ruby.h"
+#include "rubysig.h"
+#undef EXTERN	/* avoid conflict with tcl.h of tcl8.2 or before */
 #include <stdio.h>
 #include <string.h>
 #include <tcl.h>
 #include <tk.h>
-#include "ruby.h"
-#include "rubysig.h"
 
 #ifdef __MACOS__
 # include <tkMac.h>
@@ -230,11 +231,11 @@ ip_new(self)
     /* add ruby command to the interpreter */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"ruby\")");
-    Tcl_CreateObjCommand(ptr->ip, "ruby", ip_ruby, (ClientData *)NULL,
+    Tcl_CreateObjCommand(ptr->ip, "ruby", ip_ruby, (ClientData)NULL,
 			 (Tcl_CmdDeleteProc *)NULL);
 #else
     DUMP1("Tcl_CreateCommand(\"ruby\")");
-    Tcl_CreateCommand(ptr->ip, "ruby", ip_ruby, (ClientData *)NULL,
+    Tcl_CreateCommand(ptr->ip, "ruby", ip_ruby, (ClientData)NULL,
 		      (Tcl_CmdDeleteProc *)NULL);
 #endif
 

@@ -518,7 +518,7 @@ mkipaddr0(addr, buf, len)
 
     error = getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0, NI_NUMERICHOST);
     if (error) {
-	rb_raise(rb_eSocket, "%s", gai_strerror(error));
+	rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
     }
 }
 
@@ -604,7 +604,7 @@ ip_addrsetup(host, port)
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
 	}
-	rb_raise(rb_eSocket, "%s", gai_strerror(error));
+	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
 
     return res;
@@ -648,14 +648,14 @@ ipaddr(sockaddr)
 	error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			    NULL, 0, 0);
 	if (error) {
-	    rb_raise(rb_eSocket, "%s", gai_strerror(error));
+	    rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
 	}
 	addr1 = rb_tainted_str_new2(hbuf);
     }
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
-	rb_raise(rb_eSocket, "%s", gai_strerror(error));
+	rb_raise(rb_eSocket, "getnameinfo %s", gai_strerror(error));
     }
     addr2 = rb_tainted_str_new2(hbuf);
     if (do_not_reverse_lookup) {
@@ -795,7 +795,7 @@ open_inet(class, h, serv, type)
     }
     error = getaddrinfo(host, portp, &hints, &res0);
     if (error) {
-	rb_raise(rb_eSocket, "%s", gai_strerror(error));
+	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
 
     fd = -1;
@@ -1842,7 +1842,7 @@ sock_s_getaddrinfo(argc, argv)
     }
     error = getaddrinfo(hptr, pptr, &hints, &res);
     if (error) {
-	rb_raise(rb_eSocket, "%s", gai_strerror(error));
+	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
 
     ret = mkaddrinfo(res);
@@ -1948,7 +1948,7 @@ sock_s_getnameinfo(argc, argv)
 	}
 #endif
 	error = getaddrinfo(hptr, pptr, &hints, &res);
-	if (error) goto error_exit;
+	if (error) goto error_exit_addr;
 	sap = res->ai_addr;
     }
     else {
@@ -1957,7 +1957,7 @@ sock_s_getnameinfo(argc, argv)
 
     error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), fl);
-    if (error) goto error_exit;
+    if (error) goto error_exit_name;
     if (res) {
 	for (r = res->ai_next; r; r = r->ai_next) {
 	    char hbuf2[1024], pbuf2[1024];
@@ -1965,7 +1965,7 @@ sock_s_getnameinfo(argc, argv)
 	    sap = r->ai_addr;
 	    error = getnameinfo(sap, SA_LEN(sap), hbuf2, sizeof(hbuf2),
 				pbuf2, sizeof(pbuf2), fl);
-	    if (error) goto error_exit;
+	    if (error) goto error_exit_name;
 	    if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
 		freeaddrinfo(res);
 		rb_raise(rb_eSocket, "sockaddr resolved to multiple nodename");
@@ -1975,9 +1975,13 @@ sock_s_getnameinfo(argc, argv)
     }
     return rb_assoc_new(rb_tainted_str_new2(hbuf), rb_tainted_str_new2(pbuf));
 
-  error_exit:
+  error_exit_addr:
     if (res) freeaddrinfo(res);
-    rb_raise(rb_eSocket, "%s", gai_strerror(error));
+    rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
+
+  error_exit_name:
+    if (res) freeaddrinfo(res);
+    rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
 }
 
 static VALUE mConst;

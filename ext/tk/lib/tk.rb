@@ -527,15 +527,15 @@ module TkCore
     tk_call 'tk_messageBox', *hash_kv(keys)
   end
 
-  def getOpenFile(keys)
+  def getOpenFile(keys = nil)
     tk_call 'tk_getOpenFile', *hash_kv(keys)
   end
 
-  def getSaveFile(keys)
+  def getSaveFile(keys = nil)
     tk_call 'tk_getSaveFile', *hash_kv(keys)
   end
 
-  def chooseColor(keys)
+  def chooseColor(keys = nil)
     tk_call 'tk_chooseColor', *hash_kv(keys)
   end
 

@@ -7159,6 +7159,9 @@ rb_thread_create_0(fn, arg, klass)
     }
 #endif
 
+    if (ruby_block) {
+	blk_copy_prev(ruby_block);
+    }
     FL_SET(ruby_scope, SCOPE_SHARED);
     if (THREAD_SAVE_CONTEXT(curr_thread)) {
 	return thread;
