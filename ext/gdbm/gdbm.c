@@ -600,7 +600,7 @@ static VALUE
 fgdbm_has_value(obj, valstr)
     VALUE obj, valstr;
 {
-    datum key;
+    datum key, val;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
