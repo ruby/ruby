@@ -646,6 +646,7 @@ def extmake(target)
 	end
       end
     end
+    $static = $target if $static
     if File.exist?("./Makefile")
       if $static
  	$extlist.push [$static, File.basename($target)]

@@ -805,6 +805,8 @@ rb_hash_equal(hash1, hash2)
     if (TYPE(hash2) != T_HASH) return Qfalse;
     if (RHASH(hash1)->tbl->num_entries != RHASH(hash2)->tbl->num_entries)
 	return Qfalse;
+    if (!rb_equal(RHASH(hash1)->ifnone, RHASH(hash2)->ifnone))
+	return Qfalse;
 
     data.tbl = RHASH(hash2)->tbl;
     data.result = Qtrue;

@@ -1273,7 +1273,7 @@ The hash keys are case sensitive. Ask the samples.
       end
       if @output_hidden
         hidden = @output_hidden.collect{|k,v|
-          "<INPUT TYPE=HIDDEN NAME=\"#{k}\" VALUE=\"#{v}\">"
+          "<DIV><INPUT TYPE=HIDDEN NAME=\"#{k}\" VALUE=\"#{v}\"></DIV>"
         }.to_s
         body += hidden
       end

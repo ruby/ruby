@@ -1566,7 +1566,7 @@ rb_undef(klass, id)
     VALUE origin;
     NODE *body;
 
-    if (ruby_class == rb_cObject) {
+    if (klass == rb_cObject) {
 	rb_secure(4);
     }
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {

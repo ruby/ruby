@@ -1,3 +1,11 @@
+Wed Aug  7 09:51:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_equal): should check default values.
+
+Fri Aug  2 01:21:52 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (s_recvfrom): update RSTRING len.
+
 Thu Aug  1 13:51:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (io_fread): return value was longer when EWOULDBLOCK

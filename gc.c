@@ -24,11 +24,8 @@
 void re_free_registers _((struct re_registers*));
 void rb_io_fptr_finalize _((struct OpenFile*));
 
-#ifndef setjmp
-#ifdef HAVE__SETJMP
+#if !defined(setjmp) && defined(HAVE__SETJMP)
 #define setjmp(env) _setjmp(env)
-#define longjmp(env,val) _longjmp(env,val)
-#endif
 #endif
 
 /* Make alloca work the best possible way.  */
