@@ -1978,11 +1978,10 @@ sym		: fname
 dsym		: tSYMBEG xstring_contents tSTRING_END
 		    {
 		        lex_state = EXPR_END;
-			if (!$2) {
+			if (!($$ = $2)) {
 			    yyerror("empty symbol literal");
 			}
 			else {
-			    $$ = $2;
 			    switch (nd_type($$)) {
 			      case NODE_STR:
 				$$->nd_lit = ID2SYM(rb_intern(RSTRING($$->nd_lit)->ptr));
