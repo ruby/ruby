@@ -1244,6 +1244,7 @@ rb_file_s_expand_path(argc, argv)
 	    }
 	    if (strlen(dir) > MAXPATHLEN) goto toolong;
 	    strcpy(buf, dir);
+	    free(dir);
 	    p = &buf[strlen(buf)];
 	    s++;
 	    tainted = 1;

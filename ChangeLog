@@ -7,6 +7,16 @@ Wed Mar 20 00:46:54 2002  Akinori MUSHA  <knu@iDaemons.org>
 	* dir.c (my_getcwd): the content of buf is uncertain and must not
 	  be printed when getcwd(buf, size) has failed.
 
+Wed Mar 20 16:05:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): should check receiver only once.
+
+	* eval.c (is_defined): should handle NODE_NEWLINE.
+
+Wed Mar 20 11:29:25 2002  Aristarkh A Zagorodnikov  <xm@xml-objects.com>
+
+	* file.c (rb_file_s_expand_path): memory leak fixed.
+
 Mon Mar 18 10:55:03 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* enum.c (enum_find): catch a value before recycle.
