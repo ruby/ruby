@@ -1505,7 +1505,7 @@ dln_load(file)
 #endif /* __MACOS__ */
 
 #ifndef DLN_DEFINED
-    rb_notimplement("dynamic link not supported");
+    rb_notimplement();
 #endif
 
 #endif /* USE_DLN_A_OUT */
