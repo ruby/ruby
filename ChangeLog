@@ -1,6 +1,17 @@
-Wed Sep 13 17:11:19 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Mon Sep 18 17:46:11 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.
+
+Sat Sep 16 03:29:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_require): rb_provided() called too early; does not
+	  work well with threads.
+
+	* parse.y (ensure): should distinguish empty ensure and non
+	  existing ensure.
+
+	* file.c (Init_File): extending File by class of FileTest was
+	  serious mistake.
 
 Thu Sep 14 02:46:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

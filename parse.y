@@ -1507,7 +1507,11 @@ rescue		: kRESCUE exc_list exc_var then
 ensure		: none
 		| kENSURE compstmt
 		    {
-			$$ = $2;
+			if ($2)
+			    $$ = $2;
+			else
+			    /* place holder */
+			    $$ = NEW_NIL();
 		    }
 
 literal		: numeric

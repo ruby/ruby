@@ -2153,40 +2153,47 @@ rb_find_file(file)
     return 0;
 }
 
-void
+static void
+define_filetest_function(name, func, argc)
+    const char *name;
+    VALUE (*func)();
+    int argc;
+{
+    rb_define_module_function(rb_mFileTest, name, func, argc);
+    rb_define_singleton_method(rb_cFile, name, func, argc);
+}
+
 Init_File()
 {
     rb_mFileTest = rb_define_module("FileTest");
-
-    rb_define_module_function(rb_mFileTest, "directory?",  test_d, 1);
-    rb_define_module_function(rb_mFileTest, "exist?",  test_e, 1);
-    rb_define_module_function(rb_mFileTest, "exists?",  test_e, 1); /* temporary */
-    rb_define_module_function(rb_mFileTest, "readable?",  test_r, 1);
-    rb_define_module_function(rb_mFileTest, "readable_real?",  test_R, 1);
-    rb_define_module_function(rb_mFileTest, "writable?",  test_w, 1);
-    rb_define_module_function(rb_mFileTest, "writable_real?",  test_W, 1);
-    rb_define_module_function(rb_mFileTest, "executable?",  test_x, 1);
-    rb_define_module_function(rb_mFileTest, "executable_real?",  test_X, 1);
-    rb_define_module_function(rb_mFileTest, "file?",  test_f, 1);
-    rb_define_module_function(rb_mFileTest, "zero?",  test_z, 1);
-    rb_define_module_function(rb_mFileTest, "size?",  test_s, 1);
-    rb_define_module_function(rb_mFileTest, "size",   test_s, 1);
-    rb_define_module_function(rb_mFileTest, "owned?",  test_owned, 1);
-    rb_define_module_function(rb_mFileTest, "grpowned?",  test_grpowned, 1);
-
-    rb_define_module_function(rb_mFileTest, "pipe?",  test_p, 1);
-    rb_define_module_function(rb_mFileTest, "symlink?",  test_l, 1);
-    rb_define_module_function(rb_mFileTest, "socket?",  test_S, 1);
-
-    rb_define_module_function(rb_mFileTest, "blockdev?",  test_b, 1);
-    rb_define_module_function(rb_mFileTest, "chardev?",  test_c, 1);
-
-    rb_define_module_function(rb_mFileTest, "setuid?",  test_suid, 1);
-    rb_define_module_function(rb_mFileTest, "setgid?",  test_sgid, 1);
-    rb_define_module_function(rb_mFileTest, "sticky?",  test_sticky, 1);
-
     rb_cFile = rb_define_class("File", rb_cIO);
-    rb_extend_object(rb_cFile, CLASS_OF(rb_mFileTest));
+
+    define_filetest_function("directory?", test_d, 1);
+    define_filetest_function("exist?", test_e, 1);
+    define_filetest_function("exists?", test_e, 1); /* temporary */
+    define_filetest_function("readable?", test_r, 1);
+    define_filetest_function("readable_real?", test_R, 1);
+    define_filetest_function("writable?", test_w, 1);
+    define_filetest_function("writable_real?", test_W, 1);
+    define_filetest_function("executable?", test_x, 1);
+    define_filetest_function("executable_real?", test_X, 1);
+    define_filetest_function("file?", test_f, 1);
+    define_filetest_function("zero?", test_z, 1);
+    define_filetest_function("size?", test_s, 1);
+    define_filetest_function("size", test_s, 1);
+    define_filetest_function("owned?", test_owned, 1);
+    define_filetest_function("grpowned?", test_grpowned, 1);
+
+    define_filetest_function("pipe?", test_p, 1);
+    define_filetest_function("symlink?", test_l, 1);
+    define_filetest_function("socket?", test_S, 1);
+
+    define_filetest_function("blockdev?", test_b, 1);
+    define_filetest_function("chardev?", test_c, 1);
+
+    define_filetest_function("setuid?", test_suid, 1);
+    define_filetest_function("setgid?", test_sgid, 1);
+    define_filetest_function("sticky?", test_sticky, 1);
 
     rb_define_singleton_method(rb_cFile, "stat",  rb_file_s_stat, 1);
     rb_define_singleton_method(rb_cFile, "lstat", rb_file_s_lstat, 1);

@@ -5074,8 +5074,6 @@ rb_f_require(obj, fname)
     volatile int safe = ruby_safe_level;
 
     Check_SafeStr(fname);
-    if (rb_provided(RSTRING(fname)->ptr)) return Qfalse;
-
     ext = strrchr(RSTRING(fname)->ptr, '.');
     if (ext) {
 	if (strcmp(".rb", ext) == 0) {
