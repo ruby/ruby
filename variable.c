@@ -965,10 +965,11 @@ rb_copy_generic_ivar(clone, obj)
     }
 }
 
-VALUE
-rb_ivar_get(obj, id)
+static VALUE
+ivar_get(obj, id, warn)
     VALUE obj;
     ID id;
+    int warn;
 {
     VALUE val;
 
@@ -984,9 +985,27 @@ rb_ivar_get(obj, id)
 	    return generic_ivar_get(obj, id);
 	break;
     }
-    rb_warning("instance variable %s not initialized", rb_id2name(id));
+    if (warn && ruby_verbose) {
+	rb_warning("instance variable %s not initialized", rb_id2name(id));
+    }
 
     return Qnil;
+}
+
+VALUE
+rb_ivar_get(obj, id)
+    VALUE obj;
+    ID id;
+{
+    return ivar_get(obj, id, Qtrue);
+}
+
+VALUE
+rb_attr_get(obj, id)
+    VALUE obj;
+    ID id;
+{
+    return ivar_get(obj, id, Qfalse);
 }
 
 VALUE

@@ -119,7 +119,6 @@ void rb_undef _((VALUE, ID));
 void rb_define_protected_method _((VALUE, const char*, VALUE (*)(ANYARGS), int));
 void rb_define_private_method _((VALUE, const char*, VALUE (*)(ANYARGS), int));
 void rb_define_singleton_method _((VALUE, const char*, VALUE(*)(ANYARGS), int));
-void rb_define_private_method _((VALUE, const char*, VALUE(*)(ANYARGS), int));
 VALUE rb_singleton_class _((VALUE));
 /* compar.c */
 int rb_cmpint _((VALUE));
@@ -437,6 +436,7 @@ VALUE rb_ivar_set _((VALUE, ID, VALUE));
 VALUE rb_ivar_defined _((VALUE, ID));
 VALUE rb_iv_set _((VALUE, const char*, VALUE));
 VALUE rb_iv_get _((VALUE, const char*));
+VALUE rb_attr_get _((VALUE, ID));
 VALUE rb_obj_instance_variables _((VALUE));
 VALUE rb_obj_remove_instance_variable _((VALUE, VALUE));
 void *rb_mod_const_at _((VALUE, void*));

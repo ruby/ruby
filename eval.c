@@ -4629,6 +4629,9 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	if (argc != 0) {
 	    rb_raise(rb_eArgError, "wrong number of arguments(%d for 0)", argc);
 	}
+	result = rb_attr_get(recv, body->nd_vid);
+	break;
+
       case NODE_ATTRSET:
 	/* for re-scoped/renamed method */
       case NODE_ZSUPER:

@@ -1,3 +1,13 @@
+Tue Feb 18 21:39:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): should not report uninitialized warning by
+	  attribute reader method.
+
+	* variable.c (rb_attr_get): new function to get instance variable
+	  without uninitialized warning.
+
+	* io.c (argf_to_io): should prefetch argv.
+
 Tue Feb 18 00:13:50 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-comment-column): customize comment
