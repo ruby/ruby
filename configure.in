@@ -286,7 +286,8 @@ AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd chroot\
 	      truncate chsize times utimes fcntl lockf lstat symlink readlink\
 	      setitimer setruid seteuid setreuid setrgid setegid setregid pause\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority getrlimit\
-	      dlopen sigprocmask sigaction _setjmp setsid telldir seekdir fchmod)
+	      dlopen sigprocmask sigaction _setjmp setsid telldir seekdir \
+	      fchmod initstate)
 AC_STRUCT_TIMEZONE
 AC_CACHE_CHECK(for struct tm.tm_gmtoff, rb_cv_member_struct_tm_tm_gmtoff,
   [AC_TRY_COMPILE([#include <time.h>],
