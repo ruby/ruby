@@ -1,3 +1,10 @@
+Tue Jul 30 19:48:51 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-accurate-end-of-block): restrict search
+	  region.
+
+	* misc/ruby-mode.el (ruby-parse-partial): reversed wrong patch.
+
 Tue Jul 30 17:21:13 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-accurate-end-of-block): incomplete block
