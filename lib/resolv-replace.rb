@@ -7,7 +7,7 @@ class << IPSocket
     begin
       return Resolv.getaddress(host).to_s
     rescue Resolv::ResolvError
-      raise SocketError, "Name or service not known: #{host}"
+      raise SocketError, "Hostname not known: #{host}"
     end
   end
 end
@@ -38,7 +38,7 @@ class UDPSocket
       begin
         addrs = Resolv.getaddresses(host)
       rescue Resolv::ResolvError
-        raise SocketError, "Name or service not known: #{host}"
+        raise SocketError, "Hostname not known: #{host}"
       end
       err = nil
       addrs[0...-1].each {|addr|
