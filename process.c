@@ -1180,11 +1180,18 @@ proc_setpriority(obj, which, who, prio)
 #endif
 }
 
+static int under_uid_switch = 0;
+static int under_gid_switch = 0;
+
 static VALUE
 p_sys_setuid(obj, id)
     VALUE obj, id;
 {
 #if defined HAVE_SETUID
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
     if (setuid(NUM2INT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1197,6 +1204,10 @@ p_sys_setruid(obj, id)
     VALUE obj, id;
 {
 #if defined HAVE_SETRUID
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
     if (setruid(NUM2INT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1209,6 +1220,10 @@ p_sys_seteuid(obj, id)
     VALUE obj, id;
 {
 #if defined HAVE_SETEUID
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
     if (seteuid(NUM2INT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1221,6 +1236,10 @@ p_sys_setreuid(obj, rid, eid)
     VALUE obj, rid, eid;
 {
 #if defined HAVE_SETREUID
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
     if (setreuid(NUM2INT(rid),NUM2INT(eid)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1233,6 +1252,10 @@ p_sys_setresuid(obj, rid, eid, sid)
     VALUE obj, rid, eid, sid;
 {
 #if defined HAVE_SETRESUID
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
     if (setresuid(NUM2INT(rid),NUM2INT(eid),NUM2INT(sid)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1254,6 +1277,10 @@ proc_setuid(obj, id)
 {
     int uid = NUM2INT(id);
 
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
 #if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
     if (setresuid(uid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
@@ -1283,6 +1310,11 @@ p_uid_change_privilege(obj, id)
 {
     extern int errno;
     int uid;
+
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
 
     uid = NUM2INT(id);
 
@@ -1420,6 +1452,10 @@ p_sys_setgid(obj, id)
     VALUE obj, id;
 {
 #if defined HAVE_SETGID
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
     if (setgid(NUM2INT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1432,6 +1468,10 @@ p_sys_setrgid(obj, id)
     VALUE obj, id;
 {
 #if defined HAVE_SETRGID
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
     if (setrgid(NUM2INT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1444,6 +1484,10 @@ p_sys_setegid(obj, id)
     VALUE obj, id;
 {
 #if defined HAVE_SETEGID
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
     if (setegid(NUM2INT(id)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1456,6 +1500,10 @@ p_sys_setregid(obj, rid, eid)
     VALUE obj, rid, eid;
 {
 #if defined HAVE_SETREGID
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
     if (setregid(NUM2INT(rid),NUM2INT(eid)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1468,6 +1516,10 @@ p_sys_setresgid(obj, rid, eid, sid)
     VALUE obj, rid, eid, sid;
 {
 #if defined HAVE_SETRESGID
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
     if (setresgid(NUM2INT(rid),NUM2INT(eid),NUM2INT(sid)) != 0) rb_sys_fail(0);
 #else
     rb_notimplement();
@@ -1505,6 +1557,10 @@ proc_setgid(obj, id)
 {
     int gid = NUM2INT(id);
 
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
 #if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
     if (setresgid(gid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
@@ -1650,6 +1706,11 @@ p_gid_change_privilege(obj, id)
     extern int errno;
     int gid;
 
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
+
     gid = NUM2INT(id);
 
     if (geteuid() == 0) { /* root-user */
@@ -1794,6 +1855,10 @@ static VALUE
 proc_seteuid(obj, euid)
     VALUE obj, euid;
 {
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
 #if defined(HAVE_SETRESUID) && !defined(__CHECKER__)
     if (setresuid(-1, NUM2INT(euid), -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREUID
@@ -1819,6 +1884,11 @@ rb_seteuid_core(euid)
     int euid;
 {
     int uid;
+
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
 
     uid = getuid();
 
@@ -1868,6 +1938,9 @@ proc_setegid(obj, egid)
     VALUE obj, egid;
 {
     rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
 #if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
     if (setresgid(-1, NUM2INT(egid), -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
@@ -1893,6 +1966,11 @@ rb_setegid_core(egid)
     int egid;
 {
     int gid;
+
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
 
     gid = getgid();
 
@@ -1946,6 +2024,11 @@ p_uid_exchange(obj)
 {
     int uid, euid;
 
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
+
     uid = getuid();
     euid = geteuid();
 
@@ -1979,6 +2062,11 @@ p_gid_exchange(obj)
 {
     int gid, egid;
 
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
+
     gid = getgid();
     egid = getegid();
 
@@ -2004,6 +2092,16 @@ p_uid_have_saved_id()
 #endif
 }
 
+
+#if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || defined(_POSIX_SAVED_IDS)
+static VALUE
+p_uid_sw_ensure(id)
+    int id;
+{
+    under_uid_switch = 0;
+    return rb_seteuid_core(id);
+}
+
 static VALUE
 p_uid_switch(obj)
     VALUE obj;
@@ -2011,21 +2109,27 @@ p_uid_switch(obj)
     extern int errno;
     int uid, euid;
 
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
+
     uid = getuid();
     euid = geteuid();
 
-#if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || defined(_POSIX_SAVED_IDS)
     if (uid != euid) {
 	proc_seteuid(obj, INT2FIX(uid));
 	if (rb_block_given_p()) {
-	    return rb_ensure(rb_yield, Qnil, rb_seteuid_core, SAVED_USER_ID);
+	    under_uid_switch = 1;
+	    return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, SAVED_USER_ID);
 	} else {
 	    return INT2FIX(euid);
 	}
     } else if (euid != SAVED_USER_ID) {
 	proc_seteuid(obj, INT2FIX(SAVED_USER_ID));
 	if (rb_block_given_p()) {
-	    return rb_ensure(rb_yield, Qnil, rb_seteuid_core, euid);
+	    under_uid_switch = 1;
+	    return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, euid);
 	} else {
 	    return INT2FIX(uid);
 	}
@@ -2033,14 +2137,39 @@ p_uid_switch(obj)
 	errno = EPERM;
 	rb_sys_fail(0);
     }
+
 #else
+static VALUE
+p_uid_sw_ensure(obj)
+    VALUE obj;
+{
+    under_uid_switch = 0;
+    return p_uid_exchange(obj);
+}
+
+static VALUE
+p_uid_switch(obj)
+    VALUE obj;
+{
+    extern int errno;
+    int uid, euid;
+
+    rb_secure(2);
+    if (under_uid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+    }
+
+    uid = getuid();
+    euid = geteuid();
+
     if (uid == euid) {
 	errno = EPERM;
 	rb_sys_fail(0);
     }
-    p_uid_switch(obj);
+    p_uid_exchange(obj);
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, Qnil, p_uid_switch, obj);
+	under_uid_switch = 1;
+	return rb_ensure(rb_yield, Qnil, p_uid_sw_ensure, obj);
     } else {
 	return INT2FIX(euid);
     }
@@ -2057,6 +2186,15 @@ p_gid_have_saved_id()
 #endif
 }
 
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || defined(_POSIX_SAVED_IDS)
+static VALUE
+p_gid_sw_ensure(id)
+    int id;
+{
+    under_gid_switch = 0;
+    rb_setegid_core(id);
+}
+
 static VALUE
 p_gid_switch(obj)
     VALUE obj;
@@ -2064,22 +2202,27 @@ p_gid_switch(obj)
     extern int errno;
     int gid, egid;
 
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
+
     gid = getgid();
     egid = getegid();
 
-#if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || defined(_POSIX_SAVED_IDS)
     if (gid != egid) {
 	proc_setegid(obj, INT2FIX(gid));
 	if (rb_block_given_p()) {
-	    return rb_ensure(rb_yield, Qnil, proc_setegid, 
-			     INT2FIX(SAVED_GROUP_ID));
+	    under_gid_switch = 1;
+	    return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, SAVED_GROUP_ID);
 	} else {
 	    return INT2FIX(egid);
 	}
     } else if (egid != SAVED_GROUP_ID) {
 	proc_setegid(obj, INT2FIX(SAVED_GROUP_ID));
 	if (rb_block_given_p()) {
-	    return rb_ensure(rb_yield, Qnil, proc_setegid, INT2FIX(egid));
+	    under_gid_switch = 1;
+	    return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, egid);
 	} else {
 	    return INT2FIX(gid);
 	}
@@ -2088,13 +2231,36 @@ p_gid_switch(obj)
 	rb_sys_fail(0);
     }
 #else
+p_gid_sw_ensure(obj)
+    VALUE obj;
+{
+    under_gid_switch = 0;
+    p_gid_exchange(obj);
+}
+
+static VALUE
+p_gid_switch(obj)
+    VALUE obj;
+{
+    extern int errno;
+    int gid, egid;
+
+    rb_secure(2);
+    if (under_gid_switch) {
+	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::GID.switch method");
+    }
+
+    gid = getgid();
+    egid = getegid();
+
     if (gid == egid) {
 	errno = EPERM;
 	rb_sys_fail(0);
     }
-    p_gid_switch(obj);
+    p_gid_exchange(obj);
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, Qnil, p_gid_switch, obj);
+	under_gid_switch = 1;
+	return rb_ensure(rb_yield, Qnil, p_gid_sw_ensure, obj);
     } else {
 	return INT2FIX(egid);
     }

@@ -14,6 +14,7 @@ module TkComm
   def None.to_s
     'None'
   end
+  None.freeze
 
   #Tk_CMDTBL = {}
   #Tk_WINDOWS = {}
@@ -24,10 +25,16 @@ module TkComm
   def Tk_CMDTBL.method_missing(id, *args)
     TkCore::INTERP.tk_cmd_tbl.send(id, *args)
   end
+  Tk_CMDTBL.freeze
   Tk_WINDOWS = Object.new
   def Tk_WINDOWS.method_missing(id, *args)
     TkCore::INTERP.tk_windows.send(id, *args)
   end
+  Tk_WINDOWS.freeze
+
+  self.instance_eval{
+    @cmdtbl = []
+  }
 
   def error_at
     frames = caller()
@@ -894,30 +901,8 @@ module TkCore
     tk_call('info', *args)
   end
 
-  def mainloop(check_root = true, restart_on_dead = true)
-    unless restart_on_dead
-      TclTkLib.mainloop(check_root)
-    else
-      begin
-	loop do
-	  TclTkLib.mainloop(check_root)
-	  if check_root
-	    begin
-	      break if TkWinfo.exist?('.')
-	    rescue Exception
-	      break
-	    end
-	  end
-	end
-      rescue StandardError
-	if TclTkLib.mainloop_abort_on_exception != nil
-	  STDERR.print("warning: Tk mainloop on ", TkCore::INTERP.inspect, 
-		       " receives ", $!.class.inspect, 
-		       " exception (ignore) : ", $!.message, "\n");
-	end
-	retry
-      end
-    end
+  def mainloop(check_root = true)
+    TclTkLib.mainloop(check_root)
   end
 
   def mainloop_watchdog(check_root = true)
@@ -1020,15 +1005,15 @@ module TkCore
     print "=> ", args.join(" ").inspect, "\n" if $DEBUG
     begin
       # res = INTERP._invoke(*args).taint
-      res = INTERP._invoke(*args)   # _invoke returns a TAITED string
-    rescue NameError
-      err = $!
+      res = INTERP._invoke(*args)   # _invoke returns a TAINTED string
+    rescue NameError => err
+#      err = $!
       begin
         args.unshift "unknown"
         #res = INTERP._invoke(*args).taint 
-        res = INTERP._invoke(*args)   # _invoke returns a TAITED string
-      rescue
-	fail unless /^invalid command/ =~ $!
+        res = INTERP._invoke(*args)   # _invoke returns a TAINTED string
+      rescue StandardError => err2
+	fail err2 unless /^invalid command/ =~ err2
 	fail err
       end
     end
@@ -1136,7 +1121,7 @@ module Tk
     TkRoot.new
   end
 
-  def bell(nice = false)
+  def Tk.bell(nice = false)
     if nice
       tk_call 'bell', '-nice'
     else
@@ -1144,7 +1129,7 @@ module Tk
     end
   end
 
-  def bell_on_display(win, nice = false)
+  def Tk.bell_on_display(win, nice = false)
     if nice
       tk_call('bell', '-displayof', win, '-nice')
     else
@@ -1720,6 +1705,8 @@ class TkVariable
   include Tk
   extend TkCore
 
+  include Comparable
+
   TkCommandNames = ['tkwait'.freeze].freeze
 
   #TkVar_CB_TBL = {}
@@ -1749,15 +1736,27 @@ class TkVariable
     @trace_elem = nil
     @trace_opts = nil
 
+=begin
     if val == []
-      INTERP._eval(format('global %s; set %s(0) 0; unset %s(0)', 
-			  @id, @id, @id))
+      # INTERP._eval(format('global %s; set %s(0) 0; unset %s(0)', 
+      #	                    @id, @id, @id))
     elsif val.kind_of?(Array)
       a = []
-      val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
-      s = '"' + a.join(" ").gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      # val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
+      # s = '"' + a.join(" ").gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      val.each_with_index{|e,i| a.push(i); a.push(e)}
+      s = '"' + array2tk_list(a).gsub(/[\[\]$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
     elsif  val.kind_of?(Hash)
+      s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
+                   .gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
+    else
+      s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      INTERP._eval(format('global %s; set %s %s', @id, @id, s))
+    end
+=end
+    if  val.kind_of?(Hash)
       s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
                    .gsub(/[\[\]$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
@@ -1782,8 +1781,9 @@ class TkVariable
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
 	fail
       else
-	Hash[*tk_split_simplelist(INTERP._eval(format('global %s; array get %s', 
-						      @id, @id)))]
+	Hash[*tk_split_simplelist(INTERP.
+				  _eval(format('global %s; array get %s', 
+					       @id, @id)))]
       end
     end
   end
@@ -1827,6 +1827,20 @@ class TkVariable
 			_get_eval_string(index), _get_eval_string(val)))
   end
 
+  def numeric
+    number(value)
+  end
+  def numeric=(val)
+    case val
+    when Numeric
+      self.value=(val)
+    when TkVariable
+      self.value=(val.numeric)
+    else
+      raise ArgumentError, "Numeric is expected"
+    end
+  end
+
   def to_i
     number(value).to_i
   end
@@ -1843,8 +1857,102 @@ class TkVariable
     value.intern
   end
 
+  def list
+    tk_split_list(value)
+  end
+  alias to_a list
+
+  def list=(val)
+    case val
+    when Array
+      self.value=(val)
+    when TkVariable
+      self.value=(val.list)
+    else
+      raise ArgumentError, "Array is expected"
+    end
+  end
+
   def inspect
     format "#<TkVariable: %s>", @id
+  end
+
+  def coerce(other)
+    case other
+    when TkVariable
+      [other.value, self.value]
+    when String
+      [other, self.to_s]
+    when Symbol
+      [other, self.to_sym]
+    when Integer
+      [other, self.to_i]
+    when Float
+      [other, self.to_f]
+    when Array
+      [other, self.to_a]
+    else
+      [other, self.value]
+    end
+  end
+
+  def &(other)
+    if other.kind_of?(Array)
+      self.to_a & other.to_a
+    else
+      self.to_i & other.to_i
+    end
+  end
+  def |(other)
+    if other.kind_of?(Array)
+      self.to_a | other.to_a
+    else
+      self.to_i | other.to_i
+    end
+  end
+  def +(other)
+    case other
+    when Array
+      self.to_a + other
+    when String
+      self.value + other
+    else
+      begin
+	number(self.value) + other
+      rescue
+	self.value + other.to_s
+      end
+    end
+  end
+  def -(other)
+    if other.kind_of?(Array)
+      self.to_a - other
+    else
+      number(self.value) - other
+    end
+  end
+  def *(other)
+    begin
+      number(self.value) * other
+    rescue
+      self.value * other
+    end
+  end
+  def /(other)
+    number(self.value) / other
+  end
+  def %(other)
+    begin
+      number(self.value) % other
+    rescue
+      self.value % other
+    end
+  end
+  def **(other)
+    number(self.value) ** other
+  end
+  def =~(other)
+    self.value =~ other
   end
 
   def ==(other)
@@ -1861,13 +1969,38 @@ class TkVariable
       self.to_f == other
     when Array
       self.to_a == other
+    when Hash
+      self.value == other
     else
       false
     end
   end
 
-  def to_a
-    list(value)
+  def zero?
+    numeric.zero?
+  end
+  def nonzero?
+    !(numeric.zero?)
+  end
+
+  def <=>(other)
+    if other.kind_of?(TkVariable)
+      begin
+	val = other.numeric
+	other = val
+      rescue
+	other = other.value
+      end
+    end
+    if other.kind_of?(Numeric)
+      begin
+	return self.numeric <=> other
+      rescue
+	return self.value <=> other.to_s
+      end
+    else
+      return self.value <=> other
+    end
   end
 
   def to_eval
@@ -3082,9 +3215,16 @@ TkOption = TkOptionDB
 TkResourceDB = TkOptionDB
 
 module TkTreatFont
-  def font_configinfo
+  def font_configinfo(name = nil)
     ret = TkFont.used_on(self.path)
     if ret == nil
+=begin
+      if name
+	ret = name
+      else
+	ret = TkFont.init_widget_font(self.path, self.path, 'configure')
+      end
+=end
       ret = TkFont.init_widget_font(self.path, self.path, 'configure')
     end
     ret
@@ -3097,7 +3237,10 @@ module TkTreatFont
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(self.path, self.path,'configure',slot)
       else
-	latinfont_configure(fnt) if fnt
+	if fnt
+	  latinfont_configure(fnt)
+	  kanjifont_configure(fnt)
+	end
       end
     end
     if (ltn = slot.delete('latinfont'))
@@ -3192,10 +3335,18 @@ module TkTreatItemFont
   end
   private :__conf_cmd, :__item_pathname
 
-  def tagfont_configinfo(tagOrId)
+  def tagfont_configinfo(tagOrId, name = nil)
     pathname = __item_pathname(tagOrId)
     ret = TkFont.used_on(pathname)
     if ret == nil
+=begin
+      if name
+	ret = name
+      else
+	ret = TkFont.init_widget_font(pathname, self.path, 
+				      __conf_cmd(0), __conf_cmd(1), tagOrId)
+      end
+=end
       ret = TkFont.init_widget_font(pathname, self.path, 
 				    __conf_cmd(0), __conf_cmd(1), tagOrId)
     end
@@ -3212,7 +3363,10 @@ module TkTreatItemFont
 				       __conf_cmd(0), __conf_cmd(1), 
 				       tagOrId, slot)
       else
-	latintagfont_configure(tagOrId, fnt) if fnt
+	if fnt
+	  latintagfont_configure(tagOrId, fnt)
+	  kanjitagfont_configure(tagOrId, fnt)
+	end
       end
     end
     if (ltn = slot.delete('latinfont'))
@@ -3358,6 +3512,12 @@ class TkObject<TkKernel
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
       tk_call path, 'cget', "-#{slot}"
+    when 'font', 'kanjifont'
+      fnt = tk_tcl2ruby(tk_call(path, 'cget', "-#{slot}"))
+      unless fnt.kind_of?(TkFont)
+	fnt = fontobj(fnt)
+      end
+      fnt
     else
       tk_tcl2ruby tk_call(path, 'cget', "-#{slot}")
     end
@@ -3398,7 +3558,10 @@ class TkObject<TkKernel
   def configinfo(slot = nil)
     if slot == 'font' || slot == :font || 
        slot == 'kanjifont' || slot == :kanjifont
-      fontobj
+      conf = tk_split_simplelist(tk_send('configure', "-#{slot}") )
+      conf[0] = conf[0][1..-1]
+      conf[4] = fontobj(conf[4])
+      conf
     else
       if slot
 	case slot.to_s
@@ -3436,7 +3599,7 @@ class TkObject<TkKernel
 	fontconf = ret.assoc('font')
 	if fontconf
 	  ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
-	  fontconf[4] = fontobj
+	  fontconf[4] = fontobj(fontconf[4])
 	  ret.push(fontconf)
 	else
 	  ret
@@ -4367,6 +4530,7 @@ class TkPanedWindow<TkWindow
     end
     self
   end
+  alias pane_config paneconfigure
 
   def paneconfiginfo(win, key=nil)
     if key
@@ -4395,6 +4559,7 @@ class TkPanedWindow<TkWindow
       }
     end
   end
+  alias pane_configinfo paneconfiginfo
 
   def panes
     list(tk_send('panes'))
@@ -4717,6 +4882,12 @@ class TkListbox<TkTextWin
     case key.to_s
     when 'text', 'label', 'show'
       tk_send('itemcget', index, "-#{key}")
+    when 'font', 'kanjifont'
+      fnt = tk_tcl2ruby(tk_send('itemcget', index, "-#{key}"))
+      unless fnt.kind_of?(TkFont)
+	fnt = tagfontobj(index, fnt)
+      end
+      fnt
     else
       tk_tcl2ruby(tk_send('itemcget', index, "-#{key}"))
     end
@@ -4750,13 +4921,17 @@ class TkListbox<TkTextWin
       case key.to_s
       when 'text', 'label', 'show'
 	conf = tk_split_simplelist(tk_send('itemconfigure',index,"-#{key}"))
+      when 'font', 'kanjifont'
+	conf = tk_split_simplelist(tk_send('itemconfigure',index,"-#{key}") )
+	conf[4] = tagfont_configinfo(index, conf[4])
       else
 	conf = tk_split_list(tk_send('itemconfigure',index,"-#{key}"))
       end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_simplelist(tk_send('itemconfigure', index)).collect{|conflist|
+      ret = tk_split_simplelist(tk_send('itemconfigure', 
+					index)).collect{|conflist|
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]
@@ -4779,6 +4954,14 @@ class TkListbox<TkTextWin
 	end
 	conf
       }
+      fontconf = ret.assoc('font')
+      if fontconf
+	ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
+	fontconf[4] = tagfont_configinfo(index, fontconf[4])
+	ret.push(fontconf)
+      else
+	ret
+      end
     end
   end
 end
@@ -4881,8 +5064,14 @@ class TkMenu<TkWindow
     case key.to_s
     when 'text', 'label', 'show'
       tk_send 'entrycget', index, "-#{key}"
+    when 'font', 'kanjifont'
+      fnt = tk_tcl2ruby(tk_send('entrycget', index, "-#{key}"))
+      unless fnt.kind_of?(TkFont)
+	fnt = tagfontobj(index, fnt)
+      end
+      fnt
     else
-      tk_tcl2ruby tk_send('entrycget', index, "-#{key}")
+      tk_tcl2ruby(tk_send('entrycget', index, "-#{key}"))
     end
   end
   def entryconfigure(index, key, val=None)
@@ -4914,13 +5103,17 @@ class TkMenu<TkWindow
       case key.to_s
       when 'text', 'label', 'show'
 	conf = tk_split_simplelist(tk_send('entryconfigure',index,"-#{key}"))
+      when 'font', 'kanjifont'
+	conf = tk_split_simplelist(tk_send('entryconfigure',index,"-#{key}"))
+	conf[4] = tagfont_configinfo(index, conf[4])
       else
 	conf = tk_split_list(tk_send('entryconfigure',index,"-#{key}"))
       end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_simplelist(tk_send('entryconfigure', index)).collect{|conflist|
+      ret = tk_split_simplelist(tk_send('entryconfigure', 
+					index)).collect{|conflist|
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]
@@ -4943,6 +5136,13 @@ class TkMenu<TkWindow
 	end
 	conf
       }
+      if fontconf
+	ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
+	  fontconf[4] = tagfont_configinfo(index, fontconf[4])
+	ret.push(fontconf)
+      else
+	ret
+      end
     end
   end
 end
@@ -5245,6 +5445,16 @@ TkBindTag::ALL.bind(TkVirtualEvent.new('Destroy'), proc{|xpath|
 			end
 		      end
 		    }, 'x%W')
+
+# freeze core modules
+TclTkLib.freeze
+TclTkIp.freeze
+TkUtil.freeze
+TkKernel.freeze
+TkComm.freeze
+TkComm::Event.freeze
+TkCore.freeze
+Tk.freeze
 
 # autoload
 autoload :TkCanvas, 'tkcanvas'

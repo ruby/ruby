@@ -1,5 +1,5 @@
 (tof)
-                                    2003/07/25  Hidetoshi NAGAI
+                                    2003/08/07  Hidetoshi NAGAI
 
 本ドキュメントには古い tcltk ライブラリ，tcltklib ライブラリの説明
 が含まれていますが，その記述内容は古いものとなっています．
@@ -263,6 +263,12 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : Tk インタープリタ上で例外を発生した際に，イベントループをエ
          : ラー停止させるかどうかの設定状態を true/false で得る．
 
+      num_of_mainwindows
+         : 現在のメインウィンドウ (ルートウィジェット) の数を返す．
+         : メインウィンドウは一つのインタープリタに付き最大一つである
+         : ので，この値は現在 Tk の機能が有効であるインタープリタの総
+         : 数に等しい．
+
 
 クラス TclTkIp
    クラスメソッド
@@ -274,6 +280,11 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : 引数として与えるオプションと同様の情報を文字列として与える．
          : 与えられた情報は，root widget 生成の際に用いられる．
          : ( e.g. TclTkIp.new('FOO', '-geometry 500x200 -use 0x2200009') )
+         : もし options に敢えて nil または false を与えた場合，Tk ライ
+         : ブラリが導入されていない (つまりは Tcl のみの) インタープリ
+         : タを生成する．この場合は GUI 環境は必要ないため，ウインドウ
+         : システムが存在しない，または使用できない環境でも Tcl インター
+         : プリタを生成し，Tcl やその拡張ライブラリを活用することができる．
 
    インスタンスメソッド
       create_slave(name, safe=false)
@@ -331,17 +342,26 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
       _return_value
          : 直前の Tcl/Tk 上での評価の実行結果としての戻り値を返す．
 
-      mainloop             : 引数を含めて TclTkLib.mainloop に同じ
-      mainloop_watchdog    : 引数を含めて TclTkLib.mainloop_watchdog に同じ
-      do_one_event         : 引数を含めて TclTkLib.do_one_event に同じ
-      set_eventloop_tick   : 引数を含めて TclTkLib.set_eventloop_tick に同じ
-      get_eventloop_tick   : 引数を含めて TclTkLib.get_eventloop_tick に同じ
-      set_eventloop_weight : 引数を含めて TclTkLib.set_eventloop_weight に同じ
-      get_eventloop_weight : 引数を含めて TclTkLib.set_eventloop_weight に同じ
+      mainloop
+      mainloop_watchdog
+         : スレーブ IP の場合にはイベントループを起動せずに nil を返す．
+         : それ以外の点では引数を含めて TclTkLib の同名メソッドに同じ．
+
+      do_one_event
+         : スレーブ IP の場合には引数のイベントフラグに DONT_WAIT が
+         : 強制的に追加される (イベント待ちでスリープすることは禁止)．
+         : それ以外の点では引数を含めて TclTkLib の同名メソッドに同じ．
+
+      set_eventloop_tick
+      get_eventloop_tick
+      set_no_event_wait
+      get_no_event_wait
+      set_eventloop_weight
+      get_eventloop_weight
       mainloop_abort_on_exception
-         : 引数を含めて TclTkLib.mainloop_abort_on_exception に同じ
       mainloop_abort_on_exception=
-         : 引数を含めて TclTkLib.mainloop_abort_on_exception= に同じ
+         : スレーブ IP の場合には値の設定が許されない (無視される)．
+         : それ以外の点では引数を含めて TclTkLib の同名メソッドに同じ．
 
 クラス TkCallbackBreak < StandardError
 クラス TkCallbackContinue < StandardError

@@ -1,3 +1,34 @@
+Fri Aug 29 17:30:15 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
+
+	* process.c: bug fix
+
+	* process.c: add rb_secure(2) to methods of Process::{UID,GID,Sys}
+
+	* process.c: deny handling IDs during evaluating the block given to 
+	  the Process::{UID,GID}.switch method
+
+	* ext/tcltklib/tcltklib.c : some methods have no effect if on slave-IP
+
+	* ext/tcltklib/tcltklib.c : can create a interpreter without Tk
+
+	* ext/tcltklib/tcltklib.c : bug fix on handling exceptions
+
+	* ext/tcltklib/MANUAL.euc : modify
+
+	* ext/tk/lib/tk.rb : freeze some core modules
+
+	* ext/tk/lib/multi-tk.rb : more secure
+
+	* ext/tk/lib/tk.rb: TkVariable.new(array) --> treat the array as the 
+	  Tk's list
+
+	* ext/tk/lib/tk.rb: improve accessibility of TkVariable object
+
+	* ext/tk/lib/tk.rb, ext/tk/lib/tkfont.rb, ext/tk/lib/tkcanvas.rb, 
+	  ext/tk/lib/tktext.rb : fix bug of font handling
+
+	* ext/tk/lib/tkfont.rb TkFont.new() accepts compound fonts
+	
 Thu Aug 28 17:30:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_const_get_0): should check constants defined in

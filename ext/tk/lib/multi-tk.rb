@@ -6,10 +6,12 @@ require 'tcltklib'
 require 'thread'
 
 ################################################
-# ignore exception on the mainloop
+# ignore exception on the mainloop?
 
+TclTkLib.mainloop_abort_on_exception = true
 # TclTkLib.mainloop_abort_on_exception = false
-TclTkLib.mainloop_abort_on_exception = nil
+# TclTkLib.mainloop_abort_on_exception = nil
+
 
 
 ################################################
@@ -71,9 +73,16 @@ class MultiTkIp
   end
   private :_keys2opts
 
-  def _check_and_return(thread, exception, wait=3)
-    # wait to stop the caller thread
+  def _check_and_return(thread, exception, wait=0)
     return nil unless thread
+
+    if wait == 0
+      # no wait
+      thread.raise exception
+      return thread
+    end
+
+    # wait to stop the caller thread
     wait.times{
       if thread.stop?
 	# ready to send exception
@@ -104,22 +113,36 @@ class MultiTkIp
   def _create_receiver_and_watchdog()
     # command-procedures receiver
     receiver = Thread.new{
+      safe_level = $SAFE
       loop do
 	thread, cmd, *args = @cmd_queue.deq
 	if thread == @system
+	  # control command
 	  case cmd
 	  when 'set_safe_level'
 	    begin
-	      $SAFE = args[0]
+	      safe_level = args[0] if safe_level < args[0] 
 	    rescue Exception
 	      nil
 	    end
 	  else
 	    # ignore
 	  end
+
 	else
+	  # procedure
 	  begin
-	    ret = cmd.call(*args)
+	    ret = proc{$SAFE = safe_level; cmd.call(*args)}.call
+	  rescue SystemExit
+	    # delete IP
+	    unless @interp.deleted?
+	      if @interp._invoke('info', 'command', '.') != ""
+		@interp._invoke('destroy', '.')
+	      end
+	      @interp.delete
+	    end
+	    _check_and_return(thread, MultiTkIp_OK.new(nil))
+	    break
 	  rescue Exception => e
 	    # raise exception
 	    _check_and_return(thread, e)
@@ -134,7 +157,10 @@ class MultiTkIp
     # watchdog of receiver
     watchdog = Thread.new{
       begin
-	receiver.join
+	loop do
+	  sleep 1
+	  break unless receiver.alive?
+	end
       rescue Exception
 	# ignore all kind of Exception
       end
@@ -621,7 +647,9 @@ end
 # instance methods to treat tables
 class MultiTkIp
   def _tk_cmd_tbl
-    MultiTkIp.tk_cmd_tbl.collect{|ent| ent.ip == self }
+    tbl = {}
+    MultiTkIp.tk_cmd_tbl.each{|id, ent| tbl[id] = ent if ent.ip == self }
+    tbl
   end
 
   def _tk_windows
@@ -630,6 +658,10 @@ class MultiTkIp
 
   def _tk_table_list
     @tk_table_list
+  end
+
+  def _add_new_tables
+    (@@TK_TABLE_LIST.size - @tk_table_list.size).times{ @tk_table_list << {} }
   end
 
   def _init_ip_env(script)
@@ -669,10 +701,10 @@ class MultiTkIp
     __getip._tk_table_list[id]
   end
   def self.create_table
+    if __getip.slave?
+      raise SecurityError, "slave-IP has no permission creating a new table"
+    end
     id = @@TK_TABLE_LIST.size
-    @@IP_TABLE.each{|tg, ip| 
-      ip.instance_eval{@tk_table_list << {}}
-    }
     obj = Object.new
     @@TK_TABLE_LIST << obj
     obj.instance_eval <<-EOD
@@ -681,6 +713,7 @@ class MultiTkIp
       end
     EOD
     obj.freeze
+    @@IP_TABLE.each{|tg, ip| ip._add_new_tables }
     return obj
   end
 
@@ -719,33 +752,62 @@ end
 # evaluate a procedure on the proper interpreter
 class MultiTkIp
   # instance method
-  def eval_proc_core(req_val=true, cmd = Proc.new, *args)
+  def eval_proc_core(req_val, cmd, *args)
     # cmd string ==> proc
     if cmd.kind_of?(String)
-      cmd = proc{ TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *args)) }
+      xcmd  = cmd
+      xargs = args
+      cmd = proc{ TkComm._get_eval_string(TkUtil.eval_cmd(xcmd, *xargs)) }
       args = []
+    end
+
+    # check
+    unless cmd.kind_of?(Proc)
+      raise RuntimeError, "A Proc object is expected for the 'cmd' argument"
     end
 
     # on IP thread
     if (@cmd_receiver == Thread.current)
-      return cmd.call(*args)
+      begin
+	ret = cmd.call(*args)
+      rescue SystemExit
+	# exit IP
+	warn("Warning: "+ $! + " on " + self.inspect) if $DEBUG
+	self.delete
+	ret = nil
+      rescue Exception => e
+	warn("Warning: " + e.class.inspect + 
+	     ((e.message.length > 0)? ' "' + e.message + '"': '') +  
+	     " on " + self.inspect)
+	ret =  nil
+      end
+      return ret
     end
     
     # send cmd to the proc-queue
-    if req_val
-      @cmd_queue.enq([Thread.current, cmd, *args])
-    else
+    unless req_val
       @cmd_queue.enq([nil, cmd, *args])
       return nil
     end
 
-    # wait and get return value by exception
+    # send and get return value by exception
     begin
+      @cmd_queue.enq([Thread.current, cmd, *args])
       Thread.stop
     rescue MultiTkIp_OK => ret
       # return value
       return ret.value
+    rescue SystemExit
+      # exit IP
+      warn("Warning: " + $! + " on " + self.inspect) if $DEBUG
+      self.delete
+    rescue Exception => e
+      # others --> warning
+	warn("Warning: " + e.class.inspect + 
+	     ((e.message.length > 0)? ' "' + e.message + '"': '') +  
+	     " on " + self.inspect) 
     end
+    return nil
   end
   private :eval_proc_core
 
@@ -757,47 +819,56 @@ class MultiTkIp
     eval_proc_core(true, cmd, *args)
   end
   alias call eval_proc
-
+  alias eval_string eval_proc
+end
+class << MultiTkIp
   # class method
-  def self.eval_proc(cmd = Proc.new, *args)
+  def eval_proc(cmd = Proc.new, *args)
     # class ==> interp object
     __getip.eval_proc(cmd, *args)
   end
+  alias call eval_proc
+  alias eval_string eval_proc
 end
 
 
-# depend on TclTkLib
+# event loop
 # all master/slave IPs are controled by only one event-loop
 class << MultiTkIp
   def mainloop(check_root = true)
-    TclTkLib.mainloop(check_root)
+    __getip.mainloop(check_root)
   end
   def mainloop_watchdog(check_root = true)
-    TclTkLib.mainloop_watchdog(check_root)
+    __getip.mainloop_watchdog(check_root)
   end
   def do_one_event(flag = TclTkLib::EventFlag::ALL)
-    TclTkLib.do_one_event(flag)
+    __getip.do_one_event(flag)
+  end
+  def mainloop_abort_on_exception
+    __getip.mainloop_abort_on_exception
+  end
+  def mainloop_abort_on_exception=(mode)
+    __getip.mainloop_abort_on_exception=(mode)
   end
   def set_eventloop_tick(tick)
-    TclTkLib.set_eventloop_tick(tick)
+    __getip.set_eventloop_tick(tick)
   end
   def get_eventloop_tick
-    TclTkLib.get_eventloop_tick
+    __getip.get_eventloop_tick
   end
   def set_no_event_wait(tick)
-    TclTkLib.set_no_event_wait(tick)
+    __getip.set_no_event_wait(tick)
   end
   def get_no_event_wait
-    TclTkLib.get_no_event_wait
+    __getip.get_no_event_wait
   end
   def set_eventloop_weight(loop_max, no_event_tick)
-    TclTkLib.set_eventloop_weight(loop_max, no_event_tick)
+    __getip.set_eventloop_weight(loop_max, no_event_tick)
   end
   def get_eventloop_weight
-    TclTkLib.get_eventloop_weight
+    __getip.get_eventloop_weight
   end
 end
-
 
 # class methods to delegate to TclTkIp
 class << MultiTkIp
@@ -839,32 +910,76 @@ class << MultiTkIp
 end
 
 
+# wrap methods on TclTkLib : not permit calling TclTkLib module methods
+class << TclTkLib
+  def mainloop(check_root = true)
+    MultiTkIp.mainloop(check_root)
+  end
+  def mainloop_watchdog(check_root = true)
+    MultiTkIp.mainloop_watchdog(check_root)
+  end
+  def do_one_event(flag = TclTkLib::EventFlag::ALL)
+    MultiTkIp.do_one_event(flag)
+  end
+  def mainloop_abort_on_exception
+    MultiTkIp.mainloop_abort_on_exception
+  end
+  def mainloop_abort_on_exception=(mode)
+    MultiTkIp.mainloop_abort_on_exception=(mode)
+  end
+  def set_eventloop_tick(tick)
+    MultiTkIp.set_eventloop_tick(tick)
+  end
+  def get_eventloop_tick
+    MultiTkIp.get_eventloop_tick
+  end
+  def set_no_event_wait(tick)
+    MultiTkIp.set_no_event_wait(tick)
+  end
+  def get_no_event_wait
+    MultiTkIp.get_no_event_wait
+  end
+  def set_eventloop_weight(loop_max, no_event_tick)
+    MultiTkIp.set_eventloop_weight(loop_max, no_event_tick)
+  end
+  def get_eventloop_weight
+    MultiTkIp.get_eventloop_weight
+  end
+  def restart
+    MultiTkIp.restart
+  end
+end
+
+
 # depend on TclTkIp
 class MultiTkIp
   def mainloop(check_root = true, restart_on_dead = true)
+    return self if self.slave?
     unless restart_on_dead
       @interp.mainloop(check_root)
     else
       begin
 	loop do
-	  @interp.mainloop(check_root)
+	  break unless self.alive?
 	  if check_root
 	    begin
-	      break if @interp._invoke('winfo', 'exists?', '.') == "1"
+	      break if TclTkLib.num_of_mainwindows == 0
 	    rescue Exception
 	      break
 	    end
 	  end
+	  @interp.mainloop(check_root)
 	end
       rescue StandardError
 	if TclTkLib.mainloop_abort_on_exception != nil
-	  STDERR.print("warning: Tk mainloop on ", @interp.inspect, 
+	  STDERR.print("Warning: Tk mainloop on ", @interp.inspect, 
 		       " receives ", $!.class.inspect, 
 		       " exception (ignore) : ", $!.message, "\n");
 	end
 	retry
       end
     end
+    self
   end
 
   def make_safe
@@ -1187,10 +1302,19 @@ class MultiTkIp
 end
 
 
+# remove methods for security
+class MultiTkIp
+  undef_method :instance_eval
+  undef_method :instance_variable_get
+  undef_method :instance_variable_set
+end
+
+
 # end of MultiTkIp definition
 
-MultiTkIp.freeze # defend against modification
-
+# defend against modification
+MultiTkIp.freeze
+TclTkLib.freeze
 
 ########################################
 #  start Tk which depends on MultiTkIp

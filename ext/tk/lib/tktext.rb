@@ -330,6 +330,12 @@ class TkText<TkTextWin
     case key.to_s
     when 'text', 'label', 'show', 'data', 'file'
       tk_call(@path, 'tag', 'cget', tag, "-#{key}")
+    when 'font', 'kanjifont'
+      fnt = tk_tcl2ruby(tk_send('tag', 'cget', tag, "-#{key}"))
+      unless fnt.kind_of?(TkFont)
+	fnt = tagfontobj(tag, fnt)
+      end
+      fnt
     else
       tk_tcl2ruby(tk_call(@path, 'tag', 'cget', tag, "-#{key}"))
     end
@@ -363,13 +369,17 @@ class TkText<TkTextWin
       case key.to_s
       when 'text', 'label', 'show', 'data', 'file'
 	conf = tk_split_simplelist(tk_send('tag','configure',tag,"-#{key}"))
+      when 'font', 'kanjifont'
+	conf = tk_split_simplelist(tk_send('tag','configure',tag,"-#{key}") )
+	conf[4] = tagfont_configinfo(tag, conf[4])
       else
 	conf = tk_split_list(tk_send('tag','configure',tag,"-#{key}"))
       end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_simplelist(tk_send('tag', 'configure', tag)).collect{|conflist|
+      ret = tk_split_simplelist(tk_send('tag', 'configure', 
+					tag)).collect{|conflist|
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]
@@ -392,6 +402,14 @@ class TkText<TkTextWin
 	end
 	conf
       }
+      fontconf = ret.assoc('font')
+      if fontconf
+	ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
+	fontconf[4] = tagfont_configinfo(tag, fontconf[4])
+	ret.push(fontconf)
+      else
+	ret
+      end
     end
   end
 
@@ -431,6 +449,12 @@ class TkText<TkTextWin
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
       tk_send('window', 'cget', index, "-#{slot}")
+    when 'font', 'kanjifont'
+      fnt = tk_tcl2ruby(tk_send('window', 'cget', index, "-#{slot}"))
+      unless fnt.kind_of?(TkFont)
+	fnt = tagfontobj(index, fnt)
+      end
+      fnt
     else
       tk_tcl2ruby(tk_send('window', 'cget', index, "-#{slot}"))
     end
@@ -853,8 +877,14 @@ class TkTextTag<TkObject
     case key.to_s
     when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
+    when 'font', 'kanjifont'
+      fnt = tk_tcl2ruby(tk_call(@t.path, 'tag', 'cget', @id, "-#{key}"))
+      unless fnt.kind_of?(TkFont)
+	fnt = tagfontobj(@id, fnt)
+      end
+      fnt
     else
-      tk_tcl2ruby tk_call(@t.path, 'tag', 'cget', @id, "-#{key}")
+      tk_tcl2ruby(tk_call(@t.path, 'tag', 'cget', @id, "-#{key}"))
     end
   end
 

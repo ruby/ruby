@@ -211,6 +211,12 @@ class TkCanvas<TkWindow
       end
     when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
       tk_send 'itemcget', tagid(tagOrId), "-#{option}"
+    when 'font', 'kanjifont'
+      fnt = tk_tcl2ruby(tk_send('itemcget', tagid(tagOrId), "-#{option}"))
+      unless fnt.kind_of?(TkFont)
+	fnt = tagfontobj(tagid(tagOrId), fnt)
+      end
+      fnt
     else
       tk_tcl2ruby tk_send('itemcget', tagid(tagOrId), "-#{option}")
     end
@@ -264,6 +270,10 @@ class TkCanvas<TkWindow
       when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
 	conf = tk_split_simplelist(tk_send('itemconfigure', 
 					   tagid(tagOrId), "-#{key}"))
+      when 'font', 'kanjifont'
+	conf = tk_split_simplelist(tk_send('itemconfigure',
+					   tagid(tagOrId),"-#{key}") )
+	conf[4] = tagfont_configinfo(tagid(tagOrId), conf[4])
       else
 	conf = tk_split_list(tk_send('itemconfigure', 
 				     tagid(tagOrId), "-#{key}"))
@@ -271,8 +281,8 @@ class TkCanvas<TkWindow
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_simplelist(tk_send('itemconfigure', 
-				  tagid(tagOrId))).collect{|conflist|
+      ret = tk_split_simplelist(tk_send('itemconfigure', 
+					tagid(tagOrId))).collect{|conflist|
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]
@@ -302,6 +312,14 @@ class TkCanvas<TkWindow
 	end
 	conf
       }
+      fontconf = ret.assoc('font')
+      if fontconf
+	ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
+	fontconf[4] = tagfont_configinfo(tagid(tagOrId), fontconf[4])
+	ret.push(fontconf)
+      else
+	ret
+      end
     end
   end
 

@@ -8,6 +8,13 @@
 #include "rubysig.h"
 #undef EXTERN	/* avoid conflict with tcl.h of tcl8.2 or before */
 #include <stdio.h>
+#ifdef HAVE_STDARG_PROTOTYPES
+#include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
+#include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
 #include <string.h>
 #include <tcl.h>
 #include <tk.h>
@@ -93,6 +100,25 @@ static int ip_ruby _((ClientData, Tcl_Interp *, int, Tcl_Obj *CONST*));
 static int ip_ruby _((ClientData, Tcl_Interp *, int, char **));
 #endif
 
+/*---- class TclTkIp ----*/
+struct tcltkip {
+    Tcl_Interp *ip;		/* the interpreter */
+    int return_value;		/* return value */
+};
+
+static struct tcltkip *
+get_ip(self)
+    VALUE self;
+{
+    struct tcltkip *ptr;
+
+    Data_Get_Struct(self, struct tcltkip, ptr);
+    if (ptr == 0) {
+	rb_raise(rb_eTypeError, "uninitialized TclTkIp");
+    }
+    return ptr;
+}
+
 /* Tk_ThreadTimer */
 static Tcl_TimerToken timer_token = (Tcl_TimerToken)NULL;
 
@@ -156,6 +182,27 @@ get_eventloop_tick(self)
 }
 
 static VALUE
+ip_set_eventloop_tick(self, tick)
+    VALUE self;
+    VALUE tick;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
+	/* slave IP */
+	return get_eventloop_tick(self);
+    }
+    return set_eventloop_tick(self, tick);
+}
+
+static VALUE
+ip_get_eventloop_tick(self)
+    VALUE self;
+{
+    return get_eventloop_tick(self);
+}
+
+static VALUE
 set_no_event_wait(self, wait)
     VALUE self;
     VALUE wait;
@@ -177,6 +224,27 @@ get_no_event_wait(self)
     VALUE self;
 {
     return INT2NUM(no_event_wait);
+}
+
+static VALUE
+ip_set_no_event_wait(self, wait)
+    VALUE self;
+    VALUE wait;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
+	/* slave IP */
+	return get_no_event_wait(self);
+    }
+    return set_no_event_wait(self, wait);
+}
+
+static VALUE
+ip_get_no_event_wait(self)
+    VALUE self;
+{
+    return get_no_event_wait(self);
 }
 
 static VALUE
@@ -206,7 +274,29 @@ get_eventloop_weight(self)
 }
 
 static VALUE
-rb_evloop_abort_on_exc(self)
+ip_set_eventloop_weight(self, loop_max, no_event)
+    VALUE self;
+    VALUE loop_max;
+    VALUE no_event;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
+	/* slave IP */
+	return get_eventloop_weight(self);
+    }
+    return set_eventloop_weight(self, loop_max, no_event);
+}
+
+static VALUE
+ip_get_eventloop_weight(self)
+    VALUE self;
+{
+    return get_eventloop_weight(self);
+}
+
+static VALUE
+lib_evloop_abort_on_exc(self)
     VALUE self;
 {
     if (event_loop_abort_on_exc > 0) {
@@ -219,7 +309,14 @@ rb_evloop_abort_on_exc(self)
 }
 
 static VALUE
-rb_evloop_abort_on_exc_set(self, val)
+ip_evloop_abort_on_exc(self)
+    VALUE self;
+{
+    return lib_evloop_abort_on_exc(self);
+}
+
+static VALUE
+lib_evloop_abort_on_exc_set(self, val)
     VALUE self, val;
 {
     rb_secure(4);
@@ -230,7 +327,27 @@ rb_evloop_abort_on_exc_set(self, val)
     } else {
 	event_loop_abort_on_exc =  0;
     }
-    return rb_evloop_abort_on_exc(self);
+    return lib_evloop_abort_on_exc(self);
+}
+
+static VALUE
+ip_evloop_abort_on_exc_set(self, val)
+    VALUE self, val;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
+	/* slave IP */
+	return lib_evloop_abort_on_exc(self);
+    }
+    return lib_evloop_abort_on_exc_set(self, val);
+}
+
+static VALUE
+lib_num_of_mainwindows(self)
+    VALUE self;
+{
+    return INT2FIX(Tk_GetNumMainWindows());
 }
 
 VALUE
@@ -379,6 +496,21 @@ lib_mainloop(argc, argv, self)
     return lib_mainloop_launcher(check_rootwidget);
 }
 
+static VALUE
+ip_mainloop(argc, argv, self)
+    int   argc;
+    VALUE *argv;
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
+	/* slave IP */
+	return Qnil;
+    }
+    return lib_mainloop(argc, argv, self);
+}
+
 VALUE
 lib_watchdog_core(check_rootwidget)
     VALUE check_rootwidget;
@@ -464,10 +596,26 @@ lib_mainloop_watchdog(argc, argv, self)
 }
 
 static VALUE
-lib_do_one_event(argc, argv, self)
+ip_mainloop_watchdog(argc, argv, self)
     int   argc;
     VALUE *argv;
     VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
+	/* slave IP */
+	return Qnil;
+    }
+    return lib_mainloop_watchdog(argc, argv, self);
+}
+
+static VALUE
+lib_do_one_event_core(argc, argv, self, is_ip)
+    int   argc;
+    VALUE *argv;
+    VALUE self;
+    int   is_ip;
 {
     VALUE vflags;
     int flags;
@@ -479,6 +627,16 @@ lib_do_one_event(argc, argv, self)
 	Check_Type(vflags, T_FIXNUM);
 	flags = FIX2INT(vflags);
     }
+    
+    if (is_ip) {
+	/* check IP */
+	struct tcltkip *ptr = get_ip(self);
+	if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
+	    /* slave IP */
+	    flags |= TCL_DONT_WAIT;
+	}
+    }
+
     ret = Tcl_DoOneEvent(flags);
     if (ret) {
 	return Qtrue;
@@ -487,24 +645,24 @@ lib_do_one_event(argc, argv, self)
     }
 }
 
-/*---- class TclTkIp ----*/
-struct tcltkip {
-    Tcl_Interp *ip;		/* the interpreter */
-    int return_value;		/* return value */
-};
-
-static struct tcltkip *
-get_ip(self)
+static VALUE
+lib_do_one_event(argc, argv, self)
+    int   argc;
+    VALUE *argv;
     VALUE self;
 {
-    struct tcltkip *ptr;
-
-    Data_Get_Struct(self, struct tcltkip, ptr);
-    if (ptr == 0) {
-	rb_raise(rb_eTypeError, "uninitialized TclTkIp");
-    }
-    return ptr;
+    return lib_do_one_event_core(argc, argv, self, 0);
 }
+
+static VALUE
+ip_do_one_event(argc, argv, self)
+    int   argc;
+    VALUE *argv;
+    VALUE self;
+{
+    return lib_do_one_event_core(argc, argv, self, 0);
+}
+
 
 /* Tcl command `ruby' */
 static VALUE
@@ -549,6 +707,19 @@ lib_restart(self)
 #endif
 
     return Qnil;
+}
+
+static VALUE
+ip_restart(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
+	/* slave IP */
+	return Qnil;
+    }
+    return lib_restart(self);
 }
 
 static int
@@ -651,6 +822,7 @@ ip_init(argc, argv, self)
     struct tcltkip *ptr;	/* tcltkip data struct */
     VALUE argv0, opts;
     int cnt;
+    int with_tk = 1;
 
     /* create object */
     Data_Get_Struct(self, struct tcltkip, ptr);
@@ -675,7 +847,12 @@ ip_init(argc, argv, self)
     switch(cnt) {
     case 2:
 	/* options */
-	Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), 0);
+	if (opts == Qnil || opts == Qfalse) {
+	    /* without Tk */
+	    with_tk = 0;
+	} else {
+	    Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), 0);
+	}
     case 1:
 	/* argv0 */
 	if (argv0 != Qnil) {
@@ -687,17 +864,19 @@ ip_init(argc, argv, self)
     }
 
     /* from Tcl_AppInit() */
-    DUMP1("Tk_Init");
-    if (Tk_Init(ptr->ip) == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
-    }
-    DUMP1("Tcl_StaticPackage(\"Tk\")");
+    if (with_tk) {
+	DUMP1("Tk_Init");
+	if (Tk_Init(ptr->ip) == TCL_ERROR) {
+	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	}
+	DUMP1("Tcl_StaticPackage(\"Tk\")");
 #if TCL_MAJOR_VERSION >= 8
-    Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init, Tk_SafeInit);
+	Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init, Tk_SafeInit);
 #else
-    Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init,
-		      (Tcl_PackageInitProc *) NULL);
+	Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init,
+			  (Tcl_PackageInitProc *) NULL);
 #endif
+    }
 
     /* add ruby command to the interpreter */
 #if TCL_MAJOR_VERSION >= 8
@@ -901,6 +1080,32 @@ ip_fromUTF8(self, str, encodename)
 
 
 static VALUE
+#ifdef HAVE_STDARG_PROTOTYPES
+create_ip_exc(VALUE interp, VALUE exc, const char *fmt, ...)
+#else
+create_ip_exc(interp, exc, fmt, va_alist)
+    VALUE interp:
+    VALUE exc;
+    const char *fmt;
+    va_dcl
+#endif
+{
+    va_list args;
+    char buf[BUFSIZ];
+    VALUE einfo;
+
+    va_init_list(args,fmt);
+    vsnprintf(buf, BUFSIZ, fmt, args);
+    buf[BUFSIZ - 1] = '\0';
+    va_end(args);
+    einfo = rb_exc_new2(exc, buf);
+    rb_iv_set(einfo, "interp", interp);
+    Tcl_ResetResult(get_ip(interp)->ip);
+    return einfo;
+}
+
+
+static VALUE
 ip_invoke_real(argc, argv, obj)
     int argc;
     VALUE *argv;
@@ -934,7 +1139,9 @@ ip_invoke_real(argc, argv, obj)
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
 	/* if (event_loop_abort_on_exc || cmd[0] != '.') { */
 	if (event_loop_abort_on_exc > 0) {
-	    rb_raise(rb_eNameError, "invalid command name `%s'", cmd);
+	    /*rb_ip_raise(obj, rb_eNameError, "invalid command name `%s'", cmd);*/
+	    return create_ip_exc(obj, rb_eNameError, 
+				 "invalid command name `%s'", cmd);
 	} else {
 	    if (event_loop_abort_on_exc < 0) {
 		rb_warning("invalid command name `%s' (ignore)", cmd);
@@ -1021,7 +1228,8 @@ ip_invoke_real(argc, argv, obj)
     /* exception on mainloop */
     if (ptr->return_value == TCL_ERROR) {
 	if (event_loop_abort_on_exc > 0 && !Tcl_InterpDeleted(ptr->ip)) {
-	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	    /*rb_ip_raise(obj, rb_eRuntimeError, "%s", ptr->ip->result);*/
+	    return create_ip_exc(obj, rb_eRuntimeError, "%s", ptr->ip->result);
 	} else {
 	    if (event_loop_abort_on_exc < 0) {
 		rb_warning("%s (ignore)", ptr->ip->result);
@@ -1137,6 +1345,9 @@ ip_invoke(argc, argv, obj)
 
     /* get result & free allocated memory */
     result = *alloc_result;
+    if (rb_obj_is_kind_of(result, rb_eException)) {
+      rb_exc_raise(result);
+    }
     free(alloc_argv);
     free(alloc_result);
 
@@ -1197,6 +1408,10 @@ Init_tcltklib()
     rb_define_module_function(lib, "mainloop_watchdog", 
 			      lib_mainloop_watchdog, -1);
     rb_define_module_function(lib, "do_one_event", lib_do_one_event, -1);
+    rb_define_module_function(lib, "mainloop_abort_on_exception", 
+                             lib_evloop_abort_on_exc, 0);
+    rb_define_module_function(lib, "mainloop_abort_on_exception=",  
+                             lib_evloop_abort_on_exc_set, 1);
     rb_define_module_function(lib, "set_eventloop_tick",set_eventloop_tick,1);
     rb_define_module_function(lib, "get_eventloop_tick",get_eventloop_tick,0);
     rb_define_module_function(lib, "set_no_event_wait", set_no_event_wait, 1);
@@ -1205,10 +1420,8 @@ Init_tcltklib()
 			      set_eventloop_weight, 2);
     rb_define_module_function(lib, "get_eventloop_weight", 
 			      get_eventloop_weight, 0);
-    rb_define_module_function(lib, "mainloop_abort_on_exception", 
-                             rb_evloop_abort_on_exc, 0);
-    rb_define_module_function(lib, "mainloop_abort_on_exception=",  
-                             rb_evloop_abort_on_exc_set, 1);
+    rb_define_module_function(lib, "num_of_mainwindows", 
+			      lib_num_of_mainwindows, 0);
 
     rb_define_alloc_func(ip, ip_alloc);
     rb_define_method(ip, "initialize", ip_init, -1);
@@ -1222,20 +1435,21 @@ Init_tcltklib()
     rb_define_method(ip, "_fromUTF8",ip_fromUTF8,2);
     rb_define_method(ip, "_invoke", ip_invoke, -1);
     rb_define_method(ip, "_return_value", ip_retval, 0);
-    rb_define_method(ip, "mainloop", lib_mainloop, -1);
-    rb_define_method(ip, "mainloop_watchdog", lib_mainloop_watchdog, -1);
-    rb_define_method(ip, "do_one_event", lib_do_one_event, -1);
+
+    rb_define_method(ip, "mainloop", ip_mainloop, -1);
+    rb_define_method(ip, "mainloop_watchdog", ip_mainloop_watchdog, -1);
+    rb_define_method(ip, "do_one_event", ip_do_one_event, -1);
     rb_define_method(ip, "mainloop_abort_on_exception", 
-		    rb_evloop_abort_on_exc, 0);
+		    ip_evloop_abort_on_exc, 0);
     rb_define_method(ip, "mainloop_abort_on_exception=", 
-		    rb_evloop_abort_on_exc_set, 1);
-    rb_define_method(ip, "set_eventloop_tick", set_eventloop_tick, 1);
-    rb_define_method(ip, "get_eventloop_tick", get_eventloop_tick, 0);
-    rb_define_method(ip, "set_no_event_wait", set_no_event_wait, 1);
-    rb_define_method(ip, "get_no_event_wait", get_no_event_wait, 0);
-    rb_define_method(ip, "set_eventloop_weight", set_eventloop_weight, 2);
-    rb_define_method(ip, "get_eventloop_weight", get_eventloop_weight, 0);
-    rb_define_method(ip, "restart", lib_restart, 0);
+		    ip_evloop_abort_on_exc_set, 1);
+    rb_define_method(ip, "set_eventloop_tick", ip_set_eventloop_tick, 1);
+    rb_define_method(ip, "get_eventloop_tick", ip_get_eventloop_tick, 0);
+    rb_define_method(ip, "set_no_event_wait", ip_set_no_event_wait, 1);
+    rb_define_method(ip, "get_no_event_wait", ip_get_no_event_wait, 0);
+    rb_define_method(ip, "set_eventloop_weight", ip_set_eventloop_weight, 2);
+    rb_define_method(ip, "get_eventloop_weight", ip_get_eventloop_weight, 0);
+    rb_define_method(ip, "restart", ip_restart, 0);
 
     eventloop_thread = 0;
     watchdog_thread  = 0;
