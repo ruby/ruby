@@ -1,4 +1,3 @@
-.cvsignore
 MANIFEST
 depend
 dl.c

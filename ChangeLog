@@ -1,6 +1,11 @@
+Tue Mar  4 01:19:21 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dl/MANIFEST: Exclude .cvsignore. [found by: eban]
+
 Tue Mar  4 01:17:08 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/Win32API/MANIFEST: Belatedly add lib/win32/registry.rb.
+	  [found by: eban]
 
 Tue Mar  4 00:33:04 2003  Akinori MUSHA  <knu@iDaemons.org>
 
