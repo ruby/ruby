@@ -1,3 +1,7 @@
+Tue Oct  2 19:12:47 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/ftools.rb (catname): allow trailing '/' for the destination.
+
 Tue Oct  2 18:31:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): should override existing class.
