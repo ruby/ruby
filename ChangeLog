@@ -1,3 +1,7 @@
+Mon Sep 26 17:39:27 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_marshal.rb: add test for ruby's objects.
+
 Fri Sep 26 09:52:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defines.h (flush_register_windows): use volatile only for gcc on
