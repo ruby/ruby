@@ -22,12 +22,14 @@ typedef LONG rb_atomic_t;
 # define ATOMIC_DEC(var) InterlockedDecrement(&(var))
 
 /* Windows doesn't allow interrupt while system calls */
-# define TRAP_BEG win32_enter_syscall()
-# define TRAP_END win32_leave_syscall()
+# define TRAP_BEG do {\
+    rb_atomic_t trap_immediate = ATOMIC_SET(rb_trap_immediate, 1);
+# define TRAP_END ATOMIC_SET(rb_trap_immediate, trap_immediate);\
+} while (0)
 # define RUBY_CRITICAL(statements) do {\
-    win32_disable_interrupt();\
+    win32_enter_critical();\
     statements;\
-    win32_enable_interrupt();\
+    win32_leave_critical();\
 } while (0)
 #else
 typedef int rb_atomic_t;

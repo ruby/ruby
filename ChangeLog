@@ -1,3 +1,11 @@
+Sun Feb 18 00:09:50 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* win32/win32.c: fasten file I/O on mswin32/mingw32.
+
+	* win32/win32.h: ditto.
+
+	* rubysig.h: ditto.
+
 Fri Feb 16 01:44:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (set_outfile): f should be the FILE* from the assigning value.
@@ -101,7 +109,7 @@ Sat Feb 10 23:07:15 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Feb 10 00:00:30 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* win32/win32.c (win32_stat): replace stat for enable when pathname
+	* win32/win32.c (win32_stat): replace stat to enable when pathname
 	  ends with '/' or '\' for mswin32 on Win9X / Win2k.
 
 	* win32/win32.h: ditto.

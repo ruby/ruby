@@ -35,15 +35,17 @@
 #define bool int
 #endif
 
+#ifdef _M_IX86
+# define WIN95 1
+#else
+# undef  WIN95
+#endif
+
+#if HAVE_WSAWAITFORMULTIPLEEVENTS
+# define USE_INTERRUPT_WINSOCK
+#endif
+
 #if USE_INTERRUPT_WINSOCK
-
-# if defined(_MSC_VER) && _MSC_VER <= 1000
-/* VC++4.0 doesn't have this. */
-extern DWORD WSAWaitForMultipleEvents(DWORD nevent, const HANDLE *events,
-				      BOOL waitall, DWORD timeout,
-				      BOOL alertable);
-# endif
-
 # define WaitForMultipleEvents WSAWaitForMultipleEvents
 # define CreateSignal() (HANDLE)WSACreateEvent()
 # define SetSignal(ev) WSASetEvent(ev)
@@ -77,6 +79,7 @@ static DWORD wait_events(HANDLE event, DWORD timeout);
 
 char *NTLoginName;
 
+#ifdef WIN95
 DWORD Win32System = (DWORD)-1;
 
 static DWORD
@@ -102,6 +105,10 @@ static int
 IsWinNT(void) {
     return (IdOS() == VER_PLATFORM_WIN32_NT);
 }
+#else
+# define IsWinNT() TRUE
+# define IsWin95() FALSE
+#endif
 
 /* main thread constants */
 static struct {
@@ -177,6 +184,7 @@ flock_winnt(VALUE self, int argc, VALUE* argv)
     return i;
 }
 
+#ifdef WIN95
 static VALUE
 flock_win95(VALUE self, int argc, VALUE* argv)
 {
@@ -207,6 +215,7 @@ flock_win95(VALUE self, int argc, VALUE* argv)
     }
     return i;
 }
+#endif
 
 #undef LK_ERR
 #undef LK_LEN
@@ -214,6 +223,7 @@ flock_win95(VALUE self, int argc, VALUE* argv)
 int
 flock(int fd, int oper)
 {
+#ifdef WIN95
     static asynchronous_func_t locker = NULL;
 
     if (!locker) {
@@ -222,6 +232,9 @@ flock(int fd, int oper)
 	else
 	    locker = flock_win95;
     }
+#else
+    const asynchronous_func_t locker = flock_winnt;
+#endif
 
     return win32_asynchronize(locker,
 			      (VALUE)_get_osfhandle(fd), oper, NULL,
@@ -1671,6 +1684,13 @@ EXTERN_C void __cdecl _unlock(int);
 #if defined _MT || defined __MSVCRT__
 #define MSVCRT_THREADS
 #endif
+#ifdef MSVCRT_THREADS
+# define MTHREAD_ONLY(x) x
+# define STHREAD_ONLY(x)
+#else
+# define MTHREAD_ONLY(x)
+# define STHREAD_ONLY(x) x
+#endif
 
 typedef struct	{
     long osfhnd;    /* underlying OS file HANDLE */
@@ -1705,20 +1725,6 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 #define _set_osfhnd(fh, osfh) (void)(_osfhnd(fh) = osfh)
 
 static int
-_alloc_osfhnd(void)
-{
-    HANDLE hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
-    int fh = _open_osfhandle((long)hF, 0);
-    CloseHandle(hF);
-    if (fh == -1)
-        return fh;
-#ifdef MSVCRT_THREADS
-    EnterCriticalSection(&(_pioinfo(fh)->lock));
-#endif
-    return fh;
-}
-
-static int
 my_open_osfhandle(long osfhandle, int flags)
 {
     int fh;
@@ -1736,22 +1742,27 @@ my_open_osfhandle(long osfhandle, int flags)
     if (flags & O_NOINHERIT)
 	fileflags |= FNOINHERIT;
 
-    /* attempt to allocate a C Runtime file handle */
-    if ((fh = _alloc_osfhnd()) == -1) {
-	errno = EMFILE;		/* too many open files */
-	_doserrno = 0L;		/* not an OS error */
-	return -1;		/* return error to caller */
-    }
+    RUBY_CRITICAL({
+	/* attempt to allocate a C Runtime file handle */
+	HANDLE hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
+	fh = _open_osfhandle((long)hF, 0);
+	CloseHandle(hF);
+	if (fh == -1) {
+	    errno = EMFILE;		/* too many open files */
+	    _doserrno = 0L;		/* not an OS error */
+	}
+	else {
 
-    /* the file is open. now, set the info in _osfhnd array */
-    _set_osfhnd(fh, osfhandle);
+	    MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fh)->lock)));
+	    /* the file is open. now, set the info in _osfhnd array */
+	    _set_osfhnd(fh, osfhandle);
 
-    fileflags |= FOPEN;		/* mark as open */
+	    fileflags |= FOPEN;		/* mark as open */
 
-    _osfile(fh) = fileflags;	/* set osfile entry */
-#ifdef MSVCRT_THREADS
-    LeaveCriticalSection(&_pioinfo(fh)->lock);
-#endif
+	    _osfile(fh) = fileflags;	/* set osfile entry */
+	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fh)->lock));
+	}
+    });
 
     return fh;			/* return handle */
 }
@@ -1797,10 +1808,10 @@ myfddup (int fd)
 void
 myfdclose(FILE *fp)
 {
-#if !defined MSVCRT_THREADS
-    _free_osfhnd(fileno(fp));
-#endif
-    fclose(fp);
+    RUBY_CRITICAL({
+	STHREAD_ONLY(_free_osfhnd(fileno(fp)));
+	fclose(fp);
+    });
 }
 
 
@@ -2035,7 +2046,8 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     ex = &trap;
 #endif /* USE_INTERRUPT_WINSOCK */
 
-    if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR) {
+    RUBY_CRITICAL(r = select (nfds, rd, wr, ex, timeout));
+    if (r == SOCKET_ERROR) {
 	errno = WSAGetLastError();
 	switch (errno) {
 	  case WSAEINTR:
@@ -2082,6 +2094,9 @@ StartSockets ()
     interrupted_event = CreateSignal();
     if (!interrupted_event)
 	rb_fatal("Unable to create interrupt event!\n");
+    interrupted_event = CreateSignal();
+    if (!interrupted_event)
+	rb_fatal("Unable to create interrupt event!\n");
 }
 
 #undef accept
@@ -2094,7 +2109,8 @@ myaccept (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = accept (TO_SOCKET(s), addr, addrlen)) == INVALID_SOCKET)
+    RUBY_CRITICAL(r = accept (TO_SOCKET(s), addr, addrlen));
+    if (r == INVALID_SOCKET)
 	errno = WSAGetLastError();
     return my_open_osfhandle(r, O_RDWR|O_BINARY);
 }
@@ -2109,7 +2125,8 @@ mybind (SOCKET s, struct sockaddr *addr, int addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = bind (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = bind (TO_SOCKET(s), addr, addrlen));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2123,7 +2140,8 @@ myconnect (SOCKET s, struct sockaddr *addr, int addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = connect (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = connect (TO_SOCKET(s), addr, addrlen));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2138,7 +2156,8 @@ mygetpeername (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getpeername (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = getpeername (TO_SOCKET(s), addr, addrlen));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2152,7 +2171,8 @@ mygetsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getsockname (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = getsockname (TO_SOCKET(s), addr, addrlen));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2164,7 +2184,8 @@ mygetsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getsockopt (TO_SOCKET(s), level, optname, optval, optlen)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = getsockopt (TO_SOCKET(s), level, optname, optval, optlen));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2178,7 +2199,8 @@ myioctlsocket (SOCKET s, long cmd, u_long *argp)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = ioctlsocket (TO_SOCKET(s), cmd, argp)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = ioctlsocket (TO_SOCKET(s), cmd, argp));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2192,7 +2214,8 @@ mylisten (SOCKET s, int backlog)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = listen (TO_SOCKET(s), backlog)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = listen (TO_SOCKET(s), backlog));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2206,7 +2229,8 @@ myrecv (SOCKET s, char *buf, int len, int flags)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = recv (TO_SOCKET(s), buf, len, flags)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = recv (TO_SOCKET(s), buf, len, flags));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2221,7 +2245,8 @@ myrecvfrom (SOCKET s, char *buf, int len, int flags,
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = recvfrom (TO_SOCKET(s), buf, len, flags, from, fromlen)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = recvfrom (TO_SOCKET(s), buf, len, flags, from, fromlen));
+    if (r == SOCKET_ERROR)
 	errno =  WSAGetLastError();
     return r;
 }
@@ -2235,7 +2260,8 @@ mysend (SOCKET s, char *buf, int len, int flags)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = send (TO_SOCKET(s), buf, len, flags)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = send (TO_SOCKET(s), buf, len, flags));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2250,7 +2276,8 @@ mysendto (SOCKET s, char *buf, int len, int flags,
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = sendto (TO_SOCKET(s), buf, len, flags, to, tolen)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = sendto (TO_SOCKET(s), buf, len, flags, to, tolen));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2264,8 +2291,8 @@ mysetsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = setsockopt (TO_SOCKET(s), level, optname, optval, optlen))
-    		 == SOCKET_ERROR)
+    RUBY_CRITICAL(r = setsockopt (TO_SOCKET(s), level, optname, optval, optlen));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2279,7 +2306,8 @@ myshutdown (SOCKET s, int how)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = shutdown (TO_SOCKET(s), how)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = shutdown (TO_SOCKET(s), how));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2293,7 +2321,8 @@ mysocket (int af, int type, int protocol)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((s = socket (af, type, protocol)) == INVALID_SOCKET) {
+    RUBY_CRITICAL(s = socket (af, type, protocol));
+    if (s == INVALID_SOCKET) {
 	errno = WSAGetLastError();
 	//fprintf(stderr, "socket fail (%d)", WSAGetLastError());
     }
@@ -2309,7 +2338,8 @@ mygethostbyaddr (char *addr, int len, int type)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = gethostbyaddr (addr, len, type)) == NULL)
+    RUBY_CRITICAL(r = gethostbyaddr (addr, len, type));
+    if (r == NULL)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2323,7 +2353,8 @@ mygethostbyname (char *name)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = gethostbyname (name)) == NULL)
+    RUBY_CRITICAL(r = gethostbyname (name));
+    if (r == NULL)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2337,7 +2368,8 @@ mygethostname (char *name, int len)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = gethostname (name, len)) == SOCKET_ERROR)
+    RUBY_CRITICAL(r = gethostname (name, len));
+    if (r == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2351,7 +2383,8 @@ mygetprotobyname (char *name)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getprotobyname (name)) == NULL)
+    RUBY_CRITICAL(r = getprotobyname (name));
+    if (r == NULL)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2365,7 +2398,8 @@ mygetprotobynumber (int num)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getprotobynumber (num)) == NULL)
+    RUBY_CRITICAL(r = getprotobynumber (num));
+    if (r == NULL)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2379,7 +2413,8 @@ mygetservbyname (char *name, char *proto)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getservbyname (name, proto)) == NULL)
+    RUBY_CRITICAL(r = getservbyname (name, proto));
+    if (r == NULL)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2393,7 +2428,8 @@ mygetservbyport (int port, char *proto)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getservbyport (port, proto)) == NULL)
+    RUBY_CRITICAL(r = getservbyport (port, proto));
+    if (r == NULL)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2440,14 +2476,18 @@ waitpid (pid_t pid, int *stat_loc, int options)
     } else {
 	timeout = INFINITE;
     }
-    if (wait_events((HANDLE)pid, timeout) == WAIT_OBJECT_0) {
-	pid = _cwait(stat_loc, pid, 0);
+    RUBY_CRITICAL({
+	if (wait_events((HANDLE)pid, timeout) == WAIT_OBJECT_0) {
+	    pid = _cwait(stat_loc, pid, 0);
+	}
+	else {
+	    pid = 0;
+	}
+    });
 #if !defined __BORLANDC__
-	*stat_loc <<= 8;
+    if (pid) *stat_loc <<= 8;
 #endif
-	return pid;
-    }
-    return 0;
+    return pid;
 }
 
 #include <sys/timeb.h>
@@ -2579,36 +2619,38 @@ myrename(const char *oldpath, const char *newpath)
 	return -1;
     }
 
-    if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
-	SetFileAttributesA(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
+    RUBY_CRITICAL({
+	if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
+	    SetFileAttributesA(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
 
-    if (!MoveFile(oldpath, newpath))
-	res = -1;
+	if (!MoveFile(oldpath, newpath))
+	    res = -1;
 
-    if (res) {
-	switch (GetLastError()) {
-	  case ERROR_ALREADY_EXISTS:
-	  case ERROR_FILE_EXISTS:
-	    if (IsWinNT()) {
-		if (MoveFileEx(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
-		    res = 0;
-	    } else {
-		for (;;) {
-		    if (!DeleteFile(newpath) && GetLastError() != ERROR_FILE_NOT_FOUND)
-			break;
-		    else if (MoveFile(oldpath, newpath)) {
+	if (res) {
+	    switch (GetLastError()) {
+	      case ERROR_ALREADY_EXISTS:
+	      case ERROR_FILE_EXISTS:
+		if (IsWinNT()) {
+		    if (MoveFileEx(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
 			res = 0;
-			break;
+		} else {
+		    for (;;) {
+			if (!DeleteFile(newpath) && GetLastError() != ERROR_FILE_NOT_FOUND)
+			    break;
+			else if (MoveFile(oldpath, newpath)) {
+			    res = 0;
+			    break;
+			}
 		    }
 		}
 	    }
 	}
-    }
 
-    if (res)
-	errno = GetLastError();
-    else
-	SetFileAttributes(newpath, oldatts);
+	if (res)
+	    errno = GetLastError();
+	else
+	    SetFileAttributes(newpath, oldatts);
+    });
 
     return res;
 }
@@ -2617,6 +2659,7 @@ int
 win32_stat(const char *path, struct stat *st)
 {
     const char *p = path;
+    int ret;
 
     if ((isdirsep(*p) && (p++, TRUE)) || /* absolute path or UNC */
 	(ISALPHA(*p) && p[1] == ':' && (p += 2, TRUE))) { /* has drive */
@@ -2630,7 +2673,8 @@ win32_stat(const char *path, struct stat *st)
 	s[len] = '\0';
 	path = s;
     }
-    return stat(path, st);
+    RUBY_CRITICAL(ret = stat(path, st));
+    return ret;
 }
 
 static long
@@ -2704,7 +2748,7 @@ static CRITICAL_SECTION* system_state(void)
 static LONG flag_interrupt = -1;
 static volatile DWORD tlsi_interrupt = TLS_OUT_OF_INDEXES;
 
-void win32_disable_interrupt(void)
+void win32_enter_critical(void)
 {
     if (IsWinNT()) {
 	EnterCriticalSection(system_state());
@@ -2725,7 +2769,7 @@ void win32_disable_interrupt(void)
     }
 }
 
-void win32_enable_interrupt(void)
+void win32_leave_critical(void)
 {
     if (IsWinNT()) {
 	LeaveCriticalSection(system_state());
@@ -2740,7 +2784,7 @@ struct handler_arg_t {
     void (*handler)(int);
     int arg;
     int status;
-    int userstate;
+    int finished;
     HANDLE handshake;
 };
 
@@ -2753,8 +2797,8 @@ static void win32_call_handler(struct handler_arg_t* h)
     if (status) {
 	rb_jump_tag(status);
     }
-    h->userstate = 1;		/* never syscall after here */
-    for (;;);			/* wait here in user state */
+    h->finished = 1;
+    Sleep(INFINITE);		/* safe on Win95? */
 }
 
 static struct handler_arg_t* setup_handler(struct handler_arg_t *harg,
@@ -2765,7 +2809,7 @@ static struct handler_arg_t* setup_handler(struct handler_arg_t *harg,
     harg->handler = handler;
     harg->arg = arg;
     harg->status = 0;
-    harg->userstate = 0;
+    harg->finished = 0;
     harg->handshake = handshake;
     return harg;
 }
@@ -2829,7 +2873,7 @@ int win32_main_context(int arg, void (*handler)(int))
 	/* no exceptions raised, restore old context. */
 	RUBY_CRITICAL({
 	    /* ensure the main thread is in user state. */
-	    yield_until(harg.userstate);
+	    yield_until(harg.finished);
 
 	    SuspendThread(main_thread.handle);
 	    ctx_orig.ContextFlags = CONTEXT_FULL | CONTEXT_FLOATING_POINT;
@@ -2846,28 +2890,50 @@ int win32_main_context(int arg, void (*handler)(int))
 
 int win32_sleep(unsigned long msec)
 {
-    return wait_events(NULL, msec) != WAIT_TIMEOUT;
+    DWORD ret;
+    RUBY_CRITICAL(ret = wait_events(NULL, msec));
+    yield_once();
+    CHECK_INTS;
+    return ret != WAIT_TIMEOUT;
 }
 
 static void catch_interrupt(void)
 {
     yield_once();
-    win32_sleep(0);
+    RUBY_CRITICAL(wait_events(NULL, 0));
     CHECK_INTS;
 }
 
-void win32_enter_syscall(void)
+#undef fgetc
+int win32_getc(FILE* stream)
 {
-    InterlockedExchange(&rb_trap_immediate, 1);
-    catch_interrupt();
-    win32_disable_interrupt();
+    int c, trap_immediate = rb_trap_immediate;
+    if (--stream->_cnt >= 0) {
+	c = (unsigned char)*stream->_ptr++;
+	rb_trap_immediate = trap_immediate;
+    }
+    else {
+	c = _filbuf(stream);
+	rb_trap_immediate = trap_immediate;
+	catch_interrupt();
+    }
+    return c;
 }
 
-void win32_leave_syscall(void)
+#undef fputc
+int win32_putc(int c, FILE* stream)
 {
-    win32_enable_interrupt();
-    catch_interrupt();
-    InterlockedExchange(&rb_trap_immediate, 0);
+    int trap_immediate = rb_trap_immediate;
+    if (--stream->_cnt >= 0) {
+	c = (unsigned char)(*stream->_ptr++ = (char)c);
+	rb_trap_immediate = trap_immediate;
+    }
+    else {
+	c = _flsbuf(c, stream);
+	rb_trap_immediate = trap_immediate;
+	catch_interrupt();
+    }
+    return c;
 }
 
 struct asynchronous_arg_t {

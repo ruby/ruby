@@ -112,6 +112,23 @@ extern "C++" {
 #define pid_t   int
 #define WNOHANG -1
 
+#undef getc
+#undef putc
+#undef fgetc
+#undef fputc
+#undef getchar
+#undef putchar
+#undef fgetchar
+#undef fputchar
+#define getc(_stream)		win32_getc(_stream)
+#define putc(_c, _stream)	win32_putc(_c, _stream)
+#define fgetc(_stream)		getc(_stream)
+#define fputc(_c, _stream)	putc(_c, _stream)
+#define getchar()		win32_getc(stdin)
+#define putchar(_c)		win32_putc(_c, stdout)
+#define fgetchar(_stream)	getchar()
+#define fputchar(_c, _stream)	putchar(_c)
+
 #define access	   _access
 #define chmod	   _chmod
 #define chsize	   _chsize
@@ -427,10 +444,10 @@ struct tms {
 HANDLE GetCurrentThreadHandle(void);
 int win32_main_context(int arg, void (*handler)(int));
 int win32_sleep(unsigned long msec);
-void win32_enter_syscall(void);
-void win32_leave_syscall(void);
-void win32_disable_interrupt(void);
-void win32_enable_interrupt(void);
+void win32_enter_critical(void);
+void win32_leave_critical(void);
+int win32_putc(int, FILE*);
+int win32_getc(FILE*);
 #define Sleep(msec) (void)win32_sleep(msec)
 
 /*
