@@ -46,7 +46,7 @@
 #define USE_QUALIFIER_PEEK_NEXT
 
 #define INIT_MATCH_STACK_SIZE                     160
-#define DEFAULT_MATCH_STACK_LIMIT_SIZE              0 /* unlimited */
+#define MATCH_STACK_LIMIT_SIZE                 500000
 
 /* interface to external system */
 #ifdef NOT_RUBY      /* gived from Makefile */
