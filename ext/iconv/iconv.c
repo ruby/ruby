@@ -169,14 +169,17 @@ iconv_create
 	}
 	if (cd == (iconv_t)-1) {
 	    int inval = errno == EINVAL;
-	    volatile VALUE msg = rb_str_new2("iconv(\"" + (inval ? 5 : 0));
-	    char *s;
+	    char *s = inval ? "invalid encoding " : "iconv";
+	    volatile VALUE msg = rb_str_new(0, strlen(s) + RSTRING(to)->len +
+					    RSTRING(from)->len + 8);
 
-	    rb_str_buf_cat2(rb_str_buf_append(msg, to), "\", \"");
-	    rb_str_buf_cat2(rb_str_buf_append(msg, from), "\")");
-	    s = StringValuePtr(msg);
+	    sprintf(RSTRING(msg)->ptr, "%s(\"%s\", \"%s\")",
+		    s, RSTRING(to)->ptr, RSTRING(from)->ptr);
+	    s = RSTRING(msg)->ptr;
+	    RSTRING(msg)->len = strlen(s);
 	    if (!inval) rb_sys_fail(s);
-	    rb_raise(rb_eIconvInvalidEncoding, "invalid encoding %s", s);
+	    iconv_fail(rb_eIconvInvalidEncoding,
+		       Qnil, rb_ary_new3(2, to, from), NULL, s);
 	}
     }
 
