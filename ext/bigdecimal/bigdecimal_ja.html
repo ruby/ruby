@@ -303,12 +303,11 @@ a が Infinity や NaN のとき、i は nil になります。
 <LI>to_f</LI><BR>
 dup と全く同じです。
 同じ値の BigDecimal オブジェクトを生成します。
-<LI>to_s</LI><BR>
+<LI>to_s[(n)]</LI><BR>
 文字列に変換します("0.xxxxxEn"の形になります）。<BR>
-s = a.to_s
-<LI>to_s2</LI><BR>
-文字列に変換します。仮数部分を n 桁毎に空白で区切ります。<BR>
-s = a.to_s2(n)
+s = a.to_s<BR>
+n が指定されたときは、仮数部分を n 桁毎に空白で区切ります。<BR>
+s = a.to_s(n)
 <LI>exponent</LI><BR>
 指数部を整数値で返します。
 n = a.exponent <BR>
@@ -644,17 +643,17 @@ c = a op b という計算(op は + - * /)をしたときの動作は
 #!/usr/local/bin/ruby
 
 #
-# pai.rb
-#  USAGE: ruby pai.rb n
+# pi.rb
+#  USAGE: ruby pi.rb n
 #   where n is the number of digits required.
-#  EX.: ruby pai.rb 1000
+#  EX.: ruby pi.rb 1000
 #
 
 require "bigdecimal"
 #
 # Calculates 3.1415.... using J. Machin's formula.
 #
-def pai(sig) # sig: Number of significant figures
+def big_pi(sig) # sig: Number of significant figures
   exp    = -sig
   pi     = BigDecimal::new("0")
   two    = BigDecimal::new("2")
@@ -686,8 +685,8 @@ def pai(sig) # sig: Number of significant figures
 end
 
 if $0 == __FILE__
-  print "PAI("+ARGV[0]+"):\n"
-  p pai(ARGV[0].to_i)
+  print "PI("+ARGV[0]+"):\n"
+  p pi(ARGV[0].to_i)
 end
 
 </PRE></CODE>

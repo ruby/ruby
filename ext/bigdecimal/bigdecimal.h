@@ -126,7 +126,7 @@ VP_EXPORT int VpSqrt(Real *y,Real *x);
 VP_EXPORT void VpRound(Real *y,Real *x,int sw,int f,int il);
 VP_EXPORT void VpFrac(Real *y,Real *x);
 VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
-VP_EXPORT void VpPai(Real *y);
+VP_EXPORT void VpPi(Real *y);
 VP_EXPORT void VpExp1(Real *y);
 VP_EXPORT void VpExp(Real *y,Real *x);
 VP_EXPORT void VpSinCos(Real *psin,Real *pcos,Real *x);
@@ -140,8 +140,6 @@ VP_EXPORT int VPrint(FILE *fp,char *cntl_chr,Real *a);
 #define Abs(a)     (((a)>= 0)?(a):(-(a)))
 #define Max(a, b)  (((a)>(b))?(a):(b))
 #define Min(a, b)  (((a)>(b))?(b):(a))
-
-#define IsWhiteChar(ch) (((ch==' ')||(ch=='\n')||(ch=='\t')||(ch=='\b'))?1:0)
 
 #define VpMaxPrec(a)   ((a)->MaxPrec)
 #define VpPrec(a)      ((a)->Prec)

@@ -30,7 +30,7 @@
  *
  */
 
-#include "ruby.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -157,7 +157,7 @@ GetVpValue(VALUE v, int must)
         }
         break;
     case T_FIXNUM:
-        sprintf(szD, "%d", NUM2INT(v));
+        sprintf(szD, "%d", FIX2INT(v));
         return VpCreateRbObject(VpBaseFig() * 2 + 1, szD);
     case T_FLOAT:
         pv = VpCreateRbObject(VpDblFig()*2,"0");
@@ -190,7 +190,7 @@ GetVpValue(VALUE v, int must)
         }
         return pv;
     case T_STRING:
-        Check_SafeStr(v);
+        SafeStringValue(v);
         return VpCreateRbObject(strlen(RSTRING(v)->ptr) + VpBaseFig() + 1,
                                 RSTRING(v)->ptr);
     case T_BIGNUM:
@@ -274,13 +274,12 @@ BigDecimal_load(VALUE self, VALUE str)
 {
     ENTER(2);
     Real *pv;
-    long len;
     unsigned char *pch;
     unsigned char ch;
     unsigned long m=0;
 
-    Check_SafeStr(str);
-    pch = rb_str2cstr(str, &len);
+    SafeStringValue(str);
+    pch = RSTRING(str)->ptr;
     /* First get max prec */
     while((*pch)!=(unsigned char)'\0' && (ch=*pch++)!=(unsigned char)':') {
         if(ch<'0' || ch>'9') {
@@ -304,7 +303,7 @@ BigDecimal_mode(VALUE self, VALUE which, VALUE val)
     if(TYPE(which)!=T_FIXNUM)  return INT2FIX(fo);
     if(val!=Qfalse && val!=Qtrue) return INT2FIX(fo);
 
-    f = (unsigned short)NUM2INT(which);
+    f = (unsigned short)FIX2INT(which);
     if(f&VP_EXCEPTION_INFINITY) {
         fo = VpGetException();
         VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_INFINITY):
@@ -345,7 +344,7 @@ GetPositiveInt(VALUE v)
 {
     S_INT n;
     Check_Type(v, T_FIXNUM);
-    n = NUM2INT(v);
+    n = FIX2INT(v);
     if(n <= 0) {
         rb_fatal("Zero or negative argument not permitted.");
     }
@@ -824,7 +823,7 @@ BigDecimal_assign2(VALUE self, VALUE n, VALUE f)
     Check_Type(f, T_FIXNUM);
     GUARD_OBJ(cv,VpCreateRbObject(mx,"0"));
     GUARD_OBJ(av,GetVpValue(self,1));
-    VpAsgn(cv,av,NUM2INT(f));
+    VpAsgn(cv,av,FIX2INT(f));
     return ToValue(cv);
 }
 
@@ -947,7 +946,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
         iLoc = 0;
     } else {
         Check_Type(vLoc, T_FIXNUM);
-        iLoc = NUM2INT(vLoc);
+        iLoc = FIX2INT(vLoc);
     }
     sw = 2;
 
@@ -972,7 +971,7 @@ BigDecimal_truncate(int argc, VALUE *argv, VALUE self)
         iLoc = 0;
     } else {
         Check_Type(vLoc, T_FIXNUM);
-        iLoc = NUM2INT(vLoc);
+        iLoc = FIX2INT(vLoc);
     }
     sw = 1; /* truncate */
 
@@ -1010,7 +1009,7 @@ BigDecimal_floor(int argc, VALUE *argv, VALUE self)
         iLoc = 0;
     } else {
         Check_Type(vLoc, T_FIXNUM);
-        iLoc = NUM2INT(vLoc);
+        iLoc = FIX2INT(vLoc);
     }
 
     GUARD_OBJ(a,GetVpValue(self,1));
@@ -1033,7 +1032,7 @@ BigDecimal_ceil(int argc, VALUE *argv, VALUE self)
         iLoc = 0;
     } else {
         Check_Type(vLoc, T_FIXNUM);
-        iLoc = NUM2INT(vLoc);
+        iLoc = FIX2INT(vLoc);
     }
 
     GUARD_OBJ(a,GetVpValue(self,1));
@@ -1056,7 +1055,6 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
     GUARD_OBJ(vp,GetVpValue(self,1));
     nc = VpNumOfChars(vp)+1;
     if(rb_scan_args(argc,argv,"01",&f)==1) {
-        Check_Type(f, T_FIXNUM);
         mc  = GetPositiveInt(f);
         nc += (nc + mc - 1) / mc + 1;
     }
@@ -1133,7 +1131,7 @@ BigDecimal_power(VALUE self, VALUE p)
     S_LONG mp, ma, n;
 
     Check_Type(p, T_FIXNUM);
-    n = NUM2INT(p);
+    n = FIX2INT(p);
     ma = n;
     if(ma < 0)  ma = -ma;
     if(ma == 0) ma = 1;
@@ -1163,7 +1161,7 @@ BigDecimal_new(int argc, VALUE *argv, VALUE self)
     } else {
         mf = GetPositiveInt(nFig);
     }
-    Check_SafeStr(iniValue);
+    SafeStringValue(iniValue);
     GUARD_OBJ(pv,VpNewRbClass(mf, RSTRING(iniValue)->ptr,self));
     return ToValue(pv);
 }
@@ -1176,7 +1174,7 @@ BigDecimal_limit(int argc, VALUE *argv, VALUE self)
 
     if(rb_scan_args(argc,argv,"01",&nFig)==1) {
         Check_Type(nFig, T_FIXNUM);
-        VpSetPrecLimit(NUM2INT(nFig));
+        VpSetPrecLimit(FIX2INT(nFig));
     }
     return nCur;
 }
@@ -1195,7 +1193,7 @@ BigDecimal_e(VALUE self, VALUE nFig)
 }
 
 static VALUE
-BigDecimal_pai(VALUE self, VALUE nFig)
+BigDecimal_pi(VALUE self, VALUE nFig)
 {
     ENTER(5);
     Real *pv;
@@ -1203,7 +1201,7 @@ BigDecimal_pai(VALUE self, VALUE nFig)
 
     mf = GetPositiveInt(nFig)+VpBaseFig()-1;
     GUARD_OBJ(pv,VpCreateRbObject(mf, "0"));
-    VpPai(pv);
+    VpPi(pv);
     return ToValue(pv);
 }
 
@@ -1293,7 +1291,7 @@ BigDecimal_assign(VALUE self, VALUE c, VALUE a, VALUE f)
     Check_Type(f, T_FIXNUM);
     GUARD_OBJ(cv,GetVpValue(c,1));
     GUARD_OBJ(av,GetVpValue(a,1));
-    v = VpAsgn(cv,av,NUM2INT(f));
+    v = VpAsgn(cv,av,FIX2INT(f));
     return INT2NUM(v);
 }
 
@@ -1364,7 +1362,7 @@ Init_bigdecimal(void)
     rb_define_singleton_method(rb_cBigDecimal, "limit", BigDecimal_limit, -1);
     rb_define_singleton_method(rb_cBigDecimal, "E", BigDecimal_e, 1);
     rb_define_singleton_method(rb_cBigDecimal, "double_fig", BigDecimal_double_fig, 0);
-    rb_define_singleton_method(rb_cBigDecimal, "PI", BigDecimal_pai, 1);
+    rb_define_singleton_method(rb_cBigDecimal, "PI", BigDecimal_pi, 1);
     rb_define_singleton_method(rb_cBigDecimal, "induced_from",BigDecimal_induced_from, 1);
     rb_define_singleton_method(rb_cBigDecimal, "_load", BigDecimal_load, 1);
 
@@ -3090,7 +3088,7 @@ VpFormatSt(char *psz,S_INT fFmt)
 {
     U_LONG ie;
     U_LONG i, j;
-    S_INT nf;
+    S_INT nf = 0;
     char ch;
     int fDot = 0;
 
@@ -3871,10 +3869,10 @@ Exit:
 }
 
 /*
- * Calculates pai(=3.141592653589793238462........).
+ * Calculates pi(=3.141592653589793238462........).
  */
 VP_EXPORT void
-VpPai(Real *y)
+VpPi(Real *y)
 {
     Real *n, *n25, *n956, *n57121;
     Real *r, *f, *t;
@@ -3944,7 +3942,7 @@ VpPai(Real *y)
     VpFree(f);
     VpFree(r);
 #ifdef _DEBUG
-    printf("VpPai: # of iterations=%lu+%lu\n",i1,i2);
+    printf("VpPi: # of iterations=%lu+%lu\n",i1,i2);
 #endif /* _DEBUG */
 }
 
@@ -4202,7 +4200,7 @@ SkipWhiteChar(char *szVal)
     char ch;
     U_LONG i = 0;
     while(ch = szVal[i++]) {
-        if(IsWhiteChar(ch)) continue;
+        if(ISSPACE(ch)) continue;
         break;
     }
     return i - 1;

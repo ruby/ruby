@@ -704,17 +704,17 @@ its dirmeter(pi=3.14159265358979....) using J.Machin's formula.
 #!/usr/local/bin/ruby
 
 #
-# pai.rb
-#  USAGE: ruby pai.rb n
+# pi.rb
+#  USAGE: ruby pi.rb n
 #   where n is the number of digits required.
-#  EX.: ruby pai.rb 1000
+#  EX.: ruby pi.rb 1000
 #
 
 require "bigdecimal"
 #
 # Calculates 3.1415.... using J. Machin's formula.
 #
-def pai(sig) # sig: Number of significant figures
+def big_pi(sig) # sig: Number of significant figures
   exp    = -sig
   pi     = BigDecimal::new("0")
   two    = BigDecimal::new("2")
@@ -746,8 +746,8 @@ def pai(sig) # sig: Number of significant figures
 end
 
 if $0 == __FILE__
-  print "PAI("+ARGV[0]+"):\n"
-  p pai(ARGV[0].to_i)
+  print "PI("+ARGV[0]+"):\n"
+  p pi(ARGV[0].to_i)
 end
 
 </PRE></CODE>
