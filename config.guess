@@ -3,7 +3,7 @@
 #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
 #   2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
-timestamp='2004-01-20'
+timestamp='2004-06-11'
 
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -821,16 +821,16 @@ EOF
 	echo ${UNAME_MACHINE}-pc-minix
 	exit 0 ;;
     arm*:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux-gnu
+	echo ${UNAME_MACHINE}-unknown-linux
 	exit 0 ;;
     cris:Linux:*:*)
-	echo cris-axis-linux-gnu
+	echo cris-axis-linux
 	exit 0 ;;
     ia64:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux-gnu
+	echo ${UNAME_MACHINE}-unknown-linux
 	exit 0 ;;
     m68*:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux-gnu
+	echo ${UNAME_MACHINE}-unknown-linux
 	exit 0 ;;
     mips:Linux:*:*)
 	eval $set_cc_for_build
@@ -849,7 +849,7 @@ EOF
 	#endif
 EOF
 	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep ^CPU=`
-	test x"${CPU}" != x && echo "${CPU}-unknown-linux-gnu" && exit 0
+	test x"${CPU}" != x && echo "${CPU}-unknown-linux" && exit 0
 	;;
     mips64:Linux:*:*)
 	eval $set_cc_for_build
@@ -868,13 +868,13 @@ EOF
 	#endif
 EOF
 	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep ^CPU=`
-	test x"${CPU}" != x && echo "${CPU}-unknown-linux-gnu" && exit 0
+	test x"${CPU}" != x && echo "${CPU}-unknown-linux" && exit 0
 	;;
     ppc:Linux:*:*)
-	echo powerpc-unknown-linux-gnu
+	echo powerpc-unknown-linux
 	exit 0 ;;
     ppc64:Linux:*:*)
-	echo powerpc64-unknown-linux-gnu
+	echo powerpc64-unknown-linux
 	exit 0 ;;
     alpha:Linux:*:*)
 	case `sed -n '/^cpu model/s/^.*: \(.*\)/\1/p' < /proc/cpuinfo` in
@@ -888,33 +888,33 @@ EOF
         esac
 	objdump --private-headers /bin/sh | grep ld.so.1 >/dev/null
 	if test "$?" = 0 ; then LIBC="libc1" ; else LIBC="" ; fi
-	echo ${UNAME_MACHINE}-unknown-linux-gnu${LIBC}
+	echo ${UNAME_MACHINE}-unknown-linux${LIBC}
 	exit 0 ;;
     parisc:Linux:*:* | hppa:Linux:*:*)
 	# Look for CPU level
 	case `grep '^cpu[^a-z]*:' /proc/cpuinfo 2>/dev/null | cut -d' ' -f2` in
-	  PA7*) echo hppa1.1-unknown-linux-gnu ;;
-	  PA8*) echo hppa2.0-unknown-linux-gnu ;;
-	  *)    echo hppa-unknown-linux-gnu ;;
+	  PA7*) echo hppa1.1-unknown-linux ;;
+	  PA8*) echo hppa2.0-unknown-linux ;;
+	  *)    echo hppa-unknown-linux ;;
 	esac
 	exit 0 ;;
     parisc64:Linux:*:* | hppa64:Linux:*:*)
-	echo hppa64-unknown-linux-gnu
+	echo hppa64-unknown-linux
 	exit 0 ;;
     s390:Linux:*:* | s390x:Linux:*:*)
 	echo ${UNAME_MACHINE}-ibm-linux
 	exit 0 ;;
     sh64*:Linux:*:*)
-    	echo ${UNAME_MACHINE}-unknown-linux-gnu
+    	echo ${UNAME_MACHINE}-unknown-linux
 	exit 0 ;;
     sh*:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux-gnu
+	echo ${UNAME_MACHINE}-unknown-linux
 	exit 0 ;;
     sparc:Linux:*:* | sparc64:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux-gnu
+	echo ${UNAME_MACHINE}-unknown-linux
 	exit 0 ;;
     x86_64:Linux:*:*)
-	echo x86_64-unknown-linux-gnu
+	echo x86_64-unknown-linux
 	exit 0 ;;
     i*86:Linux:*:*)
 	# The BFD linker knows what the default object file format is, so
@@ -929,47 +929,20 @@ EOF
 				    p'`
         case "$ld_supported_targets" in
 	  elf32-i386)
-		TENTATIVE="${UNAME_MACHINE}-pc-linux-gnu"
+		TENTATIVE="${UNAME_MACHINE}-pc-linux"
 		;;
 	  a.out-i386-linux)
-		echo "${UNAME_MACHINE}-pc-linux-gnuaout"
+		echo "${UNAME_MACHINE}-pc-linux-aout"
 		exit 0 ;;
 	  coff-i386)
-		echo "${UNAME_MACHINE}-pc-linux-gnucoff"
+		echo "${UNAME_MACHINE}-pc-linux-coff"
 		exit 0 ;;
 	  "")
-		# Either a pre-BFD a.out linker (linux-gnuoldld) or
+		# Either a pre-BFD a.out linker (linux-oldld) or
 		# one that does not give us useful --help.
-		echo "${UNAME_MACHINE}-pc-linux-gnuoldld"
+		echo "${UNAME_MACHINE}-pc-linux-oldld"
 		exit 0 ;;
 	esac
-	# Determine whether the default compiler is a.out or elf
-	eval $set_cc_for_build
-	sed 's/^	//' << EOF >$dummy.c
-	#include <features.h>
-	#ifdef __ELF__
-	# ifdef __GLIBC__
-	#  if __GLIBC__ >= 2
-	LIBC=gnu
-	#  else
-	LIBC=gnulibc1
-	#  endif
-	# else
-	LIBC=gnulibc1
-	# endif
-	#else
-	#ifdef __INTEL_COMPILER
-	LIBC=gnu
-	#else
-	LIBC=gnuaout
-	#endif
-	#endif
-	#ifdef __dietlibc__
-	LIBC=dietlibc
-	#endif
-EOF
-	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep ^LIBC=`
-	test x"${LIBC}" != x && echo "${UNAME_MACHINE}-pc-linux-${LIBC}" && exit 0
 	test x"${TENTATIVE}" != x && echo "${TENTATIVE}" && exit 0
 	;;
     i*86:DYNIX/ptx:4*:*)
