@@ -17,6 +17,8 @@ if File.exist? CONFIG['LIBRUBY_SO']
     dldpath = "LIBPATH"
   when /-beos/
     dldpath = "LIBRARY_PATH"
+  when /-darwin/
+    dldpath = "DYLD_LIBRARY_PATH"
   else
     dldpath = "LD_LIBRARY_PATH"
   end

@@ -1,3 +1,7 @@
+Fri Aug  1 23:33:36 2003  Masatoshi Seki  <mas@snow.local.>
+
+	* rubytest.rb: set dldpath on darwin.
+
 Fri Aug  1 23:07:38 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: convert RD to RDoc. Thanks William Webber.
