@@ -1,3 +1,7 @@
+Wed Mar  6 17:58:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* dln.c (dln_load): use LoadLibrary instead of LoadLibraryEx.
+
 Tue Mar  5 03:39:27 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* ext/extmk.rb.in (create_makefile): remove unnecessary -L option from
