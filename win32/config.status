@@ -48,7 +48,7 @@ s%@LDSHARED@%cl -LD%g
 s%@DLEXT@%dll%g
 s%@STRIP@%%g
 s%@EXTSTATIC@%%g
-s%@setup@%Setup.nt%g
+s%@setup@%Setup
 s%@LIBRUBY_LDSHARED@%%g
 s%@LIBRUBY_DLDFLAGS@%%g
 s%@RUBY_INSTALL_NAME@%ruby%g

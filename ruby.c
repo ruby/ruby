@@ -87,7 +87,7 @@ usage(name)
 "-Fpattern       split() pattern for autosplit (-a)",
 "-i[extension]   edit ARGV files in place (make backup if extension supplied)",
 "-Idirectory     specify $LOAD_PATH directory (may be used more than once)",
-"-K[kcode]       specifies KANJI (Japanese) code-set",
+"-Kkcode         specifies KANJI (Japanese) code-set",
 "-l              enable line ending processing",
 "-n              assume 'while gets; ...; end' loop around your script",
 "-p              assume loop like -n but print line also like sed",
@@ -98,7 +98,7 @@ usage(name)
 "-v              enables verbose mode",
 "-w              turn warnings on for compilation of your script",
 "-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
-"-X[directory]   cd to directory, before executing your script",
+"-Xdirectory     cd to directory, before executing your script",
 "--copyright     print the copyright",
 "--version       print the version",
 "\n",
@@ -604,12 +604,6 @@ load_file(fname, script)
 	    xflag = Qfalse;
 	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
-#if defined(__EMX__) || defined(OS2)
-/*
-		if (p = strstr(RSTRING(line)->ptr, "extproc"))
-		    line = io_gets(f);
-*/
-#endif /* __EMX__ */
 		if (RSTRING(line)->len > 2
 		    && RSTRING(line)->ptr[0] == '#'
 		    && RSTRING(line)->ptr[1] == '!') {

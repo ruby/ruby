@@ -279,6 +279,7 @@ EXPORTS
 	rb_apply
 	rb_funcall
 	rb_funcall2
+	rb_funcall3
 	rb_backtrace
 	rb_frame_last_func
 	rb_obj_instance_eval

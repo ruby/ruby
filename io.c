@@ -184,7 +184,7 @@ io_write(io, str)
 	str = rb_obj_as_string(str);
     if (RSTRING(str)->len == 0) return INT2FIX(0);
 
-    if (BUILTIN_TYPE(io) != T_FILE) {
+    if (TYPE(io) != T_FILE) {
 	/* port is not IO, call write method for it. */
 	return rb_funcall(io, id_write, 1, str);
     }
@@ -1823,13 +1823,12 @@ rb_io_printf(argc, argv, out)
     VALUE argv[];
     VALUE out;
 {
-    rb_funcall(out, id_write, 1, rb_f_sprintf(argc, argv));
-
+    io_write(out, rb_f_sprintf(argc, argv));
     return Qnil;
 }
 
 static VALUE
-rb_rb_f_printf(argc, argv)
+rb_f_printf(argc, argv)
     int argc;
     VALUE argv[];
 {
@@ -1839,15 +1838,12 @@ rb_rb_f_printf(argc, argv)
     if (TYPE(argv[0]) == T_STRING) {
 	out = rb_defout;
     }
-    else if (rb_respond_to(argv[0], id_write)) {
+    else {
 	out = argv[0];
 	argv++;
 	argc--;
     }
-    else {
-	rb_raise(rb_eNameError, "output must responds to `write'");
-    }
-    rb_funcall(out, id_write, 1, rb_f_sprintf(argc, argv));
+    io_write(out, rb_f_sprintf(argc, argv));
 
     return Qnil;
 }
@@ -3151,7 +3147,7 @@ Init_IO()
     rb_define_global_function("syscall", rb_f_syscall, -1);
 
     rb_define_global_function("open", rb_f_open, -1);
-    rb_define_global_function("printf", rb_rb_f_printf, -1);
+    rb_define_global_function("printf", rb_f_printf, -1);
     rb_define_global_function("print", rb_f_print, -1);
     rb_define_global_function("putc", rb_f_putc, 1);
     rb_define_global_function("puts", rb_f_puts, -1);

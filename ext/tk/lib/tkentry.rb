@@ -7,7 +7,7 @@ require 'tk.rb'
 
 class TkEntry<TkLabel
   WidgetClassName = 'Entry'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end

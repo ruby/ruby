@@ -32,3 +32,4 @@ error = ''
 end
 print error
 print "test failed\n"
+exit 1

@@ -8,29 +8,7 @@ include Config
 
 SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 
-$cache_mod = false
-$lib_cache = {}
-$lib_found = {}
-$func_cache = {}
-$func_found = {}
-$hdr_cache = {}
-$hdr_found = {}
-
 $config_cache = CONFIG["compile_dir"]+"/ext/config.cache"
-if File.exist?($config_cache) then
-  f = open($config_cache, "r")
-  while f.gets
-    case $_
-    when /^lib: (.+) (yes|no)/
-      $lib_cache[$1] = $2
-    when /^func: ([\w_]+) (yes|no)/
-      $func_cache[$1] = $2
-    when /^hdr: (.+) (yes|no)/
-      $hdr_cache[$1] = $2
-    end
-  end
-  f.close
-end
 
 $srcdir = CONFIG["srcdir"]
 $libdir = CONFIG["libdir"]+"/ruby/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
@@ -160,16 +138,6 @@ end
 def have_library(lib, func="main")
   printf "checking for %s() in -l%s... ", func, lib
   STDOUT.flush
-  if $lib_cache[lib]
-    if $lib_cache[lib] == "yes"
-      $libs = append_library($libs, lib)
-      print "(cached) yes\n"
-      return true
-    else
-      print "(cached) no\n"
-      return false
-    end
-  end
 
   if func && func != ""
     libs = append_library($libs, lib)
@@ -195,8 +163,6 @@ int t() { #{func}(); return 0; }
 SRC
     end
     unless r
-      $lib_cache[lib] = 'no'
-      $cache_mod = true
       print "no\n"
       return false
     end
@@ -205,8 +171,6 @@ SRC
   end
 
   $libs = libs
-  $lib_cache[lib] = 'yes'
-  $cache_mod = true
   print "yes\n"
   return true
 end
@@ -236,16 +200,6 @@ end
 def have_func(func)
   printf "checking for %s()... ", func
   STDOUT.flush
-  if $func_cache[func]
-    if $func_cache[func] == "yes"
-      $defs.push(format("-DHAVE_%s", func.upcase))
-      print "(cached) yes\n"
-      return true
-    else
-      print "(cached) no\n"
-      return false
-    end
-  end
 
   libs = $libs
 
@@ -271,14 +225,10 @@ int t() { #{func}(); return 0; }
 SRC
   end
   unless r
-    $func_found[func] = 'no'
-    $cache_mod = true
     print "no\n"
     return false
   end
   $defs.push(format("-DHAVE_%s", func.upcase))
-  $func_found[func] = 'yes'
-  $cache_mod = true
   print "yes\n"
   return true
 end
@@ -286,30 +236,15 @@ end
 def have_header(header)
   printf "checking for %s... ", header
   STDOUT.flush
-  if $hdr_cache[header]
-    if $hdr_cache[header] == "yes"
-      header.tr!("a-z./\055", "A-Z___")
-      $defs.push(format("-DHAVE_%s", header))
-      print "(cached) yes\n"
-      return true
-    else
-      print "(cached) no\n"
-      return false
-    end
-  end
 
   unless try_cpp(<<"SRC")
 #include <#{header}>
 SRC
-    $hdr_found[header] = 'no'
-    $cache_mod = true
     print "no\n"
     return false
   end
-  $hdr_found[header] = 'yes'
   header.tr!("a-z./\055", "A-Z___")
   $defs.push(format("-DHAVE_%s", header))
-  $cache_mod = true
   print "yes\n"
   return true
 end
@@ -493,32 +428,6 @@ EOMF
   end
   mfile.close
 
-  if $cache_mod
-    begin
-      f = open($config_cache, "w")
-      for k,v in $lib_cache
-	f.printf "lib: %s %s\n", k, v.downcase
-      end
-      for k,v in $lib_found
-	f.printf "lib: %s %s\n", k, v.downcase
-      end
-      for k,v in $func_cache
-	f.printf "func: %s %s\n", k, v.downcase
-      end
-      for k,v in $func_found
-	f.printf "func: %s %s\n", k, v.downcase
-      end
-      for k,v in $hdr_cache
-	f.printf "hdr: %s %s\n", k, v.downcase
-      end
-      for k,v in $hdr_found
-	f.printf "hdr: %s %s\n", k, v.downcase
-      end
-      f.close
-    rescue
-    end
-  end
-  
   if RUBY_PLATFORM =~ /beos/
     if RUBY_PLATFORM =~ /^powerpc/ then
       deffilename = "ruby.exp"

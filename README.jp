@@ -39,6 +39,7 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい強力
   CVS password: guest
   $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs checkout ruby
 
+
 * ホームページ
 
 RubyのホームページのURLは
@@ -134,7 +135,7 @@ UNIXであればconfigureがほとんどの差異を吸収してくれるはずで
 
 * 配布条件
 
-RUbyはフリーソフトウェアです．GPL(the GNU General Public
+Rubyはフリーソフトウェアです．GPL(the GNU General Public
 Licence)または以下に示す条件でRubyを再配布できます．GPLにつ
 いてはCOPYINGファイルを参照して下さい．
 
@@ -171,7 +172,7 @@ Licence)または以下に示す条件でRubyを再配布できます．GPLにつ
   4. 他のプログラムへの引用はいかなる目的であれ自由です．た
      だし，Rubyに含まれる他の作者によるコードは，それぞれの
      作者の意向による制限が加えられます．具体的にはgc.c(一部)，
-     util.c(一部)，st.[ch]，regex.[ch] および.  /missingディ
+     util.c(一部)，st.[ch]，regex.[ch] および ./missingディ
      レクトリ下のファイル群が該当します．それぞれの配布条件
      などに付いては各ファイルを参照してください．
 

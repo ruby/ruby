@@ -22,11 +22,11 @@ PTY.spawn("/bin/csh") do
   
   begin
     while true
-      c = r_pty.getc
-      next if c.nil?
-      print c.chr
+      c = r_pty.sysread(512)
+      break if c.nil?
+      print c
       STDOUT.flush
-      logfile.print c.chr
+      logfile.print c
     end
   rescue
   #  print $@,':',$!,"\n"

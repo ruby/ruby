@@ -41,6 +41,8 @@
 #define DLEXT ".dll"
 #define RUBY_LIB "/usr/local/lib/ruby/1.4"
 #define RUBY_ARCHLIB "/usr/local/lib/ruby/1.4/i386-mswin32"
+#define RUBY_SITE_LIB "/usr/local/lib/ruby/1.4/site_ruby"
+#define RUBY_SITE_ARCHLIB "/usr/local/lib/ruby/1.4/site_ruby/i386-mswin32"
 #define RUBY_PLATFORM "i386-mswin32"
 
 #define SIZEOF_INT   4

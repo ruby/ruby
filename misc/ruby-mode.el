@@ -694,8 +694,8 @@ An end of a defun is found by moving forward from the beginning of one."
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
        2 font-lock-type-face)
      ;; functions
-     '("^\\s *def\\s *\\<\\(\\(\\w\\|_\\)+\\(\\.\\|::\\)\\)?\\(\\(\\w\\|_\\)+\\??\\)\\>"
-       4 font-lock-function-name-face t)
+     '("^\\s *def\\s *\\([^( ]+\\)"
+       1 font-lock-function-name-face)
      ;; symbols
      '("\\(^\\|[^:]\\)\\(:\\(\\w\\|_\\)+\\??\\)\\b"
        2 font-lock-reference-face))

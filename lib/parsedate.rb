@@ -27,7 +27,7 @@ module ParseDate
     if date.sub!(/(#{DAYPAT})[a-z]*,?/i, ' ')
       wday = DAYS[$1.downcase]
     end
-    if date.sub!(/(\d+):(\d+)(?::(\d+))?\s*(am|pm)?\s*(?:\s+([a-z]{1,4}(?:\s+[a-z]{1,4})?|[-+]\d{4}))?/i, ' ')
+    if date.sub!(/(\d+):(\d+)(?::(\d+))?(?:\s*(am|pm))?(?:\s+([a-z]{1,4}(?:\s+[a-z]{1,4})?|[-+]\d{4}))?/i, ' ')
       hour = $1.to_i
       min = $2.to_i
       if $3
@@ -62,6 +62,16 @@ module ParseDate
       mday = $1.to_i
       mon = MONTHS[$2.downcase]
       year = $3.to_i
+    elsif date.sub!(/(\d+)-(#{MONTHPAT})-(\d+)/i, ' ')
+      mday = $1.to_i
+      mon = MONTHS[$2.downcase]
+      year = $3.to_i
+    end
+    p date
+    if date.sub!(/\d{4}/i, ' ')
+      year = $&.to_i
+    elsif date.sub!(/\d\d/i, ' ')
+      year = $&.to_i
     end
     if guess
       if year < 100
@@ -71,10 +81,6 @@ module ParseDate
 	  year += 2000
 	end
       end
-    elsif date.sub!(/(\d+)-(#{MONTHPAT})-(\d+)/i, ' ')
-      mday = $1.to_i
-      mon = MONTHS[$2.downcase]
-      year = $3.to_i
     end
     return year, mon, mday, hour, min, sec, zone, wday
   end

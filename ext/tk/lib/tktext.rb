@@ -129,7 +129,7 @@ class TkText<TkTextWin
   include TkTreatTextTagFont
 
   WidgetClassName = 'Text'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end
@@ -235,40 +235,20 @@ class TkText<TkTextWin
     tk_send 'xview', '-pickplace', *what
   end
 
-  def tag_add(tag,index1,index2=None)
+  def tag_add(tag, index1, index2=None)
     tk_send 'tag', 'add', tag, index1, index2
   end
 
-  def _tag_bind_core(mode, tag, seq, cmd=Proc.new, args=nil)
-    id = install_bind(cmd, args)
-    tk_send 'tag', 'bind', tag, "<#{tk_event_sequence(seq)}>", mode + id
-    # _addcmd cmd
-  end
-  private :_tag_bind_core
-
   def tag_bind(tag, seq, cmd=Proc.new, args=nil)
-    _tag_bind_core('', tag, seq, cmd, args=nil)
+    _bind(['tag', 'bind', tag], seq, cmd, args)
   end
 
   def tag_bind_append(tag, seq, cmd=Proc.new, args=nil)
-    _tag_bind_core('+', tag, seq, cmd, args=nil)
+    _bind_append(['tag', 'bind', tag], seq, cmd, args)
   end
 
   def tag_bindinfo(tag, context=nil)
-    if context
-      (tk_send('tag', 'bind', tag, 
-	       "<#{tk_event_sequence(context)}>")).collect{|cmdline|
-	if cmdline =~ /^rb_out (c\d+)\s+(.*)$/
-	  [Tk_CMDTBL[$1], $2]
-	else
-	  cmdline
-	end
-      }
-    else
-      tk_split_list(tk_send('tag', 'bind', tag)).filter{|seq|
-	seq[1..-2].gsub(/></,',')
-      }
-    end
+    _bindinfo(['tag', 'bind', tag], context)
   end
 
   def tag_cget(tag, key)
@@ -521,40 +501,17 @@ class TkTextTag<TkObject
   def configinfo(key=nil)
     @t.tag_configinfo @id, key
   end
-#  def configinfo(key=nil)
-#    if key
-#      conf = tk_split_list(tk_call(@t.path, 'tag','configure',@id,"-#{key}"))
-#      conf[0] = conf[0][1..-1]
-#      conf
-#    else
-#      tk_split_list(tk_call(@t.path, 'tag', 'configure', @id)).collect{|conf|
-#	conf[0] = conf[0][1..-1]
-#	conf
-#      }
-#    end
-#  end
 
   def bind(seq, cmd=Proc.new, args=nil)
-    id = install_bind(cmd, args)
-    tk_call @t.path, 'tag', 'bind', @id, "<#{tk_event_sequence(seq)}>", id
-    # @t._addcmd cmd
+    _bind([@t.path, 'tag', 'bind', @id], seq, cmd, args)
+  end
+
+  def bind_append(seq, cmd=Proc.new, args=nil)
+    _bind_append([@t.path, 'tag', 'bind', @id], seq, cmd, args)
   end
 
   def bindinfo(context=nil)
-    if context
-      (tk_call(@t.path, 'tag', 'bind', @id, 
-	       "<#{tk_event_sequence(context)}>")).collect{|cmdline|
-	if cmdline =~ /^rb_out (c\d+)\s+(.*)$/
-	  [Tk_CMDTBL[$1], $2]
-	else
-	  cmdline
-	end
-      }
-    else
-      tk_split_list(tk_call(@t.path, 'tag', 'bind', @id)).filter{|seq|
-	seq[1..-2].gsub(/></,',')
-      }
-    end
+    _bindinfo([@t.path, 'tag', 'bind', @id], context)
   end
 
   def raise(above=None)

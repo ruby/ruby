@@ -798,7 +798,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		le = uv_to_utf8(buf, l);
-		rb_str_cat(res, (char*)&buf, le);
+		rb_str_cat(res, (char*)buf, le);
 	    }
 	    break;
 

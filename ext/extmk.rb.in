@@ -19,10 +19,6 @@ $extlist = []
 
 $includedir = "@includedir@".gsub(/\$\{prefix\}|\$\(prefix\)/,'@prefix@')
 
-$cache_mod = false
-$lib_cache = {}
-$func_cache = {}
-$hdr_cache = {}
 $top_srcdir = "@top_srcdir@"
 if $top_srcdir !~ "^/"
   # get absolute path
@@ -35,21 +31,6 @@ $:.push $top_srcdir
 $:.push $top_srcdir+"/lib"
 
 require 'find'
-
-if File.exist?("config.cache") then
-  f = open("config.cache", "r")
-  while f.gets
-    case $_
-    when /^lib: (.+) (yes|no)/
-      $lib_cache[$1] = $2
-    when /^func: ([\w_]+) (yes|no)/
-      $func_cache[$1] = $2
-    when /^hdr: (.+) (yes|no)/
-      $hdr_cache[$1] = $2
-    end
-  end
-  f.close
-end
 
 def older(file1, file2)
   if !File.exist?(file1) then
@@ -175,15 +156,6 @@ def append_library(libs, lib)
 end
 
 def have_library(lib, func="main")
-  if $lib_cache[lib]
-    if $lib_cache[lib] == "yes"
-      $libs = append_library($libs, lib)
-      return true
-    else
-      return false
-    end
-  end
-
   if func && func != ""
     libs = append_library($libs, lib)
     if /mswin32/ =~ RUBY_PLATFORM
@@ -208,8 +180,6 @@ int t() { #{func}(); return 0; }
 SRC
     end
     unless r
-      $lib_cache[lib] = 'no'
-      $cache_mod = true
       return false
     end
   else
@@ -217,8 +187,6 @@ SRC
   end
 
   $libs = libs
-  $lib_cache[lib] = 'yes'
-  $cache_mod = true
   return true
 end
 
@@ -240,15 +208,6 @@ SRC
 end
 
 def have_func(func)
-  if $func_cache[func]
-    if $func_cache[func] == "yes"
-      $defs.push(format("-DHAVE_%s", func.upcase))
-      return true
-    else
-      return false
-    end
-  end
-
   libs = $libs
 
   if /mswin32/ =~ RUBY_PLATFORM
@@ -273,38 +232,20 @@ int t() { #{func}(); return 0; }
 SRC
   end
   unless r
-    $func_cache[func] = 'no'
-    $cache_mod = true
     return false
   end
   $defs.push(format("-DHAVE_%s", func.upcase))
-  $func_cache[func] = 'yes'
-  $cache_mod = true
   return true
 end
 
 def have_header(header)
-  if $hdr_cache[header]
-    if $hdr_cache[header] == "yes"
-      header.tr!("a-z./\055", "A-Z___")
-      $defs.push(format("-DHAVE_%s", header))
-      return true
-    else
-      return false
-    end
-  end
-
   unless try_cpp(<<"SRC")
 #include <#{header}>
 SRC
-    $hdr_cache[header] = 'no'
-    $cache_mod = true
     return false
   end
-  $hdr_cache[header] = 'yes'
   header.tr!("a-z./\055", "A-Z___")
   $defs.push(format("-DHAVE_%s", header))
-  $cache_mod = true
   return true
 end
 
@@ -674,20 +615,6 @@ for d in Dir["#{$top_srcdir}/ext/*"]
     end
   end
   extmake(d)
-end
-
-if $cache_mod
-  f = open("config.cache", "w")
-  for k,v in $lib_cache
-    f.printf "lib: %s %s\n", k, v
-  end
-  for k,v in $func_cache
-    f.printf "func: %s %s\n", k, v
-  end
-  for k,v in $hdr_cache
-    f.printf "hdr: %s %s\n", k, v
-  end
-  f.close
 end
 
 if $install or $clean

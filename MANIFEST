@@ -80,7 +80,6 @@ cygwin/GNUmakefile.in
 ext/Setup
 ext/Setup.dj
 ext/Setup.emx
-ext/Setup.nt
 ext/Setup.x68
 ext/aix_mksym.rb
 ext/mswin32_extmk.rb

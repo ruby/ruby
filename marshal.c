@@ -692,7 +692,8 @@ r_object(arg)
 
       case TYPE_ARRAY:
 	{
-	    volatile int len = r_long(arg);
+	    volatile int len = r_long(arg); /* gcc 2.7.2.3 -O2 bug?? */
+
 	    v = rb_ary_new2(len);
 	    r_regist(v, arg);
 	    while (len--) {

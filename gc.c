@@ -890,7 +890,7 @@ void
 rb_gc()
 {
     struct gc_list *list;
-    struct FRAME *frame;
+    struct FRAME * volatile frame; /* gcc 2.7.2.3 -O2 bug??  */
     jmp_buf save_regs_gc_mark;
     VALUE stack_end;
 
@@ -907,8 +907,6 @@ rb_gc()
     /* mark frame stack */
     for (frame = ruby_frame; frame; frame = frame->prev) {
 	rb_gc_mark_frame(frame); 
-    }
-    for (frame = ruby_frame; frame; frame = frame->prev) {
 	if (frame->tmp) {
 	    struct FRAME *tmp = frame->tmp;
 	    while (tmp) {
@@ -924,7 +922,7 @@ rb_gc()
     FLUSH_REGISTER_WINDOWS;
     /* This assumes that all registers are saved into the jmp_buf */
     setjmp(save_regs_gc_mark);
-    mark_locations_array((VALUE*)&save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
+    mark_locations_array((VALUE*)save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
     rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)&stack_end);
 #if defined(THINK_C) || defined(__human68k__)
 #ifndef __human68k__

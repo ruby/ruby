@@ -1,3 +1,21 @@
+Sat Aug 21 11:30:51 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (ADJ): should not adjust addresses to data on heap.
+
+Fri Aug 20 20:50:58 1999  Kenji Nagasawa  <kenn@hma.att.ne.jp>
+
+	* defines.h (PATH_SEP): path separator is ";" for OS/2.
+
+Thu Aug 19 10:50:43 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* gc.c (rb_gc): add volatile to avoid GCC optimaize bug(?).
+
+Wed Aug 18 23:48:10 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* due to disk trouble, some change records were lost.  several
+	  modification made to eval.c, gc.c, io.c, pack.c,
+	  ext/extmk.rb.in, and lib/mkmf.rb.
+
 Fri Aug 13 15:41:39 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* stable version 1.4.0 released.

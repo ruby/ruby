@@ -8,6 +8,8 @@ require "tcltklib"
 require "tkutil"
 
 module TkComm
+  WidgetClassNames = {}
+
   None = Object.new
   def None.to_s
     'None'
@@ -34,7 +36,7 @@ module TkComm
       return path
     end
 
-    ruby_class = TkClassBind::WidgetClassNameTBL[tk_class]
+    ruby_class = WidgetClassNames[tk_class]
     gen_class_name = ruby_class.name + 'GeneratedOnTk'
     unless Object.const_defined? gen_class_name
       eval "class #{gen_class_name}<#{ruby_class.name}
@@ -328,45 +330,36 @@ module TkComm
     end
   end
 
-  def _bind_core(mode, path, context, cmd, args=nil)
-    id = install_bind(cmd, args)
+  def _bind_core(mode, what, context, cmd, args=nil)
+    id = install_bind(cmd, args) if cmd
     begin
-      tk_call 'bind', path, "<#{tk_event_sequence(context)}>", mode + id
+      tk_call(*(what + ["<#{tk_event_sequence(context)}>", mode + id]))
     rescue
-      uninstall_cmd(id)
+      uninstall_cmd(id) if cmd
       fail
     end
   end
 
-  def _bind(path, context, cmd, args=nil)
-    _bind_core('', path, context, cmd, args)
+  def _bind(what, context, cmd, args=nil)
+    _bind_core('', what, context, cmd, args)
   end
 
-  def _bind_append(path, context, cmd, args=nil)
-    _bind_core('+', path, context, cmd, args)
+  def _bind_append(what, context, cmd, args=nil)
+    _bind_core('+', what, context, cmd, args)
   end
   private :install_bind, :tk_event_sequence, :_bind_core, :_bind, :_bind_append
 
   def bind_all(context, cmd=Proc.new, args=nil)
-    _bind 'all', context, cmd, args
+    _bind(['bind', 'all'], context, cmd, args)
   end
 
   def bind_append_all(context, cmd=Proc.new, args=nil)
-    _bind_append 'all', context, cmd, args
+    _bind_append(['bind', 'all'], context, cmd, args)
   end
 
-  def bind(tagOrClass, context, cmd=Proc.new, args=nil)
-    _bind tagOrClass, context, cmd, args
-  end
-
-  def bind_append(tagOrClass, context, cmd=Proc.new, args=nil)
-    _bind_append tagOrClass, context, cmd, args
-  end
-
-  def _bindinfo(tagOrClass, context=nil)
+  def _bindinfo(what, context=nil)
     if context
-      (tk_call('bind', tagOrClass, 
-	       "<#{tk_event_sequence(context)}>")).collect{|cmdline|
+      tk_call(*what+["<#{tk_event_sequence(context)}>"]).collect {|cmdline|
 	if cmdline =~ /^rb_out (c\d+)\s+(.*)$/
 	  [Tk_CMDTBL[$1], $2]
 	else
@@ -374,14 +367,14 @@ module TkComm
 	end
       }
     else
-      tk_split_list(tk_call 'bind', tagOrClass).collect{|seq|
+      tk_split_list(tk_call(*what)).collect{|seq|
 	seq[1..-2].gsub(/></,',')
       }
     end
   end
 
   def bindinfo(tagOrClass, context=nil)
-    _bindinfo tagOrClass, context
+    _bindinfo(['bind', tagOrClass], context)
   end
 
   def pack(*args)
@@ -971,7 +964,7 @@ class TkVarAccess<TkVariable
   def initialize(varname, val=nil)
     @id = varname
     if val
-      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"'
+      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #"
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     end
   end
@@ -1648,15 +1641,15 @@ class TkObject<TkKernel
   end
 
   def bind(context, cmd=Proc.new, args=nil)
-    _bind path, context, cmd, args
+    _bind(["bind", to_eval], context, cmd, args)
   end
 
   def bind_append(context, cmd=Proc.new, args=nil)
-    _bind_append path, context, cmd, args
+    _bind_append(["bind", to_eval], context, cmd, args)
   end
 
   def bindinfo(context=nil)
-    _bindinfo path, context
+    _bindinfo(['bind', to_eval], context)
   end
 
   def event_generate(context, keys=nil)
@@ -1681,28 +1674,8 @@ class TkObject<TkKernel
   end
 end
 
-module TkClassBind
-  WidgetClassNameTBL = {}
-
-  def TkClassBind.name2class(name)
-    WidgetClassNameTBL[name]
-  end
-
-  def bind(context, cmd=Proc.new, args=nil)
-    Tk.bind to_eval, context, cmd, args
-  end
-
-  def bind_append(context, cmd=Proc.new, args=nil)
-    Tk.bind_append to_eval, context, cmd, args
-  end
-
-  def bindinfo(context=nil)
-    Tk.bindinfo to_eval, context
-  end
-end
-
 class TkWindow<TkObject
-  extend TkClassBind
+#  extend TkClassBind
 
   def initialize(parent=nil, keys=nil)
     install_win(if parent then parent.path end)
@@ -1853,7 +1826,7 @@ class TkWindow<TkObject
       tk_split_list(tk_call('bindtags', path)).collect{|tag|
 	if tag == nil
 	  '.'
-	elsif tag.kind_of?(String) && (cls = TkClassBind.name2class(tag))
+	elsif tag.kind_of?(String) && (cls = WidgetClassNames[tag])
 	  cls
 	else
 	  tag
@@ -1874,7 +1847,7 @@ class TkRoot<TkWindow
   end
 
   WidgetClassName = 'Tk'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end
@@ -1891,7 +1864,7 @@ class TkToplevel<TkWindow
   include Wm
 
   WidgetClassName = 'Toplevel'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end
@@ -1951,7 +1924,7 @@ end
 
 class TkFrame<TkWindow
   WidgetClassName = 'Frame'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end
@@ -1991,7 +1964,7 @@ end
 
 class TkLabel<TkWindow
   WidgetClassName = 'Label'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end
@@ -2004,7 +1977,7 @@ class TkLabel<TkWindow
 end
 
 class TkButton<TkLabel
-  TkClassBind::WidgetClassNameTBL['Button'] = self
+  WidgetClassNames['Button'] = self
   def TkButton.to_eval
     'Button'
   end
@@ -2020,7 +1993,7 @@ class TkButton<TkLabel
 end
 
 class TkRadioButton<TkButton
-  TkClassBind::WidgetClassNameTBL['Radiobutton'] = self
+  WidgetClassNames['Radiobutton'] = self
   def TkRadioButton.to_eval
     'Radiobutton'
   end
@@ -2039,7 +2012,7 @@ class TkRadioButton<TkButton
 end
 
 class TkCheckButton<TkRadioButton
-  TkClassBind::WidgetClassNameTBL['Checkbutton'] = self
+  WidgetClassNames['Checkbutton'] = self
   def TkCheckButton.to_eval
     'Checkbutton'
   end
@@ -2052,7 +2025,7 @@ class TkCheckButton<TkRadioButton
 end
 
 class TkMessage<TkLabel
-  TkClassBind::WidgetClassNameTBL['Message'] = self
+  WidgetClassNames['Message'] = self
   def TkMessage.to_eval
     'Message'
   end
@@ -2063,7 +2036,7 @@ end
 
 class TkScale<TkWindow
   WidgetClassName = 'Scale'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end
@@ -2091,7 +2064,7 @@ end
 
 class TkScrollbar<TkWindow
   WidgetClassName = 'Scrollbar'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end
@@ -2158,7 +2131,7 @@ class TkTextWin<TkWindow
 end
 
 class TkListbox<TkTextWin
-  TkClassBind::WidgetClassNameTBL['Listbox'] = self
+  WidgetClassNames['Listbox'] = self
   def TkListbox.to_eval
     'Listbox'
   end
@@ -2315,7 +2288,7 @@ class TkMenu<TkWindow
   include TkTreatMenuEntryFont
 
   WidgetClassName = 'Menu'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end
@@ -2395,7 +2368,7 @@ class TkMenu<TkWindow
 end
 
 class TkMenubutton<TkLabel
-  TkClassBind::WidgetClassNameTBL['Menubutton'] = self
+  WidgetClassNames['Menubutton'] = self
   def TkMenubutton.to_eval
     'Menubutton'
   end

@@ -5359,7 +5359,7 @@ blk_copy_prev(block)
 	MEMCPY(tmp, block->prev, struct BLOCK, 1);
 	if (tmp->frame.argc > 0) {
 	    tmp->frame.argv = ALLOC_N(VALUE, tmp->frame.argc);
-	    MEMCPY(tmp->frame.argv, block->frame.argv, VALUE, tmp->frame.argc);
+	    MEMCPY(tmp->frame.argv, block->prev->frame.argv, VALUE, tmp->frame.argc);
 	}
 	scope_dup(tmp->scope);
 	block->prev = tmp;
@@ -6016,8 +6016,8 @@ timeofday()
 
 static thread_t main_thread;
 
-#define ADJ(addr) (void*)(((VALUE*)(addr)-th->stk_pos)+th->stk_ptr)
-#define STACK(addr) (th->stk_pos<(addr) && (addr)<th->stk_pos+th->stk_len)
+#define STACK(addr) (th->stk_pos<(VALUE*)(addr) && (VALUE*)(addr)<th->stk_pos+th->stk_len)
+#define ADJ(addr) (void*)(STACK(addr)?(((VALUE*)(addr)-th->stk_pos)+th->stk_ptr):(VALUE*)(addr))
 
 static void
 thread_mark(th)
@@ -6041,6 +6041,7 @@ thread_mark(th)
     rb_mark_tbl(th->locals);
 
     /* mark data in copied stack */
+    if (th == curr_thread) return;
     if (th->status == THREAD_KILLED) return;
     if (th->stk_len == 0) return;  /* stack not active, no need to mark. */
     if (th->stk_ptr) {
@@ -6054,7 +6055,7 @@ thread_mark(th)
 	frame = ADJ(frame);
 	rb_gc_mark_frame(frame);
 	if (frame->tmp) {
-	    struct FRAME *tmp = ADJ(frame->tmp);
+	    struct FRAME *tmp = frame->tmp;
 
 	    while (tmp && tmp != top_frame) {
 		tmp = ADJ(tmp);

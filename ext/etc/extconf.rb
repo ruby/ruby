@@ -25,7 +25,7 @@ if  a or b or c
   etc_grep_header("pw_quota")
   etc_grep_header("pw_age")
   etc_grep_header("pw_class")
-  etc_grep_header("pw_comment")
+  etc_grep_header("pw_comment") unless /cygwin/ === RUBY_PLATFORM
   etc_grep_header("pw_expire")
   create_makefile("etc")
 end

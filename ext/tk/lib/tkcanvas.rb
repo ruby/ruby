@@ -131,7 +131,7 @@ class TkCanvas<TkWindow
   include TkTreatCItemFont
 
   WidgetClassName = 'Canvas'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  WidgetClassNames[WidgetClassName] = self
   def self.to_eval
     WidgetClassName
   end
@@ -179,31 +179,15 @@ class TkCanvas<TkWindow
   end
 
   def itembind(tag, context, cmd=Proc.new, args=nil)
-    id = install_bind(cmd, args)
-    begin
-      tk_send 'bind', tagid(tag), "<#{tk_event_sequence(context)}>", id
-    rescue
-      uninstall_cmd(cmd)
-      fail
-    end
-    # @cmdtbl.push id
+    _bind([path, "bind", tagid(tag)], context, cmd, args)
+  end
+
+  def itembind_append(tag, context, cmd=Proc.new, args=nil)
+    _bind_append([path, "bind", tagid(tag)], context, cmd, args)
   end
 
   def itembindinfo(tag, context=nil)
-    if context
-      (tk_send('bind', tagid(tag), 
-	       "<#{tk_event_sequence(context)}>")).collect{|cmdline|
-	if cmdline =~ /^rb_out (c\d+)\s+(.*)$/
-	  [Tk_CMDTBL[$1], $2]
-	else
-	  cmdline
-	end
-      }
-    else
-      tk_split_list(tk_send 'bind', tagid(tag)).filter{|seq|
-	seq[1..-2].gsub(/></,',')
-      }
-    end
+    _bindinfo([path, "bind", tagid(tag)], context)
   end
 
   def canvasx(x, *args)

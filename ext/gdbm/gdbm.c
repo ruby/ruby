@@ -334,9 +334,6 @@ fgdbm_store(obj, keystr, valstr)
     dbmp->di_size = -1;
     dbm = dbmp->di_dbm;
     if (gdbm_store(dbm, key, val, GDBM_REPLACE)) {
-#ifdef HAVE_DBM_CLAERERR
-	gdbm_clearerr(dbm);
-#endif
 	if (errno == EPERM) rb_sys_fail(0);
 	rb_raise(rb_eRuntimeError, "dbm_store failed");
     }

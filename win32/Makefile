@@ -80,7 +80,7 @@ OBJS          = array.obj \
 		version.obj \
 		$(MISSING)
 
-all:		miniruby$(EXEEXT) rbconfig.rb ext/extmk.rb ext/Setup.nt rubymw.lib $(MISCLIBS)
+all:		miniruby$(EXEEXT) rbconfig.rb ext/extmk.rb ext/Setup rubymw.lib $(MISCLIBS)
 		set LIB=..\..\win32;$(ORGLIBPATH)
 		@.\miniruby$(EXEEXT) -Xext extmk.rb
 
@@ -248,7 +248,7 @@ file.obj: file.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 gc.obj: gc.c ruby.h config.h defines.h intern.h rubysig.h st.h node.h env.h re.h regex.h
 hash.obj: hash.c ruby.h config.h defines.h intern.h st.h rubysig.h util.h
 inits.obj: inits.c ruby.h config.h defines.h intern.h
-io.obj: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
+io.obj: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h env.h
 main.obj: main.c ruby.h config.h defines.h intern.h
 marshal.obj: marshal.c ruby.h config.h defines.h intern.h rubyio.h st.h
 prec.obj: prec.c ruby.h config.h defines.h intern.h

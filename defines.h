@@ -48,7 +48,7 @@
 #define DOSISH 1
 #endif
 
-#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(OS2)
 #define PATH_SEP ";"
 #else
 #define PATH_SEP ":"

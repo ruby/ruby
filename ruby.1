@@ -25,12 +25,12 @@ ruby - Interpreted object-oriented scripting language
  ]  [ \c
 .BI -s \c
  ]  [ \c
-.BI -0 "[digit]"\c
+.BI -0 "[octal]"\c
  ]
        [ \c
 .BI -K "c"\c
  ]  [ \c
-.BI -e "script"\c
+.BI -e "command"\c
  ]  [ \c
 .BI -F "pattern"\c
  ] 
@@ -39,16 +39,16 @@ ruby - Interpreted object-oriented scripting language
  ]  [ \c
 .BI -I "dir"\c
  ] [ \c
-.BI -r "filename"\c
+.BI -r "library"\c
  ]  
        [ \c
 .BI -S \c
  ]  [ \c
 .BI -v \c
  ]  [ \c
-.BI -x "[dir]"\c
+.BI -x "[directory]"\c
  ]  [ \c
-.BI -X "[dir]"\c
+.BI -X "directory"\c
  ]  [ \c
 .BI -y \c
 ]
@@ -106,9 +106,9 @@ own prototype based object system using singleton methods, if you want
 to.
 .TP
 .B "\(bu Mix-in by modules"
-Ruby intentioanlly does not have the multiple inheritance as it is a
-souce of confusion.  Instead, Ruby has the ability to share
-implementations acrss the inheritance tree.  This is oftern called
+Ruby intentionally does not have the multiple inheritance as it is a
+source of confusion.  Instead, Ruby has the ability to share
+implementations across the inheritance tree.  This is often called
 `Mix-in'.
 .TP
 .B "\(bu Iterators"
@@ -137,8 +137,8 @@ interpreter on-the-fly.
 Ruby interpreter accepts following command-line options (switches).
 They are quite similar to those of Perl.
 .TP   
-.B -0digit
-pecifies the input record separator ($/) as an octal number. If no
+.B -0[octal]
+specifies the input record separator ($/) as an octal number. If no
 digit is given, the null character is taken as the separator.  Other
 switches may follow the digits.  -00 turns Ruby into paragraph mode.  -
 0777 makes Ruby read whole file at once as a single string since there
@@ -158,17 +158,17 @@ causes Ruby to check the syntax of the script and exit without
 executing. If there are no syntax errors, Ruby will print "Syntax
 OK" to the standard output.
 .TP
-.B -Kc
-specifies KANJI (Japanese) code-set.
+.B --copyright
+prints the copyright notice.
 .TP
 .B -d --debug
-turns on debug mode. $DEBUG will set TRUE.
+turns on debug mode. $DEBUG will set true.
 .TP
-.B -e script
+.B -e command
 specifies script from command-line while telling Ruby to not 
 search argv for script filenames.
 .TP
-.B -F regexp
+.B -F pattern
 specifies input field separator ($;).
 .TP
 .B -h --help
@@ -194,9 +194,12 @@ example:
 used to tell Ruby where to load the library scripts. Directory path
 will be added to the load-path variable ($:').
 .TP
+.B -Kkcode
+specifies KANJI (Japanese) code-set.
+.TP
 .B -l
 enables automatic line-ending processing, which means to firstly set
-$\ to the value of $/, and secondly chops every line read using chop!.
+$\e to the value of $/, and secondly chops every line read using chop!.
 .TP
 .B -n
 causes Ruby to assume the following loop around your script,
@@ -219,8 +222,8 @@ example:
 \&    MATZ
 .fi
 .TP
-.B -r filename
-causes Ruby to load the file using [4]require. It is useful
+.B -r library
+causes Ruby to load the library using require. It is useful
 with switches -n or -p.
 .TP
 .B -s
@@ -243,7 +246,7 @@ manner:
 .nf
 .ne 2          
 \&    #! /usr/local/bin/ruby
-\&    # This line makes the next one a comment in ruby \\
+\&    # This line makes the next one a comment in ruby \e
 \&      exec /usr/local/bin/ruby -S $0 $*
 .fi
 On some systems $0 does not always contain the full pathname, so you
@@ -254,9 +257,12 @@ csh.
 .TP
 .B -v --verbose
 enables verbose mode. Ruby will print its version at the beginning,
-and set the variable `$VERBOSE' to TRUE. Some methods print extra
-messages if this variable is TRUE. If this switch is given, and no
+and set the variable `$VERBOSE' to true. Some methods print extra
+messages if this variable is true. If this switch is given, and no
 other switches are present, Ruby quits after printing its version.
+.TP
+.B -T[level]
+turns on taint checks at the specified level (default 1).  
 .TP
 .B --version
 prints the version of Ruby interpreter.

@@ -7,10 +7,10 @@ when /mswin32/
   test_func = "WSACleanup"
   have_library("wsock32", "WSACleanup")
 when /cygwin/
-  $LDFLAGS << " -L/usr/lib" if File.directory?("/usr/lib")
-  $CFLAGS << " -I/usr/include"
+#  $LDFLAGS << " -L/usr/lib" if File.directory?("/usr/lib")
+#  $CFLAGS << " -I/usr/include"
   test_func = "socket"
-  have_library("bind", "gethostbyaddr")
+#  have_library("bind", "gethostbyaddr")
 when /beos/
   test_func = "socket"
   have_library("net", "socket")
