@@ -78,13 +78,13 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.5.5"
+#define WIN32OLE_VERSION "0.5.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
 
 typedef HWND (WINAPI FNHTMLHELP)(HWND hwndCaller, LPCSTR pszFile,
-				 UINT uCommand, DWORD dwData);
+                                 UINT uCommand, DWORD dwData);
 typedef struct {
     struct IEventSinkVtbl * lpVtbl;
 } IEventSink, *PEVENTSINK;
@@ -151,6 +151,8 @@ static BOOL gOLEInitialized = Qfalse;
 static HINSTANCE ghhctrl = NULL;
 static HINSTANCE gole32 = NULL;
 static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
+static VALUE com_hash;
+static IDispatchVtbl com_vtbl;
 
 struct oledata {
     IDispatch *pDispatch;
@@ -192,6 +194,137 @@ static VALUE foletype_s_allocate _((VALUE));
 static VALUE oletype_set_member  _((VALUE, ITypeInfo *, VALUE));
 static VALUE olemethod_from_typeinfo _((VALUE, ITypeInfo *, VALUE));
 static HRESULT ole_docinfo_from_type _((ITypeInfo *, BSTR *, BSTR *, DWORD *, BSTR *));
+static char *ole_wc2mb(LPWSTR);
+static VALUE ole_variant2val(VARIANT*);
+static void ole_val2variant(VALUE, VARIANT*);
+  
+typedef struct _Win32OLEIDispatch
+{
+    IDispatch dispatch;
+    ULONG refcount;
+    VALUE obj;
+} Win32OLEIDispatch;
+
+static HRESULT ( STDMETHODCALLTYPE QueryInterface )( 
+    IDispatch __RPC_FAR * This,
+    /* [in] */ REFIID riid,
+    /* [iid_is][out] */ void __RPC_FAR *__RPC_FAR *ppvObject)
+{
+    if (MEMCMP(riid, &IID_IUnknown, GUID, 1) == 0
+        || MEMCMP(riid, &IID_IDispatch, GUID, 1) == 0)
+    {
+        Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
+        p->refcount++;
+        *ppvObject = This;
+        return S_OK;
+    }
+    return E_NOINTERFACE;
+}
+        
+static ULONG ( STDMETHODCALLTYPE AddRef )( 
+    IDispatch __RPC_FAR * This)
+{
+    Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
+    return ++(p->refcount);
+}
+        
+static ULONG ( STDMETHODCALLTYPE Release )( 
+    IDispatch __RPC_FAR * This)
+{
+    Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
+    ULONG u = --(p->refcount);
+    if (u == 0) {
+        st_data_t key = p->obj;
+        st_delete(DATA_PTR(com_hash), &key, 0);
+        free(p);
+    }
+    return u;
+}
+        
+static HRESULT ( STDMETHODCALLTYPE GetTypeInfoCount )( 
+    IDispatch __RPC_FAR * This,
+    /* [out] */ UINT __RPC_FAR *pctinfo)
+{
+    return E_NOTIMPL;
+}
+        
+static HRESULT ( STDMETHODCALLTYPE GetTypeInfo )( 
+    IDispatch __RPC_FAR * This,
+    /* [in] */ UINT iTInfo,
+    /* [in] */ LCID lcid,
+    /* [out] */ ITypeInfo __RPC_FAR *__RPC_FAR *ppTInfo)
+{
+    return E_NOTIMPL;
+}
+
+        
+static HRESULT ( STDMETHODCALLTYPE GetIDsOfNames )( 
+    IDispatch __RPC_FAR * This,
+    /* [in] */ REFIID riid,
+    /* [size_is][in] */ LPOLESTR __RPC_FAR *rgszNames,
+    /* [in] */ UINT cNames,
+    /* [in] */ LCID lcid,
+    /* [size_is][out] */ DISPID __RPC_FAR *rgDispId)
+{
+    Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
+    char* psz = ole_wc2mb(*rgszNames); // support only one method
+    *rgDispId = rb_intern(psz);
+    free(psz);
+    return S_OK;
+}
+        
+static /* [local] */ HRESULT ( STDMETHODCALLTYPE Invoke )( 
+    IDispatch __RPC_FAR * This,
+    /* [in] */ DISPID dispIdMember,
+    /* [in] */ REFIID riid,
+    /* [in] */ LCID lcid,
+    /* [in] */ WORD wFlags,
+    /* [out][in] */ DISPPARAMS __RPC_FAR *pDispParams,
+    /* [out] */ VARIANT __RPC_FAR *pVarResult,
+    /* [out] */ EXCEPINFO __RPC_FAR *pExcepInfo,
+    /* [out] */ UINT __RPC_FAR *puArgErr)
+{
+    VALUE v;
+    int i;
+    int args = pDispParams->cArgs;
+    Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
+    VALUE* parg = ALLOCA_N(VALUE, args);
+    for (i = 0; i < args; i++) {
+        *(parg + i) = ole_variant2val(&pDispParams->rgvarg[args - i - 1]);
+    }
+    if (dispIdMember == DISPID_VALUE) {
+        if (wFlags == DISPATCH_METHOD) {
+            dispIdMember = rb_intern("call");
+        } else if (wFlags & DISPATCH_PROPERTYGET) {
+            dispIdMember = rb_intern("value");
+        }
+    }
+    v = rb_funcall2(p->obj, dispIdMember, args, parg);
+    ole_val2variant(v, pVarResult);
+    return S_OK;
+}
+
+static IDispatch*
+val2dispatch(val)
+    VALUE val;
+{
+    struct st_table *tbl = DATA_PTR(com_hash);
+    Win32OLEIDispatch* pdisp;
+    st_data_t data;
+
+    if (st_lookup(tbl, val, &data)) {
+        pdisp = (Win32OLEIDispatch *)(data & ~FIXNUM_FLAG);
+        pdisp->refcount++;
+    }
+    else {
+        pdisp = ALLOC(Win32OLEIDispatch);
+        pdisp->dispatch.lpVtbl = &com_vtbl;
+        pdisp->refcount = 1;
+        pdisp->obj = val;
+        st_insert(tbl, val, (VALUE)pdisp | FIXNUM_FLAG);
+    }
+    return &pdisp->dispatch;
+}
 
 static void
 time2d(hh, mm, ss, pv)
@@ -469,12 +602,12 @@ ole_initialize()
             ole_raise(hr, rb_eRuntimeError, "Fail : OLE initialize");
         }
         gOLEInitialized = Qtrue;
-	/*
-	 * In some situation, OleUninitialize does not work fine. ;-<
-	 */
-	/*
+        /*
+         * In some situation, OleUninitialize does not work fine. ;-<
+         */
+        /*
         atexit((void (*)(void))ole_uninitialize);
-	*/
+        */
     }
 }
 
@@ -600,7 +733,7 @@ ole_val2variant(val, var)
     struct oledata *pole;
     if(rb_obj_is_kind_of(val, cWIN32OLE)) {
         Data_Get_Struct(val, struct oledata, pole);
-	OLE_ADDREF(pole->pDispatch);
+        OLE_ADDREF(pole->pDispatch);
         V_VT(var) = VT_DISPATCH;
         V_DISPATCH(var) = pole->pDispatch;
         return;
@@ -678,9 +811,9 @@ ole_val2variant(val, var)
         V_I4(var) = NUM2INT(val);
         break;
     case T_BIGNUM:
-	V_VT(var) = VT_R8;
+        V_VT(var) = VT_R8;
         V_R8(var) = rb_big2dbl(val);
-	break;
+        break;
     case T_FLOAT:
         V_VT(var) = VT_R8;
         V_R8(var) = NUM2DBL(val);
@@ -698,7 +831,8 @@ ole_val2variant(val, var)
         V_ERROR(var) = DISP_E_PARAMNOTFOUND;
         break;
     default:
-        rb_raise(rb_eTypeError, "not valid value");
+        V_VT(var) = VT_DISPATCH;
+        V_DISPATCH(var) = val2dispatch(val);
         break;
     }
 }
@@ -889,7 +1023,7 @@ ole_variant2val(pvar)
             pDispatch = V_DISPATCH(pvar);
 
         if (pDispatch != NULL ) {
-	    OLE_ADDREF(pDispatch);
+            OLE_ADDREF(pDispatch);
             obj = create_win32ole_object(cWIN32OLE, pDispatch, 0, 0);
         }
         break;
@@ -1012,7 +1146,7 @@ typelib_file_from_clsid(ole)
     hr = CLSIDFromProgID(pbuf, &clsid);
     SysFreeString(pbuf);
     if (FAILED(hr)) {
-	return Qnil;
+        return Qnil;
     }
     StringFromCLSID(&clsid, &pbuf);
     vclsid = WC2VSTR(pbuf);
@@ -1070,7 +1204,7 @@ typelib_file_from_typelib(ole)
             if (typelib == Qnil)
                 continue;
             if (rb_str_cmp(typelib, ole) == 0) {
-	        for(k = 0; !found; k++) {
+                for(k = 0; !found; k++) {
                     lang = reg_enum_key(hversion, k);
                     if (lang == Qnil)
                         break;
@@ -1096,7 +1230,7 @@ typelib_file(ole)
 {
     VALUE file = typelib_file_from_clsid(ole);
     if (file != Qnil) {
-	return file;
+        return file;
     }
     return typelib_file_from_typelib(ole);
 }
@@ -1198,8 +1332,8 @@ clsid_from_remote(host, com, pclsid)
             pbuf  = ole_mb2wc(clsid, -1);
             hr = CLSIDFromString(pbuf, pclsid);
             SysFreeString(pbuf);
-	}
-	else {
+        }
+        else {
             hr = HRESULT_FROM_WIN32(err);
         }
         RegCloseKey(hpid);
@@ -1294,7 +1428,7 @@ ole_bind_obj(moniker, argc, argv, self)
     }
     hr = pMoniker->lpVtbl->BindToObject(pMoniker, pBindCtx, NULL, 
                                         &IID_IDispatch,
-				        (void**)&pDispatch);
+                                        (void**)&pDispatch);
     OLE_RELEASE(pMoniker);
     OLE_RELEASE(pBindCtx);
 
@@ -1332,8 +1466,8 @@ fole_s_connect(argc, argv, self)
 
     rb_scan_args(argc, argv, "1*", &svr_name, &others);
     if (ruby_safe_level > 0 && OBJ_TAINTED(svr_name)) {
-	rb_raise(rb_eSecurityError, "Insecure Object Connection - %s",
-		 StringValuePtr(svr_name));
+        rb_raise(rb_eSecurityError, "Insecure Object Connection - %s",
+                 StringValuePtr(svr_name));
     }
 
     /* get CLSID from OLE server name */
@@ -1420,12 +1554,12 @@ fole_s_const_load(argc, argv, self)
     else if(TYPE(ole) == T_STRING) {
         file = typelib_file(ole);
         if (file == Qnil) {
-	    file = ole;
+            file = ole;
         }
         pBuf = ole_mb2wc(StringValuePtr(file), -1);
         hr = LoadTypeLibEx(pBuf, REGKIND_NONE, &pTypeLib);
         SysFreeString(pBuf);
-	if (FAILED(hr))
+        if (FAILED(hr))
           ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to LoadTypeLibEx");
         if(TYPE(klass) != T_NIL) {
             ole_const_load(pTypeLib, klass, self);
@@ -1460,17 +1594,17 @@ ole_classes_from_typelib(pTypeLib, classes)
         hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, i,
                                                 &bstr, NULL, NULL, NULL);
         if (FAILED(hr)) 
-	    continue;
+            continue;
 
         hr = pTypeLib->lpVtbl->GetTypeInfo(pTypeLib, i, &pTypeInfo);
         if (FAILED(hr))
             continue;
 
         type = foletype_s_allocate(cWIN32OLE_TYPE);
-	oletype_set_member(type, pTypeInfo, WC2VSTR(bstr));
+        oletype_set_member(type, pTypeInfo, WC2VSTR(bstr));
 
-	rb_ary_push(classes, type);
-	OLE_RELEASE(pTypeInfo);
+        rb_ary_push(classes, type);
+        OLE_RELEASE(pTypeInfo);
     }
     return classes;
 }
@@ -1481,7 +1615,7 @@ reference_count(pole)
 {
     ULONG n = 0;
     if(pole->pDispatch) {
-	OLE_ADDREF(pole->pDispatch);
+        OLE_ADDREF(pole->pDispatch);
         n = OLE_RELEASE(pole->pDispatch);
     }
     return n;
@@ -1546,7 +1680,7 @@ ole_show_help(helpfile, helpcontext)
     hwnd = pfnHtmlHelp(GetDesktopWindow(), StringValuePtr(helpfile), 
                     0x0f, NUM2INT(helpcontext));
     if (hwnd == 0)
-	hwnd = pfnHtmlHelp(GetDesktopWindow(), StringValuePtr(helpfile), 
+        hwnd = pfnHtmlHelp(GetDesktopWindow(), StringValuePtr(helpfile), 
                  0,  NUM2INT(helpcontext));
     return hwnd;
 }
@@ -1611,14 +1745,14 @@ fole_initialize(argc, argv, self)
     rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
 
     if (ruby_safe_level > 0 && OBJ_TAINTED(svr_name)) {
-	rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
-		 StringValuePtr(svr_name));
+        rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
+                 StringValuePtr(svr_name));
     }
     if (!NIL_P(host)) {
-	if (ruby_safe_level > 0 && OBJ_TAINTED(host)) {
-	    rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
-		     StringValuePtr(svr_name));
-	}
+        if (ruby_safe_level > 0 && OBJ_TAINTED(host)) {
+            rb_raise(rb_eSecurityError, "Insecure Object Creation - %s",
+                     StringValuePtr(svr_name));
+        }
         return ole_create_dcom(argc, argv, self);
     }
 
@@ -1695,8 +1829,8 @@ set_argv(realargs, beg, end)
     Check_Type(argv, T_ARRAY);
     rb_ary_clear(argv);
     while (end-- > beg) {
-	rb_ary_push(argv, ole_variant2val(&realargs[end]));
-	VariantClear(&realargs[end]);
+        rb_ary_push(argv, ole_variant2val(&realargs[end]));
+        VariantClear(&realargs[end]);
     }
     return argv;
 }
@@ -1741,7 +1875,7 @@ ole_invoke(argc, argv, self, wFlags)
     rb_scan_args(argc, argv, "1*", &cmd, &paramS);
     OLEData_Get_Struct(self, pole);
     if(!pole->pDispatch) {
-	rb_raise(rb_eRuntimeError, "Fail to get dispatch interface.");
+        rb_raise(rb_eRuntimeError, "Fail to get dispatch interface.");
     }
     wcmdname = ole_mb2wc(StringValuePtr(cmd), -1);
     hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
@@ -1810,9 +1944,9 @@ ole_invoke(argc, argv, self, wFlags)
             VariantInit(&op.dp.rgvarg[n]);
             param = rb_ary_entry(paramS, i-cNamedArgs);
             
- 	    ole_val2variant(param, &realargs[n]);
+             ole_val2variant(param, &realargs[n]);
             V_VT(&op.dp.rgvarg[n]) = VT_VARIANT | VT_BYREF;
- 	    V_VARIANTREF(&op.dp.rgvarg[n]) = &realargs[n];
+             V_VARIANTREF(&op.dp.rgvarg[n]) = &realargs[n];
 
         }
     }
@@ -1862,7 +1996,7 @@ ole_invoke(argc, argv, self, wFlags)
     }
     /* clear dispatch parameter */
     if(op.dp.cArgs > cNamedArgs) {
-	set_argv(realargs, cNamedArgs, op.dp.cArgs);
+        set_argv(realargs, cNamedArgs, op.dp.cArgs);
     }
     else {
         for(i = 0; i < op.dp.cArgs; i++) {
@@ -1923,136 +2057,136 @@ ole_invoke2(self, dispid, args, types, dispkind)
     realargs = ALLOCA_N(VARIANTARG, dispParams.cArgs);
     for (i = 0, j = dispParams.cArgs - 1; i < (int)dispParams.cArgs; i++, j--)
     {
-	VariantInit(&realargs[i]);
-	VariantInit(&dispParams.rgvarg[i]);
-	tp = rb_ary_entry(types, j);
-	vt = (VARTYPE)FIX2INT(tp);
-	V_VT(&dispParams.rgvarg[i]) = vt;
-	param = rb_ary_entry(args, j);
-	if (param == Qnil)
-	{
+        VariantInit(&realargs[i]);
+        VariantInit(&dispParams.rgvarg[i]);
+        tp = rb_ary_entry(types, j);
+        vt = (VARTYPE)FIX2INT(tp);
+        V_VT(&dispParams.rgvarg[i]) = vt;
+        param = rb_ary_entry(args, j);
+        if (param == Qnil)
+        {
 
-	    V_VT(&dispParams.rgvarg[i]) = V_VT(&realargs[i]) = VT_ERROR;
-	    V_ERROR(&dispParams.rgvarg[i]) = V_ERROR(&realargs[i]) = DISP_E_PARAMNOTFOUND;
-	}
-	else
-	{
-	    if (vt & VT_ARRAY)
-	    {
-		int ent;
-		LPBYTE pb;
-		short* ps;
-		LPLONG pl;
-		VARIANT* pv;
-		CY *py;
-		VARTYPE v;
-		SAFEARRAYBOUND rgsabound[1];
-		Check_Type(param, T_ARRAY);
-		rgsabound[0].lLbound = 0;
-		rgsabound[0].cElements = RARRAY(param)->len;
-		v = vt & ~(VT_ARRAY | VT_BYREF);
-		V_ARRAY(&realargs[i]) = SafeArrayCreate(v, 1, rgsabound);
-		V_VT(&realargs[i]) = VT_ARRAY | v;
-		SafeArrayLock(V_ARRAY(&realargs[i]));
-		pb = V_ARRAY(&realargs[i])->pvData;
-		ps = V_ARRAY(&realargs[i])->pvData;
-		pl = V_ARRAY(&realargs[i])->pvData;
-		py = V_ARRAY(&realargs[i])->pvData;
-		pv = V_ARRAY(&realargs[i])->pvData;
-		for (ent = 0; ent < (int)rgsabound[0].cElements; ent++)
-		{
-		    VARIANT velem;
-		    VALUE elem = rb_ary_entry(param, ent);
-		    ole_val2variant(elem, &velem);
-		    if (v != VT_VARIANT)
-		    {
-			VariantChangeTypeEx(&velem, &velem,
-			    LOCALE_SYSTEM_DEFAULT, 0, v);
-		    }
-		    switch (v)
-		    {
-		    /* 128 bits */
-		    case VT_VARIANT:
-			*pv++ = velem;
-			break;
-		    /* 64 bits */
-		    case VT_R8:
-		    case VT_CY:
-		    case VT_DATE:
-			*py++ = V_CY(&velem);
-			break;
-		    /* 16 bits */
-		    case VT_BOOL:
-		    case VT_I2:
-		    case VT_UI2:
-			*ps++ = V_I2(&velem);
-			break;
-		    /* 8 bites */
-		    case VT_UI1:
-		    case VT_I1:
-			*pb++ = V_UI1(&velem);
-			break;
-		    /* 32 bits */
-		    default:
-			*pl++ = V_I4(&velem);
-			break;
-		    }
-		}
-		SafeArrayUnlock(V_ARRAY(&realargs[i]));
-	    }
-	    else
-	    {
-		ole_val2variant(param, &realargs[i]);
-		if ((vt & (~VT_BYREF)) != VT_VARIANT)
-		{
-		    hr = VariantChangeTypeEx(&realargs[i], &realargs[i],
-					     LOCALE_SYSTEM_DEFAULT, 0,
-					     (VARTYPE)(vt & (~VT_BYREF)));
-		    if (hr != S_OK)
-		    {
-			rb_raise(rb_eTypeError, "not valid value");
-		    }
-		}
-	    }
-	    if ((vt & VT_BYREF) || vt == VT_VARIANT)
-	    {
-		if (vt == VT_VARIANT)
-		    V_VT(&dispParams.rgvarg[i]) = VT_VARIANT | VT_BYREF;
-		switch (vt & (~VT_BYREF))
-		{
-		/* 128 bits */
-		case VT_VARIANT:
-		    V_VARIANTREF(&dispParams.rgvarg[i]) = &realargs[i];
-		    break;
-		/* 64 bits */
-		case VT_R8:
-		case VT_CY:
-		case VT_DATE:
-		    V_CYREF(&dispParams.rgvarg[i]) = &V_CY(&realargs[i]);
-		    break;
-		/* 16 bits */
-		case VT_BOOL:
-		case VT_I2:
-		case VT_UI2:
-		    V_I2REF(&dispParams.rgvarg[i]) = &V_I2(&realargs[i]);
-		    break;
-		/* 8 bites */
-		case VT_UI1:
-		case VT_I1:
-		    V_UI1REF(&dispParams.rgvarg[i]) = &V_UI1(&realargs[i]);
-		    break;
-		/* 32 bits */
-		default:
-		    V_I4REF(&dispParams.rgvarg[i]) = &V_I4(&realargs[i]);
-		    break;
-		}
-	    }
-	    else
-	    {
-		/* copy 64 bits of data */
-		V_CY(&dispParams.rgvarg[i]) = V_CY(&realargs[i]);
-	    }
-	}
+            V_VT(&dispParams.rgvarg[i]) = V_VT(&realargs[i]) = VT_ERROR;
+            V_ERROR(&dispParams.rgvarg[i]) = V_ERROR(&realargs[i]) = DISP_E_PARAMNOTFOUND;
+        }
+        else
+        {
+            if (vt & VT_ARRAY)
+            {
+                int ent;
+                LPBYTE pb;
+                short* ps;
+                LPLONG pl;
+                VARIANT* pv;
+                CY *py;
+                VARTYPE v;
+                SAFEARRAYBOUND rgsabound[1];
+                Check_Type(param, T_ARRAY);
+                rgsabound[0].lLbound = 0;
+                rgsabound[0].cElements = RARRAY(param)->len;
+                v = vt & ~(VT_ARRAY | VT_BYREF);
+                V_ARRAY(&realargs[i]) = SafeArrayCreate(v, 1, rgsabound);
+                V_VT(&realargs[i]) = VT_ARRAY | v;
+                SafeArrayLock(V_ARRAY(&realargs[i]));
+                pb = V_ARRAY(&realargs[i])->pvData;
+                ps = V_ARRAY(&realargs[i])->pvData;
+                pl = V_ARRAY(&realargs[i])->pvData;
+                py = V_ARRAY(&realargs[i])->pvData;
+                pv = V_ARRAY(&realargs[i])->pvData;
+                for (ent = 0; ent < (int)rgsabound[0].cElements; ent++)
+                {
+                    VARIANT velem;
+                    VALUE elem = rb_ary_entry(param, ent);
+                    ole_val2variant(elem, &velem);
+                    if (v != VT_VARIANT)
+                    {
+                        VariantChangeTypeEx(&velem, &velem,
+                            LOCALE_SYSTEM_DEFAULT, 0, v);
+                    }
+                    switch (v)
+                    {
+                    /* 128 bits */
+                    case VT_VARIANT:
+                        *pv++ = velem;
+                        break;
+                    /* 64 bits */
+                    case VT_R8:
+                    case VT_CY:
+                    case VT_DATE:
+                        *py++ = V_CY(&velem);
+                        break;
+                    /* 16 bits */
+                    case VT_BOOL:
+                    case VT_I2:
+                    case VT_UI2:
+                        *ps++ = V_I2(&velem);
+                        break;
+                    /* 8 bites */
+                    case VT_UI1:
+                    case VT_I1:
+                        *pb++ = V_UI1(&velem);
+                        break;
+                    /* 32 bits */
+                    default:
+                        *pl++ = V_I4(&velem);
+                        break;
+                    }
+                }
+                SafeArrayUnlock(V_ARRAY(&realargs[i]));
+            }
+            else
+            {
+                ole_val2variant(param, &realargs[i]);
+                if ((vt & (~VT_BYREF)) != VT_VARIANT)
+                {
+                    hr = VariantChangeTypeEx(&realargs[i], &realargs[i],
+                                             LOCALE_SYSTEM_DEFAULT, 0,
+                                             (VARTYPE)(vt & (~VT_BYREF)));
+                    if (hr != S_OK)
+                    {
+                        rb_raise(rb_eTypeError, "not valid value");
+                    }
+                }
+            }
+            if ((vt & VT_BYREF) || vt == VT_VARIANT)
+            {
+                if (vt == VT_VARIANT)
+                    V_VT(&dispParams.rgvarg[i]) = VT_VARIANT | VT_BYREF;
+                switch (vt & (~VT_BYREF))
+                {
+                /* 128 bits */
+                case VT_VARIANT:
+                    V_VARIANTREF(&dispParams.rgvarg[i]) = &realargs[i];
+                    break;
+                /* 64 bits */
+                case VT_R8:
+                case VT_CY:
+                case VT_DATE:
+                    V_CYREF(&dispParams.rgvarg[i]) = &V_CY(&realargs[i]);
+                    break;
+                /* 16 bits */
+                case VT_BOOL:
+                case VT_I2:
+                case VT_UI2:
+                    V_I2REF(&dispParams.rgvarg[i]) = &V_I2(&realargs[i]);
+                    break;
+                /* 8 bites */
+                case VT_UI1:
+                case VT_I1:
+                    V_UI1REF(&dispParams.rgvarg[i]) = &V_UI1(&realargs[i]);
+                    break;
+                /* 32 bits */
+                default:
+                    V_I4REF(&dispParams.rgvarg[i]) = &V_I4(&realargs[i]);
+                    break;
+                }
+            }
+            else
+            {
+                /* copy 64 bits of data */
+                V_CY(&dispParams.rgvarg[i]) = V_CY(&realargs[i]);
+            }
+        }
     }
 
     if (dispkind & DISPATCH_PROPERTYPUT) {
@@ -2075,7 +2209,7 @@ ole_invoke2(self, dispid, args, types, dispkind)
 
     /* clear dispatch parameter */
     if(dispParams.cArgs > 0) {
-	set_argv(realargs, 0, dispParams.cArgs);
+        set_argv(realargs, 0, dispParams.cArgs);
     }
 
     obj = ole_variant2val(&result);
@@ -2246,7 +2380,7 @@ ole_each_sub(pEnumV)
         obj = ole_variant2val(&variant);
         VariantClear(&variant);
         VariantInit(&variant);
-	rb_yield(obj);
+        rb_yield(obj);
     }
     return Qnil;
 }
@@ -2368,8 +2502,8 @@ ole_method_sub(self, pOwnerTypeInfo, pTypeInfo, name)
     }
     for(i = 0; i < pTypeAttr->cFuncs && method == Qnil; i++) {
         hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
-	if (FAILED(hr))
-	     continue;
+        if (FAILED(hr))
+             continue;
 
         hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo, pFuncDesc->memid,
                                                  &bstr, NULL, NULL, NULL);
@@ -2377,13 +2511,13 @@ ole_method_sub(self, pOwnerTypeInfo, pTypeInfo, name)
             pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
             continue;
         }
-	fname = WC2VSTR(bstr);
-	if (strcasecmp(StringValuePtr(name), StringValuePtr(fname)) == 0) {
-	    olemethod_set_member(self, pTypeInfo, pOwnerTypeInfo, i, fname);
+        fname = WC2VSTR(bstr);
+        if (strcasecmp(StringValuePtr(name), StringValuePtr(fname)) == 0) {
+            olemethod_set_member(self, pTypeInfo, pOwnerTypeInfo, i, fname);
             method = self;
         }
         pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
-	pFuncDesc=NULL;
+        pFuncDesc=NULL;
     }
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return method;
@@ -2444,8 +2578,8 @@ ole_methods_sub(pOwnerTypeInfo, pTypeInfo, methods, mask)
     for(i = 0; i < pTypeAttr->cFuncs; i++) {
         pstr = NULL;
         hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
-	if (FAILED(hr))
-	     continue;
+        if (FAILED(hr))
+             continue;
                  
         hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo, pFuncDesc->memid,
                                                  &bstr, NULL, NULL, NULL);
@@ -2453,14 +2587,14 @@ ole_methods_sub(pOwnerTypeInfo, pTypeInfo, methods, mask)
             pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
             continue;
         }
-	if(pFuncDesc->invkind & mask) {
-	    method = folemethod_s_allocate(cWIN32OLE_METHOD);
-	    olemethod_set_member(method, pTypeInfo, pOwnerTypeInfo, 
-	                         i, WC2VSTR(bstr));
+        if(pFuncDesc->invkind & mask) {
+            method = folemethod_s_allocate(cWIN32OLE_METHOD);
+            olemethod_set_member(method, pTypeInfo, pOwnerTypeInfo, 
+                                 i, WC2VSTR(bstr));
             rb_ary_push(methods, method);
         }
         pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
-	pFuncDesc=NULL;
+        pFuncDesc=NULL;
     }
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
 
@@ -2649,7 +2783,7 @@ fole_obj_help( self )
                                              &bstr, NULL, NULL, NULL);
     if (SUCCEEDED(hr)) {
         type = foletype_s_allocate(cWIN32OLE_TYPE);
-	oletype_set_member(type, pTypeInfo, WC2VSTR(bstr));
+        oletype_set_member(type, pTypeInfo, WC2VSTR(bstr));
     }
     OLE_RELEASE(pTypeLib);
     OLE_RELEASE(pTypeInfo);
@@ -2698,7 +2832,7 @@ ole_usertype2val(pTypeInfo, pTypeDesc, typedetails)
 
     hr = pTypeInfo->lpVtbl->GetRefTypeInfo(pTypeInfo, 
                                            V_UNION1(pTypeDesc, hreftype),
-				           &pRefTypeInfo);
+                                           &pRefTypeInfo);
     if(FAILED(hr))
         return Qnil;
     hr = ole_docinfo_from_type(pRefTypeInfo, &bstr, NULL, NULL, NULL);
@@ -2723,13 +2857,13 @@ ole_ptrtype2val(pTypeInfo, pTypeDesc, typedetails)
     TYPEDESC *p = pTypeDesc;
     VALUE type = rb_str_new2("");
     while(p->vt == VT_PTR || p->vt == VT_SAFEARRAY) {
-	p = V_UNION1(p, lptdesc);
-	if(strlen(StringValuePtr(type)) == 0) {
-	   type = ole_typedesc2val(pTypeInfo, p, typedetails);
-	} else {
-	   rb_str_cat(type, ",", 1);
+        p = V_UNION1(p, lptdesc);
+        if(strlen(StringValuePtr(type)) == 0) {
+           type = ole_typedesc2val(pTypeInfo, p, typedetails);
+        } else {
+           rb_str_cat(type, ",", 1);
            rb_str_concat(type, ole_typedesc2val(pTypeInfo, p, typedetails));
-	}
+        }
     }
     return type;
 }
@@ -2838,16 +2972,16 @@ ole_typedesc2val(pTypeInfo, pTypeDesc, typedetails)
         if(typedetails != Qnil)
             rb_ary_push(typedetails, rb_str_new2("USERDEFINED"));
         str = ole_usertype2val(pTypeInfo, pTypeDesc, typedetails);
-	if (str != Qnil) {
-	    return str;
-	}
+        if (str != Qnil) {
+            return str;
+        }
         return rb_str_new2("USERDEFINED");
     case VT_UNKNOWN:
-	return rb_str_new2("UNKNOWN");
+        return rb_str_new2("UNKNOWN");
     case VT_DISPATCH:
         if(typedetails != Qnil)
             rb_ary_push(typedetails, rb_str_new2("DISPATCH"));
-	return rb_str_new2("DISPATCH");
+        return rb_str_new2("DISPATCH");
     default:
         str = rb_str_new2("Unknown Type ");
         rb_str_concat(str, rb_fix2str(INT2FIX(pTypeDesc->vt), 10));
@@ -2882,7 +3016,7 @@ fole_method_help( self, cmdname )
     OLE_RELEASE(pTypeInfo);
     if (obj == Qnil)
         rb_raise(eWIN32OLE_RUNTIME_ERROR, "Not found %s",
-	         StringValuePtr(cmdname));
+                 StringValuePtr(cmdname));
     return obj;
 }
 
@@ -2906,17 +3040,17 @@ foletype_s_ole_classes(self, typelib)
     if(TYPE(typelib) == T_STRING) {
         file = typelib_file(typelib);
         if (file == Qnil) {
-	    file = typelib;
+            file = typelib;
         }
         pbuf = ole_mb2wc(StringValuePtr(file), -1);
         hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
-	if (FAILED(hr))
+        if (FAILED(hr))
           ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to LoadTypeLibEx");
         SysFreeString(pbuf);
         ole_classes_from_typelib(pTypeLib, classes);
-	OLE_RELEASE(pTypeLib);
+        OLE_RELEASE(pTypeLib);
     } else {
-	rb_raise(rb_eTypeError, "1st argument should be TypeLib string");
+        rb_raise(rb_eTypeError, "1st argument should be TypeLib string");
     }
     return classes;
 }
@@ -3055,13 +3189,13 @@ oleclass_from_typelib(self, pTypeLib, oleclass)
         hr = pTypeLib->lpVtbl->GetDocumentation(pTypeLib, i,
                                                 &bstr, NULL, NULL, NULL);
         if (FAILED(hr)) 
-	    continue;
+            continue;
         typelib = WC2VSTR(bstr);
-	if (rb_str_cmp(oleclass, typelib) == 0) {
+        if (rb_str_cmp(oleclass, typelib) == 0) {
             oletype_set_member(self, pTypeInfo, typelib);
-	    found = Qtrue;
-	}
-	OLE_RELEASE(pTypeInfo);
+            found = Qtrue;
+        }
+        OLE_RELEASE(pTypeInfo);
     }
     return found;
 }
@@ -3091,7 +3225,7 @@ foletype_initialize(self, typelib, oleclass)
     if (oleclass_from_typelib(self, pTypeLib, oleclass) == Qfalse) {
         OLE_RELEASE(pTypeLib);
         rb_raise(eWIN32OLE_RUNTIME_ERROR, "Not found `%s` in `%s`",
-	         StringValuePtr(oleclass), StringValuePtr(typelib));
+                 StringValuePtr(oleclass), StringValuePtr(typelib));
     }
     OLE_RELEASE(pTypeLib);
     return self;
@@ -3396,7 +3530,7 @@ ole_type_src_type(pTypeInfo)
         return alias;
     if(pTypeAttr->typekind != TKIND_ALIAS) {
         OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
-	return alias;
+        return alias;
     }
     alias = ole_typedesc2val(pTypeInfo, &(pTypeAttr->tdescAlias), Qnil);
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
@@ -3495,22 +3629,22 @@ ole_variables(pTypeInfo)
         if(FAILED(hr))
             continue;
         len = 0;
-	pstr = NULL;
+        pstr = NULL;
         hr = pTypeInfo->lpVtbl->GetNames(pTypeInfo, pVarDesc->memid, &bstr,
                                          1, &len);
         if(FAILED(hr) || len == 0 || !bstr)
             continue;
 
         var = Data_Make_Struct(cWIN32OLE_VARIABLE, struct olevariabledata,
-	                       0,olevariable_free,pvar);
+                               0,olevariable_free,pvar);
         pvar->pTypeInfo = pTypeInfo;
         OLE_ADDREF(pTypeInfo);
         pvar->index = i;
-	rb_ivar_set(var, rb_intern("name"), WC2VSTR(bstr));
+        rb_ivar_set(var, rb_intern("name"), WC2VSTR(bstr));
         rb_ary_push(variables, var);
 
         pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
-	pVarDesc = NULL;
+        pVarDesc = NULL;
     }
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     return variables;
@@ -3800,10 +3934,10 @@ folemethod_initialize(self, oletype, method)
     if (rb_obj_is_kind_of(oletype, cWIN32OLE_TYPE)) {
         Check_SafeStr(method);
         Data_Get_Struct(oletype, struct oletypedata, ptype);
-	obj = olemethod_from_typeinfo(self, ptype->pTypeInfo, method);
-	if (obj == Qnil) {
+        obj = olemethod_from_typeinfo(self, ptype->pTypeInfo, method);
+        if (obj == Qnil) {
             rb_raise(eWIN32OLE_RUNTIME_ERROR, "Not found %s",
-	             StringValuePtr(method));
+                     StringValuePtr(method));
         }
     }
     else {
@@ -4000,7 +4134,7 @@ ole_method_visible(pTypeInfo, method_index)
         return Qfalse;
     if (pFuncDesc->wFuncFlags & (FUNCFLAG_FRESTRICTED |
                                  FUNCFLAG_FHIDDEN |
-				 FUNCFLAG_FNONBROWSABLE)) {
+                                 FUNCFLAG_FNONBROWSABLE)) {
         visible = Qfalse;
     } else {
         visible = Qtrue;
@@ -4059,29 +4193,29 @@ static ole_method_event(pTypeInfo, method_index, method_name)
             hr = pTypeInfo->lpVtbl->GetRefTypeInfo(pTypeInfo,
                                                    href, &pRefTypeInfo);
             if (FAILED(hr))
-	        continue;
+                continue;
             hr = pRefTypeInfo->lpVtbl->GetFuncDesc(pRefTypeInfo, method_index, 
-	                                           &pFuncDesc);
+                                                   &pFuncDesc);
             if (FAILED(hr)) {
-	        OLE_RELEASE(pRefTypeInfo);
-		continue;
+                OLE_RELEASE(pRefTypeInfo);
+                continue;
             }
 
             hr = pRefTypeInfo->lpVtbl->GetDocumentation(pRefTypeInfo, 
-	                                                pFuncDesc->memid,
+                                                        pFuncDesc->memid,
                                                         &bstr, NULL, NULL, NULL);
             if (FAILED(hr)) {
-		pRefTypeInfo->lpVtbl->ReleaseFuncDesc(pRefTypeInfo, pFuncDesc);
-	        OLE_RELEASE(pRefTypeInfo);
-		continue;
+                pRefTypeInfo->lpVtbl->ReleaseFuncDesc(pRefTypeInfo, pFuncDesc);
+                OLE_RELEASE(pRefTypeInfo);
+                continue;
             }
 
             name = WC2VSTR(bstr);
-	    pRefTypeInfo->lpVtbl->ReleaseFuncDesc(pRefTypeInfo, pFuncDesc);
-	    OLE_RELEASE(pRefTypeInfo);
-	    if (rb_str_cmp(method_name, name) == 0) {
-	        event = Qtrue;
-		break;
+            pRefTypeInfo->lpVtbl->ReleaseFuncDesc(pRefTypeInfo, pFuncDesc);
+            OLE_RELEASE(pRefTypeInfo);
+            if (rb_str_cmp(method_name, name) == 0) {
+                event = Qtrue;
+                break;
             }
         }
     }
@@ -4117,8 +4251,8 @@ folemethod_event_interface(self)
     Data_Get_Struct(self, struct olemethoddata, pmethod);
     if(folemethod_event(self) == Qtrue) {
         hr = ole_docinfo_from_type(pmethod->pTypeInfo, &name, NULL, NULL, NULL);
-	if(SUCCEEDED(hr))
-	    return WC2VSTR(name);
+        if(SUCCEEDED(hr))
+            return WC2VSTR(name);
     }
     return Qnil;
 }
@@ -4822,7 +4956,7 @@ STDMETHODIMP EVENTSINK_Invoke(
 
     if (rb_ary_entry(event, 3) == Qtrue) {
         argv = rb_ary_new();
-	rb_ary_push(args, argv);
+        rb_ary_push(args, argv);
         result = rb_apply(handler, rb_intern("call"), args);
         ary2ptr_dispparams(argv, pdispparams);
     }
@@ -5089,9 +5223,9 @@ ole_event_free(poleev)
 
     if(poleev->pEvent) {
         pti = poleev->pEvent->pTypeInfo;
-	if(pti) OLE_RELEASE(pti);
-	pcp = poleev->pEvent->pConnectionPoint;
-	if(pcp) {
+        if(pti) OLE_RELEASE(pti);
+        pcp = poleev->pEvent->pConnectionPoint;
+        if(pcp) {
             pcp->lpVtbl->Unadvise(pcp, poleev->pEvent->m_dwCookie);
             OLE_RELEASE(pcp);
         }
@@ -5138,10 +5272,10 @@ fev_initialize(argc, argv, self)
     }
 
     if(TYPE(itf) != T_NIL) {
-	if (ruby_safe_level > 0 && OBJ_TAINTED(itf)) {
-	    rb_raise(rb_eSecurityError, "Insecure Event Creation - %s",
-		     StringValuePtr(itf));
-	}
+        if (ruby_safe_level > 0 && OBJ_TAINTED(itf)) {
+            rb_raise(rb_eSecurityError, "Insecure Event Creation - %s",
+                     StringValuePtr(itf));
+        }
         Check_SafeStr(itf);
         pitf = StringValuePtr(itf);
         hr = find_iid(ole, pitf, &iid, &pTypeInfo);
@@ -5275,6 +5409,16 @@ Init_win32ole()
     ary_ole_event = rb_ary_new();
     rb_global_variable(&ary_ole_event);
     id_events = rb_intern("events");
+
+    com_vtbl.QueryInterface = QueryInterface;
+    com_vtbl.AddRef = AddRef;
+    com_vtbl.Release = Release;
+    com_vtbl.GetTypeInfoCount = GetTypeInfoCount;
+    com_vtbl.GetTypeInfo = GetTypeInfo;
+    com_vtbl.GetIDsOfNames = GetIDsOfNames;
+    com_vtbl.Invoke = Invoke;
+    com_hash = Data_Wrap_Struct(rb_cData, rb_mark_hash, st_free_table, st_init_numtable());
+    rb_global_variable(&com_hash);
 
     cWIN32OLE = rb_define_class("WIN32OLE", rb_cObject);
 

@@ -1,3 +1,8 @@
+Sun Feb 15 15:48:57 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add IDispatch wrapper in val2variant.
+	  Thanks, arton.
+
 Sun Feb 15 15:23:29 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ruby.h, dir.c (rb_glob): add const.
