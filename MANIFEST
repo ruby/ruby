@@ -916,6 +916,7 @@ test/ruby/test_float.rb
 test/ruby/test_gc.rb
 test/ruby/test_hash.rb
 test/ruby/test_ifunless.rb
+test/ruby/test_io.rb
 test/ruby/test_iterator.rb
 test/ruby/test_marshal.rb
 test/ruby/test_math.rb
