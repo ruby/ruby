@@ -1,3 +1,9 @@
+Mon Dec 20 12:47:13 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/net/https.rb,protocols.rb,telnets.rb: delete
+	  doc and code about SSLContext#{key_file,cert_file}.
+	  fixed: [ruby-dev:25243]
+
 Mon Dec 20 12:42:17 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (io_fwrite): workaround for MSVCRT's bug.

@@ -29,8 +29,7 @@ module Net
     extend Forwardable
 
     def_delegators(:@ssl_context,
-                   :key=, :cert=, :key_file=, :cert_file=,
-                   :ca_file=, :ca_path=,
+                   :key=, :cert=, :ca_file=, :ca_path=,
                    :verify_mode=, :verify_callback=, :verify_depth=,
                    :timeout=, :cert_store=)
 
