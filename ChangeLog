@@ -1,3 +1,13 @@
+Fri Dec  5 13:36:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_exec_end_proc): should not clear end_procs and
+	  ephemeral_end_procs before execution. [ruby-dev:22144]
+
+	* eval.c (rb_obj_extend): call Module#extended hook after
+	  extended_object.  [ruby-list:38866]
+
+	* object.c (Init_Object): Module#extended defined.
+
 Fri Dec  5 13:17:30 2003  Tanaka Akira  <akr@m17n.org>
 
 	* test/ruby/test_pipe.rb: use IO.pipe instead of IO.popen.

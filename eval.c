@@ -6381,12 +6381,12 @@ rb_mod_include(argc, argv, module)
     VALUE *argv;
     VALUE module;
 {
-    while (argc--) {
-	VALUE m = argv[argc];
+    int i;
 
-	Check_Type(m, T_MODULE);
-	rb_funcall(m, rb_intern("append_features"), 1, module);
-	rb_funcall(m, rb_intern("included"), 1, module);
+    for (i=0; i<argc; i++) Check_Type(argv[i], T_MODULE);
+    while (argc--) {
+	rb_funcall(argv[argc], rb_intern("append_features"), 1, module);
+	rb_funcall(argv[argc], rb_intern("included"), 1, module);
     }
     return module;
 }
@@ -6431,6 +6431,7 @@ rb_obj_extend(argc, argv, obj)
     for (i=0; i<argc; i++) Check_Type(argv[i], T_MODULE);
     while (argc--) {
 	rb_funcall(argv[argc], rb_intern("extend_object"), 1, obj);
+	rb_funcall(argv[argc], rb_intern("extended"), 1, obj);
     }
     return obj;
 }
@@ -6523,7 +6524,7 @@ struct end_proc_data {
     struct end_proc_data *next;
 };
 
-static struct end_proc_data *end_procs, *ephemeral_end_procs;
+static struct end_proc_data *end_procs, *ephemeral_end_procs, *tmp_end_procs;
 
 void
 rb_set_end_proc(func, data)
@@ -6553,6 +6554,11 @@ rb_mark_end_proc()
 	link = link->next;
     }
     link = ephemeral_end_procs;
+    while (link) {
+	rb_gc_mark(link->data);
+	link = link->next;
+    }
+    link = tmp_end_procs;
     while (link) {
 	rb_gc_mark(link->data);
 	link = link->next;
@@ -6607,7 +6613,7 @@ rb_exec_end_proc()
     volatile int safe = ruby_safe_level;
 
     while (ephemeral_end_procs) {
-	link = ephemeral_end_procs;
+	tmp_end_procs = link = ephemeral_end_procs;
 	ephemeral_end_procs = 0;
 	while (link) {
 	    PUSH_TAG(PROT_NONE);
@@ -6625,7 +6631,7 @@ rb_exec_end_proc()
 	}
     }
     while (end_procs) {
-	link = end_procs;
+	tmp_end_procs = link = end_procs;
 	end_procs = 0;
 	while (link) {
 	    PUSH_TAG(PROT_NONE);
@@ -6642,6 +6648,7 @@ rb_exec_end_proc()
 	    free(tmp);
 	}
     }
+    tmp_end_procs = 0;
     ruby_safe_level = safe;
 }
 

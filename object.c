@@ -1382,6 +1382,7 @@ Init_Object()
     rb_define_private_method(rb_cObject, "initialize", rb_obj_dummy, 0);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "included", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cModule, "extended", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "method_added", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "method_removed", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy, 1);
