@@ -11,6 +11,8 @@ class DEBUGGER__
     @scripts = {}
   end
 
+  DEBUG_LAST_CMD = []
+
   def interrupt
     @stop_next = 1
   end
@@ -40,6 +42,11 @@ class DEBUGGER__
     STDOUT.flush
     while input = STDIN.gets
       input.chop!
+      if input == ""
+	input = DEBUG_LAST_CMD[0]
+      else
+	DEBUG_LAST_CMD[0] = input
+      end
       case input
       when /^b(reak)?\s+(([^:\n]+:)?.+)/
 	pos = $2

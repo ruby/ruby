@@ -232,6 +232,8 @@ time_arg(argc, argv, args)
 	ArgError("argument out of range");
 }
 
+static VALUE time_gmtime _((VALUE));
+static VALUE time_localtime _((VALUE));
 static VALUE
 time_gm_or_local(argc, argv, gm_or_local, klass)
     int argc;
@@ -245,6 +247,7 @@ time_gm_or_local(argc, argv, gm_or_local, klass)
     time_t guess, t;
     int diff;
     struct tm *(*fn)();
+    VALUE time;
 
     fn = (gm_or_local) ? gmtime : localtime;
     time_arg(argc, argv, args);
@@ -272,7 +275,9 @@ time_gm_or_local(argc, argv, gm_or_local, klass)
     guess += (args[4] - tm->tm_min) * 60;
     guess += args[5] - tm->tm_sec;
 
-    return time_new_internal(klass, guess, 0);
+    time = time_new_internal(klass, guess, 0);
+    if (gm_or_local) return time_gmtime(time);
+    return time_localtime(time);
 
   error:
     ArgError("gmtime/localtime error");

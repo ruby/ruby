@@ -310,7 +310,6 @@ struct_inspect(s)
 	str_cat(str, p, strlen(p));
 	str_cat(str, "=", 1);
 	str2 = rb_inspect(RSTRUCT(s)->ptr[i]);
-	str2 = obj_as_string(str2);
 	str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
     }
     str_cat(str, ">", 1);

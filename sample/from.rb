@@ -30,16 +30,19 @@ if ARGV[0] == '-w'
 end
 
 if ARGV.length == 0
-  user = ENV['USER']
+  file = ENV['MAIL']
+  user = ENV['USER'] || ENV['USERNAME'] || ENV['LOGNAME'] 
 else
   file = user = ARGV[0]
   ARGV.clear
 end
 
-[ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
-  if File.exist? f = "#{m}/mail/#{user}" 
-    file = f
-    break 
+if file == nil or !File.exist? file
+  [ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
+    if File.exist? f = "#{m}/mail/#{user}" 
+      file = f
+      break 
+    end
   end
 end
 

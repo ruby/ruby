@@ -526,7 +526,8 @@ mod_cmp(mod, arg)
     return INT2FIX(1);
 }
 
-VALUE module_s_new()
+VALUE
+module_s_new()
 {
     VALUE mod = module_new();
 

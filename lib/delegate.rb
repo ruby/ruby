@@ -7,7 +7,7 @@
 #
 # Usage:
 #   foo = Object.new
-#   foo = SimpleDelegator.new(foo)
+#   foo2 = SimpleDelegator.new(foo)
 #   foo.hash == foo2.hash # => true
 
 class Delegator

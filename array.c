@@ -640,7 +640,7 @@ ary_join(ary, sep)
 	  default:
 	    tmp = obj_as_string(tmp);
 	}
-	if (!NIL_P(sep)) str_cat(result, RSTRING(sep)->ptr, RSTRING(sep)->len);
+	if (!NIL_P(sep)) str_concat(result, sep);
 	str_cat(result, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
 	if (str_tainted(tmp)) str_taint(result);
     }
@@ -658,7 +658,6 @@ ary_join_method(argc, argv, ary)
 
     rb_scan_args(argc, argv, "01", &sep);
     if (NIL_P(sep)) sep = OFS;
-    if (!NIL_P(sep)) Check_Type(sep, T_STRING);
 
     return ary_join(ary, sep);
 }

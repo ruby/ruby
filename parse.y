@@ -2366,8 +2366,7 @@ retry:
       case '<':
 	c = nextc();
 	if (c == '<' &&
-	    lex_state != EXPR_END
-	    && lex_state != EXPR_CLASS &&
+	    lex_state != EXPR_END && lex_state != EXPR_CLASS &&
 	    (lex_state != EXPR_ARG || space_seen)) {
  	    int c2 = nextc();
 	    if (!isspace(c2) && (strchr("\"'`", c2) || is_identchar(c2))) {

@@ -212,6 +212,7 @@ rb_check_type(x, t)
 #include "errno.h"
 
 extern VALUE cString;
+VALUE eThrowable, eExceptional;
 VALUE eGlobalExit, eException;
 VALUE eSystemExit, eInterrupt, eFatal;
 VALUE eRuntimeError;
@@ -258,8 +259,11 @@ VALUE
 exc_new3(etype, str)
     VALUE etype, str;
 {
-    Check_Type(str, T_STRING);
-    return exc_new(etype, RSTRING(str)->ptr, RSTRING(str)->len);
+    char *s;
+    int len;
+
+    s = str2cstr(str, &len);
+    return exc_new(etype, s, len);
 }
 
 static VALUE
@@ -278,6 +282,23 @@ exc_s_new(argc, argv, etype)
     }
     obj_call_init(exc);
     return exc;
+}
+
+static VALUE
+exc_new_method(self, str)
+    VALUE self, str;
+{
+    VALUE etype;
+    char *s;
+    int len;
+
+    if (self == str) return self;
+    etype = CLASS_OF(self);
+    while (FL_TEST(etype, FL_SINGLETON)) {
+	etype = RCLASS(etype)->super;
+    }
+    s = str2cstr(str, &len);
+    return exc_new(etype, s, len);
 }
 
 static VALUE
@@ -351,15 +372,21 @@ static void init_syserr();
 void
 Init_Exception()
 {
+    eThrowable  = rb_define_module("Throwable");
     eGlobalExit  = rb_define_class("GlobalExit", cString);
+    rb_include_module(eGlobalExit, eThrowable);
     rb_define_singleton_method(eGlobalExit, "new", exc_s_new, -1);
+    rb_define_method(eGlobalExit, "new", exc_new_method, 1);
     rb_define_method(eGlobalExit, "inspect", exc_inspect, 0);
 
     eSystemExit  = rb_define_class("SystemExit", eGlobalExit);
     eFatal  	 = rb_define_class("fatal", eGlobalExit);
     eInterrupt   = rb_define_class("Interrupt", eGlobalExit);
 
+    eExceptional = rb_define_module("Exceptional");
+    rb_include_module(eExceptional, eThrowable);
     eException   = rb_define_class("Exception", eGlobalExit);
+    rb_include_module(eException, eExceptional);
     eSyntaxError = rb_define_class("SyntaxError", eException);
     eTypeError   = rb_define_class("TypeError", eException);
     eArgError    = rb_define_class("ArgumentError", eException);

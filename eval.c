@@ -362,7 +362,8 @@ extern int nerrs;
 extern VALUE mKernel;
 extern VALUE cModule;
 extern VALUE eFatal;
-extern VALUE eGlobalExit;
+extern VALUE eThrowable;
+extern VALUE eExceptional;
 extern VALUE eInterrupt;
 extern VALUE eSystemExit;
 extern VALUE eException;
@@ -722,6 +723,7 @@ static void
 error_print()
 {
     VALUE eclass;
+    VALUE einfo;
 
     if (NIL_P(errinfo)) return;
 
@@ -735,36 +737,37 @@ error_print()
     }
 
     eclass = CLASS_OF(errinfo);
-    if (eclass == eRuntimeError && RSTRING(errinfo)->len == 0) {
+    einfo = obj_as_string(errinfo);
+    if (eclass == eRuntimeError && RSTRING(einfo)->len == 0) {
 	fprintf(stderr, ": unhandled exception\n");
     }
     else {
 	VALUE epath;
 
 	epath = rb_class_path(eclass);
-	if (RSTRING(errinfo)->len == 0) {
+	if (RSTRING(einfo)->len == 0) {
 	    fprintf(stderr, ": ");
 	    fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
 	    putc('\n', stderr);
 	}
 	else {
-	    unsigned char *tail  = 0;
-	    int len = RSTRING(errinfo)->len;
+	    UCHAR *tail  = 0;
+	    int len = RSTRING(einfo)->len;
 
 	    if (RSTRING(epath)->ptr[0] == '#') epath = 0;
-	    if (tail = strchr(RSTRING(errinfo)->ptr, '\n')) {
-		len = tail - RSTRING(errinfo)->ptr;
+	    if (tail = strchr(RSTRING(einfo)->ptr, '\n')) {
+		len = tail - RSTRING(einfo)->ptr;
 		tail++;		/* skip newline */
 	    }
 	    fprintf(stderr, ": ");
-	    fwrite(RSTRING(errinfo)->ptr, 1, len, stderr);
+	    fwrite(RSTRING(einfo)->ptr, 1, len, stderr);
 	    if (epath) {
 		fprintf(stderr, " (");
 		fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
 		fprintf(stderr, ")\n");
 	    }
 	    if (tail) {
-		fwrite(tail, 1, RSTRING(errinfo)->len-len-1, stderr);
+		fwrite(tail, 1, RSTRING(einfo)->len-len-1, stderr);
 		putc('\n', stderr);
 	    }
 	}
@@ -982,9 +985,10 @@ static void
 compile_error(at)
     char *at;
 {
-    VALUE mesg;
+    char *mesg;
+    int len;
 
-    mesg = errinfo;
+    mesg = str2cstr(errinfo, &len);
     nerrs = 0;
     errinfo = exc_new2(eSyntaxError, "compile error");
     if (at) {
@@ -992,7 +996,7 @@ compile_error(at)
 	str_cat(errinfo, at, strlen(at));
     }
     str_cat(errinfo, "\n", 1);
-    str_cat(errinfo, RSTRING(mesg)->ptr, RSTRING(mesg)->len);
+    str_cat(errinfo, mesg, len);
     rb_raise(errinfo);
 }
 
@@ -1378,7 +1382,7 @@ is_defined(self, node, buf)
       case NODE_LVAR:
 	return "local-variable";
       case NODE_DVAR:
-	return "local-variable(ephemeral)";
+	return "local-variable(in-block)";
 
       case NODE_GVAR:
 	if (rb_gvar_defined(node->nd_entry)) {
@@ -2704,13 +2708,15 @@ rb_longjmp(tag, mesg, at)
     }
 
     if (!NIL_P(mesg)) {
-	if (obj_is_kind_of(mesg, eGlobalExit)) {
+	if (obj_is_kind_of(mesg, eThrowable)) {
 	    errinfo = mesg;
 	}
 	else {
 	    errinfo = exc_new3(eRuntimeError, mesg);
 	}
-	str_freeze(errinfo);
+	if (TYPE(errinfo) == T_STRING) {
+	    str_freeze(errinfo);
+	}
     }
 
     trap_restore_mask();
@@ -2759,7 +2765,7 @@ f_raise(argc, argv)
       case 2:
       case 3:
 	etype = arg1;
-	if (obj_is_kind_of(etype, eGlobalExit)) {
+	if (obj_is_kind_of(etype, eThrowable)) {
 	    etype = CLASS_OF(etype);
 	}
 	else {
@@ -2770,9 +2776,12 @@ f_raise(argc, argv)
     }
 
     if (!NIL_P(mesg)) {
-	Check_Type(mesg, T_STRING);
-	if (n == 2 || !obj_is_kind_of(mesg, eException)) {
-	    mesg = exc_new3(etype, mesg);
+	if (n >= 2 || !obj_is_kind_of(mesg, eThrowable)) {
+	    mesg = rb_funcall(etype, rb_intern("new"), 1, mesg);
+	}
+	if (!obj_is_kind_of(mesg, eThrowable)) {
+	    TypeError("should be Throwable, %s given",
+		      rb_class2name(CLASS_OF(mesg)));
 	}
     }
 
@@ -3042,7 +3051,7 @@ handle_rescue(self, node)
     TMP_PROTECT;
 
     if (!node->nd_args) {
-	return obj_is_kind_of(errinfo, eException);
+	return obj_is_kind_of(errinfo, eExceptional);
     }
 
     PUSH_ITER(ITER_NOT);
@@ -3071,7 +3080,7 @@ rb_rescue(b_proc, data1, r_proc, data2)
       retry_entry:
 	result = (*b_proc)(data1);
     }
-    else if (state == TAG_RAISE && obj_is_kind_of(errinfo, eException)) {
+    else if (state == TAG_RAISE && obj_is_kind_of(errinfo, eExceptional)) {
 	if (r_proc) {
 	    PUSH_TAG(PROT_NONE);
 	    if ((state = EXEC_TAG()) == 0) {
@@ -3838,7 +3847,7 @@ eval(self, src, scope, file, line)
 		if (sourceline > 1) {
 		    err = RARRAY(errat)->ptr[0];
 		    str_cat(err, ": ", 2);
-		    str_cat(err, RSTRING(errinfo)->ptr, RSTRING(errinfo)->len);
+		    str_concat(err, errinfo);
 		}
 		else {
 		    err = str_dup(errinfo);
@@ -4488,6 +4497,19 @@ errat_setter(val, id, var)
     *var = check_errat(val);
 }
 
+static void
+errinfo_setter(val, id, var)
+    VALUE val;
+    ID id;
+    VALUE *var;
+{
+    if (!obj_is_kind_of(val, eThrowable)) {
+	TypeError("$! should be Throwable, %s given",
+		  rb_class2name(CLASS_OF(val)));
+    }
+    *var = val;
+}
+
 VALUE f_global_variables();
 VALUE f_instance_variables();
 
@@ -4595,7 +4617,7 @@ Init_eval()
     rb_global_variable((VALUE*)&the_dyna_vars);
 
     rb_define_hooked_variable("$@", &errat, 0, errat_setter);
-    rb_define_hooked_variable("$!", &errinfo, 0, rb_str_setter);
+    rb_define_hooked_variable("$!", &errinfo, 0, errinfo_setter);
 
     rb_define_global_function("eval", f_eval, -1);
     rb_define_global_function("iterator?", f_iterator_p, 0);

@@ -113,7 +113,6 @@ module TkComm
     end
   end
   def list(val)
-    p val
     tk_split_list(val).to_a
   end
   def window(val)
@@ -274,7 +273,7 @@ module TkCore
   end
 
   def _get_eval_string(str)
-    return str if str == None
+    return nil if str == None
     if str.kind_of?(Hash)
       str = hash_kv(str).join(" ")
     elsif str == nil
@@ -294,10 +293,20 @@ module TkCore
   def tk_call(*args)
     print args.join(" "), "\n" if $DEBUG
     args.filter {|x|_get_eval_string(x)}
-    args.delete!(None)
-    args.flatten!
     args.compact!
-    res = INTERP._invoke(*args)
+    args.flatten!
+    begin
+      res = INTERP._invoke(*args)
+    rescue NameError
+      err = $!
+      begin
+        args.unshift "unknown"
+        res = INTERP._invoke(*args)
+      rescue
+	raise unless /^invalid command/ =~ $!
+	raise err
+      end
+    end
     if  INTERP._return_value() != 0
       fail RuntimeError, res, error_at
     end
@@ -819,8 +828,6 @@ class TkObject<TkKernel
     if (args.length == 1)
       configure id.id2name, args[0]
     else
-      p caller
-      p id.id2name
       $@ = error_at
       super
     end

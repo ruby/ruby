@@ -1,3 +1,20 @@
+Thu Apr 30 01:08:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/tk.rb: call 'unknown', if proc not defined.
+
+	* eval.c (handle_rescue): default rescue handles `Exceptional' not 
+	  only the instance of the `Exception's.
+
+	* eval.c (errinfo_setter): $! can be any `Throwable' object.
+
+	* time.c (time_gm_or_local): call time_gmtime or time_localtime.
+
+	* eval.c (f_raise): raises TypeError if the class which is not a
+	  subclass of String is specified (checked in exc_new()).
+
+	* error.c (exc_new): need to check whether invalid class (not a
+	  subclass of String) is specified.
+
 Tue Apr 28 15:27:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_16.

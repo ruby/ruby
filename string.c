@@ -171,7 +171,10 @@ VALUE
 str_dup(str)
     VALUE str;
 {
-    VALUE s = str_new(RSTRING(str)->ptr, RSTRING(str)->len);
+    VALUE s;
+
+    str = to_str(str);
+    s = str_new(RSTRING(str)->ptr, RSTRING(str)->len);
     if (str_tainted(str)) s = str_taint(s);
     if (RSTRING(str)->orig && FL_TEST(str, STR_NO_ORIG))
 	RSTRING(s)->orig = RSTRING(str)->orig;
@@ -442,7 +445,7 @@ str_cat(str, ptr, len)
     return str;
 }
 
-static VALUE
+VALUE
 str_concat(str1, str2)
     VALUE str1, str2;
 {

@@ -2,7 +2,7 @@ require "mkmf"
 
 # may need to be changed
 $LDFLAGS="-L/usr/X11R6/lib -L/usr/local/lib"
-$CFLAGS=`gtk-config --cflags`
+$CFLAGS=`gtk-config --cflags`.chomp!
 
 have_library("X11", "XOpenDisplay")
 have_library("Xext", "XShmQueryVersion")
