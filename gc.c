@@ -753,19 +753,27 @@ obj_free(obj)
 	break;
       case T_STRING:
 #define STR_NO_ORIG FL_USER2	/* copied from string.c */
-	if (!RANY(obj)->as.string.orig || FL_TEST(obj, STR_NO_ORIG))
+	if (!RANY(obj)->as.string.orig || FL_TEST(obj, STR_NO_ORIG)) {
 	    free(RANY(obj)->as.string.ptr);
+	}
 	break;
       case T_ARRAY:
-	if (RANY(obj)->as.array.ptr) free(RANY(obj)->as.array.ptr);
+	if (RANY(obj)->as.array.ptr) {
+	    free(RANY(obj)->as.array.ptr);
+	}
 	break;
       case T_HASH:
-	if (RANY(obj)->as.hash.tbl)
+	if (RANY(obj)->as.hash.tbl) {
 	    st_free_table(RANY(obj)->as.hash.tbl);
+	}
 	break;
       case T_REGEXP:
-	if (RANY(obj)->as.regexp.ptr) re_free_pattern(RANY(obj)->as.regexp.ptr);
-	if (RANY(obj)->as.regexp.str) free(RANY(obj)->as.regexp.str);
+	if (RANY(obj)->as.regexp.ptr) {
+	    re_free_pattern(RANY(obj)->as.regexp.ptr);
+	}
+	if (RANY(obj)->as.regexp.str) {
+	    free(RANY(obj)->as.regexp.str);
+	}
 	break;
       case T_DATA:
 	if (DATA_PTR(obj)) {
@@ -798,7 +806,9 @@ obj_free(obj)
 	break;
 
       case T_BIGNUM:
-	if (RANY(obj)->as.bignum.digits) free(RANY(obj)->as.bignum.digits);
+	if (RANY(obj)->as.bignum.digits) {
+	    free(RANY(obj)->as.bignum.digits);
+	}
 	break;
       case T_NODE:
 	switch (nd_type(obj)) {
@@ -827,8 +837,9 @@ obj_free(obj)
 	break;
 
       case T_STRUCT:
-	if (RANY(obj)->as.rstruct.ptr)
+	if (RANY(obj)->as.rstruct.ptr) {
 	    free(RANY(obj)->as.rstruct.ptr);
+	}
 	break;
 
       default:

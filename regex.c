@@ -94,7 +94,7 @@ void xfree _((void*));
 #else
 # if defined(HAVE_ALLOCA_H)
 #  include <alloca.h>
-# else
+# elif !defined(alloca)
 char *alloca();
 # endif
 #endif /* __GNUC__ */

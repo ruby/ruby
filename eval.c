@@ -7149,7 +7149,11 @@ rb_thread_schedule()
     }
 
     FOREACH_THREAD_FROM(curr, th) {
-	if (th->status <= THREAD_RUNNABLE) {
+	if (th->status == THREAD_TO_KILL) {
+	    next = th;
+	    break;
+	}
+	if (th->status == THREAD_RUNNABLE) {
 	    if (!next || next->priority < th->priority) 
 	       next = th;
 	}
