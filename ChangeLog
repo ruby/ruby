@@ -1,3 +1,8 @@
+Thu Feb 12 14:17:43 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: set ac_cv_func_link to yes to enable link() on MinGW.
+	  [ruby-dev:22241]
+
 Thu Feb 12 13:32:49 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (link): raise NotImplementedError on Win9X.
