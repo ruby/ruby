@@ -31,6 +31,8 @@ VALUE cString;
 void reg_prepare_re _((VALUE));
 void kcode_reset_option _((void));
 
+extern VALUE RS;
+
 VALUE
 str_new(ptr, len)
     UCHAR *ptr;
@@ -1286,9 +1288,12 @@ static VALUE
 str_reverse(str)
     VALUE str;
 {
-    VALUE obj = str_new(0, RSTRING(str)->len);
+    VALUE obj;
     UCHAR *s, *e, *p;
 
+    if (RSTRING(str)->len <= 1) return str;
+
+    obj = str_new(0, RSTRING(str)->len);
     s = RSTRING(str)->ptr; e = s + RSTRING(str)->len - 1;
     p = RSTRING(obj)->ptr;
 
@@ -1449,6 +1454,7 @@ str_upcase_bang(str)
     VALUE str;
 {
     UCHAR *s, *send;
+    int modify = 0;
 
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
@@ -1458,25 +1464,30 @@ str_upcase_bang(str)
 	}
 	else if (islower(*s)) {
 	    *s = toupper(*s);
+	    modify = 1;
 	}
 	s++;
     }
 
-    return str;
+    if (modify) return str;
+    return Qnil;
 }
 
 static VALUE
 str_upcase(str)
     VALUE str;
 {
-    return str_upcase_bang(str_dup(str));
+    VALUE val = str_upcase_bang(str_dup(str));
+
+    if (NIL_P(val)) return str;
+    return val;
 }
 
 static VALUE
 str_downcase_bang(str)
     VALUE str;
 {
-    UCHAR *s, *send;
+    UCHAR *s, *send, modify = 0;
 
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
@@ -1486,25 +1497,30 @@ str_downcase_bang(str)
 	}
 	else if (isupper(*s)) {
 	    *s = tolower(*s);
+	    modify = 1;
 	}
 	s++;
     }
 
-    return str;
+    if (modify) return str;
+    return Qnil;
 }
 
 static VALUE
 str_downcase(str)
     VALUE str;
 {
-    return str_downcase_bang(str_dup(str));
+    VALUE val = str_downcase_bang(str_dup(str));
+
+    if (NIL_P(val)) return str;
+    return val;
 }
 
 static VALUE
 str_capitalize_bang(str)
     VALUE str;
 {
-    UCHAR *s, *send;
+    UCHAR *s, *send, modify = 0;
 
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
@@ -1516,23 +1532,28 @@ str_capitalize_bang(str)
 	}
 	else if (isupper(*s)) {
 	    *s = tolower(*s);
+	    modify = 1;
 	}
     }
-    return str;
+    if (modify) return str;
+    return Qnil;
 }
 
 static VALUE
 str_capitalize(str)
     VALUE str;
 {
-    return str_capitalize_bang(str_dup(str));
+    VALUE val = str_capitalize_bang(str_dup(str));
+
+    if (NIL_P(val)) return str;
+    return val;
 }
 
 static VALUE
 str_swapcase_bang(str)
     VALUE str;
 {
-    UCHAR *s, *send;
+    UCHAR *s, *send, modify = 0;
 
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
@@ -1542,21 +1563,27 @@ str_swapcase_bang(str)
 	}
 	else if (isupper(*s)) {
 	    *s = tolower(*s);
+	    modify = 1;
 	}
 	else if (islower(*s)) {
 	    *s = toupper(*s);
+	    modify = 1;
 	}
 	s++;
     }
 
-    return str;
+    if (modify) return str;
+    return Qnil;
 }
 
 static VALUE
 str_swapcase(str)
     VALUE str;
 {
-    return str_swapcase_bang(str_dup(str));
+    VALUE val = str_swapcase_bang(str_dup(str));
+
+    if (NIL_P(val)) return str;
+    return val;
 }
 
 typedef UCHAR *USTR;
@@ -1607,9 +1634,10 @@ tr_trans(str, src, repl, sflag)
     struct tr trsrc, trrepl;
     int cflag = 0;
     UCHAR trans[256];
-    int i, c, c0;
-    UCHAR *s, *send, *t;
+    int i, c, c0, modify = 0;
+    UCHAR *s, *send;
 
+    str_modify(str);
     Check_Type(src, T_STRING);
     trsrc.p = RSTRING(src)->ptr; trsrc.pend = trsrc.p + RSTRING(src)->len;
     if (RSTRING(src)->len > 2 && RSTRING(src)->ptr[0] == '^') {
@@ -1618,7 +1646,8 @@ tr_trans(str, src, repl, sflag)
     }
     Check_Type(repl, T_STRING);
     if (RSTRING(repl)->len == 0) return str_delete_bang(str, src);
-    trrepl.p = RSTRING(repl)->ptr; trrepl.pend = trrepl.p + RSTRING(repl)->len;
+    trrepl.p = RSTRING(repl)->ptr;
+    trrepl.pend = trrepl.p + RSTRING(repl)->len;
     trsrc.gen = trrepl.gen = 0;
     trsrc.now = trrepl.now = 0;
     trsrc.max = trrepl.max = 0;
@@ -1658,28 +1687,41 @@ tr_trans(str, src, repl, sflag)
 	}
     }
 
-    str_modify(str);
-    t = s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
+    s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     c0 = -1;
     if (sflag) {
+	UCHAR *t = s;
+
 	while (s < send) {
 	    c = trans[*s++ & 0xff] & 0xff;
 	    if (s[-1] == c || c != c0) {
 		c0 = (s[-1] == c)?-1:c;
+		if (*t != c) {
+		    *t = c;
+		    modify = 1;
+		}
 		*t++ = c;
 	    }
+	}
+	if (RSTRING(str)->len = (t - RSTRING(str)->ptr)) {
+	    RSTRING(str)->len = (t - RSTRING(str)->ptr);
+	    modify = 1;
+	    *t = '\0';
 	}
     }
     else {
 	while (s < send) {
-	    c = trans[*s++ & 0xff] & 0xff;
-	    *t++ = c;
+	    c = trans[*s & 0xff] & 0xff;
+	    if (*s != c) {
+		*s = c;
+		modify = 1;
+	    }
+	    s++;
 	}
     }
-    *t = '\0';
-    if (sflag) RSTRING(str)->len = (t - RSTRING(str)->ptr);
 
-    return str;
+    if (modify) return str;
+    return Qnil;
 }
 
 static VALUE
@@ -1693,7 +1735,10 @@ static VALUE
 str_tr(str, src, repl)
     VALUE str, src, repl;
 {
-    return tr_trans(str_dup(str), src, repl, 0);
+    VALUE val = tr_trans(str_dup(str), src, repl, 0);
+
+    if (NIL_P(val)) return str;
+    return Qnil;
 }
 
 static void
@@ -1726,6 +1771,7 @@ str_delete_bang(str1, str2)
 {
     UCHAR *s, *send, *t;
     UCHAR squeez[256];
+    int modify = 0;
 
     Check_Type(str2, T_STRING);
     tr_setup_table(str2, squeez);
@@ -1737,20 +1783,25 @@ str_delete_bang(str1, str2)
     while (s < send) {
 	if (!squeez[*s & 0xff]) {
 	    *t++ = *s;
+	    modify = 1;
 	}
 	s++;
     }
     *t = '\0';
     RSTRING(str1)->len = t - RSTRING(str1)->ptr;
 
-    return str1;
+    if (modify) return str1;
+    return Qnil;
 }
 
 static VALUE
 str_delete(str1, str2)
     VALUE str1, *str2;
 {
-    return str_delete_bang(str_dup(str1), str2);
+    VALUE val = str_delete_bang(str_dup(str1), str2);
+
+    if (NIL_P(val)) return str1;
+    return val;
 }
 
 static VALUE
@@ -1759,7 +1810,7 @@ tr_squeeze(str1, str2)
 {
     UCHAR squeez[256];
     UCHAR *s, *send, *t;
-    char c, save;
+    char c, save, modify = 0;
 
     if (!NIL_P(str2)) {
 	tr_setup_table(str2, squeez);
@@ -1781,12 +1832,14 @@ tr_squeeze(str1, str2)
 	c = *s++ & 0xff;
 	if (c != save || !squeez[c & 0xff]) {
 	    *t++ = save = c;
+	    modify = 1;
 	}
     }
     *t = '\0';
     RSTRING(str1)->len = t - RSTRING(str1)->ptr;
 
-    return str1;
+    if (modify) return str1;
+    return Qnil;
 }
 
 static VALUE
@@ -1809,16 +1862,16 @@ str_squeeze(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    return str_squeeze_bang(argc, argv, str_dup(str));
+    VALUE val = str_squeeze_bang(argc, argv, str_dup(str));
+
+    if (NIL_P(val)) return str;
+    return val;
 }
 
 static VALUE
 str_tr_s_bang(str, src, repl)
     VALUE str, src, repl;
 {
-    Check_Type(src, T_STRING);
-    Check_Type(repl, T_STRING);
-
     return tr_trans(str, src, repl, 1);
 }
 
@@ -1826,7 +1879,10 @@ static VALUE
 str_tr_s(str, src, repl)
     VALUE str, src, repl;
 {
-    return str_tr_s_bang(str_dup(str), src, repl);
+    VALUE val = tr_trans(str_dup(str), src, repl, 1);
+
+    if (NIL_P(val)) return str;
+    return val;
 }
 
 static VALUE
@@ -1991,7 +2047,6 @@ str_each_line(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    extern VALUE RS;
     VALUE rs;
     int newline;
     int rslen;
@@ -2000,10 +2055,7 @@ str_each_line(argc, argv, str)
     int len = RSTRING(str)->len;
     VALUE line;
 
-    if (rb_scan_args(argc, argv, "01", &rs) == 1) {
-	if (!NIL_P(rs)) Check_Type(rs, T_STRING);
-    }
-    else {
+    if (rb_scan_args(argc, argv, "01", &rs) == 0) {
 	rs = RS;
     }
 
@@ -2011,6 +2063,7 @@ str_each_line(argc, argv, str)
 	rb_yield(str);
 	return Qnil;
     }
+    Check_Type(rs, T_STRING);
 
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
@@ -2063,9 +2116,8 @@ static VALUE
 str_chop_bang(str)
     VALUE str;
 {
-    str_modify(str);
-
     if (RSTRING(str)->len > 0) {
+	str_modify(str);
 	RSTRING(str)->len--;
 	if (RSTRING(str)->ptr[RSTRING(str)->len] == '\n') {
 	    if (RSTRING(str)->len > 0 &&
@@ -2074,16 +2126,19 @@ str_chop_bang(str)
 	    }
 	}
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
+	return str;
     }
-
-    return str;
+    return Qnil;
 }
 
 static VALUE
 str_chop(str)
     VALUE str;
 {
-    return str_chop_bang(str_dup(str));
+    VALUE val = str_chop_bang(str_dup(str));
+
+    if (NIL_P(val)) return str;
+    return val;
 }
 
 static VALUE
@@ -2096,45 +2151,85 @@ f_chop_bang(str)
 static VALUE
 f_chop()
 {
-    return str_chop_bang(str_dup(uscore_get()));
-}
+    VALUE str = uscore_get();
 
-static VALUE
-str_chomp_bang(str)
-    VALUE str;
-{
-    str_modify(str);
-
-    if (RSTRING(str)->len > 0 &&
-	RSTRING(str)->ptr[RSTRING(str)->len-1] == '\n') {
-	RSTRING(str)->len--;
-	if (RSTRING(str)->len > 0 &&
-	    RSTRING(str)->ptr[RSTRING(str)->len] == '\r') {
-	    RSTRING(str)->len--;
-	}
-	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
-    }
+    str = str_chop_bang(str_dup(str));
+    if (NIL_P(str)) return uscore_get();
+    lastline_set(str);
     return str;
 }
 
 static VALUE
-str_chomp(str)
+str_chomp_bang(argc, argv, str)
+    int argc;
+    VALUE *argv;
     VALUE str;
 {
-    return str_chomp_bang(str_dup(str));
+    VALUE rs;
+    int newline;
+    int rslen;
+    UCHAR *p = RSTRING(str)->ptr;
+    int len = RSTRING(str)->len;
+
+    if (rb_scan_args(argc, argv, "01", &rs) == 0) {
+	rs = RS;
+    }
+    if (NIL_P(rs)) return Qnil;
+
+    Check_Type(rs, T_STRING);
+    rslen = RSTRING(rs)->len;
+    if (rslen == 0) {
+	while (len>0 && p[len-1] == '\n') {
+	    len--;
+	}
+	if (len < RSTRING(str)->len) {
+	    RSTRING(str)->len = len;
+	    return str;
+	}
+	return Qnil;
+    }
+    if (rslen > len) return Qnil;
+    newline = RSTRING(rs)->ptr[rslen-1];
+
+    if (p[len-1] == newline &&
+	(rslen <= 1 ||
+	 memcmp(RSTRING(rs)->ptr, p+len-rslen, rslen) == 0)) {
+	RSTRING(str)->len -= rslen;
+	return str;
+    }
+    return Qnil;
 }
 
 static VALUE
-f_chomp_bang(str)
+str_chomp(argc, argv, str)
+    int argc;
+    VALUE *argv;
     VALUE str;
 {
-    return str_chomp_bang(uscore_get());
+    VALUE val = str_chomp_bang(argc, argv, str_dup(str));
+
+    if (NIL_P(val)) return str;
+    return val;
 }
 
 static VALUE
-f_chomp()
+f_chomp_bang(argc, argv)
+    int argc;
+    VALUE *argv;
 {
-    return str_chomp_bang(str_dup(uscore_get()));
+    return str_chomp_bang(argc, argv, uscore_get());
+}
+
+static VALUE
+f_chomp(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE val = str_chomp_bang(argc, argv, str_dup(uscore_get()));
+
+    if (NIL_P(val)) return uscore_get();
+    lastline_set(val);
+    return val;
 }
 
 static VALUE
@@ -2144,7 +2239,6 @@ str_strip_bang(str)
     UCHAR *s, *t, *e;
 
     str_modify(str);
-
     s = RSTRING(str)->ptr;
     e = t = s + RSTRING(str)->len;
     /* remove spaces at head */
@@ -2167,8 +2261,21 @@ str_strip_bang(str)
     else if (t < e) {
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
     }
+    else {
+	return Qnil;
+    }
 
     return str;
+}
+
+static VALUE
+str_strip(str)
+    VALUE str;
+{
+    VALUE val = str_strip_bang(str_dup(str));
+
+    if (NIL_P(val)) return str;
+    return val;
 }
 
 static VALUE
@@ -2236,13 +2343,6 @@ str_scan(str, pat)
 	rb_yield(result);
     }
     return Qnil;
-}
-
-static VALUE
-str_strip(str)
-    VALUE str;
-{
-    return str_strip_bang(str_dup(str));
 }
 
 static VALUE
@@ -2476,14 +2576,14 @@ Init_String()
     rb_define_method(cString, "sub", str_sub, -1);
     rb_define_method(cString, "gsub", str_gsub, -1);
     rb_define_method(cString, "chop", str_chop, 0);
-    rb_define_method(cString, "chomp", str_chomp, 0);
+    rb_define_method(cString, "chomp", str_chomp, -1);
     rb_define_method(cString, "strip", str_strip, 0);
 
     rb_define_method(cString, "sub!", str_sub_bang, -1);
     rb_define_method(cString, "gsub!", str_gsub_bang, -1);
     rb_define_method(cString, "strip!", str_strip_bang, 0);
     rb_define_method(cString, "chop!", str_chop_bang, 0);
-    rb_define_method(cString, "chomp!", str_chomp_bang, 0);
+    rb_define_method(cString, "chomp!", str_chomp_bang, -1);
 
     rb_define_method(cString, "tr", str_tr, 2);
     rb_define_method(cString, "tr_s", str_tr_s, 2);
@@ -2510,8 +2610,8 @@ Init_String()
     rb_define_global_function("chop", f_chop, 0);
     rb_define_global_function("chop!", f_chop_bang, 0);
 
-    rb_define_global_function("chomp", f_chomp, 0);
-    rb_define_global_function("chomp!", f_chomp_bang, 0);
+    rb_define_global_function("chomp", f_chomp, -1);
+    rb_define_global_function("chomp!", f_chomp_bang, -1);
 
     rb_define_global_function("split", f_split, -1);
 

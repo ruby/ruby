@@ -1,8 +1,13 @@
-Mon Mar 23 18:47:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Mon Mar 23 12:44:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_chomp_bang): now takes rs as an argument.
 
 	* eval.c (thread_free): main_thread should not be freed.
 
 Fri Mar 20 16:40:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_chomp_bang): chomp! (and other ! methods) returns
+ 	  nil if it does not modify the string.
 
 	* string.c (str_sub_iter_s): should check last pattern since it
 	  may be matched to null.

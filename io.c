@@ -159,12 +159,12 @@ io_write(io, str)
 
 #ifdef __human68k__
     {
-	register UCHAR *ptr = str->ptr;
-	n = (int) str->len;
+	register UCHAR *ptr = RSTRING(str)->ptr;
+	n = (int) RSTRING(str)->len;
 	while (--n >= 0)
 	    if (fputc(*ptr++, f) == EOF)
 		rb_sys_fail(fptr->path);
-	n = ptr - str->ptr;
+	n = ptr - RSTRING(str)->ptr;
     }
     if (ferror(f))
 	rb_sys_fail(fptr->path);
