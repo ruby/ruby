@@ -168,8 +168,7 @@ module REXML
 				@source.read if @source.buffer.size==0
 				if @document_status == nil
 					@source.consume( /^\s*/um )
-					word = @source.match( /(<.*?)>/um )
-					#word = @source.match_to( '>', /(<.*?)>/um )
+					word = @source.match( /(<[^>]*)>/um )
 					word = word[1] unless word.nil?
 					case word
 					when COMMENT_START
