@@ -226,7 +226,7 @@ lib_mainloop_core(check_root_widget)
     VALUE check_root_widget;
 {
     VALUE current = eventloop_thread;
-    int check = (check_root_widget == Qtrue);
+    int check = RTEST(check_root_widget);
     int tick_counter;
     struct timeval t;
 
@@ -374,6 +374,7 @@ lib_watchdog_core(check_rootwidget)
     VALUE evloop;
     int   prev_val = -1;
     int   chance = 0;
+    int   check = RTEST(check_rootwidget);
     struct timeval t0, t1;
 
     t0.tv_sec  = (time_t)0;
@@ -383,7 +384,7 @@ lib_watchdog_core(check_rootwidget)
 
     /* check other watchdog thread */
     if (watchdog_thread != 0) {
-	if (rb_funcall(watchdog_thread, rb_intern("stop?"), 0) == Qtrue) {
+	if (RTEST(rb_funcall(watchdog_thread, rb_intern("stop?"), 0))) {
 	    rb_funcall(watchdog_thread, rb_intern("kill"), 0);
 	} else {
 	    return Qnil;
@@ -394,7 +395,7 @@ lib_watchdog_core(check_rootwidget)
     /* watchdog start */
     do {
 	if (eventloop_thread == 0 || loop_counter == prev_val) {
-	    if (rb_funcall(eventloop_thread, rb_intern("stop?"), 0) == Qtrue
+	    if (RTEST(rb_funcall(eventloop_thread, rb_intern("stop?"), 0))
 		&& ++chance >= 3) {
 	      /* start new eventloop thread */
 	      DUMP2("eventloop thread %lx is sleeping or dead", 
@@ -416,7 +417,7 @@ lib_watchdog_core(check_rootwidget)
 	    }
 	    /* rb_thread_schedule(); */
 	}
-    } while(!(check_rootwidget == Qtrue) || Tk_GetNumMainWindows() != 0);
+    } while(!check || Tk_GetNumMainWindows() != 0);
 
     return Qnil;
 }
