@@ -101,6 +101,9 @@
 #define __const
 #endif /* People who don't like const sys_error */
 
+#ifdef NT
+typedef long size_t;
+#endif
 
 #ifndef NULL
 #define	NULL	0

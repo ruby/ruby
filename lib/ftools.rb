@@ -63,7 +63,7 @@ class << File
     to = catname(from, to)
     $stderr.print from, " -> ", to, "\n" if verbose
 
-    if PLATFORM =~ /djgpp|cygwin32|mswin32/ and FileTest.file? to
+    if PLATFORM =~ /djgpp|cygwin|mswin32/ and FileTest.file? to
       unlink to
     end
     begin
@@ -154,6 +154,7 @@ class << File
   def install(from, to, mode = nil, verbose = false)
     to = catname(from, to)
     unless FileTest.exist? to and cmp from, to
+      unlink to if FileTest.exist? to
       cp from, to, verbose
       chmod mode, to, verbose if mode
     end

@@ -2690,7 +2690,7 @@ fi
 echo "$ac_t""$ac_cv_func_memcmp_clean" 1>&6
 test $ac_cv_func_memcmp_clean = no && LIBOBJS="$LIBOBJS memcmp.o"
 
-for ac_func in dup2 memmove mkdir strcasecmp strerror strftime\
+for ac_func in dup2 setenv memmove mkdir strcasecmp strerror strftime\
 		 strchr strstr strtoul strdup crypt flock vsnprintf
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6

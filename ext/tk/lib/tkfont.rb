@@ -90,7 +90,7 @@ class TkFont
 	raise RuntimeError, "unknown option '-font'"
       end
       fnt = tk_split_simplelist(font_prop)[4]
-      if fnt == []
+      if fnt == ""
 	TkFont.new(nil, nil).call_font_configure(path, *(args + [{}]))
       else
 	begin

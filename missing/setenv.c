@@ -5,7 +5,12 @@
  *    License or the Artistic License, as specified in the README file.
  */
 
-#include "ruby.h"
+void *xmalloc ();
+void *xcalloc ();
+void *xrealloc ();
+#define ALLOC_N(type,n) (type*)xmalloc(sizeof(type)*(n))
+#define ALLOC(type) (type*)xmalloc(sizeof(type))
+#define REALLOC_N(var,type,n) (var)=(type*)xrealloc((char*)(var),sizeof(type)*(n))
 
 #ifndef NT
 extern char **environ;
@@ -82,7 +87,7 @@ int n;
 #endif /* MSDOS */
 }
 #else /* if WIN32 */
-void
+int
 setenv(nam,val, n)
 char *nam, *val;
 int n;
@@ -144,6 +149,7 @@ int n;
     SetEnvironmentVariable(nam,val);
 
 #endif
+    return 1;
 }
 
 #endif /* WIN32 */

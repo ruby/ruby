@@ -856,7 +856,7 @@ Init_Time()
     rb_define_method(cTime, "to_i", time_to_i, 0);
     rb_define_method(cTime, "to_f", time_to_f, 0);
     rb_define_method(cTime, "<=>", time_cmp, 1);
-    rb_define_method(cTime, "eql?", time_eql, 0);
+    rb_define_method(cTime, "eql?", time_eql, 1);
     rb_define_method(cTime, "hash", time_hash, 0);
 
     rb_define_method(cTime, "localtime", time_localtime, 0);

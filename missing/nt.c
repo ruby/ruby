@@ -287,6 +287,8 @@ isInternalCmd(char *cmd)
 {
 	int i, fRet=0;
 	char **vec;
+	int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
+
 	NtMakeCmdVector(cmd, &vec, FALSE);
         for( i = 0; szInternalCmds[i] ; i++){
 	    if(!strcmp(szInternalCmds[i], vec[0])){

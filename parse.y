@@ -572,8 +572,10 @@ reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
 arg		: variable '=' {$$ = assignable($1, 0);} arg
 		    {
 		        $$ = $<node>3;
-		        $$->nd_value = $4;
-		        fixpos($$, $4);
+			if ($$) {
+			    $$->nd_value = $4;
+			    fixpos($$, $4);
+			}
 		    }
 		| primary '[' aref_args ']' '=' arg
 		    {

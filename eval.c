@@ -3478,11 +3478,13 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	}
 	break;
 
-	/* for re-scoped/renamed method */
-      case NODE_ZSUPER:
-	/* for attr get/set */
-      case NODE_ATTRSET:
-      case NODE_IVAR:
+	
+      case NODE_IVAR:		/* for attr get */
+	if (argc != 0) {
+	    ArgError("Wrong # of arguments(%d for 0)", argc);
+	}
+      case NODE_ATTRSET:	/* for attr set */
+      case NODE_ZSUPER:		/* for re-scoped/renamed method */
 	result = rb_eval(recv, body);
 	break;
 
@@ -4280,7 +4282,7 @@ f_require(obj, fname)
     VALUE obj, fname;
 {
     char *ext, *file, *feature, *buf; /* OK */
-    VALUE load;
+    volatile VALUE load;
 
     Check_SafeStr(fname);
     if (rb_provided(RSTRING(fname)->ptr))

@@ -20,7 +20,7 @@ LDFLAGS =  $(CFLAGS) -Fm
 #CFLAGS = -nologo -DNT=1 -Zi -MD 
 #LDFLAGS =  $(CFLAGS) -Fm -MD
 LIBS =  $(EXTLIBS)  advapi32.lib wsock32.lib
-MISSING = crypt.obj setenv.obj alloca.obj nt.obj
+MISSING = crypt.obj setenv.obj vsnprintf.obj alloca.obj nt.obj
 
 prefix = 
 binprefix = 
@@ -177,6 +177,9 @@ strtol.obj: missing/strtol.c
 
 strtoul.obj: missing/strtoul.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strtoul.c
+
+vsnprintf.obj: missing/vsnprintf.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/vsnprintf.c
 
 # when I use -I., there is confliction at "OpenFile" 
 # so, set . into environment varible "include"

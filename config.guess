@@ -779,7 +779,7 @@ EOF
     news*:NEWS-OS:*:6*)
 	echo mips-sony-newsos6
 	exit 0 ;;
-    R3000:*System_V*:*:* | R4000:UNIX_SYSV:*:* | R4000:UNIX_SV:*:*)
+    R[34]000:*System_V*:*:* | R4000:UNIX_SYSV:*:* | R4000:UNIX_SV:*:*)
 	if [ -d /usr/nec ]; then
 		echo mips-nec-sysv`echo ${UNAME_RELEASE} | sed -n 's/\([.0-9]*\).*/\1/p'`
 	else

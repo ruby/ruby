@@ -1,3 +1,11 @@
+Mon Jan 18 13:02:27 1999  Kuroda Jun  <jkuro@dwe.co.j>
+
+	* hash.c (env_keys): strchr() may return NULL.
+
+Sun Jan 17 19:45:37 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* pack.c (pack_pack): nil packing caused SEGV.
+
 Mon Jan 11 16:52:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.2.1 (stable) released.

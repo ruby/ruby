@@ -134,7 +134,7 @@ pack_pack(ary, fmt)
 	  case 'H': case 'h':
 	    from = NEXTFROM;
 	    if (NIL_P(from)) {
-		ptr = 0;
+		ptr = "";
 		plen = 0;
 	    }
 	    else {

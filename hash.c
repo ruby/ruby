@@ -963,6 +963,10 @@ env_keys()
     env = environ;
     while (*env) {
 	char *s = strchr(*env, '=');
+	if (!s) {
+	  env++;
+	  continue;
+	}
 	ary_push(ary, str_taint(str_new(*env, s-*env)));
 	env++;
     }
@@ -985,6 +989,10 @@ env_values()
     env = environ;
     while (*env) {
 	char *s = strchr(*env, '=');
+	if (!s) {
+	  env++;
+	  continue;
+	}
 	ary_push(ary, str_taint(str_new2(s+1)));
 	env++;
     }
@@ -1050,6 +1058,10 @@ env_to_a()
     env = environ;
     while (*env) {
 	char *s = strchr(*env, '=');
+	if (!s) {
+	  env++;
+	  continue;
+	}
 	ary_push(ary, assoc_new(str_taint(str_new(*env, s-*env)),
 				str_taint(str_new2(s+1))));
 	env++;
@@ -1095,13 +1107,19 @@ env_has_value(dmy, value)
 {
     char **env;
     VALUE ary;
+    int len;
 
     if (TYPE(value) != T_STRING) return FALSE;
     ary = ary_new();
     env = environ;
     while (*env) {
-	char *s = strchr(*env, '=')+1;
-	int len = strlen(s);
+	char *s = strchr(*env, '=');
+	if (!s) {
+	  env++;
+	  continue;
+	}
+	s++;
+	len = strlen(s);
 	if (strncmp(s, RSTRING(value)->ptr, len) == 0) return TRUE;
 	env++;
     }

@@ -147,9 +147,6 @@ mkdir.o: @srcdir@/missing/mkdir.c
 setenv.o: @srcdir@/missing/setenv.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/setenv.c
 
-vsnprintf.o: @srcdir@/missing/vsnprintf.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/vsnprintf.c
-
 strcasecmp.o: @srcdir@/missing/strcasecmp.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strcasecmp.c
 
@@ -173,6 +170,9 @@ strtol.o: @srcdir@/missing/strtol.c
 
 strtoul.o: @srcdir@/missing/strtoul.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strtoul.c
+
+vsnprintf.o: @srcdir@/missing/vsnprintf.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/vsnprintf.c
 
 nt.o: @srcdir@/missing/nt.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/nt.c
