@@ -2,16 +2,9 @@ require 'test/unit/testsuite'
 require 'test/unit/testcase'
 require 'optparse'
 
-runner = 'console'
-opt = OptionParser.new
-opt.on("--runner=console", String) do |arg|
-  runner = arg
-end
-opt.parse!(ARGV)
-
-ARGV.each do |tc_name|
-  require tc_name
-end
+Revision = %w$Revision$[1..-1]
+(Runner = Revision[0]).chomp!(",v")
+Version = Revision[1].scan(/\d+/, &method(:Integer))
 
 class BulkTestSuite < Test::Unit::TestSuite
   def self.suite
@@ -38,5 +31,23 @@ runners_map = {
     Test::Unit::UI::Fox::TestRunner.run(suite)
   end,
 }
+
+runner = 'console'
+ARGV.options do |opt|
+  opt.program_name = Runner
+  opt.banner << " [tests...]"
+  opt.on("--runner=mode", runners_map, "UI mode (console, gtk,fox)") do |arg|
+    runner = arg
+  end
+  opt.parse!
+end or abort(ARGV.options.help)
+
+if ARGV.empty?
+  ARGV.replace(Dir.glob(File.join(File.dirname(__FILE__), "**", "test_*.rb")).sort)
+end
+
+ARGV.each do |tc_name|
+  require tc_name
+end
 
 runners_map[runner].call(BulkTestSuite.suite)

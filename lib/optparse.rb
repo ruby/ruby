@@ -620,7 +620,7 @@ Default options, which never appear in option summary.
       end
     end
     unless pkg
-      puts v if v = ARGV.options.ver
+      v = ARGV.options.ver and puts v
     end
     exit
   end
@@ -860,11 +860,12 @@ Default options, which never appear in option summary.
   end
 
 =begin
---- OptionParser#to_str
+--- OptionParser#help
 --- OptionParser#to_s
     Returns option summary string.
 =end #'#"#`#
-  def to_s; summarize(banner.to_s.sub(/\n?\z/, "\n")) end
+  def help; summarize(banner.to_s.sub(/\n?\z/, "\n")) end
+  alias to_s help
 
 =begin
 --- OptionParser#to_a
@@ -976,7 +977,7 @@ Default options, which never appear in option summary.
 	  raise ArgumentError, "argument pattern given twice"
 	end
 	if Array === o
-	  o.each {|o| pattern[(Array === o ? o.shift : o)] = o}
+	  o.each {|o| pattern[(Array === o ? o[0] : o)] = o}
 	else
 	  pattern.update(o)
 	end

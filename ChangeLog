@@ -1,3 +1,16 @@
+Fri Sep  5 11:32:17 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (--version): fix assignment/reference order.
+
+	* lib/optparse.rb (OptionParser#help): new; OptionParser#to_s may
+	  be deprecated in future.
+
+	* lib/optparse/version.rb (OptionParser#show_version): hide Object.
+
+	* test/runner.rb: fix optparse usage.
+
+	* test/runner.rb: glob all testsuits if no tests given.
+
 Fri Sep  5 10:42:58 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/runner.rb: added.  gets testcases from command line and runs it.

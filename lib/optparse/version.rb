@@ -5,7 +5,9 @@ class << OptionParser
     progname = ARGV.options.program_name
     show = proc do |klass, version|
       version = version.join(".") if Array === version
-      str = "#{progname}: #{klass} version #{version}"
+      str = "#{progname}"
+      str << ": #{klass}" unless klass == Object
+      str << " version #{version}"
       if klass.const_defined?(:Release)
         str << " (#{klass.const_get(:Release)})"
       end
@@ -25,6 +27,16 @@ class << OptionParser
       end
     end
     exit
+  end
+
+  def each_const(path, klass = ::Object)
+    path.split(/::|\//).inject(klass) do |klass, name|
+      raise NameError, path unless Module === klass
+      klass.constants.grep(/#{name}/i) do |c|
+        klass.const_defined?(c) or next
+        c = klass.const_get(c)
+      end
+    end
   end
 
   def search_const(klass, name)

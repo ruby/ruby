@@ -10,7 +10,7 @@ OptionParser.accept(DateTime) do |s,|
 end
 OptionParser.accept(Date) do |s,|
   begin
-    DateTime.parse(s) if s
+    Date.parse(s) if s
   rescue ArgumentError
     raise OptionParser::InvalidArgument, s
   end
