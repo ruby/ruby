@@ -1,3 +1,7 @@
+Fri Mar  8 12:19:15 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv.rb: use its own thread group for background threads.
+
 Thu Mar  7 20:08:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* gc.c (rb_source_filename): added. holds unique strings for file
@@ -66,7 +70,7 @@ Fri Mar  1 06:25:49 2002  Tanaka Akira  <akr@m17n.org>
 	  check msg_control and msg_accrights in struct msghdr.  check
 	  sys/uio.h.
 
-	* socket/socket.c: include sys/uio.h if available.
+	* ext/socket/socket.c: include sys/uio.h if available.
 	  (thread_read_select): new function.
 	  (unix_send_io): ditto.
 	  (unix_recv_io): ditto.

@@ -341,6 +341,8 @@ class Resolv
     Port = 53
     UDPSize = 512
 
+    DNSThreadGroup = ThreadGroup.new
+
     def initialize(config="/etc/resolv.conf")
       @mutex = Mutex.new
       @config = Config.new(config)
@@ -512,6 +514,7 @@ class Resolv
           @id = {}
           @id.default = -1
           @thread = Thread.new {
+	    DNSThreadGroup.add Thread.current
             loop {
               reply, from = @sock.recvfrom(UDPSize)
               msg = begin
@@ -565,6 +568,7 @@ class Resolv
           @sock.fcntl(Fcntl::F_SETFD, 1)
           @id = -1
           @thread = Thread.new {
+	    DNSThreadGroup.add Thread.current
             loop {
               reply = @sock.recv(UDPSize)
               msg = begin
@@ -616,6 +620,7 @@ class Resolv
           @id = -1
           @senders = {}
           @thread = Thread.new {
+	    DNSThreadGroup.add Thread.current
             loop {
               len = @sock.read(2).unpack('n')
               reply = @sock.read(len)
