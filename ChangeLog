@@ -1,3 +1,10 @@
+Thu Mar 24 23:10:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (macro_defined?): try to compile for an old compiler
+	  which doesn't bail out at #error directive.  [ruby-dev:25818]
+
+	* lib/mkmf.rb (check_sizeof): refine logging messages.
+
 Wed Mar 23 19:08:10 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/utils.rb (WEBrick::Utils.create_listeners):

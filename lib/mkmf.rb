@@ -458,10 +458,11 @@ end
 
 def macro_defined?(macro, src, opt = "", &b)
   src = src.sub(/[^\n]\z/, "\\&\n")
-  try_cpp(src + <<"SRC", opt, &b)
+  try_compile(src + <<"SRC", opt, &b)
 /*top*/
 #ifndef #{macro}
 # error
+>>>>>> #{macro} undefined <<<<<<
 #endif
 SRC
 end
@@ -688,12 +689,18 @@ def check_sizeof(type, header = nil, &b)
   expr = "sizeof(#{type})"
   m = "checking size of #{type}... "
   message "%s", m
-  Logging::message "check_sizeof: %s--------------------\n", m
-  if size = try_constant(expr, header, &b)
-    $defs.push(format("-DSIZEOF_%s=%d", type.upcase.tr_s("^A-Z0-9_", "_"), size))
+  a = size = nil
+  Logging::postpone do
+    if size = try_constant(expr, header, &b)
+      $defs.push(format("-DSIZEOF_%s=%d", type.upcase.tr_s("^A-Z0-9_", "_"), size))
+      a = "#{size}\n"
+    else
+      a = "failed\n"
+    end
+    "check_sizeof: #{m}-------------------- #{a}\n"
   end
-  message(a = size ? "#{size}\n" : "failed\n")
-  Logging::message "-------------------- %s\n", a
+  message(a)
+  Logging::message "--------------------\n\n"
   size
 end
 
