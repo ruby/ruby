@@ -162,6 +162,14 @@ rb_warning(fmt, va_alist)
     va_end(args);
 }
 
+/*
+ * call-seq:
+ *    warn(msg)   => nil
+ *
+ * Display the given message (followed by a newline) on STDERR unless
+ * warnings are disabled (for example with the <code>-W0</code> flag).
+ */
+
 static VALUE
 rb_warn_m(self, mesg)
     VALUE self, mesg;
@@ -517,6 +525,13 @@ exc_set_backtrace(exc, bt)
     return rb_iv_set(exc, "bt", check_backtrace(bt));
 }
 
+/*
+ * call-seq:
+ *   SystemExit.new(status=0)   => system_exit
+ *
+ * Create a new +SystemExit+ exception with the given status.
+ */
+
 static VALUE
 exit_initialize(argc, argv, exc)
     int argc;
@@ -532,6 +547,15 @@ exit_initialize(argc, argv, exc)
     rb_iv_set(exc, "status", status);
     return exc;
 }
+
+
+/*
+ * call-seq:
+ *   system_exit.status   => fixnum
+ *
+ * Return the status value associated with this system exit.
+ */
+
 
 static VALUE
 exit_status(exc)
@@ -564,6 +588,15 @@ rb_name_error(id, fmt, va_alist)
     rb_exc_raise(exc);
 }
 
+/*
+ * call-seq:
+ *   NameError.new(msg [, name])  => name_error
+ *
+ * Construct a new NameError exception. If given the <i>name</i>
+ * parameter may subsequently be examined using the <code>NameError.name</code>
+ * method.
+ */
+
 static VALUE
 name_err_initialize(argc, argv, self)
     int argc;
@@ -578,12 +611,29 @@ name_err_initialize(argc, argv, self)
     return self;
 }
 
+/*
+ *  call-seq:
+ *    name_error.name    =>  string or nil
+ *
+ *  Return the name associated with this NameError exception.
+ */
+
 static VALUE
 name_err_name(self)
     VALUE self;
 {
     return rb_attr_get(self, rb_intern("name"));
 }
+
+/*
+ * call-seq:
+ *   NoMethodError.new(msg, name [, args])  => no_method_error
+ *
+ * Contruct a NoMethodError exception for a method of the given name
+ * called with the given arguments. The name may be accessed using
+ * the <code>#name</code> method on the resulting object, and the
+ * arguments using the <code>#args</code> method.
+ */
 
 static VALUE
 nometh_err_initialize(argc, argv, self)
@@ -596,6 +646,14 @@ nometh_err_initialize(argc, argv, self)
     rb_iv_set(self, "args", args);
     return self;
 }
+
+/*
+ * call-seq:
+ *   no_method_error.args  => obj
+ *
+ * Return the arguments passed in as the third parameter to
+ * the constructor.
+ */
 
 static VALUE
 nometh_err_args(self)
@@ -679,6 +737,17 @@ get_syserr(n)
     return error;
 }
 
+/*
+ * call-seq:
+ *   SystemCallError.new(msg, errno)  => system_call_error_subclass
+ *
+ * If _errno_ corresponds to a known system error code, constructs
+ * the appropriate <code>Errno</code> class for that error, otherwise
+ * constructs a generic <code>SystemCallError</code> object. The
+ * error number is subsequently available via the <code>errno</code>
+ * method.
+ */
+
 static VALUE
 syserr_initialize(argc, argv, self)
     int argc;
@@ -726,12 +795,28 @@ syserr_initialize(argc, argv, self)
     return self;
 }
 
+/*
+ * call-seq:
+ *   system_call_error.errno   => fixnum
+ *
+ * Return this SystemCallError's error number.
+ */
+
 static VALUE
 syserr_errno(self)
     VALUE self;
 {
     return rb_attr_get(self, rb_intern("errno"));
 }
+
+/*
+ * call-seq:
+ *   system_call_error === other  => true or false
+ *
+ * Return +true+ if the receiver is a generic +SystemCallError+, or
+ * if the error numbers _self_ and _other_ are the same.
+ */
+
 
 static VALUE
 syserr_eqq(self, exc)

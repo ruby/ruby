@@ -334,7 +334,7 @@ module RDoc
     
     ############################################################
 
-    # Find the C code corresponding to a c method
+    # Find the C code corresponding to a Ruby method
     def find_body(meth_name, meth_obj, body)
       if body =~ %r{((?>/\*.*?\*/\s+))(static\s+)?VALUE\s+#{meth_name}
                     \s*(\(.*?\)).*?^}xm

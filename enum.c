@@ -728,6 +728,20 @@ max_ii(i, memo)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     enum.max                   => obj
+ *     enum.max {|a,b| block }    => obj
+ *  
+ *  Returns the object in _enum_ with the maximum value. The
+ *  first form assumes all objects implement <code>Comparable</code>;
+ *  the second uses the block to return <em>a <=> b</em>.
+ *     
+ *     a = %w(albatross dog horse)
+ *     a.max                                  #=> "horse"
+ *     a.max {|a,b| a.length <=> b.length }   #=> "albatross"
+ */  
+
 static VALUE
 enum_max(obj)
     VALUE obj;

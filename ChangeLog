@@ -1,8 +1,12 @@
-Mon Dec 29 11:00:16 2003  Dave Thomas  <dave@wireless_3.local.thomases.com>
+Mon Dec 29 12:51:02 2003  Dave Thomas  <dave@pragprog.com>
+
+	* eval.c: Add RDoc for Kernel global functions.
+
+Mon Dec 29 11:00:16 2003  Dave Thomas  <dave@pragprog.com>
 
 	* array.c: Tidy up RDoc loose ends.
 
-Mon Dec 29 05:05:51 2003  Dave Thomas  <dave@wireless_3.local.thomases.com>
+Mon Dec 29 05:05:51 2003  Dave Thomas  <dave@pragprog.com>
 
 	* struct.c, random: Add RDoc comments
 
@@ -10,7 +14,7 @@ Mon Dec 29 02:25:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/optparse.rb: Improved documentation.
 
-Mon Dec 29 02:20:54 2003  Dave Thomas  <dave@wireless_3.local.thomases.com>
+Mon Dec 29 02:20:54 2003  Dave Thomas  <dave@pragprog.com>
 
 	* eval.c: Add RDoc for class Proc, Method, UnboundMethod
 

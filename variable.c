@@ -531,6 +531,29 @@ rb_trace_eval(cmd, val)
     rb_eval_cmd(cmd, rb_ary_new3(1, val), 0);
 }
 
+/*
+ *  call-seq:
+ *     trace_var(symbol, cmd )             => nil
+ *     trace_var(symbol) {|val| block }    => nil
+ *  
+ *  Controls tracing of assignments to global variables. The parameter
+ *  +symbol_ identifies the variable (as either a string name or a
+ *  symbol identifier). _cmd_ (which may be a string or a
+ *  +Proc+ object) or block is executed whenever the variable
+ *  is assigned. The block or +Proc+ object receives the
+ *  variable's new value as a parameter. Also see
+ *  <code>Kernel::untrace_var</code>.
+ *     
+ *     trace_var :$_, proc {|v| puts "$_ is now '#{v}'" }
+ *     $_ = "hello"
+ *     $_ = ' there'
+ *     
+ *  <em>produces:</em>
+ *     
+ *     $_ is now 'hello'
+ *     $_ is now ' there'
+ */
+
 VALUE
 rb_f_trace_var(argc, argv)
     int argc;
@@ -583,6 +606,16 @@ remove_trace(var)
     }
     var->trace = t.next;
 }
+
+/*
+ *  call-seq:
+ *     untrace_var(symbol [, cmd] )   => array or nil
+ *  
+ *  Removes tracing for the specified command on the given global
+ *  variable and returns +nil+. If no command is specified,
+ *  removes all tracing for that variable and returns an array
+ *  containing the commands actually removed.
+ */
 
 VALUE
 rb_f_untrace_var(argc, argv)
@@ -721,6 +754,15 @@ gvar_i(key, entry, ary)
     rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     return ST_CONTINUE;
 }
+
+/*
+ *  call-seq:
+ *     global_variables    => array
+ *  
+ *  Returns an array of the names of global variables.
+ *     
+ *     global_variables.grep /std/   #=> ["$stderr", "$stdout", "$stdin"]
+ */
 
 VALUE
 rb_f_global_variables()

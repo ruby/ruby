@@ -495,6 +495,14 @@ rb_remove_method(klass, name)
     remove_method(klass, rb_intern(name));
 }
 
+/*
+ *  call-seq:
+ *     remove_method(symbol)   => self
+ *  
+ *  Removes the method identified by _symbol_ from the current
+ *  class. For an example, see <code>Module.undef_method</code>.
+ */
+
 static VALUE
 rb_mod_remove_method(argc, argv, mod)
     int argc;
@@ -1581,12 +1589,26 @@ localjump_error(mesg, value, reason)
     rb_exc_raise(exc);
 }
 
+/*
+ * call_seq:
+ *   local_jump_error.exit_value  => obj
+ *
+ * Returns the exit value associated with this +LocalJumpError+.
+ */
 static VALUE
 localjump_xvalue(exc)
     VALUE exc;
 {
     return rb_iv_get(exc, "@exit_value");
 }
+
+/*
+ * call-seq:
+ *    local_jump_error.reason   => symbol
+ *
+ * The reason this block was terminated:
+ * :break, :redo, :retry, :next, :return, or :noreason.
+ */
 
 static VALUE
 localjump_reason(exc)
@@ -1769,6 +1791,21 @@ cvar_cbase()
     return cref->nd_clss;
 }
 
+/*
+ *  call-seq:
+ *     Module.nesting    => array
+ *  
+ *  Returns the list of +Modules+ nested at the point of call.
+ *     
+ *     module M1
+ *       module M2
+ *         $a = Module.nesting
+ *       end
+ *     end
+ *     $a           #=> [M1::M2, M1]
+ *     $a[0].name   #=> "M1::M2"
+ */
+
 static VALUE
 rb_mod_nesting()
 {
@@ -1784,6 +1821,20 @@ rb_mod_nesting()
     }
     return ary;
 }
+
+/*
+ *  call-seq:
+ *     Module.constants   => array
+ *  
+ *  Returns an array of the names of all constants defined in the
+ *  system. This list includes the names of all modules and classes.
+ *     
+ *     p Module.constants.sort[1..5]
+ *     
+ *  <em>produces:</em>
+ *     
+ *     ["ARGV", "ArgumentError", "Array", "Bignum", "Binding"]
+ */
 
 static VALUE
 rb_mod_s_constants()
@@ -1875,6 +1926,49 @@ rb_undef(klass, id)
     }
 }
 
+/*
+ *  call-seq:
+ *     undef_method(symbol)    => self
+ *  
+ *  Prevents the current class from responding to calls to the named
+ *  method. Contrast this with <code>remove_method</code>, which deletes
+ *  the method from the particular class; Ruby will still search
+ *  superclasses and mixed-in modules for a possible receiver.
+ *     
+ *     class Parent
+ *       def hello
+ *         puts "In parent"
+ *       end
+ *     end
+ *     class Child < Parent
+ *       def hello
+ *         puts "In child"
+ *       end
+ *     end
+ *     
+ *     
+ *     c = Child.new
+ *     c.hello
+ *     
+ *     
+ *     class Child
+ *       remove_method :hello  # remove from child, still in parent
+ *     end
+ *     c.hello
+ *     
+ *     
+ *     class Child
+ *       undef_method :hello   # prevent any calls to 'hello'
+ *     end
+ *     c.hello
+ *     
+ *  <em>produces:</em>
+ *     
+ *     In child
+ *     In parent
+ *     prog.rb:23: undefined method `hello' for #<Child:0x401b3bb4> (NoMethodError)
+ */
+
 static VALUE
 rb_mod_undef_method(argc, argv, mod)
     int argc;
@@ -1933,6 +2027,28 @@ rb_alias(klass, name, def)
 	rb_funcall(klass, added, 1, ID2SYM(name));
     }
 }
+
+/*
+ *  call-seq:
+ *     alias_method(new_name, old_name)   => self
+ *  
+ *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
+ *  be used to retain access to methods that are overridden.
+ *     
+ *     module Mod
+ *       alias_method :orig_exit, :exit
+ *       def exit(code=0)
+ *         puts "Exiting with code #{code}"
+ *         orig_exit(code)
+ *       end
+ *     end
+ *     include Mod
+ *     exit(99)
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Exiting with code 99
+ */
 
 static VALUE
 rb_mod_alias_method(mod, newname, oldname)
@@ -2274,6 +2390,50 @@ rb_obj_is_proc(proc)
     }
     return Qfalse;
 }
+
+/*
+ *  call-seq:
+ *     set_trace_func(proc)    => proc
+ *     set_trace_func(nil)     => nil
+ *  
+ *  Establishes _proc_ as the handler for tracing, or disables
+ *  tracing if the parameter is +nil+. _proc_ takes up
+ *  to six parameters: an event name, a filename, a line number, an
+ *  object id, a binding, and the name of a class. _proc_ is
+ *  invoked whenever an event occurs. Events are: <code>c-call</code>
+ *  (call a C-language routine), <code>c-return</code> (return from a
+ *  C-language routine), <code>call</code> (call a Ruby method),
+ *  <code>class</code> (start a class or module definition),
+ *  <code>end</code> (finish a class or module definition),
+ *  <code>line</code> (execute code on a new line), <code>raise</code>
+ *  (raise an exception), and <code>return</code> (return from a Ruby
+ *  method). Tracing is disabled within the context of _proc_.
+ *
+ *      class Test
+ *	def test
+ *	  a = 1
+ *	  b = 2
+ *	end
+ *      end
+ *
+ *      set_trace_func proc { |event, file, line, id, binding, classname|
+ *	   printf "%8s %s:%-2d %10s %8s\n", event, file, line, id, classname
+ *      }
+ *      t = Test.new
+ *      t.test
+ *
+ *	  line prog.rb:11               false
+ *      c-call prog.rb:11        new    Class
+ *      c-call prog.rb:11 initialize   Object
+ *    c-return prog.rb:11 initialize   Object
+ *    c-return prog.rb:11        new    Class
+ *	  line prog.rb:12               false
+ *  	  call prog.rb:2        test     Test
+ *	  line prog.rb:3        test     Test
+ *	  line prog.rb:4        test     Test
+ *      return prog.rb:4        test     Test
+ */
+
 
 static VALUE
 set_trace_func(obj, trace)
@@ -3815,6 +3975,15 @@ rb_respond_to(obj, id)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     obj.respond_to?(symbol, include_private=false) => true or false
+ *  
+ *  Returns +true+> if _obj_ responds to the given
+ *  method. Private methods are included in the search only if the
+ *  optional second parameter evaluates to +true+.
+ */
+
 static VALUE
 rb_obj_respond_to(argc, argv, obj)
     int argc;
@@ -3832,6 +4001,32 @@ rb_obj_respond_to(argc, argv, obj)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     mod.method_defined?(symbol)    => true or false
+ *  
+ *  Returns +true+ if the named method is defined by
+ *  _mod_ (or its included modules and, if _mod_ is a class,
+ *  its ancestors). Public and protected methods are matched.
+ *     
+ *     module A
+ *       def method1()  end
+ *     end
+ *     class B
+ *       def method2()  end
+ *     end
+ *     class C < B
+ *       include A
+ *       def method3()  end
+ *     end
+ *     
+ *     A.method_defined? :method1    #=> true
+ *     C.method_defined? "method1"   #=> true
+ *     C.method_defined? "method2"   #=> true
+ *     C.method_defined? "method3"   #=> true
+ *     C.method_defined? "method4"   #=> false
+ */
+
 static VALUE
 rb_mod_method_defined(mod, mid)
     VALUE mod, mid;
@@ -3840,6 +4035,32 @@ rb_mod_method_defined(mod, mid)
 }
 
 #define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
+
+/*
+ *  call-seq:
+ *     mod.public_method_defined?(symbol)   => true or false
+ *  
+ *  Returns +true+ if the named public method is defined by
+ *  _mod_ (or its included modules and, if _mod_ is a class,
+ *  its ancestors).
+ *     
+ *     module A
+ *       def method1()  end
+ *     end
+ *     class B
+ *       protected
+ *       def method2()  end
+ *     end
+ *     class C < B
+ *       include A
+ *       def method3()  end
+ *     end
+ *     
+ *     A.method_defined? :method1           #=> true
+ *     C.public_method_defined? "method1"   #=> true
+ *     C.public_method_defined? "method2"   #=> false
+ *     C.method_defined? "method2"          #=> true
+ */
 
 static VALUE
 rb_mod_public_method_defined(mod, mid)
@@ -3855,6 +4076,32 @@ rb_mod_public_method_defined(mod, mid)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     mod.private_method_defined?(symbol)    => true or false
+ *  
+ *  Returns +true+ if the named private method is defined by
+ *  _ mod_ (or its included modules and, if _mod_ is a class,
+ *  its ancestors).
+ *     
+ *     module A
+ *       def method1()  end
+ *     end
+ *     class B
+ *       private
+ *       def method2()  end
+ *     end
+ *     class C < B
+ *       include A
+ *       def method3()  end
+ *     end
+ *     
+ *     A.method_defined? :method1            #=> true
+ *     C.private_method_defined? "method1"   #=> false
+ *     C.private_method_defined? "method2"   #=> true
+ *     C.method_defined? "method2"           #=> false
+ */
+
 static VALUE
 rb_mod_private_method_defined(mod, mid)
     VALUE mod, mid;
@@ -3868,6 +4115,32 @@ rb_mod_private_method_defined(mod, mid)
     }
     return Qfalse;
 }
+
+/*
+ *  call-seq:
+ *     mod.protected_method_defined?(symbol)   => true or false
+ *  
+ *  Returns +true+ if the named protected method is defined
+ *  by _mod_ (or its included modules and, if _mod_ is a
+ *  class, its ancestors).
+ *     
+ *     module A
+ *       def method1()  end
+ *     end
+ *     class B
+ *       protected
+ *       def method2()  end
+ *     end
+ *     class C < B
+ *       include A
+ *       def method3()  end
+ *     end
+ *     
+ *     A.method_defined? :method1              #=> true
+ *     C.protected_method_defined? "method1"   #=> false
+ *     C.protected_method_defined? "method2"   #=> true
+ *     C.method_defined? "method2"             #=> true
+ */
 
 static VALUE
 rb_mod_protected_method_defined(mod, mid)
@@ -3908,6 +4181,42 @@ rb_exit(status)
     exit(status);
 }
 
+/*
+ *  call-seq:
+ *     exit(integer=0)
+ *  
+ *  Initiates the termination of the Ruby script by raising the
+ *  <code>SystemExit</code> exception. This exception may be caught. The
+ *  optional parameter is used to return a status code to the invoking
+ *  environment.
+ *     
+ *     begin
+ *       exit
+ *       puts "never get here"
+ *     rescue SystemExit
+ *       puts "rescued a SystemExit exception"
+ *     end
+ *     puts "after begin block"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     rescued a SystemExit exception
+ *     after begin block
+ *     
+ *  Just prior to termination, Ruby executes any <code>at_exit</code>
+ *  functions and runs any object finalizers (see
+ *  <code>ObjectSpace</code> beginning on page 434).
+ *     
+ *     at_exit { puts "at_exit function" }
+ *     ObjectSpace.define_finalizer("string",  proc { puts "in finalizer" })
+ *     exit
+ *     
+ *  <em>produces:</em>
+ *     
+ *     at_exit function
+ *     in finalizer
+ */
+
 VALUE
 rb_f_exit(argc, argv)
     int argc;
@@ -3936,6 +4245,16 @@ rb_f_exit(argc, argv)
     rb_exit(istatus);
     return Qnil;		/* not reached */
 }
+
+/*
+ *  call-seq:
+ *     abort
+ *     abort(msg)
+ *  
+ *  Terminate execution immediately, effectively by calling
+ *  <code>Kernel.exit(1)</code>. If _msg_ is given, it is written
+ *  to STDERR prior to terminating.
+ */
 
 VALUE
 rb_f_abort(argc, argv)
@@ -4054,6 +4373,30 @@ rb_interrupt()
     rb_raise(rb_eInterrupt, "");
 }
 
+/*
+ *  call-seq:
+ *     raise
+ *     raise(string)
+ *     raise(exception [, string [, array]])
+ *     fail
+ *     fail(string)
+ *     fail(exception [, string [, array]])
+ *  
+ *  With no arguments, raises the exception in <code>$!</code> or raises
+ *  a <code>RuntimeError</code> if <code>$!</code> is +nil+.
+ *  With a single +String+ argument, raises a
+ *  +RuntimeError+ with the string as a message. Otherwise,
+ *  the first parameter should be the name of an +Exception+
+ *  class (or an object that returns an +Exception+ object when sent
+ *  an +exception+ message). The optional second parameter sets the
+ *  message associated with the exception, and the third parameter is an
+ *  array of callback information. Exceptions are caught by the
+ *  +rescue+ clause of <code>begin...end</code> blocks.
+ *     
+ *     raise "Failed to create socket"
+ *     raise ArgumentError, "No parameters", caller
+ */
+
 static VALUE
 rb_f_raise(argc, argv)
     int argc;
@@ -4128,6 +4471,28 @@ rb_iterator_p()
 {
     return rb_block_given_p();
 }
+
+/*
+ *  call-seq:
+ *     block_given?   => true or false
+ *     iterator?      => true or false
+ *  
+ *  Returns <code>true</code> if <code>yield</code> would execute a
+ *  block in the current context. The <code>iterator?</code> form
+ *  is mildly deprecated.
+ *     
+ *     def try
+ *       if block_given?
+ *         yield
+ *       else
+ *         "no block"
+ *       end
+ *     end
+ *     try                  #=> "no block"
+ *     try { "hello" }      #=> "hello"
+ *     try do "hello" end   #=> "hello"
+ */
+
 
 static VALUE
 rb_f_block_given_p()
@@ -4386,6 +4751,20 @@ rb_yield_splat(values)
     }
     return rb_yield_0(values, 0, 0, Qfalse, avalue);
 }
+
+/*
+ *  call-seq:
+ *     loop {|| block } 
+ *  
+ *  Repeatedly executes the block.
+ *     
+ *     loop do
+ *       print "Input: "
+ *       line = gets
+ *       break if !line or line =~ /^qQ/
+ *       # ...
+ *     end
+ */
 
 static VALUE
 rb_f_loop()
@@ -4775,6 +5154,13 @@ static int last_call_status;
 #define CSTAT_VCALL 4
 #define CSTAT_SUPER 8
 
+/*
+ * call-seq:
+ *  name_error.to_s   => string
+ *
+ * Produce a nicely-formated string representing the +NameError+.
+ */
+
 static VALUE
 name_err_to_s(exc)
     VALUE exc;
@@ -4826,6 +5212,36 @@ name_err_to_s(exc)
     if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
     return mesg;
 }
+
+/*
+ *  call-seq:
+ *     obj.method_missing(symbol [, *args] )   => result
+ *  
+ *  Invoked by Ruby when <i>obj</i> is sent a message it cannot handle.
+ *  <i>symbol</i> is the symbol for the method called, and <i>args</i>
+ *  are any arguments that were passed to it. By default, the interpreter
+ *  raises an error when this method is called. However, it is possibe
+ *  to override the method to provide more dynamic behavior.
+ *  The example below creates
+ *  a class <code>Roman</code>, which responds to methods with names
+ *  consisting of roman numerals, returning the corresponding integer
+ *  values.
+ *     
+ *     class Roman
+ *       def romanToInt(str)
+ *         # ...
+ *       end
+ *       def method_missing(methId)
+ *         str = methId.id2name
+ *         romanToInt(str)
+ *       end
+ *     end
+ *     
+ *     r = Roman.new
+ *     r.iv      #=> 4
+ *     r.xxiii   #=> 23
+ *     r.mm      #=> 2000
+ */
 
 static VALUE
 rb_method_missing(argc, argv, obj)
@@ -5302,6 +5718,24 @@ rb_apply(recv, mid, args)
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 1);
 }
 
+/*
+ *  call-seq:
+ *     obj.send(symbol [, args...])        => obj
+ *     obj.__send__(symbol [, args...])    => obj
+ *  
+ *  Invokes the method identified by _symbol_, passing it any
+ *  arguments specified. You can use <code>__send__</code> if the name
+ *  +send+ clashes with an existing method in _obj_.
+ *     
+ *     class Klass
+ *       def hello(*args)
+ *         "Hello " + args.join(' ')
+ *       end
+ *     end
+ *     k = Klass.new
+ *     k.send :hello, "gentle", "readers"   #=> "Hello gentle readers"
+ */
+
 static VALUE
 rb_f_send(argc, argv, recv)
     int argc;
@@ -5461,6 +5895,31 @@ backtrace(lev)
 
     return ary;
 }
+
+/*
+ *  call-seq:
+ *     caller(start=1)    => array
+ *  
+ *  Returns the current execution stack---an array containing strings in
+ *  the form ``<em>file:line</em>'' or ``<em>file:line: in
+ *  `method'</em>''. The optional _start_ parameter
+ *  determines the number of initial stack entries to omit from the
+ *  result.
+ *     
+ *     def a(skip)
+ *       caller(skip)
+ *     end
+ *     def b(skip)
+ *       a(skip)
+ *     end
+ *     def c(skip)
+ *       b(skip)
+ *     end
+ *     c(0)   #=> ["prog:2:in `a'", "prog:5:in `b'", "prog:8:in `c'", "prog:10"]
+ *     c(1)   #=> ["prog:5:in `b'", "prog:8:in `c'", "prog:11"]
+ *     c(2)   #=> ["prog:8:in `c'", "prog:12"]
+ *     c(3)   #=> ["prog:13"]
+ */
 
 static VALUE
 rb_f_caller(argc, argv)
@@ -5654,6 +6113,25 @@ eval(self, src, scope, file, line)
     return result;
 }
 
+/*
+ *  call-seq:
+ *     eval(string [, binding [, filename [,lineno]]])  => obj
+ *  
+ *  Evaluates the Ruby expression(s) in <em>string</em>. If
+ *  <em>binding</em> is given, the evaluation is performed in its
+ *  context. The binding may be a <code>Binding</code> object or a
+ *  <code>Proc</code> object. If the optional <em>filename</em> and
+ *  <em>lineno</em> parameters are present, they will be used when
+ *  reporting syntax errors.
+ *     
+ *     def getBinding(str)
+ *       return binding
+ *     end
+ *     str = "hello"
+ *     eval "str + ' Fred'"                      #=> "hello Fred"
+ *     eval "str + ' Fred'", getBinding("bye")   #=> "bye Fred"
+ */
+
 static VALUE
 rb_f_eval(argc, argv, self)
     int argc;
@@ -5819,6 +6297,29 @@ specific_eval(argc, argv, klass, self)
     }
 }
 
+/*
+ *  call-seq:
+ *     obj.instance_eval(string [, filename [, lineno]] )   => obj
+ *     obj.instance_eval {| | block }                       => obj
+ *  
+ *  Evaluates a string containing Ruby source code, or the given block,
+ *  within the context of the receiver (_obj_). In order to set the
+ *  context, the variable +self+ is set to _obj_ while
+ *  the code is executing, giving the code access to _obj_'s
+ *  instance variables. In the version of <code>instance_eval</code>
+ *  that takes a +String+, the optional second and third
+ *  parameters supply a filename and starting line number that are used
+ *  when reporting compilation errors.
+ *     
+ *     class Klass
+ *       def initialize
+ *         @secret = 99
+ *       end
+ *     end
+ *     k = Klass.new
+ *     k.instance_eval { @secret }   #=> 99
+ */
+
 VALUE
 rb_obj_instance_eval(argc, argv, self)
     int argc;
@@ -5836,6 +6337,30 @@ rb_obj_instance_eval(argc, argv, self)
 
     return specific_eval(argc, argv, klass, self);
 }
+
+/*
+ *  call-seq:
+ *     mod.class_eval(string [, filename [, lineno]])  => obj
+ *     mod.module_eval {|| block }                     => obj
+ *  
+ *  Evaluates the string or block in the context of _mod_. This can
+ *  be used to add methods to a class. <code>module_eval</code> returns
+ *  the result of evaluating its argument. The optional _filename_
+ *  and _lineno_ parameters set the text for error messages.
+ *     
+ *     class Thing
+ *     end
+ *     a = %q{def hello() "Hello there!" end}
+ *     Thing.module_eval(a)
+ *     puts Thing.new.hello()
+ *     Thing.module_eval("invalid code", "dummy", 123)
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Hello there!
+ *     dummy:123:in `module_eval': undefined local variable
+ *         or method `code' for Thing:Class
+ */
 
 VALUE
 rb_mod_module_eval(argc, argv, mod)
@@ -5968,6 +6493,21 @@ rb_load_protect(fname, wrap, state)
     if (state) *state = status;
 }
 
+/*
+ *  call-seq:
+ *     load(filename, wrap=false)   => true
+ *  
+ *  Loads and executes the Ruby
+ *  program in the file _filename_. If the filename does not
+ *  resolve to an absolute path, the file is searched for in the library
+ *  directories listed in <code>$:</code>. If the optional _wrap_
+ *  parameter is +true+, the loaded script will be executed
+ *  under an anonymous module, protecting the calling program's global
+ *  namespace. In no circumstance will any local variables in the loaded
+ *  file be propagated to the loading environment.
+ */
+
+
 static VALUE
 rb_f_load(argc, argv)
     int argc;
@@ -6070,6 +6610,28 @@ load_wait(ftptr)
 	rb_thread_schedule();
     } while (st_lookup(loading_tbl, (st_data_t)ftptr, &th));
 }
+
+/*
+ *  call-seq:
+ *     require(string)    => true or false
+ *  
+ *  Ruby tries to load the library named _string_, returning
+ *  +true+ if successful. If the filename does not resolve to
+ *  an absolute path, it will be searched for in the directories listed
+ *  in <code>$:</code>. If the file has the extension ``.rb'', it is
+ *  loaded as a source file; if the extension is ``.so'', ``.o'', or
+ *  ``.dll'', or whatever the default shared library extension is on
+ *  the current platform, Ruby loads the shared library as a Ruby
+ *  extension. Otherwise, Ruby tries adding ``.rb'', ``.so'', and so on
+ *  to the name. The name of the loaded feature is added to the array in
+ *  <code>$"</code>. A feature will not be loaded if it's name already
+ *  appears in <code>$"</code>. However, the file name is not converted
+ *  to an absolute path, so that ``<code>require 'a';require
+ *  './a'</code>'' will load <code>a.rb</code> twice.
+ *     
+ *     require "my-library.rb"
+ *     require "db-driver"
+ */
 
 VALUE
 rb_f_require(obj, fname)
@@ -6262,6 +6824,16 @@ set_method_visibility(self, argc, argv, ex)
     rb_clear_cache_by_class(self);
 }
 
+/*
+ *  call-seq:
+ *     public                 => self
+ *     public(symbol, ...)    => self
+ *  
+ *  With no arguments, sets the default visibility for subsequently
+ *  defined methods to public. With arguments, sets the named methods to
+ *  have public visibility.
+ */
+
 static VALUE
 rb_mod_public(argc, argv, module)
     int argc;
@@ -6277,6 +6849,16 @@ rb_mod_public(argc, argv, module)
     }
     return module;
 }
+
+/*
+ *  call-seq:
+ *     protected                => self
+ *     protected(symbol, ...)   => self
+ *  
+ *  With no arguments, sets the default visibility for subsequently
+ *  defined methods to protected. With arguments, sets the named methods
+ *  to have protected visibility.
+ */
 
 static VALUE
 rb_mod_protected(argc, argv, module)
@@ -6294,6 +6876,25 @@ rb_mod_protected(argc, argv, module)
     return module;
 }
 
+/*
+ *  call-seq:
+ *     private                 => self
+ *     private(symbol, ...)    => self
+ *  
+ *  With no arguments, sets the default visibility for subsequently
+ *  defined methods to private. With arguments, sets the named methods
+ *  to have private visibility.
+ *     
+ *     module Mod
+ *       def a()  end
+ *       def b()  end
+ *       private
+ *       def c()  end
+ *       private :a
+ *     end
+ *     Mod.private_instance_methods   #=> ["a", "c"]
+ */
+
 static VALUE
 rb_mod_private(argc, argv, module)
     int argc;
@@ -6310,6 +6911,13 @@ rb_mod_private(argc, argv, module)
     return module;
 }
 
+/*
+ *  call-seq:
+ *     mod.public_class_method(symbol, ...)    => mod
+ *  
+ *  Makes a list of existing class methods public.
+ */
+
 static VALUE
 rb_mod_public_method(argc, argv, obj)
     int argc;
@@ -6320,6 +6928,22 @@ rb_mod_public_method(argc, argv, obj)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     mod.private_class_method(symbol, ...)   => mod
+ *  
+ *  Makes existing class methods private. Often used to hide the default
+ *  constructor <code>new</code>.
+ *     
+ *     class SimpleSingleton  # Not thread safe
+ *       private_class_method :new
+ *       def SimpleSingleton.create(*args, &block)
+ *         @me = new(*args, &block) if ! @me
+ *         @me
+ *       end
+ *     end
+ */
+
 static VALUE
 rb_mod_private_method(argc, argv, obj)
     int argc;
@@ -6329,6 +6953,16 @@ rb_mod_private_method(argc, argv, obj)
     set_method_visibility(CLASS_OF(obj), argc, argv, NOEX_PRIVATE);
     return obj;
 }
+
+/*
+ *  call-seq:
+ *     public
+ *     public(symbol, ...)
+ *  
+ *  With no arguments, sets the default visibility for subsequently
+ *  defined methods to public. With arguments, sets the named methods to
+ *  have public visibility.
+ */
 
 static VALUE
 top_public(argc, argv)
@@ -6345,6 +6979,42 @@ top_private(argc, argv)
 {
     return rb_mod_private(argc, argv, rb_cObject);
 }
+
+/*
+ *  call-seq:
+ *     module_function(symbol, ...)    => self
+ *  
+ *  Creates module functions for the named methods. These functions may
+ *  be called with the module as a receiver, and also become available
+ *  as instance methods to classes that mix in the module. Module
+ *  functions are copies of the original, and so may be changed
+ *  independently. The instance-method versions are made private. If
+ *  used with no arguments, subsequently defined methods become module
+ *  functions.
+ *     
+ *     module Mod
+ *       def one
+ *         "This is one"
+ *       end
+ *       module_function :one
+ *     end
+ *     class Cls
+ *       include Mod
+ *       def callOne
+ *         one
+ *       end
+ *     end
+ *     Mod.one     #=> "This is one"
+ *     c = Cls.new
+ *     c.callOne   #=> "This is one"
+ *     module Mod
+ *       def one
+ *         "This is the new one"
+ *       end
+ *     end
+ *     Mod.one     #=> "This is one"
+ *     c.callOne   #=> "This is the new one"
+ */
 
 static VALUE
 rb_mod_modfunc(argc, argv, module)
@@ -6386,6 +7056,18 @@ rb_mod_modfunc(argc, argv, module)
     return module;
 }
 
+/*
+ *  call-seq:
+ *     append_features(mod)   => mod
+ *  
+ *  When this module is included in another, Ruby calls
+ *  <code>append_features</code> in this module, passing it the
+ *  receiving module in _mod_. Ruby's default implementation is
+ *  to add the constants, methods, and module variables of this module
+ *  to _mod_ if this module has not already been added to
+ *  _mod_ or one of its ancestors. See also <code>Module#include</code>.
+ */
+
 static VALUE
 rb_mod_append_features(module, include)
     VALUE module, include;
@@ -6402,6 +7084,13 @@ rb_mod_append_features(module, include)
 
     return module;
 }
+
+/*
+ *  call-seq:
+ *     include(module, ...)    => self
+ *  
+ *  Invokes <code>Module.append_features</code> on each parameter in turn.
+ */
 
 static VALUE
 rb_mod_include(argc, argv, module)
@@ -6437,6 +7126,33 @@ rb_extend_object(obj, module)
     rb_include_module(rb_singleton_class(obj), module);
 }
 
+/*
+ *  call-seq:
+ *     extend_object(obj)    => obj
+ *  
+ *  Extends the specified object by adding this module's constants and
+ *  methods (which are added as singleton methods). This is the callback
+ *  method used by <code>Object#extend</code>.
+ *     
+ *     module Picky
+ *       def Picky.extend_object(o)
+ *         if String === o
+ *           puts "Can't add Picky to a String"
+ *         else
+ *           puts "Picky added to #{o.class}"
+ *           super
+ *         end
+ *       end
+ *     end
+ *     (s = Array.new).extend Picky  # Call Object.extend
+ *     (s = "quick brown fox").extend Picky
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Picky added to Array
+ *     Can't add Picky to a String
+ */
+
 static VALUE
 rb_mod_extend_object(mod, obj)
     VALUE mod, obj;
@@ -6444,6 +7160,31 @@ rb_mod_extend_object(mod, obj)
     rb_extend_object(obj, mod);
     return obj;
 }
+
+/*
+ *  call-seq:
+ *     obj.extend(module, ...)    => obj
+ *  
+ *  Adds to _obj_ the instance methods from each module given as a
+ *  parameter.
+ *     
+ *     module Mod
+ *       def hello
+ *         "Hello from Mod.\n"
+ *       end
+ *     end
+ *     
+ *     class Klass
+ *       def hello
+ *         "Hello from Klass.\n"
+ *       end
+ *     end
+ *     
+ *     k = Klass.new
+ *     k.hello         #=> "Hello from Klass.\n"
+ *     k.extend(Mod)   #=> #<Klass:0x401b3bc8>
+ *     k.hello         #=> "Hello from Mod.\n"
+ */
 
 static VALUE
 rb_obj_extend(argc, argv, obj)
@@ -6463,6 +7204,15 @@ rb_obj_extend(argc, argv, obj)
     }
     return obj;
 }
+
+/*
+ *  call-seq:
+ *     include(module, ...)   => self
+ *  
+ *  Invokes <code>Module.append_features</code>
+ *  on each parameter in turn. Effectively adds the methods and constants
+ *  in each module to the receiver.
+ */
 
 static VALUE
 top_include(argc, argv, self)
@@ -6513,6 +7263,19 @@ errat_setter(val, id, var)
     }
     set_backtrace(ruby_errinfo, val);
 }
+
+/*
+ *  call-seq:
+ *     local_variables    => array
+ *  
+ *  Returns the names of the current local variables.
+ *     
+ *     fred = 1
+ *     for i in 1..10
+ *        # ...
+ *     end
+ *     local_variables   #=> ["fred", "i"]
+ */
 
 static VALUE
 rb_f_local_variables()
@@ -6619,6 +7382,27 @@ rb_f_END()
     rb_set_end_proc(call_end_proc, rb_block_proc());
     POP_FRAME();
 }
+
+/*
+ *  call-seq:
+ *     at_exit { block } -> proc
+ *  
+ *  Converts _block_ to a +Proc+ object (and therefore
+ *  binds it at the point of call) and registers it for execution when
+ *  the program exits. If multiple handlers are registered, they are
+ *  executed in reverse order of registration.
+ *     
+ *     def do_at_exit(str1)
+ *       at_exit { print str1 }
+ *     end
+ *     at_exit { puts "cruel world" }
+ *     do_at_exit("goodbye ")
+ *     exit
+ *     
+ *  <em>produces:</em>
+ *     
+ *     goodbye cruel world
+ */
 
 static VALUE
 rb_f_at_exit()
@@ -6729,7 +7513,8 @@ Init_eval()
 
     rb_define_global_function("catch", rb_f_catch, 1);
     rb_define_global_function("throw", rb_f_throw, -1);
-    rb_define_global_function("global_variables", rb_f_global_variables, 0);
+    rb_define_global_function("global_variables", 
+			      rb_f_global_variables, 0); // in variable.c
     rb_define_global_function("local_variables", rb_f_local_variables, 0);
 
     rb_define_method(rb_mKernel, "send", rb_f_send, -1);
@@ -6768,14 +7553,30 @@ Init_eval()
 
     rb_define_method(rb_mKernel, "extend", rb_obj_extend, -1);
 
-    rb_define_global_function("trace_var", rb_f_trace_var, -1);
-    rb_define_global_function("untrace_var", rb_f_untrace_var, -1);
+    rb_define_global_function("trace_var", 
+			      rb_f_trace_var, -1); // in variable.c
+    rb_define_global_function("untrace_var", 
+			      rb_f_untrace_var, -1); // in variable.c
 
     rb_define_global_function("set_trace_func", set_trace_func, 1);
     rb_global_variable(&trace_func);
 
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
 }
+
+/*
+ *  call-seq:
+ *     mod.autoload(name, filename)   => nil
+ *  
+ *  Registers _filename_ to be loaded (using <code>Kernel::require</code>) 
+ *  the first time that _module_ (which may be a <code>String</code> or
+ *  a symbol) is accessed in the namespace of _mod_.
+ *     
+ *     module A
+ *     end
+ *     A.autoload(:B, "b")
+ *     A::B.doit            # autoloads "b"
+ */
 
 static VALUE
 rb_mod_autoload(mod, sym, file)
@@ -6790,12 +7591,27 @@ rb_mod_autoload(mod, sym, file)
     return Qnil;
 }
 
+/*
+ * MISSING: documentation
+ */
+
 static VALUE
 rb_mod_autoload_p(mod, sym)
     VALUE mod, sym;
 {
     return rb_autoload_p(mod, rb_to_id(sym));
 }
+
+/*
+ *  call-seq:
+ *     autoload(module, filename)   => nil
+ *  
+ *  Registers _filename_ to be loaded (using <code>Kernel::require</code>) 
+ *  the first time that _module_ (which may be a <code>String</code> or
+ *  a symbol) is accessed.
+ *     
+ *     autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")
+ */
 
 static VALUE
 rb_f_autoload(obj, sym, file)
@@ -6805,6 +7621,11 @@ rb_f_autoload(obj, sym, file)
 {
     return rb_mod_autoload(ruby_cbase, sym, file);
 }
+
+
+/*
+ * MISSING: documentation
+ */
 
 static VALUE
 rb_f_autoload_p(obj, sym)
@@ -6981,6 +7802,22 @@ proc_clone(self)
 
     return bind;
 }
+
+/*
+ *  call-seq:
+ *     binding -> a_binding
+ *  
+ *  Returns a +Binding+ object, describing the variable and
+ *  method bindings at the point of call. This object can be used when
+ *  calling +eval+ to execute the evaluated command in this
+ *  environment. Also see the description of class +Binding+.
+ *     
+ *     def getBinding(param)
+ *       return binding
+ *     end
+ *     b = getBinding("hello")
+ *     eval("param", b)   #=> "hello"
+ */
 
 static VALUE
 rb_f_binding(self)
@@ -7733,6 +8570,38 @@ rb_obj_method(obj, vid)
     return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod);
 }
 
+/*
+ *  call-seq:
+ *     mod.instance_method(symbol)   => unbound_method
+ *  
+ *  Returns an +UnboundMethod+ representing the given
+ *  instance method in _mod_.
+ *     
+ *     class Interpreter
+ *       def do_a() print "there, "; end
+ *       def do_d() print "Hello ";  end
+ *       def do_e() print "!\n";     end
+ *       def do_v() print "Dave";    end
+ *       Dispatcher = {
+ *        ?a => instance_method(:do_a),
+ *        ?d => instance_method(:do_d),
+ *        ?e => instance_method(:do_e),
+ *        ?v => instance_method(:do_v)
+ *       }
+ *       def interpret(string)
+ *         string.each_byte {|b| Dispatcher[b].bind(self).call }
+ *       end
+ *     end
+ *     
+ *     
+ *     interpreter = Interpreter.new
+ *     interpreter.interpret('dave')
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Hello there, Dave!
+ */
+
 static VALUE
 rb_mod_method(mod, vid)
     VALUE mod;
@@ -8125,6 +8994,43 @@ rb_obj_is_method(m)
     }
     return Qfalse;
 }
+
+/*
+ *  call-seq:
+ *     define_method(symbol, method)     => new_method
+ *     define_method(symbol) { block }   => proc
+ *  
+ *  Defines an instance method in the receiver. The _method_
+ *  parameter can be a +Proc+ or +Method+ object.
+ *  If a block is specified, it is used as the method body. This block
+ *  is evaluated using <code>instance_eval</code>, a point that is
+ *  tricky to demonstrate because <code>define_method</code> is private.
+ *  (This is why we resort to the +send+ hack in this example.)
+ *     
+ *     class A
+ *       def fred
+ *         puts "In Fred"
+ *       end
+ *       def create_method(name, &block)
+ *         self.class.send(:define_method, name, &block)
+ *       end
+ *       define_method(:wilma) { puts "Charge it!" }
+ *     end
+ *     class B < A
+ *       define_method(:barney, instance_method(:fred))
+ *     end
+ *     a = B.new
+ *     a.barney
+ *     a.wilma
+ *     a.create_method(:betty) { p self }
+ *     a.betty
+ *     
+ *  <em>produces:</em>
+ *     
+ *     In Fred
+ *     Charge it!
+ *     #<B:0x401b39e8>
+ */
 
 static VALUE
 rb_mod_define_method(argc, argv, mod)
@@ -11433,6 +12339,37 @@ Init_Thread()
     curr_thread = main_thread->prev = main_thread->next = main_thread;
 }
 
+/*
+ *  call-seq:
+ *     catch(symbol) {| | block }  > obj
+ *  
+ *  +catch+ executes its block. If a +throw+ is
+ *  executed, Ruby searches up its stack for a +catch+ block
+ *  with a tag corresponding to the +throw+'s
+ *  _symbol_. If found, that block is terminated, and
+ *  +catch+ returns the value given to +throw+. If
+ *  +throw+ is not called, the block terminates normally, and
+ *  the value of +catch+ is the value of the last expression
+ *  evaluated. +catch+ expressions may be nested, and the
+ *  +throw+ call need not be in lexical scope.
+ *     
+ *     def routine(n)
+ *       puts n
+ *       throw :done if n <= 0
+ *       routine(n-1)
+ *     end
+ *     
+ *     
+ *     catch(:done) { routine(3) }
+ *     
+ *  <em>produces:</em>
+ *     
+ *     3
+ *     2
+ *     1
+ *     0
+ */
+
 static VALUE
 rb_f_catch(dmy, tag)
     VALUE dmy, tag;
@@ -11470,6 +12407,18 @@ rb_catch(tag, func, data)
 {
     return rb_iterate((VALUE(*)_((VALUE)))catch_i, ID2SYM(rb_intern(tag)), func, data);
 }
+
+/*
+ *  call-seq:
+ *     throw(symbol [, obj])
+ *  
+ *  Transfers control to the end of the active +catch+ block
+ *  waiting for _symbol_. Raises +NameError+ if there
+ *  is no +catch+ block for the symbol. The optional second
+ *  parameter supplies a return value for the +catch+ block,
+ *  which otherwise defaults to +nil+. For examples, see
+ *  <code>Kernel::catch</code>.
+ */
 
 static VALUE
 rb_f_throw(argc, argv)
