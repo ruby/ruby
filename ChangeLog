@@ -1,3 +1,8 @@
+Fri Dec 13 23:42:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/dbm/extconf.rb (db_check): check existence of the function
+	  in the specified library before checking it in libc.
+
 Fri Dec 13 12:33:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (expr): rescue clause was ignored.
