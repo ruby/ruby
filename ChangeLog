@@ -1,3 +1,11 @@
+Wed Aug 15 01:59:19 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/defs.h: Define NO_UINT64_T instead of emitting an
+	  error to fail.
+
+	* ext/digest/sha2/extconf.rb: Do not exit on error, and utilize
+	  NO_UINT64_T to detect if the system has a 64bit integer type.
+
 Tue Aug 14 21:14:07 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/sha2/extconf.rb: do not create Makefile when no 64bit

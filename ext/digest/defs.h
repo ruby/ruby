@@ -27,7 +27,7 @@
 # elif defined(_MSC_VER)
   typedef unsigned _int64 uint64_t;
 # else
-#  error What is a 64bit integer type on this system?
+#  define NO_UINT64_T
 # endif
 #endif
 
