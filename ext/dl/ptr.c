@@ -858,19 +858,21 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 
   if( TYPE(key) == T_FIXNUM || TYPE(key) == T_BIGNUM ){
     void *dst, *src;
-    int len;
-    
+    long len;
+
     StringValue(val);
     Data_Get_Struct(self, struct ptr_data, data);
     dst = (void*)((long)(data->ptr) + DLNUM2LONG(key));
     src = RSTRING(val)->ptr;
+    len = RSTRING(val)->len;
     if( num == Qnil ){
-      len = RSTRING(val)->len;
+      memcpy(dst, src, len);
     }
     else{
-      len = NUM2INT(num);
+      long n = NUM2INT(num);
+      memcpy(dst, src, n < len ? n : len);
+      if( n > len ) MEMZERO((char*)dst + len, char, n - len);
     };
-    memcpy(dst, src, len);
     return val;
   };
 
