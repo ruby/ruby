@@ -1,3 +1,8 @@
+Mon Jan 10 23:07:45 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_autoload): hide internal data from ruby level.
+	  fixed: [ruby-dev:25373]
+
 Mon Jan 10 15:28:51 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#request_line): should
