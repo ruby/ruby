@@ -1,3 +1,7 @@
+Wed Jan 22 23:19:57 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c (pipe_exec): remove unnecessary SetStdHandle().
+
 Tue Jan 21 20:29:31 2003  Michal Rokos  <michal@rokos.homeip.net>
 
 	* mkmf.rb: make possible to add files to clean and distclean targets 

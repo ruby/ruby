@@ -457,13 +457,12 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
     struct ChildRecord* child;
     HANDLE hReadIn, hReadOut;
     HANDLE hWriteIn, hWriteOut;
-    HANDLE hSavedStdIn, hSavedStdOut;
     HANDLE hDupInFile, hDupOutFile;
     HANDLE hCurProc;
     SECURITY_ATTRIBUTES sa;
     BOOL fRet;
     BOOL reading, writing;
-    int fdin, fdout;
+    int fd;
     int pipemode;
     char modes[3];
     int ret;
@@ -471,15 +470,24 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
     /* Figure out what we're doing... */
     writing = (mode & (O_WRONLY | O_RDWR)) ? TRUE : FALSE;
     reading = ((mode & O_RDWR) || !writing) ? TRUE : FALSE;
-    pipemode = (mode & O_BINARY) ? O_BINARY : O_TEXT;
+    if (mode & O_BINARY) {
+	pipemode = O_BINARY;
+	modes[1] = 'b';
+	modes[2] = '\0';
+    }
+    else {
+	pipemode = O_TEXT;
+	modes[1] = '\0';
+    }
 
     sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle       = TRUE;
+    ret = -1;
+    hWriteIn = hReadOut = NULL;
 
-    /* create pipe, save parent's STDIN/STDOUT and redirect them for child */
     RUBY_CRITICAL(do {
-	ret = -1;
+	/* create pipe */
 	hCurProc = GetCurrentProcess();
 	if (reading) {
 	    fRet = CreatePipe(&hReadIn, &hReadOut, &sa, 2048L);
@@ -487,9 +495,7 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 		errno = GetLastError();
 		break;
 	    }
-	    hSavedStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	    if (!SetStdHandle(STD_OUTPUT_HANDLE, hReadOut) ||
-		!DuplicateHandle(hCurProc, hReadIn, hCurProc, &hDupInFile, 0,
+	    if (!DuplicateHandle(hCurProc, hReadIn, hCurProc, &hDupInFile, 0,
 				 FALSE, DUPLICATE_SAME_ACCESS)) {
 		errno = GetLastError();
 		CloseHandle(hReadIn);
@@ -503,80 +509,47 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 	    fRet = CreatePipe(&hWriteIn, &hWriteOut, &sa, 2048L);
 	    if (!fRet) {
 		errno = GetLastError();
+	      write_pipe_failed:
 		if (reading) {
 		    CloseHandle(hDupInFile);
 		    CloseHandle(hReadOut);
 		}
 		break;
 	    }
-	    hSavedStdIn = GetStdHandle(STD_INPUT_HANDLE);
-	    if (!SetStdHandle(STD_INPUT_HANDLE, hWriteIn) ||
-		!DuplicateHandle(hCurProc, hWriteOut, hCurProc, &hDupOutFile, 0,
+	    if (!DuplicateHandle(hCurProc, hWriteOut, hCurProc, &hDupOutFile, 0,
 				 FALSE, DUPLICATE_SAME_ACCESS)) {
 		errno = GetLastError();
 		CloseHandle(hWriteIn);
 		CloseHandle(hWriteOut);
 		CloseHandle(hCurProc);
-		if (reading) {
-		    CloseHandle(hDupInFile);
-		    CloseHandle(hReadOut);
-		}
-		break;
+		goto write_pipe_failed;
 	    }
 	    CloseHandle(hWriteOut);
 	}
 	CloseHandle(hCurProc);
 
 	/* create child process */
-	child = CreateChild(cmd, NULL, &sa, NULL, NULL, NULL);
+	child = CreateChild(cmd, NULL, &sa, hWriteIn, hReadOut, NULL);
 	if (!child) {
 	    if (reading) {
-		SetStdHandle(STD_OUTPUT_HANDLE, hSavedStdOut);
 		CloseHandle(hReadOut);
 		CloseHandle(hDupInFile);
 	    }
 	    if (writing) {
-		SetStdHandle(STD_INPUT_HANDLE, hSavedStdIn);
 		CloseHandle(hWriteIn);
 		CloseHandle(hDupOutFile);
 	    }
 	    break;
 	}
 
-	/* restore STDIN/STDOUT */
+	/* associate handle to fp */
 	if (reading) {
-	    if (!SetStdHandle(STD_OUTPUT_HANDLE, hSavedStdOut)) {
-		errno = GetLastError();
-		CloseChildHandle(child);
-		CloseHandle(hReadOut);
-		CloseHandle(hDupInFile);
-		if (writing) {
-		    CloseHandle(hWriteIn);
-		    CloseHandle(hDupOutFile);
-		}
-		break;
-	    }
-	}
-	if (writing) {
-	    if (!SetStdHandle(STD_INPUT_HANDLE, hSavedStdIn)) {
-		errno = GetLastError();
-		CloseChildHandle(child);
-		CloseHandle(hWriteIn);
-		CloseHandle(hDupOutFile);
-		if (reading) {
-		    CloseHandle(hReadOut);
-		    CloseHandle(hDupInFile);
-		}
-		break;
-	    }
-	}
-
-	if (reading) {
-	    fdin = rb_w32_open_osfhandle((long)hDupInFile,
-					 (_O_RDONLY | pipemode));
+	    fd = rb_w32_open_osfhandle((long)hDupInFile,
+				       (_O_RDONLY | pipemode));
 	    CloseHandle(hReadOut);
-	    if (fdin == -1) {
+	    if (fd == -1) {
 		CloseHandle(hDupInFile);
+	      read_open_failed:
 		if (writing) {
 		    CloseHandle(hWriteIn);
 		    CloseHandle(hDupOutFile);
@@ -584,41 +557,29 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 		CloseChildHandle(child);
 		break;
 	    }
+	    modes[0] = 'r';
+	    if ((*fpr = (FILE *)fdopen(fd, modes)) == NULL) {
+		_close(fd);
+		goto read_open_failed;
+	    }
 	}
 	if (writing) {
-	    fdout = rb_w32_open_osfhandle((long)hDupOutFile,
-					  (_O_WRONLY | pipemode));
+	    fd = rb_w32_open_osfhandle((long)hDupOutFile,
+				       (_O_WRONLY | pipemode));
 	    CloseHandle(hWriteIn);
-	    if (fdout == -1) {
+	    if (fd == -1) {
 		CloseHandle(hDupOutFile);
-		if (reading) {
-		    _close(fdin);
-		}
-		CloseChildHandle(child);
-		break;
-	    }
-	}
-
-	if (reading) {
-	    sprintf(modes, "r%s", pipemode == O_BINARY ? "b" : "");
-	    if ((*fpr = (FILE *)fdopen(fdin, modes)) == NULL) {
-		_close(fdin);
-		if (writing) {
-		    _close(fdout);
-		}
-		CloseChildHandle(child);
-		break;
-	    }
-	}
-	if (writing) {
-	    sprintf(modes, "w%s", pipemode == O_BINARY ? "b" : "");
-	    if ((*fpw = (FILE *)fdopen(fdout, modes)) == NULL) {
-		_close(fdout);
+	      write_open_failed:
 		if (reading) {
 		    fclose(*fpr);
 		}
 		CloseChildHandle(child);
 		break;
+	    }
+	    modes[0] = 'w';
+	    if ((*fpw = (FILE *)fdopen(fd, modes)) == NULL) {
+		_close(fd);
+		goto write_open_failed;
 	    }
 	}
 	ret = child->pid;
