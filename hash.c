@@ -575,6 +575,7 @@ static VALUE
 rb_hash_become(hash, hash2)
     VALUE hash, hash2;
 {
+    if (hash == hash2) return hash;
     hash2 = to_hash(hash2);
     rb_hash_clear(hash);
     st_foreach(RHASH(hash2)->tbl, replace_i, hash);

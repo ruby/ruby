@@ -152,7 +152,12 @@ rb_make_metaclass(obj, super)
 	RCLASS(klass)->super = RBASIC(rb_class_real(RCLASS(obj)->super))->klass;
     }
     else {
-	RBASIC(klass)->klass = RBASIC(rb_class_real(super))->klass;
+	VALUE metasuper = RBASIC(rb_class_real(super))->klass;
+
+	/* metaclass of a superclass may be NULL at boot time */
+	if (metasuper) {
+	    RBASIC(klass)->klass;
+	}
     }
 
     return klass;
