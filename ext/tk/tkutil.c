@@ -8,11 +8,19 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-02-16"
+#define TKUTIL_RELEASE_DATE "2005-03-02"
 
 #include "ruby.h"
 #include "rubysig.h"
 #include "st.h"
+
+/* check ruby_version */
+#include "version.h"
+#if RUBY_VERSION_MINOR == 9
+#define ST_FOREACH_PASS_ERR_ARG 1  /* Ruby 1.9 */
+#else
+#define ST_FOREACH_PASS_ERR_ARG 0  /* Ruby 1.8 (from 2005/02/08) */
+#endif
 
 static VALUE cMethod;
 
@@ -199,12 +207,36 @@ fromUTF8_toDefaultEnc(str, self)
     return tk_fromUTF8(1, argv, self);
 }
 
+
+#if ST_FOREACH_PASS_ERR_ARG
+static void
+hash_check(err)
+    int err;
+{
+    if (err) {
+        rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
+}
+#endif
+
+#if ST_FOREACH_PASS_ERR_ARG
+static int
+to_strkey(key, value, hash, err)
+    VALUE key;
+    VALUE value;
+    VALUE hash;
+    int err;
+#else
 static int
 to_strkey(key, value, hash)
     VALUE key;
     VALUE value;
     VALUE hash;
+#endif
 {
+#if ST_FOREACH_PASS_ERR_ARG
+    hash_check(err);
+#endif
     if (key == Qundef) return ST_CONTINUE;
     rb_hash_aset(hash, rb_funcall(key, ID_to_s, 0, 0), value);
     return ST_CHECK;
@@ -219,9 +251,7 @@ tk_symbolkey2str(self, keys)
 
     if NIL_P(keys) return new_keys;
     keys = rb_convert_type(keys, T_HASH, "Hash", "to_hash");
-    if (st_foreach(RHASH(keys)->tbl, to_strkey, new_keys)) {
-	rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
+    st_foreach(RHASH(keys)->tbl, to_strkey, new_keys);
     return new_keys;
 }
 
@@ -454,14 +484,26 @@ assoc2kv_enc(assoc, ary, self)
     }
 }
 
+#if ST_FOREACH_PASS_ERR_ARG
+static int
+push_kv(key, val, args, err)
+    VALUE key;
+    VALUE val;
+    VALUE args;
+    int err;
+#else
 static int
 push_kv(key, val, args)
     VALUE key;
     VALUE val;
     VALUE args;
+#endif
 {
     volatile VALUE ary;
 
+#if ST_FOREACH_PASS_ERR_ARG
+    hash_check(err);
+#endif
     ary = RARRAY(args)->ptr[0];
 
     if (key == Qundef) return ST_CONTINUE;
@@ -493,9 +535,7 @@ hash2kv(hash, ary, self)
     RARRAY(args)->ptr[0] = dst;
     RARRAY(args)->ptr[1] = self;
     RARRAY(args)->len = 2;
-    if (st_foreach(RHASH(hash)->tbl, push_kv, args)) {
-	rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
+    st_foreach(RHASH(hash)->tbl, push_kv, args);
 
     if (NIL_P(ary)) {
         return dst;
@@ -504,14 +544,26 @@ hash2kv(hash, ary, self)
     }
 }
 
+#if ST_FOREACH_PASS_ERR_ARG
+static int
+push_kv_enc(key, val, args, err)
+    VALUE key;
+    VALUE val;
+    VALUE args;
+    int err;
+#else
 static int
 push_kv_enc(key, val, args)
     VALUE key;
     VALUE val;
     VALUE args;
+#endif
 {
     volatile VALUE ary;
 
+#if ST_FOREACH_PASS_ERR_ARG
+    hash_check(err);
+#endif
     ary = RARRAY(args)->ptr[0];
 
     if (key == Qundef) return ST_CONTINUE;
@@ -546,9 +598,7 @@ hash2kv_enc(hash, ary, self)
     RARRAY(args)->ptr[0] = dst;
     RARRAY(args)->ptr[1] = self;
     RARRAY(args)->len = 2;
-    if (st_foreach(RHASH(hash)->tbl, push_kv_enc, args)) {
-	rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
+    st_foreach(RHASH(hash)->tbl, push_kv_enc, args);
 
     if (NIL_P(ary)) {
         return dst;

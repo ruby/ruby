@@ -565,6 +565,15 @@ end
   module_function :bool, :number, :num_or_str, :string
   module_function :list, :simplelist, :window, :image_obj, :procedure
 
+  def subst(str, *opts)
+    # opts := :nobackslashes | :nocommands | novariables
+    tk_call('subst', 
+            *(opts.collect{|opt|
+                opt = opt.to_s
+                (opt[0] == ?-)? opt: '-' << opt
+              } << str))
+  end
+
   def _toUTF8(str, encoding = nil)
     TkCore::INTERP._toUTF8(str, encoding)
   end
@@ -1110,13 +1119,14 @@ module TkCore
   INTERP._invoke_without_enc('bind', 'all', "<#{WIDGET_DESTROY_HOOK}>",
                              install_cmd(proc{|path|
                                 unless TkCore::INTERP.deleted?
-                                  if (widget = TkCore::INTERP.tk_windows[path])
-                                    if widget.respond_to?(:__destroy_hook__)
-                                      begin
+                                  begin
+                                    if (widget=TkCore::INTERP.tk_windows[path])
+                                      if widget.respond_to?(:__destroy_hook__)
                                         widget.__destroy_hook__
-                                      rescue Exception
                                       end
                                     end
+                                  rescue Exception=>e
+                                      p e if $DEBUG
                                   end
                                 end
                              }) << ' %W')
@@ -1175,11 +1185,24 @@ module TkCore
 
   def TkCore.callback(*arg)
     begin
-      TkCore::INTERP.tk_cmd_tbl[arg.shift].call(*arg)
-    rescue SystemExit
-      exit(0)
-    rescue Interrupt
-      exit!(1)
+      if TkCore::INTERP.tk_cmd_tbl.kind_of?(Hash)
+        #TkCore::INTERP.tk_cmd_tbl[arg.shift].call(*arg)
+        normal_ret = false
+        ret = catch(:IRB_EXIT) do  # IRB hack
+          retval = TkCore::INTERP.tk_cmd_tbl[arg.shift].call(*arg)
+          normal_ret = true
+          retval
+        end
+        unless normal_ret
+          # catch IRB_EXIT
+          exit(ret)
+        end
+        ret
+      end
+    rescue SystemExit=>e
+      exit(e.status)
+    rescue Interrupt=>e
+      fail(e)
     rescue Exception => e
       begin
         msg = _toUTF8(e.class.inspect) + ': ' + 
@@ -1194,6 +1217,8 @@ module TkCore
               e.backtrace.join("\n") + 
               "\n---< backtrace of Tk side >-------"
       end
+      # TkCore::INTERP._set_global_var('errorInfo', msg)
+      # fail(e)
       fail(e, msg)
     end
   end
@@ -1381,6 +1406,22 @@ module TkCore
 
   def mainloop(check_root = true)
     TclTkLib.mainloop(check_root)
+  end
+
+  def mainloop_thread?
+    # true  : current thread is mainloop
+    # nil   : there is no mainloop
+    # false : mainloop is running on the other thread
+    #         ( At then, it is dangerous to call Tk interpreter directly. )
+    TclTkLib.mainloop_thread?
+  end
+
+  def mainloop_exist?
+    TclTkLib.mainloop_thread? != nil
+  end
+
+  def is_mainloop?
+    TclTkLib.mainloop_thread? == true
   end
 
   def mainloop_watchdog(check_root = true)
@@ -1738,12 +1779,33 @@ module Tk
   end
 
   def Tk.pack(*args)
-    #TkPack.configure(*args)
-    TkPack(*args)
+    TkPack.configure(*args)
+  end
+  def Tk.pack_forget(*args)
+    TkPack.forget(*args)
+  end
+  def Tk.unpack(*args)
+    TkPack.forget(*args)
   end
 
   def Tk.grid(*args)
     TkGrid.configure(*args)
+  end
+  def Tk.grid_forget(*args)
+    TkGrid.forget(*args)
+  end
+  def Tk.ungrid(*args)
+    TkGrid.forget(*args)
+  end
+
+  def Tk.place(*args)
+    TkPlace.configure(*args)
+  end
+  def Tk.place_forget(*args)
+    TkPlace.forget(*args)
+  end
+  def Tk.unplace(*args)
+    TkPlace.forget(*args)
   end
 
   def Tk.update(idle=nil)
@@ -3541,7 +3603,7 @@ class TkWindow<TkObject
     self
   end
 
-  def  grid_forget
+  def grid_forget
     #tk_call('grid', 'forget', epath)
     TkGrid.forget(self)
     self
@@ -3940,7 +4002,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-01-28'.freeze
+  RELEASE_DATE = '2005-03-02'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
@@ -3949,7 +4011,6 @@ module Tk
   autoload :LIBRARY_PATH,     'tk/variable'
   autoload :TCL_PRECISION,    'tk/variable'
 end
-
 
 # call setup script for Tk extension libraries (base configuration)
 begin

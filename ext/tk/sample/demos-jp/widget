@@ -442,6 +442,12 @@ txt.insert('end', "\n")
 txt.insert('end', "アニメーション\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. アニメーションラベル (機能に対応したバージョンのTkが必要)\n", tag_demo, "demo-anilabel")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. 波形のアニメーション (機能に対応したバージョンのTkが必要)\n", tag_demo, "demo-aniwave")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. 振り子のシミュレーション (機能に対応したバージョンのTkが必要)\n", tag_demo, "demo-pendulum")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "4. A celebration of Rube Goldberg (機能に対応したバージョンのTkが必要)\n", tag_demo, "demo-goldberg")
 
 txt.insert('end', "\n")
 #txt.insert('end', "その他\n", tag_middle)
@@ -813,7 +819,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.5.0-jp\n\n" + 
+                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.5.2-jp\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 

@@ -5,13 +5,17 @@ require 'tk'
 
 module Tk
   module Clock
+    include Tk
+    extend TkCore
+
     def self.add(clk, *args)
       tk_call_without_enc('clock','add', clk, *args).to_i
     end
 
     def self.clicks(ms=nil)
+      ms = ms.to_s if ms.kind_of?(Symbol)
       case ms
-      when nil
+      when nil, ''
         tk_call_without_enc('clock','clicks').to_i
       when /^mic/
         tk_call_without_enc('clock','clicks','-microseconds').to_i

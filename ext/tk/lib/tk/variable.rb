@@ -126,7 +126,81 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     self
   end
 
-  def initialize(val="")
+  def default_value_type
+    @type
+  end
+
+  def default_value_type=(type)
+    if type.kind_of?(Class)
+      if type == NilClass
+        @type = nil
+      elsif type == Numeric
+        @type = :numeric
+      elsif type == TrueClass || type == FalseClass
+        @type = :bool
+      elsif type == String
+        @type = :string
+      elsif type == Symbol
+        @type = :symbol
+      elsif type == Array
+        @type = :list
+      else
+        @type = nil
+      end
+    else
+      case(type)
+      when nil
+        @type = nil
+      when :numeric, 'numeric'
+        @type = :numeric
+      when true, false, :bool, 'bool'
+        @type = :bool
+      when :string, 'string'
+        @type = :string
+      when :symbol, 'symbol'
+        @type = :symbol
+      when :list, 'list'
+        @type = :list
+      when :numlist, 'numlist'
+        @type = :numlist
+      else
+        self.default_value_type = type.class
+      end
+    end
+    @type
+  end
+
+  def _to_default_type(val)
+    return val unless @type
+    if val.kind_of?(Hash)
+      val.keys.each{|k| val[k] = _to_default_type(val[k]) }
+      val
+    else
+      begin
+        case(@type)
+        when :numeric
+          number(val)
+        when :bool
+          TkComm
+        when :string
+          val
+        when :symbol
+          val.intern
+        when :list
+          tk_split_simplelist(val)
+        when :numlist
+          tk_split_simplelist(val).collect!{|v| number(v)}
+        else
+          val
+        end
+      rescue
+        val
+      end
+    end
+  end
+  private :_to_default_type
+
+  def initialize(val="", type=nil)
     # @id = Tk_VARIABLE_ID.join('')
     @id = Tk_VARIABLE_ID.join(TkCore::INTERP._ip_id_)
     Tk_VARIABLE_ID[1].succ!
@@ -138,6 +212,8 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     @trace_var  = nil
     @trace_elem = nil
     @trace_opts = nil
+
+    self.default_value_type = type
 
     begin
       INTERP._unset_global_var(@id)
@@ -242,11 +318,23 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
   def is_hash?
     #ITNERP._eval("global #{@id}; array exist #{@id}") == '1'
     INTERP._invoke_without_enc('global', @id)
-    INTERP._invoke_without_enc('array', 'exist', @id) == '1'
+    # INTERP._invoke_without_enc('array', 'exist', @id) == '1'
+    TkComm.bool(INTERP._invoke_without_enc('array', 'exist', @id))
   end
 
   def is_scalar?
     ! is_hash?
+  end
+
+  def exist?(idx = nil)
+    INTERP._invoke_without_enc('global', @id)
+    if idx
+      # array
+      TkComm.bool(tk_call('info', 'exist', "#{@id}")) && 
+        TkComm.bool(tk_call('info', 'exist', "#{@id}(#{idx})"))
+    else
+      TkComm.bool(tk_call('info', 'exist', @id))
+    end
   end
 
   def keys
@@ -256,6 +344,11 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     #tk_split_simplelist(INTERP._eval("global #{@id}; array get #{@id}"))
     INTERP._invoke_without_enc('global', @id)
     tk_split_simplelist(INTERP._fromUTF8(INTERP._invoke_without_enc('array', 'names', @id)))
+  end
+
+  def size
+    INTERP._invoke_without_enc('global', @id)
+    TkComm.number(INTERP._invoke_without_enc('array', 'size', @id))
   end
 
   def clear
@@ -274,7 +367,6 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     self
   end
 
-
 unless const_defined?(:USE_TCLs_SET_VARIABLE_FUNCTIONS)
   USE_TCLs_SET_VARIABLE_FUNCTIONS = true
 end
@@ -284,10 +376,11 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
   # use Tcl function version of set tkvariable
   ###########################################################################
 
-  def value
+  def _value
     #if INTERP._eval("global #{@id}; array exist #{@id}") == '1'
     INTERP._invoke_without_enc('global', @id)
-    if INTERP._invoke('array', 'exist', @id) == '1'
+    # if INTERP._invoke('array', 'exist', @id) == '1'
+    if TkComm.bool(INTERP._invoke('array', 'exist', @id))
       #Hash[*tk_split_simplelist(INTERP._eval("global #{@id}; array get #{@id}"))]
       Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', @id))]
     else
@@ -306,6 +399,7 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
       }
       self.value
     elsif val.kind_of?(Array)
+=begin
       INTERP._set_global_var(@id, '')
       val.each{|v|
         #INTERP._set_variable(@id, _toUTF8(_get_eval_string(v)), 
@@ -316,6 +410,8 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
                              TclTkLib::VarAccessFlag::LIST_ELEMENT)
       }
       self.value
+=end
+      _fromUTF8(INTERP._set_global_var(@id, array2tk_list(val)))
     else
       #_fromUTF8(INTERP._set_global_var(@id, _toUTF8(_get_eval_string(val))))
       _fromUTF8(INTERP._set_global_var(@id, _get_eval_string(val, true)))
@@ -325,7 +421,8 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
   def [](*idxs)
     index = idxs.collect{|idx| _get_eval_string(idx, true)}.join(',')
     begin
-      _fromUTF8(INTERP._get_global_var2(@id, index))
+      # _fromUTF8(INTERP._get_global_var2(@id, index))
+      _to_default_type(_fromUTF8(INTERP._get_global_var2(@id, index)))
     rescue => e
       case @def_default
       when :proc
@@ -365,7 +462,7 @@ else
   # use Ruby script version of set tkvariable (traditional methods)
   ###########################################################################
 
-  def value
+  def _value
     begin
       INTERP._eval(Kernel.format('global %s; set %s', @id, @id))
       #INTERP._eval(Kernel.format('set %s', @id))
@@ -436,7 +533,8 @@ else
   def [](*idxs)
     index = idxs.collect{|idx| _get_eval_string(idx)}.join(',')
     begin
-      INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index))
+      # INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index))
+      _to_default_type(INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index)))
     rescue => e
       case @def_default
       when :proc
@@ -483,8 +581,19 @@ else
 
 end
 
+  protected :_value
+
+  def value
+    _to_default_type(_value)
+  end
+
+  def value_type=(val)
+    self.default_value_type = val
+    self.value=(val)
+  end
+
   def numeric
-    number(value)
+    number(_value)
   end
   def numeric=(val)
     case val
@@ -497,17 +606,20 @@ end
     end
     val
   end
+  def numeric_type=(val)
+    @type = :numeric
+    self.numeric=(val)
+  end
 
   def bool
     # see Tcl_GetBoolean man-page
-    case value.downcase
+    case _value.downcase
     when '0', 'false', 'no', 'off'
       false
     else
       true
     end
   end
-
   def bool=(val)
     if ! val
       self.value = '0'
@@ -520,29 +632,47 @@ end
       end
     end
   end
+  def bool_type=(val)
+    @type = :bool
+    self.bool=(val)
+  end
 
   def to_i
-    number(value).to_i
+    number(_value).to_i
   end
 
   def to_f
-    number(value).to_f
+    number(_value).to_f
   end
 
   def to_s
     #string(value).to_s
-    value
+    _value
+  end
+  alias string= value=
+  def string_type=(val)
+    @type = :string
+    self.value=(val)
   end
 
   def to_sym
-    value.intern
+    _value.intern
+  end
+  alias symbol= value=
+  def symbol_type=(val)
+    @type = :symbol
+    self.value=(val)
   end
 
   def list
     #tk_split_list(value)
-    tk_split_simplelist(value)
+    tk_split_simplelist(_value)
   end
   alias to_a list
+
+  def numlist
+    list.collect!{|val| number(val)}
+  end
 
   def list=(val)
     case val
@@ -555,6 +685,39 @@ end
     end
     val
   end
+  alias numlist= list=
+
+  def list_type=(val)
+    @type = :list
+    self.list=(val)
+  end
+  def numlist_type=(val)
+    @type = :numlist
+    self.numlist=(val)
+  end
+
+  def lappend(*elems)
+    tk_call('lappend', @id, *elems)
+    self
+  end
+
+  def lindex(idx)
+    tk_call('lindex', self._value, idx)
+  end
+  alias lget lindex
+
+  def lget_i(idx)
+    number(lget(idx)).to_i
+  end
+
+  def lget_f(idx)
+    number(lget(idx)).to_f
+  end
+
+  def lset(idx, val)
+    tk_call('lset', @id, idx, val)
+    self
+  end
 
   def inspect
     #Kernel.format "#<TkVariable: %s>", @id
@@ -564,7 +727,7 @@ end
   def coerce(other)
     case other
     when TkVariable
-      [other.value, self.value]
+      [other._value, self._value]
     when String
       [other, self.to_s]
     when Symbol
@@ -576,7 +739,7 @@ end
     when Array
       [other, self.to_a]
     else
-      [other, self.value]
+      [other, self._value]
     end
   end
 
@@ -599,12 +762,12 @@ end
     when Array
       self.to_a + other
     when String
-      self.value + other
+      self._value + other
     else
       begin
-        number(self.value) + other
+        number(self._value) + other
       rescue
-        self.value + other.to_s
+        self._value + other.to_s
       end
     end
   end
@@ -612,37 +775,40 @@ end
     if other.kind_of?(Array)
       self.to_a - other
     else
-      number(self.value) - other
+      number(self._value) - other
     end
   end
   def *(other)
-    begin
-      number(self.value) * other
-    rescue
-      self.value * other
-    end
+    num_or_str(self._value) * other.to_i
+    #begin
+    #  number(self._value) * other
+    #rescue
+    #  self._value * other
+    #end
   end
   def /(other)
-    number(self.value) / other
+    number(self._value) / other
   end
   def %(other)
-    begin
-      number(self.value) % other
-    rescue
-      self.value % other
-    end
+    num_or_str(self._value) % other.to_i
+    #begin
+    #  number(self._value) % other
+    #rescue
+    #  self._value % other
+    #end
   end
   def **(other)
-    number(self.value) ** other
+    number(self._value) ** other
   end
   def =~(other)
-    self.value =~ other
+    self._value =~ other
   end
 
   def ==(other)
     case other
     when TkVariable
-      self.equal?(other)
+      #self.equal?(other)
+      self._value == other._value
     when String
       self.to_s == other
     when Symbol
@@ -654,7 +820,8 @@ end
     when Array
       self.to_a == other
     when Hash
-      self.value == other
+      # false if self is not an assoc array
+      self._value == other
     else
       false
     end
@@ -673,17 +840,17 @@ end
         val = other.numeric
         other = val
       rescue
-        other = other.value
+        other = other._value
       end
     end
     if other.kind_of?(Numeric)
       begin
         return self.numeric <=> other
       rescue
-        return self.value <=> other.to_s
+        return self._value <=> other.to_s
       end
     else
-      return self.value <=> other
+      return self._value <=> other
     end
   end
 
