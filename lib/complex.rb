@@ -21,7 +21,8 @@
 #
 # The following +Math+ module methods are redefined to handle Complex arguments.
 # They will work as normal with non-Complex arguments.
-#    sqrt exp cos sin tan log log10 atan2
+#    sqrt exp cos sin tan log log10
+#    cosh sinh tanh acos asin atan atan2 acosh asinh atanh
 #
 
 
@@ -66,7 +67,6 @@ class Complex < Numeric
     Complex(r*Math.cos(theta), r*Math.sin(theta))
   end
 
-  private_class_method :new
   #
   # Creates a +Complex+ number <tt>a</tt>+<tt>b</tt><i>i</i>.
   #
@@ -76,7 +76,9 @@ class Complex < Numeric
 
   def initialize(a, b)
     raise "non numeric 1st arg `#{a.inspect}'" if !a.kind_of? Numeric
+    raise "`#{a.inspect}' for 1st arg" if a.kind_of? Complex
     raise "non numeric 2nd arg `#{b.inspect}'" if !b.kind_of? Numeric
+    raise "`#{b.inspect}' for 2nd arg" if b.kind_of? Complex
     @real = a
     @image = b
   end
@@ -181,7 +183,7 @@ class Complex < Numeric
       end
     elsif Complex.generic?(other)
       r, theta = polar
-      Complex.polar(r.power!(other), theta * other)
+      Complex.polar(r**other, theta*other)
     else
       x, y = other.coerce(self)
       x**y
@@ -236,8 +238,9 @@ class Complex < Numeric
   # Argument (angle from (1,0) on the complex plane).
   #
   def arg
-    Math.atan2(@image.to_f, @real.to_f)
+    Math.atan2!(@image, @real)
   end
+  alias angle arg
   
   #
   # Returns the absolute value _and_ the argument.
@@ -252,6 +255,7 @@ class Complex < Numeric
   def conjugate
     Complex(@real, -@image)
   end
+  alias conj conjugate
   
   #
   # Compares the absolute values of the two numbers.
@@ -395,6 +399,7 @@ class Numeric
       return Math::PI
     end
   end
+  alias angle arg
   
   #
   # See Complex#polar.
@@ -409,46 +414,28 @@ class Numeric
   def conjugate
     self
   end
+  alias conj conjugate
 end
 
-
-class Fixnum
-  unless defined? 1.power!
-    alias power! ** 
-  end
-
-  # Redefined to handle a Complex argument.
-  def ** (other)
-    if self < 0
-      Complex.new!(self, 0) ** other
-    else
-      if defined? self.rpower
-        self.rpower(other)
-      else
-	self.power!(other)
-      end
-    end
-  end
-end
-
-class Bignum
-  alias power! **
-end
-
-class Float
-  alias power! **
-end
 
 module Math
   alias sqrt! sqrt
   alias exp! exp
+  alias log! log
+  alias log10! log10
   alias cos! cos
   alias sin! sin
   alias tan! tan
-  alias log! log
-  alias atan! atan  
-  alias log10! log10
+  alias cosh! cosh
+  alias sinh! sinh
+  alias tanh! tanh
+  alias acos! acos
+  alias asin! asin
+  alias atan! atan
   alias atan2! atan2
+  alias acosh! acosh
+  alias asinh! asinh
+  alias atanh! atanh  
 
   # Redefined to handle a Complex argument.
   def sqrt(z)
@@ -476,20 +463,6 @@ module Math
     else
       Complex(exp!(z.real) * cos!(z.image), exp!(z.real) * sin!(z.image))
     end
-  end
-  
-  #
-  # Hyperbolic cosine.
-  #
-  def cosh!(x)
-    (exp!(x) + exp!(-x))/2.0
-  end
-  
-  #
-  # Hyperbolic sine.
-  #
-  def sinh!(x)
-    (exp!(x) - exp!(-x))/2.0
   end
   
   # Redefined to handle a Complex argument.
@@ -520,6 +493,30 @@ module Math
       sin(z)/cos(z)
     end
   end
+
+  def sinh(z)
+    if Complex.generic?(z)
+      sinh!(z)
+    else
+      Complex( sinh!(z.real)*cos!(z.image), cosh!(z.real)*sin!(z.image) )
+    end
+  end
+
+  def cosh(z)
+    if Complex.generic?(z)
+      cosh!(z)
+    else
+      Complex( cosh!(z.real)*cos!(z.image), sinh!(z.real)*sin!(z.image) )
+    end
+  end
+
+  def tanh(z)
+    if Complex.generic?(z)
+      tanh!(z)
+    else
+      sinh(z)/cosh(z)
+    end
+  end
   
   # Redefined to handle a Complex argument.
   def log(z)
@@ -539,69 +536,102 @@ module Math
       log(z)/log!(10)
     end
   end
-  
-  # FIXME: I don't know what the point of this is.  If you give it Complex
-  # arguments, it will fail.
-  def atan2(x, y)
-    if Complex.generic?(x) and Complex.generic?(y)
-      atan2!(x, y)
+
+  def acos(z)
+    if Complex.generic?(z)
+      acos!(z)
     else
-      fail "Not yet implemented."
+      -1.0.im * log( z + 1.0.im * sqrt(1.0-z*z) )
     end
   end
-  
-  #
-  # Hyperbolic arctangent.
-  #
-  def atanh!(x)
-    log((1.0 + x.to_f) / ( 1.0 - x.to_f)) / 2.0
+
+  def asin(z)
+    if Complex.generic?(z)
+      asin!(z)
+    else
+      -1.0.im * log( 1.0.im * z + sqrt(1.0-z*z) )
+    end
   end
-  
-  # Redefined to handle a Complex argument.
+
   def atan(z)
     if Complex.generic?(z)
-      atan2!(z, 1)
-    elsif z.image == 0
-      atan2(z.real,1)
+      atan!(z)
     else
-      a = z.real
-      b = z.image
-      
-      c = (a*a + b*b - 1.0)
-      d = (a*a + b*b + 1.0)
-
-      Complex(atan2!((c + sqrt(c*c + 4.0*a*a)), 2.0*a),
-	      atanh!((-d + sqrt(d*d - 4.0*b*b))/(2.0*b)))
+      1.0.im * log( (1.0.im+z) / (1.0.im-z) ) / 2.0
     end
   end
-  
-  module_function :sqrt
+
+  def atan2(y,x)
+    if Complex.generic?(y) and Complex.generic?(x)
+      atan2!(y,x)
+    else
+      -1.0.im * log( (x+1.0.im*y) / sqrt(x*x+y*y) )
+    end
+  end
+
+  def acosh(z)
+    if Complex.generic?(z)
+      acosh!(z)
+    else
+      log( z + sqrt(z*z-1.0) )
+    end
+  end
+
+  def asinh(z)
+    if Complex.generic?(z)
+      asinh!(z)
+    else
+      log( z + sqrt(1.0+z*z) )
+    end
+  end
+
+  def atanh(z)
+    if Complex.generic?(z)
+      atanh!(z)
+    else
+      log( (1.0+z) / (1.0-z) ) / 2.0
+    end
+  end
+
   module_function :sqrt!
+  module_function :sqrt
   module_function :exp!
   module_function :exp
+  module_function :log!
+  module_function :log
+  module_function :log10!
+  module_function :log10
   module_function :cosh!
+  module_function :cosh
   module_function :cos!
   module_function :cos
   module_function :sinh!
+  module_function :sinh
   module_function :sin!
   module_function :sin
   module_function :tan!
   module_function :tan
-  module_function :log!
-  module_function :log
-  module_function :log10!
-  module_function :log
+  module_function :tanh!
+  module_function :tanh
+  module_function :acos!
+  module_function :acos
+  module_function :asin!
+  module_function :asin
+  module_function :atan!
+  module_function :atan
   module_function :atan2!
   module_function :atan2
-#  module_function :atan!
-  module_function :atan
+  module_function :acosh!
+  module_function :acosh
+  module_function :asinh!
+  module_function :asinh
   module_function :atanh!
+  module_function :atanh
   
 end
 
 # Documentation comments:
 #  - source: original (researched from pickaxe)
 #  - a couple of fixme's
-#  - Math module methods sinh! etc. a bit fuzzy.  What exactly is the intention?
 #  - RDoc output for Bignum etc. is a bit short, with nothing but an
 #    (undocumented) alias.  No big deal.

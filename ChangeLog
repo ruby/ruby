@@ -7,6 +7,11 @@ Sat Jul 26 21:25:21 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c: remove some old comments.
 
+Sat Jul 26 14:26:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/tk/lib/tk.rb (TkCore::chooseDirectory): back up wrongly
+	  removed method.
+
 Sat Jul 26 14:14:12 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/stringio/stringio.c: includes Enumerable as well as IO.

@@ -750,7 +750,7 @@ if test "$with_dln_a_out" != yes; then
     esac
   else
     case "$target_os" in
-	hpux*)		CCDLFLAGS='+z';;
+	hpux*)		CCDLFLAGS='+Z';;
 	solaris*|irix*)	CCDLFLAGS='-KPIC' ;;
 	sunos*)		CCDLFLAGS='-PIC' ;;
 	esix*|uxpds*)   CCDLFLAGS='-KPIC' ;;
