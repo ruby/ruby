@@ -22,6 +22,7 @@ ftools.rb	file tools
 getoptlong.rb	GNU getoptlong compatible
 getopts.rb	parses command line options (use getoptlong)
 importenv.rb	imports environment variables as global variables
+ipaddr.rb	defines the IPAddr class
 irb.rb		interactive ruby
 jcode.rb	Japanese text handling (replace String methods)
 mailread.rb	reads mail headers

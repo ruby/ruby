@@ -132,6 +132,7 @@ lib/ftools.rb
 lib/getoptlong.rb
 lib/getopts.rb
 lib/importenv.rb
+lib/ipaddr.rb
 lib/irb.rb
 lib/irb/cmd/chws.rb
 lib/irb/cmd/fork.rb
