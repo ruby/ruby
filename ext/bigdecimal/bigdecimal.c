@@ -936,11 +936,14 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
         Check_Type(vLoc, T_FIXNUM);
         iLoc = FIX2INT(vLoc);
         break;
-    case 2:
+    case 2:{
+        int sws = sw;
         Check_Type(vLoc, T_FIXNUM);
         iLoc = FIX2INT(vLoc);
         Check_Type(vRound, T_FIXNUM);
         sw = VpSetRoundMode(FIX2INT(vRound));
+        VpSetRoundMode(sws);
+        }
         break;
     }
 
