@@ -809,14 +809,14 @@ proc_waitall()
 }
 
 static VALUE
-detach_process_watcer(pid_p)
+detach_process_watcher(pid_p)
     int *pid_p;
 {
     int cpid, status;
 
     for (;;) {
 	cpid = rb_waitpid(*pid_p, &status, WNOHANG);
-	if (cpid == -1) return Qnil;
+	if (cpid == -1) return rb_last_status;
 	rb_thread_sleep(1);
     }
 }
@@ -825,7 +825,7 @@ VALUE
 rb_detach_process(pid)
     int pid;
 {
-    return rb_thread_create(detach_process_watcer, (void*)&pid);
+    return rb_thread_create(detach_process_watcher, (void*)&pid);
 }
 
 
@@ -843,7 +843,12 @@ rb_detach_process(pid)
  *  only when you do not intent to explicitly wait for the child to
  *  terminate.  <code>detach</code> only checks the status
  *  periodically (currently once each second).
- *     
+ *
+ *  The waiting thread returns the exit status of the detached process
+ *  when it terminates, so you can use <code>Thread#join</code> to
+ *  know the result.  If specified _pid_ is not a valid child process
+ *  ID, the thread returns +nil+ immediately.
+ *
  *  In this first example, we don't reap the first child process, so
  *  it appears as a zombie in the process status display.
  *     

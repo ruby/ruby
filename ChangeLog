@@ -1,3 +1,8 @@
+Mon Feb  9 16:30:12 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (detach_process_watcher): return the last status.
+	  [ruby-dev:22841]
+
 Sun Feb  8 16:46:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pp.rb (PP::PPMethods::object_address_group): suppress negative
