@@ -73,7 +73,6 @@ fc_i(key, value, res)
     
     if (!rb_is_const_id(key)) return ST_CONTINUE;
 
-    printf("fc: %s\n", rb_id2name(key));
     if (value == res->klass) {
 	res->path = fc_path(res, key);
 	return ST_STOP;
