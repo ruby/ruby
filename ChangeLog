@@ -1,3 +1,8 @@
+Wed May 19 11:09:00 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: change permition of TkObject#tk_send from 
+	  private to public
+
 Tue May 18 14:00:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.h (NEW_DSTR): adjust list length.

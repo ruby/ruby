@@ -2007,7 +2007,7 @@ class TkObject<TkKernel
   def tk_send_with_enc(cmd, *rest)
     tk_call_with_enc(path, cmd, *rest)
   end
-  private :tk_send, :tk_send_without_enc, :tk_send_with_enc
+  # private :tk_send, :tk_send_without_enc, :tk_send_with_enc
 
   def method_missing(id, *args)
     name = id.id2name
