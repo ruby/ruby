@@ -1,3 +1,8 @@
+Sat Jun 14 17:59:59 2003  Guy Decoux  <ts@moulon.inra.fr>
+
+	* eval.c (method_arity): should handle NODE_BMETHOD and
+	  NODE_DMETHOD. [ruby-core:01138]
+
 Fri Jun 13 09:24:39 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (storebinary): seek correctly. Thanks, William Webber.
@@ -6,18 +11,18 @@ Fri Jun 13 09:24:39 2003  Shugo Maeda  <shugo@ruby-lang.org>
 	
 Tue Jun 10 14:26:30 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/token.c: preserve newlines prepended to a block.
+	* ext/syck/token.c: preserve newlines prepended to a block.
 
-    * ext/syck/implicit.c (syck_match_implicit): added !merge and !default.
+	* ext/syck/implicit.c (syck_match_implicit): added !merge and !default.
 
-    * lib/yaml/constants.rb: remove '\z' escape.
+	* lib/yaml/constants.rb: remove '\z' escape.
 
-    * lib/yaml/emitter.rb: ensure reset of @seq_map shortcut flag.
+	* lib/yaml/emitter.rb: ensure reset of @seq_map shortcut flag.
 
-    * lib/yaml/encoding.rb: remove Unicode translation methods.
+	* lib/yaml/encoding.rb: remove Unicode translation methods.
 
-    * lib/yaml/rubytypes.rb: improved round-tripping of Strings.
-      [ruby-core:1134]
+	* lib/yaml/rubytypes.rb: improved round-tripping of Strings.
+	  [ruby-core:1134]
 
 Tue Jun 10 01:07:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
