@@ -78,7 +78,7 @@ BEGIN
    VALUE "FileVersion",      "#{fversion}\\0"
    VALUE "Home Page",        "http://www.ruby-lang.org/\\0"
    VALUE "InternalName",     "#{base + ext}\\0"
-   VALUE "LegalCopyright",   "Copyright (C) 1993-2003 Yukihiro Matsumoto\\0"
+   VALUE "LegalCopyright",   "Copyright (C) 1993-#{RUBY_RELEASE_DATE[/\d+/]} Yukihiro Matsumoto\\0"
    VALUE "OriginalFilename", "#{base + ext}\\0"
    VALUE "Platform",         "#{RUBY_PLATFORM}\\0"
    VALUE "ProductVersion",   "#{fversion}\\0"

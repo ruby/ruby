@@ -199,7 +199,7 @@ enum.$(OBJEXT): {$(VPATH)}enum.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}node.h {$(VPATH)}util.h
 error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}env.h {$(VPATH)}version.h {$(VPATH)}st.h
+  {$(VPATH)}env.h {$(VPATH)}st.h
 euc_jp.$(OBJEXT): {$(VPATH)}euc_jp.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h
 eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}ruby.h config.h \
