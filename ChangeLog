@@ -12,6 +12,13 @@ Wed Feb 26 00:02:41 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* string.c (rb_str_dup): set FL_EXIVAR when copied generic ivar.
 	  (ruby-bugs-ja:PR#400)
 
+Sun Feb 23 14:39:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* intern.h (rb_define_private_method): duplicated.
+
+	* configure.in (__NO_ISOCEXT): need not to add this definition on
+	  MinGW.
+
 Sat Feb 22 02:45:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_create): may called from place higher than
@@ -73,7 +80,6 @@ Sat Feb  8 04:04:13 2003  Akinori MUSHA  <knu@iDaemons.org>
 	  lib/shell/error.rb, lib/shell/filter.rb: Fix typos and
 	  grammos. [approved by: keiju]
 
->>>>>>> 1.285.2.583
 Mon Feb  3 23:46:48 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_getline): should not increment lineno at EOF.
