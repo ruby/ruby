@@ -1067,8 +1067,8 @@ rb_cmpint(cmp)
 	if (RBIGNUM(cmp)->sign) return 1;
 	return -1;
     }
-    if (rb_funcall(id_cmp, '>', 1, INT2FIX(0))) return 1;
-    if (rb_funcall(id_cmp, '<', 1, INT2FIX(0))) return -1;
+    if (rb_funcall(cmp, '>', 1, INT2FIX(0))) return 1;
+    if (rb_funcall(cmp, '<', 1, INT2FIX(0))) return -1;
     return 0;
 }
 
