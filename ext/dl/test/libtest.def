@@ -22,7 +22,6 @@ test_strlen
 test_succ
 test_data_init
 test_data_add
-test_data_print
 test_data_aref
 test_set_long_value
 test_get_long_value
