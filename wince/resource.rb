@@ -54,11 +54,10 @@ end
   open(base + '.rc', "w") { |f|
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 
+    f.print("#include <windows.h>\n")
+    f.print("#include <winver.h>\n") if $wce_ver=="2.11"
+
     f.print <<EOF
-#include <windows.h>
-#if _WIN32_WCE > 400
-  #include <winver.h>
-#endif
 
 #{icons}
 VS_VERSION_INFO VERSIONINFO

@@ -66,4 +66,24 @@ int stricmp( const char *s1, const char *s2 )
 
 	return n;
 }
+
+char *strpbrk(const char *str, const char *cs)
+{
+	wchar_t *wstr, *wcs, *w;
+	char *s = NULL;
+
+	wstr = wce_mbtowc(str);
+	wcs  = wce_mbtowc(cs);
+
+	w = wcspbrk(wstr, wcs);
+
+	if( w!=NULL )
+		s = str + (wcs-wstr)/sizeof(wchar_t);
+
+	free(wstr);
+	free(wcs);
+
+	return s;
+}
+
 #endif

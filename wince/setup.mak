@@ -40,6 +40,7 @@ sh3-ppc-wince: -prologue- -sh3- -ppc- -epilogue-
 sh3-hpcpro-wince: -prologue- -sh3- -hpcpro2- -epilogue-
 sh4-hpcpro-wince: -prologue- -sh4- -hpcpro2- -epilogue-
 armv4-.net41-wince: -prologue- -armv4- -.net41- -epilogue-
+armv4t-.net41-wince: -prologue- -armv4t- -.net41- -epilogue-
 
 -prologue-: nul
 	@type << > $(MAKEFILE)
@@ -87,10 +88,9 @@ $(CPU) = $(PROCESSOR_LEVEL)
 	@$(APPEND) CC = cl$(@:-=)
 -sh3- -sh4-::
 	@$(APPEND) CC = shcl
--armv4-::
+-armv4- -armv4t-::
 	@$(APPEND) CC = clarm
-	@$(APPEND) ARCHFOLDER = armv4
-	@$(APPEND) $(ARCH) = arm
+	@$(APPEND) ARCHFOLDER = $(@:-=)
 
 
 -arm-::
@@ -103,6 +103,10 @@ $(CPU) = $(PROCESSOR_LEVEL)
 	@$(APPEND) CECPUDEF = -DSHx -DSH4 -D_SH4_
 -armv4-::
 	@$(APPEND) CECPUDEF = -DARM -D_ARM_ -DARMV4
+	@$(APPEND) $(ARCH) = ARM
+-armv4t-::
+	@$(APPEND) CECPUDEF = -DARM -D_ARM_ -DARMV4T
+	@$(APPEND) $(ARCH) = THUMB
 
 
 -hpc2k-: -hpc2000-
@@ -176,16 +180,14 @@ LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/MS Pocket PC/lib/$$(PROCESSOR_ARC
 
 "-MS HPC Pro--":
 	@type << >>$(MAKEFILE)
-INCLUDE = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/$(@:-=)/include
-LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/$(@:-=)/lib
+INCLUDE = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/MS HPC Pro/include
+LIB = $$(CE_TOOLS_DIR)/wce$$(SUBSYSVERSION:.=)/MS HPC Pro/lib/$$(PROCESSOR_ARCHITECTURE)
 <<
 
 -.net41-:
 	@type << >>$(MAKEFILE)
 INCLUDE = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/include/$$(ARCHFOLDER)
 LIB = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/lib/$$(ARCHFOLDER)
-#INCLUDE = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/include/$$(PROCESSOR_ARCHITECTURE)
-#LIB = $$(CE_TOOLS4_DIR)/wce400/STANDARDSDK/lib/$$(PROCESSOR_ARCHITECTURE)
 <<
 
 

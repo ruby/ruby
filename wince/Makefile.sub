@@ -182,7 +182,6 @@ OBJS          = array.obj \
 
 all:		ext minirubyce$(EXEEXT) rbconfig.rb \
 		$(LIBRUBY) $(MISCLIBS)
-#		@$(MINIRUBY) $(srcdir)/ext/extmk.rb --extstatic=$(EXTSTATIC) --make "$(MAKE)" --make-flags "-$(MFLAGS)$(MAKEFLAGS)"
 		@miniruby$(EXEEXT) $(srcdir)/ext/extmk.rb --extstatic=$(EXTSTATIC) --make "$(MAKE)" --make-flags "-$(MFLAGS)$(MAKEFLAGS)"
 
 ext:
@@ -298,6 +297,20 @@ $(BANG)endif
 #define read	   _read
 #define write	   _write
 #define lseek      _lseek
+
+#if _WIN32_WCE < 300
+  #define isascii(c) ( (c>=0x00&&c<=0x7f)?1:0 )
+  #define isspace(c) ( ((c>=0x09&&c<=0x0d)||c==0x20)?1:0 )
+  #define isdigit(c) ( (c>=0x00&&c<=0x09)?1:0 )
+  #define isupper(c) ( (c>='A'&&c<='Z')?1:0 )
+  #define isalpha(c) ( ((c>='A'&&c<='Z')||(c>='a'&&c<='z'))?1:0 )
+  #define isprint(c) ( (c>=0x20&&c<=0x7e)?1:0 )
+  #define isalnum(c) ( (isalpha(c)||isdigit(c))?1:0 )
+  #define iscntrl(c) ( ((c>=0x00&&c<=0x1f)||c==0x7f)?1:0 )
+  #define islower(c) ( (c>='a'&&c<='z')?1:0 )
+  #define ispunct(c) ( !(isalnum(c)||isspace(c))?1:0 )
+  #define isxdigit(c) ( ((c>=0&&c<=9)||(c>='A'&&c<='F')||(c>='a'&&c<='f'))?1:0 )
+#endif
 <<KEEP
 
 config.status: Makefile $(srcdir)/wince/Makefile.sub
@@ -434,8 +447,6 @@ $(RUBYDEF):	$(LIBRUBY_A) minirubyce$(EXEEXT)
 		$(AR) $(ARFLAGS)$@ -def:$<
 
 install:	rbconfig.rb
-#		miniruby$(EXEEXT) $(srcdir)/instruby.rb -$(MFLAGS)$(MAKEFLAGS) $(DESTDIR)
-#		miniruby$(EXEEXT) $(srcdir)/ext/extmk.rb --make "$(MAKE)" --make-flags "-$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
 		miniruby$(EXEEXT) $(srcdir)/instruby.rb \
           "--dest-dir=$(DESTDIR)" "--make=nmake"
 		miniruby$(EXEEXT) $(srcdir)/ext/extmk.rb \
@@ -508,6 +519,7 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) \
+			-wce_ver=$(SUBSYSVERSION) \
 			. $(icondirs) $(srcdir)/wince
 
 {$(srcdir)/missing}.c.obj:
