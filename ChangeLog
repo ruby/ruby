@@ -1,3 +1,8 @@
+Wed Jun 30 16:59:39  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/ruby/test_file.rb (test_fnmatch): some tests for File.fnmatch
+	  are added.
+
 Wed Jun 30 11:38:51 2004  Elven  <elven@elven.de>
 
 	* parse.y (primary): should not be NULL.  [ruby-core:03098]
