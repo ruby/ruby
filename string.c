@@ -616,16 +616,16 @@ rb_str_rindex(argc, argv, str)
     VALUE str;
 {
     VALUE sub;
-    VALUE initpos;
+    VALUE position;
     int pos, len;
     char *s, *sbeg, *t;
 
-    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
-	pos = NUM2INT(initpos);
-	if (pos >= RSTRING(str)->len) pos = RSTRING(str)->len;
+    if (rb_scan_args(argc, argv, "11", &sub, &position) == 2) {
+	pos = NUM2INT(position);
+	if (pos > RSTRING(str)->len) return Qnil;
     }
     else {
-	pos = RSTRING(str)->len;
+	pos = 0;
     }
 
     switch (TYPE(sub)) {
@@ -636,13 +636,14 @@ rb_str_rindex(argc, argv, str)
 
       case T_STRING:
 	/* substring longer than string */
-	if (pos > RSTRING(str)->len) return Qnil;
-	sbeg = RSTRING(str)->ptr; s = sbeg + pos - RSTRING(sub)->len;
+	if (RSTRING(str)->len - pos < RSTRING(sub)->len) return Qnil;
+	sbeg = RSTRING(str)->ptr + pos;
+	s = RSTRING(str)->ptr + RSTRING(str)->len - RSTRING(sub)->len;
 	t = RSTRING(sub)->ptr;
 	len = RSTRING(sub)->len;
 	while (sbeg <= s) {
 	    if (*s == *t && memcmp(s, t, len) == 0) {
-		return INT2FIX(s - sbeg);
+		return INT2FIX(s - RSTRING(str)->ptr);
 	    }
 	    s--;
 	}
@@ -651,10 +652,12 @@ rb_str_rindex(argc, argv, str)
       case T_FIXNUM:
       {
 	  int c = FIX2INT(sub);
-	  char *p = RSTRING(str)->ptr;
+	  char *p = RSTRING(str)->ptr + RSTRING(str)->len - 1;
+	  char *pbeg = RSTRING(str)->ptr + pos;
 
-	  for (;pos>=0;pos--) {
-	      if (p[pos] == c) return INT2FIX(pos);
+	  while (pbeg <= p) {
+	      if (*p == c) return INT2FIX(p - RSTRING(str)->ptr);
+	      p--;
 	  }
 	  return Qnil;
       }
@@ -865,8 +868,8 @@ rb_str_aset(str, indx, val)
 	if (idx < 0) {
 	    idx += RSTRING(str)->len;
 	}
-	if (idx < 0 || RSTRING(str)->len < idx) {
-	    rb_raise(rb_eIndexError, "index %d out of string", NUM2INT(beg));
+	if (idx < 0 || RSTRING(str)->len <= idx) {
+	    rb_raise(rb_eIndexError, "index %d out of string", idx);
 	}
 	if (FIXNUM_P(val)) {
 	    if (RSTRING(str)->len == idx) {

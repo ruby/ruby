@@ -1,12 +1,13 @@
 #! /usr/local/bin/ruby
 
-$".push 'mkmf.rb' #"
+$".push 'mkmf.rb'
 
 if ARGV[0] == 'static'
   $force_static = TRUE
   ARGV.shift
 elsif ARGV[0] == 'install'
   $install = TRUE
+  $destdir = ARGV[1] || ''
   ARGV.shift
 elsif ARGV[0] == 'clean'
   $clean = TRUE
@@ -19,15 +20,22 @@ $cache_mod = FALSE;
 $lib_cache = {}
 $func_cache = {}
 $hdr_cache = {}
+$top_srcdir = ".."
+if $top_srcdir !~ "^/"
+  # get absolute path
+  $top_srcdir = File.expand_path($top_srcdir)
+end
+$topdir = File.expand_path("..")
+$topdir = File.expand_path($topdir)
+$ruby_inc = $top_srcdir
 
-#$dllopt = '-MD'
-$dllopt = ''
+load "#{$top_srcdir}/lib/find.rb"
 
 if File.exist?("config.cache") then
   f = open("config.cache", "r")
   while f.gets
     case $_
-    when /^lib: ([\w_]+) (yes|no)/
+    when /^lib: (.+) (yes|no)/
       $lib_cache[$1] = $2
     when /^func: ([\w_]+) (yes|no)/
       $func_cache[$1] = $2
@@ -40,40 +48,98 @@ end
 
 def older(file1, file2)
   if !File.exist?(file1) then
-    return TRUE
+    return true
   end
   if !File.exist?(file2) then
-    return FALSE
+    return false
   end
   if File.mtime(file1) < File.mtime(file2)
-    return TRUE
+    return true
   end
-  return FALSE
+  return false
 end
 
-#LINK = "cl -o conftest.exe -I../.. -Zi -O -I. %s  conftest.c %s >  nul"
-LINK = "cl -o conftest.exe -Zi -O  %s  conftest.c %s >  nul"
-CPP = "cl -E  -I../.. -I../../missing -I../../win32 -I. -Zi -O %s conftest.c >  nul"
+CFLAGS = "-g -O2"
+LINK = "gcc -o conftest -I#$topdir -I#$top_srcdir -I${prefix}/include #{CFLAGS} %s %s conftest.c -ldl -lcrypt -lm  %s"
+CPP = "gcc -E  -I#$topdir -I#$top_srcdir -I${prefix}/include #{CFLAGS} %s conftest.c"
 
-def try_link(libs)
-  #print(format("try #{LINK}", $CFLAGS, $LDFLAGS, libs))
-  #system(format(LINK, $CFLAGS, $LDFLAGS, libs))
-  print(format("try #{LINK}\n", $CFLAGS, libs))
-  system(format(LINK, $CFLAGS, libs))
+$null = open("nul", "w")
+$orgerr = $stderr.dup
+$orgout = $stdout.dup
+def xsystem command
+  if $DEBUG
+    return system(command)
+  end
+  $stderr.reopen($null) 
+  $stdout.reopen($null) 
+  r = system(command)
+  $stderr.reopen($orgerr)
+  $stdout.reopen($orgout)
+  return r
 end
 
-def try_cpp
-  system(format(CPP, $CFLAGS))
+def try_link(src, opt="")
+  cfile = open("conftest.c", "w")
+  cfile.print src
+  cfile.close
+  begin
+    xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+  end
 end
 
-def have_library(lib, func)
-  #print format("have_library(%s, %s)\n", lib, func)
+def try_cpp(src, opt=$CFLAGS)
+  cfile = open("conftest.c", "w")
+  cfile.print src
+  cfile.close
+  xsystem(format(CPP, opt))
+end
+
+def egrep_cpp(pat, src, opt=$CFLAGS)
+  cfile = open("conftest.c", "w")
+  cfile.print src
+  cfile.close
+  xsystem(format(CPP+"|egrep #{pat}", opt))
+end
+
+def try_run(src, opt="")
+  begin
+    if try_link(src, opt)
+      if xsystem("./conftest")
+	true
+      else
+	false
+      end
+    else
+      nil
+    end
+  end
+end
+
+def install_rb(mfile)
+  path = []
+  dir = []
+  Find.find("lib") do |f|
+    next unless /\.rb$/ =~ f
+    f = f[4..-1]
+    path.push f
+    dir |= File.dirname(f)
+  end
+  for f in dir
+    next if f == "."
+    mfile.printf "\t@test -d $(DESTDIR)$(pkglibdir)/%s || mkdir $(DESTDIR)$(pkglibdir)/%s\n", f, f
+  end
+  for f in path
+    mfile.printf "\t$(INSTALL_DATA) lib/%s $(DESTDIR)$(pkglibdir)/%s\n", f, f
+  end
+end
+
+def have_library(lib, func="main")
   if $lib_cache[lib]
     if $lib_cache[lib] == "yes"
-      if $libs#
-	$libs = lib + ".lib " + $libs 
+      if $libs
+        $libs = "-l" + lib + " " + $libs 
       else
-	$libs = lib + ".lib "
+	$libs = "-l" + lib
       end
       return TRUE
     else
@@ -81,30 +147,26 @@ def have_library(lib, func)
     end
   end
 
-  cfile = open("conftest.c", "w")
-  cfile.printf "\
-#include <windows.h>
-#include <winsock.h>
-int main() { return 0; }
-int t() { %s(); return 0; }
-", func
-  cfile.close
-
-  begin
+  if func && func != ""
     if $libs
-      libs =  lib + ".lib " + $libs 
+      libs = "-l" + lib + " " + $libs 
     else
-      libs =  lib + ".lib"
+      libs = "-l" + lib
     end
-    #print "libs=#{libs}\n"
-    unless try_link(libs)
-      #print "fail : #{libs}\n"
+    unless try_link(<<"SRC", libs)
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
       $lib_cache[lib] = 'no'
       $cache_mod = TRUE
       return FALSE
     end
-  ensure
-    system "rm -f conftest*"
+  else
+    if $libs
+      libs = "-l" + lib + " " + $libs 
+    else
+      libs = "-l" + lib
+    end
   end
 
   $libs = libs
@@ -123,28 +185,17 @@ def have_func(func)
     end
   end
 
-  cfile = open("conftest.c", "w")
-  cfile.printf "\
-#include <windows.h>
-#include <winsock.h>
-//char %s();
-int main() { return 0; }
-int t() { %s(); return 0; }
-", func, func
-  cfile.close
-
   libs = $libs
   libs = "" if libs == nil
 
-  begin
-    #print "libs=#{libs}\n"
-    unless try_link(libs)
-      $func_cache[func] = 'no'
-      $cache_mod = TRUE
-      return FALSE
-    end
-  ensure
-    system "rm -f conftest*"
+  unless try_link(<<"SRC", libs)
+char #{func}();
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+    $func_cache[func] = 'no'
+    $cache_mod = TRUE
+    return FALSE
   end
   $defs.push(format("-DHAVE_%s", func.upcase))
   $func_cache[func] = 'yes'
@@ -163,26 +214,50 @@ def have_header(header)
     end
   end
 
-  cfile = open("conftest.c", "w")
-  cfile.printf "\
-#include <%s>
-", header
-  cfile.close
-
-  begin
-    unless try_cpp
-      $hdr_cache[header] = 'no'
-      $cache_mod = TRUE
-      return FALSE
-    end
-  ensure
-    system "rm -f conftest*"
+  unless try_cpp(<<"SRC")
+#include <#{header}>
+SRC
+    $hdr_cache[header] = 'no'
+    $cache_mod = TRUE
+    return FALSE
   end
   $hdr_cache[header] = 'yes'
   header.tr!("a-z./\055", "A-Z___")
   $defs.push(format("-DHAVE_%s", header))
   $cache_mod = TRUE
   return TRUE
+end
+
+def arg_config(config, default=nil)
+  unless defined? $configure_args
+    $configure_args = {}
+    for arg in " --prefix=/usr --with-dbm-include=/usr/include/db1".split
+      next unless /^--/ =~ arg
+      if /=/ =~ arg
+	$configure_args[$`] = $'
+      else
+	$configure_args[arg] = default
+      end
+    end
+  end
+  $configure_args.fetch(config, default)
+end
+
+def with_config(config, default=nil)
+  unless /^--with-/ =~ config
+    config = '--with-' + config
+  end
+  arg_config(config, default)
+end
+
+def enable_config(config, default=nil)
+  if arg_config("--enable-"+config, true)
+    true
+  elsif arg_config("--disable-"+config, false)
+    false
+  else
+    default
+  end
 end
 
 def create_header()
@@ -198,103 +273,121 @@ end
 
 def create_makefile(target)
 
-  if $libs and "obj" == "obj"
+  if $libs and "so" == "o"
     libs = $libs.split
     for lib in libs
-      lib.sub!(/(.*)/, '"\1.lib"') if /.lib$/ !~ lib
+      lib.sub!(/-l(.*)/, '"lib\1.a"')
     end
     $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
-  $libs = "" unless $libs
 
+  $DLDFLAGS = ''
+
+  if PLATFORM =~ /beos/
+    if $libs
+      $libs = $libs + " -lruby"
+    else
+      $libs = "-lruby"
+    end
+    $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
+  end
+
+  $srcdir = $top_srcdir + "/ext/" + $mdir
   mfile = open("Makefile", "w")
   mfile.printf "\
-SHELL = $(COMPSEC)
+SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
-srcdir = .
-VPATH = .
+srcdir = #{$srcdir}
 
-CC = cl
+hdrdir = #{$topdir}
 
-CFLAGS   = %s -I../.. -I../../missing -I../../win32 -I. -O -DNT %s #$CFLAGS %s
+CC = gcc
 
-RUBYLIB  = ../../ruby.lib
-DLDFLAGS =  /DLL
-LDSHARED = 
-", if $static then "" else "-fpic" end, $dllopt, $defs.join(" ")
-
-  if $force_static
-  print "static\n"
-  else
-  print "non static\n"
-  end
+prefix = /usr
+CFLAGS   = %s -I#{$topdir} -I#{$top_srcdir} -I${prefix}/include #{CFLAGS} #$CFLAGS %s
+DLDFLAGS = #$DLDFLAGS #$LDFLAGS
+LDSHARED = gcc -shared
+", if $static then "" else "-fPIC" end, $defs.join(" ")
 
   mfile.printf "\
 
-libdir = /usr/local/lib/ruby/i386-mswin32
+RUBY_INSTALL_NAME = ruby
+
+prefix = /usr
+exec_prefix = ${prefix}
+libdir = ${exec_prefix}/lib
+pkglibdir = $(libdir)/ruby/1.3
+archdir = $(pkglibdir)/i586-linux
+ruby_inc = #{$ruby_inc}
 
 
 #### End of system configuration section. ####
+
 "
-  mfile.printf "LOCAL_LIBS = %s\n", $local_libs if $local_libs
+  mfile.printf "LOCAL_LIBS = %s\n", $local_libs unless $local_libs == ""
   mfile.printf "LIBS = %s\n", $libs
   mfile.printf "OBJS = "
   if !$objs then
-    $objs = Dir["*.c"]
-    for f in $objs
-      f.sub!(/\.c$/, ".obj")
+    $objs = []
+    for f in Dir["#{$top_srcdir}/ext/#{$mdir}/*.{c,cc}"]
+      f = File.basename(f)
+      f.sub!(/\.(c|cc)$/, ".o")
+      $objs.push f
     end
   end
   mfile.printf $objs.join(" ")
   mfile.printf "\n"
 
-  dots = if "ginstall -c" =~ /^\// then "" else "../" end
-  mfile.printf "\
-TARGET = %s.%s
+  mfile.printf <<EOS
+TARGET = #{target}
+DLLIB = $(TARGET).#{$static ? "a" : "so"}
 
-INSTALL = %sginstall -c
+INSTALL = /usr/bin/install -c
+INSTALL_DATA = ${INSTALL} -m 644
 
-DEFFILE = %s.def
+binsuffix = 
 
-all:            $(TARGET)
+all:		$(DLLIB)
 
-clean:;         @rm -f *.obj *.lib *.exp vc*.pdb *.bak *.def
+clean:;		@rm -f *.o *.a *.so *.sl
 		@rm -f Makefile extconf.h conftest.*
+		@rm -f core ruby$(binsuffix) *~
 
-realclean:      clean
-", target,
-    if $force_static then "lib" else "dll" end, dots, target
+realclean:	clean
+EOS
 
+  mfile.printf <<EOS
+
+install:
+	@test -d $(DESTDIR)$(libdir) || mkdir $(DESTDIR)$(libdir)
+	@test -d $(DESTDIR)$(pkglibdir) || mkdir $(DESTDIR)$(pkglibdir)
+	@test -d $(DESTDIR)$(archdir) || mkdir $(DESTDIR)$(archdir)
+EOS
   if !$static
     mfile.printf "\
-
-install:        $(libdir)/$(TARGET)
-
-$(libdir)/$(TARGET): $(TARGET)
-	@test -d $(libdir) || mkdir $(libdir)
-	$(INSTALL) $(TARGET) $(libdir)/$(TARGET)
-"
-  else
-    mfile.printf "\
-
-install:;
+	$(INSTALL) $(DLLIB) $(DESTDIR)$(archdir)/$(DLLIB)
 "
   end
+  install_rb(mfile)
+  mfile.printf "\n"
 
-  if $force_static
-    mfile.printf "\
-$(TARGET): $(OBJS)
-	lib /OUT:$(TARGET) $(OBJS)
+  if $static
+      mfile.printf "\
+$(DLLIB): $(OBJS)
+	ar cru $(DLLIB) $(OBJS)
+	@-ranlib $(DLLIB) 2> /dev/null || true
 "
   else
     mfile.printf "\
-$(DEFFILE): 
-	echo $(DEFFILE)
-
-$(TARGET): $(OBJS)  $(DEFFILE)
-	cl -DLL -o$(TARGET) $(OBJS) $(RUBYLIB) -link /DEF:$(DEFFILE)
+$(DLLIB): $(OBJS)
+	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
+"
+  elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc")
+    mfile.printf "\
+$(DLLIB): $(OBJS)
+	ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)
 "
   end
 
@@ -307,27 +400,7 @@ $(TARGET): $(OBJS)  $(DEFFILE)
     dfile.close
   end
   mfile.close
-  if $static
-    #printf format("push %s,%s\n", $static, target); ##debug print##
-    $extlist.push [$static,target]
-  end
-end
-
-#template of .def file.
-def create_def(basename)
-  defname = sprintf("%s.def", basename)
-  f = open(defname, "w")
-  f.printf "\
-LIBRARY %s.dll
-CODE LOADONCALL
-DATA LOADONCALL
-DESCRIPTION 'win32 %s.dll'
-EXPORTS
-
-	Init_%s
-", basename, basename, basename
-  f.close
-
+  
 end
 
 def extmake(target)
@@ -339,88 +412,87 @@ def extmake(target)
 
   return if $nodynamic and not $static
 
-  $local_libs = nil
-  $libs = nil
   $objs = nil
-  $CFLAGS = nil
-  $LDFLAGS = nil
+  $libs = "-lc"
+  $local_libs = ""		# to be assigned in extconf.rb
+  $CFLAGS = ""
+  $LDFLAGS = ""
 
   begin
+    system "mkdir", target unless File.directory?(target)
     Dir.chdir target
+    $mdir = target
     if $static_ext.size > 0 ||
       !File.exist?("./Makefile") ||
-      older("./Makefile", "../Setup") ||
+      older("./Makefile", "#{$top_srcdir}/ext/Setup") ||
       older("./Makefile", "../extmk.rb") ||
-      older("./Makefile", "./extconf.rb")
+      older("./Makefile", "#{$top_srcdir}/ext/#{target}/extconf.rb")
     then
       $defs = []
-      if File.exist?("extconf.rb")
-	load "extconf.rb"
+      if File.exist?("#{$top_srcdir}/ext/#{target}/extconf.rb")
+	load "#{$top_srcdir}/ext/#{target}/extconf.rb"
       else
 	create_makefile(target);
       end
     end
-
-    if !File.exist?("#{target}.def")
-        create_def(target)
-    end
-
     if File.exist?("./Makefile")
+      if $static
+	$extlist.push [$static,target]
+      end
       if $install
-	system "nmake install"
-	if File.directory? "./lib"
-	  for i in Dir["./lib/*.rb"]
-	    system "ginstall -c #{i} /usr/local/lib/ruby/i386-mswin32"
-	  end
-	end
+	system "make install DESTDIR=#{$destdir}"
       elsif $clean
-	system "nmake clean"
+	system "make clean"
       else
-	#print "!!!make!!!\n"
-	system "nmake all"
+	system "make all" or exit
       end
     end
     if $static
-      $extlibs = " "
-      $extlibs += " " + $LDFLAGS if $LDFLAGS
-      $extlibs += " " + $local_libs if $local_libs
+      $extlibs ||= ""
+      $extlibs += " " + $LDFLAGS unless $LDFLAGS == ""
       $extlibs += " " + $libs if $libs
+      $extlibs += " " + $local_libs unless $local_libs == ""
     end
   ensure
+    system "rm -f conftest*"
     Dir.chdir ".."
   end
 end
 
 # get static-link modules
 $static_ext = {}
-if File.file? "./Setup"
-  f = open("./Setup") 
-  while f.gets()
-    $_.chop!
-    sub!(/#.*$/, '')
-    next if /^\s*$/
-    #print $_, "\n"
-
-    if /^option +nodynamic/
-      $nodynamic = TRUE
-      next
+for setup in ["Setup", "#{$top_srcdir}/ext/Setup"]
+  if File.file? setup
+    f = open(setup) 
+    while f.gets()
+      $_.chomp!
+      sub!(/#.*$/, '')
+      next if /^\s*$/
+      if /^option +nodynamic/
+	$nodynamic = TRUE
+	next
+      end
+      $static_ext[$_.split[0]] = TRUE
     end
-    $static_ext[$_.split[0]] = TRUE
+    f.close
+    break
   end
-  f.close
 end
 
-for d in Dir["*"]
+for d in Dir["#{$top_srcdir}/ext/*"]
   File.directory?(d) || next
   File.file?(d + "/MANIFEST") || next
   
-  d = $1 if d =~ /\/([\/]*)$/
+  d = File.basename(d)
   if $install
     print "installing ", d, "\n"
   elsif $clean
     print "cleaning ", d, "\n"
   else
     print "compiling ", d, "\n"
+    if PLATFORM =~ /-aix/ and older("../ruby.imp", "../miniruby")
+      load "#{$top_srcdir}/ext/aix_mksym.rb"
+    end
   end
   extmake(d)
 end
@@ -440,62 +512,64 @@ if $cache_mod
 end
 
 exit if $install or $clean
-$extinit = " " unless $extinit
-$extobjs = ""
+$extinit = "" unless $extinit
+
+ruby = "ruby"
+miniruby = "miniruby"
+
 if $extlist.size > 0
   for s,t in $extlist
-  #for s,t in $static_ext
-    #f = format("%s/%s.obj", s, t)
-    #f = format("%s/%s.obj", s, s)
-    l = format("%s/%s.lib", s, s)    
-    if File.exist?(l)
+    f = format("%s/%s.a", s, t)
+    if File.exist?(f)
       $extinit += format("\
 \tInit_%s();\n\
 \trb_provide(\"%s.so\");\n\
-", s, s)
+", t, t)
+      $extobjs = "" unless $extobjs
       $extobjs += "ext/"
-      #$extobjs += f  # *.obj
-      $extobjs += l   # *.lib
+      $extobjs += f
       $extobjs += " "
     else
       FALSE
     end
   end
 
-  if older("extinit.c", "Setup")
+  if older("extinit.c", "#{$top_srcdir}/ext/Setup")
     f = open("extinit.c", "w")
     f.printf "void Init_ext() {\n"
     f.printf $extinit
     f.printf "}\n"
     f.close
   end
-  if older("extinit.obj", "extinit.c")
-    cmd = "cl -Zi -O -I. -c extinit.c"
+  if older("extinit.o", "extinit.c")
+    cmd = "gcc " + CFLAGS + " -c extinit.c"
     print cmd, "\n"
     system cmd or exit 1
   end
 
   Dir.chdir ".."
 
-  if older("ruby.exe", "ext/Setup") or older("ruby.exe", "miniruby.exe")
-    `rm -f ruby.exe`
+  if older(ruby, "#{$top_srcdir}/ext/Setup") or older(ruby, miniruby)
+    system("rm -f #{ruby}")
   end
 
-  $extobjs = "ext/extinit.obj " + $extobjs
-  #$extlibs = ""
-  #print "EXTLIBS=#{$extlibs}\n"
-  $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
-  $extlibs.gsub!(" +", " ") if $extlibs
-  #print "EXTLIBS=#{$extlibs}\n"
-
-  system format('nmake ruby.exe EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
+  if $extobjs
+    $extobjs = "ext/extinit.o " + $extobjs
+  else
+    $extobjs = "ext/extinit.o "
+  end
+  if PLATFORM =~ /m68k-human|beos/
+    $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
+  end
+  system format(%[make #{ruby} EXTOBJS="%s" EXTLIBS="%s"], $extobjs, $extlibs)
 else
   Dir.chdir ".."
-  if older("ruby.exe", "miniruby.exe")
-    `rm -f ruby.exe`
-    `cp miniruby.exe ruby.exe`
+  if older(ruby, miniruby)
+    system("rm -f #{ruby}")
+    system("make #{ruby}")
   end
 end
+
 #Local variables:
 # mode: ruby
 #end:

@@ -40,7 +40,9 @@
 
 #include <sys/types.h>
 #include <sys/param.h>
+#ifdef HAVE_SYSCTL_H
 #include <sys/sysctl.h>
+#endif
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -48,11 +50,13 @@
 #include <netdb.h>
 #include <resolv.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <ctype.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "addrinfo.h"
 #include "sockport.h"
 
@@ -160,7 +164,7 @@ if (pai->ai_flags & AI_CANONNAME) {\
 	memcpy(ai, pai, sizeof(struct addrinfo));\
 	(ai)->ai_addr = (struct sockaddr *)((ai) + 1);\
 	memset((ai)->ai_addr, 0, (afd)->a_socklen);\
-	SET_SA_LEN(*(ai)->ai_addr, (ai)->ai_addrlen = (afd)->a_socklen);\
+	SET_SA_LEN((ai)->ai_addr, (ai)->ai_addrlen = (afd)->a_socklen);\
 	(ai)->ai_addr->sa_family = (ai)->ai_family = (afd)->a_af;\
 	((struct sockinet *)(ai)->ai_addr)->si_port = port;\
 	p = (char *)((ai)->ai_addr);\
@@ -205,6 +209,27 @@ str_isnumber(p)
 	}
 	return YES;
 }
+
+#ifndef HAVE_INET_PTON
+
+#ifndef INADDR_NONE
+# define INADDR_NONE 0xffffffff
+#endif
+
+static int
+inet_pton(af, hostname, pton)
+	int af;
+	const char *hostname;
+	char *pton;
+{
+	struct in_addr in;
+	in.s_addr = inet_addr(hostname);
+	if (in.s_addr == INADDR_NONE)
+		return 0;
+	memcpy(pton, &in, sizeof(in));
+	return 1;
+}
+#endif
 
 int
 getaddrinfo(hostname, servname, hints, res)

@@ -13,7 +13,7 @@
 
 #ifndef SA_LEN
 # ifdef HAVE_SA_LEN
-#  define SA_LEN(sa) (sa)->sin_len
+#  define SA_LEN(sa) (sa)->sa_len
 # else
 #  ifdef INET6
 #   define SA_LEN(sa) \
@@ -27,7 +27,7 @@
 #endif
 
 #ifdef HAVE_SA_LEN
-# define SET_SA_LEN(sa, len) (sa)->sin_len = (len)
+# define SET_SA_LEN(sa, len) (sa)->sa_len = (len)
 #else
 # define SET_SA_LEN(sa, len) (len)
 #endif

@@ -74,7 +74,7 @@ range_s_new(argc, argv, klass)
     VALUE beg, end, flag, range;
     
     rb_scan_args(argc, argv, "21", &beg, &end, &flag);
-    if (argc == 2) flag == Qtrue;
+    if (argc == 2) flag = Qfalse;
     return range_new(klass, beg, end, RTEST(flag));
 }
 

@@ -514,7 +514,6 @@ Init_Exception()
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
     rb_eFatal  	    = rb_define_class("fatal", rb_eException);
     rb_eInterrupt   = rb_define_class("Interrupt", rb_eException);
-    rb_eInterrupt   = rb_define_class("Interrupt", rb_eException);
     rb_eSignal      = rb_define_class("SignalException", rb_eException);
 
     rb_eStandardError = rb_define_class("StandardError", rb_eException);

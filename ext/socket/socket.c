@@ -1042,7 +1042,7 @@ udp_connect(sock, host, port)
 
     GetOpenFile(sock, fptr);
     res0 = udp_addrsetup(fptr, host, port);
-    for (res0 = res; res; res = res->ai_next) {
+    for (res = res0; res; res = res->ai_next) {
   retry:
 	if (connect(fileno(fptr->f), res->ai_addr, res->ai_addrlen) >= 0) {
 	    freeaddrinfo(res0);
@@ -1804,7 +1804,7 @@ gotsap:
 static VALUE mConst;
 
 static void
-sock_rb_define_const(name, value)
+sock_define_const(name, value)
     char *name;
     int value;
 {
@@ -1904,248 +1904,248 @@ Init_socket()
 
     /* constants */
     mConst = rb_define_module_under(rb_cSocket, "Constants");
-    sock_rb_define_const("SOCK_STREAM", SOCK_STREAM);
-    sock_rb_define_const("SOCK_DGRAM", SOCK_DGRAM);
+    sock_define_const("SOCK_STREAM", SOCK_STREAM);
+    sock_define_const("SOCK_DGRAM", SOCK_DGRAM);
 #ifdef SOCK_RAW
-    sock_rb_define_const("SOCK_RAW", SOCK_RAW);
+    sock_define_const("SOCK_RAW", SOCK_RAW);
 #endif
 #ifdef SOCK_RDM
-    sock_rb_define_const("SOCK_RDM", SOCK_RDM);
+    sock_define_const("SOCK_RDM", SOCK_RDM);
 #endif
 #ifdef SOCK_SEQPACKET
-    sock_rb_define_const("SOCK_SEQPACKET", SOCK_SEQPACKET);
+    sock_define_const("SOCK_SEQPACKET", SOCK_SEQPACKET);
 #endif
 #ifdef SOCK_PACKET
-    sock_rb_define_const("SOCK_PACKET", SOCK_PACKET);
+    sock_define_const("SOCK_PACKET", SOCK_PACKET);
 #endif
 
-    sock_rb_define_const("AF_INET", AF_INET);
+    sock_define_const("AF_INET", AF_INET);
 #ifdef PF_INET
-    sock_rb_define_const("PF_INET", PF_INET);
+    sock_define_const("PF_INET", PF_INET);
 #endif
 #ifdef AF_UNIX
-    sock_rb_define_const("AF_UNIX", AF_UNIX);
-    sock_rb_define_const("PF_UNIX", PF_UNIX);
+    sock_define_const("AF_UNIX", AF_UNIX);
+    sock_define_const("PF_UNIX", PF_UNIX);
 #endif
 #ifdef AF_AX25
-    sock_rb_define_const("AF_AX25", AF_AX25);
-    sock_rb_define_const("PF_AX25", PF_AX25);
+    sock_define_const("AF_AX25", AF_AX25);
+    sock_define_const("PF_AX25", PF_AX25);
 #endif
 #ifdef AF_IPX
-    sock_rb_define_const("AF_IPX", AF_IPX);
-    sock_rb_define_const("PF_IPX", PF_IPX);
+    sock_define_const("AF_IPX", AF_IPX);
+    sock_define_const("PF_IPX", PF_IPX);
 #endif
 #ifdef AF_APPLETALK
-    sock_rb_define_const("AF_APPLETALK", AF_APPLETALK);
-    sock_rb_define_const("PF_APPLETALK", PF_APPLETALK);
+    sock_define_const("AF_APPLETALK", AF_APPLETALK);
+    sock_define_const("PF_APPLETALK", PF_APPLETALK);
 #endif
 #ifdef AF_UNSPEC
-    sock_rb_define_const("AF_UNSPEC", AF_UNSPEC);
-    sock_rb_define_const("PF_UNSPEC", PF_UNSPEC);
+    sock_define_const("AF_UNSPEC", AF_UNSPEC);
+    sock_define_const("PF_UNSPEC", PF_UNSPEC);
 #endif
 #ifdef AF_INET6
-    sock_rb_define_const("AF_INET6", AF_INET6);
-    sock_rb_define_const("PF_INET6", PF_INET6);
+    sock_define_const("AF_INET6", AF_INET6);
+    sock_define_const("PF_INET6", PF_INET6);
 #endif
 
-    sock_rb_define_const("MSG_OOB", MSG_OOB);
+    sock_define_const("MSG_OOB", MSG_OOB);
 #ifdef MSG_PEEK
-    sock_rb_define_const("MSG_PEEK", MSG_PEEK);
+    sock_define_const("MSG_PEEK", MSG_PEEK);
 #endif
 #ifdef MSG_DONTROUTE
-    sock_rb_define_const("MSG_DONTROUTE", MSG_DONTROUTE);
+    sock_define_const("MSG_DONTROUTE", MSG_DONTROUTE);
 #endif
 
-    sock_rb_define_const("SOL_SOCKET", SOL_SOCKET);
+    sock_define_const("SOL_SOCKET", SOL_SOCKET);
 #ifdef SOL_IP
-    sock_rb_define_const("SOL_IP", SOL_IP);
+    sock_define_const("SOL_IP", SOL_IP);
 #endif
 #ifdef SOL_IPX
-    sock_rb_define_const("SOL_IPX", SOL_IPX);
+    sock_define_const("SOL_IPX", SOL_IPX);
 #endif
 #ifdef SOL_AX25
-    sock_rb_define_const("SOL_AX25", SOL_AX25);
+    sock_define_const("SOL_AX25", SOL_AX25);
 #endif
 #ifdef SOL_ATALK
-    sock_rb_define_const("SOL_ATALK", SOL_ATALK);
+    sock_define_const("SOL_ATALK", SOL_ATALK);
 #endif
 #ifdef SOL_TCP
-    sock_rb_define_const("SOL_TCP", SOL_TCP);
+    sock_define_const("SOL_TCP", SOL_TCP);
 #endif
 #ifdef SOL_UDP
-    sock_rb_define_const("SOL_UDP", SOL_UDP);
+    sock_define_const("SOL_UDP", SOL_UDP);
 #endif
 
 #ifdef SO_DEBUG
-    sock_rb_define_const("SO_DEBUG", SO_DEBUG);
+    sock_define_const("SO_DEBUG", SO_DEBUG);
 #endif
-    sock_rb_define_const("SO_REUSEADDR", SO_REUSEADDR);
+    sock_define_const("SO_REUSEADDR", SO_REUSEADDR);
 #ifdef SO_TYPE
-    sock_rb_define_const("SO_TYPE", SO_TYPE);
+    sock_define_const("SO_TYPE", SO_TYPE);
 #endif
 #ifdef SO_ERROR
-    sock_rb_define_const("SO_ERROR", SO_ERROR);
+    sock_define_const("SO_ERROR", SO_ERROR);
 #endif
 #ifdef SO_DONTROUTE
-    sock_rb_define_const("SO_DONTROUTE", SO_DONTROUTE);
+    sock_define_const("SO_DONTROUTE", SO_DONTROUTE);
 #endif
 #ifdef SO_BROADCAST
-    sock_rb_define_const("SO_BROADCAST", SO_BROADCAST);
+    sock_define_const("SO_BROADCAST", SO_BROADCAST);
 #endif
 #ifdef SO_SNDBUF
-    sock_rb_define_const("SO_SNDBUF", SO_SNDBUF);
+    sock_define_const("SO_SNDBUF", SO_SNDBUF);
 #endif
 #ifdef SO_RCVBUF
-    sock_rb_define_const("SO_RCVBUF", SO_RCVBUF);
+    sock_define_const("SO_RCVBUF", SO_RCVBUF);
 #endif
 #ifdef SO_KEEPALIVE
-    sock_rb_define_const("SO_KEEPALIVE", SO_KEEPALIVE);
+    sock_define_const("SO_KEEPALIVE", SO_KEEPALIVE);
 #endif
 #ifdef SO_OOBINLINE
-    sock_rb_define_const("SO_OOBINLINE", SO_OOBINLINE);
+    sock_define_const("SO_OOBINLINE", SO_OOBINLINE);
 #endif
 #ifdef SO_NO_CHECK
-    sock_rb_define_const("SO_NO_CHECK", SO_NO_CHECK);
+    sock_define_const("SO_NO_CHECK", SO_NO_CHECK);
 #endif
 #ifdef SO_PRIORITY
-    sock_rb_define_const("SO_PRIORITY", SO_PRIORITY);
+    sock_define_const("SO_PRIORITY", SO_PRIORITY);
 #endif
 #ifdef SO_LINGER
-    sock_rb_define_const("SO_LINGER", SO_LINGER);
+    sock_define_const("SO_LINGER", SO_LINGER);
 #endif
 
 #ifdef SOPRI_INTERACTIVE
-    sock_rb_define_const("SOPRI_INTERACTIVE", SOPRI_INTERACTIVE);
+    sock_define_const("SOPRI_INTERACTIVE", SOPRI_INTERACTIVE);
 #endif
 #ifdef SOPRI_NORMAL
-    sock_rb_define_const("SOPRI_NORMAL", SOPRI_NORMAL);
+    sock_define_const("SOPRI_NORMAL", SOPRI_NORMAL);
 #endif
 #ifdef SOPRI_BACKGROUND
-    sock_rb_define_const("SOPRI_BACKGROUND", SOPRI_BACKGROUND);
+    sock_define_const("SOPRI_BACKGROUND", SOPRI_BACKGROUND);
 #endif
 
 #ifdef IP_MULTICAST_IF
-    sock_rb_define_const("IP_MULTICAST_IF", IP_MULTICAST_IF);
+    sock_define_const("IP_MULTICAST_IF", IP_MULTICAST_IF);
 #endif
 #ifdef IP_MULTICAST_TTL
-    sock_rb_define_const("IP_MULTICAST_TTL", IP_MULTICAST_TTL);
+    sock_define_const("IP_MULTICAST_TTL", IP_MULTICAST_TTL);
 #endif
 #ifdef IP_MULTICAST_LOOP
-    sock_rb_define_const("IP_MULTICAST_LOOP", IP_MULTICAST_LOOP);
+    sock_define_const("IP_MULTICAST_LOOP", IP_MULTICAST_LOOP);
 #endif
 #ifdef IP_ADD_MEMBERSHIP
-    sock_rb_define_const("IP_ADD_MEMBERSHIP", IP_ADD_MEMBERSHIP);
+    sock_define_const("IP_ADD_MEMBERSHIP", IP_ADD_MEMBERSHIP);
 #endif
 
 #ifdef IP_DEFAULT_MULTICAST_TTL
-    sock_rb_define_const("IP_DEFAULT_MULTICAST_TTL", IP_DEFAULT_MULTICAST_TTL);
+    sock_define_const("IP_DEFAULT_MULTICAST_TTL", IP_DEFAULT_MULTICAST_TTL);
 #endif
 #ifdef IP_DEFAULT_MULTICAST_LOOP
-    sock_rb_define_const("IP_DEFAULT_MULTICAST_LOOP", IP_DEFAULT_MULTICAST_LOOP);
+    sock_define_const("IP_DEFAULT_MULTICAST_LOOP", IP_DEFAULT_MULTICAST_LOOP);
 #endif
 #ifdef IP_MAX_MEMBERSHIPS
-    sock_rb_define_const("IP_MAX_MEMBERSHIPS", IP_MAX_MEMBERSHIPS);
+    sock_define_const("IP_MAX_MEMBERSHIPS", IP_MAX_MEMBERSHIPS);
 #endif
 
 #ifdef IPX_TYPE
-    sock_rb_define_const("IPX_TYPE", IPX_TYPE);
+    sock_define_const("IPX_TYPE", IPX_TYPE);
 #endif
 
 #ifdef TCP_NODELAY
-    sock_rb_define_const("TCP_NODELAY", TCP_NODELAY);
+    sock_define_const("TCP_NODELAY", TCP_NODELAY);
 #endif
 #ifdef TCP_MAXSEG
-    sock_rb_define_const("TCP_MAXSEG", TCP_MAXSEG);
+    sock_define_const("TCP_MAXSEG", TCP_MAXSEG);
 #endif
 
 #ifdef EAI_ADDRFAMILY
-    sock_rb_define_const("EAI_ADDRFAMILY", EAI_ADDRFAMILY);
+    sock_define_const("EAI_ADDRFAMILY", EAI_ADDRFAMILY);
 #endif
 #ifdef EAI_AGAIN
-    sock_rb_define_const("EAI_AGAIN", EAI_AGAIN);
+    sock_define_const("EAI_AGAIN", EAI_AGAIN);
 #endif
 #ifdef EAI_BADFLAGS
-    sock_rb_define_const("EAI_BADFLAGS", EAI_BADFLAGS);
+    sock_define_const("EAI_BADFLAGS", EAI_BADFLAGS);
 #endif
 #ifdef EAI_FAIL
-    sock_rb_define_const("EAI_FAIL", EAI_FAIL);
+    sock_define_const("EAI_FAIL", EAI_FAIL);
 #endif
 #ifdef EAI_FAMILY
-    sock_rb_define_const("EAI_FAMILY", EAI_FAMILY);
+    sock_define_const("EAI_FAMILY", EAI_FAMILY);
 #endif
 #ifdef EAI_MEMORY
-    sock_rb_define_const("EAI_MEMORY", EAI_MEMORY);
+    sock_define_const("EAI_MEMORY", EAI_MEMORY);
 #endif
 #ifdef EAI_NODATA
-    sock_rb_define_const("EAI_NODATA", EAI_NODATA);
+    sock_define_const("EAI_NODATA", EAI_NODATA);
 #endif
 #ifdef EAI_NONAME
-    sock_rb_define_const("EAI_NONAME", EAI_NONAME);
+    sock_define_const("EAI_NONAME", EAI_NONAME);
 #endif
 #ifdef EAI_SERVICE
-    sock_rb_define_const("EAI_SERVICE", EAI_SERVICE);
+    sock_define_const("EAI_SERVICE", EAI_SERVICE);
 #endif
 #ifdef EAI_SOCKTYPE
-    sock_rb_define_const("EAI_SOCKTYPE", EAI_SOCKTYPE);
+    sock_define_const("EAI_SOCKTYPE", EAI_SOCKTYPE);
 #endif
 #ifdef EAI_SYSTEM
-    sock_rb_define_const("EAI_SYSTEM", EAI_SYSTEM);
+    sock_define_const("EAI_SYSTEM", EAI_SYSTEM);
 #endif
 #ifdef EAI_BADHINTS
-    sock_rb_define_const("EAI_BADHINTS", EAI_BADHINTS);
+    sock_define_const("EAI_BADHINTS", EAI_BADHINTS);
 #endif
 #ifdef EAI_PROTOCOL
-    sock_rb_define_const("EAI_PROTOCOL", EAI_PROTOCOL);
+    sock_define_const("EAI_PROTOCOL", EAI_PROTOCOL);
 #endif
 #ifdef EAI_MAX
-    sock_rb_define_const("EAI_MAX", EAI_MAX);
+    sock_define_const("EAI_MAX", EAI_MAX);
 #endif
 #ifdef AI_PASSIVE
-    sock_rb_define_const("AI_PASSIVE", AI_PASSIVE);
+    sock_define_const("AI_PASSIVE", AI_PASSIVE);
 #endif
 #ifdef AI_CANONNAME
-    sock_rb_define_const("AI_CANONNAME", AI_CANONNAME);
+    sock_define_const("AI_CANONNAME", AI_CANONNAME);
 #endif
 #ifdef AI_NUMERICHOST
-    sock_rb_define_const("AI_NUMERICHOST", AI_NUMERICHOST);
+    sock_define_const("AI_NUMERICHOST", AI_NUMERICHOST);
 #endif
 #ifdef AI_MASK
-    sock_rb_define_const("AI_MASK", AI_MASK);
+    sock_define_const("AI_MASK", AI_MASK);
 #endif
 #ifdef AI_ALL
-    sock_rb_define_const("AI_ALL", AI_ALL);
+    sock_define_const("AI_ALL", AI_ALL);
 #endif
 #ifdef AI_V4MAPPED_CFG
-    sock_rb_define_const("AI_V4MAPPED_CFG", AI_V4MAPPED_CFG);
+    sock_define_const("AI_V4MAPPED_CFG", AI_V4MAPPED_CFG);
 #endif
 #ifdef AI_ADDRCONFIG
-    sock_rb_define_const("AI_ADDRCONFIG", AI_ADDRCONFIG);
+    sock_define_const("AI_ADDRCONFIG", AI_ADDRCONFIG);
 #endif
 #ifdef AI_V4MAPPED
-    sock_rb_define_const("AI_V4MAPPED", AI_V4MAPPED);
+    sock_define_const("AI_V4MAPPED", AI_V4MAPPED);
 #endif
 #ifdef AI_DEFAULT
-    sock_rb_define_const("AI_DEFAULT", AI_DEFAULT);
+    sock_define_const("AI_DEFAULT", AI_DEFAULT);
 #endif
 #ifdef NI_MAXHOST
-    sock_rb_define_const("NI_MAXHOST", NI_MAXHOST);
+    sock_define_const("NI_MAXHOST", NI_MAXHOST);
 #endif
 #ifdef NI_MAXSERV
-    sock_rb_define_const("NI_MAXSERV", NI_MAXSERV);
+    sock_define_const("NI_MAXSERV", NI_MAXSERV);
 #endif
 #ifdef NI_NOFQDN
-    sock_rb_define_const("NI_NOFQDN", NI_NOFQDN);
+    sock_define_const("NI_NOFQDN", NI_NOFQDN);
 #endif
 #ifdef NI_NUMERICHOST
-    sock_rb_define_const("NI_NUMERICHOST", NI_NUMERICHOST);
+    sock_define_const("NI_NUMERICHOST", NI_NUMERICHOST);
 #endif
 #ifdef NI_NAMEREQD
-    sock_rb_define_const("NI_NAMEREQD", NI_NAMEREQD);
+    sock_define_const("NI_NAMEREQD", NI_NAMEREQD);
 #endif
 #ifdef NI_NUMERICSERV
-    sock_rb_define_const("NI_NUMERICSERV", NI_NUMERICSERV);
+    sock_define_const("NI_NUMERICSERV", NI_NUMERICSERV);
 #endif
 #ifdef NI_DGRAM
-    sock_rb_define_const("NI_DGRAM", NI_DGRAM);
+    sock_define_const("NI_DGRAM", NI_DGRAM);
 #endif
 }

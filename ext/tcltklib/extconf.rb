@@ -59,7 +59,7 @@ def search_lib(file, func, *path)
 	for lib in files.sort!.reverse!
 	  lib = File::basename(lib)
 	  lib.sub!(/^lib/, '')
-	  lib.sub!(/\.(a|so)$/, '')
+	  lib.sub!(/\.(a|so(.[0-9.]+)?)$/, '')
 	  if have_library(lib, func)
 	    unless $libraries.include? path
 	      $libraries << path
@@ -74,7 +74,7 @@ def search_lib(file, func, *path)
 end
 
 if have_header("tcl.h") && have_header("tk.h") &&
-    search_lib("libX11.{so,a}", "XOpenDisplay",
+    search_lib("libX11.{so*,a}", "XOpenDisplay",
 	       "/usr/lib", "/usr/openwin/lib", "/usr/X11*/lib") &&
     search_lib("libtcl{8*,7*,}.{so,a}", "Tcl_FindExecutable",
 	       "/usr/lib", "/usr/local/lib") &&

@@ -352,8 +352,8 @@ enum regexpcode
     stop_paren,    /* Place holder at the end of (?:..). */
     casefold_on,   /* Turn on casefold flag. */
     casefold_off,  /* Turn off casefold flag. */
-    posix_on,      /* Turn on POSIXified match (match with newlines). */
-    posix_off,     /* Turn off POSIXified match. */
+    posix_on,      /* Turn on POSIXified line match (match with newlines). */
+    posix_off,     /* Turn off POSIXified line match. */
     start_nowidth, /* Save string point to the stack. */
     stop_nowidth,  /* Restore string place at the point start_nowidth. */
     pop_and_fail,  /* Fail after popping nowidth entry from stack. */
@@ -1295,7 +1295,7 @@ re_compile_pattern(pattern, size, bufp)
 
       /* charset_not matches newline according to a syntax bit.  */
       if ((enum regexpcode)b[-2] == charset_not) {
-	if (bufp->options & RE_OPTION_POSIX)
+	if (bufp->options & RE_OPTION_POSIXLINE)
 	  SET_LIST_BIT ('\n');
 	else
 	  SET_LIST_BIT ('\0');
@@ -1554,13 +1554,13 @@ re_compile_pattern(pattern, size, bufp)
 	      break;
 	    case 'p':
 	      if (negative) {
-		if (options&RE_OPTION_POSIX) {
-		  options &= ~RE_OPTION_POSIX;
+		if (options&RE_OPTION_POSIXLINE) {
+		  options &= ~RE_OPTION_POSIXLINE;
 		  BUFPUSH(posix_off);
 		}
 	      }
-	      else if (!(options&RE_OPTION_POSIX)) {
-		options |= RE_OPTION_POSIX;
+	      else if (!(options&RE_OPTION_POSIXLINE)) {
+		options |= RE_OPTION_POSIXLINE;
 		BUFPUSH(posix_on);
 	      }
 	      break;
@@ -1671,8 +1671,8 @@ re_compile_pattern(pattern, size, bufp)
       if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
 	BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
       }
-      if ((options ^ stackp[-1]) & RE_OPTION_POSIX) {
-	BUFPUSH((options&RE_OPTION_POSIX)?posix_off:posix_on);
+      if ((options ^ stackp[-1]) & RE_OPTION_POSIXLINE) {
+	BUFPUSH((options&RE_OPTION_POSIXLINE)?posix_off:posix_on);
       }
       pending_exact = 0;
       if (fixup_alt_jump) {
@@ -1766,9 +1766,9 @@ re_compile_pattern(pattern, size, bufp)
       break;
 
     case '{':
-      /* If there is no previous pattern, this isn't an interval.  */
+      /* If there is no previous pattern, this is an invalid pattern.  */
       if (!laststart || p == pend) {
-	goto normal_char;
+	goto invalid_pattern;
       }
 
       beg_interval = p - 1;
@@ -1834,6 +1834,44 @@ re_compile_pattern(pattern, size, bufp)
 	insert_jump(jump, laststart, b + 3, b);
 	b += 3;
 	break;
+      }
+
+      /* If lower_bound == upper_bound, repeat cound can be removed */
+      if (lower_bound == upper_bound) {
+	int mcnt;
+	int skip_stop_paren = 0;
+
+	if (b[-1] == stop_paren) {
+	  skip_stop_paren = 1;
+	  b--;
+	}
+
+	if (*laststart == exactn && laststart[1]+2 == b - laststart
+	    && laststart[1]*lower_bound < 256) {
+	  mcnt = laststart[1];
+	  GET_BUFFER_SPACE((lower_bound-1)*mcnt);
+	  laststart[1] = lower_bound*mcnt;
+	  while (--lower_bound) {
+	    memcpy(b, laststart+2, mcnt);
+	    b += mcnt;
+	  }
+	  if (skip_stop_paren) BUFPUSH(stop_paren);
+	  break;
+	}
+
+	if (lower_bound < 5 && b - laststart < 10) {
+	  /* 5 and 10 are the magic numbers */
+
+	  mcnt = b - laststart;
+	  GET_BUFFER_SPACE((lower_bound-1)*mcnt);
+	  while (--lower_bound) {
+	    memcpy(b, laststart, mcnt);
+	    b += mcnt;
+	  }
+	  if (skip_stop_paren) BUFPUSH(stop_paren);
+	  break;
+	}
+	if (skip_stop_paren) b++; /* push back stop_paren */
       }
 
       /* Otherwise, we have a nontrivial interval.  When
@@ -2120,7 +2158,7 @@ re_compile_pattern(pattern, size, bufp)
       laststart++;
       EXTRACT_NUMBER_AND_INCR(mcnt, laststart);
       if (mcnt == 4 && *laststart == anychar) {
-	switch ((enum regexpcode)laststart[4]) {
+	switch ((enum regexpcode)laststart[1]) {
 	case jump_n:
 	case finalize_jump:
 	case maybe_finalize_jump:
@@ -2539,7 +2577,7 @@ re_compile_fastmap(bufp)
 
       case posix_on:
       case posix_off:
-	options ^= RE_OPTION_POSIX;
+	options ^= RE_OPTION_POSIXLINE;
 	continue;
 
       case endline:
@@ -2639,7 +2677,7 @@ re_compile_fastmap(bufp)
 	fastmap['\n'] = 1;
       case anychar:
 	for (j = 0; j < (1 << BYTEWIDTH); j++) {
-	  if (j != '\n' || (options & RE_OPTION_POSIX))
+	  if (j != '\n' || (options & RE_OPTION_POSIXLINE))
 	    fastmap[j] = 1;
 	}
 	if (bufp->can_be_null) {
@@ -2836,6 +2874,7 @@ re_search(bufp, string, size, startpos, range, regs)
   if (bufp->used>0) {
     switch ((enum regexpcode)bufp->buffer[0]) {
     case begbuf:
+    begbuf_match:
       if (range > 0) {
 	if (startpos > 0)
 	  return -1;
@@ -2854,6 +2893,9 @@ re_search(bufp, string, size, startpos, range, regs)
     }
   }
   if (bufp->options & RE_OPTIMIZE_ANCHOR) {
+    if (bufp->options&RE_OPTION_POSIXLINE) {
+      goto begbuf_match;
+    }
     anchor = 1;
   }
 
@@ -2945,7 +2987,8 @@ re_search(bufp, string, size, startpos, range, regs)
 #endif /* NO_ALLOCA */
 
     if (range > 0) {
-      if (anchor && startpos < size && startpos > 0 && string[startpos-1] != '\n') {
+      if (anchor && startpos < size &&
+	  (startpos < 1 || string[startpos-1] != '\n')) {
 	while (range > 0 && string[startpos] != '\n') {
 	  range--;
 	  startpos++;
@@ -3549,7 +3592,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	  d += mbclen(*d);
 	  break;
 	}
-	if (!(options&RE_OPTION_POSIX) &&
+	if (!(options&RE_OPTION_POSIXLINE) &&
 	    (TRANSLATE_P() ? translate[*d] : *d) == '\n')
 	  goto fail;
 	SET_REGS_MATCHED;
@@ -3850,11 +3893,11 @@ re_match(bufp, string_arg, size, pos, regs)
 	continue;
 
       case posix_on:
-	options |= RE_OPTION_POSIX;
+	options |= RE_OPTION_POSIXLINE;
 	continue;
 
       case posix_off:
-	options &= ~RE_OPTION_POSIX;
+	options &= ~RE_OPTION_POSIXLINE;
 	continue;
 
       case wordbound:

@@ -1,6 +1,5 @@
 #include <ctype.h>
 
-#define min(a,b) (((a)>(b))?(b):(a))
 int
 strcasecmp(p1, p2)
     char *p1, *p2;

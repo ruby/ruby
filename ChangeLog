@@ -1,3 +1,52 @@
+Thu May  6 13:21:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_indexes): should not use rb_ary_concat().
+
+Thu May  4 12:34:18 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* parse.y (parse_string): there shuould be newline escape by
+	  backslashes in strings.
+
+	* parse.y (parse_qstring): ditto.
+
+Mon May  3 04:37:20 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* ext/tcltklib/extconf.rb: better search for libX11.
+
+	* range.c (range_s_new): embarrassing =/== typo.
+
+	* re.c (Init_Regexp): failed to set default kcode.
+
+Mon May  3 02:39:55 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* ext/socket/socket.c (open_inet): typo (res and res0).
+
+Tue May  4 02:07:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* mkconfig.rb: leave undefined $(VARIABLE) unexpanded in the
+	  Config::CONFIG hash table.
+
+Mon May  3 09:37:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): expand exactn{n} at compile time.
+	  handles stop_paren specially.
+
+	* regex.c (re_compile_pattern): expand x{n} at compile time.
+
+	* regex.c (re_search): posix line match should be checked.
+
+	* regex.c (re_search): a bug in anchor condition.
+
+Fri Apr 30 18:57:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_rindex): position should be END point, not
+	  START point.
+
+	* re.c (rb_reg_search): pos means end point on reverse now.
+
+	* array.c (rb_ary_s_create): should clear ary->ptr to avoid
+	  potential gc crash.
+
 Fri Apr 30 15:24:58 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/socket/addrinfo.h: compatibility hack for ipv4.
@@ -11,6 +60,10 @@ Fri Apr 30 15:24:58 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* lib/mkmf.rb (enable_config): ditto.
 
+Fri Apr 30 05:22:23 1999  Shugo Maeda  <shugo@netlab.co.jp>
+
+	* string.c (rb_str_aset): last index should not append.
+
 Thu Apr 29 18:55:31 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* dln.c (conv_to_posix_path): remove const from args.
@@ -22,6 +75,8 @@ Tue Apr 27 14:11:45 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* parse.y (fname): lazy workaround for keywords did not work well.
 
 	* ext/extmk.rb.in: `--with-xxx=yyy' argument configuration.
+
+	* lib/mkmf.rb: ditto.
 
 	* misc/ruby-mode.el: forgot to handle $`.
 

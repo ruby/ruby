@@ -65,6 +65,14 @@
 #define freehostent freehostent__compat
 #define freeaddrinfo freeaddrinfo__compat
 
+#ifndef __P
+# ifdef HAVE_PROTOTYPES 1
+#  define __P(args) args
+# else
+#  define __P(args)
+# endif
+#endif
+
 /* special compatibility hack -- end*/
 
 

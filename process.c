@@ -480,13 +480,6 @@ rb_f_exec(argc, argv)
     if (argc == 0) {
 	rb_raise(rb_eArgError, "wrong # of arguments");
     }
-    if (TYPE(argv[0]) == T_ARRAY) {
-	if (RARRAY(argv[0])->len != 2) {
-	    rb_raise(rb_eArgError, "wrong first argument");
-	}
-	prog = RARRAY(argv[0])->ptr[0];
-	argv[0] = RARRAY(argv[0])->ptr[1];
-    }
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {

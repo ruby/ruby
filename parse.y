@@ -2050,7 +2050,7 @@ parse_regx(term, paren)
 		    options |= RE_OPTION_EXTENDED;
 		    break;
 		  case 'p':
-		    options |= RE_OPTION_POSIX;
+		    options |= RE_OPTION_POSIXLINE;
 		    break;
 		  case 'o':
 		    once = 1;
@@ -2142,6 +2142,8 @@ parse_string(func, term, paren)
 	}
 	else if (c == '\\') {
 	    c = nextc();
+	    if (c == '\n')
+		continue;
 	    if (c == term) {
 		tokadd(c);
 	    }
@@ -2213,6 +2215,9 @@ parse_qstring(term, paren)
 	else if (c == '\\') {
 	    c = nextc();
 	    switch (c) {
+	      case '\n':
+		continue;
+
 	      case '\\':
 		c = '\\';
 		break;

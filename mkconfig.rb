@@ -63,7 +63,20 @@ File.foreach "config.status" do |$_|
 end
 
 print v_fast, v_others
-print "  CONFIG[\"compile_dir\"] = \"#{File.expand_path(File.dirname($0))}\"\n"
-print "end\n"
+print <<EOS
+  CONFIG["compile_dir"] = "#{File.expand_path(File.dirname($0))}"
+  CONFIG.each_value do |val|
+    val.gsub!(/\\$\\(([^()]+)\\)/) do |var|
+      key = $1
+      if CONFIG.key? key
+        "\#{CONFIG[\\\"\#{key}\\\"]}"
+      else
+	var
+      end
+    end
+  end
+end
+EOS
 config.close
+
 # vi:set sw=2:

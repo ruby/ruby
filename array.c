@@ -208,8 +208,7 @@ rb_ary_s_create(argc, argv, klass)
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, klass, T_ARRAY);
 
-    ary->len = argc;
-    ary->capa = argc;
+    ary->len = ary->capa = 0;
     if (argc == 0) {
 	ary->ptr = 0;
     }
@@ -217,6 +216,7 @@ rb_ary_s_create(argc, argv, klass)
 	ary->ptr = ALLOC_N(VALUE, argc);
 	MEMCPY(ary->ptr, argv, VALUE, argc);
     }
+    ary->len = ary->capa = argc;
 
     return (VALUE)ary;
 }
@@ -452,12 +452,7 @@ rb_ary_indexes(argc, argv, ary)
 
     new_ary = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
-#if 0
-	rb_ary_store(new_ary, i, rb_ary_entry(ary, NUM2INT(argv[i])));
-#else
-	VALUE v = argv[i];
-	rb_ary_concat(new_ary, rb_ary_aref(1, &v, ary));
-#endif
+	rb_ary_push(new_ary, rb_ary_aref(1, argv+i, ary));
     }
 
     return new_ary;

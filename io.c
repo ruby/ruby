@@ -1056,9 +1056,9 @@ rb_io_binmode(io)
     return io;
 }
 
-static int
+int
 rb_io_mode_flags(mode)
-    char *mode;
+    const char *mode;
 {
     int flags = 0;
 

@@ -148,7 +148,8 @@
 #define snprintf   _snprintf
 #define popen      _popen
 #define pclose     _pclose
-#define strcasecmp _strcmpi
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 
 /* these are defined in nt.c */
 

@@ -90,7 +90,7 @@ rb_str_cicmp(str1, str2)
 #define REG_CASESTATE  FL_USER0
 #define REG_IGNORECASE FL_USER1
 #define REG_EXTENDED   FL_USER2
-#define REG_POSIX      FL_USER3
+#define REG_POSIXLINE  FL_USER3
 
 #define KCODE_NONE  0
 #define KCODE_EUC   FL_USER4
@@ -234,7 +234,7 @@ rb_reg_desc(s, len, re)
 	    rb_str_cat(str, "i", 1);
 	if (FL_TEST(re, REG_EXTENDED))
 	    rb_str_cat(str, "x", 1);
-	if (FL_TEST(re, REG_POSIX))
+	if (FL_TEST(re, REG_POSIXLINE))
 	    rb_str_cat(str, "p", 1);
 	if (FL_TEST(re, KCODE_FIXED)) {
 	    switch ((RBASIC(re)->flags & KCODE_MASK)) {
@@ -494,16 +494,16 @@ rb_reg_prepare_re(reg)
 }
 
 int
-rb_reg_search(reg, str, start, reverse)
+rb_reg_search(reg, str, pos, reverse)
     VALUE reg, str;
-    int start, reverse;
+    int pos, reverse;
 {
     int result;
     VALUE match;
     struct re_registers *regs = 0;
     int range;
 
-    if (start > RSTRING(str)->len) return -1;
+    if (pos > RSTRING(str)->len) return -1;
 
     if (may_need_recompile)
 	rb_reg_prepare_re(reg);
@@ -530,14 +530,13 @@ rb_reg_search(reg, str, start, reverse)
     }
     regs = RMATCH(match)->regs;
 
+    range = RSTRING(str)->len - pos;
     if (reverse) {
-	range = -start;
-    }
-    else {
-	range = RSTRING(str)->len - start;
+	range = -range;
+	pos = RSTRING(str)->len;
     }
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
-		       start, range, regs);
+		       pos, range, regs);
     if (FL_TEST(reg, KCODE_FIXED))
 	kcode_reset_option();
 
@@ -722,7 +721,7 @@ rb_reg_new_1(klass, s, len, options)
     int len;
     int options;		/* CASEFOLD  = 1 */
 				/* EXTENDED  = 2 */
-				/* POSIX     = 4 */
+				/* POSIXLINE = 4 */
 				/* CODE_NONE = 8 */
 				/* CODE_EUC  = 16 */
 				/* CODE_SJIS = 24 */
@@ -739,8 +738,8 @@ rb_reg_new_1(klass, s, len, options)
     if (options & RE_OPTION_EXTENDED) {
 	FL_SET(re, REG_EXTENDED);
     }
-    if (options & RE_OPTION_POSIX) {
-	FL_SET(re, REG_POSIX);
+    if (options & RE_OPTION_POSIXLINE) {
+	FL_SET(re, REG_POSIXLINE);
     }
     switch (options & ~0x7) {
       case 0:
@@ -1216,13 +1215,13 @@ Init_Regexp()
     rb_eRegxpError = rb_define_class("RegxpError", rb_eStandardError);
 
     re_set_casetable(casetable);
-#ifdef RUBY_USE_EUC
+#if DEFAULT_KCODE == KCODE_EUC
     re_mbcinit(MBCTYPE_EUC);
 #else
-#ifdef RUBY_USE_SJIS
+#if DEFAULT_KCODE == KCODE_SJIS
     re_mbcinit(MBCTYPE_SJIS);
 #else
-#ifdef RUBY_USE_UTF8
+#if DEFAULT_KCODE == KCODE_UTF8
     re_mbcinit(MBCTYPE_UTF8);
 #else
     re_mbcinit(MBCTYPE_ASCII);
@@ -1259,7 +1258,7 @@ Init_Regexp()
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(RE_OPTION_EXTENDED));
-    rb_define_const(rb_cRegexp, "POSIX", INT2FIX(RE_OPTION_POSIX));
+    rb_define_const(rb_cRegexp, "POSIXLINE", INT2FIX(RE_OPTION_POSIXLINE));
 
     rb_global_variable(&reg_cache);
     rb_global_variable(&matchcache);
@@ -1276,6 +1275,6 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
-    rb_define_method(rb_cMatch, "string_s", match_string, 0);
+    rb_define_method(rb_cMatch, "string", match_string, 0);
     rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0);
 }

@@ -44,6 +44,7 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "config.h"
 #include "addrinfo.h"
 #include "sockport.h"
 
@@ -81,6 +82,21 @@ struct sockinet {
 #define ENI_FAMILY	5
 #define ENI_SALEN	6
 
+#ifndef HAVE_INET_NTOP
+static char *
+inet_ntop(af, addr, numaddr, numaddr_len)
+	int af;
+	char *addr;
+	char *numaddr;
+	int numaddr_len;
+{
+	struct in_addr in;
+	memcpy(&in.s_addr, addr, sizeof(in.s_addr));
+	strcpy(numaddr, inet_ntoa(in));
+	return numaddr;
+}
+#endif
+
 int
 getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 	const struct sockaddr *sa;
@@ -102,6 +118,7 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 	int h_error;
 	char numserv[512];
 	char numaddr[512];
+	extern int h_errno;
 
 	if (sa == NULL)
 		return ENI_NOSOCKET;

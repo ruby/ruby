@@ -1,6 +1,6 @@
 #! /usr/local/bin/ruby
 
-$".push 'mkmf.rb' #"
+$".push 'mkmf.rb'
 
 if ARGV[0] == 'static'
   $force_static = TRUE
@@ -25,11 +25,8 @@ if $top_srcdir !~ "^/"
   # get absolute path
   $top_srcdir = File.expand_path($top_srcdir)
 end
-$topdir = ".."
-if $topdir !~ "^/"  
-  # get absolute path
-  $topdir = File.expand_path($topdir)
-end
+# get absolute path
+$topdir = File.expand_path("..")
 $ruby_inc = $top_srcdir
 
 load "#{$top_srcdir}/lib/find.rb"
@@ -58,15 +55,15 @@ end
 
 def older(file1, file2)
   if !File.exist?(file1) then
-    return TRUE
+    return true
   end
   if !File.exist?(file2) then
-    return FALSE
+    return false
   end
   if File.mtime(file1) < File.mtime(file2)
-    return TRUE
+    return true
   end
-  return FALSE
+  return false
 end
 
 if PLATFORM == "m68k-human"
@@ -97,12 +94,18 @@ def xsystem command
   return r
 end
 
-def try_link(src, opt="")
+def try_link0(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
+  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+end
+
+def try_link(src, opt="")
   begin
-    xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+    try_link0(src, opt)
+  ensure
+    system "rm -f conftest*"
   end
 end
 
@@ -110,19 +113,27 @@ def try_cpp(src, opt=$CFLAGS)
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(CPP, opt))
+  begin
+    xsystem(format(CPP, opt))
+  ensure
+    system "rm -f conftest*"
+  end
 end
 
 def egrep_cpp(pat, src, opt=$CFLAGS)
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(CPP+"|egrep #{pat}", opt))
+  begin
+    xsystem(format(CPP+"|egrep #{pat}", opt))
+  ensure
+    system "rm -f conftest*"
+  end
 end
 
 def try_run(src, opt="")
   begin
-    if try_link(src, opt)
+    if try_link0(src, opt)
       if xsystem("./conftest")
 	true
       else
@@ -131,6 +142,8 @@ def try_run(src, opt="")
     else
       nil
     end
+  ensure
+    system "rm -f conftest*"
   end
 end
 
@@ -160,9 +173,9 @@ def have_library(lib, func="main")
       else
 	$libs = "-l" + lib
       end
-      return TRUE
+      return true
     else
-      return FALSE
+      return false
     end
   end
 
@@ -177,8 +190,8 @@ int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
       $lib_cache[lib] = 'no'
-      $cache_mod = TRUE
-      return FALSE
+      $cache_mod = true
+      return false
     end
   else
     if $libs
@@ -190,17 +203,17 @@ SRC
 
   $libs = libs
   $lib_cache[lib] = 'yes'
-  $cache_mod = TRUE
-  return TRUE
+  $cache_mod = true
+  return true
 end
 
 def have_func(func)
   if $func_cache[func]
     if $func_cache[func] == "yes"
       $defs.push(format("-DHAVE_%s", func.upcase))
-      return TRUE
+      return true
     else
-      return FALSE
+      return false
     end
   end
 
@@ -213,13 +226,13 @@ int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
     $func_cache[func] = 'no'
-    $cache_mod = TRUE
-    return FALSE
+    $cache_mod = true
+    return false
   end
   $defs.push(format("-DHAVE_%s", func.upcase))
   $func_cache[func] = 'yes'
-  $cache_mod = TRUE
-  return TRUE
+  $cache_mod = true
+  return true
 end
 
 def have_header(header)
@@ -227,9 +240,9 @@ def have_header(header)
     if $hdr_cache[header] == "yes"
       header.tr!("a-z./\055", "A-Z___")
       $defs.push(format("-DHAVE_%s", header))
-      return TRUE
+      return true
     else
-      return FALSE
+      return false
     end
   end
 
@@ -237,14 +250,14 @@ def have_header(header)
 #include <#{header}>
 SRC
     $hdr_cache[header] = 'no'
-    $cache_mod = TRUE
-    return FALSE
+    $cache_mod = true
+    return false
   end
   $hdr_cache[header] = 'yes'
   header.tr!("a-z./\055", "A-Z___")
   $defs.push(format("-DHAVE_%s", header))
-  $cache_mod = TRUE
-  return TRUE
+  $cache_mod = true
+  return true
 end
 
 def arg_config(config, default=nil)
@@ -291,7 +304,7 @@ def create_header()
 end
 
 def create_makefile(target)
-
+  system "rm -f conftest*"
   if $libs and "@DLEXT@" == "o"
     libs = $libs.split
     for lib in libs

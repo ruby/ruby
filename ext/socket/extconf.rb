@@ -149,6 +149,8 @@ EOF
     $CFLAGS="-DHAVE_SA_LEN "+$CFLAGS
 end
 
+have_header("sys/sysctl.h")
+
 $getaddr_info_ok = false
 if try_run(<<EOF)
 #include <sys/types.h>
@@ -270,6 +272,8 @@ else
   $CFLAGS="-I. "+$CFLAGS
   $objs += "getaddrinfo.o"
   $objs += "getnameinfo.o"
+  have_func("inet_ntop")
+  have_func("inet_pton")
 end
 
 if sockaddr_storage
@@ -277,6 +281,7 @@ if sockaddr_storage
 end
 
 have_header("sys/un.h")
+
 if have_func(test_func)
   have_func("hsterror")
   unless have_func("gethostname")

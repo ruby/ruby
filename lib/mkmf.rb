@@ -31,9 +31,7 @@ if File.exist?($config_cache) then
 end
 
 $srcdir = CONFIG["srcdir"]
-#$libdir = CONFIG["libdir"]+"/"+CONFIG["ruby_install_name"]
-$libdir = CONFIG["libdir"]+"/ruby"
-$libdir += "/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
+$libdir = CONFIG["libdir"]+"/ruby/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
 $archdir = $libdir+"/"+CONFIG["arch"]
 $install = CONFIG["INSTALL_PROGRAM"]
 $install_data = CONFIG["INSTALL_DATA"]
@@ -79,14 +77,18 @@ def xsystem command
   return r
 end
 
-def try_link(src, opt="")
+def try_link0(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
+  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+end
+
+def try_link(src, opt="")
   begin
-    xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+    try_link0(src, opt)
   ensure
-    system "rm -f conftest.*"
+    system "rm -f conftest*"
   end
 end
 
@@ -105,12 +107,8 @@ def egrep_cpp(pat, src, opt=$CFLAGS)
 end
 
 def try_run(src, opt="")
-  begin
-    if try_link(src, opt)
-      xsystem("./conftest")
-    end
-  ensure
-    system "rm -f conftest*"
+  if try_link0(src, opt)
+    xsystem("./conftest")
   end
 end
 
@@ -158,23 +156,19 @@ int t() { %s(); return 0; }
 ", func
     cfile.close
 
-    begin
-      if $libs
-	libs = "-l" + lib + " " + $libs 
-      else
-	libs = "-l" + lib
-      end
-      unless try_link(<<"SRC", libs)
+    if $libs
+      libs = "-l" + lib + " " + $libs 
+    else
+      libs = "-l" + lib
+    end
+    unless try_link(<<"SRC", libs)
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
-	$lib_cache[lib] = 'no'
-	$cache_mod = TRUE
-	print "no\n"
-	return FALSE
-      end
-    ensure
-      system "rm -f conftest*"
+      $lib_cache[lib] = 'no'
+      $cache_mod = TRUE
+      print "no\n"
+      return FALSE
     end
   else
     if $libs
@@ -208,19 +202,15 @@ def have_func(func)
   libs = $libs
   libs = "" if libs == nil
 
-  begin
-      unless try_link(<<"SRC", libs)
+  unless try_link(<<"SRC", libs)
 char #{func}();
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
-      $func_found[func] = 'no'
-      $found = TRUE
-      print "no\n"
-      return FALSE
-    end
-  ensure
-    system "rm -f conftest*"
+    $func_found[func] = 'no'
+    $found = TRUE
+    print "no\n"
+    return FALSE
   end
   $defs.push(format("-DHAVE_%s", func.upcase))
   $func_found[func] = 'yes'
@@ -244,17 +234,13 @@ def have_header(header)
     end
   end
 
-  begin
-    unless try_cpp(<<"SRC")
+  unless try_cpp(<<"SRC")
 #include <#{header}>
 SRC
-      $hdr_found[header] = 'no'
-      $found = TRUE
-      print "no\n"
-      return FALSE
-    end
-  ensure
-    system "rm -f conftest*"
+    $hdr_found[header] = 'no'
+    $found = TRUE
+    print "no\n"
+    return FALSE
   end
   $hdr_found[header] = 'yes'
   header.tr!("a-z./\055", "A-Z___")
@@ -311,6 +297,7 @@ end
 
 def create_makefile(target)
   print "creating Makefile\n"
+  system "rm -f conftest*"
   STDOUT.flush
   if $libs and CONFIG["DLEXT"] == "o"
     libs = $libs.split
@@ -363,14 +350,15 @@ LOCAL_LIBS = #{$local_libs}
 LIBS = #{$libs}
 OBJS = #{$objs}
 
-TARGET = #{target}.#{CONFIG["DLEXT"]}
+TARGET = #{target}
+DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
 
 INSTALL = #{$install}
 INSTALL_DATA = #{$install_data}
 
 binsuffix = #{CONFIG["binsuffix"]}
 
-all:		$(TARGET)
+all:		$(DLLIB)
 
 clean:;		@rm -f *.o *.so *.sl
 		@rm -f Makefile extconf.h conftest.*
@@ -378,30 +366,30 @@ clean:;		@rm -f *.o *.so *.sl
 
 realclean:	clean
 
-install:	$(archdir)/$(TARGET)
+install:	$(archdir)/$(DLLIB)
 
-$(archdir)/$(TARGET): $(TARGET)
+$(archdir)/$(DLLIB): $(DLLIB)
 	@test -d $(libdir) || mkdir $(libdir)
 	@test -d $(archdir) || mkdir $(archdir)
-	$(INSTALL) $(TARGET) $(archdir)/$(TARGET)
+	$(INSTALL) $(DLLIB) $(archdir)/$(DLLIB)
 EOMF
   install_rb(mfile)
   mfile.printf "\n"
 
   if CONFIG["DLEXT"] != "o"
     mfile.printf <<EOMF
-$(TARGET): $(OBJS)
-	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LIBS) $(LOCAL_LIBS)
+$(DLLIB): $(OBJS)
+	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
 EOMF
   elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc") or 
-    mfile.print "$(TARGET): $(OBJS)\n"
+    mfile.print "$(DLLIB): $(OBJS)\n"
     case PLATFORM
     when "m68k-human"
-      mfile.printf "ar cru $(TARGET) $(OBJS)\n"
+      mfile.printf "ar cru $(DLLIB) $(OBJS)\n"
     when /-nextstep/
-      mfile.printf "cc -r $(CFLAGS) -o $(TARGET) $(OBJS)\n"
+      mfile.printf "cc -r $(CFLAGS) -o $(DLLIB) $(OBJS)\n"
     else
-      mfile.printf "ld $(DLDFLAGS) -r -o $(TARGET) $(OBJS)\n"
+      mfile.printf "ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)\n"
     end
   end
 
