@@ -1,3 +1,7 @@
+Thu Aug 23 21:59:38 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* enum.c (sort_by_i): fix typo.
+
 Thu Aug 23 10:10:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (is_defined): should not dump core for "defined?(())".

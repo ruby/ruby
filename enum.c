@@ -208,7 +208,7 @@ sort_by_i(i, memo)
     VALUE i;
     NODE *memo;
 {
-    VALUE e = rb_ary_new3(3, rb_yield(e), INT2NUM(memo->u3.cnt), i);
+    VALUE e = rb_ary_new3(3, rb_yield(i), INT2NUM(memo->u3.cnt), i);
     rb_ary_push(memo->u1.value, e);
     memo->u3.cnt++;
     return Qnil;
