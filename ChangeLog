@@ -1,3 +1,18 @@
+Mon Sep 23 23:22:43 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_call0): must not clear ruby_current_node, or
+	  backtrace cannot be genetated.
+
+	* intern.h (ruby_yyparse): rather than yyparse().
+
+	* parse.y (yylex): nextc() returns -1 at end of input, not 0.
+
+	* parse.y (newline_node): reduce deplicated newline node.
+
+	* parse.y (literal_concat): get rid of warning.
+
+	* parse.y (new_evstr): fixed junk code.
+
 Mon Sep 23 19:57:52 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RUBY_MINGW32): new macro. check for the MinGW

@@ -3555,7 +3555,7 @@ yylex()
 			    if (!ISXDIGIT(c)) break;
 			    nondigit = 0;
 			    tokadd(c);
-			} while (c = nextc());
+			} while ((c = nextc()) != -1);
 		    }
 		    pushback(c);
 		    tokfix();
@@ -3579,7 +3579,7 @@ yylex()
 			    if (c != '0' && c != '1') break;
 			    nondigit = 0;
 			    tokadd(c);
-			} while (c = nextc());
+			} while ((c = nextc()) != -1);
 		    }
 		    pushback(c);
 		    tokfix();
@@ -3603,7 +3603,7 @@ yylex()
 			    if (!ISDIGIT(c)) break;
 			    nondigit = 0;
 			    tokadd(c);
-			} while (c = nextc());
+			} while ((c = nextc()) != -1);
 		    }
 		    pushback(c);
 		    tokfix();
@@ -3637,7 +3637,7 @@ yylex()
 			if (c < '0' || c > '7') break;
 			nondigit = 0;
 			tokadd(c);
-		    } while (c = nextc());
+		    } while ((c = nextc()) != -1);
 		    if (toklen() > start) {
 			pushback(c);
 			tokfix();
@@ -4147,7 +4147,7 @@ yylex()
 	    else {
 		if (lex_state == EXPR_FNAME) {
 		    if ((c = nextc()) == '=' && !peek('~') && !peek('>') &&
-			(!peek('=') || lex_p + 1 < lex_pend && lex_p[1] == '>')) {
+			(!peek('=') || (lex_p + 1 < lex_pend && lex_p[1] == '>'))) {
 			result = tIDENTIFIER;
 			tokadd(c);
 		    }
@@ -4258,6 +4258,7 @@ newline_node(node)
 {
     NODE *nl = 0;
     if (node) {
+	if (nd_type(node) == NODE_NEWLINE) return node;
         nl = NEW_NEWLINE(node);
         fixpos(nl, node);
         nl->nd_nth = nd_line(node);
@@ -4397,7 +4398,7 @@ literal_concat(head, tail)
 	else {
 	    list_append(head, tail);
 	}
-	return head;
+	break;
 
       case NODE_DSTR:
 	if (htype == NODE_STR) {
@@ -4411,39 +4412,35 @@ literal_concat(head, tail)
 	    tail->nd_head = NEW_STR(tail->nd_lit);
 	    list_concat(head, tail);
 	}
-	return head;
+	break;
 
       case NODE_EVSTR:
 	if (htype == NODE_STR) {
 	    nd_set_type(head, NODE_DSTR);
 	}
 	list_append(head, tail);
-	return head;
+	break;
     }
+    return head;
 }
 
 static NODE *
 new_evstr(node)
     NODE *node;
 {
-    NODE *n;
+    NODE *head = node;
 
+  again:
     if (node) {
 	switch (nd_type(node)) {
 	  case NODE_STR: case NODE_DSTR: case NODE_EVSTR:
 	    return node;
-	  case NODE_BLOCK:
-	    for (n = node; n->nd_next; n = n->nd_next) {
-		NODE *h = n->nd_head;
-		enum node_type t;
-		if (!h) continue;
-		if (t != NODE_STR && t != NODE_LIT) goto evstr;
-	    }
-	    return n->nd_head;
+	  case NODE_NEWLINE:
+	    node = node->nd_next;
+	    goto again;
 	}
     }
-  evstr:
-    return NEW_EVSTR(node);
+    return NEW_EVSTR(head);
 }
 
 static NODE *

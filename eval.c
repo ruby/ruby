@@ -4501,21 +4501,18 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    }
 	    if (trace_func) {
 		int state;
-		NODE *volatile node = ruby_current_node;
 
 		call_trace_func("c-call", ruby_current_node, recv, id, klass);
-		ruby_current_node = 0;
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
 		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
 		}
 		POP_TAG();
-		ruby_current_node = node;
+		ruby_current_node = ruby_frame->node;
 		call_trace_func("c-return", ruby_current_node, recv, id, klass);
 		if (state) JUMP_TAG(state);
 	    }
 	    else {
-		ruby_current_node = 0;
 		result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
 	    }
 	}

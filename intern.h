@@ -287,7 +287,7 @@ double rb_str_to_dbl _((VALUE, int));
 /* parse.y */
 EXTERN int   ruby_sourceline;
 EXTERN char *ruby_sourcefile;
-int yyparse _((void));
+int ruby_yyparse _((void));
 ID rb_id_attrset _((ID));
 void rb_parser_append_print _((void));
 void rb_parser_while_loop _((int, int));
