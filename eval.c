@@ -6062,9 +6062,8 @@ rb_require_safe(fname, safe)
 	ruby_safe_level = safe;
 	found = search_required(fname, &feature, &path);
 	if (found) {
-	    ftptr = RSTRING(feature)->ptr;
 	    if (!path) {
-		load_wait(ftptr);
+		load_wait(RSTRING(feature)->ptr);
 		result = Qfalse;
 	    }
 	    else {
@@ -6077,9 +6076,9 @@ rb_require_safe(fname, safe)
 			loading_tbl = st_init_strtable();
 		    }
 		    /* partial state */
-		    st_insert(loading_tbl,
-			      (st_data_t)(ftptr = ruby_strdup(ftptr)),
-			      (st_data_t)curr_thread);
+		    ftptr = ruby_strdup(RSTRING(feature)->ptr);
+		    st_insert(loading_tbl, (st_data_t)ftptr,
+			      (st_data_t)(mutex = rb_thread_mutex_new(Qtrue)));
 		    if (feature == fname && !OBJ_FROZEN(feature)) {
 			feature = rb_str_dup(feature);
 			OBJ_FREEZE(feature);
