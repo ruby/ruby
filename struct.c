@@ -593,6 +593,25 @@ rb_struct_hash(s)
 }
 
 static VALUE
+rb_struct_eql(s, s2)
+    VALUE s, s2;
+{
+    long i;
+
+    if (s == s2) return Qtrue;
+    if (TYPE(s2) != T_STRUCT) return Qfalse;
+    if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
+    if (RSTRUCT(s)->len != RSTRUCT(s2)->len) {
+	rb_bug("inconsistent struct"); /* should never happen */
+    }
+
+    for (i=0; i<RSTRUCT(s)->len; i++) {
+	if (!rb_eql(RSTRUCT(s)->ptr[i], RSTRUCT(s2)->ptr[i])) return Qfalse;
+    }
+    return Qtrue;
+}
+
+static VALUE
 rb_struct_size(s)
     VALUE s;
 {
@@ -612,7 +631,7 @@ Init_Struct()
     rb_define_method(rb_cStruct, "copy_object", rb_struct_copy_object, 1);
 
     rb_define_method(rb_cStruct, "==", rb_struct_equal, 1);
-    rb_define_method(rb_cStruct, "eql?", rb_struct_equal, 1);
+    rb_define_method(rb_cStruct, "eql?", rb_struct_eql, 1);
     rb_define_method(rb_cStruct, "hash", rb_struct_hash, 0);
 
     rb_define_method(rb_cStruct, "to_s", rb_struct_to_s, 0);

@@ -19,19 +19,21 @@ static ID id_cmp, id_succ, id_beg, id_end, id_excl;
 #define SET_EXCL(r,v) rb_ivar_set((r), id_excl, (v) ? Qtrue : Qfalse)
 
 static VALUE
-range_check(args)
-    VALUE *args;
-{
-    rb_funcall(args[0], id_cmp, 1, args[1]);
-    /* rb_funcall(args[0], id_succ, 0, 0); */
-    return Qnil;
-}
-
-static VALUE
 range_failed()
 {
     rb_raise(rb_eArgError, "bad value for range");
     return Qnil;		/* dummy */
+}
+
+static VALUE
+range_check(args)
+    VALUE *args;
+{
+    VALUE v;
+
+    v = rb_funcall(args[0], id_cmp, 1, args[1]);
+    if (NIL_P(v)) range_failed();
+    return Qnil;
 }
 
 static void

@@ -1112,16 +1112,16 @@ r_object0(arg, proc)
 
       case TYPE_MODULE_OLD:
         {
-	    VALUE str = r_bytes(arg);
+	    volatile VALUE str = r_bytes(arg);
 
-	    v = path2module(RSTRING(str)->ptr);
+	    v = rb_path2class(RSTRING(str)->ptr);
 	    r_regist(v, arg);
 	}
 	break;
 
       case TYPE_CLASS:
         {
-	    VALUE str = r_bytes(arg);
+	    volatile VALUE str = r_bytes(arg);
 
 	    v = path2class(RSTRING(str)->ptr);
 	    r_regist(v, arg);
@@ -1130,7 +1130,7 @@ r_object0(arg, proc)
 
       case TYPE_MODULE:
         {
-	    VALUE str = r_bytes(arg);
+	    volatile VALUE str = r_bytes(arg);
 
 	    v = path2module(RSTRING(str)->ptr);
 	    r_regist(v, arg);

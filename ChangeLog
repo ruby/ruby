@@ -1,7 +1,21 @@
+Sat Apr 19 00:56:13 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_eql): should compare values with "eql?".
+
+Fri Apr 18 23:29:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_check): <=> returns nil for invalid values;
+	  should check.
+
 Fri Apr 18 15:26:50 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* error.c (rb_raise): workaround for some implementations of
 	  vsnprintf.
+
+Fri Apr 18 02:23:42 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): should not set RE_OPTIMIZE_ANCHOR,
+	  if anychar_repeat is enclosed by parentheses.
 
 Fri Apr 18 01:49:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -51,13 +65,13 @@ Mon Apr 14 19:45:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Mon Apr 14 03:22:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* rubyio.h (struct OpenFile): add error raise flag to finalizer.
+	* rubyio.h (struct OpenFile): add noraise flag to finalizer.
 
 	* io.c (Init_IO): define $/, $-0, and $\ as string-only
 	  variables.
 
 	* string.c (rb_str_split_m): does not generate empty string if
-	  there's no match in the receiver.
+	  the receiver is empty.
 
 	* io.c (fptr_finalize): should raise error on EBADF for readable
 	  IOs as well.

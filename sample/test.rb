@@ -995,6 +995,9 @@ nan.test(-0.001);
 nan.test(1.0/0);
 nan.test(-1.0/0);
 
+s = "3.7517675036461267e+17"
+test_ok(s == sprintf("%.16e", s.to_f))
+
 test_check "bignum"
 def fact(n)
   return 1 if n == 0
@@ -1549,6 +1552,13 @@ test_ok($x == Marshal.load($y))
 
 StrClone=String.clone;
 test_ok(Marshal.load(Marshal.dump(StrClone.new("abc"))).class == StrClone)
+
+[[1,2,3,4], [81, 2, 118, 3146]].each { |w,x,y,z|
+  a = (x.to_f + y.to_f / z.to_f) * Math.exp(w.to_f / (x.to_f + y.to_f / z.to_f))
+  ma = Marshal.dump(a)
+  b = Marshal.load(ma)
+  test_ok(a == b)
+}
 
 test_check "pack"
 

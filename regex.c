@@ -2397,7 +2397,6 @@ re_compile_pattern(pattern, size, bufp)
   /* set optimize flags */
   laststart = bufp->buffer;
   if (laststart != b) {
-    if (*laststart == start_memory) laststart += 3;
     if (*laststart == dummy_failure_jump) laststart += 3;
     else if (*laststart == try_next) laststart += 3;
     if (*laststart == anychar_repeat) {
