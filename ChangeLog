@@ -1,3 +1,7 @@
+Sat Jan 11 22:50:47 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/dl/lib/dl/win32.rb: compatibility improvement.
+
 Sat Jan 11 01:44:16 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (RUBY_CHECK_IO_NEED): added more tests.

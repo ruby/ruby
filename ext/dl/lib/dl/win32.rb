@@ -3,24 +3,27 @@
 require 'dl'
 
 class Win32API
-  LIBRARY = {}
+  DLL = {}
 
-  attr_reader :val, :args
-
-  def initialize(lib, func, args, ret)
-    LIBRARY[lib] ||= DL.dlopen(lib)
-    ty = (ret + args).tr('V','0')
-    @sym = LIBRARY[lib].sym(func, ty)
-    @__dll__ = LIBRARY[lib].to_i
-    @__dllname__ = lib
-    @__proc__ = @sym.to_i
-    @val = nil
-    @args = []
+  def initialize(dllname, func, import, export = "0")
+    prototype = (export + import.to_s).tr("VPpNnLlIi", "0SSI")
+    handle = DLL[dllname] ||= DL::Handle.new(dllname)
+    begin
+      @sym = handle.sym(func, prototype)
+    rescue RuntimeError
+      @sym = handle.sym(func + "A", prototype)
+    end
   end
 
   def call(*args)
-    @val,@args = @sym.call(*args)
-    return @val
+    import = @sym.proto[1..-1] || ""
+    args.each_with_index do |x, i|
+      args[i] = nil if x == 0 and import[i] == ?S
+      args[i], = [x].pack("I").unpack("i") if import[i] == ?I
+    end
+    ret, = @sym.call(*args)
+    return ret || 0
   end
+
   alias Call call
 end
