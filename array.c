@@ -922,7 +922,7 @@ rb_ary_delete(ary, item)
 	if (rb_iterator_p()) {
 	    return rb_yield(item);
 	}
-	return ary;
+	return Qnil;
     }
     else {
 	RARRAY(ary)->len = i2;
