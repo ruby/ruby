@@ -1079,10 +1079,10 @@ rb_str_index_m(argc, argv, str)
       {
 	  int c = FIX2INT(sub);
 	  long len = RSTRING(str)->len;
-	  unsigned char *p = RSTRING(str)->ptr;
+	  char *p = RSTRING(str)->ptr;
 
 	  for (;pos<len;pos++) {
-	      if (p[pos] == c) return LONG2NUM(pos);
+	      if ((unsigned char)p[pos] == c) return LONG2NUM(pos);
 	  }
 	  return Qnil;
       }
@@ -1201,15 +1201,16 @@ rb_str_rindex_m(argc, argv, str)
       case T_FIXNUM:
       {
 	  int c = FIX2INT(sub);
-	  unsigned char *p = RSTRING(str)->ptr + pos;
-	  unsigned char *pbeg = RSTRING(str)->ptr;
+	  char *p = RSTRING(str)->ptr + pos;
+	  char *pbeg = RSTRING(str)->ptr;
 
 	  if (pos == RSTRING(str)->len) {
 	      if (pos == 0) return Qnil;
 	      --p;
 	  }
 	  while (pbeg <= p) {
-	      if (*p == c) return LONG2NUM((char*)p - RSTRING(str)->ptr);
+	      if ((unsigned char)*p == c)
+		  return LONG2NUM((char*)p - RSTRING(str)->ptr);
 	      p--;
 	  }
 	  return Qnil;

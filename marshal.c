@@ -871,6 +871,7 @@ r_bytes0(len, arg)
 {
     VALUE str;
 
+    if (len == 0) return rb_str_new(0, 0);
     if (!arg->end) {
 	VALUE src = (VALUE)arg->ptr;
 	VALUE n = LONG2NUM(len);

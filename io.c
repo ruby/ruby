@@ -3369,6 +3369,7 @@ rb_io_reopen(argc, argv, file)
     fptr = RFILE(file)->fptr;
     if (!fptr) {
 	fptr = RFILE(file)->fptr = ALLOC(OpenFile);
+	MEMZERO(fptr, OpenFile, 1);
     }
 
     if (!NIL_P(nmode)) {
@@ -3392,7 +3393,6 @@ rb_io_reopen(argc, argv, file)
 	    fclose(fptr->f2);
 	    fptr->f2 = 0;
 	}
-
 	return file;
     }
 

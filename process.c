@@ -2663,6 +2663,60 @@ proc_setmaxgroups(obj, val)
     return INT2FIX(maxgroups);
 }
 
+/*
+ *  call-seq:
+ *     Process.daemon()			   => fixnum
+ *     Process.daemon(nochdir=0,noclose=0) => fixnum
+ *
+ *  Detach the process from controlling terminal and run in
+ *  the background as system daemon.  Unless the argument
+ *  nochdir is true (i.e. non false), it changes the current
+ *  working directory to the root ("/"). Unless the argument
+ *  noclose is true, daemon() will redirect standard input,
+ *  standard output and standard error to /dev/null.
+ */
+
+static VALUE
+proc_daemon(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE nochdir, noclose;
+    int n;
+
+    rb_scan_args(argc, argv, "02", &nochdir, &noclose);
+
+#if defined(HAVE_DAEMON)
+    n = daemon(RTEST(nochdir), RTEST(noclose));
+    if (n < 0) rb_sys_fail("daemon");
+    return INT2FIX(n);
+#elif defined(HAVE_FORK)
+    switch (rb_fork(0, 0, 0)) {
+    case -1:
+        return (-1);
+    case 0:
+        break;
+    default:
+        _exit(0);
+    }
+
+    proc_setsid();
+
+    if (!RTEST(nochdir))
+        (void)chdir("/");
+
+    if (!RTEST(noclose) && (n = open("/dev/null", O_RDWR, 0)) != -1) {
+        (void)dup2(n, 0);
+        (void)dup2(n, 1);
+        (void)dup2(n, 2);
+        if (n > 2)
+            (void)close (n);
+    }
+    return INT2FIX(0);
+#else
+    rb_notimplement();
+#endif
+}
 
 /********************************************************************
  *
@@ -3542,6 +3596,8 @@ Init_process()
     rb_define_module_function(rb_mProcess, "groups=", proc_setgroups, 1);
     rb_define_module_function(rb_mProcess, "maxgroups", proc_getmaxgroups, 0);
     rb_define_module_function(rb_mProcess, "maxgroups=", proc_setmaxgroups, 1);
+
+    rb_define_module_function(rb_mProcess, "daemon", proc_daemon, -1);
 
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
 

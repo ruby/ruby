@@ -418,7 +418,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
 	      getpriority getrlimit dlopen sigprocmask sigaction _setjmp\
 	      setsid telldir seekdir fchmod mktime timegm cosh sinh tanh\
-	      setuid setgid)
+	      setuid setgid daemon)
 AC_ARG_ENABLE(setreuid,
        [  --enable-setreuid       use setreuid()/setregid() according to need even if obsolete.],
        [use_setreuid=$enableval])

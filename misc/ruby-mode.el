@@ -779,7 +779,7 @@ An end of a defun is found by moving forward from the beginning of one."
       (if done
 	  (save-excursion
 	    (back-to-indentation)
-	    (if (looking-at (concat ("\\<\\(" ruby-block-mid-re "\\)\\>")))
+	    (if (looking-at (concat "\\<\\(" ruby-block-mid-re "\\)\\>"))
 		(setq done nil))))))
   (back-to-indentation))
 
