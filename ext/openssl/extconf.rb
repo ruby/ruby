@@ -40,6 +40,7 @@ have_library("nsl", "t_open")
 have_library("socket", "socket")
 have_header("unistd.h")
 have_header("sys/time.h")
+have_header("assert.h")
 
 message "=== Checking for required stuff... ===\n"
 if $mingw
@@ -100,7 +101,7 @@ test-link: $(OBJS)
 	@$(RM) .testlink
 	@echo "Done."
 
-dep: $(SRCS)
+dep:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $^ -MM | \\
 	$(RUBY) -p -e 'BEGIN{S = []' \\
 		-e 'while !ARGV.empty? and /^(\\w+)=(.*)/ =~ ARGV[0]' \\

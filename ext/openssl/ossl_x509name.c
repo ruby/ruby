@@ -89,10 +89,19 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
     X509_NAME *name;
     int i, type;
     VALUE arg, item, key, value;
-	
+
     GetX509Name(self, name);
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
 	return self;
+    }
+    if (rb_respond_to(arg, ossl_s_to_der)){
+	unsigned char *p;
+	VALUE str = rb_funcall(arg, ossl_s_to_der, 0);
+	StringValue(str);
+	p  = RSTRING(str)->ptr;
+	if(!d2i_X509_NAME(&name, &p, RSTRING(str)->len))
+	    ossl_raise(eX509NameError, NULL);
+        return self;
     }
     Check_Type(arg, T_ARRAY);
     for (i=0; i<RARRAY(arg)->len; i++) {
@@ -209,6 +218,26 @@ ossl_x509name_hash(VALUE self)
     return ULONG2NUM(hash);
 }
 
+static VALUE
+ossl_x509name_to_der(VALUE self)
+{
+    X509_NAME *name;
+    VALUE str;
+    long len;
+    unsigned char *p;
+
+    GetX509Name(self, name);
+    if((len = i2d_X509_NAME(name, NULL)) <= 0)
+	ossl_raise(eX509NameError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(i2d_X509_NAME(name, &p) <= 0)
+	ossl_raise(eX509NameError, NULL);
+    ossl_str_adjust(str, p);
+
+    return str;
+}
+
 /*
  * INIT
  */
@@ -221,13 +250,11 @@ Init_ossl_x509name()
 
     rb_define_alloc_func(cX509Name, ossl_x509name_alloc);
     rb_define_method(cX509Name, "initialize", ossl_x509name_initialize, -1);
-
     rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, 0);
     rb_define_method(cX509Name, "to_a", ossl_x509name_to_a, 0);
-
     rb_define_method(cX509Name, "cmp", ossl_x509name_cmp, 1);
     rb_define_alias(cX509Name, "<=>", "cmp");
     rb_define_method(cX509Name, "eql?", ossl_x509name_eql, 1);
-
     rb_define_method(cX509Name, "hash", ossl_x509name_hash, 0);
+    rb_define_method(cX509Name, "to_der", ossl_x509name_to_der, 0);
 }

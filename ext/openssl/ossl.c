@@ -48,7 +48,7 @@ string2hex(char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
  * Data Conversion
  */
 STACK_OF(X509) *
-ossl_x509_ary2sk(VALUE ary)  
+ossl_x509_ary2sk0(VALUE ary)  
 {
     STACK_OF(X509) *sk;
     VALUE val;
@@ -74,7 +74,20 @@ ossl_x509_ary2sk(VALUE ary)
 STACK_OF(X509) *
 ossl_protect_x509_ary2sk(VALUE ary, int *status)
 {
-    return (STACK_OF(X509)*)rb_protect((VALUE(*)_((VALUE)))ossl_x509_ary2sk, ary, status);
+    return (STACK_OF(X509)*)rb_protect((VALUE(*)_((VALUE)))ossl_x509_ary2sk0,
+				       ary, status);
+}
+
+STACK_OF(X509) *
+ossl_x509_ary2sk(VALUE ary)
+{
+    STACK_OF(X509) *sk;
+    int status = 0;
+
+    sk = ossl_protect_x509_ary2sk(ary, &status);
+    if(status) rb_jump_tag(status);
+
+    return sk;
 }
 
 #if 0
@@ -106,6 +119,26 @@ ossl_##name##_sk2ary(STACK *sk)			\
 OSSL_SK2ARY(x509, X509)
 OSSL_SK2ARY(x509crl, X509_CRL)
 #endif
+
+static VALUE
+ossl_str_new(int size)
+{
+    return rb_str_new(0, size);
+}
+
+VALUE
+ossl_buf2str(char *buf, int len)
+{
+    VALUE str;
+    int status = 0;
+
+    str = rb_protect((VALUE(*)_(()))ossl_str_new, len, &status);
+    memcpy(RSTRING(str)->ptr, buf, len);
+    OPENSSL_free(buf);
+    if(status) rb_jump_tag(status);
+
+    return str;
+}
 
 /*
  * our default PEM callback
@@ -213,6 +246,30 @@ VALUE mOSSL;
  * OpenSSLError < StandardError
  */
 VALUE eOSSLError;
+
+/*
+ * Convert to DER string
+ */
+ID ossl_s_to_der;
+
+VALUE
+ossl_to_der(VALUE obj)
+{
+    VALUE tmp;
+
+    tmp = rb_funcall(obj, ossl_s_to_der, 0);
+    StringValue(tmp);
+
+    return tmp;
+}
+
+VALUE
+ossl_to_der_if_possible(VALUE obj)
+{
+    if(rb_respond_to(obj, ossl_s_to_der))
+	return ossl_to_der(obj);
+    return obj;
+}
 
 /*
  * Errors
@@ -355,6 +412,11 @@ Init_openssl()
     dOSSL = Qfalse;
     rb_define_module_function(mOSSL, "debug", ossl_debug_get, 0);
     rb_define_module_function(mOSSL, "debug=", ossl_debug_set, 1);
+
+    /*
+     * Get ID of to_der
+     */
+    ossl_s_to_der = rb_intern("to_der");
 
     /*
      * Init components

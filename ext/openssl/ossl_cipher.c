@@ -122,13 +122,13 @@ ossl_cipher_copy(VALUE self, VALUE other)
 static VALUE
 ossl_cipher_reset(VALUE self)
 {
-	EVP_CIPHER_CTX *ctx;
+    EVP_CIPHER_CTX *ctx;
 
-	GetCipher(self, ctx);
-	if (EVP_CipherInit(ctx, NULL, NULL, NULL, -1) != 1)
-		ossl_raise(eCipherError, NULL);
+    GetCipher(self, ctx);
+    if (EVP_CipherInit(ctx, NULL, NULL, NULL, -1) != 1)
+	ossl_raise(eCipherError, NULL);
 		
-	return self;
+    return self;
 }
 
 static VALUE
@@ -232,25 +232,20 @@ static VALUE
 ossl_cipher_update(VALUE self, VALUE data)
 {
     EVP_CIPHER_CTX *ctx;
-    char *in, *out;
+    char *in;
     int in_len, out_len;
     VALUE str;
 
     GetCipher(self, ctx);
-
     StringValue(data);
     in = RSTRING(data)->ptr;
     in_len = RSTRING(data)->len;
-	
-    if (!(out = OPENSSL_malloc(in_len+EVP_CIPHER_CTX_block_size(ctx)))) {
+    str = rb_str_new(0, in_len+EVP_CIPHER_CTX_block_size(ctx));
+    if (!EVP_CipherUpdate(ctx, RSTRING(str)->ptr, &out_len, in, in_len))
 	ossl_raise(eCipherError, NULL);
-    }
-    if (!EVP_CipherUpdate(ctx, out, &out_len, in, in_len)) {
-	OPENSSL_free(out);
-	ossl_raise(eCipherError, NULL);
-    }
-    str = rb_str_new(out, out_len);
-    OPENSSL_free(out);
+    assert(out_len < RSTRING(str)->len);
+    RSTRING(str)->len = out_len;
+    RSTRING(str)->ptr[out_len] = 0;
 
     return str;
 }
@@ -259,23 +254,17 @@ static VALUE
 ossl_cipher_final(VALUE self)
 {
     EVP_CIPHER_CTX *ctx;
-    char *out;
     int out_len;
     VALUE str;
 
     GetCipher(self, ctx);
-	
-    if (!(out = OPENSSL_malloc(EVP_CIPHER_CTX_block_size(ctx)))) {
+    str = rb_str_new(0, EVP_CIPHER_CTX_block_size(ctx));
+    if (!EVP_CipherFinal(ctx, RSTRING(str)->ptr, &out_len))
 	ossl_raise(eCipherError, NULL);
-    }
-    if (!EVP_CipherFinal(ctx, out, &out_len)) {
-	OPENSSL_free(out);
-	ossl_raise(eCipherError, NULL);
-    }
+    assert(out_len <= RSTRING(str)->len);
+    RSTRING(str)->len = out_len;
+    RSTRING(str)->ptr[out_len] = 0;
 
-    str = rb_str_new(out, out_len);
-    OPENSSL_free(out);
-	
     return str;
 }
 

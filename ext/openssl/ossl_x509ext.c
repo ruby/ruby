@@ -181,20 +181,17 @@ ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
 	
     /*GetX509ExtFactory(self, ctx);*/
 
-    rb_scan_args(argc, argv, "04", &issuer_cert, &subject_cert, &subject_req, &crl);
-
-    if (!NIL_P(issuer_cert)) {
+    rb_scan_args(argc, argv, "04",
+		 &issuer_cert, &subject_cert, &subject_req, &crl);
+    if (!NIL_P(issuer_cert))
 	ossl_x509extfactory_set_issuer_cert(self, issuer_cert);
-    }
-    if (!NIL_P(subject_cert)) {
+    if (!NIL_P(subject_cert))
 	ossl_x509extfactory_set_subject_cert(self, subject_cert);
-    }
-    if (!NIL_P(subject_req)) {
+    if (!NIL_P(subject_req))
 	ossl_x509extfactory_set_subject_req(self, subject_req);
-    }
-    if (!NIL_P(crl)) {
+    if (!NIL_P(crl))
 	ossl_x509extfactory_set_crl(self, crl);
-    }
+
     return self;
 }
 
@@ -207,46 +204,26 @@ ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
  * ["ln", "value"] => not critical
  */
 static VALUE 
-ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
+ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
 {
     X509V3_CTX *ctx;
     X509_EXTENSION *ext;
+    VALUE oid, value, critical, valstr, obj;
     int nid;
-    char *value;
-    VALUE item, obj;
 
     GetX509ExtFactory(self, ctx);
-    Check_Type(ary, T_ARRAY);
-    if ((RARRAY(ary)->len) < 2 || (RARRAY(ary)->len > 3)) { /*2 or 3 allowed*/
-	ossl_raise(eX509ExtError, "unsupported structure");
-    }
-    /* key [0] */
-    item = RARRAY(ary)->ptr[0];
-    StringValue(item);
-    if (!(nid = OBJ_ln2nid(RSTRING(item)->ptr))) {
-	if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr))) {
-	    ossl_raise(eX509ExtError, NULL);
-	}
-    }
-    /* data [1] */
-    item = RARRAY(ary)->ptr[1];
-    StringValue(item);
-    /* (optional) critical [2] */
-    if (RARRAY(ary)->len == 3 && RARRAY(ary)->ptr[2] == Qtrue) {
-	if (!(value = OPENSSL_malloc(strlen("critical,") +
-				     (RSTRING(item)->len) + 1))) {
-	    ossl_raise(eX509ExtError, "malloc error");
-	}
-	strcpy(value, "critical,");
-	strncat(value, RSTRING(item)->ptr, RSTRING(item)->len);
-    } else {
-	value = strdup(StringValuePtr(item));
-    }
-    if (!(ext = X509V3_EXT_conf_nid(NULL, ctx, nid, value))) {
-	OPENSSL_free(value);
-	ossl_raise(eX509ExtError, NULL);
-    }
-    OPENSSL_free(value);
+    rb_scan_args(argc, argv, "21", &oid, &value, &critical);
+    StringValue(oid);
+    StringValue(value);
+    if(NIL_P(critical)) critical = Qfalse;
+
+    nid = OBJ_ln2nid(RSTRING(oid)->ptr);
+    if(!nid) nid = OBJ_sn2nid(RSTRING(oid)->ptr);
+    if(!nid) ossl_raise(eX509ExtError, NULL);
+    valstr = rb_str_new2(RTEST(critical) ? "critical," : "");
+    rb_str_append(valstr, value);
+    ext = X509V3_EXT_conf_nid(NULL, ctx, nid, RSTRING(valstr)->ptr);
+    if (!ext) ossl_raise(eX509ExtError, NULL);
     WrapX509Ext(cX509Ext, obj, ext);
 
     return obj;
@@ -273,8 +250,18 @@ static VALUE
 ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE oid, value, critical;
+    unsigned char *p;
+    X509_EXTENSION *ext;
 
-    rb_scan_args(argc, argv, "21", &oid, &value, &critical);
+    if(rb_scan_args(argc, argv, "12", &oid, &value, &critical) == 1){
+	/* evaluate oid as a DER string */
+	oid = ossl_to_der_if_possible(oid);
+	GetX509Ext(self, ext);
+	p  = RSTRING(oid)->ptr;
+	if(!d2i_X509_EXTENSION(&ext, &p, RSTRING(oid)->len))
+	    ossl_raise(eX509ExtError, NULL);
+	return self;
+    }
     rb_funcall(self, rb_intern("oid="), 1, oid);
     rb_funcall(self, rb_intern("value="), 1, value);
     if(argc > 2) rb_funcall(self, rb_intern("critical="), 1, critical);
@@ -307,17 +294,17 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
     char *s;
 
     GetX509Ext(self, ext);
-    StringValue(data);
+    data = ossl_to_der_if_possible(data);
     if(!(s = OPENSSL_malloc(RSTRING(data)->len)))
 	ossl_raise(eX509ExtError, "malloc error");
     memcpy(s, RSTRING(data)->ptr, RSTRING(data)->len);
     if(!(asn1s = ASN1_OCTET_STRING_new())){
-        free(s);
+	free(s);
 	ossl_raise(eX509ExtError, NULL);
     }
     if(!M_ASN1_OCTET_STRING_set(asn1s, s, RSTRING(data)->len)){
-        free(s);
-        ASN1_OCTET_STRING_free(asn1s);
+	free(s);
+	ASN1_OCTET_STRING_free(asn1s);
 	ossl_raise(eX509ExtError, NULL);
     }
     X509_EXTENSION_set_data(ext, asn1s);
@@ -343,7 +330,7 @@ ossl_x509ext_get_oid(VALUE obj)
     ASN1_OBJECT *extobj;
     BIO *out;
     VALUE ret;
-    int nid, status = 0;
+    int nid;
 
     GetX509Ext(obj, ext);
     extobj = X509_EXTENSION_get_object(ext);
@@ -353,9 +340,7 @@ ossl_x509ext_get_oid(VALUE obj)
 	if (!(out = BIO_new(BIO_s_mem())))
 	    ossl_raise(eX509ExtError, NULL);
 	i2a_ASN1_OBJECT(out, extobj);
-	ret = ossl_protect_membio2str(out, &status);
-	BIO_free(out);
-	if(status) rb_jump_tag(status);
+	ret = ossl_membio2str(out);
     }
 
     return ret;
@@ -367,16 +352,13 @@ ossl_x509ext_get_value(VALUE obj)
     X509_EXTENSION *ext;
     BIO *out;
     VALUE ret;
-    int status = 0;
 
     GetX509Ext(obj, ext);
     if (!(out = BIO_new(BIO_s_mem())))
 	ossl_raise(eX509ExtError, NULL);
     if (!X509V3_EXT_print(out, ext, 0, 0))
 	M_ASN1_OCTET_STRING_print(out, ext->value);
-    ret = ossl_protect_membio2str(out, &status);
-    BIO_free(out);
-    if(status) rb_jump_tag(status);
+    ret = ossl_membio2str(out);
 
     return ret;
 }
@@ -394,15 +376,17 @@ ossl_x509ext_to_der(VALUE obj)
 {
     X509_EXTENSION *ext;
     unsigned char *p;
-    int len;
+    long len;
     VALUE str;
 
     GetX509Ext(obj, ext);
-    p = NULL;
-    if((len = i2d_X509_EXTENSION(ext, &p)) < 0)
-        ossl_raise(eX509ExtError, NULL);
-    str = rb_str_new(p, len);
-    free(p);
+    if((len = i2d_X509_EXTENSION(ext, NULL)) <= 0)
+	ossl_raise(eX509ExtError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(i2d_X509_EXTENSION(ext, &p) < 0)
+	ossl_raise(eX509ExtError, NULL);
+    ossl_str_adjust(str, p);
 
     return str;
 }
@@ -431,7 +415,7 @@ Init_ossl_x509ext()
     rb_define_method(cX509ExtFactory, "subject_request=", ossl_x509extfactory_set_subject_req, 1);
     rb_define_method(cX509ExtFactory, "crl=", ossl_x509extfactory_set_crl, 1);
     rb_define_method(cX509ExtFactory, "config=", ossl_x509extfactory_set_config, 1);
-    rb_define_method(cX509ExtFactory, "create_ext_from_array", ossl_x509extfactory_create_ext_from_array, 1);
+    rb_define_method(cX509ExtFactory, "create_ext", ossl_x509extfactory_create_ext, -1);
 	
     cX509Ext = rb_define_class_under(mX509, "Extension", rb_cObject);
     rb_define_alloc_func(cX509Ext, ossl_x509ext_alloc);

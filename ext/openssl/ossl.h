@@ -22,6 +22,12 @@ extern "C" {
  */
 #include <openssl/opensslv.h>
 
+#ifdef HAVE_ASSERT_H
+#  include <assert.h>
+#else
+#  define assert(condition)
+#endif
+
 #if defined(_WIN32)
 #  define OpenFile WINAPI_OpenFile
 #  define OSSL_NO_CONF_API 1
@@ -37,6 +43,10 @@ extern "C" {
 #include <openssl/conf_api.h>
 #undef X509_NAME
 #undef PKCS7_SIGNER_INFO
+#if defined(HAVE_OPENSSL_ENGINE_H) && !defined(OPENSSL_NO_ENGINE)
+#  define OSSL_ENGINE_ENABLED
+#  include <openssl/engine.h>
+#endif
 #if defined(HAVE_OPENSSL_OCSP_H)
 #  define OSSL_OCSP_ENABLED
 #  include <openssl/ocsp.h>
@@ -95,8 +105,18 @@ int string2hex(char *, int, char **, int *);
 /*
  * Data Conversion
  */
+STACK_OF(X509) *ossl_x509_ary2sk0(VALUE);
 STACK_OF(X509) *ossl_x509_ary2sk(VALUE);
 STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
+VALUE ossl_buf2str(char *buf, int len);
+#define ossl_str_adjust(str, p) \
+do{\
+    int len = RSTRING(str)->len;\
+    int newlen = (p) - (unsigned char*)RSTRING(str)->ptr;\
+    assert(newlen <= len);\
+    RSTRING(str)->len = newlen;\
+    RSTRING(str)->ptr[newlen] = 0;\
+}while(0)
 
 /*
  * our default PEM callback
@@ -122,6 +142,13 @@ struct ossl_verify_cb_args {
 
 VALUE ossl_call_verify_cb_proc(struct ossl_verify_cb_args *);
 int ossl_verify_cb(int, X509_STORE_CTX *);
+
+/*
+ * String to DER String
+ */
+extern ID ossl_s_to_der;
+VALUE ossl_to_der(VALUE);
+VALUE ossl_to_der_if_possible(VALUE);
 
 /*
  * Debug

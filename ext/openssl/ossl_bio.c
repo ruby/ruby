@@ -38,8 +38,8 @@ ossl_protect_obj2bio(VALUE obj, int *status)
      return ret;
 }
 
-VALUE 
-ossl_membio2str(BIO *bio)
+VALUE
+ossl_membio2str0(BIO *bio)
 {
     VALUE ret;
     BUF_MEM *buf;
@@ -53,6 +53,18 @@ ossl_membio2str(BIO *bio)
 VALUE
 ossl_protect_membio2str(BIO *bio, int *status)
 {
-    return rb_protect((VALUE(*)_((VALUE)))ossl_membio2str, (VALUE)bio, status);
+    return rb_protect((VALUE(*)_((VALUE)))ossl_membio2str0, (VALUE)bio, status);
 }
 
+VALUE 
+ossl_membio2str(BIO *bio)
+{
+    VALUE ret;
+    int status = 0;
+
+    ret = ossl_protect_membio2str(bio, &status);
+    BIO_free(bio);
+    if(status) rb_jump_tag(status);
+
+    return ret;
+}

@@ -60,18 +60,12 @@ ossl_rand_write_file(VALUE self, VALUE filename)
 static VALUE
 ossl_rand_bytes(VALUE self, VALUE len)
 {
-    unsigned char *buffer = NULL;
     VALUE str;
 	
-    if (!(buffer = OPENSSL_malloc(FIX2INT(len) + 1))) {
+    str = rb_str_new(0, FIX2INT(len));
+    if (!RAND_bytes(RSTRING(str)->ptr, FIX2INT(len))) {
 	ossl_raise(eRandomError, NULL);
     }
-    if (!RAND_bytes(buffer, FIX2INT(len))) {
-	OPENSSL_free(buffer);
-	ossl_raise(eRandomError, NULL);
-    }
-    str = rb_str_new(buffer, FIX2INT(len));
-    OPENSSL_free(buffer);
 
     return str;
 }
@@ -79,18 +73,12 @@ ossl_rand_bytes(VALUE self, VALUE len)
 static VALUE
 ossl_rand_pseudo_bytes(VALUE self, VALUE len)
 {
-    unsigned char *buffer = NULL;
     VALUE str;
-	
-    if (!(buffer = OPENSSL_malloc(FIX2INT(len) + 1))) {
+
+    str = rb_str_new(0, FIX2INT(len));
+    if (!RAND_pseudo_bytes(RSTRING(str)->ptr, FIX2INT(len))) {
 	ossl_raise(eRandomError, NULL);
     }
-    if (!RAND_pseudo_bytes(buffer, FIX2INT(len))) {
-	OPENSSL_free(buffer);
-	ossl_raise(eRandomError, NULL);
-    }
-    str = rb_str_new(buffer, FIX2INT(len));
-    OPENSSL_free(buffer);
 
     return str;
 }

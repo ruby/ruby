@@ -90,33 +90,20 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
     X509_REQ *req;
-    VALUE buffer;
+    VALUE arg;
 
-    if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
+    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
 	return self;
     }
-    StringValue(buffer);
-    
-    in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len);
-    if (!in) {
-	ossl_raise(eX509ReqError, NULL);
-    }
-    /*
-     * TODO:
-     * Check if we should
-     X509_REQ_free(DATA_PTR(self));
-    */
+    arg = ossl_to_der_if_possible(arg);
+    in = ossl_obj2bio(arg);
     req = PEM_read_bio_X509_REQ(in, (X509_REQ **)&DATA_PTR(self), NULL, NULL);
     if (!req) {
 	BIO_reset(in);
-
 	req = d2i_X509_REQ_bio(in, (X509_REQ **)&DATA_PTR(self));
     }
-    if (!req) {
-	BIO_free(in);
-	ossl_raise(eX509ReqError, NULL);
-    }
     BIO_free(in);
+    if (!req) ossl_raise(eX509ReqError, NULL);
 
     return self;
 }

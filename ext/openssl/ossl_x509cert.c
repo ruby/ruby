@@ -136,13 +136,8 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 	/* create just empty X509Cert */
 	return self;
     }
+    arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(arg);
-
-    /*
-     * TODO:
-     * Check if we could free old X509
-     X509_free(DATA_PTR(self));
-    */
     x509 = PEM_read_bio_X509(in, (X509 **)&DATA_PTR(self), NULL, NULL);
     if (!x509) {
 	BIO_reset(in);
@@ -178,22 +173,18 @@ static VALUE
 ossl_x509_to_der(VALUE self)
 {
     X509 *x509;
-    BIO *out;
     VALUE str;
-    int status=0;
+    long len;
+    unsigned char *p;
 
     GetX509(self, x509);
-
-    out = BIO_new(BIO_s_mem());
-    if (!out) ossl_raise(eX509CertError, NULL);
-
-    if (!i2d_X509_bio(out, x509)) {
-	BIO_free(out);
+    if ((len = i2d_X509(x509, NULL)) <= 0)
 	ossl_raise(eX509CertError, NULL);
-    }
-    str = ossl_protect_membio2str(out, &status);
-    BIO_free(out);
-    if (status) rb_jump_tag(status);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if (i2d_X509(x509, &p) <= 0)
+	ossl_raise(eX509CertError, NULL);
+    ossl_str_adjust(str, p);
     
     return str;
 }
@@ -204,7 +195,6 @@ ossl_x509_to_pem(VALUE self)
     X509 *x509;
     BIO *out;
     VALUE str;
-    int status=0;
 	
     GetX509(self, x509);
     out = BIO_new(BIO_s_mem());
@@ -214,9 +204,7 @@ ossl_x509_to_pem(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CertError, NULL);
     }
-    str = ossl_protect_membio2str(out, &status);
-    BIO_free(out);
-    if (status) rb_jump_tag(status);
+    str = ossl_membio2str(out);
 
     return str;
 }
@@ -227,7 +215,6 @@ ossl_x509_to_text(VALUE self)
     X509 *x509;
     BIO *out;
     VALUE str;
-    int status=0;
 	
     GetX509(self, x509);
 
@@ -238,9 +225,7 @@ ossl_x509_to_text(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CertError, NULL);
     }
-    str = ossl_protect_membio2str(out, &status);
-    BIO_free(out);
-    if (status) rb_jump_tag(status);
+    str = ossl_membio2str(out);
 
     return str;
 }
@@ -323,7 +308,6 @@ ossl_x509_get_signature_algorithm(VALUE self)
     X509 *x509;
     BIO *out;
     VALUE str;
-    int status=0;
 
     GetX509(self, x509);
 	
@@ -334,9 +318,7 @@ ossl_x509_get_signature_algorithm(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CertError, NULL);
     }
-    str = ossl_protect_membio2str(out, &status);
-    BIO_free(out);
-    if (status) rb_jump_tag(status);
+    str = ossl_membio2str(out);
 
     return str;
 }

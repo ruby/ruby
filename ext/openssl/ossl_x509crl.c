@@ -92,33 +92,20 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
     X509_CRL *crl;
-    VALUE buffer;
+    VALUE arg;
 
-    if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
+    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
 	return self;
     }
-    StringValue(buffer);
-    
-    in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len);
-    if (!in) {
-	ossl_raise(eX509CRLError, NULL);
-    }
-    /*
-     * TODO:
-     * Check if we should free CRL
-     X509_CRL_free(DATA_PTR(self));
-    */
+    arg = ossl_to_der_if_possible(arg);
+    in = ossl_obj2bio(arg);
     crl = PEM_read_bio_X509_CRL(in, (X509_CRL **)&DATA_PTR(self), NULL, NULL);
     if (!crl) {
 	BIO_reset(in);
-
 	crl = d2i_X509_CRL_bio(in, (X509_CRL **)&DATA_PTR(self));
     }
-    if (!crl) {
-	BIO_free(in);
-	ossl_raise(eX509CRLError, NULL);
-    }
     BIO_free(in);
+    if (!crl) ossl_raise(eX509CRLError, NULL);
 
     return self;
 }

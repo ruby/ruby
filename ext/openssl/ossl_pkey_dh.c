@@ -119,28 +119,28 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     DH *dh;
     int g = 2;
     BIO *in;
-    VALUE buffer, gen;
+    VALUE arg, gen;
 
     GetPKey(self, pkey);
-    rb_scan_args(argc, argv, "11", &buffer, &gen);
-    if (FIXNUM_P(buffer)) {
+    rb_scan_args(argc, argv, "11", &arg, &gen);
+    if (FIXNUM_P(arg)) {
 	if (!NIL_P(gen)) {
 	    g = FIX2INT(gen);
 	}
-	if (!(dh = dh_generate(FIX2INT(buffer), g))) {
+	if (!(dh = dh_generate(FIX2INT(arg), g))) {
 	    ossl_raise(eDHError, NULL);
 	}
-    } else {
-	StringValue(buffer);
-	in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len);
-	if (!in){
-	    ossl_raise(eDHError, NULL);
-	}
-	if (!(dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL))) {
-	    BIO_free(in);
-	    ossl_raise(eDHError, NULL);
+    }
+    else {
+	arg = ossl_to_der_if_possible(arg);
+	in = ossl_obj2bio(arg);
+	dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL);
+	if (!dh){
+	    BIO_reset(in);
+	    dh = d2i_DHparams_bio(in, NULL);
 	}
 	BIO_free(in);
+	if (!dh) ossl_raise(eDHError, NULL);
     }
     if (!EVP_PKEY_assign_DH(pkey, dh)) {
 	DH_free(dh);
@@ -177,7 +177,6 @@ ossl_dh_export(VALUE self)
 {
     EVP_PKEY *pkey;
     BIO *out;
-    BUF_MEM *buf;
     VALUE str;
 
     GetPKeyDH(self, pkey);
@@ -188,9 +187,7 @@ ossl_dh_export(VALUE self)
 	BIO_free(out);
 	ossl_raise(eDHError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
+    str = ossl_membio2str(out);
 
     return str;
 }
@@ -228,7 +225,6 @@ ossl_dh_to_text(VALUE self)
 {
     EVP_PKEY *pkey;
     BIO *out;
-    BUF_MEM *buf;
     VALUE str;
 
     GetPKeyDH(self, pkey);
@@ -239,9 +235,7 @@ ossl_dh_to_text(VALUE self)
 	BIO_free(out);
 	ossl_raise(eDHError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
+    str = ossl_membio2str(out);
 
     return str;
 }
@@ -306,24 +300,17 @@ ossl_dh_compute_key(VALUE self, VALUE pub)
     BIGNUM *pub_key;
     VALUE str;
     int len;
-    char *buf;
 
     GetPKeyDH(self, pkey);
     dh = pkey->pkey.dh;
     pub_key = GetBNPtr(pub);
-
     len = DH_size(dh);
-    if (!(buf = OPENSSL_malloc(len))) {
-	ossl_raise(eDHError, "Cannot allocate mem for shared secret");
-    }
-
-    if ((len = DH_compute_key(buf, pub_key, dh)) < 0) {
-	OPENSSL_free(buf);
+    str = rb_str_new(0, len);
+    if ((len = DH_compute_key(RSTRING(str)->ptr, pub_key, dh)) < 0) {
 	ossl_raise(eDHError, NULL);
     }
-
-    str = rb_str_new(buf, len);
-    OPENSSL_free(buf);
+    RSTRING(str)->len = len;
+    RSTRING(str)->ptr[len] = 0;
 
     return str;
 }

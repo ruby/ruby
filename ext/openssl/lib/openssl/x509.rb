@@ -20,53 +20,29 @@
 
 module OpenSSL
   module X509
-
     class ExtensionFactory
       def create_extension(*arg)
-        if arg.size == 1 then arg = arg[0] end
-        type = arg.class
-        while type
-          method = "create_ext_from_#{type.name.downcase}".intern
-          return send(method, arg) if respond_to? method
-          type = type.superclass
+        if arg.size > 1
+          create_ext(*arg)
+        else
+          send("create_ext_from_"+arg[0].class.name.downcase, arg[0])
         end
-        raise TypeError, "Don't how to create ext from #{arg.class}"
-        ###send("create_ext_from_#{arg.class.name.downcase}", arg)
       end
 
-      #
-      # create_ext_from_array is built-in
-      #
+      def create_ext_from_array(ary)
+        raise ExtensionError, "unexpected array form" if ary.size > 3 
+        create_ext(ary[0], ary[1], ary[2])
+      end
+
       def create_ext_from_string(str) # "oid = critical, value"
-        unless str =~ /\s*=\s*/
-          raise ArgumentError, "string in format \"oid = value\" expected"
-        end
-        ary = []
-        ary << $`.sub(/^\s*/,"") # delete whitespaces from the beginning
-        rest = $'.sub(/\s*$/,"") # delete them from the end
-        if rest =~ /^critical,\s*/ # handle 'critical' option
-          ary << $'
-          ary << true
-        else
-          ary << rest
-        end
-        create_ext_from_array(ary)
+        oid, value = str.split(/=/, 2)
+        oid.strip!
+        value.strip!
+        create_ext(oid, value)
       end
       
-      #
-      # Create an extention from Hash
-      #   {"oid"=>sn|ln, "value"=>value, "critical"=>true|false}
-      #
       def create_ext_from_hash(hash)
-        unless (hash.has_key? "oid" and hash.has_key? "value")
-          raise ArgumentError,
-            "hash in format {\"oid\"=>..., \"value\"=>...} expected"
-        end
-        ary = []
-        ary << hash["oid"]
-        ary << hash["value"]
-        ary << hash["critical"] if hash.has_key? "critical"
-        create_ext_from_array(ary)
+        create_ext(hash["oid"], hash["value"], hash["critical"])
       end
     end # ExtensionFactory
     
@@ -87,47 +63,6 @@ module OpenSSL
       end
     end # Extension
     
-    class Attribute
-      def self.new(arg)
-        type = arg.class
-        while type
-          method = "new_from_#{type.name.downcase}".intern
-          return Attribute::send(method, arg) if Attribute::respond_to? method
-          type = type.superclass
-        end
-        raise "Don't how to make new #{self} from #{arg.class}"
-        ###Attribute::send("new_from_#{arg.class.name.downcase}", arg)
-      end
-
-      #
-      # Attribute::new_from_array(ary) is built-in method
-      #
-      def Attribute::new_from_string(str) # "oid = value"
-        unless str =~ /\s*=\s*/
-          raise ArgumentError, "string in format \"oid = value\" expected"
-        end
-        ary = []
-        ary << $`.sub(/^\s*/,"") # delete whitespaces from the beginning
-        ary << $'.sub(/\s*$/,"") # delete them from the end
-        Attribute::new_from_array(ary)
-      end
-
-      #
-      # Create an attribute from Hash
-      #   {"oid"=>sn|ln, "value"=>value, "critical"=>true|false}
-      #
-      def Attribute::new_from_hash(hash) # {"oid"=>"...", "value"=>"..."}
-        unless (hash.has_key? "oid" and hash.has_key? "value")
-          raise ArgumentError,
-             "hash in format {\"oid\"=>..., \"value\"=>...} expected"
-        end
-        ary = []
-        ary << hash["oid"]
-        ary << hash["value"]
-        Attribute::new_from_array(ary)
-      end
-    end # Attribute
-
     class Name
       def self.parse(str)
         ary = str.scan(/\s*([^\/,]+)\s*/).collect{|i| i[0].split("=") }

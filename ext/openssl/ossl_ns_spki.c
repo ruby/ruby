@@ -80,8 +80,7 @@ ossl_spki_to_pem(VALUE self)
     if (!(data = NETSCAPE_SPKI_b64_encode(spki))) {
 	ossl_raise(eSPKIError, NULL);
     }
-    str = rb_str_new2(data);
-    OPENSSL_free(data);
+    str = ossl_buf2str(data, strlen(data));
 
     return str;
 }

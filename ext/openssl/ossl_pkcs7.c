@@ -98,20 +98,13 @@ ossl_pkcs7_s_read_smime(VALUE klass, VALUE arg)
     BIO *in, *out;
     PKCS7 *pkcs7;
     VALUE ret, data;
-    int status = 0;
 
     in = ossl_obj2bio(arg);
     out = NULL;
-    if((pkcs7 = SMIME_read_PKCS7(in, &out)) == NULL){
-	BIO_free(in);
-	BIO_free(out);
-	ossl_raise(ePKCS7Error, NULL);
-    }
-    if(out) data = ossl_protect_membio2str(out, &status);
-    else data = Qnil;
+    pkcs7 = SMIME_read_PKCS7(in, &out);
     BIO_free(in);
-    BIO_free(out);
-    if(status) rb_jump_tag(status);
+    if(!pkcs7) ossl_raise(ePKCS7Error, NULL);
+    data = out ? ossl_membio2str(out) : Qnil;
     WrapPKCS7(cPKCS7, ret, pkcs7);
     ossl_pkcs7_set_data(ret, data);
     ossl_pkcs7_set_err_string(ret, Qnil);
@@ -123,11 +116,10 @@ static VALUE
 ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
 {
     VALUE pkcs7, data, flags;
-    BIO *out;
-    BIO *in;
+    BIO *out, *in;
     PKCS7 *p7;
     VALUE str;
-    int flg, status = 0;
+    int flg;
 
     rb_scan_args(argc, argv, "12", &pkcs7, &data, &flags);
     SafeGetPKCS7(pkcs7, p7);
@@ -145,10 +137,8 @@ ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
         BIO_free(in);
         ossl_raise(ePKCS7Error, NULL);
     }
-    str = ossl_protect_membio2str(out, &status);
     BIO_free(in);
-    BIO_free(out);
-    if(status) rb_jump_tag(status);
+    str = ossl_membio2str(out);
 
     return str;
 }
@@ -231,9 +221,9 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
 	sk_X509_pop_free(x509s, X509_free);
 	ossl_raise(ePKCS7Error, NULL);
     }
+    BIO_free(in);
     WrapPKCS7(cPKCS7, ret, p7);
     ossl_pkcs7_set_data(ret, data);
-    BIO_free(in);
     sk_X509_pop_free(x509s, X509_free);
 
     return ret;
@@ -256,16 +246,18 @@ ossl_pkcs7_alloc(VALUE klass)
 static VALUE
 ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 {
+    PKCS7 *p7;
     BIO *in;
-    VALUE s;
+    VALUE arg;
 
-    if(rb_scan_args(argc, argv, "01", &s) == 0)
+    if(rb_scan_args(argc, argv, "01", &arg) == 0)
 	return self;
-    in = ossl_obj2bio(s);
-
-    if (!PEM_read_bio_PKCS7(in, (PKCS7 **)&DATA_PTR(self), NULL, NULL)) {
-	BIO_free(in);
-	ossl_raise(ePKCS7Error, NULL);
+    arg = ossl_to_der_if_possible(arg);
+    in = ossl_obj2bio(arg);
+    p7 = PEM_read_bio_PKCS7(in, (PKCS7 **)&DATA_PTR(self), NULL, NULL);
+    if (!p7) {
+	BIO_reset(in);
+        p7 = d2i_PKCS7_bio(in, (PKCS7 **)&DATA_PTR(self));
     }
     BIO_free(in);
     ossl_pkcs7_set_data(self, Qnil);
@@ -534,14 +526,12 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
 	ossl_raise(ePKCS7Error, NULL);
     }
     ok = PKCS7_verify(p7, x509s, x509st, in, out, flg);
+    BIO_free(in);
     msg = ERR_reason_error_string(ERR_get_error());
     ossl_pkcs7_set_err_string(self, msg ? rb_str_new2(msg) : Qnil);
-    data = ossl_protect_membio2str(out, &status);
+    data = ossl_membio2str(out);
     ossl_pkcs7_set_data(self, data);
-    BIO_free(in);
-    BIO_free(out);
     sk_X509_pop_free(x509s, X509_free);
-    if(status) rb_jump_tag(status);
 
     return (ok == 1) ? Qtrue : Qfalse;
 }
@@ -556,7 +546,6 @@ ossl_pkcs7_decrypt(int argc, VALUE *argv, VALUE self)
     PKCS7 *p7;
     BIO *out;
     VALUE str;
-    int status = 0;
 
     rb_scan_args(argc, argv, "21", &pkey, &cert, &flags);
     GetPKCS7(self, p7);
@@ -569,9 +558,7 @@ ossl_pkcs7_decrypt(int argc, VALUE *argv, VALUE self)
 	BIO_free(out);
 	ossl_raise(ePKCS7Error, NULL);
     }
-    str = ossl_protect_membio2str(out, &status);
-    BIO_free(out);
-    if(status) rb_jump_tag(status);
+    str = ossl_membio2str(out); /* out will be free */
 
     return str;
 }
@@ -612,12 +599,31 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
 }
 
 static VALUE
+ossl_pkcs7_to_der(VALUE self)
+{
+    PKCS7 *pkcs7;
+    VALUE str;
+    long len;
+    unsigned char *p;
+
+    GetPKCS7(self, pkcs7);
+    if((len = i2d_PKCS7(pkcs7, NULL)) <= 0)
+	ossl_raise(ePKCS7Error, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(i2d_PKCS7(pkcs7, &p) <= 0)
+	ossl_raise(ePKCS7Error, NULL);
+    ossl_str_adjust(str, p);
+
+    return str;
+}
+
+static VALUE
 ossl_pkcs7_to_pem(VALUE self)
 {
     PKCS7 *pkcs7;
     BIO *out;
     VALUE str;
-    int status = 0;
 	
     GetPKCS7(self, pkcs7);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -627,10 +633,8 @@ ossl_pkcs7_to_pem(VALUE self)
 	BIO_free(out);
 	ossl_raise(ePKCS7Error, NULL);
     }
-    str = ossl_protect_membio2str(out, &status);
-    BIO_free(out);
-    if(status) rb_jump_tag(status);
-	
+    str = ossl_membio2str(out);
+
     return str;
 }
 
@@ -750,6 +754,7 @@ Init_ossl_pkcs7()
     rb_define_method(cPKCS7, "decrypt", ossl_pkcs7_decrypt, -1);
     rb_define_method(cPKCS7, "to_pem", ossl_pkcs7_to_pem, 0);
     rb_define_alias(cPKCS7,  "to_s", "to_pem");
+    rb_define_method(cPKCS7, "to_der", ossl_pkcs7_to_der, 0);
 
     cPKCS7Signer = rb_define_class_under(mPKCS7, "Signer", rb_cObject);
     rb_define_alloc_func(cPKCS7Signer, ossl_pkcs7si_alloc);

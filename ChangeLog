@@ -1,3 +1,43 @@
+Wed Sep 17 18:03:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl: all files are reviewed to simplify and avoid memory leak.
+
+	* ext/openssl/extconf.rb: add check for assert.h.
+
+	* ext/openssl/ossl.c (ossl_buf2str): new function to convert 
+	  C buffer to String and free buffer.
+
+	* ext/openssl/ossl.c (ossl_x509_ary2sk): new function to convert
+	  Array of OpenSSL::X509 to STACK_OF(X509) with exception safe.
+
+	* ext/openssl/ossl.c (ossl_to_der, ossl_to_der_if_possible): new
+	  functions to convert object to DER string.
+
+	* ext/openssl/ossl.h: ditto.
+
+	* ext/openssl/ossl_bio.c (ossl_membio2str): new function to convert
+	  BIO to String object and free BIO.
+
+	* ext/openssl/ossl_bio.h: ditto.
+
+	* ext/openssl/ossl_pkcs7.c (ossl_pkcs7_to_der): add for "to_der".
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_to_der): ditto.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_to_der): ditto.
+
+	* ext/openssl/ossl_x509ext.c (create_ext_from_array): removed
+	  and reimplement in openssl/x509.rb.
+
+	* ext/openssl/ossl_x509attr.c: reimplemented and disable some
+	  method temporarily. this class doesn't work fine without ASN.1
+	  data support;-) I'll rewrite in near future.
+
+	* ext/openssl/lib/openssl/x509.c (X509::Attribute): get rid off
+	  unused code.
+
+	* ext/openssl/lib/openssl/x509.c (X509::ExtensionFactory): refine all.
+
 Mon Sep 16 22:25:06 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: add negative tests of row_sep.
@@ -65,9 +105,8 @@ Thu Sep 11 08:43:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Sep 10 22:47:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openssl/ossl.h: define OSSL_NO_CONF_API for win32 platform.
+	* ext/openssl/ossl.h: add a workaround for win32 platform.
 	  libeay32.dll doesn't export functions defined in conf_api.h.
-	  this workaround is to avoid link error.
 
 	* ext/openssl/ossl_config.c (ossl_config_initialize): ditto.
 

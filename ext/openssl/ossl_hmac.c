@@ -124,8 +124,7 @@ ossl_hmac_digest(VALUE self)
 	
     GetHMAC(self, ctx);
     hmac_final(ctx, &buf, &buf_len);
-    digest = rb_str_new(buf, buf_len);
-    OPENSSL_free(buf);
+    ossl_buf2str(buf, buf_len);
     
     return digest;
 }
@@ -144,9 +143,8 @@ ossl_hmac_hexdigest(VALUE self)
 	OPENSSL_free(buf);
 	ossl_raise(eHMACError, "Memory alloc error");
     }
-    hexdigest = rb_str_new(hexbuf, 2 * buf_len);
     OPENSSL_free(buf);
-    OPENSSL_free(hexbuf);
+    hexdigest = ossl_buf2str(hexbuf, 2 * buf_len);
 
     return hexdigest;
 }
@@ -180,9 +178,8 @@ ossl_hmac_s_hexdigest(VALUE klass, VALUE digest, VALUE key, VALUE data)
     if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
 	ossl_raise(eHMACError, "Cannot convert buf to hexbuf");
     }
-    hexdigest = rb_str_new(hexbuf, 2 * buf_len);
-    OPENSSL_free(hexbuf);
-	
+    hexdigest = ossl_buf2str(hexbuf, 2 * buf_len);
+
     return hexdigest;
 }
 

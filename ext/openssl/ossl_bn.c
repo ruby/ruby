@@ -167,41 +167,27 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
     switch (base) {
     case 0:
 	len = BN_bn2mpi(bn, NULL);
-	if (!(buf = OPENSSL_malloc(len))) {
-	    ossl_raise(eBNError, "Cannot allocate mem for BN");
-	}
-	if (BN_bn2mpi(bn, buf) != len) {
-	    OPENSSL_free(buf);
+        str = rb_str_new(0, len);
+	if (BN_bn2mpi(bn, RSTRING(str)->ptr) != len)
 	    ossl_raise(eBNError, NULL);
-	}
 	break;
     case 2:
 	len = BN_num_bytes(bn);
-	if (!(buf = OPENSSL_malloc(len))) {
-	    ossl_raise(eBNError, "Cannot allocate mem for BN");
-	}
-	if (BN_bn2bin(bn, buf) != len) {
-	    OPENSSL_free(buf);
+        str = rb_str_new(0, len);
+	if (BN_bn2bin(bn, RSTRING(str)->ptr) != len)
 	    ossl_raise(eBNError, NULL);
-	}
 	break;
     case 10:
-	if (!(buf = BN_bn2dec(bn))) {
-	    ossl_raise(eBNError, NULL);
-	}
-	len = strlen(buf);
+	if (!(buf = BN_bn2dec(bn))) ossl_raise(eBNError, NULL);
+	str = ossl_buf2str(buf, strlen(buf));
 	break;
     case 16:
-	if (!(buf = BN_bn2hex(bn))) {
-	    ossl_raise(eBNError, NULL);
-	}
-	len = strlen(buf);
+	if (!(buf = BN_bn2hex(bn))) ossl_raise(eBNError, NULL);
+	str = ossl_buf2str(buf, strlen(buf));
 	break;
     default:
 	ossl_raise(rb_eArgError, "illegal radix %d", base);
     }
-    str = rb_str_new(buf, len);
-    OPENSSL_free(buf);
 
     return str;
 }

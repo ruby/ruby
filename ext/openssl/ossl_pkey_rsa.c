@@ -110,43 +110,41 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     RSA *rsa;
     BIO *in;
     char *passwd = NULL;
-    VALUE buffer, pass;
+    VALUE arg, pass;
 	
     GetPKey(self, pkey);
-	
-    rb_scan_args(argc, argv, "11", &buffer, &pass);
-
-    if (FIXNUM_P(buffer)) {
-	rsa = rsa_generate(FIX2INT(buffer), NIL_P(pass) ? RSA_F4 : NUM2INT(pass));
-	if (!rsa) {
-	    ossl_raise(eRSAError, NULL);
-	}
+    rb_scan_args(argc, argv, "11", &arg, &pass);
+    if (FIXNUM_P(arg)) {
+	rsa = rsa_generate(FIX2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2INT(pass));
+	if (!rsa) ossl_raise(eRSAError, NULL);
     }
     else {
-	StringValue(buffer);
-	if (!NIL_P(pass)) {
-	    passwd = StringValuePtr(pass);
-	}
-	if (!(in = BIO_new_mem_buf(RSTRING(buffer)->ptr, RSTRING(buffer)->len))){
-	    ossl_raise(eRSAError, NULL);
-	}
-
+	if (!NIL_P(pass)) passwd = StringValuePtr(pass);
+	arg = ossl_to_der_if_possible(arg);
+	in = ossl_obj2bio(arg);
 	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
 	if (!rsa) {
 	    BIO_reset(in);
-
 	    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
 	}
 	if (!rsa) {
 	    BIO_reset(in);
-
 	    rsa = PEM_read_bio_RSA_PUBKEY(in, NULL, NULL, NULL);
 	}
-	BIO_free(in);
-
 	if (!rsa) {
-	    ossl_raise(eRSAError, "Neither PUB key nor PRIV key:");
+	    BIO_reset(in);
+	    rsa = d2i_RSAPrivateKey_bio(in, NULL);
 	}
+	if (!rsa) {
+	    BIO_reset(in);
+	    rsa = d2i_RSAPublicKey_bio(in, NULL);
+	}
+	if (!rsa) {
+	    BIO_reset(in);
+	    rsa = d2i_RSA_PUBKEY_bio(in, NULL);
+	}
+	BIO_free(in);
+	if (!rsa) ossl_raise(eRSAError, "Neither PUB key nor PRIV key:");
     }
     if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
 	RSA_free(rsa);
@@ -184,7 +182,6 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
     BIO *out;
-    BUF_MEM *buf;
     const EVP_CIPHER *ciph = NULL;
     char *passwd = NULL;
     VALUE cipher, pass, str;
@@ -214,36 +211,29 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 	    ossl_raise(eRSAError, NULL);
 	}
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
+    str = ossl_membio2str(out);
     
     return str;
 }
+
+#define ossl_rsa_buf_size(pkey) (RSA_size((pkey)->pkey.rsa)+16)
 
 static VALUE
 ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
 {
     EVP_PKEY *pkey;
-    char *buf;
     int buf_len;
     VALUE str;
 	
     GetPKeyRSA(self, pkey);
-
     StringValue(buffer);
-	
-    if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
-	ossl_raise(eRSAError, NULL);
-    }
+    str = rb_str_new(0, ossl_rsa_buf_size(pkey));
     buf_len = RSA_public_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr,
-				 buf, pkey->pkey.rsa, RSA_PKCS1_PADDING);
-    if (buf_len < 0){
-	OPENSSL_free(buf);
-	ossl_raise(eRSAError, NULL);
-    }
-    str = rb_str_new(buf, buf_len);
-    OPENSSL_free(buf);
+				 RSTRING(str)->ptr, pkey->pkey.rsa,
+				 RSA_PKCS1_PADDING);
+    if (buf_len < 0) ossl_raise(eRSAError, NULL);
+    RSTRING(str)->len = buf_len;
+    RSTRING(str)->ptr[buf_len] = 0;
 
     return str;
 }
@@ -252,23 +242,18 @@ static VALUE
 ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
 {
     EVP_PKEY *pkey;
-    char *buf;
     int buf_len;
     VALUE str;
 
     GetPKeyRSA(self, pkey);
     StringValue(buffer);
-    if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
-	ossl_raise(eRSAError, NULL);
-    }
+    str = rb_str_new(0, ossl_rsa_buf_size(pkey));
     buf_len = RSA_public_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr,
-				 buf, pkey->pkey.rsa, RSA_PKCS1_PADDING);
-    if(buf_len < 0) {
-	OPENSSL_free(buf);
-	ossl_raise(eRSAError, NULL);
-    }
-    str = rb_str_new(buf, buf_len);
-    OPENSSL_free(buf);
+				 RSTRING(str)->ptr, pkey->pkey.rsa,
+				 RSA_PKCS1_PADDING);
+    if(buf_len < 0) ossl_raise(eRSAError, NULL);
+    RSTRING(str)->len = buf_len;
+    RSTRING(str)->ptr[buf_len] = 0;
     
     return str;
 }
@@ -277,7 +262,6 @@ static VALUE
 ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 {
     EVP_PKEY *pkey;
-    char *buf;
     int buf_len;
     VALUE str;
 	
@@ -286,17 +270,13 @@ ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 	ossl_raise(eRSAError, "PRIVATE key needed for this operation!");
     }	
     StringValue(buffer);
-    if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
-	ossl_raise(eRSAError, "Memory alloc error");
-    }
+    str = rb_str_new(0, ossl_rsa_buf_size(pkey));
     buf_len = RSA_private_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr,
-				  buf, pkey->pkey.rsa, RSA_PKCS1_PADDING);
-    if (buf_len < 0){
-	OPENSSL_free(buf);
-	ossl_raise(eRSAError, NULL);
-    }
-    str = rb_str_new(buf, buf_len);
-    OPENSSL_free(buf);
+				  RSTRING(str)->ptr, pkey->pkey.rsa,
+				  RSA_PKCS1_PADDING);
+    if (buf_len < 0) ossl_raise(eRSAError, NULL);
+    RSTRING(str)->len = buf_len;
+    RSTRING(str)->ptr[buf_len] = 0;
     
     return str;
 }
@@ -305,7 +285,6 @@ static VALUE
 ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
 {
     EVP_PKEY *pkey;
-    char *buf;
     int buf_len;
     VALUE str;
 
@@ -314,17 +293,13 @@ ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
 	ossl_raise(eRSAError, "Private RSA key needed!");
     }
     StringValue(buffer);
-    if (!(buf = OPENSSL_malloc(RSA_size(pkey->pkey.rsa) + 16))) {
-	ossl_raise(eRSAError, "Memory alloc error");
-    }
+    str = rb_str_new(0, ossl_rsa_buf_size(pkey));
     buf_len = RSA_private_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr,
-				  buf, pkey->pkey.rsa, RSA_PKCS1_PADDING);
-    if(buf_len < 0) {
-	OPENSSL_free(buf);
-	ossl_raise(eRSAError, NULL);
-    }
-    str = rb_str_new(buf, buf_len);
-    OPENSSL_free(buf);
+				  RSTRING(str)->ptr, pkey->pkey.rsa,
+				  RSA_PKCS1_PADDING);
+    if (buf_len < 0) ossl_raise(eRSAError, NULL);
+    RSTRING(str)->len = buf_len;
+    RSTRING(str)->ptr[buf_len] = 0;
 
     return str;
 }
@@ -359,14 +334,13 @@ ossl_rsa_get_params(VALUE self)
 /*
  * Prints all parameters of key to buffer
  * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
+ * Don't use :-)) (It's up to you)
  */
 static VALUE
 ossl_rsa_to_text(VALUE self)
 {
     EVP_PKEY *pkey;
     BIO *out;
-    BUF_MEM *buf;
     VALUE str;
 
     GetPKeyRSA(self, pkey);
@@ -377,9 +351,7 @@ ossl_rsa_to_text(VALUE self)
 	BIO_free(out);
 	ossl_raise(eRSAError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
+    str = ossl_membio2str(out);
 
     return str;
 }

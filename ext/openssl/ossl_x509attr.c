@@ -71,69 +71,128 @@ DupX509AttrPtr(VALUE obj)
 /*
  * Private
  */
-static VALUE 
-ossl_x509attr_s_new_from_array(VALUE klass, VALUE ary)
+static VALUE
+ossl_x509attr_alloc(VALUE klass)
 {
     X509_ATTRIBUTE *attr;
-    int nid = NID_undef;
-    VALUE item, obj;
+    VALUE obj;
 
-    Check_Type(ary, T_ARRAY);
-    if (RARRAY(ary)->len != 2) {
-	ossl_raise(eX509AttrError, "unsupported ary structure");
-    }
-    /* key [0] */
-    item = RARRAY(ary)->ptr[0];
-    StringValue(item);
-    if (!(nid = OBJ_ln2nid(RSTRING(item)->ptr))) {
-	if (!(nid = OBJ_sn2nid(RSTRING(item)->ptr))) {
-	    ossl_raise(eX509AttrError, NULL);
-	}
-    }
-    /* data [1] */
-    item = RARRAY(ary)->ptr[1];
-    StringValuePtr(item);
-    if (!(attr = X509_ATTRIBUTE_create(nid, MBSTRING_ASC, RSTRING(item)->ptr))) {
+    if (!(attr = X509_ATTRIBUTE_new())) 
 	ossl_raise(eX509AttrError, NULL);
-    }
     WrapX509Attr(klass, obj, attr);
-    
+
     return obj;
 }
 
-#if 0
-/*
- * is there any print for attribute?
- * (NO, but check t_req.c in crypto/asn1)
- */
 static VALUE
-ossl_x509attr_to_a(VALUE self)
+ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 {
-    ossl_x509attr *attrp = NULL;
-    BIO *out = NULL;
-    BUF_MEM *buf = NULL;
-    int nid = NID_undef;
-    VALUE ary, value;
-	
-    GetX509Attr(obj, attrp);
-    ary = rb_ary_new2(2);
-    nid = OBJ_obj2nid(X509_ATTRIBUTE_get0_object(attrp->attribute));
-    rb_ary_push(ary, rb_str_new2(OBJ_nid2sn(nid)));
-    if (!(out = BIO_new(BIO_s_mem())))
-	ossl_raise(eX509ExtensionError, NULL);
-    if (!X509V3_???_print(out, extp->extension, 0, 0)) {
-	BIO_free(out);
-	ossl_raise(eX509ExtensionError, NULL);
-    }
-    BIO_get_mem_ptr(out, &buf);
-    value = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
-    rb_funcall(value, rb_intern("tr!"), 2, rb_str_new2("\n"), rb_str_new2(","));
-    rb_ary_push(ary, value);
+    VALUE oid, value;
+    X509_ATTRIBUTE *attr;
+    unsigned char *p;
 
-    return ary;
+    if(rb_scan_args(argc, argv, "11", &oid, &value) == 1){
+	GetX509Attr(self, attr);
+	oid = ossl_to_der_if_possible(oid);
+	p = RSTRING(oid)->ptr;
+	if(!d2i_X509_ATTRIBUTE(&attr, &p, RSTRING(oid)->len)){
+	    ossl_raise(eX509AttrError, NULL);
+	}
+	return self;
+    }
+    rb_funcall(self, rb_intern("oid="), 1, oid);
+    rb_funcall(self, rb_intern("value="), 1, value);
+
+    return self;
 }
+
+static VALUE
+ossl_x509attr_set_oid(VALUE self, VALUE oid)
+{
+    X509_ATTRIBUTE *attr;
+    ASN1_OBJECT *obj;
+    char *s;
+ 
+    GetX509Attr(self, attr);
+    s = StringValuePtr(oid);
+    obj = OBJ_txt2obj(s, 0);
+    if(!obj) obj = OBJ_txt2obj(s, 1);
+    if(!obj) ossl_raise(eX509AttrError, NULL);
+    X509_ATTRIBUTE_set1_object(attr, obj);
+ 
+    return oid;
+}
+
+static VALUE
+ossl_x509attr_get_oid(VALUE self)
+{
+    X509_ATTRIBUTE *attr;
+    ASN1_OBJECT *oid;
+    BIO *out;
+    VALUE ret;
+    int nid;
+
+    GetX509Attr(self, attr);
+    oid = X509_ATTRIBUTE_get0_object(attr);
+    if ((nid = OBJ_obj2nid(oid)) != NID_undef)
+	ret = rb_str_new2(OBJ_nid2sn(nid));
+    else{
+	if (!(out = BIO_new(BIO_s_mem())))
+	    ossl_raise(eX509AttrError, NULL);
+	i2a_ASN1_OBJECT(out, oid);
+	ret = ossl_membio2str(out);
+    }
+  
+    return ret;
+}
+
+#if defined(HAVE_ST_X509_ATTRIBUTE_SINGLE) || defined(HAVE_ST_SINGLE)
+#  define OSSL_X509ATTR_IS_SINGLE(attr)  ((attr)->single)
+#  define OSSL_X509ATTR_SET_SINGLE(attr) ((attr)->single = 1)
+#else
+#  define OSSL_X509ATTR_IS_SINGLE(attr)  (!(attr)->set)
+#  define OSSL_X509ATTR_SET_SINGLE(attr) ((attr)->set = 0)
 #endif
+
+static VALUE
+ossl_x509attr_set_value(VALUE self, VALUE value)
+{
+   /*
+    * It has not been work fine and temporarily disabled.
+    * It may be reimplemented with ASN.1 support.
+    */
+    return value;
+}
+
+static VALUE
+ossl_x509attr_get_value(VALUE self)
+{
+   /*
+    * It has not been work fine and temporarily disabled.
+    * It may be reimplemented with ASN.1 support.
+    */
+    return Qnil;
+}
+
+static VALUE
+ossl_x509attr_to_der(VALUE self)
+{
+    X509_ATTRIBUTE *attr;
+    VALUE str;
+    int len;
+    unsigned char *p;
+
+    GetX509Attr(self, attr);
+    if((len = i2d_X509_ATTRIBUTE(attr, NULL)) <= 0)
+	ossl_raise(eX509AttrError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(i2d_X509_ATTRIBUTE(attr, &p) <= 0)
+	ossl_raise(eX509AttrError, NULL);
+    RSTRING(str)->len = p - (unsigned char*)RSTRING(str)->ptr; 
+
+    return str;
+}
 
 /*
  * X509_ATTRIBUTE init
@@ -144,9 +203,11 @@ Init_ossl_x509attr()
     eX509AttrError = rb_define_class_under(mX509, "AttributeError", eOSSLError);
 
     cX509Attr = rb_define_class_under(mX509, "Attribute", rb_cObject);
-    rb_define_singleton_method(cX509Attr, "new_from_array", ossl_x509attr_s_new_from_array, 1);
-/*
- * TODO:
-    rb_define_method(cX509Attr, "to_a", ossl_x509attr_to_a, 0);
- */
+    rb_define_alloc_func(cX509Attr, ossl_x509attr_alloc);
+    rb_define_method(cX509Attr, "initialize", ossl_x509attr_initialize, -1);
+    rb_define_method(cX509Attr, "oid=", ossl_x509attr_set_oid, 1);
+    rb_define_method(cX509Attr, "oid", ossl_x509attr_get_oid, 0);
+    rb_define_method(cX509Attr, "value=", ossl_x509attr_set_value, 1);
+    rb_define_method(cX509Attr, "value", ossl_x509attr_get_value, 0);
+    rb_define_method(cX509Attr, "to_der", ossl_x509attr_to_der, 0);
 }

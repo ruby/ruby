@@ -149,23 +149,17 @@ ossl_pkey_to_der(VALUE self)
 {
     EVP_PKEY *pkey;
     VALUE str;
-    BIO *out;
-    BUF_MEM *buf;
+    long len;
+    unsigned char *p;
     
     GetPKey(self, pkey);
-
-    out = BIO_new(BIO_s_mem());
-    if (!out) ossl_raise(ePKeyError, NULL);
-
-    if (!i2d_PUBKEY_bio(out, pkey)) {
-	BIO_free(out);
+    if((len = i2d_PUBKEY(pkey, NULL)) <= 0)
 	ossl_raise(ePKeyError, NULL);
-    }
-    
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-
-    BIO_free(out);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(len = i2d_PUBKEY(pkey, &p) <= 0)
+	ossl_raise(ePKeyError, NULL);
+    ossl_str_adjust(str, p);
 
     return str;
 }
@@ -175,7 +169,6 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 {
     EVP_PKEY *pkey;
     EVP_MD_CTX ctx;
-    char *buf;
     int buf_len;
     VALUE str;
 
@@ -186,15 +179,12 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     EVP_SignInit(&ctx, GetDigestPtr(digest));
     StringValue(data);
     EVP_SignUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);
-    if (!(buf = OPENSSL_malloc(EVP_PKEY_size(pkey) + 16))) {
+    str = rb_str_new(0, EVP_PKEY_size(pkey)+16);
+    if (!EVP_SignFinal(&ctx, RSTRING(str)->ptr, &buf_len, pkey))
 	ossl_raise(ePKeyError, NULL);
-    }
-    if (!EVP_SignFinal(&ctx, buf, &buf_len, pkey)) {
-	OPENSSL_free(buf);
-	ossl_raise(ePKeyError, NULL);
-    }	
-    str = rb_str_new(buf, buf_len);
-    OPENSSL_free(buf);
+    assert(buf_len <= RSTRING(str)->len);
+    RSTRING(str)->len = buf_len;
+    RSTRING(str)->ptr[buf_len] = 0;
 
     return str;
 }

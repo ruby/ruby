@@ -166,8 +166,7 @@ ossl_digest_digest(VALUE self)
 	
     GetDigest(self, ctx);
     digest_final(ctx, &buf, &buf_len);
-    digest = rb_str_new(buf, buf_len);
-    OPENSSL_free(buf);
+    digest = ossl_buf2str(buf, buf_len);
 	
     return digest;
 }
@@ -186,9 +185,8 @@ ossl_digest_hexdigest(VALUE self)
 	OPENSSL_free(buf);
 	ossl_raise(eDigestError, "Memory alloc error");
     }
-    hexdigest = rb_str_new(hexbuf, 2 * buf_len);
     OPENSSL_free(buf);
-    OPENSSL_free(hexbuf);
+    hexdigest = ossl_buf2str(hexbuf, 2 * buf_len);
 
     return hexdigest;
 }

@@ -103,16 +103,16 @@ static VALUE
 ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
-    BIO *bio;
+    unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
-	bio = ossl_obj2bio(arg);
-	if(!d2i_OCSP_REQUEST_bio(bio, (OCSP_REQUEST**)&DATA_PTR(self))){
-	    BIO_free(bio);
+	arg = ossl_to_der_if_possible(arg);
+	p = (unsigned char*)RSTRING(arg)->ptr;
+	if(!d2i_OCSP_REQUEST((OCSP_REQUEST**)&DATA_PTR(self), &p,
+			     RSTRING(arg)->len)){
 	    ossl_raise(eOCSPError, "cannot load DER encoded request");
 	}
-	BIO_free(bio);
     }
 
     return self;
@@ -210,7 +210,7 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
     EVP_PKEY *key;
     STACK_OF(X509) *x509s;
     unsigned long flg;
-    int ret, status = 0;
+    int ret;
 
     rb_scan_args(argc, argv, "22", &signer_cert, &signer_key, &certs, &flags);
     GetOCSPReq(self, req);
@@ -221,11 +221,7 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
 	x509s = sk_X509_new_null();
 	flags |= OCSP_NOCERTS;
     }
-    else x509s = ossl_protect_x509_ary2sk(certs, &status);
-    if(status){
-	sk_X509_pop_free(x509s, X509_free);
-	rb_jump_tag(status);
-    }
+    else x509s = ossl_x509_ary2sk(certs);
     ret = OCSP_request_sign(req, signer, key, EVP_sha1(), x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
     if(!ret) ossl_raise(eOCSPError, NULL);
@@ -258,16 +254,19 @@ static VALUE
 ossl_ocspreq_to_der(VALUE self)
 {
     OCSP_REQUEST *req;
-    BIO *bio;
     VALUE str;
-    int status = 0;
+    unsigned char *p;
+    long len;
 
     GetOCSPReq(self, req);
-    if(!(bio = BIO_new(BIO_s_mem()))) rb_raise(eOCSPError, NULL);
-    i2d_OCSP_REQUEST_bio(bio, req);
-    str = ossl_protect_membio2str(bio, &status);
-    BIO_free(bio);
-    if(status) rb_jump_tag(status);
+
+    if((len = i2d_OCSP_REQUEST(req, NULL)) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(i2d_OCSP_REQUEST(req, &p) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    ossl_str_adjust(str, p);
 
     return str;
 }
@@ -308,15 +307,17 @@ static VALUE
 ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
-    BIO *bio;
+    unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
-    bio = ossl_obj2bio(arg);
-    if(!d2i_OCSP_RESPONSE_bio(bio, (OCSP_RESPONSE**)&DATA_PTR(self))){
-	BIO_free(bio);
-	ossl_raise(eOCSPError, "cannot load DER encoded response");
+    if(!NIL_P(arg)){
+	arg = ossl_to_der_if_possible(arg);
+	p = RSTRING(arg)->ptr;
+	if(!d2i_OCSP_RESPONSE((OCSP_RESPONSE**)&DATA_PTR(self), &p,
+			      RSTRING(arg)->len)){
+	    ossl_raise(eOCSPError, "cannot load DER encoded response");
+	}
     }
-    BIO_free(bio);
 
     return self;
 }
@@ -364,16 +365,18 @@ static VALUE
 ossl_ocspres_to_der(VALUE self)
 {
     OCSP_RESPONSE *res;
-    BIO *bio;
     VALUE str;
-    int status = 0;
+    long len;
+    unsigned char *p;
 
     GetOCSPRes(self, res);
-    if(!(bio = BIO_new(BIO_s_mem()))) rb_raise(eOCSPError, NULL);
-    i2d_OCSP_RESPONSE_bio(bio, res);
-    str = ossl_protect_membio2str(bio, &status);
-    BIO_free(bio);
-    if(status) rb_jump_tag(status);
+    if((len = i2d_OCSP_RESPONSE(res, NULL)) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(i2d_OCSP_RESPONSE(res, NULL) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    ossl_str_adjust(str, p);
 
     return str;
 }
@@ -556,7 +559,7 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
     EVP_PKEY *key;
     STACK_OF(X509) *x509s;
     unsigned long flg;
-    int ret, status = 0;
+    int ret;
 
     rb_scan_args(argc, argv, "22", &signer_cert, &signer_key, &certs, &flags);
     GetOCSPBasicRes(self, bs);
@@ -568,8 +571,7 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
 	flg |= OCSP_NOCERTS;
     }
     else{
-	x509s = ossl_protect_x509_ary2sk(certs, &status);
-	if(status) rb_jump_tag(status);
+	x509s = ossl_x509_ary2sk(certs);
     }
     ret = OCSP_basic_sign(bs, signer, key, EVP_sha1(), x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
