@@ -1,3 +1,12 @@
+Mon Jun 10 19:02:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* numeric.c (fix_lshift): negative shift count means right shift.
+
+	* numeric.c (fix_rshift): return -1 when left side operand is
+	  negative.
+
+	* parse.y (yylex): `0_' should be an error. (ruby-bugs-ja:PR#239)
+
 Sun Jun  9 17:40:41 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl: change the callback mechanism.

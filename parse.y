@@ -3491,6 +3491,10 @@ yylex()
 			yylval.val = rb_cstr_to_inum(tok(), 8, Qfalse);
 			return tINTEGER;
 		    }
+		    if (nondigit) {
+			pushback(c);
+			goto trailing_uc;
+		    }
 		}
 		if (c > '7' && c <= '9') {
 		    yyerror("Illegal octal digit");
