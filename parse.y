@@ -2046,6 +2046,7 @@ here_document(term)
 	    free(eos);
 	    return 0;
 	}
+	sourceline++;
 	if (strncmp(eos, RSTRING(line)->ptr, len) == 0 &&
 	    (RSTRING(line)->ptr[len] == '\n' ||
 	     RSTRING(line)->ptr[len] == '\r')) {
@@ -2054,7 +2055,6 @@ here_document(term)
 
 	lex_pbeg = lex_p = RSTRING(line)->ptr;
 	lex_pend = lex_p + RSTRING(line)->len;
-	sourceline++;
 	switch (parse_string(term, '\n')) {
 	  case STRING:
 	  case XSTRING:
