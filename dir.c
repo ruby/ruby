@@ -69,7 +69,7 @@ char *strchr _((char*,char));
 
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
-#define FNM_PERIOD	0x04
+#define FNM_DOTMATCH	0x04
 #define FNM_CASEFOLD	0x08
 
 #define FNM_NOMATCH	1
@@ -153,7 +153,7 @@ fnmatch(pat, string, flags)
     const char *s = string;
     int escape = !(flags & FNM_NOESCAPE);
     int pathname = flags & FNM_PATHNAME;
-    int period = flags & FNM_PERIOD;
+    int period = !(flags & FNM_DOTMATCH);
     int nocase = flags & FNM_CASEFOLD;
 
     while (c = *pat++) {
@@ -188,7 +188,7 @@ fnmatch(pat, string, flags)
 	    pat--;
 	    while (*s) {
 		if ((c == '[' || downcase(*s) == test) &&
-		    !fnmatch(pat, s, flags & ~FNM_PERIOD))
+		    !fnmatch(pat, s, flags | FNM_DOTMATCH))
 		    return 0;
 		else if (ISDIRSEP(*s))
 		    break;
@@ -793,13 +793,23 @@ glob_helper(path, sub, flags, func, arg)
     }
 }
 
+static void
+rb_glob2(path, flags, func, arg)
+    char *path;
+    int flags;
+    void (*func) _((const char*, VALUE));
+    VALUE arg;
+{
+    glob_helper(path, 0, flags, func, arg);
+}
+
 void
 rb_glob(path, func, arg)
     char *path;
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    glob_helper(path, 0, FNM_PERIOD, func, arg);
+    rb_glob2(path, 0, func, arg);
 }
 
 void
@@ -808,10 +818,8 @@ rb_globi(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    glob_helper(path, 0, FNM_PERIOD|FNM_CASEFOLD, func, arg);
+    rb_glob2(path, FNM_CASEFOLD, func, arg);
 }
-
-static void push_pattern _((const char *path, VALUE ary));
 
 static void
 push_pattern(path, ary)
@@ -829,17 +837,19 @@ push_pattern(path, ary)
 }
 
 static void
-push_globs(ary, s)
+push_globs(ary, s, flags)
     VALUE ary;
     char *s;
+    int flags;
 {
-    rb_glob(s, push_pattern, ary);
+    rb_glob2(s, flags, push_pattern, ary);
 }
 
 static void
-push_braces(ary, s)
+push_braces(ary, s, flags)
     VALUE ary;
     char *s;
+    int flags;
 {
     char *buf;
     char *p, *t, *b;
@@ -878,31 +888,35 @@ push_braces(ary, s)
 	    }
 	    memcpy(b, t, p-t);
 	    strcpy(b+(p-t), rbrace+1);
-	    push_braces(ary, buf);
+	    push_braces(ary, buf, flags);
 	}
 	free(buf);
     }
     else {
-	push_globs(ary, s);
+	push_globs(ary, s, flags);
     }
 }
 
 #define isdelim(c) ((c)=='\0')
 
 static VALUE
-dir_s_glob(dir, str)
-    VALUE dir, str;
+rb_push_glob(str, flags)
+    VALUE str;
+    int flags;
 {
     char *p, *pend;
     char *buf;
     char *t;
-    int nest;
-    VALUE ary = 0;
+    int nest, maxnest;
+    int noescape = flags & FNM_NOESCAPE;
+    VALUE ary;
+
+    if (rb_block_given_p())
+	ary = Qnil;
+    else
+	ary = rb_ary_new();
 
     SafeStringValue(str);
-    if (!rb_block_given_p()) {
-	ary = rb_ary_new();
-    }
     buf = xmalloc(RSTRING(str)->len + 1);
 
     p = RSTRING(str)->ptr;
@@ -913,28 +927,50 @@ dir_s_glob(dir, str)
 	nest = 0;
 	while (p < pend && isdelim(*p)) p++;
 	while (p < pend && !isdelim(*p)) {
-	    if (*p == '{') nest+=2;
-	    if (*p == '}') nest+=3;
-	    if (*p == '\\') {
+	    if (*p == '{') nest++, maxnest++;
+	    if (*p == '}') nest--;
+	    if (!noescape && *p == '\\') {
 		*t++ = *p++;
 		if (p == pend) break;
 	    }
 	    *t++ = *p++;
 	}
 	*t = '\0';
-	if (nest == 0) {
-	    push_globs(ary, buf);
+	if (maxnest == 0) {
+	    push_globs(ary, buf, flags);
 	}
-	else if (nest % 5 == 0) {
-	    push_braces(ary, buf);
+	else if (nest == 0) {
+	    push_braces(ary, buf, flags);
 	}
 	/* else unmatched braces */
     }
     free(buf);
-    if (ary) {
-	return ary;
-    }
-    return Qnil;
+
+    return ary;
+}
+
+static VALUE
+dir_s_aref(obj, str)
+    VALUE obj, str;
+{
+    return rb_push_glob(str, 0);
+}
+
+static VALUE
+dir_s_glob(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE str, rflags;
+    int flags;
+
+    if (rb_scan_args(argc, argv, "11", &str, &rflags) == 2)
+	flags = NUM2INT(rflags);
+    else
+	flags = 0;
+
+    return rb_push_glob(str, flags);
 }
 
 static VALUE
@@ -1014,14 +1050,14 @@ Init_Dir()
     rb_define_singleton_method(rb_cDir,"delete", dir_s_rmdir, 1);
     rb_define_singleton_method(rb_cDir,"unlink", dir_s_rmdir, 1);
 
-    rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, 1);
-    rb_define_singleton_method(rb_cDir,"[]", dir_s_glob, 1);
+    rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, -1);
+    rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, 1);
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);
 
     rb_file_const("FNM_NOESCAPE", INT2FIX(FNM_NOESCAPE));
     rb_file_const("FNM_PATHNAME", INT2FIX(FNM_PATHNAME));
-    rb_file_const("FNM_PERIOD", INT2FIX(FNM_PERIOD));
+    rb_file_const("FNM_DOTMATCH", INT2FIX(FNM_DOTMATCH));
     rb_file_const("FNM_CASEFOLD", INT2FIX(FNM_CASEFOLD));
 }

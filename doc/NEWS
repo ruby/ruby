@@ -1,13 +1,9 @@
-: getopts.rb
+: Dir::glob
 
-  Rewrote to fix some bugs and complete features.
-    - Accept options with the colon in the first argument;
-      getopts("a:bcd:") is equivalent to getopts("bc", "a:", "d:").
-    - Do not discard the argument that caused an error.
-    - Do not discard '-', which commonly stands for stdin or stdout.
-    - Allow specifying a long option with a value using '='.
-      (command --long-option=value)
-    - Stop reading options when it meets a non-option argument.
+  Now accepts optional FNM_* flags via the second argument, whereas
+  Dir::[] doesn't.
+
+    Dir.glob("makefile", File::FNM_CASEFOLD) #=> ['Makefile', 'makefile']
 
 : tsort module
 
@@ -210,10 +206,13 @@
 
   Added.  Refer to the fnmatch(3) manpage for details.
 
+  Localism is FNM_DOTMATCH which has the opposite meaning of the
+  commonly known FNM_PERIOD, which does not exist in Ruby.
+
   e.g.
 
-    # exclude files matching "*.bak".
-    files.reject! {|fn| File.fnmatch?("*.bak", fn) }
+    # exclude files matching "*.bak" case-insensitively.
+    files.reject! {|fn| File.fnmatch?("*.bak", fn, File::FNM_CASEFOLD) }
 
 : File.lchmod
 : File.lchown

@@ -1,3 +1,11 @@
+Wed Mar 13 19:05:15 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* dir.c: FNM_PERIOD is obsoleted and FNM_DOTMATCH is introduced
+	  instead, which has the opposite meaning of FNM_PERIOD.
+
+	* dir.c: Dir::glob now accepts optional FNM_* flags via the second
+	  argument, whereas Dir::[] doesn't.
+
 Wed Mar 13 18:36:55 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/getopts.rb: single_options can be nil[*], and is not not
