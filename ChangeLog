@@ -1,3 +1,7 @@
+Fri Nov 28 04:15:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (method_arity): used wrong Proc object.  [ruby-talk:86504]
+
 Fri Nov 28 00:47:29 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_f_exit), process.c (rb_f_exit_bang): treat true as
