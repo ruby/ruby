@@ -611,20 +611,17 @@ class RubyLex
       str = op
       @ltype = "="
 
-      begin
-        ch = getc
-        str << ch
-      end until ch == "\n"
-      
-      until peek_equal?("=end") && peek(4) =~ /\s/
-	begin
-          ch = getc
-          str << ch
-        end until ch == "\n"
-      end
 
-      str << "=end"
-      gets
+      begin
+        line = ""
+        begin
+          ch = getc
+          line << ch
+        end until ch == "\n"
+        str << line
+      end until line =~ /^=end/
+
+      ungetc
 
       @ltype = nil
       Token(TkRD_COMMENT).set_text(str)
