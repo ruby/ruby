@@ -1,3 +1,7 @@
+Wed Oct 01 14:09:53 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
+
+	* wince/mkconfig_wce.rb: sorry, forget to commit.
+
 Wed Oct 01 10:08:42 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
 
 	* wince/setup.mak: add sigmarionIII SDK support.
