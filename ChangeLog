@@ -1,10 +1,10 @@
 Sat Nov 11 08:34:18 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
-	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.31
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.31.
 
-	* lib/net/http.rb: initializes header in HTTP, not HTTPCommand
+	* lib/net/http.rb: initializes header in HTTP, not HTTPCommand.
 
-	* lib/net/protocol.rb, http.rb: rewrites proxy code
+	* lib/net/protocol.rb, http.rb: rewrites proxy code.
 
 Fri Nov 10 16:15:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -27,11 +27,11 @@ Wed Nov  8 03:08:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Nov  7 20:29:56 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
-	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.30
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.30.
 
 	* lib/net/protocol.rb, smtp.rb: Command#critical_ok -> error_ok
 
-	* lib/net/http.rb: read header when also "100 Continue"
+	* lib/net/http.rb: reads header when also "100 Continue".
 
 Tue Nov  7 04:32:19 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -178,7 +178,7 @@ Thu Oct 12 18:56:28 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/pop.rb: POP3#reset
 
-	* lib/net/http.rb: a code for "Switch Protocol" was wrongly 100
+	* lib/net/http.rb: a code for "Switch Protocol" was wrongly 100.
 
 Thu Oct 12 01:23:38 2000 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -206,7 +206,8 @@ Wed Oct 11 18:13:50 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Oct 11 14:29:51 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
-	* lib/net/protocol.rb: 2nd arg for ProtocolError#initialize is optional.
+	* lib/net/protocol.rb: 2nd arg for ProtocolError#initialize is
+	  optional.
 
 	* lib/net/http.rb: code refining.
 
