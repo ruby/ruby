@@ -346,6 +346,7 @@ lib/shell/system-command.rb
 lib/shell/version.rb
 lib/shellwords.rb
 lib/singleton.rb
+lib/soap/attachment.rb
 lib/soap/baseData.rb
 lib/soap/element.rb
 lib/soap/encodingstyle/aspDotNetHandler.rb
@@ -361,6 +362,7 @@ lib/soap/mapping/rubytypeFactory.rb
 lib/soap/mapping/typeMap.rb
 lib/soap/mapping/wsdlRegistry.rb
 lib/soap/marshal.rb
+lib/soap/mimemessage.rb
 lib/soap/netHttpClient.rb
 lib/soap/parser.rb
 lib/soap/processor.rb

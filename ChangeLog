@@ -1,3 +1,7 @@
+Wed Jan  7 14:24:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/soap/{attachment.rb,mimemessage.rb}: added from soap4r/1.5.2.
+
 Wed Jan  7 13:00:18 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_driver.rb: Fix problem where ri was
