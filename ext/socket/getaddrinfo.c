@@ -191,7 +191,10 @@ if (pai->ai_flags & AI_CANONNAME) {\
 
 #define ERR(err) { error = (err); goto bad; }
 
-const char *
+#if defined __UCLIBC__
+const
+#endif
+char *
 gai_strerror(ecode)
 	int ecode;
 {
