@@ -178,12 +178,10 @@ TkcOval.new(cvs, '16c','10c','19c','15c', 'outline'=>'',
 TkcText.new(cvs, '25c', '8.2c', 'text'=>'テキスト', 'anchor'=>'n')
 TkcRectangle.new(cvs, '22.4c','8.9c','22.6c','9.1c')
 TkcText.new(cvs, '22.5c', '9c', 'anchor'=>'n', 'font'=>font1, 'width'=>'4c', 
-	    'text'=>'短いテキスト。ワードラップ、左揃え、アンカーは北 (上)。\
-□は各テキストのアンカーポイントを示す。', 'tags'=>$tag_item )
+	    'text'=>'短いテキスト。ワードラップ、左揃え、アンカーは北(上)。□は各テキストのアンカーポイントを示す。', 'tags'=>$tag_item )
 TkcRectangle.new(cvs, '25.4c','10.9c','25.6c','11.1c')
 TkcText.new(cvs, '25.5c', '11c', 'anchor'=>'w', 'font'=>font1, 'fill'=>blue, 
-	    'text'=>'いくつかの行。\nそれぞれ独立に\n行揃え。\n\
-全て左端がアンカーされている。', 'justify'=>'center', 'tags'=>$tag_item )
+	    'text'=>"いくつかの行。\nそれぞれ独立に\n行揃え。\n全て左端がアンカーされている。", 'justify'=>'center', 'tags'=>$tag_item )
 TkcRectangle.new(cvs, '24.9c','13.9c','25.1c','14.1c')
 if $tk_version =~ /^4\.[01]/
   TkcText.new(cvs, '25c', '14c', 'anchor'=>'c', 'font'=>font2, 'fill'=>red, 
