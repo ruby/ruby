@@ -58,7 +58,7 @@ VALUE rb_cBigDecimal;
 /*
  * ================== Ruby Interface part ==========================
  */
-static ID coerce;
+# define DoSomeOne(x,y) rb_num_coerce_bin(x,y)
 
 /*
  *  **** BigDecimal version ****
@@ -79,44 +79,6 @@ static int VpInternalRound(Real *c,int ixDigit,U_LONG vPrev,U_LONG v);
 /*
  *  **** BigDecimal part ****
  */
-/* Following functions borrowed from numeric.c */
-static VALUE
-coerce_body(VALUE *x)
-{
-    return rb_funcall(x[1], coerce, 1, x[0]);
-}
-
-static VALUE
-coerce_rescue(VALUE *x)
-{
-    rb_raise(rb_eTypeError, "%s can't be coerced into %s",
-        rb_special_const_p(x[1])?
-        rb_str2cstr(rb_inspect(x[1]),0):
-        rb_class2name(CLASS_OF(x[1])),
-        rb_class2name(CLASS_OF(x[0])));
-    return (VALUE)0;
-}
-
-static void
-do_coerce(VALUE *x, VALUE *y)
-{
-    VALUE ary;
-    VALUE a[2];
-    a[0] = *x; a[1] = *y;
-    ary = rb_rescue(coerce_body, (VALUE)a, coerce_rescue, (VALUE)a);
-    if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
-        rb_raise(rb_eTypeError, "coerce must return [x, y]");
-    }
-    *x = RARRAY(ary)->ptr[0];
-    *y = RARRAY(ary)->ptr[1];
-}
-
-static VALUE
-DoSomeOne(VALUE x, VALUE y)
-{
-    do_coerce(&x, &y);
-    return rb_funcall(x, rb_frame_last_func(), 1, y);
-}
 
 static void
 BigDecimal_delete(Real *pv)
@@ -177,8 +139,8 @@ SomeOneMayDoIt:
     if(must) {
         rb_raise(rb_eTypeError, "%s can't be coerced into BigDecimal",
                     rb_special_const_p(v)?
-                    rb_str2cstr(rb_inspect(v),0):
-                    rb_class2name(CLASS_OF(v))
+                    RSTRING(rb_inspect(v))->ptr:
+                    rb_obj_classname(v)
                 );
     }
     return NULL; /* NULL means to coerce */
@@ -548,10 +510,10 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
     Real *a, *b;
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return  DoSomeOne(self,r);
+    if(!b) return rb_num_coerce_cmp(self,r);
     SAVE(b);
     e = VpComp(a, b);
-    if(e==999) return rb_float_new(VpGetDoubleNaN());
+    if(e==999) return Qnil;
     switch(op)
     {
     case '*': return   INT2FIX(e); /* any op */
@@ -1289,7 +1251,7 @@ Init_bigdecimal(void)
 {
     /* Initialize VP routines */
     VpInit((U_LONG)0);
-    coerce = rb_intern("coerce");
+
     /* Class and method registration */
     rb_cBigDecimal = rb_define_class("BigDecimal",rb_cNumeric);
 
