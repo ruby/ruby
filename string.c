@@ -1101,7 +1101,8 @@ rb_str_aref(str, indx)
 	return rb_str_subpat(str, indx, 0);
 
       case T_STRING:
-	if (rb_str_index(str, indx, 0) != -1) return indx;
+	if (rb_str_index(str, indx, 0) != -1)
+	    return rb_str_dup(indx);
 	return Qnil;
 
       default:

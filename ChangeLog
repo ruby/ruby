@@ -1,3 +1,14 @@
+Wed Oct 31 15:09:28 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (POP_VARS): should not set DVAR_DONT_RECYCLE if _old
+	  ruby_vars is already force_recycled.
+
+Wed Oct 31 10:28:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc): handles mark stack overflow.
+
+	* gc.c (PUSH_MARK): use static mark stack, no more recursion.
+
 Wed Oct 31 02:44:06 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: CGI::Cookie::parse(): Ignore duplicate keys caused by

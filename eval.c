@@ -594,15 +594,17 @@ new_blktag()
 }
 
 struct RVarmap *ruby_dyna_vars;
-#define PUSH_VARS() {			\
-    struct RVarmap * volatile _old;	\
-    _old = ruby_dyna_vars;		\
+#define PUSH_VARS() { \
+    struct RVarmap * volatile _old; \
+    _old = ruby_dyna_vars; \
     ruby_dyna_vars = 0;
 
-#define POP_VARS()			\
-   if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) \
-       FL_SET(_old, DVAR_DONT_RECYCLE); \
-    ruby_dyna_vars = _old;		\
+#define POP_VARS() \
+   if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) {\
+       if (RBASIC(_old)->flags) /* unless it's already recycled */ \
+           FL_SET(_old, DVAR_DONT_RECYCLE); \
+    }\
+    ruby_dyna_vars = _old; \
 }
 
 #define DVAR_DONT_RECYCLE FL_USER2
