@@ -1,3 +1,8 @@
+Wed Oct 20 00:25:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (search_required): required name must not be changed before
+	  loading.  [ruby-dev:24492]
+
 Tue Oct 19 23:59:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_require_safe): provide the feature after loaded.
