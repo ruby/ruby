@@ -128,15 +128,15 @@ typedef struct RNode {
     union {
 	struct RNode *node;
 	ID id;
-	int argc;
+	long argc;
 	VALUE value;
     } u2;
     union {
 	struct RNode *node;
 	ID id;
-	int state;
+	long state;
 	struct global_entry *entry;
-	int cnt;
+	long cnt;
 	VALUE value;
     } u3;
 } NODE;

@@ -28,6 +28,32 @@ Wed May 31 04:06:41 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 	* lib/cgi.rb: change: CGI#out() if "HEAD" == REQUEST_METHOD
 	  then output only HTTP header.
 
+Tue May 30 23:33:41 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* lib/mkmf.rb (create_makefile): add $(TARGET).ilk and *.pdb
+	  to cleanup files for mswin32.
+
+Mon May 29 21:48:24 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/config.status: set LDFLAGS and LIBRUBYARG for eruby.
+
+Thu May 25 22:01:32 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* re.h: mswin32: use EXTERN instead of extern.
+
+	* regex.h: mswin32: export re_mbctab properly.
+
+	* win32/win32.def: add ruby_ignorecase and regex.c's exports.
+
+Wed May 24 23:17:50 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/Makefile: remove unnecessary mv and rm command call.
+
+Wed May 24 21:01:04 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/pty/pty.c: use "" instead of <> to include ruby.h and rubyio.h
+	  for BeOS (PowerPC).
+
 Wed May 24 16:03:06 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: bug fix: CGI::escape(), CGI::Cookie::new()
@@ -46,6 +72,29 @@ Mon May 22 15:10:39 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Sun May 21 20:58:08 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* pack.c: fix OFF16 and OFF32 definitions for Alpha and IRIX64.
+
+Thu May 18 23:55:26 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* dln.c (search_undef): st_lookup()'s 3rd parameter should be
+	  a pointer of the variable which has the same size and alignment
+	  as `char *'.
+
+	* marshal.c (w_symbol, w_object): ditto.
+
+	* parse.y (rb_intern): ditto.
+
+Thu May 18 09:01:25 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* io.c: fix READ_DATA_PENDING definition for BeOS (PowerPC).
+
+Wed May 17 23:17:38 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* intern.h: use EXTERN instead of extern.
+
+	* win32/ruby.def: add rb_defout, rb_stdout, ruby_errinfo,
+	  ruby_sourceline, ruby_sourcefile to work with eruby
+	  reported by Hiroshi Saito <HiroshiSaito@pob.org>.
+	  Export both ruby_xmalloc and xmalloc etc.
 
 Wed May 17 02:22:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -73,6 +122,14 @@ Wed May 10 12:51:18 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (parse_regx): should parse backslash escape like `\c['
 	  here to avoid causing `unterminated regexp' error.
+
+Wed May 10 00:19:53 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* MANIFEST, beos/GNUmakefile.in, configure.in: no longer need
+	  beos/GNUmakefile.in to support BeOS R4.5.2 (Intel) as a result
+	  of eban's Makefile.in change.
+
+	* io.c: NOFILE is already defined on BeOS R4.5 (Intel) or later.
 
 Mon May  8 23:17:36 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

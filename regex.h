@@ -84,7 +84,14 @@
 #define MBCTYPE_SJIS 2
 #define MBCTYPE_UTF8 3
 
-extern const unsigned char *re_mbctab;
+#if defined IMPORT
+extern __declspec(dllimport)
+#elif defined EXPORT
+extern __declspec(dllexport)
+#else
+extern
+#endif
+const unsigned char *re_mbctab;
 #if defined(__STDC__)
 void re_mbcinit (int);
 #else

@@ -884,7 +884,7 @@ search_undef(key, value, lib_tbl)
     int value;
     st_table *lib_tbl;
 {
-    int offset;
+    long offset;
 
     if (st_lookup(lib_tbl, key, &offset) == 0) return ST_CONTINUE;
     target_offset = offset;

@@ -146,7 +146,7 @@ w_symbol(id, arg)
     struct dump_arg *arg;
 {
     char *sym = rb_id2name(id);
-    int num;
+    long num;
 
     if (st_lookup(arg->symbol, id, &num)) {
 	w_byte(TYPE_SYMLINK, arg);
@@ -254,7 +254,7 @@ w_object(obj, arg, limit)
 #endif
     }
     else {
-	int num;
+	long num;
 
 	limit--;
 	c_arg.limit = limit;

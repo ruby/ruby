@@ -51,9 +51,8 @@ static unsigned long alloc_objects = 0;
 
 static int malloc_called = 0;
 
-#ifndef xmalloc
 void *
-xmalloc(size)
+ruby_xmalloc(size)
     size_t size;
 {
     void *mem;
@@ -79,7 +78,7 @@ xmalloc(size)
 }
 
 void *
-xcalloc(n, size)
+ruby_xcalloc(n, size)
     size_t n, size;
 {
     void *mem;
@@ -91,7 +90,7 @@ xcalloc(n, size)
 }
 
 void *
-xrealloc(ptr, size)
+ruby_xrealloc(ptr, size)
     void *ptr;
     size_t size;
 {
@@ -115,12 +114,11 @@ xrealloc(ptr, size)
 }
 
 void
-xfree(x)
+ruby_xfree(x)
     void *x;
 {
     if (x) free(x);
 }
-#endif
 
 /* The way of garbage collecting which allows use of the cstack is due to */
 /* Scheme In One Defun, but in C this time.
@@ -1202,4 +1200,38 @@ Init_GC()
 
     rb_global_variable(&finalizers);
     finalizers = rb_ary_new();
+}
+
+#undef xmalloc
+#undef xcalloc
+#undef xrealloc
+#undef xfree
+
+void*
+xmalloc(size)
+    size_t size;
+{
+    return ruby_xmalloc(size);
+}
+
+void*
+xcalloc(n,size)
+    size_t n,size;
+{
+    return ruby_xcalloc(n, size);
+}
+
+void*
+xrealloc(ptr,size)
+    void *ptr;
+    size_t size;
+{
+    return ruby_xrealloc(ptr, size);
+}
+
+void
+xfree(ptr)
+    void *ptr;
+{
+    ruby_xfree(ptr);
 }

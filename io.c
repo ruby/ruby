@@ -67,7 +67,7 @@ char *strdup();
 extern void Init_File _((void));
 
 #ifdef __BEOS__
-# ifdef _X86_
+# ifndef NOFILE
 #  define NOFILE (OPEN_MAX)
 # endif
 #include <net/socket.h>
@@ -110,7 +110,7 @@ static VALUE lineno;
 #elif defined(FILE_COUNT)
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #elif defined(__BEOS__)
-#  define ReadDataPending(fp) (fp->_state._eof == 0)
+#  define READ_DATA_PENDING(fp) (fp->_state._eof == 0)
 #elif defined(USE_CWGUSI)
 #  define READ_DATA_PENDING(fp) (fp->state.eof == 0)
 #else

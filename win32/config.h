@@ -5,7 +5,7 @@
 /* #define HAVE_UNISTD_H 1 */
 #define HAVE_STDLIB_H 1
 #define HAVE_LIMITS_H 1
-#define HAVE_SYS_FILE_H 1
+/* #define HAVE_SYS_FILE_H 1 */
 #define HAVE_FCNTL_H 1
 /* #define HAVE_PWD_H 1       */
 /* #define HAVE_SYS_TIME_H 1  */

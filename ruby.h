@@ -344,9 +344,16 @@ struct RBignum {
 #define OBJ_TAINTED(x) FL_TEST((x), FL_TAINT)
 #define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
 
+#define xmalloc ruby_xmalloc
+#define xcalloc ruby_xcalloc
+#define xrealloc ruby_xrealloc
+#define xfree ruby_xfree
+
 void *xmalloc _((size_t));
 void *xcalloc _((size_t,size_t));
 void *xrealloc _((void*,size_t));
+void xfree _((void*));
+
 #define ALLOC_N(type,n) (type*)xmalloc(sizeof(type)*(n))
 #define ALLOC(type) (type*)xmalloc(sizeof(type))
 #define REALLOC_N(var,type,n) (var)=(type*)xrealloc((char*)(var),sizeof(type)*(n))

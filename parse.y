@@ -4467,7 +4467,7 @@ rb_intern(name)
     const char *name;
 {
     static ID last_id = LAST_TOKEN;
-    int id;
+    ID id;
     int last;
 
     if (st_lookup(sym_tbl, name, &id))

@@ -397,7 +397,7 @@ EXEEXT = #{CONFIG["EXEEXT"]}
 all:		$(DLLIB)
 
 clean:;		@rm -f *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
-		@rm -f $(TARGET).lib $(TARGET).exp
+		@rm -f $(TARGET).lib $(TARGET).exp $(TARGET).ilk *.pdb
 		@rm -f Makefile extconf.h conftest.*
 		@rm -f core ruby$(EXEEXT) *~
 

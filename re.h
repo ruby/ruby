@@ -35,7 +35,7 @@ VALUE rb_reg_regsub _((VALUE, VALUE, struct re_registers *));
 
 int rb_kcode _((void));
 
-extern int ruby_ignorecase;
+EXTERN int ruby_ignorecase;
 
 int rb_mbclen2 _((unsigned int, VALUE));
 #define mbclen2(c,re) rb_mbclen2((c),(re))

@@ -459,6 +459,10 @@ rb_big_cmp(x, y)
 	y = rb_int2big(FIX2LONG(y));
 	break;
 
+      case T_FLOAT:
+	y = rb_dbl2big(RFLOAT(y)->value);
+	break;
+
       case T_BIGNUM:
 	break;
 
@@ -484,8 +488,22 @@ static VALUE
 rb_big_eq(x, y)
     VALUE x, y;
 {
-    if (rb_big_cmp(x, y) == INT2FIX(0)) return Qtrue;
-    return Qfalse;
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	y = rb_int2big(FIX2LONG(y));
+	break;
+      case T_BIGNUM:
+	break;
+      case T_FLOAT:
+	y = rb_dbl2big(RFLOAT(y)->value);
+	break;
+      default:
+	return Qfalse;
+    }
+    if (RBIGNUM(x)->sign != RBIGNUM(y)->sign) return Qfalse;
+    if (RBIGNUM(x)->len != RBIGNUM(y)->len) return Qfalse;
+    if (memcmp(BDIGITS(x),BDIGITS(y),RBIGNUM(y)->len) != 0) return Qfalse;
+    return Qtrue;
 }
 
 static VALUE

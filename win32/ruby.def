@@ -34,6 +34,7 @@ EXPORTS
 	ruby_nerrs
 ;eval.c
 	rb_cProc
+	ruby_errinfo
 	ruby_frame
 	rb_cThread
 	rb_thread_tick
@@ -49,6 +50,15 @@ EXPORTS
 	rb_cIO
 	rb_eEOFError
 	rb_eIOError
+	rb_stdin
+	rb_stdout
+	rb_stderr
+	rb_defout
+	rb_fs
+	rb_output_fs
+	rb_rs
+	rb_output_rs
+	rb_default_rs
 ;math.c
 	rb_mMath
 ;numeric.c
@@ -66,6 +76,9 @@ EXPORTS
 	rb_cNilClass
 	rb_cTrueClass
 	rb_cFalseClass
+;parse.c
+	ruby_sourcefile
+	ruby_sourceline
 ;prec.c
 	rb_mPrecision
 ;process.c
@@ -73,6 +86,7 @@ EXPORTS
 ;range.c
 	rb_cRange
 ;re.c
+	ruby_ignorecase
 	rb_cRegexp
 ;regex.c
 	re_mbctab
@@ -326,10 +340,10 @@ EXPORTS
 	eaccess
 	rb_file_s_expand_path
 ;gc.c
-	xmalloc
-	xfree
-	xcalloc
-	xrealloc
+	ruby_xmalloc
+	ruby_xcalloc
+	ruby_xrealloc
+	ruby_xfree
 	rb_global_variable
 	rb_newobj
 	rb_data_object_alloc
@@ -342,6 +356,10 @@ EXPORTS
 	rb_gc_mark_frame
 	rb_gc
 	rb_gc_call_finalizer_at_exit
+	xmalloc
+	xcalloc
+	xrealloc
+	xfree
 ;hash.c
 	rb_hash_freeze
 	rb_hash
@@ -452,6 +470,16 @@ EXPORTS
 	rb_reg_regsub
 	rb_get_kcode
 	rb_set_kcode
+;regex.c
+	ruby_re_set_casetable
+	ruby_re_compile_pattern
+	ruby_re_free_pattern
+	ruby_re_compile_fastmap
+	ruby_re_search
+	ruby_re_match
+	ruby_re_copy_registers
+	ruby_re_free_registers
+	ruby_re_mbcinit
 ;ruby.c
 	ruby_require_libraries
 	rb_load_file
