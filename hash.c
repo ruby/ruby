@@ -65,6 +65,8 @@ rb_any_cmp(a, b)
     VALUE a, b;
 {
     VALUE args[2];
+
+    if (a == b) return 0;
     if (FIXNUM_P(a) && FIXNUM_P(b)) {
 	return a != b;
     }
@@ -72,10 +74,10 @@ rb_any_cmp(a, b)
 	TYPE(b) == T_STRING && RBASIC(b)->klass == rb_cString) {
 	return rb_str_cmp(a, b);
     }
+    if (a == Qundef || b == Qundef) return -1;
     if (SYMBOL_P(a) && SYMBOL_P(b)) {
 	return a != b;
     }
-    if (a == Qundef || b == Qundef) return -1;
 
     args[0] = a;
     args[1] = b;
@@ -99,12 +101,10 @@ rb_any_hash(a)
 	break;
 
       default:
-	DEFER_INTS;
 	hval = rb_funcall(a, id_hash, 0);
 	if (!FIXNUM_P(hval)) {
 	    hval = rb_funcall(hval, '%', 1, INT2FIX(536870923));
 	}
-	ENABLE_INTS;
 	return (int)FIX2LONG(hval);
     }
 }

@@ -4,6 +4,16 @@ Tue Mar  4 15:08:08 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* missing/strftime.c: ditto.
 
+Tue Mar  4 10:11:32 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_popen): do not call rb_io_close() directly, call
+	  "close" method instead. [ruby-dev:19717]
+
+	* io.c (rb_io_s_open): ditto.
+
+	* hash.c (rb_any_hash): remove DEFER_INTS.  all do_hash() calls in
+	  st.c are at the top of functions.  No reentrant problem.
+
 Tue Mar  4 01:19:21 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dl/MANIFEST: Exclude .cvsignore. [found by: eban]
@@ -568,6 +578,10 @@ Thu Jan 30 16:46:43 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Thu Jan 30 08:27:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (rb_file_s_expand_path): removed a sludge.
+
+Wed Jan 29 03:24:39 2003  Michal Rokos  <michal@rokos.homeip.net>
+
+	* dir.c (glob_helper): memory leak fixed.
 
 Tue Jan 28 04:45:03 2003  Akinori MUSHA  <knu@iDaemons.org>
 

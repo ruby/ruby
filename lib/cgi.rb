@@ -497,7 +497,7 @@ status:
         $stderr.printf("name:%s value:%s\n", name, value) if $DEBUG
         case name
         when 'Set-Cookie'
-          table.add($1, $2)
+          table.add(name, value)
         when /^status$/ni
           Apache::request.status_line = value
           Apache::request.status = value.to_i

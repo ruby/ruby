@@ -778,6 +778,7 @@ glob_helper(path, sub, flags, func, arg)
 		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (lstat(buf, &st) < 0) {
 			if (errno != ENOENT) rb_sys_warning(buf);
+			free(buf);
 			continue;
 		    }
 		    if (S_ISDIR(st.st_mode)) {

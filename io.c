@@ -1422,6 +1422,12 @@ rb_io_close_m(io)
 }
 
 static VALUE
+io_close(io)
+{
+    return rb_funcall(io, rb_intern("close"), 0, 0);
+}
+
+static VALUE
 rb_io_closed(io)
     VALUE io;
 {
@@ -2154,7 +2160,7 @@ rb_io_popen(str, argc, argv, klass)
     }
     RBASIC(port)->klass = klass;
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, port, rb_io_close, port);
+	return rb_ensure(rb_yield, port, io_close, port);
     }
     return port;
 }
@@ -2209,7 +2215,7 @@ rb_io_s_open(argc, argv, klass)
     VALUE io = rb_class_new_instance(argc, argv, klass);
 
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, io, rb_io_close, io);
+	return rb_ensure(rb_yield, io, io_close, io);
     }
 
     return io;
@@ -2999,16 +3005,6 @@ next_argv()
     return Qtrue;
 }
 
-static void
-any_close(file)
-    VALUE file;
-{
-    if (TYPE(file) == T_FILE)
-	rb_io_close(file);
-    else
-	rb_funcall3(file, rb_intern("close"), 0, 0);
-}
-
 static VALUE
 argf_getline(argc, argv)
     int argc;
@@ -3039,7 +3035,7 @@ argf_getline(argc, argv)
 	line = rb_io_getline(rs, fptr);
     }
     if (NIL_P(line) && next_p != -1) {
-	any_close(current_file);
+	io_close(current_file);
 	next_p = 1;
 	goto retry;
     }
@@ -3074,7 +3070,7 @@ rb_gets()
     if (!next_argv()) return Qnil;
     line = rb_io_gets(current_file);
     if (NIL_P(line) && next_p != -1) {
-	any_close(current_file);
+	io_close(current_file);
 	next_p = 1;
 	goto retry;
     }
@@ -3725,7 +3721,7 @@ argf_read(argc, argv)
 	tmp = io_read(argc, argv, current_file);
     }
     if (NIL_P(tmp) && next_p != -1) {
-	any_close(current_file);
+	io_close(current_file);
 	next_p = 1;
 	goto retry;
     }
@@ -3758,7 +3754,7 @@ argf_getc()
 	byte = rb_io_getc(current_file);
     }
     if (NIL_P(byte) && next_p != -1) {
-	any_close(current_file);
+	io_close(current_file);
 	next_p = 1;
 	goto retry;
     }
@@ -3850,7 +3846,7 @@ static VALUE
 argf_skip()
 {
     if (next_p != -1) {
-	any_close(current_file);
+	io_close(current_file);
 	next_p = 1;
     }
     return argf;
@@ -3859,7 +3855,7 @@ argf_skip()
 static VALUE
 argf_close()
 {
-    any_close(current_file);
+    io_close(current_file);
     if (next_p != -1) {
 	next_p = 1;
     }
