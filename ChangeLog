@@ -8,6 +8,16 @@ Sat Mar 16 22:43:53 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* missing/fileblocks.c: add for autoconf.
 
+Sat Mar 16 09:04:58 2002  Koji Arai <JCA02266@nifty.ne.jp>
+
+	* enum.c (enum_inject): use the first iterated element as the
+	  initial value when omitted.
+
+	* enum.c (inject_i): ditto.
+
+	* enum.c (Init_Enumerable): Enumerable#inject now takes variable
+	  count arguments.
+
 Fri Mar 15 19:47:31 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* win32/win32.c (StartSockets): remove duplicated lines.

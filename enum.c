@@ -180,20 +180,37 @@ enum_collect(obj)
 }
 
 static VALUE
-inject_i(i, np)
+inject_i(i, memo)
     VALUE i;
-    VALUE *np;
+    NODE *memo;
 {
-    *np = rb_yield(rb_assoc_new(*np, i));
+    if (memo->u2.value) {
+        memo->u2.value = Qfalse;
+        memo->u1.value = i;
+    }
+    else
+        memo->u1.value = rb_yield(rb_assoc_new(memo->u1.value, i));
+
     return Qnil;
 }
 
 static VALUE
-enum_inject(obj, n)
-    VALUE obj, n;
+enum_inject(argc, argv, obj)
+    int argc;
+    VALUE *argv, obj;
 {
-    rb_iterate(rb_each, obj, inject_i, (VALUE)&n);
+    NODE *memo;
+    VALUE n;
 
+    if (rb_scan_args(argc, argv, "01", &n) == 1)
+        memo = rb_node_newnode(NODE_MEMO, n, Qfalse, 0);
+    else
+        memo = rb_node_newnode(NODE_MEMO, Qnil, Qtrue, 0);
+
+    rb_iterate(rb_each, obj, inject_i, (VALUE)memo);
+    n = memo->u1.value;
+
+    rb_gc_force_recycle((VALUE)memo);
     return n;
 }
 
@@ -448,7 +465,7 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"map", enum_collect, 0);
-    rb_define_method(rb_mEnumerable,"inject", enum_inject, 1);
+    rb_define_method(rb_mEnumerable,"inject", enum_inject, -1);
     rb_define_method(rb_mEnumerable,"all?", enum_all, 0);
     rb_define_method(rb_mEnumerable,"any?", enum_any, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
