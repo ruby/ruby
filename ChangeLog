@@ -1,3 +1,8 @@
+Fri Jul 23 16:40:25 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (define_final): should not disclose NODE* to Ruby world.
+	  [ruby-dev:23957]
+
 Fri Jul 23 09:03:16 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (disconnected?): new method. (backported from HEAD)
