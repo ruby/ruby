@@ -153,13 +153,13 @@ Also ignores spaces after parenthesis when 'space.")
 		    (concat (substring prefix 0 -1) (substring name 4)))
 		  (t (concat prefix name)))))
 	(push (cons name pos) index-alist)
-	(ruby-accurate-end-of-block))
+	(ruby-accurate-end-of-block end))
        (t
 	(if (string= "self" name)
 	    (if prefix (setq name (substring prefix 0 -1)))
 	  (if prefix (setq name (concat (substring prefix 0 -1) "::" name)))
 	  (push (cons name pos) index-alist))
-	(ruby-accurate-end-of-block)
+	(ruby-accurate-end-of-block end)
 	(setq beg (point))
 	(setq index-alist
 	      (nconc (ruby-imenu-create-index-in-block
