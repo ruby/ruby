@@ -1,3 +1,8 @@
+Tue Nov 16 11:19:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::options): use
+	  Regexp conversion.
+
 Mon Nov 15 11:50:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-special-char-p, ruby-parse-partial): handle

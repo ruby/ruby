@@ -108,9 +108,9 @@ module Test
               @to_run.concat(a)
             end
 
-            o.on('-p', '--pattern=PATTERN', String,
+            o.on('-p', '--pattern=PATTERN', Regexp,
                  "Match files to collect against PATTERN.") do |e|
-              @pattern = Regexp.new(e.sub(%r{\A/(.*)/\Z}m, '\\1'))
+              @pattern = e
             end
           end
 
