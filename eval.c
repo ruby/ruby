@@ -9316,8 +9316,12 @@ Init_Binding()
  */
 #define __libc_ia64_register_backing_store_base (4ULL<<61)
 #else
+#ifdef HAVE_UNWIND_H
+#include <unwind.h>
+#else
 #pragma weak __libc_ia64_register_backing_store_base
 extern unsigned long __libc_ia64_register_backing_store_base;
+#endif
 #endif
 #endif
 
@@ -9779,19 +9783,24 @@ rb_thread_save_context(th)
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
 #ifdef __ia64__
     {
-	ucontext_t ctx;
 	VALUE *top, *bot;
+#ifdef HAVE_UNWIND_H
+	_Unwind_Context *unwctx = _UNW_createContextForSelf();
+
+	_UNW_currentContext(unwctx);
+	bot = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
+	top = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSPSTORE);
+	_UNW_destroyContext(unwctx);
+#else
+	ucontext_t ctx;
 
 	getcontext(&ctx);
 	bot = (VALUE*)__libc_ia64_register_backing_store_base;
-#if defined(__FreeBSD__)
-	top = (VALUE*)ctx.uc_mcontext.mc_special.bspstore;
-#else
-	top = (VALUE*)ctx.uc_mcontext.sc_ar_bsp;
+	top = (VALUE*)ctx.uc_mcontext.IA64_BSPSTORE;
 #endif
 	th->bstr_len = top - bot;
 	REALLOC_N(th->bstr_ptr, VALUE, th->bstr_len);
-	MEMCPY(th->bstr_ptr, (VALUE*)__libc_ia64_register_backing_store_base, VALUE, th->bstr_len);
+	MEMCPY(th->bstr_ptr, bot, VALUE, th->bstr_len);
     }
 #endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
@@ -9934,7 +9943,19 @@ rb_thread_restore_context(th, exit)
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(tmp->stk_pos, tmp->stk_ptr, VALUE, tmp->stk_len);
 #ifdef __ia64__
-    MEMCPY((VALUE*)__libc_ia64_register_backing_store_base, tmp->bstr_ptr, VALUE, tmp->bstr_len);
+    {
+	VALUE *base;
+#ifdef HAVE_UNWIND_H
+	_Unwind_Context *unwctx = _UNW_createContextForSelf();
+	
+	_UNW_currentContext(unwctx);
+	base = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
+	_UNW_destroyContext(unwctx);
+#else
+	base = (VALUE*)__libc_ia64_register_backing_store_base;
+#endif
+	MEMCPY(base, tmp->bstr_ptr, VALUE, tmp->bstr_len);
+    }
 #endif
 
     tval = rb_lastline_get();

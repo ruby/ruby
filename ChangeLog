@@ -99,6 +99,47 @@ Mon Sep 20 03:37:59 2004  Tanaka Akira  <akr@m17n.org>
 	* ext/zlib/zlib.c (gzfile_read_raw): call readpartial at first.
 	  (Zlib::GzipReader#readpartial): new method.
 
+Mon Sep 20 00:24:19 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_sort_by): do not use qsort directly.  use
+	  rb_ary_sort_bang() instead.  [ruby-dev:24291]
+
+	* enum.c (enum_sort_by): pedantic type check added.
+	  [ruby-dev:24291]
+
+	* hash.c (rb_hash_foreach_iter): check iter_lev after each
+	  iteration.  [ruby-dev:24289]
+
+	* array.c (rb_ary_and): element size might change during
+	  comparison.  [ruby-dev:24290]
+
+	* array.c (rb_ary_or): ditto. [ruby-dev:24292]
+
+	* array.c (rb_ary_equal): wrong fix. [ruby-dev:24286]
+
+Sat Sep 18 15:02:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_equal): element size might change during
+	  comparison.  [ruby-dev:24254]
+
+	* array.c (rb_ary_diff): ditto. [ruby-dev:24274]
+
+	* array.c (rb_ary_select): ditto. [ruby-dev:24278]
+
+	* array.c (rb_ary_delete): ditto. [ruby-dev:24283]
+
+	* array.c (rb_ary_rindex): ditto. [ruby-dev:24275]
+
+	* array.c (rb_ary_initialize): element size might change during
+	  initializing block.  [ruby-dev:24284]
+
+Sat Sep 18 14:10:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_s_chdir): avoid memory leak and unnecessary chdir to
+	  the original directory when exception has caused in changing
+	  direcotry or within block.  thanks to Johan Holmberg
+	  <holmberg@iar.se> [ruby-core:03446]
+
 Fri Sep 17 20:29:33 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y: add prototypes for Microsoft compiler.

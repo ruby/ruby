@@ -393,7 +393,7 @@ rb_ary_initialize(argc, argv, ary)
 	    rb_warn("block supersedes default value argument");
 	}
 	for (i=0; i<len; i++) {
-	    RARRAY(ary)->ptr[i] = rb_yield(LONG2NUM(i));
+	    rb_ary_store(ary, i, rb_yield(LONG2NUM(i)));
 	    RARRAY(ary)->len = i + 1;
 	}
     }
@@ -715,21 +715,28 @@ rb_ary_unshift_m(argc, argv, ary)
     return ary;
 }
 
+/* faster version - use this if you don't need to treat negative offset */
+static inline VALUE
+rb_ary_elt(ary, offset)
+    VALUE ary;
+    long offset;
+{
+    if (RARRAY(ary)->len == 0) return Qnil;
+    if (offset < 0 || RARRAY(ary)->len <= offset) {
+	return Qnil;
+    }
+    return RARRAY(ary)->ptr[offset];
+}
+
 VALUE
 rb_ary_entry(ary, offset)
     VALUE ary;
     long offset;
 {
-    if (RARRAY(ary)->len == 0) return Qnil;
-
     if (offset < 0) {
 	offset += RARRAY(ary)->len;
     }
-    if (offset < 0 || RARRAY(ary)->len <= offset) {
-	return Qnil;
-    }
-
-    return RARRAY(ary)->ptr[offset];
+    return rb_ary_elt(ary, offset);
 }
 
 static VALUE
@@ -1011,6 +1018,10 @@ rb_ary_rindex(ary, val)
     long i = RARRAY(ary)->len;
 
     while (i--) {
+	if (i > RARRAY(ary)->len) {
+	    i = RARRAY(ary)->len;
+	    continue;
+	}
 	if (rb_equal(RARRAY(ary)->ptr[i], val))
 	    return LONG2NUM(i);
     }
@@ -1641,17 +1652,36 @@ rb_ary_reverse_m(ary)
     return rb_ary_reverse(rb_ary_dup(ary));
 }
 
+struct ary_sort_data {
+    VALUE ary;
+    VALUE *ptr;
+    long len;
+};
+
+static void
+ary_sort_check(data)
+    struct ary_sort_data *data;
+{
+    if (RARRAY(data->ary)->ptr != data->ptr || RARRAY(data->ary)->len != data->len) {
+	rb_raise(rb_eArgError, "array modified during sort");
+    }
+}
+
 static int
-sort_1(a, b)
+sort_1(a, b, data)
     VALUE *a, *b;
+    struct ary_sort_data *data;
 {
     VALUE retval = rb_yield_values(2, *a, *b);
+
+    ary_sort_check(data);
     return rb_cmpint(retval, *a, *b);
 }
 
 static int
-sort_2(ap, bp)
+sort_2(ap, bp, data)
     VALUE *ap, *bp;
+    struct ary_sort_data *data;
 {
     VALUE retval;
     long a = (long)*ap, b = (long)*bp;
@@ -1666,6 +1696,7 @@ sort_2(ap, bp)
     }
 
     retval = rb_funcall(a, id_cmp, 1, b);
+    ary_sort_check(data);
     return rb_cmpint(retval, a, b);
 }
 
@@ -1673,8 +1704,12 @@ static VALUE
 sort_internal(ary)
     VALUE ary;
 {
+    struct ary_sort_data data;
+
+    data.ary = ary;
+    data.ptr = RARRAY(ary)->ptr; data.len = RARRAY(ary)->len;
     qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE),
-	  rb_block_given_p()?sort_1:sort_2);
+	  rb_block_given_p()?sort_1:sort_2, &data);
     return ary;
 }
 
@@ -1878,7 +1913,7 @@ rb_ary_select(ary)
     result = rb_ary_new2(RARRAY(ary)->len);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
-	    rb_ary_push(result, RARRAY(ary)->ptr[i]);
+	    rb_ary_push(result, rb_ary_elt(ary, i));
 	}
     }
     return result;
@@ -1910,9 +1945,12 @@ rb_ary_delete(ary, item)
 
     rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
-	if (rb_equal(RARRAY(ary)->ptr[i1], item)) continue;
+	VALUE e = RARRAY(ary)->ptr[i1];
+
+	if (rb_equal(e, item)) continue;
 	if (i1 != i2) {
-	    RARRAY(ary)->ptr[i2] = RARRAY(ary)->ptr[i1];
+	    if (RARRAY(ary)->len < i2) break;
+	    RARRAY(ary)->ptr[i2] = e;
 	}
 	i2++;
     }
@@ -2138,9 +2176,9 @@ rb_ary_zip(argc, argv, ary)
 	for (i=0; i<RARRAY(ary)->len; i++) {
 	    VALUE tmp = rb_ary_new2(argc+1);
 
-	    rb_ary_push(tmp, rb_ary_entry(ary, i));
+	    rb_ary_push(tmp, rb_ary_elt(ary, i));
 	    for (j=0; j<argc; j++) {
-		rb_ary_push(tmp, rb_ary_entry(argv[j], i));
+		rb_ary_push(tmp, rb_ary_elt(argv[j], i));
 	    }
 	    rb_yield(tmp);
 	}
@@ -2151,9 +2189,9 @@ rb_ary_zip(argc, argv, ary)
     for (i=0; i<len; i++) {
 	VALUE tmp = rb_ary_new2(argc+1);
 
-	rb_ary_push(tmp, rb_ary_entry(ary, i));
+	rb_ary_push(tmp, rb_ary_elt(ary, i));
 	for (j=0; j<argc; j++) {
-	    rb_ary_push(tmp, rb_ary_entry(argv[j], i));
+	    rb_ary_push(tmp, rb_ary_elt(argv[j], i));
 	}
 	rb_ary_push(result, tmp);
     }
@@ -2181,7 +2219,7 @@ rb_ary_transpose(ary)
     alen = RARRAY(ary)->len;
     if (alen == 0) return rb_ary_dup(ary);
     for (i=0; i<alen; i++) {
-	tmp = to_ary(RARRAY(ary)->ptr[i]);
+	tmp = to_ary(rb_ary_elt(ary, i));
 	if (elen < 0) {		/* first element */
 	    elen = RARRAY(tmp)->len;
 	    result = rb_ary_new2(elen);
@@ -2194,7 +2232,7 @@ rb_ary_transpose(ary)
 		     RARRAY(tmp)->len, elen);
 	}
 	for (j=0; j<elen; j++) {
-	    rb_ary_store(RARRAY(result)->ptr[j], i, RARRAY(tmp)->ptr[j]);
+	    rb_ary_store(rb_ary_elt(result, j), i, rb_ary_elt(tmp, j));
 	}
     }
     return result;
@@ -2541,7 +2579,7 @@ rb_ary_equal(ary1, ary2)
     }
     if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	if (!rb_equal(RARRAY(ary1)->ptr[i], RARRAY(ary2)->ptr[i]))
+	if (!rb_equal(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
 	    return Qfalse;
     }
     return Qtrue;
@@ -2709,7 +2747,7 @@ rb_ary_diff(ary1, ary2)
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (st_lookup(RHASH(hash)->tbl, RARRAY(ary1)->ptr[i], 0)) continue;
-	rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
+	rb_ary_push(ary3, rb_ary_elt(ary1, i));
     }
     return ary3;
 }
@@ -2738,9 +2776,9 @@ rb_ary_and(ary1, ary2)
     hash = ary_make_hash(ary2, 0);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	VALUE v = RARRAY(ary1)->ptr[i];
+	VALUE v = rb_ary_elt(ary1, i);
 	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&v, 0)) {
-	    rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
+	    rb_ary_push(ary3, v);
 	}
     }
 
@@ -2771,15 +2809,15 @@ rb_ary_or(ary1, ary2)
     hash = ary_make_hash(ary1, ary2);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	v = RARRAY(ary1)->ptr[i];
+	v = rb_ary_elt(ary1, i);
 	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&v, 0)) {
-	    rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
+	    rb_ary_push(ary3, v);
 	}
     }
     for (i=0; i<RARRAY(ary2)->len; i++) {
-	v = RARRAY(ary2)->ptr[i];
+	v = rb_ary_elt(ary2, i);
 	if (st_delete(RHASH(hash)->tbl, (st_data_t*)&v, 0)) {
-	    rb_ary_push(ary3, RARRAY(ary2)->ptr[i]);
+	    rb_ary_push(ary3, v);
 	}
     }
     return ary3;

@@ -466,15 +466,16 @@ typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
 #define PUSH(ll,rr) do { top->LL = (ll); top->RR = (rr); ++top; } while (0)  /* Push L,l,R,r */
 #define POP(ll,rr)  do { --top; ll = top->LL; rr = top->RR; } while (0)      /* Pop L,l,R,r */
 
-#define med3(a,b,c) ((*cmp)(a,b)<0 ?                                   \
-                       ((*cmp)(b,c)<0 ? b : ((*cmp)(a,c)<0 ? c : a)) : \
-                       ((*cmp)(b,c)>0 ? b : ((*cmp)(a,c)<0 ? a : c)))
+#define med3(a,b,c) ((*cmp)(a,b,d)<0 ?                                   \
+                       ((*cmp)(b,c,d)<0 ? b : ((*cmp)(a,c,d)<0 ? c : a)) : \
+                       ((*cmp)(b,c,d)>0 ? b : ((*cmp)(a,c,d)<0 ? a : c)))
 
-void ruby_qsort (base, nel, size, cmp)
+void ruby_qsort (base, nel, size, cmp, d)
      void* base;
      const int nel;
      const int size;
      int (*cmp)();
+     void *d;
 {
   register char *l, *r, *m;          	/* l,r:left,right group   m:median point */
   register int  t, eq_l, eq_r;       	/* eq_l: all items in left group are equal to S */
@@ -495,7 +496,7 @@ void ruby_qsort (base, nel, size, cmp)
   for (;;) {
     start:
     if (L + size == R) {       /* 2 elements */
-      if ((*cmp)(L,R) > 0) mmswap(L,R); goto nxt;
+      if ((*cmp)(L,R,d) > 0) mmswap(L,R); goto nxt;
     }
 
     l = L; r = R;
@@ -526,49 +527,49 @@ void ruby_qsort (base, nel, size, cmp)
       m = med3(m1, m, m3);
     }
 
-    if ((t = (*cmp)(l,m)) < 0) {                             /*3-5-?*/
-      if ((t = (*cmp)(m,r)) < 0) {                           /*3-5-7*/
+    if ((t = (*cmp)(l,m,d)) < 0) {                           /*3-5-?*/
+      if ((t = (*cmp)(m,r,d)) < 0) {                         /*3-5-7*/
 	if (chklim && nel >= chklim) {   /* check if already ascending order */
 	  char *p;
 	  chklim = 0;
-	  for (p=l; p<r; p+=size) if ((*cmp)(p,p+size) > 0) goto fail;
+	  for (p=l; p<r; p+=size) if ((*cmp)(p,p+size,d) > 0) goto fail;
 	  goto nxt;
 	}
 	fail: goto loopA;                                    /*3-5-7*/
       }
       if (t > 0) {
-	if ((*cmp)(l,r) <= 0) {mmswap(m,r); goto loopA;}     /*3-5-4*/
+	if ((*cmp)(l,r,d) <= 0) {mmswap(m,r); goto loopA;}     /*3-5-4*/
 	mmrot3(r,m,l); goto loopA;                           /*3-5-2*/
       }
       goto loopB;                                            /*3-5-5*/
     }
 
     if (t > 0) {                                             /*7-5-?*/
-      if ((t = (*cmp)(m,r)) > 0) {                           /*7-5-3*/
+      if ((t = (*cmp)(m,r,d)) > 0) {                         /*7-5-3*/
 	if (chklim && nel >= chklim) {   /* check if already ascending order */
 	  char *p;
 	  chklim = 0;
-	  for (p=l; p<r; p+=size) if ((*cmp)(p,p+size) < 0) goto fail2;
+	  for (p=l; p<r; p+=size) if ((*cmp)(p,p+size,d) < 0) goto fail2;
 	  while (l<r) {mmswap(l,r); l+=size; r-=size;}  /* reverse region */
 	  goto nxt;
 	}
 	fail2: mmswap(l,r); goto loopA;                      /*7-5-3*/
       }
       if (t < 0) {
-	if ((*cmp)(l,r) <= 0) {mmswap(l,m); goto loopB;}     /*7-5-8*/
+	if ((*cmp)(l,r,d) <= 0) {mmswap(l,m); goto loopB;}   /*7-5-8*/
 	mmrot3(l,m,r); goto loopA;                           /*7-5-6*/
       }
       mmswap(l,r); goto loopA;                               /*7-5-5*/
     }
 
-    if ((t = (*cmp)(m,r)) < 0)  {goto loopA;}                /*5-5-7*/
+    if ((t = (*cmp)(m,r,d)) < 0)  {goto loopA;}              /*5-5-7*/
     if (t > 0) {mmswap(l,r); goto loopB;}                    /*5-5-3*/
 
     /* determining splitting type in case 5-5-5 */           /*5-5-5*/
     for (;;) {
       if ((l += size) == r)      goto nxt;                   /*5-5-5*/
       if (l == m) continue;
-      if ((t = (*cmp)(l,m)) > 0) {mmswap(l,r); l = L; goto loopA;}  /*575-5*/
+      if ((t = (*cmp)(l,m,d)) > 0) {mmswap(l,r); l = L; goto loopA;}/*575-5*/
       if (t < 0)                 {mmswap(L,l); l = L; goto loopB;}  /*535-5*/
     }
 
@@ -578,14 +579,14 @@ void ruby_qsort (base, nel, size, cmp)
 	if ((l += size) == r)
 	  {l -= size; if (l != m) mmswap(m,l); l -= size; goto fin;}
 	if (l == m) continue;
-	if ((t = (*cmp)(l,m)) > 0) {eq_r = 0; break;}
+	if ((t = (*cmp)(l,m,d)) > 0) {eq_r = 0; break;}
 	if (t < 0) eq_l = 0;
       }
       for (;;) {
 	if (l == (r -= size))
 	  {l -= size; if (l != m) mmswap(m,l); l -= size; goto fin;}
 	if (r == m) {m = l; break;}
-	if ((t = (*cmp)(r,m)) < 0) {eq_l = 0; break;}
+	if ((t = (*cmp)(r,m,d)) < 0) {eq_l = 0; break;}
 	if (t == 0) break;
       }
       mmswap(l,r);    /* swap left and right */
@@ -597,14 +598,14 @@ void ruby_qsort (base, nel, size, cmp)
 	if (l == (r -= size))
 	  {r += size; if (r != m) mmswap(r,m); r += size; goto fin;}
 	if (r == m) continue;
-	if ((t = (*cmp)(r,m)) < 0) {eq_l = 0; break;}
+	if ((t = (*cmp)(r,m,d)) < 0) {eq_l = 0; break;}
 	if (t > 0) eq_r = 0;
       }
       for (;;) {
 	if ((l += size) == r)
 	  {r += size; if (r != m) mmswap(r,m); r += size; goto fin;}
 	if (l == m) {m = r; break;}
-	if ((t = (*cmp)(l,m)) > 0) {eq_r = 0; break;}
+	if ((t = (*cmp)(l,m,d)) > 0) {eq_r = 0; break;}
 	if (t == 0) break;
       }
       mmswap(l,r);    /* swap left and right */
