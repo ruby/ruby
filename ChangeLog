@@ -1,3 +1,8 @@
+Tue Feb 19 17:10:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (path_check_1): do not fail on world writable *parent*
+	  directories too.
+
 Tue Feb 19 15:51:41 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (path_check_1): do not warn on world writable *parent*

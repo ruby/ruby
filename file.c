@@ -2307,11 +2307,12 @@ path_check_1(path)
 #ifndef S_IWOTH
 # define S_IWOTH 002
 #endif
-	if (stat(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)) {
+	if (stat(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
 #ifdef S_ISVTX
-	    if (!p || !(st.st_mode & S_ISVTX))
+	    && (!p || !(st.st_mode & S_ISVTX))
 #endif
-		rb_warn("Unsecure world writeable dir %s , mode 0%o", p0, st.st_mode);
+	    ) {
+	    rb_warn("Unsecure world writeable dir %s , mode 0%o", p0, st.st_mode);
 	    if (p) *p = '/';
 	    return 0;
 	}
