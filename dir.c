@@ -1099,13 +1099,12 @@ struct rb_glob_args {
     VALUE arg;
 };
 
-static VALUE
+static void
 rb_glob_caller(path, a)
     VALUE path, a;
 {
     struct rb_glob_args *args = (struct rb_glob_args *)a;
     (*args->func)(RSTRING(path)->ptr, args->arg);
-    return Qnil;
 }
 
 void
@@ -1119,7 +1118,7 @@ rb_glob(path, func, arg)
 
     args.func = func;
     args.arg = arg;
-    status = rb_glob2(rb_str_new2(path), 0, rb_glob_caller, &args);
+    status = rb_glob2(rb_str_new2(path), 0, rb_glob_caller, (VALUE)&args);
 
     if (status) rb_jump_tag(status);
 }
@@ -1130,7 +1129,12 @@ rb_globi(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    int status = rb_glob2(path, FNM_CASEFOLD, func, arg);
+    struct rb_glob_args args;
+    int status;
+
+    args.func = func;
+    args.arg = arg;
+    status = rb_glob2(rb_str_new2(path), FNM_CASEFOLD, rb_glob_caller, (VALUE)&args);
 
     if (status) rb_jump_tag(status);
 }

@@ -1,3 +1,8 @@
+Thu Nov 11 17:36:12 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (rb_globi): also should call back via rb_glob_caller().
+	  [ruby-dev:24775]
+
 Thu Nov 11 16:47:21 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_file.rb (test_truncate_wbuf): we want to test
