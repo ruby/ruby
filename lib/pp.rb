@@ -14,31 +14,31 @@ pretty-printed output by (({pp})) is:
     #<PrettyPrint::Group:0x40d064c
      @buf=
       [#<PrettyPrint::Group:0x40d05d4
-	@buf=
-	 [#<PrettyPrint::Text:0x40d0598 @tail=2, @text="[", @width=1>,
-	  #<PrettyPrint::Group:0x40d0534
-	   @buf=[#<PrettyPrint::Text:0x40d04f8 @tail=1, @text="1", @width=1>],
-	   @group=2,
-	   @singleline_width=1,
-	   @tail=1>,
-	  #<PrettyPrint::Text:0x40d053e @tail=0, @text=",", @width=1>,
-	  #<PrettyPrint::Breakable:0x40d0516
-	   @genspace=#<Proc:0x40d0656>,
-	   @group=2,
-	   @indent=1,
-	   @newline="\n",
-	   @sep=" ",
-	   @tail=2,
-	   @width=1>,
-	  #<PrettyPrint::Group:0x40d04e4
-	   @buf=[#<PrettyPrint::Text:0x40d04a8 @tail=1, @text="2", @width=1>],
-	   @group=2,
-	   @singleline_width=1,
-	   @tail=1>,
-	  #<PrettyPrint::Text:0x40d057a @tail=0, @text="]", @width=1>],
-	@group=1,
-	@singleline_width=6,
-	@tail=0>],
+        @buf=
+         [#<PrettyPrint::Text:0x40d0598 @tail=2, @text="[", @width=1>,
+          #<PrettyPrint::Group:0x40d0534
+           @buf=[#<PrettyPrint::Text:0x40d04f8 @tail=1, @text="1", @width=1>],
+           @group=2,
+           @singleline_width=1,
+           @tail=1>,
+          #<PrettyPrint::Text:0x40d053e @tail=0, @text=",", @width=1>,
+          #<PrettyPrint::Breakable:0x40d0516
+           @genspace=#<Proc:0x40d0656>,
+           @group=2,
+           @indent=1,
+           @newline="\n",
+           @sep=" ",
+           @tail=2,
+           @width=1>,
+          #<PrettyPrint::Group:0x40d04e4
+           @buf=[#<PrettyPrint::Text:0x40d04a8 @tail=1, @text="2", @width=1>],
+           @group=2,
+           @singleline_width=1,
+           @tail=1>,
+          #<PrettyPrint::Text:0x40d057a @tail=0, @text="]", @width=1>],
+        @group=1,
+        @singleline_width=6,
+        @tail=0>],
      @group=0,
      @singleline_width=6,
      @tail=0>,
@@ -207,15 +207,15 @@ class PP < PrettyPrint
   def pp_object(obj)
     object_address_group(obj) {
       obj.pretty_print_instance_variables.each {|v|
-	v = v.to_s if Symbol === v
-	text ',' unless first?
-	breakable
-	text v
-	text '='
-	group(1) {
-	  breakable ''
-	  pp(obj.instance_eval(v))
-	}
+        v = v.to_s if Symbol === v
+        text ',' unless first?
+        breakable
+        text v
+        text '='
+        group(1) {
+          breakable ''
+          pp(obj.instance_eval(v))
+        }
       }
     }
   end
@@ -223,15 +223,15 @@ class PP < PrettyPrint
   def pp_hash(obj)
     group(1, '{', '}') {
       obj.each {|k, v|
-	comma_breakable unless first?
-	group {
-	  pp k
-	  text '=>'
-	  group(1) {
-	    breakable ''
-	    pp v
-	  }
-	}
+        comma_breakable unless first?
+        group {
+          pp k
+          text '=>'
+          group(1) {
+            breakable ''
+            pp v
+          }
+        }
       }
     }
   end
@@ -247,9 +247,9 @@ class PP < PrettyPrint
       # specific pretty_print is not defined, try specific inspect.
       begin
         old = Thread.current[Key]
-	result1 = sprintf('#<%s:0x%x pretty_printed>', self.class.name, self.__id__ * 2)
+        result1 = sprintf('#<%s:0x%x pretty_printed>', self.class.name, self.__id__ * 2)
         Thread.current[Key] = [pp, result1]
-	result2 = ObjectMixin.pp_call_inspect(self)
+        result2 = ObjectMixin.pp_call_inspect(self)
       ensure
         Thread.current[Key] = old
       end
@@ -264,19 +264,19 @@ class PP < PrettyPrint
 
     def inspect
       if CallInspectFrame == caller[0]
-	# specific inspect is also not defined, use generic pretty_print. 
-	pp, result = Thread.current[Key]
-	pp.pp_object(self)
-	result
+        # specific inspect is also not defined, use generic pretty_print. 
+        pp, result = Thread.current[Key]
+        pp.pp_object(self)
+        result
       else
-	super
+        super
       end
     end
 
     def pretty_print_cycled(pp)
       pp.object_address_group(self) {
-	pp.breakable
-	pp.text '...'
+        pp.breakable
+        pp.text '...'
       }
     end
 
@@ -298,8 +298,8 @@ class Array
   def pretty_print(pp)
     pp.group(1, '[', ']') {
       self.each {|v|
-	pp.comma_breakable unless pp.first?
-	pp.pp v
+        pp.comma_breakable unless pp.first?
+        pp.pp v
       }
     }
   end
@@ -329,14 +329,14 @@ class Struct
   def pretty_print(pp)
     pp.object_group(self) {
       self.members.each {|member|
-	pp.text "," unless pp.first?
-	pp.breakable
-	pp.text member.to_s
-	pp.text '='
-	pp.group(1) {
-	  pp.breakable ''
-	  pp.pp self[member]
-	}
+        pp.text "," unless pp.first?
+        pp.breakable
+        pp.text member.to_s
+        pp.text '='
+        pp.group(1) {
+          pp.breakable ''
+          pp.pp self[member]
+        }
       }
     }
   end
@@ -361,74 +361,74 @@ class File
     def pretty_print(pp)
       require 'etc.so'
       pp.object_group(self) {
-	pp.breakable
-	pp.text sprintf("dev=0x%x", self.dev); pp.comma_breakable
-	pp.text "ino="; pp.pp self.ino; pp.comma_breakable
-	pp.group {
-	  m = self.mode
-	  pp.text sprintf("mode=0%o", m)
-	  pp.breakable
-	  pp.text sprintf("(%s %c%c%c%c%c%c%c%c%c)",
-	    self.ftype,
-	    (m & 0400 == 0 ? ?- : ?r),
-	    (m & 0200 == 0 ? ?- : ?w),
-	    (m & 0100 == 0 ? (m & 04000 == 0 ? ?- : ?S) :
-	                     (m & 04000 == 0 ? ?x : ?s)),
-	    (m & 0040 == 0 ? ?- : ?r),
-	    (m & 0020 == 0 ? ?- : ?w),
-	    (m & 0010 == 0 ? (m & 02000 == 0 ? ?- : ?S) :
-	                     (m & 02000 == 0 ? ?x : ?s)),
-	    (m & 0004 == 0 ? ?- : ?r),
-	    (m & 0002 == 0 ? ?- : ?w),
-	    (m & 0001 == 0 ? (m & 01000 == 0 ? ?- : ?T) :
-	                     (m & 01000 == 0 ? ?x : ?t)))
-	}
-	pp.comma_breakable
-	pp.text "nlink="; pp.pp self.nlink; pp.comma_breakable
-	pp.group {
-	  pp.text "uid="; pp.pp self.uid
-	  begin
-	    name = Etc.getpwuid(self.uid).name
-	    pp.breakable; pp.text "(#{name})"
-	  rescue ArgumentError
-	  end
-	}
-	pp.comma_breakable
-	pp.group {
-	  pp.text "gid="; pp.pp self.gid
-	  begin
-	    name = Etc.getgrgid(self.gid).name
-	    pp.breakable; pp.text "(#{name})"
-	  rescue ArgumentError
-	  end
-	}
-	pp.comma_breakable
-	pp.group {
-	  pp.text sprintf("rdev=0x%x", self.rdev)
-	  pp.breakable
-	  pp.text sprintf('(%d, %d)', self.rdev_major, self.rdev_minor)
-	}
-	pp.comma_breakable
-	pp.text "size="; pp.pp self.size; pp.comma_breakable
-	pp.text "blksize="; pp.pp self.blksize; pp.comma_breakable
-	pp.text "blocks="; pp.pp self.blocks; pp.comma_breakable
-	pp.group {
-	  t = self.atime
-	  pp.text "atime="; pp.pp t
-	  pp.breakable; pp.text "(#{t.tv_sec})"
-	}
-	pp.comma_breakable
-	pp.group {
-	  t = self.mtime
-	  pp.text "mtime="; pp.pp t
-	  pp.breakable; pp.text "(#{t.tv_sec})"
-	}
-	pp.comma_breakable
-	pp.group {
-	  t = self.ctime
-	  pp.text "ctime="; pp.pp t
-	  pp.breakable; pp.text "(#{t.tv_sec})"
-	}
+        pp.breakable
+        pp.text sprintf("dev=0x%x", self.dev); pp.comma_breakable
+        pp.text "ino="; pp.pp self.ino; pp.comma_breakable
+        pp.group {
+          m = self.mode
+          pp.text sprintf("mode=0%o", m)
+          pp.breakable
+          pp.text sprintf("(%s %c%c%c%c%c%c%c%c%c)",
+            self.ftype,
+            (m & 0400 == 0 ? ?- : ?r),
+            (m & 0200 == 0 ? ?- : ?w),
+            (m & 0100 == 0 ? (m & 04000 == 0 ? ?- : ?S) :
+                             (m & 04000 == 0 ? ?x : ?s)),
+            (m & 0040 == 0 ? ?- : ?r),
+            (m & 0020 == 0 ? ?- : ?w),
+            (m & 0010 == 0 ? (m & 02000 == 0 ? ?- : ?S) :
+                             (m & 02000 == 0 ? ?x : ?s)),
+            (m & 0004 == 0 ? ?- : ?r),
+            (m & 0002 == 0 ? ?- : ?w),
+            (m & 0001 == 0 ? (m & 01000 == 0 ? ?- : ?T) :
+                             (m & 01000 == 0 ? ?x : ?t)))
+        }
+        pp.comma_breakable
+        pp.text "nlink="; pp.pp self.nlink; pp.comma_breakable
+        pp.group {
+          pp.text "uid="; pp.pp self.uid
+          begin
+            name = Etc.getpwuid(self.uid).name
+            pp.breakable; pp.text "(#{name})"
+          rescue ArgumentError
+          end
+        }
+        pp.comma_breakable
+        pp.group {
+          pp.text "gid="; pp.pp self.gid
+          begin
+            name = Etc.getgrgid(self.gid).name
+            pp.breakable; pp.text "(#{name})"
+          rescue ArgumentError
+          end
+        }
+        pp.comma_breakable
+        pp.group {
+          pp.text sprintf("rdev=0x%x", self.rdev)
+          pp.breakable
+          pp.text sprintf('(%d, %d)', self.rdev_major, self.rdev_minor)
+        }
+        pp.comma_breakable
+        pp.text "size="; pp.pp self.size; pp.comma_breakable
+        pp.text "blksize="; pp.pp self.blksize; pp.comma_breakable
+        pp.text "blocks="; pp.pp self.blocks; pp.comma_breakable
+        pp.group {
+          t = self.atime
+          pp.text "atime="; pp.pp t
+          pp.breakable; pp.text "(#{t.tv_sec})"
+        }
+        pp.comma_breakable
+        pp.group {
+          t = self.mtime
+          pp.text "mtime="; pp.pp t
+          pp.breakable; pp.text "(#{t.tv_sec})"
+        }
+        pp.comma_breakable
+        pp.group {
+          t = self.ctime
+          pp.text "ctime="; pp.pp t
+          pp.breakable; pp.text "(#{t.tv_sec})"
+        }
       }
     end
   end
