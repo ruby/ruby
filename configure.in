@@ -111,6 +111,8 @@ cygwin*|mingw*)
     AC_CHECK_TOOL(AS, as)
     AC_CHECK_TOOL(DLLTOOL, dlltool)
     AC_CHECK_TOOL(WINDRES, windres)
+    target_cpu=`echo $target_cpu | sed s/i.86/i386/`
+    : ${enable_shared=yes}
     ;;
 esac
 
@@ -856,7 +858,7 @@ LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
 LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so'
 ENABLE_SHARED=no
 
-AC_ARG_ENABLE(enable-shared,
+AC_ARG_ENABLE(shared,
        [--enable-shared           build a shared library for Ruby. ],
        [enable_shared=$enableval])
 if test "$enable_shared" = 'yes'; then
