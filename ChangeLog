@@ -1,4 +1,4 @@
-Thu Nov  6 11:01:19 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Nov  6 11:42:07 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_set_string, strio_reopen): check
 	  tainted.
@@ -13,6 +13,9 @@ Thu Nov  6 11:01:19 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Completion#complete): default not to
 	  ignore case on completion.  [ruby-talk:84726]
+
+	* win32/win32.c (make_cmdvector): process backslashes even if a quote
+	  is not enclosed.
 
 Wed Nov  5 23:49:45 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 

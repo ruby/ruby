@@ -1195,8 +1195,7 @@ make_cmdvector(const char *cmd, char ***vec)
 	//
 
 	len = ptr - base;
-	if (quote) escape = 0;
-	else if (done) --len;
+	if (done) --len;
 
 	//
 	// if it's an input vector element and it's enclosed by quotes, 
