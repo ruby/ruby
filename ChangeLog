@@ -1,3 +1,8 @@
+Wed Jul  7 00:48:34 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/tk/lib/tkextlib/tktrans.rb,
+	  ext/tk/lib/tkextlib/treectrl.rb: fix syntax errors.
+
 Tue Jul  6 18:38:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib : improve framework of developping Tcl/Tk extension 

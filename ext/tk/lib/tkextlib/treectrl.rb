@@ -10,4 +10,4 @@ require 'tkextlib/setup.rb'
 require 'tkextlib/treectrl/setup.rb'
 
 # load library
-require 'tkextlib/treectrl/tktreectrl')
+require 'tkextlib/treectrl/tktreectrl'
