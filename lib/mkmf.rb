@@ -585,7 +585,7 @@ SRC
 /*top*/
 static #{type} *t;
 SRC
-      $defs.push(format("-DHAVE_TYPE_%s", type.upcase))
+      $defs.push(format("-DHAVE_TYPE_%s", type.upcase.tr_s("^A-Z0-9_", "_")))
       true
     else
       false
@@ -599,7 +599,7 @@ def check_sizeof(type, header = nil, &b)
   message "%s", m
   Logging::message "check_sizeof: %s--------------------\n", m
   if size = try_constant(expr, header, &b)
-    $defs.push(format("-DSIZEOF_%s", type.upcase))
+    $defs.push(format("-DSIZEOF_%s", type.upcase.tr_s("^A-Z0-9_", "_")))
   end
   message(a = size ? "#{size}\n" : "failed\n")
   Logging::message "-------------------- %s\n", a

@@ -1,3 +1,8 @@
+Wed May 12 19:59:43 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_type, check_sizeof): replace unusable characters.
+	  [ruby-talk:99788]
+
 Wed May 12 17:41:42 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Config): make it configurable without
@@ -10,8 +15,8 @@ Wed May 12 14:37:27 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Wed May 12 13:20:19 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk/composite.rb: improve configure methods (based on 
-	  the proposal of [ruby-talk:99671]). 
+	* ext/tk/lib/tk/composite.rb: improve configure methods (based on
+	  the proposal of [ruby-talk:99671]).
 
 Wed May 12 11:51:08 2004  Dave Thomas  <dave@pragprog.com>
 
@@ -119,7 +124,7 @@ Thu May  6 14:22:29 2004  why the lucky stiff  <why@ruby-lang.org>
 	* lib/yaml/rubytypes.rb (to_yaml): added instance variable handling
 	  for Ranges, Strings, Structs, Regexps.
 
-	* lib/yaml/rubytypes.rb (to_yaml_fold): new method for setting a 
+	* lib/yaml/rubytypes.rb (to_yaml_fold): new method for setting a
 	  String's flow style.
 
 	* lib/yaml.rb (YAML::object_maker): now uses Object.allocate.
