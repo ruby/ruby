@@ -548,6 +548,22 @@ mkinetaddr(host, buf, len)
     mkipaddr0((struct sockaddr*)&sin, buf, len);
 }
 
+static int
+str_isnumber(p)
+        const char *p;
+{
+    char *ep;
+
+    if (!p || *p == '\0')
+       return 0;
+    ep = NULL;
+    (void)strtoul(p, &ep, 10);
+    if (ep && *ep == '\0')
+       return 1;
+    else
+       return 0;
+}
+
 static struct addrinfo*
 sock_addrinfo(host, port, socktype, flags)
     VALUE host, port;
@@ -598,17 +614,16 @@ sock_addrinfo(host, port, socktype, flags)
 	portp = RSTRING(port)->ptr;
     }
 
-    if (socktype == 0 && flags == 0) {
-	hintsp = 0;
+    if (socktype == 0 && flags == 0 && str_isnumber(portp)) {
+       socktype = SOCK_DGRAM;
     }
-    else {
-	hintsp = &hints;
-	MEMZERO(&hints, struct addrinfo, 1);
-	hints.ai_family = PF_UNSPEC;
-	hints.ai_protocol = 0;
-	hints.ai_socktype = socktype;
-	hints.ai_flags = flags;
-    }
+
+    hintsp = &hints;
+    MEMZERO(&hints, struct addrinfo, 1);
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_protocol = 0;
+    hints.ai_socktype = socktype;
+    hints.ai_flags = flags;
     error = getaddrinfo(hostp, portp, hintsp, &res);
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
