@@ -1,3 +1,12 @@
+Fri Jun 14 15:22:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (read_escape): deny zero-width hexadecimal character.
+	  (ruby-bugs-ja:PR#260)
+
+	* parse.y (tokadd_escape): ditto.
+
+	* regex.c (re_compile_pattern): ditto.
+
 Thu Jun 13 00:33:49 2002  takuma ozawa  <metal@mine.ne.jp>
 
 	* hash.c (rb_hash_s_create): use rb_hash_aset() instead of calling

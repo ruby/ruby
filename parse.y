@@ -2292,6 +2292,10 @@ read_escape()
 	    int numlen;
 
 	    c = scan_hex(lex_p, 2, &numlen);
+	    if (numlen == 0) {
+		yyerror("Invalid escape character syntax");
+		return 0;
+	    }
 	    lex_p += numlen;
 	}
 	return c;
@@ -2377,6 +2381,10 @@ tokadd_escape(term)
 	    tokadd('\\');
 	    tokadd(c);
 	    scan_hex(lex_p, 2, &numlen);
+	    if (numlen == 0) {
+		yyerror("Invalid escape character syntax");
+		return -1;
+	    }
 	    while (numlen--)
 		tokadd(nextc());
 	}
