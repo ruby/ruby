@@ -25,7 +25,6 @@ class CGI
       md5.update('foobar')
       md5.hexdigest[0,16]
     end
-    private :create_new_id
 
     def initialize(request, option={})
       session_key = option['session_key'] || '_session_id'

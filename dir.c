@@ -694,7 +694,14 @@ push_pattern(path, ary)
     char *path;
     VALUE ary;
 {
-    rb_ary_push(ary, rb_tainted_str_new2(path));
+    VALUE str = rb_tainted_str_new2(path);
+
+    if (ary) {
+	rb_ary_push(ary, str);
+    }
+    else {
+	rb_yield(str);
+    }
 }
 
 static void
@@ -768,10 +775,12 @@ dir_s_glob(dir, str)
     char buffer[MAXPATHLEN], *buf = buffer;
     char *t;
     int nest;
-    VALUE ary;
+    VALUE ary = 0;
 
     Check_SafeStr(str);
-    ary = rb_ary_new();
+    if (!rb_block_given_p()) {
+	ary = rb_ary_new();
+    }
     if (RSTRING(str)->len >= MAXPATHLEN)
 	buf = xmalloc(RSTRING(str)->len + 1);
 
@@ -798,14 +807,6 @@ dir_s_glob(dir, str)
     }
     if (buf != buffer)
 	free(buf);
-    if (rb_block_given_p()) {
-	long len = RARRAY(ary)->len;
-	VALUE *ptr = RARRAY(ary)->ptr;
-
-	while (len--) {
-	    rb_yield(*ptr++);
-	}
-    }
     return ary;
 }
 
