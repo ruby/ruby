@@ -5715,6 +5715,7 @@ rb_load(fname, wrap)
     volatile ID last_func;
     volatile VALUE wrapper = 0;
     volatile VALUE self = ruby_top_self;
+    NODE *volatile last_node;
     NODE *saved_cref = ruby_cref;
     TMP_PROTECT;
 
@@ -5759,6 +5760,11 @@ rb_load(fname, wrap)
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     last_func = ruby_frame->last_func;
+    last_node = ruby_current_node;
+    if (!ruby_current_node && ruby_sourcefile) {
+	last_node = NEW_NEWLINE(0);
+    }
+    ruby_current_node = 0;
     if (state == 0) {
 	NODE *node;
 	volatile int critical;
@@ -5777,6 +5783,9 @@ rb_load(fname, wrap)
     }
     ALLOW_INTS;
     ruby_frame->last_func = last_func;
+    ruby_current_node = last_node;
+    ruby_sourcefile = 0;
+    ruby_set_current_source();
     if (ruby_scope->flags == SCOPE_ALLOCA && ruby_class == rb_cObject) {
 	if (ruby_scope->local_tbl) /* toplevel was empty */
 	    free(ruby_scope->local_tbl);
