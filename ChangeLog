@@ -1,3 +1,8 @@
+Tue Dec 31 19:29:47 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* defines.h (FLUSH_REGISTER_WINDOWS): Add support for
+	  FreeBSD/sparc64.  Now ruby builds fine and make test passes.
+
 Tue Dec 31 04:55:05 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ruby.1: mdoc'ify.

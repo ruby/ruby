@@ -52,7 +52,9 @@
 #if defined(sparc) || defined(__sparc__)
 # if defined(linux) || defined(__linux__)
 #define FLUSH_REGISTER_WINDOWS  asm("ta  0x83")
-# else /* Solaris, not sparc linux */
+# elif defined(__FreeBSD__) && defined(__sparc64__)
+#define FLUSH_REGISTER_WINDOWS  asm volatile("flushw" : :)
+# else /* Solaris, OpenBSD, NetBSD, etc. */
 #define FLUSH_REGISTER_WINDOWS  asm("ta  0x03")
 # endif /* trap always to flush register windows if we are on a Sparc system */
 #else /* Not a sparc, so */
