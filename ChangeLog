@@ -1,3 +1,8 @@
+Tue May  7 09:17:51 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* eval.c (superclass): undesirable "unexpected return" when the
+	  superclass is not a Class.
+
 Sun May  5 06:53:45 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb: exclude topdir from the system configuration
