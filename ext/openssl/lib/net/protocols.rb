@@ -42,6 +42,7 @@ module Net
     def ssl_connect()
       @raw_socket = @socket
       @socket = OpenSSL::SSL::SSLSocket.new(@raw_socket, @ssl_context)
+      @scoket.sync = true
       @socket.connect
     end
 

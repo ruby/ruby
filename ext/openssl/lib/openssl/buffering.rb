@@ -16,7 +16,7 @@
 
 module Buffering
   include Enumerable
-  attr_accessor :sync
+  attr_accessor :sync, :sync_close
   BLOCK_SIZE = 1024*16
 
   #
@@ -185,5 +185,7 @@ module Buffering
   def close
     flush
     sysclose
+    @sync_close ||= false
+    @io.close if @sync_close
   end
 end

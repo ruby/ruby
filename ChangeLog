@@ -1,3 +1,14 @@
+Sun Aug 17 17:10:03 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (SSLSocket#sync_close=): add a 
+	  method to specify if the underlying IO will be closed in
+	  SSLSocket#close.
+
+	* ext/openssl/lib/openssl/buffering.rb: add forwarders to 
+	  setsockopt, getsockopt and fcntl.
+
+	* ext/openssl/lib/net/protocols.rb: enable sync for SSLSocket.
+
 Sun Aug 17 11:32:04 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): should not force to remake Makefile when
@@ -113,7 +124,7 @@ Wed Aug 13 23:31:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 Wed Aug 13 19:21:34 2003  Christian Neukirchen  <chneukirchen@yahoo.de>
 
 	* lib/webrick/https.rb (HTTPServer#run): should set syncing-mode
-	  to SSLSocket.
+	  to SSLSocket. [ruby-talk:78919]
 
 Wed Aug 13 18:13:49 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

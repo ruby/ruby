@@ -29,10 +29,21 @@ module OpenSSL
         @io.peeraddr
       end
 
+      def getsockopt(level, optname, optval)
+        @io.setsockopt(level, optname, optval)
+      end
+
+      def setsockopt(level, optname)
+        @io.setsockopt(level, optname)
+      end
+
+      def fcntl(*args)
+        @io.fcntl(*args)
+      end
+
       def closed?
         @io.closed?
       end
     end
   end
 end
-
