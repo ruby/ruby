@@ -2,6 +2,8 @@ Wed Oct 11 14:29:51 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: 2nd arg for ProtocolError#initialize is optional.
 
+	* lib/net/http.rb: code refining.
+
 Tue Oct 10 16:11:54 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dln.c (dln_load): remove unused code for cygwin.
