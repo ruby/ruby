@@ -48,8 +48,8 @@ def rm_f(*files)
     targets.concat Dir[file]
   end
   if not targets.empty?
-    File::chmod 0777, *targets
-    File::unlink *targets
+    File::chmod(0777, *targets)
+    File::unlink(*targets)
   end
 end
 
@@ -465,7 +465,7 @@ TARGET = #{target}
 DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
 
 RUBY = #{CONFIG["ruby_install_name"]}
-RM = $(RUBY) -r ftools -e 'File::rm_f(*Dir[ARGV.join(" ")])'
+RM = $(RUBY) -rftools -e 'File::rm_f(*ARGV.map{|x|Dir[x]}.flatten.uniq)'
 
 EXEEXT = #{CONFIG["EXEEXT"]}
 
