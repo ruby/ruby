@@ -198,22 +198,23 @@ end
 require 'yaml/rubytypes'
 require 'yaml/types'
 
-#
-# ryan: You know how Kernel.p is a really convenient way to dump ruby
-#       structures?  The only downside is that it's not as legible as
-#       YAML.
-#
-# _why: (listening)
-#
-# ryan: I know you don't want to urinate all over your users' namespaces.
-#       But, on the other hand, convenience of dumping for debugging is,
-#       IMO, a big YAML use case.
-#
-# _why: Go nuts!  Have a pony parade!
-#
-# ryan: Either way, I certainly will have a pony parade.
-#
 module Kernel
+    #
+    # ryan:: You know how Kernel.p is a really convenient way to dump ruby
+    #        structures?  The only downside is that it's not as legible as
+    #        YAML.
+    #
+    # _why:: (listening)
+    #
+    # ryan:: I know you don't want to urinate all over your users' namespaces.
+    #        But, on the other hand, convenience of dumping for debugging is,
+    #        IMO, a big YAML use case.
+    #
+    # _why:: Go nuts!  Have a pony parade!
+    #
+    # ryan:: Either way, I certainly will have a pony parade.
+    #
+
     def y( x )
         puts x.to_yaml
     end
