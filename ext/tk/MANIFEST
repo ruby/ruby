@@ -115,6 +115,7 @@ sample/demos-en/text.rb
 sample/demos-en/timer
 sample/demos-en/tkencoding.rb
 sample/demos-en/twind.rb
+sample/demos-en/unicodeout.rb
 sample/demos-en/vscale.rb
 sample/demos-en/widget
 sample/demos-jp/README
@@ -191,5 +192,6 @@ sample/demos-jp/tcolor
 sample/demos-jp/text.rb
 sample/demos-jp/timer
 sample/demos-jp/twind.rb
+sample/demos-jp/unicodeout.rb
 sample/demos-jp/vscale.rb
 sample/demos-jp/widget
