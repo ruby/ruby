@@ -227,9 +227,9 @@ rb_values_new2(n, elts)
 
     val = ary_new(rb_cValues, n);
     if (n > 0 && elts) {
+	RARRAY(val)->len = n;
 	MEMCPY(RARRAY(val)->ptr, elts, VALUE, n);
     }
-    RARRAY(val)->len = n;
 
     return val;
 }

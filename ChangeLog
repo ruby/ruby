@@ -1,3 +1,18 @@
+Sat May 15 01:33:12 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_each_func): terminates loop if generating value
+	  is same to @end.  [ruby-talk:100269]
+
+Fri May 14 22:08:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_new4): should not reuse frozen shared string if
+	  the original is not an instance of String. [ruby-talk:100193]
+
+Fri May 14 21:29:26 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_mdump): preserve GMT bit in the marshal data.
+	  [ruby-talk:100213]
+
 Fri May 14 18:37:49 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/canvas.rb: improve coords support for canvas
@@ -57,6 +72,11 @@ Wed May 12 13:20:19 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Wed May 12 11:51:08 2004  Dave Thomas  <dave@pragprog.com>
 
 	* class.c (rb_obj_singleton_methods): fix rdoc
+
+Tue May 11 07:09:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): do not protect exception during receiver
+	  evaluation.
 
 Mon May 10 22:28:14 2004  Minero Aoki  <aamine@loveruby.net>
 

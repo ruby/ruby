@@ -2225,15 +2225,7 @@ is_defined(self, node, buf)
 	val = self;
 	if (node->nd_recv == (NODE *)1) goto check_bound;
       case NODE_CALL:
-	PUSH_TAG(PROT_NONE);
-	if ((state = EXEC_TAG()) == 0) {
-	    val = rb_eval(self, node->nd_recv);
-	}
-	POP_TAG();
-	if (state) {
-	    ruby_errinfo = Qnil;
-	    return 0;
-	}
+	val = rb_eval(self, node->nd_recv);
       check_bound:
 	{
 	    int call = nd_type(node)==NODE_CALL;
@@ -2324,26 +2316,16 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_COLON2:
-	PUSH_TAG(PROT_NONE);
-	if ((state = EXEC_TAG()) == 0) {
-	    val = rb_eval(self, node->nd_head);
-	}
-	POP_TAG();
-	if (state) {
-	    ruby_errinfo = Qnil;
-	    return 0;
-	}
-	else {
-	    switch (TYPE(val)) {
-	      case T_CLASS:
-	      case T_MODULE:
-		if (rb_const_defined_from(val, node->nd_mid))
-		    return "constant";
-		break;
-	      default:
-		if (rb_method_boundp(CLASS_OF(val), node->nd_mid, 1)) {
-		    return "method";
-		}
+	val = rb_eval(self, node->nd_head);
+	switch (TYPE(val)) {
+	  case T_CLASS:
+	  case T_MODULE:
+	    if (rb_const_defined_from(val, node->nd_mid))
+		return "constant";
+	    break;
+	  default:
+	    if (rb_method_boundp(CLASS_OF(val), node->nd_mid, 1)) {
+		return "method";
 	    }
 	}
 	break;
@@ -4809,6 +4791,7 @@ rb_yield_values(n, va_alist)
     for (i=0; i<n; i++) {
 	RARRAY(val)->ptr[i] = va_arg(args, VALUE);
     }
+    RARRAY(val)->len = n;
     va_end(args);
     return rb_yield_0(val, 0, 0, 0, Qtrue);
 }

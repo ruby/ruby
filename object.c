@@ -208,9 +208,7 @@ init_copy(dest, obj)
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
-    if (FL_TEST(obj, FL_EXIVAR)) {
-	rb_copy_generic_ivar(dest, obj);
-    }
+    rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
     switch (TYPE(obj)) {
       case T_OBJECT:

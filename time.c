@@ -1898,11 +1898,12 @@ time_mdump(time)
     t = tobj->tv.tv_sec;
     tm = gmtime(&t);
 
-    if ((tm->tm_year & 0x1ffff) != tm->tm_year)
+    if ((tm->tm_year & 0xffff) != tm->tm_year)
 	rb_raise(rb_eArgError, "year too big to marshal");
 
     p = 0x1          << 31 | /*  1 */
-	tm->tm_year  << 14 | /* 17 */
+	tobj->gmt    << 30 | /*  1 */
+	tm->tm_year  << 14 | /* 16 */
 	tm->tm_mon   << 10 | /*  4 */
 	tm->tm_mday  <<  5 | /*  5 */
 	tm->tm_hour;         /*  5 */
@@ -1939,10 +1940,7 @@ time_dump(argc, argv, time)
 
     rb_scan_args(argc, argv, "01", 0);
     str = time_mdump(time); 
-    if (FL_TEST(time, FL_EXIVAR)) {
-	rb_copy_generic_ivar(str, time);
-	FL_SET(str, FL_EXIVAR);
-    }
+    rb_copy_generic_ivar(str, time);
 
     return str;
 }
@@ -1960,7 +1958,7 @@ time_mload(time, str)
     time_t sec, usec;
     unsigned char *buf;
     struct tm tm;
-    int i;
+    int i, gmt;
 
     time_modify(time);
     StringValue(str);
@@ -1983,7 +1981,8 @@ time_mload(time, str)
     }
     else {
 	p &= ~(1<<31);
-	tm.tm_year = (p >> 14) & 0x1ffff;
+	gmt        = (p >> 30) & 0x1;
+	tm.tm_year = (p >> 14) & 0xffff;
 	tm.tm_mon  = (p >> 10) & 0xf;
 	tm.tm_mday = (p >>  5) & 0x1f;
 	tm.tm_hour =  p        & 0x1f;
@@ -1998,6 +1997,7 @@ time_mload(time, str)
 
     GetTimeval(time, tobj);
     tobj->tm_got = 0;
+    tobj->gmt = gmt;
     tobj->tv.tv_sec = sec;
     tobj->tv.tv_usec = usec;
     return time;
@@ -2016,10 +2016,7 @@ time_load(klass, str)
 {
     VALUE time = time_s_alloc(klass);
 
-    if (FL_TEST(str, FL_EXIVAR)) {
-	rb_copy_generic_ivar(time, str);
-	FL_SET(time, FL_EXIVAR);
-    }
+    rb_copy_generic_ivar(time, str);
     time_mload(time, str);
     return time;
 }

@@ -978,6 +978,7 @@ rb_copy_generic_ivar(clone, obj)
     st_table *tbl;
 
     if (!generic_iv_tbl) return;
+    if (!FL_TEST(obj, FL_EXIVAR)) return;
     if (st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) {
 	st_table *old;
 
@@ -987,6 +988,7 @@ rb_copy_generic_ivar(clone, obj)
 	}
 	else {
 	    st_add_direct(generic_iv_tbl, clone, (st_data_t)st_copy(tbl));
+	    FL_SET(clone, FL_EXIVAR);
 	}
     }
 }

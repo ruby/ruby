@@ -155,10 +155,13 @@ static int
 r_le(a, b)
     VALUE a, b;
 {
+    int c;
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
     if (NIL_P(r)) return Qfalse;
-    if (rb_cmpint(r, a, b) <= 0) return Qtrue;
+    c = rb_cmpint(r, a, b);
+    if (c == 0) return INT2FIX(0);
+    if (c < 0) return Qtrue;
     return Qfalse;
 }
 
@@ -247,6 +250,8 @@ range_each_func(range, func, v, e, arg)
     VALUE v, e;
     void *arg;
 {
+    int c;
+
     if (EXCL(range)) {
 	while (r_lt(v, e)) {
 	    (*func)(v, arg);
@@ -254,8 +259,9 @@ range_each_func(range, func, v, e, arg)
 	}
     }
     else {
-	while (r_le(v, e)) {
+	while (RTEST(c = r_le(v, e))) {
 	    (*func)(v, arg);
+	    if (c == INT2FIX(0)) break;
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
     }

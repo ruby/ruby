@@ -163,7 +163,7 @@ rb_str_new4(orig)
 
     if (OBJ_FROZEN(orig)) return orig;
     klass = rb_obj_class(orig);
-    if (FL_TEST(orig, ELTS_SHARED) && RSTRING(orig)->aux.shared) {
+    if (FL_TEST(orig, ELTS_SHARED) && (str = RSTRING(orig)->aux.shared) && klass == RBASIC(str)->klass) {
 	long ofs;
 	str = RSTRING(orig)->aux.shared;
 	ofs = RSTRING(str)->len - RSTRING(orig)->len;
