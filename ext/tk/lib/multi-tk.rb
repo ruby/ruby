@@ -1568,8 +1568,8 @@ class << MultiTkIp
     __getip.deleted?
   end
 
-  def null_namespace?
-    __getip.null_namespace?
+  def invalid_namespace?
+    __getip.invalid_namespace?
   end
 
   def abort(msg = nil)
@@ -1894,8 +1894,8 @@ class MultiTkIp
     @interp.deleted?
   end
 
-  def null_namespace?
-    @interp.null_namespace?
+  def invalid_namespace?
+    @interp.invalid_namespace?
   end
 
   def abort(msg = nil)

@@ -1,3 +1,11 @@
+Mon Jan 31 13:13:35 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: add invalid namespace check
+
+	* ext/tk/lib/multi-tk.rb: add invalid_namespace? method
+
+	* ext/tk/lib/remote-tk.rb: ditto
+
 Sat Jan 29 09:42:12 2005  Sam Roberts  <sroberts@uniserve.com>
 
 	* lib/resolv.rb (Resolv::DNS::Resource::IN::SRV): Added RFC2782 SRV
