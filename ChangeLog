@@ -1,3 +1,9 @@
+Wed Jan  2 23:34:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): add -I. to CPPFLAGS.
+
+	* lib/mkmf.rb (create_makefile): srcdir support(.def and depend file).
+
 Tue Jan  1 02:16:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in (fake.rb): set RUBY_VERSION.

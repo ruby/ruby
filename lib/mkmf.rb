@@ -395,12 +395,17 @@ def create_makefile(target, srcdir = File.dirname($0))
 
   defflag = ''
   if RUBY_PLATFORM =~ /cygwin|mingw/
-    if not File.exist? target + '.def'
-      open(target + '.def', 'wb') do |f|
-        f.print "EXPORTS\n", "Init_", target, "\n"
+    deffile = target + '.def'
+    if not File.exist? deffile
+      if File.exist? File.join srcdir, deffile
+	deffile = File.join srcdir, deffile
+      else
+        open(deffile, 'wb') do |f|
+          f.print "EXPORTS\n", "Init_", target, "\n"
+        end
       end
     end
-    defflag = "--def=" + target + ".def"
+    defflag = "--def=" + deffile
   end
 
   if RUBY_PLATFORM =~ /mswin32/
@@ -442,7 +447,7 @@ VPATH = $(srcdir)
 CC = #{CONFIG["CC"]}
 
 CFLAGS   = #{CONFIG["CCDLFLAGS"]} #{CFLAGS} #{$CFLAGS}
-CPPFLAGS = -I$(hdrdir) -I$(srcdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]} #{$CPPFLAGS}
+CPPFLAGS = -I. -I$(hdrdir) -I$(srcdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]} #{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS)
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}
@@ -579,8 +584,9 @@ EOMF
     end
   end
 
-  if File.exist?("depend")
-    dfile = open("depend", "r")
+  depend = File.join(srcdir, "depend")
+  if File.exist?(depend)
+    dfile = open(depend, "r")
     mfile.printf "###\n"
     while line = dfile.gets()
       mfile.printf "%s", line.gsub(/\.o\b/, ".#{$OBJEXT}")
