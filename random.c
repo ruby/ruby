@@ -50,7 +50,7 @@ f_srand(argc, argv, obj)
 	seed = tv.tv_sec ^ tv.tv_usec;
     }
     else {
-	seed = NUM2INT(seed);
+	seed = NUM2UINT(seed);
     }
 
 #ifdef HAVE_RANDOM

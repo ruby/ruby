@@ -567,7 +567,7 @@ load_file(fname, script)
     if (script) {
 	rb_define_global_const("DATA", f);
     }
-    else if (f != rb_stdin) {
+    if (f != rb_stdin) {
 	io_close(f);
     }
 }
@@ -783,7 +783,7 @@ ruby_process_options(argc, argv)
 {
     origargc = argc; origargv = argv;
     ruby_script(argv[0]);	/* for the time being */
-    rb_argv0 = str_taint(str_new2(argv[0]));
+    rb_argv0 = rb_progname;
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = argv[0];
 #endif
@@ -801,12 +801,12 @@ ruby_process_options(argc, argv)
     if (do_loop) {
 	yywhile_loop(do_line, do_split);
     }
-    if (e_tmpname) {
-	unlink(e_tmpname);
-	e_tmpname = NULL;
-    }
     if (e_fp) {
 	fclose(e_fp);
 	e_fp = NULL;
+    }
+    if (e_tmpname) {
+	unlink(e_tmpname);
+	e_tmpname = NULL;
     }
 }

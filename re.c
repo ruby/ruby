@@ -725,6 +725,7 @@ reg_match(re, str)
 {
     int start;
 
+    if (NIL_P(str)) return FALSE;
     str = str_to_str(str);
     start = reg_search(re, str, 0, 0);
     if (start < 0) {

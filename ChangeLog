@@ -1,3 +1,23 @@
+Fri May  8 12:26:37 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* pack.c (pack_unpack): should be unsigned int (was signed int).
+
+Thu May  7 16:34:10 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* pack.c (pack_pack): `V', `N' uses newly created NUM2UINT().
+
+	* ruby.h (NUM2UINT): new macro.
+
+	* bignum.c (big2uint): try to convert bignum into UINT.
+
+	* re.c (reg_match): needed to return false for match with nil.
+
+	* gc.c (obj_free): wrong condition to free string.
+
+Wed May  6 21:08:08 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ruby.c (ruby_process_options): modified for DJGPP.
+
 Wed May  6 15:48:03 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_17.

@@ -342,8 +342,8 @@ big_to_s(x)
     return big2str(x, 10);
 }
 
-INT
-big2int(x)
+UINT
+big2uint(x)
     VALUE x;
 {
     UINT num;
@@ -351,13 +351,22 @@ big2int(x)
     USHORT *ds;
 
     if (len > sizeof(INT)/sizeof(USHORT))
-	ArgError("bignum too big to convert into `int'");
+	ArgError("bignum too big to convert into `uint'");
     ds = BDIGITS(x);
     num = 0;
     while (len--) {
 	num = BIGUP(num);
 	num += ds[len];
     }
+    return num;
+}
+
+INT
+big2int(x)
+    VALUE x;
+{
+    UINT num = big2uint(x);
+
     if ((INT)num < 0) {
 	ArgError("bignum too big to convert into `int'");
     }

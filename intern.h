@@ -41,6 +41,7 @@ VALUE int2inum _((INT));
 VALUE str2inum _((UCHAR *, int));
 VALUE big2str _((VALUE, int));
 INT big2int _((VALUE));
+UINT big2uint _((VALUE));
 VALUE big_to_i _((VALUE));
 VALUE dbl2big _((double));
 double big2dbl _((VALUE));

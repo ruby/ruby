@@ -658,7 +658,7 @@ obj_free(obj)
 	break;
       case T_STRING:
 #define STR_NO_ORIG FL_USER3	/* copied from string.c */
-	if (!RANY(obj)->as.string.orig && FL_TEST(obj, STR_NO_ORIG))
+	if (!RANY(obj)->as.string.orig || FL_TEST(obj, STR_NO_ORIG))
 	    free(RANY(obj)->as.string.ptr);
 	break;
       case T_ARRAY:
@@ -1022,7 +1022,7 @@ static VALUE
 id2ref(obj, id)
     VALUE obj, id;
 {
-    INT ptr = NUM2INT(id);
+    INT ptr = NUM2UINT(id);
 
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
     if (ptr == TRUE) return TRUE;

@@ -649,6 +649,16 @@ num2int(val)
     }
 }
 
+UINT
+num2uint(val)
+    VALUE val;
+{
+    if (TYPE(val) == T_BIGNUM) {
+	return big2uint(val);
+    }
+    return (UINT)num2int(val);
+}
+
 VALUE
 num2fix(val)
     VALUE val;
@@ -956,7 +966,7 @@ fix_rev(num)
     unsigned long val = FIX2UINT(num);
 
     val = ~val;
-    return INT2FIX(val);
+    return int2inum(val);
 }
 
 static VALUE
@@ -968,7 +978,7 @@ fix_and(x, y)
     if (TYPE(y) == T_BIGNUM) {
 	return big_and(y, x);
     }
-    val = NUM2INT(x) & NUM2INT(y);
+    val = FIX2INT(x) & NUM2INT(y);
     return int2inum(val);
 }
 
@@ -981,8 +991,8 @@ fix_or(x, y)
     if (TYPE(y) == T_BIGNUM) {
 	return big_or(y, x);
     }
-    val = NUM2INT(x) | NUM2INT(y);
-    return INT2FIX(val);
+    val = FIX2INT(x) | NUM2INT(y);
+    return int2inum(val);
 }
 
 static VALUE
@@ -994,8 +1004,8 @@ fix_xor(x, y)
     if (TYPE(y) == T_BIGNUM) {
 	return big_xor(y, x);
     }
-    val = NUM2INT(x) ^ NUM2INT(y);
-    return INT2FIX(val);
+    val = FIX2INT(x) ^ NUM2INT(y);
+    return int2inum(val);
 }
 
 static VALUE

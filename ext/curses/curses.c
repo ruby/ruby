@@ -12,11 +12,17 @@
 #  include <ncurses/curses.h>
 # else
 #  include <curses.h>
-#  if defined(__NetBSD__) && !defined(_maxx)
+#  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_maxx)
 #   define _maxx maxx
 #  endif
-#  if defined(__NetBSD__) && !defined(_maxy)
+#  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_maxy)
 #   define _maxy maxy
+#  endif
+#  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_begx)
+#   define _begx begx
+#  endif
+#  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_begy)
+#   define _begy begy
 #  endif
 # endif
 #endif

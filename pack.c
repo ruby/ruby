@@ -308,7 +308,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) i = 0;
 		else {
-		    i = NUM2INT(from);
+		    i = NUM2UINT(from);
 		}
 		str_cat(res, (UCHAR*)&i, sizeof(int));
 	    }
@@ -322,7 +322,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2INT(from);
+		    l = NUM2UINT(from);
 		}
 		str_cat(res, (UCHAR*)&l, sizeof(long));
 	    }
@@ -349,7 +349,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2INT(from);
+		    l = NUM2UINT(from);
 		}
 		l = htonl(l);
 		str_cat(res, (UCHAR*)&l, sizeof(long));
@@ -377,7 +377,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2INT(from);
+		    l = NUM2UINT(from);
 		}
 		l = htovl(l);
 		str_cat(res, (UCHAR*)&l, sizeof(long));
@@ -743,7 +743,7 @@ pack_unpack(str, fmt)
 		unsigned int tmp;
 		memcpy(&tmp, s, sizeof(int));
 		s += sizeof(int);
-		ary_push(ary, int2inum(tmp));
+		ary_push(ary, uint2inum(tmp));
 	    }
 	    break;
 
