@@ -1,3 +1,17 @@
+Fri Jul 21 17:35:01 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (aref_args): command_call now be permitted as
+	  aref_args.
+
+	* process.c (proc_getpriority): getpriority(2) may return valid
+	  negative number.  use errno to detect error.
+
+	* marshal.c (dump_ensure): dumped string should be tainted if
+	  any among target objects is tainted.
+
+	* marshal.c (r_regist): restored object should be tainted if and
+	  only if the source is a file or a tainted string.
+
 Wed Jul 19 15:14:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* bignum.c (bigdivrem): should use rb_int2big(), not rb_uint2big().

@@ -55,6 +55,7 @@ struct dump_arg {
     VALUE str;
     st_table *symbol;
     st_table *data;
+    int taint;
 };
 
 struct dump_call_arg {
@@ -270,6 +271,8 @@ w_object(obj, arg, limit)
 	    return;
 	}
 
+	if (OBJ_TAINTED(obj)) arg->taint = Qtrue;
+
 	st_add_direct(arg->data, obj, arg->data->num_entries);
 	if (rb_respond_to(obj, s_dump)) {
 	    VALUE v;
@@ -432,6 +435,9 @@ dump_ensure(arg)
 {
     st_free_table(arg->symbol);
     st_free_table(arg->data);
+    if (!arg->fp && arg->taint) {
+	OBJ_TAINT(arg->str);
+    }
     return 0;
 }
 
@@ -476,6 +482,7 @@ marshal_dump(argc, argv)
 
     arg.symbol = st_init_numtable();
     arg.data   = st_init_numtable();
+    arg.taint  = Qfalse;
     c_arg.obj = obj;
     c_arg.arg = &arg;
     c_arg.limit = limit;
@@ -494,6 +501,7 @@ struct load_arg {
     st_table *symbol;
     VALUE data;
     VALUE proc;
+    int taint;
 };
 
 static VALUE r_object _((struct load_arg *arg));
@@ -658,11 +666,11 @@ r_regist(v, arg)
     VALUE v;
     struct load_arg *arg;
 {
-    OBJ_TAINT(v);
     if (arg->proc) {
 	rb_funcall(arg->proc, rb_intern("call"), 1, v);
     }
     rb_hash_aset(arg->data, INT2FIX(RHASH(arg->data)->tbl->num_entries), v);
+    if (arg->taint) OBJ_TAINT(v);
     return v;
 }
 
@@ -944,6 +952,7 @@ marshal_load(argc, argv)
 	GetOpenFile(port, fptr);
 	rb_io_check_readable(fptr);
 	arg.fp = fptr->f;
+	arg.taint = Qtrue;
     }
     else if (rb_respond_to(port, rb_intern("to_str"))) {
 	int len;
@@ -951,6 +960,7 @@ marshal_load(argc, argv)
 	arg.fp = 0;
 	arg.ptr = rb_str2cstr(port, &len);
 	arg.end = arg.ptr + len;
+	arg.taint = OBJ_TAINTED(port);
     }
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");

@@ -19,6 +19,7 @@
 
 #ifndef HAVE_STRING_H
 char *strchr _((char*,char));
+char *strdup _((const char*));
 #endif
 
 #define HASH_DELETED  FL_USER1

@@ -849,6 +849,10 @@ arg		: lhs '=' arg
 		    }
 
 aref_args	: none
+		| command_call opt_nl
+		    {
+			$$ = NEW_LIST($1);
+		    }
 		| args opt_nl
 		    {
 			$$ = $1;
