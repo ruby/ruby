@@ -37,7 +37,7 @@
 # define SET_SIN_LEN(si,len) (si)->sin_len = (len)
 #else
 # define SIN_LEN(si) sizeof(struct sockaddr_in)
-# define SET_SIN_LEN(si,len) (len)
+# define SET_SIN_LEN(si,len)
 #endif
 
 #endif

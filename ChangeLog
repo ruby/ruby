@@ -1,6 +1,57 @@
-Tue May  9 17:08:43 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Fri May 12 17:33:44 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* array.c (Init_Array): prepare 'append' as alias to `push'. 
+	* regex.c (re_compile_pattern): charset_not should not exclude
+	  newline from matching set.
+
+Thu May 11 22:51:05 2000  Ryunosuke Ohshima  <ryu@jaist.ac.jp>
+
+	* pack.c (pack_pack): Bignum support.
+
+	* pack.c (pack_unpack): ditto.
+
+Thu May 11 21:19:29 2000  Hiroshi Igarashi  <iga@ruby-lang.org>
+
+	* intern.h: add missing declarations of ruby API functions.
+
+	* ruby.h: fix function name in declarations.
+
+Thu May 11 22:29:25 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/md5/depend: add $(topdir)/config.h dependency to md5c.o.
+
+	* ext/md5/extconf.rb: new file to add -DHAVE_CONFIG_H flag for Alpha.
+
+Thu May 11 10:55:52 2000  Ryunosuke Ohshima  <ryu@jaist.ac.jp>
+
+	* pack.c (pack_pack): packing BER compressed integer by `w'.
+
+	* pack.c (pack_unpack): unpacking BER.
+
+Thu May 11 00:37:55 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (parse_regx): remove in_brack.
+
+Wed May 10 12:51:18 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (proc_options): move adding RUBYLIB and "." to the load
+	  path after #! line parsing.
+
+	* parse.y (parse_regx): should parse backslash escape like `\c['
+	  here to avoid causing `unterminated regexp' error.
+
+Wed May 10 00:19:53 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* MANIFEST, beos/GNUmakefile.in, configure.in: no longer need
+	  beos/GNUmakefile.in to support BeOS R4.5.2 (Intel) as a result
+	  of eban's Makefile.in change.
+
+	* io.c: NOFILE is already defined on BeOS R4.5 (Intel) or later.
+
+	* lib/matrix.rb: remove debug print.
+
+	* regex.c: don't use nested comment.
+
+Tue May  9 17:08:43 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (massign): no longer convert nil into empty array.
 

@@ -15,6 +15,11 @@
 #include "rubysig.h"
 #include <stdio.h>
 #include <sys/types.h>
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -538,7 +543,7 @@ ip_addrsetup(host, port)
 	portp = 0;
     }
     else if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
+	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2INT(port));
 	portp = pbuf;
     }
     else {
@@ -726,7 +731,7 @@ open_inet(class, h, serv, type)
 	host = NULL;
     }
     if (FIXNUM_P(serv)) {
-	snprintf(pbuf, sizeof(pbuf), "%d", FIX2UINT(serv));
+	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2UINT(serv));
 	portp = pbuf;
     }
     else {
@@ -1748,7 +1753,7 @@ sock_s_getaddrinfo(argc, argv)
 	pptr = NULL;
     }
     else if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
+	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2INT(port));
 	pptr = pbuf;
     }
     else {
@@ -1788,7 +1793,7 @@ sock_s_getnameinfo(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE sa, af, host, port, flags;
+    VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags;
     static char hbuf[1024], pbuf[1024];
     char *hptr, *pptr;
     int fl;
@@ -1824,6 +1829,10 @@ sock_s_getnameinfo(argc, argv)
 		host = RARRAY(sa)->ptr[2];
 	    }
 	}
+	else {
+	    rb_raise(rb_eArgError, "array size should be 3 or 4, %d given",
+		     RARRAY(sa)->len);
+	}
 	if (NIL_P(host)) {
 	    hptr = NULL;
 	}
@@ -1837,7 +1846,7 @@ sock_s_getnameinfo(argc, argv)
 	    pptr = NULL;
 	}
 	else if (!NIL_P(port)) {
-	    snprintf(pbuf, sizeof(pbuf), "%d", NUM2INT(port));
+	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2INT(port));
 	    pptr = pbuf;
 	}
 	else {
@@ -1872,7 +1881,6 @@ sock_s_getnameinfo(argc, argv)
 	fl = NUM2INT(flags);
     }
 
-  gotsap:
     error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), fl);
     if (error) {

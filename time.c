@@ -80,12 +80,6 @@ time_s_new(argc, argv, klass)
 }
 
 static VALUE
-time_initialize()
-{
-    return Qnil;
-}
-
-static VALUE
 time_new_internal(klass, sec, usec)
     VALUE klass;
     time_t sec, usec;

@@ -63,7 +63,7 @@ char *strdup();
 extern void Init_File _((void));
 
 #ifdef __BEOS__
-# ifdef _X86_
+# ifdef NOFILE
 #  define NOFILE (OPEN_MAX)
 # endif
 #include <net/socket.h>
@@ -168,6 +168,25 @@ rb_read_check(fp)
     if (!READ_DATA_PENDING(fp)) {
 	rb_thread_wait_fd(fileno(fp));
     }
+}
+
+static int
+rb_dup(orig)
+    int orig;
+{
+    int fd;
+
+    fd = dup(orig);
+    if (fd < 0) {
+	if (errno == EMFILE || errno == ENFILE) {
+	    rb_gc();
+	    fd = dup(orig);
+	}
+	if (fd < 0) {
+	    rb_sys_fail(0);
+	}
+    }
+    return fd;
 }
 
 /* writing functions */
@@ -1893,10 +1912,10 @@ rb_io_clone(io)
 	else          mode = "r+";
 	break;
     }
-    fd = dup(fileno(orig->f));
+    fd = rb_dup(fileno(orig->f));
     fptr->f = rb_fdopen(fd, mode);
     if (fptr->f2) {
-	fd = dup(fileno(orig->f2));
+	fd = rb_dup(fileno(orig->f2));
 	fptr->f = rb_fdopen(fd, "w");
     }
     if (fptr->mode & FMODE_BINMODE) {
@@ -2126,25 +2145,6 @@ rb_io_defset(val, id)
     rb_defout = val;
 }
 
-static int
-rb_dup(orig)
-    int orig;
-{
-    int fd;
-
-    fd = dup(orig);
-    if (fd < 0) {
-	if (errno == EMFILE || errno == ENFILE) {
-	    rb_gc();
-	    fd = dup(orig);
-	}
-	if (fd < 0) {
-	    rb_sys_fail(0);
-	}
-    }
-    return fd;
-}
-
 static void
 set_stdin(val, id, var)
     VALUE val;
@@ -2152,8 +2152,6 @@ set_stdin(val, id, var)
     VALUE *var;
 {
     OpenFile *fptr;
-    int fd;
-    char *mode;
 
     if (val == *var) return;
     if (TYPE(val) != T_FILE) {
@@ -2180,8 +2178,6 @@ set_outfile(val, var, orig, stdf)
 {
     OpenFile *fptr;
     FILE *f;
-    int fd;
-    char *mode;
 
     if (val == *var) return;
 
@@ -2247,7 +2243,6 @@ rb_io_s_new(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    OpenFile *fp;
     NEWOBJ(io, struct RFile);
     OBJSETUP(io, klass, T_FILE);
     

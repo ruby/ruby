@@ -413,7 +413,7 @@ module BC_APPLICATION__
       
       ch = chrs.shift
       case ch
-      when /[_~*$?!@/\\;,.=:<>"]/   #"
+      when /[_~*$?!@\/\\;,.=:<>"]/   #"
 	return
 	
       when "-"

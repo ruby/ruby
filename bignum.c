@@ -423,6 +423,7 @@ rb_big2ulong(x)
     unsigned long num = big2ulong(x, "unsigned long");
 
     if (!RBIGNUM(x)->sign) return -num;
+    return num;
 }
 
 long
@@ -944,7 +945,7 @@ rb_big_remainder(x, y)
     return rb_big_modulo(x, y, 0);
 }
 
-static VALUE
+VALUE
 rb_big_divmod(x, y)
     VALUE x, y;
 {

@@ -291,7 +291,7 @@ static char*
 moreswitches(s)
     char *s;
 {
-    int argc; char *argv[3]; char **argvp = argv;
+    int argc; char *argv[3];
     char *p = s;
 
     argc = 2; argv[0] = argv[2] = 0;
@@ -636,6 +636,12 @@ proc_options(argc, argv)
 	load_file(script, 1);
     }
 
+    if (rb_safe_level() == 0) {
+	rb_ary_push(rb_load_path, rb_str_new2("."));
+	addpath(getenv("RUBYLIB"));
+    }
+
+
     process_sflag();
     xflag = 0;
 }
@@ -917,10 +923,6 @@ ruby_prog_init()
     rb_define_readonly_variable("$-p", &do_print);
     rb_define_readonly_variable("$-l", &do_line);
 
-    if (rb_safe_level() == 0) {
-	addpath(".");
-    }
-
     addpath(RUBY_LIB);
 #if defined(_WIN32) || defined(DJGPP)
     addpath(ruby_libpath());
@@ -941,10 +943,6 @@ ruby_prog_init()
 #ifdef RUBY_SEARCH_PATH
     addpath(RUBY_SEARCH_PATH);
 #endif
-
-    if (rb_safe_level() == 0) {
-	addpath(getenv("RUBYLIB"));
-    }
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
 

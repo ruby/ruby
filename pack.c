@@ -843,6 +843,53 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
+	  case 'w':
+	    while (len-- > 0) {
+		unsigned long ul;
+		VALUE buf = rb_str_new(0, 0);
+		char c, *bufs, *bufe;
+
+		from = NEXTFROM;
+
+		if (TYPE(from) == T_BIGNUM) {
+		    VALUE big128 = rb_uint2big(128);
+		    while (TYPE(from) == T_BIGNUM) {
+			from = rb_big_divmod(from, big128);
+			c = NUM2INT(RARRAY(from)->ptr[1]) | 0x80; /* mod */
+			rb_str_cat(buf, &c, sizeof(char));
+			from = RARRAY(from)->ptr[0]; /* div */
+		    }
+		}
+
+		if (NIL_P(from)) ul = 0;
+		else {
+		    ul = NUM2ULONG(from);
+		}
+
+		while (ul) {
+		    c = ((ul & 0x7f) | 0x80);
+		    rb_str_cat(buf, &c, sizeof(char));
+		    ul >>=  7;
+		}
+
+		if (RSTRING(buf)->len) {
+		    bufs = RSTRING(buf)->ptr;
+		    bufe = bufs + RSTRING(buf)->len - 1;
+		    *bufs &= 0x7f; /* clear continue bit */
+		    while (bufs < bufe) { /* reverse */
+			c = *bufs;
+			*bufs++ = *bufe;
+			*bufe-- = c;
+		    }
+		    rb_str_cat(res, RSTRING(buf)->ptr, RSTRING(buf)->len);
+		}
+		else {
+		    c = 0;
+		    rb_str_cat(res, &c, sizeof(char));
+		}
+	    }
+	    break;
+
 	  default:
 	    break;
 	}
@@ -1569,6 +1616,37 @@ pack_unpack(str, fmt)
 			rb_str_cat2(str, t);
 		    }
 		    rb_ary_push(ary, str);
+		}
+	    }
+	    break;
+
+	  case 'w':
+	    {
+		unsigned long ul = 0;
+		unsigned long ulmask = 0xfe << ((sizeof(unsigned long) - 1) * 8);
+
+		while (len > 0 && s < send) {
+		    ul <<= 7;
+		    ul |= (*s & 0x7f);
+		    if (!(*s++ & 0x80)) {
+			rb_ary_push(ary, rb_uint2inum(ul));
+			len--;
+			ul = 0;
+		    }
+		    else if (ul & ulmask) {
+			VALUE big = rb_uint2big(ul);
+			VALUE big128 = rb_uint2big(128);
+			while (s < send) {
+			    big = rb_big_mul(big, big128);
+			    big = rb_big_plus(big, rb_uint2big(*s & 0x7f));
+			    if (!(*s++ & 0x80)) {
+				rb_ary_push(ary, big);
+				len--;
+				ul = 0;
+				break;
+			    }
+			}
+		    }
 		}
 	    }
 	    break;

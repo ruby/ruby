@@ -157,8 +157,10 @@ class Queue
       t.wakeup if t
     rescue ThreadError
       retry
+    ensure
+      Thread.critical = false
     end
-    Thread.critical = false
+    t.run if t
   end
   alias enq push
 
@@ -250,10 +252,13 @@ class SizedQueue<Queue
     if @que.length < @max
       begin
 	t = @queue_wait.shift
-	t.run if t
+	t.wakeup if t
       rescue ThreadError
 	retry
+      ensure
+	Thread.critical = false
       end
+      t.run if t
     end
     super
   end

@@ -25,6 +25,12 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_SYS_FILE_H
+# include <sys/file.h>
+#else
+int flock _((int, int));
+#endif
+
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #else
@@ -875,6 +881,7 @@ rb_file_s_chmod(argc, argv)
     VALUE rest;
     int mode, n;
 
+    rb_secure(2);
     rb_scan_args(argc, argv, "1*", &vmode, &rest);
     mode = NUM2INT(vmode);
 
@@ -927,6 +934,7 @@ rb_file_s_chown(argc, argv)
     struct chown_args arg;
     int n;
 
+    rb_secure(2);
     rb_scan_args(argc, argv, "2*", &o, &g, &rest);
     if (NIL_P(o)) {
 	arg.owner = -1;
@@ -1377,6 +1385,7 @@ static VALUE
 rb_file_s_truncate(obj, path, len)
     VALUE obj, path, len;
 {
+    rb_secure(2);
     Check_SafeStr(path);
 
 #ifdef HAVE_TRUNCATE

@@ -420,7 +420,6 @@ class Matrix
 	  vij = 0
 	  0.upto(column_size - 1) do
 	    |k|
-	    p [k,j,m[k,j]]
 	    vij += self[i, k] * m[k, j]
 	  end
 	  vij

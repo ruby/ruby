@@ -593,28 +593,6 @@ static void mmswap(a, b) register char *a, *b;
  }
 }
 
-static void mmswapblock(a, b, size) register char *a, *b; int size;
-{
- register int s;
- if (mmkind >= 0) {
-   register char *t = a + (size & (-16)); register int  lo = (size & 0x0C);
-   if (size >= 16) {
-     do {
-       s = A[0]; A[0] = B[0]; B[0] = s;
-       s = A[1]; A[1] = B[1]; B[1] = s;
-       s = A[2]; A[2] = B[2]; B[2] = s;
-       s = A[3]; A[3] = B[3]; B[3] = s;  a += 16; b += 16;
-     }while (a < t);
-   }
-   if (lo != 0) { s = A[0]; A[0] = B[0]; B[0] = s;
-     if (lo >= 8) { s = A[1]; A[1] = B[1]; B[1] = s;
-       if (lo == 12) {s = A[2]; A[2] = B[2]; B[2] = s;}}}
- }else{
-   register char *t = a + size;
-   do {s = *a; *a++ = *b; *b++ = s;} while (a < t);
- }
-}
-
 static void mmrot3(a, b, c) register char *a, *b, *c;
 {
  register int s;

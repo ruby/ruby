@@ -724,7 +724,6 @@ rb_generic_ivar_table(obj)
     VALUE obj;
 {
     st_table *tbl;
-    VALUE val;
 
     if (!generic_iv_tbl) return 0;
     if (!st_lookup(generic_iv_tbl, obj, &tbl)) return 0;
@@ -1336,7 +1335,6 @@ rb_cvar_set(klass, id, val)
     ID id;
     VALUE val;
 {
-    VALUE value;
     VALUE tmp;
 
     if (FL_TEST(klass, FL_SINGLETON)) {
@@ -1382,7 +1380,6 @@ rb_cvar_defined(klass, id)
     VALUE klass;
     ID id;
 {
-    VALUE value;
     VALUE tmp;
 
     if (FL_TEST(klass, FL_SINGLETON)) {

@@ -208,8 +208,6 @@ w_ivar(tbl, arg)
     st_table *tbl;
     struct dump_call_arg *arg;
 {
-    struct dump_call_arg c_arg;
-
     if (tbl) {
 	w_long(tbl->num_entries, arg->arg);
 	st_foreach(tbl, obj_each, arg);

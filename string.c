@@ -766,7 +766,7 @@ static VALUE
 rb_str_succ(orig)
     VALUE orig;
 {
-    VALUE str, str2;
+    VALUE str;
     char *sbeg, *s;
     int c = -1;
     int n = 0;
@@ -1039,7 +1039,7 @@ rb_str_slice_bang(argc, argv, str)
     VALUE str;
 {
     VALUE arg1, arg2;
-    long pos, len, i;
+    long pos, len;
 
     rb_str_modify(str);
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {

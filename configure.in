@@ -707,7 +707,6 @@ if test "$target_os" = "beos"; then
       ;;
     i586*)
       LDFLAGS="$LDFLAGS -L."
-      FIRSTMAKEFILE=GNUmakefile:beos/GNUmakefile.in
       ;;
     *)
       echo EXPORTS > ruby.def

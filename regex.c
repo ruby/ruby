@@ -22,13 +22,11 @@
 /* UTF-8 extension added Jan 16 1999 by Yoshida Masato  <yoshidam@tau.bekkoame.ne.jp> */
 
 #include "config.h"
-#ifdef RUBY_PLATFORM
-# define RUBY
-extern int rb_prohibit_interrupt;
-extern int rb_trap_pending;
-# define CHECK_INTS if (!rb_prohibit_interrupt) {\
-    if (rb_trap_pending) rb_trap_exec();\
-}
+
+#ifdef HAVE_STRING_H
+# include <string.h>
+#else
+# include <strings.h>
 #endif
 
 /* We write fatal error messages on standard error.  */
@@ -63,6 +61,17 @@ extern int rb_trap_pending;
 # define _(args) ()
 #endif
 
+#ifdef RUBY_PLATFORM
+# define RUBY
+extern int rb_prohibit_interrupt;
+extern int rb_trap_pending;
+void rb_trap_exec _((void));
+
+# define CHECK_INTS if (!rb_prohibit_interrupt) {\
+    if (rb_trap_pending) rb_trap_exec();\
+}
+#endif
+
 #ifndef xmalloc
 void *xmalloc _((size_t));
 void *xcalloc _((size_t,size_t));
@@ -70,7 +79,7 @@ void *xrealloc _((void*,size_t));
 void free _((void*));
 #endif
 
-#define	NO_ALLOCA /*	/* try it out for now */
+#define	NO_ALLOCA	/* try it out for now */
 #ifndef NO_ALLOCA
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
@@ -474,7 +483,7 @@ utf8_firstbyte(c)
 
 static void
 print_mbc(c)
-     unsigned long c;
+     unsigned int c;
 {
   if (current_mbctype == MBCTYPE_UTF8) {
     if (c < 0x80)
@@ -587,13 +596,13 @@ print_mbc(c)
   } while (0)
 
 #define EXTRACT_MBC(p) 							\
-  ((unsigned long)((unsigned char)(p)[0] << 24 |			\
+  ((unsigned int)((unsigned char)(p)[0] << 24 |				\
 		    (unsigned char)(p)[1] << 16 |			\
                     (unsigned char)(p)[2] <<  8 |			\
 		    (unsigned char)(p)[3]))
 
 #define EXTRACT_MBC_AND_INCR(p) 					\
-  ((unsigned long)((p) += 4, 						\
+  ((unsigned int)((p) += 4, 						\
 		    (unsigned char)(p)[-4] << 24 |			\
 		    (unsigned char)(p)[-3] << 16 |			\
                     (unsigned char)(p)[-2] <<  8 |			\
@@ -1397,12 +1406,6 @@ re_compile_pattern(pattern, size, bufp)
       had_mbchar = 0;
       had_num_literal = 0;
       had_char_class = 0;
-
-      /* charset_not matches newline according to a syntax bit.  */
-      if ((enum regexpcode)b[-2] == charset_not) {
-	if (bufp->options & RE_OPTION_POSIXLINE)
-	  SET_LIST_BIT ('\n');
-      }
 
       /* Read in characters and ranges, setting map bits.  */
       for (;;) {
@@ -2325,6 +2328,8 @@ re_compile_pattern(pattern, size, bufp)
 	case dummy_failure_jump:
 	  bufp->options |= RE_OPTIMIZE_ANCHOR;
 	  break;
+	default:
+	  break;
 	}
       }
       else if (*laststart == charset || *laststart == charset_not) {
@@ -3004,6 +3009,7 @@ re_compile_fastmap(bufp)
 	}
 	break;
 
+      case begpos:
       case unused:	/* pacify gcc -Wall */
 	break;
       }
@@ -4247,7 +4253,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	p1 = p;
 	/* If failed to a backwards jump that's part of a repetition
 	   loop, need to pop this failure point and use the next one.  */
-      pop_loop:
 	switch ((enum regexpcode)*p1) {
 	case jump_n:
 	case finalize_push_n:

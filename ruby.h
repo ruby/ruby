@@ -358,13 +358,13 @@ struct RBignum {
 
 #define FL_ABLE(x) (!SPECIAL_CONST_P(x))
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
-#define FL_SET(x,f) (FL_ABLE(x) && (RBASIC(x)->flags |= (f)))
-#define FL_UNSET(x,f) (FL_ABLE(x) && (RBASIC(x)->flags &= ~(f)))
-#define FL_REVERSE(x,f) (FL_ABLE(x) && (RBASIC(x)->flags ^= (f)))
+#define FL_SET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags |= (f);} while (0)
+#define FL_UNSET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags &= ~(f);} while (0)
+#define FL_REVERSE(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags ^= (f);} while (0)
 
 #define OBJ_TAINTED(x) FL_TEST((x), FL_TAINT)
 #define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
-#define OBJ_INFECT(x,s) (FL_ABLE(x) && FL_ABLE(s) && (RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT))
+#define OBJ_INFECT(x,s) do {if (FL_ABLE(x) && FL_ABLE(s)) RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT;} while (0)
 
 #define OBJ_FROZEN(x) FL_TEST((x), FL_FREEZE)
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
@@ -394,8 +394,8 @@ void rb_define_variable _((const char*,VALUE*));
 void rb_define_virtual_variable _((const char*,VALUE(*)(),void(*)()));
 void rb_define_hooked_variable _((const char*,VALUE*,VALUE(*)(),void(*)()));
 void rb_define_readonly_variable _((const char*,VALUE*));
-void rb_define_constants _((VALUE,const char*,VALUE));
-void rb_define_global_constants _((const char*,VALUE));
+void rb_define_const _((VALUE,const char*,VALUE));
+void rb_define_global_const _((const char*,VALUE));
 
 void rb_define_method _((VALUE,const char*,VALUE(*)(),int));
 void rb_define_module_function _((VALUE,const char*,VALUE(*)(),int));

@@ -15,6 +15,7 @@
 #include "dln.h"
 
 char *dln_argv0;
+void rb_loaderror();
 
 #ifdef _AIX
 #pragma alloca

@@ -41,6 +41,7 @@ Hacking Interpreter
 * scrambled script, or script filter
 * setuid ruby
 * performance tune for in-block (dynamic) local variables.
+* generational GC ?? (is it possible?)
 
 Standard Libraries
 
@@ -64,6 +65,7 @@ Standard Libraries
 - Kernel#scan
 - call initialize for builtin classes too (not yet: Regexp, Class, Module)
 - performance tune for String's non-bang methods.
+- 'w' template for pack/unpack
 * String#scanf(?)
 * Object#fmt(?)
 * Integer#{bin,oct,hex,heX}

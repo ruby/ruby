@@ -1362,7 +1362,6 @@ ev_const_set(cref, id, val)
     VALUE val;
 {
     NODE *cbase = cref;
-    VALUE tmp;
 
     while (cbase && cbase->nd_clss != rb_cObject) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
@@ -2760,8 +2759,11 @@ rb_eval(self, n)
 	    else if (SCOPE_TEST(SCOPE_PROTECTED)) {
 		noex = NOEX_PROTECTED;
 	    }
-	    else {
+	    else if (ruby_class == rb_cObject) {
 		noex =  node->nd_noex;
+	    }
+	    else {
+		noex = NOEX_PUBLIC;
 	    }
 	    if (body && origin == ruby_class && body->nd_noex & NOEX_UNDEF) {
 		noex |= NOEX_UNDEF;
@@ -4552,7 +4554,7 @@ rb_f_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE src, scope, vfile, vline, val;
+    VALUE src, scope, vfile, vline;
     char *file = "(eval)";
     int line = 1;
 
@@ -4660,7 +4662,7 @@ yield_under_i(self)
     if (ruby_block->flags & BLOCK_DYNAMIC) {
 	struct BLOCK * volatile old_block = ruby_block;
 	struct BLOCK block;
-	volatile VALUE cbase = ruby_block->frame.cbase;
+
 	/* cbase should be pointed from volatile local variable */
 	/* to be protected from GC. 				*/
 	VALUE result;
@@ -4977,9 +4979,8 @@ rb_f_require(obj, fname)
     buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
     strcpy(buf, RSTRING(fname)->ptr);
     strcat(buf, ".rb");
-    file = rb_find_file(buf);
-    if (file) {
-	fname = rb_str_new2(file);
+    if (rb_find_file(buf)) {
+	fname = rb_str_new2(buf);
 	feature = buf;
 	goto load_rb;
     }
@@ -6490,8 +6491,9 @@ thread_switch(n)
 	break;
       case RESTORE_NORMAL:
       default:
-	return 1;
+	break;
     }
+    return 1;
 }
 
 #define THREAD_SAVE_CONTEXT(th) \

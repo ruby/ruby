@@ -52,7 +52,6 @@ static unsigned long malloc_memories = 0;
 static unsigned long alloc_objects = 0;
 
 static int malloc_called = 0;
-static int second_mem_error = 0;
 
 static void
 mem_error(mesg)
@@ -947,11 +946,7 @@ rb_gc()
     setjmp(save_regs_gc_mark);
     mark_locations_array((VALUE*)save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
     rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END);
-#if defined(THINK_C) || defined(__human68k__)
-#ifndef __human68k__
-    mark_locations_array((VALUE*)((char*)save_regs_gc_mark+2),
-			 sizeof(save_regs_gc_mark) / sizeof(VALUE *));
-#endif
+#if defined(__human68k__)
     rb_gc_mark_locations((VALUE*)((char*)rb_gc_stack_start + 2),
 			 (VALUE*)((char*)STACK_END + 2));
 #endif

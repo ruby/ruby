@@ -688,8 +688,6 @@ static VALUE
 rb_hash_to_s(hash)
     VALUE hash;
 {
-    VALUE str;
-
     if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
     return rb_protect_inspect(to_s_hash, hash, 0);
 }
@@ -928,8 +926,6 @@ env_fetch(argc, argv)
     VALUE key, if_none;
     char *nam, *env;
     int len;
-
-    VALUE val;
 
     rb_scan_args(argc, argv, "11", &key, &if_none);
     nam = rb_str2cstr(key, &len);
