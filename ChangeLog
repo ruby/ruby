@@ -1,3 +1,7 @@
+Sun Oct  5 23:07:03 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_f_END): block should be given.  [ruby-dev:21497]
+
 Sun Oct  5 22:51:23 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/ext/openssl/extconf.rb: add check for some engine functions

@@ -6462,6 +6462,7 @@ rb_f_END()
 {
     PUSH_FRAME();
     ruby_frame->argc = 0;
+    ruby_frame->iter = ITER_CUR;
     rb_set_end_proc(call_end_proc, rb_block_proc());
     POP_FRAME();
 }
