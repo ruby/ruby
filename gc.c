@@ -447,15 +447,17 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 #elif STACK_GROW_DIRECTION < 0
 # define STACK_UPPER(x, a, b) b
 #else
+static int grow_direction;
 static int
-stack_growup_p(addr)
+stack_grow_direction(addr)
     VALUE *addr;
 {
     SET_STACK_END;
 
-    if (STACK_END > addr) return Qtrue;
-    return Qfalse;
+    if (STACK_END > addr) return grow_direction = 1;
+    return grow_direction = -1;
 }
+# define stack_growup_p(x) ((grow_direction ? grow_direction : stack_grow_direction(x)) > 0)
 # define STACK_UPPER(x, a, b) (stack_growup_p(x) ? a : b)
 #endif
 
@@ -1410,10 +1412,11 @@ Init_stack(addr)
     rb_gc_stack_start = _SEND;
 #else
     if (!addr) addr = (VALUE *)&addr;
+    STACK_UPPER(&addr, addr, ++addr);
     if (rb_gc_stack_start) {
 	if (STACK_UPPER(&addr,
 			rb_gc_stack_start > addr,
-			rb_gc_stack_start < ++addr))
+			rb_gc_stack_start < addr))
 	    rb_gc_stack_start = addr;
 	return;
     }
