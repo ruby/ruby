@@ -2,7 +2,8 @@
 
 = net/pop.rb
 
-Copyright (c) 1999-2002 Yukihiro Matsumoto
+Copyright (c) 1999-2003 Yukihiro Matsumoto
+Copyright (c) 1999-2003 Minero Aoki
 
 written & maintained by Minero Aoki <aamine@loveruby.net>
 
@@ -31,14 +32,14 @@ Replace 'pop3.server.address' your POP3 server address.
 
     require 'net/pop'
 
-    pop = Net::POP3.new( 'pop3.server.address', 110 )
-    pop.start( 'YourAccount', 'YourPassword' )          ###
+    pop = Net::POP3.new('pop3.server.address', 110)
+    pop.start('YourAccount', 'YourPassword')          ###
     if pop.mails.empty? then
       puts 'no mail.'
     else
       i = 0
       pop.each_mail do |m|   # or "pop.mails.each ..."
-	File.open( 'inbox/' + i.to_s, 'w' ) {|f|
+        File.open('inbox/' + i.to_s, 'w') {|f|
             f.write m.pop
         }
         m.delete
@@ -46,7 +47,7 @@ Replace 'pop3.server.address' your POP3 server address.
       end
       puts "#{pop.mails.size} mails popped."
     end
-    pop.finish                                           ###
+    pop.finish                                        ###
 
 (1) call Net::POP3#start and start POP session
 (2) access mails by using POP3#each_mail and/or POP3#mails
@@ -61,40 +62,40 @@ alternates POP3.new, POP3#start and POP3#finish.
 
     require 'net/pop'
 
-    Net::POP3.start( 'pop3.server.address', 110 )
-                     'YourAccount', 'YourPassword' )
-	if pop.mails.empty? then
-	  puts 'no mail.'
-	else
-	  i = 0
-	  pop.each_mail do |m|   # or "pop.mails.each ..."
-	    File.open( 'inbox/' + i.to_s, 'w' ) {|f|
+    Net::POP3.start('pop3.server.address', 110)
+                    'YourAccount', 'YourPassword')
+        if pop.mails.empty?
+          puts 'no mail.'
+        else
+          i = 0
+          pop.each_mail do |m|   # or "pop.mails.each ..."
+            File.open('inbox/' + i.to_s, 'w') {|f|
                 f.write m.pop
-	    }
-	    m.delete
-	    i += 1
-	  end
+            }
+            m.delete
+            i += 1
+          end
           puts "#{pop.mails.size} mails popped."
-	end
+        end
     }
 
 POP3#delete_all alternates #each_mail and m.delete.
 
     require 'net/pop'
 
-    Net::POP3.start( 'pop3.server.address', 110,
-                     'YourAccount', 'YourPassword' ) {|pop|
-	if pop.mails.empty? then
-	  puts 'no mail.'
-	else
-	  i = 0
-	  pop.delete_all do |m|
-	    File.open( 'inbox/' + i.to_s, 'w' ) {|f|
-		f.write m.pop
-	    }
-	    i += 1
-	  end
-	end
+    Net::POP3.start('pop3.server.address', 110,
+                    'YourAccount', 'YourPassword') {|pop|
+        if pop.mails.empty?
+          puts 'no mail.'
+        else
+          i = 0
+          pop.delete_all do |m|
+            File.open('inbox/' + i.to_s, 'w') {|f|
+                f.write m.pop
+            }
+            i += 1
+          end
+        end
     }
 
 And here is more shorter example.
@@ -102,9 +103,9 @@ And here is more shorter example.
     require 'net/pop'
 
     i = 0
-    Net::POP3.delete_all( 'pop3.server.address', 110,
-                          'YourAccount', 'YourPassword' ) do |m|
-      File.open( 'inbox/' + i.to_s, 'w' ) {|f|
+    Net::POP3.delete_all('pop3.server.address', 110,
+                         'YourAccount', 'YourPassword') do |m|
+      File.open('inbox/' + i.to_s, 'w') {|f|
           f.write m.pop
       }
       i += 1
@@ -116,9 +117,9 @@ All examples above get mail as one big string.
 This example does not create such one.
 
     require 'net/pop'
-    Net::POP3.delete_all( 'pop3.server.address', 110,
-                          'YourAccount', 'YourPassword' ) do |m|
-      File.open( 'inbox', 'w' ) {|f|
+    Net::POP3.delete_all('pop3.server.address', 110,
+                         'YourAccount', 'YourPassword') do |m|
+      File.open('inbox', 'w') {|f|
           m.pop f   ####
       }
     end
@@ -132,8 +133,8 @@ You can use utility method, Net::POP3.APOP(). Example:
     require 'net/pop'
 
     # use APOP authentication if $isapop == true
-    pop = Net::POP3.APOP($isapop).new( 'apop.server.address', 110 )
-    pop.start( YourAccount', 'YourPassword' ) {|pop|
+    pop = Net::POP3.APOP($isapop).new('apop.server.address', 110)
+    pop.start(YourAccount', 'YourPassword') {|pop|
         # Rest code is same.
     }
 
@@ -151,10 +152,10 @@ You can use utility method, Net::POP3.APOP(). Example:
     equals to Net::POP3.new( address, port ).start( account, password )
 
         Net::POP3.start( addr, port, account, password ) {|pop|
-	    pop.each_mail do |m|
-	      file.write m.pop
-	      m.delete
-	    end
+            pop.each_mail do |m|
+              file.write m.pop
+              m.delete
+            end
         }
 
 : APOP( is_apop )
@@ -176,8 +177,8 @@ You can use utility method, Net::POP3.APOP(). Example:
 
         Net::POP3.start( address, port, account, password ) {|pop|
             pop.each_mail do |m|
-	      yield m
-	    end
+              yield m
+            end
         }
 
         # example
@@ -302,11 +303,11 @@ A class of mail which exists on POP server.
 
         # example
         POP3.start( 'localhost', 110 ) {|pop3|
-	    pop3.each_mail do |m|
-	      m.pop do |str|
-		# do anything
-	      end
-	    end
+            pop3.each_mail do |m|
+              m.pop do |str|
+                # do anything
+              end
+            end
         }
 
 : header
@@ -332,6 +333,9 @@ require 'digest/md5'
 
 module Net
 
+  class BadResponseError < StandardError; end
+
+
   class POP3 < Protocol
 
     protocol_param :default_port,      '110'
@@ -339,7 +343,6 @@ module Net
     protocol_param :apop_command_type, '::Net::APOPCommand'
     protocol_param :mail_type,         '::Net::POPMail'
     protocol_param :socket_type,       '::Net::InternetMessageIO'
-
 
     def POP3.APOP( isapop )
       isapop ? APOP : POP3
@@ -364,14 +367,12 @@ module Net
       new(address, port).auth_only account, password
     end
 
-
     def auth_only( account, password )
       raise IOError, 'opening already opened POP session' if active?
       start(account, password) {
-          # none
+          ;
       }
     end
-
 
     #
     # connection
@@ -393,7 +394,7 @@ module Net
 
     def conn_command
       @command = (@apop ? self.class.apop_command_type :
-                          self.class.command_type).new(socket())
+                          self.class.command_type      ).new(socket())
     end
 
     def do_finish
@@ -402,15 +403,31 @@ module Net
       disconn_socket
     end
 
-
     #
     # POP operations
     #
 
     public
 
+    def mail_size
+      return @nmails if @nmails
+      @nmails, @bytes = command().stat
+      @nmails
+    end
+
+    def bytes
+      return @bytes if @bytes
+      @nmails, @bytes = command().stat
+      @bytes
+    end
+
     def mails
       return @mails if @mails
+      if mail_size() == 0
+        # some popd raises error for LIST on the empty mailbox.
+        @mails = []
+        return @mails
+      end
 
       mails = []
       mailclass = self.class.mail_type
@@ -418,6 +435,8 @@ module Net
         mails.push mailclass.new(idx, size, command()) if size
       end
       @mails = mails.freeze
+
+      @mails
     end
 
     def each_mail( &block )
@@ -436,10 +455,11 @@ module Net
     def reset
       command().rset
       mails().each do |m|
-        m.instance_eval { @deleted = false }
+        m.instance_eval {
+            @deleted = false
+        }
       end
     end
-
 
     def command
       io_check
@@ -447,16 +467,15 @@ module Net
     end
 
     def io_check
-      (not socket() or socket().closed?) and
-              raise IOError, 'POP session is not opened yet'
+      raise IOError, 'POP session is not opened yet'\
+              if not socket() or socket().closed?
     end
 
   end
 
-  POP         = POP3
+  POP = POP3
   POPSession  = POP3
   POP3Session = POP3
-
 
   class APOP < POP3
     def APOP.command_type
@@ -477,16 +496,14 @@ module Net
       @deleted = false
     end
 
-    attr :size
+    attr_reader :size
 
     def inspect
       "#<#{self.class} #{@num}#{@deleted ? ' deleted' : ''}>"
     end
 
     def pop( dest = '', &block )
-      if block
-        dest = ReadAdapter.new(block)
-      end
+      dest = ReadAdapter.new(block) if block
       @command.retr @num, dest
     end
 
@@ -539,16 +556,25 @@ module Net
     end
 
     def list
-      arr = []
       atomic {
           getok 'LIST'
+          list = []
           @socket.each_list_item do |line|
             m = /\A(\d+)[ \t]+(\d+)/.match(line) or
-                    raise BadResponse, "illegal response: #{line}"
-            arr[m[1].to_i] = m[2].to_i
+            list[m[1].to_i] = m[2].to_i
           end
+          return list
       }
-      arr
+    end
+
+    def stat
+      atomic {
+          @socket.writeline 'STAT'
+          line = @socket.readline
+          m = /\A\+OK (\d+)[ \t]+(\d+)/.match(line) or
+                  raise BadResponseError, "illegal response: #{line}"
+          return [m[1].to_i, m[2].to_i]
+      }
     end
 
     def rset
@@ -602,7 +628,6 @@ module Net
 
     def get_reply
       str = @socket.readline
-
       if /\A\+/ === str
         Response.new(SuccessCode, str[0,3], str[3, str.size - 3].strip)
       else
@@ -616,10 +641,8 @@ module Net
   class APOPCommand < POP3Command
 
     def initialize( sock )
-      response = super(sock)
-      m = /<.+>/.match(response.msg) or
+      @stamp = super(sock).message.slice(/<.+>/) or
               raise ProtoAuthError.new("not APOP server: cannot login", nil)
-      @stamp = m[0]
     end
 
     def auth( account, pass )

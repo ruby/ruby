@@ -1,3 +1,16 @@
+Mon Mar 10 01:59:47 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/pop.rb: do not dispatch LIST when a mailbox is empty.
+
+	* lib/net/pop.rb: merge the 'STAT' patch from Frank S.Fejes
+	  <frank@oopdreams.com>, with modifications (listed below).
+
+	* lib/net/pop.rb: new method Net::POP#mail_size.
+
+	* lib/net/pop.rb: new method Net::POP#bytes.
+
+	* lib/net/pop.rb: new method Net::POPCommand#stat.
+
 Sun Mar  9 19:30:25 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/fileutils.rb (mkdir, mkdir_p): revert.
