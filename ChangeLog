@@ -1,3 +1,19 @@
+Tue Feb 17 18:02:10 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: ScanError may be (wrongly) garbage
+	  collected. (thanks Gavin Sinclair)
+
+	* ext/strscan/strscan.c: move ::ScanError to StringScanner::Error.
+	  ::ScanError is also defined for backward compatibility.
+
+	* ext/strscan/strscan.c: #peep is obsolete, use #peek.
+
+	* ext/strscan/strscan.c: #empty? is obsolete, use #eos?.
+
+	* ext/strscan/strscan.c: #clear is obsolete, use #terminate.
+
+	* ext/strscan/strscan.c: #getbyte is obsolete, use #get_byte.
+
 Tue Feb 17 12:12:47 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (parse_args): delay expanding $(extout) until invoking
