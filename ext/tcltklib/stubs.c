@@ -40,10 +40,16 @@ ruby_tcltk_stubs()
     char tk_name[20];
 
     ruby_tcl_dll = getenv("RUBY_TCL_DLL");
+#if defined NT
+    if (ruby_tcl_dll) ruby_tcl_dll = ruby_strdup(ruby_tcl_dll);
+#endif
     ruby_tk_dll = getenv("RUBY_TK_DLL");
     if (ruby_tcl_dll && ruby_tk_dll) {
 	tcl_dll = (DL_HANDLE)DL_OPEN(ruby_tcl_dll);
 	tk_dll = (DL_HANDLE)DL_OPEN(ruby_tk_dll);
+#if defined NT
+	ruby_xfree(ruby_tcl_dll);
+#endif
     } else {
 	snprintf(tcl_name, sizeof tcl_name, TCL_NAME, DLEXT);
 	snprintf(tk_name, sizeof tk_name, TK_NAME, DLEXT);
