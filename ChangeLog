@@ -1,3 +1,7 @@
+Tue Aug  5 17:58:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/fileutils.rb (install): should preserve timestamp only.
+
 Tue Aug  5 15:47:34 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_load): should preserve current source file/line.

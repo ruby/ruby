@@ -639,10 +639,10 @@ module FileUtils
 
     fu_each_src_dest(src, dest) do |s,d|
       unless FileTest.exist?(d) and compare_file(s,d)
-        fu_preserve_attr(options[:preserve], s, d) {
-	  remove_file d, true
-	  copy_file s, d
-	}
+	remove_file d, true
+	st = File.stat(s) if options[:preserve]
+	copy_file s, d
+	File.utime st.atime, st.mtime, d if options[:preserve]
 	File.chmod options[:mode], d if options[:mode]
       end
     end
@@ -769,7 +769,7 @@ module FileUtils
     'copy'         => %w( preserve noop verbose ),
     'cp'           => %w( preserve noop verbose ),
     'cp_r'         => %w( preserve noop verbose ),
-    'install'      => %w( mode noop verbose ),
+    'install'      => %w( preserve mode noop verbose ),
     'link'         => %w( force noop verbose ),
     'ln'           => %w( force noop verbose ),
     'ln_s'         => %w( force noop verbose ),
