@@ -327,7 +327,7 @@ w_unique(s, arg)
     struct dump_arg *arg;
 {
     if (s[0] == '#') {
-	rb_raise(rb_eArgError, "can't dump anonymous class %s", s);
+	rb_raise(rb_eTypeError, "can't dump anonymous class %s", s);
     }
     w_symbol(rb_intern(s), arg);
 }
@@ -502,7 +502,7 @@ w_object(obj, arg, limit)
 	    {
 		VALUE path = rb_class_path(obj);
 		if (RSTRING(path)->ptr[0] == '#') {
-		    rb_raise(rb_eArgError, "can't dump anonymous class %s",
+		    rb_raise(rb_eTypeError, "can't dump anonymous class %s",
 			     RSTRING(path)->ptr);
 		}
 		w_bytes(RSTRING(path)->ptr, RSTRING(path)->len, arg);
@@ -514,7 +514,7 @@ w_object(obj, arg, limit)
 	    {
 		VALUE path = rb_class_path(obj);
 		if (RSTRING(path)->ptr[0] == '#') {
-		    rb_raise(rb_eArgError, "can't dump anonymous module %s",
+		    rb_raise(rb_eTypeError, "can't dump anonymous module %s",
 			     RSTRING(path)->ptr);
 		}
 		w_bytes(RSTRING(path)->ptr, RSTRING(path)->len, arg);
@@ -588,7 +588,7 @@ w_object(obj, arg, limit)
 	    }
 	    else if (FL_TEST(obj, FL_USER2)) {
 		/* FL_USER2 means HASH_PROC_DEFAULT (see hash.c) */
-		rb_raise(rb_eArgError, "cannot dump hash with default proc");
+		rb_raise(rb_eTypeError, "cannot dump hash with default proc");
 	    }
 	    else {
 		w_byte(TYPE_HASH_DEF, arg);
@@ -848,7 +848,7 @@ r_symlink(arg)
     if (st_lookup(arg->symbol, num, &id)) {
 	return id;
     }
-    rb_raise(rb_eTypeError, "bad symbol");
+    rb_raise(rb_eArgError, "bad symbol");
 }
 
 static ID
@@ -921,7 +921,7 @@ path2class(path)
     VALUE v = rb_path2class(path);
 
     if (TYPE(v) != T_CLASS) {
-	rb_raise(rb_eTypeError, "%s does not refer class", path);
+	rb_raise(rb_eArgError, "%s does not refer class", path);
     }
     return v;
 }
@@ -933,7 +933,7 @@ path2module(path)
     VALUE v = rb_path2class(path);
 
     if (TYPE(v) != T_MODULE) {
-	rb_raise(rb_eTypeError, "%s does not refer module", path);
+	rb_raise(rb_eArgError, "%s does not refer module", path);
     }
     return v;
 }
