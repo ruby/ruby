@@ -50,6 +50,13 @@ class TestRand < Test::Unit::TestCase
     }
   end
 
+  def test_rand_0x100000000
+    srand(311702798)
+    %w(4119812344 3870378946 80324654 4294967296 410016213).each {|w|
+      assert_equal(w.to_i, rand(0x100000001))
+    }
+  end
+
   def test_0x1000000000000
     srand(0)
     %w(11736396900911
