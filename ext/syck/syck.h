@@ -14,7 +14,7 @@
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
-#include "../../st.h"
+#include "st.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -256,6 +256,10 @@ SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
 
 void apply_seq_in_map( SyckParser *, SyckNode * );
+
+#ifndef ST_DATA_T_DEFINED
+typedef long st_data_t;
+#endif
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

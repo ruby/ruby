@@ -1,3 +1,18 @@
+Tue May 20 15:26:25 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* st.h: define ST_DATA_T_DEFINED for portability.
+
+	* ext/syck/syck.h: add typedef, st_data_t for Ruby 1.6.
+
+	* ext/syck/syck.c (syck_st_free_nodes): return int.
+
+	* ext/syck/syck.c (syck_add_sym): cast the data to st_data_t
+	  to avoid error on bcc32.
+
+	* ext/syck/syck.c (syck_lookup_sym): ditto.
+
+	* ext/syck/syck.c (syck_free_parser): NULL is not integer.
+
 Tue May 20 13:29:04 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (kill): set errno after calling raise().
