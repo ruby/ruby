@@ -1207,11 +1207,27 @@ public
     assert_equal([["Avenches", "aus Umgebung"], ["Bad Hersfeld", "Ausgrabung"]], rows)
 
     rows = []
+    assert_raises(CSV::IllegalFormatError) do
+      CSV.open(@macfile, "r") do |row|
+	rows << row.to_a
+      end
+    end
+
+    rows = []
     file = File.open(@macfile)
     CSV::Reader.parse(file.read, ?,, ?\r) do |row|
       rows << row.to_a
     end
     assert_equal([["Avenches", "aus Umgebung"], ["Bad Hersfeld", "Ausgrabung"]], rows)
+    file.close
+
+    rows = []
+    file = File.open(@macfile)
+    assert_raises(CSV::IllegalFormatError) do
+      CSV::Reader.parse(file.read, ?,) do |row|
+	rows << row.to_a
+      end
+    end
     file.close
   end
 
