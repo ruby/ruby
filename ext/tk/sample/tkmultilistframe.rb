@@ -1,10 +1,10 @@
 #
-# tkmultilistbox.rb : multiple listbox widget
+# tkmultilistframe.rb : multiple listbox widget on scrollable frame
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 require 'tk'
 
-class TkMultiListbox < TkListbox
+class TkMultiListFrame < TkListbox
   include TkComposite
 
   #   lbox_height : height of listboxes (pixel)
@@ -16,33 +16,65 @@ class TkMultiListbox < TkListbox
       raise
     end
 
-    # decide total width
-    @width_total = 0
-    title_info.each{|title, width| @width_total += width.to_f}
-
-    # virtical scrollbar
-    @v_scroll = TkScrollbar.new(@frame, 'orient'=>'vertical')
+    # mode
+    @keep_minsize = true
+    @show_each_hscr = true
+    @show_win_hscr = true
 
     # init arrays
-    @base_list = []
+    @base_list  = []
     @rel_list   = []
     @title_list = []
+    @title_cmd  = []
     @lbox_list  = []
     @hscr_list  = []
+
+    # decide total width
+    @lbox_total = title_info.size
+    @width_total = 0
+    title_info.each{|title, width, cmd| 
+      @width_total += width.to_f
+      @title_cmd << cmd
+    }
 
     # rel-table of label=>index
     @name_index = {}
 
-    # create base flames
-    @f_title = TkFrame.new(@frame, 'width'=>@width_total)
-    @f_lbox  = TkFrame.new(@frame, 
-			   'width'=>@width_total, 'height'=>lbox_height)
-    @f_hscr  = TkFrame.new(@frame, 'width'=>@width_total, 
-			   'height'=>@v_scroll.cget('width') + 
-			             2 * @v_scroll.cget('borderwidth'))
+    # size definition
+    @window_width = @width_total
+    @sash = 5
+    @scrbar_width = 15
+    @scrbar_border = 3
+    @lbox_border = 1
+    @title_border = 3
+    @h_l_thick = 0
 
-    # dummy label to keep the hight of title space
-    TkLabel.new(@f_title, 'text'=>' ').pack
+    # virtical scrollbar
+    @v_scroll = TkScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
+				'borderwidth'=>@scrbar_border, 
+				'orient'=>'vertical', 'width'=>@scrbar_width)
+
+    # horizontal scrollbar
+    @h_scroll = TkScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
+				'borderwidth'=>@scrbar_border, 
+				'orient'=>'horizontal', 'width'=>@scrbar_width)
+
+    # create base flames
+    @c_title = TkCanvas.new(@frame, 'highlightthickness'=>@h_l_thick, 
+			    'width'=>@window_width)
+    @f_title = TkFrame.new(@c_title, 'width'=>@width_total)
+    @w_title = TkcWindow.new(@c_title, 0, 0, 
+			     'window'=>@f_title, 'anchor'=>'nw')
+
+    @c_lbox  = TkCanvas.new(@frame, 'highlightthickness'=>@h_l_thick, 
+			    'width'=>@window_width)
+    @f_lbox  = TkFrame.new(@c_lbox, 'width'=>@width_total)
+    @w_lbox  = TkcWindow.new(@c_lbox, 0, 0, 'window'=>@f_lbox, 'anchor'=>'nw')
+
+    @c_hscr  = TkCanvas.new(@frame, 'highlightthickness'=>@h_l_thick, 
+			    'width'=>@window_width)
+    @f_hscr  = TkFrame.new(@c_hscr, 'width'=>@width_total)
+    @w_hscr  = TkcWindow.new(@c_hscr, 0, 0, 'window'=>@f_hscr, 'anchor'=>'nw')
 
     # create each listbox
     sum = 0.0
@@ -62,23 +94,36 @@ class TkMultiListbox < TkListbox
       # title field
       f = TkFrame.new(@f_title, 'width'=>width)
       base = [f]
-      @title_list << TkLabel.new(f, 'text'=>label).pack('fill'=>'x')
-      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>-6, 
+
+      title = TkLabel.new(f, 'text'=>label, 'borderwidth'=>@title_border, 
+			  'relief'=>'raised', 'highlightthickness'=>@h_l_thick)
+      title_binding(title, idx)
+      title.pack('fill'=>'x')
+
+      @title_list << title
+
+      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>1, 
+	      'relheight'=>1.0, 
 	      'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
 
       # listbox field
       f = TkFrame.new(@f_lbox, 'width'=>width)
       base << f
-      @lbox_list << TkListbox.new(f).pack('fill'=>'both', 'expand'=>true)
-      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>-4, 
+      @lbox_list << TkListbox.new(f, 'highlightthickness'=>@h_l_thick, 
+				  'borderwidth'=>@lbox_border
+				  ).pack('fill'=>'both', 'expand'=>true)
+      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>1, 
 	      'relwidth'=>@rel_list[idx+1] - @rel_list[idx], 'relheight'=>1.0)
 
       # scrollbar field
       f = TkFrame.new(@f_hscr, 'width'=>width)
       base << f
-      @hscr_list << TkScrollbar.new(f, 'orient'=>'horizontal') . 
-	                                      pack('fill'=>'x', 'anchor'=>'w')
-      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>-4, 
+      @hscr_list << TkScrollbar.new(f, 'orient'=>'horizontal', 
+				    'width'=>@scrbar_width, 
+				    'borderwidth'=>@scrbar_border, 
+				    'highlightthickness'=>@h_l_thick
+				    ).pack('fill'=>'x', 'anchor'=>'w')
+      f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>1, 
 	      'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
 
       @lbox_list[idx].xscrollcommand proc{|first, last| 
@@ -90,18 +135,32 @@ class TkMultiListbox < TkListbox
       @base_list << base
     }
 
-    # create tab
-    @tab_list = [nil]
-    (1..(@rel_list.size - 2)).each{|idx|
-      tab = TkFrame.new(@f_title, 'cursor'=>'sb_h_double_arrow', 
-			'width'=>6, 'borderwidth'=>2, 'relief'=>'raised')
-      @tab_list << tab
-      tab.place('relx'=>@rel_list[idx], 'anchor'=>'ne', 'relheight'=>0.95)
-      tab.bind('Button-1', 
-	       proc{|x| @x = x; @frame_width = TkWinfo.width(@f_title).to_f}, 
-	       '%X')
-      tab.bind('B1-Motion', proc{|x, idx| resize(x, idx.to_i)}, "%X #{idx}")
+    # pad
+    # @f_title_pad = TkFrame.new(@frame)
+    @f_title_pad = TkFrame.new(@frame, 'relief'=>'raised', 
+			       'borderwidth'=>@title_border, 
+			       'highlightthickness'=>@h_l_thick)
+
+    @f_scr_pad = TkFrame.new(@frame, 'relief'=>'sunken', 
+			     'borderwidth'=>1, 
+			     'highlightthickness'=>@h_l_thick)
+
+    # height check
+    title_height = 0
+    @title_list.each{|w| 
+      h = w.winfo_reqheight
+      title_height = h if title_height < h
     }
+
+    hscr_height = 0
+    @hscr_list.each{|w| 
+      h = w.winfo_reqheight
+      hscr_height = h if hscr_height < h
+    }
+
+    @f_title.height title_height
+    @f_lbox.height lbox_height
+    @f_hscr.height hscr_height
 
     # set control procedure for virtical scroll
     @lbox_list.each{|lbox|
@@ -111,6 +170,22 @@ class TkMultiListbox < TkListbox
     }
     @v_scroll.command proc{|*args| @lbox_list.each{|lbox| lbox.yview *args} }
 
+    # set control procedure for horizoncal scroll
+    @c_title.xscrollcommand proc{|first, last| 
+      @h_scroll.set first, last
+    }
+    @c_lbox.xscrollcommand proc{|first, last| 
+      @h_scroll.set first, last
+    }
+    @c_hscr.xscrollcommand proc{|first, last| 
+      @h_scroll.set first, last
+    }
+    @h_scroll.command proc{|*args| 
+      @c_title.xview *args
+      @c_lbox.xview *args
+      @c_hscr.xview *args if @show_each_hscr
+    }
+
     # binding for listboxes
     @mode = {}
     @mode['browse']   = browse_mode_bindtag
@@ -118,7 +193,7 @@ class TkMultiListbox < TkListbox
     @mode['extended'] = extended_mode_bindtag
     @mode['multiple'] = multiple_mode_bindtag
     @current_mode = 'browse'
-    @lbox_list.each{|l| 
+    @lbox_list.each_with_index{|l, idx| 
       l.bind('Shift-Key-Left', 
 	     proc{|w| focus_shift(w, -1); Tk.callback_break}, '%W')
       l.bind('Shift-Key-Right', 
@@ -136,19 +211,40 @@ class TkMultiListbox < TkListbox
       l.bindtags(l.bindtags.unshift(@mode[@current_mode]))
     }
 
+    bbox = @w_title.bbox
+    @c_title.height(bbox[3])
+    @c_title.scrollregion(bbox)
+
+    bbox = @w_lbox.bbox
+    @c_lbox.height(bbox[3])
+    @c_lbox.scrollregion(bbox)
+
+    if @show_each_hscr
+      bbox = @w_hscr.bbox
+      @c_hscr.height(bbox[3])
+      @c_hscr.scrollregion(bbox)
+    end
+
     # alignment
     TkGrid.rowconfigure(@frame, 0, 'weight'=>0)
     TkGrid.rowconfigure(@frame, 1, 'weight'=>1)
     TkGrid.rowconfigure(@frame, 2, 'weight'=>0)
+    TkGrid.rowconfigure(@frame, 3, 'weight'=>0)
     TkGrid.columnconfigure(@frame, 0, 'weight'=>1)
     TkGrid.columnconfigure(@frame, 1, 'weight'=>0)
-    @v_scroll.grid('row'=>1, 'column'=>1, 'sticky'=>'ns')
-    @f_title.grid('row'=>0, 'column'=>0, 'sticky'=>'news')
-    @f_lbox.grid('row'=>1, 'column'=>0, 'sticky'=>'news')
-    @f_hscr.grid('row'=>2, 'column'=>0, 'sticky'=>'ew')
+    TkGrid.columnconfigure(@frame, 2, 'weight'=>0)
+    @v_scroll.grid('row'=>1, 'column'=>2, 'sticky'=>'ns')
+    @c_title.grid('row'=>0, 'column'=>0, 'sticky'=>'news')
+    @f_title_pad.grid('row'=>0, 'column'=>2, 'sticky'=>'news')
+    @c_lbox.grid('row'=>1, 'column'=>0, 'sticky'=>'news')
+    @c_hscr.grid('row'=>2, 'column'=>0, 'sticky'=>'ew') if @show_each_hscr
+    @h_scroll.grid('row'=>3, 'column'=>0, 'sticky'=>'ew') if @show_win_hscr
+    @f_scr_pad.grid('row'=>2, 'rowspan'=>2, 'column'=>2, 'sticky'=>'news')
 
     # binding for 'Configure' event
-    @frame.bind('Configure', proc{reconstruct})
+    @c_lbox.bind('Configure', 
+		 proc{|height, width| reconstruct(height, width)}, 
+		 '%h %w')
 
     # set default receiver of method calls
     @path = @lbox_list[0].path
@@ -167,19 +263,22 @@ class TkMultiListbox < TkListbox
 
     # options for listbox titles
     title_font = keys.delete('titlefont')
+    titlefont(title_font) if title_font
+
     title_fg = keys.delete('titleforeground')
+    titleforeground(title_fg) if title_fg
+
     title_bg = keys.delete('titlebackground')
-    if title_font or title_fg or title_bg
-      titleconfig(title_font, title_fg, title_bg)
-    end
+    titlebackground(title_bg) if title_bg
 
     # set receivers for configure methods
     delegate('DEFAULT', *@lbox_list)
-    delegate('activebackground', @v_scroll, *@hscr_list)
-    delegate('troughcolor', @v_scroll, *@hscr_list)
-    delegate('repeatdelay', @v_scroll, *@hscr_list)
-    delegate('repeatinterval', @v_scroll, *@hscr_list)
+    delegate('activebackground', @v_scroll, @h_scroll, *@hscr_list)
+    delegate('troughcolor', @v_scroll, @h_scroll, *@hscr_list)
+    delegate('repeatdelay', @v_scroll, @h_scroll, *@hscr_list)
+    delegate('repeatinterval', @v_scroll, @h_scroll, *@hscr_list)
     delegate('borderwidth', @frame)
+    delegate('width', @c_lbox, @c_title, @c_hscr)
     delegate('relief', @frame)
 
     # configure
@@ -197,20 +296,109 @@ class TkMultiListbox < TkListbox
     }
   end
 
-  # set scrollbar width
-  def scrollbarwidth(width)
-    @v_scroll['width'] = width
-    @hscr_list.each{|hscr| hscr['width'] = width}
-    @f_hscr['height'] = width + 2 * @v_scroll.cget('borderwidth')
+  # keep_minsize?
+  def keep_minsize?
+    @keep_minsize
+  end
+  def keep_minsize(bool)
+    @keep_minsize = bool
   end
 
-  # set options of titles
-  def titleconfig(font, fg, bg)
-    keys = {}
-    keys['font'] = font if font
-    keys['foreground'] = fg if fg
-    keys['background'] = bg if bg
-    @title_list.each{|label| label.configure(keys)}
+  # each hscr
+  def show_each_hscr
+    @show_each_hscr = true
+    @c_hscr.grid('row'=>2, 'column'=>0, 'sticky'=>'ew')
+  end
+  def hide_each_hscr
+    @show_each_hscr = false
+    @c_hscr.ungrid
+  end
+
+  # window hscroll
+  def show_win_hscr
+    @show_win_hscr = true
+    @h_scroll.grid('row'=>3, 'column'=>0, 'sticky'=>'ew')
+  end
+  def hide_win_hscr
+    @show_each_hscr = false
+    @h_scroll.ungrid
+  end
+
+  # set scrollbar width
+  def scrollbarwidth(width)
+    @scrbar_width = width
+    @v_scroll['width'] = @scrbar_width
+    @h_scroll['width'] = @scrbar_width
+    @hscr_list.each{|hscr| hscr['width'] = @scrbar_width}
+    self
+  end
+
+  # set scrollbar border
+  def scrollbarborder(width)
+    @scrbar_border = width
+    @v_scroll['border'] = @scrbar_border
+    @h_scroll['border'] = @scrbar_border
+    @hscr_list.each{|hscr| hscr['border'] = @scrbar_border}
+    self
+  end
+
+  # set listbox borders
+  def listboxborder(width)
+    @lbox_border = width
+    @lbox_list.each{|w| w['border'] = @lbox_border}
+    self
+  end
+
+  # set listbox relief
+  def listboxrelief(relief)
+    @lbox_list.each{|w| w['relief'] = relief}
+    self
+  end
+
+  # set title borders
+  def titleborder(width)
+    @title_border = width
+    @f_title_pad['border'] = @title_border
+    @title_list.each{|label| label['border'] = @title_border}
+    self
+  end
+
+  # set title font
+  def titlefont(font)
+    @title_list.each{|label| label['font'] = font}
+    title_height = 0
+    @title_list.each{|w| 
+      h = w.winfo_reqheight
+      title_height = h if title_height < h
+    }
+    @f_title.height title_height
+    bbox = @w_title.bbox
+    @c_title.height(bbox[3])
+    @c_title.scrollregion(bbox)
+    self
+  end
+
+  # set title foreground color
+  def titleforeground(fg)
+    @title_list.each{|label| label['foreground'] = fg}
+    self
+  end
+
+  # set title background color
+  def titlebackground(bg)
+    @f_title_pad['background'] = bg
+    @title_list.each{|label| label['background'] = bg}
+    self
+  end
+
+  # set title cmds
+  def titlecommand(idx, cmd=Proc.new)
+    @title_cmd[idx] = cmd
+  end
+
+  # call title cmds
+  def titleinvoke(idx)
+    @title_cmd[idx].call if @title_cmd[idx]
   end
 
   # get label widgets of listbox titles
@@ -322,39 +510,54 @@ class TkMultiListbox < TkListbox
   ###########################################
   private
 
-  def reconstruct
+  def reconstruct(height, width)
+    if @keep_minsize && width <= @width_total
+      @f_title.width(@width_total)
+      @f_lbox.width(@width_total)
+      @f_hscr.width(@width_total) if @show_each_hscr
+      @window_width = @width_total
+    else
+      @f_title.width(width)
+      @f_lbox.width(width)
+      @f_hscr.width(width) if @show_each_hscr
+      @window_width = width
+    end
+
+    @f_lbox.height(height)
+
+    @c_title.scrollregion(@w_title.bbox)
+    @c_lbox.scrollregion(@w_lbox.bbox)
+    @c_hscr.scrollregion(@w_hscr.bbox) if @show_each_hscr
+
     (0..(@rel_list.size - 2)).each{|idx|
       title, lbox, hscr = @base_list[idx]
       title.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx])
       lbox.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
 		 'relheight'=>1.0)
       hscr.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx])
-
-      tab = @tab_list[idx]
-      tab.place('relx'=>@rel_list[idx]) if tab
     }
   end
 
-  def resize(x, idx)
+  def resize(x)
+    idx = @sel_sash
+    return if idx == 0
+
     # adjustment of relative positioning
     delta = (x - @x) / @frame_width
-    if delta < @rel_list[idx-1] - @rel_list[idx] + 0.02
-      delta = @rel_list[idx-1] - @rel_list[idx] + 0.02
-    elsif delta > @rel_list[idx+1] - @rel_list[idx] - 0.02
-      delta = @rel_list[idx+1] - @rel_list[idx] - 0.02
+    if delta < @rel_list[idx-1] - @rel_list[idx] + (2*@sash/@frame_width)
+      delta = @rel_list[idx-1] - @rel_list[idx] + (2*@sash/@frame_width)
+    elsif delta > @rel_list[idx+1] - @rel_list[idx] - (2*@sash/@frame_width)
+      delta = @rel_list[idx+1] - @rel_list[idx] - (2*@sash/@frame_width)
     end
     @rel_list[idx] += delta
 
-    # adjustment of leftside widget of the tab
+    # adjustment of leftside widget of the sash
     title, lbox, hscr = @base_list[idx - 1]
     title.place('relwidth'=>@rel_list[idx] - @rel_list[idx-1])
     lbox.place('relwidth'=>@rel_list[idx] - @rel_list[idx-1], 'relheight'=>1.0)
     hscr.place('relwidth'=>@rel_list[idx] - @rel_list[idx-1])
 
-    # adjustment of the tab position
-    @tab_list[idx].place('relx'=>@rel_list[idx])
-
-    # adjustment of rightside widget of the tab
+    # adjustment of rightside widget of the sash
     title, lbox, hscr = @base_list[idx]
     title.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
 		'relx'=>@rel_list[idx])
@@ -365,6 +568,56 @@ class TkMultiListbox < TkListbox
 
     # update reference position
     @x = x
+  end
+
+  def motion_cb(w, x, idx)
+    if x <= @sash && idx > 0
+      w.cursor 'sb_h_double_arrow'
+      @mode = :sash
+      @sel_sash = idx
+    elsif x >= w.winfo_width - @sash && idx < @lbox_total - 1
+      w.cursor 'sb_h_double_arrow'
+      @mode = :sash
+      @sel_sash = idx + 1
+    else
+      w.cursor ""
+      @mode = :title
+      @sel_sash = 0
+    end
+  end
+
+  def title_binding(title, index)
+    title.bind('Motion', proc{|w, x, idx| motion_cb(w, x, idx.to_i)}, 
+	       "%W %x #{index}")
+
+    title.bind('Enter', proc{|w, x, idx| motion_cb(w, x, idx.to_i)}, 
+	       "%W %x #{index}")
+
+    title.bind('Leave', proc{|w| w.cursor ""}, "%W")
+
+    title.bind('Button-1', 
+	       proc{|w, x| 
+		 if @mode == :sash
+		   @x = x
+		   @frame_width = TkWinfo.width(@f_title).to_f
+		 else
+		   title.relief 'sunken'
+		 end
+	       }, 
+	       '%W %X')
+
+    title.bind('ButtonRelease-1', 
+	       proc{|w, x, idx| 
+		 i = idx.to_i
+		 if @mode == :title && @title_cmd[i].kind_of?(Proc)
+		   @title_cmd[i].call
+		 end
+		 title.relief 'raised'
+		 motion_cb(w,x,i)
+	       }, 
+	       "%W %x #{index}")
+
+    title.bind('B1-Motion', proc{|x| resize(x) if @mode == :sash}, "%X")
   end
 
   #################################
@@ -624,19 +877,24 @@ end
 # test
 ################################################
 if __FILE__ == $0
-  f = TkFrame.new(nil, 'width'=>300, 
-		  'height'=>200).pack('fill'=>'both', 'expand'=>'true')
-  #f = TkFrame.new.pack('fill'=>'both', 'expand'=>'true')
-  l = TkMultiListbox.new(f, 150, 
-			 [ ['L1', 100], 
-			   ['L2', 200], 
-			   ['L3', 50] ], 
-			 'titlefont'=>'courier', 
-			 'titleforeground'=>'yellow', 
-			 'titlebackground'=>'navy'
-			 ).pack('fill'=>'both', 'expand'=>true)
+  l = TkMultiListFrame.new(nil, 200, 
+			   [ ['L1', 200, proc{p 'click L1'}], 
+			     ['L2', 100], 
+			     ['L3', 200] ], 
+			   'width'=>350, 
+			   #'titleforeground'=>'yellow', 
+			   'titleforeground'=>'white', 
+			   #'titlebackground'=>'navy',
+			   'titlebackground'=>'blue',
+			   'titlefont'=>'courier'
+			   ).pack('fill'=>'both', 'expand'=>true)
   l.insert('end', [1,2,3])
   l.insert('end', [4,5,6])
+  l.insert('end', [4,5,6], [4,5,6])
+  l.insert('end', ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 
+	           'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+                   'cccccccccccccccccccccccccccccccccccccccccccccccccccc'])
+  l.insert('end', [1,2,3])
   l.insert('end', [4,5,6], [4,5,6])
   l.insert('end', ['aaaaaaaaaaaaaaa','bbbbbbbbbbbbbb','ccccccccccccccccc'])
   l.insert('end', [1,2,3])

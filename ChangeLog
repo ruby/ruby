@@ -1,3 +1,9 @@
+Fri Dec 19 17:36:49 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/tkmultilistbox.rb: bug fix
+
+	* ext/tk/sample/tkmultilistframe.rb: new sample script
+
 Fri Dec 19 03:44:27 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httputils.rb (parse_form_data): should return an
