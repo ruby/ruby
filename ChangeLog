@@ -1,3 +1,14 @@
+Tue Dec 31 07:47:15 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (parse_string): readjusted.
+
+	* parse.y (heredoc_identifier): readjusted.
+
+	* parse.y (here_document): make EOL codes of single-quoted
+	  here-documents consistent.
+
+	* parse.y (yylex): reduced unnecessary conditionals.
+
 Tue Dec 31 04:49:51 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ruby.1: mdoc'ify.

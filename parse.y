@@ -2585,6 +2585,7 @@ pushback(c)
     lex_p--;
 }
 
+#define was_bol() (lex_p == lex_pbeg + 1)
 #define peek(c) (lex_p != lex_pend && (c) == *lex_p)
 
 #define tokfix() (tokenbuf[tokidx]='\0')
@@ -2975,20 +2976,16 @@ parse_string(quote)
 	do {c = nextc();} while (ISSPACE(c));
 	space = 1;
     }
-    if (c == term) {
-	if (!lex_strnest) {
-	  eos:
-	    if (func & STR_FUNC_QWORDS) {
-		quote->nd_func = -1;
-		return ' ';
-	    }
-	    if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
-	    yylval.num = regx_options();
-	    return tREGEXP_END;
+    if ((c == term && !lex_strnest) ||
+	(c == '\\' && WHEN_QUOTED_TERM(peek(quoted_term_char)) &&
+	 (c = nextc()) == term)) {
+	if (func & STR_FUNC_QWORDS) {
+	    quote->nd_func = -1;
+	    return ' ';
 	}
-    }
-    if (c == '\\' && WHEN_QUOTED_TERM(peek(quoted_term_char))) {
-	if ((c = nextc()) == term) goto eos;
+	if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
+	yylval.num = regx_options();
+	return tREGEXP_END;
     }
     if (space) {
 	pushback(c);
@@ -3025,17 +3022,7 @@ heredoc_identifier()
 
     if (c == '-') {
 	c = nextc();
-	if (ISSPACE(c)) {
-	    pushback(c);
-	    pushback('-');
-	    return 0;
-	}
 	func = STR_FUNC_INDENT;
-    }
-    else if (ISSPACE(c)) {
-      not_heredoc:
-	pushback(c);
-	return 0;
     }
     switch (c) {
       case '\'':
@@ -3059,7 +3046,13 @@ heredoc_identifier()
 	break;
 
       default:
-	if (!is_identchar(c)) goto not_heredoc;
+	if (!is_identchar(c)) {
+	    pushback(c);
+	    if (func & STR_FUNC_INDENT) {
+		pushback('-');
+	    }
+	    return 0;
+	}
 	newtok();
 	term = '"';
 	tokadd(func |= str_dquote);
@@ -3118,9 +3111,9 @@ here_document(here)
     NODE *here;
 {
     int c, func, indent = 0;
-    char *eos;
+    char *eos, *p, *pend;
     long len;
-    VALUE str = 0, line;
+    VALUE str = 0;
 
     eos = RSTRING(here->nd_lit)->ptr;
     len = RSTRING(here->nd_lit)->len - 1;
@@ -3133,18 +3126,31 @@ here_document(here)
 	lex_strterm = 0;
 	return 0;
     }
-    if (lex_p - 1 == lex_pbeg && whole_match_p(eos, len, indent)) {
+    if (was_bol() && whole_match_p(eos, len, indent)) {
 	heredoc_restore(lex_strterm);
 	return tSTRING_END;
     }
 
     if (!(func & STR_FUNC_EXPAND)) {
 	do {
-	    line = lex_lastline;
+	    p = RSTRING(lex_lastline)->ptr;
+	    pend = lex_pend;
+	    if (pend > p) {
+		switch (pend[-1]) {
+		  case '\n':
+		    if (--pend == p || pend[-1] != '\r') {
+			pend++;
+			break;
+		    }
+		  case '\r':
+		    --pend;
+		}
+	    }
 	    if (str)
-		rb_str_cat(str, RSTRING(line)->ptr, RSTRING(line)->len);
+		rb_str_cat(str, p, pend - p);
 	    else
-		str = rb_str_new(RSTRING(line)->ptr, RSTRING(line)->len);
+		str = rb_str_new(p, pend - p);
+	    if (pend < lex_pend) rb_str_cat(str, "\n", 1);
 	    lex_p = lex_pend;
 	    if (nextc() == -1) {
 		if (str) dispose_string(str);
@@ -3304,7 +3310,7 @@ yylex()
 	return '!';
 
       case '=':
-	if (lex_p == lex_pbeg + 1) {
+	if (was_bol()) {
 	    /* skip embedded rd document */
 	    if (strncmp(lex_p, "begin", 5) == 0 && ISSPACE(lex_p[5])) {
 		for (;;) {
@@ -4163,10 +4169,10 @@ yylex()
 	  case '4': case '5': case '6':
 	  case '7': case '8': case '9':
 	    tokadd('$');
-	    while (ISDIGIT(c)) {
+	    do {
 		tokadd(c);
 		c = nextc();
-	    }
+	    } while (ISDIGIT(c));
 	    if (is_identchar(c))
 		break;
 	    pushback(c);
@@ -4207,7 +4213,7 @@ yylex()
 	break;
 
       case '_':
-	if (lex_p - 1 == lex_pbeg && whole_match_p("__END__", 7, 0)) {
+	if (was_bol() && whole_match_p("__END__", 7, 0)) {
 	    ruby__end__seen = 1;
 	    lex_lastline = 0;
 	    return -1;
@@ -4216,7 +4222,7 @@ yylex()
 	break;
 
       default:
-	if (!is_identchar(c) || ISDIGIT(c)) {
+	if (!is_identchar(c)) {
 	    rb_compile_error("Invalid char `\\%03o' in expression", c);
 	    goto retry;
 	}
@@ -4225,7 +4231,7 @@ yylex()
 	break;
     }
 
-    while (is_identchar(c)) {
+    do {
 	tokadd(c);
 	if (ismbchar(c)) {
 	    int i, len = mbclen(c)-1;
@@ -4236,7 +4242,7 @@ yylex()
 	    }
 	}
 	c = nextc();
-    }
+    } while (is_identchar(c));
     if ((c == '!' || c == '?') && is_identchar(tok()[0]) && !peek('=')) {
 	tokadd(c);
     }
