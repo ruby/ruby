@@ -1472,28 +1472,6 @@ is_socket(SOCKET fd)
     return result;
 }
 
-int
-rb_w32_fddup (int fd)
-{
-    SOCKET s = TO_SOCKET(fd);
-
-    if (s == -1)
-	return -1;
-
-    RUBY_CRITICAL(fd = rb_w32_open_osfhandle(s, O_RDWR|O_BINARY));
-    return fd;
-}
-
-
-void
-rb_w32_fdclose(FILE *fp)
-{
-    RUBY_CRITICAL({
-	STHREAD_ONLY(_free_osfhnd(fileno(fp)));
-	fclose(fp);
-    });
-}
-
 //
 // Since the errors returned by the socket error function 
 // WSAGetLastError() are not known by the library routine strerror

@@ -1,3 +1,12 @@
+Tue Oct  1 23:48:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/socket/socket.c (init_sock): no need for special finalizer,
+	  socket descriptor is no longer duplicated in 1.7.
+	  [ruby-talk:50732]
+
+	* win32/win32.c, win32/win32.h (rb_w32_fddup, rb_w32_fdclose):
+	  delete.
+
 Mon Sep 30 20:29:10 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (rb_io_inspect): not need to raise IOError for closed

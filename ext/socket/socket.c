@@ -163,23 +163,6 @@ ruby_getaddrinfo(nodename, servname, hints, res)
 #define close closesocket
 #endif
 
-#ifdef NT
-static void sock_finalize _((OpenFile *fptr));
-
-static void
-sock_finalize(fptr)
-    OpenFile *fptr;
-{
-    SOCKET s;
-
-    if (!fptr->f) return;
-    s = get_osfhandle(fileno(fptr->f));
-    rb_w32_fdclose(fptr->f);
-    if (fptr->f2) rb_w32_fdclose(fptr->f2);
-    closesocket(s);
-}
-#endif
-
 static VALUE
 init_sock(sock, fd)
     VALUE sock;
@@ -189,9 +172,6 @@ init_sock(sock, fd)
 
     MakeOpenFile(sock, fp);
     fp->f = rb_fdopen(fd, "r");
-#ifdef NT
-    fp->finalize = sock_finalize;
-#endif
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
     rb_io_synchronized(fp);

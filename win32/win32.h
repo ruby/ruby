@@ -161,8 +161,6 @@ extern char * NtGetLib(void);
 extern char * NtGetBin(void);
 extern pid_t  pipe_exec(char *, int, FILE **, FILE **);
 extern int    flock(int fd, int oper);
-extern int    rb_w32_fddup(int);
-extern void   rb_w32_fdclose(FILE *);
 extern int    rb_w32_accept(int, struct sockaddr *, int *);
 extern int    rb_w32_bind(int, struct sockaddr *, int);
 extern int    rb_w32_connect(int, struct sockaddr *, int);
