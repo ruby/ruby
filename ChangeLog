@@ -1,3 +1,7 @@
+Wed Aug 11 17:17:50 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (RPATHFLAG): stop setting RPATHFLAG on Interix.
+
 Mon Aug  9 15:03:20 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/erbhandler.rb
