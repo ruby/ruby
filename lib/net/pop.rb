@@ -748,8 +748,8 @@ module Net
 
     def auth( account, password )
       check_response_auth(critical {
-        check_response_auth(get_response('USER ' + account))
-        get_response('PASS ' + password)
+        check_response_auth(get_response('USER %s', account))
+        get_response('PASS %s', password)
       })
     end
 
