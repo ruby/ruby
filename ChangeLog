@@ -1,3 +1,10 @@
+Fri Apr 16 13:48:29 2004  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/socket/extconf.rb: Merge from 1.8: explicity specify
+	  IPPROTO_TCP as a SOCK_STREAM protocol to use, when it is not the
+	  only protocol.  KAME, for example, supports other SOCK_STREAM
+	  protocols such as SCTP.
+
 Sun Nov  2 17:53:09 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* cygwin/GNUmakefile: allow "B" type in defined symbols.
