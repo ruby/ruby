@@ -333,7 +333,8 @@ this margin are formatted verbatim.
 
    Hyperlinks can also be of the form <tt>label</tt>[url], in which
    case the label is used in the displayed text, and <tt>url</tt> is
-   used as the target.
+   used as the target. If <tt>label</tt> contains multiple words,
+   put it in braces: <em>{multi word label}[</em>url<em>]</em>.
        
 9. Method parameter lists are extracted and displayed with
    the method description. If a method calls +yield+, then
