@@ -1,3 +1,7 @@
+Sat Oct 26 10:11:47 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* node.h (nd_type): cast the value to int.
+
 Sat Oct 26 04:27:35 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dbm/dbm.c (fdbm_indexes, fdbm_select): add a missing
