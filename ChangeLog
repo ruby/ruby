@@ -1,3 +1,16 @@
+Wed Nov 17 09:38:18 2004  Johan Holmberg  <holmberg@iar.se>
+
+	* re.c (rb_reg_initialize_m): should raise exception instead of
+	  compile error.  [ruby-core:03755]
+
+Wed Nov 17 03:42:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_splice): move rb_str_modify() after
+	  StringValue(), which may alter the receiver.  [ruby-dev:24878]
+
+	* error.c (rb_error_frozen): now raise RuntimeError instead of
+	  TypeError. 
+
 Tue Nov 16 21:22:47 2004  Michael Neumann  <mneumann@ruby-lang.org>
 
 	* lib/xmlrpc/server.rb (CGIServer): fixed bug when client sends

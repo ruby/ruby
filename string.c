@@ -788,8 +788,8 @@ VALUE
 rb_str_append(str, str2)
     VALUE str, str2;
 {
-    rb_str_modify(str);
     StringValue(str2);
+    rb_str_modify(str);
     if (RSTRING(str2)->len > 0) {
 	if (FL_TEST(str, STR_ASSOC)) {
 	    long len = RSTRING(str)->len+RSTRING(str2)->len;
@@ -1643,6 +1643,7 @@ rb_str_splice(str, beg, len, val)
     }
 
     StringValue(val);
+    rb_str_modify(str);
     if (len < RSTRING(val)->len) {
 	/* expand string */
 	RESIZE_CAPA(str, RSTRING(str)->len + RSTRING(val)->len - len + 1);
@@ -1672,7 +1673,6 @@ rb_str_update(str, beg, len, val)
     long beg, len;
     VALUE val;
 {
-    rb_str_modify(str);
     rb_str_splice(str, beg, len, val);
 }
 
@@ -1706,7 +1706,6 @@ rb_str_subpat_set(str, re, nth, val)
     }
     end = RMATCH(match)->END(nth);
     len = end - start;
-    rb_str_modify(str);
     rb_str_splice(str, start, len, val);
 }
 
@@ -1731,6 +1730,7 @@ rb_str_aset(str, indx, val)
 	    idx += RSTRING(str)->len;
 	}
 	if (FIXNUM_P(val)) {
+	    rb_str_modify(str);
 	    if (RSTRING(str)->len == idx) {
 		RSTRING(str)->len += 1;
 		RESIZE_CAPA(str, RSTRING(str)->len);
@@ -1799,7 +1799,6 @@ rb_str_aset_m(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    rb_str_modify(str);
     if (argc == 3) {
 	if (TYPE(argv[0]) == T_REGEXP) {
 	    rb_str_subpat_set(str, argv[0], NUM2INT(argv[1]), argv[2]);
@@ -1838,7 +1837,6 @@ rb_str_insert(str, idx, str2)
 {
     long pos = NUM2LONG(idx);
 
-    rb_str_modify(str);
     if (pos == -1) {
 	pos = RSTRING(str)->len;
     }
@@ -2092,7 +2090,7 @@ str_gsub(argc, argv, str, bang)
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
 	    str_mod_check(str, sp, slen);
-	    str_frozen_check(str);
+	    if (bang) str_frozen_check(str);
 	    if (val == dest) { 	/* paranoid chack [ruby-dev:24827] */
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
@@ -3897,8 +3895,8 @@ rb_str_chomp_bang(argc, argv, str)
 	rs = rb_rs;
 	if (rs == rb_default_rs) {
 	  smart_chomp:
+	    rb_str_modify(str);
 	    if (RSTRING(str)->ptr[len-1] == '\n') {
-		rb_str_modify(str);
 		RSTRING(str)->len--;
 		if (RSTRING(str)->len > 0 &&
 		    RSTRING(str)->ptr[RSTRING(str)->len-1] == '\r') {
@@ -3906,7 +3904,6 @@ rb_str_chomp_bang(argc, argv, str)
 		}
 	    }
 	    else if (RSTRING(str)->ptr[len-1] == '\r') {
-		rb_str_modify(str);
 		RSTRING(str)->len--;
 	    }
 	    else {

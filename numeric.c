@@ -716,6 +716,7 @@ flo_divmod(x, y)
     VALUE x, y;
 {
     double fy, div, mod;
+    volatile VALUE a, b;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -731,9 +732,9 @@ flo_divmod(x, y)
 	return rb_num_coerce_bin(x, y);
     }
     flodivmod(RFLOAT(x)->value, fy, &div, &mod);
-    x = rb_float_new(div);
-    y = rb_float_new(mod);
-    return rb_assoc_new(x, y);
+    a = rb_float_new(div);
+    b = rb_float_new(mod);
+    return rb_assoc_new(a, b);
 }
 
 /*

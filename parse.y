@@ -3599,7 +3599,7 @@ string_content	: tSTRING_CONTENT
 			COND_LEXPOP();
 			CMDARG_LEXPOP();
 		    /*%%%*/
-			FL_UNSET($3, NODE_NEWLINE);
+		        $3->flags &= ~NODE_NEWLINE;
 			$$ = new_evstr($3);
 		    /*%
 			$$ = dispatch1(string_embexpr, $3);
@@ -6507,7 +6507,9 @@ static NODE*
 newline_node(node)
     NODE *node;
 {
-    FL_SET(node, NODE_NEWLINE);
+		    if (node) {
+			node->flags |= NODE_NEWLINE;
+		    }
     return node;
 }
 

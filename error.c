@@ -1208,7 +1208,7 @@ void
 rb_error_frozen(what)
     const char *what;
 {
-    rb_raise(rb_eTypeError, "can't modify frozen %s", what);
+    rb_raise(rb_eRuntimeError, "can't modify frozen %s", what);
 }
 
 void

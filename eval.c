@@ -2651,7 +2651,7 @@ rb_eval(self, n)
     if (!node) RETURN(Qnil);
 
     ruby_current_node = node;
-    if (trace_func && FL_TEST(node, NODE_NEWLINE)) {
+    if (trace_func && (node->flags & NODE_NEWLINE)) {
 	call_trace_func("line", node, self,
 			ruby_frame->last_func,
 			ruby_frame->last_class);
@@ -4513,6 +4513,7 @@ proc_jump_error(state, result)
     localjump_error(mesg, result, state);
 }
 
+NORETURN(static void return_jump(VALUE));
 static void
 return_jump(retval)
     VALUE retval;
@@ -4526,14 +4527,15 @@ return_jump(retval)
 	    yield = Qtrue;
 	    tt = tt->prev;
 	}
-	if (tt->tag == PROT_FUNC && tt->frame->uniq == ruby_frame->uniq) {
-	    tt->dst = (VALUE)ruby_frame->uniq;
-	    tt->retval = retval;
-	    JUMP_TAG(TAG_RETURN);
-	}
-	if (tt->tag == PROT_LAMBDA && !yield) {
+	if ((tt->tag == PROT_FUNC && tt->frame->uniq == ruby_frame->uniq) ||
+	    (tt->tag == PROT_LAMBDA && !yield))
+	{ 
 	    tt->dst = (VALUE)tt->frame->uniq;
 	    tt->retval = retval;
+	    if (trace_func) {
+		struct FRAME *f = tt->frame;
+		call_trace_func("return", f->node, f->self, f->last_func, f->last_class);
+	    }
 	    JUMP_TAG(TAG_RETURN);
 	}
 	if (tt->tag == PROT_THREAD) {
@@ -5650,6 +5652,9 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		    call_trace_func("call", b2, recv, id, klass);
 		}
 		result = rb_eval(recv, body);
+		if (trace_func) {
+		    call_trace_func("return", body, recv, id, klass);
+		}
 	    }
 	    else if (state == TAG_RETURN && TAG_DST()) {
 		result = prot_tag->retval;
@@ -5660,9 +5665,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
-	    if (trace_func) {
-		call_trace_func("return", ruby_frame->prev->node, recv, id, klass);
-	    }
 	    switch (state) {
 	      case 0:
 		break;
