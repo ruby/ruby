@@ -670,8 +670,6 @@ sample/wsdl/googleSearch/sjissearch.sh
 sample/wsdl/googleSearch/wsdlDriver.rb
 sample/wsdl/raa/raa.wsdl
 sample/wsdl/raa/soap4r.rb
-test/csv/bom.csv
-test/csv/mac.csv
 test/csv/test_csv.rb
 test/digest/test_digest.rb
 test/drb/drbtest.rb

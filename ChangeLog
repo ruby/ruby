@@ -1,3 +1,10 @@
+Sun Dec 28 11:55:29 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/csv/test_csv.rb: generate bom.csv and mac.csv files on the fly.
+	  [ruby-talk:88852]
+
+	* test/csv/{bom.csv,mac.csv}: removed.
+
 Sun Dec 28 08:56:51 2003  Dave Thomas  <dave@pragprog.com>
 
 	* eval.c: Thead[Group] RDoc (thanks to MG)
