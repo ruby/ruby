@@ -360,7 +360,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     @ts = Rinda::TupleSpaceProxy.new(@ts_base)
   end
 
-  @server = DRb.start_service
+  @server = DRb.primary_server || DRb.start_service
 end
 
 end
