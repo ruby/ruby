@@ -16,11 +16,11 @@
 # *  ``The instance'' is created at instantiation time, in other
 #    words the first call of Klass.instance(), thus
 #
-#    class OtherKlass
+#      class OtherKlass
 #        include Singleton
 #        # ...
-#    end
-#    ObjectSpace.each_object(OtherKlass){} # => 0.
+#      end
+#      ObjectSpace.each_object(OtherKlass){} # => 0.
 #
 # *  This behavior is preserved under inheritance and cloning.
 #
