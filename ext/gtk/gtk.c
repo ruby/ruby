@@ -119,7 +119,7 @@ static VALUE gdkAtom;
 static VALUE gdkColorContext;
 static VALUE gdkEvent;
 
-ID id_gtkdata, id_relatives, id_call;
+ID id_gtkdata, id_relatives, id_call, id_init;
 
 static void gobj_free();
 
@@ -196,7 +196,7 @@ static void
 gobj_free(obj)
     GtkObject *obj;
 {
-    /* just a type mark */
+    /* just for type mark */
 }
 
 static void
@@ -212,12 +212,11 @@ delete_gobject(gtkobj, obj)
     ary_delete(gtk_object_list, obj);
 }
 
-static VALUE
-make_gobject(klass, gtkobj)
-    VALUE klass;
+static void
+set_gobject(obj, gtkobj)
+    VALUE obj;
     GtkObject *gtkobj;
 {
-    VALUE obj = obj_alloc(klass);
     VALUE data;
 
     data = Data_Wrap_Struct(cData, 0, gobj_free, gtkobj);
@@ -227,7 +226,26 @@ make_gobject(klass, gtkobj)
     gtk_signal_connect(gtkobj, "destroy",
 		       (GtkSignalFunc)delete_gobject, (gpointer)obj);
     ary_push(gtk_object_list, obj);
+}
+
+static VALUE
+make_gobject(klass, gtkobj)
+    VALUE klass;
+    GtkObject *gtkobj;
+{
+    VALUE obj = obj_alloc(klass);
+
+    set_gobject(obj, gtkobj);
+    rb_funcall(obj, id_init, 0, 0);
     return obj;
+}
+
+static void
+set_widget(obj, widget)
+    VALUE obj;
+    GtkWidget *widget;
+{
+    set_gobject(obj, GTK_OBJECT(widget));
 }
 
 static VALUE
@@ -235,6 +253,8 @@ make_widget(klass, widget)
     VALUE klass;
     GtkWidget *widget;
 {
+    VALUE obj;
+
     return make_gobject(klass, GTK_OBJECT(widget));
 }
 
@@ -249,8 +269,13 @@ static VALUE
 make_gstyle(style)
     GtkStyle *style;
 {
+    VALUE obj;
+
     gtk_style_ref(style);
-    return Data_Wrap_Struct(gStyle, 0, free_gstyle, style);
+    obj = Data_Wrap_Struct(gStyle, 0, free_gstyle, style);
+    rb_funcall(obj, id_init, 0, 0);
+
+    return obj;
 }
 
 static GtkStyle*
@@ -279,8 +304,13 @@ static VALUE
 make_gtkacceltbl(tbl)
     GtkAcceleratorTable *tbl;
 {
+    VALUE obj;
+
     gtk_accelerator_table_ref(tbl);
-    return Data_Wrap_Struct(gAcceleratorTable, 0, free_gaccel, tbl);
+    obj = Data_Wrap_Struct(gAcceleratorTable, 0, free_gaccel, tbl);
+    rb_funcall(obj, id_init, 0, 0);
+
+    return obj;
 }
 
 static GtkAcceleratorTable*
@@ -303,7 +333,10 @@ static VALUE
 make_gtkprevinfo(info)
     GtkPreviewInfo *info;
 {
-    return Data_Wrap_Struct(gAcceleratorTable, 0, 0, info);
+    VALUE obj = Data_Wrap_Struct(gAcceleratorTable, 0, 0, info);
+
+    rb_funcall(obj, id_init, 0, 0);
+    return obj;
 }
 
 static GtkPreviewInfo*
@@ -355,8 +388,12 @@ make_ttips(klass, tips)
     VALUE klass;
     GtkTooltips *tips;
 {
+    VALUE obj;
+
     gtk_tooltips_ref(tips);
-    return Data_Wrap_Struct(klass, 0, free_ttips, tips);
+    obj = Data_Wrap_Struct(klass, 0, free_ttips, tips);
+    rb_funcall(obj, id_init, 0, 0);
+    return obj;
 }
 
 static GtkTooltips*
@@ -386,8 +423,12 @@ static VALUE
 make_gdkfont(font)
     GdkFont *font;
 {
+    VALUE obj;
+
     gdk_font_ref(font);
-    return Data_Wrap_Struct(gdkFont, 0, free_gdkfont, font);
+    obj = Data_Wrap_Struct(gdkFont, 0, free_gdkfont, font);
+    rb_funcall(obj, id_init, 0, 0);
+    return obj;
 }
 
 static GdkFont*
@@ -434,6 +475,7 @@ make_tobj(obj, klass, size)
     copy = xmalloc(size);
     memcpy(copy, obj, size);
     data = Data_Wrap_Struct(klass, 0, free_tobj, copy);
+    rb_funcall(data, id_init, 0, 0);
 
     return data;
 }
@@ -813,7 +855,7 @@ gslist2ary(list)
 }
 
 static VALUE
-gobj_s_new(argc, argv, self)
+gobj_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -1060,13 +1102,14 @@ cont_children(self, direction)
 }
 
 static VALUE
-align_s_new(self, xalign, yalign, xscale, yscale)
+align_initialize(self, xalign, yalign, xscale, yscale)
     VALUE self, xalign, yalign, xscale, yscale;
 {
-    return make_widget(self, gtk_alignment_new(NUM2DBL(xalign),
-					       NUM2DBL(yalign),
-					       NUM2DBL(xscale),
-					       NUM2DBL(yscale)));
+    set_widget(self, gtk_alignment_new(NUM2DBL(xalign),
+				       NUM2DBL(yalign),
+				       NUM2DBL(xscale),
+				       NUM2DBL(yscale)));
+    return Qnil;
 }
 
 static VALUE
@@ -1104,11 +1147,12 @@ misc_set_padding(self, xpad, ypad)
 }
 
 static VALUE
-arrow_s_new(self, arrow_t, shadow_t)
+arrow_initialize(self, arrow_t, shadow_t)
     VALUE self, arrow_t, shadow_t;
 {
-    return make_widget(self, gtk_arrow_new((GtkArrowType)NUM2INT(arrow_t),
-					   (GtkShadowType)NUM2INT(shadow_t)));
+    set_widget(self, gtk_arrow_new((GtkArrowType)NUM2INT(arrow_t),
+				   (GtkShadowType)NUM2INT(shadow_t)));
+    return Qnil;
 }
 
 static VALUE
@@ -1124,10 +1168,11 @@ arrow_set(self, arrow_t, shadow_t)
 }
 
 static VALUE
-frame_s_new(self, label)
+frame_initialize(self, label)
     VALUE self, label;
 {
-    return make_widget(self, gtk_frame_new(get_cstring(label)));
+    set_widget(self, gtk_frame_new(get_cstring(label)));
+    return Qnil;
 }
 
 static VALUE
@@ -1165,14 +1210,15 @@ frame_set_shadow_type(self, type)
 }
 
 static VALUE
-aframe_s_new(self, label, xalign, yalign, ratio, obey_child)
+aframe_initialize(self, label, xalign, yalign, ratio, obey_child)
     VALUE self, label, xalign, yalign, ratio, obey_child;
 {
-    return make_widget(self, gtk_aspect_frame_new(get_cstring(label),
-						  NUM2DBL(xalign),
-						  NUM2DBL(yalign),
-						  NUM2DBL(ratio),
-						  RTEST(obey_child)));
+    set_widget(self, gtk_aspect_frame_new(get_cstring(label),
+					  NUM2DBL(xalign),
+					  NUM2DBL(yalign),
+					  NUM2DBL(ratio),
+					  RTEST(obey_child)));
+    return Qnil;
 }
 
 static VALUE
@@ -1188,15 +1234,16 @@ aframe_set(self, xalign, yalign, ratio, obey_child)
 }
 
 static VALUE
-adj_s_new(self, value, lower, upper, step_inc, page_inc, page_size)
+adj_initialize(self, value, lower, upper, step_inc, page_inc, page_size)
     VALUE self, value, lower, upper, step_inc, page_inc, page_size;
 {
-    return make_widget(self, gtk_adjustment_new(NUM2DBL(value),
-						NUM2DBL(lower),
-						NUM2DBL(upper),
-						NUM2DBL(step_inc),
-						NUM2DBL(page_inc),
-						NUM2DBL(page_size)));
+    set_widget(self, gtk_adjustment_new(NUM2DBL(value),
+					NUM2DBL(lower),
+					NUM2DBL(upper),
+					NUM2DBL(step_inc),
+					NUM2DBL(page_inc),
+					NUM2DBL(page_size)));
+    return Qnil;
 }
 
 static VALUE
@@ -1874,7 +1921,7 @@ bbox_set_child_ipadding(self, ipad_x, ipad_y)
 }
 
 static VALUE
-clist_s_new(self, titles)
+clist_initialize(self, titles)
     VALUE self, titles;
 {
     char **buf;
@@ -1887,7 +1934,8 @@ clist_s_new(self, titles)
 	Check_Type(RARRAY(titles)->ptr[i], T_STRING);
 	buf[i] = RSTRING(RARRAY(titles)->ptr[i])->ptr;
     }
-    return make_widget(self, gtk_clist_new(len, buf));
+    set_widget(self, gtk_clist_new(len, buf));
+    return Qnil;
 }
 
 static VALUE
@@ -2191,10 +2239,11 @@ clist_clear(self)
 }
 
 static VALUE
-gwin_s_new(self, type)
+gwin_initialize(self, type)
     VALUE self, type;
 {
-    return make_widget(self, gtk_window_new(NUM2INT(type)));
+    set_widget(self, gtk_window_new(NUM2INT(type)));
+    return Qnil;
 }
 
 static VALUE
@@ -2285,17 +2334,19 @@ gwin_rm_accel(self, accel)
 }
 
 static VALUE
-dialog_s_new(self)
+dialog_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_dialog_new());
+    set_widget(self, gtk_dialog_new());
+    return Qnil;
 }
 
 static VALUE
-fsel_s_new(self, title)
+fsel_initialize(self, title)
     VALUE self, title;
 {
-    return make_widget(self, gtk_file_selection_new(get_cstring(title)));
+    set_widget(self, gtk_file_selection_new(get_cstring(title)));
+    return Qnil;
 }
 
 static VALUE
@@ -2372,17 +2423,19 @@ fsel_help_button(self)
 }
 
 static VALUE
-label_s_new(self, label)
+label_initialize(self, label)
     VALUE self, label;
 {
-    return make_widget(self, gtk_label_new(get_cstring(label)));
+    set_widget(self, gtk_label_new(get_cstring(label)));
+    return Qnil;
 }
 
 static VALUE
-list_s_new(self)
+list_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_list_new());
+    set_widget(self, gtk_list_new());
+    return Qnil;
 }
 
 static VALUE
@@ -2563,7 +2616,7 @@ item_toggle(self)
 }
 
 static VALUE
-litem_s_new(argc, argv, self)
+litem_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -2578,7 +2631,8 @@ litem_s_new(argc, argv, self)
 	widget = gtk_list_item_new();
     }
 
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
@@ -2623,10 +2677,11 @@ mshell_deactivate(self)
 }
 
 static VALUE
-menu_s_new(self)
+menu_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_menu_new());
+    set_widget(self, gtk_menu_new());
+    return Qnil;
 }
 
 static VALUE
@@ -2709,7 +2764,8 @@ menu_get_active(self)
     GtkWidget *widget = get_widget(self);
     GtkWidget *mitem = gtk_menu_get_active(GTK_MENU(widget));
 
-    return make_widget(gMenuItem, mitem);
+    set_widget(gMenuItem, mitem);
+    return Qnil;
 }
 
 static VALUE
@@ -2734,10 +2790,11 @@ menu_set_acceltbl(self, table)
 }
 
 static VALUE
-mbar_s_new(self)
+mbar_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_menu_bar_new());
+    set_widget(self, gtk_menu_bar_new());
+    return Qnil;
 }
 
 static VALUE
@@ -2771,7 +2828,7 @@ mbar_insert(self, child, pos)
 }
 
 static VALUE
-mitem_s_new(argc, argv, self)
+mitem_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
 {
@@ -2785,7 +2842,8 @@ mitem_s_new(argc, argv, self)
 	widget = gtk_menu_item_new();
     }
 
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
@@ -2883,7 +2941,7 @@ mitem_right_justify(self)
 }
 
 static VALUE
-cmitem_s_new(argc, argv, self)
+cmitem_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
 {
@@ -2897,7 +2955,8 @@ cmitem_s_new(argc, argv, self)
 	widget = gtk_check_menu_item_new();
     }
 
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
@@ -2933,7 +2992,7 @@ cmitem_toggled(self)
 }
 
 static VALUE
-rmitem_s_new(argc, argv, self)
+rmitem_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
 {
@@ -2965,7 +3024,8 @@ rmitem_s_new(argc, argv, self)
     else {
 	widget = gtk_radio_menu_item_new(list);
     }
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
@@ -2978,10 +3038,11 @@ rmitem_group(self)
 }
 
 static VALUE
-note_s_new(self)
+note_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_notebook_new());
+    set_widget(self, gtk_notebook_new());
+    return Qnil;
 }
 
 static VALUE
@@ -3128,10 +3189,11 @@ note_show_border(self)
 }
 
 static VALUE
-omenu_s_new(self)
+omenu_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_option_menu_new());
+    set_widget(self, gtk_option_menu_new());
+    return Qnil;
 }
 
 static VALUE
@@ -3173,11 +3235,12 @@ omenu_set_history(self, index)
 }
 
 static VALUE
-image_s_new(self, val, mask)
+image_initialize(self, val, mask)
     VALUE self, val, mask;
 {
-    return make_widget(self, gtk_image_new(get_gdkimage(val),
-					   (GdkBitmap*)get_gdkpixmap(mask)));
+    set_widget(self, gtk_image_new(get_gdkimage(val),
+				   (GdkBitmap*)get_gdkpixmap(mask)));
+    return Qnil;
 }
 
 static VALUE
@@ -3205,10 +3268,11 @@ image_get(self)
 }
 
 static VALUE
-preview_s_new(self, type)
+preview_initialize(self, type)
     VALUE self, type;
 {
-    return make_widget(self, gtk_preview_new((GtkPreviewType)NUM2INT(type)));
+    set_widget(self, gtk_preview_new((GtkPreviewType)NUM2INT(type)));
+    return Qnil;
 }
 
 
@@ -3298,10 +3362,11 @@ preview_get_info(self)
 }
 
 static VALUE
-pbar_s_new(self)
+pbar_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_progress_bar_new());
+    set_widget(self, gtk_progress_bar_new());
+    return Qnil;
 }
 
 static VALUE
@@ -3316,7 +3381,7 @@ pbar_update(self, percentage)
 }    
 
 static VALUE
-scwin_s_new(argc, argv, self)
+scwin_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -3329,7 +3394,8 @@ scwin_s_new(argc, argv, self)
     if (!NIL_P(arg1)) h_adj = (GtkAdjustment*)get_gobject(arg1);
     if (!NIL_P(arg2)) v_adj = (GtkAdjustment*)get_gobject(arg2);
 
-    return make_widget(self, gtk_scrolled_window_new(h_adj, v_adj));
+    set_widget(self, gtk_scrolled_window_new(h_adj, v_adj));
+    return Qnil;
 }
 
 static VALUE
@@ -3346,16 +3412,17 @@ scwin_set_policy(self, hpolicy, vpolicy)
 
 
 static VALUE
-tbl_s_new(argc, argv, self)
+tbl_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
 {
     VALUE row, col, homogeneous;
 
     rb_scan_args(argc, argv, "21", &row, &col, &homogeneous);
-    return make_widget(self, gtk_table_new(NUM2INT(row),
+    set_widget(self, gtk_table_new(NUM2INT(row),
 					   NUM2INT(col),
 					   RTEST(homogeneous)));
+    return Qnil;
 }
 
 static VALUE
@@ -3429,7 +3496,7 @@ tbl_set_col_spacings(self, spc)
 }
 
 static VALUE
-txt_s_new(argc, argv, self)
+txt_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -3442,7 +3509,8 @@ txt_s_new(argc, argv, self)
     if (!NIL_P(arg1)) h_adj = (GtkAdjustment*)get_gobject(arg1);
     if (!NIL_P(arg2)) v_adj = (GtkAdjustment*)get_gobject(arg2);
 
-    return make_widget(self, gtk_text_new(h_adj, v_adj));
+    set_widget(self, gtk_text_new(h_adj, v_adj));
+    return Qnil;
 }
 
 static VALUE
@@ -3556,7 +3624,7 @@ txt_forward_delete(self, nchars)
 }
 
 static VALUE
-tbar_s_new(argc, argv, self)
+tbar_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -3569,7 +3637,8 @@ tbar_s_new(argc, argv, self)
     if (!NIL_P(arg1)) orientation = (GtkOrientation)NUM2INT(arg1);
     if (!NIL_P(arg2)) style = (GtkToolbarStyle)NUM2INT(arg2);
 
-    return make_widget(self, gtk_toolbar_new(orientation, style));
+    set_widget(self, gtk_toolbar_new(orientation, style));
+    return Qnil;
 }
 
 static VALUE
@@ -3703,7 +3772,7 @@ tbar_set_tooltips(self, enable)
 }
 
 static VALUE
-ttips_s_new(self)
+ttips_initialize(self)
     VALUE self;
 {
     return make_ttips(self, gtk_tooltips_new());
@@ -3747,10 +3816,11 @@ ttips_disable(self)
 }
 
 static VALUE
-tree_s_new(self)
+tree_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_tree_new());
+    set_widget(self, gtk_tree_new());
+    return Qnil;
 }
 
 static VALUE
@@ -3784,7 +3854,7 @@ tree_insert(self, child, pos)
 }
 
 static VALUE
-titem_s_new(argc, argv, self)
+titem_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
 {
@@ -3799,7 +3869,8 @@ titem_s_new(argc, argv, self)
 	widget = gtk_tree_item_new();
     }
 
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
@@ -3853,7 +3924,7 @@ titem_collapse(self)
 }
 
 static VALUE
-vport_s_new(argc, argv, self)
+vport_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -3866,7 +3937,8 @@ vport_s_new(argc, argv, self)
     if (!NIL_P(arg1)) h_adj = (GtkAdjustment*)get_gobject(arg1);
     if (!NIL_P(arg2)) v_adj = (GtkAdjustment*)get_gobject(arg2);
 
-    return make_widget(self, gtk_viewport_new(h_adj, v_adj));
+    set_widget(self, gtk_viewport_new(h_adj, v_adj));
+    return Qnil;
 }
 
 static VALUE
@@ -3928,7 +4000,7 @@ vport_set_shadow(self, type)
 }
 
 static VALUE
-button_s_new(argc, argv, self)
+button_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
 {
@@ -3943,7 +4015,8 @@ button_s_new(argc, argv, self)
 	widget = gtk_button_new();
     }
 
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
@@ -3997,7 +4070,7 @@ button_leave(self)
 }
 
 static VALUE
-tbtn_s_new(argc, argv, self)
+tbtn_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
 {
@@ -4012,7 +4085,8 @@ tbtn_s_new(argc, argv, self)
 	widget = gtk_toggle_button_new();
     }
 
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
@@ -4046,7 +4120,7 @@ tbtn_toggled(self)
 }
 
 static VALUE
-cbtn_s_new(argc, argv, self)
+cbtn_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
 {
@@ -4061,11 +4135,12 @@ cbtn_s_new(argc, argv, self)
 	widget = gtk_check_button_new();
     }
 
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
-rbtn_s_new(argc, argv, self)
+rbtn_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
 {
@@ -4097,7 +4172,8 @@ rbtn_s_new(argc, argv, self)
     else {
 	widget = gtk_radio_button_new(list);
     }
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
@@ -4161,7 +4237,7 @@ box_pack_end(argc, argv, self)
 }
 
 static VALUE
-vbox_s_new(argc, argv, self)
+vbox_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -4172,14 +4248,16 @@ vbox_s_new(argc, argv, self)
     rb_scan_args(argc, argv, "02", &homogeneous, &spacing);
     widget = gtk_vbox_new(RTEST(homogeneous), NUM2INT(spacing));
 
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
-colorsel_s_new(self)
+colorsel_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_color_selection_new());
+    set_widget(self, gtk_color_selection_new());
+    return Qnil;
 }
 
 static VALUE
@@ -4240,22 +4318,24 @@ colorsel_get_color(self)
 }
 
 static VALUE
-cdialog_s_new(self, title)
+cdialog_initialize(self, title)
     VALUE self;
 {
     char *t;
 
     Check_Type(title, T_STRING);
     t = RSTRING(title)->ptr;
-    return make_widget(self, gtk_color_selection_dialog_new(t));
+    set_widget(self, gtk_color_selection_dialog_new(t));
+    return Qnil;
 }
 
 static VALUE
-pixmap_s_new(self, val, mask)
+pixmap_initialize(self, val, mask)
     VALUE self, val, mask;
 {
-    return make_widget(self, gtk_pixmap_new(get_gdkpixmap(val),
+    set_widget(self, gtk_pixmap_new(get_gdkpixmap(val),
 					    get_gdkpixmap(mask)));
+    return Qnil;
 }
 
 static VALUE
@@ -4284,10 +4364,11 @@ pixmap_get(self)
 }
 
 static VALUE
-darea_s_new(self)
+darea_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_drawing_area_new());
+    set_widget(self, gtk_drawing_area_new());
+    return Qnil;
 }
 
 static VALUE
@@ -4301,10 +4382,11 @@ darea_size(self, w, h)
 }
 
 static VALUE
-entry_s_new(self)
+entry_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_entry_new());
+    set_widget(self, gtk_entry_new());
+    return Qnil;
 }
 
 static VALUE
@@ -4320,17 +4402,19 @@ entry_set_text(self, text)
 }
 
 static VALUE
-eventbox_s_new(self)
+eventbox_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_event_box_new());
+    set_widget(self, gtk_event_box_new());
+    return Qnil;
 }
 
 static VALUE
-fixed_s_new(self)
+fixed_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_fixed_new());
+    set_widget(self, gtk_fixed_new());
+    return Qnil;
 }
 
 static VALUE
@@ -4354,10 +4438,11 @@ fixed_move(self, win, x, y)
 }
 
 static VALUE
-gamma_s_new(self)
+gamma_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_gamma_curve_new());
+    set_widget(self, gtk_gamma_curve_new());
+    return Qnil;
 }
 
 static VALUE
@@ -4370,10 +4455,11 @@ gamma_gamma(self)
 }
 
 static VALUE
-hbbox_s_new(self)
+hbbox_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_hbutton_box_new());
+    set_widget(self, gtk_hbutton_box_new());
+    return Qnil;
 }
 
 static VALUE
@@ -4411,10 +4497,11 @@ hbbox_set_layout_default(self, layout)
 }
 
 static VALUE
-vbbox_s_new(self)
+vbbox_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_vbutton_box_new());
+    set_widget(self, gtk_vbutton_box_new());
+    return Qnil;
 }
 
 static VALUE
@@ -4452,7 +4539,7 @@ vbbox_set_layout_default(self, layout)
 }
 
 static VALUE
-hbox_s_new(argc, argv, self)
+hbox_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -4463,7 +4550,8 @@ hbox_s_new(argc, argv, self)
     rb_scan_args(argc, argv, "02", &homogeneous, &spacing);
     widget = gtk_hbox_new(RTEST(homogeneous), NUM2INT(spacing));
 
-    return make_widget(self, widget);
+    set_widget(self, widget);
+    return Qnil;
 }
 
 static VALUE
@@ -4507,17 +4595,19 @@ paned_gutter_size(self, size)
 }
 
 static VALUE
-hpaned_s_new(self)
+hpaned_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_hpaned_new());
+    set_widget(self, gtk_hpaned_new());
+    return Qnil;
 }
 
 static VALUE
-vpaned_s_new(self)
+vpaned_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_vpaned_new());
+    set_widget(self, gtk_vpaned_new());
+    return Qnil;
 }
 
 static VALUE
@@ -4566,15 +4656,17 @@ ruler_draw_pos(self)
 }
 
 static VALUE
-hruler_s_new(self)
+hruler_initialize(self)
 {
-    return make_widget(self, gtk_hruler_new());
+    set_widget(self, gtk_hruler_new());
+    return Qnil;
 }
 
 static VALUE
-vruler_s_new(self)
+vruler_initialize(self)
 {
-    return make_widget(self, gtk_vruler_new());
+    set_widget(self, gtk_vruler_new());
+    return Qnil;
 }
 
 static VALUE
@@ -4805,7 +4897,7 @@ scale_draw_value(self)
 }
 
 static VALUE
-hscale_s_new(argc, argv, self)
+hscale_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -4816,11 +4908,12 @@ hscale_s_new(argc, argv, self)
     rb_scan_args(argc, argv, "01", &arg1);
     if (!NIL_P(arg1)) adj = (GtkAdjustment*)get_gobject(arg1);
 
-    return make_widget(self, gtk_hscale_new(adj));
+    set_widget(self, gtk_hscale_new(adj));
+    return Qnil;
 }
 
 static VALUE
-vscale_s_new(argc, argv, self)
+vscale_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -4831,11 +4924,12 @@ vscale_s_new(argc, argv, self)
     rb_scan_args(argc, argv, "01", &arg1);
     if (!NIL_P(arg1)) adj = (GtkAdjustment*)get_gobject(arg1);
 
-    return make_widget(self, gtk_vscale_new(adj));
+    set_widget(self, gtk_vscale_new(adj));
+    return Qnil;
 }
 
 static VALUE
-hscrollbar_s_new(argc, argv, self)
+hscrollbar_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -4846,11 +4940,12 @@ hscrollbar_s_new(argc, argv, self)
     rb_scan_args(argc, argv, "01", &arg1);
     if (!NIL_P(arg1)) adj = (GtkAdjustment*)get_gobject(arg1);
 
-    return make_widget(self, gtk_hscrollbar_new(adj));
+    set_widget(self, gtk_hscrollbar_new(adj));
+    return Qnil;
 }
 
 static VALUE
-vscrollbar_s_new(argc, argv, self)
+vscrollbar_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -4861,28 +4956,32 @@ vscrollbar_s_new(argc, argv, self)
     rb_scan_args(argc, argv, "01", &arg1);
     if (!NIL_P(arg1)) adj = (GtkAdjustment*)get_gobject(arg1);
 
-    return make_widget(self, gtk_vscrollbar_new(adj));
+    set_widget(self, gtk_vscrollbar_new(adj));
+    return Qnil;
 }
 
 static VALUE
-hsep_s_new(self)
+hsep_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_hseparator_new());
+    set_widget(self, gtk_hseparator_new());
+    return Qnil;
 }
 
 static VALUE
-vsep_s_new(self)
+vsep_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_vseparator_new());
+    set_widget(self, gtk_vseparator_new());
+    return Qnil;
 }
 
 static VALUE
-idiag_s_new(self)
+idiag_initialize(self)
     VALUE self;
 {
-    return make_widget(self, gtk_input_dialog_new());
+    set_widget(self, gtk_input_dialog_new());
+    return Qnil;
 }
 
 static VALUE
@@ -5146,7 +5245,8 @@ Init_gtk()
     gdkEvent = rb_define_class_under(mGdk, "gdkEvent", cObject);
 
     /* GtkObject */
-    rb_define_singleton_method(gObject, "new", gobj_s_new, -1);
+    rb_define_method(gObject, "initialize", gobj_initialize, -1);
+    rb_define_method(gObject, "initialize", gobj_initialize, -1);
     rb_define_method(gObject, "set_flags", gobj_set_flags, 1);
     rb_define_method(gObject, "unset_flags", gobj_unset_flags, 1);
     rb_define_method(gObject, "destroy", gobj_destroy, 0);
@@ -5256,7 +5356,7 @@ Init_gtk()
     /* -- */
 
     /* Alignment */
-    rb_define_singleton_method(gAlignment, "new", align_s_new, 4);
+    rb_define_method(gAlignment, "initialize", align_initialize, 4);
     rb_define_method(gAlignment, "set", align_set, 4);
 
     /* Misc */
@@ -5264,31 +5364,31 @@ Init_gtk()
     rb_define_method(gMisc, "set_padding", misc_set_padding, 2);
     
     /* Arrow */
-    rb_define_singleton_method(gArrow, "new", arrow_s_new, 2);
-    rb_define_method(gArrow, "set", arrow_s_new, 2);
+    rb_define_method(gArrow, "initialize", arrow_initialize, 2);
+    rb_define_method(gArrow, "set", arrow_initialize, 2);
 
     /* Frame */
-    rb_define_singleton_method(gFrame, "new", frame_s_new, 1);
+    rb_define_method(gFrame, "initialize", frame_initialize, 1);
     rb_define_method(gFrame, "set_label", frame_set_label, 1);
     rb_define_method(gFrame, "set_label_align", frame_set_label_align, 2);
     rb_define_method(gFrame, "set_shadow_type", frame_set_shadow_type, 1);
 
     /* AspectFrame */
-    rb_define_singleton_method(gAspectFrame, "new", aframe_s_new, 5);
+    rb_define_method(gAspectFrame, "initialize", aframe_initialize, 5);
     rb_define_method(gAspectFrame, "set", aframe_set, 4);
 
     /* Data */
     /* -- */
 
     /* Adjustment */
-    rb_define_singleton_method(gAdjustment, "new", adj_s_new, 6);
+    rb_define_method(gAdjustment, "initialize", adj_initialize, 6);
 
     /* Box */
     rb_define_method(gBox, "pack_start", box_pack_start, -1);
     rb_define_method(gBox, "pack_end", box_pack_end, -1);
 
     /* Button */
-    rb_define_singleton_method(gButton, "new", button_s_new, -1);
+    rb_define_method(gButton, "initialize", button_initialize, -1);
     rb_define_method(gButton, "pressed", button_pressed, 0);
     rb_define_method(gButton, "released", button_released, 0);
     rb_define_method(gButton, "clicked", button_clicked, 0);
@@ -5296,16 +5396,16 @@ Init_gtk()
     rb_define_method(gButton, "leave", button_leave, 0);
 
     /* ToggleButton */
-    rb_define_singleton_method(gTButton, "new", tbtn_s_new, -1);
+    rb_define_method(gTButton, "initialize", tbtn_initialize, -1);
     rb_define_method(gTButton, "set_mode", tbtn_set_mode, 1);
     rb_define_method(gTButton, "set_state", tbtn_set_state, 1);
     rb_define_method(gTButton, "toggled", tbtn_toggled, 0);
 
     /* CheckButton */
-    rb_define_singleton_method(gCButton, "new", cbtn_s_new, -1);
+    rb_define_method(gCButton, "initialize", cbtn_initialize, -1);
 
     /* RadioButton */
-    rb_define_singleton_method(gCButton, "new", rbtn_s_new, -1);
+    rb_define_method(gCButton, "initialize", rbtn_initialize, -1);
     rb_define_method(gCButton, "group", rbtn_group, 0);
 
     /* ButtonBox */
@@ -5327,7 +5427,7 @@ Init_gtk()
     rb_define_method(gBBox, "set_child_ipadding", bbox_set_child_ipadding, 2);
 
     /* CList */
-    rb_define_singleton_method(gCList, "new", clist_s_new, 1);
+    rb_define_method(gCList, "initialize", clist_initialize, 1);
     rb_define_method(gCList, "set_border", clist_set_border, 1);
     rb_define_method(gCList, "set_selection_mode", clist_set_sel_mode, 1);
     rb_define_method(gCList, "set_policy", clist_set_policy, 2);
@@ -5355,7 +5455,7 @@ Init_gtk()
     rb_define_method(gCList, "clear", clist_clear, 0);
 
     /* Window */
-    rb_define_singleton_method(gWindow, "new", gwin_s_new, 1);
+    rb_define_method(gWindow, "initialize", gwin_initialize, 1);
     rb_define_method(gWindow, "set_title", gwin_set_title, 1);
     rb_define_method(gWindow, "set_policy", gwin_set_policy, 3);
     rb_define_method(gWindow, "set_wmclass", gwin_set_wmclass, 1);
@@ -5366,10 +5466,10 @@ Init_gtk()
     rb_define_method(gWindow, "position", gwin_position, 1);
 
     /* Dialog */
-    rb_define_singleton_method(gDialog, "new", dialog_s_new, 0);
+    rb_define_method(gDialog, "initialize", dialog_initialize, 0);
 
     /* FileSelection */
-    rb_define_singleton_method(gFileSel, "new", fsel_s_new, 1);
+    rb_define_method(gFileSel, "initialize", fsel_initialize, 1);
     rb_define_method(gFileSel, "set_filename", fsel_set_fname, 1);
     rb_define_method(gFileSel, "get_filename", fsel_get_fname, 0);
     rb_define_method(gFileSel, "ok_button", fsel_ok_button, 0);
@@ -5377,45 +5477,45 @@ Init_gtk()
     rb_define_method(gFileSel, "help_button", fsel_help_button, 0);
 
     /* VBox */
-    rb_define_singleton_method(gVBox, "new", vbox_s_new, -1);
+    rb_define_method(gVBox, "initialize", vbox_initialize, -1);
 
     /* ColorSelection */
-    rb_define_singleton_method(gColorSel, "new", colorsel_s_new, 0);
+    rb_define_method(gColorSel, "initialize", colorsel_initialize, 0);
     rb_define_method(gColorSel, "set_update_policy", colorsel_set_update_policy, 1);
     rb_define_method(gColorSel, "set_opacity", colorsel_set_opacity, 1);
     rb_define_method(gColorSel, "set_color", colorsel_set_color, 1);
     rb_define_method(gColorSel, "get_color", colorsel_get_color, 0);
 
     /* ColorSelectionDialog */
-    rb_define_singleton_method(gColorSelDialog, "new", cdialog_s_new, 1);
+    rb_define_method(gColorSelDialog, "initialize", cdialog_initialize, 1);
 
     /* Image */
-    rb_define_singleton_method(gImage, "new", image_s_new, 2);
+    rb_define_method(gImage, "initialize", image_initialize, 2);
     rb_define_method(gImage, "set", image_set, 2);
     rb_define_method(gImage, "get", image_get, 0);
 
     /* DrawingArea */
-    rb_define_singleton_method(gDrawArea, "new", darea_s_new, 0);
+    rb_define_method(gDrawArea, "initialize", darea_initialize, 0);
     rb_define_method(gDrawArea, "size", darea_size, 2);
 
     /* Entry */
-    rb_define_singleton_method(gEntry, "new", entry_s_new, 0);
+    rb_define_method(gEntry, "initialize", entry_initialize, 0);
     rb_define_method(gEntry, "set_text", entry_set_text, 1);
 
     /* EventBox */
-    rb_define_singleton_method(gEventBox, "new", eventbox_s_new, 0);
+    rb_define_method(gEventBox, "initialize", eventbox_initialize, 0);
 
     /* Fixed */
-    rb_define_singleton_method(gFixed, "new", fixed_s_new, 0);
+    rb_define_method(gFixed, "initialize", fixed_initialize, 0);
     rb_define_method(gFixed, "put", fixed_put, 3);
     rb_define_method(gFixed, "move", fixed_move, 3);
 
     /* GammaCurve */
-    rb_define_singleton_method(gGamma, "new", gamma_s_new, 0);
+    rb_define_method(gGamma, "initialize", gamma_initialize, 0);
     rb_define_method(gGamma, "gamma", gamma_gamma, 0);
     
     /* HButtonBox */
-    rb_define_singleton_method(gHBBox, "new", hbbox_s_new, 0);
+    rb_define_method(gHBBox, "initialize", hbbox_initialize, 0);
     rb_define_singleton_method(gHBBox, "get_spacing_default",
 			       hbbox_get_spacing_default, 0);
     rb_define_singleton_method(gHBBox, "get_layout_default",
@@ -5426,7 +5526,7 @@ Init_gtk()
 			       hbbox_set_layout_default, 1);
 
     /* VButtonBox */
-    rb_define_singleton_method(gVBBox, "new", vbbox_s_new, 0);
+    rb_define_method(gVBBox, "initialize", vbbox_initialize, 0);
     rb_define_singleton_method(gVBBox, "get_spacing_default",
 			       vbbox_get_spacing_default, 0);
     rb_define_singleton_method(gVBBox, "get_layout_default",
@@ -5437,7 +5537,7 @@ Init_gtk()
 			       vbbox_set_layout_default, 1);
 
     /* HBox */
-    rb_define_singleton_method(gHBox, "new", hbox_s_new, -1);
+    rb_define_method(gHBox, "initialize", hbox_initialize, -1);
 
     /* Paned */
     rb_define_method(gPaned, "add1", paned_add1, 1);
@@ -5446,10 +5546,10 @@ Init_gtk()
     rb_define_method(gPaned, "gutter_size", paned_gutter_size, 1);
 
     /* HPaned */
-    rb_define_singleton_method(gHPaned, "new", hpaned_s_new, 0);
+    rb_define_method(gHPaned, "initialize", hpaned_initialize, 0);
 
     /* VPaned */
-    rb_define_singleton_method(gVPaned, "new", vpaned_s_new, 0);
+    rb_define_method(gVPaned, "initialize", vpaned_initialize, 0);
 
     /* Ruler */
     rb_define_method(gRuler, "set_metric", ruler_set_metric, 1);
@@ -5458,10 +5558,10 @@ Init_gtk()
     rb_define_method(gRuler, "draw_pos", ruler_draw_pos, 0);
 
     /* HRuler */
-    rb_define_singleton_method(gHRuler, "new", hruler_s_new, 0);
+    rb_define_method(gHRuler, "initialize", hruler_initialize, 0);
 
     /* VRuler */
-    rb_define_singleton_method(gVRuler, "new", vruler_s_new, 0);
+    rb_define_method(gVRuler, "initialize", vruler_initialize, 0);
 
     /* Range */
     rb_define_method(gRange, "get_adjustment", range_get_adj, 0);
@@ -5491,37 +5591,37 @@ Init_gtk()
     rb_define_method(gScale, "draw_value", scale_draw_value, 0);
 
     /* HScale */
-    rb_define_singleton_method(gHScale, "new", hscale_s_new, -1);
+    rb_define_method(gHScale, "initialize", hscale_initialize, -1);
 
     /* VScale */
-    rb_define_singleton_method(gVScale, "new", vscale_s_new, -1);
+    rb_define_method(gVScale, "initialize", vscale_initialize, -1);
 
     /* Scrollbar */
     /* -- */
 
     /* HScrollbar */
-    rb_define_singleton_method(gHScrollbar, "new", hscrollbar_s_new, -1);
+    rb_define_method(gHScrollbar, "initialize", hscrollbar_initialize, -1);
 
     /* VScrollbar */
-    rb_define_singleton_method(gVScrollbar, "new", vscrollbar_s_new, -1);
+    rb_define_method(gVScrollbar, "initialize", vscrollbar_initialize, -1);
 
     /* Separator */
     /* -- */
 
     /* HSeparator */
-    rb_define_singleton_method(gHSeparator, "new", hsep_s_new, 0);
+    rb_define_method(gHSeparator, "initialize", hsep_initialize, 0);
 
     /* VSeparator */
-    rb_define_singleton_method(gVSeparator, "new", vsep_s_new, 0);
+    rb_define_method(gVSeparator, "initialize", vsep_initialize, 0);
 
     /* InputDialog */
-    rb_define_singleton_method(gInputDialog, "new", idiag_s_new, 0);
+    rb_define_method(gInputDialog, "initialize", idiag_initialize, 0);
 
     /* Label */
-    rb_define_singleton_method(gLabel, "new", label_s_new, 1);
+    rb_define_method(gLabel, "initialize", label_initialize, 1);
 
     /* List */
-    rb_define_singleton_method(gList, "new", list_s_new, 0);
+    rb_define_method(gList, "initialize", list_initialize, 0);
     rb_define_method(gList, "set_selection_mode", list_set_sel_mode, 1);
     rb_define_method(gList, "selection_mode", list_sel_mode, 1);
     rb_define_method(gList, "selection", list_selection, 0);
@@ -5542,7 +5642,7 @@ Init_gtk()
     rb_define_method(gItem, "toggle", item_toggle, 0);
 
     /* ListItem */
-    rb_define_singleton_method(gListItem, "new", litem_s_new, -1);
+    rb_define_method(gListItem, "initialize", litem_initialize, -1);
 
     /* MenuShell */
     rb_define_method(gMenuShell, "append", mshell_append, 1);
@@ -5551,7 +5651,7 @@ Init_gtk()
     rb_define_method(gMenuShell, "deactivate", mshell_deactivate, 0);
 
     /* Menu */
-    rb_define_singleton_method(gMenu, "new", menu_s_new, 0);
+    rb_define_method(gMenu, "initialize", menu_initialize, 0);
     rb_define_method(gMenu, "append", menu_append, 1);
     rb_define_method(gMenu, "prepend", menu_prepend, 1);
     rb_define_method(gMenu, "insert", menu_insert, 2);
@@ -5562,13 +5662,13 @@ Init_gtk()
     rb_define_method(gMenu, "set_accelerator_table", menu_set_acceltbl, 1);
 
     /* MenuBar */
-    rb_define_singleton_method(gMenuBar, "new", mbar_s_new, 0);
+    rb_define_method(gMenuBar, "initialize", mbar_initialize, 0);
     rb_define_method(gMenuBar, "append", mbar_append, 1);
     rb_define_method(gMenuBar, "prepend", mbar_prepend, 1);
     rb_define_method(gMenuBar, "insert", mbar_insert, 2);
 
     /* MenuItem */
-    rb_define_singleton_method(gMenuItem, "new", mitem_s_new, -1);
+    rb_define_method(gMenuItem, "initialize", mitem_initialize, -1);
     rb_define_method(gMenuItem, "set_submenu", mitem_set_submenu, 1);
     rb_define_method(gMenuItem, "set_placement", mitem_set_placement, 1);
     rb_define_method(gMenuItem, "accelerator_size", mitem_accelerator_size, 0);
@@ -5580,17 +5680,17 @@ Init_gtk()
     rb_define_method(gMenuItem, "right_justify", mitem_right_justify, 0);
 
     /* CheckMenuItem */
-    rb_define_singleton_method(gCMenuItem, "new", cmitem_s_new, -1);
+    rb_define_method(gCMenuItem, "initialize", cmitem_initialize, -1);
     rb_define_method(gCMenuItem, "set_state", cmitem_set_state, 1);
     rb_define_method(gCMenuItem, "set_show_toggle", cmitem_set_show_toggle, 1);
     rb_define_method(gCMenuItem, "toggled", cmitem_toggled, 0);
 
     /* RadioMenuItem */
-    rb_define_singleton_method(gRMenuItem, "new", rmitem_s_new, -1);
+    rb_define_method(gRMenuItem, "initialize", rmitem_initialize, -1);
     rb_define_method(gRMenuItem, "group", rmitem_group, 0);
 
     /* NoteBook */
-    rb_define_singleton_method(gNotebook, "new", note_s_new, 0);
+    rb_define_method(gNotebook, "initialize", note_initialize, 0);
     rb_define_method(gNotebook, "append_page", note_append_page, 2);
     rb_define_method(gNotebook, "prepend_page", note_prepend_page, 2);
     rb_define_method(gNotebook, "insert_page", note_insert_page, 3);
@@ -5608,19 +5708,19 @@ Init_gtk()
     rb_define_method(gNotebook, "show_border", note_show_border, 0);
 
     /* OptionMenu */
-    rb_define_singleton_method(gOptionMenu, "new", omenu_s_new, 0);
+    rb_define_method(gOptionMenu, "initialize", omenu_initialize, 0);
     rb_define_method(gOptionMenu, "get_menu", omenu_get_menu, 0);
     rb_define_method(gOptionMenu, "set_menu", omenu_set_menu, 1);
     rb_define_method(gOptionMenu, "remove_menu", omenu_set_menu, 0);
     rb_define_method(gOptionMenu, "set_history", omenu_set_history, 1);
 
     /* Pixmap */
-    rb_define_singleton_method(gPixmap, "new", pixmap_s_new, 2);
+    rb_define_method(gPixmap, "initialize", pixmap_initialize, 2);
     rb_define_method(gPixmap, "set", pixmap_set, 2);
     rb_define_method(gPixmap, "get", pixmap_get, 0);
 
     /* Preview */
-    rb_define_singleton_method(gPreview, "new", preview_s_new, 1);
+    rb_define_method(gPreview, "initialize", preview_initialize, 1);
     rb_define_method(gPreview, "size", preview_size, 2);
     rb_define_method(gPreview, "put", preview_size, 8);
     rb_define_method(gPreview, "put_row", preview_size, 5);
@@ -5638,15 +5738,15 @@ Init_gtk()
     rb_define_singleton_method(gPreview, "get_info", preview_get_info, 0);
 
     /* ProgressBar */
-    rb_define_singleton_method(gProgressBar, "new", pbar_s_new, 0);
+    rb_define_method(gProgressBar, "initialize", pbar_initialize, 0);
     rb_define_method(gProgressBar, "update", pbar_update, 1);
 
     /* ScrolledWindow */
-    rb_define_singleton_method(gScrolledWin, "new", scwin_s_new, -1);
+    rb_define_method(gScrolledWin, "initialize", scwin_initialize, -1);
     rb_define_method(gScrolledWin, "set_policy", scwin_set_policy, 2);
 
     /* Table */
-    rb_define_singleton_method(gTable, "new", tbl_s_new, -1);
+    rb_define_method(gTable, "initialize", tbl_initialize, -1);
     rb_define_method(gTable, "attach", tbl_attach, -1);
     rb_define_method(gTable, "set_row_spacing", tbl_set_row_spacing, 2);
     rb_define_method(gTable, "set_col_spacing", tbl_set_col_spacing, 2);
@@ -5654,7 +5754,7 @@ Init_gtk()
     rb_define_method(gTable, "set_col_spacings", tbl_set_col_spacings, 1);
 
     /* Text */
-    rb_define_singleton_method(gText, "new", txt_s_new, -1);
+    rb_define_method(gText, "initialize", txt_initialize, -1);
     rb_define_method(gText, "set_editable", txt_set_editable, 1);
     rb_define_method(gText, "set_adjustment", txt_set_adjustment, 2);
     rb_define_method(gText, "set_point", txt_set_point, 1);
@@ -5667,7 +5767,7 @@ Init_gtk()
     rb_define_method(gText, "forward_delete", txt_forward_delete, 1);
 
     /* Toolbar */
-    rb_define_singleton_method(gToolbar, "new", tbar_s_new, -1);
+    rb_define_method(gToolbar, "initialize", tbar_initialize, -1);
     rb_define_method(gToolbar, "append_item", tbar_append_item, 4);
     rb_define_method(gToolbar, "prepend_item", tbar_prepend_item, 4);
     rb_define_method(gToolbar, "insert_item", tbar_append_item, 5);
@@ -5680,20 +5780,20 @@ Init_gtk()
     rb_define_method(gToolbar, "set_tooltips", tbar_set_tooltips, 1);
 
     /* Tooltips */
-    rb_define_singleton_method(gTooltips, "new", ttips_s_new, 0);
+    rb_define_method(gTooltips, "initialize", ttips_initialize, 0);
     rb_define_method(gTooltips, "set_tips", ttips_set_tips, 2);
     rb_define_method(gTooltips, "set_delay", ttips_set_delay, 1);
     rb_define_method(gTooltips, "enable", ttips_enable, 0);
     rb_define_method(gTooltips, "disable", ttips_disable, 0);
 
     /* Tree */
-    rb_define_singleton_method(gTree, "new", tree_s_new, 0);
+    rb_define_method(gTree, "initialize", tree_initialize, 0);
     rb_define_method(gTree, "append", tree_append, 1);
     rb_define_method(gTree, "prepend", tree_prepend, 1);
     rb_define_method(gTree, "insert", tree_insert, 2);
 
     /* TreeItem */
-    rb_define_singleton_method(gTreeItem, "new", titem_s_new, -1);
+    rb_define_method(gTreeItem, "initialize", titem_initialize, -1);
     rb_define_method(gTreeItem, "set_subtree", titem_set_subtree, 1);
     rb_define_method(gTreeItem, "select", titem_select, 0);
     rb_define_method(gTreeItem, "deselect", titem_deselect, 0);
@@ -5701,7 +5801,7 @@ Init_gtk()
     rb_define_method(gTreeItem, "collapse", titem_collapse, 0);
 
     /* ViewPort */
-    rb_define_singleton_method(gViewPort, "new", vport_s_new, -1);
+    rb_define_method(gViewPort, "initialize", vport_initialize, -1);
     rb_define_method(gViewPort, "get_hadjustment", vport_get_hadj, 0);
     rb_define_method(gViewPort, "get_vadjustment", vport_get_vadj, 0);
     rb_define_method(gViewPort, "set_hadjustment", vport_set_hadj, 1);
@@ -5730,12 +5830,12 @@ Init_gtk()
     rb_define_method(gdkFont, "==", gdkfnt_equal, 1);
 
     /* GdkBitmap */
-    rb_define_singleton_method(gdkBitmap, "new", gdkbmap_s_new, 3);
+    rb_define_method(gdkBitmap, "new", gdkbmap_s_new, 3);
     rb_define_singleton_method(gdkBitmap, "create_from_data",
 			       gdkbmap_create_from_data, 4);
 
     /* GdkPixmap */
-    rb_define_singleton_method(gdkPixmap, "new", gdkpmap_s_new, 4);
+    rb_define_method(gdkPixmap, "new", gdkpmap_s_new, 4);
     rb_define_singleton_method(gdkPixmap, "create_from_xpm",
 			       gdkpmap_create_from_xpm, 3);
     rb_define_singleton_method(gdkPixmap, "create_from_xpm_d",
@@ -5895,7 +5995,7 @@ Init_gtk()
 
     id_gtkdata = rb_intern("gtkdata");
     id_relatives = rb_intern("relatives");
-    id_call = rb_intern("call");
+    id_init = rb_intern("initialize");
     gtk_idle_add((GtkFunction)idle, 0);
 
     g_set_error_handler(gtkerr);

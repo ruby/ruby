@@ -175,8 +175,8 @@ static void top_local_setup();
 %type <id>   variable symbol operation assoc_kw
 %type <id>   cname fname op rest_arg
 %type <num>  f_arg
-%token oUPLUS 		/* unary+ */
-%token MINUS 		/* unary- */
+%token UPLUS 		/* unary+ */
+%token UMINUS 		/* unary- */
 %token POW		/* ** */
 %token CMP  		/* <=> */
 %token EQ  		/* == */
@@ -455,10 +455,6 @@ lhs		: variable
 			$$ = aryset($1, $3, 0);
 		    }
 		| primary '.' IDENTIFIER
-		    {
-			$$ = attrset($1, $3, 0);
-		    }
-		| primary '.' CONSTANT
 		    {
 			$$ = attrset($1, $3, 0);
 		    }
