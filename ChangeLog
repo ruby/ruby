@@ -1,3 +1,8 @@
+Sat Sep 28 13:19:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* hash.c (rb_hash_become): should check self-assignment after
+	  conversion.
+
 Sat Sep 28 10:40:44 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_become): Hash#become should check added
