@@ -364,15 +364,10 @@ class CGI
 	unless check_id(id)
 	  raise ArgumentError, "session_id `%s' is invalid" % id
 	end
-	path = dir+"/"+prefix+id
-	path.untaint
-	unless File::exist? path
+	@path = dir+"/"+prefix+id
+	@path.untaint
+	unless File::exist? @path
 	  @hash = {}
-	end
-	begin
-	  @f = open(path, "r+")
-	rescue Errno::ENOENT
-	  @f = open(path, "w+")
 	end
       end
 
@@ -382,13 +377,17 @@ class CGI
       def restore
 	unless @hash
 	  @hash = {}
-	  @f.flock File::LOCK_EX
-	  @f.rewind
-	  for line in @f
-	    line.chomp!
-	    k, v = line.split('=',2)
-	    @hash[CGI::unescape(k)] = CGI::unescape(v)
-	  end
+          begin
+	    f = File.open(@path, 'r')
+	    f.flock File::LOCK_SH
+	    for line in f
+	      line.chomp!
+	      k, v = line.split('=',2)
+	      @hash[CGI::unescape(k)] = CGI::unescape(v)
+	    end
+          ensure
+	    f.close unless f.nil?
+          end
 	end
 	@hash
       end
@@ -396,25 +395,25 @@ class CGI
       # Save session state to the session's FileStore file.
       def update
 	return unless @hash
-	@f.rewind
-	for k,v in @hash
-	  @f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(v))
-	end
-	@f.truncate @f.tell
+        begin
+	  f = File.open(@path, 'w')
+	  f.flock File::LOCK_EX
+   	  for k,v in @hash
+	    f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(v))
+	  end
+        ensure
+          f.close unless f.nil?
+        end
       end
 
       # Update and close the session's FileStore file.
       def close
-	return if @f.closed?
 	update
-	@f.close
       end
 
       # Close and delete the session's FileStore file.
       def delete
-	path = @f.path
-	@f.close
-	File::unlink path
+	File::unlink @path
       end
     end
 

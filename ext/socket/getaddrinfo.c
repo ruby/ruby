@@ -56,6 +56,9 @@
 #endif
 #include <netdb.h>
 #if defined(HAVE_RESOLV_H)
+#ifdef _SX
+#include <stdio.h>
+#endif
 #include <resolv.h>
 #endif
 #include <unistd.h>

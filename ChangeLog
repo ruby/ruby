@@ -1,3 +1,8 @@
+Thu May 20 12:38:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_eq): alway check if operands are NaN.
+	  [ruby-list:39685]
+
 Thu May 20 12:34:39 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_visibility): 
@@ -2644,6 +2649,11 @@ Wed Jan 28 13:07:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Jan 28 12:43:07 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rss: rss library imported. [ruby-dev:22726]
+
+Wed Jan 28 04:29:41 2004  Eric Schwartz  <emschwar@fc.hp.com>
+
+	* lib/cgi/session.rb: use LOCK_SH to read, and a few other
+	  improvements.  [ruby-core:02328]
 
 Tue Jan 27 15:00:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

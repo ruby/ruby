@@ -834,9 +834,7 @@ flo_eq(x, y)
 	return num_equal(x, y);
     }
     a = RFLOAT(x)->value;
-#if defined __BORLANDC__
     if (isnan(a) || isnan(b)) return Qfalse;
-#endif
     return (a == b)?Qtrue:Qfalse;
 }
 

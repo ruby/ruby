@@ -1132,6 +1132,7 @@ make_hostent_internal(arg)
     rb_ary_push(ary, names);
     rb_ary_push(ary, INT2NUM(addr->ai_family));
     for (ai = addr; ai; ai = ai->ai_next) {
+	printf("SA_LEN(%d)=%d\n", ai->ai_addrlen, SA_LEN(ai->ai_addr));
 	rb_ary_push(ary, (*ipaddr)(ai->ai_addr, ai->ai_addrlen));
     }
 

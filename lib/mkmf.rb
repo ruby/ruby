@@ -603,7 +603,7 @@ def check_sizeof(type, header = nil, &b)
   end
   message(a = size ? "#{size}\n" : "failed\n")
   Logging::message "-------------------- %s\n", a
-  r
+  size
 end
 
 def find_executable0(bin, path = nil)
