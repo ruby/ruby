@@ -321,20 +321,25 @@ class TkTimer
     self
   end
 
-  def set_start_proc(sleep, init_proc=nil, *init_args)
+  def set_start_proc(sleep=nil, init_proc=nil, *init_args, &b)
+    # set parameters for 'restart'
+    sleep = @init_sleep unless sleep
+
     if !sleep == 'idle' && !sleep.kind_of?(Integer)
       fail ArguemntError, "expect Integer or 'idle' for 1st argument"
     end
+
     @init_sleep = sleep
     @init_proc = init_proc
     @init_args = init_args
 
+    @init_proc = b if !@init_proc && b
     @init_proc = proc{|*args| } if @init_sleep > 0 && !@init_proc
 
     self
   end
 
-  def start(*init_args)
+  def start(*init_args, &b)
     return nil if @running
 
     Tk_CBTBL[@id] = self
@@ -357,6 +362,7 @@ class TkTimer
     @init_proc = init_args.shift if argc > 1
     @init_args = init_args if argc > 2
 
+    @init_proc = b if !@init_proc && b
     @init_proc = proc{|*args| } if @init_sleep > 0 && !@init_proc
 
     @current_sleep = @init_sleep
@@ -391,12 +397,12 @@ class TkTimer
     self
   end
 
-  def restart(*restart_args)
+  def restart(*restart_args, &b)
     cancel if @running
-    if restart_args == []
+    if restart_args == [] && !b
       start(@init_sleep, @init_proc, *@init_args)
     else
-      start(*restart_args)
+      start(*restart_args, &b)
     end
   end
 

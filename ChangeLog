@@ -1,3 +1,7 @@
+Sun Oct 17 23:03:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/timer.rb: TkTimer#start and restart accept a block
+
 Sun Oct 17 12:53:46 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (fole_func_methods): correct argument mismatch.
