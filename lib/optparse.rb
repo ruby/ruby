@@ -80,7 +80,7 @@ Keyword completion module.
         completion pattern.
 =end #'#"#`#
     def complete(key, pat = nil)
-      pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+(?=.)/, '\&\w*'),
+      pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'),
                          ignore_case?)
       canon, sw, k, v, cn = nil
       candidates = []
@@ -1034,7 +1034,7 @@ Default options, which never appear in option summary.
 	  default_style = default_style.guess(arg = a)
 	  default_pattern, conv = search(:atype, o) unless default_pattern
 	end
-	ldesc << "--#{q}"
+	ldesc << "--[no-]#{q}"
 	long << (o = q.downcase)
 	not_pattern, not_conv = search(:atype, FalseClass) unless not_style
 	not_style = Switch::NoArgument

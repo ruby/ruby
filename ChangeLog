@@ -1,3 +1,11 @@
+Sat Dec 20 16:07:14 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Completion::complete): wrong
+	  Regexp for word boundary.  pointed out by Gavin Sinclair.
+
+	* lib/optparse.rb (OptionParser::make_switch): [no-] prefix was
+	  missing.
+
 Sat Dec 20 11:40:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/yaml.rb (YAML::YAML): adjust Marshal version.
