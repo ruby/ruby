@@ -1,3 +1,11 @@
+Sun Dec  2 22:01:52 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: use GCC, not without_gcc. remove without_gcc.
+
+	* ext/curses/extconf.rb: check for curses.h.
+
+	* ext/dbm/extconf.rb: check if $CFLAGS includes DBM_HDR.
+
 Fri Nov 30 17:02:55 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set target_cpu to i386 on cygwin and mingw32.

@@ -50,7 +50,7 @@ end
 
 have_header("cdefs.h") 
 have_header("sys/cdefs.h") 
-if have_func(db_prefix("dbm_open"))
+if /DBM_HDR/ =~ $CFLAGS and have_func(db_prefix("dbm_open"))
   have_func(db_prefix("dbm_clearerr")) unless $dbm_conf_have_gdbm
   create_makefile("dbm")
 end
