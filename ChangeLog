@@ -1,3 +1,8 @@
+Sat Jun 21 21:27:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* object.c (rb_to_id): use rb_str_intern() instead of rb_intern()
+	  directly, for sanity check.
+
 Sat Jun 21 13:56:09 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/Makefile.sub: undefine HAVE__SETJMP.

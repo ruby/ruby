@@ -788,7 +788,7 @@ rb_to_id(name)
 
     switch (TYPE(name)) {
       case T_STRING:
-	return rb_intern(RSTRING(name)->ptr);
+	return rb_str_intern(name);
       case T_FIXNUM:
 	rb_warn("do not use Fixnums as Symbols");
 	id = FIX2LONG(name);
@@ -802,7 +802,7 @@ rb_to_id(name)
       default:
 	tmp = rb_check_string_type(name);
 	if (!NIL_P(tmp)) {
-	    return rb_intern(RSTRING(tmp)->ptr);
+	    return rb_str_intern(tmp);
 	}
 	rb_raise(rb_eTypeError, "%s is not a symbol", RSTRING(rb_inspect(name))->ptr);
     }
