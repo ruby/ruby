@@ -121,7 +121,7 @@ Object
 	end
       else
 	raise ArgumentError, 
-	  "expected Array of or Hash of compornents of #{self.type} (#{self.type.component.join(', ')})"
+	  "expected Array of or Hash of components of #{self.type} (#{self.type.component.join(', ')})"
       end
 
       tmp << true
@@ -296,9 +296,12 @@ Object
     end
     private :check_password
 
-    def userinfo=(user, password = nil)
-      check_userinfo(user, password)
-      set_userinfo(user, password)
+    def userinfo=(userinfo)
+      if userinfo.nil?
+	return nil
+      end
+      check_userinfo(*userinfo)
+      set_userinfo(*userinfo)
     end
 
     def user=(user)
@@ -312,21 +315,25 @@ Object
     end
 
     def set_userinfo(user, password = nil)
-      if !password
+      unless password 
 	user, password = split_userinfo(user)
       end
       @user     = user
-      @password = password
+      @password = password if password
+
+      [@user, @password]
     end
     protected :set_userinfo
 
     def set_user(v)
       set_userinfo(v, @password)
+      v
     end
     protected :set_user
 
     def set_password(v)
       set_userinfo(@user, v)
+      v
     end
     protected :set_password
 

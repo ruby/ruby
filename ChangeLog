@@ -1,3 +1,13 @@
+Wed Jun 12 18:04:44 2002  akira yamada  <akira@arika.org>
+
+	* uri/common.rb (REGEXP::PATTERN::X_ABS_URI): 'file:/foo' is valid.
+
+	* uri/generic.rb (Generic#xxx=): should return substituted value.
+	  (ruby-dev:16728.)
+
+	* test/generic.rb (test_set_component): added tests for the above
+	  change.
+
 Wed Jun 12 15:00:57 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (stmt): fix typo.

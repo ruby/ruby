@@ -145,14 +145,14 @@ module URI
       X_ABS_URI = "
 	(#{PATTERN::SCHEME}):                     (?# 1: scheme)
 	(?:
-	   (?:
+	   (?:(?:
 	     //(?:
 		 (?:(?:(#{PATTERN::USERINFO})@)?  (?# 2: userinfo)
 		   (?:(#{PATTERN::HOST})(?::(\\d*))?))?(?# 3: host, 4: port)
 	       |
 		 (#{PATTERN::REG_NAME})           (?# 5: registry)
-	       )
-	       (#{PATTERN::ABS_PATH})?            (?# 6: path)
+	       ))?
+	       ((?!//)#{PATTERN::ABS_PATH})?      (?# 6: path)
 	   )(?:\\?(#{PATTERN::QUERY}))?           (?# 7: query)
 	|
 	   (#{PATTERN::OPAQUE_PART})              (?# 8: opaque)
@@ -231,7 +231,7 @@ module URI
 	end
       else
 	raise ArgumentError, 
-	  "expected Array of or Hash of compornents of #{klass.to_s} (#{klass.component[1..-1].join(', ')})"
+	  "expected Array of or Hash of components of #{klass.to_s} (#{klass.component[1..-1].join(', ')})"
       end
       tmp[:scheme] = klass.to_s.sub(/\A.*::/, '').downcase
 

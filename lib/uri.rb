@@ -1,5 +1,5 @@
 #
-# $Id
+# $Id$
 #
 # Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
 # You can redistribute it and/or modify it under the same term as Ruby.
@@ -15,7 +15,7 @@
 =end
 
 module URI
-  VERSION_CODE = '000906'.freeze
+  VERSION_CODE = '000907'.freeze
   VERSION = VERSION_CODE.scan(/../).collect{|n| n.to_i}.join('.').freeze
 end
 
