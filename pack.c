@@ -464,6 +464,9 @@ pack_pack(ary, fmt)
 #define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : (rb_raise(rb_eArgError, toofew),0))
 
     while (p < pend) {
+	if (RSTRING(fmt)->ptr + RSTRING(fmt)->len != pend) {
+	    rb_raise(rb_eRuntimeError, "format string modified");
+	}
 	type = *p++;		/* get data type */
 #ifdef NATINT_PACK
 	natint = 0;

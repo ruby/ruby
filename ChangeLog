@@ -1,3 +1,8 @@
+Fri Oct  8 09:49:32 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): pointer modification check before each
+	  iteration.  [ruby-dev:24445]
+
 Fri Oct  8 01:13:05 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/optiondb.rb: make it more secure
