@@ -15,12 +15,6 @@
 
 #include "ruby.h"
 #include "re.h"
-#include "version.h"
-
-#if (RUBY_VERSION_CODE < 150)
-#  define rb_eRangeError rb_eArgError
-#  define rb_obj_freeze(obj) rb_str_freeze(obj)
-#endif
 
 #define STRSCAN_VERSION "0.7.0"
 

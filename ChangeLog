@@ -1,3 +1,9 @@
+Sat Mar  6 14:27:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/strscan/depend: depends on re.h and regex.h.
+
+	* ext/strscan/strscan.c: no version check needed.
+
 Sat Mar  6 11:14:33 2004  David Black  <dblack@wobblini.net>
 
 	* lib/scanf.rb: refixed the previous fix in IO#block_scanf
@@ -69,7 +75,7 @@ Fri Mar  5 19:42:09 2004  Minero Aoki  <aamine@loveruby.net>
 
 Fri Mar  5 00:51:35 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/test/unit.rb: Move RDoc documentation so that you can 
+	* lib/test/unit.rb: Move RDoc documentation so that you can
 	  now say 'ri Test::Unit'
 
 Thu Mar  4 22:31:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
