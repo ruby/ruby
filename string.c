@@ -467,7 +467,7 @@ char *
 rb_string_value_ptr(ptr)
     volatile VALUE *ptr;
 {
-    return RSTRING(rb_string_value(s))->ptr;
+    return RSTRING(rb_string_value(*ptr))->ptr;
 }
 
 VALUE
