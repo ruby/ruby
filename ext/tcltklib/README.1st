@@ -35,7 +35,19 @@ When your Tcl/Tk libraries are compiled with "pthread support",
 Ruby/Tk may cause "Hang-up" or "Segmentation Fault" frequently. 
 If you have such a trouble, please try to use the '--enable-pthread' 
 option of the 'configure' command and re-compile Ruby sources. 
-It may help you to avoid this trouble. 
+It may help you to avoid this trouble. The following configure 
+options may be useful.
+
+  --enable-tcl-thread/--disable-tcl-thread
+  --with-tclConfig-file=<path of 'tclConfig.sh'>
+
+It is not need that 'tclConfig.sh' is a normal Tcl/Tk's tclConfig.sh. 
+But the file is expected to include the line "TCL_THREADS=0" or "...=1".
+When no "TCL_THREADS=?" line, if Tcl version is 7.x or 8.0 which is 
+given by "TCL_MAJOR_VERSION=?" line and "TCL_MINOR_VERSION=?" line, 
+then --disable-tcl-thread is expected. Else, ignore the 'tclConfig.sh'.
+If --enable-tcl-thread or --disable-tcl-thread option is given, then 
+--with-tclConfig-file option is ignored. 
 
 ==========================================================
                 Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

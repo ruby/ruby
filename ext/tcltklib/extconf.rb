@@ -49,27 +49,140 @@ def find_tk(tklib, stubs)
   end
 end
 
-if have_header("tcl.h") && have_header("tk.h") &&
-    (is_win32 || find_library("X11", "XOpenDisplay",
-      "/usr/X11/lib", "/usr/lib/X11", "/usr/X11R6/lib", "/usr/openwin/lib")) &&
-    find_tcl(tcllib, stubs) &&
-    find_tk(tklib, stubs)
-  $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
-  $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
+def pthread_check()
+  tcl_major_ver = nil
+  tcl_minor_ver = nil
 
-  pthread_enabled = macro_defined?('HAVE_LIBPTHREAD', '#include "ruby.h"')
+  # Is tcl-thread given by user ?
+  case enable_config("tcl-thread")
+  when true
+    tcl_enable_thread = true
+  when false
+    tcl_enable_thread = false
+  else
+    tcl_enable_thread = nil
+  end
 
-  if try_run(<<EOF)
+  if (tclConfig = with_config("tclConfig-file"))
+    if tcl_enable_thread == true
+      puts("Warning: --with-tclConfig-file option is ignored, because --enable-tcl-thread option is given.")
+    elsif tcl_enable_thread == false
+      puts("Warning: --with-tclConfig-file option is ignored, because --disable-tcl-thread option is given.")
+    else
+      # tcl-thread is unknown and tclConfig.sh is given
+      begin
+	open(tclConfig, "r") do |cfg|
+	  while line = cfg.gets()
+	    if line =~ /^\s*TCL_THREADS=(0|1)/
+	      tcl_enable_thread = ($1 == "1")
+	      break
+	    end
+
+	    if line =~ /^\s*TCL_MAJOR_VERSION=("|')(\d+)\1/
+	      tcl_major_ver = $2
+	      if tcl_major_ver =~ /^[1-7]$/
+		tcl_enable_thread = false
+		break
+	      end
+	      if tcl_major_ver == "8" && tcl_minor_ver == "0"
+		tcl_enable_thread = false
+		break
+	      end
+	    end
+
+	    if line =~ /^\s*TCL_MINOR_VERSION=("|')(\d+)\1/
+	      tcl_minor_ver = $2
+	      if tcl_major_ver == "8" && tcl_minor_ver == "0"
+		tcl_enable_thread = false
+		break
+	      end
+	    end
+	  end
+	end
+
+	if tcl_enable_thread == nil
+	  # not find definition
+	  if tcl_major_ver
+	    puts("Warning: '#{tclConfig}' doesn't include TCL_THREADS definition.")
+	  else
+	    puts("Warning: '#{tclConfig}' may not be a tclConfig file.")
+	  end
+	  tclConfig = false
+	end
+      rescue Exception
+	puts("Warning: fail to read '#{tclConfig}'!! --> ignore the file")
+	tclConfig = false
+      end
+    end
+  end
+
+  if tcl_enable_thread == nil && !tclConfig
+    # tcl-thread is unknown and tclConfig is unavailable
+    begin
+      try_run_available = try_run("int main() { exit(0); }")
+    rescue Exception
+      # cannot try_run. Is CROSS-COMPILE environment?
+      puts(%Q'\
+*****************************************************************************
+**
+** PTHREAD SUPPORT CHECK WARNING: 
+**
+**   We cannot check the consistency of pthread support between Ruby 
+**   and Tcl/Tk library on your environment (do coss-compile?). If the 
+**   consistency is not kept, some memory troubles (e.g. "Hang-up" or 
+**   "Segmentation Fault") may bother you. We strongly you to check the 
+**   consistency by your own hand.
+**
+*****************************************************************************
+')
+      return true
+    end
+  end
+
+  if tcl_enable_thread == nil
+    # tcl-thread is unknown
+    if try_run(<<EOF)
 #include <tcl.h>
 static Tcl_ThreadDataKey dataKey;
 int main() { exit((Tcl_GetThreadData(&dataKey, 1) == dataKey)? 1: 0); }
 EOF
-    tcl_enable_thread = true
-  else
-    tcl_enable_thread = false
+      tcl_enable_thread = true
+    else
+      tcl_enable_thread = false
+    end
   end
 
-  unless pthread_enabled
+  # check pthread mode
+  if (macro_defined?('HAVE_LIBPTHREAD', '#include "ruby.h"'))
+    # ruby -> enable
+    unless tcl_enable_thread
+      # ruby -> enable && tcl -> disable
+      puts(%Q'\
+*****************************************************************************
+**
+** PTHREAD SUPPORT MODE WARNING: 
+**
+**   Ruby is compiled with --enable-pthread, but your Tcl/Tk libraries
+**   seems to be compiled without "pthread support". Although You can 
+**   create tcltklib library, this combination may cause memory trouble 
+**   (e.g. "Hang-up" or "Segmentation Fault"). If you have no reason you
+**   must have to keep current pthread support status, we recommend you 
+**   to make both or neither libraries to support pthread.
+**
+**   If you want change the status of pthread support, please recompile 
+**   Ruby without "--enable-pthread" configure option or recompile Tcl/Tk 
+**   with "--enable-threads" configure option (if your Tcl/Tk is later 
+**   than  or equal to Tcl/Tk8.1).
+**
+*****************************************************************************
+')
+    end
+
+    # ruby -> enable && tcl -> enable/disable
+    return true
+
+  else
+    # ruby -> disable
     if tcl_enable_thread
       # ruby -> disable && tcl -> enable
       puts(%Q'\
@@ -88,35 +201,21 @@ EOF
 **
 *****************************************************************************
 ')
+      return false
     else
       # ruby -> disable && tcl -> disable
-      create_makefile("tcltklib")
+      return true
     end
-  else
-    unless tcl_enable_thread
-      # ruby -> enable && tcl -> disable
-      puts(%Q'\
-*****************************************************************************
-**
-** PTHREAD SUPPORT MODE WARNING: 
-**
-**   Ruby is compiled with --enable-pthread, but your Tcl/Tk libraries
-**   seems to be compiled without "pthread support". Although You can 
-**   create tcltklib library, this combination may cause memory trouble 
-**   (e.g. "Hang-up" or "Segmentation Fault"). If you have no reason you
-**   must have to keep current pthread support status, we recommend you 
-**   to make both or neither libraries to support pthread.
-**
-**   If you want change the status of pthread support, please recompile 
-**   Ruby without "--enable-pthread" configure option or recompile Tcl/Tk 
-**   with "--enable-threads" configure option (if your Tcl/Tk is later 
-**   than Tcl/Tk8.1).
-**
-*****************************************************************************
-')
-    end
-    # ruby -> enable && tcl -> enable/disable
-
-    create_makefile("tcltklib")
   end
+end
+
+if have_header("tcl.h") && have_header("tk.h") &&
+    (is_win32 || find_library("X11", "XOpenDisplay",
+      "/usr/X11/lib", "/usr/lib/X11", "/usr/X11R6/lib", "/usr/openwin/lib")) &&
+    find_tcl(tcllib, stubs) &&
+    find_tk(tklib, stubs)
+  $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
+  $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
+
+  create_makefile("tcltklib") if pthread_check
 end
