@@ -4,10 +4,7 @@
 # Copyright:: Copyright (c) 2002 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
 
-require 'runit/testcase'
-require 'runit/cui/testrunner'
-
-require 'runit/testresult'
+require 'rubyunit'
 
 module RUNIT
   class TestTestResult < RUNIT::TestCase
@@ -143,18 +140,5 @@ module RUNIT
       @normal_suite.run(@result)
       assert(@result.succeed?)
     end
-  end
-
-  if $0 == __FILE__
-    testrunner = RUNIT::CUI::TestRunner.new
-    if ARGV.size == 0
-      suite = TestRUNIT__TestResult.suite
-    else
-      suite = RUNIT::TestSuite.new
-      ARGV.each do |testmethod|
-        suite.add(TestRUNIT__TestResult.new(testmethod))
-      end
-    end
-    testrunner.run(suite)
   end
 end
