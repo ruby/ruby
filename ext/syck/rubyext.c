@@ -521,6 +521,14 @@ yaml_org_handler( n, ref )
                 ptr += 2;
                 while ( !ISDIGIT( *ptr ) ) ptr++;
                 day = INT2FIX(strtol(ptr, NULL, 10));
+                
+                if ( !cDate ) {
+                    /*
+                     * Load Date module
+                     */
+                    rb_require( "date" );
+                    cDate = rb_const_get( rb_cObject, rb_intern("Date") );
+                }
 
                 obj = rb_funcall( cDate, s_new, 3, year, mon, day );
             }

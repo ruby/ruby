@@ -1,3 +1,8 @@
+Tue Jan 13 16:53:25 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/rubyext.c: omission of Date library code caused
+	  test suite failure. [ruby-core:2251]
+
 Tue Jan 13 16:50:03 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: use $0 as the default application class name.
