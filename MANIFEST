@@ -317,6 +317,8 @@ lib/rexml/encodings/UNILE.rb
 lib/rexml/encodings/US-ASCII.rb
 lib/rexml/encodings/UTF-16.rb
 lib/rexml/encodings/UTF-8.rb
+lib/rexml/encodings/ISO-8859-15.rb 
+lib/rexml/encodings/CP-1252.rb
 lib/rexml/entity.rb
 lib/rexml/functions.rb
 lib/rexml/instruction.rb
