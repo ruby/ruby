@@ -119,7 +119,7 @@ SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--make="$(MAKE)" \
 		--mflags="$(MFLAGS)" \
 		--make-flags="$(MAKEFLAGS)"
-EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extstatic $(EXTSTATIC)
+EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extstatic $(EXTSTATIC) --
 
 all:		@MAKEFILES@ miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
 		@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
