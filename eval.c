@@ -8105,7 +8105,7 @@ rb_callcc(self)
 	return th->result;
     }
     else {
-	return rb_yield(th->thread);
+	return rb_yield(cont);
     }
 }
 

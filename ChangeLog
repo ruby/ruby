@@ -1,3 +1,8 @@
+Thu Aug 10 08:05:03 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_callcc): returned current thread instaed of
+	  continuation wrongly.
+
 Thu Aug 10 05:40:28 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/extmk.rb.in: $CPPFLAGS should be initialized.
