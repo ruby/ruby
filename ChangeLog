@@ -883,7 +883,7 @@ Wed Jun 16 16:03:59 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Jun 16 16:01:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* gc.c (stack_grow_direction): memorize the direction.
+	* gc.c (stack_grow_direction): memoize the direction.
 
 	* gc.c (Init_stack): should always move to end of VALUE.
 
