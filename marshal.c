@@ -902,11 +902,10 @@ r_object(arg)
 	    volatile long len = r_long(arg); /* gcc 2.7.2.3 -O2 bug?? */
 
 	    v = rb_ary_new2(len);
-	    r_regist(v, arg);
 	    while (len--) {
 		rb_ary_push(v, r_object(arg));
 	    }
-	    return v;
+	    return r_regist(v, arg);;
 	}
 
       case TYPE_HASH:
@@ -915,7 +914,6 @@ r_object(arg)
 	    long len = r_long(arg);
 
 	    v = rb_hash_new();
-	    r_regist(v, arg);
 	    while (len--) {
 		VALUE key = r_object(arg);
 		VALUE value = r_object(arg);
@@ -924,7 +922,7 @@ r_object(arg)
 	    if (type == TYPE_HASH_DEF) {
 		RHASH(v)->ifnone = r_object(arg);
 	    }
-	    return v;
+	    return r_regist(v, arg);
 	}
 
       case TYPE_STRUCT:
@@ -946,7 +944,6 @@ r_object(arg)
 		rb_ary_push(values, Qnil);
 	    }
 	    v = rb_struct_alloc(klass, values);
-	    r_regist(v, arg);
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
@@ -958,6 +955,7 @@ r_object(arg)
 		}
 		rb_struct_aset(v, INT2FIX(i), r_object(arg));
 	    }
+	    r_regist(v, arg);
 	    return v;
 	}
 	break;
@@ -985,9 +983,8 @@ r_object(arg)
 	    if (TYPE(v) != T_OBJECT) {
 		rb_raise(rb_eArgError, "dump format error");
 	    }
-	    r_regist(v, arg);
 	    r_ivar(v, arg);
-	    return v;
+	    return r_regist(v, arg);
 	}
 	break;
 

@@ -1,3 +1,11 @@
+Tue Feb 19 14:45:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object): complete restoration before calling
+	  r_regist(). 
+
+	* parse.y (yylex): operators in the "op" rule should make
+	  lex_state EXPR_ARG on EXPR_FNAME and EXPR_DOT.
+
 Tue Feb 19 13:38:10 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_cvar_set): define new class variable if it's not
