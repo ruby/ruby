@@ -1,3 +1,7 @@
+Wed Aug  9 13:24:25 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* win32/win32.[ch]: emulate rename(2).
+
 Tue Aug  8 14:01:46 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/tcltklib/tcltklib.c: support --enable-tcltk_stubs

@@ -207,6 +207,7 @@ extern struct protoent *  mygetprotobynumber(int);
 extern struct servent *  mygetservbyname(char *, char *);
 extern struct servent * mygetservbyport(int, char *);
 extern char *win32_getenv(const char *);
+extern int myrename(const char *, const char *);
 
 extern int chown(const char *, int, int);
 extern int link(char *, char *);
@@ -407,5 +408,10 @@ extern char *mystrerror(int);
 #undef getenv
 #endif
 #define getenv win32_getenv
+
+#ifdef rename
+#undef rename
+#endif
+#define rename myrename
 
 #endif
