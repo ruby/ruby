@@ -2,11 +2,11 @@
 
   parse.y -
 
-  Author: matz
-  Date: 2003/10/15 02:25:44
+  $Author$
+  $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-2003 Yukihiro Matsumoto
+  Copyright (C) 1993-2004 Yukihiro Matsumoto
 
 **********************************************************************/
 
