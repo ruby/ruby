@@ -5,6 +5,29 @@ require 'tk'
 
 module Tk
   module ValidateConfigure
+    def self.__def_validcmd(scope, klass, keys=nil)
+      keys = klass._config_keys unless keys
+      keys.each{|key|
+	eval("def #{key}(*args, &b)
+                 __validcmd_call(#{klass.name}, '#{key}', *args, &b)
+              end", scope)
+      }
+    end
+
+    def __validcmd_call(klass, key, *args, &b)
+      return cget(key) if args.empty? && !b
+
+      cmd = (b)? proc(&b) : args.shift
+
+      if cmd.kind_of?(klass)
+	configure(key, cmd)
+      elsif !args.empty?
+	configure(key, [cmd, args])
+      else
+	configure(key, cmd)
+      end
+    end
+
     def __validation_class_list
       # maybe need to override
       []
@@ -73,6 +96,29 @@ module Tk
   end
 
   module ItemValidateConfigure
+    def self.__def_validcmd(scope, klass, keys=nil)
+      keys = klass._config_keys unless keys
+      keys.each{|key|
+	eval("def item_#{key}(id, *args, &b)
+                 __item_validcmd_call(#{klass.name}, '#{key}', id, *args, &b)
+              end", scope)
+      }
+    end
+
+    def __item_validcmd_call(tagOrId, klass, key, *args, &b)
+      return itemcget(tagid(tagOrId), key) if args.empty? && !b
+
+      cmd = (b)? proc(&b) : args.shift
+
+      if cmd.kind_of?(klass)
+	itemconfigure(tagid(tagOrId), key, cmd)
+      elsif !args.empty?
+	itemconfigure(tagid(tagOrId), key, [cmd, args])
+      else
+	itemconfigure(tagid(tagOrId), key, cmd)
+      end
+    end
+
     def __item_validation_class_list(id)
       # maybe need to override
       []
@@ -265,6 +311,9 @@ module TkValidation
     super << ValidateCmd
   end
 
+  Tk::ValidateConfigure.__def_validcmd(binding, ValidateCmd)
+
+=begin
   def validatecommand(cmd = Proc.new, args = nil)
     if cmd.kind_of?(ValidateCmd)
       configure('validatecommand', cmd)
@@ -274,8 +323,13 @@ module TkValidation
       configure('validatecommand', cmd)
     end
   end
-  alias vcmd validatecommand
+=end
+#  def validatecommand(*args, &b)
+#    __validcmd_call(ValidateCmd, 'validatecommand', *args, &b)
+#  end
+#  alias vcmd validatecommand
 
+=begin
   def invalidcommand(cmd = Proc.new, args = nil)
     if cmd.kind_of?(ValidateCmd)
       configure('invalidcommand', cmd)
@@ -285,5 +339,9 @@ module TkValidation
       configure('invalidcommand', cmd)
     end
   end
-  alias invcmd invalidcommand
+=end
+#  def invalidcommand(*args, &b)
+#    __validcmd_call(ValidateCmd, 'invalidcommand', *args, &b)
+#  end
+#  alias invcmd invalidcommand
 end

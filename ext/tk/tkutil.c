@@ -214,6 +214,10 @@ tk_symbolkey2str(self, keys)
 {
     volatile VALUE new_keys = rb_hash_new();
 
+    if NIL_P(keys) return new_keys;
+    if (TYPE(keys) != T_HASH) {
+	rb_raise(rb_eArgError, "Hash is expected");
+    }
     st_foreach(RHASH(keys)->tbl, to_strkey, new_keys);
     return new_keys;
 }

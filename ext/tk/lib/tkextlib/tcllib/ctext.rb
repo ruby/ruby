@@ -137,7 +137,7 @@ class Tk::Tcllib::CText
     self
   end
 
-  def modified(mode)
+  def modified?(mode)
     bool(tk_call('ctext::modified', @path, mode))
   end
 end

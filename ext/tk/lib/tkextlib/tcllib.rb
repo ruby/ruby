@@ -11,15 +11,31 @@ require 'tkextlib/setup.rb'
 # call setup script
 require 'tkextlib/tcllib/setup.rb'
 
+err = ''
+
 # package:: autoscroll
-require 'tkextlib/tcllib/autoscroll'
+target = 'tkextlib/tcllib/autoscroll'
+begin
+  require target
+rescue => e
+  err << "\n  ['" << target << "'] "  << e.class.name << ' : ' << e.message
+end
 
 # package:: cursor
-require 'tkextlib/tcllib/cursor'
+target = 'tkextlib/tcllib/cursor'
+begin
+  require target
+rescue => e
+  err << "\n  ['" << target << "'] "  << e.class.name << ' : ' << e.message
+end
 
 # package:: style
-require 'tkextlib/tcllib/style'
-
+target = 'tkextlib/tcllib/style'
+begin
+  require target
+rescue => e
+  err << "\n  ['" << target << "'] "  << e.class.name << ' : ' << e.message
+end
 
 # autoload
 module Tk
@@ -41,3 +57,8 @@ module Tk
     autoload :Tkpiechart, 'tkextlib/tcllib/tkpiechart'
   end
 end
+
+unless err.empty?
+  warn("Warning: some sub-packages are failed to require : " + err)
+end
+

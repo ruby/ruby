@@ -48,6 +48,10 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
       #_get_eval_string(TkVar_CB_TBL[name1].trace_callback(name2,op))
       begin
 	_get_eval_string(TkVar_CB_TBL[name1].trace_callback(name2, op))
+      rescue SystemExit
+	exit(0)
+      rescue Interrupt
+	exit!(1)
       rescue Exception => e
 	begin
 	  msg = _toUTF8(e.class.inspect) + ': ' + 

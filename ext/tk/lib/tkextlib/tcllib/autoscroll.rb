@@ -28,9 +28,6 @@ require 'tk'
 require 'tk/scrollbar'
 require 'tkextlib/tcllib.rb'
 
-# TkPackage.require('autoscroll', '1.0')
-TkPackage.require('autoscroll')
-
 module Tk
   module Tcllib
     module Autoscroll
@@ -43,7 +40,12 @@ module Tk
       end
     end
   end
+end
 
+# TkPackage.require('autoscroll', '1.0')
+TkPackage.require('autoscroll')
+
+module Tk
   module Scrollable
     def autoscroll(mode = nil)
       case mode

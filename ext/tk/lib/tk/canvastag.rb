@@ -2,13 +2,16 @@
 # tk/canvastag.rb - methods for treating canvas tags
 #
 require 'tk'
-require 'tk/canvas'
 require 'tk/tagfont'
 
 module TkcTagAccess
   include TkComm
   include TkTreatTagFont
+end
 
+require 'tk/canvas'
+
+module TkcTagAccess
   def addtag(tag)
     @c.addtag(tag, 'with', @id)
     self

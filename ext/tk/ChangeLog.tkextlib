@@ -1,3 +1,19 @@
+2004-07-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* bug fix
+
+	* add more part of [incr Widget] support (about 65%? are complete)
+
+	* use Tk::ValidateConfigure.__def_validcmd() method
+          (new function to define validatecommand methods easier)
+
+	* tcllib.rb : avoid the loading trouble that almost all part of 
+	  the extension is not available when some libraries are invalid. 
+
+2004-07-09  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* add some part of [incr Widget] support (about 50%? are complete)
+
 2004-07-07  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* add [incr Tck], [incr Tk] support

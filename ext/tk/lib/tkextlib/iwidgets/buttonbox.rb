@@ -36,7 +36,8 @@ class Tk::Iwidgets::Buttonbox
     if tagOrId.kind_of?(Tk::Itk::Component)
       tagOrId.name
     else
-      _get_eval_string(tagOrId)
+      #_get_eval_string(tagOrId)
+      tagOrId
     end
   end
 

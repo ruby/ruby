@@ -5,6 +5,7 @@
 #  a standard spinbox (<= 8.3)
 #  This is the same as the 8.4 core spinbox widget.
 #
+require 'tk'
 
 if (Tk::TK_MAJOR_VERSION < 8 || 
     (Tk::TK_MAJOR_VERSION == 8 && Tk::TK_MINOR_VERSION < 4))
@@ -14,4 +15,8 @@ if (Tk::TK_MAJOR_VERSION < 8 ||
   Tk.tk_call('namespace', 'import', '::vu::spinbox')
 end
 
-Tk::Vu::Spinbox = TkSpinbox
+module Tk
+  module Vu
+    Spinbox = TkSpinbox
+  end
+end

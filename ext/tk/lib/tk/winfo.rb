@@ -1,6 +1,9 @@
 #
 # tk/winfo.rb : methods for winfo command
 #
+module TkWinfo
+end
+
 require 'tk'
 
 module TkWinfo

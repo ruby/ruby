@@ -82,7 +82,7 @@ class Tk::Iwidgets::Combobox
   def sort(*params, &b)
     # see 'lsort' man page about params
     if b
-      tk_call(@path, 'sort', *params, -'command', proc(&b))
+      tk_call(@path, 'sort', '-command', proc(&b), *params)
     else
       tk_call(@path, 'sort', *params)
     end
@@ -91,6 +91,7 @@ class Tk::Iwidgets::Combobox
   def sort_ascending
     tk_call(@path, 'sort', 'ascending')
     self
+  end
   def sort_descending
     tk_call(@path, 'sort', 'descending')
     self

@@ -57,6 +57,10 @@ class TkMsgCatalog < TkObject
     return src_str unless cmd       # no cmd -> return src-str (default action)
     begin
       cmd.call(locale, src_str)
+    rescue SystemExit
+      exit(0)
+    rescue Interrupt
+      exit!(1)
     rescue Exception => e
       begin
 	msg = _toUTF8(e.class.inspect) + ': ' + 

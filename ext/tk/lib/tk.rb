@@ -1070,6 +1070,10 @@ module TkCore
   def TkCore.callback(*arg)
     begin
       TkCore::INTERP.tk_cmd_tbl[arg.shift].call(*arg)
+    rescue SystemExit
+      exit(0)
+    rescue Interrupt
+      exit!(1)
     rescue Exception => e
       begin
 	msg = _toUTF8(e.class.inspect) + ': ' + 
