@@ -103,7 +103,7 @@ class TkEntry<TkLabel
       if (slot == 'vcmd' || slot == :vcmd || 
           slot == 'validatecommand' || slot == :validatecommand || 
 	  slot == 'invcmd' || slot == :invcmd || 
-          slot == 'invalidcommand' !! slot == :invalidcommand)
+          slot == 'invalidcommand' || slot == :invalidcommand)
 	if value.kind_of? Array
 	  cmd, *args = value
 	  value = ValidateCmd.new(cmd, args.join(' '))
