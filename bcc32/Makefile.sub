@@ -108,7 +108,7 @@ MISSING = acosh.obj crypt.obj win32.obj
 STACK = 0x2000000
 !endif
 
-XCFLAGS = -DRUBY_EXPORT
+XCFLAGS = 
 
 ARFLAGS = /a 
 LD = ilink32 -q -Gn
@@ -333,7 +333,7 @@ s,@OBJEXT@,obj,;t t
 s,@XLDFLAGS@,$(XLDFLAGS),;t t
 s,@DLDFLAGS@,$(DLDFLAGS),;t t
 s,@STATIC@,$(STATIC),;t t
-s,@CCDLFLAGS@,,;t t
+s,@CCDLFLAGS@,-DIMPORT,;t t
 s,@LDSHARED@,$(LDSHARED),;t t
 s,@DLEXT@,so,;t t
 s,@DLEXT2@,dll,;t t
