@@ -37,7 +37,7 @@ sha1_hexdigest(obj)
 {
     SHA1_CTX *sha1, ctx;
     unsigned char digest[20];
-    char buf[33];
+    char buf[41];
     int i;
 
     Data_Get_Struct(obj, SHA1_CTX, sha1);
