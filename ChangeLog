@@ -1,3 +1,8 @@
+Mon Mar  8 15:03:24  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (range): treat incomplete '[' as ordinary character (like
+	  has_magic does). fix buffer overrun at incomplete escape like '[\'.
+
 Mon Mar  8 13:35:32 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* regparse.c (parse_exp): need to separate initialization for bcc32.

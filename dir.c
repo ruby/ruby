@@ -170,40 +170,48 @@ CompareImpl(p1, p2, nocase)
 #define isdirsep(c) ((c) == '/')
 #endif
 
-static char *
-range(pat, test, flags)
-    char *pat;
-    char *test;
-    int flags;
+static const char *
+range(
+    const char *pattern,
+    const char *test,
+    int flags)
 {
-    int not, ok = 0;
-    int nocase = flags & FNM_CASEFOLD;
-    int escape = !(flags & FNM_NOESCAPE);
+    int not = 0, ok = 0;
+    const char *p = pattern, *t1, *t2;
+    const int nocase = flags & FNM_CASEFOLD;
+    const int escape = !(flags & FNM_NOESCAPE);
 
-    not = *pat == '!' || *pat == '^';
-    if (not)
-	pat++;
-
-    while (*pat) {
-	char *pstart, *pend;
-	pstart = pend = pat;
-	if (*pstart == ']')
-	    return ok == not ? 0 : ++pat;
-	else if (escape && *pstart == '\\')
-	    pstart = pend = ++pat;
-	Inc(pat);
-	if (*pat == '-' && pat[1] != ']') {
-	    if (escape && pat[1] == '\\')
-		pat++;
-	    pend = pat+1;
-	    if (!*pend)
-		return 0;
-	    pat = Next(pend);
-	}
-	if (Compare(pstart, test) <= 0 && Compare(test, pend) <= 0)
-	    ok = 1;
+    if (*p == '!' || *p == '^') {
+	not = 1;
+	p++;
     }
-    return 0;
+
+    while (*p) {
+	if (*p == ']')
+	    return ok == not ? 0 : p + 1;
+	t1 = p;
+	if (escape && *t1 == '\\')
+	    t1++;
+	if (!*t1)
+	    break;
+	p = Next(t1);
+	if (*p == '-' && p[1] != ']') {
+	    t2 = p + 1;
+	    if (escape && *t2 == '\\')
+		t2++;
+	    if (!*t2)
+		break;
+	    p = Next(t2);
+	    if (!ok && Compare(t1, test) <= 0 && Compare(test, t2) <= 0)
+		ok = 1;
+	}
+	else {
+	    if (!ok && Compare(t1, test) == 0)
+		ok = 1;
+	}
+    }
+
+    return *test == '[' ? pattern : 0; /* treat incompleted '[' as ordinary character */
 }
 
 #define ISDIRSEP(c) (pathname && isdirsep(c))
