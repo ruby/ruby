@@ -1832,9 +1832,9 @@ rb_file_chown(obj, owner, group)
     int o, g;
 
     rb_secure(2);
-    GetOpenFile(obj, fptr);
     o = NUM2INT(owner);
     g = NUM2INT(group);
+    GetOpenFile(obj, fptr);
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(_WIN32) || defined(__EMX__)
     if (!fptr->path) return Qnil;
     if (chown(fptr->path, o, g) == -1)

@@ -1,3 +1,7 @@
+Tue Nov 23 02:00:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_chown): [ruby-dev:24949]
+
 Tue Nov 23 00:10:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (rb_file_chown): integer conversion should be prior to
