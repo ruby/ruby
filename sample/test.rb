@@ -1179,27 +1179,27 @@ test_ok(2.6.round == 3)
 test_ok((-2.4).truncate == -2)
 test_ok((13.4 % 1 - 0.4).abs < 0.0001)
 nan = 0.0/0
-def nan.test(v)
-  test_ok(self != v)
-  test_ok((self < v) == false)
-  test_ok((self > v) == false)
-  test_ok((self <= v) == false)
-  test_ok((self >= v) == false)
+def nan_test(x,y)
+  test_ok(x != y)
+  test_ok((x < y) == false)
+  test_ok((x > y) == false)
+  test_ok((x <= y) == false)
+  test_ok((x >= y) == false)
 end
-nan.test(nan)
-nan.test(0)
-nan.test(1)
-nan.test(-1)
-nan.test(1000)
-nan.test(-1000)
-nan.test(1_000_000_000_000)
-nan.test(-1_000_000_000_000)
-nan.test(100.0);
-nan.test(-100.0);
-nan.test(0.001);
-nan.test(-0.001);
-nan.test(1.0/0);
-nan.test(-1.0/0);
+nan_test(nan, nan)
+nan_test(nan, 0)
+nan_test(nan, 1)
+nan_test(nan, -1)
+nan_test(nan, 1000)
+nan_test(nan, -1000)
+nan_test(nan, 1_000_000_000_000)
+nan_test(nan, -1_000_000_000_000)
+nan_test(nan, 100.0);
+nan_test(nan, -100.0);
+nan_test(nan, 0.001);
+nan_test(nan, -0.001);
+nan_test(nan, 1.0/0);
+nan_test(nan, -1.0/0);
 
 #s = "3.7517675036461267e+17"
 #test_ok(s == sprintf("%.16e", s.to_f))

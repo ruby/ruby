@@ -159,6 +159,19 @@ rb_num_coerce_relop(x, y)
 }
 
 static VALUE
+num_sadded(x, name)
+    VALUE x, name;
+{
+    ruby_frame = ruby_frame->prev; /* pop frame for "singleton_method_added" */
+    /* Numerics should be values; singleton_methods should not be added to them */
+    rb_raise(rb_eTypeError,
+	     "can't define singleton method \"%s\" for %s",
+	     rb_id2name(rb_to_id(name)),
+	     rb_obj_classname(x)); 
+    return Qnil;		/* not reached */
+}
+
+static VALUE
 num_init_copy(x, y)
     VALUE x, y;
 {
@@ -1820,6 +1833,7 @@ Init_Numeric()
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
     rb_cNumeric = rb_define_class("Numeric", rb_cObject);
 
+    rb_define_method(rb_cNumeric, "singleton_method_added", num_sadded, 1);
     rb_include_module(rb_cNumeric, rb_mComparable);
     rb_define_method(rb_cNumeric, "initialize_copy", num_init_copy, 1);
     rb_define_method(rb_cNumeric, "coerce", num_coerce, 1);

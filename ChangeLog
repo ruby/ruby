@@ -1,3 +1,8 @@
+Mon Dec  1 21:33:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_sadded): prohibit singleton method definition for
+	  Numerics.  fill yet another gap between Fixnum and Bignum.
+
 Mon Dec  1 17:33:47 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (htov16): converts endian using swap16. htov32(), hton16,

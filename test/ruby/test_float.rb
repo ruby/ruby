@@ -15,30 +15,30 @@ class TestFloat < Test::Unit::TestCase
     assert((13.4 % 1 - 0.4).abs < 0.0001)
   end
 
+  def nan_test(x,y)
+    extend Test::Unit::Assertions
+    assert(x != y)
+    assert_equal(false, (x < y))
+    assert_equal(false, (x > y))
+    assert_equal(false, (x <= y))
+    assert_equal(false, (x >= y))
+  end
   def test_nan
     nan = 0.0/0
-    def nan.test(v)
-      extend Test::Unit::Assertions
-      assert(self != v)
-      assert_equal(false, (self < v))
-      assert_equal(false, (self > v))
-      assert_equal(false, (self <= v))
-      assert_equal(false, (self >= v))
-    end
-    nan.test(nan)
-    nan.test(0)
-    nan.test(1)
-    nan.test(-1)
-    nan.test(1000)
-    nan.test(-1000)
-    nan.test(1_000_000_000_000)
-    nan.test(-1_000_000_000_000)
-    nan.test(100.0);
-    nan.test(-100.0);
-    nan.test(0.001);
-    nan.test(-0.001);
-    nan.test(1.0/0);
-    nan.test(-1.0/0);
+    nan_test(nan, nan)
+    nan_test(nan, 0)
+    nan_test(nan, 1)
+    nan_test(nan, -1)
+    nan_test(nan, 1000)
+    nan_test(nan, -1000)
+    nan_test(nan, 1_000_000_000_000)
+    nan_test(nan, -1_000_000_000_000)
+    nan_test(nan, 100.0);
+    nan_test(nan, -100.0);
+    nan_test(nan, 0.001);
+    nan_test(nan, -0.001);
+    nan_test(nan, 1.0/0);
+    nan_test(nan, -1.0/0);
   end
 
   def test_precision
