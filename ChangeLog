@@ -23,6 +23,11 @@ Sun Jun 23 00:19:10 2002  Tadayoshi Funaba  <tadf@dotrb.org>
 	* lib/date.rb, lib/date/format.rb, sample/cal.rb, sample/goodfriday.rb:
 	  updated to the new version (based on date2 3.3).
 
+Fri Jun 21 18:49:58 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): __END__ should not be effective within
+	  string literals.
+
 Thu Jun 20 21:09:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/readline/readline.c (readline_readline): get rid of
@@ -41,6 +46,11 @@ Wed Jun 19 14:46:18 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb, lib/mkmf.rb (xsystem): open the log file if xsystem
 	  is called.
+
+Wed Jun 19 01:01:13 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (here_document): should be aware of __END__ within here
+	  documents.
 
 Wed Jun 19 00:50:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -63,6 +73,10 @@ Tue Jun 18 12:50:17 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* parse.y (value_expr): reduce recursion level.
 
 	* parse.y (logop): ditto.
+
+Mon Jun 17 11:11:34 2002  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* string.c (rb_str_crypt): result need not be tainted always.
 
 Mon Jun 17 10:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

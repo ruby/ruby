@@ -95,8 +95,7 @@ class PStore
       file.flock(read_only ? File::LOCK_SH : File::LOCK_EX)
       if read_only
 	@table = Marshal::load(file)
-      elsif orig
-	content = file.read
+      elsif orig and (content = file.read) != nil
 	@table = Marshal::load(content)
 	size = content.size
 	md5 = Digest::MD5.digest(content)

@@ -1778,6 +1778,7 @@ strings		: string
 			}
 			$$ = node;
 		    }
+		;
 
 string		: string1
 		| string string1
@@ -2445,12 +2446,6 @@ nextc()
 	    ruby_sourceline++;
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
 	    lex_pend = lex_p + RSTRING(v)->len;
-	    if (!lex_strterm && strncmp(lex_pbeg, "__END__", 7) == 0 &&
-		(RSTRING(v)->len == 7 || lex_pbeg[7] == '\n' || lex_pbeg[7] == '\r')) {
-		ruby__end__seen = 1;
-		lex_lastline = 0;
-		return -1;
-	    }
 	    lex_lastline = v;
 	}
 	else {
@@ -4182,6 +4177,13 @@ yylex()
 	    }
 	}
 	tokfix();
+	if (strcmp(tok(), "__END__") == 0 &&
+	    lex_p - lex_pbeg == 7 &&
+	    (lex_pend == lex_p || *lex_p == '\n' || *lex_p == '\r')) {
+	    ruby__end__seen = 1;
+	    lex_lastline = 0;
+	    return -1;
+	}
 	last_id = yylval.id = rb_intern(tok());
 	return result;
     }
