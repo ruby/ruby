@@ -28,14 +28,23 @@ Net::Protocol
 === Class Methods
 
 : new( address = 'localhost', port = 25 )
-  This method create new SMTP object.
+  creates a new Net::SMTP object.
 
+: start( address = 'localhost', port = 25, *protoargs )
+: start( address = 'localhost', port = 25, *protoargs ) {|smtp| .... }
+  same to Net::SMTP.new( address, port ).start( *protoargs )
 
 === Methods
 
-: start( helo_domain = ENV['HOSTNAME'] || ENV['HOST'], account = nil, password = nil, authtype = nil )
-  This method opens TCP connection and start SMTP.
+: start( helo_domain = Socket.gethostname, \
+         account = nil, password = nil, authtype = nil )
+: start( helo_domain = Socket.gethostname, \
+         account = nil, password = nil, authtype = nil ) {|smtp| .... }
+  opens TCP connection and starts SMTP session.
   If protocol had been started, do nothing and return false.
+
+  When this methods is called as iterator, give a SMTP object to block and
+  close session after block call finished.
 
   If account and password are given, is trying to get authentication
   by using AUTH command. "authtype" is :plain (symbol) or :cram_md5.

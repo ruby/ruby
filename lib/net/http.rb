@@ -23,17 +23,27 @@ module Net
 
 == Class Methods
 
-: new( address, port = 80 )
-  create new HTTP object.
+: new( address = 'localhost', port = 80 )
+  creates a new Net::HTTP object.
+
+: start( address = 'localhost', port = 80 )
+: start( address = 'localhost', port = 80 ) {|http| .... }
+  equals to Net::HTTP.new( address, port ).start
 
 : port
-  returns HTTP default port, 80
+  HTTP default port, 80
 
 : command_type
-  returns Command class, HTTPCommand
-
+  Command class for Net::HTTP, HTTPCommand
 
 == Methods
+
+: start
+: start {|http| .... }
+  creates a new Net::HTTP object and starts HTTP session.
+
+  When this method is called as iterator, gives HTTP object to block
+  and close HTTP session after block call finished.
 
 : get( path, header = nil, dest = '' )
 : get( path, header = nil ) {|str| .... }
