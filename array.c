@@ -990,7 +990,7 @@ rb_ary_fetch(argc, argv, ary)
  *     a = [ "a", "b", "c" ]
  *     a.index("b")        #=> 1
  *     a.index("z")        #=> nil
- *     a.index{|x|x=="b")  #=> 1
+ *     a.index{|x|x=="b"}  #=> 1
  */
 
 static VALUE
@@ -1030,7 +1030,7 @@ rb_ary_index(argc, argv, ary)
  *     a = [ "a", "b", "b", "b", "c" ]
  *     a.rindex("b")        #=> 3
  *     a.rindex("z")        #=> nil
- *     a.rindex{|x|x=="b")  #=> 3
+ *     a.rindex{|x|x=="b"}  #=> 3
  */
 
 static VALUE
