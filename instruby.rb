@@ -18,7 +18,7 @@ while arg = ARGV.shift
 end
 destdir ||= ''
 
-$:.unshift CONFIG["srcdir"]+"/lib"
+$:.unshift File.join(CONFIG["srcdir"], "lib")
 require 'ftools'
 require 'shellwords'
 
@@ -66,7 +66,7 @@ rubylibdir = destdir+CONFIG["rubylibdir"]
 archlibdir = destdir+CONFIG["archdir"]
 sitelibdir = destdir+CONFIG["sitelibdir"]
 sitearchlibdir = destdir+CONFIG["sitearchdir"]
-mandir = destdir+CONFIG["mandir"] + "/man1"
+mandir = File.join(destdir+CONFIG["mandir"], "man1")
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO"]
@@ -75,7 +75,7 @@ arc = CONFIG["LIBRUBY_A"]
 
 Installer.makedirs bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir, mandir, true
 
-Installer.install ruby_install_name+exeext, bindir+"/"+ruby_install_name+exeext, 0755, true
+Installer.install ruby_install_name+exeext, File.join(bindir, ruby_install_name+exeext), 0755, true
 if rubyw_install_name and !rubyw_install_name.empty?
   Installer.install rubyw_install_name+exeext, bindir, 0755, true
 end
@@ -98,12 +98,23 @@ end
 
 Dir.chdir CONFIG["srcdir"]
 
-for f in Dir["bin/*"]
-  next unless File.file?(f)
+for src in Dir["bin/*"]
+  next unless File.file?(src)
 
-  name = ruby_install_name.sub(/ruby/, File.basename(f))
+  name = ruby_install_name.sub(/ruby/, File.basename(src))
+  dest = File.join(bindir, name)
 
-  Installer.install f, File.join(bindir, name), 0755, true
+  Installer.install src, dest, 0755, true
+
+  open(dest, "r+") { |f|
+    shebang = f.gets
+    body = f.readlines
+
+    f.rewind
+
+    f.print shebang.sub(/ruby/, "ruby17"), *body
+    f.truncate(f.pos)
+  }
 end
 
 Dir.glob("lib/**/*{.rb,help-message}") do |f|
@@ -116,11 +127,11 @@ for f in Dir["*.h"]
   Installer.install f, archlibdir, 0644, true
 end
 if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
-  Installer.makedirs archlibdir + "/win32", true
-  Installer.install "win32/win32.h", archlibdir + "/win32", 0644, true
+  Installer.makedirs File.join(archlibdir, "win32"), true
+  Installer.install "win32/win32.h", File.join(archlibdir, "win32"), 0644, true
 end
 
 Installer.makedirs mandir, true
-Installer.install "ruby.1", mandir+"/"+ruby_install_name+".1", 0644, true
+Installer.install "ruby.1", File.join(mandir, ruby_install_name+".1"), 0644, true
 
 # vi:set sw=2:
