@@ -93,7 +93,7 @@ inet_ntop(af, addr, numaddr, numaddr_len)
 #ifdef HAVE_INET_NTOA
 	struct in_addr in;
 	memcpy(&in.s_addr, addr, sizeof(in.s_addr));
-	strncpy(numaddr, numaddr_len, inet_ntoa(in));
+	snprintf(numaddr, numaddr_len, "%s", inet_ntoa(in));
 #else
 	unsigned long x = ntohl(*(unsigned long*)addr);
 	snprintf(numaddr, numaddr_len, "%d.%d.%d.%d",

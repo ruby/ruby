@@ -49,6 +49,11 @@ end
 Dir.chdir wdir
 File.makedirs pkglibdir, true
 File.makedirs archdir, true
+
+if PLATFORM =~ /-aix/
+  File.install "ruby.imp", archdir, 0644, true
+end
+
 Dir.chdir "ext"
 system "../miniruby#{binsuffix} extmk.rb install #{destdir}"
 Dir.chdir CONFIG["srcdir"]
@@ -60,9 +65,6 @@ Find.find("lib") do |f|
   File.install f, dir, 0644, true
 end
 
-if PLATFORM =~ /-aix/
-  File.install "ruby.imp", archdir, 0644, true
-end
 for f in Dir["*.h"]
   File.install f, archdir, 0644, true
 end

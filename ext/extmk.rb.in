@@ -71,8 +71,8 @@ CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
 else
 CFLAGS = "@CFLAGS@"
 end
-LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s %s conftest.c @LIBS@ %s"
-CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s conftest.c"
+LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} @LDFLAGS@ %s %s conftest.c %s %s @LIBS@"
+CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s %s conftest.c"
 
 if /cygwin|mswin32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ PLATFORM
   $null = open("nul", "w")
@@ -98,7 +98,7 @@ def try_link0(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
 end
 
 def try_link(src, opt="")
@@ -109,23 +109,23 @@ def try_link(src, opt="")
   end
 end
 
-def try_cpp(src, opt=$CFLAGS)
+def try_cpp(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP, opt))
+    xsystem(format(CPP, $CFLAGS, opt))
   ensure
     system "rm -f conftest*"
   end
 end
 
-def egrep_cpp(pat, src, opt=$CFLAGS)
+def egrep_cpp(pat, src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP+"|egrep #{pat}", opt))
+    xsystem(format(CPP+"|egrep #{pat}", $CFLAGS, opt))
   ensure
     system "rm -f conftest*"
   end
@@ -268,7 +268,7 @@ def arg_config(config, default=nil)
       if /=/ =~ arg
 	$configure_args[$`] = $'
       else
-	$configure_args[arg] = default
+	$configure_args[arg] = true
       end
     end
   end
@@ -283,7 +283,7 @@ def with_config(config, default=nil)
 end
 
 def enable_config(config, default=nil)
-  if arg_config("--enable-"+config, true)
+  if arg_config("--enable-"+config, default)
     true
   elsif arg_config("--disable-"+config, false)
     false
@@ -335,6 +335,7 @@ srcdir = #{$srcdir}
 VPATH = #{$srcdir}
 
 hdrdir = #{$topdir}
+DESTDIR = 
 
 CC = @CC@
 
@@ -360,7 +361,7 @@ ruby_inc = #{$ruby_inc}
 #### End of system configuration section. ####
 
 "
-  mfile.printf "LOCAL_LIBS = %s\n", $local_libs unless $local_libs == ""
+  mfile.printf "LOCAL_LIBS = %s\n", $LOCAL_LIBS unless $LOCAL_LIBS == ""
   mfile.printf "LIBS = %s\n", $libs
   mfile.printf "OBJS = "
   if !$objs then
@@ -472,7 +473,7 @@ def extmake(target)
 
   $objs = nil
   $libs = PLATFORM =~ /cygwin|beos|openstep|nextstep|rhapsody/ ? nil : "-lc"
-  $local_libs = ""		# to be assigned in extconf.rb
+  $LOCAL_LIBS = ""		# to be assigned in extconf.rb
   $CFLAGS = ""
   $LDFLAGS = ""
 
@@ -509,7 +510,7 @@ def extmake(target)
       $extlibs ||= ""
       $extlibs += " " + $LDFLAGS unless $LDFLAGS == ""
       $extlibs += " " + $libs if $libs
-      $extlibs += " " + $local_libs unless $local_libs == ""
+      $extlibs += " " + $LOCAL_LIBS unless $LOCAL_LIBS == ""
     end
   ensure
     system "rm -f conftest*"

@@ -221,7 +221,7 @@ inet_pton(af, hostname, pton)
 	struct in_addr in;
 
 #ifdef HAVE_INET_ATON
-	if (!inet_aton(hostname, &in.s_addr))
+	if (!inet_aton(hostname, &in))
 	    return 0;
 #else
 	int d1, d2, d3, d4;

@@ -345,12 +345,6 @@ has_magic(s, send)
     return Qfalse;
 }
 
-struct glob1_arg {
-    void (*func)();
-    char *basename;
-    VALUE arg;
-};
-
 static char*
 extract_path(p, pend)
     char *p, *pend;
@@ -412,6 +406,11 @@ glob(path, func, arg)
 	    DIR *dirp;
 	    struct dirent *dp;
 
+	    struct d_link {
+		char *path;
+		struct d_link *next;
+	    } *tmp, *link = 0;
+
 	    base = extract_path(path, p);
 	    if (path == p) dir = ".";
 	    else dir = base;
@@ -424,27 +423,39 @@ glob(path, func, arg)
 	    magic = extract_elem(p);
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 		if (fnmatch(magic, dp->d_name, FNM_PERIOD|FNM_PATHNAME) == 0) {
-		    char *fix = ALLOC_N(char, strlen(base)+strlen(dp->d_name)+2);
+		    char *fix = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
 
-		    sprintf(fix, "%s%s%s", base, (p==path)?"":"/", dp->d_name);
+		    sprintf(fix, "%s%s%s", base, (*base)?"/":"", dp->d_name);
 		    if (!m) {
 			(*func)(fix, arg);
 			free(fix);
 			continue;
 		    }
-		    stat(fix, &st); /* should success */
-		    if (S_ISDIR(st.st_mode)) {
-			char *t = ALLOC_N(char, strlen(fix)+strlen(m)+2);
-			sprintf(t, "%s%s", fix, m);
-			glob(t, func, arg);
-			free(t);
-		    }
-		    free(fix);
+		    tmp = ALLOC(struct d_link);
+		    tmp->path = fix;
+		    tmp->next = link;
+		    link = tmp;
 		}
 	    }
 	    closedir(dirp);
 	    free(base);
 	    free(magic);
+	    while (link) {
+		stat(link->path, &st); /* should success */
+		if (S_ISDIR(st.st_mode)) {
+		    int len = strlen(link->path);
+		    int mlen = strlen(m);
+		    char *t = ALLOC_N(char, len+mlen+1);
+
+		    sprintf(t, "%s%s", link->path, m);
+		    glob(t, func, arg);
+		    free(t);
+		}
+		tmp = link;
+		link = link->next;
+		free(tmp->path);
+		free(tmp);
+	    }
 	}
 	p = m;
     }

@@ -1332,10 +1332,12 @@ rb_str_inspect(str)
 		*b++ = *p++;
 	    }
 	}
+#if 0
 	else if ((c & 0x80) && rb_kcode() != MBCTYPE_EUC) {
 	    CHECK(1);
 	    *b++ = c;
 	}
+#endif
 	else if (c == '"'|| c == '\\') {
 	    CHECK(2);
 	    *b++ = '\\';
@@ -1671,13 +1673,13 @@ tr_trans(str, src, repl, sflag)
     struct tr trsrc, trrepl;
     int cflag = 0;
     char trans[256];
-    int i, c, c0, modify = 0;
+    int i, c, modify = 0;
     char *s, *send;
 
     rb_str_modify(str);
     if (TYPE(src) != T_STRING) src = rb_str_to_str(src);
     trsrc.p = RSTRING(src)->ptr; trsrc.pend = trsrc.p + RSTRING(src)->len;
-    if (RSTRING(src)->len > 2 && RSTRING(src)->ptr[0] == '^') {
+    if (RSTRING(src)->len >= 2 && RSTRING(src)->ptr[0] == '^') {
 	cflag++;
 	trsrc.p++;
     }
@@ -1696,18 +1698,11 @@ tr_trans(str, src, repl, sflag)
 	while ((c = trnext(&trsrc)) >= 0) {
 	    trans[c & 0xff] = 0;
 	}
+	while ((c = trnext(&trrepl)) >= 0)
+	    /* retrieve last replacer */;
 	for (i=0; i<256; i++) {
-	    if (trans[i] == 0) {
-		trans[i] = i;
-	    }
-	    else {
-		c = trnext(&trrepl);
-		if (c == -1) {
-		    trans[i] = trrepl.now;
-		}
-		else {
-		    trans[i] = c;
-		}
+	    if (trans[i] != 0) {
+		trans[i] = trrepl.now;
 	    }
 	}
     }
@@ -1715,7 +1710,7 @@ tr_trans(str, src, repl, sflag)
 	char r;
 
 	for (i=0; i<256; i++) {
-	    trans[i] = i;
+	    trans[i] = 0;
 	}
 	while ((c = trnext(&trsrc)) >= 0) {
 	    r = trnext(&trrepl);
@@ -1725,19 +1720,21 @@ tr_trans(str, src, repl, sflag)
     }
 
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
-    c0 = -1;
     if (sflag) {
 	char *t = s;
+	int c0, last = -1;
 
 	while (s < send) {
-	    c = trans[*s++ & 0xff] & 0xff;
-	    if (s[-1] == c || c != c0) {
-		c0 = (s[-1] == c)?-1:c;
-		if (*t != c) {
-		    *t = c;
-		    modify = 1;
-		}
+	    c0 = *s++;
+	    if ((c = trans[c0 & 0xff] & 0xff) != 0) {
+		if (last == c) continue;
+		last = c;
 		*t++ = c;
+		modify = 1;
+	    }
+	    else {
+		last = -1;
+		*t++ = c0;
 	    }
 	}
 	if (RSTRING(str)->len > (t - RSTRING(str)->ptr)) {
@@ -1748,8 +1745,7 @@ tr_trans(str, src, repl, sflag)
     }
     else {
 	while (s < send) {
-	    c = trans[*s & 0xff] & 0xff;
-	    if (*s != c) {
+	    if ((c = trans[*s & 0xff] & 0xff) != 0) {
 		*s = c;
 		modify = 1;
 	    }
@@ -1869,11 +1865,13 @@ tr_squeeze(str1, str2)
 	c = *s++ & 0xff;
 	if (c != save || !squeez[c & 0xff]) {
 	    *t++ = save = c;
-	    modify = 1;
 	}
     }
     *t = '\0';
-    RSTRING(str1)->len = t - RSTRING(str1)->ptr;
+    if (t - RSTRING(str1)->ptr != RSTRING(str1)->len) {
+	RSTRING(str1)->len = t - RSTRING(str1)->ptr;
+	modify = 1;
+    }
 
     if (modify) return str1;
     return Qnil;

@@ -66,7 +66,7 @@
 #define freeaddrinfo freeaddrinfo__compat
 
 #ifndef __P
-# ifdef HAVE_PROTOTYPES 1
+# ifdef HAVE_PROTOTYPES
 #  define __P(args) args
 # else
 #  define __P(args)
@@ -134,12 +134,6 @@ struct addrinfo {
 	char	*ai_canonname;	/* canonical name for hostname */
 	struct sockaddr *ai_addr;	/* binary address */
 	struct addrinfo *ai_next;	/* next structure in linked list */
-};
-
-struct sockaddr_storage {
-	u_int8_t __ss_len;
-	u_int8_t __ss_family;
-	u_int8_t fill[126];
 };
 
 extern int getaddrinfo __P((

@@ -332,6 +332,7 @@ enum regexpcode
     set_number_at,	/* Set the following relative location to the
 			   subsequent number.  */
     anychar,	 /* Matches any (more or less) one character excluding newlines.  */
+    anychar_repeat,	 /* Matches sequence of characters excluding newlines.  */
     charset,     /* Matches any one char belonging to specified set.
 		    First following byte is number of bitmap bytes.
 		    Then come bytes for a bitmap saying which chars are in.
@@ -784,6 +785,10 @@ print_partial_compiled_pattern(start, end)
       printf("/anychar");
       break;
 
+    case anychar_repeat:
+      printf("/anychar_repeat");
+      break;
+
     case charset:
     case charset_not:
       {
@@ -982,12 +987,11 @@ calculate_must_string(start, end)
 
     case casefold_on:
     case casefold_off:
-    case posix_on:
-    case posix_off:
       return 0;		/* should not check must_string */
 
     case pop_and_fail:
     case anychar:
+    case anychar_repeat:
     case begline:
     case endline:
     case wordbound:
@@ -1001,6 +1005,8 @@ calculate_must_string(start, end)
     case endbuf2:
     case push_dummy_failure:
     case stop_paren:
+    case posix_on:
+    case posix_off:
       break;
 
     case charset:
@@ -1228,6 +1234,12 @@ re_compile_pattern(pattern, size, bufp)
       if (!laststart)  
 	break;
 
+      if (greedy && *laststart == anychar && b - laststart < 2) {
+	if (b[-1] == stop_paren)
+	  b--;
+	*laststart = anychar_repeat;
+	break;
+      }
       /* Now we know whether or not zero matches is allowed
 	 and also whether or not two or more matches is allowed.  */
       if (many_times_ok) {
@@ -2152,7 +2164,10 @@ re_compile_pattern(pattern, size, bufp)
     if (*laststart == start_memory) laststart += 3;
     if (*laststart == dummy_failure_jump) laststart += 3;
     else if (*laststart == try_next) laststart += 3;
-    if (*laststart == on_failure_jump) {
+    if (*laststart == anychar_repeat) {
+      bufp->options |= RE_OPTIMIZE_ANCHOR;
+    }
+    else if (*laststart == on_failure_jump) {
       int mcnt;
 
       laststart++;
@@ -2675,6 +2690,7 @@ re_compile_fastmap(bufp)
       case duplicate:
 	bufp->can_be_null = 1;
 	fastmap['\n'] = 1;
+      case anychar_repeat:
       case anychar:
 	for (j = 0; j < (1 << BYTEWIDTH); j++) {
 	  if (j != '\n' || (options & RE_OPTION_POSIXLINE))
@@ -3359,7 +3375,9 @@ re_match(bufp, string_arg, size, pos, regs)
     /* End of pattern means we might have succeeded.  */
     if (p == pend) {
       /* If not end of string, try backtracking.  Otherwise done.  */
-      if (d != dend) {
+      if ((bufp->options & RE_OPTION_POSIXMATCH) && d != dend) {
+	if (best_regs_set) /* non-greedy, no need to backtrack */
+	  goto restore_best_regs;
 	while (stackp != stackb && stackp[-1] == NON_GREEDY) {
 	  if (best_regs_set) /* non-greedy, no need to backtrack */
 	    goto restore_best_regs;
@@ -3597,6 +3615,25 @@ re_match(bufp, string_arg, size, pos, regs)
 	  goto fail;
 	SET_REGS_MATCHED;
 	d++;
+	break;
+
+      case anychar_repeat:
+	for (;;) {
+	  PUSH_FAILURE_POINT(p, d);
+	  PREFETCH;
+	  if (ismbchar(*d)) {
+	    if (d + mbclen(*d) > dend)
+	      goto fail;
+	    SET_REGS_MATCHED;
+	    d += mbclen(*d);
+	    break;
+	  }
+	  if (!(options&RE_OPTION_POSIXLINE) &&
+	      (TRANSLATE_P() ? translate[*d] : *d) == '\n')
+	    goto fail;
+	  SET_REGS_MATCHED;
+	  d++;
+	}
 	break;
 
       case charset:

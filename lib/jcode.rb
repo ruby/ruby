@@ -172,8 +172,11 @@ class String
     self.gsub!(/(.|\n)/) do |c|
       if comp
 	unless afrom.include?(c)
-	  ato[-1]
+	  c = ato[-1]
+	  next if c == last
+	  last = c
 	else
+	  last = nil
 	  c
 	end
       elsif i = afrom.index(c)

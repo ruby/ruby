@@ -1,3 +1,40 @@
+Mon May 10 00:59:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/jcode.rb: forgot to squeeze on reverse (complement) case.
+
+	* string.c (tr_squeeze): should not set modify flag to be honest,
+	  if the string is not modified.
+
+	* signal.c (Init_signal): SIGTERM should not be handled.
+
+	* regex.c (re_match): seeking for longest match is now optional,
+	  which can be set using RE_OPTION_POSIXMATCH.  This satisfies
+	  POSIX longest match as much as Emacs's posix-* functions, which
+	  are known to be incomplete.
+
+Sun May  9 13:04:01 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/socket.c (sock_s_getaddrinfo): conversion from
+	  Fixnums to C integers needed.
+
+Sun May  9 11:51:43 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* range.c (range_eqq): reverse condition.
+
+	* range.c (range_s_new): default should be end inclusive.
+
+Sat May  8 03:27:51 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/socket.c (thread_connect): replace nasty
+	  rb_thread_fd_writable() with rb_thread_select().
+
+Fri May  7 20:49:00 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/getaddrinfo.c (inet_pton): wrong parameter to
+	  inet_aton().
+
+	* ext/socket/addrinfo.h (__P): silly cut and paste typo.
+
 Fri May  7 17:03:57 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* dir.c (glob): removed GPL'ed glob.c completely.

@@ -23,10 +23,9 @@ LIBS =  $(EXTLIBS)  advapi32.lib wsock32.lib
 MISSING = crypt.obj alloca.obj win32.obj fnmatch.obj isinf.obj isnan.obj
 
 prefix = 
-binprefix = 
-exec_prefix = 
-bindir = 
-libdir = 
+RUBY_INSTALL_NAME=ruby
+binsuffix = .exe
+PROGRAM=$(RUBY_INSTALL_NAME)$(binsuffix)
 
 STACK = 0x200000
 ORGLIBPATH = $(LIB)
@@ -51,7 +50,6 @@ OBJS          = array.obj \
 		eval.obj \
 		file.obj \
 		gc.obj \
-		glob.obj \
 		hash.obj \
 		inits.obj \
 		io.obj \
@@ -79,61 +77,48 @@ OBJS          = array.obj \
 		version.obj \
 		$(MISSING)
 
-all:            miniruby.exe ext/Setup $(MISCLIBS)
-		cd ext
+all:		miniruby$(binsuffix) rbconfig.rb ext/Setup $(MISCLIBS)
 		set LIB=..\..\win32;$(ORGLIBPATH)
-		..\miniruby .\extmk.rb  static
-#		..\miniruby .\extmk.rb
-		cd ..
+		@./miniruby$(binsuffix) -Xext extmk.rb static
 
-miniruby.exe:   $(OBJS) $(MAINOBJ) $(EXTOBJS) 
+miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) $(EXTOBJS) 
 		@echo $(EXTOBJS)
 		@echo $(LIBS)
-		@rm -f miniruby.exe
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(LIBS) -o miniruby.exe
+		@rm -f miniruby$(binsuffix)
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $(LIBS) -o $@
 
-ruby.exe:       $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) rubymw.dll 
-		@rm -f ruby.exe
-#               $(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o ruby.exe
-		$(CC) $(LDFLAGS) $(MAINOBJ) -o ruby.exe rubymw.lib -link /STACK:$(STACK)
+$(PROGRAM):     $(LIBRUBY) $(MAINOBJ) rubymw.dll
+		@rm -f $(PROGRAM)
+		$(CC) $(LDFLAGS) $(MAINOBJ) -o $(PROGRAM) rubymw.lib -link /STACK:$(STACK)
 
 rubymw.dll:       $(LIBRUBY) $(EXTOBJS) 
 		set LIB=.\win32;$(ORGLIBPATH)
 		@rm -f rubymw.dll
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o rubymw.dll  -link /DLL /DEF:ruby.def
+		$(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o rubymw.dll  -link /DLL /DEF:ruby.def
 		@mv rubymw.map rubydll.map
 
 $(LIBRUBY):     $(OBJS)
 		lib /OUT:$(LIBRUBY) $(OBJS)
 
-install:;       $(INSTALL_PROGRAM) ruby.exe $(bindir)/ruby.exe
-		@-strip $(bindir)/ruby
-		@test -d $(libdir) || mkdir $(libdir)
-		cd ext; ../miniruby ./extmk.rb install
-		@for rb in `grep '^lib/' MANIFEST`; do \
-		  $(INSTALL_DATA) $$rb $(libdir); \
-		done
+install:	rbconfig.rb
+		./miniruby.exe $(srcdir)/instruby.rb $(DESTDIR)
 
-clean:;         @rm -f $(OBJS) $(LIBRUBY) main.obj dmyext.obj *.pdb *.map *.exp
-		@rm -f ext/extinit.c ext/extinit.obj
-		cd ext
-		..\miniruby .\extmk.rb clean
-		cd ..
+clean:;		@rm -f $(OBJS) $(LIBRUBY) rbconfig.rb
+		@rm -f ext/extinit.c ext/extinit.obj *.obj
+		@-./miniruby$(binsuffix) -Xext extmk.rb clean 2> /dev/null || true
 
-realclean:      clean
-		@rm -f Makefile ext/extmk.rb
-		@rm -f config.cache config.h config.log config.status
-		@rm -f core ruby miniruby *~
+distclean:	clean
+		@rm -f Makefile ext/extmk.rb config.h
+		@rm -f ext/config.cache config.cache config.log config.status
+		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
+		@rm -f $(PROGRAM) miniruby$(binsuffix)
 
-test:;          @-./ruby sample/test.rb > ./ruby_test 2>&1; \
-		 if grep '^end of test' ./ruby_test > /dev/null; then \
-		   echo "test succeeded"; \
-		 else \
-		   grep '^sample/test.rb' ./ruby_test; \
-		   grep '^not' ./ruby_test; \
-		   echo "test failed";\
-		 fi;\
-		 rm -f ./ruby_test
+realclean:	distclean
+		@rm -f parse.c
+		@rm -f lex.c
+
+test:		miniruby$(binsuffix)
+		@./miniruby$(binsuffix) $(srcdir)/rubytest.rb
 
 .c.obj:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
@@ -211,7 +196,6 @@ error.obj: error.c ruby.h config.h defines.h env.h
 eval.obj: eval.c ruby.h config.h defines.h env.h node.h rubysig.h st.h dln.h
 file.obj: file.c ruby.h config.h defines.h rubyio.h rubysig.h
 gc.obj: gc.c ruby.h config.h defines.h env.h rubysig.h st.h node.h re.h regex.h
-glob.obj: glob.c config.h missing/fnmatch.h
 hash.obj: hash.c ruby.h config.h defines.h st.h
 inits.obj: inits.c ruby.h config.h defines.h
 io.obj: io.c ruby.h config.h defines.h rubyio.h rubysig.h

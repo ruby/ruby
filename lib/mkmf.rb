@@ -59,8 +59,8 @@ if /win32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ PLATFORM
 else
   $null = open("/dev/null", "w")
 end
-LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} -I#{CONFIG['includedir']} #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c #{CONFIG['LIBS']} %s"
-CPP = "#{CONFIG['CPP']} -E -I#{$hdrdir} -I#{CONFIG['includedir']} #{CFLAGS} %s conftest.c"
+LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} -I#{CONFIG['includedir']} #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
+CPP = "#{CONFIG['CPP']} -E -I#{$hdrdir} -I#{CONFIG['includedir']} #{CFLAGS} %s %s conftest.c"
 
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
@@ -81,7 +81,7 @@ def try_link0(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt))
+  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
 end
 
 def try_link(src, opt="")
@@ -92,23 +92,41 @@ def try_link(src, opt="")
   end
 end
 
-def try_cpp(src, opt=$CFLAGS)
+def try_cpp(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(CPP, opt))
+  begin
+    xsystem(format(CPP, $CFLAGS, opt))
+  ensure
+    system "rm -f conftest*"
+  end
 end
 
-def egrep_cpp(pat, src, opt=$CFLAGS)
+def egrep_cpp(pat, src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(CPP+"|egrep #{pat}", opt))
+  begin
+    xsystem(format(CPP+"|egrep #{pat}", $CFLAGS, opt))
+  ensure
+    system "rm -f conftest*"
+  end
 end
 
 def try_run(src, opt="")
-  if try_link0(src, opt)
-    xsystem("./conftest")
+  begin
+    if try_link0(src, opt)
+      if xsystem("./conftest")
+	true
+      else
+	false
+      end
+    else
+      nil
+    end
+  ensure
+    system "rm -f conftest*"
   end
 end
 
@@ -250,7 +268,7 @@ SRC
   return TRUE
 end
 
-def arg_config(config, default="yes")
+def arg_config(config, default=nil)
   unless defined? $configure_args
     $configure_args = {}
     for arg in CONFIG["configure_args"].split + ARGV
@@ -258,14 +276,14 @@ def arg_config(config, default="yes")
       if /=/ =~ arg
 	$configure_args[$`] = $'
       else
-	$configure_args[arg] = default
+	$configure_args[arg] = true
       end
     end
   end
   $configure_args.fetch(config, default)
 end
 
-def with_config(config, default="yes")
+def with_config(config, default=nil)
   unless /^--with-/ =~ config
     config = '--with-' + config
   end
@@ -273,7 +291,7 @@ def with_config(config, default="yes")
 end
 
 def enable_config(config, default=nil)
-  if arg_config("--enable-"+config, true)
+  if arg_config("--enable-"+config, default)
     true
   elsif arg_config("--disable-"+config, false)
     false
@@ -346,7 +364,7 @@ ruby_inc = #{$ruby_inc}
 
 #### End of system configuration section. ####
 
-LOCAL_LIBS = #{$local_libs}
+LOCAL_LIBS = #{$LOCAL_LIBS}
 LIBS = #{$libs}
 OBJS = #{$objs}
 
@@ -440,7 +458,7 @@ end
 
 $libs = PLATFORM =~ /cygwin32|beos/ ? nil : "-lc"
 $objs = nil
-$local_libs = ""
+$LOCAL_LIBS = ""
 $CFLAGS = ""
 $LDFLAGS = ""
 $defs = []

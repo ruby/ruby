@@ -74,7 +74,6 @@ range_s_new(argc, argv, klass)
     VALUE beg, end, flag, range;
     
     rb_scan_args(argc, argv, "21", &beg, &end, &flag);
-    if (argc == 2) flag = Qfalse;
     return range_new(klass, beg, end, RTEST(flag));
 }
 
@@ -82,7 +81,7 @@ static VALUE
 range_exclude_end_p(range)
     VALUE range;
 {
-    return EXCL(range)?Qtrue:Qfalse;;
+    return EXCL(range)?Qtrue:Qfalse;
 }
 
 static VALUE
@@ -97,23 +96,22 @@ range_eqq(range, obj)
     if (FIXNUM_P(beg) && FIXNUM_P(obj) && FIXNUM_P(end)) {
 	if (FIX2INT(beg) <= FIX2INT(obj)) {
 	    if (EXCL(range)) {
-		if (FIX2INT(obj) <= FIX2INT(end)) return Qtrue;
+		if (FIX2INT(obj) < FIX2INT(end)) return Qtrue;
 	    }
 	    else {
-		if (FIX2INT(obj) < FIX2INT(end)) return Qtrue;
+		if (FIX2INT(obj) <= FIX2INT(end)) return Qtrue;
 	    }
 	}
 	return Qfalse;
     }
     else if (RTEST(rb_funcall(beg, rb_intern("<="), 1, obj))) {
 	if (EXCL(range)) {
-	    if (RTEST(rb_funcall(end, rb_intern(">="), 1, obj)))
+	    if (RTEST(rb_funcall(end, rb_intern(">"), 1, obj)))
 		return Qtrue;
 	}
 	else {
-	    if (RTEST(rb_funcall(end, rb_intern(">"), 1, obj)))
+	    if (RTEST(rb_funcall(end, rb_intern(">="), 1, obj)))
 		return Qtrue;
-	    if (FIX2INT(obj) < FIX2INT(end)) return Qtrue;
 	}
     }
     return Qfalse;

@@ -65,8 +65,10 @@
 #define RE_OPTION_EXTENDED   (RE_OPTION_IGNORECASE<<1)
 /* newline will be included for . and invert charclass matches */
 #define RE_OPTION_POSIXLINE  (RE_OPTION_EXTENDED<<1)
+/* search for longest match, in accord with POSIX regexp */
+#define RE_OPTION_POSIXMATCH (RE_OPTION_POSIXLINE<<1)
 
-#define RE_MAY_IGNORECASE    (RE_OPTION_POSIXLINE<<1)
+#define RE_MAY_IGNORECASE    (RE_OPTION_POSIXMATCH<<1)
 #define RE_OPTIMIZE_ANCHOR   (RE_MAY_IGNORECASE<<1)
 #define RE_OPTIMIZE_EXACTN   (RE_OPTIMIZE_ANCHOR<<1)
 #define RE_OPTIMIZE_NO_BM    (RE_OPTIMIZE_EXACTN<<1)

@@ -309,11 +309,13 @@ bsock_send(argc, argv, sock)
     if (n < 0) {
 	switch (errno) {
 	  case EINTR:
+	    rb_thread_schedule();
+	    goto retry;
 	  case EWOULDBLOCK:
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_schedule();
+	    rb_thread_fd_writable(fd);
 	    goto retry;
 	}
 	rb_sys_fail("send(2)");
@@ -367,11 +369,14 @@ s_recv(sock, argc, argv, from)
     if (RSTRING(str)->len < 0) {
 	switch (errno) {
 	  case EINTR:
+	    rb_thread_schedule();
+	    goto retry;
+
 	  case EWOULDBLOCK:
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_schedule();
+	    rb_thread_wait_fd(fd);
 	    goto retry;
 	}
 	rb_sys_fail("recvfrom(2)");
@@ -422,7 +427,7 @@ mkipaddr(addr)
     error = getnameinfo(addr, SA_LEN(addr), buf, sizeof(buf), NULL, 0,
 			NI_NUMERICHOST);
     if (error) {
-	rb_raise(rb_eSocket, gai_strerror(error));
+	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
     return rb_str_new2(buf);
 }
@@ -453,13 +458,13 @@ ipaddr(sockaddr)
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			NULL, 0, 0);
     if (error) {
-	rb_raise(rb_eSocket, gai_strerror(error));
+	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
     addr1 = rb_str_new2(hbuf);
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
-	rb_raise(rb_eSocket, gai_strerror(error));
+	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
     addr2 = rb_str_new2(hbuf);
     port = INT2FIX(atoi(pbuf));
@@ -479,7 +484,7 @@ setipaddr(name, addr)
 
     sin = (struct sockaddr_in *)addr;
     if (name[0] == 0) {
-	memset(sin, 0, sizeof(*sin));
+	MEMZERO(sin, struct sockaddr_in, 1);
 	sin->sin_family = AF_INET;
 	SET_SIN_LEN(sin, sizeof(*sin));
 	sin->sin_addr.s_addr = INADDR_ANY;
@@ -490,11 +495,11 @@ setipaddr(name, addr)
 	sin->sin_addr.s_addr = INADDR_BROADCAST;
     }
     else {
-	memset(&hints, 0, sizeof(hints));
+	MEMZERO(&hints, struct addrinfo, 1);
 	hints.ai_family = PF_UNSPEC;
 	error = getaddrinfo(name, NULL, &hints, &res);
 	if (error) {
-	    rb_raise(rb_eSocket, gai_strerror(error));
+	    rb_raise(rb_eSocket, "%s", gai_strerror(error));
 	}
 	/* just take the first one */
 	memcpy(addr, res->ai_addr, res->ai_addrlen);
@@ -502,17 +507,27 @@ setipaddr(name, addr)
     }
 }
 
+static void
+thread_write_select(fd)
+    int fd;
+{
+    fd_set fds;
+
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+    rb_thread_select(fd+1, 0, &fds, 0, 0);
+}
+
 #if defined(HAVE_FCNTL)
 static int
-thread_connect(fd, sockaddr, len, type)
+ruby_connect(fd, sockaddr, len, socks)
     int fd;
     struct sockaddr *sockaddr;
     int len;
-    int type;
+    int socks;
 {
     int status;
     int mode;
-    fd_set fds;
 
     mode = fcntl(fd, F_GETFL, 0);
 
@@ -528,7 +543,7 @@ thread_connect(fd, sockaddr, len, type)
     fcntl(fd, F_SETFL, mode|NONBLOCKING);
     for (;;) {
 #ifdef SOCKS
-	if (type == INET_SOCKS) {
+	if (socks) {
 	    status = Rconnect(fd, sockaddr, len);
 	}
 	else
@@ -538,22 +553,15 @@ thread_connect(fd, sockaddr, len, type)
 	}
 	if (status < 0) {
 	    switch (errno) {
-#ifdef EAGAIN
 	      case EAGAIN:
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
 #endif
-		rb_thread_fd_writable(fd);
+		thread_write_select(fd);
 		continue;
-#endif
 
 #ifdef EISCONN
 	      case EISCONN:
-#endif
-#ifdef EALREADY
-	      case EALREADY:
-#endif
-#if defined(EISCONN) || defined(EALREADY)
 		status = 0;
 		errno = 0;
 		break;
@@ -565,6 +573,29 @@ thread_connect(fd, sockaddr, len, type)
 	return status;
     }
 }
+
+#else
+
+#ifdef SOCKS
+static int
+ruby_connect(fd, sockaddr, len, socks)
+    int fd;
+    struct sockaddr *sockaddr;
+    int len;
+    int socks;
+{
+    if (socks) {
+	return Rconnect(fd, sockaddr, len);
+    }
+    else {
+	return connect(fd, sockaddr, len);
+    }
+}
+#else
+
+#define ruby_connect(fd, sockaddr, len, socks) connect(fd, sockaddr, len)
+
+#endif /* SOCKS */
 #endif
 
 static VALUE
@@ -595,7 +626,7 @@ open_inet(class, h, serv, type)
 	strcpy(pbuf, STR2CSTR(serv));
 	portp = pbuf;
     }
-    memset(&hints, 0, sizeof(hints));
+    MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     if (type == INET_SERVER) {
@@ -603,7 +634,7 @@ open_inet(class, h, serv, type)
     }
     error = getaddrinfo(host, portp, &hints, &res0);
     if (error) {
-	rb_raise(rb_eSocket, gai_strerror(error));
+	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
 
     fd = -1;
@@ -621,19 +652,8 @@ open_inet(class, h, serv, type)
 	    syscall = "bind(2)";
 	}
 	else {
-#if defined(HAVE_FCNTL)
-	    status = thread_connect(fd, res->ai_addr, res->ai_addrlen, type);
-#else
-#ifdef SOCKS
-	    if (type == INET_SOCKS) {
-		status = Rconnect(fd, res->ai_addr, res->ai_addrlen);
-	    }
-	    else
-#endif
-	    {
-		status = connect(fd, res->ai_addr, res->ai_addrlen);
-	    }
-#endif
+	    status = ruby_connect(fd, res->ai_addr, res->ai_addrlen,
+				  (type == INET_SOCKS));
 	    syscall = "connect(2)";
 	}
 
@@ -698,10 +718,10 @@ tcp_s_gethostbyname(obj, host)
     VALUE ary, names;
 
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	int i = NUM2INT(host);
+	long i = NUM2LONG(host);
 	struct sockaddr_in *sin;
 	sin = (struct sockaddr_in *)&addr;
-	memset(sin, 0, sizeof(*sin));
+	MEMZERO(sin, struct sockaddr_in, 1);
 	sin->sin_family = AF_INET;
 	SET_SIN_LEN(sin, sizeof(*sin));
 	sin->sin_addr.s_addr = htonl(i);
@@ -737,7 +757,7 @@ tcp_s_gethostbyname(obj, host)
     if (h == NULL) {
 #ifdef HAVE_HSTERROR
 	extern int h_errno;
-	rb_raise(rb_eSocket, (char *)hsterror(h_errno));
+	rb_raise(rb_eSocket, "%s", (char *)hsterror(h_errno));
 #else
 	rb_raise(rb_eSocket, "host not found");
 #endif
@@ -756,7 +776,7 @@ tcp_s_gethostbyname(obj, host)
 	case AF_INET:
 	  {
 	    struct sockaddr_in sin;
-	    memset(&sin, 0, sizeof(sin));
+	    MEMZERO(&sin, struct sockaddr_in, 1);
 	    sin.sin_family = AF_INET;
 	    SET_SIN_LEN(&sin, sizeof(sin));
 	    memcpy((char *) &sin.sin_addr, *pch, h->h_length);
@@ -770,7 +790,7 @@ tcp_s_gethostbyname(obj, host)
 	case AF_INET6:
 	  {
 	    struct sockaddr_in6 sin6;
-	    memset(&sin6, 0, sizeof(sin6));
+	    MEMZERO(&sin6, struct sockaddr_in6, 1);
 	    sin6.sin6_family = AF_INET;
 	    sin6.sin6_len = sizeof(sin6);
 	    memcpy((char *) &sin6.sin6_addr, *pch, h->h_length);
@@ -824,11 +844,14 @@ s_accept(class, fd, sockaddr, len)
     if (fd2 < 0) {
 	switch (errno) {
 	  case EINTR:
+	    rb_thread_schedule();
+	    goto retry;
+
 	  case EWOULDBLOCK:
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_schedule();
+	    rb_thread_wait_fd(fd);
 	    goto retry;
 	}
 	rb_sys_fail(0);
@@ -875,7 +898,7 @@ open_unix(class, path, server)
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) rb_sys_fail("socket(2)");
 
-    memset(&sockaddr, 0, sizeof(sockaddr));
+    MEMZERO(&sockaddr, struct sockaddr_un, 1);
     sockaddr.sun_family = AF_UNIX;
     strncpy(sockaddr.sun_path, path->ptr, sizeof(sockaddr.sun_path)-1);
     sockaddr.sun_path[sizeof(sockaddr.sun_path)-1] = '\0';
@@ -884,7 +907,7 @@ open_unix(class, path, server)
         status = bind(fd, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
     }
     else {
-        status = connect(fd, (struct sockaddr*)&sockaddr, sizeof(sockaddr));
+        status = ruby_connect(fd, (struct sockaddr*)&sockaddr, sizeof(sockaddr), 0);
     }
 
     if (status < 0) {
@@ -939,10 +962,10 @@ ip_s_getaddress(obj, host)
     struct sockaddr addr;
 
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	int i = NUM2INT(host);
+	long i = NUM2LONG(host);
 	struct sockaddr_in *sin;
 	sin = (struct sockaddr_in *)&addr;
-	memset(sin, 0, sizeof(*sin));
+	MEMZERO(sin, struct sockaddr_in, 1);
 	sin->sin_family = AF_INET;
 	SET_SIN_LEN(sin, sizeof(*sin));
 	sin->sin_addr.s_addr = htonl(i);
@@ -961,18 +984,12 @@ udp_s_open(argc, argv, class)
     VALUE class;
 {
     VALUE arg;
+    int socktype = AF_INET;
 
     if (rb_scan_args(argc, argv, "01", &arg) == 1) {
-	if (rb_obj_is_kind_of(arg, rb_cInteger)) {
-	    return sock_new(class, socket(NUM2INT(arg), SOCK_DGRAM, 0));
-	}
-	else {
-	    rb_raise(rb_eSocket, "argument must be Integer");
-	}
+	socktype = NUM2INT(arg);
     }
-    else {
-	return sock_new(class, socket(AF_INET, SOCK_DGRAM, 0));
-    }
+    return sock_new(class, socket(socktype, SOCK_DGRAM, 0));
 }
 
 static struct addrinfo *
@@ -990,15 +1007,15 @@ udp_addrsetup(fptr, host, port)
     }
     else if (rb_obj_is_kind_of(host, rb_cInteger)) {
 	struct sockaddr_in sin;
-	int i = NUM2INT(host);
-	memset(&sin, 0, sizeof(sin));
+	long i = NUM2LONG(host);
+	MEMZERO(&sin, struct sockaddr_in, 1);
 	sin.sin_family = AF_INET;
 	SET_SIN_LEN(&sin, sizeof(sin));
 	sin.sin_addr.s_addr = htonl(i);
 	error = getnameinfo((struct sockaddr *)&sin, SIN_LEN(&sin),
 			    hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST);
 	if (error) {
-	    rb_raise(rb_eSocket, gai_strerror(error));
+	    rb_raise(rb_eSocket, "%s", gai_strerror(error));
 	}
 	hostp = hbuf;
     }
@@ -1014,12 +1031,12 @@ udp_addrsetup(fptr, host, port)
 	portp = STR2CSTR(port);
     }
 
-    memset(&hints, 0, sizeof(hints));
+    MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_DGRAM;
     error = getaddrinfo(hostp, portp, &hints, &res);
     if (error) {
-	rb_raise(rb_eSocket, gai_strerror(error));
+	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
 
     return res;
@@ -1030,23 +1047,28 @@ udp_connect(sock, host, port)
     VALUE sock, host, port;
 {
     OpenFile *fptr;
+    int fd;
     struct addrinfo *res0, *res;
 
     GetOpenFile(sock, fptr);
+    fd = fileno(fptr->f);
     res0 = udp_addrsetup(fptr, host, port);
     for (res = res0; res; res = res->ai_next) {
   retry:
-	if (connect(fileno(fptr->f), res->ai_addr, res->ai_addrlen) >= 0) {
+	if (ruby_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
 	    freeaddrinfo(res0);
 	    return INT2FIX(0);
 	}
 	switch (errno) {
 	  case EINTR:
+	    rb_thread_schedule();
+	    goto retry;
+
 	  case EWOULDBLOCK:
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_schedule();
+	    thread_write_select(fd);
 	    goto retry;
 	}
     }
@@ -1111,11 +1133,14 @@ udp_send(argc, argv, sock)
 	}
 	switch (errno) {
 	  case EINTR:
+	    rb_thread_schedule();
+	    goto retry;
+
 	  case EWOULDBLOCK:
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_schedule();
+	    thread_write_select(fileno(f));
 	    goto retry;
 	}
     }
@@ -1354,20 +1379,24 @@ sock_connect(sock, addr)
     VALUE sock, addr;
 {
     OpenFile *fptr;
+    int fd;
 
     Check_Type(addr, T_STRING);
     rb_str_modify(addr);
 
     GetOpenFile(sock, fptr);
+    fd = fileno(fptr->f);
   retry:
-    if (connect(fileno(fptr->f), (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len) < 0) {
+    if (ruby_connect(fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len, 0) < 0) {
 	switch (errno) {
 	  case EINTR:
+	    rb_thread_schedule();
+	    goto retry;
 	  case EWOULDBLOCK:
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_schedule();
+	    thread_write_select(fd);
 	    goto retry;
 	}
 	rb_sys_fail("connect(2)");
@@ -1476,7 +1505,7 @@ mkhostent(h)
     if (h == NULL) {
 #ifdef HAVE_HSTRERROR
 	extern int h_errno;
-	rb_raise(rb_eSocket, (char *)hstrerror(h_errno));
+	rb_raise(rb_eSocket, "%s", (char *)hstrerror(h_errno));
 #else
 	rb_raise(rb_eSocket, "host not found");
 #endif
@@ -1534,10 +1563,10 @@ sock_s_gethostbyname(obj, host)
     struct hostent *h;
 
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	int i = NUM2INT(host);
+	long i = NUM2LONG(host);
 	struct sockaddr_in *sin;
 	sin = (struct sockaddr_in *)&addr;
-	memset(sin, 0, sizeof(*sin));
+	MEMZERO(sin, struct sockaddr_in, 1);
 	sin->sin_family = AF_INET;
 	SET_SIN_LEN(sin, sizeof(*sin));
 	sin->sin_addr.s_addr = htonl(i);
@@ -1642,7 +1671,7 @@ sock_s_getaddrinfo(argc, argv)
 
     host = port = family = socktype = protocol = flags = Qnil;
     rb_scan_args(argc, argv, "24", &host, &port, &family, &socktype, &protocol,
-	    &flags);
+		 &flags);
     if (NIL_P(host)) {
 	hptr = NULL;
     }
@@ -1654,7 +1683,7 @@ sock_s_getaddrinfo(argc, argv)
     if (NIL_P(port)) {
 	pptr = NULL;
     }
-    else if (rb_obj_is_kind_of(port, rb_cInteger)) {
+    else if (FIXNUM_P(port)) {
 	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
 	pptr = pbuf;
     }
@@ -1664,25 +1693,25 @@ sock_s_getaddrinfo(argc, argv)
 	pptr = pbuf;
     }
 
-    memset(&hints, 0, sizeof(hints));
-    if (!NIL_P(family) && rb_obj_is_kind_of(family, rb_cInteger)) {
-	hints.ai_family = FIX2INT(family);
+    MEMZERO(&hints, struct addrinfo, 1);
+    if (!NIL_P(family)) {
+	hints.ai_family = NUM2INT(family);
     }
     else {
 	hints.ai_family = PF_UNSPEC;
     }
-    if (!NIL_P(socktype) && rb_obj_is_kind_of(socktype, rb_cInteger)) {
-	hints.ai_socktype = socktype;
+    if (!NIL_P(socktype)) {
+	hints.ai_socktype = NUM2INT(socktype);
     }
-    if (!NIL_P(protocol) && rb_obj_is_kind_of(protocol, rb_cInteger)) {
-	hints.ai_protocol = protocol;
+    if (!NIL_P(protocol)) {
+	hints.ai_protocol = NUM2INT(protocol);
     }
-    if (!NIL_P(flags) && rb_obj_is_kind_of(flags, rb_cInteger)) {
-	hints.ai_flags = flags;
+    if (!NIL_P(flags)) {
+	hints.ai_flags = NUM2INT(flags);
     }
     error = getaddrinfo(hptr, pptr, &hints, &res);
     if (error) {
-	rb_raise(rb_eSocket, gai_strerror(error));
+	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
 
     ret = mkaddrinfo(res);
@@ -1743,8 +1772,8 @@ sock_s_getnameinfo(argc, argv)
 	    strcpy(pbuf, "0");
 	    pptr = NULL;
 	}
-	else if (rb_obj_is_kind_of(port, rb_cInteger)) {
-	    snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
+	else if (!NIL_P(port)) {
+	    snprintf(pbuf, sizeof(pbuf), "%d", NUM2INT(port));
 	    pptr = pbuf;
 	}
 	else {
@@ -1752,21 +1781,21 @@ sock_s_getnameinfo(argc, argv)
 	    pbuf[sizeof(pbuf) - 1] = '\0';
 	    pptr = pbuf;
 	}
-	memset(&hints, 0, sizeof(hints));
+	MEMZERO(&hints, struct addrinfo, 1);
 	if (strcmp(STR2CSTR(af), "AF_INET") == 0) {
 	    hints.ai_family = PF_INET;
 	}
-    #ifdef INET6
+#ifdef INET6
 	else if (strcmp(STR2CSTR(af), "AF_INET6") == 0) {
 	    hints.ai_family = PF_INET6;
 	}
-    #endif
+#endif
 	else {
 	    hints.ai_family = PF_UNSPEC;
 	}
 	error = getaddrinfo(hptr, pptr, &hints, &res);
 	if (error) {
-	    rb_raise(rb_eSocket, gai_strerror(error));
+	    rb_raise(rb_eSocket, "%s", gai_strerror(error));
 	}
 	sap = res->ai_addr;
     }
@@ -1775,15 +1804,15 @@ sock_s_getnameinfo(argc, argv)
     }
 
     fl = 0;
-    if (!NIL_P(flags) && rb_obj_is_kind_of(flags, rb_cInteger)) {
-	fl = FIX2INT(flags);
+    if (!NIL_P(flags)) {
+	fl = NUM2INT(flags);
     }
 
-gotsap:
+  gotsap:
     error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), fl);
     if (error) {
-	rb_raise(rb_eSocket, gai_strerror(error));
+	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
     if (res)
 	freeaddrinfo(res);

@@ -153,6 +153,7 @@ missing/memmove.c
 missing/mkdir.c
 missing/os2.c
 missing/strcasecmp.c
+missing/strncasecmp.c
 missing/strchr.c
 missing/strdup.c
 missing/strerror.c

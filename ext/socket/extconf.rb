@@ -21,24 +21,19 @@ else
 end
 
 $ipv6 = false
-if enable_config("ipv6", true)
-  if try_run(<<EOF)
+if enable_config("ipv6", false)
+  if try_link(<<EOF)
 #include <sys/types.h>
 #include <sys/socket.h>
 main()
 {
- exit(0);
- if (socket(AF_INET6, SOCK_STREAM, 0) < 0)
-   exit(1);
- else
-   exit(0);
+  socket(AF_INET6, SOCK_STREAM, 0);
 }
 EOF
     $CFLAGS+=" -DENABLE_IPV6"
     $ipv6 = true
   end
 end
-
 
 $ipv6type = nil
 $ipv6lib = nil
@@ -101,9 +96,10 @@ EOF
   
   if $ipv6lib
     if File.directory? $ipv6libdir and File.exist? "#{$ipv6libdir}/lib#{$ipv6lib}.a"
-      $LDFLAGS += " -L#$ipv6libdir -l#$ipv6lib"
+      $LOCAL_LIBS = " -L#$ipv6libdir -l#$ipv6lib"
     else
       print <<EOS
+
 Fatal: no #$ipv6lib library found.  cannot continue.
 You need to fetch lib#{$ipv6lib}.a from appropriate
 ipv6 kit and compile beforehand.
@@ -235,13 +231,21 @@ main()
 EOF
   $getaddr_info_ok = true
 end
+if $ipv6 and not $getaddr_info_ok
+      print <<EOS
+
+Fatal: --enable-ipv6 is specified, and your OS seems to support IPv6 feature.
+But your getaddrinfo() and getnameinfo() are appeared to be broken.  Sorry,
+you cannot compile IPv6 socket classes with broken these functions.
+EOS
+  exit
+end
+      
 
 $objs = ["socket.o"]
     
-if $getaddr_info_ok
-  if have_func("getaddrinfo") and have_func("getnameinfo")
-    have_getaddrinfo = true
-  end
+if $getaddr_info_ok and have_func("getaddrinfo") and have_func("getnameinfo")
+  have_getaddrinfo = true
 end
 
 if have_getaddrinfo

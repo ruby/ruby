@@ -312,7 +312,6 @@ signal_exec(sig)
 	    break;
 #ifndef NT
 	  case SIGHUP:
-	  case SIGTERM:
 #endif
 #ifdef SIGPIPE
 	  case SIGPIPE:
@@ -497,7 +496,6 @@ trap(arg)
 	  case SIGINT:
 #ifndef NT
 	  case SIGHUP:
-	  case SIGTERM:
 #endif
 #ifdef SIGQUIT
 	  case SIGQUIT:
@@ -615,7 +613,6 @@ Init_signal()
     ruby_signal(SIGINT, sighandle);
 #ifndef NT
     ruby_signal(SIGHUP, sighandle);
-    ruby_signal(SIGTERM, sighandle);
 #endif
 #ifdef SIGPIPE
     ruby_signal(SIGPIPE, sighandle);
