@@ -2,6 +2,7 @@
 # benchmark.rb
 #
 =begin
+  2002-04-25: bmbm(): killed unused parameter @fmtstr (gotoken)
   2001-11-26: Time.times renamed Process.times for ruby17 (gotoken#notwork.org)
   2001-01-12: made bmbm module func.  bmbm return Tms array. 
   2001-01-10: added bmbm, Job and INSTALL.rb (gotoken#notwork.org)
@@ -439,7 +440,7 @@ Gotoken (gotoken@notwork.org).
 =end
 
 module Benchmark
-  BENCHMARK_VERSION = "2001-11-26"
+  BENCHMARK_VERSION = "2002-04-25"
 
   def Benchmark::times()
       Process::times()
@@ -478,7 +479,7 @@ module Benchmark
     job.list.each{|label,item|
       print(label.ljust(width))
       res = Benchmark::measure(&item)
-      print res.format(@fmtstr)
+      print res.format()
       list.push res
     }
     sum = Tms.new; list.each{|i| sum += i}
@@ -494,7 +495,7 @@ module Benchmark
       GC::start
       print label.ljust(width)
       res = Benchmark::measure(&item)
-      print res.format(@fmtstr)
+      print res.format()
       ary.push res
       list.push [label, res]
     }
