@@ -24,6 +24,20 @@
 # include <Quickdraw.h>
 #endif
 
+#if TCL_MAJOR_VERSION >= 8
+# ifndef CONST84
+#  if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION <= 4 /* Tcl8.0.x -- 8.4b1 */
+#   define CONST84
+#  else /* unknown (maybe TCL_VERSION >= 8.5) */
+#   ifdef CONST
+#    define CONST84 CONST
+#   else
+#    define CONST84
+#   endif
+#  endif
+# endif
+#endif
+
 /* for ruby_debug */
 
 #define DUMP1(ARG1) if (ruby_debug) { fprintf(stderr, "tcltklib: %s\n", ARG1);}
@@ -862,14 +876,14 @@ ip_ruby(clientData, interp, argc, argv)
 /**************************/
 /*  based on tclEvent.c   */
 /**************************/
-static char *VwaitVarProc _((ClientData, Tcl_Interp *, CONST char *,
-			     CONST char *, int));
+static char *VwaitVarProc _((ClientData, Tcl_Interp *, CONST84 char *,
+			     CONST84 char *, int));
 static char *
 VwaitVarProc(clientData, interp, name1, name2, flags)
     ClientData clientData;      /* Pointer to integer to set to 1. */
     Tcl_Interp *interp;         /* Interpreter containing variable. */
-    CONST char *name1;          /* Name of variable. */
-    CONST char *name2;          /* Second part of variable name. */
+    CONST84 char *name1;        /* Name of variable. */
+    CONST84 char *name2;        /* Second part of variable name. */
     int flags;                  /* Information about what happened. */
 {
     int *donePtr = (int *) clientData;
@@ -953,14 +967,14 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
 /**************************/
 /*  based on tkCmd.c      */
 /**************************/
-static char *WaitVariableProc _((ClientData, Tcl_Interp *, CONST char *,
-				 CONST char *, int));
+static char *WaitVariableProc _((ClientData, Tcl_Interp *, CONST84 char *,
+				 CONST84 char *, int));
 static char *
 WaitVariableProc(clientData, interp, name1, name2, flags)
     ClientData clientData;      /* Pointer to integer to set to 1. */
     Tcl_Interp *interp;         /* Interpreter containing variable. */
-    CONST char *name1;          /* Name of variable. */
-    CONST char *name2;          /* Second part of variable name. */
+    CONST84 char *name1;        /* Name of variable. */
+    CONST84 char *name2;        /* Second part of variable name. */
     int flags;                  /* Information about what happened. */
 {
     int *donePtr = (int *) clientData;
@@ -1047,19 +1061,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 
 #if TCL_MAJOR_VERSION >= 8
     if (Tcl_GetIndexFromObj(interp, objv[1], 
-# ifdef CONST84 /* Tcl8.4.x -- ?.?.? (current latest version is 8.4.4) */
                             (CONST84 char **)optionStrings, 
-# else
-#  if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION <= 4 /* Tcl8.0.x -- 8.4b1 */
-                            (char **)optionStrings, 
-#  else /* unknown (maybe TCL_VERSION >= 8.5) */
-#   ifdef CONST
-                            (CONST char **)optionStrings, 
-#   else
-                            optionStrings, 
-#   endif
-#  endif
-# endif
 			    "option", 0, &index) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -1173,14 +1175,14 @@ struct th_vwait_param {
     int   done;
 };
 
-static char *rb_threadVwaitProc _((ClientData, Tcl_Interp *, CONST char *,
-				   CONST char *, int));
+static char *rb_threadVwaitProc _((ClientData, Tcl_Interp *, CONST84 char *,
+				   CONST84 char *, int));
 static char *
 rb_threadVwaitProc(clientData, interp, name1, name2, flags)
     ClientData clientData;      /* Pointer to integer to set to 1. */
     Tcl_Interp *interp;         /* Interpreter containing variable. */
-    CONST char *name1;          /* Name of variable. */
-    CONST char *name2;          /* Second part of variable name. */
+    CONST84 char *name1;        /* Name of variable. */
+    CONST84 char *name2;        /* Second part of variable name. */
     int flags;                  /* Information about what happened. */
 {
     struct th_vwait_param *param = (struct th_vwait_param *) clientData;
@@ -1362,19 +1364,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
 #if TCL_MAJOR_VERSION >= 8
     if (Tcl_GetIndexFromObj(interp, objv[1], 
-# ifdef CONST84 /* Tcl8.4.x -- ?.?.? (current latest version is 8.4.4) */
                             (CONST84 char **)optionStrings, 
-# else
-#  if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION <= 4 /* Tcl8.0.x -- 8.4b1 */
-                            (char **)optionStrings, 
-#  else /* unknown (maybe TCL_VERSION >= 8.5) */
-#   ifdef CONST
-                            (CONST char **)optionStrings, 
-#   else
-                            optionStrings, 
-#   endif
-#  endif
-# endif
 			    "option", 0, &index) != TCL_OK) {
         return TCL_ERROR;
     }
@@ -1978,22 +1968,8 @@ ip_invoke_real(argc, argv, obj)
     {
 	TRAP_BEG;
 #if TCL_MAJOR_VERSION >= 8
-# ifdef CONST84 /* Tcl8.4.x -- ?.?.? (current latest version is 8.4.4) */
 	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, 
 					 argc, (CONST84 char **)av);
-# else
-#  if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION <= 4 /* Tcl8.0.x -- 8.4b1 */
-	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, argc, av);
-
-#  else /* unknown (maybe TCL_VERSION >= 8.5) */
-#   ifdef CONST
-	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, 
-					 argc, (CONST char **)av);
-#   else
-	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, argc, av);
-#   endif
-#  endif
-# endif
 #else /* TCL_MAJOR_VERSION < 8 */
 	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, argc, av);
 #endif
