@@ -20,7 +20,7 @@ end
 class Mutex
   def initialize
     @waiting = []
-    @locked = FALSE;
+    @locked = false;
   end
 
   def locked?
@@ -28,33 +28,33 @@ class Mutex
   end
 
   def try_lock
-    result = FALSE
-    Thread.critical = TRUE
+    result = false
+    Thread.critical = true
     unless @locked
-      @locked = TRUE
-      result = TRUE
+      @locked = true
+      result = true
     end
-    Thread.critical = FALSE
+    Thread.critical = false
     result
   end
 
   def lock
-    while (Thread.critical = TRUE; @locked)
+    while (Thread.critical = true; @locked)
       @waiting.push Thread.current
       Thread.stop
     end
-    @locked = TRUE
-    Thread.critical = FALSE
+    @locked = true
+    Thread.critical = false
     self
   end
 
   def unlock
     return unless @locked
-    Thread.critical = TRUE
+    Thread.critical = true
     wait = @waiting
     @waiting = []
-    @locked = FALSE
-    Thread.critical = FALSE
+    @locked = false
+    Thread.critical = false
     for w in wait
       w.run
     end
@@ -82,20 +82,20 @@ class Queue
   end
 
   def push(obj)
-    Thread.critical = TRUE
+    Thread.critical = true
     @que.push obj
     t = @waiting.shift
-    Thread.critical = FALSE
+    Thread.critical = false
     t.run if t
   end
 
-  def pop non_block=FALSE
+  def pop non_block=false
     item = nil
     until item
-      Thread.critical = TRUE
+      Thread.critical = true
       if @que.length == 0
 	if non_block
-	  Thread.critical = FALSE
+	  Thread.critical = false
 	  raise ThreadError, "queue empty"
 	end
 	@waiting.push Thread.current
@@ -104,7 +104,7 @@ class Queue
 	item = @que.shift
       end
     end
-    Thread.critical = FALSE
+    Thread.critical = false
     item
   end
 
@@ -125,7 +125,28 @@ class SizedQueue<Queue
     super()
   end
 
+  def max
+    @max
+  end
+
+  def max=(max)
+    if @max >= max
+      @max = max
+    else
+      Thread.critical = TRUE
+      diff = max - @max
+      @max = max
+      diff.times do
+	t = @queue_wait.shift
+	t.run if t
+      end
+      Thread.critical = FALSE
+      @max
+    end
+  end
+
   def push(obj)
+    Thread.critical = true
     while @que.length >= @max
       @queue_wait.push Thread.current
       Thread.stop
@@ -134,6 +155,7 @@ class SizedQueue<Queue
   end
 
   def pop(*args)
+    Thread.critical = true
     if @que.length < @max
       t = @queue_wait.shift
       t.run if t

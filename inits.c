@@ -49,14 +49,14 @@ rb_call_inits()
     Init_sym();
     Init_var_tables();
     Init_Object();
-#ifdef THREAD
-    Init_Thread();
-#endif
     Init_Comparable();
     Init_Enumerable();
     Init_eval();
     Init_String();
     Init_Exception();
+#ifdef THREAD
+    Init_Thread();
+#endif
     Init_Numeric();
     Init_Bignum();
     Init_Array();

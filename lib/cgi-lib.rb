@@ -45,7 +45,7 @@ class CGI
   end
   module_function :escape, :unescape
 
-  def initialize
+  def initialize(input = $stdin)
     # exception messages should be printed to stdout.
     STDERR.reopen(STDOUT)
 
@@ -54,7 +54,7 @@ class CGI
     when "GET"
       ENV['QUERY_STRING'] or ""
     when "POST"
-      $stdin.read ENV['CONTENT_LENGTH'].to_i
+      input.read ENV['CONTENT_LENGTH'].to_i
     else
       read_from_cmdline
     end.split(/&/).each do |x|

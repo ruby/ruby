@@ -988,10 +988,18 @@ gc_call_finalizer_at_exit()
     RVALUE *p, *pend;
     int i;
 
+    /* run finalizers */
     for (i = 0; i < heaps_used; i++) {
 	p = heaps[i]; pend = p + HEAP_SLOTS;
 	while (p < pend) {
 	    run_final(p);
+	    p++;
+	}
+    }
+    /* run data object's finaliers */
+    for (i = 0; i < heaps_used; i++) {
+	p = heaps[i]; pend = p + HEAP_SLOTS;
+	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) &&
 		RANY(p)->as.data.dfree)

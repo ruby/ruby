@@ -451,6 +451,8 @@ static struct tag {
 }
 
 #define POP_TAG()			\
+    if (_tag.prev)			\
+        _tag.prev->retval = _tag.retval;\
     prot_tag = _tag.prev;		\
 }
 
@@ -1394,7 +1396,9 @@ call_trace_func(event, file, line, self, id)
     if (state) JUMP_TAG(state);
 }
 
-static void return_value _((VALUE val));
+static void return_check _((void));
+#define return_value(v) prot_tag->retval = (v)
+
 static VALUE
 rb_eval(self, node)
     VALUE self;
@@ -1695,7 +1699,12 @@ rb_eval(self, node)
 	    result = rb_eval(self, node->nd_head);
 	}
 	POP_TAG();
-	rb_eval(self, node->nd_ensr);
+	if (node->nd_ensr) {
+	    VALUE retval = prot_tag->retval; /* save retval */
+
+	    rb_eval(self, node->nd_ensr);
+	    return_value(retval);
+	}
 	if (state) {
 	    JUMP_TAG(state);
 	}
@@ -1760,6 +1769,7 @@ rb_eval(self, node)
 	if (node->nd_stts) {
 	    return_value(rb_eval(self, node->nd_stts));
 	}
+	return_check();
 	JUMP_TAG(TAG_RETURN);
 	break;
 
@@ -3700,11 +3710,39 @@ obj_instance_eval(self, src)
     return eval_under(CLASS_OF(self), self, src);
 }
 
+mod_eval(arg)
+    VALUE *arg;
+{
+    return eval_under(arg[0], arg[0], arg[1]);
+}
+
+static void
+mod_eval_ensure(a)
+    int *a;
+{
+    if (a[0]) {
+	FL_TEST(the_scope, SCOPE_PRIVATE);
+    }
+    if (a[1]) {
+	FL_TEST(the_scope, SCOPE_MODFUNC);
+    }
+}
+
 static VALUE
 mod_module_eval(mod, src)
     VALUE mod, src;
 {
-    return eval_under(mod, mod, src);
+    int f[2];
+    VALUE arg[2];
+
+    f[0] = FL_TEST(the_scope, SCOPE_PRIVATE);
+    f[1] = FL_TEST(the_scope, SCOPE_MODFUNC);
+
+    FL_UNSET(the_scope, SCOPE_PRIVATE);
+    FL_UNSET(the_scope, SCOPE_MODFUNC);
+
+    arg[0] = mod; arg[1] = src;
+    return rb_ensure(mod_eval, arg, mod_eval_ensure, f);
 }
 
 VALUE rb_load_path;
@@ -5912,7 +5950,7 @@ f_throw(argc, argv)
 	}
 #ifdef THREAD
 	if (tt->tag == PROT_THREAD) {
-	    Raise(eThreadError, "uncaught throw `%s' in thread 0x%x\n",
+	    Raise(eThreadError, "uncaught throw `%s' in thread 0x%x",
 		  rb_id2name(t),
 		  curr_thread);
 	}
@@ -5921,30 +5959,27 @@ f_throw(argc, argv)
     }
 
     if (!tt) {
-	NameError("uncaught throw `%s'\n", rb_id2name(t));
+	NameError("uncaught throw `%s'", rb_id2name(t));
     }
     JUMP_TAG(TAG_THROW);
     /* not reached */
 }
 
 static void
-return_value(val)
-    VALUE val;
+return_check()
 {
     struct tag *tt = prot_tag;
-	    
+
     while (tt) {
 	if (tt->tag == PROT_FUNC) {
-	    tt->retval = val;
 	    break;
 	}
 #ifdef THREAD
 	if (tt->tag == PROT_THREAD) {
-	    Raise(eThreadError, "return from within thread 0x%x\n",
+	    Raise(eThreadError, "return from within thread 0x%x",
 		  curr_thread);
 	}
 #endif
 	tt = tt->prev;
     }
 }
-

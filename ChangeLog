@@ -1,4 +1,22 @@
+Wed Feb 25 15:50:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (mod_module_eval): clear the_scope's PRIVATE flag before
+	  calling eval().
+
+	* eval.c (rb_eval): needed to keep prot_tag->retval before
+	  evaluating the ensure clause.
+
 Tue Feb 24 11:16:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): reserved words can be appear as method names at
+ 	  right after 'def' and `.'(dot), like foo.next.
+
+	* eval.c (return_check): checks for return out of thread (formaly
+	  done in return_value).
+
+	* eval.c (POP_TAG): copy retval to outer level.
+
+	* eval.c (return_value): just set retval, no check, no unwinding.
 
 	* parse.y (nextc): line continuation by backslash at end of line.
 

@@ -58,8 +58,9 @@ static enum lex_state {
     EXPR_MID,			/* newline significant, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
     EXPR_ARG,			/* newline significant, +/- may be a sign. */
-    EXPR_FNAME,			/* ignore newline, +/- is a operator. */
-    EXPR_CLASS,			/* immediate after `class' no here document. */
+    EXPR_FNAME,			/* ignore newline, +/- is a operator, no reserved words. */
+    EXPR_DOT,			/* immediate after `.', no reserved words. */
+    EXPR_CLASS,			/* immediate after `class', no here document. */
 } lex_state;
 
 static int class_nest = 0;
@@ -2459,6 +2460,7 @@ retry:
 	}
 	pushback(c);
 	if (!isdigit(c)) {
+	    lex_state = EXPR_DOT;
 	    return '.';
 	}
 	c = '.';
@@ -2875,12 +2877,14 @@ retry:
 	    result = IVAR;
 	    break;
 	  default:
-	    /* See if it is a reserved word.  */
-	    kw = rb_reserved_word(tok(), toklen());
-	    if (kw) {
-		enum lex_state state = lex_state;
-		lex_state = kw->state;
-		return kw->id[state != EXPR_BEG];
+	    if (lex_state != EXPR_FNAME && lex_state != EXPR_DOT) {
+		/* See if it is a reserved word.  */
+		kw = rb_reserved_word(tok(), toklen());
+		if (kw) {
+		    enum lex_state state = lex_state;
+		    lex_state = kw->state;
+		    return kw->id[state != EXPR_BEG];
+		}
 	    }
 
 	    if (lex_state == EXPR_FNAME) {
@@ -2892,7 +2896,7 @@ retry:
 		    pushback(c);
 		}
 	    }
-	    else if (lex_state == EXPR_BEG){
+	    else if (lex_state == EXPR_BEG || lex_state == EXPR_DOT){
 		lex_state = EXPR_ARG;
 	    }
 	    else {

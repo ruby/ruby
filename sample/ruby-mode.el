@@ -234,7 +234,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		(setq w (char-after (point)))
 		(cond
 		 ((and (not (eobp))
-		       (re-search-forward (format "[^\\]%c" w) indent-point t))
+		       (re-search-forward (format "[^\\]\\(\\\\\\\\\\)*%c" w) indent-point t))
 		  nil)
 		 (t
 		  (setq in-string (point))
