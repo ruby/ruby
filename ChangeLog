@@ -1,3 +1,11 @@
+Tue Aug  8 14:01:46 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/tcltklib/tcltklib.c: support --enable-tcltk_stubs
+
+	* ext/tcltklib/extconf.rb: ditto.
+
+	* ext/tcltklib/stubs.c: created. examine candidate shared libraries.
+
 Mon Aug  7 13:59:12 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h (CLONESETUP): should copy flags before any potential

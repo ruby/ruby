@@ -493,6 +493,13 @@ Init_tcltklib()
     VALUE lib = rb_define_module("TclTkLib");
     VALUE ip = rb_define_class("TclTkIp", rb_cObject);
 
+#if defined USE_TCL_STUBS && defined USE_TK_STUBS
+    extern int ruby_tcltk_stubs();
+    int ret = ruby_tcltk_stubs();
+    if (ret)
+	rb_raise(rb_eLoadError, "tcltklib: tcltk_stubs init error(%d)", ret);
+#endif
+
     eTkCallbackBreak = rb_define_class("TkCallbackBreak", rb_eStandardError);
     eTkCallbackContinue = rb_define_class("TkCallbackContinue",rb_eStandardError);
 

@@ -2,6 +2,7 @@ MANIFEST
 README.euc
 MANUAL.euc
 tcltklib.c
+stubs.c
 depend
 extconf.rb
 lib/tcltk.rb
