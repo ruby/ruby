@@ -2932,7 +2932,7 @@ rb_eval(self, n)
 	    rb_raise(rb_eTypeError, "no class/module to define constant");
 	}
 	result = rb_eval(self, node->nd_value);
-	rb_const_set(ruby_class, node->nd_vid, result);
+	rb_const_set(ruby_cbase, node->nd_vid, result);
 	break;
 
       case NODE_CVDECL:
@@ -3303,7 +3303,7 @@ rb_eval(self, n)
 		klass = rb_define_class_id(node->nd_cname, super);
 		rb_set_class_path(klass,ruby_class,rb_id2name(node->nd_cname));
 		rb_class_inherited(super, klass);
-		rb_const_set(ruby_class, node->nd_cname, klass);
+		rb_const_set(ruby_cbase, node->nd_cname, klass);
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(klass, ruby_wrapper);
@@ -3339,7 +3339,7 @@ rb_eval(self, n)
 	    }
 	    else {
 		module = rb_define_module_id(node->nd_cname);
-		rb_const_set(ruby_class, node->nd_cname, module);
+		rb_const_set(ruby_cbase, node->nd_cname, module);
 		rb_set_class_path(module,ruby_class,rb_id2name(node->nd_cname));
 	    }
 	    if (ruby_wrapper) {
@@ -3983,7 +3983,7 @@ assign(self, lhs, val, pcall)
 	break;
 
       case NODE_CDECL:
-	rb_const_set(ruby_class, lhs->nd_vid, val);
+	rb_const_set(ruby_cbase, lhs->nd_vid, val);
 	break;
 
       case NODE_CVDECL:
