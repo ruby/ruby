@@ -1,3 +1,9 @@
+Wed Dec 24 20:53:06 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/tkmulticolumnlist.rb: new sample
+
+	* ext/tk/sample/tkmultilistframe.rb: bug fix
+
 Wed Dec 24 20:37:37 2003  Eric Sunshine  <sunshine@sunshineco.com>
 
 	* configure.in (LDSHARED): Fixed typographical error in assignment of

@@ -1,10 +1,10 @@
 #
-# tkmultilistframe.rb : multiple listbox widget on scrollable frame
-#                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
+# tkmulticolumnlist.rb : multiple column list widget on scrollable frame
+#                        by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 require 'tk'
 
-class TkMultiListFrame < TkListbox
+class TkMultiColumnList < TkText
   include TkComposite
 
   #   lbox_height : height of listboxes (pixel)
@@ -51,23 +51,14 @@ class TkMultiListFrame < TkListbox
 
     # init status
     @mode = :title
+    @command = nil
 
     # virtical scrollbar
-=begin
-    @v_scroll = TkScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
-				'borderwidth'=>@scrbar_border, 
-				'orient'=>'vertical', 'width'=>@scrbar_width)
-=end
     @v_scroll = TkYScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
 				 'borderwidth'=>@scrbar_border, 
 				 'width'=>@scrbar_width)
 
     # horizontal scrollbar
-=begin
-    @h_scroll = TkScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
-				'borderwidth'=>@scrbar_border, 
-				'orient'=>'horizontal', 'width'=>@scrbar_width)
-=end
     @h_scroll = TkXScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
 				 'borderwidth'=>@scrbar_border, 
 				 'width'=>@scrbar_width)
@@ -122,22 +113,50 @@ class TkMultiListFrame < TkListbox
       # listbox field
       f = TkFrame.new(@f_lbox, 'width'=>width)
       base << f
-      @lbox_list << TkListbox.new(f, 'highlightthickness'=>@h_l_thick, 
-				  'borderwidth'=>@lbox_border
-				  ).pack('fill'=>'both', 'expand'=>true)
+      @lbox_list << TkText.new(f, 'highlightthickness'=>@h_l_thick, 
+			       'borderwidth'=>@lbox_border, 
+			       'takefocus'=>false, 
+			       'wrap'=>'none') {
+
+	bindtags(bindtags - [TkText])
+
+	@seltag = TkTextTag.new(self, 'background'=>'#b3b3b3', 
+				'borderwidth'=>1, 'relief'=>'raised')
+	def self.nearest(y)
+	  self.index("@1,#{y}").split('.')[0].to_i
+	end
+
+	def self.select_clear(first, last=nil)
+	  first = "#{first}.0" if first.kind_of?(Integer)
+	  first = self.index(first.to_s + ' linestart')
+	  last = first unless last
+	  last = "#{last}.0" if first.kind_of?(Integer)
+	  last = self.index(last.to_s + ' + 1 lines linestart')
+	  @seltag.remove(first, last)
+	end
+
+	def self.select_set(first, last=nil)
+	  first = "#{first}.0" if first.kind_of?(Integer)
+	  first = self.index(first.to_s + ' linestart')
+	  last = first unless last
+	  last = "#{last}.0" if first.kind_of?(Integer)
+	  last = self.index(last.to_s + ' + 1 lines linestart')
+	  @seltag.add(first, last)
+	end
+
+	def self.select_index
+	  self.index(@seltag.first).split('.')[0].to_i
+	end
+
+	pack('fill'=>'both', 'expand'=>true)
+      }
+
       f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>1, 
 	      'relwidth'=>@rel_list[idx+1] - @rel_list[idx], 'relheight'=>1.0)
 
       # scrollbar field
       f = TkFrame.new(@f_hscr, 'width'=>width)
       base << f
-=begin
-      @hscr_list << TkScrollbar.new(f, 'orient'=>'horizontal', 
-				    'width'=>@scrbar_width, 
-				    'borderwidth'=>@scrbar_border, 
-				    'highlightthickness'=>@h_l_thick
-				    ).pack('fill'=>'x', 'anchor'=>'w')
-=end
       @hscr_list << TkXScrollbar.new(f, 'width'=>@scrbar_width, 
 				     'borderwidth'=>@scrbar_border, 
 				     'highlightthickness'=>@h_l_thick
@@ -145,12 +164,6 @@ class TkMultiListFrame < TkListbox
       f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>1, 
 	      'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
 
-=begin
-      @lbox_list[idx].xscrollcommand proc{|first, last| 
-	@hscr_list[idx].set first, last
-      }
-      @hscr_list[idx].command proc{|*args| @lbox_list[idx].xview *args}
-=end
       @lbox_list[idx].xscrollbar(@hscr_list[idx])
 
       # add new base
@@ -158,7 +171,6 @@ class TkMultiListFrame < TkListbox
     }
 
     # pad
-    # @f_title_pad = TkFrame.new(@frame)
     @f_title_pad = TkFrame.new(@frame, 'relief'=>'raised', 
 			       'borderwidth'=>@title_border, 
 			       'highlightthickness'=>@h_l_thick)
@@ -185,47 +197,26 @@ class TkMultiListFrame < TkListbox
     @f_hscr.height hscr_height
 
     # set control procedure for virtical scroll
-=begin
-    @lbox_list.each{|lbox|
-      lbox.yscrollcommand proc{|first, last| 
-	@v_scroll.set first, last
-      }
-    }
-    @v_scroll.command proc{|*args| @lbox_list.each{|lbox| lbox.yview *args} }
-=end
     @v_scroll.assign(*@lbox_list)
 
     # set control procedure for horizoncal scroll
-=begin
-    @c_title.xscrollcommand proc{|first, last| 
-      @h_scroll.set first, last
-    }
-    @c_lbox.xscrollcommand proc{|first, last| 
-      @h_scroll.set first, last
-    }
-    @c_hscr.xscrollcommand proc{|first, last| 
-      @h_scroll.set first, last
-    }
-    @h_scroll.command proc{|*args| 
-      @c_title.xview *args
-      @c_lbox.xview *args
-      @c_hscr.xview *args if @show_each_hscr
-    }
-=end
     @h_scroll.assign(@c_title, @c_lbox, @c_hscr)
 
     # binding for listboxes
-    @lbox_mode = {}
-    @lbox_mode['browse']   = browse_mode_bindtag
-    @lbox_mode['single']   = single_mode_bindtag
-    @lbox_mode['extended'] = extended_mode_bindtag
-    @lbox_mode['multiple'] = multiple_mode_bindtag
-    @current_mode = 'browse'
     @lbox_list.each_with_index{|l, idx| 
-      l.bind('Shift-Key-Left', 
-	     proc{|w| focus_shift(w, -1); Tk.callback_break}, '%W')
-      l.bind('Shift-Key-Right', 
-	     proc{|w| focus_shift(w, 1); Tk.callback_break}, '%W')
+      l.bind('Button-1', proc{|w, y| 
+	       @frame.focus
+	       select_line(w, w.nearest(y))
+	     }, '%W %y')
+      l.bind('B1-Motion', proc{|w, y| 
+	       select_line(w, w.nearest(y))
+	     }, '%W %y')
+      l.bind('Double-Button-1', proc{
+	       @command.call(get_select) if @command
+	     })
+
+      l.bind('Control-Home', proc{|w| select_line(w, 0)}, '%W')
+      l.bind('Control-End', proc{|w| select_line(w, 'end')}, '%W')
 
       l.bind('Button-2', proc{|x, y| 
 	       @lbox_mark_x = x
@@ -235,8 +226,6 @@ class TkMultiListFrame < TkListbox
 	       @lbox_list.each{|lbox| lbox.scan_dragto(@lbox_mark_x, y)}
 	       l.scan_dragto(x, y)
 	     }, '%x %y')
-
-      l.bindtags(l.bindtags.unshift(@lbox_mode[@current_mode]))
     }
 
     bbox = @w_title.bbox
@@ -252,6 +241,12 @@ class TkMultiListFrame < TkListbox
       @c_hscr.height(bbox[3])
       @c_hscr.scrollregion(bbox)
     end
+
+    # binding
+    @frame.takefocus(true)
+    @frame.bind('Key-Up', proc{select_shift(@lbox_list[0], -1)})
+    @frame.bind('Key-Down', proc{select_shift(@lbox_list[0], 1)})
+    @frame.bind('Return', proc{@command.call(get_select) if @command})
 
     # alignment
     TkGrid.rowconfigure(@frame, 0, 'weight'=>0)
@@ -275,15 +270,15 @@ class TkMultiListFrame < TkListbox
 		 '%h %w')
 
     # set default receiver of method calls
-    @path = @lbox_list[0].path
+    @path = @frame.path
 
     # configure options
     keys = {} unless keys
     keys = _symbolkey2str(keys)
 
-    # 'mode' option of listboxes
-    sel_mode = keys.delete('mode')
-    mode(sel_mode) if sel_mode
+    # command
+    cmd = keys.delete('command')
+    command(cmd) if cmd
 
     # 'scrollbarwidth' option == 'width' option of scrollbars
     width = keys.delete('scrollbarwidth')
@@ -314,16 +309,6 @@ class TkMultiListFrame < TkListbox
   end
   private :initialize_composite
 
-  # set 'mode' option of listboxes
-  def mode(sel_mode)
-    @lbox_list.each{|l| 
-      tags = l.bindtags
-      tags = tags - [ @lbox_mode[@current_mode] ]
-      l.bindtags(tags.unshift(@lbox_mode[sel_mode]))
-      @current_mode = sel_mode
-    }
-  end
-
   # keep_minsize?
   def keep_minsize?
     @keep_minsize
@@ -350,6 +335,12 @@ class TkMultiListFrame < TkListbox
   def hide_win_hscr
     @show_each_hscr = false
     @h_scroll.ungrid
+  end
+
+  # set command
+  def command(cmd)
+    @command = cmd
+    self
   end
 
   # set scrollbar width
@@ -439,29 +430,51 @@ class TkMultiListFrame < TkListbox
     @lbox_list[*indices]
   end
 
-  def activate(idx)
-    @lbox_list.each{|lbox| lbox.activate(idx)}
-  end
-
-  def bbox(idx)
-    @lbox_list.collect{|lbox| lbox.bbox(idx)}
-  end
-
   def delete(*idx)
+    idx = idx.collect{|i|
+      if i.kind_of?(Integer)
+	"#{i}.0"
+      else
+	i.to_s
+      end
+    }
     @lbox_list.collect{|lbox| lbox.delete(*idx)}
   end
 
-  def get(*idx)
-    if idx.size == 1
-      @lbox_list.collect{|lbox| lbox.get(*idx)}
+  def get(idx_s, idx_e=nil)
+    unless idx_e
+      if idx_s.kind_of?(Integer)
+	idx_s = "#{idx_s}.0"
+	idx_e = "#{idx_s} lineend"
+      else
+	idx_s = idx_s.to_s
+	idx_e = "#{idx_s} lineend"
+      end
+      @lbox_list.collect{|lbox|
+	lbox.get(idx_s, idx_e)
+      }
     else
-      list = @lbox_list.collect{|lbox| lbox.get(*idx)}
+      if idx_s.kind_of?(Integer)
+	idx_s = "#{idx_s}.0"
+      else
+	idx_s = idx_s.to_s
+      end
+      if idx_e.kind_of?(Integer)
+	idx_e = "#{idx_e}.end"
+      else
+	idx_e = "#{idx_e} lineend"
+      end
+      list = @lbox_list.collect{|lbox| lbox.get(idx_s, idx_e).split(/\n/)}
       result = []
       list[0].each_with_index{|line, index|
 	result << list.collect{|lines| lines[index]}
       }
       result
     end
+  end
+
+  def get_select
+    get(@lbox_list[0].select_index)
   end
 
   def _line_array_to_hash(line)
@@ -489,6 +502,18 @@ class TkMultiListFrame < TkListbox
   def insert(idx, *lines)
     lbox_ins = []
     (0..@lbox_list.size).each{lbox_ins << []}
+
+    if idx.kind_of?(Integer)
+      idx = "#{idx}.0"
+    else
+      idx = idx.to_s
+    end
+
+    if @lbox_list[0].index('1.0 + 1 char') == @lbox_list[0].index('end')
+      cr = ""
+    else
+      cr = "\n"
+    end
 
     lines.each{|line|
       if line.kind_of? Hash
@@ -519,20 +544,16 @@ class TkMultiListFrame < TkListbox
     }	
 
     @lbox_list.each_with_index{|lbox, index| 
-      lbox.insert(idx, *lbox_ins[index]) if lbox_ins[index]
+      lbox.insert(idx, cr + lbox_ins[index].join("\n")) if lbox_ins[index]
     }
   end
 
-  def selection_anchor(index)
-    @lbox_list.each{|lbox| lbox.selection_anchor(index)}
+  def select_clear(first, last=None)
+    @lbox_list.each{|lbox| lbox.sel_clear(first, last=None)}
   end
 
-  def selection_clear(first, last=None)
-    @lbox_list.each{|lbox| lbox.selection_clear(first, last=None)}
-  end
-
-  def selection_set(first, last=None)
-    @lbox_list.each{|lbox| lbox.selection_set(first, last=None)}
+  def select_set(first, last=None)
+    @lbox_list.each{|lbox| lbox.sel_set(first, last=None)}
   end
 
   ###########################################
@@ -648,255 +669,34 @@ class TkMultiListFrame < TkListbox
     title.bind('B1-Motion', proc{|x| resize(x) if @mode == :sash}, "%X")
   end
 
-  #################################
-  def browse_mode_bindtag
-    t = TkBindTag.new
-    t.bind('Button-1', 
-	   proc{|w, y| w.focus; select_line(w, w.nearest(y))}, '%W %y')
-    t.bind('B1-Motion', proc{|w, y| select_line(w, w.nearest(y))}, '%W %y')
-
-    t.bind('Shift-Button-1', 
-	   proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
-
-    t.bind('Key-Up', proc{|w| select_shift(w, -1)}, '%W')
-    t.bind('Key-Down', proc{|w| select_shift(w, 1)}, '%W')
-
-    t.bind('Control-Home', proc{|w| select_line(w, 0)}, '%W')
-    t.bind('Control-End', proc{|w| select_line(w, 'end')}, '%W')
-
-    t.bind('space', proc{|w| select_line(w, w.index('active').to_i)}, '%W')
-    t.bind('Select', proc{|w| select_line(w, w.index('active').to_i)}, '%W')
-    t.bind('Control-slash', 
-	   proc{|w| select_line(w, w.index('active').to_i)}, '%W')
-
-    t
-  end
-
   ########################
-  def single_mode_bindtag
-    t = TkBindTag.new
-    t.bind('Button-1', 
-	   proc{|w, y| w.focus; select_only(w, w.nearest(y))}, '%W %y')
-    t.bind('ButtonRelease-1', 
-	   proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
-
-    t.bind('Shift-Button-1', 
-	   proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
-
-    t.bind('Key-Up', proc{|w| select_shift(w, -1)}, '%W')
-    t.bind('Key-Down', proc{|w| select_shift(w, 1)}, '%W')
-
-    t.bind('Control-Home', proc{|w| select_line(w, 0)}, '%W')
-    t.bind('Control-End', proc{|w| select_line(w, 'end')}, '%W')
-
-    t.bind('space', proc{|w| select_line(w, w.index('active').to_i)}, '%W')
-    t.bind('Select', proc{|w| select_line(w, w.index('active').to_i)}, '%W')
-    t.bind('Control-slash', 
-	   proc{|w| select_line(w, w.index('active').to_i)}, '%W')
-    t.bind('Control-backslash', 
-	   proc{@lbox_list.each{|l| l.selection_clear(0, 'end')}})
-
-    t
-  end
-
-  ########################
-  def extended_mode_bindtag
-    t = TkBindTag.new
-    t.bind('Button-1', 
-	   proc{|w, y| w.focus; select_only(w, w.nearest(y))}, '%W %y')
-    t.bind('B1-Motion', proc{|w, y| select_range(w, w.nearest(y))}, '%W %y')
-
-    t.bind('ButtonRelease-1', 
-	   proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
-
-    t.bind('Shift-Button-1', 
-	   proc{|w, y| select_range(w, w.nearest(y))}, '%W %y')
-    t.bind('Shift-B1-Motion', 
-	   proc{|w, y| select_range(w, w.nearest(y))}, '%W %y')
-
-    t.bind('Control-Button-1', 
-	   proc{|w, y| select_toggle(w, w.nearest(y))}, '%W %y')
-
-    t.bind('Control-B1-Motion', 
-	   proc{|w, y| select_drag(w, w.nearest(y))}, '%W %y')
-
-    t.bind('Key-Up', proc{|w| active_shift(w, -1)}, '%W')
-    t.bind('Key-Down', proc{|w| active_shift(w, 1)}, '%W')
-
-    t.bind('Shift-Up', proc{|w| select_expand(w, -1)}, '%W')
-    t.bind('Shift-Down', proc{|w| select_expand(w, 1)}, '%W')
-
-    t.bind('Control-Home', proc{|w| select_line2(w, 0)}, '%W')
-    t.bind('Control-End', proc{|w| select_line2(w, 'end')}, '%W')
-
-    t.bind('Control-Shift-Home', proc{|w| select_range(w, 0)}, '%W')
-    t.bind('Control-Shift-End', proc{|w| select_range(w, 'end')}, '%W')
-
-    t.bind('space', proc{|w| select_active(w)}, '%W')
-    t.bind('Select', proc{|w| select_active(w)}, '%W')
-    t.bind('Control-slash', proc{|w| select_all}, '%W')
-    t.bind('Control-backslash', proc{|w| clear_all}, '%W')
-
-    t
-  end
-
-  ########################
-  def multiple_mode_bindtag
-    t = TkBindTag.new
-    t.bind('Button-1', 
-	   proc{|w, y| w.focus; select_line3(w, w.nearest(y))}, '%W %y')
-    t.bind('ButtonRelease-1', 
-	   proc{|w, y| active_line(w, w.nearest(y))}, '%W %y')
-
-    t.bind('Key-Up', proc{|w| active_shift(w, -1)}, '%W')
-    t.bind('Key-Down', proc{|w| active_shift(w, 1)}, '%W')
-
-    t.bind('Control-Home', proc{|w| select_line2(w, 0)}, '%W')
-    t.bind('Control-End', proc{|w| select_line2(w, 'end')}, '%W')
-
-    t.bind('Control-Shift-Home', proc{|w| active_line(w, 0)}, '%W')
-    t.bind('Control-Shift-End', proc{|w| active_line(w, 'end')}, '%W')
-
-    t.bind('space', proc{|w| select_active(w)}, '%W')
-    t.bind('Select', proc{|w| select_active(w)}, '%W')
-    t.bind('Control-slash', proc{|w| select_all}, '%W')
-    t.bind('Control-backslash', proc{|w| clear_all}, '%W')
-
-    t
-  end
-
-  ########################
-  def active_line(w, idx)
-    @lbox_list.each{|l| l.activate(idx)}
-  end
-
-  def select_only(w, idx)
-    @lbox_list.each{|l|
-      l.selection_clear(0, 'end')
-      l.selection_anchor(idx)
-      l.selection_set('anchor')
-    }
-  end
-
-  def select_range(w, idx)
-    @lbox_list.each{|l|
-      l.selection_clear(0, 'end')
-      l.selection_set('anchor', idx)
-    }
-  end
-
-  def select_toggle(w, idx)
-    st = w.selection_includes(idx)
-    @lbox_list.each{|l|
-      l.selection_anchor(idx)
-      if st == 1
-	l.selection_clear(idx)
-      else
-	l.selection_set(idx)
-      end
-    }
-  end
-
-  def select_drag(w, idx)
-    st = w.selection_includes('anchor')
-    @lbox_list.each{|l|
-      if st == 1
-	l.selection_set('anchor', idx)
-      else
-	l.selection_clear('anchor', idx)
-      end
-    }
-  end
-
   def select_line(w, idx)
     @lbox_list.each{|l|
-      l.selection_clear(0, 'end')
-      l.activate(idx)
-      l.selection_anchor(idx)
-      l.selection_set('anchor')
+      l.select_clear(1, 'end')
+      l.select_set(idx)
     }
-    w.selection_set('anchor')
-  end
-
-  def select_line2(w, idx)
-    @lbox_list.each{|l|
-      l.activate(idx)
-      l.selection_anchor(idx)
-      l.selection_set('anchor')
-    }
-  end
-
-  def select_line3(w, idx)
-    @lbox_list.each{|l|
-      l.selection_set(idx)
-    }
-  end
-
-  def select_active(w)
-    idx = l.activate(idx)
-    @lbox_list.each{|l|
-      l.selection_set(idx)
-    }
-  end
-
-  def select_expand(w, dir)
-    idx = w.index('active').to_i + dir
-    if idx < 0
-      idx = 0
-    elsif idx >= w.size
-      idx = w.size - 1
-    end
-    @lbox_list.each{|l|
-      l.activate(idx)
-      l.selection_set(idx)
-    }
-  end
-
-  def active_shift(w, dir)
-    idx = w.index('active').to_i + dir
-    if idx < 0
-      idx = 0
-    elsif idx >= w.size
-      idx = w.size - 1
-    end
-    @lbox_list.each{|l|
-      l.activate(idx)
-      l.selection_anchor(idx)
-    }
+    w.select_set(idx)
   end
 
   def select_shift(w, dir)
-    idx = w.index('anchor').to_i + dir
-    if idx < 0
-      idx = 0
-    elsif idx >= w.size
-      idx = w.size - 1
+    head = w.index('@1,1').split('.')[0].to_i
+    tail = w.index("@1,#{w.winfo_height - 1}").split('.')[0].to_i - 1
+    idx = w.select_index + dir
+    last = w.index('end - 1 char').split('.')[0].to_i
+    if idx < 1
+      idx = 1
+    elsif idx > last
+      idx = last
     end
     @lbox_list.each{|l|
-      l.selection_clear(0, 'end')
-      l.activate(idx)
-      l.selection_anchor(idx)
-      l.selection_set('anchor')
+      l.select_clear(1, 'end')
+      l.select_set(idx)
     }
-  end
-
-  def select_all
-    @lbox_list.each{|l|
-      l.selection_set(0, 'end')
-    }
-  end
-
-  def clear_all
-    @lbox_list.each{|l|
-      l.selection_clear(0, 'end')
-    }
-  end
-
-  def focus_shift(w, dir)
-    idx = @lbox_list.index(w) + dir
-    return if idx < 0
-    return if idx >= @lbox_list.size
-    @lbox_list[idx].focus
+    if head > idx
+      @lbox_list.each{|l| l.yview('scroll', -1, 'units')}
+    elsif tail < idx
+      @lbox_list.each{|l| l.yview('scroll', 1, 'units')}
+    end
   end
   ########################
 end
@@ -905,17 +705,17 @@ end
 # test
 ################################################
 if __FILE__ == $0
-  l = TkMultiListFrame.new(nil, 200, 
-			   [ ['L1', 200, proc{p 'click L1'}], 
-			     ['L2', 100], 
-			     ['L3', 200] ], 
-			   'width'=>350, 
-			   #'titleforeground'=>'yellow', 
-			   'titleforeground'=>'white', 
-			   #'titlebackground'=>'navy',
-			   'titlebackground'=>'blue',
-			   'titlefont'=>'courier'
-			   ).pack('fill'=>'both', 'expand'=>true)
+  l = TkMultiColumnList.new(nil, 200, 
+			    [ ['L1', 200, proc{p 'click L1'}], 
+			      ['L2', 100], 
+			      ['L3', 200] ], 
+			    'width'=>350, 
+			    #'titleforeground'=>'yellow', 
+			    'titleforeground'=>'white', 
+			    #'titlebackground'=>'navy',
+			    'titlebackground'=>'blue',
+			    'titlefont'=>'courier'
+			    ).pack('fill'=>'both', 'expand'=>true)
   l.insert('end', [1,2,3])
   l.insert('end', [4,5,6])
   l.insert('end', [4,5,6], [4,5,6])
@@ -936,5 +736,8 @@ if __FILE__ == $0
   p l.columns(1)
   p l.columns(1..3)
   p l.columns(1,2)
+
+  l.command proc{|line_info| p line_info}
+
   Tk.mainloop
 end

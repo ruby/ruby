@@ -33,6 +33,7 @@ sample/tkfrom.rb
 sample/tkhello.rb
 sample/tkline.rb
 sample/tkmenubutton.rb
+sample/tkmulticolumnlist.rb
 sample/tkmultilistbox.rb
 sample/tkmultilistframe.rb
 sample/tkoptdb-safeTk.rb
