@@ -157,6 +157,8 @@ Object
       ex).
         p imap.search(["SUBJECT", "hello"])
         #=> [1, 6, 7, 8]
+        p imap.search('SUBJECT "hello"')
+        #=> [1, 6, 7, 8]
 
 : fetch(set, attr)
 : uid_fetch(set, attr)
@@ -166,8 +168,18 @@ Object
       number (fetch) or a unique identifier (uid_fetch).
 
       ex).
-        p imap.fetch(6..-1, "UID")
-        #=> [[6, {"UID"=>28}], [7, {"UID"=>29}], [8, {"UID"=>30}]]
+        p imap.fetch(6..8, "UID")
+        #=> [[6, ["UID", 98]], [7, ["UID", 99]], [8, ["UID", 100]]]
+        p imap.fetch(6, "BODY[HEADER.FIELDS (SUBJECT)]")
+        #=> [[6, ["BODY[HEADER.FIELDS (\"SUBJECT\")]", "Subject: test\r\n\r\n"]]]
+        seqno, data = imap.uid_fetch(98, ["RFC822.SIZE", "INTERNALDATE"])[0]
+        attr = Hash[*data]
+        p attr["RFC822.SIZE"]
+        #=> 611
+        p attr["INTERNALDATE"]
+        #=> "12-Oct-2000 22:40:59 +0900"
+        p attr["UID"]
+        #=> 98
 
 : store(set, attr, flags)
 : uid_store(set, attr, flags)
@@ -177,8 +189,8 @@ Object
       number (store) or a unique identifier (uid_store).
 
       ex).
-        p imap.store(6..-1, "+FLAGS", [:Deleted])
-        #=> [[6, {"FLAGS"=>[:Deleted]}], [7, {"FLAGS"=>[:Seen, :Deleted]}], [8, {"FLAGS"=>[:Seen, :Deleted]}]]
+        p imap.store(6..8, "+FLAGS", [:Deleted])
+        #=> [[6, ["FLAGS", [:Seen, :Deleted]]], [7, ["FLAGS", [:Seen, :Deleted]]], [8, ["FLAGS", [:Deleted]]]]
 
 : copy(set, mailbox)
 : uid_copy(set, mailbox)
@@ -536,7 +548,11 @@ module Net
     end
 
     def search_internal(cmd, keys, charset)
-      normalize_searching_criteria(keys)
+      if keys.instance_of?(String)
+	keys = [RawData.new(keys)]
+      else
+	normalize_searching_criteria(keys)
+      end
       if charset
 	send_command(cmd, "CHARSET", charset, *keys)
       else
@@ -546,13 +562,19 @@ module Net
     end
 
     def fetch_internal(cmd, set, attr)
+      if attr.instance_of?(String)
+	attr = RawData.new(attr)
+      end
       send_command(cmd, MessageSet.new(set), attr)
-      return get_fetch_response
+      return @responses.delete("FETCH")
     end
 
     def store_internal(cmd, set, attr, flags)
+      if attr.instance_of?(String)
+	attr = RawData.new(attr)
+      end
       send_command(cmd, MessageSet.new(set), attr, flags)
-      return get_fetch_response
+      return @responses.delete("FETCH")
     end
 
     def copy_internal(cmd, set, mailbox)
@@ -560,6 +582,11 @@ module Net
     end
 
     def sort_internal(cmd, sort_keys, search_keys, charset)
+      if search_keys.instance_of?(String)
+	search_keys = [RawData.new(search_keys)]
+      else
+	normalize_searching_criteria(search_keys)
+      end
       normalize_searching_criteria(search_keys)
       send_command(cmd, sort_keys, charset, *search_keys)
       return @responses.delete("SORT")[-1]
@@ -576,11 +603,16 @@ module Net
       end
     end
 
-    def get_fetch_response
-      return @responses.delete("FETCH").collect { |i|
-	i[1] = Hash[*i[1]]
-	i
-      }
+    class RawData
+      def format_data
+	return @data
+      end
+
+      private
+
+      def initialize(data)
+	@data = data
+      end
     end
 
     class Atom
@@ -712,6 +744,7 @@ module Net
 
       T_NIL	= :NIL
       T_NUMBER	= :NUMBER
+      T_ATTR	= :ATTR
       T_ATOM	= :ATOM
       T_QUOTED	= :QUOTED
       T_LITERAL	= :LITERAL
@@ -728,15 +761,16 @@ module Net
       DATA_REGEXP = /\G *(?:\
 (?# 1:	NIL	)(NIL)|\
 (?# 2:	NUMBER	)(\d+)|\
-(?# 3:	ATOM	)([^(){ \x00-\x1f\x7f%*"\\]+)|\
-(?# 4:	QUOTED	)"((?:[^"\\]|\\["\\])*)"|\
-(?# 5:	LITERAL	)\{(\d+)\}\r\n|\
-(?# 6:	FLAG	)(\\(?:[^(){ \x00-\x1f\x7f%*"\\]+|\*))|\
-(?# 7:	LPAREN	)(\()|\
-(?# 8:	RPAREN	)(\))|\
-(?# 9:	STAR	)(\*)|\
-(?# 10:	CRLF	)(\r\n)|\
-(?# 11:	EOF	)(\z))/ni
+(?# 3:	ATTR	)(BODY\[[^\]]*\](?:<\d+>)?)|\
+(?# 4:	ATOM	)([^(){ \x00-\x1f\x7f%*"\\]+)|\
+(?# 5:	QUOTED	)"((?:[^"\\]|\\["\\])*)"|\
+(?# 6:	LITERAL	)\{(\d+)\}\r\n|\
+(?# 7:	FLAG	)(\\(?:[^(){ \x00-\x1f\x7f%*"\\]+|\*))|\
+(?# 8:	LPAREN	)(\()|\
+(?# 9:	RPAREN	)(\))|\
+(?# 10:	STAR	)(\*)|\
+(?# 11:	CRLF	)(\r\n)|\
+(?# 12:	EOF	)(\z))/ni
 
       CODE_REGEXP = /\G *(?:\
 (?# 1:	NUMBER	)(\d+)|\
@@ -900,31 +934,34 @@ module Net
 	      @token.symbol = T_NUMBER
 	    elsif $3
 	      @token.value = $+
-	      @token.symbol = T_ATOM
+	      @token.symbol = T_ATTR
 	    elsif $4
+	      @token.value = $+
+	      @token.symbol = T_ATOM
+	    elsif $5
 	      @token.value = $+.gsub(/\\(["\\])/n, "\\1")
 	      @token.symbol = T_QUOTED
-	    elsif $5
+	    elsif $6
 	      len = $+.to_i
 	      @token.value = @str[@pos, len]
 	      @pos += len
 	      @token.symbol = T_LITERAL
-	    elsif $6
+	    elsif $7
 	      @token.value = $+[1..-1].intern
 	      @token.symbol = T_FLAG
-	    elsif $7
-	      @token.value = nil
-	      @token.symbol = T_LPAREN
 	    elsif $8
 	      @token.value = nil
-	      @token.symbol = T_RPAREN
+	      @token.symbol = T_LPAREN
 	    elsif $9
+	      @token.value = nil
+	      @token.symbol = T_RPAREN
+	    elsif $10
 	      @token.value = $+
 	      @token.symbol = T_STAR
-	    elsif $10
+	    elsif $11
 	      @token.value = nil
 	      @token.symbol = T_CRLF
-	    elsif $11
+	    elsif $12
 	      @token.value = nil
 	      @token.symbol = T_EOF
 	    else
