@@ -1,3 +1,14 @@
+Fri Jan 17 03:33:42 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* sprintf.c (rb_f_sprintf): Fix a bug caused by an uninitialized
+	  variable v, that a bignum unexpectedly gets converted into a
+	  string with its higher figures all filled with ./f/7/1,
+	  depending on the base.  This bug seems to have been introduced
+	  in rev.1.27.
+
+	* sprintf.c (rb_f_sprintf): Use switch instead of a sequence of
+	  else-if's.
+
 Wed Jan 15 15:18:38 2003  moumar  <moumar@netcourrier.com>
 
 	* configure.in (ARCHFILE): set even unless --enable-shared on

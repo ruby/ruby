@@ -319,7 +319,7 @@ rb_f_sprintf(argc, argv)
 		char *prefix = 0;
 		int sign = 0;
 		char sc = 0;
-		long v;
+		long v = 0;
 		int base, bignum = 0;
 		int len, pos;
 
@@ -338,11 +338,18 @@ rb_f_sprintf(argc, argv)
 		    break;
 		}
 		if (flags & FSHARP) {
-		    if (*p == 'o') prefix = "0";
-		    else if (*p == 'x') prefix = "0x";
-		    else if (*p == 'X') prefix = "0X";
-		    else if (*p == 'b') prefix = "0b";
-		    else if (*p == 'B') prefix = "0B";
+		    switch (*p) {
+		      case 'o':
+			prefix = "0"; break;
+		      case 'x':
+			prefix = "0x"; break;
+		      case 'X':
+			prefix = "0X"; break;
+		      case 'b':
+			prefix = "0b"; break;
+		      case 'B':
+			prefix = "0B"; break;
+		    }
 		    if (prefix) {
 			width -= strlen(prefix);
 		    }
@@ -369,10 +376,21 @@ rb_f_sprintf(argc, argv)
 		    goto bin_retry;
 		}
 
-		if (*p == 'u' || *p == 'd' || *p == 'i') base = 10;
-		else if (*p == 'x' || *p == 'X') base = 16;
-		else if (*p == 'o') base = 8;
-		else if (*p == 'b' || *p == 'B') base = 2;
+		switch (*p) {
+		  case 'o':
+		    base = 8; break;
+		  case 'x':
+		  case 'X':
+		    base = 16; break;
+		  case 'b':
+		  case 'B':
+		    base = 2; break;
+		  case 'u':
+		  case 'd':
+		  case 'i':
+		  default:
+		    base = 10; break;
+		}
 		if (!bignum) {
 		    if (base == 2) {
 			val = rb_int2big(v);
@@ -510,7 +528,7 @@ rb_f_sprintf(argc, argv)
 		    PUSH(prefix, plen);
 		}
 		CHECK(prec - len);
-		if (v < 0) {
+		if (!bignum && v < 0) {
 		    char c = '.';
 
 		    switch (base) {
