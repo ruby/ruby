@@ -679,6 +679,40 @@ flo_zero_p(num)
     return Qfalse;
 }
 
+static VALUE flo_is_nan_p(num)
+     VALUE num;
+{     
+
+  double value = RFLOAT(num)->value;
+
+  return isnan(value) ? Qtrue : Qfalse;
+}
+
+static VALUE flo_is_infinite_p(num)
+     VALUE num;
+{     
+  double value = RFLOAT(num)->value;
+
+  if (isinf(value)) {
+    return INT2FIX( value < 0 ? -1 : +1 );
+  }
+
+  return Qnil;
+}
+
+
+static VALUE flo_is_finite_p(num)
+     VALUE num;
+{     
+  double value = RFLOAT(num)->value;
+
+  if (isinf(value) || isnan(value))
+    return Qfalse;
+  
+  return Qtrue;
+}
+
+
 static VALUE
 to_integer(val)
     VALUE val;
@@ -1570,4 +1604,8 @@ Init_Numeric()
     rb_define_method(rb_cFloat, "floor", flo_floor, 0);
     rb_define_method(rb_cFloat, "ceil", flo_ceil, 0);
     rb_define_method(rb_cFloat, "round", flo_round, 0);
+
+    rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
+    rb_define_method(rb_cFloat, "infinite?", flo_is_infinite_p, 0);
+    rb_define_method(rb_cFloat, "finite?",   flo_is_finite_p, 0);
 }

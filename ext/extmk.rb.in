@@ -425,10 +425,12 @@ all:		$(DLLIB)
 
 clean:;		@$(RM) *.#{$OBJEXT} *.so *.sl *.#{$LIBEXT} $(DLLIB)
 		@$(RM) *.ilk *.exp *.pdb *.bak
+
+distclean:	clean
 		@$(RM) Makefile extconf.h conftest.*
 		@$(RM) core ruby$(EXEEXT) *~
 
-realclean:	clean
+realclean:	distclean
 EOS
 
   mfile.printf <<EOS

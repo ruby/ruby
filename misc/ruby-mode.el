@@ -14,11 +14,11 @@
    (substring ruby-mode-revision (match-beginning 0) (match-end 0))))
 
 (defconst ruby-block-beg-re
-  "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin"
+  "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin\\|do"
   )
 
 (defconst ruby-non-block-do-re
-  "while\\|until\\|for\\|rescue"
+  "\\(while\\|until\\|for\\|rescue\\)\\>"
   )
 
 (defconst ruby-indent-beg-re

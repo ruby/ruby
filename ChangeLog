@@ -1,8 +1,38 @@
+Sat Jun 10 23:10:32 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_seek): whence is optional, default is SEEK_SET.
+
+Fri Jun  9 15:11:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (make_time_t): supports daylight saving time.
+
+	* eval.c (rb_thread_safe_level): should retrive current $SAFE
+	  value if a thread is the current thread.
+
+Thu Jun  8 14:25:45 2000  Hiroshi Igarashi  <iga@ruby-lang.org>
+
+	* lib/mkmf.rb: add target `distclean' in Makefile for extlib.
+	target `clean' doesn't remove Makefile.
+
+Thu Jun  8 13:34:03 2000  Dave Thomas   <dave@thomases.com>
+
+	* numeric.c: add nan?, infinite?, and finite? to Float
+	
 Thu Jun  8 00:31:04 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* regex.h: export re_mbctab properly on cygwin.
 
 	* dln.c: use dlopen instead of LoadLibrary on cygwin.
+
+Thu Jun  8 13:41:34 2000  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* file.c (rb_file_s_basename): might dump core.
+
+Tue Jun  6 03:29:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (dir_foreach): now returns nil for consistency.
+
+	* bignum.c (bigdivmod): modulo by small numbers was wrong.
 
 Mon Jun  5 00:18:08 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -588,10 +618,6 @@ Sat Apr  1 00:16:05 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  $SAFE >= 4.
 
 	* object.c (sym_inspect): inspect gives ":sym", to_s gives "sym".
-
-Fri Mar 31 08:56:55 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
-
-	* parse.y (yylex): 
 
 Thu Mar 30 12:19:44 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 

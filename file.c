@@ -1330,9 +1330,9 @@ rb_file_s_basename(argc, argv)
     name = STR2CSTR(fname);
     p = strrchr(name, '/');
     if (!p) {
-	if (NIL_P(fext) || !(f = rmext(p, ext)))
+	if (NIL_P(fext) || !(f = rmext(name, ext)))
 	    return fname;
-	basename = rb_str_new(p, f);
+	basename = rb_str_new(name, f);
     }
     else {
 	p++;			/* skip last `/' */
@@ -1696,7 +1696,6 @@ rb_stat_l(obj)
 {
 #ifdef S_ISLNK
     if (S_ISLNK(get_stat(obj)->st_mode)) return Qtrue;
-
 #endif
     return Qfalse;
 }
@@ -1931,7 +1930,7 @@ rb_stat_sticky(obj)
 #ifdef S_ISVTX
     if (get_stat(obj)->st_mode & S_ISVTX) return Qtrue;
 #endif
-    return Qnil;
+    return Qfalse;
 }
 
 static VALUE rb_mConst;

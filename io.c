@@ -281,26 +281,34 @@ rb_io_tell(io)
     return rb_int2inum(pos);
 }
 
-static VALUE
-rb_io_seek(io, offset, ptrname)
-     VALUE io, offset, ptrname;
-{
-    OpenFile *fptr;
-    long pos;
-
-    GetOpenFile(io, fptr);
-    pos = fseek(fptr->f, NUM2INT(offset), NUM2INT(ptrname));
-    if (pos != 0) rb_sys_fail(fptr->path);
-    clearerr(fptr->f);
-
-    return INT2FIX(0);
-}
-
 #ifndef SEEK_CUR
 # define SEEK_SET 0
 # define SEEK_CUR 1
 # define SEEK_END 2
 #endif
+
+static VALUE
+rb_io_seek(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+    VALUE offset, ptrname;
+    int whence;
+    OpenFile *fptr;
+    long pos;
+
+    rb_scan_args(argc, argv, "11", &offset, &ptrname);
+    if (argc == 1) whence = SEEK_SET;
+    else whence = NUM2INT(ptrname);
+
+    GetOpenFile(io, fptr);
+    pos = fseek(fptr->f, NUM2INT(offset), whence);
+    if (pos != 0) rb_sys_fail(fptr->path);
+    clearerr(fptr->f);
+
+    return INT2FIX(0);
+}
 
 static VALUE
 rb_io_set_pos(io, offset)

@@ -3,6 +3,12 @@
 require 'rbconfig'
 include Config
 
+unless File.exist? "./#{CONFIG['ruby_install_name']}"
+  print "./#{CONFIG['ruby_install_name']} is not found.\n"
+  print "Try `make' first, then `make test', please.\n"
+  exit 0
+end
+
 if File.exist? CONFIG['LIBRUBY_SO']
   case RUBY_PLATFORM
   when /-hpux/
@@ -25,6 +31,7 @@ end
 
 $stderr.reopen($stdout)
 error = ''
+
 `./#{CONFIG["ruby_install_name"]} #{CONFIG["srcdir"]}/sample/test.rb`.each do |line|
   if line =~ /^end of test/
     print "test succeeded\n"

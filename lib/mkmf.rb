@@ -406,10 +406,12 @@ all:		$(DLLIB)
 
 clean:;		@$(RM) *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
 		@$(RM) $(TARGET).lib $(TARGET).exp $(TARGET).ilk *.pdb
+
+distclean:	clean
 		@$(RM) Makefile extconf.h conftest.*
 		@$(RM) core ruby$(EXEEXT) *~
 
-realclean:	clean
+realclean:	distclean
 
 install:	$(archdir)/$(DLLIB)
 

@@ -209,9 +209,13 @@ AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority\
 	      dlopen sigprocmask sigaction _setjmp setsid getrlimit)
 AC_STRUCT_TIMEZONE
-if test "$ac_cv_func_strftime" = no; then
-    AC_TRY_LINK([],
-	 [extern int daylight; int i = daylight;], AC_DEFINE(HAVE_DAYLIGHT))
+AC_CACHE_CHECK(for external int daylight, rb_cv_have_daylight,
+  [AC_TRY_LINK([],
+  	[extern int daylight; int i = daylight;],
+	rb_cv_have_daylight=yes,
+	rb_cv_have_daylight=no)])
+if test "$rb_cv_have_daylight" = yes; then
+  AC_DEFINE(HAVE_DAYLIGHT)
 fi
 
 if test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = yes; then

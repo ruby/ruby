@@ -25,6 +25,8 @@ Language Spec.
 * discourage use of Perlish features by giving warnings.
 * `exception' method to be alternative for `$!'. ??
 * non confusing in-block local variable (is it possible?)
+  + remove scope by block
+  + variables appears within block may have independent values.
 
 Hacking Interpreter
 

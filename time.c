@@ -208,6 +208,7 @@ time_arg(argc, argv, tm)
     VALUE v[6];
     int i;
 
+    MEMZERO(tm, struct tm, 1);
     if (argc == 10) {
 	v[0] = argv[5];
 	v[1] = argv[4];
@@ -215,6 +216,7 @@ time_arg(argc, argv, tm)
 	v[3] = argv[2];
 	v[4] = argv[1];
 	v[5] = argv[0];
+	tm->tm_isdst = RTEST(argv[9]) ? 1 : 0;
     }
     else {
 	rb_scan_args(argc, argv, "15", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5]);
@@ -271,9 +273,9 @@ static VALUE time_localtime _((VALUE));
 static VALUE time_get_tm _((VALUE, int));
 
 static time_t
-make_time_t(tptr, fn)
+make_time_t(tptr, utc_or_local)
     struct tm *tptr;
-    struct tm *(*fn)();
+    int utc_or_local;
 {
     struct timeval tv;
     time_t oguess, guess;
@@ -285,29 +287,72 @@ make_time_t(tptr, fn)
     }
     guess = tv.tv_sec;
 
-    tm = (*fn)(&guess);
+    tm = gmtime(&guess);
     if (!tm) goto error;
     t = tptr->tm_year;
     if (t < 69) goto out_of_range;
     while (diff = t - tm->tm_year) {
 	oguess = guess;
-	guess += diff * 364 * 24 * 3600;
+	guess += diff * 363 * 24 * 3600;
 	if (diff > 0 && guess <= oguess) goto out_of_range;
-	tm = (*fn)(&guess);
+	tm = gmtime(&guess);
 	if (!tm) goto error;
     }
     t = tptr->tm_mon;
     while (diff = t - tm->tm_mon) {
 	guess += diff * 27 * 24 * 3600;
-	tm = (*fn)(&guess);
+	tm = gmtime(&guess);
 	if (!tm) goto error;
 	if (tptr->tm_year != tm->tm_year) goto out_of_range;
     }
-    guess += (tptr->tm_mday - tm->tm_mday) * 3600 * 24;
+    guess += (tptr->tm_mday - tm->tm_mday) * 24 * 3600;
     guess += (tptr->tm_hour - tm->tm_hour) * 3600;
     guess += (tptr->tm_min - tm->tm_min) * 60;
     guess += (tptr->tm_sec - tm->tm_sec);
     if (guess < 0) goto out_of_range;
+
+    if (!utc_or_local) {	/* localtime zone adjust */
+#if defined(HAVE_DAYLIGHT)
+	extern int daylight;
+	extern long timezone;
+
+	localtime(&guess);
+	guess += timezone + daylight;
+#else
+	struct tm gt, lt;
+	long tzsec;
+
+	t = 0;
+	gt = *gmtime(&guess);
+	lt = *localtime(&guess);
+	tzsec = (gt.tm_min-lt.tm_min)*60 + (gt.tm_hour-lt.tm_hour)*3600;
+
+	if(lt.tm_year > gt.tm_year) {
+	    tzsec -= 24*3600;
+	}
+	else if(gt.tm_year > lt.tm_year) {
+	    tzsec += 24*3600;
+	}
+	else {
+	    tzsec += (gt.tm_yday - lt.tm_yday)*24*3600;
+	}
+
+	if (lt.tm_isdst) tzsec += 3600;
+    
+	guess += tzsec;
+	if (guess < 0) {
+	    goto out_of_range;
+	}
+	tm = localtime(&guess);
+	if (!tm) goto error;
+	if (tm->tm_hour != tptr->tm_hour) {
+	    guess -= 3600;
+	}
+#endif
+	if (guess < 0) {
+	    goto out_of_range;
+	}
+    }
 
     return guess;
 
@@ -320,40 +365,37 @@ make_time_t(tptr, fn)
 }
 
 static VALUE
-time_gm_or_local(argc, argv, gm_or_local, klass)
+time_utc_or_local(argc, argv, utc_or_local, klass)
     int argc;
     VALUE *argv;
-    int gm_or_local;
+    int utc_or_local;
     VALUE klass;
 {
     struct tm tm;
-    struct tm *(*fn)();
     VALUE time;
 
-    fn = (gm_or_local) ? gmtime : localtime;
     time_arg(argc, argv, &tm);
-
-    time = time_new_internal(klass, make_time_t(&tm, fn), 0);
-    if (gm_or_local) return time_gmtime(time);
+    time = time_new_internal(klass, make_time_t(&tm, utc_or_local), 0);
+    if (utc_or_local) return time_gmtime(time);
     return time_localtime(time);
 }
 
 static VALUE
-time_s_timegm(argc, argv, klass)
+time_s_mkutc(argc, argv, klass)
     int argc;
     VALUE *argv;
     VALUE klass;
 {
-    return time_gm_or_local(argc, argv, 1, klass);
+    return time_utc_or_local(argc, argv, Qtrue, klass);
 }
 
 static VALUE
-time_s_timelocal(argc, argv, klass)
+time_s_mktime(argc, argv, klass)
     int argc;
     VALUE *argv;
     VALUE klass;
 {
-    return time_gm_or_local(argc, argv, 0, klass);
+    return time_utc_or_local(argc, argv, Qfalse, klass);
 }
 
 static VALUE
@@ -765,8 +807,12 @@ time_zone(time)
 	time_get_tm(time, tobj->gmt);
     }
 
+#ifdef HAVE_TZNAME
+    return rb_str_new2(tobj->tm.tm_zone);
+#else
     len = strftime(buf, 64, "%Z", &tobj->tm);
     return rb_str_new(buf, len);
+#endif
 }
 
 static VALUE
@@ -990,9 +1036,10 @@ Init_Time()
     rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
     rb_define_singleton_method(rb_cTime, "new", time_s_new, -1);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
-    rb_define_singleton_method(rb_cTime, "gm", time_s_timegm, -1);
-    rb_define_singleton_method(rb_cTime, "local", time_s_timelocal, -1);
-    rb_define_singleton_method(rb_cTime, "mktime", time_s_timelocal, -1);
+    rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
+    rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);
+    rb_define_singleton_method(rb_cTime, "local", time_s_mktime, -1);
+    rb_define_singleton_method(rb_cTime, "mktime", time_s_mktime, -1);
 
     rb_define_singleton_method(rb_cTime, "times", time_s_times, 0);
 

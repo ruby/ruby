@@ -783,7 +783,8 @@ dir_foreach(io, dirname)
     VALUE dir;
 
     dir = rb_funcall(rb_cDir, rb_intern("open"), 1, dirname);
-    return rb_ensure(dir_each, dir, dir_close, dir);
+    rb_ensure(dir_each, dir, dir_close, dir);
+    return Qnil;
 }
 
 static VALUE
@@ -814,6 +815,8 @@ Init_Dir()
     rb_define_method(rb_cDir,"rewind", dir_rewind, 0);
     rb_define_method(rb_cDir,"tell", dir_tell, 0);
     rb_define_method(rb_cDir,"seek", dir_seek, 1);
+    rb_define_method(rb_cDir,"pos", dir_tell, 0);
+    rb_define_method(rb_cDir,"pos=", dir_seek, 1);
     rb_define_method(rb_cDir,"close", dir_close, 0);
 
     rb_define_singleton_method(rb_cDir,"chdir", dir_s_chdir, -1);

@@ -613,7 +613,7 @@ rb_reg_search(re, str, pos, reverse)
 
     if (result == -2) {
 	rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len,
-		  "Stack overfow in regexp matcher", re);
+		  "Stack overflow in regexp matcher", re);
     }
 
     if (result < 0) {

@@ -49,7 +49,7 @@ class TkFont
 
   def TkFont.create_copy(font)
     keys = {}
-    font.configure.each{|key,value| keys[key] = value }
+    font.configinfo.each{|key,value| keys[key] = value }
     new_font = TkFont.new(font.latin_font, font.kanji_font, keys)
   end
 
@@ -123,17 +123,13 @@ class TkFont
   ###################################
   private
   ###################################
-  def initialize(ltn=nil, knj=nil, keys=nil)
+  def initialize(ltn=DEFAULT_LATIN_FONT_NAME, knj=DEFAULT_KANJI_FONT_NAME, 
+		 keys=nil)
     @id = format("@font%.4d", Tk_FontID[0])
     Tk_FontID[0] += 1
     Tk_FontNameTBL[@id] = self
-
-    ltn = DEFAULT_LATIN_FONT_NAME unless ltn
     create_latinfont(ltn)
-
-    knj = DEFAULT_KANJI_FONT_NAME unless knj
     create_kanjifont(knj)
-
     create_compoundfont(keys)
   end
 
@@ -714,7 +710,7 @@ class TkFont
 	if winobj.kind_of? TkText
 	  ret.push([winobj, winobj.tagid2obj(tag)])
 	elsif winobj.kind_of? TkCanvas
-	  if (tagobj = TkcTag.id2obj(tag)).kind_of? TkcTag
+	  if (tagobj = TkcTag.id2obj(winobj, tag)).kind_of? TkcTag
 	    ret.push([winobj, tagobj])
 	  elsif (tagobj = TkcItem.id2obj(tag)).kind_of? TkcItem
 	    ret.push([winobj, tagobj])
@@ -822,7 +818,7 @@ class TkFont
     if JAPANIZED_TK
       configinfo_core(@latinfont, slot)
     else
-      configure(slot, value)
+      configinfo(slot)
     end
   end
 
