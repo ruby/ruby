@@ -1,6 +1,12 @@
+Thu Feb 19 18:08:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c, win32/win32.h: fixed prototypes.
+
+	* win32/win32.c (wait): same as waitpid() with -1.
+
 Thu Feb 19 02:34:28 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::include_file): 
+	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::include_file):
 	  Only strip comment markers if all lines start with comments.
 
 Thu Feb 19 03:05:49 2004  Minero Aoki  <aamine@loveruby.net>
@@ -34,7 +40,7 @@ Wed Feb 19 00:20:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 Thu Feb 19 00:11:05 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::handle): 
+	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::handle):
 	  Strip extraneous space from filenames in :include:
 
 Wed Feb 18 22:53:41 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
@@ -154,8 +160,8 @@ Mon Feb 16 22:22:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 	* lib/rinda/rinda.rb: added documentation (from Hugh Sasse)
 
 	* lib/rinda/tuplespace.rb: ditto
-	
-	[Note: rinda files actually committed Wed Feb 18 07:27:00 2004]
+
+	  [Note: rinda files actually committed Wed Feb 18 07:27:00 2004]
 
 Mon Feb 16 20:28:52 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

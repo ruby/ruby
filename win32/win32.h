@@ -128,11 +128,8 @@ struct timezone {
   int tz_dsttime;
 };
 #endif
-extern int    NtMakeCmdVector(char *, char ***, int);
 extern void   NtInitialize(int *, char ***);
-extern char * NtGetLib(void);
-extern char * NtGetBin(void);
-extern pid_t  pipe_exec(char *, int, FILE **, FILE **);
+extern pid_t  rb_w32_pipe_exec(const char *, const char *, int, FILE **, FILE **);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_accept(int, struct sockaddr *, int *);
 extern int    rb_w32_bind(int, struct sockaddr *, int);
@@ -175,10 +172,10 @@ extern int chown(const char *, int, int);
 extern int link(const char *, const char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern pid_t waitpid (pid_t, int *, int);
-extern int rb_w32_argv_size(char **);
-extern char *rb_w32_join_argv(char *, char **);
-extern int rb_w32_spawn(int, char *, char*);
-extern int rb_w32_aspawn(int, char *, char **);
+extern int rb_w32_argv_size(char *const *);
+extern char *rb_w32_join_argv(char *, char *const *);
+extern int rb_w32_spawn(int, const char *, const char*);
+extern int rb_w32_aspawn(int, const char *, char *const *);
 extern int kill(int, int);
 extern pid_t rb_w32_getpid(void);
 

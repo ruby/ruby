@@ -88,7 +88,7 @@
 
 bool NtSyncProcess = TRUE;
 
-static struct ChildRecord *CreateChild(char *, char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
+static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static int make_cmdvector(const char *, char ***);
 static bool has_redirection(const char *);
 static void StartSockets ();
@@ -590,10 +590,10 @@ rb_w32_get_osfhandle(int fh)
 }
 
 int
-rb_w32_argv_size(argv)
-    char **argv;
+rb_w32_argv_size(char *const *argv)
 {
-    char *p, **t;
+    const char *p;
+    char *const *t;
     int len, n, bs, quote;
 
     for (t = argv, len = 0; *t; t++) {
@@ -621,11 +621,10 @@ rb_w32_argv_size(argv)
 }
 
 char *
-rb_w32_join_argv(cmd, argv)
-    char *cmd;
-    char **argv;
+rb_w32_join_argv(char *cmd, char *const *argv)
 {
-    char *p, *q, *s, **t;
+    const char *p, *s;
+    char *q, *const *t;
     int n, bs, quote;
 
     for (t = argv, q = cmd; p = *t; t++) {
@@ -661,7 +660,7 @@ rb_w32_join_argv(cmd, argv)
 }
 
 pid_t
-rb_w32_pipe_exec(char *cmd, char *prog, int mode, FILE **fpr, FILE **fpw)
+rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, FILE **fpr, FILE **fpw)
 {
     struct ChildRecord* child;
     HANDLE hReadIn, hReadOut;
@@ -800,10 +799,7 @@ rb_w32_pipe_exec(char *cmd, char *prog, int mode, FILE **fpr, FILE **fpw)
 extern VALUE rb_last_status;
 
 int
-rb_w32_spawn(mode, cmd, prog)
-int mode;
-char *cmd;
-char *prog;
+rb_w32_spawn(int mode, const char *cmd, const char *prog)
 {
     struct ChildRecord *child;
     DWORD exitcode;
@@ -840,10 +836,7 @@ char *prog;
 }
 
 int
-rb_w32_aspawn(mode, prog, argv)
-int mode;
-char *prog;
-char **argv;
+rb_w32_aspawn(int mode, const char *prog, char *const *argv)
 {
     int len = rb_w32_argv_size(argv);
     char *cmd = ALLOCA_N(char, len);
@@ -852,14 +845,14 @@ char **argv;
 }
 
 static struct ChildRecord *
-CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, HANDLE hError)
+CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, HANDLE hError)
 {
     BOOL fRet;
     DWORD  dwCreationFlags;
     STARTUPINFO aStartupInfo;
     PROCESS_INFORMATION aProcessInformation;
     SECURITY_ATTRIBUTES sa;
-    char *shell;
+    const char *shell;
     struct ChildRecord *child;
 
     if (!cmd && !prog) {
@@ -932,7 +925,7 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
     }
 
     RUBY_CRITICAL({
-	fRet = CreateProcess(shell, cmd, psa, psa,
+	fRet = CreateProcess(shell, (char *)cmd, psa, psa,
 			     psa->bInheritHandle, dwCreationFlags, NULL, NULL,
 			     &aStartupInfo, &aProcessInformation);
 	errno = map_errno(GetLastError());
@@ -2616,9 +2609,9 @@ link(const char *from, const char *to)
 }
 
 int
-wait()
+wait(int *status)
 {
-	return 0;
+    return waitpid(-1, status, 0);
 }
 
 char *
