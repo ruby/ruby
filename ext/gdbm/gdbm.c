@@ -67,8 +67,6 @@ fgdbm_close(obj)
 
 static VALUE
 fgdbm_s_alloc(klass)
-    int argc;
-    VALUE *argv;
     VALUE klass;
 {
     return Data_Wrap_Struct(klass, 0, free_dbm, 0);
