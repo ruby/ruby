@@ -649,7 +649,7 @@ w_object(obj, arg, limit, weak)
 		w_class(TYPE_DATA, obj, arg);
 		if (!rb_respond_to(obj, s_dump_data)) {
 		    rb_raise(rb_eTypeError,
-			     "class %s needs to have instance method `marshal_dump'",
+			     "class %s needs to have instance method `_dump_data'",
 			     rb_obj_classname(obj));
 		}
 		v = rb_funcall(obj, s_dump_data, 0);

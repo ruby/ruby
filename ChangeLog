@@ -1,3 +1,7 @@
+Mon Oct  6 16:23:38 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object): wrong method name in the message.
+
 Mon Oct  6 16:02:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (stmt): END in method should cause warning.
