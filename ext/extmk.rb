@@ -317,7 +317,7 @@ exts |= Dir.glob("#{ext_prefix}/*/**/MANIFEST").collect {|d|
 } unless $extension
 
 if $extout
-  Config.expand(extout = $extout, Config::CONFIG.merge("topdir"=>$topdir))
+  Config.expand(extout = "#$extout", Config::CONFIG.merge("topdir"=>$topdir))
   if $install
     Config.expand(dest = "#{$destdir}#{$rubylibdir}")
     FileUtils.cp_r(extout+"/.", dest, :verbose => true, :noop => $dryrun)

@@ -1,3 +1,8 @@
+Thu May  6 13:32:44 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: get rid of side effect of Config.expand, patched by
+	  <tttt01@infoseek.jp>  (ruby-bugs:PR#597)
+
 Thu May  6 11:40:28 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (string): accept NIL.
@@ -6,7 +11,7 @@ Thu May  6 11:40:28 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 Thu May  6 01:59:04 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/html_generator.rb (Generators::HtmlMethod::params): 
+	* lib/rdoc/generators/html_generator.rb (Generators::HtmlMethod::params):
 	  Don't include the &block parameter if we have explicit
 	  yield parameters.
 
