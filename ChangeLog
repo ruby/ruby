@@ -1,3 +1,8 @@
+Sat Mar 20 20:57:10 2004  David Black  <dblack@wobblini.net>
+
+	* lib/scanf.rb: Backported 1.9 branch
+	  modifications/corrections to 1.8 branch
+
 Sat Mar 20 15:25:36 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/html/html.rb (RDoc::Page): Force
