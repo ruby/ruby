@@ -552,7 +552,7 @@ isInternalCmd(const char *cmd, const char *interp)
     char cmdname[9], *b = cmdname, c, **nm;
 
     i = strlen(interp) - 11;
-    if ((i == 0 || i > 0 && isdirsep(interp[i])) &&
+    if ((i == 0 || i > 0 && isdirsep(interp[i-1])) &&
 	strcasecmp(interp+i, "command.com") == 0) {
 	nt = 0;
     }

@@ -1,19 +1,15 @@
-Sat Sep  6 00:21:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Sat Sep  6 00:36:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* Makefile.in (test): phony target.
+
+	* lib/mkmf.rb (have_library, find_library): configure by library
+	  name.
 
 	* lib/optparse.rb (OptionParser#order, #permute, #parse): allow an
 	  array as argument.
 
 	* test/ruby/test_*.rb: moved invariants to left side in
 	  assert_equal, and use assert_nil, assert_raises and so on.
-
-Sat Sep  6 00:00:20 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* lib/mkmf.rb (have_library, find_library): configure by library
-	  name.
-
-Sat Sep  6 00:00:20 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (isInternalCmd): distinguish command.com and
 	  cmd.exe.
