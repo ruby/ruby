@@ -1078,6 +1078,22 @@ class ITER_TEST2 < ITER_TEST1
 end
 test_ok(ITER_TEST2.new.a {})
 
+class ITER_TEST3
+  def foo x
+    return yield if block_given?
+    x
+  end
+end
+
+class ITER_TEST4 < ITER_TEST3
+  def foo x
+    test_ok(super == yield)
+    test_ok(super(x, &nil) == x)
+  end
+end
+
+ITER_TEST4.new.foo(44){55}   
+
 test_check "float"
 test_ok(2.6.floor == 2)
 test_ok((-2.6).floor == -3)

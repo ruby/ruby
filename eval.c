@@ -7744,6 +7744,12 @@ Init_Proc()
     rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
 }
 
+#ifdef __ia64__
+#include <ucontext.h>
+#pragma weak __libc_ia64_register_backing_store_base
+extern unsigned long __libc_ia64_register_backing_store_base;
+#endif
+
 /* Windows SEH refers data on the stack. */
 #undef SAVE_WIN32_EXCEPTION_LIST
 #if defined _WIN32 || defined __CYGWIN__
@@ -7841,10 +7847,14 @@ struct thread {
 
     VALUE result;
 
-    int    stk_len;
-    int   stk_max;
-    VALUE*stk_ptr;
-    VALUE*stk_pos;
+    long   stk_len;
+    long   stk_max;
+    VALUE *stk_ptr;
+    VALUE *stk_pos;
+#ifdef __ia64__
+    VALUE *bstr_ptr;
+    long   bstr_len;
+#endif
 
     struct FRAME *frame;
     struct SCOPE *scope;
@@ -8084,6 +8094,11 @@ thread_mark(th)
 #if defined(THINK_C) || defined(__human68k__)
 	rb_gc_mark_locations(th->stk_ptr+2, th->stk_ptr+th->stk_len+2);
 #endif
+#ifdef __ia64__
+	if (th->bstr_ptr) {
+	    rb_gc_mark_locations(th->bstr_ptr, th->bstr_ptr+th->bstr_len);
+	}
+#endif
     }
     frame = th->frame;
     while (frame && frame != top_frame) {
@@ -8128,6 +8143,10 @@ thread_free(th)
 {
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
+#ifdef __ia64__
+    if (th->bstr_ptr) free(th->bstr_ptr);
+    th->bstr_ptr = 0;
+#endif
     if (th->locals) st_free_table(th->locals);
     if (th->status != THREAD_KILLED) {
 	if (th->prev) th->prev->next = th->next;
@@ -8183,6 +8202,23 @@ rb_thread_save_context(th)
     th->stk_len = len;
     FLUSH_REGISTER_WINDOWS; 
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
+#ifdef __ia64__
+    {
+	ucontext_t ctx;
+	VALUE *top, *bot;
+
+	getcontext(&ctx);
+	bot = (VALUE*)__libc_ia64_register_backing_store_base;
+#if defined(__FreeBSD__)
+	top = (VALUE*)ctx.uc_mcontext.mc_special.bspstore;
+#else
+	top = (VALUE*)ctx.uc_mcontext.sc_ar_bsp;
+#endif
+	th->bstr_len = top - bot;
+	REALLOC_N(th->bstr_ptr, VALUE, th->bstr_len);
+	MEMCPY(th->bstr_ptr, __libc_ia64_register_backing_store_base, VALUE, th->bstr_len);
+    }
+#endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
     th->win32_exception_list = win32_get_exception_list();
 #endif
@@ -8313,6 +8349,9 @@ rb_thread_restore_context(th, exit)
     ex = exit;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(tmp->stk_pos, tmp->stk_ptr, VALUE, tmp->stk_len);
+#ifdef __ia64__
+    MEMCPY((VALUE*)__libc_ia64_register_backing_store_base, tmp->bstr_ptr, tmp->bstr_len);
+#endif
 
     tval = rb_lastline_get();
     rb_lastline_set(tmp->last_line);
@@ -9187,6 +9226,12 @@ rb_thread_group(thread)
     return group;
 }
 
+#ifdef __ia64__
+# define IA64_INIT(x) x
+#else
+# define IA64_INIT(x)
+#endif
+
 #define THREAD_ALLOC(th) do {\
     th = ALLOC(struct thread);\
 \
@@ -9201,6 +9246,8 @@ rb_thread_group(thread)
     th->stk_len = 0;\
     th->stk_max = 0;\
     th->wait_for = 0;\
+    IA64_INIT(th->bstr_ptr = 0);\
+    IA64_INIT(th->bstr_len = 0);\
     FD_ZERO(&th->readfds);\
     FD_ZERO(&th->writefds);\
     FD_ZERO(&th->exceptfds);\
