@@ -1494,8 +1494,8 @@ rb_str_inspect(str)
 	char c = *p++;
 	if (ismbchar(c) && p < pend) {
 	    int len = mbclen(c);
-	    rb_str_cat(result, p, len);
-	    p += len;
+	    rb_str_cat(result, p - 1, len);
+	    p += len - 1;
 	}
 	else if (c == '"'|| c == '\\') {
 	    s[0] = '\\'; s[1] = c;

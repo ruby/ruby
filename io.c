@@ -2156,7 +2156,7 @@ rb_f_p(argc, argv)
     for (i=0; i<argc; i++) {
 	rb_p(argv[i]);
     }
-    if (TYPE(rb_defout) != T_FILE) {
+    if (TYPE(rb_defout) == T_FILE) {
 	rb_io_flush(rb_defout);
     }
     return Qnil;

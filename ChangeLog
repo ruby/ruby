@@ -5,6 +5,11 @@ Tue Dec 26 16:53:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_new): ditto.
 
+Tue Dec 26 15:45:35 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_inspect): should treat multibyte chracters
+	  properly.
+
 Mon Dec 25 17:49:08 2000  K.Kosako  <kosako@sofnec.co.jp>
 
 	* string.c (rb_str_replace_m): unexpected string share happens if
