@@ -919,13 +919,16 @@ num_step(argc, argv, from)
 	}
     }
     else if (TYPE(from) == T_FLOAT || TYPE(to) == T_FLOAT || TYPE(step) == T_FLOAT) {
+	const double epsilon = DBL_EPSILON;
 	double beg = NUM2DBL(from);
 	double end = NUM2DBL(to);
 	double unit = NUM2DBL(step);
 	double n = (end - beg)/unit;
+	double err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
 	long i;
 
-	n = n + 0.5;
+	if (err>0.5) err=0.5;
+	n = floor(n + err) + 1;
 	for (i=0; i<n; i++) {
 	    rb_yield(rb_float_new(i*unit+beg));
 	}

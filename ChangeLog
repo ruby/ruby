@@ -1,3 +1,7 @@
+Thu May  8 18:44:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc): check odd alignment stack on m68k machines.
+
 Thu May  8 12:56:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* compar.c (rb_cmperr): raise comparison failure.
@@ -11,10 +15,9 @@ Thu May  8 12:56:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* numeric.c (int_upto, int_downto): should fail unless the
 	  argument is comparable.  (ruby-bugs-ja:PR#454)
 
-Wed May  7 01:21:23 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Wed May  7 13:30:11 2003  Masahiro TANAKA  <masa@ir.isas.ac.jp>
 
-	* numeric.c (num_step): remove epsilon; add margin of 0.5, to make
-	  "1.1.step(1.5,0.1)" to work (third try).
+	* numeric.c (num_step): better error treatment of float values.
 
 Tue May  6 17:51:54 2003  Minero Aoki  <aamine@loveruby.net>
 

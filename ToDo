@@ -1,6 +1,7 @@
 Language Spec.
 
 - Class#allocate - basicNew
+- class Foo::Bar<Baz .. end, module Boo::Bar .. end
 * operator !! for rescue. ???
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -11,7 +12,6 @@ Language Spec.
 * multiple return values, yield values.  maybe incompatible ???
 * cascading method invocation ???
 * def Class#method .. end ??
-* class Foo::Bar<Baz .. end, module Boo::Bar .. end
 * def Foo::Bar::baz() .. end ??
 * I18N (or M17N) script/string/regexp
 * Fixnum 0 as false ????
@@ -81,6 +81,8 @@ Standard Libraries
 - hash etc. should handle self referenceing array/hash
 - Array#select(n1,n2...) works like Array#indexes(n1,n2...)
 - use Mersenne Twister RNG for random.
+- deprecate Array#indexes, and Array#indices.
+- remove dependency on MAXPATHLEN.
 * String#scanf(?)
 * Object#fmt(?)
 * Time::strptime
@@ -101,11 +103,10 @@ Standard Libraries
 * marshal should not depend on sprintf (works bad with locale).
 * ternary arg pow: a.pow(b,c) == a**b%c
 * new caller(), e.g. call_stack; needs better name.
-* remove dependency on MAXPATHLEN.
 * pointer share mechanism similar to one in String for Array.
-* deprecate Array#indexes, and Array#indices.
 * require "1.6" etc. by /usr/lib/ruby/1.6/1.6.rb ;-)
 * save both "feature names" and "normalized path" in $"
+* implement Mutex_m (or MutexMixin) using Mutex.
 
 Extension Libraries
 
@@ -116,7 +117,6 @@ Extension Libraries
 
 Ruby Libraries
 
-- add uri.rb
 * urllib.rb, nttplib.rb, etc.
 * format like perl's
 
@@ -124,8 +124,3 @@ Tools
 
 * freeze or undump to bundle everything
 * bundle using zlib
-
-Misc
-
-- publish Ruby books
-- publish Ruby books in English

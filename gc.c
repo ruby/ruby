@@ -1228,7 +1228,7 @@ rb_gc()
     setjmp(save_regs_gc_mark);
     mark_locations_array((VALUE*)save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
     rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END);
-#if defined(__human68k__)
+#if defined(__human68k__) || defined(__mc68000__)
     rb_gc_mark_locations((VALUE*)((char*)rb_gc_stack_start + 2),
 			 (VALUE*)((char*)STACK_END + 2));
 #endif
