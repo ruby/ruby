@@ -127,7 +127,7 @@ rubylib_mangle(s, l)
 {
     static char *newp, *oldp;
     static int newl, oldl, notfound;
-    static char ret[STATIC_FILE_LENGTH+1];
+    static char newsub[STATIC_FILE_LENGTH+1];
 
     if (!newp && !notfound) {
 	newp = getenv("RUBYLIB_PREFIX");
@@ -145,8 +145,8 @@ rubylib_mangle(s, l)
 	    if (newl == 0 || oldl == 0 || newl > STATIC_FILE_LENGTH) {
 		rb_fatal("malformed RUBYLIB_PREFIX");
 	    }
-	    strcpy(ret, newp);
-	    s = ret;
+	    strcpy(newsub, newp);
+	    s = newsub;
 	    while (*s) {
 		if (*s == '\\') *s = '/';
 		s++;
@@ -159,6 +159,7 @@ rubylib_mangle(s, l)
 	l = strlen(s);
     }
     if (!newp || l < oldl || strncasecmp(oldp, s, oldl) != 0) {
+	static char ret[STATIC_FILE_LENGTH+1];
 	strncpy(ret, s, l);
 	ret[l] = 0;
 	return ret;
@@ -166,9 +167,9 @@ rubylib_mangle(s, l)
     if (l + newl - oldl > STATIC_FILE_LENGTH || newl > STATIC_FILE_LENGTH) {
 	rb_fatal("malformed RUBYLIB_PREFIX");
     }
-    strcpy(ret + newl, s + oldl);
-    ret[l + newl - oldl] = 0;
-    return ret;
+    strcpy(newsub + newl, s + oldl);
+    newsub[l + newl - oldl] = 0;
+    return newsub;
 }
 #define rubylib_mangled_path(s, l) rb_str_new2(rubylib_mangle((s), (l)))
 #define rubylib_mangled_path2(s) rb_str_new2(rubylib_mangle((s), 0))
