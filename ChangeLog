@@ -1,3 +1,8 @@
+Sun Jan 14 21:49:28 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* sprintf.c (rb_f_sprintf): simple typo.  binary base should be 2,
+	  not '2'.
+
 Sun Jan 14 02:49:57 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb (adding): too few "yield" in case of arg is
@@ -9,6 +14,12 @@ Sat Jan 13 19:18:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* re.c (rb_reg_options): add RE_OPTION_{POSIXLINE,RE_OPTION_MULTILINE,
 	  RE_OPTION_EXTENDED}
+
+Thu Jan 11 06:45:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_dup): should propagate FL_SINGLETON.
+
+	* object.c (inspect_obj): handles the case of no instance variable.
 
 Wed Jan 10 01:50:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -1015,6 +1015,7 @@ rb_reg_initialize_m(argc, argv, self)
 	p = rb_str2cstr(src, &len);
 	rb_reg_initialize(self, p, len, flag);
     }
+    return self;
 }
 
 static VALUE

@@ -2283,7 +2283,7 @@ prep_stdio(f, mode, klass)
     return (VALUE)io;
 }
 
-static VALUE
+static void
 prep_path(io, path)
     VALUE io;
     char *path;
