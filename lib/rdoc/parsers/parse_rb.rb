@@ -1675,7 +1675,15 @@ module RDoc
             "line #{tk.line_no}" if $DEBUG
           skip_optional_do_after_expression
 
-	when TkCASE, TkDO, TkIF, TkUNLESS, TkBEGIN, TkFOR
+          # 'for' is trickier
+        when TkFOR
+          nest += 1
+          puts "FOUND #{tk.class} in #{container.name}, nest = #{nest}, " +
+            "line #{tk.line_no}" if $DEBUG
+          skip_for_variable
+          skip_optional_do_after_expression
+
+	when TkCASE, TkDO, TkIF, TkUNLESS, TkBEGIN
 	  nest += 1
           puts "Found #{tk.class} in #{container.name}, nest = #{nest}, " +
             "line #{tk.line_no}" if $DEBUG
@@ -2044,6 +2052,15 @@ module RDoc
       res = get_tkread.tr("\n", " ").strip
       res = "" if res == ";"
       res
+    end
+
+    # skip the var [in] part of a 'for' statement
+    def skip_for_variable
+      skip_tkspace(false)
+      tk = get_tk
+      skip_tkspace(false)
+      tk = get_tk
+      unget_tk(tk) unless tk.kind_of?(TkIN)
     end
 
     # while, until, and for have an optional 

@@ -1,3 +1,13 @@
+Wed May 26 13:59:17 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::skip_for_variable): Allow for 
+	  'do' after for statement
+
+Wed May 26 13:56:03 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb (Generators::MarkUp::style_url): Fix
+	  relative path to code CSS file
+
 Wed May 26 13:14:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_init_copy): copy also positions.  [ruby-talk:100910]
