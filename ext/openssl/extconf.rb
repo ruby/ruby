@@ -58,6 +58,17 @@ if !result
   end
 end
 
+check_opensslv = <<_end_of_src_
+#include <openssl/opensslv.h>
+#if OPENSSL_VERSION_NUMBER < 0x0090600fL
+#  error too old
+#endif
+_end_of_src_
+if !try_compile(check_opensslv)
+  message "OpenSSL 0.9.6 or later required.\n"
+  exit 1
+end
+
 message "=== Checking for OpenSSL features... ===\n"
 have_func("HMAC_CTX_copy")
 have_func("X509_STORE_get_ex_data")

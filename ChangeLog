@@ -1,3 +1,8 @@
+Tue Jan 20 02:49:22 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: add check for OpenSSL version.
+	  [ruby-list:39054]
+
 Tue Jan 20 01:31:36 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (lineno): typo fix(FIX2INT -> INT2FIX).
