@@ -20,6 +20,7 @@ Object
 =end
 
   class Generic
+    include URI
     include REGEXP
 
 =begin
@@ -1085,7 +1086,7 @@ Object
       end
 
       if self.class == oth.class
-	self.normalize.to_ary == oth.normalize.to_ary
+	self.normalize.component_ary == oth.normalize.component_ary
       else
 	false
       end
@@ -1101,17 +1102,13 @@ Object
 #    end
 
 =begin
---- URI::Generic#to_a
 =end
-    def to_ary
+    def component_ary
       component.collect do |x|
 	self.send(x)
       end
     end
-
-    def to_a
-      to_ary
-    end
+    protected :component_ary
 
 =begin
 --- URI::Generic#select(*components)
