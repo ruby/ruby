@@ -1077,7 +1077,7 @@ static VALUE
 rb_file_s_symlink(obj, from, to)
     VALUE obj, from, to;
 {
-#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__)
+#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__) && !defined(riscos)
     Check_SafeStr(from);
     Check_SafeStr(to);
 
@@ -1094,7 +1094,7 @@ static VALUE
 rb_file_s_readlink(obj, path)
     VALUE obj, path;
 {
-#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__)
+#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__) && !defined(riscos)
     char buf[MAXPATHLEN];
     int cc;
 
@@ -2026,7 +2026,7 @@ rb_path_check(path)
     return 1;
 }
 
-#ifdef __MACOS__
+#if defined(__MACOS__) || defined(riscos)
 static int
 is_macos_native_path(path)
     const char *path;
@@ -2045,7 +2045,7 @@ rb_find_file(file)
     VALUE fname;
     char *path;
 
-#ifdef __MACOS__
+#if defined(__MACOS__) || defined(riscos)
     if (is_macos_native_path(file)) {
 	FILE *f;
 

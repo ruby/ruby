@@ -341,6 +341,13 @@ rb_str_modify(str)
 }
 
 VALUE
+rb_str_freeze(str)
+    VALUE str;
+{
+    return rb_obj_freeze(str);
+}
+
+VALUE
 rb_str_dup_frozen(str)
     VALUE str;
 {
@@ -560,6 +567,10 @@ rb_str_index_m(argc, argv, str)
     }
     else {
 	pos = 0;
+    }
+    if (pos < 0) {
+	pos += RSTRING(str)->len;
+	if (pos < 0) return Qnil;
     }
 
     switch (TYPE(sub)) {

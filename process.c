@@ -160,7 +160,7 @@ wait_each(key, value, data)
 #endif
 
 static VALUE
-rb_f_wait()
+proc_wait()
 {
     int pid, state;
 #ifdef NO_WAITPID
@@ -189,16 +189,17 @@ rb_f_wait()
 }
 
 static VALUE
-rb_f_waitpid(obj, vpid, vflags)
+proc_waitpid(obj, vpid, vflags)
     VALUE obj, vpid, vflags;
 {
     int pid, flags, status;
 
     if (NIL_P(vflags)) flags = 0;
-    else flags = FIX2UINT(vflags);
+    else flags = NUM2UINT(vflags);
 
-    if ((pid = rb_waitpid(FIX2UINT(vpid), flags, &status)) < 0)
+    if ((pid = rb_waitpid(NUM2INT(vpid), flags, &status)) < 0)
 	rb_sys_fail(0);
+    if (pid == 0) return Qnil;
     return INT2FIX(pid);
 }
 
@@ -1056,8 +1057,8 @@ Init_process()
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
 #endif
 #ifndef NT
-    rb_define_module_function(rb_mProcess, "wait", rb_f_wait, 0);
-    rb_define_module_function(rb_mProcess, "waitpid", rb_f_waitpid, 2);
+    rb_define_module_function(rb_mProcess, "wait", proc_wait, 0);
+    rb_define_module_function(rb_mProcess, "waitpid", proc_waitpid, 2);
 
 #ifndef USE_CWGUSI
     rb_define_module_function(rb_mProcess, "pid", get_pid, 0);

@@ -1608,8 +1608,8 @@ rb_file_s_open(argc, argv, klass)
     path = RSTRING(fname)->ptr;
 
     if (FIXNUM_P(vmode)) {
-	int flags = FIX2INT(vmode);
-	int fmode = NIL_P(perm) ? 0666 : FIX2INT(perm);
+	int flags = NUM2INT(vmode);
+	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
 
 	file = rb_file_sysopen_internal(klass, path, flags, fmode);
     }
@@ -1649,7 +1649,7 @@ rb_f_open(argc, argv)
 	mode = "r";
     }
     else if (FIXNUM_P(pmode)) {
-	mode = rb_io_flags_mode(FIX2INT(pmode));
+	mode = rb_io_flags_mode(NUM2INT(pmode));
     }
     else {
 	int len;
@@ -1661,6 +1661,7 @@ rb_f_open(argc, argv)
     }
 
     port = pipe_open(RSTRING(pname)->ptr+1, mode);
+    if (!rb_iterator_p()) return port;
     if (NIL_P(port)) {
 	rb_yield(port);
     }
@@ -3395,5 +3396,8 @@ Init_IO()
 #endif
 #ifdef O_BINARY
     rb_file_const("BINARY", INT2FIX(O_BINARY));
+#endif
+#ifdef O_SYNC
+    rb_file_const("BINARY", INT2FIX(O_SYNC));
 #endif
 }

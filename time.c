@@ -394,7 +394,7 @@ time_cmp(time1, time2)
 	i = FIX2LONG(time2);
 	if (tobj1->tv.tv_sec == i) return INT2FIX(0);
 	if (tobj1->tv.tv_sec > i) return INT2FIX(1);
-	return FIX2INT(-1);
+	return INT2FIX(-1);
 	
       case T_FLOAT:
 	{
@@ -414,15 +414,15 @@ time_cmp(time1, time2)
 	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
 	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
 	    if (tobj1->tv.tv_usec > tobj2->tv.tv_usec) return INT2FIX(1);
-	    return FIX2INT(-1);
+	    return INT2FIX(-1);
 	}
 	if (tobj1->tv.tv_sec > tobj2->tv.tv_sec) return INT2FIX(1);
-	return FIX2INT(-1);
+	return INT2FIX(-1);
     }
     i = NUM2LONG(time2);
     if (tobj1->tv.tv_sec == i) return INT2FIX(0);
     if (tobj1->tv.tv_sec > i) return INT2FIX(1);
-    return FIX2INT(-1);
+    return INT2FIX(-1);
 }
 
 static VALUE

@@ -22,11 +22,11 @@ VALUE rb_mMath;
 }
 
 static VALUE
-math_atan2(obj, x, y)
+math_atan2(obj, y, x)
     VALUE obj, x, y;
 {
-    Need_Float2(x, y);
-    return rb_float_new(atan2(RFLOAT(x)->value, RFLOAT(y)->value));
+    Need_Float2(y, x);
+    return rb_float_new(atan2(RFLOAT(y)->value, RFLOAT(x)->value));
 }
 
 static VALUE

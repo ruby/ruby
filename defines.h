@@ -50,6 +50,8 @@
 
 #if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(OS2)
 #define PATH_SEP ";"
+#elif defined(riscos)
+#define PATH_SEP ","
 #else
 #define PATH_SEP ":"
 #endif

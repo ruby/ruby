@@ -1,3 +1,58 @@
+Wed Feb 16 00:32:49 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (method_arity): nd_rest is -1 for no rest argument.
+
+	* process.c (proc_waitpid): returns nil when waitpid(2) returns 0.
+
+Tue Feb 15 01:47:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* process.c (rb_f_waitpid): pid_t should be signed.
+
+Mon Feb 14 13:59:01 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): yylex yields wrong token for `:foo=~expr'.
+
+	* ruby.c (load_file): exit if reading file is empty.
+
+Mon Feb 14 03:34:52 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): `foo.bar=' should be <foo><.><bar><=>.
+
+	* eval.c (rb_thread_restore_context): process according to
+	  RESTORE_* is moved after longjmp().
+
+	* eval.c (thread_switch): new function to process RESTORE_*.
+
+Sun Feb 13 16:19:49 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ruby.c (require_libraries): don't access freed memory.
+
+	* ruby.c (add_modules): ditto.
+
+Fri Feb 11 12:06:22 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (parse_quotedwords): %w() need to split not only by mere
+	  spaces, but by all whitespaces.
+
+Thu Feb 10 02:12:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_index_m): did not support negative offset.
+
+Wed Feb  9 21:54:26 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/getaddrinfo.c: gcc --traditional support.
+	  Rearrange headers to work AC_C_CONST.
+	* ext/socket/getnameinfo.c: ditto.
+	* ext/socket/socket.c: mswin32: use double instead of long long.
+
+Wed Feb  9 16:30:41 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (num_coerce): should return [y, x].
+
+Wed Feb  9 11:07:30 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (ruby_prog_init): loadpath structure changed.
+
 Tue Feb  8 02:07:33 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_search): optimize for \G at top.

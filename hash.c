@@ -34,6 +34,13 @@ rb_hash_modify(hash)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
 }
 
+VALUE
+rb_hash_freeze(hash)
+    VALUE hash;
+{
+    return rb_obj_freeze(hash);
+}
+
 VALUE rb_cHash;
 
 static VALUE envtbl;

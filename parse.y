@@ -2430,7 +2430,7 @@ parse_quotedwords(term, paren)
     strstart = ruby_sourceline;
     newtok();
 
-    while ((c = nextc()) == ' ')
+    while (c = nextc(),ISSPACE(c))
 	;		/* skip preceding spaces */
     pushback(c);
     while ((c = nextc()) != term || nest > 0) {
@@ -2455,14 +2455,13 @@ parse_quotedwords(term, paren)
 	      case '\\':
 		c = '\\';
 		break;
-	      case ' ':
-		tokadd(' ');
-		break;
 	      default:
-		tokadd('\\');
+		if (ISSPACE(c))
+		    tokadd('\\');
+		tokadd(c);
 	    }
 	}
-	else if (c == ' ') {
+	else if (ISSPACE(c)) {
 	    NODE *str;
 
 	    tokfix();
@@ -2470,7 +2469,7 @@ parse_quotedwords(term, paren)
 	    newtok();
 	    if (!qwords) qwords = NEW_LIST(str);
 	    else list_append(qwords, str);
-	    while ((c = nextc()) == ' ')
+	    while (c = nextc(),ISSPACE(c))
 		;		/* skip continuous spaces */
 	    pushback(c);
 	    continue;
@@ -3414,8 +3413,8 @@ yylex()
 		result = tFID;
 	    }
 	    else {
-		if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
-		    if ((c = nextc()) == '=' && !peek('=')) {
+		if (lex_state == EXPR_FNAME) {
+		    if ((c = nextc()) == '=' && !peek('=') && !peek('~')) {
 			result = tIDENTIFIER;
 			tokadd(c);
 		    }

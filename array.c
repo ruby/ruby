@@ -51,6 +51,13 @@ rb_ary_modify(ary)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
 
+VALUE
+rb_ary_freeze(ary)
+    VALUE ary;
+{
+    return rb_obj_freeze(ary);
+}
+
 static VALUE
 rb_ary_frozen_p(ary)
     VALUE ary;

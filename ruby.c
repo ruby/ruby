@@ -108,13 +108,6 @@ NULL
 	printf("\n  %s", *p++);
 }
 
-#ifndef RUBY_LIB
-#define RUBY_LIB "/usr/local/lib/ruby"
-#endif
-#ifndef RUBY_SITE_LIB
-#define RUBY_SITE_LIB "/usr/local/lib/site_ruby"
-#endif
-
 extern VALUE rb_load_path;
 
 #define STATIC_FILE_LENGTH 255
@@ -215,7 +208,7 @@ addpath(path)
 }
 
 struct req_list {
-    const char *name;
+    char *name;
     struct req_list *next;
 } req_list_head;
 struct req_list *req_list_last = &req_list_head;
@@ -227,7 +220,8 @@ add_modules(mod)
     struct req_list *list;
 
     list = ALLOC(struct req_list);
-    list->name = mod;
+    list->name = ALLOC_N(char, strlen(mod)+1);
+    strcpy(list->name, mod);
     list->next = 0;
     req_list_last->next = list;
     req_list_last = list;
@@ -248,6 +242,7 @@ require_libraries()
     while (list) {
 	rb_require(list->name);
 	tmp = list->next;
+	free(list->name);
 	free(list);
 	list = tmp;
     }
@@ -745,7 +740,11 @@ load_file(fname, script)
 		}
 	    }
 	}
-	else if (!NIL_P(c)) {
+	else if (NIL_P(c)) {
+	    rb_io_close(f);
+	    return;
+	}
+	else {
 	    rb_io_ungetc(f, c);
 	}
     }
@@ -930,17 +929,14 @@ ruby_prog_init()
     addpath(ruby_libpath());
 #endif
 
-#ifdef RUBY_ARCHLIB
     addpath(RUBY_ARCHLIB);
-#endif
 #ifdef RUBY_THIN_ARCHLIB
     addpath(RUBY_THIN_ARCHLIB);
 #endif
 
     addpath(RUBY_SITE_LIB);
-#ifdef RUBY_SITE_ARCHLIB
+    addpath(RUBY_SITE_LIB2);
     addpath(RUBY_SITE_ARCHLIB);
-#endif
 #ifdef RUBY_SITE_THIN_ARCHLIB
     addpath(RUBY_SITE_THIN_ARCHLIB);
 #endif

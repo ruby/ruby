@@ -3721,11 +3721,11 @@ re_match(bufp, string_arg, size, pos, regs)
 	    cc = c = (unsigned char)translate[c];
 
 	  not = is_in_list(c, p);
+	  if (!not && cc != c) {
+	      part = not = is_in_list(cc, p);
+	  }
 	  if (*(p - 1) == (unsigned char)charset_not) {
 	    not = !not;
-	  }
-	  else if (!not && cc != c) {
-	      part = not = is_in_list(cc, p);
 	  }
 	  if (!not) goto fail;
 
