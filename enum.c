@@ -499,7 +499,7 @@ each_with_index_i(val, memo)
     VALUE val;
     NODE *memo;
 {
-    rb_yield_values(val, INT2FIX(memo->u3.cnt));
+    rb_yield_values(2, val, INT2FIX(memo->u3.cnt));
     memo->u3.cnt++;
     return Qnil;
 }

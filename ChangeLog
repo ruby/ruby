@@ -1,3 +1,10 @@
+Sat Aug 23 02:32:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (each_with_index_i): typo.
+
+	* eval.c (rb_yield_splat): should call svalue_to_avalue() before
+	  calling rb_yield_0().
+
 Fri Aug 22 17:07:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (inject_i): use rb_yield_values.
