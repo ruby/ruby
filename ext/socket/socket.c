@@ -1098,14 +1098,13 @@ make_hostent(host, addr, ipaddr)
     struct addrinfo* addr;
     VALUE (*ipaddr)_((struct sockaddr*, size_t));
 {
-    VALUE ary;
     struct hostent_arg arg;
 
     arg.host = host;
     arg.addr = addr;
     arg.ipaddr = ipaddr;
-    ary = rb_ensure(make_hostent_internal, (VALUE)&arg,
-		    RUBY_METHOD_FUNC(freeaddrinfo), (VALUE)addr);
+    return rb_ensure(make_hostent_internal, (VALUE)&arg,
+		     RUBY_METHOD_FUNC(freeaddrinfo), (VALUE)addr);
 }
 
 VALUE

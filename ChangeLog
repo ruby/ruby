@@ -1,3 +1,7 @@
+Tue Apr  6 13:21:30 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (make_hostent): must return value.
+
 Tue Apr  6 00:05:30 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb: add require 'drb/drb'
