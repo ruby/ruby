@@ -10,6 +10,15 @@ require 'pathname'
 require 'tmpdir'
 require 'test/unit'
 
+class TestFileUtils < Test::Unit::TestCase
+  TMPROOT = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
+end
+
+prevdir = Dir.pwd
+tmproot = TestFileUtils::TMPROOT
+Dir.mkdir tmproot unless File.directory?(tmproot)
+Dir.chdir tmproot
+
 def have_drive_letter?
   /djgpp|mswin(?!ce)|mingw|bcc|emx/ === RUBY_PLATFORM
 end
@@ -44,7 +53,10 @@ def have_hardlink?
   HAVE_HARDLINK
 end
 
-class TestFileUtils < Test::Unit::TestCase
+Dir.chdir prevdir
+Dir.rmdir tmproot
+
+class TestFileUtils
 
   include FileUtils
 

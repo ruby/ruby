@@ -1,3 +1,8 @@
+Wed Dec 24 11:26:41 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb: should not create any
+	  files or directories in current directory.  [ruby-talk:88724]
+
 Wed Dec 24 10:29:53 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_read): never return nil at
