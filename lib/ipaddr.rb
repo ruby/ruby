@@ -131,9 +131,13 @@ class IPAddr
 	other_addr = other.to_i
 	other_family = other.family
       end
-      if family != other_family
-	return false
-      end
+    else # Not IPAddr - assume integer in same family as us
+      other_addr   = other.to_i
+      other_family = family
+    end
+
+    if family != other_family
+      return false
     end
     return ((addr & mask_addr) == (other_addr & mask_addr))
   end
@@ -685,6 +689,12 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true, net1.include?(IPAddr.new("192.168.2.0")))
     assert_equal(true, net1.include?(IPAddr.new("192.168.2.255")))
     assert_equal(false, net1.include?(IPAddr.new("192.168.3.0")))
+    # test with integer parameter
+    int = (192 << 24) + (168 << 16) + (2 << 8) + 13
+
+    assert_equal(true, net1.include?(int))
+    assert_equal(false, net1.include?(int+255))
+
   end
 
 end
