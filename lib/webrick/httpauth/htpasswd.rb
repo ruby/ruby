@@ -32,7 +32,15 @@ module WEBrick
           open(@path){|io|
             while line = io.gets
               line.chomp!
-              user, pass = line.split(":")
+              case line
+              when %r!\A[^:]+:[a-zA-Z0-9./]{13}\z!
+                user, pass = line.split(":")
+              when /:\$/, /:\{SHA\}/
+                raise NotImplementedError,
+                      'MD5, SHA1 .htpasswd file not supported'
+              else
+                raise StandardError, 'bad .htpasswd file'
+              end
               @passwd[user] = pass
             end
           }

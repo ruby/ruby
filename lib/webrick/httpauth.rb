@@ -22,7 +22,7 @@ module WEBrick
       user = pass = nil
       if /^Basic\s+(.*)/o =~ req[req_field]
         userpass = $1
-        user, pass = decode64(userpass).split(":", 2)
+        user, pass = userpass.unpack("m*")[0].split(":", 2)
       end
       if block.call(user, pass)
         req.user = user

@@ -174,11 +174,11 @@ module WEBrick
 
         if auth_req['qop'] == "auth" || auth_req['qop'] == nil
           ha2 = hexdigest(req.request_method, auth_req['uri'])
-          ha2_res = digest("", auth_req['uri'])
+          ha2_res = hexdigest("", auth_req['uri'])
         elsif auth_req['qop'] == "auth-int"
           ha2 = hexdigest(req.request_method, auth_req['uri'],
                           hexdigest(req.body))
-          ha2_res = digest("", auth_req['uri'], hexdigest(req.body))
+          ha2_res = hexdigest("", auth_req['uri'], hexdigest(res.body))
         end
 
         if auth_req['qop'] == "auth" || auth_req['qop'] == "auth-int"
@@ -329,10 +329,6 @@ module WEBrick
 
       def hexdigest(*args)
         @h.hexdigest(args.join(":"))
-      end
-
-      def digest(*args)
-        @h.digest(args.join(":"))
       end
     end
 
