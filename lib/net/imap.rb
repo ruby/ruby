@@ -885,15 +885,16 @@ module Net
           raise "SSL extension not installed"
         end
         @usessl = true
-        @sock = SSLSocket.new(@sock)
 
         # verify the server.
-        @sock.ca_file = certs if certs && FileTest::file?(certs)
-        @sock.ca_path = certs if certs && FileTest::directory?(certs)
-        @sock.verify_mode = VERIFY_PEER if verify
+        context = SSLContext::new()
+        context.ca_file = certs if certs && FileTest::file?(certs)
+        context.ca_path = certs if certs && FileTest::directory?(certs)
+        context.verify_mode = VERIFY_PEER if verify
         if defined?(VerifyCallbackProc)
-          @sock.verify_callback = VerifyCallbackProc 
+          context.verify_callback = VerifyCallbackProc 
         end
+        @sock = SSLSocket.new(@sock, context)
         @sock.connect   # start ssl session.
       else
         @usessl = false

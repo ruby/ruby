@@ -1,3 +1,8 @@
+Wed Feb 23 01:57:46 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (initialize): handle certs correctly. Thanks,
+	  NABEYA Kenichi. (backported from CVS HEAD)
+
 Tue Feb 22 07:25:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): identfier after dot must not be a variable.
