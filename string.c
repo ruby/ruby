@@ -152,7 +152,6 @@ str_new4(klass, str)
 	FL_SET(str, ELTS_SHARED);
 	RSTRING(str)->aux.shared = str2;
     }
-    OBJ_INFECT(str2, str);
 
     return str2;
 }
@@ -177,7 +176,6 @@ rb_str_new4(orig)
     }
     else if (FL_TEST(orig, STR_ASSOC)) {
 	str = str_new(klass, RSTRING(orig)->ptr, RSTRING(orig)->len);
-	OBJ_INFECT(str, orig);
     }
     else {
 	str = str_new4(klass, orig);
@@ -527,20 +525,15 @@ rb_str_substr(str, beg, len)
     if (len == 0) return rb_str_new5(str,0,0);
 
     if (len > sizeof(struct RString)/2 &&
-	beg + len == RSTRING(str)->len &&
-	!FL_TEST(str, STR_ASSOC)) {
-	if (FL_TEST(str, ELTS_SHARED) && RSTRING(str)->aux.shared)
-	    str = RSTRING(str)->aux.shared;
-	else
-	    str = str_new4(rb_obj_class(str), str);
-	str2 = rb_str_new3(str);
+	beg + len == RSTRING(str)->len && !FL_TEST(str, STR_ASSOC)) {
+	str2 = rb_str_new3(rb_str_new4(str));
 	RSTRING(str2)->ptr += RSTRING(str2)->len - len;
 	RSTRING(str2)->len = len;
     }
     else {
 	str2 = rb_str_new5(str, RSTRING(str)->ptr+beg, len);
-	OBJ_INFECT(str2, str);
     }
+    OBJ_INFECT(str2, str);
 
     return str2;
 }

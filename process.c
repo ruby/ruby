@@ -17,6 +17,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -26,6 +29,10 @@
 
 #include <time.h>
 #include <ctype.h>
+
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
 
 struct timeval rb_time_interval _((VALUE));
 
@@ -874,7 +881,7 @@ rb_f_exit_bang(argc, argv, obj)
 	istatus = NUM2INT(status);
     }
     else {
-	istatus = -1;
+	istatus = EXIT_FAILURE;
     }
     _exit(istatus);
 

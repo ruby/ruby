@@ -18,6 +18,16 @@
 #include "util.h"
 #include "rubysig.h"
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
 #include <stdio.h>
 #include <setjmp.h>
 #include "st.h"
@@ -1181,7 +1191,7 @@ ruby_init()
     POP_TAG();
     if (state) {
 	error_print();
-	exit(1);
+	exit(EXIT_FAILURE);
     }
     POP_SCOPE();
     ruby_scope = top_scope;
@@ -1219,37 +1229,33 @@ static int
 error_handle(ex)
     int ex;
 {
-    if (thread_set_raised()) return 1;
+    int status = EXIT_FAILURE;
 
+    if (thread_set_raised()) return EXIT_FAILURE;
     switch (ex & TAG_MASK) {
       case 0:
-	ex = 0;
+	status = EXIT_SUCCESS;
 	break;
 
       case TAG_RETURN:
 	error_pos();
 	warn_print(": unexpected return\n");
-	ex = 1;
 	break;
       case TAG_NEXT:
 	error_pos();
 	warn_print(": unexpected next\n");
-	ex = 1;
 	break;
       case TAG_BREAK:
 	error_pos();
 	warn_print(": unexpected break\n");
-	ex = 1;
 	break;
       case TAG_REDO:
 	error_pos();
 	warn_print(": unexpected redo\n");
-	ex = 1;
 	break;
       case TAG_RETRY:
 	error_pos();
 	warn_print(": retry outside of rescue clause\n");
-	ex = 1;
 	break;
       case TAG_THROW:
 	if (prot_tag && prot_tag->frame && prot_tag->frame->node) {
@@ -1261,17 +1267,15 @@ error_handle(ex)
 	    error_pos();
 	    warn_printf(": unexpected throw\n");
 	}
-	ex = 1;
 	break;
       case TAG_RAISE:
       case TAG_FATAL:
 	if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
 	    VALUE st = rb_iv_get(ruby_errinfo, "status");
-	    ex = NUM2INT(st);
+	    status = NUM2INT(st);
 	}
 	else {
 	    error_print();
-	    ex = 1;
 	}
 	break;
       default:
@@ -1279,7 +1283,7 @@ error_handle(ex)
 	break;
     }
     thread_reset_raised();
-    return ex;
+    return status;
 }
 
 void
@@ -1304,9 +1308,9 @@ ruby_options(argc, argv)
 
 void rb_exec_end_proc _((void));
 
-static void
+static int
 ruby_finalize_0(exp)
-    int *exp;
+    int exp;
 {
     ruby_errinfo = 0;
     PUSH_TAG(PROT_NONE);
@@ -1316,12 +1320,13 @@ ruby_finalize_0(exp)
     POP_TAG();
     rb_exec_end_proc();
     rb_gc_call_finalizer_at_exit();
-    if (exp && ruby_errinfo && rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
-	VALUE st = rb_iv_get(ruby_errinfo, "status");
-	*exp = NUM2INT(st);
-    }
     trace_func = 0;
     tracing = 0;
+    if (ruby_errinfo && rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
+	VALUE st = rb_iv_get(ruby_errinfo, "status");
+	return NUM2INT(st);
+    }
+    return EXIT_SUCCESS;
 }
 
 void
@@ -1350,8 +1355,7 @@ ruby_cleanup(ex)
 
     ex = error_handle(ex);
     POP_TAG();
-    ruby_finalize_0(&ex);
-    return ex;
+    return ruby_finalize_0(ex);
 }
 
 int
@@ -3846,7 +3850,7 @@ rb_f_exit(argc, argv)
 	istatus = NUM2INT(status);
     }
     else {
-	istatus = 0;
+	istatus = EXIT_SUCCESS;
     }
     rb_exit(istatus);
     return Qnil;		/* not reached */
@@ -3862,7 +3866,7 @@ rb_f_abort(argc, argv)
 	if (!NIL_P(ruby_errinfo)) {
 	    error_print();
 	}
-	rb_exit(1);
+	rb_exit(EXIT_FAILURE);
     }
     else {
 	VALUE mesg;
@@ -9110,7 +9114,7 @@ rb_thread_kill(thread)
     }
     if (th->status == THREAD_TO_KILL || th->status == THREAD_KILLED)
 	return thread;
-    if (th == th->next || th == main_thread) rb_exit(0);
+    if (th == th->next || th == main_thread) rb_exit(EXIT_SUCCESS);
 
     rb_thread_ready(th);
     th->status = THREAD_TO_KILL;

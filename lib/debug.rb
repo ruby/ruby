@@ -261,7 +261,7 @@ class Context
     binding_file = file
     binding_line = line
     previous_line = nil
-    if (ENV['EMACS'] == 't')
+    if ENV['EMACS']
       stdout.printf "\032\032%s:%d:\n", binding_file, binding_line
     else
       stdout.printf "%s:%d:%s", binding_file, binding_line,

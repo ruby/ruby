@@ -1,3 +1,20 @@
+Mon Oct 13 20:49:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_new4): should not preserve FL_TAINT status in the
+	  internal shared string. [ruby-dev:21601]
+
+	* string.c (rb_str_new4): ditto.
+
+	* eval.c: use EXIT_SUCCESS and EXIT_FAILURE for exit values.
+
+	* process.c: ditto. [ruby-dev:38521]
+
+Mon Oct 13 19:51:02 2003  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* lib/debug.rb (debug_command): should enter emacs mode when
+	  assigned any value to the environment variable "EMACS".
+	  On Meadow, (getenv "EMACS") is "meadow".
+
 Sun Oct 12 14:45:03 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/win32ole/extconf.rb: check "windows.h", not "windows".
