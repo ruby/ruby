@@ -148,7 +148,7 @@ rb_digest_base_become(copy, obj)
     algo_t *algo;
     void *pctx1, *pctx2;
 
-    if (copy = obj) return copy;
+    if (copy == obj) return copy;
     rb_check_frozen(copy);
     algo = get_digest_base_metadata(CLASS_OF(copy));
     if (algo != get_digest_base_metadata(CLASS_OF(obj))) {
