@@ -160,25 +160,18 @@ class Struct
 end
 
 YAML.add_ruby_type( 'struct' ) { |type, val|
-	type =~ /^struct:(\w+)/
 	if Hash === val
-		type = $1
-		struct_type = nil
-		struct_def = []
-		struct_name = ""
-		if $1.to_s.length > 1
-			struct_name = $1[0..$1.length]
-			struct_def << struct_name
-		end
+        struct_type = nil
 
 		#
 		# Use existing Struct if it exists
 		#
 		begin
-			struct_type = Struct.const_get( struct_name )
+			struct_name, struct_type = YAML.read_type_class( type, Struct )
 		rescue NameError
 		end
 		if not struct_type
+            struct_def = [ type.split( ':', 4 ).last ]
 			struct_type = Struct.new( *struct_def.concat( val.keys.collect { |k| k.intern } ) ) 
 		end
 

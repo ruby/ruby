@@ -1,17 +1,17 @@
-//
-// node.c
-//
-// $Author$
-// $Date$
-//
-// Copyright (C) 2003 why the lucky stiff
-//
+/*
+ * node.c
+ *
+ * $Author$
+ * $Date$
+ *
+ * Copyright (C) 2003 why the lucky stiff
+ */
 
 #include "syck.h"
 
-//
-// Node allocation functions
-//
+/*
+ * Node allocation functions
+ */
 SyckNode *
 syck_alloc_node( enum syck_kind_tag type )
 {
@@ -19,7 +19,7 @@ syck_alloc_node( enum syck_kind_tag type )
 
     s = S_ALLOC( SyckNode );
     s->kind = type;
-    s->id = NULL;
+    s->id = 0;
     s->type_id = NULL;
     s->anchor = NULL;
 

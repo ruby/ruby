@@ -105,17 +105,19 @@ module YAML
 	end
 
     #
+    # Detect typing of a string
+    #
+    def YAML.detect_implicit( val )
+        @@loader.detect_implicit( val )
+    end
+
+    #
     # Method to extract colon-seperated type and class, returning
     # the type and the constant of the class
     #
     def YAML.read_type_class( type, obj_class )
-        type =~ /^([^:]+):(.+)/i
-        if $2
-            type = $1
-            $2.split( "::" ).each { |c|
-                obj_class = obj_class.const_get( c )
-            }
-        end
+        scheme, domain, type, tclass = type.split( ':', 4 )
+        tclass.split( "::" ).each { |c| obj_class = obj_class.const_get( c ) } if tclass
         return [ type, obj_class ]
     end
 

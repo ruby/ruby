@@ -1,11 +1,11 @@
-//
-// rubyext.c
-//
-// $Author$
-// $Date$
-//
-// Copyright (C) 2003 why the lucky stiff
-//
+/*
+ * rubyext.c
+ *
+ * $Author$
+ * $Date$
+ *
+ * Copyright (C) 2003 why the lucky stiff
+ */
 
 #include "ruby.h"
 #include "syck.h"
@@ -19,9 +19,9 @@ static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
 VALUE cParser, cLoader, cNode, oDefaultLoader;
 
-//
-// my private collection of numerical oddities.
-//
+/*
+ * my private collection of numerical oddities.
+ */
 static double S_zero()    { return 0.0; }
 static double S_one() { return 1.0; }
 static double S_inf() { return S_one() / S_zero(); }
@@ -29,9 +29,9 @@ static double S_nan() { return S_zero() / S_zero(); }
 
 static VALUE syck_node_transform( VALUE );
 
-//
-// read from io.
-// 
+/*
+ * read from io.
+ */
 long
 rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
 {
@@ -60,9 +60,9 @@ rb_syck_io_str_read( char *buf, SyckIoStr *str, long max_size, long skip )
     return len;
 }
 
-//
-// determine: are we reading from a string or io?
-//
+/*
+ * determine: are we reading from a string or io?
+ */
 void
 syck_parser_assign_io(parser, port)
 	SyckParser *parser;
@@ -85,9 +85,9 @@ syck_parser_assign_io(parser, port)
     }
 }
 
-//
-// Get value in hash by key, forcing an empty hash if nil.
-//
+/*
+ * Get value in hash by key, forcing an empty hash if nil.
+ */
 VALUE
 syck_get_hash_aref(hsh, key)
     VALUE hsh, key;
@@ -101,9 +101,9 @@ syck_get_hash_aref(hsh, key)
    return val;
 }
 
-//
-// creating timestamps
-//
+/*
+ * creating timestamps
+ */
 SYMID
 rb_syck_mktime(str)
     char *str;
@@ -145,10 +145,10 @@ rb_syck_mktime(str)
     return time;
 }
 
-//
-// {generic mode} node handler
-// - Loads data into Node classes
-//
+/*
+ * {generic mode} node handler
+ * - Loads data into Node classes
+ */
 SYMID
 rb_syck_parse_handler(p, n)
     SyckParser *p;
@@ -204,10 +204,10 @@ rb_syck_parse_handler(p, n)
     return obj;
 }
 
-//
-// {native mode} node handler
-// - Converts data into native Ruby types
-//
+/*
+ * {native mode} node handler
+ * - Converts data into native Ruby types
+ */
 SYMID
 rb_syck_load_handler(p, n)
     SyckParser *p;
@@ -327,9 +327,9 @@ rb_syck_load_handler(p, n)
     return obj;
 }
 
-//
-// friendly errors.
-//
+/*
+ * friendly errors.
+ */
 void
 rb_syck_err_handler(p, msg)
     SyckParser *p;
@@ -348,9 +348,9 @@ rb_syck_err_handler(p, msg)
            p->lineptr); 
 }
 
-//
-// data loaded based on the model requested.
-//
+/*
+ * data loaded based on the model requested.
+ */
 void
 syck_set_model( parser, model )
 	SyckParser *parser;
@@ -372,9 +372,9 @@ syck_set_model( parser, model )
 	}
 }
 
-//
-// wrap syck_parse().
-//
+/*
+ * wrap syck_parse().
+ */
 static VALUE
 rb_run_syck_parse(parser)
     SyckParser *parser;
@@ -382,9 +382,9 @@ rb_run_syck_parse(parser)
     return syck_parse(parser);
 }
 
-//
-// free parser.
-//
+/*
+ * free parser.
+ */
 static VALUE
 rb_syck_ensure(parser)
     SyckParser *parser;
@@ -393,9 +393,9 @@ rb_syck_ensure(parser)
     return 0;
 }
 
-//
-// YAML::Syck::Parser.new
-//
+/*
+ * YAML::Syck::Parser.new
+ */
 VALUE 
 syck_parser_new(argc, argv, class)
     int argc;
@@ -417,9 +417,9 @@ syck_parser_new(argc, argv, class)
 	return pobj;
 }
 
-//
-// YAML::Syck::Parser.initialize( options )
-//
+/*
+ * YAML::Syck::Parser.initialize( options )
+ */
 static VALUE
 syck_parser_initialize( self, options )
     VALUE self, options;
@@ -428,9 +428,9 @@ syck_parser_initialize( self, options )
 	return self;
 }
 
-//
-// YAML::Syck::Parser.load( IO or String )
-//
+/*
+ * YAML::Syck::Parser.load( IO or String )
+ */
 VALUE
 syck_parser_load(argc, argv, self)
     int argc;
@@ -454,7 +454,7 @@ syck_parser_load(argc, argv, self)
     }
 
     v = syck_parse( parser );
-    if ( v == NULL )
+    if ( v == 0 )
     {
         return Qnil;
     }
@@ -464,9 +464,9 @@ syck_parser_load(argc, argv, self)
     return v;
 }
 
-//
-// YAML::Syck::Parser.load_documents( IO or String ) { |doc| }
-//
+/*
+ * YAML::Syck::Parser.load_documents( IO or String ) { |doc| }
+ */
 VALUE
 syck_parser_load_documents(argc, argv, self)
     int argc;
@@ -497,9 +497,9 @@ syck_parser_load_documents(argc, argv, self)
     return Qnil;
 }
 
-//
-// YAML::Syck::Loader.initialize
-//
+/*
+ * YAML::Syck::Loader.initialize
+ */
 static VALUE
 syck_loader_initialize( self )
     VALUE self;
@@ -516,9 +516,9 @@ syck_loader_initialize( self )
        return self;
 }
 
-//
-// Add type family, used by add_*_type methods.
-//
+/*
+ * Add type family, used by add_*_type methods.
+ */
 VALUE
 syck_loader_add_type_family( self, domain, type_re, proc )
     VALUE self, domain, type_re, proc;
@@ -528,11 +528,12 @@ syck_loader_add_type_family( self, domain, type_re, proc )
     families = rb_iv_get(self, "@families");
     domain_types = syck_get_hash_aref(families, domain);
     rb_hash_aset( domain_types, type_re, proc );
+    return Qnil;
 }
 
-//
-// YAML::Syck::Loader.add_domain_type
-//
+/*
+ * YAML::Syck::Loader.add_domain_type
+ */
 VALUE
 syck_loader_add_domain_type( argc, argv, self )
     int argc;
@@ -543,12 +544,13 @@ syck_loader_add_domain_type( argc, argv, self )
 
     rb_scan_args(argc, argv, "2&", &domain, &type_re, &proc);
     syck_loader_add_type_family( self, domain, type_re, proc );
+    return Qnil;
 }
 
 
-//
-// YAML::Syck::Loader.add_builtin_type
-//
+/*
+ * YAML::Syck::Loader.add_builtin_type
+ */
 VALUE
 syck_loader_add_builtin_type( argc, argv, self )
     int argc;
@@ -559,11 +561,12 @@ syck_loader_add_builtin_type( argc, argv, self )
 
     rb_scan_args(argc, argv, "1&", &type_re, &proc);
     syck_loader_add_type_family( self, rb_str_new2( YAML_DOMAIN ), type_re, proc );
+    return Qnil;
 }
 
-//
-// YAML::Syck::Loader.add_ruby_type
-//
+/*
+ * YAML::Syck::Loader.add_ruby_type
+ */
 VALUE
 syck_loader_add_ruby_type( argc, argv, self )
     int argc;
@@ -574,11 +577,12 @@ syck_loader_add_ruby_type( argc, argv, self )
 
     rb_scan_args(argc, argv, "1&", &type_re, &proc);
     syck_loader_add_type_family( self, rb_str_new2( RUBY_DOMAIN ), type_re, proc );
+    return Qnil;
 }
 
-//
-// YAML::Syck::Loader.add_private_type
-//
+/*
+ * YAML::Syck::Loader.add_private_type
+ */
 VALUE
 syck_loader_add_private_type( argc, argv, self )
     int argc;
@@ -591,11 +595,30 @@ syck_loader_add_private_type( argc, argv, self )
 
     priv_types = rb_iv_get(self, "@private_types");
     rb_hash_aset( priv_types, type_re, proc );
+    return Qnil;
 }
 
-//
-// iterator to search a type hash for a match.
-//
+/*
+ * YAML::Syck::Loader#detect 
+ */
+VALUE
+syck_loader_detect_implicit( self, val )
+    VALUE self, val;
+{
+    char *type_id;
+
+    if ( TYPE(val) == T_STRING )
+    {
+        type_id = syck_match_implicit( RSTRING(val)->ptr, RSTRING(val)->len );
+        return rb_str_new2( type_id );
+    }
+
+    return rb_str_new2( "" );
+}
+
+/*
+ * iterator to search a type hash for a match.
+ */
 static VALUE
 transfer_find_i(entry, col)
     VALUE entry, col;
@@ -611,9 +634,9 @@ transfer_find_i(entry, col)
     return Qnil;
 }
 
-//
-// YAML::Syck::Loader#transfer
-//
+/*
+ * YAML::Syck::Loader#transfer
+ */
 VALUE
 syck_loader_transfer( self, type, val )
     VALUE self, type, val;
@@ -689,15 +712,16 @@ syck_loader_transfer( self, type, val )
     return val;
 }
 
-//
-// YAML::Syck::Node.initialize
-//
+/*
+ * YAML::Syck::Node.initialize
+ */
 VALUE
 syck_node_initialize( self, type_id, val )
     VALUE self, type_id, val;
 {
     rb_iv_set( self, "@type_id", type_id );
     rb_iv_set( self, "@value", val );
+    return self;
 }
 
 VALUE
@@ -708,6 +732,7 @@ syck_node_thash( entry, t )
     key = rb_ary_entry( entry, 0 );
     val = syck_node_transform( rb_ary_entry( rb_ary_entry( entry, 1 ), 1 ) );
     rb_hash_aset( t, key, val );
+    return Qnil;
 }
 
 VALUE
@@ -716,11 +741,12 @@ syck_node_ahash( entry, t )
 {
     VALUE val = syck_node_transform( entry );
     rb_ary_push( t, val );
+    return Qnil;
 }
 
-//
-// YAML::Syck::Node.transform
-//
+/*
+ * YAML::Syck::Node.transform
+ */
 VALUE
 syck_node_transform( self )
     VALUE self;
@@ -745,9 +771,9 @@ syck_node_transform( self )
     return rb_funcall( oDefaultLoader, rb_intern( "transfer" ), 2, type_id, t );
 }
 
-//
-// Initialize Syck extension
-//
+/*
+ * Initialize Syck extension
+ */
 void
 Init_syck()
 {
@@ -778,6 +804,7 @@ Init_syck()
     rb_define_method( cLoader, "add_builtin_type", syck_loader_add_builtin_type, -1 );
     rb_define_method( cLoader, "add_ruby_type", syck_loader_add_ruby_type, -1 );
     rb_define_method( cLoader, "add_private_type", syck_loader_add_private_type, -1 );
+    rb_define_method( cLoader, "detect_implicit", syck_loader_detect_implicit, 1 );
     rb_define_method( cLoader, "transfer", syck_loader_transfer, 2 );
 
     oDefaultLoader = rb_funcall( cLoader, rb_intern( "new" ), 0 );

@@ -1,11 +1,11 @@
-//
-// syck.h
-//
-// $Author$
-// $Date$
-//
-// Copyright (C) 2003 why the lucky stiff
-//
+/*
+ * syck.h
+ *
+ * $Author$
+ * $Date$
+ *
+ * Copyright (C) 2003 why the lucky stiff
+ */
 
 #ifndef SYCK_H
 #define SYCK_H
@@ -24,9 +24,9 @@
 extern "C" {
 #endif
 
-//
-// Memory Allocation
-// 
+/*
+ * Memory Allocation
+ */
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
 #include <alloca.h>
 #endif
@@ -65,9 +65,9 @@ extern "C" {
 #define NL_CHOMP    130
 #define NL_KEEP     140
 
-//
-// Node definitions
-//
+/*
+ * Node definitions
+ */
 #define SYMID unsigned long
 
 typedef struct _syck_parser SyckParser;
@@ -118,9 +118,9 @@ struct _syck_node {
     } data;
 };
 
-//
-// Parser definitions
-//
+/*
+ * Parser definitions
+ */
 typedef SYMID (*SyckNodeHandler)(SyckParser *, SyckNode *);
 typedef void (*SyckErrorHandler)(SyckParser *, char *);
 typedef long (*SyckIoFileRead)(char *, SyckIoFile *, long, long); 
@@ -135,6 +135,7 @@ enum syck_level_status {
     syck_lvl_header,
     syck_lvl_doc,
     syck_lvl_seq,
+    syck_lvl_map,
     syck_lvl_block,
     syck_lvl_str,
     syck_lvl_inline,
@@ -190,9 +191,9 @@ struct _syck_parser {
     void *bonus;
 };
 
-//
-// Handler prototypes
-//
+/*
+ * Handler prototypes
+ */
 SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
 SyckNode *syck_hdlr_add_anchor( SyckParser *, char *, SyckNode * );
 SyckNode *syck_hdlr_add_alias( SyckParser *, char * );
@@ -207,9 +208,9 @@ void syck_fold_format( struct SyckStr *, int, int, int );
 void try_tag_implicit( SyckNode *, int );
 char *syck_match_implicit( char *, size_t );
 
-//
-// API prototypes
-//
+/*
+ * API prototypes
+ */
 char *syck_strndup( char *, long );
 long syck_io_file_read( char *, SyckIoFile *, long, long );
 long syck_io_str_read( char *, SyckIoStr *, long, long );
@@ -231,9 +232,9 @@ void syck_parser_init( SyckParser *, int );
 SYMID syck_parse( SyckParser * );
 void syck_default_error_handler( SyckParser *, char * );
 
-//
-// Allocation prototypes
-//
+/*
+ * Allocation prototypes
+ */
 SyckNode *syck_alloc_map();
 SyckNode *syck_alloc_seq();
 SyckNode *syck_alloc_str();

@@ -1,11 +1,11 @@
-//
-// handler.h
-//
-// $Author$
-// $Date$
-//
-// Copyright (C) 2003 why the lucky stiff
-//
+/*
+ * handler.h
+ *
+ * $Author$
+ * $Date$
+ *
+ * Copyright (C) 2003 why the lucky stiff
+ */
 
 #include "syck.h"
 

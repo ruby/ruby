@@ -1,11 +1,11 @@
-//
-// syck.c
-//
-// $Author$
-// $Date$
-//
-// Copyright (C) 2003 why the lucky stiff
-//
+/*
+ * syck.c
+ *
+ * $Author$
+ * $Date$
+ *
+ * Copyright (C) 2003 why the lucky stiff
+ */
 #include <stdio.h>
 #include <string.h>
 
@@ -15,9 +15,9 @@
 #define SYCK_YAML_MINOR 0
 #define SYCK_BUFFERSIZE 262144
 
-//
-// Custom assert
-//
+/*
+ * Custom assert
+ */
 void 
 syck_assert( char *file_name, unsigned line_num )
 {
@@ -36,9 +36,9 @@ syck_strndup( char *buf, long len )
     S_MEMCPY( new, buf, char, len );
 }
 
-//
-// Default IO functions
-//
+/*
+ * Default IO functions
+ */
 long
 syck_io_file_read( char *buf, SyckIoFile *file, long max_size, long skip )
 {
@@ -109,7 +109,7 @@ syck_parser_reset_levels( SyckParser *p )
 {
     p->lvl_idx = 1;
     p->levels[0].spaces = -1;
-    p->levels[0].domain = "";  // YAML_DOMAIN + "/";
+    p->levels[0].domain = syck_strndup( "", 1 );  // YAML_DOMAIN + "/";
     p->levels[0].status = syck_lvl_header;
 }
 
@@ -135,9 +135,9 @@ syck_parser_reset_cursor( SyckParser *p )
     p->force_token = 0;
 }
 
-//
-// Allocate the parser
-//
+/*
+ * Allocate the parser
+ */
 SyckParser *
 syck_new_parser()
 {
@@ -303,10 +303,7 @@ syck_parser_pop_level( SyckParser *p )
     if ( p->lvl_idx <= 1 ) return;
 
     p->lvl_idx -= 1;
-    if ( p->levels[p->lvl_idx - 1].domain != p->levels[p->lvl_idx].domain )
-    {
-        free( p->levels[p->lvl_idx].domain );
-    }
+    free( p->levels[p->lvl_idx].domain );
 }
 
 void 
@@ -321,7 +318,7 @@ syck_parser_add_level( SyckParser *p, int len, enum syck_level_status status )
 
     ASSERT( len > p->levels[p->lvl_idx-1].spaces );
     p->levels[p->lvl_idx].spaces = len;
-    p->levels[p->lvl_idx].domain = p->levels[p->lvl_idx-1].domain;
+    p->levels[p->lvl_idx].domain = syck_strndup( p->levels[p->lvl_idx-1].domain, strlen( p->levels[p->lvl_idx-1].domain ) );
     p->levels[p->lvl_idx].status = status;
     p->lvl_idx += 1;
 }
@@ -443,7 +440,7 @@ syck_parse( SyckParser *p )
 
     ASSERT( p != NULL );
 
-    p->root = NULL;
+    p->root = 0;
     syck_parser_reset_levels( p );
     yyparse( p );
     return p->root;
