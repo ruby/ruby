@@ -1,3 +1,8 @@
+Sat Dec  4 14:54:52 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (proc_invoke): use volatile `tmp' rather than `args'.
+	  [ruby-core:03882]
+
 Sat Dec  4 14:28:56 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/code_objects.rb (RDoc::Context::Section::set_comment):

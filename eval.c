@@ -8139,6 +8139,7 @@ proc_invoke(proc, args, self, klass)
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
     volatile int pcall, avalue = Qtrue;
+    volatile VALUE tmp = args;
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	if (klass != ruby_frame->last_class)
@@ -8163,9 +8164,9 @@ proc_invoke(proc, args, self, klass)
     _block = *data;
     if (self != Qundef) _block.frame.self = self;
     if (klass) _block.frame.last_class = klass;
-    _block.frame.argc = RARRAY(args)->len;
-    _block.frame.argv = ALLOCA_N(VALUE, RARRAY(args)->len);
-    MEMCPY(_block.frame.argv, RARRAY(args)->ptr, VALUE, RARRAY(args)->len);
+    _block.frame.argc = RARRAY(tmp)->len;
+    _block.frame.argv = ALLOCA_N(VALUE, RARRAY(tmp)->len);
+    MEMCPY(_block.frame.argv, RARRAY(tmp)->ptr, VALUE, RARRAY(tmp)->len);
     _block.frame.flags = FRAME_ALLOCA;
     ruby_block = &_block;
 
