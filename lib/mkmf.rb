@@ -68,7 +68,7 @@ else
   STDERR.print "can't find header files for ruby.\n"
   exit 1
 end
-$topdir = $hdrdir
+$topdir = $top_srcdir = $hdrdir
 # $hdrdir.gsub!('/', '\\') if RUBY_PLATFORM =~ /mswin32|bccwin32/
 
 CFLAGS = CONFIG["CFLAGS"]
@@ -89,9 +89,9 @@ else
   CPPOUTFILE = '-o conftest.i'
 end
 
-$LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#{$hdrdir} #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
-$CC = "#{CONFIG['CC']} -c #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} #{CFLAGS} %s %s conftest.c"
-$CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} #{CFLAGS} %s %s %s conftest.c"
+$LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#{$hdrdir} -I#{$top_srcdir} #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
+$CC = "#{CONFIG['CC']} -c #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} -I#{$top_srcdir} #{CFLAGS} %s %s conftest.c"
+$CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} -I#{$top_srcdir} #{CFLAGS} %s %s %s conftest.c"
 
 def rm_f(*files)
   targets = []

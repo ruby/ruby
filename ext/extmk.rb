@@ -32,19 +32,17 @@ $extlist = []
 $:.replace ["."]
 require 'rbconfig'
 
-$top_srcdir = Config::CONFIG["srcdir"]
+srcdir = Config::CONFIG["srcdir"]
 
-$:.replace [$top_srcdir, $top_srcdir+"/lib", "."]
+$:.replace [srcdir, srcdir+"/lib", "."]
 
 require 'mkmf'
 require 'find'
 require 'ftools'
 require 'shellwords'
 
-$topdir = File.expand_path(".")
-
-$LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
-$CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#$topdir -I#$top_srcdir #{CFLAGS} %s %s %s conftest.c"
+$topdir = $hdrdir = File.expand_path(".")
+$top_srcdir = srcdir
 
 Object.class_eval do remove_method :create_makefile end
 

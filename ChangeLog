@@ -1,3 +1,10 @@
+Sun Sep  8 21:29:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* time.c (time_free): prototype; struct time_object -> void *.
+	  avoid GCC warnings.
+
+	* lib/mkmf.rb, ext/extmk.rb ($LINK, $CPP): move to lib/mkmf.rb.
+
 Sun Sep  8 19:02:28 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* time.c: prototype; time_free() to avoid VC++ warnings.
