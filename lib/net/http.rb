@@ -737,16 +737,6 @@ module Net
     end
     private :do_start
 
-    def conn_address
-      address()
-    end
-    private :conn_address
-
-    def conn_port
-      port()
-    end
-    private :conn_port
-
     def on_connect
     end
     private :on_connect
