@@ -1,3 +1,8 @@
+Sat Sep 27 01:30:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect): on win32, type of the 4th
+	  argument of getsockopt is char *.
+
 Fri Sep 26 18:35:40 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv-replace.rb: 1.8 compliance.  [ruby-talk:82946]

@@ -790,7 +790,7 @@ ruby_connect(fd, sockaddr, len, socks)
 #endif
 #if WAIT_IN_PROGRESS > 0
 		sockerrlen = sizeof(sockerr);
-		status = getsockopt(fd, SOL_SOCKET, SO_ERROR, &sockerr, &sockerrlen);
+		status = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen);
 		if (status) break;
 		if (sockerr) {
 		    status = -1;
@@ -816,7 +816,7 @@ ruby_connect(fd, sockaddr, len, socks)
 		     * status.
 		     */
 		    sockerrlen = sizeof(sockerr);
-		    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, &sockerr, &sockerrlen);
+		    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen);
 		    if (!status && !sockerr) {
 			struct timeval tv = {0, 100000};
 			rb_thread_wait_for(tv);
