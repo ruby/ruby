@@ -7033,6 +7033,53 @@ Init_Proc()
     rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
 }
 
+/* Windows SEH refers data on the stack. */
+#ifdef _WIN32
+# if !(defined _M_IX86 || defined __i386__)
+#   error unsupported processor
+# endif
+static inline DWORD
+win32_get_exception_list()
+{
+    DWORD p;
+# if defined _MSC_VER
+#   ifdef _M_IX86
+    __asm mov eax, fs:[0];
+    __asm mov p, eax;
+#   endif
+# elif defined __GNUC__
+#   ifdef __i386__
+    __asm__("movl %%fs:0,%0" : "=r"(p));
+#   endif
+# elif defined __BORLANDC__
+    __emit__(0x64, 0xA1, 0, 0, 0, 0); /* mov eax, fs:[0] */
+    p = _EAX;
+# else
+#   error unsupported compiler
+# endif
+    return p;
+}
+
+static inline void
+win32_set_exception_list()
+    DWORD p;
+{
+# if defined _MSC_VER
+#   ifdef _M_IX86
+    __asm mov eax, p;
+    __asm mov fs:[0], eax;
+#   endif
+# elif defined __GNUC__
+#   ifdef __i386__
+    __asm__("movl %0,%%fs:0" :: "r"(p));
+#   endif
+# elif defined __BORLANDC__
+    _EAX = p;
+    __emit__(0x64, 0xA3, 0, 0, 0, 0); /* mov fs:[0], eax */
+# endif
+}
+#endif
+
 static VALUE rb_eThreadError;
 
 int rb_thread_pending = 0;
@@ -7062,6 +7109,9 @@ enum thread_status {
 struct thread {
     struct thread *next, *prev;
     jmp_buf context;
+#ifdef _WIN32
+    DWORD win32_exception_list;
+#endif
 
     VALUE result;
 
@@ -7310,6 +7360,9 @@ rb_thread_save_context(th)
     th->stk_len = len;
     FLUSH_REGISTER_WINDOWS; 
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
+#ifdef _WIN32
+    th->win32_exception_list = win32_get_exception_list();
+#endif
 
     th->frame = ruby_frame;
     th->scope = ruby_scope;
@@ -7426,6 +7479,9 @@ rb_thread_restore_context(th, exit)
     ruby_sourcefile = th->file;
     ruby_sourceline = th->line;
 
+#ifdef _WIN32
+    win32_set_exception_list(th->win32_exception_list);
+#endif
     tmp = th;
     ex = exit;
     FLUSH_REGISTER_WINDOWS;

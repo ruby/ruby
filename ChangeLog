@@ -1,3 +1,12 @@
+Mon Aug 19 09:36:00 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_thread_save_context, rb_thread_restore_context):
+	  save/restore SEH chain on MS-Windows at thread switch.
+	  [ruby-win32:273]
+
+	* eval.c (win32_get_exception_frame, win32_set_exception_frame):
+	  added.
+
 Wed Aug  7 09:51:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_equal): should check default values.
