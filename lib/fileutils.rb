@@ -269,7 +269,7 @@ module FileUtils
     return false unless FileTest.exist? new
     new_time = File.ctime(new)
     args.each do |old|
-      if FileTest.exist? old then
+      if FileTest.exist? old
         return false unless new_time > File.mtime(old)
       end
     end
@@ -294,14 +294,14 @@ module FileUtils
     fu_output_message "mkdir -p #{list.join ' '}" if verbose
     return *list if noop
 
-    list.collect {|n| File.expand_path(n) }.each do |dir|
+    list.map {|n| File.expand_path(n) }.each do |dir|
       stack = []
-      until FileTest.directory? dir do
+      until FileTest.directory? dir
         stack.push dir
         dir = File.dirname(dir)
       end
-      stack.reverse_each do |dir|
-        Dir.mkdir dir
+      stack.reverse_each do |n|
+        Dir.mkdir n
       end
     end
 
@@ -329,7 +329,7 @@ module FileUtils
     fu_output_message "ln #{argv.join ' '}" if verbose
     return if noop
 
-    fu_each_src_dest( src, dest ) do |s,d|
+    fu_each_src_dest(src, dest) do |s,d|
       remove_file d, true if force
       File.link s, d
     end
@@ -342,7 +342,7 @@ module FileUtils
     fu_output_message "ln -s#{force ? 'f' : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
 
-    fu_each_src_dest( src, dest ) do |s,d|
+    fu_each_src_dest(src, dest) do |s,d|
       remove_file d, true if force
       File.symlink s, d
     end
@@ -361,7 +361,7 @@ module FileUtils
     fu_output_message "cp#{preserve ? ' -p' : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
 
-    fu_each_src_dest( src, dest ) do |s,d|
+    fu_each_src_dest(src, dest) do |s,d|
       fu_preserve_attr(preserve, s, d) {
           copy_file s, d
       }
@@ -375,8 +375,8 @@ module FileUtils
     fu_output_message "cp -r #{[src,dest].flatten.join ' '}" if verbose
     return if noop
 
-    fu_each_src_dest( src, dest ) do |s,d|
-      if FileTest.directory? s then
+    fu_each_src_dest(src, dest) do |s,d|
+      if FileTest.directory? s
         fu_copy_dir s, d, '.', preserve
       else
         fu_p_copy s, d, preserve
@@ -391,7 +391,7 @@ module FileUtils
         Dir.mkdir dir unless FileTest.directory? dir
     }
     Dir.entries( "#{src}/#{rel}" ).each do |fn|
-      if FileTest.directory? File.join(src,rel,fn) then
+      if FileTest.directory? File.join(src,rel,fn)
         next if /\A\.\.?\z/ === fn
         fu_copy_dir src, dest, "#{rel}/#{fn}", preserve
       else
@@ -409,7 +409,7 @@ module FileUtils
   private :fu_p_copy
 
   def fu_preserve_attr( really, src, dest )
-    unless really then
+    unless really
       yield src, dest
       return
     end
@@ -418,7 +418,7 @@ module FileUtils
     yield src, dest
     File.utime st.atime, st.mtime, dest
     begin
-      File.chown st.uid, st.gid
+      File.chown st.uid, st.gid, dest
     rescue Errno::EPERM
       File.chmod st.mode & 01777, dest   # clear setuid/setgid
     else
@@ -428,14 +428,12 @@ module FileUtils
   private :fu_preserve_attr
 
   def copy_file( src, dest )
-    st = r = w = nil
-
-    File.open( src,  'rb' ) {|r|
-    File.open( dest, 'wb' ) {|w|
-        st = r.stat
+    bsize = fu_blksize(File.stat(src).blksize)
+    File.open(src,  'rb') {|r|
+    File.open(dest, 'wb') {|w|
         begin
-          while true do
-            w.write r.sysread(st.blksize)
+          while true
+            w.syswrite r.sysread(bsize)
           end
         rescue EOFError
         end
@@ -448,16 +446,15 @@ module FileUtils
     fu_output_message "mv #{[src,dest].flatten.join ' '}" if verbose
     return if noop
 
-    fu_each_src_dest( src, dest ) do |s,d|
-      if /djgpp|cygwin|mswin32/ === RUBY_PLATFORM and
-         FileTest.file? d then
-         File.unlink d
+    fu_each_src_dest(src, dest) do |s,d|
+      if cannot_overwrite_file? and FileTest.file? d
+        File.unlink d
       end
 
       begin
         File.rename s, d
       rescue
-        if FileTest.symlink? s then
+        if FileTest.symlink? s
           File.symlink File.readlink(s), dest
           File.unlink s
         else
@@ -476,6 +473,10 @@ module FileUtils
   end
 
   alias move mv
+
+  def cannot_overwrite_file?
+    /djgpp|cygwin|mswin32/ === RUBY_PLATFORM
+  end
 
 
   def rm( list, *options )
@@ -531,7 +532,7 @@ module FileUtils
     rescue
       # rescue dos?
       begin
-        if first then
+        if first
           first = false
           File.chmod 0777, fn
           retry
@@ -542,7 +543,7 @@ module FileUtils
   end
 
   def remove_dir( dir, force = false )
-    Dir.foreach( dir ) do |file|
+    Dir.foreach(dir) do |file|
       next if /\A\.\.?\z/ === file
       path = "#{dir}/#{file}"
       if FileTest.directory? path then remove_dir path, force
@@ -563,16 +564,17 @@ module FileUtils
 
     sa = sb = nil
     st = File.stat(filea)
+    bsize = fu_blksize(st.blksize)
     File.size(fileb) == st.size or return true
 
-    File.open( filea, 'rb' ) {|a|
-    File.open( fileb, 'rb' ) {|b|
+    File.open(filea, 'rb') {|a|
+    File.open(fileb, 'rb') {|b|
       begin
-        while sa == sb do
-          sa = a.read( st.blksize )
-          sb = b.read( st.blksize )
-          unless sa and sb then
-            if sa.nil? and sb.nil? then
+        while sa == sb
+          sa = a.read(bsize)
+          sb = b.read(bsize)
+          unless sa and sb
+            if sa.nil? and sb.nil?
               return true
             end
           end
@@ -593,7 +595,7 @@ module FileUtils
     return if noop
 
     fu_each_src_dest( src, dest ) do |s,d|
-      unless FileTest.exist? d and cmp(s,d) then
+      unless FileTest.exist? d and cmp(s,d)
         remove_file d, true
         copy_file s, d
         File.chmod mode, d if mode
@@ -631,10 +633,10 @@ module FileUtils
 
   def fu_parseargs( opts, *flagdecl )
     tab = {}
-    if opts.last == true or opts.last == false then
+    if opts.last == true or opts.last == false
       tab[:verbose] = opts.pop
     end
-    while Symbol === opts.last do
+    while Symbol === opts.last
       tab[opts.pop] = true
     end
 
@@ -650,7 +652,7 @@ module FileUtils
   end
 
   def fu_each_src_dest( src, dest )
-    unless Array === src then
+    unless Array === src
       yield src, fu_dest_filename(src, dest)
     else
       dir = dest
@@ -663,10 +665,18 @@ module FileUtils
   end
 
   def fu_dest_filename( src, dest )
-    if FileTest.directory? dest then
+    if FileTest.directory? dest
       (dest[-1,1] == '/' ? dest : dest + '/') + File.basename(src)
     else
       dest
+    end
+  end
+
+  def fu_blksize( size )
+    if size.nil? or size.zero?
+      2048
+    else
+      size
     end
   end
 
@@ -729,11 +739,11 @@ module FileUtils
       next unless opts.include? 'verbose'
       module_eval <<-End, __FILE__, __LINE__ + 1
           def #{name}( *args )
-            unless defined? @fileutils_verbose then
+            unless defined? @fileutils_verbose
               @fileutils_verbose = true
             end
             args.push :verbose if @fileutils_verbose
-            super( *args )
+            super(*args)
           end
       End
     end
@@ -755,11 +765,11 @@ module FileUtils
       next unless opts.include? 'noop'
       module_eval <<-End, __FILE__, __LINE__ + 1
           def #{name}( *args )
-            unless defined? @fileutils_nowrite then
+            unless defined? @fileutils_nowrite
               @fileutils_nowrite = true
             end
             args.push :noop if @fileutils_nowrite
-            super( *args )
+            super(*args)
           end
       End
     end
@@ -790,7 +800,7 @@ module FileUtils
       module_eval <<-End, __FILE__, __LINE__ + 1
           def #{name}( *args )
             #{s}
-            super( *args )
+            super(*args)
           end
       End
     end
