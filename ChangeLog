@@ -6,6 +6,8 @@ Thu Jan 29 23:11:57 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub (DLEXT2):
 	  ditto.
 
+	* util.c (mblen): fix overrun.  [ruby-dev:22672]
+
 Thu Jan 29 22:41:53 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb: Allow 'link:' in Tidylinks.

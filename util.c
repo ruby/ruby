@@ -296,6 +296,8 @@ mblen(const char *s, size_t n)
     if (s) {
 	if (n == 0 || *s == 0)
 	    return 0;
+	else if (!s[1])
+	    return 1;
 	return dbcs_table[(unsigned char)*s] + 1;
     }
     else
