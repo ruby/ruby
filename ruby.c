@@ -81,6 +81,9 @@ extern char *sourcefile;
 extern VALUE rb_load_path;
 VALUE Frequire();
 
+static FILE *e_fp;
+static char *e_tmpname;
+
 static void
 addpath(path)
     char *path;
@@ -163,6 +166,7 @@ proc_options(argcp, argvp)
     version = FALSE;
     do_search = FALSE;
     script_given = 0;
+    e_tmpname = NULL;
 
     for (argc--,argv++; argc > 0; argc--,argv++) {
 	if (argv[0][0] != '-' || !argv[0][1]) break;
@@ -226,15 +230,21 @@ proc_options(argcp, argvp)
 
 	  case 'e':
 	    forbid_setid("-e");
-	    script_given++;
-	    if (script == 0) script = "-e";
+	    if (!e_fp) {
+		e_tmpname = strdup("rbXXXXXX");
+		mktemp(e_tmpname);
+		if (!*e_tmpname)
+		    Fatal("Can't mktemp(%s)", e_tmpname);
+		e_fp = fopen(e_tmpname, "w");
+		if (!e_fp)
+		    Fatal("Cannot open temporary file: %s", e_tmpname);
+		if (script == 0) script = e_tmpname;
+	    }
 	    if (argv[1]) {
-		compile_string("-e", argv[1], strlen(argv[1]));
-		argc--,argv++;
+		fputs(argv[1], e_fp);
+		argc--, argv++;
 	    }
-	    else {
-		compile_string("-e", "", 0);
-	    }
+	    putc('\n', e_fp);
 	    break;
 
 	  case 'r':
@@ -362,6 +372,14 @@ proc_options(argcp, argvp)
 
   switch_end:
     if (*argvp[0] == 0) return;
+
+    if (e_fp) {
+	if (fflush(e_fp) || ferror(e_fp) || fclose(e_fp))
+	    Fatal("Cannot write to temp file for -e");
+	e_fp = NULL;
+	argc++, argv--;
+	argv[0] = e_tmpname;
+    }
 
     if (version) {
 	show_version();
@@ -784,5 +802,13 @@ ruby_process_options(argc, argv)
     }
     if (do_loop) {
 	yywhile_loop(do_line, do_split);
+    }
+    if (e_tmpname) {
+	unlink(e_tmpname);
+	e_tmpname = NULL;
+    }
+    if (e_fp) {
+	fclose(e_fp);
+	e_fp = NULL;
     }
 }
