@@ -1203,7 +1203,7 @@ extern char **environ;
 char **rb_origenviron;
 
 void rb_call_inits _((void));
-void Init_stack _((void*));
+void Init_stack _((VALUE*));
 void Init_heap _((void));
 void Init_ext _((void));
 

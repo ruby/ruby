@@ -1,3 +1,8 @@
+Fri Oct 15 12:43:09 2004  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (Init_stack): make prototype declaration consistent with
+	  the definition in gc.c.
+
 Thu Oct 14 13:33:59 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: added link to Tutorial.
