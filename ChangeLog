@@ -1,3 +1,16 @@
+Sun Dec 29 23:45:53 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* gc.c (gc_sweep): adjust GC trigger.
+
+	* dln.c (init_funcname_len): get rid of gcc-3 -O3 warning.
+
+	* eval.c (copy_node_scope): ditto.
+
+	* hash.c (rb_hash_foreach, delete_if_i, select_i, each_value_i,
+	  each_key_i, each_pair_i, envix): ditto.
+
+	* range.c (range_each_func): ditto.
+
 Sun Dec 29 15:30:37 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (fu_parseargs): should not inherit ftools.rb's

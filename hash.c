@@ -120,7 +120,7 @@ static struct st_hash_type objhash = {
 struct rb_hash_foreach_arg {
     VALUE hash;
     enum st_retval (*func)();
-    char *arg;
+    VALUE arg;
 };
 
 static int
@@ -167,7 +167,7 @@ static int
 rb_hash_foreach(hash, func, farg)
     VALUE hash;
     enum st_retval (*func)();
-    char *farg;
+    VALUE farg;
 {
     struct rb_hash_foreach_arg arg;
 
@@ -462,7 +462,7 @@ rb_hash_shift(hash)
     }
 }
 
-static int
+static enum st_retval
 delete_if_i(key, value)
     VALUE key, value;
 {
@@ -498,9 +498,9 @@ rb_hash_reject(hash)
     return rb_hash_delete_if(rb_obj_dup(hash));
 }
 
-static int
+static enum st_retval
 select_i(key, value, result)
-    VALUE key, value;
+    VALUE key, value, result;
 {
     VALUE assoc;
 
@@ -611,7 +611,7 @@ rb_hash_empty_p(hash)
     return Qfalse;
 }
 
-static int
+static enum st_retval
 each_value_i(key, value)
     VALUE key, value;
 {
@@ -628,7 +628,7 @@ rb_hash_each_value(hash)
     return hash;
 }
 
-static int
+static enum st_retval
 each_key_i(key, value)
     VALUE key, value;
 {
@@ -645,7 +645,7 @@ rb_hash_each_key(hash)
     return hash;
 }
 
-static int
+static enum st_retval
 each_pair_i(key, value)
     VALUE key, value;
 {
@@ -1076,7 +1076,7 @@ rb_env_path_tainted()
 
 static int
 envix(nam)
-char *nam;
+const char *nam;
 {
     register int i, len = strlen(nam);
     char **env;

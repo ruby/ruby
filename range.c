@@ -208,7 +208,7 @@ step_i(i, iter)
 static void
 range_each_func(range, func, v, e, arg)
     VALUE range;
-    void (*func) _((VALUE, void*));
+    VALUE (*func) _((VALUE, void*));
     VALUE v, e;
     void *arg;
 {

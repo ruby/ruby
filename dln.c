@@ -107,17 +107,18 @@ int eaccess();
 static int
 init_funcname_len(buf, file)
     char **buf;
-    char *file;
+    const char *file;
 {
-    char *p, *slash;
+    char *p;
+    const char *slash;
     int len;
 
     /* Load the file as an object one */
-    for (p = file, slash = p-1; *p; p++) /* Find position of last '/' */
+    for (slash = file-1; *file; file++) /* Find position of last '/' */
 #ifdef __MACOS__
-	if (*p == ':') slash = p;
+	if (*file == ':') slash = file;
 #else
-	if (*p == '/') slash = p;
+	if (*file == '/') slash = file;
 #endif
 
     len = strlen(FUNCNAME_PATTERN) + strlen(slash + 1);

@@ -879,7 +879,7 @@ gc_sweep()
     RVALUE *p, *pend, *final_list;
     int freed = 0;
     int i, j;
-    unsigned long live = 0;
+    unsigned long live = 0, garbage = 0;
 
     if (ruby_in_compile && ruby_parser_stack_on_heap()) {
 	/* should not reclaim nodes during compilation
@@ -929,32 +929,7 @@ gc_sweep()
 	    }
 	    else {
 		RBASIC(p)->flags &= ~FL_MARK;
-		live += sizeof(VALUE);
-		switch (BUILTIN_TYPE(p)) {
-		  case T_OBJECT:
-		    live += size_of_table(ROBJECT(p)->iv_tbl);
-		    break;
-		  case T_CLASS:
-		  case T_ICLASS:
-		    live += size_of_table(RCLASS(p)->iv_tbl);
-		    live += size_of_table(RCLASS(p)->m_tbl);
-		    break;
-		  case T_STRING:
-		    live += RSTRING(p)->len+1;
-		    break;
-		  case T_ARRAY:
-		    live += RARRAY(p)->len * sizeof(VALUE);
-		    break;
-		  case T_HASH:
-		    live += size_of_table(RHASH(p)->tbl);
-		    break;
-		  case T_BIGNUM:
-		    live += RBIGNUM(p)->len * sizeof(BDIGIT);
-		    break;
-		  case T_STRUCT:
-		    live += RSTRUCT(p)->len * sizeof(VALUE);
-		    break;
-		}
+		live++;
 	    }
 	    p++;
 	}
@@ -971,7 +946,9 @@ gc_sweep()
 	    freed += n;
 	}
     }
-    malloc_limit = live;
+    malloc_limit += malloc_increase;
+    malloc_limit *= (double)live / (live + freed);
+    if (malloc_limit < GC_MALLOC_LIMIT) malloc_limit = GC_MALLOC_LIMIT;
     malloc_increase = 0;
     if (freed < FREE_MIN) {
 	add_heap();

@@ -1766,7 +1766,7 @@ rb_mod_alias_method(mod, newname, oldname)
 static NODE*
 copy_node_scope(node, rval)
     NODE *node;
-    VALUE rval;
+    NODE *rval;
 {
     NODE *copy = rb_node_newnode(NODE_SCOPE,0,rval,node->nd_next);
 
