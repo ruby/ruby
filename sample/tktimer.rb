@@ -22,6 +22,7 @@ TkButton.new {
 TkButton.new {
   text 'Stop'
   command proc{
+    exit if $stopped
     $stopped = TRUE
   }
   pack('side'=>'right','fill'=>'both','expand'=>'yes')

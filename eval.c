@@ -3,7 +3,7 @@
   eval.c -
 
   $Author: matz $
-  $Date: 1995/01/12 08:54:45 $
+  $Date: 1996/12/25 08:54:45 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
   Copyright (C) 1993-1995 Yukihiro Matsumoto
@@ -3858,9 +3858,6 @@ thread_restore_context(th, exit)
     errinfo = th->errinfo;
     last_status = th->last_status;
 
-    lastline_set(th->last_line);
-    backref_set(th->last_match);
-
     sourcefile = th->file;
     sourceline = th->line;
 
@@ -3868,6 +3865,9 @@ thread_restore_context(th, exit)
     ex = exit;
     FLUSH_REGISTER_WINDOWS;
     MEMCPY(tmp->stk_pos, tmp->stk_ptr, VALUE, tmp->stk_len);
+
+    lastline_set(tmp->last_line);
+    backref_set(tmp->last_match);
 
     switch (ex) {
       case 1:

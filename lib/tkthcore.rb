@@ -109,7 +109,7 @@ module Tk
     val
   end
 
-  def tk_call(*args)
+  def tk_call(str, *args)
     Tk.init if $tk_not_init
     args = args.collect{|s|
       next if s == None
@@ -129,7 +129,8 @@ module Tk
 	"{#{s}}"
       end
     }
-    str = args.join(" ")
+    str += " "
+    str += args.join(" ")
     Qin.push str
     return Qout.pop
   end

@@ -4,7 +4,7 @@
 
   $Author: matz $
   $Revision: 1.2 $
-  $Date: 1994/08/12 04:47:52 $
+  $Date: 1996/12/25 09:47:52 $
   created at: Thu Sep 30 14:18:32 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

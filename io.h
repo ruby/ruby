@@ -4,7 +4,7 @@
 
   $Author: matz $
   $Revision: 1.3 $
-  $Date: 1994/08/12 11:06:42 $
+  $Date: 1996/12/25 11:06:42 $
   created at: Fri Nov 12 16:47:09 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto
@@ -33,7 +33,9 @@ typedef struct OpenFile {
 #define FMODE_READWRITE 3
 #define FMODE_SYNC      4
 
-#define GetOpenFile(obj,fp) fp = RFILE(obj)->fptr
+void io_wrong_type();
+
+#define GetOpenFile(obj,fp) ((fp) = RFILE(obj)->fptr)
 
 #define MakeOpenFile(obj, fp) do {\
     fp = RFILE(obj)->fptr = ALLOC(OpenFile);\

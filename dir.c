@@ -3,7 +3,7 @@
   dir.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:28 $
+  $Date: 1996/12/25 10:42:28 $
   created at: Wed Jan  5 09:51:01 JST 1994
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

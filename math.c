@@ -3,7 +3,7 @@
   math.c -
 
   $Author: matz $
-  $Date: 1994/11/01 08:28:03 $
+  $Date: 1996/12/25 09:28:03 $
   created at: Tue Jan 25 14:12:56 JST 1994
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

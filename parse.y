@@ -3,7 +3,7 @@
   parse.y -
 
   $Author: matz $
-  $Date: 1995/01/12 08:54:50 $
+  $Date: 1996/12/25 08:54:50 $
   created at: Fri May 28 18:02:42 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto
@@ -3093,7 +3093,10 @@ top_local_init()
     else {
 	lvtbl->tbl = 0;
     }
-    lvtbl->dlev = (the_dyna_vars?1:0);
+    if (the_dyna_vars && the_dyna_vars->id)
+	lvtbl->dlev = 1;
+    else
+	lvtbl->dlev = 0;
 }
 
 static void

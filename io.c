@@ -3,7 +3,7 @@
   io.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:39 $
+  $Date: 1996/12/25 10:42:39 $
   created at: Fri Oct 15 18:08:59 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto
@@ -114,6 +114,11 @@ static void
 closed()
 {
     Raise(eIOError, "closed stream");
+}
+
+void
+io_wrong_type()
+{
 }
 
 /* writing functions */
@@ -1737,6 +1742,8 @@ Init_IO()
 
     cIO = rb_define_class("IO", cObject);
     rb_include_module(cIO, mEnumerable);
+
+    rb_undef_method(CLASS_OF(cIO), "new");
 
     rb_define_singleton_method(cIO, "popen", io_popen, -1);
     rb_define_singleton_method(cIO, "foreach", io_foreach, 1);

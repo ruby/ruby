@@ -3,7 +3,7 @@
   ruby.h -
 
   $Author: matz $
-  $Date: 1995/01/12 08:54:52 $
+  $Date: 1996/12/25 08:54:52 $
   created at: Thu Jun 10 14:26:32 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

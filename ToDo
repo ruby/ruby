@@ -1,7 +1,5 @@
-* """..."""と%Q#...#のどちらを残すか，あるいは両方活かすか
 * パッケージまたは大域変数のアクセス制御
 * format機能
-* here document
 * perlのようなsetuid check
 * write debugger for ruby
 * re-write regex code for speed and copyright

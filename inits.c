@@ -3,7 +3,7 @@
   inits.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:38 $
+  $Date: 1996/12/25 10:42:38 $
   created at: Tue Dec 28 16:01:58 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

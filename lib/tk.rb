@@ -486,12 +486,12 @@ class TkLabel<TkWindow
     tk_call 'label', @path
   end
   def textvariable(v)
-    v = v.id2name unless v.kind_of "String"
+    v = v.id2name unless v.kind_of? String
     vn = @path + v
-    vset = format("global {%s}; set {%s}", vn, vn)
-    tk_call vset, eval(v).inspect
+    vset = format("global {%s}; set {%s} %%s", vn, vn)
+    tk_write vset, eval(v).inspect
     trace_var v, proc{|val|
-	tk_call vset, val.inspect
+      tk_write vset, val.inspect
     }
     configure 'textvariable', vn
   end
@@ -520,7 +520,7 @@ class TkRadioButton<TkButton
     tk_send 'select'
   end
   def variable(v)
-    v = v.id2name unless v.kind_of "String"
+    v = v.id2name unless v.kind_of? String
     if v =~ /^\$/
       v = $'
     else
@@ -528,13 +528,13 @@ class TkRadioButton<TkButton
     end
     vn = 'btns_selected_' + v
     trace_var v, proc{|val|
-      tk_call 'set', vn, val
+      tk_write 'global %s; set %s %s', vn, val
     }
     @var_id = install_cmd(proc{|name1,|
-      val = tk_call('set', name1)
+      val = tk_call(format('global %s; set', name1), name1)
       eval(format("%s = '%s'", v.id2name, val))
     })
-    tk_call 'trace variable', vn, 'w', @var_id
+    tk_call 'trace', 'variable', vn, 'w', @var_id
     configure 'variable', vn
   end
   def destroy
@@ -732,7 +732,7 @@ module TkComposite
   def delegate(option, *wins)
     @delegates = {} if not @delegates
     @delegates['DEFAULT'] = @frame
-    if option.kind_of? String
+    if option.kind_of?(String)
       @delegates[option] = wins
     else
       for i in option

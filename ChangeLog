@@ -1,3 +1,15 @@
+Wed Dec 25 00:33:19 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
+
+	* version 1.0-961225
+
+	* io.c (Init_IO): newを無効化
+
+	* lib/tkthcore.rb: tk_call "global $foo; set foo 5"などもできるように
+
+	* eval.c (thread_restore_context): $~, $_でスタックを壊していた
+
+	* process.c (rb_waitpid): threadに一応対応
+
 Tue Dec 24 15:20:58 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 	* version 0.99.4-961224

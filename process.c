@@ -3,7 +3,7 @@
   process.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:47 $
+  $Date: 1996/12/25 10:42:47 $
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto
@@ -76,7 +76,12 @@ rb_waitpid(pid, flags, st)
   retry:
     result = waitpid(pid, st, flags);
     if (result < 0) {
-	if (errno == EINTR) goto retry;
+	if (errno == EINTR) {
+#ifdef THREAD
+	    thread_schedule();
+#endif
+	    goto retry;
+	}
 	return -1;
     }
 #else
@@ -84,7 +89,12 @@ rb_waitpid(pid, flags, st)
   retry:
     result = wait4(pid, st, flags, NULL);
     if (result < 0) {
-	if (errno == EINTR) goto retry;
+	if (errno == EINTR) {
+#ifdef THREAD
+	    thread_schedule();
+#endif
+	    goto retry;
+	}
 	return -1;
     }
 #else
@@ -94,13 +104,19 @@ rb_waitpid(pid, flags, st)
 	return pid;
     }
 
-    if (flags)
-	Fatal("Can't do waitpid with flags");
+    if (flags) {
+	ArgError("Can't do waitpid with flags");
+    }
 
     for (;;) {
 	result = wait(st);
 	if (result < 0) {
-	    if (errno != EINTR) continue;
+	    if (errno == EINTR) {
+#ifdef THREAD
+		thread_schedule();
+#endif
+		continue;
+	    }
 	    return -1;
 	}
 	if (result == pid) {
@@ -122,7 +138,8 @@ struct wait_data {
     int status;
 }
 
-static wait_each(key, value, data)
+static int
+wait_each(key, value, data)
     int key, value;
     struct wait_data *data;
 {
@@ -149,7 +166,13 @@ f_wait()
     }
 #endif
 
-    if ((pid = wait(&state)) < 0) {
+    while ((pid = wait(&state)) < 0) {
+	if (errno == EINTR) {
+#ifdef THREAD
+	    thread_schedule();
+#endif
+	    continue;
+	}
 	if (errno == ECHILD) return Qnil;
 	rb_sys_fail(0);
     }
@@ -252,13 +275,13 @@ rb_proc_exec(str)
 
     for (s=str; *s; s++) {
 	if (*s != ' ' && !isalpha(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
-	    before_exec();
 #if defined(MSDOS)
 	    system(str);
 #else
+	    before_exec();
 	    execl("/bin/sh", "sh", "-c", str, (char *)NULL);
-#endif
 	    after_exec();
+#endif
 	    return -1;
 	}
     }
@@ -529,7 +552,7 @@ proc_setpgid(obj, pid, pgrp)
     ipid = NUM2INT(pid);
     ipgrp = NUM2INT(pgrp);
 
-    if (setpgid(ipid, ipgrp) == -1) rb_sys_fail(0);
+    if (setpgid(ipid, ipgrp) < 0) rb_sys_fail(0);
     return Qnil;
 }
 #endif
@@ -545,7 +568,7 @@ proc_getpriority(obj, which, who)
     iwho   = NUM2INT(who);
 
     prio = getpriority(iwhich, iwho);
-    if (prio == -1) rb_sys_fail(0);
+    if (prio < 0) rb_sys_fail(0);
     return INT2FIX(prio);
 #else
     rb_notimplement();
@@ -563,7 +586,7 @@ proc_setpriority(obj, which, who, prio)
     iwho   = NUM2INT(who);
     iprio  = NUM2INT(prio);
 
-    if (setpriority(iwhich, iwho, iprio) == -1)
+    if (setpriority(iwhich, iwho, iprio) < 0)
 	rb_sys_fail(0);
     return INT2FIX(0);
 #else
@@ -649,10 +672,10 @@ proc_seteuid(obj, euid)
     VALUE obj, euid;
 {
 #ifdef HAVE_SETEUID
-    if (seteuid(NUM2INT(euid)) == -1) rb_sys_fail(0);
+    if (seteuid(NUM2INT(euid)) < 0) rb_sys_fail(0);
 #else
 #ifdef HAVE_SETREUID
-    if (setreuid(-1, NUM2INT(euid)) == -1) rb_sys_fail(0);
+    if (setreuid(-1, NUM2INT(euid)) < 0) rb_sys_fail(0);
 #else
     euid = NUM2INT(euid);
     if (euid == getuid())
@@ -677,10 +700,10 @@ proc_setegid(obj, egid)
     VALUE obj, egid;
 {
 #ifdef HAVE_SETEGID
-    if (setegid(NUM2INT(egid)) == -1) rb_sys_fail(0);
+    if (setegid(NUM2INT(egid)) < 0) rb_sys_fail(0);
 #else
 #ifdef HAVE_SETREGID
-    if (setregid(-1, NUM2INT(egid)) == -1) rb_sys_fail(0);
+    if (setregid(-1, NUM2INT(egid)) < 0) rb_sys_fail(0);
 #else
     egid = NUM2INT(egid);
     if (egid == getgid())

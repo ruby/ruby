@@ -3,7 +3,7 @@
   dln.c -
 
   $Author: matz $
-  $Date: 1994/12/09 01:28:23 $
+  $Date: 1996/12/25 01:28:23 $
   created at: Tue Jan 18 17:05:06 JST 1994
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

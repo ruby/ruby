@@ -3,7 +3,7 @@
   gc.c -
 
   $Author: matz $
-  $Date: 1995/01/12 08:54:47 $
+  $Date: 1996/12/25 09:54:47 $
   created at: Tue Oct  5 09:44:46 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto

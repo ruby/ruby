@@ -185,7 +185,7 @@ after 120000 keepalive'
   end
 
   $tk_event_queue = []
-  def tk_call(*args)
+  def tk_call(str, *args)
     args = args.collect{|s|
       next if s == None
       if s.kind_of?(Hash)
@@ -204,7 +204,8 @@ after 120000 keepalive'
 	"{#{s}}"
       end
     }
-    str = args.join(" ")
+    str += " "
+    str += args.join(" ")
     print str, "\n" if $DEBUG
     tk_write 'rb_ans %s', str
     while PORT.gets

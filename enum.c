@@ -3,7 +3,7 @@
   enum.c -
 
   $Author: matz $
-  $Date: 1995/01/10 10:42:29 $
+  $Date: 1996/12/25 10:42:29 $
   created at: Fri Oct  1 15:15:19 JST 1993
 
   Copyright (C) 1993-1996 Yukihiro Matsumoto
