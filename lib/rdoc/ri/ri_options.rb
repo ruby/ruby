@@ -5,8 +5,7 @@ module RI
 
   require 'rdoc/ri/ri_display'
 
-  VERSION_STRING = "ri: beta1"
-  CVS_ID         = "$Id$";
+  VERSION_STRING = "ri v1.0.1 - 20041108"
 
   class Options
     
@@ -170,8 +169,7 @@ module RI
 
     # Show the version and exit
     def show_version
-      cvs_info = CVS_ID.split
-      puts "#{VERSION_STRING} (#{cvs_info[2]} #{cvs_info[3]})"
+      puts VERSION_STRING
       exit(0)
     end
 

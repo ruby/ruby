@@ -1,3 +1,7 @@
+Tue Nov  9 00:50:06 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/rdoc.rb: Change version numbering of RDoc and ri
+
 Tue Nov  9 00:36:26 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/extservm.rb: add DRb::ExtServManager#uri=.
