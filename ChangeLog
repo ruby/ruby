@@ -1,3 +1,8 @@
+Thu Sep 12 00:09:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_trap_eval): preserve thread status and so on.
+	  [ruby-talk:40337], [ruby-core:00019]
+
 Wed Sep 11 21:25:52 2002  Tanaka Akira  <akr@m17n.org>
 
 	* pp.rb (ARGF.pretty_print): implemented.
