@@ -2,9 +2,10 @@ require 'test/unit/testsuite'
 require 'test/unit/testcase'
 require 'optparse'
 
-Revision = %w$Revision$[1..-1]
-(Runner = Revision[0]).chomp!(",v")
-Version = Revision[1].scan(/\d+/, &method(:Integer))
+rcsid = %w$Id$
+Runner = rcsid[1].chomp(",v").freeze
+Version = rcsid[2].scan(/\d+/, &method(:Integer)).freeze
+Release = rcsid[3].freeze
 
 class BulkTestSuite < Test::Unit::TestSuite
   def self.suite
