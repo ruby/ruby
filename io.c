@@ -1344,6 +1344,7 @@ io_reopen(io, nfile)
     nfile = io_get_io(nfile);
     GetOpenFile(nfile, orig);
 
+    if (fptr == orig) return io;
     if (orig->f2) {
 	fflush(orig->f2);
     }

@@ -497,14 +497,16 @@ dyna_var_push(id, value)
     the_dyna_vars = new_dvar(id, value);
 }
 
-VALUE
-dyna_var_asgn(id, value)
+static VALUE
+dvar_asgn(id, value, push)
     ID id;
     VALUE value;
+    int push;
 {
     struct RVarmap *vars = the_dyna_vars;
 
     while (vars) {
+	if (push && vars->id == 0) break;
 	if (vars->id == id) {
 	    vars->val = value;
 	    return value;
@@ -515,19 +517,29 @@ dyna_var_asgn(id, value)
     return value;
 }
 
+VALUE
+dyna_var_asgn(id, value)
+    ID id;
+    VALUE value;
+{
+    return dvar_asgn(id, value, 0);
+}
+
 static void
 dvar_asgn_push(id, value)
     ID id;
     VALUE value;
 {
-    if (the_dyna_vars && the_dyna_vars->id == 0) {
-	struct RVarmap* vars = new_dvar(id, value);
+    struct RVarmap* vars = 0;
 
-	vars->next = the_dyna_vars->next;
-	the_dyna_vars->next = vars;
+    if (the_dyna_vars && the_dyna_vars->id == 0) {
+	vars = the_dyna_vars;
+	the_dyna_vars = the_dyna_vars->next;
     }
-    else {
-	dyna_var_asgn(id, value);
+    dvar_asgn(id, value, 1);
+    if (vars) {
+	vars->next = the_dyna_vars;
+	the_dyna_vars = vars;
     }
 }
 
@@ -636,7 +648,7 @@ VALUE the_class;
 
 static VALUE rb_eval _((VALUE,NODE*));
 static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
-static NODE *compile _((VALUE,char*));
+static NODE *compile _((VALUE));
 
 static VALUE rb_call _((VALUE,VALUE,ID,int,VALUE*,int));
 static VALUE module_setup _((VALUE,NODE*));
@@ -2340,7 +2352,7 @@ rb_eval(self, node)
 		      case NODE_EVSTR:
 			sourceline = nd_line(node);
 			rb_in_eval++;
-			list->nd_head = compile(list->nd_head->nd_lit,0);
+			list->nd_head = compile(list->nd_head->nd_lit);
 			eval_tree = 0;
 			rb_in_eval--;
 			if (nerrs > 0) {
@@ -3851,15 +3863,13 @@ rb_frame_last_func()
 }
 
 static NODE*
-compile(src, place)
+compile(src)
     VALUE src;
-    char *place;
 {
     NODE *node;
 
     Check_Type(src, T_STRING);
-    if (place == 0) place = sourcefile;
-    node = compile_string(place, RSTRING(src)->ptr, RSTRING(src)->len);
+    node = compile_string(sourcefile, RSTRING(src)->ptr, RSTRING(src)->len);
 
     if (nerrs == 0) return node;
     return 0;
@@ -3927,7 +3937,7 @@ eval(self, src, scope, file, line)
     if ((state = EXEC_TAG()) == 0) {
 	sourcefile = file;
 	sourceline = line;
-	compile(src, file);
+	compile(src);
 	if (nerrs > 0) {
 	    compile_error(0);
 	}
@@ -3984,7 +3994,7 @@ f_eval(argc, argv, self)
 {
     VALUE src, scope, vfile, vline;
     char *file = "(eval)";
-    int line = 0;
+    int line = 1;
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
     if (argc >= 3) {

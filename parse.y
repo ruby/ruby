@@ -1677,10 +1677,9 @@ compile_string(f, s, len)
     lex_pbeg = lex_p = s;
     lex_pend = s + len;
     lex_input = 0;
-    if (!sourcefile || strcmp(f, sourcefile))	/* not in eval() */
+    if (!sourcefile || strcmp(f, sourcefile))
 	sourceline = 1;
-    else		                	/* in eval() */
-	compile_for_eval = 1;
+    compile_for_eval = 1;
 
     return yycompile(f);
 }

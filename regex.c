@@ -3899,8 +3899,10 @@ re_match(bufp, string_arg, size, pos, regs)
 	  SET_REGS_MATCHED;
           break;
 	}
+#if 0
       while (stackp != stackb && (int)stackp[-1] == 1)
 	POP_FAILURE_POINT();
+#endif
       continue;  /* Successfully executed one pattern command; keep going.  */
 
     /* Jump here if any matching operation fails. */
@@ -3912,7 +3914,7 @@ re_match(bufp, string_arg, size, pos, regs)
 
           /* If this failure point is from a dummy_failure_point, just
              skip it.  */
-	  if (stackp[-3] == 0) {
+	  if (stackp[-3] == 0 || (best_regs_set && (int)stackp[-1] == 1)) {
 	    POP_FAILURE_POINT();
 	    goto fail;
 	  }
