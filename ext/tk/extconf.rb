@@ -316,7 +316,7 @@ if mac_need_framework ||
     mk_tkutil << "@-$(RM) $@\n\t"
     mk_tkutil << "@-$(RM) $(TARGET2).lib\n\t" if $mswin
 
-    LINK_SO2 = LINK_SO.gsub(/\$\(DLLIB\)/, '$(DLLIB2)').gsub(/\$\(OBJS\)/, '$(OBJS2)').gsub(/\$\(DLDFLAGS\)/, '$(DLDFLAGS2)')
+    LINK_SO2 = LINK_SO.gsub(/\$\(DLLIB\)/, '$(DLLIB2)').gsub(/\$\(OBJS\)/, '$(OBJS2)').gsub(/\$\(DLDFLAGS\)/, '$(DLDFLAGS2)').gsub(/\$\(DEFFILE\)/, '$(DEFFILE2)')
     mk_tkutil << LINK_SO2
 
     mk_tkutil << "\n\n"
@@ -331,7 +331,7 @@ if mac_need_framework ||
 
     if EXPORT_PREFIX
       mk_tkutil << "$(DEFFILE2):\n"
-      mk_tkutil << %Q!\t$(RUBY) -e "puts 'EXPORTS', 'Init_$(TARGET2)'" > $@\n!
+      mk_tkutil << %Q!\t$(RUBY) -e "puts 'EXPORTS', '#{EXPORT_PREFIX}Init_$(TARGET2)'" > $@\n!
       mk_tkutil << "\n\n"
     end
     mk_tkutil << "\n"
