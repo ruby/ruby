@@ -1,5 +1,9 @@
 Summary of the changes since 1.6.4:
 
+: Socket::SO_*
+
+  Added.
+
 : require
 
   Changed to search directories for ".rb" and ".so" at the same time,
