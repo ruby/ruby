@@ -8,11 +8,11 @@ addr = gs.addr
 addr.shift
 printf("server is on %s\n", addr.join(":"))
 
-while TRUE
+loop do
   Thread.start(gs.accept) do |s|
     print(s, " is accepted\n")
-    while s.gets
-      s.write($_)
+    while line = s.gets
+      s.write(line)
     end
     print(s, " is gone\n")
     s.close
