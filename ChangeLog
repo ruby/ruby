@@ -1,3 +1,14 @@
+Wed Jan 10 01:50:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_reverse_bang): forgot to call rb_str_modify().
+
+Tue Jan  9 17:41:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_taint): check frozen status before modifying
+	  taint status.
+
+	* object.c (rb_obj_untaint): ditto.
+
 Mon Jan  8 21:35:10 2001  Guy Decoux  <decoux@moulon.inra.fr>
 
 	* file.c (path_check_1): should restore modified path.
