@@ -45,7 +45,7 @@
 #define DBL_MIN_10_EXP (-307)
 #endif
 #ifndef DBL_MAX_10_EXP
-#define DBL_MAN_10_EXP 308
+#define DBL_MAX_10_EXP 308
 #endif
 #ifndef DBL_DIG
 #define DBL_DIG 15

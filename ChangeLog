@@ -1,3 +1,7 @@
+Tue Dec 24 19:19:24 2002  Tietew <tietew@tietew.net>
+
+	* numeric.c (DBL_MAX_10_EXP): fix typo. [ruby-dev:36826]
+
 Tue Dec 24 17:02:46 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_undefined): use NoMethodError instead of fatal.
