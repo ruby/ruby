@@ -1836,6 +1836,7 @@ rb_get_values_at(obj, olen, argc, argv, func)
 /* 
  * call-seq:
  *   array.values_at(selector,... )  => an_array
+ *
  *   Returns an array containing the elements in
  *   _self_ corresponding to the given selector(s). The selectors
  *   may be either integer indices or ranges. 

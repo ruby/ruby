@@ -395,7 +395,7 @@ static unsigned long utf8_to_uv _((char*,long*));
  *     a.pack("a3a3a3")   #=> "a\000\000b\000\000c\000\000"
  *     n.pack("ccc")      #=> "ABC"
  *     
- * Directives for +pack+.
+ *  Directives for +pack+.
  *
  *   Directive    Meaning
  *   ---------------------------------------------------------------

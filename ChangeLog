@@ -1,3 +1,10 @@
+Fri Jul  9 22:18:59  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* array.c, enum.c, pack.c: rdoc patch from Johan Holmberg
+	  <holmberg@iar.se> [ruby-core:3132] [ruby-core:3136]
+
+	* numeric.c: rdoc patch.
+
 Fri Jul  9 19:26:39 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::HTTPS#proxy_open): raise ArgumentError to
