@@ -1,0 +1,21 @@
+If you want to use Ruby/Tk (tk.rb and so on), you must have
+tcltklib.so which is working collectry. If you fail to call 
+'require "tcltklib"', you may not have tcltklib.so. 
+Even if there is a tcltklib.so on your Ruby library directry, 
+it will not work without Tcl/Tk libraries (e.g. libtcl8.4.so) 
+on your environment. You must also check that your Tcl/Tk is 
+installed properly. 
+
+--------------------------------------------
+ ( the following is written in EUC-JP )
+
+Ruby/Tk (tk.rb など) を使いたい場合には，tcltklib.so が正しく
+動いていなければなりません．もし require "tcltklib" に失敗する
+ようなら，tcltklib.so が存在していないのかもしれません．
+たとえ Ruby のライブラリディレクトリに tcltklib.so が存在して
+いたとしても，実行環境に Tcl/Tk ライブラリ (libtcl8.4.so など) 
+がなければ機能しません．Tcl/Tk が正しくインストールされているか
+どうかもチェックしてください．
+
+==========================================================
+                Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

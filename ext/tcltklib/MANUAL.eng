@@ -1,0 +1,264 @@
+(tof)
+                                    2003/10/17  Hidetoshi NAGAI
+
+This document discribes about the 'tcltklib' library. Although there
+is the 'tcltk' library (tcltk.rb) under this directory, no description
+in this document (because it is not maintained recently). 
+
+==============================================================
+module TclTklib
+  : Defines methods to do operations which are independed on 
+  : Tcl/Tk interpreters
+
+  module TclTkLib::EventFlag
+    : Defines flags to define taget events on 'do_one_event' methos. 
+    : When to give, please use bit-operator (e.g. WINDOW | DONT_WAIT). 
+
+    [constants]
+       NONE
+         : Is 0. It means "there is no target". But on the real
+         : operation, it is same to ALL.
+
+       WINDOW
+         : 'window' event is processed.
+
+       FILE
+         : 'file' event is processed.
+
+       TIMER
+         : 'timer' event is processed.
+
+       IDLE
+         : 'idle' operation (e.g. 're-draw'; the operations when the
+         : other kinds of events doesn't occur) is processed. 
+
+       ALL
+         : All kinds of events are processed. 
+         : Same to 'WINDOW | FILE | TIMER | IDLE'. 
+
+       DONT_WAIT
+         : Without this flag, 'do_one_event' waits the occurence of 
+         : a target event. With this flag, doesn't wait and returns 
+         : false if there is no target event for processing. 
+
+    [module methods]
+       mainloop(check_root = true)
+         : Starts the eventloop. If 'check_root' is true, this method 
+	 : doesn't return when a root widget exists. 
+         : If 'check_root' is false, doen't return by the other
+         : reasons than exceptions.
+
+      mainloop_watchdog(check_root = true)
+         : On the normal eventloop, some kinds of callback operations 
+         : cause deadlock. To avoid some of such deadlocks, this
+         : method starts an eventloop and a watchdog-thread.
+
+      do_one_event(flag = TclTkLib::EventFlag::ALL | 
+                            TclTkLib::EventFlag::DONT_WAIT)
+         : Do one event for processing. When processed an event, 
+         : returns true. 
+         : If NOT set DONT_WAIT flag, this method waits occurrence of
+         : a target event. 
+         : If set DONT_WAIT flag and no event for processing, returns 
+         : false immediately. 
+         : If $SAFE >= 4,  or $SAFE >= 1 and the flag is tainted, 
+         : force to set DONT_WAIT flag.
+
+      set_eventloop_tick(timer_tick)
+         : Define the interval of thread-switching with an integer
+         : value of mili-seconds. 
+         : Default timer_tick is 0. It means that thread-switching 
+         : is based on the count of processed events. 
+         : ( see 'set_eventloop_weight' method )
+         : However, if the eventloop thread is the only thread, 
+         : timer_tick cannt be set to 0. If 0, then is set to 100 ms 
+         : automatically (see NO_THREAD_INTERRUPT_TIME on tcltklib.c). 
+         : On $SAFE >= 4, cannot call this method. 
+
+      get_eventloop_tick
+         : Get current value of 'timer_tick'
+
+      set_no_event_wait(no_event_wait)
+         : Define sleeping time of the eventloop when two or more 
+         : thread are running and there is no event for processing. 
+         : Default value is 20 (ms).
+         : If the eventloop thread is the only thread, this value is 
+         : invalid. 
+         : On $SAFE >= 4, cannot call this method. 
+
+      get_no_event_wait
+         : Get current value of 'no_event_wait'.
+
+      set_eventloop_weight(loop_max, no_event_tick)
+         : Define the weight parameters for the eventloop thread. 
+         : That is invalid when the eventloop is the only thread. 
+         : 'loop_max' is the max events for thread-switching. 
+         : 'no_event_tick' is the increment value of the event count 
+         : when no event for processing (And then, the eventloop thead
+         : sleeps 'no_event_wait' mili-seconds). 
+         : 'loop_max == 800' and 'no_event_tick == 10' are defalut. 
+         : On $SAFE >= 4, cannot call this method. 
+
+      get_eventloop_weight
+         : Get current values of 'loop_max' and 'no_event_tick'.
+
+      mainloop_abort_on_exception=(bool)
+         : Define whether the eventloop stops on exception or not. 
+         : If true (default value), stops on exception. 
+         : If false, show a warinig message but ignore the exception.
+         : If nil, no warning message and ignore the excepsion. 
+         : This parameter is sometimes useful when multiple Tk
+         : interpreters are working. Because the only one eventloop 
+         : admins all Tk interpreters, sometimes exception on a
+         : interpreter kills the eventloop thread. Even if such
+         : situation, when abort_on_exception == false or nil, 
+         : the eventloop ignores the exception and continue to working. 
+         : On $SAFE >= 4, cannot call this method. 
+
+      mainloop_abort_on_exception
+         : Get current status of that. 
+
+      num_of_mainwindows
+         : Returns the number of main-windows (root-widget). 
+         : Because there is only one main-window for one Tk interpreter, 
+         : the value is same to the number of interpreters which has 
+         : available Tk functions.
+
+
+class TclTkIp
+  [class methods]
+      new(ip_name=nil, options='')
+         : Generate an instance of TclTkIp class. 
+         : If 'ip_name' argument is given as a string, it is the name
+         : of the Tk interpreter which is shown by 'winfo interps'
+         : command. 
+         : 'options' argument accepts a string which is the command 
+         : line options of wish; such as '-geometry' or '-use'. 
+         : The information is used to generate the root widget of the 
+         : interpreter. 
+         : ( e.g. TclTkIp.new('FOO', '-geometry 500x200 -use 0x2200009') )
+         : If is given nil or falsr for the 'option' argument, generates
+         : the Tcl interpreter without Tk library. Then the interpreter 
+         : doesn't need GUI environment. Therefore, even if a window
+         : system doesn't exist or cannot be used, Ruby can control the
+         : Tcl interpreter and the extention libraries loaded on the 
+         : interpreter. 
+
+   [instance methods]
+      create_slave(name, safe=false)
+         : Create a slave interpreter. 
+         : The parent of the interpreter is the receiver of this method.
+         : The name of the slave interpreter is given by 'name' argument. 
+         : The 'safe' argument decides whether the slave interpreter is
+         : created as a safe interpreter or not. If true, create a safe
+         : interpreter. Default is false. However, if the parent
+         : interpreter is a safe interpreter, the created interpreter is
+         : a safe interpreter (ignore 'safe' argument value). 
+         : If $SAFE >= 4, can create a safe interpreter only. 
+
+      make_safe
+         : Make the interpreter to the safe interpreter, and returns
+         : self. If fail, raise RuntimeError.
+
+      safe?
+         : Check whether the interpreter is the safe interpreter. 
+         : If is the safe interpreter, returns true. 
+
+      delete
+         : Delete the interpreter. 
+         : The deleted interpreter doesn't accept command and then
+         : raise an exception.
+
+      deleted?
+         : Check whether the interpreter is already deleted.
+         : If deleted, returns true. 
+
+      restart
+         : Restart Tk part of the interpreter. 
+         : Use this when you need Tk functions after destroying the
+         : root widget. 
+         : On $SAFE >= 4, cannot call this method. 
+
+      _eval(str)
+      _invoke(*args)
+         : Estimates the arguments as a command on the Tk interpreter. 
+         : The argument of _eval is a script of Tcl/Tk.
+         : Each argument of _invoke is a token of one command line of
+         : Tcl/Tk. 
+         : Because the operation of _invoke doesn't through the
+         : command line parser of Tk interpreter, the cost of
+         : estimation is smaller than _eval. However, auto_load
+         : mechanism of the Tk interpreter doesn't work on _invoke. 
+         : So _invoke can call only the command which already
+         : registered on the interpreter by 'load' command and so on. 
+         : On _eval command, auto_load mechanism words. So if succeed 
+         : to _eval and regist the command once, after that, the
+         : command can be called by _invoke. 
+
+      _toUTF8(str, encoding)
+      _fromUTF8(str, encoding)
+         : Call the function (which is internal function of Tcl/Tk) to
+         : convert to/from a UTF8 string.
+
+      _thread_vwait(var_name)
+      _thread_tkwait(mode, target)
+         : 'vwait' or 'tkwait' with thread support. 
+         : The difference from normal 'vwait' or 'tkwait' command is 
+         : doing independent wait from the vwait stack when they are
+         : called on the other thread than the eventloop thread.
+         : In the case of Tcl/Tk's vwait / tkwait, if 2nd vwait /
+         : tkwait is called on waiting for 1st vwait / tkwait, 
+         : returns the order of [2nd]->[1st] regardless of the order
+         : of when the wait condition was fulfilled.  
+         : If _thread_vwait / _thread_tkwait is called on the
+         : eventloop thread, there is no difference from vwait /
+         : tkwait. But if called on the other thread than the
+         : eventloop, stops the thread.  And when the wait condition 
+         : is fulfilled, the thread restarts. The meaning of
+         : "independent from the vwait stack" is that the timing of 
+         : restarting is independent from the waiting status of the 
+         : other threads. That is, even if the eventloop thread is 
+         : waiting by vwait and is not fulfilled the condition, 
+         : _thread_vwait completes the waiting when its waiting
+         : condition is fulfilled and the thread which stopped by
+         : _thread_vwait can continue the operation. 
+
+      _return_value
+         : Get the last result value on the interpreter. 
+
+      mainloop
+      mainloop_watchdog
+         : If on the slave interpreter, never start an eventloop and
+         : returns nil. 
+         : With the exception that, same to the TclTkLib module method
+         : with the same name. 
+
+      do_one_event
+         : With the exception that the argument is forced to set
+         : DONT_WAIT flag on the slave interpreter, same to
+         : TclTkLib#do_one_event. 
+
+      set_eventloop_tick
+      get_eventloop_tick
+      set_no_event_wait
+      get_no_event_wait
+      set_eventloop_weight
+      get_eventloop_weight
+      mainloop_abort_on_exception
+      mainloop_abort_on_exception=
+         : With the exception that it is ignored to set value on the
+         : slave interpreter, same to the TclTkLib module method with
+         : the same name. 
+
+class TkCallbackBreak < StandardError
+class TkCallbackContinue < StandardError
+   : They are exception classes to break or continue the Tk callback 
+   : operation. 
+   : If raise TkCallbackBreak on the callback procedure, Ruby returns 
+   : 'break' code to Tk interpreter (Then the Tk interpreter will 
+   : break the operation for the current event). 
+   : If raise TkCallbackContinue, returns 'continue' code (Then the Tk
+   : interpreter will break the operateion for the current bindtag and 
+   : starts the operation for the next buindtag for the current event).
+
+(eof)

@@ -1577,6 +1577,9 @@ module Tk
     def self.new(str)
       super(str, 'utf-8')
     end
+    def self.new_without_escape(str)
+      super(str, 'utf-8')
+    end
   end
   def Tk.UTF8_String(str)
     Tk::UTF8_String.new(str)

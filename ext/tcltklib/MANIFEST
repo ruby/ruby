@@ -1,6 +1,8 @@
 MANIFEST
+README.1st
 README.euc
 MANUAL.euc
+MANUAL.eng
 tcltklib.c
 stubs.c
 depend

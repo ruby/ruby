@@ -1,0 +1,33 @@
+To compile 'tcltklib', you must have Tcl/Tk libraries on your environment. 
+Although 'extconf.rb' script searches Tcl/Tk libraries and header files, 
+sometimes fails to find them. And then, 'tcltklib' cannot be compiled. If 
+Tcl/Tk libraries or header files are installed but are not found, you can 
+give the information by arguments of the 'configure' script. Please give 
+some or all of the following options. 
+
+ --with-tcllib=<libname>    (e.g. libtcl8.3.so ==> --with-tcllib=tcl8.3)
+ --with-tklib=<libname>     (e.g. libtk8.3.so  ==> --with-tklib=tk8.3)
+
+ --enable_tcltk_stubs       (if you force to enable stubs)
+
+ --with-tcl-dir=<path> 
+      equal to "--with-tcl-include=<path>/include --with-tcl-lib=<path>/lib"
+
+ --with-tk-dir=<path> 
+      equal to "--with-tk-include=<path>/include --with-tk-lib=<path>/lib"
+
+ --with-tcl-include=<dir>   the directry containts 'tcl.h'
+ --with-tk-include=<dir>    the directry containts 'tk.h'
+
+ --with-tcl-lib=<dir>       the directry containts 'libtcl<version>.so'
+ --with-tk-lib=<dir>        the directry containts 'libtk<version>.so'
+
+If you forgot to give the options when do 'configure' on toplevel
+directry of Ruby sources, please try something like as the followings.
+
+ $ cd ext/tcltklib
+ $ rm Makefile
+ $ CONFIGURE_ARGS='--with-tcl-include=/usr/local/include/tcl8.3/ --with-tcllib=tcl8.3 --with-tklib=tk8.3 --enable-tcltk_stubs' ruby extconf.rb
+
+==========================================================
+                Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

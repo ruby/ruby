@@ -1,4 +1,5 @@
 MANIFEST
+README.1st
 extconf.rb
 depend
 tkutil.c
