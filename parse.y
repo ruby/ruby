@@ -2294,8 +2294,6 @@ none		: /* none */ {$$ = 0;}
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
 
-static int str_extend_p _((void));
-
 #define LEAVE_BS 1
 
 static VALUE (*lex_gets)();	/* gets function */
@@ -4193,22 +4191,6 @@ yylex()
 	last_id = yylval.id = rb_intern(tok());
 	return result;
     }
-}
-
-static int
-str_extend_p()
-{
-    int c = nextc(), t = 0;
-    switch (c) {
-      case '$':
-      case '@':
-	t = tSTRING_DVAR;
-      case '{':
-	t = tSTRING_DBEG;
-    }
-    pushback(c);
-    pushback('#');
-    return t;
 }
 
 NODE*

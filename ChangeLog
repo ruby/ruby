@@ -1,3 +1,7 @@
+Thu Jul  4 23:43:26 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y: remove useless function str_extend_p().
+
 Wed Jul  3 14:26:40 2002  Sean Chittenden  <sean@ruby-lang.org>
 
 	* lib/net/ftp.rb (get): new method.
