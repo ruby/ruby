@@ -50,6 +50,15 @@ str_mod_check(s, p, len)
     }
 }
 
+static inline void
+str_frozen_check(s)
+    VALUE s;
+{
+    if (OBJ_FROZEN(s)) {
+	rb_raise(rb_eRuntimeError, "string frozen");
+    }
+}
+
 static VALUE str_alloc _((VALUE));
 static VALUE
 str_alloc(klass)
@@ -1958,9 +1967,8 @@ rb_str_sub_bang(argc, argv, str)
 
 	    rb_match_busy(match);
 	    repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
-	    if (RSTRING(str)->ptr != p || RSTRING(str)->len != len) {
-		rb_raise(rb_eRuntimeError, "string modified");
-	    }
+	    str_mod_check(str, p, len);
+	    str_frozen_check(str);
 	    rb_backref_set(match);
 	}
 	else {
@@ -2080,6 +2088,7 @@ str_gsub(argc, argv, str, bang)
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
 	    str_mod_check(str, sp, slen);
+	    str_frozen_check(str);
 	    rb_backref_set(match);
 	}
 	else {
@@ -4458,11 +4467,12 @@ rb_str_justify(argc, argv, str, jflag)
     width = NUM2LONG(w);
     if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
     res = rb_str_new5(str, 0, width);
-    if (argc == 0) {
+    if (argc == 2) {
 	StringValue(pad);
-	if (RSTRING(pad)->len > 0) {
-	    f = RSTRING(pad)->ptr;
-	    flen = RSTRING(pad)->len;
+	f = RSTRING(pad)->ptr;
+	flen = RSTRING(pad)->len;
+	if (flen == 0) {
+	    rb_raise(rb_eArgError, "zero width padding");
 	}
     }
     p = RSTRING(res)->ptr;

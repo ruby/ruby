@@ -957,7 +957,6 @@ rb_ary_update(ary, beg, len, rpl)
 	len = RARRAY(ary)->len - beg;
     }
 
-    rb_ary_modify(ary);
     if (NIL_P(rpl)) {
 	rlen = 0;
     }
@@ -965,6 +964,7 @@ rb_ary_update(ary, beg, len, rpl)
 	rpl = rb_ary_to_ary(rpl);
 	rlen = RARRAY(rpl)->len;
     }
+    rb_ary_modify(ary);
 
     if (beg >= RARRAY(ary)->len) {
 	len = beg + rlen;

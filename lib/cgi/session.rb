@@ -159,7 +159,7 @@ class CGI
     attr_reader :session_id
 
     def Session::callback(dbman)  #:nodoc:
-      lambda{
+      Proc.new{
 	dbman[0].close unless dbman.empty?
       }
     end
@@ -351,17 +351,21 @@ class CGI
       #          on Unix systems).
       # prefix:: the prefix to add to the session id when generating
       #          the filename for this session's FileStore file.
+      #          Defaults to "cgi_sid_".
+      # suffix:: the prefix to add to the session id when generating
+      #          the filename for this session's FileStore file.
       #          Defaults to the empty string.
       #
       # This session's FileStore file will be created if it does
       # not exist, or opened if it does.
       def initialize(session, option={})
 	dir = option['tmpdir'] || Dir::tmpdir
-	prefix = option['prefix'] || ''
+	prefix = option['prefix'] || 'cgi_sid_'
+	suffix = option['suffix'] || ''
 	id = session.session_id
         require 'digest/md5'
         md5 = Digest::MD5.hexdigest(id)[0,16]
-	@path = dir+"/"+prefix+md5
+	@path = dir+"/"+prefix+md5+suffix
 	unless File::exist? @path
 	  @hash = {}
 	end
