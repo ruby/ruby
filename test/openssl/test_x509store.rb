@@ -107,6 +107,8 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     assert_equal(false, store.verify(ee3_cert))
     assert_match(/expire/i, store.error_string)
 
+    return unless defined?(OpenSSL::X509::V_FLAG_CRL_CHECK)
+
     store = OpenSSL::X509::Store.new
     store.purpose = OpenSSL::X509::PURPOSE_ANY
     store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK
