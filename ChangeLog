@@ -3,6 +3,17 @@ Thu Oct  4 14:11:03 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* ext/socket/socket.c (ruby_connect): EALREADY is the equivalent
 	  for EINPROGRESS in ws2_32.lib.
 
+Wed Oct  3 13:32:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_aset): should maintain original negative
+	  offset.
+
+	* string.c (rb_str_aset_m): ditto.
+
+	* re.c (rb_reg_nth_match): should check negative nth.
+
+	* re.c (rb_reg_nth_defined): ditto.
+
 Tue Oct  2 19:12:47 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftools.rb (catname): allow trailing '/' for the destination.
