@@ -649,7 +649,7 @@ $(DLLIB): $(OBJS)
       else
         line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if /nmake/i =~ $make
       end
-      mfile.printf "%s", line.gsub('\$\(hdrdir\)/config.h', '$(topdir)/config.h')
+      mfile.printf "%s", line.gsub(/\$\(hdrdir\)\/config.h/, '$(topdir)/config.h')
     end
     dfile.close
   end
