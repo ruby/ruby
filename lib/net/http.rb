@@ -690,7 +690,7 @@ module Net
       if not req.body_exist? or @seems_1_0_server then
         req['connection'] = 'close'
       end
-      req['host'] = addr_port()
+      req['host'] ||= addr_port()
     end
 
     def end_transport( req, res )
