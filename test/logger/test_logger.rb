@@ -90,9 +90,15 @@ class TestLogger < Test::Unit::TestCase
     logger = Logger.new(dummy)
     log = log_add(logger, INFO, "foo")
     assert_match(/^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d.\s*\d+ $/, log.datetime)
-    logger.datetime_format = "%d%b%Y@%H:%M:%S"
+    # [ruby-dev:24828]
+    #logger.datetime_format = "%d%b%Y@%H:%M:%S"
+    #log = log_add(logger, INFO, "foo")
+    #assert_match(/^\d\d\w\w\w\d\d\d\d@\d\d:\d\d:\d\d$/, log.datetime)
+    #
+    # don't run the next test at 23:59, or just run again if failed.
+    logger.datetime_format = "@%d%b%Y@"
     log = log_add(logger, INFO, "foo")
-    assert_match(/^\d\d\w\w\w\d\d\d\d@\d\d:\d\d:\d\d$/, log.datetime)
+    assert_equal(Time.now.strftime("@%d%b%Y@"), log.datetime)
     logger.datetime_format = ""
     log = log_add(logger, INFO, "foo")
     assert_match(/^$/, log.datetime)

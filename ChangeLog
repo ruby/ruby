@@ -1,3 +1,9 @@
+Sun Nov 14 08:46:33 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/logger/test_logger.rb: Logger just expects
+	  Logger#datetime_format to be used for Time#strftime independently of
+	  locale. [ruby-dev:24828]
+
 Fri Nov 12 17:32:07 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bcc32/README.bcc32, win32/README.win32: need bison instead of
