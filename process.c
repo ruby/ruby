@@ -1267,7 +1267,7 @@ rb_f_exec(argc, argv)
     else {
 	e.argc = argc;
 	e.argv = argv;
-	e.prog = RSTRING(prog)->ptr;
+	e.prog = prog ? RSTRING(prog)->ptr : 0;
     }
     rb_exec(&e);
     rb_sys_fail(e.prog);

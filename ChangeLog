@@ -1,3 +1,7 @@
+Mon Nov  1 11:46:19 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* process.c (rb_f_exec): should check whether prog is NULL.
+
 Mon Nov  1 09:37:19 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb: added entry point of RSS Maker.
