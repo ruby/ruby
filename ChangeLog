@@ -1,3 +1,14 @@
+Fri Mar  1 11:22:51 2002  Amos Gouaux  <amos+ruby@utdallas.edu>
+
+	* lib/net/imap.rb: added document.
+
+	* lib/net/imap.rb (getquotaroot): new method.
+
+	* lib/net/imap.rb (setacl): remove the rights if the rights
+	parameter is nil.
+
+	* lib/net/imap.rb (getacl): return a MailboxACLItem object.
+
 Fri Mar  1 06:25:49 2002  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/extconf.rb (have_struct_member): new method.

@@ -30,9 +30,14 @@ Object
 
 === Class Methods
 
-: new(host, port = 143)
+: new(host, port = 143, usessl = false, certs = nil, verify = false)
       Creates a new Net::IMAP object and connects it to the specified
-      port on the named host.
+      port on the named host.  If usessl is true, then an attempt will
+      be made to use SSL (now TLS) to connect to the server.  For this
+      to work OpenSSL((<[OSSL]>)) and the Ruby OpenSSL((<[RSSL]>))
+      extension need to be installed.  The certs parameter indicates
+      the path or file containing the CA cert of the server, and the
+      verify parameter is for the OpenSSL verification callback.
 
 : debug
       Returns the debug mode.
@@ -228,6 +233,36 @@ Object
         p imap.sort(["DATE"], ["SUBJECT", "hello"], "US-ASCII")
         #=> [6, 7, 8, 1]
 
+: setquota(mailbox, quota)
+      Sends a SETQUOTA command along with the specified mailbox and
+      quota.  If quota is nil, then quota will be unset for that
+      mailbox.  Typically one needs to be logged in as server admin
+      for this to work.  The IMAP quota commands are described in
+      ((<[RFC-2087]>)).
+
+: getquota(mailbox)
+      Sends the GETQUOTA command along with specified mailbox.
+      If this mailbox exists, then an array containing a
+      ((<Net::IMAP::MailboxQuota>)) object is returned.  This
+      command generally is only available to server admin.
+
+: getquotaroot(mailbox)
+      Sends the GETQUOTAROOT command along with specified mailbox.
+      This command is generally available to both admin and user.
+      If mailbox exists, returns an array containing objects of
+      ((<Net::IMAP::MailboxQuotaRoot>)) and ((<Net::IMAP::MailboxQuota>)).
+
+: setacl(mailbox, user, rights)
+      Sends the SETACL command along with mailbox, user and the
+      rights that user is to have on that mailbox.  If rights is nil,
+      then that user will be stripped of any rights to that mailbox.
+      The IMAP ACL commands are described in ((<[RFC-2086]>)).
+
+: getacl(mailbox)
+      Send the GETACL command along with specified mailbox.
+      If this mailbox exists, an array containing objects of
+      ((<Net::IMAP::MailboxACLItem>)) will be returned.
+
 : add_response_handler(handler = Proc.new)
       Adds a response handler.
 
@@ -390,6 +425,80 @@ Struct
 
 : name
       Returns the mailbox name.
+
+== Net::IMAP::MailboxQuota
+
+Net::IMAP::MailboxQuota represents contents of GETQUOTA response.
+This object can also be a response to GETQUOTAROOT.  In the syntax
+specification below, the delimiter used with the "#" construct is a
+single space (SPACE).
+
+   quota_list      ::= "(" #quota_resource ")"
+
+   quota_resource  ::= atom SPACE number SPACE number
+
+   quota_response  ::= "QUOTA" SPACE astring SPACE quota_list
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: mailbox
+      The mailbox with the associated quota.
+
+: usage
+      Current storage usage of mailbox.
+
+: quota
+      Quota limit imposed on mailbox.
+
+== Net::IMAP::MailboxQuotaRoot
+
+Net::IMAP::MailboxQuotaRoot represents part of the GETQUOTAROOT
+response. (GETQUOTAROOT can also return Net::IMAP::MailboxQuota.)
+
+   quotaroot_response
+                   ::= "QUOTAROOT" SPACE astring *(SPACE astring)
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: mailbox
+      The mailbox with the associated quota.
+
+: quotaroots
+      Zero or more quotaroots that effect the quota on the
+      specified mailbox.
+
+== Net::IMAP::MailboxACLItem
+
+Net::IMAP::MailboxACLItem represents response from GETACL.
+
+   acl_data        ::= "ACL" SPACE mailbox *(SPACE identifier SPACE
+                        rights)
+
+   identifier      ::= astring
+
+   rights          ::= astring
+
+=== Super Class
+
+Struct
+
+=== Methods
+
+: user
+      Login name that has certain rights to the mailbox
+      that was specified with the getacl command.
+
+: rights
+      The access rights the indicated user has to the
+      mailbox.
 
 == Net::IMAP::StatusData
 
@@ -679,6 +788,18 @@ Struct
     Crocker, D., "Standard for the Format of ARPA Internet Text
     Messages", STD 11, RFC 822, University of Delaware, August 1982.
 
+: [RFC-2087]
+    Myers, J., "IMAP4 QUOTA extension", RFC 2087, January 1997.
+
+: [RFC-2086]
+    Myers, J., "IMAP4 ACL extension", RFC 2086, January 1997.
+
+: [OSSL]
+    http://www.openssl.org
+
+: [RSSL]
+    http://savannah.gnu.org/projects/rubypki
+
 =end
 
 require "socket"
@@ -804,6 +925,16 @@ module Net
       end
     end
 
+    def getquotaroot(mailbox)
+      synchronize do
+        send_command("GETQUOTAROOT", mailbox)
+        result = []
+        result.concat(@responses.delete("QUOTAROOT"))
+        result.concat(@responses.delete("QUOTA"))
+        return result
+      end
+    end
+
     def getquota(mailbox)
       synchronize do
 	send_command("GETQUOTA", mailbox)
@@ -821,8 +952,13 @@ module Net
       send_command("SETQUOTA", mailbox, RawData.new(data))
     end
 
-    def setacl(mailbox, user, acl)
-      send_command("SETACL", mailbox, user, acl)
+    # setacl(mailbox, user, nil) will remove rights.
+    def setacl(mailbox, user, rights)
+      if rights.nil? 
+        send_command("SETACL", mailbox, user, "")
+      else
+        send_command("SETACL", mailbox, user, rights)
+      end
     end
 
     def getacl(mailbox)
@@ -1291,6 +1427,8 @@ module Net
     ResponseCode = Struct.new(:name, :data)
     MailboxList = Struct.new(:attr, :delim, :name)
     MailboxQuota = Struct.new(:mailbox, :usage, :quota)
+    MailboxQuotaRoot = Struct.new(:mailbox, :quotaroots)
+    MailboxACLItem = Struct.new(:user, :rights)
     StatusData = Struct.new(:mailbox, :attr)
     FetchData = Struct.new(:seqno, :attr)
     Envelope = Struct.new(:date, :subject, :from, :sender, :reply_to,
@@ -1474,6 +1612,8 @@ module Net
 	    return list_response
 	  when /\A(?:QUOTA)\z/ni
 	    return getquota_response
+	  when /\A(?:QUOTAROOT)\z/ni
+	    return getquotaroot_response
 	  when /\A(?:ACL)\z/ni
 	    return getacl_response
 	  when /\A(?:SEARCH|SORT)\z/ni
@@ -2037,15 +2177,32 @@ module Net
         end
       end
 
+      def getquotaroot_response
+        # Similar to getquota, but only admin can use getquota.
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        mailbox = astring
+        quotaroots = []
+        while true
+          token = lookahead
+          break unless token.symbol == T_SPACE
+          shift_token
+          quotaroots.push(astring)
+        end
+        data = MailboxQuotaRoot.new(mailbox, quotaroots)
+        return UntaggedResponse.new(name, data, @str)
+      end
+
       def getacl_response
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
         mailbox = astring
+        data = []
         token = lookahead
         if token.symbol == T_SPACE
           shift_token
-          data = []
           while true
             token = lookahead
             case token.symbol
@@ -2056,11 +2213,10 @@ module Net
             end
             user = astring
             match(T_SPACE)
-            acl = astring
-            data.push([user, acl])
+            rights = astring
+            ##XXX data.push([user, rights])
+            data.push(MailboxACLItem.new(user, rights))
           end
-        else
-          data = []
         end
 	return UntaggedResponse.new(name, data, @str)
       end
