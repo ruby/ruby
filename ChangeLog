@@ -1,3 +1,26 @@
+Wed Apr  9 23:54:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_obj_remove_instance_variable): better message.
+	  [ruby-talk:68987]
+
+	* variable.c (rb_mod_remove_const): ditto.
+
+	* object.c (rb_obj_ivar_get): ditto.
+
+	* object.c (rb_obj_ivar_set): ditto.
+
+	* parse.y (yylex): ditto.
+
+Wed Apr  9 21:51:20 2003  Dave Thomas  <Dave@Thomases.com>
+
+	* eval.c (rb_mod_define_method): Allow UnboundMethod as
+	  parameter.
+
+Wed Apr  9 18:30:58 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (top_include): include module to wrapper module if
+	  wrapper is present. experimental.  [ruby-list:37539]
+
 Wed Apr  9 17:24:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (rb_gc_mark_children): introduce this function again; this

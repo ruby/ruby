@@ -5083,7 +5083,7 @@ backtrace(lev)
 {
     struct FRAME *frame = ruby_frame;
     char buf[BUFSIZ];
-    volatile VALUE ary;
+    VALUE ary;
     NODE *n;
 
     ary = rb_ary_new();
@@ -6086,7 +6086,12 @@ top_include(argc, argv)
     VALUE *argv;
 {
     rb_secure(4);
-    return rb_mod_include(argc, argv, rb_cObject);
+    if (ruby_wrapper) {
+	return rb_mod_include(argc, argv, ruby_wrapper);
+    }
+    else {
+	return rb_mod_include(argc, argv, rb_cObject);
+    }
 }
 
 void
@@ -7180,19 +7185,10 @@ umethod_bind(method, recv)
 	    st_lookup(RCLASS(CLASS_OF(recv))->m_tbl, data->oid, 0)) {
 	    rb_raise(rb_eTypeError, "method `%s' overridden", rb_id2name(data->oid));
 	}
-#if 0
-	if (!((TYPE(data->rklass) == T_MODULE) ?
-	      rb_obj_is_kind_of(recv, data->rklass) :
-	      rb_obj_is_instance_of(recv, data->rklass))) {
-	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
-		     rb_class2name(data->rklass));
-	}
-#else
 	if(!rb_obj_is_kind_of(recv, data->rklass)) {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
 		     rb_class2name(data->rklass));
 	}
-#endif
     }
 
     method = Data_Make_Struct(rb_cMethod,struct METHOD,bm_mark,free,bound);
@@ -7344,6 +7340,15 @@ umethod_proc(method)
 }
 
 static VALUE
+rb_obj_is_method(m)
+    VALUE m;
+{
+    if (TYPE(m) == T_DATA && RDATA(m)->dmark == (RUBY_DATA_FUNC)bm_mark) {
+	return Qtrue;
+    }
+}
+
+static VALUE
 rb_mod_define_method(argc, argv, mod)
     int argc;
     VALUE *argv;
@@ -7361,7 +7366,7 @@ rb_mod_define_method(argc, argv, mod)
     else if (argc == 2) {
 	id = rb_to_id(argv[0]);
 	body = argv[1];
-	if (!rb_obj_is_kind_of(body, rb_cMethod) && !rb_obj_is_proc(body)) {
+	if (!rb_obj_is_method(body) && !rb_obj_is_proc(body)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Method)",
 		     rb_obj_classname(body));
 	}
