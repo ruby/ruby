@@ -22,6 +22,7 @@ config.log
 config.status
 configure
 foo.rb
+libruby.so.*
 miniruby
 miniruby.elhash
 miniruby.elhash2
