@@ -46,7 +46,6 @@ $sitedir = CONFIG["sitedir"]
 $sitelibdir = CONFIG["sitelibdir"]
 $sitearchdir = CONFIG["sitearchdir"]
 
-$extmk = /extmk\.rb/ =~ $0
 $mswin = /mswin/ =~ RUBY_PLATFORM
 $bccwin = /bccwin/ =~ RUBY_PLATFORM
 $mingw = /mingw/ =~ RUBY_PLATFORM
@@ -77,15 +76,17 @@ def map_dir(dir, map = nil)
   map.inject(dir) {|dir, (orig, new)| dir.gsub(orig, new)}
 end
 
+libdir = File.dirname(__FILE__)
+$extmk = libdir != Config::CONFIG["rubylibdir"]
 if not $extmk and File.exist? Config::CONFIG["archdir"] + "/ruby.h"
+  $topdir = Config::CONFIG["archdir"]
   $hdrdir = $archdir
 elsif File.exist? $srcdir + "/ruby.h"
+  $topdir = Config::CONFIG["compile_dir"]
   $hdrdir = $srcdir
 else
-  warn "can't find header files for ruby."
-  exit 1
+  abort "can't find header files for ruby."
 end
-$topdir = $hdrdir
 
 OUTFLAG = CONFIG['OUTFLAG']
 CPPOUTFILE = CONFIG['CPPOUTFILE']
@@ -714,7 +715,7 @@ SHELL = /bin/sh
 
 srcdir = #{srcdir}
 topdir = #{$topdir}
-hdrdir = #{$hdrdir}
+hdrdir = #{$extmk ? $hdrdir : '$(topdir)'}
 VPATH = #{$mingw && CONFIG['build_os'] == 'cygwin' ? '$(shell cygpath -u $(srcdir))' : '$(srcdir)'}
 }
   drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
@@ -750,7 +751,8 @@ RUBY_SO_NAME = #{CONFIG['RUBY_SO_NAME']}
 arch = #{CONFIG['arch']}
 sitearch = #{CONFIG['sitearch']}
 ruby_version = #{Config::CONFIG['ruby_version']}
-RUBY = #{$ruby}
+ruby = #{$ruby}
+RUBY = #{($nmake && !$extmk && !$configure_args.has_key?('--ruby')) ? '$(ruby:/=\)' : '$(ruby)'}
 RM = $(RUBY) -run -e rm -- -f
 MAKEDIRS = $(RUBY) -run -e mkdir -- -p
 INSTALL_PROG = $(RUBY) -run -e install -- -vpm 0755
@@ -960,7 +962,7 @@ def init_mkmf(config = CONFIG)
   $ARCH_FLAG = with_config("arch_flag", arg_config("ARCH_FLAG", config["ARCH_FLAG"])).dup
   $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
   $LDFLAGS = (with_config("ldflags") || "").dup
-  $INCFLAGS = "-I#{$topdir}"
+  $INCFLAGS = "-I$(topdir)"
   $DLDFLAGS = with_config("dldflags", arg_config("DLDFLAGS", config["DLDFLAGS"])).dup
   $LIBEXT = config['LIBEXT'].dup
   $OBJEXT = config["OBJEXT"].dup
@@ -1004,7 +1006,7 @@ $configure_args["--topsrcdir"] ||= $srcdir
 Config::CONFIG["topdir"] = CONFIG["topdir"] =
   $curdir = arg_config("--curdir", Dir.pwd)
 $configure_args["--topdir"] ||= $curdir
-$ruby = arg_config("--ruby", File.join(CONFIG["bindir"], CONFIG["ruby_install_name"]))
+$ruby = arg_config("--ruby", File.join(Config::CONFIG["bindir"], CONFIG["ruby_install_name"]))
 
 split = Shellwords.method(:shellwords).to_proc
 

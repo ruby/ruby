@@ -1,3 +1,13 @@
+Wed Mar 24 18:48:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb ($ruby, $topdir, $hdrdir): should not be affected by
+	  DESTDIR after installed.
+
+	* lib/mkmf.rb (RUBY): / is not recognized as path separator on
+	  nmake/bmake. [ruby-list:39388]
+
+	* lib/mkmf.rb (init_mkmf): $INCFLAGS also should be lazy-evaluated.
+
 Wed Mar 24 12:32:56 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::handle_class_module):
@@ -10,11 +20,11 @@ Wed Mar 24 12:32:56 2004  Dave Thomas  <dave@pragprog.com>
 
 Wed Mar 24 11:11:26 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/html_generator.rb (Generators::HTMLGenerator::load_html_template): 
+	* lib/rdoc/generators/html_generator.rb (Generators::HTMLGenerator::load_html_template):
 	  Allow non-RDoc templates by putting a slash in the template name
 
 Mon Mar 22 16:19:57 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
-	
+
 	* ruby.1: add -width option to .Bl for old groff.
 
 Sun Mar 21 21:11:16 2004  Keiju Ishitsuka  <keiju@ishitsuka.com>
