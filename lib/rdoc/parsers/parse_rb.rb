@@ -1975,6 +1975,16 @@ module RDoc
       parse_statements(container, single, meth)
       
       remove_token_listener(meth)
+
+      # Look for a 'call-seq' in the comment, and override the
+      # normal parameter stuff
+
+      if comment.sub!(/call-seq:(.*?)^\s*\#?\s*$/m, '')
+$stderr.puts $1
+        seq = $1
+        seq.gsub!(/^\s*\#\s*/, '')
+        meth.call_seq = seq
+      end
       
       meth.comment = comment
 

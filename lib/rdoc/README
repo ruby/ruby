@@ -419,6 +419,11 @@ this margin are formatted verbatim.
 
 12. Comment blocks can contain other directives:
 
+    [<tt>call-seq:</tt>]
+        lines up to the next blank line in the comment are treated as
+        the method's calling sequence, overriding the
+        default parsing of method parameters and yield arguments.
+
     [<tt>:include:</tt><i>filename</i>] 
          include the contents of the named file at this point. The
          file will be searched for in the directories listed by
