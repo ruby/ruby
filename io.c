@@ -1598,8 +1598,8 @@ next_argv()
 			fr = rb_fopen(RSTRING(str)->ptr, "r");
 #else
 			if (rename(fn, RSTRING(str)->ptr) < 0) {
-			    Warning("Can't rename %s to %s: %s, skipping file",
-				    fn, RSTRING(str)->ptr, strerror(errno));
+			    Warn("Can't rename %s to %s: %s, skipping file",
+				 fn, RSTRING(str)->ptr, strerror(errno));
 			    fclose(fr);
 			    goto retry;
 			}
@@ -1608,8 +1608,8 @@ next_argv()
 		    else {
 #if !defined(MSDOS) && !defined(__BOW__) && !defined(__CYGWIN32__) && !defined(NT) && !defined(__human68k__)
 			if (unlink(fn) < 0) {
-			    Warning("Can't remove %s: %s, skipping file",
-				fn, strerror(errno));
+			    Warn("Can't remove %s: %s, skipping file",
+				 fn, strerror(errno));
 			    fclose(fr);
 			    goto retry;
 			}

@@ -839,7 +839,7 @@ marshal_load(argc, argv)
     major = r_byte(&arg);
     if (major == MARSHAL_MAJOR) {
 	if (r_byte(&arg) != MARSHAL_MINOR) {
-	    Warning("Old marshal file format (can be read)");
+	    Warn("Old marshal file format (can be read)");
 	}
 	arg.symbol = st_init_numtable();
 	arg.data   = st_init_numtable();

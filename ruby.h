@@ -440,7 +440,8 @@ void rb_notimplement _((void));
 #endif
 
 void Error();
-void Warning();
+void Warn();
+void Warning();			/* reports if `-w' specified */
 
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));

@@ -279,7 +279,7 @@ flo_modulo(x, y, modulo)
     VALUE x, y;
     int modulo;
 {
-    double value;
+    double value, result;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -296,22 +296,21 @@ flo_modulo(x, y, modulo)
     }
 
 #ifdef HAVE_FMOD
-    value = fmod(RFLOAT(x)->value, value);
+    result = fmod(RFLOAT(x)->value, value);
 #else
     {
 	double value1 = RFLOAT(x)->value;
 	double value2;
 
 	modf(value1/value, &value2);
-	value = value1 - value2 * value;
+	result = value1 - value2 * value;
     }
 #endif
     if (modulo &&
-	(RFLOAT(x)->value < 0.0) != (RFLOAT(y)->value < 0.0) &&
-	value != 0.0) {
-	value += RFLOAT(y)->value;
+	(RFLOAT(x)->value < 0.0) != (result < 0.0) && result != 0.0) {
+	result += value;
     }
-    return float_new(value);
+    return float_new(result);
 }
 
 static VALUE

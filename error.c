@@ -95,6 +95,22 @@ Error_Append(fmt, va_alist)
 }
 
 void
+Warn(fmt, va_alist)
+    char *fmt;
+    va_dcl
+{
+    char buf[BUFSIZ];
+    va_list args;
+
+    sprintf(buf, "warning: %s", fmt);
+
+    va_start(args);
+    err_print(buf, args);
+    va_end(args);
+}
+
+/* Warning() reports only in verbose mode */
+void
 Warning(fmt, va_alist)
     char *fmt;
     va_dcl

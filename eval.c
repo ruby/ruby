@@ -21,7 +21,7 @@
 #include "dln.h"
 
 #ifndef HAVE_STRING_H
-char *strrchr();
+char *strrchr _((char*,char));
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -547,18 +547,15 @@ VALUE the_class;
     the_scope = _old;\
 }
 
-static VALUE rb_eval();
-static VALUE eval();
-static NODE *compile();
+static VALUE rb_eval _((VALUE,NODE*));
+static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
+static NODE *compile _((VALUE,char*));
 
-static VALUE rb_call();
-VALUE rb_apply();
-VALUE rb_funcall2();
+static VALUE rb_call _((VALUE,VALUE,ID,int,VALUE*,int));
+static VALUE module_setup _((VALUE,NODE*));
 
-static VALUE module_setup();
-
-static VALUE massign();
-static void assign();
+static VALUE massign _((VALUE,NODE*,VALUE));
+static void assign _((VALUE,NODE*,VALUE));
 
 static int safe_level = 0;
 /* safe-level:
@@ -943,7 +940,7 @@ rb_eval_string(str)
     char *oldsrc = sourcefile;
 
     sourcefile = "(eval)";
-    v = eval(TopSelf, str_new2(str), Qnil);
+    v = eval(TopSelf, str_new2(str), Qnil, 0, 0);
     sourcefile = oldsrc;
 
     return v;
@@ -975,7 +972,7 @@ rb_eval_cmd(cmd, arg)
     }
 
     if ((state = EXEC_TAG()) == 0) {
-	eval(TopSelf, cmd, Qnil);
+	eval(TopSelf, cmd, Qnil, 0, 0);
     }
 
     the_scope = saved_scope;
@@ -2139,7 +2136,7 @@ rb_eval(self, node)
 		    if (nd_type(list->nd_head) == NODE_EVSTR) {
 			rb_in_eval++;
 			eval_tree = 0;
-			list->nd_head = compile(list->nd_head->nd_lit);
+			list->nd_head = compile(list->nd_head->nd_lit,0);
 			rb_in_eval--;
 			if (nerrs > 0) {
 			    compile_error("string expand");
@@ -3627,22 +3624,25 @@ rb_frame_last_func()
 }
 
 static NODE*
-compile(src)
+compile(src, place)
     VALUE src;
+    char *place;
 {
     NODE *node;
 
     Check_Type(src, T_STRING);
-
-    node = compile_string(sourcefile, RSTRING(src)->ptr, RSTRING(src)->len);
+    if (place == 0) place = sourcefile;
+    node = compile_string(place, RSTRING(src)->ptr, RSTRING(src)->len);
 
     if (nerrs == 0) return node;
     return 0;
 }
 
 static VALUE
-eval(self, src, scope)
+eval(self, src, scope, file, line)
     VALUE self, src, scope;
+    char *file;
+    int line;
 {
     struct BLOCK *data;
     volatile VALUE result = Qnil;
@@ -3650,11 +3650,18 @@ eval(self, src, scope)
     struct BLOCK * volatile old_block;
     struct RVarmap * volatile old_d_vars;
     struct FRAME frame;
-    char *file = sourcefile;
-    int line = sourceline;
+    char *filesave = sourcefile;
+    int linesave = sourceline;
     volatile int iter = the_frame->iter;
     int state;
 
+    if (file == 0) {
+	file = sourcefile;
+	line = sourceline;
+    }
+    else if (line > 0) {
+	sourceline = line;
+    }
     if (!NIL_P(scope)) {
 	if (TYPE(scope) != T_DATA || RDATA(scope)->dfree != blk_free) {
 	    TypeError("wrong argument type %s (expected Proc/Binding)",
@@ -3692,7 +3699,7 @@ eval(self, src, scope)
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	eval_tree = 0;
-	compile(src);
+	compile(src, file);
 	if (nerrs > 0) {
 	    compile_error(0);
 	}
@@ -3710,18 +3717,20 @@ eval(self, src, scope)
     else {
 	the_frame->iter = iter;
     }
+    sourcefile = filesave;
+    sourceline = linesave;
     if (state) {
 	VALUE err;
 
 	if (state == TAG_RAISE) {
-	    sourcefile = file;
-	    sourceline = line;
-	    if (strcmp(sourcefile, "(eval)") == 0) {
-		err = str_dup(errinfo);
+	    if (strcmp(file, "(eval)") == 0) {
 		if (sourceline > 1) {
 		    err = RARRAY(errat)->ptr[0];
 		    str_cat(err, ": ", 2);
 		    str_cat(err, RSTRING(errinfo)->ptr, RSTRING(errinfo)->len);
+		}
+		else {
+		    err = str_dup(errinfo);
 		}
 		errat = Qnil;
 		rb_raise(exc_new3(CLASS_OF(errinfo), err));
@@ -3740,12 +3749,17 @@ f_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE src, scope;
+    VALUE src, scope, vfile, line;
+    char *file = "(eval)";
 
-    rb_scan_args(argc, argv, "11", &src, &scope);
+    rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &line);
+    if (!NIL_P(vfile)) {
+	Check_Type(vfile, T_STRING);
+	file = RSTRING(vfile)->ptr;
+    }
 
     Check_SafeStr(src);
-    return eval(self, src, scope);
+    return eval(self, src, scope, file, NUM2INT(line));
 }
 
 static VALUE
@@ -3766,7 +3780,7 @@ eval_under(under, self, src)
     the_frame->cbase = (VALUE)node_newnode(NODE_CREF,under,0,cbase);
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	val = eval(self, src, Qnil);
+	val = eval(self, src, Qnil, 0, 0);
     }
     POP_TAG();
     POP_FRAME();

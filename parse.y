@@ -1577,6 +1577,7 @@ yyerror(msg)
 }
 
 static int newline_seen;
+static int heredoc_end;
 
 int rb_in_compile = 0;
 
@@ -1633,6 +1634,10 @@ nextc()
 	    VALUE v = io_gets(lex_input);
 
 	    if (NIL_P(v)) return -1;
+	    if (heredoc_end > 0) {
+		sourceline = heredoc_end+1;
+		heredoc_end = 0;
+	    }
 	    while (RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\') {
 		VALUE v2 = io_gets(lex_input);
@@ -2098,6 +2103,7 @@ here_document(term)
     VALUE str, line;
     char *save_beg, *save_end, *save_lexp;
     NODE *list = 0;
+    int linesave = sourceline;
 
     newtok();
     switch (term) {
@@ -2178,6 +2184,8 @@ here_document(term)
     lex_pbeg = save_beg;
     lex_pend = save_end;
     lex_state = EXPR_END;
+    heredoc_end = sourceline;
+    sourceline = linesave;
 
     if (list) {
 	yylval.node = list;
@@ -3542,7 +3550,7 @@ assign_in_cond(node)
     switch (nd_type(node)) {
       case NODE_MASGN:
 	Error("multiple assignment in conditional");
-	return 0;
+	return 1;
 
       case NODE_LASGN:
       case NODE_DASGN:
@@ -3550,10 +3558,10 @@ assign_in_cond(node)
       case NODE_IASGN:
       case NODE_CASGN:
 	break;
-      case NODE_NEWLINE:
 
+      case NODE_NEWLINE:
       default:
-	return 1;
+	return 0;
     }
 
     switch (nd_type(node->nd_value)) {
@@ -3567,14 +3575,16 @@ assign_in_cond(node)
       case NODE_NIL:
       case NODE_TRUE:
       case NODE_FALSE:
-	Error("found = in conditional, should be ==");
-	return 0;
-	
+	/* reports always */
+	Warn("found = in conditional, should be ==");
+	return 1;
+
       default:
-	Warning("assignment in condition");
-	break;
     }
-    if (assign_in_cond(node->nd_value)) return 1;
+    if (assign_in_cond(node->nd_value) == 0) {
+	Warning("assignment in condition");
+    }
+    return 1;
 }
 
 static NODE*
@@ -3583,7 +3593,7 @@ cond0(node)
 {
     enum node_type type = nd_type(node);
 
-    if (assign_in_cond(node) == 0) return 0;
+    assign_in_cond(node);
     switch (type) {
       case NODE_DREGX:
       case NODE_DREGX_ONCE:

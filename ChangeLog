@@ -1,3 +1,19 @@
+Wed Mar 25 08:12:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (flo_modulo): caused SEGV if left operand is not a
+ 	  float value.
+
+	* eval.c (f_eval): optional third and fourth argument to specify
+	  file name and line number.
+
+	* eval.c (eval): filename and linenumber set properly.
+
+	* parse.y (assign_in_cond): literal assignment is now warning, not 
+	  compile error.
+
+	* error.c (Warn): Warn() always print message, OTOH Waring()
+	  prints when verbose flag is set.
+
 Tue Mar 24 12:50:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.c (ruby_prog_init): `.' should come last in the load-path.
