@@ -25,11 +25,12 @@
 #include <winbase.h>
 #include <wincon.h>
 #include "win32.h"
-#include "dir.h"
+#include "win32/dir.h"
 #ifndef index
 #define index(x, y) strchr((x), (y))
 #endif
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
+#undef stat
 
 #ifndef bool
 #define bool int
@@ -1334,7 +1335,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 //
 
 DIR *
-opendir(char *filename)
+opendir(const char *filename)
 {
     DIR            *p;
     long            len;
@@ -1344,9 +1345,6 @@ opendir(char *filename)
     struct stat	    sbuf;
     WIN32_FIND_DATA FindData;
     HANDLE          fh;
-    char            root[PATHLEN];
-    char            volname[PATHLEN];
-    DWORD           serial, maxname, flags;
 
     //
     // check to see if we\'ve got a directory

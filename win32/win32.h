@@ -98,6 +98,7 @@ extern "C++" {
 #include <process.h>
 #include <time.h>
 #include <math.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utime.h>
 #include <io.h>
@@ -180,7 +181,7 @@ extern "C++" {
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 #undef stat
-#define stat win32_stat
+#define stat(path,st) win32_stat(path,st)
 /* these are defined in nt.c */
 
 #ifdef __MINGW32__
