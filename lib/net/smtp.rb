@@ -10,7 +10,7 @@ You can freely distribute/modify this library.
 =end
 
 
-require 'net/session'
+require 'net/protocol'
 
 
 module Net
@@ -36,7 +36,7 @@ Net::Protocol
   This method opens TCP connection and start SMTP.
   If protocol had been started, do nothing and return false.
 
-: sendmail( mailsrc, from_domain, to_addrs )
+: sendmail( mailsrc, from_addr, to_addrs )
   This method sends 'mailsrc' as mail. SMTPSession read strings
   from 'mailsrc' by calling 'each' iterator, and convert them
   into "\r\n" terminated string when write.
@@ -46,6 +46,21 @@ Net::Protocol
   * Net::ProtoFatalError: fatal error (errno.550)
   * Net::ProtoUnknownError: unknown error
   * Net::ProtoServerBusy: temporary error (errno.420/450)
+
+: ready( from_addr, to_addrs ) {|adapter| .... }
+  This method stands by the SMTP object for sending mail.
+  In the block of this iterator, you can call ONLY 'write' method
+  for 'adapter'.
+
+    # usage example
+
+    SMTP.start( 'localhost', 25 ) do |smtp|
+      smtp.ready( from, to ) do |adapter|
+        adapter.write str1
+        adapter.write str2
+        adapter.write str3
+      end
+    end
 
 : finish
   This method ends SMTP.
@@ -59,12 +74,19 @@ Net::Protocol
     protocol_param :command_type, '::Net::SMTPCommand'
 
 
-    def sendmail( mailsrc, fromaddr, toaddrs )
+    def sendmail( mailsrc, fromaddr, toaddrs, &block )
       @command.mailfrom fromaddr
       @command.rcpt toaddrs
       @command.data
-      @command.sendmail mailsrc
+      @command.write_mail( mailsrc, &block )
     end
+
+    def ready( fromaddr, toaddrs, &block )
+      sendmail nil, fromaddr, toaddrs, &block
+    end
+
+
+    attr :esmtp
 
 
     private
@@ -74,7 +96,14 @@ Net::Protocol
       unless helodom then
         raise ArgumentError, "cannot get hostname"
       end
-      @command.helo helodom
+
+      @esmtp = false
+      begin
+        @command.ehlo helodom
+        @esmtp = true
+      rescue ProtocolError
+        @command.helo helodom
+      end
     end
 
   end
@@ -104,15 +133,21 @@ Net::Command
 
 : mailfrom( from_addr )
   This method sends "MAIL FROM" command.
-  from_addr is your mail address(????@????).
+  from_addr is your mail address (xxxx@xxxx)
 
 : rcpt( to_addrs )
   This method sends "RCPT TO" command.
-  to_addrs is array of mail address(???@???) of destination.
+  to_addrs is array of mail address (xxxx@xxxx) of destination.
 
-: data( mailsrc )
-  This method send 'mailsrc' as mail. SMTP reads strings from 'mailsrc'
-  by calling 'each' iterator. 
+: data
+  This method sends "DATA" command.
+
+: write_mail( mailsrc )
+: write_mail {|socket| ... }
+  send 'mailsrc' as mail.
+  SMTPCommand reads strings from 'mailsrc' by calling 'each' iterator. 
+  When iterator, SMTPCommand only stand by socket and pass it.
+  (The socket will accepts only 'in_write' method in the block)
 
 : quit
   This method sends "QUIT" command and ends SMTP session.
@@ -129,6 +164,11 @@ Net::Command
 
     def helo( fromdom )
       getok sprintf( 'HELO %s', fromdom )
+    end
+
+
+    def ehlo( fromdom )
+      getok sprintf( 'EHLO %s', fromdom )
     end
 
 
@@ -149,11 +189,11 @@ Net::Command
     end
 
 
-    def writemail( mailsrc )
-      @socket.write_pendstr mailsrc
+    def write_mail( mailsrc, &block )
+      @socket.write_pendstr mailsrc, &block
       check_reply SuccessCode
     end
-    alias sendmail writemail
+    alias sendmail write_mail
 
 
     private
