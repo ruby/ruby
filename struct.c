@@ -540,7 +540,7 @@ rb_struct_select(argc, argv, s)
 	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
 	}
 	for (i = 0; i < RSTRUCT(s)->len; i++) {
-	    if (RTEST(rb_yield(RARRAY(s)->ptr[i]))) {
+	    if (RTEST(rb_yield(RSTRUCT(s)->ptr[i]))) {
 		rb_ary_push(result, RSTRUCT(s)->ptr[i]);
 	    }
 	}

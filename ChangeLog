@@ -4,6 +4,10 @@ Fri Apr 12 12:54:04 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/config.h.in: define HAVE_COSH, HAVE_SINH, and HAVE_TANH.
 
+Fri Apr 12 02:58:55 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* struct.c (rb_struct_select): fix typo.
+
 Fri Apr 12 00:34:17 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* MANIFEST (missing/acosh.c): added.
@@ -16,6 +20,11 @@ Fri Apr 12 00:34:17 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	  inverse hyperbolic functions, asinh() and atanh().
 
 	* missing/acosh.c: added for acosh(), asinh() and atanh().
+
+Thu Apr 11 20:01:44 2002  Masahiro Tomita  <tommy@tmtm.org>
+
+	* io.c (io_write): check error if written data is less than
+	  specified size to detect EPIPE.
 
 Thu Apr 11 19:10:37 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
