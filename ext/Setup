@@ -8,6 +8,7 @@
 #kconv
 #md5
 #pty
+#sdbm
 #socket
 #tkutil
 #tcltklib

@@ -83,16 +83,23 @@ struct sockinet {
 #define ENI_SALEN	6
 
 #ifndef HAVE_INET_NTOP
-static char *
+static const char *
 inet_ntop(af, addr, numaddr, numaddr_len)
 	int af;
-	char *addr;
+	__const void *addr;
 	char *numaddr;
-	int numaddr_len;
+	size_t numaddr_len;
 {
+#ifdef HAVE_INET_NTOA
 	struct in_addr in;
 	memcpy(&in.s_addr, addr, sizeof(in.s_addr));
-	strcpy(numaddr, inet_ntoa(in));
+	strncpy(numaddr, numaddr_len, inet_ntoa(in));
+#else
+	unsigned long x = ntohl(*(unsigned long*)addr);
+	snprintf(numaddr, numaddr_len, "%d.%d.%d.%d",
+		 (int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
+		 (int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff);
+#endif
 	return numaddr;
 }
 #endif

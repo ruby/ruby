@@ -1,0 +1,12 @@
+MANIFEST
+Makefile
+README
+README.expect
+README.expect.jp
+README.jp
+expect_sample.rb
+extconf.rb
+lib/expect.rb
+pty.c
+script.rb
+shl.rb

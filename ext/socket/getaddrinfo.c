@@ -212,20 +212,32 @@ str_isnumber(p)
 
 #ifndef HAVE_INET_PTON
 
-#ifndef INADDR_NONE
-# define INADDR_NONE 0xffffffff
-#endif
-
 static int
 inet_pton(af, hostname, pton)
 	int af;
 	const char *hostname;
-	char *pton;
+	void *pton;
 {
 	struct in_addr in;
-	in.s_addr = inet_addr(hostname);
-	if (in.s_addr == INADDR_NONE)
-		return 0;
+
+#ifdef HAVE_INET_ATON
+	if (!inet_aton(hostname, &in.s_addr))
+	    return 0;
+#else
+	int d1, d2, d3, d4;
+	char ch;
+
+	if (sscanf(hostname, "%d.%d.%d.%d%c", &d1, &d2, &d3, &d4, &ch) == 4 &&
+	    0 <= d1 && d1 <= 255 && 0 <= d2 && d2 <= 255 &&
+	    0 <= d3 && d3 <= 255 && 0 <= d4 && d4 <= 255) {
+	    in.s_addr = htonl(
+		((long) d1 << 24) | ((long) d2 << 16) |
+		((long) d3 << 8) | ((long) d4 << 0));
+	}
+	else {
+	    return 0;
+	}
+#endif
 	memcpy(pton, &in, sizeof(in));
 	return 1;
 }

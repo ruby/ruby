@@ -1,3 +1,16 @@
+Fri May  7 17:03:57 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (glob): removed GPL'ed glob.c completely.
+
+Fri May  7 08:17:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/sdbm/extconf.rb: sdbm extension added to the distribution.
+
+Fri May  7 01:42:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/socket.c (tcp_s_gethostbyname): aboid using struct
+	  sockaddr_storage.
+
 Thu May  6 13:21:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* array.c (rb_ary_indexes): should not use rb_ary_concat().

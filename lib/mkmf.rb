@@ -360,7 +360,7 @@ binsuffix = #{CONFIG["binsuffix"]}
 
 all:		$(DLLIB)
 
-clean:;		@rm -f *.o *.so *.sl
+clean:;		@rm -f *.o *.so *.sl *.a
 		@rm -f Makefile extconf.h conftest.*
 		@rm -f core ruby$(binsuffix) *~
 

@@ -30,7 +30,6 @@ error.c
 eval.c
 file.c
 gc.c
-glob.c
 hash.c
 inits.c
 install-sh

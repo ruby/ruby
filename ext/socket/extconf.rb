@@ -239,45 +239,20 @@ end
 $objs = ["socket.o"]
     
 if $getaddr_info_ok
-  if have_func("getaddrinfo") and
-     have_func("getnameinfo")
+  if have_func("getaddrinfo") and have_func("getnameinfo")
     have_getaddrinfo = true
   end
 end
 
 if have_getaddrinfo
   $CFLAGS="-DHAVE_GETADDRINFO "+$CFLAGS
-  if try_link(<<EOF)
-#include <sys/types.h>
-#include <netdb.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-int
-main()
-{
-   struct sockaddr_storage storage;
-   struct sockaddr_storage *addr = 0;
-
-   addr->__ss_family = &storage.__ss_family;
-   addr->__ss_len = &storage.__ss_len;
-   return 0;
-}
-EOF
-    sockaddr_storage=true
-    $CFLAGS+=" -DHAVE_SS_LEN"
-  end
 else
   sockaddr_storage=true
   $CFLAGS="-I. "+$CFLAGS
   $objs += "getaddrinfo.o"
   $objs += "getnameinfo.o"
-  have_func("inet_ntop")
-  have_func("inet_pton")
-end
-
-if sockaddr_storage
-  $CFLAGS="-DSOCKADDR_STORAGE=sockaddr_storage "+$CFLAGS
+  have_func("inet_ntop") or have_func("inet_ntoa")
+  have_func("inet_pton") or have_func("inet_aton")
 end
 
 have_header("sys/un.h")
@@ -287,7 +262,7 @@ if have_func(test_func)
   unless have_func("gethostname")
     have_func("uname")
   end
-  if ENV["SOCKS_SERVER"]  # test if SOCKSsocket needed
+  if ENV["SOCKS_SERVER"] or enable_config("socks", false)
     if have_library("socks", "Rconnect")
       $CFLAGS="-DSOCKS"
     end

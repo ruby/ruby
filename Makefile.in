@@ -53,7 +53,6 @@ OBJS	      = array.o \
 		eval.o \
 		file.o \
 		gc.o \
-		glob.o \
 		hash.o \
 		inits.o \
 		io.o \
@@ -234,7 +233,6 @@ eval.o: eval.c ruby.h config.h defines.h intern.h node.h env.h rubysig.h st.h dl
 file.o: file.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 fnmatch.o: fnmatch.c config.h fnmatch.h
 gc.o: gc.c ruby.h config.h defines.h intern.h rubysig.h st.h node.h env.h re.h regex.h
-glob.o: config.h glob.c fnmatch.h
 hash.o: hash.c ruby.h config.h defines.h intern.h st.h rubysig.h util.h
 inits.o: inits.c ruby.h config.h defines.h intern.h
 io.o: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h

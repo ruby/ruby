@@ -47,14 +47,23 @@
 # endif
 #endif
 
-#include <errno.h>
+#ifdef HAVE_FNMATCH_H
+#include <fnmatch.h>
+#else
+#include "missing/fnmatch.h"
+#endif
 
-#ifndef NT
+#include <errno.h>
+#ifdef USE_CWGUSI
+# include <sys/errno.h>
+#endif
+
+#ifndef HAVE_STDLIB_H
 char *getenv();
 #endif
 
-#ifdef USE_CWGUSI
-# include <sys/errno.h>
+#ifndef HAVE_STRING_H
+char *strchr _((char*,char));
 #endif
 
 VALUE rb_cDir;
@@ -149,10 +158,10 @@ static VALUE
 dir_tell(dir)
     VALUE dir;
 {
-    DIR *dirp;
-    int pos;
-
 #if !defined(__CYGWIN32__) && !defined(__BEOS__)
+    DIR *dirp;
+    long pos;
+
     GetDIR(dir, dirp);
     pos = telldir(dirp);
     return rb_int2inum(pos);
@@ -303,29 +312,158 @@ dir_s_rmdir(obj, dir)
     return Qtrue;
 }
 
-#define isdelim(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\0')
+/* Return nonzero if S has any special globbing chars in it.  */
+static int
+has_magic(s, send)
+     char *s, *send;
+{
+    register char *p = s;
+    register char c;
+    int open = 0;
 
-char **glob_filename();
-extern char *glob_error_return;
+    while ((c = *p++) != '\0') {
+	switch (c) {
+	  case '?':
+	  case '*':
+	    return Qtrue;
+
+	  case '[':		/* Only accept an open brace if there is a close */
+	    open++;		/* brace to match it.  Bracket expressions must be */
+	    continue;	/* complete, according to Posix.2 */
+	  case ']':
+	    if (open)
+		return Qtrue;
+	    continue;
+
+	  case '\\':
+	    if (*p++ == '\0')
+		return Qfalse;
+	}
+
+	if (send && p >= send) break;
+    }
+    return Qfalse;
+}
+
+struct glob1_arg {
+    void (*func)();
+    char *basename;
+    VALUE arg;
+};
+
+static char*
+extract_path(p, pend)
+    char *p, *pend;
+{
+    char *alloc;
+    int len;
+
+    len = pend - p;
+    alloc = ALLOC_N(char, len+1);
+    memcpy(alloc, p, len);
+    if (len > 0 && pend[-1] == '/') {
+	alloc[len-1] = 0;
+    }
+    else {
+	alloc[len] = 0;
+    }
+
+    return alloc;
+}
+
+static char*
+extract_elem(path)
+    char *path;
+{
+    char *pend;
+
+    pend = strchr(path, '/');
+    if (!pend) pend = path + strlen(path);
+
+    return extract_path(path, pend);
+}
+
+#ifndef S_ISDIR
+#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#endif
+
+static void
+glob(path, func, arg)
+    char *path;
+    void (*func)();
+    VALUE arg;
+{
+    struct stat st;
+    char *p, *m;
+
+    if (!has_magic(path, 0)) {
+	if (stat(path, &st) == 0) {
+	    (*func)(path, arg);
+	}
+	return;
+    }
+
+    p = path;
+    while (p) {
+	if (*p == '/') p++;
+	m = strchr(p, '/');
+	if (has_magic(p, m)) {
+	    char *dir, *base, *magic;
+	    DIR *dirp;
+	    struct dirent *dp;
+
+	    base = extract_path(path, p);
+	    if (path == p) dir = ".";
+	    else dir = base;
+
+	    dirp = opendir(dir);
+	    if (dirp == NULL) {
+		free(base);
+		break;
+	    }
+	    magic = extract_elem(p);
+	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
+		if (fnmatch(magic, dp->d_name, FNM_PERIOD|FNM_PATHNAME) == 0) {
+		    char *fix = ALLOC_N(char, strlen(base)+strlen(dp->d_name)+2);
+
+		    sprintf(fix, "%s%s%s", base, (p==path)?"":"/", dp->d_name);
+		    if (!m) {
+			(*func)(fix, arg);
+			free(fix);
+			continue;
+		    }
+		    stat(fix, &st); /* should success */
+		    if (S_ISDIR(st.st_mode)) {
+			char *t = ALLOC_N(char, strlen(fix)+strlen(m)+2);
+			sprintf(t, "%s%s", fix, m);
+			glob(t, func, arg);
+			free(t);
+		    }
+		    free(fix);
+		}
+	    }
+	    closedir(dirp);
+	    free(base);
+	    free(magic);
+	}
+	p = m;
+    }
+}
+
+static void
+push_pattern(path, ary)
+    char *path;
+    VALUE ary;
+{
+    rb_ary_push(ary, rb_tainted_str_new2(path));
+}
 
 static void
 push_globs(ary, s)
     VALUE ary;
     char *s;
 {
-    char **fnames, **ff;
-
-    fnames = glob_filename(s);
-    if (fnames == (char**)-1) rb_sys_fail(s);
-    ff = fnames;
-    while (*ff) {
-	rb_ary_push(ary, rb_tainted_str_new2(*ff));
-	free(*ff);
-	ff++;
-    }
-    if (fnames != &glob_error_return) {
-        free(fnames);
-    }
+    glob(s, push_pattern, ary);
 }
 
 static void
@@ -373,6 +511,8 @@ push_braces(ary, s)
 	push_globs(ary, s);
     }
 }
+
+#define isdelim(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\0')
 
 static VALUE
 dir_s_glob(dir, str)

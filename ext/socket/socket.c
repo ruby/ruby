@@ -49,14 +49,6 @@ extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /*
 #endif
 #include "sockport.h"
 
-#ifdef SOCKADDR_STORAGE
-# define SS_LEN(ss) (ss)->ss_len
-#else
-# define SOCKADDR_STORAGE sockaddr
-# undef ss_family
-# define ss_family sa_family
-#endif
-
 VALUE rb_cBasicSocket;
 VALUE rb_cIPSocket;
 VALUE rb_cTCPSocket;
@@ -700,7 +692,7 @@ static VALUE
 tcp_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
-    struct SOCKADDR_STORAGE addr;
+    struct sockaddr addr;
     struct hostent *h;
     char **pch;
     VALUE ary, names;
@@ -717,7 +709,7 @@ tcp_s_gethostbyname(obj, host)
     else {
 	setipaddr(STR2CSTR(host), (struct sockaddr *)&addr);
     }
-    switch (addr.ss_family) {
+    switch (addr.sa_family) {
     case AF_INET:
       {
 	struct sockaddr_in *sin;
@@ -760,7 +752,7 @@ tcp_s_gethostbyname(obj, host)
     rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr
     for (pch = h->h_addr_list; *pch; pch++) {
-	switch (addr.ss_family) {
+	switch (addr.sa_family) {
 	case AF_INET:
 	  {
 	    struct sockaddr_in sin;
@@ -849,7 +841,7 @@ tcp_accept(sock)
     VALUE sock;
 {
     OpenFile *fptr;
-    struct SOCKADDR_STORAGE from;
+    struct sockaddr from;
     int fromlen;
 
     GetOpenFile(sock, fptr);
@@ -915,7 +907,7 @@ ip_addr(sock)
     VALUE sock;
 {
     OpenFile *fptr;
-    struct SOCKADDR_STORAGE addr;
+    struct sockaddr addr;
     int len = sizeof addr;
 
     GetOpenFile(sock, fptr);
@@ -930,7 +922,7 @@ ip_peeraddr(sock)
     VALUE sock;
 {
     OpenFile *fptr;
-    struct SOCKADDR_STORAGE addr;
+    struct sockaddr addr;
     int len = sizeof addr;
 
     GetOpenFile(sock, fptr);
@@ -944,7 +936,7 @@ static VALUE
 ip_s_getaddress(obj, host)
     VALUE obj, host;
 {
-    struct SOCKADDR_STORAGE addr;
+    struct sockaddr addr;
 
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
 	int i = NUM2INT(host);
@@ -1068,7 +1060,7 @@ static VALUE
 udp_bind(sock, host, port)
     VALUE sock, host, port;
 {
-    struct SOCKADDR_STORAGE addr;
+    struct sockaddr addr;
     OpenFile *fptr;
     struct addrinfo *res0, *res;
 
@@ -1538,7 +1530,7 @@ static VALUE
 sock_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
-    struct SOCKADDR_STORAGE addr;
+    struct sockaddr addr;
     struct hostent *h;
 
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
@@ -1553,7 +1545,7 @@ sock_s_gethostbyname(obj, host)
     else {
 	setipaddr(STR2CSTR(host), (struct sockaddr *)&addr);
     }
-    switch (addr.ss_family) {
+    switch (addr.sa_family) {
     case AF_INET:
       {
 	struct sockaddr_in *sin;
@@ -1709,7 +1701,7 @@ sock_s_getnameinfo(argc, argv)
     int fl;
     struct addrinfo hints, *res = NULL;
     int error;
-    struct SOCKADDR_STORAGE ss;
+    struct sockaddr ss;
     struct sockaddr *sap;
 
     sa = flags = Qnil;
@@ -1720,11 +1712,9 @@ sock_s_getnameinfo(argc, argv)
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
 	}
 	memcpy(&ss, RSTRING(sa)->ptr, RSTRING(sa)->len);
-#ifdef HAVE_SS_LEN
-	if (RSTRING(sa)->len != SS_LEN(&ss)) {
+	if (RSTRING(sa)->len != SA_LEN(&ss)) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
-#endif
 	sap = (struct sockaddr *)&ss;
     }
     else if (TYPE(sa) == T_ARRAY) {
