@@ -1,3 +1,7 @@
+Mon Jul  3 10:27:28 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: use AC_CANONICAL_SYSTEM.
+
 Sun Jul  2 21:17:37 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: support without --enable-shared for cygwin/mingw32.

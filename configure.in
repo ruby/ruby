@@ -25,8 +25,7 @@ then
 (it is also a good idea to do 'make clean' before compiling))
 fi
 
-AC_CANONICAL_HOST
-AC_CANONICAL_TARGET
+AC_CANONICAL_SYSTEM
 
 dnl checks for fat-binary
 fat_binary=no
