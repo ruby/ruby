@@ -1,3 +1,8 @@
+Thu Jun 24 14:23:29 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_fread): return already read data when system call is
+	  interrupted.  [ruby-talk:97206]
+
 Thu Jun 24 01:32:43 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* version.h: added declarations of ruby_version,
@@ -12,7 +17,7 @@ Wed Jun 23 22:23:37 2004  Dave Thomas  <dave@pragprog.com>
 
 Wed Jun 23 01:45:27 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_quotation): 
+	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_quotation):
 	  Fix problem with the 'r' being dropped from %r{xxx}
 
 Wed Jun 23 00:20:20  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
