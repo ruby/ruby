@@ -136,7 +136,7 @@ class TkEntry<TkLabel
     tk_send 'selection', 'from', index
   end
   def selection_present()
-    tk_send('selection', 'present') == 1
+    bool(tk_send('selection', 'present'))
   end
   def selection_range(s, e)
     tk_send 'selection', 'range', s, e

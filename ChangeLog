@@ -1,6 +1,22 @@
+Tue Mar 27 15:00:54 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_mod_define_method): should have clear method cache.
+
+	* eval.c (rb_mod_define_method): should have raised exception for
+	  type error.
+
+Tue Mar 27 14:48:17 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h: changed "extern INLINE" to "static inline".
+
 Mon Mar 26 23:19:33 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* time.c (rb_strftime): check whether strftime returns empty string.
+
+Mon Mar 26 18:14:47 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (rb_glob_helper): part of 1.7 globber backported to proper
+	  following of symlinks.
 
 Mon Mar 26 17:21:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

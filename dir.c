@@ -609,7 +609,7 @@ rb_glob_helper(path, flag, func, arg)
 		rb_glob_helper(buf, flag, func, arg);
 		free(buf);
 	    }
-	    if (lstat(dir, &st) < 0) {
+	    if (stat(dir, &st) < 0) {
 	        free(base);
 	        break;
 	    }
@@ -637,7 +637,15 @@ rb_glob_helper(path, flag, func, arg)
 			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
 		    sprintf(buf, "%s%s%s/**%s", base, (BASE)?"/":"", dp->d_name, m);
-		    rb_glob_helper(buf, flag, func, arg);
+		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
+		    if (lstat(buf, &st) < 0) {
+			continue;
+		    }
+		    if (S_ISDIR(st.st_mode)) {
+		        strcat(buf, "/**");
+			strcat(buf, m);
+			rb_glob_helper(buf, flag, func, arg);
+		    }
 		    free(buf);
 		    continue;
 		}
@@ -659,7 +667,7 @@ rb_glob_helper(path, flag, func, arg)
 	    free(base);
 	    free(magic);
 	    while (link) {
-		lstat(link->path, &st); /* should success */
+		stat(link->path, &st); /* should success */
 		if (S_ISDIR(st.st_mode)) {
 		    int len = strlen(link->path);
 		    int mlen = strlen(m);

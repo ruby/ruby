@@ -542,18 +542,7 @@ EXTERN VALUE rb_eNameError;
 EXTERN VALUE rb_eSyntaxError;
 EXTERN VALUE rb_eLoadError;
 
-#ifdef INLINE_DEFINE
-#define INLINE
-#else
-#define INLINE inline
-#endif
-
-extern INLINE VALUE rb_class_of _((VALUE));
-extern INLINE int rb_type _((VALUE));
-extern INLINE int rb_special_const_p _((VALUE));
-
-#if !defined(NO_C_INLINE) || defined(INLINE_DEFINE)
-extern INLINE VALUE
+static inline VALUE
 #if defined(__cplusplus)
 rb_class_of(VALUE obj)
 #else
@@ -570,7 +559,7 @@ rb_class_of(obj)
     return RBASIC(obj)->klass;
 }
 
-extern INLINE int
+static inline int
 #if defined(__cplusplus)
 rb_type(VALUE obj)
 #else
@@ -587,7 +576,7 @@ rb_type(obj)
     return BUILTIN_TYPE(obj);
 }
 
-extern INLINE int
+static inline int
 #if defined(__cplusplus)
 rb_special_const_p(VALUE obj)
 #else
@@ -598,9 +587,6 @@ rb_special_const_p(obj)
     if (SPECIAL_CONST_P(obj)) return Qtrue;
     return Qfalse;
 }
-#endif
-
-#undef INLINE
 
 #include "intern.h"
 
