@@ -18,10 +18,7 @@
 double strtod();
 #endif
 
-#if SIZEOF_LONG*2 <= SIZEOF_LONG_LONG
-typedef unsigned long BDIGIT;
-#define SIZEOF_BDIGITS SIZEOF_LONG
-#elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+#if SIZEOF_INT*2 <= SIZEOF_LONG_LONG || SIZEOF_INT*2 <= SIZEOF___INT64
 typedef unsigned int BDIGIT;
 #define SIZEOF_BDIGITS SIZEOF_INT
 #else

@@ -20,14 +20,14 @@ VALUE rb_cBignum;
 #define USHORT _USHORT
 #endif
 
-#if SIZEOF_LONG*2 <= SIZEOF_LONG_LONG
-typedef unsigned long BDIGIT;
-typedef unsigned long long BDIGIT_DBL;
-typedef long long BDIGIT_DBL_SIGNED;
-#elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
+#if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
 typedef unsigned int BDIGIT;
 typedef unsigned long long BDIGIT_DBL;
 typedef long long BDIGIT_DBL_SIGNED;
+#elif SIZEOF_INT*2 <= SIZEOF___INT64
+typedef unsigned int BDIGIT;
+typedef unsigned __int64 BDIGIT_DBL;
+typedef __int64 BDIGIT_DBL_SIGNED;
 #else
 typedef unsigned short BDIGIT;
 typedef unsigned long BDIGIT_DBL;
@@ -469,7 +469,7 @@ dbl2big(d)
     double d;
 {
     long i = 0;
-    long c;
+    BDIGIT c;
     BDIGIT *digits;
     VALUE z;
     double u = (d < 0)?-d:d;
@@ -489,9 +489,9 @@ dbl2big(d)
     digits = BDIGITS(z);
     while (i--) {
 	u *= BIGRAD;
-	c = (long)u;
+	c = (BDIGIT)u;
 	u -= c;
-	digits[i] = (BDIGIT)c;
+	digits[i] = c;
     }
 
     return z;

@@ -147,8 +147,11 @@ rb_f_rand(argc, argv, obj)
     }
     switch (TYPE(vmax)) {
       case T_FLOAT:
-	if (RFLOAT(vmax)->value <= LONG_MAX && RFLOAT(vmax)->value >= LONG_MIN)
+	if (RFLOAT(vmax)->value <= LONG_MAX && RFLOAT(vmax)->value >= LONG_MIN) {
+	    max = (long)RFLOAT(vmax)->value;
 	    break;
+	}
+	vmax = rb_dbl2big(RFLOAT(vmax)->value);
 	/* fall through */
       case T_BIGNUM:
 	return rb_big_rand(vmax, RANDOM_NUMBER);

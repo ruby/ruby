@@ -1,3 +1,8 @@
+Thu Nov  2 18:01:16 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c (rb_f_rand): half-baked float support fixed.  This fix
+	  was originally proposed by K.Kosako <kosako@sofnec.co.jp>.
+
 Tue Oct 31 17:27:17 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c: change digit size to `long|int' if long long is
