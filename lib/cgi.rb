@@ -1027,7 +1027,7 @@ class CGI
 
         buf = buf.sub(/\A((?:.|\n)*?)(?:#{EOL})?#{boundary}(#{EOL}|--)/n) do
           body.print $1
-          if "--" == $2
+          if "--" == $2 or EOL == $2
             content_length = -1
           end
           ""

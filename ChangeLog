@@ -1,3 +1,10 @@
+Fri Oct 24 23:26:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_each): Hash#each should yield single value.
+	  [ruby-talk:84420]
+
+	* hash.c (env_each): ditto for ENV.each.
+
 Thu Oct 23 20:25:32 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/server.rb (GenericServer#start): should rescue

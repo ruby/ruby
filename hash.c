@@ -671,6 +671,23 @@ rb_hash_each_pair(hash)
     return hash;
 }
 
+static enum st_retval
+each_i(key, value)
+    VALUE key, value;
+{
+    if (key == Qundef) return ST_CONTINUE;
+    rb_yield(rb_assoc_new(key, value));
+    return ST_CONTINUE;
+}
+
+static VALUE
+rb_hash_each(hash)
+    VALUE hash;
+{
+    rb_hash_foreach(hash, each_i, 0);
+    return hash;
+}
+
 static int
 to_a_i(key, value, ary)
     VALUE key, value, ary;
@@ -1340,8 +1357,9 @@ env_each_value(ehash)
 }
 
 static VALUE
-env_each(ehash)
+env_each_i(ehash, values)
     VALUE ehash;
+    int values;
 {
     char **env;
     VALUE ary = rb_ary_new();
@@ -1359,9 +1377,28 @@ env_each(ehash)
     FREE_ENVIRON(environ);
 
     for (i=0; i<RARRAY(ary)->len; i+=2) {
-	rb_yield_values(2, RARRAY(ary)->ptr[i], RARRAY(ary)->ptr[i+1]);
+	if (values) {
+	    rb_yield_values(2, RARRAY(ary)->ptr[i], RARRAY(ary)->ptr[i+1]);
+	}
+	else {
+	    rb_yield(rb_assoc_new(RARRAY(ary)->ptr[i], RARRAY(ary)->ptr[i+1]));
+	}
     }
     return ehash;
+}
+
+static VALUE
+env_each(ehash)
+    VALUE ehash;
+{
+    return env_each_i(ehash, Qfalse);
+}
+
+static VALUE
+env_each_pair(ehash)
+    VALUE ehash;
+{
+    return env_each_i(ehash, Qtrue);
 }
 
 static VALUE
@@ -1779,7 +1816,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"length", rb_hash_size, 0);
     rb_define_method(rb_cHash,"empty?", rb_hash_empty_p, 0);
 
-    rb_define_method(rb_cHash,"each", rb_hash_each_pair, 0);
+    rb_define_method(rb_cHash,"each", rb_hash_each, 0);
     rb_define_method(rb_cHash,"each_value", rb_hash_each_value, 0);
     rb_define_method(rb_cHash,"each_key", rb_hash_each_key, 0);
     rb_define_method(rb_cHash,"each_pair", rb_hash_each_pair, 0);
@@ -1819,7 +1856,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"[]=", env_aset, 2);
     rb_define_singleton_method(envtbl,"store", env_aset, 2);
     rb_define_singleton_method(envtbl,"each", env_each, 0);
-    rb_define_singleton_method(envtbl,"each_pair", env_each, 0);
+    rb_define_singleton_method(envtbl,"each_pair", env_each_pair, 0);
     rb_define_singleton_method(envtbl,"each_key", env_each_key, 0);
     rb_define_singleton_method(envtbl,"each_value", env_each_value, 0);
     rb_define_singleton_method(envtbl,"delete", env_delete_m, 1);

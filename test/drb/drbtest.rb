@@ -213,7 +213,7 @@ module DRbCore
   end
 
   def test_10_yield_undumped
-    @there.xarray2_hash.each do |k, v|
+    @there.xarray2_hash.each_pair do |k, v|
       assert_kind_of(String, k)
       assert_kind_of(DRbObject, v)
     end
