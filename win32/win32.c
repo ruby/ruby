@@ -1291,7 +1291,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 //
 
 DIR *
-opendir(char *filename)
+opendir(const char *filename)
 {
     DIR            *p;
     long            len;
