@@ -8,7 +8,7 @@
  */
 
 #define RUBY_NKF_REVISION "$Revision$"
-#define RUBY_NKF_DATETIME __DATE__ " " __TIME__
+#define RUBY_NKF_VERSION NKF_VERSION " (" NKF_RELEASE_DATE ")"
 
 #include "ruby.h"
 
@@ -269,7 +269,7 @@ Init_nkf()
   VALUE mKconv = rb_define_module("NKF");
 
   rb_define_module_function(mKconv, "nkf", rb_nkf_kconv, 2);
-  rb_define_module_function(mKconv, "guess", rb_nkf_guess1, 1);
+  rb_define_module_function(mKconv, "guess", rb_nkf_guess2, 1);
   rb_define_module_function(mKconv, "guess1", rb_nkf_guess1, 1);
   rb_define_module_function(mKconv, "guess2", rb_nkf_guess2, 1);
 
@@ -284,9 +284,9 @@ Init_nkf()
   rb_define_const(mKconv, "UTF16", INT2FIX(_UTF16));
   rb_define_const(mKconv, "UTF32", INT2FIX(_UTF32));
   rb_define_const(mKconv, "UNKNOWN", INT2FIX(_UNKNOWN));
+  rb_define_const(mKconv, "VERSION", rb_str_new2(RUBY_NKF_VERSION));
   /* for debug */
-  rb_define_const(mKconv, "REVISION", rb_str_new2(RUBY_NKF_REVISION));
-  rb_define_const(mKconv, "DATETIME", rb_str_new2(RUBY_NKF_DATETIME));
   rb_define_const(mKconv, "NKF_VERSION", rb_str_new2(NKF_VERSION));
   rb_define_const(mKconv, "NKF_RELEASE_DATE", rb_str_new2(NKF_RELEASE_DATE));
+  rb_define_const(mKconv, "REVISION", rb_str_new2(RUBY_NKF_REVISION));
 }
