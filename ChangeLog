@@ -1,3 +1,8 @@
+Mon Oct 18 01:56:03 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#initialize): 
+	  initial value of accpet-* should be array.
+
 Sun Oct 17 23:03:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb: TkTimer#start and restart accept a block

@@ -58,8 +58,10 @@ module WEBrick
       @raw_header = Array.new
       @header = nil
       @cookies = []
-      @accept = @accept_charset =
-        @accept_encoding = @accept_language = nil
+      @accept = []
+      @accept_charset = []
+      @accept_encoding = []
+      @accept_language = []
       @body = ""
 
       @addr = @peeraddr = nil
