@@ -1,0 +1,7 @@
+MANIFEST
+extconf.rb
+sha1-ruby.c
+sha1.c
+sha1.h
+sha1.txt
+sha1.txt.jp
