@@ -118,7 +118,7 @@ extern char *strchr();
 #if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)
 extern char *tzname[2];
 extern int daylight;
-#ifdef SOLARIS
+#if defined SOLARIS || defined __hpux
 extern long timezone, altzone;
 #else
 extern int timezone, altzone;

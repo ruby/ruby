@@ -35,7 +35,7 @@ AC_SUBST(CPPOUTFILE)])
 
 AC_DEFUN(RUBY_PROG_GNU_LD,
 [AC_CACHE_CHECK(whether the linker is GNU ld, rb_cv_prog_gnu_ld,
-[if `$CC $CFLAGS $CPPFLAGS $LDFLAGS --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null; then
+[if `$CC $CFLAGS $CPPFLAGS $LDFLAGS --print-prog-name=ld 2>&1` -v 2>&1 | grep "GNU ld" > /dev/null; then
   rb_cv_prog_gnu_ld=yes
 else
   rb_cv_prog_gnu_ld=no
@@ -262,6 +262,7 @@ nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
 darwin*)	LIBS="-lobjc $LIBS";;
+hpux*)		ac_cv_c_inline=no;;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	rb_cv_have_daylight=no
@@ -730,7 +731,7 @@ if test "$with_dln_a_out" != yes; then
   case "$target_os" in
 	hpux*)		DLDFLAGS="-E"
 			LDSHARED='ld -b'
-			LDFLAGS="-Wl,-E"
+			XLDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
 			   LDSHARED='$(CC) -Wl,-G'

@@ -1,3 +1,9 @@
+Tue Mar  4 15:08:08 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: better HP-UX support.
+
+	* missing/strftime.c: ditto.
+
 Tue Mar  4 01:19:21 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dl/MANIFEST: Exclude .cvsignore. [found by: eban]
