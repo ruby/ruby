@@ -20,7 +20,7 @@
 #
 class Float < Numeric
   def to_d
-    BigFloat::new(selt.to_s)
+    BigDecimal::new(selt.to_s)
   end
 end
 
