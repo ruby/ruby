@@ -1,3 +1,7 @@
+Sun Mar 13 10:04:17 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb: remove test_gc. [ruby-dev:25871]
+
 Thu Mar 10 19:12:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (lib_eventloop_ensure): mis-delete a timer
