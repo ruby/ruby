@@ -34,7 +34,8 @@ end
 $stderr.reopen($stdout)
 error = ''
 
-`./#{CONFIG["ruby_install_name"]}#{CONFIG["EXEEXT"]} -I#{CONFIG["srcdir"]}/lib #{CONFIG["srcdir"]}/sample/test.rb`.each do |line|
+srcdir = File.dirname(__FILE__)
+`./#{CONFIG["ruby_install_name"]}#{CONFIG["EXEEXT"]} -I#{srcdir}/lib #{srcdir}/sample/test.rb`.each do |line|
   if line =~ /^end of test/
     print "test succeeded\n"
     exit 0
