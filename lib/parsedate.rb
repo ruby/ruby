@@ -7,7 +7,7 @@ module ParseDate
 
   def parsedate(str, comp=false)
     Date._parse(str, comp).
-      select(:year, :mon, :mday, :hour, :min, :sec, :zone, :wday)
+      values_at(:year, :mon, :mday, :hour, :min, :sec, :zone, :wday)
   end
 
   module_function :parsedate

@@ -218,7 +218,7 @@ class Date
 
   def self.new_with_hash(elem, sg)
     elem ||= {}
-    y, m, d = elem.select(:year, :mon, :mday)
+    y, m, d = elem.values_at(:year, :mon, :mday)
     if [y, m, d].include? nil
       raise ArgumentError, 'invalid date'
     else
@@ -476,7 +476,7 @@ class DateTime < Date
   def self.new_with_hash(elem, sg)
     elem ||= {}
     y, m, d, h, min, s, of =
-      elem.select(:year, :mon, :mday, :hour, :min, :sec, :offset)
+      elem.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset)
     h   ||= 0
     min ||= 0
     s   ||= 0

@@ -1,3 +1,11 @@
+Mon May  5 18:59:45 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* sample/test.rb: substitute 'select' with 'values_at'.
+
+	* lib/date.rb: ditto.
+
+	* lib/parsedate.rb: ditto.
+
 Mon May  5 00:46:10 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_values_at): new method to replace select(index..).
