@@ -1,3 +1,7 @@
+Tue May  7 17:13:40 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: forgot to add '-Wl,' to the gcc option on Cygwin/MinGW.
+
 Tue May  7 15:41:33 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/iconv/iconv.c (iconv_try): should initialize exceptions

@@ -1041,10 +1041,10 @@ case "$target_os" in
 	RUBY_SO_NAME=$target_os-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
 	if test x"$enable_shared" = xyes; then
 	    LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
-	    LIBRUBY_DLDFLAGS='--out-implib=$(LIBRUBY) $(RUBYDEF)'
+	    LIBRUBY_DLDFLAGS='-Wl,--out-implib=$(LIBRUBY) $(RUBYDEF)'
 	else
 	    LIBRUBY_SO=dummy
-	    LIBRUBY_DLDFLAGS='-Wl,--output-exp=$(RUBY_INSTALL_NAME).exp --out-implib=$(LIBRUBY) $(RUBYDEF)'
+	    LIBRUBY_DLDFLAGS='-Wl,--output-exp=$(RUBY_INSTALL_NAME).exp,--out-implib=$(LIBRUBY) $(RUBYDEF)'
 	fi
 	LIBRUBY_ALIASES=''
 	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
