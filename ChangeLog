@@ -1,3 +1,9 @@
+Wed Jan 19 01:16:30 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv.rb (Resolv::DNS::Config.parse_resolv_conf): ignore
+	  domain and search directive without an argument.
+	  reported by Sam Roberts.  [ruby-talk:126781]
+
 Mon Jan 17 23:33:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (aix): fix typo.  [ruby-talk:126401]

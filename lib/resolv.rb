@@ -734,8 +734,10 @@ class Resolv
             when 'nameserver'
               nameserver += args
             when 'domain'
+              next if args.empty?
               search = [args[0]]
             when 'search'
+              next if args.empty?
               search = args
             end
           }
