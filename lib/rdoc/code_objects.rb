@@ -325,7 +325,7 @@ module RDoc
       result = nil
       case symbol
       when /^::(.*)/
-        result = toplevel.find_symbol(symbol)
+        result = toplevel.find_symbol($1)
       when /::/
         modules = symbol.split(/::/)
         unless modules.empty?
