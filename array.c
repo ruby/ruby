@@ -631,7 +631,6 @@ VALUE
 rb_ary_to_ary(obj)
     VALUE obj;
 {
-    if (NIL_P(obj)) return rb_ary_new2(0);
     if (TYPE(obj) == T_ARRAY) {
 	return obj;
     }
@@ -649,7 +648,7 @@ rb_ary_update(ary, beg, len, rpl)
 {
     long rlen;
 
-    rpl = rb_ary_to_ary(rpl);
+    rpl = (NIL_P(rpl)) ? rb_ary_new2(0) : rb_ary_to_ary(rpl);
     rlen = RARRAY(rpl)->len;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
