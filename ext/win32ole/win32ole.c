@@ -3190,6 +3190,7 @@ ole_type_guid(pTypeInfo)
  */
 static VALUE
 foletype_guid(self)
+    VALUE self;
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
@@ -3221,6 +3222,7 @@ ole_type_progid(pTypeInfo)
  */
 static VALUE
 foletype_progid(self)
+    VALUE self;
 {
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);

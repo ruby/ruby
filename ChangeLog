@@ -1,3 +1,14 @@
+Mon Jun 23 23:59:56 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* io.c (io_close): missing prototype.
+
+	* ext/socket/socket.c (bsock_do_not_rev_lookup_set): ditto.
+
+	* ext/win32ole/win32ole.c (foletype_guid, foletype_progid): ditto.
+
+	* error.c (syserr_initialize): length argument of sprintf() is an
+	  int.
+
 Mon Jun 23 23:28:14 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST: add wince files.

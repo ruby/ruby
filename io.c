@@ -1424,6 +1424,7 @@ rb_io_close_m(io)
 
 static VALUE
 io_close(io)
+    VALUE io;
 {
     return rb_funcall(io, rb_intern("close"), 0, 0);
 }

@@ -484,6 +484,7 @@ bsock_do_not_rev_lookup()
 
 static VALUE
 bsock_do_not_rev_lookup_set(self, val)
+    VALUE self, val;
 {
     rb_secure(4);
     do_not_reverse_lookup = RTEST(val);
