@@ -54,7 +54,7 @@ clone_method(mid, body, tbl)
     NODE *body;
     st_table *tbl;
 {
-    st_insert(tbl, mid, NEW_METHOD(body->nd_body, body->nd_noex));
+    st_insert(tbl, mid, (st_data_t)NEW_METHOD(body->nd_body, body->nd_noex));
     return ST_CONTINUE;
 }
 
@@ -77,7 +77,8 @@ rb_mod_clone(module)
     }
     if (RCLASS(module)->m_tbl) {
 	RCLASS(clone)->m_tbl = st_init_numtable();
-	st_foreach(RCLASS(module)->m_tbl, clone_method, RCLASS(clone)->m_tbl);
+	st_foreach(RCLASS(module)->m_tbl, clone_method,
+	  (st_data_t)RCLASS(clone)->m_tbl);
     }
 
     return (VALUE)clone;
@@ -120,7 +121,8 @@ rb_singleton_class_clone(obj)
 	    clone->iv_tbl = st_copy(RCLASS(klass)->iv_tbl);
 	}
 	clone->m_tbl = st_init_numtable();
-	st_foreach(RCLASS(klass)->m_tbl, clone_method, clone->m_tbl);
+	st_foreach(RCLASS(klass)->m_tbl, clone_method,
+	  (st_data_t)clone->m_tbl);
 	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
 	FL_SET(clone, FL_SINGLETON);
 	return (VALUE)clone;

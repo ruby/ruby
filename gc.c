@@ -428,12 +428,12 @@ rb_source_filename(f)
 {
     char *name;
 
-    if (!st_lookup(source_filenames, f, &name)) {
+    if (!st_lookup(source_filenames, (st_data_t)f, (st_data_t *)&name)) {
 	long len = strlen(f) + 1;
 	char *ptr = name = ALLOC_N(char, len + 1);
 	*ptr++ = 0;
 	MEMCPY(ptr, f, char, len);
-	st_add_direct(source_filenames, ptr, name);
+	st_add_direct(source_filenames, (st_data_t)ptr, (st_data_t)name);
 	return ptr;
     }
     return name + 1;
@@ -448,7 +448,7 @@ mark_source_filename(f)
     }
 }
 
-static enum st_retval
+static int
 sweep_source_filename(key, value)
     char *key, *value;
 {

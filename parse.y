@@ -5585,7 +5585,7 @@ rb_intern(name)
     ID id;
     int last;
 
-    if (st_lookup(sym_tbl, name, &id))
+    if (st_lookup(sym_tbl, (st_data_t)name, (st_data_t *)&id))
 	return id;
 
     id = 0;
@@ -5648,8 +5648,8 @@ rb_intern(name)
     id |= ++last_id << ID_SCOPE_SHIFT;
   id_regist:
     name = strdup(name);
-    st_add_direct(sym_tbl, name, id);
-    st_add_direct(sym_rev_tbl, id, name);
+    st_add_direct(sym_tbl, (st_data_t)name, id);
+    st_add_direct(sym_rev_tbl, id, (st_data_t)name);
     return id;
 }
 
@@ -5668,7 +5668,7 @@ rb_id2name(id)
 	}
     }
 
-    if (st_lookup(sym_rev_tbl, id, &name))
+    if (st_lookup(sym_rev_tbl, id, (st_data_t *)&name))
 	return name;
 
     if (is_attrset_id(id)) {

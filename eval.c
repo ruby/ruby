@@ -261,7 +261,7 @@ rb_add_method(klass, mid, node, noex)
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     rb_clear_cache_by_id(mid);
     body = NEW_METHOD(node, noex);
-    st_insert(RCLASS(klass)->m_tbl, mid, body);
+    st_insert(RCLASS(klass)->m_tbl, mid, (st_data_t)body);
 }
 
 void
@@ -290,7 +290,7 @@ search_method(klass, id, origin)
     NODE *body;
 
     if (!klass) return 0;
-    while (!st_lookup(RCLASS(klass)->m_tbl, id, &body)) {
+    while (!st_lookup(RCLASS(klass)->m_tbl, id, (st_data_t *)&body)) {
 	klass = RCLASS(klass)->super;
 	if (!klass) return 0;
     }
@@ -363,7 +363,8 @@ remove_method(klass, mid)
     if (mid == __id__ || mid == __send__ || mid == init) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
-    if (!st_delete(RCLASS(klass)->m_tbl, &mid, &body) || !body->nd_body) {
+    if (!st_delete(RCLASS(klass)->m_tbl, &mid, (st_data_t *)&body) ||
+      !body->nd_body) {
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }
@@ -1746,7 +1747,7 @@ rb_alias(klass, name, def)
 
     rb_clear_cache_by_id(name);
     st_insert(RCLASS(klass)->m_tbl, name,
-	      NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
+      (st_data_t)NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
     if (singleton) {
 	rb_funcall(singleton, singleton_added, 1, ID2SYM(name));
     }
@@ -3249,7 +3250,7 @@ rb_eval(self, n)
 
 	    if (OBJ_FROZEN(recv)) rb_error_frozen("object");
 	    klass = rb_singleton_class(recv);
-	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, &body)) {
+	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, (st_data_t *)&body)) {
 		if (ruby_safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "redefining method prohibited");
 		}
@@ -5526,7 +5527,7 @@ rb_feature_p(feature, wait)
 	if (ext && strcmp(ext, ".rb") == 0) {
 	    rb_thread_t th;
 
-	    while (st_lookup(loading_tbl, f, &th)) {
+	    while (st_lookup(loading_tbl, (st_data_t)f, (st_data_t *)&th)) {
 		if (th == curr_thread) {
 		    return Qtrue;
 		}
@@ -5692,14 +5693,14 @@ rb_f_require(obj, fname)
     }
     /* partial state */
     ftptr = ruby_strdup(RSTRING(feature)->ptr);
-    st_insert(loading_tbl, ftptr, curr_thread);
+    st_insert(loading_tbl, (st_data_t)ftptr, (st_data_t)curr_thread);
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	rb_load(fname, 0);
     }
     POP_TAG();
-    st_delete(loading_tbl, &ftptr, 0); /* loading done */
+    st_delete(loading_tbl, (st_data_t *)&ftptr, 0); /* loading done */
     free(ftptr);
     ruby_safe_level = safe;
     if (state) JUMP_TAG(state);

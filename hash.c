@@ -144,7 +144,7 @@ static VALUE
 rb_hash_foreach_call(arg)
     struct rb_hash_foreach_arg *arg;
 {
-    st_foreach(RHASH(arg->hash)->tbl, rb_hash_foreach_iter, arg);
+    st_foreach(RHASH(arg->hash)->tbl, rb_hash_foreach_iter, (st_data_t)arg);
     return Qnil;
 }
 
@@ -276,7 +276,7 @@ rb_hash_rehash(hash)
 
     rb_hash_modify(hash);
     tbl = st_init_table_with_size(&objhash, RHASH(hash)->tbl->num_entries);
-    st_foreach(RHASH(hash)->tbl, rb_hash_rehash_i, tbl);
+    st_foreach(RHASH(hash)->tbl, rb_hash_rehash_i, (st_data_t)tbl);
     st_free_table(RHASH(hash)->tbl);
     RHASH(hash)->tbl = tbl;
 
@@ -377,7 +377,7 @@ rb_hash_index(hash, value)
     args[0] = value;
     args[1] = Qnil;
 
-    st_foreach(RHASH(hash)->tbl, index_i, args);
+    st_foreach(RHASH(hash)->tbl, index_i, (st_data_t)args);
 
     return args[1];
 }
@@ -449,7 +449,7 @@ rb_hash_shift(hash)
 
     rb_hash_modify(hash);
     var.stop = 0;
-    st_foreach(RHASH(hash)->tbl, shift_i, &var);
+    st_foreach(RHASH(hash)->tbl, shift_i, (st_data_t)&var);
 
     if (var.stop) {
 	return rb_assoc_new(var.key, var.val);
@@ -834,7 +834,7 @@ rb_hash_has_value(hash, val)
 
     data[0] = Qfalse;
     data[1] = val;
-    st_foreach(RHASH(hash)->tbl, rb_hash_search_value, data);
+    st_foreach(RHASH(hash)->tbl, rb_hash_search_value, (st_data_t)data);
     return data[0];
 }
 
@@ -878,7 +878,7 @@ rb_hash_equal(hash1, hash2)
 
     data.tbl = RHASH(hash2)->tbl;
     data.result = Qtrue;
-    st_foreach(RHASH(hash1)->tbl, equal_i, &data);
+    st_foreach(RHASH(hash1)->tbl, equal_i, (st_data_t)&data);
 
     return data.result;
 }

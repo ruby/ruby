@@ -5,6 +5,7 @@
 #include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "st.h"
 
 #ifdef _WIN32
@@ -15,8 +16,8 @@ typedef struct st_table_entry st_table_entry;
 
 struct st_table_entry {
     unsigned int hash;
-    char *key;
-    char *record;
+    st_data_t key;
+    st_data_t record;
     st_table_entry *next;
 };
 
@@ -32,18 +33,18 @@ struct st_table_entry {
      * allocated initially
      *
      */
-static int numcmp();
-static int numhash();
+static int numcmp(long, long);
+static int numhash(long);
 static struct st_hash_type type_numhash = {
     numcmp,
     numhash,
 };
 
-extern int strcmp();
-static int strhash();
+/* extern int strcmp(const char *, const char *); */
+static int strhash(const char *);
 static struct st_hash_type type_strhash = {
-    strcmp,
-    strhash,
+    (st_compare_func_t)strcmp,
+    (st_hash_func_t)strhash,
 };
 
 #ifdef RUBY_PLATFORM
@@ -52,13 +53,13 @@ static struct st_hash_type type_strhash = {
 #define xrealloc ruby_xrealloc
 #define xfree ruby_xfree
 
-void *xmalloc();
-void *xcalloc();
-void *xrealloc();
-void xfree();
+void *xmalloc(long);
+void *xcalloc(long, long);
+void *xrealloc(void *, long);
+void xfree(void *);
 #endif
 
-static void rehash();
+static void rehash(st_table *);
 
 #define alloc(type) (type*)xmalloc((unsigned)sizeof(type))
 #define Calloc(n,s) (char*)xcalloc((n),(s))
@@ -180,7 +181,7 @@ st_init_table(type)
 }
 
 st_table*
-st_init_numtable()
+st_init_numtable(void)
 {
     return st_init_table(&type_numhash);
 }
@@ -193,7 +194,7 @@ st_init_numtable_with_size(size)
 }
 
 st_table*
-st_init_strtable()
+st_init_strtable(void)
 {
     return st_init_table(&type_strhash);
 }
@@ -248,8 +249,8 @@ st_free_table(table)
 int
 st_lookup(table, key, value)
     st_table *table;
-    register char *key;
-    char **value;
+    register st_data_t key;
+    st_data_t *value;
 {
     unsigned int hash_val, bin_pos;
     register st_table_entry *ptr;
@@ -287,8 +288,8 @@ do {\
 int
 st_insert(table, key, value)
     register st_table *table;
-    register char *key;
-    char *value;
+    register st_data_t key;
+    st_data_t value;
 {
     unsigned int hash_val, bin_pos;
     register st_table_entry *ptr;
@@ -309,8 +310,8 @@ st_insert(table, key, value)
 void
 st_add_direct(table, key, value)
     st_table *table;
-    char *key;
-    char *value;
+    st_data_t key;
+    st_data_t value;
 {
     unsigned int hash_val, bin_pos;
 
@@ -389,8 +390,8 @@ st_copy(old_table)
 int
 st_delete(table, key, value)
     register st_table *table;
-    register char **key;
-    char **value;
+    register st_data_t *key;
+    st_data_t *value;
 {
     unsigned int hash_val;
     st_table_entry *tmp;
@@ -431,9 +432,9 @@ st_delete(table, key, value)
 int
 st_delete_safe(table, key, value, never)
     register st_table *table;
-    register char **key;
-    char **value;
-    char *never;
+    register st_data_t *key;
+    st_data_t *value;
+    st_data_t never;
 {
     unsigned int hash_val;
     register st_table_entry *ptr;
@@ -461,7 +462,7 @@ st_delete_safe(table, key, value, never)
 
 static int
 delete_never(key, value, never)
-    char *key, *value, *never;
+    st_data_t key, value, never;
 {
     if (value == never) return ST_DELETE;
     return ST_CONTINUE;
@@ -470,7 +471,7 @@ delete_never(key, value, never)
 void
 st_cleanup_safe(table, never)
     st_table *table;
-    char *never;
+    st_data_t never;
 {
     int num_entries = table->num_entries;
 
@@ -481,8 +482,8 @@ st_cleanup_safe(table, never)
 void
 st_foreach(table, func, arg)
     st_table *table;
-    enum st_retval (*func)();
-    char *arg;
+    st_each_func_t func;
+    st_data_t arg;
 {
     st_table_entry *ptr, *last, *tmp;
     enum st_retval retval;
@@ -517,7 +518,7 @@ st_foreach(table, func, arg)
 
 static int
 strhash(string)
-    register char *string;
+    register const char *string;
 {
     register int c;
 
