@@ -83,6 +83,11 @@ extern char *inplace;
 
 struct timeval time_timeval _((VALUE));
 
+static VALUE filename, file;
+static int gets_lineno;
+static int init_p = 0, next_p = 0;
+static VALUE lineno;
+
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
 #  ifdef _IO_fpos_t
 #    define READ_DATA_PENDING(fp) ((fp)->_IO_read_ptr != (fp)->_IO_read_end)
@@ -432,8 +437,6 @@ io_read(argc, argv, io)
     return str_taint(str);
 }
 
-static VALUE lineno;
-
 VALUE
 io_gets_method(argc, argv, io)
     int argc;
@@ -619,6 +622,38 @@ io_gets(io)
     lastline_set(str);
 
     return str;
+}
+
+static VALUE
+io_lineno(io)
+    VALUE io;
+{
+    OpenFile *fptr;
+
+    GetOpenFile(io, fptr);
+    io_readable(fptr);
+    return INT2NUM(fptr->lineno);
+}
+
+static VALUE
+io_set_lineno(io, lineno)
+    VALUE io, lineno;
+{
+    OpenFile *fptr;
+
+    GetOpenFile(io, fptr);
+    io_readable(fptr);
+    fptr->lineno = NUM2INT(lineno);
+}
+
+static void
+lineno_setter(val, id, var)
+    VALUE val;
+    ID id;
+    VALUE *var;
+{
+    gets_lineno = NUM2INT(val);
+    *var = INT2FIX(gets_lineno);
 }
 
 static VALUE
@@ -1246,7 +1281,7 @@ f_open(argc, argv)
 
     port = io_open(RSTRING(pname)->ptr, mode);
     if (iterator_p()) {
-	rb_ensure(rb_yield, port, io_close, port);
+	return rb_ensure(rb_yield, port, io_close, port);
     }
 
     return port;
@@ -1662,10 +1697,6 @@ io_s_new(argc, argv, klass)
     }
     return prep_stdio(rb_fdopen(NUM2INT(fnum), m), io_mode_flags(m), klass);
 }
-
-static VALUE filename, file;
-static int gets_lineno;
-static int init_p = 0, next_p = 0;
 
 static int
 next_argv()
@@ -2590,7 +2621,7 @@ Init_IO()
     rb_define_hooked_variable("$-0", &RS, 0, rb_str_setter);
     rb_define_hooked_variable("$\\", &ORS, 0, rb_str_setter);
 
-    rb_define_variable("$.", &lineno);
+    rb_define_hooked_variable("$.", &lineno, 0, lineno_setter);
     rb_define_virtual_variable("$_", lastline_get, lastline_set);
 
     rb_define_method(cIO, "clone", io_clone, 0);
@@ -2614,6 +2645,9 @@ Init_IO()
 
     rb_define_method(cIO, "sync",   io_sync, 0);
     rb_define_method(cIO, "sync=",  io_set_sync, 1);
+
+    rb_define_method(cIO, "lineno",   io_lineno, 0);
+    rb_define_method(cIO, "lineno=",  io_set_lineno, 1);
 
     rb_define_method(cIO, "readlines",  io_readlines, -1);
 

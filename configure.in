@@ -56,7 +56,6 @@ if test "$fat_binary" = yes ; then
     echo "."
 fi 
 
-
 AC_ARG_PROGRAM
 
 dnl Checks for programs.
@@ -358,8 +357,15 @@ if test "$with_dln_a_out" != yes; then
 	human*)		DLDFLAGS=''
 			LDSHARED=''
 			LDFLAGS='' ;;
-	beos*) 		LDSHARED="mwld -xms"
-			DLDFLAGS=""
+	beos*) 		LDSHARED="ld -xms"
+			case "$host_cpu" in
+			  powerpc*)
+			    DLDFLAGS="-f ruby.def -lbe -lroot -ldll"
+                            ;;
+			  *)
+			    DLDFLAGS="ruby.def -lbe -lroot /boot/develop/lib/x86/glue-noinit.a"
+			    ;;
+			esac
 			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac
@@ -496,9 +502,28 @@ if test "$fat_binary" = yes ; then
   CFLAGS="$CFLAGS -pipe $ARCH_FLAG"
 fi
 
+LIBRUBY='libruby.a'
+LIBRUBYARG='libruby.a'
+SOLIBS=
 if test "$host_os" = "beos"; then
   CFLAGS="$CFLAGS -relax_pointers"
+  LIBRUBY='libruby.so'
+  LIBRUBYARG='-lruby'
+  SOLIBS='-lnet'
+  echo creating ruby.def
+  case "$host_cpu" in
+    powerpc*)
+      cp beos/ruby.def.in ruby.def
+      ;;
+    *)
+      echo EXPORTS > ruby.def
+      cat beos/ruby.def.in >> ruby.def
+      ;;
+  esac
 fi
+AC_SUBST(LIBRUBY)
+AC_SUBST(LIBRUBYARG)
+AC_SUBST(SOLIBS)
 
 ri_prefix=
 test "$program_prefix" != NONE &&

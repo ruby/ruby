@@ -1,22 +1,18 @@
-;;; -*-Emacs-Lisp-*- 
+(J;;;(B (J-*-Emacs-Lisp-*-(B
 ;;;
-;;;  $Id: inf-ruby.el,v 1.2 1998/04/09 07:53:42 senda Exp $
+;;;  $Id: inf-ruby.el,v 1.4 1998/05/20 02:45:58 senda Exp $
 ;;;  $Author: senda $
-;;;  $Date: 1998/04/09 07:53:42 $
+;;;  $Date: 1998/05/20 02:45:58 $
 ;;;
 ;;; Inferior Ruby Mode - ruby process in a buffer.
 ;;;                      adapted from cmuscheme.el
 ;;;
+;;; Usage:
 ;;;
-;;; How to use it ?
+;;; (0) check ruby-program-name variable that can run your environment.
 ;;;
-;;; (0) this program need 'rbc.rb'. It must install as named 'rbc',
-;;;     set mode to executable (ex. chmod a+x rbc) and place in your
-;;;     command search path. 
-;;;
-;;; (1) modify .emacs to use ruby-mode
-;;;
-;;;    ex)
+;;; (1) modify .emacs to use ruby-mode 
+;;;     for example :
 ;;;
 ;;;    (autoload 'ruby-mode "ruby-mode"
 ;;;      "Mode for editing ruby source files")
@@ -39,6 +35,17 @@
 ;;; HISTORY
 ;;; senda -  8 Apr 1998: Created.
 ;;;	 $Log: inf-ruby.el,v $
+;;;	 Revision 1.4  1998/05/20 02:45:58  senda
+;;;	 default program to irb
+;;;
+;;;	 Revision 1.3  1998/04/10 04:11:30  senda
+;;;	 modification by Matsumoto san (1.1b9_09)
+;;;	 remove-in-string defined
+;;;	 global variable :
+;;;	 	 inferior-ruby-first-prompt-pattern
+;;;	       inferior-ruby-prompt-pattern
+;;;	 defined
+;;;
 ;;;	 Revision 1.2  1998/04/09 07:53:42  senda
 ;;;	 remove M-C-x in inferior-ruby-mode
 ;;;
@@ -48,11 +55,33 @@
 ;;;
 
 (require 'comint)
-
 (require 'ruby-mode)
-(autoload 'ruby-beginning-of-defun "ruby-mode")
-(autoload 'ruby-end-of-defun "ruby-mode")
 
+;;
+;; you may change these variables
+;;
+;(defvar ruby-program-name "rbc --noreadline"
+;  "*Program invoked by the run-ruby command")
+;
+;(defvar inferior-ruby-first-prompt-pattern "^rbc0> *"
+;  "first prompt regex pattern of ruby interpreter.")
+;
+;(defvar inferior-ruby-prompt-pattern "^\\(rbc.[>*\"'] *\\)+"
+;  "prompt regex pattern of ruby interpreter.")
+
+;;;; for irb
+(defvar ruby-program-name "irb --inf-ruby-mode"
+  "*Program invoked by the run-ruby command")
+
+(defvar inferior-ruby-first-prompt-pattern "^irb(.*)[0-9:]+0> *"
+  "first prompt regex pattern of ruby interpreter.")
+
+(defvar inferior-ruby-prompt-pattern "^\\(irb(.*)[0-9:]+[>*\"'] *\\)+"
+  "prompt regex pattern of ruby interpreter.")
+
+;;
+;; mode variables
+;;
 (defvar inferior-ruby-mode-hook nil
   "*Hook for customising inferior-ruby mode.")
 (defvar inferior-ruby-mode-map nil
@@ -77,12 +106,13 @@
   (define-key ruby-mode-map "\C-c\M-r" 'ruby-send-region-and-go)
   (define-key ruby-mode-map "\C-c\C-z" 'switch-to-ruby)
   (define-key ruby-mode-map "\C-c\C-l" 'ruby-load-file)
+  (define-key ruby-mode-map "\C-c\C-s" 'run-ruby)
 )
 
-(defvar ruby-buffer nil "current ruby (actually rbc) process buffer.")
+(defvar ruby-buffer nil "current ruby (actually irb) process buffer.")
 
 (defun inferior-ruby-mode ()
-  "Major mode for interacting with an inferior ruby (rbc) process.
+  "Major mode for interacting with an inferior ruby (irb) process.
 
 The following commands are available:
 \\{inferior-ruby-mode-map}
@@ -119,7 +149,7 @@ to continue it."
   (comint-mode)
   ;; Customise in inferior-ruby-mode-hook
   ;(setq comint-prompt-regexp "^[^>\n]*>+ *")
-  (setq comint-prompt-regexp "^rbc.> *") ; rbc prompt .....
+  (setq comint-prompt-regexp inferior-ruby-prompt-pattern)
   ;;(scheme-mode-variables)
   (ruby-mode-variables)
   (setq major-mode 'inferior-ruby-mode)
@@ -130,7 +160,7 @@ to continue it."
   (setq comint-get-old-input (function ruby-get-old-input))
   (run-hooks 'inferior-ruby-mode-hook))
 
-(defvar inferior-ruby-filter-regexp "" ;;"\\`\\s *\\S ?\\S ?\\s *\\'"
+(defvar inferior-ruby-filter-regexp "\\`\\s *\\S ?\\S ?\\s *\\'"
   "*Input matching this regexp are not saved on the history list.
 Defaults to a regexp ignoring all inputs of 0, 1, or 2 letters.")
 
@@ -138,39 +168,23 @@ Defaults to a regexp ignoring all inputs of 0, 1, or 2 letters.")
   "Don't save anything matching inferior-ruby-filter-regexp"
   (not (string-match inferior-ruby-filter-regexp str)))
 
-(defun ruby-rbc-backward-sexp ()
-  "backward-sexp for ruby.
-it search  rbc0>  prompt and set point to the beginning of prompt.
-so it only valid in rbc."
-  (let ((P "^rbc0> *"))
-    (re-search-backward P)
-  ))
-
-(if (not (functionp 'replace-in-string))
-    ;; simple version of replace-in-string in XEmacs
-    (defun replace-in-string (str regexp newtext)
-      "Replace all matches in STR for REGEXP with NEWTEXT string,
- and returns the new string."
-      (let ((rtn-str "")
-	    (start 0)
-	    (special)
-	    match prev-start)
-	(while (setq match (string-match regexp str start))
-	  (setq prev-start start
-		start (match-end 0)
-		rtn-str
-		(concat
-		 rtn-str
-		 (substring str prev-start match) newtext)))
-	(concat rtn-str (substring str start))))
-)
+;; adapted from replace-in-string in XEmacs (subr.el)
+(defun remove-in-string (str regexp)
+  "Remove all matches in STR for REGEXP and returns the new string."
+  (let ((rtn-str "") (start 0) match prev-start)
+    (while (setq match (string-match regexp str start))
+      (setq prev-start start
+	    start (match-end 0)
+	    rtn-str (concat rtn-str (substring str prev-start match))))
+    (concat rtn-str (substring str start))))
 
 (defun ruby-get-old-input ()
   "Snarf the sexp ending at point"
   (save-excursion
-    (let ((end (point))(P "^rbc.> *"))
-      (ruby-rbc-backward-sexp)
-      (replace-in-string (buffer-substring (point) end) P "")
+    (let ((end (point)))
+      (re-search-backward inferior-ruby-first-prompt-pattern)
+      (remove-in-string (buffer-substring (point) end)
+			inferior-ruby-prompt-pattern)
       )))
 
 (defun ruby-args-to-list (string)
@@ -185,9 +199,6 @@ so it only valid in rbc."
 		   nil
 		 (ruby-args-to-list (substring string pos
 						 (length string)))))))))
-
-(defvar ruby-program-name "rbc --noreadline"
-  "*Program invoked by the run-ruby command")
 
 (defun run-ruby (cmd)
   "Run an inferior Ruby process, input and output via buffer *ruby*.

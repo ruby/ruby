@@ -15,13 +15,17 @@ CFLAGS = @CFLAGS@ -I@srcdir@ -I@includedir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@
+LDSHARED = @LDSHARED@
+DLDFLAGS = @DLDFLAGS@
+SOLIBS = @SOLIBS@
 
 binsuffix = @binsuffix@
 
 #### End of system configuration section. ####
 
 
-LIBRUBY	      = libruby.a
+LIBRUBY	      = @LIBRUBY@
+LIBRUBYARG    = @LIBRUBYARG@
 
 EXTOBJS	      = 
 
@@ -75,11 +79,14 @@ miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) dmyext.o
 
 ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
-$(LIBRUBY):	$(OBJS) dmyext.o
-		@AR@ rcu $(LIBRUBY) $(OBJS) dmyext.o
+libruby.a:	$(OBJS) dmyext.o
+		@AR@ rcu $@ $(OBJS) dmyext.o
 		@-@RANLIB@ $(LIBRUBY) 2> /dev/null || true
+
+libruby.so:	$(OBJS) dmyext.o
+		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.o -o $@
 
 install:	rbconfig.rb
 		./miniruby$(binsuffix) $(srcdir)/instruby.rb

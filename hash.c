@@ -371,7 +371,9 @@ hash_delete(hash, key)
     }
     else if (st_delete(RHASH(hash)->tbl, &key, &val))
 	return val;
-    if (iterator_p()) rb_yield(key);
+    if (iterator_p()) {
+	return rb_yield(key);
+    }
     return Qnil;
 }
 

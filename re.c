@@ -318,7 +318,7 @@ make_regexp(s, len, flag)
     rp->allocated = 16;
     rp->fastmap = ALLOC_N(char, 256);
     if (flag) {
-	rp->translate = casetable;
+	rp->options = flag;
     }
     err = re_compile_pattern(s, (size_t)len, rp);
     kcode_reset_option();
@@ -376,15 +376,8 @@ reg_prepare_re(reg)
     if (FL_TEST(reg, REG_IGNORECASE)) {
 	casefold = TRUE;
     }
-    if (casefold) {
-	if (RREGEXP(reg)->ptr->translate != casetable) {
-	    RREGEXP(reg)->ptr->translate = casetable;
-	    RREGEXP(reg)->ptr->fastmap_accurate = 0;
-	    need_recompile = 1;
-	}
-    }
-    else if (RREGEXP(reg)->ptr->translate) {
-	RREGEXP(reg)->ptr->translate = NULL;
+    if ((casefold && !(RREGEXP(reg)->ptr->options & RE_OPTION_IGNORECASE))
+	|| (!casefold && (RREGEXP(reg)->ptr->options & RE_OPTION_IGNORECASE))) {
 	RREGEXP(reg)->ptr->fastmap_accurate = 0;
 	need_recompile = 1;
     }
@@ -619,42 +612,42 @@ Regexp *rp;
 VALUE cRegexp;
 
 static VALUE
-reg_new_1(klass, s, len, flag)
+reg_new_1(klass, s, len, options)
     VALUE klass;
     char *s;
     int len;
-    int flag;			/* CASEFOLD  = 0x1 */
-				/* CODE_NONE = 0x2 */
-				/* CODE_EUC  = 0x4 */
-				/* CODE_SJIS = 0x6 */
+    int options;		/* CASEFOLD  = 1 */
+				/* EXTENDED  = 2 */
+				/* CODE_NONE = 4 */
+				/* CODE_EUC  = 8 */
+				/* CODE_SJIS = 12 */
 {
     NEWOBJ(re, struct RRegexp);
     OBJSETUP(re, klass, T_REGEXP);
-
     re->ptr = 0;
     re->str = 0;
 
-    if (flag & 0x1) {
+    if (options & 0x1) {
 	FL_SET(re, REG_IGNORECASE);
     }
-    switch (flag & ~0x1) {
+    switch (options & ~0x3) {
       case 0:
       default:
 	FL_SET(re, reg_kcode);
 	break;
-      case 2:
+      case 4:
 	kcode_none(re);
 	break;
-      case 4:
+      case 8:
 	kcode_euc(re);
 	break;
-      case 6:
+      case 12:
 	kcode_sjis(re);
 	break;
     }
 
     kcode_set_option(re);
-    re->ptr = make_regexp(s, len, flag & 0x1);
+    re->ptr = make_regexp(s, len, options & 0x3);
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
     re->str[len] = '\0';
@@ -1024,6 +1017,7 @@ Init_Regexp()
 		  | RE_CONTEXTUAL_INVALID_OPS
 		  | RE_CHAR_CLASSES
 		  | RE_BACKSLASH_ESCAPE_IN_LISTS);
+    re_set_casetable(casetable);
 
     rb_define_virtual_variable("$~", match_getter, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);

@@ -452,10 +452,10 @@ class FTP
 
   MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)$/
 
-  def mtime(filename) 
+  def mtime(filename, local = false)
     str = mdtm(filename)
-    ary = str.scan(MDTM_REGEXP)[0].collect {|i| i.to_i} 
-    return Time.gm(*ary) 
+    ary = str.scan(MDTM_REGEXP)[0].collect {|i| i.to_i}
+    return local ? Time.local(*ary) : Time.gm(*ary)
   end
 
   def mkdir(dirname)

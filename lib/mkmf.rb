@@ -236,6 +236,12 @@ def create_makefile(target)
     $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
   $libs = "" unless $libs
+  $DLDFLAGS = CONFIG["DLDFLAGS"]
+
+  if PLATFORM =~ /beos/
+    $libs = $libs + " -lruby"
+    $DLDFLAGS = $DLDFLAGS + " -L" + CONFIG["prefix"] + "/lib"
+  end
 
   unless $objs then
     $objs = Dir["*.c"]
@@ -258,7 +264,7 @@ CC = gcc
 
 prefix = #{CONFIG["prefix"]}
 CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I#{$hdrdir} -I#{CONFIG["includedir"]} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
-DLDFLAGS = #{CONFIG["DLDFLAGS"]} #{$LDFLAGS}
+DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]}
 
 prefix = #{CONFIG["prefix"]}
@@ -349,10 +355,18 @@ EOMF
     rescue
     end
   end
+  
+  if PLATFORM =~ /beos/
+    print "creating ruby.def\n"
+    open("ruby.def", "w") do |file|
+      file.print("EXPORTS\n") if PLATFORM =~ /^i/
+      file.print("Init_#{target}\n")
+    end
+  end
 end
 
 $local_libs = nil
-$libs = PLATFORM =~ /cygwin32/ ? nil : "-lc"
+$libs = PLATFORM =~ /cygwin32|beos/ ? nil : "-lc"
 $objs = nil
 $CFLAGS = nil
 $LDFLAGS = nil

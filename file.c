@@ -1158,7 +1158,8 @@ file_s_expand_path(argc, argv)
     }
     else if (s[0] != '/') {
 	if (argc == 2) {
-	    strcpy(buf, STR2CSTR(dname));
+	    dname = file_s_expand_path(1, &dname);
+	    strcpy(buf, RSTRING(dname)->ptr);
 	}
 	else {
 #ifdef HAVE_GETCWD

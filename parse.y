@@ -1832,7 +1832,7 @@ parse_regx(term, paren)
     char kcode = 0;
     int once = 0;
     int nest = 0;
-    int casefold = 0;
+    int options = 0;
     int in_brack = 0;
     int re_start = sourceline;
     NODE *list = 0;
@@ -1921,19 +1921,22 @@ parse_regx(term, paren)
 	    for (;;) {
 		switch (c = nextc()) {
 		  case 'i':
-		    casefold = 1;
+		    options |= RE_OPTION_IGNORECASE;
+		    break;
+		  case 'x':
+		    options |= RE_OPTION_EXTENDED;
 		    break;
 		  case 'o':
 		    once = 1;
 		    break;
 		  case 'n':
-		    kcode = 2;
-		    break;
-		  case 'e':
 		    kcode = 4;
 		    break;
+		  case 'e':
+		    kcode = 8;
+		    break;
 		  case 's':
-		    kcode = 6;
+		    kcode = 12;
 		    break;
 		  default:
 		    pushback(c);
@@ -1950,12 +1953,12 @@ parse_regx(term, paren)
 		    list_append(list, NEW_STR(ss));
 		}
 		nd_set_type(list, once?NODE_DREGX_ONCE:NODE_DREGX);
-		list->nd_cflag = kcode | casefold;
+		list->nd_cflag = options | kcode;
 		yylval.node = list;
 		return tDREGEXP;
 	    }
 	    else {
-		yylval.val = reg_new(tok(), toklen(), kcode | casefold);
+		yylval.val = reg_new(tok(), toklen(), options | kcode);
 		return tREGEXP;
 	    }
 	}

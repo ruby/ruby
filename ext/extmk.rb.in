@@ -225,6 +225,17 @@ def create_makefile(target)
     $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
 
+  $DLDFLAGS = '@DLDFLAGS@'
+
+  if PLATFORM =~ /beos/
+    if $libs
+      $libs = $libs + " -lruby"
+    else
+      $libs = "-lruby"
+    end
+    $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
+  end
+
   $srcdir = $topdir + "/ext/" + target
   mfile = open("Makefile", "w")
   mfile.printf "\
@@ -241,7 +252,7 @@ CC = @CC@
 
 prefix = @prefix@
 CFLAGS   = %s -I#{$topdir} -I@includedir@ %s #$CFLAGS %s
-DLDFLAGS = @DLDFLAGS@ #$LDFLAGS
+DLDFLAGS = #$DLDFLAGS #$LDFLAGS
 LDSHARED = @LDSHARED@
 ", if $static then "" else "@CCDLFLAGS@" end, CFLAGS, $defs.join(" ")
 
@@ -343,6 +354,14 @@ $(TARGET): $(OBJS)
     dfile.close
   end
   mfile.close
+  
+  if PLATFORM =~ /beos/
+    print "creating ruby.def\n"
+    open("ruby.def", "w") do |file|
+      file.print("EXPORTS\n") if PLATFORM =~ /^i/
+      file.print("Init_#{target}\n")
+    end
+  end
 end
 
 def extmake(target)

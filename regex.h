@@ -164,6 +164,9 @@ extern long re_syntax_options;
                         | RE_NO_BK_REFS | RE_NO_EMPTY_RANGES 		   \
                         | RE_NO_HYPHEN_RANGE_END)
 
+#define RE_OPTION_IGNORECASE (1L<<0)
+#define RE_OPTION_EXTENDED   (1L<<1)
+
 /* For multi-byte char support */
 #define MBCTYPE_ASCII 0
 #define MBCTYPE_EUC 1
@@ -192,13 +195,10 @@ struct re_pattern_buffer
     char *fastmap;	/* Pointer to fastmap, if any, or zero if none.  */
 			/* re_search uses the fastmap, if there is one,
 			   to skip over totally implausible characters.  */
-    char *translate;	/* Translate table to apply to all characters before 
-		           comparing, or zero for no translation.
-			   The translation is applied to a pattern when it is 
-                           compiled and to data when it is matched.  */
     char *must;	        /* Pointer to exact pattern which strings should have
 			   to be matched.  */
 
+    long options;	/* Flags for options such as extended_pattern. */
     long re_nsub;	/* Number of subexpressions found by the compiler. */
     char fastmap_accurate;
 			/* Set to zero when a new pattern is stored,
@@ -211,11 +211,6 @@ struct re_pattern_buffer
 			   but at end of range or before a character
 			   listed in the fastmap.  */
   };
-
-
-/* search.c (search_buffer) needs this one value.  It is defined both in
-   regex.c and here.  */
-#define RE_EXACTN_VALUE 1
 
 
 /* Structure to store register contents data in.
@@ -252,7 +247,9 @@ extern int re_search (struct re_pattern_buffer *, char*, int, int, int,
 extern int re_match (struct re_pattern_buffer *, char *, int, int,
 		     struct re_registers *);
 extern long re_set_syntax (long syntax);
+extern void re_set_casetable(char *table);
 extern void re_copy_registers (struct re_registers*, struct re_registers*);
+extern void re_free_registers (struct re_registers*);
 
 #ifndef RUBY
 /* 4.2 bsd compatibility.  */
@@ -268,6 +265,7 @@ extern void re_compile_fastmap ();
 extern int re_search ();
 extern int re_match ();
 extern long re_set_syntax();
+extern void re_set_casetable();
 extern void re_copy_registers ();
 extern void re_free_registers ();
 

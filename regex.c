@@ -134,8 +134,7 @@ static void store_jump_n P((char *, int, char *, unsigned));
 static void insert_jump_n P((int, char *, char *, char *, unsigned));
 static void insert_op P((int, char *, char *));
 static void insert_op_2 P((int, char *, char *, int, int));
-static int memcmp_translate P((unsigned char *, unsigned char *,
-			       int, unsigned char *));
+static int memcmp_translate P((unsigned char *, unsigned char *, int));
 
 /* Define the syntax stuff, so we can do the \<, \>, etc.  */
 
@@ -149,6 +148,7 @@ static int memcmp_translate P((unsigned char *, unsigned char *,
 
 static char re_syntax_table[256];
 static void init_syntax_once P((void));
+static char *translate = 0;
 
 #undef P
 
@@ -183,6 +183,13 @@ init_syntax_once()
    re_syntax_table[0367] = 0;
 
    done = 1;
+}
+
+void
+re_set_casetable(table)
+     char *table;
+{
+  translate = table;
 }
 
 /* Jim Meyering writes:
@@ -287,6 +294,9 @@ enum regexpcode
 		    and store it in a memory register.  Followed by
                     one byte containing the register number. Register
                     numbers must be in the range 0 through RE_NREGS.  */
+    start_paren,   /* Just a mark for starting(?:). */
+    start_casefold, /* Start casefold region. */
+    stop_casefold,  /* End casefold region. */
     start_nowidth, /* Save string point to the stack. */
     stop_nowidth,  /* Restore string place at the point start_nowidth. */
     pop_and_fail,  /* Fail after popping nowidth entry from stack. */
@@ -369,6 +379,7 @@ long re_syntax_options = 0;
 
 /* Macros for re_compile_pattern, which is found below these definitions.  */
 
+#define TRANSLATE_P() ((options&RE_OPTION_IGNORECASE) && translate)
 /* Fetch the next character in the uncompiled pattern---translating it 
    if necessary.  Also cast from a signed character in the constant
    string passed to us by the user to an unsigned char that we can use
@@ -376,7 +387,7 @@ long re_syntax_options = 0;
 #define PATFETCH(c)							\
   do {if (p == pend) goto end_of_pattern;				\
     c = (unsigned char) *p++; 						\
-    if (translate) c = (unsigned char)translate[c];			\
+    if (TRANSLATE_P()) c = (unsigned char)translate[c];	\
   } while (0)
 
 /* Fetch the next character in the uncompiled pattern, with no
@@ -649,6 +660,18 @@ print_partial_compiled_pattern(start, end)
 	  printf ("/stop_memory/%d", mcnt);
           break;
 
+	case start_paren:
+	  printf ("/start_paren");
+	  break;
+
+	case start_casefold:
+	  printf ("/start_casefold");
+	  break;
+
+	case stop_casefold:
+	  printf ("/stop_casefold");
+	  break;
+
 	case start_nowidth:
           EXTRACT_NUMBER_AND_INCR (mcnt, p);
 	  printf ("/start_nowidth//%d", mcnt);
@@ -853,6 +876,9 @@ calculate_must_string(start, end)
           p++;
           break;
 
+	case start_casefold:
+	case stop_casefold:
+	case start_paren:
 	case start_nowidth:
 	case stop_nowidth:
 	case pop_and_fail:
@@ -1008,8 +1034,7 @@ re_compile_pattern(pattern, size, bufp)
     int range = 0;
     int had_char_class = 0;
 
-    /* How to translate the characters in the pattern.  */
-    char *translate = bufp->translate;
+    int options = bufp->options;
 
     bufp->fastmap_accurate = 0;
 
@@ -1038,37 +1063,21 @@ re_compile_pattern(pattern, size, bufp)
 	    char *p1 = p;
 	    /* When testing what follows the $,
 	       look past the \-constructs that don't consume anything.  */
-	    if (! (re_syntax_options & RE_CONTEXT_INDEP_OPS))
-	      while (p1 != pend)
-		{
-		  if (*p1 == '\\' && p1 + 1 != pend
-		      && (p1[1] == 'b' || p1[1] == 'B'))
-		    p1 += 2;
-		  else
-		    break;
-		}
-            if (re_syntax_options & RE_TIGHT_VBAR)
+
+	    while (p1 != pend)
 	      {
-		if (! (re_syntax_options & RE_CONTEXT_INDEP_OPS) && p1 != pend)
-		  goto normal_char;
-		/* Make operand of last vbar end before this `$'.  */
-		if (fixup_jump)
-		  store_jump(fixup_jump, jump, b);
-		fixup_jump = 0;
-		BUFPUSH(endline);
-		break;
+		if (*p1 == '\\' && p1 + 1 != pend
+		    && (p1[1] == 'b' || p1[1] == 'B'))
+		  p1 += 2;
+		else
+		  break;
 	      }
 	    /* $ means succeed if at end of line, but only in special contexts.
 	      If validly in the middle of a pattern, it is a normal character. */
 
 	    if (p1 == pend || *p1 == '\n'
-		|| (re_syntax_options & RE_CONTEXT_INDEP_OPS)
-		|| (re_syntax_options & RE_NO_BK_PARENS
-		    ? *p1 == ')'
-		    : *p1 == '\\' && p1[1] == ')')
-		|| (re_syntax_options & RE_NO_BK_VBAR
-		    ? *p1 == '|'
-		    : *p1 == '\\' && p1[1] == '|'))
+		|| *p1 == ')'
+		|| *p1 == '|')
 	      {
 		BUFPUSH(endline);
 		break;
@@ -1079,36 +1088,19 @@ re_compile_pattern(pattern, size, bufp)
 	  /* ^ means succeed if at beg of line, but only if no preceding 
              pattern.  */
 
-          if ((re_syntax_options & RE_CONTEXTUAL_INVALID_OPS) && laststart)
+          if (laststart)
             goto invalid_pattern;
-          if (laststart && p - 2 >= pattern && p[-2] != '\n'
-	       && !(re_syntax_options & RE_CONTEXT_INDEP_OPS))
+          if (laststart && p - 2 >= pattern && p[-2] != '\n')
 	    goto normal_char;
-	  if (re_syntax_options & RE_TIGHT_VBAR)
-	    {
-	      if (p != pattern + 1
-		  && ! (re_syntax_options & RE_CONTEXT_INDEP_OPS))
-		goto normal_char;
-	      BUFPUSH(begline);
-	      begalt = b;
-	    }
-	  else
-	    {
-	      BUFPUSH(begline);
-	    }
+	  BUFPUSH(begline);
 	  break;
 
 	case '+':
 	case '?':
-	  if (re_syntax_options & RE_LIMITED_OPS)
-	    goto normal_char;
 	case '*':
 	  /* If there is no previous pattern, char not special. */
 	  if (!laststart) {
-	    if (re_syntax_options & RE_CONTEXTUAL_INVALID_OPS)
-	      goto invalid_pattern;
-	    else if (! (re_syntax_options & RE_CONTEXT_INDEP_OPS))
-	      goto normal_char;
+	    goto invalid_pattern;
 	  }
 	  /* If there is a sequence of repetition chars,
 	     collapse it down to just one.  */
@@ -1221,9 +1213,7 @@ re_compile_pattern(pattern, size, bufp)
 
               if (c == ']') {
                   if (p == p0 + 1) {
-		      /* If this is an empty bracket expression.  */
-                      if ((re_syntax_options & RE_NO_EMPTY_BRACKETS) 
-                          && p == pend)
+                      if (p == pend)
 			  goto invalid_pattern;
 		  }
                   else 
@@ -1323,10 +1313,6 @@ re_compile_pattern(pattern, size, bufp)
               /* Get a range.  */
 	      if (range) {
 		  if (last > c)
-                    goto invalid_pattern;
-
-		  if ((re_syntax_options & RE_NO_HYPHEN_RANGE_END) 
-                      && c == '-' && *p != ']')
                     goto invalid_pattern;
 
 		  range = 0;
@@ -1442,11 +1428,31 @@ re_compile_pattern(pattern, size, bufp)
 	  if (c == '?') {
 	      PATFETCH(c);
 	      switch (c) {
-		case '#':
-		case 'i':
-		case 'm':
-		case 's':
 		case 'x':
+		case 'i':
+		  for (;;) {
+		    switch (c) {
+		    case ')':
+		      break;
+
+		    case 'x':
+		      options |= RE_OPTION_EXTENDED;
+		      break;
+		    case 'i':
+		      options |= RE_OPTION_IGNORECASE;
+		      BUFPUSH(start_casefold);
+		      break;
+
+		    default:
+		      FREE_AND_RETURN(stackb, "undefined (?...) inline option");
+		    }
+		    if (c == ')') break;
+		    PATFETCH(c);
+		  }
+		  c = '#';	/* read whole in-line options */
+		  break;
+
+		case '#':
 		  for (;;) {
 		      PATFETCH(c);
 		      if (c == ')') break;
@@ -1468,7 +1474,7 @@ re_compile_pattern(pattern, size, bufp)
 	    c = '(';
 	  }
 	  if (c == '#') break;
-	  if (stackp+6 >= stacke) {
+	  if (stackp+7 >= stacke) {
 	    int *stackx;
 	    unsigned int len = stacke - stackb;
 
@@ -1509,11 +1515,14 @@ re_compile_pattern(pattern, size, bufp)
 	      break;
 
 	    case ':':
+	      if (b > bufp->buffer && b[-1] != start_paren)
+		BUFPUSH(start_paren);
 	      pending_exact = 0;
 	    default:
 	      break;
 	  }
 	  *stackp++ = c;
+	  *stackp++ = options;
 	  fixup_jump = 0;
 	  laststart = 0;
 	  begalt = b;
@@ -1521,6 +1530,10 @@ re_compile_pattern(pattern, size, bufp)
 
 	case ')':
 	  if (stackp == stackb) goto unmatched_close;
+	  if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
+	    BUFPUSH(stop_casefold);
+	  }
+	  options = *--stackp;
 	  switch (c = *--stackp) {
 	    case '(':
 	      if (fixup_jump)
@@ -1589,32 +1602,27 @@ re_compile_pattern(pattern, size, bufp)
 	  /* If there is no previous pattern, this isn't an interval.  */
 	  if (!laststart)
 	    {
-	      if (re_syntax_options & RE_CONTEXTUAL_INVALID_OPS)
-		goto invalid_pattern;
-	      else
 		goto normal_backsl;
 	    }
 	  /* It also isn't an interval if not preceded by an re
 	     matching a single character or subexpression, or if
 	     the current type of intervals can't handle back
 	     references and the previous thing is a back reference.  */
+
 	  if (! (*laststart == anychar
 		 || *laststart == charset
 		 || *laststart == charset_not
 		 || *laststart == wordchar
 		 || *laststart == notwordchar
 		 || *laststart == start_memory
+		 || *laststart == start_paren
 		 || (*laststart == exactn
 		     && (laststart[1] == 1
 			 || laststart[1] == 2 && ismbchar(laststart[2])))
-		 || (! (re_syntax_options & RE_NO_BK_REFS)
-		     && *laststart == duplicate)))
+		 || *laststart == duplicate))
 	    {
 	      /* Posix extended syntax is handled in previous
 		 statement; this is for Posix basic syntax.  */
-	      if (re_syntax_options & RE_INTERVALS)
-		goto invalid_pattern;
-
 	      goto normal_backsl;
 	    }
 	  lower_bound = -1;			/* So can see if are set.  */
@@ -1874,6 +1882,23 @@ re_compile_pattern(pattern, size, bufp)
 	      goto normal_char;
 	    }
 	  break;
+
+	case '#':
+	  if (options & RE_OPTION_EXTENDED)
+	    {
+	      while (p != pend) {
+		PATFETCH(c);
+		if (c == '\n') break;
+	      }
+	      break;
+	    }
+	  goto normal_char;
+
+	case ' ':
+	case '\t':
+	case '\n':
+	  if (options & RE_OPTION_EXTENDED)
+	    break;
 
 	default:
 	normal_char:		/* Expects the character in `c'.  */
@@ -2160,12 +2185,12 @@ re_compile_fastmap(bufp)
   register unsigned char *p = pattern;
   register unsigned char *pend = pattern + size;
   register int j, k;
-  unsigned char *translate = (unsigned char *)bufp->translate;
   unsigned is_a_succeed_n;
 
   unsigned char **stackb = RE_TALLOC(NFAILURES, unsigned char*);
   unsigned char **stackp = stackb;
   unsigned char **stacke = stackb + NFAILURES;
+  int options = bufp->options;
 
   memset(fastmap, 0, (1 << BYTEWIDTH));
   bufp->fastmap_accurate = 1;
@@ -2187,12 +2212,12 @@ re_compile_fastmap(bufp)
 	{
 	case exactn:
 	  if (p[1] == 0xff) {
-	      if (translate)
+	      if (TRANSLATE_P())
 		fastmap[translate[p[2]]] = 2;
 	      else
 		fastmap[p[2]] = 2;
 	  }
-	  else if (translate)
+	  else if (TRANSLATE_P())
 	    fastmap[translate[p[1]]] = 1;
 	  else
 	    fastmap[p[1]] = 1;
@@ -2206,10 +2231,13 @@ re_compile_fastmap(bufp)
 	case wordbeg:
 	case wordend:
 	case pop_and_fail:
+	case start_paren:
+	case start_casefold:
+	case stop_casefold:
 	  continue;
 
 	case endline:
-	  if (translate)
+	  if (TRANSLATE_P())
 	    fastmap[translate['\n']] = 1;
 	  else
 	    fastmap['\n'] = 1;
@@ -2333,7 +2361,7 @@ re_compile_fastmap(bufp)
 	  for (j = *p++ * BYTEWIDTH - 1; j >= 0; j--)
 	    if (p[j / BYTEWIDTH] & (1 << (j % BYTEWIDTH)))
 	      {
-		if (translate)
+		if (TRANSLATE_P())
 		  fastmap[translate[j]] = 1;
 		else
 		  fastmap[j] = 1;
@@ -2453,8 +2481,8 @@ re_search(bufp, string, size, startpos, range, regs)
      struct re_registers *regs;
 {
   register char *fastmap = bufp->fastmap;
-  register unsigned char *translate = (unsigned char *) bufp->translate;
   int val, anchor = 0;
+  int options = bufp->options;
 
   /* Check for out-of-range starting position.  */
   if (startpos < 0  ||  startpos > size)
@@ -2490,7 +2518,7 @@ re_search(bufp, string, size, startpos, range, regs)
       && bufp->must
       && !must_instr(bufp->must+1, bufp->must[0],
 		     string+startpos, size-startpos,
-		     translate)) {
+		     (TRANSLATE_P())?translate:0)) {
     return -1;
   }
 #endif
@@ -2528,7 +2556,7 @@ re_search(bufp, string, size, startpos, range, regs)
 		    break;
 		}
 		else 
-		  if (fastmap[translate ? translate[c] : c])
+		  if (fastmap[(TRANSLATE_P()) ? translate[c] : c])
 		    break;
 		range--;
 	      }
@@ -2540,7 +2568,7 @@ re_search(bufp, string, size, startpos, range, regs)
 
 	      c = string[startpos];
               c &= 0xff;
-	      if (translate ? !fastmap[translate[c]] : !fastmap[c])
+	      if ((TRANSLATE_P()) ? !fastmap[translate[c]] : !fastmap[c])
 		goto advance;
 	    }
 	}
@@ -2787,7 +2815,7 @@ re_match(bufp, string_arg, size, pos, regs)
 
   register unsigned char *d, *dend;
   register int mcnt;			/* Multipurpose.  */
-  unsigned char *translate = (unsigned char *) bufp->translate;
+  int options = bufp->options;
   unsigned is_a_jump_n = 0;
 
  /* Failure point stack.  Each place that can handle a failure further
@@ -3041,8 +3069,8 @@ re_match(bufp, string_arg, size, pos, regs)
 
 		/* Compare that many; failure if mismatch, else move
                    past them.  */
-		if (translate 
-                    ? memcmp_translate(d, d2, mcnt, translate) 
+		if ((options & RE_OPTION_IGNORECASE) 
+                    ? memcmp_translate(d, d2, mcnt) 
                     : memcmp((char *)d, (char *)d2, mcnt))
 		  goto fail;
 		d += mcnt, d2 += mcnt;
@@ -3079,9 +3107,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	    d += 2;
 	    break;
 	  }
-	  if ((translate ? translate[*d] : *d) == '\n'
-              || ((re_syntax_options & RE_DOT_NOT_NULL) 
-                  && (translate ? translate[*d] : *d) == '\000'))
+	  if (((TRANSLATE_P()) ? translate[*d] : *d) == '\n')
 	    goto fail;
 	  SET_REGS_MATCHED;
           d++;
@@ -3102,7 +3128,7 @@ re_match(bufp, string_arg, size, pos, regs)
 		c |= (unsigned char)d[1];
 	      }
 	    }
-	    else if (translate)
+	    else if (TRANSLATE_P())
 	      c = (unsigned char)translate[c];
 
 	    half = not = is_in_list(c, p);
@@ -3308,11 +3334,16 @@ re_match(bufp, string_arg, size, pos, regs)
 	  continue;
 
 	case finalize_push_n:
-          EXTRACT_NUMBER(mcnt, p + 2);
-          /* Originally, this is how many times we CAN jump.  */
+          EXTRACT_NUMBER(mcnt, p + 2); 
+         /* Originally, this is how many times we CAN jump.  */
           if (mcnt) {
+	    int pos, i;
+
 	    mcnt--;
 	    STORE_NUMBER(p + 2, mcnt);
+	    EXTRACT_NUMBER(pos, p);
+	    EXTRACT_NUMBER(i, p+pos+5);
+	    if (i > 0) goto nofinalize;
 	    POP_FAILURE_POINT();
 	    EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	    PUSH_FAILURE_POINT(p + mcnt, d);
@@ -3327,6 +3358,17 @@ re_match(bufp, string_arg, size, pos, regs)
         /* Ignore these.  Used to ignore the n of succeed_n's which
            currently have n == 0.  */
         case unused:
+	  continue;
+
+        case start_paren:
+	  continue;
+
+        case start_casefold:
+	  options |= RE_OPTION_IGNORECASE;
+	  continue;
+
+        case stop_casefold:
+	  options &= ~RE_OPTION_IGNORECASE;
 	  continue;
 
         case wordbound:
@@ -3374,7 +3416,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	  mcnt = *p++;
 	  /* This is written out as an if-else so we don't waste time
              testing `translate' inside the loop.  */
-          if (translate)
+          if (TRANSLATE_P())
 	    {
 	      do
 		{
@@ -3469,10 +3511,9 @@ re_match(bufp, string_arg, size, pos, regs)
 
 
 static int
-memcmp_translate(s1, s2, len, translate)
+memcmp_translate(s1, s2, len)
      unsigned char *s1, *s2;
      register int len;
-     unsigned char *translate;
 {
   register unsigned char *p1 = s1, *p2 = s2, c;
   while (len)

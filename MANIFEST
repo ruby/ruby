@@ -74,6 +74,7 @@ util.c
 variable.c
 version.c
 version.h
+beos/ruby.def.in
 ext/Setup
 ext/Setup.dj
 ext/Setup.nt

@@ -1,3 +1,36 @@
+Mon May 25 12:38:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): inline i option (?i).
+
+	* regex.c (re_compile_pattern): inline x option (?x).
+
+	* regex.c (re_compile_pattern): x option for regexp.
+
+	* dir.c (dir_s_open): returns block's evaluated value.
+
+	* io.c (f_open): returns block's evaluated value.
+
+	* ext/curses/curses.c (curses_addstr): nil argument caused SEGV.
+
+Fri May 22 11:52:45 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): push mark on (?:), so that
+	  laststart check for {a,b} can be done.
+
+Thu May 21 17:31:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): wrong match (too non-greedy) for `{a,b}?'.
+
+	* io.c (io_lineno): new method IO#lineno, IO#lineno=.
+
+Wed May 20 06:04:43 1998  MAEDA shugo  <shugo@aianet.ne.jp>
+
+	* BeOS patch.
+
+Wed May 20 16:32:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (BIGDN): use RSHIFT(), instead of mere `>>'.
+
 Tue May 19 16:36:26 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_22.

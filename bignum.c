@@ -21,7 +21,7 @@ typedef unsigned short USHORT;
 #define BIGRAD (1L << BITSPERDIG)
 #define DIGSPERINT ((unsigned int)(sizeof(long)/sizeof(short)))
 #define BIGUP(x) ((unsigned int)(x) << BITSPERDIG)
-#define BIGDN(x) ((x) >> BITSPERDIG)
+#define BIGDN(x) RSHIFT((x),BITSPERDIG)
 #define BIGLO(x) ((x) & (BIGRAD-1))
 
 static VALUE
@@ -347,11 +347,11 @@ unsigned long
 big2ulong(x)
     VALUE x;
 {
-    unsigned int num;
+    unsigned long num;
     unsigned int len = RBIGNUM(x)->len;
     USHORT *ds;
 
-    if (len > sizeof(long)/sizeof(short))
+    if (len > sizeof(long)/sizeof(USHORT))
 	ArgError("bignum too big to convert into `uint'");
     ds = BDIGITS(x);
     num = 0;

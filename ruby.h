@@ -499,8 +499,8 @@ VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 static char *libs_to_be_linked[] = { EXTLIB, 0 };
 #endif
 
-#endif
-
 #if defined(__cplusplus)
 }  /* extern "C" { */
 #endif
+
+#endif /* ifndef RUBY_H */

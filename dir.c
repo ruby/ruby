@@ -88,7 +88,7 @@ dir_s_open(dir_class, dirname)
     obj = Data_Wrap_Struct(dir_class, 0, free_dir, dirp);
 
     if (iterator_p()) {
-	rb_ensure(rb_yield, obj, dir_close, obj);
+	return rb_ensure(rb_yield, obj, dir_close, obj);
     }
 
     return obj;

@@ -333,7 +333,11 @@ curses_addstr(obj, str)
     VALUE obj;
     VALUE str;
 {
-    addstr(STR2CSTR(str));
+    char *s = STR2CSTR(str);
+
+    if (s) {
+	addstr(s);
+    }
     return Qnil;
 }
 
@@ -681,11 +685,14 @@ window_addstr(obj, str)
     VALUE obj;
     VALUE str;
 {
-    struct windata *winp;
-    
-    GetWINDOW(obj, winp);
-    waddstr(winp->window, STR2CSTR(str));
-    
+    char *s = STR2CSTR(str);
+
+    if (s) {
+	struct windata *winp;
+
+	GetWINDOW(obj, winp);
+	waddstr(winp->window, s);
+    }
     return Qnil;
 }
 
