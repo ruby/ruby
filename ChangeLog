@@ -1,3 +1,8 @@
+Thu Jun 10 19:19:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/sdbm/init.c (fsdbm_store): sdbm should use StringValue().
+	  [ruby-talk:103062]
+
 Wed Jun  9 16:09:01 2004  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic::merge,

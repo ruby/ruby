@@ -475,14 +475,12 @@ fsdbm_store(obj, keystr, valstr)
     }
 
     fdbm_modify(obj);
-    keystr = rb_obj_as_string(keystr);
+    StringValue(keystr);
 
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
-    if (NIL_P(valstr)) return fsdbm_delete(obj, keystr);
-
-    valstr = rb_obj_as_string(valstr);
+    StringValue(valstr);
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
 
