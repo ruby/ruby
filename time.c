@@ -1279,7 +1279,7 @@ time_strftime(time, format)
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
     }
-    if (strlen(fmt) < len) {
+    else if (strlen(fmt) < len) {
 	/* Ruby string may contain \0's. */
 	char *p = fmt, *pe = fmt + len;
 
@@ -1297,7 +1297,9 @@ time_strftime(time, format)
 	}
 	return str;
     }
-    len = rb_strftime(&buf, RSTRING(format)->ptr, &tobj->tm);
+    else {
+	len = rb_strftime(&buf, RSTRING(format)->ptr, &tobj->tm);
+    }
     str = rb_str_new(buf, len);
     if (buf != buffer) free(buf);
     return str;
