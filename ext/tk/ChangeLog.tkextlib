@@ -1,3 +1,21 @@
+2005-03-30  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* sample/tkextlib/bwidget/tree.rb: use 'return' in the Proc object.
+
+	* sample/tkextlib/tkHTML/hv.rb: ditto.
+
+	* sample/tkextlib/tkHTML/ss.rb: ditto.
+
+	* sample/tkextlib/tktable/basic.rb: ditto.
+
+	* sample/tkextlib/tktable/command.rb: ditto.
+
+	* sample/tkextlib/tktable/debug.rb: ditto.
+
+	* sample/tkextlib/tktable/maxsize.rb: ditto.
+
+	* sample/tkextlib/treectrl/demo.rb: ditto.
+
 2005-03-29  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/blt/component.rb: cannot create elements except

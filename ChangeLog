@@ -1,3 +1,20 @@
+Wed Mar 30 17:41:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: add TclTkIp#_create_console() method to create 
+	  a Tcl/Tk's console window.
+
+	* ext/tk/lib/multi-tk.rb: support TclTkIp#_create_console() method.
+
+	* ext/tk/lib/remote-tk.rb: ditto.
+
+	* ext/tk/lib/tk/console.rb: ditto.
+
+	* ext/tk/lib/tk.rb: update RELEASE_DATE
+
+	* ext/tk/sample/demo-*/check2.rb: use 'return' in the Proc object.
+
+	* ext/tk/sample/tkextlib/**: ditto.
+
 Tue Mar 29 22:20:49 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: use DRbObject.new_with instead of reinit.

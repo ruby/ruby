@@ -9,6 +9,9 @@ module TkConsole
 
   TkCommandNames = ['console'.freeze].freeze
 
+  def self.create
+    TkCore::INTERP._create_console
+  end
   def self.title(str=None)
     tk_call 'console', str
   end

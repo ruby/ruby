@@ -78,38 +78,43 @@ big_imgs = {}
 hotkey   = {}
 
 move_big_image = proc{|b|
-  return unless big_imgs.key?(b)
-  b.copy(big_imgs[b])
-  big_imgs[b].delete
-  big_imgs.delete(b)
-  Tk.update
+  if big_imgs.key?(b)
+    b.copy(big_imgs[b])
+    big_imgs[b].delete
+    big_imgs.delete(b)
+    Tk.update
+  end
 }
 
 image_cmd = proc{|*args|
-  return smgray unless show_img.bool
-  fn = args[0]
-  if old_imgs.key?(fn)
-    images[fn] = old_imgs[fn]
-    old_imgs.delete(fn)
-    return images[fn]
+  if show_img.bool
+    smgray
+  else
+    fn = args[0]
+
+    if old_imgs.key?(fn)
+      images[fn] = old_imgs[fn]
+      old_imgs.delete(fn)
+      images[fn]
+
+    else
+      begin
+        img = TkPhotoImage.new(:file=>fn)
+      rescue
+        smgray
+      else
+        if img.width * img.height > 20000
+          b = TkPhotoImage.new(:width=>img.width, :height=>img.height)
+          big_imgs[b] = img
+          img = b
+          Tk.after_idle(proc{ move_big_image.call(b) })
+        end
+
+        images[fn] = img
+        img
+      end
+    end
   end
-
-  begin
-    img = TkPhotoImage.new(:file=>fn)
-  rescue
-    return smgray
-  end
-
-  if img.width * img.height > 20000
-    b = TkPhotoImage.new(:width=>img.width, :height=>img.height)
-    big_imgs[b] = img
-    img = b
-    Tk.after_idle(proc{ move_big_image.call(b) })
-  end
-
-  images[fn] = img
-
-  img
 }
 
 #
@@ -183,12 +188,13 @@ clear_screen = proc{
 # Load a file into the HTML widget
 #
 load_file = proc{|name|
-  return unless (doc = read_file.call(name))
-  clear_screen.call
-  last_file = name
-  html.configure(:base=>name)
-  html.parse(doc)
-  old_imgs.clear
+  if (doc = read_file.call(name))
+    clear_screen.call
+    last_file = name
+    html.configure(:base=>name)
+    html.parse(doc)
+    old_imgs.clear
+  end
 }
 
 href_binding = proc{|x, y|
@@ -196,15 +202,16 @@ href_binding = proc{|x, y|
   html.selection_clear
   priv['mark'] = "@#{x},#{y}"
   lst = html.href(x, y)
-  return if lst.size.zero?
 
-  lnk, target = lst
+  unless lst.size.zero?
+    lnk, target = lst
 
-  if lnk != ""
-    if lnk =~ /^#{last_file}#(.*)$/
-      html.yview($1)
-    else
-      load_file.call(lnk)
+    if lnk != ""
+      if lnk =~ /^#{last_file}#(.*)$/
+        html.yview($1)
+      else
+        load_file.call(lnk)
+      end
     end
   end
 }
