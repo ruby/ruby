@@ -1,3 +1,8 @@
+Fri Sep 27 13:24:35 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): Class#inherited should be called after the
+	  execution of the class body.
+
 Fri Sep 27 02:41:53 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/sha1: Use OpenSSL's SHA1 engine if available.  It is
@@ -26,6 +31,11 @@ Thu Sep 26 22:44:21 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_s_hexdigest): Get rid of
 	  redundant struct allocation.
+
+Thu Sep 26 09:52:52 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (primary): remove "return outside of method" check at
+	  compile time.
 
 Wed Sep 25 23:51:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

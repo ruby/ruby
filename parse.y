@@ -556,8 +556,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 
 expr		: kRETURN call_args
 		    {
-			if (!compile_for_eval && !in_def && !in_single)
-			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN(ret_args($2));
 		    }
 		| kBREAK call_args
@@ -1339,8 +1337,6 @@ primary		: literal
 		    }
 		| kRETURN
 		    {
-			if (!compile_for_eval && !in_def && !in_single)
-			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN(0);
 		    }
 		| kYIELD '(' call_args ')'

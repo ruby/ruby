@@ -3281,6 +3281,7 @@ rb_eval(self, n)
 		    if (tmp != super) {
 			goto override_class;
 		    }
+		    super = 0;
 		}
 		if (ruby_safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "extending class prohibited");
@@ -3291,7 +3292,6 @@ rb_eval(self, n)
 		if (!super) super = rb_cObject;
 		klass = rb_define_class_id(node->nd_cname, super);
 		rb_set_class_path(klass,ruby_cbase,rb_id2name(node->nd_cname));
-		rb_class_inherited(super, klass);
 		rb_const_set(ruby_cbase, node->nd_cname, klass);
 	    }
 	    if (ruby_wrapper) {
@@ -3300,6 +3300,7 @@ rb_eval(self, n)
 	    }
 
 	    result = module_setup(klass, node->nd_body);
+	    if (super) rb_class_inherited(super, klass);
 	}
 	break;
 
