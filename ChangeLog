@@ -1,3 +1,9 @@
+Sat Apr 14 13:33:32 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* win32/config.status.in: no longer use missing/alloca.c.
+
+	* win32/Makefile.sub: ditto.
+
 Wed Apr 11 13:29:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_singleton_class_attached): should modify iv_tbl by
