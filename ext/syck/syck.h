@@ -47,7 +47,7 @@ extern "C" {
 #endif
 
 #define ALLOC_CT 8
-#define SYCK_BUFFERSIZE 262144
+#define SYCK_BUFFERSIZE 16384
 #define S_ALLOC_N(type,n) (type*)malloc(sizeof(type)*(n))
 #define S_ALLOC(type) (type*)malloc(sizeof(type))
 #define S_REALLOC_N(var,type,n) (var)=(type*)realloc((char*)(var),sizeof(type)*(n))

@@ -1,3 +1,12 @@
+Sat Oct  4 04:48:49 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+	* ext/syck/rubyext.c: default keys handled.
+
+	* ext/syck/syck.h: lowered default buffer size to 16k for increased
+	  performance.
+
+	* test/yaml: checkin of basic unit tests.
+
 Sat Oct  4 04:24:19 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: add check for X509V3_set_nconf.
