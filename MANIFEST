@@ -141,6 +141,7 @@ lib/forwardable.rb
 lib/ftools.rb
 lib/getoptlong.rb
 lib/getopts.rb
+lib/gserver.rb
 lib/importenv.rb
 lib/ipaddr.rb
 lib/irb.rb
@@ -317,6 +318,16 @@ lib/rexml/parsers/sax2parser.rb
 lib/rexml/parsers/streamparser.rb
 lib/rexml/parsers/ultralightparser.rb
 lib/rexml/parsers/xpathparser.rb
+lib/xmlrpc/base64.rb
+lib/xmlrpc/client.rb
+lib/xmlrpc/config.rb
+lib/xmlrpc/create.rb
+lib/xmlrpc/datetime.rb
+lib/xmlrpc/httpserver.rb
+lib/xmlrpc/marshal.rb
+lib/xmlrpc/parser.rb
+lib/xmlrpc/server.rb
+lib/xmlrpc/utils.rb
 lib/yaml.rb
 lib/yaml/basenode.rb
 lib/yaml/constants.rb

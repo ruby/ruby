@@ -4,6 +4,11 @@ Sat Jul 19 19:03:24 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 Sat Jul 19 11:27:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* lib/xmlrpc: import.
+
+	* eval.c (thgroup_add): should return group for terminated thread
+	  case.
+
 	* eval.c (thgroup_add): do not raise ThreadError on terminated
 	  thread addition for compatibility.  just warning.
 

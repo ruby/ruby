@@ -9944,7 +9944,7 @@ thgroup_add(group, thread)
 
     if (!th->thgroup) {
 	rb_warn("terminated thread");
-	return;
+	return group;
     }
     if (OBJ_FROZEN(th->thgroup)) {
 	rb_raise(rb_eThreadError, "can't move from the frozen thread group");
