@@ -1,298 +1,346 @@
-#
-#               Date.rb - 
-#                       $Release Version: $
-#                       $Revision: 1.2 $
-#                       $Date: 2000/07/06 07:21:23 $
-#                       by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
-#
-# --
-#
-#    September 1752
-#  S  M Tu  W Th  F  S
-#        1  2 14 15 16
-# 17 18 19 20 21 22 23
-# 24 25 26 27 28 29 30
-#       
+# date2.rb: Written by Tadayoshi Funaba 1998-2000
+# $Id: date2.rb,v 1.22 2000-07-16 10:23:40+09 tadf Exp $
 
 class Date
+
   include Comparable
-  
-  Weektag = [
-    "Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"
-  ]
 
-  Monthtag = [
-    "January","February","March","April", "May", "June","July",
-    "August", "September", "October", "November", "December"
-  ]
+  IDENT = 2
 
-  Monthtab = {
-    "jan"=>1, "feb"=>2, "mar"=>3, "apr"=>4, "may"=>5, "jun"=>6,
-    "jul"=>7, "aug"=>8, "sep"=>9, "oct"=>10, "nov"=>11, "dec"=>12
-  }
+  MONTHNAMES = [nil] + %w(January February March April May June July
+			  August September October November December)
 
-  def initialize(y = 1, m = 1, d = 1)
-    if y.kind_of?(String)
-      case y
-      when /(\d\d\d\d)-?(?:(\d\d)-?(\d\d)?)?/
-	@year = $1.to_i
-	@month = if $2 then $2.to_i else 1 end
-	@day = if $3 then $3.to_i else 1 end
+  DAYNAMES = %w(Sunday Monday Tuesday Wednesday Thursday Friday Saturday)
+
+  ITALY     = 2299161 # 1582-10-15
+  ENGLAND   = 2361222 # 1752-09-14
+  JULIAN    = false
+  GREGORIAN = true
+
+  class << self
+
+    def os? (jd, sg)
+      case sg
+      when Numeric; jd < sg
+      else;         not sg
+      end
+    end
+
+    def ns? (jd, sg) not os?(jd, sg) end
+
+    def civil_to_jd(y, m, d, sg=GREGORIAN)
+      if m <= 2
+	y -= 1
+	m += 12
+      end
+      a = (y / 100.0).floor
+      b = 2 - a + (a / 4.0).floor
+      jd = (365.25 * (y + 4716)).floor +
+	(30.6001 * (m + 1)).floor +
+	d + b - 1524
+      if os?(jd, sg)
+	jd -= b
+      end
+      jd
+    end
+
+    def jd_to_civil(jd, sg=GREGORIAN)
+      if os?(jd, sg)
+	a = jd
       else
-	require 'parsedate'
-	@year, @month, @day = ParseDate.parsedate(y)
+	x = ((jd - 1867216.25) / 36524.25).floor
+	a = jd + 1 + x - (x / 4.0).floor
       end
-    else
-      if m.kind_of?(String)
-        m = Monthtab[m.downcase]
-        if m.nil?
-          raise ArgumentError, "Wrong argument. (month)"
-        end
+      b = a + 1524
+      c = ((b - 122.1) / 365.25).floor
+      d = (365.25 * c).floor
+      e = ((b - d) / 30.6001).floor
+      dom = b - d - (30.6001 * e).floor
+      if e <= 13
+	m = e - 1
+	y = c - 4716
+      else
+	m = e - 13
+	y = c - 4715
       end
-      @year = y.to_i
-      @month = m.to_i
-      @day = d.to_i
+      return y, m, dom
     end
-    _check_date
-    return self
-  end
-  
-  def year
-    return @year
-  end
-  
-  def month
-    return @month
-  end
-  alias mon month
-  
-  def day
-    return @day
-  end
-  alias mday day
-  
-  def period
-    return Date.period!(@year, @month, @day)
-  end
-  protected :period
 
-  def jd
-    return period + 1721423
-  end
-
-  def mjd
-    return jd - 2400000.5
-  end
-
-  def to_s
-    format("%.3s, %.3s %2d %4d", name_of_week, name_of_month, @day, @year)
-  end
-
-  def inspect
-    to_s
-  end
-
-  def wday
-    return (period + 5) % 7
-  end
-  alias day_of_week wday
-
-  def yday
-    return period - Date.new(@year-1,12,31).period
-  end
-
-  def name_of_week
-    return Weektag[self.day_of_week]
-  end
-  
-  def name_of_month
-    return Monthtag[@month-1]
-  end
-  
-  def +(o)
-    if o.kind_of?(Numeric)
-      d = Integer(self.period + o)
-    elsif o.kind_of?(Date)
-      d = self.period + o.period
-    else
-      raise TypeError, "Illegal type. (Integer or Date)"
+    def ordinal_to_jd(y, d, sg=GREGORIAN)
+      civil_to_jd(y, 1, d, sg)
     end
-    if d <= 0
-      raise ArgumentError, "argument out of range. (self > other)"
+
+    def jd_to_ordinal(jd, sg=GREGORIAN)
+      y = jd_to_civil(jd, sg)[0]
+      doy = jd - civil_to_jd(y - 1, 12, 31, ns?(jd, sg))
+      return y, doy
     end
-    return Date.at(d)
-  end
-  
-  def -(o)
-    if o.kind_of?(Numeric)
-      d = Integer(self.period - o)
-    elsif o.kind_of?(Date)
-      return Integer(self.period - o.period)
-    else
-      raise TypeError, "Illegal type. (Integer or Date)"
+
+    def jd_to_commercial(jd, sg=GREGORIAN)
+      ns = ns?(jd, sg)
+      a = jd_to_civil(jd - 3, ns)[0]
+      y = if jd >= commercial_to_jd(a + 1, 1, 1, ns) then a + 1 else a end
+      w = 1 + (jd - commercial_to_jd(y, 1, 1, ns)) / 7
+      d = (jd + 1) % 7
+      if d.zero? then d = 7 end
+      return y, w, d
     end
-    if d <= 0
-      raise ArgumentError, "argument out of range. (self > other)"
+
+    def commercial_to_jd(y, w, d, ns=GREGORIAN)
+      jd = civil_to_jd(y, 1, 4, ns)
+      (jd - (((jd - 1) + 1) % 7)) +
+	7 * (w - 1) +
+	(d - 1)
     end
-    return Date.at(d)
-  end
-  
-  def <=>(o)
-    if o.kind_of?(Integer)
-      d = o
-    elsif o.kind_of?(Date)
-      d = o.period
-    else
-      raise TypeError, "Illegal type. (Integer or Date)"
+
+    def clfloor(x, y=1)
+      q, r = x.divmod(y)
+      q = q.to_i
+      return q, r
     end
-    return self.period <=> d
+
+    def rjd_to_jd(rjd) clfloor(rjd + 0.5) end
+    def jd_to_rjd(jd, fr) jd + fr - 0.5 end
+
+    def mjd_to_jd(mjd) mjd + 2400000.5 end
+    def jd_to_mjd(jd) jd - 2400000.5 end
+    def tjd_to_jd(tjd) tjd + 2440000.5 end
+    def jd_to_tjd(jd) jd - 2440000.5 end
+    def tjd2_to_jd(cycle, tjd) tjd_to_jd(cycle * 10000 + tjd) end
+    def jd_to_tjd2(jd) clfloor(jd_to_tjd(jd), 10000) end
+    def ld_to_jd(ld) ld + 2299160 end
+    def jd_to_ld(jd) jd - 2299160 end
+
+    def jd_to_wday(jd) (jd + 1) % 7 end
+
+    def julian_leap? (y) y % 4 == 0 end
+    def gregorian_leap? (y) y % 4 == 0 and y % 100 != 0 or y % 400 == 0 end
+
+    alias_method :leap?, :gregorian_leap?
+
+    alias_method :new0, :new
+
+    def new1(jd=0, sg=ITALY) new0(jd, sg) end
+
+    def exist3? (y, m, d, sg=ITALY)
+      if m < 0
+	m += 13
+      end
+      if d < 0
+	ny, nm = clfloor(y * 12 + m, 12)
+	nm,    = clfloor(m + 1, 1)
+	la = nil
+	31.downto 1 do |z|
+	  break if la = exist3?(y, m, z, sg)
+	end
+	ns = ns?(la, sg)
+	d = jd_to_civil(civil_to_jd(ny, nm, 1, ns) + d, ns)[-1]
+      end
+      jd = civil_to_jd(y, m, d, sg)
+      return unless [y, m, d] == jd_to_civil(jd, sg)
+      jd
+    end
+
+    alias_method :exist?, :exist3?
+
+    def new3(y=-4712, m=1, d=1, sg=ITALY)
+      unless jd = exist3?(y, m, d, sg)
+	raise ArgumentError, 'invalid date'
+      end
+      new0(jd, sg)
+    end
+
+    alias_method :new, :new3
+
+    def exist2? (y, d, sg=ITALY)
+      if d < 0
+	ny = y + 1
+	la = nil
+	366.downto 1 do |z|
+	  break if la = exist2?(y, z, sg)
+	end
+	ns = ns?(la, sg)
+	d = jd_to_ordinal(ordinal_to_jd(ny, 1, ns) + d, ns)[-1]
+      end
+      jd = ordinal_to_jd(y, d, sg)
+      return unless [y, d] == jd_to_ordinal(jd, sg)
+      jd
+    end
+
+    def new2(y=-4712, d=1, sg=ITALY)
+      unless jd = exist2?(y, d, sg)
+	raise ArgumentError, 'invalid date'
+      end
+      new0(jd, sg)
+    end
+
+    def existw? (y, w, d, sg=ITALY)
+      if d < 0
+	d += 8
+      end
+      if w < 0
+	w = jd_to_commercial(commercial_to_jd(y + 1, 1, 1) + w * 7)[1]
+      end
+      jd = commercial_to_jd(y, w, d)
+      return unless ns?(jd, sg)
+      return unless [y, w, d] == jd_to_commercial(jd)
+      jd
+    end
+
+    def neww(y=1582, w=41, d=5, sg=ITALY)
+      unless jd = existw?(y, w, d, sg)
+	raise ArgumentError, 'invalid date'
+      end
+      new0(jd, sg)
+    end
+
+    def today(sg=ITALY)
+      new0(civil_to_jd(*(Time.now.to_a[3..5].reverse << sg)), sg)
+    end
+
+    def once(*ids)
+      for id in ids
+	module_eval <<-"end;"
+	  alias_method :__#{id.to_i}__, :#{id.id2name}
+	  def #{id.id2name}(*args, &block)
+	    (@__#{id.to_i}__ ||= [__#{id.to_i}__(*args, &block)])[0]
+	  end
+	end;
+      end
+    end
+
+    private :once
+
   end
 
-  def eql?(o)
-    self == o
-  end
-  
-  def hash
-    return @year ^ @month ^ @day
-  end
-  
+  def initialize(rjd=0, sg=ITALY) @rjd, @sg = rjd, sg end
+
+  def rjd() @rjd end
+  def rmjd() type.jd_to_mjd(@rjd) end
+  def rtjd() type.jd_to_tjd(@rjd) end
+  def rtjd2() type.jd_to_tjd2(@rjd) end
+
+  once :rmjd, :rtjd, :rtjd2
+
+  def jd() type.rjd_to_jd(@rjd)[0] end
+  def fr1() type.rjd_to_jd(@rjd)[1] end
+  def mjd() type.jd_to_mjd(jd) end
+  def tjd() type.jd_to_tjd(jd) end
+  def tjd2() type.jd_to_tjd2(jd) end
+  def ld() type.jd_to_ld(jd) end
+
+  once :jd, :fr1, :mjd, :tjd, :tjd2, :ld
+
+  def civil() type.jd_to_civil(jd, @sg) end
+  def ordinal() type.jd_to_ordinal(jd, @sg) end
+  def commercial() type.jd_to_commercial(jd, @sg) end
+
+  once :civil, :ordinal, :commercial
+  private :civil, :ordinal, :commercial
+
+  def year() civil[0] end
+  def yday() ordinal[1] end
+  def mon() civil[1] end
+
+  alias_method :month, :mon
+
+  def mday() civil[2] end
+
+  alias_method :day, :mday
+
+  def cwyear() commercial[0] end
+  def cweek() commercial[1] end
+  def cwday() commercial[2] end
+
+  def wday() type.jd_to_wday(jd) end
+
+  once :wday
+
+  def os? () type.os?(jd, @sg) end
+  def ns? () type.ns?(jd, @sg) end
+
+  once :os?, :ns?
+
   def leap?
-    Date.leapyear(@year) != 1
-  end
-  alias leapyear? leap?
-
-  def _check_date
-    if @year == nil or @month == nil or @day == nil
-      raise ArgumentError, "argument contains nil"
-    end
-    m = Date.daylist(@year)
-    if @month < 1 || @month > 12
-      raise ArgumentError, "argument(month) out of range."
-    end
-    if @year == 1752 && @month == 9
-      if @day >= 3 && @day <= 13
-        raise ArgumentError, "argument(1752/09/3-13) out of range."
-      end
-      d = 30
-    else
-      d = m[@month]
-    end
-    if @day < 1 || @day > d
-      raise ArgumentError, "argument(day) out of range."
-    end
-    return self
+    type.jd_to_civil(type.civil_to_jd(year, 3, 1, ns?) - 1,
+		     ns?)[-1] == 29
   end
 
-  def << (n)
-    self >> -n
+  once :leap?
+
+  def sg() @sg end
+  def newsg(sg=type::ITALY) type.new0(@rjd, sg) end
+
+  def italy() newsg(type::ITALY) end
+  def england() newsg(type::ENGLAND) end
+  def julian() newsg(type::JULIAN) end
+  def gregorian() newsg(type::GREGORIAN) end
+
+  def + (n)
+    case n
+    when Numeric; return type.new0(@rjd + n, @sg)
+    end
+    raise TypeError, 'expected numeric'
   end
-  
+
+  def - (x)
+    case x
+    when Numeric; return type.new0(@rjd - x, @sg)
+    when Date;    return @rjd - x.rjd
+    end
+    raise TypeError, 'expected numeric or date'
+  end
+
+  def <=> (other)
+    case other
+    when Numeric; return @rjd <=> other
+    when Date;    return @rjd <=> other.rjd
+    end
+    raise TypeError, 'expected numeric or date'
+  end
+
+  def === (other)
+    case other
+    when Numeric; return jd == other
+    when Date;    return jd == other.jd
+    end
+    raise TypeError, 'expected numeric or date'
+  end
+
   def >> (n)
-    y = @year
-    m = @month-1
-    d = @day
+    y, m = type.clfloor(year * 12 + (mon - 1) + n, 12)
+    m,   = type.clfloor(m + 1, 1)
+    d = mday
+    d -= 1 until jd2 = type.exist3?(y, m, d, ns?)
+    self + (jd2 - jd)
+  end
 
-    m += n
-    y += m/12
-    m = m%12
-    m += 1
+  def << (n) self >> -n end
 
-    if y == 1752 && m == 9 && d >= 3 && d <= 13
-      d = 2
-    else
-      lasts = Date.daylist(y)
-      if d > lasts[m]
-	d = lasts[m]
-      end
+  def step(limit, step)
+    da = self
+    op = [:-,:<=,:>=][step<=>0]
+    while da.__send__(op, limit)
+      yield da
+      da += step
     end
-    Date.new(y,m,d)
+    self
   end
-  
-  private :_check_date
-end
 
-def Date.at(d)
-  if d.kind_of? Time
-    return Date.new(d.year, d.mon, d.mday)
-  end
-  if d.kind_of? Date
-    return Date.at(d.period)
-  end
-  mm = 1
-  yy = (d / 366.0).to_i
-  if yy != 0
-    dd = d - (Date.period!(yy, 1, 1) - 1)
-  else
-    dd = d
-    yy = 1
-  end
-  dl = Date.daylist(yy)
-  while dd > dl[mm]
-    if dd > dl[0]
-      dd -= dl[0]
-      yy += 1
-      dl = Date.daylist(yy)
-    else
-      dd -= dl[mm]
-      mm += 1
-    end
-  end
-  if yy == 1752 && mm == 9 && dd >= 3 && dd <= 19
-    dd += (14 - 3)              # 1752/09/03-19 -> 1752/09/14-30
-  end
-  
-  return Date.new(yy, mm, dd)
-end
+  def upto(max, &block) step(max, +1, &block) end
+  def downto(min, &block) step(min, -1, &block) end
 
-def Date.new3(year,mon=1,day=1)
-  Date.new(year,mon,day)
-end
+  def succ() self + 1 end
 
-def Date.today
-  Date.new(*Time.now.to_a[3,3].reverse!)
-end
+  alias_method :next, :succ
 
-## private class methods - do not call
-def Date.period!(y, m, d)
-  p = d
-  dl = Date.daylist(y)
-  for mm in 1..(m - 1)
-    p += dl[mm]
-  end
-  p += (y - 1) * 365 + ((y - 1) / 4.0).to_i
-  if y > 1752
-    p -= ((y - 1) / 100.0).to_i
-    p += ((y - 1) / 400.0).to_i
-    p += 2
-  elsif y == 1752 && m == 9 && d >= 14 && d <= 30
-    p -= (14 - 3)
-  end
-  return p
-end
+  def eql? (other) Date === other and self == other end
+  def hash() type.clfloor(@rjd)[0] end
 
-def Date.leapyear(yy)
-  return ((Date.jan1!(yy + 1) + 7 - Date.jan1!(yy)) % 7)
-end
+  def inspect() format('#<%s: %s,%s>', type, @rjd, @sg) end
+  def to_s() format('%.4d-%02d-%02d', year, mon, mday) end
 
-def Date.daylist(yy)
-  case (Date.leapyear(yy))
-  when 1 # non-leapyear
-    return [365, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-  when 2 # leapyear
-    return [366, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-  else   # 1752
-    return [355, 31, 29, 31, 30, 31, 30, 31, 31, 19, 31, 30, 31]
-  end
-end
+  def _dump(limit) Marshal.dump([@rjd, @sg], -1) end
+  def self._load(str) new0(*Marshal.load(str)) end
 
-def Date.jan1!(y)
-  d = 4 + y + (y + 3) / 4
-  if y > 1800
-    d -= (y - 1701) / 100
-    d += (y - 1601) / 400
-  end
-  if y > 1752
-    d += 3
-  end
-  return (d % 7)
 end
