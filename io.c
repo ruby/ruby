@@ -3851,6 +3851,7 @@ rb_io_initialize(argc, argv, io)
     else if (!ofp) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
 	flags = fcntl(fd, F_GETFL);
+	if (flags == -1) rb_sys_fail(0);
 #else
 	flags = O_RDONLY;
 #endif
