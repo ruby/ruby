@@ -16,7 +16,7 @@ module RPC
     if obj.is_a?(Module)
       obj.methods - Module.methods
     else
-      obj.methods - Kernel.instance_methods(true)
+      obj.methods - Object.instance_methods(true)
     end
   end
 end

@@ -30,9 +30,9 @@ class Import < Info
   def parse_attr(attr, value)
     case attr
     when NamespaceAttrName
-      @namespace = value
+      @namespace = value.source
     when SchemaLocationAttrName
-      @schemalocation = value
+      @schemalocation = value.source
     else
       nil
     end

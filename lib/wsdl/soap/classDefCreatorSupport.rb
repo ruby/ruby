@@ -59,6 +59,18 @@ __EOD__
     str
   end
 
+  def dq(ele)
+    ele.dump
+  end
+
+  def ndq(ele)
+    ele.nil? ? 'nil' : dq(ele)
+  end
+
+  def sym(ele)
+    ':' + ele
+  end
+
 private
 
   def dump_inout_type(param)
@@ -66,10 +78,14 @@ private
       message = param.find_message
       params = ""
       message.parts.each do |part|
-        next unless part.type
         name = safevarname(part.name)
-        typename = safeconstname(part.type.name)
-        params << add_at("#   #{name}", "#{typename} - #{part.type}\n", 20)
+        if part.type
+          typename = safeconstname(part.type.name)
+          params << add_at("#   #{name}", "#{typename} - #{part.type}\n", 20)
+        elsif part.element
+          typename = safeconstname(part.element.name)
+          params << add_at("#   #{name}", "#{typename} - #{part.element}\n", 20)
+        end
       end
       unless params.empty?
         return params

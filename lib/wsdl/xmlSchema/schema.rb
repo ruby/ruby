@@ -32,7 +32,7 @@ class Schema < Info
     @elements = XSD::NamedElements.new
     @attributes = XSD::NamedElements.new
     @imports = []
-    @elementformdefault = nil
+    @elementformdefault = "qualified"
   end
 
   def parse_element(element)
@@ -64,11 +64,11 @@ class Schema < Info
   def parse_attr(attr, value)
     case attr
     when TargetNamespaceAttrName
-      @targetnamespace = value
+      @targetnamespace = value.source
     when AttributeFormDefaultAttrName
-      @attributeformdefault = value
+      @attributeformdefault = value.source
     when ElementFormDefaultAttrName
-      @elementformdefault = value
+      @elementformdefault = value.source
     else
       nil
     end

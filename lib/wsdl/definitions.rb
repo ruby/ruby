@@ -216,9 +216,9 @@ class Definitions < Info
   def parse_attr(attr, value)
     case attr
     when NameAttrName
-      @name = XSD::QName.new(@targetnamespace, value)
+      @name = XSD::QName.new(targetnamespace, value.source)
     when TargetNamespaceAttrName
-      self.targetnamespace = value
+      self.targetnamespace = value.source
     else
       nil
     end

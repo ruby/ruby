@@ -28,13 +28,18 @@ class Element < Info
     @type = type
     @local_complextype = nil
     @constraint = nil
-    @maxoccurs = 1
-    @minoccurs = 1
+    @maxoccurs = '1'
+    @minoccurs = '1'
     @nillable = nil
   end
 
   def targetnamespace
     parent.targetnamespace
+  end
+
+  def elementform
+    # ToDo: must be overwritten.
+    parent.elementformdefault
   end
 
   def parse_element(element)
@@ -54,45 +59,27 @@ class Element < Info
   def parse_attr(attr, value)
     case attr
     when NameAttrName
-      #@name = XSD::QName.new(nil, value)
-      @name = XSD::QName.new(targetnamespace, value)
+      @name = XSD::QName.new(targetnamespace, value.source)
     when TypeAttrName
-      @type = if value.is_a?(XSD::QName)
-	  value
-	else
-	  XSD::QName.new(XSD::Namespace, value)
-	end
+      @type = value
     when MaxOccursAttrName
-      case parent
-      when All
-	if value != '1'
+      if parent.is_a?(All)
+	if value.source != '1'
 	  raise Parser::AttrConstraintError.new(
 	    "Cannot parse #{ value } for #{ attr }.")
 	end
-	@maxoccurs = value
-      when Sequence
-	@maxoccurs = value
-      else
-	raise NotImplementedError.new
       end
-      @maxoccurs
+      @maxoccurs = value.source
     when MinOccursAttrName
-      case parent
-      when All
-	if ['0', '1'].include?(value)
-	  @minoccurs = value
-	else
+      if parent.is_a?(All)
+	unless ['0', '1'].include?(value.source)
 	  raise Parser::AttrConstraintError.new(
 	    "Cannot parse #{ value } for #{ attr }.")
 	end
-      when Sequence
-	@minoccurs = value
-      else
-	raise NotImplementedError.new
       end
-      @minoccurs
+      @minoccurs = value.source
     when NillableAttrName
-      @nillable = (value == 'true')
+      @nillable = (value.source == 'true')
     else
       nil
     end

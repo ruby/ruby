@@ -33,8 +33,11 @@ class Attribute < Info
     @type = nil
     @default = nil
     @fixed = nil
-
     @arytype = nil
+  end
+
+  def targetnamespace
+    parent.targetnamespace
   end
 
   def parse_element(element)
@@ -46,23 +49,23 @@ class Attribute < Info
     when RefAttrName
       @ref = value
     when UseAttrName
-      @use = value
+      @use = value.source
     when FormAttrName
-      @form = value
+      @form = value.source
     when NameAttrName
-      @name = value
+      @name = XSD::QName.new(targetnamespace, value.source)
     when TypeAttrName
       @type = value
     when DefaultAttrName
-      @default = value
+      @default = value.source
     when FixedAttrName
-      @fixed = value
+      @fixed = value.source
     when ArrayTypeAttrName
-      @arytype = if value.is_a?(XSD::QName)
-	  value
-	else
-	  XSD::QName.new(XSD::Namespace, value)
-	end
+      @arytype = if value.namespace.nil?
+          XSD::QName.new(XSD::Namespace, value.source)
+        else
+          value
+        end
     else
       nil
     end

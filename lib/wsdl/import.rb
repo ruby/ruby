@@ -39,13 +39,13 @@ class Import < Info
   def parse_attr(attr, value)
     case attr
     when NamespaceAttrName
-      @namespace = value
+      @namespace = value.source
       if @content
 	@content.targetnamespace = @namespace
       end
       @namespace
     when LocationAttrName
-      @location = value
+      @location = value.source
       @content = import(@location)
       if @content.is_a?(Definitions)
 	@content.root = root

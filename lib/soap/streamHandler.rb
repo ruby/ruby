@@ -8,6 +8,12 @@
 
 require 'soap/soap'
 require 'soap/property'
+begin
+  require 'stringio'
+  require 'zlib'
+rescue LoadError
+  STDERR.puts "Loading stringio or zlib failed.  No gzipped response support." if $DEBUG
+end
 
 
 module SOAP
@@ -44,12 +50,6 @@ class StreamHandler
     end
   end
 
-  attr_accessor :endpoint_url
-
-  def initialize(endpoint_url)
-    @endpoint_url = endpoint_url
-  end
-
   def self.parse_media_type(str)
     if /^#{ MediaType }(?:\s*;\s*charset=([^"]+|"[^"]+"))?$/i !~ str
       return nil
@@ -65,7 +65,7 @@ class StreamHandler
 end
 
 
-class HTTPPostStreamHandler < StreamHandler
+class HTTPStreamHandler < StreamHandler
   include SOAP
 
 public
@@ -75,31 +75,40 @@ public
   
   NofRetry = 10       	# [times]
 
-  def initialize(endpoint_url, options)
-    super(endpoint_url)
+  def initialize(options)
+    super()
     @client = Client.new(nil, "SOAP4R/#{ Version }")
     @wiredump_file_base = nil
-    @charset = @wiredump_dev = nil
+    @charset = @wiredump_dev = @nil
     @options = options
     set_options
     @client.debug_dev = @wiredump_dev
     @cookie_store = nil
+    @accept_encoding_gzip = false
   end
 
   def test_loopback_response
     @client.test_loopback_response
   end
 
+  def accept_encoding_gzip=(allow)
+    @accept_encoding_gzip = allow
+  end
+
   def inspect
-    "#<#{self.class}:#{endpoint_url}>"
+    "#<#{self.class}>"
   end
 
-  def send(conn_data, soapaction = nil, charset = @charset)
-    send_post(conn_data, soapaction, charset)
+  def send(endpoint_url, conn_data, soapaction = nil, charset = @charset)
+    send_post(endpoint_url, conn_data, soapaction, charset)
   end
 
-  def reset
-    @client.reset(@endpoint_url)
+  def reset(endpoint_url = nil)
+    if endpoint_url.nil?
+      @client.reset_all
+    else
+      @client.reset(endpoint_url)
+    end
     @client.save_cookie_store if @cookie_store
   end
 
@@ -142,6 +151,15 @@ private
     set_basic_auth(basic_auth)
     basic_auth.add_hook do |key, value|
       set_basic_auth(basic_auth)
+    end
+    @options.add_hook("connect_timeout") do |key, value|
+      @client.connect_timeout = value
+    end
+    @options.add_hook("send_timeout") do |key, value|
+      @client.send_timeout = value
+    end
+    @options.add_hook("receive_timeout") do |key, value|
+      @client.receive_timeout = value
     end
     @options.lock(true)
     ssl_config.unlock
@@ -213,7 +231,7 @@ private
     OpenSSL::PKey::RSA.new(File.open(filename) { |f| f.read })
   end
 
-  def send_post(conn_data, soapaction, charset)
+  def send_post(endpoint_url, conn_data, soapaction, charset)
     conn_data.send_contenttype ||= StreamHandler.create_media_type(charset)
 
     if @wiredump_file_base
@@ -226,26 +244,23 @@ private
     extra = {}
     extra['Content-Type'] = conn_data.send_contenttype
     extra['SOAPAction'] = "\"#{ soapaction }\""
+    extra['Accept-Encoding'] = 'gzip' if send_accept_encoding_gzip?
     send_string = conn_data.send_string
-
     @wiredump_dev << "Wire dump:\n\n" if @wiredump_dev
     begin
-      res = @client.post(@endpoint_url, send_string, extra)
+      res = @client.post(endpoint_url, send_string, extra)
     rescue
-      @client.reset(@endpoint_url)
+      @client.reset(endpoint_url)
       raise
     end
     @wiredump_dev << "\n\n" if @wiredump_dev
-
     receive_string = res.content
-
     if @wiredump_file_base
       filename = @wiredump_file_base + '_response.xml'
       f = File.open(filename, "w")
       f << receive_string
       f.close
     end
-
     case res.status
     when 405
       raise PostUnavailableError.new("#{ res.status }: #{ res.reason }")
@@ -254,13 +269,30 @@ private
     else
       raise HTTPStreamError.new("#{ res.status }: #{ res.reason }")
     end
-
+    if res.respond_to?(:header) and !res.header['content-encoding'].empty? and
+        res.header['content-encoding'][0].downcase == 'gzip'
+      receive_string = decode_gzip(receive_string)
+    end
     conn_data.receive_string = receive_string
     conn_data.receive_contenttype = res.contenttype
     conn_data
   end
 
-  CRLF = "\r\n"
+  def send_accept_encoding_gzip?
+    @accept_encoding_gzip and defined?(::Zlib)
+  end
+
+  def decode_gzip(instring)
+    unless send_accept_encoding_gzip?
+      raise HTTPStreamError.new("Gzipped response content.")
+    end
+    begin
+      gz = Zlib::GzipReader.new(StringIO.new(instring))
+      gz.read
+    ensure
+      gz.close
+    end
+  end
 end
 
 

@@ -95,11 +95,11 @@ class Operation < Info
   def parse_attr(attr, value)
     case attr
     when NameAttrName
-      @name = XSD::QName.new(targetnamespace, value)
+      @name = XSD::QName.new(targetnamespace, value.source)
     when TypeAttrName
       @type = value
     when ParameterOrderAttrName
-      @parameter_order = value.split(/\s+/)
+      @parameter_order = value.source.split(/\s+/)
     else
       nil
     end

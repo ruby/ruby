@@ -68,10 +68,15 @@ Methods = [
     end
     c.def_privatemethod("init_methods") do
       <<-EOD
-        Methods.each do |name_as, name, params, soapaction, namespace|
+        Methods.each do |name_as, name, params, soapaction, namespace, style|
           qname = ::XSD::QName.new(namespace, name_as)
-          @proxy.add_method(qname, soapaction, name, params)
-          add_rpc_method_interface(name, params)
+          if style == :document
+            @proxy.add_document_method(qname, soapaction, name, params)
+            add_document_method_interface(name, name_as)
+          else
+            @proxy.add_rpc_method(qname, soapaction, name, params)
+            add_rpc_method_interface(name, params)
+          end
         end
       EOD
     end

@@ -57,9 +57,13 @@ Methods = [
       <<-EOD
         super(*arg)
         servant = #{class_name}.new
-        #{class_name}::Methods.each do |name_as, name, params, soapaction, ns|
-          qname = XSD::QName.new(ns, name_as)
-          @soaplet.app_scope_router.add_method(servant, qname, soapaction, name, params)
+        #{class_name}::Methods.each do |name_as, name, param_def, soapaction, namespace, style|
+          qname = XSD::QName.new(namespace, name_as)
+          if style == :document
+            @soaplet.app_scope_router.add_document_method(servant, qname, soapaction, name, param_def)
+          else
+            @soaplet.app_scope_router.add_rpc_method(servant, qname, soapaction, name, param_def)
+          end
         end
         self.mapping_registry = #{class_name}::MappingRegistry
       EOD
@@ -68,7 +72,11 @@ Methods = [
 
       if $0 == __FILE__
         # Change listen port.
-        #{class_name}App.new('app', nil, '0.0.0.0', 10080).start
+        server = #{class_name}App.new('app', nil, '0.0.0.0', 10080)
+        trap(:INT) do
+          server.shutdown
+        end
+        server.start
       end
     EOD
   end

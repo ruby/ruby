@@ -93,9 +93,20 @@ public
   # $1 and $2 are necessary.
   ParseRegexp = Regexp.new('^([^:]+)(?::(.+))?$')
 
-  def parse(elem)
-    ns = nil
-    name = nil
+  def parse(str, local = false)
+    if ParseRegexp =~ str
+      if (name = $2) and (ns = @tag2ns[$1])
+        return XSD::QName.new(ns, name)
+      end
+    end
+    XSD::QName.new(local ? nil : @default_namespace, str)
+  end
+
+  # For local attribute key parsing
+  #   <foo xmlns="urn:" xmlns:n1="urn:" bar="1" n1:baz="2" />
+  #     =>
+  #   {}bar, {urn:}baz
+  def parse_local(elem)
     ParseRegexp =~ elem
     if $2
       ns = @tag2ns[$1]
@@ -104,10 +115,9 @@ public
 	raise FormatError.new('Unknown namespace qualifier: ' << $1)
       end
     elsif $1
-      ns = @default_namespace
+      ns = nil
       name = $1
-    end
-    if !name
+    else
       raise FormatError.new("Illegal element format: #{ elem }")
     end
     XSD::QName.new(ns, name)

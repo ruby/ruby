@@ -50,13 +50,14 @@ class Operation < Info
   def parse_attr(attr, value)
     case attr
     when StyleAttrName
-      if ["document", "rpc"].include?(value)
-	@style = value.intern
+      if ["document", "rpc"].include?(value.source)
+	@style = value.source.intern
       else
-	raise AttributeConstraintError.new("Unexpected value #{ value }.")
+	raise Parser::AttributeConstraintError.new(
+          "Unexpected value #{ value }.")
       end
     when SOAPActionAttrName
-      @soapaction = value
+      @soapaction = value.source
     else
       nil
     end

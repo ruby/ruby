@@ -1,9 +1,12 @@
 # SOAP4R - Ruby type mapping utility.
-# Copyright (C) 2000, 2001, 2003 NAKAMURA Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000, 2001, 2003, 2004  NAKAMURA Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
 # either the dual license version in 2003, or any later version.
+
+
+require 'xsd/codegen/gensupport'
 
 
 module SOAP
@@ -101,8 +104,10 @@ module Mapping
   def self._obj2soap(obj, registry, type = nil)
     if referent = Thread.current[:SOAPMarshalDataKey][obj.__id__]
       SOAPReference.new(referent)
+    elsif registry
+      registry.obj2soap(obj, type)
     else
-      registry.obj2soap(obj.class, obj, type)
+      raise MappingError.new("No mapping registry given.")
     end
   end
 
@@ -116,9 +121,41 @@ module Mapping
         return _soap2obj(target, registry)
       end
     end
-    return registry.soap2obj(node.class, node)
+    return registry.soap2obj(node)
   end
 
+  if Object.respond_to?(:allocate)
+    # ruby/1.7 or later.
+    def self.create_empty_object(klass)
+      klass.allocate
+    end
+  else
+    MARSHAL_TAG = {
+      String => ['"', 1],
+      Regexp => ['/', 2],
+      Array => ['[', 1],
+      Hash => ['{', 1]
+    }
+    def self.create_empty_object(klass)
+      if klass <= Struct
+	name = klass.name
+	return ::Marshal.load(sprintf("\004\006S:%c%s\000", name.length + 5, name))
+      end
+      if MARSHAL_TAG.has_key?(klass)
+	tag, terminate = MARSHAL_TAG[klass]
+	return ::Marshal.load(sprintf("\004\006%s%s", tag, "\000" * terminate))
+      end
+      MARSHAL_TAG.each do |k, v|
+	if klass < k
+	  name = klass.name
+	  tag, terminate = v
+	  return ::Marshal.load(sprintf("\004\006C:%c%s%s%s", name.length + 5, name, tag, "\000" * terminate))
+	end
+      end
+      name = klass.name
+      ::Marshal.load(sprintf("\004\006o:%c%s\000", name.length + 5, name))
+    end
+  end
   def self.set_instance_vars(obj, values)
     values.each do |name, value|
       setter = name + "="
@@ -197,6 +234,19 @@ module Mapping
       class2qname(obj.class)
     else
       XSD::QName.new(namespace, name)
+    end
+  end
+
+  def self.find_attribute(obj, attr_name)
+    if obj.is_a?(::Hash)
+      obj[attr_name] || obj[attr_name.intern]
+    else
+      name = ::XSD::CodeGen::GenSupport.safevarname(attr_name)
+      if obj.respond_to?(name)
+        obj.__send__(name)
+      else
+        obj.instance_eval("@#{name}")
+      end
     end
   end
 

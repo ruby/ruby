@@ -28,7 +28,7 @@ class Address < Info
   def parse_attr(attr, value)
     case attr
     when LocationAttrName
-      @location = value
+      @location = value.source
     else
       nil
     end

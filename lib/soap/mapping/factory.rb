@@ -27,39 +27,6 @@ class Factory
     # return convert_succeeded_or_not, obj
   end
 
-  if Object.respond_to?(:allocate)
-    # ruby/1.7 or later.
-    def create_empty_object(klass)
-      klass.allocate
-    end
-  else
-    MARSHAL_TAG = {
-      String => ['"', 1],
-      Regexp => ['/', 2],
-      Array => ['[', 1],
-      Hash => ['{', 1]
-    }
-    def create_empty_object(klass)
-      if klass <= Struct
-	name = klass.name
-	return ::Marshal.load(sprintf("\004\006S:%c%s\000", name.length + 5, name))
-      end
-      if MARSHAL_TAG.has_key?(klass)
-	tag, terminate = MARSHAL_TAG[klass]
-	return ::Marshal.load(sprintf("\004\006%s%s", tag, "\000" * terminate))
-      end
-      MARSHAL_TAG.each do |k, v|
-	if klass < k
-	  name = klass.name
-	  tag, terminate = v
-	  return ::Marshal.load(sprintf("\004\006C:%c%s%s%s", name.length + 5, name, tag, "\000" * terminate))
-	end
-      end
-      name = klass.name
-      ::Marshal.load(sprintf("\004\006o:%c%s\000", name.length + 5, name))
-    end
-  end
-
   def setiv2obj(obj, node, map)
     return if node.nil?
     if obj.is_a?(Array)
@@ -129,7 +96,7 @@ class StringFactory_ < Factory
   end
 
   def soap2obj(obj_class, node, info, map)
-    obj = create_empty_object(obj_class)
+    obj = Mapping.create_empty_object(obj_class)
     decoded = XSD::Charset.encoding_conv(node.data, XSD::Charset.encoding, $KCODE)
     obj.replace(decoded)
     mark_unmarshalled_obj(node, obj)
@@ -253,16 +220,16 @@ class ArrayFactory_ < Factory
     else
       arytype = XSD::AnyTypeName
     end
-    param = SOAPArray.new(ValueArrayName, 1, arytype)
-    mark_marshalled_obj(obj, param)
-    obj.each do |var|
-      param.add(Mapping._obj2soap(var, map))
+    soap_obj = SOAPArray.new(ValueArrayName, 1, arytype)
+    mark_marshalled_obj(obj, soap_obj)
+    obj.each do |item|
+      soap_obj.add(Mapping._obj2soap(item, map))
     end
-    param
+    soap_obj
   end
 
   def soap2obj(obj_class, node, info, map)
-    obj = create_empty_object(obj_class)
+    obj = Mapping.create_empty_object(obj_class)
     mark_unmarshalled_obj(node, obj)
     node.soap2array(obj) do |elem|
       elem ? Mapping._soap2obj(elem, map) : nil
@@ -282,12 +249,12 @@ class TypedArrayFactory_ < Factory
       return nil
     end
     arytype = info[:type] || info[0]
-    param = SOAPArray.new(ValueArrayName, 1, arytype)
-    mark_marshalled_obj(obj, param)
+    soap_obj = SOAPArray.new(ValueArrayName, 1, arytype)
+    mark_marshalled_obj(obj, soap_obj)
     obj.each do |var|
-      param.add(Mapping._obj2soap(var, map))
+      soap_obj.add(Mapping._obj2soap(var, map))
     end
-    param
+    soap_obj
   end
 
   def soap2obj(obj_class, node, info, map)
@@ -298,7 +265,7 @@ class TypedArrayFactory_ < Factory
     unless node.arytype == arytype
       return false
     end
-    obj = create_empty_object(obj_class)
+    obj = Mapping.create_empty_object(obj_class)
     mark_unmarshalled_obj(node, obj)
     node.soap2array(obj) do |elem|
       elem ? Mapping._soap2obj(elem, map) : nil
@@ -310,14 +277,14 @@ end
 class TypedStructFactory_ < Factory
   def obj2soap(soap_class, obj, info, map)
     type = info[:type] || info[0]
-    param = soap_class.new(type)
-    mark_marshalled_obj(obj, param)
+    soap_obj = soap_class.new(type)
+    mark_marshalled_obj(obj, soap_obj)
     if obj.class <= SOAP::Marshallable
-      setiv2soap(param, obj, map)
+      setiv2soap(soap_obj, obj, map)
     else
-      setiv2soap(param, obj, map)
+      setiv2soap(soap_obj, obj, map)
     end
-    param
+    soap_obj
   end
 
   def soap2obj(obj_class, node, info, map)
@@ -325,7 +292,7 @@ class TypedStructFactory_ < Factory
     unless node.type == type
       return false
     end
-    obj = create_empty_object(obj_class)
+    obj = Mapping.create_empty_object(obj_class)
     mark_unmarshalled_obj(node, obj)
     setiv2obj(obj, node, map)
     return true, obj
@@ -347,16 +314,16 @@ class HashFactory_ < Factory
 	(obj.respond_to?(:default_proc) and obj.default_proc)
       return nil
     end
-    param = SOAPStruct.new(MapQName)
-    mark_marshalled_obj(obj, param)
+    soap_obj = SOAPStruct.new(MapQName)
+    mark_marshalled_obj(obj, soap_obj)
     obj.each do |key, value|
       elem = SOAPStruct.new
       elem.add("key", Mapping._obj2soap(key, map))
       elem.add("value", Mapping._obj2soap(value, map))
       # ApacheAxis allows only 'item' here.
-      param.add("item", elem)
+      soap_obj.add("item", elem)
     end
-    param
+    soap_obj
   end
 
   def soap2obj(obj_class, node, info, map)
@@ -366,7 +333,7 @@ class HashFactory_ < Factory
     if node.class == SOAPStruct and node.key?('default')
       return false
     end
-    obj = create_empty_object(obj_class)
+    obj = Mapping.create_empty_object(obj_class)
     mark_unmarshalled_obj(node, obj)
     if node.class == SOAPStruct
       node.each do |key, value|

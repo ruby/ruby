@@ -55,8 +55,13 @@ Methods = [
       <<-EOD
         super(*arg)
         servant = #{class_name}.new
-        #{class_name}::Methods.each do |name_as, name, params, soapaction, ns|
-          add_method_with_namespace_as(ns, servant, name, name_as, params, soapaction)
+        #{class_name}::Methods.each do |name_as, name, param_def, soapaction, namespace, style|
+          qname = XSD::QName.new(namespace, name_as)
+          if style == :document
+            @router.add_document_method(servant, qname, soapaction, name, param_def)
+          else
+            @router.add_rpc_method(servant, qname, soapaction, name, param_def)
+          end
         end
         self.mapping_registry = #{class_name}::MappingRegistry
         self.level = Logger::Severity::ERROR

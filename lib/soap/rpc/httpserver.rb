@@ -55,6 +55,8 @@ class HTTPServer < Logger::Application
     @soaplet.app_scope_router.mapping_registry = mapping_registry
   end
 
+  # servant entry interface
+
   def add_rpc_request_servant(factory, namespace = @default_namespace,
       mapping_registry = nil)
     @soaplet.add_rpc_request_servant(factory, namespace, mapping_registry)
@@ -72,23 +74,52 @@ class HTTPServer < Logger::Application
     @soaplet.add_rpc_headerhandler(obj)
   end
 
-  def add_method(obj, name, *param)
-    add_method_as(obj, name, name, *param)
+  # method entry interface
+
+  def add_rpc_method(obj, name, *param)
+    add_rpc_method_as(obj, name, name, *param)
+  end
+  alias add_method add_rpc_method
+
+  def add_document_method(obj, name, req_qname, res_qname)
+    opt = {}
+    opt[:request_style] = opt[:response_style] = :document
+    opt[:request_use] = opt[:response_use] = :literal
+    param_def = [
+      ['input', req_qname.name, [nil, req_qname.namespace, req_qname.name]],
+      ['output', req_qname.name, [nil, res_qname.namespace, res_qname.name]]
+    ]
+    @soaplet.app_scope_router.add_operation(req_qname, nil, obj, name,
+      param_def, opt)
   end
 
-  def add_method_as(obj, name, name_as, *param)
+  def add_rpc_method_as(obj, name, name_as, *param)
     qname = XSD::QName.new(@default_namespace, name_as)
     soapaction = nil
-    method = obj.method(name)
-    param_def = if param.size == 1 and param[0].is_a?(Array)
-        param[0]
-      elsif param.empty?
-	::SOAP::RPC::SOAPMethod.create_param_def(
-	  (1..method.arity.abs).collect { |i| "p#{ i }" })
-      else
-        SOAP::RPC::SOAPMethod.create_param_def(param)
-      end
-    @soaplet.app_scope_router.add_method(obj, qname, soapaction, name, param_def)
+    param_def = create_param_def(obj, name, param)
+    add_operation(qname, soapaction, obj, name, param_def)
+  end
+  alias add_method_as add_rpc_method_as
+
+  def add_operation(qname, soapaction, obj, name, param_def, opt = {})
+    opt[:request_style] ||= :rpc
+    opt[:response_style] ||= :rpc
+    opt[:request_use] ||= :encoded
+    opt[:response_use] ||= :encoded
+    @soaplet.app_scope_router.add_operation(qname, soapaction, obj, name,
+      param_def, opt)
+  end
+
+  def create_param_def(obj, name, param = nil)
+    if param.nil? or param.empty?
+      method = obj.method(name)
+      ::SOAP::RPC::SOAPMethod.create_param_def(
+        (1..method.arity.abs).collect { |i| "p#{i}" })
+    elsif param.size == 1 and param[0].is_a?(Array)
+      param[0]
+    else
+      ::SOAP::RPC::SOAPMethod.create_param_def(param)
+    end
   end
 
 private

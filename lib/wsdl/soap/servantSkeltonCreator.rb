@@ -45,14 +45,16 @@ private
     c = ::XSD::CodeGen::ClassDef.new(class_name)
     operations = @definitions.porttype(name).operations
     operations.each do |operation|
-      name = operation.name.name
+      name = safemethodname(operation.name.name)
       input = operation.input
-      m = ::XSD::CodeGen::MethodDef.new(name,
-        input.find_message.parts.collect { |part| safevarname(part.name) }) do
-        <<-EOD
-          raise NotImplementedError.new
-        EOD
-      end
+      params = input.find_message.parts.collect { |part|
+        safevarname(part.name)
+      }
+      m = ::XSD::CodeGen::MethodDef.new(name, params) do <<-EOD
+            p [#{params.join(", ")}]
+            raise NotImplementedError.new
+          EOD
+        end
       m.comment = dump_method_signature(operation)
       c.add_method(m)
     end

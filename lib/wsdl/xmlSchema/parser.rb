@@ -22,7 +22,7 @@ class Parser
   include XSD
 
   class ParseError < Error; end
-  class FormatDecodeError < Error; end
+  class FormatDecodeError < ParseError; end
   class UnknownElementError < FormatDecodeError; end
   class UnknownAttributeError < FormatDecodeError; end
   class UnexpectedElementError < FormatDecodeError; end
@@ -114,34 +114,21 @@ private
     else
       o = parent.parse_element(element)
       unless o
-	raise UnknownElementError.new("Unknown element #{ element }.")
+	STDERR.puts("Unknown element #{ element }.")
+	o = Documentation.new	# which accepts any element.
       end
       # node could be a pseudo element.  pseudo element has its own parent.
       o.parent = parent if o.parent.nil?
     end
     attrs.each do |key, value|
-      attr = unless /:/ =~ key
-	  XSD::QName.new(nil, key)
-	else
-	  ns.parse(key)
-	end
-      value_ele = if /:/ !~ value
-	  value
-	elsif /^http:\/\// =~ value	# ToDo: ugly.
-	  value
-	else
-	  begin
-	    ns.parse(value)
-	  rescue
-	    value
-	  end
-	end
-      if attr == IdAttrName
+      attr_ele = ns.parse(key, true)
+      value_ele = ns.parse(value, true)
+      value_ele.source = value  # for recovery; value may not be a QName
+      if attr_ele == IdAttrName
 	o.id = value_ele
       else
-	unless o.parse_attr(attr, value_ele)
-	  STDERR.puts("Unknown attr #{ attr }.")
-	  # raise UnknownAttributeError.new("Unknown attr #{ attr }.")
+	unless o.parse_attr(attr_ele, value_ele)
+	  STDERR.puts("Unknown attr #{ attr_ele }.")
    	end
       end
     end

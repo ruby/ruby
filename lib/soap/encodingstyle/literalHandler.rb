@@ -159,7 +159,7 @@ class LiteralHandler < Handler
   def decode_attrs(ns, attrs)
     extraattr = {}
     attrs.each do |key, value|
-      qname = ns.parse(key)
+      qname = ns.parse_local(key)
       extraattr[qname] = value
     end
     extraattr

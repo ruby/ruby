@@ -1,3 +1,32 @@
+Mon Dec 20 22:40:31 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* added files:
+	  * lib/soap/mapping/wsdl*.rb
+	  * lib/wsdl/soap/element.rb
+	  * lib/wsdl/xmlSchema/simpleContent.rb
+
+	* modified files:
+	  * lib/soap/*
+	  * lib/wsdl/*
+	  * lib/xsd/*
+	  * test/soap/*
+	  * test/wsdl/*
+	  * test/xsd/*
+
+	* summary
+	  * imported from the soap4r repository.  Version: 1.5.3-ruby1.8.2
+
+	  * added several XSD basetype support: nonPositiveInteger,
+	    negativeInteger, nonNegativeInteger, unsignedLong, unsignedInt,
+	    unsignedShort, unsignedByte, positiveInteger
+
+	  * HTTP client connection/send/receive timeout support.
+
+	  * HTTP client/server gzipped content encoding support.
+
+	  * improved WSDL schema definition support; still is far from
+	    complete, but is making step by step improovement.
+
 Mon Dec 20 14:45:19 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/net/https.rb: delete descriptions about key_file and cert_file.
@@ -3616,7 +3645,7 @@ Mon Jul 12 21:20:51 2004  Dave Thomas  <dave@pragprog.com>
 
 Sat Jul 10 09:30:24 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
-	* test/soap/marshal/test_struct.rb: use qualified build-tin class name
+	* test/soap/marshal/test_struct.rb: use qualified built-in class name
 	  (::Struct) to avoid name crash.
 
 Sat Jul 10 04:21:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>

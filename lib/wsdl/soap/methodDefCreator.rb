@@ -45,9 +45,15 @@ private
   def dump_method(operation, binding)
     name = safemethodname(operation.name.name)
     name_as = operation.name.name
-    params = collect_parameter(operation)
-    soapaction = binding.soapoperation.soapaction
-    namespace = binding.input.soapbody.namespace
+    stylestr = binding.soapoperation.operation_style.id2name
+    if binding.soapoperation.operation_style == :rpc
+      soapaction = binding.soapoperation.soapaction
+      namespace = binding.input.soapbody.namespace
+      params = collect_rpcparameter(operation)
+    else
+      soapaction = namespace = nil
+      params = collect_documentparameter(operation)
+    end
     paramstr = param2str(params)
     if paramstr.empty?
       paramstr = '[]'
@@ -57,36 +63,45 @@ private
     return <<__EOD__
 [#{ dq(name_as) }, #{ dq(name) },
   #{ paramstr },
-  #{ soapaction ? dq(soapaction) : "nil" }, #{ dq(namespace) }
+  #{ ndq(soapaction) }, #{ ndq(namespace) }, #{ sym(stylestr) }
 ]
 __EOD__
   end
 
-  def collect_parameter(operation)
+  def collect_rpcparameter(operation)
     result = operation.inputparts.collect { |part|
       collect_type(part.type)
-      param_set('in', definedtype(part), part.name)
+      param_set('in', rpcdefinedtype(part), part.name)
     }
     outparts = operation.outputparts
     if outparts.size > 0
       retval = outparts[0]
       collect_type(retval.type)
-      result << param_set('retval', definedtype(retval), retval.name)
+      result << param_set('retval', rpcdefinedtype(retval), retval.name)
       cdr(outparts).each { |part|
 	collect_type(part.type)
-	result << param_set('out', definedtype(part), part.name)
+	result << param_set('out', rpcdefinedtype(part), part.name)
       }
     end
     result
   end
 
-  def definedtype(part)
+  def collect_documentparameter(operation)
+    input = operation.inputparts[0]
+    output = operation.outputparts[0]
+    [
+      param_set('input', documentdefinedtype(input), input.name),
+      param_set('output', documentdefinedtype(output), output.name)
+    ]
+  end
+
+  def rpcdefinedtype(part)
     if mapped = basetype_mapped_class(part.type)
       ['::' + mapped.name]
-    elsif definedelement = @elements[part.element]
-      raise RuntimeError.new("Part: #{part.name} should be typed for RPC service for now.")
     elsif definedtype = @simpletypes[part.type]
       ['::' + basetype_mapped_class(definedtype.base).name]
+    elsif definedtype = @elements[part.element]
+      ['::SOAP::SOAPStruct', part.element.namespace, part.element.name]
     elsif definedtype = @complextypes[part.type]
       case definedtype.compoundtype
       when :TYPE_STRUCT
@@ -99,6 +114,18 @@ __EOD__
       else
 	raise NotImplementedError.new("Must not reach here.")
       end
+    else
+      raise RuntimeError.new("Part: #{part.name} cannot be resolved.")
+    end
+  end
+
+  def documentdefinedtype(part)
+    if definedtype = @simpletypes[part.type]
+      ['::' + basetype_mapped_class(definedtype.base).name, nil, part.name]
+    elsif definedtype = @elements[part.element]
+      ['::SOAP::SOAPElement', part.element.namespace, part.element.name]
+    elsif definedtype = @complextypes[part.type]
+      ['::SOAP::SOAPElement', part.type.namespace, part.type.name]
     else
       raise RuntimeError.new("Part: #{part.name} cannot be resolved.")
     end
@@ -128,12 +155,8 @@ __EOD__
     if type.size == 1
       "[#{ type[0] }]" 
     else
-      "[#{ type[0] }, #{ dq(type[1]) }, #{ dq(type[2]) }]" 
+      "[#{ type[0] }, #{ ndq(type[1]) }, #{ dq(type[2]) }]" 
     end
-  end
-
-  def dq(ele)
-    "\"" << ele << "\""
   end
 
   def cdr(ary)

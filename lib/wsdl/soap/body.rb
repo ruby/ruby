@@ -34,13 +34,13 @@ class Body < Info
   def parse_attr(attr, value)
     case attr
     when PartsAttrName
-      @parts = value
+      @parts = value.source
     when UseAttrName
-      @use = value
+      @use = value.source
     when EncodingStyleAttrName
-      @encodingstyle = value
+      @encodingstyle = value.source
     when NamespaceAttrName
-      @namespace = value
+      @namespace = value.source
     else
       nil
     end

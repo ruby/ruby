@@ -1,4 +1,4 @@
-# WSDL4R - XMLSchema enumeration definition for WSDL.
+# WSDL4R - XMLSchema element definition for WSDL.
 # Copyright (C) 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
@@ -6,27 +6,25 @@
 # either the dual license version in 2003, or any later version.
 
 
-require 'wsdl/info'
+require 'wsdl/xmlSchema/element'
 
 
 module WSDL
 module XMLSchema
 
 
-class Enumeration < Info
-  def initialize
-    super
+class Element < Info
+  def map_as_array?
+    maxoccurs != '1'
   end
 
-  def parse_element(element)
-    nil
+  def attributes
+    @local_complextype.attributes
   end
 
-  def parse_attr(attr, value)
-    case attr
-    when ValueAttrName
-      parent.enumeration << value.source
-      value.source
+  def each_element
+    @local_complextype.each_element do |element|
+      yield(element)
     end
   end
 end

@@ -319,6 +319,16 @@ class SOAPInteger < XSD::XSDInteger
   extend SOAPModuleUtils
 end
 
+class SOAPNonPositiveInteger < XSD::XSDNonPositiveInteger
+  include SOAPBasetype
+  extend SOAPModuleUtils
+end
+
+class SOAPNegativeInteger < XSD::XSDNegativeInteger
+  include SOAPBasetype
+  extend SOAPModuleUtils
+end
+
 class SOAPLong < XSD::XSDLong
   include SOAPBasetype
   extend SOAPModuleUtils
@@ -330,6 +340,41 @@ class SOAPInt < XSD::XSDInt
 end
 
 class SOAPShort < XSD::XSDShort
+  include SOAPBasetype
+  extend SOAPModuleUtils
+end
+
+class SOAPByte < XSD::XSDByte
+  include SOAPBasetype
+  extend SOAPModuleUtils
+end
+
+class SOAPNonNegativeInteger < XSD::XSDNonNegativeInteger
+  include SOAPBasetype
+  extend SOAPModuleUtils
+end
+
+class SOAPUnsignedLong < XSD::XSDUnsignedLong
+  include SOAPBasetype
+  extend SOAPModuleUtils
+end
+
+class SOAPUnsignedInt < XSD::XSDUnsignedInt
+  include SOAPBasetype
+  extend SOAPModuleUtils
+end
+
+class SOAPUnsignedShort < XSD::XSDUnsignedShort
+  include SOAPBasetype
+  extend SOAPModuleUtils
+end
+
+class SOAPUnsignedByte < XSD::XSDUnsignedByte
+  include SOAPBasetype
+  extend SOAPModuleUtils
+end
+
+class SOAPPositiveInteger < XSD::XSDPositiveInteger
   include SOAPBasetype
   extend SOAPModuleUtils
 end
@@ -466,6 +511,7 @@ class SOAPElement
 
   # Text interface.
   attr_accessor :text
+  alias data text
 
   # Element interfaces.
   def add(value)

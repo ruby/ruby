@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <definitions
-    name="RAA"
-    targetNamespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"
-    xmlns:tns="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"
-    xmlns:txd="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"
+    name="map"
+    targetNamespace="urn:map"
+    xmlns:tns="urn:map"
+    xmlns:txd="urn:map"
     xmlns="http://schemas.xmlsoap.org/wsdl/"
     xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
     xmlns:xsd="http://www.w3.org/2001/XMLSchema"
@@ -19,8 +19,8 @@
 	  <element name="item" minOccurs="0" maxOccurs="unbounded">
 	    <complexType>
 	      <sequence>
-		<element name="key" type="anyType" />
-		<element name="value" type="anyType" />
+		<element name="key" type="xsd:anyType" />
+		<element name="value" type="xsd:anyType" />
 	      </sequence>
 	    </complexType>
 	  </element>
@@ -34,32 +34,58 @@
     <part name="return" type="apachesoap:Map"/>
   </message>
 
-  <portType name="RAABaseServicePortType">
+  <message name="map2Request">
+    <part name="arg" type="apachesoap:Map"/>
+  </message>
+  <message name="map2Response">
+    <part name="return" type="apachesoap:Map"/>
+  </message>
+
+  <portType name="MapServicePortType">
     <operation name="map" parameterOrder="">
       <input message="tns:mapRequest"/>
       <output message="tns:mapResponse"/>
     </operation>
+
+    <operation name="map2" parameterOrder="">
+      <input message="tns:map2Request"/>
+      <output message="tns:map2Response"/>
+    </operation>
   </portType>
 
-  <binding name="RAABaseServicePortBinding" type="tns:RAABaseServicePortType">
+  <binding name="MapServicePortBinding" type="tns:MapServicePortType">
     <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
     <operation name="map">
       <soap:operation soapAction=""/>
       <input>
 	<soap:body use="encoded"
 	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
-	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+	    namespace="urn:map"/>
       </input>
       <output>
 	<soap:body use="encoded"
 	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
-	    namespace="http://www.ruby-lang.org/xmlns/soap/interface/RAA/0.0.2/"/>
+	    namespace="urn:map"/>
+      </output>
+    </operation>
+
+    <operation name="map2">
+      <soap:operation soapAction=""/>
+      <input>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:map"/>
+      </input>
+      <output>
+	<soap:body use="encoded"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+	    namespace="urn:map"/>
       </output>
     </operation>
   </binding>
 
-  <service name="RAAService">
-    <port name="RAABaseServicePort" binding="tns:RAABaseServicePortBinding">
+  <service name="MapService">
+    <port name="MapServicePort" binding="tns:MapServicePortBinding">
       <soap:address location="http://raa.ruby-lang.org/soap/1.0.2/"/>
     </port>
   </service>
