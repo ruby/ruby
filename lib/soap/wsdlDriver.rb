@@ -79,17 +79,13 @@ class WSDLDriver
   class << self
     def __attr_proxy(symbol, assignable = false)
       name = symbol.to_s
-      module_eval <<-EOD
-       	def #{name}
-	  @servant.#{name}
-	end
-      EOD
+      self.__send__(:define_method, name, proc {
+        @servant.__send__(name)
+      })
       if assignable
-   	module_eval <<-EOD
-	  def #{name}=(rhs)
-	    @servant.#{name} = rhs
-	  end
-	EOD
+        self.__send__(:define_method, name + '=', proc { |rhs|
+          @servant.__send__(name + '=', rhs)
+        })
       end
     end
   end
@@ -348,7 +344,7 @@ class WSDLDriver
     def create_method_obj(names, params)
       o = Object.new
       for idx in 0 ... params.length
-	o.instance_eval("@#{ names[idx] } = params[idx]")
+        o.instance_variable_set('@' + names[idx], params[idx])
       end
       o
     end
@@ -436,22 +432,23 @@ class WSDLDriver
     end
 
     def add_rpc_method_interface(name, parts_names)
-      i = 0
-      param_names = parts_names.collect { |orgname| i += 1; "arg#{ i }" }
-      callparam = (param_names.collect { |pname| ", " + pname }).join
-      @host.instance_eval <<-EOS
-	def #{ name }(#{ param_names.join(", ") })
-	  @servant.rpc_call(#{ name.dump }#{ callparam })
-	end
-      EOS
+      sclass = class << @host; self; end
+      sclass.__send__(:define_method, name, proc { |*arg|
+        unless arg.size == parts_names.size
+          raise ArgumentError.new(
+            "wrong number of arguments (#{arg.size} for #{parts_names.size})")
+        end
+        @servant.rpc_call(name, *arg)
+      })
+      @host.method(name)
     end
 
     def add_document_method_interface(name)
-      @host.instance_eval <<-EOS
-	def #{ name }(h, b)
-	  @servant.document_send(#{ name.dump }, h, b)
-	end
-      EOS
+      sclass = class << @host; self; end
+      sclass.__send__(:define_method, name, proc { |h, b|
+        @servant.document_send(name, h, b)
+      })
+      @host.method(name)
     end
 
     def setup_options

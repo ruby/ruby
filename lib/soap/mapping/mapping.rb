@@ -156,13 +156,26 @@ module Mapping
       ::Marshal.load(sprintf("\004\006o:%c%s\000", name.length + 5, name))
     end
   end
+
+  unless Object.respond_to?(:instance_variable_get)
+    class Object
+      def instance_variable_get(ivarname)
+	instance_eval(ivarname)
+      end
+
+      def instance_variable_set(ivarname, value)
+	instance_eval("#{ivarname} = value")
+      end
+    end
+  end
+
   def self.set_instance_vars(obj, values)
     values.each do |name, value|
       setter = name + "="
       if obj.respond_to?(setter)
 	obj.__send__(setter, value)
       else
-	obj.instance_eval("@#{ name } = value")
+        obj.instance_variable_set('@' + name, value)
       end
     end
   end
@@ -202,12 +215,12 @@ module Mapping
 
   def self.class2qname(klass)
     name = if klass.class_variables.include?("@@schema_type")
-        klass.class_eval("@@schema_type")
+        klass.class_eval('@@schema_type')
       else
         nil
       end
     namespace = if klass.class_variables.include?("@@schema_ns")
-        klass.class_eval("@@schema_ns")
+        klass.class_eval('@@schema_ns')
       else
         nil
       end
@@ -224,11 +237,11 @@ module Mapping
   def self.obj2element(obj)
     name = namespace = nil
     ivars = obj.instance_variables
-    if ivars.include?("@schema_type")
-      name = obj.instance_eval("@schema_type")
+    if ivars.include?('@schema_type')
+      name = obj.instance_variable_get('@schema_type')
     end
-    if ivars.include?("@schema_ns")
-      namespace = obj.instance_eval("@schema_ns")
+    if ivars.include?('@schema_ns')
+      namespace = obj.instance_variable_get('@schema_ns')
     end
     if !name or !namespace
       class2qname(obj.class)
@@ -245,7 +258,7 @@ module Mapping
       if obj.respond_to?(name)
         obj.__send__(name)
       else
-        obj.instance_eval("@#{name}")
+        obj.instance_variable_get('@' + name)
       end
     end
   end

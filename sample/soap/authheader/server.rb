@@ -23,6 +23,7 @@ class AuthHeaderPortServer < SOAP::RPC::StandaloneServer
   def initialize(*arg)
     super
     add_rpc_servant(AuthHeaderService.new, Name)
+    # header handler must be a per request handler.
     add_rpc_request_headerhandler(ServerAuthHeaderHandler)
   end
 
