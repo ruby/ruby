@@ -230,20 +230,8 @@ extern char *mystrerror(int);
 #define pclose   mypclose
 #endif
 
-#undef va_start
-#undef va_end
-
-#ifdef popen
-#undef popen
-#define popen    mypopen
-#endif
-#ifdef pclose
-#undef pclose
-#define pclose   mypclose
-#endif
-
-#undef va_start
-#undef va_end
+/* #undef va_start */
+/* #undef va_end */
 
 #ifdef fdopen
 #undef fdopen

@@ -2971,6 +2971,9 @@ re_match(bufp, string_arg, size, pos, regs)
     regstart[mcnt] = regend[mcnt]
       = old_regstart[mcnt] = old_regend[mcnt]
       = best_regstart[mcnt] = best_regend[mcnt] = REG_UNSET_VALUE;
+#ifdef __CHECKER__
+    reg_info[mcnt].word = 0;
+#endif
     REG_MATCH_NULL_STRING_P (reg_info[mcnt]) = MATCH_NULL_UNSET_VALUE;
     IS_ACTIVE (reg_info[mcnt]) = 0;
     MATCHED_SOMETHING (reg_info[mcnt]) = 0;

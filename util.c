@@ -15,6 +15,10 @@
 #define RUBY_NO_INLINE
 #include "ruby.h"
 
+#ifdef NT
+#include "missing/file.h"
+#endif
+
 int
 rb_type(obj)
     VALUE obj;
@@ -101,6 +105,10 @@ int *retlen;
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
 #endif
 
+#ifdef NT
+#include "missing/file.h"
+#endif
+
 static char *
 check_dir(dir)
     char *dir;
@@ -133,7 +141,6 @@ ruby_mktemp()
 }
 
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT)
-#include <fcntl.h>
 /*
  *  Copyright (c) 1993, Intergraph Corporation
  *

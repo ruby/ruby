@@ -4,7 +4,7 @@
 #define SIZEOF_VOIDP 4
 #define HAVE_PROTOTYPES 1
 #define HAVE_STDARG_PROTOTYPES 1
-#define HAVE_ATTR_NORETURN 1
+/* #define HAVE_ATTR_NORETURN 1 */
 /* #define HAVE_DIRENT_H 1 */
 /* #define HAVE_UNISTD_H 1 */
 #define HAVE_STDLIB_H 1

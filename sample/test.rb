@@ -749,6 +749,13 @@ x = proc{proc{}}.call
 eval "(0..9).each{|i4| $x[i4] = proc{i4*2}}", x
 ok($x[4].call == 8)
 
+proc {
+  p = proc{}
+  foo = 1
+  eval "foo = 10", p
+  ok(eval("foo", p) == eval("foo"))
+}.call
+
 check "system"
 ok(`echo foobar` == "foobar\n")
 ok(`./ruby -e 'print "foobar"'` == 'foobar')

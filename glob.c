@@ -111,6 +111,10 @@ extern void throw_to_top_level ();
 extern int interrupt_state;
 #endif /* SHELL */
 
+#if defined(NT)
+#include "missing/dir.h"
+#endif
+
 /* Global variable which controls whether or not * matches .*.
    Non-zero means don't match .*.  */
 int noglob_dot_filenames = 1;

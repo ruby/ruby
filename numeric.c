@@ -574,6 +574,51 @@ flo_to_i(num)
 }
 
 static VALUE
+flo_floor(num)
+    VALUE num;
+{
+    double f = floor(RFLOAT(num)->value);
+    long val;
+
+    if (!FIXABLE(f)) {
+	return dbl2big(f);
+    }
+    val = f;
+    return INT2FIX(val);
+}
+
+static VALUE
+flo_ceil(num)
+    VALUE num;
+{
+    double f = ceil(RFLOAT(num)->value);
+    long val;
+
+    if (!FIXABLE(f)) {
+	return dbl2big(f);
+    }
+    val = f;
+    return INT2FIX(val);
+}
+
+static VALUE
+flo_round(num)
+    VALUE num;
+{
+    double f = RFLOAT(num)->value;
+    long val;
+
+    if (f > 0.0) f = floor(f+0.5);
+    if (f < 0.0) f = ceil(f-0.5);
+
+    if (!FIXABLE(f)) {
+	return dbl2big(f);
+    }
+    val = f;
+    return INT2FIX(val);
+}
+
+static VALUE
 flo_to_f(num)
     VALUE num;
 {
@@ -1410,4 +1455,8 @@ Init_Numeric()
     rb_define_method(cFloat, "to_f", flo_to_f, 0);
     rb_define_method(cFloat, "abs", flo_abs, 0);
     rb_define_method(cFloat, "zero?", flo_zero_p, 0);
+
+    rb_define_method(cFloat, "floor", flo_floor, 0);
+    rb_define_method(cFloat, "ceil", flo_ceil, 0);
+    rb_define_method(cFloat, "round", flo_round, 0);
 }

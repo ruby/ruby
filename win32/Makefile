@@ -15,7 +15,7 @@ INSTALL_DATA = $(INSTALL) -m 644
 PURIFY =
 
 
-CFLAGS = -nologo -DNT=1 -Ox 
+CFLAGS = -nologo -DNT=1 -Ox -I. -I./missing
 LDFLAGS =  $(CFLAGS) -Fm
 #CFLAGS = -nologo -DNT=1 -Zi -MD 
 #LDFLAGS =  $(CFLAGS) -Fm -MD

@@ -705,8 +705,15 @@ file_s_ftype(obj, fname)
     struct stat st;
     char *t;
 
+#if defined(MSDOS) || defined(NT)
     if (rb_stat(fname, &st) < 0)
+	rb_sys_fail(RSTRIN(fname)->ptr);
+#else
+    Check_SafeStr(fname);
+    if (lstat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
+    }
+#endif
 
     if (S_ISREG(st.st_mode)) {
 	t = "file";

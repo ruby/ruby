@@ -1041,19 +1041,19 @@ rb_eval_string(str)
     return v;
 }
 
-void
+VALUE
 rb_eval_cmd(cmd, arg)
     VALUE cmd, arg;
 {
     int state;
+    VALUE val;
     struct SCOPE *saved_scope;
     volatile int safe = rb_safe_level();
 
     if (TYPE(cmd) != T_STRING) {
 	Check_Type(arg, T_ARRAY);
-	rb_funcall2(cmd, rb_intern("call"),
-		    RARRAY(arg)->len, RARRAY(arg)->ptr);
-	return;
+	return rb_funcall2(cmd, rb_intern("call"),
+			   RARRAY(arg)->len, RARRAY(arg)->ptr);
     }
 
     PUSH_CLASS();
@@ -1067,7 +1067,7 @@ rb_eval_cmd(cmd, arg)
     }
 
     if ((state = EXEC_TAG()) == 0) {
-	eval(TopSelf, cmd, Qnil, 0, 0);
+	val = eval(TopSelf, cmd, Qnil, 0, 0);
     }
 
     the_scope = saved_scope;
@@ -1097,24 +1097,27 @@ rb_eval_cmd(cmd, arg)
 	JUMP_TAG(state);
 	break;
     }
+    return val;
 }
 
-void
+VALUE
 rb_trap_eval(cmd, sig)
     VALUE cmd;
     int sig;
 {
     int state;
+    VALUE val;			/* OK */
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	rb_eval_cmd(cmd, ary_new3(1, INT2FIX(sig)));
+	val = rb_eval_cmd(cmd, ary_new3(1, INT2FIX(sig)));
     }
     POP_TAG();
     if (state) {
 	trap_immediate = 0;
 	JUMP_TAG(state);
     }
+    return val;
 }
 
 static VALUE
@@ -1122,7 +1125,7 @@ superclass(self, node)
     VALUE self;
     NODE *node;
 {
-    VALUE val = 0;		/* OK */
+    VALUE val;			/* OK */
     int state;
 
     PUSH_TAG(PROT_NONE);
@@ -1130,7 +1133,7 @@ superclass(self, node)
 	val = rb_eval(self, node);
     }
     POP_TAG();
-    if (state == TAG_RAISE) {
+    if (state) {
       superclass_error:
 	switch (nd_type(node)) {
 	  case NODE_COLON2:
@@ -1351,8 +1354,8 @@ is_defined(self, node, buf)
 	}
 	break;
 
-      case NODE_FCALL:
       case NODE_VCALL:
+      case NODE_FCALL:
 	val = CLASS_OF(self);
 	goto check_bound;
 
@@ -1401,6 +1404,7 @@ is_defined(self, node, buf)
       case NODE_MASGN:
       case NODE_LASGN:
       case NODE_DASGN:
+      case NODE_DASGN_PUSH:
       case NODE_GASGN:
       case NODE_IASGN:
       case NODE_CASGN:
@@ -2073,6 +2077,19 @@ rb_eval(self, node)
 
       case NODE_DASGN:
 	result = dyna_var_asgn(node->nd_vid, rb_eval(self, node->nd_value));
+	break;
+
+      case NODE_DASGN_PUSH:
+	result = rb_eval(self, node->nd_value);
+	if (the_dyna_vars && the_dyna_vars->id == 0) {
+	    struct RVarmap* vars = new_dvar(node->nd_vid, result);
+
+	    vars->next = the_dyna_vars->next;
+	    the_dyna_vars->next = vars;
+	}
+	else {
+	    push_dvar(node->nd_vid, result);
+	}
 	break;
 
       case NODE_GASGN:
@@ -2954,6 +2971,10 @@ assign(self, lhs, val)
 	dyna_var_asgn(lhs->nd_vid, val);
 	break;
 
+      case NODE_DASGN_PUSH:
+	push_dvar(lhs->nd_vid, val);
+	break;
+
       case NODE_CASGN:
 	rb_const_set(the_class, lhs->nd_vid, val);
 	break;
@@ -3604,7 +3625,7 @@ f_send(argc, argv, recv)
 }
 
 
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start(a,b)
 #else
@@ -4843,6 +4864,10 @@ f_binding(self)
 	data->prev = 0;
     }
 
+    if (data->d_vars && data->d_vars->id) {
+	push_dvar(0, 0);
+	data->d_vars = the_dyna_vars;
+    }
     scope_dup(data->scope);
     POP_BLOCK();
 
@@ -4896,6 +4921,10 @@ proc_s_new(klass)
 	    FL_SET(proc, PROC_T5);
 	    break;
 	}
+    }
+    if (data->d_vars && data->d_vars->id) {
+	push_dvar(0, 0);
+	data->d_vars = the_dyna_vars;
     }
     obj_call_init(proc);
 

@@ -3379,8 +3379,8 @@ gettable(id)
 	return NEW_LIT(INT2FIX(sourceline));
     }
     else if (is_local_id(id)) {
-	if (local_id(id)) return NEW_LVAR(id);
 	if (dyna_var_defined(id)) return NEW_DVAR(id);
+	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
 	return NEW_VCALL(id);
     }
@@ -3429,8 +3429,11 @@ assignable(id, val)
 	else{
 	    if (!dyna_var_defined(id)) {
 		dyna_var_asgn(id, 0);
+		lhs = NEW_DASGN_PUSH(id, val);
 	    }
-	    lhs = NEW_DASGN(id, val);
+	    else {
+		lhs = NEW_DASGN(id, val);
+	    }
 	}
     }
     else if (is_global_id(id)) {

@@ -54,6 +54,7 @@ module TkComm
     return tk_tcl2ruby(str) unless idx
 
     list = tk_tcl2ruby(str[0,idx])
+    list = [] if list == ""
     str = str[idx+1..-1]
     i = -1
     brace = 1
@@ -78,13 +79,26 @@ module TkComm
     if keys and keys != None
       for k, v in keys
 	 conf.push("-#{k}")
-	 v = install_cmd(v) if v.kind_of? Proc
 	 conf.push(v)
       end
     end
     conf
   end
   private :hash_kv
+
+  def array2tk_list(ary)
+    ary.collect{|e|
+      if e.kind_of? Array
+	"{#{array2tk_list(e)}}"
+      elsif e.kind_of? Hash
+	"{#{e.to_a.collect{|ee| array2tk_list(ee)}.join(' ')}}"
+      else
+	s = _get_eval_string(e)
+	(s.index(/\s/))? "{#{s}}": s
+      end
+    }.join(" ")
+  end
+  private :array2tk_list
 
   def bool(val)
     case val
@@ -221,8 +235,12 @@ module TkComm
   end
 
   def _bind(path, context, cmd, args=nil)
+    context = context.join("><") if context.kind_of? Array
+    if /,/ =~ context
+      context = context.split(/\s*,\s*/).join("><")
+    end
+    id = install_bind(cmd, args)
     begin
-      id = install_bind(cmd, args)
       tk_call 'bind', path, "<#{context}>", id
     rescue
       uninstall_cmd(id)
@@ -271,7 +289,7 @@ module TkCore
 
   def TkCore.callback(arg)
     arg = Array(tk_split_list(arg))
-    TkUtil.eval_cmd Tk_CMDTBL[arg.shift], *arg
+    _get_eval_string(TkUtil.eval_cmd(Tk_CMDTBL[arg.shift], *arg))
   end
 
   def mainloop
@@ -282,6 +300,10 @@ module TkCore
     return nil if str == None
     if str.kind_of?(Hash)
       str = hash_kv(str).join(" ")
+    elsif str.kind_of?(Array)
+      str = array2tk_list(str)
+    elsif str.kind_of?(Proc)
+      str = install_cmd(v)
     elsif str == nil
       str = ""
     elsif str == false
@@ -324,6 +346,9 @@ end
 module Tk
   include TkCore
   extend Tk
+
+  TCL_VERSION = INTERP._invoke("info", "tclversion")
+  TK_VERSION  = INTERP._invoke("set", "tk_version")
 
   def root
     TkRoot.new
@@ -448,8 +473,20 @@ class TkVariable
   def initialize(val="")
     @id = Tk_VARIABLE_ID[0]
     Tk_VARIABLE_ID[0] = Tk_VARIABLE_ID[0].succ
-    s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
-    INTERP._eval(format('global %s; set %s %s', @id, @id, s))
+    if val == []
+      INTERP._eval(format('global %s; set %s(0) 0; unset %s(0)', 
+			  @id, @id, @id))
+    elsif val.kind_of?(Array)
+	s = '"' + array2tk_list(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
+	INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
+    elsif  val.kind_of?(Hash)
+      s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
+                   ..gsub(/[][$"]/, '\\\\\&') + '"' #'
+      INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
+    else
+      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
+      INTERP._eval(format('global %s; set %s %s', @id, @id, s))
+    end
   end
 
   def id
@@ -457,11 +494,50 @@ class TkVariable
   end
 
   def value
-    INTERP._eval(format('global %s; set %s', @id, @id))
+    begin
+      INTERP._eval(format('global %s; set %s', @id, @id))
+    rescue
+      if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
+	raise
+      else
+	INTERP._eval(format('global %s; array get %s', @id, @id))
+      end
+    end
   end
 
   def value=(val)
-    INTERP._eval(format('global %s; set %s %s', @id, @id, _get_eval_string(val)))
+    begin
+      INTERP._eval(format('global %s; set %s %s', @id, @id, _get_eval_string(val)))
+    rescue
+      if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
+	raise
+      else
+	INTERP._eval(format('global %s; unset %s'), @id, @id)
+	if val == []
+	  INTERP._eval(format('global %s; set %s(0) 0; unset %s(0)', 
+			      @id, @id, @id))
+	elsif val.kind_of?(Array)
+	  s = '"' + array2tk_list(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
+	  INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
+	elsif  val.kind_of?(Hash)
+	  s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
+	                        .gsub(/[][$"]/, '\\\\\&') + '"' #'
+	  INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
+	else
+	  raise
+	end
+      end
+    end
+  end
+
+  def [](index)
+    INTERP._eval(format('global %s; set %s(%s)', 
+			@id, @id, _get_eval_string(index)))
+  end
+
+  def []=(index,val)
+    INTERP._eval(format('global %s; set %s(%s) %s', @id, @id, 
+			_get_eval_string(index), _get_eval_string(val)))
   end
 
   def to_i
@@ -503,6 +579,16 @@ class TkVariable
 
   def to_eval
     @id
+  end
+end
+
+class TkVarAccess<TkVariable
+  def initialize(varname, val=nil)
+    @id = varname
+    if val
+      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
+      INTERP._eval(format('global %s; set %s %s', @id, @id, s))
+    end
   end
 end
 
@@ -577,49 +663,49 @@ module TkWinfo
   def TkWinfo.depth(window)
     number(tk_call('winfo', 'depth', window.path))
   end
-  def winfo_depth(window)
+  def winfo_depth
     TkWinfo.depth self
   end
   def TkWinfo.exist?(window)
     bool(tk_call('winfo', 'exists', window.path))
   end
-  def winfo_exist?(window)
+  def winfo_exist?
     TkWinfo.exist? self
   end
   def TkWinfo.fpixels(window, number)
     number(tk_call('winfo', 'fpixels', window.path, number))
   end
-  def winfo_fpixels(window, number)
+  def winfo_fpixels(number)
     TkWinfo.fpixels self
   end
   def TkWinfo.geometry(window)
     list(tk_call('winfo', 'geometry', window.path))
   end
-  def winfo_geometry(window)
+  def winfo_geometry
     TkWinfo.geometry self
   end
   def TkWinfo.height(window)
     number(tk_call('winfo', 'height', window.path))
   end
-  def winfo_height(window)
+  def winfo_height
     TkWinfo.height self
   end
   def TkWinfo.id(window)
     number(tk_call('winfo', 'id', window.path))
   end
-  def winfo_id(window)
+  def winfo_id
     TkWinfo.id self
   end
   def TkWinfo.mapped?(window)
     bool(tk_call('winfo', 'ismapped', window.path))
   end
-  def winfo_mapped?(window)
+  def winfo_mapped?
     TkWinfo.mapped? self
   end
   def TkWinfo.parent(window)
     window(tk_call('winfo', 'parent', window.path))
   end
-  def winfo_parent(window)
+  def winfo_parent
     TkWinfo.parent self
   end
   def TkWinfo.widget(id)
@@ -631,139 +717,139 @@ module TkWinfo
   def TkWinfo.pixels(window, number)
     number(tk_call('winfo', 'pixels', window.path, number))
   end
-  def winfo_pixels(window, number)
+  def winfo_pixels(number)
     TkWinfo.pixels self, number
   end
   def TkWinfo.reqheight(window)
     number(tk_call('winfo', 'reqheight', window.path))
   end
-  def winfo_reqheight(window)
+  def winfo_reqheight
     TkWinfo.reqheight self
   end
   def TkWinfo.reqwidth(window)
     number(tk_call('winfo', 'reqwidth', window.path))
   end
-  def winfo_reqwidth(window)
+  def winfo_reqwidth
     TkWinfo.reqwidth self
   end
   def TkWinfo.rgb(window, color)
     list(tk_call('winfo', 'rgb', window.path, color))
   end
-  def winfo_rgb(window, color)
+  def winfo_rgb(color)
     TkWinfo.rgb self, color
   end
   def TkWinfo.rootx(window)
     number(tk_call('winfo', 'rootx', window.path))
   end
-  def winfo_rootx(window)
+  def winfo_rootx
     TkWinfo.rootx self
   end
   def TkWinfo.rooty(window)
     number(tk_call('winfo', 'rooty', window.path))
   end
-  def winfo_rooty(window)
+  def winfo_rooty
     TkWinfo.rooty self
   end
   def TkWinfo.screen(window)
     tk_call 'winfo', 'screen', window.path
   end
-  def winfo_screen(window)
+  def winfo_screen
     TkWinfo.screen self
   end
   def TkWinfo.screencells(window)
     number(tk_call('winfo', 'screencells', window.path))
   end
-  def winfo_screencells(window)
+  def winfo_screencells
     TkWinfo.screencells self
   end
   def TkWinfo.screendepth(window)
     number(tk_call('winfo', 'screendepth', window.path))
   end
-  def winfo_screendepth(window)
+  def winfo_screendepth
     TkWinfo.screendepth self
   end
   def TkWinfo.screenheight (window)
     number(tk_call('winfo', 'screenheight', window.path))
   end
-  def winfo_screenheight(window)
+  def winfo_screenheight
     TkWinfo.screenheight self
   end
   def TkWinfo.screenmmheight(window)
     number(tk_call('winfo', 'screenmmheight', window.path))
   end
-  def winfo_screenmmheight(window)
+  def winfo_screenmmheight
     TkWinfo.screenmmheight self
   end
   def TkWinfo.screenmmwidth(window)
     number(tk_call('winfo', 'screenmmwidth', window.path))
   end
-  def winfo_screenmmwidth(window)
+  def winfo_screenmmwidth
     TkWinfo.screenmmwidth self
   end
   def TkWinfo.screenvisual(window)
     tk_call 'winfo', 'screenvisual', window.path
   end
-  def winfo_screenvisual(window)
+  def winfo_screenvisual
     TkWinfo.screenvisual self
   end
   def TkWinfo.screenwidth(window)
     number(tk_call('winfo', 'screenwidth', window.path))
   end
-  def winfo_screenwidth(window)
+  def winfo_screenwidth
     TkWinfo.screenwidth self
   end
   def TkWinfo.toplevel(window)
     window(tk_call('winfo', 'toplevel', window.path))
   end
-  def winfo_toplevel(window)
+  def winfo_toplevel
     TkWinfo.toplevel self
   end
   def TkWinfo.visual(window)
     tk_call 'winfo', 'visual', window.path
   end
-  def winfo_visual(window)
+  def winfo_visual
     TkWinfo.visual self
   end
   def TkWinfo.vrootheigh(window)
     number(tk_call('winfo', 'vrootheight', window.path))
   end
-  def winfo_vrootheight(window)
+  def winfo_vrootheight
     TkWinfo.vrootheight self
   end
   def TkWinfo.vrootwidth(window)
     number(tk_call('winfo', 'vrootwidth', window.path))
   end
-  def winfo_vrootwidth(window)
+  def winfo_vrootwidth
     TkWinfo.vrootwidth self
   end
   def TkWinfo.vrootx(window)
     number(tk_call('winfo', 'vrootx', window.path))
   end
-  def winfo_vrootx(window)
+  def winfo_vrootx
     TkWinfo.vrootx self
   end
   def TkWinfo.vrooty(window)
     number(tk_call('winfo', 'vrooty', window.path))
   end
-  def winfo_vrooty(window)
+  def winfo_vrooty
     TkWinfo.vrooty self
   end
   def TkWinfo.width(window)
     number(tk_call('winfo', 'width', window.path))
   end
-  def winfo_width(window)
+  def winfo_width
     TkWinfo.width self
   end
   def TkWinfo.x(window)
     number(tk_call('winfo', 'x', window.path))
   end
-  def winfo_x(window)
+  def winfo_x
     TkWinfo.x self
   end
   def TkWinfo.y(window)
     number(tk_call('winfo', 'y', window.path))
   end
-  def winfo_y(window)
+  def winfo_y
     TkWinfo.y self
   end
 end
@@ -804,7 +890,7 @@ module TkGrid
     if args[-1].kind_of?(Hash)
       keys = args.pop
     end
-    wins = [widget.path]
+    wins = [widget.epath]
     for i in args
       wins.push i.epath
     end
@@ -926,6 +1012,19 @@ class TkObject<TkKernel
 
   def configure_cmd(slot, value)
     configure slot, install_cmd(value)
+  end
+
+  def configinfo(slot = nil)
+    if slot
+      conf = tk_split_list(tk_send('configure', "-#{slot}") )
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_list(tk_send('configure') ).collect{|conf|
+        conf[0] = conf[0][1..-1]
+        conf
+      }
+    end
   end
 
   def bind(context, cmd=Proc.new, args=nil)

@@ -622,12 +622,12 @@ if test "${enable_fat_binary+set}" = set; then
    fat_binary=$enableval  
 fi
 
-if test "$fat_binary" = yes ; then
+      if test "$fat_binary" = yes ; then
 
     echo $ac_n "checking target architecture ""... $ac_c" 1>&6
 echo "configure:629: checking target architecture " >&5
 
-    if "$host_os" = "rhapsody" ; then
+    if test "$host_os" = "rhapsody" ; then
         echo -n "Rhapsody: "
 	if test "$TARGET_ARCHS" = "" ; then
            TARGET_ARCHS="ppc i486"
@@ -3905,8 +3905,8 @@ if test "$host_os" = "beos"; then
   esac
 fi
 
-if "$host_os" = "rhapsody" ; then
-	 CFLAGS="$CFLAGS -no-precomp"
+if test "$host_os" = "rhapsody" ; then
+    CFLAGS="$CFLAGS -no-precomp"
 fi
 
 

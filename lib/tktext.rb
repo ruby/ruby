@@ -45,6 +45,26 @@ class TkText<TkTextWin
       end
     }
   end
+  def image_names
+    tk_send('image', 'names').collect{|elt|
+      if not @tags[elt]
+	elt
+      else
+	@tags[elt]
+      end
+    }
+  end
+
+  def set_insert(index)
+    tk_send 'mark', 'set', 'insert', index
+  end
+  def set_current(index)
+    tk_send 'mark', 'set', 'current', index
+  end
+
+  def insert(index, chars, *tags)
+    super index, chars, tags.collect{|x|_get_eval_string(x)}.join(' ')
+  end
 
   def destroy
     @tags.each_value do |t|
@@ -66,6 +86,15 @@ class TkText<TkTextWin
   end
   def debug=(boolean)
     tk_send 'debug', boolean
+  end
+
+  def bbox(index)
+    inf = tk_send('bbox', index)
+    (inf == "")?  [0,0,0,0]: inf
+  end
+  def dlineinfo(index)
+    inf = tk_send('dlineinfo', index)
+    (inf == "")?  [0,0,0,0,0]: inf
   end
 
   def yview(*what)
@@ -107,22 +136,85 @@ class TkTextTag<TkObject
     tk_call @t.path, 'tag', 'remove', @id, *index
   end
 
+  def ranges
+    l = tk_split_list(tk_call(@t.path, 'tag', 'ranges', @id))
+    r = []
+    while key=l.shift
+      r.push [key, l.shift]
+    end
+    r
+  end
+
+  def nextrange(first, last=nil)
+    l = tk_split_list(tk_call(@t.path, 'tag', 'nextrange', @id, first, last))
+    r = []
+    while key=l.shift
+      r.push [key, l.shift]
+    end
+    r
+  end
+
+  def prevrange(first, last=nil)
+    l = tk_split_list(tk_call(@t.path, 'tag', 'prevrange', @id, first, last))
+    r = []
+    while key=l.shift
+      r.push [key, l.shift]
+    end
+    r
+  end
+
+  def [](key)
+    cget key
+  end
+
+  def []=(key,val)
+    configure key, val
+  end
+
+  def cget(key)
+    tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
+  end
+
   def configure(keys)
     tk_call @t.path, 'tag', 'configure', @id, *hash_kv(keys)
   end
+#  def configure(key, value)
+#    if value == FALSE
+#      value = "0"
+#    elsif value.kind_of? Proc
+#      value = install_cmd(value)
+#    end
+#    tk_call @t.path, 'tag', 'configure', @id, "-#{key}", value
+#  end
 
   def bind(seq, cmd=Proc.new, args=nil)
     id = install_bind(cmd, args)
-    tk_call @t, 'tag', 'bind', @id, "<#{seq}>", id
+    tk_call @t.path, 'tag', 'bind', @id, "<#{seq}>", id
     @t._addcmd cmd
   end
 
+  def raise(above=None)
+    tk_call @t.path, 'tag', 'raise', @id, above
+  end
+
   def lower(below=None)
-    tk_call @t.path, 'tag', 'lower', below
+    tk_call @t.path, 'tag', 'lower', @id, below
   end
 
   def destroy
     tk_call @t.path, 'tag', 'delete', @id
+  end
+end
+
+class TkTextTagSel<TkTextTag
+  def initialize(parent, keys=nil)
+    if not parent.kind_of?(TkText)
+      fail format("%s need to be TkText", parent.inspect)
+    end
+    @t = parent
+    @path = @id = 'sel'
+    tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
+    @t._addtag id, self
   end
 end
 
@@ -150,19 +242,183 @@ class TkTextMark<TkObject
     tk_call @t.path, 'mark', 'unset', @id
   end
   alias destroy unset
+
+  def gravity
+    tk_call @t.path, 'mark', 'gravity', @id
+  end
+
+  def gravity=(direction)
+    tk_call @t.path, 'mark', 'gravity', @id, direction
+  end
 end
 
-class TkTextWindow<TkObject
-  def initialize(parent, index, *args)
+class TkTextMarkInsert<TkTextMark
+  def initialize(parent, index=nil)
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
     @t = parent
-    @path = @index = index
-    tk_call @t.path, 'window', 'create', index, *args
+    @path = @id = 'insert'
+    tk_call @t.path, 'mark', 'set', @id, index if index
+    @t._addtag id, self
+  end
+end
+
+class TkTextMarkCurrent<TkTextMark
+  def initialize(parent,index=nil)
+    if not parent.kind_of?(TkText)
+      fail format("%s need to be TkText", parent.inspect)
+    end
+    @t = parent
+    @path = @id = 'current'
+    tk_call @t.path, 'mark', 'set', @id, index if index
+    @t._addtag id, self
+  end
+end
+
+class TkTextWindow<TkObject
+  def initialize(parent, index, keys)
+    if not parent.kind_of?(TkText)
+      fail format("%s need to be TkText", parent.inspect)
+    end
+    @t = parent
+    if index == 'end'
+      @path = TkTextMark.new(@t, tk_call(@t.path, 'index', 'end - 1 chars'))
+    elsif index.kind_of? TkTextMark
+      if tk_call(@t.path,'index',index.path) == tk_call(@t.path,'index','end')
+	@path = TkTextMark.new(@t, tk_call(@t.path, 'index', 'end - 1 chars'))
+      else
+	@path = TkTextMark.new(@t, tk_call(@t.path, 'index', index.path))
+      end
+    else
+      @path = TkTextMark.new(@t, tk_call(@t.path, 'index', index))
+    end
+    @path.gravity = 'left'
+    @index = @path.path
+    @id = keys['window']
+    if keys['create']
+      @p_create = keys['create']
+      if @p_create.kind_of? Proc
+	keys['create'] = install_cmd(proc{@id = @p_create.call; @id.path})
+      end
+    end
+    tk_call @t.path, 'window', 'create', @index, *hash_kv(keys)
+  end
+
+  def [](slot)
+    cget(slot)
+  end
+  def []=(slot, value)
+    configure(slot, value)
+  end
+
+  def cget(slot)
+    tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
   end
 
   def configure(slot, value)
-    tk_call @t.path, 'window', 'configure', @index, "-#{slot}", value
+    @id = value if slot == 'window'
+    if slot == 'create'
+      self.create=value
+    else
+      tk_call @t.path, 'window', 'configure', @index, "-#{slot}", value
+    end
+  end
+
+  def window
+    @id
+  end
+
+  def window=(value)
+    tk_call @t.path, 'window', 'configure', @index, '-window', value
+    @id = value
+  end
+
+  def create
+    @p_create
+  end
+
+  def create=(value)
+    @p_create = value
+    if @p_create.kind_of? Proc
+      value = install_cmd(proc{@id = @p_create.call})
+    end
+    tk_call @t.path, 'window', 'configure', @index, '-create', value
+  end
+
+  def configinfo(slot = nil)
+    if slot
+      conf = tk_split_list(tk_call @t.path, 'window', 'configure', 
+			   @index, "-#{slot}")
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_list(tk_call @t.path, 'window', 'configure', 
+		    @index).collect{|conf|
+	conf[0] = conf[0][1..-1]
+	conf
+      }
+    end
+  end
+end
+
+class TkTextImage<TkObject
+  def initialize(parent, index, keys)
+    if not parent.kind_of?(TkText)
+      fail format("%s need to be TkText", parent.inspect)
+    end
+    @t = parent
+    if index == 'end'
+      @path = TkTextMark.new(@t, tk_call(@t.path, 'index', 'end - 1 chars'))
+    elsif index.kind_of? TkTextMark
+      if tk_call(@t.path,'index',index.path) == tk_call(@t.path,'index','end')
+	@path = TkTextMark.new(@t, tk_call(@t.path, 'index', 'end - 1 chars'))
+      else
+	@path = TkTextMark.new(@t, tk_call(@t.path, 'index', index.path))
+      end
+    else
+      @path = TkTextMark.new(@t, tk_call(@t.path, 'index', index))
+    end
+    @path.gravity = 'left'
+    @index = @path.path
+    @id = tk_call(@t.path, 'image', 'create', @index, *hash_kv(keys))
+  end
+
+  def [](slot)
+    cget(slot)
+  end
+  def []=(slot, value)
+    configure(slot, value)
+  end
+
+  def cget(slot)
+    tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
+  end
+
+  def configure(slot, value)
+    tk_call @t.path, 'image', 'configure', @index, "-#{slot}", value
+  end
+
+  def image
+    tk_call @t.path, 'image', 'configure', @index, '-image'
+  end
+
+  def image=(value)
+    tk_call @t.path, 'image', 'configure', @index, '-image', value
+  end
+
+  def configinfo(slot = nil)
+    if slot
+      conf = tk_split_list(tk_call @t.path, 'image', 'configure', 
+			   @index, "-#{slot}")
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_list(tk_call @t.path, 'image', 'configure', 
+		    @index).collect{|conf|
+	conf[0] = conf[0][1..-1]
+	conf
+      }
+    end
   end
 end

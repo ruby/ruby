@@ -459,7 +459,11 @@ io_gets_method(argc, argv, io)
 	if (!NIL_P(rs)) Check_Type(rs, T_STRING);
     }
 
-    if (!NIL_P(rs)) {
+    if (NIL_P(rs)) {
+	rsptr = 0;
+	rslen = 0;
+    }
+    else {
 	rslen = RSTRING(rs)->len;
 	if (rslen == 0) {
 	    rsptr = "\n\n";
@@ -472,10 +476,6 @@ io_gets_method(argc, argv, io)
 	else {
 	    rsptr = RSTRING(rs)->ptr;
 	}
-    }
-    else {
-	rsptr = 0;
-	rslen = 0;
     }
 
     GetOpenFile(io, fptr);

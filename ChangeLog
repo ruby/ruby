@@ -1,3 +1,23 @@
+Thu Jun 18 16:46:04 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_26.
+
+Thu Jun 18 13:37:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* file.c (file_s_ftype): uses lstat(2) instead of stat(2).
+
+	* dir.c (dir_s_glob): there can be buffer overrun, check added.
+
+	* eval.c (f_binding): handles in-block variables declared after
+	  binding's generation.
+
+	* numeric.c (flo_floor): floor, ceil, round added to Float.
+
+Wed Jun 17 11:20:00 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (gettable): nesting local variables should have higher
+ 	  priority than normal local variables.
+
 Tue Jun 16 12:30:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* bignum.c (str2inum): handles `+ddd'.

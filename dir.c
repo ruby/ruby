@@ -371,22 +371,23 @@ push_braces(ary, s)
 }
 
 static VALUE
-dir_s_glob(dir, vstr)
-    VALUE dir, vstr;
+dir_s_glob(dir, str)
+    VALUE dir, str;
 {
     char *p, *pend;
     char buf[MAXPATHLEN];
     char *t, *t0;
     int nest;
     VALUE ary;
-    struct RString *str;
 
-    Check_SafeStr(vstr);
-    str = RSTRING(vstr);
+    Check_SafeStr(str);
+    if (RSTRING(str)->len > MAXPATHLEN) {
+	ArgError("pathname too long (%d bytes)", RSTRING(str)->len);
+    }
     ary = ary_new();
 
-    p = str->ptr;
-    pend = p + str->len;
+    p = RSTRING(str)->ptr;
+    pend = p + RSTRING(str)->len;
 
     while (p < pend) {
 	t = buf;

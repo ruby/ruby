@@ -120,8 +120,9 @@ ip_ruby(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
     res = rb_rescue(rb_eval_string, (VALUE)argv[1], ip_eval_rescue, (VALUE)&failed);
     trap_immediate = old_trapflg;
 
+    Tcl_ResetResult(interp);
     if (failed) {
-	Tcl_AppendResult(interp, RSTRING(failed)->ptr, (char*)NULL);
+	Tcl_AppendResult(interp, STR2CSTR(failed), (char*)NULL);
 	return TCL_ERROR;
     }
 
@@ -130,12 +131,11 @@ ip_ruby(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 	DUMP1("(rb_eval_string result) nil");
 	return TCL_OK;
     }
-    Check_Type(res, T_STRING);
 
     /* copy result to the tcl interpreter */
-    DUMP2("(rb_eval_string result) %s", RSTRING(res)->ptr);
+    DUMP2("(rb_eval_string result) %s", STR2CSTR(res));
     DUMP1("Tcl_AppendResult");
-    Tcl_AppendResult(interp, RSTRING(res)->ptr, (char *)NULL);
+    Tcl_AppendResult(interp, STR2CSTR(res), (char *)NULL);
 
     return TCL_OK;
 }

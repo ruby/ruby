@@ -18,8 +18,7 @@ tk_eval_cmd(argc, argv)
     VALUE cmd, rest;
 
     rb_scan_args(argc, argv, "1*", &cmd, &rest);
-    rb_eval_cmd(cmd, rest);
-    return Qnil;
+    return rb_eval_cmd(cmd, rest);
 }
 
 static VALUE

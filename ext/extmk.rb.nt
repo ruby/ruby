@@ -1,5 +1,7 @@
 #! /usr/local/bin/ruby
 
+$".push 'mkmf.rb' #"
+
 if ARGV[0] == 'static'
   $force_static = TRUE
   ARGV.shift
@@ -379,7 +381,7 @@ def extmake(target)
       end
     end
     if $static
-      #$extlibs = " "
+      $extlibs = " "
       $extlibs += " " + $LDFLAGS if $LDFLAGS
       $extlibs += " " + $local_libs if $local_libs
       $extlibs += " " + $libs if $libs
@@ -438,6 +440,8 @@ if $cache_mod
 end
 
 exit if $install or $clean
+$extinit = " " unless $extinit
+$extobjs = ""
 if $extlist.size > 0
   for s,t in $extlist
   #for s,t in $static_ext

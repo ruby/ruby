@@ -190,24 +190,24 @@ dln.o: dln.c config.h defines.h dln.h
 dmyext.o: dmyext.c
 enum.o: enum.c ruby.h config.h defines.h intern.h
 error.o: error.c ruby.h config.h defines.h intern.h env.h
-eval.o: eval.c ruby.h config.h defines.h intern.h node.h env.h sig.h st.h dln.h
-file.o: file.c ruby.h config.h defines.h intern.h io.h sig.h
-gc.o: gc.c ruby.h config.h defines.h intern.h sig.h st.h node.h env.h re.h regex.h
-hash.o: hash.c ruby.h config.h defines.h intern.h st.h sig.h
+eval.o: eval.c ruby.h config.h defines.h intern.h node.h env.h rubysig.h st.h dln.h
+file.o: file.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
+gc.o: gc.c ruby.h config.h defines.h intern.h rubysig.h st.h node.h env.h re.h regex.h
+hash.o: hash.c ruby.h config.h defines.h intern.h st.h rubysig.h
 inits.o: inits.c ruby.h config.h defines.h intern.h
-io.o: io.c ruby.h config.h defines.h intern.h io.h sig.h
+io.o: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 main.o: main.c ruby.h config.h defines.h intern.h
-marshal.o: marshal.c ruby.h config.h defines.h intern.h io.h sig.h st.h
+marshal.o: marshal.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h st.h
 math.o: math.c ruby.h config.h defines.h intern.h
 numeric.o: numeric.c ruby.h config.h defines.h intern.h
 object.o: object.c ruby.h config.h defines.h intern.h st.h
 pack.o: pack.c ruby.h config.h defines.h intern.h
-process.o: process.c ruby.h config.h defines.h intern.h sig.h st.h
+process.o: process.c ruby.h config.h defines.h intern.h rubysig.h st.h
 random.o: random.c ruby.h config.h defines.h intern.h
 range.o: range.c ruby.h config.h defines.h intern.h
 re.o: re.c ruby.h config.h defines.h intern.h re.h regex.h
 ruby.o: ruby.c ruby.h config.h defines.h intern.h dln.h
-signal.o: signal.c ruby.h config.h defines.h intern.h sig.h
+signal.o: signal.c ruby.h config.h defines.h intern.h rubysig.h
 sprintf.o: sprintf.c ruby.h config.h defines.h intern.h
 st.o: st.c config.h st.h
 string.o: string.c ruby.h config.h defines.h intern.h re.h regex.h

@@ -96,7 +96,8 @@ EXPORTS
 	int2inum
 	str2inum
 	big2str
-	big2int
+	big2ulong
+	big2long
 	big_to_i
 	dbl2big
 	big2dbl
@@ -365,7 +366,7 @@ EXPORTS
 	str_substr
 	str_modify
 	str_freeze
-	str_dup_freezed
+	str_dup_frozen
 	str_taint
 	str_tainted
 	str_resize
