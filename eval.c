@@ -1648,12 +1648,16 @@ ev_const_defined(cref, id, self)
     VALUE self;
 {
     NODE *cbase = cref;
+    VALUE result;
 
     while (cbase && cbase->nd_next) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
 	if (NIL_P(klass)) return rb_const_defined(CLASS_OF(self), id);
-	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
+	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
+	    if (result == Qundef && NIL_P(rb_autoload_p((VALUE)klass, id))) {
+		return Qfalse;
+	    }
 	    return Qtrue;
 	}
 	cbase = cbase->nd_next;
@@ -1674,7 +1678,11 @@ ev_const_get(cref, id, self)
 	VALUE klass = cbase->nd_clss;
 
 	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);
-	if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
+	while (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
+	    if (result == Qundef) {
+		rb_autoload_load(klass, id);
+		continue;
+	    }
 	    return result;
 	}
 	cbase = cbase->nd_next;
@@ -3502,9 +3510,6 @@ rb_eval(self, n)
 
 	    cbase = class_prefix(self, node->nd_cpath);
 	    cname = node->nd_cpath->nd_mid;
-	    if ((cbase == rb_cObject) && rb_autoload_defined(cname)) {
-		rb_autoload_load(cname);
-	    }
 	    if (rb_const_defined_at(cbase, cname)) {
 		klass = rb_const_get(cbase, cname);
 		if (TYPE(klass) != T_CLASS) {
@@ -3548,9 +3553,6 @@ rb_eval(self, n)
 	    }
 	    cbase = class_prefix(self, node->nd_cpath);
 	    cname = node->nd_cpath->nd_mid;
-	    if ((cbase == rb_cObject) && rb_autoload_defined(cname)) {
-		rb_autoload_load(cname);
-	    }
 	    if (rb_const_defined_at(cbase, cname)) {
 		module = rb_const_get(cbase, cname);
 		if (TYPE(module) != T_MODULE) {
@@ -6512,7 +6514,43 @@ Init_eval()
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
 }
 
-VALUE rb_f_autoload();
+static VALUE
+rb_mod_autoload(mod, sym, file)
+    VALUE mod;
+    VALUE sym;
+    VALUE file;
+{
+    ID id = rb_to_id(sym);
+
+    Check_SafeStr(file);
+    rb_autoload(mod, id, RSTRING(file)->ptr);
+    return Qnil;
+}
+
+static VALUE
+rb_mod_autoload_p(mod, sym)
+    VALUE mod, sym;
+{
+    return rb_autoload_p(mod, rb_to_id(sym));
+}
+
+static VALUE
+rb_f_autoload(obj, sym, file)
+    VALUE obj;
+    VALUE sym;
+    VALUE file;
+{
+    return rb_mod_autoload(ruby_class, sym, file);
+}
+
+static VALUE
+rb_f_autoload_p(obj, sym)
+    VALUE obj;
+    VALUE sym;
+{
+    /* use ruby_class as same as rb_f_autoload. */
+    return rb_mod_autoload_p(ruby_class, sym);
+}
 
 void
 Init_load()
@@ -6527,7 +6565,10 @@ Init_load()
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
-    rb_define_global_function("autoload", rb_f_autoload, 2);
+    rb_define_method(rb_cModule, "autoload",  rb_mod_autoload,   2);
+    rb_define_method(rb_cModule, "autoload?", rb_mod_autoload_p, 1);
+    rb_define_global_function("autoload",  rb_f_autoload,   2);
+    rb_define_global_function("autoload?", rb_f_autoload_p, 1);
     rb_global_variable(&ruby_wrapper);
 
     ruby_dln_librefs = rb_ary_new();

@@ -1,3 +1,30 @@
+Thu May 29 09:11:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (ev_const_defined, ev_const_get), variable.c
+	  (rb_const_get_at, rb_const_get, rb_mod_remove_const): use Qundef
+	  as autoload marker.  [ruby-dev:18103], [ruby-dev:18184]
+
+	* eval.c (rb_mod_autoload, rb_mod_autoload_p): new method;
+	  Module#autoload, Module#autoload?.
+
+	* variable.c (rb_autoload, rb_autoload_load, rb_autoload_p):
+	  manage autoload constants per classes/modules.
+
+	* variable.c (rb_const_defined_at, rb_const_defined): return false
+	  for autoloading constants.
+
+	* class.c (rb_define_class, rb_define_module), eval.c (rb_eval),
+	  variable.c (rb_mod_const_at, rb_const_assign): removed autoload
+	  stuff.
+
+	* intern.h: prototypes; rb_autoload, rb_autoload_load,
+	  rb_autoload_p.
+
+Thu May 29 09:11:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse.rb (OptionParser::Switch::PlacedArgument::parse):
+	  do not treat unmatched argument as an option.
+
 Tue May 27 20:33:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c, util.c: removed duplicated includes/defines.
