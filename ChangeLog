@@ -1,3 +1,10 @@
+Sun Sep 12 23:53:17 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* util.c (ruby_strdup): remove unnecessary code. (xmalloc never
+	  returns NULL.)
+
+	* util.c (ruby_getcwd): fix memory leak on failure.
+
 Sun Sep 12 02:41:58 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: add TclTkIp#allow_ruby_exit? and 
