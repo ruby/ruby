@@ -6941,28 +6941,33 @@ method_inspect(method)
     rb_str_buf_cat2(str, ": ");
 
     if (FL_TEST(data->klass, FL_SINGLETON)) {
-	VALUE v;
+	VALUE v = rb_iv_get(data->klass, "__attached__");
 
-	rb_str_buf_append(str, rb_inspect(data->recv));
-	v = rb_iv_get(data->klass, "__attached__");
-	if (data->recv != v) {
-	    rb_str_buf_cat2(str, "(");
+	if (data->recv == Qundef) {
+	    rb_str_buf_append(str, rb_inspect(data->klass));
+	}
+	else if (data->recv == v) {
 	    rb_str_buf_append(str, rb_inspect(v));
-	    rb_str_buf_cat2(str, ").");
+	    sharp = ".";
 	}
 	else {
-	    rb_str_buf_cat2(str, ".");
+	    rb_str_buf_append(str, rb_inspect(data->recv));
+	    rb_str_buf_cat2(str, "(");
+	    rb_str_buf_append(str, rb_inspect(v));
+	    rb_str_buf_cat2(str, ")");
+	    sharp = ".";
 	}
     }
     else {
 	rb_str_buf_cat2(str, rb_class2name(data->rklass));
-	rb_str_buf_cat2(str, "(");
-	s = rb_class2name(data->klass);
-	rb_str_buf_cat2(str, s);
-	rb_str_buf_cat2(str, ")#");
+	if (data->rklass != data->klass) {
+	    rb_str_buf_cat2(str, "(");
+	    rb_str_buf_cat2(str, rb_class2name(data->klass));
+	    rb_str_buf_cat2(str, ")");
+	}
     }
-    s = rb_id2name(data->oid);
-    rb_str_buf_cat2(str, s);
+    rb_str_buf_cat2(str, sharp);
+    rb_str_buf_cat2(str, rb_id2name(data->oid));
     rb_str_buf_cat2(str, ">");
 
     return str;

@@ -1327,10 +1327,10 @@ env_select(argc, argv)
 	while (*env) {
 	    char *s = strchr(*env, '=');
 	    if (s) {
-		VALUE str = rb_tainted_str_new(*env, s-*env);
-
-		if (RTEST(rb_yield(str))) {
-		    rb_ary_push(result, str);
+                VALUE assoc = rb_assoc_new(rb_tainted_str_new(*env, s-*env),
+                                           rb_tainted_str_new2(s+1));
+		if (RTEST(rb_yield(assoc))) {
+		    rb_ary_push(result, assoc);
 		}
 	    }
 	    env++;

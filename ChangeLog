@@ -1,11 +1,27 @@
+Mon Feb 25 15:14:01 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (method_inspect): should not dump core for unbound
+	  singleton methods.
+
+	* object.c (rb_mod_to_s): better description.
+
 Mon Feb 25 13:32:13 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/shell.rb (Shell::expand_path): relative to @cwd.
+
+Mon Feb 25 06:30:11 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* hash.c (env_select): should path the assoc list.
 
 Sun Feb 24 17:20:22 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/*/*.h: Merge from rough.
 	  - Avoid namespace pollution. (MD5_* -> rb_Digest_MD5_*, etc.)
+
+Sat Feb 23 21:12:13 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (rb_syswait): thread kludge; should be fixed to
+	  support native thread.
 
 Fri Feb 22 21:20:53 2002  Minero Aoki  <aamine@loveruby.net>
 
