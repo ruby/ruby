@@ -1,3 +1,8 @@
+Tue May 25 01:50:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_asn1.c (ossl_i2d_ASN1_TYPE, ossl_ASN1_TYPE_free):
+	  workaround for the versions earlier than OpenSSL-0.9.7.
+
 Mon May 24 10:46:26 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/rdoc/generators/template/html/html.rb: SYSTEM identifiers
