@@ -348,7 +348,7 @@ module Net
           tmp = Digest::MD5.digest( isecret + challenge )
           tmp = Digest::MD5.hexdigest( osecret + tmp )
 
-          getok [user + ' ' + tmp].pack('m').chomp
+          getok [user + ' ' + tmp].pack('m').gsub(/\s+/, '')
       }
     end
 

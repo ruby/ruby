@@ -1,3 +1,8 @@
+Tue Mar 11 21:06:31 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb (auth_cram_md5): Digest string had wrongly
+	  included '\n' when user name is too long. (ruby-bugs-ja:PR#404)
+
 Fri Mar  7 00:30:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/Win32API/Win32API.c: no longer use inline-asms.
