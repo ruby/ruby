@@ -1,3 +1,7 @@
+Fri Feb 21 12:45:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cmp_m): two small bugs fixed.
+
 Fri Feb 21 08:03:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (rb_gc_mark): inline rb_gc_mark_children().

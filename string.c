@@ -816,10 +816,11 @@ rb_str_cmp_m(str1, str2)
 	else {
 	    VALUE tmp = rb_funcall(str2, rb_intern("<=>"), 1, str1);
 
+	    if (NIL_P(tmp)) return Qnil;
 	    if (!FIXNUM_P(tmp)) {
-		return rb_funcall(LONG2FIX(0), '-', tmp);
+		return rb_funcall(LONG2FIX(0), '-', 1, tmp);
 	    }
-	    result = FIX2LONG(tmp);
+	    result = -FIX2LONG(tmp);
 	}
     }
     else {
