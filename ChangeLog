@@ -1,6 +1,6 @@
-Tue Jun 25 00:24:00 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+Tue Jun 25 18:40:50 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
-	* dln.c: remark definition rb_loaderror().
+	* dln.c: remove definition rb_loaderror().
 
 Thu Jun 20 21:09:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
