@@ -1,3 +1,7 @@
+Sat Jan 10 22:46:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_inspect): new method, Dir#inspect.  [ruby-dev:22562]
+
 Fri Jan  9 13:14:59 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/test/unit/collector/dir.rb: do not ignore exceptions(LoadError

@@ -374,6 +374,29 @@ dir_closed()
 
 /*
  *  call-seq:
+ *     dir.inspect => string
+ *
+ *  Return a string describing this Dir object.
+ */
+static VALUE
+dir_inspect(dir)
+    VALUE dir;
+{
+    struct dir_data *dirp;
+
+    GetDIR(dir, dirp);
+    if (dirp->path) {
+	char *c = rb_obj_classname(dir);
+	int len = strlen(c) + strlen(dirp->path) + 4;
+	VALUE s = rb_str_new(0, len);
+	snprintf(RSTRING(s)->ptr, len+1, "#<%s:%s>", c, dirp->path);
+	return s;
+    }
+    return rb_funcall(dir, rb_intern("to_s"), 0, 0);
+}
+
+/*
+ *  call-seq:
  *     dir.path => string or nil
  *
  *  Returns the path parameter passed to <em>dir</em>'s constructor.
@@ -1502,6 +1525,7 @@ Init_Dir()
 
     rb_define_method(rb_cDir,"initialize", dir_initialize, 1);
     rb_define_method(rb_cDir,"path", dir_path, 0);
+    rb_define_method(rb_cDir,"inspect", dir_inspect, 0);
     rb_define_method(rb_cDir,"read", dir_read, 0);
     rb_define_method(rb_cDir,"each", dir_each, 0);
     rb_define_method(rb_cDir,"rewind", dir_rewind, 0);
