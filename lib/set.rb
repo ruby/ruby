@@ -8,222 +8,46 @@
 #
 # You can redistribute and/or modify it under the same terms as Ruby.
 #
+# $Id$
+# 
+# This library provides the Set class that deals with a collection of
+# unordered values with no duplicates.  It is a hybrid of Array's
+# intuitive inter-operation facilities and Hash's fast lookup.
+#
+#== Example
+#
+#  require 'set'
+#
+#  set1 = Set.new ["foo", "bar", "baz"]
+#
+#  p set1			#=> #<Set: {"baz", "foo", "bar"}>
+#
+#  p set1.include?("bar")	#=> true
+#
+#  set1.add("heh")
+#  set1.delete("foo")
+#
+#  p set1			#=> #<Set: {"heh", "baz", "bar"}>
 
-=begin
-= set.rb
-
-This library provides the Set class that deals with a collection of
-unordered values with no duplicates.  It is a hybrid of Array's
-intuitive inter-operation facilities and Hash's fast lookup.
-
-== Example
-
-  require 'set'
-
-  set1 = Set.new ["foo", "bar", "baz"]
-
-  p set1			#=> #<Set: {"baz", "foo", "bar"}>
-
-  p set1.include?("bar")	#=> true
-
-  set1.add("heh")
-  set1.delete("foo")
-
-  p set1			#=> #<Set: {"heh", "baz", "bar"}>
-
-== Set class
-Set implements a collection of unordered values with no duplicates.
-This is a hybrid of Array's intuitive inter-operation facilities and
-Hash's fast lookup.
-
-The equality of each couple of elements is determined according to
-Object#eql? and Object#hash, since Set uses Hash as storage.
-
-=== Included Modules
-    Enumerable
-
-=== Class Methods
---- Set::new(enum = nil)
---- Set::new(enum = nil) { |o| ... }
-    Creates a new set containing the elements of the given enumerable
-    object.
-
-    If a block is given, the elements of enum are preprocessed by the
-    given block.
-
---- Set[*ary]
-    Creates a new set containing the given objects.
-
-=== Instance Methods
---- dup
-    Duplicates the set.
-
---- size
---- length
-    Returns the number of elements.
-
---- empty?
-    Returns true if the set contains no elements.
-
---- clear
-    Removes all elements and returns self.
-
---- replace(enum)
-    Replaces the contents of the set with the contents of the given
-    enumerable object and returns self.
-
---- flatten
-    Returns a new set that is a copy of the set, flattening each
-    containing set recursively.
-
---- flatten!
-    Equivalent to Set#flatten, but replaces the receiver with the
-    result in place.  Returns nil if no modifications were made.
-
---- to_a
-    Converts the set to an array. (the order is uncertain)
-
---- include?(o)
---- member?(o)
-    Returns true if the set contains the given object.
-
---- superset?(set)
-    Returns true if the set is a superset of or is equal to the given
-    set.
-
---- proper_superset?(set)
-    Returns true if the set is a superset of or is equal to the given
-    set.
-
---- subset?(set)
-    Returns true if the set is a proper subset of the given set.
-
---- proper_subset?(set)
-    Returns true if the set is a proper subset of the given set.
-
---- each { |o| ... }
-    Calls the given block once for each element in the set, passing
-    the element as parameter.
-
---- add(o)
---- << o
-    Adds the given object to the set and returns self.
-
---- add?(o)
-    Adds the given object to the set and returns self.  If it the
-    object is already in the set, returns nil.
-
---- delete(o)
-    Deletes the given object from the set and returns self.
-
---- delete?(o)
-    Deletes the given object from the set and returns self.  If the
-    object is not in the set, returns nil.
-
---- delete_if { |o| ... }
-    Deletes every element of the set for which block evaluates to
-    true, and returns self.
-
---- collect! { |o| ... }
---- map! { |o| ... }
-    Do collect() destructively.
-
---- reject! { |o| ... }
-    Equivalent to Set#delete_if, but returns nil if no changes were
-    made.
-
---- merge(enum)
-    Merges the elements of the given enumerable object to the set and
-    returns self.
-
---- subtract(enum)
-    Deletes every element that appears in the given enumerable object
-    and returns self.
-
---- + enum
---- | enum
---- union(enum)
-    Returns a new set built by merging the set and the elements of the
-    given enumerable object.
-
---- - enum
-    Returns a new set built by duplicating the set, removing every
-    element that appear in the given enumerable object.
-
---- & enum
---- intersection(enum)
-    Returns a new array containing elements common to the set and the
-    given enumerable object.
-
---- ^ enum
-    Returns a new array containing elements exclusive between the set
-    and the given enumerable object.  (set ^ enum) is equivalent to
-    ((set | enum) - (set & enum)).
-
---- == set
-    Returns true if two sets are equal.  The equality of each couple
-    of elements is defined according to Object#eql?.
-
---- classify { |o| ... }
-    Classifies the set by the return value of the given block and
-    returns a hash of {value => set of elements} pairs.  The block is
-    called once for each element of the set, passing the element as
-    parameter.
-
-    e.g.:
-
-      require 'set'
-      files = Set.new(Dir.glob("*.rb"))
-      hash = files.classify { |f| File.mtime(f).year }
-      p hash    #=> {2000=>#<Set: {"a.rb", "b.rb"}>,
-                #    2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
-                #    2002=>#<Set: {"f.rb"}>}
-
---- divide { |o| ... }
---- divide { |o1, o2| ... }
-    Divides the set into a set of subsets according to the commonality
-    defined by the given block.
-
-    If the arity of the block is 2, elements o1 and o2 are in common
-    if block.call(o1, o2) is true.  Otherwise, elements o1 and o2 are
-    in common if block.call(o1) == block.call(o2).
-
-    e.g.:
-
-      require 'set'
-      numbers = Set[1, 3, 4, 6, 9, 10, 11]
-      set = numbers.divide { |i,j| (i - j).abs == 1 }
-      p set     #=> #<Set: {#<Set: {1}>,
-                #           #<Set: {11, 9, 10}>,
-                #           #<Set: {3, 4}>,
-                #           #<Set: {6}>}>
-
---- inspect
-    Returns a string containing a human-readable representation of the
-    set. ("#<Set: {element1, element2, ...}>")
-
-== SortedSet class
-SortedSet implements a set which elements are sorted in order.
-
-=== Super class
-    Set
-
-== Enumerable module
-
-=== Instance Methods
---- to_set(klass = Set, *args)
---- to_set(klass = Set, *args) { |o| ... }
-    Makes a set from the enumerable object with given arguments.
-
-=end
-
+# Set implements a collection of unordered values with no duplicates.
+# This is a hybrid of Array's intuitive inter-operation facilities and
+# Hash's fast lookup.
+#
+# The equality of each couple of elements is determined according to
+# Object#eql? and Object#hash, since Set uses Hash as storage.
 class Set
   include Enumerable
 
+  # Creates a new set containing the given objects.
   def self.[](*ary)
     new(ary)
   end
 
+  # Creates a new set containing the elements of the given enumerable
+  # object.
+  #
+  # If a block is given, the elements of enum are preprocessed by the
+  # given block.
   def initialize(enum = nil, &block)
     @hash ||= Hash.new
 
@@ -236,6 +60,7 @@ class Set
     end
   end
 
+  # Duplicates the set.
   def dup
     myhash = @hash
     self.class.new.instance_eval {
@@ -244,20 +69,25 @@ class Set
     }
   end
 
+  # Returns the number of elements.
   def size
     @hash.size
   end
   alias length size
 
+  # Returns true if the set contains no elements.
   def empty?
     @hash.empty?
   end
 
+  # Removes all elements and returns self.
   def clear
     @hash.clear
     self
   end
 
+  # Replaces the contents of the set with the contents of the given
+  # enumerable object and returns self.
   def replace(enum)
     if enum.class == self.class
       @hash.replace(enum.instance_eval { @hash })
@@ -270,6 +100,7 @@ class Set
     self
   end
 
+  # Converts the set to an array. (the order is uncertain)
   def to_a
     @hash.keys
   end
@@ -293,10 +124,14 @@ class Set
   end
   protected :flatten_merge
 
+  # Returns a new set that is a copy of the set, flattening each
+  # containing set recursively.
   def flatten
     self.class.new.flatten_merge(self)
   end
 
+  # Equivalent to Set#flatten, but replaces the receiver with the
+  # result in place.  Returns nil if no modifications were made.
   def flatten!
     if detect { |e| e.is_a?(Set) }
       replace(flatten())
@@ -305,45 +140,57 @@ class Set
     end
   end
 
+  # Returns true if the set contains the given object.
   def include?(o)
     @hash.include?(o)
   end
   alias member? include?
 
+  # Returns true if the set is a superset of or is equal to the given
+  # set.
   def superset?(set)
     set.is_a?(Set) or raise ArgumentError, "value must be a set"
     return false if size < set.size
     set.all? { |o| include?(o) }
   end
 
+  # Returns true if the set is a superset of or is equal to the given
+  # set.
   def proper_superset?(set)
     set.is_a?(Set) or raise ArgumentError, "value must be a set"
     return false if size <= set.size
     set.all? { |o| include?(o) }
   end
 
+  # Returns true if the set is a proper subset of the given set.
   def subset?(set)
     set.is_a?(Set) or raise ArgumentError, "value must be a set"
     return false if set.size < size
     all? { |o| set.include?(o) }
   end
 
+  # Returns true if the set is a proper subset of the given set.
   def proper_subset?(set)
     set.is_a?(Set) or raise ArgumentError, "value must be a set"
     return false if set.size <= size
     all? { |o| set.include?(o) }
   end
 
+  # Calls the given block once for each element in the set, passing
+  # the element as parameter.
   def each
     @hash.each_key { |o| yield(o) }
   end
 
+  # Adds the given object to the set and returns self.
   def add(o)
     @hash[o] = true
     self
   end
   alias << add
 
+  # Adds the given object to the set and returns self.  If it the
+  # object is already in the set, returns nil.
   def add?(o)
     if include?(o)
       nil
@@ -352,11 +199,14 @@ class Set
     end
   end
 
+  # Deletes the given object from the set and returns self.
   def delete(o)
     @hash.delete(o)
     self
   end
 
+  # Deletes the given object from the set and returns self.  If the
+  # object is not in the set, returns nil.
   def delete?(o)
     if include?(o)
       delete(o)
@@ -365,11 +215,14 @@ class Set
     end
   end
 
+  # Deletes every element of the set for which block evaluates to
+  # true, and returns self.
   def delete_if
     @hash.delete_if { |o,| yield(o) }
     self
   end
 
+  # Do collect() destructively.
   def collect!
     set = self.class.new
     each { |o| set << yield(o) }
@@ -377,12 +230,16 @@ class Set
   end
   alias map! collect!
 
+  # Equivalent to Set#delete_if, but returns nil if no changes were
+  # made.
   def reject!
     n = size
     delete_if { |o| yield(o) }
     size == n ? nil : self
   end
 
+  # Merges the elements of the given enumerable object to the set and
+  # returns self.
   def merge(enum)
     if enum.class == self.class
       @hash.update(enum.instance_eval { @hash })
@@ -394,12 +251,16 @@ class Set
     self
   end
 
+  # Deletes every element that appears in the given enumerable object
+  # and returns self.
   def subtract(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     enum.each { |o| delete(o) }
     self
   end
 
+  # Returns a new set built by merging the set and the elements of the
+  # given enumerable object.
   def |(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     dup.merge(enum)
@@ -407,12 +268,16 @@ class Set
   alias + |		##
   alias union |		##
 
+  # Returns a new set built by duplicating the set, removing every
+  # element that appear in the given enumerable object.
   def -(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     dup.subtract(enum)
   end
   alias difference -	##
 
+  # Returns a new array containing elements common to the set and the
+  # given enumerable object.
   def &(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     n = self.class.new
@@ -421,6 +286,9 @@ class Set
   end
   alias intersection &	##
 
+  # Returns a new array containing elements exclusive between the set
+  # and the given enumerable object.  (set ^ enum) is equivalent to
+  # ((set | enum) - (set & enum)).
   def ^(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     n = dup
@@ -428,6 +296,8 @@ class Set
     n
   end
 
+  # Returns true if two sets are equal.  The equality of each couple
+  # of elements is defined according to Object#eql?.
   def ==(set)
     equal?(set) and return true
 
@@ -436,14 +306,27 @@ class Set
     set.all? { |o| include?(o) }
   end
 
-  def hash
+  def hash	# :nodoc:
     @hash.hash
   end
 
-  def eql?(o)
+  def eql?(o)	# :nodoc:
     @hash.hash == o.hash
   end
 
+  # Classifies the set by the return value of the given block and
+  # returns a hash of {value => set of elements} pairs.  The block is
+  # called once for each element of the set, passing the element as
+  # parameter.
+  #
+  # e.g.:
+  #
+  #   require 'set'
+  #   files = Set.new(Dir.glob("*.rb"))
+  #   hash = files.classify { |f| File.mtime(f).year }
+  #   p hash    #=> {2000=>#<Set: {"a.rb", "b.rb"}>,
+  #             #    2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
+  #             #    2002=>#<Set: {"f.rb"}>}
   def classify
     h = {}
 
@@ -455,11 +338,27 @@ class Set
     h
   end
 
+  # Divides the set into a set of subsets according to the commonality
+  # defined by the given block.
+  #
+  # If the arity of the block is 2, elements o1 and o2 are in common
+  # if block.call(o1, o2) is true.  Otherwise, elements o1 and o2 are
+  # in common if block.call(o1) == block.call(o2).
+  #
+  # e.g.:
+  #
+  #   require 'set'
+  #   numbers = Set[1, 3, 4, 6, 9, 10, 11]
+  #   set = numbers.divide { |i,j| (i - j).abs == 1 }
+  #   p set     #=> #<Set: {#<Set: {1}>,
+  #             #           #<Set: {11, 9, 10}>,
+  #             #           #<Set: {3, 4}>,
+  #             #           #<Set: {6}>}>
   def divide(&func)
     if func.arity == 2
       require 'tsort'
 
-      class << dig = {}
+      class << dig = {}		# :nodoc:
 	include TSort
 
 	alias tsort_each_node each_key
@@ -485,6 +384,8 @@ class Set
 
   InspectKey = :__inspect_key__
 
+  # Returns a string containing a human-readable representation of the
+  # set. ("#<Set: {element1, element2, ...}>")
   def inspect
     ids = (Thread.current[InspectKey] ||= [])
 
@@ -500,7 +401,7 @@ class Set
     end
   end
 
-  def pretty_print(pp)
+  def pretty_print(pp)	# :nodoc:
     pp.text sprintf('#<%s: {', self.class.name)
     pp.nest(1) {
       first = true
@@ -517,20 +418,21 @@ class Set
     pp.text "}>"
   end
 
-  def pretty_print_cycle(pp)
+  def pretty_print_cycle(pp)	# :nodoc:
     pp.text sprintf('#<%s: {%s}>', self.class.name, empty? ? '' : '...')
   end
 end
 
+# SortedSet implements a set which elements are sorted in order.
 class SortedSet < Set
   @@setup = false
 
   class << self
-    def [](*ary)
+    def [](*ary)	# :nodoc:
       new(ary)
     end
 
-    def setup
+    def setup	# :nodoc:
       @@setup and return
 
       begin
@@ -599,13 +501,14 @@ class SortedSet < Set
     end
   end
 
-  def initialize(*args, &block)
+  def initialize(*args, &block)	# :nodoc:
     SortedSet.setup
     initialize(*args, &block)
   end
 end
 
 module Enumerable
+  # Makes a set from the enumerable object with given arguments.
   def to_set(klass = Set, *args, &block)
     klass.new(self, *args, &block)
   end
