@@ -939,8 +939,8 @@ set_arg0(val, id)
 	for (i = 1; i < origargc; i++)
 	    origargv[i] = 0;
     }
-#endif
     rb_progname = rb_tainted_str_new2(origargv[0]);
+#endif
 }
 
 void
