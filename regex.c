@@ -195,32 +195,27 @@ init_syntax_once()
    macros don't need to be guarded with references to isascii. ...
    Defining isascii to 1 should let any compiler worth its salt
    eliminate the && through constant folding."  */
-#if ! defined (isascii) || defined (STDC_HEADERS)
-#undef isascii
-#define isascii(c) 1
-#endif
-
 #ifdef isblank
-#define ISBLANK(c) (isascii (c) && isblank (c))
+#define ISBLANK(c) isblank ((unsigned char)c)
 #else
 #define ISBLANK(c) ((c) == ' ' || (c) == '\t')
 #endif
 #ifdef isgraph
-#define ISGRAPH(c) (isascii (c) && isgraph (c))
+#define ISGRAPH(c) isgraph ((unsigned char)c)
 #else
-#define ISGRAPH(c) (isascii (c) && isprint (c) && !isspace (c))
+#define ISGRAPH(c) (isprint ((unsigned char)c) && !isspace ((unsigned char)c))
 #endif
 
-#define ISPRINT(c) (isascii (c) && isprint (c))
-#define ISDIGIT(c) (isascii (c) && isdigit (c))
-#define ISALNUM(c) (isascii (c) && isalnum (c))
-#define ISALPHA(c) (isascii (c) && isalpha (c))
-#define ISCNTRL(c) (isascii (c) && iscntrl (c))
-#define ISLOWER(c) (isascii (c) && islower (c))
-#define ISPUNCT(c) (isascii (c) && ispunct (c))
-#define ISSPACE(c) (isascii (c) && isspace (c))
-#define ISUPPER(c) (isascii (c) && isupper (c))
-#define ISXDIGIT(c) (isascii (c) && isxdigit (c))
+#define ISPRINT(c) isprint ((unsigned char)c)
+#define ISDIGIT(c) isdigit ((unsigned char)c)
+#define ISALNUM(c) isalnum ((unsigned char)c)
+#define ISALPHA(c) isalpha ((unsigned char)c)
+#define ISCNTRL(c) iscntrl ((unsigned char)c)
+#define ISLOWER(c) islower ((unsigned char)c)
+#define ISPUNCT(c) ispunct ((unsigned char)c)
+#define ISSPACE(c) isspace ((unsigned char)c)
+#define ISUPPER(c) isupper ((unsigned char)c)
+#define ISXDIGIT(c) isxdigit ((unsigned char)c)
 
 /* These are the command codes that appear in compiled regular
    expressions, one per byte.  Some command codes are followed by
