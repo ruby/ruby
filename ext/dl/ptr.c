@@ -660,6 +660,7 @@ cary2ary(void *ptr, char t, int len)
       ptr = (char *)ptr + sizeof(long);
       break;
     case 'P':
+    case 'S':
       elem = rb_dlptr_new(*((void**)ptr),0, 0);
       ptr = (char *)ptr + sizeof(void*);
       break;
@@ -697,6 +698,7 @@ cary2ary(void *ptr, char t, int len)
       ptr = (char *)ptr + sizeof(long);
       break;
     case 'P':
+    case 'S':
       elem = rb_dlptr_new(*((void**)ptr), 0, 0);
       ptr = (char *)ptr + sizeof(void*);
       break;
@@ -764,6 +766,7 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	  DLALIGN(data->ptr,offset,LONG_ALIGN);
 	  break;
 	case 'P':
+	case 'S':
 	  DLALIGN(data->ptr,offset,VOIDP_ALIGN);
 	  break;
 	case 'F':
@@ -790,6 +793,7 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	offset += sizeof(long) * data->ssize[i];
 	break;
       case 'P':
+      case 'S':
 	offset += sizeof(void*) * data->ssize[i];
 	break;
       case 'F':
@@ -895,6 +899,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	  DLALIGN(data->ptr,offset,LONG_ALIGN);
 	  break;
 	case 'P':
+	case 'S':
 	  DLALIGN(data->ptr,offset,VOIDP_ALIGN);
 	  break;
 	case 'D':
@@ -926,6 +931,8 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	break;
       case 'P':
       case 'p':
+      case 'S':
+      case 's':
 	offset += sizeof(void*) * data->ssize[i];
 	break;
       case 'D':
@@ -961,6 +968,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	  memsize = sizeof(long) * data->ssize[i];
 	  break;
 	case 'P': case 'p':
+	case 'S': case 's':
 	  memsize = sizeof(void*) * data->ssize[i];
 	  break;
 	case 'F': case 'f':

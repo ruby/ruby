@@ -34,36 +34,43 @@ module DL
       ["u_int",  "unsigned int", nil, nil, nil, nil],
       ["ulong",  "unsigned long", nil, nil, nil, nil],
       ["u_long", "unsigned long", nil, nil, nil, nil],
-      
+
       # DL::Importable primitive types
       ["ibool",   "I",
 	proc{|v| v ? 1 : 0},
 	proc{|v| (v != 0) ? true : false},
-	nil, nil],
+	proc{|v| v ? 1 : 0 },
+	proc{|v| (v != 0) ? true : false} ],
       ["cbool",   "C",
 	proc{|v| v ? 1 : 0},
 	proc{|v| (v != 0) ? true : false},
-	nil, nil],
+	proc{|v,len| v ? 1 : 0},
+	proc{|v,len| (v != 0) ? true : false}],
       ["lbool",   "L",
 	proc{|v| v ? 1 : 0},
 	proc{|v| (v != 0) ? true : false},
-	nil, nil],
+	proc{|v,len| v ? 1 : 0},
+	proc{|v,len| (v != 0) ? true : false}],
       ["unsigned char", "I",
 	proc{|v| [v].pack("C").unpack("c")[0]},
 	proc{|v| [v].pack("c").unpack("C")[0]},
-	nil, nil],
+	proc{|v| [v].pack("C").unpack("c")[0]},
+	proc{|v| [v].pack("c").unpack("C")[0]}],
       ["unsigned short", "H",
 	proc{|v| [v].pack("S").unpack("s")[0]},
 	proc{|v| [v].pack("s").unpack("S")[0]},
-	nil, nil],
+	proc{|v| [v].pack("S").unpack("s")[0]},
+	proc{|v| [v].pack("s").unpack("S")[0]}],
       ["unsigned int", "I",
 	proc{|v| [v].pack("I").unpack("i")[0]},
 	proc{|v| [v].pack("i").unpack("I")[0]},
-	nil, nil],
+	proc{|v| [v].pack("I").unpack("i")[0]},
+	proc{|v| [v].pack("i").unpack("I")[0]}],
       ["unsigned long", "L",
 	proc{|v| [v].pack("L").unpack("l")[0]},
 	proc{|v| [v].pack("l").unpack("L")[0]},
-	nil, nil],
+	proc{|v| [v].pack("L").unpack("l")[0]},
+	proc{|v| [v].pack("l").unpack("L")[0]}],
       ["unsigned char ref", "i",
 	proc{|v| [v].pack("C").unpack("c")[0]},
 	proc{|v| [v].pack("c").unpack("C")[0]},
@@ -116,7 +123,7 @@ module DL
 	if( t1.is_a?(String) )
 	  t1 = Regexp.new("^" + t1 + "$")
 	end
-	if( ty =~ t1 )
+	if( t1 =~ ty )
 	  ty = ty.gsub(t1,t2)
 	  if( enc )
 	    if( c1 )
