@@ -1,3 +1,9 @@
+2004-10-06  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* bwidget.rb (BWidget.grab): bug fix
+
+	* tcllib.rb: typo fix
+
 2004-07-28  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* add winico support

@@ -1,3 +1,7 @@
+Thu Oct  7 01:05:33 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: add Tk.errorInfo and Tk.errorCode
+
 Thu Oct  7 00:08:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_s_sysopen): preserve path in the buffer allocated by

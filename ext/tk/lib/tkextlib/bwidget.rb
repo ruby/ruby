@@ -72,7 +72,7 @@ module Tk
     end
 
     def self.grab(opt, path)
-      tk_call('BWidget::', opt, path)
+      tk_call('BWidget::grab', opt, path)
     end
 
     def self.inuse(klass)

@@ -29,7 +29,7 @@ rescue => e
   err << "\n  ['" << target << "'] "  << e.class.name << ' : ' << e.message
 end
 
-# package:: cursor
+# package:: style
 target = 'tkextlib/tcllib/style'
 begin
   require target
