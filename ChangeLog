@@ -1,3 +1,7 @@
+Wed Mar 28 19:29:21 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/extmk.rb.in, lib/mkmf.rb: move C++ rules to the right place.
+
 Wed Mar 28 17:39:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_str2cstr): warn if string contains \0 and length

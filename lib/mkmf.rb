@@ -492,6 +492,15 @@ EOMF
     mfile.print "
 .c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+.cc.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+.cpp.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+.cxx.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+.C.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 "
   elsif /nmake/i =~ $make
     mfile.print "
@@ -507,9 +516,6 @@ EOMF
 
 .c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
-
-.cc.#{$OBJEXT} .cpp.#{$OBJEXT} .cxx.#{$OBJEXT} .C.#{$OBJEXT}:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
 "
   end
 
