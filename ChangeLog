@@ -1,3 +1,7 @@
+Tue May  4 23:46:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/xmlrpc/README.txt: introduced for documentation purposes
+
 Mon May  3 09:47:24 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_or_yield_parameters):
