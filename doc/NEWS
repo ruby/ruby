@@ -1,3 +1,7 @@
+: dl module
+
+  Imported. An interface to the dynamic linker.
+
 : IO#sysseek
 
   Added.
