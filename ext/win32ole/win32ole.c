@@ -1691,6 +1691,7 @@ ole_invoke(argc, argv, self, wFlags)
     unsigned int argErr = 0;
     unsigned int i;
     unsigned int cNamedArgs;
+    int n;
     struct oleparam op;
     memset(&excepinfo, 0, sizeof(EXCEPINFO));
 
@@ -1768,7 +1769,7 @@ ole_invoke(argc, argv, self, wFlags)
     if(op.dp.cArgs > cNamedArgs) {
         realargs = ALLOCA_N(VARIANTARG, op.dp.cArgs-cNamedArgs+1);
         for(i = cNamedArgs; i < op.dp.cArgs; i++) {
-            int n = op.dp.cArgs - i + cNamedArgs - 1;
+            n = op.dp.cArgs - i + cNamedArgs - 1;
             VariantInit(&realargs[n]);
             VariantInit(&op.dp.rgvarg[n]);
             param = rb_ary_entry(paramS, i-cNamedArgs);
@@ -1793,6 +1794,23 @@ ole_invoke(argc, argv, self, wFlags)
                                          &IID_NULL, lcid, wFlags, &op.dp, 
                                          &result, &excepinfo, &argErr);
     if (FAILED(hr)) {
+        /* retry to call args by value */
+        if(op.dp.cArgs > cNamedArgs) {
+            for(i = cNamedArgs; i < op.dp.cArgs; i++) {
+                n = op.dp.cArgs - i + cNamedArgs - 1;
+                param = rb_ary_entry(paramS, i-cNamedArgs);
+                ole_val2variant(param, &op.dp.rgvarg[n]);
+            }
+            memset(&excepinfo, 0, sizeof(EXCEPINFO));
+            hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
+                                                 &IID_NULL, lcid, wFlags,
+                                                 &op.dp, NULL,
+                                                 &excepinfo, &argErr);
+            for(i = cNamedArgs; i < op.dp.cArgs; i++) {
+                n = op.dp.cArgs - i + cNamedArgs - 1;
+                VariantClear(&op.dp.rgvarg[n]);
+            }
+        }
         /* mega kludge. if a method in WORD is called and we ask
          * for a result when one is not returned then
          * hResult == DISP_E_EXCEPTION. this only happens on
@@ -1811,7 +1829,7 @@ ole_invoke(argc, argv, self, wFlags)
         args = rb_cvar_get(cWIN32OLE, rb_intern("ARGV"));
         rb_funcall(args, rb_intern("clear"), 0);
         for(i = cNamedArgs; i < op.dp.cArgs; i++) {
-            int n = op.dp.cArgs - i + cNamedArgs - 1;
+            n = op.dp.cArgs - i + cNamedArgs - 1;
             rb_ary_push(args, ole_variant2val(&realargs[n]));
             VariantClear(&realargs[n]);
         }
