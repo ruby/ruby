@@ -172,7 +172,7 @@ module Net # :nodoc:
     # or ip address of your SMTP server.  +port+ is the port to
     # connect to; it defaults to port 25.
     # This method does not open the TCP connection.
-    def initialize( address, port = nil )
+    def initialize(address, port = nil)
       @address = address
       @port = (port || SMTP.default_port)
       @esmtp = true
@@ -199,7 +199,7 @@ module Net # :nodoc:
     # and the connection fails due to a ProtocolError, the SMTP
     # object will automatically switch to plain SMTP mode and
     # retry (but not vice versa).
-    def esmtp=( bool )
+    def esmtp=(bool)
       @esmtp = bool
     end
 
@@ -223,7 +223,7 @@ module Net # :nodoc:
 
     # Set the number of seconds to wait until timing-out a read(2)
     # call.
-    def read_timeout=( sec )
+    def read_timeout=(sec)
       @socket.read_timeout = sec if @socket
       @read_timeout = sec
     end
@@ -240,7 +240,7 @@ module Net # :nodoc:
     #   smtp.start {
     #     ....
     #   }
-    def set_debug_output( arg )
+    def set_debug_output(arg)
       @debug_output = arg
     end
 
@@ -284,10 +284,9 @@ module Net # :nodoc:
     # * Net::SMTPUnknownError
     # * IOError
     # * TimeoutError
-    def SMTP.start( address, port = nil,
-                    helo = 'localhost.localdomain',
-                    user = nil, secret = nil, authtype = nil,
-                    &block) # :yield: smtp
+    def SMTP.start(address, port = nil, helo = 'localhost.localdomain',
+                   user = nil, secret = nil, authtype = nil,
+                   &block)   # :yield: smtp
       new(address, port).start(helo, user, secret, authtype, &block)
     end
 
@@ -323,8 +322,8 @@ module Net # :nodoc:
     # * Net::SMTPUnknownError
     # * IOError
     # * TimeoutError
-    def start( helo = 'localhost.localdomain',
-               user = nil, secret = nil, authtype = nil ) # :yield: smtp
+    def start(helo = 'localhost.localdomain',
+              user = nil, secret = nil, authtype = nil)   #:yield: smtp
       if block_given?
         begin
           do_start(helo, user, secret, authtype)
@@ -338,7 +337,7 @@ module Net # :nodoc:
       end
     end
 
-    def do_start( helodomain, user, secret, authtype )
+    def do_start(helodomain, user, secret, authtype)
       raise IOError, 'SMTP session already started' if @started
       check_auth_args user, secret, authtype if user or secret
 
@@ -417,7 +416,7 @@ module Net # :nodoc:
     # * Net::SMTPUnknownError
     # * IOError
     # * TimeoutError
-    def send_message( msgstr, from_addr, *to_addrs )
+    def send_message(msgstr, from_addr, *to_addrs)
       send0(from_addr, to_addrs.flatten) {
         @socket.write_message msgstr
       }
@@ -462,7 +461,7 @@ module Net # :nodoc:
     # * Net::SMTPUnknownError
     # * IOError
     # * TimeoutError
-    def open_message_stream( from_addr, *to_addrs, &block ) # :yield: stream
+    def open_message_stream(from_addr, *to_addrs, &block)   #:yield: stream
       send0(from_addr, to_addrs.flatten) {
         @socket.write_message_by_block(&block)
       }
@@ -472,7 +471,7 @@ module Net # :nodoc:
 
     private
 
-    def send0( from_addr, to_addrs )
+    def send0(from_addr, to_addrs)
       raise IOError, 'closed session' unless @socket
       raise ArgumentError, 'mail destination not given' if to_addrs.empty?
       if $SAFE > 0
@@ -500,7 +499,7 @@ module Net # :nodoc:
 
     private
 
-    def check_auth_args( user, secret, authtype )
+    def check_auth_args(user, secret, authtype)
       raise ArgumentError, 'both user and secret are required'\
                       unless user and secret
       auth_method = "auth_#{authtype || 'cram_md5'}"
@@ -508,17 +507,17 @@ module Net # :nodoc:
                       unless respond_to?(auth_method, true)
     end
 
-    def authenticate( user, secret, authtype )
+    def authenticate(user, secret, authtype)
       __send__("auth_#{authtype || 'cram_md5'}", user, secret)
     end
 
-    def auth_plain( user, secret )
+    def auth_plain(user, secret)
       res = critical { get_response('AUTH PLAIN %s',
                                     base64_encode("\0#{user}\0#{secret}")) }
       raise SMTPAuthenticationError, res unless /\A2../ === res
     end
 
-    def auth_login( user, secret )
+    def auth_login(user, secret)
       res = critical {
         check_response(get_response('AUTH LOGIN'), true)
         check_response(get_response(base64_encode(user)), true)
@@ -527,7 +526,7 @@ module Net # :nodoc:
       raise SMTPAuthenticationError, res unless /\A2../ === res
     end
 
-    def auth_cram_md5( user, secret )
+    def auth_cram_md5(user, secret)
       # CRAM-MD5: [RFC2195]
       res = nil
       critical {
@@ -549,7 +548,7 @@ module Net # :nodoc:
       raise SMTPAuthenticationError, res unless /\A2../ === res
     end
 
-    def base64_encode( str )
+    def base64_encode(str)
       # expects "str" may not become too long
       [str].pack('m').gsub(/\s+/, '')
     end
@@ -560,19 +559,19 @@ module Net # :nodoc:
 
     private
 
-    def helo( domain )
+    def helo(domain)
       getok('HELO %s', domain)
     end
 
-    def ehlo( domain )
+    def ehlo(domain)
       getok('EHLO %s', domain)
     end
 
-    def mailfrom( fromaddr )
+    def mailfrom(fromaddr)
       getok('MAIL FROM:<%s>', fromaddr)
     end
 
-    def rcptto( to )
+    def rcptto(to)
       getok('RCPT TO:<%s>', to)
     end
 
@@ -586,7 +585,7 @@ module Net # :nodoc:
 
     private
 
-    def getok( fmt, *args )
+    def getok(fmt, *args)
       res = critical {
         @socket.writeline sprintf(fmt, *args)
         recv_response()
@@ -594,7 +593,7 @@ module Net # :nodoc:
       return check_response(res)
     end
 
-    def get_response( fmt, *args )
+    def get_response(fmt, *args)
       @socket.writeline sprintf(fmt, *args)
       recv_response()
     end
@@ -609,7 +608,7 @@ module Net # :nodoc:
       res
     end
 
-    def check_response( res, allow_continue = false )
+    def check_response(res, allow_continue = false)
       return res if /\A2/ === res
       return res if allow_continue and /\A3/ === res
       err = case res
@@ -621,7 +620,7 @@ module Net # :nodoc:
       raise err, res
     end
 
-    def critical( &block )
+    def critical(&block)
       return '200 dummy reply code' if @error_occured
       begin
         return yield()

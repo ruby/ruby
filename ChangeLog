@@ -1,3 +1,7 @@
+Wed Apr 21 18:23:45 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: change coding style: def m( a ) -> def m(a).
+
 Wed Apr 21 18:01:47 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: do not use class variables.
