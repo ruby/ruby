@@ -120,7 +120,7 @@ module Net # :nodoc:
 
     def read( len, dest = '', ignore_eof = false )
       LOG "reading #{len} bytes..."
-      LOG_off()
+      # LOG_off()   # experimental: [ruby-list:38800]
       read_bytes = 0
       begin
         while read_bytes + @rbuf.size < len
@@ -131,14 +131,14 @@ module Net # :nodoc:
       rescue EOFError
         raise unless ignore_eof
       end
-      LOG_on()
+      # LOG_on()
       LOG "read #{read_bytes} bytes"
       dest
     end
 
     def read_all( dest = '' )
       LOG 'reading all...'
-      LOG_off()
+      # LOG_off()   # experimental: [ruby-list:38800]
       read_bytes = 0
       begin
         while true
@@ -148,7 +148,7 @@ module Net # :nodoc:
       rescue EOFError
         ;
       end
-      LOG_on()
+      # LOG_on()
       LOG "read #{read_bytes} bytes"
       dest
     end

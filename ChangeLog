@@ -1,3 +1,8 @@
+Sun Nov 16 12:16:10 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: logging response body. [experimental]
+	  [ruby-list:38800]
+
 Sun Nov 16 10:49:38 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/thread.rb (Thread.exclusive): wrap method definition in
