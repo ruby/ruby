@@ -1,3 +1,8 @@
+Fri Oct 22 10:36:37 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#meta_vars):
+	  should check if path_info is not nil.
+
 Fri Oct 22 00:22:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/zlib/zlib.c (zstream_shift_buffer): should restore class
