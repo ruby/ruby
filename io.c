@@ -2852,6 +2852,9 @@ pipe_open(argc, argv, mode)
 	rb_w32_join_argv(cmd, args);
 	exename = RSTRING(prog)->ptr;
     }
+    else {
+	cmd = StringValueCStr(prog);
+    }
     while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fpr, &fpw)) == -1) {
 	/* exec failed */
 	switch (errno) {

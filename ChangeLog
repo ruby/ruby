@@ -1,3 +1,7 @@
+Tue Nov  2 14:54:02 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (pipe_open): need to set cmd if argc == 0 (win32).
+
 Tue Nov  2 01:20:09 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (pipe_open): IO.popen should take array as 1st argument for
