@@ -1,3 +1,10 @@
+Tue Mar  4 17:54:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_aref): give warning if index is a symbol.
+	  [ruby-list:37217]
+
+	* array.c (rb_ary_aset): raise TypeError if index is a symbol.
+
 Tue Nov 13 14:39:11 2001  WATANABE Tetsuya  <tetsu@jpn.hp.com>
 
 	* missing/strftime.c: HP-UX support.
