@@ -1271,7 +1271,7 @@ rb_file_s_expand_path(argc, argv)
 #endif
 	}
     }
-#if defined DOSISH
+#if defined DOSISH || __CYGWIN__
     /* skip drive letter */
     else if (ISALPHA(s[0]) && s[1] == ':' && isdirsep(s[2])) {
 	while (*s && !isdirsep(*s)) {
@@ -2060,7 +2060,7 @@ is_absolute_path(path)
     const char *path;
 {
     if (path[0] == '/') return 1;
-# if defined DOSISH
+# if defined DOSISH || defined __CYGWIN__
     if (path[0] == '\\') return 1;
     if (strlen(path) > 2 && path[1] == ':') return 1;
 # endif

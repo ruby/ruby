@@ -1,3 +1,9 @@
+Tue Aug 20 19:39:03 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* file.c (rb_file_s_expand_path): accept drive letter on Cygwin.
+
+	* file.c (is_absolute_path): ditto.
+
 Mon Aug 19 19:01:55 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/inf-ruby.el (inf-ruby-keys): ruby-send-definition
