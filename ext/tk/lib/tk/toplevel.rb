@@ -3,9 +3,11 @@
 #
 require 'tk'
 require 'tk/wm'
+require 'tk/menuspec'
 
 class TkToplevel<TkWindow
   include Wm
+  include TkMenuSpec
 
   TkCommandNames = ['toplevel'.freeze].freeze
   WidgetClassName = 'Toplevel'.freeze
@@ -167,6 +169,25 @@ class TkToplevel<TkWindow
 
   def specific_class
     @classname
+  end
+
+  def add_menu(menu_info, tearoff=false, opts=nil)
+    # See tk/menuspec.rb for menu_info.
+    # opts is a hash of default configs for all of cascade menus. 
+    # Configs of menu_info can override it. 
+    if tearoff.kind_of?(Hash)
+      opts = tearoff
+      tearoff = false
+    end
+    _create_menubutton(self, menu_info, tearoff, opts)
+  end
+
+  def add_menubar(menu_spec, tearoff=false, opts=nil)
+    # See tk/menuspec.rb for menu_spec.
+    # opts is a hash of default configs for all of cascade menus.
+    # Configs of menu_spec can override it. 
+    menu_spec.each{|info| add_menu(info, tearoff, opts)}
+    self.menu
   end
 
   def self.database_class

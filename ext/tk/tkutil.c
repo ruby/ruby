@@ -27,6 +27,7 @@ static ID ID_split_tklist;
 static ID ID_toUTF8;
 static ID ID_fromUTF8;
 static ID ID_path;
+static ID ID_at_path;
 static ID ID_to_eval;
 static ID ID_to_s;
 static ID ID_install_cmd;
@@ -1073,7 +1074,7 @@ static VALUE
 tkobj_path(self)
     VALUE self;
 {
-    return rb_ivar_get(self, ID_path);
+    return rb_ivar_get(self, ID_at_path);
 }
 
 /*************************************/
@@ -1091,6 +1092,7 @@ Init_tkutil()
     cMethod = rb_const_get(rb_cObject, rb_intern("Method"));
 
     ID_path = rb_intern("path");
+    ID_at_path = rb_intern("@path");
     ID_to_eval = rb_intern("to_eval");
     ID_to_s = rb_intern("to_s");
     ID_install_cmd = rb_intern("install_cmd");

@@ -588,7 +588,8 @@ end
 =end
     else
       newopts = @trace_opts.dup
-      opts.each_byte{|c| newopts += c.chr unless newopts.index(c)}
+      #opts.each_byte{|c| newopts += c.chr unless newopts.index(c)}
+      opts.each_byte{|c| newopts.concat(c.chr) unless newopts.index(c)}
       if newopts != @trace_opts
 	Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 'rb_var')
 	@trace_opts.replace(newopts)
@@ -637,7 +638,8 @@ end
 =end
     else
       newopts = @trace_opts.dup
-      opts.each_byte{|c| newopts += c.chr unless newopts.index(c)}
+      # opts.each_byte{|c| newopts += c.chr unless newopts.index(c)}
+      opts.each_byte{|c| newopts.concat(c.chr) unless newopts.index(c)}
       if newopts != @trace_opts
 	Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 'rb_var')
 	@trace_opts.replace(newopts)
@@ -684,7 +686,8 @@ end
 	idx = i
 	next
       end
-      e[0].each_byte{|c| newopts += c.chr unless newopts.index(c)}
+      # e[0].each_byte{|c| newopts += c.chr unless newopts.index(c)}
+      e[0].each_byte{|c| newopts.concat(c.chr) unless newopts.index(c)}
     }
     if idx >= 0
       @trace_var.delete_at(idx) 
@@ -694,7 +697,8 @@ end
 
     @trace_elem.each{|elem|
       @trace_elem[elem].each{|e|
-	e[0].each_byte{|c| newopts += c.chr unless newopts.index(c)}
+	# e[0].each_byte{|c| newopts += c.chr unless newopts.index(c)}
+	e[0].each_byte{|c| newopts.concat(c.chr) unless newopts.index(c)}
       }
     }
 
@@ -751,11 +755,13 @@ end
 
     newopts = ''
     @trace_var.each{|e| 
-      e[0].each_byte{|c| newopts += c.chr unless newopts.index(c)}
+      # e[0].each_byte{|c| newopts += c.chr unless newopts.index(c)}
+      e[0].each_byte{|c| newopts.concat(c.chr) unless newopts.index(c)}
     }
     @trace_elem.each{|elem|
       @trace_elem[elem].each{|e|
-	e[0].each_byte{|c| newopts += c.chr unless newopts.index(c)}
+	# e[0].each_byte{|c| newopts += c.chr unless newopts.index(c)}
+	e[0].each_byte{|c| newopts.concat(c.chr) unless newopts.index(c)}
       }
     }
 

@@ -62,13 +62,26 @@ module TkGrid
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
     if slot
-      num_or_str(tk_call_without_enc('grid', 'columnconfigure', 
-				     master, index, "-#{slot}"))
+      case slot
+      when 'uniform', :uniform
+	tk_call_without_enc('grid', 'columnconfigure', 
+			    master, index, "-#{slot}")
+      else
+	num_or_str(tk_call_without_enc('grid', 'columnconfigure', 
+				       master, index, "-#{slot}"))
+      end
     else
-      ilist = list(tk_call_without_enc('grid','columnconfigure',master,index))
+      #ilist = list(tk_call_without_enc('grid','columnconfigure',master,index))
+      ilist = simplelist(tk_call_without_enc('grid', 'columnconfigure', 
+					     master, index))
       info = {}
       while key = ilist.shift
-	info[key[1..-1]] = ilist.shift
+	case key
+	when 'uniform'
+	  info[key[1..-1]] = ilist.shift
+	else
+	  info[key[1..-1]] = tk_tcl2ruby(ilist.shift)
+	end
       end
       info
     end
@@ -78,13 +91,26 @@ module TkGrid
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
     if slot
-      num_or_str(tk_call_without_enc('grid', 'rowconfigure', 
-				     master, index, "-#{slot}"))
+      case slot
+      when 'uniform', :uniform
+	tk_call_without_enc('grid', 'rowconfigure', 
+			    master, index, "-#{slot}")
+      else
+	num_or_str(tk_call_without_enc('grid', 'rowconfigure', 
+				       master, index, "-#{slot}"))
+      end
     else
-      ilist = list(tk_call_without_enc('grid', 'rowconfigure', master, index))
+      #ilist = list(tk_call_without_enc('grid', 'rowconfigure', master, index))
+      ilist = simplelist(tk_call_without_enc('grid', 'rowconfigure', 
+					     master, index))
       info = {}
       while key = ilist.shift
-	info[key[1..-1]] = ilist.shift
+	case key
+	when 'uniform'
+	  info[key[1..-1]] = ilist.shift
+	else
+	  info[key[1..-1]] = tk_tcl2ruby(ilist.shift)
+	end
       end
       info
     end
@@ -106,10 +132,12 @@ module TkGrid
   def info(slave)
     # slave = slave.epath if slave.kind_of?(TkObject)
     slave = _epath(slave)
-    ilist = list(tk_call_without_enc('grid', 'info', slave))
+    #ilist = list(tk_call_without_enc('grid', 'info', slave))
+    ilist = simplelist(tk_call_without_enc('grid', 'info', slave))
     info = {}
     while key = ilist.shift
-      info[key[1..-1]] = ilist.shift
+      #info[key[1..-1]] = ilist.shift
+      info[key[1..-1]] = tk_tcl2ruby(ilist.shift)
     end
     return info
   end

@@ -52,6 +52,7 @@ lib/tk/listbox.rb
 lib/tk/macpkg.rb
 lib/tk/menu.rb
 lib/tk/menubar.rb
+lib/tk/menuspec.rb
 lib/tk/message.rb
 lib/tk/mngfocus.rb
 lib/tk/msgcat.rb
@@ -92,6 +93,8 @@ sample/binstr_usage.rb
 sample/btn_with_frame.rb
 sample/encstr_usage.rb
 sample/iso2022-kr.txt
+sample/menubar1.rb
+sample/menubar2.rb
 sample/propagate.rb
 sample/resource.en
 sample/resource.ja

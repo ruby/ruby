@@ -67,6 +67,11 @@ class TkText<TkTextWin
     tk_send_without_enc('index', _get_eval_enc_str(index))
   end
 
+  def get_displaychars(*index)
+    # Tk8.5 feature
+    get('-displaychars', *index)
+  end
+
   def value
     _fromUTF8(tk_send_without_enc('get', "1.0", "end - 1 char"))
   end
@@ -326,9 +331,35 @@ class TkText<TkTextWin
   end
 
   def count(idx1, idx2, *opts)
-    opts = opts.collect{|opt| '-' + opt.to_s}
-    number(tk_send_without_enc('count', _get_eval_enc_str(idx1), 
-			       _get_eval_enc_str(idx2), *opts))
+    # opts are Tk8.5 feature
+    cnt = 0
+    args = opts.collect{|opt|
+      str = opt.to_s
+      cnt += 1 if str != 'update'
+      '-' + str
+    }
+    args << _get_eval_enc_str(idx1) << _get_eval_enc_str(idx2)
+    if cnt <= 1
+      number(tk_send_without_enc('count', *opts))
+    else
+      list(tk_send_without_enc('count', *opts))
+    end
+  end
+
+  def count_info(idx1, idx2, update=true)
+    # Tk8.5 feature
+    opts = [
+      :chars, :displaychars, :displayindices, :displaylines, 
+      :indices, :lines, :xpixels, :ypixels
+    ]
+    if update
+      lst = count(idx1, idx2, :update, *opts)
+    else
+      lst = count(idx1, idx2, *opts)
+    end
+    info = {}
+    opts.each_with_index{|key, idx| info[key] = lst[idx]}
+    info
   end
 
   def replace(idx1, idx2, *opts)
@@ -879,53 +910,40 @@ class TkText<TkTextWin
   def tksearch(*args)
     # call 'search' subcommand of text widget
     #   args ::= [<array_of_opts>] <pattern> <start_index> [<stop_index>]
-    # <pattern> must be a regular expression of Tcl
-    all_mode = false
-    opts = args.shift
-    if opts.kind_of?(Array)
-      opts = opts.collect{|opt| 
-	opt =  opt.to_s
-	all_mode = true if opt == 'all'
-        opt
-      }
+    # If <pattern> is regexp, then it must be a regular expression of Tcl
+    if args[0].kind_of?(Array)
+      opts = args.shift.collect{|opt| '-' + opt.to_s }
     else
-      args.unshift(opts)
       opts = []
     end
 
     opts << '--'
 
-    if all_mode
-      tk_split_simplelist(tk_send(*(opts + args)))
+    ret = tk_send('search', *(opts + args))
+    if ret == ""
+      nil
     else
-      tk_send(*(opts + args))
+      ret
     end
   end
 
   def tksearch_with_count(*args)
     # call 'search' subcommand of text widget
     #   args ::= [<array_of_opts>] <var> <pattern> <start_index> [<stop_index>]
-    # <pattern> must be a regular expression of Tcl
-    all_mode = false
-    opts = args.shift
-    if opts.kind_of?(Array)
-      opts = opts.collect{|opt| 
-	opt =  opt.to_s
-	all_mode = true if opt == 'all'
-        opt
-      }
-      var = args.shift
+    # If <pattern> is regexp, then it must be a regular expression of Tcl
+    if args[0].kind_of?(Array)
+      opts = args.shift.collect{|opt| '-' + opt.to_s }
     else
-      var = opts
       opts = []
     end
 
-    opts << '-count' << var << '--'
+    opts << '-count' << args.shift << '--'
 
-    if all_mode
-      tk_split_simplelist(tk_send(*(opts + args)))
+    ret = tk_send('search', *(opts + args))
+    if ret == ""
+      nil
     else
-      tk_send(*(opts + args))
+      ret
     end
   end
 

@@ -52,7 +52,8 @@ module TkOptionDB
     cline = ''
     open(file, 'r') {|f|
       while line = f.gets
-	cline += line.chomp!
+	#cline += line.chomp!
+	cline.concat(line.chomp!)
 	case cline
 	when /\\$/    # continue
 	  cline.chop!
