@@ -9,3 +9,7 @@
 #define RUBY_RELEASE_YEAR 2004
 #define RUBY_RELEASE_MONTH 6
 #define RUBY_RELEASE_DAY 23
+
+RUBY_EXTERN const char ruby_version[];
+RUBY_EXTERN const char ruby_release_date[];
+RUBY_EXTERN const char ruby_platform[];
