@@ -1,3 +1,7 @@
+Fri Jun 22 22:54:33 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
+
+	* lib/irb/locale.rb: fix for require "kconv" problem
+	
 Fri Jun 22 17:12:23 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* st.c (new_size): prime hash size enabled.
