@@ -6,9 +6,7 @@ dlrealloc
 dlstrdup
 rb_ary_to_ptr
 rb_dl_dlopen
-rb_dl_get_callback
 rb_dl_malloc
-rb_dl_set_callback
 rb_dl_strdup
 rb_eDLError
 rb_eDLTypeError
