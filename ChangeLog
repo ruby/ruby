@@ -1,3 +1,8 @@
+Wed Jun 23 00:20:20  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_hresult2msg): remove trailing
+	  CR and LF. (doesn't depend on CR+LF) [ruby-dev:23694]
+
 Wed Jun 23 00:00:25 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_initialize): should check fcntl result.  [ruby-dev:23742]
