@@ -1,3 +1,7 @@
+Mon Dec 29 00:41:44 2003  Dave Thomas  <dave@pragprog.com>
+
+	* math.c: Add RDoc comments
+
 Sun Dec 28 20:19:11 2003  Tanaka Akira  <akr@m17n.org>
 
 	* ext/stringio/stringio.c (strio_sysread): StringIO.new.sysread didn't
