@@ -484,7 +484,8 @@ w_object(obj, arg, limit)
 	    VALUE v;
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
-	    w_class(TYPE_USRMARSHAL, obj, arg);
+	    w_byte(TYPE_USRMARSHAL, arg);
+	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
 	    w_object(v, arg, limit);
 	    if (ivtbl) w_ivar(ivtbl, &c_arg);
 	    return;

@@ -289,7 +289,7 @@ static VALUE
 flo_to_s(flt)
     VALUE flt;
 {
-    char buf[25];
+    char buf[32];
     char *fmt = "%.15g";
     double value = RFLOAT(flt)->value;
     double avalue, d1, d2;

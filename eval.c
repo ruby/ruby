@@ -7604,6 +7604,7 @@ method_proc(method)
     Data_Get_Struct(proc, struct BLOCK, bdata);
     bdata->body->nd_file = mdata->body->nd_file;
     nd_set_line(bdata->body, nd_line(mdata->body));
+    bdata->body->nd_state = YIELD_FUNC_SVALUE;
 
     return proc;
 }
@@ -8478,8 +8479,6 @@ rb_thread_schedule()
     int n, max;
     int need_select = 0;
     int select_timeout = 0;
-
-    if (ruby_in_compile) abort();
 
     rb_thread_pending = 0;
     if (curr_thread == curr_thread->next

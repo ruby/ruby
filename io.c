@@ -478,7 +478,7 @@ rb_io_tell(io)
 
     GetOpenFile(io, fptr);
     pos = io_tell(fptr);
-    if (ferror(fptr->f)) rb_sys_fail(fptr->path);
+    if (pos < 0) rb_sys_fail(fptr->path);
     return OFFT2NUM(pos);
 }
 
@@ -492,7 +492,7 @@ rb_io_seek(io, offset, whence)
 
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, NUM2OFFT(offset), whence);
-    if (pos != 0) rb_sys_fail(fptr->path);
+    if (pos < 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
     return INT2FIX(0);
@@ -1221,9 +1221,9 @@ rb_io_each_byte(io)
 	TRAP_END;
 	if (c == EOF) {
 	    if (ferror(f)) {
+		clearerr(f);
 		if (!rb_io_wait_readable(fileno(f)))
 		    rb_sys_fail(fptr->path);
-		clearerr(f);
 		continue;
 	    }
 	    break;
@@ -1254,9 +1254,9 @@ rb_io_getc(io)
 
     if (c == EOF) {
 	if (ferror(f)) {
+	    clearerr(f);
 	    if (!rb_io_wait_readable(fileno(f)))
 		rb_sys_fail(fptr->path);
-	    clearerr(f);
 	    goto retry;
 	}
 	return Qnil;
