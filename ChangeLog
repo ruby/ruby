@@ -1,3 +1,7 @@
+Mon Nov  1 11:52:18 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (pipe_open): avoid conflict of variable name. [ruby-dev:24662]
+
 Mon Nov  1 11:46:19 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* process.c (rb_f_exec): should check whether prog is NULL.

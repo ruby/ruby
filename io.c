@@ -2783,7 +2783,7 @@ pipe_open(argc, argv, pname, mode)
 #elif defined(_WIN32)
     FILE *fpr, *fpw;
     int openmode = rb_io_mode_modenum(mode);
-    char *prog = NULL;
+    char *exename = NULL;
 #endif
     char *cmd;
 
@@ -2854,9 +2854,9 @@ pipe_open(argc, argv, pname, mode)
 	cmd = ALLOCA_N(char, rb_w32_argv_size(args));
 	rb_w32_join_argv(cmd, args);
 	free(args);
-	prog = pname;
+	exename = pname;
     }
-    while ((pid = rb_w32_pipe_exec(cmd, prog, openmode, &fpr, &fpw)) == -1) {
+    while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fpr, &fpw)) == -1) {
 	/* exec failed */
 	switch (errno) {
 	  case EAGAIN:
