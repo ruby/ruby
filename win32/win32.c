@@ -1393,8 +1393,6 @@ rb_w32_opendir(const char *filename)
 	SetBit(p->bits, 0);
     if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
 	SetBit(p->bits, 1);
-    p->bits = ALLOC_N(char, 1);
-    p->bits[0] = fd.attrib & _A_SUBDIR ? 1 : 0;
     p->nfiles++;
     
     //
@@ -1431,18 +1429,6 @@ rb_w32_opendir(const char *filename)
 	if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
 	    SetBit(p->bits, p->nfiles * 2 + 1);
 
-
-	if (p->nfiles % 8 == 0) {
-	    Renew (p->bits, p->nfiles / 8 + 1, char);
-	    if (p->bits == NULL) {
-		rb_fatal ("opendir: malloc failed!\n");
-	    }
-	    p->bits[p->nfiles / 8] = 0;
-	}
-	if (fd.attrib & _A_SUBDIR) {
-	    p->bits[p->nfiles / 8] |= (1 << p->nfiles % 8);
-	}
-
 	p->nfiles++;
 	idx += len+1;
     }
@@ -1478,12 +1464,6 @@ rb_w32_readdir(DIR *dirp)
 	// Fake inode
 	//
 	dirp->dirstr.d_ino = dummy++;
-
-	//
-	// Directory flag
-	//
-	dirp->dirstr.d_isdir = dirp->bits[dirp->bitpos / 8] & (1 << dirp->bitpos % 8);
-	dirp->bitpos++;
 
 	//
 	// Attributes
@@ -1537,7 +1517,6 @@ rb_w32_rewinddir(DIR *dirp)
 {
 	dirp->curr = dirp->start;
 	dirp->bitpos = 0;
-	dirp->bitpos = 0;
 }
 
 //
@@ -1547,7 +1526,6 @@ rb_w32_rewinddir(DIR *dirp)
 void
 rb_w32_closedir(DIR *dirp)
 {
-	free(dirp->bits);
 	free(dirp->start);
 	free(dirp->bits);
 	free(dirp);

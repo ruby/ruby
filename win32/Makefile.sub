@@ -572,7 +572,7 @@ compar.obj: {$(srcdir)}compar.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}/win32/win32.h
 dir.obj: {$(srcdir)}dir.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}util.h {$(srcdir)}/win32/win32.h
+  {$(srcdir)}util.h {$(srcdir)}/win32/win32.h {$(srcdir)}/win32/dir.h
 dln.obj: {$(srcdir)}dln.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}dln.h {$(srcdir)}/win32/win32.h

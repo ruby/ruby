@@ -1,3 +1,9 @@
+Tue Jan  6 01:01:04 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/dir.h, win32/win32.c: fix patch miss.
+
+	* win32/Makefile.sub: fix file dependency.
+
 Mon Jan  5 20:32:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/logger.rb: enhanced documentation.
