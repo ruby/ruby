@@ -1,3 +1,8 @@
+Fri Apr  2 14:35:26 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): should increment unique identifier of the
+	  block.  [ruby-talk:96363]
+
 Fri Apr  2 11:36:20 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* eval.c (Init_load): make $LOADED_FEATURES built-in.
