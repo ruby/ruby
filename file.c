@@ -335,7 +335,7 @@ rb_file_s_stat(klass, fname)
     if (rb_sys_stat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
-    return stat_new_0(klass, &st);
+    return stat_new(&st);
 }
 
 static VALUE
@@ -1733,10 +1733,24 @@ static VALUE
 rb_stat_s_new(klass, fname)
     VALUE klass, fname;
 {
-    VALUE stat = rb_file_s_stat(klass, fname);
+    VALUE s;
+    struct stat st;
 
-    rb_obj_call_init(stat, 1, &fname);
-    return stat;
+    Check_SafeStr(fname);
+    if (rb_sys_stat(RSTRING(fname)->ptr, &st) == -1) {
+	rb_sys_fail(RSTRING(fname)->ptr);
+    }
+    s = stat_new_0(klass, &st);
+    rb_obj_call_init(s, 1, &fname);
+    return s;
+}
+
+static VALUE
+rb_stat_init(klass, fname)
+    VALUE klass, fname;
+{
+    /* do nothing */
+    return Qnil;
 }
 
 static VALUE
@@ -2283,6 +2297,7 @@ Init_File()
 
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);
     rb_define_singleton_method(rb_cStat, "new",  rb_stat_s_new, 1);
+    rb_define_method(rb_cStat, "initialize", rb_stat_init, 1);
 
     rb_include_module(rb_cStat, rb_mComparable);
 
