@@ -139,7 +139,7 @@ ruby.imp:	$(LIBRUBY_A)
 		@@NM@ -Pgp $(LIBRUBY_A) | awk 'BEGIN{print "#!"}; $$2~/^[BD]$$/{print $$1}' | sort -u -o $@
 # $(MINIRUBY) $< $@
 
-install:	install-nodoc rdoc
+install:	install-nodoc @RDOCTARGET@
 
 install-nodoc:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
@@ -149,9 +149,9 @@ what-where no-install:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)/instruby.rb -n $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
 		$(MINIRUBY) $(srcdir)/ext/extmk.rb -n $(SCRIPT_ARGS) install
 
-rdoc:
+install-doc:
 		@echo Generating RDoc documentation
-		$(MINIRUBY) -I lib bin/rdoc --all --ri-system
+		$(bindir)/$(PROGRAM) $(srcdir)/bin/rdoc --all --ri-system $(srcdir)
 
 clean-ext:
 		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(SCRIPT_ARGS) clean 2> /dev/null || true
@@ -204,7 +204,7 @@ Makefile:	$(srcdir)/Makefile.in
 
 .PRECIOUS:	@MAKEFILES@
 
-.PHONY:		test install install-nodoc rdoc
+.PHONY:		test install install-nodoc install-doc
 
 PHONY:
 
