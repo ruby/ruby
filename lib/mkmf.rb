@@ -465,7 +465,7 @@ TARGET = #{target}
 DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
 
 RUBY = #{CONFIG["ruby_install_name"]}
-RM = $(RUBY) -rftools -e 'File::rm_f(*ARGV.map{|x|Dir[x]}.flatten.uniq)'
+RM = $(RUBY) -rftools -e "File::rm_f(*ARGV.map{|x|Dir[x]}.flatten.uniq)"
 
 EXEEXT = #{CONFIG["EXEEXT"]}
 

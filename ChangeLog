@@ -1,3 +1,10 @@
+Tue Jul 17 11:18:42 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* ext/extmk.rb.in: modify RM macro because command.com/cmd.exe don't
+	  recognize single quotation as quote character.
+
+	* lib/mkmf.rb: ditto.
+
 Mon Jul 16 12:58:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): should preserve iter status for embedded
