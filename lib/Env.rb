@@ -6,19 +6,7 @@
 #  $USER = "matz"
 #  p ENV["USER"]
 
-for k,v in ENV
-  next unless /^[a-zA-Z][_a-zA-Z0-9]*/ =~ k
-  eval <<EOS
-  $#{k} = %q!#{v}!
-  trace_var "$#{k}", proc{|v|
-    ENV[%q!#{k}!] = v; 
-    $#{k} = v
-    if v == nil
-      untrace_var "$#{k}"
-    end
-  }
-EOS
-end
+require 'importenv'
 
 if __FILE__ == $0
   p $TERM

@@ -1450,6 +1450,7 @@ ev_const_get(cref, id)
     while (cbase && cbase->nd_clss != rb_cObject) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
+	if (NIL_P(klass)) return rb_const_get(rb_cObject, id);
 	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
 	    return result;
 	}
@@ -6275,19 +6276,12 @@ proc_call(proc, args)
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = blk_orphan(data);
 
-    if (orphan) {/* orphan procedure */
-	if (rb_block_given_p()) {
-	    ruby_block->frame.iter = ITER_CUR;
-	}
-	else {
-	    ruby_block->frame.iter = ITER_NOT;
-	}
-    }
-
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
     ruby_block = &_block;
+    ruby_block->frame.iter = ITER_NOT;
+
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
 
