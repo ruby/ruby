@@ -610,6 +610,7 @@ rb_gc_mark(ptr)
       case T_REGEXP:
       case T_FLOAT:
       case T_BIGNUM:
+      case T_BLKTAG:
 	break;
 
       case T_MATCH:
@@ -826,6 +827,7 @@ obj_free(obj)
 
       case T_FLOAT:
       case T_VARMAP:
+      case T_BLKTAG:
 	break;
 
       case T_BIGNUM:
@@ -1048,6 +1050,7 @@ os_live_obj()
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
+		    if (!p->as.basic.klass) continue;
 		    rb_yield((VALUE)p);
 		    n++;
 		}
@@ -1080,6 +1083,7 @@ os_obj_of(of)
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
+		    if (!p->as.basic.klass) continue;
 		    if (rb_obj_is_kind_of((VALUE)p, of)) {
 			rb_yield((VALUE)p);
 			n++;

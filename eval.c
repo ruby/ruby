@@ -527,14 +527,20 @@ static struct SCOPE *top_scope;
     ruby_sourceline = _frame.line;	\
     ruby_frame = _frame.prev; }
 
+struct BLOCKTAG {
+    struct RBasic super;
+    long dst;
+    long flags;
+};
+
 struct BLOCK {
     NODE *var;
     NODE *body;
     VALUE self;
     struct FRAME frame;
     struct SCOPE *scope;
+    struct BLOCKTAG *tag;
     VALUE klass;
-    struct tag *tag;
     int iter;
     int vmode;
     int flags;
@@ -545,12 +551,23 @@ struct BLOCK {
 
 #define BLOCK_D_SCOPE 1
 #define BLOCK_DYNAMIC 2
+#define BLOCK_ORPHAN  4
 
 static struct BLOCK *ruby_block;
 
+static struct BLOCKTAG*
+new_blktag()
+{
+    NEWOBJ(blktag, struct BLOCKTAG);
+    OBJSETUP(blktag, 0, T_BLKTAG);
+    blktag->dst = 0;
+    blktag->flags = 0;
+    return blktag;
+}
+
 #define PUSH_BLOCK(v,b) {		\
     struct BLOCK _block;		\
-    _block.tag = prot_tag;		\
+    _block.tag = new_blktag();		\
     _block.var = v;			\
     _block.body = b;			\
     _block.self = self;			\
@@ -567,6 +584,7 @@ static struct BLOCK *ruby_block;
     ruby_block = &_block;
 
 #define POP_BLOCK() 			\
+   _block.tag->flags |= BLOCK_ORPHAN;	\
    ruby_block = _block.prev; 		\
 }
 
@@ -576,6 +594,7 @@ static struct BLOCK *ruby_block;
     ruby_block = b;
 
 #define POP_BLOCK2() 			\
+   _block.tag->flags |= BLOCK_ORPHAN;	\
    ruby_block = _old;	 		\
 }
 
@@ -1051,7 +1070,7 @@ static int
 error_handle(ex)
     int ex;
 {
-    switch (ex & 0xf) {
+    switch (ex & TAG_MASK) {
       case 0:
 	ex = 0;
 	break;
@@ -2213,8 +2232,8 @@ rb_eval(self, n)
       case NODE_FOR:
 	{
 	  iter_retry:
-	    PUSH_BLOCK(node->nd_var, node->nd_body);
 	    PUSH_TAG(PROT_FUNC);
+	    PUSH_BLOCK(node->nd_var, node->nd_body);
 
 	    state = EXEC_TAG();
 	    if (state == 0) {
@@ -2243,8 +2262,8 @@ rb_eval(self, n)
 		    result = prot_tag->retval;
 		}
 	    }
-	    POP_TAG();
 	    POP_BLOCK();
+	    POP_TAG();
 	    switch (state) {
 	      case 0:
 		break;
@@ -3554,7 +3573,7 @@ rb_yield_0(val, self, klass, acheck)
 	  case TAG_RETURN:
 	    state |= (serial++ << 8);
 	    state |= 0x10;
-	    block->tag->dst = state; 
+	    block->tag->dst = state;
 	    break;
 	  default:
 	    break;
@@ -3584,7 +3603,19 @@ rb_yield_0(val, self, klass, acheck)
     if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
        scope_dup(old_scope);
     ruby_scope = old_scope;
-    if (state) JUMP_TAG(state);
+    if (state) {
+	if (!block->tag) {
+	    switch (state & TAG_MASK) {
+	      case TAG_BREAK:
+		rb_raise(rb_eLocalJumpError, "unexpected break");
+		break;
+	      case TAG_RETURN:
+		rb_raise(rb_eLocalJumpError, "unexpected return");
+		break;
+	    }
+	}
+	JUMP_TAG(state);
+    }
     return result;
 }
 
@@ -6087,7 +6118,6 @@ proc_new(klass)
 
     data->orig_thread = rb_thread_current();
     data->iter = data->prev?Qtrue:Qfalse;
-    data->tag = 0;		/* should not point into stack */
     frame_dup(&data->frame);
     if (data->iter) {
 	blk_copy_prev(data);
@@ -6131,8 +6161,10 @@ static int
 blk_orphan(data)
     struct BLOCK *data;
 {
-    if (data->scope && data->scope != top_scope &&
-	(data->scope->flag & SCOPE_NOSTACK)) {
+    if (!(data->scope->flag & SCOPE_NOSTACK)) {
+	return 0;
+    }
+    if ((data->tag->flags & BLOCK_ORPHAN)) {
 	return 1;
     }
     if (data->orig_thread != rb_thread_current()) {
@@ -6196,7 +6228,6 @@ proc_call(proc, args)
     }
 
     PUSH_TAG(PROT_NONE);
-    _block.tag = prot_tag;
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
@@ -6292,7 +6323,6 @@ block_pass(self, node)
     ruby_frame->iter = ITER_PRE;
 
     PUSH_TAG(PROT_NONE);
-    _block.tag = prot_tag;
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(block);
@@ -6301,38 +6331,30 @@ block_pass(self, node)
     POP_TAG();
     POP_ITER();
     if (_block.tag->dst == state) {
-	if (orphan) {
-	    state &= TAG_MASK;
-	}
-	else {
-	    struct BLOCK *ptr = old_block;
-
-	    while (ptr) {
-		if (ptr->scope == _block.scope) {
-		    ptr->tag->dst = state;
-		    break;
-		}
-		ptr = ptr->prev;
-	    }
-	}
+	state &= TAG_MASK;
     }
     ruby_block = old_block;
     ruby_safe_level = safe;
 
-    if (state) {
-	switch (state) {/* escape from orphan procedure */
-	  case TAG_BREAK:
-	    rb_raise(rb_eLocalJumpError, "break from proc-closure");
-	    break;
-	  case TAG_RETRY:
+    switch (state) {/* escape from orphan procedure */
+      case 0:
+	break;
+      case TAG_BREAK:
+	if (orphan) {
 	    rb_raise(rb_eLocalJumpError, "retry from proc-closure");
-	    break;
-	  case TAG_RETURN:
-	    rb_raise(rb_eLocalJumpError, "return from proc-closure");
-	    break;
 	}
+	break;
+      case TAG_RETRY:
+	rb_raise(rb_eLocalJumpError, "retry from proc-closure");
+	break;
+      case TAG_RETURN:
+	if (orphan) {
+	    rb_raise(rb_eLocalJumpError, "return from proc-closure");
+	}
+      default:
 	JUMP_TAG(state);
     }
+
     return result;
 }
 

@@ -1,6 +1,27 @@
+Tue Jan 23 16:10:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (os_live_obj): do not list terminated object.
+
+	* gc.c (os_obj_of): ditto.
+
+	* gc.c (rb_gc_mark): support new T_BLKTAG tag.
+
+	* gc.c (obj_free): ditto.
+
+	* eval.c (new_blktag): creation of new block tag, which holds
+	  destination of global jump and orphan status.
+
+	* eval.c (block_pass): break from orphan Proc object will raise a
+	  LocalJumpError exception.
+
 Mon Jan 22 16:33:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* mkconfig.rb: autoconf 2.49 support.
+
+Mon Jan 22 00:32:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): behavior consistency with proc_call(). do
+	  not propagate `break'.
 
 Sat Jan 20 03:54:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -49,7 +49,6 @@ static int yyerror();
 static enum lex_state {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
-    EXPR_PAREN,			/* almost like EXPR_END, `do' works as `{'. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
     EXPR_MID,			/* newline significant, +/- is a operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
@@ -186,9 +185,9 @@ static void top_local_setup();
 %type <val>  literal numeric
 %type <node> compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
-%type <node> opt_call_args call_args ret_args args when_args
+%type <node> args ret_args when_args call_args paren_args opt_paren_args
 %type <node> aref_args opt_block_arg block_arg var_ref
-%type <node> mrhs mrhs_basic superclass generic_call block_call blocklike_call
+%type <node> mrhs mrhs_basic superclass generic_call block_call call_block
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
@@ -445,15 +444,15 @@ expr		: mlhs '=' mrhs
 		| arg
 
 command_call	: command
-		| blocklike_call
+		| block_call
 
-blocklike_call	: block_call
-		| block_call '.' operation2 call_args
+block_call	: call_block
+		| call_block '.' operation2 call_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		    }
-		| block_call tCOLON2 operation2 call_args
+		| call_block tCOLON2 operation2 call_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
@@ -930,16 +929,25 @@ aref_args	: none
 			$$ = NEW_RESTARGS($2);
 		    }
 
-opt_call_args	: none
-		| call_args opt_nl
-		| blocklike_call opt_nl
+paren_args	: '(' none ')'
 		    {
-			$$ = NEW_LIST($1);
+			$$ = $2;
 		    }
-		| args ',' blocklike_call
+		| '(' call_args opt_nl ')'
 		    {
-			$$ = list_append($1, $3);
+			$$ = $2;
 		    }
+		| '(' block_call opt_nl ')'
+		    {
+			$$ = NEW_LIST($2);
+		    }
+		| '(' args ',' block_call opt_nl ')'
+		    {
+			$$ = list_append($2, $4);
+		    }
+
+opt_paren_args	: none
+		| paren_args
 
 call_args	: command
 		    {
@@ -1416,7 +1424,7 @@ generic_call	: tIDENTIFIER
 		| command_call
 
 
-block_call	: generic_call do_block
+call_block	: generic_call do_block
 		    {
 			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
 			    rb_compile_error("both block arg and actual block given");
@@ -1425,48 +1433,32 @@ block_call	: generic_call do_block
 			$$ = $2;
 		        fixpos($$, $2);
 		    }
-		| block_call '.' operation2 
+		| call_block '.' operation2 opt_paren_args
 		    {
 			value_expr($1);
-			$$ = new_call($1, $3, 0);
+			$$ = new_call($1, $3, $4);
 		    }
-		| block_call '.' operation2 '(' opt_call_args close_paren
+		| call_block tCOLON2 operation2 opt_paren_args
 		    {
 			value_expr($1);
-			$$ = new_call($1, $3, $5);
-		    }
-		| block_call tCOLON2 operation2 
-		    {
-			value_expr($1);
-			$$ = new_call($1, $3, 0);
-		    }
-		| block_call tCOLON2 operation2 '(' opt_call_args close_paren
-		    {
-			value_expr($1);
-			$$ = new_call($1, $3, $5);
+			$$ = new_call($1, $3, $4);
 		    }
 
-method_call	: operation '(' opt_call_args close_paren
+method_call	: operation paren_args
 		    {
-			$$ = new_fcall($1, $3);
-		        fixpos($$, $3);
+			$$ = new_fcall($1, $2);
+		        fixpos($$, $2);
 		    }
-		| primary '.' operation2 '(' opt_call_args close_paren
+		| primary '.' operation2 opt_paren_args
 		    {
 			value_expr($1);
-			$$ = new_call($1, $3, $5);
+			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| primary '.' operation2
+		| primary tCOLON2 operation2 paren_args
 		    {
 			value_expr($1);
-			$$ = new_call($1, $3, 0);
-		        fixpos($$, $1);
-		    }
-		| primary tCOLON2 operation2 '(' opt_call_args close_paren
-		    {
-			value_expr($1);
-			$$ = new_call($1, $3, $5);
+			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
 		| primary tCOLON2 operation3
@@ -1474,12 +1466,12 @@ method_call	: operation '(' opt_call_args close_paren
 			value_expr($1);
 			$$ = new_call($1, $3, 0);
 		    }
-		| kSUPER '(' opt_call_args close_paren
+		| kSUPER paren_args
 		    {
 			if (!compile_for_eval && !cur_mid &&
 		            !in_single && !in_defined)
 			    yyerror("super called outside of method");
-			$$ = new_super($3);
+			$$ = new_super($2);
 		    }
 		| kSUPER
 		    {
@@ -1487,11 +1479,6 @@ method_call	: operation '(' opt_call_args close_paren
 		            !in_single && !in_defined)
 			    yyerror("super called outside of method");
 			$$ = NEW_ZSUPER();
-		    }
-
-close_paren	: ')'
-		    {
-			if (!COND_P()) lex_state = EXPR_PAREN;
 		    }
 
 case_body	: kWHEN when_args then
@@ -1847,8 +1834,6 @@ none		: /* none */
 %%
 #include "regex.h"
 #include "util.h"
-
-#define enc ruby_default_encoding
 
 /* We remove any previous definition of `SIGN_EXTEND_CHAR',
    since ours (we hope) works properly with all combinations of
@@ -2919,8 +2904,7 @@ yylex()
       case '<':
 	c = nextc();
 	if (c == '<' &&
-	    lex_state != EXPR_END && lex_state != EXPR_PAREN && 
-	    lex_state != EXPR_CLASS &&
+	    lex_state != EXPR_END && lex_state != EXPR_CLASS &&
 	    (lex_state != EXPR_ARG || space_seen)) {
  	    int c2 = nextc();
 	    int indent = 0;
@@ -2979,7 +2963,7 @@ yylex()
 	return parse_qstring(c,0);
 
       case '?':
-	if (lex_state == EXPR_END || lex_state == EXPR_PAREN) {
+	if (lex_state == EXPR_END) {
 	    lex_state = EXPR_BEG;
 	    return '?';
 	}
@@ -3306,7 +3290,7 @@ yylex()
 	    return tCOLON2;
 	}
 	pushback(c);
-	if (lex_state == EXPR_END || lex_state == EXPR_PAREN || ISSPACE(c)) {
+	if (lex_state == EXPR_END || ISSPACE(c)) {
 	    lex_state = EXPR_BEG;
 	    return ':';
 	}
@@ -3391,7 +3375,6 @@ yylex()
 
       case '{':
 	if (lex_state != EXPR_END &&
-	    lex_state != EXPR_PAREN &&
 	    lex_state != EXPR_ARG)
 	    c = tLBRACE;
 	lex_state = EXPR_BEG;
