@@ -44,11 +44,13 @@ This is what you need to do to compile and install Ruby:
 
   5. Optionally, run 'make test' to check whether the compiled Ruby
      interpreter works well.  If you see the message "test succeeded",
-     your Ruby works as it should (hopefully).
+     your ruby works as it should (hopefully).
 
   6. Run 'make install'
 
-If you fail to compile Ruby, please send the detailed error report with
+     You may have to be a super user to install ruby.
+
+If you fail to compile ruby, please send the detailed error report with
 the error log and machine/OS type, to help others.
 
 * Copying
