@@ -107,6 +107,11 @@ Wed May  9 14:38:33 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (rb_yield_0): preserve and restore ruby_cref as well.
 
+Tue May  8 18:28:19 2001  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/irb.rb lib/irb/multi-irb.rb lib/irb/ruby-lex.rb
+	lib/irb/version.rb resolve ctrl-c problem
+
 Tue May  8 17:12:43 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (is_defined): core dumped during instance_eval for
