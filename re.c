@@ -69,7 +69,7 @@ static char casetable[] = {
 >>> "You lose. You will need a translation table for your character set." <<<
 #endif
 
-#define min(a,b) (((a)>(b))?(b):(a))
+#define MIN(a,b) (((a)>(b))?(b):(a))
 
 int
 str_cicmp(str1, str2)
@@ -78,7 +78,7 @@ str_cicmp(str1, str2)
     int len, i;
     char *p1, *p2;
 
-    len = min(RSTRING(str1)->len, RSTRING(str2)->len);
+    len = MIN(RSTRING(str1)->len, RSTRING(str2)->len);
     p1 = RSTRING(str1)->ptr; p2 = RSTRING(str2)->ptr;
 
     for (i = 0; i < len; i++, p1++, p2++) {

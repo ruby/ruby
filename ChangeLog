@@ -1,3 +1,10 @@
+Tue Jan 19 18:19:24 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ext/extmk.rb.in (install): there should be no newline after install:
+
+	* re.c (MIN): renamed from min().  there's a local variable named
+ 	  min in the file, so that some cpp will raise an error.
+
 Mon Jan 19 16:30:05 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1b5 released.
