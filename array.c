@@ -576,9 +576,10 @@ rb_ary_pop(ary)
  *  Removes the last element from <i>self</i> and returns it, or
  *  <code>nil</code> if the array is empty.
  *     
- *     a = [ "a", "m", "z" ]
- *     a.pop   #=> "z"
- *     a       #=> ["a", "m"]
+ *     a = [ "a", "b", "c", "d" ]
+ *     a.pop     #=> "d"
+ *     a.pop(2)  #=> ["b", "c"]
+ *     a         #=> ["a"]
  */
 
 static VALUE
