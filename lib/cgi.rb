@@ -486,7 +486,7 @@ status:
     end
 
     options.each{|key, value|
-      buf += key + ": " + value + EOL
+      buf += key + ": " + value.to_s + EOL
     }
 
     if defined?(MOD_RUBY)
