@@ -81,7 +81,7 @@ class CGI < SimpleDelegator
   end
 
   def CGI.error
-    m = $!.dup
+    m = $!.to_s.dup
     m.gsub!(/&/, '&amp;')
     m.gsub!(/</, '&lt;')
     m.gsub!(/>/, '&gt;')

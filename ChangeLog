@@ -1,3 +1,17 @@
+Fri Jun 19 18:28:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_27.
+
+Fri Jun 19 14:34:49 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (assign): support hack for nested multiple assignment.
+
+	* parse.y (mlhs): nested multiple assignment.
+
+	* eval.c (rb_eval): in-block variables now honors static scope.
+
+	* configure.in: RSHIFT check moved to configure.
+
 Thu Jun 18 16:46:04 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_26.

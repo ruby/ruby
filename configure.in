@@ -231,6 +231,25 @@ fi
 AC_C_BIGENDIAN
 AC_CHAR_UNSIGNED
 
+AC_MSG_CHECKING(whether right shift preserve sign bit)
+AC_CACHE_VAL(rb_cv_rshift_sign,
+    [AC_TRY_RUN([
+#define FIXNUM_FLAG 0x01
+int
+main()
+{
+  return (-1!=(((-1)<<1)&FIXNUM_FLAG)>>1);
+}
+],
+	rb_cv_rshift_sign=yes,
+	rb_cv_rshift_sign=no)])
+  AC_MSG_RESULT($rb_cv_rshift_sign)
+if test "$rb_cv_rshift_sign" = yes; then
+  AC_DEFINE(RSHIFT(x,y), ((x)>>y))
+else
+  AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>y) : (x)>>y))
+fi
+
 AC_MSG_CHECKING([count field in FILE structures])
 AC_CACHE_VAL(rb_cv_fcnt,
 [AC_TRY_COMPILE([#include <stdio.h>],
@@ -548,6 +567,11 @@ if test "$host_os" = "beos"; then
       cat beos/ruby.def.in >> ruby.def
       ;;
   esac
+fi
+
+if test "$enable_shared" = 'yes'; then
+  LIBRUBY='libruby.so'
+  LIBRUBYARG='-L./ -lruby'
 fi
 
 if test "$host_os" = "rhapsody" ; then

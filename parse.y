@@ -437,6 +437,11 @@ mlhs		: mlhs_head
 		    {
 			$$ = NEW_MASGN(NEW_LIST($1), 0);
 		    }
+		| tLPAREN mlhs ')'
+		    {
+			$$ = $2;
+		    }
+
 		| mlhs_head tSTAR lhs
 		    {
 			$$ = NEW_MASGN(NEW_LIST($1), $3);
@@ -455,10 +460,18 @@ mlhs		: mlhs_head
 		    }
 
 mlhs_head	: lhs ','
+		| tLPAREN mlhs ')' ','
+		    {
+			$$ = $2;
+		    }
 
 mlhs_tail	: lhs
 		    {
 			$$ = NEW_LIST($1);
+		    }
+		| tLPAREN  mlhs ')'
+		    {
+			$$ = NEW_LIST($2);
 		    }
 		| mlhs_tail ',' lhs
 		    {
@@ -3428,7 +3441,7 @@ assignable(id, val)
 	}
 	else{
 	    if (!dyna_var_defined(id)) {
-		dyna_var_asgn(id, 0);
+		dyna_var_push(id, 0);
 		lhs = NEW_DASGN_PUSH(id, val);
 	    }
 	    else {

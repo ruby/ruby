@@ -176,7 +176,7 @@ str2inum(str, base)
 
     while (ISSPACE(*str)) str++;
 
-    if (*str == '|') {
+    if (*str == '+') {
 	str++;
     }
     else if (*str == '-') {

@@ -142,6 +142,29 @@ module TkComm
   end
   private :bool, :number, :string, :list, :window, :procedure
 
+  def _get_eval_string(str)
+    return nil if str == None
+    if str.kind_of?(Hash)
+      str = hash_kv(str).join(" ")
+    elsif str.kind_of?(Array)
+      str = array2tk_list(str)
+    elsif str.kind_of?(Proc)
+      str = install_cmd(str)
+    elsif str == nil
+      str = ""
+    elsif str == false
+      str = "0"
+    elsif str == true
+      str = "1"
+    elsif (str.respond_to?(:to_eval))
+      str = str.to_eval()
+    else
+      str = str.to_s()
+    end
+    return str
+  end
+  private :_get_eval_string
+
   Tk_IDs = [0]		# [0]-cmdid, [1]-winid
   def _curr_cmd_id
     id = format("c%.4d", Tk_IDs[0])
@@ -262,12 +285,26 @@ module TkComm
   end
 
   def after(ms, cmd=Proc.new)
-    myid = _curr_cmd_id
-    tk_call 'after', ms,
-      install_cmd(proc{
-		    TkUtil.eval_cmd cmd
-		    uninstall_cmd myid
-		  })
+      myid = _curr_cmd_id
+      INTERP._eval('after '+ms+' '+_get_eval_string(install_cmd(proc{
+		      TkUtil.eval_cmd cmd
+		      uninstall_cmd myid
+		    })))
+    return
+    if false #defined? Thread
+      Thread.start do
+	ms = Float(ms)/1000
+	ms = 10 if ms == 0
+	sleep ms/1000
+	cmd.call
+      end
+    else
+      myid = _curr_cmd_id
+      INTERP._eval('after '+ms+' '+_get_eval_string(install_cmd(proc{
+		      TkUtil.eval_cmd cmd
+		      uninstall_cmd myid
+		    })))
+    end
   end
 
   def update(idle=nil)
@@ -294,28 +331,6 @@ module TkCore
 
   def mainloop
     TclTkLib.mainloop
-  end
-
-  def _get_eval_string(str)
-    return nil if str == None
-    if str.kind_of?(Hash)
-      str = hash_kv(str).join(" ")
-    elsif str.kind_of?(Array)
-      str = array2tk_list(str)
-    elsif str.kind_of?(Proc)
-      str = install_cmd(v)
-    elsif str == nil
-      str = ""
-    elsif str == false
-      str = "0"
-    elsif str == true
-      str = "1"
-    elsif (str.respond_to?(:to_eval))
-      str = str.to_eval()
-    else
-      str = str.to_s()
-    end
-    return str
   end
 
   def tk_call(*args)
@@ -981,11 +996,14 @@ class TkObject<TkKernel
   private :tk_send
 
   def method_missing(id, *args)
-    if (args.length == 1)
-      configure id.id2name, args[0]
+    name = id.id2name
+    case args.length
+    when 1
+      configure name, args[0]
+    when 0
+      fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
     else
-      $@ = error_at
-      super
+      fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
     end
   end
 

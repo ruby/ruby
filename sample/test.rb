@@ -749,11 +749,23 @@ x = proc{proc{}}.call
 eval "(0..9).each{|i4| $x[i4] = proc{i4*2}}", x
 ok($x[4].call == 8)
 
+x = binding
+eval "i = 1", x
+ok(eval("i", x) == 1)
+x = proc{binding}.call
+eval "i = 22", x
+ok(eval("i", x) == 22)
+$x = []
+x = proc{binding}.call
+eval "(0..9).each{|i4| $x[i4] = proc{i4*2}}", x
+ok($x[4].call == 8)
+
 proc {
-  p = proc{}
-  foo = 1
-  eval "foo = 10", p
-  ok(eval("foo", p) == eval("foo"))
+  p = binding
+  eval "foo11 = 1", p
+  proc{foo11=22}.call
+  ok(eval("foo11", p) == eval("foo11"))
+  ok(eval("foo11") == 1)
 }.call
 
 check "system"
@@ -808,7 +820,7 @@ File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
 $bad = false
 for script in Dir["{lib,sample}/*.rb"]
-  unless `./ruby -c #{script}` == "Syntax OK\n"
+  unless `./ruby -c #{script}`.chomp == "Syntax OK"
     $bad = true
   end
 end

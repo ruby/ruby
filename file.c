@@ -707,7 +707,7 @@ file_s_ftype(obj, fname)
 
 #if defined(MSDOS) || defined(NT)
     if (rb_stat(fname, &st) < 0)
-	rb_sys_fail(RSTRIN(fname)->ptr);
+	rb_sys_fail(RSTRING(fname)->ptr);
 #else
     Check_SafeStr(fname);
     if (lstat(RSTRING(fname)->ptr, &st) == -1) {

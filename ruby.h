@@ -120,11 +120,6 @@ typedef unsigned int ID;
 VALUE int2inum _((long));
 #define INT2NUM(v) int2inum(v)
 
-#if (-1==(((-1)<<1)&FIXNUM_FLAG)>>1)
-# define RSHIFT(x,y) ((x)>>y)
-#else
-# define RSHIFT(x,y) (((x)<0) ? ~((~(x))>>y) : (x)>>y)
-#endif
 #define FIX2LONG(x) RSHIFT((long)x,1)
 #define FIX2ULONG(x) (((unsigned long)(x))>>1)
 #define FIXNUM_P(f) (((long)(f))&FIXNUM_FLAG)

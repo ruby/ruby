@@ -455,24 +455,11 @@ new_dvar(id, value)
 }
 
 static void
-push_dvar(id, value)
-    ID id;
-    VALUE value;
-{
-    the_dyna_vars = new_dvar(id, value);
-}
-
-static void
 mark_dvar(vars)
-    struct RVarmap* vars;
+    struct RVarmap *vars;
 {
-    if (!vars) {
-	the_dyna_vars = new_dvar(0, 0);
-	the_dyna_vars->next = vars;
-    }
-    else {
-	the_dyna_vars = vars;
-    }
+    the_dyna_vars = new_dvar(0, 0);
+    the_dyna_vars->next = vars;
 }
 
 VALUE
@@ -503,6 +490,14 @@ dyna_var_ref(id)
     return Qnil;
 }
 
+void
+dyna_var_push(id, value)
+    ID id;
+    VALUE value;
+{
+    the_dyna_vars = new_dvar(id, value);
+}
+
 VALUE
 dyna_var_asgn(id, value)
     ID id;
@@ -517,8 +512,24 @@ dyna_var_asgn(id, value)
 	}
 	vars = vars->next;
     }
-    push_dvar(id, value);
+    dyna_var_push(id, value);
     return value;
+}
+
+static void
+dvar_asgn_push(id, value)
+    ID id;
+    VALUE value;
+{
+    if (the_dyna_vars && the_dyna_vars->id == 0) {
+	struct RVarmap* vars = new_dvar(id, value);
+
+	vars->next = the_dyna_vars->next;
+	the_dyna_vars->next = vars;
+    }
+    else {
+	dyna_var_push(id, value);
+    }
 }
 
 struct iter {
@@ -2081,15 +2092,7 @@ rb_eval(self, node)
 
       case NODE_DASGN_PUSH:
 	result = rb_eval(self, node->nd_value);
-	if (the_dyna_vars && the_dyna_vars->id == 0) {
-	    struct RVarmap* vars = new_dvar(node->nd_vid, result);
-
-	    vars->next = the_dyna_vars->next;
-	    the_dyna_vars->next = vars;
-	}
-	else {
-	    push_dvar(node->nd_vid, result);
-	}
+	dvar_asgn_push(node->nd_vid, result);
 	break;
 
       case NODE_GASGN:
@@ -2972,11 +2975,15 @@ assign(self, lhs, val)
 	break;
 
       case NODE_DASGN_PUSH:
-	push_dvar(lhs->nd_vid, val);
+	dvar_asgn_push(lhs->nd_vid, val);
 	break;
 
       case NODE_CASGN:
 	rb_const_set(the_class, lhs->nd_vid, val);
+	break;
+
+      case NODE_MASGN:
+	massign(self, lhs, val);
 	break;
 
       case NODE_CALL:
@@ -3817,7 +3824,7 @@ eval(self, src, scope, file, line)
 	old_block = the_block;
 	the_block = data->prev;
 	old_d_vars = the_dyna_vars;
-	mark_dvar(data->d_vars);
+	the_dyna_vars = data->d_vars;
 	old_vmode = scope_vmode;
 	scope_vmode = data->vmode;
 
@@ -4864,10 +4871,6 @@ f_binding(self)
 	data->prev = 0;
     }
 
-    if (data->d_vars && data->d_vars->id) {
-	push_dvar(0, 0);
-	data->d_vars = the_dyna_vars;
-    }
     scope_dup(data->scope);
     POP_BLOCK();
 
@@ -4921,10 +4924,6 @@ proc_s_new(klass)
 	    FL_SET(proc, PROC_T5);
 	    break;
 	}
-    }
-    if (data->d_vars && data->d_vars->id) {
-	push_dvar(0, 0);
-	data->d_vars = the_dyna_vars;
     }
     obj_call_init(proc);
 
