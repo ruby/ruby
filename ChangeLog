@@ -1,3 +1,7 @@
+Tue Dec  3 01:48:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (backtrace): should ignore line 0 frame.
+
 Sun Dec  1 22:43:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (win32_stat): empty path is invalid, and return
@@ -37,9 +41,26 @@ Fri Nov 22 19:30:17 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* instruby.rb: Install batch files on Windows. [Submitted by usa]
 
+Fri Nov 22 22:55:01 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): preceding ".." for negative
+	  hexadecimal numbers should not appear if prec (e.g. %.4) is
+	  specified.
+
 Thu Nov 21 20:56:35 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: should not overwrite Host: header.
+
+Wed Nov 20 02:07:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compar.c (cmp_eq,cmp_gt,cmp_ge,cmp_lt,cmp_le): "<=>" might
+	  return nil.  check using rb_cmpint().
+
+	* error.c (init_syserr): remove sys_nerr dependency.
+
+Tue Nov 19 22:37:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_match): avoid dereferencing if size == 0.
 
 Tue Nov 19 05:16:23 2002  Akinori MUSHA  <knu@iDaemons.org>
 

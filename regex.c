@@ -4140,6 +4140,7 @@ re_match(bufp, string_arg, size, pos, regs)
 
       case wordbound:
 	if (AT_STRINGS_BEG(d)) {
+	  if (AT_STRINGS_END(d)) goto fail;
 	  if (IS_A_LETTER(d)) break;
 	  else goto fail;
 	}

@@ -922,7 +922,7 @@ obj_free(obj)
 	    break;
 #ifdef C_ALLOCA
 	  case NODE_ALLOCA:
-	    RUBY_CRITICAL(free(RANY(obj)->as.node.u1.value));
+	    RUBY_CRITICAL(free(RANY(obj)->as.node.u1.node));
 	    break;
 #endif
 	}

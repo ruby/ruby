@@ -402,36 +402,6 @@ fi
 AC_FUNC_GETPGRP
 AC_FUNC_SETPGRP  
 
-AC_CACHE_CHECK(for working strtod, rb_cv_func_strtod,
-[AC_TRY_RUN([
-double strtod ();
-int
-main()
-{
-  {
-    /* Some versions of Linux strtod mis-parse strings with leading '+'.  */
-    char *string = " +69";
-    char *term;
-    double value;
-    value = strtod(string, &term);
-    if (value != 69 || term != (string + 4))
-      exit(1);
-  }
-
-  {
-    /* Under Solaris 2.4, strtod returns the wrong value for the
-       terminating character under some conditions.  */
-    char *string = "NaN";
-    char *term;
-    strtod(string, &term);
-    if (term != string && *(term - 1) == 0)
-      exit(1);
-  }
-  exit(0);
-}
-], rb_cv_func_strtod=yes, rb_cv_func_strtod=no, rb_cv_func_strtod=no)])
-test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
-
 AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_CHAR_UNSIGNED

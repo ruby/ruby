@@ -4787,7 +4787,7 @@ backtrace(lev)
 	    }
 	}
     }
-    while (frame && frame->file) {
+    while (frame && frame->file && frame->line) {
 	if (frame->prev && frame->prev->last_func) {
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     frame->file, frame->line,

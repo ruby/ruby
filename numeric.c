@@ -1559,6 +1559,7 @@ Init_Numeric()
 
     rb_define_method(rb_cNumeric, "+@", num_uplus, 0);
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);
+    rb_define_method(rb_cNumeric, "==", num_equal, 1);
     rb_define_method(rb_cNumeric, "===", num_equal, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);

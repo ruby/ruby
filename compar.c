@@ -21,9 +21,9 @@ cmp_eq(a)
     VALUE *a;
 {
     VALUE c = rb_funcall(a[0], cmp, 1, a[1]);
-    int t = NUM2INT(c);
 
-    if (t == 0) return Qtrue;
+    if (NIL_P(c)) return Qfalse;
+    if (rb_cmpint(c) == 0) return Qtrue;
     return Qfalse;
 }
 
@@ -51,9 +51,9 @@ cmp_gt(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
-    int t = NUM2INT(c);
 
-    if (t > 0) return Qtrue;
+    if (NIL_P(c)) return Qfalse;
+    if (rb_cmpint(c) > 0) return Qtrue;
     return Qfalse;
 }
 
@@ -62,9 +62,9 @@ cmp_ge(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
-    int t = NUM2INT(c);
 
-    if (t >= 0) return Qtrue;
+    if (NIL_P(c)) return Qfalse;
+    if (rb_cmpint(c) >= 0) return Qtrue;
     return Qfalse;
 }
 
@@ -73,9 +73,9 @@ cmp_lt(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
-    int t = NUM2INT(c);
 
-    if (t < 0) return Qtrue;
+    if (NIL_P(c)) return Qfalse;
+    if (rb_cmpint(c) < 0) return Qtrue;
     return Qfalse;
 }
 
@@ -84,9 +84,9 @@ cmp_le(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
-    int t = NUM2INT(c);
 
-    if (t <= 0) return Qtrue;
+    if (NIL_P(c)) return Qfalse;
+    if (rb_cmpint(c) <= 0) return Qtrue;
     return Qfalse;
 }
 
@@ -94,13 +94,8 @@ static VALUE
 cmp_between(x, min, max)
     VALUE x, min, max;
 {
-    VALUE c = rb_funcall(x, cmp, 1, min);
-    long t = NUM2LONG(c);
-    if (t < 0) return Qfalse;
-
-    c = rb_funcall(x, cmp, 1, max);
-    t = NUM2LONG(c);
-    if (t > 0) return Qfalse;
+    if (cmp_lt(x, min)) return Qfalse;
+    if (cmp_gt(x, max)) return Qfalse;
     return Qtrue;
 }
 

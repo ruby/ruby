@@ -13,6 +13,7 @@
 #include "ruby.h"
 #include "env.h"
 #include "version.h"
+#include "st.h"
 
 #include <stdio.h>
 #ifdef HAVE_STDARG_PROTOTYPES
@@ -412,101 +413,34 @@ exc_set_backtrace(exc, bt)
     return rb_iv_set(exc, "bt", check_backtrace(bt));
 }
 
-#ifdef __BEOS__
-typedef struct {
-   VALUE *list;
-   int n;
-} syserr_list_entry;
-
-typedef struct {
-   int ix;
-   int n;
-} syserr_index_entry;
-
-static VALUE syserr_error;
-static VALUE syserr_list_b_general[16+1];
-static VALUE syserr_list_b_os0[2+1];
-static VALUE syserr_list_b_os1[5+1];
-static VALUE syserr_list_b_os2[2+1];
-static VALUE syserr_list_b_os3[3+1];
-static VALUE syserr_list_b_os4[1+1];
-static VALUE syserr_list_b_app[15+1];
-static VALUE syserr_list_b_interface[0+1];
-static VALUE syserr_list_b_media[8+1];
-static VALUE syserr_list_b_midi[0+1];
-static VALUE syserr_list_b_storage[15+1];
-static VALUE syserr_list_b_posix[38+1];
-static VALUE syserr_list_b_mail[8+1];
-static VALUE syserr_list_b_print[1+1];
-static VALUE syserr_list_b_device[14+1];
-
-# define SYSERR_LIST_B(n) {(n), sizeof(n)/sizeof(VALUE)}
-static const syserr_list_entry syserr_list[] = {
-   SYSERR_LIST_B(syserr_list_b_general),
-   SYSERR_LIST_B(syserr_list_b_os0),
-   SYSERR_LIST_B(syserr_list_b_os1),
-   SYSERR_LIST_B(syserr_list_b_os2),
-   SYSERR_LIST_B(syserr_list_b_os3),
-   SYSERR_LIST_B(syserr_list_b_os4),
-   SYSERR_LIST_B(syserr_list_b_app),
-   SYSERR_LIST_B(syserr_list_b_interface),
-   SYSERR_LIST_B(syserr_list_b_media),
-   SYSERR_LIST_B(syserr_list_b_midi),
-   SYSERR_LIST_B(syserr_list_b_storage),
-   SYSERR_LIST_B(syserr_list_b_posix),
-   SYSERR_LIST_B(syserr_list_b_mail),
-   SYSERR_LIST_B(syserr_list_b_print),
-   SYSERR_LIST_B(syserr_list_b_device),
-};
-# undef SYSERR_LIST_B
-
-static const syserr_index_entry syserr_index[]= {
-     {0, 1},  {1, 5},  {6, 1},  {7, 1}, {8, 1}, {9, 1}, {10, 1}, {11, 1},
-     {12, 1}, {13, 1}, {14, 1}, {0, 0},
-};
-#else
-static VALUE *syserr_list;
-#endif
-
-#if !defined(NT) && !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__) && !defined(sys_nerr)
-#  if !defined(__APPLE__) || (__APPLE_CC__ < 1151)
-extern int sys_nerr;
-#  endif
-#endif
+static st_table *syserr_tbl;
 
 static VALUE
-set_syserr(i, name)
-    int i;
+set_syserr(n, name)
+    int n;
     const char *name;
 {
-#ifdef __BEOS__
-   VALUE *list;
-   int ix, offset;
-#endif
-    VALUE error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
-    rb_define_const(error, "Errno", INT2NUM(i));
-#ifdef __BEOS__
-   if (i == B_ERROR) {
-      syserr_error = error;
-      rb_global_variable(&syserr_error);
-      return error;
-   }
-   i -= B_GENERAL_ERROR_BASE;
-   ix = (i >> 12) & 0xf;
-   offset = (i >> 8) & 0xf;
-   if (offset < syserr_index[ix].n) {
-      ix = syserr_index[ix].ix;
-      if ((i & 0xff) < syserr_list[ix + offset].n) {
-	 list = syserr_list[ix + offset].list;
-	 list[i & 0xff] = error;
-	 rb_global_variable(&list[i & 0xff]);
-      }
-   }
-#else
-    if (i <= sys_nerr) {
-	syserr_list[i] = error;
+    VALUE error;
+
+    if (!st_lookup(syserr_tbl, n, &error)) {
+	error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);;
+	rb_define_const(error, "Errno", INT2NUM(n));
+	st_add_direct(syserr_tbl, n, error);
     }
-#endif
+    return error;
+}
+
+static VALUE
+get_syserr(int n)
+{
+    VALUE error;
+
+    if (!st_lookup(syserr_tbl, n, &error)) {
+	char name[6];
+      
+	sprintf(name, "E%03d", n);
+	error = set_syserr(n, name);
+    }
     return error;
 }
 
@@ -672,26 +606,7 @@ rb_sys_fail(mesg)
     }
 
     errno = 0;
-#ifdef __BEOS__
-    ee = get_syserr(n);
-    if (!ee) {
-	char name[6];
-      
-	sprintf(name, "E%03d", n);
-	ee = set_syserr(n, name);
-   }
-#else
-    if (n > sys_nerr || !syserr_list[n]) {
-	char name[6];
-
-	sprintf(name, "E%03d", n);
-	ee = set_syserr(n, name);
-    }
-    else {
-	ee = syserr_list[n];
-    }
-#endif
-    ee = rb_exc_new2(ee, buf);
+    ee = rb_exc_new2(get_syserr(n), buf);
     rb_iv_set(ee, "errno", INT2NUM(n));
     rb_exc_raise(ee);
 }
@@ -713,26 +628,11 @@ rb_error_frozen(what)
 static void
 init_syserr()
 {
-#ifdef __BEOS__
-   int i, ix, offset;
-#endif
+    syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
     rb_define_method(rb_eSystemCallError, "errno", syserr_errno, 0);
 
     rb_mErrno = rb_define_module("Errno");
-#ifdef __BEOS__
-   for (i = 0; syserr_index[i].n != 0; i++) {
-      ix = syserr_index[i].ix;
-      for (offset = 0; offset < syserr_index[i].n; offset++) {
-	 MEMZERO(syserr_list[ix + offset].list, VALUE, syserr_list[ix + offset].n);
-      }
-   }
-   set_syserr(B_ERROR, "ERROR");
-#else
-    syserr_list = ALLOC_N(VALUE, sys_nerr+1);
-    MEMZERO(syserr_list, VALUE, sys_nerr+1);
-#endif
-
 #ifdef EPERM
     set_syserr(EPERM, "EPERM");
 #endif

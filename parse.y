@@ -2928,10 +2928,6 @@ arg_ambiguous()
     rb_warning("ambiguous first argument; make sure");
 }
 
-#if !defined(strtod) && !defined(HAVE_STDLIB_H)
-double strtod ();
-#endif
-
 static int
 yylex()
 {
@@ -4111,9 +4107,7 @@ str_extend(list, term, paren)
 			    c = nextc();
 			}
 		    }
-		    else {
-			tokadd(c);
-		    }
+		    tokadd(c);
 		    break;
 		}
 		/* out of brace */

@@ -58,4 +58,7 @@ char *ruby_strdup _((const char*));
 #undef strdup
 #define strdup(s) ruby_strdup((s))
 
+double ruby_strtod _((const char*, char **));
+#define strtod(s,e) ruby_strtod((s),(e))
+
 #endif /* UTIL_H */
