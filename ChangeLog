@@ -1,3 +1,7 @@
+Sun Mar 21 21:11:16 2004  Keiju Ishitsuka  <keiju@ishitsuka.com>
+
+	* lib/shell/*: bug fix for Shell#system(command_line_string).
+
 Sat Mar 20 20:57:10 2004  David Black  <dblack@wobblini.net>
 
 	* lib/scanf.rb: Backported 1.9 branch
