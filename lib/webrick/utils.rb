@@ -48,6 +48,30 @@ module WEBrick
     end
     module_function :getservername
 
+    def create_listeners(address, port, logger=nil)
+      res = Socket::getaddrinfo(address, port,
+                                Socket::AF_UNSPEC,   # address family
+                                Socket::SOCK_STREAM, # socket type
+                                0,                   # protocol
+                                Socket::AI_PASSIVE)  # flag
+      last_error = nil
+      sockets = []
+      res.each{|ai|
+        begin
+          logger.debug("TCPServer.new(#{ai[3]}, #{ai[1]})") if logger
+          sock = TCPServer.new(ai[3], ai[1])
+          Utils::set_close_on_exec(sock)
+          sockets << sock
+        rescue => ex
+          logger.warn("TCPServer Error: #{ex}") if logger
+          last_error  = ex
+        end
+      }
+      raise last_error if sockets.empty?
+      return sockets
+    end
+    module_function :create_listeners
+
     RAND_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                  "0123456789" +
                  "abcdefghijklmnopqrstuvwxyz" 

@@ -1,3 +1,24 @@
+Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/ssl.rb: new file; SSL/TLS enhancement for GenericServer.
+
+	* lib/webrick/https.rb: SSLSocket handling is moved to webrick/ssl.rb.
+
+	* lib/webrick/compat.rb (File::fnmatch): remove old migration code.
+
+	* lib/webrick/httpserver.rb (HTTPServer#run): ditto.
+
+	* lib/webrick/server.rb (GenericServer#listen): the body of this
+	  method is pull out as Utils::create_lisnteners.
+
+	* lib/webrick/utils.rb (Utils::create_lisnteners): new method.
+
+	* lib/webrick/server.rb (GenericServer#start): should not
+	  through unknown errors. and refine comments.
+
+	* ext/openssl/lib/openssl/ssl.rb (SSLServer#accept): should close 
+	  socket if SSLSocket raises error.
+
 Tue Aug 19 11:19:33 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* io.c (next_argv): should not call GetOpenFile() if rb_stdout is

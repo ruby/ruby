@@ -69,11 +69,16 @@ module OpenSSL
 
       def accept
         sock = @svr.accept
-        ssl = OpenSSL::SSL::SSLSocket.new(sock, @ctx)
-        ssl.sync = true
-        ssl.sync_close = true
-        ssl.accept if @start_immediately
-        ssl
+        begin
+          ssl = OpenSSL::SSL::SSLSocket.new(sock, @ctx)
+          ssl.sync = true
+          ssl.sync_close = true
+          ssl.accept if @start_immediately
+          ssl
+        rescue SSLError => ex
+          sock.close
+          raise ex
+        end
       end
 
       def close

@@ -55,10 +55,9 @@ module WEBrick
       @logger.info("WEBrick #{webrickv}")
       @logger.info("ruby #{rubyv}")
 
-      if  @config[:DoNotListen]
-        @listeners = []
-      else
-        @listeners = listen(@config[:BindAddress], @config[:Port])
+      @listeners = []
+      unless  @config[:DoNotListen]
+        listen(@config[:BindAddress], @config[:Port])
         @config[:Listen].each{|addr, port|
           listen(addr, port).each{|sock| @listeners << sock }
         }
@@ -70,26 +69,7 @@ module WEBrick
     end
 
     def listen(address, port)
-      res = Socket::getaddrinfo(address, port,
-                                Socket::AF_UNSPEC,   # address family
-                                Socket::SOCK_STREAM, # socket type
-                                0,                   # protocol
-                                Socket::AI_PASSIVE)  # flag
-      last_error = nil
-      sockets = []
-      res.each{|ai|
-        begin
-          @logger.debug("TCPServer.new(#{ai[3]}, #{ai[1]})")
-          sock = TCPServer.new(ai[3], ai[1])
-          Utils::set_close_on_exec(sock)
-          sockets << sock
-        rescue => ex
-          @logger.warn("TCPServer Error: #{ex}")
-          last_error  = ex
-        end
-      }
-      raise last_error if sockets.empty?
-      return sockets
+      @listeners += Utils::create_listeners(address, port, @logger)
     end
 
     def start(&block)
@@ -117,12 +97,14 @@ module WEBrick
               }
             end
           rescue Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPROTO => ex
+            # TCP connection was established but RST segment was sent
+            # from peer before calling TCPServer#accept.
+          rescue Errno::EBADF => ex
+            # if the listening socket was closed in GenericServer#shutdown,
+            # IO::select raise it.
+          rescue => ex
             msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
             @logger.error msg
-          rescue Errno::EBADF => ex  # IO::select causes by shutdown
-          rescue => ex
-            @logger.error ex
-            break
           end
         end
 

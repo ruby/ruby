@@ -58,7 +58,7 @@ module WEBrick
           res.set_error(ex)
         rescue HTTPStatus::Status => ex
           res.status = ex.code
-        rescue StandardError, NameError => ex # for Ruby 1.6
+        rescue StandardError => ex
           @logger.error(ex)
           res.set_error(ex, true)
         ensure
