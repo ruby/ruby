@@ -235,24 +235,24 @@ the prototype consists of the following type specifiers, first element of
 prototype represents the type of return value, and remaining elements represent
 the type of each argument.
 
-    C : a character (char)
-    c : a pointer to a character (char *)
-    H : a short integer (short)
-    h : a pointer to a short integer (short *)
-    I : an integer (char, short, int)
-    i : a pointer to an integer (char *, short *, int *)
-    L : a long integer (long)
-    l : a pointer to a long integer (long *)
-    F : a real (float)
-    f : a pointer to a real (float *)
-    D : a real (double)
-    d : a pointer to a real (double *)
-    S : an immutable string (const char *)
-    s : a mutable string (char *)
-    A : an array (const type[])
-    a : a mutable array (type[])
-    P : a pointer (void *)
-    p : a mutable object (void *)
+    C : char
+    c : char *
+    H : short
+    h : short *
+    I : int
+    i : int *
+    L : long
+    l : long *
+    F : float
+    f : float *
+    D : double
+    d : double *
+    S : const char *
+    s : char *
+    A : const type[]
+    a : type[] (allocates new memory space)
+    P : void * (same as 'p')
+    p : void * (same as 'P')
     0 : void function (this must be a first character of the prototype)
 
 the cbtype consists of type specifiers 0, C, I, H, L, F, D, S and P.
