@@ -1,3 +1,7 @@
+Mon Jan 28 18:33:18 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (yylex): strict check for numbers.
+
 Mon Jan 28 13:29:41 2002  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (is_defined): defined?(Foo::Baz) should check constants

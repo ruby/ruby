@@ -3140,9 +3140,9 @@ yylex()
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
 	{
-	    int is_float, seen_point, seen_e, seen_uc;
+	    int is_float, seen_point, seen_e, nondigit;
 
-	    is_float = seen_point = seen_e = seen_uc = 0;
+	    is_float = seen_point = seen_e = nondigit = 0;
 	    lex_state = EXPR_END;
 	    newtok();
 	    if (c == '-' || c == '+') {
@@ -3150,46 +3150,53 @@ yylex()
 		c = nextc();
 	    }
 	    if (c == '0') {
+		int start = toklen();
 		c = nextc();
 		if (c == 'x' || c == 'X') {
 		    /* hexadecimal */
 		    c = nextc();
-		    do {
-			if (c == '_') {
-			    seen_uc = 1;
-			    continue;
-			}
-			if (!ISXDIGIT(c)) break;
-			seen_uc = 0;
-			tokadd(c);
-		    } while (c = nextc());
+		    if (ISXDIGIT(c)) {
+			do {
+			    if (c == '_') {
+				if (nondigit) break;
+				nondigit = c;
+				continue;
+			    }
+			    if (!ISXDIGIT(c)) break;
+			    nondigit = 0;
+			    tokadd(c);
+			} while (c = nextc());
+		    }
 		    pushback(c);
 		    tokfix();
-		    if (toklen() == 0) {
+		    if (toklen() == start) {
 			yyerror("hexadecimal number without hex-digits");
 		    }
-		    else if (seen_uc) goto trailing_uc;
+		    else if (nondigit) goto trailing_uc;
 		    yylval.val = rb_cstr2inum(tok(), 16);
 		    return tINTEGER;
 		}
 		if (c == 'b' || c == 'B') {
 		    /* binary */
 		    c = nextc();
-		    do {
-			if (c == '_') {
-			    seen_uc = 1;
-			    continue;
-			}
-			if (c != '0'&& c != '1') break;
-			seen_uc = 0;
-			tokadd(c);
-		    } while (c = nextc());
+		    if (c == '0' || c == '1') {
+			do {
+			    if (c == '_') {
+				if (nondigit) break;
+				nondigit = c;
+				continue;
+			    }
+			    if (c != '0' && c != '1') break;
+			    nondigit = 0;
+			    tokadd(c);
+			} while (c = nextc());
+		    }
 		    pushback(c);
 		    tokfix();
-		    if (toklen() == 0) {
+		    if (toklen() == start) {
 			yyerror("numeric literal without digits");
 		    }
-		    else if (seen_uc) goto trailing_uc;
+		    else if (nondigit) goto trailing_uc;
 		    yylval.val = rb_cstr2inum(tok(), 2);
 		    return tINTEGER;
 		}
@@ -3197,23 +3204,26 @@ yylex()
 		    /* octal */
 	            do {
 			if (c == '_') {
-			    seen_uc = 1;
+			    if (nondigit) break;
+			    nondigit = c;
 			    continue;
 			}
 			if (c < '0' || c > '7') break;
-			seen_uc = 0;
+			nondigit = 0;
 			tokadd(c);
 		    } while (c = nextc());
-		    pushback(c);
-		    tokfix();
-		    if (seen_uc) goto trailing_uc;
-		    yylval.val = rb_cstr2inum(tok(), 8);
-		    return tINTEGER;
+		    if (toklen() > start) {
+			pushback(c);
+			tokfix();
+			if (nondigit) goto trailing_uc;
+			yylval.val = rb_cstr2inum(tok(), 8);
+			return tINTEGER;
+		    }
 		}
 		if (c > '7' && c <= '9') {
 		    yyerror("Illegal octal digit");
 		}
-		else if (c == '.') {
+		else if (c == '.' || c == 'e' || c == 'E') {
 		    tokadd('0');
 		}
 		else {
@@ -3227,12 +3237,12 @@ yylex()
 		switch (c) {
 		  case '0': case '1': case '2': case '3': case '4':
 		  case '5': case '6': case '7': case '8': case '9':
-		    seen_uc = 0;
+		    nondigit = 0;
 		    tokadd(c);
 		    break;
 
 		  case '.':
-		    if (seen_uc) goto trailing_uc;
+		    if (nondigit) goto trailing_uc;
 		    if (seen_point || seen_e) {
 			goto decode_num;
 		    }
@@ -3248,27 +3258,32 @@ yylex()
 		    tokadd(c);
 		    is_float++;
 		    seen_point++;
-		    seen_uc = 0;
+		    nondigit = 0;
 		    break;
 
 		  case 'e':
 		  case 'E':
+		    if (nondigit) {
+			pushback(c);
+			c = nondigit;
+			goto decode_num;
+		    }
 		    if (seen_e) {
 			goto decode_num;
 		    }
 		    tokadd(c);
 		    seen_e++;
 		    is_float++;
-		    while ((c = nextc()) == '_')
-			seen_uc = 1;
-		    if (c == '-' || c == '+')
-			tokadd(c);
-		    else 
-			continue;
+		    nondigit = c;
+		    c = nextc();
+		    if (c != '-' && c != '+') continue;
+		    tokadd(c);
+		    nondigit = c;
 		    break;
 
 		  case '_':	/* `_' in number just ignored */
-		    seen_uc = 1;
+		    if (nondigit) goto decode_num;
+		    nondigit = c;
 		    break;
 
 		  default:
@@ -3280,9 +3295,11 @@ yylex()
 	  decode_num:
 	    pushback(c);
 	    tokfix();
-	    if (seen_uc) {
+	    if (nondigit) {
+		char tmp[30];
 	      trailing_uc:
-		yyerror("trailing `_' in number");
+		sprintf(tmp, "trailing `%c' in number", nondigit);
+		yyerror(tmp);
 	    }
 	    if (is_float) {
 		double d = strtod(tok(), 0);
