@@ -250,7 +250,7 @@ enum_sort_by(obj)
     rb_ary_sort_inplace(ary);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	VALUE e = RARRAY(ary)->ptr[i];
-	RARRAY(ary)->ptr[i] = RARRAY(e)->ptr[2];
+	RARRAY(ary)->ptr[i] = RARRAY(e)->ptr[RARRAY(e)->len - 1];
     }
 
     return ary;
