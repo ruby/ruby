@@ -401,7 +401,7 @@ module Net
   class POPBadResponse < StandardError; end
 
 
-  class POP3
+  class POP3 < Protocol
 
     Revision = %q$Revision$.split[1]
 

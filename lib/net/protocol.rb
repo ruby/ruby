@@ -24,6 +24,17 @@ require 'timeout'
 
 module Net
 
+  class Protocol
+    private
+    def Protocol.protocol_param( name, val )
+      module_eval(<<-End, __FILE__, __LINE__ + 1)
+        def #{name}
+          #{val}
+        end
+      End
+    end
+  end
+
   class ProtocolError          < StandardError; end
   class ProtoSyntaxError       < ProtocolError; end
   class ProtoFatalError        < ProtocolError; end

@@ -1,3 +1,13 @@
+Sat May  3 00:22:00 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: reintroduce Protocol.protocol_param.
+
+	* lib/net/http.rb: ditto.
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/smtp.rb: ditto.
+
 Fri May  2 23:29:53 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: remove Protocol class.

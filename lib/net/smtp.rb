@@ -233,7 +233,7 @@ require 'digest/md5'
 
 module Net
 
-  class SMTP
+  class SMTP < Protocol
 
     Revision = %q$Revision$.split[1]
 

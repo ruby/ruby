@@ -562,7 +562,7 @@ module Net
   class HTTPHeaderSyntaxError < StandardError; end
 
 
-  class HTTP
+  class HTTP < Protocol
 
     Revision = %q$Revision$.split[1]
 
