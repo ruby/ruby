@@ -8031,8 +8031,6 @@ static int
 block_orphan(data)
     struct BLOCK *data;
 {
-    struct tag *tt;
-
     if (data->scope->flags & SCOPE_NOSTACK) {
 	return 1;
     }

@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 #include "env.h"
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 
