@@ -1979,7 +1979,7 @@ module RDoc
       # Look for a 'call-seq' in the comment, and override the
       # normal parameter stuff
 
-      if comment.sub!(/call-seq:(.*?)^\s*\#?\s*$/m, '')
+      if comment.sub!(/:?call-seq:(.*?)^\s*\#?\s*$/m, '')
         seq = $1
         seq.gsub!(/^\s*\#\s*/, '')
         meth.call_seq = seq
