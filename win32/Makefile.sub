@@ -15,9 +15,6 @@ RUBYW_INSTALL_NAME = $(RUBY_INSTALL_NAME:ruby=rubyw)
 !if "$(RUBYW_INSTALL_NAME)" == "$(RUBY_INSTALL_NAME)"
 RUBYW_INSTALL_NAME = $(RUBY_INSTALL_NAME)w
 !endif
-!ifndef RUBY_SO_NAME
-RUBY_SO_NAME = rubymw
-!endif
 !if !defined(icondirs) && defined(ICONDIRS)
 icondirs=$(ICONDIRS)
 !endif
@@ -36,10 +33,15 @@ CC = cl
 !if !defined(YACC)
 YACC = byacc
 !endif
+AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
 
-!if !defined(PROCESSOR_ARCHITECTURE) || "$(PROCESSOR_ARCHITECTURE)" == "x86"
+!if !defined(PROCESSOR_ARCHITECTURE)
+PROCESSOR_ARCHITECTURE = x86
+!endif
+MACHINE = $(PROCESSOR_ARCHITECTURE)
+!if "$(PROCESSOR_ARCHITECTURE)" == "x86"
 !if !defined(PROCESSOR_LEVEL)
 PROCESSOR_LEVEL = 5
 !endif
@@ -61,6 +63,10 @@ OPTFLAGS = -O2b2xg-
 !endif
 OS = mswin32
 RT = msvcrt
+
+!ifndef RUBY_SO_NAME
+RUBY_SO_NAME = $(RT)-$(RUBY_INSTALL_NAME)17
+!endif
 
 !if !defined(prefix)
 prefix = /usr
@@ -155,7 +161,6 @@ OBJS          = array.obj \
 
 all:		miniruby$(EXEEXT) rbconfig.rb \
 		$(LIBRUBY) $(MISCLIBS)
-		set LIB=..\..;$(ORGLIBPATH)
 		@.\miniruby$(EXEEXT) $(srcdir)/ext/extmk.rb 
 
 ruby: $(PROGRAM)
@@ -301,7 +306,7 @@ s,@CC@,$(CC),;t t
 s,@CPP@,$$(CC) -E,;t t
 s,@YACC@,$(YACC),;t t
 s,@RANLIB@,rem,;t t
-s,@AR@,lib -nologo,;t t
+s,@AR@,$(AR),;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
 s,@LIBOBJS@, acosh.obj crypt.obj win32.obj isinf.obj isnan.obj,;t t
@@ -337,22 +342,15 @@ s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
 s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
+		@if not exist $(@D)\nul mkdir $(@D)
 s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 <<
 
-#ext/extmk.rb:	$(srcdir)/ext/extmk.rb.in config.status
-#		@echo Creating ext/extmk.rb
-#		@.\miniruby$(EXEEXT) $(srcdir)/ext/configsub.rb \
-#			-srcdir=$(srcdir) \
-#			-install_name=$(RUBY_INSTALL_NAME) \
-#			-so_name=$(RUBY_SO_NAME) \
-#			-output=$@ $(srcdir)/ext/extmk.rb.in
-
-miniruby$(EXEEXT):	$(OBJS) $(MAINOBJ) $(EXTOBJS) 
+miniruby$(EXEEXT):	$(OBJS) $(MAINOBJ) dmyext.obj
 		@echo $(EXTOBJS)
 		@echo $(LIBS)
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(OBJS) $(LIBS) -Fe$@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.obj $(OBJS) $(LIBS) -Fe$@
 
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $*.res
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $*.res \
@@ -363,20 +361,14 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $*.res
 			-Fe$@ $(LIBRUBYARG) -link -stack:$(STACK) -subsystem:Windows -incremental:no
 
 $(LIBRUBY_A):	$(OBJS) dmyext.obj
-		lib -nologo /OUT:$@ $(OBJS) dmyext.obj
+		$(AR) -out:$@ -machine:$(MACHINE) $(OBJS) dmyext.obj
 
 $(LIBRUBY):	$(RUBYDEF)
-		lib -nologo /OUT:$@ /DEF:$(RUBYDEF)
+		$(AR) -out:$@ -def:$(RUBYDEF) -machine:$(MACHINE)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $@.res
-		set LIB=.\win32;$(ORGLIBPATH)
 		$(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $@.res $(LIBS) \
 			-Fe$@ -link -dll -def:$(RUBYDEF)
-
-!if "$(LIBRUBY_SO)" != "rubymw.dll"
-rubymw.dll:	$(LIBRUBY)
-		$(CC) -nologo $(EXTOBJS) $(LIBRUBY) -o $@ -link /DLL /DEF:$(RUBYDEF)
-!endif
 
 $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 		.\miniruby$(EXEEXT) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
@@ -451,9 +443,6 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(LIBRUBY_SO).rc: rbconfig.rb
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(LIBRUBY_SO) \
 			. $(icondirs) $(srcdir)/win32
-
-#config.status:	$(srcdir)/configure
-#		$(SHELL) ./config.status --recheck
 
 {$(srcdir)/missing}.c.obj:
 	$(CC) $(CFLAGS) -I. -I$(<D) $(CPPFLAGS) -c -Tc$(<:\=/)

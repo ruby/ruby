@@ -9,23 +9,50 @@ srcdir = $(WIN32DIR)/..
 !ENDIF
 OS = mswin32
 RT = msvcrt
+INCLUDE = !include
+MAKEFILE = $(WIN32DIR)/setup.mak
 
-all: ext
+!if "$(target)" == ""
 all: Makefile
-all:; @echo type `nmake' to make ruby for mswin32.
+	@echo type `$(MAKE)' to make ruby for $(OS).
+!else
+all: $(target)
+!endif
+
+i386-$(OS):
+	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
+		PROCESSOR_ARCHITECTURE=x86 PROCESSOR_LEVEL=3
+i486-$(OS):
+	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
+		PROCESSOR_ARCHITECTURE=x86 PROCESSOR_LEVEL=4
+i586-$(OS):
+	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
+		PROCESSOR_ARCHITECTURE=x86 PROCESSOR_LEVEL=5
+i686-$(OS):
+	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
+		PROCESSOR_ARCHITECTURE=x86 PROCESSOR_LEVEL=6
+alpha-$(OS):
+	@$(MAKE) -$(MAKEFLAGS) -f $(MAKEFILE) target= \
+		PROCESSOR_ARCHITECTURE=alpha PROCESSOR_LEVEL=
 
 Makefile:
-	@echo ### makefile for ruby $(OS) ###> $@
-	@echo srcdir = $(srcdir:\=/)>> $@
-	@echo RUBY_INSTALL_NAME = ruby>> $@
-	@echo RUBY_SO_NAME = $(RT)-$$(RUBY_INSTALL_NAME)17>> $@
-	@echo prefix = /usr>> $@
-	@echo CFLAGS = -nologo -MD -DNT=1 $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)>> $@
-	@echo CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\">> $@
-	@echo LDFLAGS = $$(CFLAGS) -Fm>> $@
-	@echo XLDFLAGS = >> $@
-	@echo RFLAGS = -r>> $@
-	@echo EXTLIBS =>> $@
-	@echo !INCLUDE $$(srcdir)/win32/Makefile.sub>> $@
-
-ext:;	@if not exist $@\* mkdir $@
+	@echo Creating <<$@
+### Makefile for ruby $(OS) ###
+srcdir = $(srcdir:\=/)
+!if defined(PROCESSOR_ARCHITECTURE)
+PROCESSOR_ARCHITECTURE = $(PROCESSOR_ARCHITECTURE)
+!endif
+!if defined(PROCESSOR_LEVEL)
+PROCESSOR_LEVEL = $(PROCESSOR_LEVEL)
+!endif
+RUBY_INSTALL_NAME = ruby
+RUBY_SO_NAME = $(RT)-$$(RUBY_INSTALL_NAME)17
+prefix = /usr
+CFLAGS = -nologo -MD -DNT=1 $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
+CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
+LDFLAGS = $$(CFLAGS) -Fm
+XLDFLAGS = 
+RFLAGS = -r
+EXTLIBS =
+$(INCLUDE) $$(srcdir)/win32/Makefile.sub
+<<KEEP
