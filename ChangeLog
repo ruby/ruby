@@ -1,4 +1,4 @@
-Fri Aug  9 00:35:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
+Sat Aug  9 00:35:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal.c: F style output(like 1234.56789) implemented
 	  to to_s method.
