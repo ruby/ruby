@@ -1,3 +1,12 @@
+Mon Mar 28 23:40:40 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: move method DRbObject#reinit to DRbObject.new_with.
+	  extract method DRbObject.prepare_backtrace. add DRb.regist_server,
+	  remove_server, fetch_server. change server in thread variable if
+	  in-proc sesrver. [druby-ja:113]
+
+	* lib/drb/gw.rb: ditto.
+
 Mon Mar 28 20:43:34 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/rubyext.c: get rid of warnings caused by a bug of VC.
