@@ -4244,6 +4244,21 @@ class TkMenu<TkWindow
     tk_send 'add', type, *hash_kv(keys)
     self
   end
+  def add_cascade(keys=nil)
+    add('cascade', keys)
+  end
+  def add_checkbutton(keys=nil)
+    add('checkbutton', keys)
+  end
+  def add_command(keys=nil)
+    add('command', keys)
+  end
+  def add_radiobutton(keys=nil)
+    add('radiobutton', keys)
+  end
+  def add_separator(keys=nil)
+    add('separator', keys)
+  end
   def index(index)
     ret = tk_send('index', index)
     (ret == 'none')? nil: number(ret)
@@ -4430,8 +4445,8 @@ end
 
 class TkOptionMenubutton<TkMenubutton
   class OptionMenu<TkMenu
-    def initialize(parent)
-      @path = parent.path + '.menu'
+    def initialize(path)  #==> return value of tk_optionMenu
+      @path = path
       TkComm::Tk_WINDOWS[@path] = self
     end
   end
@@ -4443,13 +4458,13 @@ class TkOptionMenubutton<TkMenubutton
        var = keys['variable'] if keys['variable']
        firstval, *vals = keys['values']
     end
-    fail unless var.kind_of? TkVariable
+    fail 'variable option must be TkVariable' unless var.kind_of? TkVariable
     @variable = var
     firstval = @variable.value unless firstval
     @variable.value = firstval
     install_win(if parent then parent.path end)
-    @menu = OptionMenu.new(self)
-    tk_call 'tk_optionMenu', @path, @variable.id, firstval, *vals
+    @menu = OptionMenu.new(tk_call('tk_optionMenu', @path, @variable.id, 
+				   firstval, *vals))
   end
 
   def value
@@ -4483,15 +4498,18 @@ class TkOptionMenubutton<TkMenubutton
   def yposition(index)
     @menu.yposition(index)
   end
-  def menucget(index, key)
-    @menu.cget(index, key)
+  def menu
+    @menu
   end
-  def menuconfigure(index, key, val=None)
-    @menu.configure(index, key, val)
+  def menucget(key)
+    @menu.cget(key)
+  end
+  def menuconfigure(key, val=None)
+    @menu.configure(key, val)
     self
   end
-  def menuconfiginfo(index, key=nil)
-    @menu.configinfo(index, key)
+  def menuconfiginfo(key=nil)
+    @menu.configinfo(key)
   end
   def entrycget(index, key)
     @menu.entrycget(index, key)
