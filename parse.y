@@ -402,7 +402,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| lhs '=' command_call
 		    {
-			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
 		| mlhs '=' command_call
@@ -685,11 +684,11 @@ reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
 
 arg		: lhs '=' arg
 		    {
-			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
 		| variable tOP_ASGN {$$ = assignable($1, 0);} arg
 		    {
+			value_expr($4);
 			if ($<node>3) {
 			    if ($2 == tOROP) {
 				$<node>3->nd_value = $4;
@@ -716,6 +715,7 @@ arg		: lhs '=' arg
 		    {
                         NODE *tmp, *args = NEW_LIST($6);
 
+			value_expr($5);
 			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
 			if ($5 == tOROP) {
@@ -729,6 +729,7 @@ arg		: lhs '=' arg
 		    }
 		| primary '.' tIDENTIFIER tOP_ASGN arg
 		    {
+			value_expr($5);
 			if ($4 == tOROP) {
 			    $4 = 0;
 			}
@@ -740,6 +741,7 @@ arg		: lhs '=' arg
 		    }
 		| primary '.' tCONSTANT tOP_ASGN arg
 		    {
+			value_expr($5);
 			if ($4 == tOROP) {
 			    $4 = 0;
 			}
@@ -751,6 +753,7 @@ arg		: lhs '=' arg
 		    }
 		| primary tCOLON2 tIDENTIFIER tOP_ASGN arg
 		    {
+			value_expr($5);
 			if ($4 == tOROP) {
 			    $4 = 0;
 			}
@@ -797,7 +800,7 @@ arg		: lhs '=' arg
 		    {
 			int need_negate = Qfalse;
 
-			if (nd_type($1) == NODE_LIT) {
+			if ($1 && nd_type($1) == NODE_LIT) {
 
 			    switch (TYPE($1->nd_lit)) {
 			      case T_FIXNUM:
@@ -830,7 +833,7 @@ arg		: lhs '=' arg
 			if ($2 && nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
 			    long i = FIX2LONG($2->nd_lit);
 
-			    $2->nd_lit = INT2FIX(-i);
+			    $2->nd_lit = INT2NUM(-i);
 			    $$ = $2;
 			}
 			else {

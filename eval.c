@@ -2580,8 +2580,13 @@ rb_eval(self, n)
 	    TMP_PROTECT;
 
 	    if (ruby_frame->last_class == 0) {	
-		rb_raise(rb_eNameError, "superclass method `%s' disabled",
-			 rb_id2name(ruby_frame->last_func));
+		if (ruby_frame->last_func) {
+		    rb_raise(rb_eNameError, "superclass method `%s' disabled",
+			     rb_id2name(ruby_frame->last_func));
+		}
+		else {
+		    rb_raise(rb_eRuntimeError, "super called outside of method");
+		}
 	    }
 	    if (nd_type(node) == NODE_ZSUPER) {
 		argc = ruby_frame->argc;

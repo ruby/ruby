@@ -8,6 +8,26 @@ Mon Jun 10 19:02:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (yylex): `0_' should be an error. (ruby-bugs-ja:PR#249)
 
+Mon Jun 10 01:53:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): ruby_frame->last_func may be null, if it's
+	  called outside of a method.
+
+	* parse.y (arg): use INT2NUM, not INT2FIX for tUMINUS.
+
+	* parse.y (arg): $1 may be null for tPOW.
+
+Sat Jun  8 00:48:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (stmt,arg): too much void value check.
+
+	* parse.y (arg): need to check void value on rules which does not
+	  use node_assign().
+
+Thu Jun  6 17:42:39 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (ipaddr): need not to taint hostnames.
+
 Wed Jun  5 18:53:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (Init_Math): backport asin, acos, atan.
