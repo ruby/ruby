@@ -1,3 +1,7 @@
+Mon Jul  3 16:47:22 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* cygwin/GNUmakefile: librubys.a -> lib$(RUBY_INSTALL_NAME)s.a
+
 Mon Jul  3 13:15:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* numeric.c (fix_divmod): x * d + m = y where d, m = x.divmod(y).

@@ -8,7 +8,7 @@ ifneq (,$(findstring no, $(ENABLE_SHARED)))
   DLLNAME = ruby.exe
   RUBYEXP = --output-exp=ruby.exp
   MAINOBJ := ruby.exp $(MAINOBJ)
-  LIBRUBYARG := librubys.a
+  LIBRUBYARG := lib$(RUBY_INSTALL_NAME)s.a
 else
   ifneq (,$(findstring mingw, $(ARCH)))
     DLL = rubymg.dll
