@@ -1,3 +1,7 @@
+Mon Mar 11 21:03:37 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/stringio: new.
+
 Mon Mar 11 14:44:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_object): module inclusion using extend() should
