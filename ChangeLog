@@ -1,3 +1,7 @@
+Wed Nov 10 12:31:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT (Example): extconf.rb is indispensable now.
+
 Wed Nov 10 03:33:36 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix SEGV when compiled with Tcl/Tk8.3.x

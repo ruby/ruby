@@ -595,8 +595,7 @@ are not exported to the Ruby world.  You need to protect them by
 (4) prepare extconf.rb
 
 If the file named extconf.rb exists, it will be executed to generate
-Makefile.  If not, the compilation scheme will try to generate Makefile
-anyway.
+Makefile.
 
 extconf.rb is the file for check compilation conditions etc.  You
 need to put
