@@ -83,9 +83,11 @@ sample/demos-en/images/tcllogo.gif
 sample/demos-en/images/teapot.ppm
 sample/demos-en/items.rb
 sample/demos-en/ixset
+sample/demos-en/ixset2
 sample/demos-en/label.rb
 sample/demos-en/labelframe.rb
 sample/demos-en/menu.rb
+sample/demos-en/menu84.rb
 sample/demos-en/menubu.rb
 sample/demos-en/msgbox.rb
 sample/demos-en/patch_1.1c1
@@ -94,6 +96,7 @@ sample/demos-en/paned2.rb
 sample/demos-en/plot.rb
 sample/demos-en/puzzle.rb
 sample/demos-en/radio.rb
+sample/demos-en/radio2.rb
 sample/demos-en/rmt
 sample/demos-en/rolodex
 sample/demos-en/rolodex-j
@@ -156,10 +159,12 @@ sample/demos-jp/images/tcllogo.gif
 sample/demos-jp/images/teapot.ppm
 sample/demos-jp/items.rb
 sample/demos-jp/ixset
+sample/demos-jp/ixset2
 sample/demos-jp/label.rb
 sample/demos-jp/labelframe.rb
 sample/demos-jp/menu.rb
 sample/demos-jp/menu8x.rb
+sample/demos-jp/menu84.rb
 sample/demos-jp/menubu.rb
 sample/demos-jp/msgbox.rb
 sample/demos-jp/paned1.rb
@@ -167,6 +172,7 @@ sample/demos-jp/paned2.rb
 sample/demos-jp/plot.rb
 sample/demos-jp/puzzle.rb
 sample/demos-jp/radio.rb
+sample/demos-jp/radio2.rb
 sample/demos-jp/rmt
 sample/demos-jp/rolodex
 sample/demos-jp/rolodex-j

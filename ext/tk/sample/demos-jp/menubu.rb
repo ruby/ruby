@@ -193,8 +193,18 @@ TkFrame.new(center) {|f|
     'White','Brown','DarkSeaGreen','DarkViolet']
   colorMenuButton = TkMenubutton.new(f)
   m = optionMenu(colorMenuButton, paletteColor, *colors)
-  topBorderColor = 'gray50'
-  bottomBorderColor = 'gray75'
+  begin
+    windowingsystem = Tk.windowingsystem()
+  rescue
+    windowingsystem = ""
+  end
+  if windowingsystem == "classic" || windowingsystem == "aqua"
+    topBorderColor = 'Black'
+    bottomBorderColor = 'Black'
+  else
+    topBorderColor = 'gray50'
+    bottomBorderColor = 'gray75'
+  end
   for i in 0..15
     image = TkPhotoImage.new('height'=>16, 'width'=>16)
     image.put(topBorderColor, 0, 0, 16, 1)

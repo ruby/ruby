@@ -19,6 +19,13 @@ $text_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+# version check
+if ((Tk::TK_VERSION.split('.').collect{|n| n.to_i} <=> [8,4]) < 0)
+  undo_support = false
+else
+  undo_support = true
+end
+
 # frame
 TkFrame.new($text_demo) {|frame|
   TkButton.new(frame) {
@@ -36,13 +43,16 @@ TkFrame.new($text_demo) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# text 生成
+# text 
 TkText.new($text_demo){|t|
-  # 生成
   relief 'sunken'
   bd 2
   setgrid 1
   height 30
+  if undo_support
+    undo true
+    autoseparators true
+  end
   TkScrollbar.new($text_demo) {|s|
     pack('side'=>'right', 'fill'=>'y')
     command proc{|*args| t.yview(*args)}
@@ -51,7 +61,8 @@ TkText.new($text_demo){|t|
   pack('expand'=>'yes', 'fill'=>'both')
 
   # 
-  insert('0.0', %q|This window is a text widget.  It displays one or more lines of text
+  insert('0.0', <<EOT)
+This window is a text widget.  It displays one or more lines of text
 and allows you to edit the text.  Here is a summary of the things you
 can do to a text widget:
 
@@ -89,14 +100,27 @@ the insertion cursor to the end of the line, or it deletes the newline
 character if that is the only thing left on the line.  Control-o opens
 a new line by inserting a newline character to the right of the insertion
 cursor.  Control-t transposes the two characters on either side of the
-insertion cursor.
+insertion cursor. #{
+      if undo_support
+	undo_text = "Control-z undoes the last editing action performed,\nand "
+	case $tk_platform['platform']
+	when "unix", "macintosh"
+	  undo_text << "Control-Shift-z"
+	else # 'windows'
+	  undo_text << "Control-y"
+	end
+	undo_text << "redoes undone edits."
+      else
+	""
+      end
+}
 
 7. Resize the window.  This widget has been configured with the "setGrid"
 option on, so that if you resize the window it will always resize to an
 even number of characters high and wide.  Also, if you make the window
 narrow you can see that long lines automatically wrap around onto
-additional lines so that all the information is always visible.|)
+additional lines so that all the information is always visible.
+EOT
 
   set_insert('0.0')
 }
-

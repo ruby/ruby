@@ -211,19 +211,22 @@ txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "4. ラジオボタン (任意の一つを選択可能)\n", 
 	   tag_demo, "demo-radio")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ボタンで作られた15-パズルゲーム\n", 
+txt.insert('end', "5. ラジオボタン (機能に対応したバージョンのTkが必要)\n", 
+	   tag_demo, "demo-radio2")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "6. ボタンで作られた15-パズルゲーム\n", 
 	   tag_demo, "demo-puzzle")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. ビットマップを使用したアイコンボタン\n", 
+txt.insert('end', "7. ビットマップを使用したアイコンボタン\n", 
 	   tag_demo, "demo-icon")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "7. 画像を表示する二つのラベル\n", 
+txt.insert('end', "8. 画像を表示する二つのラベル\n", 
 	   tag_demo, "demo-image1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "8. 画像を見るための簡単なユーザインターフェース\n", 
+txt.insert('end', "9. 画像を見るための簡単なユーザインターフェース\n", 
 	   tag_demo, "demo-image2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "9. ラベル付きフレーム (Tkに実装されている場合に限る)\n", 
+txt.insert('end', "10. ラベル付きフレーム (機能に対応したバージョンのTkが必要)\n", 
 	   tag_demo, "demo-labelframe")
 txt.insert('end', " \n ", tag_demospace)
 
@@ -247,7 +250,7 @@ txt.insert('end', "1. スクロールバーなし\n", tag_demo, "demo-entry1")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. スクロールバーあり\n", tag_demo, "demo-entry2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. スピンボックス (Tkに実装されている場合に限る)\n", 
+txt.insert('end', "3. スピンボックス (機能に対応したバージョンのTkが必要)\n", 
 	   tag_demo, "demo-spin")
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "4. 簡単なフォーム\n", tag_demo, "demo-form")
@@ -302,10 +305,10 @@ txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "\n")
 txt.insert('end', "ペインドウィンドウ\n", tag_kanji_title)
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "1. 水平方向 (Tkに実装されている場合に限る)\n", 
+txt.insert('end', "1. 水平方向 (機能に対応したバージョンのTkが必要)\n", 
 	   tag_demo.id, "demo-paned1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. 垂直方向 (Tkに実装されている場合に限る)\n", 
+txt.insert('end', "2. 垂直方向 (機能に対応したバージョンのTkが必要)\n", 
 	   tag_demo.id, "demo-paned2")
 txt.insert('end', " \n ", tag_demospace)
 
@@ -319,7 +322,10 @@ txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "2. メニューとカスケードを含んだウィンドウ (Tk8.x 専用)\n", 
 	   tag_demo, "demo-menu8x")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. メニューボタン (Tk8.x 専用)\n", 
+txt.insert('end', "3.                 〃                (機能に対応したバージョンのTkが必要)\n", 
+	   tag_demo, "demo-menu84")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "4. メニューボタン (Tk8.x 専用)\n", 
 	   tag_demo, "demo-menubu")
 txt.insert('end', " \n ", tag_demospace)
 

@@ -198,15 +198,17 @@ txt.insert('end', "3. Checkbuttons (select any of a group).\n", tag_demo, "demo-
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "4. Radiobuttons (select one of a group).\n", tag_demo, "demo-radio")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. A 15-puzzle game made out of buttons.\n", tag_demo, "demo-puzzle")
+txt.insert('end', "5. Radiobuttons (if supported 'compound' option).\n", tag_demo, "demo-radio2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. Iconic buttons that use bitmaps.\n", tag_demo, "demo-icon")
+txt.insert('end', "6. A 15-puzzle game made out of buttons.\n", tag_demo, "demo-puzzle")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "7. Two labels displaying images.\n", tag_demo, "demo-image1")
+txt.insert('end', "7. Iconic buttons that use bitmaps.\n", tag_demo, "demo-icon")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "8. A simple user interface for viewing images.\n", tag_demo, "demo-image2")
+txt.insert('end', "8. Two labels displaying images.\n", tag_demo, "demo-image1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "9. Labelled frames (if supported)\n", tag_demo, "demo-labelframe")
+txt.insert('end', "9. A simple user interface for viewing images.\n", tag_demo, "demo-image2")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "10. Labelled frames (if supported)\n", tag_demo, "demo-labelframe")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
@@ -284,7 +286,9 @@ txt.insert('end', "Menus\n", tag_title)
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. Menus and cascades.\n", tag_demo, "demo-menu")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. Menubuttons\n", tag_demo, "demo-menubu")
+txt.insert('end', "2. Menus and cascades. (if supported)\n", tag_demo, "demo-menu84")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. Menubuttons\n", tag_demo, "demo-menubu")
 txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
@@ -502,7 +506,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-		'message'=>"Ruby/Tk widget demonstration Ver.1.3.0-en\n\n( based on Tk 8.1 Copyright (c) 1996-1997 Sun Microsystems, Inc. )\n\nRunning Version :: Ruby#{VERSION}/Tk#{$tk_version}")
+		'message'=>"Ruby/Tk widget demonstration Ver.1.3.1-en\n\n( based on Tk 8.1 Copyright (c) 1996-1997 Sun Microsystems, Inc. )\n\nRunning Version :: Ruby#{VERSION}/Tk#{$tk_version}")
 end
 
 ################################

@@ -2729,9 +2729,15 @@ module TkGrid
     if args[-1].kind_of?(Hash)
       keys = args.pop
     end
-    wins = [widget.epath]
+    wins = []
+    args.unshift(widget)
     for i in args
-      wins.push i.epath
+      case i
+      when '-', 'x', '^'  # RELATIVE PLACEMENT
+	wins.push(i)
+      else
+	wins.push(i.epath)
+      end
     end
     tk_call "grid", 'configure', *(wins+hash_kv(keys))
   end

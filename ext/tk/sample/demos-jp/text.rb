@@ -15,6 +15,13 @@ $text_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+# version check
+if ((Tk::TK_VERSION.split('.').collect{|n| n.to_i} <=> [8,4]) < 0)
+  undo_support = false
+else
+  undo_support = true
+end
+
 # frame 生成
 TkFrame.new($text_demo) {|frame|
   TkButton.new(frame) {
@@ -47,7 +54,7 @@ TkText.new($text_demo){|t|
   pack('expand'=>'yes', 'fill'=>'both')
 
   # テキスト挿入
-  insert('0.0', %q|
+  insert('0.0', <<EOT)
 このウィンドウはテキスト widget です。1行またはそれ以上のテキストを表
 示・編集することができます。以下はテキスト widget でできる操作について
 まとめたものです。
@@ -82,12 +89,27 @@ TkText.new($text_demo){|t|
 カーソルの右側の文字を削除します。Meta-バックスペースは挿入カーソルの
 右側の単語を削除し、Meta-D は挿入カーソルの左側の単語を削除します。
 コントロール-K は挿入カーソルから行末までを削除し、その位置に改行
-しかなかった場合は、改行を削除します。
+しかなかった場合は、改行を削除します。#{
+      if undo_support
+	undo_text = "Control-z は最後に行った変更の取り消し(undo)を行い、"
+	case $tk_platform['platform']
+	when "unix", "macintosh"
+	  undo_text << "Control-Shift-z"
+	else # 'windows'
+	  undo_text << "Control-y"
+	end
+	undo_text << "はundoした変更の再適用(redo)を行います。"
+      else
+	""
+      end
+}
+
 
 8. ウィンドウのリサイズ。この widget は "setGrid" オプションをオンにし
 てありますので、ウィンドウをリサイズする時には高さと幅は常に文字高と文
 字幅の整数倍になります。また、ウィンドウを狭くした場合には長い行が自動
-的に折り返され、常に全ての内容が見えるようになっています。|)
+的に折り返され、常に全ての内容が見えるようになっています。
+EOT
 
   set_insert('0.0')
 }

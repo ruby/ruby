@@ -47,10 +47,20 @@ TkFrame.new($puzzle_demo) {|frame|
 # Special trick: scrollbar widget を生成してその trough color を用いることで
 #                空白部分のための暗色を選択し，設定する 
 #
+begin
+  if Tk.windowingsystem() == 'aqua'
+    frameSize = 160
+  else
+    frameSize = 120
+  end
+rescue
+  frameSize = 120
+end
+ 
 s = TkScrollbar.new($puzzle_demo)
 base = TkFrame.new($puzzle_demo) {
-  width  120
-  height 120
+  width  frameSize
+  height frameSize
   borderwidth 2
   relief 'sunken'
   bg s['troughcolor']

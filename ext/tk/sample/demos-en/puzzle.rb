@@ -50,11 +50,20 @@ TkFrame.new($puzzle_demo) {|frame|
 
 # Special trick: select a darker color for the space by creating a
 # scrollbar widget and using its trough color.
+begin
+  if Tk.windowingsystem() == 'aqua'
+    frameSize = 160
+  else
+    frameSize = 120
+  end
+rescue
+  frameSize = 120
+end
  
 s = TkScrollbar.new($puzzle_demo)
 base = TkFrame.new($puzzle_demo) {
-  width  120
-  height 120
+  width  frameSize
+  height frameSize
   borderwidth 2
   relief 'sunken'
   bg s['troughcolor']
