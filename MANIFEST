@@ -664,6 +664,7 @@ test/ruby/test_clone.rb
 test/ruby/test_condition.rb
 test/ruby/test_const.rb
 test/ruby/test_defined.rb
+test/ruby/test_env.rb
 test/ruby/test_eval.rb
 test/ruby/test_exception.rb
 test/ruby/test_file.rb
