@@ -1195,6 +1195,20 @@ window_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 #endif
 }
 
+#ifdef USE_COLOR
+static VALUE
+window_color_set(VALUE obj, VALUE col) 
+{
+  struct windata *winp;
+  int res;
+
+  GetWINDOW(obj, winp);
+  res = wcolor_set(winp->window, NUM2INT(col), NULL);
+  return (res == OK) ? Qtrue : Qfalse;
+  return Qfalse;
+}
+#endif /* USE_COLOR */
+
 static VALUE
 window_scroll(VALUE obj)
 {
@@ -1471,6 +1485,9 @@ Init_curses()
     rb_define_method(cWindow, "box", window_box, -1);
     rb_define_method(cWindow, "move", window_move, 2);
     rb_define_method(cWindow, "setpos", window_setpos, 2);
+#ifdef USE_COLOR
+    rb_define_method(cWindow, "color_set", window_color_set, 1);
+#endif /* USE_COLOR */
     rb_define_method(cWindow, "cury", window_cury, 0);
     rb_define_method(cWindow, "curx", window_curx, 0);
     rb_define_method(cWindow, "maxy", window_maxy, 0);

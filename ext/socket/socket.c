@@ -2796,6 +2796,9 @@ Init_socket()
     sock_define_const("SO_DEBUG", SO_DEBUG);
 #endif
     sock_define_const("SO_REUSEADDR", SO_REUSEADDR);
+#ifdef SO_REUSEPORT
+    sock_define_const("SO_REUSEPORT", SO_REUSEPORT);
+#endif
 #ifdef SO_TYPE
     sock_define_const("SO_TYPE", SO_TYPE);
 #endif

@@ -1,7 +1,16 @@
+Wed Feb  9 08:07:08 2005  Paul Duncan  <pabs@pablotron.org>
+
+	* ext/curses/curses.c (window_color_set): [ruby-core:04393]
+
 Tue Feb  8 23:51:47 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: reject :instance_eval, :class_eval, :module_eval
 	  [druby-ja:117]
+
+Tue Feb  8 13:06:12 2005  Sam Roberts  <sroberts@uniserve.com>
+
+	* ext/socket/socket.c (Init_socket): SO_REUSEPORT added.
+	  [ruby-talk:130092]
 
 Tue Feb  8 09:30:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
