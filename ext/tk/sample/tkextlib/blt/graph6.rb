@@ -70,9 +70,13 @@ class BLT_Graph_Demo
     (1..39).each{|i| @graph.element_create("V#{i}", :x=>@x, :y=>@v[i])}
 
     @top = Tk::BLT::Tile::Toplevel.new
+=begin
     legend = Tk::BLT::Graph.new(@top, :widgetname=>'legend', 
                                 :without_creating=>true)
     @graph.legend_configure(:position=>legend)
+=end
+    # legend = @graph.legend_window_create(@top, :widgetname=>'legend')
+    legend = @graph.legend_window_create(@top)
     legend.pack(:fill=>:both, :expand=>true)
 
     Tk::BLT::Table.add(@root, @graph, [0,0], :fill=>:both)
