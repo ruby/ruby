@@ -229,7 +229,8 @@ module TkComm
     when /^-?\d+\.?\d*(e[-+]?\d+)?$/
       val.to_f
     else
-      fail ArgumentError, format('invalid value for Number:"%s"', val.to_s)
+      fail(ArgumentError, 
+	   Kernel.format('invalid value for Number:"%s"', val.to_s))
     end
   end
   def string(val)
@@ -334,7 +335,7 @@ module TkComm
     @cmdtbl = [] unless defined? @cmdtbl
     @cmdtbl.taint unless @cmdtbl.tainted?
     @cmdtbl.push id
-    return format("rb_out %s", id);
+    return Kernel.format("rb_out %s", id);
   end
   def uninstall_cmd(id)
     id = $1 if /rb_out (c\d+)/ =~ id
@@ -354,9 +355,9 @@ module TkComm
     if name[0] == ?.
       @path = name.dup
     elsif !ppath or ppath == "."
-      @path = format(".%s", name);
+      @path = Kernel.format(".%s", name);
     else
-      @path = format("%s.%s", ppath, name)
+      @path = Kernel.format("%s.%s", ppath, name)
     end
     #Tk_WINDOWS[@path] = self
     TkCore::INTERP.tk_windows[@path] = self
@@ -1549,8 +1550,8 @@ module Tk
 
     def self.tk_escape(str)
       s = '"' + str.gsub(/[\[\]$"]/, '\\\\\&') + '"'
-      TkCore::INTERP.__eval(format('global %s; set %s %s', 
-				   @@enc_buf, @@enc_buf, s))
+      TkCore::INTERP.__eval(Kernel.format('global %s; set %s %s', 
+					  @@enc_buf, @@enc_buf, s))
     end
 
     def self.new(str, enc = Tk.encoding_system)
@@ -1782,7 +1783,7 @@ class TkBindTag
   end
 
   def inspect
-    format "#<TkBindTag: %s>", @id
+    Kernel.format "#<TkBindTag: %s>", @id
   end
 end
 
@@ -1808,7 +1809,7 @@ class TkDatabaseClass<TkBindTag
   end
 
   def inspect
-    format "#<TkDatabaseClass: %s>", @id
+    Kernel.format "#<TkDatabaseClass: %s>", @id
   end
 end
 
@@ -1871,10 +1872,10 @@ class TkVariable
     if  val.kind_of?(Hash)
       s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
                    .gsub(/[\[\]$"]/, '\\\\\&') + '"'
-      INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
+      INTERP._eval(Kernel.format('global %s; array set %s %s', @id, @id, s))
     else
       s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
-      INTERP._eval(format('global %s; set %s %s', @id, @id, s))
+      INTERP._eval(Kernel.format('global %s; set %s %s', @id, @id, s))
     end
   end
 
@@ -1918,14 +1919,13 @@ class TkVariable
 
   def value
     begin
-      INTERP._eval(format('global %s; set %s', @id, @id))
+      INTERP._eval(Kernel.format('global %s; set %s', @id, @id))
     rescue
-      if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
+      if INTERP._eval(Kernel.format('global %s; array exists %s', 
+				    @id, @id)) != "1"
 	fail
       else
-	Hash[*tk_split_simplelist(INTERP.
-				  _eval(format('global %s; array get %s', 
-					       @id, @id)))]
+	Hash[*tk_split_simplelist(INTERP._eval(Kernel.format('global %s; array get %s', @id, @id)))]
       end
     end
   end
@@ -1933,25 +1933,25 @@ class TkVariable
   def value=(val)
     begin
       s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"'
-      INTERP._eval(format('global %s; set %s %s', @id, @id, s))
+      INTERP._eval(Kernel.format('global %s; set %s %s', @id, @id, s))
     rescue
-      if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
+      if INTERP._eval(Kernel.format('global %s; array exists %s', 
+				    @id, @id)) != "1"
 	fail
       else
 	if val == []
-	  INTERP._eval(format('global %s; unset %s; set %s(0) 0; unset %s(0)', 
-			      @id, @id, @id, @id))
+	  INTERP._eval(Kernel.format('global %s; unset %s; set %s(0) 0; unset %s(0)', @id, @id, @id, @id))
 	elsif val.kind_of?(Array)
 	  a = []
 	  val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
 	  s = '"' + a.join(" ").gsub(/[\[\]$"]/, '\\\\\&') + '"'
-	  INTERP._eval(format('global %s; unset %s; array set %s %s', 
-			      @id, @id, @id, s))
+	  INTERP._eval(Kernel.format('global %s; unset %s; array set %s %s', 
+				     @id, @id, @id, s))
 	elsif  val.kind_of?(Hash)
 	  s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
 	                        .gsub(/[\[\]$"]/, '\\\\\&') + '"'
-	  INTERP._eval(format('global %s; unset %s; array set %s %s', 
-			      @id, @id, @id, s))
+	  INTERP._eval(Kernel.format('global %s; unset %s; array set %s %s', 
+				     @id, @id, @id, s))
 	else
 	  fail
 	end
@@ -1960,13 +1960,13 @@ class TkVariable
   end
 
   def [](index)
-    INTERP._eval(format('global %s; set %s(%s)', 
-			@id, @id, _get_eval_string(index)))
+    INTERP._eval(Kernel.format('global %s; set %s(%s)', 
+			       @id, @id, _get_eval_string(index)))
   end
 
   def []=(index,val)
-    INTERP._eval(format('global %s; set %s(%s) %s', @id, @id, 
-			_get_eval_string(index), _get_eval_string(val)))
+    INTERP._eval(Kernel.format('global %s; set %s(%s) %s', @id, @id, 
+			       _get_eval_string(index), _get_eval_string(val)))
   end
 
   def numeric
@@ -2016,7 +2016,7 @@ class TkVariable
   end
 
   def inspect
-    format "#<TkVariable: %s>", @id
+    Kernel.format "#<TkVariable: %s>", @id
   end
 
   def coerce(other)
@@ -2151,10 +2151,10 @@ class TkVariable
 
   def unset(elem=nil)
     if elem
-      INTERP._eval(format('global %s; unset %s(%s)', 
-			  @id, @id, tk_tcl2ruby(elem)))
+      INTERP._eval(Kernel.format('global %s; unset %s(%s)', 
+				 @id, @id, tk_tcl2ruby(elem)))
     else
-      INTERP._eval(format('global %s; unset %s', @id, @id))
+      INTERP._eval(Kernel.format('global %s; unset %s', @id, @id))
     end
   end
   alias remove unset
@@ -2302,7 +2302,7 @@ class TkVarAccess<TkVariable
     TkVar_ID_TBL[@id] = self
     if val
       s = '"' + _get_eval_string(val).gsub(/[\[\]$"]/, '\\\\\&') + '"' #"
-      INTERP._eval(format('global %s; set %s %s', @id, @id, s))
+      INTERP._eval(Kernel.format('global %s; set %s %s', @id, @id, s))
     end
   end
 end
@@ -3919,8 +3919,9 @@ class TkObject<TkKernel
 
   def tk_trace_variable(v)
     unless v.kind_of?(TkVariable)
-      fail ArgumentError, 
-	format("type error (%s); must be TkVariable object", v.class)
+      fail(ArgumentError, 
+	   Kernel.format("type error (%s); must be TkVariable object", 
+			 v.class))
     end
     v
   end
@@ -5547,7 +5548,7 @@ module TkSystemMenu
     unless parent.kind_of? TkMenu
       fail ArgumentError, "parent must be a TkMenu object"
     end
-    @path = format("%s.%s", parent.path, self.class::SYSMENU_NAME)
+    @path = Kernel.format("%s.%s", parent.path, self.class::SYSMENU_NAME)
     #TkComm::Tk_WINDOWS[@path] = self
     TkCore::INTERP.tk_windows[@path] = self
     if self.method(:create_self).arity == 0

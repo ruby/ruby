@@ -569,7 +569,7 @@ class TkcTag<TkObject
 
   def initialize(parent, mode=nil, *args)
     if not parent.kind_of?(TkCanvas)
-      fail format("%s need to be TkCanvas", parent.inspect)
+      fail Kernel.format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
     @cpath = parent.path
@@ -647,7 +647,7 @@ class TkcTagString<TkcTag
 
   def initialize(parent, name, mode=nil, *args)
     if not parent.kind_of?(TkCanvas)
-      fail format("%s need to be TkCanvas", parent.inspect)
+      fail Kernel.format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
     @cpath = parent.path
@@ -664,7 +664,7 @@ TkcNamedTag = TkcTagString
 class TkcTagAll<TkcTag
   def initialize(parent)
     if not parent.kind_of?(TkCanvas)
-      fail format("%s need to be TkCanvas", parent.inspect)
+      fail Kernel.format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
     @cpath = parent.path
@@ -677,7 +677,7 @@ end
 class TkcTagCurrent<TkcTag
   def initialize(parent)
     if not parent.kind_of?(TkCanvas)
-      fail format("%s need to be TkCanvas", parent.inspect)
+      fail Kernel.format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
     @cpath = parent.path
@@ -691,7 +691,7 @@ class TkcGroup<TkcTag
   Tk_cGroup_ID = ['tkcg'.freeze, '00000'.taint].freeze
   def create_self(parent, *args)
     if not parent.kind_of?(TkCanvas)
-      fail format("%s need to be TkCanvas", parent.inspect)
+      fail Kernel.format("%s need to be TkCanvas", parent.inspect)
     end
     @c = parent
     @cpath = parent.path
@@ -737,7 +737,7 @@ class TkcItem<TkObject
 
   def initialize(parent, *args)
     if not parent.kind_of?(TkCanvas)
-      fail format("%s need to be TkCanvas", parent.inspect)
+      fail Kernel.format("%s need to be TkCanvas", parent.inspect)
     end
     @parent = @c = parent
     @path = parent.path

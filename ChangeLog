@@ -1,3 +1,15 @@
+Wed Dec  3 13:49:07 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: 'format'==>'Kernel.format' (avoid override trouble)
+
+	* ext/tk/lib/tkafter.rb: ditto.
+
+	* ext/tk/lib/tkcanvas.rb: ditto.
+
+	* ext/tk/lib/tkdialog.rb: ditto.
+
+	* ext/tk/lib/tktext.rb: ditto.
+
 Wed Dec  3 13:28:13 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (lex.c): try gperf first, and copy from the source

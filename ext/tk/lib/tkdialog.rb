@@ -18,8 +18,8 @@ class TkDialog2 < TkWindow
 		     "to the dialog button#{i}. It was removed.\n")
       end
       c.delete('command'); c.delete(:command)
-      @config << format("%s.button%s configure %s; ", 
-			@path, i, hash_kv(c).join(' '))
+      @config << Kernel.format("%s.button%s configure %s; ", 
+			       @path, i, hash_kv(c).join(' '))
     }
     case configs
     when Proc
@@ -114,23 +114,23 @@ class TkDialog2 < TkWindow
     }
 
     if @message_config.kind_of? Hash
-      @config << format("%s.msg configure %s;", 
-		       @path, hash_kv(@message_config).join(' '))
+      @config << Kernel.format("%s.msg configure %s;", 
+			       @path, hash_kv(@message_config).join(' '))
     end
 
     if @msgframe_config.kind_of? Hash
-      @config << format("%s.top configure %s;", 
-		       @path, hash_kv(@msgframe_config).join(' '))
+      @config << Kernel.format("%s.top configure %s;", 
+			       @path, hash_kv(@msgframe_config).join(' '))
     end
 
     if @btnframe_config.kind_of? Hash
-      @config << format("%s.bot configure %s;", 
-		       @path, hash_kv(@btnframe_config).join(' '))
+      @config << Kernel.format("%s.bot configure %s;", 
+			       @path, hash_kv(@btnframe_config).join(' '))
     end
 
     if @bitmap_config.kind_of? Hash
-      @config << format("%s.bitmap configure %s;", 
-		       @path, hash_kv(@bitmap_config).join(' '))
+      @config << Kernel.format("%s.bitmap configure %s;", 
+			       @path, hash_kv(@bitmap_config).join(' '))
     end
 
     _set_button_config(@button_configs) if @button_configs

@@ -834,7 +834,7 @@ class TkTextTag<TkObject
 
   def initialize(parent, *args)
     if not parent.kind_of?(TkText)
-      fail format("%s need to be TkText", parent.inspect)
+      fail Kernel.format("%s need to be TkText", parent.inspect)
     end
     @parent = @t = parent
     @tpath = parent.path
@@ -1006,7 +1006,7 @@ class TkTextNamedTag<TkTextTag
 
   def initialize(parent, name, *args)
     if not parent.kind_of?(TkText)
-      fail format("%s need to be TkText", parent.inspect)
+      fail Kernel.format("%s need to be TkText", parent.inspect)
     end
     @parent = @t = parent
     @tpath = parent.path
@@ -1050,7 +1050,7 @@ class TkTextMark<TkObject
 
   def initialize(parent, index)
     if not parent.kind_of?(TkText)
-      fail format("%s need to be TkText", parent.inspect)
+      fail Kernel.format("%s need to be TkText", parent.inspect)
     end
     @parent = @t = parent
     @tpath = parent.path
@@ -1122,7 +1122,7 @@ class TkTextNamedMark<TkTextMark
 
   def initialize(parent, name, index=nil)
     if not parent.kind_of?(TkText)
-      fail format("%s need to be TkText", parent.inspect)
+      fail Kernel.format("%s need to be TkText", parent.inspect)
     end
     @parent = @t = parent
     @tpath = parent.path
@@ -1156,7 +1156,7 @@ end
 class TkTextWindow<TkObject
   def initialize(parent, index, keys)
     if not parent.kind_of?(TkText)
-      fail format("%s need to be TkText", parent.inspect)
+      fail Kernel.format("%s need to be TkText", parent.inspect)
     end
     @t = parent
     if index == 'end'
@@ -1245,7 +1245,7 @@ end
 class TkTextImage<TkObject
   def initialize(parent, index, keys)
     if not parent.kind_of?(TkText)
-      fail format("%s need to be TkText", parent.inspect)
+      fail Kernel.format("%s need to be TkText", parent.inspect)
     end
     @t = parent
     if index == 'end'

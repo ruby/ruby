@@ -193,7 +193,7 @@ class TkTimer
   def set_procs(interval, loop_exec, *procs)
     if !interval == 'idle' \
        && !interval.kind_of?(Integer) && !interval.kind_of?(Proc)
-      fail format("%s need to be Integer or Proc", interval.inspect)
+      fail Kernel.format("%s need to be Integer or Proc", interval.inspect)
     end
     @sleep_time = interval
 
@@ -216,7 +216,7 @@ class TkTimer
 	@loop_exec = 1
       else
 	if not loop_exec.kind_of?(Integer)
-	  fail format("%s need to be Integer", loop_exec.inspect)
+	  fail Kernel.format("%s need to be Integer", loop_exec.inspect)
 	end
 	@loop_exec = loop_exec
       end
@@ -263,7 +263,7 @@ class TkTimer
 
   def set_start_proc(sleep, init_proc, *init_args)
     if !sleep == 'idle' && !sleep.kind_of?(Integer)
-      fail format("%s need to be Integer", sleep.inspect)
+      fail Kernel.format("%s need to be Integer", sleep.inspect)
     end
     @init_sleep = sleep
     @init_proc = init_proc
@@ -282,7 +282,7 @@ class TkTimer
     if argc > 0
       sleep = init_args.shift
       if !sleep == 'idle' && !sleep.kind_of?(Integer)
-	fail format("%s need to be Integer", sleep.inspect)
+	fail Kernel.format("%s need to be Integer", sleep.inspect)
       end
       @init_sleep = sleep
     end
@@ -293,7 +293,7 @@ class TkTimer
     @running = true
     if @init_proc
       if not @init_proc.kind_of? Proc
-	fail format("%s need to be Proc", @init_proc.inspect)
+	fail Kernel.format("%s need to be Proc", @init_proc.inspect)
       end
       @current_proc = @init_proc
       set_callback(@init_sleep, @init_args)
@@ -346,7 +346,7 @@ class TkTimer
     fail RuntimeError, "no procedure to continue" unless cmd
     if wait
       if not wait.kind_of? Integer
-	fail RuntimeError, format("%s need to be Integer", wait.inspect)
+	fail RuntimeError, Kernel.format("%s need to be Integer", wait.inspect)
       end
       sleep = wait
     end
