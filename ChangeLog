@@ -1,3 +1,8 @@
+Tue Mar 25 23:26:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (trap): return "DEFAULT" and "IGNORE" respectively for
+	  previous sighandler SIG_DFL and SIG_IGN. [ruby-talk:67860]
+
 Tue Mar 25 12:24:15 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): call avalue_to_mrhs() to assign block

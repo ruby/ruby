@@ -481,8 +481,8 @@ static VALUE
 trap(arg)
     struct trap_arg *arg;
 {
-    sighandler_t func;
-    VALUE command, old;
+    sighandler_t func, oldfunc;
+    VALUE command, oldcmd;
     int sig = -1;
     char *s;
 
@@ -588,9 +588,13 @@ trap(arg)
 #endif
 	}
     }
-    ruby_signal(sig, func);
-    old = trap_list[sig];
-    if (!old) old = Qnil;
+    oldfunc = ruby_signal(sig, func);
+    oldcmd = trap_list[sig];
+    if (!oldcmd) {
+	if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
+	else if (oldfunc == sighandler) oldcmd = rb_str_new2("DEFAULT");
+	else oldcmd = Qnil;
+    }
 
     trap_list[sig] = command;
     /* enable at least specified signal. */
@@ -601,7 +605,7 @@ trap(arg)
     arg->mask &= ~sigmask(sig);
 #endif
 #endif
-    return old;
+    return oldcmd;
 }
 
 #ifndef _WIN32

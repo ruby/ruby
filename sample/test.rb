@@ -248,6 +248,11 @@ f = lambda {|r,*l| test_ok([] == r); test_ok([1] == l)}
 f.call([], *[1])
 f.yield([], *[1])
 
+a = [42,55]
+lambda{|x| test_ok([42,55] == x)}.call(a)
+lambda{|x,| test_ok([42,55] == x)}.call(a)
+lambda{|*x| test_ok([[42,55]] == x)}.call(a)
+
 a,=*[1]
 test_ok(a == 1)
 
