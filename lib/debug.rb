@@ -535,7 +535,7 @@ Commands
   cat[ch] <an Exception>     set catchpoint to an exception
   b[reak]                    list breakpoints
   cat[ch]                    show catchpoint
-  del[ele][ nnn]             delete some or all breakpoints
+  del[ete][ nnn]             delete some or all breakpoints
   disp[lay] <expression>     add expression into display expression list
   undisp[lay][ nnn]          delete one particular or all display expressions
   c[ont]                     run until program ends or hit breakpoint
