@@ -1,3 +1,12 @@
+Sat Jul 14 02:56:19 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/extmk.rb.in: support multi-level ext/ directories.
+	  (e.g. you can have ext/foo, ext/foo/bar and ext/foo/baz)
+
+Sat Jul 14 02:55:02 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/.cvsignore: let cvs ignore extinit.c.
+
 Fri Jul 13 23:18:19 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb: use File::split to split a target into a prefix and
