@@ -84,7 +84,8 @@ module DRb
 	return if @servers.include?(name)
 	@servers[name] = false
       end
-      Process.spawn("#{command} #{DRb.uri} #{name}")
+      Process.detach(Process.spawn("#{command} #{DRb.uri} #{name}"))
+      true
     end
   end
 end

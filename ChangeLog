@@ -1,3 +1,8 @@
+Thu Mar  4 11:46:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/drb/extservm.rb (DRb::ExtServManager#invoke_service_command):
+	  detach server processes to get rid of zombies.
+
 Thu Mar  4 08:08:36 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/rubyext.c: get rid of warnings.
