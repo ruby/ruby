@@ -6635,6 +6635,9 @@ rb_thread_fd_close(fd)
 static void
 rb_thread_deadlock()
 {
+    if (curr_thread == main_thread) {
+	rb_raise(rb_eFatal, "Thread: deadlock");
+    }
     curr_thread = main_thread;
     th_raise_argc = 1;
     th_raise_argv[0] = rb_exc_new2(rb_eFatal, "Thread: deadlock");
@@ -6877,17 +6880,17 @@ rb_thread_schedule()
 	curr_thread->file = ruby_sourcefile;
 	curr_thread->line = ruby_sourceline;
 	FOREACH_THREAD_FROM(curr, th) {
-	    fprintf(stderr, "deadlock 0x%lx: %d:%d %s - %s:%d:\n", 
+	    fprintf(stderr, "deadlock 0x%lx: %d:%d %s - %s:%d\n", 
 		    th->thread, th->status,
 		    th->wait_for, th==main_thread?"(main)":"",
 		    th->file, th->line);
 	}
 	END_FOREACH_FROM(curr, th);
-	rb_thread_deadlock();
 	next = main_thread;
-	rb_thread_ready(next);
 	next->gid = 0;
+	rb_thread_ready(next);
 	next->status = THREAD_TO_KILL;
+	rb_thread_deadlock();
     }
     if (next->status == THREAD_RUNNABLE && next == curr_thread) {
 	return;

@@ -1,7 +1,25 @@
 Wed May 31 04:06:41 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
-	* lib/cgi.rb: change: CGI#out()
-	  if "HEAD" == REQUEST_METHOD then output only HTTP header.
+	* lib/cgi.rb: change: CGI#out() if "HEAD" == REQUEST_METHOD then
+	  output only HTTP header.
+
+Wed May 31 01:54:21 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_schedule): set main_thread->status to
+	  THREAD_TO_KILL, before raising deadlock error.
+
+	* eval.c (rb_thread_deadlock): if curr_thread == main_thread, do
+	  not call rb_thread_restore_context()
+
+Tue May 30 23:33:41 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/extmk.rb.in (have_library, have_func): remove unnecessary
+	  try_link() call from the mswin32 platform branch.
+
+	* lib/mkmf.rb (have_library, have_func): ditto.
+
+	* lib/mkmf.rb (create_makefile): add $(TARGET).ilk and *.pdb
+	  to cleanup files for mswin32.
 
 Mon May 29 10:41:10 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
