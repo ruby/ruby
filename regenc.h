@@ -1,12 +1,33 @@
-/**********************************************************************
-
-  regenc.h -  Oniguruma (regular expression library)
-
-  Copyright (C) 2003-2004  K.Kosako (kosako@sofnec.co.jp)
-
-**********************************************************************/
 #ifndef REGENC_H
 #define REGENC_H
+/**********************************************************************
+  regenc.h -  Oniguruma (regular expression library)
+**********************************************************************/
+/*-
+ * Copyright (c) 2002-2004  K.Kosako  <kosako AT sofnec DOT co DOT jp>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
 #ifndef RUBY_PLATFORM
 #include "config.h"
@@ -31,8 +52,6 @@
 #define ONIGENCERR_INVALID_WIDE_CHAR_VALUE                      -400
 #define ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE                      -401
 
-#define ONIG_NEWLINE     '\n'
-#define ONIG_IS_NEWLINE(c)                ((c) == ONIG_NEWLINE)
 #define ONIG_IS_NULL(p)                    (((void*)(p)) == (void*)0)
 #define ONIG_IS_NOT_NULL(p)                (((void*)(p)) != (void*)0)
 #define ONIG_CHECK_NULL_RETURN(p)          if (ONIG_IS_NULL(p)) return NULL
@@ -48,44 +67,72 @@
 #define ONIG_ENCODING_INIT_DEFAULT           ONIG_ENCODING_ASCII
 
 /* for encoding system implementation (internal) */
-ONIG_EXTERN int onigenc_nothing_get_all_fold_match_code P_((OnigCodePoint** codes));
-ONIG_EXTERN int onigenc_nothing_get_fold_match_info P_((UChar* p, UChar* end, OnigEncFoldMatchInfo** info));
-ONIG_EXTERN int onigenc_nothing_get_ctype_code_range P_((int ctype, int* nsb, int* nmb, OnigCodePointRange* sbr[], OnigCodePointRange* mbr[]));
+ONIG_EXTERN int onigenc_ascii_get_all_pair_ambig_codes P_((OnigAmbigType flag, OnigPairAmbigCodes** acs));
+ONIG_EXTERN int onigenc_nothing_get_all_comp_ambig_codes P_((OnigAmbigType flag, OnigCompAmbigCodes** acs));
+ONIG_EXTERN int onigenc_iso_8859_1_get_all_pair_ambig_codes P_((OnigAmbigType flag, OnigPairAmbigCodes** acs));
+ONIG_EXTERN int onigenc_ess_tsett_get_all_comp_ambig_codes P_((OnigAmbigType flag, OnigCompAmbigCodes** acs));
+ONIG_EXTERN int onigenc_not_support_get_ctype_code_range P_((int ctype, int* nsb, int* nmb, OnigCodePointRange* sbr[], OnigCodePointRange* mbr[]));
+ONIG_EXTERN int onigenc_is_mbc_newline_0x0a P_((UChar* p, UChar* end));
 
 /* methods for single byte encoding */
-ONIG_EXTERN int onigenc_ascii_mbc_to_lower P_((UChar* p, UChar* lower));
-ONIG_EXTERN int onigenc_ascii_mbc_is_case_ambig P_((UChar* p));
+ONIG_EXTERN int onigenc_ascii_mbc_to_normalize P_((OnigAmbigType flag, UChar** p, UChar* end, UChar* lower));
+ONIG_EXTERN int onigenc_ascii_is_mbc_ambiguous P_((OnigAmbigType flag, UChar** p, UChar* end));
+ONIG_EXTERN int onigenc_single_byte_mbc_enc_len P_((UChar* p));
 ONIG_EXTERN OnigCodePoint onigenc_single_byte_mbc_to_code P_((UChar* p, UChar* end));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbclen P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbc_first P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbc P_((OnigCodePoint code, UChar *buf));
 ONIG_EXTERN UChar* onigenc_single_byte_left_adjust_char_head P_((UChar* start, UChar* s));
-ONIG_EXTERN int onigenc_single_byte_is_allowed_reverse_match P_((UChar* s, UChar* end));
+ONIG_EXTERN int onigenc_always_true_is_allowed_reverse_match P_((UChar* s, UChar* end));
+ONIG_EXTERN int onigenc_always_false_is_allowed_reverse_match P_((UChar* s, UChar* end));
 
 /* methods for multi byte encoding */
 ONIG_EXTERN OnigCodePoint onigenc_mbn_mbc_to_code P_((OnigEncoding enc, UChar* p, UChar* end));
-ONIG_EXTERN int onigenc_mbn_mbc_to_lower P_((OnigEncoding enc, UChar* p, UChar* lower));
-ONIG_EXTERN int onigenc_mbn_mbc_is_case_ambig P_((UChar* p));
+ONIG_EXTERN int onigenc_mbn_mbc_to_normalize P_((OnigEncoding enc, OnigAmbigType flag, UChar** p, UChar* end, UChar* lower));
+ONIG_EXTERN int onigenc_mbn_is_mbc_ambiguous P_((OnigEncoding enc, OnigAmbigType flag, UChar** p, UChar* end));
 ONIG_EXTERN int onigenc_mb2_code_to_mbclen P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_mb2_code_to_mbc_first P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_mb2_code_to_mbc P_((OnigEncoding enc, OnigCodePoint code, UChar *buf));
-ONIG_EXTERN int onigenc_mb2_code_is_ctype P_((OnigEncoding enc, OnigCodePoint code, unsigned int ctype));
+ONIG_EXTERN int onigenc_mb2_is_code_ctype P_((OnigEncoding enc, OnigCodePoint code, unsigned int ctype));
 ONIG_EXTERN int onigenc_mb4_code_to_mbclen P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_mb4_code_to_mbc_first P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_mb4_code_to_mbc P_((OnigEncoding enc, OnigCodePoint code, UChar *buf));
-ONIG_EXTERN int onigenc_mb4_code_is_ctype P_((OnigEncoding enc, OnigCodePoint code, unsigned int ctype));
+ONIG_EXTERN int onigenc_mb4_is_code_ctype P_((OnigEncoding enc, OnigCodePoint code, unsigned int ctype));
 
 ONIG_EXTERN int onigenc_get_all_fold_match_code_ss_0xdf P_((OnigCodePoint** codes));
-ONIG_EXTERN int onigenc_get_fold_match_info_ss_0xdf P_((UChar* p, UChar* end, OnigEncFoldMatchInfo** info));
+
+/* in enc/unicode.c */
+ONIG_EXTERN int onigenc_unicode_is_code_ctype P_((OnigCodePoint code, unsigned int ctype));
+ONIG_EXTERN int onigenc_unicode_get_ctype_code_range P_((int ctype, int* nsb, int* nmb, OnigCodePointRange* sbr[], OnigCodePointRange* mbr[]));
+
+
+#define ONIGENC_ISO_8859_1_TO_LOWER_CASE(c) \
+  OnigEncISO_8859_1_ToLowerCaseTable[c]
+#define ONIGENC_ISO_8859_1_TO_UPPER_CASE(c) \
+  OnigEncISO_8859_1_ToUpperCaseTable[c]
+#define ONIGENC_IS_UNICODE_ISO_8859_1_CTYPE(code,ctype) \
+  ((OnigEnc_Unicode_ISO_8859_1_CtypeTable[code] & ctype) != 0)
+
+ONIG_EXTERN UChar OnigEncISO_8859_1_ToLowerCaseTable[];
+ONIG_EXTERN UChar OnigEncISO_8859_1_ToUpperCaseTable[];
+ONIG_EXTERN unsigned short OnigEnc_Unicode_ISO_8859_1_CtypeTable[];
+ONIG_EXTERN OnigPairAmbigCodes OnigAsciiPairAmbigCodes[];
 
 #endif /* is not ONIG_RUBY_M17N */
+
+ONIG_EXTERN int
+onigenc_with_ascii_strncmp P_((OnigEncoding enc, UChar* p, UChar* end, UChar* sascii /* ascii */, int n));
+ONIG_EXTERN UChar*
+onigenc_step P_((OnigEncoding enc, UChar* p, UChar* end, int n));
 
 
 ONIG_EXTERN OnigEncoding  OnigEncDefaultCharEncoding;
 ONIG_EXTERN UChar* OnigEncAsciiToLowerCaseTable;
+ONIG_EXTERN UChar  OnigEncAsciiToUpperCaseTable[];
 ONIG_EXTERN unsigned short OnigEncAsciiCtypeTable[];
 
 #define ONIGENC_ASCII_CODE_TO_LOWER_CASE(c) OnigEncAsciiToLowerCaseTable[c]
+#define ONIGENC_ASCII_CODE_TO_UPPER_CASE(c) OnigEncAsciiToUpperCaseTable[c]
 #define ONIGENC_IS_ASCII_CODE_CTYPE(code,ctype) \
   ((OnigEncAsciiCtypeTable[code] & ctype) != 0)
 #define ONIGENC_IS_ASCII_CODE_CASE_AMBIG(code) \

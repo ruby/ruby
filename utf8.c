@@ -1,51 +1,69 @@
 /**********************************************************************
-
   utf8.c -  Oniguruma (regular expression library)
-
-  Copyright (C) 2003-2004  K.Kosako (kosako@sofnec.co.jp)
-
 **********************************************************************/
+/*-
+ * Copyright (c) 2002-2004  K.Kosako  <kosako AT sofnec DOT co DOT jp>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
 #include "regenc.h"
+
+#define USE_INVALID_CODE_SCHEME
+
+#ifdef USE_INVALID_CODE_SCHEME
+/* virtual codepoint values for invalid encoding byte 0xfe and 0xff */
+#define INVALID_CODE_FE   0xfffffffe
+#define INVALID_CODE_FF   0xffffffff
+#define VALID_CODE_LIMIT  0x7fffffff
+#endif
 
 #define utf8_islead(c)     ((UChar )((c) & 0xc0) != 0x80)
 
-#define ENC_IS_ISO_8859_1_CTYPE(code,ctype) \
-  ((EncUnicode_ISO_8859_1_CtypeTable[code] & ctype) != 0)
-
-static unsigned short EncUnicode_ISO_8859_1_CtypeTable[256] = {
-  0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004,
-  0x1004, 0x1106, 0x1104, 0x1104, 0x1104, 0x1104, 0x1004, 0x1004,
-  0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004,
-  0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004,
-  0x1142, 0x10d0, 0x10d0, 0x10d0, 0x1050, 0x10d0, 0x10d0, 0x10d0,
-  0x10d0, 0x10d0, 0x10d0, 0x1050, 0x10d0, 0x10d0, 0x10d0, 0x10d0,
-  0x1c58, 0x1c58, 0x1c58, 0x1c58, 0x1c58, 0x1c58, 0x1c58, 0x1c58,
-  0x1c58, 0x1c58, 0x10d0, 0x10d0, 0x1050, 0x1050, 0x1050, 0x10d0,
-  0x10d0, 0x1e51, 0x1e51, 0x1e51, 0x1e51, 0x1e51, 0x1e51, 0x1a51,
-  0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51,
-  0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51,
-  0x1a51, 0x1a51, 0x1a51, 0x10d0, 0x10d0, 0x10d0, 0x1050, 0x18d0,
-  0x1050, 0x1c71, 0x1c71, 0x1c71, 0x1c71, 0x1c71, 0x1c71, 0x1871,
-  0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871,
-  0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871,
-  0x1871, 0x1871, 0x1871, 0x10d0, 0x1050, 0x10d0, 0x1050, 0x1004,
-  0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004,
-  0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004,
-  0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004,
-  0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004, 0x1004,
-  0x1142, 0x10d0, 0x1050, 0x1050, 0x1050, 0x1050, 0x1050, 0x1050,
-  0x1050, 0x1050, 0x1871, 0x10d0, 0x1050, 0x10d0, 0x1050, 0x1050,
-  0x1050, 0x1050, 0x1850, 0x1850, 0x1050, 0x1871, 0x1050, 0x10d0,
-  0x1050, 0x1850, 0x1871, 0x10d0, 0x1850, 0x1850, 0x1850, 0x10d0,
-  0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51,
-  0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51,
-  0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1050,
-  0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1a51, 0x1871,
-  0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871,
-  0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871,
-  0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1050,
-  0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871, 0x1871
+static int EncLen_UTF8[] = {
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+  4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 1, 1
 };
+
+static int
+utf8_mbc_enc_len(UChar* p)
+{
+  return EncLen_UTF8[*p];
+}
 
 static OnigCodePoint
 utf8_mbc_to_code(UChar* p, UChar* end)
@@ -53,8 +71,8 @@ utf8_mbc_to_code(UChar* p, UChar* end)
   int c, len;
   OnigCodePoint n;
 
+  len = enc_len(ONIG_ENCODING_UTF8, p);
   c = *p++;
-  len = enc_len(ONIG_ENCODING_UTF8, c);
   if (len > 1) {
     len--;
     n = c & ((1 << (6 - len)) - 1);
@@ -64,8 +82,14 @@ utf8_mbc_to_code(UChar* p, UChar* end)
     }
     return n;
   }
-  else
+  else {
+#ifdef USE_INVALID_CODE_SCHEME
+    if (c > 0xfd) {
+      return ((c == 0xfe) ? INVALID_CODE_FE : INVALID_CODE_FF);
+    }
+#endif
     return (OnigCodePoint )c;
+  }
 }
 
 static int
@@ -81,6 +105,10 @@ utf8_code_to_mbclen(OnigCodePoint code)
   else if ((code & 0xffe00000) == 0) return 4;
   else if ((code & 0xfc000000) == 0) return 5;
   else if ((code & 0x80000000) == 0) return 6;
+#ifdef USE_INVALID_CODE_SCHEME
+  else if (code == INVALID_CODE_FE) return 1;
+  else if (code == INVALID_CODE_FF) return 1;
+#endif
   else
     return ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE;
 }
@@ -147,6 +175,16 @@ utf8_code_to_mbc(OnigCodePoint code, UChar *buf)
       *p++ = UTF8_TRAILS(code, 12);
       *p++ = UTF8_TRAILS(code,  6);
     }
+#ifdef USE_INVALID_CODE_SCHEME
+    else if (code == INVALID_CODE_FE) {
+      *p = 0xfe;
+      return 1;
+    }
+    else if (code == INVALID_CODE_FF) {
+      *p = 0xff;
+      return 1;
+    }
+#endif
     else {
       return ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE;
     }
@@ -157,49 +195,129 @@ utf8_code_to_mbc(OnigCodePoint code, UChar *buf)
 }
 
 static int
-utf8_mbc_to_lower(UChar* p, UChar* lower)
+utf8_mbc_to_normalize(OnigAmbigType flag, UChar** pp, UChar* end, UChar* lower)
 {
-  int len;
+  UChar* p = *pp;
 
-  /* !!! U+0080 - U+00ff is treated by fold match. !!! */
   if (ONIGENC_IS_MBC_ASCII(p)) {
-    *lower = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*p);
+    if (end > p + 1 &&
+        (flag & ONIGENC_AMBIGUOUS_MATCH_COMPOUND) != 0 &&
+	((*p == 's' && *(p+1) == 's') ||
+	 ((flag & ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE) != 0 &&
+	  (*p == 'S' && *(p+1) == 'S')))) {
+      *lower++ = '\303';
+      *lower   = '\237';
+      (*pp) += 2;
+      return 2;
+    }
+
+    if ((flag & ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE) != 0) {
+      *lower = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*p);
+    }
+    else {
+      *lower = *p;
+    }
+    (*pp)++;
     return 1; /* return byte length of converted char to lower */
   }
   else {
-    len = enc_len(ONIG_ENCODING_UTF8, *p);
+    int len;
+
+    if (*p == 195) { /* 195 == '\303' */
+      int c = *(p + 1);
+      if (c >= 128) {
+        if (c <= '\236' &&  /* upper */
+            (flag & ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE) != 0) {
+          if (c != '\227') {
+            *lower++ = *p;
+            *lower   = (UChar )(c + 32);
+            (*pp) += 2;
+            return 2;
+          }
+        }
+#if 0
+        else if (c == '\237' &&
+                 (flag & ONIGENC_AMBIGUOUS_MATCH_COMPOUND) != 0) {
+          *lower++ = '\303';
+          *lower   = '\237';
+          (*pp) += 2;
+          return 2;
+        }
+#endif
+      }
+    }
+
+    len = enc_len(ONIG_ENCODING_UTF8, p);
     if (lower != p) {
-      /* memcpy(lower, p, len); */
       int i;
       for (i = 0; i < len; i++) {
 	*lower++ = *p++;
       }
     }
+    (*pp) += len;
     return len; /* return byte length of converted char to lower */
   }
 }
 
 static int
-utf8_mbc_is_case_ambig(UChar* p)
+utf8_is_mbc_ambiguous(OnigAmbigType flag, UChar** pp, UChar* end)
 {
-  /* !!! U+0080 - U+00ff ( 0x80[0xc2,0x80] - 0xff[0xc3,0xbf] )
-     is treated by fold match. !!! */
+  UChar* p = *pp;
 
-  if (ONIGENC_IS_MBC_ASCII(p))
-    return ONIGENC_IS_ASCII_CODE_CASE_AMBIG(*p);
+  if (ONIGENC_IS_MBC_ASCII(p)) {
+    if (end > p + 1 &&
+        (flag & ONIGENC_AMBIGUOUS_MATCH_COMPOUND) != 0 &&
+	((*p == 's' && *(p+1) == 's') ||
+	 ((flag & ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE) != 0 &&
+	  (*p == 'S' && *(p+1) == 'S')))) {
+      (*pp) += 2;
+      return TRUE;
+    }
+
+    (*pp)++;
+    if ((flag & ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE) != 0) {
+      return ONIGENC_IS_ASCII_CODE_CASE_AMBIG(*p);
+    }
+  }
+  else {
+    (*pp) += enc_len(ONIG_ENCODING_UTF8, p);
+
+    if (*p == 195) { /* 195 == '\303' */
+      int c = *(p + 1);
+      if (c >= 128) {
+        if ((flag & ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE) != 0) {
+          if (c <= '\236') { /* upper */
+            if (c == '\227') return FALSE;
+            return TRUE;
+          }
+          else if (c >= '\240' && c <= '\276') { /* lower */
+            if (c == '\267') return FALSE;
+            return TRUE;
+          }
+        }
+        else if (c == '\237' &&
+                 (flag & ONIGENC_AMBIGUOUS_MATCH_COMPOUND) != 0) {
+	  return TRUE;
+        }
+      }
+    }
+  }
 
   return FALSE;
 }
 
 static int
-utf8_code_is_ctype(OnigCodePoint code, unsigned int ctype)
+utf8_is_code_ctype(OnigCodePoint code, unsigned int ctype)
 {
   if (code < 256) {
-    return ENC_IS_ISO_8859_1_CTYPE(code, ctype);
+    return ONIGENC_IS_UNICODE_ISO_8859_1_CTYPE(code, ctype);
   }
 
   if ((ctype & ONIGENC_CTYPE_WORD) != 0) {
-    return TRUE;
+#ifdef USE_INVALID_CODE_SCHEME
+    if (code <= VALID_CODE_LIMIT)
+#endif
+      return TRUE;
   }
 
   return FALSE;
@@ -223,22 +341,17 @@ utf8_get_ctype_code_range(int ctype, int* nsb, int* nmb,
 } while (0)
 
   static OnigCodePointRange SBAlpha[] = {
-    { 0x41, 0x5a },
-    { 0x61, 0x7a }
+    { 0x41, 0x5a }, { 0x61, 0x7a }
   };
 
   static OnigCodePointRange MBAlpha[] = {
-    { 0xaa, 0xaa },
-    { 0xb5, 0xb5 },
-    { 0xba, 0xba },
-    { 0xc0, 0xd6 },
-    { 0xd8, 0xf6 },
-    { 0xf8, 0x220 }
+    { 0xaa, 0xaa }, { 0xb5, 0xb5 },
+    { 0xba, 0xba }, { 0xc0, 0xd6 },
+    { 0xd8, 0xf6 }, { 0xf8, 0x220 }
   };
 
   static OnigCodePointRange SBBlank[] = {
-    { 0x09, 0x09 },
-    { 0x20, 0x20 }
+    { 0x09, 0x09 }, { 0x20, 0x20 }
   };
 
   static OnigCodePointRange MBBlank[] = {
@@ -246,8 +359,7 @@ utf8_get_ctype_code_range(int ctype, int* nsb, int* nmb,
   };
 
   static OnigCodePointRange SBCntrl[] = {
-    { 0x00, 0x1f },
-    { 0x7f, 0x7f }
+    { 0x00, 0x1f }, { 0x7f, 0x7f }
   };
 
   static OnigCodePointRange MBCntrl[] = {
@@ -271,10 +383,8 @@ utf8_get_ctype_code_range(int ctype, int* nsb, int* nmb,
   };
 
   static OnigCodePointRange MBLower[] = {
-    { 0xaa, 0xaa },
-    { 0xb5, 0xb5 },
-    { 0xba, 0xba },
-    { 0xdf, 0xf6 },
+    { 0xaa, 0xaa }, { 0xb5, 0xb5 },
+    { 0xba, 0xba }, { 0xdf, 0xf6 },
     { 0xf8, 0xff }
   };
 
@@ -287,29 +397,21 @@ utf8_get_ctype_code_range(int ctype, int* nsb, int* nmb,
   };
 
   static OnigCodePointRange SBPunct[] = {
-    { 0x21, 0x23 },
-    { 0x25, 0x2a },
-    { 0x2c, 0x2f },
-    { 0x3a, 0x3b },
-    { 0x3f, 0x40 },
-    { 0x5b, 0x5d },
-    { 0x5f, 0x5f },
-    { 0x7b, 0x7b },
+    { 0x21, 0x23 }, { 0x25, 0x2a },
+    { 0x2c, 0x2f }, { 0x3a, 0x3b },
+    { 0x3f, 0x40 }, { 0x5b, 0x5d },
+    { 0x5f, 0x5f }, { 0x7b, 0x7b },
     { 0x7d, 0x7d }
   };
 
   static OnigCodePointRange MBPunct[] = {
-    { 0xa1, 0xa1 },
-    { 0xab, 0xab },
-    { 0xad, 0xad },
-    { 0xb7, 0xb7 },
-    { 0xbb, 0xbb },
-    { 0xbf, 0xbf }
+    { 0xa1, 0xa1 }, { 0xab, 0xab },
+    { 0xad, 0xad }, { 0xb7, 0xb7 },
+    { 0xbb, 0xbb }, { 0xbf, 0xbf }
   };
 
   static OnigCodePointRange SBSpace[] = {
-    { 0x09, 0x0d },
-    { 0x20, 0x20 }
+    { 0x09, 0x0d }, { 0x20, 0x20 }
   };
 
   static OnigCodePointRange MBSpace[] = {
@@ -321,30 +423,23 @@ utf8_get_ctype_code_range(int ctype, int* nsb, int* nmb,
   };
 
   static OnigCodePointRange MBUpper[] = {
-    { 0xc0, 0xd6 },
-    { 0xd8, 0xde }
+    { 0xc0, 0xd6 }, { 0xd8, 0xde }
   };
 
   static OnigCodePointRange SBXDigit[] = {
-    { 0x30, 0x39 },
-    { 0x41, 0x46 },
+    { 0x30, 0x39 }, { 0x41, 0x46 },
     { 0x61, 0x66 }
   };
 
   static OnigCodePointRange SBWord[] = {
-    { 0x30, 0x39 },
-    { 0x41, 0x5a },
-    { 0x5f, 0x5f },
-    { 0x61, 0x7a }
+    { 0x30, 0x39 }, { 0x41, 0x5a },
+    { 0x5f, 0x5f }, { 0x61, 0x7a }
   };
 
   static OnigCodePointRange MBWord[] = {
-    { 0xaa, 0xaa },
-    { 0xb2, 0xb3 },
-    { 0xb5, 0xb5 },
-    { 0xb9, 0xba },
-    { 0xbc, 0xbe },
-    { 0xc0, 0xd6 },
+    { 0xaa, 0xaa }, { 0xb2, 0xb3 },
+    { 0xb5, 0xb5 }, { 0xb9, 0xba },
+    { 0xbc, 0xbe }, { 0xc0, 0xd6 },
     { 0xd8, 0xf6 },
 #if 0
     { 0xf8, 0x220 }
@@ -358,18 +453,14 @@ utf8_get_ctype_code_range(int ctype, int* nsb, int* nmb,
   };
 
   static OnigCodePointRange SBAlnum[] = {
-    { 0x30, 0x39 },
-    { 0x41, 0x5a },
+    { 0x30, 0x39 }, { 0x41, 0x5a },
     { 0x61, 0x7a }
   };
 
   static OnigCodePointRange MBAlnum[] = {
-    { 0xaa, 0xaa },
-    { 0xb5, 0xb5 },
-    { 0xba, 0xba },
-    { 0xc0, 0xd6 },
-    { 0xd8, 0xf6 },
-    { 0xf8, 0x220 }
+    { 0xaa, 0xaa }, { 0xb5, 0xb5 },
+    { 0xba, 0xba }, { 0xc0, 0xd6 },
+    { 0xd8, 0xf6 }, { 0xf8, 0x220 }
   };
 
   switch (ctype) {
@@ -424,92 +515,6 @@ utf8_get_ctype_code_range(int ctype, int* nsb, int* nmb,
   return 0;
 }
 
-static int
-utf8_get_all_fold_match_code(OnigCodePoint** codes)
-{
-  static OnigCodePoint list[] = {
-    0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
-    0xc8, 0xc9, 0xca, 0xcb, 0xcc, 0xcd, 0xce, 0xcf,
-    0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6,
-    0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf,
-
-    0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7,
-    0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef,
-    0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6,
-    0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe,
-  };
-
-  *codes = list;
-  return sizeof(list) / sizeof(OnigCodePoint);
-}
-
-static int
-utf8_get_fold_match_info(UChar* p, UChar* end, OnigEncFoldMatchInfo** info)
-{
-  
-  static OnigEncFoldMatchInfo xc[] = {
-    { 2, { 2, 2 }, { "\303\200", "\303\240" } }, /* CodePoint 0xc0 */
-    { 2, { 2, 2 }, { "\303\201", "\303\241" } },
-    { 2, { 2, 2 }, { "\303\202", "\303\242" } },
-    { 2, { 2, 2 }, { "\303\203", "\303\243" } },
-    { 2, { 2, 2 }, { "\303\204", "\303\244" } },
-    { 2, { 2, 2 }, { "\303\205", "\303\245" } },
-    { 2, { 2, 2 }, { "\303\206", "\303\246" } },
-    { 2, { 2, 2 }, { "\303\207", "\303\247" } },
-    { 2, { 2, 2 }, { "\303\210", "\303\250" } },
-    { 2, { 2, 2 }, { "\303\211", "\303\251" } },
-    { 2, { 2, 2 }, { "\303\212", "\303\252" } },
-    { 2, { 2, 2 }, { "\303\213", "\303\253" } },
-    { 2, { 2, 2 }, { "\303\214", "\303\254" } },
-    { 2, { 2, 2 }, { "\303\215", "\303\255" } },
-    { 2, { 2, 2 }, { "\303\216", "\303\256" } },
-    { 2, { 2, 2 }, { "\303\217", "\303\257" } },
-    { 2, { 2, 2 }, { "\303\220", "\303\260" } }, /* CodePoint 0xd0 */
-    { 2, { 2, 2 }, { "\303\221", "\303\261" } },
-    { 2, { 2, 2 }, { "\303\222", "\303\262" } },
-    { 2, { 2, 2 }, { "\303\223", "\303\263" } },
-    { 2, { 2, 2 }, { "\303\224", "\303\264" } },
-    { 2, { 2, 2 }, { "\303\225", "\303\265" } },
-    { 2, { 2, 2 }, { "\303\226", "\303\266" } },
-    { 0, { 0 }, { "" } },
-    { 2, { 2, 2 }, { "\303\230", "\303\270" } },
-    { 2, { 2, 2 }, { "\303\231", "\303\271" } },
-    { 2, { 2, 2 }, { "\303\232", "\303\272" } },
-    { 2, { 2, 2 }, { "\303\233", "\303\273" } },
-    { 2, { 2, 2 }, { "\303\234", "\303\274" } },
-    { 2, { 2, 2 }, { "\303\235", "\303\275" } },
-    { 2, { 2, 2 }, { "\303\236", "\303\276" } },
-    { 3, { 2, 2, 2 }, { "\303\237", "ss", "SS" }} /* ess-tsett(U+00DF) */
-  };
-
-  if (p + 1 >= end)  return -1;
-  if (*p < 0x80) {
-    if ((*p == 'S' && *(p+1) == 'S') ||
-	(*p == 's' && *(p+1) == 's')) {
-      *info = &(xc[0xdf - 0xc0]);
-      return 2;
-    }
-  }
-  else if (*p == 195) { /* 195 == '\303' */
-    int c = *(p+1);
-    if (c >= 128) {
-      if (c <= 159) { /* upper */
-	if (c == 151) return -1; /* 0xd7 */
-	*info = &(xc[c - 128]);
-	return 2;
-      }
-      else { /* lower */
-	if (c == 183) return -1; /* 0xf7 */
-	*info = &(xc[c - 160]);
-	return 2;
-      }
-    }
-  }
-
-  return -1; /* is not a fold string. */
-}
-
-
 static UChar*
 utf8_left_adjust_char_head(UChar* start, UChar* s)
 {
@@ -522,45 +527,32 @@ utf8_left_adjust_char_head(UChar* start, UChar* s)
   return p;
 }
 
-static int
-utf8_is_allowed_reverse_match(UChar* s, UChar* end)
-{
-  return TRUE;
-}
-
 OnigEncodingType OnigEncodingUTF8 = {
-  {
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-    4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 1, 1
-  },
+  utf8_mbc_enc_len,
   "UTF-8",     /* name */
   6,           /* max byte length */
-  TRUE,        /* is_fold_match */
-  ONIGENC_CTYPE_SUPPORT_LEVEL_FULL,  /* ctype_support_level */
-  TRUE,                             /* is continuous sb mb codepoint */
+  1,           /* min byte length */
+  (ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE | 
+   ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE | 
+   ONIGENC_AMBIGUOUS_MATCH_COMPOUND),
+  {
+      (OnigCodePoint )'\\'                       /* esc */
+    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar '.'  */
+    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anytime '*'  */
+    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* zero or one time '?' */
+    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* one or more time '+' */
+    , (OnigCodePoint )ONIG_INEFFECTIVE_META_CHAR /* anychar anytime */
+  },
+  onigenc_is_mbc_newline_0x0a,
   utf8_mbc_to_code,
   utf8_code_to_mbclen,
   utf8_code_to_mbc,
-  utf8_mbc_to_lower,
-  utf8_mbc_is_case_ambig,
-  utf8_code_is_ctype,
+  utf8_mbc_to_normalize,
+  utf8_is_mbc_ambiguous,
+  onigenc_iso_8859_1_get_all_pair_ambig_codes,
+  onigenc_ess_tsett_get_all_comp_ambig_codes,
+  utf8_is_code_ctype,
   utf8_get_ctype_code_range,
   utf8_left_adjust_char_head,
-  utf8_is_allowed_reverse_match,
-  utf8_get_all_fold_match_code,
-  utf8_get_fold_match_info
+  onigenc_always_true_is_allowed_reverse_match
 };
