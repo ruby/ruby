@@ -18,10 +18,15 @@ class TestCalc2 < Test::Unit::TestCase
     @server = CalcServer2.new('CalcServer', 'http://tempuri.org/calcService', '0.0.0.0', Port)
     @server.level = Logger::Severity::FATAL
     @t = Thread.new {
+      Thread.current.abort_on_exception = true
       @server.start
     }
     while @server.server.nil? or @server.server.status != :Running
       sleep 0.1
+      unless @t.alive?
+	@t.join
+	raise
+      end
     end
     @var = SOAP::RPC::Driver.new("http://localhost:#{Port}/", 'http://tempuri.org/calcService')
     @var.add_method('set', 'newValue')
@@ -35,6 +40,7 @@ class TestCalc2 < Test::Unit::TestCase
   def teardown
     @server.server.shutdown
     @t.kill
+    @t.join
   end
 
   def test_calc2

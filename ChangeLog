@@ -1,3 +1,8 @@
+Tue Oct 21 00:35:02 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/soap/calc/*, test/soap/helloworld/*: catch the exception from
+	  test server thread and recover.
+
 Tue Oct 21 00:22:57 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/*: import drb/runit.

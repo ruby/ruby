@@ -22,6 +22,10 @@ class TestCalc < Test::Unit::TestCase
     }
     while @server.server.nil? or @server.server.status != :Running
       sleep 0.1
+      unless @t.alive?
+	@t.join
+	raise
+      end
     end
     @calc = SOAP::RPC::Driver.new("http://localhost:#{Port}/", 'http://tempuri.org/calcService')
     @calc.add_method('add', 'lhs', 'rhs')
@@ -33,6 +37,7 @@ class TestCalc < Test::Unit::TestCase
   def teardown
     @server.server.shutdown
     @t.kill
+    @t.join
   end
 
   def test_calc
