@@ -1,3 +1,18 @@
+Fri Feb 20 10:17:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (stmt): if/unless modifiers returns nil, if condition is 
+	  not established.
+
+Thu Feb 19 11:06:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/kconv/kconv.c (kconv_kconv): charcode can be specified by
+	  code name (JIS, SJIS, EUC like value of $KCODE).
+
+	* regex.c (re_compile_pattern): forgot to fixup_jump for (?:..).
+
+	* regex.c (re_compile_pattern): needed to clear pending_exact on
+	  non-registering grouping (?:...).
+
 Wed Feb 18 18:45:10 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* patches for cygwin32 applied.

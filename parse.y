@@ -303,12 +303,14 @@ stmt		: iterator iter_do_block
 		| stmt kIF_MOD expr
 		    {
 			value_expr($3);
-		        $$ = node_newnode(NODE_AND, cond($3), $1);
+			$$ = NEW_IF(cond($3), $1, 0);
+		        fixpos($$, $3);
 		    }
 		| stmt kUNLESS_MOD expr
 		    {
 			value_expr($3);
-		        $$ = node_newnode(NODE_OR, cond($3), $1);
+			$$ = NEW_UNLESS(cond($3), $1, 0);
+		        fixpos($$, $3);
 		    }
 		| stmt kWHILE_MOD expr
 		    {

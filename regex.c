@@ -1381,6 +1381,7 @@ re_compile_pattern(pattern, size, bufp)
 	      break;
 
 	    case ':':
+	      pending_exact = 0;
 	    default:
 	      break;
 	  }
@@ -1417,6 +1418,8 @@ re_compile_pattern(pattern, size, bufp)
 	      break;
 
 	    case ':':
+	      if (fixup_jump)
+		store_jump(fixup_jump, jump, b);
 	    default:
 	      break;
 	  }

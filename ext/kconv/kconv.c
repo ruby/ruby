@@ -1787,12 +1787,42 @@ kconv_kconv(argc, argv)
     if (NIL_P(out)) {
 	out_code = _JIS;
     }
+    else if (TYPE(out) == T_STRING) {
+	switch (RSTRING(out)->ptr[0]) {
+	  case 'E': case 'e':
+	    out_code = _EUC;
+	    break;
+	  case 'S': case 's':
+	    out_code = _SJIS;
+	    break;
+	  case 'J': case 'j':
+	  default:
+	    out_code = _JIS;
+	    break;
+	}
+    }
     else {
 	out_code = NUM2INT(out);
 	if (out_code == _NOCONV) return (VALUE)src;
     }
     if (NIL_P(in)) {
 	in_code = _AUTO;
+    }
+    else if (TYPE(in) == T_STRING) {
+	switch (RSTRING(in)->ptr[0]) {
+	  case 'E': case 'e':
+	    in_code = _EUC;
+	    break;
+	  case 'S': case 's':
+	    in_code = _SJIS;
+	    break;
+	  case 'J': case 'j':
+	    in_code = _JIS;
+	    break;
+	  default:
+	    in_code = _AUTO;
+	    break;
+	}
     }
     else {
 	in_code = NUM2INT(in);
