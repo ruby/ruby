@@ -743,13 +743,13 @@ class Tk::TreeCtrl
     marquee_visible()
   end
 
-  def notify_bind(obj, event, cmd=Proc.new, args=nil)
-    _bind([@path, 'notify', 'bind', obj], event, cmd, args)
+  def notify_bind(obj, event, cmd=Proc.new, *args)
+    _bind([@path, 'notify', 'bind', obj], event, cmd, *args)
     self
   end
 
-  def notify_bind_append(obj, event, cmd=Proc.new, args=nil)
-    _bind([@path, 'notify', 'bind', obj], event, cmd, args)
+  def notify_bind_append(obj, event, cmd=Proc.new, *args)
+    _bind([@path, 'notify', 'bind', obj], event, cmd, *args)
     self
   end
 

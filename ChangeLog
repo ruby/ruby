@@ -1,3 +1,18 @@
+Sun Nov  7 23:49:26 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: bind-event methods accept multi substitution
+	  arguments.
+
+	* ext/tk/lib/tk/canvas.rb: ditto.
+
+	* ext/tk/lib/tk/canvastag.rb: ditto.
+
+	* ext/tk/lib/tk/text.rb: ditto.
+
+	* ext/tk/lib/tk/texttag.rb: ditto.
+
+	* ext/tk/lib/tkextlib: ditto.
+
 Sat Nov  6 20:40:16 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: rename WIN32OLE#ole_obj_help to

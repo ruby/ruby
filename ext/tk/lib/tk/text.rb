@@ -519,13 +519,13 @@ class TkText<TkTextWin
   alias deltag tag_delete
   alias delete_tag tag_delete
 
-  def tag_bind(tag, seq, cmd=Proc.new, args=nil)
-    _bind([@path, 'tag', 'bind', tag], seq, cmd, args)
+  def tag_bind(tag, seq, cmd=Proc.new, *args)
+    _bind([@path, 'tag', 'bind', tag], seq, cmd, *args)
     self
   end
 
-  def tag_bind_append(tag, seq, cmd=Proc.new, args=nil)
-    _bind_append([@path, 'tag', 'bind', tag], seq, cmd, args)
+  def tag_bind_append(tag, seq, cmd=Proc.new, *args)
+    _bind_append([@path, 'tag', 'bind', tag], seq, cmd, *args)
     self
   end
 
