@@ -63,7 +63,7 @@ flush_register_windows(void)
 }
 #define FLUSH_REGISTER_WINDOWS	flush_register_windows()
 #else /* Not a sparc, so */
-#define FLUSH_REGISTER_WINDOWS	/* empty -- nothing to do here */
+#define FLUSH_REGISTER_WINDOWS	NULL
 #endif 
 
 #if defined(MSDOS) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__)
