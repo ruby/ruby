@@ -140,6 +140,7 @@ def parse_args()
     # Only nmake puts flags together
     if $nmake == ?m
       grep(/^-(?!-).*#{'%c' % flag}/i) { return true }
+      false
     else
       include?('-%c' % flag)
     end

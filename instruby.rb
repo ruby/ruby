@@ -36,8 +36,9 @@ def parse_args()
 
   def $mflags.set?(flag)
     # Only nmake puts flags together
-    if $nmake == ?m
+    if /nmake/ =~ $make
       grep(/^-(?!-).*#{'%c' % flag}/i) { return true }
+      false
     else
       include?('-%c' % flag)
     end
