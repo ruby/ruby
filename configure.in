@@ -265,6 +265,10 @@ AC_ARG_WITH(libc_r,
 	*)   with_libc_r=no;;
 	esac], [with_libc_r=no])
 
+AC_ARG_ENABLE(pthread,
+       [  --enable-pthread        use pthread library [--enable-pthread].],
+       [enable_pthread=$enableval], [enable_pthread=yes])
+
 dnl Checks for libraries.
 case "$target_os" in
 nextstep*)	;;
@@ -318,7 +322,7 @@ freebsd*)	LIBS="-lm $LIBS"
 		if test "$rb_cv_lib_xpg4_needed" = yes; then
 			AC_CHECK_LIB(xpg4, setlocale)
 		fi
-		if test "$with_libc_r" = yes; then
+		if test "$with_libc_r" = yes -a "$enable_pthread" = 'yes'; then
 			AC_CACHE_CHECK([whether libc_r is supplementary to libc],
 			  rb_cv_supplementary_lib_c_r,
 			  [AC_TRY_CPP([
@@ -672,52 +676,54 @@ int main()
 ], rb_cv_stack_grow_dir=-1, rb_cv_stack_grow_dir=+1, rb_cv_stack_grow_dir=0)])
 AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $rb_cv_stack_grow_dir)
 
-AC_CHECK_LIB(pthread, pthread_mutex_init, 
-             rb_with_pthread=yes, rb_with_pthread=no)
-if test "$rb_with_pthread" = "no"; then
-   AC_CHECK_LIB(pthread, __pthread_mutex_init, 
+if test "$enable_pthread" = "yes"; then
+   AC_CHECK_LIB(pthread, pthread_mutex_init, 
                 rb_with_pthread=yes, rb_with_pthread=no)
-fi
-if test "$rb_with_pthread" = "yes"; then
-   LIBS="-lpthread $LIBS"
-   AC_DEFINE(_REENTRANT)
-   AC_DEFINE(_THREAD_SAFE)
-   AC_DEFINE(HAVE_LIBPTHREAD)
-else
-   AC_CHECK_LIB(pthreads, pthread_mutex_init, 
-                rb_with_pthread=yes, rb_with_pthread=no)
+   if test "$rb_with_pthread" = "no"; then
+      AC_CHECK_LIB(pthread, __pthread_mutex_init, 
+                   rb_with_pthread=yes, rb_with_pthread=no)
+   fi
    if test "$rb_with_pthread" = "yes"; then
-      LIBS="-lpthreads $LIBS"
+      LIBS="-lpthread $LIBS"
       AC_DEFINE(_REENTRANT)
       AC_DEFINE(_THREAD_SAFE)
       AC_DEFINE(HAVE_LIBPTHREAD)
    else
-      AC_CHECK_LIB(c, pthread_mutex_init, 
+      AC_CHECK_LIB(pthreads, pthread_mutex_init, 
                    rb_with_pthread=yes, rb_with_pthread=no)
       if test "$rb_with_pthread" = "yes"; then
-         AC_DEFINE(_REENTRANT)
+         LIBS="-lpthreads $LIBS"
+	 AC_DEFINE(_REENTRANT)
 	 AC_DEFINE(_THREAD_SAFE)
 	 AC_DEFINE(HAVE_LIBPTHREAD)
       else
-	 AC_CHECK_LIB(c_r, pthread_mutex_init, 
+         AC_CHECK_LIB(c, pthread_mutex_init, 
                       rb_with_pthread=yes, rb_with_pthread=no)
-	 if test "$rb_with_pthread" = "yes"; then
-	    if test "$with_libc_r" = "yes"; then
-	       if test "$rb_cv_supplementary_lib_c_r" = "yes"; then
-		  AC_DEFINE(_REENTRANT)
-		  AC_DEFINE(_THREAD_SAFE)
-		  AC_DEFINE(HAVE_LIBPTHREAD)
-		  MAINLIBS="-pthread $MAINLIBS"
+         if test "$rb_with_pthread" = "yes"; then
+            AC_DEFINE(_REENTRANT)
+	    AC_DEFINE(_THREAD_SAFE)
+	    AC_DEFINE(HAVE_LIBPTHREAD)
+         else
+	    AC_CHECK_LIB(c_r, pthread_mutex_init, 
+                         rb_with_pthread=yes, rb_with_pthread=no)
+	    if test "$rb_with_pthread" = "yes"; then
+	       if test "$with_libc_r" = "yes"; then
+	          if test "$rb_cv_supplementary_lib_c_r" = "yes"; then
+		     AC_DEFINE(_REENTRANT)
+		     AC_DEFINE(_THREAD_SAFE)
+		     AC_DEFINE(HAVE_LIBPTHREAD)
+		     MAINLIBS="-pthread $MAINLIBS"
+	          fi
+	       else
+	          MAINLIBS="-pthread $MAINLIBS"
+	          AC_DEFINE(_REENTRANT)
+	          AC_DEFINE(_THREAD_SAFE)
+	          AC_DEFINE(HAVE_LIBPTHREAD)
 	       fi
 	    else
-	       MAINLIBS="-pthread $MAINLIBS"
-	       AC_DEFINE(_REENTRANT)
-	       AC_DEFINE(_THREAD_SAFE)
-	       AC_DEFINE(HAVE_LIBPTHREAD)
+	       AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
 	    fi
-	 else
-	    AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
-	 fi
+         fi
       fi
    fi
 fi

@@ -1,3 +1,7 @@
+Sat Nov 22 22:56:20 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* configure.in: add --enable-pthread option (default: yes)
+
 Sat Nov 22 22:48:46 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: add Tk.grab_release and fix bug of TkComposite
