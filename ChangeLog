@@ -1,3 +1,32 @@
+Thu Apr  5 22:40:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_const_get): no recursion to show full class path
+	  for modules.
+
+	* eval.c (rb_set_safe_level): should set safe level in curr_thread
+	  as well.
+
+	* eval.c (safe_setter): ditto.
+
+Thu Apr  5 13:46:06 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* object.c (rb_obj_is_instance_of): nil belongs to false, not true.
+
+Thu Apr  5 02:19:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (make_time_t): proper (I hope) daylight saving time
+	  handling for both US and Europe.  I HATE SUMMER TIME!
+
+	* eval.c (rb_thread_wait_for): non blocked signal interrupt should
+	  stop the interval.
+
+Wed Apr  4 03:47:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_mod_clone): should copy method bodies too.
+
+	* bignum.c (bigdivrem): should trim trailing zero bdigits of
+	  remainder, even if dd == 0.
+
 Tue Apr  3 15:29:10 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* Makefile.in: Introduce MAINLIBS.

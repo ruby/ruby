@@ -351,7 +351,7 @@ module TkComm
     end
     if context.kind_of? Array
       context = context.collect{|ev|
-	if context.kind_of? TkVirtualEvent
+	if ev.kind_of? TkVirtualEvent
 	  ev.path
 	else
 	  ev
@@ -397,8 +397,18 @@ module TkComm
 	end
       }
     else
-      tk_split_list(tk_call(*what)).collect{|seq|
-	seq[1..-2].gsub(/></,',')
+      tk_split_simplelist(tk_call(*what)).collect!{|seq|
+	l = seq.scan(/<*[^<>]+>*/).collect!{|subseq|
+	  case (subseq)
+	  when /^<<[^<>]+>>$/
+	    TkVirtualEvent.getobj(subseq[1..-2])
+	  when /^<[^<>]+>$/
+	    subseq[1..-2]
+	  else
+	    subseq.split('')
+	  end
+	}.flatten
+	(l.size == 1) ? l[0] : l
       }
     end
   end
@@ -1046,6 +1056,12 @@ class TkBindTag
     BTagID_TBL[id]? BTagID_TBL[id]: id
   end
 
+  ALL = self.new
+  ALL.instance_eval {
+    @id = 'all'
+    BTagID_TBL[@id] = self
+  }
+
   def initialize(*args)
     @id = Tk_BINDTAG_ID[0]
     Tk_BINDTAG_ID[0] = Tk_BINDTAG_ID[0].succ
@@ -1063,20 +1079,11 @@ class TkBindTag
 end
 
 class TkBindTagAll<TkBindTag
-  BindTagALL = []
   def TkBindTagAll.new(*args)
-    if BindTagALL[0]
-      BindTagALL[0].bind(*args) if args != []
-    else
-      new = super()
-      BindTagALL[0] = new
-    end
-    BindTagALL[0]
-  end
+    $stderr.puts "Warning: TkBindTagALL is obsolete. Use TkBindTag::ALL\n"
 
-  def initialize(*args)
-    @id = 'all'
-    BindTagALL[0].bind(*args) if args != []
+    TkBindTag::ALL.bind(*args) if args != []
+    TkBindTag::ALL
   end
 end
 
@@ -2575,7 +2582,7 @@ class TkWindow<TkObject
 
   def bindtags(taglist=nil)
     if taglist
-      fail unless taglist.kind_of? Array
+      fail ArgumentError unless taglist.kind_of? Array
       tk_call('bindtags', path, taglist)
     else
       list(tk_call('bindtags', path)).collect{|tag|

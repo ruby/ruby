@@ -128,33 +128,8 @@ int ruby_safe_level = 0;
    4 - no global (non-tainted) variable modification/no direct output
 */
 
-void
-rb_set_safe_level(level)
-    int level;
-{
-    if (level > ruby_safe_level) {
-	ruby_safe_level = level;
-    }
-}
-
-static VALUE
-safe_getter()
-{
-    return INT2FIX(ruby_safe_level);
-}
-
-static void
-safe_setter(val)
-    VALUE val;
-{
-    int level = NUM2INT(val);
-
-    if (level < ruby_safe_level) {
-	rb_raise(rb_eSecurityError, "tried to downgrade safe level from %d to %d",
-		 ruby_safe_level, level);
-    }
-    ruby_safe_level = level;
-}
+static VALUE safe_getter _((void));
+static void safe_setter _((VALUE val));
 
 void
 rb_secure(level)
@@ -821,6 +796,11 @@ static VALUE ruby_wrapper;	/* security wrapper */
 
 #define POP_CLASS() ruby_class = _class; }
 
+static NODE *ruby_cref = 0;
+static NODE *top_cref;
+#define PUSH_CREF(c) ruby_cref = rb_node_newnode(NODE_CREF,(c),0,ruby_cref)
+#define POP_CREF() ruby_cref = ruby_cref->nd_next
+
 #define PUSH_SCOPE() {			\
     volatile int _vmode = scope_vmode;	\
     struct SCOPE * volatile _old;	\
@@ -1047,7 +1027,9 @@ ruby_init()
 	rb_call_inits();
 	ruby_class = rb_cObject;
 	ruby_frame->self = ruby_top_self;
-	ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,rb_cObject,0,0);
+	top_cref = rb_node_newnode(NODE_CREF,rb_cObject,0,0);
+	ruby_cref = top_cref;
+	ruby_frame->cbase = (VALUE)ruby_cref;
 	rb_define_global_const("TOPLEVEL_BINDING", rb_f_binding(ruby_top_self));
 #ifdef __MACOS__
 	_macruby_init();
@@ -1603,6 +1585,23 @@ rb_mod_alias_method(mod, newname, oldname)
 {
     rb_alias(mod, rb_to_id(newname), rb_to_id(oldname));
     return mod;
+}
+
+static NODE*
+copy_node_scope(node, rval)
+    NODE *node;
+    VALUE rval;
+{
+    NODE *copy = rb_node_newnode(NODE_SCOPE,0,rval,node->nd_next);
+
+    if (node->nd_tbl) {
+	copy->nd_tbl = ALLOC_N(ID, node->nd_tbl[0]+1);
+	MEMCPY(copy->nd_tbl, node->nd_tbl, ID, node->nd_tbl[0]+1);
+    }
+    else {
+	copy->nd_tbl = 0;
+    }
+    return copy;
 }
 
 #ifdef C_ALLOCA
@@ -2533,6 +2532,7 @@ rb_eval(self, n)
       case NODE_SCOPE:
 	{
 	    struct FRAME frame;
+	    NODE *saved_cref = 0;
 
 	    frame = *ruby_frame;
 	    frame.tmp = ruby_frame;
@@ -2540,7 +2540,11 @@ rb_eval(self, n)
 
 	    PUSH_SCOPE();
 	    PUSH_TAG(PROT_NONE);
-	    if (node->nd_rval) ruby_frame->cbase = node->nd_rval;
+	    if (node->nd_rval) {
+		saved_cref = ruby_cref;
+		ruby_cref = (NODE*)node->nd_rval;
+		ruby_frame->cbase = node->nd_rval;
+	    }
 	    if (node->nd_tbl) {
 		VALUE *vars = ALLOCA_N(VALUE, node->nd_tbl[0]+1);
 		*vars++ = (VALUE)node;
@@ -2558,6 +2562,8 @@ rb_eval(self, n)
 	    POP_TAG();
 	    POP_SCOPE();
 	    ruby_frame = frame.tmp;
+	    if (saved_cref)
+		ruby_cref = saved_cref;
 	    if (state) JUMP_TAG(state);
 	}
 	break;
@@ -2896,7 +2902,7 @@ rb_eval(self, n)
 
       case NODE_DEFN:
 	if (node->nd_defn) {
-	    NODE *body;
+	    NODE *body,  *defn;
 	    VALUE origin;
 	    int noex;
 
@@ -2938,11 +2944,13 @@ rb_eval(self, n)
 	    if (body && origin == ruby_class && body->nd_noex & NOEX_UNDEF) {
 		noex |= NOEX_UNDEF;
 	    }
-	    rb_add_method(ruby_class, node->nd_mid, node->nd_defn, noex);
+
+	    defn = copy_node_scope(node->nd_defn, ruby_cref);
+	    rb_add_method(ruby_class, node->nd_mid, defn, noex);
 	    rb_clear_cache_by_id(node->nd_mid);
 	    if (scope_vmode == SCOPE_MODFUNC) {
 		rb_add_method(rb_singleton_class(ruby_class),
-			      node->nd_mid, node->nd_defn, NOEX_PUBLIC);
+			      node->nd_mid, defn, NOEX_PUBLIC);
 		rb_funcall(ruby_class, singleton_added, 1, ID2SYM(node->nd_mid));
 	    }
 	    if (FL_TEST(ruby_class, FL_SINGLETON)) {
@@ -2960,7 +2968,7 @@ rb_eval(self, n)
 	if (node->nd_defn) {
 	    VALUE recv = rb_eval(self, node->nd_recv);
 	    VALUE klass;
-	    NODE *body = 0;
+	    NODE *body = 0, *defn;
 
 	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(recv)) {
 		rb_raise(rb_eSecurityError, "Insecure; can't define singleton method");
@@ -2982,7 +2990,9 @@ rb_eval(self, n)
 		    rb_warning("redefine %s", rb_id2name(node->nd_mid));
 		}
 	    }
-	    rb_add_method(klass, node->nd_mid, node->nd_defn, 
+	    defn = copy_node_scope(node->nd_defn, ruby_cref);
+	    defn->nd_rval = (VALUE)ruby_cref;
+	    rb_add_method(klass, node->nd_mid, defn, 
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
 	    rb_clear_cache_by_id(node->nd_mid);
 	    rb_funcall(recv, singleton_added, 1, ID2SYM(node->nd_mid));
@@ -3180,16 +3190,11 @@ module_setup(module, n)
     frame.tmp = ruby_frame;
     ruby_frame = &frame;
 
-    /* fill c-ref */
-    node->nd_clss = module;
-    node = node->nd_body;
-
     PUSH_CLASS();
     ruby_class = module;
     PUSH_SCOPE();
     PUSH_VARS();
 
-    if (node->nd_rval) ruby_frame->cbase = node->nd_rval;
     if (node->nd_tbl) {
 	VALUE *vars = TMP_ALLOC(node->nd_tbl[0]+1);
 	*vars++ = (VALUE)node;
@@ -3202,6 +3207,8 @@ module_setup(module, n)
 	ruby_scope->local_tbl  = 0;
     }
 
+    PUSH_CREF(module);
+    ruby_frame->cbase = (VALUE)ruby_cref;
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (trace_func) {
@@ -3212,6 +3219,7 @@ module_setup(module, n)
 	result = rb_eval(ruby_class, node->nd_next);
     }
     POP_TAG();
+    POP_CREF();
     POP_VARS();
     POP_SCOPE();
     POP_CLASS();
@@ -4313,14 +4321,19 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	result = proc_call(body->nd_cval, rb_ary_new4(argc, argv));
 	break;
 
-      default:
+      case NODE_SCOPE:
 	{
 	    int state;
 	    VALUE *local_vars;	/* OK */
+	    NODE *saved_cref = 0;
 
 	    PUSH_SCOPE();
 
-	    if (body->nd_rval) ruby_frame->cbase = body->nd_rval;
+	    if (body->nd_rval) {
+		saved_cref = ruby_cref;
+		ruby_cref = (NODE*)body->nd_rval;
+		ruby_frame->cbase = body->nd_rval;
+	    }
 	    if (body->nd_tbl) {
 		local_vars = TMP_ALLOC(body->nd_tbl[0]+1);
 		*local_vars++ = (VALUE)body;
@@ -4413,6 +4426,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	    POP_TAG();
 	    POP_VARS();
 	    POP_SCOPE();
+	    ruby_cref = saved_cref;
 	    if (trace_func) {
 		char *file = ruby_frame->prev->file;
 		int line = ruby_frame->prev->line;
@@ -4436,6 +4450,11 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 		break;
 	    }
 	}
+	break;
+
+      default:
+	rb_bug("unknown node type %d", nd_type(body));
+	break;
     }
     POP_FRAME();
     POP_ITER();
@@ -5074,6 +5093,7 @@ rb_load(fname, wrap)
     volatile ID last_func;
     volatile VALUE wrapper = 0;
     volatile VALUE self = ruby_top_self;
+    NODE *saved_cref = ruby_cref;
     TMP_PROTECT;
 
     if (wrap) {
@@ -5091,6 +5111,7 @@ rb_load(fname, wrap)
     PUSH_VARS();
     PUSH_CLASS();
     wrapper = ruby_wrapper;
+    ruby_cref = top_cref;
     if (!wrap) {
 	rb_secure(4);		/* should alter global state */
 	ruby_class = rb_cObject;
@@ -5101,6 +5122,7 @@ rb_load(fname, wrap)
 	ruby_class = ruby_wrapper = rb_module_new();
 	self = rb_obj_clone(ruby_top_self);
 	rb_extend_object(self, ruby_class);
+	PUSH_CREF(ruby_wrapper);
     }
     PUSH_FRAME();
     ruby_frame->last_func = 0;
@@ -5143,6 +5165,7 @@ rb_load(fname, wrap)
 	    free(ruby_scope->local_tbl);
     }
     POP_TAG();
+    ruby_cref = saved_cref;
     POP_SCOPE();
     POP_FRAME();
     POP_CLASS();
@@ -6321,8 +6344,10 @@ proc_eq(self, other)
 {
     struct BLOCK *data, *data2;
 
+    if (self == other) return Qtrue;
     if (TYPE(other) != T_DATA) return Qfalse;
-    if (RDATA(other)->dmark != (RUBY_DATA_FUNC)blk_mark) Qfalse;
+    if (RDATA(other)->dmark != (RUBY_DATA_FUNC)blk_mark) return Qfalse;
+    if (CLASS_OF(self) != CLASS_OF(other)) return Qfalse;
     Data_Get_Struct(self, struct BLOCK, data);
     Data_Get_Struct(other, struct BLOCK, data2);
     if (data->tag == data2->tag) return Qtrue;
@@ -6556,8 +6581,8 @@ method_call(argc, argv, method)
     Data_Get_Struct(method, struct METHOD, data);
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
     PUSH_TAG(PROT_NONE);
-    if (OBJ_TAINTED(method)) {
-	if (ruby_safe_level < 4) ruby_safe_level = 4;
+    if (OBJ_TAINTED(method) && ruby_safe_level < 4) {
+	ruby_safe_level = 4;
     }
     if ((state = EXEC_TAG()) == 0) {
 	result = rb_call0(data->klass,data->recv,data->id,argc,argv,data->body,0);
@@ -6841,6 +6866,7 @@ struct thread {
     struct tag *tag;
     VALUE klass;
     VALUE wrapper;
+    NODE *cref;
 
     int flags;		/* misc. states (vmode/rb_trap_immediate/raised) */
 
@@ -6883,6 +6909,37 @@ struct thread {
 
 #define FOREACH_THREAD(x) FOREACH_THREAD_FROM(curr_thread,x)
 #define END_FOREACH(x)    END_FOREACH_FROM(curr_thread,x)
+
+/* $SAFE accessor */
+void
+rb_set_safe_level(level)
+    int level;
+{
+    if (level > ruby_safe_level) {
+	ruby_safe_level = level;
+	curr_thread->safe = level;
+    }
+}
+
+static VALUE
+safe_getter()
+{
+    return INT2FIX(ruby_safe_level);
+}
+
+static void
+safe_setter(val)
+    VALUE val;
+{
+    int level = NUM2INT(val);
+
+    if (level < ruby_safe_level) {
+	rb_raise(rb_eSecurityError, "tried to downgrade safe level from %d to %d",
+		 ruby_safe_level, level);
+    }
+    ruby_safe_level = level;
+    curr_thread->safe = level;
+}
 
 /* Return the current time as a floating-point number */
 static double
@@ -7026,6 +7083,7 @@ rb_thread_save_context(th)
     th->scope = ruby_scope;
     th->klass = ruby_class;
     th->wrapper = ruby_wrapper;
+    th->cref = ruby_cref;
     th->dyna_vars = ruby_dyna_vars;
     th->block = ruby_block;
     th->flags &= THREAD_FLAGS_MASK;
@@ -7116,6 +7174,7 @@ rb_thread_restore_context(th, exit)
     ruby_scope = th->scope;
     ruby_class = th->klass;
     ruby_wrapper = th->wrapper;
+    ruby_cref = th->cref;
     ruby_dyna_vars = th->dyna_vars;
     ruby_block = th->block;
     scope_vmode = th->flags&SCOPE_MASK;
@@ -7516,7 +7575,14 @@ rb_thread_wait_for(time)
 	    n = select(0, 0, 0, 0, &time);
 	    TRAP_END;
 	    if (n == 0) return;
-
+	    if (n < 0) {
+		switch (errno) {
+		  case EINTR:
+		    return;
+		  default:
+		    rb_sys_fail("sleep");
+		}
+	    }
 #ifndef linux
 	    d = limit - timeofday();
 
@@ -7920,6 +7986,7 @@ rb_thread_abort_exc_set(thread, val)
     th->scope = 0;\
     th->klass = 0;\
     th->wrapper = 0;\
+    th->cref = ruby_cref;\
     th->dyna_vars = ruby_dyna_vars;\
     th->block = 0;\
     th->iter = 0;\

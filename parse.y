@@ -132,10 +132,6 @@ static struct RVarmap *dyna_push();
 static void dyna_pop();
 static int dyna_in_block();
 
-#define cref_push() NEW_CREF()
-static void cref_pop();
-static NODE *cur_cref;
-
 static void top_local_init();
 static void top_local_setup();
 %}
@@ -269,7 +265,6 @@ program		:  {
 		        $<vars>$ = ruby_dyna_vars;
 			lex_state = EXPR_BEG;
                         top_local_init();
-			NEW_CREF0(); /* initialize constant c-ref */
 			if ((VALUE)ruby_class == rb_cObject) class_nest = 0;
 			else class_nest = 1;
 		    }
@@ -288,7 +283,6 @@ program		:  {
 			}
 			ruby_eval_tree = block_append(ruby_eval_tree, $2);
                         top_local_setup();
-			cur_cref = 0;
 			class_nest = 0;
 		        ruby_dyna_vars = $<vars>1;
 		    }
@@ -1248,7 +1242,6 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
 			class_nest++;
-			cref_push();
 			local_push();
 		        $<num>$ = ruby_sourceline;
 		    }
@@ -1258,7 +1251,6 @@ primary		: literal
 		        $$ = NEW_CLASS($2, $5, $3);
 		        nd_set_line($$, $<num>4);
 		        local_pop();
-			cref_pop();
 			class_nest--;
 		    }
 		| kCLASS tLSHFT expr
@@ -1271,7 +1263,6 @@ primary		: literal
 		        $<num>$ = in_single;
 		        in_single = 0;
 			class_nest++;
-			cref_push();
 			local_push();
 		    }
 		  compstmt
@@ -1280,7 +1271,6 @@ primary		: literal
 		        $$ = NEW_SCLASS($3, $7);
 		        fixpos($$, $3);
 		        local_pop();
-			cref_pop();
 			class_nest--;
 		        in_def = $<num>4;
 		        in_single = $<num>6;
@@ -1290,7 +1280,6 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("module definition in method body");
 			class_nest++;
-			cref_push();
 			local_push();
 		        $<num>$ = ruby_sourceline;
 		    }
@@ -1300,7 +1289,6 @@ primary		: literal
 		        $$ = NEW_MODULE($2, $4);
 		        nd_set_line($$, $<num>3);
 		        local_pop();
-			cref_pop();
 			class_nest--;
 		    }
 		| kDEF fname
@@ -4748,12 +4736,6 @@ dyna_in_block()
     return (lvtbl->dlev > 0);
 }
 
-static void
-cref_pop()
-{
-    cur_cref = cur_cref->nd_next;
-}
-
 void
 rb_parser_append_print()
 {
@@ -4837,7 +4819,6 @@ Init_sym()
 {
     sym_tbl = st_init_strtable_with_size(200);
     sym_rev_tbl = st_init_numtable_with_size(200);
-    rb_global_variable((VALUE*)&cur_cref);
     rb_global_variable((VALUE*)&lex_lastline);
 }
 

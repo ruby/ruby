@@ -229,12 +229,10 @@ rb_obj_is_instance_of(obj, c)
 	return Qfalse;
 
       case T_FALSE:
-	if (obj) return Qfalse;
-	return Qtrue;
+	return RTEST(obj) ? Qfalse : Qtrue;
 
       case T_TRUE:
-	if (obj) return Qtrue;
-	return Qfalse;
+	return RTEST(obj) ? Qtrue : Qfalse;
 
       default:
 	rb_raise(rb_eTypeError, "class or module required");
@@ -516,36 +514,6 @@ sym_to_s(sym)
     VALUE sym;
 {
     return rb_str_new2(rb_id2name(SYM2ID(sym)));
-}
-
-static VALUE
-rb_mod_clone(module)
-    VALUE module;
-{
-    NEWOBJ(clone, struct RClass);
-    CLONESETUP(clone, module);
-
-    clone->super = RCLASS(module)->super;
-    if (RCLASS(module)->iv_tbl) {
-	clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
-    }
-    if (RCLASS(module)->m_tbl) {
-	clone->m_tbl = st_copy(RCLASS(module)->m_tbl);
-    }
-
-    return (VALUE)clone;
-}
-
-static VALUE
-rb_mod_dup(mod)
-    VALUE mod;
-{
-    VALUE dup = rb_mod_clone(mod);
-    OBJSETUP(dup, RBASIC(mod)->klass, BUILTIN_TYPE(mod));
-    if (FL_TEST(mod, FL_SINGLETON)) {
-	FL_SET(dup, FL_SINGLETON);
-    }
-    return dup;
 }
 
 static VALUE

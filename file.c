@@ -757,7 +757,8 @@ test_sticky(obj, fname)
     VALUE obj, fname;
 {
 #ifdef S_ISVTX
-    return check3rdbyte(STR2CSTR(fname), S_ISVTX);
+    Check_SafeStr(fname);
+    return check3rdbyte(RSTRING(fname)->ptr, S_ISVTX);
 #else
     return Qnil;
 #endif

@@ -33,16 +33,6 @@ rb_class_new(super)
     return (VALUE)klass;
 }
 
-VALUE
-rb_singleton_class_new(super)
-    VALUE super;
-{
-    VALUE klass = rb_class_new(super);
-
-    FL_SET(klass, FL_SINGLETON);
-    return klass;
-}
-
 static int
 clone_method(mid, body, tbl)
     ID mid;
@@ -51,6 +41,47 @@ clone_method(mid, body, tbl)
 {
     st_insert(tbl, mid, NEW_METHOD(body->nd_body, body->nd_noex));
     return ST_CONTINUE;
+}
+
+VALUE
+rb_mod_clone(module)
+    VALUE module;
+{
+    NEWOBJ(clone, struct RClass);
+    CLONESETUP(clone, module);
+
+    clone->super = RCLASS(module)->super;
+    if (RCLASS(module)->iv_tbl) {
+	clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
+    }
+    if (RCLASS(module)->m_tbl) {
+	clone->m_tbl = st_init_numtable();
+	st_foreach(RCLASS(module)->m_tbl, clone_method, clone->m_tbl);
+    }
+
+    return (VALUE)clone;
+}
+
+VALUE
+rb_mod_dup(mod)
+    VALUE mod;
+{
+    VALUE dup = rb_mod_clone(mod);
+    OBJSETUP(dup, RBASIC(mod)->klass, BUILTIN_TYPE(mod));
+    if (FL_TEST(mod, FL_SINGLETON)) {
+	FL_SET(dup, FL_SINGLETON);
+    }
+    return dup;
+}
+
+VALUE
+rb_singleton_class_new(super)
+    VALUE super;
+{
+    VALUE klass = rb_class_new(super);
+
+    FL_SET(klass, FL_SINGLETON);
+    return klass;
 }
 
 VALUE
@@ -222,6 +253,11 @@ rb_include_module(klass, module)
     VALUE p;
     int changed = 0;
 
+    rb_frozen_class_p(klass);
+    if (!OBJ_TAINTED(klass)) {
+	rb_secure(4);
+    }
+    
     rb_frozen_class_p(klass);
     if (!OBJ_TAINTED(klass)) {
 	rb_secure(4);

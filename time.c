@@ -352,8 +352,13 @@ make_time_t(tptr, utc_or_local)
 	}
 	tm = localtime(&guess);
 	if (!tm) goto error;
-	if (tptr->tm_hour != tm->tm_hour) {
-	    guess -= 3600;
+	if (lt.tm_isdst != tm->tm_isdst || tptr->tm_hour != tm->tm_hour) {
+	    oguess = guess - 3600;
+	    tm = localtime(&oguess);
+	    if (!tm) goto error;
+	    if (tptr->tm_hour == tm->tm_hour) {
+		guess = oguess;
+	    }
 	}
 	if (guess < 0) {
 	    goto out_of_range;
