@@ -1,7 +1,17 @@
+#
+# = test/unit.rb
+#
+# Ruby's standard unit testing library/software.
+#
+# Copyright (c) 2000-2003, Nathaniel Talbott.
+#
+# See Test::Unit for documentation.
+#
+
 require 'test/unit/testcase'
 require 'test/unit/autorunner'
 
-module Test # :nodoc:
+module Test
   #
   # = Test::Unit - Ruby Unit Testing Framework
   # 

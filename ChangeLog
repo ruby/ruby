@@ -1,3 +1,8 @@
+Sun May 16 22:36:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/text/unit.rb: Removed :nodoc: directive (it prevented effective
+	  RDoc operation), and added file-level comment.
+
 Sun May 16 20:55:49 2004  Tanaka Akira  <akr@m17n.org>
 
 	* ext/dbm/dbm.c (fdbm_initialize): accept optional 3rd argument to 
