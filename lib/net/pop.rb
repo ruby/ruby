@@ -2,7 +2,7 @@
 
 = net/pop.rb
 
-Copyright (c) 1999-2001 Yukihiro Matsumoto
+Copyright (c) 1999-2002 Yukihiro Matsumoto
 
 written & maintained by Minero Aoki <aamine@loveruby.net>
 
@@ -334,43 +334,41 @@ module Net
 
   class POP3 < Protocol
 
-    protocol_param :port,              '110'
+    protocol_param :default_port,      '110'
     protocol_param :command_type,      '::Net::POP3Command'
     protocol_param :apop_command_type, '::Net::APOPCommand'
     protocol_param :mail_type,         '::Net::POPMail'
+    protocol_param :socket_type,       '::Net::InternetMessageIO'
 
-    class << self
 
-      def APOP( bool )
-        bool ? APOP : POP3
-      end
+    def POP3.APOP( bool )
+      bool ? APOP : POP3
+    end
 
-      def foreach( address, port = nil,
-                   account = nil, password = nil, &block )
-        start( address, port, account, password ) do |pop|
+    def POP3.foreach( address, port = nil,
+                 account = nil, password = nil, &block )
+      start( address, port, account, password ) {|pop|
           pop.each_mail( &block )
-        end
-      end
+      }
+    end
 
-      def delete_all( address, port = nil,
-                      account = nil, password = nil, &block )
-        start( address, port, account, password ) do |pop|
+    def POP3.delete_all( address, port = nil,
+                    account = nil, password = nil, &block )
+      start( address, port, account, password ) {|pop|
           pop.delete_all( &block )
-        end
-      end
+      }
+    end
 
-      def auth_only( address, port = nil,
-                     account = nil, password = nil )
-        new( address, port ).auth_only account, password
-      end
-
+    def POP3.auth_only( address, port = nil,
+                   account = nil, password = nil )
+      new( address, port ).auth_only account, password
     end
 
 
     def auth_only( account, password )
-      active? and raise IOError, 'opening already opened POP session'
+      raise IOError, 'opening already opened POP session' if active?
       start( account, password ) {
-          ;
+          # none
       }
     end
 
@@ -450,12 +448,18 @@ module Net
 
   end
 
-  POP = POP3
+  POP         = POP3
+  POPSession  = POP3
+  POP3Session = POP3
 
 
   class APOP < POP3
-    protocol_param :command_type, '::Net::APOPCommand'
+    def APOP.command_type
+      APOPCommand
+    end
   end
+
+  APOPSession = APOP
 
 
   class POPMail
@@ -476,16 +480,16 @@ module Net
 
     def pop( dest = '', &block )
       if block then
-        dest = ReadAdapter.new( block )
+        dest = ReadAdapter.new(block)
       end
-      @command.retr( @num, dest )
+      @command.retr @num, dest
     end
 
     alias all pop
     alias mail pop
 
     def top( lines, dest = '' )
-      @command.top( @num, lines, dest )
+      @command.top @num, lines, dest
     end
 
     def header( dest = '' )
@@ -533,7 +537,7 @@ module Net
       arr = []
       atomic {
           getok 'LIST'
-          @socket.read_pendlist do |line|
+          @socket.each_list_item do |line|
             m = /\A(\d+)[ \t]+(\d+)/.match(line) or
                     raise BadResponse, "illegal response: #{line}"
             arr[ m[1].to_i ] = m[2].to_i
@@ -551,15 +555,15 @@ module Net
 
     def top( num, lines = 0, dest = '' )
       atomic {
-          getok sprintf( 'TOP %d %d', num, lines )
-          @socket.read_pendstr dest
+          getok sprintf('TOP %d %d', num, lines)
+          @socket.read_message_to dest
       }
     end
 
-    def retr( num, dest = '', &block )
+    def retr( num, dest = '' )
       atomic {
           getok sprintf('RETR %d', num)
-          @socket.read_pendstr dest, &block
+          @socket.read_message_to dest
       }
     end
     
@@ -571,7 +575,7 @@ module Net
 
     def uidl( num )
       atomic {
-          getok( sprintf('UIDL %d', num) ).msg.split(' ')[1]
+          getok( sprintf('UIDL %d', num) ).message.split(' ')[1]
       }
     end
 
@@ -623,12 +627,5 @@ module Net
     end
 
   end
-
-
-  # for backward compatibility
-
-  POPSession  = POP3
-  POP3Session = POP3
-  APOPSession = APOP
 
 end   # module Net

@@ -2,7 +2,7 @@
 
 = net/http.rb
 
-Copyright (c) 1999-2001 Yukihiro Matsumoto
+Copyright (c) 1999-2002 Yukihiro Matsumoto
 
 written & maintained by Minero Aoki <aamine@loveruby.net>
 This file is derived from "http-access.rb".
@@ -97,7 +97,7 @@ URI class will be included in ruby standard library.
 
     Net::HTTP.start( 'auth.some.domain' ) {|http|
         response , = http.get( '/need-auth.cgi',
-                'Authentication' => ["#{account}:#{password}"].pack('m').strip )
+                'Authorization' => 'Basic ' + ["#{account}:#{password}"].pack('m').strip )
         print response.body
     }
 
@@ -453,50 +453,36 @@ module Net
 
   class HTTP < Protocol
 
-    #
-    # constructors
-    #
-
-    class << self
-
-      def start( address, port = nil, p_addr = nil, p_port = nil, &block )
-        new( address, port, p_addr, p_port ).start( &block )
-      end
-
-      alias newobj new
-
-      def new( address, port = nil, p_addr = nil, p_port = nil )
-        obj = Proxy(p_addr, p_port).newobj(address, port)
-        setimplversion obj
-        obj
-      end
-
-    end
-
-    def initialize( addr, port = nil )
-      super
-      @curr_http_version = HTTPVersion
-      @seems_1_0_server = false
-    end
-
-
-    #
-    # connection
-    #
-
-    protocol_param :port, '80'
-
     HTTPVersion = '1.1'
 
-    private
 
-    def do_start
-      conn_socket
+    #
+    # for backward compatibility
+    #
+
+    if RUBY_VERSION  <= '1.6' then
+      @@newimpl = false
+    else
+      @@newimpl = true
     end
 
-    def do_finish
-      disconn_socket
+    def HTTP.version_1_2
+      @@newimpl = true
     end
+
+    def HTTP.version_1_1
+      @@newimpl = false
+    end
+
+    def HTTP.is_version_1_2?
+      @@newimpl
+    end
+
+    def HTTP.setimplversion( obj )
+      f = @@newimpl
+      obj.instance_eval { @newimpl = f }
+    end
+    private_class_method :setimplversion
 
 
     #
@@ -521,31 +507,71 @@ module Net
 
 
     #
+    # connection
+    #
+
+    protocol_param :default_port, '80'
+    protocol_param :socket_type,  '::Net::InternetMessageIO'
+
+    class << HTTP
+      def start( address, port = nil, p_addr = nil, p_port = nil, &block )
+        new( address, port, p_addr, p_port ).start( &block )
+      end
+
+      alias newobj new
+
+      def new( address, port = nil, p_addr = nil, p_port = nil )
+        obj = Proxy(p_addr, p_port).newobj(address, port)
+        setimplversion obj
+        obj
+      end
+    end
+
+    def initialize( addr, port = nil )
+      super
+      @curr_http_version = HTTPVersion
+      @seems_1_0_server = false
+    end
+
+    private
+
+    def do_start
+      conn_socket
+    end
+
+    def do_finish
+      disconn_socket
+    end
+
+
+    #
     # proxy
     #
 
     public
 
-    class << self
-      def Proxy( p_addr, p_port = nil )
-        p_addr or return self
+    # no proxy
+    @is_proxy_class = false
+    @proxy_addr = nil
+    @proxy_port = nil
 
-        p_port ||= port()
-        mod = ProxyDelta
-        proxyclass = Class.new(self)
-        proxyclass.module_eval {
-            include mod
-            @is_proxy_class = true
-            @proxy_address = p_addr
-            @proxy_port    = p_port
-        }
-        proxyclass
-      end
+    def HTTP.Proxy( p_addr, p_port = nil )
+      p_addr or return self
 
-      @is_proxy_class = false
-      @proxy_addr = nil
-      @proxy_port = nil
+      p_port ||= port()
+      delta = ProxyDelta
+      proxyclass = Class.new(self)
+      proxyclass.module_eval {
+          include delta
+          # with proxy
+          @is_proxy_class = true
+          @proxy_address = p_addr
+          @proxy_port    = p_port
+      }
+      proxyclass
+    end
 
+    class << HTTP
       def proxy_class?
         @is_proxy_class
       end
@@ -571,7 +597,7 @@ module Net
 
     private
 
-    # without proxy
+    # no proxy
 
     def conn_address
       address
@@ -601,40 +627,6 @@ module Net
       def edit_path( path )
         'http://' + addr_port() + path
       end
-    end
-
-
-    #
-    # for backward compatibility
-    #
-
-    if Version < '1.2.0' then   ###noupdate
-      @@newimpl = false
-    else
-      @@newimpl = true
-    end
-
-    class << self
-
-      def version_1_2
-        @@newimpl = true
-      end
-
-      def version_1_1
-        @@newimpl = false
-      end
-
-      def is_version_1_2?
-        @@newimpl
-      end
-
-      private
-
-      def setimplversion( obj )
-        f = @@newimpl
-        obj.instance_eval { @newimpl = f }
-      end
-
     end
 
 
@@ -682,6 +674,7 @@ module Net
       res
     end
 
+
     def request_get( path, initheader = nil, &block )
       request Get.new(path,initheader), &block
     end
@@ -703,11 +696,13 @@ module Net
     alias post2  request_post
     alias put2   request_put
 
+
     def send_request( name, path, body = nil, header = nil )
       r = HTTPGenericRequest.new( name, (body ? true : false), true,
                                   path, header )
       request r, body
     end
+
 
     def request( req, body = nil, &block )
       unless active? then
@@ -717,17 +712,21 @@ module Net
         }
       end
         
-      connecting( req ) {
-          req.__send__( :exec,
-                  @socket, @curr_http_version, edit_path(req.path), body )
-          yield req.response if block_given?
-      }
-      req.response
+      begin_transport req
+          req.__send__(:exec,
+                       @socket, @curr_http_version, edit_path(req.path), body)
+          begin
+            res = HTTPResponse.read_new(@socket, req.response_body_permitted?)
+          end while HTTPContinue === res
+          yield res if block_given?
+      end_transport req, res
+
+      res
     end
 
     private
 
-    def connecting( req )
+    def begin_transport( req )
       if @socket.closed? then
         reconn_socket
       end
@@ -735,14 +734,15 @@ module Net
         req['connection'] = 'close'
       end
       req['host'] = addr_port()
+    end
 
-      yield req
-      req.response.__send__ :terminate
-      @curr_http_version = req.response.http_version
+    def end_transport( req, res )
+      res.__send__ :terminate
+      @curr_http_version = res.http_version
 
-      if not req.response.body then
+      if not res.body then
         @socket.close
-      elsif keep_alive? req, req.response then
+      elsif keep_alive? req, res then
         D 'Conn keep-alive'
         if @socket.closed? then   # (only) read stream had been closed
           D 'Conn (but seems 1.0 server)'
@@ -788,71 +788,7 @@ module Net
 
   end
 
-
-
-  class Code
-
-    def http_mkchild( bodyexist = nil )
-      c = mkchild(nil)
-      be = if bodyexist.nil? then @body_exist else bodyexist end
-      c.instance_eval { @body_exist = be }
-      c
-    end
-
-    def body_exist?
-      @body_exist
-    end
-  
-  end
-
-  HTTPInformationCode               = InformationCode.http_mkchild( false )
-  HTTPSuccessCode                   = SuccessCode    .http_mkchild( true )
-  HTTPRedirectionCode               = RetriableCode  .http_mkchild( true )
-  HTTPRetriableCode = HTTPRedirectionCode
-  HTTPClientErrorCode               = FatalErrorCode .http_mkchild( true )
-  HTTPFatalErrorCode = HTTPClientErrorCode
-  HTTPServerErrorCode               = ServerErrorCode.http_mkchild( true )
-
-
-  HTTPSwitchProtocol                = HTTPInformationCode.http_mkchild
-
-  HTTPOK                            = HTTPSuccessCode.http_mkchild
-  HTTPCreated                       = HTTPSuccessCode.http_mkchild
-  HTTPAccepted                      = HTTPSuccessCode.http_mkchild
-  HTTPNonAuthoritativeInformation   = HTTPSuccessCode.http_mkchild
-  HTTPNoContent                     = HTTPSuccessCode.http_mkchild( false )
-  HTTPResetContent                  = HTTPSuccessCode.http_mkchild( false )
-  HTTPPartialContent                = HTTPSuccessCode.http_mkchild
-
-  HTTPMultipleChoice                = HTTPRedirectionCode.http_mkchild
-  HTTPMovedPermanently              = HTTPRedirectionCode.http_mkchild
-  HTTPMovedTemporarily              = HTTPRedirectionCode.http_mkchild
-  HTTPNotModified                   = HTTPRedirectionCode.http_mkchild( false )
-  HTTPUseProxy                      = HTTPRedirectionCode.http_mkchild( false )
-  
-  HTTPBadRequest                    = HTTPClientErrorCode.http_mkchild
-  HTTPUnauthorized                  = HTTPClientErrorCode.http_mkchild
-  HTTPPaymentRequired               = HTTPClientErrorCode.http_mkchild
-  HTTPForbidden                     = HTTPClientErrorCode.http_mkchild
-  HTTPNotFound                      = HTTPClientErrorCode.http_mkchild
-  HTTPMethodNotAllowed              = HTTPClientErrorCode.http_mkchild
-  HTTPNotAcceptable                 = HTTPClientErrorCode.http_mkchild
-  HTTPProxyAuthenticationRequired   = HTTPClientErrorCode.http_mkchild
-  HTTPRequestTimeOut                = HTTPClientErrorCode.http_mkchild
-  HTTPConflict                      = HTTPClientErrorCode.http_mkchild
-  HTTPGone                          = HTTPClientErrorCode.http_mkchild
-  HTTPLengthRequired                = HTTPClientErrorCode.http_mkchild
-  HTTPPreconditionFailed            = HTTPClientErrorCode.http_mkchild
-  HTTPRequestEntityTooLarge         = HTTPClientErrorCode.http_mkchild
-  HTTPRequestURITooLarge            = HTTPClientErrorCode.http_mkchild
-  HTTPUnsupportedMediaType          = HTTPClientErrorCode.http_mkchild
-
-  HTTPNotImplemented                = HTTPServerErrorCode.http_mkchild
-  HTTPBadGateway                    = HTTPServerErrorCode.http_mkchild
-  HTTPServiceUnavailable            = HTTPServerErrorCode.http_mkchild
-  HTTPGatewayTimeOut                = HTTPServerErrorCode.http_mkchild
-  HTTPVersionNotSupported           = HTTPServerErrorCode.http_mkchild
-
+  HTTPSession = HTTP
 
 
   ###
@@ -1013,7 +949,6 @@ module Net
       @request_has_body = reqbody
       @response_has_body = resbody
       @path = path
-      @response = nil
 
       @header = tmp = {}
       return unless initheader
@@ -1029,10 +964,9 @@ module Net
 
     attr_reader :method
     attr_reader :path
-    attr_reader :response
 
     def inspect
-      "\#<#{type}>"
+      "\#<#{self.type} #{@method}>"
     end
 
     def request_body_permitted?
@@ -1045,24 +979,19 @@ module Net
 
     alias body_exist? response_body_permitted?
 
-
-    private
-
     #
     # write
     #
 
-    def exec( sock, ver, path, body, &block )
+    private
+
+    def exec( sock, ver, path, body )
       if body then
         check_body_premitted
-        check_arg_b body, block
-        sendreq_with_body sock, ver, path, body, &block
+        send_request_with_body sock, ver, path, body
       else
-        check_arg_n body
-        sendreq_no_body sock, ver, path
+        request sock, ver, path
       end
-      @response = r = get_response(sock)
-      r
     end
 
     def check_body_premitted
@@ -1070,21 +999,7 @@ module Net
           raise ArgumentError, 'HTTP request body is not premitted'
     end
 
-    def check_arg_b( data, block )
-      (data and block) and raise ArgumentError, 'both of data and block given'
-      (data or block) or raise ArgumentError, 'str or block required'
-    end
-
-    def check_arg_n( data )
-      data and raise ArgumentError, "data is not permitted for #{@method}"
-    end
-
-
-    def sendreq_no_body( sock, ver, path )
-      request sock, ver, path
-    end
-
-    def sendreq_with_body( sock, ver, path, body )
+    def send_request_with_body( sock, ver, path, body )
       if block_given? then
         ac = Accumulator.new
         yield ac              # must be yield, DO NOT USE block.call
@@ -1111,17 +1026,6 @@ module Net
       end
       sock.writeline ''
     end
-
-    #
-    # read
-    #
-
-    def get_response( sock )
-      begin
-        resp = HTTPResponse.new_from_socket(sock, response_body_permitted?)
-      end while ContinueCode === resp
-      resp
-    end
   
   end
 
@@ -1135,30 +1039,6 @@ module Net
             path, initheader
     end
 
-  end
-
-
-  class Accumulator
-  
-    def initialize
-      @buf = ''
-    end
-
-    def write( s )
-      @buf.concat s
-    end
-
-    def <<( s )
-      @buf.concat s
-      self
-    end
-
-    def terminate
-      ret = @buf
-      @buf = nil
-      ret
-    end
-  
   end
 
 
@@ -1196,20 +1076,164 @@ module Net
   ### response
   ###
 
-  class HTTPResponse < Response
+  class HTTPResponse
+    # predefine HTTPResponse class to allow inheritance
 
-    include HTTPHeader
+    def self.body_permitted?
+      self::HAS_BODY
+    end
+
+    def self.exception_type
+      self::EXCEPTION_TYPE
+    end
+  end
+
+
+  class HTTPUnknownResponse < HTTPResponse
+    HAS_BODY = true
+    EXCEPTION_TYPE = ProtocolError
+  end
+  class HTTPInformation < HTTPResponse
+    HAS_BODY = false
+    EXCEPTION_TYPE = ProtocolError
+  end
+  class HTTPSuccess < HTTPResponse
+    HAS_BODY = true
+    EXCEPTION_TYPE = ProtocolError
+  end
+  class HTTPRedirection < HTTPResponse
+    HAS_BODY = true
+    EXCEPTION_TYPE = ProtoRetriableError
+  end
+  class HTTPClientError < HTTPResponse
+    HAS_BODY = true
+    EXCEPTION_TYPE = ProtoFatalError
+  end
+  class HTTPServerError < HTTPResponse
+    HAS_BODY = true
+    EXCEPTION_TYPE = ProtoServerError
+  end
+  class HTTPContinue < HTTPInformation
+    HAS_BODY = false
+  end
+  class HTTPSwitchProtocol < HTTPInformation
+    HAS_BODY = false
+  end
+  class HTTPOK < HTTPSuccess
+    HAS_BODY = true
+  end
+  class HTTPCreated < HTTPSuccess
+    HAS_BODY = true
+  end
+  class HTTPAccepted < HTTPSuccess
+    HAS_BODY = true
+  end
+  class HTTPNonAuthoritativeInformation < HTTPSuccess
+    HAS_BODY = true
+  end
+  class HTTPNoContent < HTTPSuccess
+    HAS_BODY = false
+  end
+  class HTTPResetContent < HTTPSuccess
+    HAS_BODY = false
+  end
+  class HTTPPartialContent < HTTPSuccess
+    HAS_BODY = true
+  end
+  class HTTPMultipleChoice < HTTPRedirection
+    HAS_BODY = true
+  end
+  class HTTPMovedPermanently < HTTPRedirection
+    HAS_BODY = true
+  end
+  class HTTPMovedTemporarily < HTTPRedirection
+    HAS_BODY = true
+  end
+  class HTTPNotModified < HTTPRedirection
+    HAS_BODY = false
+  end
+  class HTTPUseProxy < HTTPRedirection
+    HAS_BODY = false
+  end
+  class HTTPBadRequest < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPUnauthorized < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPPaymentRequired < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPForbidden < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPNotFound < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPMethodNotAllowed < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPNotAcceptable < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPProxyAuthenticationRequired < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPRequestTimeOut < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPConflict < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPGone < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPLengthRequired < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPPreconditionFailed < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPRequestEntityTooLarge < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPRequestURITooLarge < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPUnsupportedMediaType < HTTPClientError
+    HAS_BODY = true
+  end
+  class HTTPInternalServerError < HTTPServerError
+    HAS_BODY = true
+  end
+  class HTTPNotImplemented < HTTPServerError
+    HAS_BODY = true
+  end
+  class HTTPBadGateway < HTTPServerError
+    HAS_BODY = true
+  end
+  class HTTPServiceUnavailable < HTTPServerError
+    HAS_BODY = true
+  end
+  class HTTPGatewayTimeOut < HTTPServerError
+    HAS_BODY = true
+  end
+  class HTTPVersionNotSupported < HTTPServerError
+    HAS_BODY = true
+  end
+
+
+  class HTTPResponse   # redefine
 
     CODE_CLASS_TO_OBJ = {
-      '1' => HTTPInformationCode,
-      '2' => HTTPSuccessCode,
-      '3' => HTTPRedirectionCode,
-      '4' => HTTPClientErrorCode,
-      '5' => HTTPServerErrorCode
+      '1' => HTTPInformation,
+      '2' => HTTPSuccess,
+      '3' => HTTPRedirection,
+      '4' => HTTPClientError,
+      '5' => HTTPServerError
     }
-
     CODE_TO_OBJ = {
-      '100' => ContinueCode,
+      '100' => HTTPContinue,
       '101' => HTTPSwitchProtocol,
 
       '200' => HTTPOK,
@@ -1223,7 +1247,6 @@ module Net
       '300' => HTTPMultipleChoice,
       '301' => HTTPMovedPermanently,
       '302' => HTTPMovedTemporarily,
-      '303' => HTTPMovedPermanently,
       '304' => HTTPNotModified,
       '305' => HTTPUseProxy,
 
@@ -1238,13 +1261,13 @@ module Net
       '408' => HTTPRequestTimeOut,
       '409' => HTTPConflict,
       '410' => HTTPGone,
-      '411' => HTTPFatalErrorCode,
+      '411' => HTTPLengthRequired,
       '412' => HTTPPreconditionFailed,
       '413' => HTTPRequestEntityTooLarge,
       '414' => HTTPRequestURITooLarge,
       '415' => HTTPUnsupportedMediaType,
 
-      '500' => HTTPFatalErrorCode,
+      '501' => HTTPInternalServerError,
       '501' => HTTPNotImplemented,
       '502' => HTTPBadGateway,
       '503' => HTTPServiceUnavailable,
@@ -1255,50 +1278,57 @@ module Net
 
     class << self
 
-      def new_from_socket( sock, hasbody )
-        resp = readnew( sock, hasbody )
+      def read_new( sock, hasbody )
+        httpv, code, msg = read_response_status(sock)
+        res = response_class(code).new( httpv, code, msg, sock, hasbody )
+        read_response_header sock, res
+        res
+      end
 
+      private
+
+      def read_response_status( sock )
+        str = sock.readline
+        m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match(str) or
+                raise HTTPBadResponse, "wrong status line: #{str.dump}"
+        return m.to_a[1,3]
+      end
+
+      def response_class( code )
+        CODE_TO_OBJ[code] or
+        CODE_CLASS_TO_OBJ[code[0,1]] or
+        HTTPUnknownResponse
+      end
+
+      def read_response_header( sock, res )
         while true do
           line = sock.readuntil( "\n", true )   # ignore EOF
           line.sub!( /\s+\z/, '' )              # don't use chop!
           break if line.empty?
 
-          m = /\A([^:]+):\s*/.match( line )
-          m or raise HTTPBadResponse, 'wrong header line format'
-          nm = m[1]
+          m = /\A([^:]+):\s*/.match(line) or
+                  raise HTTPBadResponse, 'wrong header line format'
+          name = m[1]
           line = m.post_match
-          if resp.key? nm then
-            resp[nm] << ', ' << line
+          if res.key? name then
+            res[name] << ', ' << line
           else
-            resp[nm] = line
+            res[name] = line
           end
         end
-
-        resp
-      end
-
-      private
-
-      def readnew( sock, hasbody )
-        str = sock.readline
-        m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match( str )
-        m or raise HTTPBadResponse, "wrong status line: #{str}"
-        discard, httpv, stat, desc = *m.to_a
-        
-        new( stat, desc, sock, hasbody, httpv )
       end
 
     end
 
 
-    def initialize( stat, msg, sock, be, hv )
-      code = CODE_TO_OBJ[stat] ||
-             CODE_CLASS_TO_OBJ[stat[0,1]] ||
-             UnknownCode
-      super code, stat, msg
-      @socket = sock
-      @body_exist = be
-      @http_version = hv
+    include HTTPHeader
+
+    def initialize( httpv, code, msg, sock, hasbody )
+      @http_version = httpv
+      @code         = code
+      @message      = msg
+      @socket       = sock
+      @body_exist   = hasbody
 
       @header = {}
       @body = nil
@@ -1306,15 +1336,33 @@ module Net
     end
 
     attr_reader :http_version
+    attr_reader :code
+    attr_reader :message
+    alias msg message
 
     def inspect
-      "#<#{type} #{code}>"
+      "#<#{type} #{@code} readbody=#{@read}>"
+    end
+
+    #
+    # response <-> exception relationship
+    #
+
+    def code_type
+      self.type
+    end
+
+    def error!
+      raise error_type.new(@code + ' ' + @message.dump, self)
+    end
+
+    def error_type
+      type::EXCEPTION_TYPE
     end
 
     def value
-      SuccessCode === self or error!
+      HTTPSuccess === self or error!
     end
-
 
     #
     # header (for backward compatibility)
@@ -1340,8 +1388,7 @@ module Net
 
       to = procdest(dest, block)
       stream_check
-
-      if @body_exist and code_type.body_exist? then
+      if @body_exist and self.type.body_permitted? then
         read_body_0 to
         @body = to
       else
@@ -1393,7 +1440,7 @@ module Net
         @socket.read 2   # \r\n
       end
       until @socket.readline.empty? do
-        ;
+        # none
       end
     end
 
@@ -1402,11 +1449,10 @@ module Net
     end
 
     def procdest( dest, block )
-      if dest and block then
-        raise ArgumentError, 'both of arg and block are given for HTTP method'
-      end
+      (dest and block) and
+          raise ArgumentError, 'both of arg and block are given for HTTP method'
       if block then
-        ReadAdapter.new block
+        ReadAdapter.new(block)
       else
         dest || ''
       end
@@ -1415,17 +1461,22 @@ module Net
   end
 
 
-  # for backward compatibility
 
-  HTTPSession = HTTP
+  # for backward compatibility
 
   module NetPrivate
     HTTPResponse         = ::Net::HTTPResponse
     HTTPGenericRequest   = ::Net::HTTPGenericRequest
     HTTPRequest          = ::Net::HTTPRequest
-    Accumulator          = ::Net::Accumulator
     HTTPHeader           = ::Net::HTTPHeader
   end
+  HTTPInformationCode = HTTPInformation
+  HTTPSuccessCode     = HTTPSuccess
+  HTTPRedirectionCode = HTTPRedirection
+  HTTPRetriableCode   = HTTPRedirection
+  HTTPClientErrorCode = HTTPClientError
+  HTTPFatalErrorCode  = HTTPClientError
+  HTTPServerErrorCode = HTTPServerError
   HTTPResponceReceiver = HTTPResponse
 
 end   # module Net

@@ -2,7 +2,7 @@
 
 = net/protocol.rb
 
-Copyright (c) 1999-2001 Yukihiro Matsumoto
+Copyright (c) 1999-2002 Yukihiro Matsumoto
 
 written & maintained by Minero Aoki <aamine@loveruby.net>
 
@@ -31,6 +31,10 @@ module Net
 
     class << self
 
+      def port
+        default_port
+      end
+
       private
 
       def protocol_param( name, val )
@@ -47,9 +51,9 @@ module Net
     #
     # --- Configuration Staffs for Sub Classes ---
     #
-    #   protocol_param port
-    #   protocol_param command_type
-    #   protocol_param socket_type   (optional)
+    #   class method default_port
+    #   class method command_type
+    #   class method socket_type
     #
     #   private method do_start
     #   private method do_finish
@@ -58,27 +62,21 @@ module Net
     #   private method conn_port
     #
 
-    protocol_param :port,         'nil'
-    protocol_param :command_type, 'nil'
-    protocol_param :socket_type,  '::Net::BufferedSocket'
-
 
     def Protocol.start( address, port = nil, *args )
-      instance = new( address, port )
+      instance = new(address, port)
 
       if block_given? then
-        ret = nil
-        instance.start( *args ) { ret = yield(instance) }
-        ret
+        instance.start(*args) { return yield(instance) }
       else
-        instance.start( *args )
+        instance.start(*args)
         instance
       end
     end
 
     def initialize( addr, port = nil )
       @address = addr
-      @port    = port || type.port
+      @port    = port || type.default_port
 
       @command = nil
       @socket  = nil
@@ -236,7 +234,7 @@ module Net
       @response = resp
     end
 
-    attr :response
+    attr_reader :response
     alias data response
 
     def inspect
@@ -287,64 +285,6 @@ module Net
   AuthErrorCode   = ErrorCode.mkchild( ProtoAuthError )
   RetriableCode   = ReplyCode.mkchild( ProtoRetriableError )
   UnknownCode     = ReplyCode.mkchild( ProtoUnknownError )
-
-
-
-  class WriteAdapter
-
-    def initialize( sock, mid )
-      @socket = sock
-      @mid = mid
-    end
-
-    def inspect
-      "#<#{type} socket=#{@socket.inspect}>"
-    end
-
-    def <<( str )
-      @socket.__send__ @mid, str
-      self
-    end
-
-    def write( str )
-      @socket.__send__ @mid, str
-    end
-
-    alias print write
-
-    def puts( str = '' )
-      @socket.__send__ @mid, str.sub(/\n?/, "\n")
-    end
-
-    def printf( *args )
-      @socket.__send__ @mid, sprintf(*args)
-    end
-  
-  end
-
-
-  class ReadAdapter
-
-    def initialize( block )
-      @block = block
-    end
-
-    def inspect
-      "#<#{type}>"
-    end
-
-    def <<( str )
-      call_block str, &@block if @block
-    end
-
-    private
-
-    def call_block( str )
-      yield str
-    end
-  
-  end
-
 
 
   class Command
@@ -408,25 +348,10 @@ module Net
       ret
     end
 
-    def begin_atomic
-      ret = @atomic
-      @atomic = true
-      not ret
-    end
-
-    def end_atomic
-      @atomic = false
-    end
-
-    alias critical       atomic
-    alias begin_critical begin_atomic
-    alias end_critical   end_atomic
-
   end
 
 
-
-  class BufferedSocket
+  class InternetMessageIO
 
     class << self
       alias open new
@@ -494,10 +419,6 @@ module Net
     ###  READ
     ###
 
-    #
-    # basic reader
-    #
-
     public
 
     def read( len, dest = '', ignore = false )
@@ -557,48 +478,9 @@ module Net
       ret
     end
 
-    #
-    # line oriented reader
-    #
-
-    public
-
-    def read_pendstr( dest )
-      D_off 'reading text...'
-
-      rsize = 0
-      while (str = readuntil("\r\n")) != ".\r\n" do
-        rsize += str.size
-        str.gsub!( /\A\./, '' )
-        dest << str
-      end
-
-      D_on "read #{rsize} bytes"
-      dest
-    end
-  
-    # private use only (can not handle 'break')
-    def read_pendlist
-    #  D_off 'reading list...'
-
-      str = nil
-      i = 0
-      while (str = readuntil("\r\n")) != ".\r\n" do
-        i += 1
-        str.chop!
-        yield str
-      end
-
-    #  D_on "read #{i} items"
-    end
-
-    #
-    # lib (reader)
-    #
-
     private
 
-    BLOCK_SIZE = 1024 * 2
+    BLOCK_SIZE = 1024
 
     def rbuf_fill
       until IO.select [@socket], nil, nil, @read_timeout do
@@ -617,13 +499,39 @@ module Net
       len
     end
 
+    #
+    # message read
+    #
+
+    public
+
+    def read_message_to( dest )
+      D_off 'reading text...'
+
+      rsize = 0
+      while (str = readuntil("\r\n")) != ".\r\n" do
+        rsize += str.size
+        dest << str.sub(/\A\./, '')
+      end
+
+      D_on "read #{rsize} bytes"
+      dest
+    end
+  
+    # private use only (cannot handle 'break')
+    def each_list_item
+      while (str = readuntil("\r\n")) != ".\r\n" do
+        yield str.chop
+      end
+    end
+
 
     ###
     ###  WRITE
     ###
 
     #
-    # basic writer
+    # basic write
     #
 
     public
@@ -640,33 +548,45 @@ module Net
       }
     end
 
-    def write_bin( src, block )
-      writing {
-          if block then
-            block.call WriteAdapter.new(self, :do_write)
-          else
-            src.each do |bin|
-              do_write bin
-            end
-          end
-      }
+    private
+
+    def writing
+      @writtensize = 0
+      @debugout << '<- ' if @debugout
+      yield
+      @socket.flush
+      @debugout << "\n" if @debugout
+      @writtensize
+    end
+
+    def do_write( str )
+      @debugout << str.dump if @debugout
+      @writtensize += (n = @socket.write(str))
+      n
     end
 
     #
-    # line oriented writer
+    # message write
     #
 
     public
 
-    def write_pendstr( src, &block )
+    def write_message( src )
       D_off "writing text from #{src.type}"
 
       wsize = using_each_crlf_line {
-          if block_given? then
-            yield WriteAdapter.new(self, :wpend_in)
-          else
-            wpend_in src
-          end
+          wpend_in src
+      }
+
+      D_on "wrote #{wsize} bytes text"
+      wsize
+    end
+
+    def through_message
+      D_off 'writing text from block'
+
+      wsize = using_each_crlf_line {
+          yield WriteAdapter.new(self, :wpend_in)
       }
 
       D_on "wrote #{wsize} bytes text"
@@ -758,27 +678,6 @@ module Net
       end
     end
 
-    #
-    # lib (writer)
-    #
-
-    private
-
-    def writing
-      @writtensize = 0
-      @debugout << '<- ' if @debugout
-      yield
-      @socket.flush
-      @debugout << "\n" if @debugout
-      @writtensize
-    end
-
-    def do_write( str )
-      @debugout << str.dump if @debugout
-      @writtensize += (n = @socket.write(str))
-      n
-    end
-
     ###
     ### DEBUG
     ###
@@ -800,17 +699,75 @@ module Net
       @debugout << msg
       @debugout << "\n"
     end
+  
+  end
 
+
+  class WriteAdapter
+
+    def initialize( sock, mid )
+      @socket = sock
+      @mid = mid
+    end
+
+    def inspect
+      "#<#{type} socket=#{@socket.inspect}>"
+    end
+
+    def write( str )
+      @socket.__send__ @mid, str
+    end
+
+    alias print write
+
+    def <<( str )
+      write str
+      self
+    end
+
+    def puts( str = '' )
+      write str.sub(/\n?/, "\n")
+    end
+
+    def printf( *args )
+      write sprintf(*args)
+    end
+  
+  end
+
+
+  class ReadAdapter
+
+    def initialize( block )
+      @block = block
+    end
+
+    def inspect
+      "#<#{type}>"
+    end
+
+    def <<( str )
+      call_block str, &@block if @block
+    end
+
+    private
+
+    def call_block( str )
+      yield str
+    end
+  
   end
 
 
   # for backward compatibility
   module NetPrivate
-    Response       = ::Net::Response
-    WriteAdapter   = ::Net::WriteAdapter
-    ReadAdapter    = ::Net::ReadAdapter
-    Command        = ::Net::Command
-    Socket         = ::Net::BufferedSocket
+    Response = ::Net::Response
+    Command = ::Net::Command
+    Socket = ::Net::InternetMessageIO
+    BufferedSocket = ::Net::InternetMessageIO
+    WriteAdapter = ::Net::WriteAdapter
+    ReadAdapter = ::Net::ReadAdapter
   end
+  BufferedSocket = ::Net::InternetMessageIO
 
 end   # module Net

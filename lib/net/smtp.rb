@@ -2,7 +2,7 @@
 
 = net/smtp.rb
 
-Copyright (c) 1999-2001 Yukihiro Matsumoto
+Copyright (c) 1999-2002 Yukihiro Matsumoto
 
 written & maintained by Minero Aoki <aamine@loveruby.net>
 
@@ -220,15 +220,25 @@ module Net
 
   class SMTP < Protocol
 
-    protocol_param :port,         '25'
+    protocol_param :default_port, '25'
     protocol_param :command_type, '::Net::SMTPCommand'
+    protocol_param :socket_type,  '::Net::InternetMessageIO'
+  
 
     def initialize( addr, port = nil )
       super
       @esmtp = true
     end
 
-    attr :esmtp
+    def esmtp?
+      @esmtp
+    end
+
+    def esmtp=( bool )
+      @esmtp = bool
+    end
+
+    alias esmtp esmtp?
 
     private
 
@@ -279,28 +289,27 @@ module Net
 
     def send_mail( mailsrc, from_addr, *to_addrs )
       do_ready from_addr, to_addrs.flatten
-      command().write_mail mailsrc, nil
+      command().write_mail mailsrc
     end
 
     alias sendmail send_mail
 
     def ready( from_addr, *to_addrs, &block )
       do_ready from_addr, to_addrs.flatten
-      command().write_mail nil, block
+      command().through_mail &block
     end
 
     private
 
     def do_ready( from_addr, to_addrs )
-      if to_addrs.empty? then
-        raise ArgumentError, 'mail destination does not given'
-      end
+      raise ArgumentError, 'mail destination does not given' if to_addrs.empty?
       command().mailfrom from_addr
       command().rcpt to_addrs
-      command().data
     end
 
   end
+
+  SMTPSession = SMTP
 
 
   class SMTPCommand < Command
@@ -366,15 +375,20 @@ module Net
       end
     end
 
-    def data
-      return unless begin_atomic
-      getok 'DATA', ContinueCode
+    def write_mail( src )
+      atomic {
+          getok 'DATA', ContinueCode
+          @socket.write_message src
+          check_reply SuccessCode
+      }
     end
 
-    def write_mail( mailsrc, block )
-      @socket.write_pendstr mailsrc, &block
-      check_reply SuccessCode
-      end_atomic
+    def through_mail( &block )
+      atomic {
+          getok 'DATA', ContinueCode
+          @socket.through_message(&block)
+          check_reply SuccessCode
+      }
     end
 
     def quit
@@ -421,9 +435,6 @@ module Net
 
 
   # for backward compatibility
-
-  SMTPSession = SMTP
-
   module NetPrivate
     SMTPCommand = ::Net::SMTPCommand
   end

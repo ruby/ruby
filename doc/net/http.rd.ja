@@ -79,7 +79,7 @@ Net::HTTP を継承しているので Net::HTTP と全く同じように使えます。
 
     Net::HTTP.start( 'auth.some.domain' ) {|http|
         response , = http.get( '/need-auth.cgi',
-                'Authentication' => ["#{account}:#{password}"].pack('m').strip )
+                'Authorization' => 'Basic ' + ["#{account}:#{password}"].pack('m').strip )
         print response.body
     }
 

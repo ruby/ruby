@@ -1,3 +1,63 @@
+Tue Feb 19 21:43:32 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: rename Protocol.port to default_port.
+
+	* lib/net/smtp.rb: ditto.
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/http.rb: ditto.
+
+	* lib/net/protocol.rb: rename BufferedSocket class to
+	  InternetMessageIO.
+
+	* lib/net/smtp.rb: ditto.
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/http.rb: ditto.
+
+	* lib/net/protocol.rb: rename InternetMessageIO#write_pendstr to
+	  write_message.
+
+	* lib/net/smtp.rb: ditto.
+
+	* lib/net/protocol.rb: new method
+	  InternetMessageIO#through_message.
+
+	* lib/net/smtp.rb: ditto.
+
+	* lib/net/protocol.rb: rename InternetMessageIO#read_pendstr to
+	  read_message_to.
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/protocol.rb: rename InternetMessageIO#read_pendlist to
+	  each_list_item
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/protocol.rb: Now block size is 1024.
+
+	* lib/net/smtp.rb: new methods SMTP#esmtp? and #esmtp=.
+
+	* lib/net/http.rb: Using singleton method syntax instead of
+	  singleton class clause, to avoid behavior change of class
+	  variables in ruby 1.7.
+
+	* lib/net/http.rb: HTTPResponse class does not inherit from
+	  Net::Response.
+
+	* lib/net/http.rb: devide HTTP#connecting into
+	  {begin,end}_transport.
+
+	* lib/net/http.rb: unused class Accumulator removed.
+
+	* lib/net/http.rb: Net::HTTP reads response. not HTTPRequest.
+
+	* lib/net/http.rb: proxy related class-instance-variables are not
+	  initialized correctly.
+
 Tue Feb 19 17:10:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* file.c (path_check_1): do not fail on world writable *parent*
