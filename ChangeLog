@@ -1,3 +1,8 @@
+Thu May 13 14:17:57 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/rubyext.c (yaml_org_handler): some empty strings were
+	  loaded as symbols.
+
 Thu May 13 11:04:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_pack): always add with null for 'Z'.

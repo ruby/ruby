@@ -558,7 +558,7 @@ yaml_org_handler( n, ref )
 			{
 				obj = rb_funcall( cDefaultKey, s_new, 0 );
 			}
-            else if ( strncmp( n->data.str->ptr, ":", 1 ) == 0 )
+            else if ( n->data.str->len > 1 && strncmp( n->data.str->ptr, ":", 1 ) == 0 )
             {
                 obj = rb_funcall( oDefaultLoader, s_transfer, 2, 
                                   rb_str_new2( "ruby/sym" ), 
