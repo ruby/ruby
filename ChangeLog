@@ -1,3 +1,7 @@
+Wed Feb 18 18:45:10 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* patches for cygwin32 applied.
+
 Wed Feb 18 00:41:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_match): \Z matches newline just before the end of

@@ -78,9 +78,10 @@ ext/Setup
 ext/Setup.dj
 ext/Setup.nt
 ext/Setup.x68
+ext/aix_ld.rb
+ext/cygwin32_ld.rb
 ext/extmk.rb.in
 ext/extmk.rb.nt
-ext/aix_ld.rb
 lib/English.rb
 lib/Env.rb
 lib/base64.rb

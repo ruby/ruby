@@ -83,6 +83,13 @@ addpath(path)
     char *path;
 {
     if (path == 0) return;
+#if defined(__CYGWIN32__)
+    {
+	char rubylib[FILENAME_MAX];
+	conv_to_posix_path(path, rubylib);
+	path = rubylib;
+    }
+#endif
     if (strchr(path, RUBY_LIB_SEP)) {
 	char *p, *s;
 	VALUE ary = ary_new();

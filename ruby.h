@@ -43,6 +43,10 @@
 #include <alloca.h>
 #endif
 
+#if defined(__CYGWIN32__) && defined(DLLIMPORT)
+#include "import.h"
+#endif
+
 #ifdef _AIX
 #pragma alloca
 #endif

@@ -551,6 +551,13 @@ class FTP
       resp
    end
    
+   def mdtm(filename)
+     resp = sendcmd("MDTM " + filename)
+     if resp[0, 3] == "213"
+       return resp[3 .. -1].strip
+     end
+   end
+
    def help(arg = nil)
       cmd = "HELP"
       if arg
