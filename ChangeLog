@@ -1,3 +1,9 @@
+Thu Jun 24 01:32:43 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* version.h: added declarations of ruby_version,
+	  ruby_release_date, ruby_platform.
+	  (backported from HEAD)
+
 Wed Jun 23 22:23:37 2004  Dave Thomas  <dave@pragprog.com>
 
 	* ext/socket/socket.c (sock_s_gethostbyaddr): Work around problem
