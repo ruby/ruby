@@ -2323,6 +2323,7 @@ yyerror(msg)
     return 0;
 }
 
+static int heredoc_end;
 static int command_start = Qtrue;
 
 int ruby_in_compile = 0;
@@ -2363,6 +2364,7 @@ yycompile(f, line)
 
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
+    heredoc_end = 0;
     lex_strterm = 0;
     lex_strnest = 0;
     quoted_term = -1;
@@ -2473,6 +2475,10 @@ nextc()
 	    VALUE v = lex_getline();
 
 	    if (NIL_P(v)) return -1;
+	    if (heredoc_end > 0) {
+		ruby_sourceline = heredoc_end;
+		heredoc_end = 0;
+	    }
 	    ruby_sourceline++;
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
 	    lex_pend = lex_p + RSTRING(v)->len;
@@ -2989,6 +2995,8 @@ heredoc_restore(here)
     lex_pbeg = RSTRING(line)->ptr;
     lex_pend = lex_pbeg + RSTRING(line)->len;
     lex_p = lex_pbeg + here->nd_nth;
+    heredoc_end = ruby_sourceline;
+    ruby_sourceline = nd_line(here);
     rb_gc_force_recycle(here->nd_lit);
     rb_gc_force_recycle((VALUE)here);
 }

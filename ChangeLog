@@ -1,3 +1,10 @@
+Tue Sep 10 23:35:46 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (nextc): restore line number after here documents.
+	  (ruby-bugs-ja:PR#331)
+
+	* parse.y (heredoc_restore): ditto.
+
 Tue Sep 10 18:26:52 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb, lib/mkmf.rb ($INCFLAGS): new var for -I$(topdir).
