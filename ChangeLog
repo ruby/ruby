@@ -3,6 +3,16 @@ Sat Jul 17 05:26:27 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/diagram.rb: Incorporate Micheal Neumann's
 	  client-side imagemao patch
 
+Sat Jul 17 01:57:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (THREAD_ALLOC): th->thread should be initialized to NULL.
+	  [ruby-talk:106657]  The solution was found by Guy Decoux.
+
+Fri Jul 16 22:30:28 2004  Michael Neumann  <mneumann@ntecs.de>
+
+	* file.c (rb_stat_dev_major): new methods File::Stat#dev_major and
+	  #dev_minor. [ruby-core:03195]
+
 Fri Jul 16 11:17:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exit_initialize): use EXIT_SUCCESS instead of 0.

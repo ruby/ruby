@@ -11227,6 +11227,7 @@ rb_thread_group(thread)
     th->priority = 0;\
     th->thgroup = thgroup_default;\
     th->locals = 0;\
+    th->thread = 0;\
 } while (0)
 
 static rb_thread_t

@@ -217,6 +217,52 @@ rb_stat_dev(self)
     return INT2NUM(get_stat(self)->st_dev);
 }
 
+/*
+ *  call-seq:
+ *     stat.dev_major   => fixnum
+ *  
+ *  Returns the major part of <code>File_Stat#dev</code> or
+ *  <code>nil</code>.
+ *     
+ *     File.stat("/dev/fd1").dev_major   #=> 2
+ *     File.stat("/dev/tty").dev_major   #=> 5
+ */
+
+static VALUE
+rb_stat_dev_major(self)
+    VALUE self;
+{
+#if defined(major)
+    long dev = get_stat(self)->st_dev;
+    return ULONG2NUM(major(dev));
+#else
+    return Qnil;
+#endif
+}
+
+/*
+ *  call-seq:
+ *     stat.dev_minor   => fixnum
+ *  
+ *  Returns the minor part of <code>File_Stat#dev</code> or
+ *  <code>nil</code>.
+ *     
+ *     File.stat("/dev/fd1").dev_minor   #=> 1
+ *     File.stat("/dev/tty").dev_minor   #=> 0
+ */
+
+static VALUE
+rb_stat_dev_minor(self)
+    VALUE self;
+{
+#if defined(minor)
+    long dev = get_stat(self)->st_dev;
+    return ULONG2NUM(minor(dev));
+#else
+    return Qnil;
+#endif
+}
+
 
 /*
  *  call-seq:
@@ -4319,6 +4365,8 @@ Init_File()
     rb_define_method(rb_cStat, "<=>", rb_stat_cmp, 1);
 
     rb_define_method(rb_cStat, "dev", rb_stat_dev, 0);
+    rb_define_method(rb_cStat, "dev_major", rb_stat_dev_major, 0);
+    rb_define_method(rb_cStat, "dev_minor", rb_stat_dev_minor, 0);
     rb_define_method(rb_cStat, "ino", rb_stat_ino, 0);
     rb_define_method(rb_cStat, "mode", rb_stat_mode, 0);
     rb_define_method(rb_cStat, "nlink", rb_stat_nlink, 0);
