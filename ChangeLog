@@ -1,3 +1,7 @@
+Wed Jun  9 15:39:55 2004  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in: Add support for DragonFly BSD.
+
 Wed Jun  9 15:07:06 2004  Akinori MUSHA  <knu@iDaemons.org>
 
 	* config.guess, config.sub: Update to a more recent version as of

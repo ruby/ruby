@@ -352,6 +352,8 @@ freebsd*)	LIBS="-lm $LIBS"
 			fi
 		fi
 		;;
+dragonfly*)	LIBS="-lm $LIBS"
+		;;
 bow)		ac_cv_func_setitimer=no
 		;;
 superux*)     ac_cv_func_setitimer=no
@@ -869,7 +871,7 @@ if test "$with_dln_a_out" != yes; then
 	gnu*)   	: ${LDSHARED="$CC -shared"}
 			rb_cv_dlopen=yes
 			LDFLAGS="$LDFLAGS -rdynamic" ;;
-	freebsd*)       : ${LDSHARED="$CC -shared"}
+	freebsd*|dragonfly*)       : ${LDSHARED="$CC -shared"}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -rdynamic"
 			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$(.TARGET)'
@@ -1170,7 +1172,7 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	;;
-    freebsd*)
+    freebsd*|dragonfly*)
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)'
 	if test "$rb_cv_binary_elf" != "yes" ; then
