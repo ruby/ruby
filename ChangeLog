@@ -1,3 +1,7 @@
+Mon Dec 29 05:05:51 2003  Dave Thomas  <dave@wireless_3.local.thomases.com>
+
+	* struct.c, random: Add RDoc comments
+
 Mon Dec 29 02:25:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/optparse.rb: Improved documentation.

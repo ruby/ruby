@@ -729,7 +729,7 @@ rb_obj_frozen_p(obj)
 
 
 /*
- * Document-class: NillClass
+ * Document-class: NilClass
  *
  *  The class of the singleton object <code>nil</code>.
  */
