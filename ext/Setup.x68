@@ -19,6 +19,7 @@ nkf
 #sdbm
 #socket
 stringio
+strscan
 #syslog
 #tcltklib
 #tk

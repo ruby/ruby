@@ -1,3 +1,9 @@
+Fri Mar 22 15:44:38 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/MANIFEST, strscan.c, depend, extconf.rb: new files.
+
+	* ext/Setup*: add strscan entry.
+
 Fri Mar 22 14:32:14 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: Protocol#start should return self.
