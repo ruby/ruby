@@ -794,6 +794,7 @@ test/ruby/test_signal.rb
 test/ruby/test_stringchar.rb
 test/ruby/test_struct.rb
 test/ruby/test_system.rb
+test/ruby/test_time.rb
 test/ruby/test_trace.rb
 test/ruby/test_variable.rb
 test/ruby/test_whileuntil.rb
