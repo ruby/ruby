@@ -1461,7 +1461,7 @@ skiproot(path)
 
 #define nextdirsep rb_path_next
 char *
-nextdirsep(s)
+rb_path_next(s)
     const char *s;
 {
     while (*s && !isdirsep(*s)) {
@@ -1472,7 +1472,7 @@ nextdirsep(s)
 
 #define skipprefix rb_path_skip_prefix
 char *
-skipprefix(path)
+rb_path_skip_prefix(path)
     const char *path;
 {
 #if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) 
@@ -1493,7 +1493,7 @@ skipprefix(path)
 
 #define strrdirsep rb_path_last_separator
 char *
-strrdirsep(path)
+rb_path_last_separator(path)
     const char *path;
 {
     char *last = NULL;
@@ -1513,7 +1513,7 @@ strrdirsep(path)
 
 #define chompdirsep rb_path_end
 char *
-chompdirsep(path)
+rb_path_end(path)
     const char *path;
 {
     while (*path) {

@@ -1,10 +1,10 @@
-Mon Dec 15 13:11:32 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Dec 15 13:32:22 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (check_dirname): check string safety and remove extraneous
 	  trailing directory separators.  [ruby-dev:22279]
 
-	* file.c: extern rb_path_next, rb_path_skip_prefix,
-	  rb_path_last_separator, rb_path_end.
+	* file.c: renamed and externalized rb_path_next,
+	  rb_path_skip_prefix, rb_path_last_separator, rb_path_end.
 
 	* intern.h: prototypes for rb_path_next, rb_path_skip_prefix,
 	  rb_path_last_separator, rb_path_end.
