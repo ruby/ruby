@@ -1,3 +1,8 @@
+Wed Apr 21 15:56:43 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/ui/console/testrunner.rb (test_started): restore $0
+	  after changing process title.  [ruby-talk:97426]
+
 Wed Apr 21 11:45:22  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* process.c: Recover wrongly removed spaces at end of the lines.

@@ -90,7 +90,8 @@ module Test
           end
           
           def test_started(name)
-            $0 = $0.sub(/(?:\0.*)?\z/) {"\0"+name}
+            $0 += "\0#{name}"
+            $0.sub!(/\0.*\z/, '')
             output_single(name + ": ", VERBOSE)
           end
           
