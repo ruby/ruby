@@ -261,6 +261,42 @@ AC_CACHE_CHECK(for external int daylight, rb_cv_have_daylight,
 if test "$rb_cv_have_daylight" = yes; then
   AC_DEFINE(HAVE_DAYLIGHT)
 fi
+AC_CACHE_CHECK(for negative time_t for gmtime(3), rb_cv_negative_time_t,
+  [AC_TRY_RUN([
+#include <time.h>
+
+void
+check(tm, y, m, d, h, s)
+    struct tm *tm;
+    int y, m, d, h, s;
+{
+    if (tm->tm_year != y ||
+	tm->tm_mon  != m-1 ||
+	tm->tm_mday != d ||
+	tm->tm_hour != h ||
+	tm->tm_sec  != s) {
+	exit(1);
+    }
+}
+
+int
+main()
+{
+   time_t t = -1;
+   struct tm *tm;
+
+   check(gmtime(&t), 69, 12, 31, 23, 59);
+   t = -0x80000000;
+   check(gmtime(&t), 1, 12, 13, 20, 52);
+   return 0;
+}
+],
+	rb_cv_negative_time_t=yes,
+	rb_cv_negative_time_t=no,
+	rb_cv_negative_time_t=yes)])
+if test "$rb_cv_negative_time_t" = yes; then
+  AC_DEFINE(NEGATIVE_TIME_T)
+fi
 
 if test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = yes; then
    AC_DEFINE(POSIX_SIGNAL)

@@ -80,8 +80,10 @@ time_new_internal(klass, sec, usec)
     VALUE obj;
     struct time_object *tobj;
 
+#ifndef NEGATIVE_TIME_T
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
+#endif
 
     obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
     tobj->tm_got = 0;
@@ -108,22 +110,28 @@ time_timeval(time, interval)
     switch (TYPE(time)) {
       case T_FIXNUM:
 	t.tv_sec = FIX2LONG(time);
+#ifndef NEGATIVE_TIME_T
 	if (t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "time must be positive");
+#endif
 	t.tv_usec = 0;
 	break;
 
       case T_FLOAT:
+#ifndef NEGATIVE_TIME_T
 	if (RFLOAT(time)->value < 0.0)
 	    rb_raise(rb_eArgError, "time must be positive");
+#endif
 	t.tv_sec = (time_t)RFLOAT(time)->value;
 	t.tv_usec = (time_t)((RFLOAT(time)->value - (double)t.tv_sec)*1e6);
 	break;
 
       case T_BIGNUM:
 	t.tv_sec = NUM2LONG(time);
+#ifndef NEGATIVE_TIME_T
 	if (t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "time must be positive");
+#endif
 	t.tv_usec = 0;
 	break;
 
