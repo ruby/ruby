@@ -5,7 +5,7 @@ $Date$
 
 net/telnet.rb
 
-Version 1.31
+Version 1.32
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -156,6 +156,12 @@ of cource, set sync=true or flush is necessary.
 
 
 == HISTORY
+
+=== Version 1.32
+
+2000/05/09 22:02:56
+
+- require English.rb
 
 === Version 1.31
 
@@ -369,6 +375,7 @@ if ommit password, then not require password prompt.
 require "socket"
 require "delegate"
 require "timeout"
+require "English"
 
 module Net
   class Telnet < SimpleDelegator
@@ -443,7 +450,7 @@ module Net
     EOL  = CR + LF
   v = $-v
   $-v = false
-    VERSION = "1.31"
+    VERSION = "1.32"
     RELEASE_DATE = "$Date$"
   $-v = v
 
@@ -482,7 +489,7 @@ module Net
             hexvals = line.unpack('H*')[0]
             hexvals.concat ' ' * (32 - hexvals.length)
             hexvals = format "%s %s %s %s  " * 4, *hexvals.unpack('a2' * 16)
-            line.gsub! /[\000-\037\177-\377]/n, '.'
+            line = line.gsub(/[\000-\037\177-\377]/n, '.')
             printf "%s 0x%5.5x: %s%s\n", dir, addr, hexvals, line
             addr += 16
             offset += 16
@@ -510,15 +517,15 @@ module Net
           if @options["Timeout"] == false
             @sock = TCPsocket.open(@options["Host"], @options["Port"])
           else
-            timeout(@options["Timeout"]){
+            timeout(@options["Timeout"]) do
               @sock = TCPsocket.open(@options["Host"], @options["Port"])
-            }
+            end
           end
         rescue TimeoutError
           raise TimeoutError, "timed-out; opening of the host"
         rescue
-          @log.write($!.to_s + "\n") if @options.has_key?("Output_log")
-          @dumplog.log_dump('#', $!.to_s + "\n") if @options.has_key?("Dump_log")
+          @log.write($ERROR_INFO.to_s + "\n") if @options.has_key?("Output_log")
+          @dumplog.log_dump('#', $ERROR_INFO.to_s + "\n") if @options.has_key?("Dump_log")
           raise
         end
         @sock.sync = true
@@ -552,20 +559,18 @@ module Net
     end
 
     def preprocess(string)
-      str = string.dup
-
       # combine CR+NULL into CR
-      str.gsub!(/#{CR}#{NULL}/no, CR) if @options["Telnetmode"]
+      string = string.gsub(/#{CR}#{NULL}/no, CR) if @options["Telnetmode"]
 
       # combine EOL into "\n"
-      str.gsub!(/#{EOL}/no, "\n") unless @options["Binmode"]
+      string = string.gsub(/#{EOL}/no, "\n") unless @options["Binmode"]
 
-      str.gsub!(/#{IAC}(
+      string.gsub(/#{IAC}(
                    [#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]|
                    [#{DO}#{DONT}#{WILL}#{WONT}]
                      [#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}]|
                    #{SB}[^#{IAC}]*#{IAC}#{SE}
-                 )/xno){
+                 )/xno) do
         if    IAC == $1         # handle escaped IAC characters
           IAC
         elsif AYT == $1         # respond to "IAC AYT" (are you there)
@@ -607,9 +612,7 @@ module Net
         else
           ''
         end
-      }
-
-      str
+      end
     end # preprocess
 
     def waitfor(options)
@@ -681,24 +684,23 @@ module Net
     end
 
     def print(string)
-      str = string.dup + "\n"
+      string = string + "\n"
+      string = string.gsub(/#{IAC}/no, IAC + IAC) if @options["Telnetmode"]
 
-      str.gsub!(/#{IAC}/no, IAC + IAC) if @options["Telnetmode"]
-
-      unless @options["Binmode"]
+      if @options["Binmode"]
+        self.write(string)
+      else
         if @telnet_option["BINARY"] and @telnet_option["SGA"]
           # IAC WILL SGA IAC DO BIN send EOL --> CR
-          str.gsub!(/\n/n, CR)
+          self.write(string.gsub(/\n/n, CR))
         elsif @telnet_option["SGA"]
           # IAC WILL SGA send EOL --> CR+NULL
-          str.gsub!(/\n/n, CR + NULL)
+          self.write(string.gsub(/\n/n, CR + NULL))
         else
           # NONE send EOL --> CR+LF
-          str.gsub!(/\n/n, EOL)
+          self.write(string.gsub(/\n/n, EOL))
         end
       end
-
-      self.write(str)
     end
 
     def cmd(options)
