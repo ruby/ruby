@@ -1,6 +1,11 @@
-Tue Sep 12 16:02:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Tue Sep 12 22:34:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.
+
+Tue Sep 12 22:28:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/socket/extconf.rb: avoid using terrible <netinet/tcp.h>
+	  on cygwin 1.1.5.
 
 Tue Sep 12 16:01:58 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 

@@ -173,7 +173,7 @@ EOF
     $CFLAGS="-DHAVE_SA_LEN "+$CFLAGS
 end
 
-have_header("netinet/tcp.h")
+have_header("netinet/tcp.h") if not /cygwin/ === RUBY_PLATFORM # for cygwin 1.1.5
 have_header("netinet/udp.h")
 
 $getaddr_info_ok = false
