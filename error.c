@@ -672,6 +672,7 @@ nometh_err_initialize(argc, argv, self)
     return self;
 }
 
+/* :nodoc: */
 static void
 name_err_mesg_mark(ptr)
     VALUE *ptr;
@@ -679,6 +680,7 @@ name_err_mesg_mark(ptr)
     rb_gc_mark_locations(ptr, ptr+3);
 }
 
+/* :nodoc: */
 static VALUE
 name_err_mesg_init(obj, mesg, recv, method)
     VALUE obj, mesg, recv, method;
@@ -691,6 +693,7 @@ name_err_mesg_init(obj, mesg, recv, method)
     return Data_Wrap_Struct(rb_cNameErrorMesg, name_err_mesg_mark, -1, ptr);
 }
 
+/* :nodoc: */
 static VALUE
 name_err_mesg_to_str(obj)
     VALUE obj;
@@ -737,6 +740,7 @@ name_err_mesg_to_str(obj)
     return mesg;
 }
 
+/* :nodoc: */
 static VALUE
 name_err_mesg_load(klass, str)
     VALUE klass, str;

@@ -3183,6 +3183,7 @@ rb_io_reopen(argc, argv, file)
     return file;
 }
 
+/* :nodoc: */
 static VALUE
 rb_io_init_copy(dest, io)
     VALUE dest, io;

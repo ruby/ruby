@@ -295,6 +295,7 @@ rb_obj_dup(obj)
     return dup;
 }
 
+/* :nodoc: */
 VALUE
 rb_obj_init_copy(obj, orig)
     VALUE obj, orig;
@@ -2560,7 +2561,7 @@ Init_Object()
     rb_define_method(rb_cModule, "<=", rb_mod_le, 1);
     rb_define_method(rb_cModule, ">",  rb_mod_gt, 1);
     rb_define_method(rb_cModule, ">=", rb_mod_ge, 1);
-    rb_define_method(rb_cModule, "initialize_copy", rb_mod_init_copy, 1);
+    rb_define_method(rb_cModule, "initialize_copy", rb_mod_init_copy, 1); /* in class.c */
     rb_define_method(rb_cModule, "to_s", rb_mod_to_s, 0);
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0); /* in class.c */
     rb_define_method(rb_cModule, "include?", rb_mod_include_p, 1); /* in class.c */
@@ -2598,7 +2599,7 @@ Init_Object()
     rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
-    rb_define_method(rb_cClass, "initialize_copy", rb_class_init_copy, 1);
+    rb_define_method(rb_cClass, "initialize_copy", rb_class_init_copy, 1); /* in class.c */
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
     rb_undef_method(rb_cClass, "extend_object");

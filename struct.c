@@ -514,6 +514,7 @@ rb_struct_to_a(s)
     return rb_ary_new4(RSTRUCT(s)->len, RSTRUCT(s)->ptr);
 }
 
+/* :nodoc: */
 static VALUE
 rb_struct_init_copy(copy, s)
     VALUE copy, s;

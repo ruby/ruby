@@ -944,6 +944,7 @@ time_hash(time)
     return LONG2FIX(hash);
 }
 
+/* :nodoc: */
 static VALUE
 time_init_copy(copy, time)
     VALUE copy, time;

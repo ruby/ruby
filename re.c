@@ -678,6 +678,7 @@ match_alloc(klass)
     return (VALUE)match;
 }
 
+/* :nodoc: */
 static VALUE
 match_init_copy(obj, orig)
     VALUE obj, orig;
@@ -1972,6 +1973,7 @@ rb_reg_s_union(argc, argv)
     }
 }
 
+/* :nodoc: */
 static VALUE
 rb_reg_init_copy(copy, re)
     VALUE copy, re;

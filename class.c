@@ -58,6 +58,7 @@ clone_method(mid, body, tbl)
     return ST_CONTINUE;
 }
 
+/* :nodoc: */
 VALUE
 rb_mod_init_copy(clone, orig)
     VALUE clone, orig;
@@ -85,6 +86,7 @@ rb_mod_init_copy(clone, orig)
     return clone;
 }
 
+/* :nodoc: */
 VALUE
 rb_class_init_copy(clone, orig)
     VALUE clone, orig;
