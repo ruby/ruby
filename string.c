@@ -4505,7 +4505,6 @@ rb_str_justify(argc, argv, str, jflag)
     rb_scan_args(argc, argv, "11", &w, &pad);
     width = NUM2LONG(w);
     if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
-    res = rb_str_new5(str, 0, width);
     if (argc == 2) {
 	StringValue(pad);
 	f = RSTRING(pad)->ptr;
@@ -4514,6 +4513,7 @@ rb_str_justify(argc, argv, str, jflag)
 	    rb_raise(rb_eArgError, "zero width padding");
 	}
     }
+    res = rb_str_new5(str, 0, width);
     p = RSTRING(res)->ptr;
     if (jflag != 'l') {
 	n = width - RSTRING(str)->len;
