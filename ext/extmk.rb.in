@@ -385,7 +385,7 @@ def create_makefile(target)
         f.print "EXPORTS\n", "Init_", target, "\n"
       end
     end
-    defflag = "--def=" + target + ".def"
+    defflag = target + ".def"
   end
 
   if RUBY_PLATFORM =~ /mswin32/

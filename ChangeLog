@@ -4,6 +4,12 @@ Fri Apr 19 16:22:55 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c: include <mswsock.h> on __MINGW32__.
 
+	* configure.in: cleanup for autoconf 2.5x.
+
+	* configure.in: use gcc -shared instead of dllwrap on Cygwin/MinGW.
+
+	* ext/extmk.rb, lib/mkmf.rb: get rid of "--def=".
+
 Fri Apr 19 14:57:44 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* re.c (rb_reg_to_s): remove redundant shy group.

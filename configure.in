@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(ruby.h)
+AC_INIT(ruby, 0.0)
 
 AC_PREREQ(2.50)
 
@@ -23,15 +23,11 @@ AC_ARG_WITH(gcc, [  --without-gcc           never use gcc], [
 dnl If the user switches compilers, we can't believe the cache
 if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
 then
-  AC_ERROR(cached CC is different -- throw away $cache_file
+  AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 fi
 
-AC_DEFUN(RUBY_CANONICAL_BUILD, [AC_REQUIRE([AC_CANONICAL_BUILD])])
-
-AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
-RUBY_CANONICAL_BUILD
 
 dnl checks for fat-binary
 fat_binary=no
@@ -107,9 +103,7 @@ AC_CHECK_PROGS(AR, ar aal, ar)
 case "$target_os" in
 cygwin*|mingw*)
     AC_CHECK_TOOL(NM, nm)
-    AC_CHECK_TOOL(DLLWRAP, dllwrap)
     AC_CHECK_TOOL(AS, as)
-    AC_CHECK_TOOL(DLLTOOL, dlltool)
     AC_CHECK_TOOL(WINDRES, windres)
     target_cpu=`echo $target_cpu | sed s/i.86/i386/`
     : ${enable_shared=yes}
@@ -123,13 +117,11 @@ AC_PROG_MAKE_SET
 AC_AIX
 AC_MINIX
 
-AC_EXEEXT
-AC_OBJEXT
-
 dnl check for large file stuff
 AC_SYS_LARGEFILE
 
 AC_CHECK_TYPES([long long, off_t])
+
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(short, 2)
 AC_CHECK_SIZEOF(long, 4)
@@ -718,7 +710,7 @@ if test "$with_dln_a_out" != yes; then
 			LDSHARED='ld -Bshareable -x'
 			LDFLAGS="-L/lib -L/usr/lib -L/usr/local/lib"
 			rb_cv_dlopen=yes;;
-	cygwin*|mingw*)	: ${LDSHARED="${DLLWRAP} --target=${target_os} --as=${AS} --dlltool-name=${DLLTOOL} --driver-name=${CC} --export-all -s"}
+	cygwin*|mingw*)	: ${LDSHARED="${CC} -shared -s"}
 			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac
@@ -1038,10 +1030,10 @@ case "$target_os" in
 	RUBY_SO_NAME=$target_os-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
 	if test x"$enable_shared" = xyes; then
 	    LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
-	    LIBRUBY_DLDFLAGS='--dllname=$@ --output-lib=$(LIBRUBY) --add-stdcall-alias --def=$(RUBYDEF)'
+	    LIBRUBY_DLDFLAGS='--out-implib=$(LIBRUBY) $(RUBYDEF)'
 	else
 	    LIBRUBY_SO=dummy
-	    LIBRUBY_DLDFLAGS='--output-exp=$(RUBY_INSTALL_NAME).exp --dllname=$(RUBY_INSTALL_NAME)$(EXEEXT) --output-lib=$(LIBRUBY) --add-stdcall-alias --def=$(RUBYDEF)'
+	    LIBRUBY_DLDFLAGS='-Wl,--output-exp=$(RUBY_INSTALL_NAME).exp --out-implib=$(LIBRUBY) $(RUBYDEF)'
 	fi
 	LIBRUBY_ALIASES=''
 	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
@@ -1152,4 +1144,5 @@ else
 fi
 : > confdefs.h
 
-AC_OUTPUT($FIRSTMAKEFILE Makefile ext/extmk.rb)
+AC_CONFIG_FILES([$FIRSTMAKEFILE Makefile ext/extmk.rb])
+AC_OUTPUT

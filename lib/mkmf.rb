@@ -443,7 +443,7 @@ def create_makefile(target, srcprefix = nil)
         end
       end
     end
-    defflag = "--def=" + deffile
+    defflag = deffile
   end
 
   if RUBY_PLATFORM =~ /mswin32/
