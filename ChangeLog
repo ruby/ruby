@@ -1,3 +1,8 @@
+Sat Jun 23 18:28:52 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/readline/readline.c (readline_event): a non-void function
+	  should return a value.
+
 Fri Jun 22 23:17:28 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): workaround for the setup of

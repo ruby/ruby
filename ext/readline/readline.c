@@ -26,6 +26,7 @@ readline_event()
 {
     CHECK_INTS;
     rb_thread_schedule();
+    return 0;
 }
 
 static VALUE
