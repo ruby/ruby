@@ -56,81 +56,53 @@ extern "C" {
 
 /* Win32 API redifinition. */
 
-#ifdef GetCommandLine
 #undef GetCommandLine
 #define GetCommandLine GetCommandLineA
-#endif
 
-#ifdef SetFileAttributes
 #undef SetFileAttributes
 #define SetFileAttributes SetFileAttributesA
-#endif
 
-#ifdef GetFileAttributes
 #undef GetFileAttributes
 #define GetFileAttributes GetFileAttributesA
-#endif
 
-#ifdef FormatMessage
 #undef FormatMessage
 #define FormatMessage FormatMessageA
-#endif
 
-#ifdef GetModuleFileName
 #undef GetModuleFileName
 #define GetModuleFileName GetModuleFileNameA
-#endif
 
-#ifdef CreateFile
 #undef CreateFile
 #define CreateFile CreateFileA
-#endif
 
-#ifdef MoveFile
 #undef MoveFile
 #define MoveFile MoveFileA
-#endif
 
-#ifdef DeleteFile
 #undef DeleteFile
 #define DeleteFile DeleteFileA
-#endif
 
-#ifdef CreateProcess
 #undef CreateProcess
 #define CreateProcess CreateProcessA
-#endif
 
-#ifdef CharNext
 #undef CharNext
 #define CharNext CharNextA
-#endif
 
-#ifdef CharPrev
 #undef CharPrev
 #define CharPrev CharPrevA
-#endif
 
-#ifdef WIN32_FIND_DATA
 #undef WIN32_FIND_DATA
 #define WIN32_FIND_DATA WIN32_FIND_DATAA
-#endif
 
-#ifdef FindFirstFile
 #undef FindFirstFile
 #define FindFirstFile FindFirstFileA
-#endif
 
-#ifdef FindNextFile
 #undef FindNextFile
 #define FindNextFile FindNextFileA
-#endif
 
 /* stdio.c */
 FILE *freopen(const char *filename, const char *mode, FILE *file);
-FILE *_fdopen( int handle, const char *mode );
+FILE *fdopen( int handle, const char *mode );
 
-#define fdopen _fdopen
+//#define fdopen _fdopen
 
 /* stdlib.c */
 char *getenv(const char *charstuff);
@@ -141,9 +113,12 @@ char *strdup(const char * str);
 /* char *strerror(int errno); */
 int strnicmp( const char *s1, const char *s2, size_t count );
 
-#define strnicmp _strnicmp
+//#define strnicmp _strnicmp
+#define stricmp _stricmp
 
 /* for win32.c */
+FARPROC GetProcAddressX(HMODULE hModule, LPCSTR lpProcName);
+
 BOOL MoveFileEx(LPCSTR oldname, LPCSTR newname, DWORD dwFlags);
 BOOL DuplicateHandle(
 	HANDLE source_process, HANDLE source,
@@ -186,6 +161,8 @@ char*    wce_wctomb(const wchar_t* w);
 /* other helpers. */
 void wce_SetCommandLine(LPCWSTR wcmd);
 void wce_FreeCommandLine(void);
+TCHAR *wce_replaceRelativeDir(const char* str);
+void wce_SetCurrentDir();
 
 #if _WIN32_WCE < 300
   /* for Handheld PC Pro. */

@@ -1,3 +1,37 @@
+Sat Apr 26 14:25:00 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
+
+	* wince/ : files removed.
+	           (config, dll.mak, exe.mak, mswince-ruby17.def,
+	            io.c, process.c, signal.c, string.c, time.c)
+
+	* wince/ : files added.
+	           (assert.c, Makefile.sub, mkexports.rb, io_wce.c,
+	            process_wce.c, signal_wce.c, string_wce.c,
+	            time_wce.c)
+
+	* wince/configure.bat : like mswin32 style.
+
+	* wince/direct.c : remove "static" at _currentdir.
+
+	* wince/io.h : change definition.
+
+	* wince/stdio.c : _fdopen -> fdopen.
+
+	* wince/process.h : add _P_OVERLAY.
+
+	* wince/time.h : change definition.
+
+	* wince/wincemain.c : add wce_SetCurrentDir.
+
+	* wince/wince.c : add wce_SetCurrentDir and wce_fopen.
+	                  fix GetModuleFileNameA to return correct "lpFileName".
+
+	* wince/wince.h : remove #ifdef.
+
+	* wince/sys/utime.h, utime.c : rename _utime to utime.
+
+	* wince/sys/stat.c : expand relative directory in stat.
+
 Fri Apr 25 18:46:00 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* gc.c: STACK_LEVEL_MAX=65535 on mswince.

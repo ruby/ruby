@@ -22,7 +22,7 @@ FILE *freopen(const char *filename, const char *mode, FILE *file)
 	return fp;
 }
 
-FILE *_fdopen( int handle, const char *mode )
+FILE *fdopen( int handle, const char *mode )
 {
 	wchar_t *wmode;
 	FILE* fp;

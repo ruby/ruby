@@ -6,27 +6,48 @@
 
 (1) eMbedded Visual C++ 3.0 or later.
 
+(2) If you want to run `((%nmake clean%))' or `((%nmake distclean%))'
+    properly, you must install UNIX compatible `((%rm%))' command on
+    your ((|PATH|)) if you want to clean after compile.
+
+(3) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH})),
+    (({CE_TOOLS_DIR})), (({EMBEDDED_TOOLS_DIR})) to run required commands
+    properly from the command line.
+
+    Note: building ruby requires following commands.
+     * nmake
+     * clarm or clmips or shcl
+     * lib
+     * dumpbin
+
 == How to compile and install
 
-(1) Move to ruby\wince directory.
-
-(2) if you changed install directories of eMVC and SDK from default
-    settings, please modify .\configure.bat in order to set 
-    environment valuables such as "PATH", "INCLUDE", and "LIB".
-
-(2) Execute .\configure.bat on "ruby\wince" directory.
+(1) Execute wince\configure.bat on your build directory.
     You can specify the target platform as an argument.
-    For example, run:
-      [CPU]      [OS ver.]
-      StrongARM  HPC2000    : `configure ARM HPC2K'
-      MIPS       PocketPC   : `configure MIPS PPC'
-      SH3        PocketPC   : `configure SH3 PPC'
-      SH4        HPCPro     : `configure SH4 HPCPRO'
-      (caution: "HPCPro" is not supported yet.)
+    For example, run `((%configure arm-hpc2k-wince%))'
 
-(3) Execute `.\make.bat'.
+(2) Change ((|RUBY_INSTALL_NAME|)) and ((|RUBY_SO_NAME|)) in (({Makefile}))
+    if you want to change the name of the executable files. 
 
-(4) Copy mswince-ruby17.dll, ruby.exe, and irb.exe to your WinCE machine.
+(3) Run `((%nmake%))'
+
+(4) Run `((%nmake DESTDIR=<install_directory> install%))'
+
+    This command will create following directories and copy (not install :-P)
+    files onto them.
+      * <install_directory>\bin
+      * <install_directory>\lib
+      * <install_directory>\lib\ruby
+      * <install_directory>\lib\ruby\<MAJOR>.<MINOR>
+      * <install_directory>\lib\ruby\<MAJOR>.<MINOR>\<PLATFORM>
+      * <install_directory>\lib\ruby\site_ruby
+      * <install_directory>\lib\ruby\site_ruby\<MAJOR>.<MINOR>
+      * <install_directory>\lib\ruby\site_ruby\<MAJOR>.<MINOR>\<PLATFORM>
+      * <install_directory>\man\man1
+    If Ruby's version is `x.y.z', the ((|<MAJOR>|)) is `x' and the ((|<MINOR>|)) is `y'.
+    In case of `mips-hpc2k-wince', The ((|<PLATFORM>|)) is `(({mips-mswince}))'.
+
+(5) Copy <install_directory> to your WindowsCE machine.
 
 == Icons
 
@@ -49,14 +70,52 @@ in Japanese, but you can download at least.
 
 == Build examples
 
-  ex.)
-    current directory:      C:\
-    ruby source directory:  C:\ruby
-    target CPU:             StrongARM
-    target OS version:      PocketPC
+* Build on the ruby source directory.
 
-    cd \ruby\wince
-    .\configure ARM PPC
-    .\make.bat
+  ex.)
+    ruby source directory:  C:\ruby
+    build directory:        C:\ruby
+    install directory:      C:\usr\local
+
+    C:
+    cd \ruby
+    win32\configure
+    nmake
+    nmake DESTDIR=/usr/local install
+
+* Build on the relative directory from the ruby source directory.
+
+  ex.)
+    ruby source directory:  C:\ruby
+    build directory:        C:\ruby\mswin32
+    install directory:      C:\usr\local
+
+    C:
+    cd \ruby
+    mkdir mswin32
+    cd mswin32
+    ..\win32\configure
+    nmake
+    nmake DESTDIR=/usr/local install
+
+* Build on the different drive.
+
+  ex.)
+    ruby source directory:  C:\src\ruby
+    build directory:        D:\build\ruby
+    install directory:      C:\usr\local
+
+    D:
+    cd D:\build\ruby
+    C:\src\ruby\win32\configure
+    nmake
+    nmake DESTDIR=C:/usr/local install
+
+== Bugs
+
+You can ((*NOT*)) use a path name contains any white space characters as
+the ruby source directory, this restriction comes from the behavior of
+(({!INCLUDE})) directives of (({NMAKE})).
+((- you may call it a bug. -))
 
 =end

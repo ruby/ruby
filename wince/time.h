@@ -1,5 +1,5 @@
-#ifndef TIME_H
-#define TIME_H 1
+#ifndef _TIME_WINCE_H
+#define _TIME_WINCE_H 1
 
 #include <winbase.h>
 #include <sys/types.h>

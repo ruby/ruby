@@ -15,6 +15,8 @@
 /* global for GetCommandLineA */
 char *_commandLine;
 
+extern char _currentdir[];
+
 /* make up Win32API except wce_* functions.  */
 
 DWORD GetModuleFileNameA( 
@@ -23,18 +25,18 @@ DWORD GetModuleFileNameA(
 {
 	LPWSTR lpFileNameW;
 	LPSTR  mb;
-	size_t len;
+	size_t ret;
+
+	if( size==0 ) return 0;
 
 	lpFileNameW = (LPWSTR)malloc( size*sizeof(wchar_t) );
-	GetModuleFileNameW( hModule, lpFileNameW, size );
+	ret = GetModuleFileNameW( hModule, lpFileNameW, size );
 	mb = wce_wctomb(lpFileNameW);
-	len = min(strlen(mb),size);
-	strncpy(lpFileName, mb, len);
-	lpFileName[len-1] = '\0';
+	strcpy(lpFileName, mb);
 	free(mb);
 	free(lpFileNameW);
 
-	return 0;
+	return ret;
 }
 
 #if _WIN32_WCE < 300
@@ -48,7 +50,7 @@ FARPROC GetProcAddressA(HMODULE hModule, LPCSTR lpProcName)
 	free( lpwProcName );
 	return p;
 }
-#endif
+#endif 
 
 char * GetCommandLineA(void)
 {
@@ -448,6 +450,9 @@ HINSTANCE LoadLibraryA(LPCSTR libname)
 	HINSTANCE h;
 	LPWSTR wlibname;
 
+	// if starts ".\", replace current directory.
+//	wlibname = wce_replaceRelativeDir(libname);
+
 	wlibname = wce_mbtowc(libname);
 	h = LoadLibraryW(wlibname);
 	free(wlibname);
@@ -461,6 +466,8 @@ HINSTANCE LoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile,
 	LPWSTR wlibname;
 
 	wlibname = wce_mbtowc(lpLibFileName);
+//	wlibname = wce_replaceRelativeDir(lpLibFileName);
+
 #if _WIN32_WCE < 300
 	h = LoadLibraryW(wlibname);
 #else
@@ -503,6 +510,47 @@ int ReadDataPending()
 }
 
 /*---------------- helper functions. ---------------------------- */
+FILE *wce_fopen( const char *fname, const char *mode )
+{
+	TCHAR* tfname = wce_replaceRelativeDir(fname);
+	TCHAR* tmode = wce_mbtowc(mode);
+	FILE* fp = _tfopen(tfname, tmode);
+	free(tfname); free(tmode);
+	return fp;
+}
+
+void wce_SetCurrentDir()
+{
+	WCHAR tbuf[MAX_PATH+1]={0};
+	WCHAR *tp;
+	char *buf;
+
+	GetModuleFileNameW( NULL, tbuf, MAX_PATH );
+	tp = _tcsrchr( tbuf, '\\' );
+	if( tp!=NULL ) *tp=_T('\0');
+	buf = wce_wctomb(tbuf);
+	strcpy( _currentdir, buf );
+	free(buf);
+}
+
+TCHAR *wce_replaceRelativeDir(const char* str)
+{
+	TCHAR *tbuf;
+
+	if( 2<=strlen(str) && str[0]=='.' &&
+		(str[1]=='/' || str[1]=='\\') )
+	{
+		char *buf;
+		int len = strlen(str) + strlen(_currentdir);
+		buf = malloc( len+1 );
+		sprintf(buf, "%s%s", _currentdir, &str[1]);
+		tbuf = wce_mbtowc(buf);
+		free(buf);
+	}
+	else
+		tbuf = wce_mbtowc(str);
+	return tbuf;
+}
 
 /* char -> wchar_t */
 wchar_t* wce_mbtowc(const char* a)

@@ -8,7 +8,7 @@
 #include "wince.h" /* for wce_mbtowc */
 
 /* global for chdir, getcwd */
-static char _currentdir[MAX_PATH+1];
+char _currentdir[MAX_PATH+1];
 
 
 char *getcwd(char* buffer, int maxlen)

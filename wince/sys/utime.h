@@ -16,12 +16,12 @@ struct utimbuf
 extern "C" {
 #endif
 
-int _utime(const char *f, struct utimbuf *t);
+int utime(const char *f, struct utimbuf *t);
 
 #ifdef __cplusplus
 };
 #endif
 
-#define utime _utime
+//#define utime _utime
 
 #endif

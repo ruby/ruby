@@ -77,7 +77,7 @@ int _open(const char *file, int mode, va_list arg)
 	return (int)h;
 }
 
-int _close(int fd)
+int close(int fd)
 {
 	CloseHandle( (HANDLE)fd );
 	return 0;
@@ -185,18 +185,18 @@ int _chmod(const char *path, int mode)
 
 /* WinCE doesn't have dup and dup2.  */
 /* so, we cannot use missing/dup2.c. */
-int _dup( int handle )
+int dup( int handle )
 {
 	errno = EBADF;
 	return -1;
 }
-
+/*
 int dup2( int handle1, int handle2 )
 {
 	errno = EBADF;
 	return -1;
 }
-
+*/
 int _isatty(int fd)
 {
 	if( fd==(int)_fileno(stdin) || 

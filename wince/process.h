@@ -4,11 +4,13 @@
 
 #define _P_WAIT         0
 #define _P_NOWAIT       1
+#define _P_OVERLAY      2
 #define _P_DETACH       4
 
 #define P_WAIT          _P_WAIT
 #define P_NOWAIT        _P_NOWAIT
 #define P_DETACH        _P_DETACH
+#define P_OVERLAY       _P_OVERLAY
 
 #ifndef _INTPTR_T_DEFINED
 typedef int            intptr_t;

@@ -14,7 +14,7 @@
   #endif
 #endif
 
-int _utime(const char *f, struct utimbuf *t)
+int utime(const char *f, struct utimbuf *t)
 {
 	HANDLE h;
 	FILETIME atime={0}, mtime={0};

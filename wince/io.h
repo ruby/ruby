@@ -1,6 +1,11 @@
 
-#ifndef _IO_H_
-#define _IO_H_
+#ifndef _IO_WINCE_H_
+#define _IO_WINCE_H_
+
+#ifndef _TIME_T_DEFINED
+typedef unsigned long time_t;
+#define _TIME_T_DEFINED
+#endif
 
 #ifndef _FSIZE_T_DEFINED
 typedef unsigned long _fsize_t; /* Could be 64 bits for Win32 */
@@ -29,15 +34,15 @@ int _rename (const char *oldname, const char *newname);
 int _unlink(const char *file);
 int _umask(int cmask);
 int _chmod(const char *path, int mode);
-int _dup( int handle );
-int dup2( int handle1, int handle2 );
+int dup( int handle );
+//int dup2( int handle1, int handle2 );
 int _isatty(int fd);
 int _pipe(int *phandles, unsigned int psize, int textmode);
 int _access(const char *filename, int flags);
 int _open_osfhandle ( long osfhandle, int flags);
 long _get_osfhandle( int filehandle );
 int _open(const char *file, int mode,...);
-int _close(int fd);
+int close(int fd);
 int _read(int fd, void *buffer, int length);
 int _write(int fd, const void *buffer, unsigned count);
 long _lseek(int handle, long offset, int origin);
@@ -58,12 +63,14 @@ int _findclose( long handle );
 #define read	   _read
 #define write	   _write
 #define umask	   _umask
-#define dup        _dup
+//#define dup        _dup
 #define isatty	   _isatty
 #define access	   _access
 #define pipe       _pipe
 #define setmode    _setmode
 #define lseek      _lseek
+
+#define _close	   close
 
 #endif
 
