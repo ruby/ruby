@@ -24,6 +24,8 @@
 
 static VALUE rb_cDBM, rb_eDBMError;
 
+#define RUBY_DBM_RW_BIT 0x20000000
+
 struct dbmdata {
     int  di_size;
     DBM *di_dbm;
@@ -78,12 +80,12 @@ fdbm_initialize(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE file, vmode;
+    VALUE file, vmode, vflags;
     DBM *dbm;
     struct dbmdata *dbmp;
-    int mode;
+    int mode, flags = 0;
 
-    if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
+    if (rb_scan_args(argc, argv, "12", &file, &vmode, &vflags) == 1) {
 	mode = 0666;		/* default value */
     }
     else if (NIL_P(vmode)) {
@@ -92,17 +94,27 @@ fdbm_initialize(argc, argv, obj)
     else {
 	mode = NUM2INT(vmode);
     }
+
+    if (!NIL_P(vflags))
+        flags = NUM2INT(vflags);
+
     SafeStringValue(file);
 
-    dbm = 0;
-    if (mode >= 0) {
-	dbm = dbm_open(RSTRING(file)->ptr, O_RDWR|O_CREAT, mode);
+    if (flags & RUBY_DBM_RW_BIT) {
+        flags &= ~RUBY_DBM_RW_BIT;
+        dbm = dbm_open(RSTRING(file)->ptr, flags, mode);
     }
-    if (!dbm) {
-	dbm = dbm_open(RSTRING(file)->ptr, O_RDWR, 0);
-    }
-    if (!dbm) {
-	dbm = dbm_open(RSTRING(file)->ptr, O_RDONLY, 0);
+    else {
+        dbm = 0;
+        if (mode >= 0) {
+            dbm = dbm_open(RSTRING(file)->ptr, O_RDWR|O_CREAT, mode);
+        }
+        if (!dbm) {
+            dbm = dbm_open(RSTRING(file)->ptr, O_RDWR, 0);
+        }
+        if (!dbm) {
+            dbm = dbm_open(RSTRING(file)->ptr, O_RDONLY, 0);
+        }
     }
 
     if (!dbm) {
@@ -786,6 +798,12 @@ Init_dbm()
 
     rb_define_method(rb_cDBM, "to_a", fdbm_to_a, 0);
     rb_define_method(rb_cDBM, "to_hash", fdbm_to_hash, 0);
+
+    /* flags for dbm_open() */
+    rb_define_const(rb_cDBM, "READER",  INT2FIX(O_RDONLY|RUBY_DBM_RW_BIT));
+    rb_define_const(rb_cDBM, "WRITER",  INT2FIX(O_RDWR|RUBY_DBM_RW_BIT));
+    rb_define_const(rb_cDBM, "WRCREAT", INT2FIX(O_RDWR|O_CREAT|RUBY_DBM_RW_BIT));
+    rb_define_const(rb_cDBM, "NEWDB",   INT2FIX(O_RDWR|O_CREAT|O_TRUNC|RUBY_DBM_RW_BIT));
 
 #ifdef DB_VERSION_STRING
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(DB_VERSION_STRING));

@@ -1,3 +1,10 @@
+Sun May 16 20:55:49 2004  Tanaka Akira  <akr@m17n.org>
+
+	* ext/dbm/dbm.c (fdbm_initialize): accept optional 3rd argument to
+	  specify an open flag.
+	  (Init_dbm): define open flags: DBM::READER, DBM::WRITER, DBM::WRCREAT
+	  and DBM::NEWDB.
+
 Sat May 15 17:52:24  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_float.rb(test_strtod): Add test for signed 0.000...1
