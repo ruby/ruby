@@ -122,7 +122,7 @@ require 'net/protocol'
 require 'digest/md5'
 
 
-module Net
+module Net # :nodoc:
 
   # Module mixed in to all SMTP error classes
   module SMTPError

@@ -21,7 +21,7 @@
 require 'socket'
 require 'timeout'
 
-module Net
+module Net # :nodoc:
 
   class Protocol   #:nodoc: internal use only
     private

@@ -132,6 +132,8 @@
 #     }
 # 
 # === HTTP Response Classes
+#
+# TODO: write me.
 # 
 # == Switching Net::HTTP versions
 # 
@@ -155,10 +157,12 @@ require 'net/protocol'
 require 'uri'
 
 
-module Net
+module Net # :nodoc:
 
+  # :stopdoc:
   class HTTPBadResponse < StandardError; end
   class HTTPHeaderSyntaxError < StandardError; end
+  # :startdoc:
 
   #
   # Class providing both short-cut class methods for retrieving entities,
@@ -168,15 +172,11 @@ module Net
   #
   class HTTP < Protocol
 
+    # :stopdoc:
     Revision = %q$Revision$.split[1]
-
     HTTPVersion = '1.1'
-
-    #
-    # for backward compatibility
-    #
-
-    @@newimpl = true
+    @@newimpl = true    # for backward compatability
+    # :startdoc:
 
     # Turns on net/http 1.2 (ruby 1.8) features.
     # Defaults to ON in ruby 1.8.
@@ -411,7 +411,7 @@ module Net
     # When called with a block, returns the return value of the
     # block; otherwise, returns self.
     #
-    def start  # :yield: +http+
+    def start  # :yield: http
       raise IOError, 'HTTP session already opened' if @started
       if block_given?
         begin
@@ -1319,6 +1319,8 @@ module Net
     end
   end   # redefined after
 
+  # :stopdoc:
+
   class HTTPUnknownResponse < HTTPResponse
     HAS_BODY = true
     EXCEPTION_TYPE = HTTPError
@@ -1471,6 +1473,8 @@ module Net
   class HTTPVersionNotSupported < HTTPServerError   # 505
     HAS_BODY = true
   end
+
+  # :startdoc:
 
 
   class HTTPResponse   # redefine
@@ -1778,12 +1782,14 @@ module Net
   end
 
 
+  # :enddoc:
+
   #--
   # for backward compatibility
   class HTTP
     ProxyMod = ProxyDelta
   end
-  module NetPrivate   #:nodoc:
+  module NetPrivate
     HTTPRequest = ::Net::HTTPRequest
   end
 

@@ -185,7 +185,7 @@ begin
 rescue LoadError
 end
 
-module Net
+module Net # :nodoc:
 
   # Net::IMAP implements Internet Message Access Protocol (IMAP) client
   # functionality.  The protocol is described in [IMAP].
@@ -834,8 +834,8 @@ module Net
 
     private
 
-    CRLF = "\r\n"
-    PORT = 143
+    CRLF = "\r\n"      # :nodoc:
+    PORT = 143         # :nodoc:
 
     @@debug = false
     @@authenticators = {}

@@ -14,13 +14,15 @@
 require "socket"
 require "monitor"
 
-module Net
+module Net # :nodoc:
 
+  # :stopdoc:
   class FTPError < StandardError; end
   class FTPReplyError < FTPError; end
-  class FTPTempError < FTPError; end
-  class FTPPermError < FTPError; end
+  class FTPTempError < FTPError; end 
+  class FTPPermError < FTPError; end 
   class FTPProtoError < FTPError; end
+  # :startdoc:
 
   #
   # This class implements the File Transfer Protocol.  If you have used a
@@ -31,6 +33,8 @@ module Net
   # == Example
   # 
   #   require 'net/ftp'
+  #
+  # === Example 1
   #  
   #   ftp = Net::FTP.new('ftp.netlab.co.jp')
   #   ftp.login
@@ -38,6 +42,15 @@ module Net
   #   files = ftp.list('n*')
   #   ftp.getbinaryfile('nif.rb-0.91.gz', 'nif.gz', 1024)
   #   ftp.close
+  #
+  # === Example 2
+  #
+  #   Net::FTP.open('ftp.netlab.co.jp') do |ftp|
+  #     ftp.login
+  #     files = ftp.chdir('pub/lang/ruby/contrib')
+  #     files = ftp.list('n*')
+  #     ftp.getbinaryfile('nif.rb-0.91.gz', 'nif.gz', 1024)
+  #   end
   #
   # == Major Methods
   #
@@ -56,10 +69,11 @@ module Net
   class FTP
     include MonitorMixin
     
+    # :stopdoc:
     FTP_PORT = 21
     CRLF = "\r\n"
-
     DEFAULT_BLOCKSIZE = 4096
+    # :startdoc:
     
     # When +true+, transfers are performed in binary mode.  Default: +true+.
     attr_accessor :binary
@@ -123,11 +137,13 @@ module Net
       end
     end
 
+    # Obsolete
     def return_code
       $stderr.puts("warning: Net::FTP#return_code is obsolete and do nothing")
       return "\n"
     end
 
+    # Obsolete
     def return_code=(s)
       $stderr.puts("warning: Net::FTP#return_code= is obsolete and do nothing")
     end
@@ -524,7 +540,7 @@ module Net
     # data in +blocksize+ chunks.
     #
     def putbinaryfile(localfile, remotefile = File.basename(localfile),
-		      blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: line/data
+		      blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
       if @resume
         begin
           rest_offset = size(remotefile)
@@ -670,7 +686,7 @@ module Net
       return resp[3..-1].strip.to_i
     end
     
-    MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)$/
+    MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)$/  # :nodoc:
     
     #
     # Returns the last modification time of the (remote) file.  If +local+ is
