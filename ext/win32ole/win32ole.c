@@ -1727,6 +1727,24 @@ fole_s_show_help(argc, argv, self)
     return Qnil;
 }
 
+/*
+ * Document-class: WIN32OLE
+ *
+ *   <code>WIN32OLE</code> objects represent OLE Automation object in the Ruby.
+ */
+
+/*
+ *  call-seq:
+ *     WIN32OLE.new(server, [host]) -> WIN32OLE object
+ * 
+ *  Returns a new WIN32OLE object(OLE Automation object).
+ *  The first argument server specifies OLE Automation server.
+ *  The first argument should be CLSID or PROGID.
+ *  If second argument host specified, then returns OLE Automation 
+ *  object on host. 
+ *
+ *      WIN32OLE.new('Excel.Application') #=> Excel OLE Automation object.
+ */
 static VALUE
 fole_initialize(argc, argv, self)
     int argc;
@@ -2015,6 +2033,16 @@ ole_invoke(argc, argv, self, wFlags)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE#invoke(method, [arg1,...])  => return value of method.
+ *
+ *  Runs OLE method. 
+ *
+ *  The first argument specifies the method name of OLE Automation object.
+ *  The others specify argument of the <i>method</i>.
+ *
+ */
 static VALUE
 fole_invoke(argc, argv, self)
     int argc;
@@ -2357,6 +2385,15 @@ ole_propertyput(self, property, value)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE#ole_free
+ *
+ *  invokes Release method of Dispatch interface of WIN32OLE object.
+ *  Usually, you do not need to call this method because Release method
+ *  called automatically when WIN32OLE object garbaged.
+ *
+ */
 static VALUE
 fole_free(self)
     VALUE self;
@@ -3201,6 +3238,23 @@ oleclass_from_typelib(self, pTypeLib, oleclass)
     return found;
 }
 
+/*
+ * Document-class: WIN32OLE_TYPE
+ *
+ *   <code>WIN32OLE_TYPE</code> objects represent OLE type libarary information.
+ */
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPE.new(typelib, ole_class) -> WIN32OLE_TYPE object
+ *
+ *  Returns a new WIN32OLE_TYPE object.
+ *  The first argument <i>typelib</i> specifies OLE type library name.
+ *  The second argument specifies OLE class name.
+ *
+ *      WIN32OLE.new('Microsoft Excel 9.0 Object Library', 'Application') 
+ *          #=> WIN32OLE_TYPE object of Application class of Excel. 
+ */
 static VALUE
 foletype_initialize(self, typelib, oleclass)
     VALUE self;
@@ -3233,9 +3287,10 @@ foletype_initialize(self, typelib, oleclass)
 }
 
 /*
- * WIN32OLE_TYPE#name
- * ---
- * Returns name.
+ * call-seq:
+ *    WIN32OLE_TYPE#name #=> OLE type name
+ *
+ * Returns OLE type name.
  */
 static VALUE
 foletype_name(self)
@@ -3292,9 +3347,10 @@ ole_ole_type(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#ole_type
- * ----
- * returns type of class.
+ *  call-seq:
+ *     WIN32OLE_TYPE#ole_type #=> OLE type string.
+ * 
+ *  returns type of OLE class.
  */
 static VALUE
 foletype_ole_type(self)
@@ -3326,9 +3382,10 @@ ole_type_guid(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#guid
- * ----
- * Returns GUID.
+ *  call-seq:
+ *     WIN32OLE_TYPE#guid  #=> GUID
+ * 
+ *  Returns GUID.
  */
 static VALUE
 foletype_guid(self)
@@ -3358,8 +3415,9 @@ ole_type_progid(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#progid
- * ----
+ * call-seq:
+ *   WIN32OLE_TYPE#progid  #=> ProgID
+ * 
  * Returns ProgID if it exists. If not found, then returns nil.
  */
 static VALUE
@@ -3392,9 +3450,10 @@ ole_type_visible(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#visible
- * ----
- * returns true if the OLE class is public.
+ *  call-seq:
+ *    WIN32OLE_TYPE#visible  #=> true or false
+ * 
+ *  Returns true if the OLE class is public.
  */
 static VALUE
 foletype_visible(self)
@@ -3421,9 +3480,10 @@ ole_type_major_version(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#major_version
- * ----
- * Returns major version.
+ *  call-seq:
+ *     WIN32OLE_TYPE#major_version
+ * 
+ *  Returns major version.
  */
 static VALUE
 foletype_major_version(self)
@@ -3450,9 +3510,10 @@ ole_type_minor_version(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#minor_version
- * ----
- * Returns minor version.
+ *  call-seq:
+ *    WIN32OLE_TYPE#minor_version #=> OLE minor version
+ * 
+ *  Returns minor version.
  */
 static VALUE
 foletype_minor_version(self)
@@ -3479,9 +3540,10 @@ ole_type_typekind(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#typekind
- * ----
- * Returns number which represents type.
+ *  call-seq:
+ *    WIN32OLE_TYPE#typekind #=> number of type.
+ * 
+ *  Returns number which represents type.
  */
 static VALUE 
 foletype_typekind(self)
@@ -3506,9 +3568,10 @@ ole_type_helpstring(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#helpstring
- * ---
- * Returns help string.
+ *  call-seq:
+ *    WIN32OLE_TYPE#helpstring #=> help string.
+ * 
+ *  Returns help string.
  */
 static VALUE 
 foletype_helpstring(self)
@@ -3539,9 +3602,10 @@ ole_type_src_type(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#src_type
- * ----
- * Returns source class when the OLE class is 'Alias'.
+ *  call-seq:
+ *     WIN32OLE_TYPE#src_type #=> OLE source class
+ * 
+ *  Returns source class when the OLE class is 'Alias'.
  */
 static VALUE
 foletype_src_type(self)
@@ -3566,9 +3630,10 @@ ole_type_helpfile(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#helpfile
- * ----
- * Returns helpfile
+ *  call-seq:
+ *     WIN32OLE_TYPE#helpfile
+ * 
+ *  Returns helpfile
  */
 static VALUE
 foletype_helpfile(self)
@@ -3593,9 +3658,10 @@ ole_type_helpcontext(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#helpcontext
- * ---
- * Returns helpcontext.
+ *  call-seq:
+ *     WIN32OLE_TYPE#helpcontext
+ * 
+ *  Returns helpcontext.
  */
 static VALUE
 foletype_helpcontext(self)
@@ -3652,9 +3718,11 @@ ole_variables(pTypeInfo)
 }
 
 /*
- * WIN32OLE_TYPE#variables
- * ----
- * Returns array of variables defined in OLE class.
+ *  call-seq:
+ *     WIN32OLE_TYPE#variables
+ * 
+ *  Returns array of WIN32OLE_VARIABLE objects which represent variables 
+ *  defined in OLE class.
  */
 static VALUE
 foletype_variables(self)
@@ -3666,9 +3734,11 @@ foletype_variables(self)
 }
 
 /*
- * WIN32OLE_TYPE#ole_methods
- * ----
- * Returns array of WIN32OLE_METHOD objects.
+ *  call-seq:
+ *     WIN32OLE_TYPE#ole_methods # the array of WIN32OLE_METHOD objects.
+ * 
+ *  Returns array of WIN32OLE_METHOD objects which represent OLE method defined in 
+ *  OLE type library.
  */
 static VALUE
 foletype_methods(argc, argv, self)
@@ -3682,9 +3752,10 @@ foletype_methods(argc, argv, self)
 }
 
 /*
- * WIN32OLE_VARIABLE#name
- * ---
- * Returns the name.
+ *  call-seq:
+ *     WIN32OLE_VARIABLE#name
+ * 
+ *  Returns the name.
  */
 static VALUE
 folevariable_name(self)
@@ -3924,6 +3995,16 @@ folemethod_s_allocate(klass)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_METHOD.new(ole_type,  method) -> WIN32OLE_METHOD object
+ * 
+ *  Returns a new WIN32OLE_METHOD object which represents the information
+ *  about OLE method.
+ *  The first argument <i>ole_type</i> specifies WIN32OLE_TYPE object.
+ *  The second argument <i>method</i> specifies OLE method name defined OLE class
+ *  which represents WIN32OLE_TYPE object.
+ */
 static VALUE
 folemethod_initialize(self, oletype, method)
     VALUE self;
@@ -4242,6 +4323,12 @@ folemethod_event(self)
                             rb_ivar_get(self, rb_intern("name")));
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_METHOD#event_interface
+ *
+ *  Returns event interface name if the method is event.
+ */
 static VALUE
 folemethod_event_interface(self)
     VALUE self;
@@ -4294,6 +4381,12 @@ ole_method_helpstring(pTypeInfo, method_index)
     return WC2VSTR(bhelpstring);
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_METHOD#helpstring
+ *
+ *  Returns help string of OLE method.
+ */
 static VALUE
 folemethod_helpstring(self)
     VALUE self;
@@ -4450,11 +4543,6 @@ folemethod_size_params(self)
     return ole_method_size_params(pmethod->pTypeInfo, pmethod->index);
 }
 
-/*
- * WIN32OLE_METHOD#size_opt_params
- * ----
- * Returns the size of optional parameters.
- */
 static VALUE
 ole_method_size_opt_params(pTypeInfo, method_index)
     ITypeInfo *pTypeInfo;
@@ -4471,6 +4559,12 @@ ole_method_size_opt_params(pTypeInfo, method_index)
     return size_opt_params;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_METHOD#size_opt_params
+ * 
+ *  Returns the size of optional parameters.
+ */
 static VALUE
 folemethod_size_opt_params(self)
     VALUE self;
@@ -4566,6 +4660,12 @@ ole_param_ole_type(pTypeInfo, method_index, index)
     return type;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_PARAM#ole_type
+ *
+ *  Returns OLE type of WIN32OLE_PARAM object(parameter of OLE method).
+ */
 static VALUE 
 foleparam_ole_type(self)
     VALUE self;
@@ -4594,6 +4694,11 @@ ole_param_ole_type_detail(pTypeInfo, method_index, index)
     return typedetail;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_PARAM#ole_type_detail
+ *  Returns detail information of type of argument.
+ */
 static VALUE 
 foleparam_ole_type_detail(self)
     VALUE self;
@@ -4665,6 +4770,12 @@ static VALUE foleparam_optional(self)
                                pparam->index, PARAMFLAG_FOPT);
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_PARAM#retval?
+ *
+ *  Returns true if argument is return value.
+ */
 static VALUE foleparam_retval(self)
     VALUE self;
 {
@@ -5246,6 +5357,14 @@ fev_s_allocate(klass)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_EVENT.new(ole, event) #=> WIN32OLE_EVENT object.
+ *
+ *  Returns OLE event object.
+ *  The first argument specifies WIN32OLE object.
+ *  The second argument specifies OLE event name.
+ */     
 static VALUE
 fev_initialize(argc, argv, self)
     int argc;
@@ -5329,9 +5448,10 @@ fev_initialize(argc, argv, self)
 }
 
 /*
- * WIN32OLE_EVENT.message_loop
- * ---
- * Translates and dispatches Windows message.
+ *  call-seq:
+ *     WIN32OLE_EVENT.message_loop
+ * 
+ *  Translates and dispatches Windows message.
  */
 static VALUE
 fev_s_msg_loop(klass)
@@ -5373,10 +5493,11 @@ ev_on_event(argc, argv, self, is_ary_arg)
 }
 
 /*
- * WIN32OLE_EVENT#on_event([event]){...}
- * ----
- * defines the callback event.
- * If argument is omitted, this method defines the callback of all events.
+ *  call-seq:
+ *     WIN32OLE_EVENT#on_event([event]){...}
+ * 
+ *  Defines the callback event.
+ *  If argument is omitted, this method defines the callback of all events.
  */
 static VALUE
 fev_on_event(argc, argv, self)
@@ -5388,11 +5509,12 @@ fev_on_event(argc, argv, self)
 }
 
 /*
- * WIN32OLE_EVENT#on_event_with_outargs([event]){...}
- * ----
- * defines the callback of event.
- * If you want modify argument in callback, 
- * you should use this method instead of WIN32OLE_EVENT#on_event.
+ *  call-seq:
+ *     WIN32OLE_EVENT#on_event_with_outargs([event]){...}
+ * 
+ *  Defines the callback of event.
+ *  If you want modify argument in callback, 
+ *  you should use this method instead of WIN32OLE_EVENT#on_event.
  */
 static VALUE
 fev_on_event_with_outargs(argc, argv, self)
