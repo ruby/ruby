@@ -120,8 +120,8 @@ ruby.hでは構造体へキャストするマクロも「RXXXXX()」(全部大文
 
 例えば，文字列strの長さを得るためには「RSTRING(str)->len」と
 し，文字列strをchar*として得るためには「RSTRING(str)->ptr」
-とします．配列の場合には，それぞれ「RARRAT(str)->len」，
-「RARRAT(str)->ptr」となります．
+とします．配列の場合には，それぞれ「RARRAY(str)->len」，
+「RARRAY(str)->ptr」となります．
 
 rubyの構造体を直接アクセスする時に気をつけなければならないこ
 とは，配列や文字列の構造体の中身は参照するだけで，直接変更し
