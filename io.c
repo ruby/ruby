@@ -1013,7 +1013,6 @@ read_all(fptr, siz, str)
 	str = rb_str_new(0, siz);
     }
     else {
-	StringValue(str);
 	rb_str_resize(str, siz);
     }
     for (;;) {
@@ -1066,6 +1065,7 @@ io_read(argc, argv, io)
     rb_scan_args(argc, argv, "02", &length, &str);
 
     if (NIL_P(length)) {
+	if (!NIL_P(str)) StringValue(str);
 	GetOpenFile(io, fptr);
 	rb_io_check_readable(fptr);	
 	return read_all(fptr, remain_size(fptr), str);

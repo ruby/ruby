@@ -1,3 +1,8 @@
+Fri Nov 26 00:17:40 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_read): move StringValue() check before GetOpenFile().
+	  [ruby-dev:24959]
+
 Thu Nov 25 20:14:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/thwait.rb (ThreadsWait#join_nowait): abnormally terminated
