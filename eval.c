@@ -4002,7 +4002,7 @@ rb_jump_tag(tag)
 int
 rb_block_given_p()
 {
-    if (ruby_frame->iter && ruby_block)
+    if (ruby_frame->iter == ITER_CUR && ruby_block)
 	return Qtrue;
     return Qfalse;
 }
@@ -4016,7 +4016,7 @@ rb_iterator_p()
 static VALUE
 rb_f_block_given_p()
 {
-    if (ruby_frame->prev && ruby_frame->prev->iter && ruby_block)
+    if (ruby_frame->prev && ruby_frame->prev->iter == ITER_CUR && ruby_block)
 	return Qtrue;
     return Qfalse;
 }
@@ -7244,7 +7244,8 @@ block_pass(self, node)
     _block.outer = ruby_block;
     ruby_block = &_block;
     PUSH_ITER(ITER_PRE);
-    ruby_frame->iter = ITER_PRE;
+    if (ruby_frame->iter == ITER_NOT)
+	ruby_frame->iter = ITER_PRE;
 
     PUSH_TAG(PROT_ITER);
     state = EXEC_TAG();

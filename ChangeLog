@@ -1,3 +1,13 @@
+Thu Oct  2 01:32:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_block_given_p): real required condition is
+	  ruby_frame->prev->iter == ITER_CUR.
+
+	* eval.c (rb_block_given_p): ditto.
+
+	* eval.c (block_pass): update ruby_frame->iter only when previous
+	  value is ITER_NOT.
+
 Thu Oct  2 01:02:35 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_const_defined_at): should exclude constants from
