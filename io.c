@@ -1132,11 +1132,13 @@ io_readpartial(argc, argv, io)
 
     READ_CHECK(fptr->f);
     if (RSTRING(str)->len != len) {
+      modified:
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
     n = read_buffered_data(RSTRING(str)->ptr, len, fptr->f);
     if (n <= 0) {
       again:
+	if (RSTRING(str)->len != len) goto modified;
         TRAP_BEG;
         n = read(fileno(fptr->f), RSTRING(str)->ptr, len);
         TRAP_END;

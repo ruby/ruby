@@ -1,3 +1,8 @@
+Fri Oct 22 00:22:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_shift_buffer): should restore class
+	  field of a buffer.  [ruby-dev:24562]
+
 Fri Oct 22 00:20:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_include): should not treat char as negative value.
@@ -13,6 +18,12 @@ Thu Oct 21 13:11:31 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* io.c (pipe_open): variable name "fpw" is conflicted.
 
 Thu Oct 21 00:36:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_alias): should warn on method discarding.
+	  [ruby-dev:24546]
+
+	* ext/zlib/zlib.c (zstream_expand_buffer_into): hide internal
+	  string buffer by clearing klass.  [ruby-dev:24548]
 
 	* parse.y (lex_getline): should not touch ruby_debug_lines if
 	  RIPPER is defined.  [ruby-dev:24547]
