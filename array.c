@@ -1180,13 +1180,14 @@ rb_ary_select(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
-    VALUE result = rb_ary_new();
+    VALUE result;
     long i;
 
     if (rb_block_given_p()) {
 	if (argc > 0) {
 	    rb_raise(rb_eArgError, "wrong number arguments (%d for 0)", argc);
 	}
+	result = rb_ary_new2(RARRAY(ary)->len);
 	for (i = 0; i < RARRAY(ary)->len; i++) {
 	    if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
 		rb_ary_push(result, RARRAY(ary)->ptr[i]);
@@ -1194,6 +1195,7 @@ rb_ary_select(argc, argv, ary)
 	}
     }
     else {
+	result = rb_ary_new2(argc);
 	for (i=0; i<argc; i++) {
 	    rb_ary_push(result, rb_ary_entry(ary, NUM2LONG(argv[i])));
 	}
