@@ -3911,7 +3911,7 @@ class TkRoot<TkWindow
     Tk_WINDOWS["."] = new
   end
 =end
-  def TkRoot.new(keys=nil)
+  def TkRoot.new(keys=nil, &b)
     unless TkCore::INTERP.tk_windows['.']
       TkCore::INTERP.tk_windows['.'] = 
 	super(:without_creating=>true, :widgetname=>'.')
@@ -3926,7 +3926,8 @@ class TkRoot<TkWindow
 	end
       }
     end
-    return root
+    root.instance_eval(&b) if block_given?
+    root
   end
 
   WidgetClassName = 'Tk'.freeze
