@@ -84,7 +84,7 @@ static int req_timer_tick = DEFAULT_TIMER_TICK;
 static int run_timer_flag = 0;
 
 static int event_loop_wait_event   = 0;
-static int event_loop_abort_no_cmd = 0;
+static int event_loop_abort_on_exc = 1;
 static int loop_counter = 0;
 
 #if TCL_MAJOR_VERSION >= 8
@@ -206,19 +206,31 @@ get_eventloop_weight(self)
 }
 
 static VALUE
-rb_evloop_abort_no_cmd(self)
+rb_evloop_abort_on_exc(self)
     VALUE self;
 {
-    return event_loop_abort_no_cmd? Qtrue: Qfalse;
+    if (event_loop_abort_on_exc > 0) {
+	return Qtrue;
+    } else if (event_loop_abort_on_exc == 0) {
+	return Qfalse;
+    } else {
+	return Qnil;
+    }
 }
 
 static VALUE
-rb_evloop_abort_no_cmd_set(self, val)
+rb_evloop_abort_on_exc_set(self, val)
     VALUE self, val;
 {
     rb_secure(4);
-    event_loop_abort_no_cmd = (RTEST(val))? 1: 0;
-    return rb_evloop_abort_no_cmd(self);
+    if (RTEST(val)) {
+	event_loop_abort_on_exc =  1;
+    } else if (val == Qnil) {
+	event_loop_abort_on_exc = -1;
+    } else {
+	event_loop_abort_on_exc =  0;
+    }
+    return rb_evloop_abort_on_exc(self);
 }
 
 VALUE
@@ -324,7 +336,7 @@ lib_mainloop_ensure(parent_evloop)
     DUMP2("mainloop-ensure: current-thread : %lx\n", rb_thread_current());
     DUMP2("mainloop-ensure: eventloop-thread : %lx\n", eventloop_thread);
     if (eventloop_thread == rb_thread_current()) {
-	DUMP2("tcltklib: eventloop-thread -> %lx\n", parent_evloop);
+	DUMP2("eventloop-thread -> %lx\n", parent_evloop);
 	eventloop_thread = parent_evloop;
     }
     return Qnil;
@@ -394,19 +406,20 @@ lib_watchdog_core(check_rootwidget)
 
     /* watchdog start */
     do {
-	if (eventloop_thread == 0 || loop_counter == prev_val) {
-	    if (RTEST(rb_funcall(eventloop_thread, rb_intern("stop?"), 0))
-		&& ++chance >= 3) {
-	      /* start new eventloop thread */
-	      DUMP2("eventloop thread %lx is sleeping or dead", 
-		    eventloop_thread);
-	      evloop = rb_thread_create(lib_mainloop_launcher, 
-					(void*)&check_rootwidget);
-	      DUMP2("create new eventloop thread %lx", evloop);
-	      loop_counter = -1;
-	      chance = 0;
-	      rb_thread_run(evloop);
-	    }
+	if (eventloop_thread == 0 
+	    || (loop_counter == prev_val
+		&& RTEST(rb_funcall(eventloop_thread, rb_intern("stop?"), 0))
+		&& ++chance >= 3 )
+	    ) {
+	    /* start new eventloop thread */
+	    DUMP2("eventloop thread %lx is sleeping or dead", 
+		  eventloop_thread);
+	    evloop = rb_thread_create(lib_mainloop_launcher, 
+				      (void*)&check_rootwidget);
+	    DUMP2("create new eventloop thread %lx", evloop);
+	    loop_counter = -1;
+	    chance = 0;
+	    rb_thread_run(evloop);
 	} else {
 	    loop_counter = prev_val;
 	    chance = 0;
@@ -919,11 +932,16 @@ ip_invoke_real(argc, argv, obj)
 
     /* map from the command name to a C procedure */
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
-	if (event_loop_abort_no_cmd || cmd[0] != '.')
+	/* if (event_loop_abort_on_exc || cmd[0] != '.') { */
+	if (event_loop_abort_on_exc > 0) {
 	    rb_raise(rb_eNameError, "invalid command name `%s'", cmd);
-	else {
+	} else {
+	    if (event_loop_abort_on_exc < 0) {
+		rb_warning("invalid command name `%s' (ignore)", cmd);
+	    } else {
+		rb_warn("invalid command name `%s' (ignore)", cmd);
+	    }
 	    Tcl_ResetResult(ptr->ip);
-	    rb_warning("invalid command name `%s' (ignore)", cmd);
 	    return rb_tainted_str_new2("");
 	}
     }
@@ -1000,8 +1018,19 @@ ip_invoke_real(argc, argv, obj)
 	TRAP_END;
     }
 
+    /* exception on mainloop */
     if (ptr->return_value == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	if (event_loop_abort_on_exc > 0) {
+	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	} else {
+	    if (event_loop_abort_on_exc < 0) {
+		rb_warning("%s (ignore)", ptr->ip->result);
+	    } else {
+		rb_warn("%s (ignore)", ptr->ip->result);
+	    }
+	    Tcl_ResetResult(ptr->ip);
+	    return rb_tainted_str_new2("");
+	}
     }
 
     /* pass back the result (as string) */
@@ -1176,10 +1205,10 @@ Init_tcltklib()
 			      set_eventloop_weight, 2);
     rb_define_module_function(lib, "get_eventloop_weight", 
 			      get_eventloop_weight, 0);
-    rb_define_module_function(lib, "mainloop_abort_on_no_widget_cmd", 
-                             rb_evloop_abort_no_cmd, 0);
-    rb_define_module_function(lib, "mainloop_abort_on_no_widget_cmd=",  
-                             rb_evloop_abort_no_cmd_set, 1);
+    rb_define_module_function(lib, "mainloop_abort_on_exception", 
+                             rb_evloop_abort_on_exc, 0);
+    rb_define_module_function(lib, "mainloop_abort_on_exception=",  
+                             rb_evloop_abort_on_exc_set, 1);
 
     rb_define_alloc_func(ip, ip_alloc);
     rb_define_method(ip, "initialize", ip_init, -1);
@@ -1196,10 +1225,10 @@ Init_tcltklib()
     rb_define_method(ip, "mainloop", lib_mainloop, -1);
     rb_define_method(ip, "mainloop_watchdog", lib_mainloop_watchdog, -1);
     rb_define_method(ip, "do_one_event", lib_do_one_event, -1);
-    rb_define_method(ip, "mainloop_abort_on no_widget_cmd", 
-		    rb_evloop_abort_no_cmd, 0);
-    rb_define_method(ip, "mainloop_abort_on_no_widget_cmd=", 
-		    rb_evloop_abort_no_cmd_set, 1);
+    rb_define_method(ip, "mainloop_abort_on_exception", 
+		    rb_evloop_abort_on_exc, 0);
+    rb_define_method(ip, "mainloop_abort_on_exception=", 
+		    rb_evloop_abort_on_exc_set, 1);
     rb_define_method(ip, "set_eventloop_tick", set_eventloop_tick, 1);
     rb_define_method(ip, "get_eventloop_tick", get_eventloop_tick, 0);
     rb_define_method(ip, "set_no_event_wait", set_no_event_wait, 1);

@@ -3359,7 +3359,7 @@ class TkObject<TkKernel
   private :tk_trace_variable
 
   def destroy
-    tk_call 'trace', 'vdelete', @tk_vn, 'w', @var_id if @var_id
+    tk_call 'trace', 'vdelete', @tk_vn, 'w', @var_id if defined? @var_id
   end
 end
 

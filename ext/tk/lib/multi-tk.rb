@@ -25,6 +25,12 @@ MultiTkIp_OK.freeze
 ################################################
 # methods for construction
 class MultiTkIp
+
+  # ignore exception on the mainloop
+  TclTkLib.mainloop_abort_on_exception = false
+
+  ######################################
+
   SLAVE_IP_ID = ['slave'.freeze, '00000']
 
   @@IP_TABLE = {}

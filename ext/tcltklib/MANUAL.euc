@@ -244,25 +244,24 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : 現在の loop_max と no_event_tick との値を返す．
          : ( see set_eventloop_wait )
 
-      mainloop_abort_on_no_widget_cmd=(bool)
-         : Tk インタープリタ上で widget に対応するコマンドが存在しない
-         : という例外を発生した際に，イベントループをエラー停止させる
-         : かどうかを指定する．true を指定した場合はエラー停止するが，
-	 : false の場合は例外を無視してイベントループを継続する．
-         : デフォルトでは false に設定されている．
-         : これは，コールバック処理の消去を忘れたままに widget を破壊
-         : してしまった場合のエラー停止の回避に役立つ．特に複数のイン
-         : タープリタが同時に動作している場合には，それらを管理するイ
-         : ベントループは 1 個であるため，いずれかのインタープリタが強
-         : 制停止させられた際にコールバックの完全な消去に失敗する場合
-         : がしばしば見られる．そのような場合でもエラーを無視してイベ
-	 : ントループが稼働を続けることで，残りのインタープリタが正常
-         : に動作し続けることができる．
+      mainloop_abort_on_exception=(bool)
+         : Tk インタープリタ上で例外を発生した際に，イベントループを
+         : エラー停止させるかどうかを指定する．true を指定した場合は
+         : エラー停止するが，false の場合は例外を無視してイベントルー
+         : プを継続する．さらに nil の場合は警告モードでない限りはエ
+         : ラーメッセージの出力すら省略して，例外を無視する．
+	 : デフォルトでは true に設定されている．
+         : １個のインタープリタだけを使っている場合にはエラー時にその
+         : まま停止しても通常は問題ないが，複数のインタープリタが同時
+         : に動作している場合には，それらを管理するイベントループは１
+         : 個だけであるため，いずれかのインタープリタのエラーが原因で，
+         : 他のインタープリタの処理継続が不可能になることがある．その
+         : ような場合でもエラーを無視してイベントループが稼働を続ける
+         : ことで，他のインタープリタが正常に動作し続けることができる．
 
-      mainloop_abort_on_no_widget_cmd
-         : Tk インタープリタ上で widget に対応するコマンドが存在しない
-         : という例外を発生した際に，イベントループをエラー停止させる
-         : かどうかを設定状態を true/false で得る．
+      mainloop_abort_on_exception
+         : Tk インタープリタ上で例外を発生した際に，イベントループをエ
+         : ラー停止させるかどうかの設定状態を true/false で得る．
 
 
 クラス TclTkIp
@@ -339,10 +338,10 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
       get_eventloop_tick   : 引数を含めて TclTkLib.get_eventloop_tick に同じ
       set_eventloop_weight : 引数を含めて TclTkLib.set_eventloop_weight に同じ
       get_eventloop_weight : 引数を含めて TclTkLib.set_eventloop_weight に同じ
-      mainloop_abort_on_no_widget_cmd=
-         : 引数を含めて TclTkLib.mainloop_abort_on_no_widget_cmd= に同じ
-      mainloop_abort_on_no_widget_cmd
-         : 引数を含めて TclTkLib.mainloop_abort_on_no_widget_cmd に同じ
+      mainloop_abort_on_exception
+         : 引数を含めて TclTkLib.mainloop_abort_on_exception に同じ
+      mainloop_abort_on_exception=
+         : 引数を含めて TclTkLib.mainloop_abort_on_exception= に同じ
 
 クラス TkCallbackBreak < StandardError
 クラス TkCallbackContinue < StandardError
