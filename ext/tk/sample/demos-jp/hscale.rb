@@ -24,7 +24,8 @@ msg.pack('side'=>'top')
 
 TkFrame.new($hscale_demo) {|frame|
   TkButton.new(frame) {
-    text 'Î»²ò'
+    #text 'Î»²ò'
+    text 'ÊÄ¤¸¤ë'
     command proc {
       tmppath = $hscale_demo
       $hscale_demo = nil

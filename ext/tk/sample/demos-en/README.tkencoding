@@ -1,3 +1,8 @@
+This is a original document of 'tkencoding.rb'. 
+The library 'tkencoding.rb' is obsolete. 
+Functions of tkencoding.rb is already included into Ruby/Tk.
+
+-------------------------------------------------
 tkencoding.rbを用いた日本語の表示について
 
 Copyright (C) 1999/07, Takaaki Tateishi <ttate@jaist.ac.jp>

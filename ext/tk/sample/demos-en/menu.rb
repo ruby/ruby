@@ -15,7 +15,7 @@ $menu_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-# menu frame À¸À®
+# menu frame
 $menu_frame = TkFrame.new($menu_demo, 'relief'=>'raised', 'bd'=>2)
 $menu_frame.pack('side'=>'top', 'fill'=>'x')
 
@@ -149,7 +149,8 @@ TkMenubutton.new($menu_frame, 'text'=>'Icons', 'underline'=>0) {|m|
   TkMenu.new(m, 'tearoff'=>false) {|icon_menu|
     m.configure('menu'=>icon_menu)
     add('command', 
-	'bitmap'=>'@'+[$demo_dir,'images','pattern.xbm'].join(File::Separator),
+	'bitmap'=>'@'+[$demo_dir,'..',
+	                'images','pattern.xbm'].join(File::Separator),
 	'command'=>proc{TkDialog.new('title'=>'Bitmap Menu Entry', 
 				     'text'=>'The menu entry you invoked displays a bitmap rather than a text string.  Other than this, it is just like any other menu entry.',
 				     'bitmap'=>'', 'default'=>0, 

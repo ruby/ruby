@@ -3,6 +3,7 @@
 #			by Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 require 'tcltklib'
+require 'tkutil'
 require 'thread'
 
 ################################################
@@ -11,7 +12,6 @@ require 'thread'
 TclTkLib.mainloop_abort_on_exception = true
 # TclTkLib.mainloop_abort_on_exception = false
 # TclTkLib.mainloop_abort_on_exception = nil
-
 
 
 ################################################
@@ -48,12 +48,15 @@ class MultiTkIp
 
   ######################################
 
-  @@CB_ENTRY_CLASS = Class.new{|c|
+  @@CB_ENTRY_CLASS = Class.new(TkCallbackEntry){|c|
     def initialize(ip, cmd)
       @ip = ip
       @cmd = cmd
     end
     attr_reader :ip, :cmd
+    def inspect
+      cmd.inspect
+    end
     def call(*args)
       begin
 	 unless @ip.deleted?
@@ -68,8 +71,11 @@ class MultiTkIp
 
   ######################################
 
-  def _keys2opts(keys)
-    keys.collect{|k,v| "-#{k} #{v}"}.join(' ')
+  def _keys2opts(src_keys)
+    return nil if src_keys == nil
+    keys = {}; src_keys.each{|k, v| keys[k.to_s] = v}
+    #keys.collect{|k,v| "-#{k} #{v}"}.join(' ')
+    keys.collect{|k,v| "-#{k} #{TclTkLib._conv_listelement(TkComm::_get_eval_string(v))}"}.join(' ')
   end
   private :_keys2opts
 
@@ -136,10 +142,11 @@ class MultiTkIp
 	  rescue SystemExit
 	    # delete IP
 	    unless @interp.deleted?
-	      if @interp._invoke('info', 'command', '.') != ""
-		@interp._invoke('destroy', '.')
-	      end
-	      @interp.delete
+	      # if @interp._invoke('info', 'command', '.') != ""
+	      #   @interp._invoke('destroy', '.')
+	      # end
+	      # @interp.delete
+	      @interp._eval_without_enc('exit')
 	    end
 	    _check_and_return(thread, MultiTkIp_OK.new(nil))
 	    break
@@ -200,13 +207,13 @@ class MultiTkIp
 
   @@DEFAULT_MASTER = self.allocate
   @@DEFAULT_MASTER.instance_eval{
-    @encoding = [].taint
-
     @tk_windows = {}.taint
 
     @tk_table_list = [].taint
 
     @slave_ip_tbl = {}.taint
+
+    @slave_ip_top = {}.taint
 
     unless keys.kind_of? Hash
       fail ArgumentError, "expecting a Hash object for the 2nd argument"
@@ -274,23 +281,28 @@ class MultiTkIp
     tk_opts   = {}
 
     keys.each{|k,v|
-      if k.to_s == 'name'
+      k_str = k.to_s
+      if k_str == 'name'
 	name = v 
-      elsif k.to_s == 'safe'
+      elsif k_str == 'safe'
 	safe = v
-      elsif SAFE_OPT_LIST.member?(k.to_s)
-	safe_opts[k] = v
+      elsif SAFE_OPT_LIST.member?(k_str)
+	safe_opts[k_str] = v
       else
-	tk_opts[k] = v
+	tk_opts[k_str] = v
       end
     }
 
-    [name, safe, safe_opts, tk_opts]
+    if keys['without_tk'] || keys[:without_tk]
+      [name, safe, safe_opts, nil]
+    else
+      [name, safe, safe_opts, tk_opts]
+    end
   end
   private :_parse_slaveopts
 
   def _create_slave_ip_name
-    name = SLAVE_IP_ID.join
+    name = SLAVE_IP_ID.join('')
     SLAVE_IP_ID[1].succ!
     name
   end
@@ -388,13 +400,17 @@ class MultiTkIp
     # procedure to delete slave interpreter
     slave_delete_proc = proc{
       unless slave_ip.deleted?
-	if slave_ip._invoke('info', 'command', '.') != ""
-	  slave_ip._invoke('destroy', '.')
-	end
-	slave_ip.delete
+	#if slave_ip._invoke('info', 'command', '.') != ""
+	#  slave_ip._invoke('destroy', '.')
+	#end
+	#slave_ip.delete
+	slave_ip._eval_without_enc('exit')
       end
+      top.destroy if top.winfo_exist?
     }
     tag = TkBindTag.new.bind('Destroy', slave_delete_proc)
+
+    top.bindtags = top.bindtags.unshift(tag)
 
     # create control frame
     TkFrame.new(top, :bg=>'red', :borderwidth=>3, :relief=>'ridge') {|fc|
@@ -421,23 +437,45 @@ class MultiTkIp
 
     # return keys
     loadTk_keys['use'] = TkWinfo.id(c)
-    loadTk_keys
+    [loadTk_keys, top.path]
   end
   private :__create_safetk_frame
 
   def __create_safe_slave_obj(safe_opts, app_name, tk_opts)
     # safe interpreter
-    # at present, not enough support for '-deleteHook' option
     ip_name = _create_slave_ip_name
     slave_ip = @interp.create_slave(ip_name, true)
-    @interp._eval("::safe::interpInit #{ip_name} "+_keys2opts(safe_opts))
-    tk_opts = __check_safetk_optkeys(tk_opts)
-    unless tk_opts.key?('use')
-      tk_opts = __create_safetk_frame(slave_ip, ip_name, app_name, tk_opts)
-    end
-    slave_ip._invoke('set', 'argv0', app_name) if app_name.kind_of?(String)
-    @interp._eval("::safe::loadTk #{ip_name} #{_keys2opts(tk_opts)}")
     @slave_ip_tbl[ip_name] = slave_ip
+
+    @interp._eval("::safe::interpInit #{ip_name}")
+
+    slave_ip._invoke('set', 'argv0', app_name) if app_name.kind_of?(String)
+
+    if tk_opts
+      tk_opts = __check_safetk_optkeys(tk_opts)
+      if tk_opts.key?('use')
+	@slave_ip_top[ip_name] = ''
+      else
+	tk_opts, top_path = __create_safetk_frame(slave_ip, ip_name, app_name, 
+						  tk_opts)
+	@slave_ip_top[ip_name] = top_path
+      end
+      @interp._eval("::safe::loadTk #{ip_name} #{_keys2opts(tk_opts)}")
+    else
+      @slave_ip_top[ip_name] = nil
+    end
+
+    if safe_opts.key?('deleteHook') || safe_opts.key?(:deleteHook)
+      @interp._eval("::safe::interpConfigure #{ip_name} " + 
+		    _keys2opts(safe_opts))
+    else
+      @interp._eval("::safe::interpConfigure #{ip_name} " + 
+		    _keys2opts(safe_opts) + '-deleteHook {' + 
+		    TkComm._get_eval_string(proc{|slave|
+					      self._default_delete_hook(slave)
+					    }) + '}')
+    end
+
     [slave_ip, ip_name]
   end
 
@@ -481,15 +519,15 @@ class MultiTkIp
       fail ArgumentError, "expecting a Hash object for the 2nd argument"
     end
 
-    @encoding = []
     @tk_windows = {}
     @tk_table_list = []
     @slave_ip_tbl = {}
+    @slave_ip_top = {}
 
-    @encoding.taint unless @encoding.tainted?
     @tk_windows.taint unless @tk_windows.tainted?
     @tk_table_list.taint unless @tk_table_list.tainted?
     @slave_ip_tbl.taint unless @slave_ip_tbl.tainted?
+    @slave_ip_top.taint unless @slave_ip_top.tainted?
 
     name, safe, safe_opts, tk_opts = _parse_slaveopts(keys)
 
@@ -531,6 +569,34 @@ class MultiTkIp
     }
 
     self.freeze  # defend against modification
+  end
+
+  ######################################
+
+  def _default_delete_hook(slave)
+    if @slave_ip_top[slave].kind_of?(String)
+      # call default hook of safetk.tcl (ignore exceptions)
+      if @slave_ip_top[slave] == ''
+	begin
+	  @interp._eval("::safe::disallowTk #{slave}")
+	rescue
+	  warn("Waring: fail to call '::safe::disallowTk'") if $DEBUG
+	end
+      else # toplevel path
+	begin
+	  @interp._eval("::safe::tkDelete {} #{@slave_ip_top[slave]} #{slave}")
+	rescue
+	  warn("Waring: fail to call '::safe::tkDelete'") if $DEBUG
+	  begin
+	    @interp._eval("destroy #{@slave_ip_top[slave]}")
+	  rescue
+	    warn("Waring: fail to destroy toplevel") if $DEBUG
+	  end
+	end
+      end
+    end
+    @slave_ip_tbl.delete(slave)
+    @slave_ip_top.delete(slave)
   end
 end
 
@@ -796,6 +862,10 @@ class MultiTkIp
       rescue SystemExit
 	# exit IP
 	warn("Warning: "+ $! + " on " + self.inspect) if $DEBUG
+	begin
+	  self._eval_without_enc('exit')
+	rescue Exception
+	end
 	self.delete
 	ret = nil
       rescue Exception => e
@@ -823,6 +893,10 @@ class MultiTkIp
     rescue SystemExit
       # exit IP
       warn("Warning: " + $! + " on " + self.inspect) if $DEBUG
+      begin
+	self._eval_without_enc('exit')
+      rescue Exception
+      end
       self.delete
     rescue Exception => e
       # others --> warning
@@ -868,10 +942,12 @@ class << MultiTkIp
     __getip.do_one_event(flag)
   end
   def mainloop_abort_on_exception
-    __getip.mainloop_abort_on_exception
+    # __getip.mainloop_abort_on_exception
+    TclTkLib.mainloop_abort_on_exception
   end
   def mainloop_abort_on_exception=(mode)
-    __getip.mainloop_abort_on_exception=(mode)
+    # __getip.mainloop_abort_on_exception=(mode)
+    TclTkLib.mainloop_abort_on_exception=(mode)
   end
   def set_eventloop_tick(tick)
     __getip.set_eventloop_tick(tick)
@@ -919,6 +995,22 @@ class << MultiTkIp
     __getip._invoke(*args)
   end
 
+  def _eval_without_enc(str)
+    __getip._eval_without_enc(str)
+  end
+
+  def _invoke_without_enc(*args)
+    __getip._invoke_without_enc(*args)
+  end
+
+  def _eval_with_enc(str)
+    __getip._eval_with_enc(str)
+  end
+
+  def _invoke_with_enc(*args)
+    __getip._invoke_with_enc(*args)
+  end
+
   def _toUTF8(str, encoding)
     __getip._toUTF8(str, encoding)
   end
@@ -938,6 +1030,54 @@ class << MultiTkIp
   def _return_value
     __getip._return_value
   end
+
+  def _get_variable(var, flag)
+    __getip._get_variable(var, flag)
+  end
+  def _get_variable2(var, idx, flag)
+    __getip._get_variable2(var, idx, flag)
+  end
+  def _set_variable(var, value, flag)
+    __getip._set_variable(var, value, flag)
+  end
+  def _set_variable2(var, idx, value, flag)
+    __getip._set_variable2(var, idx, value, flag)
+  end
+  def _unset_variable(var, flag)
+    __getip._unset_variable(var, flag)
+  end
+  def _unset_variable2(var, idx, flag)
+    __getip._unset_variable2(var, idx, flag)
+  end
+
+  def _get_global_var(var)
+    __getip._get_global_var(var)
+  end
+  def _get_global_var2(var, idx)
+    __getip._get_global_var2(var, idx)
+  end
+  def _set_global_var(var, value)
+    __getip._set_global_var(var, value)
+  end
+  def _set_global_var2(var, idx, value)
+    __getip._set_global_var2(var, idx, value)
+  end
+  def _unset_global_var(var)
+    __getip._unset_global_var(var)
+  end
+  def _unset_global_var2(var, idx)
+    __getip._unset_global_var2(var, idx)
+  end
+
+  def _split_tklist(str)
+    __getip._split_tklist(str)
+  end
+  def _merge_tklist(*args)
+    __getip._merge_tklist(*args)
+  end
+  def _conv_listelement(arg)
+    __getip._conv_listelement(arg)
+  end
 end
 
 
@@ -952,12 +1092,12 @@ class << TclTkLib
   def do_one_event(flag = TclTkLib::EventFlag::ALL)
     MultiTkIp.do_one_event(flag)
   end
-  def mainloop_abort_on_exception
-    MultiTkIp.mainloop_abort_on_exception
-  end
-  def mainloop_abort_on_exception=(mode)
-    MultiTkIp.mainloop_abort_on_exception=(mode)
-  end
+  #def mainloop_abort_on_exception
+  #  MultiTkIp.mainloop_abort_on_exception
+  #end
+  #def mainloop_abort_on_exception=(mode)
+  #  MultiTkIp.mainloop_abort_on_exception=(mode)
+  #end
   def set_eventloop_tick(tick)
     MultiTkIp.set_eventloop_tick(tick)
   end
@@ -979,12 +1119,19 @@ class << TclTkLib
   def restart
     MultiTkIp.restart
   end
+
+  def _merge_tklist(*args)
+    MultiTkIp._merge_tklist(*args)
+  end
+  def _conv_listelement(arg)
+    MultiTkIp._conv_listelement(arg)
+  end
 end
 
 
 # depend on TclTkIp
 class MultiTkIp
-  def mainloop(check_root = true, restart_on_dead = true)
+  def mainloop(check_root = true, restart_on_dead = false)
     return self if self.slave?
     unless restart_on_dead
       @interp.mainloop(check_root)
@@ -1022,6 +1169,10 @@ class MultiTkIp
   end
 
   def delete
+    if safe?
+      # do 'exit' to call the delete_hook procedure
+      @interp._eval_without_enc('exit')
+    end
     @interp.delete
   end
 
@@ -1039,6 +1190,22 @@ class MultiTkIp
 
   def _invoke(*args)
     @interp._invoke(*args)
+  end
+
+  def _eval_without_enc(str)
+    @interp._eval_without_enc(str)
+  end
+
+  def _invoke_without_enc(*args)
+    @interp._invoke_without_enc(*args)
+  end
+
+  def _eval_with_enc(str)
+    @interp._eval_with_enc(str)
+  end
+
+  def _invoke_with_enc(*args)
+    @interp._invoke_with_enc(*args)
   end
 
   def _toUTF8(str, encoding)
@@ -1059,6 +1226,54 @@ class MultiTkIp
 
   def _return_value
     @interp._return_value
+  end
+
+  def _get_variable(var, flag)
+    @interp._get_variable(var, flag)
+  end
+  def _get_variable2(var, idx, flag)
+    @interp._get_variable2(var, idx, flag)
+  end
+  def _set_variable(var, value, flag)
+    @interp._set_variable(var, value, flag)
+  end
+  def _set_variable2(var, idx, value, flag)
+    @interp._set_variable2(var, idx, value, flag)
+  end
+  def _unset_variable(var, flag)
+    @interp._unset_variable(var, flag)
+  end
+  def _unset_variable2(var, idx, flag)
+    @interp._unset_variable2(var, idx, flag)
+  end
+
+  def _get_global_var(var)
+    @interp._get_global_var(var)
+  end
+  def _get_global_var2(var, idx)
+    @interp._get_global_var2(var, idx)
+  end
+  def _set_global_var(var, value)
+    @interp._set_global_var(var, value)
+  end
+  def _set_global_var2(var, idx, value)
+    @interp._set_global_var2(var, idx, value)
+  end
+  def _unset_global_var(var)
+    @interp._unset_global_var(var)
+  end
+  def _unset_global_var2(var, idx)
+    @interp._unset_global_var2(var, idx)
+  end
+
+  def _split_tklist(str)
+    @interp._split_tklist(str)
+  end
+  def _merge_tklist(*args)
+    @interp._merge_tklist(*args)
+  end
+  def _conv_listelement(arg)
+    @interp._conv_listelement(arg)
   end
 end
 
@@ -1090,7 +1305,7 @@ class MultiTkIp
     else
       list.push str[0..i-1]
     end
-    list += tk_split_simplelist(str[i+1..-1])
+    list += _lst2ary(str[i+1..-1])
     list
   end
   private :_lst2ary
@@ -1224,6 +1439,14 @@ class MultiTkIp
     self
   end
 
+  def recursion_limit(slave = '', limit = None)
+    number(@interp._invoke('interp', 'recursionlimit', 
+			   _slavearg(slave), limit))
+  end
+  def self.recursion_limit(slave = '', limit = None)
+    __getip.recursion_limit(slave)
+  end
+
   def alias_target(aliascmd, slave = '')
     @interp._invoke('interp', 'target', _slavearg(slave), aliascmd)
   end
@@ -1309,35 +1532,94 @@ class MultiTkIp
 end
 
 
+# Safe Base :: manipulating safe interpreter
+class MultiTkIp
+  def safeip_configure(slave, slot, value=None)
+    # use for '-noStatics' option ==> {statics=>false}
+    #     for '-nestedLoadOk' option ==> {nested=>true}
+    if slot.kind_of?(Hash)
+      ip = MultiTkIp.__getip
+      ip._eval('::safe::interpConfigure ' + @ip_name + ' ' + 
+	       hash_kv(slot).join(' '))
+    else
+      ip._eval('::safe::interpConfigure ' + @ip_name + ' ' + 
+	       "-#{slot} #{_get_eval_string(value)}")
+    end
+    self
+  end
+
+  def safeip_configinfo(slot = nil)
+    ip = MultiTkIp.__getip
+    ret = {}
+    if slot
+      conf = _lst2ary(ip._eval("::safe::interpConfigure " + 
+			       @ip_name + " -#{slot}"))
+      if conf[0] == '-deleteHook'
+	if conf[1] =~ /^rb_out (c\d+)/
+	  ret[conf[0][1..-1]] = MultiTkIp._tk_cmd_tbl[$1]
+	else
+	  ret[conf[0][1..-1]] = conf[1]
+	end
+      else
+	ret[conf[0][1..-1]] = conf[1]
+      end
+    else
+      Hash[*_lst2ary(ip._eval("::safe::interpConfigure " + 
+			      @ip_name))].each{|k, v|
+	if k == '-deleteHook'
+	  if v =~ /^rb_out (c\d+)/
+	    ret[k[1..-1]] = MultiTkIp._tk_cmd_tbl[$1]
+	  else
+	    ret[k[1..-1]] = v
+	  end
+	else
+	  ret[k[1..-1]] = v
+	end
+      }
+    end
+    ret
+  end
+
+  def safeip_delete(slave)
+    ip = MultiTkIp.__getip
+    ip._eval("::safe::interpDelete " + @ip_name)
+  end
+
+  def safeip_add_to_access_path(slave, dir)
+    ip = MultiTkIp.__getip
+    ip._eval("::safe::interpAddToAccessPath #{@ip_name} #{dir}")
+  end
+
+  def safeip_find_in_access_path(slave, dir)
+    ip = MultiTkIp.__getip
+    ip._eval("::safe::interpFindInAccessPath #{@ip_name} #{dir}")
+  end
+
+  def safeip_set_log_cmd(slave, cmd = Proc.new)
+    ip = MultiTkIp.__getip
+    ip._eval("::safe::setLogCmd #{@ip_name} #{_get_eval_string(cmd)}")
+  end
+end
+
+
 # encoding convert
 class MultiTkIp
-  # from tkencoding.rb by ttate@jaist.ac.jp
-  alias __eval _eval
-  alias __invoke _invoke
-
   def encoding
-    @encoding[0]
+    @interp.encoding
   end
   def encoding=(enc)
-    @encoding[0] = enc
-  end
-    
-  def _eval(cmd)
-    if @encoding[0] != nil
-      _fromUTF8(__eval(_toUTF8(cmd, @encoding[0])), @encoding[0])
-    else
-      __eval(cmd)
-    end
+    @interp.encoding = enc
   end
 
-  def _invoke(*cmds)
-    if defined?(@encoding[0]) && @encoding[0] != nil
-      cmds = cmds.collect{|cmd| _toUTF8(cmd, @encoding[0])}
-      _fromUTF8(__invoke(*cmds), @encoding[0])
-    else
-      __invoke(*cmds)
-    end
+  def encoding_convertfrom(str, enc=None)
+    @interp.encoding_convertfrom(str, enc)
   end
+  alias encoding_convert_from encoding_convertfrom
+
+  def encoding_convertto(str, enc=None)
+    @interp.encoding_convertto(str, enc)
+  end
+  alias encoding_convert_to encoding_convertto
 end
 
 

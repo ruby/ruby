@@ -92,7 +92,7 @@ if __FILE__ == $0
   TkButton.new('text'=>'This button has another balloon help') {|b|
     pack('fill'=>'x')
     TkBalloonHelp.new(b, 'text'=>'configured message', 
-		      'interval'=>500, 'font'=>'courier', 
+		      'interval'=>200, 'font'=>'courier', 
 		      'background'=>'gray', 'foreground'=>'red')
   }
   Tk.mainloop

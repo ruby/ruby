@@ -31,7 +31,8 @@ color = TkVariable.new
 # frame 生成
 TkFrame.new($radio_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $radio_demo
       $radio_demo = nil

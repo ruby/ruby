@@ -1595,7 +1595,8 @@ TkLabel.new($floor_demo, 'font'=>$font, 'wraplength'=>'8i', 'justify'=>'left',
 # frame 生成
 $floor_buttons = TkFrame.new($floor_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $floor_demo
       $floor_demo = nil

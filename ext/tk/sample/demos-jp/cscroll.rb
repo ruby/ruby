@@ -24,7 +24,8 @@ TkLabel.new($cscroll_demo, 'font'=>$font, 'wraplength'=>'4i',
 # frame 生成
 $cscroll_buttons = TkFrame.new($cscroll_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $cscroll_demo
       $cscroll_demo = nil

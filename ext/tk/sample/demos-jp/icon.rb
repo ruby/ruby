@@ -27,7 +27,8 @@ msg.pack('side'=>'top')
 # frame 生成
 TkFrame.new($icon_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $icon_demo
       $icon_demo = nil
@@ -44,15 +45,16 @@ TkFrame.new($icon_demo) {|frame|
 
 # image 生成
 flagup = \
-TkBitmapImage.new('file'=>[$demo_dir,
-                           'images','flagup.bmp'].join(File::Separator),
+TkBitmapImage.new('file'=>[$demo_dir,'..',
+                           'images','flagup.xbm'].join(File::Separator),
 		  'maskfile'=>\
-		  [$demo_dir,'images','flagup.bmp'].join(File::Separator))
+		  [$demo_dir,'..','images','flagup.xbm'].join(File::Separator))
 flagdown = \
-TkBitmapImage.new('file'=>[$demo_dir,
-                           'images','flagdown.bmp'].join(File::Separator),
+TkBitmapImage.new('file'=>[$demo_dir,'..',
+                           'images','flagdown.xbm'].join(File::Separator),
 		  'maskfile'=>\
-		  [$demo_dir,'images','flagdown.bmp'].join(File::Separator))
+		  [$demo_dir,'..',
+		    'images','flagdown.xbm'].join(File::Separator))
 
 # 変数生成
 letters = TkVariable.new
@@ -61,13 +63,15 @@ letters = TkVariable.new
 TkFrame.new($icon_demo, 'borderwidth'=>10){|w|
   TkFrame.new(w) {|f|
     TkRadioButton.new(f){
-      bitmap '@' + [$demo_dir,'images','letters.bmp'].join(File::Separator)
+      bitmap '@' + [$demo_dir,'..',
+	             'images','letters.xbm'].join(File::Separator)
       variable letters
       value 'full'
     }.pack('side'=>'top', 'expand'=>'yes')
 
     TkRadioButton.new(f){
-      bitmap '@' + [$demo_dir,'images','noletter.bmp'].join(File::Separator)
+      bitmap '@' + [$demo_dir,'..',
+	             'images','noletter.xbm'].join(File::Separator)
       variable letters
       value 'empty'
     }.pack('side'=>'top', 'expand'=>'yes')
@@ -82,7 +86,8 @@ TkFrame.new($icon_demo, 'borderwidth'=>10){|w|
   }.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'5m')
 
   TkCheckButton.new(w) {
-    bitmap '@' + [$demo_dir,'images','letters.bmp'].join(File::Separator)
+    bitmap '@' + [$demo_dir,'..',
+                   'images','letters.xbm'].join(File::Separator)
     indicatoron 0
     selectcolor 'SeaGreen1'
   }.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'5m')

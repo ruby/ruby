@@ -24,7 +24,8 @@ TkLabel.new($plot_demo, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left',
 # frame 生成
 $plot_buttons = TkFrame.new($plot_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $plot_demo
       $plot_demo = nil

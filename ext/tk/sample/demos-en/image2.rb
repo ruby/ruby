@@ -46,8 +46,8 @@ TkFrame.new($image2_demo) {|frame|
 
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# 変数生成
-$dirName = TkVariable.new([$demo_dir,'images'].join(File::Separator))
+# create variable
+$dirName = TkVariable.new([$demo_dir,'..','images'].join(File::Separator))
 
 # image
 $image2a = TkPhotoImage.new

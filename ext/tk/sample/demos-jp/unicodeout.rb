@@ -41,7 +41,7 @@ EOL
 TkFrame.new($unicodeout_demo){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
-  TkButton.new(f, :text=>'Î»²ò', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'ÊÄ¤¸¤ë', :width=>15, :command=>proc{
 		 $unicodeout_demo.destroy
 		 $unicodeout_demo = nil
 	       }).pack(:side=>:left, :expand=>true)

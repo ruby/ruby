@@ -26,7 +26,8 @@ TkLabel.new($menu8x_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
 # frame 生成
 TkFrame.new($menu8x_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $menu8x_demo
       $menu8x_demo = nil
@@ -36,7 +37,7 @@ TkFrame.new($menu8x_demo) {|frame|
 
   TkButton.new(frame) {
     text 'コード参照'
-    command proc{showCode 'menu'}
+    command proc{showCode 'menu8x'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
@@ -62,7 +63,8 @@ TkFrame.new($menu8x_demo) {|frame|
 # frame 生成
 TkFrame.new($menu8x_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $menu8x_demo
       $menu8x_demo = nil
@@ -72,7 +74,7 @@ TkFrame.new($menu8x_demo) {|frame|
 
   TkButton.new(frame) {
     text 'コード参照'
-    command proc{showCode 'menu'}
+    command proc{showCode 'menu8x'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 

@@ -1,5 +1,5 @@
 (tof)
-                                    2003/10/17  Hidetoshi NAGAI
+                                    2004/03/28  Hidetoshi NAGAI
 
 本ドキュメントには古い tcltk ライブラリ，tcltklib ライブラリの説明
 が含まれていますが，その記述内容は古いものとなっています．
@@ -175,6 +175,52 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : 処理対象イベントが存在しない場合に，イベント発生を待たず
          : に do_one_event を終了 ( false を返す ) する 
 
+   モジュール TclTkLib::VarAccessFlag
+      : _get_variable などでのフラグを指定するためのもの．フラグに
+      : は以下の定数を OR で連結して与える．
+
+      定数  NONE
+         : 値は 0 で，何もフラグを指定していないのに等しい．
+
+      定数  GLOBAL_ONLY
+         : 通常，変数の検索はまず手続き呼び出しを行ったレベルで検
+         : 索し，次に現在の名前空間で検索，最後にグローバル空間で
+         : 検索を行う．しかし，このフラグが指定された場合には，グ
+         : ローバル空間でのみ検索する．
+         : もし GLOBAL_ONLY と NAMESPACE_ONLY とが両方指定された場
+         : 合には，GLOBAL_ONLY の指定は無視される．
+
+      定数  NAMESPACE_ONLY
+         : このフラグが指定された場合には，現在の名前空間でのみ変
+         : 数の検索を行う．GLOBAL_ONLY の説明も参照すること．
+
+      定数  LEAVE_ERR_MSG
+         : 変数アクセスにおいてエラーが発生した場合，このフラグが
+         : 指定されていれば，実行結果として Tcl インタープリタにエ
+         : ラーメッセージが残される．このフラグが指定されていなけ
+         : れば，エラーメッセージは一切残されない．
+
+      定数  APPEND_VALUE
+         : このフラグが指定されていた場合，変数の値を置き換えので
+         : はなく，現在の値に代入値が追加 (append; 文字列連結) さ
+         : れる．変数が未定義あった場合，このフラグは無視される．
+
+      定数  LIST_ELEMENT
+         : このフラグが指定されていた場合，代入値はまず Tcl のリス
+         : ト要素として適切となるように変換される．代入値がリスト
+         : (またはサブリスト) の最初の要素となるのでない限り，代入
+         : 値の直前には空白文字が追加される．
+
+      定数  PARSE_VARNAME
+         : _set_variable などの呼び出しにおいてこのフラグが指定さ
+         : れていた場合，var_name 引数が連想配列名と要素名とを両方
+         : 含む可能性がある (開き括弧を含み，閉じ括弧で終わる) こ
+         : とを示す．その場合，括弧の間が要素名指定，最初の開き括
+         : 弧までが連想配列名として扱われる．_set_variable2 などで
+         : このフラグを指定する場合，連想配列名と要素名は var_name 
+         : から抽出されるはずであるから，index_name 引数は nil と
+         : せねばならない．
+
    モジュールメソッド
       mainloop(check_root = true)
          : イベントループを起動する．check_root が true であれば，
@@ -277,6 +323,26 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : ので，この値は現在 Tk の機能が有効であるインタープリタの総
          : 数に等しい．
 
+      _merge_tklist(str, str, ... )
+         : Tcl/Tk のライブラリ関数を使って，引数の文字列がそれぞれ
+         : 正しく一つのリスト要素となるように連結した文字列を返す．
+
+      _conv_listelement(str)
+         : Tcl/Tk のライブラリ関数を使って，引数の文字列が Tcl の
+         : 一つのリスト要素として適切な表現になるように変換した文
+         : 字列を返す．
+
+      _toUTF8(str, encoding)
+      _fromUTF8(str, encoding)
+         : Tcl/Tk が内蔵している UTF8 変換処理を呼び出す．
+
+      _subst_UTF_backslash(str)
+      _subst_Tcl_backslash(str)
+         : Tcl のルールでバックスラッシュ記法 ( \uhhhh による 
+         : Unicode 文字表現を含む ) を解析する．
+         : _subst_Tcl_backslash はすべてのバックスラッシュ記法を
+         : 置き換えるのに対し，_subst_UTF_backslash は \uhhhh 
+         : による Unicode 文字表現だけを置き換える．
 
 クラス TclTkIp
    クラスメソッド
@@ -372,6 +438,52 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
 
       _return_value
          : 直前の Tcl/Tk 上での評価の実行結果としての戻り値を返す．
+
+      _get_variable(var_name, flag)
+      _get_variable2(var_name, index_name, flag)
+         : Tcl/Tk 上の var という変数名の変数の値を返す．
+         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照) 
+         : された場合は連想配列 var_name の index_name の要素を返す．
+         : flag には変数を検索する際の条件を指定する．flag に与える
+         : 値はモジュール TclTkLib::VarAccessFlag を参照すること．
+
+      _set_variable(var_name, value, flag)
+      _set_variable2(var_name, index_name, value, flag)
+         : Tcl/Tk 上の var という変数名の変数に値を設定する．
+         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照) 
+         : された場合は連想配列 var_name の index_name の要素を設定
+         : する．
+         : flag には変数を検索する際の条件を指定する．flag に与える
+         : 値はモジュール TclTkLib::VarAccessFlag を参照すること．
+
+      _unset_variable(var_name)
+      _unset_variable2(var_name, index_name)
+         : Tcl/Tk 上の var_name という変数名の変数を消去する．
+         : もし index_name が指定 (PARSE_VARNAME フラグの説明も参照) 
+         : された場合は連想配列 var_name から index_name の要素だけ
+         : を消去する．
+
+      _get_global_var(var_name)
+      _get_global_var2(var_name, index_name)
+      _set_global_var(var_name, value)
+      _set_global_var2(var_name, index_name, value)
+      _unset_global_var(var_name)
+      _unset_global_var2(var_name, index_name)
+         : それぞれ，対応する変数アクセスメソッドの flag に対して
+         : (GLOBAL_ONLY | LEAVE_ERR_MSG) を与えたもの．
+
+      _split_tklist(str)
+         : Tcl/Tk のライブラリ関数を使って，文字列 str をリストに
+         : 分割する (文字列の配列として返す)．
+
+      _merge_tklist(str, str, ... )
+         : Tcl/Tk のライブラリ関数を使って，引数の文字列がそれぞれ
+         : 正しく一つのリスト要素となるように連結した文字列を返す．
+
+      _conv_listelement(str)
+         : Tcl/Tk のライブラリ関数を使って，引数の文字列が Tcl の
+         : 一つのリスト要素として適切な表現になるように変換した文
+         : 字列を返す．
 
       mainloop
       mainloop_watchdog

@@ -1,6 +1,6 @@
 #! /usr/local/bin/ruby
 
-require "tcltk"
+require "tk"
 
 def drawlines()
   print Time.now, "\n"
@@ -14,7 +14,7 @@ def drawlines()
       col = "red"
     end
     for i in 0 .. 99
-#      $a.e("create line", i, 0, 0, 500 - i, "-fill", col)
+#      TkcLine.new($a, i, 0, 0, 500 - i, "-fill", col)
     end
   end
 
@@ -29,22 +29,26 @@ def drawlines()
       col = "red"
     end
     for i in 0 .. 99
-      $a.e("create line", i, 0, 0, 500 - i, "-fill", col)
+      TkcLine.new($a, i, 0, 0, 500 - i, "-fill", col)
     end
   end
 
   print Time.now, "\n"
-#  $ip.commands()["destroy"].e($root)
+#  Tk.root.destroy
 end
 
-$ip = TclTkInterpreter.new()
-$root = $ip.rootwidget()
-$a = TclTkWidget.new($ip, $root, "canvas", "-height 500 -width 500")
-$c = TclTkCallback.new($ip, proc{drawlines()})
-$b = TclTkWidget.new($ip, $root, "button", "-text draw -command", $c)
+$a = TkCanvas.new{
+  height(500)
+  width(500)
+}
 
-$ip.commands()["pack"].e($a, $b, "-side left")
+$b = TkButton.new{
+  text("draw")
+  command(proc{drawlines()})
+}
 
-TclTk.mainloop
+TkPack.configure($a, $b, {"side"=>"left"})
+
+Tk.mainloop
 
 # eof

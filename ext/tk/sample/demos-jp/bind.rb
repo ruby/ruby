@@ -18,7 +18,8 @@ $bind_demo = TkToplevel.new {|w|
 # frame À¸À®
 TkFrame.new($bind_demo) {|frame|
   TkButton.new(frame) {
-    text 'Î»²ò'
+    #text 'Î»²ò'
+    text 'ÊÄ¤¸¤ë'
     command proc{
       tmppath = $bind_demo
       $bind_demo = nil

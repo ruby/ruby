@@ -22,7 +22,8 @@ TkLabel.new($filebox_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
 # frame 生成
 TkFrame.new($filebox_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $filebox_demo
       $filebox_demo = nil

@@ -1,4 +1,4 @@
-# radio.rb
+# radio2.rb
 #
 # This demonstration script creates a toplevel window containing
 # several radiobutton widgets.
@@ -14,8 +14,8 @@ end
 
 # demo toplevel widget
 $radio2_demo = TkToplevel.new {|w|
-  title("Radiobutton Demonstration")
-  iconname("radio")
+  title("Radiobutton Demonstration 2")
+  iconname("radio2")
   positionWindow(w)
 }
 
@@ -47,7 +47,7 @@ TkFrame.new($radio2_demo) {|frame|
 
   TkButton.new(frame) {
     text 'Show Code'
-    command proc{showCode 'radio'}
+    command proc{showCode 'radio2'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {

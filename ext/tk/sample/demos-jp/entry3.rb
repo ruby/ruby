@@ -41,7 +41,7 @@ EOL
 TkFrame.new($entry3_demo){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
-  TkButton.new(f, :text=>'Î»²ò', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'ÊÄ¤¸¤ë', :width=>15, :command=>proc{
 		 $entry3_demo.destroy
 		 $entry3_demo = nil
 	       }).pack(:side=>:left, :expand=>true)
@@ -161,6 +161,8 @@ def validatePhoneChange(widget, vmode, idx, char)
     widget.delete(idx)
     widget.insert(idx, $phoneNumberMap[char] || char)
     Tk.after_idle(proc{phoneSkipRight(widget, -1)})
+    # Tk.update(true) # Don't work 'update' inter validation callback.
+                      # It depends on Tcl/Tk side (tested on Tcl/Tk8.5a1). 
     return true
   end
   return false

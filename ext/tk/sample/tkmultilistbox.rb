@@ -109,7 +109,9 @@ class TkMultiListbox < TkListbox
 	@v_scroll.set first, last
       }
     }
-    @v_scroll.command proc{|*args| @lbox_list.each{|lbox| lbox.yview *args} }
+#    @v_scroll.command proc{|*args| @lbox_list.each{|lbox| lbox.yview *args} }
+    @v_scroll.command proc{|*args| p "";p [@lbox_list, args]; @lbox_list.each{|lbox| lbox.yview *args} }
+#    @v_scroll.command proc{|*args| p "";p [@lbox_list, args]; @lbox_list.each{|lbox| lbox.yview *args}; p [@lbox_list, args] }
 
     # binding for listboxes
     @mode = {}

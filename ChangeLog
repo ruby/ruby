@@ -1,3 +1,7 @@
+Sun May  2 01:04:38 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib, ext/tk: renewal Ruby/Tk
+
 Fri Apr 30 20:08:41 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* time.c (SIZEOF_TIME_T): support SIZEOF_TIME_T == SIZEOF_INT.

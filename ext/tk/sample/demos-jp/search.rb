@@ -77,7 +77,8 @@ $search_demo = TkToplevel.new {|w|
 # frame 生成
 $search_buttons = TkFrame.new($search_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $search_demo
       $search_demo = nil
@@ -141,45 +142,33 @@ $search_text = TkText.new($search_demo, 'setgrid'=>true) {|t|
 
 if TkWinfo.depth($search_demo) > 1
   textToggle(proc{
-	       begin
-		 $search_Tag.configure('background'=>'#ce5555', 
-				       'foreground'=>'white')
-	       rescue
-	       end
+	       $search_Tag.configure('background'=>'#ce5555', 
+				     'foreground'=>'white')
 	     },
 	     800, 
 	     proc{
-	       begin
-		 $search_Tag.configure('background'=>'', 'foreground'=>'')
-	       rescue
-	       end
+	       $search_Tag.configure('background'=>'', 'foreground'=>'')
 	     },
 	     200 )
 else
   textToggle(proc{
-	       begin
-		 $search_Tag.configure('background'=>'black', 
-				       'foreground'=>'white')
-	       rescue
-	       end
+	       $search_Tag.configure('background'=>'black', 
+				     'foreground'=>'white')
 	     },
 	     800, 
 	     proc{
-	       begin
-		 $search_Tag.configure('background'=>'', 'foreground'=>'')
-	       rescue
-	       end
+	       $search_Tag.configure('background'=>'', 'foreground'=>'')
 	     },
 	     200 )
 end
-$search_text.insert('1.0', '\
-このウィンドウは検索機構を実現するのにテキスト widget のタグ機能がどの
-ように使われるのかをデモするものです。まず上のエントリにファイル名を入
-れ、<リターン> を押すか「ロード」ボタンを押してください。次にその下の
-エントリに文字列を入力し、<リターン> を押すか「反転」ボタンを押してく
-ださい。するとファイル中の、検索文字列と一致する部分に全て "search_Tag"
-というタグがつけられ、タグの表示属性としてその文字列が点滅するように
-設定されます。')
+$search_text.insert('1.0', "\
+このウィンドウは検索機構を実現するのにテキスト widget のタグ機能がどの \
+ように使われるのかをデモするものです。まず上のエントリにファイル名を入 \
+れ、<リターン> を押すか「ロード」ボタンを押してください。次にその下の \
+エントリに文字列を入力し、<リターン> を押すか「反転」ボタンを押してく \
+ださい。するとファイル中の、検索文字列と一致する部分に全て \"search_Tag\" \
+というタグがつけられ、タグの表示属性としてその文字列が点滅するように \
+設定されます。")
 $search_text.set_insert '0.0'
 
 $search_fileName.value = ''

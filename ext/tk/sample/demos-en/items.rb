@@ -123,7 +123,7 @@ TkcLine.new(cvs, '5c','6c','9c','6c','9c','1c','8c','1c','8c','4.8c','8.8c',
 	    '8.6c','1.4c','8.4c','1.4c','8.4c','4.4c',
 	    'width'=>3, 'fill'=>red, 'tags'=>$tag_item )
 TkcLine.new(cvs, '1c','5c','7c','5c','7c','7c','9c','7c', 'width'=>'.5c', 
-	    'stipple'=>'@'+[$demo_dir,
+	    'stipple'=>'@'+[$demo_dir,'..',
 	                    'images','gray25.xbm'].join(File::Separator), 
 	    'arrow'=>'both', 'arrowshape'=>'15 15 7', 'tags'=>$tag_item )
 TkcLine.new(cvs, '1c','7c','1.75c','5.8c','2.5c','7c','3.25c','5.8c','4c','7c',
@@ -139,7 +139,7 @@ TkcLine.new(cvs, '15.5c','1c','19.5c','1.5c','15.5c','4.5c','19.5c','4c',
 TkcLine.new(cvs, '12c','6c','13.5c','4.5c','16.5c','7.5c','18c','6c', 
 	    '16.5c','4.5c','13.5c','7.5c','12c','6c',
 	    'smooth'=>'on', 'width'=>'3m', 'capstyle'=>'round', 
-	    'stipple'=>'@'+[$demo_dir, 
+	    'stipple'=>'@'+[$demo_dir, '..',
 	                    'images', 'gray25.xbm'].join(File::Separator), 
 	    'fill'=>red, 'tags'=>$tag_item )
 
@@ -154,7 +154,7 @@ TkcPolygon.new(cvs, '25c','4c','25c','4c','25c','1c','26c','1c','27c','4c',
 TkcPolygon.new(cvs, '22c','4.5c','25c','4.5c','25c','6.75c','28c','6.75c',
 	       '28c','5.25c','24c','5.25c','24c','6.0c','26c','6c','26c',
 	       '7.5c','22c','7.5c', 
-	       'stipple'=>'@' + [$demo_dir, 
+	       'stipple'=>'@' + [$demo_dir, '..',
                                  'images', 'gray25.xbm'].join(File::Separator),
 	       'outline'=>'black', 'tags'=>$tag_item )
 
@@ -164,7 +164,7 @@ TkcRectangle.new(cvs, '1c','9.5c','4c','12.5c',
 TkcRectangle.new(cvs, '0.5c','13.5c','4.5c','15.5c', 
 		 'fill'=>green, 'tags'=>$tag_item )
 TkcRectangle.new(cvs, '6c','10c','9c','15c', 'outline'=>'',
-		 'stipple'=>'@'+[$demo_dir,
+		 'stipple'=>'@'+[$demo_dir,'..',
 	                         'images','gray25.xbm'].join(File::Separator),
 		 'fill'=>blue, 'tags'=>$tag_item )
 
@@ -174,7 +174,7 @@ TkcOval.new(cvs, '11c','9.5c','14c','12.5c',
 TkcOval.new(cvs, '10.5c','13.5c','14.5c','15.5c', 
 		 'fill'=>green, 'tags'=>$tag_item )
 TkcOval.new(cvs, '16c','10c','19c','15c', 'outline'=>'',
-		 'stipple'=>'@'+[$demo_dir,
+		 'stipple'=>'@'+[$demo_dir,'..',
 	                         'images','gray25.xbm'].join(File::Separator),
 		 'fill'=>blue, 'tags'=>$tag_item )
 
@@ -188,7 +188,7 @@ TkcText.new(cvs, '25.5c', '11c', 'anchor'=>'w', 'font'=>font1, 'fill'=>blue,
 TkcRectangle.new(cvs, '24.9c','13.9c','25.1c','14.1c')
 if $tk_version =~ /^4\.[01]/
   TkcText.new(cvs, '25c', '14c', 'anchor'=>'c', 'font'=>font2, 'fill'=>red, 
-	      'stipple'=>'@' + [$demo_dir, 
+	      'stipple'=>'@' + [$demo_dir, '..',
                                 'images', 'grey.5'].join(File::Separator),
 	      'text'=>'Stippled characters', 'tags'=>$tag_item )
 else
@@ -206,7 +206,7 @@ TkcArc.new(cvs, '0.5c','17c','7c','20c', 'fill'=>green, 'outline'=>'black',
 #	   'tags'=>$tag_item)
 TkcArc.new(cvs, '6.5c','17c','9.5c','20c', 'width'=>'4m', 'style'=>'arc', 
 	   'outline'=>blue, 'start'=>135, 'extent'=>270, 
-	   'outlinestipple'=>'@'+[$demo_dir, 
+	   'outlinestipple'=>'@'+[$demo_dir, '..',
                                   'images','gray25.xbm'].join(File::Separator),
 	   'tags'=>$tag_item)
 TkcArc.new(cvs, '0.5c','20c','9.5c','24c', 'width'=>'4m', 'style'=>'pieslice', 
@@ -221,14 +221,14 @@ TkcText.new(cvs, '15c', '16.2c', 'text'=>'Bitmaps', 'anchor'=>'n')
 #	      'bitmap'=>'@' + ['images', 'face'].join(File::Separator),
 #	      'tags'=>$tag_item)
 TkcBitmap.new(cvs, '13c','20c',
-	      'bitmap'=>'@' + [$demo_dir, 
+	      'bitmap'=>'@' + [$demo_dir, '..',
                                'images', 'face.xbm'].join(File::Separator),
 	      'tags'=>$tag_item)
 #TkcBitmap.new(cvs, '17c','18.5c',
 #	      'bitmap'=>'@' + ['images', 'noletters'].join(File::Separator),
 #	      'tags'=>$tag_item)
 TkcBitmap.new(cvs, '17c','18.5c',
-	      'bitmap'=>'@' + [$demo_dir, 
+	      'bitmap'=>'@' + [$demo_dir, '..',
 	                       'images', 'noletter.xbm'].join(File::Separator),
 	      'tags'=>$tag_item)
 #TkcBitmap.new(cvs, '17c','21.5c',
@@ -236,7 +236,7 @@ TkcBitmap.new(cvs, '17c','18.5c',
 #	      'tags'=>$tag_item)
 # 
 TkcBitmap.new(cvs, '17c','21.5c') {
-  bitmap '@' + [$demo_dir, 'images', 'letters.xbm'].join(File::Separator)
+  bitmap '@' + [$demo_dir, '..', 'images', 'letters.xbm'].join(File::Separator)
   tags $tag_item
 }
 #TkcBitmap.new(cvs, '17c','21.5c') {

@@ -133,7 +133,7 @@ TkFrame.new($search_demo) {|f|
   }
 }.pack('side'=>'top', 'fill'=>'x')
 
-$search_text = TkText.new($search_demo, 'setgrid'=>true) {|t|
+$search_text = TkText.new($search_demo, 'setgrid'=>true, 'wrap'=>'word') {|t|
   $search_Tag = TkTextTag.new(t)
   TkScrollbar.new($search_demo, 'command'=>proc{|*args| t.yview(*args)}) {|sc|
     t.yscrollcommand(proc{|first,last| sc.set first,last})
@@ -146,45 +146,33 @@ $search_text = TkText.new($search_demo, 'setgrid'=>true) {|t|
 
 if TkWinfo.depth($search_demo) > 1
   textToggle(proc{
-	       begin
-		 $search_Tag.configure('background'=>'#ce5555', 
-				       'foreground'=>'white')
-	       rescue
-	       end
+	       $search_Tag.configure('background'=>'#ce5555', 
+				     'foreground'=>'white')
 	     },
 	     800, 
 	     proc{
-	       begin
-		 $search_Tag.configure('background'=>'', 'foreground'=>'')
-	       rescue
-	       end
+	       $search_Tag.configure('background'=>'', 'foreground'=>'')
 	     },
 	     200 )
 else
   textToggle(proc{
-	       begin
-		 $search_Tag.configure('background'=>'black', 
-				       'foreground'=>'white')
-	       rescue
-	       end
+	       $search_Tag.configure('background'=>'black', 
+				     'foreground'=>'white')
 	     },
 	     800, 
 	     proc{
-	       begin
-		 $search_Tag.configure('background'=>'', 'foreground'=>'')
-	       rescue
-	       end
+	       $search_Tag.configure('background'=>'', 'foreground'=>'')
 	     },
 	     200 )
 end
-$search_text.insert('1.0', '\
-This window demonstrates how to use the tagging facilities in text
-widgets to implement a searching mechanism.  First, type a file name
-in the top entry, then type <Return> or click on "Load File".  Then
-type a string in the lower entry and type <Return> or click on
-"Load File".  This will cause all of the instances of the string to
-be tagged with the tag "search", and it will arrange for the tag\'s
-display attributes to change to make all of the strings blink.')
+$search_text.insert('1.0', "\
+This window demonstrates how to use the tagging facilities in text \
+widgets to implement a searching mechanism.  First, type a file name \
+in the top entry, then type <Return> or click on \"Load File\".  Then \
+type a string in the lower entry and type <Return> or click on \
+\"Load File\".  This will cause all of the instances of the string to \
+be tagged with the tag \"search\", and it will arrange for the tag\'s \
+display attributes to change to make all of the strings blink.")
 $search_text.set_insert '0.0'
 
 $search_fileName.value = ''

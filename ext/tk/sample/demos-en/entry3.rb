@@ -158,6 +158,8 @@ def validatePhoneChange(widget, vmode, idx, char)
     widget.insert(idx, $phoneNumberMap[char] || char)
     Tk.after_idle(proc{phoneSkipRight(widget, -1)})
     return true
+    # Tk.update(true) # Don't work 'update' inter validation callback.
+                      # It depends on Tcl/Tk side (tested on Tcl/Tk8.5a1). 
   end
   return false
 end

@@ -76,11 +76,13 @@ $demo_rulerInfo.normalStyle = {'fill'=>'black'}
 if TkWinfo.depth($ruler_canvas) > 1
   $demo_rulerInfo.activeStyle = {'fill'=>'red', 'stipple'=>''}
   $demo_rulerInfo.deleteStyle = {'fill'=>'red', 
-    'stipple'=>'@'+[$demo_dir, 'images', 'gray25.xbm'].join(File::Separator)}
+    'stipple'=>'@'+[$demo_dir, '..', 
+                     'images', 'gray25.xbm'].join(File::Separator)}
 else
   $demo_rulerInfo.activeStyle = {'fill'=>'black', 'stipple'=>''}
   $demo_rulerInfo.deleteStyle = {'fill'=>'black', 
-    'stipple'=>'@'+[$demo_dir, 'images', 'gray25.xbm'].join(File::Separator)}
+    'stipple'=>'@'+[$demo_dir, '..', 
+                     'images', 'gray25.xbm'].join(File::Separator)}
 end
 
 TkcLine.new($ruler_canvas, 

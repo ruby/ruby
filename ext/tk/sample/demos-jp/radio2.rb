@@ -1,4 +1,4 @@
-# radio.rb
+# radio2.rb
 #
 # This demonstration script creates a toplevel window containing
 # several radiobutton widgets.
@@ -14,8 +14,8 @@ end
 
 # demo toplevel widget
 $radio2_demo = TkToplevel.new {|w|
-  title("Radiobutton Demonstration")
-  iconname("radio")
+  title("Radiobutton Demonstration 2")
+  iconname("radio2")
   positionWindow(w)
 }
 
@@ -24,7 +24,7 @@ msg = TkLabel.new($radio2_demo) {
   font $font
   wraplength '5i'
   justify 'left'
-  text "下には2つのラジオボタングループが表示されています。ボタンをクリックすると、そのボタンだけがそのグループの中で選択されます。各グループに対してそのグループの中のどのボタンが選択されているかを示す変数が割り当てられています。現在の変数の値を見るには「変数参照」ボタンをクリックしてください。"
+  text "下には3つのラジオボタングループが表示されています。ボタンをクリックすると、そのボタンだけがそのグループの中で選択されます。各グループに対してそのグループの中のどのボタンが選択されているかを示す変数が割り当てられています。現在の変数の値を見るには「変数参照」ボタンをクリックしてください。"
 }
 msg.pack('side'=>'top')
 
@@ -36,7 +36,8 @@ align = TkVariable.new
 # frame 
 TkFrame.new($radio2_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $radio2_demo
       $radio2_demo = nil
@@ -47,7 +48,7 @@ TkFrame.new($radio2_demo) {|frame|
 
   TkButton.new(frame) {
     text 'コード参照'
-    command proc{showCode 'radio'}
+    command proc{showCode 'radio2'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {

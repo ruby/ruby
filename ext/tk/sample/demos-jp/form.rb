@@ -27,7 +27,8 @@ msg.pack('side'=>'top', 'fill'=>'x')
 # frame 生成
 TkFrame.new($form_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $form_demo
       $form_demo = nil
