@@ -1,3 +1,10 @@
+Sat Feb 28 10:31:03 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* MANIFEST: add test_erb.rb
+
+	* lib/erb.rb, test/erb/test_erb.rb: don't forget filename,
+	  if both filename and safe_level given. [ruby-dev:23050]
+
 Fri Feb 27 20:37:09 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): no orphan block check is needed when pcall

@@ -772,6 +772,7 @@ test/drb/ut_large.rb
 test/drb/ut_port.rb
 test/drb/ut_safe1.rb
 test/drb/ut_timerholder.rb
+test/erb/test_erb.rb
 test/fileutils/fileasserts.rb
 test/fileutils/test_fileutils.rb
 test/fileutils/test_nowrite.rb
