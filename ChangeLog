@@ -1,3 +1,11 @@
+Fri Jan 21 17:09:44 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (decode_utf7): use pack("U*") to encode UTF-8.
+
+	* lib/net/imap.rb (encode_utf7): use unpack("U*") to decode UTF-8.
+
+	* test/net/imap/test_imap.rb: added tests for Net::IMAP.
+
 Fri Jan 21 13:58:37 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (u8tou16): fixed typo. fixed: [ruby-lis:40546]
