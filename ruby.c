@@ -561,7 +561,6 @@ proc_options(argc, argv)
 		    s += numlen;
 		}
 		rb_set_safe_level(v);
-		s += numlen;
 	    }
 	    goto reswitch;
 
@@ -573,7 +572,7 @@ proc_options(argc, argv)
 		ruby_incpush(argv[1]);
 		argc--,argv++;
 	    }
-	    goto reswitch;
+	    break;
 
 	  case '0':
 	    {
