@@ -1,7 +1,8 @@
 Mon Sep 29 23:39:13 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (finish): does not raise IOError even if
-	  !started?, to allow duplicated #finish call.
+	  !started?, to allow closing socket which was opened before
+	  session started.
 
 	* lib/net/pop.rb (finish): ditto.
 
