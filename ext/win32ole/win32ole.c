@@ -2208,6 +2208,32 @@ fole_free(self)
     return Qnil;
 }
 
+static VALUE
+ole_each_sub(pEnumV)
+    VALUE pEnumV;
+{
+    VARIANT variant;
+    VALUE obj = Qnil;
+    IEnumVARIANT *pEnum = (IEnumVARIANT *)pEnumV;
+    VariantInit(&variant);
+    while(pEnum->lpVtbl->Next(pEnum, 1, &variant, NULL) == S_OK) {
+        obj = ole_variant2val(&variant);
+        VariantClear(&variant);
+        VariantInit(&variant);
+	rb_yield(obj);
+    }
+    return Qnil;
+}
+
+static VALUE
+ole_ienum_free(pEnumV)
+    VALUE pEnumV;
+{
+    IEnumVARIANT *pEnum = (IEnumVARIANT *)pEnumV;
+    OLE_RELEASE(pEnum);
+    return Qnil;
+}
+
 /*
  * WIN32OLE#each {|i|...}
  * -----
@@ -2224,11 +2250,9 @@ fole_each(self)
     unsigned int argErr;
     EXCEPINFO excepinfo;
     DISPPARAMS dispParams;
-    VARIANT result, variant;
+    VARIANT result;
     HRESULT hr;
     IEnumVARIANT *pEnum = NULL;
-
-    VALUE obj;
 
     VariantInit(&result);
     dispParams.rgvarg = NULL;
@@ -2262,15 +2286,8 @@ fole_each(self)
         ole_raise(hr, rb_eRuntimeError, "Fail to get IEnum Interface");
     }
 
-    VariantInit(&variant);
-    while(pEnum->lpVtbl->Next(pEnum, 1, &variant, NULL) == S_OK) {
-        obj = ole_variant2val(&variant);
-        rb_yield(obj);
-        VariantClear(&variant);
-        VariantInit(&variant);
-    }
     VariantClear(&result);
-    OLE_RELEASE(pEnum);
+    rb_ensure(ole_each_sub, (VALUE)pEnum, ole_ienum_free, (VALUE)pEnum);
     return Qnil;
 }
 
