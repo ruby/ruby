@@ -198,7 +198,8 @@ syck_lookup_sym( SyckParser *p, SYMID id, char **data )
 int
 syck_st_free_nodes( char *key, SyckNode *n, char *arg )
 {
-    syck_free_node( n );
+    if ( n != (void *)1 ) syck_free_node( n );
+    n = NULL;
     return ST_CONTINUE;
 }
 

@@ -1,3 +1,21 @@
+Tue Apr 27 08:15:13 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb: passing Range tests.
+
+	* ext/syck/syck.h: version 0.44.
+
+	* ext/syck/gram.c: transfers no longer open an indentation.
+	  fixed transfers which precede blocks.
+
+	* ext/syck/token.c: ditto.
+
+	* ext/syck/syck.c: fixed segfault if an anchor has been released already.
+
+	* ext/syck/node.c (syck_free_members): organized order of free'd nodes.
+
+	* ext/syck/rubyext.c (syck_emitter_write_m): test for proper string with
+	  StringValue.
+
 Mon Apr 26 23:56:54 2004  Daniel Kelley  <news-1082945587@dkelley.gmp.san-jose.ca.us>
 
 	* README.EXT, README.EXT.ja: fixed wrong function signature.

@@ -205,6 +205,7 @@ SyckParser *syck_parser_ptr = NULL;
  * Accessory funcs later in this file.
  */
 void eat_comments( SyckParser * );
+char escape_seq( char );
 int is_newline( char *ptr );
 int sycklex_yaml_utf8( YYSTYPE *, SyckParser * );
 int sycklex_bytecode_utf8( YYSTYPE *, SyckParser * );
@@ -256,7 +257,7 @@ sycklex_yaml_utf8( YYSTYPE *sycklval, SyckParser *parser )
         return t;
     }
 
-#line 274
+#line 276
 
 
     if ( YYLINEPTR != YYCURSOR )
@@ -293,7 +294,7 @@ yy2:	yyaccept = 0;
 	default:	goto yy3;
 	}
 yy3:
-#line 333
+#line 335
 	{   YYPOS(0);
                         goto Document; 
                     }
@@ -305,13 +306,13 @@ yy4:	yyaccept = 0;
 	}
 yy5:	yych = *++YYCURSOR;
 yy6:
-#line 315
+#line 317
 	{   eat_comments( parser ); 
                         goto Header;
                     }
 yy7:	yych = *++YYCURSOR;
 yy8:
-#line 319
+#line 321
 	{   SyckLevel *lvl = CURRENT_LEVEL();
                         ENSURE_YAML_IEND(lvl, -1);
                         YYPOS(0);
@@ -321,7 +322,7 @@ yy9:	yyaccept = 1;
 	yych = *(YYMARKER = ++YYCURSOR);
 	goto yy18;
 yy10:
-#line 325
+#line 327
 	{   GOBBLE_UP_YAML_INDENT( doc_level, YYTOKEN );
                         goto Header; 
                     }
@@ -333,7 +334,7 @@ yy11:	yych = *++YYCURSOR;
 yy12:	yych = *++YYCURSOR;
 	goto yy16;
 yy13:
-#line 329
+#line 331
 	{   doc_level = YYCURSOR - YYLINEPTR;
                         goto Header;
                     }
@@ -381,7 +382,7 @@ yy22:	yych = *++YYCURSOR;
 	}
 yy23:	yych = *++YYCURSOR;
 yy24:
-#line 301
+#line 303
 	{   SyckLevel *lvl = CURRENT_LEVEL();
                         if ( lvl->status == syck_lvl_header )
                         {
@@ -421,7 +422,7 @@ yy29:	yych = *++YYCURSOR;
 	}
 yy30:	yych = *++YYCURSOR;
 yy31:
-#line 287
+#line 289
 	{   SyckLevel *lvl = CURRENT_LEVEL();
                         if ( lvl->status == syck_lvl_header )
                         {
@@ -448,7 +449,7 @@ yy34:	yych = *++YYCURSOR;
 	default:	goto yy20;
 	}
 }
-#line 337
+#line 339
 
 
 Document:
@@ -491,7 +492,7 @@ yy37:	yyaccept = 0;
 	yych = *(YYMARKER = ++YYCURSOR);
 	goto yy90;
 yy38:
-#line 351
+#line 353
 	{   /* Isolate spaces */
                         int indt_len;
                         GOBBLE_UP_YAML_INDENT( indt_len, YYTOKEN );
@@ -525,7 +526,7 @@ yy40:
                     }
 yy41:	yych = *++YYCURSOR;
 yy42:
-#line 373
+#line 375
 	{   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         lvl = CURRENT_LEVEL();
                         ADD_LEVEL(lvl->spaces + 1, syck_lvl_inline);
@@ -533,7 +534,7 @@ yy42:
                     }
 yy43:	yych = *++YYCURSOR;
 yy44:
-#line 379
+#line 381
 	{   POP_LEVEL();
                         return YYTOKEN[0]; 
                     }
@@ -683,9 +684,8 @@ yy48:	yych = *++YYCURSOR;
 	}
 yy49:	yych = *++YYCURSOR;
 yy50:
-#line 418
-	{   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
-                        goto TransferMethod; }
+#line 419
+	{   goto TransferMethod; }
 yy51:	yych = *++YYCURSOR;
 yy52:
 #line 421
@@ -853,7 +853,7 @@ yy74:	switch(yych){
 	default:	goto yy75;
 	}
 yy75:
-#line 413
+#line 414
 	{   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
                         sycklval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
                         return YAML_ALIAS;
@@ -925,9 +925,8 @@ yy77:	switch(yych){
 	default:	goto yy78;
 	}
 yy78:
-#line 401
-	{   ENSURE_YAML_IOPEN(lvl, doc_level, 1);
-                        sycklval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
+#line 403
+	{   sycklval->name = syck_strndup( YYTOKEN + 1, YYCURSOR - YYTOKEN - 1 );
 
                         /*
                          * Remove previous anchors of the same name.  Since the parser will likely
@@ -939,7 +938,7 @@ yy78:
                     }
 yy79:	yych = *++YYCURSOR;
 yy80:
-#line 387
+#line 389
 	{   ENSURE_YAML_IOPEN(lvl, YYTOKEN - YYLINEPTR, 1);
                         FORCE_NEXT_TOKEN(YAML_IOPEN);
                         if ( is_newline( YYCURSOR ) || is_newline( YYCURSOR - 1 ) )
@@ -967,7 +966,7 @@ yy83:	yych = *++YYCURSOR;
 	}
 yy84:	yych = *++YYCURSOR;
 yy85:
-#line 383
+#line 385
 	{   YYPOS(1); 
                         return YYTOKEN[0]; 
                     }
@@ -1770,7 +1769,7 @@ yy158:	yych = *++YYCURSOR;
 	default:	goto yy159;
 	}
 yy159:
-#line 722
+#line 711
 	{   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1)); 
                         goto DoubleQuote2; 
                     }
@@ -1780,7 +1779,7 @@ yy160:	yyaccept = 1;
 	case '\n':	goto yy168;
 	case '\r':	goto yy170;
 	case ' ':	goto yy165;
-	case '"':	case '\\':	case 'a':
+	case '"':	case '0':	case '\\':	case 'a':
 	case 'b':	case 'e':
 	case 'f':	case 'n':	case 'r':	case 't':	case 'v':	goto yy172;
 	case 'x':	goto yy171;
@@ -1788,7 +1787,7 @@ yy160:	yyaccept = 1;
 	}
 yy161:	yych = *++YYCURSOR;
 yy162:
-#line 707
+#line 696
 	{   SyckLevel *lvl;
                         SyckNode *n = syck_alloc_str();
                         lvl = CURRENT_LEVEL();
@@ -1823,7 +1822,7 @@ yy167:	YYCURSOR = YYMARKER;
 	}
 yy168:	yych = *++YYCURSOR;
 yy169:
-#line 702
+#line 691
 	{   keep_nl = 0;
                         YYCURSOR--;
                         goto DoubleQuote2; 
@@ -1860,19 +1859,8 @@ yy171:	yych = *++YYCURSOR;
 yy172:	yych = *++YYCURSOR;
 yy173:
 #line 677
-	{  char ch = *( YYCURSOR - 1 );
-                        switch ( ch )
-                        {
-                            case 'a': ch = 7; break;
-                            case 'b': ch = '\010'; break;
-                            case 'e': ch = '\033'; break;
-                            case 'f': ch = '\014'; break;
-                            case 'n': ch = '\n'; break;
-                            case 'r': ch = '\015'; break;
-                            case 't': ch = '\t'; break;
-                            case 'v': ch = '\013'; break;
-                        }
-                        QUOTECAT(qstr, qcapa, qidx, ch);
+	{   char ch = *( YYCURSOR - 1 );
+                        QUOTECAT(qstr, qcapa, qidx, escape_seq( ch ));
                         goto DoubleQuote2; 
                     }
 yy174:	yych = *++YYCURSOR;
@@ -1901,7 +1889,7 @@ yy174:	yych = *++YYCURSOR;
 	}
 yy175:	yych = *++YYCURSOR;
 yy176:
-#line 693
+#line 682
 	{   long ch;
                         char *chr_text = syck_strndup( YYTOKEN, 4 );
                         chr_text[0] = '0';
@@ -1927,7 +1915,7 @@ yy179:	++YYCURSOR;
 	default:	goto yy167;
 	}
 }
-#line 726
+#line 715
 
     }
 
@@ -1962,7 +1950,7 @@ yy182:	YYCURSOR = YYMARKER;
 	}
 yy183:	yych = *++YYCURSOR;
 yy184:
-#line 740
+#line 729
 	{   SyckLevel *lvl;
                         YYCURSOR = YYTOKTMP;
                         if ( YYCURSOR == YYTOKEN + 1 )
@@ -2013,20 +2001,23 @@ yy184:
                         return YAML_TRANSFER; 
                     }
 yy185:	yych = *++YYCURSOR;
-	goto yy196;
+	goto yy198;
 yy186:	yych = *++YYCURSOR;
 	switch(yych){
-	case '\n':	goto yy194;
+	case '\n':	goto yy196;
 	default:	goto yy187;
 	}
 yy187:
-#line 802
+#line 796
 	{   QUOTECAT(qstr, qcapa, qidx, *(YYCURSOR - 1)); 
                         goto TransferMethod2;
                     }
 yy188:	yyaccept = 0;
 	yych = *(YYMARKER = ++YYCURSOR);
 	switch(yych){
+	case '"':	case '0':	case '\\':	case 'a':
+	case 'b':	case 'e':
+	case 'f':	case 'n':	case 'r':	case 't':	case 'v':	goto yy191;
 	case 'x':	goto yy190;
 	default:	goto yy187;
 	}
@@ -2053,10 +2044,17 @@ yy190:	yych = *++YYCURSOR;
 	case 'c':
 	case 'd':
 	case 'e':
-	case 'f':	goto yy191;
+	case 'f':	goto yy193;
 	default:	goto yy182;
 	}
 yy191:	yych = *++YYCURSOR;
+yy192:
+#line 782
+	{  char ch = *( YYCURSOR - 1 );
+                        QUOTECAT(qstr, qcapa, qidx, escape_seq( ch ));
+                        goto TransferMethod2;
+                    }
+yy193:	yych = *++YYCURSOR;
 	switch(yych){
 	case '0':
 	case '1':
@@ -2077,12 +2075,12 @@ yy191:	yych = *++YYCURSOR;
 	case 'c':
 	case 'd':
 	case 'e':
-	case 'f':	goto yy192;
+	case 'f':	goto yy194;
 	default:	goto yy182;
 	}
-yy192:	yych = *++YYCURSOR;
-yy193:
-#line 793
+yy194:	yych = *++YYCURSOR;
+yy195:
+#line 787
 	{   long ch;
                         char *chr_text = syck_strndup( YYTOKTMP, 4 );
                         chr_text[0] = '0';
@@ -2091,17 +2089,17 @@ yy193:
                         QUOTECAT(qstr, qcapa, qidx, ch);
                         goto TransferMethod2;
                     }
-yy194:	yych = *++YYCURSOR;
+yy196:	yych = *++YYCURSOR;
 	goto yy184;
-yy195:	++YYCURSOR;
+yy197:	++YYCURSOR;
 	if(YYLIMIT == YYCURSOR) YYFILL(1);
 	yych = *YYCURSOR;
-yy196:	switch(yych){
-	case ' ':	goto yy195;
+yy198:	switch(yych){
+	case ' ':	goto yy197;
 	default:	goto yy184;
 	}
 }
-#line 807
+#line 801
 
     }
 
@@ -2150,23 +2148,24 @@ ScalarBlock2:
 {
 	YYCTYPE yych;
 	unsigned int yyaccept;
-	goto yy197;
-yy198:	++YYCURSOR;
-yy197:
-	if((YYLIMIT - YYCURSOR) < 2) YYFILL(2);
+	goto yy199;
+yy200:	++YYCURSOR;
+yy199:
+	if((YYLIMIT - YYCURSOR) < 5) YYFILL(5);
 	yych = *YYCURSOR;
 	switch(yych){
-	case '\000':	goto yy205;
-	case '\n':	goto yy199;
-	case '\r':	goto yy201;
-	case '#':	goto yy203;
-	default:	goto yy207;
+	case '\000':	goto yy207;
+	case '\n':	goto yy201;
+	case '\r':	goto yy203;
+	case '#':	goto yy205;
+	case '-':	goto yy209;
+	default:	goto yy210;
 	}
-yy199:	yyaccept = 0;
+yy201:	yyaccept = 0;
 	yych = *(YYMARKER = ++YYCURSOR);
-	goto yy209;
-yy200:
-#line 854
+	goto yy220;
+yy202:
+#line 848
 	{   char *pacer;
                         char *tok = YYTOKEN;
                         int indt_len = 0, nl_count = 0, fold_nl = 0, nl_begin = 0;
@@ -2232,19 +2231,19 @@ yy200:
                         }
                         goto ScalarBlock2;
                     }
-yy201:	yych = *++YYCURSOR;
+yy203:	yych = *++YYCURSOR;
 	switch(yych){
-	case '\n':	goto yy208;
-	default:	goto yy202;
+	case '\n':	goto yy219;
+	default:	goto yy204;
 	}
-yy202:
-#line 940
+yy204:
+#line 953
 	{   QUOTECAT(qstr, qcapa, qidx, *YYTOKEN);
                         goto ScalarBlock2;
                     }
-yy203:	yych = *++YYCURSOR;
-yy204:
-#line 921
+yy205:	yych = *++YYCURSOR;
+yy206:
+#line 915
 	{   lvl = CURRENT_LEVEL();
                         if ( lvl->status != syck_lvl_block )
                         {
@@ -2257,37 +2256,89 @@ yy204:
                         }
                         goto ScalarBlock2;
                     }
-yy205:	yych = *++YYCURSOR;
-yy206:
-#line 935
+yy207:	yych = *++YYCURSOR;
+yy208:
+#line 929
 	{   YYCURSOR--;
                         POP_LEVEL();
                         RETURN_YAML_BLOCK(); 
                     }
-yy207:	yych = *++YYCURSOR;
-	goto yy202;
-yy208:	yyaccept = 0;
+yy209:	yyaccept = 1;
+	yych = *(YYMARKER = ++YYCURSOR);
+	switch(yych){
+	case '-':	goto yy211;
+	default:	goto yy204;
+	}
+yy210:	yych = *++YYCURSOR;
+	goto yy204;
+yy211:	yych = *++YYCURSOR;
+	switch(yych){
+	case '-':	goto yy213;
+	default:	goto yy212;
+	}
+yy212:	YYCURSOR = YYMARKER;
+	switch(yyaccept){
+	case 0:	goto yy202;
+	case 1:	goto yy204;
+	}
+yy213:	yych = *++YYCURSOR;
+	switch(yych){
+	case '\n':	goto yy214;
+	case '\r':	goto yy218;
+	case ' ':	goto yy216;
+	default:	goto yy212;
+	}
+yy214:	yych = *++YYCURSOR;
+yy215:
+#line 934
+	{   if ( YYTOKEN == YYLINEPTR )
+                        {
+                            if ( blockType == BLOCK_FOLD )
+                            {
+                                qidx -= 1;
+                            }
+                            QUOTECAT(qstr, qcapa, qidx, '\n');
+                            POP_LEVEL();
+                            YYCURSOR = YYTOKEN;
+                            RETURN_YAML_BLOCK();
+                        }
+                        else
+                        {
+                            QUOTECAT(qstr, qcapa, qidx, *YYTOKEN);
+                            YYCURSOR = YYTOKEN + 1;
+                            goto ScalarBlock2;
+                        }
+                    }
+yy216:	++YYCURSOR;
+	if(YYLIMIT == YYCURSOR) YYFILL(1);
+	yych = *YYCURSOR;
+yy217:	switch(yych){
+	case ' ':	goto yy216;
+	default:	goto yy215;
+	}
+yy218:	yych = *++YYCURSOR;
+	switch(yych){
+	case '\n':	goto yy214;
+	default:	goto yy212;
+	}
+yy219:	yyaccept = 0;
 	YYMARKER = ++YYCURSOR;
 	if(YYLIMIT == YYCURSOR) YYFILL(1);
 	yych = *YYCURSOR;
-yy209:	switch(yych){
-	case '\n':	case ' ':	goto yy208;
-	case '\r':	goto yy210;
-	default:	goto yy200;
+yy220:	switch(yych){
+	case '\n':	case ' ':	goto yy219;
+	case '\r':	goto yy221;
+	default:	goto yy202;
 	}
-yy210:	++YYCURSOR;
+yy221:	++YYCURSOR;
 	if(YYLIMIT == YYCURSOR) YYFILL(1);
 	yych = *YYCURSOR;
 	switch(yych){
-	case '\n':	goto yy208;
-	default:	goto yy211;
-	}
-yy211:	YYCURSOR = YYMARKER;
-	switch(yyaccept){
-	case 0:	goto yy200;
+	case '\n':	goto yy219;
+	default:	goto yy212;
 	}
 }
-#line 945
+#line 958
 
     }
 
@@ -2305,63 +2356,81 @@ Comment:
 {
 	YYCTYPE yych;
 	unsigned int yyaccept;
-	goto yy212;
-yy213:	++YYCURSOR;
-yy212:
+	goto yy222;
+yy223:	++YYCURSOR;
+yy222:
 	if((YYLIMIT - YYCURSOR) < 2) YYFILL(2);
 	yych = *YYCURSOR;
 	switch(yych){
-	case '\000':	goto yy214;
-	case '\n':	goto yy216;
-	case '\r':	goto yy217;
-	default:	goto yy219;
+	case '\000':	goto yy224;
+	case '\n':	goto yy226;
+	case '\r':	goto yy227;
+	default:	goto yy229;
 	}
-yy214:	yych = *++YYCURSOR;
-yy215:
-#line 961
+yy224:	yych = *++YYCURSOR;
+yy225:
+#line 974
 	{   YYCURSOR = YYTOKEN;
                         return;
                     }
-yy216:	yyaccept = 0;
+yy226:	yyaccept = 0;
 	yych = *(YYMARKER = ++YYCURSOR);
-	goto yy221;
-yy217:	yych = *++YYCURSOR;
+	goto yy231;
+yy227:	yych = *++YYCURSOR;
 	switch(yych){
-	case '\n':	goto yy220;
-	default:	goto yy218;
+	case '\n':	goto yy230;
+	default:	goto yy228;
 	}
-yy218:
-#line 965
+yy228:
+#line 978
 	{   goto Comment; 
                     }
-yy219:	yych = *++YYCURSOR;
-	goto yy218;
-yy220:	yyaccept = 0;
+yy229:	yych = *++YYCURSOR;
+	goto yy228;
+yy230:	yyaccept = 0;
 	YYMARKER = ++YYCURSOR;
 	if(YYLIMIT == YYCURSOR) YYFILL(1);
 	yych = *YYCURSOR;
-yy221:	switch(yych){
-	case '\n':	goto yy220;
-	case '\r':	goto yy222;
-	default:	goto yy215;
+yy231:	switch(yych){
+	case '\n':	goto yy230;
+	case '\r':	goto yy232;
+	default:	goto yy225;
 	}
-yy222:	++YYCURSOR;
+yy232:	++YYCURSOR;
 	if(YYLIMIT == YYCURSOR) YYFILL(1);
 	yych = *YYCURSOR;
 	switch(yych){
-	case '\n':	goto yy220;
-	default:	goto yy223;
+	case '\n':	goto yy230;
+	default:	goto yy233;
 	}
-yy223:	YYCURSOR = YYMARKER;
+yy233:	YYCURSOR = YYMARKER;
 	switch(yyaccept){
-	case 0:	goto yy215;
+	case 0:	goto yy225;
 	}
 }
-#line 968
+#line 981
 
 
     }
 
+}
+
+char
+escape_seq( char ch )
+{
+    switch ( ch )
+    {
+        case '0': return '\0';
+        case 'a': return 7;
+        case 'b': return '\010';
+        case 'e': return '\033';
+        case 'f': return '\014';
+        case 'n': return '\n';
+        case 'r': return '\015';
+        case 't': return '\t';
+        case 'v': return '\013';
+        default: return ch;
+    }
 }
 
 int

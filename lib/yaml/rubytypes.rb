@@ -352,16 +352,20 @@ class Range
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) { |out|
-			out << "!ruby/range " 
-            self.to_s.to_yaml(:Emitter => out)
+			out << "!ruby/range '" 
+            self.begin.to_yaml(:Emitter => out)
+            out << ( self.exclude_end? ? "..." : ".." )
+            self.end.to_yaml(:Emitter => out)
+            out << "'"
 		}
 	end
 end
 
 YAML.add_ruby_type( 'range' ) { |type, val|
-	if String === val and val =~ /^(.*[^.])(\.{2,3})([^.].*)$/
+    inr = '(\w+|[+-]*\d+(?:\.\d+)?|"(?:[^\\"]|\\.)*")'
+	if String === val and val =~ /^#{inr}(\.{2,3})#{inr}$/
         r1, rdots, r2 = $1, $2, $3
-		Range.new( YAML.try_implicit( r1 ), YAML.try_implicit( r2 ), rdots.length == 3 )
+		Range.new( YAML.load( "--- #{r1}" ), YAML.load( "--- #{r2}" ), rdots.length == 3 )
 	elsif Hash === val
 		Range.new( val['begin'], val['end'], val['exclude_end?'] )
 	else
