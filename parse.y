@@ -180,7 +180,7 @@ static void top_local_setup();
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> array assoc_list assocs assoc undef_list
 %type <node> iter_var opt_iter_var iter_block iter_do_block
-%type <node> mlhs mlhs_head mlhs_tail lhs backref
+%type <node> mlhs mlhs_head mlhs_tail mlhs_basic mlhs_item lhs backref
 %type <id>   variable symbol operation
 %type <id>   cname fname op f_rest_arg
 %type <num>  f_arg
@@ -433,13 +433,21 @@ command_call	: operation call_args
 		        fixpos($$, $2);
 		    }
 
-mlhs		: mlhs_head
-		    {
-			$$ = NEW_MASGN(NEW_LIST($1), 0);
-		    }
-		| tLPAREN mlhs ')'
+mlhs		: mlhs_basic
+		| tLPAREN mlhs_item ')'
 		    {
 			$$ = $2;
+		    }
+
+mlhs_item	: mlhs_basic
+		| tLPAREN mlhs_item ')'
+		    {
+			$$ = NEW_MASGN(NEW_LIST($2), 0);
+		    }
+
+mlhs_basic	: mlhs_head
+		    {
+			$$ = NEW_MASGN(NEW_LIST($1), 0);
 		    }
 		| mlhs_head tSTAR lhs
 		    {
@@ -459,7 +467,7 @@ mlhs		: mlhs_head
 		    }
 
 mlhs_head	: lhs ','
-		| tLPAREN mlhs ')' ','
+		| tLPAREN mlhs_item ')' ','
 		    {
 			$$ = $2;
 		    }
@@ -468,7 +476,7 @@ mlhs_tail	: lhs
 		    {
 			$$ = NEW_LIST($1);
 		    }
-		| tLPAREN  mlhs ')'
+		| tLPAREN  mlhs_item ')'
 		    {
 			$$ = NEW_LIST($2);
 		    }
@@ -853,6 +861,7 @@ mrhs		: args
 		    }
 		| args ',' tSTAR arg
 		    {
+			value_expr($4);
 			$$ = arg_add($1, $4);
 		    }
 		| tSTAR arg

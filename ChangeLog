@@ -1,3 +1,10 @@
+Wed Jun 24 02:18:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c: rename function prefix `thread_' to `thred_' to avoid
+	  conflict on some machine.
+
+	* parse.y (mlhs): `((a,b)),c = [[1,2]],3' assigns a=1,b=2,c=3.
+
 Tue Jun 23 11:46:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (yylex): `&&=' and `||=' added.

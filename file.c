@@ -1376,10 +1376,10 @@ file_truncate(obj, len)
 
 #if defined(THREAD) && defined(EWOULDBLOCK)
 static int
-thread_flock(fd, op)
+thred_flock(fd, op)
     int fd, op;
 {
-    if (thread_alone() || (op & LOCK_NB)) {
+    if (thred_alone() || (op & LOCK_NB)) {
 	return flock(fd, op);
     }
     op |= LOCK_NB;
@@ -1387,7 +1387,7 @@ thread_flock(fd, op)
 	switch (errno) {
 	  case EINTR:		/* can be happen? */
 	  case EWOULDBLOCK:
-	    thread_schedule();	/* busy wait */
+	    thred_schedule();	/* busy wait */
 	    break;
 	  default:
 	    return -1;
@@ -1395,7 +1395,7 @@ thread_flock(fd, op)
     }
     return 0;
 }
-#define flock thread_flock
+#define flock thred_flock
 #endif
 
 static VALUE

@@ -81,7 +81,7 @@ rb_waitpid(pid, flags, st)
     int result;
 #if defined(THREAD) && (defined(HAVE_WAITPID) || defined(HAVE_WAIT4))
     int oflags = flags;
-    if (!thread_alone()) {	/* there're other threads to run */
+    if (!thred_alone()) {	/* there're other threads to run */
 	flags |= WNOHANG;
     }
 #endif
@@ -92,7 +92,7 @@ rb_waitpid(pid, flags, st)
     if (result < 0) {
 	if (errno == EINTR) {
 #ifdef THREAD
-	    thread_schedule();
+	    thred_schedule();
 #endif
 	    goto retry;
 	}
@@ -101,8 +101,8 @@ rb_waitpid(pid, flags, st)
 #ifdef THREAD
     if (result == 0) {
 	if (oflags & WNOHANG) return 0;
-	thread_schedule();
-	if (thread_alone()) flags = oflags;
+	thred_schedule();
+	if (thred_alone()) flags = oflags;
 	goto retry;
     }
 #endif
@@ -120,8 +120,8 @@ rb_waitpid(pid, flags, st)
 #ifdef THREAD
     if (result == 0) {
 	if (oflags & WNOHANG) return 0;
-	thread_schedule();
-	if (thread_alone()) flags = oflags;
+	thred_schedule();
+	if (thred_alone()) flags = oflags;
 	goto retry;
     }
 #endif
@@ -141,7 +141,7 @@ rb_waitpid(pid, flags, st)
 	if (result < 0) {
 	    if (errno == EINTR) {
 #ifdef THREAD
-		thread_schedule();
+		thred_schedule();
 #endif
 		continue;
 	    }
@@ -197,7 +197,7 @@ f_wait()
     while ((pid = wait(&state)) < 0) {
 	if (errno == EINTR) {
 #ifdef THREAD
-	    thread_schedule();
+	    thred_schedule();
 #endif
 	    continue;
 	}
@@ -728,7 +728,7 @@ f_system(argc, argv)
       case -1:
 	if (errno == EAGAIN) {
 #ifdef THREAD
-	    thread_sleep(1);
+	    thred_sleep(1);
 #else
 	    sleep(1);
 #endif
@@ -758,10 +758,10 @@ f_sleep(argc, argv)
     beg = time(0);
 #ifdef THREAD
     if (argc == 0) {
-	thread_sleep_forever();
+	thred_sleep_forever();
     }
     else if (argc == 1) {
-	thread_wait_for(time_timeval(argv[0]));
+	thred_wait_for(time_timeval(argv[0]));
     }
 #else
     if (argc == 0) {

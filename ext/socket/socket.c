@@ -24,7 +24,7 @@
 
 #ifdef USE_CWGUSI
 extern int fileno(FILE *stream); /* <unix.mac.h> */
-extern int thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /* thread.c */
+extern int thred_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /* thread.c */
 # include <sys/errno.h>
 # include <GUSI.h>
 #endif
@@ -243,7 +243,7 @@ bsock_send(argc, argv, sock)
     fd = fileno(f);
   retry:
 #ifdef THREAD
-    thread_fd_writable(fd);
+    thred_fd_writable(fd);
 #endif
     m = str2cstr(msg, &mlen);
     if (RTEST(to)) {
@@ -262,7 +262,7 @@ bsock_send(argc, argv, sock)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thread_schedule();
+	    thred_schedule();
 #endif
 	    goto retry;
 	}
@@ -309,7 +309,7 @@ s_recv(sock, argc, argv, from)
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
 #ifdef THREAD
-    thread_wait_fd(fd);
+    thred_wait_fd(fd);
 #endif
     TRAP_BEG;
   retry:
@@ -325,7 +325,7 @@ s_recv(sock, argc, argv, from)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thread_schedule();
+	    thred_schedule();
 #endif
 	    goto retry;
 	}
@@ -370,7 +370,7 @@ bsock_recv(argc, argv, sock)
 
 #if defined(THREAD) && defined(HAVE_FCNTL)
 static int
-thread_connect(fd, sockaddr, len, type)
+thred_connect(fd, sockaddr, len, type)
     int fd;
     struct sockaddr *sockaddr;
     int len;
@@ -412,9 +412,9 @@ thread_connect(fd, sockaddr, len, type)
 		FD_ZERO(&fds);
 		FD_SET(fd, &fds);
 #ifndef USE_CWGUSI
-		thread_select(fd+1, 0, &fds, 0, 0, 0);
+		thred_select(fd+1, 0, &fds, 0, 0, 0);
 #else
-		thread_select(fd+1, 0, &fds, 0, 0);
+		thred_select(fd+1, 0, &fds, 0, 0);
 #endif
 		continue;
 #endif
@@ -535,8 +535,8 @@ open_inet(class, h, serv, type)
     }
     else {
 #if defined(THREAD) && defined(HAVE_FCNTL)
-        status = thread_connect(fd, (struct sockaddr*)&sockaddr,
-				sizeof(sockaddr), type);
+        status = thred_connect(fd, (struct sockaddr*)&sockaddr,
+			       sizeof(sockaddr), type);
 #else
 #ifdef SOCKS
 	if (type == INET_SOCKS) {
@@ -611,7 +611,7 @@ s_accept(class, fd, sockaddr, len)
 
   retry:
 #ifdef THREAD
-    thread_wait_fd(fd);
+    thred_wait_fd(fd);
 #endif
     TRAP_BEG;
     fd2 = accept(fd, sockaddr, len);
@@ -624,7 +624,7 @@ s_accept(class, fd, sockaddr, len)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thread_schedule();
+	    thred_schedule();
 #endif
 	    goto retry;
 	}
@@ -889,7 +889,7 @@ udp_connect(sock, host, port)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thread_schedule();
+	    thred_schedule();
 #endif
 	    goto retry;
 	}
@@ -948,7 +948,7 @@ udp_send(argc, argv, sock)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thread_schedule();
+	    thred_schedule();
 #endif
 	    goto retry;
 	}
@@ -1203,7 +1203,7 @@ sock_connect(sock, addr)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thread_schedule();
+	    thred_schedule();
 #endif
 	    goto retry;
 	}

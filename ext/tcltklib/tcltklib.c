@@ -52,7 +52,7 @@ void _timer_for_tcl (ClientData clientData)
     timer->flag = 0;
     CHECK_INTS;
 #ifdef THREAD 
-    if (!thread_critical) thread_schedule();
+    if (!thred_critical) thred_schedule();
 #endif
 
     timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 

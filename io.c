@@ -109,7 +109,7 @@ extern int ReadDataPending();
 # define READ_CHECK(fp) 0
 #else
 # define READ_CHECK(fp) do {\
-    if (!READ_DATA_PENDING(fp)) thread_wait_fd(fileno(fp));\
+    if (!READ_DATA_PENDING(fp)) thred_wait_fd(fileno(fp));\
 } while(0)
 #endif
 
@@ -881,7 +881,7 @@ io_syswrite(io, str)
     f = GetWriteFile(fptr);
 
 #ifdef THREAD
-    thread_fd_writable(fileno(f));
+    thred_fd_writable(fileno(f));
 #endif
     n = write(fileno(f), RSTRING(str)->ptr, RSTRING(str)->len);
 
@@ -905,7 +905,7 @@ io_sysread(io, len)
     str = str_new(0, ilen);
 
 #ifdef THREAD
-    thread_wait_fd(fileno(fptr->f));
+    thred_wait_fd(fileno(fptr->f));
 #endif
     TRAP_BEG;
     n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
@@ -1184,7 +1184,7 @@ pipe_open(pname, mode)
       case -1:			/* fork failed */
 	if (errno == EAGAIN) {
 #ifdef THREAD
-	    thread_sleep(1);
+	    thred_sleep(1);
 #else
 	    sleep(1);
 #endif
@@ -2055,7 +2055,7 @@ f_select(argc, argv, obj)
     max++;
 
 #ifdef THREAD
-    n = thread_select(max, rp, wp, ep, tp);
+    n = thred_select(max, rp, wp, ep, tp);
     if (n < 0) {
 	rb_sys_fail(0);
     }

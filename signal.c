@@ -286,8 +286,8 @@ posix_signal(signum, handler)
 #endif
 
 #ifdef THREAD
-# define rb_interrupt thread_interrupt
-# define rb_trap_eval thread_trap_eval
+# define rb_interrupt thred_interrupt
+# define rb_trap_eval thred_trap_eval
 #endif
 
 static RETSIGTYPE
