@@ -8170,7 +8170,11 @@ rb_thread_fd_close(fd)
     rb_thread_t th;
 
     FOREACH_THREAD(th) {
-	if ((th->wait_for & WAIT_FD) && fd == th->fd) {
+	if (((th->wait_for & WAIT_FD) && fd == th->fd) ||
+	    ((th->wait_for & WAIT_SELECT) && (fd < th->fd) &&
+	     (FD_ISSET(fd, &th->readfds) ||
+	      FD_ISSET(fd, &th->writefds) ||
+	      FD_ISSET(fd, &th->exceptfds)))) {
 	    VALUE exc = rb_exc_new2(rb_eIOError, "stream closed");
 	    rb_thread_raise(1, &exc, th);
 	}

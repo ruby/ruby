@@ -1,3 +1,13 @@
+Thu May 22 02:42:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_thread_fd_close): raise for writing threads.
+	  [ruby-dev:20269]
+
+	* io.c (rb_io_close, io_reopen): ditto.
+
+	* io.c (io_reopen): keep stdio objects for stdin, stdout,
+	  and stderr.  [ruby-dev:19442]
+
 Thu May 22 01:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (strings, word_list): must create new instance always.

@@ -710,7 +710,7 @@ rb_io_fread(ptr, len, f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 		  case EWOULDBLOCK:
 #endif
-                   if (len - n >= 0) {
+		    if (len - n >= 0) {
 			clearerr(f);
 			return len - n;
 		    }
@@ -1385,15 +1385,22 @@ rb_io_close(io)
     VALUE io;
 {
     OpenFile *fptr;
-    int fd;
+    int fd, fd2;
 
     fptr = RFILE(io)->fptr;
     if (!fptr) return Qnil;
-    if (!fptr->f && !fptr->f2) return Qnil;
+    if (fptr->f2) {
+	fd2 = fileno(fptr->f2);
+    }
+    else {
+	if (!fptr->f) return Qnil;
+	fd2 = -1;
+    }
 
     fd = fileno(fptr->f);
     rb_io_fptr_cleanup(fptr, Qfalse);
     rb_thread_fd_close(fd);
+    if (fd2 >= 0) rb_thread_fd_close(fd2);
 
     if (fptr->pid) {
 	rb_syswait(fptr->pid);
@@ -1953,7 +1960,6 @@ pipe_del_fptr(fptr)
     }
 }
 
-#if defined (_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS)
 static void
 pipe_atexit _((void))
 {
@@ -1966,7 +1972,6 @@ pipe_atexit _((void))
 	list = tmp;
     }
 }
-#endif
 
 static void pipe_finalize _((OpenFile *fptr,int));
 
@@ -2351,7 +2356,9 @@ io_reopen(io, nfile)
     else if (orig->mode & FMODE_WRITABLE) {
 	io_fflush(orig->f, orig);
     }
-    rb_thread_fd_close(fileno(fptr->f));
+    if (fptr->mode & FMODE_WRITABLE) {
+	io_fflush(GetWriteFile(fptr), fptr);
+    }
 
     /* copy OpenFile structure */
     fptr->mode = orig->mode;
@@ -2364,7 +2371,7 @@ io_reopen(io, nfile)
 
     mode = rb_io_mode_string(fptr);
     fd = fileno(fptr->f);
-    if (fd < 3) {
+    if (fd == fileno(stdin) || fd == fileno(stdout) || fd == fileno(stderr)) {
 	clearerr(fptr->f);
 	/* need to keep stdio objects */
 	if (dup2(fileno(orig->f), fd) < 0)
@@ -2376,14 +2383,16 @@ io_reopen(io, nfile)
 	    rb_sys_fail(orig->path);
 	fptr->f = rb_fdopen(fd, mode);
     }
+    rb_thread_fd_close(fd);
     if ((orig->mode & FMODE_READABLE) && pos >= 0) {
 	io_seek(fptr, pos, SEEK_SET);
 	io_seek(orig, pos, SEEK_SET);
     }
 
-    if (fptr->f2) {
+    if (fptr->f2 && fd != fileno(fptr->f2)) {
 	fd = fileno(fptr->f2);
 	fclose(fptr->f2);
+	rb_thread_fd_close(fd);
 	if (orig->f2) {
 	    if (dup2(fileno(orig->f2), fd) < 0)
 		rb_sys_fail(orig->path);
