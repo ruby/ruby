@@ -41,6 +41,7 @@ end
 $ipv6type = nil
 $ipv6lib = nil
 $ipv6libdir = nil
+$ipv6trylibc = nil
 if $ipv6
   if egrep_cpp("yes", <<EOF)
 #include <netinet/in.h>
@@ -59,6 +60,7 @@ EOF
     $ipv6type = "kame"
     $ipv6lib="inet6"
     $ipv6libdir="/usr/local/v6/lib"
+    $ipv6trylibc=true
     $CFLAGS="-DINET6 "+$CFLAGS
   elsif File.directory? "/usr/inet6"
     $ipv6type = "linux"
@@ -100,7 +102,7 @@ EOF
   if $ipv6lib
     if File.directory? $ipv6libdir and File.exist? "#{$ipv6libdir}/lib#{$ipv6lib}.a"
       $LOCAL_LIBS = " -L#$ipv6libdir -l#$ipv6lib"
-    else
+    elsif !$ipv6trylibc
       print <<EOS
 
 Fatal: no #$ipv6lib library found.  cannot continue.
@@ -128,6 +130,23 @@ main()
 }
 EOF
     $CFLAGS="-DHAVE_SIN_LEN "+$CFLAGS
+end
+
+  if try_link(<<EOF)
+#include <sys/types.h>
+#include <netdb.h>
+#include <string.h>
+#include <sys/socket.h>
+int
+main()
+{
+   struct sockaddr_storage ss;
+
+   ss.ss_family;
+   return 0;
+}
+EOF
+    $CFLAGS="-DHAVE_SOCKADDR_STORAGE "+$CFLAGS
 end
 
   if try_link(<<EOF)

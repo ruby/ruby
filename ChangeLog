@@ -1,3 +1,7 @@
+Sun Jan 16 20:12:13 2000  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* eval.c (dvar_asgn): may need to push dvar.
+
 Sat Jan 15 22:21:08 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (search_method): argument klass may be 0.

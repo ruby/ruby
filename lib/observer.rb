@@ -32,7 +32,7 @@ module Observable
   def notify_observers(*arg)
     if @observer_state
       if @observer_peers
-	for i in @observer_peers
+	for i in @observer_peers.dup
 	  i.update(*arg)
 	end
       end

@@ -556,14 +556,27 @@ dvar_asgn(id, value, push)
     struct RVarmap *vars = ruby_dyna_vars;
 
     while (vars) {
-	if (push && vars->id == 0) break;
+	if (push && vars->id == 0) {
+	    rb_dvar_push(id, value);
+	    return;
+	}
 	if (vars->id == id) {
 	    vars->val = value;
 	    return;
 	}
 	vars = vars->next;
     }
+
+    vars = 0;
+    if (ruby_dyna_vars && ruby_dyna_vars->id == 0) {
+	vars = ruby_dyna_vars;
+	ruby_dyna_vars = ruby_dyna_vars->next;
+    }
     rb_dvar_push(id, value);
+    if (vars) {
+	vars->next = ruby_dyna_vars;
+	ruby_dyna_vars = vars;
+    }
 }
 
 void
