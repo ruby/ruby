@@ -12,10 +12,6 @@
 
 #define RUBY
 
-#if !defined(__STDC__) && !defined(_MSC_VER)
-# define volatile
-#endif
-
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
 #  define HAVE_PROTOTYPES 1

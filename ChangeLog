@@ -1,3 +1,11 @@
+Thu Jul 24 16:05:22 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (AC_C_VOLATILE): check if volatile works.
+
+	* defines.h (volatile): removed.
+
+	* eval.c (rb_thread_group): Thread#group.  [new]
+
 Thu Jul 24 15:50:42 JST 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: add check for win32 OpenSSL libraries.

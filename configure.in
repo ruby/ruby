@@ -475,6 +475,7 @@ AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_CHAR_UNSIGNED
 AC_C_INLINE
+AC_C_VOLATILE
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_TRY_RUN([

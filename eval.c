@@ -9178,6 +9178,17 @@ rb_thread_abort_exc_set(thread, val)
     return val;
 }
 
+VALUE
+rb_thread_group(thread)
+    VALUE thread;
+{
+    VALUE group = rb_thread_check(thread)->thgroup;
+    if (!group) {
+	group = Qnil;
+    }
+    return group;
+}
+
 #define THREAD_ALLOC(th) do {\
     th = ALLOC(struct thread);\
 \
@@ -10024,6 +10035,7 @@ Init_Thread()
     rb_define_method(rb_cThread, "priority", rb_thread_priority, 0);
     rb_define_method(rb_cThread, "priority=", rb_thread_priority_set, 1);
     rb_define_method(rb_cThread, "safe_level", rb_thread_safe_level, 0);
+    rb_define_method(rb_cThread, "group", rb_thread_group, 0);
 
     rb_define_method(rb_cThread, "[]", rb_thread_aref, 1);
     rb_define_method(rb_cThread, "[]=", rb_thread_aset, 2);
