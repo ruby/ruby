@@ -1,3 +1,7 @@
+Thu May  1 08:24:00 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_match_exec): $ _always_ matches at the end of string.
+
 Wed Apr 30 14:12:00 2003  wanowa.kimura@nifty.ne.jp (kimura wataru)
 
 	* net/imap.rb: support THREAD extension.

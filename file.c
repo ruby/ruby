@@ -2045,6 +2045,7 @@ rb_file_flock(obj, operation)
     if (fptr->mode & FMODE_WRITABLE) {
 	fflush(GetWriteFile(fptr));
     }
+  retry:
     TRAP_BEG;
     ret = flock(fileno(fptr->f), NUM2INT(operation));
     TRAP_END;
@@ -2056,6 +2057,11 @@ rb_file_flock(obj, operation)
           case EWOULDBLOCK:
 #endif
               return Qfalse;
+	  case EINTR:
+#if defined(ERESTART)
+	  case ERESTART:
+#endif
+	    goto retry;
         }
 	rb_sys_fail(fptr->path);
     }

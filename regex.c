@@ -3883,8 +3883,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 
       case endline:
 	if (AT_STRINGS_END(d)) {
-	  if (size == 0 || d[-1] != '\n')
-	    break;
+	  break;
 	}
 	else if (*d == '\n')
 	  break;
