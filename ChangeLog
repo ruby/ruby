@@ -1,3 +1,18 @@
+Mon Jan 10 15:28:51 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#request_line): should
+	  escape SCRIPT_NAME and PATH_INFO before being parsed as a URI.
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils#escape_path): add
+	  new method to escape URI path component.
+
+	* lib/webrick/ssl.rb (WEBrick::Config::SSL): the default value
+	  of :SSLEnable is false.
+
+	* test/webrick/{test_cgi.rb,webrick.cgi}: new file.
+
+	* test/webrick/utils.rb: require "webrick/https.h".
+
 Sun Jan  9 14:12:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_f_select): IO list could be altered.  [ruby-dev:25312]

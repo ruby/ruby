@@ -1,4 +1,5 @@
 require "webrick"
+require "webrick/https"
 require "webrick/httpproxy"
 
 module TestWEBrick

@@ -352,15 +352,18 @@ module WEBrick
     unwise   = '{}|\\^[]`'
     nonascii = (0x80..0xff).collect{|c| c.chr }.join
 
+    module_function
+
     def _make_regex(str) /([#{Regexp.escape(str)}])/n end
+    def _make_regex!(str) /([^#{Regexp.escape(str)}])/n end
     def _escape(str, regex) str.gsub(regex){ "%%%02X" % $1[0] } end
     def _unescape(str, regex) str.gsub(regex){ $1.hex.chr } end
-    module_function :_make_regex, :_escape, :_unescape
 
     UNESCAPED = _make_regex(control+space+delims+unwise+nonascii)
     UNESCAPED_FORM = _make_regex(reserved+control+delims+unwise+nonascii)
     NONASCII  = _make_regex(nonascii)
     ESCAPED   = /%([0-9a-fA-F]{2})/
+    UNESCAPED_PCHAR = _make_regex!(unreserved+":@&=+$,")
 
     def escape(str)
       _escape(str, UNESCAPED)
@@ -380,12 +383,14 @@ module WEBrick
       _unescape(str.gsub(/\+/, " "), ESCAPED)
     end
 
+    def escape_path(str)
+      str.split("/").collect{|i|
+        _escape(i, UNESCAPED_PCHAR)
+      }.join("/")
+    end
+
     def escape8bit(str)
       _escape(str, NONASCII)
     end
-
-    module_function :escape, :unescape, :escape_form, :unescape_form,
-                    :escape8bit
-
   end
 end
