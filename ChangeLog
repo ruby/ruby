@@ -1,3 +1,8 @@
+Thu Nov 18 23:42:36 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/depend: Never regenerate lib/ripper/core.rb
+	  automatically. [ruby-dev:24911]
+
 Thu Nov 18 20:47:24 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.[ch] (rb_w32_isatty): new function to replace MSVCRT's
