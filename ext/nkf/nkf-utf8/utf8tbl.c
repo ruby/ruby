@@ -15,6 +15,23 @@ unsigned short euc_to_utf8_A1[] = {
  0xFF04, 0x00A2, 0x00A3, 0xFF05, 0xFF03, 0xFF06, 0xFF0A, 0xFF20,
  0x00A7, 0x2606, 0x2605, 0x25CB, 0x25CF, 0x25CE, 0x25C7,
 };
+
+/* Microsoft UCS Mapping Compatible */
+unsigned short euc_to_utf8_A1_ms[] = {
+         0x3000, 0x3001, 0x3002, 0xFF0C, 0xFF0E, 0x30FB, 0xFF1A,
+ 0xFF1B, 0xFF1F, 0xFF01, 0x309B, 0x309C, 0x00B4, 0xFF40, 0x00A8,
+ 0xFF3E, 0xFFE3, 0xFF3F, 0x30FD, 0x30FE, 0x309D, 0x309E, 0x3003,
+ 0x4EDD, 0x3005, 0x3006, 0x3007, 0x30FC, 0x2015, 0x2010, 0xFF0F,
+ 0xFF3C, 0xFF5E, 0x2225, 0xFF5C, 0x2026, 0x2025, 0x2018, 0x2019,
+ 0x201C, 0x201D, 0xFF08, 0xFF09, 0x3014, 0x3015, 0xFF3B, 0xFF3D,
+ 0xFF5B, 0xFF5D, 0x3008, 0x3009, 0x300A, 0x300B, 0x300C, 0x300D,
+ 0x300E, 0x300F, 0x3010, 0x3011, 0xFF0B, 0xFF0D, 0x00B1, 0x00D7,
+ 0x00F7, 0xFF1D, 0x2260, 0xFF1C, 0xFF1E, 0x2266, 0x2267, 0x221E,
+ 0x2234, 0x2642, 0x2640, 0x00B0, 0x2032, 0x2033, 0x2103, 0xFFE5,
+ 0xFF04, 0xFFE0, 0xFFE1, 0xFF05, 0xFF03, 0xFF06, 0xFF0A, 0xFF20,
+ 0x00A7, 0x2606, 0x2605, 0x25CB, 0x25CF, 0x25CE, 0x25C7,
+};
+
 unsigned short euc_to_utf8_A2[] = {
          0x25C6, 0x25A1, 0x25A0, 0x25B3, 0x25B2, 0x25BD, 0x25BC,
  0x203B, 0x3012, 0x2192, 0x2190, 0x2191, 0x2193, 0x3013,      0,
@@ -22,6 +39,22 @@ unsigned short euc_to_utf8_A2[] = {
       0,      0, 0x2208, 0x220B, 0x2286, 0x2287, 0x2282, 0x2283,
  0x222A, 0x2229,      0,      0,      0,      0,      0,      0,
       0,      0, 0x2227, 0x2228, 0x00AC, 0x21D2, 0x21D4, 0x2200,
+ 0x2203,      0,      0,      0,      0,      0,      0,      0,
+      0,      0,      0,      0, 0x2220, 0x22A5, 0x2312, 0x2202,
+ 0x2207, 0x2261, 0x2252, 0x226A, 0x226B, 0x221A, 0x223D, 0x221D,
+ 0x2235, 0x222B, 0x222C,      0,      0,      0,      0,      0,
+      0,      0, 0x212B, 0x2030, 0x266F, 0x266D, 0x266A, 0x2020,
+ 0x2021, 0x00B6,      0,      0,      0,      0, 0x25EF,
+};
+
+/* Microsoft UCS Mapping Compatible */
+unsigned short euc_to_utf8_A2_ms[] = {
+         0x25C6, 0x25A1, 0x25A0, 0x25B3, 0x25B2, 0x25BD, 0x25BC,
+ 0x203B, 0x3012, 0x2192, 0x2190, 0x2191, 0x2193, 0x3013,      0,
+      0,      0,      0,      0,      0,      0,      0,      0,
+      0,      0, 0x2208, 0x220B, 0x2286, 0x2287, 0x2282, 0x2283,
+ 0x222A, 0x2229,      0,      0,      0,      0,      0,      0,
+      0,      0, 0x2227, 0x2228, 0xFFE2, 0x21D2, 0x21D4, 0x2200,
  0x2203,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0, 0x2220, 0x22A5, 0x2312, 0x2202,
  0x2207, 0x2261, 0x2252, 0x226A, 0x226B, 0x221A, 0x223D, 0x221D,
@@ -1263,6 +1296,33 @@ unsigned short euc_to_utf8_1byte[] = {
 };
 unsigned short * euc_to_utf8_2bytes[] = {
                  euc_to_utf8_A1, euc_to_utf8_A2, euc_to_utf8_A3,
+ euc_to_utf8_A4, euc_to_utf8_A5, euc_to_utf8_A6, euc_to_utf8_A7,
+ euc_to_utf8_A8, euc_to_utf8_A9, euc_to_utf8_AA, euc_to_utf8_AB,
+ euc_to_utf8_AC, euc_to_utf8_AD, euc_to_utf8_AE, euc_to_utf8_AF,
+ euc_to_utf8_B0, euc_to_utf8_B1, euc_to_utf8_B2, euc_to_utf8_B3,
+ euc_to_utf8_B4, euc_to_utf8_B5, euc_to_utf8_B6, euc_to_utf8_B7,
+ euc_to_utf8_B8, euc_to_utf8_B9, euc_to_utf8_BA, euc_to_utf8_BB,
+ euc_to_utf8_BC, euc_to_utf8_BD, euc_to_utf8_BE, euc_to_utf8_BF,
+ euc_to_utf8_C0, euc_to_utf8_C1, euc_to_utf8_C2, euc_to_utf8_C3,
+ euc_to_utf8_C4, euc_to_utf8_C5, euc_to_utf8_C6, euc_to_utf8_C7,
+ euc_to_utf8_C8, euc_to_utf8_C9, euc_to_utf8_CA, euc_to_utf8_CB,
+ euc_to_utf8_CC, euc_to_utf8_CD, euc_to_utf8_CE, euc_to_utf8_CF,
+ euc_to_utf8_D0, euc_to_utf8_D1, euc_to_utf8_D2, euc_to_utf8_D3,
+ euc_to_utf8_D4, euc_to_utf8_D5, euc_to_utf8_D6, euc_to_utf8_D7,
+ euc_to_utf8_D8, euc_to_utf8_D9, euc_to_utf8_DA, euc_to_utf8_DB,
+ euc_to_utf8_DC, euc_to_utf8_DD, euc_to_utf8_DE, euc_to_utf8_DF,
+ euc_to_utf8_E0, euc_to_utf8_E1, euc_to_utf8_E2, euc_to_utf8_E3,
+ euc_to_utf8_E4, euc_to_utf8_E5, euc_to_utf8_E6, euc_to_utf8_E7,
+ euc_to_utf8_E8, euc_to_utf8_E9, euc_to_utf8_EA, euc_to_utf8_EB,
+ euc_to_utf8_EC, euc_to_utf8_ED, euc_to_utf8_EE, euc_to_utf8_EF,
+ euc_to_utf8_F0, euc_to_utf8_F1, euc_to_utf8_F2, euc_to_utf8_F3,
+ euc_to_utf8_F4, euc_to_utf8_F5,              0,              0,
+              0, euc_to_utf8_F9, euc_to_utf8_FA, euc_to_utf8_FB,
+ euc_to_utf8_FC,              0,              0,
+};
+/* Microsoft UCS Mapping Compatible */
+unsigned short * euc_to_utf8_2bytes_ms[] = {
+                 euc_to_utf8_A1_ms,euc_to_utf8_A2_ms, euc_to_utf8_A3,
  euc_to_utf8_A4, euc_to_utf8_A5, euc_to_utf8_A6, euc_to_utf8_A7,
  euc_to_utf8_A8, euc_to_utf8_A9, euc_to_utf8_AA, euc_to_utf8_AB,
  euc_to_utf8_AC, euc_to_utf8_AD, euc_to_utf8_AE, euc_to_utf8_AF,
