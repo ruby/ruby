@@ -1,3 +1,8 @@
+Thu Nov 13 11:31:14 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Completion#complete): prior shorter
+	  name to containing longer name.
+
 Thu Nov 13 06:08:54 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: stop freezing some classes

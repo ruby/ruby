@@ -82,18 +82,28 @@ Keyword completion module.
     def complete(key, pat = nil)
       pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+(?=.)/, '\&\w*'),
                          ignore_case?)
-      canon, sw, k, v = nil
+      canon, sw, k, v, cn = nil
       each do |k, *v|
 	(if Regexp === k
+	   kn = nil
 	   k === key
 	 else
-	   pat === (defined?(k.id2name) ? k.id2name : k)
+	   kn = defined?(k.id2name) ? k.id2name : k
+	   pat === kn
 	 end) or next
 	v << k if v.empty?
-	unless canon
-	  canon, sw = k, v
-	else
-	  throw :ambiguous, key unless sw == v
+	if !canon
+	  canon, sw, cn = k, v, kn
+	elsif sw != v
+	  if String === cn and String === kn
+	    if cn.rindex(kn, 0)
+	      canon, sw, cn = k, v, kn
+	      next
+	    elsif kn.rindex(canon, 0)
+	      next
+	    end
+	  end
+	  throw :ambiguous, key
 	end
       end
       if canon
@@ -564,7 +574,7 @@ summary feature.
     def match(key)
       return key, *fetch(key) {
 	raise AmbiguousArgument, catch(:ambiguous) {return complete(key)}
-      }.to_a
+      }
     end
   end
 
@@ -995,11 +1005,7 @@ Default options, which never appear in option summary.
 	else
 	  raise ArgumentError, "argument pattern given twice"
 	end
-	if Array === o
-	  o.each {|o| pattern[(Array === o ? o[0] : o)] = o}
-	else
-	  pattern.update(o)
-	end
+	o.each {|(o, *v)| pattern[o] = v.fetch(0) {o}}
       when Module
 	raise ArgumentError, "unsupported argument type: #{o}"
       when *ArgumentStyle.keys
@@ -1191,7 +1197,7 @@ Default options, which never appear in option summary.
 	    argv.unshift(opt) if opt and (opt = opt.sub(/\A-*/, '-')) != '-'
 	    sw.call(val) if sw
 	  rescue ParseError
-	    raise $!.set_option(arg, has_arg)
+	    raise $!.set_option(arg, arg.length > 2)
 	  end
 
 	# non-option argument
