@@ -1,3 +1,8 @@
+Tue Feb 24 06:40:14 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_identifier): Handle 
+	  class variables in code listings
+
 Tue Feb 24 06:32:27 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_aliases): Handle

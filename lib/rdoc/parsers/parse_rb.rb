@@ -917,7 +917,7 @@ class RubyLex
     end
 
     @OP.def_rule('@') do
-      if peek(0) =~ /[\w_]/
+      if peek(0) =~ /[@\w_]/
 	ungetc
 	identify_identifier
       else
@@ -992,6 +992,8 @@ class RubyLex
   def identify_identifier
     token = ""
     token.concat getc if peek(0) =~ /[$@]/
+    token.concat getc if peek(0) == "@"
+
     while (ch = getc) =~ /\w|_/
       print ":", ch, ":" if RubyLex.debug?
       token.concat ch
@@ -1003,7 +1005,7 @@ class RubyLex
     end
     # fix token
 
-#    puts "identifier - #{token}, state = #@lex_state"
+    # $stderr.puts "identifier - #{token}, state = #@lex_state"
 
     case token
     when /^\$/
