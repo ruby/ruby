@@ -1,3 +1,7 @@
+Sat Aug  2 15:11:54 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb (--no-undefined): annoying option removed.
+
 Sat Aug  2 14:53:55 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): get configuration by pkg-config.  [new]
