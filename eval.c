@@ -7980,6 +7980,7 @@ rb_thread_remove(th)
 
     rb_thread_ready(th);
     rb_thread_die(th);
+    if (th->status == THREAD_KILLED) return; /* died in process */
     th->prev->next = th->next;
     th->next->prev = th->prev;
 }
@@ -9004,6 +9005,7 @@ rb_thread_start_0(fn, arg, th_arg)
 	}
     }
     rb_thread_schedule();
+    ruby_stop(0);		/* last thread termination */
     return 0;			/* not reached */
 }
 
