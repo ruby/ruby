@@ -828,7 +828,7 @@ if test "$with_dln_a_out" != yes; then
 			XLDFLAGS='-Wl,-bE:ruby.imp'
 			DLDFLAGS='-brtl -eInit_$(TARGET) -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
 			LDFLAGS="-brtl"
-			test $GCC = yes || ARCHFILE="ruby.imp"
+			ARCHFILE="ruby.imp"
 			rb_cv_dlopen=yes ;;
 
 	human*)		DLDFLAGS=''

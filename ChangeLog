@@ -1,3 +1,8 @@
+Fri Jul 11 22:37:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (aix): needs ruby.imp even with gcc.
+	  (ruby-bugs:PR#1007)
+
 Fri Jul 11 18:37:37 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* instruby.rb: do not handle directories. [ruby-dev:20613]
