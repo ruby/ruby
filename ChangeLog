@@ -1,3 +1,8 @@
+Fri Aug  1 23:07:38 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: convert RD to RDoc. Thanks William Webber.
+	  [ruby-doc:456]
+
 Fri Aug  1 19:48:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/rubyext.c (syck_emitter_write_m): forgot to declare
