@@ -1,3 +1,7 @@
+Tue Feb 26 21:36:01 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* bignum.c (rb_big_2comp): void function cannot return any value.
+
 Tue Feb 26 11:25:50 2002  akira yamada  <akira@arika.org>
 
 	* lib/uri/generic.rb: merge0 shuld return [oth, oth] if oth is
