@@ -89,7 +89,8 @@
 bool NtSyncProcess = TRUE;
 
 static struct ChildRecord *CreateChild(char *, char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
-static bool NtHasRedirection (char *);
+static int make_cmdvector(const char *, char ***);
+static bool has_redirection(const char *);
 static int valid_filename(char *s);
 static void StartSockets ();
 static char *str_grow(struct RString *str, size_t new_size);
@@ -370,7 +371,7 @@ NtInitialize(int *argc, char ***argv)
     //
     // subvert cmd.exe's feeble attempt at command line parsing
     //
-    *argc = NtMakeCmdVector((char *)GetCommandLine(), argv, TRUE);
+    *argc = make_cmdvector(GetCommandLine(), argv);
 
     //
     // Now set up the correct time stuff
@@ -510,28 +511,44 @@ static char *szInternalCmds[] = {
   "type",
   "ver",
   "vol",
-  NULL
 };
 
-int
-isInternalCmd(char *cmd)
+static int
+internal_match(const void *key, const void *elem)
 {
-    int i, fRet=0;
-    char **vec;
-    int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
+    return strcmp(key, *(const char *const *)elem);
+}
 
-    if (vecc == 0)
-	return 0;
-    for( i = 0; szInternalCmds[i] ; i++){
-	if(!strcasecmp(szInternalCmds[i], vec[0])){
-	    fRet = 1;
-	    break;
-	}
+static int
+isInternalCmd(const char *cmd)
+{
+    int i;
+    char cmdname[8], *b = cmdname, c;
+
+    do {
+	if (!(c = *cmd++)) return 0;
+    } while (isspace(c));
+    while (isalpha(c)) {
+	*b++ = tolower(c);
+	if (b == cmdname + sizeof(cmdname)) return 0;
+	if (!(c = *cmd++)) return 0;
     }
-
-    SafeFree(vec, vecc);
-
-    return fRet;
+    if (c == '.') c = *cmd;
+    switch (c) {
+      case '<': case '>': case '|':
+	return 1;
+      case '\0': case ' ': case '\t': case '\n':
+	break;
+      default:
+	return 0;
+    }
+    *b = 0;
+    if (!bsearch(cmdname, szInternalCmds,
+		 sizeof(szInternalCmds) / sizeof(*szInternalCmds),
+		 sizeof(*szInternalCmds),
+		 internal_match))
+	return 0;
+    return 1;
 }
 
 
@@ -860,14 +877,15 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
 	shell = prog;
     }
     else {
-	if ((shell = getenv("RUBYSHELL")) && NtHasRedirection(cmd)) {
+	int redir = -1;
+	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd))) {
 	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
 				 sizeof (" -c "));
 	    sprintf(tmp, "%s -c %s", shell, cmd);
 	    cmd = tmp;
 	}
 	else if ((shell = getenv("COMSPEC")) &&
-		 (NtHasRedirection(cmd) || isInternalCmd(cmd))) {
+		 ((redir < 0 ? has_redirection(cmd) : redir) || isInternalCmd(cmd))) {
 	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
 				 sizeof (" /c "));
 	    sprintf(tmp, "%s /c %s", shell, cmd);
@@ -904,7 +922,7 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
 }
 
 typedef struct _NtCmdLineElement {
-    struct _NtCmdLineElement *next, *prev;
+    struct _NtCmdLineElement *next;
     char *str;
     int len;
     int flags;
@@ -918,38 +936,11 @@ typedef struct _NtCmdLineElement {
 #define NTMALLOC 0x2	// string in element was malloc'ed
 #define NTSTRING 0x4	// element contains a quoted string
 
-NtCmdLineElement *NtCmdHead = NULL, *NtCmdTail = NULL;
-
-void
-NtFreeCmdLine(void)
-{
-    NtCmdLineElement *ptr;
-    
-    while(NtCmdHead) {
-	ptr = NtCmdHead;
-	NtCmdHead = NtCmdHead->next;
-	free(ptr);
-    }
-    NtCmdHead = NtCmdTail = NULL;
-}
-
-//
-// This function expands wild card characters that were spotted 
-// during the parse phase. The idea here is to call FindFirstFile and
-// FindNextFile with the wildcard pattern specified, and splice in the
-// resulting list of new names. If the wildcard pattern doesn't match 
-// any existing files, just leave it in the list.
-//
-typedef struct {
-    NtCmdLineElement *head;
-    NtCmdLineElement *tail;
-} ListInfo;
-
 static void
 insert(const char *path, VALUE vinfo)
 {
     NtCmdLineElement *tmpcurr;
-    ListInfo *listinfo = (ListInfo *)vinfo;
+    NtCmdLineElement ***tail = (NtCmdLineElement ***)vinfo;
 
     tmpcurr = ALLOC(NtCmdLineElement);
     MEMZERO(tmpcurr, NtCmdLineElement, 1);
@@ -957,14 +948,8 @@ insert(const char *path, VALUE vinfo)
     tmpcurr->str = ALLOC_N(char, tmpcurr->len + 1);
     tmpcurr->flags |= NTMALLOC;
     strcpy(tmpcurr->str, path);
-    if (listinfo->tail) {
-	listinfo->tail->next = tmpcurr;
-	tmpcurr->prev = listinfo->tail;
-	listinfo->tail = tmpcurr;
-    }
-    else {
-	listinfo->tail = listinfo->head = tmpcurr;
-    }
+    **tail = tmpcurr;
+    *tail = &tmpcurr->next;
 }
 
 #ifdef HAVE_SYS_PARAM_H
@@ -973,14 +958,13 @@ insert(const char *path, VALUE vinfo)
 # define MAXPATHLEN 512
 #endif
 
-void
-NtCmdGlob (NtCmdLineElement *patt)
+
+static NtCmdLineElement **
+cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
 {
-    ListInfo listinfo;
     char buffer[MAXPATHLEN], *buf = buffer;
     char *p;
-
-    listinfo.head = listinfo.tail = 0;
+    NtCmdLineElement **last = tail;
 
     if (patt->len >= MAXPATHLEN)
 	buf = ruby_xmalloc(patt->len + 1);
@@ -990,21 +974,15 @@ NtCmdGlob (NtCmdLineElement *patt)
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
-    rb_globi(buf, insert, (VALUE)&listinfo);
+    rb_globi(buf, insert, (VALUE)&tail);
     if (buf != buffer)
 	free(buf);
 
-    if (listinfo.head && listinfo.tail) {
-	listinfo.head->prev = patt->prev;
-	listinfo.tail->next = patt->next;
-	if (listinfo.head->prev)
-	    listinfo.head->prev->next = listinfo.head;
-	if (listinfo.tail->next)
-	    listinfo.tail->next->prev = listinfo.tail;
-    }
+    if (last == tail) return 0;
     if (patt->flags & NTMALLOC)
 	free(patt->str);
-    // free(patt);  //TODO:  memory leak occures here. we have to fix it.
+    free(patt);
+    return tail;
 }
 
 // 
@@ -1013,80 +991,77 @@ NtCmdGlob (NtCmdLineElement *patt)
 //
 
 static bool
-NtHasRedirection (char *cmd)
+has_redirection(const char *cmd)
 {
-    int inquote = 0;
     char quote = '\0';
-    char *ptr ;
+    const char *ptr;
 
     //
     // Scan the string, looking for redirection (< or >) or pipe 
     // characters (|) that are not in a quoted string
     //
 
-    for (ptr = cmd; *ptr; ptr++) {
-
+    for (ptr = cmd; *ptr;) {
 	switch (*ptr) {
-
 	  case '\'':
 	  case '\"':
-	    if (inquote) {
-		if (quote == *ptr) {
-		    inquote = 0;
-		    quote = '\0';
-		}
-	    }
-	    else {
+	    if (!quote)
 		quote = *ptr;
-		inquote++;
-	    }
+	    else if (quote == *ptr)
+		quote = '\0';
+	    ptr++;
 	    break;
 
 	  case '>':
 	  case '<':
 	  case '|':
-
-	    if (!inquote)
+	    if (!quote)
 		return TRUE;
+	    ptr++;
+	    break;
+
+	  case '\\':
+	    ptr++;
+	  default:
+	    ptr = CharNext(ptr);
+	    break;
 	}
     }
     return FALSE;
 }
 
-
-int 
-NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
+static inline char *
+skipspace(char *ptr)
 {
-    int cmdlen = strlen(cmdline);
-    int done, instring, globbing, quoted, len;
-    int newline, need_free = 0, i;
-    int elements, strsz;
-    int slashes = 0;
-    char *ptr, *base, *buffer;
+    while (ISSPACE(*ptr))
+	ptr++;
+    return ptr;
+}
+
+static int 
+make_cmdvector(const char *cmd, char ***vec)
+{
+    int cmdlen, globbing, len, i;
+    int elements, strsz, done;
+    int slashes, escape;
+    char *ptr, *base, *buffer, *cmdline;
     char **vptr;
     char quote;
-    NtCmdLineElement *curr;
+    NtCmdLineElement *curr, **tail;
+    NtCmdLineElement *cmdhead = NULL, **cmdtail = &cmdhead;
 
     //
     // just return if we don't have a command line
     //
 
-    if (cmdlen == 0) {
+    while (ISSPACE(*cmd))
+	cmd++;
+    if (!*cmd) {
 	*vec = NULL;
 	return 0;
     }
 
-    cmdline = strdup(cmdline);
-
-    //
-    // strip trailing white space
-    //
-
-    ptr = cmdline+(cmdlen - 1);
-    while(ptr >= cmdline && ISSPACE(*ptr))
-        --ptr;
-    *++ptr = '\0';
-
+    ptr = cmdline = strdup(cmd);
 
     //
     // Ok, parse the command line, building a list of CmdLineElements.
@@ -1097,19 +1072,10 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     // The inner loop does one interation for each character in the element.
     //
 
-    for (done = 0, ptr = cmdline; *ptr;) {
-
-	//
-	// zap any leading whitespace
-	//
-
-	while(ISSPACE(*ptr))
-	    ptr++;
+    while (*(ptr = skipspace(ptr))) {
 	base = ptr;
-
-	for (done = newline = globbing = instring = quoted = 0; 
-	     *ptr && !done; ptr++) {
-
+	quote = slashes = globbing = escape = 0;
+	for (done = 0; !done && *ptr; ) {
 	    //
 	    // Switch on the current character. We only care about the
 	    // white-space characters, the  wild-card characters, and the
@@ -1118,55 +1084,40 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 
 	    switch (*ptr) {
 	      case '\\':
-	        if (ptr[1] == '"') ptr++;
+		slashes++;
 	        break;
+
 	      case ' ':
 	      case '\t':
-#if 0
-	      case '/':  // have to do this for NT/DOS option strings
-
-		//
-		// check to see if we're parsing an option switch
-		//
-
-		if (*ptr == '/' && base == ptr)
-		    continue;
-#endif
+	      case '\n':
 		//
 		// if we're not in a string, then we're finished with this
 		// element
 		//
 
-		if (!instring)
-		    done++;
+		if (!quote) {
+		    *ptr = 0;
+		    done = 1;
+		}
 		break;
 
 	      case '*':
 	      case '?':
-
+	      case '[':
+	      case '{':
 		// 
 		// record the fact that this element has a wildcard character
 		// N.B. Don't glob if inside a single quoted string
 		//
 
-		if (!(instring && quote == '\''))
+		if (quote != '\'')
 		    globbing++;
-		break;
-
-	      case '\n':
-
-		//
-		// If this string contains a newline, mark it as such so
-		// we can replace it with the two character sequence "\n"
-		// (cmd.exe doesn't like raw newlines in strings...sigh).
-		//
-
-		newline++;
+		ptr++;
+		slashes = 0;
 		break;
 
 	      case '\'':
 	      case '\"':
-
 		//
 		// if we're already in a string, see if this is the
 		// terminating close-quote. If it is, we're finished with 
@@ -1174,28 +1125,23 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 		// If we're not already in a string, start one.
 		//
 
-		if (instring) {
-		    if (quote == *ptr) {
-			instring = 0;
+		if (!(slashes & 1)) {
+		    if (!quote)
+			quote = *ptr;
+		    else if (quote == *ptr)
 			quote = '\0';
-		    }
+		    escape++;
 		}
-		else {
-		    instring++;
-		    quote = *ptr;
-		    quoted++;
-		}
+		slashes = 0;
 		break;
+
+	      default:
+		ptr = CharNext(ptr);
+		slashes = 0;
+		continue;
 	    }
+	    ptr++;
 	}
-
-	//
-	// need to back up ptr by one due to last increment of for loop
-	// (if we got out by seeing white space)
-	//
-
-	if (*ptr)
-	    ptr--;
 
 	//
 	// when we get here, we've got a pair of pointers to the element,
@@ -1203,61 +1149,75 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	// points to the character following the element.
 	//
 
-	curr = ALLOC(NtCmdLineElement);
-	memset (curr, 0, sizeof(*curr));
-
 	len = ptr - base;
+	if (quote) escape = 0;
+	else if (done) --len;
 
 	//
 	// if it's an input vector element and it's enclosed by quotes, 
 	// we can remove them.
 	//
 
-	if (InputCmd && !instring && (base[0] == '\"' && base[len-1] == '\"')) {
-	    char *p;
-	    base++;
-	    len -= 2;
-	    base[len] = 0;
-	    for (p = base; p < base + len; p++) {
-		if ((p[0] == '\\' || p[0] == '\"') && p[1] == '"') {
-		    strcpy(p, p + 1);
-		    len--;
+	if (escape) {
+	    char *p = base;
+	    slashes = quote = 0;
+	    while (p < base + len) {
+		switch (*p) {
+		  case '\\':
+		    p++;
+		    slashes++;
+		    break;
+
+		  case '\'':
+		  case '"':
+		    if (!(slashes & 1)) {
+			if (!quote)
+			    quote = *p;
+			else if (quote == *p)
+			    quote = '\0';
+			else {
+			    p++;
+			    slashes = 0;
+			    break;
+			}
+		    }
+		    if (base + slashes == p) {
+			base += slashes >> 1;
+			len -= slashes >> 1;
+			slashes &= 1;
+		    }
+		    if (base == p) {
+			base = ++p;
+			--len;
+		    }
+		    else {
+			memcpy(p - ((slashes + 1) >> 1), p + (~slashes & 1), base + len - p);
+			slashes >>= 1;
+			p -= slashes;
+			len -= slashes + 1;
+			slashes = 0;
+		    }
+		    break;
+
+		  default:
+		    p = CharNext(p);
+		    slashes = 0;
+		    break;
 		}
 	    }
 	}
-	else if (InputCmd && !instring && (base[0] == '\'' && base[len-1] == '\'')) {
-	    base++;
-	    len -= 2;
-	}
 
+	curr = ALLOC(NtCmdLineElement);
+	MEMZERO(curr, NtCmdLineElement, 1);
 	curr->str = base;
 	curr->len = len;
-	curr->flags |= (globbing ? NTGLOB : 0);
 
-	//
-	// Now put it in the list of elements
-	//
-	if (NtCmdTail) {
-	    NtCmdTail->next = curr;
-	    curr->prev = NtCmdTail;
-	    NtCmdTail = curr;
+	if (globbing && (tail = cmdglob(curr, cmdtail))) {
+	    cmdtail = tail;
 	}
 	else {
-	    NtCmdHead = NtCmdTail = curr;
-	}
-    }
-
-    if (InputCmd) {
-
-	//
-	// When we get here we've finished parsing the command line. Now 
-	// we need to run the list, expanding any globbing patterns.
-	//
-	
-	for(curr = NtCmdHead; curr; curr = curr->next) {
-	    if (curr->flags & NTGLOB) {
-		NtCmdGlob(curr);
-	    }
+	    *cmdtail = curr;
+	    cmdtail = &curr->next;
 	}
     }
 
@@ -1267,7 +1227,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     // (argv) and a string table for the elements.
     // 
 
-    for (elements = 0, strsz = 0, curr = NtCmdHead; curr; curr = curr->next) {
+    for (elements = 0, strsz = 0, curr = cmdhead; curr; curr = curr->next) {
 	elements++;
 	strsz += (curr->len + 1);
     }
@@ -1275,8 +1235,6 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     len = (elements+1)*sizeof(char *) + strsz;
     buffer = ALLOC_N(char, len);
     
-    memset (buffer, 0, len);
-
     //
     // make vptr point to the start of the buffer
     // and ptr point to the area we'll consider the string table.
@@ -1293,13 +1251,17 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 
     ptr = buffer + (elements+1) * sizeof(char *);
 
-    for (curr =  NtCmdHead; curr;  curr = curr->next) {
+    while (curr = cmdhead) {
 	strncpy (ptr, curr->str, curr->len);
 	ptr[curr->len] = '\0';
 	*vptr++ = ptr;
 	ptr += curr->len + 1;
+	cmdhead = curr->next;
+	if (curr->flags & NTMALLOC) free(curr->str);
+	free(curr);
     }
-    NtFreeCmdLine();
+    *vptr = 0;
+
     *vec = (char **) buffer;
     free(cmdline);
     return elements;
