@@ -1980,8 +1980,7 @@ module Net
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
-        token = match(T_ATOM)
-        mailbox = token.value
+        mailbox = astring
         match(T_SPACE)
         match(T_LPAR)
         match(T_ATOM)
@@ -2000,8 +1999,7 @@ module Net
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
-        token = match(T_ATOM)
-        mailbox = token.value
+        mailbox = astring
         token = lookahead
         if token.symbol == T_SPACE
           shift_token

@@ -1,4 +1,12 @@
+Tue Nov  6 14:17:14 2001  Amos Gouaux <amos+ruby@utdallas.edu>
+
+	* lib/net/imap.rb (getquota_response): use astring for mailbox
+	names.
+
+	* lib/net/imap.rb (getacl_response): ditto.
+
 Sat Nov  3 22:28:51 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
+
 	* matrix.rb (Matrix#column_vectors, Matrix#row_vectors): ditto bug. 
 	  this bug report and fix by tsutomu@nucba.ac.jp.
 	
