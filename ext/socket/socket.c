@@ -416,6 +416,7 @@ s_recvfrom(sock, argc, argv, from)
     char buf[1024];
     socklen_t alen = sizeof buf;
     VALUE len, flg;
+    long buflen;
     long slen;
     int fd, flags;
 
@@ -430,13 +431,13 @@ s_recvfrom(sock, argc, argv, from)
     }
     fd = fileno(fptr->f);
 
-    slen = NUM2INT(len);
-    str = rb_tainted_str_new(0, slen);
+    buflen = NUM2INT(len);
+    str = rb_tainted_str_new(0, buflen);
 
   retry:
     rb_thread_wait_fd(fd);
     TRAP_BEG;
-    slen = recvfrom(fd, RSTRING(str)->ptr, slen, flags, (struct sockaddr*)buf, &alen);
+    slen = recvfrom(fd, RSTRING(str)->ptr, buflen, flags, (struct sockaddr*)buf, &alen);
     TRAP_END;
 
     if (slen < 0) {
