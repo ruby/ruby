@@ -1100,7 +1100,7 @@ rb_ary_delete_at(ary, pos)
     return del;
 }
 
-VALUE
+static VALUE
 rb_ary_delete_at_m(ary, pos)
     VALUE ary, pos;
 {
@@ -1186,7 +1186,7 @@ rb_ary_replace_m(ary, ary2)
     return ary;
 }
 
-static VALUE
+VALUE
 rb_ary_clear(ary)
     VALUE ary;
 {

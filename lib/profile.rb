@@ -1,6 +1,7 @@
 
 module Profiler__
-  Start = Float(Time.times[0])
+  Times = if defined? Process.times then Process else Time end
+  Start = Float(Times::times[0])
   top = "toplevel".intern
   Stack = [[0, 0, top]]
   MAP = {"#toplevel" => [1, 0, 0, "#toplevel"]}
@@ -8,10 +9,10 @@ module Profiler__
   p = proc{|event, file, line, id, binding, klass|
     case event
     when "call", "c-call"
-      now = Float(Time.times[0])
+      now = Float(Times::times[0])
       Stack.push [now, 0.0, id]
     when "return", "c-return"
-      now = Float(Time.times[0])
+      now = Float(Times::times[0])
       tick = Stack.pop
       name = klass.to_s
       if name.nil? then name = '' end
@@ -35,7 +36,7 @@ module Profiler__
   }
   END {
     set_trace_func nil
-    total = Float(Time.times[0]) - Start
+    total = Float(Times::times[0]) - Start
     if total == 0 then total = 0.01 end
     MAP["#toplevel"][1] = total
 #    f = open("./rmon.out", "w")

@@ -375,7 +375,7 @@ def create_makefile(target, srcdir = File.dirname($0))
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
   $libs = CONFIG["LIBRUBYARG"] + " " + $libs
-  $configure_args['--enable-shared'] or $LIBPATH |= ["$(topdir)"]
+  $configure_args['--enable-shared'] or $LIBPATH |= [$topdir]
   $LIBPATH |= [CONFIG["libdir"]]
 
   defflag = ''

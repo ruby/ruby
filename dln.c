@@ -84,9 +84,9 @@ int eaccess();
 
 #ifndef FUNCNAME_PATTERN
 # if defined(__hp9000s300) ||  (defined(__NetBSD__) && !defined(__ELF__)) || defined(__BORLANDC__) || (defined(__FreeBSD__) && __FreeBSD__ < 3) || defined(__OpenBSD__) || defined(NeXT) || defined(__WATCOMC__) || defined(__APPLE__)
-#  define FUNCNAME_PATTERN "_Init_%.200s"
+#  define FUNCNAME_PATTERN "_Init_%s"
 # else
-#  define FUNCNAME_PATTERN "Init_%.200s"
+#  define FUNCNAME_PATTERN "Init_%s"
 # endif
 #endif
 
@@ -1194,7 +1194,7 @@ aix_loaderror(const char *pathname)
 #define LOAD_ERRTAB_LEN	(sizeof(load_errtab)/sizeof(load_errtab[0]))
 #define ERRBUF_APPEND(s) strncat(errbuf, s, sizeof(errbuf)-strlen(errbuf)-1)
 
-    snprintf(errbuf, 1024, "load failed - %.200s ", pathname);
+    snprintf(errbuf, 1024, "load failed - %s ", pathname);
 
     if (!loadquery(1, &message[0], sizeof(message))) 
 	ERRBUF_APPEND(strerror(errno));

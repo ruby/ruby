@@ -87,10 +87,10 @@ enum_find(argc, argv, obj)
 	rb_gc_force_recycle((VALUE)memo);
 	return memo->u1.value;
     }
+    rb_gc_force_recycle((VALUE)memo);
     if (!NIL_P(if_none)) {
 	rb_eval_cmd(if_none, rb_ary_new2(0));
     }
-    rb_gc_force_recycle((VALUE)memo);
     return Qnil;
 }
 
@@ -147,7 +147,7 @@ collect_i(i, tmp)
 }
 
 static VALUE
-enum_all(i, ary)
+collect_all(i, ary)
     VALUE i, ary;
 {
     rb_ary_push(ary, i);
@@ -161,7 +161,7 @@ enum_to_a(obj)
     VALUE ary;
 
     ary = rb_ary_new();
-    rb_iterate(rb_each, obj, enum_all, ary);
+    rb_iterate(rb_each, obj, collect_all, ary);
 
     return ary;
 }
@@ -173,7 +173,7 @@ enum_collect(obj)
     VALUE tmp;
 
     tmp = rb_ary_new();
-    rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : enum_all, tmp);
+    rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : collect_all, tmp);
 
     return tmp;
 }
@@ -201,6 +201,54 @@ enum_sort(obj)
     VALUE obj;
 {
     return rb_ary_sort(enum_to_a(obj));
+}
+
+static VALUE
+all_i(i, memo)
+    VALUE i;
+    NODE *memo;
+{
+    if (!RTEST(rb_yield(i))) {
+	memo->u1.value = Qfalse;
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+static VALUE
+enum_all(obj)
+    VALUE obj;
+{
+    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+
+    memo->u1.value = Qtrue;
+    rb_iterate(rb_each, obj, all_i, (VALUE)memo);
+    rb_gc_force_recycle((VALUE)memo);
+    return memo->u1.value;
+}
+
+static VALUE
+any_i(i, memo)
+    VALUE i;
+    NODE *memo;
+{
+    if (RTEST(rb_yield(i))) {
+	memo->u1.value = Qtrue;
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+static VALUE
+enum_any(obj)
+    VALUE obj;
+{
+    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+
+    memo->u1.value = Qfalse;
+    rb_iterate(rb_each, obj, any_i, (VALUE)memo);
+    rb_gc_force_recycle((VALUE)memo);
+    return memo->u1.value;
 }
 
 static VALUE
@@ -358,6 +406,8 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"map", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"inject", enum_inject, 1);
+    rb_define_method(rb_mEnumerable,"all?", enum_all, 0);
+    rb_define_method(rb_mEnumerable,"any?", enum_any, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);

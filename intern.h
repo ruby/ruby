@@ -41,6 +41,7 @@ VALUE rb_ary_sort _((VALUE));
 VALUE rb_ary_sort_bang _((VALUE));
 VALUE rb_ary_delete _((VALUE, VALUE));
 VALUE rb_ary_delete_at _((VALUE, long));
+VALUE rb_ary_clear _((VALUE));
 VALUE rb_ary_plus _((VALUE, VALUE));
 VALUE rb_ary_concat _((VALUE, VALUE));
 VALUE rb_ary_assoc _((VALUE, VALUE));

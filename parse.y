@@ -233,6 +233,7 @@ static void top_local_setup();
 %token <id> tOP_ASGN	/* +=, -=  etc. */
 %token tASSOC		/* => */
 %token tLPAREN		/* ( */
+%token tRPAREN		/* ) */
 %token tLBRACK		/* [ */
 %token tLBRACE		/* { */
 %token tSTAR		/* * */
@@ -360,31 +361,21 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		| stmt kWHILE_MOD expr
 		    {
 			value_expr($3);
-			if ($1) {
-			    if (nd_type($1) == NODE_BEGIN) {
-				$$ = NEW_WHILE(cond($3), $1->nd_body, 0);
-			    }
-			    else {
-				$$ = NEW_WHILE(cond($3), $1, 1);
-			    }
+			if ($1 && nd_type($1) == NODE_BEGIN) {
+			    $$ = NEW_WHILE(cond($3), $1->nd_body, 0);
 			}
 			else {
-			    $$ = 0;
+			    $$ = NEW_WHILE(cond($3), $1, 1);
 			}
 		    }
 		| stmt kUNTIL_MOD expr
 		    {
 			value_expr($3);
-			if ($1) {
-			    if (nd_type($1) == NODE_BEGIN) {
-				$$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
-			    }
-			    else {
-				$$ = NEW_UNTIL(cond($3), $1, 1);
-			    }
+			if ($1 && nd_type($1) == NODE_BEGIN) {
+			    $$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
 			}
 			else {
-			    $$ = 0;
+			    $$ = NEW_UNTIL(cond($3), $1, 1);
 			}
 		    }
 		| stmt kRESCUE_MOD stmt
@@ -4470,20 +4461,20 @@ static void
 warn_unless_e_option(str)
     const char *str;
 {
-    if (e_option_supplied()) rb_warn(str);
+    if (!e_option_supplied()) rb_warn(str);
 }
 
 static void
 warning_unless_e_option(str)
     const char *str;
 {
-    if (e_option_supplied()) rb_warning(str);
+    if (!e_option_supplied()) rb_warning(str);
 }
 
 static NODE *cond0();
 
 static NODE*
-cond2(node, logop)
+range_op(node, logop)
     NODE *node;
     int logop;
 {
@@ -4512,39 +4503,31 @@ cond0(node, logop)
     assign_in_cond(node);
     switch (type) {
       case NODE_DSTR:
+      case NODE_STR:
 	if (logop) break;
-	nd_set_type(node, NODE_DREGX);
-	warn_unless_e_option("string literal in condition");
-	goto dregex;
+	warn("string literal in condition");
+	break;
 
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
 	warning_unless_e_option("regex literal in condition");
-      dregex:
 	local_cnt('_');
 	local_cnt('~');
 	return NEW_MATCH2(node, NEW_GVAR(rb_intern("$_")));
 
       case NODE_DOT2:
       case NODE_DOT3:
-	node->nd_beg = cond2(node->nd_beg, logop);
-	node->nd_end = cond2(node->nd_end, logop);
+	node->nd_beg = range_op(node->nd_beg, logop);
+	node->nd_end = range_op(node->nd_end, logop);
 	if (type == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (type == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
 	node->nd_cnt = local_append(0);
 	warn_unless_e_option("range literal in condition");
 	break;
 
-      case NODE_STR:
-	if (logop) break;
-	node->nd_lit = rb_reg_new(RSTRING(node->nd_lit)->ptr,RSTRING(node->nd_lit)->len,0);
-	warn_unless_e_option("string literal in condition");
-	goto regexp;
-
       case NODE_LIT:
 	if (TYPE(node->nd_lit) == T_REGEXP) {
 	    warning_unless_e_option("regex literal in condition");
-	  regexp:
 	    nd_set_type(node, NODE_MATCH);
 	    local_cnt('_');
 	    local_cnt('~');

@@ -317,7 +317,23 @@ rb_io_tell(io)
 #endif
 
 static VALUE
-rb_io_seek(argc, argv, io)
+rb_io_seek(io, offset, whence)
+    VALUE io, offset;
+    int whence;
+{
+    OpenFile *fptr;
+    long pos;
+
+    GetOpenFile(io, fptr);
+    pos = fseek(fptr->f, NUM2INT(offset), whence);
+    if (pos != 0) rb_sys_fail(fptr->path);
+    clearerr(fptr->f);
+
+    return INT2FIX(0);
+}
+
+static VALUE
+rb_io_seek_m(argc, argv, io)
     int argc;
     VALUE *argv;
     VALUE io;
@@ -331,12 +347,7 @@ rb_io_seek(argc, argv, io)
     if (argc == 1) whence = SEEK_SET;
     else whence = NUM2INT(ptrname);
 
-    GetOpenFile(io, fptr);
-    pos = fseek(fptr->f, NUM2INT(offset), whence);
-    if (pos != 0) rb_sys_fail(fptr->path);
-    clearerr(fptr->f);
-
-    return INT2FIX(0);
+    return rb_io_seek(io, offset, whence);
 }
 
 static VALUE
@@ -3148,7 +3159,7 @@ rb_io_s_read(argc, argv, io)
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
-	rb_io_seek(1, &offset, arg.io);
+	rb_io_seek(arg.io, offset, SEEK_SET);
     }
     return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
 }
@@ -3167,9 +3178,13 @@ argf_tell()
 }
 
 static VALUE
-argf_seek(self, offset, ptrname)
-     VALUE self, offset, ptrname;
+argf_seek_m(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
+    VALUE args[2];
+
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to seek");
     }
@@ -3177,7 +3192,7 @@ argf_seek(self, offset, ptrname)
     if (TYPE(current_file) != T_FILE) {
 	return argf_forward();
     }
-    return rb_io_seek(current_file, offset, ptrname);
+    return rb_io_seek_m(argc, argv, current_file);
 }
 
 static VALUE
@@ -3490,7 +3505,7 @@ Init_IO()
     rb_define_method(rb_cIO, "<<",    rb_io_addstr, 1);
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
     rb_define_method(rb_cIO, "tell", rb_io_tell, 0);
-    rb_define_method(rb_cIO, "seek", rb_io_seek, -1);
+    rb_define_method(rb_cIO, "seek", rb_io_seek_m, -1);
     rb_define_const(rb_cIO, "SEEK_SET", INT2FIX(SEEK_SET));
     rb_define_const(rb_cIO, "SEEK_CUR", INT2FIX(SEEK_CUR));
     rb_define_const(rb_cIO, "SEEK_END", INT2FIX(SEEK_END));
@@ -3548,7 +3563,7 @@ Init_IO()
     rb_define_singleton_method(argf, "getc", argf_getc, 0);
     rb_define_singleton_method(argf, "readchar", argf_readchar, 0);
     rb_define_singleton_method(argf, "tell", argf_tell, 0);
-    rb_define_singleton_method(argf, "seek", argf_seek, 2);
+    rb_define_singleton_method(argf, "seek", argf_seek_m, -1);
     rb_define_singleton_method(argf, "rewind", argf_rewind, 0);
     rb_define_singleton_method(argf, "pos", argf_tell, 0);
     rb_define_singleton_method(argf, "pos=", argf_set_pos, 1);

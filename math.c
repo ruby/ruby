@@ -57,6 +57,62 @@ math_tan(obj, x)
 }
 
 static VALUE
+math_acos(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    /*
+    if (RFLOAT(x)->value < -1.0 || RFLOAT(x)->value > 1.0)
+	rb_raise(rb_eArgError, "Out of range (-1..1)");
+    */
+    return rb_float_new(acos(RFLOAT(x)->value));
+}
+
+static VALUE
+math_asin(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    /*
+    if (RFLOAT(x)->value < -1.0 || RFLOAT(x)->value > 1.0)
+	rb_raise(rb_eArgError, "Out of range (-1..1)");
+    */
+    return rb_float_new(asin(RFLOAT(x)->value));
+}
+
+static VALUE
+math_atan(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    return rb_float_new(atan(RFLOAT(x)->value));
+}
+
+static VALUE
+math_cosh(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    return rb_float_new(cosh(RFLOAT(x)->value));
+}
+
+static VALUE
+math_sinh(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    return rb_float_new(sinh(RFLOAT(x)->value));
+}
+
+static VALUE
+math_tanh(obj, x)
+    VALUE obj, x;
+{
+    Need_Float(x);
+    return rb_float_new(tanh(RFLOAT(x)->value));
+}
+
+static VALUE
 math_exp(obj, x)
     VALUE obj, x;
 {
@@ -118,6 +174,14 @@ math_ldexp(obj, x, n)
     return rb_float_new(d = ldexp(RFLOAT(x)->value, NUM2INT(n)));
 }
 
+static VALUE
+math_hypot(obj, x, y)
+    VALUE obj, x, y;
+{
+    Need_Float2(x, y);
+    return rb_float_new(hypot(RFLOAT(x)->value, RFLOAT(y)->value));
+}
+
 void
 Init_Math()
 {
@@ -140,6 +204,14 @@ Init_Math()
     rb_define_module_function(rb_mMath, "sin", math_sin, 1);
     rb_define_module_function(rb_mMath, "tan", math_tan, 1);
 
+    rb_define_module_function(rb_mMath, "acos", math_acos, 1);
+    rb_define_module_function(rb_mMath, "asin", math_asin, 1);
+    rb_define_module_function(rb_mMath, "atan", math_atan, 1);
+
+    rb_define_module_function(rb_mMath, "cosh", math_cosh, 1);
+    rb_define_module_function(rb_mMath, "sinh", math_sinh, 1);
+    rb_define_module_function(rb_mMath, "tanh", math_tanh, 1);
+
     rb_define_module_function(rb_mMath, "exp", math_exp, 1);
     rb_define_module_function(rb_mMath, "log", math_log, 1);
     rb_define_module_function(rb_mMath, "log10", math_log10, 1);
@@ -147,4 +219,6 @@ Init_Math()
 
     rb_define_module_function(rb_mMath, "frexp", math_frexp, 1);
     rb_define_module_function(rb_mMath, "ldexp", math_ldexp, 2);
+
+    rb_define_module_function(rb_mMath, "hypot", math_hypot, 2);
 }

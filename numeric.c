@@ -947,7 +947,7 @@ rb_fix2str(x, base)
     else if (base == 8) fmt[2] = 'o';
     else rb_fatal("fixnum cannot treat base %d", base);
 
-    snprintf(buf, 22, fmt, FIX2LONG(x));
+    sprintf(buf, fmt, FIX2LONG(x));
     return rb_str_new2(buf);
 }
 

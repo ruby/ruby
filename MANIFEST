@@ -167,6 +167,7 @@ missing/dup2.c
 missing/file.h
 missing/finite.c
 missing/flock.c
+missing/hypot.c
 missing/isinf.c
 missing/isnan.c
 missing/memcmp.c

@@ -1,14 +1,58 @@
+<<<<<<< ChangeLog
+Tue Mar 13 14:41:16 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_seek_m): wrong calling sequence of rb_io_seek().
+
+Tue Mar 13 09:14:19 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (cond0): no special treatment of string literal in
+	  condition.
+
 Mon Mar 12 18:59:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): save/restore $libs and $LIBPATH.
+
+Sun Mar 11 18:13:34 2001  Masahiro Tanaka  <masa@stars.gsfc.nasa.gov>
+
+	* math.c: add acos, asin, atan, conh, sinh, tanh and hypot to Math.
+
+	* configure.in: check hypot availablility.
+
+	* missing/hypot.c: public domain rewrite of hypot.
+
+Sun Mar 11 13:21:04 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* parse.y (warn_unless_e_option): warning condition was wrong.
+
+	* parse.y (warning_unless_e_option): ditto.
 
 Sun Mar 11 00:55:31 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (install_rb): fix handling of destination path.
 
+Sat Mar 10 22:56:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_all): new method 'all?', which returns true if
+	  block returns true for all elements.
+
+	* enum.c (enum_any): new method 'any?', which returns true if
+	  block retruns true for any of elements.
+
 Sat Mar 10 02:34:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* math.c (math_log, math_log10): use nan() instead of 0.0/0.0 on Cygwin.
+
+Fri Mar  9 09:56:19 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (marshal_load): do not give warning unless explicitly
+	  set to verbose.
+
+Fri Mar  9 02:07:53 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_exit): give string value "exit" to SystemExit.
+
+	* ruby.c (proc_options): -v should not print version if
+	  proc_options called via moreswitches().
 
 Thu Mar  8 17:45:19 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
@@ -18,6 +62,14 @@ Wed Mar  7 14:26:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* math.c (math_log, math_log10): should return NaN if x < 0.0
 	  on Cygwin.
+
+Thu Mar  7 10:31:26 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (stmt): while/until modifier must work for empty body.
+
+Tue Mar  6 22:53:58 2001  Kazuhiro Yoshida   <moriq.kazuhiro@nifty.ne.jp>
+
+	* ruby.c (ruby_set_argv): clear ARGV contents before adding args.
 
 Tue Mar  6 10:50:29 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

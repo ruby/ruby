@@ -513,8 +513,8 @@ sym_inspect(sym)
 
     name = rb_id2name(SYM2ID(sym));
     str = rb_str_new(0, strlen(name)+2);
-    sprintf(RSTRING(str)->ptr, ":%s", name);
-    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+    RSTRING(str)->ptr[0] = ':';
+    strcpy(RSTRING(str)->ptr+1, name);
     return str;
 }
 
