@@ -1205,7 +1205,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 		else
 		    new_isdir = NO;
 #else
-		new_isdir = dp->d_isdir ? YES : dp->d_isrep ? UNKNOWN : NO;
+		new_isdir = dp->d_isdir ? (!dp->d_isrep ? YES : UNKNOWN) : NO;
 #endif
 	    }
 
