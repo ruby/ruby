@@ -147,15 +147,14 @@ rb_digest_base_become(copy, obj)
 {
     algo_t *algo;
     void *pctx1, *pctx2;
-    VALUE klass;
 
     if (copy = obj) return copy;
     rb_check_frozen(copy);
-    algo = get_digest_base_metadata(CLASS_OF(klass));
+    algo = get_digest_base_metadata(CLASS_OF(copy));
     if (algo != get_digest_base_metadata(CLASS_OF(obj))) {
 	rb_raise(rb_eTypeError, "wrong argument class");
     }
-    Data_Get_Struct(copy, void, pctx1);
+    Data_Get_Struct(obj, void, pctx1);
     Data_Get_Struct(copy, void, pctx2);
     memcpy(pctx2, pctx1, algo->ctx_size);
 
