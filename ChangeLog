@@ -1,3 +1,10 @@
+Sat Apr  2 22:30:01 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (CP, INSTALL): get rid of less portable options.
+
+	* lib/mkmf.rb (configuration, create_makefile): correct configuration
+	  variable.
+
 Sat Apr  2 16:59:46 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: forgot to update RELEASE_DATE
@@ -9,7 +16,7 @@ Sat Apr  2 16:59:46 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/dialog.rb: use array2tk_list method when calling
 	  Tk.ip_eval.
 
-	* ext/tk/lib/tk/autoload.rb: add autoload entry 'TkDialogObj' and 
+	* ext/tk/lib/tk/autoload.rb: add autoload entry 'TkDialogObj' and
 	  'TkWarningObj'
 
 Sat Apr  2 13:23:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
@@ -24,7 +31,7 @@ Sat Apr  2 02:19:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  which is used as an argument of Tcl/Tk's widget allocation commands.
 
 	* ext/tk/lib/tk/image.rb (TkImage.initialize): accept 'imagename'
-	  option to create a image object by the given name. 
+	  option to create a image object by the given name.
 
 Thu Mar 31 23:52:48 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

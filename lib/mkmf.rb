@@ -887,11 +887,11 @@ ruby_version = #{Config::CONFIG['ruby_version']}
 ruby = #{$ruby}
 RUBY = #{($nmake && !$extmk && !$configure_args.has_key?('--ruby')) ? '$(ruby:/=\)' : '$(ruby)'}
 RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
-MAKEDIRS = #{config_string('MAKEDIRS') || '$(RUBY) -run -e mkdir -- -p'}
-INSTALL = #{config_string('INSTALL') || '$(RUBY) -run -e install -- -vp'}
+MAKEDIRS = #{config_string('MAKEDIRS') || '@$(RUBY) -run -e mkdir -- -p'}
+INSTALL = #{config_string('INSTALL') || '@$(RUBY) -run -e install -- -vp'}
 INSTALL_PROG = $(INSTALL) -m 0755
 INSTALL_DATA = $(INSTALL) -m 0644
-COPY = #{config_string('COPY') || '$(RUBY) -run -e cp -- -v'}
+COPY = #{config_string('CP') || '@$(RUBY) -run -e cp -- -v'}
 
 #### End of system configuration section. ####
 
@@ -1020,7 +1020,7 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
     dest = "#{dir}/#{f}"
     mfile.print "install-so: #{dest}\n"
     unless $extout
-      mfile.print "#{dest}: #{f}\n\t@$(INSTALL_PROG) #{f} #{dir}\n"
+      mfile.print "#{dest}: #{f}\n\t$(INSTALL_PROG) #{f} #{dir}\n"
     end
   end
   dirs << (dir = "$(RUBYLIBDIR)")
@@ -1036,12 +1036,12 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
       files.each do |f|
 	dest = "#{dir}/#{File.basename(f)}"
 	mfile.print("install-rb#{sfx}: #{dest}\n")
-	mfile.print("#{dest}: #{f}\n\t@$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} #{dir}\n")
+	mfile.print("#{dest}: #{f}\n\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} #{dir}\n")
       end
     end
   end
   dirs.unshift(sodir) if target and !dirs.include?(sodir)
-  dirs.each {|dir| mfile.print "#{dir}:\n\t@$(MAKEDIRS) $@\n"}
+  dirs.each {|dir| mfile.print "#{dir}:\n\t$(MAKEDIRS) $@\n"}
 
   mfile.print <<-SITEINSTALL
 
