@@ -36,7 +36,7 @@ runner = 'console'
 ARGV.options do |opt|
   opt.program_name = $0
   opt.banner << " [tests...]"
-  opt.on("--runner=mode", runners_map, "UI mode (console, gtk,fox)") do |arg|
+  opt.on("--runner=mode", runners_map.keys, "UI mode (console, gtk,fox)") do |arg|
     runner = arg
   end
   opt.parse!
