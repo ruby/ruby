@@ -22,7 +22,6 @@ VALUE cObject;
 #endif
 VALUE cModule;
 VALUE cClass;
-extern VALUE cFixnum;
 VALUE cData;
 
 static VALUE cNilClass;

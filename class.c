@@ -21,9 +21,6 @@
 
 extern st_table *rb_class_tbl;
 
-extern VALUE cClass;
-extern VALUE cModule;
-
 VALUE
 class_new(super)
     VALUE super;
@@ -536,8 +533,6 @@ rb_define_module_function(module, name, func, argc)
     rb_define_private_method(module, name, func, argc);
     rb_define_singleton_method(module, name, func, argc);
 }
-
-extern VALUE mKernel;
 
 void
 rb_define_global_function(name, func, argc)

@@ -2607,10 +2607,6 @@ str_center(str, w)
     return res;
 }
 
-extern VALUE mKernel;
-extern VALUE mComparable;
-extern VALUE mEnumerable;
-
 void
 Init_String()
 {

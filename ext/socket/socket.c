@@ -135,8 +135,7 @@ bsock_shutdown(argc, argv, sock)
 
 static VALUE
 bsock_setsockopt(sock, lev, optname, val)
-    VALUE sock, lev, optname;
-    struct RString *val;
+    VALUE sock, lev, optname, val;
 {
     int level, option;
     OpenFile *fptr;
@@ -160,8 +159,7 @@ bsock_setsockopt(sock, lev, optname, val)
 	v = (char*)&i; vlen = sizeof(i);
 	break;
       default:
-	Check_Type(val, T_STRING);
-	v = val->ptr; vlen = val->len;
+	v = str2cstr(val, &vlen);
     }
 
     GetOpenFile(sock, fptr);
@@ -229,16 +227,16 @@ bsock_send(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-    struct RString *msg, *to;
+    VALUE msg, to;
     VALUE flags;
     OpenFile *fptr;
     FILE *f;
     int fd, n;
+    char *m, *t;
+    int mlen, tlen;
 
     rb_secure(4);
     rb_scan_args(argc, argv, "21", &msg, &flags, &to);
-
-    Check_Type(msg, T_STRING);
 
     GetOpenFile(sock, fptr);
     f = fptr->f2?fptr->f2:fptr->f;
@@ -247,13 +245,14 @@ bsock_send(argc, argv, sock)
 #ifdef THREAD
     thread_fd_writable(fd);
 #endif
+    m = str2cstr(msg, &mlen);
     if (RTEST(to)) {
-	Check_Type(to, T_STRING);
-	n = sendto(fd, msg->ptr, msg->len, NUM2INT(flags),
-		   (struct sockaddr*)to->ptr, to->len);
+	t = str2cstr(to, &tlen);
+	n = sendto(fd, m, mlen, NUM2INT(flags),
+		   (struct sockaddr*)t, tlen);
     }
     else {
-	n = send(fd, msg->ptr, msg->len, NUM2INT(flags));
+	n = send(fd, m, mlen, NUM2INT(flags));
     }
     if (n < 0) {
 	switch (errno) {
@@ -491,12 +490,14 @@ open_inet(class, h, serv, type)
 	servport = FIX2UINT(serv);
 	goto setup_servent;
     }
-    Check_Type(serv, T_STRING);
-    servent = getservbyname(RSTRING(serv)->ptr, "tcp");
+    servent = getservbyname(STR2CSTR(serv), "tcp");
     if (servent == NULL) {
-	servport = strtoul(RSTRING(serv)->ptr, 0, 0);
-	if (servport == -1) {
-	    Raise(eSocket, "no such servce %s", RSTRING(serv)->ptr);
+	char *s = STR2CSTR(serv);
+	char *end;
+
+	servport = strtoul(s, &end, 0);
+	if (*end != '\0') {
+	    Raise(eSocket, "no such servce %s", s);
 	}
       setup_servent:
 	_servent.s_port = htons(servport);
@@ -814,8 +815,7 @@ ip_s_getaddress(obj, host)
 	addr.sin_addr.s_addr = htonl(i);
     }
     else {
-	Check_Type(host, T_STRING);
-	setipaddr(RSTRING(host)->ptr, &addr);
+	setipaddr(STR2CSTR(host), &addr);
     }
 
     return mkipaddr(addr.sin_addr.s_addr);
@@ -845,8 +845,7 @@ udp_addrsetup(host, port, addr)
 	addr->sin_addr.s_addr = htonl(i);
     }
     else {
-	Check_Type(host, T_STRING);
-	setipaddr(RSTRING(host)->ptr, addr);
+	setipaddr(STR2CSTR(host), addr);
     }
     if (FIXNUM_P(port)) {
 	addr->sin_port = htons(FIX2INT(port));
@@ -854,16 +853,18 @@ udp_addrsetup(host, port, addr)
     else {
 	struct servent *servent;
 
-	Check_Type(port, T_STRING);
-	servent = getservbyname(RSTRING(port)->ptr, "udp");
+	servent = getservbyname(STR2CSTR(port), "udp");
 	if (servent) {
 	    addr->sin_port = servent->s_port;
 	}
 	else {
-	    int port = strtoul(RSTRING(port)->ptr, 0, 0);
+	    char *s = STR2CSTR(port);
+	    char *end;
+	    int portno;
 
-	    if (port == -1) {
-		Raise(eSocket, "no such servce %s", RSTRING(port)->ptr);
+	    portno = strtoul(s, &end, 0);
+	    if (*end != '\0') {
+		Raise(eSocket, "no such servce %s", s);
 	    }
 	    addr->sin_port = htons(port);
 	}
@@ -924,19 +925,21 @@ udp_send(argc, argv, sock)
     OpenFile *fptr;
     FILE *f;
     int n;
+    char *m;
+    int mlen;
 
     if (argc == 2) {
 	return bsock_send(argc, argv, sock);
     }
     rb_scan_args(argc, argv, "4", &mesg, &flags, &host, &port);
-    Check_Type(mesg, T_STRING);
 
     udp_addrsetup(host, port, &addr);
     GetOpenFile(sock, fptr);
     f = fptr->f2?fptr->f2:fptr->f;
+    m = str2cstr(mesg, &mlen);
   retry:
-    n = sendto(fileno(f), RSTRING(mesg)->ptr, RSTRING(mesg)->len,
-	       NUM2INT(flags), (struct sockaddr*)&addr, sizeof(addr));
+    n = sendto(fileno(f), m, mlen, NUM2INT(flags),
+	       (struct sockaddr*)&addr, sizeof(addr));
     if (n < 0) {
 	switch (errno) {
 	  case EINTR:
@@ -1347,8 +1350,7 @@ sock_s_gethostbyname(obj, host)
 	addr.sin_addr.s_addr = htonl(i);
     }
     else {
-	Check_Type(host, T_STRING);
-	setipaddr(RSTRING(host)->ptr, &addr);
+	setipaddr(STR2CSTR(host), &addr);
     }
     h = gethostbyaddr((char *)&addr.sin_addr,
 		      sizeof(addr.sin_addr),
@@ -1364,12 +1366,12 @@ sock_s_gethostbyaddr(argc, argv)
 {
     VALUE vaddr, vtype;
     int type;
-
-    struct sockaddr_in *addr;
+    char *addr;
+    int alen;
     struct hostent *h;
 
     rb_scan_args(argc, argv, "11", &addr, &vtype);
-    Check_Type(addr, T_STRING);
+    addr = str2cstr(vaddr, &alen);
     if (!NIL_P(vtype)) {
 	type = NUM2INT(vtype);
     }
@@ -1377,7 +1379,7 @@ sock_s_gethostbyaddr(argc, argv)
 	type = AF_INET;
     }
 
-    h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len, type);
+    h = gethostbyaddr(addr, alen, type);
 
     return mkhostent(h);
 }
@@ -1393,15 +1395,22 @@ sock_s_getservbyaname(argc, argv)
     int port;
 
     rb_scan_args(argc, argv, "11", &service, &protocol);
-    Check_Type(service, T_STRING);
     if (NIL_P(protocol)) proto = "tcp";
-    else proto = RSTRING(protocol)->ptr;
+    else proto = STR2CSTR(protocol);
 
-    sp = getservbyname(RSTRING(service)->ptr, proto);
-    if (!sp) {
-	Raise(eSocket, "service/proto not found");
+    sp = getservbyname(STR2CSTR(service), proto);
+    if (sp) {
+	port = ntohs(sp->s_port);
     }
-    port = ntohs(sp->s_port);
+    else {
+	char *s = STR2CSTR(service);
+	char *end;
+
+	port = strtoul(s, &end, 0);
+	if (*end != '\0') {
+	    Raise(eSocket, "no such servce %s/%s", s, proto);
+	}
+    }
     
     return INT2FIX(port);
 }

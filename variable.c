@@ -43,8 +43,6 @@ struct fc_result {
     struct fc_result *prev;
 };
 
-extern VALUE cModule;
-
 static int
 fc_i(key, value, res)
     ID key;

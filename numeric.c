@@ -1303,9 +1303,6 @@ fix_zero_p(num)
     return FALSE;
 }
 
-extern VALUE mComparable;
-extern VALUE eStandardError;
-
 void
 Init_Numeric()
 {

@@ -55,7 +55,6 @@ char *strrchr _((char*,char));
  extern int utimes();
 #endif
 
-extern VALUE cIO;
 VALUE cFile;
 VALUE mFileTest;
 static VALUE sStat;
@@ -1573,8 +1572,6 @@ f_test(argc, argv)
     ArgError("unknow command ?%c", cmd);
     return Qnil;		/* not reached */
 }
-
-extern VALUE mKernel;
 
 void
 Init_File()

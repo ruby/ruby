@@ -39,7 +39,6 @@ static VALUE cTime;
 #if defined(HAVE_TIMES) || defined(NT)
 static VALUE S_Tms;
 #endif
-extern VALUE mComparable;
 
 struct time_object {
     struct timeval tv;

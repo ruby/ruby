@@ -65,7 +65,6 @@ struct timeval {
 #endif
 
 VALUE cIO;
-extern VALUE cFile;
 VALUE eEOFError;
 VALUE eIOError;
 
@@ -2558,10 +2557,6 @@ opt_i_set(val)
     Check_Type(val, T_STRING);
     inplace = RSTRING(val)->ptr;
 }
-
-extern VALUE mKernel;
-extern VALUE mEnumerable;
-extern VALUE eStandardError;
 
 void
 Init_IO()

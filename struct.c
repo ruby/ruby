@@ -15,7 +15,6 @@
 #endif
 
 VALUE cStruct;
-extern VALUE mEnumerable;
 
 static VALUE
 class_of(obj)

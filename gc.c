@@ -1047,8 +1047,6 @@ id2ref(obj, id)
     return (VALUE)ptr;
 }
 
-extern VALUE cModule;
-
 void
 Init_GC()
 {

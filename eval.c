@@ -364,18 +364,8 @@ extern NODE *eval_tree0;
 extern NODE *eval_tree;
 extern int nerrs;
 
-extern VALUE mKernel;
-extern VALUE cModule;
-extern VALUE eFatal;
-extern VALUE eStandardError;
-extern VALUE eInterrupt;
-extern VALUE eSystemExit;
-extern VALUE eException;
-extern VALUE eRuntimeError;
-extern VALUE eSyntaxError;
 static VALUE eLocalJumpError;
 static VALUE eSysStackError;
-extern VALUE eSecurityError;
 
 extern VALUE TopSelf;
 

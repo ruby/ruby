@@ -1294,8 +1294,6 @@ ary_flatten(ary)
     return v;
 }
 
-extern VALUE mEnumerable;
-
 void
 Init_Array()
 {

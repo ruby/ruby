@@ -13,8 +13,6 @@
 #include "ruby.h"
 
 static VALUE cRange;
-extern VALUE cNumeric;
-
 static ID upto;
 
 static VALUE
@@ -202,8 +200,6 @@ range_length(rng)
 
     return size;
 }
-
-extern VALUE mEnumerable;
 
 void
 Init_Range()

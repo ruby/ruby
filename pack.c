@@ -74,8 +74,6 @@ endian()
 #endif
 #endif
 
-extern VALUE cString, cArray;
-
 static char *toofew = "too few arguments";
 
 static void encodes _((VALUE,char*,int,int));

@@ -12,7 +12,6 @@
 #include <math.h>
 #include <ctype.h>
 
-extern VALUE cInteger;
 VALUE cBignum;
 typedef unsigned short USHORT;
 

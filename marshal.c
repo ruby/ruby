@@ -38,11 +38,6 @@
 
 #define TYPE_LINK	'@'
 
-extern VALUE cString;
-extern VALUE cRegexp;
-extern VALUE cArray;
-extern VALUE cHash;
-
 VALUE rb_path2class _((char*));
 
 static ID s_dump, s_load;
@@ -168,7 +163,6 @@ w_unique(s, arg)
 }
 
 static void w_object _((VALUE,struct dump_arg*,int));
-extern VALUE cIO, cBignum, cStruct;
 
 static int
 hash_each(key, value, arg)

@@ -147,12 +147,6 @@ VALUE int2inum _((long));
 # define RTEST(v) rb_test_false_or_nil((VALUE)(v))
 #define NIL_P(v) ((VALUE)(v) == Qnil)
 
-#ifdef __MACOS__ /* name conflict, AERegistory.h */
-extern VALUE cRubyObject;
-#else
-extern VALUE cObject;
-#endif
-
 VALUE rb_class_of _((VALUE));
 #define CLASS_OF(v) rb_class_of((VALUE)(v))
 
@@ -491,6 +485,55 @@ int iterator_p _((void));
 VALUE rb_iterate _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_rescue _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
+
+extern VALUE mKernel;
+extern VALUE mComparable;
+extern VALUE mEnumerable;
+extern VALUE mErrno;
+extern VALUE mFileTest;
+extern VALUE mGC;
+extern VALUE mMath;
+extern VALUE mProcess;
+
+#ifdef __MACOS__ /* name conflict, AERegistory.h */
+extern VALUE cRubyObject;
+#else
+extern VALUE cObject;
+#endif
+extern VALUE cArray;
+extern VALUE cBignum;
+extern VALUE cClass;
+extern VALUE cData;
+extern VALUE cFile;
+extern VALUE cFixnum;
+extern VALUE cFloat;
+extern VALUE cHash;
+extern VALUE cInteger;
+extern VALUE cIO;
+extern VALUE cModule;
+extern VALUE cNumeric;
+extern VALUE cProc;
+extern VALUE cRegexp;
+extern VALUE cString;
+extern VALUE cThread;
+extern VALUE cStruct;
+
+extern VALUE eException;
+extern VALUE eStandardError;
+extern VALUE eSystemExit, eInterrupt, eFatal;
+extern VALUE eArgError;
+extern VALUE eEOFError;
+extern VALUE eIndexError;
+extern VALUE eIOError;
+extern VALUE eLoadError;
+extern VALUE eNameError;
+extern VALUE eRuntimeError;
+extern VALUE eSecurityError;
+extern VALUE eSyntaxError;
+extern VALUE eSystemCallError;
+extern VALUE eTypeError;
+extern VALUE eZeroDiv;
+extern VALUE eNotImpError;
 
 #include "intern.h"
 

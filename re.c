@@ -437,7 +437,7 @@ reg_search(reg, str, start, reverse)
 		       start, range, regs);
     kcode_reset_option();
 
-    if (start == -2) {
+    if (result == -2) {
 	reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len,
 		  "Stack overfow in regexp matcher", reg);
     }
@@ -1009,8 +1009,6 @@ match_setter(val)
     Check_Type(val, T_MATCH);
     backref_set(val);
 }
-
-extern VALUE eStandardError;
 
 void
 Init_Regexp()
