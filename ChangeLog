@@ -1,3 +1,19 @@
+Thu Feb 17 00:09:45 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/ignore_test_drb.rb: move TestDRbReusePort to new file
+	  [ruby-dev:25238]
+
+	* test/drb/test_drb.rb: add method DRbService.ext_service, move
+	  TestDRbReusePort to new file [ruby-dev:25238]
+
+	* test/drb/test_drb.rb: ditto.
+
+	* test/drb/test_drbssl.rb: ditto.
+
+	* test/drb/test_drbunix.rb: ditto.
+
+	* test/drb/ut_drb.rb: reduce sleep.
+
 Thu Feb 17 00:02:27 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (is_defined): NODE_IASGN is an assignment.

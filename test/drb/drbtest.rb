@@ -26,6 +26,11 @@ class DRbService
   def self.server
     @server || @@server
   end
+  def self.ext_service(name)
+    timeout(10, RuntimeError) do
+      manager.service(name)
+    end
+  end
 end
 
 class Onecky
@@ -61,12 +66,12 @@ end
 
 module DRbCore
   def setup
-    @ext = DRbService.manager.service('ut_drb.rb')
+    @ext = DRbService.ext_service('ut_drb.rb')
     @there = @ext.front
   end
 
   def teardown
-    @ext.stop_service
+    @ext.stop_service if @ext
   end
 
   def test_00_DRbObject
@@ -244,12 +249,12 @@ end
 
 module DRbAry
   def setup
-    @ext = DRbService.manager.service('ut_array.rb')
+    @ext = DRbService.ext_service('ut_array.rb')
     @there = @ext.front
   end
 
   def teardown
-    @ext.stop_service
+    @ext.stop_service if @ext
   end
 
   def test_01

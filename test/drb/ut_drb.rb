@@ -49,7 +49,7 @@ class DRbEx
   end
 
   def do_timeout(n)
-    timeout(1) do
+    timeout(0.1) do
       n.sleep(2)
     end
   end

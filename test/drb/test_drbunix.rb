@@ -20,7 +20,7 @@ end
 class TestDRbUNIXCore < Test::Unit::TestCase
   include DRbCore
   def setup
-    @ext = DRbUNIXService.manager.service('ut_drb_drbunix.rb')
+    @ext = DRbUNIXService.ext_service('ut_drb_drbunix.rb')
     @there = @ext.front
   end
 
@@ -32,23 +32,12 @@ class TestDRbUNIXCore < Test::Unit::TestCase
 
   def test_05_eq
   end
-
-  def test_06_timeout
-    ten = Onecky.new(3)
-    assert_raises(TimeoutError) do
-      @there.do_timeout(ten)
-    end
-    assert_raises(TimeoutError) do
-      @there.do_timeout(ten)
-    end
-    sleep 3
-  end
 end
 
 class TestDRbUNIXAry < Test::Unit::TestCase
   include DRbAry
   def setup
-    @ext = DRbUNIXService.manager.service('ut_array_drbunix.rb')
+    @ext = DRbUNIXService.ext_service('ut_array_drbunix.rb')
     @there = @ext.front
   end
 end
