@@ -916,7 +916,7 @@ convert string charset, and set language to "ja".
 
     def initialize_query()
       if ("POST" == env_table['REQUEST_METHOD']) and
-         (%r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|n.match(env_table['CONTENT_TYPE'])
+         %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|n.match(env_table['CONTENT_TYPE'])
         boundary = $1.dup
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
