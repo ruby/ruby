@@ -1,3 +1,7 @@
+Tue Feb 24 18:03:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_file.rb (test_fnmatch): test for dir.c:1.108.
+
 Tue Feb 24 17:07:17  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (fnmatch): File.fnmatch with FNM_PATHNAME was broken
@@ -17,7 +21,7 @@ Tue Feb 24 07:23:30 2004  Dave Thomas  <dave@pragprog.com>
 
 Tue Feb 24 06:40:14 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_identifier): Handle 
+	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_identifier): Handle
 	  class variables in code listings
 
 Tue Feb 24 06:32:27 2004  Dave Thomas  <dave@pragprog.com>
@@ -32,7 +36,7 @@ Tue Feb 24 06:16:22 2004  Dave Thomas  <dave@pragprog.com>
 
 Tue Feb 24 06:08:47 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_constant): 
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_constant):
 	  Start collecting text of constant values earlier: was missing
 	  values in output if there was no space after '='
 
