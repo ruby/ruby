@@ -1,3 +1,8 @@
+Mon Dec  1 01:03:27 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (TRY_LINK, link_command): added support for DLDFLAGS
+	  and ARCH_FLAG.  [ruby-dev:22085]
+
 Sun Nov 30 20:18:07 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: keep ARCH_FLAG separate. export ARCH_FLAG.
@@ -9,7 +14,7 @@ Sun Nov 30 20:18:07 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (link_command, cc_command): use ARCH_FLAG.
 
-	* lib/mkfm.rb (configuration): add ARCH_FLAG to DLDFLAGS.
+	* lib/mkmf.rb (configuration): add ARCH_FLAG to DLDFLAGS.
 
 	* Makefile.in: add ARCH_FLAG to DLDFLAGS.
 

@@ -217,6 +217,7 @@ def link_command(ldflags, opt="", libpath=$LIBPATH)
 		 'CFLAGS' => "#$CFLAGS",
 		 'ARCH_FLAG' => "#$ARCH_FLAG",
 		 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
+		 'DLDFLAGS' => "#$DLDFLAGS",
 		 'LIBPATH' => libpathflag(libpath),
 		 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
 		 'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS")
@@ -948,7 +949,7 @@ def init_mkmf(config = CONFIG)
   $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
   $LDFLAGS = (with_config("ldflags") || "").dup
   $INCFLAGS = "-I#{$topdir}"
-  $DLDFLAGS = (arg_config("DLDFLAGS") || "").dup
+  $DLDFLAGS = with_config("dldflags", arg_config("DLDFLAGS", config["DLDFLAGS"])).dup
   $LIBEXT = config['LIBEXT'].dup
   $OBJEXT = config["OBJEXT"].dup
   $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
@@ -1015,7 +1016,7 @@ COMPILE_C = config_string('COMPILE_C') || '$(CC) $(CFLAGS) $(CPPFLAGS) -c $<'
 COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<'
 TRY_LINK = config_string('TRY_LINK') ||
   "$(CC) #{OUTFLAG}conftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS) " \
-  "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(LOCAL_LIBS) $(LIBS)"
+  "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(DLDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
 LINK_SO = config_string('LINK_SO') ||
   if CONFIG["DLEXT"] == $OBJEXT
     "ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)\n"
