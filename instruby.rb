@@ -112,7 +112,7 @@ for src in Dir["bin/*"]
 
     f.rewind
 
-    f.print shebang.sub(/ruby/, "ruby17"), *body
+    f.print shebang.sub(/ruby/, ruby_install_name), *body
     f.truncate(f.pos)
   }
 end
