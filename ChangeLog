@@ -1,3 +1,14 @@
+Fri Jul 25 01:27:59 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/emitter.c (syck_emitter_flush): accepts count
+      of bytes to flush.  anchor offsets now functional.
+
+    * ext/syck/syck.h (syck_emitter_flush): ditto.
+
+    * ext/syck/rubyext.c: ditto.
+
+    * ext/syck/token.c: URI escaping now supported.
+
 Thu Jul 24 16:41:31 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb (have_type): check if a type is defined.

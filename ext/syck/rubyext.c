@@ -1025,7 +1025,12 @@ rb_syck_output_handler( emitter, str, len )
     char *str;
     long len;
 {
-    rb_str_cat( (VALUE)emitter->bonus, str, len );
+    VALUE dest = (VALUE)emitter->bonus;
+    if ( rb_respond_to( dest, rb_intern("to_str") ) ) {
+        rb_str_cat( dest, str, len );
+    } else {
+        rb_io_write( dest, rb_str_new( str, len ) );
+    }
 }
 
 /*
@@ -1035,7 +1040,7 @@ static void
 syck_mark_emitter(emitter)
     SyckEmitter *emitter;
 {
-    rb_gc_mark( emitter->ignore_id );
+    rb_gc_mark(emitter->ignore_id);
     if ( emitter->bonus != NULL )
     {
         rb_gc_mark( (VALUE)emitter->bonus );
@@ -1104,7 +1109,7 @@ syck_emitter_flush_m( self )
     SyckEmitter *emitter;
 
 	Data_Get_Struct(self, SyckEmitter, emitter);
-    syck_emitter_flush( emitter );
+    syck_emitter_flush( emitter, 0 );
     return self;
 }
 
@@ -1171,7 +1176,7 @@ syck_emitter_end_object( self, oid )
 
     if ( emitter->level < 0 )
     {
-        syck_emitter_flush( emitter );
+        syck_emitter_flush( emitter, 0 );
     }
     return (VALUE)emitter->bonus;
 }

@@ -5,6 +5,9 @@
  * $Date$
  *
  * Copyright (C) 2003 why the lucky stiff
+ * 
+ * All Base64 code from Ruby's pack.c.
+ * Ruby is Copyright (C) 1993-2003 Yukihiro Matsumoto 
  */
 #include <stdio.h>
 #include <string.h>
@@ -148,7 +151,7 @@ syck_emitter_write( SyckEmitter *e, char *str, long len )
     at = e->marker - e->buffer;
     if ( len + at > e->bufsize )
     {
-        syck_emitter_flush( e );
+        syck_emitter_flush( e, 0 );
     }
 
     /*
@@ -162,8 +165,26 @@ syck_emitter_write( SyckEmitter *e, char *str, long len )
  * Write a chunk of data out.
  */
 void
-syck_emitter_flush( SyckEmitter *e )
+syck_emitter_flush( SyckEmitter *e, long check_room )
 {
+    /*
+     * Check for enough space in the buffer for check_room length.
+     */
+    if ( check_room > 0 )
+    {
+        if ( e->bufsize > ( e->marker - e->buffer ) + check_room )
+        {
+            return;
+        }
+    }
+    else
+    {
+        check_room = e->bufsize;
+    }
+
+    /*
+     * Determine headers.
+     */
     if ( ( e->stage == doc_open && ( e->headless == 0 || e->use_header == 1 ) ) || 
          e->stage == doc_need_header )
     {
@@ -181,9 +202,17 @@ syck_emitter_flush( SyckEmitter *e )
         }
         e->stage = doc_processing;
     }
-    (e->handler)( e, e->buffer, e->marker - e->buffer );
-    e->bufpos += e->marker - e->buffer;
-    e->marker = e->buffer;
+
+    /*
+     * Commit buffer.
+     */
+    if ( check_room > e->marker - e->buffer )
+    {
+        check_room = e->marker - e->buffer;
+    }
+    (e->handler)( e, e->buffer, check_room );
+    e->bufpos += check_room;
+    e->marker -= check_room;
 }
 
 /*
@@ -202,9 +231,9 @@ syck_emitter_simple( SyckEmitter *e, char *str, long len )
 int
 syck_adjust_anchors( char *key, SyckEmitterNode *n, struct adjust_arg *arg )
 {
-    if ( arg->startpos >= n->pos )
+    if ( arg->startpos < n->pos )
     {
-        n->pos += arg->offset + 1;
+        n->pos += arg->offset;
     }
     return ST_CONTINUE;
 }
@@ -271,32 +300,37 @@ syck_emitter_start_obj( SyckEmitter *e, SYMID oid )
                     char *start = e->buffer + ( n->pos - e->bufpos );
 
                     char *anc = ( e->anchor_format == NULL ? DEFAULT_ANCHOR_FORMAT : e->anchor_format );
-                    char *aname = S_ALLOC_N( char, strlen( anc ) + 10 );
-                    S_MEMZERO( aname, char, strlen( anc ) + 10 );
-                    sprintf( aname, anc, idx );
+                    anchor_name = S_ALLOC_N( char, strlen( anc ) + 10 );
+                    S_MEMZERO( anchor_name, char, strlen( anc ) + 10 );
+                    sprintf( anchor_name, anc, idx );
+
+                    /*
+                     * Need to flush the buffer some, if there is not room for the anchor.
+                     */
+                    alen = strlen( anchor_name ) + 2;
+                    syck_emitter_flush( e, alen );
 
                     /*
                      * Write the anchor into the buffer
-                     * FIXME: Need to flush the buffer some, if there is not room for the anchor.
                      */
-                    alen = strlen( aname );
-                    S_MEMMOVE( start + alen + 1, start, char, e->marker - start );
-                    S_MEMCPY( start + 1, aname, char, alen );
+                    S_MEMMOVE( start + alen, start, char, e->marker - start );
+                    S_MEMCPY( start + 1, anchor_name, char, strlen( anchor_name ) );
                     start[0] = '&';
-                    e->marker += alen + 1;
+                    start[alen - 1] = ' ';
+                    e->marker += alen;
 
                     /*
                      * Cycle through anchors, modify for the size of the anchor.
                      */
                     args->startpos = n->pos;
-                    args->offset = alen + 1;
-                    st_foreach( e->anchors, syck_adjust_anchors, (st_data_t)args );
+                    args->offset = alen;
+                    st_foreach( e->markers, syck_adjust_anchors, (st_data_t)args );
                     S_FREE( args );
 
                     /*
                      * Insert into anchors table
                      */
-                    st_insert( e->anchors, (st_data_t)oid, (st_data_t)aname );
+                    st_insert( e->anchors, (st_data_t)oid, (st_data_t)anchor_name );
                 }
             }
 

@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.35"
+#define SYCK_VERSION    "0.38"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -308,7 +308,7 @@ void syck_emitter_handler( SyckEmitter *, SyckOutputHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
 void syck_emitter_write( SyckEmitter *, char *, long );
-void syck_emitter_flush( SyckEmitter * );
+void syck_emitter_flush( SyckEmitter *, long );
 char *syck_emitter_start_obj( SyckEmitter *, SYMID );
 void syck_emitter_end_obj( SyckEmitter * );
 SyckParser *syck_new_parser();
