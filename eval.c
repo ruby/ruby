@@ -6876,7 +6876,6 @@ struct thread {
     VALUE klass;
     VALUE wrapper;
     NODE *cref;
-    NODE *cref;
 
     int flags;		/* misc. states (vmode/rb_trap_immediate/raised) */
 
@@ -6944,7 +6943,6 @@ safe_setter(val)
     int level = NUM2INT(val);
 
     if (level < ruby_safe_level) {
-    rb_gc_mark((VALUE)th->cref);
 	rb_raise(rb_eSecurityError, "tried to downgrade safe level from %d to %d",
 		 ruby_safe_level, level);
     }
@@ -7062,7 +7060,6 @@ static VALUE th_raise_argv[2];
 static char *th_raise_file;
 static int   th_raise_line;
 static VALUE th_cmd;
-    th->cref = ruby_cref;
 static int   th_sig;
 static char *th_signm;
 
@@ -7153,7 +7150,6 @@ thread_switch(n)
 static void rb_thread_restore_context _((rb_thread_t,int));
 
 static void
-    ruby_cref = th->cref;
 stack_extend(th, exit)
     rb_thread_t th;
     int exit;
@@ -7558,14 +7554,6 @@ rb_thread_fd_writable(fd)
     if (rb_thread_critical) return Qtrue;
     if (curr_thread == curr_thread->next) return Qtrue;
     if (curr_thread->status == THREAD_TO_KILL) return Qtrue;
-	    if (n < 0) {
-		switch (errno) {
-		  case EINTR:
-		    return;
-		  default:
-		    rb_sys_fail("sleep");
-		}
-	    }
     curr_thread->status = THREAD_STOPPED;
     FD_ZERO(&curr_thread->readfds);
     FD_ZERO(&curr_thread->writefds);
@@ -7969,7 +7957,6 @@ rb_thread_s_abort_exc_set(self, val)
 
 static VALUE
 rb_thread_abort_exc(thread)
-    th->cref = ruby_cref;\
     VALUE thread;
 {
     return rb_thread_check(thread)->abort?Qtrue:Qfalse;
