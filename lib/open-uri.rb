@@ -312,7 +312,7 @@ module OpenURI
       elsif block_given?
         yield
       elsif type && %r{\Atext/} =~ type &&
-            @base_uri && @base_uri.scheme == 'http'
+            @base_uri && /\Ahttp\z/i =~ @base_uri.scheme
         "iso-8859-1" # RFC2616 3.7.1
       else
         nil
@@ -434,8 +434,16 @@ module URI
     # The proxy URI is obtained from environment variables such as http_proxy,
     # ftp_proxy, no_proxy, etc.
     # If there is no proper proxy, nil is returned.
+    #
+    # The enveironment variable CGI_http_proxy and CGI_HTTP_PROXY is used
+    # instead of http_proxy and HTTP_PROXY in the CGI environment because
+    # HTTP_PROXY can be set by Proxy: header sent by a CGI client.
     def find_proxy
-      name = self.scheme + '_proxy'
+      name = self.scheme.downcase + '_proxy'
+      if ENV.include? 'REQUEST_METHOD' # in CGI?
+        # Use CGI_HTTP_PROXY.  cf. libwww-perl.
+        name = "CGI_#{name}" if /\Ahttp_/i =~ name
+      end
       if proxy_uri = ENV[name] || ENV[name.upcase]
         proxy_uri = URI.parse(proxy_uri)
         name = 'no_proxy'
