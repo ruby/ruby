@@ -475,7 +475,7 @@ clean:;		@$(RM) *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
 		@$(RM) $(TARGET).lib $(TARGET).exp $(TARGET).ilk *.pdb
 
 distclean:	clean
-		@$(RM) Makefile extconf.h conftest.* mkmf.rb
+		@$(RM) Makefile extconf.h conftest.* mkmf.log
 		@$(RM) core ruby$(EXEEXT) *~
 
 realclean:	distclean
