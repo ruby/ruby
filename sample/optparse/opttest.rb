@@ -79,7 +79,7 @@ ARGV.options do
 end
 
 pp self
-(print ARGV.options; exit) if @quit
+begin print ARGV.options; exit end if @quit
 ARGV.options = nil		# no more parse
 puts "ARGV = #{ARGV.join(' ')}" if !ARGV.empty?
 #opts.variable.each {|sym| puts "#{sym} = #{opts.send(sym).inspect}"}

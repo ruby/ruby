@@ -1,3 +1,11 @@
+Sat Mar 20 23:51:03 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (rb_require_safe): preserve old ruby_errinfo.
+	  [ruby-talk:95409]
+
+	* eval.c (rb_f_raise): should not clear backtrace information if
+	  exception object already have one.
+
 Sat Mar 20 21:21:03 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb: rm -rf $extout, not extout.
@@ -11,6 +19,11 @@ Sat Mar 20 09:33:36 2004  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: _parse() now accepts fractional
 	  part of second minute that follows a comma or a full stop.
+
+Fri Mar 19 21:06:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (assoc_list): allow {sym: val} style Hash. [Ruby2]
+	  this change is done by Nobuyoshi Nakada <nobu@ruby-lang.org>.
 
 Fri Mar 19 15:15:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

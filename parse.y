@@ -74,6 +74,7 @@ static enum lex_state {
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
+    EXPR_TERNARY,		/* alike EXPR_BEG but immediate after ternary op. */
 } lex_state;
 static NODE *lex_strterm;
 
@@ -244,7 +245,7 @@ static void top_local_setup();
 	k__LINE__
 	k__FILE__
 
-%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR
+%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL
 %token <node> tINTEGER tFLOAT tSTRING_CONTENT
 %token <node> tNTH_REF tBACK_REF
 %token <num>  tREGEXP_END
@@ -2380,6 +2381,10 @@ assoc_list	: none
 			}
 			$$ = $1;
 		    }
+		| tLABEL arg_value
+		    {
+			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1))), $2);
+		    }
 		;
 
 assocs		: assoc
@@ -3305,6 +3310,7 @@ arg_ambiguous()
 }
 
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
+#define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_TERNARY)
 
 static int
 yylex()
@@ -3360,6 +3366,7 @@ yylex()
 	  case EXPR_FNAME:
 	  case EXPR_DOT:
 	  case EXPR_CLASS:
+	  case EXPR_TERNARY:
 	    goto retry;
 	  default:
 	    break;
@@ -3389,7 +3396,7 @@ yylex()
 		rb_warning("`*' interpreted as argument prefix");
 		c = tSTAR;
 	    }
-	    else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	    else if (IS_BEG()) {
 		c = tSTAR;
 	    }
 	    else {
@@ -3542,7 +3549,7 @@ yylex()
 
       case '?':
 	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG) {
-	    lex_state = EXPR_BEG;
+	    lex_state = EXPR_TERNARY;
 	    return '?';
 	}
 	c = nextc();
@@ -3579,7 +3586,7 @@ yylex()
 	    }
 	  ternary:
 	    pushback(c);
-	    lex_state = EXPR_BEG;
+	    lex_state = EXPR_TERNARY;
 	    return '?';
 	}
 	else if (ismbchar(c)) {
@@ -3618,7 +3625,7 @@ yylex()
 	    rb_warning("`&' interpreted as argument prefix");
 	    c = tAMPER;
 	}
-	else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	else if (IS_BEG()) {
 	    c = tAMPER;
 	}
 	else {
@@ -3672,7 +3679,7 @@ yylex()
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
+	if (IS_BEG() ||
 	    (IS_ARG() && space_seen && !ISSPACE(c))) {
 	    if (IS_ARG()) arg_ambiguous();
 	    lex_state = EXPR_BEG;
@@ -3702,7 +3709,7 @@ yylex()
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
+	if (IS_BEG() ||
 	    (IS_ARG() && space_seen && !ISSPACE(c))) {
 	    if (IS_ARG()) arg_ambiguous();
 	    lex_state = EXPR_BEG;
@@ -3961,7 +3968,7 @@ yylex()
       case ':':
 	c = nextc();
 	if (c == ':') {
-	    if (lex_state == EXPR_BEG ||  lex_state == EXPR_MID ||
+	    if (IS_BEG() ||
 		lex_state == EXPR_CLASS || (IS_ARG() && space_seen)) {
 		lex_state = EXPR_BEG;
 		return tCOLON3;
@@ -3989,7 +3996,7 @@ yylex()
 	return tSYMBEG;
 
       case '/':
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	if (IS_BEG()) {
 	    lex_strterm = NEW_STRTERM(str_regexp, '/', 0);
 	    return tREGEXP_BEG;
 	}
@@ -4051,7 +4058,7 @@ yylex()
 
       case '(':
 	command_start = Qtrue;
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	if (IS_BEG()) {
 	    c = tLPAREN;
 	}
 	else if (space_seen) {
@@ -4081,7 +4088,7 @@ yylex()
 	    pushback(c);
 	    return '[';
 	}
-	else if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	else if (IS_BEG()) {
 	    c = tLBRACK;
 	}
 	else if (IS_ARG() && space_seen) {
@@ -4114,7 +4121,7 @@ yylex()
 	return '\\';
 
       case '%':
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	if (IS_BEG()) {
 	    int term;
 	    int paren;
 
@@ -4400,7 +4407,7 @@ yylex()
 			    return kDO_BLOCK;
 			return kDO;
 		    }
-		    if (state == EXPR_BEG)
+		    if (state == EXPR_BEG || state == EXPR_TERNARY)
 			return kw->id[0];
 		    else {
 			if (kw->id[0] != kw->id[1])
@@ -4411,10 +4418,18 @@ yylex()
 	    }
 
 	    if (lex_state == EXPR_BEG ||
-		lex_state == EXPR_MID ||
-		lex_state == EXPR_DOT ||
 		lex_state == EXPR_ARG ||
 		lex_state == EXPR_CMDARG) {
+		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
+		    lex_state = EXPR_BEG;
+		    nextc();
+		    yylval.id = rb_intern(tok());
+		    return tLABEL;
+		}
+	    }
+	    if (IS_BEG() ||
+		lex_state == EXPR_DOT ||
+		IS_ARG()) {
 		if (cmd_state) {
 		    lex_state = EXPR_CMDARG;
 		}

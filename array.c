@@ -213,6 +213,13 @@ to_ary(ary)
     return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
+static VALUE
+to_a(ary)
+    VALUE ary;
+{
+    return rb_convert_type(ary, T_ARRAY, "Array", "to_a");
+}
+
 VALUE
 rb_check_array_type(ary)
     VALUE ary;
@@ -2025,7 +2032,7 @@ rb_ary_zip(argc, argv, ary)
     VALUE result;
 
     for (i=0; i<argc; i++) {
-	argv[i] = to_ary(argv[i]);
+	argv[i] = to_a(argv[i]);
     }
     if (rb_block_given_p()) {
 	for (i=0; i<RARRAY(ary)->len; i++) {

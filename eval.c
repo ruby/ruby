@@ -4410,7 +4410,8 @@ rb_f_raise(argc, argv)
     if (argc > 0) {
 	if (!rb_obj_is_kind_of(mesg, rb_eException))
 	    rb_raise(rb_eTypeError, "exception object expected");
-	set_backtrace(mesg, (argc>2)?argv[2]:Qnil);
+	if (argc>2)
+	    set_backtrace(mesg, argv[2]);
     }
 
     if (ruby_frame != top_frame) {
@@ -5549,7 +5550,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 			rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
 				 argc, i);
 		    }
-		    if (node->nd_rest == -1) {
+		    if ((int)node->nd_rest == -1) {
 			int opt = i;
 			NODE *optnode = node->nd_opt;
 
@@ -5584,7 +5585,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 			    }
 			}
 			local_vars = ruby_scope->local_vars;
-			if (node->nd_rest >= 0) {
+			if ((int)node->nd_rest >= 0) {
 			    VALUE v;
 
 			    if (argc > 0)
@@ -6705,6 +6706,7 @@ rb_require_safe(fname, safe)
     int safe;
 {
     VALUE result = Qnil;
+    volatile VALUE errinfo = ruby_errinfo;
     int state;
     struct {
 	NODE *node;
@@ -6782,7 +6784,7 @@ rb_require_safe(fname, safe)
     if (NIL_P(result)) {
 	load_failed(fname);
     }
-    ruby_errinfo = Qnil;
+    ruby_errinfo = errinfo;
 
     return result;
 }

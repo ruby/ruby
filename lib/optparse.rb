@@ -417,7 +417,7 @@ class OptionParser
         yield(indent + l)
       end
 
-      while (l = left.shift; r = right.shift; l or r)
+      while begin l = left.shift; r = right.shift; l or r end
         l = l.to_s.ljust(width) + ' ' + r if r and !r.empty?
         yield(indent + l)
       end
