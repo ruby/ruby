@@ -10,7 +10,7 @@
 #ifndef SYCK_H
 #define SYCK_H
 
-#define SYCK_VERSION    "0.32"
+#define SYCK_VERSION    "0.34"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>

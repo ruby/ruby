@@ -1,3 +1,7 @@
+Thu Jun  5 05:49:43 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/rubyext.c: using GC nodes caused segfault. [ruby-core:1071]
+
 Thu Jun  5 04:48:57 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/token.c: directives choked on a period.

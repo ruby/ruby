@@ -33,6 +33,11 @@ SYMID rb_syck_parse_handler _((SyckParser *, SyckNode *));
 SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
 void rb_syck_err_handler _((SyckParser *, char *));
 
+struct parser_xtra {
+    VALUE data;  // Borrowed this idea from marshal.c to fix [ruby-dev:8067] problem
+    VALUE proc;
+};
+
 /*
  * read from io.
  */
@@ -201,6 +206,7 @@ rb_syck_parse_handler(p, n)
 {
     VALUE t, v, obj;
     int i;
+    struct parser_xtra *bonus;
 
     obj = rb_obj_alloc(cNode);
     if ( n->type_id != NULL )
@@ -240,12 +246,14 @@ rb_syck_parse_handler(p, n)
         break;
     }
 
-	if ( p->bonus != 0 )
+    bonus = (struct parser_xtra *)p->bonus;
+	if ( bonus->proc != 0 )
 	{
-		VALUE proc = (VALUE)p->bonus;
-		rb_funcall(proc, rb_intern("call"), 1, v);
+		rb_funcall(bonus->proc, rb_intern("call"), 1, v);
 	}
+
     rb_iv_set(obj, "@value", v);
+    rb_hash_aset(bonus->data, INT2FIX(RHASH(bonus->data)->tbl->num_entries), obj);
     return obj;
 }
 
@@ -262,6 +270,7 @@ rb_syck_load_handler(p, n)
     long i;
     int str = 0;
     int check_transfers = 0;
+    struct parser_xtra *bonus;
 
     switch (n->kind)
     {
@@ -358,10 +367,10 @@ rb_syck_load_handler(p, n)
         break;
     }
 
-	if ( p->bonus != 0 )
+    bonus = (struct parser_xtra *)p->bonus;
+	if ( bonus->proc != 0 )
 	{
-		VALUE proc = (VALUE)p->bonus;
-		rb_funcall(proc, rb_intern("call"), 1, obj);
+		rb_funcall(bonus->proc, rb_intern("call"), 1, obj);
 	}
 
     if ( check_transfers == 1 && n->type_id != NULL )
@@ -369,6 +378,7 @@ rb_syck_load_handler(p, n)
         obj = rb_funcall( oDefaultLoader, rb_intern( "transfer" ), 2, rb_str_new2( n->type_id ), obj );
     }
 
+    rb_hash_aset(bonus->data, INT2FIX(RHASH(bonus->data)->tbl->num_entries), obj);
     return obj;
 }
 
@@ -444,6 +454,12 @@ syck_mark_parser(parser)
 {
     rb_gc_mark(parser->root);
     rb_gc_mark(parser->root_on_error);
+    if ( parser->bonus != 0 )
+    {
+        struct parser_xtra *bonus = (struct parser_xtra *)parser->bonus;
+        rb_gc_mark(bonus->proc);
+        rb_gc_mark(bonus->data);
+    }
 }
 
 /*
@@ -494,6 +510,8 @@ syck_parser_load(argc, argv, self)
 {
     VALUE port, proc, v, model;
 	SyckParser *parser;
+    struct parser_xtra bonus;
+    volatile VALUE hash;	/* protect from GC */
 
     rb_scan_args(argc, argv, "11", &port, &proc);
 	Data_Get_Struct(self, SyckParser, parser);
@@ -502,12 +520,11 @@ syck_parser_load(argc, argv, self)
 	model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
 	syck_set_model( parser, model );
 
-	parser->bonus = 0;
-	if ( !NIL_P( proc ) ) 
-    {
-        parser->bonus = (void *)proc;
-    }
-
+    bonus.data = hash = rb_hash_new();
+	if ( NIL_P( proc ) ) bonus.proc = 0;
+    else                 bonus.proc = proc;
+    
+	parser->bonus = (void *)&bonus;
 
     //v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
 
@@ -525,6 +542,8 @@ syck_parser_load_documents(argc, argv, self)
 {
     VALUE port, proc, v, model;
 	SyckParser *parser;
+    struct parser_xtra bonus;
+    volatile VALUE hash;
 
     rb_scan_args(argc, argv, "1&", &port, &proc);
 	Data_Get_Struct(self, SyckParser, parser);
@@ -532,15 +551,22 @@ syck_parser_load_documents(argc, argv, self)
 
 	model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
 	syck_set_model( parser, model );
-    parser->bonus = 0;
-
+    
     while ( 1 )
 	{
+        /* Reset hash for tracking nodes */
+        bonus.data = hash = rb_hash_new();
+        bonus.proc = 0;
+        parser->bonus = (void *)&bonus;
+
+        /* Parse a document */
     	v = syck_parse( parser );
         if ( parser->eof == 1 )
         {
             break;
         }
+
+        /* Pass document to block */
 		rb_funcall( proc, rb_intern("call"), 1, v );
 	}
 
