@@ -20,8 +20,8 @@ class WeakRef<Delegator
   ID_REV_MAP =  {}          # ref -> obj
   ObjectSpace.add_finalizer(lambda{|id|
 			      __old_status = Thread.critical
-			      Thread.critical = true
 			      begin
+				Thread.critical = true
 				rids = ID_MAP[id]
 				if rids
 				  for rid in rids
@@ -45,8 +45,8 @@ class WeakRef<Delegator
     @__id = orig.__id__
     ObjectSpace.call_finalizer orig
     ObjectSpace.call_finalizer self
+    __old_status = Thread.critical
     begin
-      __old_status = Thread.critical
       Thread.critical = true
       ID_MAP[@__id] = [] unless ID_MAP[@__id]
     ensure

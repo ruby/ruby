@@ -1,8 +1,17 @@
+Mon Aug  7 13:59:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): check for stack depth was needed.
+
 Sat Aug  5 16:43:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* lib/ftools.rb (compare, safe_unlink, chmod): avoid warnings.
 
 	* lib/ftools.rb (move): typo. not `tpath', but `to'.
+
+Wed Aug  2 18:27:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_continuation_call): prohibit Continuation#call across
+	  threads.
 
 Sat Jul 29 23:42:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -334,17 +334,42 @@ class TkText<TkTextWin
     tk_split_simplelist(tk_send('tag', 'prevrange', tag, first, last))
   end
 
+  def _ktext_length(txt)
+    if $KCODE !~ /n/i
+      return txt.gsub(/[^\Wa-zA-Z_\d]/, ' ').length
+    end
+
+    # $KCODE == 'NONE'
+    if JAPANIZED_TK
+      tk_call('kstring', 'length', txt).to_i
+    else
+      begin
+	tk_call('encoding', 'convertto', 'ascii', txt).length
+      rescue StandardError, NameError
+	# sorry, I have no plan
+	txt.length
+      end
+    end
+  end
+  private :_ktext_length
+
   def search_with_length(pat,start,stop=None)
-    pat = pat.char if pat.kind_of? Integer
+    pat = pat.chr if pat.kind_of? Integer
     if stop != None
       return ["", 0] if compare(start,'>=',stop)
       txt = get(start,stop)
       if (pos = txt.index(pat))
-	pos = txt[0..(pos-1)].split('').length if pos > 0
+	match = $&
+	#pos = txt[0..(pos-1)].split('').length if pos > 0
+	pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
 	if pat.kind_of? String
-	  return [index(start + " + #{pos} chars"), pat.split('').length]
+	  #return [index(start + " + #{pos} chars"), pat.split('').length]
+	  return [index(start + " + #{pos} chars"), 
+		  _ktext_length(pat), pat.dup]
 	else
-	  return [index(start + " + #{pos} chars"), $&.split('').length]
+	  #return [index(start + " + #{pos} chars"), $&.split('').length]
+	  return [index(start + " + #{pos} chars"), 
+		  _ktext_length(match), match]
 	end
       else
 	return ["", 0]
@@ -352,20 +377,31 @@ class TkText<TkTextWin
     else
       txt = get(start,'end - 1 char')
       if (pos = txt.index(pat))
-	pos = txt[0..(pos-1)].split('').length if pos > 0
+	match = $&
+	#pos = txt[0..(pos-1)].split('').length if pos > 0
+	pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
 	if pat.kind_of? String
-	  return [index(start + " + #{pos} chars"), pat.split('').length]
+	  #return [index(start + " + #{pos} chars"), pat.split('').length]
+	  return [index(start + " + #{pos} chars"), 
+		  _ktext_length(pat), pat.dup]
 	else
-	  return [index(start + " + #{pos} chars"), $&.split('').length]
+	  #return [index(start + " + #{pos} chars"), $&.split('').length]
+	  return [index(start + " + #{pos} chars"), 
+		  _ktext_length(match), match]
 	end
       else
 	txt = get('1.0','end - 1 char')
 	if (pos = txt.index(pat))
-	  pos = txt[0..(pos-1)].split('').length if pos > 0
+	  match = $&
+	  #pos = txt[0..(pos-1)].split('').length if pos > 0
+	  pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
 	  if pat.kind_of? String
-	    return [index("1.0 + #{pos} chars"), pat.split('').length]
+	    #return [index("1.0 + #{pos} chars"), pat.split('').length]
+	    return [index("1.0 + #{pos} chars"), 
+		    _ktext_length(pat), pat.dup]
 	  else
-	    return [index("1.0 + #{pos} chars"), $&.split('').length]
+	    #return [index("1.0 + #{pos} chars"), $&.split('').length]
+	    return [index("1.0 + #{pos} chars"), _ktext_length(match), match]
 	  end
 	else
 	  return ["", 0]
@@ -379,16 +415,20 @@ class TkText<TkTextWin
   end
 
   def rsearch_with_length(pat,start,stop=None)
-    pat = pat.char if pat.kind_of? Integer
+    pat = pat.chr if pat.kind_of? Integer
     if stop != None
       return ["", 0] if compare(start,'<=',stop)
       txt = get(stop,start)
       if (pos = txt.rindex(pat))
-	pos = txt[0..(pos-1)].split('').length if pos > 0
+	match = $&
+	#pos = txt[0..(pos-1)].split('').length if pos > 0
+	pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
 	if pat.kind_of? String
-	  return [index(stop + " + #{pos} chars"), pat.split('').length]
+	  #return [index(stop + " + #{pos} chars"), pat.split('').length]
+	  return [index(stop + " + #{pos} chars"), _ktext_length(pat), pat.dup]
 	else
-	  return [index(stop + " + #{pos} chars"), $&.split('').length]
+	  #return [index(stop + " + #{pos} chars"), $&.split('').length]
+	  return [index(stop + " + #{pos} chars"), _ktext_length(match), match]
 	end
       else
 	return ["", 0]
@@ -396,20 +436,28 @@ class TkText<TkTextWin
     else
       txt = get('1.0',start)
       if (pos = txt.rindex(pat))
-	pos = txt[0..(pos-1)].split('').length if pos > 0
+	match = $&
+	#pos = txt[0..(pos-1)].split('').length if pos > 0
+	pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
 	if pat.kind_of? String
-	  return [index("1.0 + #{pos} chars"), pat.split('').length]
+	  #return [index("1.0 + #{pos} chars"), pat.split('').length]
+	  return [index("1.0 + #{pos} chars"), _ktext_length(pat), pat.dup]
 	else
-	  return [index("1.0 + #{pos} chars"), $&.split('').length]
+	  #return [index("1.0 + #{pos} chars"), $&.split('').length]
+	  return [index("1.0 + #{pos} chars"), _ktext_length(match), match]
 	end
       else
 	txt = get('1.0','end - 1 char')
 	if (pos = txt.rindex(pat))
-	  pos = txt[0..(pos-1)].split('').length if pos > 0
+	  match = $&
+	  #pos = txt[0..(pos-1)].split('').length if pos > 0
+	  pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
 	  if pat.kind_of? String
-	    return [index("1.0 + #{pos} chars"), pat.split('').length]
+	    #return [index("1.0 + #{pos} chars"), pat.split('').length]
+	    return [index("1.0 + #{pos} chars"), _ktext_length(pat), pat.dup]
 	  else
-	    return [index("1.0 + #{pos} chars"), $&.split('').length]
+	    #return [index("1.0 + #{pos} chars"), $&.split('').length]
+	    return [index("1.0 + #{pos} chars"), _ktext_length(match), match]
 	  end
 	else
 	  return ["", 0]

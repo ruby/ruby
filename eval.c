@@ -7518,7 +7518,8 @@ rb_callcc(self)
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }
-    th->prev = th->next = 0;
+    th->prev = 0;
+    th->next = curr_thread;
     if (THREAD_SAVE_CONTEXT(th)) {
 	return th->result;
     }
@@ -7535,6 +7536,9 @@ rb_continuation_call(argc, argv, cont)
 {
     rb_thread_t th = rb_thread_check(cont);
 
+    if (th->next != curr_thread) {
+	rb_raise(rb_eRuntimeError, "continuation called across threads");
+    }
     switch (argc) {
     case 0:
 	th->result = Qnil;

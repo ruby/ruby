@@ -3837,7 +3837,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	   because didn't fail.  Also remove the register information
 	   put on by the on_failure_jump.  */
       case finalize_jump:
-	if (stackp[-2] == d) {
+	if (stackp > stackb && stackp[-2] == d) {
 	  p = stackp[-3];
 	  POP_FAILURE_POINT();
 	  continue;
@@ -3945,7 +3945,7 @@ re_match(bufp, string_arg, size, pos, regs)
       case finalize_push:
 	POP_FAILURE_POINT();
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
-        if (mcnt < 0 && stackp[-2] == d) /* avoid infinit loop */
+        if (mcnt < 0 && stackp > stackb && stackp[-2] == d) /* avoid infinit loop */
 	   goto fail;
 	PUSH_FAILURE_POINT(p + mcnt, d);
 	stackp[-1] = NON_GREEDY;

@@ -515,7 +515,6 @@ else
   > $cache_file
 fi
 
-echo $CC
 ac_ext=c
 # CFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
 ac_cpp='$CPP $CPPFLAGS'
@@ -4692,8 +4691,11 @@ case "$host_os" in
 	openstep*)
     	CFLAGS="$CFLAGS -pipe"
 		;;
-	rhasody*)
+	rhapsody*)
     	CFLAGS="$CFLAGS -pipe -no-precomp"
+		;;
+	os2_emx)
+    	CFLAGS="$CFLAGS -DOS2"
 		;;
 	*)
 		;;	

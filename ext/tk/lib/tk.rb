@@ -311,7 +311,7 @@ module TkComm
 
   def install_bind(cmd, args=nil)
     if args
-      id = install_cmd(proc{|arg|
+      id = install_cmd(proc{|*arg|
 	TkUtil.eval_cmd cmd, *arg
       })
       id + " " + args
@@ -780,6 +780,96 @@ module Tk
     end
     def withdraw
       tk_call 'wm', 'withdraw', path
+    end
+  end
+end
+
+###########################################
+#  convert kanji string to/from utf-8
+###########################################
+if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
+  class TclTkIp
+    # from tkencoding.rb by ttate@jaist.ac.jp
+    alias __eval _eval
+    alias __invoke _invoke
+    private :__eval
+    private :__invoke
+    
+    attr_accessor :encoding
+    
+    def _eval(cmd)
+      if @encoding
+	_fromUTF8(__eval(_toUTF8(cmd, @encoding)), @encoding)
+      else
+	__eval(cmd)
+      end
+    end
+    
+    def _invoke(*cmds)
+      if @encoding
+	cmds = cmds.collect{|cmd| _toUTF8(cmd, @encoding)}
+	_fromUTF8(__invoke(*cmds), @encoding)
+      else
+	__invoke(*cmds)
+	end
+    end
+  end
+
+  module Tk
+    def encoding=(name)
+      INTERP.encoding = name
+    end
+
+    def encoding
+      INTERP.encoding
+    end
+
+    def encoding_names
+      tk_split_simplelist(tk_call('encoding', 'names'))
+    end
+
+    def encoding_system
+      tk_call('encoding', 'system')
+    end
+
+    def encoding_system=(enc)
+      tk_call('encoding', 'system', enc)
+    end
+  end
+
+  # estimate encoding
+  case $KCODE
+  when /^e/i  # EUC
+    Tk.encoding = 'euc-jp'
+  when /^s/i  # SJIS
+    Tk.encoding = 'shiftjis'
+  when /^u/i  # UTF8
+    Tk.encoding = 'utf-8'
+  else        # NONE
+    begin
+      Tk.encoding = Tk.encoding_system
+    rescue StandardError, NameError
+      Tk.encoding = 'utf-8'
+    end
+  end
+
+else
+  # dummy methods
+  module Tk
+    def encoding=(name)
+      nil
+    end
+    def encoding
+      nil
+    end
+    def encoding_names
+      nil
+    end
+    def encoding_system
+      nil
+    end
+    def encoding_system=(enc)
+      nil
     end
   end
 end
