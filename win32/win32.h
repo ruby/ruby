@@ -127,6 +127,10 @@ extern "C++" {
 #undef isatty
 #define isatty(h)		rb_w32_isatty(h)
 #endif
+#undef mkdir
+#define mkdir(p, m)		rb_w32_mkdir(p, m)
+#undef rmdir
+#define rmdir(p)		rb_w32_rmdir(p)
 
 #ifdef __MINGW32__
 struct timezone {
@@ -187,6 +191,8 @@ extern pid_t rb_w32_getpid(void);
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 extern int rb_w32_isatty(int);
 #endif
+extern int rb_w32_mkdir(const char *, int);
+extern int rb_w32_rmdir(const char *);
 
 #ifdef __BORLANDC__
 extern FILE *rb_w32_fopen(const char *, const char *);

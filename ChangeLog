@@ -1,3 +1,14 @@
+Wed Jan  5 10:48:16 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* dir.c (dir_s_mkdir): win32 special processing doesn't need any
+	  longer. (backported from CVS HEAD)
+
+	* win32/win32.[ch] (rb_w32_mkdir): new function. POSIX.1 compatible
+	  interface. (backported from CVS HEAD)
+
+	* win32/win32.[ch] (rb_w32_rmdir): new function. (backported from CVS
+	  HEAD)
+
 Wed Jan  5 02:30:11 2005  Tanaka Akira  <akr@m17n.org>
 
 	* random.c (init_by_array): imported from mt19937ar-cok.tgz.

@@ -3324,6 +3324,45 @@ rb_w32_snprintf(char *buf, size_t size, const char *format, ...)
     return ret;
 }
 
+#undef mkdir
+#undef rmdir
+int
+rb_w32_mkdir(const char *path, int mode)
+{
+    int ret = -1;
+    RUBY_CRITICAL(do {
+	if (mkdir(path) == -1)
+	    break;
+	if (chmod(path, mode) == -1) {
+	    int save_errno = errno;
+	    rmdir(path);
+	    errno = save_errno;
+	    break;
+	}
+	ret = 0;
+    } while (0));
+    return ret;
+}
+
+int
+rb_w32_rmdir(const char *path)
+{
+    DWORD attr;
+    int ret;
+    RUBY_CRITICAL({
+	attr = GetFileAttributes(path);
+	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
+	    attr &= ~FILE_ATTRIBUTE_READONLY;
+	    SetFileAttributes(path, attr);
+	}
+	ret = rmdir(path);
+	if (ret < 0 && attr != (DWORD)-1) {
+	    SetFileAttributes(path, attr);
+	}
+    });
+    return ret;
+}
+
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 int
 rb_w32_isatty(int fd)
