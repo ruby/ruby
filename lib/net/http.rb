@@ -445,7 +445,7 @@ module Net
       header = procheader( u_header )
       recv = err = nil
 
-      connecting( header ) {
+      connecting( header, body_exist ) {
         recv = HTTPResponseReceiver.new( @command, body_exist )
         yield header
         begin
@@ -455,30 +455,33 @@ module Net
         end
         recv.terminate
 
-        recv.response
+        recv
       }
       raise err if err
 
       recv.response
     end
 
-    def connecting( header )
+    def connecting( header, body_exist )
       if not @socket then
         header['Connection'] = 'close'
         start
       elsif @socket.closed? then
         @socket.reopen
       end
-      if @seems_1_0 then
+      if not body_exist or @seems_1_0 then
         header['Connection'] = 'close'
       end
 
-      resp = yield
+      recv = yield
       if @command.http_version == '1.0' then
         @seems_1_0 = true
       end
 
-      unless keep_alive? resp then
+      if not recv.body then
+        # close connection always (for corrupted server)
+        @socket.close
+      elsif not keep_alive? header, recv.response then
         if @socket.closed? then
           @seems_1_0 = true
         else
@@ -487,9 +490,10 @@ module Net
       end
     end
 
-    def keep_alive?( resp )
+    def keep_alive?( header, resp )
       /close/i === resp['connection'].to_s            and return false
       /close/i === resp['proxy-connection'].to_s      and return false
+      /close/i === header['connection'].to_s          and return false
       @seems_1_0                                      and return false
 
       /keep-alive/i === resp['connection'].to_s       and return true
@@ -638,15 +642,12 @@ module Net
     private
 
     def stream_check
-      unless @command then
-        raise IOError, 'receiver was used out of block'
-      end
+      @command or raise IOError, 'receiver was used out of block'
     end
 
     def procdest( dest, block )
       if dest and block then
-        raise ArgumentError,
-          'both of arg and block are given for HTTP method'
+        raise ArgumentError, 'both of arg and block are given for HTTP method'
       end
       if block then
         NetPrivate::ReadAdapter.new block

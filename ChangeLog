@@ -1,3 +1,7 @@
+Fri Feb 23 16:36:09 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: always close connection if body is not exist.
+
 Fri Feb 23 13:27:05 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: keep-alive detection was incomplete.
