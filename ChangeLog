@@ -1,3 +1,8 @@
+Wed Aug 18 12:52:55 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_obj_instance_eval): evaluates under special singleton
+	  classes as for special constants.
+
 Wed Aug 18 11:22:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (init_env): initialize HOME and USER environment
