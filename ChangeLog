@@ -1,3 +1,7 @@
+Sat Jul 13 09:30:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (literal_concat_string): wrong optimization.
+
 Sat Jul 13 01:25:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/resolv.rb (Resolv::DNS::open, close): new.

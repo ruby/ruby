@@ -4367,8 +4367,7 @@ literal_concat_string(head, tail, str)
 		head->nd_alen += 1;
 	    }
 	    if (!tail) tail = NEW_STR(str);
-	    last1->nd_next = NEW_LIST(tail);
-	    head->nd_alen += 1;
+	    list_append(head, tail);
 	    return head;
 	}
     }
