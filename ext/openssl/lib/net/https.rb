@@ -137,7 +137,7 @@ module Net
       SSLIO
     end
 
-    attr_accessor :use_ssl
+    attr_reader :use_ssl
     attr_writer :key, :cert
     attr_writer :ca_file, :ca_path
     attr_writer :verify_mode, :verify_callback, :verify_depth
@@ -150,6 +150,14 @@ module Net
       default_initialize(*args)
       @key = @cert = @ca_file = @ca_path = @verify_mode =
       @verify_callback = @verify_depth = @timeout = @cert_store = nil
+      @already_connected = false
+    end
+
+    def use_ssl=(flag)
+      if @already_connected && !@use_ssl
+        raise ProtocolError, "connection is alrady set up"
+      end
+      @use_ssl = flag
     end
 
     def on_connect
@@ -173,6 +181,7 @@ module Net
         @socket.ssl_connect
         @peer_cert = @socket.peer_cert
       end
+      @already_connected = true
     end
 
   end

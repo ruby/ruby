@@ -1,3 +1,8 @@
+Tue Jul 29 03:53:28 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/net/https.rb (use_ssl=): raise ProtocolError if
+	  connection is set up already.
+
 Mon Jul 28 23:23:08 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (Init_File): IO should include File::Const.
