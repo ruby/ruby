@@ -245,7 +245,7 @@ end
 def arg_config(config, default=nil)
   unless defined? $configure_args
     $configure_args = {}
-    for arg in CONFIG["configure_args"].split
+    for arg in "@configure_args@".split
       next unless /^--/ =~ arg
       if /=/ =~ arg
 	$configure_args[$`] = $'
@@ -254,7 +254,6 @@ def arg_config(config, default=nil)
       end
     end
   end
-  p [$configure_args, config]
   $configure_args.fetch(config, default)
 end
 

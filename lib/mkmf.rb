@@ -254,7 +254,6 @@ def arg_config(config, default="yes")
       end
     end
   end
-  p [$configure_args, config]
   $configure_args.fetch(config, default)
 end
 
@@ -263,13 +262,6 @@ def with_config(config, default="yes")
     config = '--with-' + config
   end
   arg_config(config, default)
-end
-
-def with_config(config, value="yes")
-  unless /^-with-/ =~ config
-    config = '-with-' + config
-  end
-  arg_config(config, value)
 end
 
 def create_header()
