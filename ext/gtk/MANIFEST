@@ -1,4 +1,5 @@
 MANIFEST
+ENVIRONMENT
 extconf.rb
 gtk.c
 test.rb
