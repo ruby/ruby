@@ -1,5 +1,5 @@
-# format.rb: Written by Tadayoshi Funaba 1999-2003
-# $Id: format.rb,v 2.9 2003-04-19 19:19:35+09 tadf Exp $
+# format.rb: Written by Tadayoshi Funaba 1999-2004
+# $Id: format.rb,v 2.12 2004-01-19 05:43:28+09 tadf Exp $
 
 class Date
 
@@ -501,8 +501,14 @@ class Date
       when '%x'; o << strftime('%m/%d/%y')
       when '%Y'; o << '%.4d' %  year
       when '%y'; o << '%02d' % (year % 100)
-      when '%Z'; o << zone
-      when '%z'; o << zone					# ID
+      when '%Z'; o << (if offset.zero? then 'Z' else strftime('%z') end)
+      when '%z'							# ID
+	o << if offset < 0 then '-' else '+' end
+	of = offset.abs
+	hh, fr = of.divmod(1.to_r/24)
+	mm = fr / (1.to_r/1440)
+	o << '%02d' % hh
+	o << '%02d' % mm
       when '%%'; o << '%'
       when '%+'; o << strftime('%a %b %e %H:%M:%S %Z %Y')	# TZ
       when '%1'; o <<   '%d' % jd

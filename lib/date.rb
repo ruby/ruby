@@ -1,20 +1,20 @@
-# 
+#
 # date.rb - date and time library
 #
-# Author: Tadayoshi Funaba 1998-2002
+# Author: Tadayoshi Funaba 1998-2004
 #
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.8 2002-06-08 00:39:51+09 tadf Exp $
+# $Id: date.rb,v 2.11 2004-01-19 04:56:12+09 tadf Exp $
 #++
 #
 # == Overview
 #
 # This file provides two classes for working with
 # dates and times.
-# 
-# The first class, Date, represents dates.  
+#
+# The first class, Date, represents dates. 
 # It works with years, months, weeks, and days.
 # See the Date class documentation for more details.
 #
@@ -28,11 +28,11 @@
 # In common usage, the date is reckoned in years since or
 # before the Common Era (CE/BCE, also known as AD/BC), then
 # as a month and day-of-the-month within the current year.
-# This is known as the *Civil* *Date*, and abbrevated 
+# This is known as the *Civil* *Date*, and abbrevated
 # as +civil+ in the Date class.
 #
-# Instead of year, month-of-the-year,  and day-of-the-month, 
-# the date can also be reckoned in terms of year and 
+# Instead of year, month-of-the-year,  and day-of-the-month,
+# the date can also be reckoned in terms of year and
 # day-of-the-year.  This is known as the *Ordinal* *Date*,
 # and is abbreviated as +ordinal+ in the Date class.  (Note
 # that referring to this as the Julian date is incorrect.)
@@ -58,7 +58,7 @@
 # Date class as the *Astronomical* *Julian* *Day* *Number*, and
 # abbreviated as +ajd+.  In the Date class, the Astronomical
 # Julian Day Number includes fractional days.
-# 
+#
 # Another absolute day count is the *Modified* *Julian* *Day*
 # *Number*, which takes November 17, 1858 as its initial day.
 # This is abbreviated as +mjd+ in the Date class.  There
@@ -80,7 +80,7 @@
 # The standard civil year is 365 days long.  However, the
 # solar year is fractionally longer than this.  To account
 # for this, a *leap* *year* is occasionally inserted.  This
-# is a year with 366 days, the extra day falling on February 29.  
+# is a year with 366 days, the extra day falling on February 29. 
 # In the early days of the civil calendar, every fourth
 # year without exception was a leap year.  This way of
 # reckoning leap years is the *Julian* *Calendar*.
@@ -94,7 +94,7 @@
 #
 # The Gregorian Calendar was introduced at different times
 # in different regions.  The day on which it was introduced
-# for a particular region is the *Day* *of* *Calendar* 
+# for a particular region is the *Day* *of* *Calendar*
 # *Reform* for that region.  This is abbreviated as +sg+
 # (for Start of Gregorian calendar) in the Date class.
 #
@@ -103,24 +103,24 @@
 # the Day of Calendar Reform for Italy and most Catholic
 # countries.  The second is September 14, 1752, which was
 # the Day of Calendar Reform for England and its colonies
-# (including what is now the United States).  These two 
+# (including what is now the United States).  These two
 # dates are available as the constants Date::ITALY and
 # Date::ENGLAND, respectively.  (By comparison, Germany and
 # Holland, less Catholic than Italy but less stubborn than
 # England, changed over in 1698; Sweden in 1753; Russia not
 # till 1918, after the Revolution; and Greece in 1923.  Many
 # Orthodox churches still use the Julian Calendar.  A complete
-# list of Days of Calendar Reform can be found at 
+# list of Days of Calendar Reform can be found at
 # http://www.polysyllabic.com/GregConv.html.)
 #
 # Switching from the Julian to the Gregorian calendar
 # involved skipping a number of days to make up for the
 # accumulated lag, and the later the switch was (or is)
 # done, the more days need to be skipped.  So in 1582 in Italy,
-# 4th October was followed by 15th October, skipping 10 days; in 1752 
+# 4th October was followed by 15th October, skipping 10 days; in 1752
 # in England, 2nd September was followed by 14th September, skipping
-# 11 days; and if I decided to switch from Julian to Gregorian 
-# Calendar this midnight, I would go from 27th July 2003 (Julian) 
+# 11 days; and if I decided to switch from Julian to Gregorian
+# Calendar this midnight, I would go from 27th July 2003 (Julian)
 # today to 10th August 2003 (Gregorian) tomorrow, skipping
 # 13 days.  The Date class is aware of this gap, and a supposed
 # date that would fall in the middle of it is regarded as invalid.
@@ -148,13 +148,13 @@
 # of time zones.  Time zones are represented as an offset
 # from UTC, as a fraction of a day.  This offset is the
 # how much local time is later (or earlier) than UTC.
-# UTC offset 0 is centred on England (also known as GMT).  
+# UTC offset 0 is centred on England (also known as GMT). 
 # As you travel east, the offset increases until you
 # reach the dateline in the middle of the Pacific Ocean;
 # as you travel west, the offset decreases.  This offset
 # is abbreviated as +of+ in the Date class.
 #
-# This simple representation of time zones does not take 
+# This simple representation of time zones does not take
 # into account the common practice of Daylight Savings
 # Time or Summer Time.
 #
@@ -201,7 +201,7 @@ require 'date/format'
 # See the documentation to the file date.rb for an overview.
 #
 # Internally, the date is represented as an Astronomical
-# Julian Day Number, +ajd+.  The Day of Calendar Reform, +sg+, is 
+# Julian Day Number, +ajd+.  The Day of Calendar Reform, +sg+, is
 # also stored, for conversions to other date formats.  (There
 # is also an +of+ field for a time zone offset, but this
 # is only for the use of the DateTime subclass.)
@@ -217,7 +217,7 @@ require 'date/format'
 # Date objects are immutable once created.
 #
 # Once a Date has been created, date values
-# can be retrieved for the different date formats supported 
+# can be retrieved for the different date formats supported
 # using instance methods.  For instance, #mon() gives the
 # Civil month, #cwday() gives the Commercial day of the week,
 # and #yday() gives the Ordinal day of the year.  Date values
@@ -237,7 +237,7 @@ class Date
   MONTHNAMES = [nil] + %w(January February March April May June July
 			  August September October November December)
 
-  # Full names of days of the week, in English.  Days of the week 
+  # Full names of days of the week, in English.  Days of the week
   # count from 0 to 6 (except in the commercial week); a day's numerical
   # represenation indexed into this array gives the name of that day.
   DAYNAMES = %w(Sunday Monday Tuesday Wednesday Thursday Friday Saturday)
@@ -312,7 +312,7 @@ class Date
   # the Julian Day Number. +sg+ specifies the Day of
   # Calendar Reform.
   #
-  # Returns the corresponding [year, month, day_of_month] 
+  # Returns the corresponding [year, month, day_of_month]
   # as a three-element array.
   def self.jd_to_civil(jd, sg=GREGORIAN)
     if os?(jd, sg)
@@ -351,7 +351,7 @@ class Date
   # +jd+ is the Julian Day Number to convert.
   # +sg+ specifies the Day of Calendar Reform.
   #
-  # Returns the corresponding Ordinal Date as 
+  # Returns the corresponding Ordinal Date as
   # [year, day_of_year]
   def self.jd_to_ordinal(jd, sg=GREGORIAN)
     y = jd_to_civil(jd, sg)[0]
@@ -378,7 +378,7 @@ class Date
 
   # Convert a Commercial Date to a Julian Day Number.
   #
-  # +y+, +w+, and +d+ are the (commercial) year, week of the year, 
+  # +y+, +w+, and +d+ are the (commercial) year, week of the year,
   # and day of the week of the Commercial Date to convert.
   # +sg+ specifies the Day of Calendar Reform.
   def self.commercial_to_jd(y, w, d, ns=GREGORIAN)
@@ -405,7 +405,7 @@ class Date
   # Convert an Astronomical Julian Day Number to a (civil) Julian
   # Day Number.
   #
-  # +ajd+ is the Astronomical Julian Day Number to convert.  
+  # +ajd+ is the Astronomical Julian Day Number to convert. 
   # +of+ is the offset from UTC as a fraction of a day (defaults to 0).
   #
   # Returns the (civil) Julian Day Number as [day_number,
@@ -416,10 +416,10 @@ class Date
   # Day Number.
   #
   # +jd+ is the Julian Day Number to convert, and +fr+ is a
-  # fractional day.  
+  # fractional day. 
   # +of+ is the offset from UTC as a fraction of a day (defaults to 0).
   #
-  # Returns the Astronomical Julian Day Number as a single 
+  # Returns the Astronomical Julian Day Number as a single
   # numeric value.
   def self.jd_to_ajd(jd, fr, of=0) jd + fr - of - 1.to_r/2 end
 
@@ -438,7 +438,7 @@ class Date
     h.to_r/24 + min.to_r/1440 + s.to_r/86400
   end
 
-  # Convert an Astronomical Modified Julian Day Number to an 
+  # Convert an Astronomical Modified Julian Day Number to an
   # Astronomical Julian Day Number.
   def self.amjd_to_ajd(amjd) amjd + 4800001.to_r/2 end
 
@@ -450,7 +450,7 @@ class Date
   # Day Number.
   def self.mjd_to_jd(mjd) mjd + 2400001 end
 
-  # Convert a Julian Day Number to a Modified Julian Day 
+  # Convert a Julian Day Number to a Modified Julian Day
   # Number.
   def self.jd_to_mjd(jd) jd - 2400001 end
 
@@ -490,7 +490,7 @@ class Date
   # Create a new Date object from a Julian Day Number.
   #
   # +jd+ is the Julian Day Number; if not specified, it defaults to
-  # 0.  
+  # 0. 
   # +sg+ specifies the Day of Calendar Reform.
   def self.jd(jd=0, sg=ITALY)
     jd = valid_jd?(jd, sg)
@@ -504,8 +504,8 @@ class Date
   # +d+ can be a negative number, in which case it counts backwards
   # from the end of the year (-1 being the last day of the year).
   # No year wraparound is performed, however, so valid values of
-  # +d+ are -365 .. -1, 1 .. 365 on a non-leap-year, 
-  # -366 .. -1, 1 .. 366 on a leap year.  
+  # +d+ are -365 .. -1, 1 .. 365 on a non-leap-year,
+  # -366 .. -1, 1 .. 366 on a leap year. 
   # A date falling in the period skipped in the Day of Calendar Reform
   # adjustment is not valid.
   #
@@ -541,15 +541,15 @@ class Date
     new0(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
-  # Do year +y+, month +m+, and day-of-month +d+ make a 
-  # valid Civil Date?  Returns the corresponding Julian 
+  # Do year +y+, month +m+, and day-of-month +d+ make a
+  # valid Civil Date?  Returns the corresponding Julian
   # Day Number if they do, nil if they don't.
   #
   # +m+ and +d+ can be negative, in which case they count
   # backwards from the end of the year and the end of the
   # month respectively.  No wraparound is performed, however,
   # and invalid values cause an ArgumentError to be raised.
-  # A date falling in the period skipped in the Day of Calendar 
+  # A date falling in the period skipped in the Day of Calendar
   # Reform adjustment is not valid.
   #
   # +sg+ specifies the Day of Calendar Reform.
@@ -580,7 +580,7 @@ class Date
   # backwards from the end of the year and the end of the
   # month respectively.  No wraparound is performed, however,
   # and invalid values cause an ArgumentError to be raised.
-  # can be negative 
+  # can be negative
   #
   # +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is
   # Julian Day Number day 0.
@@ -605,7 +605,7 @@ class Date
   # backwards from the end of the year and the end of the
   # week respectively.  No wraparound is performed, however,
   # and invalid values cause an ArgumentError to be raised.
-  # A date falling in the period skipped in the Day of Calendar 
+  # A date falling in the period skipped in the Day of Calendar
   # Reform adjustment is not valid.
   #
   # +sg+ specifies the Day of Calendar Reform.
@@ -659,7 +659,7 @@ class Date
   # according to a specified format.
   #
   # +str+ is a String holding a date representation.
-  # +fmt+ is the format that the date is in.  See 
+  # +fmt+ is the format that the date is in.  See
   # date/format.rb for details on supported formats.
   #
   # The default +str+ is '-4712-01-01', and the default
@@ -678,7 +678,7 @@ class Date
   # Create a new Date object by parsing from a String,
   # without specifying the format.
   #
-  # +str+ is a String holding a date representation.  
+  # +str+ is a String holding a date representation. 
   # +comp+ specifies whether to interpret 2-digit years
   # as 19XX (>= 69) or 20XX (< 69); the default is not to.
   # The method will attempt to parse a date from the String
@@ -723,7 +723,7 @@ class Date
 
   # *NOTE* this is the documentation for the method new0().  If
   # you are reading this as the documentation for new(), that is
-  # because rdoc doesn't fully support the aliasing of the 
+  # because rdoc doesn't fully support the aliasing of the
   # initialize() method.
   # new() is in
   # fact an alias for #civil(): read the documentation for that
@@ -731,9 +731,9 @@ class Date
   #
   # Create a new Date object.
   #
-  # +ajd+ is the Astronomical Julian Day Number. 
+  # +ajd+ is the Astronomical Julian Day Number.
   # +of+ is the offset from UTC as a fraction of a day.
-  # Both default to 0. 
+  # Both default to 0.
   #
   # +sg+ specifies the Day of Calendar Reform to use for this
   # Date object.
@@ -817,13 +817,7 @@ class Date
 
   private :hour, :min, :sec, :sec_fraction
 
-  def zone
-    ['Z',
-      format('%+.2d%02d',
-	     (@of     / (1.to_r/24)).to_i,
-	     (@of.abs % (1.to_r/24) / (1.to_r/1440)).to_i)
-    ][@of<=>0]
-  end
+  def zone() strftime('%Z') end
 
   private :zone
 
@@ -921,7 +915,7 @@ class Date
 
   # Compare this date with another date.
   #
-  # +other+ can also be a Numeric value, in which case it is 
+  # +other+ can also be a Numeric value, in which case it is
   # interpreted as an Astronomical Julian Day Number.
   #
   # Comparison is by Astronomical Julian Day Number, including
@@ -975,7 +969,7 @@ class Date
   def << (n) self >> -n end
 
   # Step the current date forward +step+ days at a
-  # time (or backward, if +step+ is negative) until 
+  # time (or backward, if +step+ is negative) until
   # we reach +limit+ (inclusive), yielding the resultant
   # date at each step.
   def step(limit, step)  # :yield: date
@@ -991,13 +985,13 @@ class Date
   # Step forward one day at a time until we reach +max+
   # (inclusive), yielding each date as we go.
   def upto(max, &block)  # :yield: date
-      step(max, +1, &block) 
-  end 
+      step(max, +1, &block)
+  end
 
   # Step backward one day at a time until we reach +min+
   # (inclusive), yielding each date as we go.
   def downto(min, &block) # :yield: date
-      step(min, -1, &block) 
+      step(min, -1, &block)
   end
 
   # Return a new Date one day after this one.
@@ -1057,7 +1051,7 @@ end
 #
 # Get the hour-of-the-day of the time.  This is given
 # using the 24-hour clock, counting from midnight.  The first
-# hour after midnight is hour 0; the last hour of the day is 
+# hour after midnight is hour 0; the last hour of the day is
 # hour 23.
 #
 # === min()
@@ -1165,7 +1159,7 @@ class DateTime < Date
   # +of+ is the offset from UTC as a fraction of a day (defaults to 0).
   # +sg+ specifies the Day of Calendar Reform.
   #
-  # +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is Julian Day 
+  # +y+ defaults to -4712, +m+ to 1, and +d+ to 1; this is Julian Day
   # Number day 0.  The time values default to 0.
   def self.civil(y=-4712, m=1, d=1, h=0, min=0, s=0, of=0, sg=ITALY)
     unless (jd = valid_civil?(y, m, d, sg)) and
@@ -1221,7 +1215,7 @@ class DateTime < Date
   # according to a specified format.
   #
   # +str+ is a String holding a date-time representation.
-  # +fmt+ is the format that the date-time is in.  See 
+  # +fmt+ is the format that the date-time is in.  See
   # date/format.rb for details on supported formats.
   #
   # The default +str+ is '-4712-01-01T00:00:00Z', and the default
@@ -1239,7 +1233,7 @@ class DateTime < Date
   # Create a new DateTime object by parsing from a String,
   # without specifying the format.
   #
-  # +str+ is a String holding a date-time representation.  
+  # +str+ is a String holding a date-time representation. 
   # +comp+ specifies whether to interpret 2-digit years
   # as 19XX (>= 69) or 20XX (< 69); the default is not to.
   # The method will attempt to parse a date-time from the String
@@ -1266,9 +1260,7 @@ class DateTime < Date
     a = i.to_a[0..5].reverse
     jd = civil_to_jd(*(a[0,3] << sg))
     fr = time_to_day_fraction(*(a[3,3])) + i.usec.to_r/86400000000
-    d = Time.gm(*i.to_a).to_i - i.to_i
-    d += d / d.abs if d.nonzero?
-    of = (d / 60).to_r/1440
+    of = i.utc_offset.to_r/86400
     new0(jd_to_ajd(jd, fr, of), of, sg)
   end
 
