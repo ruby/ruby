@@ -84,7 +84,7 @@
 #define MBCTYPE_SJIS 2
 #define MBCTYPE_UTF8 3
 
-#if defined IMPORT
+#if defined IMPORT || defined USEIMPORTLIB
 extern __declspec(dllimport)
 #elif defined EXPORT
 extern __declspec(dllexport)

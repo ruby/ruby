@@ -1,3 +1,7 @@
+Fri Jun  9 01:05:55 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* regex.h: export re_mbctab properly on cygwin.
+
 Tue Jun  6 03:29:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* bignum.c (bigdivmod): modulo by small numbers was wrong.
