@@ -9,6 +9,7 @@ File.makedirs(File.dirname(rbconfig_rb), true)
 version = RUBY_VERSION
 rbconfig_rb_tmp = rbconfig_rb + '.tmp'
 config = open(rbconfig_rb_tmp, "w")
+$orgout = $stdout.dup
 $stdout.reopen(config)
 
 fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
@@ -111,6 +112,8 @@ print <<EOS
   end
 end
 EOS
+$stdout.flush
+$stdout.reopen($orgout)
 config.close
 File.rename(rbconfig_rb_tmp, rbconfig_rb)
 

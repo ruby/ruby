@@ -1,3 +1,7 @@
+Wed Mar 20 22:16:25 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* mkconfig.rb: close duplicated $stdout before renaming rbconfig.rb.
+
 Wed Mar 20 21:54:17 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* win32/Makefile.sub: made variables configurable.
