@@ -1,3 +1,12 @@
+Fri Jul  6 15:11:38 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/tempfile.rb: merge from 1.7: do not delete a used tempfile
+	  from children processes.
+
+	* lib/tempfile.rb: merge from 1.7: do not change the umask so as
+	  not to affect other threads' file creation.  specify a file mode
+	  (0600) when creating a tempfile instead.
+
 Fri Jul  6 00:49:05 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/readline/readline.c (readline_event): merge from 1.7: a
