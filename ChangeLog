@@ -1,3 +1,8 @@
+Thu Jul 31 23:02:47 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/etc/etc.c: revert getenv()'s prototype. use it only when _WIN32
+	  is not defined.
+
 Thu Jul 31 15:25:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* array.c (rb_ary_collect): must get length of array for each
