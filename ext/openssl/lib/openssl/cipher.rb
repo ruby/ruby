@@ -20,7 +20,7 @@
 
 module OpenSSL
   module Cipher
-    %w(AES Cast5 BF DES Idea RC2 RC4 RC5).each{|cipher|
+    %w(AES CAST5 BF DES IDEA RC2 RC4 RC5).each{|cipher|
       eval(<<-EOD)
         class #{cipher} < Cipher
           def initialize(*args)

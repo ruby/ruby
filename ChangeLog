@@ -1,3 +1,28 @@
+Wed Mar  9 19:42:21 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c: OpenSSL::SSL::SSLContexts suports callbacks:
+	  - SSLContext#client_cert_cb is a Proc. it is called when a client
+	    certificate is requested by a server and no certificate was yet
+	    set for the SSLContext. it must return an Array which includes
+	    OpenSSL::X509::Certificate and OpenSSL::PKey::RSA/DSA objects.
+	  - SSLContext#tmp_dh_callback is called in key exchange with DH
+	    algorithm. it must return an OpenSSL::PKey::DH object.
+
+	* ext/openssl/ossl_ssl.c: 
+	  (ossl_sslctx_set_ciphers): ignore the argument if it's nil.
+	  (ossl_start_ssl, ossl_ssl_write): call rb_sys_fail if errno isn't 0.
+	  [ruby-dev:25831]
+
+	* ext/openssl/ossl_pkey.c
+	  (GetPrivPKeyPtr, ossl_pkey_sign): should call rb_funcall first.
+	  (DupPrivPKeyPtr): new function.
+
+	* ext/openssl/ossl_pkey_dh.c: add default DH parameters.
+
+	* ext/openssl/ossl_pkey.h: ditto.
+
+	* ext/openssl/lib/openssl/cipher.rb: fix typo. [ruby-dev:24285]
+
 Wed Mar  9 18:09:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (gettable_gen): warns if VCALL name is used as

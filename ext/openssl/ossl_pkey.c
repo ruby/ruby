@@ -96,10 +96,21 @@ GetPrivPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 	
-    SafeGetPKey(obj, pkey);
-    if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) { /* returns Qtrue */
+    if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
+    SafeGetPKey(obj, pkey);
+
+    return pkey;
+}
+
+EVP_PKEY *
+DupPKeyPtr(VALUE obj)
+{
+    EVP_PKEY *pkey;
+	
+    SafeGetPKey(obj, pkey);
+    CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
 
     return pkey;
 }
@@ -109,10 +120,10 @@ DupPrivPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 	
-    SafeGetPKey(obj, pkey);
-    if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) { /* returns Qtrue */
+    if (rb_funcall(obj, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
+    SafeGetPKey(obj, pkey);
     CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
 
     return pkey;
@@ -152,10 +163,10 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     int buf_len;
     VALUE str;
 
-    GetPKey(self, pkey);
     if (rb_funcall(self, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
+    GetPKey(self, pkey);
     EVP_SignInit(&ctx, GetDigestPtr(digest));
     StringValue(data);
     EVP_SignUpdate(&ctx, RSTRING(data)->ptr, RSTRING(data)->len);

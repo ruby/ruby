@@ -155,6 +155,43 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     }
   end
 
+  def test_client_auth
+    vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
+    start_server(PORT, vflag, true){|s, p|
+      assert_raises(OpenSSL::SSL::SSLError){
+        sock = TCPSocket.new("127.0.0.1", p)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock)
+        ssl.connect
+      }
+
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.key = @cli_key
+      ctx.cert = @cli_cert
+      sock = TCPSocket.new("127.0.0.1", p)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      ssl.sync_close = true
+      ssl.connect
+      ssl.puts("foo")
+      assert_equal("foo\n", ssl.gets)
+      ssl.close
+
+      called = nil
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.client_cert_cb = Proc.new{|ssl|
+        called = true
+        [@cli_cert, @cli_key]
+      }
+      sock = TCPSocket.new("127.0.0.1", p)
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      ssl.sync_close = true
+      ssl.connect
+      assert(called)
+      ssl.puts("foo")
+      assert_equal("foo\n", ssl.gets)
+      ssl.close
+    }
+  end
+
   def test_starttls
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|s, p|
       sock = TCPSocket.new("127.0.0.1", p)
