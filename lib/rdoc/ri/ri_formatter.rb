@@ -166,8 +166,12 @@ module RI
 
       when SM::Flow::H
         display_heading(conv_html(item.text.join), item.level, @indent)
+
+      when SM::Flow::RULE
+        draw_line
+
       else
-        fail "Unknown flow element: #{item.class}"
+        fail "xxUnknown flow element: #{item.class}"
       end
     end
 
