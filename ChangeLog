@@ -1,3 +1,8 @@
+Tue Feb 24 06:32:27 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_aliases): Handle
+	  aliases in C files.
+
 Tue Feb 24 06:16:22 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb (RDoc::RDoc::document): Now create op dir _before_
