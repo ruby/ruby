@@ -1,3 +1,10 @@
+Tue Apr 13 23:06:30 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/rinda.rb: change pattern matching. 
+	  a === b -> a == b || a === b. [druby-ja:98]
+
+	* test/rinda/test_rinda.rb: ditto.
+
 Tue Apr 13 19:54:29 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: should not overwrite HTTP request header.

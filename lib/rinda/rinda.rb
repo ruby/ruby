@@ -105,7 +105,9 @@ module Rinda
           return false
         end
 	next if v.nil?
-	return false unless (v === it)
+        next if v == it
+        next if v === it
+	return false
       end
       return true
     end

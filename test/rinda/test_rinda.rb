@@ -26,11 +26,12 @@ module TupleSpaceTestModule
     assert(tmpl.match(['Rinda', 2, :hello]))
     assert(!tmpl.match(['Rinda', 2, Symbol]))
     assert(!tmpl.match([1, 2, :hello]))
+    assert(tmpl.match([/^rinda/i, nil, :hello]))
 
     tmpl = Rinda::Template.new([Symbol])
     assert_equal(1, tmpl.size)
     assert(tmpl.match([:hello]))
-    assert(!tmpl.match([Symbol]))
+    assert(tmpl.match([Symbol]))
     assert(!tmpl.match(['Symbol']))
 
     tmpl = Rinda::Template.new({"message"=>String, "name"=>String})
