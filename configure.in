@@ -1062,7 +1062,7 @@ case "$target_os" in
 	    CCDLFLAGS=-DUSEIMPORTLIB ;;
 	mingw*)
 	    AC_LIBOBJ([win32])
-	    CFLAGS="-DNT -D__MSVCRT__ $CFLAGS"
+	    CFLAGS="-DNT -D__NO_ISOCEXT $CFLAGS"
 	    CCDLFLAGS=-DIMPORT ;;
 	esac
 	;;
