@@ -1102,10 +1102,10 @@ Init_process()
     rb_define_module_function(rb_mProcess, "wait2", proc_wait2, 0);
     rb_define_module_function(rb_mProcess, "waitpid", proc_waitpid, -1);
     rb_define_module_function(rb_mProcess, "waitpid2", proc_waitpid2, -1);
+#endif /* ifndef NT */
 
     rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
     rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);
-#endif /* ifndef NT */
 
     rb_define_module_function(rb_mProcess, "getpgrp", proc_getpgrp, -1);
     rb_define_module_function(rb_mProcess, "setpgrp", proc_setpgrp, -1);

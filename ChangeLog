@@ -1,3 +1,8 @@
+Fri Nov 23 03:13:49 2001  Usaku Nakamura  <usa@ruby-lang.org>
+
+	* process.c (Init_process): enable getpid and getppid on NT.
+	  (ruby-bugs-ja:PR#152)
+
 Thu Nov 22 00:28:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (str_extend): should check nesting parentheses in #{}.
