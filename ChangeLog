@@ -1,3 +1,9 @@
+Mon Nov  4 04:04:32 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/getopts.rb: Do not choke on characters that cannot be used
+	  in a variable name.  Replace them with `_'.  Define a hash named
+	  $OPT for convenience.
+
 Thu Oct 31 09:31:51 2002  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (rb_export_method): undef'ed method visibility should not
