@@ -86,4 +86,9 @@ class TestProc < Test::Unit::TestCase
     b = lambda {}
     assert_not_equal(a, b)
   end
+
+  def test_block_par
+    assert_equal(10, Proc.new{|&b| b.call(10)}.call {|x| x})
+    assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})
+  end
 end

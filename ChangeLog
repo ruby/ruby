@@ -1,3 +1,10 @@
+Tue May 25 11:54:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_yield_0, proc_invoke, proc_arity): allow passing a block
+	  to a Proc.  [ruby-dev:23533]
+
+	* parse.y (block_par, block_var): ditto.
+
 Tue May 25 01:50:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.c (ossl_i2d_ASN1_TYPE, ossl_ASN1_TYPE_free):
