@@ -595,7 +595,7 @@ get_eval_string_core(obj, enc_flag, self)
 	    if (rb_respond_to(self, ID_install_cmd)) {
 		return rb_funcall(self, ID_install_cmd, 1, obj);
 	    } else {
-		return tk_install_cmd(obj);
+		return tk_install_cmd_core(obj);
 	    }
 	}
 
