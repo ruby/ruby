@@ -1,3 +1,8 @@
+Sun Sep 15 21:14:22 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* win32/win32.c (rb_w32_opendir): Corresponds to the unjust path containing ".
+	                (rb_w32_stat) : ditto.
+
 Sun Sep 15 19:48:55 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (OUTFLAG, CPPOUTFILE): moved from lib/mkmf.rb.

@@ -1150,14 +1150,14 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 DIR *
 rb_w32_opendir(const char *filename)
 {
-    DIR            *p;
-    long            len;
-    long            idx;
-    char            scannamespc[PATHLEN];
-    char	   *scanname = scannamespc;
-    struct stat	    sbuf;
-    WIN32_FIND_DATA FindData;
-    HANDLE          fh;
+    DIR               *p;
+    long               len;
+    long               idx;
+    char               scannamespc[PATHLEN];
+    char	      *scanname = scannamespc;
+    struct stat	       sbuf;
+    struct _finddata_t fd;
+    long               fh;
 
     //
     // check to see if we've got a directory
@@ -1165,10 +1165,11 @@ rb_w32_opendir(const char *filename)
 
     if ((rb_w32_stat (filename, &sbuf) < 0 ||
 #ifdef __BORLANDC__
-	(unsigned short)(sbuf.st_mode) & _S_IFDIR == 0) &&
+	 (unsigned short)(sbuf.st_mode)
 #else
-	sbuf.st_mode & _S_IFDIR == 0) &&
+	 sbuf.st_mode
 #endif
+	 & _S_IFDIR == 0) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
 	return NULL;
@@ -1197,8 +1198,8 @@ rb_w32_opendir(const char *filename)
     // do the FindFirstFile call
     //
 
-    fh = FindFirstFile (scanname, &FindData);
-    if (fh == INVALID_HANDLE_VALUE) {
+    fh = _findfirst(scanname, &fd);
+    if (fh == -1) {
 	return NULL;
     }
 
@@ -1207,9 +1208,9 @@ rb_w32_opendir(const char *filename)
     // filenames that we find.
     //
 
-    idx = strlen(FindData.cFileName)+1;
+    idx = strlen(fd.name)+1;
     p->start = ALLOC_N(char, idx);
-    strcpy (p->start, FindData.cFileName);
+    strcpy(p->start, fd.name);
     p->nfiles++;
     
     //
@@ -1218,8 +1219,8 @@ rb_w32_opendir(const char *filename)
     // the variable idx should point one past the null terminator
     // of the previous string found.
     //
-    while (FindNextFile(fh, &FindData)) {
-	len = strlen (FindData.cFileName);
+    while (_findnext(fh, &fd) == 0) {
+	len = strlen(fd.name);
 
 	//
 	// bump the string table size by enough for the
@@ -1232,11 +1233,11 @@ rb_w32_opendir(const char *filename)
 	if (p->start == NULL) {
             rb_fatal ("opendir: malloc failed!\n");
 	}
-	strcpy(&p->start[idx], FindData.cFileName);
+	strcpy(&p->start[idx], fd.name);
 	p->nfiles++;
 	idx += len+1;
     }
-    FindClose(fh);
+    _findclose(fh);
     p->size = idx;
     p->curr = p->start;
     return p;
@@ -2517,6 +2518,12 @@ rb_w32_stat(const char *path, struct stat *st)
     *s = '\0';
     len = strlen(buf1);
     p = CharPrev(buf1, buf1 + len);
+    if( '\"' == *(--s) )
+    {
+	errno = EBADF;
+	return -1;
+    }
+
     if (isUNCRoot(buf1)) {
 	if (*p != '\\')
 	    strcat(buf1, "\\");
