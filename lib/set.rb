@@ -13,12 +13,12 @@
 #
 # == Overview 
 # 
-# This library provides the Set class that deals with a collection of
-# unordered values with no duplicates.  It is a hybrid of Array's
-# intuitive inter-operation facilities and Hash's fast lookup.
+# This library provides the Set class, which deals with a collection
+# of unordered values with no duplicates.  It is a hybrid of Array's
+# intuitive inter-operation facilities and Hash's fast lookup.  If you
+# need to keep values ordered, use the SortedSet class.
 #
-# It also provides the SortedSet class which keeps the elements sorted,
-# and adds the method +to_set+ to Enumerable.
+# The method +to_set+ is added to Enumerable for convenience.
 #
 # See the Set class for an example of usage.
 
@@ -625,7 +625,6 @@ end
 __END__
 
 require 'test/unit'
-require 'test/unit/ui/console/testrunner'
 
 class TC_Set < Test::Unit::TestCase
   def test_aref
