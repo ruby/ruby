@@ -787,10 +787,10 @@ test_ok($x.has_value?(4))
 test_ok($x.values_at(2,3) == [4,6])
 test_ok($x == {1=>2, 2=>4, 3=>6})
 
-$z = $y.keys.join(":")
+$z = $y.keys.sort.join(":")
 test_ok($z == "1:2:3")
 
-$z = $y.values.join(":")
+$z = $y.values.sort.join(":")
 test_ok($z == "2:4:6")
 test_ok($x == $y)
 

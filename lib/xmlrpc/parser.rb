@@ -51,7 +51,7 @@ end # module NQXML
 
 module XMLRPC
 
-  class FaultException < Exception
+  class FaultException < StandardError
     attr_reader :faultCode, :faultString
 
     def initialize(faultCode, faultString)

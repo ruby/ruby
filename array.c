@@ -334,9 +334,6 @@ rb_ary_s_create(argc, argv, klass)
 {
     VALUE ary = ary_alloc(klass);
 
-    if (argc < 0) {
-	rb_raise(rb_eArgError, "negative number of arguments");
-    }
     if (argc > 0) {
 	RARRAY(ary)->ptr = ALLOC_N(VALUE, argc);
 	MEMCPY(RARRAY(ary)->ptr, argv, VALUE, argc);
@@ -552,9 +549,6 @@ rb_ary_unshift_m(argc, argv, ary)
 {
     long len = RARRAY(ary)->len;
 
-    if (argc < 0) {
-	rb_raise(rb_eArgError, "negative number of arguments");
-    }
     if (argc == 0) return ary;
 
     /* make rooms by setting the last item */

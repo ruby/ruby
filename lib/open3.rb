@@ -35,7 +35,7 @@ module Open3
 
 	exec(*cmd)
       }
-      exit!
+      exit!(0)
     }
 
     pw[0].close
