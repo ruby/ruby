@@ -4421,10 +4421,13 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 			    rb_eval(recv, opt);
 			}
 			if (node->nd_rest >= 0) {
+			    VALUE v;
+
 			    if (argc > 0)
-				local_vars[node->nd_rest]=rb_ary_new4(argc,argv);
+				v = rb_ary_new4(argc,argv);
 			    else
-				local_vars[node->nd_rest]=rb_ary_new2(0);
+				v = rb_ary_new2(0);
+			    local_vars[node->nd_rest] = v;
 			}
 		    }
 		}
