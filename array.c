@@ -1774,7 +1774,7 @@ rb_ary_select(argc, argv, ary)
     long i;
 
     if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number arguments (%d for 0)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     result = rb_ary_new2(RARRAY(ary)->len);
     for (i = 0; i < RARRAY(ary)->len; i++) {

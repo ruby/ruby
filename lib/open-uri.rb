@@ -501,7 +501,7 @@ module URI
       if proxy_uri
         proxy_uri = URI.parse(proxy_uri)
         unless URI::HTTP === proxy_uri
-          raise "Non-http proxy URI: #{proxy_uri}"
+          raise "Non-HTTP proxy URI: #{proxy_uri}"
         end
         name = 'no_proxy'
         if no_proxy = ENV[name] || ENV[name.upcase]

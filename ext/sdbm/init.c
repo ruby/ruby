@@ -227,7 +227,7 @@ fsdbm_select(argc, argv, obj)
         struct dbmdata *dbmp;
 
 	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
 	}
         GetDBM(obj, dbmp);
         dbm = dbmp->di_dbm;

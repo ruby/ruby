@@ -2116,7 +2116,7 @@ rb_file_s_umask(argc, argv)
 	omask = umask(NUM2INT(argv[0]));
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of argument");
+	rb_raise(rb_eArgError, "wrong number of arguments");
     }
     return INT2FIX(omask);
 }
@@ -2996,7 +2996,7 @@ test_check(n, argc, argv)
     int i;
 
     n+=1;
-    if (n != argc) rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)", argc, n);
+    if (n != argc) rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, n);
     for (i=1; i<n; i++) {
 	switch (TYPE(argv[i])) {
 	  case T_STRING:

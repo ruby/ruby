@@ -1816,7 +1816,7 @@ time_mdump(time)
     tm = gmtime(&t);
 
     if ((tm->tm_year & 0x1ffff) != tm->tm_year)
-	rb_raise(rb_eArgError, "too big year to marshal");
+	rb_raise(rb_eArgError, "year too big to marshal");
 
     p = 0x1          << 31 | /*  1 */
 	tm->tm_year  << 14 | /* 17 */

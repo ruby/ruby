@@ -557,7 +557,7 @@ class CSV
   private
 
     def initialize(dev)
-      raise RuntimeError.new('do not instanciate this class directly')
+      raise RuntimeError.new('do not instantiate this class directly')
     end
 
     def get_row(row)
@@ -709,7 +709,7 @@ class CSV
   private
 
     def initialize(dev)
-      raise RuntimeError.new('do not instanciate this class directly')
+      raise RuntimeError.new('do not instantiate this class directly')
     end
 
     def terminate
@@ -801,7 +801,7 @@ class CSV
   #     end
   #   end
   #
-  class StreamBuf       # pure virtual. (do not instanciate it directly)
+  class StreamBuf       # pure virtual. (do not instantiate it directly)
 
     # get a char or a partial string from the stream.
     # idx: index of a string to specify a start point of a string to get.
@@ -893,7 +893,7 @@ class CSV
       return idx_is_eos?(0)
     end
 
-    # WARN: Do not instanciate this class directly.  Define your own class
+    # WARN: Do not instantiate this class directly.  Define your own class
     # which derives this class and define 'read' instance method.
     def initialize
       @buf_list = []

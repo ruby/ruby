@@ -3639,7 +3639,7 @@ rb_eval(self, n)
 
       case NODE_ATTRSET:
 	if (ruby_frame->argc != 1)
-	    rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)",
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)",
 		     ruby_frame->argc);
 	result = rb_ivar_set(self, node->nd_vid, ruby_frame->argv[0]);
 	break;
@@ -4853,7 +4853,7 @@ massign(self, node, val, pcall)
     }
     if (pcall && list) goto arg_error;
     if (node->nd_args) {
-	if (node->nd_args == (NODE*)-1) {
+	if ((long)(node->nd_args) == -1) {
 	    /* no check for mere `*' */
 	}
 	else if (!list && i<len) {
@@ -5333,7 +5333,7 @@ call_cfunc(func, recv, len, argc, argv)
     VALUE *argv;
 {
     if (len >= 0 && argc != len) {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 		 argc, len);
     }
 
@@ -5484,7 +5484,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	/* for attr get/set */
       case NODE_IVAR:
 	if (argc != 0) {
-	    rb_raise(rb_eArgError, "wrong number of arguments(%d for 0)", argc);
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
 	}
 	result = rb_attr_get(recv, body->nd_vid);
 	break;
@@ -5547,10 +5547,10 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
 		    i = node->nd_cnt;
 		    if (i > argc) {
-			rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
+			rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 				 argc, i);
 		    }
-		    if ((int)node->nd_rest == -1) {
+		    if ((long)node->nd_rest == -1) {
 			int opt = i;
 			NODE *optnode = node->nd_opt;
 
@@ -5559,7 +5559,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 			    optnode = optnode->nd_next;
 			}
 			if (opt < argc) {
-			    rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
+			    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
 				     argc, opt);
 			}
 			ruby_frame->argc = opt;
@@ -5585,7 +5585,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 			    }
 			}
 			local_vars = ruby_scope->local_vars;
-			if ((int)node->nd_rest >= 0) {
+			if ((long)node->nd_rest >= 0) {
 			    VALUE v;
 
 			    if (argc > 0)
@@ -7196,7 +7196,7 @@ rb_obj_extend(argc, argv, obj)
     int i;
 
     if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments(0 for 1)");
+	rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
     }
     for (i=0; i<argc; i++) Check_Type(argv[i], T_MODULE);
     while (argc--) {
@@ -9096,7 +9096,7 @@ rb_mod_define_method(argc, argv, mod)
 	}
     }
     else {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
     }
     if (RDATA(body)->dmark == (RUBY_DATA_FUNC)bm_mark) {
 	struct METHOD *method = (struct METHOD *)DATA_PTR(body);

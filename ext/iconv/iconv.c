@@ -601,7 +601,7 @@ iconv_s_iconv
     struct iconv_env_t arg;
 
     if (argc < 2)		/* needs `to' and `from' arguments at least */
-	rb_raise(rb_eArgError, "wrong # of arguments (%d for %d)", argc, 2);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, 2);
 
     arg.argc = argc -= 2;
     arg.argv = argv + 2;

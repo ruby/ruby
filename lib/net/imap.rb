@@ -859,7 +859,7 @@ module Net # :nodoc:
     #                       firewall.
     # Errno::ETIMEDOUT:: connection timed out (possibly due to packets
     #                    being dropped by an intervening firewall).
-    # Errno::NETUNREACH:: there is no route to that network.
+    # Errno::ENETUNREACH:: there is no route to that network.
     # SocketError:: hostname not known or other socket error.
     # Net::IMAP::ByeResponseError:: we connected to the host, but they 
     #                               immediately said goodbye to us.

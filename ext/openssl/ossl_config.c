@@ -147,7 +147,7 @@ ossl_config_initialize(int argc, VALUE *argv, VALUE self)
         }
     }
 #ifdef OSSL_NO_CONF_API
-    else rb_raise(rb_eArgError, "wrong number of arguments(0 for 1)");
+    else rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
 #else
     else _CONF_new_data(conf);
 #endif

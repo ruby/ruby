@@ -373,7 +373,7 @@ module Net # :nodoc:
     # Finishes the SMTP session and closes TCP connection.
     # Raises IOError if not started.
     def finish
-      raise IOError, 'not started yet' unless started?
+      raise IOError, 'not yet started' unless started?
       do_finish
     end
 
@@ -474,7 +474,7 @@ module Net # :nodoc:
 
     def send0( from_addr, to_addrs )
       raise IOError, 'closed session' unless @socket
-      raise ArgumentError, 'mail destination does not given' if to_addrs.empty?
+      raise ArgumentError, 'mail destination not given' if to_addrs.empty?
       if $SAFE > 0
         raise SecurityError, 'tainted from_addr' if from_addr.tainted?
         to_addrs.each do |to| 
@@ -501,7 +501,7 @@ module Net # :nodoc:
     private
 
     def check_auth_args( user, secret, authtype )
-      raise ArgumentError, 'both of user and secret are required'\
+      raise ArgumentError, 'both user and secret are required'\
                       unless user and secret
       auth_method = "auth_#{authtype || 'cram_md5'}"
       raise ArgumentError, "wrong auth type #{authtype}"\

@@ -467,7 +467,7 @@ module XMLRPC
         else
           # is a normal return value
           raise "Missing return value!" if parser.params.size == 0
-          raise "To many return values. Only one allowed!" if parser.params.size > 1
+          raise "Too many return values. Only one allowed!" if parser.params.size > 1
           [true, parser.params[0]]
         end
       end

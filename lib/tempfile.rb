@@ -9,7 +9,7 @@ require 'tmpdir'
 
 # A class for managing temporary files.  This library is written to be
 # thread safe.
-class Tempfile < SimpleDelegator
+class Tempfile < DelegateClass(File)
   MAX_TRY = 10
   @@cleanlist = []
 

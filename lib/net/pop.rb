@@ -293,7 +293,7 @@ module Net
     # This method must not be called while POP3 session is opened.
     # This method raises POPAuthenticationError if authentication fails.
     def auth_only(account, password)
-      raise IOError, 'opening already opened POP session' if started?
+      raise IOError, 'opening previously opened POP session' if started?
       start(account, password) {
         ;
       }
@@ -449,7 +449,7 @@ module Net
 
     # Finishes a POP3 session and closes TCP connection.
     def finish
-      raise IOError, 'POP session not started yet' unless started?
+      raise IOError, 'POP session not yet started' unless started?
       do_finish
     end
 

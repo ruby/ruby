@@ -111,6 +111,9 @@ def DelegateClass(superclass)
   def __getobj__
     @_dc_obj
   end
+  def __setobj__(obj)
+    @_dc_obj = obj
+  end
   return klass;
 end
 

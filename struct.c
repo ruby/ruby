@@ -734,7 +734,7 @@ rb_struct_select(argc, argv, s)
     long i;
 
     if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     result = rb_ary_new();
     for (i = 0; i < RSTRUCT(s)->len; i++) {

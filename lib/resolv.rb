@@ -1157,9 +1157,9 @@ class Resolv
           @limit = @index + len
           d = yield(len)
           if @index < @limit
-            raise DecodeError.new("junk exist")
+            raise DecodeError.new("junk exists")
           elsif @limit < @index
-            raise DecodeError.new("limit exceed")
+            raise DecodeError.new("limit exceeded")
           end
           @limit = save_limit
           return d
@@ -1185,7 +1185,7 @@ class Resolv
               raise StandardError.new("unsupported template: '#{byte.chr}' in '#{template}'")
             end
           }
-          raise DecodeError.new("limit exceed") if @limit < @index + len
+          raise DecodeError.new("limit exceeded") if @limit < @index + len
           arr = @data.unpack("@#{@index}#{template}")
           @index += len
           return arr
@@ -1193,7 +1193,7 @@ class Resolv
 
         def get_string
           len = @data[@index]
-          raise DecodeError.new("limit exceed") if @limit < @index + 1 + len
+          raise DecodeError.new("limit exceeded") if @limit < @index + 1 + len
           d = @data[@index + 1, len]
           @index += 1 + len
           return d
@@ -1554,7 +1554,7 @@ class Resolv
           raise ArgumentError.new("IPv4 address with invalid value: " + arg)
         end
       else
-        raise ArgumentError.new("cannot interprete as IPv4 address: #{arg.inspect}")
+        raise ArgumentError.new("cannot interpret as IPv4 address: #{arg.inspect}")
       end
     end
 
@@ -1662,7 +1662,7 @@ class Resolv
         end
         return IPv6.new(address)
       else
-        raise ArgumentError.new("cannot interprete as IPv6 address: #{arg.inspect}")
+        raise ArgumentError.new("cannot interpret as IPv6 address: #{arg.inspect}")
       end
     end
 

@@ -123,7 +123,7 @@ module Net
     # a Net::HTTP object raises IOError.
     def use_ssl=(flag)
       flag = (flag ? true : false)
-      raise IOError, "use_ssl value changed but session already started" \
+      raise IOError, "use_ssl value changed, but session already started" \
           if started? and @use_ssl != flag
       if flag and not @ssl_context
         @ssl_context = OpenSSL::SSL::SSLContext.new

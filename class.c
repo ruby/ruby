@@ -1017,7 +1017,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
     }
 
     if (argc > i) {
-	rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)", argc, i);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, i);
     }
 
     return argc;

@@ -286,7 +286,7 @@ rb_hash_s_create(argc, argv, klass)
     }
 
     if (argc % 2 != 0) {
-	rb_raise(rb_eArgError, "odd number args for Hash");
+	rb_raise(rb_eArgError, "odd number of arguments for Hash");
     }
 
     hash = hash_alloc(klass);
@@ -803,7 +803,7 @@ rb_hash_select(argc, argv, hash)
     VALUE result;
 
     if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     result = rb_ary_new();
     rb_hash_foreach(hash, select_i, result);
@@ -2019,7 +2019,7 @@ env_select(argc, argv)
     char **env;
 
     if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     result = rb_ary_new();
     env = GET_ENVIRON(environ);

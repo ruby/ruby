@@ -121,7 +121,7 @@ module Net # :nodoc:
   # 
   #     def fetch( uri_str, limit = 10 )
   #       # You should choose better exception. 
-  #       raise ArgumentError, 'http redirect too deep' if limit == 0
+  #       raise ArgumentError, 'HTTP redirect too deep' if limit == 0
   # 
   #       response = Net::HTTP.get_response(URI.parse(uri_str))
   #       case response
@@ -480,7 +480,7 @@ module Net # :nodoc:
     # Finishes HTTP session and closes TCP connection.
     # Raises IOError if not started.
     def finish
-      raise IOError, 'HTTP session not started yet' unless started?
+      raise IOError, 'HTTP session not yet started' unless started?
       do_finish
     end
 
@@ -2058,11 +2058,11 @@ e      @header.each_key(&block)
     end
 
     def stream_check
-      raise IOError, 'try to read body out of block' if @socket.closed?
+      raise IOError, 'attempt to read body out of block' if @socket.closed?
     end
 
     def procdest(dest, block)
-      raise ArgumentError, 'both of arg and block are given for HTTP method' \
+      raise ArgumentError, 'both arg and block given for HTTP method' \
           if dest and block
       if block
         ReadAdapter.new(block)

@@ -63,7 +63,7 @@ ossl_x509_ary2sk0(VALUE ary)
         val = rb_ary_entry(ary, i);
         if (!rb_obj_is_kind_of(val, cX509Cert)) {
             sk_X509_pop_free(sk, X509_free);
-            ossl_raise(eOSSLError, "object except X509 cert is in array"); 
+            ossl_raise(eOSSLError, "object not X509 cert in array"); 
         }
         x509 = DupX509CertPtr(val); /* NEED TO DUP */
         sk_X509_push(sk, x509);

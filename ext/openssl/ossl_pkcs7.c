@@ -358,7 +358,7 @@ ossl_pkcs7_set_detached(VALUE self, VALUE flag)
 
     GetPKCS7(self, p7);
     if(flag != Qtrue && flag != Qfalse)
-	ossl_raise(ePKCS7Error, "must secify a boolean");
+	ossl_raise(ePKCS7Error, "must specify a boolean");
     if(!PKCS7_set_detached(p7, flag == Qtrue ? 1 : 0))
 	ossl_raise(ePKCS7Error, NULL);
 

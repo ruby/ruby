@@ -108,7 +108,7 @@ sign_bits(base, p)
 	       (posarg = -1, GETNTHARG(n))))
 
 #define GETNTHARG(nth) \
-    ((nth >= argc) ? (rb_raise(rb_eArgError, "too few argument."), 0) : argv[nth])
+    ((nth >= argc) ? (rb_raise(rb_eArgError, "too few arguments."), 0) : argv[nth])
 
 #define GETASTER(val) do { \
     t = p++; \
@@ -716,7 +716,7 @@ rb_f_sprintf(argc, argv)
      *       the format string may contain `n$'-style argument selector.
      */
     if (RTEST(ruby_verbose) && nextarg < argc) {
-	rb_raise(rb_eArgError, "too many argument for format string");
+	rb_raise(rb_eArgError, "too many arguments for format string");
     }
 #endif
     rb_str_resize(result, blen);
