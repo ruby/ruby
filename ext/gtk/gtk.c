@@ -5983,6 +5983,7 @@ Init_gtk()
     }
     RARRAY(rb_argv)->len = argc-1;
 
+    id_call = rb_intern("call");
     id_gtkdata = rb_intern("gtkdata");
     id_relatives = rb_intern("relatives");
     id_init = rb_intern("initialize");
