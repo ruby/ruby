@@ -5679,10 +5679,18 @@ rb_mod_modfunc(argc, argv, module)
 
     set_method_visibility(module, argc, argv, NOEX_PRIVATE);
     for (i=0; i<argc; i++) {
+	VALUE m = module;
+
 	id = rb_to_id(argv[i]);
-	body = search_method(module, id, 0);
-	if (body == 0 || body->nd_body == 0) {
-	    rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
+	for (;;) {
+	    body = search_method(m, id, &m);
+	    if (body == 0 || body->nd_body == 0) {
+		rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
+	    }
+	    if (nd_type(body->nd_body) != NODE_ZSUPER) {
+		break;		/* normal case: need not to follow 'super' link */
+	    }
+	    m = RCLASS(m)->super;
 	}
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
 	rb_clear_cache_by_id(id);

@@ -860,8 +860,10 @@ rb_ary_to_s(ary)
     VALUE str, sep;
 
     if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
-    if (!NIL_P(rb_output_fs)) sep = rb_output_fs;
-    else sep = rb_default_rs;
+    sep = rb_output_fs;
+#if 1
+    if (NIL_P(rb_output_fs)) sep = rb_default_rs; /* newline */
+#endif
     str = rb_ary_join(ary, sep);
     return str;
 }

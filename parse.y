@@ -4028,19 +4028,16 @@ str_extend(list, term)
 		break;
 	      case '{':
 		if (brace != -1) nest++;
-	      case '\"':
-	      case '/':
-	      case '`':
+	      default:
 		if (c == term) {
 		    pushback(c);
 		    list_append(list, NEW_STR(rb_str_new2("#")));
-		    rb_warning("bad substitution in string");
+		    rb_warn("bad substitution in string");
 		    tokfix();
 		    list_append(list, NEW_STR(rb_str_new(tok(), toklen())));
 		    newtok();
 		    return list;
 		}
-	      default:
 		tokadd(c);
 		break;
 	    }

@@ -20,6 +20,11 @@
 #include "re.h"
 #include <stdio.h>
 #include <setjmp.h>
+#include <sys/types.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>

@@ -1,3 +1,16 @@
+Mon Nov 19 17:58:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_modfunc): should follow NODE_ZSUPER link; based
+	  on Guy Decoux's patch in [ruby-talk:25478].
+
+Mon Nov 19 16:09:33 2001  Tanaka Akira  <akr@m17n.org>
+
+	* string.c (rb_str_succ): there was buffer overrun.
+
+Mon Nov 19 14:14:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): term can be any character.
+
 Mon Nov 19 04:58:42 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb (header): support for Apache. thanks to
