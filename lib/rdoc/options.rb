@@ -1,6 +1,8 @@
 # We handle the parsing of options, and subsequently as a singleton
 # object to be queried for option values
 
+require "rdoc/ri/ri_paths"
+
 class Options
 
   require 'singleton'
@@ -177,6 +179,17 @@ class Options
 
       [ "--quiet",         "-q",   nil,
         "don't show progress as we parse" ],
+
+      [ "--ri",            "-r",   nil,
+       "generate output for use by 'ri.' The files are\n" +
+       "stored in the '.rdoc' directory under your home\n"+
+       "directory unless overridden by a subsequent\n" +
+       "--op parameter, so no special privileges are needed." ],
+
+      [ "--ri-site",       "-R",   nil,
+       "generate output for use by 'ri.' The files are\n" +
+       "stored in a site-wide directory, making them accessible\n"+
+       "to others, so special privileges are needed." ],
 
       [ "--show-hash",     "-H",   nil,
         "A name of the form #name in a comment\n" +
@@ -391,15 +404,7 @@ class Options
 
 	when "--fmt"
           @generator_name = arg.downcase
-	  @generator = generators[@generator_name]
-          if !@generator
-            OptionList.error("Invalid output formatter")
-          end
-
-          if @generator_name == "xml"
-            @all_one_file = true
-            @inline_source = true
-          end
+          setup_generator(generators)
 
         when "--help"      
           OptionList.usage(generators.keys)
@@ -416,6 +421,11 @@ class Options
 
         when "--include"   
           @rdoc_include.concat arg.split(/\s*,\s*/)
+
+        when "--ri", "--ri-site"
+          @generator_name = "ri"
+          @op_dir = opt == "--ri" ? RI::Paths::HOMEDIR : RI::Paths::SITEDIR
+          setup_generator(generators)
 
         when "--tab-width"
           begin
@@ -478,6 +488,19 @@ class Options
 
 
   private
+
+  # Set up an output generator for the format in @generator_name
+  def setup_generator(generators)
+    @generator = generators[@generator_name]
+    if !@generator
+      OptionList.error("Invalid output formatter")
+    end
+    
+    if @generator_name == "xml"
+      @all_one_file = true
+      @inline_source = true
+    end
+  end
 
   # Check that the right version of 'dot' is available.
   # Unfortuately this doesn't work correctly under Windows NT, 

@@ -84,6 +84,7 @@ bcc32/setup.mak
 bin/erb
 bin/irb
 bin/rdoc
+bin/ri
 bin/testrb
 cygwin/GNUmakefile.in
 djgpp/GNUmakefile.in
@@ -231,6 +232,7 @@ lib/rdoc/tokenstream.rb
 lib/rdoc/dot/dot.rb
 lib/rdoc/generators/chm_generator.rb
 lib/rdoc/generators/html_generator.rb
+lib/rdoc/generators/ri_generator.rb
 lib/rdoc/generators/xml_generator.rb
 lib/rdoc/generators/template/chm/chm.rb
 lib/rdoc/generators/template/html/css2.rb
@@ -246,6 +248,7 @@ lib/rdoc/markup/simple_markup/fragments.rb
 lib/rdoc/markup/simple_markup/inline.rb
 lib/rdoc/markup/simple_markup/lines.rb
 lib/rdoc/markup/simple_markup/preprocess.rb
+lib/rdoc/markup/simple_markup/to_flow.rb
 lib/rdoc/markup/simple_markup/to_html.rb
 lib/rdoc/markup/simple_markup/to_latex.rb
 lib/rdoc/markup/test/AllTests.rb
@@ -256,6 +259,13 @@ lib/rdoc/parsers/parse_f95.rb
 lib/rdoc/parsers/parse_rb.rb
 lib/rdoc/parsers/parse_simple.rb
 lib/rdoc/parsers/parserfactory.rb
+lib/rdoc/ri/ri_cache.rb
+lib/rdoc/ri/ri_descriptions.rb
+lib/rdoc/ri/ri_formatter.rb
+lib/rdoc/ri/ri_paths.rb
+lib/rdoc/ri/ri_reader.rb
+lib/rdoc/ri/ri_util.rb
+lib/rdoc/ri/ri_writer.rb
 lib/readbytes.rb
 lib/resolv-replace.rb
 lib/resolv.rb
