@@ -103,7 +103,7 @@ have_func("BN_mod_sub")
 have_func("BN_rand_range")
 have_func("BN_pseudo_rand_range")
 have_func("CONF_get1_default_config_file")
-if try_cpp("#define FOO(a, ...) foo(a, ##__VA_ARGS__)\n")
+if try_cpp("#define FOO(a, ...) foo(a, ##__VA_ARGS__)\n int x(){FOO(1,2);}\n")
   $defs.push("-DHAVE_VA_ARGS_MACRO")
 end
 have_header("openssl/ocsp.h")
