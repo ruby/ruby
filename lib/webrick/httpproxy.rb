@@ -206,6 +206,9 @@ module WEBrick
         res.set_error(ex)
         raise HTTPStatus::EOFError
       ensure
+        if handler = @config[:ProxyContentHandler]
+          handler.call(req, res)
+        end
         res.send_response(ua)
         access_log(@config, req, res)
       end

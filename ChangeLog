@@ -1,3 +1,8 @@
+Sun Aug 22 01:15:31 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#proxy_connect):
+	  should call :ProxyContentHandler before finishing CONNECT.
+
 Sat Aug 21 06:41:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tcltklib/extconf.rb (find_tcl, find_tk): find stub library.
@@ -39,7 +44,7 @@ Thu Aug 19 06:07:45 2004  why the lucky stiff  <why@ruby-lang.org>
 
 Wed Aug 18 23:41:33 2004  Minero Aoki  <aamine@loveruby.net>
 
-	* lib/net/protocol.rb (rbuf_fill): OpenSSL::SSLSocket has its own
+	* lib/net/protocol.rb (rbuf_fill): OpenSSL::SSL::SSLSocket has its own
 	  buffer, select(2) might not work. [ruby-dev:24072]
 
 Wed Aug 18 17:10:12 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
