@@ -92,8 +92,6 @@ CPPOUTFILE = CONFIG['CPPOUTFILE']
 
 CONFTEST_C = "conftest.c"
 
-$INSTALLFILES ||= nil
-
 class String
   def quote
     /\s/ =~ self ? "\"#{self}\"" : self
@@ -567,7 +565,7 @@ LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 CFLAGS   = #{CONFIG['CCDLFLAGS'] unless $static} #$CFLAGS
 CPPFLAGS = -I. -I$(topdir) -I$(hdrdir) -I$(srcdir) #{$defs.join(" ")} #{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
-DLDFLAGS = #$LDFLAGS #{CONFIG['DLDFLAGS']} #$DLDFLAGS
+DLDFLAGS = #{CONFIG['DLDFLAGS']} #$DLDFLAGS
 LDSHARED = #{CONFIG['LDSHARED']}
 AR = #{CONFIG['AR']}
 EXEEXT = #{CONFIG['EXEEXT']}
@@ -798,6 +796,7 @@ def init_mkmf(config = CONFIG)
   $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
   $LIBPATH = CROSS_COMPILING ? [] : ["$(libdir)"]
   $LIBPATH.unshift("$(topdir)") if $extmk
+  $INSTALLFILES = nil
 
   $objs = nil
   $libs = ""

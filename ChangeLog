@@ -1,3 +1,7 @@
+Fri Jul 18 18:44:22 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb (init_mkmf): clear $INSTALLFILES.  [ruby-dev:20727]
+
 Fri Jul 18 17:34:39 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb (rm_f): use FileUtils.
