@@ -297,7 +297,7 @@ VALUE rb_f_kill _((int, VALUE*));
 void rb_gc_mark_trap_list _((void));
 #ifdef POSIX_SIGNAL
 #define posix_signal ruby_posix_signal
-void posix_signal _((int, void (*)()));
+void posix_signal _((int, RETSIGTYPE (*)()));
 #endif
 void rb_trap_exit _((void));
 void rb_trap_exec _((void));

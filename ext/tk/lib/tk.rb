@@ -1,5 +1,5 @@
 #
-#		tk.rb - Tk interface modue using tcltklib
+#		tk.rb - Tk interface module using tcltklib
 #			$Date$
 #			by Yukihiro Matsumoto <matz@netlab.co.jp>
 

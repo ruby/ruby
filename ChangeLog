@@ -14,6 +14,23 @@ Thu Apr 26 22:36:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* configure.in: add -mieee/-ieee to CFLAGS on OSF1/Alpha
 	  to disable "DIVISION BY ZERO" exception.
 
+Thu Apr 26 22:30:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should preserve value of ruby_errinfo.
+
+Thu Apr 26 10:36:09 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): inifinite sleep should not cause
+	  dead lock.
+
+Wed Apr 25 16:40:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_flatten_bang): proper recursive detection.
+
+Wed Apr 25 15:36:15 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (yield_under): need not to prohibit at safe leve 4.
+
 Tue Apr 24 16:03:25 2001  Hiroshi Igarashi  <iga@ruby-lang.org>
 
 	* ext/extmk.rb.in: add target `distclean' in Makefile for extlib.
@@ -124,7 +141,7 @@ Wed Apr 11 13:29:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  itself, no longer use rb_iv_set() to avoid freeze check error.
 
 	* variable.c (rb_const_get): error message "uninitialized constant
-	  Foo at Bar::Baz" instead of "uninitialized constantBar::Baz::Foo".
+	  Foo at Bar::Baz" instead of "uninitialized constant Bar::Baz::Foo".
 
 Tue Apr 10 02:24:40 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

@@ -1584,35 +1584,54 @@ rb_ary_nitems(ary)
     return INT2NUM(n);
 }
 
+static int
+flatten(ary, idx, ary2, memo)
+    VALUE ary;
+    long idx;
+    VALUE ary2, memo;
+{
+    VALUE id;
+    long i = idx;
+    long n, lim = idx + RARRAY(ary2)->len;
+
+    id = rb_obj_id(ary2);
+    if (rb_ary_includes(memo, id)) {
+	rb_raise(rb_eArgError, "tried to flatten recursive array");
+    }
+    rb_ary_push(memo, id);
+    rb_ary_replace(ary, idx, 1, ary2);
+    while (i < lim) {
+	if (TYPE(RARRAY(ary)->ptr[i]) == T_ARRAY) {
+	    n = flatten(ary, i, RARRAY(ary)->ptr[i], memo);
+	    i += n; lim += n;
+	}
+	i++;
+    }
+    rb_ary_pop(memo);
+
+    return lim - idx - 1;	/* returns number of increased items */
+}
+
 static VALUE
 rb_ary_flatten_bang(ary)
     VALUE ary;
 {
-    long i;
+    long i = 0;
     int mod = 0;
-    VALUE flattening = Qnil;
+    VALUE memo = Qnil;
 
     rb_ary_modify(ary);
-    for (i=0; i<RARRAY(ary)->len; i++) {
+    while (i<RARRAY(ary)->len) {
 	VALUE ary2 = RARRAY(ary)->ptr[i];
-	if (TYPE(ary2) == T_ARRAY) {
-	    if (ary == ary2) {
-		ary2 = Qnil;
-	    } else {
-		VALUE id;
 
-		if (NIL_P(flattening)) {
-		    flattening = rb_ary_new();
-		}
-		id = rb_obj_id(ary2);
-		if (rb_ary_includes(flattening, id)) {
-		    rb_raise(rb_eArgError, "tried to flatten recursive array");
-		}
-		rb_ary_push(flattening, id);
+	if (TYPE(ary2) == T_ARRAY) {
+	    if (NIL_P(memo)) {
+		memo = rb_ary_new();
 	    }
-	    rb_ary_replace(ary, i--, 1, ary2);
+	    i += flatten(ary, i, ary2, memo);
 	    mod = 1;
 	}
+	i++;
     }
     if (mod == 0) return Qnil;
     return ary;

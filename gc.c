@@ -1151,7 +1151,7 @@ rm_final(os, proc)
 static VALUE
 finals()
 {
-    rb_warn("ObjectSpace::finals is deprecated");
+    rb_warn("ObjectSpace::finalizers is deprecated");
     return finalizers;
 }
 

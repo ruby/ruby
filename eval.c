@@ -2371,9 +2371,11 @@ rb_eval(self, n)
 	POP_TAG();
 	if (node->nd_ensr) {
 	    VALUE retval = prot_tag->retval; /* save retval */
+	    VALUE errinfo = ruby_errinfo;
 
 	    rb_eval(self, node->nd_ensr);
 	    return_value(retval);
+	    ruby_errinfo = errinfo;
 	}
 	if (state) JUMP_TAG(state);
 	break;
@@ -5015,8 +5017,6 @@ static VALUE
 yield_under(under, self)
     VALUE under, self;
 {
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(self))
-	rb_raise(rb_eSecurityError, "Insecure: can't eval");
     return exec_under(yield_under_i, under, self);
 }
 
@@ -7412,6 +7412,9 @@ rb_thread_schedule()
 		found = 1;
 	    } else if (th_delay < delay) {
 		delay = th_delay;
+		need_select = 1;
+	    }
+	    if (th->delay == DELAY_INFTY) {
 		need_select = 1;
 	    }
 	}

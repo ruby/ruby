@@ -41,7 +41,7 @@ class PStore
 
   def [](name)
     in_transaction
-    if @table.key? name
+    unless @table.key? name
       raise PStore::Error, format("undefined root name `%s'", name)
     end
     @table[name]
