@@ -1,3 +1,8 @@
+Wed Oct  1 17:01:30 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_load): Object scope had priority over required file
+	  scope.  [ruby-dev:21415]
+
 Wed Oct 01 14:09:53 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
 
 	* wince/mkconfig_wce.rb: sorry, forget to commit.

@@ -5758,7 +5758,6 @@ rb_load(fname, wrap)
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = self;
-    PUSH_CREF(ruby_class);
     PUSH_SCOPE();
     /* default visibility is private at loading toplevel */
     SCOPE_SET(SCOPE_PRIVATE);
