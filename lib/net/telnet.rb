@@ -1,94 +1,98 @@
-# = net/telnet.rb - simple telnet client library
+# = net/telnet.rb - Simple Telnet Client Library
 # 
-# Wakou Aoyama <wakou@ruby-lang.org>
-#
-# == Overview
+# Author:: Wakou Aoyama <wakou@ruby-lang.org>
+# Documentation:: William Webber and Wakou Aoyama 
 #
 # This file holds the class Net::Telnet, which provides client-side
 # telnet functionality.
 #
-# The telnet protocol allows a client to login remotely to a user
-# account on a server and execute commands via a shell.  The equivalent
-# is done by creating a Net::Telnet class with the Host option
-# set to your host, calling #login() with your user and password,
-# issuing one or more #cmd() calls, and then calling #close()
-# to end the session.  The #waitfor(), #print(), #puts(), and
-# #write() methods, which #cmd() is implemented on top of, are
-# only needed if you are doing something more complicated.
+# For documentation, see Net::Telnet.
 #
-# A Net::Telnet object can also be used to connect to non-telnet
-# services, such as SMTP or HTTP.  In this case, you normally
-# want to provide the Port option to specify the port to
-# connect to, and set the Telnetmode option to false to prevent
-# the client from attempting to interpret telnet command sequences.
-# Generally, #login() will not work with other protocols, and you
-# have to handle authentication yourself.
-# For some protocols, it will be possible to specify the Prompt
-# option once when you create the Telnet object and use #cmd() calls; 
-# for others, you will have to specify the response sequence to
-# look for as the Match option to every #cmd() call, or call
-# #puts() and #waitfor() directly; for yet others, you will have 
-# to use #sysread() instead of #waitfor() and parse server 
-# responses yourself.
-#
-# It is worth noting that when you create a new Net::Telnet object,
-# you can supply a proxy IO channel via the Proxy option.  This
-# can be used to attach the Telnet object to other Telnet objects,
-# to already open sockets, or to any read-write IO object.  This
-# can be useful, for instance, for setting up a test fixture for
-# unit testing.
-# 
-# == Examples of use.
-# 
-# === Log in and send a command, echoing all output to stdout.
-# 
-#   localhost = Net::Telnet::new({"Host" => "localhost",
-#                                 "Timeout" => 10,
-#                                 "Prompt" => /[$%#>] \z/n})
-#   localhost.login("username", "password"){|c| print c }
-#   localhost.cmd("command"){|c| print c }
-#   localhost.close
-# 
-# 
-# === Check a POP server to see if you have mail.
-# 
-#   pop = Net::Telnet::new({"Host" => "your_destination_host_here",
-#                           "Port" => 110,
-#                           "Telnetmode" => false,
-#                           "Prompt" => /^\+OK/n})
-#   pop.cmd("user " + "your_username_here"){|c| print c}
-#   pop.cmd("pass " + "your_password_here"){|c| print c}
-#   pop.cmd("list"){|c| print c}
-#
-# == References.
-#
-# There are a large number of RFCs relevant to the Telnet protocol.
-# RFCs 854-861 define the base protocol.  For a complete listing
-# of relevant RFCs, see
-# http://www.omnifarious.org/~hopper/technical/telnet-rfc.html
-
 
 require "socket"
 require "delegate"
 require "timeout"
 require "English"
+ 
+module Net
 
-module Net # :nodoc:
-
+  #
+  # == Net::Telnet
+  #
   # Provides telnet client functionality.
   #
-  # This class also has, through delegation, all the methods of
-  # a socket object (by default, a TCPSocket, but can be set
-  # by the Proxy option to new()).  This provides methods
-  # such as #close() to end the session and #sysread() to
-  # read data directly from the host, instead of via the
-  # #waitfor() mechanism.  Note that if you do use #sysread() 
-  # directly when in telnet mode, you should probably pass
-  # the output through #preprocess() to extract telnet command
-  # sequences.
+  # This class also has, through delegation, all the methods of a
+  # socket object (by default, a +TCPSocket+, but can be set by the
+  # +Proxy+ option to <tt>new()</tt>).  This provides methods such as
+  # <tt>close()</tt> to end the session and <tt>sysread()</tt> to read
+  # data directly from the host, instead of via the <tt>waitfor()</tt>
+  # mechanism.  Note that if you do use <tt>sysread()</tt> directly
+  # when in telnet mode, you should probably pass the output through
+  # <tt>preprocess()</tt> to extract telnet command sequences.
   #
-  # See the documentation to the telnet.rb file for an overview
-  # and examples of usage.
+  # == Overview
+  #
+  # The telnet protocol allows a client to login remotely to a user
+  # account on a server and execute commands via a shell.  The equivalent
+  # is done by creating a Net::Telnet class with the +Host+ option
+  # set to your host, calling #login() with your user and password,
+  # issuing one or more #cmd() calls, and then calling #close()
+  # to end the session.  The #waitfor(), #print(), #puts(), and
+  # #write() methods, which #cmd() is implemented on top of, are
+  # only needed if you are doing something more complicated.
+  #
+  # A Net::Telnet object can also be used to connect to non-telnet
+  # services, such as SMTP or HTTP.  In this case, you normally
+  # want to provide the +Port+ option to specify the port to
+  # connect to, and set the +Telnetmode+ option to false to prevent
+  # the client from attempting to interpret telnet command sequences.
+  # Generally, #login() will not work with other protocols, and you
+  # have to handle authentication yourself.
+  #
+  # For some protocols, it will be possible to specify the +Prompt+
+  # option once when you create the Telnet object and use #cmd() calls; 
+  # for others, you will have to specify the response sequence to
+  # look for as the Match option to every #cmd() call, or call
+  # #puts() and #waitfor() directly; for yet others, you will have 
+  # to use #sysread() instead of #waitfor() and parse server 
+  # responses yourself.
+  #
+  # It is worth noting that when you create a new Net::Telnet object,
+  # you can supply a proxy IO channel via the Proxy option.  This
+  # can be used to attach the Telnet object to other Telnet objects,
+  # to already open sockets, or to any read-write IO object.  This
+  # can be useful, for instance, for setting up a test fixture for
+  # unit testing.
+  # 
+  # == Examples
+  # 
+  # === Log in and send a command, echoing all output to stdout
+  # 
+  #   localhost = Net::Telnet::new("Host" => "localhost",
+  #                                "Timeout" => 10,
+  #                                "Prompt" => /[$%#>] \z/n)
+  #   localhost.login("username", "password") { |c| print c }
+  #   localhost.cmd("command") { |c| print c }
+  #   localhost.close
+  # 
+  # 
+  # === Check a POP server to see if you have mail
+  # 
+  #   pop = Net::Telnet::new("Host" => "your_destination_host_here",
+  #                          "Port" => 110,
+  #                          "Telnetmode" => false,
+  #                          "Prompt" => /^\+OK/n)
+  #   pop.cmd("user " + "your_username_here") { |c| print c }
+  #   pop.cmd("pass " + "your_password_here") { |c| print c }
+  #   pop.cmd("list") { |c| print c }
+  #
+  # == References
+  #
+  # There are a large number of RFCs relevant to the Telnet protocol.
+  # RFCs 854-861 define the base protocol.  For a complete listing
+  # of relevant RFCs, see
+  # http://www.omnifarious.org/~hopper/technical/telnet-rfc.html
+  #
   class Telnet < SimpleDelegator
 
     # :stopdoc:
@@ -163,6 +167,7 @@ module Net # :nodoc:
     REVISION = '$Id$'
     # :startdoc:
 
+    #
     # Creates a new Net::Telnet object.
     #
     # Attempts to connect to the host (unless the Proxy option is
@@ -176,7 +181,7 @@ module Net # :nodoc:
     # +options+ is a hash of options.  The following example lists
     # all options and their default values.
     # 
-    #   host = Net::Telnet::new({
+    #   host = Net::Telnet::new(
     #            "Host"       => "localhost",  # default: "localhost"
     #            "Port"       => 23,           # default: 23
     #            "Binmode"    => false,        # default: false
@@ -189,7 +194,7 @@ module Net # :nodoc:
     #            "Waittime"   => 0,            # default: 0
     #            "Proxy"      => proxy         # default: nil
     #                            # proxy is Net::Telnet or IO object
-    #          })
+    #          )
     #
     # The options have the following meanings:
     #
@@ -266,6 +271,7 @@ module Net # :nodoc:
     #         instance will use that one's socket for communication.  If an
     #         IO object, it is used directly for communication.  Any other
     #         kind of object will cause an error to be raised.
+    #
     def initialize(options) # :yield: mesg 
       @options = options
       @options["Host"]       = "localhost"   unless @options.has_key?("Host")
