@@ -1,3 +1,7 @@
+Thu Sep 20 21:25:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (MATCH_DATA): access via rb_svar().
+
 Thu Sep 20 15:20:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c, intern.h (rb_svar): return reference to special variable

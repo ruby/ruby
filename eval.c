@@ -1726,7 +1726,7 @@ copy_node_scope(node, rval)
     POP_ITER();\
 }
 
-#define MATCH_DATA ruby_scope->local_vars[node->nd_cnt]
+#define MATCH_DATA *rb_svar(node->nd_cnt)
 
 static char* is_defined _((VALUE, NODE*, char*));
 
