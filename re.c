@@ -722,7 +722,7 @@ reg_match(re, str)
     str = str_to_str(str);
     start = reg_search(re, str, 0, 0);
     if (start >= 0) return INT2FIX(start);
-    return Qnil;
+    return FALSE;
 }
 
 VALUE
@@ -735,7 +735,7 @@ reg_match2(re)
     if (TYPE(line) != T_STRING) return Qnil;
     start = reg_search(re, line, 0, 0);
     if (start >= 0) return INT2FIX(start);
-    return Qnil;
+    return FALSE;
 }
 
 static VALUE

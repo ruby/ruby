@@ -65,6 +65,7 @@ static enum lex_state {
 
 static int class_nest = 0;
 static int in_single = 0;
+static int compile_for_eval = 0;
 static ID cur_mid = 0;
 
 static int value_expr();
@@ -361,7 +362,7 @@ stmt		: iterator iter_do_block
 		    }
 		| klEND '{' compstmt '}'
 		    {
-			if (cur_mid || in_single) {
+			if (compile_for_eval && (cur_mid || in_single)) {
 			    yyerror("END in method; use at_exit");
 			}
 
@@ -378,7 +379,7 @@ expr		: mlhs '=' mrhs
 		| kRETURN ret_args
 		    {
 			value_expr($2);
-			if (!cur_mid && !in_single)
+			if (!compile_for_eval && !cur_mid && !in_single)
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RET($2);
 		    }
@@ -427,7 +428,7 @@ command_call	: operation call_args
 		    }
 		| kSUPER call_args
 		    {
-			if (!cur_mid && !in_single && !in_defined)
+			if (!compile_for_eval && !cur_mid && !in_single)
 			    yyerror("super called outside of method");
 			$$ = NEW_SUPER($2);
 		        fixpos($$, $2);
@@ -970,20 +971,20 @@ primary		: literal
 		    }
 		| kRETURN '(' ret_args ')'
 		    {
-			if (!cur_mid && !in_single)
+			if (!compile_for_eval && !cur_mid && !in_single)
 			    yyerror("return appeared outside of method");
 			value_expr($3);
 			$$ = NEW_RET($3);
 		    }
 		| kRETURN '(' ')'
 		    {
-			if (!cur_mid && !in_single)
+			if (!compile_for_eval && !cur_mid && !in_single)
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RET(0);
 		    }
 		| kRETURN
 		    {
-			if (!cur_mid && !in_single)
+			if (!compile_for_eval && !cur_mid && !in_single)
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RET(0);
 		    }
@@ -1304,13 +1305,15 @@ method_call	: operation '(' opt_call_args ')'
 		    }
 		| kSUPER '(' opt_call_args ')'
 		    {
-			if (!cur_mid && !in_single && !in_defined)
+			if (!compile_for_eval && !cur_mid &&
+		            !in_single && !in_defined)
 			    yyerror("super called outside of method");
 			$$ = NEW_SUPER($3);
 		    }
 		| kSUPER
 		    {
-			if (!cur_mid && !in_single && !in_defined)
+			if (!compile_for_eval && !cur_mid &&
+		            !in_single && !in_defined)
 			    yyerror("super called outside of method");
 			$$ = NEW_ZSUPER();
 		    }
@@ -1659,6 +1662,7 @@ yycompile(f)
     sourcefile = f;
     rb_in_compile = 1;
     n = yyparse();
+    cur_mid = 0;
     rb_in_compile = 0;
     if (n == 0) return eval_tree;
 
@@ -1675,6 +1679,8 @@ compile_string(f, s, len)
     lex_input = 0;
     if (!sourcefile || strcmp(f, sourcefile))	/* not in eval() */
 	sourceline = 1;
+    else		                	/* in eval() */
+	compile_for_eval = 1;
 
     return yycompile(f);
 }

@@ -922,22 +922,19 @@ static VALUE
 eval_node(self)
     VALUE self;
 {
-    VALUE result = Qnil;
-    NODE *tree;
+    NODE *beg_tree, *tree;
 
-    if (eval_tree_begin) {
-	tree = eval_tree_begin;
+    beg_tree = eval_tree_begin;
+    tree = eval_tree;
+    if (beg_tree) {
 	eval_tree_begin = 0;
-	rb_eval(self, tree);
+	rb_eval(self, beg_tree);
     }
 
-    if (!eval_tree) return Qnil;
-
-    tree = eval_tree;
+    if (!tree) return Qnil;
     eval_tree = 0;
 
-    result = rb_eval(self, tree);
-    return result;
+    return rb_eval(self, tree);
 }
 
 int rb_in_eval;
@@ -1950,7 +1947,7 @@ rb_eval(self, node)
       case NODE_FLIP2:		/* like AWK */
 	if (node->nd_state == 0) {
 	    if (RTEST(rb_eval(self, node->nd_beg))) {
-		node->nd_state = rb_eval(self, node->nd_end)?0:1;
+		node->nd_state = RTEST(rb_eval(self, node->nd_end))?0:1;
 		result = TRUE;
 	    }
 	    else {
@@ -1971,7 +1968,9 @@ rb_eval(self, node)
 		node->nd_state = 1;
 		result = TRUE;
 	    }
-	    result = FALSE;
+	    else {
+		result = FALSE;
+	    }
 	}
 	else {
 	    if (RTEST(rb_eval(self, node->nd_end))) {
@@ -4894,6 +4893,7 @@ blk_copy_prev(block)
 	tmp = ALLOC_N(struct BLOCK, 1);
 	MEMCPY(tmp, block->prev, struct BLOCK, 1);
 	tmp->frame.argv = ALLOC_N(VALUE, tmp->frame.argc);
+	scope_dup(tmp->scope);
 	MEMCPY(tmp->frame.argv, block->frame.argv, VALUE, tmp->frame.argc);
 	block->prev = tmp;
 	block = tmp;

@@ -1,3 +1,17 @@
+Thu Apr  8 18:10:37 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.2.4 (stable) released.
+
+Tue Apr  6 17:33:00 1999  Inaba Hiroto  <inaba@st.rim.or.jp>
+
+	* eval.c (rb_eval): flip3 did not work properly.
+
+Tue Apr  6 14:02:39 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* re.c (reg_match): should return false, not nil.
+
+	* re.c (reg_match2): ditto.
+
 Fri Mar 12 12:27:55 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (str_index): negative offset.
@@ -58,6 +72,7 @@ Tue Feb 16 23:42:51 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
 
 	* configure.in: FreeBSD objformat patch
 
+>>>>>>> 1.1.1.2.2.163
 Tue Feb 16 12:40:55 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.2.3 (stable) released.
@@ -275,7 +290,7 @@ Sat Oct 31 23:18:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* string.c (rb_str_split_method): if LIMIT is unspecified,
 	  trailing null fields are stripped.
 
-Sat Oct 31 04:16:14 1998  Inaba Hiroto   <inaba@st.rim.or.jp>
+Sat Oct 31 04:16:14 1998  Inaba Hiroto  <inaba@st.rim.or.jp>
 
 	* string.c (str_aref): regexp index SEGVed.
 

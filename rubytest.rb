@@ -5,7 +5,7 @@ include Config
 
 $stderr.reopen($stdout)
 error = ''
-`./ruby #{CONFIG["srcdir"]}/sample/test.rb`.each do |line|
+`./miniruby #{CONFIG["srcdir"]}/sample/test.rb`.each do |line|
   if line =~ /^end of test/
     print "test succeeded\n"
     exit 0

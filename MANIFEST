@@ -103,6 +103,7 @@ lib/finalize.rb
 lib/ftplib.rb
 lib/ftools.rb
 lib/getopts.rb
+lib/getoptlong.rb
 lib/importenv.rb
 lib/jcode.rb
 lib/mailread.rb
@@ -117,6 +118,7 @@ lib/ostruct.rb
 lib/parsearg.rb
 lib/parsedate.rb
 lib/ping.rb
+lib/profile.rb
 lib/pstore.rb
 lib/rational.rb
 lib/readbytes.rb

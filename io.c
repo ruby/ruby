@@ -1744,8 +1744,8 @@ next_argv()
 	next_p = 0;
 	if (RARRAY(rb_argv)->len > 0) {
 	    filename = ary_shift(rb_argv);
-	    fn = RSTRING(filename)->ptr;
-	    if (RSTRING(filename)->len == 1 && fn[0] == '-') {
+	    fn = STR2CSTR(filename);
+	    if (strlen(fn) == 1 && fn[0] == '-') {
 		file = rb_stdin;
 		if (inplace) {
 		    rb_defout = rb_stdout;
