@@ -88,9 +88,8 @@ class SLex
   #
   #----------------------------------------------------------------------
   class Node
-    # if postproc no exist, this node is abstract node.
-    # if postproc isn't nil, this node is real node.
-    # (JP: postprocがなければ抽象ノード, nilじゃなければ具象ノード)
+    # if postproc is nil, this node is an abstract node.
+    # if postproc is non-nil, this node is a real node.
     def initialize(preproc = nil, postproc = nil)
       @Tree = {}
       @preproc = preproc
@@ -159,11 +158,9 @@ class SLex
 
     #
     # chrs: String
-    #       character array (JP: 一文字づつのArray)
-    #       io It must have getc()/ungetc(), and ungetc() can be
-    #          called any number of times. 
-    #          (JP:だだし, getc/ungetcが備わっていなければならない.
-    #           さらに, ungetcは複数回可能でなくてはならない.)
+    #       character array
+    #       io must have getc()/ungetc(); and ungetc() must be
+    #       able to be called arbitrary number of times. 
     #
     def match(chrs, op = "")
       print "match>: ", chrs, "op:", op, "\n" if SLex.debug?

@@ -1,5 +1,5 @@
 #
-#   irb/multi-irb.rb - multiple irb module(JP: 複数irb対応モジュール)
+#   irb/multi-irb.rb - multiple irb module
 #   	$Release Version: 0.7.3$
 #   	$Revision$
 #   	$Date$
@@ -14,7 +14,6 @@ require "thread"
 
 module IRB
   # job management class
-  # (JP: job管理クラス)
   class JobManager
     @RCS_ID='-$Id$-'
 
@@ -142,7 +141,6 @@ module IRB
   end
 
   # invoke multi-irb 
-  # (JP: irb起動)
   def IRB.irb(file = nil, *main)
     workspace = WorkSpace.new(*main)
     parent_thread = Thread.current

@@ -12,7 +12,6 @@
 module IRB
   #
   # IRB extended command
-  # (JP: IRB拡張コマンド)
   #
   module ExtendCommand
 #    include Loader

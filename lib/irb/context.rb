@@ -28,7 +28,6 @@ module IRB
       @irb_level = 0
 
       # copy of default configuration
-      # (JP: デフォルトコンフィギュレーションのコピー)
       @ap_name = IRB.conf[:AP_NAME]
       @rc = IRB.conf[:RC]
       @load_modules = IRB.conf[:LOAD_MODULES]
