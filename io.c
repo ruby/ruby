@@ -498,6 +498,10 @@ io_fread(ptr, len, f)
 	c = getc(f);
 	TRAP_END;
 	if (c == EOF) {
+	    if (ferror(f)) {
+		if (errno == EINTR) continue;
+		rb_sys_fail(0);
+	    }
 	    *ptr = '\0';
 	    break;
 	}
@@ -624,7 +628,10 @@ rb_io_gets_internal(argc, argv, io)
 		c = getc(f);
 		TRAP_END;
 		if (c == EOF) {
-		    if (ferror(f) && errno == EINTR) continue;
+		    if (ferror(f)) {
+			if (errno == EINTR) continue;
+			rb_sys_fail(fptr->path);
+		    }
 		    break;
 		}
 		if ((*bp++ = c) == newline) break;
@@ -711,7 +718,10 @@ rb_io_gets(io)
 	c = getc(f);
 	TRAP_END;
 	if (c == EOF) {
-	    if (ferror(f) && errno == EINTR) continue;
+	    if (ferror(f)) {
+		if (errno == EINTR) continue;
+		rb_sys_fail(fptr->path);
+	    }
 	    break;
 	}
 	if ((*bp++ = c) == '\n') break;
@@ -865,7 +875,13 @@ rb_io_each_byte(io)
 	TRAP_BEG;
 	c = getc(f);
 	TRAP_END;
-	if (c == EOF) break;
+	if (c == EOF) {
+	    if (ferror(f)) {
+		if (errno == EINTR) continue;
+		rb_sys_fail(fptr->path);
+	    }
+	    break;
+	}
 	rb_yield(INT2FIX(c & 0xff));
     }
     if (ferror(f)) rb_sys_fail(fptr->path);
@@ -884,13 +900,17 @@ rb_io_getc(io)
     rb_io_check_readable(fptr);
     f = fptr->f;
 
+  retry:
     READ_CHECK(f);
     TRAP_BEG;
     c = getc(f);
     TRAP_END;
 
     if (c == EOF) {
-	if (ferror(f)) rb_sys_fail(fptr->path);
+	if (ferror(f)) {
+	    if (errno == EINTR) goto retry;
+	    rb_sys_fail(fptr->path);
+	}
 	return Qnil;
     }
     return INT2FIX(c & 0xff);

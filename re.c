@@ -520,16 +520,20 @@ rb_reg_prepare_re(re)
     VALUE re;
 {
     int need_recompile = 0;
+    int state;
 
     rb_reg_check(re);
-    /* case-flag not set for the object */
-    if (!(RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)) {
-	int state = FL_TEST(re, REG_CASESTATE);
-
-	if ((ruby_ignorecase || state) && !(ruby_ignorecase && state))  {
-	    RBASIC(re)->flags ^= REG_CASESTATE;
-	    need_recompile = 1;
-	}
+    state = FL_TEST(re, REG_CASESTATE);
+    /* ignorecase status */
+    if (ruby_ignorecase && !state) {
+	FL_SET(re, REG_CASESTATE);
+	RREGEXP(re)->ptr->options |= RE_OPTION_IGNORECASE;
+	need_recompile = 1;
+    }
+    if (!ruby_ignorecase && state) {
+	FL_UNSET(re, REG_CASESTATE);
+	RREGEXP(re)->ptr->options &= ~RE_OPTION_IGNORECASE;
+	need_recompile = 1;
     }
 
     if (!FL_TEST(re, KCODE_FIXED) &&

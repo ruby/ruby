@@ -826,13 +826,29 @@ proc_setpgid(obj, pid, pgrp)
 static VALUE
 proc_setsid()
 {
-#ifdef HAVE_SETSID
+#if defined(HAVE_SETSID)
     int pid;
 
     rb_secure(2);
     pid = setsid();
     if (pid < 0) rb_sys_fail(0);
     return INT2FIX(pid);
+#elif defined(HAVE_SETPGRP) && defined(TIOCNOTTY)
+  pid_t sid;
+
+#if defined(SETPGRP_VOID)
+  sid = setpgrp();
+#else
+  sid = setpgrp(0, getpid());
+#endif
+  if (sid == -1) return -1;
+
+  if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
+    ioctl(fd, TIOCNOTTY, NULL);
+    close(fd);
+  }
+  return sid;
+}
 #else
     rb_notimplement();
 #endif
@@ -1025,9 +1041,7 @@ Init_process()
 #endif
 #endif
 
-#if !defined(NT)
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
-#endif
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
 #ifndef NT

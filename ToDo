@@ -44,7 +44,8 @@ Hacking Interpreter
 * scrambled script, or script filter
 * setuid ruby
 * performance tune for in-block (dynamic) local variables.
-* generational GC ?? (is it possible?)
+* generational GC ?
+* give warnings to assign magic variables.
 
 Standard Libraries
 

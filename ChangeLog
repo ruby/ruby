@@ -1,3 +1,15 @@
+Tue Jun 13 11:46:17 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* process.c (proc_setsid): try implement it using setpgrp() and
+	  ioctl(fd, TIOCNOTTY, NULL).
+
+	* re.c (rb_reg_prepare_re): magic variable $= should affect regex
+	  pattern match. 
+
+	* time.c (make_time_t): use tm.tm_gmtoff if possible.
+
+	* time.c (time_zone): use tm.tm_zone if available.
+
 Mon Jun 12 23:41:54 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in (daylight): avoid GCC optimization.
