@@ -57,8 +57,8 @@ I like the latter.  If you do too, this library is for you.
 
     It returns (({nil})).
 
-== Customized output
-To define your customized pretty printing function for your class,
+== Output Customization
+To define your customized pretty printing function for your classes,
 redefine a method (({pretty_print(((|pp|)))})) in the class.
 It takes an argument ((|pp|)) which is an instance of the class ((<PP>)).
 The method should use PP#text, PP#breakable, PP#nest, PP#group and
@@ -118,9 +118,9 @@ end
 
 class PP < PrettyPrint
   def PP.pp(obj, width=79, out=$>)
-    pp = PP.new
+    pp = PP.new(out, width)
     pp.guard_inspect_key {pp.pp obj}
-    pp.format(out, width)
+    pp.flush
     #$pp = pp
     out << "\n"
   end
@@ -134,7 +134,7 @@ class PP < PrettyPrint
     @@sharing_detection = val
   end
 
-  def initialize
+  def initialize(out, width=79)
     super
     @sharing_detection = @@sharing_detection
   end

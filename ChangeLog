@@ -1,3 +1,10 @@
+Thu Jun 27 15:22:18 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/prettyprint.rb: re-implemented for incremental output to handle
+	huge data.  API is changed a bit.
+
+	* lib/pp.rb: adapt new pretty printing API.
+
 Thu Jun 27 08:28:18 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (literal_concat_string): non-string last expression in
