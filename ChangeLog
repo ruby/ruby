@@ -1,3 +1,11 @@
+Fri Sep  3 02:12:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: fix typo [ruby-talk:111266]
+
+	* ext/tk/lib/tk/text.rb: fix typo
+
+	* ext/tk/lib/multi-tk.rb: improve safe-level treatment on slave IPs
+
 Fri Sep  3 01:54:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): extact target prefix from Makefiles.

@@ -722,7 +722,7 @@ class TkText<TkTextWin
 
   def tag_remove(tag, *indices)
     tk_send_without_enc('tag', 'remove', _get_eval_enc_str(tag), 
-			*(indces.collect{|idx| _get_eval_enc_str(idx)}))
+			*(indices.collect{|idx| _get_eval_enc_str(idx)}))
     self
   end
 

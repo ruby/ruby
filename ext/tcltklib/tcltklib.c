@@ -4139,7 +4139,7 @@ invoke_queue_handler(evPtr, flags)
     if (rb_safe_level() != q->safe_level) {
 	volatile VALUE q_dat;
 	q_dat = Data_Wrap_Struct(rb_cData,invoke_queue_mark,0,q);
-	ret = rb_funcall(rb_proc_new(evq_safelevel_handler, q_dat), 
+	ret = rb_funcall(rb_proc_new(ivq_safelevel_handler, q_dat), 
 			 ID_call, 0);
     } else {
 	DUMP2("call invoke_real (for caller thread:%lx)", q->thread);
