@@ -1,7 +1,6 @@
 option nodynamic
 
 #Win32API
-bigfloat
 #curses
 dbm
 digest
