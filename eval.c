@@ -401,7 +401,7 @@ struct BLOCK {
 #endif
     struct BLOCK *prev;
 };
-static struct BLOCK  *the_block;
+static struct BLOCK *the_block;
 
 #define PUSH_BLOCK(v,b) {		\
     struct BLOCK _block;		\
@@ -1312,6 +1312,18 @@ mod_alias_method(mod, newname, oldname)
     }\
 }
 
+#define BEGIN_CALLARGS {\
+    struct BLOCK *tmp_block = the_block;\
+    if (the_iter->iter == ITER_PRE) {\
+	the_block = the_block->prev;\
+    }\
+    PUSH_ITER(ITER_NOT);
+
+#define END_CALLARGS \
+    the_block = tmp_block;\
+    POP_ITER();\
+}
+
 #define MATCH_DATA the_scope->local_vars[node->nd_cnt]
 
 static char* is_defined _((VALUE, NODE*, char*));
@@ -1961,10 +1973,11 @@ rb_eval(self, node)
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
 	    TMP_PROTECT;
 
-	    PUSH_ITER(ITER_NOT);
+	    BEGIN_CALLARGS;
 	    recv = rb_eval(self, node->nd_recv);
 	    SETUP_ARGS(node->nd_args);
-	    POP_ITER();
+	    END_CALLARGS;
+
 	    result = rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,0);
 	}
 	break;
@@ -1974,9 +1987,10 @@ rb_eval(self, node)
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
 	    TMP_PROTECT;
 
-	    PUSH_ITER(ITER_NOT);
+	    BEGIN_CALLARGS;
 	    SETUP_ARGS(node->nd_args);
-	    POP_ITER();
+	    END_CALLARGS;
+
 	    result = rb_call(CLASS_OF(self),self,node->nd_mid,argc,argv,1);
 	}
 	break;
@@ -2000,9 +2014,9 @@ rb_eval(self, node)
 		argv = the_frame->argv;
 	    }
 	    else {
-		PUSH_ITER(ITER_NOT);
+		BEGIN_CALLARGS;
 		SETUP_ARGS(node->nd_args);
-		POP_ITER();
+		END_CALLARGS;
 	    }
 
 	    PUSH_ITER(the_iter->iter?ITER_PRE:ITER_NOT);
@@ -3072,9 +3086,10 @@ handle_rescue(self, node)
 	return obj_is_kind_of(errinfo, eStandardError);
     }
 
-    PUSH_ITER(ITER_NOT);
+    BEGIN_CALLARGS;
     SETUP_ARGS(node->nd_args);
-    POP_ITER();
+    END_CALLARGS;
+
     while (argc--) {
 	if (!obj_is_kind_of(argv[0], cModule)) {
 	    TypeError("class or module required for rescue clause");

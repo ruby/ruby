@@ -1,3 +1,8 @@
+Tue Jun 30 01:05:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (BEGIN_CALLARGS): adjust the_block before evaluating the
+	  receiver's value and the arguments.
+
 Fri Jun 26 18:02:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_28.

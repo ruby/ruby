@@ -453,6 +453,19 @@ end
 ok($x.size == 10)
 ok($x == [1, 2, 3, 1, 2, 3, 4, 5, 6, 7])
 
+# append method to built-in class
+class Array
+  def iter_test1
+    collect{|e| [e, yield(e)]}.sort{|a,b|a[1]<=>b[1]}
+  end
+  def iter_test2
+    a = collect{|e| [e, yield(e)]}
+    a.sort{|a,b|a[1]<=>b[1]}
+  end
+end
+$x = [[1,2],[3,4],[5,6]]
+ok($x.iter_test1{|x|x} == $x.iter_test2{|x|x})
+
 check "bignum"
 def fact(n)
   return 1 if n == 0

@@ -5779,7 +5779,7 @@ idle()
 {
     CHECK_INTS;
 #ifdef THREAD
-    if (!thred_critical) thred_schedule();
+    if (!thread_critical) thread_schedule();
 #endif
     return TRUE;
 }
