@@ -207,7 +207,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 XHTML_PREAMBLE = %{<?xml version="1.0" encoding="%charset%"?>
 <!DOCTYPE html 
      PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-     "DTD/xhtml1-transitional.dtd">
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 }
 
 HEADER = XHTML_PREAMBLE + %{
@@ -619,7 +619,7 @@ METHOD_INDEX = FILE_INDEX
 INDEX = %{<?xml version="1.0" encoding="%charset%"?>
 <!DOCTYPE html 
      PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"
-     "DTD/xhtml1-frameset.dtd">
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
 
 <!--
 

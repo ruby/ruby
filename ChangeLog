@@ -1,3 +1,8 @@
+Mon May 24 10:46:26 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/rdoc/generators/template/html/html.rb: SYSTEM identifiers
+	  must be absolute URIs
+
 Sat May 22 12:00:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* MANIFEST: add new encodings in rexml.
