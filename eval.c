@@ -7574,7 +7574,7 @@ rb_thread_schedule()
 	    if (rb_trap_pending) rb_trap_exec();
 	    if (errno == EINTR) goto again;
 #ifdef ERESTART
-	    if (erestart == ERESTART) goto again;
+	    if (errno == ERESTART) goto again;
 #endif
 	    FOREACH_THREAD_FROM(curr, th) {
 		if (th->wait_for & WAIT_SELECT) {
@@ -7807,21 +7807,20 @@ rb_thread_select(max, read, write, except, timeout)
 	    TRAP_BEG;
 	    n = select(max, read, write, except, tvp);
 	    TRAP_END;
-		switch (errno) {
-		  case EINTR:
+	    switch (errno) {
+	      case EINTR:
 #ifdef ERESTART
-		  case ERESTART:
+	      case ERESTART:
 #endif
-		    if (timeout) {
-			double d = timeofday() - limit;
+		if (timeout) {
+		    double d = timeofday() - limit;
 
-			tv.tv_sec = (unsigned int)d;
-			tv.tv_usec = (long)((d-(double)tv.tv_sec)*1e6);
-		    }
-		    continue;
-		  default:
-		    break;
+		    tv.tv_sec = (unsigned int)d;
+		    tv.tv_usec = (long)((d-(double)tv.tv_sec)*1e6);
 		}
+		continue;
+	      default:
+		break;
 	    }
 	    return n;
 	}
