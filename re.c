@@ -69,8 +69,6 @@ static const char casetable[] = {
 # error >>> "You lose. You will need a translation table for your character set." <<<
 #endif
 
-#define MIN(a,b) (((a)>(b))?(b):(a))
-
 int
 rb_memcicmp(p1, p2, len)
     char *p1, *p2;
@@ -101,7 +99,7 @@ rb_memsearch(x0, m, y0, n)
     char *x0, *y0;
     long m, n;
 {
-    unsigned char *x = x0, *y = y0;
+    unsigned char *x = (unsigned char *)x0, *y = (unsigned char *)y0;
     unsigned char *s, *e;
     long i;
     int d;

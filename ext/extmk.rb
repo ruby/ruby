@@ -61,15 +61,17 @@ def extmake(target)
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
     $preload = nil
+    makefile = "./Makefile"
     unless $ignore
       if $static ||
-	 !(t = modified?("./Makefile", MTIMES)) ||
+	 !(t = modified?(makefile, MTIMES)) ||
 	 %W<#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb
 	    #{$srcdir}/depend #{$srcdir}/MANIFEST>.any? {|f| modified?(f, [t])}
       then
 	$defs = []
 	Logging::logfile 'mkmf.log'
 	Config::CONFIG["srcdir"] = $srcdir
+	rm_f makefile
 	begin
 	  if File.exist?($0 = "#{$srcdir}/makefile.rb")
 	    load $0
@@ -78,6 +80,7 @@ def extmake(target)
 	  else
 	    create_makefile(target)
 	  end
+	  File.exist?(makefile)
 	rescue SystemExit
 	  # ignore
 	ensure
@@ -85,19 +88,20 @@ def extmake(target)
 	  $0 = $PROGRAM_NAME
 	  Config::CONFIG["srcdir"] = $top_srcdir
 	end
+      else
+	true
       end
+    end or open(makefile, "w") do |f|
+      f.print dummy_makefile($srcdir)
+      return true
     end
-    if File.exist?("./Makefile")
-      if $static
-	$extlist.push [$static, $target, File.basename($target), $preload]
-      end
-      unless system($make, *sysquote($mflags))
-	$ignore or $continue or return false
-      end
-    else
-      open("./Makefile", "w") {|f|
-        f.print dummy_makefile($srcdir)
-      }
+    args = sysquote($mflags)
+    if $static
+      args += ["static"]
+      $extlist.push [$static, $target, File.basename($target), $preload]
+    end
+    unless system($make, *args)
+      $ignore or $continue or return false
     end
     if $static
       $extflags ||= ""

@@ -308,11 +308,11 @@ w_symbol(id, arg)
     struct dump_arg *arg;
 {
     char *sym = rb_id2name(id);
-    long num;
+    st_data_t num;
 
     if (st_lookup(arg->symbols, id, &num)) {
 	w_byte(TYPE_SYMLINK, arg);
-	w_long(num, arg);
+	w_long((long)num, arg);
     }
     else {
 	w_byte(TYPE_SYMBOL, arg);
@@ -468,11 +468,11 @@ w_object(obj, arg, limit)
 	w_symbol(SYM2ID(obj), arg);
     }
     else {
-	long num;
+	st_data_t num;
 
 	if (st_lookup(arg->data, obj, &num)) {
 	    w_byte(TYPE_LINK, arg);
-	    w_long(num, arg);
+	    w_long((long)num, arg);
 	    return;
 	}
 

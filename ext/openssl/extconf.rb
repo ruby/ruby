@@ -79,14 +79,11 @@ have_func("BN_mod_sub")
 have_func("BN_rand_range")
 have_func("BN_pseudo_rand_range")
 have_func("CONF_get1_default_config_file")
-if try_cpp("#define FOO(a, ...) foo(a, ##__VA_ARGS__)\n int x(){FOO(1,2);}\n")
+if try_cpp("#define FOO(a, ...) foo(a, ##__VA_ARGS__)\n int x(){FOO(1);FOO(1,2);FOO(1,2,3);}\n")
   $defs.push("-DHAVE_VA_ARGS_MACRO")
 end
 have_header("openssl/ocsp.h")
 have_struct_member("EVP_CIPHER_CTX", "flags", "openssl/evp.h")
-
-message "=== Checking for Ruby features... ===\n"
-have_func("rb_obj_init_copy", "ruby.h")
 
 message "=== Checking done. ===\n"
 $distcleanfiles << "GNUmakefile" << "dep"

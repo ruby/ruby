@@ -16,15 +16,13 @@ extern "C" {
 #endif
 
 /*
- * Check the Ruby version and OpenSSL
+ * Check the OpenSSL version
  * The only supported are:
- * 	Ruby >= 1.7.2
  * 	OpenSSL >= 0.9.7
  */
-#include <version.h>
 #include <openssl/opensslv.h>
 
-#if defined(NT) || defined(_WIN32)
+#if defined(_WIN32)
 #  define OpenFile WINAPI_OpenFile
 #endif
 #include <errno.h>
@@ -40,7 +38,7 @@ extern "C" {
 #  define OSSL_OCSP_ENABLED
 #  include <openssl/ocsp.h>
 #endif
-#if defined(NT) || defined(_WIN32)
+#if defined(_WIN32)
 #  undef OpenFile
 #endif
 

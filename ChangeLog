@@ -1,3 +1,29 @@
+Sat Aug 16 23:58:18 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_symbol, w_object): get rid of warnings.
+
+	* re.c (rb_memsearch): ditto.
+
+	* time.c (time_dump): ditto.
+
+	* ext/extmk.rb (extmake): not continue making when extconf.rb
+	  failed.
+
+	* ext/openssl/extconf.rb: check __VA_ARGS__ macro more precisely.
+
+	* ext/openssl/ossl.h: remove version.h dependency.
+
+	* ext/openssl/ruby_missing.h: ditto.
+
+	* lib/mkmf.rb (pkg_config): use --libs output except with
+	  only-L for other options.  [ruby-list:38099]
+
+	* lib/mkmf.rb (create_makefile): separate rule for static
+	  library from shared object.
+
+	* win32/Makefile.sub, bcc32/Makefile.sub, wince/Makefile.sub:
+	  define exec_prefix and libdir.
+
 Fri Aug 15 23:15:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c .h: Bug in combination of limit & div

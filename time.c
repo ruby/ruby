@@ -1302,7 +1302,7 @@ time_dump(argc, argv, time)
     struct time_object *tobj;
     struct tm *tm;
     unsigned long p, s;
-    unsigned char buf[8];
+    char buf[8];
     time_t t;
     int i;
 

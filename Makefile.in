@@ -196,12 +196,12 @@ Makefile:	$(srcdir)/Makefile.in
 
 @MAKEFILES@: config.status
 		MAKE=$(MAKE) $(SHELL) ./config.status
-		@{ : $(MAKE); \
+		@{ \
 		    echo "all:; -@rm -f conftest.mk"; \
 		    echo "conftest.mk: .force; @echo AUTO_REMAKE"; \
 		    echo ".force:"; \
-		} > conftest.mk
-		@$(MAKE) -f conftest.mk | grep '^AUTO_REMAKE$$' >/dev/null 2>&1 || \
+		} > conftest.mk || exit 1; \
+		$(MAKE) -f conftest.mk | grep '^AUTO_REMAKE$$' >/dev/null 2>&1 || \
 		{ echo "Makefile updated, restart."; exit 1; }
 
 config.status:	$(srcdir)/configure

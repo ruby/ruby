@@ -1,3 +1,5 @@
+# -*- makefile -*-
+
 SHELL = $(COMSPEC)
 
 #### Start of system configuration section. ####
@@ -73,6 +75,12 @@ RUBY_SO_NAME = $(RT)-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)
 
 !if !defined(prefix)
 prefix = /usr
+!endif
+!if !defined(exec_prefix)
+exec_prefix = $(prefix)
+!endif
+!if !defined(libdir)
+libdir = $(exec_prefix)/lib
 !endif
 !if !defined(DESTDIR)
 DESTDIR = $(prefix)

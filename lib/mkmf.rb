@@ -650,8 +650,9 @@ def pkg_config(pkg)
   end
   if $PKGCONFIG and system("#{$PKGCONFIG} --exists #{pkg}")
     cflags = `#{$PKGCONFIG} --cflags #{pkg}`.chomp
-    ldflags = `#{$PKGCONFIG} --libs-only-L #{pkg}`.chomp
+    ldflags = `#{$PKGCONFIG} --libs #{pkg}`.chomp
     libs = `#{$PKGCONFIG} --libs-only-l #{pkg}`.chomp
+    ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
     $CFLAGS += " " << cflags
     $LDFLAGS += " " << ldflags
     $libs += " " << libs
@@ -805,7 +806,8 @@ def create_makefile(target, srcprefix = nil)
 
   libpath = libpathflag(libpath)
 
-  dllib = target ? "$(TARGET).#{$static ? $LIBEXT : CONFIG['DLEXT']}" : ""
+  dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""
+  staticlib = target ? "$(TARGET).#$LIBEXT" : ""
   mfile = open("Makefile", "wb")
   mfile.print configuration(srcdir)
   mfile.print %{
@@ -821,6 +823,7 @@ LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
 OBJS = #{$objs}
 TARGET = #{target}
 DLLIB = #{dllib}
+STATIC_LIB = #{staticlib}
 }
   if $extmk
     mfile.print %{
@@ -840,6 +843,7 @@ CLEANLIBS     = "$(TARGET).{lib,exp,il?,tds,map}" $(DLLIB)
 CLEANOBJS     = "*.{#{$OBJEXT},#{$LIBEXT},s[ol],pdb,bak}"
 
 all:		#{target ? "$(DLLIB)" : "Makefile"}
+static:		$(STATIC_LIB)
 }
   mfile.print CLEANINGS
   dirs = []
@@ -894,13 +898,11 @@ all:		#{target ? "$(DLLIB)" : "Makefile"}
   mfile.print "$(DLLIB): $(OBJS)\n\t"
   mfile.print "@-$(RM) $@\n\t"
   mfile.print "@-$(RM) $(TARGET).lib\n\t" if $mswin
-  if $static
-    mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$(DLLIB) $(OBJS)"
-    if ranlib = config_string('RANLIB')
-      mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
-    end
-  else
-    mfile.print LINK_SO
+  mfile.print LINK_SO, "\n\n"
+  mfile.print "$(STATIC_LIB): $(OBJS)\n\t"
+  mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"
+  if ranlib = config_string('RANLIB')
+    mfile.print "\n\t@-#{ranlib} $(DLLIB) 2> /dev/null || true"
   end
   mfile.print "\n\n"
 
