@@ -1312,6 +1312,22 @@ rb_eval_string_wrap(str, state)
 }
 
 static void
+localjump_error(mesg, status)
+    const char *mesg;
+{
+    VALUE exc = rb_exc_new2(rb_eLocalJumpError, mesg);
+    rb_iv_set(exc, "@status", status);
+    rb_exc_raise(exc);
+}
+
+static VALUE
+localjump_exitstatus(exc)
+    VALUE exc;
+{
+    return rb_iv_get(exc, "@status");
+}
+
+static void
 jump_tag_but_local_jump(state)
     int state;
 {
@@ -1319,19 +1335,19 @@ jump_tag_but_local_jump(state)
       case 0:
 	break;
       case TAG_RETURN:
-	rb_raise(rb_eLocalJumpError, "unexpected return");
+	localjump_error("unexpected return", Qnil);
 	break;
       case TAG_NEXT:
-	rb_raise(rb_eLocalJumpError, "unexpected next");
+	localjump_error("unexpected next", Qnil);
 	break;
       case TAG_BREAK:
-	rb_raise(rb_eLocalJumpError, "unexpected break");
+	localjump_error("unexpected break", Qnil);
 	break;
       case TAG_REDO:
-	rb_raise(rb_eLocalJumpError, "unexpected redo");
+	localjump_error("unexpected redo", Qnil);
 	break;
       case TAG_RETRY:
-	rb_raise(rb_eLocalJumpError, "retry outside of rescue clause");
+	localjump_error("retry outside of rescue clause", Qnil);
 	break;
       default:
 	JUMP_TAG(state);
@@ -3660,7 +3676,7 @@ rb_yield_0(val, self, klass, pcall)
     static unsigned serial = 1;
 
     if (!rb_block_given_p()) {
-	rb_raise(rb_eLocalJumpError, "no block given");
+	localjump_error("no block given", Qnil);
     }
 
     PUSH_VARS();
@@ -6309,22 +6325,30 @@ proc_save_safe_level(data)
     }
 }
 
-static void
-proc_set_safe_level(data)
+static int
+proc_get_safe_level(data)
     VALUE data;
 {
     if (OBJ_TAINTED(data)) {
 	switch (RBASIC(data)->flags & PROC_TMASK) {
 	  case PROC_T3:
-	    ruby_safe_level = 3;
-	    break;
+	    return 3;
 	  case PROC_T4:
-	    ruby_safe_level = 4;
-	    break;
+	    return 4;
 	  case PROC_TMAX:
-	    ruby_safe_level = 5;
-	    break;
+	    return 5;
 	}
+	return 3;
+    }
+    return 0;
+}
+
+static void
+proc_set_safe_level(data)
+    VALUE data;
+{
+    if (OBJ_TAINTED(data)) {
+	ruby_safe_level = proc_get_safe_level(data);
     }
 }
 
@@ -6461,14 +6485,17 @@ proc_invoke(proc, args, pcall, self)
       case 0:
 	break;
       case TAG_BREAK:
+	if (!pcall && orphan) {
+	    localjump_error("break from proc-closure", prot_tag->retval);
+	}
 	result = prot_tag->retval;
 	break;
       case TAG_RETRY:
-	rb_raise(rb_eLocalJumpError, "retry from proc-closure");
+	localjump_error("retry from proc-closure", Qnil);
 	break;
       case TAG_RETURN:
 	if (orphan) {	/* orphan procedure */
-	    rb_raise(rb_eLocalJumpError, "return from proc-closure");
+	    localjump_error("return from proc-closure", prot_tag->retval);
 	}
 	/* fall through */
       default:
@@ -6577,12 +6604,15 @@ block_pass(self, node)
     }
 
     if (rb_safe_level() >= 1 && OBJ_TAINTED(block)) {
-	rb_raise(rb_eSecurityError, "Insecure: tainted block value");
+	if (rb_safe_level() > proc_get_safe_level(block)) {
+	    rb_raise(rb_eSecurityError, "Insecure: tainted block value");
+	}
     }
 
     Data_Get_Struct(block, struct BLOCK, data);
     orphan = blk_orphan(data);
 
+  retry:
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
@@ -6626,16 +6656,13 @@ block_pass(self, node)
       case 0:
 	break;
       case TAG_BREAK:
-	if (orphan) {
-	    rb_raise(rb_eLocalJumpError, "break from proc-closure");
-	}
+	result = prot_tag->retval;
 	break;
       case TAG_RETRY:
-	rb_raise(rb_eLocalJumpError, "retry from proc-closure");
-	break;
+	goto retry;
       case TAG_RETURN:
 	if (orphan) {
-	    rb_raise(rb_eLocalJumpError, "return from proc-closure");
+	    localjump_error("return from proc-closure", prot_tag->retval);
 	}
       default:
 	JUMP_TAG(state);
@@ -7008,6 +7035,8 @@ void
 Init_Proc()
 {
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
+    rb_define_method(rb_eLocalJumpError, "exitstatus", localjump_exitstatus, 0);
+
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);

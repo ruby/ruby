@@ -1,3 +1,24 @@
+Thu Jan 17 16:21:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): allow "retry" from within argument passed
+	  block. [new]
+
+	* eval.c (localjump_error): should preserve exit status in the
+	  exception object. [new]
+
+	* eval.c (proc_invoke): should raise exception for "break" if it's
+	  yielding, not calling. [new]
+
+	* eval.c (block_pass): should NOT raise exception for "break". [new]
+
+	* eval.c (block_pass): should allow block argument relay even in
+	  the tainted mode.
+
+Thu Jan 17 04:51:48 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c: support subclassing by proper "initialize"
+	  calling convention. [new]
+
 Wed Jan 16 18:25:08 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* st.c: primes should be primes.
@@ -5,10 +26,10 @@ Wed Jan 16 18:25:08 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Jan 16 12:29:14 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/timeout.rb (timeout): new optional argument to specify an
-	exception class.
+	  exception class.
 
 	* lib/resolv.rb: use Resolv::ResolvTimeout for internal timeout to
-	avoid problem with timeout of application. 
+	  avoid problem with timeout of application.
 
 Wed Jan 16 11:12:30 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
