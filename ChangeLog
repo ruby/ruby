@@ -1,3 +1,8 @@
+Tue Nov 25 17:52:11 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (URI::Generic#find_proxy): use http_proxy under CGI
+	  if the environment variable is case sensitive.
+
 Tue Nov 25 16:41:33 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/wsdl/multiplefault.wsdl, test/wsdl/test_multiplefault.rb:

@@ -443,16 +443,35 @@ module URI
     # ftp_proxy, no_proxy, etc.
     # If there is no proper proxy, nil is returned.
     #
-    # The enveironment variable CGI_http_proxy and CGI_HTTP_PROXY is used
-    # instead of http_proxy and HTTP_PROXY in the CGI environment because
-    # HTTP_PROXY can be set by Proxy: header sent by a CGI client.
+    # Note that capitalized variables (HTTP_PROXY, FTP_PROXY, NO_PROXY, etc.)
+    # are examined too.
+    #
+    # But http_proxy and HTTP_PROXY is treated specially under CGI environment.
+    # It's because HTTP_PROXY may be set by Proxy: header.
+    # So HTTP_PROXY is not used.
+    # http_proxy is not used too if the variable is case insentitive.
+    # CGI_HTTP_PROXY can be used instead.
     def find_proxy
       name = self.scheme.downcase + '_proxy'
-      if ENV.include? 'REQUEST_METHOD' # in CGI?
-        # Use CGI_HTTP_PROXY.  cf. libwww-perl.
-        name = "CGI_#{name}" if /\Ahttp_/i =~ name
+      proxy_uri = nil
+      if name == 'http_proxy' && ENV.include?('REQUEST_METHOD') # CGI?
+        # HTTP_PROXY conflicts with *_proxy for proxy settings and
+        # HTTP_* for header informatin in CGI.
+        # So it should be careful to use it.
+        case_sentsitive = /djgpp|bccwin32|mingw|mswin32|mswince|emx/ !~ RUBY_PLATFORM
+        if case_sentsitive
+          # http_proxy is safe to use.
+          proxy_uri = ENV[name]
+        end
+        if !proxy_uri
+          # Use CGI_HTTP_PROXY.  cf. libwww-perl.
+          proxy_uri = ENV["CGI_#{name.upcase}"]
+        end
+      else
+        proxy_uri = ENV[name] || ENV[name.upcase]
       end
-      if proxy_uri = ENV[name] || ENV[name.upcase]
+
+      if proxy_uri
         proxy_uri = URI.parse(proxy_uri)
         name = 'no_proxy'
         if no_proxy = ENV[name] || ENV[name.upcase]
