@@ -108,14 +108,18 @@ Fmath_sqrt(obj, x)
 Init_Math()
 {
     M_Math = rb_define_module("Math");
+    rb_extend_object(M_Math, M_Math);
 
-    rb_define_module_function(M_Math, "atan2", Fmath_atan2, 2);
-    rb_define_module_function(M_Math, "cos", Fmath_cos, 1);
-    rb_define_module_function(M_Math, "sin", Fmath_sin, 1);
-    rb_define_module_function(M_Math, "tan", Fmath_tan, 1);
+    rb_define_const(M_Math, "PI", float_new(M_PI));
+    rb_define_const(M_Math, "E", float_new(M_E));
+    
+    rb_define_method(M_Math, "atan2", Fmath_atan2, 2);
+    rb_define_method(M_Math, "cos", Fmath_cos, 1);
+    rb_define_method(M_Math, "sin", Fmath_sin, 1);
+    rb_define_method(M_Math, "tan", Fmath_tan, 1);
 
-    rb_define_module_function(M_Math, "exp", Fmath_exp, 1);
-    rb_define_module_function(M_Math, "log", Fmath_log, 1);
-    rb_define_module_function(M_Math, "log10", Fmath_log10, 1);
-    rb_define_module_function(M_Math, "sqrt", Fmath_sqrt, 1);
+    rb_define_method(M_Math, "exp", Fmath_exp, 1);
+    rb_define_method(M_Math, "log", Fmath_log, 1);
+    rb_define_method(M_Math, "log10", Fmath_log10, 1);
+    rb_define_method(M_Math, "sqrt", Fmath_sqrt, 1);
 }

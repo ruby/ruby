@@ -1,3 +1,66 @@
+Wed Mar 15 14:59:18 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.69
+
+	* eval.c(method_missing): unknownから名称変更．
+
+	* eval.c(single_method_added): 特異メソッドが定義された時に呼ばれ
+	  るメソッド．hookとして使える．実際に定義される直前に呼ばれる．
+
+Tue Mar 14 14:46:44 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* ruby.c(proc_options): 引数の解析を自分でやることにより引数指定の
+	  方法がperlに近付いた．getopt_longはもう使わない．
+
+	* dir.c(glob): `{}'のネストを許すようにした．
+
+Mon Mar 13 17:56:25 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* glob.c: Glob(ワイルドカードオブジェクト)はなくなった．ワイルドカー
+	  ドの展開はDir.glob(文字列)を使う．ワイルドカードのマッチは正規表
+	  現で代用．
+
+Fri Mar 10 18:35:46 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: Mathのようなモジュールは自分自身でextendする．
+
+	* eval.c: クラスやモジュールを定義した既に同名のものがあれば追加定
+	  義となるように．ただし．superクラスの違いなどはチェックする．
+
+	* regex.c: debug.
+
+	* math.c: 定数PIとEを定義．
+
+Thu Mar  9 21:35:12 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* regex.c: EUC,SJISモードでは0x80以上の8進，16進リテラルを禁止．
+
+	* regex.c: クラス内でも数値リテラル・文字クラスが使えるようした．
+
+Wed Mar  8 17:39:05 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* regex.c: \200など括弧の数以上の表現は8進リテラルと解釈する．ただ
+	  し，\1から\9までは例外．
+
+	* regex.c: \9以上のリファレンスも有効にした．
+
+Tue Mar  7 14:26:01 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(public/private): スコープ制御メソッドの名称変更．静的なア
+	  クセスも出来るようにしてみたが，不採用．
+
+Mon Mar  6 19:34:32 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(inlcude): メソッド化．動的にモジュールをインクルードでき
+	  るように．さらに任意のオブジェクトにもモジュールをインクルードで
+	  きるメソッド `extend'も用意した．
+
+	* parse.y: 文法からincludeを削除．メソッド化．
+
+Tue Feb 28 15:35:10 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: 配列，連想配列の最後に`,'をおけるように．
+
 Fri Feb 24 13:15:43 1995  Yukihiro Matsumoto  (matz@ix-02)
 
 	* version 0.68

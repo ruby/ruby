@@ -28,7 +28,6 @@ rb_call_inits()
     Init_Struct();
     Init_String();
     Init_Regexp();
-    Init_Glob();
     Init_pack();
     Init_Cons();
     Init_Range();

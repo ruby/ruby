@@ -237,6 +237,108 @@ Sdir_rmdir(obj, dir)
     return TRUE;
 }
 
+#define isdelim(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\0')
+
+char **glob_filename();
+
+static void
+push_globs(ary, s)
+    VALUE ary;
+    char *s;
+{
+    char **fnames, **ff;
+
+    fnames = glob_filename(s);
+    if (fnames == (char**)-1) rb_sys_fail(s);
+    ff = fnames;
+    while (*ff) {
+	ary_push(ary, str_new2(*ff));
+	free(*ff);
+	ff++;
+    }
+    free(fnames);
+}
+
+static int
+push_braces(ary, s)
+    VALUE ary;
+    char *s;
+{
+    char buf[MAXPATHLEN];
+    char *p, *t, *b;
+    char *lbrace, *rbrace;
+
+    p = s;
+    lbrace = rbrace = Qnil;
+    while (*p) {
+	if (*p == '{' && !lbrace) lbrace = p;
+	if (*p == '}' && lbrace) rbrace = p;
+	*p++;
+    }
+
+    if (lbrace) {
+	memcpy(buf, s, lbrace-s);
+	b = buf + (lbrace-s);
+	p = lbrace;
+	while (*p != '}') {
+	    t = p + 1;
+	    for (p = t; *p!='}' && *p!=','; p++) {
+		/* skip inner braces */
+		if (*p == '{') while (*p!='}') p++;
+	    }
+	    memcpy(b, t, p-t);
+	    strcpy(b+(p-t), rbrace+1);
+	    push_braces(ary, buf);
+	}
+    }
+    else {
+	push_globs(ary, s);
+    }
+}
+
+static VALUE
+Sdir_glob(dir, str)
+    VALUE dir;
+    struct RString *str;
+{
+    char *p, *pend;
+    char buf[MAXPATHLEN];
+    char *t, *t0;
+    int nest;
+    VALUE ary;
+
+    Check_Type(str, T_STRING);
+
+    ary = ary_new();
+
+    p = str->ptr;
+    pend = p + str->len;
+
+    while (p < pend) {
+	t = buf;
+	while (p < pend && isdelim(*p)) p++;
+	while (p < pend && !isdelim(*p)) {
+	    *t++ = *p++;
+	}
+	*t = '\0';
+	t0 = buf;
+	nest = 0;
+	while (t0 < t) {
+	    if (*t0 == '{') nest+=2;
+	    if (*t0 == '}') nest+=3;
+	    t0++;
+	}
+	if (nest == 0) {
+	    push_globs(ary, buf);
+	}
+	else if (nest % 5 == 0) {
+	    push_braces(ary, buf);
+	}
+	/* else unmatched braces */
+    }
+    return ary;
+}
+
 Init_Dir()
 {
     extern VALUE M_Enumerable;
@@ -261,4 +363,7 @@ Init_Dir()
     rb_define_single_method(C_Dir,"rmdir", Sdir_rmdir, 1);
     rb_define_single_method(C_Dir,"delete", Sdir_rmdir, 1);
     rb_define_single_method(C_Dir,"unlink", Sdir_rmdir, 1);
+
+    rb_define_single_method(C_Dir,"glob", Sdir_glob, 1);
+    rb_define_single_method(C_Dir,"[]", Sdir_glob, 1);
 }

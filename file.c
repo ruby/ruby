@@ -1,4 +1,3 @@
-
 /************************************************
 
   file.c -
@@ -56,59 +55,23 @@ file_open(fname, mode)
 }
 
 static int
-apply2files0(func, args, arg, gl)
-    void (*func)();
+apply2files(func, args, arg)
+    int (*func)();
     struct RArray *args;
     void *arg;
-    int gl;
 {
-    int i, n;
+    int i;
     VALUE path;
 
-    for (i=n=0; i<args->len; i++) {
+    for (i=0; i<args->len; i++) {
 	path = args->ptr[i];
-	if (TYPE(path) == T_STRING) {
-	    if (gl) {
-		char buf[MAXPATHLEN];
-		char *p, *s;
-
-		s = buf;
-		p = RSTRING(path)->ptr;
-		while (*p) {
-		    switch (*s = *p++) {
-		      case '*': case '?':
-		      case '[': case '{':
-			path = glob_new(path);
-			goto glob;
-		      case '\\':
-			if (*p == '\0') break;
-			*s = *p++;
-		    }
-		    s++;
-		}
-		*s = '\0';
-		(*func)(buf, arg);
-	    }
-	    else {
-		(*func)(RSTRING(path)->ptr, arg);
-	    }
-	    n++;
-	}
-	else {
-	    extern VALUE C_Glob;
-
-	    if (!obj_is_kind_of(path, C_Glob)) {
-		WrongType(path, T_STRING);
-	    }
-	  glob:
-	    n += apply2files0(func, rb_to_a(path), arg, 0);
-	}
+	Check_Type(path, T_STRING);
+	if ((*func)(RSTRING(path)->ptr, arg) < 0)
+	    rb_sys_fail(RSTRING(path)->ptr);
     }
 
-    return n;
+    return args->len;
 }
-
-#define apply2files(func,args,arg) apply2files0(func,args,arg,1)
 
 static VALUE
 Ffile_tell(obj)
@@ -1131,6 +1094,7 @@ Init_File()
     rb_define_method(M_FileTest, "k",  Ftest_sticky, 1);
 
     C_File = rb_define_class("File", C_IO);
+    rb_extend_object(C_File, M_FileTest);
 
     rb_define_single_method(C_File, "stat",  Sfile_stat, 1);
     rb_define_single_method(C_File, "lstat", Sfile_lstat, 1);
@@ -1153,8 +1117,6 @@ Init_File()
     rb_define_single_method(C_File, "rename", Sfile_rename, 2);
     rb_define_single_method(C_File, "umask", Sfile_umask, -1);
     rb_define_single_method(C_File, "truncate", Sfile_truncate, 2);
-
-    rb_include_module(CLASS_OF(C_File), M_FileTest);
 
     rb_define_method(C_File, "stat",  Ffile_stat, 0);
     rb_define_method(C_File, "lstat",  Ffile_lstat, 0);

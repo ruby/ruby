@@ -27,11 +27,7 @@ file.c
 fnmatch.c
 fnmatch.h
 gc.c
-getopt.c
-getopt.h
-getopt1.c
 glob.c
-gnuglob.c
 ident.h
 inits.c
 io.c
@@ -62,6 +58,8 @@ st.h
 string.c
 struct.c
 time.c
+util.h
+util.c
 variable.c
 version.c
 version.h

@@ -615,12 +615,13 @@ Init_Dict()
     rb_define_method(C_Dict,"has_value", Fdic_has_value, 1);
 
     envtbl = obj_alloc(C_Object);
+    rb_extend_object(envtbl, M_Enumerable);
+
     rb_define_single_method(envtbl,"[]", Fgetenv, 1);
     rb_define_single_method(envtbl,"[]=", Fsetenv, 2);
     rb_define_single_method(envtbl,"each", Fenv_each, 0);
     rb_define_single_method(envtbl,"delete", Fenv_delete, 1);
     rb_define_single_method(envtbl,"to_s", Fenv_to_s, 0);
-    rb_include_module(CLASS_OF(envtbl), M_Enumerable);
 
     rb_define_variable("$ENV", &envtbl, Qnil, rb_readonly_hook, 0);
     rb_define_const(C_Kernel, "ENV", envtbl);

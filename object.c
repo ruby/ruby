@@ -208,6 +208,13 @@ Fobj_init_object(obj)
 }
 
 static VALUE
+Fobj_s_added(obj, id)
+    VALUE obj, id;
+{
+    return Qnil;
+}
+
+static VALUE
 Fnil_to_s(obj)
     VALUE obj;
 {
@@ -296,8 +303,8 @@ Fcls_attr(argc, argv, class)
     return Qnil;
 }
 
-static VALUE
-Fcls_export_internal(argc, argv, ex)
+void
+method_visibility(argc, argv, ex)
     int argc;
     VALUE *argv;
     int ex;
@@ -316,24 +323,23 @@ Fcls_export_internal(argc, argv, ex)
 	}
 	rb_export_method(self, id, ex);
     }
+}
+
+static VALUE
+Fcls_public(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    method_visibility(argc, argv, NOEX_PUBLIC);
     return Qnil;
 }
 
 static VALUE
-Fcls_export(argc, argv)
+Fcls_private(argc, argv)
     int argc;
     VALUE *argv;
 {
-    Fcls_export_internal(argc, argv, 0);
-    return Qnil;
-}
-
-static VALUE
-Fcls_unexport(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    Fcls_export_internal(argc, argv, 1);
+    method_visibility(argc, argv, NOEX_PRIVATE);
     return Qnil;
 }
 
@@ -429,6 +435,7 @@ Init_Object()
     rb_define_alias(C_Kernel, "format", "sprintf");
 
     rb_define_private_method(C_Object, "init_object", Fobj_init_object, -1);
+    rb_define_private_method(C_Object, "single_method_added", Fobj_s_added, 1);
 
     rb_define_method(C_Object, "clone", Fobj_clone, 0);
 
@@ -440,8 +447,9 @@ Init_Object()
     rb_define_method(C_Module, "to_s", Fcls_to_s, 0);
     rb_define_method(C_Module, "clone", Fcant_clone, 0);
     rb_define_private_method(C_Module, "attr", Fcls_attr, -1);
-    rb_define_method(C_Module, "export", Fcls_export, -1);
-    rb_define_method(C_Module, "unexport", Fcls_unexport, -1);
+
+    rb_define_method(C_Module, "public", Fcls_public, -1);
+    rb_define_method(C_Module, "private", Fcls_private, -1);
 
     rb_define_method(C_Class, "new", Fcls_new, -1);
 

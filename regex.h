@@ -38,10 +38,10 @@
 
 
 /* This defines the various regexp syntaxes.  */
-extern long obscure_syntax;
+extern long re_syntax_options;
 
 
-/* The following bits are used in the obscure_syntax variable to choose among
+/* The following bits are used in the re_syntax_options variable to choose among
    alternative regexp syntaxes.  */
 
 /* If this bit is set, plain parentheses serve as grouping, and backslash
@@ -93,6 +93,7 @@ extern long obscure_syntax;
    If set, then { and } serve as interval operators and \{ and \} are 
      literals.  */
 #define RE_NO_BK_CURLY_BRACES (1L << 8)
+#define RE_NO_BK_BRACES RE_NO_BK_CURLY_BRACES
 
 /* If this bit is set, then character classes are supported; they are:
      [:alpha:],	[:upper:], [:lower:],  [:digit:], [:alnum:], [:xdigit:],
@@ -142,6 +143,9 @@ extern long obscure_syntax;
    If it isn't, then it can.  */
 #define RE_NO_HYPHEN_RANGE_END (1L << 18)
 
+/* If this bit is not set, then \ inside a bracket expression is literal.
+   If set, then such a \ quotes the following character.  */
+#define RE_BACKSLASH_ESCAPE_IN_LISTS (1L << 19)
 
 /* Define combinations of bits for the standard possibilities.  */
 #define RE_SYNTAX_POSIX_AWK (RE_NO_BK_PARENS | RE_NO_BK_VBAR \
@@ -165,15 +169,25 @@ extern long obscure_syntax;
                         | RE_NO_HYPHEN_RANGE_END)
 
 /* For multi-byte char support */
-#define RE_MBCTYPE_EUC (1L << 19)
-#define RE_MBCTYPE_SJIS (1L << 20)
+#define RE_MBCTYPE_EUC (1L << 20)
+#define RE_MBCTYPE_SJIS (1L << 21)
 #define RE_MBCTYPE_MASK (RE_MBCTYPE_EUC | RE_MBCTYPE_SJIS)
+
+#ifdef EUC
+#define DEFAULT_MBCTYPE RE_MBCTYPE_EUC
+#else
+#ifdef SJIS
+#define DEFAULT_MBCTYPE RE_MBCTYPE_SJIS
+#else
+#define DEFAULT_MBCTYPE 0
+#endif
+#endif
 
 #undef ismbchar
 #define ismbchar(c) \
-  (obscure_syntax & RE_MBCTYPE_EUC		\
+  (re_syntax_options & RE_MBCTYPE_EUC		\
    ? ((unsigned char) (c) >= 0x80)		\
-   : (obscure_syntax & RE_MBCTYPE_SJIS		\
+   : (re_syntax_options & RE_MBCTYPE_SJIS		\
       ? ((   0x80 <= (unsigned char) (c)	\
 	  && (unsigned char) (c) <= 0x9f)	\
 	 || (0xe0 <= (unsigned char) (c)))	\
@@ -193,6 +207,9 @@ struct re_pattern_buffer
 		           comparing, or zero for no translation.
 			   The translation is applied to a pattern when it is 
                            compiled and to data when it is matched.  */
+
+	
+    long re_nsub;	/* Number of subexpressions found by the compiler. */
     char fastmap_accurate;
 			/* Set to zero when a new pattern is stored,
 			   set to one when the fastmap is updated from it.  */
@@ -223,8 +240,10 @@ struct re_pattern_buffer
 
 struct re_registers
   {
-    int start[RE_NREGS];
-    int end[RE_NREGS];
+    unsigned allocated;
+    unsigned num_regs;
+    int *beg;
+    int *end;
   };
 
 
@@ -236,14 +255,10 @@ extern char *re_compile_pattern (char *, size_t, struct re_pattern_buffer *);
 extern void re_compile_fastmap (struct re_pattern_buffer *);
 extern int re_search (struct re_pattern_buffer *, char*, int, int, int,
 		      struct re_registers *);
-extern int re_search_2 (struct re_pattern_buffer *, char *, int,
-			char *, int, int, int,
-			struct re_registers *, int);
 extern int re_match (struct re_pattern_buffer *, char *, int, int,
 		     struct re_registers *);
-extern int re_match_2 (struct re_pattern_buffer *, char *, int,
-		       char *, int, int, struct re_registers *, int);
 extern long re_set_syntax (long syntax);
+extern void re_copy_registers (struct re_registers*, struct re_registers*);
 
 #ifndef RUBY
 /* 4.2 bsd compatibility.  */
@@ -256,15 +271,10 @@ extern int re_exec (char *);
 extern char *re_compile_pattern ();
 /* Is this really advertised? */
 extern void re_compile_fastmap ();
-extern int re_search (), re_search_2 ();
-extern int re_match (), re_match_2 ();
+extern int re_search ();
+extern int re_match ();
 extern long re_set_syntax();
-
-#ifndef RUBY
-/* 4.2 bsd compatibility.  */
-extern char *re_comp ();
-extern int re_exec ();
-#endif
+extern void re_copy_registers ();
 
 #endif /* __STDC__ */
 

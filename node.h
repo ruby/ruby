@@ -38,6 +38,7 @@ enum node_type {
     NODE_OP_ASGN1,
     NODE_OP_ASGN2,
     NODE_CALL,
+    NODE_FCALL,
     NODE_SUPER,
     NODE_ZSUPER,
     NODE_ARRAY,
@@ -56,13 +57,13 @@ enum node_type {
     NODE_IVAR,
     NODE_CVAR,
     NODE_CONST,
+    NODE_NTH_REF,
     NODE_LIT,
     NODE_STR,
     NODE_STR2,
     NODE_XSTR,
     NODE_XSTR2,
     NODE_DREGX,
-    NODE_DGLOB,
     NODE_ARGS,
     NODE_DEFN,
     NODE_DEFS,
@@ -71,7 +72,6 @@ enum node_type {
     NODE_CLASS,
     NODE_MODULE,
     NODE_CREF,
-    NODE_INC,
     NODE_DOT3,
     NODE_ATTRSET,
     NODE_SELF,
@@ -173,6 +173,8 @@ typedef struct RNode {
 #define nd_state u3.state
 #define nd_rval  u3.node
 
+#define nd_nth   u2.argc
+
 #define NEW_METHOD(n,x) newnode(NODE_METHOD,x,n,0)
 #define NEW_FBODY(n,i,o) newnode(NODE_FBODY,n,i,o)
 #define NEW_DEFN(i,a,d,p) newnode(NODE_DEFN,p,i,NEW_RFUNC(a,d))
@@ -216,12 +218,14 @@ typedef struct RNode {
 #define NEW_LVAR2(v) newnode(NODE_LVAR2,v,0,0)
 #define NEW_IVAR(v) newnode(NODE_IVAR,v,0,0)
 #define NEW_CVAR(v) newnode(NODE_CVAR,v,0,cref_list)
+#define NEW_NTH_REF(n) newnode(NODE_NTH_REF,0,n,0)
 #define NEW_LIT(l) newnode(NODE_LIT,l,0,0)
 #define NEW_STR(s) newnode(NODE_STR,s,0,0)
 #define NEW_STR2(s) newnode(NODE_STR2,s,0,0)
 #define NEW_XSTR(s) newnode(NODE_XSTR,s,0,0)
 #define NEW_XSTR2(s) newnode(NODE_XSTR2,s,0,0)
 #define NEW_CALL(r,m,a) newnode(NODE_CALL,r,m,a)
+#define NEW_FCALL(m,a) newnode(NODE_FCALL,0,m,a)
 #define NEW_SUPER(a) newnode(NODE_SUPER,0,0,a)
 #define NEW_ZSUPER() newnode(NODE_ZSUPER,0,0,0)
 #define NEW_ARGS(f,r) newnode(NODE_ARGS,0,r,f)
@@ -232,7 +236,6 @@ typedef struct RNode {
 #define NEW_CREF0() (cref_list=newnode(NODE_CREF,the_class,0,0))
 #define NEW_CREF(b) (cref_list=newnode(NODE_CREF,0,0,cref_list))
 #define NEW_CBODY(b) (cref_list->nd_body=NEW_SCOPE(b),cref_list)
-#define NEW_INC(m) newnode(NODE_INC,m,0,0)
 #define NEW_DOT3(b,e) newnode(NODE_DOT3,b,e,0)
 #define NEW_ATTRSET(a) newnode(NODE_ATTRSET,a,0,0)
 #define NEW_SELF() newnode(NODE_SELF,0,0,0)

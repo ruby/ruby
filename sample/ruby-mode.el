@@ -18,7 +18,7 @@
 (defconst ruby-block-end-re "end")
 
 (defconst ruby-delimiter
-  (concat "[$/<(){}#\"'`]\\|\\[\\|\\]\\|\\b\\("
+  (concat "[$/(){}#\"'`]\\|\\[\\|\\]\\|\\b\\("
 	  ruby-block-beg-re "\\|" ruby-block-end-re "\\)\\b")
   )
 
@@ -178,9 +178,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	     (t
 	      (goto-char indent-point)
 	      (setq in-string t))))
-	   ((or (string= "/" w)
-		(string= "<" w))
-	    (if (string= "<" w) (setq w ">"))
+	   ((string= "/" w)
 	    (let (c)
 	      (save-excursion
 		(goto-char pnt)
@@ -200,6 +198,120 @@ The variable ruby-indent-level controls the amount of indentation.
 		    nil
 		  (goto-char indent-point)
 		  (setq in-string t))))))
+	   ((string= "$" w)		;skip $char
+	    (forward-char 1))
+	   ((string= "#" w)		;skip comment
+	    (forward-line 1))
+	   ((string= "(" w)		;skip to matching paren
+	    (let ((orig depth))
+	      (setq nest (cons (point) nest))
+	      (setq depth (1+ depth))
+	      (while (and (/= depth orig)
+			  (re-search-forward "[()]" indent-point t))
+		(cond
+		 ((= (char-after (match-beginning 0)) ?\( )
+		  (setq nest (cons (point) nest))
+		  (setq depth (1+ depth)))
+		 (t
+		  (setq nest (cdr nest))
+		  (setq depth (1- depth)))))
+	      (if (> depth orig) (setq in-paren ?\())))
+	   ((string= "[" w)		;skip to matching paren
+	    (let ((orig depth))
+	      (setq nest (cons (point) nest))
+	      (setq depth (1+ depth))
+	      (while (and (/= depth orig)
+			  (re-search-forward "\\[\\|\\]" indent-point t))
+		(cond
+		 ((= (char-after (match-beginning 0)) ?\[ )
+		  (setq nest (cons (point) nest))
+		  (setq depth (1+ depth)))
+		 (t
+		  (setq nest (cdr nest))
+		  (setq depth (1- depth)))))
+	      (if (> depth orig) (setq in-paren ?\[))))
+	   ((string= "{" w)		;skip to matching paren
+	    (let ((orig depth))
+	      (setq nest (cons (point) nest))
+	      (setq depth (1+ depth))
+	      (while (and (/= depth orig)
+			  (re-search-forward "[{}]" indent-point t))
+		(cond
+		 ((= (char-after (match-beginning 0)) ?{ )
+		  (setq nest (cons (point) nest))
+		  (setq depth (1+ depth)))
+		 (t
+		  (setq nest (cdr nest))
+		  (setq depth (1- depth)))))
+	      (if (> depth orig) (setq in-paren ?{))))
+	   ((string-match ruby-block-end-re w)
+	    (setq nest (cdr nest))
+	    (setq depth (1- depth)))
+	   ((string-match ruby-block-beg-re w)
+	    (let (c)
+	      (save-excursion
+		(goto-char pnt)
+		(skip-chars-backward " \t")
+		(setq c (char-after (1- (point)))))
+	      (if (or (null c) (= c ?\n) (= c ?\;))
+		  (progn
+		    (setq nest (cons (point) nest))
+		    (setq depth (1+ depth))))))
+	   (t
+	    (error (format "bad string %s" w)))))))
+    (list in-string in-paren (car nest) depth)))
+
+(defun ruby-parse-region (start end)
+  (let ((indent-point end)
+	(indent 0)
+	(in-string nil)
+	(in-paren nil)
+	(depth 0)
+	(nest nil))
+    (save-excursion
+      (if start
+	  (goto-char start)
+	(ruby-beginning-of-defun))
+      (while (and (> indent-point (point))
+		  (re-search-forward ruby-delimiter indent-point t))
+	(let ((w (buffer-substring (match-beginning 0) (match-end 0)))
+	      (pnt (match-beginning 0)))
+	  (cond
+	   ((or (string= "\"" w)	;skip string
+		(string= "'" w)
+		(string= "`" w))
+	    (cond 
+	     ((string= w (char-to-string (char-after (point))))
+	      (forward-char 1))
+	     ((re-search-forward (format "[^\\]%s" w) indent-point t)
+		nil)
+	     (t
+	      (goto-char indent-point)
+	      (setq in-string t))))
+	   ((or (string= "/" w)
+		(string= "<" w))
+	    (if (string= "<" w) (setq w ">"))
+	    (let (c)
+	      (save-excursion
+		(goto-char pnt)
+		(skip-chars-backward " \t")
+		(setq c (char-after (1- (point))))
+		(if c (setq c (char-syntax c))))
+	      (if (or (eq c ?.)
+		      (and (eq c ?w)
+			   (save-excursion
+			     (forward-word -1)
+			     (or 
+			      (looking-at ruby-block-beg-re)
+			      (looking-at ruby-block-mid-re)))))
+		  (cond
+		   ((string= w (char-to-string (char-after (point))))
+		    (forward-char 1))
+		   ((re-search-forward (format "[^\\]%s" w) indent-point t)
+		    nil)
+		   (t
+		    (goto-char indent-point)
+		    (setq in-string t))))))
 	   ((string= "$" w)		;skip $char
 	    (forward-char 1))
 	   ((string= "#" w)		;skip comment

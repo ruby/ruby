@@ -203,17 +203,6 @@ rb_readonly_hook(val, id)
 }
 
 VALUE
-rb_id2class(id)
-    ID id;
-{
-    VALUE class;
-
-    if (st_lookup(class_tbl, id, &class))
-	return class;
-    return Qnil;
-}
-
-VALUE
 rb_gvar_get(entry)
     struct global_entry *entry;
 {

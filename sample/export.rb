@@ -1,18 +1,38 @@
 # method access permission
 # output:
 #	foobar
-#	foo
+#	Foo
 
 class Foo
-  export :printf
+  public :printf
+  def baz
+    print "baz\n"
+  end
+  private :baz
+
+  def quux
+    print "in QUUX "
+    baz()
+  end
 end
 
 def foobar
   print "foobar\n"
 end
 
-f = foo.new
-#foo.unexport :printf
-foo.export :foobar
+f = Foo.new
+#Foo.private :printf
+Foo.public :foobar
 f.foobar
-f.printf "%s\n", foo
+f.printf "%s\n", Foo
+
+f.quux
+
+class Bar : Foo
+  def quux
+    super
+    baz()
+  end
+end
+
+Bar.new.quux

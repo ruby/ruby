@@ -492,6 +492,7 @@ Init_process()
     rb_define_private_method(C_Kernel, "sleep", Fsleep, -1);
 
     M_Process = rb_define_module("Process");
+    rb_extend_object(M_Process, M_Process);
 
     rb_define_single_method(M_Process, "fork", Ffork, 0);
     rb_define_single_method(M_Process, "_exit", Ffork, 1);
@@ -499,25 +500,25 @@ Init_process()
     rb_define_single_method(M_Process, "waitpid", Fwaitpid, 2);
     rb_define_single_method(M_Process, "kill", Fkill, -1);
 
-    rb_define_module_function(M_Process, "pid", get_pid, 0);
-    rb_define_module_function(M_Process, "ppid", get_ppid, 0);
+    rb_define_method(M_Process, "pid", get_pid, 0);
+    rb_define_method(M_Process, "ppid", get_ppid, 0);
 
-    rb_define_module_function(M_Process, "getpgrp", Fproc_getpgrp, -1);
-    rb_define_module_function(M_Process, "setpgrp", Fproc_setpgrp, 2);
+    rb_define_method(M_Process, "getpgrp", Fproc_getpgrp, -1);
+    rb_define_method(M_Process, "setpgrp", Fproc_setpgrp, 2);
 
-    rb_define_module_function(M_Process, "getpriority", Fproc_getpriority, 2);
-    rb_define_module_function(M_Process, "setpriority", Fproc_setpriority, 3);
+    rb_define_method(M_Process, "getpriority", Fproc_getpriority, 2);
+    rb_define_method(M_Process, "setpriority", Fproc_setpriority, 3);
 
     rb_define_const(M_Process, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
     rb_define_const(M_Process, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
     rb_define_const(M_Process, "PRIO_USER", INT2FIX(PRIO_USER));
 
-    rb_define_module_function(M_Process, "uid", Fproc_getuid, 0);
-    rb_define_module_function(M_Process, "uid=", Fproc_setuid, 1);
-    rb_define_module_function(M_Process, "gid", Fproc_getgid, 0);
-    rb_define_module_function(M_Process, "gid=", Fproc_setgid, 1);
-    rb_define_module_function(M_Process, "euid", Fproc_geteuid, 0);
-    rb_define_module_function(M_Process, "euid=", Fproc_seteuid, 1);
-    rb_define_module_function(M_Process, "egid", Fproc_getegid, 0);
-    rb_define_module_function(M_Process, "egid=", Fproc_setegid, 1);
+    rb_define_method(M_Process, "uid", Fproc_getuid, 0);
+    rb_define_method(M_Process, "uid=", Fproc_setuid, 1);
+    rb_define_method(M_Process, "gid", Fproc_getgid, 0);
+    rb_define_method(M_Process, "gid=", Fproc_setgid, 1);
+    rb_define_method(M_Process, "euid", Fproc_geteuid, 0);
+    rb_define_method(M_Process, "euid=", Fproc_seteuid, 1);
+    rb_define_method(M_Process, "egid", Fproc_getegid, 0);
+    rb_define_method(M_Process, "egid=", Fproc_setegid, 1);
 }

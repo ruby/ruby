@@ -1,4 +1,4 @@
-#! /usr/local/bin/ruby -Cn
+#! /usr/local/bin/ruby -Kn
 # usage: exyacc.rb [yaccfiles]
 # this is coverted from exyacc.pl in the camel book
 

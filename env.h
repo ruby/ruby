@@ -32,4 +32,7 @@ extern int rb_in_eval;
 
 extern struct RClass *the_class;
 
+#define NOEX_PUBLIC  0
+#define NOEX_PRIVATE 1
+
 #endif /* ENV_H */

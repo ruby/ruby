@@ -17,8 +17,8 @@ module ParseDate
     if date.sub(/\s+(\d+:\d+(:\d+)?)/, ' ')
       time = $1
     end
-    if date =~ /19\d\d/
-      year = $&
+    if date =~ /19(\d\d)/
+      year = $1
     end
     if date.sub(/\s*(\d+)\s+(#{MONTHPAT})\S*\s+/, ' ')
       dayofmonth = $1

@@ -1,5 +1,10 @@
 #!/usr/local/bin/ruby
 
+if $ARGV[0] == "-c"
+  out_stdout = 1;
+  $ARGV.shift
+end
+
 while gets()
   if /^begin\s*(\d*)\s*(\S*)/
     $mode, $file = $1, $2
@@ -8,8 +13,13 @@ while gets()
   end
 end
 
-fail "missing begin" if !$sawbegin;
-OUT = open($file, "w") if $file != "";
+fail "missing begin" if ! $sawbegin;
+
+if out_stdout
+  out = STDOUT
+else
+  out = open($file, "w") if $file != "";
+end
 
 while gets()
   if /^end/
@@ -19,9 +29,9 @@ while gets()
   sub(/[a-z]+$/, ""); # handle stupid trailing lowercase letters
   continue if /[a-z]/
   continue if !(((($_[0] - 32) & 077) + 2) / 3 == $_.length / 4)
-  OUT << $_.unpack("u");
+  out << $_.unpack("u");
 end
 
-fail "missing end" if ! $sawend;
-File.chmod $mode.oct, $file;
+fail "missing end" if !$sawend;
+File.chmod $mode.oct, $file if ! out_stdout
 exit 0;

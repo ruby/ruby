@@ -360,8 +360,6 @@ Fstr_cmp(str1, str2)
 
 VALUE Freg_match();
 
-extern VALUE C_Glob;
-
 static VALUE
 Fstr_match(x, y)
     struct RString *x, *y;
@@ -382,9 +380,6 @@ Fstr_match(x, y)
 	return INT2FIX(start);
 
       default:
-	if (obj_is_kind_of(y, C_Glob)) {
-	    return Fglob_match(y, x);
-	}
 	Fail("type mismatch");
 	break;
     }
@@ -684,8 +679,8 @@ str_sub(str, pat, val, once)
 
     for (offset=0, n=0;
 	 (beg=research(pat, str, offset)) >= 0;
-	 offset=RREGEXP(pat)->ptr->regs.start[0]+STRLEN(val)) {
-	end = RREGEXP(pat)->ptr->regs.end[0]-1;
+	 offset=BEG(0)+STRLEN(val)) {
+	end = END(0)-1;
 	sub = re_regsub(val);
 	str_replace2(str, beg, end, sub);
 	n++;
@@ -1339,11 +1334,8 @@ Fstr_split(argc, argv, str)
 	int last_null = 0;
 	int idx;
 
-#define LMATCH spat->ptr->regs.start
-#define RMATCH spat->ptr->regs.end
-
 	while ((end = research(spat, str, start)) >= 0) {
-	    if (start == end && LMATCH[0] == RMATCH[0]) {
+	    if (start == end && BEG(0) == END(0)) {
 		if (last_null == 1) {
 		    if (ismbchar(str->ptr[beg]))
 			ary_push(result, str_substr(str, beg, 2));
@@ -1360,17 +1352,17 @@ Fstr_split(argc, argv, str)
 	    }
 	    else {
 		ary_push(result, str_substr(str, beg, end-beg));
-		beg = start = RMATCH[0];
+		beg = start = END(0);
 		if (limit && lim <= ++i) break;
 	    }
 	    last_null = 0;
 
 	    for (idx=1; idx < 10; idx++) {
-		if (LMATCH[idx] == -1) break;
-		if (LMATCH[idx] == RMATCH[idx])
+		if (BEG(idx) == -1) break;
+		if (BEG(idx) == END(idx))
 		    tmp = str_new(0, 0);
 		else
-		    tmp = str_subseq(str, LMATCH[idx], RMATCH[idx]-1);
+		    tmp = str_subseq(str, BEG(idx), END(idx)-1);
 		ary_push(result, tmp);
 		if (limit && lim <= ++i) break;
 	    }
@@ -1379,9 +1371,6 @@ Fstr_split(argc, argv, str)
     }
     if (str->len > beg) {
 	ary_push(result, str_subseq(str, beg, -1));
-    }
-    else if (str->len == beg) {
-	ary_push(result, str_new(0, 0));
     }
 
     return result;

@@ -161,7 +161,7 @@ struct RArray {
 
 struct RRegexp {
     struct RBasic basic;
-    struct Regexp *ptr;
+    struct re_pattern_buffer *ptr;
     UINT len;
     char *str;
 };

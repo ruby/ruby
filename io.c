@@ -1395,6 +1395,8 @@ Init_IO()
     rb_define_const(C_Object, "STDERR", rb_stderr);
 
     argf = obj_alloc(C_Object);
+    rb_extend_object(argf, M_Enumerable);
+
     rb_define_variable("$<", &argf, Qnil, rb_readonly_hook, 0);
     rb_define_variable("$ARGF", &argf, Qnil, rb_readonly_hook, 0);
 
@@ -1411,7 +1413,6 @@ Init_IO()
     rb_define_single_method(argf, "to_s", Farg_filename, 0);
     rb_define_single_method(argf, "filename", Farg_filename, 0);
     rb_define_single_method(argf, "file", Farg_file, 0);
-    rb_include_module(CLASS_OF(argf), M_Enumerable);
 
     filename = str_new2("-");
     rb_define_variable("$FILENAME", &filename, Qnil, rb_readonly_hook, 0);

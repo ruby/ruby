@@ -25,8 +25,13 @@ err_sprintf(buf, fmt, args)
     char *buf, *fmt;
     va_list args;
 {
-    sprintf(buf, "%s:%d: ", sourcefile, sourceline);
-    vsprintf((char*)buf+strlen(buf), fmt, args);
+    if (!sourcefile) {
+	vsprintf(buf, fmt, args);
+    }
+    else {
+	sprintf(buf, "%s:%d: ", sourcefile, sourceline);
+	vsprintf((char*)buf+strlen(buf), fmt, args);
+    }
     if (buf[strlen(buf)-1] != '\n')
 	strcat(buf, "\n");
 }

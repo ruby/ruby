@@ -230,7 +230,7 @@ rb_define_method(class, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_add_method(class, rb_intern(name), NEW_CFUNC(func, argc), 0);
+    rb_add_method(class, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PUBLIC);
 }
 
 void
@@ -238,7 +238,7 @@ rb_undef_method(class, name)
     struct RClass *class;
     char *name;
 {
-    rb_add_method(class, rb_intern(name), Qnil, 0);
+    rb_add_method(class, rb_intern(name), Qnil, NOEX_PUBLIC);
 }
 
 void
@@ -248,7 +248,7 @@ rb_define_private_method(class, name, func, argc)
     VALUE (*func)();
     int argc;
 {
-    rb_add_method(class, rb_intern(name), NEW_CFUNC(func, argc), 1);
+    rb_add_method(class, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PRIVATE);
 }
 
 VALUE

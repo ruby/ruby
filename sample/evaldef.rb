@@ -18,8 +18,8 @@ class Bar : Foo
   end
 end
 
-f = foo.new
-b = bar.new
+f = Foo.new
+b = Bar.new
 
 b.foo
 b.bar

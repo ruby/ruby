@@ -24,9 +24,9 @@
 #define is_local_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
 #define is_global_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_GLOBAL)
 #define is_instance_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
-#define is_variable_id(id) (is_id_nonop(id)&&((id)&ID_VARMASK))
 #define is_attrset_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
 #define is_const_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
+#define is_nthref_id(id) (((id)&ID_SCOPE_MASK)==ID_NTHREF)
 
 struct op_tbl {
     ID token;
@@ -94,7 +94,6 @@ static void top_local_setup();
 	MODULE
 	DEF
 	UNDEF
-	INCLUDE
 	BEGIN
 	RESQUE
 	ENSURE
@@ -126,16 +125,16 @@ static void top_local_setup();
 	WHILE_MOD
 	ALIAS
 
-%token <id>   IDENTIFIER GVAR IVAR CONSTANT
-%token <val>  INTEGER FLOAT STRING XSTRING REGEXP GLOB
-%token <node> STRING2 XSTRING2 DREGEXP DGLOB
+%token <id>   IDENTIFIER GVAR IVAR CONSTANT NTH_REF
+%token <val>  INTEGER FLOAT STRING XSTRING REGEXP
+%token <node> STRING2 XSTRING2 DREGEXP
 
-%type <node> singleton inc_list
+%type <node> singleton
 %type <val>  literal numeric
 %type <node> compexpr exprs expr arg primary var_ref
 %type <node> if_tail opt_else case_body cases resque ensure
 %type <node> call_args call_args0 args args2 opt_args
-%type <node> f_arglist f_args assoc_list assocs assoc
+%type <node> f_arglist f_args array assoc_list assocs assoc
 %type <node> mlhs mlhs_head mlhs_tail lhs iter_var opt_iter_var
 %type <id>   superclass variable symbol
 %type <id>   fname op rest_arg
@@ -245,7 +244,7 @@ expr		: mlhs '=' args2
 		    }
 		| IDENTIFIER call_args0
 		    {
-			$$ = NEW_CALL(Qnil, $1, $2);
+			$$ = NEW_FCALL($1, $2);
 		    }
 		| primary '.' IDENTIFIER call_args0
 		    {
@@ -265,12 +264,6 @@ expr		: mlhs '=' args2
 		| ALIAS fname {lex_state = EXPR_FNAME;} fname
 		    {
 		        $$ = NEW_ALIAS($2, $4);
-		    }
-		| INCLUDE inc_list
-		    {
-			if (cur_mid || in_single)
-			    Error("include appeared in method definition");
-			$$ = $2;
 		    }
 		| expr IF_MOD expr
 		    {
@@ -322,32 +315,13 @@ lhs		: variable
 		    {
 			$$ = asignable($1, Qnil);
 		    }
-		| primary '[' opt_args rbracket
+		| primary '[' opt_args opt_nl rbracket
 		    {
 			$$ = aryset($1, $3, Qnil);
 		    }
 		| primary '.' IDENTIFIER
 		    {
 			$$ = attrset($1, $3, Qnil);
-		    }
-
-inc_list	: CONSTANT
-		    {
-			$$ = NEW_INC($1);
-		    }
-		| inc_list comma CONSTANT
-		    {
-			$$ = block_append($1, NEW_INC($3));
-		    }
-		| error
-		    {
-			lex_state = EXPR_BEG;
-			$$ = Qnil;
-		    }
-		| inc_list comma error
-		    {
-			lex_state = EXPR_BEG;
-			$$ = $1;
 		    }
 
 fname		: IDENTIFIER
@@ -389,9 +363,9 @@ arg		: variable '=' arg
 			value_expr($3);
 			$$ = asignable($1, $3);
 		    }
-		| primary '[' opt_args rbracket '=' arg
+		| primary '[' opt_args opt_nl rbracket '=' arg
 		    {
-			$$ = aryset($1, $3, $6);
+			$$ = aryset($1, $3, $7);
 		    }
 		| primary '.' IDENTIFIER '=' arg
 		    {
@@ -416,12 +390,12 @@ arg		: variable '=' arg
 			}
 		  	$$ = asignable($1, call_op(val, $2, 1, $3));
 		    }
-		| primary '[' opt_args rbracket OP_ASGN arg
+		| primary '[' opt_args opt_nl rbracket OP_ASGN arg
 		    {
-			NODE *args = NEW_LIST($6);
+			NODE *args = NEW_LIST($7);
 
 			if ($3) list_concat(args, $3);
-			$$ = NEW_OP_ASGN1($1, $5, args);
+			$$ = NEW_OP_ASGN1($1, $6, args);
 		    }
 		| primary '.' IDENTIFIER OP_ASGN arg
 		    {
@@ -577,8 +551,8 @@ call_args	: /* none */
 		    {
 			$$ = Qnil;
 		    }
-		| call_args0
-		| '*' arg
+		| call_args0 opt_nl
+		| '*' arg opt_nl
 		    {
 			$$ = $2;
 		    }
@@ -624,6 +598,12 @@ args2		: args
 			}
 		    }
 
+array		: /* none */
+		    {
+			$$ = Qnil;
+		    }
+		| args trailer
+
 primary		: literal
 		    {
 			$$ = NEW_LIT($1);
@@ -639,7 +619,6 @@ primary		: literal
 		    }
 		| XSTRING2
 		| DREGEXP
-		| DGLOB
 		| var_ref
 		| SUPER '(' call_args rparen
 		    {
@@ -653,12 +632,12 @@ primary		: literal
 			    Error("super called outside of method");
 			$$ = NEW_ZSUPER();
 		    }
-		| primary '[' opt_args rbracket
+		| primary '[' opt_args opt_nl rbracket
 		    {
 			value_expr($1);
 			$$ = NEW_CALL($1, AREF, $3);
 		    }
-		| LBRACK opt_args rbracket
+		| LBRACK array rbracket
 		    {
 			if ($2 == Qnil)
 			    $$ = NEW_ZARRAY(); /* zero length array*/
@@ -726,13 +705,13 @@ primary		: literal
 			if (nd_type($1) == NODE_LVAR
 		            || nd_type($1) == NODE_LVAR2
 		            || nd_type($1) == NODE_CVAR) {
-			    $1 = NEW_CALL(Qnil, $1->nd_vid, Qnil);
+			    $1 = NEW_FCALL($1->nd_vid, Qnil);
 			}
 			$$ = NEW_ITER($3, $1, $5);
 		    }
 		| IDENTIFIER '(' call_args rparen
 		    {
-			$$ = NEW_CALL(Qnil, $1, $3);
+			$$ = NEW_FCALL($1, $3);
 		    }
 		| primary '.' IDENTIFIER '(' call_args rparen
 		    {
@@ -832,7 +811,7 @@ primary		: literal
 		  compexpr
 		  END
 		    {
-			$$ = NEW_DEFN($2, $4, $5, class_nest?1:0);
+			$$ = NEW_DEFN($2, $4, $5, class_nest?0:1);
 		        local_pop();
 			cur_mid = Qnil;
 		    }
@@ -918,7 +897,6 @@ literal		: numeric
 			$$ = INT2FIX($2);
 		    }
 		| REGEXP
-		| GLOB
 
 symbol		: fname
 		| IVAR
@@ -931,6 +909,7 @@ variable	: IDENTIFIER
 		| IVAR
 		| GVAR
 		| CONSTANT
+		| NTH_REF
 		| NIL
 		    {
 			$$ = NIL;
@@ -1037,7 +1016,6 @@ singleton	: var_ref
 			  case NODE_XSTR:
 			  case NODE_XSTR2:
 			  case NODE_DREGX:
-			  case NODE_DGLOB:
 			  case NODE_LIT:
 			  case NODE_ARRAY:
 			  case NODE_ZARRAY:
@@ -1052,8 +1030,8 @@ assoc_list	: /* none */
 		    {
 			$$ = Qnil;
 		    }
-		| assocs
-		| args
+		| assocs trailer
+		| args trailer
 		    {
 			if ($1->nd_alen%2 != 0) {
 			    Error("odd number list for Dict");
@@ -1078,6 +1056,10 @@ opt_term	: /* none */
 opt_nl		: /* none */
 		| nl
 
+trailer		: /* none */
+		| nl
+		| comma
+
 term		: sc
 		| nl
 
@@ -1091,10 +1073,12 @@ rparen		: ')' 		{ yyerrok; }
 rbracket	: ']'		{ yyerrok; }
 rbrace		: '}'		{ yyerrok; }
 comma		: ',' 		{ yyerrok; }
+
 %%
 #include <ctype.h>
 #include <sys/types.h>
 #include "regex.h"
+#include "util.h"
 
 #define is_identchar(c) ((c)!=-1&&(isalnum(c) || (c) == '_' || ismbchar(c)))
 
@@ -1107,11 +1091,10 @@ VALUE newfloat();
 VALUE newinteger();
 char *strdup();
 
-#define EXPAND_B 1
-#define LEAVE_BS 2
-
 static NODE *var_extend();
 static void read_escape();
+
+#define LEAVE_BS 1
 
 static char *lex_p;
 static int lex_len;
@@ -1131,6 +1114,22 @@ lex_setsrc(src, ptr, len)
 
 #define nextc() ((--lex_len>=0)?(*lex_p++):-1)
 #define pushback() (lex_len++, lex_p--)
+
+#define SCAN_HEX(i) 			\
+do {					\
+    int numlen;				\
+    i=scan_hex(lex_p, 2, &numlen);	\
+    lex_p += numlen;			\
+    lex_len -= numlen;			\
+} while (0)
+
+#define SCAN_OCT(i) 			\
+do {					\
+    int numlen;				\
+    i=scan_oct(lex_p, 3, &numlen);	\
+    lex_p += numlen;			\
+    lex_len -= numlen;			\
+} while (0)
 
 #define tokfix() (tokenbuf[tokidx]='\0')
 #define tok() tokenbuf
@@ -1187,18 +1186,37 @@ parse_regx()
 		continue;
 
 	  case '\\':
-	    if ((c = nextc()) == -1) {
+	    switch (c = nextc()) {
+	      case -1:
 		sourceline = re_start;
 		Error("unterminated regexp meets end of file");
 		return 0;
-	    }
-	    else if (c == '\n') {
+
+	      case '\n':
 		sourceline++;
-	    }
-	    else if (in_brack && c == 'b') {
-		tokadd('\b');
-	    }
-	    else {
+		break;
+
+	      case '\\':
+		tokadd('\\');
+		tokadd('\\');
+		break;
+
+	      case '1': case '2': case '3':
+	      case '4': case '5': case '6':
+	      case '7': case '8': case '9':
+	      case '0': case 'x':
+		tokadd('\\');
+		tokadd(c);
+		break;
+
+	      case 'b':
+		if (!in_brack) {
+		    tokadd('\\');
+		    tokadd('b');
+		    break;
+		}
+		/* fall through */
+	      default:
 		pushback();
 		read_escape(LEAVE_BS);
 	    }
@@ -1285,11 +1303,11 @@ parse_string(term)
 		tokadd(c);
 	    }
 	    else {
-		int flags = EXPAND_B;
-		if (term != '"') flags |= LEAVE_BS;
-		pushback();
-		read_escape(flags);
-	    }
+                int flags = 0;
+                if (term != '"') flags = LEAVE_BS;
+                pushback();
+                read_escape(flags);
+  	    }
 	    continue;
 	}
 	tokadd(c);
@@ -1342,7 +1360,6 @@ static struct kwtable {
     "for", 	FOR,		EXPR_BEG,
     "if",	IF,		EXPR_BEG,
     "in",	IN,		EXPR_BEG,
-    "include",	INCLUDE,	EXPR_BEG,
     "module",	MODULE,		EXPR_BEG,
     "nil",	NIL,		EXPR_END,
     "or",	OR,		EXPR_BEG,
@@ -1438,14 +1455,6 @@ retry:
 	return '=';
 
       case '<':
-	if (lex_state == EXPR_BEG) {
-	    if (parse_string('>') == STRING) {
-		yylval.val = glob_new(yylval.val);
-		return GLOB;
-	    }
-	    nd_set_type(yylval.node, NODE_DGLOB);
-	    return DGLOB;
-	}
 	lex_state = EXPR_BEG;
 	if ((c = nextc()) == '=') {
 	    if ((c = nextc()) == '>') {
@@ -1533,7 +1542,7 @@ retry:
       case '?':
 	if ((c = nextc()) == '\\') {
 	    newtok();
-	    read_escape(EXPAND_B);
+	    read_escape(0);
 	    c = tok()[0];
 	}
 	c &= 0xff;
@@ -1830,8 +1839,8 @@ retry:
 	return c;
 
       case '$':
+	lex_state = EXPR_END;
 	newtok();
-	tokadd(c);
 	c = nextc();
 	switch (c) {
 	  case '*':		/* $*: argv */
@@ -1854,17 +1863,42 @@ retry:
 	  case '<':		/* $<: reading filename */
 	  case '>':		/* $>: default output handle */
 	  case '"':		/* $": already loaded files */
+	    tokadd('$');
 	    tokadd(c);
 	    tokfix();
 	    yylval.id = rb_intern(tok());
-	    lex_state = EXPR_END;
 	    return GVAR;
 
+	  case '1':
+	  case '2':
+	  case '3':
+	  case '4':
+	  case '5':
+	  case '6':
+	  case '7':
+	  case '8':
+	  case '9':
+	    while (isdigit(c)) {
+		tokadd(c);
+		c = nextc();
+	    }
+	    pushback();
+	    tokfix();
+	    {
+		ID id = atoi(tok());
+		id <<= ID_SCOPE_SHIFT;
+		id |= ID_NTHREF;
+		yylval.id = id;
+		return NTH_REF;
+	    }
+
+	  case '0':
 	  default:
 	    if (!is_identchar(c)) {
 		pushback();
 		return '$';
 	    }
+	    tokadd('$');
 	}
 	break;
 
@@ -2082,87 +2116,36 @@ read_escape(flag)
 	tokadd(033);
 	break;
 
-      case 'M':
-	if ((c = nextc()) != '-') {
-	    Error("Invalid escape character syntax");
-	    tokadd('\0');
-	    return;
-	}
-	if ((c = nextc()) == '\\') {
-	    read_escape(flag);
-	    tokenbuf[tokidx-1] |= 0200; /* kludge */
-	}
-	else {
-	    tokadd((c & 0xff) | 0200);
-	}
-	break;
-
-      case 'C':
-	if ((c = nextc()) != '-') {
-	    Error("Invalid escape character syntax");
-	    tokadd('\0');
-	    return;
-	}
-    case '^':
-	if ((c = nextc())== '\\') {
-	    read_escape (flag);
-	    tokenbuf[tokidx-1] &= 0237; /* kludge */
-	}
-	else if (c == '?')
+      case 'c':
+	if (c == '?')
 	    tokadd(0177);
-	else
-	    tokadd(c & 0237);
+	else {
+	    if (islower(c))
+		c = toupper(c);
+	    tokadd(c ^ 64);
+	}
 	break;
 
       case '0': case '1': case '2': case '3':
       case '4': case '5': case '6': case '7':
 	{	/* octal constant */
-	    register int i = c - '0';
-	    register int count = 0;
-
-	    while (++count < 3) {
-		if ((c = nextc()) >= '0' && c <= '7') {
-		    i *= 8;
-		    i += c - '0';
-		}
-		else {
-		    pushback();
-		    break;
-		}
-	    }
-	    tokadd(i&0xff);
+	    pushback();
+	    SCAN_OCT(c);
+	    tokadd(c);
 	}
 	break;
 
       case 'x':	/* hex constant */
 	{
-	    register int i = 0;
-	    register int count = 0;
-
-	    while (++count < 3) {
-		if ((c = nextc()) >= '0' && c <= '9') {
-		    i *= 16;
-		    i += c - '0';
-		}
-		else if ((int)strchr("abcdefABCDEF", (c = nextc()))) {
-		    i *= 16;
-		    i += toupper(c) - 'A' + 10;
-		}
-		else {
-		    pushback();
-		    break;
-		}
-	    }
-	    tokadd(i&0xff);
+	    SCAN_HEX(c);
+	    tokadd(c);
 	}
 	break;
 
       case 'b':	/* backspace */
-	if (flag & EXPAND_B) {
-	    tokadd('\b');
-	    return;
-	}
-	/* go turough */
+	tokadd('\b');
+	return;
+
       default:
 	if (flag & LEAVE_BS) {
 	    tokadd('\\');
@@ -2398,6 +2381,9 @@ gettable(id)
     else if (is_const_id(id)) {
 	return NEW_CVAR(id);
     }
+    else if (is_nthref_id(id)) {
+	return NEW_NTH_REF(id>>ID_SCOPE_SHIFT);
+    }
 }
 
 static NODE*
@@ -2405,14 +2391,12 @@ asignable(id, val)
     ID id;
     NODE *val;
 {
-    NODE *lhs;
+    NODE *lhs = Qnil;
 
     if (id == SELF) {
-	lhs = Qnil;
 	Error("Can't change the value of self");
     }
     else if (id == NIL) {
-	lhs = Qnil;
 	Error("Can't asign to nil");
     }
     else if (id == _LINE_ || id == _FILE_) {
@@ -2431,6 +2415,9 @@ asignable(id, val)
 	if (cur_mid || in_single)
 	    Error("class constant asigned in method body");
 	lhs = NEW_CASGN(id, val);
+    }
+    else if (is_nthref_id(id)) {
+	Error("Can't set variable $%d", id>>ID_SCOPE_SHIFT);
     }
     else {
 	Bug("bad id for variable");
@@ -2476,7 +2463,6 @@ value_expr(node)
       case NODE_FAIL:
       case NODE_WHILE:
       case NODE_WHILE2:
-      case NODE_INC:
       case NODE_CLASS:
       case NODE_MODULE:
       case NODE_DEFN:
@@ -2699,8 +2685,8 @@ void
 yyappend_print()
 {
     eval_tree =
-	block_append(eval_tree, NEW_CALL(Qnil, rb_intern("print"),
-					 NEW_ARRAY(NEW_GVAR(rb_intern("$_")))));
+	block_append(eval_tree, NEW_FCALL(rb_intern("print"),
+					  NEW_ARRAY(NEW_GVAR(rb_intern("$_")))));
 }
 
 void
@@ -2719,7 +2705,7 @@ yywhole_loop(chop, split)
 	    block_append(NEW_CALL(NEW_GVAR(rb_intern("$_")),
 				  rb_intern("chop"), Qnil), eval_tree);
     }
-    eval_tree = NEW_WHILE(NEW_CALL(0,rb_intern("gets"),0),eval_tree);
+    eval_tree = NEW_WHILE(NEW_FCALL(rb_intern("gets"),0),eval_tree);
 }
 
 static struct op_tbl rb_op_tbl[] = {
@@ -2790,7 +2776,7 @@ rb_intern(name)
 	return id;
 
     id = ++last_id;
-    id <<= 3;
+    id <<= ID_SCOPE_SHIFT;
     switch (name[0]) {
       case '$':
 	id |= ID_GLOBAL;
