@@ -413,7 +413,7 @@ clean-local::
 		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 
 distclean-local::
-		@$(RM) ext\config.cache
+		@$(RM) ext\config.cache $(RBCONFIG:/=\)
 		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 

@@ -1,3 +1,7 @@
+Thu Apr 22 10:07:01 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* */Makefile.sub (distclean-local): should remove $(RBCONFIG).
+
 Thu Apr 22 04:17:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_mod_define_method): allow binding methods to modules.
