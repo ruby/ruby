@@ -41,4 +41,7 @@ class SimpleDelegater<Delegater
     @obj
   end
 
+  def __setobj__(obj)
+    @obj = obj
+  end
 end

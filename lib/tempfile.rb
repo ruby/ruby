@@ -1,12 +1,12 @@
 #
 # $Id$
-# Copyright (C) 1998 akira yamada. All rights reserved. 
-# This file can be distributed under the terms of the Ruby.
-
+#
 # The class for temporary files.
 #  o creates a temporary file, which name is "basename.pid.n" with mode "w+".
 #  o Tempfile objects can be used like IO object.
-#  o created temporary files are removed on closing or script termination.
+#  o with tmpfile.close(true) created temporary files are removed.
+#  o created files are also removed on script termination.
+#  o with Tempfile#open, you can reopen the temporary file.
 #  o file mode of the temporary files are 0600.
 
 require 'delegate'
@@ -16,18 +16,14 @@ class Tempfile < SimpleDelegater
   Max_try = 10
 
   def initialize(basename, tmpdir = '/tmp')
-    @tmpdir = tmpdir
-
     umask = File.umask(0177)
-    cwd = Dir.getwd
-    Dir.chdir(@tmpdir)
     begin
       n = 0
       while true
 	begin
-	  @tmpname = sprintf('%s.%d.%d', basename, $$, n)
+	  @tmpname = sprintf('%s/%s.%d.%d', tmpdir, basename, $$, n)
 	  unless File.exist?(@tmpname)
-	    File.symlink('.', @tmpname + '.lock')
+	    File.symlink(tmpdir, @tmpname + '.lock')
 	    break
 	  end
 	rescue
@@ -38,21 +34,20 @@ class Tempfile < SimpleDelegater
       end
 
       @clean_files = proc {|id| 
-	if File.exist?(@tmpdir + '/' + @tmpname)
-	  File.unlink(@tmpdir + '/' + @tmpname) 
+	if File.exist?(@tmpname)
+	  File.unlink(@tmpname) 
 	end
-	if File.exist?(@tmpdir + '/' + @tmpname + '.lock')
-	  File.unlink(@tmpdir + '/' + @tmpname + '.lock')
+	if File.exist?(@tmpname + '.lock')
+	  File.unlink(@tmpname + '.lock')
 	end
       }
       ObjectSpace.define_finalizer(self, @clean_files)
 
-      @tmpfile = open(@tmpname, 'w+')
+      @tmpfile = File.open(@tmpname, 'w+')
       super(@tmpfile)
       File.unlink(@tmpname + '.lock')
     ensure
       File.umask(umask)
-      Dir.chdir(cwd)
     end
   end
 
@@ -60,9 +55,18 @@ class Tempfile < SimpleDelegater
     Tempfile.new(*args)
   end
 
-  def close
-    @tmpfile.close
-    @clean_files.call
-    ObjectSpace.undefine_finalizer(self)
+  def open
+    @tmpfile.close if @tmpfile
+    @tmpfile = File.open(@tmpname, 'r+')
+    __setobj__(@tmpfile)
+  end
+
+  def close(real=false)
+    @tmpfile.close if @tmpfile
+    @tmpfile = nil
+    if real
+      @clean_files.call
+      ObjectSpace.undefine_finalizer(self)
+    end
   end
 end
