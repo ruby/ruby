@@ -285,6 +285,8 @@ bsock_setsockopt(sock, lev, optname, val)
     rb_secure(2);
     level = NUM2INT(lev);
     option = NUM2INT(optname);
+    GetOpenFile(sock, fptr);
+
     switch (TYPE(val)) {
       case T_FIXNUM:
 	i = FIX2INT(val);
@@ -304,7 +306,6 @@ bsock_setsockopt(sock, lev, optname, val)
 	break;
     }
 
-    GetOpenFile(sock, fptr);
     if (setsockopt(fileno(fptr->f), level, option, v, vlen) < 0)
 	rb_sys_fail(fptr->path);
 
@@ -2182,7 +2183,7 @@ sock_s_gethostbyaddr(argc, argv)
 	t = AF_INET6;
     }
 #endif
-    h = gethostbyaddr((char*)RSTRING(addr)->ptr, RSTRING(addr)->len, t);
+    h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len, t);
     if (h == NULL) {
 #ifdef HAVE_HSTRERROR
 	extern int h_errno;
@@ -2223,14 +2224,15 @@ sock_s_getservbyaname(argc, argv)
 
     rb_scan_args(argc, argv, "11", &service, &proto);
     if (NIL_P(proto)) proto = rb_str_new2("tcp");
-    else StringValue(proto);
+    StringValue(service);
+    StringValue(proto);
 
-    sp = getservbyname((char*)RSTRING(service)->ptr, RSTRING(proto)->ptr);
+    sp = getservbyname(StringValueCStr(service),  StringValueCStr(proto));
     if (sp) {
 	port = ntohs(sp->s_port);
     }
     else {
-	char *s = StringValuePtr(service);
+	char *s = RSTRING(service)->ptr;
 	char *end;
 
 	port = strtoul(s, &end, 0);

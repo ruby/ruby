@@ -1444,13 +1444,11 @@ extern NODE *ruby_eval_tree;
 
 static void cont_call _((VALUE));
 
-int
-ruby_exec()
+static int
+ruby_exec_internal()
 {
     int state;
-    volatile NODE *tmp;
 
-    Init_stack((void*)&tmp);
     PUSH_TAG(PROT_THREAD);
     PUSH_ITER(ITER_NOT);
     /* default visibility is private at toplevel */
@@ -1466,6 +1464,15 @@ ruby_exec()
     POP_ITER();
     POP_TAG();
     return state;
+}
+
+int
+ruby_exec()
+{
+    volatile NODE *tmp;
+
+    Init_stack((void*)&tmp);
+    return ruby_exec_internal();
 }
 
 void
@@ -7777,6 +7784,21 @@ blk_copy_prev(block)
 }
 
 
+static void
+blk_dup(dup, orig)
+    struct BLOCK *dup, *orig;
+{
+    MEMCPY(dup, orig, struct BLOCK, 1);
+    frame_dup(&dup->frame);
+
+    if (dup->iter) {
+	blk_copy_prev(dup);
+    }
+    else {
+	dup->prev = 0;
+    }
+}
+
 /*
  * MISSING: documentation
  */
@@ -7791,15 +7813,25 @@ proc_clone(self)
     Data_Get_Struct(self, struct BLOCK, orig);
     bind = Data_Make_Struct(rb_obj_class(self),struct BLOCK,blk_mark,blk_free,data);
     CLONESETUP(bind, self);
-    MEMCPY(data, orig, struct BLOCK, 1);
-    frame_dup(&data->frame);
+    blk_dup(data, orig);
 
-    if (data->iter) {
-	blk_copy_prev(data);
-    }
-    else {
-	data->prev = 0;
-    }
+    return bind;
+}
+
+/*
+ * MISSING: documentation
+ */
+
+static VALUE
+proc_dup(self)
+    VALUE self;
+{
+    struct BLOCK *orig, *data;
+    VALUE bind;
+
+    Data_Get_Struct(self, struct BLOCK, orig);
+    bind = Data_Make_Struct(rb_obj_class(self),struct BLOCK,blk_mark,blk_free,data);
+    blk_dup(data, orig);
 
     return bind;
 }
@@ -9224,6 +9256,7 @@ Init_Proc()
     rb_define_singleton_method(rb_cProc, "new", proc_s_new, -1);
 
     rb_define_method(rb_cProc, "clone", proc_clone, 0);
+    rb_define_method(rb_cProc, "dup", proc_dup, 0);
     rb_define_method(rb_cProc, "call", proc_call, -2);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "[]", proc_call, -2);

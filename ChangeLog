@@ -1,3 +1,16 @@
+Wed Oct 20 01:37:18 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_times): Array#* should return an instance of
+	  the class of right operand.  [ruby-dev:24526]
+
+	* ext/zlib/zlib.c (zstream_detach_buffer): should not expose
+	  class-less object to Ruby world. [ruby-dev:24530]
+
+	* eval.c (proc_dup): provide Proc#dup as well.  [ruby-talk:116915]
+
+	* eval.c (ruby_exec): stack marking position may be higher than
+	  expected.  thanks to Guy Decoux.  [ruby-core:03527]
+
 Wed Oct 20 00:25:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (search_required): required name must not be changed before

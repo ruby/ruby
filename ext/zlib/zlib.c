@@ -532,6 +532,7 @@ zstream_detach_buffer(z)
     z->buf_filled = 0;
     z->stream.next_out = 0;
     z->stream.avail_out = 0;
+    RBASIC(dst)->klass = rb_cString;
     return dst;
 }
 
