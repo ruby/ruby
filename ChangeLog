@@ -1,3 +1,7 @@
+Tue Oct 19 16:12:18 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil.c: backport from CVS HEAD
+
 Tue Oct 19 08:54:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h, object.c (rb_class_inherited_p): export.
