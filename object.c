@@ -769,7 +769,7 @@ rb_mod_const_get(mod, name)
     ID id = rb_to_id(name);
 
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "wrong constant name %s", rb_id2name(id));
+	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
     }
     return rb_const_get(mod, id);
 }
@@ -781,7 +781,7 @@ rb_mod_const_set(mod, name, value)
     ID id = rb_to_id(name);
 
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "wrong constant name %s", rb_id2name(id));
+	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
     }
     rb_const_set(mod, id, value);
     return value;
@@ -794,7 +794,7 @@ rb_mod_const_defined(mod, name)
     ID id = rb_to_id(name);
 
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "wrong constant name %s", rb_id2name(id));
+	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
     }
     return rb_const_defined_at(mod, id);
 }
@@ -866,8 +866,7 @@ rb_convert_type(val, type, tname, method)
     arg1.val = arg2.val = val;
     arg1.s = method;
     arg2.s = tname;
-    val = rb_rescue2(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2,
-		     rb_eStandardError, rb_eNameError, 0);
+    val = rb_rescue2(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
     if (TYPE(val) != type) {
 	rb_raise(rb_eTypeError, "%s#%s should return %s",
 		 rb_class2name(CLASS_OF(arg1.val)), method, tname);
@@ -886,8 +885,7 @@ rb_to_integer(val, method)
     arg1.val = arg2.val = val;
     arg1.s = method;
     arg2.s = "Integer";
-    val = rb_rescue2(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2,
-		     rb_eStandardError, rb_eNameError, 0);
+    val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
     if (!rb_obj_is_kind_of(val, rb_cInteger)) {
 	rb_raise(rb_eTypeError, "%s#%s should return Integer",
 		 rb_class2name(CLASS_OF(arg1.val)), method);

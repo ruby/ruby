@@ -538,8 +538,8 @@ has_magic(s, send, flags)
 	  case '*':
 	    return Qtrue;
 
-	  case '[':		/* Only accept an open brace if there is a close */
-	    open++;		/* brace to match it.  Bracket expressions must be */
+	  case '[':	/* Only accept an open brace if there is a close */
+	    open++;	/* brace to match it.  Bracket expressions must be */
 	    continue;	/* complete, according to Posix.2 */
 	  case ']':
 	    if (open)
@@ -596,6 +596,7 @@ static void
 remove_backslashes(p)
     char *p;
 {
+#if defined DOSISH
     char *pend = p + strlen(p);
     char *t = p;
 
@@ -606,6 +607,7 @@ remove_backslashes(p)
 	*t++ = *p++;
     }
     *t = '\0';
+#endif
 }
 
 #ifndef S_ISDIR
@@ -845,7 +847,7 @@ push_braces(ary, s)
     }
 }
 
-#define isdelim(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\0')
+#define isdelim(c) ((c)=='\0')
 
 static VALUE
 dir_s_glob(dir, str)

@@ -25,7 +25,7 @@ class IO
         break
       end
     end
-    if iterator? then
+    if block_given? then
       yield result
     else
       return result

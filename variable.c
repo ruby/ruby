@@ -251,8 +251,7 @@ rb_autoload_id(id, filename)
 {
     rb_secure(4);
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "autoload must be constant name",
-		 rb_id2name(id));
+	rb_name_error(id, "autoload must be constant name", rb_id2name(id));
     }
 
     if (!autoload_tbl) {
@@ -418,7 +417,7 @@ readonly_setter(val, id, var)
     ID id;
     void *var;
 {
-    rb_raise(rb_eNameError, "can't set variable %s", rb_id2name(id));
+    rb_name_error(id, "can't set variable %s", rb_id2name(id));
 }
 
 static int
@@ -528,8 +527,7 @@ rb_f_trace_var(argc, argv)
     }
     id = rb_to_id(var);
     if (!st_lookup(rb_global_tbl, id, &entry)) {
-	rb_raise(rb_eNameError, "undefined global variable %s",
-		 rb_id2name(id));
+	rb_name_error(id, "undefined global variable %s", rb_id2name(id));
     }
     trace = ALLOC(struct trace_var);
     trace->next = entry->trace;
@@ -575,8 +573,7 @@ rb_f_untrace_var(argc, argv)
     rb_scan_args(argc, argv, "11", &var, &cmd);
     id = rb_to_id(var);
     if (!st_lookup(rb_global_tbl, id, &entry)) {
-	rb_raise(rb_eNameError, "undefined global variable %s",
-		 rb_id2name(id));
+	rb_name_error(id, "undefined global variable %s", rb_id2name(id));
     }
 
     trace = entry->trace;
@@ -1005,8 +1002,7 @@ rb_obj_remove_instance_variable(obj, name)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     if (OBJ_FROZEN(obj)) rb_error_frozen("object");
     if (!rb_is_instance_id(id)) {
-	rb_raise(rb_eNameError, "`%s' is not an instance variable",
-		 rb_id2name(id));
+	rb_name_error(id, "`%s' is not an instance variable", rb_id2name(id));
     }
 
     switch (TYPE(obj)) {
@@ -1055,9 +1051,9 @@ rb_const_get_at(klass, id)
     if (klass == rb_cObject && top_const_get(id, &value)) {
 	return value;
     }
-    rb_raise(rb_eNameError, "uninitialized constant %s::%s",
-	     RSTRING(rb_class_path(klass))->ptr,
-	     rb_id2name(id));
+    rb_name_error(id, "uninitialized constant %s::%s",
+		  RSTRING(rb_class_path(klass))->ptr,
+		  rb_id2name(id));
     return Qnil;		/* not reached */
 }
 
@@ -1104,12 +1100,12 @@ rb_const_get(klass, id)
 
     /* Uninitialized constant */
     if (klass && klass != rb_cObject) {
-	rb_raise(rb_eNameError, "uninitialized constant %s at %s",
-		 rb_id2name(id),
-		 RSTRING(rb_class_path(klass))->ptr);
+	rb_name_error(id, "uninitialized constant %s at %s",
+		      rb_id2name(id),
+		      RSTRING(rb_class_path(klass))->ptr);
     }
     else {
-	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
+	rb_name_error(id, "uninitialized constant %s",rb_id2name(id));
     }
     return Qnil;		/* not reached */
 }
@@ -1122,7 +1118,7 @@ rb_mod_remove_const(mod, name)
     VALUE val;
 
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "`%s' is not constant", rb_id2name(id));
+	rb_name_error(id, "`%s' is not constant", rb_id2name(id));
     }
     if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
@@ -1132,11 +1128,11 @@ rb_mod_remove_const(mod, name)
 	return val;
     }
     if (rb_const_defined_at(mod, id)) {
-	rb_raise(rb_eNameError, "cannot remove %s::%s", 
+	rb_name_error(id, "cannot remove %s::%s", 
 		 rb_class2name(mod), rb_id2name(id));
     }
-    rb_raise(rb_eNameError, "constant %s::%s not defined", 
-	     rb_class2name(mod), rb_id2name(id));
+    rb_name_error(id, "constant %s::%s not defined", 
+		  rb_class2name(mod), rb_id2name(id));
     return Qnil;		/* not reached */
 }
 
@@ -1339,11 +1335,11 @@ rb_const_assign(klass, id, val)
 
     /* Uninitialized constant */
     if (klass && klass != rb_cObject)
-	rb_raise(rb_eNameError, "uninitialized constant %s::%s",
-		 RSTRING(rb_class_path(klass))->ptr,
-		 rb_id2name(id));
+	rb_name_error(id, "uninitialized constant %s::%s",
+		      RSTRING(rb_class_path(klass))->ptr,
+		      rb_id2name(id));
     else {
-	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
+	rb_name_error(id, "uninitialized constant %s",rb_id2name(id));
     }
 }
 
@@ -1402,8 +1398,8 @@ rb_cvar_set(klass, id, val)
 	tmp = RCLASS(tmp)->super;
     }
 
-    rb_raise(rb_eNameError,"uninitialized class variable %s in %s",
-	     rb_id2name(id), rb_class2name(klass));
+    rb_name_error(id,"uninitialized class variable %s in %s",
+		  rb_id2name(id), rb_class2name(klass));
 }
 
 void
@@ -1444,8 +1440,8 @@ rb_cvar_get(klass, id)
 	tmp = RCLASS(tmp)->super;
     }
 
-    rb_raise(rb_eNameError,"uninitialized class variable %s in %s",
-	     rb_id2name(id), rb_class2name(klass));
+    rb_name_error(id,"uninitialized class variable %s in %s",
+		  rb_id2name(id), rb_class2name(klass));
     return Qnil;		/* not reached */
 }
 
@@ -1475,7 +1471,7 @@ rb_cv_set(klass, name, val)
 {
     ID id = rb_intern(name);
     if (!rb_is_class_id(id)) {
-	rb_raise(rb_eNameError, "wrong class variable name %s", name);
+	rb_name_error(id, "wrong class variable name %s", name);
     }
     rb_cvar_set(klass, id, val);
 }
@@ -1487,7 +1483,7 @@ rb_cv_get(klass, name)
 {
     ID id = rb_intern(name);
     if (!rb_is_class_id(id)) {
-	rb_raise(rb_eNameError, "wrong class variable name %s", name);
+	rb_name_error(id, "wrong class variable name %s", name);
     }
     return rb_cvar_get(klass, id);
 }
@@ -1501,7 +1497,7 @@ rb_define_class_variable(klass, name, val)
     ID id = rb_intern(name);
 
     if (!rb_is_class_id(id)) {
-	rb_raise(rb_eNameError, "wrong class variable name %s", name);
+	rb_name_error(id, "wrong class variable name %s", name);
     }
     rb_cvar_declare(klass, id, val);
 }
@@ -1549,7 +1545,7 @@ rb_mod_remove_cvar(mod, name)
     VALUE val;
 
     if (!rb_is_class_id(id)) {
-	rb_raise(rb_eNameError, "wrong class variable name %s", name);
+	rb_name_error(id, "wrong class variable name %s", name);
     }
     if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove class variable");
@@ -1559,11 +1555,11 @@ rb_mod_remove_cvar(mod, name)
 	return val;
     }
     if (rb_cvar_defined(mod, id)) {
-	rb_raise(rb_eNameError, "cannot remove %s for %s", 
+	rb_name_error(id, "cannot remove %s for %s", 
 		 rb_id2name(id), rb_class2name(mod));
     }
-    rb_raise(rb_eNameError, "class variable %s not defined for %s",
-	     rb_id2name(id), rb_class2name(mod));
+    rb_name_error(id, "class variable %s not defined for %s",
+		  rb_id2name(id), rb_class2name(mod));
     return Qnil;		/* not reached */
 }
 

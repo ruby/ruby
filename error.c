@@ -322,15 +322,11 @@ exc_exception(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE etype, exc;
+    VALUE exc;
 
     if (argc == 0) return self;
     if (argc == 1 && self == argv[0]) return self;
-    etype = CLASS_OF(self);
-    while (FL_TEST(etype, FL_SINGLETON)) {
-	etype = RCLASS(etype)->super;
-    }
-    exc = rb_obj_alloc(etype);
+    exc = rb_obj_clone(self);
     rb_obj_call_init(exc, argc, argv);
 
     return exc;
@@ -415,6 +411,43 @@ exit_status(exc)
     VALUE exc;
 {
     return rb_iv_get(exc, "status");
+}
+
+void
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_name_error(ID id, const char *fmt, ...)
+#else
+rb_name_error(id, fmt, va_alist)
+    ID id;
+    const char *fmt;
+    va_dcl
+#endif
+{
+    VALUE exc;
+
+    va_list args;
+    char buf[BUFSIZ];
+
+    va_init_list(args, fmt);
+    vsnprintf(buf, BUFSIZ, fmt, args);
+    va_end(args);
+    exc = rb_exc_new2(rb_eLoadError, buf);
+    rb_iv_set(exc, "name", ID2SYM(id));
+    rb_exc_raise(exc);
+}
+
+static VALUE
+name_name(self)
+    VALUE self;
+{
+    return rb_iv_get(self, "name");
+}
+
+static VALUE
+nometh_args(self)
+    VALUE self;
+{
+    return rb_iv_get(self, "args");
 }
 
 #ifdef __BEOS__
@@ -594,7 +627,9 @@ Init_Exception()
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
     rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
+    rb_define_method(rb_eNameError, "name", name_name, 0);
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
+    rb_define_method(rb_eNoMethodError, "args", nometh_args, 0);
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);

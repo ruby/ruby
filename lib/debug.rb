@@ -300,7 +300,9 @@ class DEBUGGER__
 	  when /^\s*b(?:reak)?\s+((?:.*?+:)?.+)$/
 	    pos = $1
 	    if pos.index(":")
-	      file, pos = pos.split(":")
+	      pos = pos.split(":")
+	      file = pos[0...-1].join(":")
+	      pos = pos[-1]
 	    end
 	    file = File.basename(file)
 	    if pos =~ /^\d+$/

@@ -42,8 +42,7 @@ cmp_equal(x, y)
     if (x == y) return Qtrue;
 
     a[0] = x; a[1] = y;
-    return rb_rescue2(cmp_eq, (VALUE)a, cmp_failed, 0,
-		      rb_eStandardError, rb_eNameError, 0);
+    return rb_rescue(cmp_eq, (VALUE)a, cmp_failed, 0);
 }
 
 static VALUE

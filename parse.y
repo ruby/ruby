@@ -99,7 +99,6 @@ static int in_single = 0;
 static int in_def = 0;
 static int compile_for_eval = 0;
 static ID cur_mid = 0;
-static ID last_id = 0;
 
 static NODE *cond();
 static NODE *logop();
@@ -1091,16 +1090,16 @@ command_args	:  {
 		    }
 
 open_args	: call_args
-		    | tLPAREN_ARG  {lex_state = EXPR_ENDARG;} ')'
+		| tLPAREN_ARG  {lex_state = EXPR_ENDARG;} ')'
 		    {
 		        rb_warning("%s (...) interpreted as method call",
-		                   rb_id2name(last_id));
+		                   rb_id2name($<id>1));
 			$$ = 0;
 		    }
 		| tLPAREN_ARG call_args2 {lex_state = EXPR_ENDARG;} ')'
 		    {
 		        rb_warning("%s (...) interpreted as method call",
-		                   rb_id2name(last_id));
+		                   rb_id2name($<id>1));
 			$$ = $2;
 		    }
 
@@ -1192,7 +1191,7 @@ primary		: literal
 		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} ')'
 		    {
-		        rb_warning("%s (...) interpreted as command call", rb_id2name(last_id));
+		        rb_warning("%s (...) interpreted as command call", rb_id2name($<id>1));
 			$$ = $2;
 		    }
 		| tLPAREN compstmt ')'
@@ -2892,6 +2891,7 @@ double strtod ();
 static int
 yylex()
 {
+    static ID last_id = 0;
     register int c;
     int space_seen = 0;
     int cmd_state;
@@ -3460,6 +3460,7 @@ yylex()
 	    else if (lex_state == EXPR_ARG) {
 		rb_warning("%s (...) interpreted as method call", tok());
 		c = tLPAREN_ARG;
+		yylval.id = last_id;
 	    }
 	}
 	COND_PUSH(0);
@@ -4422,10 +4423,6 @@ void_expr(node)
 	  case tLEQ:
 	  case tEQ:
 	  case tNEQ:
-	  case tAREF:
-	  case tRSHFT:
-	  case tCOLON2:
-	  case tCOLON3:
 	    useless = rb_id2name(node->nd_mid);
 	    break;
 	}

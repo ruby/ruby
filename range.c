@@ -45,8 +45,7 @@ range_init(obj, beg, end, exclude_end)
 
     args[0] = beg; args[1] = end;
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
-	rb_rescue2(range_check, (VALUE)args, range_failed, 0,
-		   rb_eStandardError, rb_eNameError, 0);
+	rb_rescue2(range_check, (VALUE)args, range_failed, 0);
     }
 
     SET_EXCL(obj, exclude_end);
@@ -76,7 +75,7 @@ range_initialize(argc, argv, obj)
     rb_scan_args(argc, argv, "21", &beg, &end, &flags);
     /* Ranges are immutable, so that they should be initialized only once. */
     if (rb_ivar_defined(obj, id_beg)) {
-	rb_raise(rb_eNameError, "`initialize' called twice");
+	rb_name_error(rb_intern("initialized"), "`initialize' called twice");
     }
     range_init(obj, beg, end, RTEST(flags));
     return Qnil;

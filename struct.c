@@ -89,7 +89,7 @@ rb_struct_getmember(obj, id)
 	    return RSTRUCT(obj)->ptr[i];
 	}
     }
-    rb_raise(rb_eNameError, "%s is not struct member", rb_id2name(id));
+    rb_name_error(id, "%s is not struct member", rb_id2name(id));
     return Qnil;		/* not reached */
 }
 
@@ -141,7 +141,8 @@ rb_struct_set(obj, val)
 	    return RSTRUCT(obj)->ptr[i] = val;
 	}
     }
-    rb_raise(rb_eNameError, "not struct member");
+    rb_name_error(rb_frame_last_func(), "`%s' is not a struct member",
+		  rb_id2name(rb_frame_last_func()));
     return Qnil;		/* not reached */
 }
 
@@ -160,7 +161,7 @@ make_struct(name, member, klass)
 	char *cname = StringValuePtr(name);
 	id = rb_intern(cname);
 	if (!rb_is_const_id(id)) {
-	    rb_raise(rb_eNameError, "identifier %s needs to be constant", cname);
+	    rb_name_error(id, "identifier %s needs to be constant", cname);
 	}
 	nstr = rb_define_class_under(klass, cname, klass);
     }
@@ -435,7 +436,7 @@ rb_struct_aref_id(s, id)
 	    return RSTRUCT(s)->ptr[i];
 	}
     }
-    rb_raise(rb_eNameError, "no member '%s' in struct", rb_id2name(id));
+    rb_name_error(id, "no member '%s' in struct", rb_id2name(id));
     return Qnil;		/* not reached */
 }
 
@@ -481,7 +482,7 @@ rb_struct_aset_id(s, id, val)
 	    return val;
 	}
     }
-    rb_raise(rb_eNameError, "no member '%s' in struct", rb_id2name(id));
+    rb_name_error(id, "no member '%s' in struct", rb_id2name(id));
 }
 
 VALUE

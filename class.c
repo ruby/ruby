@@ -149,7 +149,7 @@ rb_define_class(name, super)
     id = rb_intern(name);
     if (rb_const_defined(rb_cObject, id)) {
 	klass = rb_const_get(rb_cObject, id);
-	rb_raise(rb_eNameError, "%s is already defined", name);
+	rb_name_error(id, "%s is already defined", name);
     }
     klass = rb_define_class_id(id, super);
     st_add_direct(rb_class_tbl, id, klass);
@@ -169,7 +169,7 @@ rb_define_class_under(outer, name, super)
     id = rb_intern(name);
     if (rb_const_defined_at(outer, id)) {
 	klass = rb_const_get(outer, id);
-	rb_raise(rb_eNameError, "%s is already defined", name);
+	rb_name_error(id, "%s is already defined", name);
     }
     klass = rb_define_class_id(id, super);
     rb_const_set(outer, id, klass);

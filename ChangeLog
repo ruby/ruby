@@ -1,3 +1,48 @@
+Mon Jul  2 17:22:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (exc_exception): clone the receiver exception instead of
+	  creating brand new exception object of the receiver.
+
+Mon Jul  2 09:53:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval_string_wrap): extend new ruby_top_self, not
+	  original self.
+
+	* eval.c (rb_eval_cmd): respect ruby_wrapper if set.
+
+	* eval.c (eval): do not update ruby_class unless scope is not
+	  provided.
+
+Sun Jul  1 10:51:15 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* eval.c (eval): preserve wrapper information.
+
+	* eval.c (proc_invoke): ditto.
+
+	* eval.c (block_pass): ditto.
+
+Sat Jun 30 02:55:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (void_expr): too much warnings for void context
+	  (e.g. foo[1] that can be mere Proc call).
+
+Fri Jun 29 17:23:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_name_error): new function to raise NameError with
+	  name attribute set.
+
+	* eval.c (rb_f_missing): set name and args in the exception
+	  object. [new]
+
+	* error.c (name_name): NameError#name - new method.
+
+	* error.c (nometh_args): NoMethodError#args - new method.
+
+Fri Jun 29 15:29:31 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lex.c (rb_reserved_word): lex_state after tRESCUE should be
+	  EXPR_MID.
+
 Thu Jun 28 00:21:28 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 
 	* lib/matrix.rb: resolve 'ruby -w' warnings.
@@ -22,6 +67,33 @@ Wed Jun 27 08:53:26 2001  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/protocol.rb: new method ProtocolError#response
 
 	* lib/net/protocol.rb,smtp.rb,pop.rb,http.rb: add document.
+
+Tue Jun 26 18:42:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (add_heap): allocation size of the heap unit is doubled for
+	  each allocation.
+
+Mon Jun 25 09:54:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (isdelim): space, tab, and newline are no longer
+	  delimiters for glob patterns.
+
+Sat Jun 23 22:28:52 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (svalue_to_avalue): new conversion scheme between single
+	  value and array values.
+
+	* eval.c (avalue_to_svalue): ditto.
+
+	* eval.c (rb_eval): REXPAND now uses avalue_to_svalue(), return
+	  and yield too.
+
+	* eval.c (rb_yield_0): use avalue_to_svalue().
+
+	* eval.c (proc_invoke): Proc#call gives avaules, whereas
+	  Proc#yield gives mvalues.
+
+	* eval.c (bmcall): convert given value (svalue) to avalue.
 
 Sat Jun 23 18:28:52 2001  Akinori MUSHA  <knu@iDaemons.org>
 

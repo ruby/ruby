@@ -70,8 +70,7 @@ do_coerce(x, y)
     VALUE a[2];
 
     a[0] = *x; a[1] = *y;
-    ary = rb_rescue2(coerce_body, (VALUE)a, coerce_rescue, (VALUE)a,
-		     rb_eStandardError, rb_eNameError, 0);
+    ary = rb_rescue(coerce_body, (VALUE)a, coerce_rescue, (VALUE)a);
     if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
 	rb_raise(rb_eTypeError, "coerce must return [x, y]");
     }

@@ -419,28 +419,31 @@ rb_ary_aref(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
-    VALUE arg1, arg2;
+    VALUE arg;
     long beg, len;
 
-    if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
-	beg = NUM2LONG(arg1);
-	len = NUM2LONG(arg2);
+    if (argc == 2) {
+	beg = NUM2LONG(argv[0]);
+	len = NUM2LONG(argv[1]);
 	if (beg < 0) {
 	    beg += RARRAY(ary)->len;
 	}
 	return rb_ary_subseq(ary, beg, len);
     }
-
-    /* special case - speeding up */
-    if (FIXNUM_P(arg1)) {
-	return rb_ary_entry(ary, FIX2LONG(arg1));
+    if (argc != 1) {
+	rb_scan_args(argc, argv, "11", 0, 0);
     }
-    else if (TYPE(arg1) == T_BIGNUM) {
+    arg = argv[0];
+    /* special case - speeding up */
+    if (FIXNUM_P(arg)) {
+	return rb_ary_entry(ary, FIX2LONG(arg));
+    }
+    else if (TYPE(arg) == T_BIGNUM) {
 	rb_raise(rb_eIndexError, "index too big");
     }
     else {
 	/* check if idx is Range */
-	switch (rb_range_beg_len(arg1, &beg, &len, RARRAY(ary)->len, 0)) {
+	switch (rb_range_beg_len(arg, &beg, &len, RARRAY(ary)->len, 0)) {
 	  case Qfalse:
 	    break;
 	  case Qnil:
@@ -449,7 +452,7 @@ rb_ary_aref(argc, argv, ary)
 	    return rb_ary_subseq(ary, beg, len);
 	}
     }
-    return rb_ary_entry(ary, NUM2LONG(arg1));
+    return rb_ary_entry(ary, NUM2LONG(arg));
 }
 
 static VALUE
