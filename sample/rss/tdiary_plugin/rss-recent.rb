@@ -1,3 +1,4 @@
+# -*- indent-tabs-mode: t -*-
 # rss-recent.rb: RSS recent plugin 
 #
 # rss_recnet: show recnet list from RSS
@@ -7,7 +8,7 @@
 #      cache_time: cache time(second) of RSS(60*60)
 #      
 #
-# Copyright (c) 2003-2004 Kouhei Sutou <kou@cozmixng.org>
+# Copyright (c) 2003-2005 Kouhei Sutou <kou@cozmixng.org>
 # Distributed under the GPL
 #
 
@@ -18,7 +19,7 @@ RSS_RECENT_ENTRY_SEPARATOR = "\1"
 RSS_RECENT_VERSION = "0.0.5"
 RSS_RECENT_HTTP_HEADER = {
 	"User-Agent" => "tDiary RSS recent plugin version #{RSS_RECENT_VERSION}. " <<
-	"Using RSS parser version is #{::RSS::VERSION}.",
+		"Using RSS parser version is #{::RSS::VERSION}.",
 }
 
 def rss_recent(url, max=5, cache_time=3600)
@@ -30,28 +31,36 @@ def rss_recent(url, max=5, cache_time=3600)
 	
 	return '' unless test(?r, cache_file)
 
-	rv = "<ul>\n"
-	
+	rv = "<div class='rss-recent'>\n"
+
+	site_info, *infos = rss_recent_read_from_cache(cache_file)
+  
+	if site_info
+		title, url, time = site_info
+		content = rss_recent_entry_to_html(title, url, time)
+		rv << "<div class='rss-recent-title'>\n"
+		rv << "<span class='#{rss_recent_modified_class(time)}'>#{content}</span>\n"
+		rv << "</div>\n"
+	end
+  
+	have_entry = infos.size > 0 && max > 0
+  
+	rv << "<ul>\n" if have_entry
 	i = 0
-	rss_recent_read_from_cache(cache_file).each do |title, url, time|
+	infos.each do |title, url, time|
 		break if i >= max
 		next if title.nil?
 		rv << '<li>'
 		rv << %Q[<span class="#{rss_recent_modified_class(time)}">]
-		unless url.nil?
-			rv << %Q[<a href="#{CGI.escapeHTML(url)}" title="#{CGI.escapeHTML(title)}]
-			rv << %Q[ (#{CGI.escapeHTML(time.localtime.to_s)})] unless time.nil?
-			rv << %Q[">]
-		end
-		rv << CGI::escapeHTML(title)
-		rv << '</a>' unless url.nil?
-		rv << "(#{rss_recent_modified(time)})"
+		rv << rss_recent_entry_to_html(title, url, time)
 		rv << %Q[</span>]
 		rv << "</li>\n"
 		i += 1
 	end
 
-	rv << "</ul>\n"
+	rv << "</ul>\n" if have_entry
+
+	rv << "</div>\n"
 
 	rv
 end
@@ -92,9 +101,17 @@ def rss_recent_cache_rss(url, cache_file, cache_time)
 			rescue ::RSS::UnknownConversionMethodError
 			end
 
-			rss_infos = rss.items.collect do |item|
+			rss_recent_pubDate_to_dc_date(rss.channel)
+			rss_infos = [
+				[
+					rss.channel.title,
+					rss.channel.link,
+					rss.channel.dc_date,
+				]
+			]
+			rss.items.each do |item|
 				rss_recent_pubDate_to_dc_date(item)
-				[item.title, item.link, item.dc_date]
+				rss_infos << [item.title, item.link, item.dc_date]
 			end
 			rss_recent_write_to_cache(cache_file, rss_infos)
 
@@ -123,7 +140,7 @@ def rss_recent_fetch_rss(uri, cache_time)
 			end
 		end
 	rescue TimeoutError, SocketError, StandardError,
-			SecurityError # occured in redirect
+		SecurityError # occured in redirect
 		raise InvalidResourceError
 	end
 	rss
@@ -161,7 +178,7 @@ def rss_recent_read_from_cache(cache_file)
 		[
 			rss_recent_convert(title),
 			rss_recent_convert(url),
-			rss_recent_convert(time) {|time| Time.parse(time)},
+			rss_recent_convert(time) {|t| Time.parse(t)},
 		]
 	end
 end
@@ -176,6 +193,19 @@ def rss_recent_convert(str)
 			str
 		end
 	end
+end
+
+def rss_recent_entry_to_html(title, url, time)
+	rv = ""
+	unless url.nil?
+		rv << %Q[<a href="#{CGI.escapeHTML(url)}" title="#{CGI.escapeHTML(title)}]
+		rv << %Q[ (#{CGI.escapeHTML(time.localtime.to_s)})] unless time.nil?
+		rv << %Q[">]
+	end
+	rv << CGI::escapeHTML(title)
+	rv << '</a>' unless url.nil?
+	rv << "(#{rss_recent_modified(time)})"
+	rv
 end
 
 # from RWiki
