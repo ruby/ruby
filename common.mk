@@ -241,8 +241,7 @@ inits.$(OBJEXT): {$(VPATH)}inits.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 io.$(OBJEXT): {$(VPATH)}io.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}rubyio.h {$(VPATH)}rubysig.h {$(VPATH)}env.h \
-  {$(VPATH)}util.h
+  {$(VPATH)}rubyio.h {$(VPATH)}rubysig.h  {$(VPATH)}util.h
 main.$(OBJEXT): {$(VPATH)}main.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c {$(VPATH)}ruby.h config.h \

@@ -159,24 +159,24 @@ VALUE
 rb_make_metaclass(obj, super)
     VALUE obj, super;
 {
-    VALUE klass = rb_class_boot(super);
-    FL_SET(klass, FL_SINGLETON);
-    RBASIC(obj)->klass = klass;
-    rb_singleton_class_attached(klass, obj);
     if (BUILTIN_TYPE(obj) == T_CLASS && FL_TEST(obj, FL_SINGLETON)) {
-	RBASIC(klass)->klass = klass;
-	RCLASS(klass)->super = RBASIC(rb_class_real(RCLASS(obj)->super))->klass;
+	return RBASIC(obj)->klass = rb_cClass;
     }
     else {
-	VALUE metasuper = RBASIC(rb_class_real(super))->klass;
+	VALUE metasuper;
+	VALUE klass = rb_class_boot(super);
 
+	FL_SET(klass, FL_SINGLETON);
+	RBASIC(obj)->klass = klass;
+	rb_singleton_class_attached(klass, obj);
+
+	metasuper = RBASIC(rb_class_real(super))->klass;
 	/* metaclass of a superclass may be NULL at boot time */
 	if (metasuper) {
 	    RBASIC(klass)->klass = metasuper;
 	}
+	return klass;
     }
-
-    return klass;
 }
 
 VALUE

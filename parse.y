@@ -48,6 +48,8 @@
 	 ((id)&ID_SCOPE_MASK) == ID_INSTANCE || \
 	 ((id)&ID_SCOPE_MASK) == ID_CLASS))
 
+static int is_valid_lvar _((ID id));
+
 #ifndef RIPPER
 char *ruby_sourcefile;		/* current source file */
 int   ruby_sourceline;		/* current line no. */
@@ -211,10 +213,10 @@ static NODE *cond_gen _((struct parser_params*,NODE*));
 static NODE *logop_gen _((struct parser_params*,enum node_type,NODE*,NODE*));
 #define logop(type,node1,node2) logop_gen(parser, type, node1, node2)
 
-static int cond_negative();
+static int cond_negative _((NODE**));
 
-static NODE *newline_node();
-static void fixpos();
+static NODE *newline_node _((NODE*));
+static void fixpos  _((NODE*,NODE*));
 
 static int value_expr_gen _((struct parser_params*,NODE*));
 static void void_expr_gen _((struct parser_params*,NODE*));
@@ -225,25 +227,25 @@ static void void_stmts_gen _((struct parser_params*,NODE*));
 #define void_stmts(node) void_stmts_gen(parser, node)
 static void reduce_nodes _((NODE**));
 
-static NODE *block_append();
-static NODE *list_append();
-static NODE *list_concat();
-static NODE *arg_concat();
-static NODE *arg_prepend();
-static NODE *literal_concat();
-static NODE *new_evstr();
-static NODE *evstr2dstr();
+static NODE *block_append _((NODE*,NODE*));
+static NODE *list_append _((NODE*,NODE*));
+static NODE *list_concat _((NODE*,NODE*));
+static NODE *arg_concat _((NODE*,NODE*));
+static NODE *literal_concat _((NODE*,NODE*));
+static NODE *new_evstr _((NODE*));
+static NODE *evstr2dstr _((NODE*));
 
 static NODE *call_op_gen _((struct parser_params*,NODE*,ID,int,NODE*));
 #define call_op(recv,id,narg,arg1) call_op_gen(parser, recv,id,narg,arg1)
 
-static NODE *negate_lit();
-static NODE *ret_args();
-static NODE *arg_blk_pass();
-static NODE *new_call();
-static NODE *new_fcall();
-static NODE *new_super();
-static NODE *new_yield();
+static NODE *negate_lit _((NODE*));
+static NODE *ret_args _((NODE*));
+static NODE *arg_blk_pass _((NODE*,NODE*));
+static NODE *new_call _((NODE*,ID,NODE*));
+static NODE *new_fcall_gen _((struct parser_params*,ID,NODE*));
+#define new_fcall(id,args) new_fcall_gen(parser, id, args)
+static NODE *new_super  _((NODE*));
+static NODE *new_yield  _((NODE*));
 
 static NODE *gettable_gen _((struct parser_params*,ID));
 #define gettable(id) gettable_gen(parser,id)
@@ -254,7 +256,7 @@ static NODE *aryset_gen _((struct parser_params*,NODE*,NODE*));
 static NODE *attrset_gen _((struct parser_params*,NODE*,ID));
 #define attrset(node,id) attrset_gen(parser, node, id)
 
-static void rb_backref_error();
+static void rb_backref_error _((NODE*));
 static NODE *node_assign_gen _((struct parser_params*,NODE*,NODE*));
 #define node_assign(node1, node2) node_assign_gen(parser, node1, node2)
 
@@ -362,6 +364,7 @@ static VALUE ripper_id2sym _((ID));
 #define method_optarg(m,a) ((a)==Qundef ? m : dispatch2(method_add_arg,m,a))
 #define method_arg(m,a) dispatch2(method_add_arg,m,a)
 #define escape_Qundef(x) ((x)==Qundef ? Qnil : (x))
+
 #endif /* RIPPER */
 
 #ifndef RIPPER
@@ -1110,7 +1113,7 @@ command		: operation command_args       %prec tLOWEST
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
 		    /*%
-			$$ = dispatch2(command, $1, $2);
+		        $$ = dispatch2(command, $1, $2);
 		    %*/
 		    }
 		| operation command_args cmd_brace_block
@@ -1126,7 +1129,7 @@ command		: operation command_args       %prec tLOWEST
 			}
 		        fixpos($$, $2);
 		    /*%
-			$$ = dispatch2(command, $1, $2);
+		        $$ = dispatch2(command, $1, $2);
                         $$ = dispatch2(iter_block, $$, $3);
 		    %*/
 		    }
@@ -2327,7 +2330,7 @@ open_args	: call_args
 		| tLPAREN_ARG  {lex_state = EXPR_ENDARG;} rparen
 		    {
 		    /*%%%*/
-		        rb_warn("don't put space before argument parentheses");
+		        rb_warning("don't put space before argument parentheses");
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(space, dispatch1(arg_paren, arg_new()));
@@ -2336,7 +2339,7 @@ open_args	: call_args
 		| tLPAREN_ARG call_args2 {lex_state = EXPR_ENDARG;} rparen
 		    {
 		    /*%%%*/
-		        rb_warn("don't put space before argument parentheses");
+		        rb_warning("don't put space before argument parentheses");
 			$$ = $2;
 		    /*%
 			$$ = dispatch1(space, dispatch1(arg_paren, $2));
@@ -3184,7 +3187,7 @@ method_call	: operation paren_args
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
 		    /*%
-			$$ = method_arg(dispatch1(fcall, $1), $2);
+		        $$ = method_arg(dispatch1(fcall, $1), $2);
 		    %*/
 		    }
 		| primary_value '.' operation2 opt_paren_args
@@ -6048,7 +6051,6 @@ parser_yylex(parser)
 	return '~';
 
       case '(':
-	command_start = Qtrue;
 	if (IS_BEG()) {
 	    c = tLPAREN;
 	}
@@ -6057,7 +6059,7 @@ parser_yylex(parser)
 		c = tLPAREN_ARG;
 	    }
 	    else if (lex_state == EXPR_ARG) {
-		rb_warn0("don't put space before argument parentheses");
+		rb_warning0("don't put space before argument parentheses");
 		c = '(';
 	    }
 	}
@@ -6829,11 +6831,6 @@ gettable_gen(parser, id)
 	if (dyna_in_block() && rb_dvar_defined(id)) return NEW_DVAR(id);
 	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
-#if 0
-	/* Rite will warn this */
-	rb_warn("ambiguous identifier; %s() or self.%s is better for method call",
-		rb_id2name(id), rb_id2name(id));
-#endif
 	return NEW_VCALL(id);
     }
     else if (is_global_id(id)) {
@@ -7582,15 +7579,30 @@ new_call(r,m,a)
 }
 
 static NODE*
-new_fcall(m,a)
+fcall_gen(parser, m, a)
+    struct parser_params *parser;
+    ID m;
+    NODE *a;
+{
+    if (is_local_id(m)) {
+	if ((dyna_in_block() && rb_dvar_defined(m)) || local_id(m)) {
+	    return NEW_CALL(gettable(m), rb_intern("call"), a);
+	}
+    }
+    return NEW_FCALL(m,a);
+}
+
+static NODE*
+new_fcall_gen(parser, m, a)
+    struct parser_params *parser;
     ID m;
     NODE *a;
 {
     if (a && nd_type(a) == NODE_BLOCK_PASS) {
-	a->nd_iter = NEW_FCALL(m,a->nd_head);
+	a->nd_iter = fcall_gen(parser,m,a->nd_head);
 	return a;
     }
-    return NEW_FCALL(m,a);
+    return fcall_gen(parser, m,a);
 }
 
 static NODE*
@@ -8268,9 +8280,7 @@ rb_parser_s_new()
 {
     struct parser_params *p = parser_new();
 
-    /* Object class is a dummy */
-    return Data_Make_Struct(rb_cObject, struct parser_params,
-			    parser_mark, parser_free, p);
+    return Data_Wrap_Struct(0, parser_mark, parser_free, p);
 }
 #endif
 

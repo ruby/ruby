@@ -154,7 +154,7 @@ rb_num_coerce_bin(x, y)
     VALUE x, y;
 {
     do_coerce(&x, &y, Qtrue);
-    return rb_funcall(x, ruby_frame->orig_func, 1, y);
+    return rb_funcall(x, rb_frame_this_func(), 1, y);
 }
 
 VALUE
@@ -162,7 +162,7 @@ rb_num_coerce_cmp(x, y)
     VALUE x, y;
 {
     if (do_coerce(&x, &y, Qfalse)) 
-	return rb_funcall(x, ruby_frame->orig_func, 1, y);
+	return rb_funcall(x, rb_frame_this_func(), 1, y);
     return Qnil;
 }
 
@@ -173,7 +173,7 @@ rb_num_coerce_relop(x, y)
     VALUE c, x0 = x, y0 = y;
 
     if (!do_coerce(&x, &y, Qfalse) ||
-	NIL_P(c = rb_funcall(x, ruby_frame->orig_func, 1, y))) {
+	NIL_P(c = rb_funcall(x, rb_frame_this_func(), 1, y))) {
 	rb_cmperr(x0, y0);
 	return Qnil;		/* not reached */
     }
@@ -1438,7 +1438,7 @@ num_step(argc, argv, from)
 	    rb_raise(rb_eArgError, "wrong number of arguments");
 	}
 	if (rb_equal(step, INT2FIX(0))) {
-	    rb_raise(rb_eArgError, "step cannot be 0");
+	    rb_raise(rb_eArgError, "step can't be 0");
 	}
     }
 

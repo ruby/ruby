@@ -138,21 +138,6 @@ rb_obj_id(obj)
     return (VALUE)((long)obj|FIXNUM_FLAG);
 }
 
-/*
- *  call-seq:
- *     obj.id    => fixnum
- *  
- *  Soon-to-be deprecated version of <code>Object#object_id</code>.
- */
-
-VALUE
-rb_obj_id_obsolete(obj)
-    VALUE obj;
-{
-    rb_warn("Object#id will be deprecated; use Object#object_id");
-    return rb_obj_id(obj);
-}
-
 VALUE
 rb_class_real(cl)
     VALUE cl;
@@ -161,21 +146,6 @@ rb_class_real(cl)
 	cl = RCLASS(cl)->super;
     }
     return cl;
-}
-
-/*
- *  call-seq:
- *     obj.type   => class
- *  
- *  Deprecated synonym for <code>Object#class</code>.
- */
-
-VALUE
-rb_obj_type(obj)
-    VALUE obj;
-{
-    rb_warn("Object#type is deprecated; use Object#class");
-    return rb_class_real(CLASS_OF(obj));
 }
 
 /*
@@ -375,10 +345,16 @@ inspect_i(id, value, str)
 }
 
 static VALUE
-inspect_obj(obj, str)
+inspect_obj(obj, str, recur)
     VALUE obj, str;
+    int recur;
 {
-    st_foreach_safe(ROBJECT(obj)->iv_tbl, inspect_i, str);
+    if (recur) {
+	rb_str_cat2(str, "...");
+    }
+    else {
+	st_foreach_safe(ROBJECT(obj)->iv_tbl, inspect_i, str);
+    }
     rb_str_cat2(str, ">");
     RSTRING(str)->ptr[0] = '#';
     OBJ_INFECT(str, obj);
@@ -410,16 +386,10 @@ rb_obj_inspect(obj)
 	char *c;
 
 	c = rb_obj_classname(obj);
-	if (rb_inspecting_p(obj)) {
-	    str = rb_str_new(0, strlen(c)+10+16+1); /* 10:tags 16:addr 1:nul */
-	    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx ...>", c, obj);
-	    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
-	    return str;
-	}
-	str = rb_str_new(0, strlen(c)+6+16+1); /* 6:tags 16:addr 1:nul */
+	str = rb_str_new(0, strlen(c)+10+16+1); /* 10:tags 16:addr 1:nul */
 	sprintf(RSTRING(str)->ptr, "-<%s:0x%lx", c, obj);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
-	return rb_protect_inspect(inspect_obj, obj, str);
+	return rb_exec_recursive(inspect_obj, obj, str);
     }
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);
 }
@@ -1295,12 +1265,6 @@ rb_class_inherited_p(mod, arg)
       default:
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
-
-    if (FL_TEST(mod, FL_SINGLETON)) {
-	if (RCLASS(mod)->m_tbl == RCLASS(arg)->m_tbl)
-	    return Qtrue;
-	mod = RBASIC(mod)->klass;
-    }
     while (mod) {
 	if (RCLASS(mod)->m_tbl == RCLASS(arg)->m_tbl)
 	    return Qtrue;
@@ -1496,8 +1460,8 @@ rb_class_initialize(argc, argv, klass)
     }
     RCLASS(klass)->super = super;
     rb_make_metaclass(klass, RBASIC(super)->klass);
-    rb_mod_initialize(klass);
     rb_class_inherited(super, klass);
+    rb_mod_initialize(klass);
 
     return klass;
 }
@@ -1586,9 +1550,6 @@ rb_class_superclass(klass)
 
     if (!super) {
 	rb_raise(rb_eTypeError, "uninitialized class");
-    }
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	super = RBASIC(klass)->klass;
     }
     while (TYPE(super) == T_ICLASS) {
 	super = RCLASS(super)->super;
@@ -1972,7 +1933,8 @@ rb_obj_ivar_get(obj, iv)
  *  
  *  Sets the instance variable names by <i>symbol</i> to
  *  <i>object</i>, thereby frustrating the efforts of the class's
- *  author to attempt to provide proper encapsulation.
+ *  author to attempt to provide proper encapsulation. The variable
+ *  did not have to exist prior to this call.
  *     
  *     class Fred
  *       def initialize(p1, p2)
@@ -1981,7 +1943,8 @@ rb_obj_ivar_get(obj, iv)
  *     end
  *     fred = Fred.new('cat', 99)
  *     fred.instance_variable_set(:@a, 'dog')   #=> "dog"
- *     fred.inspect                             #=> "#<Fred:0x401b3da8 @a=\"dog\", @b=99>"
+ *     fred.instance_variable_set(:@c, 'cat')   #=> "cat"
+ *     fred.inspect                             #=> "#<Fred:0x401b3da8 @a=\"dog\", @b=99, @c=\"cat\">"
  */
 
 static VALUE
@@ -2064,7 +2027,7 @@ convert_type(val, tname, method, raise)
     m = rb_intern(method);
     if (!rb_respond_to(val, m)) {
 	if (raise) {
-	    rb_raise(rb_eTypeError, "cannot convert %s into %s",
+	    rb_raise(rb_eTypeError, "can't convert %s into %s",
 		     NIL_P(val) ? "nil" :
 		     val == Qtrue ? "true" :
 		     val == Qfalse ? "false" :
@@ -2090,7 +2053,7 @@ rb_convert_type(val, type, tname, method)
     v = convert_type(val, tname, method, Qtrue);
     if (TYPE(v) != type) {
 	char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "cannot convert %s to %s (%s#%s gives %s)",
+	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
 		 cname, tname, cname, method, rb_obj_classname(v));
     }
     return v;
@@ -2110,7 +2073,7 @@ rb_check_convert_type(val, type, tname, method)
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
 	char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "cannot convert %s to %s (%s#%s gives %s)",
+	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
 		 cname, tname, cname, method, rb_obj_classname(v));
     }
     return v;
@@ -2125,7 +2088,7 @@ rb_to_integer(val, method)
     VALUE v = convert_type(val, "Integer", method, Qtrue);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "cannot convert %s to Integer (%s#%s gives %s)",
+	rb_raise(rb_eTypeError, "can't convert %s to Integer (%s#%s gives %s)",
 		 cname, cname, method, rb_obj_classname(v));
     }
     return v;
@@ -2306,7 +2269,7 @@ rb_Float(val)
 	return rb_float_new(rb_str_to_dbl(val, Qtrue));
 
       case T_NIL:
-	rb_raise(rb_eTypeError, "cannot convert nil into Float");
+	rb_raise(rb_eTypeError, "can't convert nil into Float");
 	break;
 
       default:
@@ -2561,10 +2524,8 @@ Init_Object()
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
 
     rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "id", rb_obj_id_obsolete, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "type", rb_obj_type, 0);
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
 
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);

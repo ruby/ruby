@@ -107,7 +107,7 @@ sign_bits(base, p)
 	       (posarg = -1, GETNTHARG(n))))
 
 #define GETNTHARG(nth) \
-    ((nth >= argc) ? (rb_raise(rb_eArgError, "too few arguments."), 0) : argv[nth])
+    ((nth >= argc) ? (rb_raise(rb_eArgError, "too few arguments"), 0) : argv[nth])
 
 #define GETASTER(val) do { \
     t = p++; \

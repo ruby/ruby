@@ -832,10 +832,10 @@ test_ok($x.has_value?(4))
 test_ok($x.values_at(2,3) == [4,6])
 test_ok($x == {1=>2, 2=>4, 3=>6})
 
-$z = $y.keys.join(":")
+$z = $y.keys.sort.join(":")
 test_ok($z == "1:2:3")
 
-$z = $y.values.join(":")
+$z = $y.values.sort.join(":")
 test_ok($z == "2:4:6")
 test_ok($x == $y)
 
@@ -1115,17 +1115,17 @@ argument_test(false, get_block(&lambda{||}),1)
 argument_test(true, get_block(&lambda{|a,|}),1)
 argument_test(false, get_block(&lambda{|a,|}),1,2)
 
-block = get_block{11}
-test_ok(block.class == Proc)
-test_ok(block.to_proc.class == Proc)
-test_ok(block.clone.call == 11)
-test_ok(get_block(&block).class == Proc)
+blk = get_block{11}
+test_ok(blk.class == Proc)
+test_ok(blk.to_proc.class == Proc)
+test_ok(blk.clone.call == 11)
+test_ok(get_block(&blk).class == Proc)
 
-lambda = lambda{44}
-test_ok(lambda.class == Proc)
-test_ok(lambda.to_proc.class == Proc)
-test_ok(lambda.clone.call == 44)
-test_ok(get_block(&lambda).class == Proc)
+lmd = lambda{44}
+test_ok(lmd.class == Proc)
+test_ok(lmd.to_proc.class == Proc)
+test_ok(lmd.clone.call == 44)
+test_ok(get_block(&lmd).class == Proc)
 
 test_ok(Proc.new{|a,| a}.call(1,2,3) == 1)
 argument_test(true, Proc.new{|a,|}, 1,2)
@@ -1325,7 +1325,7 @@ end
 test_ok(test_b15{|e| break 155 } == 155)
 
 def marity_test(m)
-  method = method(m)
+  method = self.method(m)
   test_ok(method.arity == method.to_proc.arity, 2)
 end
 marity_test(:test_ok)

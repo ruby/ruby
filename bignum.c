@@ -1976,7 +1976,7 @@ rb_big_coerce(x, y)
 	return rb_assoc_new(rb_int2big(FIX2LONG(y)), x);
     }
     else {
-	rb_raise(rb_eTypeError, "Can't coerce %s to Bignum",
+	rb_raise(rb_eTypeError, "can't coerce %s to Bignum",
 		 rb_obj_classname(y));
     }
     /* not reached */
@@ -2015,11 +2015,13 @@ rb_big_rand(max, rand_buf)
 	return rb_float_new(rand_buf[0]);
     }
     v = bignew(len,1);
+    len--;
+    BDIGITS(v)[len] = BDIGITS(max)[len] * rand_buf[len];    
     while (len--) {
 	BDIGITS(v)[len] = ((BDIGIT)~0) * rand_buf[len];
     }
 
-    return rb_big_modulo((VALUE)v, max);
+    return v;
 }
 
 /*

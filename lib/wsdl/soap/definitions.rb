@@ -77,8 +77,8 @@ class Definitions < Info
 
   def collect_faulttypes
     result = []
-    collect_fault_messages.each do |message|
-      parts = message(message).parts
+    collect_fault_messages.each do |m|
+      parts = message(m).parts
       if parts.size != 1
 	raise RuntimeError.new("Expecting fault message to have only 1 part.")
       end

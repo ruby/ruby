@@ -375,7 +375,7 @@ getDevice(master,slave)
 	}
 	close(i);
     }
-    rb_raise(rb_eRuntimeError, "Cannot get Master/Slave device");
+    rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
 #else
     char **p;
     char MasterName[DEVICELEN];
@@ -394,7 +394,7 @@ getDevice(master,slave)
 	    close(i);
 	}
     }
-    rb_raise(rb_eRuntimeError, "Cannot get %s", SlaveName);
+    rb_raise(rb_eRuntimeError, "can't get %s", SlaveName);
 #endif
 }
 #endif /* HAVE__GETPTY */

@@ -1671,13 +1671,13 @@ rb_f_spawn(argc, argv)
 
 /*
  *  call-seq:
- *     sleep(duration=0)    => fixnum
+ *     sleep([duration])    => fixnum
  *
  *  Suspends the current thread for _duration_ seconds (which may be
  *  any number, including a +Float+ with fractional seconds). Returns the actual
  *  number of seconds slept (rounded), which may be less than that asked
  *  for if the thread was interrupted by a +SIGALRM+, or if
- *  another thread calls <code>Thread#run</code>. An argument of zero
+ *  another thread calls <code>Thread#run</code>. Zero arguments
  *  causes +sleep+ to sleep forever.
  *
  *     Time.new    #=> Wed Apr 09 08:56:32 CDT 2003
@@ -2046,7 +2046,7 @@ check_uid_switch()
 {
     rb_secure(2);
     if (under_uid_switch) {
-	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+	rb_raise(rb_eRuntimeError, "can't handle UID while evaluating block given to Process::UID.switch method");
     }
 }
 
@@ -2056,7 +2056,7 @@ check_gid_switch()
 {
     rb_secure(2);
     if (under_gid_switch) {
-	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::UID.switch method");
+	rb_raise(rb_eRuntimeError, "can't handle GID while evaluating block given to Process::UID.switch method");
     }
 }
 

@@ -731,7 +731,7 @@ proc_options(argc, argv)
 		}
 		if (!*s) break;
 		if (!strchr("IdvwrK", *s))
-		    rb_raise(rb_eRuntimeError, "Illegal switch in RUBYOPT: -%c", *s);
+		    rb_raise(rb_eRuntimeError, "illegal switch in RUBYOPT: -%c", *s);
 		s = moreswitches(s);
 	    }
 	}
@@ -858,7 +858,7 @@ load_file(fname, script)
 		    }
 		}
 	    }
-	    rb_raise(rb_eLoadError, "No Ruby script found in input");
+	    rb_raise(rb_eLoadError, "no Ruby script found in input");
 	}
 
 	c = rb_io_getc(f);
@@ -1047,11 +1047,11 @@ forbid_setid(s)
     const char *s;
 {
     if (euid != uid)
-        rb_raise(rb_eSecurityError, "No %s allowed while running setuid", s);
+        rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
     if (egid != gid)
-        rb_raise(rb_eSecurityError, "No %s allowed while running setgid", s);
+        rb_raise(rb_eSecurityError, "no %s allowed while running setgid", s);
     if (rb_safe_level() > 0)
-        rb_raise(rb_eSecurityError, "No %s allowed in tainted mode", s);
+        rb_raise(rb_eSecurityError, "no %s allowed in tainted mode", s);
 }
 
 static void

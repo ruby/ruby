@@ -674,7 +674,7 @@ trap(arg)
     }
 #if defined(HAVE_SETITIMER)
     if (sig == SIGVTALRM) {
-	rb_raise(rb_eArgError, "SIGVTALRM reserved for Thread; cannot set handler");
+	rb_raise(rb_eArgError, "SIGVTALRM reserved for Thread; can't set handler");
     }
 #endif
     if (func == SIG_DFL) {

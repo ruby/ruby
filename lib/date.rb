@@ -1300,7 +1300,7 @@ class DateTime < Date
   def to_date() Date.new0(self.class.jd_to_ajd(jd, 0, 0), 0, @sg) end
   def to_datetime() self end
 
-  class << self; undef_method :today end
+  class << self; undef_method :today end rescue nil
 
   # Create a new DateTime object representing the current time.
   #

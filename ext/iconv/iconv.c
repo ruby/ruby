@@ -806,7 +806,7 @@ iconv_iconv
 
     return iconv_convert(VALUE2ICONV(cd), str,
 			 NIL_P(n1) ? 0 : NUM2INT(n1),
-			 NIL_P(n2) ? -1 : NUM2INT(n1),
+                        NIL_P(n2) ? -1 : NUM2INT(n2),
 			 NULL);
 }
 

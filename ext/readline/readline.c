@@ -7,6 +7,7 @@
 #include <readline/history.h>
 
 #include "ruby.h"
+#include "rubyio.h"
 #include "rubysig.h"
 
 #ifdef HAVE_UNISTD_H
@@ -45,6 +46,7 @@ readline_readline(argc, argv, self)
     char *prompt = NULL;
     char *buff;
     int status;
+    OpenFile *ofp, *ifp;
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
@@ -54,6 +56,10 @@ readline_readline(argc, argv, self)
 
     if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "stdin closed");
 
+    GetOpenFile(rb_stdout, ofp);
+    rl_outstream = rb_io_stdio_file(ofp);
+    GetOpenFile(rb_stdin, ifp);
+    rl_instream = rb_io_stdio_file(ifp);
     buff = (char*)rb_protect((VALUE(*)_((VALUE)))readline, (VALUE)prompt,
                               &status);
     if (status) {
@@ -488,7 +494,7 @@ hist_get(self, index)
         i += state->length;
     }
     if (i < 0 || i > state->length - 1) {
-	rb_raise(rb_eIndexError, "Invalid index");
+	rb_raise(rb_eIndexError, "invalid index");
     }
     return rb_tainted_str_new2(state->entries[i]->line);
 }
@@ -510,7 +516,7 @@ hist_set(self, index, str)
         i += state->length;
     }
     if (i < 0 || i > state->length - 1) {
-	rb_raise(rb_eIndexError, "Invalid index");
+	rb_raise(rb_eIndexError, "invalid index");
     }
     SafeStringValue(str);
     replace_history_entry(i, RSTRING(str)->ptr, NULL);
@@ -629,7 +635,7 @@ hist_delete_at(self, index)
     if (i < 0)
         i += state->length;
     if (i < 0 || i > state->length - 1) {
-	rb_raise(rb_eIndexError, "Invalid index");
+	rb_raise(rb_eIndexError, "invalid index");
     }
     return rb_remove_history(i);
 }

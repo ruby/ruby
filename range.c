@@ -352,7 +352,7 @@ range_step(argc, argv, range)
 
 	    if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
 	    if (!rb_respond_to(b, id_succ)) {
-		rb_raise(rb_eTypeError, "cannot iterate from %s",
+		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(b));
 	    }
 	
@@ -400,7 +400,7 @@ range_each(range)
     end = rb_ivar_get(range, id_end);
 
     if (!rb_respond_to(beg, id_succ)) {
-	rb_raise(rb_eTypeError, "cannot iterate from %s",
+	rb_raise(rb_eTypeError, "can't iterate from %s",
 		 rb_obj_classname(beg));
     }
     if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */

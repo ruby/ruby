@@ -1292,8 +1292,7 @@ rb_autoload(mod, id, file)
 	tbl = check_autoload_table(av);
     }
     else {
-	av = Data_Wrap_Struct(rb_cData, rb_mark_tbl, st_free_table, 0);
-	RBASIC(av)->klass = 0;
+	av = Data_Wrap_Struct(0, rb_mark_tbl, st_free_table, 0);
 	st_add_direct(tbl, autoload, av);
 	DATA_PTR(av) = tbl = st_init_numtable();
     }

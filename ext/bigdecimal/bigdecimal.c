@@ -202,7 +202,7 @@ BigDecimal_load(VALUE self, VALUE str)
     /* First get max prec */
     while((*pch)!=(unsigned char)'\0' && (ch=*pch++)!=(unsigned char)':') {
         if(!ISDIGIT(ch)) {
-            rb_raise(rb_eTypeError, "Load failed: invalid character in the marshaled string");
+            rb_raise(rb_eTypeError, "load failed: invalid character in the marshaled string");
         }
         m = m*10 + (unsigned long)(ch-'0');
     }
@@ -230,7 +230,7 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
         fo = VpGetException();
         if(val==Qnil) return INT2FIX(fo);
         if(val!=Qfalse && val!=Qtrue) {
-            rb_raise(rb_eTypeError, "The second argument must be true or false.");
+            rb_raise(rb_eTypeError, "second argument must be true or false");
             return Qnil; /* Not reached */
         }
         if(f&VP_EXCEPTION_INFINITY) {
@@ -250,13 +250,13 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
         if(val==Qnil) return INT2FIX(fo);
         Check_Type(val, T_FIXNUM);
         if(!VpIsRoundMode(FIX2INT(val))) {
-            rb_raise(rb_eTypeError, "Invalid rounding mode.");
+            rb_raise(rb_eTypeError, "invalid rounding mode");
             return Qnil;
         }
         fo = VpSetRoundMode((unsigned long)FIX2INT(val));
         return INT2FIX(fo);
     }
-    rb_raise(rb_eTypeError, "The first argument for BigDecimal#mode is invalid.");
+    rb_raise(rb_eTypeError, "first argument for BigDecimal#mode invalid");
     return Qnil;
 }
 
@@ -412,7 +412,7 @@ BigDecimal_to_f(VALUE self)
     errno = 0;
     d2 = pow(10.0,(double)e);
     if((errno == ERANGE && e>0) || (d2>1.0 && (fabs(d) > (DBL_MAX / d2)))) {
-       VpException(VP_EXCEPTION_OVERFLOW,"BigDecimal to Float conversion.",0);
+       VpException(VP_EXCEPTION_OVERFLOW,"BigDecimal to Float conversion",0);
        if(d>0.0) return rb_float_new(DBL_MAX);
        else      return rb_float_new(-DBL_MAX);
     }
@@ -940,7 +940,7 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
         Check_Type(vRound, T_FIXNUM);
         sw   = FIX2INT(vRound);
         if(!VpIsRoundMode(sw)) {
-            rb_raise(rb_eTypeError, "Invalid rounding mode.");
+            rb_raise(rb_eTypeError, "invalid rounding mode");
             return Qnil;
         }
         break;
@@ -3304,7 +3304,7 @@ VpCtoV(Real *a, char *int_chr, U_LONG ni, char *frac, U_LONG nf, char *exp_chr, 
             es = e*((S_INT)BASE_FIG);
             e = e * 10 + exp_chr[i] - '0';
             if(es>e*((S_INT)BASE_FIG)) {
-                return VpException(VP_EXCEPTION_INFINITY,"Exponent overflow",0);
+                return VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
             }
             ++i;
         }

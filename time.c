@@ -1834,6 +1834,7 @@ time_strftime(time, format)
 	time_get_tm(time, tobj->gmt);
     }
     StringValue(format);
+    format = rb_str_new4(format);
     fmt = RSTRING(format)->ptr;
     len = RSTRING(format)->len;
     if (len == 0) {

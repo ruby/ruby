@@ -30,8 +30,12 @@ module RDoc
     
     def scan
       #    @body.gsub(/^(\s\n)+/, '')
-      @top_level.comment = @body
+      @top_level.comment = remove_private_comments(@body)
       @top_level
+    end
+
+    def remove_private_comments(comment)
+      comment.gsub(/^--.*?^\+\+/m, '').sub(/^--.*/m, '')
     end
   end
 end

@@ -10,6 +10,11 @@ module ParseDate
       values_at(:year, :mon, :mday, :hour, :min, :sec, :zone, :wday)
   end
 
-  module_function :parsedate
 
+  def strptime(str, format)
+    Date._strptime(str, format).
+      values_at(:year, :mon, :mday, :hour, :min, :sec, :zone, :wday)
+  end
+
+  module_function :parsedate, :strptime
 end

@@ -245,11 +245,11 @@ class TestIterator < Test::Unit::TestCase
     assert_equal(block.clone.call, 11)
     assert_instance_of(Proc, get_block(&block))
 
-    lambda = lambda{44}
-    assert_instance_of(Proc, lambda)
-    assert_instance_of(Proc, lambda.to_proc)
-    assert_equal(lambda.clone.call, 44)
-    assert_instance_of(Proc, get_block(&lambda))
+    lmd = lambda{44}
+    assert_instance_of(Proc, lmd)
+    assert_instance_of(Proc, lmd.to_proc)
+    assert_equal(lmd.clone.call, 44)
+    assert_instance_of(Proc, get_block(&lmd))
 
     assert_equal(1, Proc.new{|a,| a}.call(1,2,3))
     assert_nothing_raised {Proc.new{|a,|}.call(1,2)}
@@ -310,9 +310,9 @@ class TestIterator < Test::Unit::TestCase
     end
 
     block = get_block{11}
-    lambda = lambda{44}
+    lmd = lambda{44}
     assert_equal(0, block.arity)
-    assert_equal(0, lambda.arity)
+    assert_equal(0, lmd.arity)
     assert_equal(0, lambda{||}.arity)
     assert_equal(1, lambda{|a|}.arity)
     assert_equal(1, lambda{|a,|}.arity)
@@ -320,8 +320,8 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def marity_test(m)
-    method = method(m)
-    assert_equal(method.arity, method.to_proc.arity)
+    mobj = method(m)
+    assert_equal(mobj.arity, mobj.to_proc.arity)
   end
 
   def test_marity

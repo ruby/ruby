@@ -174,7 +174,7 @@ module RDoc
     # prepare to parse a C file
     def initialize(top_level, file_name, body, options, stats)
       @known_classes = KNOWN_CLASSES.dup
-      @body = handle_ifdefs_in(body)
+      @body = handle_tab_width(handle_ifdefs_in(body))
       @options = options
       @stats   = stats
       @top_level = top_level
@@ -187,6 +187,7 @@ module RDoc
     def scan
       remove_commented_out_lines
       do_classes
+      do_constants
       do_methods
       do_includes
       do_aliases
@@ -240,7 +241,7 @@ module RDoc
       if @body =~ %r{((?>/\*.*?\*/\s+))
                      (static\s+)?void\s+Init_#{class_name}\s*\(\)}xmi
         comment = $1
-      elsif @body =~ %r{Document-(class|module):\s#{class_name}.*?\n((?>.*?\*/))}m
+      elsif @body =~ %r{Document-(class|module):\s#{class_name}\s*?\n((?>.*?\*/))}m
         comment = $2
       end
       class_meth.comment = mangle_comment(comment) if comment
@@ -249,13 +250,13 @@ module RDoc
     ############################################################
 
     def do_classes
-      @body.scan(/(\w+)\s* = \s*rb_define_module\(\s*"(\w+)"\s*\)/mx) do 
+      @body.scan(/(\w+)\s* = \s*rb_define_module\s*\(\s*"(\w+)"\s*\)/mx) do 
         |var_name, class_name|
         handle_class_module(var_name, "module", class_name, nil, nil)
       end
       
       # The '.' lets us handle SWIG-generated files
-      @body.scan(/([\w\.]+)\s* = \s*rb_define_class
+      @body.scan(/([\w\.]+)\s* = \s*rb_define_class\s*
                 \( 
                    \s*"(\w+)",
                    \s*(\w+)\s*
@@ -265,7 +266,7 @@ module RDoc
         handle_class_module(var_name, "class", class_name, parent, nil)
       end
       
-      @body.scan(/(\w+)\s*=\s*boot_defclass\(\s*"(\w+?)",\s*(\w+?)\)/) do
+      @body.scan(/(\w+)\s*=\s*boot_defclass\s*\(\s*"(\w+?)",\s*(\w+?)\s*\)/) do
         |var_name, class_name, parent|
         parent = nil if parent == "0"
         handle_class_module(var_name, "class", class_name, parent, nil)
@@ -281,17 +282,39 @@ module RDoc
         handle_class_module(var_name, "module", class_name, nil, in_module)
       end
       
-      @body.scan(/([\w\.]+)\s* = \s*rb_define_class_under
+      @body.scan(/([\w\.]+)\s* = \s*rb_define_class_under\s*
                 \( 
                    \s*(\w+),
                    \s*"(\w+)",
                    \s*(\w+)\s*
-                \)/mx) do 
+                \s*\)/mx) do 
         
         |var_name, in_module, class_name, parent|
         handle_class_module(var_name, "class", class_name, parent, in_module)
       end
       
+    end
+
+		###########################################################
+
+    def do_constants
+      @body.scan(%r{\Wrb_define_
+                     (
+                        variable |
+                        readonly_variable |
+                        const |
+                        global_const |
+                      )
+                 \s*\( 
+                   (?:\s*(\w+),)?
+                   \s*"(\w+)",
+                   \s*(.*?)\s*\)\s*;
+                   }xm) do
+        
+        |type, var_name, const_name, definition|
+        var_name = "rb_cObject" if !var_name or var_name == "rb_mKernel"
+				handle_constants(type, var_name, const_name, definition)
+      end
     end
     
     ############################################################
@@ -305,7 +328,7 @@ module RDoc
                         module_function  |
                         private_method
                      )
-                     \(\s*([\w\.]+),
+                     \s*\(\s*([\w\.]+),
                        \s*"([^"]+)",
                        \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
                        \s*(-?\w+)\s*\)
@@ -325,7 +348,21 @@ module RDoc
                       meth_body, param_count, source_file)
       end
 
-      @body.scan(%r{rb_define_global_function\(
+      @body.scan(%r{rb_define_attr\(
+                               \s*([\w\.]+),
+                               \s*"([^"]+)",
+                               \s*(\d+),
+                               \s*(\d+)\s*\);
+                  }xm) do  #"
+        |var_name, attr_name, attr_reader, attr_writer|
+        
+        #var_name = "rb_cObject" if var_name == "rb_mKernel"
+        handle_attr(var_name, attr_name,
+                    attr_reader.to_i != 0,
+                    attr_writer.to_i != 0)
+      end
+
+      @body.scan(%r{rb_define_global_function\s*\(
                                \s*"([^"]+)",
                                \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
                                \s*(-?\w+)\s*\)
@@ -336,7 +373,7 @@ module RDoc
                       meth_body, param_count, source_file)
       end
   
-      @body.scan(/define_filetest_function\(
+      @body.scan(/define_filetest_function\s*\(
                                \s*"([^"]+)",
                                \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
                                \s*(-?\w+)\s*\)/xm) do  #"
@@ -350,7 +387,7 @@ module RDoc
     ############################################################
     
     def do_aliases
-      @body.scan(%r{rb_define_alias\(\s*(\w+),\s*"([^"]+)",\s*"([^"]+)"\s*\)}m) do
+      @body.scan(%r{rb_define_alias\s*\(\s*(\w+),\s*"([^"]+)",\s*"([^"]+)"\s*\)}m) do
         |var_name, new_name, old_name|
         @stats.num_methods += 1
         class_name = @known_classes[var_name] || var_name
@@ -361,6 +398,83 @@ module RDoc
    end
 
     ############################################################
+
+    def handle_constants(type, var_name, const_name, definition)
+      #@stats.num_constants += 1
+      class_name = @known_classes[var_name]
+      
+      return unless class_name
+
+      class_obj  = find_class(var_name, class_name)
+
+      unless class_obj
+        $stderr.puts("Enclosing class/module '#{const_name}' for not known")
+        return
+      end
+      
+      comment = find_const_comment(type, const_name)
+
+      con = Constant.new(const_name, definition, mangle_comment(comment))
+      class_obj.add_constant(con)
+    end
+
+    ###########################################################
+
+    def find_const_comment(type, const_name)
+      if @body =~ %r{((?>/\*.*?\*/\s+))
+                     rb_define_#{type}\((?:\s*(\w+),)?\s*"#{const_name}"\s*,.*?\)\s*;}xmi
+        $1
+      elsif @body =~ %r{Document-(?:const|global|variable):\s#{const_name}\s*?\n((?>.*?\*/))}m
+        $1
+      else
+        ''
+      end
+    end
+
+    ###########################################################
+
+    def handle_attr(var_name, attr_name, reader, writer)
+      rw = ''
+      if reader 
+        #@stats.num_methods += 1
+        rw << 'R'
+      end
+      if writer
+        #@stats.num_methods += 1
+        rw << 'W'
+      end
+
+      class_name = @known_classes[var_name]
+
+      return unless class_name
+      
+      class_obj  = find_class(var_name, class_name)
+
+      if class_obj
+        comment = find_attr_comment(attr_name)
+        unless comment.empty?
+          comment = mangle_comment(comment)
+        end
+        att = Attr.new('', attr_name, rw, comment)
+        class_obj.add_attribute(att)
+      end
+
+    end
+
+    ###########################################################
+
+    def find_attr_comment(attr_name)
+      if @body =~ %r{((?>/\*.*?\*/\s+))
+                     rb_define_attr\((?:\s*(\w+),)?\s*"#{attr_name}"\s*,.*?\)\s*;}xmi
+        $1
+      elsif @body =~ %r{Document-attr:\s#{attr_name}\s*?\n((?>.*?\*/))}m
+        $1
+      else
+        ''
+      end
+    end
+
+    ###########################################################
 
     def handle_method(type, var_name, meth_name, 
                       meth_body, param_count, source_file = nil)
@@ -469,12 +583,10 @@ module RDoc
     ############################################################
 
     def find_override_comment(meth_name)
-      comment = nil
       name = Regexp.escape(meth_name)
-      if @body =~ %r{Document-method:\s#{name}.*?\n((?>.*?\*/))}m
-        comment = $1
+      if @body =~ %r{Document-method:\s#{name}\s*?\n((?>.*?\*/))}m
+        $1
       end
-      comment
     end
 
     ############################################################
@@ -482,7 +594,7 @@ module RDoc
     # Look for includes of the form
     #     rb_include_module(rb_cArray, rb_mEnumerable);
     def do_includes
-      @body.scan(/rb_include_module\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c,m|
+      @body.scan(/rb_include_module\s*\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c,m|
         if cls = @classes[c]
           m = KNOWN_CLASSES[m] || m
           cls.add_include(Include.new(m, ""))
@@ -510,6 +622,18 @@ module RDoc
         end
       end
       @classes[raw_name]
+    end
+
+    def handle_tab_width(body)
+      if /\t/ =~ body
+        tab_width = Options.instance.tab_width
+        body.split(/\n/).map do |line|
+          1 while line.gsub!(/\t+/) { ' ' * (tab_width*$&.length - $`.length % tab_width)}  && $~ #`
+          line
+        end .join("\n")
+      else
+        body
+      end
     end
 
     # Remove #ifdefs that would otherwise confuse us

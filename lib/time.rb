@@ -94,6 +94,37 @@ class Time
     end
     private :zone_utc?
 
+    def make_time(year, mon, day, hour, min, sec, zone, now)
+      if now
+        begin
+          break if year; year = now.year
+          break if mon; mon = now.mon
+          break if day; day = now.day
+          break if hour; hour = now.hour
+          break if min; min = now.min
+          break if sec; sec = now.sec
+        end until true
+      end
+
+      year ||= 1970
+      mon ||= 1
+      day ||= 1
+      hour ||= 0
+      min ||= 0
+      sec ||= 0
+
+      off = nil
+      off = zone_offset(zone, year) if zone
+
+      if off
+        t = Time.utc(year, mon, day, hour, min, sec) - off
+        t.localtime if !zone_utc?(zone)
+        t
+      else
+        Time.local(year, mon, day, hour, min, sec)
+      end
+    end
+
     #
     # Parses +date+ using ParseDate.parsedate and converts it to a Time object.
     #
@@ -147,35 +178,20 @@ class Time
     def parse(date, now=Time.now)
       year, mon, day, hour, min, sec, zone, _ = ParseDate.parsedate(date)
       year = yield(year) if year && block_given?
+      make_time(year, mon, day, hour, min, sec, zone, now)
+    end
 
-      if now
-        begin
-          break if year; year = now.year
-          break if mon; mon = now.mon
-          break if day; day = now.day
-          break if hour; hour = now.hour
-          break if min; min = now.min
-          break if sec; sec = now.sec
-        end until true
-      end
-
-      year ||= 1970
-      mon ||= 1
-      day ||= 1
-      hour ||= 0
-      min ||= 0
-      sec ||= 0
-
-      off = nil
-      off = zone_offset(zone, year) if zone
-
-      if off
-        t = Time.utc(year, mon, day, hour, min, sec) - off
-        t.localtime if !zone_utc?(zone)
-        t
-      else
-        Time.local(year, mon, day, hour, min, sec)
-      end
+    #
+    # Parses +date+ using ParseDate.strptime and converts it to a Time object.
+    #
+    # If a block is given, the year described in +date+ is converted by the
+    # block.  For example:
+    #
+    #     Time.parse(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
+    def strptime(date, format, now=Time.now)
+      year, mon, day, hour, min, sec, zone, _ = ParseDate.strptime(date, format)
+      year = yield(year) if year && block_given?
+      make_time(year, mon, day, hour, min, sec, zone, now)
     end
 
     MonthValue = {

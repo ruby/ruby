@@ -156,12 +156,12 @@ module REXML
 		#   unable to parse proper XML, we have to provide a hack to generate XML
 		#   that IE's limited abilities can handle.  This hack inserts a space 
 		#   before the /> on empty tags.  Defaults to false
-		def write( output=$stdout, indent=-1, transitive=false, ie_hack=false )
+		def write( output=$stdout, indent_level=-1, transitive=false, ie_hack=false )
 			output = Output.new( output, xml_decl.encoding ) if xml_decl.encoding != "UTF-8" && !output.kind_of?(Output)
 			@children.each { |node|
-				indent( output, indent ) if node.node_type == :element
-				if node.write( output, indent, transitive, ie_hack )
-          output << "\n" unless indent<0 or node == @children[-1]
+				indent( output, indent_level ) if node.node_type == :element
+				if node.write( output, indent_level, transitive, ie_hack )
+          output << "\n" unless indent_level<0 or node == @children[-1]
         end
 			}
 		end

@@ -15,6 +15,7 @@
 #include "ruby.h"
 #include "util.h"
 #include "st.h"
+#include "node.h"
 
 VALUE rb_cArray, rb_cValues;
 
@@ -427,9 +428,6 @@ rb_ary_s_create(argc, argv, klass)
 {
     VALUE ary = ary_alloc(klass);
 
-    if (argc < 0) {
-	rb_raise(rb_eArgError, "negative number of arguments");
-    }
     if (argc > 0) {
 	RARRAY(ary)->ptr = ALLOC_N(VALUE, argc);
 	MEMCPY(RARRAY(ary)->ptr, argv, VALUE, argc);
@@ -705,9 +703,6 @@ rb_ary_unshift_m(argc, argv, ary)
 {
     long len = RARRAY(ary)->len;
 
-    if (argc < 0) {
-	rb_raise(rb_eArgError, "negative number of arguments");
-    }
     if (argc == 0) return ary;
 
     /* make rooms by setting the last item */
@@ -1363,10 +1358,14 @@ rb_ary_dup(ary)
 extern VALUE rb_output_fs;
 
 static VALUE
-inspect_join(ary, arg)
+recursive_join(ary, arg, recur)
     VALUE ary;
     VALUE *arg;
+    int recur;
 {
+    if (recur) {
+	return rb_str_new2("[...]");
+    }
     return rb_ary_join(arg[0], arg[1]);
 }
 
@@ -1396,15 +1395,12 @@ rb_ary_join(ary, sep)
 	  case T_STRING:
 	    break;
 	  case T_ARRAY:
-	    if (rb_inspecting_p(tmp)) {
-		tmp = rb_str_new2("[...]");
-	    }
-	    else {
+	    {
 		VALUE args[2];
 
 		args[0] = tmp;
 		args[1] = sep;
-		tmp = rb_protect_inspect(inspect_join, ary, (VALUE)args);
+		tmp = rb_exec_recursive(recursive_join, ary, (VALUE)args);
 	    }
 	    break;
 	  default:
@@ -1464,96 +1460,17 @@ rb_ary_to_s(ary)
     return rb_ary_join(ary, rb_output_fs);
 }
 
-static ID inspect_key;
-
-struct inspect_arg {
-    VALUE (*func)();
-    VALUE arg1, arg2;
-};
-
 static VALUE
-inspect_call(arg)
-    struct inspect_arg *arg;
-{
-    return (*arg->func)(arg->arg1, arg->arg2);
-}
-
-static VALUE
-get_inspect_tbl(create)
-    int create;
-{
-    VALUE inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
-
-    if (NIL_P(inspect_tbl)) {
-	if (create) {
-	  tbl_init:
-	    inspect_tbl = rb_ary_new();
-	    rb_thread_local_aset(rb_thread_current(), inspect_key, inspect_tbl);
-	}
-    }
-    else if (TYPE(inspect_tbl) != T_ARRAY) {
-	rb_warn("invalid inspect_tbl value");
-	if (create) goto tbl_init;
-	rb_thread_local_aset(rb_thread_current(), inspect_key, Qnil);
-	return Qnil;
-    }
-    return inspect_tbl;
-}
-
-static VALUE
-inspect_ensure(obj)
-    VALUE obj;
-{
-    VALUE inspect_tbl;
-
-    inspect_tbl = get_inspect_tbl(Qfalse);
-    if (!NIL_P(inspect_tbl)) {
-	rb_ary_pop(inspect_tbl);
-    }
-    return 0;
-}
-
-VALUE
-rb_protect_inspect(func, obj, arg)
-    VALUE (*func)(ANYARGS);
-    VALUE obj, arg;
-{
-    struct inspect_arg iarg;
-    VALUE inspect_tbl;
-    VALUE id;
-
-    inspect_tbl = get_inspect_tbl(Qtrue);
-    id = rb_obj_id(obj);
-    if (rb_ary_includes(inspect_tbl, id)) {
-	return (*func)(obj, arg);
-    }
-    rb_ary_push(inspect_tbl, id);
-    iarg.func = func;
-    iarg.arg1 = obj;
-    iarg.arg2 = arg;
-
-    return rb_ensure(inspect_call, (VALUE)&iarg, inspect_ensure, obj);
-}
-
-VALUE
-rb_inspecting_p(obj)
-    VALUE obj;
-{
-    VALUE inspect_tbl;
-
-    inspect_tbl = get_inspect_tbl(Qfalse);
-    if (NIL_P(inspect_tbl)) return Qfalse;
-    return rb_ary_includes(inspect_tbl, rb_obj_id(obj));
-}
-
-static VALUE
-inspect_ary(ary)
+inspect_ary(ary, dummy, recur)
     VALUE ary;
+    VALUE dummy;
+    int recur;
 {
     int tainted = OBJ_TAINTED(ary);
     long i;
     VALUE s, str;
 
+    if (recur) return rb_tainted_str_new2("[...]");
     str = rb_str_buf_new2("[");
     for (i=0; i<RARRAY(ary)->len; i++) {
 	s = rb_inspect(RARRAY(ary)->ptr[i]);
@@ -1578,8 +1495,7 @@ rb_ary_inspect(ary)
     VALUE ary;
 {
     if (RARRAY(ary)->len == 0) return rb_str_new2("[]");
-    if (rb_inspecting_p(ary)) return rb_str_new2("[...]");
-    return rb_protect_inspect(inspect_ary, ary, 0);
+    return rb_exec_recursive(inspect_ary, ary, 0);
 }
 
 /*
@@ -2254,7 +2170,7 @@ rb_ary_transpose(ary)
 	    }
 	}
 	else if (elen != RARRAY(tmp)->len) {
-	    rb_raise(rb_eIndexError, "element size differ (%d should be %d)",
+	    rb_raise(rb_eIndexError, "element size differs (%d should be %d)",
 		     RARRAY(tmp)->len, elen);
 	}
 	for (j=0; j<elen; j++) {
@@ -2637,6 +2553,26 @@ rb_ary_eql(ary1, ary2)
     return Qtrue;
 }
 
+static VALUE
+recursive_hash(ary, dummy, recur)
+    VALUE ary, dummy;
+    int recur;
+{
+    long i, h;
+    VALUE n;
+
+    if (recur) {
+	return LONG2FIX(0);
+    }
+    h = RARRAY(ary)->len;
+    for (i=0; i<RARRAY(ary)->len; i++) {
+	h = (h << 1) | (h<0 ? 1 : 0);
+	n = rb_hash(RARRAY(ary)->ptr[i]);
+	h ^= NUM2LONG(n);
+    }
+    return LONG2FIX(h);
+}
+
 /*
  *  call-seq:
  *     array.hash   -> fixnum
@@ -2649,16 +2585,7 @@ static VALUE
 rb_ary_hash(ary)
     VALUE ary;
 {
-    long i, h;
-    VALUE n;
-
-    h = RARRAY(ary)->len;
-    for (i=0; i<RARRAY(ary)->len; i++) {
-	h = (h << 1) | (h<0 ? 1 : 0);
-	n = rb_hash(RARRAY(ary)->ptr[i]);
-	h ^= NUM2LONG(n);
-    }
-    return LONG2FIX(h);
+    return rb_exec_recursive(recursive_hash, ary, 0);
 }
 
 /*
@@ -3177,7 +3104,6 @@ Init_Array()
     rb_define_method(rb_cArray, "nitems", rb_ary_nitems, 0);
 
     id_cmp = rb_intern("<=>");
-    inspect_key = rb_intern("__inspect_key__");
 
     rb_cValues  = rb_define_class("Values", rb_cArray);
 }

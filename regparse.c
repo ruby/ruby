@@ -305,6 +305,88 @@ typedef struct {
 
 #include "st.h"
 
+typedef struct {
+  unsigned char* s;
+  unsigned char* end;
+} st_strend_key;
+
+static int strend_cmp(st_strend_key*, st_strend_key*);
+static int strend_hash(st_strend_key*);
+
+static struct st_hash_type type_strend_hash = {
+  strend_cmp,
+  strend_hash,
+};
+
+static st_table*
+onig_st_init_strend_table_with_size(int size)
+{
+    return onig_st_init_table_with_size(&type_strend_hash, size);
+}
+
+static int
+onig_st_lookup_strend(st_table *table, const UChar* str_key, const UChar* end_key, st_data_t *value)
+{
+    st_strend_key key;
+
+    key.s   = (unsigned char* )str_key;
+    key.end = (unsigned char* )end_key;
+
+    return onig_st_lookup(table, (st_data_t )(&key), value);
+}
+
+static int
+onig_st_insert_strend(st_table *table, const UChar* str_key, const UChar* end_key, st_data_t value)
+{
+  st_strend_key* key;
+  int result;
+
+  key = (st_strend_key* )xmalloc(sizeof(st_strend_key));
+  key->s   = (unsigned char* )str_key;
+  key->end = (unsigned char* )end_key;
+  result = onig_st_insert(table, (st_data_t )key, value);
+  if (result) {
+    xfree(key);
+  }
+  return result;
+}
+
+static int
+strend_cmp(st_strend_key* x, st_strend_key* y)
+{
+  unsigned char *p, *q;
+  int c;
+
+  if ((x->end - x->s) != (y->end - y->s))
+    return 1;
+
+  p = x->s;
+  q = y->s;
+  while (p < x->end) {
+    c = (int )*p - (int )*q;
+    if (c != 0) return c;
+
+    p++; q++;
+  }
+
+  return 0;
+}
+
+static int
+strend_hash(st_strend_key* x)
+{
+  int val;
+  unsigned char *p;
+
+  val = 0;
+  p = x->s;
+  while (p < x->end) {
+    val = val * 997 + (int )*p++;
+  }
+
+  return val + (val >> 5);
+}
+
 typedef st_table  NameTable;
 typedef st_data_t HashDataType;   /* 1.6 st.h doesn't define st_data_t type */
 
@@ -350,8 +432,10 @@ onig_print_names(FILE* fp, regex_t* reg)
 static int
 i_free_name_entry(UChar* key, NameEntry* e, void* arg)
 {
-  xfree(e->name);  /* == key */
+  xfree(e->name);
   if (IS_NOT_NULL(e->back_refs)) xfree(e->back_refs);
+  xfree(key);
+  xfree(e);
   return ST_DELETE;
 }
 
@@ -4546,27 +4630,9 @@ static int type_cclass_hash(type_cclass_key* key)
   return val + (val >> 5);
 }
 
-static int type_cclass_key_free(st_data_t x)
-{
-  xfree((void* )x);
-  return 0;
-}
-
-static st_data_t type_cclass_key_clone(st_data_t x)
-{
-  type_cclass_key* new_key;
-  type_cclass_key* key = (type_cclass_key* )x;
-
-  new_key = (type_cclass_key* )xmalloc(sizeof(type_cclass_key));
-  *new_key = *key;
-  return (st_data_t )new_key;
-}
-
 static struct st_hash_type type_type_cclass_hash = {
     type_cclass_cmp,
     type_cclass_hash,
-    type_cclass_key_free,
-    type_cclass_key_clone
 };
 
 static st_table* OnigTypeCClassTable;

@@ -15,7 +15,6 @@
 #include "ruby.h"
 #include "rubyio.h"
 #include "rubysig.h"
-#include "env.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -174,7 +173,7 @@ is_socket(fd, path)
 void
 rb_eof_error()
 {
-    rb_raise(rb_eEOFError, "End of file reached");
+    rb_raise(rb_eEOFError, "end of file reached");
 }
 
 VALUE
@@ -801,8 +800,7 @@ static int
 io_getc(OpenFile *fptr)
 {
     int r;
-    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) &&
-        TYPE(rb_stdout) == T_FILE) {
+    if (fptr->fd == 0 && (fptr->mode & FMODE_TTY) && TYPE(rb_stdout) == T_FILE) {
         OpenFile *ofp;
         GetOpenFile(rb_stdout, ofp);
         if (ofp->mode & FMODE_TTY) {
@@ -2415,7 +2413,7 @@ rb_io_flags_mode(flags)
 	}
 	return MODE_BINMODE("r+", "rb+");
     }
-    rb_raise(rb_eArgError, "illegal access mode %o", flags);
+    rb_raise(rb_eArgError, "illegal access modenum %o", flags);
     return NULL;		/* not reached */
 }
 
@@ -3278,6 +3276,10 @@ rb_f_open(argc, argv)
 
 	if (rb_respond_to(argv[0], to_open)) {
 	    VALUE io = rb_funcall2(argv[0], to_open, argc-1, argv+1);
+
+	    if (TYPE(io) != T_FILE) {
+		rb_raise(rb_eTypeError, "to_open should return IO value");
+	    }
 	    if (rb_block_given_p()) {
 		return rb_ensure(rb_yield, io, io_close, io);
 	    }
@@ -3331,7 +3333,7 @@ io_reopen(io, nfile)
     if (IS_PREP_STDIO(fptr)) {
 	if ((fptr->mode & FMODE_READWRITE) != (orig->mode & FMODE_READWRITE)) {
 	    rb_raise(rb_eArgError,
-		     "%s cannot change access mode from \"%s\" to \"%s\"",
+		     "%s can't change access mode from \"%s\" to \"%s\"",
 		     PREP_STDIO_NAME(fptr), rb_io_flags_mode(fptr->mode),
 		     rb_io_flags_mode(orig->mode));
 	}
@@ -3445,7 +3447,7 @@ rb_io_reopen(argc, argv, file)
 	if (IS_PREP_STDIO(fptr) &&
 	    (fptr->mode & FMODE_READWRITE) != (flags & FMODE_READWRITE)) {
 	    rb_raise(rb_eArgError,
-		     "%s cannot change access mode from \"%s\" to \"%s\"",
+		     "%s can't change access mode from \"%s\" to \"%s\"",
 		     PREP_STDIO_NAME(fptr), rb_io_flags_mode(fptr->mode),
 		     rb_io_flags_mode(flags));
 	}
@@ -3698,7 +3700,7 @@ rb_f_putc(recv, ch)
 }
 
 static VALUE
-io_puts_ary(ary, out)
+io_puts_ary(ary, out, recur)
     VALUE ary, out;
 {
     VALUE tmp;
@@ -3706,7 +3708,7 @@ io_puts_ary(ary, out)
 
     for (i=0; i<RARRAY(ary)->len; i++) {
 	tmp = RARRAY(ary)->ptr[i];
-	if (rb_inspecting_p(tmp)) {
+	if (recur) {
 	    tmp = rb_str_new2("[...]");
 	}
 	rb_io_puts(1, &tmp, out);
@@ -3755,7 +3757,7 @@ rb_io_puts(argc, argv, out)
 	else {
 	    line = rb_check_array_type(argv[i]);
 	    if (!NIL_P(line)) {
-		rb_protect_inspect(io_puts_ary, line, out);
+		rb_exec_recursive(io_puts_ary, line, out);
 		continue;
 	    }
 	    line = rb_obj_as_string(argv[i]);
@@ -4161,18 +4163,20 @@ rb_io_s_for_fd(argc, argv, klass)
 static int binmode = 0;
 
 static VALUE
-argf_forward(VALUE *argv)
+argf_forward(argc, argv)
+    int argc;
+    VALUE *argv;
 {
-    return rb_funcall3(current_file, ruby_frame->last_func, ruby_frame->argc, argv);
+    return rb_funcall3(current_file, rb_frame_this_func(), argc, argv);
 }
 
-#define ARGF_FORWARD(argv) do {\
+#define ARGF_FORWARD(argc, argv) do {\
   if (TYPE(current_file) != T_FILE)\
-     return argf_forward(argv);\
+     return argf_forward(argc, argv);\
 } while (0)
-#define NEXT_ARGF_FORWARD(argv) do {\
+#define NEXT_ARGF_FORWARD(argc, argv) do {\
      if (!next_argv()) return Qnil;\
-     ARGF_FORWARD(argv);\
+     ARGF_FORWARD(argc, argv);\
 } while (0)
 
 static void
@@ -4428,7 +4432,7 @@ rb_f_readline(argc, argv)
     VALUE line;
 
     if (!next_argv()) rb_eof_error();
-    ARGF_FORWARD(argv);
+    ARGF_FORWARD(argc, argv);
     line = rb_f_gets(argc, argv);
     if (NIL_P(line)) {
 	rb_eof_error();
@@ -4465,7 +4469,7 @@ rb_f_readlines(argc, argv)
 {
     VALUE line, ary;
 
-    NEXT_ARGF_FORWARD(argv);
+    NEXT_ARGF_FORWARD(argc, argv);
     ary = rb_ary_new();
     while (!NIL_P(line = argf_getline(argc, argv))) {
 	rb_ary_push(ary, line);
@@ -5138,7 +5142,7 @@ argf_tell()
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to tell");
     }
-    ARGF_FORWARD(0);
+    ARGF_FORWARD(0, 0);
     return rb_io_tell(current_file);
 }
 
@@ -5151,7 +5155,7 @@ argf_seek_m(argc, argv, self)
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to seek");
     }
-    ARGF_FORWARD(argv);
+    ARGF_FORWARD(argc, argv);
     return rb_io_seek_m(argc, argv, current_file);
 }
 
@@ -5162,7 +5166,7 @@ argf_set_pos(self, offset)
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to set position");
     }
-    ARGF_FORWARD(&offset);
+    ARGF_FORWARD(1, &offset);
     return rb_io_set_pos(current_file, offset);
 }
 
@@ -5172,7 +5176,7 @@ argf_rewind()
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to rewind");
     }
-    ARGF_FORWARD(0);
+    ARGF_FORWARD(0, 0);
     return rb_io_rewind(current_file);
 }
 
@@ -5182,7 +5186,7 @@ argf_fileno()
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream");
     }
-    ARGF_FORWARD(0);
+    ARGF_FORWARD(0, 0);
     return rb_io_fileno(current_file);
 }
 
@@ -5190,7 +5194,7 @@ static VALUE
 argf_to_io()
 {
     next_argv();
-    ARGF_FORWARD(0);
+    ARGF_FORWARD(0, 0);
     return current_file;
 }
 
@@ -5199,7 +5203,7 @@ argf_eof()
 {
     if (current_file) {
 	if (init_p == 0) return Qtrue;
-	ARGF_FORWARD(0);
+	ARGF_FORWARD(0, 0);
 	if (rb_io_eof(current_file)) {
 	    return Qtrue;
 	}
@@ -5230,7 +5234,7 @@ argf_read(argc, argv)
 	return str;
     }
     if (TYPE(current_file) != T_FILE) {
-	tmp = argf_forward(argv);
+	tmp = argf_forward(argc, argv);
     }
     else {
 	tmp = io_read(argc, argv, current_file);
@@ -5325,7 +5329,7 @@ argf_readchar()
 {
     VALUE c;
 
-    NEXT_ARGF_FORWARD(0);
+    NEXT_ARGF_FORWARD(0, 0);
     c = argf_getc();
     if (NIL_P(c)) {
 	rb_eof_error();
@@ -5384,7 +5388,7 @@ argf_binmode()
 {
     binmode = 1;
     next_argv();
-    ARGF_FORWARD(0);
+    ARGF_FORWARD(0, 0);
     rb_io_binmode(current_file);
     return argf;
 }
@@ -5415,7 +5419,7 @@ static VALUE
 argf_closed()
 {
     next_argv();
-    ARGF_FORWARD(0);
+    ARGF_FORWARD(0, 0);
     return rb_io_closed(current_file);
 }
 

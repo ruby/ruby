@@ -155,7 +155,7 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 
     Data_Get_Struct(self, struct dl_handle, dlhandle);
     if( ! dlhandle->open ){
-	rb_raise(rb_eDLError, "Closed handle.");
+	rb_raise(rb_eDLError, "closed handle");
     }
     handle = dlhandle->ptr;
 
@@ -187,7 +187,7 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 		}
 		CHECK_DLERROR;
 		if( !func ){
-		    rb_raise(rb_eDLError, "Unknown symbol \"%s\".", name);
+		    rb_raise(rb_eDLError, "unknown symbol \"%s\"", name);
 		}
 	    }
 	}
@@ -205,7 +205,7 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 	}
 	CHECK_DLERROR;
         if( !func ){
-	    rb_raise(rb_eDLError, "Unknown symbol \"%s\".", name);
+	    rb_raise(rb_eDLError, "unknown symbol \"%s\"", name);
 	}
 #endif
     }

@@ -430,7 +430,7 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 	    return vptr;
 	}
 	else{
-	    rb_raise(rb_eDLError, "to_ptr should return a CPtr object.");
+	    rb_raise(rb_eDLError, "to_ptr should return a CPtr object");
 	}
     }
     else{

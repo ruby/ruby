@@ -32,10 +32,10 @@ class TestLogger < Test::Unit::TestCase
   end
 
   def log_add(logger, severity, msg, progname = nil, &block)
-    log(logger, :add, severity, msg, progname, &block)
+    do_log(logger, :add, severity, msg, progname, &block)
   end
 
-  def log(logger, msg_id, *arg, &block)
+  def do_log(logger, msg_id, *arg, &block)
     logdev = Tempfile.new(File.basename(__FILE__) + '.log')
     logger.instance_eval { @logdev = Logger::LogDevice.new(logdev) }
     logger.__send__(msg_id, *arg, &block)
@@ -134,44 +134,44 @@ class TestLogger < Test::Unit::TestCase
   def test_level_log
     logger = Logger.new(nil)
     logger.progname = "my_progname"
-    log = log(logger, :debug, "custom_progname") { "msg" }
+    log = do_log(logger, :debug, "custom_progname") { "msg" }
     assert_equal("msg\n", log.msg)
     assert_equal("custom_progname", log.progname)
     assert_equal("DEBUG", log.severity)
     assert_equal("D", log.label)
     #
-    log = log(logger, :debug) { "msg_block" }
+    log = do_log(logger, :debug) { "msg_block" }
     assert_equal("msg_block\n", log.msg)
     assert_equal("my_progname", log.progname)
-    log = log(logger, :debug, "msg_inline")
+    log = do_log(logger, :debug, "msg_inline")
     assert_equal("msg_inline\n", log.msg)
     assert_equal("my_progname", log.progname)
     #
-    log = log(logger, :info, "custom_progname") { "msg" }
+    log = do_log(logger, :info, "custom_progname") { "msg" }
     assert_equal("msg\n", log.msg)
     assert_equal("custom_progname", log.progname)
     assert_equal("INFO", log.severity)
     assert_equal("I", log.label)
     #
-    log = log(logger, :warn, "custom_progname") { "msg" }
+    log = do_log(logger, :warn, "custom_progname") { "msg" }
     assert_equal("msg\n", log.msg)
     assert_equal("custom_progname", log.progname)
     assert_equal("WARN", log.severity)
     assert_equal("W", log.label)
     #
-    log = log(logger, :error, "custom_progname") { "msg" }
+    log = do_log(logger, :error, "custom_progname") { "msg" }
     assert_equal("msg\n", log.msg)
     assert_equal("custom_progname", log.progname)
     assert_equal("ERROR", log.severity)
     assert_equal("E", log.label)
     #
-    log = log(logger, :fatal, "custom_progname") { "msg" }
+    log = do_log(logger, :fatal, "custom_progname") { "msg" }
     assert_equal("msg\n", log.msg)
     assert_equal("custom_progname", log.progname)
     assert_equal("FATAL", log.severity)
     assert_equal("F", log.label)
     #
-    log = log(logger, :unknown, "custom_progname") { "msg" }
+    log = do_log(logger, :unknown, "custom_progname") { "msg" }
     assert_equal("msg\n", log.msg)
     assert_equal("custom_progname", log.progname)
     assert_equal("ANY", log.severity)

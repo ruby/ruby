@@ -124,7 +124,7 @@ curses_init_screen()
     if (rb_stdscr) return rb_stdscr;
     initscr();
     if (stdscr == 0) {
-	rb_raise(rb_eRuntimeError, "cannot initialize curses");
+	rb_raise(rb_eRuntimeError, "can't initialize curses");
     }
     clear();
     rb_stdscr = prep_window(cWindow, stdscr);
@@ -561,7 +561,7 @@ curses_resizeterm(VALUE obj, VALUE lin, VALUE col)
 #endif
 }
 
-#ifdef USE_COLOR
+#if defined(USE_COLOR) && defined(HAVE_WCOLOR_SET)
 static VALUE
 curses_start_color(VALUE obj)
 {
@@ -1195,6 +1195,20 @@ window_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 #endif
 }
 
+#if defined(USE_COLOR) && defined(HAVE_WCOLOR_SET)
+static VALUE
+window_color_set(VALUE obj, VALUE col) 
+{
+  struct windata *winp;
+  int res;
+
+  GetWINDOW(obj, winp);
+  res = wcolor_set(winp->window, NUM2INT(col), NULL);
+  return (res == OK) ? Qtrue : Qfalse;
+  return Qfalse;
+}
+#endif /* USE_COLOR */
+
 static VALUE
 window_scroll(VALUE obj)
 {
@@ -1471,6 +1485,9 @@ Init_curses()
     rb_define_method(cWindow, "box", window_box, -1);
     rb_define_method(cWindow, "move", window_move, 2);
     rb_define_method(cWindow, "setpos", window_setpos, 2);
+#if defined(USE_COLOR) && defined(HAVE_WCOLOR_SET)
+    rb_define_method(cWindow, "color_set", window_color_set, 1);
+#endif /* USE_COLOR && HAVE_WCOLOR_SET */
     rb_define_method(cWindow, "cury", window_cury, 0);
     rb_define_method(cWindow, "curx", window_curx, 0);
     rb_define_method(cWindow, "maxy", window_maxy, 0);

@@ -38,8 +38,8 @@ module REXML
 			Instruction.new self
 		end
 		
-		def write writer, indent=-1, transitive=false, ie_hack=false
-			indent(writer, indent)
+		def write writer, indent_level=-1, transitive=false, ie_hack=false
+			indent(writer, indent_level)
 			writer << START.sub(/\\/u, '')
 			writer << @target
 			writer << ' '

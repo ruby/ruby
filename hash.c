@@ -102,8 +102,6 @@ rb_any_hash(a)
 static struct st_hash_type objhash = {
     rb_any_cmp,
     rb_any_hash,
-    st_nothing_key_free,
-    st_nothing_key_clone
 };
 
 struct foreach_safe_arg {
@@ -113,17 +111,14 @@ struct foreach_safe_arg {
 };
 
 static int
-foreach_safe_i(key, value, arg, err)
+foreach_safe_i(key, value, arg)
     st_data_t key, value;
     struct foreach_safe_arg *arg;
 {
     int status;
 
-    if (err) {
-	rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
     if (key == Qundef) return ST_CONTINUE;
-    status = (*arg->func)(key, value, arg->arg, err);
+    status = (*arg->func)(key, value, arg->arg);
     if (status == ST_CONTINUE) {
 	return ST_CHECK;
     }
@@ -141,7 +136,9 @@ st_foreach_safe(table, func, a)
     arg.tbl = table;
     arg.func = func;
     arg.arg = a;
-    st_foreach(table, foreach_safe_i, (st_data_t)&arg);
+    if (st_foreach(table, foreach_safe_i, (st_data_t)&arg)) {
+	rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
 }
 
 struct hash_foreach_arg {
@@ -151,17 +148,13 @@ struct hash_foreach_arg {
 };
 
 static int
-hash_foreach_iter(key, value, arg, err)
+hash_foreach_iter(key, value, arg)
     VALUE key, value;
     struct hash_foreach_arg *arg;
-    int err;
 {
     int status;
     st_table *tbl;
 
-    if (err) {
-	rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
     tbl = RHASH(arg->hash)->tbl;
     if (key == Qundef) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
@@ -199,7 +192,9 @@ static VALUE
 hash_foreach_call(arg)
     struct hash_foreach_arg *arg;
 {
-    st_foreach(RHASH(arg->hash)->tbl, hash_foreach_iter, (st_data_t)arg);
+    if (st_foreach(RHASH(arg->hash)->tbl, hash_foreach_iter, (st_data_t)arg)) {
+ 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
     return Qnil;
 }
 
@@ -1202,11 +1197,13 @@ inspect_i(key, value, str)
 }
 
 static VALUE
-inspect_hash(hash)
-    VALUE hash;
+inspect_hash(hash, dummy, recur)
+    VALUE hash, dummy;
+    int recur;
 {
     VALUE str;
 
+    if (recur) return rb_str_new2("{...}");
     str = rb_str_buf_new2("{");
     rb_hash_foreach(hash, inspect_i, str);
     rb_str_buf_cat2(str, "}");
@@ -1228,14 +1225,15 @@ rb_hash_inspect(hash)
 {
     if (RHASH(hash)->tbl == 0 || RHASH(hash)->tbl->num_entries == 0)
 	return rb_str_new2("{}");
-    if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
-    return rb_protect_inspect(inspect_hash, hash, 0);
+    return rb_exec_recursive(inspect_hash, hash, 0);
 }
 
 static VALUE
-to_s_hash(hash)
-    VALUE hash;
+to_s_hash(hash, dummy, recur)
+    VALUE hash, dummy;
+    int recur;
 {
+    if (recur) return rb_str_new2("{...}");
     return rb_ary_to_s(rb_hash_to_a(hash));
 }
 
@@ -1256,8 +1254,7 @@ static VALUE
 rb_hash_to_s(hash)
     VALUE hash;
 {
-    if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
-    return rb_protect_inspect(to_s_hash, hash, 0);
+    return rb_exec_recursive(to_s_hash, hash, 0);
 }
 
 /*
@@ -1518,6 +1515,25 @@ rb_hash_hash_i(key, value, hp)
     return ST_CONTINUE;
 }
 
+static VALUE
+recursive_hash(hash, dummy, recur)
+    VALUE hash, dummy;
+    int recur;
+{
+    long h;
+    VALUE n;
+
+    if (recur) {
+	return LONG2FIX(0);
+    }
+    h = RHASH(hash)->tbl->num_entries;
+    rb_hash_foreach(hash, rb_hash_hash_i, (VALUE)&h);
+    h = (h << 1) | (h<0 ? 1 : 0);
+    n = rb_hash(RHASH(hash)->ifnone);
+    h ^= NUM2LONG(n);
+    return LONG2FIX(h);
+}    
+
 /*
  *  call-seq:
  *     hash.hash   -> fixnum
@@ -1530,17 +1546,9 @@ static VALUE
 rb_hash_hash(hash)
     VALUE hash;
 {
-    long h;
-    VALUE n;
-
-    h = RHASH(hash)->tbl->num_entries;
-    rb_hash_foreach(hash, rb_hash_hash_i, (VALUE)&h);
-    h = (h << 1) | (h<0 ? 1 : 0);
-    n = rb_hash(RHASH(hash)->ifnone);
-    h ^= NUM2LONG(n);
-
-    return LONG2FIX(h);
+    return rb_exec_recursive(recursive_hash, hash, 0);
 }
+
 
 static int
 rb_hash_invert_i(key, value, hash)
@@ -1604,12 +1612,17 @@ rb_hash_update_block_i(key, value, hash)
  *     hsh.merge!(other_hash){|key, oldval, newval| block}    => hsh
  *     hsh.update(other_hash){|key, oldval, newval| block}    => hsh
  *  
- *  Adds the contents of <i>other_hash</i> to <i>hsh</i>, overwriting
- *  entries with duplicate keys with those from <i>other_hash</i>.
+ *  Adds the contents of <i>other_hash</i> to <i>hsh</i>.  If no
+ *  block is specified entries with duplicate keys are overwritten
+ *  with the values from <i>other_hash</i>, otherwise the value
+ *  of each duplicate key is detemined by calling the block with
+ *  the key, its value in <i>hsh</i> and its value in <i>other_hash</i>.
  *     
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 254, "c" => 300 }
  *     h1.merge!(h2)   #=> {"a"=>100, "b"=>254, "c"=>300}
+ *     h1.merge!(h2) { |key, v1, v2| v1 }
+ *                     #=> {"a"=>100, "b"=>200, "c"=>300}
  */
 
 static VALUE
@@ -1932,7 +1945,7 @@ env_aset(obj, nm, val)
     char *name, *value;
 
     if (rb_safe_level() >= 4) {
-	rb_raise(rb_eSecurityError, "cannot change environment variable");
+	rb_raise(rb_eSecurityError, "can't change environment variable");
     }
 
     if (NIL_P(val)) {

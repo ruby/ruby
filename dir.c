@@ -1345,14 +1345,15 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 }
 
 static int
-rb_glob2(path, flags, func, arg)
+rb_glob2(path, offset, flags, func, arg)
     VALUE path;
+    long offset;
     int flags;
     void (*func) _((VALUE, VALUE));
     VALUE arg;
 {
     struct glob_pattern *list;
-    const char *root;
+    const char *root, *start;
     VALUE buf;
     int n;
     int status;
@@ -1361,18 +1362,18 @@ rb_glob2(path, flags, func, arg)
 	rb_warn("Dir.glob() ignores File::FNM_CASEFOLD");
     }
 
+    start = root = StringValuePtr(path) + offset;
 #if defined DOSISH
     flags |= FNM_CASEFOLD;
-    root = rb_path_skip_prefix(RSTRING(path)->ptr);
+    root = rb_path_skip_prefix(root);
 #else
-    root = StringValuePtr(path);
     flags &= ~FNM_CASEFOLD;
 #endif
 
     if (root && *root == '/') root++;
 
-    n = root - RSTRING(path)->ptr;
-    buf = rb_str_new(RSTRING(path)->ptr, n);
+    n = root - start;
+    buf = rb_str_new(start, n);
 
     list = glob_make_pattern(root, flags);
     status = glob_helper(buf, 0, UNKNOWN, UNKNOWN, &list, &list + 1, flags, func, arg);
@@ -1431,7 +1432,7 @@ push_glob(ary, str, offset, flags)
     const int escape = !(flags & FNM_NOESCAPE);
 
     const char *p = RSTRING(str)->ptr + offset;
-    const char *s = RSTRING(str)->ptr + offset;
+    const char *s = p;
     const char *lbrace = 0, *rbrace = 0;
     int nest = 0, status = 0;
 
@@ -1452,11 +1453,11 @@ push_glob(ary, str, offset, flags)
     if (lbrace && rbrace) {
 	VALUE buffer = rb_str_new(0, strlen(s));
 	char *buf;
-	long offset;
+	long shift;
 
 	buf = RSTRING(buffer)->ptr;
 	memcpy(buf, s, lbrace-s);
-	offset = (lbrace-s);
+	shift = (lbrace-s);
 	p = lbrace;
 	while (p < rbrace) {
 	    const char *t = ++p;
@@ -1469,14 +1470,14 @@ push_glob(ary, str, offset, flags)
 		}
 		Inc(p);
 	    }
-	    memcpy(buf+offset, t, p-t);
-	    strcpy(buf+offset+(p-t), rbrace+1);
+	    memcpy(buf+shift, t, p-t);
+	    strcpy(buf+shift+(p-t), rbrace+1);
 	    status = push_glob(ary, buffer, offset, flags);
 	    if (status) break;
 	}
     }
     else if (!lbrace && !rbrace) {
-	status = rb_glob2(str, flags, push_pattern, ary);
+	status = rb_glob2(str, offset, flags, push_pattern, ary);
     }
 
     return status;
@@ -1608,6 +1609,22 @@ dir_s_glob(argc, argv, obj)
     return rb_push_glob(str, flags);
 }
 
+static VALUE
+dir_open_dir(path)
+    VALUE path;
+{
+    struct dir_data *dp;
+    VALUE dir = rb_funcall(rb_cDir, rb_intern("open"), 1, path);
+
+    if (TYPE(dir) != T_DATA ||
+	RDATA(dir)->dfree != (RUBY_DATA_FUNC)free_dir) {
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected Dir)",
+		 rb_obj_classname(dir));
+    }
+    return dir;
+}
+
+
 /*
  *  call-seq:
  *     Dir.foreach( dirname ) {| filename | block }  => nil
@@ -1631,7 +1648,7 @@ dir_foreach(io, dirname)
 {
     VALUE dir;
 
-    dir = rb_funcall(rb_cDir, rb_intern("open"), 1, dirname);
+    dir = dir_open_dir(dirname);
     rb_ensure(dir_each, dir, dir_close, dir);
     return Qnil;
 }
@@ -1653,7 +1670,7 @@ dir_entries(io, dirname)
 {
     VALUE dir;
 
-    dir = rb_funcall(rb_cDir, rb_intern("open"), 1, dirname);
+    dir = dir_open_dir(dirname);
     return rb_ensure(rb_Array, dir, dir_close, dir);
 }
 

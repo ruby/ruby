@@ -2815,10 +2815,11 @@ static VALUE separator;
 static VALUE rb_file_join _((VALUE ary, VALUE sep));
 
 static VALUE
-file_inspect_join(ary, arg)
+file_inspect_join(ary, arg, recur)
     VALUE ary;
     VALUE *arg;
 {
+    if (recur) return rb_str_new2("[...]");
     return rb_file_join(arg[0], arg[1]);
 }
 
@@ -2854,15 +2855,12 @@ rb_file_join(ary, sep)
 	  case T_STRING:
 	    break;
 	  case T_ARRAY:
-	    if (rb_inspecting_p(tmp)) {
-		tmp = rb_str_new2("[...]");
-	    }
-	    else {
+	    {
 		VALUE args[2];
 
 		args[0] = tmp;
 		args[1] = sep;
-		tmp = rb_protect_inspect(file_inspect_join, ary, (VALUE)args);
+		tmp = rb_exec_recursive(file_inspect_join, ary, (VALUE)args);
 	    }
 	    break;
 	  default:

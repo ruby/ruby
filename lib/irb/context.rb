@@ -38,7 +38,7 @@ module IRB
       @inspect_mode = IRB.conf[:INSPECT_MODE]
 
       self.math_mode = IRB.conf[:MATH_MODE] if IRB.conf[:MATH_MODE]
-      self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRASER]
+      self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRACER]
       self.use_loader = IRB.conf[:USE_LOADER] if IRB.conf[:USE_LOADER]
       self.eval_history = IRB.conf[:EVAL_HISTORY] if IRB.conf[:EVAL_HISTORY]
 

@@ -199,7 +199,7 @@ module REXML
 		#  b.namespace("y")      # -> '2'
 		def namespace(prefix=nil)
 			if prefix.nil?
-				prefix = prefix()
+				prefix = self.prefix()
 			end
 			if prefix == ''
 				prefix = "xmlns"

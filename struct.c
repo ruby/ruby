@@ -118,7 +118,7 @@ static VALUE
 rb_struct_ref(obj)
     VALUE obj;
 {
-    return rb_struct_getmember(obj, rb_frame_last_func());
+    return rb_struct_getmember(obj, rb_frame_this_func());
 }
 
 static VALUE rb_struct_ref0(obj) VALUE obj; {return RSTRUCT(obj)->ptr[0];}
@@ -165,12 +165,12 @@ rb_struct_set(obj, val)
     rb_struct_modify(obj);
     for (i=0; i<RARRAY(members)->len; i++) {
 	slot = RARRAY(members)->ptr[i];
-	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_last_func()) {
+	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_this_func()) {
 	    return RSTRUCT(obj)->ptr[i] = val;
 	}
     }
-    rb_name_error(rb_frame_last_func(), "`%s' is not a struct member",
-		  rb_id2name(rb_frame_last_func()));
+    rb_name_error(rb_frame_this_func(), "`%s' is not a struct member",
+		  rb_id2name(rb_frame_this_func()));
     return Qnil;		/* not reached */
 }
 
@@ -190,6 +190,7 @@ make_struct(name, members, klass)
     }
     else {
 	char *cname = StringValuePtr(name);
+
 	id = rb_intern(cname);
 	if (!rb_is_const_id(id)) {
 	    rb_name_error(id, "identifier %s needs to be constant", cname);
@@ -198,7 +199,7 @@ make_struct(name, members, klass)
 	    rb_warn("redefining constant Struct::%s", cname);
 	    rb_mod_remove_const(klass, ID2SYM(id));
 	}
-	nstr = rb_define_class_under(klass, cname, klass);
+	nstr = rb_define_class_under(klass, rb_id2name(id), klass);
     }
     rb_iv_set(nstr, "__size__", LONG2NUM(RARRAY(members)->len));
     rb_iv_set(nstr, "__members__", members);
@@ -209,7 +210,11 @@ make_struct(name, members, klass)
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     for (i=0; i< RARRAY(members)->len; i++) {
 	ID id = SYM2ID(RARRAY(members)->ptr[i]);
-	if (i<10) {
+	if (!rb_is_local_id(id)) {
+	    rb_raise(rb_eNameError, "`%s' is not proper name for a struct member",
+		     rb_id2name(id));
+	}
+	if (i<sizeof(ref_func)) {
 	    rb_define_method_id(nstr, id, ref_func[i], 0);
 	}
 	else {
@@ -462,12 +467,22 @@ rb_struct_each_pair(s)
 }
 
 static VALUE
-inspect_struct(s)
-    VALUE s;
+inspect_struct(s, dummy, recur)
+    VALUE s, dummy;
+    int recur;
 {
     char *cname = rb_class2name(rb_obj_class(s));
     VALUE str, members;
     long i;
+
+    if (recur) {
+	char *cname = rb_class2name(rb_obj_class(s));
+	VALUE str = rb_str_new(0, strlen(cname) + 15);
+
+	sprintf(RSTRING(str)->ptr, "#<struct %s:...>", cname);
+	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+	return str;
+    }
 
     members = rb_struct_members(s);
     str = rb_str_buf_new2("#<struct ");
@@ -505,15 +520,7 @@ static VALUE
 rb_struct_inspect(s)
     VALUE s;
 {
-    if (rb_inspecting_p(s)) {
-	char *cname = rb_class2name(rb_obj_class(s));
-	VALUE str = rb_str_new(0, strlen(cname) + 15);
-
-	sprintf(RSTRING(str)->ptr, "#<struct %s:...>", cname);
-	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
-	return str;
-    }
-    return rb_protect_inspect(inspect_struct, s, 0);
+    return rb_exec_recursive(inspect_struct, s, 0);
 }
 
 /*

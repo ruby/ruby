@@ -314,7 +314,7 @@ module Generators
     def collect_methods
       list = @context.method_list
       unless @options.show_all
-        list = list.find_all {|m| m.visibility == :public || m.force_documentation }
+        list = list.find_all {|m| m.visibility == :public || m.visibility == :protected || m.force_documentation }
       end
       @methods = list.collect {|m| HtmlMethod.new(m, self, @options) }
     end
@@ -681,13 +681,13 @@ module Generators
       res = []
       atts.each do |att|
         next unless att.section == section
-        if att.visibility == :public || @options.show_all
+        if att.visibility == :public || att.visibility == :protected || @options.show_all
           entry = {
             "name"   => CGI.escapeHTML(att.name), 
             "rw"     => att.rw, 
             "a_desc" => markup(att.comment, true)
           }
-          unless att.visibility == :public
+          unless att.visibility == :public || att.visibility == :protected
             entry["rw"] << "-"
           end
           res << entry

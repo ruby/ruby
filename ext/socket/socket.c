@@ -1611,7 +1611,7 @@ unix_send_io(sock, val)
         fd = FIX2INT(val);
     }
     else {
-	rb_raise(rb_eTypeError, "IO nor file descriptor");
+	rb_raise(rb_eTypeError, "neither IO nor file descriptor");
     }
 
     GetOpenFile(sock, fptr);
@@ -1728,7 +1728,7 @@ unix_recv_io(argc, argv, sock)
         msg.msg_accrightslen != sizeof(fd)
 #endif
 	) {
-	rb_raise(rb_eSocket, "File descriptor was not passed");
+	rb_raise(rb_eSocket, "file descriptor was not passed");
     }
 
 #if FD_PASSING_BY_MSG_CONTROL
@@ -1880,7 +1880,7 @@ setup_domain_and_type(domain, dv, type, tv)
 	    *dv = PF_IPX;
 #endif
 	else
-	    rb_raise(rb_eSocket, "Unknown socket domain %s", ptr);
+	    rb_raise(rb_eSocket, "unknown socket domain %s", ptr);
     }
     else {
 	*dv = NUM2INT(domain);
@@ -1911,7 +1911,7 @@ setup_domain_and_type(domain, dv, type, tv)
 	    *tv = SOCK_PACKET;
 #endif
 	else
-	    rb_raise(rb_eSocket, "Unknown socket type %s", ptr);
+	    rb_raise(rb_eSocket, "unknown socket type %s", ptr);
     }
     else {
 	*tv = NUM2INT(type);
@@ -2215,7 +2215,7 @@ sock_s_gethostbyaddr(argc, argv)
 }
 
 static VALUE
-sock_s_getservbyaname(argc, argv)
+sock_s_getservbyname(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -2242,6 +2242,25 @@ sock_s_getservbyaname(argc, argv)
 	}
     }
     return INT2FIX(port);
+}
+
+static VALUE
+sock_s_getservbyport(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE port, proto;
+    struct servent *sp;
+
+    rb_scan_args(argc, argv, "11", &port, &proto);
+    if (NIL_P(proto)) proto = rb_str_new2("tcp");
+    StringValue(proto);
+
+    sp = getservbyport(NUM2INT(port),  StringValueCStr(proto));
+    if (!sp) {
+	rb_raise(rb_eSocket, "no such service for port %d/%s", NUM2INT(port), RSTRING(proto)->ptr);
+    }
+    return rb_tainted_str_new2(sp->s_name);
 }
 
 static VALUE
@@ -2629,7 +2648,8 @@ Init_socket()
     rb_define_singleton_method(rb_cSocket, "gethostname", sock_gethostname, 0);
     rb_define_singleton_method(rb_cSocket, "gethostbyname", sock_s_gethostbyname, 1);
     rb_define_singleton_method(rb_cSocket, "gethostbyaddr", sock_s_gethostbyaddr, -1);
-    rb_define_singleton_method(rb_cSocket, "getservbyname", sock_s_getservbyaname, -1);
+    rb_define_singleton_method(rb_cSocket, "getservbyname", sock_s_getservbyname, -1);
+    rb_define_singleton_method(rb_cSocket, "getservbyport", sock_s_getservbyport, -1);
     rb_define_singleton_method(rb_cSocket, "getaddrinfo", sock_s_getaddrinfo, -1);
     rb_define_singleton_method(rb_cSocket, "getnameinfo", sock_s_getnameinfo, -1);
     rb_define_singleton_method(rb_cSocket, "sockaddr_in", sock_s_pack_sockaddr_in, 2);

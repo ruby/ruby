@@ -1883,6 +1883,7 @@ module RDoc
       name_t = get_tk
       back_tk = skip_tkspace
       meth = nil
+      added_container = false
 
       dot = get_tk
       if dot.kind_of?(TkDOT) or dot.kind_of?(TkCOLON2)
@@ -1897,8 +1898,21 @@ module RDoc
           prev_container = container
           container = container.find_module_named(name_t.name)
           if !container
-            warn("Couldn't find #{name_t.name}. Assuming it's a module")
-            container = prev_container.add_module(NormalModule, name_t.name)
+            added_container = true
+            obj = name_t.name.split("::").inject(Object) do |state, item|
+              state.const_get(item)
+            end rescue nil
+
+            type = obj.class == Class ? NormalClass : NormalModule
+            if not [Class, Module].include?(obj.class)
+              warn("Couldn't find #{name_t.name}. Assuming it's a module")
+            end
+
+            if type == NormalClass then
+              container = prev_container.add_class(type, name_t.name, obj.superclass.name)
+            else
+              container = prev_container.add_module(type, name_t.name)
+            end
           end
 	else
 	  # warn("Unexpected token '#{name_t2.inspect}'")
@@ -1940,7 +1954,9 @@ module RDoc
       parse_method_parameters(meth)
 
       if meth.document_self
-	container.add_method(meth)
+        container.add_method(meth)
+      elsif added_container
+        container.document_self = false
       end
 
       # Having now read the method parameters and documentation modifiers, we

@@ -237,7 +237,7 @@ rb_dlcfunc_inspect(VALUE self)
   CASE(6); break; CASE(7); break; CASE(8); break; CASE(9); break; CASE(10);break; \
   CASE(11);break; CASE(12);break; CASE(13);break; CASE(14);break; CASE(15);break; \
   CASE(16);break; CASE(17);break; CASE(18);break; CASE(19);break; CASE(20);break; \
-  default: rb_raise(rb_eArgError, "too many arguments."); \
+  default: rb_raise(rb_eArgError, "too many arguments"); \
 }
 
 
@@ -257,7 +257,7 @@ rb_dlcfunc_call(VALUE self, VALUE ary)
     Data_Get_Struct(self, struct cfunc_data, cfunc);
 
     if( cfunc->ptr == 0 ){
-	rb_raise(rb_eDLError, "can't call null-function.");
+	rb_raise(rb_eDLError, "can't call null-function");
 	return Qnil;
     }
     

@@ -60,8 +60,6 @@ VALUE rb_ary_assoc _((VALUE, VALUE));
 VALUE rb_ary_rassoc _((VALUE, VALUE));
 VALUE rb_ary_includes _((VALUE, VALUE));
 VALUE rb_ary_cmp _((VALUE, VALUE));
-VALUE rb_protect_inspect _((VALUE(*)(ANYARGS),VALUE,VALUE));
-VALUE rb_inspecting_p _((VALUE));
 VALUE rb_check_array_value _((VALUE));
 VALUE rb_get_values_at _((VALUE, long, int, VALUE*, VALUE(*) _((VALUE,long))));
 /* bignum.c */
@@ -175,7 +173,7 @@ int rb_respond_to _((VALUE, ID));
 void rb_interrupt _((void));
 VALUE rb_apply _((VALUE, ID, VALUE));
 void rb_backtrace _((void));
-ID rb_frame_last_func _((void));
+ID rb_frame_this_func _((void));
 VALUE rb_obj_instance_eval _((int, VALUE*, VALUE));
 VALUE rb_mod_module_eval _((int, VALUE*, VALUE));
 void rb_load _((VALUE, int));
@@ -227,6 +225,7 @@ VALUE rb_thread_main _((void));
 VALUE rb_thread_local_aref _((VALUE, ID));
 VALUE rb_thread_local_aset _((VALUE, ID, VALUE));
 void rb_thread_atfork _((void));
+VALUE rb_exec_recursive _((VALUE(*)(ANYARGS),VALUE,VALUE));
 /* file.c */
 int eaccess _((const char*, int));
 VALUE rb_file_s_expand_path _((int, VALUE *));
