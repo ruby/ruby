@@ -6,6 +6,8 @@
 ;;;  created at: Fri Feb  4 14:49:13 JST 1994
 ;;;
 
+(defconst ruby-mode-revision "$Revision$")
+
 (defconst ruby-mode-version "$Id$")
 
 (defconst ruby-block-beg-re
