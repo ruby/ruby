@@ -2783,6 +2783,10 @@ prep_stdio(f, mode, klass)
     VALUE io = io_alloc(klass);
 
     MakeOpenFile(io, fp);
+#ifdef __CYGWIN__
+    mode |= O_BINARY;
+    setmode(fileno(f), O_BINARY);
+#endif
     fp->f = f;
     fp->mode = mode;
 
@@ -3894,6 +3898,19 @@ opt_i_set(val)
 void
 Init_IO()
 {
+#ifdef __CYGWIN__ 
+#include <sys/cygwin.h>
+    static struct __cygwin_perfile pf[] =
+    {
+	{"", O_RDONLY | O_BINARY},
+	{"", O_WRONLY | O_BINARY},
+	{"", O_RDWR | O_BINARY},
+	{"", O_APPEND | O_BINARY},
+	{NULL, 0}
+    };
+    cygwin_internal(CW_PERFILE, pf);
+#endif
+
     rb_eIOError = rb_define_class("IOError", rb_eStandardError);
     rb_eEOFError = rb_define_class("EOFError", rb_eIOError);
 

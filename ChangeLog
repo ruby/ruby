@@ -1,3 +1,7 @@
+Sun Feb 16 03:14:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (prep_stdio, Init_io): always set binmode on Cygwin.
+
 Sat Feb 15 01:01:45 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (file_expand_path): fix surplus path separators while
