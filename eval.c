@@ -6364,6 +6364,18 @@ proc_new(klass)
     return proc;
 }
 
+static VALUE
+proc_s_new(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE proc = proc_new(klass);
+
+    rb_obj_call_init(proc, argc, argv);
+    return proc;
+}
+
 VALUE
 rb_f_lambda()
 {
@@ -6969,7 +6981,8 @@ Init_Proc()
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);
-    rb_define_singleton_method(rb_cProc, "allocate", proc_new, 0);
+    rb_undef_method(CLASS_OF(rb_cProc), "allocate");
+    rb_define_singleton_method(rb_cProc, "new", proc_s_new, -1);
 
     rb_define_method(rb_cProc, "call", proc_call, -2);
     rb_define_method(rb_cProc, "yield", proc_yield, -2);

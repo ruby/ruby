@@ -1,3 +1,10 @@
+Fri Oct  5 11:59:13 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (proc_s_new): revived.
+
+	* eval.c (Init_Proc): define Proc.new instead of Proc.allocate to
+	  inhibit from creating uninitialized Proc.
+
 Thu Oct  4 14:11:03 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): EALREADY is the equivalent
