@@ -1,3 +1,9 @@
+Fri Jun 16 21:23:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: add pause(2) checking.
+
+	* eval.c: define pause() if missing.
+
 Fri Jun 16 05:18:45 2000  Yasuhiro Fukuma  <yasuf@bsdclub.org>
 
 	* configure.in: FreeBSD: do not link dummy libxpg4 which was

@@ -69,6 +69,14 @@ struct timeval {
 
 #include <sys/stat.h>
 
+#if !defined HAVE_PAUSE
+# if defined _WIN32 && !defined __CYGWIN__
+#  define pause() Sleep(INFINITE)
+# else
+#  define pause() sleep(0x7fffffff)
+# endif
+#endif
+
 VALUE rb_cProc;
 static VALUE rb_cBinding;
 static VALUE proc_call _((VALUE,VALUE));

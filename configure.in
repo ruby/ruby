@@ -222,7 +222,7 @@ AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority\
-	      dlopen sigprocmask sigaction _setjmp setsid getrlimit)
+	      dlopen sigprocmask sigaction _setjmp setsid getrlimit pause)
 AC_STRUCT_TIMEZONE
 AC_CACHE_CHECK(for external int daylight, rb_cv_have_daylight,
   [AC_TRY_LINK([#include <time.h>
