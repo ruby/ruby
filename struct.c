@@ -424,8 +424,8 @@ static VALUE
 rb_struct_become(clone, s)
     VALUE clone, s;
 {
-    if (!rb_obj_is_kind_of(s, rb_obj_class(clone))) {
-	rb_raise(rb_eTypeError, "wrong argument type");
+    if (!rb_obj_is_instance_of(s, rb_obj_class(clone))) {
+	rb_raise(rb_eTypeError, "wrong argument class");
     }
     RSTRUCT(clone)->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
     RSTRUCT(clone)->len = RSTRUCT(s)->len;

@@ -2027,8 +2027,12 @@ rb_stat_become(obj, orig)
     struct stat *nst;
 
     /* need better argument type check */
-    if (!rb_obj_is_kind_of(orig, rb_obj_class(obj))) {
-	rb_raise(rb_eTypeError, "wrong argument type");
+    if (!rb_obj_is_instance_of(orig, rb_obj_class(obj))) {
+	rb_raise(rb_eTypeError, "wrong argument class");
+    }
+    if (DATA_PTR(obj)) {
+	free(DATA_PTR(obj));
+	DATA_PTR(obj) = 0;
     }
     if (DATA_PTR(orig)) {
 	nst = ALLOC(struct stat);

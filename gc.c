@@ -1356,7 +1356,7 @@ static VALUE
 call_final(os, obj)
     VALUE os, obj;
 {
-    rb_warn("ObjectSpace::call_final is deprecated; use define_finalizer");
+    rb_warn("ObjectSpace::call_finalizer is deprecated; use define_finalizer");
     need_call_final = 1;
     FL_SET(obj, FL_FINALIZE);
     return obj;

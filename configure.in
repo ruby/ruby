@@ -1018,7 +1018,7 @@ case "$target_os" in
     	CFLAGS="$CFLAGS -pipe -no-precomp"
 	;;
     darwin*)
-    	CFLAGS="$CFLAGS -pipe -no-precomp"
+    	CFLAGS="$CFLAGS -pipe"
 	;;
     os2_emx)
     	CFLAGS="$CFLAGS -DOS2"

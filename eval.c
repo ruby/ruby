@@ -1700,6 +1700,7 @@ rb_alias(klass, name, def)
 {
     VALUE origin;
     NODE *orig, *body;
+    VALUE singleton = 0;
 
     rb_frozen_class_p(klass);
     if (name == def) return;
@@ -1715,6 +1716,12 @@ rb_alias(klass, name, def)
     if (!orig || !orig->nd_body) {
 	print_undef(klass, def);
     }
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	singleton = rb_iv_get(klass, "__attached__");
+	if (name == alloc && TYPE(singleton) == T_CLASS) {
+	    rb_raise(rb_eNameError, "cannot make alias named `allocate'");
+	}
+    }
     body = orig->nd_body;
     orig->nd_cnt++;
     if (nd_type(body) == NODE_FBODY) { /* was alias */
@@ -1726,9 +1733,8 @@ rb_alias(klass, name, def)
     rb_clear_cache_by_id(name);
     st_insert(RCLASS(klass)->m_tbl, name,
 	      NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	rb_funcall(rb_iv_get(klass, "__attached__"),
-		   singleton_added, 1, ID2SYM(name));
+    if (singleton) {
+	rb_funcall(singleton, singleton_added, 1, ID2SYM(name));
     }
     else {
 	rb_funcall(klass, added, 1, ID2SYM(name));

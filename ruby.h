@@ -211,6 +211,7 @@ void rb_check_type _((VALUE,int));
 
 VALUE rb_str_to_str _((VALUE));
 VALUE rb_string_value _((volatile VALUE*));
+char *rb_string_value_ptr _((volatile VALUE*));
 
 #define StringValue(v) if (TYPE(v) != T_STRING) rb_string_value(&(v))
 void rb_check_safe_str _((VALUE));
@@ -218,7 +219,7 @@ void rb_check_safe_str _((VALUE));
     StringValue(v);\
     rb_check_safe_str(v);\
 } while (0)
-#define StringValuePtr(v) RSTRING((TYPE(v) == T_STRING) ? (v) : rb_string_value(&(v)))->ptr
+#define StringValuePtr(v) rb_string_value_ptr(&(v))
 /* obsolete macro - use SafeStringValue(v) */
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 

@@ -265,8 +265,14 @@ rb_hash_become(copy, orig)
     if (FL_TEST(orig, HASH_PROC_DEFAULT)) {
 	FL_SET(copy, HASH_PROC_DEFAULT);
     }
+    else {
+	FL_UNSET(copy, HASH_PROC_DEFAULT);
+    }
     if (FL_TEST(orig, HASH_DELETED)) {
 	FL_SET(copy, HASH_DELETED);
+    }
+    else {
+	FL_UNSET(copy, HASH_DELETED);
     }
 
     return copy;

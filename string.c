@@ -440,6 +440,21 @@ rb_string_value(ptr)
     return *ptr = rb_str_to_str(*ptr);
 }
 
+char *
+rb_string_value_ptr(ptr)
+    volatile VALUE *ptr;
+{
+    VALUE s = *ptr;
+    if (TYPE(s) != T_STRING) {
+	s = rb_str_to_str(s);
+	*ptr = s;
+    }
+    if (!RSTRING(s)->ptr) {
+	str_make_independent(s);
+    }
+    return RSTRING(s)->ptr;
+}
+
 VALUE
 rb_str_substr(str, beg, len)
     VALUE str;
@@ -1609,18 +1624,17 @@ rb_str_replace(str, str2)
 	}
 	RSTRING(str)->len = RSTRING(str2)->len;
 	RSTRING(str)->ptr = RSTRING(str2)->ptr;
-	if (FL_TEST(str2, ELTS_SHARED|STR_ASSOC)) {
-	    FL_SET(str, RBASIC(str2)->flags & (ELTS_SHARED|STR_ASSOC));
-	    RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
-	}
-	else {
-	    RSTRING(str)->aux.capa = RSTRING(str2)->aux.capa;
-	}
+	FL_SET(str, RBASIC(str2)->flags & (ELTS_SHARED|STR_ASSOC));
+	RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
     }
     else {
 	rb_str_modify(str);
 	rb_str_resize(str, RSTRING(str2)->len);
 	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
+	if (FL_TEST(str2, STR_ASSOC)) {
+	    FL_SET(str, RBASIC(str2)->flags & (ELTS_SHARED|STR_ASSOC));
+	    RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
+	}
     }
 
     OBJ_INFECT(str, str2);

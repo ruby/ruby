@@ -1333,7 +1333,7 @@ rb_reg_become(clone, re)
     VALUE re;
 {
     /* need better argument type check */
-    if (!rb_obj_is_kind_of(re, rb_obj_class(clone))) {
+    if (!rb_obj_is_instance_of(re, rb_obj_class(clone))) {
 	rb_raise(rb_eTypeError, "wrong argument type");
     }
     RREGEXP(clone)->ptr = 0;

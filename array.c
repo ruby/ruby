@@ -801,7 +801,8 @@ rb_ary_become(copy, orig)
 {
     orig = to_ary(orig);
     ary_make_shared(orig);
-    if (RARRAY(copy)->ptr) free(RARRAY(copy)->ptr);
+    if (RARRAY(copy)->ptr && !FL_TEST(copy, ELTS_SHARED))
+	free(RARRAY(copy)->ptr);
     RARRAY(copy)->ptr = RARRAY(orig)->ptr;
     RARRAY(copy)->len = RARRAY(orig)->len;
     RARRAY(copy)->aux.shared = RARRAY(orig)->aux.shared;

@@ -32,10 +32,11 @@ Language Spec.
 * .. or something like defadvice in Emacs.
 * property - for methods, or for objects in general.
 * "in" modifier, to annotate, or to encourage assertion.
-* selector namespace - something like generic-flet in CLOS, to help RubyBehevior
+* selector namespace - something like generic-flet in CLOS, to help RubyBehavior
 * private instance variable (as in Python?) @_foo in class Foo => @_Foo_foo
 * warn/error "bare word" method, like "foo",  you should type "foo()"
 * clarify evaluation order of operator argument (=~, .., ...)
+* :symbol => value hash in the form of {symbol: value, ...} ??
 
 Hacking Interpreter
 
@@ -115,7 +116,7 @@ Extension Libraries
 
 Ruby Libraries
 
-* add uri.rb
+- add uri.rb
 * urllib.rb, nttplib.rb, etc.
 * format like perl's
 

@@ -466,11 +466,15 @@ w_object(obj, arg, limit)
 
 	  case T_HASH:
 	    w_uclass(obj, rb_cHash, arg);
-	    if (!NIL_P(RHASH(obj)->ifnone)) {
-		w_byte(TYPE_HASH_DEF, arg);
+	    if (NIL_P(RHASH(obj)->ifnone)) {
+		w_byte(TYPE_HASH, arg);
+	    }
+	    else if (FL_TEST(obj, FL_USER2)) {
+		/* FL_USER2 means HASH_PROC_DEFAULT (see hash.c) */
+		rb_raise(rb_eArgError, "cannot dump hash with default proc");
 	    }
 	    else {
-		w_byte(TYPE_HASH, arg);
+		w_byte(TYPE_HASH_DEF, arg);
 	    }
 	    w_long(RHASH(obj)->tbl->num_entries, arg);
 	    st_foreach(RHASH(obj)->tbl, hash_each, &c_arg);
@@ -1047,12 +1051,17 @@ r_object0(arg, proc)
            VALUE klass;
 
            klass = rb_path2class(r_unique(arg));
-           if (!rb_respond_to(klass, s_alloc)) {
-               rb_raise(rb_eTypeError,
-                        "class %s needs to have class method `_alloc'",
-                        rb_class2name(klass));
+           if (rb_respond_to(klass, s_alloc)) {
+	       static int warn = Qtrue;
+	       if (warn) {
+		   rb_warn("define `allocate' instead of `_alloc'");
+		   warn = Qfalse;
+	       }
+	       v = rb_funcall(klass, s_alloc, 0);
            }
-           v = rb_funcall(klass, s_alloc, 0);
+	   else {
+	       v = rb_obj_alloc(klass);
+	   }
            if (TYPE(v) != T_DATA) {
                rb_raise(rb_eArgError, "dump format error");
            }
