@@ -1,3 +1,7 @@
+Tue May 20 13:29:04 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c (kill): set errno after calling raise().
+
 Tue May 20 10:51:26 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_f_missing): create exception instance by ordinal
@@ -14,13 +18,13 @@ Tue May 20 10:51:26 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Mon May 19 18:54:30 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * lib/token.c, lib/implicit.c: expanded character set to allow UTF-8,
-      other Ruby encodings.
+	* ext/syck/token.c, ext/syck/implicit.c: expanded character set to
+	  allow UTF-8, other Ruby encodings.
 
 Mon May 19 16:47:00 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * lib/syck.c, lib/syck.h, lib/token.c, lib/gram.c: count line numbers
-      only if line pointer has increased.
+	* ext/syck/syck.c, ext/syck/syck.h, ext/syck/token.c, ext/syck/gram.c:
+	  count line numbers only if line pointer has increased.
 
 Tue May 20 00:45:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -142,10 +146,11 @@ Fri May 16 12:40:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu May 15 21:55:54 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-	* lib/gram.c: fixes to one-line documents and end of stream documents.
+	* ext/syck/gram.c: fixes to one-line documents and end of stream
+	  documents.
 
-	* lib/syck.c, lib/syck.h: add root_on_error to parser struct, specifying
-	  the symbol to be returned on a parse error.
+	* ext/syck/syck.c, ext/syck/syck.h: add root_on_error to parser
+	  struct, specifying the symbol to be returned on a parse error.
 
 Thu May 15 18:44:31 2003  Tanaka Akira  <akr@m17n.org>
 
@@ -164,10 +169,11 @@ Thu May 15 16:55:16 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu May 15 07:45:30 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-	* ext/ruby/ext/syck/rubyext.c, lib/implicit.re: timestamp repairs to
+	* ext/syck/rubyext.c, ext/syck/implicit.c: timestamp repairs to
 	  timezone and milliseconds.
 
-	* lib/syck.c (syck_parser_reset_levels): duplicate string literal to avoid warning.
+	* ext/syck/syck.c (syck_parser_reset_levels): duplicate string literal
+	  to avoid warning.
 
 Thu May 15 13:26:48 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

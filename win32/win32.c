@@ -2541,8 +2541,13 @@ kill(int pid, int sig)
 
     if (IsWin95()) pid = -pid;
     if ((unsigned int)pid == GetCurrentProcessId() &&
-	(sig != 0 && sig != SIGKILL))
-	return raise(sig);
+	(sig != 0 && sig != SIGKILL)) {
+	if ((ret = raise(sig)) != 0) {
+	    /* MSVCRT doesn't set errno... */
+	    errno = EINVAL;
+	}
+	return ret;
+    }
 
     switch (sig) {
       case 0:
