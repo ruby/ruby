@@ -21,9 +21,7 @@ module REXML
 		attr_reader :encoding
 		def encoding=( enc )
                 	enc = UTF_8 unless enc
-                	rv = ENCODING_CLAIMS.find{|k,v| /#{v}/i =~ enc }
-                	enc = rv[1] if rv
-                	@encoding = enc
+                	@encoding = enc.upcase
                 	require "rexml/encodings/#@encoding" unless @encoding == UTF_8
 		end
 
