@@ -102,7 +102,7 @@ class PStore
       file.flock(read_only ? File::LOCK_SH : File::LOCK_EX)
       if read_only
 	@table = Marshal::load(file)
-      elsif orig and (content = file.read) != nil
+      elsif orig and (content = file.read) != ""
 	@table = Marshal::load(content)
 	size = content.size
 	md5 = Digest::MD5.digest(content)
@@ -118,7 +118,7 @@ class PStore
 	@abort = true
 	raise
       ensure
-	if !read_only && !@abort
+	if !read_only and !@abort
 	  file.rewind
 	  content = Marshal::dump(@table)
 	  if !md5 || size != content.size || md5 != Digest::MD5.digest(content)
@@ -132,6 +132,9 @@ class PStore
 	      raise
 	    end
 	  end
+	end
+	if @abort and !orig
+	  File.unlink(@filename)
 	end
 	@abort = false
       end

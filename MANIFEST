@@ -255,7 +255,6 @@ missing/strerror.c
 missing/strftime.c
 missing/strncasecmp.c
 missing/strstr.c
-missing/strtod.c
 missing/strtol.c
 missing/strtoul.c
 missing/vsnprintf.c

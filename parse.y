@@ -555,19 +555,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		| expr
 		;
 
-expr		: kRETURN call_args
-		    {
-			$$ = NEW_RETURN(ret_args($2));
-		    }
-		| kBREAK call_args
-		    {
-			$$ = NEW_BREAK(ret_args($2));
-		    }
-		| kNEXT call_args
-		    {
-			$$ = NEW_NEXT(ret_args($2));
-		    }
-		| command_call
+expr		: command_call
 		| expr kAND expr
 		    {
 			$$ = logop(NODE_AND, $1, $3);
@@ -584,6 +572,7 @@ expr		: kRETURN call_args
 		    {
 			$$ = NEW_NOT(cond($2));
 		    }
+		| arg kRESCUE_MOD command_call
 		| arg
 		;
 
@@ -596,6 +585,18 @@ expr_value	: expr
 
 command_call	: command
 		| block_command
+		| kRETURN call_args
+		    {
+			$$ = NEW_RETURN(ret_args($2));
+		    }
+		| kBREAK call_args
+		    {
+			$$ = NEW_BREAK(ret_args($2));
+		    }
+		| kNEXT call_args
+		    {
+			$$ = NEW_NEXT(ret_args($2));
+		    }
 		;
 
 block_command	: block_call
@@ -3129,10 +3130,6 @@ arg_ambiguous()
     rb_warning("ambiguous first argument; make sure");
 }
 
-#if !defined(strtod) && !defined(HAVE_STDLIB_H)
-double strtod ();
-#endif
-
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
 
 static int
@@ -4251,10 +4248,12 @@ yylex()
 		lex_state == EXPR_DOT ||
 		lex_state == EXPR_ARG ||
 		lex_state == EXPR_CMDARG) {
-		if (cmd_state)
+		if (cmd_state) {
 		    lex_state = EXPR_CMDARG;
-		else
+		}
+		else {
 		    lex_state = EXPR_ARG;
+		}
 	    }
 	    else {
 		lex_state = EXPR_END;
@@ -4269,6 +4268,9 @@ yylex()
 	    return -1;
 	}
 	last_id = yylval.id = rb_intern(tok());
+	if ((dyna_in_block() && rb_dvar_defined(last_id)) || local_id(last_id)) {
+	    lex_state = EXPR_END;
+	}
 	return result;
     }
 }

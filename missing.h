@@ -107,10 +107,6 @@ extern size_t strftime _((char *, size_t, const char *, const struct tm *));
 extern char *strstr _((char *, char *));
 #endif
 
-#ifndef HAVE_STRTOD
-extern double strtod _((const char *, char **));
-#endif
-
 /*
 #ifndef HAVE_STRTOL
 extern long strtol _((char *, char **, int));

@@ -19,10 +19,10 @@
 class Delegator
 
   def initialize(obj)
-    preserved = ::Kernel.instance_methods
+    preserved = ::Kernel.public_instance_methods
     preserved -= ["to_s","to_a","inspect","==","=~","==="]
     for t in self.class.ancestors
-      preserved |= t.instance_methods
+      preserved |= t.public_instance_methods
       preserved |= t.private_instance_methods
       preserved |= t.protected_instance_methods
       break if t == Delegator
@@ -76,8 +76,8 @@ SimpleDelegater = SimpleDelegator
 #
 def DelegateClass(superclass)
   klass = Class.new
-  methods = superclass.instance_methods(true)
-  methods -= ::Kernel.instance_methods
+  methods = superclass.public_instance_methods(true)
+  methods -= ::Kernel.public_instance_methods
   methods |= ["to_s","to_a","inspect","==","=~","==="]
   klass.module_eval <<-EOS
   def initialize(obj)

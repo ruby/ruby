@@ -1,3 +1,15 @@
+Thu Nov 14 08:23:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* math.c (math_acos): check errno after operation.  ditto for
+	  asin, acosh, atanh, log, log10 and sqrt.
+
+	* eval.c (rb_add_method): initialize should always be private.
+
+	* parse.y (expr): add rescue modifier rule.
+
+	* parse.y (command_call): return, break and next with argument is
+	  now part of this rule.
+
 Wed Nov 13 16:22:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (DLDFLAGS): removed -Wl,-no-undefined to
@@ -28,6 +40,11 @@ Sat Nov  9 11:39:45 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c: remove ENABLE_TRACE/DISABLE_TRACE to trace child nodes of
 	  c-call. [ruby-dev:18699]
+
+Fri Nov  8 04:16:55 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): "a" in "a /5" should be considered as a local
+	  variable. [experimental]
 
 Thu Nov  7 09:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

@@ -230,6 +230,10 @@ rb_clear_cache_by_class(klass)
     }
 }
 
+static ID init, alloc, eqq, each, aref, aset, match, missing;
+static ID added, singleton_added;
+static ID __id__, __send__;
+
 void
 rb_add_method(klass, mid, node, noex)
     VALUE klass;
@@ -242,6 +246,9 @@ rb_add_method(klass, mid, node, noex)
     if (NIL_P(klass)) klass = rb_cObject;
     if (ruby_safe_level >= 4 && (klass == rb_cObject || !OBJ_TAINTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
+    }
+    if (mid == init) {
+	noex = NOEX_PRIVATE | (noex & NOEX_NOSUPER);
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     rb_clear_cache_by_id(mid);
@@ -312,10 +319,6 @@ rb_get_method_body(klassp, idp, noexp)
     if (noexp) *noexp = ent->noex;
     return body;
 }
-
-static ID init, alloc, eqq, each, aref, aset, match, missing;
-static ID added, singleton_added;
-static ID __id__, __send__;
 
 static void
 remove_method(klass, mid)

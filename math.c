@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 #include <math.h>
+#include <sys/errno.h>
 
 VALUE rb_mMath;
 
@@ -26,7 +27,6 @@ math_atan2(obj, y, x)
     VALUE obj, x, y;
 {
     Need_Float2(y, x);
-    
     return rb_float_new(atan2(RFLOAT(y)->value, RFLOAT(x)->value));
 }
 
@@ -35,7 +35,6 @@ math_cos(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
-
     return rb_float_new(cos(RFLOAT(x)->value));
 }
 
@@ -61,24 +60,30 @@ static VALUE
 math_acos(obj, x)
     VALUE obj, x;
 {
+    double d;
+
     Need_Float(x);
-    /*
-    if (RFLOAT(x)->value < -1.0 || RFLOAT(x)->value > 1.0)
-	rb_raise(rb_eArgError, "Out of range (-1..1)");
-    */
-    return rb_float_new(acos(RFLOAT(x)->value));
+    errno = 0;
+    d = acos(RFLOAT(x)->value);
+    if (errno) {
+	rb_sys_fail("acos");
+    }
+    return rb_float_new(d);
 }
 
 static VALUE
 math_asin(obj, x)
     VALUE obj, x;
 {
+    double d;
+
     Need_Float(x);
-    /*
-    if (RFLOAT(x)->value < -1.0 || RFLOAT(x)->value > 1.0)
-	rb_raise(rb_eArgError, "Out of range (-1..1)");
-    */
-    return rb_float_new(asin(RFLOAT(x)->value));
+    errno = 0;
+    d = asin(RFLOAT(x)->value);
+    if (errno) {
+	rb_sys_fail("asin");
+    }
+    return rb_float_new(d);
 }
 
 static VALUE
@@ -86,7 +91,6 @@ math_atan(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
-    
     return rb_float_new(atan(RFLOAT(x)->value));
 }
 
@@ -122,7 +126,6 @@ math_sinh(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
-    
     return rb_float_new(sinh(RFLOAT(x)->value));
 }
 
@@ -140,7 +143,6 @@ math_tanh(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
-    
     return rb_float_new(tanh(RFLOAT(x)->value));
 }
 
@@ -148,9 +150,15 @@ static VALUE
 math_acosh(obj, x)
     VALUE obj, x;
 {
+    double d;
+
     Need_Float(x);
-    
-    return rb_float_new(acosh(RFLOAT(x)->value));
+    errno = 0;
+    d = acosh(RFLOAT(x)->value);
+    if (errno) {
+	rb_sys_fail("acosh");
+    }
+    return rb_float_new(d);
 }
 
 static VALUE
@@ -158,7 +166,6 @@ math_asinh(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
-    
     return rb_float_new(asinh(RFLOAT(x)->value));
 }
 
@@ -166,9 +173,15 @@ static VALUE
 math_atanh(obj, x)
     VALUE obj, x;
 {
+    double d;
+
     Need_Float(x);
-    
-    return rb_float_new(atanh(RFLOAT(x)->value));
+    errno = 0;
+    d = atanh(RFLOAT(x)->value);
+    if (errno) {
+	rb_sys_fail("atanh");
+    }
+    return rb_float_new(d);
 }
 
 static VALUE
@@ -176,7 +189,6 @@ math_exp(obj, x)
     VALUE obj, x;
 {
     Need_Float(x);
-    
     return rb_float_new(exp(RFLOAT(x)->value));
 }
 
@@ -189,28 +201,45 @@ static VALUE
 math_log(obj, x)
     VALUE obj, x;
 {
+    double d;
+
     Need_Float(x);
-    
-    return rb_float_new(log(RFLOAT(x)->value));
+    errno = 0;
+    d = log(RFLOAT(x)->value);
+    if (errno) {
+	rb_sys_fail("log");
+    }
+    return rb_float_new(d);
 }
 
 static VALUE
 math_log10(obj, x)
     VALUE obj, x;
 {
+    double d;
+
     Need_Float(x);
-    
-    return rb_float_new(log10(RFLOAT(x)->value));
+    errno = 0;
+    d = log10(RFLOAT(x)->value);
+    if (errno) {
+	rb_sys_fail("log10");
+    }
+    return rb_float_new(d);
 }
 
 static VALUE
 math_sqrt(obj, x)
     VALUE obj, x;
 {
-    Need_Float(x);
+    double d;
 
-    if (RFLOAT(x)->value < 0.0) rb_raise(rb_eArgError, "square root for negative number");
-    return rb_float_new(sqrt(RFLOAT(x)->value));
+    Need_Float(x);
+    errno = 0;
+    d = sqrt(RFLOAT(x)->value);
+    if (errno) {
+	rb_sys_fail("sqrt");
+    }
+    return rb_float_new(d);
 }
 
 static VALUE
@@ -230,11 +259,8 @@ static VALUE
 math_ldexp(obj, x, n)
     VALUE obj, x, n;
 {
-    double d;
-
     Need_Float(x);
-    
-    return rb_float_new(d = ldexp(RFLOAT(x)->value, NUM2INT(n)));
+    return rb_float_new(ldexp(RFLOAT(x)->value, NUM2INT(n)));
 }
 
 static VALUE
@@ -242,7 +268,6 @@ math_hypot(obj, x, y)
     VALUE obj, x, y;
 {
     Need_Float2(x, y);
-    
     return rb_float_new(hypot(RFLOAT(x)->value, RFLOAT(y)->value));
 }
 
