@@ -1,10 +1,11 @@
 #
 # = net/http.rb
 #
-# Copyright (c) 1999-2003 Yukihiro Matsumoto
-# Copyright (c) 1999-2003 Minero Aoki
+# Copyright (C) 1999-2003 Yukihiro Matsumoto
+# Copyright (C) 1999-2003 Minero Aoki
 # 
-# Written & maintained by Minero Aoki <aamine@loveruby.net>.
+# Written and maintained by Minero Aoki <aamine@loveruby.net>.
+# HTTPS support added by GOTOU Yuuzou <gotoyuzo@notwork.org>.
 #
 # This file is derived from "http-access.rb".
 #
@@ -25,11 +26,6 @@
 
 require 'net/protocol'
 require 'uri'
-begin
-  require 'net/protocols'
-rescue LoadError
-end
-
 
 module Net # :nodoc:
 
@@ -355,30 +351,16 @@ module Net # :nodoc:
     def initialize(address, port = nil)
       @address = address
       @port    = (port || HTTP.default_port)
-
       @curr_http_version = HTTPVersion
       @seems_1_0_server = false
       @close_on_empty_response = false
       @socket  = nil
       @started = false
-
       @open_timeout = 30
       @read_timeout = 60
-
       @debug_output = nil
-
-      # ssl
       @use_ssl = false
-      @key = nil
-      @cert = nil
-      @ca_file = nil
-      @ca_path = nil
-      @verify_mode = nil
-      @verify_callback = nil
-      @verify_depth = nil
-      @ssl_timeout = nil
-      @cert_store = nil
-      @peer_cert = nil
+      @ssl_context = nil
     end
 
     def inspect
@@ -432,28 +414,8 @@ module Net # :nodoc:
 
     # returns true if use SSL/TLS with HTTP.
     def use_ssl?
-      @use_ssl
+      false   # redefined in net/https
     end
-
-    alias use_ssl use_ssl?   #:nodoc:
-
-    # turn on/off SSL.
-    # This flag must be set before starting session.
-    # If you change use_ssl value after session started,
-    # a Net::HTTP object raises IOError.
-    def use_ssl=(flag)
-      flag = (flag ? true : false)
-      raise IOError, "use_ssl value changed but session already started" if started? and @use_ssl != flag
-      @use_ssl = flag
-    end
-
-    attr_writer :key, :cert
-    attr_writer :ca_file, :ca_path
-    attr_writer :verify_mode, :verify_callback, :verify_depth
-    attr_writer :cert_store, :ssl_timeout
-    attr_reader :peer_cert
-
-    alias timeout= ssl_timeout=   # for backward compatibility
 
     # Opens TCP connection and HTTP session.
     # 
@@ -479,38 +441,34 @@ module Net # :nodoc:
     end
 
     def do_start
-      if use_ssl?
-        require 'net/protocols'
-        sockclass = SSLIO
-      else
-        sockclass = InternetMessageIO
-      end
-      @socket = sockclass.open(conn_address(), conn_port(),
-                               @open_timeout, @read_timeout, @debug_output)
-      if use_ssl?
-        if proxy?
-          @socket.writeline sprintf('CONNECT %s:%s HTTP/%s',
-                                    @address, @port, HTTP_VERSION)
-          @socket.writeline ''
-          res = HTTPResponse.read_new(@socket)
-          res.value
-        end
-        @socket.key = @key if @key
-        @socket.cert = @cert if @cert
-        @socket.ca_file = @ca_file
-        @socket.ca_path = @ca_path
-        @socket.verify_mode = @verify_mode
-        @socket.verify_callback = @verify_callback
-        @socket.verify_depth = @verify_depth
-        @socket.timeout = @ssl_timeout
-        @socket.cert_store = @cert_store
-        @socket.ssl_connect
-        @peer_cert = @socket.peer_cert
-      end
-      on_connect
+      connect
       @started = true
     end
     private :do_start
+
+    def connect
+      s = timeout(@open_timeout) { TCPSocket.open(conn_address(), conn_port()) }
+      if use_ssl?
+        unless @ssl_context.verify_mode
+          warn "warning: peer certificate won't be verified in this SSL session"
+          @ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
+        s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
+        s.sync_close = true
+        s.connect
+      end
+      @socket = BufferedIO.new(s)
+      @socket.read_timeout = @read_timeout
+      @socket.debug_output = @debug_output
+      if use_ssl? and proxy?
+        @socket.writeline sprintf('CONNECT %s:%s HTTP/%s',
+                                  @address, @port, HTTP_VERSION)
+        @socket.writeline ''
+        HTTPResponse.read_new(@socket).value
+      end
+      on_connect
+    end
+    private :connect
 
     def on_connect
     end
@@ -966,7 +924,7 @@ module Net # :nodoc:
         req.exec @socket, @curr_http_version, edit_path(req.path), body
         begin
           res = HTTPResponse.read_new(@socket)
-        end while HTTPContinue === res
+        end while res.kind_of?(HTTPContinue)
         res.reading_body(@socket, req.response_body_permitted?) {
           yield res if block_given?
         }
@@ -979,8 +937,7 @@ module Net # :nodoc:
 
     def begin_transport(req)
       if @socket.closed?
-        @socket.reopen @open_timeout
-        on_connect
+        connect
       end
       if @seems_1_0_server
         req['connection'] = 'close'
@@ -1041,6 +998,7 @@ module Net # :nodoc:
   end
 
   HTTPSession = HTTP
+
 
   #
   # Header module.
@@ -1219,6 +1177,7 @@ module Net # :nodoc:
 
   end
 
+
   #
   # Parent of HTTPRequest class.  Do not use this directly; use
   # a subclass of HTTPRequest.
@@ -1319,7 +1278,6 @@ module Net # :nodoc:
 
 
   class HTTP
-
     class Get < HTTPRequest
       METHOD = 'GET'
       REQUEST_HAS_BODY  = false
@@ -1397,7 +1355,6 @@ module Net # :nodoc:
       REQUEST_HAS_BODY = true
       RESPONSE_HAS_BODY = true
     end
-
   end
 
 
@@ -1717,9 +1674,7 @@ module Net # :nodoc:
       '505' => HTTPVersionNotSupported
     }
 
-
-    class << self
-
+    class << HTTPResponse
       def read_new(sock)   #:nodoc: internal use only
         httpv, code, msg = read_status_line(sock)
         res = response_class(code).new(httpv, code, msg)
@@ -1730,7 +1685,6 @@ module Net # :nodoc:
             res[k] = v
           end
         end
-
         res
       end
 
@@ -1758,7 +1712,6 @@ module Net # :nodoc:
           yield m[1], m.post_match
         end
       end
-
     end
 
     # next is to fix bug in RDoc, where the private inside class << self
@@ -1825,7 +1778,7 @@ module Net # :nodoc:
 
     # Raises HTTP error if the response is not 2xx.
     def value
-      error! unless HTTPSuccess === self
+      error! unless self.kind_of?(HTTPSuccess)
     end
 
     #

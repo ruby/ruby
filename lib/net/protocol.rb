@@ -46,61 +46,33 @@ module Net # :nodoc:
   ProtocRetryError = ProtoRetriableError
 
 
-  class InternetMessageIO   #:nodoc: internal use only
-    class << self
-      alias open new
-    end
-
-    def initialize(addr, port, open_timeout = nil, read_timeout = nil, debug_output = nil)
-      @address      = addr
-      @port         = port
-      @read_timeout = read_timeout
-      @debug_output = debug_output
-      @socket       = nil
-      @rbuf         = nil   # read buffer
-      @wbuf         = nil   # write buffer
-      connect open_timeout
-      LOG 'opened'
-    end
-
-    def connect(open_timeout)
-      LOG "opening connection to #{@address}..."
-      timeout(open_timeout) {
-        @socket = TCPsocket.new(@address, @port)
-      }
-      @rbuf = ''
-    end
-    private :connect
-
-    def close
-      if @socket
-        @socket.close
-        LOG 'closed'
-      else
-        LOG 'close call for already closed socket'
-      end
-      @socket = nil
+  class BufferedIO   #:nodoc: internal use only
+    def initialize(io)
+      @io = io
+      @read_timeout = 60
+      @debug_output = nil
       @rbuf = ''
     end
 
-    def reopen(open_timeout = nil)
-      LOG 'reopening...'
-      close
-      connect open_timeout
-      LOG 'reopened'
+    attr_reader :io
+    attr_accessor :read_timeout
+    attr_accessor :debug_output
+
+    def inspect
+      "#<#{self.class} io=#{@io}>"
     end
 
     def closed?
-      not @socket
+      @io.closed?
     end
 
-    def inspect
-      "#<#{self.class} #{closed?() ? 'closed' : 'opened'}>"
+    def close
+      @io.close
     end
 
-    ###
-    ###  READ
-    ###
+    #
+    # Read
+    #
 
     public
 
@@ -154,6 +126,90 @@ module Net # :nodoc:
       readuntil("\n").chop
     end
 
+    private
+
+    def rbuf_fill
+      until IO.select([@io], nil, nil, @read_timeout)
+        raise TimeoutError, "socket read timeout (#{@read_timeout} sec)"
+      end
+      @rbuf << @io.sysread(1024)
+    end
+
+    def rbuf_consume(len)
+      s = @rbuf.slice!(0, len)
+      @debug_output << %Q[-> #{s.dump}\n] if @debug_output
+      s
+    end
+
+    #
+    # Write
+    #
+
+    public
+
+    def write(str)
+      writing {
+        write0 str
+      }
+    end
+
+    def writeline(str)
+      writing {
+        write0 str + "\r\n"
+      }
+    end
+
+    private
+
+    def writing
+      @written_bytes = 0
+      @debug_output << '<- ' if @debug_output
+      yield
+      @debug_output << "\n" if @debug_output
+      bytes = @written_bytes
+      @written_bytes = nil
+      bytes
+    end
+
+    def write0(str)
+      @debug_output << str.dump if @debug_output
+      len = @io.write(str)
+      @written_bytes += len
+      len
+    end
+
+    #
+    # Logging
+    #
+
+    private
+
+    def LOG_off
+      @save_debug_out = @debug_output
+      @debug_output = nil
+    end
+
+    def LOG_on
+      @debug_output = @save_debug_out
+    end
+
+    def LOG(msg)
+      return unless @debug_output
+      @debug_output << msg + "\n"
+    end
+  end
+
+
+  class InternetMessageIO < BufferedIO   #:nodoc: internal use only
+    def initialize(io)
+      super
+      @wbuf = nil
+    end
+
+    #
+    # Read
+    #
+
     def each_message_chunk
       LOG 'reading message...'
       LOG_off()
@@ -173,38 +229,17 @@ module Net # :nodoc:
       end
     end
 
-    private
-
-    def rbuf_fill
-      until IO.select([@socket], nil, nil, @read_timeout)
-        raise TimeoutError, "socket read timeout (#{@read_timeout} sec)"
+    def write_message_0(src)
+      prev = @written_bytes
+      each_crlf_line(src) do |line|
+        write0 line.sub(/\A\./, '..')
       end
-      @rbuf << @socket.sysread(1024)
+      @written_bytes - prev
     end
 
-    def rbuf_consume(len)
-      s = @rbuf.slice!(0, len)
-      @debug_output << %Q[-> #{s.dump}\n] if @debug_output
-      s
-    end
-
-    ###
-    ###  WRITE
-    ###
-
-    public
-
-    def write(str)
-      writing {
-        write0 str
-      }
-    end
-
-    def writeline(str)
-      writing {
-        write0 str + "\r\n"
-      }
-    end
+    #
+    # Write
+    #
 
     def write_message(src)
       LOG "writing message from #{src.class}"
@@ -238,42 +273,6 @@ module Net # :nodoc:
 
     private
 
-    def writing
-      @written_bytes = 0
-      @debug_output << '<- ' if @debug_output
-      yield
-      @socket.flush
-      @debug_output << "\n" if @debug_output
-      bytes = @written_bytes
-      @written_bytes = nil
-      bytes
-    end
-
-    def write0(str)
-      @debug_output << str.dump if @debug_output
-      len = @socket.write(str)
-      @written_bytes += len
-      len
-    end
-
-    #
-    # Reads string from src calling :each, and write to @socket.
-    # Escapes '.' on the each line head.
-    #
-    def write_message_0(src)
-      prev = @written_bytes
-      each_crlf_line(src) do |line|
-        if line[0] == ?.
-        then write0 '.' + line
-        else write0       line
-        end
-      end
-      @written_bytes - prev
-    end
-
-    #
-    # setup @wbuf for each_crlf_line.
-    #
     def using_each_crlf_line
       @wbuf = ''
       yield
@@ -314,26 +313,6 @@ module Net # :nodoc:
         end
         yield unless buf.empty?
       end
-    end
-
-    ###
-    ### DEBUG
-    ###
-
-    private
-
-    def LOG_off
-      @save_debug_out = @debug_output
-      @debug_output = nil
-    end
-
-    def LOG_on
-      @debug_output = @save_debug_out
-    end
-
-    def LOG(msg)
-      return unless @debug_output
-      @debug_output << msg + "\n"
     end
   end
 

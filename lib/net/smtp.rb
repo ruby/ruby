@@ -1,17 +1,16 @@
 # = net/smtp.rb
-# 
+#
 #--
-# Copyright (c) 1999-2003 Yukihiro Matsumoto
-# Copyright (c) 1999-2003 Minero Aoki
+# Copyright (C) 1999-2004 Yukihiro Matsumoto
+# Copyright (C) 1999-2004 Minero Aoki
 # 
-# written & maintained by Minero Aoki <aamine@loveruby.net>
+# written and maintained by Minero Aoki <aamine@loveruby.net>
 # 
 # This program is free software. You can re-distribute and/or
-# modify this program under the same terms as Ruby itself,
-# Ruby Distribute License or GNU General Public License.
+# modify this program under the same terms as Ruby itself.
 # 
-# NOTE: You can find Japanese version of this document in
-# the doc/net directory of the standard ruby interpreter package.
+# NOTE: You can find Japanese version of this document at:
+# http://www.ruby-lang.org/ja/man/index.cgi?cmd=view;name=net%2Fsmtp.rb
 # 
 # $Id$
 #++
@@ -120,7 +119,7 @@
 
 require 'net/protocol'
 require 'digest/md5'
-
+require 'timeout'
 
 module Net # :nodoc:
 
@@ -343,9 +342,12 @@ module Net # :nodoc:
       raise IOError, 'SMTP session already started' if @started
       check_auth_args user, secret, authtype if user or secret
 
-      @socket = InternetMessageIO.open(@address, @port,
-                                       @open_timeout, @read_timeout,
-                                       @debug_output)
+      @socket = InternetMessageIO.new(timeout(@open_timeout) {
+                  TCPSocket.open(@address, @port)
+                })
+      logging "SMTP session opened: #{@address}:#{@port}"
+      @socket.read_timeout = @read_timeout
+      @socket.debug_output = @debug_output
       check_response(critical { recv_response() })
       begin
         if @esmtp
@@ -627,6 +629,10 @@ module Net # :nodoc:
         @error_occured = true
         raise
       end
+    end
+
+    def logging(msg)
+      @debug_output << msg if @debug_output
     end
 
   end   # class SMTP

@@ -1,3 +1,24 @@
+Sun Mar  7 02:06:07 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: spin off https code again.
+
+	* lib/net/https.rb: new file.
+
+	* ext/openssl/lib/net/https.rb: removed.  moved to net/https with
+	  slight modifications.
+
+	* ext/openssl/lib/net/protocol.rb: removed.  merged with net/http.
+
+	* lib/net/protocol.rb: new class BufferedIO.
+
+	* lib/net/protocol.rb: InternetMessageIO < BufferedIO.
+
+	* lib/net/protocol.rb: BufferedIO.new takes an IO.
+
+	* lib/net/smtp.rb: follow InternetMessageIO's change.
+
+	* lib/net/pop.rb: ditto.
+
 Sun Mar  7 00:55:03 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: remove method: InternetMessageIO#address,
