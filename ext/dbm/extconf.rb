@@ -4,23 +4,42 @@ dir_config("dbm")
 
 dblib = with_config("dbm-type", nil)
 
+$dbm_conf_headers = {
+  "db" => ["db.h"],
+  "db1" => ["db1/ndbm.h", "db1.h"],
+  "db2" => ["db2/db.h", "db2.h", "db.h"],
+  "dbm" => ["ndbm.h"],
+  "gdbm" => ["gdbm-ndbm.h", "gdbm.h"],
+}
+
 def db_check(db)
-  $db_hdr = "ndbm.h"
-  $db_prefix = ""
+  $dbm_conf_db_prefix = ""
+  $dbm_conf_have_gdbm = false
+  hsearch = ""
 
   case db
   when /^db2?$/
-    $db_prefix = "__db_n"
-    $db_hdr = db+".h"
+    $dbm_conf_db_prefix = "__db_n"
+    hsearch = "-DDB_DBM_HSEARCH "
   when "gdbm"
-    $have_gdbm = true
+    $dbm_conf_have_gdbm = true
   end
 
-  have_func(db_prefix("dbm_open")) || have_library(db, db_prefix("dbm_open"))
+  if have_func(db_prefix("dbm_open")) || have_library(db, db_prefix("dbm_open"))
+    for hdr in $dbm_conf_headers.fetch(db, ["ndbm.h"])
+      if have_header(hdr.dup)
+	$CFLAGS = "-DDBM_HDR='<"+hdr+">'"
+	break
+      end
+    end
+    $CFLAGS = hsearch + "-DDBM_HDR='<"+hdr+">'"
+    return true
+  end
+  return false
 end
 
 def db_prefix(func)
-  $db_prefix+func
+  $dbm_conf_db_prefix+func
 end
 
 if dblib
@@ -33,7 +52,7 @@ end
 
 have_header("cdefs.h") 
 have_header("sys/cdefs.h") 
-if have_header($db_hdr) and have_func(db_prefix("dbm_open"))
-  have_func(db_prefix("dbm_clearerr")) unless $have_gdbm
+if have_func(db_prefix("dbm_open"))
+  have_func(db_prefix("dbm_clearerr")) unless $dbm_conf_have_gdbm
   create_makefile("dbm")
 end
