@@ -1,3 +1,8 @@
+Sun Apr 20 03:09:30 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* parse.y (void_expr0): node might become NULL after calling
+	  remove_begin().
+
 Sat Apr 19 21:55:10 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/Setup*: Add zlib and remove bogus and obsolete entries.

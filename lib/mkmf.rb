@@ -518,7 +518,7 @@ def dir_config(target, idefault=nil, ldefault=nil)
   end
 
   if ldir
-    $LIBPATH.unshift(ldir) unless $LIBPATH.include?(ldir)
+    $LIBPATH.concat [ldir] unless $LIBPATH.include?(ldir)
   end
 
   [idir, ldir]
