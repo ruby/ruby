@@ -1,3 +1,9 @@
+Sat Jun 15 18:51:13 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* dir.c (glob_helper): Use lstat() instead of stat() so it catches
+	  a dead symlink.  Given a dead symlink named "a", Dir.glob("?") 
+	  did catch it but Dir.glob("a") somehow didn't.
+
 Fri Jun 14 21:01:48 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* bcc32/mkexports.rb: insert sleep(1) for win9x.

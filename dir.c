@@ -671,7 +671,7 @@ glob_helper(path, sub, flags, func, arg)
 #else
 	if (!(flags & FNM_NOESCAPE)) remove_backslashes(p);
 #endif
-	if (stat(path, &st) == 0) {
+	if (lstat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
 	else if (errno != ENOENT) {
