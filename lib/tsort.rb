@@ -55,7 +55,7 @@ TSort uses Hash internally.
 
 --- strongly_connected_components
     returns strongly connected components as an array of array of nodes.
-    The array is sorted as children to parents.
+    The array is sorted from children to parents.
     Each elements of the array represents a strongly connected component.
 
 --- each_strongly_connected_component {|nodes| ...}
@@ -114,7 +114,8 @@ Very simple `make' like tool can be implemented as follows:
             outputs_time = nil
           end
           if outputs_time == nil ||
-             inputs_time != nil && outputs_time < inputs_time # `<=' is better?
+             inputs_time != nil && outputs_time <= inputs_time
+            sleep 1 if inputs_time != nil && inputs_time.to_i == Time.now.to_i
             block.call
           end
         end

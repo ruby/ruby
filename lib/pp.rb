@@ -55,6 +55,8 @@ I like the latter.  If you do too, this library is for you.
 : pp(obj)
     output ((|obj|)) to (({$>})) in pretty printed format.
 
+    It returns (({nil})).
+
 == Customized output
 To define your customized pretty printing function for your class,
 redefine a method (({pretty_print(((|pp|)))})) in the class.
@@ -110,6 +112,7 @@ module Kernel
     objs.each {|obj|
       PP.pp(obj)
     }
+    nil
   end
 end
 

@@ -1,3 +1,7 @@
+Tue Mar 26 03:23:50 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (pp): return nil like p.
+
 Tue Mar 26 01:48:01 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/bigfloat/extconf.rb: Downcase the module name. (BigFloat.so
