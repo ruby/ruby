@@ -60,7 +60,7 @@ static VALUE do_split = Qfalse;
 
 static char *script;
 
-static int origargc;
+static int origargc, origarglen;
 static char **origargv;
 
 static void
@@ -882,23 +882,11 @@ set_arg0(val, id)
     static int len;
 
     if (origargv == 0) rb_raise(rb_eRuntimeError, "$0 not initialized");
-#ifndef __hpux
-    if (len == 0) {
-	s = origargv[0];
-	s += strlen(s);
-	/* See if all the arguments are contiguous in memory */
-	for (i = 1; i < origargc; i++) {
-	    if (origargv[i] == s + 1)
-		s += strlen(++s);	/* this one is ok too */
-	}
-	len = s - origargv[0];
-    }
-#endif
     s = rb_str2cstr(val, &i);
 #ifndef __hpux
-    if (i < len) {
-	memcpy(origargv[0], s, i);
-	origargv[0][i] = '\0';
+    if (i >= len) {
+	memcpy(origargv[0], s, len);
+	origargv[0][len] = '\0';
     }
     else {
 	memcpy(origargv[0], s, i);
@@ -1020,6 +1008,19 @@ ruby_process_options(argc, argv)
     char **argv;
 {
     origargc = argc; origargv = argv;
+#ifndef __hpux
+    if (origarglen == 0) {
+	int i;
+	char *s = origargv[0];
+	s += strlen(s);
+	/* See if all the arguments are contiguous in memory */
+	for (i = 1; i < origargc; i++) {
+	    if (origargv[i] == s + 1)
+		s += strlen(++s);	/* this one is ok too */
+	}
+	origarglen = s - origargv[0];
+    }
+#endif
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = rb_progname;
 #if defined(USE_DLN_A_OUT)

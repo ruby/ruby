@@ -1,3 +1,11 @@
+Sat Sep  1 09:50:54 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ruby.c (set_arg0): prevent SEGV when val is longer than the
+	  original arguments.
+
+	* ruby.c (ruby_process_options): initialize total length of
+	  original arguments at first.
+
 Mon Aug 27 07:32:23 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* dir.c (rb_glob_helper): merge from 1.7: traversed files twice
