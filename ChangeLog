@@ -147,7 +147,7 @@ Mon Oct 13 20:49:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c: use EXIT_SUCCESS and EXIT_FAILURE for exit values.
 
-	* process.c: ditto. [ruby-dev:38521]
+	* process.c: ditto. [ruby-list:38521]
 
 Mon Oct 13 19:51:02 2003  Koji Arai  <jca02266@nifty.ne.jp>
 
