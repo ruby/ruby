@@ -736,6 +736,7 @@ module Net
             yield
           end
         end
+        yield unless @wbuf.empty?
       end
     end
 
