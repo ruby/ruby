@@ -940,12 +940,12 @@ rb_file_chmod(obj, vmode)
     mode = NUM2INT(vmode);
 
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(NT) || defined(__BEOS__) || defined(__EMX__)
-    if (!fptr->path) return Qnil;
-    if (chmod(fptr->path, mode) == -1)
+#ifdef HAVE_FCHMOD
+    if (fchmod(fileno(fptr->f), mode) == -1)
 	rb_sys_fail(fptr->path);
 #else
-    if (fchmod(fileno(fptr->f), mode) == -1)
+    if (!fptr->path) return Qnil;
+    if (chmod(fptr->path, mode) == -1)
 	rb_sys_fail(fptr->path);
 #endif
 

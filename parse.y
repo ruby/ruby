@@ -749,7 +749,26 @@ arg		: lhs '=' arg
 		    }
 		| arg tPOW arg
 		    {
+			int need_negate = Qfalse;
+
+			if (nd_type($1) == NODE_LIT) {
+
+			    switch (TYPE($1->nd_lit)) {
+			      case T_FIXNUM:
+			      case T_FLOAT:
+			      case T_BIGNUM:
+				if (RTEST(rb_funcall($1->nd_lit,'<',1,INT2FIX(0)))) {
+				    $1->nd_lit = rb_funcall($1->nd_lit,rb_intern("-@"),0,0);
+				    need_negate = Qtrue;
+				}
+			      default:
+				break;
+			    }
+			}
 			$$ = call_op($1, tPOW, 1, $3);
+			if (need_negate) {
+			    $$ = call_op($$, tUMINUS, 0, 0);
+			}
 		    }
 		| tUPLUS arg
 		    {
@@ -1891,6 +1910,7 @@ yyerror(msg)
 }
 
 static int heredoc_end;
+static int last_newline;
 
 int ruby_in_compile = 0;
 int ruby__end__seen;
@@ -1930,6 +1950,7 @@ yycompile(f, line)
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
     heredoc_end = 0;
+    last_newline = 0;
     ruby_sourcefile = f;
     ruby_in_compile = 1;
     n = yyparse();
@@ -3823,9 +3844,10 @@ newline_node(node)
 {
     NODE *nl = 0;
     if (node) {
+	if (nd_line(node) == last_newline) return node;
         nl = NEW_NEWLINE(node);
         fixpos(nl, node);
-        nl->nd_nth = nd_line(node);
+        last_newline = nl->nd_nth = nd_line(node);
     }
     return nl;
 }

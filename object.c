@@ -871,12 +871,37 @@ rb_convert_type(val, type, tname, method)
     return val;
 }
 
+static VALUE
+rb_to_integer(val, method)
+    VALUE val;
+    char *method;
+{
+    struct arg_to arg1, arg2;
+
+
+    arg1.val = arg2.val = val;
+    arg1.s = method;
+    arg2.s = "Integer";
+    val = rb_rescue2(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2,
+		     rb_eStandardError, rb_eNameError, 0);
+    if (!rb_obj_is_kind_of(val, rb_cInteger)) {
+	rb_raise(rb_eTypeError, "%s#%s_i should return Integer",
+		 method, rb_class2name(CLASS_OF(arg1.val)));
+    }
+    return val;
+}
+
+VALUE
+rb_to_int(val)
+    VALUE val;
+{
+    return rb_to_integer(val, "to_int");
+}
+
 VALUE
 rb_Integer(val)
     VALUE val;
 {
-    struct arg_to arg1, arg2;
-
     switch (TYPE(val)) {
       case T_FLOAT:
 	if (RFLOAT(val)->value <= (double)FIXNUM_MAX
@@ -897,17 +922,7 @@ rb_Integer(val)
       default:
 	break;
     }
-
-    arg1.val = arg2.val = val;
-    arg1.s = "to_i";
-    arg2.s = "Integer";
-    val = rb_rescue2(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2,
-		     rb_eStandardError, rb_eNameError, 0);
-    if (!rb_obj_is_kind_of(val, rb_cInteger)) {
-	rb_raise(rb_eTypeError, "%s#to_i should return Integer",
-		 rb_class2name(CLASS_OF(arg1.val)));
-    }
-    return val;
+    return rb_to_integer(val, "to_i");
 }
 
 static VALUE

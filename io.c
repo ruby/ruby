@@ -2481,7 +2481,11 @@ next_argv()
 		    fw = rb_fopen(fn, "w");
 #ifndef NO_SAFE_RENAME
 		    fstat(fileno(fw), &st2);
+#ifdef HAVE_FCHMOD
 		    fchmod(fileno(fw), st.st_mode);
+#else
+		    chmod(fn, st.st_mode);
+#endif
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
 			fchown(fileno(fw), st.st_uid, st.st_gid);
 		    }

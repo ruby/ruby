@@ -1564,6 +1564,7 @@ Init_Numeric()
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "chr", int_chr, 0);
     rb_define_method(rb_cInteger, "to_i", int_to_i, 0);
+    rb_define_method(rb_cInteger, "to_int", int_to_i, 0);
     rb_define_method(rb_cInteger, "floor", int_to_i, 0);
     rb_define_method(rb_cInteger, "ceil", int_to_i, 0);
     rb_define_method(rb_cInteger, "round", int_to_i, 0);

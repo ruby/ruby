@@ -1,3 +1,13 @@
+Sat Nov 11 22:57:38 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg): uniformed treatment of -a**b, where a is a
+	  number literal;  hacky but behavior appears uniformed.
+
+	* parse.y (newline_node): reduce newline node (one per line).
+
+	* random.c (rb_f_srand): should be prohibited in safe level
+	  greater than 4.
+
 Sat Nov 11 08:34:18 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.31.
@@ -8,7 +18,9 @@ Sat Nov 11 08:34:18 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 Fri Nov 10 16:15:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* error.c: T_SYMBOL was misplaced my T_UNDEF.
+	* numeric.c (rb_num2long): use to_int, not to_i.
+
+	* error.c: T_SYMBOL was misplaced by T_UNDEF.
 
 	* parse.y (yylex): eval("^") caused infinite loop.
 
