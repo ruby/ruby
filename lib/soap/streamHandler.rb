@@ -115,9 +115,11 @@ private
     @options.add_hook("no_proxy") do |key, value|
       @client.no_proxy = value
     end
-    @client.protocol_version = @options["protocol_version"]
-    @options.add_hook("protocol_version") do |key, value|
-      @client.protocol_version = value
+    if @client.respond_to?(:protocol_version=)
+      @client.protocol_version = @options["protocol_version"]
+      @options.add_hook("protocol_version") do |key, value|
+	@client.protocol_version = value
+      end
     end
     set_cookie_store_file(@options["cookie_store_file"])
     @options.add_hook("cookie_store_file") do |key, value|
