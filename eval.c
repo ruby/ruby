@@ -144,6 +144,8 @@ static VALUE method_call _((int, VALUE*, VALUE));
 static VALUE rb_cUnboundMethod;
 static VALUE umethod_bind _((VALUE, VALUE));
 static VALUE rb_mod_define_method _((int, VALUE*, VALUE));
+NORETURN(static void rb_raise_jump _((VALUE)));
+static VALUE rb_make_exception _((int argc, VALUE *argv));
 
 static int scope_vmode;
 #define SCOPE_PUBLIC    0
@@ -4390,6 +4392,15 @@ rb_f_raise(argc, argv)
     int argc;
     VALUE *argv;
 {
+    rb_raise_jump(rb_make_exception(argc, argv));
+    return Qnil;		/* not reached */
+}
+
+static VALUE
+rb_make_exception(argc, argv)
+    int argc;
+    VALUE *argv;
+{
     VALUE mesg;
     ID exception;
     int n;
@@ -4429,6 +4440,13 @@ rb_f_raise(argc, argv)
 	    set_backtrace(mesg, argv[2]);
     }
 
+    return mesg;
+}
+
+static void
+rb_raise_jump(mesg)
+    VALUE mesg;
+{
     if (ruby_frame != top_frame) {
 	PUSH_FRAME();		/* fake frame */
 	*ruby_frame = *_frame.prev->prev;
@@ -4436,8 +4454,6 @@ rb_f_raise(argc, argv)
 	POP_FRAME();
     }
     rb_longjmp(TAG_RAISE, mesg);
-
-    return Qnil;		/* not reached */
 }
 
 void
@@ -9764,8 +9780,7 @@ rb_thread_check(data)
 
 static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
 
-static int   th_raise_argc;
-static VALUE th_raise_argv[2];
+static VALUE th_raise_exception;
 static NODE *th_raise_node;
 static VALUE th_cmd;
 static int   th_sig, th_safe;
@@ -9865,13 +9880,13 @@ rb_thread_switch(n)
       case RESTORE_RAISE:
 	ruby_frame->last_func = 0;
 	ruby_current_node = th_raise_node;
-	rb_f_raise(th_raise_argc, th_raise_argv);
+	rb_raise_jump(th_raise_exception);
 	break;
       case RESTORE_SIGNAL:
 	rb_raise(rb_eSignal, "SIG%s", th_signm);
 	break;
       case RESTORE_EXIT:
-	ruby_errinfo = th_raise_argv[0];
+	ruby_errinfo = th_raise_exception;
 	ruby_current_node = th_raise_node;
 	error_print();
 	terminate_process(EXIT_FAILURE, 0, 0);
@@ -10034,8 +10049,7 @@ rb_thread_main_jump(err, tag)
     int tag;
 {
     curr_thread = main_thread;
-    th_raise_argc = 1;
-    th_raise_argv[0] = err;
+    th_raise_exception = err;
     th_raise_node = ruby_current_node;
     rb_thread_restore_context(main_thread, tag);
 }
@@ -11816,13 +11830,15 @@ rb_thread_raise(argc, argv, th)
     rb_thread_t th;
 {
     volatile rb_thread_t th_save = th;
+    VALUE exc;
 
     if (!th->next) {
 	rb_raise(rb_eArgError, "unstarted thread");
     }
     if (rb_thread_dead(th)) return Qnil;
+    exc = rb_make_exception(argc, argv);
     if (curr_thread == th) {
-	rb_f_raise(argc, argv);
+	rb_raise_jump(exc);
     }
 
     if (!rb_thread_dead(curr_thread)) {
@@ -11831,11 +11847,10 @@ rb_thread_raise(argc, argv, th)
 	}
     }
 
-    rb_scan_args(argc, argv, "11", &th_raise_argv[0], &th_raise_argv[1]);
     rb_thread_ready(th);
     curr_thread = th;
 
-    th_raise_argc = argc;
+    th_raise_exception = exc;
     th_raise_node = ruby_current_node;
     rb_thread_restore_context(curr_thread, RESTORE_RAISE);
     return Qnil;		/* not reached */

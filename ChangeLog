@@ -1,11 +1,17 @@
+Fri Jul  9 14:28:54 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_raise): accept third argument as well as
+	  Kernel#raise, and evaluate the arguments to create an exception in
+	  the caller's context.  [ruby-talk:105507]
+
 Fri Jul  9 01:47:08 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib : bug fix
 	* ext/tk/lib/tkextlib/itcl : add [incr Tcl] support
 	* ext/tk/lib/tkextlib/itk  : add [incr Tk] support
 	* ext/tk/lib/tkextlib/iwidgets : midway point of [incr Widgets] support
-	* ext/tk/sample/tkextlib/iwidgets : very simple examples of 
-	  [incr Widgets] 
+	* ext/tk/sample/tkextlib/iwidgets : very simple examples of
+	  [incr Widgets]
 
 Thu Jul  8 19:27:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
