@@ -315,7 +315,6 @@ module Net
     def append(mailbox, message, flags = nil, date_time = nil)
       args = []
       if flags
-	flags.collect! {|i| Flag.new(i)}
 	args.push(flags)
       end
       args.push(date_time) if date_time
