@@ -1,3 +1,10 @@
+Fri Jul 14 12:49:50 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): should preserve errinfo even if return, break,
+	  etc. is called in rescue clause.
+
+	* instruby.rb: install irb too.
+
 Wed Jul 12 15:32:57 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* variable.c (rb_const_get): constants for builtin classes must
@@ -10,7 +17,7 @@ Wed Jul 12 15:06:28 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): use rb_const_get_at().
 
-	* variable.c (rb_const_get_at): retrieve toplevel constants only,
+	* variable.c (top_const_get): retrieve toplevel constants only,
 	  not ones of Object (and its included modules) in general.
 
 Wed Jul 12 15:04:11 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>

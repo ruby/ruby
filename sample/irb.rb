@@ -19,8 +19,7 @@ if __FILE__ == $0
   IRB.start(__FILE__)
 else
   # check -e option
-  tmp = ENV["TMP"] || ENV["TMPDIR"] || "/tmp"
-  if %r|#{tmp}/rb| =~ $0
+  if /^-e$/ =~ $0
     IRB.start(__FILE__)
   else
     IRB.initialize(__FILE__)
