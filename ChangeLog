@@ -1,3 +1,7 @@
+Mon Jan 27 02:06:38 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* error.c (get_syserror): some Windows' errno have 5 digits.
+
 Sun Jan 26 19:23:10 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* instruby.rb ($mflags.set?): Check $make instead of $nmake, sinse
