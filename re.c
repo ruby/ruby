@@ -1355,6 +1355,7 @@ Init_Regexp()
     rb_define_singleton_method(rb_cRegexp, "compile", rb_reg_s_new, -1);
     rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, -1);
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, -1);
+    rb_define_singleton_method(rb_cRegexp, "last_match", match_getter, 0);
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
     rb_define_method(rb_cRegexp, "clone", rb_reg_clone, 0);
@@ -1367,7 +1368,6 @@ Init_Regexp()
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
     rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
     rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_m, 0);
-    rb_define_method(rb_cRegexp, "last_match", match_getter, 0);
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(RE_OPTION_EXTENDED));

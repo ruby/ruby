@@ -1087,6 +1087,7 @@ rb_str_sub_bang(argc, argv, str)
     VALUE pat, repl, match;
     struct re_registers *regs;
     int iter = 0;
+    int tainted = 0;
     long plen;
 
     if (argc == 1 && rb_block_given_p()) {
@@ -1094,6 +1095,7 @@ rb_str_sub_bang(argc, argv, str)
     }
     else if (argc == 2) {
 	repl = rb_obj_as_string(argv[1]);;
+	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
 	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
@@ -1113,6 +1115,7 @@ rb_str_sub_bang(argc, argv, str)
 	else {
 	    repl = rb_reg_regsub(repl, str, regs);
 	}
+	if (OBJ_TAINTED(repl)) tainted = 1;
 	plen = END(0) - BEG(0);
 	if (RSTRING(repl)->len > plen) {
 	    REALLOC_N(RSTRING(str)->ptr, char,
@@ -1127,7 +1130,8 @@ rb_str_sub_bang(argc, argv, str)
 	       RSTRING(repl)->ptr, RSTRING(repl)->len);
 	RSTRING(str)->len += RSTRING(repl)->len - plen;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
-	OBJ_INFECT(str, repl);
+	if (tainted) OBJ_TAINT(str);
+
 	return str;
     }
     return Qnil;

@@ -95,8 +95,7 @@ fgdbm_close(obj)
 {
     struct dbmdata *dbmp;
 
-    Data_Get_Struct(obj, struct dbmdata, dbmp);
-    if (dbmp->di_dbm == 0) closed_dbm();
+    GetDBM(obj, dbmp);
     gdbm_close(dbmp->di_dbm);
     dbmp->di_dbm = 0;
 
@@ -319,7 +318,7 @@ fgdbm_store(obj, keystr, valstr)
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
 
-    Data_Get_Struct(obj, struct dbmdata, dbmp);
+    GetDBM(obj, dbmp);
     dbmp->di_size = -1;
     dbm = dbmp->di_dbm;
     if (gdbm_store(dbm, key, val, GDBM_REPLACE)) {
@@ -339,7 +338,7 @@ fgdbm_length(obj)
     GDBM_FILE dbm;
     int i = 0;
 
-    Data_Get_Struct(obj, struct dbmdata, dbmp);
+    GetDBM(obj, dbmp);
     if (dbmp->di_size > 0) return INT2FIX(dbmp->di_size);
     dbm = dbmp->di_dbm;
 
@@ -360,7 +359,7 @@ fgdbm_empty_p(obj)
     GDBM_FILE dbm;
     int i = 0;
 
-    Data_Get_Struct(obj, struct dbmdata, dbmp);
+    GetDBM(obj, dbmp);
     if (dbmp->di_size < 0) {
 	dbm = dbmp->di_dbm;
 

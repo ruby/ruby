@@ -314,17 +314,22 @@ make_time_t(tptr, utc_or_local)
     if (!utc_or_local) {	/* localtime zone adjust */
 #if defined(HAVE_TM_ZONE)
 	tm = localtime(&guess);
+	if (!tm) goto error;
 	guess -= tm->tm_gmtoff;
 #else
 	struct tm gt, lt;
 	long tzsec;
 
 	t = 0;
-	gt = *gmtime(&guess);
-	lt = *localtime(&guess);
+	tm = gmtime(&guess);
+	if (!tm) goto error;
+	gt = *tm;
+	tm = localtime(&guess);
+	if (!tm) goto error;
+	lt = *tm;
 	tzsec = (gt.tm_min-lt.tm_min)*60 + (gt.tm_hour-lt.tm_hour)*3600;
 
-	if(lt.tm_year > gt.tm_year) {
+	if (lt.tm_year > gt.tm_year) {
 	    tzsec -= 24*3600;
 	}
 	else if(gt.tm_year > lt.tm_year) {
@@ -334,18 +339,17 @@ make_time_t(tptr, utc_or_local)
 	    tzsec += (gt.tm_yday - lt.tm_yday)*24*3600;
 	}
 
-	if (lt.tm_isdst) tzsec += 3600;
-    
+	if (lt.tm_isdst) guess += 3600;
 	guess += tzsec;
 	if (guess < 0) {
 	    goto out_of_range;
 	}
+#endif
 	tm = localtime(&guess);
 	if (!tm) goto error;
 	if (tm->tm_hour != tptr->tm_hour) {
 	    guess -= 3600;
 	}
-#endif
 	if (guess < 0) {
 	    goto out_of_range;
 	}

@@ -1,3 +1,25 @@
+Fri Jun 16 05:18:45 2000  Yasuhiro Fukuma  <yasuf@bsdclub.org>
+
+	* configure.in: FreeBSD: do not link dummy libxpg4 which was
+	  merged into libc.
+
+Fri Jun 16 03:17:36 2000  Satoshi Nojo  <nojo@t-samukawa.or.jp>
+
+	* ext/dbm/dbm.c (fdbm_length): use GetDBM. empty?, [] too.
+
+	* ext/gdbm/gdbm.c (fgdbm_length): ditto.
+
+	* ext/sdbm/init.c (fsdbm_length): ditto.
+
+Fri Jun 16 01:57:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_sleep_forever): pause(2) instead of sleep(3).
+
+Thu Jun 15 10:46:36 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_sub_bang): should probagate taintness from
+	  replacement string.
+
 Wed Jun 14 17:01:41 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* rubytest.rb: add CONFIG['EXEEXT'] to the executable file name.

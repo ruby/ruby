@@ -1799,6 +1799,7 @@ io_reopen(io, nfile)
 	fptr->f = rb_fdopen(fd, mode);
 	if (orig->mode & FMODE_READABLE && pos >= 0) {
 	    fseek(fptr->f, pos, SEEK_SET);
+	    fseek(orig->f, pos, SEEK_SET);
 	}
     }
 

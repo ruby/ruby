@@ -7251,7 +7251,7 @@ rb_thread_sleep_forever()
 {
     if (curr_thread == curr_thread->next) {
 	TRAP_BEG;
-	sleep((32767L<<16)+32767);
+	pause();
 	TRAP_END;
 	return;
     }
