@@ -20,13 +20,15 @@ module SM
     def handle(text)
       text.gsub!(/^([ \t#]*):(\w+):\s*(.+)?\n/) do 
 
+        prefix    = $1
         directive = $2.downcase
         param     = $3
 
         case directive
 
         when "include"
-          include_file($3, $1)
+          filename = param.split[0]
+          include_file(filename, prefix)
 
         else
           yield(directive, param)

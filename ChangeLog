@@ -1,3 +1,8 @@
+Thu Feb 19 00:11:05 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/markup/simple_markup/preprocess.rb (SM::PreProcess::handle): 
+	  Strip extraneous space from filenames in :include:
+
 Wed Feb 18 22:53:41 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/unix.rb: remove O_NONBLOCk, thanks \ay
