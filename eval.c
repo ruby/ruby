@@ -6640,7 +6640,6 @@ rb_thread_schedule()
 	rb_thread_ready(next);
 	next->status = THREAD_TO_KILL;
     }
-    printf("<0x%x>\n", next);
     if (next->status == THREAD_RUNNABLE && next == curr_thread) {
 	return;
     }
