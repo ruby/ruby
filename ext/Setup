@@ -10,6 +10,6 @@
 #pty
 #sdbm
 #socket
-tk
-tcltklib
+#tk
+#tcltklib
 #gtk
