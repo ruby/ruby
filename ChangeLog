@@ -1,3 +1,8 @@
+Sun Mar 28 14:09:13 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/pop.rb (auth): failed when account/password include "%".
+	  [ruby-talk:95933]
+
 Sat Mar 27 21:40:41 2004  Tanaka Akira  <akr@m17n.org>
 
 	* (lib/open-uri.rb): permit extra semicolon in content-type field.
