@@ -1779,6 +1779,9 @@ cvar_cbase()
 	    rb_warn("class variable access from toplevel singleton method");
 	}
     }
+    if (NIL_P(cref->nd_clss)) {
+	rb_raise(rb_eTypeError, "no class variables available");
+    }
     return cref->nd_clss;
 }
 
