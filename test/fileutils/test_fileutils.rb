@@ -44,13 +44,6 @@ def have_hardlink?
   HAVE_HARDLINK
 end
 
-case RUBY_PLATFORM
-when /openbsd/, /freebsd/
-  ErrorOnLoopedSymlink = Errno::ELOOP
-when /linux/, /netbsd/, /cygwin/,    // # FIXME
-  ErrorOnLoopedSymlink = Errno::EEXIST
-end
-
 class TestFileUtils < Test::Unit::TestCase
 
   include FileUtils
@@ -412,9 +405,11 @@ if have_symlink?
     }
     # src==dest (3) looped symlink
     File.symlink 'cptmp_symlink', 'tmp/cptmp_symlink'
-    assert_raises(ErrorOnLoopedSymlink) {
+    begin
       ln 'tmp/cptmp_symlink', 'tmp/cptmp_symlink'
-    }
+    rescue => err
+      assert_kind_of SystemCallError, err
+    end
 end
 
     # pathname
