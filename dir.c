@@ -210,7 +210,8 @@ bracket(p, s, flags)
    End marker itself won't be compared.
    And if function succeeds, *pcur reaches end marker.
 */
-#define ISEND(c) (!(c) || (pathname && (c) == '/'))
+#define UNESCAPE(p) (escape && *(p) == '\\' && (p)[1] ? (p) + 1 : (p))
+#define ISEND(p) (!*(p) || (pathname && *(p) == '/'))
 #define RETURN(val) return *pcur = p, *scur = s, (val);
 
 static int
@@ -220,9 +221,9 @@ fnmatch_helper(pcur, scur, flags)
     int flags;
 {
     const int period = !(flags & FNM_DOTMATCH);
+    const int pathname = flags & FNM_PATHNAME;
     const int escape = !(flags & FNM_NOESCAPE);
     const int nocase = flags & FNM_CASEFOLD;
-    const int pathname = flags & FNM_PATHNAME;
 
     const char *ptmp = 0;
     const char *stmp = 0;
@@ -230,49 +231,51 @@ fnmatch_helper(pcur, scur, flags)
     const char *p = *pcur;
     const char *s = *scur;
 
-    if (period && *s == '.' && *p != '.') /* leading period */
+    if (period && *s == '.' && *UNESCAPE(p) != '.') /* leading period */
 	RETURN(FNM_NOMATCH);
 
     while (1) {
-	if (*p == '*') {
+	switch (*p) {
+	  case '*':
 	    do { p++; } while (*p == '*');
-	    if (ISEND(*p))
+	    if (ISEND(UNESCAPE(p))) {
+		p = UNESCAPE(p);
 		RETURN(0);
+	    }
+	    if (ISEND(s))
+		RETURN(FNM_NOMATCH);
 	    ptmp = p;
 	    stmp = s;
-	}
-	if (ISEND(*s)) {
-	    RETURN(ISEND(*p) ? 0 : FNM_NOMATCH);
-	}
-	if (ISEND(*p)) {
-	    goto failed;
-	}
-	switch (*p) {
+	    continue;
+
 	  case '?':
+	    if (ISEND(s))
+		RETURN(FNM_NOMATCH);
 	    p++;
 	    Inc(s);
 	    continue;
 
 	  case '[': {
-	    const char *t = bracket(p + 1, s, flags);
-	    if (t) {
+	    const char *t;
+	    if (ISEND(s))
+		RETURN(FNM_NOMATCH);
+	    if (t = bracket(p + 1, s, flags)) {
 		p = t;
 		Inc(s);
 		continue;
 	    }
 	    goto failed;
 	  }
-
-	  case '\\':
-	    if (escape && p[1])
-		p++;
-	    break; /* goto ordinary */
 	}
 
 	/* ordinary */
-	if (Compare(p, s) != 0) {
+	p = UNESCAPE(p);
+	if (ISEND(s))
+	    RETURN(ISEND(p) ? 0 : FNM_NOMATCH);
+	if (ISEND(p))
 	    goto failed;
-	}
+	if (Compare(p, s) != 0)
+	    goto failed;
 	Inc(p);
 	Inc(s);
 	continue;
@@ -318,7 +321,7 @@ fnmatch(p, s, flags)
 		    return 0;
 	    }
 	    /* failed : try next recursion */
-	    if (ptmp && stmp && !(period && *stmp == '.' && *ptmp != '.')) {
+	    if (ptmp && stmp && !(period && *stmp == '.')) {
 		while (*stmp && *stmp != '/') Inc(stmp);
 		if (*stmp) {
 		    p = ptmp;
