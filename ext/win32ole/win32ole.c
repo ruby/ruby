@@ -5063,7 +5063,7 @@ find_default_source(ole, piid, ppTypeInfo)
         return hr;
     }
 
-    // Determine IID of default source interface
+    /* Determine IID of default source interface */
     hr = (*ppTypeInfo)->lpVtbl->GetTypeAttr(*ppTypeInfo, &pTypeAttr);
     if (SUCCEEDED(hr)) {
         *piid = pTypeAttr->guid;

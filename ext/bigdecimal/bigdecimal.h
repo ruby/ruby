@@ -213,4 +213,4 @@ VP_EXPORT int VPrint(FILE *fp,char *cntl_chr,Real *a);
 #if defined(__cplusplus)
 }  /* extern "C" { */
 #endif
-#endif //____BIG_DECIMAL__H____
+#endif /* ____BIG_DECIMAL__H____ */

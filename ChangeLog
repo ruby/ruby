@@ -1,3 +1,9 @@
+Thu Sep 25 07:55:26 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c, ext/openssl/ossl_pkey_dsa.c,
+	  ext/openssl/ossl_pkey_rsa.c, ext/bigdecimal/bigdecimal.h: must
+	  not use C++ or C99 style comment yet.  (ruby-bugs:PR#1184)
+
 Thu Sep 25 00:23:22 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST: add SOAP4R.

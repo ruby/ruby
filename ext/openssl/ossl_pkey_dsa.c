@@ -260,7 +260,7 @@ ossl_dsa_to_text(VALUE self)
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eDSAError, NULL);
     }
-    if (!DSA_print(out, pkey->pkey.dsa, 0)) { //offset = 0
+    if (!DSA_print(out, pkey->pkey.dsa, 0)) { /* offset = 0 */
 	BIO_free(out);
 	ossl_raise(eDSAError, NULL);
     }
