@@ -4,7 +4,7 @@
 
 cgi.rb - cgi support library
 
-Version 2.0.1
+Version 2.1.0
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 
@@ -185,10 +185,10 @@ class CGI
   CR  = "\015"
   LF  = "\012"
   EOL = CR + LF
-  VERSION = "2.0.1"
-  RELEASE_DATE = "2000-09-13"
-  VERSION_CODE = 201
-  RELEASE_CODE = 20000913
+  VERSION = "2.1.0"
+  RELEASE_DATE = "2000-10-12"
+  VERSION_CODE = 210
+  RELEASE_CODE = 20001012
 
   NEEDS_BINMODE = true if /WIN/ni === RUBY_PLATFORM
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
@@ -1319,6 +1319,7 @@ convert string charset, and set language to "ja".
         attributes = { "PRETTY" => true }
       end
       pretty = attributes.delete("PRETTY")
+      pretty = "  " if true == pretty
       buf = ""
 
       if attributes.has_key?("DOCTYPE")
@@ -1923,6 +1924,11 @@ end
 =begin
 
 == HISTORY
+
+* Thu Oct 12 01:16:59 JST 2000 - wakou
+  * version 2.1.0
+  * bug fix: CGI::html(): PRETTY option didn't work.
+    thanks to akira yamada <akira@ruby-lang.org>
 
 * Wed Sep 13 06:09:26 JST 2000 - wakou
   * version 2.0.1

@@ -1,3 +1,7 @@
+Thu Oct 12 01:23:38 2000 Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: bug fix: CGI::html(): PRETTY option didn't work.
+
 Wed Oct 11 14:29:51 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: 2nd arg for ProtocolError#initialize is optional.
