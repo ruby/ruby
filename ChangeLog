@@ -1,3 +1,7 @@
+Tue Jan 14 01:21:32 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (next_argv): not always set binmode.
+
 Sun Jan 12 16:07:17 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (next_argv): inherit binmode from $defout.

@@ -2464,7 +2464,7 @@ next_argv()
     int defout_binmode = 0;
 
     GetOpenFile(rb_defout, fptr);
-    if (fptr->mode | FMODE_BINMODE)
+    if (fptr->mode & FMODE_BINMODE)
 	defout_binmode = 1;
 
     if (init_p == 0) {
