@@ -1,5 +1,4 @@
 require 'date'
-require 'yaml/constants'
 #
 # Type conversions
 #
@@ -242,6 +241,38 @@ YAML.add_builtin_type( 'seq', &array_proc )
 YAML.add_ruby_type( 'array', &array_proc ) 
 
 #
+# Exception#to_yaml
+#
+class Exception
+    def is_complex_yaml?
+        true
+    end
+    def to_yaml_type
+        "!ruby/exception:#{self.class}"
+    end
+	def to_yaml( opts = {} )
+		YAML::quick_emit( self.object_id, opts ) { |out|
+            out.map( self.to_yaml_type ) { |map|
+                map.add( 'message', self.message )
+				to_yaml_properties.each { |m|
+                    map.add( m[1..-1], instance_eval( m ) )
+                }
+            }
+		}
+	end
+end
+
+YAML.add_ruby_type( 'exception' ) { |type, val|
+    type, obj_class = YAML.read_type_class( type, Exception )
+    o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) }, true )
+    val.each_pair { |k,v|
+		o.instance_eval "@#{k} = v"
+	}
+	o
+}
+
+
+#
 # String#to_yaml
 #
 class String
@@ -274,7 +305,7 @@ class String
                             "''"
                         elsif YAML.detect_implicit( self ) != 'str'
                             "\"#{YAML.escape( self )}\"" 
-                        elsif self =~ /#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |\n|$)|\'/
+                        elsif self =~ /#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}] |\n|\'/
                             "\"#{YAML.escape( self )}\"" 
                         elsif self =~ /^[^#{YAML::WORD_CHAR}]/
                             "\"#{YAML.escape( self )}\"" 

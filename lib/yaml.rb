@@ -124,13 +124,20 @@ module YAML
     #
     # Allocate blank object
     #
-    def YAML.object_maker( obj_class, val )
+    def YAML.object_maker( obj_class, val, is_attr = false )
         if Hash === val
             name = obj_class.name
-            o = ::Marshal.load( sprintf( "\004\006o:%c%s\000", name.length + 5, name ))
-            val.each_pair { |k,v|
-                o.instance_eval "@#{k} = v"
-            }
+            ostr = sprintf( "\004\006o:%c%s\000", name.length + 5, name )
+            if is_attr
+                ostr[ -1, 1 ] = Marshal.dump( val ).sub( /^[^{]+\{/, '' )
+				p ostr
+            end
+            o = ::Marshal.load( ostr )
+            unless is_attr
+                val.each_pair { |k,v|
+                    o.instance_eval "@#{k} = v"
+                }
+            end
             o
         else
             raise YAML::Error, "Invalid object explicitly tagged !ruby/Object: " + val.inspect
