@@ -1,23 +1,14 @@
-#
-# list-scan-event-ids.rb
-#
-
-require 'getopts'
-
-def usage(status)
-  (status == 0 ? $stdout : $stderr).puts(<<EOS)
-Usage: #{File.basename($0)} eventids2.c
-    -a    print IDs with arity.
-EOS
-  exit status
-end
+# $Id$
 
 def main
-  ok = getopts('a', 'help')
-  usage 0 if $OPT_help
-  usage 1 unless ok
+  if ARGV.first == '-a'
+    with_arity = true
+    ARGV.delete_at 0
+  else
+    with_arity = false
+  end
   extract_ids(ARGF).sort.each do |id|
-    if $OPT_a
+    if with_arity
       puts "#{id} 1"
     else
       puts id

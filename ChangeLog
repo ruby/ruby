@@ -1,3 +1,9 @@
+Mon Sep 13 06:43:42 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/tools/list-parse-event-ids.rb: does not use getopts.
+
+	* ext/ripper/tools/list-scan-event-ids.rb: ditto.
+
 Mon Sep 13 02:42:28 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/Setup: add ripper.

@@ -1,27 +1,22 @@
-#
-# list-parse-event-ids.rb
-#
-
-require 'getopts'
-
-def usage( status )
-  (status == 0 ? $stdout : $stderr).print(<<EOS)
-Usage: #{File.basename($0)} [-a] filename
-EOS
-  exit status
-end
+# $Id$
 
 def main
-  getopts('a') or usage(1)
+  if ARGV[0] == '-a'
+    with_arity = true
+    ARGV.delete_at 0
+  else
+    with_arity = false
+  end
   extract_ids(ARGF).each do |id, arity|
-    if $OPT_a
-    then puts "#{id} #{arity}"
-    else puts id
+    if with_arity
+      puts "#{id} #{arity}"
+    else
+      puts id
     end
   end
 end
 
-def extract_ids( f )
+def extract_ids(f)
   results = []
   f.each do |line|
     next if /\A\#\s*define\s+s?dispatch/ === line
