@@ -1,3 +1,8 @@
+Mon Jul  5 09:02:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_yield, rb_f_catch): 4th argument to rb_yield_0()
+	  is a set of bit flags.  [ruby-dev:23859]
+
 Mon Jul  5 01:20:17  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/drb/drb.rb(DRbConn self.open): If socket pool is full, close
@@ -94,7 +99,7 @@ Sat Jul  3 22:25:27 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	  * map Ruby's anonymous Struct to common SOAP Struct in SOAP Object
 	    Model.  it caused error.
-	  
+
 	  * add WSDL simpleType support to restrict lexical value space.
 
 Sat Jul  3 17:19:44 2004  WATANABE Hirofumi  <eban@ruby-lang.org>

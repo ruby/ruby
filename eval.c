@@ -11470,7 +11470,7 @@ rb_thread_yield(arg, th)
     rb_dvar_push('~', Qnil);
     ruby_block->dyna_vars = ruby_dyna_vars;
 
-    return rb_yield_0(arg, 0, 0, Qtrue, Qtrue);
+    return rb_yield_0(arg, 0, 0, YIELD_LAMBDA_CALL, Qtrue);
 }
 
 /*
@@ -12513,7 +12513,7 @@ rb_f_catch(dmy, tag)
     tag = ID2SYM(rb_to_id(tag));
     PUSH_TAG(tag);
     if ((state = EXEC_TAG()) == 0) {
-	val = rb_yield_0(tag, 0, 0, Qfalse, Qfalse);
+	val = rb_yield_0(tag, 0, 0, 0, Qfalse);
     }
     else if (state == TAG_THROW && tag == prot_tag->dst) {
 	val = prot_tag->retval;
