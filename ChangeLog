@@ -1,3 +1,7 @@
+Wed May  2 20:39:35 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* dir.c (rb_glob, rb_iglob): remove unnecessary FNM_PATHNAME.
+
 Wed May  2 11:46:13 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (block_pass): should not downgrade safe level.
