@@ -171,10 +171,10 @@ time_arg(argc, argv, args)
 	rb_scan_args(argc, argv, "15", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5]);
     }
 
-    args[0] = NUM2INT(v[0]);
+    args[0] = rb_obj2int(v[0]);
     if (args[0] < 70) args[0] += 100;
     if (args[0] > 1900) args[0] -= 1900;
-    if (v[1] == Qnil) {
+    if (NIL_P(v[1])) {
 	args[1] = 0;
     }
     else if (TYPE(v[1]) == T_STRING) {
@@ -189,25 +189,25 @@ time_arg(argc, argv, args)
 	    char c = RSTRING(v[1])->ptr[0];
 
 	    if ('0' <= c && c <= '9') {
-		args[1] = NUM2INT(v[1])-1;
+		args[1] = rb_obj2int(v[1])-1;
 	    }
 	}
     }
     else {
-	args[1] = NUM2INT(v[1]) - 1;
+	args[1] = rb_obj2int(v[1]) - 1;
     }
-    if (v[2] == Qnil) {
+    if (NIL_P(v[2])) {
 	args[2] = 1;
     }
     else {
-	args[2] = NUM2INT(v[2]);
+	args[2] = rb_obj2int(v[2]);
     }
     for (i=3;i<6;i++) {
-	if (v[i] == Qnil) {
+	if (NIL_P(v[i])) {
 	    args[i] = 0;
 	}
 	else {
-	    args[i] = NUM2INT(v[i]);
+	    args[i] = rb_obj2int(v[i]);
 	}
     }
 

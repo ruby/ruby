@@ -494,8 +494,9 @@ static long
 r_long(arg)
     struct load_arg *arg;
 {
-    int c = r_byte(arg), i;
     register long x;
+    int c = (char)r_byte(arg);
+    int i;
 
     if (c == 0) return 0;
     if (c > 0) {

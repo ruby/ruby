@@ -1,3 +1,12 @@
+Mon Apr 20 14:47:49 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_12.
+
+	* time.c (time_arg): args may be string (support for reduced
+	  implicit type conversion).
+
+	* lib/base64.rb: changed to use pack/unpack with `m' template.
+
 Mon Apr 20 06:23:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* variable.c (mod_remove_const): new method.
@@ -9,6 +18,10 @@ Sat Apr 18 03:53:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* class.c (rb_include_module): check for super modules, since
  	  module's included modules may be changed.
+
+Fri Apr 17 21:50:47 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* marshal.c (r_long): r_byte() may return signed byte.
 
 Fri Apr 17 11:58:30 1998  NAGAI Hidetoshi  <nagai@dumbo.ai.kyutech.ac.jp>
 
