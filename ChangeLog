@@ -1,3 +1,7 @@
+Wed Mar 20 22:08:51 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (is_defined): label forgotten.
+
 Wed Mar 20 20:46:36 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* win32/config.status.in: RUBY_SO_NAME had been changed long long

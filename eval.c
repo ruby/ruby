@@ -1739,6 +1739,7 @@ is_defined(self, node, buf)
     VALUE val;			/* OK */
     int state;
 
+  again:
     if (!node) return "expression";
     switch (nd_type(node)) {
       case NODE_SUPER:
