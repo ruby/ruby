@@ -93,7 +93,6 @@ struct dump_call_arg {
     VALUE obj;
     struct dump_arg *arg;
     int limit;
-    int weak;
 };
 
 static void w_long _((long, struct dump_arg*));
@@ -333,15 +332,15 @@ w_unique(s, arg)
     w_symbol(rb_intern(s), arg);
 }
 
-static void w_object _((VALUE,struct dump_arg*,int,int));
+static void w_object _((VALUE,struct dump_arg*,int));
 
 static int
 hash_each(key, value, arg)
     VALUE key, value;
     struct dump_call_arg *arg;
 {
-    w_object(key, arg->arg, arg->limit, arg->weak);
-    w_object(value, arg->arg, arg->limit, arg->weak);
+    w_object(key, arg->arg, arg->limit);
+    w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
 }
 
@@ -404,7 +403,7 @@ w_obj_each(id, value, arg)
     struct dump_call_arg *arg;
 {
     w_symbol(id, arg->arg);
-    w_object(value, arg->arg, arg->limit, arg->weak);
+    w_object(value, arg->arg, arg->limit);
     return ST_CONTINUE;
 }
 
@@ -423,11 +422,10 @@ w_ivar(tbl, arg)
 }
 
 static void
-w_object(obj, arg, limit, weak)
+w_object(obj, arg, limit)
     VALUE obj;
     struct dump_arg *arg;
     int limit;
-    int weak;
 {
     struct dump_call_arg c_arg;
     st_table *ivtbl = 0;
@@ -439,7 +437,6 @@ w_object(obj, arg, limit, weak)
     limit--;
     c_arg.limit = limit;
     c_arg.arg = arg;
-    c_arg.weak = weak;
 
     if (ivtbl = rb_generic_ivar_table(obj)) {
 	w_byte(TYPE_IVAR, arg);
@@ -463,7 +460,7 @@ w_object(obj, arg, limit, weak)
 	    w_long(FIX2LONG(obj), arg);
 	}
 	else {
-	    w_object(rb_int2big(FIX2LONG(obj)), arg, limit, weak);
+	    w_object(rb_int2big(FIX2LONG(obj)), arg, limit);
 	}
 #endif
     }
@@ -485,17 +482,11 @@ w_object(obj, arg, limit, weak)
 	if (rb_respond_to(obj, s_mdump)) {
 	    VALUE v;
 
-	    if (TYPE(obj) == T_OBJECT) {
-		w_byte(TYPE_IVAR, arg);
-		ivtbl = ROBJECT(obj)->iv_tbl;
-	    }
 	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    w_byte(TYPE_USRMARSHAL, arg);
 	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
-	    w_object(v, arg, limit, weak);
-	    c_arg.weak = Qtrue;
-	    ivtbl = rb_generic_ivar_table(v);
-	    if (ivtbl) w_ivar(ivtbl, &c_arg);
+	    w_object(v, arg, limit);
+	    if (ivtbl) w_ivar(0, &c_arg);
 	    return;
 	}
 	if (rb_respond_to(obj, s_dump)) {
@@ -505,11 +496,14 @@ w_object(obj, arg, limit, weak)
 	    if (TYPE(v) != T_STRING) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
 	    }
+	    if (!ivtbl && (ivtbl = rb_generic_ivar_table(v))) {
+		w_byte(TYPE_IVAR, arg);
+	    }
 	    w_class(TYPE_USERDEF, obj, arg);
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
-	    c_arg.weak = Qtrue;
-	    ivtbl = rb_generic_ivar_table(v);
-	    if (ivtbl) w_ivar(ivtbl, &c_arg);
+	    if (ivtbl) {
+		w_ivar(ivtbl, &c_arg);
+	    }
 	    return;
 	}
 
@@ -595,7 +589,7 @@ w_object(obj, arg, limit, weak)
 
 		w_long(len, arg);
 		while (len--) {
-		    w_object(*ptr, arg, limit, weak);
+		    w_object(*ptr, arg, limit);
 		    ptr++;
 		}
 	    }
@@ -616,7 +610,7 @@ w_object(obj, arg, limit, weak)
 	    w_long(RHASH(obj)->tbl->num_entries, arg);
 	    st_foreach(RHASH(obj)->tbl, hash_each, (st_data_t)&c_arg);
 	    if (!NIL_P(RHASH(obj)->ifnone)) {
-		w_object(RHASH(obj)->ifnone, arg, limit, weak);
+		w_object(RHASH(obj)->ifnone, arg, limit);
 	    }
 	    break;
 
@@ -634,7 +628,7 @@ w_object(obj, arg, limit, weak)
 		}
 		for (i=0; i<len; i++) {
 		    w_symbol(SYM2ID(RARRAY(mem)->ptr[i]), arg);
-		    w_object(RSTRUCT(obj)->ptr[i], arg, limit, weak);
+		    w_object(RSTRUCT(obj)->ptr[i], arg, limit);
 		}
 	    }
 	    break;
@@ -655,15 +649,11 @@ w_object(obj, arg, limit, weak)
 			     rb_obj_classname(obj));
 		}
 		v = rb_funcall(obj, s_dump_data, 0);
-		w_object(v, arg, limit, weak);
+		w_object(v, arg, limit);
 	    }
 	    break;
 
 	  default:
-	    if (weak) {
-		w_byte(TYPE_NIL, arg);
-		return;
-	    }
 	    rb_raise(rb_eTypeError, "can't dump %s",
 		     rb_obj_classname(obj));
 	    break;
@@ -678,7 +668,7 @@ static VALUE
 dump(arg)
     struct dump_call_arg *arg;
 {
-    w_object(arg->obj, arg->arg, arg->limit, arg->weak);
+    w_object(arg->obj, arg->arg, arg->limit);
     if (arg->arg->dest) {
 	rb_io_write(arg->arg->dest, arg->arg->str);
 	rb_str_resize(arg->arg->str, 0);
@@ -1216,10 +1206,6 @@ r_object0(arg, proc, ivp)
 	    }
 	    r_entry(v, arg);
 	    data = r_object(arg);
-	    if (ivp) {
-		r_ivar(v, arg);
-		*ivp = Qfalse;
-	    }
 	    rb_funcall(v, s_mload, 1, data);
 	}
         break;

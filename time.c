@@ -1317,7 +1317,6 @@ time_mdump(time)
     char buf[8];
     time_t t;
     int i;
-    VALUE str;
 
     GetTimeval(time, tobj);
 
@@ -1345,13 +1344,7 @@ time_mdump(time)
 	s = RSHIFT(s, 8);
     }
 
-    str = rb_str_new(buf, 8);
-    if (FL_TEST(time, FL_EXIVAR)) {
-	rb_copy_generic_ivar(str, time);
-	FL_SET(str, FL_EXIVAR);
-    }
-
-    return str;
+    return rb_str_new(buf, 8);
 }
 
 static VALUE
@@ -1360,10 +1353,16 @@ time_dump(argc, argv, time)
     VALUE *argv;
     VALUE time;
 {
-    VALUE dummy;
+    VALUE str;
 
-    rb_scan_args(argc, argv, "01", &dummy);
-    return time_mdump(time);
+    rb_scan_args(argc, argv, "01", 0);
+    str = time_mdump(time); 
+    if (FL_TEST(time, FL_EXIVAR)) {
+	rb_copy_generic_ivar(str, time);
+	FL_SET(str, FL_EXIVAR);
+    }
+
+    return str;
 }
 
 static VALUE

@@ -23,13 +23,26 @@ Thu Oct  9 17:43:36 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (proc_save_safe_level, proc_get_safe_level,
 	  proc_set_safe_level): save/restore safe level 1..4.
 
+Thu Oct  9 16:33:23 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object0): remove unnecessary iv restoration for
+	  USRMARSHAL. [ruby-dev:21582]
+
+	* marshal.c (w_object): dump generic instance variables from
+	  a string from '_dump'.
+
+	* variable.c (rb_generic_ivar_table): return 0 if obj's FL_EXIVAR
+	  is not set.
+
+	* time.c (time_dump): copy instance variables to dumped string, to
+	  be included in the marshaled data.
+
+	* bignum.c (rb_big2ulong): add range check to ensure round trip.
+
 Thu Oct  9 15:45:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (uv_to_utf8): change message to "out of range", since
 	  negative values are not "too big". [ruby-dev21567]
-
-	* marshal.c (w_object): should pass the value of "weak" to
-	  w_object().  [ruby-dev:21555] and [ruby-dev:21561]
 
 Thu Oct  9 14:05:38 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

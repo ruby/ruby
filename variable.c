@@ -780,6 +780,7 @@ rb_generic_ivar_table(obj)
 {
     st_table *tbl;
 
+    if (!FL_TEST(obj, FL_EXIVAR)) return 0;
     if (!generic_iv_tbl) return 0;
     if (!st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) return 0;
     return tbl;

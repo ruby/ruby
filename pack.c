@@ -825,7 +825,7 @@ pack_pack(ary, fmt)
 
 	  case 'U':
 	    while (len-- > 0) {
-		unsigned long l;
+		long l;
 		char buf[8];
 		int le;
 
@@ -833,6 +833,9 @@ pack_pack(ary, fmt)
 		if (NIL_P(from)) l = 0;
 		else {
 		    l = NUM2ULONG(from);
+		}
+		if (l < 0) {
+		    rb_raise(rb_eArgError, "pack(U): negative value");
 		}
 		le = uv_to_utf8(buf, l);
 		rb_str_buf_cat(res, (char*)buf, le);
@@ -918,7 +921,11 @@ pack_pack(ary, fmt)
 
 		if (NIL_P(from)) ul = 0;
 		else {
-		    ul = NUM2ULONG(from);
+		    long l = NUM2LONG(from);
+		    if (l < 0) {
+			rb_raise(rb_eArgError, "cannot compress negative numbers");
+		    }
+		    ul = l;
 		}
 
 		while (ul) {
@@ -1857,7 +1864,7 @@ uv_to_utf8(buf, uv)
 	buf[5] = (uv&0x3f)|0x80;
 	return 6;
     }
-    rb_raise(rb_eArgError, "uv_to_utf8(); value out of range");
+    rb_raise(rb_eArgError, "pack(U): value out of range");
 }
 
 static const long utf8_limits[] = {

@@ -729,7 +729,12 @@ rb_big2ulong(x)
 {
     unsigned long num = big2ulong(x, "unsigned long");
 
-    if (!RBIGNUM(x)->sign) return -num;
+    if (!RBIGNUM(x)->sign) {
+	if ((long)num < 0) {
+	    rb_raise(rb_eRangeError, "bignum out of range of unsigned long");
+	}
+	return -num;
+    }
     return num;
 }
 
