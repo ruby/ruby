@@ -3251,7 +3251,7 @@ rb_eval(self, n)
 		}
 	    }
 	    if (nd_type(node) == NODE_ZSUPER) {
-		if (ruby_frame->flags & FRAME_DMETH) {
+		if (ruby_frame->prev && (ruby_frame->prev->flags & FRAME_DMETH)) {
 		    rb_raise(rb_eRuntimeError, "super: specify arguments explicitly");
 		}
 		argc = ruby_frame->argc;

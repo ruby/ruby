@@ -1,3 +1,14 @@
+Tue Nov 30 16:18:50 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should check previous frame for ZSUPER.
+
+	* io.c (read_all): remove unnecessary rb_str_resize().
+	  [ruby-dev:24996]
+
+	* io.c (io_readpartial): ditto.
+
+	* io.c (io_read): ditto.
+
 Tue Nov 30 14:58:33 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* instruby.rb (install): add arguments explicitly to "super".
