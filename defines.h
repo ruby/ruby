@@ -99,22 +99,81 @@ void xfree _((void*));
 #endif
 
 #ifdef __NeXT__
-#define S_IXGRP 0000010         /* execute/search permission, group */
-#define S_IXOTH 0000001         /* execute/search permission, other */
-#ifndef __APPLE__
-#define S_IXUSR _S_IXUSR        /* execute/search permission, owner */
-#define GETPGRP_VOID 1
-#define WNOHANG 01
-#define WUNTRACED 02
-#define X_OK 1
-typedef int pid_t;
+/* NextStep, OpenStep, Rhapsody */
+#ifndef S_IRUSR
+#define S_IRUSR 0000400        /* read permission, owner */
+#endif
+#ifndef S_IRGRP
+#define S_IRGRP 0000040        /* read permission, group */
+#endif
+#ifndef S_IROTH
+#define S_IROTH 0000004        /* read permission, other */
+#endif
+#ifndef S_IWUSR
+#define S_IWUSR 0000200        /* write permission, owner */
+#endif
+#ifndef S_IWGRP
+#define S_IWGRP 0000020        /* write permission, group */
+#endif
+#ifndef S_IWOTH
+#define S_IWOTH 0000002        /* write permission, other */
+#endif
+#ifndef S_IXUSR
+#define S_IXUSR 0000100        /* execute/search permission, owner */
+#endif
+#ifndef S_IXGRP
+#define S_IXGRP 0000010        /* execute/search permission, group */
+#endif
+#ifndef S_IXOTH
+#define S_IXOTH 0000001        /* execute/search permission, other */
+#endif
+#ifndef S_IRWXU
+#define S_IRWXU 0000700        /* read, write, execute permissions, owner */
+#endif
+#ifndef S_IRWXG
+#define S_IRWXG 0000070        /* read, write, execute permissions, group */
+#endif
+#ifndef S_IRWXO
+#define S_IRWXO 0000007        /* read, write, execute permissions, other */
+#endif
+#ifndef S_ISBLK
+#define S_ISBLK(mode)  (((mode) & (0170000)) == (0060000))
+#endif
+#ifndef S_ISCHR
+#define S_ISCHR(mode)  (((mode) & (0170000)) == (0020000))
+#endif
+#ifndef S_ISDIR
+#define S_ISDIR(mode)  (((mode) & (0170000)) == (0040000))
+#endif
+#ifndef S_ISFIFO
+#define S_ISFIFO(mode) (((mode) & (0170000)) == (0010000))
+#endif
+#ifndef S_ISREG
+#define S_ISREG(mode)  (((mode) & (0170000)) == (0100000))
+#endif
 /* Do not trust WORDS_BIGENDIAN from configure since -arch compiler flag may
-   result in a different endian. */
+   result in a different endian.  Instead trust __BIG_ENDIAN__ and
+   __LITTLE_ENDIAN__ which are set correctly by -arch. */
 #undef WORDS_BIGENDIAN
 #ifdef __BIG_ENDIAN__
 #define WORDS_BIGENDIAN
 #endif
+#ifndef __APPLE__
+/* NextStep, OpenStep (but not Rhapsody) */
+#ifndef GETPGRP_VOID
+#define GETPGRP_VOID 1
 #endif
+#ifndef WNOHANG
+#define WNOHANG 01
+#endif
+#ifndef WUNTRACED
+#define WUNTRACED 02
+#endif
+#ifndef X_OK
+#define X_OK 1
+#endif
+typedef int pid_t;
+#endif /* __APPLE__ */
 #endif /* NeXT */
 
 #ifdef __CYGWIN__

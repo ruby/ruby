@@ -8,6 +8,20 @@ Sun Jan 11 02:07:47 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList): 
 	  Also accept command line options via the 'RI' environment variable.
 
+Sat Jan 10 21:27:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): need to add message delimiter. [ruby-dev:22561]
+
+Sat Jan 10 01:54:50 2004  Eric Sunshine  <sunshine@sunshineco.com>
+
+	* defines.h (__NeXT__): Ensure that all standard S_IRUSR, S_IWGRP,
+	  S_IRWXO, etc. macros are defined since future code might require
+	  them (even though present code only requires a subset).
+
+	* defines.h (__NeXT__): Bug fix: WORDS_BIGENDIAN was not being set
+	  correctly on Rhapsody when -arch compiler flag was used (via
+	  configure's --enable-fat-binary option).
+
 Fri Jan  9 10:05:14 2004  Siena.  <siena@faculty.chiba-u.jp>
 
 	* lib/mkmf.rb (libpathflag): use single quotes.  [ruby-dev:22440]
