@@ -6004,7 +6004,7 @@ rb_f_local_variables()
 
     vars = ruby_dyna_vars;
     while (vars) {
-	if (vars->id) {
+	if (vars->id && rb_is_local_id(vars->id)) { /* skip $_, $~ and flip states */
 	    rb_ary_push(ary, rb_str_new2(rb_id2name(vars->id)));
 	}
 	vars = vars->next;
