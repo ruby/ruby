@@ -1152,7 +1152,7 @@ module Net
     end
 
     def proxy_basic_auth( account, password )
-      header['proxy-authorization'] = basic_encode(account, password)
+      @header['proxy-authorization'] = basic_encode(account, password)
     end
 
     def basic_encode( account, password )

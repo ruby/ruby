@@ -1,3 +1,8 @@
+Tue Jun 24 16:47:07 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (HTTPHeader#proxy_basic_auth): missing `@'.
+	  Thanks Douglas Koszerek. (ruby-bugs:PR975)
+
 Tue Jun 24 14:31:17 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* config.guess: have wrongly returned "alphaev56-unknown-linux-"
