@@ -779,7 +779,7 @@ if test "$with_dln_a_out" != yes; then
 	netbsd*)	LDSHARED='${CC} -shared'
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="-Wl,-export-dynamic"
-			    LIBPATHFLAG=' -L%1$s -Wl,-R%1$s'
+			    LIBPATHFLAG=' -L%1$$s -Wl,-R%1$$s'
 			fi
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"

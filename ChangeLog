@@ -1,3 +1,12 @@
+Thu Oct 24 02:22:41 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (LIBPATHFLAG): should escape $.  [ruby-dev:18572]
+
+	* mkconfig.rb: never substute escaped $$.
+
+	* instruby.rb: not install LIBRUBY_SO unless enable-shared.
+	  [ruby-dev:18569]
+
 Wed Oct 23 19:16:06 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_eval): added NODE_DSYM, symbol literal with

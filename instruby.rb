@@ -20,6 +20,7 @@ destdir ||= ''
 
 $:.unshift CONFIG["srcdir"]+"/lib"
 require 'ftools'
+require 'shellwords'
 
 class Installer < File; end
 class << Installer
@@ -66,6 +67,8 @@ archlibdir = destdir+CONFIG["archdir"]
 sitelibdir = destdir+CONFIG["sitelibdir"]
 sitearchlibdir = destdir+CONFIG["sitearchdir"]
 mandir = destdir+CONFIG["mandir"] + "/man1"
+configure_args = Shellwords.shellwords(CONFIG["configure_args"])
+enable_shared = configure_args.include?('--enable-shared')
 dll = CONFIG["LIBRUBY_SO"]
 lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
@@ -76,7 +79,7 @@ Installer.install ruby_install_name+exeext, bindir+"/"+ruby_install_name+exeext,
 if rubyw_install_name and !rubyw_install_name.empty?
   Installer.install rubyw_install_name+exeext, bindir, 0755, true
 end
-Installer.install dll, bindir, 0755, true unless dll == lib
+Installer.install dll, bindir, 0755, true if enable_shared and dll != lib
 Installer.install lib, libdir, 0555, true unless lib == arc
 Installer.install arc, archlibdir, 0644, true
 Installer.install "config.h", archlibdir, 0644, true
@@ -97,7 +100,7 @@ Dir.chdir CONFIG["srcdir"]
 
 Installer.install "sample/irb.rb", "#{bindir}/irb", 0755, true
 
-Dir.glob("lib/*{.rb,help-message}") do |f|
+Dir.glob("lib/**/*{.rb,help-message}") do |f|
   dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
   Installer.makedirs dir, true unless File.directory? dir
   Installer.install f, dir, 0644, true
