@@ -16,6 +16,7 @@ require "matrix.rb"
 
 class Integer
 
+  remove_method(:gcd2)
   def gcd2(int)
     a = self.abs
     b = int.abs
@@ -116,6 +117,7 @@ end
 class Rational
   Unify = true
 
+  remove_method(:inspect)
   def inspect
     format "%s/%s", numerator.inspect, denominator.inspect
   end
@@ -228,6 +230,7 @@ class Rational
 end
 
 module Math
+  remove_method(:sqrt)
   def sqrt(a)
     if a.kind_of?(Complex)
       abs = sqrt(a.real*a.real + a.image*a.image)

@@ -979,27 +979,41 @@ rb_ary_fetch(argc, argv, ary)
 
 /*
  *  call-seq:
- *     array.index(obj)   ->  int or nil
+ *     array.index(obj)           ->  int or nil
+ *     array.index {|item| block} ->  int or nil
  *  
- *  Returns the index of the first object in <i>self</i> such that is 
- *  <code>==</code> to <i>obj</i>. Returns <code>nil</code> if
- *  no match is found.
+ *  Returns the index of the first object in <i>self</i> such that is
+ *  <code>==</code> to <i>obj</i>. If a block is given instead of an
+ *  argument, returns first object for which <em>block</em> is true.
+ *  Returns <code>nil</code> if no match is found.
  *     
  *     a = [ "a", "b", "c" ]
- *     a.index("b")   #=> 1
- *     a.index("z")   #=> nil
+ *     a.index("b")        #=> 1
+ *     a.index("z")        #=> nil
+ *     a.index{|x|x=="b")  #=> 1
  */
 
 static VALUE
-rb_ary_index(ary, val)
+rb_ary_index(argc, argv, ary)
+    int argc;
+    VALUE *argv;
     VALUE ary;
-    VALUE val;
 {
+    VALUE val;
     long i;
 
-    for (i=0; i<RARRAY(ary)->len; i++) {
-	if (rb_equal(RARRAY(ary)->ptr[i], val))
-	    return LONG2NUM(i);
+    if (rb_scan_args(argc, argv, "01", &val) == 0) {
+	for (i=0; i<RARRAY(ary)->len; i++) {
+	    if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
+		return LONG2NUM(i);
+	    }
+	}
+    }
+    else {
+	for (i=0; i<RARRAY(ary)->len; i++) {
+	    if (rb_equal(RARRAY(ary)->ptr[i], val))
+		return LONG2NUM(i);
+	}
     }
     return Qnil;
 }
@@ -1008,29 +1022,43 @@ rb_ary_index(ary, val)
  *  call-seq:
  *     array.rindex(obj)    ->  int or nil
  *  
- *  Returns the index of the last object in <i>array</i> 
- *  <code>==</code> to <i>obj</i>. Returns <code>nil</code> if
- *  no match is found.
+ *  Returns the index of the last object in <i>array</i>
+ *  <code>==</code> to <i>obj</i>. If a block is given instead of an
+ *  argument, returns first object for which <em>block</em> is
+ *  true. Returns <code>nil</code> if no match is found.
  *     
  *     a = [ "a", "b", "b", "b", "c" ]
- *     a.rindex("b")   #=> 3
- *     a.rindex("z")   #=> nil
+ *     a.rindex("b")        #=> 3
+ *     a.rindex("z")        #=> nil
+ *     a.rindex{|x|x=="b")  #=> 3
  */
 
 static VALUE
-rb_ary_rindex(ary, val)
+rb_ary_rindex(argc, argv, ary)
+    int argc;
+    VALUE *argv;
     VALUE ary;
-    VALUE val;
 {
+    VALUE val;
     long i = RARRAY(ary)->len;
 
-    while (i--) {
-	if (i > RARRAY(ary)->len) {
-	    i = RARRAY(ary)->len;
-	    continue;
+    if (rb_scan_args(argc, argv, "01", &val) == 0) {
+	while (i--) {
+	    if (RTEST(rb_yield(RARRAY(ary)->ptr[i])))
+		return LONG2NUM(i);
+	    if (i > RARRAY(ary)->len) {
+		i = RARRAY(ary)->len;
+	    }
 	}
-	if (rb_equal(RARRAY(ary)->ptr[i], val))
-	    return LONG2NUM(i);
+    }
+    else {
+	while (i--) {
+	    if (rb_equal(RARRAY(ary)->ptr[i], val))
+		return LONG2NUM(i);
+	    if (i > RARRAY(ary)->len) {
+		i = RARRAY(ary)->len;
+	    }
+	}
     }
     return Qnil;
 }
@@ -3120,8 +3148,8 @@ Init_Array()
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
     rb_define_alias(rb_cArray,  "size", "length");
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
-    rb_define_method(rb_cArray, "index", rb_ary_index, 1);
-    rb_define_method(rb_cArray, "rindex", rb_ary_rindex, 1);
+    rb_define_method(rb_cArray, "index", rb_ary_index, -1);
+    rb_define_method(rb_cArray, "rindex", rb_ary_rindex, -1);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse_bang, 0);

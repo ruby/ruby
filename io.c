@@ -1194,8 +1194,8 @@ io_read(argc, argv, io)
 	StringValue(str);
 	rb_str_modify(str);
 	rb_str_resize(str,len);
-	FL_SET(str, FL_FREEZE);
     }
+    FL_SET(str, FL_FREEZE);
     if (len == 0) return str;
 
     READ_CHECK(fptr->f);
@@ -2283,37 +2283,26 @@ rb_io_binmode(io)
     return io;
 }
 
-char*
-rb_io_flags_mode(flags, mode)
+static char*
+rb_io_flags_mode(flags)
     int flags;
-    char *mode;
 {
-    char *p = mode;
+#ifdef O_BINARY
+# define MODE_BINMODE(a,b) ((mode & O_BINARY) ? (a) : (b))
+#else
+# define MODE_BINMODE(a,b) (a)
+#endif
 
     switch (flags & FMODE_READWRITE) {
       case FMODE_READABLE:
-	*p++ = 'r';
-	break;
+	return MODE_BINMODE("r", "rb");
       case FMODE_WRITABLE:
-	*p++ = 'w';
-	break;
+	return MODE_BINMODE("w", "wb");
       case FMODE_READWRITE:
-	*p++ = 'r';
-	*p++ = '+';
-	break;
+	return MODE_BINMODE("r+", "rb+");
     }
-    *p++ = '\0';
-#ifdef O_BINARY
-    if (flags & FMODE_BINMODE) {
-	if (mode[1] == '+') {
-	    mode[1] = 'b'; mode[2] = '+'; mode[3] = '\0';
-	}
-	else {
-	    mode[1] = 'b'; mode[2] = '\0';
-	}
-    }
-#endif
-    return mode;
+    rb_raise(rb_eArgError, "illegal access mode %o", flags);
+    return NULL;		/* not reached */
 }
 
 int
@@ -2483,12 +2472,15 @@ rb_fopen(fname, mode)
     const char *mode;
 {
     FILE *file;
+    char mbuf[MODENUM_MAX];
 
-    file = fopen(fname, mode);
+    strncpy(mbuf, mode, sizeof(mbuf) - 1);
+    mbuf[sizeof(mbuf) - 1] = 0;
+    file = fopen(fname, mbuf);
     if (!file) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    file = fopen(fname, mode);
+	    file = fopen(fname, mbuf);
 	}
 	if (!file) {
 	    rb_sys_fail(fname);
@@ -2550,13 +2542,11 @@ rb_file_open_internal(io, fname, mode)
     const char *fname, *mode;
 {
     OpenFile *fptr;
-    char mbuf[MODENUM_MAX];
 
     MakeOpenFile(io, fptr);
-
     fptr->mode = rb_io_mode_flags(mode);
     fptr->path = strdup(fname);
-    fptr->f = rb_fopen(fptr->path, rb_io_flags_mode(fptr->mode, mbuf));
+    fptr->f = rb_fopen(fptr->path, rb_io_flags_mode(fptr->mode));
 
     return io;
 }
@@ -2748,13 +2738,13 @@ pipe_open(argc, argv, pname, mode)
     int modef = rb_io_mode_flags(mode);
     int pid = 0;
     OpenFile *fptr;
-    FILE *fpr, *fpw;
     VALUE port, arg0;
 #if defined(HAVE_FORK)
     int status;
     struct popen_arg arg;
     volatile int doexec;
 #elif defined(_WIN32)
+    FILE *fpr, *fpw;
     int openmode = rb_io_mode_modenum(mode);
     char *prog = NULL;
 #endif
@@ -2861,7 +2851,7 @@ pipe_open(argc, argv, pname, mode)
 	fptr->f = PIPE_FDOPEN(0);
     }
     if (modef & FMODE_WRITABLE) {
-	fpw = PIPE_FDOPEN(1);
+	FILE *fpw = PIPE_FDOPEN(1);
 	if (fptr->f) fptr->f2 = fpw;
 	else fptr->f = fpw;
     }
@@ -3376,11 +3366,7 @@ rb_io_reopen(argc, argv, file)
     }
 
     if (!NIL_P(nmode)) {
-	strncpy(mode, StringValuePtr(nmode), sizeof(mode));
-	mode[sizeof(mode) - 1] = 0;
-    }
-    else {
-	rb_io_flags_mode(fptr->mode, mode);
+	fptr->mode = rb_io_mode_flags(StringValuePtr(nmode));
     }
 
     if (fptr->path) {
@@ -3389,9 +3375,8 @@ rb_io_reopen(argc, argv, file)
     }
 
     fptr->path = strdup(RSTRING(fname)->ptr);
-    fptr->mode = rb_io_mode_flags(mode);
     if (!fptr->f) {
-	fptr->f = rb_fopen(fptr->path, mode);
+	fptr->f = rb_fopen(fptr->path, rb_io_flags_mode(fptr->mode));
 	if (fptr->f2) {
 	    fclose(fptr->f2);
 	    fptr->f2 = 0;

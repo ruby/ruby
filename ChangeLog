@@ -1,3 +1,15 @@
+Tue Oct  5 09:53:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_fopen): mode string copy at the lowest level.
+
+	* io.c (rb_io_flags_mode): requires output buffer no more.  no
+	  allocation needed.
+
+	* array.c (rb_ary_index): takes a block to compare items in an
+	  array.  [ruby-talk:113069] [Ruby2]
+
+	* array.c (rb_ary_rindex): ditto.
+
 Mon Oct  4 14:03:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_file_open_internal, rb_io_reopen): fname might be altered
@@ -29,6 +41,16 @@ Sat Oct  2 20:34:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* node.h (NEW_DVAR): extra semicolon.
 
 Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_byte): retrieve pointer from string value for each
+	  time.  [ruby-dev:24404]
+
+	* marshal.c (r_bytes0): ditto.
+
+	* enum.c (sort_by_i): re-entrance check added.  [ruby-dev:24399]
+
+	* io.c (io_read): should freeze all reading buffer.
+	  [ruby-dev:24400]
 
 	* string.c (rb_str_sum): should use bignums when bits is greater
 	  than or equals to sizeof(long)*CHAR_BITS. [ruby-dev:24395]

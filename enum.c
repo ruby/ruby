@@ -393,6 +393,9 @@ sort_by_i(i, ary)
     NODE *memo;
 
     v = rb_yield(i);
+    if (RBASIC(ary)->klass) {
+	rb_raise(rb_eRuntimeError, "sort_by reentered");
+    }
     memo = rb_node_newnode(NODE_MEMO, v, i, 0);
     rb_ary_push(ary, (VALUE)memo);
     return Qnil;

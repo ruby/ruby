@@ -99,11 +99,13 @@ class PStore
       content = nil
       unless read_only
         file = File.open(@filename, File::RDWR | File::CREAT)
+        file.binmode
         file.flock(File::LOCK_EX)
         commit_new(file) if FileTest.exist?(new_file)
         content = file.read()
       else
         file = File.open(@filename, File::RDONLY)
+        file.binmode
         file.flock(File::LOCK_SH)
         content = (File.read(new_file) rescue file.read())
       end
