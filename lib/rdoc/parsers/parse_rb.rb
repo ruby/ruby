@@ -1733,7 +1733,11 @@ module RDoc
           if name == container.name
             parse_statements(container, SINGLE, &block)
           else
-            other = TopLevel.find_class_named(name) || Context.new
+            other = TopLevel.find_class_named(name)
+            unless other
+              other = @top_level.add_class(NormalClass, name, nil)
+              other.record_location(@top_level)
+            end
             parse_statements(other, SINGLE, &block)
           end
 	end
