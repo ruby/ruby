@@ -45,7 +45,9 @@ struct timeval rb_time_interval _((VALUE));
 #include <sys/times.h>
 #endif
 
+#ifdef HAVE_GETGROUPS
 #include <grp.h>
+#endif
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
 static VALUE S_Tms;
@@ -1227,6 +1229,7 @@ static size_t maxgroups = 32;
 static VALUE
 proc_getgroups(VALUE obj)
 {
+#ifdef HAVE_GETGROUPS
     VALUE ary;
     size_t ngroups = 32;
     gid_t *groups;
@@ -1243,11 +1246,16 @@ proc_getgroups(VALUE obj)
         rb_ary_push(ary, INT2NUM(groups[i]));
 
     return ary;
+#else
+    rb_notimplement();
+    return Qnil;
+#endif
 }
 
 static VALUE
 proc_setgroups(VALUE obj, VALUE ary)
 {
+#ifdef HAVE_GETGROUPS
     size_t ngroups;
     gid_t *groups;
     int i;
@@ -1284,6 +1292,10 @@ proc_setgroups(VALUE obj, VALUE ary)
         rb_sys_fail(0);
 
     return proc_getgroups(obj);
+#else
+    rb_notimplement();
+    return Qnil;
+#endif
 }
 
 static VALUE
