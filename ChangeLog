@@ -1,3 +1,11 @@
+Tue Nov 11 03:30:43 JST 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/ext/openssl/ossl_conf.c (ossl_config_get_value): return nil
+	  if the specified value doesn't exist.
+
+	* lib/ext/openssl/ossl_conf.c (ossl_config_get_section): return
+	  a empty hash if the specified section doesn't exist.
+
 Mon Nov 10 11:40:29 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/monitor.rb (wait): return true on signal/broadcastfalse and

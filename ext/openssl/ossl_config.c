@@ -199,7 +199,10 @@ ossl_config_get_value(VALUE self, VALUE section, VALUE name)
     StringValue(section);
     StringValue(name);
     str = NCONF_get_string(conf, RSTRING(section)->ptr, RSTRING(name)->ptr);
-    if(!str) ossl_raise(eConfigError, NULL);
+    if(!str){
+	ERR_clear_error();
+	return Qnil;
+    }
 
     return rb_str_new2(str);
 }
@@ -257,11 +260,12 @@ ossl_config_get_section(VALUE self, VALUE section)
     int i, entries;
     VALUE hash;
 
+    hash = rb_hash_new();
     GetConfig(self, conf);
     if (!(sk = NCONF_get_section(conf, StringValuePtr(section)))) {
-	ossl_raise(eConfigError, NULL);
+	ERR_clear_error();
+	return hash;
     }
-    hash = rb_hash_new();
     if ((entries = sk_CONF_VALUE_num(sk)) < 0) {
 	OSSL_Debug("# of items in section is < 0?!?");
 	return hash;
