@@ -276,6 +276,8 @@ lib/rexml/encoding.rb
 lib/rexml/encodings/EUC-JP.rb
 lib/rexml/encodings/ICONV.rb
 lib/rexml/encodings/ISO-8859-1.rb
+lib/rexml/encodings/Shift-JIS.rb
+lib/rexml/encodings/Shift_JIS.rb
 lib/rexml/encodings/SHIFT-JIS.rb
 lib/rexml/encodings/SHIFT_JIS.rb
 lib/rexml/encodings/UNILE.rb
