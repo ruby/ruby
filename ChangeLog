@@ -1,3 +1,13 @@
+Fri Feb  1 17:46:39 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* regex.c (mbc_startpos): become macro.
+
+	* regex.c (euc_startpos): added for improvement.
+
+	* regex.c (sjis_startpos): ditto.
+
+	* regex.c (utf8_startpos): ditto.
+
 Fri Feb  1 00:03:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (rb_stat_inspect): print dev, rdev in hexadecimal.

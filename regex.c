@@ -478,7 +478,9 @@ re_set_syntax(syntax)
 #define WC2MBC1ST(c)							\
  ((current_mbctype != MBCTYPE_UTF8) ? ((c<0x100) ? (c) : (((c)>>8)&0xff)) : utf8_firstbyte(c))
 
-int mbc_startpos _((const char *start, int pos));
+typedef unsigned int (*mbc_startpos_func_t) _((const char *string, unsigned int pos));
+const mbc_startpos_func_t mbc_startpos_func[];
+#define mbc_startpos(start, pos) (*mbc_startpos_func[current_mbctype])((start), (pos))
 
 static unsigned int
 utf8_firstbyte(c)
@@ -4384,7 +4386,6 @@ re_free_registers(regs)
    Created for grep multi-byte extension Jul., 1993 by t^2 (Takahiro Tanimoto)
    Last change: Jul. 9, 1993 by t^2  */
 static const unsigned char mbctab_ascii[] = {
-  /* forward scan */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4401,28 +4402,9 @@ static const unsigned char mbctab_ascii[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-
-  /* reverse scan */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 static const unsigned char mbctab_euc[] = { /* 0xA1-0xFE */
-  /* forward scan */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4439,28 +4421,9 @@ static const unsigned char mbctab_euc[] = { /* 0xA1-0xFE */
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-
-  /* reverse scan */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
 };
 
-static const unsigned char mbctab_sjis[] = { /* 0x80-0x9f,0xE0-0xFF */
-  /* forward scan */
+static const unsigned char mbctab_sjis[] = { /* 0x80-0x9f,0xE0-0xFC */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4476,9 +4439,10 @@ static const unsigned char mbctab_sjis[] = { /* 0x80-0x9f,0xE0-0xFF */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0
+};
 
-  /* reverse scan */
+static const unsigned char mbctab_sjis_trail[] = { /* 0x40-0x7E,0x80-0xFC */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4498,7 +4462,6 @@ static const unsigned char mbctab_sjis[] = { /* 0x80-0x9f,0xE0-0xFF */
 };
 
 static const unsigned char mbctab_utf8[] = {
-  /* forward scan */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -4515,24 +4478,6 @@ static const unsigned char mbctab_utf8[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 0, 0,
-
-  /* reverse scan */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 const unsigned char *re_mbctab = mbctab_ascii;
@@ -4561,35 +4506,86 @@ re_mbcinit(mbctype)
   }
 }
 
-int
-mbc_startpos(string, pos)
-     const char *string;
-     int pos;
-{
-  int i = pos, w;
+#define mbc_isfirst(t, c) (t)[(unsigned char)(c)]
+#define mbc_len(t, c)     ((t)[(unsigned char)(c)]+1)
 
-  while (i > 0 && re_mbctab[(unsigned char)string[i]+256]) {
+static unsigned int asc_startpos _((const char *string, unsigned int pos));
+static unsigned int
+asc_startpos(string, pos)
+     const char *string;
+     unsigned int pos;
+{
+  return pos;
+}
+
+#define euc_islead(c)  ((unsigned char)((c) - 0xa1) > 0xfe - 0xa1)
+#define euc_mbclen(c)  mbc_len(mbctab_euc, (c))
+static unsigned int euc_startpos _((const char *string, unsigned int pos));
+static unsigned int
+euc_startpos(string, pos)
+     const char *string;
+     unsigned int pos;
+{
+  unsigned int i = pos, w;
+
+  while (i > 0 && !euc_islead(string[i])) {
     --i;
   }
-  if (i == pos || i + (w = mbclen(string[i])) > pos) return i;
-  i += w;
-
-  switch (current_mbctype) {
-  case MBCTYPE_EUC:
-    return i + ((pos - i) & ~1);
-
-  case MBCTYPE_SJIS:
-    while (i + (w = mbclen(string[i])) < pos) {
-      i += w;
-    }
+  if (i == pos || i + (w = euc_mbclen(string[i])) > pos) {
     return i;
-
-  case MBCTYPE_UTF8:
-    return i;
-  default:
-    return pos;
   }
+  i += w;
+  return i + ((pos - i) & ~1);
 }
+
+#define sjis_isfirst(c) mbc_isfirst(mbctab_sjis, (c))
+#define sjis_istrail(c) mbctab_sjis_trail[(unsigned char)(c)]
+#define sjis_mbclen(c)  mbc_len(mbctab_sjis, (c))
+static unsigned int sjis_startpos _((const char *string, unsigned int pos));
+static unsigned int
+sjis_startpos(string, pos)
+     const char *string;
+     unsigned int pos;
+{
+  unsigned int i = pos, w;
+
+  if (i > 0 && sjis_istrail(string[i])) {
+    do {
+      if (!sjis_isfirst(string[--i])) {
+	++i;
+	break;
+      }
+    } while (i > 0);
+  }
+  if (i == pos || i + (w = sjis_mbclen(string[i])) > pos) {
+    return i;
+  }
+  i += w;
+  return i + ((pos - i) & ~1);
+}
+
+#define utf8_islead(c)  ((unsigned char)((c) & 0xc0) != 0x80)
+#define utf8_mbclen(c)  mbc_len(mbctab_utf8, (c))
+static unsigned int utf8_startpos _((const char *string, unsigned int pos));
+static unsigned int
+utf8_startpos(string, pos)
+     const char *string;
+     unsigned int pos;
+{
+  unsigned int i = pos, w;
+
+  while (i > 0 && !utf8_islead(string[i])) {
+    --i;
+  }
+  if (i == pos || i + (w = utf8_mbclen(string[i])) > pos) {
+    return i;
+  }
+  return i + w;
+}
+
+const mbc_startpos_func_t mbc_startpos_func[4] = {
+  asc_startpos, euc_startpos, sjis_startpos, utf8_startpos
+};
 
 /*
   vi: sw=2 ts=8
