@@ -1,3 +1,7 @@
+Wed Mar  2 17:15:08 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (lib_eventloop_core): fix typo
+
 Wed Mar  2 16:59:50 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* eval.c (ruby_native_thread_kill): call pthread_kill() to send a 
