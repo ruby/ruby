@@ -1,3 +1,8 @@
+Wed Apr 14 11:29:56 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* numeric.c (flo_eq): workaround for bcc32's bug.
+	  (ruby-bugs-ja:PR#594)
+
 Wed Apr 14 13:06:35 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
 
 	* array.c, enum.c, eval.c, file.c, io.c, numeric.c, object.c, prec.c,
