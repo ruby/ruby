@@ -232,7 +232,8 @@ rb_add_method(klass, mid, node, noex)
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     body = NEW_METHOD(node, noex);
-    st_insert(RCLASS(klass)->m_tbl, mid, body);
+    if (st_insert(RCLASS(klass)->m_tbl, mid, body))
+	rb_clear_cache_by_id(mid);
 }
 
 static NODE*
@@ -4199,8 +4200,17 @@ stack_length(p)
 void
 rb_stack_check()
 {
-    if (stack_length(0) > STACK_LEVEL_MAX) {
-	rb_raise(rb_eSysStackError, "stack level too deep");
+    static int overflowing = 0;
+    if (!overflowing && stack_length(0) > STACK_LEVEL_MAX) {
+	int state;
+	overflowing = 1;
+	PUSH_TAG(PROT_NONE);
+	if ((state = EXEC_TAG()) == 0) {
+	    rb_raise(rb_eSysStackError, "stack level too deep");
+	}
+	POP_TAG();
+	overflowing = 0;
+	JUMP_TAG(state);
     }
 }
 
