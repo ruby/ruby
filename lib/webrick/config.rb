@@ -45,14 +45,14 @@ module WEBrick
       :DirectoryIndex => ["index.html","index.htm","index.cgi","index.rhtml"],
       :DocumentRoot   => nil,
       :DocumentRootOptions => { :FancyIndexing => true },
+      :RequestCallback => nil,
+      :ServerAlias    => nil,
 
-      :RequestHandler => nil,
+      # for HTTPProxyServer
       :ProxyAuthProc  => nil,
       :ProxyContentHandler => nil,
       :ProxyVia       => true,
       :ProxyTimeout   => true,
-
-      # upstream proxy server
       :ProxyURI       => nil,
 
       :CGIInterpreter => nil,

@@ -55,7 +55,7 @@ module WEBrick
           end
         ensure
           cgi_in.close
-          status = $? >> 8
+          status = $?.exitstatus
           sleep 0.1 if /mswin/ =~ RUBY_PLATFORM
           data = cgi_out.read
           cgi_out.close(true)
@@ -74,7 +74,7 @@ module WEBrick
         data = "" unless data
         raw_header, body = data.split(/^[\xd\xa]+/on, 2) 
         raise HTTPStatus::InternalServerError,
-          "The server encontered a script error." if body.nil?
+          "Premature end of script headers: #{@script_filename}" if body.nil?
 
         begin
           header = HTTPUtils::parse_header(raw_header)

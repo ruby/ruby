@@ -52,13 +52,18 @@ module WEBrick
           res.request_http_version = req.http_version
           res.keep_alive = req.keep_alive?
           server = lookup_server(req) || self
-          if handler = server[:RequestHandler]
-            handler.call(req, res)
+          if callback = server[:RequestCallback]
+            callback.call(req, res)
+          elsif callback = server[:RequestHandler]
+            msg = ":RequestHandler is deprecated, please use :RequestCallback"
+            @logger.warn(msg)
+            callback.call(req, res)
           end
           server.service(req, res)
         rescue HTTPStatus::EOFError, HTTPStatus::RequestTimeout => ex
           res.set_error(ex)
         rescue HTTPStatus::Error => ex
+          @logger.error(ex.message)
           res.set_error(ex)
         rescue HTTPStatus::Status => ex
           res.status = ex.code
@@ -130,10 +135,11 @@ module WEBrick
     end
 
     def lookup_server(req)
-      @virtual_hosts.find{|server|
-        (server[:Port].nil?        || req.port == server[:Port])           &&
-        (server[:BindAddress].nil? || req.addr[3] == server[:BindAddress]) &&
-        (server[:ServerName].nil?  || req.host == server[:ServerName])
+      @virtual_hosts.find{|s|
+        (s[:Port].nil?        || req.port == s[:Port])           &&
+        (s[:BindAddress].nil? || req.addr[3] == s[:BindAddress]) &&
+        ((s[:ServerName].nil?  || req.host == s[:ServerName]) ||
+         (s[:ServerAlias].nil? || s[:ServerAlias].find{|h| h === req.host}))
       }
     end
 

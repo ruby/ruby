@@ -1,3 +1,21 @@
+Mon Mar  8 01:05:55 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/config.rb (WEBrick::Config::HTTP): rename :RequestHander
+	  to :RequestCallback and add new option :ServerAlias.
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): use
+	  :RequestCallback and warn if :RequestHandler is in server's option.
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): should print
+	  error message for WEBrick::HTTPSataus::Error.
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#lookup_server): 
+	  lookup for hostname from :ServerAlias if the req.host is not match
+	  to :ServerName.
+
+	* lib/webrick/httpservlet.rb (WEBrick::HTTPServlet::CGIHandler#do_GET):
+	  use $?.exitstatus and refine log message.
+
 Sun Mar  7 16:22:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in (lex.c): use $? instead of $<.
