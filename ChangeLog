@@ -1,3 +1,13 @@
+Sat Dec 30 03:14:22 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_iterate): NODE_CFUNC does not protect its data
+	  (nd_tval), so create new node NODE_IFUNC for iteration C
+	  function. 
+
+	* eval.c (rb_yield_0): use NODE_IFUNC.
+
+	* gc.c (rb_gc_mark): support NODE_IFUNC.
+
 Fri Dec 29 11:41:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (mem_error): prohibit recursive mem_error().

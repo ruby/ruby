@@ -3526,7 +3526,7 @@ rb_yield_0(val, self, klass, acheck)
 	if (!node) {
 	    result = Qnil;
 	}
-	else if (nd_type(node) == NODE_CFUNC) {
+	else if (nd_type(node) == NODE_IFUNC) {
 	    if (val == Qundef) val = rb_ary_new2(0);
 	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
 	}
@@ -3745,7 +3745,7 @@ rb_iterate(it_proc, data1, bl_proc, data2)
 {
     int state;
     volatile VALUE retval = Qnil;
-    NODE *node = NEW_CFUNC(bl_proc, data2);
+    NODE *node = NEW_IFUNC(bl_proc, data2);
     VALUE self = ruby_top_self;
 
   iter_retry:

@@ -480,6 +480,7 @@ rb_gc_mark(ptr)
 	  case NODE_OP_ASGN_AND:
 	    rb_gc_mark(obj->as.node.u1.node);
 	    /* fall through */
+	  case NODE_IFUNC:
 	  case NODE_METHOD:	/* 2 */
 	  case NODE_NOT:
 	  case NODE_GASGN:
