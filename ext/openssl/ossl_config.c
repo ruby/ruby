@@ -220,6 +220,7 @@ set_conf_section_i(VALUE i, VALUE *arg)
 {
     VALUE name, value;
 
+    Check_Type(i, T_ARRAY);
     name = rb_ary_entry(i, 0);
     value = rb_ary_entry(i, 1);
     ossl_config_add_value(arg[0], arg[1], name, value);
