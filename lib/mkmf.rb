@@ -202,11 +202,11 @@ def link_command(ldflags, opt="", libpath=$LIBPATH)
 		 'src' => CONFTEST_C,
 		 'INCFLAGS' => $INCFLAGS,
 		 'CPPFLAGS' => $CPPFLAGS,
-		 'CFLAGS' => "#$CFLAGS #{opt}",
+		 'CFLAGS' => "#$CFLAGS",
 		 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
 		 'LIBPATH' => libpathflag(libpath),
 		 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-		 'LIBS' => "#$LIBRUBYARG #$LIBS")
+		 'LIBS' => "#$LIBRUBYARG ${opt} #$LIBS")
 end
 
 def cc_command(opt="")

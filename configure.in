@@ -18,19 +18,14 @@ test "$rb_cv_mingw32" = yes && target_os="mingw32"
 esac])
 
 AC_DEFUN(RUBY_CPPOUTFILE,
-[AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
 [cppflags=$CPPFLAGS
-CPPFLAGS='-o conftest.i'
-AC_TRY_CPP([], rb_cv_cppoutfile=yes, rb_cv_cppoutfile=no)
-if test "$rb_cv_cppoutfile" = yes; then
-  CPPOUTFILE=$CPPFLAGS
-else
-  CPPOUTFILE='> conftest.i'
-fi
-CPPFLAGS=$cppflags
-AC_SUBST(CPPOUTFILE)
+AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
+[CPPFLAGS='-o conftest.i'
+AC_TRY_CPP([], rb_cv_cppoutfile="$CPPFLAGS", rb_cv_cppoutfile=' >conftest.i')
 rm -f conftest*])
-])
+CPPOUTFILE="$rb_cv_cppoutfile"
+AC_SUBST(CPPOUTFILE)
+CPPFLAGS=$cppflags])
 
 AC_DEFUN(RUBY_PROG_GNU_LD,
 [AC_CACHE_CHECK(whether the linker is GNU ld, rb_cv_prog_gnu_ld,

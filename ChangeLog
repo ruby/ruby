@@ -1,3 +1,10 @@
+Tue Oct 22 00:59:59 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (RUBY_CPPOUTFILE): fix cache file bug.
+
+	* lib/mkmf.rb (link_command): put 'opt' after conftest.c for
+	  static linking.
+
 Mon Oct 21 22:53:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (XCFLAGS): CFLAGS to comile ruby itself.
