@@ -47,9 +47,8 @@ module RSS
 						@iconv.iconv(#{value})
 					rescue Iconv::Failure
 						raise ConversionError.new(#{value}, "#{to_enc}", "#{from_enc}")
-						#{value}
 					end
-EOC
+					EOC
 				end
 			rescue LoadError, ArgumentError, SystemCallError
 				raise UnknownConversionMethodError.new(to_enc, from_enc)
@@ -66,48 +65,37 @@ EOC
 			end
 		end
 
-		def def_to_euc_jp_from_utf_8
+		def def_uconv_convert_if_can(meth, to_enc, from_enc)
 			begin
 				require "uconv"
 				def_convert do |value|
-					"Uconv.u8toeuc(#{value})"
+					<<-EOC
+					begin
+						Uconv.#{meth}(#{value})
+					rescue Uconv::Error
+						raise ConversionError.new(#{value}, "#{to_enc}", "#{from_enc}")
+					end
+					EOC
 				end
 			rescue LoadError
-				def_iconv_convert('EUC-JP', 'UTF-8')
+				def_iconv_convert(to_enc, from_enc)
 			end
+		end
+
+		def def_to_euc_jp_from_utf_8
+			def_uconv_convert_if_can('u8toeuc', 'EUC-JP', 'UTF-8')
 		end
 		
 		def def_to_utf_8_from_euc_jp
-			begin
-				require "uconv"
-				def_convert do |value|
-					"Uconv.euctou8(#{value})"
-				end
-			rescue LoadError
-				def_iconv_convert('UTF-8', 'EUC-JP')
-			end
+			def_uconv_convert_if_can('euctou8', 'UTF-8', 'EUC-JP')
 		end
 		
 		def def_to_shift_jis_from_utf_8
-			begin
-				require "uconv"
-				def_convert do |value|
-					"Uconv.u8tosjis(#{value})"
-				end
-			rescue LoadError
-				def_iconv_convert('Shift_JIS', 'UTF-8')
-			end
+			def_uconv_convert_if_can('u8tosjis', 'Shift_JIS', 'UTF-8')
 		end
 		
 		def def_to_utf_8_from_shift_jis
-			begin
-				require "uconv"
-				def_convert do |value|
-					"Uconv.sjistou8(#{value})"
-				end
-			rescue LoadError
-				def_iconv_convert('UTF-8', 'Shift_JIS')
-			end
+			def_uconv_convert_if_can('sjistou8', 'UTF-8', 'Shift_JIS')
 		end
 		
 		def def_to_euc_jp_from_shift_jis
@@ -157,7 +145,7 @@ EOC
 					end
 				end
 				array_enc.pack('C*')
-EOC
+				EOC
 			end
 		end
 		

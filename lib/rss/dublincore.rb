@@ -7,7 +7,7 @@ module RSS
 	
 	RDF.install_ns(DC_PREFIX, DC_URI)
 
-	module DublincoreModel
+	module DublinCoreModel
 
 		extend BaseModel
 
@@ -43,16 +43,19 @@ module RSS
 
 	end
 
+	# For backward compatibility
+	DublincoreModel = DublinCoreModel
+
 	class RDF
-		class Channel; include DublincoreModel; end
-		class Image; include DublincoreModel; end
-		class Item; include DublincoreModel; end
-		class Textinput; include DublincoreModel; end
+		class Channel; include DublinCoreModel; end
+		class Image; include DublinCoreModel; end
+		class Item; include DublinCoreModel; end
+		class Textinput; include DublinCoreModel; end
 	end
 
 	prefix_size = DC_PREFIX.size + 1
-	DublincoreModel::ELEMENTS.uniq!
-	DublincoreModel::ELEMENTS.each do |x|
+	DublinCoreModel::ELEMENTS.uniq!
+	DublinCoreModel::ELEMENTS.each do |x|
 		BaseListener.install_get_text_element(x[prefix_size..-1], DC_URI, "#{x}=")
 	end
 

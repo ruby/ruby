@@ -1,3 +1,9 @@
+Wed Mar  3 01:18:52 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/converter.rb: handled Uconv::Error.
+
+	* lib/rss/dublincore.rb: DublincoreModel -> DublinCoreModel
+
 Wed Mar  3 00:59:30 2004  David Black  <dblack@wobblini.net>
 
 	* scanf.rb: soak_up_spaces only ungetc's non-space last

@@ -75,11 +75,11 @@ EORDF
 
 		private
 		def xmldecl
-			rv = "<?xml version='#{@version}'"
+			rv = %Q[<?xml version="#{@version}"]
 			if @output_encoding or @encoding
-				rv << " encoding='#{@output_encoding or @encoding}'" 
+				rv << %Q[ encoding="#{@output_encoding or @encoding}"]
 			end
-			rv << " standalone='#{@standalone}'" if @standalone
+			rv << %Q[ standalone="#{@standalone}"] if @standalone
 			rv << '?>'
 			rv
 		end
@@ -138,10 +138,10 @@ EORDF
 			
 			def to_s(convert=true)
 				<<-EOT
-				<#{PREFIX}:Seq>
-#{li_elements(convert, "\t\t\t\t\t")}
-#{other_element(convert, "\t\t\t\t\t")}
-				</#{PREFIX}:Seq>			
+			<#{PREFIX}:Seq>
+#{li_elements(convert, "\t\t\t\t")}
+#{other_element(convert, "\t\t\t\t")}
+			</#{PREFIX}:Seq>
 EOT
 			end
 
@@ -189,7 +189,7 @@ EOT
 			
 			def to_s(convert=true)
 				if @resource
-					rv = %Q!<#{PREFIX}:li resource="#{h @resource}" />!
+					rv = %Q!<#{PREFIX}:li resource="#{h @resource}" />\n!
 					rv = @converter.convert(rv) if convert and @converter
 					rv
 				else
