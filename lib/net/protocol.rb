@@ -70,7 +70,7 @@ module Net
 
     protocol_param :port,         'nil'
     protocol_param :command_type, 'nil'
-    protocol_param :socket_type,  '::Net::Socket'
+    protocol_param :socket_type,  '::Net::BufferedSocket'
 
 
     def initialize( addr, port = nil )
@@ -434,7 +434,7 @@ module Net
   end
 
 
-  class Socket
+  class BufferedSocket
 
     def initialize( addr, port, otime = nil, rtime = nil, dout = nil )
       @addr = addr
@@ -740,7 +740,7 @@ module Net
 
       when File
         while true do
-          i = src.read( 2048 )
+          i = src.read(2048)
           break unless i
           i[0,0] = @wbuf
           @wbuf = i
@@ -820,7 +820,7 @@ module Net
     WriteAdapter   = ::Net::WriteAdapter
     ReadAdapter    = ::Net::ReadAdapter
     Command        = ::Net::Command
-    Socket         = ::Net::Socket
+    Socket         = ::Net::BufferedSocket
   end
 
 end   # module Net

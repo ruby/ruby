@@ -1,3 +1,7 @@
+Thu Dec 20 14:08:20 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: rename Net::Socket to Net::BufferedSocket
+
 Wed Dec 19 16:58:29 2001  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/readline.c: new methods
