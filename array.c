@@ -414,6 +414,7 @@ rb_ary_subseq(ary, beg, len)
     ary2 = rb_ary_new2(len);
     MEMCPY(RARRAY(ary2)->ptr, RARRAY(ary)->ptr+beg, VALUE, len);
     RARRAY(ary2)->len = len;
+    RBASIC(ary2)->klass = rb_obj_class(ary);
 
     return ary2;
 }
@@ -1295,6 +1296,9 @@ rb_ary_times(ary, times)
     for (i=0; i<len; i+=RARRAY(ary)->len) {
 	MEMCPY(RARRAY(ary2)->ptr+i, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
     }
+
+    OBJ_INFECT(ary2, ary);
+    RBASIC(ary2)->klass = rb_obj_class(ary);
 
     return ary2;
 }

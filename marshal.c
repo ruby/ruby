@@ -344,6 +344,10 @@ w_object(obj, arg, limit)
 	    w_byte(TYPE_CLASS, arg);
 	    {
 		VALUE path = rb_class_path(obj);
+		if (RSTRING(path)->ptr[0] == '#') {
+		    rb_raise(rb_eArgError, "can't dump anonymous class %s",
+			     RSTRING(path)->ptr);
+		}
 		w_bytes(RSTRING(path)->ptr, RSTRING(path)->len, arg);
 	    }
 	    break;
@@ -352,10 +356,6 @@ w_object(obj, arg, limit)
 	    w_byte(TYPE_MODULE, arg);
 	    {
 		VALUE path = rb_class_path(obj);
-		if (RSTRING(path)->ptr[0] == '#') {
-		    rb_raise(rb_eArgError, "can't dump anonymous class %s",
-			     RSTRING(path)->ptr);
-		}
 		if (RSTRING(path)->ptr[0] == '#') {
 		    rb_raise(rb_eArgError, "can't dump anonymous module %s",
 			     RSTRING(path)->ptr);

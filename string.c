@@ -306,9 +306,8 @@ rb_str_times(str, times)
     }
     RSTRING(str2)->ptr[RSTRING(str2)->len] = '\0';
 
-    if (OBJ_TAINTED(str)) {
-	OBJ_TAINT(str2);
-    }
+    OBJ_INFECT(str2, str);
+    RBASIC(str2)->klass = rb_obj_class(str);
 
     return str2;
 }
@@ -354,6 +353,7 @@ rb_str_substr(str, beg, len)
     if (len == 0) return rb_str_new(0,0);
 
     str2 = rb_str_new(RSTRING(str)->ptr+beg, len);
+    RBASIC(str2)->klass = rb_obj_class(str);
     if (OBJ_TAINTED(str)) OBJ_TAINT(str2);
 
     return str2;
@@ -807,6 +807,7 @@ rb_str_succ(orig)
     int n = 0;
 
     str = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
+    RBASIC(str)->klass = rb_obj_class(orig);
     OBJ_INFECT(str, orig);
     if (RSTRING(str)->len == 0) return str;
 
@@ -1288,6 +1289,7 @@ str_gsub(argc, argv, str, bang)
 	NEWOBJ(dup, struct RString);
 	OBJSETUP(dup, rb_cString, T_STRING);
 	OBJ_INFECT(dup, str);
+	RBASIC(dup)->klass = rb_obj_class(str);
 	str = (VALUE)dup;
 	dup->orig = 0;
     }
@@ -1432,6 +1434,8 @@ rb_str_reverse(str)
     while (e >= s) {
 	*p++ = *e--;
     }
+    OBJ_INFECT(obj, str);
+    RBASIC(obj)->klass = rb_obj_class(str);
 
     return obj;
 }
@@ -2718,6 +2722,7 @@ rb_str_ljust(str, w)
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
     res = rb_str_new(0, width);
+    RBASIC(res)->klass = rb_obj_class(str);
     memcpy(RSTRING(res)->ptr, RSTRING(str)->ptr, RSTRING(str)->len);
     p = RSTRING(res)->ptr + RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
     while (p < pend) {
@@ -2738,6 +2743,7 @@ rb_str_rjust(str, w)
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
     res = rb_str_new(0, width);
+    RBASIC(res)->klass = rb_obj_class(str);
     p = RSTRING(res)->ptr; pend = p + width - RSTRING(str)->len;
     while (p < pend) {
 	*p++ = ' ';
@@ -2759,6 +2765,7 @@ rb_str_center(str, w)
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
     res = rb_str_new(0, width);
+    RBASIC(res)->klass = rb_obj_class(str);
     n = (width - RSTRING(str)->len)/2;
     p = RSTRING(res)->ptr; pend = p + n;
     while (p < pend) {

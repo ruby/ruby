@@ -775,7 +775,7 @@ rb_num2long(val)
 
 	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
 	    if (s = strchr(buf, ' ')) *s = '\0';
-	    rb_raise(rb_eRangeError, "float %s out of rang of integer", buf);
+	    rb_raise(rb_eRangeError, "float %s out of range of integer", buf);
 	}
 
       case T_BIGNUM:

@@ -690,7 +690,7 @@ arg		: lhs '=' arg
 		    }
 		| primary '[' aref_args ']' tOP_ASGN arg
 		    {
-			NODE *args = NEW_LIST($6);
+                        NODE *tmp, *args = NEW_LIST($6);
 
 			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);

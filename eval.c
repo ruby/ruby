@@ -577,15 +577,11 @@ new_blktag()
     _block.wrapper = ruby_wrapper;	\
     ruby_block = &_block;
 
-#define POP_BLOCK_TAG(tag) do {		\
-   if ((tag)->flags & BLOCK_DYNAMIC)	\
-       (tag)->flags |= BLOCK_ORPHAN;	\
-   else					\
-       rb_gc_force_recycle((VALUE)tag); \
-} while (0)
-
 #define POP_BLOCK() 			\
-   POP_BLOCK_TAG(_block.tag);		\
+   if (_block.tag->flags & (BLOCK_DYNAMIC)) \
+       _block.tag->flags |= BLOCK_ORPHAN; \
+   else	if (!(_block.scope->flag & SCOPE_DONT_RECYCLE)) \
+       rb_gc_force_recycle((VALUE)_block.tag); \
    ruby_block = _block.prev; 		\
 }
 
@@ -4809,10 +4805,6 @@ eval(self, src, scope, file, line)
     volatile int iter = ruby_frame->iter;
     int state;
 
-    if (file == 0) {
-	file = ruby_sourcefile;
-	line = ruby_sourceline;
-    }
     if (!NIL_P(scope)) {
 	if (!rb_obj_is_block(scope)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Binding)",
@@ -4836,6 +4828,11 @@ eval(self, src, scope, file, line)
 	ruby_cref = (NODE*)ruby_frame->cbase;
 	old_wrapper = ruby_wrapper;
 	ruby_wrapper = data->wrapper;
+	if ((file == 0 || (line == 1 && strcmp(file, "(eval)") == 0)) &&
+	    data->body && data->body->nd_file) {
+	    file = data->body->nd_file;
+	    line = nd_line(data->body);
+	}
 
 	self = data->self;
 	ruby_frame->iter = data->iter;
@@ -4844,6 +4841,10 @@ eval(self, src, scope, file, line)
 	if (ruby_frame->prev) {
 	    ruby_frame->iter = ruby_frame->prev->iter;
 	}
+    }
+    if (file == 0) {
+	file = ruby_sourcefile;
+	line = ruby_sourceline;
     }
     PUSH_CLASS();
     ruby_class = ruby_cbase;

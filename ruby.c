@@ -597,8 +597,10 @@ proc_options(argc, argv)
 	    s++;
 	    if (strcmp("copyright", s) == 0)
 		copyright = 1;
-	    else if (strcmp("debug", s) == 0)
-		ruby_debug = 1;
+	    else if (strcmp("debug", s) == 0) {
+		ruby_debug = Qtrue;
+                ruby_verbose = Qtrue;
+            }
 	    else if (strcmp("version", s) == 0)
 		version = 1;
 	    else if (strcmp("verbose", s) == 0) {

@@ -72,8 +72,8 @@ rb_obj_id(obj)
     return (VALUE)((long)obj|FIXNUM_FLAG);
 }
 
-static VALUE
-rb_obj_type(obj)
+VALUE
+rb_obj_class(obj)
     VALUE obj;
 {
     VALUE cl = CLASS_OF(obj);
@@ -113,7 +113,7 @@ rb_obj_dup(obj)
 	rb_raise(rb_eTypeError, "dupulicated object must be same type");
     }
     if (!SPECIAL_CONST_P(dup)) {
-	OBJSETUP(dup, rb_obj_type(obj), BUILTIN_TYPE(obj));
+	OBJSETUP(dup, rb_obj_class(obj), BUILTIN_TYPE(obj));
 	OBJ_INFECT(dup, obj);
 	if (FL_TEST(obj, FL_EXIVAR)) {
 	    FL_SET(dup, FL_EXIVAR);
@@ -241,7 +241,7 @@ rb_obj_is_instance_of(obj, c)
 	rb_raise(rb_eTypeError, "class or module required");
     }
 
-    if (rb_obj_type(obj) == c) return Qtrue;
+    if (rb_obj_class(obj) == c) return Qtrue;
     return Qfalse;
 }
 
@@ -359,13 +359,6 @@ nil_inspect(obj)
     return rb_str_new2("nil");
 }
 
-static VALUE
-nil_type(obj)
-    VALUE obj;
-{
-    return rb_cNilClass;
-}
-
 #ifdef NIL_PLUS
 static VALUE
 nil_plus(x, y)
@@ -403,13 +396,6 @@ true_to_s(obj)
 }
 
 static VALUE
-true_type(obj)
-    VALUE obj;
-{
-    return rb_cTrueClass;
-}
-
-static VALUE
 true_and(obj, obj2)
     VALUE obj, obj2;
 {
@@ -435,13 +421,6 @@ false_to_s(obj)
     VALUE obj;
 {
     return rb_str_new2("false");
-}
-
-static VALUE
-false_type(obj)
-    VALUE obj;
-{
-    return rb_cFalseClass;
 }
 
 static VALUE
@@ -487,13 +466,6 @@ rb_obj_alloc(klass)
     OBJSETUP(obj, klass, T_OBJECT);
 
     return (VALUE)obj;
-}
-
-static VALUE
-sym_type(sym)
-    VALUE sym;
-{
-    return rb_cSymbol;
 }
 
 static VALUE
@@ -1156,8 +1128,8 @@ Init_Object()
     rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "id", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "type", rb_obj_type, 0);
-    rb_define_method(rb_mKernel, "class", rb_obj_type, 0);
+    rb_define_method(rb_mKernel, "type", rb_obj_class, 0);
+    rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
 
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
@@ -1196,7 +1168,6 @@ Init_Object()
     rb_define_global_function("Array", rb_f_array, 1);
 
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
-    rb_define_method(rb_cNilClass, "type", nil_type, 0);
     rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
@@ -1211,7 +1182,6 @@ Init_Object()
 
     rb_cSymbol = rb_define_class("Symbol", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
-    rb_define_method(rb_cSymbol, "type", sym_type, 0);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "to_int", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
@@ -1268,7 +1238,6 @@ Init_Object()
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
-    rb_define_method(rb_cTrueClass, "type", true_type, 0);
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
@@ -1277,7 +1246,6 @@ Init_Object()
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
-    rb_define_method(rb_cFalseClass, "type", false_type, 0);
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
