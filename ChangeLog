@@ -1,3 +1,9 @@
+Thu May 20 12:22:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_type): do not check pointer to incomplete type,
+	  which always get compiled.
+	  [ruby-list:39683]
+
 Wed May 19 23:45:43 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/inlinetest.rb (InlineTest::loadtest): requiring library with

@@ -574,7 +574,7 @@ end
 def have_type(type, header = nil, opt = "", &b)
   checking_for type do
     header = cpp_include(header)
-    if try_compile(<<"SRC", opt, &b) or try_compile(<<"SRC", opt, &b)
+    if try_compile(<<"SRC", opt, &b) or (/\A\w+\z/n =~ type && try_compile(<<"SRC", opt, &b))
 #{COMMON_HEADERS}
 #{header}
 /*top*/
@@ -585,7 +585,7 @@ SRC
 /*top*/
 static #{type} *t;
 SRC
-      $defs.push(format("-DHAVE_TYPE_%s", type.upcase.tr_s("^A-Z0-9_", "_")))
+      $defs.push(format("-DHAVE_TYPE_%s", type.strip.upcase.tr_s("^A-Z0-9_", "_")))
       true
     else
       false
