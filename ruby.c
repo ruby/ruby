@@ -233,6 +233,7 @@ ruby_init_loadpath()
 #define CharNext(p) ((p) + 1)
 #endif
 
+    libpath[FILENAME_MAX] = '\0';
     for (p = libpath; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
@@ -675,14 +676,14 @@ proc_options(argc, argv)
       OBJ_TAINT(rb_load_path);
     }
 
-    if (!e_script && argc == 0) { /* no more args */
-	if (verbose) exit(0);
-	script = "-";
-    }
-    else {
+    if (argc == 0) {		/* no more args */
 	if (!e_script) {
-	    script = argv[0];
+	    if (verbose) exit(0);
+	    script = "-";
 	}
+    }
+    else if (!e_script) {
+	script = argv[0];
 	if (script[0] == '\0') {
 	    script = "-";
 	}
@@ -700,9 +701,7 @@ proc_options(argc, argv)
 		if (!script) script = argv[0];
 	    }
 	}
-	if (!e_script) {
-	    argc--; argv++;
-	}
+	argc--; argv++;
     }
 
     ruby_script(script);

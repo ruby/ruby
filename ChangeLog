@@ -1,3 +1,11 @@
+Thu Feb 13 09:58:12 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ruby.c (ruby_init_loadpath): ensures buffer terminated
+	  before use strncpy().
+
+	* ruby.c (proc_options): avoid SEGV at -S with no arguments.
+	  (ruby-bugs-ja:PR#391)
+
 Sat Feb  8 04:04:13 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/irb/context.rb, lib/irb/multi-irb.rb, lib/irb/workspace.rb,
