@@ -1,3 +1,11 @@
+Mon Mar 24 16:55:04 2003  Takaaki Tateishi <ttate@ttsky.net>
+
+	* ext/dl/dl.c: added rb_secure(4). (Thanks to Minero Aoki)
+
+	* ext/dl/sym.c: ditto.
+
+	* ext/dl/ptr.c: ditto.
+
 Mon Mar 24 00:09:02 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (block_append): warn unused literal.

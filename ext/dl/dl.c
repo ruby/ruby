@@ -542,18 +542,21 @@ rb_io_to_ptr(VALUE self)
 VALUE
 rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
 {
+  rb_secure(4);
   return rb_class_new_instance(argc, argv, rb_cDLHandle);
 }
 
 VALUE
 rb_dl_malloc(VALUE self, VALUE size)
 {
+  rb_secure(4);
   return rb_dlptr_malloc(DLNUM2LONG(size), dlfree);
 }
 
 VALUE
 rb_dl_strdup(VALUE self, VALUE str)
 {
+  rb_secure(4);
   str = rb_String(str);
   return rb_dlptr_new(strdup(RSTRING(str)->ptr), RSTRING(str)->len, dlfree);
 }
@@ -561,6 +564,7 @@ rb_dl_strdup(VALUE self, VALUE str)
 static VALUE
 rb_dl_sizeof(VALUE self, VALUE str)
 {
+  rb_secure(4);
   return INT2NUM(dlsizeof(StringValuePtr(str)));
 }
 
@@ -571,6 +575,7 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
   int rettype, entry, i;
   char fname[127];
 
+  rb_secure(4);
   proc = Qnil;
   switch( rb_scan_args(argc, argv, "11", &type, &proc) ){
   case 1:
@@ -636,9 +641,11 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
 static VALUE
 rb_dl_remove_callback(VALUE mod, VALUE sym)
 {
-  freefunc_t f = rb_dlsym2csym(sym);
+  freefunc_t f;
   int i, j;
 
+  rb_secure(4);
+  f = rb_dlsym2csym(sym);
   for( i=0; i < CALLBACK_TYPES; i++ ){
     for( j=0; j < MAX_CALLBACK; j++ ){
       if( rb_dl_callback_table[i][j] == f ){

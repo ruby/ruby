@@ -26,6 +26,7 @@ rb_hash_delete(VALUE hash, VALUE key)
 static void
 rb_dlmem_delete(void *ptr)
 {
+  rb_secure(4);
   rb_hash_delete(DLMemoryTable, DLLONG2NUM(ptr));
 }
 
@@ -89,6 +90,7 @@ rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
   struct ptr_data *data;
   VALUE val;
 
+  rb_secure(4);
   if( ptr ){
     val = rb_dlmem_aref(ptr);
     if( val == Qnil ){
@@ -130,6 +132,7 @@ rb_dlptr_malloc(long size, freefunc_t func)
 {
   void *ptr;
 
+  rb_secure(4);
   ptr = dlmalloc((size_t)size);
   memset(ptr,0,(size_t)size);
   return rb_dlptr_new(ptr, size, func);
@@ -161,6 +164,7 @@ rb_dlptr_s_allocate(VALUE klass)
   VALUE obj;
   struct ptr_data *data;
 
+  rb_secure(4);
   obj = Data_Make_Struct(klass, struct ptr_data, 0, dlptr_free, data);
   data->ptr = 0;
   data->free = 0;
@@ -850,6 +854,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
   long memsize;
   void *memimg;
 
+  rb_secure(4);
   switch( rb_scan_args(argc, argv, "21", &key, &num, &val) ){
   case 2:
     val = num;

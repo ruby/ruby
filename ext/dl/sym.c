@@ -77,6 +77,7 @@ rb_dlsym_new(void (*func)(), const char *name, const char *type)
   struct sym_data *data;
   const char *ptype;
 
+  rb_secure(4);
   if( !type || !type[0] ){
     return rb_dlptr_new((void*)func, 0, 0);
   }
@@ -329,6 +330,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
   long ftype;
   void *func;
 
+  rb_secure(4);
   Data_Get_Struct(self, struct sym_data, sym);
   DEBUG_CODE({
     printf("rb_dlsym_call(): type = '%s', func = 0x%x\n", sym->type, sym->func);
