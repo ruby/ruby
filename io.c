@@ -743,7 +743,7 @@ rb_io_seek_m(argc, argv, io)
 
 /*
  *  call-seq:
- *     ios.pos = integer    => 0
+ *     ios.pos = integer    => integer
  *
  *  Seeks to the given position (in bytes) in <em>ios</em>.
  *
@@ -1723,7 +1723,7 @@ rb_io_readline(argc, argv, io)
  *
  *  Reads all of the lines in <em>ios</em>, and returns them in
  *  <i>anArray</i>. Lines are separated by the optional
- *  <i>sep_string</i>. If <i>set_string</i> is <code>nil</code>, the
+ *  <i>sep_string</i>. If <i>sep_string</i> is <code>nil</code>, the
  *  rest of the stream is returned as a single record.
  *  The stream must be opened for reading or an
  *  <code>IOError</code> will be raised.
@@ -2245,7 +2245,7 @@ rb_io_sysseek(argc, argv, io)
 
 /*
  *  call-seq:
- *     ios.syswrite(string )   => integer
+ *     ios.syswrite(string)   => integer
  *
  *  Writes the given string to <em>ios</em> using a low-level write.
  *  Returns the number of bytes written. Do not mix with other methods
@@ -3181,7 +3181,7 @@ rb_io_s_sysopen(argc, argv)
 /*
  *  call-seq:
  *     open(path [, mode [, perm]] )                => io or nil
- *     open(path [, mode [. perm]] ) {|io| block }  => nil
+ *     open(path [, mode [, perm]] ) {|io| block }  => obj
  *
  *  Creates an <code>IO</code> object connected to the given stream,
  *  file, or subprocess.
@@ -3194,8 +3194,8 @@ rb_io_s_sysopen(argc, argv)
  *
  *  If a block is specified, it will be invoked with the
  *  <code>File</code> object as a parameter, and the file will be
- *  automatically closed when the block terminates. The call always
- *  returns <code>nil</code> in this case.
+ *  automatically closed when the block terminates. The call
+ *  returns the value of the block.
  *
  *  If <i>path</i> starts with a pipe character, a subprocess is
  *  created, connected to the caller by a pair of pipes. The returned
@@ -3794,8 +3794,7 @@ rb_p(obj)			/* for debug print within C code */
  *
  *  For each object, directly writes
  *  _obj_.+inspect+ followed by the current output
- *  record separator to the program's standard output. +p+
- *  bypasses the Ruby I/O libraries.
+ *  record separator to the program's standard output.
  *
  *     S = Struct.new(:name, :state)
  *     s = S['dave', 'TX']
@@ -4409,7 +4408,7 @@ rb_gets()
 
 /*
  *  call-seq:
- *     readline(separator=$/    => string
+ *     readline(separator=$/)   => string
  *
  *  Equivalent to <code>Kernel::gets</code>, except
  *  +readline+ raises +EOFError+ at end of file.
@@ -4450,7 +4449,7 @@ rb_f_getc()
  *     readlines(separator=$/)    => array
  *
  *  Returns an array containing the lines returned by calling
- *  <code>Kernel.gets(<i>aString</i>)</code> until the end of file.
+ *  <code>Kernel.gets(<i>separator</i>)</code> until the end of file.
  */
 
 static VALUE
@@ -5096,7 +5095,7 @@ io_s_read(arg)
 
 /*
  *  call-seq:
- *     IO.read(rane, [length [, offset]] )   => string
+ *     IO.read(name, [length [, offset]] )   => string
  *
  *  Opens the file, optionally seeks to the given offset, then returns
  *  <i>length</i> bytes (defaulting to the rest of the file).
