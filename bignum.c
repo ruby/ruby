@@ -951,7 +951,8 @@ bigdivmod(x, y, divp, modp)
     VALUE mod;
 
     bigdivrem(x, y, divp, &mod);
-    if (RBIGNUM(x)->sign != RBIGNUM(y)->sign && RBIGNUM(mod)->len > 0) {
+    if (RBIGNUM(x)->sign != RBIGNUM(y)->sign &&
+	!(RBIGNUM(mod)->len == 1 && BDIGITS(mod)[0] == 0)) {
 	if (divp) *divp = bigadd(*divp, rb_int2big(1), 0);
 	if (modp) *modp = bigadd(mod, y, 1);
     }
@@ -1313,6 +1314,9 @@ rb_big_rshift(x, y)
     xds = BDIGITS(x);
     i = RBIGNUM(x)->len; j = i - s1;
     z = bignew(j, RBIGNUM(x)->sign);
+    if (!RBIGNUM(x)->sign) {
+	num = ((BDIGIT_DBL)~0) << BITSPERDIG;
+    }
     zds = BDIGITS(z);
     while (i--, j--) {
 	num = (num | xds[i]) >> s2;
@@ -1445,6 +1449,7 @@ Init_Bignum()
     rb_define_method(rb_cBignum, "*", rb_big_mul, 1);
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
+    rb_define_method(rb_cBignum, "div", rb_big_div, 1);
     rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);

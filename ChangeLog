@@ -1,3 +1,9 @@
+Mon Oct  7 15:36:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigdivmod): wrong condition check for Bignum zero.
+
+	* bignum.c (Init_Bignum): need to add Bignum#div.
+
 Sun Oct  6 06:11:19 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* eval.c (rb_load): should not pass block to the loaded file.
@@ -10,6 +16,13 @@ Fri Oct  4 14:23:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 	  on Linux if GNU ld is used and --enable-shared is specified.
 
 	* configure.in (RUBY_MINGW32): backport from 1.7.
+
+Fri Oct  4 02:21:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_rshift): num should be initialized by carry
+	  bits if x is negative. (ruby-bugs-ja:PR#347)
+
+	* bignum.c (bigdivmod): len for bignum zero is 1, not 0.
 
 Thu Oct  3 20:09:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
