@@ -121,14 +121,14 @@ SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--make-flags="$(MAKEFLAGS)"
 EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extstatic $(EXTSTATIC) --
 
-all:		@MAKEFILES@ miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
+all:		@MAKEFILES@ $(PREP) rbconfig.rb $(LIBRUBY)
 		@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) $(DMYEXT)
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINLIBS) $(MAINOBJ) $(LIBRUBY_A) $(LIBS) -o $@
 
-$(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) $(SETUP) miniruby$(EXEEXT)
+$(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) $(SETUP) $(PREP)
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
@@ -144,7 +144,7 @@ $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 		@AR@ rcu $@ $(OBJS) $(DMYEXT)
 		@-@RANLIB@ $@ 2> /dev/null || true
 
-$(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) miniruby$(EXEEXT) $(PREP) $(ARCHFILE)
+$(LIBRUBY_SO):	$(OBJS) $(DLDOBJS) $(PREP) $(ARCHFILE)
 		$(LDSHARED) $(DLDFLAGS) $(OBJS) $(DLDOBJS) $(SOLIBS) -o $@
 		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
@@ -210,10 +210,10 @@ extconf:
 		$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
 		$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
-rbconfig.rb:	miniruby$(EXEEXT) $(srcdir)/mkconfig.rb config.status $(PREP)
+rbconfig.rb:	$(srcdir)/mkconfig.rb config.status $(PREP)
 		@$(MINIRUBY) $(srcdir)/mkconfig.rb rbconfig.rb
 
-fake.rb:	miniruby$(EXEEXT) Makefile
+fake.rb:	Makefile
 		@echo ' \
 		class Object; \
 		  CROSS_COMPILING = RUBY_PLATFORM; \

@@ -1,3 +1,9 @@
+Thu Mar  4 22:31:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in: miniruby is not needed for cross compile.
+
+	* configure.in (PREP): miniruby for native compile.
+
 Thu Mar  4 11:46:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/drb/extservm.rb (DRb::ExtServManager#invoke_service_command):
