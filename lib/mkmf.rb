@@ -43,6 +43,8 @@ $sitedir = CONFIG["sitedir"]
 $sitelibdir = CONFIG["sitelibdir"]
 $sitearchdir = CONFIG["sitearchdir"]
 
+$extmk = /extmk\.rb/ =~ $0
+
 def dir_re(dir)
   Regexp.new('\$(?:\('+dir+'\)|\{'+dir+'\})(?:\$\(target_prefix\)|\{target_prefix\})?')
 end
@@ -60,7 +62,7 @@ SITEINSTALL_DIRS = [
   [dir_re('archdir'), "$(sitearchdir)$(target_prefix)"]
 ]
 
-if File.exist? Config::CONFIG["archdir"] + "/ruby.h"
+if not $extmk and File.exist? Config::CONFIG["archdir"] + "/ruby.h"
   $hdrdir = $archdir
 elsif File.exist? $srcdir + "/ruby.h"
   $hdrdir = $srcdir
@@ -318,7 +320,7 @@ def append_library(libs, lib)
 end
 
 def message(*s)
-  unless /extmk\.rb/ =~ $0 and not $VERBOSE
+  unless $extmk and not $VERBOSE
     print(*s)
     STDOUT.flush
   end
