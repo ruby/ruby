@@ -177,6 +177,7 @@ def have_library(lib, func="main")
   if func && func != ""
     libs = append_library($libs, lib)
     if /mswin32|mingw/ =~ RUBY_PLATFORM
+      return true if lib == 'm'
       r = try_link(<<"SRC", libs)
 #include <windows.h>
 #include <winsock.h>

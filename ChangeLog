@@ -1,3 +1,8 @@
+Sun Dec 30 00:59:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb.in, lib/mkmf.rb (have_library): accept -lm
+	  unconditionally on mswin32/mingw32.
+
 Thu Dec 27 18:43:04 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* bignum.c (rb_cstr2inum): deny "0_".
