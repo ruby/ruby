@@ -20,12 +20,13 @@ You can get it from RAA
 
 : new( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
   creates a new Net::HTTP object.
-  if proxy_addr is given, this method is equals to
+  If proxy_addr is given, this method is equals to
   Net::HTTP::Proxy(proxy_addr,proxy_port).
 
 : start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
 : start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
-  is equals to Net::HTTP.new( address, port, proxy_addr, proxy_port ).start(&block)
+  is equals to
+    Net::HTTP.new( address, port, proxy_addr, proxy_port ).start(&block)
 
 : Proxy( address, port )
   creates a HTTP proxy class.
@@ -86,15 +87,15 @@ You can get it from RAA
     # example
     begin
       response, body = http.get( '/index.html' )
-    rescue Net::ProtoRetriableError
-      response = $!.data
+    rescue Net::ProtoRetriableError => err
+      response = err.data
       ...
     end
 
 : head( path, header = nil )
-  get only header from "path" on connecting host.
+  gets only header from "path" on connecting host.
   "header" is a Hash like { 'Accept' => '*/*', ... }.
-  This method returns Net::HTTPResponse object.
+  This method returns a Net::HTTPResponse object.
   You can http header from this object like:
 
     response['content-length']   #-> '2554'
@@ -104,13 +105,13 @@ You can get it from RAA
 
 : post( path, data, header = nil, dest = '' )
 : post( path, data, header = nil ) {|str| .... }
-  post "data"(must be String now) to "path".
-  If body exists, also get entity body.
-  It is written to "dest" by using "<<" method.
+  posts "data" (must be String now) to "path".
+  If the body exists, also gets entity body.
+  Data is written to "dest" by using "<<" method.
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   This method returns Net::HTTPResponse object and "dest".
 
-  If called with block, gives a part String of entity body.
+  If called with block, gives a part of entity body string.
 
 : get2( path, header = nil )
 : get2( path, header = nil ) {|recv| .... }
@@ -145,7 +146,7 @@ You can get it from RAA
 : head2( path, header = nil )
 : head2( path, header = nil ) {|recv| .... }
   send HEAD request for "path".
-  "header" must be a Hash like { 'Accept' => '*/*', ... }.
+  "header" must be a Hash like { 'Accept' => 'text/html', ... }.
   The difference between "head" method is that
   "head2" does not raise exceptions.
 
@@ -162,7 +163,7 @@ You can get it from RAA
 
 : post2( path, data, header = nil )
 : post2( path, data, header = nil ) {|recv| .... }
-  post "data"(must be String now) to "path".
+  posts "data" (must be String now) to "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   If this method is called with block, one gives
   a HTTPResponseReceiver object to block.
@@ -200,10 +201,10 @@ All "key" is case-insensitive.
   set field value for "key".
 
 : key?( key )
-  true if key is exist
+  true if key exists
 
 : each {|name,value| .... }
-  iterate for each field name and value pair
+  iterates for each field name and value pair
 
 : code
   HTTP result code string. For example, '302'
@@ -232,33 +233,33 @@ All "key" is case-insensitive.
 
 = http.rb version 1.2 features
 
-You can use these 1.2 features by calling method
-Net::HTTP.new_implementation. Or you want to use 1.1 feature,
-call Net::HTTP.old_implementation.
+You can use 1.2 features by calling HTTP.new_implementation. And
+calling Net::HTTP.old_implementation allows to use 1.1 features.
 
-Now old_impl is default and if new_impl was called then Net::HTTP
-changes self into new implementation.  In 1.2, new_impl is default
-and if old_impl was called then changes self into old implementation.
+  # example
+  HTTP.start {|http1| ...(http1 has 1.1 features)... }
 
-== Warning!!!
+  HTTP.new_implementation
+  HTTP.start {|http2| ...(http2 has 1.2 features)... }
 
-You can call new_implementation/old_implementation any times
-but CANNOT call both of them at the same time.
-You must use one implementation in one application (process).
+  HTTP.old_implementation
+  HTTP.start {|http3| ...(http3 has 1.1 features)... }
 
-== Method
+== Method (only diff to 1.1)
 
 : get( path, u_header = nil )
 : get( path, u_header = nil ) {|str| .... }
-get document from "path" and returns HTTPResponse object.
+  gets document from "path".
+  returns HTTPResponse object.
 
 : head( path, u_header = nil )
-get only document header from "path" and returns HTTPResponse object.
+  gets only document header from "path".
+  returns HTTPResponse object.
 
 : post( path, data, u_header = nil )
 : post( path, data, u_header = nil ) {|str| .... }
-post "data" to "path" entity and get document,
-then returns HTTPResponse object.
+  posts "data" to "path" entity and gets document.
+  returns HTTPResponse object.
 
 =end
 
@@ -290,7 +291,10 @@ module Net
       alias orig_new new
 
       def new( address = nil, port = nil, p_addr = nil, p_port = nil )
-        (p_addr ? self::Proxy(p_addr, p_port) : self).orig_new( address, port )
+        c = p_addr ? self::Proxy(p_addr, p_port) : self
+        i = c.orig_new( address, port )
+        setvar i
+        i
       end
 
       def start( address = nil, port = nil, p_addr = nil, p_port = nil, &block )
@@ -332,48 +336,27 @@ module Net
     ### 1.2 implementation
     ###
 
-    @new_impl = false
+    @@newimpl = false
 
-    class << self
+    #class << self
 
-      def new_implementation
-        return if @new_impl
-        @new_impl = true
-        module_eval %^
-
-        undef head
-        alias head head2
-
-        undef get
-
-        def get( path, u_header = nil, dest = nil, &block )
-          get2( path, u_header ) {|f| f.body( dest, &block ) }
-        end
-
-        undef post
-
-        def post( path, data, u_header = nil, dest = nil, &block )
-          post2( path, data, u_header ) {|f| f.body( dest, &block ) }
-        end
-
-        undef put
-
-        def put( path, src, u_header = nil )
-          put2( path, src, u_header ) {|f| f.body }
-        end
-
-        ^
+      def self.new_implementation
+        @@newimpl = true
       end
 
-      def old_implementation
-        if @new_impl then
-          raise RuntimeError,
-                'http.rb is already switched to new implementation'
-        end
+      def self.old_implementation
+        @@newimpl = false
       end
 
-    end
-      
+      #private
+
+      def self.setvar( obj )
+        f = @@newimpl
+        obj.instance_eval { @newimpl = f }
+      end
+
+    #end
+
 
     ###
     ### http operations
@@ -381,42 +364,49 @@ module Net
 
     def get( path, u_header = nil, dest = nil, &block )
       resp = get2( path, u_header ) {|f| f.body( dest, &block ) }
-      resp.value
-      return resp, resp.body
+      if @newimpl then
+        resp
+      else
+        resp.value
+        return resp, resp.body
+      end
     end
 
     def get2( path, u_header = nil, &block )
-      connecting( u_header ) {|uh|
+      common_oper( u_header, true, block ) {|uh|
         @command.get edit_path(path), uh
-        receive true, block
       }
     end
 
 
     def head( path, u_header = nil )
       resp = head2( path, u_header )
-      resp.value
+      unless @newimpl then
+        resp.value
+      end
       resp
     end
 
     def head2( path, u_header = nil, &block )
-      connecting( u_header ) {|uh|
+      common_oper( u_header, false, block ) {|uh|
         @command.head edit_path(path), uh
-        receive false, block
       }
     end
 
 
     def post( path, data, u_header = nil, dest = nil, &block )
       resp = post2( path, data, u_header ) {|f| f.body( dest, &block ) }
-      resp.value
-      return resp, resp.body
+      if @newimpl then
+        resp
+      else
+        resp.value
+        return resp, resp.body
+      end
     end
 
     def post2( path, data, u_header = nil, &block )
-      connecting( u_header ) {|uh|
+      common_oper( u_header, true, block ) {|uh|
         @command.post edit_path(path), uh, data
-        receive true, block
       }
     end
 
@@ -424,14 +414,17 @@ module Net
     # not tested because I could not setup apache  (__;;;
     def put( path, src, u_header = nil )
       resp = put2( path, src, u_header ) {|f| f.body }
-      resp.value
-      return resp, resp.body
+      if @newimpl then
+        resp
+      else
+        resp.value
+        return resp, resp.body
+      end
     end
 
     def put2( path, src, u_header = nil, &block )
-      connecting( u_header ) {|uh|
+      common_oper( u_header, true, block ) {|uh|
         @command.put path, uh, src
-        receive true, block
       }
     end
 
@@ -439,8 +432,28 @@ module Net
     private
 
 
-    def connecting( u_header )
+    def common_oper( u_header, body_exist, block )
       u_header = procheader( u_header )
+      recv = err = nil
+
+      connecting( u_header ) {
+        recv = HTTPResponseReceiver.new( @command, body_exist )
+        yield u_header
+        begin
+          block.call recv if block
+        rescue Exception => err
+          ;
+        end
+        recv.terminate
+
+        recv.response
+      }
+      raise err if err
+
+      recv.response
+    end
+
+    def connecting( u_header )
       if not @socket then
         u_header['Connection'] = 'close'
         start
@@ -448,13 +461,11 @@ module Net
         @socket.reopen
       end
 
-      resp = yield( u_header )
+      resp = yield
 
       unless keep_alive? u_header, resp then
         @socket.close
       end
-
-      resp
     end
 
     def keep_alive?( header, resp )
@@ -487,21 +498,17 @@ module Net
       ret[ 'Accept' ]     = '*/*'
 
       return ret unless h
+      tmp = {}
       h.each do |k,v|
-        arr = k.split('-')
-        arr.each {|i| i.capitalize! }
-        ret[ arr.join('-') ] = v
+        key = k.split('-').collect {|i| i.capitalize }.join('-')
+        if tmp[key] then
+          $stderr.puts "'#{key}' http header appered twice" if $VERBOSE
+        end
+        tmp[key] = v
       end
+      ret.update tmp
 
       ret
-    end
-
-
-    def receive( body_exist, block )
-      recv = HTTPResponseReceiver.new( @command, body_exist )
-      block.call recv if block
-      recv.terminate
-      recv.header
     end
 
 
@@ -600,29 +607,31 @@ module Net
     alias header read_header
     alias response read_header
 
-    def body( dest = nil, &block )
+    def read_body( dest = nil, &block )
       unless @body then
-        self.read_header
+        read_header
 
         to = procdest( dest, block )
         stream_check
-        if @body_exist and header.code_type.body_exist? then
-          @command.get_body header, to
-          header.body = @body = to
+
+        if @body_exist and @header.code_type.body_exist? then
+          @command.get_body @header, to
+          @header.body = @body = to
         else
           @command.no_body
-          header.body = nil
+          @header.body = nil
           @body = 1
         end
       end
       @body == 1 ? nil : @body
     end
 
-    alias entity body
+    alias body read_body
+    alias entity read_body
 
     def terminate
-      header
-      body
+      read_header
+      read_body
       @command = nil
     end
 
@@ -955,7 +964,7 @@ module Net
 
     def get_body( resp, dest )
       if chunked? resp then
-        read_chunked( dest, resp )
+        read_chunked dest
       else
         clen = content_length( resp )
         if clen then
@@ -965,15 +974,7 @@ module Net
           if clen then
             @socket.read clen, dest
           else
-            tmp = resp['connection']
-            if tmp and /close/i === tmp then
-              @socket.read_all dest
-            else
-              tmp = resp['proxy-connection']
-              if tmp and /close/i === tmp then
-                @socket.read_all dest
-              end
-            end
+            @socket.read_all dest
           end
         end
       end
@@ -987,7 +988,7 @@ module Net
 
     private
 
-    def read_chunked( ret, header )
+    def read_chunked( dest )
       len = nil
       total = 0
 
@@ -999,7 +1000,7 @@ module Net
         end
         len = m[0].hex
         break if len == 0
-        @socket.read( len, ret ); total += len
+        @socket.read( len, dest ); total += len
         @socket.read 2   # \r\n
       end
       until @socket.readline.empty? do
@@ -1007,9 +1008,9 @@ module Net
       end
     end
 
-    def content_length( header )
-      if header.key? 'content-length' then
-        m = /\d+/.match( header['content-length'] )
+    def content_length( resp )
+      if resp.key? 'content-length' then
+        m = /\d+/.match( resp['content-length'] )
         unless m then
           raise HTTPBadResponse, 'wrong Content-Length format'
         end
@@ -1019,14 +1020,14 @@ module Net
       end
     end
 
-    def chunked?( header )
-      str = header[ 'transfer-encoding' ]
-      str and /(?:\A|\s+)chunked(?:\s+|\z)/i === str
-    end
+    def chunked?( resp )
+      tmp = resp['transfer-encoding']
+      tmp and /(?:\A|\s+)chunked(?:\s+|\z)/i === tmp
+     end
 
-    def range_length( header )
-      if header.key? 'content-range' then
-        m = %r<bytes\s+(\d+)-(\d+)/\d+>.match( header['content-range'] )
+    def range_length( resp )
+      if resp.key? 'content-range' then
+        m = %r<bytes\s+(\d+)-(\d+)/\d+>.match( resp['content-range'] )
         unless m then
           raise HTTPBadResponse, 'wrong Content-Range format'
         end

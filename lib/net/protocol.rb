@@ -314,10 +314,29 @@ module Net
     end
 
     def <<( str )
-      @block.call str
+      callblock( str, &@block ) if @block
+    end
+
+    private
+
+    def callblock( str )
+      begin
+        user_break = true
+        yield str
+        user_break = false
+      rescue Exception
+        user_break = false
+        raise
+      ensure
+        if user_break then
+          @block = nil
+          return   # stop break
+        end
+      end
     end
   
   end
+
 
 
   class Command
@@ -442,6 +461,7 @@ module Net
     def address
       @addr.dup
     end
+
     alias addr address
 
     attr_reader :port
@@ -449,12 +469,17 @@ module Net
     def ip_address
       @ipaddr.dup
     end
+
     alias ipaddr ip_address
 
     attr_reader :sending
 
 
-    CRLF    = "\r\n"
+    ###
+    ### read
+    ###
+
+    CRLF = "\r\n"
 
     def read( len, dest = '' )
       @pipe << "reading #{len} bytes...\n" if @pipe; pipeoff
@@ -514,7 +539,7 @@ module Net
 
       rsize = 0
 
-      while (str = readuntil( "\r\n" )) != ".\r\n" do
+      while (str = readuntil("\r\n")) != ".\r\n" do
         rsize += str.size
         str.gsub!( /\A\./, '' )
         dest << str
@@ -525,20 +550,19 @@ module Net
     end
 
 
+    # private use only (can not handle 'break')
     def read_pendlist
       @pipe << "reading list...\n" if @pipe; pipeoff
 
-      arr = []
       str = nil
-
-      while (str = readuntil( "\r\n" )) != ".\r\n" do
+      i = 0
+      while (str = readuntil("\r\n")) != ".\r\n" do
         str.chop!
-        arr.push str
-        yield str if block_given?
+        yield str
+        i += 1
       end
 
-      @pipe << "read #{arr.size} lines\n" if pipeon
-      arr
+      @pipe << "read #{i} items\n" if pipeon
     end
 
 
@@ -560,6 +584,10 @@ module Net
       len
     end
 
+
+    ###
+    ### write
+    ###
 
     public
 

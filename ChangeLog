@@ -1,3 +1,18 @@
+Thu Nov 16 23:06:07 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: can call {old,new}_implementation any times.
+
+	* lib/net/http.rb: HTTP#connecting, receive ->
+	  common_oper, connecting.
+
+	* lib/net/http.rb: output warning if u_header includes
+	  duplicated header.
+
+	* lib/net/http.rb: not check Connection:/Proxy-Connection;
+	  always read until eof.
+
+	* lib/net/protocol: detects and catches "break" from block.
+
 Thu Nov 16 14:58:00 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/socket/socket.c (sock_new): duplicates file descriptor 
