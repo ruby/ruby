@@ -430,7 +430,7 @@ module Net
     def get_all_responses(tag, cmd, &block)
       while resp = get_response
 	if @@debug
-	  $stderr.puts(resp.inspect)
+	  $stderr.printf("R: %s\n", resp.inspect)
 	end
 	case resp
 	when TaggedResponse
@@ -754,10 +754,11 @@ module Net
 
       private
 
-      EXPR_BEG		= :BEG
-      EXPR_TEXT		= :TEXT
-      EXPR_RTEXT	= :RTEXT
-      EXPR_CTEXT	= :CTEXT
+      EXPR_BEG		= :EXPR_BEG
+      EXPR_DATA		= :EXPR_DATA
+      EXPR_TEXT		= :EXPR_TEXT
+      EXPR_RTEXT	= :EXPR_RTEXT
+      EXPR_CTEXT	= :EXPR_CTEXT
 
       T_SPACE	= :SPACE
       T_NIL	= :NIL
@@ -794,6 +795,15 @@ module Net
 (?# 14:	PERCENT	)(%)|\
 (?# 15:	CRLF	)(\r\n)|\
 (?# 16:	EOF	)(\z))/ni
+
+      DATA_REGEXP = /\G(?:\
+(?# 1:	SPACE	)( )|\
+(?# 2:	NIL	)(NIL)|\
+(?# 3:	NUMBER	)(\d+)|\
+(?# 4:	QUOTED	)"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)"|\
+(?# 5:	LITERAL	)\{(\d+)\}\r\n|\
+(?# 6:	LPAR	)(\()|\
+(?# 7:	RPAR	)(\)))/ni
 
       TEXT_REGEXP = /\G(?:\
 (?# 1:	TEXT	)([^\x00\x80-\xff\r\n]*))/ni
@@ -932,6 +942,7 @@ module Net
       end
 
       def envelope
+	@lex_state = EXPR_DATA
 	match(T_LPAR)
 	date = nstring
 	match(T_SPACE)
@@ -953,6 +964,7 @@ module Net
 	match(T_SPACE)
 	message_id = nstring
 	match(T_RPAR)
+	@lex_state = EXPR_BEG
 	return Envelope.new(date, subject, from, sender, reply_to,
 			    to, cc, bcc, in_reply_to, message_id)
       end
@@ -1006,6 +1018,7 @@ module Net
       end
 
       def body
+	@lex_state = EXPR_DATA
 	match(T_LPAR)
 	token = lookahead
 	if token.symbol == T_LPAR
@@ -1014,6 +1027,7 @@ module Net
 	  result = body_type_1part
 	end
 	match(T_RPAR)
+	@lex_state = EXPR_BEG
 	return result
       end
 
@@ -1639,7 +1653,7 @@ module Net
 	      return Token.new(T_ATOM, $+)
 	    elsif $5
 	      return Token.new(T_QUOTED,
-				 $+.gsub(/\\(["\\])/n, "\\1"))
+			       $+.gsub(/\\(["\\])/n, "\\1"))
 	    elsif $6
 	      return Token.new(T_LPAR, $+)
 	    elsif $7
@@ -1665,6 +1679,34 @@ module Net
 	      return Token.new(T_CRLF, $+)
 	    elsif $16
 	      return Token.new(T_EOF, $+)
+	    else
+	      parse_error("[Net::IMAP BUG] BEG_REGEXP is invalid")
+	    end
+	  else
+	    @str.index(/\S*/n, @pos)
+	    parse_error("unknown token - %s", $&.dump)
+	  end
+	when EXPR_DATA
+	  if @str.index(DATA_REGEXP, @pos)
+	    @pos = $~.end(0)
+	    if $1
+	      return Token.new(T_SPACE, $+)
+	    elsif $2
+	      return Token.new(T_NIL, $+)
+	    elsif $3
+	      return Token.new(T_NUMBER, $+)
+	    elsif $4
+	      return Token.new(T_QUOTED,
+			       $+.gsub(/\\(["\\])/n, "\\1"))
+	    elsif $5
+	      len = $+.to_i
+	      val = @str[@pos, len]
+	      @pos += len
+	      return Token.new(T_LITERAL, val)
+	    elsif $6
+	      return Token.new(T_LPAR, $+)
+	    elsif $7
+	      return Token.new(T_RPAR, $+)
 	    else
 	      parse_error("[Net::IMAP BUG] BEG_REGEXP is invalid")
 	    end
