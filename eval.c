@@ -6619,6 +6619,7 @@ proc_invoke(proc, args, pcall, self)
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
+    _block.frame.self = self;
     ruby_block = &_block;
 
     PUSH_ITER(ITER_CUR);
