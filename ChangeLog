@@ -1,6 +1,11 @@
+Wed May 26 14:19:42 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval, eval): make line number consistent on eval with
+	  Proc.  [ruby-talk:101253]
+
 Wed May 26 13:59:17 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::skip_for_variable): Allow for 
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::skip_for_variable): Allow for
 	  'do' after for statement
 
 Wed May 26 13:56:03 2004  Dave Thomas  <dave@pragprog.com>

@@ -2931,6 +2931,7 @@ rb_eval(self, n)
 	      iter_retry:
 		PUSH_ITER(ITER_PRE);
 		if (nd_type(node) == NODE_ITER) {
+		    ruby_frame->node = node;
 		    result = rb_eval(self, node->nd_iter);
 		}
 		else {
@@ -6042,10 +6043,10 @@ eval(self, src, scope, file, line)
 	ruby_cref = data->cref;
 	old_wrapper = ruby_wrapper;
 	ruby_wrapper = data->wrapper;
-	if ((file == 0 || (line == 1 && strcmp(file, "(eval)") == 0)) && data->body) {
-	    file = data->body->nd_file;
+	if (file == 0 || (line == 1 && strcmp(file, "(eval)") == 0)) {
+	    file = data->frame.node->nd_file;
 	    if (!file) file = "__builtin__";
-	    line = nd_line(data->body);
+	    line = nd_line(data->frame.node);
 	}
 
 	self = data->self;
