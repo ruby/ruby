@@ -1030,6 +1030,17 @@ module DRb
 	raise result
       end
     end
+
+    def pretty_print(q)   # :nodoc:
+      q.pp_object(self)
+    end
+
+    def pretty_print_cycle(q)   # :nodoc:
+      q.object_address_group(self) {
+        q.breakable
+        q.text '...'
+      }
+    end
   end
 
   # Class handling the connection between a DRbObject and the

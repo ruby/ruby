@@ -1,3 +1,7 @@
+Sat Feb 14 11:08:23 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: add pretty_print, thanks gotoken.
+
 Fri Feb 13 12:35:08 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: File.link may raise EINVAL and
