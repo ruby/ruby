@@ -1,3 +1,8 @@
+Mon Oct  6 15:17:23 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_iterator.rb (test_block_argument_without_paren):
+	  added. (follows sample/test.rb)
+
 Mon Oct  6 11:57:06 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_beginendblock.rb, test/ruby/beginmainend.rb: added

@@ -56,14 +56,19 @@ class TestIterator < Test::Unit::TestCase
     tt{|i| break if i == 5}
     assert_equal(5, i)
 
-    $x = false
-    begin
+    assert_raises(ArgumentError) do
       tt3{}
-    rescue ArgumentError
-      $x = true
-    rescue Exception
     end
-    assert($x)
+  end
+
+  def tt4 &block
+    tt2(raise(ArgumentError,""),&block)
+  end
+
+  def test_block_argument_without_paren
+    assert_raises(ArgumentError) do
+      tt4{}
+    end
   end
 
   # iterator break/redo/next/retry
