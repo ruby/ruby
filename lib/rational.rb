@@ -271,7 +271,7 @@ class Integer
     self
   end
   
-  def denomerator
+  def denomirator
     1
   end
   

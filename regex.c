@@ -3904,8 +3904,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	/* Match at the very end of the data. */
       case endbuf2:
 	if (AT_STRINGS_END(d)) {
-	  if (size == 0 || d[-1] != '\n')
-	    break;
+	  break;
 	}
 	/* .. or newline just before the end of the data. */
 	if (*d == '\n' && AT_STRINGS_END(d+1))
