@@ -217,31 +217,34 @@ rb_include_module(klass, module)
     VALUE p;
 
     if (NIL_P(module)) return;
+    if (klass == module) return;
 
     switch (TYPE(module)) {
       case T_MODULE:
       case T_CLASS:
+      case T_ICLASS:
 	break;
       default:
 	Check_Type(module, T_MODULE);
     }
 
-    if (klass == module) return;
-    rb_clear_cache();
- 
     while (module) {
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
 	    if (BUILTIN_TYPE(p) == T_ICLASS &&
-		RCLASS(p)->m_tbl == RCLASS(module)->m_tbl)
+		RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
+		if (RCLASS(module)->super) {
+		    rb_include_module(p, RCLASS(module)->super);
+		}
 		return;
+	    }
 	}
-
 	RCLASS(klass)->super =
 	    include_class_new(module, RCLASS(klass)->super);
 	klass = RCLASS(klass)->super;
 	module = RCLASS(module)->super;
     }
+    rb_clear_cache();
 }
 
 VALUE

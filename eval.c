@@ -3982,6 +3982,18 @@ mod_module_eval(argc, argv, mod)
 
 VALUE rb_load_path;
 
+static int
+is_absolute_path(path)
+    char *path;
+{
+    if (path[0] == '/') return 1;
+#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+    if (path[0] == '\\') return 1;
+    if (strlen(path) > 2 && path[1] == ':') return 1;
+#endif
+    return 0;
+}
+
 static char*
 find_file(file)
     char *file;
@@ -3990,11 +4002,13 @@ find_file(file)
     VALUE vpath;
     char *path;
 
-    if (file[0] == '/') return file;
-#if defined(MSDOS) || defined(NT) || defined(__human68k__)
-    if (file[0] == '\\') return file;
-    if (file[1] == ':') return file;
-#endif
+    if (is_absolute_path(file)) {
+	FILE *f = fopen(file, "r");
+
+	if (f == NULL) return 0;
+	fclose(f);
+	return file;
+    }
 
     if (rb_load_path) {
 	int i;
@@ -4603,9 +4617,9 @@ Init_eval()
     rb_define_method(cModule, "module_eval", mod_module_eval, -1);
     rb_define_method(cModule, "class_eval", mod_module_eval, -1);
 
-    rb_define_method(cModule, "remove_method", mod_remove_method, 1);
-    rb_define_method(cModule, "undef_method", mod_undef_method, 1);
-    rb_define_method(cModule, "alias_method", mod_alias_method, 2);
+    rb_define_private_method(cModule, "remove_method", mod_remove_method, 1);
+    rb_define_private_method(cModule, "undef_method", mod_undef_method, 1);
+    rb_define_private_method(cModule, "alias_method", mod_alias_method, 2);
 
     rb_define_singleton_method(cModule, "nesting", mod_nesting, 0);
     rb_define_singleton_method(cModule, "constants", mod_s_constants, 0);

@@ -1188,7 +1188,11 @@ file_s_expand_path(obj, fname)
 
     p = buf;
     if (s[0] == '~') {
-	if (s[1] == '/' || s[1] == '\0') {
+	if (s[1] == '/' || 
+#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+	    s[1] == '\\' || 
+#endif
+	    s[1] == '\0') {
 	    char *dir = getenv("HOME");
 
 	    if (!dir) {

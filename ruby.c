@@ -445,6 +445,13 @@ load_file(fname, script)
 	f = rb_stdin;
     }
     else {
+	FILE *fp = fopen(fname, "r");
+
+	if (fp == NULL) {
+	    LoadError("No such file to load -- %s", fname);
+	}
+	fclose(fp);
+
 	f = file_open(fname, "r");
     }
 

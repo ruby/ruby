@@ -1,4 +1,3 @@
-#!/usr/local/bin/ruby
 #
 #		getopts.rb - 
 #			$Release Version: $

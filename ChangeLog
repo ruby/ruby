@@ -1,8 +1,24 @@
+Mon Apr 20 06:23:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (mod_remove_const): new method.
+
+Sat Apr 18 03:53:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (hash_each_with_index): removed.  use Enumerable's
+	  each_with_index instead.
+
+	* class.c (rb_include_module): check for super modules, since
+ 	  module's included modules may be changed.
+
 Fri Apr 17 11:58:30 1998  NAGAI Hidetoshi  <nagai@dumbo.ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (lib_mainloop): thread and interrupt check.
 
 Fri Apr 17 11:06:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (find_file): try to fopen() to check whether file exists.
+
+	* ruby.c (load_file): ditto.
 
 	* struct.c (struct_aset): struct member can be set by member name.
 

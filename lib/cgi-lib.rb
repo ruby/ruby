@@ -1,4 +1,3 @@
-#!/usr/local/bin/ruby
 #
 # Get CGI String
 #

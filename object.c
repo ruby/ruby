@@ -704,6 +704,7 @@ obj_private_methods(obj)
 
 VALUE obj_instance_variables();
 VALUE obj_remove_instance_variable();
+VALUE mod_remove_const();
 
 static VALUE
 f_integer(obj, arg)
@@ -938,7 +939,8 @@ Init_Object()
     rb_define_method(mKernel, "protected_methods", obj_protected_methods, 0);
     rb_define_method(mKernel, "private_methods", obj_private_methods, 0);
     rb_define_method(mKernel, "instance_variables", obj_instance_variables, 0);
-    rb_define_method(mKernel, "remove_instance_variable", obj_remove_instance_variable, 0);
+    rb_define_private_method(mKernel, "remove_instance_variable",
+			     obj_remove_instance_variable, 0);
 
     rb_define_method(mKernel, "instance_of?", obj_is_instance_of, 1);
     rb_define_method(mKernel, "kind_of?", obj_is_kind_of, 1);
@@ -997,6 +999,7 @@ Init_Object()
     rb_define_method(cModule, "const_get", mod_const_get, 1);
     rb_define_method(cModule, "const_set", mod_const_set, 2);
     rb_define_method(cModule, "const_defined?", mod_const_defined, 1);
+    rb_define_private_method(cModule, "remove_const", mod_remove_const, 1);
     rb_define_private_method(cModule, "method_added", obj_dummy, 1);
 
     rb_define_method(cClass, "new", class_new_instance, -1);

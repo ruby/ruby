@@ -1,9 +1,8 @@
-#!/usr/local/bin/ruby
 #
 #   tracer.rb - 
 #   	$Release Version: 0.2$
-#   	$Revision: 1.6 $
-#   	$Date: 1998/02/02 08:12:02 $
+#   	$Revision: 1.1.1.1.4.1 $
+#   	$Date: 1998/02/03 10:02:57 $
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --
@@ -15,7 +14,7 @@
 # tracer main class
 #
 class Tracer
-  RCS_ID='-$Id: tracer.rb,v 1.6 1998/02/02 08:12:02 keiju Exp keiju $-'
+  RCS_ID='-$Id: tracer.rb,v 1.1.1.1.4.1 1998/02/03 10:02:57 matz Exp $-'
   
   MY_FILE_NAME = caller(0)[0].scan(/^(.*):[0-9]+$/)[0]
   

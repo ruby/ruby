@@ -1260,15 +1260,15 @@ dln_load(file)
 	flags = BIND_DEFERRED;
 	lib = shl_load(file, flags, 0);
 	if (lib == NULL) {
-	    rb_sys_fail(file);
+	    extern int errno;
+	    LoadError("%s - %s", strerror(errno), file);
 	}
 	shl_findsym(&lib, buf, TYPE_PROCEDURE, (void*)&init_fct);
 	if (init_fct == NULL) {
 	    shl_findsym(&lib, buf, TYPE_UNDEFINED, (void*)&init_fct);
 	    if (init_fct == NULL) {
-		extern int errno;
 		errno = ENOSYM;
-		rb_sys_fail(file);
+		LoadError("%s - %s", strerror(ENOSYM), file);
 	    }
 	}
 	(*init_fct)();
@@ -1414,7 +1414,7 @@ dln_find_1(fname, path, exe_flag)
       return fname;
 #if defined(MSDOS) || defined(NT) || defined(__human68k__)
     if (fname[0] == '\\') return fname;
-    if (fname[1] == ':') return fname;
+    if (strlen(fname) > 2 && fname[1] == ':') return fname;
     if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
       return fname;
 #endif
@@ -1446,7 +1446,11 @@ dln_find_1(fname, path, exe_flag)
 	    **	take the path literally.
 	    */
 
-	    if (*dp == '~' && (l == 1 || dp[1] == '/')) {
+	    if (*dp == '~' && (l == 1 ||
+#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+			       dp[1] == '\\' || 
+#endif
+			       dp[1] == '/')) {
 		char *home;
 
 		home = getenv("HOME");

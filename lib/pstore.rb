@@ -1,5 +1,4 @@
-#!/usr/local/bin/ruby
-
+#
 # How to use:
 #
 # db = PStore.new("/tmp/foo")

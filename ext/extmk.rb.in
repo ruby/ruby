@@ -223,7 +223,6 @@ def create_makefile(target)
     end
     $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
-  $libs = "" unless $libs
 
   $srcdir = $topdir + "/ext/" + target
   mfile = open("Makefile", "w")
@@ -352,9 +351,9 @@ def extmake(target)
 
   return if $nodynamic and not $static
 
-  $local_libs = nil
-  $libs = nil
   $objs = nil
+  $libs = "-lc"
+  $local_libs = nil		# to be assigned in extconf.rb
   $CFLAGS = nil
   $LDFLAGS = nil
 

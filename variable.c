@@ -786,10 +786,10 @@ VALUE
 obj_remove_instance_variable(obj, name)
     VALUE obj, name;
 {
-    VALUE val;
+    VALUE val = Qnil;
     ID id = rb_to_id(name);
 
-    if (rb_ivar_defined(obj, id)) {
+    if (!rb_is_instance_id(id)) {
 	NameError("`%s' is not an instance variable", rb_id2name(id));
     }
 
@@ -806,7 +806,7 @@ obj_remove_instance_variable(obj, name)
 		  rb_class2name(CLASS_OF(obj)));
 	break;
     }
-    return obj;
+    return val;
 }
 
 VALUE
@@ -887,6 +887,28 @@ const_i(key, value, ary)
 	}
     }
     return ST_CONTINUE;
+}
+
+VALUE
+mod_remove_const(mod, name)
+    VALUE mod, name;
+{
+    ID id = rb_to_id(name);
+    VALUE val;
+
+    if (!rb_is_const_id(id)) {
+	NameError("`%s' is not constant", rb_id2name(id));
+    }
+
+    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, &id, &val)) {
+	return val;
+    }
+    if (rb_const_defined_at(mod, id)) {
+	NameError("cannot remove %s::%s", 
+		  rb_class2name(mod), rb_id2name(id));
+    }
+    NameError("constant %s::%s not defined", 
+	      rb_class2name(mod), rb_id2name(id));
 }
 
 static int

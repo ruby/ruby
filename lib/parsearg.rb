@@ -1,4 +1,3 @@
-#!/usr/local/bin/ruby
 #
 #		parsearg.rb - parse arguments
 #			$Release Version: $
