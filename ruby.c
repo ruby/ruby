@@ -346,11 +346,14 @@ require_libraries()
     struct req_list *list = req_list_head.next;
     struct req_list *tmp;
 
-    Init_ext();		/* should be called here for some reason :-( */
     save[0] = ruby_eval_tree;
     save[1] = ruby_eval_tree_begin;
     save[2] = NEW_BEGIN(0);
     ruby_eval_tree = ruby_eval_tree_begin = 0;
+    ruby_current_node = 0;
+    Init_ext();		/* should be called here for some reason :-( */
+    ruby_current_node = save[2];
+    ruby_set_current_source();
     req_list_last = 0;
     while (list) {
 	ruby_current_node = 0;

@@ -1,3 +1,8 @@
+Sun Apr 11 19:10:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (require_libraries): restore source file/line after
+	  statically linked extensions initialized.
+
 Sun Apr 11 10:47:04 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/code_objects.rb (RDoc::TopLevel::add_class_or_module): Toplevel
@@ -11,7 +16,7 @@ Sat Apr 10 23:51:13 2004  Dave Thomas  <dave@pragprog.com>
 
 Sat Apr 10 00:00:19 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/markup/simple_markup/inline.rb: Fix problem 
+	* lib/rdoc/markup/simple_markup/inline.rb: Fix problem
 	  with \_cat_<b>dog</b>
 
 Fri Apr  9 17:05:21  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
@@ -28,7 +33,7 @@ Fri Apr  9 17:05:21  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* dir.c (find_dirsep): escaped slash '\/' loses its meaning as
 	  directory separator in Dir.glob.
 
-	[ruby-dev:23291]
+	  [ruby-dev:23291]
 
 Thu Apr  8 20:25:19 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
