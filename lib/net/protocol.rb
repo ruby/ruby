@@ -68,7 +68,7 @@ Object
 
   class Protocol
 
-    Version = '1.1.19'
+    Version = '1.1.20'
 
     class << self
 
