@@ -11698,10 +11698,21 @@ static VALUE
 rb_thread_initialize(thread, args)
     VALUE thread, args;
 {
+    rb_thread_t th;
+
     if (!rb_block_given_p()) {
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
-    return rb_thread_start_0(rb_thread_yield, args, rb_thread_check(thread));
+    th = rb_thread_check(thread);
+    if (th->stk_max) {
+	NODE *node = th->node;
+	if (!node) {
+	    rb_raise(rb_eThreadError, "already initialized thread");
+	}
+	rb_raise(rb_eThreadError, "already initialized thread - %s:%d",
+		 node->nd_file, nd_line(node));
+    }
+    return rb_thread_start_0(rb_thread_yield, args, th);
 }
 
 

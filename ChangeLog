@@ -1,3 +1,8 @@
+Wed Jan  5 12:49:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_initialize): Thread objects cannot be initialized
+	  again.  fixed: [ruby-core:04067]
+
 Wed Jan  5 02:30:11 2005  Tanaka Akira  <akr@m17n.org>
 
 	* random.c (init_by_array): imported from mt19937ar-cok.tgz.
@@ -13,7 +18,7 @@ Wed Jan  5 02:30:11 2005  Tanaka Akira  <akr@m17n.org>
 
 Tue Jan  4 21:25:43 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* test/drb/{test_drbssl.rb,test_drbunix.rb,ut_drb.rb}: use 
+	* test/drb/{test_drbssl.rb,test_drbunix.rb,ut_drb.rb}: use
 	  DRbService.ext_service. reduce sleep.
 
 Mon Jan  3 14:01:54 2005  Tanaka Akira  <akr@m17n.org>
@@ -28,7 +33,7 @@ Mon Jan  3 11:37:42 2005  Tanaka Akira  <akr@m17n.org>
 
 Mon Jan  3 11:03:37 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* test/drb/test_drb.rb: move TestDRbReusePort to new file. 
+	* test/drb/test_drb.rb: move TestDRbReusePort to new file.
 	  [ruby-dev:25238]
 
 	* test/drb/drbtest.rb: change timeout.
@@ -93,7 +98,7 @@ Sat Jan  1 16:21:29 2005  Minero Aoki  <aamine@loveruby.net>
 
 Sat Jan  1 04:20:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openssl/ossl_ns_spki.c (ossl_spki_set_challenge): should call 
+	* ext/openssl/ossl_ns_spki.c (ossl_spki_set_challenge): should call
 	  StringValue before GetSPKI. fixed: [ruby-dev:25359].
 
 Fri Dec 31 14:10:43 2004  Dave Thomas  <dave@pragprog.com>
