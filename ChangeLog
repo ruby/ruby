@@ -1,3 +1,8 @@
+Thu Mar 20 18:31:37 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse.rb (OptionParser#order!): follow recent change
+	  of proc argument.
+
 Thu Mar 20 16:12:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_to_s): change format specifier to "%.15g" to

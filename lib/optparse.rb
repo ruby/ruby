@@ -1147,7 +1147,7 @@ Default options, which never appear in option summary.
 	    opt, sw, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
 	    raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
 	    argv.unshift(opt) if opt and (opt = opt.sub(/\A-*/, '-')) != '-'
-	    sw.yield(val) if sw
+	    sw.yield(*val) if sw
 	  rescue ParseError
 	    raise $!.set_option(arg, has_arg)
 	  end
