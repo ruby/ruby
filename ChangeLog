@@ -1,3 +1,8 @@
+Thu Jan  8 16:51:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/wsdl/datetime/test_datetime.rb: fixed a stupid testcase which
+	  dumps "E" at month-end.
+
 Thu Jan  8 11:20:01 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c, object.c, process.c, re.c: don't use C++ style comments.
