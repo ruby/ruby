@@ -4655,6 +4655,7 @@ rb_load(fname, wrap)
     int state;
     char *file;
     volatile ID last_func;
+    volatile VALUE wrapper = 0;
     VALUE self = ruby_top_self;
     TMP_PROTECT;
 
@@ -4671,9 +4672,11 @@ rb_load(fname, wrap)
 
     PUSH_VARS();
     PUSH_CLASS();
+    wrapper = ruby_wrapper;
     if (!wrap) {
 	rb_secure(4);		/* should alter global state */
 	ruby_class = rb_cObject;
+	ruby_wrapper = 0;
     }
     else {
 	/* load in anonymous module as toplevel */
@@ -4720,7 +4723,7 @@ rb_load(fname, wrap)
     POP_FRAME();
     POP_CLASS();
     POP_VARS();
-    ruby_wrapper = 0;
+    ruby_wrapper = wrapper;
     if (ruby_nerrs > 0) {
 	ruby_nerrs = 0;
 	rb_exc_raise(ruby_errinfo);
@@ -5193,7 +5196,8 @@ struct end_proc_data {
     VALUE data;
     struct end_proc_data *next;
 };
-static struct end_proc_data *end_proc_data;
+
+static struct end_proc_data *end_procs, *ephemeral_end_procs;
 
 void
 rb_set_end_proc(func, data)
@@ -5201,12 +5205,31 @@ rb_set_end_proc(func, data)
     VALUE data;
 {
     struct end_proc_data *link = ALLOC(struct end_proc_data);
+    struct end_proc_data **list;
 
-    link->next = end_proc_data;
+    if (ruby_wrapper) list = &ephemeral_end_procs;
+    else              list = &end_procs;
+    link->next = *list;
     link->func = func;
     link->data = data;
-    rb_global_variable(&link->data);
-    end_proc_data = link;
+    *list = link;
+}
+
+void
+rb_mark_end_proc()
+{
+    struct end_proc_data *link;
+
+    link = end_procs;
+    while (link) {
+	rb_gc_mark(link->data);
+	link = link->next;
+    }
+    link = ephemeral_end_procs;
+    while (link) {
+	rb_gc_mark(link->data);
+	link = link->next;
+    }
 }
 
 static void
@@ -5239,17 +5262,20 @@ rb_f_at_exit()
 void
 rb_exec_end_proc()
 {
-    struct end_proc_data *link = end_proc_data;
-    struct end_proc_data *tmp;
+    struct end_proc_data *link;
     int status;
 
+    link = end_procs;
     while (link) {
 	rb_protect((VALUE(*)())link->func, link->data, &status);
-	tmp = link->next;
-	free(link);
-	link = tmp;
+	link = link->next;
     }
-    end_proc_data = 0;
+    while (ephemeral_end_procs) {
+	link = ephemeral_end_procs;
+	ephemeral_end_procs = link->next;
+	rb_protect((VALUE(*)())link->func, link->data, &status);
+	free(link);
+    }
 }
 
 void

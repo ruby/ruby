@@ -664,7 +664,6 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "return"
 	       "then"
 	       "throw"
-	       "self"
 	       "super"
 	       "unless"
 	       "undef"
@@ -676,8 +675,8 @@ An end of a defun is found by moving forward from the beginning of one."
 	    "\\)\\>[^_]")
 	   2)
      ;; variables
-     '("\\b\\(nil\\|self\\|true\\|false\\)\\b"
-       1 font-lock-variable-name-face)
+     '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\b[^_]"
+       2 font-lock-variable-name-face)
      ;; variables
      '("[$@].\\(\\w\\|_\\)*"
        0 font-lock-variable-name-face)

@@ -1,3 +1,31 @@
+Mon Nov 29 15:28:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_path2class): evaluated value from path should be
+	  module or class.
+
+Fri Nov 26 18:12:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_exec_end_proc): should remove only end_procs defined
+	  within load wrapper.
+
+	* eval.c (rb_load): save and restore ruby_wrapper around loading.
+
+	* eval.c (rb_mark_end_proc): mark end procs registered by END{} or
+	  at_exit{}. 
+
+	* eval.c (rb_set_end_proc): should not call rb_global_variable()
+	  on heap address;  it crashed mod_ruby.
+
+Fri Nov 26 18:12:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* enum.c (enum_grep): does not return nil.
+
+	* eval.c (rb_mark_end_proc): mark end procs registered by END{} or
+	  at_exit{}. 
+
+	* eval.c (rb_set_end_proc): should not call rb_global_variable()
+	  on heap address;  it crashed mod_ruby.
+
 Thu Nov 18 16:18:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* lib/pstore.rb: mutual lock by flock(2).

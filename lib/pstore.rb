@@ -107,6 +107,7 @@ class PStore
 	    Marshal::dump(@table, file)
 	  rescue
 	    File::rename backup, @filename if File::exist?(backup)
+	    raise
 	  end
 	end
 	@abort = false

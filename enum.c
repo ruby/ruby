@@ -54,7 +54,6 @@ enum_grep(obj, pat)
     }
     else {
 	rb_iterate(rb_each, obj, grep_i, (VALUE)arg);
-	if (RARRAY(tmp)->len == 0) return Qnil;
     }
     return tmp;
 }

@@ -121,6 +121,7 @@ VALUE rb_f_lambda _((void));
 VALUE rb_protect _((VALUE (*)(), VALUE, int*));
 void rb_set_end_proc _((void (*)(), VALUE));
 void rb_exec_end_proc _((void));
+void rb_mark_end_proc _((void));
 void rb_gc_mark_threads _((void));
 void rb_thread_start_timer _((void));
 void rb_thread_stop_timer _((void));
