@@ -11385,13 +11385,8 @@ rb_thread_start_0(fn, arg, th)
     if (th == main_thread) ruby_stop(state);
     rb_thread_remove(th);
 
-    for (block = saved_block; block;) {
-	struct BLOCK *tmp = block;
-
-	if (tmp->frame.argc > 0)
-	    free(tmp->frame.argv);
-	block = tmp->prev;
-	free((void*)tmp);
+    if (saved_block) {
+	blk_free(saved_block);
     }
 
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {
