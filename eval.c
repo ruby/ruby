@@ -1735,7 +1735,7 @@ is_defined(self, node, buf)
       case NODE_GASGN:
       case NODE_CDECL:
       case NODE_CVDECL:
-      case NODE_CVASGN2:
+      case NODE_CVASGN:
 	return "assignment";
 
       case NODE_LVAR:
@@ -1768,9 +1768,10 @@ is_defined(self, node, buf)
 	    }
 	    break;
 	}
+	self = rb_iv_get(ruby_cbase, "__attached__");
 	/* fall through */
       case NODE_CVAR2:
-	if (rb_cvar_defined_singleton(self, node->nd_vid)) {
+	if (rb_cvar_defined(rb_cvar_singleton(self), node->nd_vid)) {
 	    return "class variable";
 	}
 	break;
@@ -2255,6 +2256,7 @@ rb_eval(self, n)
 	    if (state == TAG_RAISE) {
 		NODE * volatile resq = node->nd_resq;
 
+		ruby_sourceline = nd_line(node);
 		while (resq) {
 		    if (handle_rescue(self, resq)) {
 			state = 0;
@@ -2598,15 +2600,18 @@ rb_eval(self, n)
 	if (NIL_P(ruby_cbase)) {
 	    rb_raise(rb_eTypeError, "no class/module to define class variable");
 	}
-	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
-	    result = rb_eval(self, node->nd_value);
-	    rb_cvar_declare(ruby_cbase, node->nd_vid, result);
+	result = rb_eval(self, node->nd_value);
+	if (FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	    rb_cvar_declare(rb_cvar_singleton(rb_iv_get(ruby_cbase, "__attached__")),
+			    node->nd_vid, result);
 	    break;
 	}
-	/* fall through */
-      case NODE_CVASGN2:
+	rb_cvar_declare(ruby_cbase, node->nd_vid, result);
+	break;
+
+      case NODE_CVASGN:
 	result = rb_eval(self, node->nd_value);
-	rb_cvar_set_singleton(self, node->nd_vid, result);
+	rb_cvar_set(rb_cvar_singleton(self), node->nd_vid, result);
 	break;
 
       case NODE_LVAR:
@@ -2632,14 +2637,15 @@ rb_eval(self, n)
 	result = ev_const_get(RNODE(ruby_frame->cbase), node->nd_vid);
 	break;
 
-      case NODE_CVAR:
+      case NODE_CVAR:		/* normal method */
 	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    result = rb_cvar_get(ruby_cbase, node->nd_vid);
 	    break;
 	}
+	self = rb_iv_get(ruby_cbase, "__attached__");
 	/* fall through */
-      case NODE_CVAR2:
-	result = rb_cvar_get_singleton(self, node->nd_vid);
+      case NODE_CVAR2:		/* singleton method */
+	result = rb_cvar_get(rb_cvar_singleton(self), node->nd_vid);
 	break;
 
       case NODE_BLOCK_ARG:
@@ -3634,11 +3640,14 @@ assign(self, lhs, val, check)
 	break;
 
       case NODE_CVDECL:
-	rb_cvar_declare(ruby_cbase, lhs->nd_vid, val);
-	break;
-
-      case NODE_CVASGN2:
-	rb_cvar_set(CLASS_OF(self), lhs->nd_vid, val);
+	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	    rb_cvar_declare(ruby_cbase, lhs->nd_vid, val);
+	    break;
+	}
+	self = rb_iv_get(ruby_cbase, "__attached__");
+	/* fall through */
+      case NODE_CVASGN:
+	rb_cvar_set(rb_cvar_singleton(self), lhs->nd_vid, val);
 	break;
 
       case NODE_MASGN:

@@ -1,4 +1,12 @@
+Tue Nov 21 03:39:41 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): clarify class variable behavior for
+	  singleton classes.
+
 Mon Nov 20 13:45:21 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): set ruby_sourceline before evaluating
+	  exceptions.
 
 	* gc.c (gc_sweep): defer finalization in GC during compilation or
 	  interrupt prohibit section.

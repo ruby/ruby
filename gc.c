@@ -486,7 +486,7 @@ rb_gc_mark(ptr)
 	  case NODE_IASGN:
 	  case NODE_CDECL:
 	  case NODE_CVDECL:
-	  case NODE_CVASGN2:
+	  case NODE_CVASGN:
 	  case NODE_MODULE:
 	  case NODE_COLON3:
 	  case NODE_OPT_N:
@@ -661,7 +661,7 @@ gc_sweep()
     int i, used = heaps_used;
 
     if (ruby_in_compile) {
-	/* sould not reclaim nodes during compilation */
+	/* should not reclaim nodes during compilation */
 	for (i = 0; i < used; i++) {
 	    p = heaps[i]; pend = p + HEAP_SLOTS;
 	    while (p < pend) {

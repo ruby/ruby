@@ -4089,7 +4089,7 @@ assignable(id, val)
 	return NEW_CDECL(id, val);
     }
     else if (is_class_id(id)) {
-	if (in_single) return NEW_CVASGN2(id, val);
+	if (in_single) return NEW_CVASGN(id, val);
 	return NEW_CVDECL(id, val);
     }
     else {
@@ -4179,7 +4179,7 @@ node_assign(lhs, rhs)
       case NODE_MASGN:
       case NODE_CDECL:
       case NODE_CVDECL:
-      case NODE_CVASGN2:
+      case NODE_CVASGN:
 	lhs->nd_value = rhs;
 	break;
 

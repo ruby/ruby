@@ -1327,6 +1327,20 @@ rb_define_global_const(name, val)
     rb_define_const(rb_cObject, name, val);
 }
 
+VALUE
+rb_cvar_singleton(obj)
+    VALUE obj;
+{
+    switch (TYPE(obj)) {
+      case T_MODULE:
+      case T_CLASS:
+	return obj;
+      default:
+	break;
+    }
+    return CLASS_OF(obj);
+}
+
 void
 rb_cvar_set(klass, id, val)
     VALUE klass;
@@ -1409,55 +1423,6 @@ rb_cvar_defined(klass, id)
     }
 
     return Qfalse;
-}
-
-int
-rb_cvar_defined_singleton(obj, id)
-    VALUE obj;
-    ID id;
-{
-    switch (TYPE(obj)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
-	obj = CLASS_OF(obj);
-	break;
-    }
-    return rb_cvar_defined(obj, id);
-}
-
-void
-rb_cvar_set_singleton(obj, id, value)
-    VALUE obj;
-    ID id;
-    VALUE value;
-{
-    switch (TYPE(obj)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
-	obj = CLASS_OF(obj);
-	break;
-    }
-    rb_cvar_set(obj, id, value);
-}
-
-VALUE
-rb_cvar_get_singleton(obj, id)
-    VALUE obj;
-    ID id;
-{
-    switch (TYPE(obj)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
-	obj = CLASS_OF(obj);
-	break;
-    }
-    return rb_cvar_get(obj, id);
 }
 
 void
