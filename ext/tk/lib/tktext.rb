@@ -427,6 +427,98 @@ class TkText<TkTextWin
   def rsearch(pat,start,stop=None)
     rsearch_with_length(pat,start,stop)[0]
   end
+
+  def _dump(type, *index)
+    str = tk_send('dump', type, *index)
+    result = []
+    sel = nil
+    i = 0
+    while i < str.size
+      # retrieve key
+      idx = str.index(/ /, i)
+      result.push str[i..(idx-1)]
+      i = idx + 1
+      
+      # retrieve value
+      case result[-1]
+      when 'text'
+	if str[i] == ?{
+	  # text formed as {...}
+	  val, i = _retrieve_braced_text(str, i)
+	  result.push val
+	else
+	  # text which may contain backslahes
+	  val, i = _retrieve_backslashed_text(str, i)
+	  result.push val
+	end
+      else
+	idx = str.index(/ /, i)
+	val = str[i..(idx-1)]
+	case result[-1]
+	when 'mark'
+	  case val
+	  when 'insert'
+	    result.push TkTextMarkInsert.new(self)
+	  when 'current'
+	    result.push TkTextMarkCurrent.new(self)
+	  when 'anchor'
+	    result.push TkTextMarkAnchor.new(self)
+	  else
+	    result.push tk_tcl2rb(val)
+	  end
+	when 'tagon'
+	  if val == 'sel'
+	    if sel
+	      result.push sel
+	    else
+	      result.push TkTextTagSel.new(self)
+	    end
+	  else
+	    result.push tk_tcl2rb val
+	  end
+	when 'tagoff'
+	    result.push tk_tcl2rb sel
+	when 'window'
+	  result.push tk_tcl2rb val
+	end
+	i = idx + 1
+      end
+
+      # retrieve index
+      idx = str.index(/ /, i)
+      if idx
+	result.push str[i..(idx-1)]
+	i = idx + 1
+      else
+	result.push str[i..-1]
+	break
+      end
+    end
+    
+    kvis = []
+    until result.empty?
+      kvis.push [result.shift, result.shift, result.shift]
+    end
+    kvis  # result is [[key1, value1, index1], [key2, value2, index2], ...]
+  end
+  private :_dump
+
+  def dump_all(*index)
+    _dump('-all', *index)
+  end
+  def dump_mark(*index)
+    _dump('-mark', *index)
+  end
+  def dump_tag(*index)
+    _dump('-tag', *index)
+  end
+  def dump_text(*index)
+    _dump('-text', *index)
+  end
+  def dump_window(*index)
+    _dump('-window', *index)
+  end
+
 end
 
 class TkTextTag<TkObject
@@ -739,81 +831,6 @@ class TkTextWindow<TkObject
     end
   end
 
-  def _dump(type, *index)
-    str = tk_send('dump', type, *index)
-    result = []
-    sel = nil
-    i = 0
-    while i < str.size
-      # retrieve key
-      idx = str.index(/ /, i)
-      result.push str[i..(idx-1)]
-      i = idx + 1
-      
-      # retrieve value
-      case result[-1]
-      when 'text'
-	if str[i] == ?{
-	  # text formed as {...}
-	  val, i = _retrieve_braced_text(str, i)
-	  result.push val
-	else
-	  # text which may contain backslahes
-	  val, i = _retrieve_backslashed_text(str, i)
-	  result.push val
-	end
-      else
-	idx = str.index(/ /, i)
-	val = str[i..(idx-1)]
-	case result[-1]
-	when 'mark'
-	  case val
-	  when 'insert'
-	    result.push TkTextMarkInsert.new(self)
-	  when 'current'
-	    result.push TkTextMarkCurrent.new(self)
-	  when 'anchor'
-	    result.push TkTextMarkAnchor.new(self)
-	  else
-	    result.push tk_tcl2rb(val)
-	  end
-	when 'tagon'
-	  if val == 'sel'
-	    if sel
-	      result.push sel
-	    else
-	      result.push TkTextTagSel.new(self)
-	    end
-	  else
-	    result.push tk_tcl2rb val
-	  end
-	when 'tagoff'
-	    result.push tk_tcl2rb sel
-	when 'window'
-	  result.push tk_tcl2rb val
-	end
-	i = idx + 1
-      end
-
-      # retrieve index
-      idx = str.index(/ /, i)
-      if idx
-	result.push str[i..(idx-1)]
-	i = idx + 1
-      else
-	result.push str[i..-1]
-	break
-      end
-    end
-    
-    kvis = []
-    until result.empty?
-      kvis.push [result.shift, result.shift, result.shift]
-    end
-    kvis  # result is [[key1, value1, index1], [key2, value2, index2], ...]
-  end
-  private :_dump
-
   def _retrieve_braced_text(str, i)
     cnt = 0
     idx = i
@@ -850,21 +867,6 @@ class TkTextWindow<TkObject
   end
   private :_retrieve_backslashed_text
 
-  def dump_all(*index)
-    _dump('-all', *index)
-  end
-  def dump_mark(*index)
-    _dump('-mark', *index)
-  end
-  def dump_tag(*index)
-    _dump('-tag', *index)
-  end
-  def dump_text(*index)
-    _dump('-text', *index)
-  end
-  def dump_window(*index)
-    _dump('-window', *index)
-  end
 end
 
 class TkTextImage<TkObject

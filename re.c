@@ -243,27 +243,27 @@ rb_reg_desc(s, len, re)
 {
     VALUE str = rb_str_new2("/");
     rb_reg_expr_str(str, s, len);
-    rb_str_cat(str, "/", 1);
+    rb_str_cat2(str, "/");
     if (re) {
 	if (FL_TEST(re, REG_IGNORECASE))
-	    rb_str_cat(str, "i", 1);
+	    rb_str_cat2(str, "i");
 	if (FL_TEST(re, REG_EXTENDED))
-	    rb_str_cat(str, "x", 1);
+	    rb_str_cat2(str, "x");
 	if (FL_TEST(re, REG_POSIXLINE))
-	    rb_str_cat(str, "p", 1);
+	    rb_str_cat2(str, "p");
 	if (FL_TEST(re, KCODE_FIXED)) {
 	    switch ((RBASIC(re)->flags & KCODE_MASK)) {
 	      case KCODE_NONE:
-		rb_str_cat(str, "n", 1);
+		rb_str_cat2(str, "n");
 		break;
 	      case KCODE_EUC:
-		rb_str_cat(str, "e", 1);
+		rb_str_cat2(str, "e");
 		break;
 	      case KCODE_SJIS:
-		rb_str_cat(str, "s", 1);
+		rb_str_cat2(str, "s");
 		break;
 	      case KCODE_UTF8:
-		rb_str_cat(str, "u", 1);
+		rb_str_cat2(str, "u");
 		break;
 	    }
 	}

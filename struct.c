@@ -55,7 +55,7 @@ rb_struct_s_members(obj)
     ary = rb_ary_new2(RARRAY(member)->len);
     p = RARRAY(member)->ptr; pend = p + RARRAY(member)->len;
     while (p < pend) {
-	rb_ary_push(ary, rb_str_new2(rb_id2name(FIX2INT(*p))));
+	rb_ary_push(ary, rb_str_new2(rb_id2name(SYM2ID(*p))));
 	p++;
     }
 
@@ -135,7 +135,7 @@ rb_struct_set(obj, val)
     }
     for (i=0; i<RARRAY(member)->len; i++) {
 	slot = RARRAY(member)->ptr[i];
-	if (rb_id_attrset(FIX2INT(slot)) == rb_frame_last_func()) {
+	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_last_func()) {
 	    return RSTRUCT(obj)->ptr[i] = val;
 	}
     }
@@ -169,7 +169,7 @@ make_struct(name, member, klass)
     rb_define_singleton_method(nstr, "[]", struct_alloc, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members, 0);
     for (i=0; i< RARRAY(member)->len; i++) {
-	ID id = FIX2INT(RARRAY(member)->ptr[i]);
+	ID id = SYM2ID(RARRAY(member)->ptr[i]);
 	if (i<10) {
 	    rb_define_method_id(nstr, id, ref_func[i], 0);
 	}
@@ -210,7 +210,7 @@ rb_struct_define(name, va_alist)
     va_init_list(ar, name);
     while (mem = va_arg(ar, char*)) {
 	ID slot = rb_intern(mem);
-	rb_ary_push(ary, INT2FIX(slot));
+	rb_ary_push(ary, ID2SYM(slot));
     }
     va_end(ar);
 
@@ -231,11 +231,11 @@ rb_struct_s_def(argc, argv, klass)
     rb_scan_args(argc, argv, "1*", &name, &rest);
     for (i=0; i<RARRAY(rest)->len; i++) {
 	id = rb_to_id(RARRAY(rest)->ptr[i]);
-	RARRAY(rest)->ptr[i] = INT2FIX(id);
+	RARRAY(rest)->ptr[i] = ID2SYM(id);
     }
     if (TYPE(name) != T_STRING) {
 	id = rb_to_id(name);
-	rb_ary_unshift(rest, INT2FIX(id));
+	rb_ary_unshift(rest, ID2SYM(id));
 	name = Qnil;
     }
     st = make_struct(name, rest, klass);
@@ -252,7 +252,7 @@ rb_struct_initialize(self, values)
     long n;
 
     size = iv_get(klass, "__size__");
-    n = FIX2INT(size);
+    n = FIX2LONG(size);
     if (n < RARRAY(values)->len) {
 	rb_raise(rb_eArgError, "struct size differs");
     }
@@ -357,24 +357,23 @@ inspect_struct(s)
     }
 
     str = rb_str_new2("#<");
-    rb_str_cat(str, cname, strlen(cname));
-    rb_str_cat(str, " ", 1);
+    rb_str_cat2(str, cname);
+    rb_str_cat2(str, " ");
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	VALUE str2, slot;
 	char *p;
 
 	if (i > 0) {
-	    rb_str_cat(str, ", ", 2);
+	    rb_str_cat2(str, ", ");
 	}
 	slot = RARRAY(member)->ptr[i];
-	p = rb_id2name(FIX2LONG(slot));
-	rb_str_cat(str, p, strlen(p));
-	rb_str_cat(str, "=", 1);
+	p = rb_id2name(SYM2ID(slot));
+	rb_str_cat2(str, p);
+	rb_str_cat2(str, "=");
 	str2 = rb_inspect(RSTRUCT(s)->ptr[i]);
-	rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
-	OBJ_INFECT(str, str2);
+	rb_str_append(str, str2);
     }
-    rb_str_cat(str, ">", 1);
+    rb_str_cat2(str, ">");
     OBJ_INFECT(str, s);
 
     return str;
@@ -430,7 +429,7 @@ rb_struct_aref_id(s, id)
 
     len = RARRAY(member)->len;
     for (i=0; i<len; i++) {
-	if (FIX2UINT(RARRAY(member)->ptr[i]) == id) {
+	if (SYM2ID(RARRAY(member)->ptr[i]) == id) {
 	    return RSTRUCT(s)->ptr[i];
 	}
     }
@@ -475,7 +474,7 @@ rb_struct_aset_id(s, id, val)
     if (OBJ_FROZEN(s)) rb_error_frozen("Struct");
     len = RARRAY(member)->len;
     for (i=0; i<len; i++) {
-	if (FIX2UINT(RARRAY(member)->ptr[i]) == id) {
+	if (SYM2ID(RARRAY(member)->ptr[i]) == id) {
 	    RSTRUCT(s)->ptr[i] = val;
 	    return val;
 	}

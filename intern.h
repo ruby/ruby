@@ -286,6 +286,8 @@ void rb_str_modify _((VALUE));
 VALUE rb_str_freeze _((VALUE));
 VALUE rb_str_resize _((VALUE, long));
 VALUE rb_str_cat _((VALUE, const char*, long));
+VALUE rb_str_cat2 _((VALUE, const char*));
+VALUE rb_str_append _((VALUE, VALUE));
 VALUE rb_str_concat _((VALUE, VALUE));
 int rb_str_hash _((VALUE));
 int rb_str_cmp _((VALUE, VALUE));

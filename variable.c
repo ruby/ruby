@@ -49,8 +49,8 @@ fc_i(key, value, res)
     name = rb_id2name(key);
     if (res->path) {
 	path = rb_str_dup(res->path);
-	rb_str_cat(path, "::", 2);
-	rb_str_cat(path, name, strlen(name));
+	rb_str_cat2(path, "::");
+	rb_str_cat2(path, name);
     }
     else {
 	path = rb_str_new2(name);
@@ -129,7 +129,7 @@ classname(klass)
 	ID classid = rb_intern("__classid__");
 
 	if (st_lookup(ROBJECT(klass)->iv_tbl, classid, &path)) {
-	    path = rb_str_new2(rb_id2name(FIX2INT(path)));
+	    path = rb_str_new2(rb_id2name(SYM2ID(path)));
 	    st_insert(ROBJECT(klass)->iv_tbl, classpath, path);
 	    st_delete(RCLASS(klass)->iv_tbl, &classid, 0);
 	}
@@ -185,8 +185,8 @@ rb_set_class_path(klass, under, name)
     }
     else {
 	str = rb_str_dup(rb_class_path(under));
-	rb_str_cat(str, "::", 2);
-	rb_str_cat(str, name, strlen(name));
+	rb_str_cat2(str, "::");
+	rb_str_cat2(str, name);
     }
     rb_iv_set(klass, "__classpath__", str);
 }
@@ -216,7 +216,7 @@ rb_name_class(klass, id)
     VALUE klass;
     ID id;
 {
-    rb_iv_set(klass, "__classid__", INT2FIX(id));
+    rb_iv_set(klass, "__classid__", ID2SYM(id));
 }
 
 static st_table *autoload_tbl = 0;

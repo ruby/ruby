@@ -2686,8 +2686,8 @@ rb_eval(self, node)
 			str2 = rb_obj_as_string(str2);
 			break;
 		    }
-		    rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
-		    if (OBJ_TAINTED(str2)) OBJ_TAINT(str);
+		    rb_str_append(str, str2);
+		    OBJ_INFECT(str, str2);
 		}
 		list = list->nd_next;
 	    }
@@ -4524,8 +4524,8 @@ eval(self, src, scope, file, line)
 	    if (strcmp(file, "(eval)") == 0) {
 		if (ruby_sourceline > 1) {
 		    err = RARRAY(errat)->ptr[0];
-		    rb_str_cat(err, ": ", 2);
-		    rb_str_concat(err, ruby_errinfo);
+		    rb_str_cat2(err, ": ");
+		    rb_str_append(err, ruby_errinfo);
 		}
 		else {
 		    err = rb_str_dup(ruby_errinfo);
@@ -4560,7 +4560,7 @@ rb_f_eval(argc, argv, self)
 	line = NUM2INT(vline);
     }
 
-    if (ruby_safe_level >= 3) {
+    if (ruby_safe_level >= 4) {
 	Check_Type(src, T_STRING);
     }
     else {
@@ -4697,7 +4697,12 @@ specific_eval(argc, argv, klass, self)
     int   iter = rb_iterator_p();
 
     if (argc > 0) {
-	Check_SafeStr(argv[0]);
+	if (ruby_safe_level >= 4) {
+	    Check_Type(argv[0], T_STRING);
+	}
+	else {
+	    Check_SafeStr(argv[0]);
+	}
 	if (argc > 3) {
 	    rb_raise(rb_eArgError, "wrong # of arguments: %s(src) or %s{..}",
 		     rb_id2name(ruby_frame->last_func),
@@ -5708,7 +5713,7 @@ proc_set_safe_level(data)
 }
 
 static VALUE
-proc_s_new(klass)
+proc_new(klass)
     VALUE klass;
 {
     volatile VALUE proc;
@@ -5743,10 +5748,22 @@ proc_s_new(klass)
     return proc;
 }
 
+static VALUE
+proc_s_new(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE proc = proc_new(klass);
+
+    rb_obj_call_init(proc, argc, argv);
+    return proc;
+}
+
 VALUE
 rb_f_lambda()
 {
-    return proc_s_new(rb_cProc);
+    return proc_new(rb_cProc);
 }
 
 static int
@@ -5761,6 +5778,21 @@ blk_orphan(data)
 	return 1;
     }
     return 0;
+}
+
+static VALUE
+callargs(args)
+    VALUE args;
+{
+    switch (RARRAY(args)->len) {
+      case 0:
+	return Qnil;
+	break;
+      case 1:
+	return RARRAY(args)->ptr[0];
+      default:
+	return args;
+    }
 }
 
 static VALUE
@@ -5786,14 +5818,7 @@ proc_call(proc, args)
     ruby_frame->iter = ITER_CUR;
 
     if (TYPE(args) == T_ARRAY) {
-	switch (RARRAY(args)->len) {
-	  case 0:
-	    args = Qnil;
-	    break;
-	  case 1:
-	    args = RARRAY(args)->ptr[0];
-	    break;
-	}
+	args = callargs(args);
     }
 
     if (orphan) {/* orphan procedure */
@@ -6087,14 +6112,14 @@ method_inspect(method)
     Data_Get_Struct(method, struct METHOD, data);
     str = rb_str_new2("#<");
     s = rb_class2name(CLASS_OF(method));
-    rb_str_cat(str, s, strlen(s));
-    rb_str_cat(str, ": ", 2);
+    rb_str_cat2(str, s);
+    rb_str_cat2(str, ": ");
     s = rb_class2name(data->oklass);
-    rb_str_cat(str, s, strlen(s));
-    rb_str_cat(str, "#", 1);
+    rb_str_cat2(str, s);
+    rb_str_cat2(str, "#");
     s = rb_id2name(data->oid);
-    rb_str_cat(str, s, strlen(s));
-    rb_str_cat(str, ">", 1);
+    rb_str_cat2(str, s);
+    rb_str_cat2(str, ">");
 
     return str;
 }
@@ -6138,7 +6163,7 @@ Init_Proc()
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);
-    rb_define_singleton_method(rb_cProc, "new", proc_s_new, 0);
+    rb_define_singleton_method(rb_cProc, "new", proc_s_new, -1);
 
     rb_define_method(rb_cProc, "call", proc_call, -2);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
@@ -6333,6 +6358,10 @@ thread_free(th)
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
     if (th->locals) st_free_table(th->locals);
+    if (th->status != THREAD_KILLED) {
+	th->prev->next = th->next;
+	th->next->prev = th->prev;
+    }
     if (th != main_thread) free(th);
 }
 
@@ -7270,12 +7299,11 @@ rb_thread_stop_timer()
 #endif
 
 static VALUE
-rb_thread_create_0(fn, arg, klass)
+rb_thread_start_0(fn, arg, th)
     VALUE (*fn)();
     void *arg;
-    VALUE klass;
+    thread_t th;
 {
-    thread_t th = rb_thread_alloc(klass);
     volatile VALUE thread = th->thread;
     enum thread_status status;
     int state;
@@ -7339,7 +7367,7 @@ rb_thread_create(fn, arg)
     VALUE (*fn)();
     void *arg;
 {
-    return rb_thread_create_0(fn, arg, rb_cThread);
+    return rb_thread_start_0(fn, arg, rb_thread_alloc(rb_cThread));
 }
 
 int
@@ -7354,7 +7382,37 @@ rb_thread_yield(arg, th)
     thread_t th;
 {
     scope_dup(ruby_block->scope);
-    return rb_yield_0(arg, 0, 0, Qfalse);
+    return rb_yield_0(callargs(arg), 0, 0, Qfalse);
+}
+
+static VALUE
+rb_thread_s_new(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    thread_t th = rb_thread_alloc(klass);
+    volatile VALUE *pos;
+
+    THREAD_SAVE_CONTEXT(th);
+    pos = th->stk_pos;
+    rb_obj_call_init(th->thread, argc, argv);
+    if (th->stk_pos == pos) {
+	rb_raise(rb_eThreadError, "uninitialized thread - check `initialize' of %s",
+		 rb_class2name(klass));
+    }
+
+    return th->thread;
+}
+
+static VALUE
+rb_thread_initialize(thread, args)
+    VALUE thread, args;
+{
+    if (!rb_iterator_p()) {
+	rb_raise(rb_eThreadError, "must be called as iterator");
+    }
+    return rb_thread_start_0(rb_thread_yield, args, rb_thread_check(thread));
 }
 
 static VALUE
@@ -7364,7 +7422,7 @@ rb_thread_start(klass, args)
     if (!rb_iterator_p()) {
 	rb_raise(rb_eThreadError, "must be called as iterator");
     }
-    return rb_thread_create_0(rb_thread_yield, args, klass);
+    return rb_thread_start_0(rb_thread_yield, args, rb_thread_alloc(klass));
 }
 
 static VALUE
@@ -7743,7 +7801,9 @@ struct thgroup {
 };
 
 static VALUE
-thgroup_s_new(klass)
+thgroup_s_new(argc, argv, klass)
+    int argc;
+    VALUE *argv;
     VALUE klass;
 {
     VALUE group;
@@ -7753,6 +7813,7 @@ thgroup_s_new(klass)
     group = Data_Make_Struct(klass, struct thgroup, 0, free, data);
     data->gid = serial++;
 
+    rb_obj_call_init(group, argc, argv);
     return group;
 }
 
@@ -7800,7 +7861,8 @@ Init_Thread()
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
     rb_cThread = rb_define_class("Thread", rb_cObject);
 
-    rb_define_singleton_method(rb_cThread, "new", rb_thread_start, -2);
+    rb_define_singleton_method(rb_cThread, "new", rb_thread_s_new, -1);
+    rb_define_method(rb_cThread, "initialize", rb_thread_initialize, -2);
     rb_define_singleton_method(rb_cThread, "start", rb_thread_start, -2);
     rb_define_singleton_method(rb_cThread, "fork", rb_thread_start, -2);
 
@@ -7851,10 +7913,10 @@ Init_Thread()
     rb_define_global_function("callcc", rb_callcc, 0);
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
-    rb_define_singleton_method(cThGroup, "new", thgroup_s_new, 0);
+    rb_define_singleton_method(cThGroup, "new", thgroup_s_new, -1);
     rb_define_method(cThGroup, "list", thgroup_list, 0);
     rb_define_method(cThGroup, "add", thgroup_add, 1);
-    rb_define_const(cThGroup, "Default", thgroup_s_new(cThGroup));
+    rb_define_const(cThGroup, "Default", thgroup_s_new(0, 0, cThGroup));
 }
 
 static VALUE
@@ -7884,7 +7946,7 @@ static VALUE
 catch_i(tag)
     ID tag;
 {
-    return rb_funcall(Qnil, rb_intern("catch"), 0, INT2FIX(tag));
+    return rb_funcall(Qnil, rb_intern("catch"), 1, ID2SYM(tag));
 }
 
 VALUE
@@ -7937,7 +7999,7 @@ rb_throw(tag, val)
     VALUE argv[2];
     ID t = rb_intern(tag);
 
-    argv[0] = INT2FIX(t);
+    argv[0] = ID2SYM(t);
     argv[1] = val;
     rb_f_throw(2, argv);
 }

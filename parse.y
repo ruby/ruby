@@ -2573,9 +2573,9 @@ here_document(term, indent)
 	switch (parse_string(term, '\n', '\n')) {
 	  case tSTRING:
 	  case tXSTRING:
-	    rb_str_cat(yylval.val, "\n", 1);
+	    rb_str_cat2(yylval.val, "\n");
 	    if (!list) {
-	        rb_str_cat(str, RSTRING(yylval.val)->ptr, RSTRING(yylval.val)->len);
+	        rb_str_append(str, yylval.val);
 	    }
 	    else {
 		list_append(list, NEW_STR(yylval.val));
@@ -3167,11 +3167,8 @@ yylex()
 	    lex_state = EXPR_BEG;
 	}
 	else {
-	    if (lex_state == EXPR_ARG) {
-		if (space_seen) {
-		    arg_ambiguous();
-		    c = tLPAREN;
-		}
+	    if (lex_state == EXPR_ARG && space_seen) {
+		rb_warning("%s (...) interpreted as function", tok());
 	    }
 	    lex_state = EXPR_BEG;
 	}
@@ -3549,6 +3546,10 @@ str_extend(list, term)
       case '@':
 	tokadd(c);
 	c = nextc();
+        if (c == '@') {
+	    tokadd(c);
+	    c = nextc();
+        }
 	while (is_identchar(c)) {
 	    tokadd(c);
 	    if (ismbchar(c)) {

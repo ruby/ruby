@@ -254,7 +254,7 @@ w_object(obj, arg, limit)
 #endif
     }
     else if (SYMBOL_P(obj)) {
-	w_symbol(obj, arg);
+	w_symbol(SYM2ID(obj), arg);
 	return;
     }
     else {
@@ -597,25 +597,40 @@ r_bytes0(s, len, arg)
 }
 
 static ID
-r_symbol(arg)
+r_symlink(arg)
+    struct load_arg *arg;
+{
+    ID id;
+    int num = r_long(arg);
+
+    if (st_lookup(arg->symbol, num, &id)) {
+	return id;
+    }
+    rb_raise(rb_eTypeError, "bad symbol");
+}
+
+static ID
+r_symreal(arg)
     struct load_arg *arg;
 {
     char *buf;
     ID id;
 
-    if (r_byte(arg) == TYPE_SYMLINK) {
-	int num = r_long(arg);
-
-	if (st_lookup(arg->symbol, num, &id)) {
-	    return id;
-	}
-	rb_raise(rb_eTypeError, "bad symbol");
-    }
     r_bytes(buf, arg);
     id = rb_intern(buf);
     st_insert(arg->symbol, arg->symbol->num_entries, id);
 
     return id;
+}
+
+static ID
+r_symbol(arg)
+    struct load_arg *arg;
+{
+    if (r_byte(arg) == TYPE_SYMLINK) {
+	return r_symlink(arg);
+    }
+    return r_symreal(arg);
 }
 
 static char*
@@ -881,8 +896,12 @@ r_object(arg)
 	    }
 	    return r_regist(m, arg);
 	}
+
       case TYPE_SYMBOL:
-	return ID2SYM(r_symbol(arg));
+	return ID2SYM(r_symreal(arg));
+
+      case TYPE_SYMLINK:
+	return ID2SYM(r_symlink(arg));
 
       default:
 	rb_raise(rb_eArgError, "dump format error(0x%x)", type);

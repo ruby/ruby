@@ -1799,7 +1799,7 @@ rb_io_reopen(argc, argv, file)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
-	if (TYPE(fname) == T_FILE) { /* fname must be IO */
+	if (TYPE(fname) != T_STRING) { /* fname must be IO */
 	    return io_reopen(file, fname);
 	}
     }
@@ -1895,7 +1895,7 @@ rb_io_printf(argc, argv, out)
     VALUE argv[];
     VALUE out;
 {
-    io_write(out, rb_f_sprintf(argc, argv));
+    rb_io_write(out, rb_f_sprintf(argc, argv));
     return Qnil;
 }
 
@@ -1915,7 +1915,7 @@ rb_f_printf(argc, argv)
 	argv++;
 	argc--;
     }
-    io_write(out, rb_f_sprintf(argc, argv));
+    rb_io_write(out, rb_f_sprintf(argc, argv));
 
     return Qnil;
 }
@@ -2334,8 +2334,7 @@ next_argv()
 #if defined(MSDOS) || defined(__CYGWIN__) || defined(NT)
                         ruby_add_suffix(str, ruby_inplace_mode);
 #else
-			rb_str_cat(str, ruby_inplace_mode,
-				   strlen(ruby_inplace_mode));
+			rb_str_cat2(str, ruby_inplace_mode);
 #endif
 #if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(NT) || defined(__human68k__) || defined(__EMX__)
 			(void)fclose(fr);
@@ -3063,7 +3062,7 @@ argf_read(argc, argv)
     }
     if (NIL_P(tmp) || RSTRING(tmp)->len == 0) return str;
     else if (NIL_P(str)) str = tmp;
-    else rb_str_cat(str, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
+    else rb_str_append(str, tmp);
     if (argc == 0) {
 	goto retry;
     }

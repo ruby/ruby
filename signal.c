@@ -429,6 +429,7 @@ trap(arg)
     RETSIGTYPE (*func)();
     VALUE command, old;
     int sig;
+    char *s;
 
     func = sighandle;
     command = arg->cmd;
@@ -466,18 +467,27 @@ trap(arg)
 	command = 0;
     }
 
-    if (TYPE(arg->sig) == T_STRING) {
-	char *s = RSTRING(arg->sig)->ptr;
+    switch (TYPE(arg->sig)) {
+      case T_FIXNUM:
+	sig = NUM2INT(arg->sig);
+	break;
 
+      case T_SYMBOL:
+	s = rb_id2name(SYM2ID(arg->sig));
+	if (!s) rb_raise(rb_eArgError, "bad signal");
+	goto str_signal;
+
+      case T_STRING:
+	s = RSTRING(arg->sig)->ptr;
+
+      str_signal:
 	if (strncmp("SIG", s, 3) == 0)
 	    s += 3;
 	sig = signm2signo(s);
 	if (sig == 0 && strcmp(s, "EXIT") != 0)
 	    rb_raise(rb_eArgError, "invalid signal SIG%s", s);
     }
-    else {
-	sig = NUM2INT(arg->sig);
-    }
+
     if (sig < 0 || sig > NSIG) {
 	rb_raise(rb_eArgError, "invalid signal number (%d)", sig);
     }

@@ -344,9 +344,9 @@ exc_inspect(exc)
 
     str = rb_str_new2("#<");
     klass = rb_class_path(klass);
-    rb_str_concat(str, klass);
+    rb_str_append(str, klass);
     rb_str_cat(str, ": ", 2);
-    rb_str_concat(str, exc);
+    rb_str_append(str, exc);
     rb_str_cat(str, ">", 1);
 
     return str;
@@ -631,8 +631,10 @@ rb_sys_fail(mesg)
 
     err = strerror(errno);
     if (mesg) {
-	buf = ALLOCA_N(char, strlen(err)+strlen(mesg)+4);
-	sprintf(buf, "%s - %s", err, mesg);
+	volatile VALUE tmp = rb_str_inspect(rb_str_new2(mesg));
+
+	buf = ALLOCA_N(char, strlen(err)+RSTRING(tmp)->len+4);
+	sprintf(buf, "%s - %s", err, RSTRING(tmp)->ptr);
     }
     else {
 	buf = ALLOCA_N(char, strlen(err)+1);
@@ -658,8 +660,8 @@ rb_sys_fail(mesg)
     else {
 	ee = syserr_list[n];
     }
-    ee = rb_exc_new2(ee, buf);
 #endif
+    ee = rb_exc_new2(ee, buf);
     rb_iv_set(ee, "errno", INT2FIX(n));
     rb_exc_raise(ee);
 }

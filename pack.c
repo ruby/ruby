@@ -1565,8 +1565,9 @@ pack_unpack(str, fmt)
 		    VALUE str = rb_str_new(0, 0);
 		    memcpy(&t, s, sizeof(char *));
 		    s += sizeof(char *);
-		    if (t)
-			rb_str_cat(str, t, strlen(t));
+		    if (t) {
+			rb_str_cat2(str, t);
+		    }
 		    rb_ary_push(ary, str);
 		}
 	    }

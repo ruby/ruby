@@ -256,8 +256,10 @@ range_to_s(range)
 
     str = rb_obj_as_string(rb_ivar_get(range, id_beg));
     str2 = rb_obj_as_string(rb_ivar_get(range, id_end));
+    str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range)?3:2);
-    rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    rb_str_append(str, str2);
+    OBJ_INFECT(str, str2);
 
     return str;
 }
@@ -270,8 +272,10 @@ range_inspect(range)
 
     str = rb_inspect(rb_ivar_get(range, id_beg));
     str2 = rb_inspect(rb_ivar_get(range, id_end));
+    str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range)?3:2);
-    rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    rb_str_append(str, str2);
+    OBJ_INFECT(str, str2);
 
     return str;
 }

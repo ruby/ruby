@@ -728,8 +728,8 @@ rb_ary_join(ary, sep)
 	  default:
 	    tmp = rb_obj_as_string(tmp);
 	}
-	if (!NIL_P(sep)) rb_str_concat(result, sep);
-	rb_str_cat(result, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
+	if (!NIL_P(sep)) rb_str_append(result, sep);
+	rb_str_append(result, tmp);
 	if (OBJ_TAINTED(tmp)) taint = 1;
     }
 
@@ -841,8 +841,8 @@ inspect_ary(ary)
     for (i=0; i<RARRAY(ary)->len; i++) {
 	s = rb_inspect(RARRAY(ary)->ptr[i]);
 	tainted = OBJ_TAINTED(s);
-	if (i > 0) rb_str_cat(str, ", ", 2);
-	rb_str_cat(str, RSTRING(s)->ptr, RSTRING(s)->len);
+	if (i > 0) rb_str_cat2(str, ", ");
+	rb_str_append(str, s);
     }
     rb_str_cat(str, "]", 1);
 

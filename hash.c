@@ -639,14 +639,14 @@ inspect_i(key, value, str)
 
     if (key == Qundef) return ST_CONTINUE;
     if (RSTRING(str)->len > 1) {
-	rb_str_cat(str, ", ", 2);
+	rb_str_cat2(str, ", ");
     }
     str2 = rb_inspect(key);
-    rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    rb_str_append(str, str2);
     OBJ_INFECT(str, str2);
-    rb_str_cat(str, "=>", 2);
+    rb_str_cat2(str, "=>");
     str2 = rb_inspect(value);
-    rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    rb_str_append(str, str2);
     OBJ_INFECT(str, str2);
 
     return ST_CONTINUE;
@@ -660,7 +660,7 @@ inspect_hash(hash)
 
     str = rb_str_new2("{");
     st_foreach(RHASH(hash)->tbl, inspect_i, str);
-    rb_str_cat(str, "}", 1);
+    rb_str_cat2(str, "}");
     
     OBJ_INFECT(str, hash);
     return str;

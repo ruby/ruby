@@ -159,16 +159,16 @@ inspect_i(id, value, str)
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
     if (RSTRING(str)->ptr[0] == '-') {
 	RSTRING(str)->ptr[0] = '#';
-	rb_str_cat(str, ": ", 2);
+	rb_str_cat2(str, ": ");
     }
     else {
-	rb_str_cat(str, ", ", 2);
+	rb_str_cat2(str, ", ");
     }
     ivname = rb_id2name(id);
-    rb_str_cat(str, ivname, strlen(ivname));
-    rb_str_cat(str, "=", 1);
+    rb_str_cat2(str, ivname);
+    rb_str_cat2(str, "=");
     str2 = rb_inspect(value);
-    rb_str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    rb_str_append(str, str2);
     OBJ_INFECT(str, str2);
 
     return ST_CONTINUE;
@@ -179,7 +179,7 @@ inspect_obj(obj, str)
     VALUE obj, str;
 {
     st_foreach(ROBJECT(obj)->iv_tbl, inspect_i, str);
-    rb_str_cat(str, ">", 1);
+    rb_str_cat2(str, ">");
     OBJ_INFECT(str, obj);
 
     return str;
@@ -202,7 +202,7 @@ rb_obj_inspect(obj)
 	    return rb_str_new2(buf);
 	}
 	str = rb_str_new2("-<");
-	rb_str_cat(str, b, strlen(b));
+	rb_str_cat2(str, b);
 	return rb_protect_inspect(inspect_obj, obj, str);
     }
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);
@@ -494,7 +494,7 @@ sym_to_i(sym)
 }
 
 static VALUE
-sym_to_s(sym)
+sym_inspect(sym)
     VALUE sym;
 {
     char *name, *buf;
@@ -507,7 +507,7 @@ sym_to_s(sym)
 }
 
 static VALUE
-sym_id2name(sym)
+sym_to_s(sym)
     VALUE sym;
 {
     return rb_str_new2(rb_id2name(SYM2ID(sym)));
@@ -1117,8 +1117,9 @@ Init_Object()
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_method(rb_cSymbol, "type", sym_type, 0);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
+    rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
-    rb_define_method(rb_cSymbol, "id2name", sym_id2name, 0);
+    rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
 
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
     rb_define_method(rb_cModule, "<=>",  rb_mod_cmp, 1);

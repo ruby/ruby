@@ -329,8 +329,8 @@ def create_makefile(target)
 
   $DLDFLAGS = '@DLDFLAGS@'
 
-  if RUBY_PLATFORM =~ /beos/
-    $libs = $libs + " -lruby"
+  if RUBY_PLATFORM =~ /beos/ and not $static
+    $libs = $libs + " @LIBRUBYARG@"
     $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
   end
 

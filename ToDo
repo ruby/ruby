@@ -35,11 +35,12 @@ Hacking Interpreter
 - all object made freezable
 * non-blocking open (e.g. for named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr (use fork ???)
-* objectify interpreters
+* objectify interpreters ???
 * remove rb_eval() recursions
 * syntax tree -> bytecode ???
 * scrambled script, or script filter
 * setuid ruby
+* performance tune for in-block (dynamic) local variables.
 
 Standard Libraries
 
@@ -61,7 +62,7 @@ Standard Libraries
 - Struct::new([name,]member,...)
 - IO#reopen accepts path as well
 - Kernel#scan
-- call initialize for builtin class too (not yet: Regexp, etc)
+- call initialize for builtin classes too (not yet: Regexp, Class, Module)
 - performance tune for String's non-bang methods.
 * String#scanf(?)
 * Object#fmt(?)

@@ -414,10 +414,28 @@ rb_str_cat(str, ptr, len)
 }
 
 VALUE
+rb_str_cat2(str, ptr)
+    VALUE str;
+    const char *ptr;
+{
+    return rb_str_cat(str, ptr, strlen(ptr));
+}
+
+VALUE
+rb_str_append(str1, str2)
+    VALUE str1, str2;
+{
+    if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
+    str1 = rb_str_cat(str1, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    OBJ_INFECT(str1, str2);
+
+    return str1;
+}
+
+VALUE
 rb_str_concat(str1, str2)
     VALUE str1, str2;
 {
-    rb_str_modify(str1);
     if (FIXNUM_P(str2)) {
 	int i = FIX2INT(str2);
 	if (0 <= i && i <= 0xff) { /* byte */
@@ -425,9 +443,8 @@ rb_str_concat(str1, str2)
 	    return rb_str_cat(str1, &c, 1);
 	}
     }
-    if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
-    str1 = rb_str_cat(str1, RSTRING(str2)->ptr, RSTRING(str2)->len);
-    if (OBJ_TAINTED(str2)) OBJ_TAINT(str1);
+    str1 = rb_str_append(str1, str2);
+
     return str1;
 }
 

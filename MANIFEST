@@ -76,7 +76,6 @@ variable.c
 version.c
 version.h
 beos/GNUmakefile.in
-beos/ruby.def.in
 cygwin/GNUmakefile.in
 ext/Setup
 ext/Setup.dj
@@ -90,6 +89,8 @@ lib/Env.rb
 lib/README
 lib/base64.rb
 lib/cgi.rb
+lib/cgi/session.rb
+lib/cgi-lib.rb
 lib/complex.rb
 lib/date.rb
 lib/date2.rb
@@ -125,11 +126,9 @@ lib/matrix.rb
 lib/mkmf.rb
 lib/monitor.rb
 lib/mutex_m.rb
-lib/net/http.rb
 lib/net/ftp.rb
-lib/net/http.rb
 lib/net/pop.rb
-lib/net/session.rb
+lib/net/protocol.rb
 lib/net/smtp.rb
 lib/observer.rb
 lib/open3.rb
@@ -223,7 +222,6 @@ sample/rename.rb
 sample/rcs.awk
 sample/rcs.dat
 sample/rcs.rb
-sample/rd2html.rb
 sample/regx.rb
 sample/sieve.rb
 sample/svr.rb

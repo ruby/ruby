@@ -403,8 +403,8 @@ proc_options(argc, argv)
 		e_script = rb_str_new(0,0);
 		if (script == 0) script = "-e";
 	    }
-	    rb_str_cat(e_script, s, strlen(s));
-	    rb_str_cat(e_script, "\n", 1);
+	    rb_str_cat2(e_script, s);
+	    rb_str_cat2(e_script, "\n");
 	    break;
 
 	  case 'r':

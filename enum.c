@@ -88,7 +88,7 @@ enum_find(argc, argv, obj)
 	return memo->u1.value;
     }
     if (!NIL_P(if_none)) {
-	rb_eval_cmd(if_none, Qnil);
+	rb_eval_cmd(if_none, rb_ary_new2(0));
     }
     rb_gc_force_recycle((VALUE)memo);
     return Qnil;
