@@ -246,10 +246,10 @@ valid_filename(char *s)
     /*
     // It doesn't exist, so see if we can open it.
     */
-    
+
     if ((fd = _open(s, O_CREAT, 0666)) >= 0) {
 	_close(fd);
-	_unlink (s);	/* don't leave it laying around */
+	_unlink(s);	/* don't leave it laying around */
 	return 1;
     }
     return 0;
@@ -806,7 +806,6 @@ ruby_strtod(string, endPtr)
     if (mantSize == 0) {
 	fraction = 0.0;
 	p = string;
-	goto done;
     }
     else {
 	int frac1, frac2;
@@ -830,70 +829,94 @@ ruby_strtod(string, endPtr)
 	    }
 	    frac2 = 10*frac2 + (c - '0');
 	}
-	fraction = (1.0e9 * frac1) + frac2;
-    }
 
-    /*
-     * Skim off the exponent.
-     */
+	/*
+	 * Skim off the exponent.
+	 */
 
-    p = pExp;
-    if ((*p == 'E') || (*p == 'e')) {
-	p += 1;
-	if (*p == '-') {
-	    expSign = TRUE;
+	p = pExp;
+	if ((*p == 'E') || (*p == 'e')) {
 	    p += 1;
-	}
-	else {
-	    if (*p == '+') {
+	    if (*p == '-') {
+		expSign = TRUE;
 		p += 1;
 	    }
+	    else {
+		if (*p == '+') {
+		    p += 1;
+		}
+		expSign = FALSE;
+	    }
+	    while (ISDIGIT(*p)) {
+		exp = exp * 10 + (*p - '0');
+		p += 1;
+	    }
+	}
+	if (expSign) {
+	    exp = fracExp - exp;
+	}
+	else {
+	    exp = fracExp + exp;
+	}
+
+	/*
+	 * Generate a floating-point number that represents the exponent.
+	 * Do this by processing the exponent one bit at a time to combine
+	 * many powers of 2 of 10. Then combine the exponent with the
+	 * fraction.
+	 */
+    
+	if (exp > maxExponent) {
+	    exp = maxExponent;
+	    errno = ERANGE;
+	}
+	else if (exp < -maxExponent) {
+	    exp = -maxExponent;
+	    errno = ERANGE;
+	}
+	fracExp = exp;
+	exp += 9;
+	if (exp < 0) {
+	    expSign = TRUE;
+	    exp = -exp;
+	}
+	else {
 	    expSign = FALSE;
 	}
-	while (ISDIGIT(*p)) {
-	    exp = exp * 10 + (*p - '0');
-	    p += 1;
+	dblExp = 1.0;
+	for (d = powersOf10; exp != 0; exp >>= 1, d += 1) {
+	    if (exp & 01) {
+		dblExp *= *d;
+	    }
+	}
+	if (expSign) {
+	    fraction = frac1 / dblExp;
+	}
+	else {
+	    fraction = frac1 * dblExp;
+	}
+	exp = fracExp;
+	if (exp < 0) {
+	    expSign = TRUE;
+	    exp = -exp;
+	}
+	else {
+	    expSign = FALSE;
+	}
+	dblExp = 1.0;
+	for (d = powersOf10; exp != 0; exp >>= 1, d += 1) {
+	    if (exp & 01) {
+		dblExp *= *d;
+	    }
+	}
+	if (expSign) {
+	    fraction += frac2 / dblExp;
+	}
+	else {
+	    fraction += frac2 * dblExp;
 	}
     }
-    if (expSign) {
-	exp = fracExp - exp;
-    }
-    else {
-	exp = fracExp + exp;
-    }
 
-    /*
-     * Generate a floating-point number that represents the exponent.
-     * Do this by processing the exponent one bit at a time to combine
-     * many powers of 2 of 10. Then combine the exponent with the
-     * fraction.
-     */
-    
-    if (exp < 0) {
-	expSign = TRUE;
-	exp = -exp;
-    }
-    else {
-	expSign = FALSE;
-    }
-    if (exp > maxExponent) {
-	exp = maxExponent;
-	errno = ERANGE;
-    }
-    dblExp = 1.0;
-    for (d = powersOf10; exp != 0; exp >>= 1, d += 1) {
-	if (exp & 01) {
-	    dblExp *= *d;
-	}
-    }
-    if (expSign) {
-	fraction /= dblExp;
-    }
-    else {
-	fraction *= dblExp;
-    }
-
-done:
     if (endPtr != NULL) {
 	*endPtr = (char *) p;
     }
