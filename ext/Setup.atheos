@@ -1,6 +1,8 @@
 option nodynamic
 
 bigdecimal
+bigdecimal/lib
+bigdecimal/sample
 curses
 dbm
 digest
