@@ -1,3 +1,8 @@
+: Regexp
+
+  It is being obsoleted to regard /re/ as /re/ =~ $_ in a conditional
+  context.  Use ~/re/ instead.
+
 : String#lstrip, rstrip, lstrip!, rstrip!
 
   Added.  These strip only left or right part of a string.
