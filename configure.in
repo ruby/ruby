@@ -168,7 +168,7 @@ AC_ARG_WITH(libc_r,
 	case $withval in
 	yes) with_libc_r=yes;;
 	*)   with_libc_r=no;;
-	esac], [with_libc_r=yes])
+	esac], [with_libc_r=no])
 
 dnl Checks for libraries.
 case "$target_os" in

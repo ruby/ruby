@@ -1,3 +1,8 @@
+Thu May 31 01:28:54 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in: default --with-libc_r to `no' until the problem is
+	  fixed. (FreeBSD only)
+
 Tue May 29 18:46:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_compile_pattern): * \1 .. \9 should be
