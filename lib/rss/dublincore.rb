@@ -13,8 +13,10 @@ module RSS
 
 		ELEMENTS = []
 
-		def self.included(mod)
-			mod.module_eval(<<-EOC)
+		def self.append_features(klass)
+			super
+			
+			klass.module_eval(<<-EOC)
 				%w(title description creator subject publisher
 						contributor type format identifier source
 						language relation coverage rights).each do |x|

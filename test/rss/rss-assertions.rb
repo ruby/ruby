@@ -1,4 +1,16 @@
 # -*- tab-width: 2 -*- vim: ts=2
+module Test
+	module Unit
+		module Assertions
+			# For backward compatibility
+			unless instance_methods.include?("assert_raise")
+				def assert_raise(*args, &block)
+					assert_raises(*args, &block)
+				end
+			end
+		end
+	end
+end
 
 module RSS
 	module Assertions

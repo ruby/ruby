@@ -3,24 +3,23 @@ require 'rss/2.0'
 
 module RSS
 
-  TRACKBACK_PREFIX = 'trackback'
-  TRACKBACK_URI = 'http://madskills.com/public/xml/rss/module/trackback/'
+	TRACKBACK_PREFIX = 'trackback'
+	TRACKBACK_URI = 'http://madskills.com/public/xml/rss/module/trackback/'
 
-  RDF.install_ns(TRACKBACK_PREFIX, TRACKBACK_URI)
-  Rss.install_ns(TRACKBACK_PREFIX, TRACKBACK_URI)
+	RDF.install_ns(TRACKBACK_PREFIX, TRACKBACK_URI)
+	Rss.install_ns(TRACKBACK_PREFIX, TRACKBACK_URI)
 
 	module BaseTrackBackModel
-    def trackback_validate(tags)
-			raise unless @do_validate
-      counter = {}
-      %w(ping about).each do |x|
+		def trackback_validate(tags)
+			counter = {}
+			%w(ping about).each do |x|
 				counter["#{TRACKBACK_PREFIX}_#{x}"] = 0
 			end
 
-      tags.each do |tag|
-        key = "#{TRACKBACK_PREFIX}_#{tag}"
-        raise UnknownTagError.new(tag, TRACKBACK_URI) unless counter.has_key?(key)
-        counter[key] += 1
+			tags.each do |tag|
+				key = "#{TRACKBACK_PREFIX}_#{tag}"
+				raise UnknownTagError.new(tag, TRACKBACK_URI) unless counter.has_key?(key)
+				counter[key] += 1
 				if tag != "about" and counter[key] > 1
 					raise TooMuchTagError.new(tag, tag_name)
 				end
@@ -33,8 +32,8 @@ module RSS
 		end
 	end
 
-  module TrackBackModel10
-    extend BaseModel
+	module TrackBackModel10
+		extend BaseModel
 		include BaseTrackBackModel
 
 		def self.append_features(klass)
@@ -211,23 +210,23 @@ module RSS
 					EOC
 				end
 			end
-
-			private
-			def new_with_content(klass, content)
-				obj = klass.new
-				obj.content = content
-				obj
-			end
-
-			def new_with_content_if_need(klass, content)
-				if content.is_a?(klass)
-					content
-				else
-					new_with_content(klass, content)
-				end
-			end
-
 		end
+
+		private
+		def new_with_content(klass, content)
+			obj = klass.new
+			obj.content = content
+			obj
+		end
+
+		def new_with_content_if_need(klass, content)
+			if content.is_a?(klass)
+				content
+			else
+				new_with_content(klass, content)
+			end
+		end
+
 
 		class Ping < Element
 			include RSS09
@@ -288,9 +287,9 @@ module RSS
 		end
 	end
 
-  class RDF
-    class Item; include TrackBackModel10; end
-  end
+	class RDF
+		class Item; include TrackBackModel10; end
+	end
 
 	class Rss
 		class Channel
