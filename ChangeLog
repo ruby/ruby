@@ -1,3 +1,8 @@
+Sun Oct  5 13:47:22 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_beginendblock.rb, test/ruby/beginmainend.rb: add tests
+	  about scope, order and allowd syntax.
+
 Sun Oct  5 11:54:29 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/envutil.rb: added.  split "rubybin" from test_system.rb.
