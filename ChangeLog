@@ -1,3 +1,8 @@
+Mon Apr 26 21:40:09 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/code_objects.rb (RDoc::Context::add_alias): Only alias
+	  to instance methods.
+
 Sun Apr 25 18:26:23 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (ac_cv_func_fork): set to no on DJGPP.
