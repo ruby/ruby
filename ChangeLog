@@ -1,3 +1,8 @@
+Sun Feb 29 23:14:53 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_class): 
+	  Handle :nodoc: on singleton classes.
+
 Sat Feb 28 10:58:49 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* MANIFEST: add test_erb.rb
