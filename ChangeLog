@@ -1,3 +1,8 @@
+Thu Jan 29 22:41:53 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Allow 'link:' in Tidylinks.
+	  THis means you can write "see f1[link:files/f1_rb.html]".
+
 Thu Jan 29 22:24:47 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* sample/openssl/gen_csr.rb: follow OpenSSL::X509::Name change.
@@ -23,6 +28,7 @@ Thu Jan 29 17:03:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* dir.c: merge tuning from H.Yamamoto <ocean@m2.ccsnet.ne.jp>.
 	  [ruby-dev:22761]
 
+>>>>>>> 1.2844
 Thu Jan 29 11:32:14 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/rss/test_*: do $: trick while searching a module in the current

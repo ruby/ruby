@@ -125,15 +125,10 @@ module Generators
       end
     end
 
-    # And we're invoked with a potential external hyperlink mailto:
-    # just gets inserted. http: links are checked to see if they
-    # reference an image. If so, that image gets inserted using an
-    # <img> tag. Otherwise a conventional <a href> is used.  We also
-    # support a special type of hyperlink, link:, which is a reference
-    # to a local file whose path is relative to the --op directory.
 
-    def handle_special_HYPERLINK(special)
-      url = special.text
+    # Generate a hyperlink for url, labeled with text. Handle the
+    # special cases for img: and link: described under handle_special_HYPEDLINK
+    def gen_url(url, text)
       if url =~ /([A-Za-z]+):(.*)/
         type = $1
         path = $2
@@ -156,8 +151,20 @@ module Generators
 
         "<img src=\"#{url}\">"
       else
-        "<a href=\"#{url}\">#{url.sub(%r{^\w+:/*}, '')}</a>"
+        "<a href=\"#{url}\">#{text.sub(%r{^\w+:/*}, '')}</a>"
       end
+    end
+
+    # And we're invoked with a potential external hyperlink mailto:
+    # just gets inserted. http: links are checked to see if they
+    # reference an image. If so, that image gets inserted using an
+    # <img> tag. Otherwise a conventional <a href> is used.  We also
+    # support a special type of hyperlink, link:, which is a reference
+    # to a local file whose path is relative to the --op directory.
+
+    def handle_special_HYPERLINK(special)
+      url = special.text
+      gen_url(url, url)
     end
 
     # HEre's a hypedlink where the label is different to the URL
@@ -171,12 +178,7 @@ module Generators
       end
       label = $1
       url   = $2
-      
-      unless url =~ /\w+?:/
-        url = "http://#{url}"
-      end
-      
-      "<a href=\"#{url}\">#{label}</a>"
+      gen_url(url, label)
     end
 
   end
