@@ -1,3 +1,7 @@
+Wed Jul  4 00:12:37 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/find.rb: merge from 1.7: rescue Errno::EACCES as well.
+
 Wed Jul  4 00:09:16 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mathn.rb: merge from 1.7: add Rational#inspect().
