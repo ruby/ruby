@@ -3,10 +3,10 @@ Wed Sep  4 15:23:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* class.c (rb_make_metaclass): obj.meta.super.meta should be equal
 	  to obj.meta.meta.super (ruby-bugs-ja:PR#324).
 
-Wed Sep 04 05:10:16 2002  Koji Arai  <jca02266@nifty.ne.jp>
+Wed Sep  4 05:10:16 2002  Koji Arai  <jca02266@nifty.ne.jp>
 
 	* parse.y (yylex): the warning message "invalid
-          character syntax" was never issued.
+          character syntax" was never issued (ruby-bugs-ja:PR#323).
 
 Wed Sep  4 01:08:45 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
