@@ -1,3 +1,14 @@
+Sat Aug 14 13:09:10 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: backport from CVS HEAD (rev1.44).
+
+	* lib/fileutils.rb: cp_r should copy symlink itself, except cp_r
+	  root.
+
+	* lib/fileutils.rb: new option mv :force.
+
+	* lib/fileutils.rb: new module FileUtils::DryRun.
+
 Sat Aug 14 02:48:16 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/usage.rb: Added. Allows command line programs
