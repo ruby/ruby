@@ -295,8 +295,7 @@ rb_define_alloc_func(klass, func)
     VALUE (*func) _((VALUE));
 {
     Check_Type(klass, T_CLASS);
-    rb_add_method(CLASS_OF(klass), ID_ALLOCATOR, NEW_CFUNC(func, 0),
-		  NOEX_PRIVATE|NOEX_CFUNC);
+    rb_add_method(CLASS_OF(klass), ID_ALLOCATOR, NEW_CFUNC(func, 0), NOEX_PRIVATE);
 }
 
 void
@@ -5152,7 +5151,8 @@ rb_call_super(argc, argv)
     VALUE result;
 
     if (ruby_frame->last_class == 0) {	
-	rb_name_error(ruby_frame->last_func, "superclass method `%s' must be enabled by rb_enable_super()",
+	rb_name_error(ruby_frame->last_func,
+		      "superclass method `%s' must be enabled by rb_enable_super()",
 		      rb_id2name(ruby_frame->last_func));
     }
 

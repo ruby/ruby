@@ -1,3 +1,8 @@
+Thu May 22 15:46:37 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_define_alloc_func): need not to disable
+	  rb_call_super() for allocation functions. [ruby-core:1065]
+
 Thu May 22 06:21:33 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/rubyext.c (rb_syck_err_handler): raise ArgumentError on
