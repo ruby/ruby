@@ -1,3 +1,9 @@
+Sat May 10 19:00:08 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
+
+	* wince/string.c: file removed.
+
+	* wince/stdlib.c: file added.
+
 Sat May 10 16:17:02 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (decode_utf7): new method.
