@@ -164,6 +164,7 @@ VALUE rb_uint2inum _((unsigned long));
 #define T_MATCH  0x23
 #define T_SYMBOL 0x24
 
+#define T_BLKTAG 0x3b
 #define T_UNDEF  0x3c
 #define T_VARMAP 0x3d
 #define T_SCOPE  0x3e

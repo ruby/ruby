@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 1993-2001 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -56,8 +56,16 @@ static enum lex_state {
     EXPR_CLASS,			/* immediate after `class', no here document. */
 } lex_state;
 
+#if SIZEOF_LONG_LONG > 0
+typedef unsigned long long stack_type;
+#elif SIZEOF___INT64 > 0
+typedef unsigned __int64 stack_type;
+#else
+typedef unsigned long stack_type;
+#endif
+
 static int cond_nest = 0;
-static unsigned long cond_stack = 0;
+static stack_type cond_stack = 0;
 #define COND_PUSH do {\
     cond_nest++;\
     cond_stack = (cond_stack<<1)|1;\
@@ -67,6 +75,15 @@ static unsigned long cond_stack = 0;
     cond_stack >>= 1;\
 } while (0)
 #define COND_P() (cond_nest > 0 && (cond_stack&1))
+
+static stack_type cmdarg_stack = 0;
+#define CMDARG_PUSH do {\
+    cmdarg_stack = (cmdarg_stack<<1)|1;\
+} while(0)
+#define CMDARG_POP do {\
+    cmdarg_stack >>= 1;\
+} while (0)
+#define CMDARG_P() (cmdarg_stack && (cmdarg_stack&1))
 
 static int class_nest = 0;
 static int in_single = 0;
@@ -154,7 +171,8 @@ static void top_local_setup();
 	kRETRY
 	kIN
 	kDO
-	kDO2
+	kDO_COND
+	kDO_BLOCK
 	kRETURN
 	kYIELD
 	kSUPER
@@ -186,8 +204,8 @@ static void top_local_setup();
 %type <node> compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
 %type <node> args ret_args when_args call_args paren_args opt_paren_args
-%type <node> aref_args opt_block_arg block_arg var_ref
-%type <node> mrhs mrhs_basic superclass generic_call block_call call_block
+%type <node> command_args aref_args opt_block_arg block_arg var_ref
+%type <node> mrhs mrhs_basic superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
@@ -444,38 +462,38 @@ expr		: mlhs '=' mrhs
 		| arg
 
 command_call	: command
-		| block_call
+		| block_command
 
-block_call	: call_block
-		| call_block '.' operation2 call_args
+block_command	: block_call
+		| block_call '.' operation2 command_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		    }
-		| call_block tCOLON2 operation2 call_args
+		| block_call tCOLON2 operation2 command_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		    }
 
-command		:  operation call_args
+command		:  operation command_args
 		    {
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
 		   }
-		| primary '.' operation2 call_args
+		| primary '.' operation2 command_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| primary tCOLON2 operation2 call_args
+		| primary tCOLON2 operation2 command_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		        fixpos($$, $1);
 		    }
-		| kSUPER call_args
+		| kSUPER command_args
 		    {
 			if (!compile_for_eval && !cur_mid && !in_single)
 			    yyerror("super called outside of method");
@@ -487,7 +505,6 @@ command		:  operation call_args
 			$$ = NEW_YIELD($2);
 		        fixpos($$, $2);
 		    }
-
 
 mlhs		: mlhs_basic
 		| tLPAREN mlhs_entry ')'
@@ -996,6 +1013,12 @@ call_args	: command
 		    }
 		| block_arg
 
+command_args	: {CMDARG_PUSH;} call_args
+		    {
+		        CMDARG_POP;
+			$$ = $2;
+		    }
+
 block_arg	: tAMPER arg
 		    {
 			value_expr($2);
@@ -1347,7 +1370,7 @@ then		: term
 		| term kTHEN
 
 do		: term
-		| kDO2
+		| kDO_COND
 
 if_tail		: opt_else
 		| kELSIF expr then
@@ -1383,7 +1406,7 @@ opt_block_var	: none
 		    }
 
 
-do_block	: kDO
+do_block	: kDO_BLOCK
 		    {
 		        $<vars>$ = dyna_push();
 		    }
@@ -1396,35 +1419,7 @@ do_block	: kDO
 			dyna_pop($<vars>2);
 		    }
 
-brace_block	: '{'
-		    {
-		        $<vars>$ = dyna_push();
-		    }
-		  opt_block_var
-		  compstmt '}'
-		    {
-			$$ = NEW_ITER($3, 0, $4);
-		        fixpos($$, $4);
-			dyna_pop($<vars>2);
-		    }
-
-generic_call	: tIDENTIFIER
-		    {
-			$$ = NEW_VCALL($1);
-		    }
-		| tCONSTANT
-		    {
-			$$ = NEW_VCALL($1);
-		    }
-		| tFID
-		    {
-			$$ = NEW_VCALL($1);
-		    }
-		| method_call
-		| command_call
-
-
-call_block	: generic_call do_block
+block_call	: command do_block
 		    {
 			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
 			    rb_compile_error("both block arg and actual block given");
@@ -1433,12 +1428,12 @@ call_block	: generic_call do_block
 			$$ = $2;
 		        fixpos($$, $2);
 		    }
-		| call_block '.' operation2 opt_paren_args
+		| block_call '.' operation2 opt_paren_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
 		    }
-		| call_block tCOLON2 operation2 opt_paren_args
+		| block_call tCOLON2 operation2 opt_paren_args
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, $4);
@@ -1479,6 +1474,29 @@ method_call	: operation paren_args
 		            !in_single && !in_defined)
 			    yyerror("super called outside of method");
 			$$ = NEW_ZSUPER();
+		    }
+
+brace_block	: '{'
+		    {
+		        $<vars>$ = dyna_push();
+		    }
+		  opt_block_var
+		  compstmt '}'
+		    {
+			$$ = NEW_ITER($3, 0, $4);
+		        fixpos($$, $4);
+			dyna_pop($<vars>2);
+		    }
+		| kDO
+		    {
+		        $<vars>$ = dyna_push();
+		    }
+		  opt_block_var
+		  compstmt kEND
+		    {
+			$$ = NEW_ITER($3, 0, $4);
+		        fixpos($$, $4);
+			dyna_pop($<vars>2);
 		    }
 
 case_body	: kWHEN when_args then
@@ -2033,10 +2051,7 @@ rb_compile_file(f, file, start)
     return yycompile(strdup(f), start);
 }
 
-#if defined(__GNUC__) && __GNUC__ >= 2
-__inline__
-#endif
-static int
+static inline int
 nextc()
 {
     int c;
@@ -3604,8 +3619,10 @@ yylex()
 		    if (state == EXPR_FNAME) {
 			yylval.id = rb_intern(kw->name);
 		    }
-		    if (kw->id[0] == kDO && COND_P()) {
-			return kDO2;
+		    if (kw->id[0] == kDO) {
+			if (COND_P()) return kDO_COND;
+			if (CMDARG_P()) return kDO_BLOCK;
+			return kDO;
 		    }
 		    return kw->id[state != EXPR_BEG];
 		}
@@ -4361,6 +4378,9 @@ void_expr(node)
     }
 }
 
+
+static NODE *cond2 _((NODE*));
+
 static void
 void_stmts(node)
     NODE *node;
@@ -4375,8 +4395,6 @@ void_stmts(node)
 	node = node->nd_next;
     }
 }
-
-static NODE *cond2();
 
 static int
 assign_in_cond(node)
@@ -4422,6 +4440,14 @@ assign_in_cond(node)
     }
 #endif
     return 1;
+}
+
+static void
+warn_unless_e_option(str)
+    const char *str;
+{
+    if (strcmp(ruby_sourcefile, "-e") != 0)
+	rb_warning(str);
 }
 
 static NODE*

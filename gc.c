@@ -613,6 +613,7 @@ rb_gc_mark(ptr)
       case T_REGEXP:
       case T_FLOAT:
       case T_BIGNUM:
+      case T_BLKTAG:
 	break;
 
       case T_MATCH:
@@ -829,6 +830,7 @@ obj_free(obj)
 
       case T_FLOAT:
       case T_VARMAP:
+      case T_BLKTAG:
 	break;
 
       case T_BIGNUM:

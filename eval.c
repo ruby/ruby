@@ -527,14 +527,20 @@ static struct SCOPE *top_scope;
     ruby_sourceline = _frame.line;	\
     ruby_frame = _frame.prev; }
 
+struct BLOCKTAG {
+    struct RBasic super;
+    long dst;
+    long flags;
+};
+
 struct BLOCK {
     NODE *var;
     NODE *body;
     VALUE self;
     struct FRAME frame;
     struct SCOPE *scope;
+    struct BLOCKTAG *tag;
     VALUE klass;
-    struct tag *tag;
     int iter;
     int vmode;
     int flags;
@@ -545,12 +551,23 @@ struct BLOCK {
 
 #define BLOCK_D_SCOPE 1
 #define BLOCK_DYNAMIC 2
+#define BLOCK_ORPHAN  4
 
 static struct BLOCK *ruby_block;
 
+static struct BLOCKTAG*
+new_blktag()
+{
+    NEWOBJ(blktag, struct BLOCKTAG);
+    OBJSETUP(blktag, 0, T_BLKTAG);
+    blktag->dst = 0;
+    blktag->flags = 0;
+    return blktag;
+}
+
 #define PUSH_BLOCK(v,b) {		\
     struct BLOCK _block;		\
-    _block.tag = prot_tag;		\
+    _block.tag = new_blktag();		\
     _block.var = v;			\
     _block.body = b;			\
     _block.self = self;			\
@@ -566,17 +583,16 @@ static struct BLOCK *ruby_block;
     _block.dyna_vars = ruby_dyna_vars;	\
     ruby_block = &_block;
 
+#define POP_BLOCK_TAG(tag) do {		\
+   if ((tag)->flags & BLOCK_DYNAMIC)	\
+       (tag)->flags |= BLOCK_ORPHAN;	\
+   else					\
+       rb_gc_force_recycle((VALUE)tag); \
+} while (0)
+
 #define POP_BLOCK() 			\
+   POP_BLOCK_TAG(_block.tag);		\
    ruby_block = _block.prev; 		\
-}
-
-#define PUSH_BLOCK2(b) {		\
-    struct BLOCK * volatile _old;	\
-    _old = ruby_block;			\
-    ruby_block = b;
-
-#define POP_BLOCK2() 			\
-   ruby_block = _old;	 		\
 }
 
 struct RVarmap *ruby_dyna_vars;
@@ -586,6 +602,8 @@ struct RVarmap *ruby_dyna_vars;
     ruby_dyna_vars = 0;
 
 #define POP_VARS()			\
+   if (_old && (ruby_scope->flag & SCOPE_DONT_RECYCLE)) \
+       FL_SET(_old, DVAR_DONT_RECYCLE); \
     ruby_dyna_vars = _old;		\
 }
 
@@ -1051,7 +1069,7 @@ static int
 error_handle(ex)
     int ex;
 {
-    switch (ex & 0xf) {
+    switch (ex & TAG_MASK) {
       case 0:
 	ex = 0;
 	break;
@@ -2211,15 +2229,14 @@ rb_eval(self, n)
       case NODE_FOR:
 	{
 	  iter_retry:
-	    PUSH_BLOCK(node->nd_var, node->nd_body);
 	    PUSH_TAG(PROT_FUNC);
+	    PUSH_BLOCK(node->nd_var, node->nd_body);
 
 	    state = EXEC_TAG();
 	    if (state == 0) {
+		PUSH_ITER(ITER_PRE);
 		if (nd_type(node) == NODE_ITER) {
-		    PUSH_ITER(ITER_PRE);
 		    result = rb_eval(self, node->nd_iter);
-		    POP_ITER();
 		}
 		else {
 		    VALUE recv;
@@ -2227,13 +2244,14 @@ rb_eval(self, n)
 		    int line = ruby_sourceline;
 
 		    _block.flags &= ~BLOCK_D_SCOPE;
+		    BEGIN_CALLARGS;
 		    recv = rb_eval(self, node->nd_iter);
-		    PUSH_ITER(ITER_PRE);
+		    END_CALLARGS;
 		    ruby_sourcefile = file;
 		    ruby_sourceline = line;
 		    result = rb_call(CLASS_OF(recv),recv,each,0,0,0);
-		    POP_ITER();
 		}
+		POP_ITER();
 	    }
 	    else if (_block.tag->dst == state) {
 		state &= TAG_MASK;
@@ -2241,8 +2259,8 @@ rb_eval(self, n)
 		    result = prot_tag->retval;
 		}
 	    }
-	    POP_TAG();
 	    POP_BLOCK();
+	    POP_TAG();
 	    switch (state) {
 	      case 0:
 		break;
@@ -3552,7 +3570,7 @@ rb_yield_0(val, self, klass, acheck)
 	  case TAG_RETURN:
 	    state |= (serial++ << 8);
 	    state |= 0x10;
-	    block->tag->dst = state; 
+	    block->tag->dst = state;
 	    break;
 	  default:
 	    break;
@@ -3562,26 +3580,58 @@ rb_yield_0(val, self, klass, acheck)
   pop_state:
     POP_ITER();
     POP_CLASS();
-    if ((block->flags & BLOCK_D_SCOPE) &&
+#if 0
+    if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
+	(!(ruby_scope->flags & SCOPE_DONT_RECYCLE) ||
+	 !(block->tag->flags & BLOCK_DYNAMIC) ||
+	 !FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE))) {
+	struct RVarmap *vars, *tmp;
+
+	if (ruby_dyna_vars->id == 0) {
+	    vars = ruby_dyna_vars->next;
+	    rb_gc_force_recycle((VALUE)ruby_dyna_vars);
+	    while (vars && vars->id != 0) {
+		tmp = vars->next;
+		rb_gc_force_recycle((VALUE)vars);
+		vars = tmp;
+	    }
+	}
+    }
+#else
+    if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
 	!FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
 	struct RVarmap *vars = ruby_dyna_vars;
 
-	while (vars && vars->id != 0) {
-	    struct RVarmap *tmp = vars->next;
-	    rb_gc_force_recycle((VALUE)vars);
-	    vars = tmp;
-	}
-	if (ruby_dyna_vars && ruby_dyna_vars->id == 0) {
+	if (ruby_dyna_vars->id == 0) {
+	    vars = ruby_dyna_vars->next;
 	    rb_gc_force_recycle((VALUE)ruby_dyna_vars);
+	    while (vars && vars->id != 0) {
+		struct RVarmap *tmp = vars->next;
+		rb_gc_force_recycle((VALUE)vars);
+		vars = tmp;
+	    }
 	}
     }
+#endif
     POP_VARS();
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
     if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
        scope_dup(old_scope);
     ruby_scope = old_scope;
-    if (state) JUMP_TAG(state);
+    if (state) {
+	if (!block->tag) {
+	    switch (state & TAG_MASK) {
+	      case TAG_BREAK:
+		rb_raise(rb_eLocalJumpError, "unexpected break");
+		break;
+	      case TAG_RETURN:
+		rb_raise(rb_eLocalJumpError, "unexpected return");
+		break;
+	    }
+	}
+	JUMP_TAG(state);
+    }
     return result;
 }
 
@@ -4420,6 +4470,9 @@ rb_call(klass, recv, mid, argc, argv, scope)
     ID     id = mid;
     struct cache_entry *ent;
 
+    if (!klass) {
+	rb_raise(rb_eNotImpError, "method call on terminated obejct");
+    }
     /* is it in the method cache? */
     ent = cache + EXPR1(klass, mid);
     if (ent->mid == mid && ent->klass == klass) {
@@ -4705,7 +4758,6 @@ eval(self, src, scope, file, line)
 	}
 
 	Data_Get_Struct(scope, struct BLOCK, data);
-
 	/* PUSH BLOCK from data */
 	frame = data->frame;
 	frame.tmp = ruby_frame;	/* gc protection */
@@ -4751,14 +4803,33 @@ eval(self, src, scope, file, line)
     POP_CLASS();
     ruby_in_eval--;
     if (!NIL_P(scope)) {
+	int dont_recycle = ruby_scope->flag & SCOPE_DONT_RECYCLE;
+
 	ruby_frame = frame.tmp;
-	if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
-           scope_dup(old_scope);
 	ruby_scope = old_scope;
 	ruby_block = old_block;
 	ruby_dyna_vars = old_dyna_vars;
 	data->vmode = scope_vmode; /* write back visibility mode */
 	scope_vmode = old_vmode;
+	if (dont_recycle) {
+	   struct tag *tag;
+	   struct RVarmap *vars;
+
+           scope_dup(ruby_scope);
+	   for (tag=prot_tag; tag; tag=tag->prev) {
+	       scope_dup(tag->scope);
+	   }
+	   if (ruby_block) {
+	       struct BLOCK *block = ruby_block;
+	       while (block) {
+		   block->tag->flags |= BLOCK_DYNAMIC;
+		   block = block->prev;
+	       }
+	   }
+	   for (vars = ruby_dyna_vars; vars; vars = vars->next) {
+	       FL_SET(vars, DVAR_DONT_RECYCLE);
+	   }
+	}
     }
     else {
 	ruby_frame->iter = iter;
@@ -5171,7 +5242,7 @@ rb_feature_p(feature, wait)
 
 	    while (st_lookup(loading_tbl, f, &th)) {
 		if (th == curr_thread) {
-		    rb_raise(rb_eLoadError, "infinite load loop -- %s", f);
+		    return Qtrue;
 		}
 		CHECK_INTS;
 		rb_thread_schedule();
@@ -5887,6 +5958,7 @@ blk_mark(data)
 	rb_gc_mark(data->self);
 	rb_gc_mark(data->dyna_vars);
 	rb_gc_mark(data->klass);
+	rb_gc_mark(data->tag);
 	data = data->prev;
     }
 }
@@ -5929,6 +6001,7 @@ blk_copy_prev(block)
 	    MEMCPY(tmp->frame.argv, block->prev->frame.argv, VALUE, tmp->frame.argc);
 	}
 	scope_dup(tmp->scope);
+	tmp->tag->flags |= BLOCK_DYNAMIC;
 	block->prev = tmp;
 	block = tmp;
     }
@@ -6006,6 +6079,8 @@ rb_f_binding(self)
     else {
 	data->prev = 0;
     }
+    data->flags |= BLOCK_DYNAMIC;
+    data->tag->flags |= BLOCK_DYNAMIC;
 
     for (p = data; p; p = p->prev) {
 	for (vars = p->dyna_vars; vars; vars = vars->next) {
@@ -6081,7 +6156,6 @@ proc_new(klass)
 
     data->orig_thread = rb_thread_current();
     data->iter = data->prev?Qtrue:Qfalse;
-    data->tag = 0;		/* should not point into stack */
     frame_dup(&data->frame);
     if (data->iter) {
 	blk_copy_prev(data);
@@ -6090,6 +6164,7 @@ proc_new(klass)
 	data->prev = 0;
     }
     data->flags |= BLOCK_DYNAMIC;
+    data->tag->flags |= BLOCK_DYNAMIC;
 
     for (p = data; p; p = p->prev) {
 	for (vars = p->dyna_vars; vars; vars = vars->next) {
@@ -6190,7 +6265,6 @@ proc_call(proc, args)
     }
 
     PUSH_TAG(PROT_NONE);
-    _block.tag = prot_tag;
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
@@ -6286,7 +6360,6 @@ block_pass(self, node)
     ruby_frame->iter = ITER_PRE;
 
     PUSH_TAG(PROT_NONE);
-    _block.tag = prot_tag;
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(block);
@@ -6308,25 +6381,33 @@ block_pass(self, node)
 		}
 		ptr = ptr->prev;
 	    }
+	    if (!ptr) {
+		state &= TAG_MASK;
+	    }
 	}
     }
     ruby_block = old_block;
     ruby_safe_level = safe;
 
-    if (state) {
-	switch (state) {/* escape from orphan procedure */
-	  case TAG_BREAK:
-	    rb_raise(rb_eLocalJumpError, "break from proc-closure");
-	    break;
-	  case TAG_RETRY:
+    switch (state) {/* escape from orphan procedure */
+      case 0:
+	break;
+      case TAG_BREAK:
+	if (orphan) {
 	    rb_raise(rb_eLocalJumpError, "retry from proc-closure");
-	    break;
-	  case TAG_RETURN:
-	    rb_raise(rb_eLocalJumpError, "return from proc-closure");
-	    break;
 	}
+	break;
+      case TAG_RETRY:
+	rb_raise(rb_eLocalJumpError, "retry from proc-closure");
+	break;
+      case TAG_RETURN:
+	if (orphan) {
+	    rb_raise(rb_eLocalJumpError, "return from proc-closure");
+	}
+      default:
 	JUMP_TAG(state);
     }
+
     return result;
 }
 
@@ -6619,7 +6700,7 @@ rb_mod_define_method(argc, argv, mod)
     VALUE mod;
 {
     ID id;
-    VALUE name, body;
+    VALUE body;
 
     if (argc == 1) {
 	id = rb_to_id(argv[0]);
@@ -8031,8 +8112,6 @@ static VALUE
 rb_thread_start(klass, args)
     VALUE klass, args;
 {
-    rb_thread_t th;
-
     if (!rb_block_given_p()) {
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
@@ -8378,6 +8457,14 @@ rb_callcc(self)
     scope_dup(ruby_scope);
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
+    }
+    if (ruby_block) {
+	struct BLOCK *block = ruby_block;
+
+	while (block) {
+	    block->tag->flags |= BLOCK_DYNAMIC;
+	    block = block->prev;
+	}
     }
     th->thread = curr_thread->thread;
 

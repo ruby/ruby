@@ -367,7 +367,6 @@ str_independent(str)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return 1;
     if (TYPE(RSTRING(str)->orig) != T_STRING) rb_bug("non string str->orig");
-    RSTRING(str)->orig = 0;
     return 0;
 }
 
@@ -384,6 +383,7 @@ rb_str_modify(str)
     }
     ptr[RSTRING(str)->len] = 0;
     RSTRING(str)->ptr = ptr;
+    RSTRING(str)->orig = 0;
 }
 
 VALUE
@@ -1278,6 +1278,9 @@ str_gsub(argc, argv, str, bang)
 	if (str_independent(str)) {
 	    free(RSTRING(str)->ptr);
 	}
+	else {
+	    RSTRING(str)->orig = 0;
+	}
     }
     else {
 	NEWOBJ(dup, struct RString);
@@ -1320,9 +1323,9 @@ rb_str_replace_m(str, str2)
     if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
 
     if (RSTRING(str2)->orig && !FL_TEST(str2, STR_NO_ORIG)) {
-	if (str_independent(str))
-	  free(RSTRING(str)->ptr);
-
+	if (str_independent(str)) {
+	    free(RSTRING(str)->ptr);
+	}
 	RSTRING(str)->len = RSTRING(str2)->len;
 	RSTRING(str)->ptr = RSTRING(str2)->ptr;
 	RSTRING(str)->orig = RSTRING(str2)->orig;

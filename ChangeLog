@@ -1,3 +1,11 @@
+Fri Feb  2 16:14:51 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): returns self, even if its length is
+	  less than 2.
+
+	* eval.c (POP_VARS): propagate DVAR_DONT_RECYCLE, if
+	  SCOPE_DONT_RECYCLE of ruby_scope is set.
+
 Wed Jan 31 22:27:29 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: gcc-2.95.2-7(cygwin) support.
@@ -5,10 +13,44 @@ Wed Jan 31 22:27:29 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* cygwin/GNUmakefile: ditto.
 
+Mon Jan 29 17:36:19 2001  TOYOFUKU Chikanobu  <toyofuku@juice.or.jp>
+
+	* eval.c (rb_eval): nd_iter evaluation should be wrapped by
+	  BEGIN_CALLARGS and END_CALLARGS.
+
+Mon Jan 29 01:40:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_independent): should not clear str->orig here.
+	  it's too early.
+
+Wed Jan 24 01:45:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (POP_BLOCK_TAG): call rb_gc_force_recycle() if block has
+	  not been objectified.
+
+	* eval.c (rb_callcc): should nail down block->tag history to avoid
+	  rb_gc_force_recycle(). 
+
 Tue Jan 23 18:51:57 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): should finalize objects in
 	  deferred_final_list too.
+
+Tue Jan 23 16:10:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (os_live_obj): do not list terminated object.
+
+	* gc.c (os_obj_of): ditto.
+
+	* gc.c (rb_gc_mark): support new T_BLKTAG tag.
+
+	* gc.c (obj_free): ditto.
+
+	* eval.c (new_blktag): creation of new block tag, which holds
+	  destination of global jump and orphan status.
+
+	* eval.c (block_pass): break from orphan Proc object will raise a
+	  LocalJumpError exception.
 
 Mon Jan 22 16:33:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -80,6 +122,12 @@ Mon Jan  8 21:24:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigdivrem): t2 might be too big for signed long; do
 	  not use rb_int2big(), but rb_uint2big().
+
+Mon Jan  8 03:09:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_load_fail): new func to report LoadError.
+
+	* ruby.c (load_file): use rb_load_fail.
 
 Sat Jan  6 00:55:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
