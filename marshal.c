@@ -995,6 +995,9 @@ r_object(arg)
 	    VALUE klass;
 
 	    klass = rb_path2class(r_unique(arg));
+	    if (TYPE(klass) != T_CLASS) {
+		rb_raise(rb_eArgError, "dump format error");
+	    }
 	    v = rb_obj_alloc(klass);
 	    if (TYPE(v) != T_OBJECT) {
 		rb_raise(rb_eArgError, "dump format error");

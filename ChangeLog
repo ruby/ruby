@@ -1,3 +1,12 @@
+Tue Oct 22 18:15:49 2002  Guy Decoux  <ts@moulon.inra.fr>
+
+	* eval.c (rb_eval): local_vars[-1] should protect body, not a
+	  local_tbl.
+
+Tue Oct 22 02:31:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): check if klass is really a class.
+
 Fri Oct 18 23:39:00 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (value_expr0): allow return/break/next/redo/retry in rhs

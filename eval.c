@@ -2918,8 +2918,8 @@ rb_eval(self, n)
 			    NODE *body = (NODE *)ruby_scope->scope_node;
 			    if (body && body->nd_tbl != ruby_scope->local_tbl) {
 				if (body->nd_tbl) free(body->nd_tbl);
-				ruby_scope->local_vars[-1] =
-				    (VALUE)(body->nd_tbl = ruby_scope->local_tbl);
+                               ruby_scope->local_vars[-1] = (VALUE)body;
+                               body->nd_tbl = ruby_scope->local_tbl;
 			    }
 			}
 			ruby_eval_tree = 0;
