@@ -1,3 +1,8 @@
+Fri Jan 16 14:33:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (class2path): get class path and check referable.
+	  [ruby-dev:22588]
+
 Thu Jan 15 12:58:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_read): do not append EOF.  (ruby-bugs-ja:PR#585)
