@@ -898,12 +898,13 @@ module Net
       @response_handlers = []
       @tagged_response_arrival = new_cond
       @continuation_request_arrival = new_cond
+      @logout_command_tag = nil
       @debug_output_bol = true
 
       @greeting = get_response
-      if /\ABYE\z/ni =~ @greeting.name
+      if @greeting.name == "BYE"
         @sock.close
-        raise ByeResponseError, resp[0]
+        raise ByeResponseError, @greeting.raw_data
       end
 
       @client_thread = Thread.current
@@ -928,11 +929,18 @@ module Net
             when TaggedResponse
               @tagged_responses[resp.tag] = resp
               @tagged_response_arrival.broadcast
+              if resp.tag == @logout_command_tag
+                return
+              end
             when UntaggedResponse
               record_response(resp.name, resp.data)
               if resp.data.instance_of?(ResponseText) &&
                   (code = resp.data.code)
                 record_response(code.name, code.data)
+              end
+              if resp.name == "BYE" && @logout_command_tag.nil?
+                @sock.close
+                raise ByeResponseError, resp.raw_data
               end
             when ContinuationRequest
               @continuation_request_arrival.signal
@@ -998,6 +1006,9 @@ module Net
           send_data(i)
         end
         put_string(CRLF)
+        if cmd == "LOGOUT"
+          @logout_command_tag = tag
+        end
         if block
           add_response_handler(block)
         end

@@ -1,3 +1,8 @@
+Sun Jul 18 02:35:30 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (receive_responses): return if a LOGOUT response
+	received.
+
 Sat Jul 17 23:59:01 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (send_string_data): wait command continuation
