@@ -1,3 +1,7 @@
+Thu Mar 15 01:28:02 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_s_chdir): block form of Dir.chdir. (RCR#U016).
+
 Fri Mar 16 17:14:17 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Set SOLIBS properly for all ELF and

@@ -389,13 +389,38 @@ dir_close(dir)
     return Qnil;
 }
 
+static void
+dir_chdir(path)
+    const char *path;
+{
+    if (chdir(path) < 0)
+	rb_sys_fail(path);
+}
+
+static int chdir_blocking = 0;
+
+static VALUE
+chdir_restore(path)
+    const char *path;
+{
+    chdir_blocking--;
+    dir_chdir(path);
+    return Qnil;
+}
+
+#ifdef HAVE_GETCWD
+#define GETCWD(path) if (getcwd(path, sizeof(path)) == 0) rb_sys_fail(path)
+#else
+#define GETCWD(path) if (getwd(path) == 0) rb_sys_fail(path)
+#endif
+
 static VALUE
 dir_s_chdir(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
 {
-    VALUE path;
+    VALUE path = Qnil;
     char *dist = "";
 
     rb_secure(2);
@@ -410,8 +435,18 @@ dir_s_chdir(argc, argv, obj)
 	}
     }
 
-    if (chdir(dist) < 0)
-	rb_sys_fail(dist);
+    if (chdir_blocking > 0)
+	rb_warn("chdir during chdir block");
+
+    if (rb_block_given_p()) {
+	char cwd[MAXPATHLEN];
+
+	GETCWD(cwd);
+	chdir_blocking++;
+	dir_chdir(dist);
+	return rb_ensure(rb_yield, path, chdir_restore, (VALUE)cwd);
+    }
+    dir_chdir(dist);
 
     return INT2FIX(0);
 }
@@ -422,13 +457,7 @@ dir_s_getwd(dir)
 {
     char path[MAXPATHLEN];
 
-#ifdef HAVE_GETCWD
-    if (getcwd(path, sizeof(path)) == 0) rb_sys_fail(path);
-#else
-    extern char *getwd();
-    if (getwd(path) == 0) rb_sys_fail(path);
-#endif
-
+    GETCWD(path);
     return rb_tainted_str_new2(path);
 }
 
