@@ -211,8 +211,11 @@ end
 def libpathflag
   if $mswin
     ENV['LIB'] = ($LIBPATH + [ORIG_LIBPATH]).join(';')
-    yield ""
-    ENV['LIB'] = ORIG_LIBPATH
+    begin
+      yield ""
+    ensure
+      ENV['LIB'] = ORIG_LIBPATH
+    end
   else
     yield $LIBPATH.map{|x| %Q[#{LIBPATHFLAG}"#{x}"]}.join
   end
