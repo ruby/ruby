@@ -626,7 +626,7 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
 	       rb_assoc_new(INT2NUM(rettype),INT2NUM(entry)),
 	       rb_assoc_new(type,proc));
   sprintf(fname, "rb_dl_callback_func_%d_%d", rettype, entry);
-  return rb_dlsym_new(rb_dl_callback_table[rettype][entry], fname, STR2CSTR(type));
+  return rb_dlsym_new((void (*)())rb_dl_callback_table[rettype][entry], fname, STR2CSTR(type));
 }
 
 static VALUE

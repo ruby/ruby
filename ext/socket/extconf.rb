@@ -39,6 +39,10 @@ SRC
 end
 
 case RUBY_PLATFORM
+when /bccwin32/
+  test_func = "WSACleanup"
+  have_library("ws2_32", "WSACleanup")
+  have_func("closesocket")
 when /mswin32|mingw/
   test_func = "WSACleanup"
   have_library("wsock32", "WSACleanup")

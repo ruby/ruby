@@ -89,28 +89,16 @@ extern "C++" {
 #define fgetchar(_stream)	getchar()
 #define fputchar(_c, _stream)	putchar(_c)
 
+#ifndef __BORLANDC__
+
 #define access	   _access
 #define chmod	   _chmod
 #define chsize	   _chsize
-#define close	   _close
-#define creat	   _creat
 #define dup	   _dup
 #define dup2	   _dup2
-#define eof	   _eof
-#define filelength _filelength
 #define isatty	   _isatty
-#define locking    _locking
-#define lseek	   _lseek
-#define mktemp	   _mktemp
 #define open	   _open
-#define perror     _perror
-#define read	   _read
 #define setmode    _setmode
-#define sopen	   _sopen
-#define tell	   _tell
-#define umask	   _umask
-#define unlink	   _unlink
-#define write	   _write
 #define execl	   _execl
 #define execle	   _execle
 #define execlp	   _execlp
@@ -119,8 +107,7 @@ extern "C++" {
 #define execve	   _execve
 #define execvp	   _execvp
 #define execvpe    _execvpe
-#define getpid	   _getpid
-#define sleep(x)   rb_w32_sleep((x)*1000)
+#define lseek      _lseek
 #define spawnl	   _spawnl
 #define spawnle    _spawnle
 #define spawnlp    _spawnlp
@@ -132,13 +119,34 @@ extern "C++" {
 #if _MSC_VER < 800
 #define fileno	   _fileno
 #endif
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#else
+#define strcasecmp  stricmp
+#define strncasecmp strnicmp
+#define _open       _sopen
+#endif
+
+#define close	   _close
+#define creat	   _creat
+#define eof	   _eof
+#define filelength _filelength
+#define locking    _locking
+#define mktemp	   _mktemp
+#define perror     _perror
+#define read	   _read
+#define sopen	   _sopen
+#define tell	   _tell
+#define umask	   _umask
+#define unlink	   _unlink
+#define write	   _write
+#define getpid	   _getpid
+#define sleep(x)   rb_w32_sleep((x)*1000)
 #define utime      _utime
 #define vsnprintf  _vsnprintf
 #define snprintf   _snprintf
 #define popen      _popen
 #define pclose     _pclose
-#define strcasecmp _stricmp
-#define strncasecmp _strnicmp
 #undef stat
 #define stat(path,st) rb_w32_stat(path,st)
 /* these are defined in nt.c */
@@ -196,9 +204,44 @@ extern int gettimeofday(struct timeval *, struct timezone *);
 extern pid_t waitpid (pid_t, int *, int);
 extern int do_spawn(char *);
 extern int kill(int, int);
+#ifndef __BORLANDC__
 extern int isinf(double);
 extern int isnan(double);
+#else
+#include <float.h>
+#ifndef isinf
+#define isinf    !_finite
+#endif
+#ifndef isnan
+#define isnan    _isnan
+#endif
 
+#ifdef S_ISDIR
+#undef S_ISDIR
+#endif
+
+#ifdef S_ISFIFO
+#undef S_ISFIFO
+#endif
+
+#ifdef S_ISBLK
+#undef S_ISBLK
+#endif
+
+#ifdef S_ISCHR
+#undef S_ISCHR
+#endif
+
+#ifdef S_ISREG
+#undef S_ISREG
+#endif
+
+#define S_ISDIR(m)  (((unsigned short)(m) & S_IFMT) == S_IFDIR)
+#define S_ISFIFO(m) (((unsigned short)(m) & S_IFMT) == S_IFIFO)
+#define S_ISBLK(m)  (((unsigned short)(m) & S_IFMT) == S_IFBLK)
+#define S_ISCHR(m)  (((unsigned short)(m) & S_IFMT) == S_IFCHR)
+#define S_ISREG(m)  (((unsigned short)(m) & S_IFMT) == S_IFREG)
+#endif
 
 //
 // define this so we can do inplace editing

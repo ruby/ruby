@@ -27,6 +27,8 @@
   typedef unsigned long long uint64_t;
 # elif defined(_MSC_VER)
   typedef unsigned _int64 uint64_t;
+# elif defined(__BORLANDC__)
+  typedef unsigned __int64 uint64_t;
 # else
 #  define NO_UINT64_T
 # endif

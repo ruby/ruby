@@ -732,6 +732,9 @@ rb_sys_fail(mesg)
 	rb_bug("rb_sys_fail() - errno == 0");
     }
 
+#ifdef __BORLANDC__
+    if (errno == EPIPE) return; // (*moriq*)
+#endif
     err = strerror(errno);
     if (mesg) {
 	volatile VALUE tmp = rb_str_inspect(rb_str_new2(mesg));

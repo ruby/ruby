@@ -176,6 +176,21 @@ $INSTALLFILES = [
   ["dl.h", "$(archdir)$(target_prefix)", ""],
 ]
 
+if /bccwin32/ =~ RUBY_PLATFORM
+  srcdir = $top_srcdir + "/ext/dl/"
+  if !FileTest.exist?( srcdir+"dl.def.org" )
+    File.copy( srcdir+"dl.def", srcdir+"dl.def.org" )
+    open( srcdir+"dl.def.org" ){ |f|
+      open( "dl.def", "w" ) { |g|
+        g.print f.gets
+        while line = f.gets
+          g.print "_", line
+        end
+      }
+    }
+  end
+end
+
 create_makefile('dl')
 rescue SystemExit
   # do nothing

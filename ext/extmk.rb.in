@@ -28,7 +28,7 @@ $extlist = []
 $libdir = "@libdir@"
 
 $top_srcdir = "@top_srcdir@"
-if $top_srcdir !~ "^/"
+if $top_srcdir !~ ("^" + File::SEPARATOR)
   # get absolute path
   $top_srcdir = File.expand_path($top_srcdir)
 end
@@ -72,6 +72,8 @@ if RUBY_PLATFORM == "m68k-human"
 end
 if /mswin32/ =~ RUBY_PLATFORM
   OUTFLAG = '-Fe'
+elsif /bccwin32/ =~ RUBY_PLATFORM
+  OUTFLAG = '-o'
 else
   OUTFLAG = '-o '
 end
@@ -101,7 +103,7 @@ def try_link0(src, opt="")
   cfile.print src
   cfile.close
   ldflags = $LDFLAGS
-  if /mswin32/ =~ RUBY_PLATFORM and !$LIBPATH.empty?
+  if /mswin32|bccwin32/ =~ RUBY_PLATFORM and !$LIBPATH.empty?
     ENV['LIB'] = ($LIBPATH + [ORIG_LIBPATH]).compact.join(';')
   else
     ldflags = ldflags.dup
@@ -110,7 +112,7 @@ def try_link0(src, opt="")
   begin
     xsystem(Config::expand(format(LINK, $CFLAGS, $CPPFLAGS, ldflags, opt, $LOCAL_LIBS)))
   ensure
-    ENV['LIB'] = ORIG_LIBPATH if /mswin32/ =~ RUBY_PLATFORM
+    ENV['LIB'] = ORIG_LIBPATH if /mswin32|bccwin32/ =~ RUBY_PLATFORM
   end
 end
 
@@ -119,6 +121,9 @@ def try_link(src, opt="")
     try_link0(src, opt)
   ensure
     rm_f "conftest*"
+    if /bccwin32/ =~ RUBY_PLATFORM
+      rm_f "c0x32*"
+    end
   end
 end
 
@@ -162,7 +167,7 @@ end
 
 def install_rb(mfile, srcdir = nil)
   libdir = "lib"
-  libdir = srcdir + "/" + libdir if srcdir
+  libdir = File.join(srcdir, libdir) if srcdir
   path = []
   dir = []
   if File.directory? libdir
@@ -186,7 +191,7 @@ def install_rb(mfile, srcdir = nil)
 end
 
 def append_library(libs, lib)
-  if /mswin32/ =~ RUBY_PLATFORM
+  if /mswin32|bccwin32/ =~ RUBY_PLATFORM
     lib + ".lib " + libs
   else
     "-l" + lib + " " + libs
@@ -196,7 +201,7 @@ end
 def have_library(lib, func="main")
   if func && func != ""
     libs = append_library($libs, lib)
-    if /mswin32|mingw/ =~ RUBY_PLATFORM
+    if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
       return true if lib == 'm'
       r = try_link(<<"SRC", libs)
 #include <windows.h>
@@ -249,7 +254,7 @@ end
 def have_func(func, header=nil)
   libs = $libs
   src = 
-    if /mswin32|mingw/ =~ RUBY_PLATFORM
+    if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
       r = <<"SRC"
 #include <windows.h>
 #include <winsock.h>
@@ -293,7 +298,7 @@ def arg_config(config, default=nil)
   unless defined? $configure_args
     $configure_args = {}
     args = "@configure_args@"
-    if /mswin32|mingw/ =~ RUBY_PLATFORM and ENV["CONFIGURE_ARGS"]
+    if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM and ENV["CONFIGURE_ARGS"]
       args << " " << ENV["CONFIGURE_ARGS"]
     end
     for arg in Shellwords::shellwords(args)
@@ -386,9 +391,16 @@ def create_makefile(target)
       end
     end
     defflag = target + ".def"
+  elsif RUBY_PLATFORM =~ /bccwin32/
+    deffile = target + '.def'
+    if not File.exist? target + '.def'
+      open(deffile, 'wb') do |f|
+        f.print "EXPORTS\n", "_Init_", target, "\n"
+      end
+    end
   end
 
-  if RUBY_PLATFORM =~ /mswin32/
+  if RUBY_PLATFORM =~ /mswin32|bccwin32/
     libpath = $LIBPATH.join(';')
   else
     $LIBPATH.each {|d| $DLDFLAGS << " -L" << d}
@@ -397,7 +409,7 @@ def create_makefile(target)
     end
   end
 
-  $srcdir = $top_srcdir + "/ext/" + $mdir
+  $srcdir = File.join($top_srcdir,"ext",$mdir)
   mfile = open("Makefile", "w")
   mfile.binmode if /mingw/ =~ RUBY_PLATFORM
   mfile.printf "\
@@ -415,8 +427,15 @@ CC = @CC@
 
 CFLAGS   = %s #{CFLAGS} #$CFLAGS
 CPPFLAGS = -I$(topdir) -I$(hdrdir) %s #$CPPFLAGS
-DLDFLAGS = #$DLDFLAGS #$LDFLAGS
-LDSHARED = @LDSHARED@ #{defflag}
+#{
+if /bccwin32/ =~ RUBY_PLATFORM
+  "DLDFLAGS = #$LDFLAGS -L" + '"$(topdir:/=\\)"' + "\n" +
+  "LDSHARED = @LDSHARED@\n"
+else
+  "DLDFLAGS = #$DLDFLAGS #$LDFLAGS\n" +
+  "LDSHARED = @LDSHARED@ #{defflag}\n"
+end
+}
 ", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
   mfile.puts "LIBPATH = #{libpath}" if libpath
 
@@ -440,9 +459,13 @@ target_prefix = #{target_prefix}
 
 "
   mfile.printf "LOCAL_LIBS = %s %s\n", $LOCAL_LIBS, $local_flags
-  mfile.printf "LIBS = %s\n", $libs
+  if /bccwin32/ =~ RUBY_PLATFORM
+    mfile.printf "LIBS = $(topdir:/=\\)\\%s\n", $libs
+  else
+    mfile.printf "LIBS = %s\n", $libs
+  end
   mfile.printf "OBJS = "
-  if !$objs then
+  if !$objs or (/bccwin32/ =~ RUBY_PLATFORM) then
     $objs = []
     for f in Dir["#{$top_srcdir}/ext/#{$mdir}/*.{#{SRC_EXT.join(%q{,})}}"]
       f = File.basename(f)
@@ -457,9 +480,13 @@ target_prefix = #{target_prefix}
   mfile.printf $objs.join(" ")
   mfile.printf "\n"
 
-  ruby_interpreter = "$(topdir)/miniruby@EXEEXT@"
-  if /nmake/i =~ $make
-    ruby_interpreter = '$(topdir:/=\)\miniruby@EXEEXT@'
+  if /bccwin32/ =~ RUBY_PLATFORM
+    ruby_interpreter = '$(topdir:/=\)/miniruby@EXEEXT@'
+  else
+    ruby_interpreter = "$(topdir)/miniruby@EXEEXT@"
+    if /nmake/i =~ $make
+      ruby_interpreter = '$(topdir:/=\)\miniruby@EXEEXT@'
+    end
   end
   if defined? CROSS_COMPILING
     ruby_interpreter = "@MINIRUBY@"
@@ -476,8 +503,16 @@ EXEEXT = @EXEEXT@
 
 all:		$(DLLIB)
 
-clean:;		@$(RM) *.#{$OBJEXT} *.so *.sl *.#{$LIBEXT} $(DLLIB)
-		@$(RM) *.ilk *.exp *.pdb *.bak $(CLEANFILES)
+clean:
+		@$(RM) *.#{$OBJEXT} *.so *.sl *.#{$LIBEXT} $(DLLIB)
+#{
+if /bccwin32/ =~ RUBY_PLATFORM
+  "		@$(RM) *.def *.ilc *.ild *.ilf *.ils *.map *.tds *.bak $(CLEANFILES)\n" +
+  "		@if exist $(target).def.org ren $(target).def.org $(target).def"
+else
+  "		@$(RM) *.ilk *.exp *.pdb *.bak $(CLEANFILES)"
+end
+}
 
 distclean:	clean
 		@$(RM) Makefile extconf.h conftest.*
@@ -501,7 +536,11 @@ EOS
   mfile.printf "\n"
 
   unless /mswin32/ =~ RUBY_PLATFORM
-    src = '$<'
+    if /bccwin32/=~ RUBY_PLATFORM
+      src = '$(<:\\=/)'
+    else
+      src = '$<'
+    end
     copt = cxxopt = ''
   else
     if /nmake/i =~ $make
@@ -513,6 +552,18 @@ EOS
     cxxopt = '-Tp'
   end
   unless /nmake/i =~ $make
+    if /bccwin32/ =~ RUBY_PLATFORM
+    mfile.print "
+{$(srcdir)}.cc{}.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
+{$(srcdir)}.cpp{}.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
+{$(srcdir)}.cxx{}.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
+{$(srcdir)}.c{}.@OBJEXT@:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c #{copt}#{src}
+"
+    end
     mfile.puts "
 .cc.@OBJEXT@:
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c #{cxxopt}#{src}
@@ -561,14 +612,18 @@ $(DLLIB): $(OBJS)
     end
   elsif "@DLEXT@" != $OBJEXT
     mfile.print "$(DLLIB): $(OBJS)\n"
-    if /mswin32/ =~ RUBY_PLATFORM
-      if /nmake/i =~ $make
-	mfile.print "\tset LIB=$(LIBPATH:/=\\);$(LIB)\n"
-      else
-	mfile.print "\tenv LIB='$(subst /,\\\\,$(LIBPATH));$(LIB)' \\\n"
+    if /bccwin32/ =~ RUBY_PLATFORM 
+      mfile.print "\t$(LDSHARED) $(DLDFLAGS) C0D32.OBJ $(OBJS), $@,, CW32.LIB IMPORT32.LIB WS2_32.LIB $(LIBS), #{deffile}\n"
+    else
+      if /mswin32/ =~ RUBY_PLATFORM
+        if /nmake/i =~ $make
+          mfile.print "\tset LIB=$(LIBPATH:/=\\);$(LIB)\n"
+        else
+          mfile.print "\tenv LIB='$(subst /,\\\\,$(LIBPATH));$(LIB)' \\\n"
+        end
       end
+      mfile.print "\t$(LDSHARED) $(DLDFLAGS) #{OUTFLAG}$(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)\n"
     end
-    mfile.print "\t$(LDSHARED) $(DLDFLAGS) #{OUTFLAG}$(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)\n"
   elsif RUBY_PLATFORM == "m68k-human"
     mfile.printf "\
 $(DLLIB): $(OBJS)
@@ -586,7 +641,11 @@ $(DLLIB): $(OBJS)
     mfile.printf "###\n"
     while line = dfile.gets()
       line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-      line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if /nmake/i =~ $make
+      if /bccwin32/ =~ RUBY_PLATFORM
+        line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2')
+      else
+        line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if /nmake/i =~ $make
+      end
       mfile.printf "%s", line.gsub('\$\(hdrdir\)/config.h', '$(topdir)/config.h')
     end
     dfile.close
@@ -613,6 +672,8 @@ def extmake(target)
   if /mswin32/ =~ RUBY_PLATFORM
     $LIBEXT = "lib"
     $local_flags = "-link /INCREMENTAL:no /EXPORT:Init_$(TARGET)"
+  elsif /bccwin32/ =~ RUBY_PLATFORM
+    $LIBEXT = "lib"
   end
   $LOCAL_LIBS = ""		# to be assigned in extconf.rb
   $CFLAGS = ""
@@ -651,7 +712,11 @@ def extmake(target)
  	$extlist.push [$static, File.basename($target)]
       end
       if $install
-	system "#{$make} install DESTDIR=#{$destdir}"
+        if /bccwin32/ =~ RUBY_PLATFORM
+          system "#{$make} -DDESTDIR=#{$destdir} install"
+        else
+          system "#{$make} install DESTDIR=#{$destdir}"
+        end
       elsif $clean
 	system "#{$make} #{$clean}"
       else
@@ -691,7 +756,7 @@ for setup in ["@setup@", "#{$top_srcdir}/ext/@setup@"]
 	next
       end
       target = line.split[0]
-      target = target.downcase if /mswin32/ =~ RUBY_PLATFORM
+      target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
       $static_ext[target] = true
     end
     f.close

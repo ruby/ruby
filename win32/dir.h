@@ -1,3 +1,10 @@
+#ifdef __BORLANDC__
+#  ifndef WIN32_DIR_H_
+#    define WIN32_DIR_H_
+#    include <sys/types.h>
+#  endif
+#endif
+
 struct direct
 {
     long d_namlen;

@@ -6,19 +6,19 @@ LDSHARED_TEST = $(LDSHARED) $(LDFLAGS) test/test.o -o test/libtest.so $(LOCAL_LI
 libtest.so: test/libtest.so
 
 test/libtest.so: test/test.o test/libtest.def
-	$(RUBY) -rftools -e 'ARGV.each{|d|File.mkpath(File.dirname(d))}' $@
+	$(RUBY) -rftools -e 'ARGV.each do|d|File.mkpath(File.dirname(d))end' $@
 	$(LDSHARED_TEST:dl.def=test/libtest.def)
 
 test/test.o: $(srcdir)/test/test.c
 	@$(RUBY) -rftools -e 'File.mkpath(*ARGV)' test
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/test/test.c -o $@
 
-test:: dl.so libtest.so .force
+test:: dl.so libtest.so force
 	$(RUBY) -I. -I$(srcdir)/lib $(srcdir)/test/test.rb
 
-.force:
+force:
 
-.PHONY: .force test
+.PHONY: force test
 
 allclean: distclean
 	@rm -f $(CLEANFILES) $(DISTCLEANFILES)

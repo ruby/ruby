@@ -45,6 +45,11 @@
 # undef  WIN95
 #endif
 
+#ifdef __BORLANDC__
+#  define _filbuf _fgetc
+#  define _flsbuf fputc
+#endif
+
 #if HAVE_WSAWAITFORMULTIPLEEVENTS
 # define USE_INTERRUPT_WINSOCK
 #endif
@@ -1115,7 +1120,11 @@ rb_w32_opendir(const char *filename)
     //
 
     if ((rb_w32_stat (filename, &sbuf) < 0 ||
+#ifdef __BORLANDC__
+	(unsigned short)(sbuf.st_mode) & _S_IFDIR == 0) &&
+#else
 	sbuf.st_mode & _S_IFDIR == 0) &&
+#endif
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
 	return NULL;
@@ -1320,6 +1329,9 @@ EXTERN_C void __cdecl _unlock(int);
 #ifdef MSVCRT_THREADS
 # define MTHREAD_ONLY(x) x
 # define STHREAD_ONLY(x)
+#elif defined(__BORLANDC__)
+# define MTHREAD_ONLY(x)
+# define STHREAD_ONLY(x)
 #else
 # define MTHREAD_ONLY(x)
 # define STHREAD_ONLY(x) x
@@ -1339,15 +1351,16 @@ typedef struct	{
 #define _CRTIMP __declspec(dllimport)
 #endif
 
+#ifndef __BORLANDC__
 EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 
 #define IOINFO_L2E			5
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
 #define _pioinfo(i)	(__pioinfo[i >> IOINFO_L2E] + (i & (IOINFO_ARRAY_ELTS - 1)))
-
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
 #define _pipech(i)  (_pioinfo(i)->pipech)
+#endif
 
 #define FOPEN			0x01	/* file handle open */
 #define FNOINHERIT		0x10	/* file handle opened O_NOINHERIT */
@@ -1375,6 +1388,29 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
     if (flags & O_NOINHERIT)
 	fileflags |= FNOINHERIT;
 
+#ifdef __BORLANDC__
+    {
+	/* attempt to allocate a C Runtime file handle */
+	HANDLE hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
+	fh = _open_osfhandle((long)hF, 0);
+	CloseHandle(hF);
+	if (fh == -1) {
+	    errno = EMFILE;		/* too many open files */
+	    _doserrno = 0L;		/* not an OS error */
+	}
+	else {
+
+	    MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fh)->lock)));
+	    /* the file is open. now, set the info in _osfhnd array */
+	    //_set_osfhnd(fh, osfhandle);
+
+	    fileflags |= FOPEN;		/* mark as open */
+
+	    //_osfile(fh) = fileflags;	/* set osfile entry */
+	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fh)->lock));
+	}
+    }
+#else
     RUBY_CRITICAL({
 	/* attempt to allocate a C Runtime file handle */
 	HANDLE hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
@@ -1396,7 +1432,7 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
 	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fh)->lock));
 	}
     });
-
+#endif
     return fh;			/* return handle */
 }
 
@@ -1538,7 +1574,11 @@ setgid(int gid)
 
 int
 /* ioctl(int i, unsigned int u, char *data) */
-ioctl(int i, unsigned int u, long data)
+#ifdef __BORLANDC__
+  ioctl(int i, int u, ...)
+#else
+  ioctl(int i, unsigned int u, long data)
+#endif
 {
     return -1;
 }
@@ -1713,10 +1753,18 @@ StartSockets ()
 
     atexit((void (*)(void)) WSACleanup);
 
+#ifndef SO_SYNCHRONOUS_NONALERT
+#define SO_SYNCHRONOUS_NONALERT 0x20
+#endif
+
     iSockOpt = SO_SYNCHRONOUS_NONALERT;
     /*
      * Enable the use of sockets as filehandles
      */
+#ifndef SO_OPENTYPE
+#define SO_OPENTYPE     0x7008
+#endif
+
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
 	       (char *)&iSockOpt, sizeof(iSockOpt));
 
@@ -1955,7 +2003,11 @@ rb_w32_socket (int af, int type, int protocol)
 	errno = WSAGetLastError();
 	//fprintf(stderr, "socket fail (%d)", WSAGetLastError());
     }
+#ifdef __BORLANDC__
+    return _open_osfhandle(s, O_RDWR|O_BINARY);
+#else
     return rb_w32_open_osfhandle(s, O_RDWR|O_BINARY);
+#endif
 }
 
 #undef gethostbyaddr
@@ -2211,7 +2263,12 @@ rb_w32_getcwd(buffer, size)
     int length;
     char *bp;
 
+#ifdef __BORLANDC__
+#undef getcwd
+    if (getcwd(buffer, size) == NULL) {
+#else
     if (_getcwd(buffer, size) == NULL) {
+#endif
         return NULL;
     }
     length = strlen(buffer);
@@ -2671,8 +2728,8 @@ static void catch_interrupt(void)
 int rb_w32_getc(FILE* stream)
 {
     int c, trap_immediate = rb_trap_immediate;
-    if (--stream->_cnt >= 0) {
-	c = (unsigned char)*stream->_ptr++;
+    if (--stream->FILE_COUNT >= 0) {
+	c = (unsigned char)*stream->FILE_READPTR++;
 	rb_trap_immediate = trap_immediate;
     }
     else {
@@ -2687,8 +2744,8 @@ int rb_w32_getc(FILE* stream)
 int rb_w32_putc(int c, FILE* stream)
 {
     int trap_immediate = rb_trap_immediate;
-    if (--stream->_cnt >= 0) {
-	c = (unsigned char)(*stream->_ptr++ = (char)c);
+    if (--stream->FILE_COUNT >= 0) {
+	c = (unsigned char)(*stream->FILE_READPTR++ = (char)c);
 	rb_trap_immediate = trap_immediate;
     }
     else {

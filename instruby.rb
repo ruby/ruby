@@ -88,7 +88,7 @@ end
 for f in Dir["*.h"]
   File.install f, archlibdir, 0644, true
 end
-if RUBY_PLATFORM =~ /mswin32|mingw/
+if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
   File.makedirs archlibdir + "/win32", true
   File.install "win32/win32.h", archlibdir + "/win32", 0644, true
 end

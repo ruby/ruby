@@ -148,6 +148,15 @@ Win32API_initialize(self, dllname, proc, import, export)
     return Qnil;
 }
 
+#ifdef __BORLANDC__ 
+int c_m( FARPROC api, long* p )
+{
+  long pp[16];
+  memcpy( pp, p, 16*sizeof(long) );
+  return api();
+}
+#endif
+
 static VALUE
 Win32API_Call(argc, argv, obj)
     int argc;
@@ -175,6 +184,10 @@ Win32API_Call(argc, argv, obj)
     int nimport, timport, texport, i;
     int items;
     int ret;
+#ifdef __BORLANDC__ 
+    long* ptr;
+    long p[16];
+#endif
 
     items = rb_scan_args(argc, argv, "0*", &args);
 
@@ -192,6 +205,9 @@ Win32API_Call(argc, argv, obj)
 	    nimport, items);
 
     if (0 < nimport) {
+#ifdef __BORLANDC__ 
+       ptr = p + ( nimport - 1 );
+#endif
 	for (i = nimport - 1; 0 <= i; i--) {
 	    VALUE str;
 	    import_type = rb_ary_entry(obj_import, i);
@@ -215,6 +231,9 @@ Win32API_Call(argc, argv, obj)
 #else
 #error
 #endif
+#elif defined(__BORLANDC__)
+		*ptr = lParam;
+		--ptr;
 #elif defined __GNUC__
 		asm volatile ("pushl %0" :: "g" (lParam));
 #else
@@ -247,6 +266,9 @@ Win32API_Call(argc, argv, obj)
 #else
 #error
 #endif
+#elif defined(__BORLANDC__)
+		*ptr = (long)pParam;
+		--ptr;
 #elif defined __GNUC__
 		asm volatile ("pushl %0" :: "g" (pParam));
 #else
@@ -275,16 +297,28 @@ Win32API_Call(argc, argv, obj)
 #else
     switch (texport) {
     case _T_NUMBER:
+#if defined(__BORLANDC__)
+	Return = INT2NUM((long)c_m(ApiFunction, p));
+#else
 	ApiFunctionNumber = (ApiNumber *) ApiFunction;
 	Return = INT2NUM(ApiFunctionNumber());
+#endif
 	break;
     case _T_POINTER:
+#if defined(__BORLANDC__)
+	Return = rb_str_new2((char *)c_m(ApiFunction, p));
+#else
 	ApiFunctionPointer = (ApiPointer *) ApiFunction;
 	Return = rb_str_new2((char *)ApiFunctionPointer());
+#endif
 	break;
     case _T_INTEGER:
+#if defined(__BORLANDC__)
+	Return = INT2NUM((int)c_m(ApiFunction, p));
+#else
 	ApiFunctionInteger = (ApiInteger *) ApiFunction;
 	Return = INT2NUM(ApiFunctionInteger());
+#endif
 	break;
     case _T_VOID:
     default:

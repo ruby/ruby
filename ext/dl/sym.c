@@ -140,7 +140,7 @@ rb_dlsym_s_new(int argc, VALUE argv[], VALUE self)
   sname = NIL_P(name) ? NULL : StringValuePtr(name);
   stype = NIL_P(type) ? NULL : StringValuePtr(type);
 
-  val = rb_dlsym_new(saddr, sname, stype);
+  val = rb_dlsym_new((void (*)())saddr, sname, stype);
 
   if( val != Qnil ){
     rb_obj_call_init(val, argc, argv);

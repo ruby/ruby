@@ -949,7 +949,11 @@ env_delete(obj, name)
 	VALUE value = rb_tainted_str_new2(val);
 
 	ruby_setenv(nam, 0);
+#ifdef __BORLANDC__
+	if (strcmpi(nam, "PATH") == 0 && !OBJ_TAINTED(name)) {
+#else
 	if (strcmp(nam, "PATH") == 0 && !OBJ_TAINTED(name)) {
+#endif
 	    path_tainted = 0;
 	}
 	return value;
@@ -979,7 +983,11 @@ rb_f_getenv(obj, name)
     }
     env = getenv(nam);
     if (env) {
+#ifdef __BORLANDC__
+	if (strcmpi(nam, "PATH") == 0 && !rb_env_path_tainted())
+#else
 	if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
+#endif
 	    return rb_str_new2(env);
 	return rb_tainted_str_new2(env);
     }
@@ -1013,7 +1021,11 @@ env_fetch(argc, argv)
 	}
 	return if_none;
     }
+#ifdef __BORLANDC__
+    if (strcmpi(nam, "PATH") == 0 && !rb_env_path_tainted())
+#else
     if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
+#endif
 	return rb_str_new2(env);
     return rb_tainted_str_new2(env);
 }
