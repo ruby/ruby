@@ -1,3 +1,8 @@
+Thu Feb 21 21:40:18 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* ext/extmk.rb.in (create_makefile): remove unnecessary -L option from
+	  LIBS macro.
+
 Thu Feb 21 02:49:12 2002  Koji Arai  <jca02266@nifty.ne.jp>
 
 	* pack.c (pack_pack): wrong # comment treatment.
