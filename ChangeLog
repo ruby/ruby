@@ -1,3 +1,8 @@
+Sun Mar 21 18:57:37 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/*: Test::Unit::TestCase -> RSS::TestCase and
+	  Test::Unit::Assertions -> RSS::Assertions.
+
 Sun Mar 21 18:48:20 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/{rss,dublincore,syndication}.rb: handled W3CDTF correctly.

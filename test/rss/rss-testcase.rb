@@ -1,51 +1,58 @@
 # -*- tab-width: 2 -*- vim: ts=2
 
-require 'my-assertions'
+require "test/unit"
+require 'rss-assertions'
 
-module TestRSSMixin
+module RSS
+	class TestCase < Test::Unit::TestCase
 
-	include RSS
+		include RSS
+		include Assertions
 
-	XMLDECL_VERSION = "1.0"
-	XMLDECL_ENCODING = "UTF-8"
-	XMLDECL_STANDALONE = "no"
+		XMLDECL_VERSION = "1.0"
+		XMLDECL_ENCODING = "UTF-8"
+		XMLDECL_STANDALONE = "no"
 
-	RDF_ABOUT = "http://www.xml.com/xml/news.rss"
-	RDF_RESOURCE = "http://xml.com/universal/images/xml_tiny.gif"
-	TITLE_VALUE = "XML.com"
-	LINK_VALUE = "http://xml.com/pub"
-	URL_VALUE = "http://xml.com/universal/images/xml_tiny.gif"
-	NAME_VALUE = "hogehoge"
-	DESCRIPTION_VALUE = "
+		RDF_ABOUT = "http://www.xml.com/xml/news.rss"
+		RDF_RESOURCE = "http://xml.com/universal/images/xml_tiny.gif"
+		TITLE_VALUE = "XML.com"
+		LINK_VALUE = "http://xml.com/pub"
+		URL_VALUE = "http://xml.com/universal/images/xml_tiny.gif"
+		NAME_VALUE = "hogehoge"
+		DESCRIPTION_VALUE = "
     XML.com features a rich mix of information and services 
     for the XML community.
-	"
-	RESOURCES = [
-		"http://xml.com/pub/2000/08/09/xslt/xslt.html",
-		"http://xml.com/pub/2000/08/09/rdfdb/index.html",
-	]
+		"
+		RESOURCES = [
+			"http://xml.com/pub/2000/08/09/xslt/xslt.html",
+			"http://xml.com/pub/2000/08/09/rdfdb/index.html",
+		]
 
-	private
-	def make_xmldecl(v=XMLDECL_VERSION, e=XMLDECL_ENCODING, s=XMLDECL_STANDALONE)
-		rv = "<?xml version='#{v}'"
-		rv << " encoding='#{e}'" if e
-		rv << " standalone='#{s}'" if s
-		rv << "?>"
-		rv
-	end
+		def default_test
+			# This class isn't tested
+		end
 
-	def make_RDF(content=nil, xmlns=[])
-		<<-EORSS
+		private
+		def make_xmldecl(v=XMLDECL_VERSION, e=XMLDECL_ENCODING, s=XMLDECL_STANDALONE)
+			rv = "<?xml version='#{v}'"
+			rv << " encoding='#{e}'" if e
+			rv << " standalone='#{s}'" if s
+			rv << "?>"
+			rv
+		end
+
+		def make_RDF(content=nil, xmlns=[])
+			<<-EORSS
 #{make_xmldecl}
 <rdf:RDF xmlns="#{URI}" xmlns:rdf="#{RDF::URI}"
 #{xmlns.collect {|pre, uri| "xmlns:#{pre}='#{uri}'"}.join(' ')}>
 #{block_given? ? yield : content}
 </rdf:RDF>
 EORSS
-	end
+		end
 
-	def make_channel(content=nil)
-		<<-EOC
+		def make_channel(content=nil)
+			<<-EOC
 <channel rdf:about="#{RDF_ABOUT}">
 	<title>#{TITLE_VALUE}</title>
 	<link>#{LINK_VALUE}</link>
@@ -64,10 +71,10 @@ EORSS
 #{block_given? ? yield : content}
 </channel>
 EOC
-	end
+		end
 
-	def make_image(content=nil)
-		<<-EOI
+		def make_image(content=nil)
+			<<-EOI
 <image rdf:about="#{RDF_ABOUT}">
 	<title>#{TITLE_VALUE}</title>
 	<url>#{URL_VALUE}</url>
@@ -75,10 +82,10 @@ EOC
 #{block_given? ? yield : content}
 </image>
 EOI
-	end
+		end
 
-	def make_item(content=nil)
-		<<-EOI
+		def make_item(content=nil)
+			<<-EOI
 <item rdf:about="#{RDF_ABOUT}">
 	<title>#{TITLE_VALUE}</title>
 	<link>#{LINK_VALUE}</link>
@@ -86,10 +93,10 @@ EOI
 #{block_given? ? yield : content}
 </item>
 EOI
-	end
+		end
 
-	def make_textinput(content=nil)
-		<<-EOT
+		def make_textinput(content=nil)
+			<<-EOT
 <textinput rdf:about="#{RDF_ABOUT}">
 	<title>#{TITLE_VALUE}</title>
 	<description>#{DESCRIPTION_VALUE}</description>
@@ -98,29 +105,29 @@ EOI
 #{block_given? ? yield : content}
 </textinput>
 EOT
-	end
+		end
 
-	def make_sample_RDF
-		make_RDF(<<-EOR)
+		def make_sample_RDF
+			make_RDF(<<-EOR)
 #{make_channel}
 #{make_image}
 #{make_item}
 #{make_textinput}
 EOR
-	end
+		end
 
-	def make_Rss2(content=nil, xmlns=[])
-		<<-EORSS
+		def make_Rss2(content=nil, xmlns=[])
+			<<-EORSS
 #{make_xmldecl}
 <rss version="2.0"
 #{xmlns.collect {|pre, uri| "xmlns:#{pre}='#{uri}'"}.join(' ')}>
 #{block_given? ? yield : content}
 </rss>
 EORSS
-	end
+		end
 
-	def make_channel2(content=nil)
-		<<-EOC
+		def make_channel2(content=nil)
+			<<-EOC
 <channel>
 	<title>#{TITLE_VALUE}</title>
 	<link>#{LINK_VALUE}</link>
@@ -141,10 +148,10 @@ EORSS
 #{block_given? ? yield : content}
 </channel>
 EOC
-	end
+		end
 
-	def make_item2(content=nil)
-		<<-EOI
+		def make_item2(content=nil)
+			<<-EOI
 <item>
 	<title>#{TITLE_VALUE}</title>
 	<link>#{LINK_VALUE}</link>
@@ -152,5 +159,6 @@ EOC
 #{block_given? ? yield : content}
 </item>
 EOI
+		end
 	end
 end
