@@ -464,6 +464,7 @@ str_independent(str)
     VALUE str;
 {
     if (FL_TEST(str, STR_TMPLOCK)) {
+	FL_UNSET(str, STR_TMPLOCK);
 	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
     }
     if (OBJ_FROZEN(str)) rb_error_frozen("string");
@@ -2075,6 +2076,8 @@ str_gsub(argc, argv, str, bang)
     bp = buf;
     cp = RSTRING(str)->ptr;
 
+    rb_str_locktmp(str);
+    rb_str_locktmp(dest);
     while (beg >= 0) {
 	n++;
 	match = rb_backref_get();
@@ -2132,6 +2135,8 @@ str_gsub(argc, argv, str, bang)
     }
     rb_backref_set(match);
     *bp = '\0';
+    rb_str_unlocktmp(str);
+    rb_str_unlocktmp(dest);
     if (bang) {
 	if (str_independent(str)) {
 	    free(RSTRING(str)->ptr);

@@ -648,7 +648,7 @@ mark_tbl(tbl, lev)
     int lev;
 {
     if (!tbl) return;
-    st_foreach(tbl, mark_entry, lev+1);
+    st_foreach(tbl, mark_entry, lev);
 }
 
 void
@@ -675,7 +675,7 @@ mark_hash(tbl, lev)
     int lev;
 {
     if (!tbl) return;
-    st_foreach(tbl, mark_keyvalue, lev+1);
+    st_foreach(tbl, mark_keyvalue, lev);
 }
 
 void
@@ -721,7 +721,7 @@ gc_mark(ptr, lev)
 	}
 	return;
     }
-    gc_mark_children(ptr, lev);
+    gc_mark_children(ptr, lev+1);
 }
 
 void

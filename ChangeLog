@@ -1,3 +1,14 @@
+Thu Nov  4 09:11:35 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark): enable GC stack checking.
+
+Thu Nov  4 03:11:33 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): lock strings temporarily.  [ruby-dev:24687]
+
+	* ext/socket/socket.c (s_recvfrom): tmplock input buffer.
+	  [ruby-dev:24705]
+
 Wed Nov  3 22:24:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpauth/digestauth.rb: use Base64.encode64 to

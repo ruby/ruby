@@ -474,10 +474,12 @@ s_recvfrom(sock, argc, argv, from)
     str = rb_tainted_str_new(0, buflen);
 
   retry:
+    rb_str_locktmp(str);
     rb_thread_wait_fd(fd);
     TRAP_BEG;
     slen = recvfrom(fd, RSTRING(str)->ptr, buflen, flags, (struct sockaddr*)buf, &alen);
     TRAP_END;
+    rb_str_unlocktmp(str);
 
     if (slen < 0) {
 	if (rb_io_wait_readable(fd)) {
