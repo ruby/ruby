@@ -11,7 +11,7 @@
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   2
 #define ONIGURUMA_VERSION_MINOR   2
-#define ONIGURUMA_VERSION_TEENY   6
+#define ONIGURUMA_VERSION_TEENY   7
 
 #ifndef P_
 #if defined(__STDC__) || defined(_WIN32)
@@ -401,7 +401,7 @@ ONIG_EXTERN OnigSyntaxType OnigSyntaxJava;
 ONIG_EXTERN OnigSyntaxType OnigSyntaxPerl;
 ONIG_EXTERN OnigSyntaxType OnigSyntaxRuby;
 
-/* predefined syntaxes (see regparse.c) */
+/* predefined syntaxes (see regsyntax.c) */
 #define ONIG_SYNTAX_POSIX_BASIC        (&OnigSyntaxPosixBasic)
 #define ONIG_SYNTAX_POSIX_EXTENDED     (&OnigSyntaxPosixExtended)
 #define ONIG_SYNTAX_EMACS              (&OnigSyntaxEmacs)

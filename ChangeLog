@@ -1,3 +1,7 @@
+Wed Apr 28 01:16:23 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* oniguruma.h, regparse.c: imported Oni Guruma 2.2.7.
+
 Tue Apr 27 14:43:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk: LIBURUBY_A is needed for extconf.rb even when
