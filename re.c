@@ -967,6 +967,7 @@ match_aref(argc, argv, match)
     return rb_reg_nth_match(FIX2INT(idx), match);
 }
 
+static VALUE match_entry _((VALUE, long));
 static VALUE
 match_entry(match, n)
     VALUE match;

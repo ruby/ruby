@@ -1,3 +1,7 @@
+Wed Jul 09 11:09:57 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* re.c (match_entry): add prototype to avoid VC++ warnings.
+
 Mon Jul  7 10:22:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/dbm/extconf.rb (gdbm_compat, qdbm): add check for gdbm_compat
