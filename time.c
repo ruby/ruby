@@ -313,7 +313,7 @@ time_arg(argc, argv, tm, usec)
 	if (argc == 8) {
 	    /* v[6] is timezone, but ignored */
 	}
-	else {
+	else if (argc == 7) {
 	    *usec = obj2long(v[6]);
 	}
     }
