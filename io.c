@@ -301,7 +301,9 @@ io_fflush(f, fptr)
 {
     int n;
 
-    rb_thread_fd_writable(fileno(f));
+    if (!rb_thread_fd_writable(fileno(f))) {
+        rb_io_check_closed(fptr);
+    }
     for (;;) {
 	TRAP_BEG;
 	n = fflush(f);
@@ -1331,6 +1333,7 @@ fptr_finalize(fptr, noraise)
 		e = errno;
 		break;
 	    }
+	    if (!fptr->f2) break;
 	}
 	fptr->f2 = 0;
     }
@@ -1339,6 +1342,7 @@ fptr_finalize(fptr, noraise)
 	while ((n1 = fclose(fptr->f)) < 0) {
 	    if (f2 != -1 || !(fptr->mode & FMODE_WBUF)) break;
 	    if (!rb_io_wait_writable(f1)) break;
+	    if (!fptr->f) break;
 	}
 	fptr->f = 0;
 	if (n1 < 0 && errno == EBADF && f1 == f2) {

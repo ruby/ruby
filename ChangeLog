@@ -1,3 +1,13 @@
+Fri Jun 27 03:24:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (io_fflush): need to check if closed after thread switch.
+	  [ruby-dev:20351]
+
+	* io.c (fptr_finalize): ditto.
+
+	* string.c (rb_str_rindex_m): fixed wrong fix.  should move backward
+	  first only when matching from the end.
+
 Thu Jun 26 21:34:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* class.c (class_instance_method_list): get rid of warning about

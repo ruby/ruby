@@ -1010,8 +1010,13 @@ rb_str_rindex_m(argc, argv, str)
 	  char *p = RSTRING(str)->ptr + pos;
 	  char *pbeg = RSTRING(str)->ptr;
 
-	  while (pbeg <= --p) {
+	  if (pos == RSTRING(str)->len) {
+	      if (pos == 0) return Qnil;
+	      --p;
+	  }
+	  while (pbeg <= p) {
 	      if (*p == c) return LONG2NUM(p - RSTRING(str)->ptr);
+	      p--;
 	  }
 	  return Qnil;
       }
