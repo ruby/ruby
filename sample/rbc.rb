@@ -2,8 +2,8 @@
 #
 #   rbc.rb - 
 #   	$Release Version: 0.8 $
-#   	$Revision: 1.7 $
-#   	$Date: 1998/02/27 03:45:51 $
+#   	$Revision: 1.8 $
+#   	$Date: 1998/03/11 05:43:00 $
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --
@@ -23,7 +23,7 @@
 #
 # 追加 private method:
 #   exit, quit		    終了する.
-#   inspect(sw = nil)	    インスペクトモードのトグル
+#   inspect_mode(sw = nil)  インスペクトモードのトグル
 #   trace_load(sw = nil)    load/require時にrbcのfile読み込み機能を用
 #			    いるモードのスイッチ(デフォルトはトレース
 #			    モード)
@@ -33,7 +33,7 @@ require "e2mmap.rb"
 $stdout.sync = TRUE
 
 module BC_APPLICATION__
-  RCS_ID='-$Id: rbc.rb,v 1.7 1998/02/27 03:45:51 keiju Exp keiju $-'
+  RCS_ID='-$Id: rbc.rb,v 1.8 1998/03/11 05:43:00 keiju Exp keiju $-'
   
   extend Exception2MessageMapper
   def_exception :UnrecognizedSwitch, "Unrecognized switch: %s"
@@ -43,7 +43,7 @@ module BC_APPLICATION__
   CONFIG[:USE_READLINE] = TRUE
   CONFIG[:LOAD_MODULES] = []
   CONFIG[:INSPECT] = nil
-  CONFIG[:TRACE_LOAD] = TRUE
+  CONFIG[:TRACE_LOAD] = FALSE
   CONFIG[:RC] = TRUE
 
   CONFIG[:DEBUG] = FALSE
@@ -831,25 +831,26 @@ module BC_APPLICATION__
   
   module CONTEXT
     def _=(value)
-      @_ = value
+      CONFIG[:_] = value
+      eval "_=BC_APPLICATION__::CONFIG[:_]", CONFIG[:BIND]
     end
     
-    def _
-      @_
-    end
+#    def _
+#      eval "_", CONFIG[:BIND]
+#    end
     
     def quit
       exit
     end
     
     def trace_load(opt = nil)
-      if opt
-	@Trace_require = opt
+      if !opt.nil?
+	CONFIG[:TRACE_LOAD] = opt
       else
-	@Trace_require = !@Trace_require
+	CONFIG[:TRACE_LOAD] = !CONFIG[:TRACE_LOAD]
       end
-      print "Switch to load/require #{unless @Trace_require; ' non';end} trace mode.\n"
-      if @Trace_require
+      print "Switch to load/require #{unless CONFIG[:TRACE_LOAD]; ' non';end} trace mode.\n"
+      if CONFIG[:TRACE_LOAD]
 	eval %{
 	  class << self
 	    alias load rbc_load
@@ -864,7 +865,7 @@ module BC_APPLICATION__
 	  end
 	}
       end
-      @Trace_require
+      CONFIG[:TRACE_LOAD]
     end
     
     alias rbc_load_org load
@@ -911,7 +912,7 @@ module BC_APPLICATION__
       return false
     end
 
-    def inspect(opt = nil)
+    def inspect_mode(opt = nil)
       if opt
 	CONFIG[:INSPECT] = opt
       else

@@ -11,6 +11,10 @@ Wed Mar 11 02:14:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* class.c (rb_define_method): disables superclass's overriding
  	  method by default.
 
+Wed Mar 11 01:40:48 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
+
+	* numeric.c (flo_gt,etc.): do not depend on `<=>', to handle NaN.
+
 Tue Mar 10 00:03:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.c (load_file): understands multiple options in #! line.

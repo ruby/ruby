@@ -404,6 +404,110 @@ flo_cmp(x, y)
 }
 
 static VALUE
+flo_gt(x, y)
+    VALUE x, y;
+{
+    double a, b;
+
+    a = RFLOAT(x)->value;
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	b = (double)FIX2INT(y);
+	break;
+
+      case T_BIGNUM:
+	b = big2dbl(y);
+	break;
+
+      case T_FLOAT:
+	b = RFLOAT(y)->value;
+	break;
+
+      default:
+	return num_coerce_bin(x, y);
+    }
+    return (a > b)?TRUE:FALSE;
+}
+
+static VALUE
+flo_ge(x, y)
+    VALUE x, y;
+{
+    double a, b;
+
+    a = RFLOAT(x)->value;
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	b = (double)FIX2INT(y);
+	break;
+
+      case T_BIGNUM:
+	b = big2dbl(y);
+	break;
+
+      case T_FLOAT:
+	b = RFLOAT(y)->value;
+	break;
+
+      default:
+	return num_coerce_bin(x, y);
+    }
+    return (a >= b)?TRUE:FALSE;
+}
+
+static VALUE
+flo_lt(x, y)
+    VALUE x, y;
+{
+    double a, b;
+
+    a = RFLOAT(x)->value;
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	b = (double)FIX2INT(y);
+	break;
+
+      case T_BIGNUM:
+	b = big2dbl(y);
+	break;
+
+      case T_FLOAT:
+	b = RFLOAT(y)->value;
+	break;
+
+      default:
+	return num_coerce_bin(x, y);
+    }
+    return (a < b)?TRUE:FALSE;
+}
+
+static VALUE
+flo_le(x, y)
+    VALUE x, y;
+{
+    double a, b;
+
+    a = RFLOAT(x)->value;
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	b = (double)FIX2INT(y);
+	break;
+
+      case T_BIGNUM:
+	b = big2dbl(y);
+	break;
+
+      case T_FLOAT:
+	b = RFLOAT(y)->value;
+	break;
+
+      default:
+	return num_coerce_bin(x, y);
+    }
+    return (a <= b)?TRUE:FALSE;
+}
+
+static VALUE
 flo_eql(x, y)
     VALUE x, y;
 {
@@ -1161,6 +1265,10 @@ Init_Numeric()
     rb_define_method(cFloat, "**", flo_pow, 1);
     rb_define_method(cFloat, "==", flo_eq, 1);
     rb_define_method(cFloat, "<=>", flo_cmp, 1);
+    rb_define_method(cFloat, ">",  flo_gt, 1);
+    rb_define_method(cFloat, ">=", flo_ge, 1);
+    rb_define_method(cFloat, "<",  flo_lt, 1);
+    rb_define_method(cFloat, "<=", flo_le, 1);
     rb_define_method(cFloat, "eql?", flo_eql, 1);
     rb_define_method(cFloat, "hash", flo_hash, 0);
     rb_define_method(cFloat, "to_i", flo_to_i, 0);
