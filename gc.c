@@ -38,19 +38,25 @@ void rb_io_fptr_finalize _((struct OpenFile*));
 #endif
 
 /* Make alloca work the best possible way.  */
-#ifndef __GNUC__
-# if HAVE_ALLOCA_H
+#ifdef __GNUC__
+# ifndef atarist
+#  ifndef alloca
+#   define alloca __builtin_alloca
+#  endif
+# endif /* atarist */
+#else
+# ifdef HAVE_ALLOCA_H
 #  include <alloca.h>
 # else
 #  ifdef _AIX
-#   pragma alloca
+ #pragma alloca
 #  else
 #   ifndef alloca /* predefined by HP cc +Olibcalls */
 void *alloca ();
 #   endif
-#  endif
-# endif
-#endif
+#  endif /* AIX */
+# endif /* HAVE_ALLOCA_H */
+#endif /* __GNUC__ */
 
 #ifndef GC_MALLOC_LIMIT
 #if defined(MSDOS) || defined(__human68k__)

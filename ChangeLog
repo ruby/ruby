@@ -1,3 +1,11 @@
+Sat Oct 26 03:28:43 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c, gc.c: use a common set of alloca() #ifdef's.  This fixes
+	  the build with Intel C Compiler for Linux.
+
+	* eval.c (rb_f_require): declare old_func with a real type, not
+	  just type modifiers.
+
 Fri Oct 25 02:55:01 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* string.c (rb_str_split_m): RSTRING(str)->ptr might become NULL.
