@@ -15,7 +15,7 @@ require 'socket'
 
 module Net
 
-  Version = '1.1.16'
+  Version = '1.1.17'
 
 =begin
 
