@@ -1,3 +1,8 @@
+Mon Aug  6 17:01:33 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mark_end_proc): should mark ruby_cref, maybe should
+	  not be here, but it's simplest way for a kludge.
+
 Mon Aug  6 00:35:03 2001  Guy Decoux  <decoux@moulon.inra.fr>
 
 	* struct.c (rb_struct_modify): should check frozen and taint

@@ -5817,6 +5817,8 @@ rb_mark_end_proc()
 	rb_gc_mark(link->data);
 	link = link->next;
     }
+    /* static global mark */
+    rb_gc_mark((VALUE)ruby_cref);
 }
 
 static void
