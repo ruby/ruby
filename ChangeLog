@@ -54,6 +54,11 @@ Sat Jun 28 12:28:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* gc.c (Init_stack): add safety margin.
 
+Sat Jun 14 17:59:59 2003  Guy Decoux  <ts@moulon.inra.fr>
+
+	* eval.c (method_arity): should handle NODE_BMETHOD and
+	  NODE_DMETHOD. [ruby-core:01138]
+
 Fri May 30 11:25:58 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/irb/xmp.rb: sync with 1.8 ("irb/irb" -> "irb").

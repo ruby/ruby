@@ -2184,7 +2184,8 @@ rb_io_puts(argc, argv, out)
 	    line = rb_obj_as_string(argv[i]);
 	}
 	rb_io_write(out, line);
-	if (RSTRING(line)->ptr[RSTRING(line)->len-1] != '\n') {
+	if (RSTRING(line)->len == 0 ||
+            RSTRING(line)->ptr[RSTRING(line)->len-1] != '\n') {
 	    rb_io_write(out, rb_default_rs);
 	}
     }

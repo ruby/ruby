@@ -6827,6 +6827,9 @@ method_arity(method)
 	return INT2FIX(1);
       case NODE_IVAR:
 	return INT2FIX(0);
+      case NODE_BMETHOD:
+      case NODE_DMETHOD:
+       return proc_arity(method);
       default:
 	body = body->nd_next;	/* skip NODE_SCOPE */
 	if (nd_type(body) == NODE_BLOCK)

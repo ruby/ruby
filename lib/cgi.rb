@@ -823,13 +823,15 @@ convert string charset, and set language to "ja".
           end
 
           c = if bufsize < content_length
-                stdinput.read(bufsize) or ''
+                stdinput.read(bufsize)
               else
-                stdinput.read(content_length) or ''
+                stdinput.read(content_length)
               end
+          if c.nil?
+            raise EOFError, "bad content body"
+          end
           buf += c
           content_length -= c.size
-
         end
 
         buf = buf.sub(/\A((?:.|\n)*?)(?:#{EOL})?#{boundary}(#{EOL}|--)/n) do
