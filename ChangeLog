@@ -1,3 +1,19 @@
+Sun Jan  5 03:12:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* file.c (utimbuf): use utimbuf instead of _utimbuf if defined _WIN32.
+
+	* win32/Makefile.sub (LIBS): use oldnames.lib.
+
+	* win32/win32.c (rb_w32_getcwd): follow above change.
+
+	* win32/win32.h: ditto.
+
+	* wince/direct.c, wince/direct.h (getcwd): ditto.
+
+	* wince/io.h: ditto.
+
+	* wince/string.c, wince/wince.h (stricmp, strnicmp): ditto.
+
 Sat Jan  4 15:18:50 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* process.c (rb_proc_exec): use same logic as DJGPP on win32 ports.

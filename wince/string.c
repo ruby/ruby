@@ -23,8 +23,8 @@ char* strerror(int errno)
 	return rb_w32_strerror(errno);
 }
 
-/* _strnicmp already exists in stdlib.h? */
-int _strnicmp( const char *s1, const char *s2, size_t count )
+/* strnicmp already exists in stdlib.h? */
+int strnicmp( const char *s1, const char *s2, size_t count )
 {
 	wchar_t *w1, *w2;
 	int n;
@@ -53,7 +53,7 @@ char *strrchr( const char *p, int c )
 	return pp==p ? NULL : pp;
 }
 
-int _stricmp( const char *s1, const char *s2 )
+int stricmp( const char *s1, const char *s2 )
 {
 	wchar_t *w1, *w2;
 	int n;

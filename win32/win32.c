@@ -2398,12 +2398,8 @@ rb_w32_getcwd(buffer, size)
     int length;
     char *bp;
 
-#ifdef __BORLANDC__
 #undef getcwd
     if (getcwd(buffer, size) == NULL) {
-#else
-    if (_getcwd(buffer, size) == NULL) {
-#endif
         return NULL;
     }
     length = strlen(buffer);

@@ -57,10 +57,8 @@ extern "C" {
 /* Win32 API redifinition. */
 
 #ifdef GetCommandLine
-  #undef GetCommandLine
-  #define GetCommandLine GetCommandLineA
-#else
-  #define GetCommandLine GetCommandLineA
+#undef GetCommandLine
+#define GetCommandLine GetCommandLineA
 #endif
 
 #ifdef SetFileAttributes
@@ -141,7 +139,7 @@ char *_fullpath(char *absPath, const char *relPath, size_t maxLength);
 /* string.c */
 char *strdup(const char * str);
 /* char *strerror(int errno); */
-int _strnicmp( const char *s1, const char *s2, size_t count );
+int strnicmp( const char *s1, const char *s2, size_t count );
 
 #define strnicmp _strnicmp
 
@@ -192,7 +190,7 @@ void wce_FreeCommandLine(void);
 #if _WIN32_WCE < 300
   /* for Handheld PC Pro. */
   char *strrchr( const char *p, int c );
-  int _stricmp( const char *p1, const char *p2 );
+  int stricmp( const char *p1, const char *p2 );
   VOID ZeroMemory(PVOID p, DWORD length);
 
   #define isascii(c) ( (c>=0x00&&c<=0x7f)?1:0 )

@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-char *_getcwd(char* buffer, int maxlen);
+char *getcwd(char* buffer, int maxlen);
 int _chdir(const char * dirname);
 int _rmdir(const char * dir);
 int _mkdir(const char * dir);
@@ -15,7 +15,6 @@ int _mkdir(const char * dir);
 };
 #endif
 
-#define getcwd     _getcwd
 #define chdir      _chdir
 #define rmdir      _rmdir
 #define mkdir      _mkdir

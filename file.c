@@ -1201,9 +1201,6 @@ struct utimbuf {
     long modtime;
 };
 #endif
-#if defined(_WIN32) && !defined(_WIN32_WCE)&& (defined(_MSC_VER) || defined(__MINGW__))
-# define utimbuf _utimbuf
-#endif
 
 static void
 utime_internal(path, utp)

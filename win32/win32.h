@@ -98,46 +98,17 @@ extern "C++" {
 #define fgetchar()		getchar()
 #define fputchar(_c)		putchar(_c)
 
-#ifndef __BORLANDC__
-
-#define access	   _access
-#define chmod	   _chmod
-#define chsize	   _chsize
-#define dup	   _dup
-#define dup2	   _dup2
-#define isatty	   _isatty
-#define open	   _open
-#define setmode    _setmode
-#define execl	   _execl
-#define execle	   _execle
-#define execlp	   _execlp
-#define execlpe    _execlpe
-#define execv	   _execv
-#define execve	   _execve
-#define execvp	   _execvp
-#define execvpe    _execvpe
-#define lseek      _lseek
-#define spawnl	   _spawnl
-#define spawnle    _spawnle
-#define spawnlp    _spawnlp
-#define spawnlpe   _spawnlpe
-#define spawnv	   _spawnv
-#define spawnve    _spawnve
-#define spawnvp    _spawnvp
-#define spawnvpe   _spawnvpe
-#if _MSC_VER < 800
-#define fileno	   _fileno
-#endif
-#define strcasecmp _stricmp
-#define strncasecmp _strnicmp
-#else
 #define strcasecmp  stricmp
 #define strncasecmp strnicmp
+#ifdef __BORLANDC__
 #define _open       _sopen
 #endif
 
 #define close	   rb_w32_close
 #define fclose	   rb_w32_fclose
+#define getpid	   rb_w32_getpid
+#define sleep(x)   rb_w32_sleep((x)*1000)
+#ifdef __BORLANDC__
 #define creat	   _creat
 #define eof	   _eof
 #define filelength _filelength
@@ -150,9 +121,8 @@ extern "C++" {
 #define umask	   _umask
 #define unlink	   _unlink
 #define write	   _write
-#define getpid	   rb_w32_getpid
-#define sleep(x)   rb_w32_sleep((x)*1000)
 #define utime      _utime
+#endif
 #define vsnprintf  _vsnprintf
 #define snprintf   _snprintf
 #undef stat

@@ -11,7 +11,7 @@
 static char _currentdir[MAX_PATH+1];
 
 
-char *_getcwd(char* buffer, int maxlen)
+char *getcwd(char* buffer, int maxlen)
 {
 	strcpy( buffer, _currentdir );
 	return buffer;

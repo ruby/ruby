@@ -49,6 +49,7 @@ int _findclose( long handle );
 };
 #endif
 
+#define chmod      _chmod
 #define chsize     _chsize
 #define rename     _rename
 #define unlink	   _unlink
@@ -61,6 +62,8 @@ int _findclose( long handle );
 #define isatty	   _isatty
 #define access	   _access
 #define pipe       _pipe
+#define setmode    _setmode
+#define lseek      _lseek
 
 #endif
 
