@@ -1,7 +1,12 @@
+Wed Mar 19 23:05:30 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+
+	* lib/tracer.rb (trace_func): save and recover Thread.critical state.
+	  Fixed by Fukumoto Atsushi <fukumoto@imasy.or.jp> [ruby-dev:19830]
+
 Sun Mar 16 12:29:55 2003  Tanaka Akira  <akr@m17n.org>
 
-        * lib/pp.rb (object_address_group): use to_s instead of name
-          to get name of class.
+	* lib/pp.rb (object_address_group): use to_s instead of name
+	  to get name of class.
 
 Wed Mar 12 16:48:19 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
