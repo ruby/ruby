@@ -806,7 +806,7 @@ each_with_index_i(val, memo)
 
 /*
  *  call-seq:
- *     enum.each_with_index {|obj, i| block }  -> nil
+ *     enum.each_with_index {|obj, i| block }  -> enum
  *  
  *  Calls <em>block</em> with two arguments, the item and its index, for
  *  each item in <i>enum</i>.

@@ -223,7 +223,7 @@ num_uplus(num)
 
 /*
  *  call-seq:
- *     --num    => numeric
+ *     -num    => numeric
  *  
  *  Unary Minus---Returns the receiver's value, negated.
  */
