@@ -407,18 +407,22 @@ class File
         q.group {
           q.text "uid="; q.pp self.uid
           begin
-            name = Etc.getpwuid(self.uid).name
-            q.breakable; q.text "(#{name})"
+            pw = Etc.getpwuid(self.uid)
           rescue ArgumentError
+          end
+          if pw
+            q.breakable; q.text "(#{pw.name})"
           end
         }
         q.comma_breakable
         q.group {
           q.text "gid="; q.pp self.gid
           begin
-            name = Etc.getgrgid(self.gid).name
-            q.breakable; q.text "(#{name})"
+            gr = Etc.getgrgid(self.gid)
           rescue ArgumentError
+          end
+          if gr
+            q.breakable; q.text "(#{gr.name})"
           end
         }
         q.comma_breakable

@@ -1,3 +1,9 @@
+Sun Mar  6 11:36:37 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (File::Stat#pretty_print): Etc.getpwuid and Etc.getgrgid
+	  may return nil.  [ruby-talk:129826]
+	  reported by Daniel Berger.
+
 Sun Mar  6 06:34:31 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_start_ssl): should wait for that
