@@ -143,7 +143,7 @@ static int get_addr __P((const char *, int, struct addrinfo **,
 			struct addrinfo *, int));
 static int str_isnumber __P((const char *));
 	
-static char *ai_errlist[] = {
+static const char *ai_errlist[] = {
 	"success.",
 	"address family for hostname not supported.",	/* EAI_ADDRFAMILY */
 	"temporary failure in name resolution.",	/* EAI_AGAIN      */
