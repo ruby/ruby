@@ -76,7 +76,7 @@ module Kernel
   # Kernel[#.]open can accepts such URIs and strings which begins with
   # http:// and ftp://.  In this http and ftp case, the opened file object
   # is extended by OpenURI::Meta.
-  def open(name, *rest, &block)
+  def open(name, *rest, &block) # :doc:
     if name.respond_to?(:open)
       name.open(*rest, &block)
     elsif name.respond_to?(:to_str) &&
