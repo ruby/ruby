@@ -1,3 +1,16 @@
+Fri Dec 24 02:22:53 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_loader_transfer): check type conversion.
+
+	* ext/syck/rubyext.c (syck_parser_assign_io, rb_new_syck_node): duck
+	  typing.
+
+	* ext/syck/rubyext.c (syck_parser_s_alloc, syck_parser_initialize):
+	  allocation framework.
+
+	* ext/syck/rubyext.c (syck_emitter_s_alloc, syck_emitter_initialize):
+	  ditto.
+
 Fri Dec 24 01:21:00 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/blt.rb: add BLT extension support
