@@ -153,7 +153,7 @@ module DL
                      "S",nil, nil],
       [/^const char\s*\*$/,"S",nil, nil,
                            "S",nil, nil],
-      [/^.+\*$/,   "p", nil, nil,
+      [/^.+\*$/,   "P", nil, nil,
                    "P", nil, nil],
       [/^.+\[\]$/, "a", nil, nil,
                    "a", nil, nil],
@@ -186,8 +186,8 @@ module DL
 #	  t1 = Regexp.new("^" + t1 + "$")
 #	end
 	if( (t1.is_a?(Regexp) && (t1 =~ ty)) || (t1 == ty) )
-	  ty1 = ty.gsub(t1,t2)
-          ty2 = ty.gsub(t1,t3)
+	  ty1 = ty.gsub(t1,t2) if t2
+          ty2 = ty.gsub(t1,t3) if t3
           ty1.strip! if ty1
           ty2.strip! if ty2
 	  if( enc )

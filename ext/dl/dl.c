@@ -92,7 +92,7 @@ rb_dl_scan_callback_args(long stack[], const char *proto,
       }
       break;
     default:
-      rb_raise(rb_eDLTypeError, "unsupported type `%c'", proto[i]);
+      rb_raise(rb_eDLTypeError, "scan_callback_args: unsupported type `%c'", proto[i]);
       break;
     }
     argv[i-1] = val;

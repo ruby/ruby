@@ -697,7 +697,7 @@ cary2ary(void *ptr, char t, int len)
       ptr = (char *)ptr + sizeof(short);
       break;
     default:
-      rb_raise(rb_eDLTypeError, "unsupported type '%c'", t);
+      rb_raise(rb_eDLTypeError, "cary2ary: unsupported type '%c'", t);
     }
     return elem;
   }
@@ -735,7 +735,7 @@ cary2ary(void *ptr, char t, int len)
       ptr = (char *)ptr + sizeof(short);
       break;
     default:
-      rb_raise(rb_eDLTypeError, "unsupported type '%c'", t);
+      rb_raise(rb_eDLTypeError, "cary2ary: unsupported type '%c'", t);
     }
     rb_ary_push(ary, elem);
   }
