@@ -49,6 +49,9 @@ do{\
 static VALUE
 ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 {
+#if !defined(HAVE_ENGINE_LOAD_BUILTIN_ENGINES)
+    return Qnil;
+#else
     VALUE name;
 
     rb_scan_args(argc, argv, "01", &name);
@@ -68,12 +71,15 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
     OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto);
 #endif
     rb_raise(eEngineError, "no such engine `%s'", RSTRING(name)->ptr);
+#endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
 }
 
 static VALUE
 ossl_engine_s_cleanup(VALUE self)
 {
+#if defined(HAVE_ENGINE_CLEANUP)
     ENGINE_cleanup();
+#endif
     return Qnil;
 }
 
@@ -156,6 +162,7 @@ ossl_engine_finish(VALUE self)
 static VALUE
 ossl_engine_get_cipher(VALUE self, VALUE name)
 {
+#if defined(HAVE_ENGINE_GET_CIPHER)
     ENGINE *e;
     const EVP_CIPHER *ciph, *tmp;
     char *s;
@@ -170,11 +177,15 @@ ossl_engine_get_cipher(VALUE self, VALUE name)
     if(!ciph) ossl_raise(eEngineError, NULL);
 
     return ossl_cipher_new(ciph);
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
 ossl_engine_get_digest(VALUE self, VALUE name)
 {
+#if defined(HAVE_ENGINE_GET_DIGEST)
     ENGINE *e;
     const EVP_MD *md, *tmp;
     char *s;
@@ -189,6 +200,9 @@ ossl_engine_get_digest(VALUE self, VALUE name)
     if(!md) ossl_raise(eEngineError, NULL);
 
     return ossl_digest_new(md);
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -292,8 +306,18 @@ Init_ossl_engine()
     DefEngineConst(METHOD_DSA);
     DefEngineConst(METHOD_DH);
     DefEngineConst(METHOD_RAND);
+#ifdef ENGINE_METHOD_BN_MOD_EXP
+    DefEngineConst(METHOD_BN_MOD_EXP);
+#endif
+#ifdef ENGINE_METHOD_BN_MOD_EXP_CRT
+    DefEngineConst(METHOD_BN_MOD_EXP_CRT);
+#endif
+#ifdef ENGINE_METHOD_CIPHERS
     DefEngineConst(METHOD_CIPHERS);
+#endif
+#ifdef ENGINE_METHOD_DIGESTS
     DefEngineConst(METHOD_DIGESTS);
+#endif
     DefEngineConst(METHOD_ALL);
     DefEngineConst(METHOD_NONE);
 }
