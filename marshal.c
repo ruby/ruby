@@ -16,6 +16,9 @@
 #include "util.h"
 
 #include <math.h>
+#ifdef HAVE_FLOAT_H
+#include <float.h>
+#endif
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
@@ -55,7 +58,7 @@ shortlen(len, ds)
 #define TYPE_OBJECT	'o'
 #define TYPE_DATA       'd'
 #define TYPE_USERDEF	'u'
-#define TYPE_USRMARHAL	'U'
+#define TYPE_USRMARSHAL	'U'
 #define TYPE_FLOAT	'f'
 #define TYPE_BIGNUM	'l'
 #define TYPE_STRING	'"'
@@ -181,6 +184,49 @@ w_long(x, arg)
     }
 }
 
+#ifdef DBL_MANT_DIG
+static int
+save_mantissa(d, buf)
+    double d;
+    char *buf;
+{
+    int e, m;
+
+    m = (int)(modf(ldexp(frexp(fabs(d), &e), DBL_MANT_DIG - 16), &d) * 0x10000);
+    *buf++ = 0;
+    *buf++ = m >> 8;
+    *buf++ = m;
+    return 3;
+}
+
+static double
+load_mantissa(d, buf, len)
+    double d;
+    const char *buf;
+    int len;
+{
+    if (len > 0) {
+	int e, s = d < 0, dig = len << 3;
+	unsigned long m = 0;
+
+	modf(ldexp(frexp(fabs(d), &e), DBL_MANT_DIG - dig), &d);
+	do {m = (m << 8) | (*buf++ & 0xff);} while (--len);
+	d = ldexp(frexp(d + ldexp((double)m, -dig), &dig), e);
+	if (s) d = -d;
+    }
+    return d;
+}
+#else
+#define load_mantissa(d, buf, len) (d)
+#define save_mantissa(d, buf) 0
+#endif
+
+#ifdef DBL_DIG
+#define FLOAT_DIG (DBL_DIG+1)
+#else
+#define FLOAT_DIG 17
+#endif
+
 static void
 w_float(d, arg)
     double d;
@@ -200,8 +246,13 @@ w_float(d, arg)
 	else           strcpy(buf, "0");
     }
     else {
+	int len;
+
 	/* xxx: should not use system's sprintf(3) */
-	sprintf(buf, "%.16g", d);
+	sprintf(buf, "%.*g", FLOAT_DIG, d);
+	len = strlen(buf);
+	w_bytes(buf, len + save_mantissa(d, buf + len), arg);
+	return;
     }
     w_bytes(buf, strlen(buf), arg);
 }
@@ -918,18 +969,23 @@ r_object0(arg, proc)
 	{
 	    double d, t = 0.0;
 	    VALUE str = r_bytes(arg);
+	    const char *ptr = RSTRING(str)->ptr;
 
-	    if (strcmp(RSTRING(str)->ptr, "nan") == 0) {
+	    if (strcmp(ptr, "nan") == 0) {
 		d = t / t;
 	    }
-	    else if (strcmp(RSTRING(str)->ptr, "inf") == 0) {
+	    else if (strcmp(ptr, "inf") == 0) {
 		d = 1.0 / t;
 	    }
-	    else if (strcmp(RSTRING(str)->ptr, "-inf") == 0) {
+	    else if (strcmp(ptr, "-inf") == 0) {
 		d = -1.0 / t;
 	    }
 	    else {
-		d = strtod(RSTRING(str)->ptr, 0);
+		char *e;
+		d = strtod(ptr, &e);
+		if (!*e++) {
+		    d = load_mantissa(d, e, RSTRING(str)->len - (e - ptr));
+		}
 	    }
 	    v = rb_float_new(d);
 	    r_regist(v, arg);

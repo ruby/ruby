@@ -1,3 +1,10 @@
+Mon Apr 21 00:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* marshal.c (w_float): append least mantissa bits to get rid
+	  of roundoff problem.  [ruby-talk:69518]
+
+	* marshal.c (r_object0): load least mantissa bits.
+
 Sun Apr 20 23:24:25 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (NtInitialize): set the floating-point control word
