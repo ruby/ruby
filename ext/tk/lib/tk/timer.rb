@@ -525,9 +525,16 @@ class TkRTTimer < TkTimer
   def cancel
     super()
     @est_time = nil
+    @cb_start_time = Time.now
     self
   end
   alias stop cancel
+
+  def continue(wait=nil)
+    fail RuntimeError, "is already running" if @running
+    @cb_start_time = Time.now
+    super(wait)
+  end
 
   def set_interval(interval)
     super(interval)
