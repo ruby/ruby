@@ -175,7 +175,7 @@ ext/socket/addrinfo.h:
 ext/socket/getaddrinfo.c:
 ext/socket/getnameinfo.c:
 
-  This file is under the BSD licence.
+  These files are under the BSD licence.
 
     Copyright (C) 1995, 1996, 1997, 1998, and 1999 WIDE Project.
     All rights reserved.
