@@ -2291,7 +2291,7 @@ sock_s_getnameinfo(argc, argv)
 		hints.ai_family = PF_INET;
 	    }
 #ifdef INET6
-	    else if (ap, "AF_INET6") == 0) {
+	    else if (strcmp(ap, "AF_INET6") == 0) {
 		hints.ai_family = PF_INET6;
 	    }
 #endif
