@@ -1,3 +1,12 @@
+Mon Jan 12 11:46:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBPATHFLAG, RPATHFLAG): enclose paths with single
+	  quotes.  [ruby-dev:22564]
+
+	* lib/mkmf.rb (libpathflag): do not enclose with quotes always.
+
+	* {bcc32,win32,wince}/Makefile.sub (LIBPATHFLAG): quoted.
+
 Mon Jan 12 02:24:07 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_formatter.rb (RI::HtmlFormatter): Add HTML
@@ -10,12 +19,12 @@ Mon Jan 12 02:24:07 2004  Dave Thomas  <dave@pragprog.com>
 
 Sun Jan 11 02:07:47 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList): 
+	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList):
 	  Also accept command line options via the 'RI' environment variable.
 
 Sun Jan 11 02:07:47 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList): 
+	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList):
 	  Also accept command line options via the 'RI' environment variable.
 
 Sat Jan 10 21:27:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>

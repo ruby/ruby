@@ -411,7 +411,7 @@ s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
 s,@OUTFLAG@,-Fe,;t t
 s,@CPPOUTFILE@,-P,;t t
-s,@LIBPATHFLAG@, -libpath:%s,;t t
+s,@LIBPATHFLAG@, -libpath:"%s",;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
 s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS),;t t

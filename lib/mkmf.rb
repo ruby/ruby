@@ -234,7 +234,7 @@ end
 
 def libpathflag(libpath=$LIBPATH)
   libpath.map{|x|
-    (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % %['#{x}']
+    (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % x
   }.join
 end
 
@@ -1020,7 +1020,7 @@ LINK_SO = config_string('LINK_SO') ||
     "$(LDSHARED) $(DLDFLAGS) $(LIBPATH) #{OUTFLAG}$(DLLIB) " \
     "$(OBJS) $(LOCAL_LIBS) $(LIBS)"
   end
-LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
+LIBPATHFLAG = config_string('LIBPATHFLAG') || " -L'%s'"
 RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
 
