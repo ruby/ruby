@@ -1,3 +1,7 @@
+Wed Mar 20 19:44:09 2002  Tanaka Akira  <akr@m17n.org>
+
+	* mkconfig.rb: don't touch rbconfig.rb if there is a trouble.
+
 Wed Mar 20 16:05:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (is_defined): should check receiver only once.

@@ -7,7 +7,8 @@ srcdir = $srcdir if $srcdir
 File.makedirs(File.dirname(rbconfig_rb), true)
 
 version = RUBY_VERSION
-config = open(rbconfig_rb, "w")
+rbconfig_rb_tmp = rbconfig_rb + '.tmp'
+config = open(rbconfig_rb_tmp, "w")
 $stdout.reopen(config)
 
 fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
@@ -111,5 +112,6 @@ print <<EOS
 end
 EOS
 config.close
+File.rename(rbconfig_rb_tmp, rbconfig_rb)
 
 # vi:set sw=2:
