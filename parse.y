@@ -3404,6 +3404,7 @@ yylex()
 		    break;
 
 		  case '.':
+		    if (seen_uc) goto trailing_uc;
 		    if (seen_point || seen_e) {
 			goto decode_num;
 		    }

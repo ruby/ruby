@@ -345,6 +345,96 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
+
+#define MARK_STACK_MAX 1024
+static VALUE mark_stack[MARK_STACK_MAX];
+static VALUE *mark_stack_ptr;
+static int mark_stack_overflow;
+
+static void
+init_mark_stack()
+{
+    mark_stack_overflow = 0;
+    mark_stack_ptr = mark_stack;
+    memset(mark_stack, 0, MARK_STACK_MAX);
+}
+
+#define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
+            
+static int mark_all;
+
+static void rb_gc_mark_children(VALUE ptr);
+static void
+gc_mark_all()
+{
+    RVALUE *p, *pend;
+    int i;
+    mark_all = 0;
+    while(!mark_all){
+	mark_all = 1;
+	for (i = 0; i < heaps_used; i++) {
+	    p = heaps[i]; pend = p + heaps_limits[i];
+	    while (p < pend) {
+		if (!(rb_special_const_p((VALUE)p))
+		    && p->as.basic.flags&FL_MARK) {
+		    rb_gc_mark_children((VALUE)p);
+		}
+		p++;
+	    }
+	}
+    }
+}
+
+static void
+gc_mark_rest()
+{
+    VALUE tmp_arry[MARK_STACK_MAX];
+    VALUE *p;
+
+    p = (mark_stack_ptr - mark_stack) + tmp_arry;
+    memcpy(tmp_arry, mark_stack, MARK_STACK_MAX);
+	
+    init_mark_stack();
+    
+    while(p != tmp_arry){
+	p--;
+	rb_gc_mark(*p);
+    }
+}
+
+#if defined(DJGPP)
+# define STACK_LEVEL_MAX 65535;
+#elif defined(__human68k__)
+extern unsigned int _stacksize;
+# define STACK_LEVEL_MAX (_stacksize - 4096)
+#else
+# define STACK_LEVEL_MAX 655300
+#endif
+
+#ifdef C_ALLOCA
+# define SET_STACK_END VALUE stack_end; alloca(0);
+# define STACK_END (&stack_end)
+#else
+# if defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS)
+#  define  SET_STACK_END    VALUE *stack_end = __builtin_frame_address(0);
+# else
+#  define  SET_STACK_END    VALUE *stack_end = alloca(1);
+# endif
+# define STACK_END (stack_end)
+#endif
+#ifdef __sparc__
+# define STACK_LENGTH  (rb_gc_stack_start - STACK_END + 0x80)
+#else
+# define STACK_LENGTH  ((STACK_END < rb_gc_stack_start) ? rb_gc_stack_start - STACK_END\
+                                           : STACK_END - rb_gc_stack_start)
+#endif
+
+#define CHECK_STACK(ret) do {\
+    SET_STACK_END;\
+    ret = (STACK_LENGTH > STACK_LEVEL_MAX);\
+} while (0)\
+
+
 static inline int
 is_pointer_to_heap(ptr)
     void *ptr;
@@ -364,73 +454,6 @@ is_pointer_to_heap(ptr)
     }
     return Qfalse;
 }
-
-#define MARK_STACK_SIZE 4096
-static VALUE mark_stack_base[MARK_STACK_SIZE];
-static VALUE *mark_stack;
-static int mark_stack_overflow = 0;
-
-#define PUSH_MARK(obj) do {\
-    if (mark_stack_overflow) {\
-        FL_SET((obj),FL_MARK);\
-    }\
-    else {\
-	if (mark_stack - mark_stack_base >= MARK_STACK_SIZE) {\
-	    mark_stack_overflow = 1;\
-	}\
-	else {\
-	    if (   rb_special_const_p(obj) /* special const not marked */\
-		|| FL_TEST((obj),FL_MARK)) /* already marked */ {\
-	    }\
-	    else {\
-		*mark_stack++ = (obj);\
-	    }\
-	}\
-    }\
-} while (0)
-
-#define POP_MARK() (*--mark_stack)
-
-#define MARK_EMPTY() (mark_stack == mark_stack_base)
-
-#ifdef NO_REGION
-
-#define PUSH_MARK_REGION(a,b) do {\
-	VALUE *tmp_beg_ptr = (a);\
-	while (tmp_beg_ptr < (b)) {\
-	    PUSH_MARK(*tmp_beg_ptr);\
-            tmp_beg_ptr++;\
-	}\
-} while (0)
-
-#else
-
-#define MARK_REGION_STACK_SIZE 1024
-static VALUE *mark_region_stack_base[MARK_REGION_STACK_SIZE];
-static VALUE **mark_region_stack;
-
-#define PUSH_MARK_REGION(a,b) do {\
-    if (mark_region_stack - mark_region_stack_base >= MARK_REGION_STACK_SIZE || (b) - (a) < 3) {\
-	VALUE *tmp_beg_ptr = (a);\
-	while (tmp_beg_ptr < (b)) {\
-	    PUSH_MARK(*tmp_beg_ptr);\
-            tmp_beg_ptr++;\
-	}\
-    }\
-    else {\
-	*mark_region_stack++ = (a);\
-	*mark_region_stack++ = (b);\
-    }\
-} while (0)
-
-#define POP_MARK_REGION(a,b) do {\
-    (b) = (*--mark_region_stack);\
-    (a) = (*--mark_region_stack);\
-} while (0)
-
-#define MARK_REGION_EMPTY() (mark_region_stack == mark_region_stack_base)
-
-#endif
 
 static void
 mark_locations_array(x, n)
@@ -479,23 +502,6 @@ rb_mark_tbl(tbl)
 }
 
 static int
-push_entry(key, value)
-    ID key;
-    VALUE value;
-{
-    PUSH_MARK(value);
-    return ST_CONTINUE;
-}
-
-static void
-push_mark_tbl(tbl)
-    st_table *tbl;
-{
-    if (!tbl) return;
-    st_foreach(tbl, push_entry, 0);
-}
-
-static int
 mark_hashentry(key, value)
     VALUE key;
     VALUE value;
@@ -513,24 +519,6 @@ rb_mark_hash(tbl)
     st_foreach(tbl, mark_hashentry, 0);
 }
 
-static int
-push_hashentry(key, value)
-    VALUE key;
-    VALUE value;
-{
-    PUSH_MARK(key);
-    PUSH_MARK(value);
-    return ST_CONTINUE;
-}
-
-static void
-push_mark_hash(tbl)
-    st_table *tbl;
-{
-    if (!tbl) return;
-    st_foreach(tbl, push_hashentry, 0);
-}
-
 void
 rb_gc_mark_maybe(obj)
     VALUE obj;
@@ -540,14 +528,47 @@ rb_gc_mark_maybe(obj)
     }
 }
 
-static void
-gc_mark_children(ptr)
+void
+rb_gc_mark(ptr)
     VALUE ptr;
 {
     register RVALUE *obj = RANY(ptr);
 
-  Top:
+    if (!mark_stack_overflow){
+	int ret;
+	CHECK_STACK(ret);
+	if (ret) {
+	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
+		*mark_stack_ptr = ptr;
+		mark_stack_ptr++;
+		return;
+	    }else{
+		mark_stack_overflow = 1;
+		printf("mark_stack_overflow\n");
+	    }
+	}
+    }
+
+    if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
+    if (obj->as.basic.flags == 0) return;       /* free cell */
+    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
+    
     obj->as.basic.flags |= FL_MARK;
+
+    if (mark_stack_overflow){
+	mark_all &= 0;
+	return;
+    }else{
+	rb_gc_mark_children(ptr);
+    }
+}
+
+void
+rb_gc_mark_children(ptr)
+    VALUE ptr;
+{
+    register RVALUE *obj = RANY(ptr);	
+    
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_mark_generic_ivar((VALUE)obj);
     }
@@ -568,7 +589,7 @@ gc_mark_children(ptr)
 	  case NODE_MASGN:
 	  case NODE_RESCUE:
 	  case NODE_RESBODY:
-	    PUSH_MARK((VALUE)obj->as.node.u2.node);
+	    rb_gc_mark((VALUE)obj->as.node.u2.node);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
 	  case NODE_ARRAY:
@@ -582,14 +603,14 @@ gc_mark_children(ptr)
 	  case NODE_CALL:
 	  case NODE_DEFS:
 	  case NODE_OP_ASGN1:
-	    PUSH_MARK((VALUE)obj->as.node.u1.node);
+	    rb_gc_mark((VALUE)obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
 	  case NODE_DEFN:
 	  case NODE_NEWLINE:
-	    obj = RANY(obj->as.node.u3.node);
-	    goto Again;
+	    rb_gc_mark((VALUE)obj->as.node.u3.node);	    
+	    break;
 
 	  case NODE_WHILE:	/* 1,2 */
 	  case NODE_UNTIL:
@@ -605,7 +626,7 @@ gc_mark_children(ptr)
 	  case NODE_MATCH3:
 	  case NODE_OP_ASGN_OR:
 	  case NODE_OP_ASGN_AND:
-	    PUSH_MARK((VALUE)obj->as.node.u1.node);
+	    rb_gc_mark((VALUE)obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
 	  case NODE_NOT:
@@ -620,8 +641,8 @@ gc_mark_children(ptr)
 	  case NODE_MODULE:
 	  case NODE_COLON3:
 	  case NODE_OPT_N:
-	    obj = RANY(obj->as.node.u2.node);
-	    goto Again;
+	    rb_gc_mark((VALUE)obj->as.node.u2.node);
+	    break;
 
 	  case NODE_HASH:	/* 1 */
 	  case NODE_LIT:
@@ -635,15 +656,15 @@ gc_mark_children(ptr)
 	  case NODE_YIELD:
 	  case NODE_COLON2:
 	  case NODE_ARGS:
-	    obj = RANY(obj->as.node.u1.node);
-	    goto Again;
+	    rb_gc_mark((VALUE)obj->as.node.u1.node);
+	    break;
 
 	  case NODE_SCOPE:	/* 2,3 */
 	  case NODE_CLASS:
 	  case NODE_BLOCK_PASS:
-	    PUSH_MARK((VALUE)obj->as.node.u3.node);
-	    obj = RANY(obj->as.node.u2.node);
-	    goto Again;
+	    rb_gc_mark((VALUE)obj->as.node.u3.node);
+	    rb_gc_mark((VALUE)obj->as.node.u2.node);
+	    break;
 
 	  case NODE_ZARRAY:	/* - */
 	  case NODE_ZSUPER:
@@ -674,52 +695,53 @@ gc_mark_children(ptr)
 	  case NODE_ALLOCA:
 	    mark_locations_array((VALUE*)obj->as.node.u1.value,
 				 obj->as.node.u3.cnt);
-	    obj = RANY(obj->as.node.u2.node);
-	    goto Again;
+	    rb_gc_mark((VALUE)obj->as.node.u2.node);	    
+	    break;
 #endif
 
 	  default:
 	    if (is_pointer_to_heap(obj->as.node.u1.node)) {
-		PUSH_MARK((VALUE)obj->as.node.u1.node);
+		rb_gc_mark((VALUE)obj->as.node.u1.node);
 	    }
 	    if (is_pointer_to_heap(obj->as.node.u2.node)) {
-		PUSH_MARK((VALUE)obj->as.node.u2.node);
+		rb_gc_mark((VALUE)obj->as.node.u2.node);
 	    }
 	    if (is_pointer_to_heap(obj->as.node.u3.node)) {
-		obj = RANY(obj->as.node.u3.node);
-		goto Again;
+		rb_gc_mark((VALUE)obj->as.node.u3.node);
 	    }
 	}
 	return;			/* no need to mark class. */
     }
 
-    PUSH_MARK(obj->as.basic.klass);
+    rb_gc_mark(obj->as.basic.klass);
     switch (obj->as.basic.flags & T_MASK) {
       case T_ICLASS:
       case T_CLASS:
       case T_MODULE:
-	PUSH_MARK(obj->as.klass.super);
-	push_mark_tbl(obj->as.klass.m_tbl);
-	push_mark_tbl(obj->as.klass.iv_tbl);
+	rb_gc_mark(obj->as.klass.super);
+	rb_mark_tbl(obj->as.klass.m_tbl);
+	rb_mark_tbl(obj->as.klass.iv_tbl);
 	break;
 
       case T_ARRAY:
-      {
-	  int i, len = obj->as.array.len;
-	  VALUE *ptr = obj->as.array.ptr;
+	{
+	    int i, len = obj->as.array.len;
+	    VALUE *ptr = obj->as.array.ptr;
 
-	  PUSH_MARK_REGION(ptr,ptr+len);
-      }
-      break;
+	    for (i=0; i < len; i++)
+		rb_gc_mark(*ptr++);
+	}
+	break;
 
       case T_HASH:
-	push_mark_hash(obj->as.hash.tbl);
-	obj = RANY(obj->as.hash.ifnone);
-	goto Again;
+	rb_mark_hash(obj->as.hash.tbl);
+	rb_gc_mark(obj->as.hash.ifnone);
+	break;
 
       case T_STRING:
-	obj = RANY(obj->as.string.orig);
-	goto Again;
+	if (obj->as.string.orig) {
+	    rb_gc_mark((VALUE)obj->as.string.orig);
+	}
 	break;
 
       case T_DATA:
@@ -727,7 +749,7 @@ gc_mark_children(ptr)
 	break;
 
       case T_OBJECT:
-	push_mark_tbl(obj->as.object.iv_tbl);
+	rb_mark_tbl(obj->as.object.iv_tbl);
 	break;
 
       case T_FILE:
@@ -739,78 +761,41 @@ gc_mark_children(ptr)
 
       case T_MATCH:
 	if (obj->as.match.str) {
-	    obj = RANY(obj->as.match.str);
-	    goto Again;
+	    rb_gc_mark((VALUE)obj->as.match.str);
 	}
 	break;
 
       case T_VARMAP:
-	PUSH_MARK(obj->as.varmap.val);
-	obj = RANY(obj->as.varmap.next);
-	goto Again;
+	rb_gc_mark(obj->as.varmap.val);
+	rb_gc_mark((VALUE)obj->as.varmap.next);
+	break;
 
       case T_SCOPE:
 	if (obj->as.scope.local_vars && (obj->as.scope.flags & SCOPE_MALLOC)) {
 	    int n = obj->as.scope.local_tbl[0]+1;
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 
-
-	    PUSH_MARK_REGION(vars,vars+n);
+	    while (n--) {
+		rb_gc_mark(*vars);
+		vars++;
+	    }
 	}
 	break;
 
       case T_STRUCT:
-      {
-	  int i, len = obj->as.rstruct.len;
-	  VALUE *ptr = obj->as.rstruct.ptr;
+	{
+	    int i, len = obj->as.rstruct.len;
+	    VALUE *ptr = obj->as.rstruct.ptr;
 
-	  PUSH_MARK_REGION(ptr,ptr+len);
-      }
-      break;
+	    for (i=0; i < len; i++)
+		rb_gc_mark(*ptr++);
+	}
+	break;
 
       default:
 	rb_bug("rb_gc_mark(): unknown data type 0x%x(0x%x) %s",
 	       obj->as.basic.flags & T_MASK, obj,
 	       is_pointer_to_heap(obj)?"corrupted object":"non object");
-    }
-    return;
-
-  Again:    
-    if (rb_special_const_p(obj)) return; /* special const not marked */
-    if (RBASIC(obj)->flags == 0) return; /* free cell */
-    if (FL_TEST((obj),FL_MARK)) return;  /* already marked */
-    goto Top;
-}
-
-void
-rb_gc_mark(ptr)
-    VALUE ptr;
-{
-    if (rb_special_const_p(ptr)) return; /* special const not marked */
-    if (RBASIC(ptr)->flags == 0) return; /* free cell */
-    if (RBASIC(ptr)->flags & FL_MARK) return; /* already marked */
-    gc_mark_children(ptr);
-}
-
-static void
-gc_mark()
-{
-    while (!MARK_EMPTY()) {
-	rb_gc_mark(POP_MARK());
-#ifndef NO_REGION
-	while (!MARK_REGION_EMPTY()) {
-	    VALUE *p, *pend;
-
-	    POP_MARK_REGION(p, pend);
-	    while (p < pend) {
-		rb_gc_mark(*p);
-		p++;
-	    }
-	    while (!MARK_EMPTY()) {
-		rb_gc_mark(POP_MARK());
-	    }
-	}
-#endif
     }
 }
 
@@ -821,31 +806,24 @@ gc_sweep()
 {
     RVALUE *p, *pend, *final_list;
     int freed = 0;
-    int i;
+    int i, used = heaps_used;
 
     if (ruby_in_compile) {
-	int marked = 0;
-
 	/* should not reclaim nodes during compilation */
-	for (i = 0; i < heaps_used; i++) {
+	for (i = 0; i < used; i++) {
 	    p = heaps[i]; pend = p + heaps_limits[i];
 	    while (p < pend) {
-		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE) {
+		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
 		    rb_gc_mark((VALUE)p);
-		    marked = 1;
-		}
 		p++;
 	    }
-	}
-	if (marked) {
-	    gc_mark();
 	}
     }
 
     freelist = 0;
     final_list = deferred_final_list;
     deferred_final_list = 0;
-    for (i = 0; i < heaps_used; i++) {
+    for (i = 0; i < used; i++) {
 	int n = 0;
 
 	p = heaps[i]; pend = p + heaps_limits[i];
@@ -905,7 +883,6 @@ void
 rb_gc_force_recycle(p)
     VALUE p;
 {
-    RANY(p)->type = BUILTIN_TYPE(p);
     RANY(p)->as.free.flags = 0;
     RANY(p)->as.free.next = freelist;
     freelist = RANY(p);
@@ -1118,11 +1095,8 @@ rb_gc()
     if (during_gc) return;
     during_gc++;
 
-    mark_stack_overflow = 0;
-    mark_stack = mark_stack_base;
-#ifndef NO_REGION
-    mark_region_stack = mark_region_stack_base;
-#endif
+    init_mark_stack();
+    
     /* mark frame stack */
     for (frame = ruby_frame; frame; frame = frame->prev) {
 	rb_gc_mark_frame(frame); 
@@ -1164,25 +1138,16 @@ rb_gc()
 
     /* mark generic instance variables for special constants */
     rb_mark_generic_ivar_tbl();
-
-    gc_mark();
-    while (mark_stack_overflow) {
-	RVALUE *p, *pend;
-	int i;
-
-	mark_stack_overflow = 0;
-	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i]; pend = p + heaps_limits[i];
-	    while (p < pend) {
-		if (p->as.basic.flags&FL_MARK) {
-		    gc_mark_children((VALUE)p);
-		}
-		p++;
-	    }
+    
+    /* gc_mark objects whose marking are not completed*/
+    while (!MARK_STACK_EMPTY){
+	if (mark_stack_overflow){
+	    gc_mark_all();
+	    break;
+	}else{
+	    gc_mark_rest();
 	}
-	gc_mark();
     }
-
     gc_sweep();
 }
 
@@ -1385,7 +1350,7 @@ static VALUE
 run_single_final(args)
     VALUE *args;
 {
-    rb_eval_cmd(args[0], args[1]);
+    rb_eval_cmd(args[0], args[1], 0);
     return Qnil;
 }
 

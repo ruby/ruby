@@ -924,11 +924,14 @@ error_print()
 	errat = Qnil;
     }
     POP_TAG();
-    if (NIL_P(errat)) {
+    if (NIL_P(errat)){
 	if (ruby_sourcefile)
 	    fprintf(stderr, "%s:%d", ruby_sourcefile, ruby_sourceline);
 	else
 	    fprintf(stderr, "%d", ruby_sourceline);
+    }
+    else if (RARRAY(errat)->len == 0) {
+	error_pos();
     }
     else {
 	VALUE mesg = RARRAY(errat)->ptr[0];
@@ -1342,8 +1345,9 @@ jump_tag_but_local_jump(state)
 }
 
 VALUE
-rb_eval_cmd(cmd, arg)
+rb_eval_cmd(cmd, arg, tcheck)
     VALUE cmd, arg;
+    int tcheck;
 {
     int state;
     VALUE val;			/* OK */
@@ -1365,7 +1369,7 @@ rb_eval_cmd(cmd, arg)
     ruby_frame->self = ruby_top_self;
     ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_wrapper,0,0);
 
-    if (OBJ_TAINTED(cmd)) {
+    if (tcheck && OBJ_TAINTED(cmd)) {
 	ruby_safe_level = 4;
     }
 
@@ -1396,7 +1400,7 @@ rb_trap_eval(cmd, sig)
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
-	val = rb_eval_cmd(cmd, rb_ary_new3(1, INT2FIX(sig)));
+	val = rb_eval_cmd(cmd, rb_ary_new3(1, INT2FIX(sig)), 0);
     }
     POP_ITER();
     POP_TAG();
@@ -1430,7 +1434,7 @@ superclass(self, node)
 	    rb_raise(rb_eTypeError, "undefined superclass `%s'",
 		     rb_id2name(node->nd_vid));
 	  default:
-	    rb_raise(rb_eTypeError, "superclass undefined");
+	    break;
 	}
 	JUMP_TAG(state);
     }
@@ -4257,7 +4261,7 @@ static unsigned int STACK_LEVEL_MAX = 65535;
 #ifdef __human68k__
 extern unsigned int _stacksize;
 # define STACK_LEVEL_MAX (_stacksize - 4096)
-#undef HAVE_GETRLIMIT
+# undef HAVE_GETRLIMIT
 #else
 #ifdef HAVE_GETRLIMIT
 static unsigned int STACK_LEVEL_MAX = 655300;
@@ -5037,7 +5041,7 @@ eval(self, src, scope, file, line)
 		    err = rb_str_dup(ruby_errinfo);
 		}
 		errat = Qnil;
-		rb_exc_raise(rb_exc_new3(CLASS_OF(ruby_errinfo), err));
+		rb_exc_raise(rb_funcall(ruby_errinfo, rb_intern("exception"), 1, err));
 	    }
 	    rb_exc_raise(ruby_errinfo);
 	}

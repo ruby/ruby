@@ -103,7 +103,7 @@ VALUE
 rb_str_new3(str)
     VALUE str;
 {
-    VALUE str2 = rb_obj_alloc(rb_cString);
+    VALUE str2 = rb_obj_alloc(rb_obj_class(str));
 
     RSTRING(str2)->len = RSTRING(str)->len;
     RSTRING(str2)->ptr = RSTRING(str)->ptr;
@@ -124,13 +124,13 @@ rb_str_new4(orig)
 	VALUE str;
 
 	if (FL_TEST(orig, STR_NO_ORIG)) {
-	    str = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
+	    str = rb_str_new0(klass, RSTRING(orig)->ptr, RSTRING(orig)->len);
 	}
 	else {
 	    str = rb_str_new3(RSTRING(orig)->orig);
+	    RBASIC(str)->klass = klass;
 	}
 	OBJ_FREEZE(str);
-	RBASIC(str)->klass = klass;
 	return str;
     }
     else {
@@ -139,7 +139,6 @@ rb_str_new4(orig)
 	RSTRING(str)->len = RSTRING(orig)->len;
 	RSTRING(str)->ptr = RSTRING(orig)->ptr;
 	RSTRING(orig)->orig = str;
-	RSTRING(str)->orig = 0;
 	OBJ_INFECT(str, orig);
 	OBJ_FREEZE(str);
 
@@ -287,10 +286,11 @@ rb_str_dup(str)
 
     if (OBJ_FROZEN(str)) str2 = rb_str_new3(str);
     else if (FL_TEST(str, STR_NO_ORIG)) {
-	str2 = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
+	str2 = rb_str_new0(klass, RSTRING(str)->ptr, RSTRING(str)->len);
     }
     else if (RSTRING(str)->orig) {
 	str2 = rb_str_new3(RSTRING(str)->orig);
+	RBASIC(str2)->klass = klass;
 	FL_UNSET(str2, FL_TAINT);
 	OBJ_INFECT(str2, str);
     }
@@ -300,7 +300,6 @@ rb_str_dup(str)
     if (FL_TEST(str, FL_EXIVAR))
 	rb_copy_generic_ivar(str2, str);
     OBJ_INFECT(str2, str);
-    RBASIC(str2)->klass = klass;
     return str2;
 }
 
@@ -448,6 +447,7 @@ str_independent(str)
     if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return 1;
+    if (RBASIC(str)->flags == 0) abort();
     if (TYPE(RSTRING(str)->orig) != T_STRING) rb_bug("non string str->orig");
     return 0;
 }

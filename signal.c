@@ -355,7 +355,7 @@ sighandle(sig)
 	rb_bug("trap_handler: Bad signal %d", sig);
     }
 
-#if !defined(BSD_SIGNAL)
+#if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandle);
 #endif
 
@@ -407,7 +407,7 @@ rb_trap_exit()
 	VALUE trap_exit = trap_list[0];
 
 	trap_list[0] = 0;
-	rb_eval_cmd(trap_exit, rb_ary_new3(1, INT2FIX(0)));
+	rb_eval_cmd(trap_exit, rb_ary_new3(1, INT2FIX(0)), 0);
     }
 #endif
 }
@@ -628,6 +628,9 @@ sig_trap(argc, argv)
 	arg.cmd = argv[1];
     }
 
+    if (OBJ_TAINTED(arg.cmd)) {
+	rb_raise(rb_eSecurityError, "Insecure: tainted signal trap");
+    }
 #if !defined(NT)
     /* disable interrupt */
 # ifdef HAVE_SIGPROCMASK

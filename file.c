@@ -2325,8 +2325,7 @@ rb_find_file_ext(filep, ext)
     int i, j;
 
     if (f[0] == '~') {
-	fname = *filep;
-	fname = rb_file_s_expand_path(1, &fname);
+	fname = rb_file_s_expand_path(1, filep);
 	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}

@@ -324,7 +324,7 @@ exc_exception(argc, argv, self)
     if (argc == 0) return self;
     if (argc == 1 && self == argv[0]) return self;
     exc = rb_obj_clone(self);
-    rb_obj_call_init(exc, argc, argv);
+    exc_initialize(argc, argv, exc);
 
     return exc;
 }

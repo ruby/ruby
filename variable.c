@@ -402,7 +402,7 @@ var_getter(id, var)
     ID id;
     VALUE *var;
 {
-    if (!var || !*var) return Qnil;
+    if (!var) return Qnil;
     return *var;
 }
 
@@ -518,7 +518,7 @@ static void
 rb_trace_eval(cmd, val)
     VALUE cmd, val;
 {
-    rb_eval_cmd(cmd, rb_ary_new3(1, val));
+    rb_eval_cmd(cmd, rb_ary_new3(1, val), 0);
 }
 
 VALUE
@@ -527,19 +527,19 @@ rb_f_trace_var(argc, argv)
     VALUE *argv;
 {
     VALUE var, cmd;
-    ID id;
     struct global_entry *entry;
     struct trace_var *trace;
 
+    rb_secure(4);
     if (rb_scan_args(argc, argv, "11", &var, &cmd) == 1) {
 	cmd = rb_f_lambda();
     }
     if (NIL_P(cmd)) {
 	return rb_f_untrace_var(argc, argv);
     }
-    id = rb_to_id(var);
-    if (!st_lookup(rb_global_tbl, id, &entry)) {
-	rb_name_error(id, "undefined global variable %s", rb_id2name(id));
+    entry = rb_global_entry(rb_to_id(var));
+    if (OBJ_TAINTED(cmd)) {
+	rb_raise(rb_eSecurityError, "Insecure: tainted variable trace");
     }
     trace = ALLOC(struct trace_var);
     trace->next = entry->var->trace;
@@ -1419,17 +1419,28 @@ rb_cvar_singleton(obj)
     return CLASS_OF(obj);
 }
 
-static void
-cvar_override_check(id, a, b)
-    VALUE a, b;
+static VALUE
+original_module(c)
+    VALUE c;
 {
+    if (TYPE(c) == T_ICLASS)
+	return RBASIC(c)->klass;
+    return c;
+}
+
+static void
+cvar_override_check(id, a)
+    VALUE a;
+{
+    VALUE base = original_module(a);
+
     a = RCLASS(a)->super;
     while (a) {
 	if (RCLASS(a)->iv_tbl) {
 	    if (st_lookup(RCLASS(a)->iv_tbl,id,0)) {
 		rb_warning("class variable %s of %s is overridden by %s",
-			   rb_id2name(id), rb_class2name(a),
-			   rb_class2name(b));
+			   rb_id2name(id), rb_class2name(original_module(a)),
+			   rb_class2name(base));
 	    }
 	}
 	a = RCLASS(a)->super;
@@ -1452,7 +1463,7 @@ rb_cvar_set(klass, id, val)
 		    rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
 		st_insert(RCLASS(tmp)->iv_tbl,id,val);
 		if (ruby_verbose) {
-		    cvar_override_check(id, tmp, klass);
+		    cvar_override_check(id, tmp);
 		}
 		return;
 	    }
@@ -1482,7 +1493,7 @@ rb_cvar_declare(klass, id, val)
 	    }
 	    st_insert(RCLASS(tmp)->iv_tbl,id,val);
 	    if (ruby_verbose) {
-		cvar_override_check(id, tmp, klass);
+		cvar_override_check(id, tmp);
 	    }
 	    return;
 	}
@@ -1505,7 +1516,7 @@ rb_cvar_get(klass, id)
 	if (RCLASS(tmp)->iv_tbl) {
 	    if (st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 		if (ruby_verbose) {
-		    cvar_override_check(id, tmp, klass);
+		    cvar_override_check(id, tmp);
 		}
 		return value;
 	    }

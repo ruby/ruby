@@ -89,7 +89,7 @@ enum_find(argc, argv, obj)
     }
     rb_gc_force_recycle((VALUE)memo);
     if (!NIL_P(if_none)) {
-	rb_eval_cmd(if_none, rb_ary_new2(0));
+	rb_eval_cmd(if_none, rb_ary_new2(0), 0);
     }
     return Qnil;
 }
@@ -299,7 +299,7 @@ min_i(i, memo)
 	memo->u1.value = i;
     else {
 	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
-	if (NUM2LONG(cmp) < 0)
+	if (rb_cmpint(cmp) < 0)
 	    memo->u1.value = i;
     }
     return Qnil;
@@ -316,7 +316,7 @@ min_ii(i, memo)
 	memo->u1.value = i;
     else {
 	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
-	if (NUM2LONG(cmp) < 0)
+	if (rb_cmpint(cmp) < 0)
 	    memo->u1.value = i;
     }
     return Qnil;
@@ -344,7 +344,7 @@ max_i(i, memo)
 	memo->u1.value = i;
     else {
 	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
-	if (NUM2LONG(cmp) > 0)
+	if (rb_cmpint(cmp) > 0)
 	    memo->u1.value = i;
     }
     return Qnil;
@@ -361,7 +361,7 @@ max_ii(i, memo)
 	memo->u1.value = i;
     else {
 	cmp = rb_yield(rb_assoc_new(i, memo->u1.value));
-	if (NUM2LONG(cmp) > 0)
+	if (rb_cmpint(cmp) > 0)
 	    memo->u1.value = i;
     }
     return Qnil;
