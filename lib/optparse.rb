@@ -1118,7 +1118,7 @@ Default options, which never appear in option summary.
 	  end
 	  begin
 	    opt, sw, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-	    sw.yield(val) if sw
+	    sw.yield(*val) if sw
 	  rescue ParseError
 	    raise $!.set_option(arg, rest)
 	  end
