@@ -904,7 +904,7 @@ arg_to_value(arg)
 #endif
 #ifdef GTK_TYPE_TOOLTIPS
 	else if (arg->type == GTK_TYPE_TOOLTIPS) {
-	    return make_ttips(gTooltips, GTK_VALUE_BOXED(*arg));
+	    return make_gobject(gTooltips, GTK_OBJECT(GTK_VALUE_BOXED(*arg)));
 	}
 #endif
 	else {
@@ -3877,13 +3877,14 @@ ttips_initialize(self)
 }
 
 static VALUE
-ttips_set_tips(self, win, text)
+ttips_set_tip(self, win, text,priv)
     VALUE self, win, text;
 {
     Check_Type(text, T_STRING);
-    gtk_tooltips_set_tips(GTK_TOOLTIPS(get_widget(self)),
-			  get_widget(win),
-			  RSTRING(text)->ptr);
+    gtk_tooltips_set_tip(GTK_TOOLTIPS(get_widget(self)),
+			 get_widget(win),
+			 RSTRING(text)->ptr,
+			 RSTRING(priv)->ptr);
 
     return self;
 }
@@ -3894,6 +3895,16 @@ ttips_set_delay(self, delay)
 {
     gtk_tooltips_set_delay(GTK_TOOLTIPS(get_widget(self)), NUM2INT(delay));
 
+    return self;
+}
+
+static VALUE
+ttips_set_colors(self, back, fore)
+    VALUE self, back, fore;
+{
+    gtk_tooltips_set_colors(GTK_TOOLTIPS(get_widget(self)),
+			    get_gdkcolor(back),
+			    get_gdkcolor(fore));
     return self;
 }
 
@@ -4931,14 +4942,6 @@ range_default_vmotion(self, xdelta, ydelta)
 }
 
 static VALUE
-range_calc_value(self, pos)
-    VALUE self, pos;
-{
-    gtk_range_calc_value(GTK_RANGE(get_widget(self)), NUM2INT(pos));
-    return self;
-}
-
-static VALUE
 scale_set_digits(self, digits)
     VALUE self, digits;
 {
@@ -5468,7 +5471,8 @@ static VALUE
 gdkdraw_draw_bmap(self, gc, src, xsrc, ysrc, xdst, ydst, w, h)
     VALUE self, gc, src, xsrc, ysrc, xdst, ydst, w, h;
 {
-    gdk_draw_bitmap(get_gdkdrawable(self), get_gdkgc(gc),
+    /* why there's no gdk_draw_bitmap()?? */
+    gdk_draw_pixmap(get_gdkdrawable(self), get_gdkgc(gc),
 		    get_gdkdrawable(src),
 		    NUM2INT(xsrc), NUM2INT(ysrc),
 		    NUM2INT(xdst), NUM2INT(ydst),
@@ -6147,7 +6151,6 @@ Init_gtk()
     rb_define_method(gRange, "default_vtrough_click", range_default_vtrough_click, 2);
     rb_define_method(gRange, "default_hmotion", range_default_hmotion, 2);
     rb_define_method(gRange, "default_vmotion", range_default_vmotion, 2);
-    rb_define_method(gRange, "calc_value", range_calc_value, 1);
 
     /* Scale */
     rb_define_method(gScale, "set_digits", scale_set_digits, 1);
@@ -6347,8 +6350,9 @@ Init_gtk()
 
     /* Tooltips */
     rb_define_method(gTooltips, "initialize", ttips_initialize, 0);
-    rb_define_method(gTooltips, "set_tips", ttips_set_tips, 2);
+    rb_define_method(gTooltips, "set_tip", ttips_set_tip, 3);
     rb_define_method(gTooltips, "set_delay", ttips_set_delay, 1);
+    rb_define_method(gTooltips, "set_colors", ttips_set_colors, 2);
     rb_define_method(gTooltips, "enable", ttips_enable, 0);
     rb_define_method(gTooltips, "disable", ttips_disable, 0);
 
