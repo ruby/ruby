@@ -220,7 +220,7 @@ rb_str2inum(str, base)
     }
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
-	unsigned int val = strtoul((char*)str, 0, base);
+	unsigned long val = strtoul((char*)str, 0, base);
 
 	if (POSFIXABLE(val)) {
 	    if (sign) return INT2FIX(val);
