@@ -30,6 +30,9 @@ Mon Dec 22 13:40:19 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 Mon Dec 22 00:32:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* eval.c (rb_with_disable_interrupt): use ENABLE_INTS instead of
+	  ALLOW_INTS which may switch context.  [ruby-dev:22319]
+
 	* ext/syck/emitter.c (syck_emitter_write): str bigger than
 	  e->bufsize causes buffer overflow.  [ruby-dev:22307]
 

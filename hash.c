@@ -46,13 +46,6 @@ VALUE rb_cHash;
 static VALUE envtbl;
 static ID id_hash, id_call, id_default;
 
-VALUE
-rb_hash(obj)
-    VALUE obj;
-{
-    return rb_funcall(obj, id_hash, 0);
-}
-
 static VALUE
 eql(args)
     VALUE *args;
@@ -82,6 +75,13 @@ rb_any_cmp(a, b)
     args[0] = a;
     args[1] = b;
     return !rb_with_disable_interrupt(eql, (VALUE)args);
+}
+
+VALUE
+rb_hash(obj)
+    VALUE obj;
+{
+    return rb_funcall(obj, id_hash, 0);
 }
 
 static int

@@ -4733,14 +4733,18 @@ rb_with_disable_interrupt(proc, data)
     int status;
 
     DEFER_INTS;
-    RUBY_CRITICAL(
+    {
+	int thr_critical = rb_thread_critical;
+
+	rb_thread_critical = Qtrue;
 	PUSH_TAG(PROT_NONE);
 	if ((status = EXEC_TAG()) == 0) {
 	    result = (*proc)(data);
 	}
 	POP_TAG();
-    );
-    ALLOW_INTS;
+	rb_thread_critical = thr_critical;
+    }
+    ENABLE_INTS;
     if (status) JUMP_TAG(status);
 
     return result;
