@@ -93,9 +93,11 @@ static VALUE
 coerce_rescue(x)
     VALUE *x;
 {
+    volatile VALUE v;
+
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
 	     rb_special_const_p(x[1])?
-	     RSTRING(rb_inspect(x[1]))->ptr:
+	     RSTRING(v = rb_inspect(x[1]))->ptr:
 	     rb_obj_classname(x[1]),
 	     rb_obj_classname(x[0]));
     return Qnil;		/* dummy */
@@ -506,17 +508,24 @@ static VALUE
 flo_eq(x, y)
     VALUE x, y;
 {
+    double a, b;
+
     switch (TYPE(y)) {
       case T_FIXNUM:
-	if (RFLOAT(x)->value == FIX2LONG(y)) return Qtrue;
-	return Qfalse;
+	b = FIX2LONG(y);
+	break;
       case T_BIGNUM:
-	return (RFLOAT(x)->value == rb_big2dbl(y))?Qtrue:Qfalse;
+	b = rb_big2dbl(y);
+	break;
       case T_FLOAT:
-	return (RFLOAT(x)->value == RFLOAT(y)->value)?Qtrue:Qfalse;
+	b = RFLOAT(y)->value;
+	break;
       default:
 	return num_equal(x, y);
     }
+    a = RFLOAT(x)->value;
+    if (isnan(a) || isnan(b)) return Qfalse;
+    return (a == b)?Qtrue:Qfalse;
 }
 
 static VALUE
@@ -541,6 +550,7 @@ VALUE
 rb_dbl_cmp(a, b)
     double a, b;
 {
+    if (isnan(a) || isnan(b)) return Qnil;
     if (a == b) return INT2FIX(0);
     if (a > b) return INT2FIX(1);
     if (a < b) return INT2FIX(-1);
@@ -596,6 +606,7 @@ flo_gt(x, y)
       default:
 	return rb_num_coerce_cmp(x, y);
     }
+    if (isnan(a) || isnan(b)) return Qfalse;
     return (a > b)?Qtrue:Qfalse;
 }
 
@@ -622,6 +633,7 @@ flo_ge(x, y)
       default:
 	return rb_num_coerce_cmp(x, y);
     }
+    if (isnan(a) || isnan(b)) return Qfalse;
     return (a >= b)?Qtrue:Qfalse;
 }
 
@@ -648,6 +660,7 @@ flo_lt(x, y)
       default:
 	return rb_num_coerce_cmp(x, y);
     }
+    if (isnan(a) || isnan(b)) return Qfalse;
     return (a < b)?Qtrue:Qfalse;
 }
 
@@ -674,6 +687,7 @@ flo_le(x, y)
       default:
 	return rb_num_coerce_cmp(x, y);
     }
+    if (isnan(a) || isnan(b)) return Qfalse;
     return (a <= b)?Qtrue:Qfalse;
 }
 
@@ -681,8 +695,12 @@ static VALUE
 flo_eql(x, y)
     VALUE x, y;
 {
-    if (TYPE(y) == T_FLOAT && RFLOAT(x)->value == RFLOAT(y)->value) {
-	return Qtrue;
+    if (TYPE(y) == T_FLOAT) {
+	double a = RFLOAT(x)->value;
+	double b = RFLOAT(y)->value;
+
+	if (isnan(a) || isnan(b)) return Qfalse;
+	if (a == b) return Qtrue;
     }
     return Qfalse;
 }
@@ -716,37 +734,35 @@ static VALUE
 flo_is_nan_p(num)
      VALUE num;
 {     
+    double value = RFLOAT(num)->value;
 
-  double value = RFLOAT(num)->value;
-
-  return isnan(value) ? Qtrue : Qfalse;
+    return isnan(value) ? Qtrue : Qfalse;
 }
 
 static VALUE
 flo_is_infinite_p(num)
      VALUE num;
 {     
-  double value = RFLOAT(num)->value;
+    double value = RFLOAT(num)->value;
 
-  if (isinf(value)) {
-    return INT2FIX( value < 0 ? -1 : 1 );
-  }
+    if (isinf(value)) {
+	return INT2FIX( value < 0 ? -1 : 1 );
+    }
 
-  return Qnil;
+    return Qnil;
 }
 
 static VALUE
 flo_is_finite_p(num)
      VALUE num;
 {     
-  double value = RFLOAT(num)->value;
+    double value = RFLOAT(num)->value;
 
-  if (isinf(value) || isnan(value))
-    return Qfalse;
+    if (isinf(value) || isnan(value))
+	return Qfalse;
   
-  return Qtrue;
+    return Qtrue;
 }
-
 
 static VALUE
 flo_floor(num)
