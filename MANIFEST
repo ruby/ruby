@@ -185,6 +185,7 @@ lib/telnet.rb
 lib/tempfile.rb
 lib/thread.rb
 lib/thwait.rb
+lib/time.rb
 lib/timeout.rb
 lib/tracer.rb
 lib/weakref.rb

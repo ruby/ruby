@@ -284,6 +284,14 @@ AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd chroot\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority getrlimit\
 	      dlopen sigprocmask sigaction _setjmp setsid telldir seekdir fchmod)
 AC_STRUCT_TIMEZONE
+AC_CACHE_CHECK(for struct tm.tm_gmtoff, rb_cv_member_struct_tm_tm_gmtoff,
+  [AC_TRY_COMPILE([#include <time.h>],
+    [struct tm t; t.tm_gmtoff = 3600;],
+  [rb_cv_member_struct_tm_tm_gmtoff=yes],
+  [rb_cv_member_struct_tm_tm_gmtoff=no])])
+if test "$rb_cv_member_struct_tm_tm_gmtoff" = yes; then
+  AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF)
+fi
 AC_CACHE_CHECK(for external int daylight, rb_cv_have_daylight,
   [AC_TRY_LINK([#include <time.h>
   int i;],

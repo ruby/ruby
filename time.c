@@ -878,6 +878,48 @@ time_zone(time)
 }
 
 static VALUE
+time_utc_offset(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    if (tobj->tm_got == 0) {
+        time_get_tm(time, tobj->gmt);
+    }
+
+    if (tobj->gmt == 1) {
+        return INT2FIX(0);
+    }
+    else {
+#if defined(HAVE_STRUCT_TM_TM_GMTOFF)
+        return INT2NUM(tobj->tm.tm_gmtoff);
+#else
+        struct tm *u, *l;
+        time_t t;
+        int off;
+        l = &tobj->tm;
+        t = tobj->tv.tv_sec;
+        u = gmtime(&t);
+        if (!u)
+            rb_raise(rb_eArgError, "gmtime error");
+        if (l->tm_year != u->tm_year)
+            off = l->tm_year < u->tm_year ? -1 : 1;
+        else if (l->tm_mon != u->tm_mon)
+            off = l->tm_mon < u->tm_mon ? -1 : 1;
+        else if (l->tm_mday != u->tm_mday)
+            off = l->tm_mday < u->tm_mday ? -1 : 1;
+        else
+            off = 0;
+        off = off * 24 + l->tm_hour - u->tm_hour;
+        off = off * 60 + l->tm_min - u->tm_min;
+        off = off * 60 + l->tm_sec - u->tm_sec;
+        return INT2FIX(off);
+#endif
+    }
+}
+
+static VALUE
 time_to_a(time)
     VALUE time;
 {
@@ -1131,6 +1173,9 @@ Init_Time()
     rb_define_method(rb_cTime, "isdst", time_isdst, 0);
     rb_define_method(rb_cTime, "dst?", time_isdst, 0);
     rb_define_method(rb_cTime, "zone", time_zone, 0);
+    rb_define_method(rb_cTime, "gmtoff", time_utc_offset, 0);
+    rb_define_method(rb_cTime, "gmt_offset", time_utc_offset, 0);
+    rb_define_method(rb_cTime, "utc_offset", time_utc_offset, 0);
 
     rb_define_method(rb_cTime, "utc?", time_utc_p, 0);
     rb_define_method(rb_cTime, "gmt?", time_utc_p, 0);

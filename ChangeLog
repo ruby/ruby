@@ -1,3 +1,11 @@
+Sun Dec 30 18:04:07 2001  Tanaka Akira  <akr@m17n.org>
+
+	* time.c (time_utc_offset): new function.
+
+	* time.c (Init_Time): new method gmtoff, gmt_offset and utc_offset.
+
+	* lib/time.rb: new file.
+
 Sun Dec 30 00:59:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb (have_library): accept -lm

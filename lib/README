@@ -54,6 +54,7 @@ telnet.rb	obsolete - use net/telnet
 tempfile.rb	temporary file with automatic removal
 thread.rb	thread support
 thwait.rb	thread syncronization class
+time.rb		RFC2822, RFC2616, ISO8601 style time formatting/parsing
 timeout.rb	provides timeout
 tracer.rb	execution tracer
 weakref.rb	weak reference class
