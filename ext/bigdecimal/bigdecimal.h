@@ -52,12 +52,14 @@ extern "C" {
 #define VP_EXCEPTION_MEMORY     ((unsigned short)0x0040)
 
 /* Computation mode */
-#define VP_COMP_MODE            ((unsigned short)0x0100)
-#define VP_COMP_MODE_TRUNCATE   0
-#define VP_COMP_MODE_ROUNDUP    1
-#define VP_COMP_MODE_CEIL       2
-#define VP_COMP_MODE_FLOOR      3
-#define VP_COMP_MODE_EVEN       4
+#define VP_ROUND_MODE            ((unsigned short)0x0100)
+#define VP_ROUND_UP         1
+#define VP_ROUND_DOWN       2
+#define VP_ROUND_HALF_UP    3
+#define VP_ROUND_HALF_DOWN  4
+#define VP_ROUND_CEIL       5
+#define VP_ROUND_FLOOR      6
+#define VP_ROUND_EVEN       7
 
 #define VP_SIGN_NaN                0 /* NaN                      */
 #define VP_SIGN_POSITIVE_ZERO      1 /* Positive zero            */
@@ -120,8 +122,8 @@ VP_EXPORT U_LONG VpGetPrecLimit(void);
 VP_EXPORT U_LONG VpSetPrecLimit(U_LONG n);
 
 /* Computation mode */
-VP_EXPORT unsigned long VpGetCompMode(void);
-VP_EXPORT unsigned long VpSetCompMode(unsigned long n);
+VP_EXPORT unsigned long VpGetRoundMode(void);
+VP_EXPORT unsigned long VpSetRoundMode(unsigned long n);
 
 VP_EXPORT int VpException(unsigned short f,char *str,int always);
 VP_EXPORT int VpIsNegDoubleZero(double v);
