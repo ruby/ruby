@@ -32,11 +32,12 @@ module REXML
 		#	 # <!DOCTYPE foo '-//I/Hate/External/IDs'>
 		#	 dt = DocType.new( doctype_to_clone )
 		#	 # Incomplete.  Shallow clone of doctype
-		#	 source = Source.new( '<!DOCTYPE foo "bar">' )
-		#	 dt = DocType.new( source )
-		#	 # <!DOCTYPE foo "bar">
-		#	 dt = DocType.new( source, some_document )
-		#	 # Creates a doctype, and adds to the supplied document
+    #
+    # +Note+ that the constructor: 
+    #
+    #  Doctype.new( Source.new( "<!DOCTYPE foo 'bar'>" ) )
+    #
+    # is _deprecated_.  Do not use it.  It will probably disappear.
 		def initialize( first, parent=nil )
 			@entities = DEFAULT_ENTITIES
 			@long_name = @uri = nil
@@ -54,6 +55,15 @@ module REXML
 				@external_id = first[1]
 				@long_name = first[2]
 				@uri = first[3]
+      elsif first.kind_of? Source
+        super( parent )
+        parser = Parsers::BaseParser.new( first )
+        event = parser.pull
+        if event[0] == :start_doctype
+          @name, @external_id, @long_name, @uri, = event[1..-1]
+        end
+      else
+        super()
 			end
 		end
 

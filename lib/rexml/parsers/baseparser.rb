@@ -100,6 +100,8 @@ module REXML
 				self.stream = source
 			end
 
+      attr_reader :source
+
 			def stream=( source )
 				if source.kind_of? String
 					@source = Source.new(source)

@@ -67,6 +67,22 @@ module REXML
 			end
 		end
 
+    def inspect
+      rv = "<#@expanded_name"
+
+      @attributes.each_attribute do |attr|
+        rv << " "
+        attr.write( rv, 0 )
+      end unless @attributes.empty?
+
+      if children.size > 0
+        rv << " ... </>"
+      else
+        rv << "/>"
+      end
+    end
+
+
 		# Creates a shallow copy of self.
 		#   d = Document.new "<a><b/><b/><c><d/></c></a>"
 		#   new_a = d.root.clone
@@ -643,7 +659,7 @@ module REXML
         end
 				writer << "/" 
 			else
-				if transitive and indent>-1 and !@children[0].kind_of? Text
+				if transitive and indent>-1 and !@children[0].instance_of? Text
 					writer << "\n"
 					indent writer, indent+1
 				end

@@ -146,6 +146,12 @@ module REXML
     def node_type
       :attribute
     end
+
+    def inspect
+      rv = ""
+      write( rv )
+      rv
+    end
 	end
 end
 #vim:ts=2 sw=2 noexpandtab:
