@@ -1,6 +1,9 @@
+require 'mkmf'
 $CFLAGS="-I/usr/include/ncurses -I/usr/local/include/ncurses"
 $LDFLAGS="-L/usr/local/lib"
 make=FALSE
+
+have_library("mytinfo", "tgetent") if /bow/ =~ PLATFORM
 if have_header("ncurses.h") and have_library("ncurses", "initscr")
   make=TRUE
 elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr")
@@ -14,7 +17,7 @@ else
 end
 
 if make then
-  for f in ["isendwin", "ungetch", "beep"]
+  for f in %w(isendwin ungetch beep doupdate flash deleteln wdeleteln)
     have_func(f)
   end
   create_makefile("curses")

@@ -1,48 +1,44 @@
 # tof
 
-#### tcltk ライブラリ
+#### tcltk library, more direct manipulation of tcl/tk
 ####	Sep. 5, 1997	Y. Shigehiro
 
 require "tcltklib"
 
 ################
 
-# module TclTk: tcl/tk のライブラリ全体で必要になるものを集めたもの
-# (主に, 名前空間の点から module にする使う.)
+# module TclTk: collection of tcl/tk utilities (supplies namespace.)
 module TclTk
 
-  # 単にここに書けば最初に 1 度実行されるのか??
-
-  # 生成した一意な名前を保持しておく連想配列を初期化する.
+  # initialize Hash to hold unique symbols and such
   @namecnt = {}
 
-  # コールバックを保持しておく連想配列を初期化する.
+  # initialize Hash to hold callbacks
   @callback = {}
 end
 
-# TclTk.mainloop(): TclTkLib.mainloop() を呼ぶ.
+# TclTk.mainloop(): call TclTkLib.mainloop()
 def TclTk.mainloop()
   print("mainloop: start\n") if $DEBUG
   TclTkLib.mainloop()
   print("mainloop: end\n") if $DEBUG
 end
 
-# TclTk.deletecallbackkey(ca): コールバックを TclTk module から取り除く.
-#     tcl/tk インタプリタにおいてコールバックが取り消されるわけではない.
-#     これをしないと, 最後に TclTkInterpreter が GC できない.
-#     (GC したくなければ, 別に, これをしなくても良い.)
-#   ca: コールバック(TclTkCallback)
+# TclTk.deletecallbackkey(ca): remove callback from TclTk module
+#     this does not remove callbacks from tcl/tk interpreter
+#     without calling this method, TclTkInterpreter will not be GCed
+#   ca: callback(TclTkCallback)
 def TclTk.deletecallbackkey(ca)
   print("deletecallbackkey: ", ca.to_s(), "\n") if $DEBUG
   @callback.delete(ca.to_s)
 end
 
-# TclTk.dcb(ca, wid, W): 配列に入っている複数のコールバックに対して
-#     TclTk.deletecallbackkey() を呼ぶ.
-#     トップレベルの <Destroy> イベントのコールバックとして呼ぶためのもの.
-#   ca: コールバック(TclTkCallback) の Array
-#   wid: トップレベルのウィジェット(TclTkWidget)
-#   w: コールバックに %W で与えられる, ウインドウに関するパラメータ(String)
+# TclTk.dcb(ca, wid, W): call TclTk.deletecallbackkey() for each callbacks
+#     in an array.
+#     this is for callback for top-level <Destroy>
+#   ca: array of callbacks(TclTkCallback)
+#   wid: top-level widget(TclTkWidget)
+#   w: information about window given by %W(String)
 def TclTk.dcb(ca, wid, w)
   if wid.to_s() == w
     ca.each{|i|
@@ -51,33 +47,33 @@ def TclTk.dcb(ca, wid, w)
   end
 end
 
-# TclTk._addcallback(ca): コールバックを登録する.
-#   ca: コールバック(TclTkCallback)
+# TclTk._addcallback(ca): register callback
+#   ca: callback(TclTkCallback)
 def TclTk._addcallback(ca)
   print("_addcallback: ", ca.to_s(), "\n") if $DEBUG
   @callback[ca.to_s()] = ca
 end
 
-# TclTk._callcallback(key, arg): 登録したコールバックを呼び出す.
-#   key: コールバックを選択するキー (TclTkCallback が to_s() で返す値)
-#   arg: tcl/tk インタプリタからのパラメータ
+# TclTk._callcallback(key, arg): invoke registered callback
+#   key: key to select callback (to_s value of the TclTkCallback)
+#   arg: parameter from tcl/tk interpreter
 def TclTk._callcallback(key, arg)
   print("_callcallback: ", @callback[key].inspect, "\n") if $DEBUG
   @callback[key]._call(arg)
-  # コールバックからの返り値はどうせ捨てられる.
-  # String を返さないと, rb_eval_string() がエラーになる.
+  # throw out callback value
+  # should return String to satisfy rb_eval_string()
   return ""
 end
 
-# TclTk._newname(prefix): 一意な名前(String)を生成して返す.
-#   prefix: 名前の接頭語
+# TclTk._newname(prefix): generate unique name(String)
+#   prefix: prefix of the unique name
 def TclTk._newname(prefix)
-  # 生成した名前のカウンタは @namecnt に入っているので, 調べる.
+  # generated name counter is stored in @namecnt
   if !@namecnt.key?(prefix)
-    # 初めて使う接頭語なので初期化する.
+    # first appearing prefix, initialize
     @namecnt[prefix] = 1
   else
-    # 使ったことのある接頭語なので, 次の名前にする.
+    # already appeared prefix, generate next name
     @namecnt[prefix] += 1
   end
   return "#{prefix}#{@namecnt[prefix]}"
@@ -85,51 +81,48 @@ end
 
 ################
 
-# class TclTkInterpreter: tcl/tk のインタプリタ
+# class TclTkInterpreter: tcl/tk interpreter
 class TclTkInterpreter
 
-  # initialize(): 初期化.
+  # initialize(): 
   def initialize()
-    # インタプリタを生成する.
+    # generate interpreter object
     @ip = TclTkIp.new()
 
-    # インタプリタに ruby_fmt コマンドを追加する.
-    # ruby_fmt コマンドとは, 後ろの引数を format コマンドで処理して
-    # ruby コマンドに渡すものである.
-    # (なお, ruby コマンドは, 引数を 1 つしかとれない.)
+    # add ruby_fmt command to tcl interpreter
+    # ruby_fmt command format arguments by `format' and call `ruby' command
+    # (notice ruby command receives only one argument)
     if $DEBUG
       @ip._eval("proc ruby_fmt {fmt args} { puts \"ruby_fmt: $fmt $args\" ; ruby [format $fmt $args] }")
     else
       @ip._eval("proc ruby_fmt {fmt args} { ruby [format $fmt $args] }")
     end
 
-    # @ip._get_eval_string(*args): tcl/tk インタプリタで評価する
-    #     文字列(String)を生成して返す.
-    #   *args: tcl/tk で評価するスクリプト(に対応するオブジェクト列)
+    # @ip._get_eval_string(*args): generate string to evaluate in tcl interpreter
+    #   *args: script which is going to be evaluated under tcl/tk
     def @ip._get_eval_string(*args)
       argstr = ""
       args.each{|arg|
 	argstr += " " if argstr != ""
-	# もし to_eval() メソッドが
+	# call to_eval if it is defined
 	if (arg.respond_to?(:to_eval))
-	  # 定義されていればそれを呼ぶ.
 	  argstr += arg.to_eval()
 	else
-	  # 定義されていなければ to_s() を呼ぶ.
+	  # call to_s unless defined
 	  argstr += arg.to_s()
 	end
       }
       return argstr
     end
 
-    # @ip._eval_args(*args): tcl/tk インタプリタで評価し,
-    #     その結果(String)を返す.
-    #   *args: tcl/tk で評価するスクリプト(に対応するオブジェクト列)
+    # @ip._eval_args(*args): evaluate string under tcl/tk interpreter
+    #     returns result string.
+    #   *args: script which is going to be evaluated under tcl/tk
     def @ip._eval_args(*args)
-      # インタプリタで評価する文字列を求める.
+      # calculate the string to eval in the interpreter
       argstr = _get_eval_string(*args)
 
-      # インタプリタで評価する.
+      # evaluate under the interpreter
       print("_eval: \"", argstr, "\"") if $DEBUG
       res = _eval(argstr)
       if $DEBUG
@@ -137,219 +130,205 @@ class TclTkInterpreter
       elsif  _return_value() != 0
 	print(res, "\n")
       end
-      fail(%Q/can't eval "#{argstr}"/) if _return_value() != 0
+      fail(%Q/can't eval "#{argstr}"/) if _return_value() != 0 #'
       return res
     end
 
-    # tcl/tk のコマンドに対応するオブジェクトを生成し, 連想配列に入れておく.
+    # generate tcl/tk command object and register in the hash
     @commands = {}
-    # tcl/tk インタプリタに登録されているすべてのコマンドに対して,
+    # for all commands registered in tcl/tk interpreter:
     @ip._eval("info command").split(/ /).each{|comname|
       if comname =~ /^[.]/
-	# コマンドがウィジェット(のパス名)の場合は
-	# TclTkWidget のインスタンスを作って連想配列に入れる.
+	# if command is a widget (path), generate TclTkWidget,
+	# and register it in the hash
 	@commands[comname] = TclTkWidget.new(@ip, comname)
       else
-	# そうでない場合は
-	# TclTkCommand のインスタンスを作って連想配列に入れる.
+	# otherwise, generate TclTkCommand
 	@commands[comname] = TclTkCommand.new(@ip, comname)
       end
     }
   end
 
-  # commands(): tcl/tk のコマンドに対応するオブジェクトを Hash に
-  #     入れたものを返す.
+  # commands(): returns hash of the tcl/tk commands
   def commands()
     return @commands
   end
 
-  # rootwidget(): ルートウィジェット(TclTkWidget)を返す.
+  # rootwidget(): returns root widget(TclTkWidget)
   def rootwidget()
     return @commands["."]
   end
 
-  # _tcltkip(): @ip(TclTkIp) を返す.
+  # _tcltkip(): returns @ip(TclTkIp)
   def _tcltkip()
     return @ip
   end
 
-  # method_missing(id, *args): 未定義のメソッドは tcl/tk のコマンドとみなして
-  #     実行し, その結果(String)を返す.
-  #   id: メソッドのシンボル
-  #   *args: コマンドの引数
+  # method_missing(id, *args): execute undefined method as tcl/tk command
+  #   id: method symbol
+  #   *args: method arguments
   def method_missing(id, *args)
-    # もし, メソッドの tcl/tk コマンドが
+    # if command named by id registered, then execute it
     if @commands.key?(id.id2name)
-      # あれば, 実行して結果を返す.
       return @commands[id.id2name].e(*args)
     else
-      # 無ければもともとの処理.
+      # otherwise, exception
       super
     end
   end
 end
 
-# class TclTkObject: tcl/tk のオブジェクト
-# (基底クラスとして使う.
-#  tcltk ライブラリを使う人が TclTkObject.new() することはないはず.)
+# class TclTkObject: base class of the tcl/tk objects
 class TclTkObject
 
-  # initialize(ip, exp): 初期化.
-  #   ip: インタプリタ(TclTkIp)
-  #   exp: tcl/tk での表現形
+  # initialize(ip, exp): 
+  #   ip: interpreter(TclTkIp)
+  #   exp: tcl/tk representation
   def initialize(ip, exp)
     fail("type is not TclTkIp") if !ip.kind_of?(TclTkIp)
     @ip = ip
     @exp = exp
   end
 
-  # to_s(): tcl/tk での表現形(String)を返す.
+  # to_s(): returns tcl/tk representation
   def to_s()
     return @exp
   end
 end
 
-# class TclTkCommand: tcl/tk のコマンド
-# (tcltk ライブラリを使う人が TclTkCommand.new() することはないはず.
-#  TclTkInterpreter:initialize() から new() される.)
+# class TclTkCommand: tcl/tk commands
+# you should not call TclTkCommand.new()
+# commands are created by TclTkInterpreter:initialize()
 class TclTkCommand < TclTkObject
 
-  # e(*args): コマンドを実行し, その結果(String)を返す.
-  #     (e は exec または eval の e.)
-  #   *args: コマンドの引数
+  # e(*args): execute command.  returns String (e is for exec or eval)
+  #   *args: command arguments
   def e(*args)
     return @ip._eval_args(to_s(), *args)
   end
 end
 
-# class TclTkLibCommand: tcl/tk のコマンド
-# (ライブラリにより実現されるコマンドで, tcl/tk インタプリタに最初から
-#  存在しないものは, インタプリタの commands() では生成できない.
-#  そのようなものに対し, コマンドの名前から TclTkCommand オブジェクトを
-#  生成する.
+# class TclTkLibCommand: tcl/tk commands in the library
 class TclTkLibCommand < TclTkCommand
 
-  # initialize(ip, name): 初期化
-  #   ip: インタプリタ(TclTkInterpreter)
-  #   name: コマンド名 (String)
+  # initialize(ip, name): 
+  #   ip: interpreter(TclTkInterpreter)
+  #   name: command name (String)
   def initialize(ip, name)
     super(ip._tcltkip, name)
   end
 end
 
-# class TclTkVariable: tcl/tk の変数
+# class TclTkVariable: tcl/tk variable
 class TclTkVariable < TclTkObject
 
-  # initialize(interp, dat): 初期化.
-  #   interp: インタプリタ(TclTkInterpreter)
-  #   dat: 設定する値(String)
-  #       nil なら, 設定しない.
+  # initialize(interp, dat): 
+  #   interp: interpreter(TclTkInterpreter)
+  #   dat: the value to set(String)
+  #       if nil, not initialize variable
   def initialize(interp, dat)
-    # tcl/tk での表現形(変数名)を自動生成する.
+    # auto-generate tcl/tk representation (variable name)
     exp = TclTk._newname("v_")
-    # TclTkObject を初期化する.
+    # initialize TclTkObject
     super(interp._tcltkip(), exp)
-    # set コマンドを使うのでとっておく.
+    # safe this for `set' command
     @set = interp.commands()["set"]
-    # 値を設定する.
+    # set value
     set(dat) if dat
   end
 
-  # tcl/tk の set を使えば, 値の設定/参照はできるが,
-  # それだけではなんなので, 一応, メソッドをかぶせたものも用意しておく.
+  # although you can set/refer variable by using set in tcl/tk,
+  # we provide the method for accessing variables
 
-  # set(data): tcl/tk の変数に set を用いて値を設定する.
-  #   data: 設定する値
+  # set(data): set tcl/tk variable using `set'
+  #   data: new value
   def set(data)
     @set.e(to_s(), data.to_s())
   end
 
-  # get(): tcl/tk の変数の値(String)を set を用いて読みだし返す.
+  # get(): read tcl/tk variable(String) using `set'
   def get()
     return @set.e(to_s())
   end
 end
 
-# class TclTkWidget: tcl/tk のウィジェット
+# class TclTkWidget: tcl/tk widget
 class TclTkWidget < TclTkCommand
 
-  # initialize(*args): 初期化.
-  #   *args: パラメータ
+  # initialize(*args): 
+  #   *args: parameters
   def initialize(*args)
     if args[0].kind_of?(TclTkIp)
-      # 最初の引数が TclTkIp の場合:
+      # in case the 1st argument is TclTkIp:
 
-      # 既に tcl/tk に定義されているウィジェットに TclTkWidget の構造を
-      # かぶせる. (TclTkInterpreter:initialize() から使われる.)
+      # Wrap tcl/tk widget by TclTkWidget
+      # (used in TclTkInterpreter#initialize())
 
-      # パラメータ数が 2 でなければエラー.
+      # need two arguments
       fail("illegal # of parameter") if args.size != 2
 
-      # ip: インタプリタ(TclTkIp)
-      # exp: tcl/tk での表現形
+      # ip: interpreter(TclTkIp)
+      # exp: tcl/tk representation
       ip, exp = args
 
-      # TclTkObject を初期化する.
+      # initialize TclTkObject
       super(ip, exp)
     elsif args[0].kind_of?(TclTkInterpreter)
-      # 最初の引数が TclTkInterpreter の場合:
+      # in case 1st parameter is TclTkInterpreter:
 
-      # 親ウィジェットから新たなウィジェトを生成する.
+      # generate new widget from parent widget
 
-      # interp: インタプリタ(TclTkInterpreter)
-      # parent: 親ウィジェット
-      # command: ウィジェットを生成するコマンド(label 等)
-      # *args: command に渡す引数
+      # interp: interpreter(TclTkInterpreter)
+      # parent: parent widget
+      # command: widget generating tk command(label 等)
+      # *args: argument to the command 
       interp, parent, command, *args = args
 
-      # ウィジェットの名前を作る.
+      # generate widget name
       exp = parent.to_s()
       exp += "." if exp !~ /[.]$/
       exp += TclTk._newname("w_")
-      # TclTkObject を初期化する.
+      # initialize TclTkObject
       super(interp._tcltkip(), exp)
-      # ウィジェットを生成する.
+      # generate widget
       res = @ip._eval_args(command, exp, *args)
 #      fail("can't create Widget") if res != exp
-      # tk_optionMenu では, ボタン名を exp で指定すると
-      # res にメニュー名を返すので res != exp となる.
+      # for tk_optionMenu, it is legal res != exp
     else
       fail("first parameter is not TclTkInterpreter")
     end
   end
 end
 
-# class TclTkCallback: tcl/tk のコールバック
+# class TclTkCallback: tcl/tk callbacks
 class TclTkCallback < TclTkObject
 
-  # initialize(interp, pr, arg): 初期化.
-  #   interp: インタプリタ(TclTkInterpreter)
-  #   pr: コールバック手続き(Proc)
-  #   arg: pr のイテレータ変数に渡す文字列
-  #       tcl/tk の bind コマンドではパラメータを受け取るために % 置換を
-  #       用いるが, pr の内部で % を書いてもうまくいかない.
-  #       arg に文字列を書いておくと, その置換結果を, pr で
-  #       イテレータ変数を通して受け取ることができる.
-  #       scrollbar コマンドの -command オプションのように
-  #       何も指定しなくてもパラメータが付くコマンドに対しては,
-  #       arg を指定してはならない.
+  # initialize(interp, pr, arg): 
+  #   interp: interpreter(TclTkInterpreter)
+  #   pr: callback procedure(Proc)
+  #   arg: string to pass as block parameters of pr
+  #       bind command of tcl/tk uses % replacement for parameters
+  #       pr can receive replaced data using block parameter
+  #       its format is specified by arg string
+  #       You should not specify arg for the command like 
+  #       scrollbar with -command option, which receives parameters
+  #       without specifying any replacement
   def initialize(interp, pr, arg = nil)
-    # tcl/tk での表現形(変数名)を自動生成する.
+    # auto-generate tcl/tk representation (variable name)
     exp = TclTk._newname("c_")
-    # TclTkObject を初期化する.
+    # initialize TclTkObject
     super(interp._tcltkip(), exp)
-    # パラメータをとっておく.
+    # save parameters
     @pr = pr
     @arg = arg
-    # モジュールに登録しておく.
+    # register in the module
     TclTk._addcallback(self)
   end
 
-  # to_eval(): @ip._eval_args で評価するときの表現形(String)を返す.
+  # to_eval(): retuens string representation for @ip._eval_args
   def to_eval()
     if @arg
-      # %s は ruby_fmt より前に bind により置換されてしまうので
-      # %%s としてある. したがって, これは bind 専用.
+      # bind replaces %s before calling ruby_fmt, so %%s is used
       s = %Q/{ruby_fmt {TclTk._callcallback("#{to_s()}", "%%s")} #{@arg}}/
     else
       s = %Q/{ruby_fmt {TclTk._callcallback("#{to_s()}", "%s")}}/
@@ -358,28 +337,28 @@ class TclTkCallback < TclTkObject
     return s
   end
 
-  # _call(arg): コールバックを呼び出す.
-  #   arg: コールバックに渡されるパラメータ
+  # _call(arg): invoke callback
+  #   arg: callback parameter
   def _call(arg)
     @pr.call(arg)
   end
 end
 
-# class TclTkImage: tcl/tk のイメージ
+# class TclTkImage: tcl/tk images
 class TclTkImage < TclTkCommand
 
-  # initialize(interp, t, *args): 初期化.
-  #     イメージの生成は TclTkImage.new() で行うが,
-  #     破壊は image delete で行う. (いまいちだけど仕方が無い.)
-  #   interp: インタプリタ(TclTkInterpreter)
-  #   t: イメージのタイプ (photo, bitmap, etc.)
-  #   *args: コマンドの引数
+  # initialize(interp, t, *args): 
+  #     generating image is done by TclTkImage.new()
+  #     destrying is done by image delete (inconsistent, sigh)
+  #   interp: interpreter(TclTkInterpreter)
+  #   t: image type (photo, bitmap, etc.)
+  #   *args: command argument
   def initialize(interp, t, *args)
-    # tcl/tk での表現形(変数名)を自動生成する.
+    # auto-generate tcl/tk representation
     exp = TclTk._newname("i_")
-    # TclTkObject を初期化する.
+    # initialize TclTkObject
     super(interp._tcltkip(), exp)
-    # イメージを生成する.
+    # generate image
     res = @ip._eval_args("image create", t, exp, *args)
     fail("can't create Image") if res != exp
   end

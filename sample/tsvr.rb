@@ -13,7 +13,7 @@ while TRUE
   ns = gs.accept
   print(ns, " is accepted\n")
   Thread.start do
-    s =	ns			# save to dynamic variable
+    s =	ns			# save to thread-local variable
     while s.gets
       s.write($_)
     end

@@ -1,5 +1,4 @@
-#!/usr/local/bin/ruby
-
+#
 # How to use:
 #
 # db = PStore.new("/tmp/foo")
@@ -16,7 +15,8 @@
 require "marshal"
 
 class PStore
-  Exception(:Error)
+  class Error < StandardError
+  end
 
   def initialize(file)
     dir = File::dirname(file)
@@ -89,33 +89,46 @@ class PStore
 	catch(:pstore_abort_transaction) do
 	  value = yield(self)
 	end
+      rescue Exception
+	@abort = true
+	raise
       ensure
 	unless @abort
-	  File::rename @filename, @filename+"~"
+	  begin
+	    File::rename @filename, @filename+"~"
+	  rescue Errno::ENOENT
+	    no_orig = true
+	  end
 	  begin
 	    File::open(@filename, "w") do |file|
 	      Marshal::dump(@table, file)
 	    end
 	  rescue
-	    File::rename @filename+"~", @filename
+	    File::rename @filename+"~", @filename unless no_orig
 	  end
 	end
 	@abort = false
       end
     ensure
+      @table = nil
       @transaction = false
     end
     value
   end
 end
 
-db = PStore.new("/tmp/foo")
-db.transaction do
-  p db.roots
-  ary = db["root"] = [1,2,3,4]
-  ary[0] = [1,1.5]
-end
+if __FILE__ == $0
+  db = PStore.new("/tmp/foo")
+  db.transaction do
+    p db.roots
+    ary = db["root"] = [1,2,3,4]
+    ary[1] = [1,1.5]
+  end
 
-db.transaction do
-  p db["root"]
+  1000.times do
+    db.transaction do
+      db["root"][0] += 1
+      p db["root"][0]
+    end
+  end
 end

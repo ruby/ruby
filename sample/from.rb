@@ -9,8 +9,6 @@ include Kconv
 
 class String
 
-  public :kconv
-
   def kconv(code = Kconv::EUC)
     Kconv.kconv(self, code, Kconv::AUTO)
   end
@@ -32,13 +30,20 @@ if ARGV[0] == '-w'
 end
 
 if ARGV.length == 0
-  user = ENV['USER']
+  file = ENV['MAIL']
+  user = ENV['USER'] || ENV['USERNAME'] || ENV['LOGNAME'] 
 else
-  user = ARGV[0]
+  file = user = ARGV[0]
+  ARGV.clear
 end
 
-[ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
-  break if File.exist? ARGV[0] = "#{m}/mail/#{user}" 
+if file == nil or !File.exist? file
+  [ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
+    if File.exist? f = "#{m}/mail/#{user}"
+      file = f
+      break 
+    end
+  end
 end
 
 $outcount = 0;
@@ -63,18 +68,23 @@ def fromout(date, from, subj)
   end
   from = from.kconv(lang).kjust(28)
   subj = subj.kconv(lang).kjust(40)
-  printf "%02d/%02d/%02d [%s] %s\n",y,m,d,from,subj
+  printf "%02d/%02d/%02d [%s] %s\n",y%100,m,d,from,subj
   $outcount += 1
 end
 
-for file in ARGV
-  next if !File.exist?(file)
+if File.exist?(file)
+  atime = File.atime(file)
+  mtime = File.mtime(file)
   f = open(file, "r")
-  while !f.eof?
-    mail = Mail.new(f)
-    fromout mail.header['Date'], mail.header['From'], mail.header['Subject']
+  begin
+    until f.eof?
+      mail = Mail.new(f)
+      fromout mail.header['Date'],mail.header['From'],mail.header['Subject']
+    end
+  ensure
+    f.close
+    File.utime(atime, mtime, file)
   end
-  f.close
 end
 
 if $outcount == 0

@@ -21,9 +21,12 @@ for k,v in ENV
 EOS
 end
 
-p $TERM
-$TERM = nil
-p $TERM
-p ENV["TERM"]
-$TERM = "foo"
-p ENV["TERM"]
+if __FILE__ == $0
+  p $TERM
+  $TERM = nil
+  p $TERM
+  p ENV["TERM"]
+  $TERM = "foo"
+  p ENV["TERM"]
+end
+

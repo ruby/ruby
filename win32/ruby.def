@@ -1,37 +1,58 @@
 LIBRARY rubymw.dll
-CODE LOADONCALL
-DATA LOADONCALL
 DESCRIPTION 'win32 rubymw.dll'
 EXPORTS
-;global objects
+;;global objects
 ;array.c:
-	cArray
+	rb_cArray
 ;bignum.c:
-	cBignum
+	rb_cBignum
+;enum.c
+	rb_mEnumerable
+;error.c
+	rb_eException;
+	rb_eSystemExit
+	rb_eInterrupt
+	rb_eFatal;
+	rb_eStandardError;
+	rb_eRuntimeError;
+	rb_eSyntaxError;
+	rb_eTypeError;
+	rb_eArgError;
+	rb_eNameError;
+	rb_eIndexError;
+	rb_eLoadError;
+	rb_eSecurityError;
+	rb_eNotImpError;
+	rb_eSystemCallError;
+	rb_mErrno;
 ;eval.c:
-	cProc
+	rb_cProc
 ;file.c:
-	cFile
+	rb_cFile
 ;hash.c:
-	cHash
+	rb_cHash
 ;io.c:
-	cIO
+	rb_cIO
 ;numeric.c:
-	cNumeric
-	cFloat
-	cInteger
-	cFixnum
+	rb_cNumeric
+	rb_cFloat
+	rb_cInteger
+	rb_cFixnum
 ;object.c
-	cObject
-	cModule
-	cClass
-	cFixnum
-	cData
+	rb_mKernel
+	rb_cObject
+	rb_cModule
+	rb_cClass
+	rb_cData
+
+	rb_cNilClass
+	rb_cTrueClass
+	rb_cFalseClass
 ;re.c:
-	cRegexp
+	rb_cRegexp
 ;string.c:
-	cString
-	cStruct
+	rb_cString
+	rb_cStruct
 
 ; procedures/methods
 ;missing/nt.c
@@ -60,64 +81,63 @@ EXPORTS
 	mygetservbyname
 	mygetservbyport
 ;array.c
-	memclear
-	ary_freeze
-	ary_new2
-	ary_new
-	ary_new3
-	ary_new4
-	assoc_new
-	ary_store
-	ary_push
-	ary_pop
-	ary_shift
-	ary_unshift
-	ary_entry
-	ary_each
-	ary_join
-	ary_to_s
-	ary_reverse
-	ary_sort_bang
-	ary_sort
-	ary_delete
-	ary_delete_at
-	ary_plus
-	ary_concat
-	ary_assoc
-	ary_rassoc
-	ary_includes
+	rb_ary_freeze
+	rb_ary_new2
+	rb_ary_new
+	rb_ary_new3
+	rb_ary_new4
+	rb_assoc_new
+	rb_ary_store
+	rb_ary_push
+	rb_ary_pop
+	rb_ary_shift
+	rb_ary_unshift
+	rb_ary_entry
+	rb_ary_aref
+	rb_ary_each
+	rb_ary_join
+	rb_ary_to_s
+	rb_ary_reverse
+	rb_ary_sort_bang
+	rb_ary_sort
+	rb_ary_delete
+	rb_ary_delete_at
+	rb_ary_plus
+	rb_ary_concat
+	rb_ary_assoc
+	rb_ary_rassoc
+	rb_ary_includes
 ;bignum.c
-	big_clone
-	big_2comp
-	big_norm
-	uint2big
-	int2big
-	uint2inum
-	int2inum
-	str2inum
-	big2str
-	big2int
-	big_to_i
-	dbl2big
-	big2dbl
-	big_to_f
-	big_plus
-	big_minus
-	big_mul
-	big_pow
-	big_and
-	big_or
-	big_xor
-	big_lshift
-	big_rand
+	rb_big_clone
+	rb_big_2comp
+	rb_big_norm
+	rb_uint2big
+	rb_int2big
+	rb_uint2inum
+	rb_int2inum
+	rb_str2inum
+	rb_big2str
+	rb_big2ulong
+	rb_big2long
+	rb_dbl2big
+	rb_big2dbl
+	rb_big_plus
+	rb_big_minus
+	rb_big_mul
+	rb_big_pow
+	rb_big_and
+	rb_big_or
+	rb_big_xor
+	rb_big_lshift
+	rb_big_rand
 ;class.c
-	class_new
-	singleton_class_new
-	singleton_class_clone
+	rb_class_new
+	rb_singleton_class_new
+	rb_singleton_class_clone
 	rb_define_class_id
 	rb_define_class
 	rb_define_class_under
-	module_new
+	rb_module_new
 	rb_define_module_id
 	rb_define_module
 	rb_define_module_under
@@ -126,6 +146,7 @@ EXPORTS
 	rb_define_method
 	rb_undef_method
 	rb_define_private_method
+	rb_define_protected_method
 	rb_singleton_class
 	rb_define_singleton_method
 	rb_define_module_function
@@ -134,39 +155,37 @@ EXPORTS
 	rb_define_attr
 	rb_scan_args
 ; dln.c
+	dln_find_exe
+	dln_find_file
 	dln_load
 	dln_find_exe
 	dln_find_file
 ; enum.c
 	rb_each
-	enum_length
+	rb_enum_length
 ; error.c
-	Error
-	Error_Append
-	Warning
-	Bug
+	rb_compile_error
+	rb_compile_error_append
+	rb_warn
+	rb_warning
+	rb_bug
 	rb_check_type
-	exc_new
-	exc_new2
-	exc_new3
-	Raise
-	TypeError
-	ArgError
-	NameError
-	IndexError
-	Fail
+	rb_exc_new
+	rb_exc_new2
+	rb_exc_new3
+	rb_raise
+	rb_loaderror
 	rb_notimplement
-	LoadError
-	Fatal
+	rb_fatal
 	rb_sys_fail
 ;eval.c
 	rb_clear_cache
-	rb_add_method
 	rb_alias
+	rb_add_method
+	rb_remove_method
+	rb_disable_super
+	rb_enable_super
 	rb_method_boundp
-	dyna_var_defined
-	dyna_var_ref
-	dyna_var_asgn
 	rb_safe_level
 	rb_set_safe_level
 	rb_check_safe_str
@@ -183,9 +202,7 @@ EXPORTS
 	rb_raise
 	rb_fatal
 	rb_interrupt
-	iterator_p
-	rb_yield_0
-	rb_yield
+	rb_iterator_p
 	rb_iterate
 	rb_rescue
 	rb_ensure
@@ -194,88 +211,89 @@ EXPORTS
 	rb_funcall2
 	rb_backtrace
 	rb_frame_last_func
-	f_load
+	rb_load
 	rb_provide
-	f_require
-	class_new_instance
+	rb_f_require
+	rb_obj_instance_eval
+	rb_obj_call_init
+	rb_class_new_instance
 	rb_extend_object
-	f_lambda
-	gc_mark_threads
-	thread_schedule
-	thread_wait_fd
-	thread_fd_writable
-	thread_wait_for
-	thread_alone
-	thread_select
-	thread_sleep
-	thread_sleep_forever
-	thread_create
-	thread_interrupt
+	rb_f_global_variables
+	rb_set_end_proc
+	rb_f_autoload
+	rb_f_lambda
+	rb_gc_mark_threads
+	rb_thread_schedule
+	rb_thread_wait_fd
+	rb_thread_fd_writable
+	rb_thread_wait_for
+	rb_thread_alone
+	rb_thread_select
+	rb_thread_sleep
+	rb_thread_sleep_forever
+	rb_thread_create
+	rb_thread_scope_shared_p
+	rb_thread_interrupt
+	rb_thread_trap_eval
+	rb_catch
+	rb_throw
+	rb_yield
 ; file.c
-	file_open
+	rb_file_open
 	eaccess
-	file_s_expand_path
+	rb_file_s_expand_path
 ; gc.c
 	xmalloc
 	xcalloc
 	xrealloc
-	gc_s_enable
-	gc_s_disable
 	rb_global_variable
 	rb_newobj
-	data_object_alloc
-	gc_mark_locations
-	gc_mark_maybe
-	gc_mark
-	gc_force_recycle
-	gc_mark_frame
-	gc_gc
+	rb_data_object_alloc
+	rb_gc_mark_locations
+	rb_gc_mark_maybe
+	rb_gc_mark
+	rb_gc_force_recycle
+	rb_gc_mark_frame
+	rb_gc
 ; hash.c
+	rb_hash_freeze
 	rb_hash
-	hash_new
-	hash_aref
-	hash_aset
+	rb_hash_new
+	rb_hash_aref
+	rb_hash_aset
 ; inits.c
 	rb_call_inits
 ; io.c
-	eof_error
-	io_writable
-	io_readable
-	io_write
-	io_gets_method
-	io_gets
-	io_getc
-	io_ungetc
-	io_fptr_finalize
-	io_close
-	io_binmode
-	io_mode_flags
+	rb_eof_error
+	rb_io_write
+	rb_io_gets
+	rb_io_getc
+	rb_io_ungetc
+	rb_io_fptr_finalize
+	rb_io_close
+	rb_io_binmode
+	rb_io_mode_flags
 	rb_fopen
 	rb_fdopen
-	io_unbuffered
-	io_reopen
-	f_gets
+	rb_io_unbuffered
+	rb_io_reopen
 	rb_str_setter
 ; numeric.c
-	num_zerodiv
-	num_coerce_bin
-	float_new
-	flo_pow
-	num2int
-	num2fix
-	fix2str
-	fix_to_s
-	num_upto
-	fix_upto
+	rb_num_zerodiv
+	rb_num_coerce_bin
+	rb_float_new
+	rb_num2long
+	rb_num2ulong
+	rb_num2fix
+	rb_fix2str
 ; object.c
 	rb_equal
 	rb_eql
-	obj_equal
-	any_to_s
+	rb_any_to_s
 	rb_inspect
-	obj_is_instance_of
-	obj_is_kind_of
-	obj_alloc
+	rb_obj_is_instance_of
+	rb_obj_is_kind_of
+	rb_obj_alloc
 	rb_to_id
 	rb_class_of
 	rb_type
@@ -285,54 +303,51 @@ EXPORTS
 	rb_String
 	rb_Array
 ; parse.c
-	;;compile_string
-	;;compile_file
-	;;node_newnode
-	nodetype
-	nodeline
-	id_attrset
+	rb_node_newnode
+	rb_id_attrset
 	rb_intern
 	rb_id2name
 	rb_is_const_id
 	rb_is_instance_id
-	local_var_append
-	backref_get
-	backref_set
-	lastline_get
-	lastline_set
+	rb_backref_get
+	rb_backref_set
+	rb_lastline_get
+	rb_lastline_set
 ; process.c
 	rb_proc_exec
 	rb_syswait
 ; range.c
-	range_new
-	range_beg_end
+	rb_range_new
+	rb_range_beg_end
 ; re.c
-	str_cicmp
-	reg_search
-	reg_nth_defined
-	reg_nth_match
-	reg_last_match
-	reg_match_pre
-	reg_match_post
-	reg_match_last
-	reg_free
-	reg_new
-	reg_regcomp
-	reg_match
-	reg_match2
-	reg_regsub
+	rb_str_cicmp
+	rb_reg_search
+	rb_reg_nth_defined
+	rb_reg_nth_match
+	rb_reg_last_match
+	rb_reg_match_pre
+	rb_reg_match_post
+	rb_reg_match_last
+	rb_reg_new
+	rb_reg_regcomp
+	rb_reg_match
+	rb_reg_match2
+	rb_reg_regsub
+	rb_get_kcode
 	rb_set_kcode
 ; ruby.c
-	rb_require_modules
+	ruby_require_modules
 	rb_load_file
 	ruby_script
 	ruby_prog_init
 	ruby_set_argv
 	ruby_process_options
 ; signal.c
-	gc_mark_trap_list
+	rb_gc_mark_trap_list
 	rb_trap_exit
 	rb_trap_exec
+; sprintf.c
+	rb_f_sprintf
 ; st.c
 	st_init_table_with_size
 	st_init_table
@@ -342,58 +357,61 @@ EXPORTS
 	st_lookup
 	st_insert
 	st_add_direct
-	st_find_or_add
 	st_copy
 	st_delete
 	st_delete_safe
 	st_foreach
 ; string.c
-	str_new
-	str_new2
-	str_new3
-	str_new4
-	obj_as_string
-	str_dup
-	str_plus
-	str_times
-	str_substr
-	str_modify
-	str_freeze
-	str_dup_freezed
-	str_taint
-	str_tainted
-	str_resize
-	str_cat
-	str_hash
-	str_cmp
-	str_upto
-	str_inspect
-	str_split
+	rb_str_new
+	rb_str_new2
+	rb_tainted_str_new
+	rb_tainted_str_new2
+	rb_str_new3
+	rb_str_new4
+	rb_str_to_str
+	rb_obj_as_string
+	rb_str_dup
+	rb_str_plus
+	rb_str_times
+	rb_str_substr
+	rb_str_modify
+	rb_str_freeze
+	rb_str_dup_frozen
+	rb_str_resize
+	rb_str_cat
+	rb_str_hash
+	rb_str_cmp
+	rb_str_upto
+	rb_str_inspect
+	rb_str_split
 ; struct.c
-	struct_getmember
-	struct_define
-	struct_alloc
-	struct_new
-	struct_aref
-	struct_aset
+	rb_struct_getmember
+	rb_struct_define
+	rb_struct_alloc
+	rb_struct_new
+	rb_struct_aref
+	rb_struct_aset
 ; time.c
-	time_new
-	time_timeval
+	rb_time_new
+	rb_time_timeval
 ; util.c
-	scan_oct
-	scan_hex
-	add_suffix
+	rb_class_of
+	rb_type
+	rb_special_const_p
+	rb_test_false_or_nil
+	ruby_scan_oct
+	ruby_scan_hex
+	rb_add_suffix
 ;variable.c
-	new_idhash
 	rb_class_path
 	rb_set_class_path
 	rb_path2class
 	rb_name_class
 	rb_autoload
-	f_autoload
+	rb_f_autoload
 	rb_class2name
 	rb_global_entry
-	gc_mark_global_tbl
+	rb_gc_mark_global_tbl
 	rb_define_hooked_variable
 	rb_define_variable
 	rb_define_readonly_variable
@@ -408,7 +426,9 @@ EXPORTS
 	rb_ivar_defined
 	rb_const_get_at
 	rb_const_get
-	mod_constants
+	rb_mod_const_at
+	rb_mod_constants
+	rb_mod_const_of
 	rb_const_defined_at
 	rb_autoload_defined
 	rb_const_defined
@@ -418,7 +438,6 @@ EXPORTS
 	rb_iv_get
 	rb_iv_set
 ; version.c
-	show_version
-	show_copyright
-
+	ruby_show_version
+	ruby_show_copyright
 

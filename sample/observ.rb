@@ -7,25 +7,26 @@ class Tick
   include Observable
   def initialize
     Thread.start do
-      while TRUE
+      loop do
 	sleep 0.999
+	now = Time.now
 	changed
-	notify_observers(Time.now.strftime("%H:%M:%S"))
+	notify_observers(now.hour, now.min, now.sec)
       end
     end
   end
 end
 
 class Clock
-  def initialize
-    @tick = Tick.new
+  def initialize(tick)
+    @tick = tick
     @tick.add_observer(self)
   end
-  def update(time)
-    print "\e[8D", time
+  def update(h, m, s)
+    printf "\e[8D%02d:%02d:%02d", h, m, s
     STDOUT.flush
   end
 end
 
-clock = Clock.new
+clock = Clock.new(Tick.new)
 sleep

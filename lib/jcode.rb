@@ -11,13 +11,13 @@ class String
   alias original_succ succ
   private :original_succ
 
-  def mbchar?(c)
+  def mbchar?
     if $KCODE =~ /^s/i
-      c =~ /[\x81-\x9f\xe0-\xef][\x40-\x7e\x80-\xfc]/n
+      self =~ /[\x81-\x9f\xe0-\xef][\x40-\x7e\x80-\xfc]/n
     elsif $KCODE =~ /^e/i
-      c =~ /[\xa1-\xfe][\xa1-\xfe]/n
+      self =~ /[\xa1-\xfe][\xa1-\xfe]/n
     else
-      FALSE
+      false
     end
   end
 
@@ -25,12 +25,13 @@ class String
     if self[-2] && self[-2] & 0x80 != 0
       s = self.dup
       s[-1] += 1
-      s[-1] += 1 if !mbchar?(s)
+      s[-1] += 1 if !s.mbchar?
       return s
     else
       original_succ
     end
   end
+  alias next succ
 
   def upto(to)
     return if self > to
@@ -41,7 +42,7 @@ class String
       if self[0..-2] == to[0..-2]
 	first = self[-2].chr
 	for c in self[-1] .. to[-1]
-	  if mbchar?(first+c.chr)
+	  if (first+c.chr).mbchar?
 	    yield self[0..-2]+c.chr
 	  end
 	end
@@ -103,7 +104,7 @@ class String
   end
 
   def tr(from, to)
-    self.dup.tr!(from, to)
+    (str = self.dup).tr!(from, to) or str
   end
 
   def delete!(del)
@@ -126,7 +127,7 @@ class String
   end
 
   def delete(del)
-    self.dup.delete!(del)
+    (str = self.dup).delete!(del) or str
   end
 
   def squeeze!(del=nil)
@@ -154,7 +155,7 @@ class String
   end
 
   def squeeze(del=nil)
-    self.dup.squeeze!(del)
+    (str = self.dup).squeeze!(del) or str
   end
 
   def tr_s!(from, to)
@@ -187,7 +188,7 @@ class String
   end
 
   def tr_s(from, to)
-    self.dup.tr_s!(from,to)
+    (str = self.dup).tr_s!(from,to) or str
   end
 
   alias original_chop! chop!
@@ -201,7 +202,7 @@ class String
   end
 
   def chop
-    self.dup.chop!
+    (str = self.dup).chop! or str
   end
 end
 $VERBOSE = $vsave

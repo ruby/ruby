@@ -1,7 +1,8 @@
-# module to create Makefile for extention modules
+# module to create Makefile for extension modules
 # invoke like: ruby -r mkmf extconf.rb
 
 require 'rbconfig'
+require 'find'
 
 include Config
 
@@ -36,6 +37,7 @@ $install = CONFIG["INSTALL_PROGRAM"]
 $install_data = CONFIG["INSTALL_DATA"]
 if $install !~ /^\// then
   $install = CONFIG["srcdir"]+"/"+$install
+  $install_data = CONFIG["srcdir"]+"/"+$install_data
 end
 
 if File.exist? $archdir + "/ruby.h"
@@ -47,28 +49,60 @@ else
   exit 1
 end
 
-nul = "> /dev/null"
-
 CFLAGS = CONFIG["CFLAGS"]
 if PLATFORM == "m68k-human"
-  nul = "> nul"
   CFLAGS.gsub!(/-c..-stack=[0-9]+ */, '')
 end
-if $DEBUG
-  nul = ""
+if /win32|djgpp|mingw32|m68k-human/i =~ PLATFORM
+  $null = open("nul", "w")
+else
+  $null = open("/dev/null", "w")
 end
-LINK = CONFIG["CC"]+" -o conftest -I#{$srcdir} " + CFLAGS + " %s " + CONFIG["LDFLAGS"] + " %s conftest.c " + CONFIG["LIBS"] + "%s " + nul + " 2>&1"
-CPP = CONFIG["CPP"] + " -E  -I#{$srcdir} " + CFLAGS + " %s conftest.c " + nul + " 2>&1"
+LINK = "#{CONFIG['CC']} -o conftest -I#{$srcdir} -I#{CONFIG['includedir']} #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c #{CONFIG['LIBS']} %s"
+CPP = "#{CONFIG['CPP']} -E -I#{$srcdir} -I#{CONFIG['includedir']} #{CFLAGS} %s conftest.c"
+
+$orgerr = $stderr.dup
+$orgout = $stdout.dup
+def xsystem command
+  if $DEBUG
+    print command, "\n"
+    return system(command)
+  end
+  $stderr.reopen($null) 
+  $stdout.reopen($null) 
+  r = system(command)
+  $stderr.reopen($orgerr)
+  $stdout.reopen($orgout)
+  return r
+end
 
 def try_link(libs)
-  system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+  xsystem(format(LINK, $CFLAGS, $LDFLAGS, libs))
 end
 
 def try_cpp
-  system(format(CPP, $CFLAGS))
+  xsystem(format(CPP, $CFLAGS))
 end
 
-def have_library(lib, func)
+def install_rb(mfile)
+  path = []
+  dir = []
+  Find.find("lib") do |f|
+    next unless /\.rb$/ =~ f
+    f = f[4..-1]
+    path.push f
+    dir |= File.dirname(f)
+  end
+  for f in dir
+    next if f == "."
+    mfile.printf "\t@test -d $(libdir)/%s || mkdir $(libdir)/%s\n", f, f
+  end
+  for f in path
+    mfile.printf "\t$(INSTALL_DATA) lib/%s $(libdir)/%s\n", f, f
+  end
+end
+
+def have_library(lib, func="main")
   printf "checking for %s() in -l%s... ", func, lib
   STDOUT.flush
   if $lib_cache[lib]
@@ -86,32 +120,40 @@ def have_library(lib, func)
     end
   end
 
-  cfile = open("conftest.c", "w")
-  cfile.printf "\
+  if func && func != ""
+    cfile = open("conftest.c", "w")
+    cfile.printf "\
 int main() { return 0; }
 int t() { %s(); return 0; }
 ", func
-  cfile.close
+    cfile.close
 
-  begin
+    begin
+      if $libs
+	libs = "-l" + lib + " " + $libs 
+      else
+	libs = "-l" + lib
+      end
+      unless try_link(libs)
+	$lib_cache[lib] = 'no'
+	$cache_mod = TRUE
+	print "no\n"
+	return FALSE
+      end
+    ensure
+      system "rm -f conftest*"
+    end
+  else
     if $libs
       libs = "-l" + lib + " " + $libs 
     else
       libs = "-l" + lib
     end
-    unless try_link(libs)
-      $lib_found[lib] = 'no'
-      $found = TRUE
-      print "no\n"
-      return FALSE
-    end
-  ensure
-    system "rm -f conftest*"
   end
 
   $libs = libs
-  $lib_found[lib] = 'yes'
-  $found = TRUE
+  $lib_cache[lib] = 'yes'
+  $cache_mod = TRUE
   print "yes\n"
   return TRUE
 end
@@ -221,9 +263,15 @@ def create_makefile(target)
     $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
   $libs = "" unless $libs
+  $DLDFLAGS = CONFIG["DLDFLAGS"]
 
-  if !$objs then
-    $objs = Dir["*.c"]
+  if PLATFORM =~ /beos/
+    $libs = $libs + " -lruby"
+    $DLDFLAGS = $DLDFLAGS + " -L" + CONFIG["prefix"] + "/lib"
+  end
+
+  unless $objs then
+    $objs = Dir["*.{c,cc}"]
     for f in $objs
       f.sub!(/\.(c|cc)$/, ".o")
     end
@@ -239,15 +287,18 @@ SHELL = /bin/sh
 srcdir = #{$srcdir}
 hdrdir = #{$hdrdir}
 
-CC = gcc
+CC = #{CONFIG["CC"]}
 
-CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I#{$hdrdir} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
-DLDFLAGS = #{CONFIG["DLDFLAGS"]} #{$LDFLAGS}
+prefix = #{CONFIG["prefix"]}
+CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I$(hdrdir) -I#{CONFIG["includedir"]} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
+CXXFLAGS = $(CFLAGS)
+DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]}
 
 prefix = #{CONFIG["prefix"]}
 exec_prefix = #{CONFIG["exec_prefix"]}
-libdir = #{$archdir}
+libdir = #{$libdir}
+archdir = #{$archdir}
 
 #### End of system configuration section. ####
 
@@ -258,6 +309,7 @@ OBJS = #{$objs}
 TARGET = #{target}.#{CONFIG["DLEXT"]}
 
 INSTALL = #{$install}
+INSTALL_DATA = #{$install_data}
 
 binsuffix = #{CONFIG["binsuffix"]}
 
@@ -269,21 +321,20 @@ clean:;		@rm -f *.o *.so *.sl
 
 realclean:	clean
 
-install:	$(libdir)/$(TARGET)
+install:	$(archdir)/$(TARGET)
 
-$(libdir)/$(TARGET): $(TARGET)
+$(archdir)/$(TARGET): $(TARGET)
 	@test -d $(libdir) || mkdir $(libdir)
-	$(INSTALL) $(TARGET) $(libdir)/$(TARGET)
+	@test -d $(archdir) || mkdir $(archdir)
+	$(INSTALL) $(TARGET) $(archdir)/$(TARGET)
 EOMF
-  for rb in Dir["lib/*.rb"]
-    mfile.printf "\t$(INSTALL) %s %s\n", rb, $libdir
-  end
+  install_rb(mfile)
   mfile.printf "\n"
 
   if CONFIG["DLEXT"] != "o"
     mfile.printf <<EOMF
 $(TARGET): $(OBJS)
-	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LOCAL_LIBS) $(LIBS)
+	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LIBS) $(LOCAL_LIBS)
 EOMF
   elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc") or 
     mfile.print "$(TARGET): $(OBJS)\n"
@@ -332,12 +383,19 @@ EOMF
     rescue
     end
   end
+  
+  if PLATFORM =~ /beos/
+    print "creating ruby.def\n"
+    open("ruby.def", "w") do |file|
+      file.print("EXPORTS\n") if PLATFORM =~ /^i/
+      file.print("Init_#{target}\n")
+    end
+  end
 end
 
-$local_libs = nil
-$libs = nil
+$libs = PLATFORM =~ /cygwin32|beos/ ? nil : "-lc"
 $objs = nil
-$CFLAGS = nil
-$LDFLAGS = nil
+$local_libs = ""
+$CFLAGS = ""
+$LDFLAGS = ""
 $defs = []
-

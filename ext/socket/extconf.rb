@@ -1,18 +1,22 @@
-$LDFLAGS = "-L/usr/local/lib"
+require 'mkmf'
+$LDFLAGS = "-L/usr/local/lib" if File.directory?("/usr/local/lib")
 case PLATFORM
 when /mswin32/
   test_func = "WSACleanup"
   have_library("wsock32", "WSACleanup")
 when /cygwin32/
-  test_func = "cygwin32_socket"
+  test_func = "socket"
+when /beos/
+  test_func = "socket"
+  have_library("net", "socket")
 else
   test_func = "socket"
+  have_library("nsl", "t_open")
   have_library("socket", "socket")
-  have_library("inet", "gethostbyname")
-  have_library("nsl", "gethostbyname")
 end
 have_header("sys/un.h")
 if have_func(test_func)
+  have_func("inet_aton")
   have_func("hsterror")
   unless have_func("gethostname")
     have_func("uname")

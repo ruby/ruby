@@ -43,7 +43,7 @@ def extract(nm, out)
     else
       next
     end
-  }.sort!
+  }.compact!.sort!
   uniq(data)
   exp = open(out, "w")
   for line in data

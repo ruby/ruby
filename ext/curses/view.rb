@@ -43,6 +43,7 @@ while TRUE
     addstr(data_lines[lptr + i]) #if data_lines[lptr + i]
     i += 1
   end
+  refresh
 
   explicit = FALSE
   n = 0

@@ -8,19 +8,26 @@ VPATH = @srcdir@:@srcdir@/missing
 CC = @CC@
 YACC = @YACC@
 PURIFY =
+AUTOCONF = autoconf
 @SET_MAKE@
 
-CFLAGS = @CFLAGS@ -I@srcdir@
+prefix = @prefix@
+CFLAGS = @CFLAGS@ -I. -I@srcdir@ -I@includedir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
+EXTLIBS = 
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@
+LDSHARED = @LDSHARED@
+DLDFLAGS = @DLDFLAGS@
+SOLIBS = @SOLIBS@
 
 binsuffix = @binsuffix@
 
 #### End of system configuration section. ####
 
 
-LIBRUBY	      = libruby.a
+LIBRUBY	      = @LIBRUBY@
+LIBRUBYARG    = @LIBRUBYARG@
 
 EXTOBJS	      = 
 
@@ -42,8 +49,8 @@ OBJS	      = array.o \
 		hash.o \
 		inits.o \
 		io.o \
-		math.o \
 		marshal.o \
+		math.o \
 		numeric.o \
 		object.o \
 		pack.o \
@@ -66,32 +73,40 @@ OBJS	      = array.o \
 		$(MISSING)
 
 all:		miniruby$(binsuffix) rbconfig.rb
-		@cd ext; ../miniruby$(binsuffix) ./extmk.rb @EXTSTATIC@
+		@./miniruby$(binsuffix) -Xext extmk.rb @EXTSTATIC@
 
-miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) dmyext.o
+miniruby$(binsuffix):	libruby.a $(MAINOBJ) dmyext.o
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) dmyext.o $(LIBS) -o miniruby
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o libruby.a $(LIBS) -o $@
 
 ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o ruby
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
-$(LIBRUBY):	$(OBJS) dmyext.o
-		@AR@ rcu $(LIBRUBY) $(OBJS) dmyext.o
-		@-@RANLIB@ $(LIBRUBY) 2> /dev/null || true
+libruby.a:	$(OBJS) dmyext.o
+		@AR@ rcu $@ $(OBJS) dmyext.o
+		@-@RANLIB@ $@ 2> /dev/null || true
+
+libruby.so:	$(OBJS) dmyext.o
+		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.o -o $@
 
 install:	rbconfig.rb
-		./miniruby$(binsuffix) $(srcdir)/instruby.rb
+		./miniruby$(binsuffix) $(srcdir)/instruby.rb $(DESTDIR)
 
 clean:;		@rm -f $(OBJS) $(LIBRUBY) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.o dmyext.o
-		@if test -f ./miniruby; then cd ext; ../miniruby ./extmk.rb clean; fi
+		@if test -f ./miniruby$(binsuffix); then \
+			./miniruby$(binsuffix) -Xext extmk.rb clean; \
+		fi
 
-realclean:	clean
-		@rm -f Makefile ext/extmk.rb ext/config.cache
-		@rm -f config.cache config.h config.log config.status
-		@rm -f parse.c lex.c *~ core *.core gmon.out
+distclean:	clean
+		@rm -f Makefile ext/extmk.rb config.h
+		@rm -f ext/config.cache config.cache config.log config.status
+		@rm -f parse.c *~ core *.core gmon.out y.tab.c y.output
 		@rm -f ruby$(binsuffix) miniruby$(binsuffix)
+
+realclean:	distclean
+		@rm -f lex.c
 
 test:		miniruby$(binsuffix)
 		@./miniruby$(binsuffix) $(srcdir)/rubytest.rb
@@ -99,11 +114,17 @@ test:		miniruby$(binsuffix)
 rbconfig.rb:	config.status miniruby$(binsuffix)
 		@./miniruby$(binsuffix) $(srcdir)/mkconfig.rb rbconfig.rb
 
+config.status:	$(srcdir)/configure
+		$(SHELL) ./config.status --recheck
+
+$(srcdir)/configure: $(srcdir)/configure.in
+		cd $(srcdir) && $(AUTOCONF)
+
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
 lex.c: keywords
-	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ keywords > lex.c
+	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ @srcdir@/keywords > lex.c
 
 parse.c: parse.y
 	$(YACC) $<
@@ -121,23 +142,29 @@ dup2.o: @srcdir@/missing/dup2.c
 flock.o: @srcdir@/missing/flock.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/flock.c
 
+memcmp.o: @srcdir@/missing/memcmp.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/memcmp.c
+
 memmove.o: @srcdir@/missing/memmove.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/memmove.c
 
 mkdir.o: @srcdir@/missing/mkdir.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/mkdir.c
 
-setenv.o: @srcdir@/missing/setenv.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/setenv.c
+vsnprintf.o: @srcdir@/missing/vsnprintf.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/vsnprintf.c
 
 strcasecmp.o: @srcdir@/missing/strcasecmp.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strcasecmp.c
 
-strerror.o: @srcdir@/missing/strerror.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strerror.c
+strchr.o: @srcdir@/missing/strchr.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strchr.c
 
 strdup.o: @srcdir@/missing/strdup.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strdup.c
+
+strerror.o: @srcdir@/missing/strerror.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strerror.c
 
 strftime.o: @srcdir@/missing/strftime.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strftime.c
@@ -160,40 +187,43 @@ x68.o: @srcdir@/missing/x68.c
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 ###
-parse.o : parse.y ruby.h defines.h config.h intern.h env.h node.h st.h regex.h lex.c
+parse.o: parse.y ruby.h config.h defines.h intern.h env.h node.h st.h regex.h util.h lex.c
 ###
 array.o: array.c ruby.h config.h defines.h intern.h
 bignum.o: bignum.c ruby.h config.h defines.h intern.h
 class.o: class.c ruby.h config.h defines.h intern.h node.h st.h
 compar.o: compar.c ruby.h config.h defines.h intern.h
 dir.o: dir.c ruby.h config.h defines.h intern.h
-dln.o: dln.c config.h defines.h dln.h st.h
+dln.o: dln.c config.h defines.h dln.h
 dmyext.o: dmyext.c
 enum.o: enum.c ruby.h config.h defines.h intern.h
 error.o: error.c ruby.h config.h defines.h intern.h env.h
-eval.o: eval.c ruby.h config.h defines.h intern.h env.h node.h sig.h st.h dln.h
-file.o: file.c ruby.h config.h defines.h intern.h io.h sig.h
-gc.o: gc.c ruby.h config.h defines.h intern.h env.h sig.h st.h node.h re.h regex.h
-hash.o: hash.c ruby.h config.h defines.h intern.h st.h
+eval.o: eval.c ruby.h config.h defines.h intern.h node.h env.h rubysig.h st.h dln.h
+file.o: file.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
+fnmatch.o: fnmatch.c config.h fnmatch.h
+gc.o: gc.c ruby.h config.h defines.h intern.h rubysig.h st.h node.h env.h re.h regex.h
+glob.o: config.h glob.c fnmatch.h
+hash.o: hash.c ruby.h config.h defines.h intern.h st.h rubysig.h
 inits.o: inits.c ruby.h config.h defines.h intern.h
-io.o: io.c ruby.h config.h defines.h intern.h io.h sig.h
-main.o: main.c
-marshal.o: marshal.c ruby.h config.h defines.h intern.h io.h sig.h st.h
+io.o: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
+main.o: main.c ruby.h config.h defines.h intern.h
+marshal.o: marshal.c ruby.h config.h defines.h intern.h rubyio.h st.h
 math.o: math.c ruby.h config.h defines.h intern.h
 numeric.o: numeric.c ruby.h config.h defines.h intern.h
 object.o: object.c ruby.h config.h defines.h intern.h st.h
 pack.o: pack.c ruby.h config.h defines.h intern.h
-process.o: process.c ruby.h config.h defines.h intern.h sig.h st.h
+process.o: process.c ruby.h config.h defines.h intern.h rubysig.h st.h
 random.o: random.c ruby.h config.h defines.h intern.h
 range.o: range.c ruby.h config.h defines.h intern.h
 re.o: re.c ruby.h config.h defines.h intern.h re.h regex.h
-ruby.o: ruby.c ruby.h config.h defines.h intern.h re.h regex.h dln.h
-signal.o: signal.c ruby.h config.h defines.h intern.h sig.h
+regex.o: regex.c config.h regex.h util.h
+ruby.o: ruby.c ruby.h config.h defines.h intern.h dln.h util.h
+signal.o: signal.c ruby.h config.h defines.h intern.h rubysig.h
 sprintf.o: sprintf.c ruby.h config.h defines.h intern.h
 st.o: st.c config.h st.h
 string.o: string.c ruby.h config.h defines.h intern.h re.h regex.h
 struct.o: struct.c ruby.h config.h defines.h intern.h
 time.o: time.c ruby.h config.h defines.h intern.h
-util.o: util.c defines.h intern.h config.h util.h
-variable.o: variable.c ruby.h config.h defines.h intern.h env.h st.h
+util.o: util.c ruby.h config.h defines.h intern.h util.h
+variable.o: variable.c ruby.h config.h defines.h intern.h env.h node.h st.h
 version.o: version.c ruby.h config.h defines.h intern.h version.h

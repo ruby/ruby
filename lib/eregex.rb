@@ -30,10 +30,7 @@ class Regexp
   end
 end
 
-p "abc" =~ /b/|/c/
-p "abc" =~ /b/&/c/
-
-
-
-
-
+if __FILE__ == $0
+  p "abc" =~ /b/|/c/
+  p "abc" =~ /b/&/c/
+end

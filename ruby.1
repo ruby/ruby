@@ -1,45 +1,8 @@
-.\"Ruby is copyrighted by Yukihiro Matsumoto <matz@ruby.club.co.jp>.
-.\"
-.\"This source is distributed under the conditions blow:
-.\"
-.\" 1. You may make and give away verbatim copies of the source form of
-.\"    the software without restriction, provided that you do not modify
-.\"    the original distribution files.
-.\"
-.\"    If you want to distribute the modified version in any way, contact 
-.\"    the author.
-.\"
-.\" 2. You may distribute the software in object code or executable
-.\"    form, provided that you distribute it with instructions on where
-.\"    to get the software.
-.\"
-.\" 3. You may modify the software in any way, provided that you do not
-.\"    distribute the modified version.
-.\"
-.\" 4. You may modify and include the part of the software into any other
-.\"    software (possibly commercial).  But some files in the distribution
-.\"    are not written by the author, so that they are not under this terms.
-.\"    They are gc.c(partly)，utils.c(partly), regex.[ch]，fnmatch.[ch]，
-.\"    glob.c, st.[ch] and somme files under the ./missing directory.  See
-.\"    each files for the copying condition.
-.\"
-.\" 5. The scripts and library files supplied as input to or produced as 
-.\"    output from the software do not automatically fall under the
-.\"    copyright of the software, but belong to whomever generated them, 
-.\"    and may be sold commercially, and may be aggregated with this
-.\"    software.
-.\"
-.\" 6. THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
-.\"    IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-.\"    WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR
-.\"    PURPOSE.
-.\"
-.\" $Id$
-.\"
+.\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.co.jp>.
 .na
-.TH RUBY 1 "ruby 1.0" "19/Sep/97" "Ruby Programmers Reference Guide"
+.TH RUBY 1 "ruby 1.3" "18/Jan/99" "Ruby Programmers Reference Guide"
 .SH NAME
-ruby - Interpreted scripting language
+ruby - Interpreted object-oriented scripting language
 .SH SYNOPSIS
 .B ruby \c
   [ \c
@@ -94,99 +57,96 @@ ruby - Interpreted scripting language
  ] [ programfile ]  [ argument ] ...
                                        
 .SH PREFACE
-Ruby is the interpreted scripting language for quick and easy
-object-oriented programming. It has many features to process text
-files and to do system management tasks (as in perl). It is simple,
+Ruby is an interpreted scripting language for quick and easy
+object-oriented programming.  It has many features to process text
+files and to do system management tasks (as in Perl).  It is simple,
 straight-forward, and extensible.
 .PP   
 If you want a language for easy object-oriented programming, or you
-don't like the PERL ugliness, or you do like the concept of lisp, but
-don't like too much parentheses, ruby may be the language of the
+don't like the Perl ugliness, or you do like the concept of lisp, but
+don't like too much parentheses, Ruby may be the language of your
 choice.
 .SH DESCRIPTION
 Ruby's features are as follows:
 .TP
 .B "\(bu Interpretive"
-Ruby is the interpreted language, so you don't have to
-recompile to execute the program written in ruby.
+Ruby is an interpreted language, so you don't have to recompile
+programs written in Ruby to execute them.
 .TP
 .B "\(bu Variables have no type (dynamic typing)"
-Variables in ruby can contain data of any type. You don't have
-to worry about variable typing. Consequently, it has weaker
-compile time check.
-.TP          
+Variables in Ruby can contain data of any type.  You don't have to
+worry about variable typing.  Consequently, it has a weaker compile
+time check.
+.TP
 .B "\(bu No declaration needed"
-You can use variables in your ruby programs without any
-declarations. Variable name itself denotes its scope (local,
-global, instance, etc.)
+You can use variables in your Ruby programs without any declarations.
+Variable names denote their scope, local, global, instance, etc.
 .TP
 .B "\(bu Simple syntax"
-Ruby has simple syntax influenced slightly from Eiffel.
+Ruby has a simple syntax influenced slightly from Eiffel.
 .TP
 .B "\(bu No user-level memory management"
 Ruby has automatic memory management. Objects no longer
 referenced from anywhere are automatically collected by the
-garbage collector built in the interpreter.
+garbage collector built into the interpreter.
 .TP
-.B "\(bu Everything is object"
-Ruby is the pure object-oriented language from the beginning.
-Even basic data like integers are treated uniformly as objects.
+.B "\(bu Everything is an object"
+Ruby is the purely object-oriented language, and was so since its
+creation.  Even such basic data as integers are seen as objects.
 .TP
 .B "\(bu Class, inheritance, methods"
-Of course, as a O-O language, ruby has basic features like
-classes, inheritance, methods, etc.
+Of course, as an object-oriented language, Ruby has such basic
+features like classes, inheritance, and methods.
 .TP
 .B "\(bu Singleton methods"
-Ruby has the feature to define methods for certain specified
-object. For example, you can define a press-button action for
-certain GUI button by defining a singleton method for the
-button. Or, you can make up your own prototype based object
-system using singleton methods (if you want to).
+Ruby has the ability to define methods for certain objects.  For
+example, you can define a press-button action for certain widget by
+defining a singleton method for the button.  Or, you can make up your
+own prototype based object system using singleton methods, if you want
+to.
 .TP
 .B "\(bu Mix-in by modules"
-Ruby does not have the multiple inheritance intentionally. IMO,
-It is the source of confusion. Instead, ruby has modules to
-share the implementation across the inheritance tree. It is
-often called "Mix-in."
+Ruby intentioanlly does not have the multiple inheritance as it is a
+souce of confusion.  Instead, Ruby has the ability to share
+implementations acrss the inheritance tree.  This is oftern called
+`Mix-in'.
 .TP
 .B "\(bu Iterators"
 Ruby has iterators for loop abstraction.
 .TP
 .B "\(bu Closures"
-In ruby, you can objectify the procedure.
+In Ruby, you can objectify the procedure.
 .TP
 .B "\(bu Text processing and regular expression"
-Ruby has bunch of text processing features like in perl.
+Ruby has a bunch of text processing features like in Perl.
 .TP
 .B "\(bu Bignums"
-With bu ilt-in bignums, you can calculate factorial(400), for
-example.
+With built-in bignums, you can for example calculate factorial(400).
 .TP
 .B "\(bu Exception handling"
 As in Java(tm).
 .TP
-.B "\(bu Direct access to OS"
-Ruby can call most of system calls on UNIX boxes. It can be
-used in system programming.
+.B "\(bu Direct access to the OS"
+Ruby can use most UNIX system calls, often used in system programming.
 .TP
 .B "\(bu Dynamic loading"
-You can load object files into ruby interpreter on-the-fly, on
-most of UNIXes.
+On most UNIX systems, you can load object files into the Ruby
+interpreter on-the-fly.
 .PP
-.SH Command line options
+.SH COMMAND LINE OPTIONS
 Ruby interpreter accepts following command-line options (switches).
-Basically they are quite similar to those of Perl.
+They are quite similar to those of Perl.
 .TP   
 .B -0digit
-specifies the input record separator ($/) as an octal number.
-If no digits given, the null character is the separator. Other
-switches may follow the digits. -00 turns ruby into paragraph
-mode. -0777 makes ruby read whole file at once as a single
-string, since there is no legal character with that value.
+pecifies the input record separator ($/) as an octal number. If no
+digit is given, the null character is taken as the separator.  Other
+switches may follow the digits.  -00 turns Ruby into paragraph mode.  -
+0777 makes Ruby read whole file at once as a single string since there
+is no legal character with that value.
 .TP
 .B -a
 turns on auto-split mode when used with -n or -p. In auto-split
-mode, ruby executes
+mode, Ruby executes
 .nf
 .ne 1
 \&    $F = $_.split 
@@ -194,20 +154,20 @@ at beginning of each loop.
 .fi
 .TP
 .B  -c
-causes ruby to check the syntax of the script and exit without
-executing. If there is no syntax error, ruby will print "Syntax
+causes Ruby to check the syntax of the script and exit without
+executing. If there are no syntax errors, Ruby will print "Syntax
 OK" to the standard output.
 .TP
 .B -Kc
-specifies KANJI (Japanese character) code-set.
+specifies KANJI (Japanese) code-set.
 .TP
 .B
 -d --debug
 turns on debug mode. $DEBUG will set TRUE.
 .TP
 .B -e script
-specifies script from command-line. if -e switch specified,
-ruby will not look for a script filename in the arguments.
+specifies script from command-line while telling Ruby to not 
+search argv for script filenames.
 .TP
 .B -F regexp
 specifies input field separator ($;).
@@ -229,16 +189,15 @@ example:
 .fi
 .TP
 .B -I directory
-used to tell ruby where to load the library scripts. Directory
-path will be added to the load-path variable ($:').
+used to tell Ruby where to load the library scripts. Directory path
+will be added to the load-path variable ($:').
 .TP
 .B -l
-enables automatic line-ending processing, which means firstly
-set $\ to the value of $/, and secondly chops every line read
-using chop!.
+enables automatic line-ending processing, which means to firstly set
+$\ to the value of $/, and secondly chops every line read using chop!.
 .TP
 .B -n
-causes ruby to assume the following loop around your script,
+causes Ruby to assume the following loop around your script,
 which makes it iterate over filename arguments somewhat like
 sed -n or awk.
 .nf
@@ -259,24 +218,23 @@ example:
 .fi
 .TP
 .B -r filename
-causes ruby to load the file using [4]require. It is useful
+causes Ruby to load the file using [4]require. It is useful
 with switches -n or -p.
 .TP
 .B -s
-enables some switch parsing for switches after script name but
-before any filename arguments (or before a --). Any switches
-found there is removed from ARGV and set the corresponding
-variable in the script.
+enables some switch parsing for switches after script name but before
+any filename arguments (or before a --). Any switches found there are
+removed from ARGV and set the corresponding variable in the script.
 example:
 .nf
 .ne 3          
 \&    #! /usr/local/bin/ruby -s
 \&    # prints "true" if invoked with `-xyz' switch.
-\&    print "true\n" if $xyz
+\&    print "true\en" if $xyz
 .fi
 .TP
 .B -S
-makes ruby uses the PATH environment variable to search for
+makes Ruby use the PATH environment variable to search for
 script, unless if its name begins with a slash. This is used to
 emulate #! on machines that don't support it, in the following
 manner:
@@ -286,44 +244,40 @@ manner:
 \&    # This line makes the next one a comment in ruby \\
 \&      exec /usr/local/bin/ruby -S $0 $*
 .fi
-On some systems $0 does not always contain the full pathname,
-so you need -S switch to tell ruby to search for the script if
-necessary.
-To handle embedded spaces or such, A better construct than $*
-would be ${1+"$@"}, but it does not work if the script is being
-interpreted by csh.
+On some systems $0 does not always contain the full pathname, so you
+need -S switch to tell Ruby to search for the script if necessary.  To
+handle embedded spaces or such.  A better construct than $* would be
+${1+"$@"}, but it does not work if the script is being interpreted by
+csh.
 .TP
 .B -v --verbose
-enables verbose mode. Ruby will prints its version at the
-beginning, and set the variable `$VERBOSE' to TRUE. Some
-methods prints extra messages if this variable is TRUE. If this
-switch is given, and no other switches present, ruby quits
-after printing its version.
+enables verbose mode. Ruby will print its version at the beginning,
+and set the variable `$VERBOSE' to TRUE. Some methods print extra
+messages if this variable is TRUE. If this switch is given, and no
+other switches are present, Ruby quits after printing its version.
 .TP
 .B --version
-prints the version of ruby executable.
+prints the version of Ruby interpreter.
 .TP
 .B -w
 enables verbose mode without printing version message at the
-beginning. It set the variable `$VERBOSE' to TRUE.
+beginning. It set the `$VERBOSE' variable to true.
 .TP
 .B -x[directory]
-tells ruby that the script is embedded in a message. Leading
-garbage will be discarded until the first that starts with "#!"
-and contains string "ruby". Any meaningful switches on that
-line will applied. The end of script must be specified with
-either EOF, ^D (control-D), ^Z (control-Z), or reserved word
-__END__.If the directory name is specified, ruby will switch to
-that directory before executing script.
+tells Ruby that the script is embedded in a message. Leading garbage
+will be discarded until the first that starts with "#!"  and contains
+the string, "ruby". Any meaningful switches on that line will applied. 
+The end of script must be specified with either EOF, ^D (control-D),
+^Z (control-Z), or reserved word __END__.If the directory name is
+specified, Ruby will switch to that directory before executing script.
 .TP
 .B -X directory
-causes ruby to switch to the directory.
+causes Ruby to switch to the directory.
 .TP
 .B -y --yydebug
-turns on compiler debug mode. ruby will print bunch of internal
-state messages during compiling scripts. You don't have to
-specify this switch, unless you are going to debug the ruby
-interpreter itself.
+turns on compiler debug mode. Ruby will print a bunch of internal
+state messages during compiling scripts. You don't have to specify
+this switch, unless you are going to debug the Ruby interpreter.
 .PP
 .SH AUTHOR
- Ruby is designed and implemented by Yukihiro Matsumoto <matz@ruby.club.co.jp>.
+ Ruby is designed and implemented by Yukihiro Matsumoto <matz@netlab.co.jp>.

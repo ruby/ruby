@@ -6,56 +6,46 @@
   $Date$
   created at: Mon Aug  9 16:11:34 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
 #include "ruby.h"
 #include "env.h"
 #include <stdio.h>
+#ifdef HAVE_STDARG_PROTOTYPES
+#include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
 #include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
 
-extern char *sourcefile;
-extern int   sourceline;
+#ifdef USE_CWGUSI
+#include <sys/errno.h>
+int sys_nerr = 256;
+#endif
 
-int nerrs;
+int ruby_nerrs;
 
 static void
-err_sprintf(buf, fmt, args)
+err_snprintf(buf, len, fmt, args)
     char *buf, *fmt;
+    int len;
     va_list args;
 {
-    if (!sourcefile) {
-	vsprintf(buf, fmt, args);
+    if (!ruby_sourcefile) {
+	vsnprintf(buf, len, fmt, args);
     }
     else {
-	sprintf(buf, "%s:%d: ", sourcefile, sourceline);
-	vsprintf((char*)buf+strlen(buf), fmt, args);
+	int n = snprintf(buf, len, "%s:%d: ", ruby_sourcefile, ruby_sourceline);
+	if (len > n) {
+	    vsnprintf((char*)buf+n, len-n, fmt, args);
+	}
     }
 }
 
-static void
-err_append(s)
-    char *s;
-{
-    extern VALUE errinfo;
-
-    if (rb_in_eval) {
-	if (NIL_P(errinfo)) {
-	    errinfo = str_new2(s);
-	}
-	else {
-	    str_cat(errinfo, "\n", 1);
-	    str_cat(errinfo, s, strlen(s));
-	}
-    }
-    else {
-	fputs(s, stderr);
-	fputs("\n", stderr);
-	fflush(stderr);
-    }
-}
-
+static void err_append _((char*));
 static void
 err_print(fmt, args)
     char *fmt;
@@ -63,66 +53,102 @@ err_print(fmt, args)
 {
     char buf[BUFSIZ];
 
-    err_sprintf(buf, fmt, args);
+    err_snprintf(buf, BUFSIZ, fmt, args);
     err_append(buf);
 }
 
 void
-Error(fmt, va_alist)
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_compile_error(char *fmt, ...)
+#else
+rb_compile_error(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     va_list args;
 
-    va_start(args);
+    va_init_list(args, fmt);
     err_print(fmt, args);
     va_end(args);
-    nerrs++;
+    ruby_nerrs++;
 }
 
 void
-Error_Append(fmt, va_alist)
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_compile_error_append(char *fmt, ...)
+#else
+rb_compile_error_append(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     va_list args;
     char buf[BUFSIZ];
 
-    va_start(args);
-    vsprintf(buf, fmt, args);
+    va_init_list(args, fmt);
+    vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
     err_append(buf);
 }
 
 void
-Warning(fmt, va_alist)
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_warn(char *fmt, ...)
+#else
+rb_warn(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     char buf[BUFSIZ];
     va_list args;
 
-    if (!RTEST(verbose)) return;
+    snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
-    sprintf(buf, "warning: %s", fmt);
+    va_init_list(args, fmt);
+    err_print(buf, args);
+    va_end(args);
+}
 
-    va_start(args);
+/* rb_warning() reports only in verbose mode */
+void
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_warning(char *fmt, ...)
+#else
+rb_warning(fmt, va_alist)
+    char *fmt;
+    va_dcl
+#endif
+{
+    char buf[BUFSIZ];
+    va_list args;
+
+    if (!RTEST(rb_verbose)) return;
+
+    snprintf(buf, BUFSIZ, "warning: %s", fmt);
+
+    va_init_list(args, fmt);
     err_print(buf, args);
     va_end(args);
 }
 
 void
-Bug(fmt, va_alist)
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_bug(char *fmt, ...)
+#else
+rb_bug(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
     char buf[BUFSIZ];
     va_list args;
 
-    sprintf(buf, "[BUG] %s", fmt);
+    snprintf(buf, BUFSIZ, "[BUG] %s", fmt);
     rb_in_eval = 0;
 
-    va_start(args);
+    va_init_list(args, fmt);
     err_print(buf, args);
     va_end(args);
     abort();
@@ -156,94 +182,133 @@ static struct types {
     -1,		0,
 };
 
-extern void TypeError();
-
 void
 rb_check_type(x, t)
     VALUE x;
     int t;
 {
     struct types *type = builtin_types;
+    int tt = TYPE(x);
 
-    if (TYPE(x)!=(t)) {
+    if (tt != t) {
 	while (type->type >= 0) {
 	    if (type->type == t) {
-		TypeError("wrong argument type %s (expected %s)",
-			  rb_class2name(CLASS_OF(x)), type->name);
+		char *etype;
+
+		if (NIL_P(x)) {
+		    etype = "nil";
+		}
+		else if (FIXNUM_P(x)) {
+		    etype = "Fixnum";
+		}
+		else if (rb_special_const_p(x)) {
+		    etype = RSTRING(rb_obj_as_string(x))->ptr;
+		}
+		else {
+		    etype = rb_class2name(CLASS_OF(x));
+		}
+		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
+			 etype, type->name);
 	    }
 	    type++;
 	}
-	Bug("unknown type 0x%x", t);
+	rb_bug("unknown type 0x%x", t);
     }
 }
 
 /* exception classes */
-#include "errno.h"
+#include <errno.h>
 
-extern VALUE cString;
-VALUE eGlobalExit, eException;
-VALUE eSystemExit, eInterrupt, eFatal;
-VALUE eRuntimeError;
-VALUE eSyntaxError;
-VALUE eTypeError;
-VALUE eArgError;
-VALUE eNameError;
-VALUE eIndexError;
-VALUE eNotImpError;
-VALUE eLoadError;
-VALUE eSecurityError;
+VALUE rb_eException;
+VALUE rb_eSystemExit, rb_eInterrupt, rb_eFatal;
+VALUE rb_eStandardError;
+VALUE rb_eRuntimeError;
+VALUE rb_eSyntaxError;
+VALUE rb_eTypeError;
+VALUE rb_eArgError;
+VALUE rb_eNameError;
+VALUE rb_eIndexError;
+VALUE rb_eLoadError;
+VALUE rb_eSecurityError;
+VALUE rb_eNotImpError;
 
-VALUE eSystemCallError;
-VALUE mErrno;
+VALUE rb_eSystemCallError;
+VALUE rb_mErrno;
 
 VALUE
-exc_new(etype, ptr, len)
+rb_exc_new(etype, ptr, len)
     VALUE etype;
     char *ptr;
-    UINT len;
+    int len;
 {
-    NEWOBJ(exc, struct RString);
-    OBJSETUP(exc, etype, T_STRING);
+    VALUE exc = rb_obj_alloc(etype);
 
-    exc->len = len;
-    exc->orig = 0;
-    exc->ptr = ALLOC_N(char,len+1);
-    if (ptr) {
-	memcpy(exc->ptr, ptr, len);
-    }
-    exc->ptr[len] = '\0';
-    return (VALUE)exc;
+    rb_iv_set(exc, "mesg", rb_str_new(ptr, len));
+    return exc;
 }
 
 VALUE
-exc_new2(etype, s)
+rb_exc_new2(etype, s)
     VALUE etype;
     char *s;
 {
-    return exc_new(etype, s, strlen(s));
+    return rb_exc_new(etype, s, strlen(s));
 }
 
 VALUE
-exc_new3(etype, str)
+rb_exc_new3(etype, str)
     VALUE etype, str;
 {
-    Check_Type(str, T_STRING);
-    return exc_new(etype, RSTRING(str)->ptr, RSTRING(str)->len);
+    char *s;
+    int len;
+
+    s = str2cstr(str, &len);
+    return rb_exc_new(etype, s, len);
 }
 
 static VALUE
-exc_s_new(argc, argv, etype)
+exc_initialize(argc, argv, exc)
     int argc;
     VALUE *argv;
-    VALUE etype;
+    VALUE exc;
 {
-    VALUE arg;
+    VALUE mesg;
 
-    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
-	return exc_new(etype, 0, 0);
+    if (rb_scan_args(argc, argv, "01", &mesg) == 1) {
+	STR2CSTR(mesg);		/* ensure mesg can be converted to String */
     }
-    Check_Type(arg, T_STRING);
-    return exc_new3(etype, arg);
+    rb_iv_set(exc, "mesg", mesg);
+
+    return exc;
+}
+
+static VALUE
+exc_new(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    VALUE etype, exc;
+
+    if (argc == 1 && self == argv[0]) return self;
+    etype = CLASS_OF(self);
+    while (FL_TEST(etype, FL_SINGLETON)) {
+	etype = RCLASS(etype)->super;
+    }
+    exc = rb_obj_alloc(etype);
+    rb_obj_call_init(exc);
+
+    return exc;
+}
+
+static VALUE
+exc_to_s(exc)
+    VALUE exc;
+{
+    VALUE mesg = rb_iv_get(exc, "mesg");
+
+    if (NIL_P(mesg)) return rb_class_path(CLASS_OF(exc));
+    return mesg;
 }
 
 static VALUE
@@ -253,18 +318,56 @@ exc_inspect(exc)
     VALUE str, klass;
 
     klass = CLASS_OF(exc);
+    exc = rb_obj_as_string(exc);
     if (RSTRING(exc)->len == 0) {
-	return rb_class_path(klass);
+	return rb_str_dup(rb_class_path(klass));
     }
 
-    str = str_new2("#<");
+    str = rb_str_new2("#<");
     klass = rb_class_path(klass);
-    str_cat(str, RSTRING(klass)->ptr, RSTRING(klass)->len);
-    str_cat(str, ":", 1);
-    str_cat(str, RSTRING(exc)->ptr, RSTRING(exc)->len);
-    str_cat(str, ">", 1);
+    rb_str_concat(str, klass);
+    rb_str_cat(str, ":", 1);
+    rb_str_concat(str, exc);
+    rb_str_cat(str, ">", 1);
 
     return str;
+}
+
+static VALUE
+exc_backtrace(exc)
+    VALUE exc;
+{
+    return rb_iv_get(exc, "bt");
+}
+
+static VALUE
+check_backtrace(bt)
+    VALUE bt;
+{
+    int i;
+    static char *err = "backtrace must be Array of String";
+
+    if (!NIL_P(bt)) {
+	int t = TYPE(bt);
+
+	if (t == T_STRING) return rb_ary_new3(1, bt);
+	if (t != T_ARRAY) {
+	    rb_raise(rb_eTypeError, err);
+	}
+	for (i=0;i<RARRAY(bt)->len;i++) {
+	    if (TYPE(RARRAY(bt)->ptr[i]) != T_STRING) {
+		rb_raise(rb_eTypeError, err);
+	    }
+	}
+    }
+    return bt;
+}
+
+static VALUE
+exc_set_backtrace(exc, bt)
+    VALUE exc;
+{
+    return rb_iv_set(exc, "bt", check_backtrace(bt));
 }
 
 static VALUE
@@ -272,166 +375,257 @@ exception(argc, argv)
     int argc;
     VALUE *argv;
 {
-    void ArgError();
     VALUE v = Qnil;
+    VALUE etype = rb_eStandardError;
     int i;
     ID id;
 
     if (argc == 0) {
-	ArgError("wrong # of arguments");
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
+    rb_warn("Exception() is now obsolete");
+    if (TYPE(argv[argc-1]) == T_CLASS) {
+	etype = argv[argc-1];
+	argc--;
+	if (!rb_funcall(etype, '<', 1, rb_eException)) {
+	    rb_raise(rb_eTypeError, "exception should be subclass of Exception");
+	}
     }
     for (i=0; i<argc; i++) {	/* argument check */
 	id = rb_to_id(argv[i]);
 	if (!rb_id2name(id)) {
-	    ArgError("argument needs to be symbol or string");
+	    rb_raise(rb_eArgError, "argument needs to be symbol or string");
 	}
 	if (!rb_is_const_id(id)) {
-	    ArgError("identifier %s needs to be constant", rb_id2name(id));
+	    rb_raise(rb_eArgError, "identifier `%s' needs to be constant",
+		     rb_id2name(id));
 	}
     }
     for (i=0; i<argc; i++) {
-	v = rb_define_class_under(the_class, rb_id2name(rb_to_id(argv[i])), eException);
+	v = rb_define_class_under(ruby_class,
+				  rb_id2name(rb_to_id(argv[i])),
+				  rb_eStandardError);
     }
     return v;
 }
 
+#ifdef __BEOS__
+typedef struct {
+   VALUE *list;
+   size_t n;
+} syserr_list_entry;
+
+typedef struct {
+   int ix;
+   size_t n;
+} syserr_index_entry;
+
+static VALUE syserr_list_b_general[16+1];
+static VALUE syserr_list_b_os0[2+1];
+static VALUE syserr_list_b_os1[5+1];
+static VALUE syserr_list_b_os2[2+1];
+static VALUE syserr_list_b_os3[3+1];
+static VALUE syserr_list_b_os4[1+1];
+static VALUE syserr_list_b_app[15+1];
+static VALUE syserr_list_b_interface[0+1];
+static VALUE syserr_list_b_media[8+1];
+static VALUE syserr_list_b_midi[0+1];
+static VALUE syserr_list_b_storage[15+1];
+static VALUE syserr_list_b_posix[38+1];
+static VALUE syserr_list_b_mail[8+1];
+static VALUE syserr_list_b_print[1+1];
+static VALUE syserr_list_b_device[14+1];
+
+# define SYSERR_LIST_B(n) {(n), sizeof(n)/sizeof(VALUE)}
+static const syserr_list_entry syserr_list[] = {
+   SYSERR_LIST_B(syserr_list_b_general),
+   SYSERR_LIST_B(syserr_list_b_os0),
+   SYSERR_LIST_B(syserr_list_b_os1),
+   SYSERR_LIST_B(syserr_list_b_os2),
+   SYSERR_LIST_B(syserr_list_b_os3),
+   SYSERR_LIST_B(syserr_list_b_os4),
+   SYSERR_LIST_B(syserr_list_b_app),
+   SYSERR_LIST_B(syserr_list_b_interface),
+   SYSERR_LIST_B(syserr_list_b_media),
+   SYSERR_LIST_B(syserr_list_b_midi),
+   SYSERR_LIST_B(syserr_list_b_storage),
+   SYSERR_LIST_B(syserr_list_b_posix),
+   SYSERR_LIST_B(syserr_list_b_mail),
+   SYSERR_LIST_B(syserr_list_b_print),
+   SYSERR_LIST_B(syserr_list_b_device),
+};
+# undef SYSERR_LIST_B
+
+static const syserr_index_entry syserr_index[]= {
+     {0, 1},  {1, 5},  {6, 1},  {7, 1}, {8, 1}, {9, 1}, {10, 1}, {11, 1},
+     {12, 1}, {13, 1}, {14, 1}, {0, 0},
+};
+#else
 static VALUE *syserr_list;
+#endif
 
 #ifndef NT
 extern int sys_nerr;
 #endif
 
-static void
+static VALUE
 set_syserr(i, name)
     int i;
     char *name;
 {
+#ifdef __BEOS__
+   VALUE *list;
+   int ix, offset;
+#endif
+    VALUE error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
+    rb_define_const(error, "Errno", INT2FIX(i));
+#ifdef __BEOS__
+   i -= B_GENERAL_ERROR_BASE;
+   ix = (i >> 12) & 0xf;
+   offset = (i >> 8) & 0xf;
+   if (offset < syserr_index[ix].n) {
+      ix = syserr_index[ix].ix;
+      if ((i & 0xff) < syserr_list[ix + offset].n) {
+	 list = syserr_list[ix + offset].list;
+	 list[i & 0xff] = error;
+	 rb_global_variable(&list[i & 0xff]);
+      }
+   }
+#else
     if (i <= sys_nerr) {
-	syserr_list[i] = rb_define_class_under(mErrno, name, eSystemCallError);
-	rb_global_variable(&syserr_list[i]);
+	syserr_list[i] = error;
     }
+#endif
+    return error;
 }
 
-static void init_syserr();
+static VALUE
+syserr_errno(self)
+    VALUE self;
+{
+    return rb_iv_get(self, "errno");
+}
+
+#ifdef __BEOS__
+static VALUE
+get_syserr(int i)
+{
+   VALUE *list;
+   int ix, offset;
+   
+   i -= B_GENERAL_ERROR_BASE;
+   ix = (i >> 12) & 0xf;
+   offset = (i >> 8) & 0xf;
+   if (offset < syserr_index[ix].n) {
+      ix = syserr_index[ix].ix;
+      if ((i & 0xff) < syserr_list[ix + offset].n) {
+	 list = syserr_list[ix + offset].list;
+	 return list[i & 0xff];
+      }
+   }
+   return 0;
+}
+#endif /* __BEOS__ */
+
+static void init_syserr _((void));
 
 void
 Init_Exception()
 {
-    eGlobalExit  = rb_define_class("GlobalExit", cString);
-    rb_define_singleton_method(eGlobalExit, "new", exc_s_new, -1);
-    rb_define_method(eGlobalExit, "inspect", exc_inspect, 0);
+    rb_eException   = rb_define_class("Exception", rb_cObject);
+    rb_define_method(rb_eException, "new", exc_new, -1);
+    rb_define_method(rb_eException, "initialize", exc_initialize, -1);
+    rb_define_method(rb_eException, "to_s", exc_to_s, 0);
+    rb_define_method(rb_eException, "to_str", exc_to_s, 0);
+    rb_define_method(rb_eException, "message", exc_to_s, 0);
+    rb_define_method(rb_eException, "inspect", exc_inspect, 0);
+    rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
+    rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
 
-    eSystemExit  = rb_define_class("SystemExit", eGlobalExit);
-    eFatal  	 = rb_define_class("fatal", eGlobalExit);
-    eInterrupt   = rb_define_class("Interrupt", eGlobalExit);
+    rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
+    rb_eFatal  	 = rb_define_class("fatal", rb_eException);
+    rb_eInterrupt   = rb_define_class("Interrupt", rb_eException);
 
-    eException   = rb_define_class("Exception", eGlobalExit);
-    eSyntaxError = rb_define_class("SyntaxError", eException);
-    eTypeError   = rb_define_class("TypeError", eException);
-    eArgError    = rb_define_class("ArgumentError", eException);
-    eNameError   = rb_define_class("NameError", eException);
-    eIndexError  = rb_define_class("IndexError", eException);
-    eNotImpError = rb_define_class("NotImplementError", eException);
-    eLoadError   = rb_define_class("LoadError", eException);
+    rb_eStandardError = rb_define_class("StandardError", rb_eException);
+    rb_eSyntaxError = rb_define_class("SyntaxError", rb_eStandardError);
+    rb_eTypeError   = rb_define_class("TypeError", rb_eStandardError);
+    rb_eArgError    = rb_define_class("ArgumentError", rb_eStandardError);
+    rb_eNameError   = rb_define_class("NameError", rb_eStandardError);
+    rb_eIndexError  = rb_define_class("IndexError", rb_eStandardError);
+    rb_eLoadError   = rb_define_class("LoadError", rb_eStandardError);
 
-    eRuntimeError = rb_define_class("RuntimeError", eException);
-    eSecurityError = rb_define_class("SecurityError", eException);
+    rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
+    rb_eSecurityError = rb_define_class("SecurityError", rb_eStandardError);
+    rb_eNotImpError = rb_define_class("NotImplementError", rb_eException);
 
     init_syserr();
 
     rb_define_global_function("Exception", exception, -1);
 }
 
-#define RAISE_ERROR(class) {\
-    va_list args;\
-    char buf[BUFSIZ];\
-\
-    va_start(args);\
-    vsprintf(buf, fmt, args);\
-    va_end(args);\
-\
-    rb_raise(exc_new2(class, buf));\
-}
-
 void
-Raise(exc, fmt, va_alist)
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_raise(VALUE exc, char *fmt, ...)
+#else
+rb_raise(exc, fmt, va_alist)
     VALUE exc;
     char *fmt;
     va_dcl
+#endif
 {
-    RAISE_ERROR(exc);
+    va_list args;
+    char buf[BUFSIZ];
+
+    va_init_list(args,fmt);
+    vsnprintf(buf, BUFSIZ, fmt, args);
+    va_end(args);
+    rb_exc_raise(rb_exc_new2(exc, buf));
 }
 
 void
-TypeError(fmt, va_alist)
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_loaderror(char *fmt, ...)
+#else
+rb_loaderror(fmt, va_alist)
     char *fmt;
     va_dcl
+#endif
 {
-    RAISE_ERROR(eTypeError);
-}
+    va_list args;
+    char buf[BUFSIZ];
 
-void
-ArgError(fmt, va_alist)
-    char *fmt;
-    va_dcl
-{
-    RAISE_ERROR(eArgError);
-}
-
-void
-NameError(fmt, va_alist)
-    char *fmt;
-    va_dcl
-{
-    RAISE_ERROR(eNameError);
-}
-
-void
-IndexError(fmt, va_alist)
-    char *fmt;
-    va_dcl
-{
-    RAISE_ERROR(eIndexError);
-}
-
-void
-Fail(fmt, va_alist)
-    char *fmt;
-    va_dcl
-{
-    RAISE_ERROR(eRuntimeError);
+    va_init_list(args, fmt);
+    vsnprintf(buf, BUFSIZ, fmt, args);
+    va_end(args);
+    rb_exc_raise(rb_exc_new2(rb_eLoadError, buf));
 }
 
 void
 rb_notimplement()
 {
-    Raise(eNotImpError,
-	  "The %s() function is unimplemented on this machine",
-	  rb_id2name(the_frame->last_func));
+    rb_raise(rb_eNotImpError,
+	     "The %s() function is unimplemented on this machine",
+	     rb_id2name(ruby_frame->last_func));
 }
 
 void
-LoadError(fmt, va_alist)
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_fatal(char *fmt, ...)
+#else
+rb_fatal(fmt, va_alist)
     char *fmt;
     va_dcl
-{
-    RAISE_ERROR(eLoadError);
-}
-
-void
-Fatal(fmt, va_alist)
-    char *fmt;
-    va_dcl
+#endif
 {
     va_list args;
     char buf[BUFSIZ];
 
-    va_start(args);
-    vsprintf(buf, fmt, args);
+    va_init_list(args, fmt);
+    vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
 
     rb_in_eval = 0;
-    rb_fatal(exc_new2(eFatal, buf));
+    rb_exc_fatal(rb_exc_new2(rb_eFatal, buf));
 }
 
 void
@@ -441,32 +635,79 @@ rb_sys_fail(mesg)
 #ifndef NT
     char *strerror();
 #endif
-    char buf[BUFSIZ];
+    char *err;
+    char *buf;
     extern int errno;
     int n = errno;
+    VALUE ee;
 
-    if (RTEST(mesg))
-	sprintf(buf, "%s - %s", strerror(errno), mesg);
-    else
-	sprintf(buf, "%s", strerror(errno));
+    err = strerror(errno);
+    if (mesg) {
+	buf = ALLOCA_N(char, strlen(err)+strlen(mesg)+4);
+	sprintf(buf, "%s - %s", err, mesg);
+    }
+    else {
+	buf = ALLOCA_N(char, strlen(err)+1);
+	strcpy(buf, err);
+    }
 
     errno = 0;
+#ifdef __BEOS__
+    ee = get_syserr(n);
+    if (!ee) {
+	char name[6];
+      
+	sprintf(name, "E%03d", n);
+	ee = set_syserr(n, name);
+   }
+#else
+# ifdef USE_CWGUSI
+    if (n < 0) {
+	int macoserr_index = sys_nerr - 1;
+	if (!syserr_list[macoserr_index]) {
+	    char name[6];
+	    sprintf(name, "E%03d", macoserr_index);
+	    ee = set_syserr(macoserr_index, name);
+	}
+    }
+    else
+#endif /* USE_CWGUSI */
     if (n > sys_nerr || !syserr_list[n]) {
 	char name[6];
 
 	sprintf(name, "E%03d", n);
-	set_syserr(n, name);
+	ee = set_syserr(n, name);
     }
-    rb_raise(exc_new2(syserr_list[n], buf));
+    else {
+	ee = syserr_list[n];
+    }
+    ee = rb_exc_new2(ee, buf);
+#endif
+    rb_iv_set(ee, "errno", INT2FIX(n));
+    rb_exc_raise(ee);
 }
 
 static void
 init_syserr()
 {
-    eSystemCallError = rb_define_class("SystemCallError", eException);
-    mErrno = rb_define_module("Errno");
+#ifdef __BEOS__
+   int i, ix, offset;
+#endif
+    rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
+    rb_define_method(rb_eSystemCallError, "errno", syserr_errno, 0);
+
+    rb_mErrno = rb_define_module("Errno");
+#ifdef __BEOS__
+   for (i = 0; syserr_index[i].n != 0; i++) {
+      ix = syserr_index[i].ix;
+      for (offset = 0; offset < syserr_index[i].n; offset++) {
+	 MEMZERO(syserr_list[ix + offset].list, VALUE, syserr_list[ix + offset].n);
+      }
+   }
+#else
     syserr_list = ALLOC_N(VALUE, sys_nerr+1);
     MEMZERO(syserr_list, VALUE, sys_nerr+1);
+#endif
 
 #ifdef EPERM
     set_syserr(EPERM, "EPERM");
@@ -834,4 +1075,29 @@ init_syserr()
 #ifdef EDQUOT
     set_syserr(EDQUOT, "EDQUOT");
 #endif
+}
+
+static void
+err_append(s)
+    char *s;
+{
+    extern VALUE rb_errinfo;
+
+    if (rb_in_eval) {
+	if (NIL_P(rb_errinfo)) {
+	    rb_errinfo = rb_exc_new2(rb_eSyntaxError, s);
+	}
+	else {
+	    VALUE str = rb_str_to_str(rb_errinfo);
+
+	    rb_str_cat(str, "\n", 1);
+	    rb_str_cat(str, s, strlen(s));
+	    rb_errinfo = rb_exc_new3(rb_eSyntaxError, str);
+	}
+    }
+    else {
+	fputs(s, stderr);
+	fputs("\n", stderr);
+	fflush(stderr);
+    }
 }

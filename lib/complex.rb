@@ -1,8 +1,8 @@
 #
 #   complex.rb - 
 #   	$Release Version: 0.5 $
-#   	$Revision: 1.1 $
-#   	$Date: 1996/11/11 04:25:19 $
+#   	$Revision: 1.3 $
+#   	$Date: 1998/07/08 10:05:28 $
 #   	by Keiju ISHITSUKA(SHL Japan Inc.)
 #
 # --
@@ -59,6 +59,7 @@ def Complex(a, b = 0)
 end
 
 class Complex < Numeric
+  @RCS_ID='-$Id: complex.rb,v 1.3 1998/07/08 10:05:28 keiju Exp keiju $-'
   
   def Complex.generic?(other)
     other.kind_of?(Integer) or
@@ -284,6 +285,11 @@ class Complex < Numeric
     @real ^ @image
   end
   
+  def inspect
+    sprintf("Complex(%s, %s)", @real.inspect, @image.inspect)
+  end
+
+  
   I = Complex(0,1)
   
   attr :real
@@ -396,7 +402,7 @@ module Math
       cos!(z)
     else
       Complex(cos!(z.real)*cosh!(z.image),
-	      sin!(z.real)*sinh!(z.image))
+	      -sin!(z.real)*sinh!(z.image))
     end
   end
     
@@ -405,7 +411,7 @@ module Math
       sin!(z)
     else
       Complex(sin!(z.real)*cosh!(z.image),
-	      -cos!(z.real)*sinh!(z.image))
+	      cos!(z.real)*sinh!(z.image))
     end
   end
   

@@ -1,4 +1,3 @@
-#!/usr/local/bin/ruby
 #
 # Get CGI String
 #
@@ -7,26 +6,26 @@
 # foo = CGI.new
 # foo['field']   <== value of 'field'
 # foo.keys       <== array of fields
-# foo.inputs     <== hash of { <field> => <value> }
+# and foo has Hash class methods
 
 # if running on Windows(IIS or PWS) then change cwd.
 if ENV['SERVER_SOFTWARE'] =~ /^Microsoft-/ then
   Dir.chdir ENV['PATH_TRANSLATED'].sub(/[^\\]+$/, '')
 end
 
-require "shellwords.rb"
+require "delegate"
 
-class CGI
-  include Shellwords
+class CGI < SimpleDelegator
 
   attr("inputs")
 
   # original is CGI.pm
   def read_from_cmdline
-    words = shellwords(if not ARGV.empty? then
+    require "shellwords.rb"
+    words = Shellwords.shellwords(if not ARGV.empty? then
                          ARGV.join(' ')
                        else
-                         print "(offline mode: enter name=value pairs on standard input)\n"
+                         STDERR.print "(offline mode: enter name=value pairs on standard input)\n" if STDIN.tty?
                          readlines.join(' ').gsub(/\n/, '')
                        end.gsub(/\\=/, '%3D').gsub(/\\&/, '%26'))
 
@@ -47,32 +46,32 @@ class CGI
   end
   module_function :escape, :unescape
 
-  def initialize
-    # exception messages should be printed to stdout.
-    STDERR.reopen(STDOUT)
+  def initialize(input = $stdin)
 
     @inputs = {}
     case ENV['REQUEST_METHOD']
     when "GET"
+      # exception messages should be printed to stdout.
+      STDERR.reopen(STDOUT)
       ENV['QUERY_STRING'] or ""
     when "POST"
-      $stdin.read ENV['CONTENT_LENGTH'].to_i
+      # exception messages should be printed to stdout.
+      STDERR.reopen(STDOUT)
+      input.read Integer(ENV['CONTENT_LENGTH'])
     else
       read_from_cmdline
     end.split(/&/).each do |x|
       key, val = x.split(/=/,2).collect{|x|unescape(x)}
-      @inputs[key] += ("\0" if @inputs[key]) + (val or "")
+      if @inputs.include?(key)
+        @inputs[key] += "\0" + (val or "")
+      else
+        @inputs[key] = (val or "")
+      end
     end
+
+    super(@inputs)
   end
 
-  def keys
-    @inputs.keys
-  end
-
-  def [](key)
-    @inputs[key]
-  end
-  
   def CGI.message(msg, title = "")
     print "Content-type: text/html\n\n"
     print "<html><head><title>"
@@ -84,7 +83,7 @@ class CGI
   end
 
   def CGI.error
-    m = $!.dup
+    m = $!.to_s.dup
     m.gsub!(/&/, '&amp;')
     m.gsub!(/</, '&lt;')
     m.gsub!(/>/, '&gt;')

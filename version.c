@@ -7,7 +7,7 @@
   $Date$
   created at: Thu Sep 30 20:08:01 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -18,19 +18,19 @@
 void
 Init_version()
 {
-    rb_define_global_const("VERSION", str_new2(RUBY_VERSION));
-    rb_define_global_const("PLATFORM", str_new2(RUBY_PLATFORM));
+    rb_define_global_const("VERSION", rb_str_new2(RUBY_VERSION));
+    rb_define_global_const("PLATFORM", rb_str_new2(RUBY_PLATFORM));
 }
 
 void
-show_version()
+ruby_show_version()
 {
     fprintf(stderr, "ruby %s(%s) [%s]\n", RUBY_VERSION, VERSION_DATE, RUBY_PLATFORM);
 }
 
 void
-show_copyright()
+ruby_show_copyright()
 {
-    fprintf(stderr, "ruby - Copyright (C) 1993-1997 Yukihiro Matsumoto\n");
+    fprintf(stderr, "ruby - Copyright (C) 1993-1998 Yukihiro Matsumoto\n");
     exit(0);
 }

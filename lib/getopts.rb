@@ -1,4 +1,3 @@
-#!/usr/local/bin/ruby
 #
 #		getopts.rb - 
 #			$Release Version: $
@@ -11,7 +10,7 @@
 #	
 #
 
-$RCS_ID="$Header$"
+$RCS_ID=%q$Header$
 
 def isSingle(lopt)
   if lopt.index(":")

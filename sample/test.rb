@@ -24,6 +24,24 @@ end
 
 # make sure conditional operators work
 
+check "assignment"
+
+a=[]; a[0] ||= "bar";
+ok(a[0] == "bar")
+h={}; h["foo"] ||= "bar";
+ok(h["foo"] == "bar")
+
+aa = 5
+aa ||= 25
+ok(aa == 5)
+bb ||= 25
+ok(bb == 25)
+cc &&=33
+ok(cc == nil)
+cc = 5
+cc &&=44
+ok(cc == 44)
+
 check "condition"
 
 $x = '0';
@@ -109,8 +127,8 @@ tmp.close
 $bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
-    next if /vt100/;
-    $bad = 1 if /vt100/;
+  next if /vt100/;
+  $bad = 1 if /vt100/;
 end
 ok(!(!tmp.eof? || /vt100/ || $bad))
 tmp.close
@@ -240,6 +258,18 @@ while true
 end
 ok(!$bad)
 
+ok(catch(:foo) {
+     loop do
+       loop do
+	 throw :foo, true
+	 break
+       end
+       break
+       ok(false)			# should no reach here
+     end
+     false
+   })
+
 check "array"
 ok([1, 2] + [3, 4] == [1, 2, 3, 4])
 ok([1, 2] * 2 == [1, 2, 1, 2])
@@ -265,10 +295,19 @@ ok($x[0] == -1 && $x[1] == 10)
 $x[-1, 1] = 20
 ok($x[-1] == 20 && $x.pop == 20)
 
+# array and/or
+ok(([1,2,3]&[2,4,6]) == [2])
+ok(([1,2,3]|[2,4,6]) == [1,2,3,4,6])
+
 # compact
 $x = [nil, 1, nil, nil, 5, nil, nil]
 $x.compact!
 ok($x == [1, 5])
+
+# uniq
+$x = [1, 1, 4, 2, 5, 4, 5, 1, 2]
+$x.uniq!
+ok($x == [1, 4, 2, 5])
 
 # empty?
 ok(!$x.empty?)
@@ -287,7 +326,8 @@ ok($x == [7,5,3,2,1])
 
 # split test
 $x = "The Book of Mormon"
-ok($x.split(//).reverse!.join == "nomroM fo kooB ehT")
+ok($x.split(//).reverse!.join == $x.reverse)
+ok($x.reverse == $x.reverse!)
 ok("1 byte string".split(//).reverse.join(":") == "g:n:i:r:t:s: :e:t:y:b: :1")
 $x = "a b c  d"
 ok($x.split == ['a', 'b', 'c', 'd'])
@@ -296,7 +336,7 @@ ok(defined? "a".chomp)
 ok("abc".scan(/./) == ["a", "b", "c"])
 ok("1a2b3c".scan(/(\d.)/) == [["1a"], ["2b"], ["3c"]])
 # non-greedy match
-ok("a=12;b=22".scan(/(.*?)=(\d*?);?/) == [["a", "12"], ["b", "22"]])
+ok("a=12;b=22".scan(/(.*?)=(\d*);?/) == [["a", "12"], ["b", "22"]])
 
 $x = [1]
 ok(($x * 5).join(":") == '1:1:1:1:1')
@@ -374,17 +414,6 @@ tt{|i| break if i == 5}
 ok(i == 5)
 
 # iterator break/redo/next/retry
-unless defined? loop
-  def loop
-    while true
-      yield
-    end
-  end
-  ok(false)
-else
-  ok(true)
-end
-
 done = true
 loop{
   break
@@ -430,6 +459,76 @@ for i in 1 .. 7			# see how retry works in iterator loop
 end
 ok($x.size == 10)
 ok($x == [1, 2, 3, 1, 2, 3, 4, 5, 6, 7])
+
+# append method to built-in class
+class Array
+  def iter_test1
+    collect{|e| [e, yield(e)]}.sort{|a,b|a[1]<=>b[1]}
+  end
+  def iter_test2
+    a = collect{|e| [e, yield(e)]}
+    a.sort{|a,b|a[1]<=>b[1]}
+  end
+end
+$x = [[1,2],[3,4],[5,6]]
+ok($x.iter_test1{|x|x} == $x.iter_test2{|x|x})
+
+class IterTest
+  def initialize(e); @body = e; end
+
+  def each0(&block); @body.each(&block); end
+  def each1(&block); @body.each { |*x| block.call(*x) } end
+  def each2(&block); @body.each { |*x| block.call(x) } end
+  def each3(&block); @body.each { |x| block.call(*x) } end
+  def each4(&block); @body.each { |x| block.call(x) } end
+  def each5; @body.each { |*x| yield(*x) } end
+  def each6; @body.each { |*x| yield(x) } end
+  def each7; @body.each { |x| yield(*x) } end
+  def each8; @body.each { |x| yield(x) } end
+end
+
+IterTest.new([0]).each0 { |x| $x = x }
+ok($x == 0)
+IterTest.new([1]).each1 { |x| $x = x }
+ok($x == 1)
+IterTest.new([2]).each2 { |x| $x = x }
+ok($x == [2])
+IterTest.new([3]).each3 { |x| $x = x }
+ok($x == 3)
+IterTest.new([4]).each4 { |x| $x = x }
+ok($x == 4)
+IterTest.new([5]).each5 { |x| $x = x }
+ok($x == 5)
+IterTest.new([6]).each6 { |x| $x = x }
+ok($x == [6])
+IterTest.new([7]).each7 { |x| $x = x }
+ok($x == 7)
+IterTest.new([8]).each8 { |x| $x = x }
+ok($x == 8)
+
+IterTest.new([[0]]).each0 { |x| $x = x }
+ok($x == [0])
+IterTest.new([[1]]).each1 { |x| $x = x }
+ok($x == 1)
+IterTest.new([[2]]).each2 { |x| $x = x }
+ok($x == [2])
+IterTest.new([[3]]).each3 { |x| $x = x }
+ok($x == 3)
+IterTest.new([[4]]).each4 { |x| $x = x }
+ok($x == [4])
+IterTest.new([[5]]).each5 { |x| $x = x }
+ok($x == 5)
+IterTest.new([[6]]).each6 { |x| $x = x }
+ok($x == [6])
+IterTest.new([[7]]).each7 { |x| $x = x }
+ok($x == 7)
+IterTest.new([[8]]).each8 { |x| $x = x }
+ok($x == [8])
+
+IterTest.new([[0,0]]).each0 { |x| $x = x }
+ok($x == [0,0])
+IterTest.new([[8,8]]).each8 { |x| $x = x }
+ok($x == [8,8])
 
 check "bignum"
 def fact(n)
@@ -482,7 +581,9 @@ ok($good)
 $good = true;
 for i in 4000..4096
   n1 = 1 << i;
-  $good = false if ((n1**2-1) / (n1+1) != (n1-1))
+  if (n1**2-1) / (n1+1) != (n1-1)
+    $good = false
+  end
 end
 ok($good)
 
@@ -491,9 +592,9 @@ check "string & char"
 ok("abcd" == "abcd")
 ok("abcd" =~ "abcd")
 ok("abcd" === "abcd")
-ok(("abc" =~ /^$/) == false)
-ok(("abc\n" =~ /^$/) == false)
-ok(("abc" =~ /^d*$/) == false)
+ok("abc" !~ /^$/)
+ok("abc\n" !~ /^$/)
+ok("abc" !~ /^d*$/)
 ok(("abc" =~ /d*$/) == 3)
 ok("" =~ /^$/)
 ok("\n" =~ /^$/)
@@ -539,6 +640,8 @@ ok(?\M-\C-a == 129)
 ok("a".upcase![0] == ?A)
 ok("A".downcase![0] == ?a)
 ok("abc".tr!("a-z", "A-Z") == "ABC")
+ok("aabbcccc".tr_s!("a-z", "A-Z") == "ABC")
+ok("abc".tr!("0-9", "A-Z") == nil)
 ok("abcc".squeeze!("a-z") == "abc")
 ok("abcd".delete!("bc") == "ad")
 
@@ -571,10 +674,13 @@ ok(a == 1)
 a, *b = 1, 2, 3
 ok(a == 1 && b == [2, 3])
 
+a, (b, c), d = 1, [2, 3], 4
+ok(a == 1 && b == 2 && c == 3 && d == 4)
+
 *a = 1, 2, 3
 ok(a == [1, 2, 3])
 
-*a = 1..3
+*a = 1..3			# array conversion
 ok(a == [1, 2, 3])
 
 check "call"
@@ -614,14 +720,14 @@ ok($proc.call(2) == 4)
 ok($proc.call(3) == 6)
 
 proc{
-  iii=5				# dynamic local variable
+  iii=5				# nested local variable
   $proc = proc{|i|
     iii = i
   }
   $proc2 = proc {
-    $x = iii			# dynamic variables shared by procs
+    $x = iii			# nested variables shared by procs
   }
-  # scope of dynamic variables
+  # scope of nested variables
   ok(defined?(iii))
 }.call
 ok(!defined?(iii))		# out of scope
@@ -649,9 +755,7 @@ if defined? Process.kill
   rescue
     x = $!
   end
-  ok(x && x =~ /Interrupt/)
-else
-  ok(false)
+  ok(x && /Interrupt/ =~ x)
 end
 
 check "eval"
@@ -691,8 +795,8 @@ def test_ev
 end
 
 $x = test_ev
-ok(eval("local1", $x) == "local1") # static local var
-ok(eval("local2", $x) == "local2") # dynamic local var
+ok(eval("local1", $x) == "local1") # normal local var
+ok(eval("local2", $x) == "local2") # nested local var
 $bad = true
 begin
   p eval("local1")
@@ -715,6 +819,51 @@ rescue NameError		# must raise error
   $bad = false
 end
 ok(!$bad)
+
+x = proc{}
+eval "i4 = 1", x
+ok(eval("i4", x) == 1)
+x = proc{proc{}}.call
+eval "i4 = 22", x
+ok(eval("i4", x) == 22)
+$x = []
+x = proc{proc{}}.call
+eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
+ok($x[4].call == 8)
+
+x = binding
+eval "i = 1", x
+ok(eval("i", x) == 1)
+x = proc{binding}.call
+eval "i = 22", x
+ok(eval("i", x) == 22)
+$x = []
+x = proc{binding}.call
+eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
+ok($x[4].call == 8)
+
+proc {
+  p = binding
+  eval "foo11 = 1", p
+  proc{foo11=22}.call
+  ok(eval("foo11", p) == eval("foo11"))
+  ok(eval("foo11") == 1)
+}.call
+
+p1 = proc{i6 = 0; proc{i6}}.call
+ok(p1.call == 0)
+eval "i6=5", p1
+ok(p1.call == 5)
+ok(!defined?(i6))
+
+p1 = proc{i6 = 0; proc{i6}}.call
+i6 = nil
+ok(p1.call == 0)
+eval "i6=1", p1
+ok(p1.call == 1)
+eval "i6=5", p1
+ok(p1.call == 5)
+ok(i6 == nil)
 
 check "system"
 ok(`echo foobar` == "foobar\n")
@@ -766,6 +915,14 @@ ok(done)
 File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
 File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
+$bad = false
+for script in Dir["{lib,sample}/*.rb"]
+  unless `./ruby -c #{script}`.chomp == "Syntax OK"
+    $bad = true
+  end
+end
+ok(!$bad)
+
 check "const"
 TEST1 = 1
 TEST2 = 2
@@ -808,6 +965,11 @@ begin
 rescue
   ok true
 end
+
+check "marshal"
+$x = [1,2,3,[4,5,"foo"],{1=>"bar"},2.5,fact(30)]
+$y = Marshal.dump($x)
+ok($x == Marshal.load($y))
 
 check "pack"
 
