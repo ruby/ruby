@@ -1,3 +1,9 @@
+Fri Jul  4 21:48:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/syck/rubyext.c, ext/syck/syck.c, ext/syck/syck.h,
+	  ext/syck/token.c: C++ style comments are not allowed.
+	  (ruby-bugs:PR#1008)
+
 Thu Jul  3 23:41:30 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/timeout.rb: add optional exception argument for compatibility
