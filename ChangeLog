@@ -1,3 +1,8 @@
+Thu Jul 17 13:46:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_init): set ruby_running to true after
+	  initialization.
+
 Thu Jul 17 13:42:53 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftools.rb (File::makedirs): do not handle "//" as a directory.

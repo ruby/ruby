@@ -324,7 +324,7 @@ module TkComm
     return '' if cmd == ''
     id = _next_cmd_id
     Tk_CMDTBL[id] = cmd
-    @cmdtbl = [] unless @cmdtbl
+    @cmdtbl = [] unless defined? @cmdtbl
     @cmdtbl.push id
     return format("rb_out %s", id);
   end
@@ -859,10 +859,6 @@ module TkCore
     tk_call 'tk_getSaveFile', *hash_kv(keys)
   end
 
-  def chooseDirectory(keys = nil)
-    tk_call 'tk_chooseDIrectory', *hash_kv(keys)
-  end
-
   def chooseColor(keys = nil)
     tk_call 'tk_chooseColor', *hash_kv(keys)
   end
@@ -1385,7 +1381,7 @@ if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
     attr_accessor :encoding
     
     def _eval(cmd)
-      if @encoding
+      if defined? @encoding
 	_fromUTF8(__eval(_toUTF8(cmd, @encoding)), @encoding)
       else
 	__eval(cmd)
@@ -1393,7 +1389,7 @@ if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
     end
     
     def _invoke(*cmds)
-      if @encoding
+      if defined? @encoding
 	cmds = cmds.collect{|cmd| _toUTF8(cmd, @encoding)}
 	_fromUTF8(__invoke(*cmds), @encoding)
       else
@@ -1505,14 +1501,14 @@ class TkBindTag
     }
   end
 
-  ALL = self.new_by_name('all')
-
   def initialize(*args, &b)
     @id = Tk_BINDTAG_ID[0]
     Tk_BINDTAG_ID[0] = Tk_BINDTAG_ID[0].succ
     BTagID_TBL[@id] = self
     bind(*args, &b) if args != []
   end
+
+  ALL = self.new_by_name('all')
 
   def name
     @id

@@ -365,7 +365,6 @@ rb_get_method_body(klassp, idp, noexp)
 
     if (ruby_running) {
 	/* store in cache */
-	if (BUILTIN_TYPE(origin) == T_ICLASS) origin = RBASIC(origin)->klass;
 	ent = cache + EXPR1(klass, id);
 	ent->klass  = klass;
 	ent->noex   = body->nd_noex;
@@ -1200,6 +1199,7 @@ ruby_init()
     }
     POP_SCOPE();
     ruby_scope = top_scope;
+    ruby_running = 1;
 }
 
 static VALUE
@@ -1365,7 +1365,6 @@ ruby_exec()
     volatile NODE *tmp;
 
     Init_stack((void*)&tmp);
-    ruby_running = 1;
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     /* default visibility is private at toplevel */
