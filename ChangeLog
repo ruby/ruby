@@ -1,3 +1,9 @@
+Tue Jan  1 02:16:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/curses/extconf.rb: add dir_config.
+
+	* Makefile.in (fake.rb): set RUBY_VERSION.
+
 Mon Dec 31 14:20:46 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yycompile): always store copy of filename.
@@ -3834,15 +3840,6 @@ Tue Feb 13 23:05:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dir.c (lstat): should use rb_sys_stat if lstat(2) is not
 	  available.
-
-Sun Feb 11 16:00:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
-
-	* eval.c (stack_length): use __builtin_frame_address() only if
-	  GCC and i386 CPU.
-
-	* gc.c (rb_gc, Init_stack): ditto.
-
-	* configure.in: add ac_cv_func_getpgrp_void=yes on DJGPP.
 
 Tue Feb 13 08:43:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

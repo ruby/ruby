@@ -1,8 +1,8 @@
 require 'mkmf'
 
-if( ! $CPPFLAGS )
-  $CPPFLAGS = ""
-end
+dir_config('curses')
+dir_config('ncurses')
+dir_config('termcap')
 
 make=false
 have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM

@@ -137,11 +137,9 @@ fake.rb:	miniruby$(EXEEXT)
 		@echo ' \
 		class Object; \
 		  remove_const :RUBY_PLATFORM; \
+		  remove_const :RUBY_VERSION; \
 		  RUBY_PLATFORM = "@arch@"; \
-		  if defined? PLATFORM; \
-		    remove_const :PLATFORM; \
-		    PLATFORM = "@arch@"; \
-		  end; \
+		  RUBY_VERSION = "@MAJOR@.@MINOR@.@TEENY@"; \
 		  CROSS_COMPILING = true; \
 		end \
 		' > $@
