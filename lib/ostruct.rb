@@ -13,7 +13,7 @@ class OpenStruct
     @table = {}
     if hash
       for k,v in hash
-	@table[k] = v.to_sym
+	@table[k.to_sym] = v
       end
     end
   end
@@ -27,7 +27,7 @@ class OpenStruct
       end
       mname.chop!
       @table[mname.intern] = args[0]
-    elsif args.length == 0
+    elsif len == 0
       @table[mid]
     else
       raise NoMethodError, "undefined method `#{mname}' for #{self}", caller(1)
@@ -41,12 +41,8 @@ class OpenStruct
   def inspect
     str = "<#{self.class}"
     for k,v in @table
-      str += " "
-      str += k.to_s
-      str += "="
-      str += v.inspect
+      str << " #{k}=#{v.inspect}"
     end
-    str += ">"
-    str
+    str << ">"
   end
 end

@@ -114,7 +114,7 @@ for src in Dir["bin/*"]
 
     f.print shebang.sub(/ruby/, ruby_install_name), *body
     f.truncate(f.pos)
-  }
+  } unless $dryrun
 end
 
 Dir.glob("lib/**/*{.rb,help-message}") do |f|
