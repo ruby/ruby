@@ -1,3 +1,8 @@
+Wed Aug  7 00:15:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
+
+	* ext/bigdecimal.c: Comparison results adjusted to Float's.
+	* ext/bigdecimal.c: Use rb_num_coerce_????(x,y) instead of own.
+
 Wed Aug  6 22:58:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/testcase.rb: Added equality checking.
