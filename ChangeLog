@@ -1,3 +1,7 @@
+Tue Dec 21 12:10:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/grid.rb: rescue bug of 'grid configure' on Tcl/Tk8.3-
+
 Mon Dec 20 22:52:29 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* added samples for the previous soap4r's commit.

@@ -42,7 +42,16 @@ module TkGrid
       params.push("-#{k}")
       params.push((v.kind_of?(TkObject))? v.epath: v)
     }
-    tk_call_without_enc("grid", 'configure', *params)
+    if Tk::TCL_MAJOR_VERSION < 8 ||
+        (Tk::TCL_MAJOR_VERSION == 8 && Tk::TCL_MINOR_VERSION <= 3)
+      if params[0] == '-' || params[0] == 'x' || params[0] == '^'
+        tk_call_without_enc('grid', *params)
+      else
+        tk_call_without_enc('grid', 'configure', *params)
+      end
+    else
+      tk_call_without_enc('grid', 'configure', *params)
+    end
   end
   alias grid configure
 
