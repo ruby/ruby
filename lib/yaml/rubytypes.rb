@@ -451,17 +451,9 @@ class Time
 	end
 end
 
-YAML.add_builtin_type( 'time' ) { |type, val|
-    if val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})[Tt](\d{2})\:(\d{2})\:(\d{2})(\.\d{1,2})?(Z|[-+][0-9][0-9](?:\:[0-9][0-9])?)\Z/
-        YAML.mktime( *$~.to_a[1,8] )
-    elsif val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})[ \t]+(\d{2})\:(\d{2})\:(\d{2})(\.\d+)?[ \t]+(Z|[-+][0-9][0-9](?:\:[0-9][0-9])?)\Z/
-        YAML.mktime( *$~.to_a[1,8] )
-    elsif val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})[ \t]+(\d{2})\:(\d{2})\:(\d{2})(\.\d{1,2})?\Z/
-        YAML.mktime( *$~.to_a[1,7] )
-	elsif val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})\Z/
+YAML.add_builtin_type( 'time#ymd' ) { |type, val|
+	if val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})\Z/
 		Date.new($1.to_i, $2.to_i, $3.to_i)
-    elsif type == :Implicit
-        :InvalidType
     else
         raise YAML::TypeError, "Invalid !time string: " + val.inspect
     end

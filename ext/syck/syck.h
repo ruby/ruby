@@ -121,6 +121,7 @@ struct _syck_node {
  */
 typedef SYMID (*SyckNodeHandler)(SyckParser *, SyckNode *);
 typedef void (*SyckErrorHandler)(SyckParser *, char *);
+typedef SyckNode * (*SyckBadAnchorHandler)(SyckParser *, char *);
 typedef long (*SyckIoFileRead)(char *, SyckIoFile *, long, long); 
 typedef long (*SyckIoStrRead)(char *, SyckIoStr *, long, long);
 
@@ -150,6 +151,8 @@ struct _syck_parser {
     SyckNodeHandler handler;
     // Error handler
     SyckErrorHandler error_handler;
+    // InvalidAnchor handler
+    SyckBadAnchorHandler bad_anchor_handler;
     // IO type
     enum syck_io_type io_type;
     // Custom buffer size
@@ -174,8 +177,8 @@ struct _syck_parser {
             SyckIoStrRead read;
         } *str;
     } io;
-    // Symbol table
-    st_table *anchors;
+    // Symbol table for anchors
+    st_table *anchors, *bad_anchors;
     // Optional symbol table for SYMIDs
     st_table *syms;
     // Levels of indentation
@@ -194,7 +197,8 @@ struct _syck_parser {
  */
 SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
 SyckNode *syck_hdlr_add_anchor( SyckParser *, char *, SyckNode * );
-SyckNode *syck_hdlr_add_alias( SyckParser *, char * );
+void syck_hdlr_remove_anchor( SyckParser *, char * );
+SyckNode *syck_hdlr_get_anchor( SyckParser *, char * );
 void syck_add_transfer( char *, SyckNode *, int );
 char *syck_xprivate( char *, int );
 char *syck_taguri( char *, char *, int );
@@ -218,6 +222,7 @@ void syck_parser_implicit_typing( SyckParser *, int );
 void syck_parser_taguri_expansion( SyckParser *, int );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_error_handler( SyckParser *, SyckErrorHandler );
+void syck_parser_bad_anchor_handler( SyckParser *, SyckBadAnchorHandler );
 void syck_parser_file( SyckParser *, FILE *, SyckIoFileRead );
 void syck_parser_str( SyckParser *, char *, long, SyckIoStrRead );
 void syck_parser_str_auto( SyckParser *, char *, SyckIoStrRead );

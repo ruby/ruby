@@ -1,3 +1,15 @@
+Tue Jun 17 17:01:08 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/gram.c: added grammar for certain empty sequence entries.
+
+    * ext/syck/handler.c, ext/syck/syck.c, ext/syck/syck.h: track bad anchors.
+
+    * ext/syck/token.c: added pause token, tag possible circular references.
+
+    * lib/yaml/rubytypes.rb: parsing YMD time as Date instance.
+
+    * ext/syck/rubyext.c: ditto. DomainType, PrivateType, BadAlias classes.
+
 Tue Jun 17 21:28:27 2003  Ariff Abdullah <skywizard@time.net.my>
 
 	* win32/win32.c (rb_w32_opendir): need to set errno. [ruby-talk:73761]

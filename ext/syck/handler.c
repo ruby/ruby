@@ -31,6 +31,18 @@ SyckNode *
 syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
 {
     n->anchor = a;
+    if ( p->bad_anchors != NULL )
+    {
+        SyckNode *bad;
+        if ( st_lookup( p->bad_anchors, (st_data_t)a, (st_data_t *)&bad ) )
+        {
+            if ( n->kind != syck_str_kind )
+            {
+                n->id = bad->id;
+                (p->handler)( p, n );
+            }
+        }
+    }
     if ( p->anchors == NULL )
     {
         p->anchors = st_init_strtable();
@@ -39,23 +51,50 @@ syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
     return n;
 }
 
-SyckNode *
-syck_hdlr_add_alias( SyckParser *p, char *a )
+void
+syck_hdlr_remove_anchor( SyckParser *p, char *a )
 {
-    SyckNode *n;
+    if ( p->anchors == NULL )
+    {
+        p->anchors = st_init_strtable();
+    }
+    st_insert( p->anchors, (st_data_t)a, (st_data_t)1 );
+}
+
+SyckNode *
+syck_hdlr_get_anchor( SyckParser *p, char *a )
+{
+    SyckNode *n = NULL;
 
     if ( p->anchors != NULL )
     {
-       if ( st_lookup( p->anchors, (st_data_t)a, (st_data_t *)&n ) )
-       {
-           return n;
-       }
+        if ( st_lookup( p->anchors, (st_data_t)a, (st_data_t *)&n ) )
+        {
+            if ( n != (void *)1 )
+            {    
+                return n;
+            }
+            else
+            {
+                if ( p->bad_anchors == NULL )
+                {
+                    p->bad_anchors = st_init_strtable();
+                }
+                if ( ! st_lookup( p->bad_anchors, (st_data_t)a, (st_data_t *)&n ) )
+                {
+                    n = (p->bad_anchor_handler)( p, a );
+                    st_insert( p->bad_anchors, (st_data_t)a, (st_data_t)n );
+                }
+            }
+        }
     }
 
-    //
-    // FIXME: Return an InvalidAnchor object
-    //
-    return syck_new_str( "..." );
+    if ( n == NULL )
+    {
+        n = (p->bad_anchor_handler)( p, a );
+    }
+    n->anchor = a;
+    return n;
 }
 
 void

@@ -12,12 +12,23 @@
 #include <sys/types.h>
 #include <time.h>
 
+typedef struct RVALUE {
+    union {
+	struct RBasic  basic;
+	struct RObject object;
+	struct RClass  klass;
+	struct RArray  array;
+	struct RHash   hash;
+	struct RStruct rstruct;
+    } as;
+} RVALUE;
+
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
 
-static ID s_utc, s_at, s_to_f, s_read, s_binmode;
+static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
-VALUE cParser, cLoader, cNode, oDefaultLoader;
+VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, oDefaultLoader;
 
 /*
  * my private collection of numerical oddities.
@@ -32,6 +43,7 @@ static VALUE syck_node_transform( VALUE );
 SYMID rb_syck_parse_handler _((SyckParser *, SyckNode *));
 SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
 void rb_syck_err_handler _((SyckParser *, char *));
+SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 
 struct parser_xtra {
     VALUE data;  // Borrowed this idea from marshal.c to fix [ruby-dev:8067] problem
@@ -249,7 +261,7 @@ rb_syck_parse_handler(p, n)
     bonus = (struct parser_xtra *)p->bonus;
 	if ( bonus->proc != 0 )
 	{
-		rb_funcall(bonus->proc, rb_intern("call"), 1, v);
+		rb_funcall(bonus->proc, s_call, 1, v);
 	}
 
     rb_iv_set(obj, "@value", v);
@@ -333,9 +345,28 @@ rb_syck_load_handler(p, n)
             }
             else if ( strcmp( n->type_id, "timestamp#ymd" ) == 0 )
             {
-                S_REALLOC_N( n->data.str->ptr, char, 22 );
-                strcat( n->data.str->ptr, "t00:00:00Z" );
-                obj = rb_syck_mktime( n->data.str->ptr );
+                char *ptr = n->data.str->ptr;
+                VALUE year, mon, day;
+
+                // Year
+                ptr[4] = '\0';
+                year = INT2FIX(strtol(ptr, NULL, 10));
+
+                // Month
+                ptr += 4;
+                while ( !isdigit( *ptr ) ) ptr++;
+                mon = INT2FIX(strtol(ptr, NULL, 10));
+
+                // Day
+                ptr += 2;
+                while ( !isdigit( *ptr ) ) ptr++;
+                day = INT2FIX(strtol(ptr, NULL, 10));
+
+                obj = rb_funcall( cDate, s_new, 3, year, mon, day );
+
+                // S_REALLOC_N( n->data.str->ptr, char, 22 );
+                // strcat( n->data.str->ptr, "t00:00:00Z" );
+                // obj = rb_syck_mktime( n->data.str->ptr );
             }
             else if ( strncmp( n->type_id, "timestamp", 9 ) == 0 )
             {
@@ -367,15 +398,25 @@ rb_syck_load_handler(p, n)
         break;
     }
 
+    //
+    // ID already set, let's alter the symbol table to accept the new object
+    //
+    if (n->id > 0)
+    {
+        MEMCPY((void *)n->id, (void *)obj, RVALUE, 1);
+        MEMZERO((void *)obj, RVALUE, 1);
+        obj = n->id;
+    }
+
     bonus = (struct parser_xtra *)p->bonus;
 	if ( bonus->proc != 0 )
 	{
-		rb_funcall(bonus->proc, rb_intern("call"), 1, obj);
+		rb_funcall(bonus->proc, s_call, 1, obj);
 	}
 
     if ( check_transfers == 1 && n->type_id != NULL )
     {
-        obj = rb_funcall( oDefaultLoader, rb_intern( "transfer" ), 2, rb_str_new2( n->type_id ), obj );
+        obj = rb_funcall( oDefaultLoader, s_transfer, 2, rb_str_new2( n->type_id ), obj );
     }
 
     rb_hash_aset(bonus->data, INT2FIX(RHASH(bonus->data)->tbl->num_entries), obj);
@@ -403,6 +444,16 @@ rb_syck_err_handler(p, msg)
            p->lineptr); 
 }
 
+SyckNode *
+rb_syck_bad_anchor_handler(p, a)
+    SyckParser *p;
+    char *a;
+{
+    SyckNode *badanc = syck_new_map( rb_str_new2( "name" ), rb_str_new2( a ) );
+    badanc->type_id = syck_strndup( "taguri:ruby.yaml.org,2002:object:YAML::Syck::BadAlias", 53 );
+    return badanc;
+}
+
 /*
  * data loaded based on the model requested.
  */
@@ -414,17 +465,17 @@ syck_set_model( parser, model )
 	if ( model == sym_generic )
 	{
 		syck_parser_handler( parser, rb_syck_parse_handler );
-		syck_parser_error_handler( parser, rb_syck_err_handler );
 		syck_parser_implicit_typing( parser, 1 );
 		syck_parser_taguri_expansion( parser, 1 );
 	}
 	else
 	{
 		syck_parser_handler( parser, rb_syck_load_handler );
-		syck_parser_error_handler( parser, rb_syck_err_handler );
 		syck_parser_implicit_typing( parser, 1 );
 		syck_parser_taguri_expansion( parser, 0 );
 	}
+    syck_parser_error_handler( parser, rb_syck_err_handler );
+    syck_parser_bad_anchor_handler( parser, rb_syck_bad_anchor_handler );
 }
 
 /*
@@ -561,7 +612,7 @@ syck_parser_load_documents(argc, argv, self)
         }
 
         /* Pass document to block */
-		rb_funcall( proc, rb_intern("call"), 1, v );
+		rb_funcall( proc, s_call, 1, v );
 	}
 
     return Qnil;
@@ -732,7 +783,7 @@ syck_loader_transfer( self, type, val )
 
     if ( taguri != NULL )
     {
-        VALUE scheme, name, type_hash, type_proc;
+        VALUE scheme, domain, name, type_hash, type_proc = Qnil;
         VALUE type_uri = rb_str_new2( taguri );
         VALUE str_taguri = rb_str_new2("taguri");
         VALUE str_xprivate = rb_str_new2("x-private");
@@ -748,7 +799,7 @@ syck_loader_transfer( self, type, val )
         }
         else if ( rb_str_cmp( scheme, str_taguri ) == 0 )
         {
-            VALUE domain = rb_ary_shift( parts );
+            domain = rb_ary_shift( parts );
             name = rb_ary_join( parts, rb_str_new2( ":" ) );
             type_hash = rb_iv_get(self, "@families");
             type_hash = rb_hash_aref(type_hash, domain);
@@ -773,13 +824,57 @@ syck_loader_transfer( self, type, val )
                    // rb_funcall(rb_mKernel, rb_intern("p"), 2, name, type_proc);
         }
 
-        if ( rb_respond_to( type_proc, rb_intern("call") ) )
+        if ( rb_respond_to( type_proc, s_call ) )
         {
-                   val = rb_funcall(type_proc, rb_intern("call"), 2, type_uri, val);
+            val = rb_funcall(type_proc, s_call, 2, type_uri, val);
+        }
+        else if ( rb_str_cmp( scheme, str_xprivate ) == 0 )
+        {
+            val = rb_funcall(cPrivateType, s_new, 2, name, val);
+        }
+        else
+        {
+            val = rb_funcall(cDomainType, s_new, 3, domain, name, val);
         }
     }
 
     return val;
+}
+
+/*
+ * YAML::Syck::BadAlias.initialize
+ */
+VALUE
+syck_badalias_initialize( self, val )
+    VALUE self, val;
+{
+    rb_iv_set( self, "@name", val );
+    return self;
+}
+
+/*
+ * YAML::Syck::DomainType.initialize
+ */
+VALUE
+syck_domaintype_initialize( self, domain, type_id, val )
+    VALUE self, type_id, val;
+{
+    rb_iv_set( self, "@domain", domain );
+    rb_iv_set( self, "@type_id", type_id );
+    rb_iv_set( self, "@value", val );
+    return self;
+}
+
+/*
+ * YAML::Syck::PrivateType.initialize
+ */
+VALUE
+syck_privatetype_initialize( self, type_id, val )
+    VALUE self, type_id, val;
+{
+    rb_iv_set( self, "@type_id", type_id );
+    rb_iv_set( self, "@value", val );
+    return self;
 }
 
 /*
@@ -838,7 +933,7 @@ syck_node_transform( self )
     {
         t = val;
     }
-    return rb_funcall( oDefaultLoader, rb_intern( "transfer" ), 2, type_id, t );
+    return rb_funcall( oDefaultLoader, s_transfer, 2, type_id, t );
 }
 
 /*
@@ -854,16 +949,25 @@ Init_syck()
 	//
 	// Global symbols
 	//
+    s_new = rb_intern("new");
     s_utc = rb_intern("utc");
     s_at = rb_intern("at");
     s_to_f = rb_intern("to_f");
     s_read = rb_intern("read");
     s_binmode = rb_intern("binmode");
+    s_transfer = rb_intern("transfer");
+    s_call = rb_intern("call");
 	sym_model = ID2SYM(rb_intern("Model"));
 	sym_generic = ID2SYM(rb_intern("Generic"));
     sym_map = ID2SYM(rb_intern("map"));
     sym_scalar = ID2SYM(rb_intern("scalar"));
     sym_seq = ID2SYM(rb_intern("seq"));
+
+    //
+    // Load Date module
+    //
+    rb_require( "date" );
+    cDate = rb_funcall( rb_cObject, rb_intern("const_get"), 1, rb_str_new2("Date") );
 
 	//
     // Define YAML::Syck::Loader class
@@ -902,5 +1006,29 @@ Init_syck()
     rb_define_attr( cNode, "anchor", 1, 1 );
     rb_define_method( cNode, "initialize", syck_node_initialize, 2);
     rb_define_method( cNode, "transform", syck_node_transform, 0);
+
+    //
+    // Define YAML::Syck::PrivateType class
+    //
+    cPrivateType = rb_define_class_under( rb_syck, "PrivateType", rb_cObject );
+    rb_define_attr( cPrivateType, "type_id", 1, 1 );
+    rb_define_attr( cPrivateType, "value", 1, 1 );
+    rb_define_method( cPrivateType, "initialize", syck_privatetype_initialize, 2);
+
+    //
+    // Define YAML::Syck::DomainType class
+    //
+    cDomainType = rb_define_class_under( rb_syck, "DomainType", rb_cObject );
+    rb_define_attr( cDomainType, "domain", 1, 1 );
+    rb_define_attr( cDomainType, "type_id", 1, 1 );
+    rb_define_attr( cDomainType, "value", 1, 1 );
+    rb_define_method( cDomainType, "initialize", syck_domaintype_initialize, 3);
+
+    //
+    // Define YAML::Syck::BadAlias class
+    //
+    cBadAlias = rb_define_class_under( rb_syck, "BadAlias", rb_cObject );
+    rb_define_attr( cBadAlias, "name", 1, 1 );
+    rb_define_method( cBadAlias, "initialize", syck_badalias_initialize, 1);
 }
 

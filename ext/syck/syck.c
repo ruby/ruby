@@ -170,6 +170,7 @@ syck_new_parser()
     p->io.str = NULL;
     p->syms = NULL;
     p->anchors = NULL;
+    p->bad_anchors = NULL;
     p->implicit_typing = 1;
     p->taguri_expansion = 0;
     p->bufsize = SYCK_BUFFERSIZE;
@@ -219,13 +220,20 @@ syck_st_free( SyckParser *p )
     }
 
     //
-    // Free the anchor table
+    // Free the anchor tables
     //
     if ( p->anchors != NULL )
     {
         st_foreach( p->anchors, syck_st_free_nodes, 0 );
         st_free_table( p->anchors );
         p->anchors = NULL;
+    }
+
+    if ( p->bad_anchors != NULL )
+    {
+        st_foreach( p->bad_anchors, syck_st_free_nodes, 0 );
+        st_free_table( p->bad_anchors );
+        p->bad_anchors = NULL;
     }
 }
 
@@ -275,6 +283,13 @@ syck_parser_error_handler( SyckParser *p, SyckErrorHandler hdlr )
 {
     ASSERT( p != NULL );
     p->error_handler = hdlr;
+}
+
+void
+syck_parser_bad_anchor_handler( SyckParser *p, SyckBadAnchorHandler hdlr )
+{
+    ASSERT( p != NULL );
+    p->bad_anchor_handler = hdlr;
 }
 
 void
