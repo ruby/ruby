@@ -857,7 +857,7 @@ static struct tag *prot_tag;
     prot_tag = _tag.prev;		\
 } while (0)
 
-#define TAG_DST(t) (_tag.dst == (VALUE)_tag.scope)
+#define TAG_DST() (_tag.dst == (VALUE)_tag.scope)
 
 #define TAG_RETURN	0x1
 #define TAG_BREAK	0x2
