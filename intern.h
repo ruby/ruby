@@ -249,6 +249,7 @@ VALUE rb_hash_delete _((VALUE,VALUE));
 int rb_path_check _((char*));
 int rb_env_path_tainted _((void));
 /* io.c */
+#define rb_defout rb_stdout
 RUBY_EXTERN VALUE rb_fs;
 RUBY_EXTERN VALUE rb_output_fs;
 RUBY_EXTERN VALUE rb_rs;

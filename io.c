@@ -94,7 +94,7 @@ VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
 
-VALUE rb_stdin, rb_stdout, rb_stderr;
+VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
 static VALUE orig_stdout, orig_stderr;
 
 VALUE rb_output_fs;
@@ -3180,6 +3180,9 @@ static VALUE
 rb_f_getc()
 {
     rb_warn("getc is obsolete; use STDIN.getc instead");
+    if (TYPE(rb_stdin) != T_FILE) {
+	return rb_funcall3(rb_stdin, rb_intern("getc"), 0, 0);
+    }
     return rb_io_getc(rb_stdin);
 }
 
@@ -4134,7 +4137,7 @@ Init_IO()
     rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO);
     rb_define_hooked_variable("$stderr", &rb_stderr, 0, set_output_var);
     rb_define_hooked_variable("$>", &rb_stdout, 0, set_output_var);
-    orig_stdout = rb_stdout;
+    rb_defout = orig_stdout = rb_stdout;
     orig_stderr = rb_stderr;
 
     /* variables to be removed in 1.8.1 */

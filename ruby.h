@@ -109,7 +109,7 @@ typedef unsigned long ID;
 #   define LLONG_MIN  LONG_LONG_MIN
 #  else
 #   ifdef _I64_MIN
-#    define LLONG_MIN _I64_MAX
+#    define LLONG_MIN _I64_MIX
 #   else
 #    define LLONG_MIN (-LLONG_MAX-1)
 #   endif

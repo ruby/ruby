@@ -1,7 +1,19 @@
+Tue Jul 29 16:38:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP::send0): add taint check.
+
 Tue Jul 29 15:41:02 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* instruby.rb (install): preserve the timestamp for Mac OS X ranlib
 	  problem.
+
+Tue Jul 29 01:14:51 2003  Rick Ohnemus  <rick_ohnemus@acm.org>
+
+	* ruby.h (LLONG_MIN): wrong value.
+
+Mon Jul 28 22:57:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_getc): $stdin may not be IO. [ruby-dev:20973]
 
 Tue Jul 29 12:22:28 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
@@ -43,6 +55,7 @@ Mon Jul 28 18:53:03 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* ext/openssl/extconf.rb: check again after pkg-config for MinGW on
 	  Cygwin.
 
+>>>>>>> 1.1963
 Mon Jul 28 15:32:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_gets): only "gets" should set $_.

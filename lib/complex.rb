@@ -75,14 +75,14 @@ class Complex < Numeric
   end
 
   def initialize(a, b)
-    raise "non numeric 1st arg `#{a.inspect}'" if !a.kind_of? Numeric
-    raise "`#{a.inspect}' for 1st arg" if a.kind_of? Complex
-    raise "non numeric 2nd arg `#{b.inspect}'" if !b.kind_of? Numeric
-    raise "`#{b.inspect}' for 2nd arg" if b.kind_of? Complex
+    raise TypeError, "non numeric 1st arg `#{a.inspect}'" if !a.kind_of? Numeric
+    raise TypeError, "`#{a.inspect}' for 1st arg" if a.kind_of? Complex
+    raise TypeError, "non numeric 2nd arg `#{b.inspect}'" if !b.kind_of? Numeric
+    raise TypeError, "`#{b.inspect}' for 2nd arg" if b.kind_of? Complex
     @real = a
     @image = b
   end
-  
+
   #
   # Addition with real or complex number.
   #
