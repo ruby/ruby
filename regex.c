@@ -2381,19 +2381,6 @@ re_compile_pattern(pattern, size, bufp)
     if (*laststart == anychar_repeat) {
       bufp->options |= RE_OPTIMIZE_ANCHOR;
     }
-    else if (*laststart == on_failure_jump) {
-      int mcnt;
-
-      laststart++;
-      EXTRACT_NUMBER_AND_INCR(mcnt, laststart);
-      if (*laststart == charset || *laststart == charset_not) {
-	p0 = laststart;
-	mcnt = *++p0;
-	p0 += mcnt+1;
-	mcnt = EXTRACT_UNSIGNED_AND_INCR(p0);
-	p0 += 8*mcnt;
-      }
-    }
   }
 
   bufp->used = b - bufp->buffer;

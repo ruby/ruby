@@ -246,8 +246,8 @@ rb_define_module_under(outer, name)
     ID id;
 
     id = rb_intern(name);
-    if (rb_const_defined(outer, id)) {
-	module = rb_const_get(rb_cObject, id);
+    if (rb_const_defined_at(outer, id)) {
+	module = rb_const_get(outer, id);
 	if (TYPE(module) == T_MODULE)
 	    return module;
 	rb_raise(rb_eTypeError, "%s::%s is not a module",

@@ -4,9 +4,18 @@ Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
 	fractional_seconds to specify a number of digits of
 	fractional part of the time.
 
+Sat Jan  5 03:07:34 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_new2): NULL pointer check added.
+
 Sat Jan  5 00:19:12 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yycompile): strdup()'ed twice.
+
+Fri Jan  4 18:29:10 2002  Michal Rokos  <m.rokos@sh.cvut.cz>
+
+	* class.c (rb_define_module_under): should locate predefined
+	  module using rb_const_defined_at().
 
 Fri Jan  4 17:23:49 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
