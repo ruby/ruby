@@ -426,6 +426,22 @@ expr		: kRETURN ret_args
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN($2);
 		    }
+		| kBREAK
+		    {
+			$$ = NEW_BREAK();
+		    }
+		| kNEXT
+		    {
+			$$ = NEW_NEXT();
+		    }
+		| kREDO
+		    {
+			$$ = NEW_REDO();
+		    }
+		| kRETRY
+		    {
+			$$ = NEW_RETRY();
+		    }
 		| command_call
 		| expr kAND expr
 		    {
@@ -1342,22 +1358,6 @@ primary		: literal
 		        fixpos($$, $2);
 		        local_pop();
 			in_single--;
-		    }
-		| kBREAK
-		    {
-			$$ = NEW_BREAK();
-		    }
-		| kNEXT
-		    {
-			$$ = NEW_NEXT();
-		    }
-		| kREDO
-		    {
-			$$ = NEW_REDO();
-		    }
-		| kRETRY
-		    {
-			$$ = NEW_RETRY();
 		    }
 
 then		: term

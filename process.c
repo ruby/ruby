@@ -1285,7 +1285,7 @@ rb_proc_times(obj)
 #endif /* HZ */
     struct tms buf;
 
-    if (times(&buf) == -1) rb_sys_fail(0);
+    times(&buf);
     return rb_struct_new(S_Tms,
 			 rb_float_new((double)buf.tms_utime / HZ),
 			 rb_float_new((double)buf.tms_stime / HZ),

@@ -365,7 +365,7 @@ rb_big2str(x, base)
     VALUE x;
     int base;
 {
-    VALUE t;
+    volatile VALUE t;
     BDIGIT *ds;
     long i, j, hbase;
     VALUE ss;
@@ -395,7 +395,7 @@ rb_big2str(x, base)
     else {
 	j = 0;
 	hbase = 0;
-	rb_raise(rb_eArgError, "bignum cannot treat base %d", base);
+	rb_raise(rb_eArgError, "Bignum cannot treat base %d", base);
     }
 
     t = rb_big_clone(x);
