@@ -944,6 +944,27 @@ rb_io_to_io(io)
 }
 
 /* reading functions */
+static long
+read_buffered_data(ptr, len, f)
+    char *ptr;
+    long len;
+    FILE *f;
+{
+    long n;
+
+#ifdef READ_DATA_PENDING_COUNT
+    n = READ_DATA_PENDING_COUNT(f);
+    if (n <= 0) return 0;
+    if (n > len) n = len;
+    return fread(ptr, 1, n, f);
+#else
+    for (n = 0; n < len && READ_DATA_PENDING(f); ++n) {
+        *ptr++ = getc(f);
+    }
+    return n;
+#endif
+}
+
 long
 io_fread(ptr, len, fptr)
     char *ptr;
@@ -952,32 +973,17 @@ io_fread(ptr, len, fptr)
 {
     long n = len;
     int c;
+    int saved_errno;
 
     while (n > 0) {
-#ifdef READ_DATA_PENDING_COUNT
-	long i = READ_DATA_PENDING_COUNT(fptr->f);
-	if (i <= 0) {
-	    rb_thread_wait_fd(fileno(fptr->f));	
-	    rb_io_check_closed(fptr);
-	    i = READ_DATA_PENDING_COUNT(fptr->f);
-	}
-	if (i > 0) {
-	    if (i > n) i = n;
-	    TRAP_BEG;
-	    c = fread(ptr, 1, i, fptr->f);
-	    TRAP_END;
-	    if (c < 0) goto eof;
-	    ptr += c;
-	    n -= c;
-	    if (c < i) goto eof;
-	    continue;
-	}
-#else
-	if (!READ_DATA_PENDING(fptr->f)) {
-	    rb_thread_wait_fd(fileno(fptr->f));
-	    rb_io_check_closed(fptr);
-	}
-#endif
+        c = read_buffered_data(ptr, n, fptr->f);
+        if (c < 0) goto eof;
+        if (c > 0) {
+            ptr += c;
+            if ((n -= c) <= 0) break;
+        }
+        rb_thread_wait_fd(fileno(fptr->f));
+        rb_io_check_closed(fptr);
 	TRAP_BEG;
 	c = getc(fptr->f);
 	TRAP_END;
@@ -998,6 +1004,9 @@ io_fread(ptr, len, fptr)
 		    if (len > n) {
 			clearerr(fptr->f);
 		    }
+                    saved_errno = errno;
+                    rb_warn("nonblocking IO#read is obsolete; use IO#readpartial or IO#sysread");
+                    errno = saved_errno;
 		}
 		if (len == n) return 0;
 	    }
@@ -1090,6 +1099,126 @@ read_all(fptr, siz, str)
     OBJ_TAINT(str);
 
     return str;
+}
+
+static VALUE
+io_getpartial(int argc, VALUE *argv, VALUE io)
+{
+    OpenFile *fptr;
+    VALUE length, str;
+    long n, len;
+
+    rb_scan_args(argc, argv, "11", &length, &str);
+
+    if ((len = NUM2LONG(length)) < 0) {
+        rb_raise(rb_eArgError, "negative length %ld given", len);
+    }
+
+    if (NIL_P(str)) {
+        str = rb_str_new(0, len);
+    }
+    else {
+        StringValue(str);
+        rb_str_modify(str);
+        rb_str_resize(str, len);
+    }
+    OBJ_TAINT(str);
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+
+    if (len == 0)
+        return str;
+
+    READ_CHECK(fptr->f);
+    if (RSTRING(str)->len != len) {
+      modified:
+        rb_raise(rb_eRuntimeError, "buffer string modified");
+    }
+    n = read_buffered_data(RSTRING(str)->ptr, len, fptr->f);
+    if (n <= 0) {
+      again:
+        if (RSTRING(str)->len != len) goto modified;
+        TRAP_BEG;
+        n = read(fileno(fptr->f), RSTRING(str)->ptr, len);
+        TRAP_END;
+        if (n < 0) {
+            if (rb_io_wait_readable(fileno(fptr->f)))
+                goto again;
+            rb_sys_fail(fptr->path);
+        }
+    }
+    rb_str_resize(str, n);
+
+    if (n == 0)
+        return Qnil;
+    else
+        return str;
+}
+
+/*
+ *  call-seq:
+ *     ios.readpartial(maxlen[, outbuf])    => string, outbuf
+ *
+ *  Reads at most <i>maxlen</i> bytes from the I/O stream but
+ *  it blocks only if <em>ios</em> has no data immediately available.
+ *  If the optional <i>outbuf</i> argument is present,
+ *  it must reference a String, which will receive the data.
+ *  It raises <code>EOFError</code> on end of file.
+ *
+ *  readpartial is designed for streams such as pipe, socket, tty, etc.
+ *  It blocks only when no data immediately available.
+ *  This means that it blocks only when following all conditions hold.
+ *  * the buffer in the IO object is empty.
+ *  * the content of the stream is empty.
+ *  * the stream is not reached to EOF.
+ *
+ *  When readpartial blocks, it waits data or EOF on the stream.
+ *  If some data is reached, readpartial returns with the data.
+ *  If EOF is reached, readpartial raises EOFError.
+ *
+ *  When readpartial doesn't blocks, it returns or raises immediately.
+ *  If the buffer is not empty, it returns the data in the buffer.
+ *  Otherwise if the stream has some content,
+ *  it returns the data in the stream. 
+ *  Otherwise if the stream is reached to EOF, it raises EOFError.
+ *
+ *     r, w = IO.pipe           #               buffer          pipe content
+ *     w << "abc"               #               ""              "abc".
+ *     r.readpartial(4096)      #=> "abc"       ""              ""
+ *     r.readpartial(4096)      # blocks because buffer and pipe is empty.
+ *
+ *     r, w = IO.pipe           #               buffer          pipe content
+ *     w << "abc"               #               ""              "abc"
+ *     w.close                  #               ""              "abc" EOF
+ *     r.readpartial(4096)      #=> "abc"       ""              EOF
+ *     r.readpartial(4096)      # raises EOFError
+ *
+ *     r, w = IO.pipe           #               buffer          pipe content
+ *     w << "abc\ndef\n"        #               ""              "abc\ndef\n"
+ *     r.gets                   #=> "abc\n"     "def\n"         ""
+ *     w << "ghi\n"             #               "def\n"         "ghi\n"
+ *     r.readpartial(4096)      #=> "def\n"     ""              "ghi\n"
+ *     r.readpartial(4096)      #=> "ghi\n"     ""              ""
+ *
+ *  Note that readpartial is nonblocking-flag insensitive.
+ *  It blocks even if the nonblocking-flag is set.
+ *
+ *  Also note that readpartial behaves similar to sysread in blocking mode.
+ *  The behavior is identical when the buffer is empty.
+ *
+ */
+
+static VALUE
+io_readpartial(int argc, VALUE *argv, VALUE io)
+{
+    VALUE ret;
+
+    ret = io_getpartial(argc, argv, io);
+    if (NIL_P(ret))
+        rb_eof_error();
+    else
+        return ret;
 }
 
 /*
@@ -5409,6 +5538,7 @@ Init_IO()
 
     rb_define_method(rb_cIO, "readlines",  rb_io_readlines, -1);
 
+    rb_define_method(rb_cIO, "readpartial",  io_readpartial, -1);
     rb_define_method(rb_cIO, "read",  io_read, -1);
     rb_define_method(rb_cIO, "write", io_write, 1);
     rb_define_method(rb_cIO, "gets",  rb_io_gets_m, -1);
