@@ -1,3 +1,13 @@
+Mon Mar 10 23:19:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_find_file): need world writable directory check for
+	  relative paths too.
+
+Mon Mar 10 11:23:00 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_find_file): world writable directory check if
+	  $SAFE >= 1 (was $SAFE >= 2).
+
 Mon Mar 10 01:59:47 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: do not dispatch LIST when a mailbox is empty.

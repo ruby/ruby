@@ -2731,15 +2731,15 @@ rb_find_file(path)
 
     if (f[0] == '~') {
 	path = rb_file_expand_path(path, Qnil);
-	if (rb_safe_level() >= 2 && OBJ_TAINTED(path)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
+	if (rb_safe_level() >= 1 && OBJ_TAINTED(path)) {
+	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
 	}
 	f = StringValuePtr(path);
     }
 
 #if defined(__MACOS__) || defined(riscos)
     if (is_macos_native_path(f)) {
-	if (rb_safe_level() >= 2 && !rb_path_check(f)) {
+	if (rb_safe_level() >= 1 && !rb_path_check(f)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
 	if (file_load_ok(f)) return path;
@@ -2747,7 +2747,7 @@ rb_find_file(path)
 #endif
 
     if (is_absolute_path(f)) {
-	if (rb_safe_level() >= 2 && !rb_path_check(f)) {
+	if (rb_safe_level() >= 1 && !rb_path_check(f)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
 	if (file_load_ok(f)) return path;
@@ -2775,7 +2775,7 @@ rb_find_file(path)
 	}
 	else {
 	    lpath = RSTRING(tmp)->ptr;
-	    if (rb_safe_level() >= 2 && !rb_path_check(lpath)) {
+	    if (rb_safe_level() >= 1 && !rb_path_check(lpath)) {
 		rb_raise(rb_eSecurityError, "loading from unsafe path %s", lpath);
 	    }
 	}
@@ -2788,6 +2788,9 @@ rb_find_file(path)
 	return 0;		/* no path, no load */
     }
     f = dln_find_file(f, lpath);
+    if (rb_safe_level() >= 1 && !rb_path_check(f)) {
+	rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
+    }
     if (file_load_ok(f)) {
 	return rb_str_new2(f);
     }

@@ -411,8 +411,9 @@ pty_getpty(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE res, th;
-    struct pty_info info, thinfo;
+    VALUE res;
+    struct pty_info info;
+    struct pty_info thinfo;
     OpenFile *wfptr,*rfptr;
     VALUE rport = rb_obj_alloc(rb_cFile);
     VALUE wport = rb_obj_alloc(rb_cFile);
@@ -435,11 +436,11 @@ pty_getpty(argc, argv, self)
     rb_ary_store(res,1,(VALUE)wport);
     rb_ary_store(res,2,INT2FIX(info.child_pid));
 
-    th = rb_thread_create(pty_syswait, (void*)&info);
-    thinfo.thread = th;
+    thinfo.thread = rb_thread_create(pty_syswait, (void*)&info);
     thinfo.child_pid = info.child_pid;
 
     if (rb_block_given_p()) {
+
 	rb_ensure(rb_yield, res, pty_finalize_syswait, (VALUE)&thinfo);
 	return Qnil;
     }
