@@ -1,3 +1,11 @@
+Sat Jun  3 16:42:27 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* cygwin/GNUmakefile: remove unused import.h
+
+	* instruby.rb: ditto.
+
+	* ext/tcltklib/tcltklib.c: remove declaration of rb_argv0.
+
 Thu Jun  1 00:58:11 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (mcall): args == nil if no argument given.

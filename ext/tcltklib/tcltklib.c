@@ -489,8 +489,6 @@ _macinit()
 void
 Init_tcltklib()
 {
-    extern VALUE rb_argv0;	/* the argv[0] */
-
     VALUE lib = rb_define_module("TclTkLib");
     VALUE ip = rb_define_class("TclTkIp", rb_cObject);
 

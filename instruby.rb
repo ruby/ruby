@@ -57,10 +57,6 @@ File.makedirs archlibdir, true
 File.makedirs sitelibdir, true
 File.makedirs sitearchlibdir, true
 
-if RUBY_PLATFORM =~ /cygwin/ and File.exist? "import.h"
-  File.install "import.h", archlibdir, 0644, true
-end
-
 if RUBY_PLATFORM =~ /-aix/
   File.install "ruby.imp", archlibdir, 0644, true
 end
