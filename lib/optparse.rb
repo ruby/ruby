@@ -1346,14 +1346,14 @@ Default options, which never appear in option summary.
   hex = 'x[\da-f]+(?:_[\da-f]+)*'
   octal = "0(?:[0-7]*(?:_[0-7]+)*|#{binary}|#{hex})"
   integer = "#{octal}|#{decimal}"
-  accept(Integer, %r"\A[\-+]?(?:#{integer})"io) {|s| Integer(s) if s}
+  accept(Integer, %r"\A[-+]?(?:#{integer})"io) {|s| Integer(s) if s}
 
 =begin
 : Float
   Float number format, and converts to (({Float})).
 =end #'#"#`#
-  float = "(?:#{decimal}(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[\\-+]?#{decimal})?"
-  floatpat = %r"\A[\-+]?#{float}"io
+  float = "(?:#{decimal}(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[-+]?#{decimal})?"
+  floatpat = %r"\A[-+]?#{float}"io
   accept(Float, floatpat) {|s| s.to_f if s}
 
 =begin
@@ -1361,13 +1361,13 @@ Default options, which never appear in option summary.
   Generic numeric format, and converts to (({Integer})) for integer
   format, (({Float})) for float format.
 =end #'#"#`#
-  accept(Numeric, %r"\A[\-+]?(?:#{octal}|#{float})"io) {|s| eval(s) if s}
+  accept(Numeric, %r"\A[-+]?(?:#{octal}|#{float})"io) {|s| eval(s) if s}
 
 =begin
 : OptionParser::DecimalInteger
   Decimal integer format, to be converted to (({Integer})).
 =end #'#"#`#
-  DecimalInteger = /\A[\-+]?#{decimal}/io
+  DecimalInteger = /\A[-+]?#{decimal}/io
   accept(DecimalInteger) {|s| s.to_i if s}
 
 =begin
@@ -1375,7 +1375,7 @@ Default options, which never appear in option summary.
   Ruby/C like octal/hexadecimal/binary integer format, to be converted
   to (({Integer})).
 =end #'#"#`#
-  OctalInteger = /\A[\-+]?(?:[0-7]+(?:_[0-7]+)*|0(?:#{binary}|#{hex}))/io
+  OctalInteger = /\A[-+]?(?:[0-7]+(?:_[0-7]+)*|0(?:#{binary}|#{hex}))/io
   accept(OctalInteger) {|s| s.oct if s}
 
 =begin

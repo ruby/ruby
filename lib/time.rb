@@ -69,9 +69,9 @@ class Time
     def zone_offset(zone, year=Time.now.year)
       off = nil
       zone = zone.upcase
-      if /\A([\-+])(\d\d):?(\d\d)\z/ =~ zone
+      if /\A([+-])(\d\d):?(\d\d)\z/ =~ zone
         off = ($1 == '-' ? -1 : 1) * ($2.to_i * 60 + $3.to_i) * 60
-      elsif /\A[\-+]\d\d\z/ =~ zone
+      elsif /\A[+-]\d\d\z/ =~ zone
         off = zone.to_i * 3600
       elsif ZoneOffset.include?(zone)
         off = ZoneOffset[zone] * 3600
@@ -191,7 +191,7 @@ class Time
           (\d{2})\s*
           :\s*(\d{2})\s*
           (?::\s*(\d{2}))?\s+
-          ([+\-]\d{4}|
+          ([+-]\d{4}|
            UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|[A-IK-Z])/ix =~ date
         # Since RFC 2822 permit comments, the regexp has no right anchor.
         day = $1.to_i
@@ -277,7 +277,7 @@ class Time
           T
           (\d\d):(\d\d):(\d\d)
           (\.\d*)?
-          (Z|[+\-]\d\d:\d\d)?
+          (Z|[+-]\d\d:\d\d)?
           \s*\z/ix =~ date
 	datetime = [$1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i, $6.to_i] 
 	datetime << $7.to_f * 1000000 if $7

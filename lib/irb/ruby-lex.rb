@@ -948,7 +948,7 @@ class RubyLex
 	allow_point = false
       when allow_e && "e", allow_e && "E"
 	type = TkFLOAT
-	if peek(0) =~ /[+\-]/
+	if peek(0) =~ /[+-]/
 	  getc
 	end
 	allow_e = false

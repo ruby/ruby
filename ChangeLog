@@ -1,3 +1,10 @@
+Sat Mar 29 15:19:48 2003  Tanaka Akira  <akr@m17n.org>
+
+        * instruby.rb, ext/extmk.rb, lib/benchmark.rb, lib/cgi.rb,
+          lib/debug.rb, lib/getoptlong.rb, lib/optparse.rb, lib/time.rb,
+          lib/date/format.rb, lib/irb/ruby-lex.rb lib/uri/common.rb: revert
+          escape for `-' in character class.
+
 Sat Mar 29 09:48:35 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (avalue_to_svalue): use rb_check_array_type() again.
