@@ -1029,7 +1029,7 @@ marshal_load(argc, argv)
 
     major = r_byte(&arg);
     minor = r_byte(&arg);
-    if (major != MARSHAL_MAJOR) {
+    if (major != MARSHAL_MAJOR || minor > MARSHAL_MINOR) {
 	rb_raise(rb_eTypeError, "incompatible marshal file format (can't be read)\n\
 \tformat version %d.%d required; %d.%d given",
 		 MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
