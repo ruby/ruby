@@ -249,6 +249,7 @@ time_arg(argc, argv, tm, usec)
 	v[3] = argv[2];
 	v[4] = argv[1];
 	v[5] = argv[0];
+	v[6] = Qnil;
 	tm->tm_isdst = RTEST(argv[8]) ? 1 : 0;
     }
     else {

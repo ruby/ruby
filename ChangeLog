@@ -1,3 +1,8 @@
+Mon Jun 23 13:45:30 2003  Tanaka Akira  <akr@m17n.org>
+
+	* time.c (time_arg): initialize v[6] even when argc is 10 to
+	  avoid valgrind error.
+
 Sat Jun 21 23:15:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): should not propagate distination tag if
