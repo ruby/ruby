@@ -1,3 +1,8 @@
+Sat Oct 23 00:20:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_run): always use zstream_append_input()
+	  to avoid SEGV.  [ruby-dev:24568]
+
 Fri Oct 22 12:02:28 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_alias): was warning for wrong condition.

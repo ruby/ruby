@@ -699,15 +699,9 @@ zstream_run(z, src, len, flush)
     uInt n;
     int err;
 
-    if (NIL_P(z->input)) {
-	z->stream.next_in = src;
-	z->stream.avail_in = len;
-    }
-    else {
-	zstream_append_input(z, src, len);
-	z->stream.next_in = RSTRING(z->input)->ptr;
-	z->stream.avail_in = RSTRING(z->input)->len;
-    }
+    zstream_append_input(z, src, len);
+    z->stream.next_in = RSTRING(z->input)->ptr;
+    z->stream.avail_in = RSTRING(z->input)->len;
 
     if (z->stream.avail_out == 0) {
 	zstream_expand_buffer(z);
