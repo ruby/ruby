@@ -24,10 +24,13 @@ class TestDefined < Test::Unit::TestCase
     assert(defined?($x))		# global variable
     assert_equal('global-variable', defined?($x))# returns description
 
+    assert_nil(defined?(foo))		# undefined
     foo=5
     assert(defined?(foo))		# local variable
 
-    assert(defined?(::Array))		# constant	!! Array -> ::Array
+    assert(defined?(Array))		# constant
+    assert(defined?(::Array))		# toplevel constant
+    assert(defined?(File::Constants))	# nested constant
     assert(defined?(Object.new))	# method
     assert(!defined?(Object.print))	# private method
     assert(defined?(1 == 2))		# operator expression

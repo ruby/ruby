@@ -1430,12 +1430,12 @@ rb_const_defined_0(klass, id, exclude, recurse)
     ID id;
     int exclude, recurse;
 {
-    VALUE tmp = klass, value;
+    VALUE value, tmp;
+    int mod_retry = 0;
 
+    tmp = klass;
+  retry:
     while (tmp) {
-	if (tmp == rb_cObject && klass != rb_cObject) {
-	    break;
-	}
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl, id, &value)) {
 	    if (value == Qundef && NIL_P(autoload_file(klass, id)))
 		return Qfalse;
@@ -1444,8 +1444,10 @@ rb_const_defined_0(klass, id, exclude, recurse)
 	if (!recurse && klass != rb_cObject) break;
 	tmp = RCLASS(tmp)->super;
     }
-    if (!exclude && BUILTIN_TYPE(klass) == T_MODULE) {
-	return rb_const_defined(rb_cObject, id);
+    if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
+	mod_retry = 1;
+	tmp = rb_cObject;
+	goto retry;
     }
     return Qfalse;
 }
