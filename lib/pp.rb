@@ -361,7 +361,7 @@ class File
 	pp.breakable
 	pp.group {
 	  m = self.mode
-	  pp.text "mode="; pp.text sprintf("0%o", m)
+	  pp.text sprintf("mode=0%o", m)
 	  pp.breakable
 	  pp.text sprintf("(%s %c%c%c%c%c%c%c%c%c)",
 	    self.ftype,
@@ -400,7 +400,13 @@ class File
 	  end
 	  pp.text ','
 	}
-	pp.breakable; pp.text "rdev="; pp.pp self.rdev; pp.text ','
+	pp.breakable
+	pp.group {
+	  pp.text sprintf("rdev=0x%x", self.rdev)
+	  pp.breakable
+	  pp.text sprintf('(%d, %d)', self.rdev_major, self.rdev_minor)
+	  pp.text ','
+	}
 	pp.breakable; pp.text "size="; pp.pp self.size; pp.text ','
 	pp.breakable; pp.text "blksize="; pp.pp self.blksize; pp.text ','
 	pp.breakable; pp.text "blocks="; pp.pp self.blocks; pp.text ','

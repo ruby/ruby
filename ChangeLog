@@ -1,3 +1,7 @@
+Thu Jan 31 13:22:36 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (File::Stat#pretty_print): print rdev_major and rdev_minor.
+
 Wed Jan 30 15:58:04 2002  K.Kosako  <kosako@sofnec.co.jp>
 
 	* regex.c (re_adjust_startpos): fix for SJIS and UTF-8. 
