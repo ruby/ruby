@@ -1,7 +1,15 @@
+Mon Jan 26 11:35:23 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: Makefiles should depend on also rbconfig.rb.
+	  (ruby-bugs:PR#1256)
+
+	* ext/win32ole/win32ole.c (set_argv): set real arguments to
+	  WIN32OLE::ARGV.  [ruby-list:39073]
+
 Thu Jan 22 22:54:53 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (BEG_REGEXP): allow 8-bit characters in quoted
-	strings for Novell GroupWise Internet Agent.
+	  strings for Novell GroupWise Internet Agent.
 	* lib/net/imap.rb (DATA_REGEXP): ditto.
 
 Thu Jan 22 16:21:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
