@@ -951,6 +951,7 @@ fi
 AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
 AC_SUBST(RPATHFLAG)
+AC_SUBST(TRY_LINK)
 
 dln_a_out_works=no
 if test "$ac_cv_header_a_out_h" = yes; then
