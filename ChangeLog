@@ -1,3 +1,7 @@
+Sat Mar  6 10:49:40 2004  David Black  <dblack@wobblini.net>
+
+	* lib/scanf.rb: fixed a logic glitch in IO#block_scanf
+
 Sat Mar  6 02:00:19 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: net/https is merged.
@@ -114,10 +118,10 @@ Wed Mar  3 01:18:52 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 Wed Mar  3 00:59:30 2004  David Black  <dblack@wobblini.net>
 
-	* scanf.rb: soak_up_spaces only ungetc's non-space last
+	* lib/scanf.rb: soak_up_spaces only ungetc's non-space last
 	  character
 
-	* scanf.rb: IO#block_scanf now returns partial last iteration
+	* lib/scanf.rb: IO#block_scanf now returns partial last iteration
 	  array if format string matches partly
 
 Tue Mar  2 16:30:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
