@@ -1037,7 +1037,8 @@ classの名前を返す(デバッグ用)．classが名前を持たない時には,
 
 objのインスタンス変数の値を得る．`@'で始まらないインスタンス
 変数は rubyプログラムからアクセスできない「隠れた」インスタ
-ンス変数になる．
+ンス変数になる．定数は大文字の名前を持つクラス(またはモジュー
+ル)のインスタンス変数として実装されている．
 
  VALUE rb_iv_set(VALUE obj, char *name, VALUE val)
 
@@ -1080,7 +1081,7 @@ RuntimeError例外を発生させる．引数はprintf()と同じ．
 
  void Raise(VALUE exception, char *fmt, ...)
 
-exceptionで指定した例外を発生させる．引数はprintf()と同じ．
+exceptionで指定した例外を発生させる．fmt以下の引数はprintf()と同じ．
 
  void Fatal(char *fmt, ...)
 

@@ -1378,7 +1378,7 @@ is_defined(self, node, buf)
       case NODE_LVAR:
 	return "local-variable";
       case NODE_DVAR:
-	return "local-variable(nested)";
+	return "local-variable(ephemeral)";
 
       case NODE_GVAR:
 	if (rb_gvar_defined(node->nd_entry)) {
@@ -1450,6 +1450,26 @@ static int handle_rescue _((VALUE,NODE*));
 static void blk_free();
 
 static VALUE
+obj_is_block(block)
+    VALUE block;
+{
+    if (TYPE(block) == T_DATA && RDATA(block)->dfree == blk_free) {
+	return TRUE;
+    }
+    return FALSE;
+}
+
+static VALUE
+obj_is_proc(proc)
+    VALUE proc;
+{
+    if (obj_is_block(proc) && obj_is_kind_of(proc, cProc)) {
+	return TRUE;
+    }
+    return FALSE;
+}
+
+static VALUE
 set_trace_func(obj, trace)
     VALUE obj, trace;
 {
@@ -1457,7 +1477,7 @@ set_trace_func(obj, trace)
 	trace_func = 0;
 	return Qnil;
     }
-    if (TYPE(trace) != T_DATA || RDATA(trace)->dfree != blk_free) {
+    if (!obj_is_proc(trace)) {
 	TypeError("trace_func needs to be Proc");
     }
     return trace_func = trace;
@@ -3750,7 +3770,7 @@ eval(self, src, scope, file, line)
 	line = sourceline;
     }
     if (!NIL_P(scope)) {
-	if (TYPE(scope) != T_DATA || RDATA(scope)->dfree != blk_free) {
+	if (!obj_is_block(scope)) {
 	    TypeError("wrong argument type %s (expected Proc/Binding)",
 		      rb_class2name(CLASS_OF(scope)));
 	}
@@ -4731,7 +4751,7 @@ bind_clone(self)
     VALUE bind;
 
     Data_Get_Struct(self, struct BLOCK, orig);
-    bind = Data_Make_Struct(self, struct BLOCK, blk_mark,blk_free,data);
+    bind = Data_Make_Struct(self,struct BLOCK,blk_mark,blk_free,data);
     MEMCPY(data, orig, struct BLOCK, 1);
     data->frame.argv = ALLOC_N(VALUE, orig->frame.argc);
     MEMCPY(data->frame.argv, orig->frame.argv, VALUE, orig->frame.argc);
@@ -4754,7 +4774,7 @@ f_binding(self)
     VALUE bind;
 
     PUSH_BLOCK(0,0);
-    bind = Data_Make_Struct(cBinding, struct BLOCK, blk_mark,blk_free,data);
+    bind = Data_Make_Struct(cBinding,struct BLOCK,blk_mark,blk_free,data);
     MEMCPY(data, the_block, struct BLOCK, 1);
 
 #ifdef THREAD
@@ -4958,9 +4978,7 @@ block_pass(self, node)
     if (obj_is_kind_of(block, cMethod)) {
 	block = method_proc(block);
     }
-    else if (TYPE(block) != T_DATA
-	|| RDATA(block)->dfree != blk_free
-	|| !obj_is_kind_of(block, cProc)) {
+    else if (!obj_is_proc(block)) {
 	TypeError("wrong argument type %s (expected Proc)",
 		  rb_class2name(CLASS_OF(block)));
     }
@@ -5177,7 +5195,7 @@ static VALUE eThreadError;
 
 int thread_pending = 0;
 
-static VALUE cThread;
+VALUE cThread;
 
 #include <sys/types.h>
 #ifdef HAVE_SYS_TIME_H

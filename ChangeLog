@@ -1,3 +1,9 @@
+Tue Apr 28 00:07:38 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (obj_is_proc): type check predicate.
+
+	* eval.c (obj_is_block): ditto.
+
 Mon Apr 27 16:59:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/gtk/gtk.c (Init_gtk): use timeout, not idle to avoid
