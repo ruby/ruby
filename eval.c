@@ -1390,7 +1390,7 @@ ruby_run()
     int state;
     static int ex;
 
-    if (ruby_nerrs > 0) exit(ruby_nerrs);
+    if (ruby_nerrs > 0) exit(EXIT_FAILURE);
     state = ruby_exec();
     if (state && !ex) ex = state;
     ruby_stop(ex);

@@ -1,3 +1,8 @@
+Wed Oct 15 15:00:54 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_run): just return FAILURE instead of parse error
+	  count.  [ruby-list:38569]
+
 Wed Oct 15 13:17:02 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/digest/digest.c (rb_digest_base_alloc): need to initialize
@@ -32,7 +37,7 @@ Wed Oct 15 08:09:07 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 	* ext/syck/handler.c: Now using 'tag' rather than 'taguri' in type URIs.
 
 	* ext/syck/rubyext.c: Ditto (on both counts).
-	
+
 Wed Oct 15 05:05:53 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/generator.rb: A new library which converts an internal
@@ -43,10 +48,10 @@ Wed Oct 15 05:05:53 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 Wed Oct 15 04:31:51 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/sample/demos-en/entry3.rb, ext/tk/sample/demos-jp/entry3.rb : 
+	* ext/tk/sample/demos-en/entry3.rb, ext/tk/sample/demos-jp/entry3.rb :
 	  new demo-scripts
 
-	* ext/tk/sample/demos-en/widget, ext/tk/sample/demos-jp/widget : 
+	* ext/tk/sample/demos-en/widget, ext/tk/sample/demos-jp/widget :
 	  add entries for 'entry3.rb'
 
 Wed Oct 15 04:31:47 2003  Akinori MUSHA  <knu@iDaemons.org>
@@ -75,7 +80,7 @@ Wed Oct 15 00:20:15 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/multi-tk.rb: support TclTkIp._thread_vwait and
 	  _thread_tkwait.
 
-	* ext/tk/lib/tk.rb: now, TkVariable#wait has 2 arguments. 
+	* ext/tk/lib/tk.rb: now, TkVariable#wait has 2 arguments.
 	  If 1st argument is true, waits on a thread. If false, waits on
 	  an eventloop. If 2nd argument is true, checks existence of
 	  rootwidgets. If false, doesn't. Default is wait(true, false).
