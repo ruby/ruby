@@ -77,11 +77,11 @@ AC_CHECK_PROGS(AR, ar aal, ar)
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-AC_EXEEXT
-AC_OBJEXT
-
 # checks for UNIX variants that set C preprocessor variables
 AC_MINIX
+
+AC_EXEEXT
+AC_OBJEXT
 
 AC_CHECK_SIZEOF(int, 4)
 AC_CHECK_SIZEOF(short, 2)
