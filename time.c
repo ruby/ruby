@@ -218,7 +218,7 @@ obj2long(obj)
     VALUE obj;
 {
     if (TYPE(obj) == T_STRING) {
-	obj = rb_str2inum(obj, 10);
+	obj = rb_str_to_inum(obj, 10, Qfalse);
     }
 
     return NUM2LONG(obj);

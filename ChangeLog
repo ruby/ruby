@@ -1,3 +1,39 @@
+Fri Feb  1 19:10:04 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* intern.h: prototypes for new functions; rb_cstr_to_inum(),
+	  rb_str_to_inum(), rb_cstr_to_dbl(), rb_str_to_dbl()
+
+	* bignum.c (rb_cstr_to_inum): changed from rb_cstr2inum(), and
+	  added argument badcheck to be consistent with parser. [new]
+
+	* bignum.c (rb_str_to_inum): ditto.
+
+	* bignum.c (rb_cstr2inum): wapper of rb_cstr_to_inum() now.
+
+	* bignum.c (rb_str2inum): ditto.
+
+	* object.c (rb_cstr_to_dbl): float number parser. [new]
+
+	* object.c (rb_str_to_dbl): ditto.
+
+	* object.c (rb_Float): use rb_cstr_to_dbl() for strict check.
+
+	* object.c (rb_Integer): use rb_str_to_inum() for strict check.
+
+	* string.c (rb_str_to_f): use rb_str_to_dbl() with less check.
+
+	* string.c (rb_str_to_i): use rb_str_to_inum() with less check.
+
+	* string.c (rb_str_hex): ditto.
+
+	* string.c (rb_str_oct): ditto.
+
+	* sprintf.c (rb_f_sprintf): ditto.
+
+	* time.c (obj2long): ditto.
+
+	* parse.y (yylex): use rb_cstr_to_inum() for strict check.
+
 Fri Feb  1 17:46:39 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* regex.c (mbc_startpos): become macro.

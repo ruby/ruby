@@ -61,6 +61,8 @@ VALUE rb_uint2big _((unsigned long));
 VALUE rb_int2big _((long));
 VALUE rb_uint2inum _((unsigned long));
 VALUE rb_int2inum _((long));
+VALUE rb_cstr_to_inum _((const char*, int, int));
+VALUE rb_str_to_inum _((VALUE, int, int));
 VALUE rb_cstr2inum _((const char*, int));
 VALUE rb_str2inum _((VALUE, int));
 VALUE rb_big2str _((VALUE, int));
@@ -263,6 +265,8 @@ VALUE rb_Integer _((VALUE));
 VALUE rb_Float _((VALUE));
 VALUE rb_String _((VALUE));
 VALUE rb_Array _((VALUE));
+double rb_cstr_to_dbl _((const char *, int));
+double rb_str_to_dbl _((VALUE, int));
 /* parse.y */
 EXTERN int   ruby_sourceline;
 EXTERN char *ruby_sourcefile;

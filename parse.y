@@ -3345,7 +3345,7 @@ yylex()
 			yyerror("hexadecimal number without hex-digits");
 		    }
 		    else if (nondigit) goto trailing_uc;
-		    yylval.val = rb_cstr2inum(tok(), 16);
+		    yylval.val = rb_cstr_to_inum(tok(), 16, Qfalse);
 		    return tINTEGER;
 		}
 		if (c == 'b' || c == 'B') {
@@ -3369,7 +3369,7 @@ yylex()
 			yyerror("numeric literal without digits");
 		    }
 		    else if (nondigit) goto trailing_uc;
-		    yylval.val = rb_cstr2inum(tok(), 2);
+		    yylval.val = rb_cstr_to_inum(tok(), 2, Qfalse);
 		    return tINTEGER;
 		}
 		if (c >= '0' && c <= '7' || c == '_') {
@@ -3388,7 +3388,7 @@ yylex()
 			pushback(c);
 			tokfix();
 			if (nondigit) goto trailing_uc;
-			yylval.val = rb_cstr2inum(tok(), 8);
+			yylval.val = rb_cstr_to_inum(tok(), 8, Qfalse);
 			return tINTEGER;
 		    }
 		}
@@ -3482,7 +3482,7 @@ yylex()
 		yylval.val = rb_float_new(d);
 		return tFLOAT;
 	    }
-	    yylval.val = rb_cstr2inum(tok(), 10);
+	    yylval.val = rb_cstr_to_inum(tok(), 10, Qfalse);
 	    return tINTEGER;
 	}
 

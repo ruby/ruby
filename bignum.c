@@ -186,21 +186,26 @@ rb_int2inum(n)
 }
 
 VALUE
-rb_cstr2inum(str, base)
+rb_cstr_to_inum(str, base, badcheck)
     const char *str;
     int base;
+    int badcheck;
 {
     const char *s = str;
     char *end;
-    int badcheck = (base==0)?1:0;
-    char sign = 1, c;
+    char sign = 1, c, nondigit = 0;
     BDIGIT_DBL num;
     long len, blen = 1;
     long i;
     VALUE z;
     BDIGIT *zds;
 
-    while (*str && ISSPACE(*str)) str++;
+    if (badcheck) {
+	while (ISSPACE(*str)) str++;
+    }
+    else {
+	while (ISSPACE(*str) || *str == '_') str++;
+    }
 
     if (str[0] == '+') {
 	str++;
@@ -213,7 +218,7 @@ rb_cstr2inum(str, base)
 	if (badcheck) goto bad;
 	return INT2FIX(0);
     }
-    if (base == 0) {
+    if (base <= 0) {
 	if (str[0] == '0') {
 	    if (str[1] == 'x' || str[1] == 'X') {
 		base = 16;
@@ -224,6 +229,9 @@ rb_cstr2inum(str, base)
 	    else {
 		base = 8;
 	    }
+	}
+	else if (base < -1) {
+	    base = -base;
 	}
 	else {
 	    base = 10;
@@ -290,18 +298,27 @@ rb_cstr2inum(str, base)
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': 
 	    c = c - '0';
+	    nondigit = 0;
 	    break;
 	  case 'a': case 'b': case 'c':
 	  case 'd': case 'e': case 'f':
-	    if (base != 16) c = base;
-	    else c = c - 'a' + 10;
-	    break;
+	    c -= 'a' - 'A';
 	  case 'A': case 'B': case 'C':
 	  case 'D': case 'E': case 'F':
-	    if (base != 16) c = base;
-	    else c = c - 'A' + 10;
+	    if (base != 16) {
+		nondigit = c;
+		c = base;
+	    }
+	    else {
+		c = c - 'A' + 10;
+		nondigit = 0;
+	    }
 	    break;
 	  case '_':
+	    if (badcheck) {
+		if (nondigit) goto bad;
+		nondigit = c;
+	    }
 	    continue;
 	  default:
 	    c = base;
@@ -334,9 +351,10 @@ rb_cstr2inum(str, base)
 }
 
 VALUE
-rb_str2inum(str, base)
+rb_str_to_inum(str, base, badcheck)
     VALUE str;
     int base;
+    int badcheck;
 {
     char *s;
     int len;
@@ -351,10 +369,26 @@ rb_str2inum(str, base)
 	p[len] = '\0';
 	s = p;
     }
-    if (base == 0 && len != strlen(s)) {
+    if (badcheck && len != strlen(s)) {
 	rb_raise(rb_eArgError, "string for Integer contains null byte");
     }
-    return rb_cstr2inum(s, base); 
+    return rb_cstr_to_inum(s, base, badcheck); 
+}
+
+VALUE
+rb_cstr2inum(str, base)
+    const char *str;
+    int base;
+{
+    return rb_cstr_to_inum(str, base, base==0);
+}
+
+VALUE
+rb_str2inum(str, base)
+    VALUE str;
+    int base;
+{
+    return rb_str_to_inum(str, base, base==0);
 }
 
 static char hexmap[] = "0123456789abcdef";

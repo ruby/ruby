@@ -1766,16 +1766,14 @@ rb_str_to_i(argc, argv, str)
       default:
 	rb_raise(rb_eArgError, "illegal radix %d", base);
     }
-    return rb_str2inum(str, base);
+    return rb_str_to_inum(str, base, Qfalse);
 }
 
 static VALUE
 rb_str_to_f(str)
     VALUE str;
 {
-    double f = strtod(RSTRING(str)->ptr, 0);
-
-    return rb_float_new(f);
+    return rb_float_new(rb_str_to_dbl(str, Qfalse));
 }
 
 static VALUE
@@ -2963,28 +2961,14 @@ static VALUE
 rb_str_hex(str)
     VALUE str;
 {
-    return rb_str2inum(str, 16);
+    return rb_str_to_inum(str, 16, Qfalse);
 }
 
 static VALUE
 rb_str_oct(str)
     VALUE str;
 {
-    int base = 8;
-
-    if (RSTRING(str)->len > 2 && RSTRING(str)->ptr[0] == '0') {
-	switch (RSTRING(str)->ptr[1]) {
-	  case 'x':
-	  case 'X':
-	    base = 16;
-	    break;
-	  case 'b':
-	  case 'B':
-	    base = 2;
-	    break;
-	}
-    }
-    return rb_str2inum(str, base);
+    return rb_str_to_inum(str, -8, Qfalse);
 }
 
 static VALUE

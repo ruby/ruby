@@ -18,10 +18,6 @@
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
-#if !defined(atof) && !defined(HAVE_STDLIB_H)
-double strtod();
-#endif
-
 static void fmt_setup _((char*,int,int,int,int));
 
 static char*
@@ -397,7 +393,7 @@ rb_f_sprintf(argc, argv)
 		    bignum = 1;
 		    break;
 		  case T_STRING:
-		    val = rb_str2inum(val, 0);
+		    val = rb_str_to_inum(val, 0, Qtrue);
 		    goto bin_retry;
 		  case T_BIGNUM:
 		    bignum = 1;

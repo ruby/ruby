@@ -945,7 +945,7 @@ rb_Integer(val)
 	return val;
 
       case T_STRING:
-	return rb_str2inum(val, 0);
+	return rb_str_to_inum(val, 0, Qtrue);
 
       case T_FIXNUM:
 	return val;
@@ -963,6 +963,90 @@ rb_f_integer(obj, arg)
     return rb_Integer(arg);
 }
 
+double
+rb_cstr_to_dbl(p, badcheck)
+    const char *p;
+    int badcheck;
+{
+    const char *q;
+    char *end;
+    double d;
+
+    q = p;
+    if (badcheck) {
+	while (ISSPACE(*p)) p++;
+    }
+    else {
+	while (ISSPACE(*p) || *p == '_') p++;
+    }
+    d = strtod(p, &end);
+    if (p == end) {
+	if (badcheck) {
+      bad:
+	    rb_invalid_str(q, "Float()");
+	}
+	return d;
+    }
+    if (*end) {
+	char *buf = ALLOCA_N(char, strlen(p));
+	char *n = buf;
+
+	while (p < end) *n++ = *p++;
+	while (*p) {
+	    if (*p == '_') {
+		/* remove underscores between digits */
+		if (badcheck) {
+		    if (n == buf || !ISDIGIT(n[-1])) goto bad;
+		    ++p;
+		    if (!ISDIGIT(*p)) goto bad;
+		}
+		else {
+		    while (*++p == '_');
+		    continue;
+		}
+	    }
+	    *n++ = *p++;
+	}
+	*n = '\0';
+	p = buf;
+	d = strtod(p, &end);
+	if (badcheck) {
+	    if (p == end) goto bad;
+	    while (*end && ISSPACE(*end)) end++;
+	    if (*end) goto bad;
+	}
+    }
+    if (errno == ERANGE) {
+	errno = 0;
+	rb_raise(rb_eArgError, "Float %s out of range", q);
+    }
+    return d;
+}
+
+double
+rb_str_to_dbl(str, badcheck)
+    VALUE str;
+    int badcheck;
+{
+    char *s;
+    int len;
+
+    StringValue(str);
+    s = RSTRING(str)->ptr;
+    len = RSTRING(str)->len;
+    if (s[len]) {		/* no sentinel somehow */
+	char *p = ALLOCA_N(char, len+1);
+
+	MEMCPY(p, s, char, len);
+	p[len] = '\0';
+	s = p;
+    }
+    if (badcheck && len != strlen(s)) {
+	rb_raise(rb_eArgError, "string for Float contains null byte");
+    }
+    return rb_cstr_to_dbl(s, badcheck);
+}
+
 VALUE
 rb_Float(val)
     VALUE val;
@@ -978,53 +1062,7 @@ rb_Float(val)
 	return rb_float_new(rb_big2dbl(val));
 
       case T_STRING:
-        {
-	    char *q, *p, *end;
-	    double d;
-
-	    q = p = StringValuePtr(val);
-	    while (*p && ISSPACE(*p)) p++;
-	    d = strtod(p, &end);
-	    if (p == end) {
-	      bad:
-		rb_invalid_str(q, "Float()");
-	    }
-	    if (*end) {
-		if (*end == '_') {
-		    char *buf = ALLOCA_N(char, strlen(p));
-		    char *n = buf, *last = p;
-
-		    while (p < end) *n++ = *p++;
-		    while (*p) {
-			if (*p == '_' && (n > buf && ISDIGIT(n[-1]))) {
-			    /* remove underscores between digits */
-			    last = ++p;
-			    while (*p == '_') ++p;
-			    if (!ISDIGIT(*p)) {
-				while (last < p) *n++ = *last++;
-				continue;
-			    }
-			    last = p;
-			}
-			*n++ = *p++;
-		    }
-		    while (*last && (*last == '_' || ISSPACE(*last)))
-			last++;
-		    if (!*last) goto bad;
-		    *n = '\0';
-		    p = buf;
-		    d = strtod(p, &end);
-		    if (p == end) goto bad;
-		}
-		while (*end && ISSPACE(*end)) end++;
-		if (*end) goto bad;
-	    }
-	    if (errno == ERANGE) {
-		errno = 0;
-		rb_raise(rb_eArgError, "Float %s out of range", p);
-	    }
-	    return rb_float_new(d);
-	}
+	return rb_float_new(rb_str_to_dbl(val, Qtrue));
 
       case T_NIL:
 	return rb_float_new(0.0);
