@@ -777,14 +777,7 @@ match_aref(argc, argv, match)
     if (!NIL_P(rest) || !FIXNUM_P(idx) || FIX2INT(idx) < 0) {
 	return rb_ary_aref(argc, argv, match_to_a(match));
     }
-
-    regs = RMATCH(match)->regs;
-    i = FIX2INT(idx);
-
-    if (i >= regs->num_regs) return Qnil;
-
-    ptr = RSTRING(RMATCH(match)->str)->ptr;
-    return rb_str_new(ptr+regs->beg[i], regs->end[i]-regs->beg[i]);
+    return rb_reg_nth_match(FIX2INT(idx), match);
 }
 
 static VALUE

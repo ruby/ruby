@@ -859,6 +859,10 @@ aref_args	: none
 		    {
 			$$ = NEW_LIST($1);
 		    }
+		| block_call opt_nl
+		    {
+			$$ = NEW_LIST($1);
+		    }
 		| args opt_nl
 		    {
 			$$ = $1;
@@ -888,6 +892,10 @@ aref_args	: none
 
 opt_call_args	: none
 		| call_args opt_nl
+		| block_call opt_nl
+		    {
+			$$ = NEW_LIST($1);
+		    }
 
 call_args	: command_call
 		    {

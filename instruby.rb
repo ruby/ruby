@@ -93,7 +93,7 @@ end
 File.install wdir+'/'+CONFIG['LIBRUBY_A'], archlibdir, 0644, true
 
 File.makedirs mandir, true
-File.install "ruby.1", mandir, 0644, true
+File.install "ruby.1", mandir+"/"+ruby_install_name+".1", 0644, true
 Dir.chdir wdir
 File.install "config.h", archlibdir, 0644, true
 File.install "rbconfig.rb", archlibdir, 0644, true

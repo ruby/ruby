@@ -2579,7 +2579,7 @@ rb_str_scan(str, pat)
 	match = rb_backref_get();
 	rb_match_busy(match);
 	rb_yield(result);
-	rb_backref_set(match);
+	rb_backref_set(match);	/* restore $~ value */
     }
     rb_backref_set(match);
     return str;
