@@ -1,6 +1,12 @@
+Mon Jul 24 18:52:55 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* win32/win32.c (win32_getenv): should remove `static'.
+
+	* ruby.c (rubylib_mangle): support "/hoge;/foo"
+
 Sun Jul 23 12:55:04 2000  Dave Thomas  <Dave@Thomases.com>
 
-       * string.c (rb_str_rindex): Support negative end position.
+	* string.c (rb_str_rindex): Support negative end position.
 
 Fri Jul 21 17:35:01 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -2350,13 +2350,12 @@ wait()
 char *
 win32_getenv(const char *name)
 {
-    static char *curitem = NULL;	/* XXX threadead */
-    static DWORD curlen = 0;		/* XXX threadead */
+    char *curitem = NULL;	/* XXX threadead */
+    DWORD curlen = 0;		/* XXX threadead */
     DWORD needlen;
-    if (!curitem) {
-	curlen = 512;
-	curitem = ALLOC_N(char, curlen);
-    }
+
+    curlen = 512;
+    curitem = ALLOC_N(char, curlen);
 
     needlen = GetEnvironmentVariable(name,curitem,curlen);
     if (needlen != 0) {

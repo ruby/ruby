@@ -128,12 +128,12 @@ rubylib_mangle(s, l)
     static char *newp, *oldp;
     static int newl, oldl, notfound;
     static char ret[STATIC_FILE_LENGTH+1];
-    
+
     if (!newp && !notfound) {
 	newp = getenv("RUBYLIB_PREFIX");
 	if (newp) {
 	    char *s;
-	    
+
 	    oldp = newp;
 	    while (*newp && !ISSPACE(*newp) && *newp != ';') {
 		newp++; oldl++;		/* Skip digits. */
@@ -155,19 +155,19 @@ rubylib_mangle(s, l)
 	    notfound = 1;
 	}
     }
-    if (!newp) {
-	return s;
-    }
     if (l == 0) {
 	l = strlen(s);
     }
-    if (l < oldl || strncasecmp(oldp, s, oldl) != 0) {
-	return s;
+    if (!newp || l < oldl || strncasecmp(oldp, s, oldl) != 0) {
+	strncpy(ret, s, l);
+	ret[l] = 0;
+	return ret;
     }
     if (l + newl - oldl > STATIC_FILE_LENGTH || newl > STATIC_FILE_LENGTH) {
 	rb_fatal("malformed RUBYLIB_PREFIX");
     }
     strcpy(ret + newl, s + oldl);
+    ret[l + newl - oldl] = 0;
     return ret;
 }
 #define rubylib_mangled_path(s, l) rb_str_new2(rubylib_mangle((s), (l)))
