@@ -1,3 +1,11 @@
+Wed Jan  7 14:26:05 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb (TkPanedWindow): use epath for embedded windows.
+
+	* ext/tk/lib/tktext.rb: use epath for embedded windows.
+
+	* ext/tk/lib/tkcanvas.rb: use epath for window items.
+
 Wed Jan  7 14:24:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/soap/{attachment.rb,mimemessage.rb}: added from soap4r/1.5.2.

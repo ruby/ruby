@@ -499,8 +499,41 @@ class TkText<TkTextWin
       index.configure(slot, value)
     else
       if slot.kind_of? Hash
+	slot = _symbolkey2str(slot)
+	win = slot['window']
+	slot['window'] = win.epath if win.kind_of?(TkWindow)
+	if slot['create']
+	  p_create = slot['create']
+	  if p_create.kind_of? Proc
+	    slot['create'] = install_cmd(proc{
+					   id = p_create.call
+					   if id.kind_of?(TkWindow)
+					     id.epath
+					   else
+					     id
+					   end
+					 })
+	  end
+	end
 	tk_send('window', 'configure', index, *hash_kv(slot))
       else
+	if slot == 'window' || slot == :window
+	  id = value 
+	  value = id.epath if id.kind_of?(TkWindow)
+	end
+	if slot == 'create' || slot == :create
+	  p_create = value
+	  if p_create.kind_of? Proc
+	    value = install_cmd(proc{
+				  id = p_create.call
+				  if id.kind_of?(TkWindow)
+				    id.epath
+				  else
+				    id
+				  end
+				})
+	  end
+	end
 	tk_send('window', 'configure', index, "-#{slot}", value)
       end
     end
@@ -1177,10 +1210,18 @@ class TkTextWindow<TkObject
     @index = @path.path
     keys = _symbolkey2str(keys)
     @id = keys['window']
+    keys['window'] = @id.epath if @id.kind_of?(TkWindow)
     if keys['create']
       @p_create = keys['create']
       if @p_create.kind_of? Proc
-	keys['create'] = install_cmd(proc{@id = @p_create.call; @id.path})
+	keys['create'] = install_cmd(proc{
+				       @id = @p_create.call
+				       if @id.kind_of?(TkWindow)
+					 @id.epath
+				       else
+					 @id
+				       end
+				     })
       end
     end
     tk_call @t.path, 'window', 'create', @index, *hash_kv(keys)
@@ -1200,16 +1241,21 @@ class TkTextWindow<TkObject
   def configure(slot, value=None)
     if slot.kind_of? Hash
       slot = _symbolkey2str(slot)
-      @id = slot['window'] if slot['window']
+      if slot['window']
+	@id = slot['window'] 
+	slot['window'] = @id.epath if @id.kind_of?(TkWindow)
+      end
       if slot['create']
-	self.create=value
-	slot['create']=nil
+	self.create=slot.delete('create')
       end
       if slot.size > 0
 	tk_call(@t.path, 'window', 'configure', @index, *hash_kv(slot))
       end
     else
-      @id = value if slot == 'window' || slot == :window
+      if slot == 'window' || slot == :window
+	@id = value 
+	value = @id.epath if @id.kind_of?(TkWindow)
+      end
       if slot == 'create' || slot == :create
 	self.create=value
       else
@@ -1228,8 +1274,9 @@ class TkTextWindow<TkObject
   end
 
   def window=(value)
-    tk_call @t.path, 'window', 'configure', @index, '-window', value
     @id = value
+    value = @id.epath if @id.kind_of?(TkWindow)
+    tk_call @t.path, 'window', 'configure', @index, '-window', value
   end
 
   def create
@@ -1239,7 +1286,14 @@ class TkTextWindow<TkObject
   def create=(value)
     @p_create = value
     if @p_create.kind_of? Proc
-      value = install_cmd(proc{@id = @p_create.call})
+      value = install_cmd(proc{
+			    @id = @p_create.call
+			    if @id.kind_of?(TkWindow)
+			      @id.epath
+			    else
+			      @id
+			    end
+			  })
     end
     tk_call @t.path, 'window', 'configure', @index, '-create', value
   end
