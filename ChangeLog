@@ -1,3 +1,7 @@
+Mon Jan 22 16:33:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* mkconfig.rb: autoconf 2.49 support.
+
 Sat Jan 20 03:54:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (yylex): fixed serious syntax misbehavior.  do's
