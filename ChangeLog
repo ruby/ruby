@@ -1,3 +1,23 @@
+Tue Jun 22 01:32:40 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_pkey_dh.c (ossl_dh_initialize): should create
+	  empty pkey object if no argument is passed. [ruby-talk:103328]
+
+	* ext/openssl/ossl_pkey_dsa.c (ossl_dsa_initialize): ditto.
+
+	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_initialize): ditto.
+
+	* ext/openssl/ossl_pkey_dh.c: add new methods: OpenSSL::PKey::DH#p,
+	  OpenSSL::PKey::DH#p=, OpenSSL::PKey::DH#g, OpenSSL::PKey::DH#g=,
+	  OpenSSL::PKey::DH#pub_key, OpenSSL::PKey::DH#pub_key=,
+	  OpenSSL::PKey::DH#priv_key and OpenSSL::PKey::DH#priv_key=.
+
+	* ext/openssl/ossl_pkey_dsa.c: add new methods: OpenSSL::PKey::DSA#p,
+	  OpenSSL::PKey::DSA#p=, OpenSSL::PKey::DSA#q, OpenSSL::PKey::DSA#q=,
+	  OpenSSL::PKey::DSA#g, OpenSSL::PKey::DSA#g=,
+	  OpenSSL::PKey::DSA#pub_key, OpenSSL::PKey::DSA#pub_key=,
+	  OpenSSL::PKey::DSA#priv_key and OpenSSL::PKey::DSA#priv_key=.
+
 Mon Jun 21 09:24:51 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_opendir): should set errno if error occurs

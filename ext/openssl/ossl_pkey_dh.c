@@ -129,8 +129,10 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     VALUE arg, gen;
 
     GetPKey(self, pkey);
-    rb_scan_args(argc, argv, "11", &arg, &gen);
-    if (FIXNUM_P(arg)) {
+    if(rb_scan_args(argc, argv, "02", &arg, &gen) == 0) {
+      dh = DH_new();
+    }
+    else if (FIXNUM_P(arg)) {
 	if (!NIL_P(gen)) {
 	    g = FIX2INT(gen);
 	}
@@ -151,7 +153,7 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     }
     if (!EVP_PKEY_assign_DH(pkey, dh)) {
 	DH_free(dh);
-	ossl_raise(eRSAError, NULL);
+	ossl_raise(eDHError, NULL);
     }
     return self;
 }
@@ -342,6 +344,11 @@ ossl_dh_compute_key(VALUE self, VALUE pub)
     return str;
 }
 
+OSSL_PKEY_BN(dh, p);
+OSSL_PKEY_BN(dh, g);
+OSSL_PKEY_BN(dh, pub_key);
+OSSL_PKEY_BN(dh, priv_key);
+
 /*
  * INIT
  */
@@ -367,6 +374,11 @@ Init_ossl_dh()
     rb_define_method(cDH, "params_ok?", ossl_dh_check_params, 0);
     rb_define_method(cDH, "generate_key!", ossl_dh_generate_key, 0);
     rb_define_method(cDH, "compute_key", ossl_dh_compute_key, 1);
+
+    DEF_OSSL_PKEY_BN(cDH, dh, p);
+    DEF_OSSL_PKEY_BN(cDH, dh, g);
+    DEF_OSSL_PKEY_BN(cDH, dh, pub_key);
+    DEF_OSSL_PKEY_BN(cDH, dh, priv_key);
 
     rb_define_method(cDH, "params", ossl_dh_get_params, 0);
 }
