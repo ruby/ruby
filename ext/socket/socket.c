@@ -1502,6 +1502,19 @@ unix_send_io(sock, val)
 #endif
 }
 
+#if defined(HAVE_RECVMSG) && (defined(HAVE_ST_MSG_CONTROL) || defined(HAVE_ST_MSG_ACCRIGHTS))
+static void
+thread_read_select(fd)
+    int fd;
+{
+    fd_set fds;
+
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+    rb_thread_select(fd+1, &fds, 0, 0, 0);
+}
+#endif
+
 static VALUE
 unix_recv_io(argc, argv, sock)
     int argc;

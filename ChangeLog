@@ -1,3 +1,9 @@
+Sun Oct  5 23:27:09 2003  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/extconf.rb: check recvmsg even if sendmsg is exists.
+
+	* ext/socket/socket.c (thread_read_select): restored.
+
 Mon Oct  6 16:23:38 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object): wrong method name in the message.
