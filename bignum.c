@@ -22,23 +22,23 @@ VALUE rb_cBignum;
 
 #if SIZEOF_LONG*2 <= SIZEOF_LONG_LONG
 typedef unsigned long BDIGIT;
-typedef unsigned long long BDIGIT2;
-typedef long long BDIGIT2_SIGNED;
+typedef unsigned long long BDIGIT_DBL;
+typedef long long BDIGIT_DBL_SIGNED;
 #elif SIZEOF_INT*2 <= SIZEOF_LONG_LONG
 typedef unsigned int BDIGIT;
-typedef unsigned long long BDIGIT2;
-typedef long long BDIGIT2_SIGNED;
+typedef unsigned long long BDIGIT_DBL;
+typedef long long BDIGIT_DBL_SIGNED;
 #else
 typedef unsigned short BDIGIT;
-typedef unsigned long BDIGIT2;
-typedef long BDIGIT2_SIGNED;
+typedef unsigned long BDIGIT_DBL;
+typedef long BDIGIT_DBL_SIGNED;
 #endif
 
 #define BDIGITS(x) ((BDIGIT*)RBIGNUM(x)->digits)
 #define BITSPERDIG (sizeof(BDIGIT)*CHAR_BIT)
-#define BIGRAD ((BDIGIT2)1 << BITSPERDIG)
+#define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
 #define DIGSPERLONG ((unsigned int)(sizeof(long)/sizeof(BDIGIT)))
-#define BIGUP(x) ((BDIGIT2)(x) << BITSPERDIG)
+#define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT(x,BITSPERDIG)
 #define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
 
@@ -75,7 +75,7 @@ rb_big_2comp(x)			/* get 2's complement */
 {
     long i = RBIGNUM(x)->len;
     BDIGIT *ds = BDIGITS(x);
-    BDIGIT2 num;
+    BDIGIT_DBL num;
 
     while (i--) ds[i] = ~ds[i];
     i = 0; num = 1;
@@ -132,7 +132,7 @@ VALUE
 rb_uint2big(n)
     unsigned long n;
 {
-    BDIGIT2 num = n;
+    BDIGIT_DBL num = n;
     long i = 0;
     BDIGIT *digits;
     VALUE big;
@@ -194,7 +194,7 @@ rb_cstr2inum(str, base)
     char *end;
     int badcheck = (base==0)?1:0;
     char sign = 1, c;
-    BDIGIT2 num;
+    BDIGIT_DBL num;
     long len, blen = 1;
     long i;
     VALUE z;
@@ -306,7 +306,7 @@ rb_cstr2inum(str, base)
 	num = c;
 	for (;;) {
 	    while (i<blen) {
-		num += (BDIGIT2)zds[i]*base;
+		num += (BDIGIT_DBL)zds[i]*base;
 		zds[i++] = BIGLO(num);
 		num = BIGDN(num);
 	    }
@@ -390,7 +390,7 @@ rb_big2str(x, base)
     s[0] = RBIGNUM(x)->sign ? '+' : '-';
     while (i && j) {
 	long k = i;
-	BDIGIT2 num = 0;
+	BDIGIT_DBL num = 0;
 
 	while (k--) {
 	    num = BIGUP(num) + ds[k];
@@ -427,7 +427,7 @@ big2ulong(x, type)
     char *type;
 {
     long len = RBIGNUM(x)->len;
-    BDIGIT2 num;
+    BDIGIT_DBL num;
     BDIGIT *ds;
 
     if (len > sizeof(long)/sizeof(BDIGIT))
@@ -617,7 +617,7 @@ bigsub(x, y)
 {
     VALUE z = 0;
     BDIGIT *zds;
-    BDIGIT2_SIGNED num;
+    BDIGIT_DBL_SIGNED num;
     long i;
 
     i = RBIGNUM(x)->len;
@@ -642,7 +642,7 @@ bigsub(x, y)
     zds = BDIGITS(z);
 
     for (i = 0, num = 0; i < RBIGNUM(y)->len; i++) { 
-	num += (BDIGIT2_SIGNED)BDIGITS(x)[i] - BDIGITS(y)[i];
+	num += (BDIGIT_DBL_SIGNED)BDIGITS(x)[i] - BDIGITS(y)[i];
 	zds[i] = BIGLO(num);
 	num = BIGDN(num);
     } 
@@ -665,7 +665,7 @@ bigadd(x, y, sign)
     char sign;
 {
     VALUE z;
-    BDIGIT2 num;
+    BDIGIT_DBL num;
     long i, len;
 
     sign = (sign == RBIGNUM(y)->sign);
@@ -685,7 +685,7 @@ bigadd(x, y, sign)
 
     len = RBIGNUM(x)->len;
     for (i = 0, num = 0; i < len; i++) {
-	num += BDIGITS(x)[i] + BDIGITS(y)[i];
+	num += (BDIGIT_DBL)BDIGITS(x)[i] + BDIGITS(y)[i];
 	BDIGITS(z)[i] = BIGLO(num);
 	num = BIGDN(num);
     }
@@ -747,7 +747,7 @@ rb_big_mul(x, y)
     VALUE x, y;
 {
     long i, j;
-    BDIGIT2 n = 0;
+    BDIGIT_DBL n = 0;
     VALUE z;
     BDIGIT *zds;
 
@@ -772,11 +772,11 @@ rb_big_mul(x, y)
     zds = BDIGITS(z);
     while (j--) zds[j] = 0;
     for (i = 0; i < RBIGNUM(x)->len; i++) {
-	BDIGIT2 dd = BDIGITS(x)[i]; 
+	BDIGIT_DBL dd = BDIGITS(x)[i]; 
 	if (dd == 0) continue;
 	n = 0;
 	for (j = 0; j < RBIGNUM(y)->len; j++) {
-	    BDIGIT2 ee = n + (BDIGIT2)dd * BDIGITS(y)[j];
+	    BDIGIT_DBL ee = n + (BDIGIT_DBL)dd * BDIGITS(y)[j];
 	    n = zds[i + j] + ee;
 	    if (ee) zds[i + j] = BIGLO(n);
 	    n = BIGDN(n);
@@ -798,8 +798,8 @@ bigdivrem(x, y, divp, modp)
     long i, j;
     VALUE yy, z;
     BDIGIT *xds, *yds, *zds, *tds;
-    BDIGIT2 t2;
-    BDIGIT2_SIGNED num;
+    BDIGIT_DBL t2;
+    BDIGIT_DBL_SIGNED num;
     BDIGIT dd, q;
 
     yds = BDIGITS(y);
@@ -830,13 +830,13 @@ bigdivrem(x, y, divp, modp)
     zds = BDIGITS(z);
     if (nx==ny) zds[nx+1] = 0;
     while (!yds[ny-1]) ny--;
-    if ((dd = BIGRAD/(BDIGIT2_SIGNED)(yds[ny-1]+1)) != 1) {
+    if ((dd = BIGRAD/(BDIGIT_DBL_SIGNED)(yds[ny-1]+1)) != 1) {
 	yy = rb_big_clone(y);
 	tds = BDIGITS(yy);
 	j = 0;
 	num = 0;
 	while (j<ny) {
-	    num += (BDIGIT2)yds[j]*dd;
+	    num += (BDIGIT_DBL)yds[j]*dd;
 	    tds[j++] = BIGLO(num);
 	    num = BIGDN(num);
 	}
@@ -844,7 +844,7 @@ bigdivrem(x, y, divp, modp)
 	j = 0;
 	num = 0;
 	while (j<nx) {
-	    num += (BDIGIT2)xds[j]*dd;
+	    num += (BDIGIT_DBL)xds[j]*dd;
 	    zds[j++] = BIGLO(num);
 	    num = BIGDN(num);
 	}
@@ -862,20 +862,20 @@ bigdivrem(x, y, divp, modp)
 	if (q) {
 	    i = 0; num = 0; t2 = 0;
 	    do {			/* multiply and subtract */
-		BDIGIT2 ee;
-		t2 += (BDIGIT2)yds[i] * q;
+		BDIGIT_DBL ee;
+		t2 += (BDIGIT_DBL)yds[i] * q;
 		ee = num - BIGLO(t2);
-		num = zds[j - ny + i] + ee;
+		num = (BDIGIT_DBL)zds[j - ny + i] + ee;
 		if (ee) zds[j - ny + i] = BIGLO(num);
 		num = BIGDN(num);
 		t2 = BIGDN(t2);
 	    } while (++i < ny);
-	    num += zds[j - ny + i] - t2; /* borrow from high digit; don't update */
+	    num += zds[j - ny + i] - t2;/* borrow from high digit; don't update */
 	    while (num) {		/* "add back" required */
 		i = 0; num = 0; q--;
 		do {
-		    BDIGIT2 ee = num + yds[i];
-		    num = (BDIGIT2)zds[j - ny + i] + ee;
+		    BDIGIT_DBL ee = num + yds[i];
+		    num = (BDIGIT_DBL)zds[j - ny + i] + ee;
 		    if (ee) zds[j - ny + i] = BIGLO(num);
 		    num = BIGDN(num);
 		} while (++i < ny);
@@ -1230,7 +1230,7 @@ rb_big_lshift(x, y)
     int s1 = shift/BITSPERDIG;
     int s2 = shift%BITSPERDIG;
     VALUE z;
-    BDIGIT2 num = 0;
+    BDIGIT_DBL num = 0;
     long len, i;
 
     if (shift < 0) return rb_big_rshift(x, INT2FIX(-shift));
@@ -1259,7 +1259,7 @@ rb_big_rshift(x, y)
     int s1 = shift/BITSPERDIG;
     int s2 = shift%BITSPERDIG;
     VALUE z;
-    BDIGIT2 num = 0;
+    BDIGIT_DBL num = 0;
     long i = RBIGNUM(x)->len;
     long j;
 

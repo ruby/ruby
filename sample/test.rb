@@ -641,6 +641,9 @@ test_ok(7 == a.remainder(-b))
 test_ok(-7 == (-a).remainder(b))
 test_ok(-7 == (-a).remainder(-b))
 
+test_ok(10**40+10**20 == 10000000000000000000100000000000000000000)
+test_ok(10**40/10**20 == 100000000000000000000)
+
 test_check "string & char"
 
 test_ok("abcd" == "abcd")
