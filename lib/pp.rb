@@ -193,7 +193,7 @@ class PP < PrettyPrint
     end
 
     def object_address_group(obj, &block)
-      group(1, sprintf('#<%s:0x%x', obj.class.to_s, obj.__id__ * 2), '>', &block)
+      group(1, sprintf('#<%s:0x%.x', obj.class.to_s, obj.__id__ * 2), '>', &block)
     end
 
     def comma_breakable

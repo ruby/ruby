@@ -1,6 +1,11 @@
+Sun Feb  8 16:46:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pp.rb (PP::PPMethods::object_address_group): suppress negative
+	  sign for higher heap areas.
+
 Fri Feb  6 22:48:16 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/html_generator.rb (gen_url): Support 
+	* lib/rdoc/generators/html_generator.rb (gen_url): Support
 	  https in RDoc hyperlinks
 
 Fri Feb  6 22:41:22 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
@@ -57,7 +62,7 @@ Mon Feb  2 01:54:00 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (Struct#pretty_print): make it 1.8 style.
 	  (Numeric#pretty_print, FalseClass#pretty_print)
-	  (TrueClass#pretty_print, Module#pretty_print): fix pp for objects 
+	  (TrueClass#pretty_print, Module#pretty_print): fix pp for objects
 	  with instance variables.  [ruby-talk:91157]
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): return nil on loopback
@@ -96,18 +101,18 @@ Sat Jan 31 09:20:32 2004  NAKAMURA, Hiroshi  <nakahiro@sairon.co.jp>
 Sat Jan 31 01:00:32 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/soap/wsdlDriver.rb, lib/wsdl/soap/operation.rb: add support of
-          "parts" attribute of soap:body element in WSDL.
+	  "parts" attribute of soap:body element in WSDL.
 
 	* lib/wsdl/xmlSchema/schema.rb: friendly warning message for
-          simpleType element which is not supported for now.
+	  simpleType element which is not supported for now.
 
 	* lib/soap/mapping/factory.rb: deleted unused methods.
 
 	* lib/soap/mapping/rubytypeFactory.rb: do no ignore case while xsi:type
-          string <-> Ruby class name matching.
+	  string <-> Ruby class name matching.
 
 	* test/wsdl/soap/{soapbodyparts.wsdl,test_soapbodyparts.wsdl}: new
-          files.
+	  files.
 
 Thu Jan 29 23:56:00 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
