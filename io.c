@@ -1780,6 +1780,7 @@ rb_io_fptr_finalize(fptr)
     OpenFile *fptr;
 {
     if (!fptr) return;
+    if (fptr->refcnt <= 0 || --fptr->refcnt) return;
     if (fptr->path) {
 	free(fptr->path);
     }
@@ -1787,6 +1788,7 @@ rb_io_fptr_finalize(fptr)
     if (fileno(fptr->f) < 3) return;
 
     rb_io_fptr_cleanup(fptr, Qtrue);
+    free(fptr);
 }
 
 VALUE
@@ -3059,6 +3061,13 @@ rb_io_get_io(io)
     return rb_convert_type(io, T_FILE, "IO", "to_io");
 }
 
+static VALUE
+rb_io_check_io(io)
+    VALUE io;
+{
+    return rb_check_convert_type(io, T_FILE, "IO", "to_io");
+}
+
 static char*
 rb_io_mode_string(fptr)
     OpenFile *fptr;
@@ -3751,9 +3760,12 @@ prep_path(io, path)
  *     IO.new(fd, mode)   => io
  *  
  *  Returns a new <code>IO</code> object (a stream) for the given
- *  integer file descriptor and mode string. See also
- *  <code>IO#fileno</code> and <code>IO::for_fd</code>.
- *     
+ *  <code>IO</code> object or integer file descriptor and mode
+ *  string. See also <code>IO#fileno</code> and
+ *  <code>IO::for_fd</code>.
+ *
+ *     puts IO.new($stdout).fileno # => 1
+ *
  *     a = IO.new(2,"w")      # '2' is standard error
  *     $stderr.puts "Hello"
  *     a.puts "World"
@@ -3770,14 +3782,24 @@ rb_io_initialize(argc, argv, io)
     VALUE *argv;
     VALUE io;
 {
-    VALUE fnum, mode;
-    OpenFile *fp;
-    int fd, flags;
+    VALUE fnum, mode, orig;
+    OpenFile *fp, *ofp = NULL;
+    int fd, flags, fmode;
     char mbuf[4];
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
-    fd = NUM2INT(fnum);
+    orig = rb_io_check_io(fnum);
+    if (NIL_P(orig)) {
+	fd = NUM2INT(fnum);
+    }
+    else {
+	GetOpenFile(orig, ofp);
+	if (ofp->refcnt == LONG_MAX) {
+	    VALUE s = rb_inspect(orig);
+	    rb_raise(rb_eIOError, "too many shared IO for %s", StringValuePtr(s));
+	}
+    }
     if (argc == 2) {
 	if (FIXNUM_P(mode)) {
 	    flags = FIX2LONG(mode);
@@ -3786,17 +3808,40 @@ rb_io_initialize(argc, argv, io)
 	    SafeStringValue(mode);
 	    flags = rb_io_mode_modenum(RSTRING(mode)->ptr);
 	}
+	fmode = rb_io_modenum_flags(flags);
     }
-    else {
+    else if (!ofp) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
 	flags = fcntl(fd, F_GETFL);
 #else
 	flags = O_RDONLY;
 #endif
+	fmode = rb_io_modenum_flags(flags);
     }
-    MakeOpenFile(io, fp);
-    fp->mode = rb_io_modenum_flags(flags);
-    fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags, mbuf));
+    if (!ofp) {
+	MakeOpenFile(io, fp);
+	fp->mode = fmode;
+	fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags, mbuf));
+    }
+    else {
+	if (argc == 2) {
+	    if ((ofp->mode ^ fmode) & (FMODE_READWRITE|FMODE_BINMODE)) {
+		if (FIXNUM_P(mode)) {
+		    rb_raise(rb_eArgError, "incompatible mode 0%o", flags);
+		}
+		else {
+		    rb_raise(rb_eArgError, "incompatible mode %s", RSTRING(mode)->ptr);
+		}
+	    }
+	}
+	if (RFILE(io)->fptr) {
+	    rb_io_close(io);
+	    free(RFILE(io)->fptr);
+	    RFILE(io)->fptr = 0;
+	}
+	ofp->refcnt++;
+	RFILE(io)->fptr = ofp;
+    }
 
     return io;
 }

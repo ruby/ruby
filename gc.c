@@ -1178,7 +1178,6 @@ obj_free(obj)
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
 	    rb_io_fptr_finalize(RANY(obj)->as.file.fptr);
-	    RUBY_CRITICAL(free(RANY(obj)->as.file.fptr));
 	}
 	break;
       case T_ICLASS:

@@ -24,6 +24,7 @@ typedef struct OpenFile {
     int lineno;			/* number of lines read */
     char *path;			/* pathname for file */
     void (*finalize) _((struct OpenFile*,int)); /* finalize proc */
+    long refcnt;
 } OpenFile;
 
 #define FMODE_READABLE  1
@@ -50,6 +51,7 @@ typedef struct OpenFile {
     fp->lineno = 0;\
     fp->path = NULL;\
     fp->finalize = 0;\
+    fp->refcnt = 1;\
 } while (0)
 
 #define GetReadFile(fptr) ((fptr)->f)
