@@ -60,7 +60,7 @@ module RSS
       tag_name_with_prefix(PREFIX)
     end
     
-    def to_s(convert=true, indent=calc_indent)
+    def to_s(need_convert=true, indent=calc_indent)
       rv = tag(indent, ns_declarations) do |next_indent|
         [
           channel_element(false, next_indent),
@@ -70,7 +70,7 @@ module RSS
           other_element(false, next_indent),
         ]
       end
-      rv = @converter.convert(rv) if convert and @converter
+      rv = convert(rv) if need_convert
       rv
     end
 
@@ -118,11 +118,11 @@ module RSS
         @li = li
       end
       
-      def to_s(convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent=calc_indent)
         tag(indent) do |next_indent|
           [
-            li_elements(convert, next_indent),
-            other_element(convert, next_indent),
+            li_elements(need_convert, next_indent),
+            other_element(need_convert, next_indent),
           ]
         end
       end
@@ -177,9 +177,9 @@ module RSS
         tag_name_with_prefix(PREFIX)
       end
       
-      def to_s(convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent=calc_indent)
         rv = tag(indent)
-        rv = @converter.convert(rv) if convert and @converter
+        rv = convert(rv) if need_convert
         rv
       end
 
@@ -204,7 +204,7 @@ module RSS
 
       end
 
- 			[
+      [
         ["about", URI, true]
       ].each do |name, uri, required|
         install_get_attribute(name, uri, required)
@@ -234,7 +234,7 @@ module RSS
         @about = about
       end
 
-      def to_s(convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent=calc_indent)
         rv = tag(indent) do |next_indent|
           [
             title_element(false, next_indent),
@@ -246,8 +246,8 @@ module RSS
             other_element(false, next_indent),
           ]
         end
-        rv = @converter.convert(rv) if convert and @converter
-  	    rv
+        rv = convert(rv) if need_convert
+        rv
       end
 
       private
@@ -305,9 +305,9 @@ module RSS
           @resource = resource
         end
 
-        def to_s(convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent=calc_indent)
           rv = tag(indent)
-          rv = @converter.convert(rv) if convert and @converter
+          rv = convert(rv) if need_convert
           rv
         end
 
@@ -342,9 +342,9 @@ module RSS
           @resource = resource
         end
 
-        def to_s(convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent=calc_indent)
           rv = tag(indent)
-          rv = @converter.convert(rv) if convert and @converter
+          rv = convert(rv) if need_convert
           rv
         end
         
@@ -384,11 +384,11 @@ module RSS
           @Seq = seq
         end
         
-        def to_s(convert=true, indent=calc_indent)
+        def to_s(need_convert=true, indent=calc_indent)
           rv = tag(indent) do |next_indent|
             [
-              Seq_element(convert, next_indent),
-              other_element(convert, next_indent),
+              Seq_element(need_convert, next_indent),
+              other_element(need_convert, next_indent),
             ]
           end
         end
@@ -448,7 +448,7 @@ module RSS
         @about = about
       end
 
-      def to_s(convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent=calc_indent)
         rv = tag(indent) do |next_indent|
           [
             title_element(false, next_indent),
@@ -457,7 +457,7 @@ module RSS
             other_element(false, next_indent),
           ]
         end
-        rv = @converter.convert(rv) if convert and @converter
+        rv = convert(rv) if need_convert
         rv
       end
 
@@ -518,7 +518,7 @@ module RSS
         @about = about
       end
 
-      def to_s(convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent=calc_indent)
         rv = tag(indent) do |next_indent|
           [
             title_element(false, next_indent),
@@ -527,7 +527,7 @@ module RSS
             other_element(false, next_indent),
           ]
         end
-        rv = @converter.convert(rv) if convert and @converter
+        rv = convert(rv) if need_convert
         rv
       end
  
@@ -589,7 +589,7 @@ module RSS
         @about = about
       end
 
-      def to_s(convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent=calc_indent)
         rv = tag(indent) do |next_indent|
           [
             title_element(false, next_indent),
@@ -599,7 +599,7 @@ module RSS
             other_element(false, next_indent),
           ]
         end
-        rv = @converter.convert(rv) if convert and @converter
+        rv = convert(rv) if need_convert
         rv
       end
 

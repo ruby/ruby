@@ -1,3 +1,15 @@
+Wed Feb  2 21:56:01 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (RSS::Element#convert): added.
+
+	* lib/rss/rss.rb: convert -> need_convert.
+
+	* lib/rss/1.0.rb: ditto.
+	
+	* lib/rss/0.9.rb: ditto.
+	
+	* lib/rss/2.0.rb: ditto.
+
 Wed Feb  2 03:30:58 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/lib/ripper/tokenizer.rb -> lexer.rb.

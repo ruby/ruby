@@ -164,7 +164,7 @@ module RSS
       install_element(name) do |n, elem_name|
         <<-EOC
         if @#{n}
-          "\#{@#{n}.to_s(convert, indent)}"
+          "\#{@#{n}.to_s(need_convert, indent)}"
         else
           ''
         end
@@ -183,7 +183,7 @@ EOC
         <<-EOC
         rv = []
         @#{n}.each do |x|
-          value = "\#{x.to_s(convert, indent)}"
+          value = "\#{x.to_s(need_convert, indent)}"
           rv << value if /\\A\\s*\\z/ !~ value
         end
         rv.join("\n")
@@ -202,8 +202,8 @@ EOC
         if @#{n}
           rv = "\#{indent}<#{elem_name}>"
           value = html_escape(@#{n})
-          if convert and @converter
-            rv << @converter.convert(value)
+          if need_convert
+            rv << convert(value)
           else
             rv << value
           end
@@ -260,8 +260,8 @@ EOC
         if @#{n}
           rv = "\#{indent}<#{elem_name}>"
           value = html_escape(@#{n}.#{type})
-          if convert and @converter
-            rv << @converter.convert(value)
+          if need_convert
+            rv << convert(value)
           else
             rv << value
           end
@@ -279,7 +279,7 @@ EOC
     def install_element(name, postfix="")
       elem_name = name.sub('_', ':')
       module_eval(<<-EOC, *get_file_and_line_from_caller(2))
-      def #{name}_element#{postfix}(convert=true, indent='')
+      def #{name}_element#{postfix}(need_convert=true, indent='')
         #{yield(name, elem_name)}
       end
       private :#{name}_element#{postfix}
@@ -332,12 +332,12 @@ EOC
 
     def def_content_only_to_s
       module_eval(<<-EOC, *get_file_and_line_from_caller(2))
-      def to_s(convert=true, indent=calc_indent)
+      def to_s(need_convert=true, indent=calc_indent)
         if @content
           rv = tag(indent) do |next_indent|
             h(@content)
           end
-          rv = @converter.convert(rv) if convert and @converter
+          rv = convert(rv) if need_convert
           rv
         else
           ""
@@ -513,6 +513,14 @@ EOC
       @converter = converter
       children.each do |child|
         child.converter = converter unless child.nil?
+      end
+    end
+
+    def convert(value)
+      if @converter
+        @converter.convert(value)
+      else
+        value
       end
     end
     
@@ -692,12 +700,12 @@ EOC
       end
     end
 
-    def other_element(convert, indent='')
+    def other_element(need_convert, indent='')
       rv = []
       private_methods.each do |meth|
         if /\A([^_]+)_[^_]+_elements?\z/ =~ meth and
             self.class::NSPOOL.has_key?($1)
-          res = __send__(meth, convert)
+          res = __send__(meth, need_convert)
           rv << "#{indent}#{res}" if /\A\s*\z/ !~ res
         end
       end
