@@ -16,22 +16,69 @@ class Ripper
     Tokenizer.tokenize(str)
   end
 
+
   class Tokenizer < ::Ripper
-    def Tokenizer.tokenize(str)
-      new(str).tokenize
+
+    def Tokenizer.tokenize(str, filename = '-', lineno = 1)
+      new(str, filename, lineno).tokenize
+    end
+
+    def initialize(src, filename = '-', lineno = 1)
+      @src = src
+      @__filename = filename
+      @__linestart = lineno
+      @__line = nil
+      @__col = nil
+    end
+
+    def filename
+      @__filename
+    end
+
+    def lineno
+      @__line
+    end
+
+    def column
+      @__col
     end
 
     def tokenize
-      @tokens = []
-      parse
-      @tokens.sort_by {|tok, pos| pos }.map {|tok,| tok }
+      _exec_tokenizer().map {|pos, event, tok| tok }
+    end
+
+    def parse
+      _exec_tokenizer().each do |pos, event, tok|
+        @__line, @__col = *pos
+        on__scan(event, tok)
+        __send__(event, tok)
+      end
+      data
     end
 
     private
 
-    def on__scan(type, tok)
-      @tokens.push [tok, [lineno(),column()]]
+    def _exec_tokenizer
+      TokenSorter.new(@src, @__filename, @__linestart).parse
     end
+
+  end
+
+
+  class TokenSorter < ::Ripper   #:nodoc: internal use only
+
+    def parse
+      @data = []
+      super
+      @data.sort_by {|pos, event, tok| pos }
+    end
+
+    private
+
+    def on__scan(event, tok)
+      @data.push [[lineno(),column()], event, tok]
+    end
+
   end
 
 end

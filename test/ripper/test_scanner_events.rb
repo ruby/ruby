@@ -20,11 +20,11 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
     def parse
       @tokens = []
       super
-      @tokens
+      @tokens.sort_by {|tok,pos| pos }.map {|tok,| tok }
     end
 
     def on__scan(type, tok)
-      @tokens.push tok if !@target or type == @target
+      @tokens.push [tok,[lineno(),column()]] if !@target or type == @target
     end
   end
 
@@ -80,7 +80,8 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
   def validate_location(src)
     data = PosInfo.new(src).parse
     buf = ''
-    data.each do |tok, type, line, col|
+    data.sort_by {|tok, type, line, col| [line,col] }\
+        .each do |tok, type, line, col|
       assert_equal buf.count("\n") + 1, line,
           "wrong lineno: #{tok.inspect} (#{type}) [#{line}:#{col}]"
       assert_equal buf.sub(/\A.*\n/m, '').size, col,
