@@ -19,9 +19,6 @@
 #include <netdb.h>
 #endif
 #include <errno.h>
-#ifdef __EMX__
-#undef HAVE_SYS_UN_H
-#endif
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
 #endif

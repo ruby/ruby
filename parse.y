@@ -20,11 +20,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-/* hack for bison */
-#ifdef const
-# undef const
-#endif
-
 #define ID_SCOPE_SHIFT 3
 #define ID_SCOPE_MASK 0x07
 #define ID_LOCAL    0x01

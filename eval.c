@@ -973,8 +973,6 @@ static void rb_thread_wait_other_threads _((void));
 
 static int exit_status;
 
-static void exec_end_proc _((void));
-
 void
 ruby_run()
 {
@@ -1057,7 +1055,7 @@ ruby_run()
 	rb_bug("Unknown longjmp status %d", ex);
 	break;
     }
-    exec_end_proc();
+    rb_exec_end_proc();
     rb_gc_call_finalizer_at_exit();
     exit(ex);
 }
@@ -2954,7 +2952,8 @@ rb_exit(status)
 	exit_status = status;
 	rb_exc_raise(rb_exc_new(rb_eSystemExit, 0, 0));
     }
-    exec_end_proc();
+    rb_exec_end_proc();
+    rb_gc_call_finalizer_at_exit();
     exit(status);
 }
 
@@ -5114,16 +5113,20 @@ rb_f_at_exit()
     return proc;
 }
 
-static void
-exec_end_proc()
+void
+rb_exec_end_proc()
 {
     struct end_proc_data *link = end_proc_data;
+    struct end_proc_data *tmp;
     int status;
 
     while (link) {
 	rb_protect((VALUE(*)())link->func, link->data, &status);
-	link = link->next;
+	tmp = link->next;
+	free(link);
+	link = tmp;
     }
+    end_proc_data = 0;
 }
 
 void

@@ -1,3 +1,17 @@
+Tue Jun  1 15:29:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version.h (RUBY_RELEASE_CODE): integer macro contant for source
+	  version detection.
+
+Sun May 30 22:19:12 1999  Kenji Nagasawa  <kenn@tcp-ip.or.jp>
+
+	* ext/socket/socket.c: emx/gcc 0.9d now fixes things about
+	  AF_UNIX.
+
+	* process.c: OS/2 EMX kludge.
+
+	* Makefile.in (strncasecmp.o): added dependency.
+
 Mon May 31 16:06:28 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.3.4 - preliminary release for 1.4

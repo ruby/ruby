@@ -214,6 +214,7 @@ sample/tsvr.rb
 sample/uumerge.rb
 win32/Makefile
 win32/config.h
+win32/config.status
 win32/ntsetup.bat
 win32/ruby.def
 win32/sdbm.c

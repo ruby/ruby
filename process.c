@@ -48,6 +48,10 @@ struct timeval rb_time_timeval _((VALUE));
 # include "macruby_missing.h"
 #endif
 
+#ifdef __EMX__
+#undef HAVE_GETPGRP
+#endif
+
 static VALUE
 get_pid()
 {
@@ -607,7 +611,7 @@ rb_f_system(argc, argv)
     if (state == 0) return Qtrue;
     return Qfalse;
 #else
-#if defined(DJGPP)
+#if defined(DJGPP) || defined(__EMX__)
     VALUE cmd;
     int state;
 

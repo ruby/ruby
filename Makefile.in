@@ -179,6 +179,9 @@ vsnprintf.o: @srcdir@/missing/vsnprintf.c
 strcasecmp.o: @srcdir@/missing/strcasecmp.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strcasecmp.c
 
+strncasecmp.o: @srcdir@/missing/strncasecmp.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strncasecmp.c
+
 strchr.o: @srcdir@/missing/strchr.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strchr.c
 

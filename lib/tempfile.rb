@@ -38,7 +38,7 @@ class Tempfile < SimpleDelegator
 	  tmpdir ||= ENV['TMPDIR'] || ENV['TMP'] || ENV['TEMP'] || '/tmp'
 	  tmpname = sprintf('%s/%s.%d.%d', tmpdir, basename, $$, n)
 	  lock = tmpname + '.lock'
-	  unless File.exist?(lock)
+	  unless File.exist?(tmpname) or File.exist?(lock)
 	    Dir.mkdir(lock)
 	    break
 	  end
@@ -78,6 +78,10 @@ class Tempfile < SimpleDelegator
       @clean_files.call
       ObjectSpace.undefine_finalizer(self)
     end
+  end
+
+  def path
+    @tmpname
   end
 end
 

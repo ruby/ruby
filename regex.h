@@ -79,8 +79,8 @@
 #define MBCTYPE_SJIS 2
 #define MBCTYPE_UTF8 3
 
-#ifdef __STDC__
 extern const unsigned char *re_mbctab;
+#if defined(__STDC__)
 void re_mbcinit (int);
 #else
 extern unsigned char *re_mbctab;

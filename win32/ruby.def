@@ -334,7 +334,6 @@ EXPORTS
 	rb_get_kcode
 	rb_set_kcode
 ; ruby.c
-	ruby_require_modules
 	rb_load_file
 	ruby_script
 	ruby_prog_init
