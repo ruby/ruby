@@ -371,7 +371,7 @@ end
 
 symbol_proc = Proc.new { |type, val|
 	if String === val
-        val = YAML::load( "--- #{val}") if val =~ /^["'].*["']$/
+        val = YAML::load( "--- #{val}") if val =~ /^["'].*['"]$/
 		val.intern
 	else
 		raise YAML::Error, "Invalid Symbol: " + val.inspect
@@ -414,9 +414,9 @@ end
 
 YAML.add_ruby_type( /^range/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, ::Range )
-    inr = '(\w+|[+-]*\d+(?:\.\d+)?|"(?:[^\\"]|\\.)*")'
+    inr = %r'(\w+|[+-]?\d+(?:\.\d+)?(?:e[+-]\d+)?|"(?:[^\\"]|\\.)*")'
     opts = {}
-	if String === val and val =~ /^#{inr}(\.{2,3})#{inr}$/
+	if String === val and val =~ /^#{inr}(\.{2,3})#{inr}$/o
         r1, rdots, r2 = $1, $2, $3
         opts = {
             'begin' => YAML.load( "--- #{r1}" ),

@@ -1,0 +1,10 @@
+handler.o: handler.c syck.h
+emitter.o: emitter.c syck.h
+implicit.o: implicit.c syck.h
+gram.o: gram.c syck.h
+bytecode.o: bytecode.c syck.h gram.h
+node.o: node.c syck.h
+syck.o: syck.c syck.h
+token.o: token.c syck.h gram.h
+yaml2byte.o: yaml2byte.c syck.h yamlbyte.h
+rubyext.o: rubyext.c syck.h

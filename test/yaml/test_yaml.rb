@@ -33,6 +33,10 @@ class YAML_Unit_Tests < Test::Unit::TestCase
 		assert_equal( obj, YAML::parse( yaml ).transform )
 	end
 
+    def assert_cycle( obj )
+        assert_equal( obj, YAML::load( obj.to_yaml ) )
+    end
+
     def assert_path_segments( path, segments )
         YAML::YPath.each_path( path ) { |choice|
             assert_equal( choice.segments, segments.shift )
@@ -71,10 +75,14 @@ EOY
 
 	def test_basic_strings
 		# Common string types
+		assert_cycle("x")
+		assert_cycle(":x")
+		assert_cycle(":")
 		assert_parse_only(
 			{ 1 => 'simple string', 2 => 42, 3 => '1 Single Quoted String',
 			  4 => 'YAML\'s Double "Quoted" String', 5 => "A block\n  with several\n    lines.\n",
-			  6 => "A \"chomped\" block", 7 => "A folded\n string\n" }, <<EOY
+			  6 => "A \"chomped\" block", 7 => "A folded\n string\n", 8 => ": started string" },
+			  <<EOY
 1: simple string
 2: 42
 3: '1 Single Quoted String'
@@ -89,6 +97,7 @@ EOY
   A
   folded
    string
+8: ": started string"
 EOY
 		)
 	end
@@ -380,7 +389,7 @@ EOY
 		assert_parse_only(
 			[ "Mark McGwire's year was crippled by a knee injury.\n" ], <<EOY
 - >
-    Mark McGwire's
+    Mark McGwire\'s
     year was crippled
     by a knee injury.
 EOY
@@ -909,7 +918,7 @@ literal: |
  single line break, but does
  not start with one.
 
-is equal to: "The \\ \' \\" characters may \\
+is equal to: "The \\ ' \\" characters may \\
  be\\nfreely used. Leading white\\n   space \\
  is significant.\\n\\nLine breaks are \\
  significant.\\nThus this value contains \\
@@ -1031,7 +1040,7 @@ EOY
 	def test_ruby_regexp
 		# Test Ruby regular expressions
 		assert_to_yaml( 
-			{ 'simple' => /a.b/, 'complex' => /\A"((?:[^"]|\")+)"/,
+			{ 'simple' => /a.b/, 'complex' => %r'\A"((?:[^"]|\")+)"',
 			  'case-insensitive' => /George McFly/i }, <<EOY
 case-insensitive: !ruby/regexp "/George McFly/i"
 complex: !ruby/regexp "/\\\\A\\"((?:[^\\"]|\\\\\\")+)\\"/"
@@ -1191,7 +1200,7 @@ EOY
         require 'yaml'
         t = Time.now
         5.times do
-            assert_equal( t, YAML.load( YAML.dump( t ) ) )
+            assert_cycle(t)
         end
     end
 
@@ -1202,22 +1211,19 @@ EOY
       #
       # From Minero Aoki [ruby-core:02306]
       #
-      t = "a".."z"
-      assert_equal( t, YAML.load( YAML.dump( t ) ) )
+      assert_cycle("a".."z")
 
       #
       # From Nobu Nakada [ruby-core:02311]
       #
-      t = 0..1
-      assert_equal( t, YAML.load( YAML.dump( t ) ) )
-      t = "0".."1"
-      assert_equal( t, YAML.load( YAML.dump( t ) ) )
-      t = ".."..."..."
-      assert_equal( t, YAML.load( YAML.dump( t ) ) )
-      t = ".rb"..".pl"
-      assert_equal( t, YAML.load( YAML.dump( t ) ) )
-      t = ".rb"...".pl"
-      assert_equal( t, YAML.load( YAML.dump( t ) ) )
+      assert_cycle(0..1)
+      assert_cycle(1.0e20 .. 2.0e20)
+      assert_cycle("0".."1")
+      assert_cycle(".."..."...")
+      assert_cycle(".rb"..".pl")
+      assert_cycle(".rb"...".pl")
+      assert_cycle('"'...".")
+      assert_cycle("'"...".")
     end
 
     #

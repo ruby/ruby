@@ -1,3 +1,12 @@
+Sat May 15 13:38:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/MANIFEST, ext/syck/depend: new file.
+
+	* lib/yaml/rubytypes.rb: range of exponential floats.  [ruby-core:02824]
+
+	* test/yaml/test_yaml.rb: tests for strings start with colon and some
+	  round trip.
+
 Sat May 15 12:04:58 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml.rb: removed fallback to pure Ruby parser.
@@ -44,7 +53,7 @@ Fri May 14 21:29:26 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Fri May 14 18:37:49 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/canvas.rb: improve coords support for canvas
-	  items. Now, supports all of the followings. 
+	  items. Now, supports all of the followings.
 	       TkcLine.new(c, 0, 0, 100, 100, :fill=>'red')
 	       TkcLine.new(c, [0, 0, 100, 100], :fill=>'red')
 	       TkcLine.new(c, [0, 0], [100, 100], :fill=>'red')
