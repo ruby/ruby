@@ -1,3 +1,10 @@
+Thu Dec  9 14:38:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): escape # which starts an expression
+	  substitution.  fixed: [ruby-core:03922]
+
+	* string.c (rb_str_dump): not escape # which isn't a substitution.
+
 Thu Dec  9 12:31:53 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (pipe_open): should set prog if argc != 0.
