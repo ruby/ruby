@@ -1,3 +1,8 @@
+Thu Oct  9 19:11:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0): non-volatile should be restored from
+	  volatile.
+
 Thu Oct  9 17:43:36 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (proc_save_safe_level, proc_get_safe_level,

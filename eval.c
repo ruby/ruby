@@ -9436,11 +9436,12 @@ rb_thread_start_0(fn, arg, th)
 	    curr_thread = th;
 	    th->result = (*fn)(arg, th);
 	}
+	th = th_save;
     }
     else if (TAG_DST()) {
+	th = th_save;
 	th->result = prot_tag->retval;
     }
-    th = th_save;
     POP_TAG();
     status = th->status;
 
