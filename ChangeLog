@@ -1,3 +1,9 @@
+Mon Feb 28 09:03:09 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (Init_socket): add bunch of Socket
+	  constants.  Patch from Sam Roberts <sroberts@uniserve.com>.
+	  [ruby-core:04409]
+
 Thu Feb 23 15:04:32 2005  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (split_userinfo): should split ":pass" into ""

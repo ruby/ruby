@@ -2642,6 +2642,195 @@ Init_socket()
 #ifdef INET6
     sock_define_const("PF_INET6", PF_INET6);
 #endif
+#ifdef AF_LOCAL
+    sock_define_const("AF_LOCAL", AF_LOCAL);
+#endif
+#ifdef PF_LOCAL
+    sock_define_const("PF_LOCAL", PF_LOCAL);
+#endif
+#ifdef AF_IMPLINK
+    sock_define_const("AF_IMPLINK", AF_IMPLINK);
+#endif
+#ifdef PF_IMPLINK
+    sock_define_const("PF_IMPLINK", PF_IMPLINK);
+#endif
+#ifdef AF_PUP
+    sock_define_const("AF_PUP", AF_PUP);
+#endif
+#ifdef PF_PUP
+    sock_define_const("PF_PUP", PF_PUP);
+#endif
+#ifdef AF_CHAOS
+    sock_define_const("AF_CHAOS", AF_CHAOS);
+#endif
+#ifdef PF_CHAOS
+    sock_define_const("PF_CHAOS", PF_CHAOS);
+#endif
+#ifdef AF_NS
+    sock_define_const("AF_NS", AF_NS);
+#endif
+#ifdef PF_NS
+    sock_define_const("PF_NS", PF_NS);
+#endif
+#ifdef AF_ISO
+    sock_define_const("AF_ISO", AF_ISO);
+#endif
+#ifdef PF_ISO
+    sock_define_const("PF_ISO", PF_ISO);
+#endif
+#ifdef AF_OSI
+    sock_define_const("AF_OSI", AF_OSI);
+#endif
+#ifdef PF_OSI
+    sock_define_const("PF_OSI", PF_OSI);
+#endif
+#ifdef AF_ECMA
+    sock_define_const("AF_ECMA", AF_ECMA);
+#endif
+#ifdef PF_ECMA
+    sock_define_const("PF_ECMA", PF_ECMA);
+#endif
+#ifdef AF_DATAKIT
+    sock_define_const("AF_DATAKIT", AF_DATAKIT);
+#endif
+#ifdef PF_DATAKIT
+    sock_define_const("PF_DATAKIT", PF_DATAKIT);
+#endif
+#ifdef AF_CCITT
+    sock_define_const("AF_CCITT", AF_CCITT);
+#endif
+#ifdef PF_CCITT
+    sock_define_const("PF_CCITT", PF_CCITT);
+#endif
+#ifdef AF_SNA
+    sock_define_const("AF_SNA", AF_SNA);
+#endif
+#ifdef PF_SNA
+    sock_define_const("PF_SNA", PF_SNA);
+#endif
+#ifdef AF_DEC
+    sock_define_const("AF_DEC", AF_DEC);
+#endif
+#ifdef PF_DEC
+    sock_define_const("PF_DEC", PF_DEC);
+#endif
+#ifdef AF_DLI
+    sock_define_const("AF_DLI", AF_DLI);
+#endif
+#ifdef PF_DLI
+    sock_define_const("PF_DLI", PF_DLI);
+#endif
+#ifdef AF_LAT
+    sock_define_const("AF_LAT", AF_LAT);
+#endif
+#ifdef PF_LAT
+    sock_define_const("PF_LAT", PF_LAT);
+#endif
+#ifdef AF_HYLINK
+    sock_define_const("AF_HYLINK", AF_HYLINK);
+#endif
+#ifdef PF_HYLINK
+    sock_define_const("PF_HYLINK", PF_HYLINK);
+#endif
+#ifdef AF_ROUTE
+    sock_define_const("AF_ROUTE", AF_ROUTE);
+#endif
+#ifdef PF_ROUTE
+    sock_define_const("PF_ROUTE", PF_ROUTE);
+#endif
+#ifdef AF_LINK
+    sock_define_const("AF_LINK", AF_LINK);
+#endif
+#ifdef PF_LINK
+    sock_define_const("PF_LINK", PF_LINK);
+#endif
+#ifdef AF_COIP
+    sock_define_const("AF_COIP", AF_COIP);
+#endif
+#ifdef PF_COIP
+    sock_define_const("PF_COIP", PF_COIP);
+#endif
+#ifdef AF_CNT
+    sock_define_const("AF_CNT", AF_CNT);
+#endif
+#ifdef PF_CNT
+    sock_define_const("PF_CNT", PF_CNT);
+#endif
+#ifdef AF_SIP
+    sock_define_const("AF_SIP", AF_SIP);
+#endif
+#ifdef PF_SIP
+    sock_define_const("PF_SIP", PF_SIP);
+#endif
+#ifdef AF_NDRV
+    sock_define_const("AF_NDRV", AF_NDRV);
+#endif
+#ifdef PF_NDRV
+    sock_define_const("PF_NDRV", PF_NDRV);
+#endif
+#ifdef AF_ISDN
+    sock_define_const("AF_ISDN", AF_ISDN);
+#endif
+#ifdef PF_ISDN
+    sock_define_const("PF_ISDN", PF_ISDN);
+#endif
+#ifdef AF_NATM
+    sock_define_const("AF_NATM", AF_NATM);
+#endif
+#ifdef PF_NATM
+    sock_define_const("PF_NATM", PF_NATM);
+#endif
+#ifdef AF_SYSTEM
+    sock_define_const("AF_SYSTEM", AF_SYSTEM);
+#endif
+#ifdef PF_SYSTEM
+    sock_define_const("PF_SYSTEM", PF_SYSTEM);
+#endif
+#ifdef AF_NETBIOS
+    sock_define_const("AF_NETBIOS", AF_NETBIOS);
+#endif
+#ifdef PF_NETBIOS
+    sock_define_const("PF_NETBIOS", PF_NETBIOS);
+#endif
+#ifdef AF_PPP
+    sock_define_const("AF_PPP", AF_PPP);
+#endif
+#ifdef PF_PPP
+    sock_define_const("PF_PPP", PF_PPP);
+#endif
+#ifdef AF_ATM
+    sock_define_const("AF_ATM", AF_ATM);
+#endif
+#ifdef PF_ATM
+    sock_define_const("PF_ATM", PF_ATM);
+#endif
+#ifdef AF_NETGRAPH
+    sock_define_const("AF_NETGRAPH", AF_NETGRAPH);
+#endif
+#ifdef PF_NETGRAPH
+    sock_define_const("PF_NETGRAPH", PF_NETGRAPH);
+#endif
+#ifdef AF_MAX
+    sock_define_const("AF_MAX", AF_MAX);
+#endif
+#ifdef PF_MAX
+    sock_define_const("PF_MAX", PF_MAX);
+#endif
+#ifdef AF_E164
+    sock_define_const("AF_E164", AF_E164);
+#endif
+#ifdef PF_XTP
+    sock_define_const("PF_XTP", PF_XTP);
+#endif
+#ifdef PF_RTIP
+    sock_define_const("PF_RTIP", PF_RTIP);
+#endif
+#ifdef PF_PIP
+    sock_define_const("PF_PIP", PF_PIP);
+#endif
+#ifdef PF_KEY
+    sock_define_const("PF_KEY", PF_KEY);
+#endif
 
     sock_define_const("MSG_OOB", MSG_OOB);
 #ifdef MSG_PEEK
@@ -2649,6 +2838,42 @@ Init_socket()
 #endif
 #ifdef MSG_DONTROUTE
     sock_define_const("MSG_DONTROUTE", MSG_DONTROUTE);
+#endif
+#ifdef MSG_EOR
+    sock_define_const("MSG_EOR", MSG_EOR);
+#endif
+#ifdef MSG_TRUNC
+    sock_define_const("MSG_TRUNC", MSG_TRUNC);
+#endif
+#ifdef MSG_CTRUNC
+    sock_define_const("MSG_CTRUNC", MSG_CTRUNC);
+#endif
+#ifdef MSG_WAITALL
+    sock_define_const("MSG_WAITALL", MSG_WAITALL);
+#endif
+#ifdef MSG_DONTWAIT
+    sock_define_const("MSG_DONTWAIT", MSG_DONTWAIT);
+#endif
+#ifdef MSG_EOF
+    sock_define_const("MSG_EOF", MSG_EOF);
+#endif
+#ifdef MSG_FLUSH
+    sock_define_const("MSG_FLUSH", MSG_FLUSH);
+#endif
+#ifdef MSG_HOLD
+    sock_define_const("MSG_HOLD", MSG_HOLD);
+#endif
+#ifdef MSG_SEND
+    sock_define_const("MSG_SEND", MSG_SEND);
+#endif
+#ifdef MSG_HAVEMORE
+    sock_define_const("MSG_HAVEMORE", MSG_HAVEMORE);
+#endif
+#ifdef MSG_RCVMORE
+    sock_define_const("MSG_RCVMORE", MSG_RCVMORE);
+#endif
+#ifdef MSG_COMPAT
+    sock_define_const("MSG_COMPAT", MSG_COMPAT);
 #endif
 
     sock_define_const("SOL_SOCKET", SOL_SOCKET);
@@ -2887,6 +3112,33 @@ Init_socket()
 #endif
 #ifdef SO_SNDTIMEO
     sock_define_const("SO_SNDTIMEO", SO_SNDTIMEO);
+#endif
+#ifdef SO_ACCEPTCONN
+    sock_define_const("SO_ACCEPTCONN", SO_ACCEPTCONN);
+#endif
+#ifdef SO_USELOOPBACK
+    sock_define_const("SO_USELOOPBACK", SO_USELOOPBACK);
+#endif
+#ifdef SO_ACCEPTFILTER
+    sock_define_const("SO_ACCEPTFILTER", SO_ACCEPTFILTER);
+#endif
+#ifdef SO_DONTTRUNC
+    sock_define_const("SO_DONTTRUNC", SO_DONTTRUNC);
+#endif
+#ifdef SO_WANTMORE
+    sock_define_const("SO_WANTMORE", SO_WANTMORE);
+#endif
+#ifdef SO_WANTOOBFLAG
+    sock_define_const("SO_WANTOOBFLAG", SO_WANTOOBFLAG);
+#endif
+#ifdef SO_NREAD
+    sock_define_const("SO_NREAD", SO_NREAD);
+#endif
+#ifdef SO_NKE
+    sock_define_const("SO_NKE", SO_NKE);
+#endif
+#ifdef SO_NOSIGPIPE
+    sock_define_const("SO_NOSIGPIPE", SO_NOSIGPIPE);
 #endif
 
 #ifdef SO_SECURITY_AUTHENTICATION
