@@ -51,16 +51,18 @@ module RSS
 			end
 		end
 
-		def to_s(convert=true)
+		def to_s(convert=true, indent=calc_indent)
+			next_indent = indent + INDENT
 			rv = <<-EOR
 #{xmldecl}
-#{xml_stylesheet_pi}<rss version="#{@rss_version}"#{ns_declaration}>
-#{channel_element(false)}
-#{other_element(false, "\t")}
-</rss>
+#{xml_stylesheet_pi}
+#{indent}<rss version="#{@rss_version}"#{ns_declaration(next_indent)}>
+#{channel_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{inent}}</rss>
 EOR
-      rv = @converter.convert(rv) if convert and @converter
-      rv
+			rv = @converter.convert(rv) if convert and @converter
+			remove_empty_newline(rv)
 		end
 
 		private
@@ -135,30 +137,31 @@ EOR
 				super()
 			end
 
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
+				next_indent = indent + INDENT
 				rv = <<-EOT
-	<channel>
-		#{title_element(false)}
-		#{link_element(false)}
-		#{description_element(false)}
-		#{language_element(false)}
-		#{copyright_element(false)}
-		#{managingEditor_element(false)}
-		#{webMaster_element(false)}
-		#{rating_element(false)}
-		#{pubDate_element(false)}
-		#{lastBuildDate_element(false)}
-		#{docs_element(false)}
-		#{skipDays_element(false)}
-		#{skipHours_element(false)}
-		#{image_element(false)}
-#{item_elements(false)}
-		#{textInput_element(false)}
-#{other_element(false, "\t\t")}
-	</channel>
+#{indent}<channel>
+#{title_element(false, next_indent)}
+#{link_element(false, next_indent)}
+#{description_element(false, next_indent)}
+#{language_element(false, next_indent)}
+#{copyright_element(false, next_indent)}
+#{managingEditor_element(false, next_indent)}
+#{webMaster_element(false, next_indent)}
+#{rating_element(false, next_indent)}
+#{pubDate_element(false, next_indent)}
+#{lastBuildDate_element(false, next_indent)}
+#{docs_element(false, next_indent)}
+#{skipDays_element(false, next_indent)}
+#{skipHours_element(false, next_indent)}
+#{image_element(false, next_indent)}
+#{item_elements(false, next_indent)}
+#{textInput_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{indent}</channel>
 EOT
 	      rv = @converter.convert(rv) if convert and @converter
-  	    rv
+				rv
 			end
 
 	    private
@@ -208,17 +211,18 @@ EOT
 					install_model(x, "?")
 				end
 
-				def to_s(convert=true)
+				def to_s(convert=true, indent=calc_indent)
+					next_indent = indent + INDENT
 					rv = <<-EOT
-			<image>
-				#{url_element(false)}
-				#{title_element(false)}
-				#{link_element(false)}
-				#{width_element(false)}
-				#{height_element(false)}
-				#{description_element(false)}
-#{other_element(false, "\t\t\t\t")}
-			</image>
+#{indent}<image>
+#{url_element(false, next_indent)}
+#{title_element(false, next_indent)}
+#{link_element(false, next_indent)}
+#{width_element(false, next_indent)}
+#{height_element(false, next_indent)}
+#{description_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{indent}</image>
 EOT
 	     		rv = @converter.convert(rv) if convert and @converter
 	  	    rv
@@ -257,14 +261,15 @@ EOT
 					@protocol = protocol
 				end
 
-				def to_s(convert=true)
+				def to_s(convert=true, indent=calc_indent)
+					next_indent = indent + INDENT
 					rv = <<-EOT
-			<cloud
-				domain="#{h @domain}"
-				port="#{h @port}"
-				path="#{h @path}"
-				registerProcedure="#{h @registerProcedure}"
-				protocol="#{h @protocol}"/>
+#{indent}<cloud
+#{next_indent}domain="#{h @domain}"
+#{next_indent}port="#{h @port}"
+#{next_indent}path="#{h @path}"
+#{next_indent}registerProcedure="#{h @registerProcedure}"
+#{next_indent}protocol="#{h @protocol}"/>
 EOT
 	     		rv = @converter.convert(rv) if convert and @converter
 	  	    rv
@@ -302,17 +307,18 @@ EOT
 					install_model(tag, occurs)
 				end
 
-				def to_s(convert=true)
+				def to_s(convert=true, indent=calc_indent)
+          next_indent = indent + INDENT
 					rv = <<-EOT
-			<item>
-				#{title_element(false)}
-				#{link_element(false)}
-				#{description_element(false)}
-				#{category_element(false)}
-				#{source_element(false)}
-				#{enclosure_element(false)}
-#{other_element(false, "\t\t\t\t")}
-			</item>
+#{indent}<item>
+#{title_element(false, next_indent)}
+#{link_element(false, next_indent)}
+#{description_element(false, next_indent)}
+#{category_element(false, next_indent)}
+#{source_element(false, next_indent)}
+#{enclosure_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{indent}</item>
 EOT
 	     		rv = @converter.convert(rv) if convert and @converter
 	  	    rv
@@ -350,7 +356,7 @@ EOT
 						@content = content
 					end
 
-					def to_s(convert=true)
+					def to_s(convert=true, indent=calc_indent)
 						if @url
 							rv = %Q!				<source url="#{@url}">!
 							rv << %Q!#{@content}</source>!
@@ -393,7 +399,7 @@ EOT
 						@type = type
 					end
 
-					def to_s(convert=true)
+					def to_s(convert=true, indent=calc_indent)
 						if @url and @length and @type
 							rv = %Q!<enclosure url="#{h @url}" !
 							rv << %Q!length="#{h @length}" type="#{h @type}"/>!
@@ -433,7 +439,7 @@ EOT
 						@content = content
 					end
 
-					def to_s(convert=true)
+					def to_s(convert=true, indent=calc_indent)
 						if @domain
 							rv = %Q!<category domain="#{h @domain}">!
 							rv << %Q!#{h @content}</category>!
@@ -464,15 +470,16 @@ EOT
 					install_model(x, nil)
 				end
 
-				def to_s(convert=true)
+				def to_s(convert=true, indent=calc_indent)
+          next_indent = indent + INDENT
 					rv = <<-EOT
-			<textInput>
-				#{title_element(false)}
-				#{description_element(false)}
-				#{name_element(false)}
-				#{link_element(false)}
-#{other_element(false, "\t\t\t\t")}
-			</textInput>
+#{indent}<textInput>
+#{title_element(false, next_indent)}
+#{description_element(false, next_indent)}
+#{name_element(false, next_indent)}
+#{link_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{indent}</textInput>
 EOT
 	     		rv = @converter.convert(rv) if convert and @converter
 	  	    rv

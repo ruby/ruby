@@ -76,9 +76,10 @@ module RSS
 				@resource = resource
 			end
 
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
 				if @resource
-					rv = %Q!<#{TRACKBACK_PREFIX}:ping #{::RSS::RDF::PREFIX}:resource="#{h @resource}"/>!
+					rv = %Q[#{indent}<#{TRACKBACK_PREFIX}:ping ]
+					rv << %Q[#{::RSS::RDF::PREFIX}:resource="#{h @resource}"/>]
 					rv = @converter.convert(rv) if convert and @converter
 					rv
 				else
@@ -121,9 +122,10 @@ module RSS
 				@resource = resource
 			end
 
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
 				if @resource
-					rv = %Q!<#{TRACKBACK_PREFIX}:about #{::RSS::RDF::PREFIX}:resource="#{h @resource}"/>!
+					rv = %Q[#{indent}<#{TRACKBACK_PREFIX}:about ]
+					rv << %Q[#{::RSS::RDF::PREFIX}:resource="#{h @resource}"/>]
 					rv = @converter.convert(rv) if convert and @converter
 					rv
 				else
@@ -245,9 +247,11 @@ module RSS
 
 			end
 			
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
 				if @content
-					rv = %Q!<#{TRACKBACK_PREFIX}:ping>#{h @content}</#{TRACKBACK_PREFIX}:ping>!
+					rv = %Q[#{indent}<#{TRACKBACK_PREFIX}:ping>]
+					rv << h(@content)
+					rv << %Q[</#{TRACKBACK_PREFIX}:ping>]
 					rv = @converter.convert(rv) if convert and @converter
 					rv
 				else
@@ -274,9 +278,11 @@ module RSS
 
 			end
 			
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
 				if @content
-					rv = %Q!<#{TRACKBACK_PREFIX}:about>#{h @content}</#{TRACKBACK_PREFIX}:about>!
+					rv = %Q[#{indent}<#{TRACKBACK_PREFIX}:about>]
+					rv << h(@content)
+					rv << %Q[</#{TRACKBACK_PREFIX}:about>]
 					rv = @converter.convert(rv) if convert and @converter
 					rv
 				else
