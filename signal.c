@@ -358,6 +358,12 @@ struct trap_arg {
     VALUE sig, cmd;
 };
 
+# ifdef HAVE_SIGPROCMASK
+static sigset_t trap_last_mask;
+# else
+static int trap_last_mask;
+# endif
+
 static RETSIGTYPE
 sigexit()
 {
@@ -476,8 +482,21 @@ trap_ensure(arg)
 #else
     sigsetmask(arg->mask);
 #endif
+    trap_last_mask = arg->mask;
 }
 #endif
+
+void
+trap_restore_mask()
+{
+#ifndef NT
+# ifdef HAVE_SIGPROCMASK
+    sigprocmask(SIG_SETMASK, &trap_last_mask, NULL);
+# else
+    sigsetmask(trap_last_mask);
+# endif
+#endif
+}
 
 static VALUE
 f_trap(argc, argv)

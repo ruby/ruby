@@ -1,12 +1,22 @@
+Mon Mar 16 14:11:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* class.c (ins_methods_i): needed to consider NOEX_UNDEF.
+
 Mon Mar 16 13:23:53 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* io.c (io_check_closed): check for `fptr->f2 == NULL'.
 
 	* io.c (io_fptr_close): ditto.
 
-Mon Mar 16 14:11:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Mon Mar 16 11:49:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* class.c (ins_methods_i): needed to consider NOEX_UNDEF.
+	* io.c (pipe_atexit): free()ing referencing pipe_list.
+
+	* range.c (range_length): returns zero, if the first is greater
+	  than the last.
+
+	* signal.c (trap_restore_mask): restore signal mask before raising 
+	  exceptions and throws.
 
 Fri Mar 13 13:49:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

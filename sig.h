@@ -20,6 +20,8 @@ extern int prohibit_interrupt;
 #define ENABLE_INTS {prohibit_interrupt--;}
 
 extern int trap_pending;
+void trap_restore_mask _((void));
+
 #ifdef THREAD
 extern int thread_critical;
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)

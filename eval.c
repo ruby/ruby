@@ -2622,6 +2622,7 @@ rb_longjmp(tag, mesg, at)
 	str_freeze(errinfo);
     }
 
+    trap_restore_mask();
     JUMP_TAG(tag);
 }
 
@@ -6156,6 +6157,7 @@ f_throw(argc, argv)
     if (!tt) {
 	NameError("uncaught throw `%s'", rb_id2name(t));
     }
+    trap_restore_mask();
     JUMP_TAG(TAG_THROW);
     /* not reached */
 }

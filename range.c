@@ -190,6 +190,9 @@ range_length(rng)
     first = rb_iv_get(rng, "first");
     last = rb_iv_get(rng, "last");
 
+    if (RTEST(rb_funcall(first, '>', 1, last))) {
+	return INT2FIX(0);
+    }
     if (!obj_is_kind_of(first, cNumeric)) {
 	return enum_length(rng);
     }

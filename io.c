@@ -886,7 +886,7 @@ rb_fdopen(fd, mode)
     return f;
 }
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__) || 1
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
 static struct pipe_list {
     OpenFile *fptr;
     struct pipe_list *next;
@@ -913,6 +913,7 @@ pipe_del_fptr(fptr)
 
     if (list->fptr == fptr) {
 	pipe_list = list->next;
+	free(list);
 	return;
     }
 
@@ -931,10 +932,12 @@ static void
 pipe_atexit()
 {
     struct pipe_list *list = pipe_list;
+    struct pipe_list *tmp;
 
     while (list) {
+	tmp = list->next;
 	io_fptr_finalize(list->fptr);
-	list = list->next;
+	list = tmp;
     }
 }
 
@@ -2500,7 +2503,7 @@ Init_IO()
 
     rb_define_virtual_variable("$-i", opt_i_get, opt_i_set);
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__) || 1
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
     atexit(pipe_atexit);
 #endif
 
