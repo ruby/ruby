@@ -520,7 +520,7 @@ TARGET = #{target}
 DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
 
 RUBY = #{CONFIG["ruby_install_name"]}
-RM = $(RUBY) -rftools -e "File::rm_f(*ARGV.map{|x|Dir[x]}.flatten.uniq)"
+RM = $(RUBY) -rftools -e "File::rm_f(*ARGV.map do|x|Dir[x]end.flatten.uniq)"
 MAKEDIRS = $(RUBY) -r ftools -e 'File::makedirs(*ARGV)'
 INSTALL_PROG = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)'
 INSTALL_DATA = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)'
