@@ -659,7 +659,8 @@ class IO
     last_spec = fstr.last_spec
     begin
       current = scanf(str)
-      final.push(yield(current)) unless current.empty?
+      break if current.empty?
+      final.push(yield(current))
     end until eof || fstr.last_spec_tried == last_spec
     return final
   end
