@@ -65,7 +65,126 @@ get_ppid()
 #endif
 }
 
+static VALUE rb_cProcStatus;
 VALUE rb_last_status = Qnil;
+
+static VALUE
+last_status_set(status)
+    int status;
+{
+    rb_last_status = rb_obj_alloc(rb_cProcStatus);
+    rb_iv_set(rb_last_status, "status", INT2FIX(status));
+}
+
+static VALUE
+pst_to_i(st)
+    VALUE st;
+{
+    return rb_iv_get(st, "status");
+}
+
+static VALUE
+pst_to_s(st)
+    VALUE st;
+{
+    return rb_fix2str(pst_to_i(st), 10);
+}
+
+static VALUE
+pst_equal(st1, st2)
+    VALUE st1, st2;
+{
+    if (st1 == st2) return Qtrue;
+    return rb_equal(pst_to_i(st1), st2);
+}
+
+static VALUE
+pst_bitand(st1, st2)
+    VALUE st1, st2;
+{
+    int status = NUM2INT(st1) & NUM2INT(st2);
+
+    return INT2NUM(status);
+}
+
+static VALUE
+pst_ifstopped(st)
+    VALUE st;
+{
+    int status = NUM2INT(st);
+
+    if (WIFSTOPPED(status))
+	return Qtrue;
+    else
+	return Qfalse;
+}
+
+static VALUE
+pst_stopsig(st)
+    VALUE st;
+{
+    int status = NUM2INT(st);
+
+    return INT2NUM(WSTOPSIG(status));
+}
+
+static VALUE
+pst_ifsignaled(st)
+    VALUE st;
+{
+    int status = NUM2INT(st);
+
+    if (WIFSIGNALED(st))
+	return Qtrue;
+    else
+	return Qfalse;
+}
+
+static VALUE
+pst_termsig(st)
+    VALUE st;
+{
+    int status = NUM2INT(st);
+
+    return INT2NUM(WTERMSIG(status));
+}
+
+static VALUE
+pst_ifexited(st)
+    VALUE st;
+{
+    int status = NUM2INT(st);
+
+    if (WIFEXITED(status))
+	return Qtrue;
+    else
+	return Qfalse;
+}
+
+static VALUE
+pst_exitstatus(st)
+    VALUE st;
+{
+    int status = NUM2INT(st);
+
+    return INT2NUM(WEXITSTATUS(status));
+}
+
+static VALUE
+pst_coredump(st)
+    VALUE st;
+{
+#ifdef WCOREDUMP
+    int status = NUM2INT(st);
+
+    if (WCOREDUMP(status))
+	return Qtrue;
+    else
+	return Qfalse;
+#else
+    return Qfalse;
+#endif
+}
 
 #if !defined(HAVE_WAITPID) && !defined(HAVE_WAIT4)
 #define NO_WAITPID
@@ -108,7 +227,7 @@ rb_waitpid(pid, flags, st)
     }
 #else  /* NO_WAITPID */
     if (pid_tbl && st_lookup(pid_tbl, pid, st)) {
-	rb_last_status = INT2FIX(*st);
+	last_status_set(*st);
 	st_delete(pid_tbl, &pid, NULL);
 	return pid;
     }
@@ -137,7 +256,7 @@ rb_waitpid(pid, flags, st)
 	if (!rb_thread_alone()) rb_thread_schedule();
     }
 #endif
-    rb_last_status = INT2FIX(*st);
+    last_status_set(*st);
     return result;
 }
 
@@ -158,25 +277,49 @@ wait_each(key, value, data)
     data->status = value;
     return ST_DELETE;
 }
+
+struct waitall_data {
+    int pid;
+    int status;
+    VALUE ary;
+}
+
+static int
+waitall_each(key, value, data)
+    int key, value;
+    struct wait_data *data;
+{
+    VALUE pid_status_member;
+
+    if (data->status != -1) return ST_STOP;
+
+    data->pid = key;
+    data->status = value;
+    pid_status_member = rb_ary_new2(2);
+    rb_ary_push(pid_status_member, INT2NUM(key));
+    rb_ary_push(pid_status_member, INT2NUM(value));
+    rb_ary_push(data->ary, pid_status_member);
+    return ST_DELETE;
+}
 #endif
 
 static VALUE
 proc_wait()
 {
-    int pid, state;
+    int pid, status;
 #ifdef NO_WAITPID
     struct wait_data data;
 
     data.status = -1;
     st_foreach(pid_tbl, wait_each, &data);
     if (data.status != -1) {
-	rb_last_status = data.status;
+	last_status_set(data.status);
 	return INT2FIX(data.pid);
     }
 
     while (1) {
 	TRAP_BEG;
-	pid = wait(&state);
+	pid = wait(&status);
 	TRAP_END;
 	if (pid >= 0) break;
         if (errno == EINTR) {
@@ -185,9 +328,9 @@ proc_wait()
         }
         rb_sys_fail(0);
     }
-    rb_last_status = INT2FIX(state);
+    last_status_set(status);
 #else
-    if ((pid = rb_waitpid(-1, 0, &state)) < 0)
+    if ((pid = rb_waitpid(-1, 0, &status)) < 0)
 	rb_sys_fail(0);
 #endif
     return INT2FIX(pid);
@@ -232,6 +375,58 @@ proc_waitpid2(argc, argv)
     VALUE pid = proc_waitpid(argc, argv);
     if (NIL_P(pid)) return Qnil;
     return rb_assoc_new(pid, rb_last_status);
+}
+
+static VALUE
+proc_waitall()
+{
+    VALUE pid_status_ary, pid_status_member;
+    int pid, status;
+#ifdef NO_WAITPID
+    struct waitall_data data;
+
+    data.ary = pid_status_ary = rb_ary_new();
+    data.status = -1;
+    st_foreach(pid_tbl, waitall_each, &data);
+    if (data.status != -1) {
+	last_status_set(data.status);
+	return pid_status_ary;
+    }
+
+    for (pid = -1;;) {
+	pid = wait(&status);
+	if (pid == -1) {
+	    if (errno == ECHILD)
+		break;
+            if (errno == EINTR) {
+		rb_thread_schedule();
+		continue;
+	    }
+	    rb_sys_fail(0);
+	}
+	pid_status_member = rb_ary_new2(2);
+	rb_ary_push(pid_status_member, INT2NUM(pid));
+	rb_ary_push(pid_status_member, INT2NUM(status));
+	rb_ary_push(pid_status_ary, pid_status_member);
+    }
+    if (RARRAY(pid_status_ary)->len != 0)
+	last_status_set(status);
+#else
+    pid_status_ary = rb_ary_new();
+    for (pid = -1;;) {
+	pid = rb_waitpid(-1, 0, &status);
+	if (pid == -1) {
+	    if (errno == ECHILD)
+		break;
+	    rb_sys_fail(0);
+	}
+	pid_status_member = rb_ary_new2(2);
+	rb_ary_push(pid_status_member, INT2NUM(pid));
+	rb_ary_push(pid_status_member, INT2NUM(status));
+	rb_ary_push(pid_status_ary, pid_status_member);
+    }
+#endif
+    return pid_status_ary;
 }
 
 #ifndef HAVE_STRING_H
@@ -354,24 +549,24 @@ rb_proc_exec(str)
     for (s=str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 #if defined(MSDOS)
-	    int state;
+	    int status;
 	    before_exec();
-	    state = system(str);
+	    status = system(str);
 	    after_exec();
-	    if (state != -1)
-		exit(state);
+	    if (status != -1)
+		exit(status);
 #else
 #if defined(__human68k__) || defined(__CYGWIN32__) || defined(__EMX__)
 	    char *shell = dln_find_exe("sh", 0);
-	    int state = -1;
+	    int status = -1;
 	    before_exec();
 	    if (shell)
 		execl(shell, "sh", "-c", str, (char *) NULL);
 	    else
-		state = system(str);
+		status = system(str);
 	    after_exec();
-	    if (state != -1)
-		exit(state);
+	    if (status != -1)
+		exit(status);
 #else
 	    before_exec();
 	    execl("/bin/sh", "sh", "-c", str, (char *)NULL);
@@ -404,7 +599,7 @@ proc_spawn_v(argv, prog)
     char *prog;
 {
     char *extension;
-    int state;
+    int status;
 
     if (prog) {
 	security(prog);
@@ -439,9 +634,9 @@ proc_spawn_v(argv, prog)
 	}
     }
     before_exec();
-    state = spawnv(P_WAIT, prog, argv);
+    status = spawnv(P_WAIT, prog, argv);
     after_exec();    
-    return state;
+    return status;
 }
 
 static int
@@ -472,7 +667,7 @@ proc_spawn(sv)
     char *str;
     char *s, *t;
     char **argv, **a;
-    int state;
+    int status;
 
     Check_SafeStr(sv);
     str = s = RSTRING(sv)->ptr;
@@ -480,9 +675,9 @@ proc_spawn(sv)
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    char *shell = dln_find_exe("sh", 0);
 	    before_exec();
-	    state = shell?spawnl(P_WAIT,shell,"sh","-c",str,(char*)NULL):system(str);
+	    status = shell?spawnl(P_WAIT,shell,"sh","-c",str,(char*)NULL):system(str);
 	    after_exec();
-	    return state;
+	    return status;
 	}
     }
     a = argv = ALLOCA_N(char*, (s - str) / 2 + 2);
@@ -623,12 +818,12 @@ rb_f_system(argc, argv)
 {
 #if defined(NT) || defined(__EMX__)
     VALUE cmd;
-    int state;
+    int status;
 
     fflush(stdout);
     fflush(stderr);
     if (argc == 0) {
-	rb_last_status = INT2FIX(0);
+	rb_last_status = Qnil;
 	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
@@ -641,18 +836,18 @@ rb_f_system(argc, argv)
     cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 
     Check_SafeStr(cmd);
-    state = do_spawn(RSTRING(cmd)->ptr);
-    rb_last_status = INT2FIX(state);
+    status = do_spawn(RSTRING(cmd)->ptr);
+    last_status_set(status);
 
-    if (state == 0) return Qtrue;
+    if (status == 0) return Qtrue;
     return Qfalse;
 #else
 #ifdef DJGPP
     VALUE cmd;
-    int state;
+    int status;
 
     if (argc == 0) {
-	rb_last_status = INT2FIX(0);
+	rb_last_status = Qnil;
 	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
@@ -665,22 +860,22 @@ rb_f_system(argc, argv)
     cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 
     Check_SafeStr(cmd);
-    state = system(RSTRING(cmd)->ptr);
-    rb_last_status = INT2FIX((state & 0xff) << 8);
+    status = system(RSTRING(cmd)->ptr);
+    last_status_set((status & 0xff) << 8);
 
-    if (state == 0) return Qtrue;
+    if (status == 0) return Qtrue;
     return Qfalse;
 #else
 #if defined(__human68k__)
     VALUE prog = 0;
     int i;
-    int state;
+    int status;
 
     fflush(stdin);
     fflush(stdout);
     fflush(stderr);
     if (argc == 0) {
-	rb_last_status = INT2FIX(0);
+	rb_last_status = Qnil;
 	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
@@ -693,13 +888,13 @@ rb_f_system(argc, argv)
     }
 
     if (argc == 1 && prog == 0) {
-	state = proc_spawn(argv[0]);
+	status = proc_spawn(argv[0]);
     }
     else {
-	state = proc_spawn_n(argc, argv, prog);
+	status = proc_spawn_n(argc, argv, prog);
     }
-    rb_last_status = state == -1 ? INT2FIX(127) : INT2FIX(state);
-    return state == 0 ? Qtrue : Qfalse;
+    last_status_set(status == -1 ? 127 : status);
+    return status == 0 ? Qtrue : Qfalse;
 #else
     volatile VALUE prog = 0;
     int pid;
@@ -708,7 +903,7 @@ rb_f_system(argc, argv)
     fflush(stdout);
     fflush(stderr);
     if (argc == 0) {
-	rb_last_status = INT2FIX(0);
+	rb_last_status = Qnil;
 	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
@@ -750,7 +945,8 @@ rb_f_system(argc, argv)
 	rb_syswait(pid);
     }
 
-    if (rb_last_status == INT2FIX(0)) return Qtrue;
+    if (NUM2INT(rb_last_status) == 0)
+	return Qtrue;
     return Qfalse;
 #endif /* __human68k__ */
 #endif /* DJGPP */
@@ -1092,8 +1288,27 @@ Init_process()
 #ifndef NT
     rb_define_module_function(rb_mProcess, "wait", proc_wait, 0);
     rb_define_module_function(rb_mProcess, "wait2", proc_wait2, 0);
+    rb_define_module_function(rb_mProcess, "waitall", proc_waitall, 0);
     rb_define_module_function(rb_mProcess, "waitpid", proc_waitpid, -1);
     rb_define_module_function(rb_mProcess, "waitpid2", proc_waitpid2, -1);
+
+    rb_cProcStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
+    rb_undef_method(CLASS_OF(rb_cProcStatus), "new");
+
+    rb_define_method(rb_cProcStatus, "==", pst_equal, 1);
+    rb_define_method(rb_cProcStatus, "&", pst_bitand, 1);
+    rb_define_method(rb_cProcStatus, "to_i", pst_to_i, 0);
+    rb_define_method(rb_cProcStatus, "to_int", pst_to_i, 0);
+    rb_define_method(rb_cProcStatus, "to_s", pst_to_s, 0);
+    rb_define_method(rb_cProcStatus, "inspect", pst_to_s, 0);
+
+    rb_define_method(rb_cProcStatus, "ifstopped?", pst_ifstopped, 0);
+    rb_define_method(rb_cProcStatus, "stopsig", pst_stopsig, 0);
+    rb_define_method(rb_cProcStatus, "ifsignaled?", pst_ifsignaled, 0);
+    rb_define_method(rb_cProcStatus, "termsig", pst_termsig, 0);
+    rb_define_method(rb_cProcStatus, "ifexited?", pst_ifexited, 0);
+    rb_define_method(rb_cProcStatus, "exitstatus", pst_exitstatus, 0);
+    rb_define_method(rb_cProcStatus, "coredump?", pst_coredump, 0);
 
     rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
     rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);

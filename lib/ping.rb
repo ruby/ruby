@@ -47,6 +47,8 @@ module Ping
 	s = TCPsocket.new(host, service)
 	s.close
       end
+    rescue Errno::ECONNREFUSED
+      return true
     rescue
       return false
     end

@@ -2,6 +2,13 @@ Thu Feb 15 11:33:49 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/cgi/session.rb (close): fixed reversed condition.
 
+Thu Feb 15 08:34:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_waitall): new method based on a patch from Brian
+	  Fundakowski Feldman <green@green.dyndns.org>.
+
+	* process.c (last_status_set): objectify $? value (Process::Status).
+
 Wed Feb 14 17:28:24 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: supports unknown resp_text_code.

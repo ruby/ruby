@@ -558,7 +558,7 @@ extract_elem(path)
 }
 
 static void
-remove_backslases(p)
+remove_backslashes(p)
     char *p;
 {
     char *pend = p + strlen(p);
@@ -590,7 +590,7 @@ rb_glob_helper(path, flag, func, arg)
     char *p, *m;
 
     if (!has_magic(path, 0)) {
-	remove_backslases(path);
+	remove_backslashes(path);
 	if (rb_sys_stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}

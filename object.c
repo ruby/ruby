@@ -28,9 +28,6 @@ VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
 VALUE rb_cSymbol;
 
-VALUE rb_f_sprintf();
-VALUE rb_obj_alloc();
-
 static ID eq, eql;
 static ID inspect;
 static ID clone;
