@@ -22,13 +22,13 @@ module Test
           assert_same(@original, @wrapped_original.to_proc, "The wrapper should return what was wrapped")
         end
         def test_hashing
-          assert_not_equal(@original.hash, @munged.hash, "The original and munged procs should not have the same hash")
       
           assert_equal(@wrapped_original.hash, @wrapped_munged.hash, "The original and munged should have the same hash when wrapped")
           assert_equal(@wrapped_original, @wrapped_munged, "The wrappers should be equivalent")
           
           a_hash = {@wrapped_original => @original}
           assert(a_hash[@wrapped_original], "Should be able to access the wrapper in the hash")
+          assert_equal(a_hash[@wrapped_original], @original, "Should be able to access the wrapper in the hash")
         end
       end
     end

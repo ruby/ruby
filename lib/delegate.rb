@@ -64,15 +64,15 @@ class SimpleDelegator<Delegator
 
   def initialize(obj)
     super
-    @obj = obj
+    @_sd_obj = obj
   end
 
   def __getobj__
-    @obj
+    @_sd_obj
   end
 
   def __setobj__(obj)
-    @obj = obj
+    @_sd_obj = obj
   end
 end
 
@@ -88,7 +88,7 @@ def DelegateClass(superclass)
   methods |= ["to_s","to_a","inspect","==","=~","==="]
   klass.module_eval <<-EOS
   def initialize(obj)
-    @obj = obj
+    @_dc_obj = obj
   end
   EOS
   for method in methods
@@ -96,7 +96,7 @@ def DelegateClass(superclass)
       klass.module_eval <<-EOS
         def #{method}(*args, &block)
 	  begin
-	    @obj.__send__(:#{method}, *args, &block)
+	    @_dc_obj.__send__(:#{method}, *args, &block)
 	  rescue
 	    $@[0,2] = nil
 	    raise
@@ -106,6 +106,9 @@ def DelegateClass(superclass)
     rescue SyntaxError
       raise NameError, "invalid identifier %s" % method, caller(3)
     end
+  end
+  def __getobj__
+    @_dc_obj
   end
   return klass;
 end

@@ -9492,12 +9492,6 @@ static int thread_init = 0;
 # define PTHREAD_TIMER
 #endif
 
-#if defined(POSIX_SIGNAL)
-# define ruby_signal(x,y) posix_signal((x), (y))
-#else
-# define ruby_signal(x,y) signal((x), (y))
-#endif
-
 #if defined(PTHREAD_TIMER) || defined(HAVE_SETITIMER)
 static void
 catch_timer(sig)
@@ -9589,7 +9583,11 @@ rb_thread_start_0(fn, arg, th)
     if (!thread_init) {
 	thread_init = 1;
 #if defined(HAVE_SETITIMER) || defined(PTHREAD_TIMER)
-	ruby_signal(SIGVTALRM, catch_timer);
+#if defined(POSIX_SIGNAL)
+	posix_signal(SIGVTALRM, catch_timer);
+#else
+	signal(SIGVTALRM, catch_timer);
+#endif
 
 #ifdef PTHREAD_TIMER
 	pthread_create(&time_thread, 0, thread_timer, 0);

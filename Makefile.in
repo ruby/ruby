@@ -115,7 +115,7 @@ all:		@MAKEFILES@ miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) $(DMYEXT)
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(DMYEXT) $(LIBRUBY_A) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINLIBS) $(MAINOBJ) $(DMYEXT) $(LIBRUBY_A) $(LIBS) -o $@
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) $(SETUP) miniruby$(EXEEXT)
 		@rm -f $@

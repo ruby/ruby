@@ -1,3 +1,21 @@
+Wed Dec 17 15:15:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension::Value::[]): should work like
+	  String#[] if more than one arguments are specified.
+
+	* lib/delegate.rb: avoid using common instance name as "@obj".
+
+	* lib/cgi.rb (CGI::QueryExtension::Value): Value is no longer
+	  subclass of String, but DelegateClass(String).
+
+	* ext/curses/extconf.rb: restore function check for init_color.
+	  [ruby-list:38905]
+
+	* Makefile.in: need to specify $(MAINLIBS) for the miniruby
+	  generation rule.
+
+	* configure.in: better FreeBSD -lc_r support.
+
 Wed Dec 17 00:16:14 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: new method

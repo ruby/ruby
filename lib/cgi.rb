@@ -1141,14 +1141,18 @@ class CGI
       @multipart
     end
 
-    class Value < String    # :nodoc:
+    class Value < DelegateClass(String)    # :nodoc:
       def initialize(str, params)
         @params = params
         super(str)
       end
-      def [](idx)
-        warn "#{caller(1)[0]}:CAUTION! cgi['key'] == cgi.params['key'][0]; if want Array, use cgi.params['key']"
-        self
+      def [](idx, *args)
+        if args.size == 0
+          warn "#{caller(1)[0]}:CAUTION! cgi['key'] == cgi.params['key'][0]; if want Array, use cgi.params['key']"
+          self
+        else
+          self.to_s[idx,*args]
+        end
       end
       def first
         warn "#{caller(1)[0]}:CAUTION! cgi['key'] == cgi.params['key'][0]; if want Array, use cgi.params['key']"
