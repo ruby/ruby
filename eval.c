@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jun 10 14:22:17 JST 1993
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -317,8 +317,7 @@ remove_method(klass, mid)
     }
     rb_clear_cache_by_id(mid);
     if (FL_TEST(klass, FL_SINGLETON)) {
-	rb_funcall(rb_iv_get(klass, "__attached__"),
-		   singleton_removed, 1, ID2SYM(mid));
+	rb_funcall(rb_iv_get(klass, "__attached__"), singleton_removed, 1, ID2SYM(mid));
     }
     else {
 	rb_funcall(klass, removed, 1, ID2SYM(mid));
@@ -680,6 +679,7 @@ dvar_asgn_internal(id, value, curr)
 
     while (vars) {
 	if (curr && vars->id == 0) {
+	    /* first null is a dvar header */
 	    n++;
 	    if (n == 2) break;
 	}

@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 17:12:58 JST 1993
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -1748,10 +1748,25 @@ rb_str_include(str, arg)
 }
 
 static VALUE
-rb_str_to_i(str)
+rb_str_to_i(argc, argv, str)
+    int argc;
+    VALUE *argv;
     VALUE str;
 {
-    return rb_str2inum(str, 10);
+    VALUE b;
+    int base;
+
+    rb_scan_args(argc, argv, "01", &b);
+    if (argc == 0) base = 10;
+    else base = NUM2INT(b);
+
+    switch (base) {
+      case 2: case 8: case 10: case 16:
+	break;
+      default:
+	rb_raise(rb_eArgError, "illegal radix %d", base);
+    }
+    return rb_str2inum(str, base);
 }
 
 static VALUE
@@ -3158,7 +3173,7 @@ Init_String()
     rb_define_method(rb_cString, "rindex", rb_str_rindex, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
 
-    rb_define_method(rb_cString, "to_i", rb_str_to_i, 0);
+    rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);
     rb_define_method(rb_cString, "to_s", rb_str_to_s, 0);
     rb_define_method(rb_cString, "to_str", rb_str_to_s, 0);

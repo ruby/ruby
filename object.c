@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jul 15 12:01:24 JST 1993
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
@@ -831,19 +831,12 @@ rb_obj_private_methods(obj)
     return rb_class_private_instance_methods(1, argv, CLASS_OF(obj));
 }
 
-struct arg_to {
-    VALUE val;
-    const char *s;
-    ID m;
-};
-
 static VALUE
 convert_type(val, tname, method, raise)
     VALUE val;
     const char *tname, *method;
     int raise;
 {
-    struct arg_to arg1, arg2;
     ID m;
 
     m = rb_intern(method);

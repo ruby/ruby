@@ -48,6 +48,15 @@ Thu Jan 10 11:42:47 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/resource.rb: Modify copyright in resource script.
 
+Thu Jan 10 07:15:44 2002  takuma ozawa  <metal@mine.ne.jp>
+
+	* re.c (match_select): should propagate taintness.
+
+Thu Jan 10 00:54:57 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_set_default): Hash#default= should return the
+	  new value.
+
 Wed Jan  9 20:21:09 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* misc/ruby-mode.el (ruby-calculate-indent): indentation after
@@ -55,6 +64,13 @@ Wed Jan  9 20:21:09 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* misc/ruby-mode.el (font-lock-defaults): unless XEmacs, set
 	  font-lock variables in ruby-mode-hook.
+
+Tue Jan  8 15:56:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_to_i): accepts optional base argument. [new]
+
+	* numeric.c (rb_fix2str): should not handle negative fixnum values
+	  int32 via calling sprintf() directly.
 
 Tue Jan  8 15:54:02 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

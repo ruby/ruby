@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -4280,7 +4280,7 @@ gettable(id)
     else if (id == k__FILE__) {
 	VALUE f = rb_str_new2(ruby_sourcefile);
 	OBJ_FREEZE(f);
-	return NEW_STR(f);
+	return NEW_LIT(f);
     }
     else if (id == k__LINE__) {
 	return NEW_LIT(INT2FIX(ruby_sourceline));

@@ -347,7 +347,7 @@ rb_hash_set_default(hash, ifnone)
     rb_hash_modify(hash);
     RHASH(hash)->ifnone = ifnone;
     FL_UNSET(hash, HASH_PROC_DEFAULT);
-    return hash;
+    return ifnone;
 }
 
 static int

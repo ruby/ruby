@@ -829,6 +829,7 @@ match_select(argc, argv, match)
     VALUE result = rb_ary_new();
     int i;
     long idx;
+    int taint = OBJ_TAINTED(match);
 
     for (i=0; i<argc; i++) {
 	idx = NUM2LONG(argv[i]);
@@ -837,8 +838,9 @@ match_select(argc, argv, match)
 	    rb_ary_push(result, Qnil);
 	}
 	else {
-	    rb_ary_push(result, rb_str_new(ptr+regs->beg[idx],
-					   regs->end[idx]-regs->beg[idx]));
+	    VALUE str = rb_str_new(ptr+regs->beg[i], regs->end[i]-regs->beg[i]);
+	    if (taint) OBJ_TAINT(str);
+	    rb_ary_push(result, str);
 	}
     }
     return result;
@@ -981,15 +983,11 @@ static VALUE
 rb_reg_equal(re1, re2)
     VALUE re1, re2;
 {
-    int min;
-
     if (re1 == re2) return Qtrue;
     if (TYPE(re2) != T_REGEXP) return Qfalse;
     rb_reg_check(re1); rb_reg_check(re2);
     if (RREGEXP(re1)->len != RREGEXP(re2)->len) return Qfalse;
-    min = RREGEXP(re1)->len;
-    if (min > RREGEXP(re2)->len) min = RREGEXP(re2)->len;
-    if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, min) == 0 &&
+    if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, RREGEXP(re1)->len) == 0 &&
 	rb_reg_cur_kcode(re1) == rb_reg_cur_kcode(re2) &&
 	RREGEXP(re1)->ptr->options == RREGEXP(re2)->ptr->options) {
 	return Qtrue;

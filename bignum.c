@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Jun 10 00:48:55 JST 1994
 
-  Copyright (C) 1993-2001 Yukihiro Matsumoto
+  Copyright (C) 1993-2002 Yukihiro Matsumoto
 
 **********************************************************************/
 
@@ -351,7 +351,7 @@ rb_str2inum(str, base)
 	p[len] = '\0';
 	s = p;
     }
-    if (len != strlen(s)) {
+    if (base == 0 && len != strlen(s)) {
 	rb_raise(rb_eArgError, "string for Integer contains null byte");
     }
     return rb_cstr2inum(s, base); 

@@ -1,3 +1,11 @@
+: String#to_i
+
+  Accepts optional base argument.
+
+: Integer#to_s
+
+  Accepts optional base argument.
+
 : TCPServer#listen, UNIXServer#listen
 
   Added.
@@ -13,10 +21,6 @@
 : String#chomp
 
   if $/ == '\n', chops off last newlines (any of \n, \r, \r\n).
-
-: IO#puts
-
-  do not treat Array specially.
 
 : Module::new/Class::new
 
