@@ -1,3 +1,10 @@
+Fri Oct 31 12:55:24 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in, lib/mkmf.rb: add RPATHFLAG for NetBSD.
+	  [ruby-dev:21791]
+
+	* bcc32/Makefile.sub, win32/Makefile.sub, win32/Makefile.sub: ditto.
+
 Fri Oct 31 01:38:14 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* wince/Makefile.sub, win32/Makefile.sub (.y.c): allow white spaces

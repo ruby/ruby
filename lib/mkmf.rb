@@ -232,7 +232,9 @@ def cpp_command(outfile, opt="")
 end
 
 def libpathflag(libpath=$LIBPATH)
-  libpath.map{|x| LIBPATHFLAG % %["#{x}"]}.join
+  libpath.map{|x|
+    (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % %["#{x}"]
+  }.join
 end
 
 def try_link0(src, opt="", &b)
@@ -1020,6 +1022,7 @@ LINK_SO = config_string('LINK_SO') ||
     "$(OBJS) $(LOCAL_LIBS) $(LIBS)"
   end
 LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
+RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
 
 CLEANINGS = "
