@@ -69,7 +69,16 @@ module Net
 	voidresp
       end
     end
-    
+
+    def set_socket(sock, get_greeting = true)
+      synchronize do
+	@sock = sock
+	if get_greeting
+	  voidresp
+	end
+      end
+    end
+
     def sanitize(s)
       if s =~ /^PASS /i
 	return s[0, 5] + "*" * (s.length - 5)
