@@ -3434,7 +3434,7 @@ assignable(id, val)
 	}
 	else{
 	    if (!dyna_var_defined(id)) {
-		dyna_var_asgn(id, TRUE);
+		dyna_var_asgn(0, id);
 	    }
 	    lhs = NEW_DASGN(id, val);
 	}

@@ -794,10 +794,32 @@ num2dbl(val)
 }
 
 static VALUE
+to_s(obj)
+    VALUE obj;
+{
+    return rb_funcall(obj, rb_intern("to_s"), 0);
+}
+
+static VALUE
+fail_to_str(val)
+    VALUE val;
+{
+    TypeError("failed to convert %s into Sting",
+	      rb_class2name(CLASS_OF(val)));
+}
+
+static VALUE
 f_string(obj, arg)
     VALUE obj, arg;
 {
-    return rb_funcall(arg, rb_intern("to_s"), 0);
+    return rb_rescue(to_s, arg, fail_to_str, arg);
+}
+
+static VALUE
+to_str(obj)
+    VALUE obj;
+{
+    return rb_funcall(obj, rb_intern("to_str"), 0);
 }
 
 char*
@@ -805,7 +827,10 @@ str2cstr(str)
     VALUE str;
 {
     if (NIL_P(str)) return NULL;
-    Check_Type(str, T_STRING);
+    if (TYPE(str) != T_STRING) {
+	str = rb_rescue(to_str, str, fail_to_str, str);
+	Check_Type(str, T_STRING);
+    }
     return RSTRING(str)->ptr;
 }
 

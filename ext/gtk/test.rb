@@ -1,82 +1,61 @@
 require 'gtk'
 
-def create_menu(depth)
-  return nil if depth < 1
-  
-  menu = Gtk::Menu::new()
-  group = nil
-  submenu = nil
-
-  for i in 0..4
-    buf = sprintf("item %2d - %d", depth, i+1)
-#    menuitem = Gtk::MenuItem::new(buf)
-    menuitem = Gtk::RadioMenuItem.new(group, buf)
-    group = menuitem.group
-    if depth % 2
-      menuitem.set_show_toggle TRUE
-    end
-    menu.append menuitem
-    menuitem.show
-    if depth > 0
-      unless submenu
-	submenu = create_menu(depth - 1)
-      end
-      menuitem.set_submenu submenu
-    end
-  end
-  return menu
-end
+Gtk::RC::parse_string <<EOS
+style "default"
+{
+  fontset = "-adobe-helvetica-medium-r-normal--*-120-*-*-*-*-*-*,*"
+}
+widget_class "*" style "default"
+EOS
 
 window = Gtk::Window::new(Gtk::WINDOW_TOPLEVEL)
-window.signal_connect("destroy") do
-  exit
-end
-window.signal_connect("delete_event") do
-  exit
-end
-window.set_title("menus")
+window.set_title("entry")
 window.border_width(0)
 
 box1 = Gtk::VBox::new(FALSE, 0)
-window.add box1
+window.add(box1)
 box1.show
 
-menubar = Gtk::MenuBar::new()
-box1.pack_start menubar, FALSE, TRUE, 0
-menubar.show
-
-menu = create_menu(2)
-menuitem = Gtk::MenuItem::new("test\nline2")
-menuitem.set_submenu menu
-menubar.append menuitem
-menuitem.show
-
-menuitem = Gtk::MenuItem::new("foo")
-menuitem.set_submenu menu
-menubar.append menuitem
-menuitem.show
-
-menuitem = Gtk::MenuItem::new("bar")
-menuitem.set_submenu menu
-menubar.append menuitem
-menuitem.show
-
 box2 = Gtk::VBox::new(FALSE, 10)
-box2.border_width 10
-box1.pack_start box2, TRUE, TRUE, 0
+box2.border_width(10)
+box1.pack_start(box2, TRUE, TRUE, 0)
 box2.show
 
-optionmenu = Gtk::OptionMenu::new()
-optionmenu.set_menu create_menu(1)
-optionmenu.set_history 4
-box2.pack_start optionmenu, TRUE, TRUE, 0
-optionmenu.show
+entry = Gtk::Entry::new()
+entry.set_text("hello world")
+entry.select_region(0, -1)
+box2.pack_start(entry, TRUE, TRUE, 0)
+entry.show
+
+cb = Gtk::Combo::new()
+cb.set_popdown_strings(["item0",
+			 "item1 item1",
+			 "item2 item2 item2",
+			 "item3 item3 item3 item3",
+			 "item4 item4 item4 item4 item4",
+			 "item5 item5 item5 item5 item5 item5",
+			 "item6 item6 item6 item6 item6",
+			 "item7 item7 item7 item7",
+			 "item8 item8 item8",
+			 "item9 item9"])
+cb.entry.set_text("hello world")
+cb.entry.select_region(0, -1)
+box2.pack_start(cb, TRUE, TRUE, 0)
+cb.show
+
+check = Gtk::CheckButton::new("Editable")
+box2.pack_start(check, FALSE, TRUE, 0)
+check.signal_connect("toggled") do
+  entry.set_editable(check.active)
+end
+check.set_state(false)
+check.show
 
 separator = Gtk::HSeparator::new()
 box1.pack_start(separator, FALSE, TRUE, 0)
 separator.show
 
-box2 = Gtk::HBox::new(FALSE, 10)
+box2 = Gtk::VBox::new(FALSE, 10)
 box2.border_width(10)
 box1.pack_start(box2, FALSE, TRUE, 0)
 box2.show
@@ -90,7 +69,6 @@ box2.pack_start(button, TRUE, TRUE, 0)
 button.set_flags(Gtk::CAN_DEFAULT);
 button.grab_default
 button.show
-
 window.show
 
 Gtk::main()

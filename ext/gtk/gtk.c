@@ -42,6 +42,7 @@ static VALUE gFileSel;
 static VALUE gVBox;
 static VALUE gColorSel;
 static VALUE gColorSelDialog;
+static VALUE gCombo;
 static VALUE gImage;
 static VALUE gDrawArea;
 static VALUE gEditable;
@@ -99,6 +100,8 @@ static VALUE gPreviewInfo;
 static VALUE gAllocation;
 static VALUE gRequisiton;
 
+static VALUE mRC;
+
 static VALUE mGdk;
 
 static VALUE gdkFont;
@@ -140,6 +143,9 @@ get_gobject(obj)
 	TypeError("not a Gtk object");
     }
     Data_Get_Struct(data, GtkObject, gtkp);
+    if (!gtkp) {
+	ArgError("destroyed GtkObject");
+    }
     if (!GTK_IS_OBJECT(gtkp)) {
 	TypeError("not a GtkObject");
     }
@@ -199,10 +205,10 @@ delete_gobject(gtkobj, obj)
 {
     struct RData *data;
 
+    ary_delete(gtk_object_list, obj);
     data = RDATA(rb_ivar_get(obj, id_gtkdata));
     data->dfree = 0;
     data->data = 0;
-    ary_delete(gtk_object_list, obj);
 }
 
 static void
@@ -229,7 +235,6 @@ make_gobject(klass, gtkobj)
     VALUE obj = obj_alloc(klass);
 
     set_gobject(obj, gtkobj);
-    rb_funcall(obj, rb_intern("initialize"), 0, 0);
     return obj;
 }
 
@@ -541,12 +546,11 @@ gdkpmap_create_from_xpm(self, win, tcolor, fname)
     GdkBitmap *mask;
     GdkWindow *window = get_gdkwindow(win);
 
-    Check_Type(fname, T_STRING);
     new = gdk_pixmap_create_from_xpm(window, &mask,
 				     get_gdkcolor(tcolor),
-				     RSTRING(fname)->ptr);
+				     STR2CSTR(fname));
     if (!new) {
-	ArgError("Pixmap not created from %s", RSTRING(fname)->ptr);
+	ArgError("Pixmap not created from %s", STR2CSTR(fname));
     }
     return assoc_new(make_gdkpixmap2(self,new),
 		     make_gdkbitmap(mask));
@@ -565,8 +569,7 @@ gdkpmap_create_from_xpm_d(self, win, tcolor, data)
     Check_Type(data, T_ARRAY);
     buf = ALLOCA_N(char*, RARRAY(data)->len);
     for (i=0; i<RARRAY(data)->len; i++) {
-	Check_Type(RARRAY(data)->ptr[i], T_STRING);
-	buf[i] = RSTRING(RARRAY(data)->ptr[i])->ptr;
+	buf[i] = STR2CSTR(RARRAY(data)->ptr[i]);
     }
 
     new = gdk_pixmap_create_from_xpm_d(window, &mask,
@@ -1102,11 +1105,16 @@ signal_callback(widget, data, nparams, params)
 {
     VALUE self = get_value_from_gobject(GTK_OBJECT(widget));
     VALUE proc = RARRAY(data)->ptr[0];
+    VALUE a = RARRAY(data)->ptr[3];
     ID id = NUM2INT(RARRAY(data)->ptr[1]);
     VALUE result = Qnil;
-    VALUE args = ary_new2(nparams+1);
+    VALUE args = ary_new2(nparams+1+RARRAY(a)->len);
+    int i;
 
     signal_setup_args(self, id, nparams, params, args);
+    for (i=0; i<RARRAY(a)->len; i++) {
+	ary_push(args, RARRAY(a)->ptr[i]);
+    }
     if (NIL_P(proc)) {
 	if (rb_respond_to(self, id)) {
 	    result = rb_apply(self, id, args);
@@ -1155,9 +1163,55 @@ gobj_smethod_added(self, id)
 }
 
 static VALUE
+nil()
+{
+    return Qnil;
+}
+
+static GtkObject*
+try_get_gobject(self)
+    VALUE self;
+{
+    return (GtkObject*)rb_rescue(get_gobject, self, nil, Qnil);
+}
+
+static VALUE
+gobj_equal(self, other)
+    VALUE self, other;
+{
+    if (self == other) return TRUE;
+    if (get_gobject(self) == try_get_gobject(other)) return TRUE;
+    return FALSE;
+}
+
+static VALUE
+gobj_inspect(self)
+    VALUE self;
+{
+    VALUE iv = rb_ivar_get(self, id_gtkdata);
+    char *cname = rb_class2name(CLASS_OF(self));
+    char *s;
+
+    s = ALLOCA_N(char, strlen(cname)+8+16+1); /* 6:tags 16:addr 1:eos */
+    if (NIL_P(iv) || RDATA(iv)->data == 0) {
+	sprintf(s, "#<%s: destroyed>", cname);
+    }
+    else {
+	sprintf(s, "#<%s: id=0x%x>", cname, get_gobject(self));
+    }
+    return str_new2(s);
+}
+
+static VALUE
 gobj_destroy(self)
     VALUE self;
 {
+    VALUE iv = rb_ivar_get(self, id_gtkdata);
+
+    if (NIL_P(iv) || RDATA(iv)->data == 0) {
+	/* destroyed object */
+	return Qnil;
+    }
     gtk_object_destroy(get_gobject(self));
     clear_gobject(self);
     return Qnil;
@@ -1187,20 +1241,16 @@ gobj_sig_connect(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE sig, data;
+    VALUE sig, data, args;
     ID id = 0;
     int i;
 
-    rb_scan_args(argc, argv, "11", &sig, &data);
-    Check_Type(sig, T_STRING);
-    if (NIL_P(data) && iterator_p()) {
-	data = f_lambda();
-	id = rb_intern(RSTRING(sig)->ptr);
-    }
-    data = assoc_new(data, INT2NUM(id));
+    rb_scan_args(argc, argv, "1*", &sig, &args);
+    id = rb_intern(STR2CSTR(sig));
+    data = ary_new3(3, f_lambda(), INT2NUM(id), args);
     add_relative(self, data);
     i = gtk_signal_connect_interp(GTK_OBJECT(get_widget(self)),
-				  RSTRING(sig)->ptr,
+				  STR2CSTR(sig),
 				  signal_callback, (gpointer)data,
 				  NULL, 0);
 
@@ -1213,19 +1263,16 @@ gobj_sig_connect_after(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE sig, data;
+    VALUE sig, data, args;
     ID id = 0;
     int i;
 
-    rb_scan_args(argc, argv, "11", &sig, &data);
-    Check_Type(sig, T_STRING);
-    if (NIL_P(data) && iterator_p()) {
-	data = f_lambda();
-	id = rb_intern(RSTRING(sig)->ptr);
-    }
+    rb_scan_args(argc, argv, "1*", &sig, &args);
+     id = rb_intern(STR2CSTR(sig));
+    data = ary_new3(3, f_lambda(), INT2NUM(id), args);
     add_relative(self, data);
-    i = gtk_signal_connect_interp(GTK_OBJECT(get_widget(self)),
-				  RSTRING(sig)->ptr,
+     i = gtk_signal_connect_interp(GTK_OBJECT(get_widget(self)),
+				  STR2CSTR(sig),
 				  signal_callback, (gpointer)data,
 				  NULL, 1);
 
@@ -1479,16 +1526,6 @@ adj_initialize(self, value, lower, upper, step_inc, page_inc, page_size)
 					NUM2DBL(step_inc),
 					NUM2DBL(page_inc),
 					NUM2DBL(page_size)));
-    return Qnil;
-}
-
-static VALUE
-widget_destroy(self)
-    VALUE self;
-{
-    gtk_widget_destroy(get_widget(self));
-    clear_gobject(self);
-
     return Qnil;
 }
 
@@ -2148,8 +2185,7 @@ clist_initialize(self, titles)
 	len = RARRAY(titles)->len;
 	buf = ALLOCA_N(char*, len);
 	for (i=0; i<len; i++) {
-	    Check_Type(RARRAY(titles)->ptr[i], T_STRING);
-	    buf[i] = RSTRING(RARRAY(titles)->ptr[i])->ptr;
+	    buf[i] = STR2CSTR(RARRAY(titles)->ptr[i]);
 	}
 	widget = gtk_clist_new_with_titles(len, buf);
     }
@@ -2388,8 +2424,7 @@ clist_append(self, text)
     }
     buf = ALLOCA_N(char*, len);
     for (i=0; i<len; i++) {
-	Check_Type(RARRAY(text)->ptr[i], T_STRING);
-	buf[i] = RSTRING(RARRAY(text)->ptr[i])->ptr;
+	buf[i] = STR2CSTR(RARRAY(text)->ptr[i]);
     }
     i = gtk_clist_append(GTK_CLIST(get_widget(self)), buf);
     return INT2FIX(i);
@@ -2409,8 +2444,7 @@ clist_insert(self, row, text)
     }
     buf = ALLOCA_N(char*, len);
     for (i=0; i<len; i++) {
-	Check_Type(RARRAY(text)->ptr[i], T_STRING);
-	buf[i] = RSTRING(RARRAY(text)->ptr[i])->ptr;
+	buf[i] = STR2CSTR(RARRAY(text)->ptr[i]);
     }
     gtk_clist_insert(GTK_CLIST(get_widget(self)), NUM2INT(row), buf);
     return self;
@@ -2567,9 +2601,8 @@ static VALUE
 fsel_set_fname(self, fname)
     VALUE self, fname;
 {
-    Check_Type(fname, T_STRING);
     gtk_file_selection_set_filename(GTK_FILE_SELECTION(get_widget(self)),
-				    RSTRING(fname)->ptr);
+				    STR2CSTR(fname));
 
     return self;
 }
@@ -3145,8 +3178,7 @@ rmitem_initialize(argc, argv, self)
     }
     else {
 	if (!NIL_P(arg2)) {
-	    Check_Type(arg2, T_STRING);
-	    label = RSTRING(arg2)->ptr;
+	    label = STR2CSTR(arg2);
 	}
 	if (obj_is_kind_of(arg1, gRMenuItem)) {
 	    GtkWidget *b = get_widget(arg1);
@@ -3880,11 +3912,10 @@ static VALUE
 ttips_set_tip(self, win, text,priv)
     VALUE self, win, text;
 {
-    Check_Type(text, T_STRING);
     gtk_tooltips_set_tip(GTK_TOOLTIPS(get_widget(self)),
 			 get_widget(win),
-			 RSTRING(text)->ptr,
-			 RSTRING(priv)->ptr);
+			 STR2CSTR(text),
+			 STR2CSTR(priv));
 
     return self;
 }
@@ -3966,8 +3997,7 @@ titem_initialize(argc, argv, self)
     GtkWidget *widget;
 
     if (rb_scan_args(argc, argv, "01", &label) == 1) {
-	Check_Type(label, T_STRING);
-	widget = gtk_tree_item_new_with_label(RSTRING(label)->ptr);
+	widget = gtk_tree_item_new_with_label(STR2CSTR(label));
     }
     else {
 	widget = gtk_tree_item_new();
@@ -4094,8 +4124,7 @@ button_initialize(argc, argv, self)
     GtkWidget *widget;
 
     if (rb_scan_args(argc, argv, "01", &label) == 1) {
-	Check_Type(label, T_STRING);
-	widget = gtk_button_new_with_label(RSTRING(label)->ptr);
+	widget = gtk_button_new_with_label(STR2CSTR(label));
     }
     else {
 	widget = gtk_button_new();
@@ -4154,8 +4183,7 @@ tbtn_initialize(argc, argv, self)
     GtkWidget *widget;
 
     if (rb_scan_args(argc, argv, "01", &label) == 1) {
-	Check_Type(label, T_STRING);
-	widget = gtk_toggle_button_new_with_label(RSTRING(label)->ptr);
+	widget = gtk_toggle_button_new_with_label(STR2CSTR(label));
     }
     else {
 	widget = gtk_toggle_button_new();
@@ -4192,6 +4220,15 @@ tbtn_toggled(self)
 }
 
 static VALUE
+tbtn_active(self)
+    VALUE self;
+{
+    if (GTK_TOGGLE_BUTTON(get_widget(self))->active)
+	return TRUE;
+    return FALSE;
+}
+
+static VALUE
 cbtn_initialize(argc, argv, self)
     int argc;
     VALUE *argv;
@@ -4200,8 +4237,7 @@ cbtn_initialize(argc, argv, self)
     GtkWidget *widget;
 
     if (rb_scan_args(argc, argv, "01", &label) == 1) {
-	Check_Type(label, T_STRING);
-	widget = gtk_check_button_new_with_label(RSTRING(label)->ptr);
+	widget = gtk_check_button_new_with_label(STR2CSTR(label));
     }
     else {
 	widget = gtk_check_button_new();
@@ -4227,8 +4263,7 @@ rbtn_initialize(argc, argv, self)
     }
     else {
 	if (!NIL_P(arg2)) {
-	    Check_Type(arg2, T_STRING);
-	    label = RSTRING(arg2)->ptr;
+	    label = STR2CSTR(arg2);
 	}
 	if (obj_is_kind_of(arg1, gRButton)) {
 	    GtkWidget *b = get_widget(arg1);
@@ -4385,11 +4420,7 @@ static VALUE
 cdialog_initialize(self, title)
     VALUE self;
 {
-    char *t;
-
-    Check_Type(title, T_STRING);
-    t = RSTRING(title)->ptr;
-    set_widget(self, gtk_color_selection_dialog_new(t));
+    set_widget(self, gtk_color_selection_dialog_new(STR2CSTR(title)));
     return Qnil;
 }
 
@@ -4545,9 +4576,16 @@ static VALUE
 entry_set_text(self, text)
     VALUE self, text;
 {
-    Check_Type(text, T_STRING);
-    gtk_entry_set_text(GTK_ENTRY(get_widget(self)), RSTRING(text)->ptr);
+    gtk_entry_set_text(GTK_ENTRY(get_widget(self)), STR2CSTR(text));
 
+    return self;
+}
+
+static VALUE
+entry_set_editable(self, editable)
+    VALUE self, editable;
+{
+    gtk_entry_set_editable(GTK_ENTRY(get_widget(self)), RTEST(editable));
     return self;
 }
 
@@ -4694,6 +4732,114 @@ hbox_initialize(argc, argv, self)
 
     set_widget(self, gtk_hbox_new(RTEST(homogeneous), NUM2INT(spacing)));
     return Qnil;
+}
+
+static VALUE
+combo_initialize(self)
+    VALUE self;
+{
+    set_widget(self, gtk_combo_new());
+    return Qnil;
+}
+
+static VALUE
+combo_val_in_list(self, val, ok)
+    VALUE self, val, ok;
+{
+    gtk_combo_set_value_in_list(GTK_COMBO(get_widget(self)),
+				RTEST(val), RTEST(ok));
+    return Qnil;
+}
+
+static VALUE
+combo_use_arrows(self, val)
+    VALUE self, val;
+{
+    gtk_combo_set_use_arrows(GTK_COMBO(get_widget(self)),
+			     RTEST(val));
+    return Qnil;
+}
+
+static VALUE
+combo_case_sensitive(self, val)
+    VALUE self, val;
+{
+    gtk_combo_set_case_sensitive(GTK_COMBO(get_widget(self)),
+				 RTEST(val));
+    return Qnil;
+}
+
+static VALUE
+combo_item_string(self, item, val)
+    VALUE self, item, val;
+{
+    gtk_combo_set_item_string(GTK_COMBO(get_widget(self)),
+			      GTK_ITEM(get_widget(self)),
+			      STR2CSTR(val));
+    return Qnil;
+}
+
+static VALUE
+combo_popdown_strings(self, ary)
+    VALUE self, ary;
+{
+    int i;
+    GList *glist = NULL;
+
+    Check_Type(ary, T_ARRAY);
+    for (i=0; i<RARRAY(ary)->len; i++) {
+	/* check to avoid memory leak */
+	STR2CSTR(RARRAY(ary)->ptr[i]);
+    }
+    for (i=0; i<RARRAY(ary)->len; i++) {
+	glist = g_list_append(glist,STR2CSTR(RARRAY(ary)->ptr[i]));
+    }
+
+    gtk_combo_set_popdown_strings(GTK_COMBO(get_widget(self)), glist);
+    return Qnil;
+}
+
+static VALUE
+combo_disable_activate(self)
+    VALUE self;
+{
+    gtk_combo_disable_activate(GTK_COMBO(get_widget(self)));
+    return Qnil;
+}
+
+static VALUE
+combo_entry(self)
+    VALUE self;
+{
+    return make_widget(gEntry, GTK_COMBO(get_widget(self))->entry);
+}
+
+static VALUE
+combo_button(self)
+    VALUE self;
+{
+    return make_widget(gButton, GTK_COMBO(get_widget(self))->button);
+}
+
+static VALUE
+combo_popup(self)
+    VALUE self;
+{
+    return make_widget(gScrolledWin, GTK_COMBO(get_widget(self))->popup);
+}
+
+static VALUE
+combo_popwin(self)
+    VALUE self;
+{
+    return make_widget(gWindow, GTK_COMBO(get_widget(self))->popwin);
+}
+
+static VALUE
+combo_list(self)
+    VALUE self;
+{
+    return make_widget(gList, GTK_COMBO(get_widget(self))->list);
 }
 
 static VALUE
@@ -5377,6 +5523,45 @@ gtk_m_main(self)
     return Qnil;
 }
 
+static VALUE
+gtk_rc_m_parse(self, rc)
+    VALUE self, rc;
+{
+    gtk_rc_parse(STR2CSTR(rc));
+    return Qnil;
+}
+
+static VALUE
+gtk_rc_m_parse_string(self, rc)
+    VALUE self, rc;
+{
+    gtk_rc_parse_string(STR2CSTR(rc));
+    return Qnil;
+}
+
+static VALUE
+gtk_rc_m_get_style(self, w)
+    VALUE self, w;
+{
+    GtkStyle *s = gtk_rc_get_style(get_widget(w));
+    return make_gstyle(s);
+}
+
+static VALUE
+gtk_rc_m_add_widget_name_style(self, style, pat)
+    VALUE self, style, pat;
+{
+    gtk_rc_add_widget_name_style(get_gstyle(style), STR2CSTR(pat));
+    return Qnil;
+}
+
+static VALUE
+gtk_rc_m_add_widget_class_style(self, style, pat)
+    VALUE self, style, pat;
+{
+    gtk_rc_add_widget_class_style(get_gstyle(style), STR2CSTR(pat));
+    return Qnil;
+}
 
 static VALUE
 gdkdraw_draw_point(self, gc, x, y)
@@ -5691,6 +5876,7 @@ Init_gtk()
     int argc, i;
     char **argv;
 
+    gtk_set_locale();
     gtk_object_list = ary_new();
     rb_global_variable(&gtk_object_list);
 
@@ -5730,6 +5916,7 @@ Init_gtk()
     gHBBox = rb_define_class_under(mGtk, "HButtonBox", gBBox);
     gVBBox = rb_define_class_under(mGtk, "VButtonBox", gBBox);
     gHBox = rb_define_class_under(mGtk, "HBox", gBox);
+    gCombo = rb_define_class_under(mGtk, "Combo", gHBox);
     gPaned = rb_define_class_under(mGtk, "Paned", gContainer);
     gHPaned = rb_define_class_under(mGtk, "HPaned", gPaned);
     gVPaned = rb_define_class_under(mGtk, "VPaned", gPaned);
@@ -5777,6 +5964,8 @@ Init_gtk()
     gRequisiton = rb_define_class_under(mGtk, "Requisiton", cData);
     gAllocation = rb_define_class_under(mGtk, "Allocation", cData);
 
+    mRC = rb_define_module_under(mGtk, "RC");
+
     mGdk = rb_define_module("Gdk");
 
     gdkFont = rb_define_class_under(mGdk, "Font", cData);
@@ -5805,9 +5994,10 @@ Init_gtk()
     rb_define_method(gObject, "signal_connect", gobj_sig_connect, -1);
     rb_define_method(gObject, "signal_connect_after", gobj_sig_connect_after, -1);
     rb_define_method(gObject, "singleton_method_added", gobj_smethod_added, 1);
+    rb_define_method(gObject, "==", gobj_equal, 1);
+    rb_define_method(gObject, "inspect", gobj_inspect, 0);
 
     /* Widget */
-    rb_define_method(gWidget, "destroy", widget_destroy, 0);
     rb_define_method(gWidget, "show", widget_show, 0);
     rb_define_method(gWidget, "show_all", widget_show_all, 0);
     rb_define_method(gWidget, "hide", widget_hide, 0);
@@ -5952,13 +6142,14 @@ Init_gtk()
     rb_define_method(gTButton, "set_mode", tbtn_set_mode, 1);
     rb_define_method(gTButton, "set_state", tbtn_set_state, 1);
     rb_define_method(gTButton, "toggled", tbtn_toggled, 0);
+    rb_define_method(gTButton, "active", tbtn_active, 0);
 
     /* CheckButton */
     rb_define_method(gCButton, "initialize", cbtn_initialize, -1);
 
     /* RadioButton */
-    rb_define_method(gCButton, "initialize", rbtn_initialize, -1);
-    rb_define_method(gCButton, "group", rbtn_group, 0);
+    rb_define_method(gRButton, "initialize", rbtn_initialize, -1);
+    rb_define_method(gRButton, "group", rbtn_group, 0);
 
     /* ButtonBox */
     rb_define_singleton_method(gBBox, "get_child_size_default",
@@ -6071,6 +6262,7 @@ Init_gtk()
     /* Entry */
     rb_define_method(gEntry, "initialize", entry_initialize, 0);
     rb_define_method(gEntry, "set_text", entry_set_text, 1);
+    rb_define_method(gEntry, "set_editable", entry_set_editable, 1);
 
     /* EventBox */
     rb_define_method(gEventBox, "initialize", eventbox_initialize, 0);
@@ -6108,6 +6300,21 @@ Init_gtk()
 
     /* HBox */
     rb_define_method(gHBox, "initialize", hbox_initialize, -1);
+
+    /* Combo */
+    rb_define_method(gCombo, "initialize", combo_initialize, 0);
+    rb_define_method(gCombo, "set_value_in_list", combo_val_in_list, 2);
+    rb_define_method(gCombo, "set_use_arrows", combo_use_arrows, 1);
+    rb_define_method(gCombo, "set_case_sensitive", combo_case_sensitive, 1);
+    rb_define_method(gCombo, "set_item_string", combo_item_string, 2);
+    rb_define_method(gCombo, "set_popdown_strings", combo_popdown_strings, 1);
+    rb_define_method(gCombo, "disable_activate", combo_disable_activate, 0);
+
+    rb_define_method(gCombo, "entry", combo_entry, 0);
+    rb_define_method(gCombo, "button", combo_button, 0);
+    rb_define_method(gCombo, "popup", combo_popup, 0);
+    rb_define_method(gCombo, "popwin", combo_popwin, 0);
+    rb_define_method(gCombo, "list", combo_list, 0);
 
     /* Paned */
     rb_define_method(gPaned, "add1", paned_add1, 1);
@@ -6429,6 +6636,15 @@ Init_gtk()
     rb_define_module_function(mGtk, "set_print_handler",
 			      set_print_handler, -1);
 
+    /* RC module */
+    rb_define_module_function(mRC, "parse", gtk_rc_m_parse, 1);
+    rb_define_module_function(mRC, "parse_string", gtk_rc_m_parse_string, 1);
+    rb_define_module_function(mRC, "get_style", gtk_rc_m_get_style, 1);
+    rb_define_module_function(mRC, "add_widget_name_style",
+			      gtk_rc_m_add_widget_name_style, 1);
+    rb_define_module_function(mRC, "add_widget_class_style",
+			      gtk_rc_m_add_widget_class_style, 1);
+
     /* Gdk module */
     /* GdkFont */
     rb_define_method(gdkFont, "==", gdkfnt_equal, 1);
@@ -6582,7 +6798,7 @@ Init_gtk()
 
     argc = RARRAY(rb_argv)->len;
     argv = ALLOCA_N(char*,argc+1);
-    argv[0] = RSTRING(rb_argv0)->ptr;
+    argv[0] = STR2CSTR(rb_argv0);
     for (i=0;i<argc;i++) {
 	if (TYPE(RARRAY(rb_argv)->ptr[i]) == T_STRING) {
 	    argv[i+1] = RSTRING(RARRAY(rb_argv)->ptr[i])->ptr;
@@ -6604,7 +6820,7 @@ Init_gtk()
 	sigfunc[5] = signal(SIGPIPE, SIG_IGN);
 	sigfunc[6] = signal(SIGTERM, SIG_IGN);
 
-	gdk_init(&argc, &argv);
+	gtk_init(&argc, &argv);
 
 	signal(SIGHUP,  sigfunc[0]);
 	signal(SIGINT,  sigfunc[1]);

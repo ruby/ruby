@@ -452,18 +452,16 @@ new_dvar(id, value)
 {
     NEWOBJ(vars, struct RVarmap);
     OBJSETUP(vars, 0, T_VARMAP);
-    vars->id = id;
     vars->val = value;
     if (id == 0) {
-	vars->next = the_dyna_vars;
-    }
-    else if (the_dyna_vars) {
-	vars->next = the_dyna_vars->next;
-	the_dyna_vars->next = vars;
-    }
-    else {			/* complie time dyna_var check */
+	vars->id = (ID)value;
 	vars->next = the_dyna_vars;
 	the_dyna_vars = vars;
+    }
+    else if (the_dyna_vars) {
+	vars->id = id;
+	vars->next = the_dyna_vars->next;
+	the_dyna_vars->next = vars;
     }
 
     return vars;
@@ -1702,7 +1700,6 @@ rb_eval(self, node)
 	{
 	  iter_retry:
 	    PUSH_BLOCK(node->nd_var, node->nd_body);
-	    _block.d_vars = new_dvar(0,0);
 	    PUSH_TAG(PROT_FUNC);
 
 	    state = EXEC_TAG();
@@ -2804,7 +2801,8 @@ rb_yield_0(val, self)
     old_scope = the_scope;
     the_scope = block->scope;
     the_block = block->prev;
-    the_dyna_vars = block->d_vars;
+    the_dyna_vars = new_dvar(0, 0);
+    the_dyna_vars->next = block->d_vars;
     the_class = block->klass;
     if (!self) self = block->self;
     node = block->body;

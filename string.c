@@ -2663,6 +2663,7 @@ Init_String()
     rb_define_method(cString, "to_i", str_to_i, 0);
     rb_define_method(cString, "to_f", str_to_f, 0);
     rb_define_method(cString, "to_s", str_to_s, 0);
+    rb_define_method(cString, "to_str", str_to_s, 0);
     rb_define_method(cString, "inspect", str_inspect, 0);
     rb_define_method(cString, "dump", str_dump, 0);
 

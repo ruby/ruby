@@ -17,10 +17,11 @@ table.show
 
 button = []
 0.upto(8) do |i|
-  button.push Gtk::Button::new("button"+(i+1))
+  button.push Gtk::Button::new("button"+(i+1).to_s)
 end
 0.upto(8) do |i|
   button[i].signal_connect("clicked") do |w|
+    p [i]
     j = (i+1)%9
     if button[j].visible?
       button[j].hide

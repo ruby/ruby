@@ -12,8 +12,22 @@
 
 #include "ruby.h"
 
+#include <time.h>
+#ifndef NT
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#else
+struct timeval {
+        long    tv_sec;         /* seconds */
+        long    tv_usec;        /* and microseconds */
+};
+#endif
+#endif /* NT */
+
 static int first = 1;
+#ifdef HAVE_RANDOM
 static char state[256];
+#endif
 
 static VALUE
 f_srand(argc, argv, obj)
@@ -26,7 +40,10 @@ f_srand(argc, argv, obj)
     static int saved_seed;
 
     if (rb_scan_args(argc, argv, "01", &seed) == 0) {
-	seed = time(0);
+	struct timeval tv;
+
+	gettimeofday(&tv, 0);
+	seed = tv.tv_usec;
     }
     else {
 	seed = NUM2INT(seed);
@@ -61,12 +78,9 @@ f_rand(obj, vmax)
 {
     int val, max;
 
-#ifdef HAVE_RANDOM
     if (first == 1) {
-	initstate(1, state, sizeof state);
-	first = 0;
+	f_srand(0, 0, 0);
     }
-#endif
 
     switch (TYPE(vmax)) {
       case T_BIGNUM:

@@ -2,7 +2,6 @@ require "mkmf"
 
 # may need to be changed
 $LDFLAGS="-L/usr/X11R6/lib -L/usr/local/lib"
-$CFLAGS="-I/usr/X11R6/include -L/usr/local/include"
 
 have_library("X11", "XOpenDisplay")
 have_library("Xext", "XShmQueryVersion")

@@ -57,13 +57,14 @@ if /win32|djgpp|mingw32|m68k-human/i =~ PLATFORM
 else
   $null = open("/dev/null", "w")
 end
-LINK = "#{CONFIG['CC']} -o conftest } -I#{CONFIG['includedir']} -I#{$srcdir} #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c #{CONFIG['LIBS']} %s"
+LINK = "#{CONFIG['CC']} -o conftest -I#{CONFIG['includedir']} -I#{$srcdir} #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c #{CONFIG['LIBS']} %s"
 CPP = "#{CONFIG['CPP']} -E -I#{CONFIG['includedir']} -I#{$srcdir} #{CFLAGS} %s conftest.c"
 
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
 def xsystem command
   if $DEBUG
+    print command, "\n"
     return system(command)
   end
   $stderr.reopen($null) 

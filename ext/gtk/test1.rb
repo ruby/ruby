@@ -1,5 +1,13 @@
 require 'gtk'
 
+Gtk::RC::parse_string <<EOS
+style "default"
+{
+  fontset = "-adobe-helvetica-medium-r-normal--*-120-*-*-*-*-*-*,*"
+}
+widget_class "*" style "default"
+EOS
+
 window = Gtk::Window::new(Gtk::WINDOW_TOPLEVEL)
 window.set_title("entry")
 window.border_width(0)
