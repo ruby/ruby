@@ -247,7 +247,7 @@ rb_add_method(klass, mid, node, noex)
     if (ruby_safe_level >= 4 && (klass == rb_cObject || !OBJ_TAINTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
-    if (mid == init && !FL_TEST(klass, FL_SINGLETON) && nd_type(node) != NODE_ZSUPER) {
+    if (mid == init && !FL_TEST(klass, FL_SINGLETON) && node && nd_type(node) != NODE_ZSUPER) {
 	noex = NOEX_PRIVATE | (noex & NOEX_NOSUPER);
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");

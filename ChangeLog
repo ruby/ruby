@@ -1,3 +1,7 @@
+Fri Nov 22 18:31:46 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_add_method): node may be NULL.
+
 Thu Nov 21 20:53:06 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: changes coding style.
