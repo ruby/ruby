@@ -1,6 +1,10 @@
+Thu Aug 16 13:54:04 2001  Usaku Nakamura  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (s_recvfrom): fix typo.
+
 Thu Aug 16 09:53:28 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
-	* ext/socket/socket.c (s_recvform): avoid VC++6 warning.
+	* ext/socket/socket.c (s_recvfrom): avoid VC++6 warning.
 
 Thu Aug 16 03:50:33 2001  Usaku Nakamura  <usa@ruby-lang.org>
 

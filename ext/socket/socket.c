@@ -477,7 +477,7 @@ s_recvfrom(sock, argc, argv, from)
       case RECV_SOCKET:
 	return rb_assoc_new(str, rb_tainted_str_new(buf, alen));
       default:
-	rb_bug("s_recvform called with bad value");
+	rb_bug("s_recvfrom called with bad value");
     }
 }
 
