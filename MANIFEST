@@ -109,6 +109,7 @@ lib/importenv.rb
 lib/irb/completion.rb
 lib/irb/frame.rb
 lib/irb/input-method.rb
+lib/irb/irb.rb
 lib/irb/loader.rb
 lib/irb/main.rb
 lib/irb/multi-irb.rb
