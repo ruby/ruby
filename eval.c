@@ -6737,7 +6737,7 @@ rb_thread_schedule()
     FD_ZERO(&writefds);
     FD_ZERO(&exceptfds);
     delay = DELAY_INFTY;
-    now = timeofday();
+    now = -1.0;
 
     FOREACH_THREAD_FROM(curr, th) {
 	if (!next && (th->status == THREAD_RUNNABLE || th->status == THREAD_TO_KILL)) {
@@ -6763,13 +6763,16 @@ rb_thread_schedule()
 	    th->select_value = 0;
 	}
 	if (th->wait_for & WAIT_TIME) {
-	    if (th->delay <= now) {
-		th->delay = 0.0;
+	    double th_delay;
+
+	    if (now < 0.0) now = timeofday();
+	    th_delay = th->delay - now;
+	    if (th_delay <= 0.0) {
 		th->wait_for = 0;
 		th->status = THREAD_RUNNABLE;
 		found = 1;
-	    } else if (th->delay < delay) {
-		delay = th->delay;
+	    } else if (th_delay < delay) {
+		delay = th_delay;
 		need_select = 1;
 	    }
 	}
@@ -6790,9 +6793,8 @@ rb_thread_schedule()
 		delay_ptr = 0;
 	    }
 	    else {
-		delay -= now;
-		delay_tv.tv_sec = (unsigned int)delay;
-		delay_tv.tv_usec = (long)((delay-(double)delay_tv.tv_sec)*1e6);
+		delay_tv.tv_sec = delay;
+		delay_tv.tv_usec = (delay - (double)delay_tv.tv_sec)*1e6;
 		delay_ptr = &delay_tv;
 	    }
 
@@ -6815,7 +6817,8 @@ rb_thread_schedule()
 		}
 		END_FOREACH(th);
 	    }
-	    if (n > 0) {
+	    if (n >= 0) {
+		now = -1.0;
 		/* Some descriptors are ready. 
 		   Make the corresponding threads runnable. */
 		FOREACH_THREAD_FROM(curr, th) {
@@ -6839,6 +6842,14 @@ rb_thread_schedule()
 			intersect_fds(&exceptfds, &th->exceptfds, max);
 			th->select_value = n;
 			found = 1;
+		    }
+		    if (th->wait_for & WAIT_TIME) {
+			if (now < 0.0) now = timeofday();
+			if (th->delay <= now) {
+			    th->wait_for = 0;
+			    th->status = THREAD_RUNNABLE;
+			    found = 1;
+			}
 		    }
 		}
 		END_FOREACH_FROM(curr, th);
