@@ -721,7 +721,7 @@ bigdivmod(x, y, div, mod, modulo)
     long i, j;
     VALUE yy, z;
     USHORT *xds, *yds, *zds, *tds;
-    long t2;
+    unsigned long t2;
     long num;
     USHORT dd, q;
 
