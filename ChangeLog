@@ -11,6 +11,8 @@ Sun Nov 30 20:18:07 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkfm.rb (configuration): add ARCH_FLAG to DLDFLAGS.
 
+	* Makefile.in: add ARCH_FLAG to DLDFLAGS.
+
 Sun Nov 30 18:22:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: do not override CCDLDFLAGS, LDFLAGS, XLDFLAGS,
