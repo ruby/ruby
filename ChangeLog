@@ -1,3 +1,8 @@
+Tue Mar 26 18:45:15 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (FILE_READPTR): check bufread instead of bufend
+	  for uClibc.
+
 Tue Mar 26 01:56:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (primary): while/until statement modifiers to "begin"

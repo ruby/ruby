@@ -501,7 +501,7 @@ else
     AC_CACHE_VAL(rb_cv_frend,
     [for frend in	dnl
          _IO_read_end	dnl
-         bufend 	dnl
+         bufread 	dnl
     ; do
         AC_TRY_COMPILE([#include <stdio.h>
     ],
