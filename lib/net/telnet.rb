@@ -599,6 +599,9 @@ end
 
 == HISTORY
 
+* 2000/09/12 05:37:35 - matz
+  * change: iterator? --> block_given?
+
 * Tue Sep 12 06:52:48 JST 2000 - wakou
   * version 1.6.0
   * correct: document.
@@ -706,7 +709,7 @@ end
 
 * 1999/04/11 - wakou
   * version 0.163
-  * STDOUT.write(message) --> yield(message) if block_given?
+  * STDOUT.write(message) --> yield(message) if iterator?
 
 * 1999/03/17 - wakou
   * version 0.162

@@ -1,3 +1,7 @@
+Wed Sep 13 06:09:26 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: bug fix: CGI::header(): output status header.
+
 Tue Sep 12 22:34:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.

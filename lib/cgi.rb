@@ -4,7 +4,7 @@
 
 cgi.rb - cgi support library
 
-Version 2.0.0
+Version 2.0.1
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 
@@ -436,8 +436,12 @@ status:
         options["connection"] = "close"
       end
 
+      options.delete("status")
     end
-    options.delete("status")
+
+    if options.has_key?("status")
+      buf.concat("Status: " + options.delete("status") + EOL)
+    end
 
     if options.has_key?("server")
       buf.concat("Server: " + options.delete("server") + EOL)
@@ -1919,6 +1923,11 @@ end
 =begin
 
 == HISTORY
+
+* Wed Sep 13 06:09:26 JST 2000 - wakou
+  * version 2.0.1
+  * bug fix: CGI::header(): output status header.
+    thanks to Yasuhiro Fukuma <yasuf@bsdclub.org>
 
 * Tue Sep 12 06:56:51 JST 2000 - wakou
   * version 2.0.0
