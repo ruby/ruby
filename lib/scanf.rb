@@ -331,7 +331,6 @@ module Scanf
 
     def initialize(str)
       @spec_string = str
-
       h = '[A-Fa-f0-9]'
 
       @re_string, @handler = 
@@ -523,7 +522,7 @@ module Scanf
     end
 
     def to_s
-      @spec_string
+      @specs.join('')
     end
 
     def prune(n=matched_count)
@@ -592,7 +591,7 @@ class IO
     return block_scanf(str,&b) if b
     return [] unless str.size > 0
 
-    start_position = pos
+    start_position = pos rescue 0
     matched_so_far = 0
     source_buffer = ""
     result_buffer = []
@@ -601,7 +600,7 @@ class IO
     fstr = Scanf::FormatString.new(str)
 
     loop do
-      if eof
+      if eof || (tty? &&! fstr.match(source_buffer))
         final_result.concat(result_buffer)
         break
       end
@@ -616,6 +615,7 @@ class IO
           result_buffer.replace(current_match)
           next
         end
+
       elsif (fstr.matched_count == fstr.spec_count - 1)
         if /\A\s*\z/.match(fstr.string_left)
           break if spec.count_space?
@@ -632,10 +632,10 @@ class IO
       break if fstr.last_spec
       fstr.prune
     end
-    
+
     seek(start_position + matched_so_far, IO::SEEK_SET) rescue Errno::ESPIPE
     soak_up_spaces if fstr.last_spec && fstr.space
-    
+
     return final_result
   end
 
