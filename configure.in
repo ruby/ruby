@@ -205,12 +205,6 @@ AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
 AC_CHECK_SIZEOF(time_t, 0)
 
-AC_CHECK_TYPE(rlim_t, [AC_DEFINE(HAVE_RLIM_T)], [], [#include <sys/resource.h>])
-AC_CHECK_SIZEOF(rlim_t, 0, [
-  #include <stdio.h>
-  #include <sys/resource.h>
-])
-
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
 	rb_cv_have_prototypes=yes,
@@ -387,6 +381,36 @@ AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
 		 sys/mkdev.h sys/utime.h netinet/in_systm.h float.h ieeefp.h pthread.h \
 		 ucontext.h intrinsics.h unwind.h)
+
+dnl Check additional types.
+AC_CHECK_TYPE(rlim_t, [AC_DEFINE(HAVE_RLIM_T)], [], [
+  #ifdef HAVE_SYS_TYPES_H
+  # include <sys/types.h>
+  #endif
+  #ifdef HAVE_SYS_TIME_H
+  # include <sys/time.h>
+  #endif
+  #ifdef HAVE_SYS_RESOURCE_H
+  # include <sys/resource.h>
+  #endif
+  #ifdef HAVE_UNISTD_H
+  # include <unistd.h>
+  #endif
+])
+AC_CHECK_SIZEOF(rlim_t, 0, [
+  #ifdef HAVE_SYS_TYPES_H
+  # include <sys/types.h>
+  #endif
+  #ifdef HAVE_SYS_TIME_H
+  # include <sys/time.h>
+  #endif
+  #ifdef HAVE_SYS_RESOURCE_H
+  # include <sys/resource.h>
+  #endif
+  #ifdef HAVE_UNISTD_H
+  # include <unistd.h>
+  #endif
+])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T

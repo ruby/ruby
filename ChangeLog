@@ -1,3 +1,7 @@
+Mon Nov 15 18:58:05 2004  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in: check rlim_t more portably. [ruby-core:3735]
+
 Mon Nov 15 11:50:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-special-char-p, ruby-parse-partial): handle
