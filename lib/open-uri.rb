@@ -477,12 +477,21 @@ module URI
           # Use CGI_HTTP_PROXY.  cf. libwww-perl.
           proxy_uri = ENV["CGI_#{name.upcase}"]
         end
+      elsif name == 'http_proxy'
+        unless proxy_uri = ENV[name]
+          if proxy_uri = ENV[name.upcase]
+            warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.'
+          end
+        end
       else
         proxy_uri = ENV[name] || ENV[name.upcase]
       end
 
       if proxy_uri
         proxy_uri = URI.parse(proxy_uri)
+        unless URI::HTTP === proxy_uri
+          raise "Non-http proxy URI: #{proxy_uri}"
+        end
         name = 'no_proxy'
         if no_proxy = ENV[name] || ENV[name.upcase]
           no_proxy.scan(/([^:,]*)(?::(\d+))?/) {|host, port|
