@@ -1463,6 +1463,7 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
 	int mb_len = enc_len(encode, *s);
 
 	if (s + mb_len > end) {
+          DATA_ENSURE(1);
 	  s = end;
 	  p += tlen;
 	  goto cc_mb_not_success;
