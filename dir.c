@@ -373,7 +373,7 @@ dir_set_pos(dir, pos)
     VALUE dir, pos;
 {
     dir_seek(dir, pos);
-    return dir;
+    return pos;
 }
 
 static VALUE

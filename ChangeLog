@@ -1,9 +1,17 @@
+Mon Dec 16 16:35:28 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.8 release candidate.
+
 Mon Dec 16 15:53:20 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (nextc): get rid of overrun.  (pointed out by akr
 	  [ruby-list:36773])
 
 	* eval.c (rb_eval): untangled ruby_dyna_vars.  [ruby-talk:59035]
+
+Mon Dec 16 08:03:47 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_set_pos): Dir#pos= should return the new position.
 
 Sat Dec 14 02:03:51 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -15,6 +23,11 @@ Fri Dec 13 23:39:09 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* ext/dbm/extconf.rb: backported from 1.7.
 
 	* ext/dbm/dbm.c: ditto.
+
+Fri Dec 13 17:15:49 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (generic_ivar_get): should always warn for
+	  uninitialized instance variables.
 
 Thu Dec 12 16:26:31 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -33,10 +46,6 @@ Wed Dec 11 20:48:03 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/getoptlong.rb (GetoptLong::Error): provide a common ancestor
 	  for GetoptLong error classes (RCR#129).
-
-Mon Dec  9 15:13:14 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* stable version 1.6.8 release candidate.
 
 Fri Dec  6 14:13:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

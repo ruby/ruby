@@ -782,11 +782,15 @@ generic_ivar_get(obj, id)
     st_table *tbl;
     VALUE val;
 
-    if (!generic_iv_tbl) return Qnil;
-    if (!st_lookup(generic_iv_tbl, obj, &tbl)) return Qnil;
-    if (st_lookup(tbl, id, &val)) {
-	return val;
+    if (generic_iv_tbl) {
+      if (st_lookup(generic_iv_tbl, obj, &tbl)) {
+	if (st_lookup(tbl, id, &val)) {
+	  return val;
+	}
+      }
     }
+
+    rb_warning("instance variable %s not initialized", rb_id2name(id));
     return Qnil;
 }
 
