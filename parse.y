@@ -3936,6 +3936,7 @@ str_extend(list, term, paren)
     NODE *node;
     int brace_nest = 0;
     int paren_nest = 0;
+    int start;
 
     c = nextc();
     switch (c) {
@@ -3949,6 +3950,7 @@ str_extend(list, term, paren)
 	return list;
     }
 
+    start = ruby_sourceline;
     ss = rb_str_new(tok(), toklen());
     if (list == 0) {
 	list = NEW_DSTR(ss);
@@ -4125,6 +4127,7 @@ str_extend(list, term, paren)
   fetch_id:
     tokfix();
     node = NEW_EVSTR(tok(),toklen());
+    nd_set_line(node, start);
     list_append(list, node);
     newtok();
 

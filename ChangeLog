@@ -1,3 +1,9 @@
+Fri Jul 12 00:51:09 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_eval): fixed line number in string interpolation.
+
+	* parse.y (str_extend): ditto.
+
 Thu Jul 11 21:30:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (yylex): should pushback proper char after '<<'.

@@ -2911,7 +2911,7 @@ rb_eval(self, n)
 		      case NODE_EVSTR:
 			result = ruby_errinfo;
 			ruby_errinfo = Qnil;
-			ruby_sourceline = nd_line(node);
+			ruby_sourceline = nd_line(list->nd_head);
 			ruby_in_eval++;
 			rb_dvar_push(0, 0);
 			list->nd_head = compile(list->nd_head->nd_lit,
