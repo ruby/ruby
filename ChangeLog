@@ -1,3 +1,15 @@
+Wed Nov 12 06:11:39 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl.c (ossl_x509_sk2ary, ossl_x509crl_sk2ary): 
+	  add functions to convert STACK into Array.
+
+	* ext/openssl/ossl.h: add prototypes.
+
+	* ext/openssl/ossl_pkcs7.c (ossl_pkcs7_set_certificates, 
+	  ossl_pkcs7_get_certificates, ossl_pkcs7_get_crls,
+	  ossl_pkcs7_set_crls): add functions for PKCS7#certificates=
+	  PKCS7#certificates, PKCS7#crls= and PKCS7#crls. 
+
 Tue Nov 12 00:47:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/ui/testrunnermediator.rb: should require 'test/unit'.
@@ -17,7 +29,7 @@ Tue Nov 11 10:42:41 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk.rb: raise an exception when creating TkWindow
 	  object, because TkWindow class is an abstract class.
 
-Tue Nov 11 03:30:43 JST 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Tue Nov 11 03:30:43 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/ext/openssl/ossl_conf.c (ossl_config_get_value): return nil
 	  if the specified value doesn't exist.

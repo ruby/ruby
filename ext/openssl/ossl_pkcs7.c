@@ -479,6 +479,57 @@ ossl_pkcs7_add_certificate(VALUE self, VALUE cert)
     return self;
 }
 
+static STACK *
+pkcs7_get_certs_or_crls(VALUE self, int want_certs)
+{
+    PKCS7 *pkcs7;
+    STACK_OF(X509) *certs;
+    STACK_OF(X509_CRL) *crls;
+    int i;
+
+    GetPKCS7(self, pkcs7);
+    i = OBJ_obj2nid(pkcs7->type);
+    switch(i){
+    case NID_pkcs7_signed:
+        certs = pkcs7->d.sign->cert;
+        crls = pkcs7->d.sign->crl;
+        break;
+    case NID_pkcs7_signedAndEnveloped:
+        certs = pkcs7->d.signed_and_enveloped->cert;
+        crls = pkcs7->d.signed_and_enveloped->crl;
+        break;
+    default:
+        certs = crls = NULL;
+    }
+
+    return want_certs ? certs : crls;
+}
+
+static VALUE
+ossl_pkcs7_set_certs_i(VALUE i, VALUE arg)
+{
+    return ossl_pkcs7_add_certificate(arg, i);
+}
+
+static VALUE
+ossl_pkcs7_set_certificates(VALUE self, VALUE ary)
+{
+    STACK_OF(X509) *certs;
+    X509 *cert;
+
+    certs = pkcs7_get_certs_or_crls(self, 1);
+    while((cert = sk_X509_pop(certs))) X509_free(cert);
+    rb_iterate(rb_each, ary, ossl_pkcs7_set_certs_i, self);
+
+    return ary;
+}
+
+static VALUE
+ossl_pkcs7_get_certificates(VALUE self)
+{
+    return ossl_x509_sk2ary(pkcs7_get_certs_or_crls(self, 1));
+}
+
 static VALUE
 ossl_pkcs7_add_crl(VALUE self, VALUE crl)
 {
@@ -492,6 +543,31 @@ ossl_pkcs7_add_crl(VALUE self, VALUE crl)
     }
 
     return self;
+}
+
+static VALUE
+ossl_pkcs7_set_crls_i(VALUE i, VALUE arg)
+{
+    return ossl_pkcs7_add_crl(arg, i);
+}
+
+static VALUE
+ossl_pkcs7_set_crls(VALUE self, VALUE ary)
+{
+    STACK_OF(X509_CRL) *crls;
+    X509_CRL *crl;
+
+    crls = pkcs7_get_certs_or_crls(self, 0);
+    while((crl = sk_X509_CRL_pop(crls))) X509_CRL_free(crl);
+    rb_iterate(rb_each, ary, ossl_pkcs7_set_crls_i, self);
+
+    return ary;
+}
+
+static VALUE
+ossl_pkcs7_get_crls(VALUE self)
+{
+    return ossl_x509crl_sk2ary(pkcs7_get_certs_or_crls(self, 0));
 }
 
 static VALUE
@@ -747,7 +823,11 @@ Init_ossl_pkcs7()
     rb_define_method(cPKCS7, "signers", ossl_pkcs7_get_signer, 0);
     rb_define_method(cPKCS7, "add_recipient", ossl_pkcs7_add_recipient, 1);
     rb_define_method(cPKCS7, "add_certificate", ossl_pkcs7_add_certificate, 1);
+    rb_define_method(cPKCS7, "certificates=", ossl_pkcs7_set_certificates, 1);
+    rb_define_method(cPKCS7, "certificates", ossl_pkcs7_get_certificates, 0);
     rb_define_method(cPKCS7, "add_crl", ossl_pkcs7_add_crl, 1);
+    rb_define_method(cPKCS7, "crls=", ossl_pkcs7_set_crls, 1);
+    rb_define_method(cPKCS7, "crls", ossl_pkcs7_get_crls, 0);
     rb_define_method(cPKCS7, "add_data", ossl_pkcs7_add_data, 1);
     rb_define_alias(cPKCS7,  "data=", "add_data");
     rb_define_method(cPKCS7, "verify", ossl_pkcs7_verify, -1);

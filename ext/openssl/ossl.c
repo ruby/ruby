@@ -90,8 +90,7 @@ ossl_x509_ary2sk(VALUE ary)
     return sk;
 }
 
-#if 0
-#define OSSL_SK2ARY(name, type)			\
+#define OSSL_IMPL_SK2ARY(name, type)	        \
 VALUE						\
 ossl_##name##_sk2ary(STACK *sk)			\
 {						\
@@ -101,7 +100,7 @@ ossl_##name##_sk2ary(STACK *sk)			\
 						\
     if (!sk) {					\
 	OSSL_Debug("empty sk!");		\
-	return rb_ary_new();			\
+	return Qnil;				\
     }						\
     num = sk_num(sk);				\
     if (num < 0) {				\
@@ -116,9 +115,8 @@ ossl_##name##_sk2ary(STACK *sk)			\
     }						\
     return ary;					\
 }
-OSSL_SK2ARY(x509, X509)
-OSSL_SK2ARY(x509crl, X509_CRL)
-#endif
+OSSL_IMPL_SK2ARY(x509, X509)
+OSSL_IMPL_SK2ARY(x509crl, X509_CRL)
 
 static VALUE
 ossl_str_new(int size)
