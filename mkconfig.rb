@@ -1,6 +1,7 @@
 #!./miniruby -s
 
 require File.dirname($0)+"/lib/ftools"
+mkconfig = File.basename($0)
 
 rbconfig_rb = ARGV[0] || 'rbconfig.rb'
 srcdir = $srcdir if $srcdir
@@ -12,13 +13,13 @@ $stdout.reopen(config)
 
 fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
 print %[
+# This file was created by #{mkconfig} when ruby was built.  Any
+# changes made to this file will be lost the next time ruby is built.
+
 module Config
 
   RUBY_VERSION == "#{version}" or
     raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
-
-# This file was created by configrb when ruby was built. Any changes
-# made to this file will be lost the next time ruby is built.
 ]
 
 print "  DESTDIR = '' if not defined? DESTDIR\n  CONFIG = {}\n"
