@@ -12,7 +12,7 @@ test/check-event-arity.rb
 test/check-event-coverage.sh
 test/check-scanner-event-coverage.rb
 test/list-called-events.rb
-test/src.rb
+test/src_rb
 test/validate.rb
 tools/generate-eventids1.rb
 tools/generate-param-macros.rb
