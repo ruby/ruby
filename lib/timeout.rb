@@ -39,6 +39,12 @@ def timeout(sec)
     yield sec
     return true
   ensure
-    Thread.kill y if y.alive?
+    Thread.kill y if y and y.alive?
   end
+end
+
+if __FILE__ == $0
+  timeout(5) {
+    p 10
+  }
 end

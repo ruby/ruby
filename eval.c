@@ -664,7 +664,6 @@ dvar_asgn_internal(id, value, curr)
     struct RVarmap *vars = ruby_dyna_vars;
 
     while (vars) {
-	if (TYPE(vars) != T_VARMAP) abort();
 	if (curr && vars->id == 0) {
 	    n++;
 	    if (n == 2) break;
@@ -729,6 +728,7 @@ struct tag {
     struct SCOPE *scope;
     int dst;
     struct tag *prev;
+    int line;
 };
 static struct tag *prot_tag;
 
@@ -742,6 +742,7 @@ static struct tag *prot_tag;
     _tag.scope = ruby_scope;		\
     _tag.tag = ptag;			\
     _tag.dst = 0;			\
+    _tag.line = __LINE__;		\
     prot_tag = &_tag;
 
 #define PROT_NONE   0
@@ -798,6 +799,7 @@ static VALUE ruby_wrapper;	/* security wrapper */
 
 typedef struct thread * rb_thread_t;
 static rb_thread_t curr_thread = 0;
+static rb_thread_t main_thread;
 static void scope_dup _((struct SCOPE *));
 
 #define POP_SCOPE() 			\
@@ -868,8 +870,8 @@ set_backtrace(info, bt)
 static void
 error_print()
 {
-    VALUE errat = Qnil;
-    VALUE eclass;
+    VALUE errat = Qnil;		/* OK */
+    volatile VALUE eclass;
     char *einfo;
     int elen;
 
@@ -3274,9 +3276,10 @@ rb_longjmp(tag, mesg)
 
     if (RTEST(ruby_debug) && !NIL_P(ruby_errinfo)
 	&& !rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
-	fprintf(stderr, "Exception `%s' at %s:%d\n",
+	fprintf(stderr, "Exception `%s' at %s:%d - %s\n",
 		rb_class2name(CLASS_OF(ruby_errinfo)),
-		ruby_sourcefile, ruby_sourceline);
+		ruby_sourcefile, ruby_sourceline,
+		STR2CSTR(ruby_errinfo));
     }
 
     rb_trap_restore_mask();
@@ -4837,7 +4840,7 @@ yield_under_i(self)
 	POP_TAG();
 	ruby_block = old_block;
 	if (state) JUMP_TAG(state);
-	
+
 	return result;
     }
     /* static block, no need to restore */
@@ -4930,7 +4933,7 @@ rb_load(fname, wrap)
     char *file;
     volatile ID last_func;
     volatile VALUE wrapper = 0;
-    VALUE self = ruby_top_self;
+    volatile VALUE self = ruby_top_self;
     TMP_PROTECT;
 
     if (wrap) {
@@ -6146,7 +6149,7 @@ block_pass(self, node)
     VALUE self;
     NODE *node;
 {
-    VALUE block = rb_eval(self, node->nd_body);
+    VALUE block = rb_eval(self, node->nd_body);	/* OK */
     struct BLOCK * volatile old_block;
     struct BLOCK _block;
     struct BLOCK *data;
@@ -6623,9 +6626,6 @@ struct thread {
 
 #define THREAD_RAISED 0x200
 
-static rb_thread_t main_thread;
-/*static rb_thread_t curr_thread = 0;*/
-
 #define FOREACH_THREAD_FROM(f,x) x = f; do { x = x->next;
 #define END_FOREACH_FROM(f,x) } while (x != f)
 
@@ -6754,7 +6754,6 @@ rb_thread_save_context(th)
     rb_thread_t th;
 {
     VALUE *pos;
-
     int len;
 
     len = stack_length(&pos);
@@ -7005,7 +7004,6 @@ find_bad_fds(dst, src, max)
     fd_set *dst, *src;
     int max;
 {
-    struct stat s;
     int i, test = Qfalse;
 
     for (i=0; i<=max; i++) {
@@ -7300,7 +7298,6 @@ rb_thread_select(max, read, write, except, timeout)
     struct timeval *timeout;
 {
     double limit;
-    struct timeval zero;
     int n;
 
     if (!read && !write && !except) {
@@ -7643,6 +7640,9 @@ rb_thread_abort_exc_set(thread, val)
 #define THREAD_ALLOC(th) do {\
     th = ALLOC(struct thread);\
 \
+    th->next = 0;\
+    th->prev = 0;\
+\
     th->status = THREAD_RUNNABLE;\
     th->result = 0;\
     th->errinfo = Qnil;\
@@ -7696,7 +7696,6 @@ rb_thread_alloc(klass)
     }
     else {
 	curr_thread = th->prev = th->next = th;
-	th->status = THREAD_RUNNABLE;
     }
 
     for (vars = th->dyna_vars; vars; vars = vars->next) {
@@ -7758,11 +7757,12 @@ rb_thread_stop_timer()
 #endif
 
 static VALUE
-rb_thread_start_0(fn, arg, th)
+rb_thread_start_0(fn, arg, th_arg)
     VALUE (*fn)();
     void *arg;
-    rb_thread_t th;
+    rb_thread_t th_arg;
 {
+    volatile rb_thread_t th = th_arg;
     volatile VALUE thread = th->thread;
     enum thread_status status;
     int state;
@@ -7791,7 +7791,7 @@ rb_thread_start_0(fn, arg, th)
 
     PUSH_TAG(PROT_THREAD);
     if ((state = EXEC_TAG()) == 0) {
-	if (THREAD_SAVE_CONTEXT(th) == 0) {
+	if ((status = THREAD_SAVE_CONTEXT(th)) == 0) {
 	    curr_thread = th;
 	    th->result = (*fn)(arg, th);
 	}
@@ -7833,7 +7833,8 @@ rb_thread_create(fn, arg)
     VALUE (*fn)();
     void *arg;
 {
-    return rb_thread_start_0(fn, arg, rb_thread_alloc(rb_cThread));
+    rb_thread_t th = rb_thread_alloc(rb_cThread);
+    return rb_thread_start_0(fn, arg, th);
 }
 
 int
@@ -7864,7 +7865,7 @@ rb_thread_s_new(argc, argv, klass)
     pos = th->stk_pos;
     rb_obj_call_init(th->thread, argc, argv);
     if (th->stk_pos == pos) {
-	rb_raise(rb_eThreadError, "uninitialized thread - check `initialize' of %s",
+	rb_raise(rb_eThreadError, "uninitialized thread - check `%s#initialize'",
 		 rb_class2name(klass));
     }
 
@@ -7875,20 +7876,27 @@ static VALUE
 rb_thread_initialize(thread, args)
     VALUE thread, args;
 {
+    rb_thread_t th;
+
+    th = rb_thread_check(thread);
     if (!rb_block_given_p()) {
+	rb_thread_remove(th);
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
-    return rb_thread_start_0(rb_thread_yield, args, rb_thread_check(thread));
+    return rb_thread_start_0(rb_thread_yield, args, th);
 }
 
 static VALUE
 rb_thread_start(klass, args)
     VALUE klass, args;
 {
+    rb_thread_t th;
+    VALUE t;
+
     if (!rb_block_given_p()) {
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
-    return rb_thread_start_0(rb_thread_yield, args, rb_thread_alloc(klass));
+    return rb_thread_start_0(rb_thread_yield, args, rb_thread_alloc(rb_cThread));
 }
 
 static VALUE
@@ -8092,6 +8100,7 @@ rb_thread_raise_m(argc, argv, thread)
 	rb_secure(4);
     }
     rb_thread_raise(argc, argv, th);
+    return Qnil;		/* not reached */
 }
 
 VALUE
@@ -8170,7 +8179,7 @@ rb_thread_inspect(thread)
 {
     char *cname = rb_class2name(CLASS_OF(thread));
     rb_thread_t th = rb_thread_check(thread);
-    char *s, *status;
+    char *status;
     VALUE str;
 
     switch (th->status) {
@@ -8205,8 +8214,8 @@ rb_callcc(self)
     struct RVarmap *vars;
 
     THREAD_ALLOC(th);
-    cont = Data_Wrap_Struct(rb_cCont, thread_mark,
-					 thread_free, th);
+    th->status = THREAD_RUNNABLE;
+    cont = Data_Wrap_Struct(rb_cCont, thread_mark, thread_free, th);
 
     scope_dup(ruby_scope);
     for (tag=prot_tag; tag; tag=tag->prev) {
@@ -8478,4 +8487,3 @@ return_check()
 	tt = tt->prev;
     }
 }
-

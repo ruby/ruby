@@ -5,15 +5,16 @@ if $SAFE > 0
   STDERR.print "-r debug.rb is not available in safe mode\n"
   exit 1
 end
-SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__
 
 require 'tracer'
+
 class Tracer
   def Tracer.trace_func(*vars)
     Single.trace_func(*vars)
   end
 end
 
+SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__
 
 class DEBUGGER__
   class Mutex
@@ -89,6 +90,7 @@ class DEBUGGER__
       @frames = []
       @finish_pos = 0
       @trace = false
+      @catch = "StandardError"
     end
 
     def stop_next(n=1)
@@ -130,16 +132,8 @@ class DEBUGGER__
 
     def var_list(ary, binding)
       ary.sort!
-      if false # ary.size < 0
-	f = open("|less", "w")
-	for v in ary
-	  f.printf "  %s => %s\n", v, eval(v, binding).inspect
-	end
-	f.close
-      else
-	for v in ary
-	  stdout.printf "  %s => %s\n", v, eval(v, binding).inspect
-	end
+      for v in ary
+	stdout.printf "  %s => %s\n", v, eval(v, binding).inspect
       end
     end
 
@@ -158,7 +152,7 @@ class DEBUGGER__
       when /^\s*c(?:onst(?:ant)?)?\s+/
 	obj = debug_eval($', binding)
 	unless obj.kind_of? Module
-	  stdout.print "should be Class/Module: ", $', "\n"
+	  stdout.print "Should be Class/Module: ", $', "\n"
 	else
 	  var_list(obj.constants, obj.module_eval{binding()})
 	end
@@ -184,7 +178,7 @@ class DEBUGGER__
       else
 	obj = debug_eval(input, binding)
 	unless obj.kind_of? Module
-	  stdout.print "should be Class/Module: ", input, "\n"
+	  stdout.print "Should be Class/Module: ", input, "\n"
 	else
 	  len = 0
 	  for v in obj.instance_methods.sort
@@ -235,12 +229,12 @@ class DEBUGGER__
 
 	  case input
 	  when /^\s*tr(?:ace)?(?:\s+(on|off))?$/
-	    if !defined?( $1 )
-	      @trace = !@trace
-	    elsif $1 == 'on'
-	      @trace = true
-	    else
-	      @trace = false
+	    if defined?( $1 )
+	      if $1 == 'on'
+		@trace = true
+	      else
+		@trace = false
+	      end
 	    end
 	    if @trace
 	      stdout.print "Trace on\n"
@@ -271,7 +265,7 @@ class DEBUGGER__
 	  when /^\s*b(?:reak)?$/
 	    if break_points.find{|b| b[1] == 0}
 	      n = 1
-	      stdout.print "breakpoints:\n"
+	      stdout.print "Breakpoints:\n"
 	      for b in break_points
 		if b[0] and b[1] == 0
 		  stdout.printf "  %d %s:%s\n", n, b[2], b[3] 
@@ -282,7 +276,7 @@ class DEBUGGER__
 	    if break_points.find{|b| b[1] == 1}
 	      n = 1
 	      stdout.print "\n"
-	      stdout.print "watchpoints:\n"
+	      stdout.print "Watchpoints:\n"
 	      for b in break_points
 		if b[0] and b[1] == 1
 		  stdout.printf "  %d %s\n", n, b[2]
@@ -291,7 +285,7 @@ class DEBUGGER__
 	      end
 	    end
 	    if break_points.size == 0
-	      stdout.print "no breakpoints\n"
+	      stdout.print "No breakpoints\n"
 	    else
 	      stdout.print "\n"
 	    end
@@ -299,7 +293,7 @@ class DEBUGGER__
 	  when /^\s*del(?:ete)?(?:\s+(\d+))?$/
 	    pos = $1
 	    unless pos
-	      input = readline("clear all breakpoints? (y/n) ", false)
+	      input = readline("Clear all breakpoints? (y/n) ", false)
 	      if input == "y"
 		for b in break_points
 		  b[0] = false
@@ -326,7 +320,7 @@ class DEBUGGER__
 	  when /^\s*undisp(?:lay)?(?:\s+(\d+))?$/
 	    pos = $1
 	    unless pos
-	      input = readline("clear all expressions? (y/n) ", false)
+	      input = readline("Clear all expressions? (y/n) ", false)
 	      if input == "y"
 		for d in display
 		  d[0] = false
@@ -337,7 +331,7 @@ class DEBUGGER__
 	      if display[pos-1]
 		display[pos-1][0] = false
 	      else
-		stdout.printf "display expression %d is not defined\n", pos
+		stdout.printf "Display expression %d is not defined\n", pos
 	      end
 	    end
 
@@ -397,7 +391,7 @@ class DEBUGGER__
 	    frame_pos += lev
 	    if frame_pos >= @frames.size
 	      frame_pos = @frames.size - 1
-	      stdout.print "at toplevel\n"
+	      stdout.print "At toplevel\n"
 	    end
 	    binding, binding_file, binding_line = @frames[frame_pos]
 	    stdout.printf "#%d %s:%s\n", frame_pos, binding_file, binding_line
@@ -412,7 +406,7 @@ class DEBUGGER__
 	    frame_pos -= lev
 	    if frame_pos < 0
 	      frame_pos = 0
-	      stdout.print "at stack bottom\n"
+	      stdout.print "At stack bottom\n"
 	    end
 	    binding, binding_file, binding_line = @frames[frame_pos]
 	    stdout.printf "#%d %s:%s\n", frame_pos, binding_file, binding_line
@@ -422,9 +416,27 @@ class DEBUGGER__
 	      stdout.print "\"finish\" not meaningful in the outermost frame.\n"
 	    else
 	      @finish_pos = @frames.size - frame_pos
-	      p @finish_pos
 	      frame_pos = 0
+	      MUTEX.unlock
 	      return
+	    end
+
+	  when /^\s*cat(?:ch)?(?:\s+(.+))?$/
+	    if $1
+	      excn = $1
+	      if excn == 'off'
+		@catch = nil
+		stdout.print "Clear catchpoint.\n"
+	      else
+		@catch = excn
+		stdout.printf "Set catchpoint %s.\n", @catch
+	      end
+	    else
+	      if @catch
+		stdout.printf "Catchpoint %s.\n", @catch
+	      else
+		stdout.print "No catchpoint.\n"
+	      end
 	    end
 
 	  when /^\s*q(?:uit)?$/
@@ -444,27 +456,29 @@ class DEBUGGER__
 	    end
 
 	  when /^\s*p\s+/
-	    p debug_eval($', binding)
+	    stdout.printf "%s\n", debug_eval($', binding)
 
-	  when /^\s*h(?:elp)?/
+	  when /^\s*h(?:elp)?$/
 	    debug_print_help()
 
 	  else
 	    v = debug_eval(input, binding)
-	    p v unless (v == nil)
+	    stdout.printf "%s\n", v unless (v == nil)
 	  end
 	end
       end
     end
 
     def debug_print_help
-      print <<EOHELP
+      stdout.print <<EOHELP
 Debugger help v.-0.002b
 Commands
   b[reak] [file|method:]<line|method>
 	                     set breakpoint to some position
   wat[ch] <expression>       set watchpoint to some expression
+  cat[ch] <an Exception>     set catchpoint to an exception
   b[reak]                    list breakpoints
+  cat[ch]                    show catchpoint
   del[ele][ nnn]             delete some or all breakpoints
   disp[lay] <expression>     add expression into display expression list
   undisp[lay][ nnn]          delete one particular or all display expressions
@@ -549,7 +563,7 @@ EOHELP
 	  end
 	end
       else
-	stdout.printf "no sourcefile available for %s\n", file
+	stdout.printf "No sourcefile available for %s\n", file
       end
     end
 
@@ -580,11 +594,11 @@ EOHELP
       for b in break_points
 	if b[0]
 	  if b[1] == 0 and b[2] == file and b[3] == pos
-	    stdout.printf "breakpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
+	    stdout.printf "Breakpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
 	    return true
 	  elsif b[1] == 1
 	    if debug_silent_eval(b[2], binding)
-	      stdout.printf "watchpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
+	      stdout.printf "Watchpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
 	      return true
 	    end
 	  end
@@ -596,22 +610,25 @@ EOHELP
     end
 
     def excn_handle(file, line, id, binding)
-      p $!
+      stdout.printf "Exception `%s': %s\n", $!.type, $!
       if $!.type <= SystemExit
 	set_trace_func nil
 	exit
       end
+
       MUTEX.lock
       fs = @frames.size
       tb = caller(0)[-fs..-1]
-
-      stdout.printf "%s\n", $!
       if tb
 	for i in tb
 	  stdout.printf "\tfrom %s\n", i
 	end
       end
-      debug_command(file, line, id, binding)
+      if @catch and ($!.type.ancestors.find { |e| e.to_s == @catch })
+	debug_command(file, line, id, binding)
+      else
+	MUTEX.unlock
+      end
     end
 
     def trace_func(event, file, line, id, binding, klass)
@@ -781,8 +798,8 @@ EOHELP
     end
   end
 
-  @stdout.printf "Debug.rb\n"
-  @stdout.printf "Emacs support available.\n\n"
+  stdout.printf "Debug.rb\n"
+  stdout.printf "Emacs support available.\n\n"
   set_trace_func proc{|event, file, line, id, binding,klass,*rest|
     DEBUGGER__.context.trace_func event, file, line, id, binding,klass
   }
