@@ -73,7 +73,9 @@ def extmake(target)
     $srcdir = File.join($top_srcdir, "ext", $mdir)
     unless $ignore
       if $static ||
-	older("./Makefile", *MTIMES + %W"#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb")
+	 !(t = modified?("./Makefile", MTIMES)) ||
+	 %W<#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb
+	    #{$srcdir}/depend #{$srcdir}/MANIFEST>.any? {|f| modified?(f, [t])}
       then
 	$defs = []
 	Logging::logfile 'mkmf.log'
@@ -244,7 +246,7 @@ if $extlist.size > 0
   end
 
   src = "void Init_ext() {\n#$extinit}\n"
-  if older("extinit.c", *MTIMES) || IO.read("extinit.c") != src
+  if !modified?("extinit.c", MTIMES) || IO.read("extinit.c") != src
     open("extinit.c", "w") {|f| f.print src}
   end
 
@@ -268,6 +270,9 @@ rubies = []
 }
 
 Dir.chdir ".."
+if $extlist.size > 0
+  rm_f(Config::CONFIG["LIBRUBY_SO"])
+end
 puts "making #{rubies.join(', ')}"
 $stdout.flush
 $mflags.concat(rubies)

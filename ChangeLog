@@ -1,3 +1,19 @@
+Fri Jul 18 17:34:39 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb (rm_f): use FileUtils.
+
+	* lib/mkmf.rb (modified?): return mtime of the target if
+	  it exists and newer than times.
+
+	* lib/mkmf.rb (install_files): add a current directory
+	  file even if it does not exist yet.
+
+	* lib/mkmf.rb (configuration): do not add $LDFLAGS to
+	  DLDFLAGS.
+
+	* ext/extmk.rb (extmake): check whether Makefile is newer
+	  than depend and MANIFEST.
+
 Fri Jul 18 14:57:19 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (make_cmdvector): recognize quote within string.

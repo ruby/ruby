@@ -2,6 +2,7 @@
 # invoke like: ruby -r mkmf extconf.rb
 
 require 'rbconfig'
+require 'fileutils'
 require 'shellwords'
 
 CONFIG = Config::MAKEFILE_CONFIG
@@ -105,25 +106,13 @@ class Array
 end
 
 def rm_f(*files)
-  targets = []
-  for file in files
-    targets.concat Dir[file]
-  end
-  if not targets.empty?
-    File::chmod(0777, *targets)
-    File::unlink(*targets)
-  end
+  FileUtils.rm_f(Dir[files.join("\0")])
 end
 
-def older(target, *files)
-  mtime = proc do |f|
-    Time === f ? f : f.respond_to?(:mtime) ? f.mtime : File.mtime(f) rescue nil
-  end
-  t = mtime[target] or return true
-  for f in files
-    return true if t < (mtime[f] or next)
-  end
-  false
+def modified?(target, times)
+  (t = File.mtime(target)) rescue return nil
+  Array === times or times = [times]
+  t if times.all? {|n| n <= t}
 end
 
 module Logging
@@ -339,6 +328,7 @@ def install_files(mfile, ifiles, map = nil, srcprefix = nil)
       files = File.join(srcdir, files)
       len = srcdir.size
     end
+    f = nil
     Dir.glob(files) do |f|
       f[0..len] = "" if len
       d = File.dirname(f)
@@ -346,6 +336,12 @@ def install_files(mfile, ifiles, map = nil, srcprefix = nil)
       d = (d.empty? || d == ".") ? dir : File.join(dir, d)
       f = File.join(srcprefix, f) if len
       path[d] << f
+    end
+    unless len or f
+      d = File.dirname(files)
+      d.sub!(prefix, "") if prefix
+      d = (d.empty? || d == ".") ? dir : File.join(dir, d)
+      path[d] << files
     end
   end
   dirs
@@ -370,9 +366,10 @@ def checking_for(m)
   f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim
   m = "checking for #{m}... "
   message m
-  Logging::message "#{f}#{m}\n"
+  Logging::message "#{f}#{m}--------------------\n"
   r = yield
-  message(r ? "yes\n" : "no\n")
+  message(a = r ? "yes\n" : "no\n")
+  Logging::message "-------------------- #{a}\n"
   r
 end
 
