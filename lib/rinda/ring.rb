@@ -21,7 +21,7 @@ module Rinda
     def write_service
       Thread.new do
 	loop do
-	  msg, addr = @soc.recvfrom(1024)
+	  msg = @soc.recv(1024)
 	  do_write(msg)
 	end
       end

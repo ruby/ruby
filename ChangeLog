@@ -1,3 +1,7 @@
+Wed May  5 03:52:31 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/ring.rb: use recv instead of recvfrom.
+
 Wed May  5 00:38:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/gserver.rb: documented
