@@ -1,0 +1,17 @@
+parse.c
+newver.rb
+ruby
+miniruby
+README.fat-patch
+config.cache
+config.h
+config.log
+config.status
+Makefile
+ppack
+archive
+*.orig
+*.rej
+*.bak
+*.sav
+*~
