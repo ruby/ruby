@@ -153,8 +153,8 @@ class TkFont
     charset  = (info = font['charset'] .to_s)?  info: '*'
     encoding = (info = font['encoding'].to_s)?  info: '*'
 
-    Array([foundry, family, weight, slant, swidth, adstyle, 
-	    pixels, points, resx, resy, space, avgWidth, charset, encoding])
+    [foundry, family, weight, slant, swidth, adstyle,
+      pixels, points, resx, resy, space, avgWidth, charset, encoding]
   end
 
   def create_latinfont_tk4x(font)
@@ -238,13 +238,10 @@ class TkFont
       }
 
       @kanjifont = '-' + _get_font_info_from_hash(finfo).join('-') + '-'
-
     elsif font.kind_of? TkFont
       @kanjifont = font.kanji_font
-
     else
       @kanjifont = font
-
     end
   end
 
@@ -309,11 +306,9 @@ class TkFont
 
     elsif font.kind_of? TkFont
       tk_call('font', 'create', @kanjifont, '-copy', font.kanji_font)
-
     else
       tk_call('font', 'create', @kanjifont, '-copy', font, 
 	      '-charset', 'jisx0208.1983')
-
     end
   end
 
@@ -397,9 +392,9 @@ class TkFont
     if option
       ""
     else
-      Array([ ['family',[]], ['size',[]], ['weight',[]], ['slant',[]], 
-	      ['underline',[]], ['overstrike',[]], ['charset',[]], 
-	      ['pointadjust',[]] ])
+      [['family',[]], ['size',[]], ['weight',[]], ['slant',[]], 
+	['underline',[]], ['overstrike',[]], ['charset',[]], 
+	['pointadjust',[]]]
     end
   end
 
@@ -440,9 +435,9 @@ class TkFont
     if option
       ""
     else
-      Array([ ['family',[]], ['size',[]], ['weight',[]], ['slant',[]], 
-	      ['underline',[]], ['overstrike',[]], ['charset',[]], 
-	      ['pointadjust',[]] ])
+      [['family',[]], ['size',[]], ['weight',[]], ['slant',[]], 
+	['underline',[]], ['overstrike',[]], ['charset',[]], 
+	['pointadjust',[]]]
     end
   end
 
@@ -583,15 +578,15 @@ class TkFont
 
   def kanji_replace_core_tk81(knj)
     if font.kind_of? Hash
-      tk_call('font', 'configure', @compoundfont, *hash_kv(font))
+      tk_call('font', 'configure', @compoundfont, *hash_kv(knj))
     else
       keys = {}
-      if font.kind_of? Array
-	actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
-      elsif font.kind_of? TkFont
-	actual_core(font.latin_font).each{|key,val| keys[key] = val}
+      if knj.kind_of? Array
+	actual_core(array2tk_list(knj)).each{|key,val| keys[key] = val}
+      elsif knj.kind_of? TkFont
+	actual_core(knj.latin_font).each{|key,val| keys[key] = val}
       else
-	actual_core(font).each{|key,val| keys[key] = val}
+	actual_core(knj).each{|key,val| keys[key] = val}
       end
       tk_call('font', 'configure', @compoundfont, *hash_kv(keys))
     end
@@ -616,7 +611,7 @@ class TkFont
     if option
       ""
     else
-      Array([ ['ascent',[]], ['descent',[]], ['linespace',[]], ['fixed',[]] ])
+      [['ascent',[]], ['descent',[]], ['linespace',[]], ['fixed',[]]]
     end
   end
 

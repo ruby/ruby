@@ -79,12 +79,10 @@ rb_waitpid(pid, flags, st)
 {
     int result;
 #ifndef NO_WAITPID
-#if defined(USE_THREAD)
     int oflags = flags;
     if (!rb_thread_alone()) {	/* there're other threads to run */
 	flags |= WNOHANG;
     }
-#endif
 
   retry:
 #ifdef HAVE_WAITPID
@@ -94,21 +92,17 @@ rb_waitpid(pid, flags, st)
 #endif
     if (result < 0) {
 	if (errno == EINTR) {
-#ifdef USE_THREAD
 	    rb_thread_schedule();
-#endif
 	    goto retry;
 	}
 	return -1;
     }
-#ifdef USE_THREAD
     if (result == 0) {
 	if (oflags & WNOHANG) return 0;
 	rb_thread_schedule();
 	if (rb_thread_alone()) flags = oflags;
 	goto retry;
     }
-#endif
 #else  /* NO_WAITPID */
     if (pid_tbl && st_lookup(pid_tbl, pid, st)) {
 	rb_last_status = INT2FIX(*st);
@@ -124,9 +118,7 @@ rb_waitpid(pid, flags, st)
 	result = wait(st);
 	if (result < 0) {
 	    if (errno == EINTR) {
-#ifdef USE_THREAD
 		rb_thread_schedule();
-#endif
 		continue;
 	    }
 	    return -1;
@@ -137,9 +129,7 @@ rb_waitpid(pid, flags, st)
 	if (!pid_tbl)
 	    pid_tbl = st_init_numtable();
 	st_insert(pid_tbl, pid, st);
-#ifdef USE_THREAD
 	if (!rb_thread_alone()) rb_thread_schedule();
-#endif
     }
 #endif
     rb_last_status = INT2FIX(*st);
@@ -181,9 +171,7 @@ rb_f_wait()
 
     while ((pid = wait(&state)) < 0) {
         if (errno == EINTR) {
-#ifdef USE_THREAD
             rb_thread_schedule();
-#endif
             continue;
         }
         rb_sys_fail(0);
@@ -212,7 +200,7 @@ rb_f_waitpid(obj, vpid, vflags)
 
 char *strtok();
 
-#if defined(USE_THREAD) && defined(HAVE_SETITIMER)
+#ifdef HAVE_SETITIMER
 #define before_exec() rb_thread_stop_timer()
 #define after_exec() rb_thread_start_timer()
 #else
@@ -320,10 +308,11 @@ proc_exec_n(argc, argv, progv)
 
 int
 rb_proc_exec(str)
-    char *str;
+    const char *str;
 {
 #ifndef USE_CWGUSI
-    char *s = str, *t;
+    const char *s = str;
+    char *ss, *t;
     char **argv, **a;
 
     security(str);
@@ -358,9 +347,9 @@ rb_proc_exec(str)
 	}
     }
     a = argv = ALLOCA_N(char*, (s-str)/2+2);
-    s = ALLOCA_N(char, s-str+1);
-    strcpy(s, str);
-    if (*a++ = strtok(s, " \t")) {
+    ss = ALLOCA_N(char, s-str+1);
+    strcpy(ss, str);
+    if (*a++ = strtok(ss, " \t")) {
 	while (t = strtok(NULL, " \t")) {
 	    *a++ = t;
 	}
@@ -712,11 +701,7 @@ rb_f_system(argc, argv)
 
       case -1:
 	if (errno == EAGAIN) {
-#ifdef USE_THREAD
 	    rb_thread_sleep(1);
-#else
-	    sleep(1);
-#endif
 	    goto retry;
 	}
 	rb_sys_fail(0);
@@ -742,30 +727,12 @@ rb_f_sleep(argc, argv)
     int beg, end;
 
     beg = time(0);
-#ifdef USE_THREAD
     if (argc == 0) {
 	rb_thread_sleep_forever();
     }
     else if (argc == 1) {
 	rb_thread_wait_for(rb_time_timeval(argv[0]));
     }
-#else
-    if (argc == 0) {
-	TRAP_BEG;
-	sleep((32767<<16)+32767);
-	TRAP_END;
-    }
-    else if (argc == 1) {
-	struct timeval tv;
-	int n;
-
-	tv = rb_time_timeval(argv[0]);
-	TRAP_BEG;
-	n = select(0, 0, 0, 0, &tv);
-	TRAP_END;
-	if (n<0) rb_sys_fail(0);
-    }
-#endif
     else {
 	rb_raise(rb_eArgError, "wrong # of arguments");
     }

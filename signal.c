@@ -179,6 +179,18 @@ signm2signo(nm)
     return 0;
 }
 
+static char*
+signo2signm(no)
+    int no;
+{
+    struct signals *sigs;
+
+    for (sigs = siglist; sigs->signm; sigs++)
+	if (sigs->signo == no)
+	    return sigs->signm;
+    return 0;
+}
+
 VALUE
 rb_f_kill(argc, argv)
     int argc;
@@ -284,30 +296,61 @@ posix_signal(signum, handler)
     sigact.sa_flags = 0;
     sigaction(signum, &sigact, 0);
 }
+#define ruby_signal(sig,handle) posix_signal((sig),(handle))
+#else
+#define ruby_signal(sig,handle) signal((sig),(handle))
 #endif
 
-#ifdef USE_THREAD
-# define rb_interrupt rb_thread_interrupt
-# define rb_trap_eval rb_thread_trap_eval
+static int
+signal_exec(sig)
+    int sig;
+{
+    if (trap_list[sig] == 0) {
+	switch (sig) {
+	  case SIGINT:
+	    rb_thread_interrupt();
+	    break;
+	  case SIGHUP:
+	  case SIGTERM:
+#ifdef SIGPIPE
+	  case SIGPIPE:
 #endif
+#ifdef SIGQUIT
+	  case SIGQUIT:
+#endif
+#ifdef SIGALRM
+	  case SIGALRM:
+#endif
+#ifdef SIGUSR1
+	  case SIGUSR1:
+#endif
+#ifdef SIGUSR2
+	  case SIGUSR2:
+#endif
+	    rb_thread_signal_raise(signo2signm(sig));
+	    break;
+	}
+    }
+    else {
+	rb_thread_trap_eval(trap_list[sig], sig);
+    }
+}
 
 static RETSIGTYPE
 sighandle(sig)
     int sig;
 {
-    if (sig >= NSIG ||(sig != SIGINT && !trap_list[sig]))
+    if (sig >= NSIG) {
 	rb_bug("trap_handler: Bad signal %d", sig);
+    }
 
 #if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
-    signal(sig, sighandle);
+    ruby_signal(sig, sighandle);
 #endif
 
     if (rb_trap_immediate) {
 	rb_trap_immediate = 0;
-	if (sig == SIGINT && !trap_list[SIGINT]) {
-	    rb_interrupt();
-	}
-	rb_trap_eval(trap_list[sig], sig);
+	signal_exec(sig);
 	rb_trap_immediate = 1;
     }
     else {
@@ -353,11 +396,7 @@ rb_trap_exec()
     for (i=0; i<NSIG; i++) {
 	if (trap_pending_list[i]) {
 	    trap_pending_list[i] = 0;
-	    if (i == SIGINT && trap_list[SIGINT] == 0) {
-		rb_interrupt();
-		return;
-	    }
-	    rb_trap_eval(trap_list[i], i);
+	    signal_exec(i);
 	}
     }
 #endif /* MACOS_UNUSE_SIGNAL */
@@ -446,7 +485,7 @@ trap(arg)
     if (sig < 0 || sig > NSIG) {
 	rb_raise(rb_eArgError, "invalid signal number (%d)", sig);
     }
-#if defined(USE_THREAD) && defined(HAVE_SETITIMER) && !defined(__BOW__)
+#if defined(HAVE_SETITIMER) && !defined(__BOW__)
     if (sig == SIGVTALRM) {
 	rb_raise(rb_eArgError, "SIGVTALRM reserved for Thread; cannot set handler");
     }
@@ -454,6 +493,23 @@ trap(arg)
     if (func == SIG_DFL) {
 	switch (sig) {
 	  case SIGINT:
+	  case SIGHUP:
+	  case SIGTERM:
+#ifdef SIGQUIT
+	  case SIGQUIT:
+#endif
+#ifdef SIGALRM
+	  case SIGALRM:
+#endif
+#ifdef SIGUSR1
+	  case SIGUSR1:
+#endif
+#ifdef SIGUSR2
+	  case SIGUSR2:
+#endif
+#ifdef SIGPIPE
+	  case SIGPIPE:
+#endif
 	    func = sighandle;
 	    break;
 #ifdef SIGBUS
@@ -468,11 +524,7 @@ trap(arg)
 #endif
 	}
     }
-#ifdef POSIX_SIGNAL
-    posix_signal(sig, func);
-#else
-    signal(sig, func);
-#endif
+    ruby_signal(sig, func);
     old = trap_list[sig];
     if (!old) old = Qnil;
 
@@ -556,16 +608,30 @@ Init_signal()
 {
 #ifndef MACOS_UNUSE_SIGNAL
     rb_define_global_function("trap", rb_f_trap, -1);
-#ifdef POSIX_SIGNAL
-    posix_signal(SIGINT, sighandle);
-#else
-    signal(SIGINT, sighandle);
+    ruby_signal(SIGINT, sighandle);
+    ruby_signal(SIGHUP, sighandle);
+    ruby_signal(SIGTERM, sighandle);
+#ifdef SIGPIPE
+    ruby_signal(SIGPIPE, sighandle);
 #endif
+#ifdef SIGQUIT
+    ruby_signal(SIGQUIT, sighandle);
+#endif
+#ifdef SIGALRM
+    ruby_signal(SIGALRM, sighandle);
+#endif
+#ifdef SIGUSR1
+    ruby_signal(SIGUSR1, sighandle);
+#endif
+#ifdef SIGUSR2
+    ruby_signal(SIGUSR2, sighandle);
+#endif
+
 #ifdef SIGBUS
-    signal(SIGBUS, sigbus);
+    ruby_signal(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
-    signal(SIGSEGV, sigsegv);
+    ruby_signal(SIGSEGV, sigsegv);
 #endif
 #endif /* MACOS_UNUSE_SIGNAL */
 }

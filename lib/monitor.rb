@@ -1,271 +1,96 @@
-## monitor.rb
+=begin
 
-# Author: Shugo Maeda <shugo@po.aianet.ne.jp>
-# Version: $Revision: 0.1 $
+monitor.rb
+Author: Shugo Maeda <shugo@netlab.co.jp>
+Version: 1.2.1
 
-# USAGE:
-#
-#   foo = Foo.new
-#   foo.extend(MonitorMixin)
-#   cond = foo.new_cond
-#
-#   thread1:
-#   foo.synchronize {
-#     ...
-#     cond.wait_until { foo.done? }
-#     ...
-#   }
-#
-#   thread2:
-#   foo.synchronize {
-#     foo.do_something
-#     cond.signal
-#   }
+USAGE:
 
-# ATTENTION:
-#
-#   If you include MonitorMixin and override `initialize', you should
-#   call `super'.
-#   If you include MonitorMixin to built-in classes, you should override
-#   `new' to call `mon_initialize'.
+  foo = Foo.new
+  foo.extend(MonitorMixin)
+  cond = foo.new_cond
 
-## Code:
+  thread1:
+  foo.synchronize {
+    ...
+    cond.wait_until { foo.done? }
+    ...
+  }
+
+  thread2:
+  foo.synchronize {
+    foo.do_something
+    cond.signal
+  }
+
+=end
   
-require "final"
-
 module MonitorMixin
-  
-  RCS_ID = %q$Id: monitor.rb,v 0.1 1998/03/01 08:40:18 shugo Exp shugo $
-  
-  module Primitive
-    
-    include MonitorMixin
-    
-    MON_OWNER_TABLE = {}
-    MON_COUNT_TABLE = {}
-    MON_ENTERING_QUEUE_TABLE = {}
-    MON_WAITING_QUEUE_TABLE = {}
-    
-    FINALIZER = Proc.new { |id|
-      MON_OWNER_TABLE.delete(id)
-      MON_COUNT_TABLE.delete(id)
-      MON_ENTERING_QUEUE_TABLE.delete(id)
-      MON_WAITING_QUEUE_TABLE.delete(id)
-    }
-  
-    def self.extend_object(obj)
-      super(obj)
-      obj.mon_initialize
-    end
-    
-    def mon_initialize
-      MON_OWNER_TABLE[id] = nil
-      MON_COUNT_TABLE[id] = 0
-      MON_ENTERING_QUEUE_TABLE[id] = []
-      MON_WAITING_QUEUE_TABLE[id] = []
-      ObjectSpace.define_finalizer(self, FINALIZER)
-    end
-    
-    def mon_owner
-      return MON_OWNER_TABLE[id]
-    end
-    
-    def mon_count
-      return MON_COUNT_TABLE[id]
-    end
-    
-    def mon_entering_queue
-      return MON_ENTERING_QUEUE_TABLE[id]
-    end
-    
-    def mon_waiting_queue
-      return MON_WAITING_QUEUE_TABLE[id]
-    end
-    
-    def set_mon_owner(val)
-      return MON_OWNER_TABLE[id] = val
-    end
-    
-    def set_mon_count(val)
-      return MON_COUNT_TABLE[id] = val
-    end
-    
-    private :mon_count, :mon_entering_queue, :mon_waiting_queue,
-      :set_mon_owner, :set_mon_count
+  module Accessible
+  protected
+    attr_accessor :mon_owner, :mon_count
+    attr_reader :mon_entering_queue, :mon_waiting_queue
   end
   
-  module NonPrimitive
-    
-    include MonitorMixin
-      
-    attr_reader :mon_owner, :mon_count,
-      :mon_entering_queue, :mon_waiting_queue
-  
-    def self.extend_object(obj)
-      super(obj)
-      obj.mon_initialize
-    end
-  
+  module Initializable
+  protected
     def mon_initialize
       @mon_owner = nil
       @mon_count = 0
       @mon_entering_queue = []
       @mon_waiting_queue = []
     end
-    
-    def set_mon_owner(val)
-      @mon_owner = val
-    end
-    
-    def set_mon_count(val)
-      @mon_count = val
-    end
-    
-    private :mon_count, :mon_entering_queue, :mon_waiting_queue,
-      :set_mon_owner, :set_mon_count
   end
   
-  def self.extendable_module(obj)
-    if Fixnum === obj or TrueClass === obj or FalseClass === obj or
-	NilClass === obj
-      raise TypeError, "MonitorMixin can't extend #{obj.type}"
-    else
-      begin
-	obj.instance_eval("@mon_owner")
-	return NonPrimitive
-      rescue TypeError
-	return Primitive
-      end
-    end
-  end
-  
-  def self.extend_object(obj)
-    obj.extend(extendable_module(obj))
-  end
-  
-  def self.includable_module(klass)
-    if klass.instance_of?(Module)
-      return NonPrimitive
-    end
-    begin
-      dummy = klass.new
-      return extendable_module(dummy)
-    rescue ArgumentError
-      if klass.singleton_methods.include?("new")
-	return Primitive
-      else
-	return NonPrimitive
-      end
-    rescue NameError
-      raise TypeError, "#{klass} can't include MonitorMixin"
-    end
-  end
-  
-  def self.append_features(klass)
-    mod = includable_module(klass)
-    klass.module_eval("include mod")
-  end
-  
-  def initialize(*args)
-    super
-    mon_initialize
-  end
-  
-  def try_mon_enter
-    result = false
-    Thread.critical = true
-    if mon_owner.nil?
-      set_mon_owner(Thread.current)
-    end
-    if mon_owner == Thread.current
-      set_mon_count(mon_count + 1)
-      result = true
-    end
-    Thread.critical = false
-    return result
-  end
-
-  def mon_enter
-    Thread.critical = true
-    while mon_owner != nil && mon_owner != Thread.current
-      mon_entering_queue.push(Thread.current)
-      Thread.stop
-      Thread.critical = true
-    end
-    set_mon_owner(Thread.current)
-    set_mon_count(mon_count + 1)
-    Thread.critical = false
-  end
-  
-  def mon_exit
-    if mon_owner != Thread.current
-      raise ThreadError, "current thread not owner"
-    end
-    Thread.critical = true
-    set_mon_count(mon_count - 1)
-    if mon_count == 0
-      set_mon_owner(nil)
-      if mon_waiting_queue.empty?
-	t = mon_entering_queue.shift
-      else
-	t = mon_waiting_queue.shift
-      end
-    end
-    t.wakeup if t
-    Thread.critical = false
-    Thread.pass
-  end
-
-  def mon_synchronize
-    mon_enter
-    begin
-      yield
-    ensure
-      mon_exit
-    end
-  end
-  alias synchronize mon_synchronize
-
   class ConditionVariable
-    def initialize(monitor)
-      @monitor = monitor
-      @waiters = []
-    end
+    class Timeout < Exception; end
     
-    def wait
+    include Accessible
+    
+    def wait(timeout = nil)
       if @monitor.mon_owner != Thread.current
 	raise ThreadError, "current thread not owner"
       end
       
-      @monitor.instance_eval(<<MON_EXIT)
       Thread.critical = true
-      _count = mon_count
-      set_mon_count(0)
-      set_mon_owner(nil)
-      if mon_waiting_queue.empty?
-	t = mon_entering_queue.shift
+      count = @monitor.mon_count
+      @monitor.mon_count = 0
+      @monitor.mon_owner = nil
+      if @monitor.mon_waiting_queue.empty?
+	t = @monitor.mon_entering_queue.shift
       else
-	t = mon_waiting_queue.shift
+	t = @monitor.mon_waiting_queue.shift
       end
       t.wakeup if t
-      Thread.critical = false
-MON_EXIT
-      
-      Thread.critical = true
       @waiters.push(Thread.current)
-      Thread.stop
       
-      @monitor.instance_eval(<<MON_ENTER)
+      if timeout
+	t = Thread.current
+	timeout_thread = Thread.start {
+	  sleep(timeout)
+	  t.raise(Timeout.new)
+	}
+      end
+      begin
+	Thread.stop
+      rescue Timeout
+	@waiters.delete(Thread.current)
+      ensure
+	if timeout && timeout_thread.alive?
+	  Thread.kill(timeout_thread)
+	end
+      end
+      
       Thread.critical = true
-      while mon_owner != nil && mon_owner != Thread.current
-	mon_waiting_queue.push(Thread.current)
+      while @monitor.mon_owner &&
+	  @monitor.mon_owner != Thread.current
+	@monitor.mon_waiting_queue.push(Thread.current)
 	Thread.stop
 	Thread.critical = true
       end
-      set_mon_owner(Thread.current)
-      set_mon_count(_count)
+      @monitor.mon_owner = Thread.current
+      @monitor.mon_count = count
       Thread.critical = false
-MON_ENTER
     end
     
     def wait_while
@@ -307,10 +132,86 @@ MON_ENTER
     def count_waiters
       return @waiters.length
     end
+    
+  private
+    def initialize(monitor)
+      @monitor = monitor
+      @waiters = []
+    end
   end
+  
+  include Accessible
+  include Initializable
+  extend Initializable
+  
+  def self.extend_object(obj)
+    super(obj)
+    obj.mon_initialize
+  end
+  
+  def try_mon_enter
+    result = false
+    Thread.critical = true
+    if mon_owner.nil?
+      self.mon_owner = Thread.current
+    end
+    if mon_owner == Thread.current
+      self.mon_count += 1
+      result = true
+    end
+    Thread.critical = false
+    return result
+  end
+
+  def mon_enter
+    Thread.critical = true
+    while mon_owner != nil && mon_owner != Thread.current
+      mon_entering_queue.push(Thread.current)
+      Thread.stop
+      Thread.critical = true
+    end
+    self.mon_owner = Thread.current
+    self.mon_count += 1
+    Thread.critical = false
+  end
+  
+  def mon_exit
+    if mon_owner != Thread.current
+      raise ThreadError, "current thread not owner"
+    end
+    Thread.critical = true
+    self.mon_count -= 1
+    if mon_count == 0
+      self.mon_owner = nil
+      if mon_waiting_queue.empty?
+	t = mon_entering_queue.shift
+      else
+	t = mon_waiting_queue.shift
+      end
+    end
+    t.wakeup if t
+    Thread.critical = false
+    Thread.pass
+  end
+
+  def mon_synchronize
+    mon_enter
+    begin
+      yield
+    ensure
+      mon_exit
+    end
+  end
+  alias synchronize mon_synchronize
   
   def new_cond
     return ConditionVariable.new(self)
+  end
+  
+private
+  def initialize(*args)
+    super
+    mon_initialize
   end
 end
 
@@ -322,4 +223,7 @@ class Monitor
   alias owner mon_owner
 end
 
-## monitor.rb ends here
+# Local variables:
+# mode: Ruby
+# tab-width: 8
+# End:

@@ -110,16 +110,12 @@ extern int ReadDataPending();
 #  define READ_DATA_PENDING(fp) ReadDataPending(fp)
 #endif
 
-#ifndef USE_THREAD
-# define READ_CHECK(fp) 0
-#else
-# define READ_CHECK(fp) do {\
+#define READ_CHECK(fp) do {\
     if (!READ_DATA_PENDING(fp)) {\
 	rb_thread_wait_fd(fileno(fp));\
         rb_io_check_closed(fptr);\
      }\
 } while(0)
-#endif
 
 void
 rb_eof_error()
@@ -154,8 +150,8 @@ rb_io_check_writable(fptr)
 }
 
 /* writing functions */
-VALUE
-rb_io_write(io, str)
+static VALUE
+io_write(io, str)
     VALUE io, str;
 {
     OpenFile *fptr;
@@ -198,6 +194,13 @@ rb_io_write(io, str)
     }
 
     return INT2FIX(n);
+}
+
+VALUE
+rb_io_write(io, str)
+    VALUE io, str;
+{
+    return rb_funcall(io, id_write, 1, str);
 }
 
 static VALUE
@@ -419,7 +422,7 @@ read_all(port)
 }
 
 static VALUE
-rb_io_read(argc, argv, io)
+io_read(argc, argv, io)
     int argc;
     VALUE *argv;
     VALUE io;
@@ -850,10 +853,7 @@ rb_io_fptr_close(fptr)
     int fd;
 
     if (fptr->f == NULL && fptr->f2 == NULL) return;
-
-#ifdef USE_THREAD
     rb_thread_fd_close(fileno(fptr->f));
-#endif
 
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
@@ -911,6 +911,7 @@ rb_io_close_read(io)
     VALUE io;
 {
     OpenFile *fptr;
+    int n;
 
     rb_secure(4);
     GetOpenFile(io, fptr);
@@ -920,10 +921,11 @@ rb_io_close_read(io)
     if (fptr->f2 == 0) {
 	return rb_io_close(io);
     }
-    fclose(fptr->f);
+    n = fclose(fptr->f);
     fptr->mode &= ~FMODE_READABLE;
     fptr->f = fptr->f2;
     fptr->f2 = 0;
+    if (n != 0) rb_sys_fail(fptr->path);
 
     return Qnil;
 }
@@ -933,6 +935,7 @@ rb_io_close_write(io)
     VALUE io;
 {
     OpenFile *fptr;
+    int n;
 
     rb_secure(4);
     GetOpenFile(io, fptr);
@@ -942,9 +945,10 @@ rb_io_close_write(io)
     if (fptr->f2 == 0) {
 	return rb_io_close(io);
     }
-    fclose(fptr->f2);
+    n = fclose(fptr->f2);
     fptr->f2 = 0;
     fptr->mode &= ~FMODE_WRITABLE;
+    if (n != 0) rb_sys_fail(fptr->path);
 
     return Qnil;
 }
@@ -965,11 +969,9 @@ rb_io_syswrite(io, str)
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
-#ifdef USE_THREAD
     if (!rb_thread_fd_writable(fileno(f))) {
         rb_io_check_closed(fptr);
     }
-#endif
     n = write(fileno(f), RSTRING(str)->ptr, RSTRING(str)->len);
 
     if (n == -1) rb_sys_fail(fptr->path);
@@ -991,9 +993,7 @@ rb_io_sysread(io, len)
 
     str = rb_str_new(0, ilen);
 
-#ifdef USE_THREAD
     rb_thread_wait_fd(fileno(fptr->f));
-#endif
     TRAP_BEG;
     n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
     TRAP_END;
@@ -1158,8 +1158,8 @@ rb_open(fname, flag, mode)
 
 FILE *
 rb_fopen(fname, mode)
-    char *fname;
-    char *mode;
+    const char *fname;
+    const char *mode;
 {
     FILE *file;
 
@@ -1179,7 +1179,7 @@ rb_fopen(fname, mode)
 FILE *
 rb_fdopen(fd, mode)
     int fd;
-    char *mode;
+    const char *mode;
 {
     FILE *file;
 
@@ -1198,7 +1198,7 @@ rb_fdopen(fd, mode)
 
 VALUE
 rb_file_open(fname, mode)
-    char *fname, *mode;
+    const char *fname, *mode;
 {
     OpenFile *fptr;
     NEWOBJ(port, struct RFile);
@@ -1388,8 +1388,6 @@ pipe_open(pname, mode)
 	}
 
 	if (doexec) {
-	    extern char *ruby_sourcefile;
-	    extern int   ruby_sourceline;
 	    int fd;
 
 	    for (fd = 3; fd < NOFILE; fd++)
@@ -1403,11 +1401,7 @@ pipe_open(pname, mode)
 
       case -1:			/* fork failed */
 	if (errno == EAGAIN) {
-#ifdef USE_THREAD
 	    rb_thread_sleep(1);
-#else
-	    sleep(1);
-#endif
 	    goto retry;
 	}
 	close(pr[0]); close(pw[1]);
@@ -1603,9 +1597,7 @@ rb_io_reopen(io, nfile)
     else if (orig->mode & FMODE_WRITABLE) {
 	fflush(orig->f);
     }
-#ifdef USE_THREAD
     rb_thread_fd_close(fileno(fptr->f));
-#endif
 
     /* copy OpenFile structure */
     fptr->mode = orig->mode;
@@ -2060,8 +2052,8 @@ next_argv()
 	next_p = 0;
 	if (RARRAY(rb_argv)->len > 0) {
 	    filename = rb_ary_shift(rb_argv);
-	    fn = RSTRING(filename)->ptr;
-	    if (RSTRING(filename)->len == 1 && fn[0] == '-') {
+	    fn = STR2CSTR(filename);
+	    if (strlen(fn) == 1 && fn[0] == '-') {
 		file = rb_stdin;
 		if (ruby_inplace_mode) {
 		    rb_defout = rb_stdout;
@@ -2282,6 +2274,7 @@ rb_f_select(argc, argv, obj)
     int i, max = 0, n;
     int interrupt_flag = 0;
     int pending = 0;
+    VALUE io;
 
     rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout);
     if (NIL_P(timeout)) {
@@ -2298,9 +2291,7 @@ rb_f_select(argc, argv, obj)
 	rp = &rset;
 	FD_ZERO(rp);
 	for (i=0; i<RARRAY(read)->len; i++) {
-	    VALUE io = rb_io_get_io(RARRAY(read)->ptr[i]);
-
-	    GetOpenFile(io, fptr);
+	    GetOpenFile(rb_io_get_io(RARRAY(read)->ptr[i]), fptr);
 	    FD_SET(fileno(fptr->f), rp);
 	    if (READ_DATA_PENDING(fptr->f)) { /* check for buffered data */
 		pending++;
@@ -2321,9 +2312,7 @@ rb_f_select(argc, argv, obj)
 	wp = &wset;
 	FD_ZERO(wp);
 	for (i=0; i<RARRAY(write)->len; i++) {
-	    VALUE io = rb_io_get_io(RARRAY(write)->ptr[i]);
-
-	    GetOpenFile(io, fptr);
+	    GetOpenFile(rb_io_get_io(RARRAY(write)->ptr[i]), fptr);
 	    FD_SET(fileno(fptr->f), wp);
 	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
@@ -2340,9 +2329,7 @@ rb_f_select(argc, argv, obj)
 	ep = &eset;
 	FD_ZERO(ep);
 	for (i=0; i<RARRAY(except)->len; i++) {
-	    VALUE io = rb_io_get_io(RARRAY(except)->ptr[i]);
-
-	    GetOpenFile(io, fptr);
+	    GetOpenFile(rb_io_get_io(RARRAY(except)->ptr[i]), fptr);
 	    FD_SET(fileno(fptr->f), ep);
 	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
@@ -2356,24 +2343,10 @@ rb_f_select(argc, argv, obj)
 
     max++;
 
-#ifdef USE_THREAD
     n = rb_thread_select(max, rp, wp, ep, tp);
     if (n < 0) {
 	rb_sys_fail(0);
     }
-#else
-  retry:
-    TRAP_BEG;
-    n = select(max, rp, wp, ep, tp);
-    TRAP_END;
-    if (n < 0) {
-	if (errno != EINTR) {
-	    rb_sys_fail(0);
-	}
-	if (tp == NULL) goto retry;
-	interrupt_flag = 1;
-    }
-#endif
     if (!pending && n == 0) return Qnil; /* returns nil on timeout */
 
     res = rb_ary_new2(3);
@@ -2385,7 +2358,7 @@ rb_f_select(argc, argv, obj)
 	if (rp) {
 	    list = RARRAY(res)->ptr[0];
 	    for (i=0; i< RARRAY(read)->len; i++) {
-		GetOpenFile(RARRAY(read)->ptr[i], fptr);
+		GetOpenFile(rb_io_get_io(RARRAY(read)->ptr[i]), fptr);
 		if (FD_ISSET(fileno(fptr->f), rp)
 		    || FD_ISSET(fileno(fptr->f), &pset)) {
 		    rb_ary_push(list, RARRAY(read)->ptr[i]);
@@ -2396,7 +2369,7 @@ rb_f_select(argc, argv, obj)
 	if (wp) {
 	    list = RARRAY(res)->ptr[1];
 	    for (i=0; i< RARRAY(write)->len; i++) {
-		GetOpenFile(RARRAY(write)->ptr[i], fptr);
+		GetOpenFile(rb_io_get_io(RARRAY(write)->ptr[i]), fptr);
 		if (FD_ISSET(fileno(fptr->f), wp)) {
 		    rb_ary_push(list, RARRAY(write)->ptr[i]);
 		}
@@ -2409,7 +2382,7 @@ rb_f_select(argc, argv, obj)
 	if (ep) {
 	    list = RARRAY(res)->ptr[2];
 	    for (i=0; i< RARRAY(except)->len; i++) {
-		GetOpenFile(RARRAY(except)->ptr[i], fptr);
+		GetOpenFile(rb_io_get_io(RARRAY(except)->ptr[i]), fptr);
 		if (FD_ISSET(fileno(fptr->f), ep)) {
 		    rb_ary_push(list, RARRAY(except)->ptr[i]);
 		}
@@ -2787,7 +2760,7 @@ arg_read(argc, argv)
 
   retry:
     if (!next_argv()) return str;
-    tmp = rb_io_read(argc, argv, file);
+    tmp = io_read(argc, argv, file);
     if (NIL_P(tmp) && next_p != -1) {
 	rb_io_close(file);
 	next_p = 1;
@@ -3017,8 +2990,8 @@ Init_IO()
 
     rb_define_method(rb_cIO, "readlines",  rb_io_readlines, -1);
 
-    rb_define_method(rb_cIO, "read",  rb_io_read, -1);
-    rb_define_method(rb_cIO, "write", rb_io_write, 1);
+    rb_define_method(rb_cIO, "read",  io_read, -1);
+    rb_define_method(rb_cIO, "write", io_write, 1);
     rb_define_method(rb_cIO, "gets",  rb_io_gets_method, -1);
     rb_define_method(rb_cIO, "readline",  rb_io_readline, -1);
     rb_define_method(rb_cIO, "getc",  rb_io_getc, 0);

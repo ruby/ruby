@@ -73,11 +73,11 @@ char *strchr _((char*,char));
 
 unsigned long
 scan_oct(start, len, retlen)
-char *start;
+const char *start;
 int len;
 int *retlen;
 {
-    register char *s = start;
+    register const char *s = start;
     register unsigned long retval = 0;
 
     while (len-- && *s >= '0' && *s <= '7') {
@@ -90,12 +90,12 @@ int *retlen;
 
 unsigned long
 scan_hex(start, len, retlen)
-char *start;
+const char *start;
 int len;
 int *retlen;
 {
     static char hexdigit[] = "0123456789abcdef0123456789ABCDEFx";
-    register char *s = start;
+    register const char *s = start;
     register unsigned long retval = 0;
     char *tmp;
 
@@ -329,7 +329,6 @@ valid_filename(char *s)
 #endif
 
 #ifdef DJGPP
-/* Copyright (C) 1996 DJ Delorie, see COPYING.DJ for details */
 /* Copyright (C) 1995 DJ Delorie, see COPYING.DJ for details */
 #include <libc/stubs.h>
 #include <stdio.h>		/* For FILENAME_MAX */

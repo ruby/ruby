@@ -55,9 +55,7 @@ void _timer_for_tcl (ClientData clientData)
 
     timer->flag = 0;
     CHECK_INTS;
-#ifdef USE_THREAD 
     if (!rb_thread_critical) rb_thread_schedule();
-#endif
 
     timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
 					 (ClientData)timer);
@@ -82,11 +80,9 @@ lib_mainloop(VALUE self)
     }
     DUMP1("stop Tk_Mainloop");
 
-#ifdef USE_THREAD
     if (timer->flag) {
       Tk_DeleteTimerHandler(timer->token);
     }
-#endif
 
     return Qnil;
 }

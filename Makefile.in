@@ -148,8 +148,17 @@ crypt.o: @srcdir@/missing/crypt.c
 dup2.o: @srcdir@/missing/dup2.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/dup2.c
 
+finite.o: @srcdir@/missing/finite.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/finite.c
+
 flock.o: @srcdir@/missing/flock.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/flock.c
+
+isinf.o: @srcdir@/missing/isinf.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/isinf.c
+
+isnan.o: @srcdir@/missing/isnan.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/isnan.c
 
 fnmatch.o: @srcdir@/missing/fnmatch.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/fnmatch.c

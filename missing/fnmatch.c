@@ -48,7 +48,7 @@ static char sccsid[] = "@(#)fnmatch.c	8.2 (Berkeley) 4/16/94";
 
 #define	EOS	'\0'
 
-static char *rangematch(const char *, int, int);
+static char *rangematch();
 
 int
 fnmatch(pattern, string, flags)

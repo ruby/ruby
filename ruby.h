@@ -51,19 +51,16 @@ extern "C" {
 
 #ifndef __STDC__
 # define volatile
-# ifdef __GNUC__
-#  define const __const__
-# else
-#  define const
-# endif
 #endif
 
+#undef _
 #ifdef HAVE_PROTOTYPES
 # define _(args) args
 #else
 # define _(args) ()
 #endif
 
+#undef __
 #ifdef HAVE_STDARG_PROTOTYPES
 # define __(args) args
 #else
@@ -84,7 +81,9 @@ extern "C" {
 #if defined(DLLIMPORT)
 #include "import.h"
 #else
+#if !defined(__CYGWIN__)
 #define environ (*__imp___cygwin_environ)
+#endif
 #endif
 #endif
 
@@ -371,30 +370,30 @@ void *xrealloc _((void*,size_t));
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 
-VALUE rb_define_class _((char*,VALUE));
-VALUE rb_define_module _((char*));
-VALUE rb_define_class_under _((VALUE, char *, VALUE));
-VALUE rb_define_module_under _((VALUE, char *));
+VALUE rb_define_class _((const char*,VALUE));
+VALUE rb_define_module _((const char*));
+VALUE rb_define_class_under _((VALUE, const char*, VALUE));
+VALUE rb_define_module_under _((VALUE, const char*));
 
 void rb_include_module _((VALUE,VALUE));
 void rb_extend_object _((VALUE,VALUE));
 
-void rb_define_variable _((char*,VALUE*));
-void rb_define_virtual_variable _((char*,VALUE(*)(),void(*)()));
-void rb_define_hooked_variable _((char*,VALUE*,VALUE(*)(),void(*)()));
-void rb_define_readonly_variable _((char*,VALUE*));
-void rb_define_const _((VALUE,char*,VALUE));
-void rb_define_global_const _((char*,VALUE));
+void rb_define_variable _((const char*,VALUE*));
+void rb_define_virtual_variable _((const char*,VALUE(*)(),void(*)()));
+void rb_define_hooked_variable _((const char*,VALUE*,VALUE(*)(),void(*)()));
+void rb_define_readonly_variable _((const char*,VALUE*));
+void rb_define_const _((VALUE,const char*,VALUE));
+void rb_define_global_const _((const char*,VALUE));
 
-void rb_define_method _((VALUE,char*,VALUE(*)(),int));
-void rb_define_module_function _((VALUE,char*,VALUE(*)(),int));
-void rb_define_global_function _((char*,VALUE(*)(),int));
+void rb_define_method _((VALUE,const char*,VALUE(*)(),int));
+void rb_define_module_function _((VALUE,const char*,VALUE(*)(),int));
+void rb_define_global_function _((const char*,VALUE(*)(),int));
 
-void rb_undef_method _((VALUE,char*));
-void rb_define_alias _((VALUE,char*,char*));
-void rb_define_attr _((VALUE,char*,int,int));
+void rb_undef_method _((VALUE,const char*));
+void rb_define_alias _((VALUE,const char*,const char*));
+void rb_define_attr _((VALUE,const char*,int,int));
 
-ID rb_intern _((char*));
+ID rb_intern _((const char*));
 char *rb_id2name _((ID));
 ID rb_to_id _((VALUE));
 
@@ -402,13 +401,13 @@ char *rb_class2name _((VALUE));
 
 void rb_p _((VALUE));
 
-VALUE rb_eval_string _((char*));
-VALUE rb_eval_string_protect _((char*, int*));
+VALUE rb_eval_string _((const char*));
+VALUE rb_eval_string_protect _((const char*, int*));
 VALUE rb_funcall __((VALUE, ID, int, ...));
-int rb_scan_args __((int, VALUE*, char*, ...));
+int rb_scan_args __((int, VALUE*, const char*, ...));
 
-VALUE rb_iv_get _((VALUE, char *));
-VALUE rb_iv_set _((VALUE, char *, VALUE));
+VALUE rb_iv_get _((VALUE, const char*));
+VALUE rb_iv_set _((VALUE, const char*, VALUE));
 VALUE rb_const_get _((VALUE, ID));
 VALUE rb_const_get_at _((VALUE, ID));
 void rb_const_set _((VALUE, ID, VALUE));
@@ -420,16 +419,16 @@ EXTERN VALUE ruby_verbose, ruby_debug;
 int rb_safe_level _((void));
 void rb_set_safe_level _((int));
 
-void rb_raise __((VALUE, char*, ...)) NORETURN;
-void rb_fatal __((char*, ...)) NORETURN;
-void rb_bug __((char*, ...)) NORETURN;
-void rb_sys_fail _((char*)) NORETURN;
+void rb_raise __((VALUE, const char*, ...)) NORETURN;
+void rb_fatal __((const char*, ...)) NORETURN;
+void rb_bug __((const char*, ...)) NORETURN;
+void rb_sys_fail _((const char*)) NORETURN;
 void rb_iter_break _((void)) NORETURN;
 void rb_exit _((int)) NORETURN;
 void rb_notimplement _((void)) NORETURN;
 
-void rb_warn __((char*, ...));
-void rb_warning __((char*, ...));		/* reports if `-w' specified */
+void rb_warn __((const char*, ...));
+void rb_warning __((const char*, ...));		/* reports if `-w' specified */
 
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));
@@ -437,8 +436,8 @@ int rb_iterator_p _((void));
 VALUE rb_iterate _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_rescue _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
-VALUE rb_catch _((char*,VALUE(*)(),VALUE));
-void rb_throw _((char*,VALUE)) NORETURN;
+VALUE rb_catch _((const char*,VALUE(*)(),VALUE));
+void rb_throw _((const char*,VALUE)) NORETURN;
 
 void ruby_init _((void));
 void ruby_options _((int, char**));
@@ -483,6 +482,7 @@ EXTERN VALUE rb_eException;
 EXTERN VALUE rb_eStandardError;
 EXTERN VALUE rb_eSystemExit;
 EXTERN VALUE rb_eInterrupt;
+EXTERN VALUE rb_eSignal;
 EXTERN VALUE rb_eFatal;
 EXTERN VALUE rb_eArgError;
 EXTERN VALUE rb_eEOFError;

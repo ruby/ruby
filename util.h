@@ -21,13 +21,13 @@
 #endif
 
 #define scan_oct ruby_scan_oct
-unsigned long scan_oct _((char*, int, int*));
+unsigned long scan_oct _((const char*, int, int*));
 #define scan_hex ruby_scan_hex
-unsigned long scan_hex _((char*, int, int*));
+unsigned long scan_hex _((const char*, int, int*));
 
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT)
+void ruby_add_suffix();
 #define add_suffix ruby_add_suffix
-void add_suffix();
 #endif
 
 char *ruby_mktemp _((void));
@@ -37,5 +37,9 @@ void ruby_qsort _((void*, int, int, int (*)()));
 
 void ruby_setenv _((char*, char*));
 void ruby_unsetenv _((char*));
+#undef setenv
+#undef unsetenv
+#define setenv(name,val) ruby_setenv((name),(val))
+#define unsetenv(name,val) ruby_unsetenv((name));
 
 #endif /* UTIL_H */

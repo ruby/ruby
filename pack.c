@@ -914,6 +914,16 @@ hex2num(c)
     }
 }
 
+#define PACK_LENGTH_ADJUST(type) do {		\
+    tmp = 0;					\
+    if (len > (send - s)/sizeof(type)) {	\
+	tmp = len - (send - s) / sizeof(type);	\
+	len = (send - s) / sizeof(type);	\
+    }						\
+} while (0)
+
+#define PACK_ITEM_ADJUST() while (tmp--) rb_ary_push(ary, Qnil);
+
 static VALUE
 pack_unpack(str, fmt)
     VALUE str, fmt;
@@ -923,7 +933,7 @@ pack_unpack(str, fmt)
     char *p, *pend;
     VALUE ary;
     char type;
-    int len;
+    int len, tmp;
 
     s = rb_str2cstr(str, &len);
     send = s + len;
@@ -1052,93 +1062,92 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'c':
-	    if (len > send - s)
-		len = send - s;
+	    PACK_LENGTH_ADJUST(char);
 	    while (len-- > 0) {
                 int c = *s++;
                 if (c > (char)127) c-=256;
 		rb_ary_push(ary, INT2FIX(c));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'C':
-	    if (len > send - s)
-		len = send - s;
+	    PACK_LENGTH_ADJUST(char);
 	    while (len-- > 0) {
 		unsigned char c = *s++;
 		rb_ary_push(ary, INT2FIX(c));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 's':
-	    if (len >= (send - s) / sizeof(short))
-		len = (send - s) / sizeof(short);
+	    PACK_LENGTH_ADJUST(short);
 	    while (len-- > 0) {
 		short tmp;
 		memcpy(&tmp, s, sizeof(short));
 		s += sizeof(short);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'S':
-	    if (len >= (send - s) / sizeof(short))
-		len = (send - s) / sizeof(short);
+	    PACK_LENGTH_ADJUST(short);
 	    while (len-- > 0) {
 		unsigned short tmp;
 		memcpy(&tmp, s, sizeof(short));
 		s += sizeof(short);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'i':
-	    if (len >= (send - s) / sizeof(int))
-		len = (send - s) / sizeof(int);
+	    PACK_LENGTH_ADJUST(int);
 	    while (len-- > 0) {
 		int tmp;
 		memcpy(&tmp, s, sizeof(int));
 		s += sizeof(int);
 		rb_ary_push(ary, rb_int2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'I':
-	    if (len >= (send - s) / sizeof(int))
-		len = (send - s) / sizeof(int);
+	    PACK_LENGTH_ADJUST(int);
 	    while (len-- > 0) {
 		unsigned int tmp;
 		memcpy(&tmp, s, sizeof(int));
 		s += sizeof(int);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'l':
-	    if (len >= (send - s) / sizeof(long))
-		len = (send - s) / sizeof(long);
+	    PACK_LENGTH_ADJUST(long);
 	    while (len-- > 0) {
 		long tmp;
 		memcpy(&tmp, s, sizeof(long));
 		s += sizeof(long);
 		rb_ary_push(ary, rb_int2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'L':
-	    if (len >= (send - s) / sizeof(long))
-		len = (send - s) / sizeof(long);
+	    PACK_LENGTH_ADJUST(long);
 	    while (len-- > 0) {
 		unsigned long tmp;
 		memcpy(&tmp, s, sizeof(long));
 		s += sizeof(long);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'n':
-	    if (len >= (send - s) / sizeof(short))
-		len = (send - s) / sizeof(short);
+	    PACK_LENGTH_ADJUST(short);
 	    while (len-- > 0) {
 		unsigned short tmp;
 		memcpy(&tmp, s, sizeof(short));
@@ -1146,11 +1155,11 @@ pack_unpack(str, fmt)
 		tmp = ntohs(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'N':
-	    if (len >= (send - s) / sizeof(long))
-		len = (send - s) / sizeof(long);
+	    PACK_LENGTH_ADJUST(long);
 	    while (len-- > 0) {
 		unsigned long tmp;
 		memcpy(&tmp, s, sizeof(long));
@@ -1158,11 +1167,11 @@ pack_unpack(str, fmt)
 		tmp = ntohl(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'v':
-	    if (len >= (send - s) / sizeof(short))
-		len = (send - s) / sizeof(short);
+	    PACK_LENGTH_ADJUST(short);
 	    while (len-- > 0) {
 		unsigned short tmp;
 		memcpy(&tmp, s, sizeof(short));
@@ -1170,11 +1179,11 @@ pack_unpack(str, fmt)
 		tmp = vtohs(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'V':
-	    if (len >= (send - s) / sizeof(long))
-		len = (send - s) / sizeof(long);
+	    PACK_LENGTH_ADJUST(long);
 	    while (len-- > 0) {
 		unsigned long tmp;
 		memcpy(&tmp, s, sizeof(long));
@@ -1182,23 +1191,23 @@ pack_unpack(str, fmt)
 		tmp = vtohl(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'f':
 	  case 'F':
-	    if (len >= (send - s) / sizeof(float))
-		len = (send - s) / sizeof(float);
+	    PACK_LENGTH_ADJUST(float);
 	    while (len-- > 0) {
 		float tmp;
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
 		rb_ary_push(ary, rb_float_new((double)tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'e':
-	    if (len >= (send - s) / sizeof(float))
-		len = (send - s) / sizeof(float);
+	    PACK_LENGTH_ADJUST(float);
 	    while (len-- > 0) {
 	        float tmp;
 		FLOAT_CONVWITH(ftmp);
@@ -1208,11 +1217,11 @@ pack_unpack(str, fmt)
 		tmp = VTOHF(tmp,ftmp);
 		rb_ary_push(ary, rb_float_new((double)tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 	    
 	  case 'E':
-	    if (len >= (send - s) / sizeof(double))
-		len = (send - s) / sizeof(double);
+	    PACK_LENGTH_ADJUST(double);
 	    while (len-- > 0) {
 		double tmp;
 		DOUBLE_CONVWITH(dtmp);
@@ -1222,23 +1231,23 @@ pack_unpack(str, fmt)
 		tmp = VTOHD(tmp,dtmp);
 		rb_ary_push(ary, rb_float_new(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 	    
 	  case 'D':
 	  case 'd':
-	    if (len >= (send - s) / sizeof(double))
-		len = (send - s) / sizeof(double);
+	    PACK_LENGTH_ADJUST(double);
 	    while (len-- > 0) {
 		double tmp;
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
 		rb_ary_push(ary, rb_float_new(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'g':
-	    if (len >= (send - s) / sizeof(float))
-		len = (send - s) / sizeof(float);
+	    PACK_LENGTH_ADJUST(float);
 	    while (len-- > 0) {
 	        float tmp;
 		FLOAT_CONVWITH(ftmp;)
@@ -1248,11 +1257,11 @@ pack_unpack(str, fmt)
 		tmp = NTOHF(tmp,ftmp);
 		rb_ary_push(ary, rb_float_new((double)tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 	    
 	  case 'G':
-	    if (len >= (send - s) / sizeof(double))
-		len = (send - s) / sizeof(double);
+	    PACK_LENGTH_ADJUST(double);
 	    while (len-- > 0) {
 		double tmp;
 		DOUBLE_CONVWITH(dtmp);
@@ -1262,6 +1271,7 @@ pack_unpack(str, fmt)
 		tmp = NTOHD(tmp,dtmp);
 		rb_ary_push(ary, rb_float_new(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 	    
 	  case 'u':

@@ -43,7 +43,7 @@ printf("[[%c][%c][%d]]\n", c, output[output_ctr - 1], output_ctr);
 }
 
 #define PERL_XS 1
-#include "orig/nkf.c"
+#include "1.7/nkf.c"
 
 static VALUE
 rb_nkf_kconv(obj, opt, src)
@@ -61,12 +61,12 @@ rb_nkf_kconv(obj, opt, src)
     }
     arguments(opt_ptr);
   }
-  dst = rb_str_new(0, RSTRING(src)->len*3 + 10); /* large enough? */
 
   incsize = INCSIZE;
 
   input_ctr = 0; 
   input     = str2cstr(src, &i_len);
+  dst = rb_str_new(0, i_len*3 + 10); /* large enough? */
 
   output_ctr = 0;
   output     = RSTRING(dst)->ptr;
@@ -106,12 +106,13 @@ rb_nkf_guess(obj, src)
 {
   unsigned char *p;
   unsigned char *pend;
+  int plen;
   int sequence_counter = 0;
 
   Check_Type(src, T_STRING);
 
-  p = RSTRING(src)->ptr;
-  pend = p + RSTRING(src)->len;
+  p = str2cstr(src, &plen);
+  pend = p + plen;
 
 #define INCR do {\
     p++;\

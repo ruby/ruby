@@ -1,6 +1,6 @@
 .\" README.EXT -  -*- Text -*- created at: Mon Aug  7 16:45:54 JST 1995
 
-This document explains how to make extention modules for Ruby.
+This document explains how to make extention libraries for Ruby.
 
 1．Basic knowledge
 
@@ -183,11 +183,6 @@ interpreter.  Useful functions are listed below (not all):
     array.  They may dump core if other types given.
 
 2. Extend Ruby with C
-
-原理的にRubyで書けることはCでも書けます．RubyそのものがCで記
-述されているんですから，当然といえば当然なんですけど．ここで
-はRubyの拡張に使うことが多いだろうと予測される機能を中心に紹
-介します．
 
 2.1 Add new features to Ruby
 
@@ -422,7 +417,7 @@ The pointer to the structure will be assigned to the variable sval.
 
 See example below for detail. 
 
-4．Example - Create dbm module
+4．Example - Creating dbm extension
 
 OK, here's the example to make extension library.  This is the
 extension to access dbm.  The full source is included in ext/
@@ -448,17 +443,17 @@ You need to design the library features, before making it.
 
 (4) write C code.
 
-拡張ライブラリ本体となるC言語のソースを書きます．C言語のソー
-スがひとつの時には「モジュール名.c」を選ぶと良いでしょう．C
-言語のソースが複数の場合には逆に「モジュール名.c」というファ
-イル名は避ける必要があります．オブジェクトファイルとモジュー
-ル生成時に中間的に生成される「モジュール名.o」というファイル
-とが衝突するからです．
+You need to write C code for your extension library.  If your library
+has only one source file, choosing ``LIBRARY.c'' as a file name is
+preferred.  On the other hand, in case your library has prural source
+files, avoid chooing ``LIBRARY.c'' for a file name.  It may conflict
+with intermediate file ``LIBRARY.o'' on some platforms.
 
-Rubyは拡張ライブラリをロードする時に「Init_モジュール名」と
-いう関数を自動的に実行します．dbmモジュールの場合「Init_dbm」
-です．この関数の中でクラス，モジュール，メソッド，定数などの
-定義を行います．dbm.cから一部引用します．
+Ruby will execute the initializing function named ``Init_LIBRARY'' in
+the library.  For exapmle, ``Init_dbm()'' will be executed when loading
+the library.
+
+Here's the example of an initializing function.
 
 --
 Init_dbm()
@@ -480,11 +475,7 @@ Init_dbm()
 }
 --
 
-DBMモジュールはdbmのデータと対応するオブジェクトになるはずで
-すから，Cの世界のdbmをRubyの世界に取り込む必要があります．
-
-
-dbm.cではData_Make_Structを以下のように使っています．
+The dbm extension wrap dbm struct in C world using Data_Make_Struct.
 
 --
 struct dbmdata {
@@ -593,23 +584,27 @@ If there exists the file named extconf.rb, it will be executed to
 generate Makefile.  If not, compilation scheme try to generate
 Makefile anyway.
 
-extconf.rbはモジュールのコンパイルに必要な条件のチェックなど
-を行うことが目的です．extconf.rbの中では以下のRuby関数を使う
-ことが出来ます．
+The extconf.rb is the file to check compilation condition etc.  You
+need to put
 
-  have_library(lib, func): ライブラリの存在チェック
-  have_func(func): 関数の存在チェック
-  have_header(header): ヘッダファイルの存在チェック
-  create_makefile(target): Makefileの生成
+  require 'mkmf'
 
-以下の変数を使うことができます．
+at the top of the file.  You can use the funcitons below to check the
+condition.
 
-  $CFLAGS: コンパイル時に追加的に指定するフラグ(-Iなど)
-  $LDFLAGS: リンク時に追加的に指定するフラグ(-Lなど)
+  have_library(lib, func): check whether library containing function exists.
+  have_func(func): check whether function exists
+  have_header(header): check whether header file exists
+  create_makefile(target): generate Makefile
 
-モジュールをコンパイルする条件が揃わなず，そのモジュールはコ
-ンパイルしない時にはcreate_makefileを呼ばなければMakefileは
-生成されず，コンパイルも行われません．
+The value of variables below will affect Makefile.
+
+  $CFLAGS: included in CFLAGS make variable (such as -I)
+  $LDFLAGS: included in LDFLAGS make variable (such as -L)
+
+If compilation condition is not fulfilled, you do not call
+``create_makefile''.  Makefile will not generated, compilation will
+not be done.
 
 (6) prepare depend (optional)
 
@@ -620,7 +615,7 @@ check dependency.  You can make this file by invoking
 
 It's no harm.  Prepare it.
 
-(7) MANIFESTファイルにファイル名を入れる
+(7) put file names into MANIFEST (optional)
 
   % find * -type f -print > MANIFEST
   % vi MANIFEST
@@ -629,18 +624,30 @@ Append file names into MANIFEST.  The compilation scheme requires
 MANIFEST only to be exist.  But, you'd better take this step to
 distinguish required files.
 
-(8) make
+(8) generate Makefile
 
-Rubyのディレクトリでmakeを実行するとMakefileを生成からmake，
-必要によってはそのモジュールのRubyへのリンクまで自動的に実行
-してくれます．extconf.rbを書き換えるなどしてMakefileの再生成
-が必要な時はまたRubyディレクトリでmakeしてください．
+Try generate Makefile by:
+
+  ruby extconf.rb
+
+You don't need this step, if you put extension library under ext
+directory of the ruby source tree.  In that case, compilation of the
+interpreter will do this step for you.
+
+(9) make
+
+Type
+
+  make
+
+to compile your extension.  You don't need this step neither, if you
+put extension library under ext directory of the ruby source tree.
 
 (9) debug
 
-You may need to rb_debug the module.  The modules can be linked 
-statically by adding directory name in the ext/Setup file,
-so that you can inspect the module by the debugger.
+You may need to rb_debug the extension.  The extensions can be linked
+statically by adding directory name in the ext/Setup file, so that you
+can inspect the extension with the debugger.
 
 (10) done, now you have the extension library
 
@@ -648,12 +655,7 @@ You can do anything you want with your library.  The author of Ruby
 will not claim any restriction about your code depending Ruby API.
 Feel free to use, modify, distribute or sell your program.
 
-Appendix A. Rubyのソースコードの分類
-
-Rubyのソースはいくつかに分類することが出来ます．このうちクラ
-スライブラリの部分は基本的に拡張ライブラリと同じ作り方になっ
-ています．これらのソースは今までの説明でほとんど理解できると
-思います．
+Appendix A. Ruby source files overview
 
 ruby language core
 
@@ -865,7 +867,7 @@ argc,argv形式で与えられた引数を分解する．fmtは必須引数の数,
 数に対応する引数が与えられていない場合は変数にQnilが代入され
 る．
 
-** Rubyメソッド呼び出し
+** Invoking Ruby method
 
  VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
 

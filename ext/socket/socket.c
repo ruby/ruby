@@ -30,7 +30,7 @@ extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /*
 # include <GUSI.h>
 #endif
 
-#if defined(USE_THREAD) && defined(HAVE_FCNTL)
+#if defined(HAVE_FCNTL)
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
@@ -43,20 +43,20 @@ extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /*
 #endif
 
 VALUE rb_cBasicSocket;
-VALUE rb_cIPsocket;
-VALUE rb_cTCPsocket;
-VALUE rb_cTCPserver;
-VALUE rb_cUDPsocket;
+VALUE rb_cIPSocket;
+VALUE rb_cTCPSocket;
+VALUE rb_cTCPServer;
+VALUE rb_cUDPSocket;
 #ifdef AF_UNIX
-VALUE rb_cUNIXsocket;
-VALUE rb_cUNIXserver;
+VALUE rb_cUNIXSocket;
+VALUE rb_cUNIXServer;
 #endif
 VALUE rb_cSocket;
 
 static VALUE rb_eSocket;
 
 #ifdef SOCKS
-VALUE rb_cSOCKSsocket;
+VALUE rb_cSOCKSSocket;
 void SOCKSinit();
 int Rconnect();
 #endif
@@ -146,9 +146,7 @@ bsock_close_read(sock)
     if (fptr->f2 == 0) {
 	return rb_io_close(sock);
     }
-#ifdef USE_THREAD
     rb_thread_fd_close(fileno(fptr->f));
-#endif
     fptr->mode &= ~FMODE_READABLE;
 #ifdef NT
     free(fptr->f);
@@ -293,9 +291,7 @@ bsock_send(argc, argv, sock)
     f = GetWriteFile(fptr);
     fd = fileno(f);
   retry:
-#ifdef USE_THREAD
     rb_thread_fd_writable(fd);
-#endif
     m = rb_str2cstr(msg, &mlen);
     if (RTEST(to)) {
 	t = rb_str2cstr(to, &tlen);
@@ -312,9 +308,7 @@ bsock_send(argc, argv, sock)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef USE_THREAD
 	    rb_thread_schedule();
-#endif
 	    goto retry;
 	}
 	rb_sys_fail("send(2)");
@@ -329,9 +323,9 @@ static VALUE unixaddr _((struct sockaddr_un*));
 
 enum sock_recv_type {
     RECV_RECV,			/* BasicSocket#recv(no from) */
-    RECV_TCP,			/* TCPsocket#recvfrom */
-    RECV_UDP,			/* UDPsocket#recvfrom */
-    RECV_UNIX,			/* UNIXsocket#recvfrom */
+    RECV_TCP,			/* TCPSocket#recvfrom */
+    RECV_UDP,			/* UDPSocket#recvfrom */
+    RECV_UNIX,			/* UNIXSocket#recvfrom */
     RECV_SOCKET,		/* Socket#recvfrom */
 };
 
@@ -358,9 +352,7 @@ s_recv(sock, argc, argv, from)
 
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
-#ifdef USE_THREAD
     rb_thread_wait_fd(fd);
-#endif
     TRAP_BEG;
   retry:
     RSTRING(str)->len = recvfrom(fd, RSTRING(str)->ptr, RSTRING(str)->len, flags,
@@ -374,9 +366,7 @@ s_recv(sock, argc, argv, from)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef USE_THREAD
 	    rb_thread_schedule();
-#endif
 	    goto retry;
 	}
 	rb_sys_fail("recvfrom(2)");
@@ -504,7 +494,7 @@ setipaddr(name, addr)
     }
 }
 
-#if defined(USE_THREAD) && defined(HAVE_FCNTL)
+#if defined(HAVE_FCNTL)
 static int
 thread_connect(fd, sockaddr, len, type)
     int fd;
@@ -661,7 +651,7 @@ open_inet(class, h, serv, type)
 	syscall = "bind(2)";
     }
     else {
-#if defined(USE_THREAD) && defined(HAVE_FCNTL)
+#if defined(HAVE_FCNTL)
         status = thread_connect(fd, (struct sockaddr*)&sockaddr,
 			       sizeof(sockaddr), type);
 #else
@@ -742,7 +732,7 @@ tcp_s_gethostbyname(obj, host)
     for (pch = h->h_aliases; *pch; pch++) {
 	rb_ary_push(names, rb_str_new2(*pch));
     }
-    rb_ary_push(ary, NUM2INT(h->h_addrtype));
+    rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr
     for (pch = h->h_addr_list; *pch; pch++) {
 	memcpy((char *) &addr.sin_addr, *pch, h->h_length);
@@ -780,9 +770,7 @@ s_accept(class, fd, sockaddr, len)
     int fd2;
 
   retry:
-#ifdef USE_THREAD
     rb_thread_wait_fd(fd);
-#endif
     TRAP_BEG;
     fd2 = accept(fd, sockaddr, len);
     TRAP_END;
@@ -793,9 +781,7 @@ s_accept(class, fd, sockaddr, len)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef USE_THREAD
 	    rb_thread_schedule();
-#endif
 	    goto retry;
 	}
 	rb_sys_fail(0);
@@ -813,7 +799,7 @@ tcp_accept(sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(struct sockaddr_in);
-    return s_accept(rb_cTCPsocket, fileno(fptr->f),
+    return s_accept(rb_cTCPSocket, fileno(fptr->f),
 		    (struct sockaddr*)&from, &fromlen);
 }
 
@@ -981,9 +967,7 @@ udp_connect(sock, host, port)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef USE_THREAD
 	    rb_thread_schedule();
-#endif
 	    goto retry;
 	}
 	rb_sys_fail("connect(2)");
@@ -1040,9 +1024,7 @@ udp_send(argc, argv, sock)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef USE_THREAD
 	    rb_thread_schedule();
-#endif
 	    goto retry;
 	}
 	rb_sys_fail("sendto(2)");
@@ -1110,7 +1092,7 @@ unix_accept(sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(struct sockaddr_un);
-    return s_accept(rb_cUNIXsocket, fileno(fptr->f),
+    return s_accept(rb_cUNIXSocket, fileno(fptr->f),
 		    (struct sockaddr*)&from, &fromlen);
 }
 
@@ -1293,9 +1275,7 @@ sock_connect(sock, addr)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-#ifdef USE_THREAD
 	    rb_thread_schedule();
-#endif
 	    goto retry;
 	}
 	rb_sys_fail("connect(2)");
@@ -1416,7 +1396,7 @@ mkhostent(h)
     for (pch = h->h_aliases; *pch; pch++) {
 	rb_ary_push(names, rb_str_new2(*pch));
     }
-    rb_ary_push(ary, NUM2INT(h->h_addrtype));
+    rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr
     for (pch = h->h_addr_list; *pch; pch++) {
 	rb_ary_push(ary, rb_str_new(*pch, h->h_length));
@@ -1533,49 +1513,56 @@ Init_socket()
     rb_define_method(rb_cBasicSocket, "send", bsock_send, -1);
     rb_define_method(rb_cBasicSocket, "recv", bsock_recv, -1);
 
-    rb_cIPsocket = rb_define_class("IPsocket", rb_cBasicSocket);
-    rb_define_method(rb_cIPsocket, "addr", ip_addr, 0);
-    rb_define_method(rb_cIPsocket, "peeraddr", ip_peeraddr, 0);
-    rb_define_singleton_method(rb_cIPsocket, "getaddress", ip_s_getaddress, 1);
+    rb_cIPSocket = rb_define_class("IPSocket", rb_cBasicSocket);
+    rb_define_global_const("IPsocket", rb_cIPSocket);
+    rb_define_method(rb_cIPSocket, "addr", ip_addr, 0);
+    rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, 0);
+    rb_define_singleton_method(rb_cIPSocket, "getaddress", ip_s_getaddress, 1);
 
-    rb_cTCPsocket = rb_define_class("TCPsocket", rb_cIPsocket);
-    rb_define_singleton_method(rb_cTCPsocket, "open", tcp_s_open, 2);
-    rb_define_singleton_method(rb_cTCPsocket, "new", tcp_s_open, 2);
-    rb_define_singleton_method(rb_cTCPsocket, "gethostbyname", tcp_s_gethostbyname, 1);
-    rb_define_method(rb_cTCPsocket, "recvfrom", tcp_recvfrom, -1);
+    rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
+    rb_define_global_const("TCPsocket", rb_cTCPSocket);
+    rb_define_singleton_method(rb_cTCPSocket, "open", tcp_s_open, 2);
+    rb_define_singleton_method(rb_cTCPSocket, "new", tcp_s_open, 2);
+    rb_define_singleton_method(rb_cTCPSocket, "gethostbyname", tcp_s_gethostbyname, 1);
+    rb_define_method(rb_cTCPSocket, "recvfrom", tcp_recvfrom, -1);
 
 #ifdef SOCKS
-    rb_cSOCKSsocket = rb_define_class("SOCKSsocket", rb_cTCPsocket);
-    rb_define_singleton_method(rb_cSOCKSsocket, "open", socks_s_open, 2);
-    rb_define_singleton_method(rb_cSOCKSsocket, "new", socks_s_open, 2);
+    rb_cSOCKSSocket = rb_define_class("SOCKSSocket", rb_cTCPSocket);
+    rb_define_global_const("SOCKSsocket", rb_cSOCKSSocket);
+    rb_define_singleton_method(rb_cSOCKSSocket, "open", socks_s_open, 2);
+    rb_define_singleton_method(rb_cSOCKSSocket, "new", socks_s_open, 2);
 #endif
 
-    rb_cTCPserver = rb_define_class("TCPserver", rb_cTCPsocket);
-    rb_define_singleton_method(rb_cTCPserver, "open", tcp_svr_s_open, -1);
-    rb_define_singleton_method(rb_cTCPserver, "new", tcp_svr_s_open, -1);
-    rb_define_method(rb_cTCPserver, "accept", tcp_accept, 0);
+    rb_cTCPServer = rb_define_class("TCPServer", rb_cTCPSocket);
+    rb_define_global_const("TCPserver", rb_cTCPServer);
+    rb_define_singleton_method(rb_cTCPServer, "open", tcp_svr_s_open, -1);
+    rb_define_singleton_method(rb_cTCPServer, "new", tcp_svr_s_open, -1);
+    rb_define_method(rb_cTCPServer, "accept", tcp_accept, 0);
 
-    rb_cUDPsocket = rb_define_class("UDPsocket", rb_cIPsocket);
-    rb_define_singleton_method(rb_cUDPsocket, "open", udp_s_open, 0);
-    rb_define_singleton_method(rb_cUDPsocket, "new", udp_s_open, 0);
-    rb_define_method(rb_cUDPsocket, "connect", udp_connect, 2);
-    rb_define_method(rb_cUDPsocket, "bind", udp_bind, 2);
-    rb_define_method(rb_cUDPsocket, "send", udp_send, -1);
-    rb_define_method(rb_cUDPsocket, "recvfrom", udp_recvfrom, -1);
+    rb_cUDPSocket = rb_define_class("UDPSocket", rb_cIPSocket);
+    rb_define_global_const("UDPsocket", rb_cUDPSocket);
+    rb_define_singleton_method(rb_cUDPSocket, "open", udp_s_open, 0);
+    rb_define_singleton_method(rb_cUDPSocket, "new", udp_s_open, 0);
+    rb_define_method(rb_cUDPSocket, "connect", udp_connect, 2);
+    rb_define_method(rb_cUDPSocket, "bind", udp_bind, 2);
+    rb_define_method(rb_cUDPSocket, "send", udp_send, -1);
+    rb_define_method(rb_cUDPSocket, "recvfrom", udp_recvfrom, -1);
 
 #ifdef HAVE_SYS_UN_H
-    rb_cUNIXsocket = rb_define_class("UNIXsocket", rb_cBasicSocket);
-    rb_define_singleton_method(rb_cUNIXsocket, "open", unix_s_sock_open, 1);
-    rb_define_singleton_method(rb_cUNIXsocket, "new", unix_s_sock_open, 1);
-    rb_define_method(rb_cUNIXsocket, "path", unix_path, 0);
-    rb_define_method(rb_cUNIXsocket, "addr", unix_addr, 0);
-    rb_define_method(rb_cUNIXsocket, "peeraddr", unix_peeraddr, 0);
-    rb_define_method(rb_cUNIXsocket, "recvfrom", unix_recvfrom, -1);
+    rb_cUNIXSocket = rb_define_class("UNIXSocket", rb_cBasicSocket);
+    rb_define_global_const("UNIXsocket", rb_cUNIXSocket);
+    rb_define_singleton_method(rb_cUNIXSocket, "open", unix_s_sock_open, 1);
+    rb_define_singleton_method(rb_cUNIXSocket, "new", unix_s_sock_open, 1);
+    rb_define_method(rb_cUNIXSocket, "path", unix_path, 0);
+    rb_define_method(rb_cUNIXSocket, "addr", unix_addr, 0);
+    rb_define_method(rb_cUNIXSocket, "peeraddr", unix_peeraddr, 0);
+    rb_define_method(rb_cUNIXSocket, "recvfrom", unix_recvfrom, -1);
 
-    rb_cUNIXserver = rb_define_class("UNIXserver", rb_cUNIXsocket);
-    rb_define_singleton_method(rb_cUNIXserver, "open", unix_svr_s_open, 1);
-    rb_define_singleton_method(rb_cUNIXserver, "new", unix_svr_s_open, 1);
-    rb_define_method(rb_cUNIXserver, "accept", unix_accept, 0);
+    rb_cUNIXServer = rb_define_class("UNIXServer", rb_cUNIXSocket);
+    rb_define_global_const("UNIXserver", rb_cUNIXServer);
+    rb_define_singleton_method(rb_cUNIXServer, "open", unix_svr_s_open, 1);
+    rb_define_singleton_method(rb_cUNIXServer, "new", unix_svr_s_open, 1);
+    rb_define_method(rb_cUNIXServer, "accept", unix_accept, 0);
 #endif
 
     rb_cSocket = rb_define_class("Socket", rb_cBasicSocket);

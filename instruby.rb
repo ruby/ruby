@@ -7,6 +7,7 @@ destdir = ARGV[0] || ''
 
 $:.unshift CONFIG["srcdir"]+"/lib"
 require "ftools"
+require "find"
 
 binsuffix = CONFIG["binsuffix"]
 if ENV["prefix"]
@@ -51,8 +52,12 @@ File.makedirs archdir, true
 Dir.chdir "ext"
 system "../miniruby#{binsuffix} extmk.rb install #{destdir}"
 Dir.chdir CONFIG["srcdir"]
-for f in Dir["lib/*.rb"]
-  File.install f, pkglibdir, 0644, true
+
+Find.find("lib") do |f|
+  next unless /\.rb$/ =~ f
+  dir = pkglibdir+"/"+File.dirname(f[4..-1])
+  File.makedirs dir, true unless File.directory? dir
+  File.install f, dir, 0644, true
 end
 
 for f in Dir["*.h"]

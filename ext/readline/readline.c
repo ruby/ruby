@@ -19,9 +19,7 @@ static int
 readline_event()
 {
     CHECK_INTS;
-#ifdef USE_THREAD
     rb_thread_schedule();
-#endif
 }
 
 static VALUE
@@ -135,14 +133,14 @@ readline_attempted_completion_function(char *text, int start, int end)
 static VALUE
 readline_s_vi_editing_mode(VALUE self)
 {
-    rl_vi_editing_mode();
+    rl_vi_editing_mode(1,0);
     return Qnil;
 }
 
 static VALUE
 readline_s_emacs_editing_mode(VALUE self)
 {
-    rl_emacs_editing_mode();
+    rl_emacs_editing_mode(1,0);
     return Qnil;
 }
 

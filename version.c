@@ -19,13 +19,14 @@ void
 Init_version()
 {
     rb_define_global_const("VERSION", rb_str_new2(RUBY_VERSION));
+    rb_define_global_const("RELEASE_DATE", rb_str_new2(RUBY_RELEASE_DATE));
     rb_define_global_const("PLATFORM", rb_str_new2(RUBY_PLATFORM));
 }
 
 void
 ruby_show_version()
 {
-    fprintf(stderr, "ruby %s(%s) [%s]\n", RUBY_VERSION, VERSION_DATE, RUBY_PLATFORM);
+    fprintf(stderr, "ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
 }
 
 void

@@ -911,10 +911,7 @@ rb_gc()
     rb_gc_mark_locations((VALUE*)((char*)rb_gc_stack_start + 2),
 		   (VALUE*)((char*)&stack_end + 2));
 #endif
-
-#ifdef USE_THREAD
     rb_gc_mark_threads();
-#endif
 
     /* mark protected global variables */
     for (list = Global_List; list; list = list->next) {

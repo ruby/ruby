@@ -41,8 +41,6 @@ double strtod();
 
 #define TYPE_LINK	'@'
 
-VALUE rb_path2class _((char*));
-
 static ID s_dump, s_load;
 
 struct dump_arg {

@@ -18,7 +18,7 @@ static VALUE rb_eRegxpError;
 #define END(no) regs->end[no]
 
 #if 'a' == 97   /* it's ascii */
-static char casetable[] = {
+static const char casetable[] = {
         '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
         '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
         '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
@@ -198,10 +198,10 @@ extern int ruby_in_compile;
 static void
 rb_reg_expr_str(str, s, len)
     VALUE str;
-    char *s;
+    const char *s;
     int len;
 {
-    char *p, *pend;
+    const char *p, *pend;
     int slash = 0;
 
     p = s; pend = p + len;
@@ -233,7 +233,7 @@ rb_reg_expr_str(str, s, len)
 
 static VALUE
 rb_reg_desc(s, len, re)
-    char *s;
+    const char *s;
     int len;
     VALUE re;
 {
@@ -282,9 +282,9 @@ rb_reg_inspect(re)
 
 static void
 rb_reg_raise(s, len, err, re)
-    char *s;
+    const char *s;
     int len;
-    char *err;
+    const char *err;
     VALUE re;
 {
     VALUE desc = rb_reg_desc(s, len, re);
@@ -329,7 +329,7 @@ rb_reg_kcode_method(re)
 
 static Regexp*
 make_regexp(s, len, flag)
-    char *s;
+    const char *s;
     int len, flag;
 {
     Regexp *rp;
@@ -390,6 +390,59 @@ match_clone(orig)
     CLONESETUP(match, orig);
 
     return (VALUE)match;
+}
+
+static VALUE
+match_size(match)
+    VALUE match;
+{
+    return INT2FIX(RMATCH(match)->regs->num_regs);
+}
+
+static VALUE
+match_offset(match, n)
+    VALUE match, n;
+{
+    int i = NUM2INT(n);
+
+    if (i < 0 || RMATCH(match)->regs->num_regs <= i)
+	rb_raise(rb_eIndexError, "index %d out of matches", i);
+
+    if (RMATCH(match)->regs->beg[i] < 0)
+	return rb_assoc_new(Qnil, Qnil);
+
+    return rb_assoc_new(INT2FIX(RMATCH(match)->regs->beg[i]),
+			INT2FIX(RMATCH(match)->regs->end[i]));
+}
+
+static VALUE
+match_begin(match, n)
+    VALUE match, n;
+{
+    int i = NUM2INT(n);
+
+    if (i < 0 || RMATCH(match)->regs->num_regs <= i)
+	rb_raise(rb_eIndexError, "index %d out of matches", i);
+
+    if (RMATCH(match)->regs->beg[i] < 0)
+	return Qnil;
+
+    return INT2FIX(RMATCH(match)->regs->beg[i]);
+}
+
+static VALUE
+match_end(match, n)
+    VALUE match, n;
+{
+    int i = NUM2INT(n);
+
+    if (i < 0 || RMATCH(match)->regs->num_regs <= i)
+	rb_raise(rb_eIndexError, "index %d out of matches", i);
+
+    if (RMATCH(match)->regs->beg[i] < 0)
+	return Qnil;
+
+    return INT2FIX(RMATCH(match)->regs->end[i]);
 }
 
 #define MATCH_BUSY FL_USER2
@@ -467,16 +520,12 @@ rb_reg_search(reg, str, start, reverse)
     else if (reg_kcode != curr_kcode)
 	kcode_reset_option();
 
-#ifdef USE_THREAD
     if (rb_thread_scope_shared_p()) {
 	match = Qnil;
     }
     else {
 	match = rb_backref_get();
     }
-#else
-    match = rb_backref_get();
-#endif
     if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
 	if (matchcache) {
 	    match = matchcache;
@@ -569,7 +618,7 @@ rb_reg_match_post(match)
     if (NIL_P(match)) return Qnil;
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
     return rb_str_new(RSTRING(RMATCH(match)->str)->ptr+RMATCH(match)->END(0),
-		   RSTRING(RMATCH(match)->str)->len-RMATCH(match)->END(0));
+		      RSTRING(RMATCH(match)->str)->len-RMATCH(match)->END(0));
 }
 
 VALUE
@@ -648,7 +697,7 @@ match_aref(argc, argv, match)
     regs = RMATCH(match)->regs;
     i = FIX2INT(idx);
 
-    if (i>=regs->num_regs) return Qnil;
+    if (i >= regs->num_regs) return Qnil;
 
     ptr = RSTRING(RMATCH(match)->str)->ptr;
     return rb_str_new(ptr+regs->beg[i], regs->end[i]-regs->beg[i]);
@@ -664,12 +713,19 @@ match_to_s(match)
     return str;
 }
 
+static VALUE
+match_string(match)
+    VALUE match;
+{
+    return rb_str_dup(RMATCH(match)->str);
+}
+
 VALUE rb_cRegexp;
 
 static VALUE
 rb_reg_new_1(klass, s, len, options)
     VALUE klass;
-    char *s;
+    const char *s;
     int len;
     int options;		/* CASEFOLD  = 1 */
 				/* EXTENDED  = 2 */
@@ -727,7 +783,7 @@ rb_reg_new_1(klass, s, len, options)
 
 VALUE
 rb_reg_new(s, len, options)
-    char *s;
+    const char *s;
     int len;
     int options;
 {
@@ -816,6 +872,16 @@ rb_reg_match2(re)
 }
 
 static VALUE
+rb_reg_match_method(re, str)
+    VALUE re, str;
+{
+    VALUE result = rb_reg_match(re, str);
+
+    if (NIL_P(result)) return Qnil;
+    return rb_backref_get();
+}
+
+static VALUE
 rb_reg_s_new(argc, argv, self)
     int argc;
     VALUE *argv;
@@ -827,8 +893,9 @@ rb_reg_s_new(argc, argv, self)
     if (argc == 0 || argc > 3) {
 	rb_raise(rb_eArgError, "wrong # of argument");
     }
-    if (argc >= 2 && RTEST(argv[1])) {
-	flag = RE_OPTION_IGNORECASE;
+    if (argc >= 2) {
+	if (FIXNUM_P(argv[1])) flag = FIX2INT(argv[1]);
+	else if (RTEST(argv[1])) flag = RE_OPTION_IGNORECASE;
     }
     if (argc == 3) {
 	char *kcode = STR2CSTR(argv[2]);
@@ -865,40 +932,50 @@ rb_reg_s_new(argc, argv, self)
 }
 
 static VALUE
-rb_reg_s_quote(re, str)
-    VALUE re, str;
+rb_reg_s_quote(argc, argv)
+    int argc;
+    VALUE *argv;
 {
-  char *s, *send, *t;
-  char *tmp;
-  int len;
+    VALUE str, kcode;
+    int kcode_saved = reg_kcode;
+    char *s, *send, *t;
+    char *tmp;
+    int len;
 
-  s = str2cstr(str, &len);
-  send = s + len;
-  tmp = ALLOCA_N(char, len*2);
-  t = tmp;
-
-  for (; s != send; s++) {
-      if (ismbchar(*s)) {
-	  size_t n = mbclen(*s);
-
-	  while (n--)
-	    *t++ = *s++;
-	  s--;
-	  continue;
-      }
-      if (*s == '[' || *s == ']'
-	  || *s == '{' || *s == '}'
-	  || *s == '(' || *s == ')'
-	  || *s == '|'
-	  || *s == '*' || *s == '.' || *s == '\\'
-	  || *s == '?' || *s == '+'
-	  || *s == '^' || *s == '$') {
-	  *t++ = '\\';
-      }
-      *t++ = *s;
+    rb_scan_args(argc, argv, "11", &str, &kcode);
+    if (!NIL_P(kcode)) {
+	rb_set_kcode(STR2CSTR(kcode));
+	curr_kcode = reg_kcode;
+	reg_kcode = kcode_saved;
     }
+    s = str2cstr(str, &len);
+    send = s + len;
+    tmp = ALLOCA_N(char, len*2);
+    t = tmp;
 
-  return rb_str_new(tmp, t - tmp);
+    for (; s != send; s++) {
+	if (ismbchar(*s)) {
+	    size_t n = mbclen(*s);
+
+	    while (n--)
+		*t++ = *s++;
+	    s--;
+	    continue;
+	}
+	if (*s == '[' || *s == ']'
+	    || *s == '{' || *s == '}'
+	    || *s == '(' || *s == ')'
+	    || *s == '|'
+	    || *s == '*' || *s == '.' || *s == '\\'
+	    || *s == '?' || *s == '+'
+	    || *s == '^' || *s == '$') {
+	    *t++ = '\\';
+	}
+	*t++ = *s;
+    }
+    kcode_reset_option();
+
+    return rb_str_new(tmp, t - tmp);
 }
 
 int
@@ -1039,7 +1116,7 @@ rb_reg_regsub(str, src, regs)
     return val;
 }
 
-char*
+const char*
 rb_get_kcode()
 {
     switch (reg_kcode) {
@@ -1062,7 +1139,7 @@ kcode_getter()
 
 void
 rb_set_kcode(code)
-    char *code;
+    const char *code;
 {
     if (code == 0) goto set_no_conversion;
 
@@ -1166,25 +1243,38 @@ Init_Regexp()
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
     rb_define_singleton_method(rb_cRegexp, "new", rb_reg_s_new, -1);
     rb_define_singleton_method(rb_cRegexp, "compile", rb_reg_s_new, -1);
-    rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, 1);
+    rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, -1);
+    rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, -1);
 
     rb_define_method(rb_cRegexp, "clone", rb_reg_clone, 0);
     rb_define_method(rb_cRegexp, "==", rb_reg_equal, 1);
     rb_define_method(rb_cRegexp, "=~", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "===", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "~", rb_reg_match2, 0);
+    rb_define_method(rb_cRegexp, "match", rb_reg_match_method, 1);
     rb_define_method(rb_cRegexp, "inspect", rb_reg_inspect, 0);
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
     rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
     rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_method, 0);
+
+    rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
+    rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(RE_OPTION_EXTENDED));
 
     rb_global_variable(&reg_cache);
     rb_global_variable(&matchcache);
 
     rb_cMatch  = rb_define_class("MatchingData", rb_cData);
     rb_define_method(rb_cMatch, "clone", match_clone, 0);
+    rb_define_method(rb_cMatch, "size", match_size, 0);
+    rb_define_method(rb_cMatch, "length", match_size, 0);
+    rb_define_method(rb_cMatch, "offset", match_offset, 1);
+    rb_define_method(rb_cMatch, "begin", match_begin, 1);
+    rb_define_method(rb_cMatch, "end", match_end, 1);
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
+    rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
+    rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
+    rb_define_method(rb_cMatch, "string_s", match_string, 0);
     rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0);
 }

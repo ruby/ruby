@@ -176,7 +176,7 @@ static void top_local_setup();
 %type <node> array assoc_list assocs assoc undef_list backref
 %type <node> iter_var opt_iter_var iter_block iter_do_block
 %type <node> mlhs mlhs_head mlhs_tail mlhs_basic mlhs_entry mlhs_item lhs
-%type <id>   variable symbol operation
+%type <id>   variable symbol operation operation2
 %type <id>   cname fname op f_rest_arg
 %type <num>  f_arg
 %token tUPLUS 		/* unary+ */
@@ -935,11 +935,6 @@ primary		: literal
 			value_expr($1);
 			$$ = NEW_COLON2($1, $3);
 		    }
-		| primary tCOLON2 tIDENTIFIER
-		    {
-			value_expr($1);
-			$$ = new_call($1, $3, 0);
-		    }
 		| tCOLON3 cname
 		    {
 			$$ = NEW_COLON3($2);
@@ -1313,6 +1308,11 @@ method_call	: operation '(' opt_call_args ')'
 			$$ = new_call($1, $3, $5);
 		        fixpos($$, $1);
 		    }
+		| primary tCOLON2 operation2
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, 0);
+		    }
 		| kSUPER '(' opt_call_args ')'
 		    {
 			if (!cur_mid && !in_single && !in_defined)
@@ -1579,6 +1579,9 @@ operation	: tIDENTIFIER
 		| tCONSTANT
 		| tFID
 
+operation2	: tIDENTIFIER
+		| tFID
+
 dot_or_colon	: '.'
 		| tCOLON2
 
@@ -1608,7 +1611,9 @@ terms		: term
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
 
+#ifndef strdup
 char *strdup();
+#endif
 
 static NODE *rb_str_extend();
 
@@ -1664,7 +1669,6 @@ yyerror(msg)
     return 0;
 }
 
-static int newline_seen;
 static int heredoc_end;
 
 int ruby_in_compile = 0;
@@ -1678,7 +1682,6 @@ yycompile(f)
 
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
-    newline_seen = 0;
     heredoc_end = 0;
     ruby_sourcefile = f;
     ruby_in_compile = 1;
@@ -1713,7 +1716,7 @@ lex_get_str(s)
 
 NODE*
 rb_compile_string(f, s)
-    char *f;
+    const char *f;
     VALUE s;
 {
     lex_gets = lex_get_str;
@@ -1721,14 +1724,16 @@ rb_compile_string(f, s)
     lex_input = s;
     lex_pbeg = lex_p = lex_pend = 0;
     if (!ruby_sourcefile || strcmp(f, ruby_sourcefile))	/* not in eval() */
-	ruby_sourceline = 1;
+	ruby_sourceline = 0;
+    else if (ruby_frame)	                        /* in eval() */
+	cur_mid = ruby_frame->last_func;
 
     return yycompile(f);
 }
 
 NODE*
 rb_compile_cstr(f, s, len)
-    char *f, *s;
+    const char *f, *s;
     int len;
 {
     return rb_compile_string(f, rb_str_new(s, len));
@@ -1736,14 +1741,14 @@ rb_compile_cstr(f, s, len)
 
 NODE*
 rb_compile_file(f, file, start)
-    char *f;
+    const char *f;
     VALUE file;
     int start;
 {
     lex_gets = rb_io_gets;
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
-    ruby_sourceline = start;
+    ruby_sourceline = start - 1;
 
     return yycompile(strdup(f));
 }
@@ -1777,22 +1782,11 @@ nextc()
 
 	    if (NIL_P(v)) return -1;
 	    if (heredoc_end > 0) {
-		ruby_sourceline = heredoc_end+1;
+		ruby_sourceline = heredoc_end;
 		heredoc_end = 0;
 	    }
 	    normalize_newline(v);
-	    while (RSTRING(v)->len >= 2 &&
-		   RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
-		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\' &&
-		   (RSTRING(v)->len == 2 ||
-		    RSTRING(v)->ptr[RSTRING(v)->len-3] != '\\')) {
-		VALUE v2 = (*lex_gets)(lex_input);
-
-		if (!NIL_P(v2)) {
-		    normalize_newline(v2);
-		    rb_str_cat(v, RSTRING(v2)->ptr, RSTRING(v2)->len);
-		}
-	    }
+	    ruby_sourceline++;
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
 	    lex_pend = lex_p + RSTRING(v)->len;
 	    if (strncmp(lex_pbeg, "__END__", 7) == 0 && lex_pbeg[7] == '\n') {
@@ -1897,7 +1891,7 @@ read_escape()
 		}
 		buf[i] = c;
 	    }
-	    c = scan_oct(buf, i+1, &i);
+	    c = scan_oct(buf, i, &i);
 	}
 	return c;
 
@@ -1914,7 +1908,7 @@ read_escape()
 		    break;
 		}
 	    }
-	    c = scan_hex(buf, i+1, &i);
+	    c = scan_hex(buf, i, &i);
 	}
 	return c;
 
@@ -1983,9 +1977,6 @@ parse_regx(term, paren)
 	}
 
 	switch (c) {
-	  case '\n':
-	    ruby_sourceline++;
-	    break;
 	  case '[':
 	    in_brack = 1;
 	    break;
@@ -2006,7 +1997,6 @@ parse_regx(term, paren)
 		return 0;
 
 	      case '\n':
-		ruby_sourceline++;
 		break;
 
 	      case '\\':
@@ -2036,16 +2026,20 @@ parse_regx(term, paren)
 		    if (c == paren) nest++;
 		    if (c == term) nest--;
 		}
-		if (c == '\n') {
-		    ruby_sourceline++;
-		}
-		else if (c == term) {
+		if (c == term) {
 		    tokadd(c);
 		}
 		else {
+		    int c1;
 		    pushback(c);
-		    tokadd('\\');
-		    tokadd(read_escape());
+		    c1 = read_escape();
+		    if (c1 != c) {
+			tokadd(c1);
+		    }
+		    else {
+			tokadd('\\');
+			tokadd(c);
+		    }
 		}
 	    }
 	    continue;
@@ -2099,6 +2093,7 @@ parse_regx(term, paren)
 	    tokfix();
 	    lex_state = EXPR_END;
 	    if (list) {
+		nd_set_line(list, re_start-1);
 		if (toklen() > 0) {
 		    VALUE ss = rb_str_new(tok(), toklen());
 		    list_append(list, NEW_STR(ss));
@@ -2134,9 +2129,9 @@ parse_string(func, term, paren)
 	return parse_qstring(term, paren);
     }
     if (func == 0) {		/* read 1 line for heredoc */
-	ruby_sourceline++;
 				/* -1 for chomp */
 	yylval.val = rb_str_new(lex_pbeg, lex_pend - lex_pbeg - 1);
+	lex_p = lex_pend;
 	return tSTRING;
     }
     strstart = ruby_sourceline;
@@ -2156,9 +2151,6 @@ parse_string(func, term, paren)
 		c = nextc();
 	    }
 	}
-	else if (c == '\n') {
-	    ruby_sourceline++;
-	}
 	else if (c == '#') {
 	    list = rb_str_extend(list, term);
 	    if (list == (NODE*)-1) goto unterm_str;
@@ -2166,10 +2158,7 @@ parse_string(func, term, paren)
 	}
 	else if (c == '\\') {
 	    c = nextc();
-	    if (c == '\n') {
-		ruby_sourceline++;
-	    }
-	    else if (c == term) {
+	    if (c == term) {
 		tokadd(c);
 	    }
 	    else {
@@ -2191,7 +2180,9 @@ parse_string(func, term, paren)
 
     tokfix();
     lex_state = EXPR_END;
+
     if (list) {
+	nd_set_line(list, strstart-1);
 	if (toklen() > 0) {
 	    VALUE ss = rb_str_new(tok(), toklen());
 	    list_append(list, NEW_STR(ss));
@@ -2235,16 +2226,9 @@ parse_qstring(term, paren)
 		c = nextc();
 	    }
 	}
-	else if (c == '\n') {
-	    ruby_sourceline++;
-	}
 	else if (c == '\\') {
 	    c = nextc();
 	    switch (c) {
-	      case '\n':
-		ruby_sourceline++;
-		continue;
-
 	      case '\\':
 		c = '\\';
 		break;
@@ -2403,6 +2387,7 @@ here_document(term, indent)
     ruby_sourceline = linesave;
 
     if (list) {
+	nd_set_line(list, linesave);
 	yylval.node = list;
     }
     switch (term) {
@@ -2438,12 +2423,7 @@ yylex()
     int space_seen = 0;
     struct kwtable *kw;
 
-    if (newline_seen) {
-	ruby_sourceline += newline_seen;
-	newline_seen = 0;
-    }
-
-retry:
+  retry:
     switch (c = nextc()) {
       case '\0':		/* NUL */
       case '\004':		/* ^D */
@@ -2461,26 +2441,6 @@ retry:
 	while ((c = nextc()) != '\n') {
 	    if (c == -1)
 		return 0;
-	    if (ismbchar(c)) {
-		int i, len = mbclen(c)-1;
-
-		for (i = 0; i < len; i++) {
-		    c = nextc();
-		    if (c == '\n') {
-			pushback(c);
-			break;
-		    }
-		}
-	    }
-	    else if (c == ' ') {
-		if ((c = nextc()) == '\\') {
-		    c = nextc();
-		    if (c == '\n') ruby_sourceline++;
-		}
-		else {
-		    pushback(c);
-		}
-	    }
 	}
 	/* fall through */
       case '\n':
@@ -2488,12 +2448,10 @@ retry:
 	  case EXPR_BEG:
 	  case EXPR_FNAME:
 	  case EXPR_DOT:
-	    ruby_sourceline++;
 	    goto retry;
 	  default:
 	    break;
 	}
-	newline_seen++;
 	lex_state = EXPR_BEG;
 	return '\n';
 
@@ -2541,7 +2499,6 @@ retry:
 	    /* skip embedded rd document */
 	    if (strncmp(lex_p, "begin", 5) == 0 && ISSPACE(lex_p[5])) {
 		for (;;) {
-		    ruby_sourceline++;
 		    lex_p = lex_pend;
 		    c = nextc();
 		    if (c == -1) {
@@ -2553,7 +2510,6 @@ retry:
 			break;
 		    }
 		}
-		ruby_sourceline++;
 		lex_p = lex_pend;
 		goto retry;
 	    }
@@ -2715,10 +2671,12 @@ retry:
 	    yylval.id = '+';
 	    return tOP_ASGN;
 	}
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
+	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
  	    if (ISDIGIT(c)) {
 		goto start_num;
 	    }
+	    if (lex_state == EXPR_ARG) arg_ambiguous();
 	    pushback(c);
 	    lex_state = EXPR_BEG;
 	    return tUPLUS;
@@ -2741,12 +2699,14 @@ retry:
 	    yylval.id = '-';
 	    return tOP_ASGN;
 	}
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
+	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
+	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
 	    if (ISDIGIT(c)) {
 		pushback(c);
 		c = '-';
 		goto start_num;
 	    }
+	    if (lex_state == EXPR_ARG) arg_ambiguous();
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    return tUMINUS;
@@ -3021,7 +2981,6 @@ retry:
       case '\\':
 	c = nextc();
 	if (c == '\n') {
-	    ruby_sourceline++;
 	    space_seen = 1;
 	    goto retry; /* skip \\n */
 	}
@@ -3721,6 +3680,9 @@ aryset(recv, idx, val)
 	    idx = arg_add(idx, val);
 	}
     }
+    else {
+	idx = val;
+    }
     return NEW_CALL(recv, tASET, idx);
 }
 
@@ -4205,9 +4167,6 @@ static struct {
     0,		0,
 };
 
-char *rb_id2name();
-char *rb_class2name();
-
 static st_table *sym_tbl;
 static st_table *sym_rev_tbl;
 
@@ -4222,7 +4181,7 @@ Init_sym()
 
 ID
 rb_intern(name)
-    char *name;
+    const char *name;
 {
     static ID last_id = LAST_TOKEN;
     int id;

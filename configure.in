@@ -25,15 +25,6 @@ then
 (it is also a good idea to do 'make clean' before compiling))
 fi
 
-dnl checks for thread
-rb_thread=yes
-AC_ARG_ENABLE(thread, [--disable-thread          never use user-level thread], [
-	rb_thread=$enableval
-])
-if test $rb_thread = yes; then
-  AC_DEFINE(USE_THREAD)
-fi
-
 AC_CANONICAL_HOST
 
 dnl checks for fat-binary
@@ -194,8 +185,8 @@ AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      setruid seteuid setreuid setrgid setegid setregid\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority\
 	      dlopen sigprocmask sigaction _setjmp setsid)
+AC_STRUCT_TIMEZONE
 if test "$ac_cv_func_strftime" = no; then
-    AC_STRUCT_TIMEZONE
     AC_TRY_LINK([],
 	 [extern int daylight; int i = daylight;], AC_DEFINE(HAVE_DAYLIGHT))
 fi
@@ -265,6 +256,7 @@ main()
 test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
 
 AC_C_BIGENDIAN
+AC_C_CONST
 AC_CHAR_UNSIGNED
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
@@ -384,8 +376,12 @@ if test "$with_dln_a_out" != yes; then
 			LDSHARED='ld -b'
 			LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
-	solaris*) 	LDSHARED='ld -G'
-			test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && LDFLAGS="-Wl,-E"
+	solaris*) 	if test "$GCC" = yes; then
+			   LDSHARED='gcc -Wl,-G'
+			   `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && LDFLAGS="-Wl,-E"
+			else
+			   LDSHARED='ld -G'
+			fi
 			rb_cv_dlopen=yes;;
 	sunos*) 	LDSHARED='ld -assert nodefinitions'
 			rb_cv_dlopen=yes;;
@@ -394,6 +390,8 @@ if test "$with_dln_a_out" != yes; then
 	sysv4*) 	LDSHARED='ld -G'
 			rb_cv_dlopen=yes;;
 	esix*|uxpds*) 	LDSHARED="ld -G"
+			rb_cv_dlopen=yes ;;
+	osf*) 		LDSHARED="gcc -shared"
 			rb_cv_dlopen=yes ;;
 	linux*) 	LDSHARED="gcc -shared"
 			rb_cv_dlopen=yes ;;
@@ -433,7 +431,8 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
 	human*)		DLDFLAGS=''
 			LDSHARED=''
-			LDFLAGS='' ;;
+			LDFLAGS=''
+			rb_cv_dlopen=yes ;;
 	beos*) 		case "$host_cpu" in
 			  powerpc*)
 			    LDSHARED="ld -xms"
@@ -445,10 +444,10 @@ if test "$with_dln_a_out" != yes; then
 			    ;;
 			  *)
 			    DLDFLAGS="ruby.def -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
-			    ;;
 			esac
 			rb_cv_dlopen=yes ;;
-	cygwin*)	LDSHARED='../../miniruby ../cygwin32_ld.rb' ;;
+	cygwin*)	LDSHARED='../../miniruby ../cygwin32_ld.rb'
+			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
@@ -678,26 +677,27 @@ test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
-#RUBY_LIB_PATH="${prefix}/lib/${RUBY_INSTALL_NAME}/${MAJOR}.${MINOR}"
 RUBY_LIB_PATH="${prefix}/lib/ruby/${MAJOR}.${MINOR}"
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_LIB_PATH}/site_ruby")
+RUBY_SITE_LIB_PATH="${RUBY_LIB_PATH}/site_ruby"
+AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
 AC_SUBST(arch)dnl
 
 if test "$fat_binary" = yes ; then
     arch="fat-${host_os}"
 
     AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB,
-                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}" )
+                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}")
 
     AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB,
-                 "${RUBY_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}" )
+                 "${RUBY_SITE_LIB_PATH}/" __ARCHITECTURE__ "-${host_os}")
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, __ARCHITECTURE__ "-${host_os}")
 else
     arch="${host_cpu}-${host_os}"
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
 AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_LIB_PATH}/site_ruby/${arch}")
-AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH}/${arch}")
 
 echo "creating config.h"
 cat confdefs.h > config.h

@@ -105,7 +105,7 @@ rb_define_class_id(id, super)
 
 VALUE
 rb_define_class(name, super)
-    char *name;
+    const char *name;
     VALUE super;
 {
     VALUE klass;
@@ -122,7 +122,7 @@ rb_define_class(name, super)
 VALUE
 rb_define_class_under(outer, name, super)
     VALUE outer;
-    char *name;
+    const char *name;
     VALUE super;
 {
     VALUE klass;
@@ -164,7 +164,7 @@ rb_define_module_id(id)
 
 VALUE
 rb_define_module(name)
-    char *name;
+    const char *name;
 {
     VALUE module;
     ID id;
@@ -179,7 +179,7 @@ rb_define_module(name)
 VALUE
 rb_define_module_under(outer, name)
     VALUE outer;
-    char *name;
+    const char *name;
 {
     VALUE module;
     ID id;
@@ -462,7 +462,7 @@ rb_define_method_id(klass, name, func, argc)
 void
 rb_define_method(klass, name, func, argc)
     VALUE klass;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -476,7 +476,7 @@ rb_define_method(klass, name, func, argc)
 void
 rb_define_protected_method(klass, name, func, argc)
     VALUE klass;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -487,7 +487,7 @@ rb_define_protected_method(klass, name, func, argc)
 void
 rb_define_private_method(klass, name, func, argc)
     VALUE klass;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -498,7 +498,7 @@ rb_define_private_method(klass, name, func, argc)
 void
 rb_undef_method(klass, name)
     VALUE klass;
-    char *name;
+    const char *name;
 {
     rb_add_method(klass, rb_intern(name), 0, NOEX_UNDEF);
 }
@@ -521,7 +521,7 @@ rb_singleton_class(obj)
 void
 rb_define_singleton_method(obj, name, func, argc)
     VALUE obj;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -531,7 +531,7 @@ rb_define_singleton_method(obj, name, func, argc)
 void
 rb_define_module_function(module, name, func, argc)
     VALUE module;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -541,7 +541,7 @@ rb_define_module_function(module, name, func, argc)
 
 void
 rb_define_global_function(name, func, argc)
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -551,7 +551,7 @@ rb_define_global_function(name, func, argc)
 void
 rb_define_alias(klass, name1, name2)
     VALUE klass;
-    char *name1, *name2;
+    const char *name1, *name2;
 {
     rb_alias(klass, rb_intern(name1), rb_intern(name2));
 }
@@ -559,7 +559,7 @@ rb_define_alias(klass, name1, name2)
 void
 rb_define_attr(klass, name, read, write)
     VALUE klass;
-    char *name;
+    const char *name;
     int read, write;
 {
     rb_attr(klass, rb_intern(name), read, write, Qfalse);
@@ -575,17 +575,17 @@ rb_define_attr(klass, name, read, write)
 
 int
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
+rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
 #else
 rb_scan_args(argc, argv, fmt, va_alist)
     int argc;
     VALUE *argv;
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
     int n, i;
-    char *p = fmt;
+    const char *p = fmt;
     VALUE *var;
     va_list vargs;
 

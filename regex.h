@@ -59,12 +59,17 @@
    If not set, then character classes are not supported.  */
 #define RE_CHAR_CLASSES (1L << 9)
 
-#define RE_OPTION_EXTENDED   (1L<<0)
+/* match will be done case insensetively */
 #define RE_OPTION_IGNORECASE (1L<<1)
-#define RE_MAY_IGNORECASE    (1L<<2)
-#define RE_OPTIMIZE_ANCHOR   (1L<<4)
-#define RE_OPTIMIZE_EXACTN   (1L<<5)
-#define RE_OPTIMIZE_NO_BM    (1L<<6)
+/* perl-style extended pattern available */
+#define RE_OPTION_EXTENDED   (RE_OPTION_IGNORECASE<<1)
+/* newline will be included for . and invert charclass matches */
+#define RE_OPTION_POSIX      (RE_OPTION_EXTENDED<<1)
+
+#define RE_MAY_IGNORECASE    (RE_OPTION_POSIX<<1)
+#define RE_OPTIMIZE_ANCHOR   (RE_MAY_IGNORECASE<<1)
+#define RE_OPTIMIZE_EXACTN   (RE_OPTIMIZE_ANCHOR<<1)
+#define RE_OPTIMIZE_NO_BM    (RE_OPTIMIZE_ANCHOR<<1)
 
 /* For multi-byte char support */
 #define MBCTYPE_ASCII 0
@@ -151,22 +156,22 @@ typedef struct
 
 #ifdef __STDC__
 
-extern char *re_compile_pattern (char *, int, struct re_pattern_buffer *);
+extern char *re_compile_pattern (const char *, int, struct re_pattern_buffer *);
 void re_free_pattern (struct re_pattern_buffer *);
 /* Is this really advertised?  */
 extern void re_compile_fastmap (struct re_pattern_buffer *);
-extern int re_search (struct re_pattern_buffer *, char*, int, int, int,
+extern int re_search (struct re_pattern_buffer *, const char*, int, int, int,
 		      struct re_registers *);
-extern int re_match (struct re_pattern_buffer *, char *, int, int,
+extern int re_match (struct re_pattern_buffer *, const char *, int, int,
 		     struct re_registers *);
-extern void re_set_casetable (char *table);
+extern void re_set_casetable (const char *table);
 extern void re_copy_registers (struct re_registers*, struct re_registers*);
 extern void re_free_registers (struct re_registers*);
 
 #ifndef RUBY
 /* 4.2 bsd compatibility.  */
-extern char *re_comp (char *);
-extern int re_exec (char *);
+extern char *re_comp (const char *);
+extern int re_exec (const char *);
 #endif
 
 #else /* !__STDC__ */

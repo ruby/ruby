@@ -14,7 +14,7 @@
 #include "st.h"
 
 #ifdef USE_CWGUSI
-char* strdup(char*);
+char* strdup(const char*);
 #endif
 
 static st_table *rb_global_tbl;
@@ -176,7 +176,7 @@ rb_class_path(klass)
 void
 rb_set_class_path(klass, under, name)
     VALUE klass, under;
-    char *name;
+    const char *name;
 {
     VALUE str;
 
@@ -193,7 +193,7 @@ rb_set_class_path(klass, under, name)
 
 VALUE
 rb_path2class(path)
-    char *path;
+    const char *path;
 {
     if (path[0] == '#') {
 	rb_raise(rb_eArgError, "can't retrieve anonymous class %s", path);
@@ -214,7 +214,7 @@ static st_table *autoload_tbl = 0;
 static void
 rb_autoload_id(id, filename)
     ID id;
-    char *filename;
+    const char *filename;
 {
     if (!rb_is_const_id(id)) {
 	rb_raise(rb_eNameError, "autoload must be constant name",
@@ -229,7 +229,7 @@ rb_autoload_id(id, filename)
 
 void
 rb_autoload(klass, filename)
-    char *klass, *filename;
+    const char *klass, *filename;
 {
     rb_autoload_id(rb_intern(klass), filename);
 }
@@ -414,7 +414,7 @@ rb_gc_mark_global_tbl()
 
 static ID
 global_id(name)
-    char *name;
+    const char *name;
 {
     ID id;
 
@@ -430,7 +430,7 @@ global_id(name)
 
 void
 rb_define_hooked_variable(name, var, getter, setter)
-    char  *name;
+    const char  *name;
     VALUE *var;
     VALUE (*getter)();
     void  (*setter)();
@@ -447,7 +447,7 @@ rb_define_hooked_variable(name, var, getter, setter)
 
 void
 rb_define_variable(name, var)
-    char  *name;
+    const char  *name;
     VALUE *var;
 {
     rb_define_hooked_variable(name, var, 0, 0);
@@ -455,7 +455,7 @@ rb_define_variable(name, var)
 
 void
 rb_define_readonly_variable(name, var)
-    char  *name;
+    const char  *name;
     VALUE *var;
 {
     rb_define_hooked_variable(name, var, 0, readonly_setter);
@@ -463,7 +463,7 @@ rb_define_readonly_variable(name, var)
 
 void
 rb_define_virtual_variable(name, getter, setter)
-    char  *name;
+    const char  *name;
     VALUE (*getter)();
     void  (*setter)();
 {
@@ -631,7 +631,7 @@ rb_gvar_set(entry, val)
 
 VALUE
 rb_gvar_set2(name, val)
-    char *name;
+    const char *name;
     VALUE val;
 {
     struct global_entry *entry;
@@ -1073,7 +1073,7 @@ rb_mod_remove_const(mod, name)
 static int
 autoload_i(key, name, ary)
     ID key;
-    char *name;
+    const char *name;
     VALUE ary;
 {
     VALUE kval = rb_str_new2(rb_id2name(key));
@@ -1188,7 +1188,7 @@ rb_const_set(klass, id, val)
 void
 rb_define_const(klass, name, val)
     VALUE klass;
-    char *name;
+    const char *name;
     VALUE val;
 {
     ID id = rb_intern(name);
@@ -1204,7 +1204,7 @@ rb_define_const(klass, name, val)
 
 void
 rb_define_global_const(name, val)
-    char *name;
+    const char *name;
     VALUE val;
 {
     rb_define_const(rb_cObject, name, val);
@@ -1213,7 +1213,7 @@ rb_define_global_const(name, val)
 VALUE
 rb_iv_get(obj, name)
     VALUE obj;
-    char *name;
+    const char *name;
 {
     ID id = rb_intern(name);
 
@@ -1223,7 +1223,7 @@ rb_iv_get(obj, name)
 VALUE
 rb_iv_set(obj, name, val)
     VALUE obj;
-    char *name;
+    const char *name;
     VALUE val;
 {
     ID id = rb_intern(name);

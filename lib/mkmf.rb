@@ -37,7 +37,7 @@ $libdir += "/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
 $archdir = $libdir+"/"+CONFIG["arch"]
 $install = CONFIG["INSTALL_PROGRAM"]
 $install_data = CONFIG["INSTALL_DATA"]
-if $install !~ /^\// then
+if $install =~ %r!^[^\s/]+/! then
   $install = CONFIG["srcdir"]+"/"+$install
   $install_data = CONFIG["srcdir"]+"/"+$install_data
 end

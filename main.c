@@ -31,7 +31,7 @@ main(argc, argv, envp)
     NtInitialize(&argc, &argv);
 #endif
 #if defined(__MACOS__) && defined(__MWERKS__)
-	argc = ccommand(&argv);
+    argc = ccommand(&argv);
 #endif
 
     ruby_init();

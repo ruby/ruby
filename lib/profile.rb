@@ -22,7 +22,7 @@ module Profiler__
 	else
 	  name += "."
 	end
-	data = [0, 0, 0, name+id.id2name]
+	data = [0.0, 0.0, 0.0, name+id.id2name]
 	MAP[id] = data
       end
       data[0] += 1

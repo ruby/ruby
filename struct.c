@@ -179,10 +179,10 @@ make_struct(name, member, klass)
 
 VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_struct_define(char *name, ...)
+rb_struct_define(const char *name, ...)
 #else
 rb_struct_define(name, va_alist)
-    char *name;
+    const char *name;
     va_dcl
 #endif
 {

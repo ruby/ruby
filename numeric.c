@@ -167,7 +167,7 @@ num_nonzero_p(num)
     VALUE num;
 {
     if (RTEST(rb_funcall(num, rb_intern("zero?"), 0, 0))) {
-	return Qfalse;
+	return Qnil;
     }
     return num;
 }

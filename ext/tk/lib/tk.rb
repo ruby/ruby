@@ -228,7 +228,7 @@ module TkComm
     return '' if cmd == ''
     id = _next_cmd_id
     Tk_CMDTBL[id] = cmd
-    @cmdtbl = [] if not @cmdtbl
+    @cmdtbl = [] unless @cmdtbl
     @cmdtbl.push id
     return format("rb_out %s", id);
   end
@@ -711,14 +711,14 @@ class TkVariable
     elsif val.kind_of?(Array)
       a = []
       val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
-      s = '"' + a.join(" ").gsub(/[][$"]/, '\\\\\&') + '"' #'
+      s = '"' + a.join(" ").gsub(/[][$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
     elsif  val.kind_of?(Hash)
       s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
-                   .gsub(/[][$"]/, '\\\\\&') + '"' #'
+                   .gsub(/[][$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; array set %s %s', @id, @id, s))
     else
-      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
+      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     end
   end
@@ -738,16 +738,15 @@ class TkVariable
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
 	raise
       else
-	Hash[*tk_split_simplelist(INTERP\
-				  ._eval(format('global %s; array get %s', 
-						@id, @id)))]
+	Hash[*tk_split_simplelist(INTERP._eval(format('global %s; array get %s', 
+						      @id, @id)))]
       end
     end
   end
 
   def value=(val)
     begin
-      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
+      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     rescue
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
@@ -760,12 +759,12 @@ class TkVariable
 	elsif val.kind_of?(Array)
 	  a = []
 	  val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
-	  s = '"' + a.join(" ").gsub(/[][$"]/, '\\\\\&') + '"' #'
+	  s = '"' + a.join(" ").gsub(/[][$"]/, '\\\\\&') + '"'
 	  INTERP._eval(format('global %s; unset %s; array set %s %s', 
 			      @id, @id, @id, s))
 	elsif  val.kind_of?(Hash)
 	  s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
-	                        .gsub(/[][$"]/, '\\\\\&') + '"' #'
+	                        .gsub(/[][$"]/, '\\\\\&') + '"'
 	  INTERP._eval(format('global %s; unset %s; array set %s %s', 
 			      @id, @id, @id, s))
 	else
@@ -972,7 +971,7 @@ class TkVarAccess<TkVariable
   def initialize(varname, val=nil)
     @id = varname
     if val
-      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
+      s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"'
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     end
   end
@@ -1600,17 +1599,21 @@ class TkObject<TkKernel
 
   def configure(slot, value=None)
     if slot.kind_of? Hash
-      if ( slot['font'] || slot['kanjifont'] \
-	  || slot['latinfont'] || slot['asciifont'] )
+      if (slot['font'] || slot['kanjifont'] ||
+	  slot['latinfont'] || slot['asciifont'] )
 	font_configure(slot.dup)
       else
 	tk_call path, 'configure', *hash_kv(slot)
       end
 
     else
-      if ( slot == 'font' || slot == 'kanjifont' \
-	  || slot == 'latinfont' || slot == 'asciifont' )
-	font_configure({slot=>value})
+      if (slot == 'font' || slot == 'kanjifont' ||
+	  slot == 'latinfont' || slot == 'asciifont')
+	if value == None
+	  fontobj
+	else
+	  font_configure({slot=>value})
+	end
       else
 	tk_call path, 'configure', "-#{slot}", value
       end
@@ -1624,13 +1627,11 @@ class TkObject<TkKernel
   def configinfo(slot = nil)
     if slot == 'font' || slot == 'kanjifont'
       fontobj
-
     else
       if slot
 	conf = tk_split_list(tk_send('configure', "-#{slot}") )
 	conf[0] = conf[0][1..-1]
 	conf
-
       else
 	ret = tk_split_list(tk_send('configure') ).collect{|conf|
 	  conf[0] = conf[0][1..-1]
@@ -2360,27 +2361,21 @@ class TkMenu<TkWindow
   def yposition(index)
     number(tk_send('yposition', index))
   end
-  def entryconfigure(index, keys=nil)
-    tk_send 'entryconfigure', index, *hash_kv(keys)
-  end
-#  def entryconfigure(index, keys=nil)
-#    tk_send 'entryconfigure', index, *hash_kv(keys)
-#  end
   def entrycget(index, key)
     tk_tcl2ruby tk_send 'entrycget', index, "-#{key}"
   end
   def entryconfigure(index, key, val=None)
     if key.kind_of? Hash
-      if ( key['font'] || key['kanjifont'] \
-	  || key['latinfont'] || key['asciifont'] )
+      if (key['font'] || key['kanjifont'] ||
+	  key['latinfont'] || key['asciifont'])
 	tagfont_configure(index, key.dup)
       else
 	tk_send 'entryconfigure', index, *hash_kv(key)
       end
 
     else
-      if ( key == 'font' || key == 'kanjifont' \
-	  || key == 'latinfont' || key == 'asciifont' )
+      if (key == 'font' || key == 'kanjifont' ||
+	  key == 'latinfont' || key == 'asciifont' )
 	tagfont_configure({key=>val})
       else
 	tk_call 'entryconfigure', index, "-#{key}", val

@@ -6,6 +6,7 @@ Language Spec.
 * multiple return values, yield values.  maybe imcompatible
 * cascading method invocation.
 * def Class#method .. end
+* exclusive range n...m (means n<=x<m).
 
 Hacking Interpreter
 

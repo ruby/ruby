@@ -229,9 +229,10 @@ rb_ary_store(ary, idx, val)
 {
     rb_ary_modify(ary);
     if (idx < 0) {
-	idx = RARRAY(ary)->len + idx;
+	idx += RARRAY(ary)->len;
 	if (idx < 0) {
-	    rb_raise(rb_eIndexError, "negative index of array");
+	    rb_raise(rb_eIndexError, "index %d out of array",
+		     idx - RARRAY(ary)->len);
 	}
     }
 
@@ -349,67 +350,28 @@ rb_ary_entry(ary, offset)
 }
 
 static VALUE
-rb_ary_subseq(ary, beg, len)
+rb_ary_subary(ary, beg, len)
     VALUE ary;
     int beg, len;
 {
     VALUE ary2;
 
-    if (len == 0) return rb_ary_new2(0);
-    if (len < 0) {
-	rb_raise(rb_eIndexError, "negative length %d", len);
-    }
-    if (beg < 0) {
-	len += beg;
-	beg = 0;
-    }
+    if (len < 0) return Qnil;
+    if (beg > RARRAY(ary)->len) return Qnil;
+    if (beg < 0) return Qnil;
     if (beg + len > RARRAY(ary)->len) {
 	len = RARRAY(ary)->len - beg;
     }
     if (len < 0) {
 	len = 0;
     }
+    if (len == 0) return rb_ary_new2(0);
 
     ary2 = rb_ary_new2(len);
     MEMCPY(RARRAY(ary2)->ptr, RARRAY(ary)->ptr+beg, VALUE, len);
     RARRAY(ary2)->len = len;
 
     return ary2;
-}
-
-static VALUE
-beg_len(range, begp, lenp, len)
-    VALUE range;
-    int *begp, *lenp, len;
-{
-    int beg, end;
-    int b, e;
-
-    if (!rb_range_beg_end(range, &beg, &end)) return Qfalse;
-    b = beg; e = end;
-
-    if (beg < 0) {
-	beg = len + beg;
-    }
-    if (end < 0) {
-	end = len + end;
-    }
-    *begp = beg;
-    if (beg > end) {
-	if (e == -1) {
-	    *lenp = 0;
-	    return Qtrue;
-	}
-	rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", b, e);
-    }
-
-    if (beg > len) {
-	*lenp = 0;
-    }
-    else {
-	*lenp = end - beg + 1;
-    }
-    return Qtrue;
 }
 
 VALUE
@@ -427,7 +389,7 @@ rb_ary_aref(argc, argv, ary)
 	if (beg < 0) {
 	    beg = RARRAY(ary)->len + beg;
 	}
-	return rb_ary_subseq(ary, beg, len);
+	return rb_ary_subary(ary, beg, len);
     }
 
     /* special case - speeding up */
@@ -437,9 +399,16 @@ rb_ary_aref(argc, argv, ary)
     else if (TYPE(arg1) == T_BIGNUM) {
 	rb_raise(rb_eIndexError, "index too big");
     }
-    else if (beg_len(arg1, &beg, &len, RARRAY(ary)->len)) {
+    else {
 	/* check if idx is Range */
-	return rb_ary_subseq(ary, beg, len);
+	switch (rb_range_beg_len(arg1, &beg, &len, RARRAY(ary)->len, 0)) {
+	  case Qfalse:
+	    break;
+	  case Qnil:
+	    return Qnil;
+	  default:
+	    return rb_ary_subary(ary, beg, len);
+	}
     }
     return rb_ary_entry(ary, NUM2INT(arg1));
 }
@@ -483,7 +452,12 @@ rb_ary_indexes(argc, argv, ary)
 
     new_ary = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
+#if 0
 	rb_ary_store(new_ary, i, rb_ary_entry(ary, NUM2INT(argv[i])));
+#else
+	VALUE v = argv[i];
+	rb_ary_concat(new_ary, rb_ary_aref(1, &v, ary));
+#endif
     }
 
     return new_ary;
@@ -494,20 +468,20 @@ rb_ary_replace(ary, beg, len, rpl)
     VALUE ary, rpl;
     int beg, len;
 {
-    if (len < 0) {
-	rb_raise(rb_eIndexError, "negative length %d", len);
+    if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
+    if (beg < 0) {
+	beg += RARRAY(ary)->len;
+    }
+    if (beg < 0) {
+	beg -= RARRAY(ary)->len;
+	rb_raise(rb_eIndexError, "index %d out of array", beg);
+    }
+    if (beg + len > RARRAY(ary)->len) {
+	len = RARRAY(ary)->len - beg;
     }
 
     if (TYPE(rpl) != T_ARRAY) {
 	rpl = rb_Array(rpl);
-    }
-
-    if (beg + len < 0 || (beg < 0 && beg <= -len)) {
-	rb_raise(rb_eIndexError, "index %d out of range", beg);
-    }
-    if (beg < 0) {
-	len += beg;
-	beg = 0;
     }
 
     rb_ary_modify(ary);
@@ -550,30 +524,18 @@ rb_ary_aset(argc, argv, ary)
     VALUE ary;
 {
     VALUE arg1, arg2, arg3;
-    int offset, beg, len;
+    int offset, beg, end, len;
 
     if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
-	beg = NUM2INT(arg1);
-	len = NUM2INT(arg2);
-
-	if (beg < 0) {
-	    beg = RARRAY(ary)->len + beg;
-	}
-#ifdef INABA
-	if (len < 0) return Qnil;
-#endif
-	rb_ary_replace(ary, beg, len, arg3);
+	rb_ary_replace(ary, NUM2INT(arg1), NUM2INT(arg2), arg3);
 	return arg3;
     }
     else if (FIXNUM_P(arg1)) {
 	offset = FIX2INT(arg1);
 	goto fixnum;
     }
-    else if (beg_len(arg1, &beg, &len, RARRAY(ary)->len)) {
+    else if (rb_range_beg_len(arg1, &beg, &len, RARRAY(ary)->len, 1)) {
 	/* check if idx is Range */
-#ifdef INABA
-	if (len < 0) return Qnil;
-#endif
 	rb_ary_replace(ary, beg, len, arg2);
 	return arg2;
     }
@@ -655,7 +617,7 @@ static VALUE
 rb_ary_dup(ary)
     VALUE ary;
 {
-    return rb_ary_new4(RARRAY(ary)->len, RARRAY(ary)->ptr);
+    return rb_ary_s_create(RARRAY(ary)->len, RARRAY(ary)->ptr, CLASS_OF(ary));
 }
 
 static VALUE
@@ -758,11 +720,7 @@ rb_ary_to_s(ary)
     return str;
 }
 
-#ifdef USE_THREAD
 static ID inspect_key;
-#else
-static VALUE inspect_tbl;
-#endif
 
 struct inspect_arg {
     VALUE (*func)();
@@ -780,11 +738,9 @@ static VALUE
 inspect_ensure(obj)
     VALUE obj;
 {
-#ifdef USE_THREAD
     VALUE inspect_tbl;
 
     inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
-#endif
     rb_ary_pop(inspect_tbl);
     return 0;
 }
@@ -796,7 +752,6 @@ rb_protect_inspect(func, obj, arg)
 {
     struct inspect_arg iarg;
 
-#ifdef USE_THREAD
     VALUE inspect_tbl;
 
     if (!inspect_key) {
@@ -807,12 +762,6 @@ rb_protect_inspect(func, obj, arg)
 	inspect_tbl = rb_ary_new();
 	rb_thread_local_aset(rb_thread_current(), inspect_key, inspect_tbl);
     }
-#else
-    if (!inspect_tbl) {
-	inspect_tbl = rb_ary_new();
-	rb_global_variable(&inspect_tbl);
-    }
-#endif
     rb_ary_push(inspect_tbl, obj);
     iarg.func = func;
     iarg.arg1 = obj;
@@ -824,15 +773,11 @@ VALUE
 rb_inspecting_p(obj)
     VALUE obj;
 {
-#ifdef USE_THREAD
     VALUE inspect_tbl;
 
     if (!inspect_key) return Qfalse;
     inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
     if (NIL_P(inspect_tbl)) return Qfalse;
-#else
-    if (!inspect_tbl) return Qfalse;
-#endif
     return rb_ary_includes(inspect_tbl, obj);
 }
 
@@ -1054,7 +999,7 @@ rb_ary_replace_method(ary, ary2)
     VALUE ary, ary2;
 {
     ary2 = to_ary(ary2);
-    rb_ary_replace(ary, 0, RARRAY(ary2)->len, ary2);
+    rb_ary_replace(ary, 0, RARRAY(ary)->len, ary2);
     return ary;
 }
 
@@ -1080,17 +1025,25 @@ rb_ary_fill(argc, argv, ary)
     int beg, end, len;
     VALUE *p, *pend;
 
-    if (rb_scan_args(argc, argv, "12", &item, &arg1, &arg2) == 2 &&
-	beg_len(arg1, &beg, &len, RARRAY(ary)->len)) {
-	/* beg and len set already */
-    }
-    else {
+    rb_scan_args(argc, argv, "12", &item, &arg1, &arg2);
+    switch (argc) {
+      case 1:
+	beg = 0;
+	len = RARRAY(ary)->len - beg;
+	break;
+      case 2:
+	if (rb_range_beg_len(arg1, &beg, &len, RARRAY(ary)->len, 1)) {
+	    break;
+	}
+	/* fall through */
+      case 3:
 	beg = NIL_P(arg1)?0:NUM2INT(arg1);
 	if (beg < 0) {
 	    beg = RARRAY(ary)->len + beg;
 	    if (beg < 0) beg = 0;
 	}
 	len = NIL_P(arg2)?RARRAY(ary)->len - beg:NUM2INT(arg2);
+	break;
     }
     rb_ary_modify(ary);
     end = beg + len;

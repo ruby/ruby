@@ -3,5 +3,5 @@ depend
 extconf.rb
 lib/kconv.rb
 nkf.c
-orig/nkf.c
+1.7/nkf.c
 test.rb

@@ -27,14 +27,14 @@ and query.cookie has Hash class methods
 == print HTTP header and HTML string to $>
 
 	require "cgi-lib.rb"
-	CGI.print{
-	  CGI.tag("HTML"){
-	    CGI.tag("HEAD"){ CGI.tag("TITLE"){"TITLE"} } +
-	    CGI.tag("BODY"){
-	      CGI.tag("FORM", {"ACTION"=>"test.rb", "METHOD"=>"POST"}){
-	        CGI.tag("INPUT", {"TYPE"=>"submit", "VALUE"=>"submit"})
+	CGI::print{
+	  CGI::tag("HTML"){
+	    CGI::tag("HEAD"){ CGI::tag("TITLE"){"TITLE"} } +
+	    CGI::tag("BODY"){
+	      CGI::tag("FORM", {"ACTION"=>"test.rb", "METHOD"=>"POST"}){
+	        CGI::tag("INPUT", {"TYPE"=>"submit", "VALUE"=>"submit"})
 	      } +
-	      CGI.tag("HR")
+	      CGI::tag("HR")
 	    }
 	  }
 	}
@@ -43,68 +43,68 @@ and query.cookie has Hash class methods
 == make raw cookie string
 
 	require "cgi-lib.rb"
-	cookie1 = CGI.cookie({'name'    => 'name',
-	                      'value'   => 'value',
-	                      'path'    => 'path',   # optional
-	                      'domain'  => 'domain', # optional
-	                      'expires' => Time.now, # optional
-	                      'secure'  => true      # optional
-	                     })
+	cookie1 = CGI::cookie({'name'    => 'name',
+	                       'value'   => 'value',
+	                       'path'    => 'path',   # optional
+	                       'domain'  => 'domain', # optional
+	                       'expires' => Time.now, # optional
+	                       'secure'  => true      # optional
+	                      })
 
-	CGI.print("Content-Type: text/html", cookie1, cookie2){ "string" }
+	CGI::print("Content-Type: text/html", cookie1, cookie2){ "string" }
 
 
 == print HTTP header and string to $>
 
 	require "cgi-lib.rb"
-	CGI.print{ "string" }
-	  # == CGI.print("Content-Type: text/html"){ "string" }
-	CGI.print("Content-Type: text/html", cookie1, cookie2){ "string" }
+	CGI::print{ "string" }
+	  # == CGI::print("Content-Type: text/html"){ "string" }
+	CGI::print("Content-Type: text/html", cookie1, cookie2){ "string" }
 
 
 === NPH (no-parse-header) mode
 
 	require "cgi-lib.rb"
-	CGI.print("nph"){ "string" }
-	  # == CGI.print("nph", "Content-Type: text/html"){ "string" }
-	CGI.print("nph", "Content-Type: text/html", cookie1, cookie2){ "string" }
+	CGI::print("nph"){ "string" }
+	  # == CGI::print("nph", "Content-Type: text/html"){ "string" }
+	CGI::print("nph", "Content-Type: text/html", cookie1, cookie2){ "string" }
 
 
 == make HTML tag string
 
 	require "cgi-lib.rb"
-	CGI.tag("element", {"attribute_name"=>"attribute_value"}){"content"}
+	CGI::tag("element", {"attribute_name"=>"attribute_value"}){"content"}
 
 
 == make HTTP header string
 
 	require "cgi-lib.rb"
-	CGI.header # == CGI.header("Content-Type: text/html")
-	CGI.header("Content-Type: text/html", cookie1, cookie2)
+	CGI::header # == CGI::header("Content-Type: text/html")
+	CGI::header("Content-Type: text/html", cookie1, cookie2)
 
 
 === NPH (no-parse-header) mode
 
-	CGI.header("nph") # == CGI.header("nph", "Content-Type: text/html")
-	CGI.header("nph", "Content-Type: text/html", cookie1, cookie2)
+	CGI::header("nph") # == CGI::header("nph", "Content-Type: text/html")
+	CGI::header("nph", "Content-Type: text/html", cookie1, cookie2)
 
 
 == escape url encode
 
 	require "cgi-lib.rb"
-	url_encoded_string = CGI.escape("string")
+	url_encoded_string = CGI::escape("string")
 
 
 == unescape url encoded
 
 	require "cgi-lib.rb"
-	string = CGI.unescape("url encoded string")
+	string = CGI::unescape("url encoded string")
 
 
 == escape HTML &"<>
 
 	require "cgi-lib.rb"
-	CGI.escapeHTML("string")
+	CGI::escapeHTML("string")
 
 
 =end
@@ -116,11 +116,6 @@ class CGI < SimpleDelegator
   CR  = "\015"
   LF  = "\012"
   EOL = CR + LF
-
-  # if running on Windows(IIS or PWS) then change cwd.
-  if ENV['SERVER_SOFTWARE'] =~ /^Microsoft-/
-    Dir.chdir(ENV['PATH_TRANSLATED'].sub(/[^\\]+$/, ''))
-  end
 
   # escape url encode
   def escape(str)
@@ -160,12 +155,8 @@ class CGI < SimpleDelegator
 
     case ENV['REQUEST_METHOD']
     when "GET"
-      # exception messages should be printed to stdout.
-      STDERR.reopen($>)
       ENV['QUERY_STRING'] or ""
     when "POST"
-      # exception messages should be printed to stdout.
-      STDERR.reopen($>)
       input.read Integer(ENV['CONTENT_LENGTH'])
     else
       read_from_cmdline
@@ -198,7 +189,7 @@ class CGI < SimpleDelegator
   attr("cookie")
 
   # make HTML tag string
-  def CGI.tag(element, attributes = {})
+  def CGI::tag(element, attributes = {})
     "<" + escapeHTML(element) + attributes.collect{|name, value|
       " " + escapeHTML(name) + '="' + escapeHTML(value) + '"'
     }.to_s + ">" +
@@ -206,7 +197,7 @@ class CGI < SimpleDelegator
   end
 
   # make raw cookie string
-  def CGI.cookie(options)
+  def CGI::cookie(options)
     "Set-Cookie: " + options['name'] + '=' + escape(options['value']) +
     (options['domain']  ? '; domain='  + options['domain'] : '') +
     (options['path']    ? '; path='    + options['path']   : '') +
@@ -215,7 +206,7 @@ class CGI < SimpleDelegator
   end
 
   # make HTTP header string
-  def CGI.header(*options)
+  def CGI::header(*options)
     if ENV['MOD_RUBY']
       options.each{|option|
         option.sub(/(.*?): (.*)/){
@@ -238,32 +229,31 @@ class CGI < SimpleDelegator
   end
 
   # print HTTP header and string to $>
-  def CGI.print(*options)
-    $>.print CGI.header(*options) + yield.to_s
+  def CGI::print(*options)
+    $>.print CGI::header(*options) + yield.to_s
   end
 
   # print message to $>
-  def CGI.message(message, title = "", header = ["Content-Type: text/html"])
+  def CGI::message(message, title = "", header = ["Content-Type: text/html"])
     if message.kind_of?(Hash)
       title   = message['title']
       header  = message['header']
       message = message['body']
     end
-    CGI.print(*header){
-      CGI.tag("HTML"){
-        CGI.tag("HEAD"){ CGI.tag("TITLE"){ title } } +
-        CGI.tag("BODY"){ message }
+    CGI::print(*header){
+      CGI::tag("HTML"){
+        CGI::tag("HEAD"){ CGI.tag("TITLE"){ title } } +
+        CGI::tag("BODY"){ message }
       }
     }
     TRUE
   end
 
   # print error message to $> and exit
-  def CGI.error
-    CGI.message({'title'=>'ERROR', 'body'=>
-      CGI.tag("PRE"){
-        "ERROR: " + CGI.tag("STRONG"){ escapeHTML($!.to_s) } + "\n" +
-        escapeHTML($@.join("\n"))
+  def CGI::error
+    CGI::message({'title'=>'ERROR', 'body'=>
+      CGI::tag("PRE"){
+        "ERROR: " + CGI::tag("STRONG"){ escapeHTML($!.to_s) } + "\n" + escapeHTML($@.join("\n"))
       }
     })
     exit

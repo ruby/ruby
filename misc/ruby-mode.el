@@ -261,6 +261,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	       ((looking-at "%")
 		(cond
 		 ((and (not (eobp)) (ruby-expr-beg)
+		       (not (looking-at "%="))
 		       (looking-at "%[Qqrxw]?\\(.\\)"))
 		  (setq w (buffer-substring (match-beginning 1)
 					    (match-end 1)))

@@ -34,9 +34,9 @@
 #endif
 
 #ifndef HAVE_STRING_H
-char *strchr _((char*,char));
-char *strrchr _((char*,char));
-char *strstr _((char*,char*));
+char *strchr _((const char*,const char));
+char *strrchr _((const char*,const char));
+char *strstr _((const char*,const char*));
 #endif
 
 #include "util.h"
@@ -52,14 +52,16 @@ VALUE ruby_verbose = Qfalse;
 static int sflag = Qfalse;
 
 char *ruby_inplace_mode = Qfalse;
+# ifndef strdup
 char *strdup();
+# endif
 
 extern int yydebug;
 static int xflag = Qfalse;
 
 static void load_stdin _((void));
 static void load_file _((char *, int));
-static void forbid_setid _((char *));
+static void forbid_setid _((const char *));
 
 static VALUE do_loop = Qfalse, do_print = Qfalse;
 static VALUE do_check = Qfalse, do_line = Qfalse;
@@ -72,7 +74,7 @@ static char **origargv;
 
 static void
 usage(name)
-    char *name;
+    const char *name;
 {
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that opton. Others? */
@@ -124,7 +126,7 @@ static char *e_tmpname;
 
 static void
 addpath(path)
-    char *path;
+    const char *path;
 {
     const char sep = RUBY_PATH_SEP[0];
 
@@ -137,7 +139,7 @@ addpath(path)
     }
 #endif
     if (strchr(path, sep)) {
-	char *p, *s;
+	const char *p, *s;
 	VALUE ary = rb_ary_new();
 
 	p = path;
@@ -160,14 +162,14 @@ addpath(path)
 }
 
 struct req_list {
-    char *name;
+    const char *name;
     struct req_list *next;
 } req_list_head;
 struct req_list *req_list_last = &req_list_head;
 
 static void
 add_modules(mod)
-    char *mod;
+    const char *mod;
 {
     struct req_list *list;
 
@@ -602,10 +604,10 @@ load_file(fname, script)
 		if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
 		    RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
 		if (p = strstr(p, " -")) {
-		    int argc; char *argv[2]; char **argvp = argv;
+		    int argc; char *argv[3]; char **argvp = argv;
 		    char *s = ++p;
 
-		    argc = 2; argv[0] = 0;
+		    argc = 2; argv[0] = argv[2] = 0;
 		    while (*p == '-') {
 			while (*s && !ISSPACE(*s))
 			    s++;
@@ -733,7 +735,7 @@ init_ids()
 
 static void
 forbid_setid(s)
-    char *s;
+    const char *s;
 {
     if (euid != uid)
         rb_raise(rb_eSecurityError, "No %s allowed while running setuid", s);

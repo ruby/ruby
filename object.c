@@ -740,7 +740,7 @@ rb_obj_private_methods(obj)
 
 struct arg_to {
     VALUE val;
-    char *s;
+    const char *s;
 };
 
 static VALUE
@@ -766,7 +766,7 @@ VALUE
 rb_convert_type(val, type, tname, method)
     VALUE val;
     int type;
-    char *tname, *method;
+    const char *tname, *method;
 {
     struct arg_to arg1, arg2;
 

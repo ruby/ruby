@@ -35,7 +35,7 @@ extern VALUE rb_rs;
 
 VALUE
 rb_str_new(ptr, len)
-    char *ptr;
+    const char *ptr;
     int len;
 {
     NEWOBJ(str, struct RString);
@@ -54,14 +54,14 @@ rb_str_new(ptr, len)
 
 VALUE
 rb_str_new2(ptr)
-    char *ptr;
+    const char *ptr;
 {
     return rb_str_new(ptr, strlen(ptr));
 }
 
 VALUE
 rb_tainted_str_new(ptr, len)
-    char *ptr;
+    const char *ptr;
     int len;
 {
     VALUE str = rb_str_new(ptr, len);
@@ -72,7 +72,7 @@ rb_tainted_str_new(ptr, len)
 
 VALUE
 rb_tainted_str_new2(ptr)
-    char *ptr;
+    const char *ptr;
 {
     VALUE str = rb_str_new2(ptr);
 
@@ -300,59 +300,30 @@ rb_str_format(str, arg)
 }
 
 VALUE
-rb_str_substr(str, start, len)
+rb_str_substr(str, beg, len)
     VALUE str;
-    int start, len;
+    int beg, len;
 {
     VALUE str2;
 
-    if (len == 0) return rb_str_new(0,0);
+    if (len < 0) return Qnil;
+    if (beg > RSTRING(str)->len) return Qnil;
+    if (beg < 0) {
+	beg += RSTRING(str)->len;
+	if (beg < 0) return Qnil;
+    }
+    if (beg + len > RSTRING(str)->len) {
+	len = RSTRING(str)->len - beg;
+    }
     if (len < 0) {
-	rb_raise(rb_eIndexError, "negative length %d", len);
+	len = 0;
     }
-    if (start < 0) {
-	start = RSTRING(str)->len + start;
-    }
-    if (RSTRING(str)->len <= start) {
-	return rb_str_new(0,0);
-    }
-    if (RSTRING(str)->len < start + len) {
-	len = RSTRING(str)->len - start;
-    }
+    if (len == 0) return rb_str_new(0,0);
 
-    str2 = rb_str_new(RSTRING(str)->ptr+start, len);
+    str2 = rb_str_new(RSTRING(str)->ptr+beg, len);
     if (OBJ_TAINTED(str)) OBJ_TAINT(str2);
 
     return str2;
-}
-
-static VALUE
-rb_str_subseq(str, beg, end)
-    VALUE str;
-    int beg, end;
-{
-    int b, e, len;
-
-    b = beg; e = end;
-    if (beg < 0) {
-	beg = RSTRING(str)->len + beg;
-    }
-    if (end < 0) {
-	end = RSTRING(str)->len + end;
-    }
-    if (beg > end) {
-	if (e != -1) {
-	    rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", b, e);
-	}
-	return rb_str_new(0, 0);
-    }
-
-    if (beg >= RSTRING(str)->len) {
-	len = 0;
-    }
-
-    len = end - beg + 1;
-    return rb_str_substr(str, beg, len);
 }
 
 void
@@ -424,7 +395,7 @@ rb_str_resize(str, len)
 VALUE
 rb_str_cat(str, ptr, len)
     VALUE str;
-    char *ptr;
+    const char *ptr;
     int len;
 {
     if (len > 0) {
@@ -572,11 +543,16 @@ rb_str_index(str, sub, offset)
     char *s, *e, *p;
     int len;
 
+    if (offset < 0) {
+	offset += RSTRING(str)->len;
+	if (offset < 0) return -1;
+    }
     if (RSTRING(str)->len - offset < RSTRING(sub)->len) return -1;
     s = RSTRING(str)->ptr+offset;
     p = RSTRING(sub)->ptr;
     len = RSTRING(sub)->len;
-    e = s + RSTRING(str)->len - len + 1;
+    if (len == 0) return offset;
+    e = RSTRING(str)->ptr + RSTRING(str)->len - len + 1;
     while (s < e) {
 	if (*s == *(RSTRING(sub)->ptr) && memcmp(s, p, len) == 0) {
 	    return (s-(RSTRING(str)->ptr));
@@ -761,25 +737,32 @@ rb_str_succ_bang(str)
 }
 
 VALUE
-rb_str_upto(beg, end)
+rb_str_upto(beg, end, excl)
     VALUE beg, end;
+    int excl;
 {
     VALUE current;
 
     if (TYPE(end) != T_STRING) end = rb_str_to_str(end);
-    if (RTEST(rb_funcall(beg, '>', 1, end))) 
-	return Qnil;
 
     current = beg;
     for (;;) {
 	rb_yield(current);
-	if (rb_str_equal(current, end)) break;
+	if (!excl && rb_str_equal(current, end)) break;
 	current = rb_str_succ(current);
+	if (excl && rb_str_equal(current, end)) break;
 	if (RSTRING(current)->len > RSTRING(end)->len)
 	    break;
     }
 
     return Qnil;
+}
+
+static VALUE
+rb_str_upto_method(beg, end)
+    VALUE beg, end;
+{
+    return rb_str_upto(beg, end, 0);
 }
 
 static VALUE
@@ -813,9 +796,14 @@ rb_str_aref(str, indx)
       default:
 	/* check if indx is Range */
 	{
-	    int beg, end;
-	    if (rb_range_beg_end(indx, &beg, &end)) {
-		return rb_str_subseq(str, beg, end);
+	    int beg, len;
+	    switch (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 0)) {
+	      case Qfalse:
+		break;
+	      case Qnil:
+		return Qnil;
+	      default:
+		return rb_str_substr(str, beg, len);
 	    }
 	}
 	rb_raise(rb_eIndexError, "invalid index for string");
@@ -861,37 +849,6 @@ rb_str_replace(str, beg, len, val)
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 }
 
-/* rb_str_replace2() understands negative offset */
-static void
-rb_str_replace2(str, beg, end, val)
-    VALUE str, val;
-    int beg, end;
-{
-    int b, e, len;
-
-    b = beg; e = end;
-    if (beg < 0) {
-	beg = RSTRING(str)->len + beg;
-    }
-    if (end < 0) {
-	end = RSTRING(str)->len + end;
-    }
-    if (beg > end) {
-	if (e != -1) {
-	    rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", b, e);
-	}
-	end = beg - 1;
-    }
-    if (beg >= RSTRING(str)->len) {
-	beg = RSTRING(str)->len;
-	len = 0;
-    }
-    else {
-	len = end - beg + 1;
-    }
-    rb_str_replace(str, beg, len, val);
-}
-
 static VALUE rb_str_sub_bang _((int, VALUE*, VALUE));
 
 static VALUE
@@ -904,19 +861,23 @@ rb_str_aset(str, indx, val)
 
     switch (TYPE(indx)) {
       case T_FIXNUM:
-	idx = NUM2INT(indx);
+	beg = idx = NUM2INT(indx);
 	if (idx < 0) {
-	    idx = RSTRING(str)->len + idx;
+	    idx += RSTRING(str)->len;
 	}
-	if (idx < 0 || RSTRING(str)->len <= idx) {
-	    rb_raise(rb_eIndexError, "index %d out of range [0..%d]", idx,
-		     RSTRING(str)->len - 1);
+	if (idx < 0 || RSTRING(str)->len < idx) {
+	    rb_raise(rb_eIndexError, "index %d out of string", NUM2INT(beg));
 	}
-	if (TYPE(val) == T_STRING) {
-	    rb_str_replace(str, idx, 1, val);
+	if (FIXNUM_P(val)) {
+	    if (RSTRING(str)->len == idx) {
+		RSTRING(str)->len += 1;
+		REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len);
+	    }
+	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
 	}
 	else {
-	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
+	    if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
+	    rb_str_replace(str, idx, 1, val);
 	}
 	return val;
 
@@ -932,18 +893,18 @@ rb_str_aset(str, indx, val)
       case T_STRING:
 	beg = rb_str_index(str, indx, 0);
 	if (beg != -1) {
-	    end = beg + RSTRING(indx)->len - 1;
-	    rb_str_replace2(str, beg, end, val);
+	    if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
+	    rb_str_replace(str, beg, RSTRING(indx)->len, val);
 	}
 	return val;
 
       default:
 	/* check if indx is Range */
 	{
-	    int beg, end;
-	    if (rb_range_beg_end(indx, &beg, &end)) {
+	    int beg, len;
+	    if (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 2)) {
 		if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
-		rb_str_replace2(str, beg, end, val);
+		rb_str_replace(str, beg, len, val);
 		return val;
 	    }
 	}
@@ -962,17 +923,21 @@ rb_str_aset_method(argc, argv, str)
     rb_str_modify(str);
 
     if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
-	int beg;
-	int len;
+	int beg, len;
 
 	if (TYPE(arg3) != T_STRING) arg3 = rb_str_to_str(arg3);
 	beg = NUM2INT(arg1);
-	if (beg < 0) {
-	    beg = RSTRING(str)->len + beg;
-	    if (beg < 0) beg = 0;
-	}
 	len = NUM2INT(arg2);
 	if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
+	if (beg < 0) {
+	    beg += RSTRING(str)->len;
+	}
+	if (beg < 0 || RSTRING(str)->len < beg) {
+	    if (beg < 0) {
+		beg -= RSTRING(str)->len;
+	    }
+	    rb_raise(rb_eIndexError, "index %d out of string", beg);
+	}
 	if (beg + len > RSTRING(str)->len) {
 	    len = RSTRING(str)->len - beg;
 	}
@@ -2069,14 +2034,14 @@ rb_str_split_method(argc, argv, str)
 		if (BEG(idx) == END(idx))
 		    tmp = rb_str_new(0, 0);
 		else
-		    tmp = rb_str_subseq(str, BEG(idx), END(idx)-1);
+		    tmp = rb_str_substr(str, BEG(idx), END(idx)-BEG(idx));
 		rb_ary_push(result, tmp);
 	    }
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
     }
     if (!NIL_P(limit) || RSTRING(str)->len > beg || lim < 0) {
-	rb_ary_push(result, rb_str_subseq(str, beg, -1));
+	rb_ary_push(result, rb_str_substr(str, beg, RSTRING(str)->len-beg));
     }
     if (NIL_P(limit) && lim == 0) {
 	while (RARRAY(result)->len > 0 &&
@@ -2090,7 +2055,7 @@ rb_str_split_method(argc, argv, str)
 VALUE
 rb_str_split(str, sep0)
     VALUE str;
-    char *sep0;
+    const char *sep0;
 {
     VALUE sep;
 
@@ -2579,7 +2544,7 @@ Init_String()
     rb_define_method(rb_cString, "succ!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "next", rb_str_succ, 0);
     rb_define_method(rb_cString, "next!", rb_str_succ_bang, 0);
-    rb_define_method(rb_cString, "upto", rb_str_upto, 1);
+    rb_define_method(rb_cString, "upto", rb_str_upto_method, 1);
     rb_define_method(rb_cString, "index", rb_str_index_method, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace_method, 1);

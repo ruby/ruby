@@ -1,7 +1,7 @@
 #! /usr/local/bin/ruby
 
 # cal.rb (bsd compatible version): Written by Tadayoshi Funaba 1998, 1999
-# $Id: bsdcal.rb,v 1.3 1999/02/06 08:52:21 tadf Exp $
+# $Id: bsdcal.rb,v 1.4 1999/03/06 02:05:59 tadf Exp $
 
 require 'date2'
 
@@ -70,10 +70,10 @@ end
 
 while /^-([^-].*)$/no =~ $*[0]
   a = $1
-  if /^c(.+)?$/no =~ a then
-    if $1 then
+  if /^c(.+)?$/no =~ a
+    if $1
       $cc = $1.downcase
-    elsif $*.length >= 2 then
+    elsif $*.length >= 2
       $cc = $*[1].downcase
       $*.shift
     else
@@ -109,7 +109,7 @@ end
 usage unless m.nil? or (1..12) === m
 usage unless y >= -4712
 $w = if $jd then 3 else 2 end
-unless $yr then
+unless $yr
   print cal(m, y, gs)
 else
   print y.to_s.center(((($w + 1) * 7) - 1) *

@@ -56,7 +56,9 @@ void *xrealloc();
 #endif
 
 #ifndef NT
+# ifndef strdup
 char *strdup();
+# endif
 char *getenv();
 #endif
 
@@ -88,7 +90,8 @@ int eaccess();
 
 static void
 init_funcname(buf, file)
-    char *buf, *file;
+    char *buf;
+    char *file;
 {
     char *p, *slash;
 
@@ -316,7 +319,7 @@ sym_hash(hdrp, syms)
 
 static int
 dln_init(prog)
-    char *prog;
+    const char *prog;
 {
     char *file;
     int fd;
@@ -424,7 +427,7 @@ load_text_data(fd, hdrp, bss, disp)
 }
 
 static int
-underb_f_print(key, value)
+undef_print(key, value)
     char *key, *value;
 {
     fprintf(stderr, "  %s\n", key);
@@ -435,7 +438,7 @@ static void
 dln_print_undef()
 {
     fprintf(stderr, " Undefined symbols:\n");
-    st_foreach(undef_tbl, underb_f_print, NULL);
+    st_foreach(undef_tbl, undef_print, NULL);
 }
 
 static void
@@ -463,7 +466,7 @@ struct undef {
 static st_table *reloc_tbl = NULL;
 static void
 link_undef(name, base, reloc)
-    char *name;
+    const char *name;
     long base;
     struct relocation_info *reloc;
 {
@@ -563,7 +566,7 @@ reloc_undef(no, undef, arg)
 
 static void
 unlink_undef(name, value)
-    char *name;
+    const char *name;
     long value;
 {
     struct reloc_arg arg;
@@ -596,7 +599,7 @@ static int
 load_1(fd, disp, need_init)
     int fd;
     long disp;
-    char *need_init;
+    const char *need_init;
 {
     static char *libc = LIBC_NAME;
     struct exec hdr;
@@ -874,7 +877,7 @@ load_1(fd, disp, need_init)
 static int target_offset;
 static int
 search_undef(key, value, lib_tbl)
-    char *key;
+    const char *key;
     int value;
     st_table *lib_tbl;
 {
@@ -894,7 +897,7 @@ char *dln_librrb_ary_path = DLN_DEFAULT_LIB_PATH;
 
 static int
 load_lib(lib)
-    char *lib;
+    const char *lib;
 {
     char *path, *file;
     char armagic[SARMAG];
@@ -1031,7 +1034,7 @@ load_lib(lib)
 
 static int
 load(file)
-    char *file;
+    const char *file;
 {
     int fd;
     int result;
@@ -1057,7 +1060,7 @@ load(file)
 
 void*
 dln_sym(name)
-    char *name;
+    const char *name;
 {
     struct nlist *sym;
 
@@ -1100,7 +1103,7 @@ dln_sym(name)
 #include <windows.h>
 #endif
 
-static char *
+static const char *
 dln_strerror()
 {
 #ifdef USE_DLN_A_OUT
@@ -1153,7 +1156,7 @@ dln_strerror()
 
 #if defined(_AIX)
 static void
-aix_loaderror(char *pathname)
+aix_loaderror(const char *pathname)
 {
     char *message[8], errbuf[1024];
     int i,j;
@@ -1201,7 +1204,7 @@ aix_loaderror(char *pathname)
 
 void
 dln_load(file)
-    char *file;
+    const char *file;
 {
 #ifdef _WIN32
     HINSTANCE handle;
@@ -1497,8 +1500,8 @@ static char *dln_find_1();
 
 char *
 dln_find_exe(fname, path)
-    char *fname;
-    char *path;
+    const char *fname;
+    const char *path;
 {
     if (!path) {
 #if defined(__human68k__)
@@ -1520,8 +1523,8 @@ dln_find_exe(fname, path)
 
 char *
 dln_find_file(fname, path)
-    char *fname;
-    char *path;
+    const char *fname;
+    const char *path;
 {
 #ifndef __MACOS__
     if (!path) path = ".";
@@ -1533,10 +1536,10 @@ dln_find_file(fname, path)
 }
 
 #if defined(__CYGWIN32__)
-char *
+const char *
 conv_to_posix_path(win32, posix)
-    char *win32;
-    char *posix;
+    const char *win32;
+    const char *posix;
 {
     char *first = win32;
     char *p = win32;

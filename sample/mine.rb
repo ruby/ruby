@@ -168,6 +168,6 @@ begin
     end
   end
 ensure
- system("stty -raw echo")
+  system("stty -raw echo")
 end
 print "\n"

@@ -22,7 +22,6 @@ extern int rb_prohibit_interrupt;
 extern int rb_trap_pending;
 void rb_trap_restore_mask _((void));
 
-#ifdef USE_THREAD
 extern int rb_thread_critical;
 void rb_thread_schedule _((void));
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
@@ -31,11 +30,11 @@ extern int rb_thread_pending;
     if (rb_trap_pending) rb_trap_exec();\
     if (rb_thread_pending && !rb_thread_critical) rb_thread_schedule();\
 }
-# else
+#else
 /* pseudo preemptive thread switching */
 extern int rb_thread_tick;
 #define THREAD_TICK 500
-# define CHECK_INTS if (!rb_prohibit_interrupt) {\
+#define CHECK_INTS if (!rb_prohibit_interrupt) {\
     if (rb_trap_pending) rb_trap_exec();\
     if (!rb_thread_critical) {\
 	if (rb_thread_tick-- <= 0) {\
@@ -43,11 +42,6 @@ extern int rb_thread_tick;
 	    rb_thread_schedule();\
 	}\
     }\
-}
-# endif
-#else
-# define CHECK_INTS if (!rb_prohibit_interrupt) {\
-    if (rb_trap_pending) rb_trap_exec();\
 }
 #endif
 

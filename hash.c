@@ -847,48 +847,24 @@ extern char **environ;
 #endif
 static char **origenviron;
 
-void
-ruby_unsetenv(name)
-    char *name;
-{
-    int i, len;
-
-    len = strlen(name);
-    for(i=0; environ[i]; i++) {
-	if (strncmp(environ[i], name, len) == 0 && environ[i][len] == '=') {
-	    break;
-	}
-    }
-    while (environ[i]) {
-	environ[i] = environ[i+1];
-	i++;
-    }
-}
-
 static VALUE
 env_delete(obj, name)
     VALUE obj, name;
 {
     int i, len;
-    char *nam, *val = 0;
+    char *nam, *val;
 
     rb_secure(4);
-    nam = STR2CSTR(name);
-    if (strcmp(nam, "PATH") == 0 && !OBJ_TAINTED(name)) {
-	path_tainted = 0;
+    nam = str2cstr(name, &len);
+    if (strlen(nam) != len) {
+	rb_raise(rb_eArgError, "bad environment variable name");
     }
-    len = strlen(nam);
-    for(i=0; environ[i]; i++) {
-	if (strncmp(environ[i], nam, len) == 0 && environ[i][len] == '=') {
-	    val = environ[i]+len+1;
-	    break;
-	}
-    }
-    while (environ[i]) {
-	environ[i] = environ[i+1];
-	i++;
-    }
+    val = getenv(nam);
     if (val) {
+	ruby_setenv(nam, 0);
+	if (strcmp(nam, "PATH") == 0 && !OBJ_TAINTED(name)) {
+	    path_tainted = 0;
+	}
 	return rb_str_new2(val);
     }
     return Qnil;
@@ -1011,7 +987,7 @@ ruby_setenv(name, value)
     char *name;
     char *value;
 {
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN32__)
 #ifdef USE_WIN32_RTL_ENV
     register char *envstr;
     STRLEN namlen = strlen(name);
@@ -1069,7 +1045,7 @@ ruby_setenv(name, value)
 
 #else  /* WIN32 */
 
-    register int i=envix(name);		/* where does it go? */
+    int i=envix(name);		        /* where does it go? */
 
     if (environ == origenviron) {	/* need we copy environment? */
 	int j;
@@ -1084,6 +1060,7 @@ ruby_setenv(name, value)
 	environ = tmpenv;		/* tell exec where it is now */
     }
     if (!value) {
+	free(environ[i]);
 	while (environ[i]) {
 	    environ[i] = environ[i+1];
 	    i++;
@@ -1111,6 +1088,13 @@ ruby_setenv(name, value)
 #endif /* MSDOS */
 
 #endif /* WIN32 */
+}
+
+void
+ruby_unsetenv(name)
+    char *name;
+{
+    ruby_setenv(name, 0);
 }
 
 static VALUE

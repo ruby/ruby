@@ -144,6 +144,10 @@ class Queue
     @que.length == 0
   end
 
+  def clear
+    @que.replace([])
+  end
+
   def length
     @que.length
   end

@@ -51,7 +51,7 @@ VALUE rb_time_new _((time_t, time_t));
 #endif
 
 #ifndef HAVE_STRING_H
-char *strrchr _((char*,char));
+char *strrchr _((const char*,const char));
 #endif
 
 #include <sys/types.h>
@@ -256,7 +256,7 @@ group_member(gid)
 
 int
 eaccess(path, mode)
-     char *path;
+     const char *path;
      int mode;
 {
 #ifndef NT
@@ -560,7 +560,7 @@ test_grpowned(obj, fname)
 #if defined(S_ISUID) || defined(S_ISGID) || defined(S_ISVTX)
 static VALUE
 check3rdbyte(file, mode)
-    char *file;
+    const char *file;
     int mode;
 {
     struct stat st;
@@ -745,7 +745,7 @@ rb_file_ctime(obj)
 
 static void
 chmod_internal(path, mode)
-    char *path;
+    const char *path;
     int mode;
 {
     if (chmod(path, mode) == -1)
@@ -796,7 +796,7 @@ struct chown_args {
 
 static void
 chown_internal(path, args)
-    char *path;
+    const char *path;
     struct chown_args *args;
 {
     if (chown(path, args->owner, args->group) < 0)
@@ -902,7 +902,7 @@ struct utimbuf {
 
 static void
 utime_internal(path, utp)
-    char *path;
+    const char *path;
     struct utimbuf *utp;
 {
     if (utime(path, utp) < 0)
@@ -987,7 +987,7 @@ rb_file_s_readlink(obj, path)
 
 static void
 unlink_internal(path)
-    char *path;
+    const char *path;
 {
     if (unlink(path) < 0)
 	rb_sys_fail(path);
@@ -1147,7 +1147,7 @@ rb_file_s_expand_path(argc, argv)
 
 static int
 rmext(p, e)
-    char *p, *e;
+    const char *p, *e;
 {
     int l1, l2;
 
@@ -1303,7 +1303,7 @@ rb_file_truncate(obj, len)
 #  define LOCK_UN 8
 # endif
 
-#if defined(USE_THREAD) && defined(EWOULDBLOCK)
+#if defined(EWOULDBLOCK)
 static int
 rb_thread_flock(fd, op, fptr)
     int fd, op;
@@ -1515,7 +1515,7 @@ static VALUE rb_mConst;
 
 void
 rb_file_const(name, value)
-    char *name;
+    const char *name;
     VALUE value;
 {
     rb_define_const(rb_cFile, name, value);

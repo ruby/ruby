@@ -48,8 +48,8 @@ typedef struct OpenFile {
 #define GetReadFile(fptr) ((fptr)->f)
 #define GetWriteFile(fptr) (((fptr)->f2) ? (fptr)->f2 : (fptr)->f)
 
-FILE *rb_fopen _((char *, char *));
-FILE *rb_fdopen _((int, char *));
+FILE *rb_fopen _((const char*, const char*));
+FILE *rb_fdopen _((int, const char*));
 void rb_io_check_writable _((OpenFile *));
 void rb_io_check_readable _((OpenFile *));
 void rb_io_fptr_finalize _((OpenFile *));
