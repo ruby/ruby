@@ -466,7 +466,7 @@ rb_io_fwrite(ptr, len, f)
     of.f = f;
     of.f2 = NULL;
     of.mode = FMODE_WRITABLE;
-    of.path = "(rb_io_fwrite)";
+    of.path = NULL;
     return io_fwrite(ptr, len, &of);
 }
 
