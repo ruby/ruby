@@ -705,19 +705,17 @@ proc_options(argc, argv)
       OBJ_TAINT(rb_load_path);
     }
 
-    if (argc == 0) {		/* no more args */
-	if (!e_script) {
+    if (!e_script) {
+	if (argc == 0) {	/* no more args */
 	    if (verbose) exit(0);
 	    script = "-";
 	}
-    }
-    else if (!e_script) {
-	script = argv[0];
-	if (script[0] == '\0') {
-	    script = "-";
-	}
 	else {
-	    if (do_search) {
+	    script = argv[0];
+	    if (script[0] == '\0') {
+		script = "-";
+	    }
+	    else if (do_search) {
 		char *path = getenv("RUBYPATH");
 
 		script = 0;
@@ -732,8 +730,8 @@ proc_options(argc, argv)
 #ifdef DOSISH
 	    translate_char(script, '\\', '/');
 #endif
+	    argc--; argv++;
 	}
-	argc--; argv++;
     }
 
     ruby_script(script);
