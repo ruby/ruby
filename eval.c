@@ -1881,7 +1881,6 @@ is_defined(self, node, buf)
 	goto check_bound;
 
       case NODE_CALL:
-      case NODE_ATTRASGN:
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_eval(self, node->nd_recv);
@@ -1937,6 +1936,7 @@ is_defined(self, node, buf)
 	return "false";
 
       case NODE_ATTRSET:
+      case NODE_ATTRASGN:
       case NODE_OP_ASGN1:
       case NODE_OP_ASGN2:
       case NODE_MASGN:
