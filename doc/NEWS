@@ -691,6 +691,10 @@
 
   fast YAML parser.
 
+: lib/abbrev
+
+  creates an abbreviation table from a list
+
 : lib/benchmark
 
   Ruby scripts benchmarker
@@ -714,6 +718,10 @@
 : lib/fileutils
 
   file utility library.
+
+: lib/generator
+
+  converts an internal iterator to an external iterator
 
 : lib/gserver
 

@@ -1,3 +1,11 @@
+Wed Oct 15 05:05:53 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/generator.rb: A new library which converts an internal
+	  iterator to an external iterator.
+
+	* lib/abbrev.rb: A new library which creates an abbreviation table
+	  from a list.
+
 Wed Oct 15 04:31:51 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/demos-en/entry3.rb, ext/tk/sample/demos-jp/entry3.rb : 
