@@ -73,15 +73,23 @@ rb_obj_id(obj)
 }
 
 VALUE
-rb_obj_class(obj)
-    VALUE obj;
+rb_class_real(cl)
+    VALUE cl;
 {
-    VALUE cl = CLASS_OF(obj);
-
+    if (TYPE(cl) == T_ICLASS) {
+	cl = RBASIC(cl)->klass;
+    }
     while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
 	cl = RCLASS(cl)->super;
     }
     return cl;
+}
+
+VALUE
+rb_obj_class(obj)
+    VALUE obj;
+{
+    return rb_class_real(CLASS_OF(obj));
 }
 
 VALUE

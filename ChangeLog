@@ -1,3 +1,8 @@
+Tue Dec 18 01:02:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): should not select a thread which is
+	  not yet initialized.
+
 Mon Dec 17 17:06:56 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* intern.h: add prototypes.
@@ -19,6 +24,22 @@ Mon Dec 17 17:06:56 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* ruby.c: (req_list_head, req_list_last): ditto.
 
 	* ruby.c (require_libraries): ditto.
+
+Mon Dec 17 00:02:04 2001  Guy Decoux  <ts@moulon.inra.fr>
+
+	* variable.c (find_class_path): should initialize iv_tbl if it's
+	  NULL.
+
+Fri Dec 14 00:16:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_define_class): should return the existing class if
+	  the class is already defined and its superclass is ideintical to
+	  the specified superclass.
+
+	* class.c (rb_define_class_under): ditto.
+
+	* class.c (rb_define_module): should return the existing module if
+	  the module is already defined.
 
 Thu Dec 13 10:03:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

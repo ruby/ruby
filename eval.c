@@ -3082,13 +3082,7 @@ rb_eval(self, n)
 			     rb_id2name(node->nd_cname));
 		}
 		if (super) {
-		    tmp = RCLASS(klass)->super;
-		    if (FL_TEST(tmp, FL_SINGLETON)) {
-			tmp = RCLASS(tmp)->super;
-		    }
-		    while (TYPE(tmp) == T_ICLASS) {
-			tmp = RCLASS(tmp)->super;
-		    }
+		    tmp = rb_class_real(RCLASS(klass)->super);
 		    if (tmp != super) {
 			goto override_class;
 		    }
@@ -7650,7 +7644,7 @@ rb_thread_schedule()
 	    next = th;
 	    break;
 	}
-	if (th->status == THREAD_RUNNABLE) {
+	if (th->status == THREAD_RUNNABLE && th->stk_ptr) {
 	    if (!next || next->priority < th->priority) 
 	       next = th;
 	}

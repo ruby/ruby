@@ -522,7 +522,14 @@ The variable ruby-indent-level controls the amount of indentation.
 	       (re-search-backward "#" (save-excursion
 					 (beginning-of-line)
 					 (point)) t)
+	       (save-excursion
+		 (forward-char -1)
+		 (not (looking-at "\\?")))
 	       (skip-chars-backward " \t")
+	       (if (save-excursion
+		     (forward-char -1)
+		     (looking-at "\\?"))
+		   (skip-chars-forward " \t"))
 	       (setq state (ruby-parse-region parse-start (point)))
 	       (nth 0 state)
 	       (goto-char pos)))
@@ -668,11 +675,37 @@ An end of a defun is found by moving forward from the beginning of one."
 	    '(lambda ()
 	       (make-local-variable 'font-lock-syntactic-keywords)
 	       (setq font-lock-syntactic-keywords
-		     '(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
+		     '(
+		       ;; #{ }, #$hoge, #@foo are not comments
 		       ("\\(#\\)[{$@]" 1 (1 . nil))
-		       ("\\(/\\)\\([^/\n]\\|\\\\/\\)*\\(/\\)"
-			(1 (7 . ?'))
-			(3 (7 . ?')))))
+		       ;; the last $' in the string ,'...$' is not variable 
+		       ;; the last ?' in the string ,'...?' is not ascii code 
+		       ("\\(^\\|[[\\s <+(,=]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[?$]\\('\\)"
+			(2 (7 . nil))
+			(4 (7 . nil)))	
+		       ;; the last $` in the string ,`...$` is not variable
+		       ;; the last ?` in the string ,`...?` is not ascii code
+		       ("\\(^\\|[[\\s <+(,=]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[?$]\\(`\\)"
+			(2 (7 . nil))
+			(4 (7 . nil)))
+		       ;; the last $" in the string ,"...$" is not variable
+		       ;; the last ?" in the string ,"...?" is not ascii code
+		       ("\\(^\\|[[\\s <+(,=]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[?$]\\(\"\\)"
+			(2 (7 . nil))
+			(4 (7 . nil)))
+		       ;; $' $" $` .... are variables
+		       ;; ?' ?" ?` are ascii codes
+		       ("[?$][#\"'`]" 0 (1 . nil))
+		       ;; regexps 
+		       ("\\(^\\|[=(,~?:;]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
+			(4 (7 . ?/))
+			(6 (7 . ?/)))
+		       ;; %Q!...! 
+		       ("\\(^\\|[[\\s <+(,=]\\)%[xrqQ]?\\([^a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\2\\)" 
+			(2 (7 . nil))
+			(4 (7 . nil)))		       
+		       ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
+		       ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
 	       (make-local-variable 'font-lock-defaults)
 	       (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
 	       (setq font-lock-keywords ruby-font-lock-keywords)))
@@ -687,6 +720,21 @@ An end of a defun is found by moving forward from the beginning of one."
 	      (progn
 		(set-match-data (list beg (point)))
 		t)))))
+
+  (defun ruby-font-lock-maybe-docs (limit)
+    (let (beg)
+      (save-excursion
+	(if (and (re-search-backward "^=\\(begin\\|end\\)\\(\\s \\|$\\)" nil t)
+		 (string= (match-string 1) "begin"))
+	    (progn
+	      (beginning-of-line)
+	      (setq beg (point)))))
+      (if (and beg (and (re-search-forward "^=\\(begin\\|end\\)\\(\\s \\|$\\)" nil t)
+			(string= (match-string 1) "end")))
+	  (progn
+	    (set-match-data (list beg (point)))
+	    t)
+	nil)))
 
   (defvar ruby-font-lock-keywords
     (list
@@ -737,10 +785,14 @@ An end of a defun is found by moving forward from the beginning of one."
      '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\b\\([^_]\\|$\\)"
        2 font-lock-variable-name-face)
      ;; variables
-     '("[$@].\\(\\w\\|_\\)*"
+     '("\\(\\$\\([^a-zA-Z0-9 \n]\\|[0-9]\\)\\)\\W"
+       1 font-lock-variable-name-face)     
+     '("\\(\\$\\|@\\|@@\\)\\(\\w\\(\\w\\|_\\)*\\|#{\\)"
        0 font-lock-variable-name-face)
      ;; embedded document
      '(ruby-font-lock-docs
+       0 font-lock-comment-face t)
+     '(ruby-font-lock-maybe-docs
        0 font-lock-comment-face t)
      ;; constants
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
@@ -749,8 +801,11 @@ An end of a defun is found by moving forward from the beginning of one."
      '("^\\s *def\\s +\\([^( ]+\\)"
        1 font-lock-function-name-face)
      ;; symbols
-     '("\\(^\\|[^:]\\)\\(:\\([-+/%&|^~`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|\\[\\]\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b\\)\\)\\)"
-       2 font-lock-reference-face))
+     '("\\(^\\|[^:]\\)\\(:\\([-+/%&|^~`]\\|\\*\\*?\\|<\\(<\\|=>?\\)?\\|>[>=]?\\|===?\\|=~\\|\\[\\]\\|\\(\\w\\|_\\)+\\([!?=]\\|\\b\\)\\|#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}\\)\\)"
+       2 font-lock-reference-face)
+     ;; expression expansion
+     '("#{[^}\n\\\\]*\\(\\\\.[^}\n\\\\]*\\)*}" 
+       0 font-lock-variable-name-face t))
     "*Additional expressions to highlight in ruby mode."))
 
  ((featurep 'hilit19)

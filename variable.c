@@ -129,6 +129,9 @@ find_class_path(klass)
 	st_foreach(rb_class_tbl, fc_i, &arg);
     }
     if (arg.path) {
+	if (!ROBJECT(klass)->iv_tbl) {
+	    ROBJECT(klass)->iv_tbl = st_init_numtable();
+	} 
 	st_insert(ROBJECT(klass)->iv_tbl,rb_intern("__classpath__"),arg.path);
 	return arg.path;
     }
@@ -142,12 +145,7 @@ classname(klass)
     VALUE path = Qnil;
     ID classpath = rb_intern("__classpath__");
 
-    if (TYPE(klass) == T_ICLASS) {
-	klass = RBASIC(klass)->klass;
-    }
-    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
-	klass = (VALUE)RCLASS(klass)->super;
-    }
+    klass = rb_class_real(klass);
     if (!klass) klass = rb_cObject;
     if (ROBJECT(klass)->iv_tbl &&
 	!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {

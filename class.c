@@ -147,6 +147,16 @@ rb_define_class(name, super)
     ID id;
 
     id = rb_intern(name);
+    if (rb_const_defined(rb_cObject, id)) {
+	klass = rb_const_get(rb_cObject, id);
+	if (TYPE(klass) != T_CLASS) {
+	    rb_raise(rb_eTypeError, "%s is not a class", name);
+	}
+	if (rb_class_real(RCLASS(klass)->super) != super) {
+	    rb_raise(rb_eNameError, "%s is already defined", name);
+	}
+	return klass;
+    }
     klass = rb_define_class_id(id, super);
 
     st_add_direct(rb_class_tbl, id, klass);
@@ -164,6 +174,16 @@ rb_define_class_under(outer, name, super)
     ID id;
 
     id = rb_intern(name);
+    if (rb_const_defined_at(outer, id)) {
+	klass = rb_const_get(outer, id);
+	if (TYPE(klass) != T_CLASS) {
+	    rb_raise(rb_eTypeError, "%s is not a class", name);
+	}
+	if (rb_class_real(RCLASS(klass)->super) != super) {
+	    rb_raise(rb_eNameError, "%s is already defined", name);
+	}
+	return klass;
+    }
     klass = rb_define_class_id(id, super);
     rb_const_set(outer, id, klass);
     rb_set_class_path(klass, outer, name);
@@ -205,6 +225,12 @@ rb_define_module(name)
     ID id;
 
     id = rb_intern(name);
+    if (rb_const_defined(rb_cObject, id)) {
+	module = rb_const_get(rb_cObject, id);
+	if (TYPE(module) == T_MODULE)
+	    return module;
+	rb_raise(rb_eTypeError, "%s is not a module", name);
+    }
     module = rb_define_module_id(id);
     st_add_direct(rb_class_tbl, id, module);
 
@@ -220,6 +246,13 @@ rb_define_module_under(outer, name)
     ID id;
 
     id = rb_intern(name);
+    if (rb_const_defined(outer, id)) {
+	module = rb_const_get(rb_cObject, id);
+	if (TYPE(module) == T_MODULE)
+	    return module;
+	rb_raise(rb_eTypeError, "%s::%s is not a module",
+		 rb_class2name(outer), rb_class2name(CLASS_OF(module)));
+    }
     module = rb_define_module_id(id);
     rb_const_set(outer, id, module);
     rb_set_class_path(module, outer, name);

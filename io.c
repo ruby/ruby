@@ -2134,18 +2134,17 @@ rb_io_puts(argc, argv, out)
 	return Qnil;
     }
     for (i=0; i<argc; i++) {
-	switch (TYPE(argv[i])) {
-	  case T_NIL:
+	if (NIL_P(argv[i])) {
 	    line = rb_str_new2("nil");
-	    break;
-	  case T_ARRAY:
-	    rb_protect_inspect(io_puts_ary, argv[i], out);
-	    continue;
-	  default:
-	    line = argv[i];
-	    break;
 	}
-	line = rb_obj_as_string(line);
+	else {
+	    line = rb_check_convert_type(argv[i], T_ARRAY, "Array", "to_ary");
+	    if (!NIL_P(line)) {
+		rb_protect_inspect(io_puts_ary, line, out);
+		continue;
+	    }
+	    line = rb_obj_as_string(argv[i]);
+	}
 	rb_io_write(out, line);
 	if (RSTRING(line)->ptr[RSTRING(line)->len-1] != '\n') {
 	    rb_io_write(out, rb_default_rs);
