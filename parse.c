@@ -5721,7 +5721,6 @@ retry:
 		}
 		else if (c >= '0' && c <= '7' || c == '_') {
 		    /* octal */
-		    tokadd(c);
 	            do {
 			if (c  == '_') continue;
 			if (c < '0' || c > '7') break;

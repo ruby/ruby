@@ -32,6 +32,7 @@ end
 
 $srcdir = CONFIG["srcdir"]
 $libdir = CONFIG["libdir"]+"/"+CONFIG["ruby_install_name"]
+$libdir += "/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
 $archdir = $libdir+"/"+CONFIG["arch"]
 $install = CONFIG["INSTALL_PROGRAM"]
 $install_data = CONFIG["INSTALL_DATA"]

@@ -295,12 +295,12 @@ LDSHARED = @LDSHARED@
   mfile.printf "\
 
 program_transform_name = -e @program_transform_name@
-RUBY_INSTALL_NAME = `t='$(program_transform_name)'; echo ruby | sed $$t`
+RUBY_INSTALL_NAME = `t='$(program_transform_name)'; echo @RUBY_INSTALL_NAME@ | sed $$t`
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
-pkglibdir = $(libdir)/$(RUBY_INSTALL_NAME)
+pkglibdir = $(libdir)/$(RUBY_INSTALL_NAME)/@MAJOR@.@MINOR@
 archdir = $(pkglibdir)/@arch@
 @SET_MAKE@
 

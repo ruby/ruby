@@ -4309,7 +4309,6 @@ ri_suffix=
 test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
-LIBSUFFIX=$ri_suffix
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
 RUBY_LIB_PATH="${prefix}/lib/${RUBY_INSTALL_NAME}/${MAJOR}.${MINOR}"
 cat >> confdefs.h <<EOF
