@@ -3503,6 +3503,7 @@ rb_yield_0(val, self, klass, acheck)
 {
     NODE *node;
     volatile VALUE result = Qnil;
+    volatile VALUE old_cref;
     struct BLOCK *block;
     struct SCOPE *old_scope;
     struct FRAME frame;
@@ -3519,6 +3520,8 @@ rb_yield_0(val, self, klass, acheck)
     frame = block->frame;
     frame.prev = ruby_frame;
     ruby_frame = &(frame);
+    old_cref = (VALUE)ruby_cref;
+    ruby_cref = (NODE*)ruby_frame->cbase;
     old_scope = ruby_scope;
     ruby_scope = block->scope;
     ruby_block = block->prev;
@@ -3643,6 +3646,7 @@ rb_yield_0(val, self, klass, acheck)
     POP_VARS();
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
+    ruby_cref = (NODE*)old_cref;
     if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
        scope_dup(old_scope);
     ruby_scope = old_scope;

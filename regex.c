@@ -2258,6 +2258,7 @@ re_compile_pattern(pattern, size, bufp)
 	  if (!ISDIGIT(c)) PATUNFETCH;
 
 	  if (c1 >= regnum) {
+         need_to_get_octal:
 	    /* need to get octal */
 	    p = p_save;
 	    c = scan_oct(p_save, 3, &numlen) & 0xff;
@@ -2269,9 +2270,24 @@ re_compile_pattern(pattern, size, bufp)
 	}
 
 	/* Can't back reference to a subexpression if inside of it.  */
-	for (stackt = stackp - 2;  stackt > stackb;  stackt -= 5)
-	  if (*stackt == c1)
-	    goto normal_char;
+       for (stackt = stackp - 2;  stackt > stackb;  ) {
+           switch (*stackt) {
+           case '(':
+               if (stackt[-2] == c1)
+                   goto need_to_get_octal;
+               stackt -= 5;
+               break;
+           case '!':
+               stackt--;
+           case '=':
+           case '>':
+               stackt -= 4;
+               break;
+           default:
+               stackt -= 3;
+               break;
+           }
+       }
 	laststart = b;
 	BUFPUSH(duplicate);
 	BUFPUSH(c1);

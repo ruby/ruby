@@ -140,6 +140,11 @@ Thu May 17 05:23:52 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 	* lib/irb.rb lib/irb/multi-irb.rb lib/irb/ruby-lex.rb lib/irb/version.rb
 	  resolve ctrl-c problem
 
+Wed May 16 01:48:34 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* regex.c (re_compile_pattern): no back reference to a
+	  subexpression if inside of it.
+
 Tue May 15 17:46:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_and): should not push frozen key string.
@@ -190,6 +195,10 @@ Fri May 11 02:42:40 2001  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 Fri May 11 02:00:44 2001  Ryo HAYASAKA  <ryoh@jaist.ac.jp>
 
 	* bignum.c (bigdivrem): access boundary bug.
+
+Wed May  9 14:38:33 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_yield_0): preserve and restore ruby_cref as well.
 
 Tue May  8 17:12:43 2001  K.Kosako  <kosako@sofnec.co.jp>
 
