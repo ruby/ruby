@@ -3088,7 +3088,9 @@ class TkObject<TkKernel
       begin
 	cget name
       rescue
-	fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
+	fail NameError, 
+	     "undefined local variable or method `#{name}' for #{self.to_s}", 
+	     error_at
       end
     else
       fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
@@ -4773,6 +4775,15 @@ module TkClipboard
   end
 end
 
+# widget_destroy_hook
+require 'tkvirtevent'
+TkBindTag::ALL.bind(TkVirtualEvent.new('Destroy'), proc{|widget| 
+		      if widget.respond_to? :__destroy_hook__
+			widget.__destroy_hook__
+		      end
+		    }, '%W')
+
+# autoload
 autoload :TkCanvas, 'tkcanvas'
 autoload :TkImage, 'tkcanvas'
 autoload :TkBitmapImage, 'tkcanvas'
@@ -4789,7 +4800,6 @@ autoload :TkAfter, 'tkafter'
 autoload :TkTimer, 'tkafter'
 autoload :TkPalette, 'tkpalette'
 autoload :TkFont, 'tkfont'
-autoload :TkVirtualEvent, 'tkvirtevent'
 autoload :TkBgError, 'tkbgerror'
 autoload :TkManageFocus, 'tkmngfocus'
 autoload :TkPalette, 'tkpalette'

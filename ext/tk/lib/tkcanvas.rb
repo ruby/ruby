@@ -32,6 +32,10 @@ class TkCanvas<TkWindow
   WidgetClassName = 'Canvas'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __destroy_hook__
+    TkcItem::CItemID_TBL.delete(@path)
+  end
+
   def create_self(keys)
     if keys and keys != None
       tk_call 'canvas', @path, *hash_kv(keys)
@@ -119,6 +123,11 @@ class TkCanvas<TkWindow
   end
 
   def delete(*args)
+    if TkcItem::CItemID_TBL[self.path]
+      find('withtag', *args).each{|item| 
+	TkcItem::CItemID_TBL[self.path].delete(item.id)
+      }
+    end
     tk_send 'delete', *args.collect{|t| tagid(t)}
     self
   end

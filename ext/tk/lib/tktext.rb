@@ -39,7 +39,13 @@ class TkText<TkTextWin
   end
 
   def init_instance_variable
+    @cmdtbl = {}
     @tags = {}
+  end
+
+  def __destroy_hook__
+    TTagID_TBL.delete(@path)
+    TMarkID_TBL.delete(@path)
   end
 
   def create_self(keys)
@@ -73,10 +79,10 @@ class TkText<TkTextWin
   end
 
   def tagid2obj(tagid)
-    if not @tags[tagid]
-      tagid
-    else
+    if @tags[tagid]
       @tags[tagid]
+    else
+      tagid
     end
   end
 
@@ -92,13 +98,36 @@ class TkText<TkTextWin
     }
   end
 
+  def mark_gravity(mark, direction=nil)
+    if direction
+      tk_send 'mark', 'gravity', mark, direction
+      self
+    else
+      tk_send 'mark', 'gravity', mark
+    end
+  end
+
+  def mark_set(mark, index)
+    tk_send 'mark', 'set', mark, index
+    self
+  end
+  alias set_mark mark_set
+
+  def mark_unset(*marks)
+    tk_send 'mark', 'unset', *marks
+    self
+  end
+  alias unset_mark mark_unset
+
   def mark_next(index)
     tagid2obj(tk_send('mark', 'next', index))
   end
+  alias next_mark mark_next
 
   def mark_previous(index)
     tagid2obj(tk_send('mark', 'previous', index))
   end
+  alias previous_mark mark_previous
 
   def image_cget(index, slot)
     case slot.to_s
@@ -259,12 +288,23 @@ class TkText<TkTextWin
     self
   end
   alias addtag tag_add
+  alias add_tag tag_add
 
   def tag_delete(*tags)
     tk_send 'tag', 'delete', *tags
+    if TkTextTag::TTagID_TBL[@path]
+      tags.each{|tag|
+	if tag.kind_of? TkTextTag
+	  TTagID_TBL[@path].delete(tag.id) 
+	else
+	  TTagID_TBL[@path].delete(tag) 
+	end
+      }
+    end
     self
   end
   alias deltag tag_delete
+  alias delete_tag tag_delete
 
   def tag_bind(tag, seq, cmd=Proc.new, args=nil)
     _bind([@path, 'tag', 'bind', tag], seq, cmd, args)
@@ -876,7 +916,7 @@ class TkTextTag<TkObject
 
   def destroy
     tk_call @t.path, 'tag', 'delete', @id
-    TTagID_TBL[@tpath].delete(@id) if CTagID_TBL[@tpath]
+    TTagID_TBL[@tpath].delete(@id) if TTagID_TBL[@tpath]
     self
   end
 end
@@ -884,7 +924,18 @@ end
 class TkTextNamedTag<TkTextTag
   def self.new(parent, name, *args)
     if TTagID_TBL[parent.path] && TTagID_TBL[parent.path][name]
-      return TTagID_TBL[parent.path][name]
+      tagobj = TTagID_TBL[parent.path][name]
+      if args != [] then
+	keys = args.pop
+	if keys.kind_of? Hash then
+	  tagobj.add(*args) if args != []
+	  tagobj.configure(keys)
+	else
+	  args.push keys
+	  tagobj.add(*args)
+	end
+      end
+      return tagobj
     else
       super(parent, name, *args)
     end
@@ -894,11 +945,11 @@ class TkTextNamedTag<TkTextTag
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
-    @t = parent
+    @parent = @t = parent
     @tpath = parent.path
     @path = @id = name
     TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
-    TTagID_TBL[@tpath][@id] = self
+    TTagID_TBL[@tpath][@id] = self unless TTagID_TBL[@tpath][@id]
     #if mode
     #  tk_call @t.path, "addtag", @id, *args
     #end
@@ -916,27 +967,39 @@ class TkTextNamedTag<TkTextTag
   end
 end
 
-class TkTextTagSel<TkTextTag
-  def initialize(parent, keys=nil)
-    if not parent.kind_of?(TkText)
-      fail format("%s need to be TkText", parent.inspect)
-    end
-    @t = parent
-    @path = @id = 'sel'
-    #tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
-    configure(keys) if keys
-    @t._addtag id, self
+class TkTextTagSel<TkTextNamedTag
+  def self.new(parent, *args)
+    super(parent, 'sel', *args)
   end
 end
 
 class TkTextMark<TkObject
+  TMarkID_TBL = {}
   Tk_TextMark_ID = ['mark0000']
+
+  TkComm.__add_target_for_init__(self)
+
+  def self.__init_tables__
+    TMarkID_TBL.clear
+    Tk_TextMark_ID[0] = 'mark0000'
+  end
+
+  def TkTextMark.id2obj(text, id)
+    tpath = text.path
+    return id unless TMarkID_TBL[tpath]
+    TMarkID_TBL[tpath][id]? TMarkID_TBL[tpath][id]: id
+  end
+
   def initialize(parent, index)
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
-    @t = parent
+    @parent = @t = parent
+    @tpath = parent.path
     @path = @id = Tk_TextMark_ID[0]
+    TMarkID_TBL[@id] = self
+    TMarkID_TBL[@tpath] = {} unless TMarkID_TBL[@tpath]
+    TMarkID_TBL[@tpath][@id] = self
     Tk_TextMark_ID[0] = Tk_TextMark_ID[0].succ
     tk_call @t.path, 'mark', 'set', @id, index
     @t._addtag id, self
@@ -990,39 +1053,45 @@ class TkTextMark<TkObject
   end
 end
 
-class TkTextMarkInsert<TkTextMark
-  def initialize(parent, index=nil)
+class TkTextNamedMark<TkTextMark
+  def self.new(parent, name, *args)
+    if TMarkID_TBL[parent.path] && TMarkID_TBL[parent.path][name]
+      return TMarkID_TBL[parent.path][name]
+    else
+      super(parent, name, *args)
+    end
+  end
+
+  def initialize(parent, name, index=nil)
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
-    @t = parent
-    @path = @id = 'insert'
+    @parent = @t = parent
+    @tpath = parent.path
+    @path = @id = name
+    TMarkID_TBL[@id] = self
+    TMarkID_TBL[@tpath] = {} unless TMarkID_TBL[@tpath]
+    TMarkID_TBL[@tpath][@id] = self unless TMarkID_TBL[@tpath][@id]
     tk_call @t.path, 'mark', 'set', @id, index if index
     @t._addtag id, self
+  end
+end
+
+class TkTextMarkInsert<TkTextNamedMark
+  def self.new(parent,*args)
+    super(parent, 'insert', *args)
   end
 end
 
 class TkTextMarkCurrent<TkTextMark
-  def initialize(parent,index=nil)
-    if not parent.kind_of?(TkText)
-      fail format("%s need to be TkText", parent.inspect)
-    end
-    @t = parent
-    @path = @id = 'current'
-    tk_call @t.path, 'mark', 'set', @id, index if index
-    @t._addtag id, self
+  def self.new(parent,*args)
+    super(parent, 'current', *args)
   end
 end
 
 class TkTextMarkAnchor<TkTextMark
-  def initialize(parent,index=nil)
-    if not parent.kind_of?(TkText)
-      fail format("%s need to be TkText", parent.inspect)
-    end
-    @t = parent
-    @path = @id = 'anchor'
-    tk_call @t.path, 'mark', 'set', @id, index if index
-    @t._addtag id, self
+  def self.new(parent,*args)
+    super(parent, 'anchor', *args)
   end
 end
 
