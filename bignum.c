@@ -209,6 +209,10 @@ rb_cstr2inum(str, base)
 	str++;
 	sign = 0;
     }
+    if (str[0] == '+' || str[0] == '-') {
+	if (badcheck) goto bad;
+	return INT2FIX(0);
+    }
     if (base == 0) {
 	if (str[0] == '0') {
 	    if (str[1] == 'x' || str[1] == 'X') {

@@ -1421,16 +1421,17 @@ superclass(self, node)
 #define ruby_cbase (RNODE(ruby_frame->cbase)->nd_clss)
 
 static VALUE
-ev_const_defined(cref, id)
+ev_const_defined(cref, id, self)
     NODE *cref;
     ID id;
+    VALUE self;
 {
     NODE *cbase = cref;
 
     while (cbase && cbase->nd_clss != rb_cObject) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (NIL_P(klass)) return rb_const_defined(rb_cObject, id);
+	if (NIL_P(klass)) return rb_const_defined(CLASS_OF(self), id);
 	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
 	    return Qtrue;
 	}
@@ -1440,9 +1441,10 @@ ev_const_defined(cref, id)
 }
 
 static VALUE
-ev_const_get(cref, id)
+ev_const_get(cref, id, self)
     NODE *cref;
     ID id;
+    VALUE self;
 {
     NODE *cbase = cref;
     VALUE result;
@@ -1450,34 +1452,13 @@ ev_const_get(cref, id)
     while (cbase && cbase->nd_clss != rb_cObject) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (NIL_P(klass)) return rb_const_get(rb_cObject, id);
+	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);
 	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
 	    return result;
 	}
 	cbase = cbase->nd_next;
     }
     return rb_const_get(cref->nd_clss, id);
-}
-
-static VALUE
-ev_const_set(cref, id, val)
-    NODE *cref;
-    ID id;
-    VALUE val;
-{
-    NODE *cbase = cref;
-
-    while (cbase && cbase->nd_clss != rb_cObject) {
-	struct RClass *klass = RCLASS(cbase->nd_clss);
-
-	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
-	    st_insert(klass->iv_tbl, id, val);
-	    return val;
-	}
-	cbase = cbase->nd_next;
-    }
-    rb_const_assign(cbase->nd_clss, id, val);
-    return val;
 }
 
 static VALUE
@@ -1825,7 +1806,7 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CONST:
-	if (ev_const_defined(RNODE(ruby_frame->cbase), node->nd_vid)) {
+	if (ev_const_defined(RNODE(ruby_frame->cbase), node->nd_vid, self)) {
 	    return "constant";
 	}
 	break;
@@ -2737,7 +2718,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_CONST:
-	result = ev_const_get(RNODE(ruby_frame->cbase), node->nd_vid);
+	result = ev_const_get(RNODE(ruby_frame->cbase), node->nd_vid, self);
 	break;
 
       case NODE_CVAR:		/* normal method */
@@ -3538,7 +3519,7 @@ rb_yield_0(val, self, klass, acheck)
 	ruby_dyna_vars = block->dyna_vars;
     }
     ruby_class = klass?klass:block->klass;
-    if (!self) self = block->self;
+    if (!klass) self = block->self;
     node = block->body;
 
     if (block->var) {

@@ -1,3 +1,17 @@
+Wed Mar 14 10:41:34 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): 0 (= Qfalse) is a valid value, so that
+	  default self should be checked by klass == 0.
+
+	* bignum.c (rb_cstr2inum): should disallow '++1', '+-1', etc.
+
+Tue Mar 13 17:51:09 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ev_const_defined): add new parameter self for special
+	  const fallback.
+
+	* eval.c (ev_const_get): ditto.
+
 Tue Mar 13 16:39:45 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dir.c (rb_glob_helper): fix drive letter handling on DOSISH.
