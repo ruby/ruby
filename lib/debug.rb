@@ -529,7 +529,7 @@ class Context
     stdout.print <<EOHELP
 Debugger help v.-0.002b
 Commands
-  b[reak] [file|method:]<line|method>
+  b[reak] [file:]<line|method>
                              set breakpoint to some position
   wat[ch] <expression>       set watchpoint to some expression
   cat[ch] <an Exception>     set catchpoint to an exception
