@@ -517,7 +517,7 @@ EOC
       end
     end
 
-    def tag(indent, additional_attrs=[])
+    def tag(indent, additional_attrs=[], &block)
       next_indent = indent + INDENT
 
       attrs = collect_attrs
@@ -525,9 +525,9 @@ EOC
 
       attrs += additional_attrs
       start_tag = make_start_tag(indent, next_indent, attrs)
-      
-      if block_given?
-        content = yield(next_indent)
+
+      if block
+        content = block.call(next_indent)
       else
         content = []
       end
@@ -794,9 +794,9 @@ EOC
     end
     
     private
-    def tag(indent, attrs)
+    def tag(indent, attrs, &block)
       rv = xmldecl + xml_stylesheet_pi
-      rv << super
+      rv << super(indent, attrs, &block)
       rv
     end
 

@@ -11,7 +11,7 @@ module RSS
         install_model(x, '?')
       end
 
-      undef :ttl=
+      remove_method :ttl=
       def ttl=(value)
         @ttl = value.to_i
       end

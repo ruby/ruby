@@ -53,12 +53,12 @@ module RSS
           klass_name = x.capitalize
           klass.install_have_child_element(var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
-            undef #{var_name}
+            remove_method :#{var_name}
             def #{var_name}
               @#{var_name} and @#{var_name}.value
             end
 
-            undef #{var_name}=
+            remove_method :#{var_name}=
             def #{var_name}=(value)
               @#{var_name} = new_with_value_if_need(#{klass_name}, value)
             end
@@ -70,7 +70,7 @@ module RSS
           klass_name = name.capitalize
           klass.install_have_children_element(var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
-            undef #{var_name}
+            remove_method :#{var_name}
             def #{var_name}(*args)
               if args.empty?
                 @#{var_name}.first and @#{var_name}.first.value
@@ -84,8 +84,8 @@ module RSS
               end
             end
 
-            undef #{var_name}=
-            undef set_#{var_name}
+            remove_method :#{var_name}=
+            remove_method :set_#{var_name}
             def #{var_name}=(*args)
               if args.size == 1
                 item = new_with_value_if_need(#{klass_name}, args[0])

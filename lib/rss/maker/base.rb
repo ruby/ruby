@@ -186,7 +186,7 @@ EOC
       end
       
       private
-      undef make_xml_stylesheets
+      remove_method :make_xml_stylesheets
       def make_xml_stylesheets
         XMLStyleSheets.new(self)
       end

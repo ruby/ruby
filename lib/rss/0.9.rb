@@ -309,7 +309,7 @@ module RSS
             @content = content
           end
 
-          undef :content=
+          remove_method :content=
           def content=(value)
             @content = value.to_i
           end

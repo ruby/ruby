@@ -1,3 +1,11 @@
+Sun Nov 28 15:57:58 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (RSS::Element#tag): not use block_given? for
+	  working with ruby 1.6 again.
+
+	* lib/rss/{0.9,2.0,trackback}.rb, lib/rss/maker/base.rb:
+	  undef -> remove_method for working with ruby 1.6 again.
+
 Sun Nov 28 15:51:40 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::NotSetError): added.
