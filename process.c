@@ -72,6 +72,29 @@ static VALUE S_Tms;
 #define WSTOPSIG        WEXITSTATUS
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__) && !defined(__MacOS_X__)
+#define __MacOS_X__ 1
+#endif
+
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__)
+#define HAVE_44BSD_SETUID 1
+#define HAVE_44BSD_SETGID 1
+#endif
+
+#if defined(__MacOS_X__) || defined(__bsdi__)
+#define BROKEN_SETREUID 1
+#define BROKEN_SETREGID 1
+#endif
+
+#if defined(HAVE_44BSD_SETUID) || defined(__MacOS_X__)
+#if !defined(USE_SETREUID) && !defined(BROKEN_SETREUID)
+#define OBSOLETE_SETREUID 1
+#endif
+#if !defined(USE_SETREGID) && !defined(BROKEN_SETREGID)
+#define OBSOLETE_SETREGID 1
+#endif
+#endif
+
 static VALUE
 get_pid()
 {
@@ -1158,6 +1181,66 @@ proc_setpriority(obj, which, who, prio)
 }
 
 static VALUE
+p_sys_setuid(obj, id)
+    VALUE obj, id;
+{
+#if defined HAVE_SETUID
+    if (setuid(NUM2INT(id)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
+p_sys_setruid(obj, id)
+    VALUE obj, id;
+{
+#if defined HAVE_SETRUID
+    if (setruid(NUM2INT(id)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
+p_sys_seteuid(obj, id)
+    VALUE obj, id;
+{
+#if defined HAVE_SETEUID
+    if (seteuid(NUM2INT(id)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
+p_sys_setreuid(obj, rid, eid)
+    VALUE obj, rid, eid;
+{
+#if defined HAVE_SETREUID
+    if (setreuid(NUM2INT(rid),NUM2INT(eid)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
+p_sys_setresuid(obj, rid, eid, sid)
+    VALUE obj, rid, eid, sid;
+{
+#if defined HAVE_SETRESUID
+    if (setresuid(NUM2INT(rid),NUM2INT(eid),NUM2INT(sid)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
 proc_getuid(obj)
     VALUE obj;
 {
@@ -1177,7 +1260,7 @@ proc_setuid(obj, id)
     if (setreuid(uid, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETRUID
     if (setruid(uid) < 0) rb_sys_fail(0);
-#else
+#elif defined HAVE_SETUID
     {
 	if (geteuid() == uid) {
 	    if (setuid(uid) < 0) rb_sys_fail(0);
@@ -1186,8 +1269,225 @@ proc_setuid(obj, id)
 	    rb_notimplement();
 	}
     }
+#else
+    rb_notimplement();
 #endif
     return INT2FIX(uid);
+}
+
+static int SAVED_USER_ID;
+
+static VALUE
+p_uid_change_privilege(obj, id)
+    VALUE obj, id;
+{
+    extern int errno;
+    int uid;
+
+    uid = NUM2INT(id);
+
+    if (geteuid() == 0) { /* root-user */
+#if defined(HAVE_SETRESUID)
+      if (setresuid(uid, uid, uid) < 0) rb_sys_fail(0);
+      SAVED_USER_ID = uid;
+#elif defined(HAVE_SETUID)
+      if (setuid(uid) < 0) rb_sys_fail(0);
+      SAVED_USER_ID = uid;
+#elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
+      if (getuid() == uid) {
+	if (SAVED_USER_ID == uid) {
+	  if (setreuid(-1, uid) < 0) rb_sys_fail(0);
+	} else {
+	  if (uid == 0) { /* (r,e,s) == (root, root, x) */
+	    if (setreuid(-1, SAVED_USER_ID) < 0) rb_sys_fail(0);
+	    if (setreuid(SAVED_USER_ID, 0) < 0) rb_sys_fail(0);
+	    SAVED_USER_ID = 0; /* (r,e,s) == (x, root, root) */
+	    if (setreuid(uid, uid) < 0) rb_sys_fail(0);
+	    SAVED_USER_ID = uid;
+	  } else {
+	    if (setreuid(0, -1) < 0) rb_sys_fail(0);
+	    SAVED_USER_ID = 0;
+	    if (setreuid(uid, uid) < 0) rb_sys_fail(0);
+	    SAVED_USER_ID = uid;
+	  }
+	}
+      } else {
+	if (setreuid(uid, uid) < 0) rb_sys_fail(0);
+	SAVED_USER_ID = uid;
+      }
+#elif defined(HAVE_SETRUID) && defined(HAVE_SETEUID)
+      if (getuid() == uid) {
+	if (SAVED_USER_ID == uid) {
+	  if (seteuid(uid) < 0) rb_sys_fail(0);
+	} else {
+	  if (uid == 0) {
+	    if (setruid(SAVED_USER_ID) < 0) rb_sys_fail(0);
+	    SAVED_USER_ID = 0;
+	    if (setruid(0) < 0) rb_sys_fail(0);
+	  } else {
+	    if (setruid(0) < 0) rb_sys_fail(0);
+	    SAVED_USER_ID = 0;
+	    if (seteuid(uid) < 0) rb_sys_fail(0);
+	    if (setruid(uid) < 0) rb_sys_fail(0);
+	    SAVED_USER_ID = uid;
+	  }
+	}
+      } else {
+	if (seteuid(uid) < 0) rb_sys_fail(0);
+	if (setruid(uid) < 0) rb_sys_fail(0);
+	SAVED_USER_ID = uid;
+      }
+#else
+      rb_notimplement();
+#endif
+    } else { /* unprivileged user */
+#if defined(HAVE_SETRESUID)
+      if (setresuid((getuid() == uid)? -1: uid, 
+		    (geteuid() == uid)? -1: uid, 
+		    (SAVED_USER_ID == uid)? -1: uid) < 0) rb_sys_fail(0);
+      SAVED_USER_ID = uid;
+#elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
+      if (SAVED_USER_ID == uid) {
+	if (setreuid((getuid() == uid)? -1: uid, 
+		     (geteuid() == uid)? -1: uid) < 0) rb_sys_fail(0);
+      } else if (getuid() != uid) {
+	if (setreuid(uid, (geteuid() == uid)? -1: uid) < 0) rb_sys_fail(0);
+	SAVED_USER_ID = uid;
+      } else if (/* getuid() == uid && */ geteuid() != uid) {
+	if (setreuid(geteuid(), uid) < 0) rb_sys_fail(0);
+	SAVED_USER_ID = uid;
+	if (setreuid(uid, -1) < 0) rb_sys_fail(0);
+      } else { /* getuid() == uid && geteuid() == uid */
+	if (setreuid(-1, SAVED_USER_ID) < 0) rb_sys_fail(0);
+	if (setreuid(SAVED_USER_ID, uid) < 0) rb_sys_fail(0);
+	SAVED_USER_ID = uid;
+	if (setreuid(uid, -1) < 0) rb_sys_fail(0);
+      }
+#elif defined(HAVE_SETRUID) && defined(HAVE_SETEUID)
+      if (SAVED_USER_ID == uid) {
+	if (geteuid() != uid && seteuid(uid) < 0) rb_sys_fail(0);
+	if (getuid() != uid && setruid(uid) < 0) rb_sys_fail(0);
+      } else if (/* SAVED_USER_ID != uid && */ geteuid() == uid) {
+	if (getuid() != uid) {
+	  if (setruid(uid) < 0) rb_sys_fail(0);
+	  SAVED_USER_ID = uid;
+	} else {
+	  if (setruid(SAVED_USER_ID) < 0) rb_sys_fail(0);
+	  SAVED_USER_ID = uid;
+	  if (setruid(uid) < 0) rb_sys_fail(0);
+	}
+      } else if (/* geteuid() != uid && */ getuid() == uid) {
+	if (seteuid(uid) < 0) rb_sys_fail(0);
+	if (setruid(SAVED_USER_ID) < 0) rb_sys_fail(0);
+	SAVED_USER_ID = uid;
+	if (setruid(uid) < 0) rb_sys_fail(0);
+      } else {
+	errno = EPERM;
+	rb_sys_fail(0);
+      }
+#elif defined HAVE_44BSD_SETUID
+      if (getuid() == uid) {
+	/* (r,e,s)==(uid,?,?) ==> (uid,uid,uid) */
+	if (setuid(uid) < 0) rb_sys_fail(0);
+	SAVED_USER_ID = uid;
+      } else {
+	errno = EPERM;
+	rb_sys_fail(0);
+      }
+#elif defined HAVE_SETEUID
+      if (getuid() == uid && SAVED_USER_ID == uid) {
+	if (seteuid(uid) < 0) rb_sys_fail(0);
+      } else {
+	errno = EPERM;
+	rb_sys_fail(0);
+      }
+#elif defined HAVE_SETUID
+      if (getuid() == uid && SAVED_USER_ID == uid) {
+	if (setuid(uid) < 0) rb_sys_fail(0);
+      } else {
+	errno = EPERM;
+	rb_sys_fail(0);
+      }
+#else
+      rb_notimplement();
+#endif
+    }
+    return INT2FIX(uid);
+}
+
+static VALUE
+p_sys_setgid(obj, id)
+    VALUE obj, id;
+{
+#if defined HAVE_SETGID
+    if (setgid(NUM2INT(id)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
+p_sys_setrgid(obj, id)
+    VALUE obj, id;
+{
+#if defined HAVE_SETRGID
+    if (setrgid(NUM2INT(id)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
+p_sys_setegid(obj, id)
+    VALUE obj, id;
+{
+#if defined HAVE_SETEGID
+    if (setegid(NUM2INT(id)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
+p_sys_setregid(obj, rid, eid)
+    VALUE obj, rid, eid;
+{
+#if defined HAVE_SETREGID
+    if (setregid(NUM2INT(rid),NUM2INT(eid)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
+p_sys_setresgid(obj, rid, eid, sid)
+    VALUE obj, rid, eid, sid;
+{
+#if defined HAVE_SETRESGID
+    if (setresgid(NUM2INT(rid),NUM2INT(eid),NUM2INT(sid)) != 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
+}
+
+static VALUE
+p_sys_issetugid(obj)
+    VALUE obj;
+{
+#if defined HAVE_ISSETUGID
+    if (issetugid()) {
+      return Qtrue;
+    } else {
+      return Qfalse;
+    }
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -1208,9 +1508,9 @@ proc_setgid(obj, id)
     if (setresgid(gid, -1, -1) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETREGID
     if (setregid(gid, -1) < 0) rb_sys_fail(0);
-#elif defined HAS_SETRGID
+#elif defined HAVE_SETRGID
     if (setrgid((GIDTYPE)gid) < 0) rb_sys_fail(0);
-#else
+#elif defined HAVE_SETGID
     {
 	if (getegid() == gid) {
 	    if (setgid(gid) < 0) rb_sys_fail(0);
@@ -1219,6 +1519,8 @@ proc_setgid(obj, id)
 	    rb_notimplement();
 	}
     }
+#else
+    rb_notimplement();
 #endif
     return INT2FIX(gid);
 }
@@ -1302,6 +1604,21 @@ proc_setgroups(VALUE obj, VALUE ary)
 }
 
 static VALUE
+proc_initgroups(obj, uname, base_grp)
+     VALUE obj, uname, base_grp;
+{
+#ifdef HAVE_INITGROUPS
+    if (initgroups(StringValuePtr(uname), (gid_t)NUM2INT(base_grp)) != 0) {
+	rb_sys_fail(0);
+    }
+    return proc_getgroups(obj);
+#else
+    rb_notimplement();
+    return Qnil;
+#endif
+}
+
+static VALUE
 proc_getmaxgroups(obj)
     VALUE obj;
 {
@@ -1322,6 +1639,147 @@ proc_setmaxgroups(obj, val)
     return INT2FIX(maxgroups);
 }
 
+static int SAVED_GROUP_ID;
+
+static VALUE
+p_gid_change_privilege(obj, id)
+    VALUE obj, id;
+{
+    extern int errno;
+    int gid;
+
+    gid = NUM2INT(id);
+
+    if (geteuid() == 0) { /* root-user */
+#if defined(HAVE_SETRESGID)
+      if (setresgid(gid, gid, gid) < 0) rb_sys_fail(0);
+      SAVED_GROUP_ID = gid;
+#elif defined HAVE_SETGID
+      if (setgid(gid) < 0) rb_sys_fail(0);
+      SAVED_GROUP_ID = gid;
+#elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
+      if (getgid() == gid) {
+	if (SAVED_GROUP_ID == gid) {
+	  if (setregid(-1, gid) < 0) rb_sys_fail(0);
+	} else {
+	  if (gid == 0) { /* (r,e,s) == (root, y, x) */
+	    if (setregid(-1, SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+	    if (setregid(SAVED_GROUP_ID, 0) < 0) rb_sys_fail(0);
+	    SAVED_GROUP_ID = 0; /* (r,e,s) == (x, root, root) */
+	    if (setregid(gid, gid) < 0) rb_sys_fail(0);
+	    SAVED_GROUP_ID = gid;
+	  } else { /* (r,e,s) == (z, y, x) */
+	    if (setregid(0, 0) < 0) rb_sys_fail(0);
+	    SAVED_GROUP_ID = 0;
+	    if (setregid(gid, gid) < 0) rb_sys_fail(0);
+	    SAVED_GROUP_ID = gid;
+	  }
+	}
+      } else {
+	if (setregid(gid, gid) < 0) rb_sys_fail(0);
+	SAVED_GROUP_ID = gid;
+      }
+#elif defined(HAVE_SETRGID) && defined (HAVE_SETEGID)
+      if (getgid() == gid) {
+	if (SAVED_GROUP_ID == gid) {
+	  if (setegid(gid) < 0) rb_sys_fail(0);
+	} else {
+	  if (gid == 0) {
+	    if (setegid(gid) < 0) rb_sys_fail(0);
+	    if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+	    SAVED_GROUP_ID = 0;
+	    if (setrgid(0) < 0) rb_sys_fail(0);
+	  } else {
+	    if (setrgid(0) < 0) rb_sys_fail(0);
+	    SAVED_GROUP_ID = 0;
+	    if (setegid(gid) < 0) rb_sys_fail(0);
+	    if (setrgid(gid) < 0) rb_sys_fail(0);
+	    SAVED_GROUP_ID = gid;
+	  }
+	}
+      } else {
+	if (setegid(gid) < 0) rb_sys_fail(0);
+	if (setrgid(gid) < 0) rb_sys_fail(0);
+	SAVED_GROUP_ID = gid;
+      }
+#else
+      rb_notimplement();
+#endif
+    } else { /* unprivileged user */
+#if defined(HAVE_SETRESGID)
+      if (setresgid((getgid() == gid)? -1: gid, 
+		    (getegid() == gid)? -1: gid, 
+		    (SAVED_GROUP_ID == gid)? -1: gid) < 0) rb_sys_fail(0);
+      SAVED_GROUP_ID = gid;
+#elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
+      if (SAVED_GROUP_ID == gid) {
+	if (setregid((getgid() == gid)? -1: gid, 
+		     (getegid() == gid)? -1: gid) < 0) rb_sys_fail(0);
+      } else if (getgid() != gid) {
+	if (setregid(gid, (getegid() == gid)? -1: gid) < 0) rb_sys_fail(0);
+	SAVED_GROUP_ID = gid;
+      } else if (/* getgid() == gid && */ getegid() != gid) {
+	if (setregid(getegid(), gid) < 0) rb_sys_fail(0);
+	SAVED_GROUP_ID = gid;
+	if (setregid(gid, -1) < 0) rb_sys_fail(0);
+      } else { /* getgid() == gid && getegid() == gid */
+	if (setregid(-1, SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+	if (setregid(SAVED_GROUP_ID, gid) < 0) rb_sys_fail(0);
+	SAVED_GROUP_ID = gid;
+	if (setregid(gid, -1) < 0) rb_sys_fail(0);
+      }
+#elif defined(HAVE_SETRGID) && defined(HAVE_SETEGID)
+      if (SAVED_GROUP_ID == gid) {
+	if (getegid() != gid && setegid(gid) < 0) rb_sys_fail(0);
+	if (getgid() != gid && setrgid(gid) < 0) rb_sys_fail(0);
+      } else if (/* SAVED_GROUP_ID != gid && */ getegid() == gid) {
+	if (getgid() != gid) {
+	  if (setrgid(gid) < 0) rb_sys_fail(0);
+	  SAVED_GROUP_ID = gid;
+	} else {
+	  if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+	  SAVED_GROUP_ID = gid;
+	  if (setrgid(gid) < 0) rb_sys_fail(0);
+	}
+      } else if (/* getegid() != gid && */ getgid() == gid) {
+	if (setegid(gid) < 0) rb_sys_fail(0);
+	if (setrgid(SAVED_GROUP_ID) < 0) rb_sys_fail(0);
+	SAVED_GROUP_ID = gid;
+	if (setrgid(gid) < 0) rb_sys_fail(0);
+      } else {
+	errno = EPERM;
+	rb_sys_fail(0);
+      }
+#elif defined HAVE_44BSD_SETGID
+      if (getgid() == gid) {
+	/* (r,e,s)==(gid,?,?) ==> (gid,gid,gid) */
+	if (setgid(gid) < 0) rb_sys_fail(0);
+	SAVED_GROUP_ID = gid;
+      } else {
+	errno = EPERM;
+	rb_sys_fail(0);
+      }
+#elif defined HAVE_SETEGID
+      if (getgid() == gid && SAVED_GROUP_ID == gid) {
+	if (setegid(gid) < 0) rb_sys_fail(0);
+      } else {
+	errno = EPERM;
+	rb_sys_fail(0);
+      }
+#elif defined HAVE_SETGID
+      if (getgid() == gid && SAVED_GROUP_ID == gid) {
+	if (setgid(gid) < 0) rb_sys_fail(0);
+      } else {
+	errno = EPERM;
+	rb_sys_fail(0);
+      }
+#else
+      rb_notimplement();
+#endif
+    }
+    return INT2FIX(gid);
+}
+
 static VALUE
 proc_geteuid(obj)
     VALUE obj;
@@ -1340,7 +1798,7 @@ proc_seteuid(obj, euid)
     if (setreuid(-1, NUM2INT(euid)) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETEUID
     if (seteuid(NUM2INT(euid)) < 0) rb_sys_fail(0);
-#else
+#elif defined HAVE_SETUID
     euid = NUM2INT(euid);
     if (euid == getuid()) {
 	if (setuid(euid) < 0) rb_sys_fail(0);
@@ -1348,8 +1806,50 @@ proc_seteuid(obj, euid)
     else {
 	rb_notimplement();
     }
+#else
+    rb_notimplement();
 #endif
     return euid;
+}
+
+static VALUE
+rb_seteuid_core(euid)
+    int euid;
+{
+    int uid;
+
+    uid = getuid();
+
+#if defined(HAVE_SETRESUID) && !defined(__CHECKER__)
+    if (uid != euid) {
+      if (setresuid(-1,euid,euid) < 0) rb_sys_fail(0);
+      SAVED_USER_ID = euid;
+    } else {
+      if (setresuid(-1,euid,-1) < 0) rb_sys_fail(0);
+    }
+#elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
+    if (setreuid(-1, euid) < 0) rb_sys_fail(0);
+    if (uid != euid) {
+      if (setreuid(euid,uid) < 0) rb_sys_fail(0);
+      if (setreuid(uid,euid) < 0) rb_sys_fail(0);
+      SAVED_USER_ID = euid;
+    }
+#elif defined HAVE_SETEUID
+    if (seteuid(euid) < 0) rb_sys_fail(0);
+#elif defined HAVE_SETUID
+    if (geteuid() == 0) rb_sys_fail(0);
+    if (setuid(euid) < 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return INT2FIX(euid);
+}
+
+static VALUE
+p_uid_grant_privilege(obj, id)
+    VALUE obj, id;
+{
+  return rb_seteuid_core(NUM2INT(id));
 }
 
 static VALUE
@@ -1372,7 +1872,7 @@ proc_setegid(obj, egid)
     if (setregid(-1, NUM2INT(egid)) < 0) rb_sys_fail(0);
 #elif defined HAVE_SETEGID
     if (setegid(NUM2INT(egid)) < 0) rb_sys_fail(0);
-#else
+#elif defined HAVE_SETGID
     egid = NUM2INT(egid);
     if (egid == getgid()) {
 	if (setgid(egid) < 0) rb_sys_fail(0);
@@ -1380,8 +1880,222 @@ proc_setegid(obj, egid)
     else {
 	rb_notimplement();
     }
+#else
+    rb_notimplement();
 #endif
     return egid;
+}
+
+static VALUE
+rb_setegid_core(egid)
+    int egid;
+{
+    int gid;
+
+    gid = getgid();
+
+#if defined(HAVE_SETRESGID) && !defined(__CHECKER__)
+    if (gid != egid) {
+      if (setresgid(-1,egid,egid) < 0) rb_sys_fail(0);
+      SAVED_GROUP_ID = egid;
+    } else {
+      if (setresgid(-1,egid,-1) < 0) rb_sys_fail(0);
+    }
+#elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
+    if (setregid(-1, egid) < 0) rb_sys_fail(0);
+    if (gid != egid) {
+      if (setregid(egid,gid) < 0) rb_sys_fail(0);
+      if (setregid(gid,egid) < 0) rb_sys_fail(0);
+      SAVED_GROUP_ID = egid;
+    }
+#elif defined HAVE_SETEGID
+    if (setegid(egid) < 0) rb_sys_fail(0);
+#elif defined HAVE_SETGID
+    if (geteuid() == 0 /* root user */) rb_sys_fail(0);
+    if (setgid(egid) < 0) rb_sys_fail(0);
+#else
+    rb_notimplement();
+#endif
+    return INT2FIX(egid);
+}
+
+static VALUE
+p_gid_grant_privilege(obj, id)
+    VALUE obj, id;
+{
+  return rb_setegid_core(NUM2INT(id));
+}
+
+static VALUE
+p_uid_exchangeable()
+{
+#if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
+  return Qtrue;
+#elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
+  return Qtrue;
+#else
+  return Qfalse;
+#endif
+}
+
+static VALUE
+p_uid_exchange(obj)
+    VALUE obj;
+{
+    int uid, euid;
+
+    uid = getuid();
+    euid = geteuid();
+
+#if defined(HAVE_SETRESUID) &&  !defined(__CHECKER__)
+    if (setresuid(euid, uid, uid) < 0) rb_sys_fail(0);
+    SAVED_USER_ID = uid;
+#elif defined(HAVE_SETREUID) && !defined(OBSOLETE_SETREUID)
+    if (setreuid(euid,uid) < 0) rb_sys_fail(0);
+    SAVED_USER_ID = uid;
+#else
+    rb_notimplement();
+#endif
+    return INT2FIX(uid);
+}
+
+static VALUE
+p_gid_exchangeable()
+{
+#if defined(HAVE_SETRESGID) &&  !defined(__CHECKER__)
+  return Qtrue;
+#elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
+  return Qtrue;
+#else
+  return Qfalse;
+#endif
+}
+
+static VALUE
+p_gid_exchange(obj)
+    VALUE obj;
+{
+    int gid, egid;
+
+    gid = getgid();
+    egid = getegid();
+
+#if defined(HAVE_SETRESGID) &&  !defined(__CHECKER__)
+    if (setresgid(egid, gid, gid) < 0) rb_sys_fail(0);
+    SAVED_GROUP_ID = gid;
+#elif defined(HAVE_SETREGID) && !defined(OBSOLETE_SETREGID)
+    if (setregid(egid,gid) < 0) rb_sys_fail(0);
+    SAVED_GROUP_ID = gid;
+#else
+    rb_notimplement();
+#endif
+    return INT2FIX(gid);
+}
+
+static VALUE
+p_uid_have_saved_id()
+{
+#if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || _POSIX_SAVED_IDS
+  return Qtrue;
+#else
+  return Qfalse;
+#endif
+}
+
+static VALUE
+p_uid_switch(obj)
+    VALUE obj;
+{
+    extern int errno;
+    int uid, euid;
+
+    uid = getuid();
+    euid = geteuid();
+
+#if defined(HAVE_SETRESUID) || defined(HAVE_SETEUID) || _POSIX_SAVED_IDS
+    if (uid != euid) {
+      proc_seteuid(obj, INT2FIX(uid));
+      if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, Qnil, rb_seteuid_core, SAVED_USER_ID);
+      } else {
+	return INT2FIX(euid);
+      }
+    } else if (euid != SAVED_USER_ID) {
+      proc_seteuid(obj, INT2FIX(SAVED_USER_ID));
+      if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, Qnil, rb_seteuid_core, euid);
+      } else {
+	return INT2FIX(uid);
+      }
+    } else {
+      errno = EPERM;
+      rb_sys_fail(0);
+    }
+#else
+    if (uid == euid) {
+      errno = EPERM;
+      rb_sys_fail(0);
+    }
+    p_uid_switch(obj);
+    if (rb_block_given_p()) {
+      return rb_ensure(rb_yield, Qnil, p_uid_switch, obj);
+    } else {
+      return INT2FIX(euid);
+    }
+#endif
+}
+
+static VALUE
+p_gid_have_saved_id()
+{
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || _POSIX_SAVED_IDS
+  return Qtrue;
+#else
+  return Qfalse;
+#endif
+}
+
+static VALUE
+p_gid_switch(obj)
+    VALUE obj;
+{
+    extern int errno;
+    int gid, egid;
+
+    gid = getgid();
+    egid = getegid();
+
+#if defined(HAVE_SETRESGID) || defined(HAVE_SETEGID) || _POSIX_SAVED_IDS
+    if (gid != egid) {
+      proc_setegid(obj, INT2FIX(gid));
+      if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, Qnil, proc_setegid, INT2FIX(SAVED_GROUP_ID));
+      } else {
+	return INT2FIX(egid);
+      }
+    } else if (egid != SAVED_GROUP_ID) {
+      proc_setegid(obj, INT2FIX(SAVED_GROUP_ID));
+      if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, Qnil, proc_setegid, INT2FIX(egid));
+      } else {
+	return INT2FIX(gid);
+      }
+    } else {
+      errno = EPERM;
+      rb_sys_fail(0);
+    }
+#else
+    if (gid == egid) {
+      errno = EPERM;
+      rb_sys_fail(0);
+    }
+    p_gid_switch(obj);
+    if (rb_block_given_p()) {
+      return rb_ensure(rb_yield, Qnil, p_gid_switch, obj);
+    } else {
+      return INT2FIX(egid);
+    }
+#endif
 }
 
 VALUE
@@ -1411,6 +2125,9 @@ rb_proc_times(obj)
 }
 
 VALUE rb_mProcess;
+VALUE rb_mProcUID;
+VALUE rb_mProcGID;
+VALUE rb_mProcID_Syscall;
 
 void
 Init_process()
@@ -1499,6 +2216,7 @@ Init_process()
     rb_define_module_function(rb_mProcess, "euid=", proc_seteuid, 1);
     rb_define_module_function(rb_mProcess, "egid", proc_getegid, 0);
     rb_define_module_function(rb_mProcess, "egid=", proc_setegid, 1);
+    rb_define_module_function(rb_mProcess, "initgroups", proc_initgroups, 2);
     rb_define_module_function(rb_mProcess, "groups", proc_getgroups, 0);
     rb_define_module_function(rb_mProcess, "groups=", proc_setgroups, 1);
     rb_define_module_function(rb_mProcess, "maxgroups", proc_getmaxgroups, 0);
@@ -1509,4 +2227,65 @@ Init_process()
 #if defined(HAVE_TIMES) || defined(_WIN32)
     S_Tms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", 0);
 #endif
+
+    SAVED_USER_ID = geteuid();
+    SAVED_GROUP_ID = getegid();
+
+    rb_mProcUID = rb_define_module_under(rb_mProcess, "UID");
+    rb_mProcGID = rb_define_module_under(rb_mProcess, "GID");
+
+    rb_define_module_function(rb_mProcUID, "rid", proc_getuid, 0);
+    rb_define_module_function(rb_mProcGID, "rid", proc_getgid, 0);
+    rb_define_module_function(rb_mProcUID, "eid", proc_geteuid, 0);
+    rb_define_module_function(rb_mProcGID, "eid", proc_getegid, 0);
+    rb_define_module_function(rb_mProcUID, "change_privilege", 
+			      p_uid_change_privilege, 1);
+    rb_define_module_function(rb_mProcGID, "change_privilege", 
+			      p_gid_change_privilege, 1);
+    rb_define_module_function(rb_mProcUID, "grant_privilege", 
+			      p_uid_grant_privilege, 1);
+    rb_define_module_function(rb_mProcGID, "grant_privilege", 
+			      p_gid_grant_privilege, 1);
+    rb_define_alias(rb_mProcUID, "eid=", "grant_privilege");
+    rb_define_alias(rb_mProcGID, "eid=", "grant_privilege");
+    rb_define_module_function(rb_mProcUID, "re_exchange", p_uid_exchange, 0);
+    rb_define_module_function(rb_mProcGID, "re_exchange", p_gid_exchange, 0);
+    rb_define_module_function(rb_mProcUID, "re_exchangeable?", 
+			      p_uid_exchangeable, 0);
+    rb_define_module_function(rb_mProcGID, "re_exchangeable?", 
+			      p_gid_exchangeable, 0);
+    rb_define_module_function(rb_mProcUID, "sid_available?", 
+			      p_uid_have_saved_id, 0);
+    rb_define_module_function(rb_mProcGID, "sid_available?", 
+			      p_gid_have_saved_id, 0);
+    rb_define_module_function(rb_mProcUID, "switch", p_uid_switch, 0);
+    rb_define_module_function(rb_mProcGID, "switch", p_uid_switch, 0);
+
+    rb_mProcID_Syscall = rb_define_module_under(rb_mProcess, "Sys");
+
+    rb_define_module_function(rb_mProcID_Syscall, "getuid", proc_getuid, 0);
+    rb_define_module_function(rb_mProcID_Syscall, "geteuid", proc_geteuid, 0);
+    rb_define_module_function(rb_mProcID_Syscall, "getgid", proc_getgid, 0);
+    rb_define_module_function(rb_mProcID_Syscall, "getegid", proc_getegid, 0);
+
+    rb_define_module_function(rb_mProcID_Syscall, "setuid", p_sys_setuid, 1);
+    rb_define_module_function(rb_mProcID_Syscall, "setgid", p_sys_setgid, 1);
+
+    rb_define_module_function(rb_mProcID_Syscall, "setruid", p_sys_setruid, 1);
+    rb_define_module_function(rb_mProcID_Syscall, "setrgid", p_sys_setrgid, 1);
+
+    rb_define_module_function(rb_mProcID_Syscall, "seteuid", p_sys_seteuid, 1);
+    rb_define_module_function(rb_mProcID_Syscall, "setegid", p_sys_setegid, 1);
+
+    rb_define_module_function(rb_mProcID_Syscall, "setreuid", 
+			      p_sys_setreuid, 2);
+    rb_define_module_function(rb_mProcID_Syscall, "setregid", 
+			      p_sys_setregid, 2);
+
+    rb_define_module_function(rb_mProcID_Syscall, "setresuid", 
+			      p_sys_setresuid, 3);
+    rb_define_module_function(rb_mProcID_Syscall, "setresgid", 
+			      p_sys_setresgid, 3);
+    rb_define_module_function(rb_mProcID_Syscall, "issetugid", 
+			      p_sys_issetugid, 0);
 }
