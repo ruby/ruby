@@ -1,3 +1,8 @@
+Wed Oct 15 03:53:20 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fixed trouble on auto-load Tcl commands (enbug
+	  on the last commit).
+
 Wed Oct 15 00:20:15 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: replace Tcl/Tk's vwait and tkwait to
