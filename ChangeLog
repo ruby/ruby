@@ -1,3 +1,8 @@
+Thu Jul 26 11:27:12 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* file.c (rb_find_file_noext, rb_find_file): fix tilde expansion
+	  problem.
+
 Tue Jul 24 19:28:23 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: dig the target subdirectory for
