@@ -1694,7 +1694,7 @@ set_argv(realargs, beg, end)
 
     Check_Type(argv, T_ARRAY);
     rb_ary_clear(argv);
-    while (--end >= beg) {
+    while (end-- > beg) {
 	rb_ary_push(argv, ole_variant2val(&realargs[end]));
 	VariantClear(&realargs[end]);
     }
