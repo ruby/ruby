@@ -1,5 +1,11 @@
 Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* string.c (rb_str_sum): wrong cast caused wrong result.
+	  [ruby-dev:24385]
+
+	* enum.c (enum_sort_by): hide temporary array from
+	  ObjectSpace.each_object.  [ruby-dev:24386]
+
 	* string.c (rb_str_sum): check was done with false pointer.
 	  [ruby-dev:24383]
 

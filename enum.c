@@ -493,6 +493,7 @@ enum_sort_by(obj)
     else {
 	ary = rb_ary_new();
     }
+    RBASIC(ary)->klass = 0;
     rb_iterate(rb_each, obj, sort_by_i, ary);
     if (RARRAY(ary)->len > 1) {
 	rb_iterate(rb_ary_sort_bang, ary, sort_by_cmp, ary);
@@ -500,6 +501,7 @@ enum_sort_by(obj)
     for (i=0; i<RARRAY(ary)->len; i++) {
 	RARRAY(ary)->ptr[i] = RNODE(RARRAY(ary)->ptr[i])->u2.value;
     }
+    RBASIC(ary)->klass = rb_cArray;
     return ary;
 }
 

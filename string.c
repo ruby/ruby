@@ -4417,34 +4417,34 @@ rb_str_sum(argc, argv, str)
     len = RSTRING(str)->len;
     pend = p + len;
     if (bits > sizeof(long)*CHAR_BIT) {
-	VALUE res = INT2FIX(0);
-	VALUE mod;
-
-	mod = rb_funcall(INT2FIX(1), rb_intern("<<"), 1, INT2FIX(bits));
-	mod = rb_funcall(mod, '-', 1, INT2FIX(1));
+	VALUE sum = INT2FIX(0);
 
 	while (p < pend) {
 	    str_mod_check(str, ptr, len);
-	    res = rb_funcall(res, '+', 1, INT2FIX((unsigned int)*p));
+	    sum = rb_funcall(sum, '+', 1, INT2FIX((unsigned char)*p));
 	    p++;
 	}
-	res = rb_funcall(res, '&', 1, mod);
-	return res;
+	if (bits != 0) {
+	    VALUE mod;
+
+	    mod = rb_funcall(INT2FIX(1), rb_intern("<<"), 1, INT2FIX(bits));
+	    mod = rb_funcall(mod, '-', 1, INT2FIX(1));
+	    sum = rb_funcall(sum, '&', 1, mod);
+	}
+	return sum;
     }
     else {
-	unsigned int res = 0;
-	unsigned int mod = (1<<bits)-1;
+	unsigned int sum = 0;
 
-	if (mod == 0) {
-	    mod = -1;
-	}
 	while (p < pend) {
 	    str_mod_check(str, ptr, len);
-	    res += (unsigned int)*p;
+	    sum += (unsigned char)*p;
 	    p++;
 	}
-	res &= mod;
-	return rb_int2inum(res);
+	if (bits != 0) {
+	    sum &= (1<<bits)-1;
+	}
+	return rb_int2inum(sum);
     }
 }
 
