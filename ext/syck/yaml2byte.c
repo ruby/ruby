@@ -1,14 +1,14 @@
-//
-// ybext.c
-//
-// $Author$
-// $Date$
-//
-// Copyright (C) 2003 why the lucky stiff, clark evans
-//
-//   WARNING WARNING WARNING  --- THIS IS *NOT JUST* PLAYING
-//   ANYMORE! -- WHY HAS EMBRACED THIS AS THE REAL THING!
-// 
+/*
+ * ybext.c
+ *
+ * $Author$
+ * $Date$
+ *
+ * Copyright (C) 2003 why the lucky stiff, clark evans
+ *
+ *   WARNING WARNING WARNING  --- THIS IS *NOT JUST* PLAYING
+ *   ANYMORE! -- WHY HAS EMBRACED THIS AS THE REAL THING!
+ */ 
 #include <syck.h>
 #include <assert.h>
 #define YAMLBYTE_UTF8
@@ -37,7 +37,7 @@ typedef struct {
 } bytestring_t;
 bytestring_t *bytestring_alloc() {
     bytestring_t *ret; 
-    //TRACE0("bytestring_alloc()");
+    /*TRACE0("bytestring_alloc()");*/
     ret = S_ALLOC(bytestring_t);
     ret->hash   = HASH;
     ret->length = CHUNKSIZE;
@@ -54,7 +54,7 @@ void bytestring_append(bytestring_t *str, char code,
     long length = 2;   /* CODE + LF */
     char *curr;
     assert(str && HASH == str->hash);
-    //TRACE0("bytestring_append()");
+    /*TRACE0("bytestring_append()");*/
     if(start) {
         if(!finish)
             finish = start + strlen(start);
@@ -129,7 +129,7 @@ syck_yaml2byte_handler(p, n)
     char *finish;
     bytestring_t *val = NULL;
     bytestring_t *sav = NULL;
-    //TRACE0("syck_yaml2byte_handler()");
+    /*TRACE0("syck_yaml2byte_handler()");*/
     val = bytestring_alloc();
     if(n->anchor) bytestring_append(val,YAMLBYTE_ANCHOR, n->anchor, NULL);
     if ( n->type_id )
@@ -154,7 +154,7 @@ syck_yaml2byte_handler(p, n)
             start  = n->data.str->ptr;
             finish = start + n->data.str->len - 1;
             current = start;
-            //TRACE2("SCALAR: %s %d", start, n->data.str->len); 
+            /*TRACE2("SCALAR: %s %d", start, n->data.str->len); */
             while(1) {
                 ch = *current;
                 if('\n' == ch || 0 == ch || current > finish) {
@@ -208,7 +208,7 @@ syck_yaml2byte_handler(p, n)
         break;
     }
     oid = syck_add_sym( p, (char *) val );
-    //TRACE1("Saving: %s", val->buffer );
+    /*TRACE1("Saving: %s", val->buffer );*/
     return oid;
 }
 

@@ -102,7 +102,7 @@ syck_base64dec( char *s, long len )
         }
     }
     *end = '\0';
-    //RSTRING(buf)->len = ptr - RSTRING(buf)->ptr;
+    /*RSTRING(buf)->len = ptr - RSTRING(buf)->ptr;*/
     return ptr;
 }
 
