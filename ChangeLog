@@ -1,3 +1,11 @@
+Mon Jul  3 18:19:05 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.26.
+
+	* lib/net/protocol.rb (finish): do nothing unless active.
+
+	* lib/net/http.rb: HTTP#{get,post}2 again (for new impl).
+
 Sun Jul  2 03:37:02 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.25.
