@@ -1,3 +1,8 @@
+Mon Apr 12 18:45:58 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_init_i): should return
+	  a value.
+
 Mon Apr 12 10:39:50  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (rb_glob2, rb_glob, push_globs, push_braces, rb_push_glob):

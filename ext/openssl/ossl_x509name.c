@@ -104,8 +104,9 @@ ossl_x509name_init_i(VALUE i, VALUE args)
     entry[2] = rb_ary_entry(i, 2);
     if(NIL_P(entry[2])) entry[2] = rb_aref(template, entry[0]);
     if(NIL_P(entry[2])) entry[2] = DEFAULT_OBJECT_TYPE;
-
     ossl_x509name_add_entry(3, entry, self);
+
+    return Qnil;
 }
 
 static VALUE
