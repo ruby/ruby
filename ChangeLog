@@ -1,7 +1,9 @@
-Thu Apr 22 04:16:34 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 22 04:17:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_mod_define_method): allow binding methods to modules.
 	  [ruby-dev:23410]
+
+	* parse.y (aref_args): should pass expanded list.  [ruby-core:02793]
 
 Wed Apr 21 23:04:42 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 

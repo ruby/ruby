@@ -1235,7 +1235,7 @@ aref_args	: none
 		| tSTAR arg opt_nl
 		    {
 			value_expr($2);
-			$$ = newline_node(NEW_SPLAT($2));
+			$$ = NEW_LIST(NEW_SPLAT($2));
 		    }
 		;
 
