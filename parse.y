@@ -240,7 +240,7 @@ static void top_local_setup();
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents string_content
 %type <node> words qwords word_list qword_list word
-%type <node> literal numeric dsym cpath clhs
+%type <node> literal numeric dsym cpath
 %type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
@@ -290,7 +290,7 @@ static void top_local_setup();
 %nonassoc tLOWEST
 %nonassoc tLBRACE_ARG
 
-%left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD
+%nonassoc  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD
 %left  kOR kAND
 %right kNOT
 %nonassoc kDEFINED
@@ -451,6 +451,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    nd_set_type($$, NODE_WHILE);
 			}
 		    }
+		| stmt kRESCUE_MOD stmt
+		    {
+			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
+		    }
 		| klBEGIN
 		    {
 			if (in_def || in_single) {
@@ -475,6 +479,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| lhs '=' command_call
 		    {
+			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
 		| mlhs '=' command_call
@@ -482,10 +487,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			value_expr($3);
 			$1->nd_value = NEW_RESTARY($3);
 			$$ = $1;
-		    }
-		| clhs '=' command_call
-		    {
-			$$ = node_assign($1, $3);
 		    }
 		| var_lhs tOP_ASGN command_call
 		    {
@@ -574,10 +575,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			$$ = node_assign($1, NEW_SVALUE($3));
 		    }
-		| clhs '=' mrhs
-		    {
-			$$ = node_assign($1, NEW_SVALUE($3));
-		    }
 		| mlhs '=' arg_value
 		    {
 			$1->nd_value = $3;
@@ -587,10 +584,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			$1->nd_value = $3;
 			$$ = $1;
-		    }
-		| clhs '=' arg
-		    {
-			$$ = node_assign($1, $3);
 		    }
 		| expr
 		;
@@ -611,10 +604,6 @@ expr		: command_call
 		| '!' command_call
 		    {
 			$$ = NEW_NOT(cond($2));
-		    }
-		| arg kRESCUE_MOD command_call
-		    {
-			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
 		    }
 		| arg
 		;
@@ -808,6 +797,12 @@ mlhs_node	: variable
 		    {
 			$$ = attrset($1, $3);
 		    }
+		| primary_value tCOLON2 tCONSTANT
+		    {
+			if (in_def || in_single)
+			    yyerror("dynamic constant assignment");
+			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
+		    }
 		| backref
 		    {
 		        rb_backref_error($1);
@@ -835,18 +830,16 @@ lhs		: variable
 		    {
 			$$ = attrset($1, $3);
 		    }
-		| backref
-		    {
-		        rb_backref_error($1);
-			$$ = 0;
-		    }
-		;
-
-clhs		: primary_value tCOLON2 tCONSTANT
+		| primary_value tCOLON2 tCONSTANT
 		    {
 			if (in_def || in_single)
 			    yyerror("dynamic constant assignment");
 			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
+		    }
+		| backref
+		    {
+		        rb_backref_error($1);
+			$$ = 0;
 		    }
 		;
 
@@ -933,13 +926,16 @@ reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
 		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
 		| kFOR | kIF_MOD | kIN | kMODULE | kNEXT | kNIL | kNOT
 		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
-		| kTHEN | kTRUE | kUNDEF | kUNLESS_MOD | kUNTIL_MOD | kWHEN
-		| kWHILE_MOD | kYIELD | kRESCUE_MOD
+		| kTHEN | kTRUE | kUNDEF | kWHEN | kYIELD
 		;
 
 arg		: lhs '=' arg
 		    {
 			$$ = node_assign($1, $3);
+		    }
+		| lhs '=' arg kRESCUE_MOD arg
+		    {
+			$$ = node_assign($1, NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0));
 		    }
 		| var_lhs tOP_ASGN arg
 		    {
@@ -1018,6 +1014,10 @@ arg		: lhs '=' arg
 			}
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
 		        fixpos($$, $1);
+		    }
+		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg
+		    {
+			yyerror("constant re-assignment");
 		    }
 		| backref tOP_ASGN arg
 		    {
@@ -1156,10 +1156,6 @@ arg		: lhs '=' arg
 		| arg tOROP arg
 		    {
 			$$ = logop(NODE_OR, $1, $3);
-		    }
-		| arg kRESCUE_MOD arg
-		    {
-			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
 		    }
 		| kDEFINED opt_nl {in_defined = 1;} arg
 		    {
@@ -1674,11 +1670,13 @@ primary_value 	: primary
 		;
 
 then		: term
+		| ':'
 		| kTHEN
 		| term kTHEN
 		;
 
 do		: term
+		| ':'
 		| kDO_COND
 		;
 

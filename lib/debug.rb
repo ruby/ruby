@@ -158,10 +158,9 @@ class Context
   def debug_eval(str, binding)
     begin
       val = eval(str, binding)
-      val
-    rescue StandardError, ScriptError
-      at = eval("caller(0)", binding)
-      stdout.printf "%s:%s\n", at.shift, $!.to_s.sub(/\(eval\):1:(in `.*?':)?/, '') #`
+    rescue StandardError, ScriptError => e
+      at = eval("caller(1)", binding)
+      stdout.printf "%s:%s\n", at.shift, e.to_s.sub(/\(eval\):1:(in `.*?':)?/, '')
       for i in at
 	stdout.printf "\tfrom %s\n", i
       end
@@ -296,6 +295,12 @@ class Context
           else
             stdout.print "Trace off.\n"
           end
+
+	when /^\s*b(?:reak)?\s+(.+)[#.](.+)$/
+	  pos = $2.intern.id2name
+	  file = debug_eval($1, binding)
+	  break_points.push [true, 0, file, pos]
+	  stdout.printf "Set breakpoint %d at %s.%s\n", break_points.size, file, pos
 
 	when /^\s*b(?:reak)?\s+(?:(.+):)?(.+)$/
 	  pos = $2
@@ -646,7 +651,7 @@ EOHELP
 
   def check_break_points(file, pos, binding, id)
     return false if break_points.empty?
-    file = File.basename(file)
+#    file = File.basename(file)
     n = 1
     for b in break_points
       if b[0]
@@ -709,7 +714,8 @@ EOHELP
     when 'call'
       @frames.unshift [binding, file, line, id]
       if check_break_points(file, id.id2name, binding, id) or
-	  check_break_points(klass.to_s, id.id2name, binding, id)
+	  check_break_points(klass.to_s, id.id2name, binding, id) or
+	  check_break_points(klass, id.id2name, binding, id)
 	suspend_all
 	debug_command(file, line, id, binding)
       end

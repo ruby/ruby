@@ -365,7 +365,7 @@ class Date
     when Numeric; return @ajd <=> other
     when Date;    return @ajd <=> other.ajd
     end
-    raise TypeError, 'expected numeric or date'
+    nil
   end
 
   def === (other)
@@ -373,7 +373,7 @@ class Date
     when Numeric; return jd == other
     when Date;    return jd == other.jd
     end
-    raise TypeError, 'expected numeric or date'
+    false
   end
 
   def >> (n)

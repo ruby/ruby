@@ -1,3 +1,12 @@
+Mon Mar  3 11:29:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg): parse 'lhs = a rescue b' as 'lhs=(a rescue b)'.
+
+Mon Mar  3 02:53:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_fread): should not clearerr() if there's no filled
+	  buffer (i.e. rb_io_fread() returning zero).
+
 Mon Mar 03 01:42:35 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-expr-beg): escaped char syntax.
