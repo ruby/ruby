@@ -1,3 +1,16 @@
+Sat Nov  1 18:21:09 2003 GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_peer_cert_chain): add new method
+	  SSLSocket#peer_cert_chain.
+
+	* ext/openssl/ossl_x509req.c (GetX509ReqPtr): new function
+	  which returns underlying X509_REQ.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509extfactory_set_issuer_cert,
+	  ossl_x509extfactory_set_subject_cert, ossl_x509extfactory_set_crl,
+	  ossl_x509extfactory_set_subject_req, ossl_x509extfactory_set_config):
+	  use underlying C struct without duplication not to leak momory.
+
 Sat Nov  1 18:11:18 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/io/wait/wait.c: #include <sys/time.h> is needed for struct

@@ -118,7 +118,7 @@ ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
 
     GetX509ExtFactory(self, ctx);
     rb_iv_set(self, "@issuer_certificate", cert);
-    ctx->issuer_cert = DupX509CertPtr(cert); /* DUP NEEDED */
+    ctx->issuer_cert = GetX509CertPtr(cert); /* NO DUP NEEDED */
 
     return cert;
 }
@@ -130,7 +130,7 @@ ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
 
     GetX509ExtFactory(self, ctx);
     rb_iv_set(self, "@subject_certificate", cert);
-    ctx->subject_cert = DupX509CertPtr(cert); /* DUP NEEDED */
+    ctx->subject_cert = GetX509CertPtr(cert); /* NO DUP NEEDED */
 
     return cert;
 }
@@ -142,7 +142,7 @@ ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
 
     GetX509ExtFactory(self, ctx);
     rb_iv_set(self, "@subject_request", req);
-    ctx->subject_req = DupX509ReqPtr(req);
+    ctx->subject_req = GetX509ReqPtr(req); /* NO DUP NEEDED */
 
     return req;
 }
@@ -154,7 +154,7 @@ ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
 
     GetX509ExtFactory(self, ctx);
     rb_iv_set(self, "@crl", crl);
-    ctx->crl = DupX509CRLPtr(crl);
+    ctx->crl = GetX509CRLPtr(crl); /* NO DUP NEEDED */
 
     return crl;
 }
@@ -168,7 +168,7 @@ ossl_x509extfactory_set_config(VALUE self, VALUE config)
 
     GetX509ExtFactory(self, ctx);
     rb_iv_set(self, "@config", config);
-    conf = GetConfigPtr(config);
+    conf = GetConfigPtr(config);  /* NO DUP NEEDED */
     X509V3_set_nconf(ctx, conf);
 
     return config;

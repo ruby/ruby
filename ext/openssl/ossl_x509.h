@@ -80,6 +80,7 @@ extern VALUE cX509Req;
 extern VALUE eX509ReqError;
 
 VALUE ossl_x509req_new(X509_REQ *);
+X509_REQ *GetX509ReqPtr(VALUE);
 X509_REQ *DupX509ReqPtr(VALUE);
 void Init_ossl_x509req(void);
 

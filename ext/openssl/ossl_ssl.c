@@ -604,6 +604,31 @@ ossl_ssl_get_peer_cert(VALUE self)
 }
 
 static VALUE
+ossl_ssl_get_peer_cert_chain(VALUE self)
+{
+    SSL *ssl;
+    STACK_OF(X509) *chain;
+    X509 *cert;
+    VALUE ary;
+    int i, num;
+
+    Data_Get_Struct(self, SSL, ssl);
+    if(!ssl){
+	rb_warning("SSL session is not started yet.");
+	return Qnil;
+    }
+    chain = SSL_get_peer_cert_chain(ssl);
+    num = sk_num(chain);
+    ary = rb_ary_new2(num);
+    for (i = 0; i < num; i++){
+	cert = (X509*)sk_value(chain, i);
+	rb_ary_push(ary, ossl_x509_new(cert));
+    }
+
+    return ary;
+}
+
+static VALUE
 ossl_ssl_get_cipher(VALUE self)
 {
     SSL *ssl;
@@ -674,6 +699,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "sysclose",   ossl_ssl_close, 0);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);
+    rb_define_method(cSSLSocket, "peer_cert_chain", ossl_ssl_get_peer_cert_chain, 0);
     rb_define_method(cSSLSocket, "cipher",     ossl_ssl_get_cipher, 0);
     rb_define_method(cSSLSocket, "state",      ossl_ssl_get_state, 0);
 

@@ -56,6 +56,16 @@ ossl_x509req_new(X509_REQ *req)
 }
 
 X509_REQ *
+GetX509ReqPtr(VALUE obj)
+{
+    X509_REQ *req;
+
+    SafeGetX509Req(obj, req);
+
+    return req;
+}
+
+X509_REQ *
 DupX509ReqPtr(VALUE obj)
 {
     X509_REQ *req, *new;
