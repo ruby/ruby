@@ -1525,6 +1525,50 @@ module Tk
 end
 
 ###########################################
+#  string with Tcl's encoding
+###########################################
+module Tk
+  class EncodedString < String
+    @@enc_buf = '__rb_encoding_buffer__'
+
+    def self.tk_escape(str)
+      s = '"' + str.gsub(/[\[\]$"]/, '\\\\\&') + '"'
+      TkCore::INTERP.__eval(format('global %s; set %s %s', 
+				   @@enc_buf, @@enc_buf, s))
+    end
+
+    def self.new(str, enc = Tk.encoding_system)
+      obj = super(self.tk_escape(str))
+      obj.instance_eval{@enc = enc}
+      obj
+    end
+
+    def self.new_without_escape(str, enc = Tk.encoding_system)
+      obj = super(str)
+      obj.instance_eval{@enc = enc}
+      obj
+    end
+
+    def encoding
+      @enc
+    end
+  end
+  def Tk.EncodedString(str, enc = Tk.encoding_system)
+    Tk::EncodedString.new(str, enc)
+  end
+
+  class UTF8_String < EncodedString
+    def self.new(str)
+      super(str, 'utf-8')
+    end
+  end
+  def Tk.UTF8_String(str)
+    Tk::UTF8_String.new(str)
+  end
+end
+
+
+###########################################
 #  convert kanji string to/from utf-8
 ###########################################
 if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
@@ -1537,7 +1581,11 @@ if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
     
     def _eval(cmd)
       if defined? @encoding
-	_fromUTF8(__eval(_toUTF8(cmd, @encoding)), @encoding)
+	if cmd.kind_of?(Tk::EncodedString)
+	  _fromUTF8(__eval(_toUTF8(cmd, cmd.encoding)), @encoding)
+	else
+	  _fromUTF8(__eval(_toUTF8(cmd, @encoding)), @encoding)
+	end
       else
 	__eval(cmd)
       end
@@ -1545,7 +1593,13 @@ if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
 
     def _invoke(*cmds)
       if defined? @encoding
-	cmds = cmds.collect{|cmd| _toUTF8(cmd, @encoding)}
+	cmds = cmds.collect{|cmd|
+	  if cmd.kind_of?(Tk::EncodedString)
+	    _toUTF8(cmd, cmd.encoding)
+	  else
+	    _toUTF8(cmd, @encoding)
+	  end
+	}
 	_fromUTF8(__invoke(*cmds), @encoding)
       else
 	__invoke(*cmds)

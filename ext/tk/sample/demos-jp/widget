@@ -211,33 +211,35 @@ txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "1. ラベル (テキスト, ビットマップ)\n", 
 	   tag_demo, "demo-label")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "2. ボタン \n", tag_demo, "demo-button")
+txt.insert('end', "2. ラベルとUNICODEテキスト (機能に対応したバージョンのTkが必要)\n", tag_demo, "demo-unicodeout")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "3. チェックボタン (複数を選択可能)\n", 
+txt.insert('end', "3. ボタン \n", tag_demo, "demo-button")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "4. チェックボタン (複数を選択可能)\n", 
 	   tag_demo, "demo-check")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "4. ラジオボタン (任意の一つを選択可能)\n", 
+txt.insert('end', "5. ラジオボタン (任意の一つを選択可能)\n", 
 	   tag_demo, "demo-radio")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "5. ラジオボタン (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "6. ラジオボタン (機能に対応したバージョンのTkが必要)\n", 
 	   tag_demo, "demo-radio2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "6. ボタンで作られた15-パズルゲーム\n", 
+txt.insert('end', "7. ボタンで作られた15-パズルゲーム\n", 
 	   tag_demo, "demo-puzzle")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "7. ビットマップを使用したアイコンボタン\n", 
+txt.insert('end', "8. ビットマップを使用したアイコンボタン\n", 
 	   tag_demo, "demo-icon")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "8. 画像を表示する二つのラベル\n", 
+txt.insert('end', "9. 画像を表示する二つのラベル\n", 
 	   tag_demo, "demo-image1")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "9. 画像を見るための簡単なユーザインターフェース\n", 
+txt.insert('end', "10. 画像を見るための簡単なユーザインターフェース\n", 
 	   tag_demo, "demo-image2")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "10. 画像を見るための簡単なユーザインターフェース (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "11. 画像を見るための簡単なユーザインターフェース (機能に対応したバージョンのTkが必要)\n", 
 	   tag_demo, "demo-image3")
 txt.insert('end', " \n ", tag_demospace)
-txt.insert('end', "11. ラベル付きフレーム (機能に対応したバージョンのTkが必要)\n", 
+txt.insert('end', "12. ラベル付きフレーム (機能に対応したバージョンのTkが必要)\n", 
 	   tag_demo, "demo-labelframe")
 txt.insert('end', " \n ", tag_demospace)
 

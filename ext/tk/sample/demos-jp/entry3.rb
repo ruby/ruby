@@ -29,7 +29,7 @@ TkLabel.new($entry3_demo,
 二つめのエントリボックスは，入力された文字列の長さが\
 １０文字未満の場合だけを受け付け，制限を越えて書き込もうとしたときには\
 ベルを鳴らして知らせます．\
-三つめはアメリカの電話番号を受け付けるエントリボックスです．\
+三つめは米国の電話番号を受け付けるエントリボックスです．\
 アルファベットは，電話機のダイヤル上で対応づけられている数字に変換されます．\
 不適切な文字が入力されたり数字以外の文字の位置に数字を入力しようとしたり\
 した場合には警告のベルが鳴ります．\
@@ -41,12 +41,12 @@ EOL
 TkFrame.new($entry3_demo){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
-  TkButton.new(f, :text=>'Dismiss', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'了解', :width=>15, :command=>proc{
 		 $entry3_demo.destroy
 		 $entry3_demo = nil
 	       }).pack(:side=>:left, :expand=>true)
 
-  TkButton.new(f, :text=>'See Code', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'コード参照', :width=>15, :command=>proc{
 		 showCode 'entry3'
 	       }).pack(:side=>:left, :expand=>true)
 }
@@ -71,7 +71,7 @@ def focusAndFlash(widget, fg, bg, count=5)
   widget.focus(true)
 end
 
-l1 = TkLabelFrame.new($entry3_demo, :text=>"Integer Entry")
+l1 = TkLabelFrame.new($entry3_demo, :text=>"整数エントリ")
 TkEntry.new(l1, :validate=>:focus, 
 	    :vcmd=>[
 	      proc{|s| s == '' || /^[+-]?\d+$/ =~ s }, '%P'
@@ -80,7 +80,7 @@ TkEntry.new(l1, :validate=>:focus,
   pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 }
 
-l2 = TkLabelFrame.new($entry3_demo, :text=>"Length-Constrained Entry")
+l2 = TkLabelFrame.new($entry3_demo, :text=>"長さ制約付きエントリ")
 TkEntry.new(l2, :validate=>:key, :invcmd=>proc{Tk.bell}, 
 	    :vcmd=>[proc{|s| s.length < 10}, '%P']
 	    ).pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
@@ -167,7 +167,7 @@ def validatePhoneChange(widget, vmode, idx, char)
 end
 
 
-l3 = TkLabelFrame.new($entry3_demo, :text=>"US Phone-Number Entry")
+l3 = TkLabelFrame.new($entry3_demo, :text=>"米国電話番号エントリ")
 TkEntry.new(l3, :validate=>:key, :invcmd=>proc{Tk.bell}, 
 	    :textvariable=>entry3content, 
 	    :vcmd=>[
@@ -186,7 +186,7 @@ TkEntry.new(l3, :validate=>:key, :invcmd=>proc{Tk.bell},
   pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 }
 
-l4 = TkLabelFrame.new($entry3_demo, :text=>"Password Entry")
+l4 = TkLabelFrame.new($entry3_demo, :text=>"パスワードエントリ")
 TkEntry.new(l4, :validate=>:key, :show=>'*', 
 	    :vcmd=>[
 	      proc{|s| s.length <= 8}, 

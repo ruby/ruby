@@ -1,3 +1,15 @@
+Thu Oct 16 16:40:51 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: 
+	  Add Tk::EncodedString and Tk::UTF8_String class to support 
+	  characters using the \uXXXX escape to the UNICODE string.
+
+	* ext/tk/sample/{demos-en,demos-jp}/unicodeout.rb
+	  new demo-scripts (samples of Tk::UTF8_String)
+
+	* ext/tk/sample/{demos-en,demos-jp}/widget
+	  add entries for 'unicodeout.rb'
+
 Thu Oct 16 08:38:06 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/digest/test_digest.rb (test_eq): show failed class.
