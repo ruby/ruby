@@ -6517,7 +6517,7 @@ rb_thread_schedule()
 			    th->wait_for &= ~WAIT_TIME;
 			    th->status = THREAD_RUNNABLE;
 			    num_waiting_on_timer--;
-			    next = th;
+			    if (!next) next = th;
 			} else if (th->delay < delay) {
 			    delay = th->delay;
 			}

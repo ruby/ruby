@@ -4093,9 +4093,10 @@ re_match(bufp, string_arg, size, pos, regs)
 	case jump:
 	  p1++;
 	  EXTRACT_NUMBER_AND_INCR (mcnt, p1);
+
+	  if (mcnt >= 0) break;	/* should be backward jump */
 	  p1 += mcnt;
 
-	  if (p1 >= pend) break;
 	  if (( is_a_jump_n && (enum regexpcode)*p1 == succeed_n) ||
 	      (!is_a_jump_n && (enum regexpcode)*p1 == on_failure_jump)) {
 	    if (failed_paren) {

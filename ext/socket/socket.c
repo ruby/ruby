@@ -511,6 +511,7 @@ ip_addrsetup(host, port)
 	long i = NUM2LONG(host);
 
 	mkinetaddr(htonl(i), hbuf, sizeof(hbuf));
+	hostp = hbuf;
     }
     else {
 	char *name = STR2CSTR(host);
@@ -524,8 +525,8 @@ ip_addrsetup(host, port)
 	else {
 	    strcpy(hbuf, name);
 	}
+	hostp = hbuf;
     }
-    hostp = hbuf;
     if (NIL_P(port)) {
 	portp = 0;
     }

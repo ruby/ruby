@@ -565,6 +565,7 @@ rb_mod_cmp(mod, arg)
 
 static VALUE
 rb_module_s_new(klass)
+    VALUE klass;
 {
     VALUE mod = rb_module_new();
 

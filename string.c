@@ -265,6 +265,9 @@ rb_str_times(str, times)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
     }
+    if (LONG_MAX / len <  RSTRING(str)->len) {
+	rb_raise(rb_eArgError, "argument too big");
+    }
 
     str2 = rb_str_new(0, RSTRING(str)->len*len);
     for (i=0; i<len; i++) {

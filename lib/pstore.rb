@@ -52,6 +52,10 @@ class PStore
     in_transaction
     @table[name] = value
   end
+  def delete(name)
+    in_transaction
+    @table.delete name
+  end
 
   def roots
     in_transaction

@@ -1,3 +1,21 @@
+Sat Feb 26 22:39:31 2000  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* Fix String#* with huge string.
+
+Fri Feb 25 06:42:26 2000  GOTOU YUUZOU  <gotoyuzo@notwork.org>
+
+	* ext/socket/socket.c (ip_addrsetup): hostp should remain NULL if
+	  host is nil.
+
+Thu Feb 24 16:53:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_schedule): priority was too high for sleep
+	  expired threads.
+
+Sat Feb 19 23:58:51 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): pop_loop should not pop at forward jump.
+
 Thu Feb 17 19:09:05 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* win32/win32.c (mypopen): don't close handle if it is not assigned.
