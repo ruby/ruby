@@ -1032,7 +1032,8 @@ module Net # :nodoc:
     # Returns an Integer object which represents the Content-Length: header field
     # or +nil+ if that field is not provided.
     def content_length
-      len = @header['content-length'].to_s.slice(/\d+/) or
+      return nil unless @header.key?('content-length')
+      len = @header['content-length'].slice(/\d+/) or
           raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
       len.to_i
     end

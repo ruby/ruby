@@ -1,3 +1,8 @@
+Wed Jan  7 20:42:06 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (HTTPHeader#content_length): should return nil
+	  unless header exists. [ruby-dev:22519]
+
 Wed Jan  7 14:26:05 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb (TkPanedWindow): use epath for embedded windows.
