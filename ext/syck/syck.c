@@ -119,7 +119,7 @@ syck_parser_reset_levels( SyckParser *p )
     {
         p->lvl_idx = 1;
         p->levels[0].spaces = -1;
-        p->levels[0].domain = "";  // YAML_DOMAIN + "/";
+        p->levels[0].domain = syck_strndup( "", 0 );
         p->levels[0].status = syck_lvl_header;
     }
 }
@@ -220,6 +220,7 @@ syck_free_parser( SyckParser *p )
     // Free all else
     //
     syck_parser_reset_levels( p );
+    S_FREE( p->levels[0].domain );
     S_FREE( p->levels );
 
     if ( p->buffer != NULL )

@@ -14,7 +14,7 @@
 
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
 
-static ID s_utc, s_read, s_binmode;
+static ID s_utc, s_at, s_to_f, s_read, s_binmode;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
 VALUE cParser, cLoader, cNode, oDefaultLoader;
@@ -114,7 +114,7 @@ rb_syck_mktime(str)
 {
     VALUE time;
     char *ptr = str;
-    VALUE year, mon, day, hour, min, sec;
+    VALUE year, mon, day, hour, min, sec, usec;
 
     // Year
     ptr[4] = '\0';
@@ -145,7 +145,41 @@ rb_syck_mktime(str)
     while ( !isdigit( *ptr ) ) ptr++;
     sec = INT2FIX(strtol(ptr, NULL, 10));
 
-    time = rb_funcall(rb_cTime, s_utc, 6, year, mon, day, hour, min, sec );
+    // Millisecond 
+    ptr += 2;
+    usec = INT2FIX( strtod( ptr, NULL ) * 1000000 );
+
+    // Make UTC time
+    time = rb_funcall(rb_cTime, s_utc, 7, year, mon, day, hour, min, sec, usec);
+
+    // Time Zone
+    while ( *ptr != 'Z' && *ptr != '+' && *ptr != '-' && *ptr != '\0' ) ptr++;
+    if ( *ptr == '-' || *ptr == '+' )
+    {
+        long tz_offset = 0;
+        double utc_time = 0;
+        tz_offset += strtol(ptr, NULL, 10) * 3600;
+
+        while ( *ptr != ':' && *ptr != '\0' ) ptr++;
+        if ( *ptr == ':' )
+        {
+            ptr += 1;
+            if ( tz_offset < 0 )
+            {
+                tz_offset -= strtol(ptr, NULL, 10) * 60;
+            }
+            else
+            {
+                tz_offset += strtol(ptr, NULL, 10) * 60;
+            }
+        }
+
+        // Make TZ time
+        utc_time = NUM2DBL(rb_funcall(time, s_to_f, 0));
+        utc_time -= tz_offset;
+        time = rb_funcall(rb_cTime, s_at, 1, rb_float_new(utc_time));
+    }
+
     return time;
 }
 
@@ -284,7 +318,7 @@ rb_syck_load_handler(p, n)
             else if ( strcmp( n->type_id, "timestamp#ymd" ) == 0 )
             {
                 S_REALLOC_N( n->data.str->ptr, char, 22 );
-                strcat( n->data.str->ptr, "t12:00:00Z" );
+                strcat( n->data.str->ptr, "t00:00:00Z" );
                 obj = rb_syck_mktime( n->data.str->ptr );
             }
             else if ( strncmp( n->type_id, "timestamp", 9 ) == 0 )
@@ -789,6 +823,8 @@ Init_syck()
 	// Global symbols
 	//
     s_utc = rb_intern("utc");
+    s_at = rb_intern("at");
+    s_to_f = rb_intern("to_f");
     s_read = rb_intern("read");
     s_binmode = rb_intern("binmode");
 	sym_model = ID2SYM(rb_intern("Model"));

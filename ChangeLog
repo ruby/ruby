@@ -1,3 +1,10 @@
+Thu May 15 07:45:30 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/ruby/ext/syck/rubyext.c, lib/implicit.re: timestamp repairs to
+      timezone and milliseconds.
+
+    * lib/syck.c (syck_parser_reset_levels): duplicate string literal to avoid warning.
+
 Thu May 15 13:26:48 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (set_stdio): better message.
