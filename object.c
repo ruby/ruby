@@ -686,10 +686,10 @@ rb_module_s_alloc(klass)
     return mod;
 }
 
+static VALUE rb_class_s_alloc _((VALUE));
 static VALUE
-rb_class_s_alloc(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_class_s_alloc(klass)
+    VALUE klass;
 {
     return rb_class_boot(0);
 }
