@@ -1323,7 +1323,7 @@ EXTERN_C void __cdecl _lock_fhandle(int);
 EXTERN_C void __cdecl _unlock_fhandle(int);
 EXTERN_C void __cdecl _unlock(int);
 
-#if defined _MT || defined __MSVCRT__
+#if (defined _MT || defined __MSVCRT__) && !defined __BORLANDC__
 #define MSVCRT_THREADS
 #endif
 #ifdef MSVCRT_THREADS
@@ -1360,6 +1360,15 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
 #define _pipech(i)  (_pioinfo(i)->pipech)
+
+#define _set_osfhnd(fh, osfh) (void)(_osfhnd(fh) = osfh)
+#define _set_osflags(fh, flags) (_osfile(fh) = (flags))
+
+#else
+
+#define _set_osfhnd(fh, osfh) (void)((fh), (osfh))
+#define _set_osflags(fh, flags) (void)((fh), (flags))
+
 #endif
 
 #define FOPEN			0x01	/* file handle open */
@@ -1367,8 +1376,6 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 #define FAPPEND			0x20	/* file handle opened O_APPEND */
 #define FDEV			0x40	/* file handle refers to device */
 #define FTEXT			0x80	/* file handle is in text mode */
-
-#define _set_osfhnd(fh, osfh) (void)(_osfhnd(fh) = osfh)
 
 static int
 rb_w32_open_osfhandle(long osfhandle, int flags)
@@ -1388,29 +1395,6 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
     if (flags & O_NOINHERIT)
 	fileflags |= FNOINHERIT;
 
-#ifdef __BORLANDC__
-    {
-	/* attempt to allocate a C Runtime file handle */
-	HANDLE hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
-	fh = _open_osfhandle((long)hF, 0);
-	CloseHandle(hF);
-	if (fh == -1) {
-	    errno = EMFILE;		/* too many open files */
-	    _doserrno = 0L;		/* not an OS error */
-	}
-	else {
-
-	    MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fh)->lock)));
-	    /* the file is open. now, set the info in _osfhnd array */
-	    //_set_osfhnd(fh, osfhandle);
-
-	    fileflags |= FOPEN;		/* mark as open */
-
-	    //_osfile(fh) = fileflags;	/* set osfile entry */
-	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fh)->lock));
-	}
-    }
-#else
     RUBY_CRITICAL({
 	/* attempt to allocate a C Runtime file handle */
 	HANDLE hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
@@ -1428,11 +1412,10 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
 
 	    fileflags |= FOPEN;		/* mark as open */
 
-	    _osfile(fh) = fileflags;	/* set osfile entry */
+	    _set_osflags(fh, fileflags); /* set osfile entry */
 	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fh)->lock));
 	}
     });
-#endif
     return fh;			/* return handle */
 }
 

@@ -3,7 +3,7 @@
 SYM = {}
 objs = ARGV.collect {|s| s.tr('/', '\\')}
 system("tdump -oiPUBDEF -oiPUBD32 #{objs.join(' ')} > pub.def")
-
+sleep(1)
 IO.foreach('pub.def'){|l|
   next unless /(PUBDEF|PUBD32)/ =~ l
   /'(.*?)'/ =~ l

@@ -1,3 +1,11 @@
+Fri Jun 14 21:01:48 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* bcc32/mkexports.rb: insert sleep(1) for win9x.
+
+	* bcc32/configure.bat: change return code LF -> CRLF fo win9x.
+
+	* win32/win32.c: fix rb_w32_open_osfhandle()
+
 Fri Jun 14 15:22:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (read_escape): deny zero-width hexadecimal character.
