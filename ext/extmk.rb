@@ -154,7 +154,7 @@ target_prefix = #{target_prefix}
     mfile.printf "LIBS = %s\n", $libs
   end
   mfile.printf "OBJS = "
-  if !$objs or (/bccwin32/ =~ RUBY_PLATFORM) then
+  if !$objs then
     $objs = []
     for f in Dir["#{$top_srcdir}/ext/#{$mdir}/*.{#{SRC_EXT.join(%q{,})}}"]
       f = File.basename(f)

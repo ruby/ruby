@@ -1,3 +1,7 @@
+Sat Sep 28 09:50:03 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* ext/extmk.rb: The condition judgment without necessity was deleted.
+
 Fri Sep 27 18:40:42 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_thread_deadlock): more verbose message at deadlock.
