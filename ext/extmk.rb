@@ -20,20 +20,27 @@ $extlist = []
 $:.replace ["."]
 require 'rbconfig'
 
-srcdir = Config::CONFIG["srcdir"]
+srcdir = File.dirname(File.dirname(__FILE__))
 
 $:.replace [srcdir, srcdir+"/lib", "."]
+
+$topdir = "."
+$top_srcdir = srcdir
 
 require 'mkmf'
 require 'optparse/shellwords'
 
-$topdir = "."
-$top_srcdir = srcdir
-$hdrdir = $top_srcdir
-
 def sysquote(x)
   @quote ||= /human|os2|macos/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
   @quote ? x.quote : x
+end
+
+def relative_from(path, base)
+  if File.expand_path(path) == File.expand_path(path, base)
+    path
+  else
+    File.join(base, path)
+  end
 end
 
 def extmake(target)
@@ -59,9 +66,7 @@ def extmake(target)
     top_srcdir = $top_srcdir
     topdir = $topdir
     prefix = "../" * (target.count("/")+1)
-    if File.expand_path(top_srcdir) != File.expand_path(top_srcdir, dir)
-      $hdrdir = $top_srcdir = prefix + top_srcdir
-    end
+    $hdrdir = $top_srcdir = relative_from(top_srcdir, prefix)
     $topdir = prefix + $topdir
     $target = target
     $mdir = target
@@ -239,7 +244,7 @@ elsif $nmake
 else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end
-$ruby << " -I$(topdir) -I$(hdrdir)/lib"
+$ruby << " -I'$(topdir)' -I'$(hdrdir)/lib'"
 $config_h = '$(topdir)/config.h'
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
@@ -289,7 +294,7 @@ exts |= Dir.glob("#{ext_prefix}/*/**/MANIFEST").collect {|d|
 } unless $extension
 
 if $extout
-  Config.expand(extout = $extout+"/.")
+  Config.expand(extout = $extout+"/.", Config::CONFIG.merge("topdir"=>$topdir))
   if $install
     Config.expand(dest = "#{$destdir}#{$rubylibdir}")
     FileUtils.cp_r(extout, dest, :verbose => true, :noop => $dryrun)
@@ -304,10 +309,7 @@ dir = Dir.pwd
 FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
-if File.expand_path(srcdir) != File.expand_path(srcdir, dir)
-  $hdrdir = $top_srcdir = "../" + srcdir
-end
-$topdir = ".."
+$hdrdir = $top_srcdir = relative_from(srcdir, $topdir = "..")
 exts.each do |d|
   extmake(d) or abort
 end

@@ -1,3 +1,11 @@
+Thu Mar 18 18:50:06 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: no longer embed srcdir and compile_dir into
+	  rbconfig.rb.
+
+	* ext/extmk.rb, lib/mkmf.rb: obtain top_srcdir and topdir from library
+	  paths.
+
 Thu Mar 18 17:46:35 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: do not undef :to_a.

@@ -1,7 +1,6 @@
 #!./miniruby -s
 
 # avoid warnings with -d.
-$srcdir ||= nil
 $install_name ||= nil
 $so_name ||= nil
 
@@ -9,7 +8,6 @@ require File.dirname($0)+"/lib/fileutils"
 mkconfig = File.basename($0)
 
 rbconfig_rb = ARGV[0] || 'rbconfig.rb'
-srcdir = $srcdir || '.'
 unless File.directory?(dir = File.dirname(rbconfig_rb))
   FileUtils.makedirs(dir, :verbose => true)
 end
@@ -54,16 +52,11 @@ File.foreach "config.status" do |line|
       v_others << v
     end
     has_version = true if name == "MAJOR"
-  elsif /^(?:ac_given_)?srcdir=(.*)/ =~ line
-    srcdir = $1.strip
   elsif /^ac_given_INSTALL=(.*)/ =~ line
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
 #  break if /^CEOF/
 end
-
-srcdir = File.expand_path(srcdir)
-v_fast.unshift("  CONFIG[\"srcdir\"] = \"" + srcdir + "\"\n")
 
 v_fast.collect! do |x|
   if /"prefix"/ === x
@@ -113,7 +106,7 @@ print <<EOS
   CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
   CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
   CONFIG["sitearchdir"] = "$(sitelibdir)/$(sitearch)"
-  CONFIG["compile_dir"] = "#{Dir.pwd}"
+  CONFIG["topdir"] = File.dirname(__FILE__)
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
   def Config::expand(val, config = CONFIG)

@@ -38,7 +38,6 @@ unless defined? $configure_args
   end
 end
 
-$srcdir = CONFIG["srcdir"]
 $libdir = CONFIG["libdir"]
 $rubylibdir = CONFIG["rubylibdir"]
 $archdir = CONFIG["archdir"]
@@ -77,12 +76,13 @@ def map_dir(dir, map = nil)
   map.inject(dir) {|dir, (orig, new)| dir.gsub(orig, new)}
 end
 
-if not $extmk and File.exist?(Config::CONFIG["archdir"] + "/ruby.h")
+libdir = File.dirname(__FILE__)
+if libdir == Config::CONFIG["rubylibdir"] and
+    File.exist?(Config::CONFIG["archdir"] + "/ruby.h")
   $topdir = $hdrdir = $archdir
-elsif File.exist?($srcdir + "/ruby.h") and
-    File.exist?((compile_dir = Config::CONFIG['compile_dir']) + "/config.h")
-  $hdrdir = $srcdir
-  $topdir = compile_dir
+elsif File.exist?(($top_srcdir ||= File.dirname(libdir))  + "/ruby.h") and
+    File.exist?(($topdir ||= Config::CONFIG["topdir"]) + "/config.h")
+  $hdrdir = $top_srcdir
 else
   abort "can't find header files for ruby."
 end
@@ -728,7 +728,7 @@ end
 def configuration(srcdir)
   mk = []
   vpath = %w[$(srcdir) $(topdir) $(hdrdir)]
-  if $mingw && CONFIG['build_os'] == 'cygwin'
+  if !CROSS_COMPILING && CONFIG['build_os'] == 'cygwin' && CONFIG['target_os'] != 'cygwin'
     vpath.each {|p| p.sub!(/.*/, '$(shell cygpath -u \&)')}
   end
   mk << %{
@@ -739,7 +739,7 @@ SHELL = /bin/sh
 srcdir = #{srcdir}
 topdir = #{$topdir}
 hdrdir = #{$hdrdir}
-VPATH = #{vpath.join(File::PATH_SEPARATOR)}
+VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
   drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
   if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?
