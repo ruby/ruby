@@ -1,6 +1,13 @@
+Thu Feb 19 02:42:19 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: don't use rb_eval_string, it defines
+	  classes under the module when required in module clauses.
+	  [ruby-dev:22951]
+
 Thu Feb 19 02:37:28 2004  Minero Aoki  <aamine@loveruby.net>
 
-	* ext/strscan/strscan.c: merge documentation from 1.8 branch. Thanks Gavin Sinclair.
+	* ext/strscan/strscan.c: merge documentation from 1.8 branch.
+	  Thanks Gavin Sinclair.
 
 Wed Feb 19 00:20:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 

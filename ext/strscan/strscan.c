@@ -1245,10 +1245,14 @@ inspect2(p)
 void
 Init_strscan()
 {
-    volatile VALUE tmp;
+    ID id_scanerr = rb_intern("ScanError");
+    VALUE tmp;
 
     StringScanner = rb_define_class("StringScanner", rb_cObject);
-    ScanError = rb_eval_string("class StringScanner; class Error < StandardError; end; end; ScanError = StringScanner::Error unless defined?(ScanError); StringScanner::Error");
+    ScanError = rb_define_class_under(StringScanner, "Error", rb_eStandardError);
+    if (!rb_const_defined(rb_cObject, id_scanerr)) {
+	rb_const_set(rb_cObject, id_scanerr, ScanError);
+    }
     tmp = rb_str_new2(STRSCAN_VERSION);
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Version"), tmp);
