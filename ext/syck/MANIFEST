@@ -12,3 +12,4 @@ syck.c
 syck.h
 token.c
 yaml2byte.c
+yamlbyte.h
