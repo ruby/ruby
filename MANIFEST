@@ -75,6 +75,7 @@ util.c
 variable.c
 version.c
 version.h
+beos/GNUmakefile.in
 beos/ruby.def.in
 cygwin/GNUmakefile.in
 ext/Setup
@@ -124,6 +125,8 @@ lib/matrix.rb
 lib/mkmf.rb
 lib/monitor.rb
 lib/mutex_m.rb
+lib/net/http.rb
+lib/net/ftp.rb
 lib/net/http.rb
 lib/net/pop.rb
 lib/net/session.rb

@@ -143,8 +143,8 @@ while tmp.gets()
     gsub!('VT100', 'Vt100')
     redo;
   end
-  $bad = 1 if /vt100/;
-  $bad = 1 if /VT100/;
+  $bad = 1 if /vt100/
+  $bad = 1 if /VT100/
 end
 ok(tmp.eof? && !$bad)
 tmp.close
@@ -180,6 +180,7 @@ until i>4
   i+=1
 end
 ok(i>4)
+
 
 # exception handling
 check "exception";

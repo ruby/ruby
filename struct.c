@@ -444,7 +444,7 @@ rb_struct_aref(s, idx)
 {
     long i;
 
-    if (TYPE(idx) == T_STRING) {
+    if (TYPE(idx) == T_STRING || TYPE(idx) == T_SYMBOL) {
 	return rb_struct_aref_id(s, rb_to_id(idx));
     }
 
@@ -489,7 +489,7 @@ rb_struct_aset(s, idx, val)
 {
     long i;
 
-    if (TYPE(idx) == T_STRING) {
+    if (TYPE(idx) == T_STRING || TYPE(idx) == T_SYMBOL) {
 	return rb_struct_aset_id(s, rb_to_id(idx), val);
     }
 

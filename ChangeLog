@@ -1,3 +1,51 @@
+Mon Mar 13 16:12:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (block_pass): distinguish real orphan block and still
+	  on-stack block passed by block argument.
+
+Mon Mar 13 00:20:25 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (f_norm_arg): proper error message when constant comes
+	  in formal argument list.  this message is suggested by Muvaw
+	  Pnazte <bugathlon@yahoo.com>.
+
+	* eval.c (rb_f_raise): proper error message when the first
+	  argument is not an exception class/object.
+
+	* string.c (rb_str_dup): dup now postpone buffer copy as long as
+	  possible.  performance improved by lazy copying.
+
+Sun Mar 12 13:58:52 2000  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* signal.c (rb_f_kill): should treat some symbols as the signal.
+
+Sat Mar 11 22:03:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_gsub): performance tune by avoiding buffer copy.
+
+	* eval.c (rb_f_missing): check if argv[0] is ID.
+
+Sat Mar 11 15:49:41 2000  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* struct.c (rb_struct_aref): struct aref by symbol.
+
+Sat Mar 11 05:07:11 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* process.c (proc_setpriority): should return 0, not nil.
+
+	* process.c (proc_setpgid): ditto.
+
+Fri Mar 10 18:14:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* file.c (path_check_1): confusing buf and path.  this bug found
+	  by <decoux@moulon.inra.fr>.
+
+Fri Mar 10 09:37:49 JST 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* MANIFEST: add beos/GNUmakefile.in.
+	* configure.in: support BeOS R4.5.2 (Intel).
+	* beos/GNUmakefile.in: new file to support BeOS R4.5.2 (Intel).
+
 Thu Mar  9 11:13:32 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_fastmap): fixed embarrassing brace bug.

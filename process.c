@@ -783,7 +783,7 @@ proc_setpgrp(argc, argv)
     rb_scan_args(argc, argv, "0");
     if (setpgrp() < 0) rb_sys_fail(0);
 #endif
-    return Qnil;
+    return INT2FIX(0);
 #else
     rb_notimplement();
 #endif
@@ -815,7 +815,7 @@ proc_setpgid(obj, pid, pgrp)
     ipgrp = NUM2INT(pgrp);
 
     if (setpgid(ipid, ipgrp) < 0) rb_sys_fail(0);
-    return Qnil;
+    return INT2FIX(0);
 #else
     rb_notimplement();
 #endif

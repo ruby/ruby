@@ -25,6 +25,7 @@ EXPORTS
 	rb_eArgError
 	rb_eNameError
 	rb_eIndexError
+	rb_eRangeError
 	rb_eLoadError
 	rb_eSecurityError
 	rb_eNotImpError
@@ -67,6 +68,7 @@ EXPORTS
 	rb_cNilClass
 	rb_cTrueClass
 	rb_cFalseClass
+	rb_cSymbol
 ;prec.c
 	rb_mPrecision
 ;process.c
@@ -283,6 +285,7 @@ EXPORTS
 	rb_funcall
 	rb_funcall2
 	rb_funcall3
+	rb_call_super
 	rb_backtrace
 	rb_frame_last_func
 	rb_obj_instance_eval

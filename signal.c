@@ -202,12 +202,12 @@ rb_f_kill(argc, argv)
     switch (TYPE(argv[0])) {
       case T_FIXNUM:
 	sig = FIX2UINT(argv[0]);
-	if (sig >= NSIG) {
-	    s = rb_id2name(sig);
-	    if (!s) rb_raise(rb_eArgError, "bad signal");
-	    goto str_signal;
-	}
 	break;
+
+      case T_SYMBOL:
+	s = rb_id2name(SYM2ID(argv[0]));
+	if (!s) rb_raise(rb_eArgError, "bad signal");
+	goto str_signal;
 
       case T_STRING:
         {

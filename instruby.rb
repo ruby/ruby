@@ -18,14 +18,14 @@ end
 
 ruby_install_name = CONFIG["ruby_install_name"]
 version = "/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
-arch = version+"/"+CONFIG["arch"]
+arch = "/"+CONFIG["arch"]
 
 bindir = destdir+CONFIG["bindir"]
 libdir = destdir+CONFIG["libdir"]
-scriptdir = destdir+CONFIG["prefix"]+"/lib/ruby"+version
-archlibdir = libdir+"/ruby"+arch
-sitelibdir = libdir+"/site_ruby"+version
-sitearchlibdir = libdir+"/site_ruby"+arch
+rubylibdir = destdir+CONFIG["prefix"]+"/lib/ruby"+version
+archlibdir = rubylibdir+arch
+sitelibdir = destdir+CONFIG["prefix"]+"/lib/site_ruby"+version
+sitearchlibdir = sitelibdir+arch
 mandir = destdir+CONFIG["mandir"] + "/man1"
 wdir = Dir.getwd
 
@@ -52,7 +52,7 @@ if File.exist? CONFIG["LIBRUBY_SO"]
   end
 end
 Dir.chdir wdir
-File.makedirs scriptdir, true
+File.makedirs rubylibdir, true
 File.makedirs archlibdir, true
 File.makedirs sitelibdir, true
 File.makedirs sitearchlibdir, true
@@ -71,7 +71,7 @@ Dir.chdir CONFIG["srcdir"]
 
 Find.find("lib") do |f|
   next unless /\.rb$/ =~ f
-  dir = scriptdir+"/"+File.dirname(f[4..-1])
+  dir = rubylibdir+"/"+File.dirname(f[4..-1])
   File.makedirs dir, true unless File.directory? dir
   File.install f, dir, 0644, true
 end

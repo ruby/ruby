@@ -195,10 +195,10 @@ class Date
     def once(*ids)
       for id in ids
 	module_eval <<-"end;"
-	  alias_method :__#{id}__, #{id}
+	  alias_method :__#{id.to_i}__, #{id}
 	  def #{id.id2name}(*args, &block)
-	    def self.#{id.id2name}(*args, &block); @__#{id}__ end
-	    @__#{id}__ = __#{id}__(*args, &block)
+	    def self.#{id.id2name}(*args, &block); @__#{id.to_i}__ end
+	    @__#{id.to_i}__ = __#{id.to_i}__(*args, &block)
 	  end
 	end;
       end

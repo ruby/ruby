@@ -1957,9 +1957,9 @@ path_check_1(path)
 	char buf[MAXPATHLEN+1];
 
 #ifdef HAVE_GETCWD
-	if (getcwd(path, sizeof(path)) == 0) return 0;
+	if (getcwd(buf, MAXPATHLEN) == 0) return 0;
 #else
-	if (getwd(path) == 0) return 0;
+	if (getwd(buf) == 0) return 0;
 #endif
 	strncat(buf, path, MAXPATHLEN);
 	buf[MAXPATHLEN] = '\0';

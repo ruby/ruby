@@ -106,9 +106,7 @@ rb_str_new4(orig)
 	str->ptr = RSTRING(orig)->ptr;
 	RSTRING(orig)->orig = (VALUE)str;
 	str->orig = 0;
-	if (OBJ_TAINTED(orig)) {
-	    OBJ_TAINT(str);
-	}
+	OBJ_INFECT(str, orig);
 	OBJ_FREEZE(str);
 
 	return (VALUE)str;
@@ -162,23 +160,7 @@ rb_obj_as_string(obj)
 }
 
 static VALUE
-rb_str_clone(str)
-    VALUE str;
-{
-    VALUE clone;
-
-    if (RSTRING(str)->orig && !FL_TEST(str, STR_NO_ORIG))
-	clone = rb_str_new3(RSTRING(str)->orig);
-    else
-	clone = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
-    if (RSTRING(str)->orig && FL_TEST(str, STR_NO_ORIG))
-	RSTRING(str)->orig = RSTRING(str)->orig;
-    CLONESETUP(clone, str);
-    return clone;
-}
-
-VALUE
-rb_str_dup(str)
+str_dup(str)
     VALUE str;
 {
     VALUE s;
@@ -188,6 +170,43 @@ rb_str_dup(str)
     if (OBJ_TAINTED(str)) OBJ_TAINT(s);
 
     return s;
+}
+
+VALUE
+rb_str_dup(str)
+    VALUE str;
+{
+    if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
+    if (OBJ_FROZEN(str)) return rb_str_new3(str);
+    if (FL_TEST(str, STR_NO_ORIG)) return str_dup(str);
+    if (RSTRING(str)->orig) return rb_str_new3(RSTRING(str)->orig);
+    else {
+	VALUE shadow;
+
+	NEWOBJ(dup, struct RString);
+	OBJSETUP(dup, rb_cString, T_STRING);
+
+	shadow = rb_str_new4(str);
+
+	dup->len = RSTRING(shadow)->len;
+	dup->ptr = RSTRING(shadow)->ptr;
+	dup->orig = shadow;
+	OBJ_INFECT(dup, str);
+
+	return (VALUE)dup;
+    }
+}
+
+
+static VALUE
+rb_str_clone(str)
+    VALUE str;
+{
+    VALUE clone = rb_str_dup(str);
+    if (FL_TEST(str, STR_NO_ORIG))
+	RSTRING(str)->orig = RSTRING(str)->orig;
+    CLONESETUP(clone, str);
+    return clone;
 }
 
 static VALUE
@@ -1059,6 +1078,7 @@ rb_str_sub_bang(argc, argv, str)
 
     pat = get_pat(argv[0]);
     if (rb_reg_search(pat, str, 0, 0) >= 0) {
+	rb_str_modify(str);
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
 
@@ -1071,7 +1091,6 @@ rb_str_sub_bang(argc, argv, str)
 	    repl = rb_reg_regsub(repl, str, regs);
 	}
 	plen = END(0) - BEG(0);
-	rb_str_modify(str);
 	if (RSTRING(repl)->len > plen) {
 	    REALLOC_N(RSTRING(str)->ptr, char,
 		      RSTRING(str)->len + RSTRING(repl)->len - plen + 1);
@@ -1085,6 +1104,7 @@ rb_str_sub_bang(argc, argv, str)
 	       RSTRING(repl)->ptr, RSTRING(repl)->len);
 	RSTRING(str)->len += RSTRING(repl)->len - plen;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
+	OBJ_INFECT(str, repl);
 	return str;
     }
     return Qnil;
@@ -1102,10 +1122,11 @@ rb_str_sub(argc, argv, str)
 }
 
 static VALUE
-rb_str_gsub_bang(argc, argv, str)
+str_gsub(argc, argv, str, bang)
     int argc;
     VALUE *argv;
     VALUE str;
+    int bang;
 {
     VALUE pat, val, repl, match;
     struct re_registers *regs;
@@ -1129,7 +1150,10 @@ rb_str_gsub_bang(argc, argv, str)
     pat = get_pat(argv[0]);
     offset=0; n=0; 
     beg = rb_reg_search(pat, str, 0, 0);
-    if (beg < 0) return Qnil;	/* no match, no substitution */
+    if (beg < 0) {
+	if (bang) return Qnil;	/* no match, no substitution */
+	return rb_str_dup(str);
+    }
 
     blen = RSTRING(str)->len + 30; /* len + margin */
     buf = ALLOC_N(char, blen);
@@ -1190,14 +1214,30 @@ rb_str_gsub_bang(argc, argv, str)
 	bp += RSTRING(str)->len - offset;
     }
     rb_backref_set(match);
-    rb_str_modify(str);
-    free(RSTRING(str)->ptr);
+    if (bang) {
+	rb_str_modify(str);
+	free(RSTRING(str)->ptr);
+    }
+    else {
+	NEWOBJ(dup, struct RString);
+	OBJSETUP(dup, rb_cString, T_STRING);
+	str = (VALUE)dup;
+    }
     RSTRING(str)->ptr = buf;
     RSTRING(str)->len = len = bp - buf;
     RSTRING(str)->ptr[len] = '\0';
-    if (tainted) OBJ_TAINT(str);
 
+    if (tainted) OBJ_TAINT(str);
     return str;
+}
+
+static VALUE
+rb_str_gsub_bang(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    return str_gsub(argc, argv, str, 1);
 }
 
 static VALUE
@@ -1206,9 +1246,7 @@ rb_str_gsub(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    str = rb_str_dup(str);
-    rb_str_gsub_bang(argc, argv, str);
-    return str;
+    return str_gsub(argc, argv, str, 0);
 }
 
 static VALUE

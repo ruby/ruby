@@ -671,6 +671,7 @@ fi
 AC_SUBST(MINIRUBY)
 AC_SUBST(PREP)
 
+FIRSTMAKEFILE=""
 LIBRUBY_A='lib$(RUBY_INSTALL_NAME).a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG='$(LIBRUBY_A)'
@@ -687,6 +688,7 @@ if test "$target_os" = "beos"; then
       ;;
     i586*)
       LDFLAGS="$LDFLAGS -L."
+      FIRSTMAKEFILE=GNUmakefile:beos/GNUmakefile.in
       ;;
     *)
       echo EXPORTS > ruby.def
@@ -695,7 +697,6 @@ if test "$target_os" = "beos"; then
   esac
 fi
 
-FIRSTMAKEFILE=""
 LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
 LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
