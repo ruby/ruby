@@ -492,7 +492,11 @@ s_recvfrom(sock, argc, argv, from)
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 #endif
-	return rb_assoc_new(str, ipaddr((struct sockaddr*)buf, fptr->mode & FMODE_NOREVLOOKUP));
+	if (alen) /* OSX doesn't return a from result for connection-oriented sockets */
+	  return rb_assoc_new(str, ipaddr((struct sockaddr*)buf, fptr->mode & FMODE_NOREVLOOKUP));
+	else
+	  return rb_assoc_new(str, Qnil);
+
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
 	return rb_assoc_new(str, unixaddr((struct sockaddr_un*)buf));
