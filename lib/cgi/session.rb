@@ -27,15 +27,17 @@ class CGI
 
     def initialize(request, option={})
       session_key = option['session_key'] || '_session_id'
-      id, = option['session_id']
+      id = option['session_id']
       unless id
 	if option['new_session']
 	  id = Session::create_new_id
 	end
       end
       unless id
-	id, = request[session_key]
-        id = id.read if id.respond_to?(:read)
+	if request.key?(session_key)
+	  id = request[session_key] 
+	  id = id.read if id.respond_to?(:read)
+	end
 	unless id
 	  id, = request.cookies[session_key]
 	end

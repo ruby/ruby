@@ -1,3 +1,8 @@
+Fri May  2 17:37:01 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session::initialize): updated to
+	  support 2003-04-23 change in cgi.rb [ruby-core:1002]
+
 Fri May  2 17:21:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (method_list): classify methods based on nearest
