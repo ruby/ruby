@@ -6,6 +6,8 @@
   $Date$
   created at: Thu Mar 31 12:21:29 JST 1994
 
+  Copyright (C) 1993-2000 Yukihiro Matsumoto
+
 ************************************************/
 
 #include "ruby.h"
@@ -13,6 +15,11 @@
 #include "rubysig.h"
 #include <stdio.h>
 #include <sys/types.h>
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -27,13 +34,6 @@
 #include <errno.h>
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
-#endif
-
-#ifdef USE_CWGUSI
-extern int fileno(FILE *stream); /* <unix.mac.h> */
-extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /* thread.c */
-# include <sys/errno.h>
-# include <GUSI.h>
 #endif
 
 #if defined(HAVE_FCNTL)
@@ -104,6 +104,91 @@ struct sockaddr_storage {
 };
 #endif
 
+#define LOOKUP_ORDER_UNSPEC	0
+#define LOOKUP_ORDER_INET	1
+#define LOOKUP_ORDER_INET6	2
+
+#if   defined(DEFAULT_LOOKUP_ORDER_UNSPEC)
+# define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_UNSPEC
+#elif defined(DEFAULT_LOOKUP_ORDER_INET)
+# define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_INET
+#elif defined(DEFAULT_LOOKUP_ORDER_INET6)
+# define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_INET6
+#endif
+
+#ifdef INET6
+#define LOOKUP_ORDERS		3
+int lookup_order_table[LOOKUP_ORDERS][LOOKUP_ORDERS] = {
+  {PF_UNSPEC, PF_UNSPEC, PF_UNSPEC},	/* 0:unspec */
+  {PF_INET, PF_INET6, PF_UNSPEC},	/* 1:inet inet6 */
+  {PF_INET6, PF_INET, PF_UNSPEC}	/* 2:inet6 inet */
+};
+
+static int lookup_order = LOOKUP_ORDER_DEFAULT;
+
+static VALUE
+lookup_order_get(self)
+    VALUE self;
+{
+    return INT2FIX(lookup_order);
+}
+
+static VALUE
+lookup_order_set(self, order)
+    VALUE self, order;
+{
+    int n = NUM2INT(order);
+
+    if (n < 0 || LOOKUP_ORDERS <= n) {
+	rb_raise(rb_eArgError, "invalid value for lookup_order");
+    }
+    lookup_order = n;
+    return order;
+}
+
+static int
+rb_getaddrinfo(nodename, servname, hints, res)
+     char *nodename;
+     char *servname;
+     struct addrinfo *hints;
+     struct addrinfo **res;
+{
+    struct addrinfo tmp_hints;
+    int i, af, error;
+
+    for (i = 0; i < LOOKUP_ORDERS; i++) {
+	af = lookup_order_table[lookup_order][i];
+	MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
+	tmp_hints.ai_family = af;
+	error = getaddrinfo(nodename, servname, &tmp_hints, res);
+	if (error) {
+	    if (tmp_hints.ai_family == PF_UNSPEC) {
+		break;
+	    }
+	}
+	else {
+	    break;
+	}
+    }
+
+    return error;
+}
+#else
+static VALUE
+lookup_order_get(self)
+    VALUE self;
+{
+    return INT2FIX(LOOKUP_ORDER_DEFAULT);
+}
+
+static VALUE
+lookup_order_set(self, order)
+    VALUE self, order;
+{
+    return order;
+}
+#endif
+
 #ifdef NT
 static void
 sock_finalize(fptr)
@@ -128,7 +213,6 @@ sock_new(class, fd)
     NEWOBJ(sock, struct RFile);
     OBJSETUP(sock, class, T_FILE);
 
-    rb_secure(4);
     MakeOpenFile(sock, fp);
     fp->f = rb_fdopen(fd, "r");
 #ifdef NT
@@ -153,7 +237,9 @@ bsock_shutdown(argc, argv, sock)
     int how;
     OpenFile *fptr;
 
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't shutdown socket");
+    }
     rb_scan_args(argc, argv, "01", &howto);
     if (howto == Qnil)
 	how = 2;
@@ -176,7 +262,9 @@ bsock_close_read(sock)
 {
     OpenFile *fptr;
 
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
+    }
     GetOpenFile(sock, fptr);
     shutdown(fileno(fptr->f), 0);
     if (fptr->f2 == 0) {
@@ -201,7 +289,9 @@ bsock_close_write(sock)
 {
     OpenFile *fptr;
 
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
+    }
     GetOpenFile(sock, fptr);
     if (fptr->f2 == 0) {
 	return rb_io_close(sock);
@@ -273,7 +363,7 @@ bsock_getsockopt(sock, lev, optname)
     if (getsockopt(fileno(fptr->f), level, option, buf, &len) < 0)
 	rb_sys_fail(fptr->path);
 
-    return rb_str_new(buf, len);
+    return rb_tainted_str_new(buf, len);
 #else
     rb_notimplement();
 #endif
@@ -290,7 +380,7 @@ bsock_getsockname(sock)
     GetOpenFile(sock, fptr);
     if (getsockname(fileno(fptr->f), (struct sockaddr*)buf, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return rb_str_new(buf, len);
+    return rb_tainted_str_new(buf, len);
 }
 
 static VALUE
@@ -304,7 +394,7 @@ bsock_getpeername(sock)
     GetOpenFile(sock, fptr);
     if (getpeername(fileno(fptr->f), (struct sockaddr*)buf, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return rb_str_new(buf, len);
+    return rb_tainted_str_new(buf, len);
 }
 
 static VALUE
@@ -387,10 +477,14 @@ s_recv(sock, argc, argv, from)
     if (flg == Qnil) flags = 0;
     else             flags = NUM2INT(flg);
 
-    str = rb_str_new(0, NUM2INT(len));
-
     GetOpenFile(sock, fptr);
+    if (rb_read_pending(fptr->f)) {
+	rb_raise(rb_eIOError, "recv for buffered IO");
+    }
     fd = fileno(fptr->f);
+
+    str = rb_tainted_str_new(0, NUM2INT(len));
+
     rb_thread_wait_fd(fd);
   retry:
     TRAP_BEG;
@@ -430,7 +524,7 @@ s_recv(sock, argc, argv, from)
 	return rb_assoc_new(str, unixaddr((struct sockaddr_un *)buf));
 #endif
       case RECV_SOCKET:
-	return rb_assoc_new(str, rb_str_new(buf, alen));
+	return rb_assoc_new(str, rb_tainted_str_new(buf, alen));
     }
 }
 
@@ -464,8 +558,7 @@ mkipaddr0(addr, buf, len)
 {
     int error;
 
-    error = getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0,
-			NI_NUMERICHOST);
+    error = getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0, NI_NUMERICHOST);
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
@@ -478,7 +571,7 @@ mkipaddr(addr)
     char buf[1024];
 
     mkipaddr0(addr, buf, sizeof(buf));
-    return rb_str_new2(buf);
+    return rb_tainted_str_new2(buf);
 }
 
 static void
@@ -515,16 +608,18 @@ ip_addrsetup(host, port)
 	hostp = hbuf;
     }
     else {
-	char *name = STR2CSTR(host);
+	char *name;
 
+	Check_SafeStr(host);
+	name = RSTRING(host)->ptr;
 	if (*name == 0) {
 	    mkinetaddr(INADDR_ANY, hbuf, sizeof(hbuf));
 	}
 	else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
 	    mkinetaddr(INADDR_BROADCAST, hbuf, sizeof(hbuf));
 	}
-	else if (strlen(name) > sizeof(hbuf)-1) {
-	    rb_raise(rb_eSocket, "hostname too long (%d)", strlen(name));
+	else if (strlen(name) >= sizeof(hbuf)) {
+	    rb_raise(rb_eArgError, "hostname too long (%d)", strlen(name));
 	}
 	else {
 	    strcpy(hbuf, name);
@@ -535,17 +630,22 @@ ip_addrsetup(host, port)
 	portp = 0;
     }
     else if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
+	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2INT(port));
 	portp = pbuf;
     }
     else {
+	Check_SafeStr(port);
 	portp = STR2CSTR(port);
     }
 
     MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_DGRAM;
+#ifndef INET6
     error = getaddrinfo(hostp, portp, &hints, &res);
+#else
+    error = rb_getaddrinfo(hostp, portp, &hints, &res);
+#endif
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
@@ -596,14 +696,14 @@ ipaddr(sockaddr)
 	if (error) {
 	    rb_raise(rb_eSocket, "%s", gai_strerror(error));
 	}
-	addr1 = rb_str_new2(hbuf);
+	addr1 = rb_tainted_str_new2(hbuf);
     }
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
-    addr2 = rb_str_new2(hbuf);
+    addr2 = rb_tainted_str_new2(hbuf);
     if (do_not_reverse_lookup) {
 	addr1 = addr2;
     }
@@ -611,17 +711,6 @@ ipaddr(sockaddr)
     ary = rb_ary_new3(4, family, port, addr1, addr2);
 
     return ary;
-}
-
-static void
-thread_write_select(fd)
-    int fd;
-{
-    fd_set fds;
-
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-    rb_thread_select(fd+1, 0, &fds, 0, 0);
 }
 
 static int
@@ -638,6 +727,17 @@ ruby_socket(domain, type, proto)
 	}
     }
     return fd;
+}
+
+static void
+thread_write_select(fd)
+    int fd;
+{
+    fd_set fds;
+
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+    rb_thread_select(fd+1, 0, &fds, 0, 0);
 }
 
 static int
@@ -723,11 +823,14 @@ open_inet(class, h, serv, type)
 	host = NULL;
     }
     if (FIXNUM_P(serv)) {
-	snprintf(pbuf, sizeof(pbuf), "%d", FIX2UINT(serv));
+	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2UINT(serv));
 	portp = pbuf;
     }
     else {
-	strcpy(pbuf, STR2CSTR(serv));
+	Check_SafeStr(serv);
+	if (RSTRING(serv)->len >= sizeof(pbuf))
+	    rb_raise(rb_eArgError, "servicename too long (%d)", RSTRING(serv)->len);
+	strcpy(pbuf, RSTRING(serv)->ptr);
 	portp = pbuf;
     }
     MEMZERO(&hints, struct addrinfo, 1);
@@ -736,7 +839,11 @@ open_inet(class, h, serv, type)
     if (type == INET_SERVER) {
 	hints.ai_flags = AI_PASSIVE;
     }
+#ifndef INET6
     error = getaddrinfo(host, portp, &hints, &res0);
+#else
+    error = rb_getaddrinfo(host, portp, &hints, &res0);
+#endif
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
@@ -823,6 +930,9 @@ socks_s_close(sock)
 {
     OpenFile *fptr;
 
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
+	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
+    }
     GetOpenFile(sock, fptr);
     shutdown(fileno(fptr->f), 2);
     shutdown(fileno(fptr->f2), 2);
@@ -844,9 +954,11 @@ tcp_s_gethostbyname(obj, host)
     char **pch;
     VALUE ary, names;
 
+    rb_secure(3);
     if (rb_obj_is_kind_of(host, rb_cInteger)) {
 	long i = NUM2LONG(host);
 	struct sockaddr_in *sin;
+
 	sin = (struct sockaddr_in *)&addr;
 	MEMZERO(sin, struct sockaddr_in, 1);
 	sin->sin_family = AF_INET;
@@ -890,11 +1002,11 @@ tcp_s_gethostbyname(obj, host)
 #endif
     }
     ary = rb_ary_new();
-    rb_ary_push(ary, rb_str_new2(h->h_name));
+    rb_ary_push(ary, rb_tainted_str_new2(h->h_name));
     names = rb_ary_new();
     rb_ary_push(ary, names);
     for (pch = h->h_aliases; *pch; pch++) {
-	rb_ary_push(names, rb_str_new2(*pch));
+	rb_ary_push(names, rb_tainted_str_new2(*pch));
     }
     rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr
@@ -965,6 +1077,7 @@ s_accept(class, fd, sockaddr, len)
 {
     int fd2;
 
+    rb_secure(3);
   retry:
     rb_thread_wait_fd(fd);
     TRAP_BEG;
@@ -1110,6 +1223,7 @@ udp_s_open(argc, argv, class)
     int socktype = AF_INET;
     int fd;
 
+    rb_secure(3);
     if (rb_scan_args(argc, argv, "01", &arg) == 1) {
 	socktype = NUM2INT(arg);
     }
@@ -1129,6 +1243,7 @@ udp_connect(sock, host, port)
     int fd;
     struct addrinfo *res0, *res;
 
+    rb_secure(3);
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
     res0 = ip_addrsetup(host, port);
@@ -1151,6 +1266,7 @@ udp_bind(sock, host, port)
     OpenFile *fptr;
     struct addrinfo *res0, *res;
 
+    rb_secure(3);
     GetOpenFile(sock, fptr);
     res0 = ip_addrsetup(host, port);
     for (res = res0; res; res = res->ai_next) {
@@ -1182,6 +1298,7 @@ udp_send(argc, argv, sock)
     if (argc == 2) {
 	return bsock_send(argc, argv, sock);
     }
+    rb_secure(4);
     rb_scan_args(argc, argv, "4", &mesg, &flags, &host, &port);
 
     GetOpenFile(sock, fptr);
@@ -1189,7 +1306,7 @@ udp_send(argc, argv, sock)
     f = GetWriteFile(fptr);
     m = rb_str2cstr(mesg, &mlen);
     for (res = res0; res; res = res->ai_next) {
-  retry:
+      retry:
 	n = sendto(fileno(f), m, mlen, NUM2INT(flags), res->ai_addr,
 		    res->ai_addrlen);
 	if (n >= 0) {
@@ -1205,7 +1322,7 @@ udp_send(argc, argv, sock)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    thread_write_select(fileno(f));
+	    rb_thread_fd_writable(fileno(f));
 	    goto retry;
 	}
     }
@@ -1245,7 +1362,7 @@ unix_path(sock)
 	    rb_sys_fail(0);
 	fptr->path = strdup(addr.sun_path);
     }
-    return rb_str_new2(fptr->path);
+    return rb_tainted_str_new2(fptr->path);
 }
 
 static VALUE
@@ -1282,7 +1399,8 @@ static VALUE
 unixaddr(sockaddr)
     struct sockaddr_un *sockaddr;
 {
-    return rb_assoc_new(rb_str_new2("AF_UNIX"),rb_str_new2(sockaddr->sun_path));
+    return rb_assoc_new(rb_str_new2("AF_UNIX"),
+			rb_tainted_str_new2(sockaddr->sun_path));
 }
 
 static VALUE
@@ -1324,6 +1442,7 @@ setup_domain_and_type(domain, dv, type, tv)
     char *ptr;
 
     if (TYPE(domain) == T_STRING) {
+	Check_SafeStr(domain);
 	ptr = RSTRING(domain)->ptr;
 	if (strcmp(ptr, "AF_INET") == 0)
 	    *dv = AF_INET;
@@ -1372,6 +1491,7 @@ setup_domain_and_type(domain, dv, type, tv)
 	*dv = NUM2INT(domain);
     }
     if (TYPE(type) == T_STRING) {
+	Check_SafeStr(type);
 	ptr = RSTRING(type)->ptr;
 	if (strcmp(ptr, "SOCK_STREAM") == 0)
 	    *tv = SOCK_STREAM;
@@ -1408,6 +1528,7 @@ sock_s_open(class, domain, type, protocol)
     int fd;
     int d, t;
 
+    rb_secure(3);
     setup_domain_and_type(domain, &d, type, &t);
     fd = ruby_socket(d, t, NUM2INT(protocol));
     if (fd < 0) rb_sys_fail("socket(2)");
@@ -1486,6 +1607,7 @@ sock_listen(sock, log)
 {
     OpenFile *fptr;
 
+    rb_secure(4);
     GetOpenFile(sock, fptr);
     if (listen(fileno(fptr->f), NUM2INT(log)) < 0)
 	rb_sys_fail("listen(2)");
@@ -1514,7 +1636,7 @@ sock_accept(sock)
     GetOpenFile(sock, fptr);
     sock2 = s_accept(rb_cSocket,fileno(fptr->f),(struct sockaddr*)buf,&len);
 
-    return rb_assoc_new(sock2, rb_str_new(buf, len));
+    return rb_assoc_new(sock2, rb_tainted_str_new(buf, len));
 }
 
 #ifdef HAVE_GETHOSTNAME
@@ -1524,11 +1646,12 @@ sock_gethostname(obj)
 {
     char buf[1024];
 
+    rb_secure(3);
     if (gethostname(buf, (int)sizeof buf - 1) < 0)
 	rb_sys_fail("gethostname");
 
     buf[sizeof buf - 1] = '\0';
-    return rb_str_new2(buf);
+    return rb_tainted_str_new2(buf);
 }
 #else
 #ifdef HAVE_UNAME
@@ -1539,10 +1662,11 @@ static VALUE
 sock_gethostname(obj)
     VALUE obj;
 {
-  struct utsname un;
+    struct utsname un;
 
-  uname(&un);
-  return rb_str_new2(un.nodename);
+    rb_secure(3);
+    uname(&un);
+    return rb_tainted_str_new2(un.nodename);
 }
 #else
 static VALUE
@@ -1570,19 +1694,19 @@ mkhostent(h)
 #endif
     }
     ary = rb_ary_new();
-    rb_ary_push(ary, rb_str_new2(h->h_name));
+    rb_ary_push(ary, rb_tainted_str_new2(h->h_name));
     names = rb_ary_new();
     rb_ary_push(ary, names);
     for (pch = h->h_aliases; *pch; pch++) {
-	rb_ary_push(names, rb_str_new2(*pch));
+	rb_ary_push(names, rb_tainted_str_new2(*pch));
     }
     rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr
     for (pch = h->h_addr_list; *pch; pch++) {
-	rb_ary_push(ary, rb_str_new(*pch, h->h_length));
+	rb_ary_push(ary, rb_tainted_str_new(*pch, h->h_length));
     }
 #else
-    rb_ary_push(ary, rb_str_new(h->h_addr, h->h_length));
+    rb_ary_push(ary, rb_tainted_str_new(h->h_addr, h->h_length));
 #endif
 
     return ary;
@@ -1728,8 +1852,7 @@ sock_s_getaddrinfo(argc, argv)
     int error;
 
     host = port = family = socktype = protocol = flags = Qnil;
-    rb_scan_args(argc, argv, "24", &host, &port, &family, &socktype, &protocol,
-		 &flags);
+    rb_scan_args(argc, argv, "24", &host, &port, &family, &socktype, &protocol, &flags);
     if (NIL_P(host)) {
 	hptr = NULL;
     }
@@ -1742,7 +1865,7 @@ sock_s_getaddrinfo(argc, argv)
 	pptr = NULL;
     }
     else if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
+	snprintf(pbuf, sizeof(pbuf), "%ld", FIX2INT(port));
 	pptr = pbuf;
     }
     else {
@@ -1755,9 +1878,11 @@ sock_s_getaddrinfo(argc, argv)
     if (!NIL_P(family)) {
 	hints.ai_family = NUM2INT(family);
     }
+#ifndef INET6
     else {
 	hints.ai_family = PF_UNSPEC;
     }
+#endif
     if (!NIL_P(socktype)) {
 	hints.ai_socktype = NUM2INT(socktype);
     }
@@ -1767,7 +1892,16 @@ sock_s_getaddrinfo(argc, argv)
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
+#ifndef INET6
     error = getaddrinfo(hptr, pptr, &hints, &res);
+#else
+    if (!NIL_P(family)) {
+      error = getaddrinfo(hptr, pptr, &hints, &res);
+    }
+    else {
+      error = rb_getaddrinfo(hptr, pptr, &hints, &res);
+    }
+#endif
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
@@ -1782,7 +1916,7 @@ sock_s_getnameinfo(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE sa, af, host, port, flags;
+    VALUE sa, af = Qnil, host = Qnil, port = Qnil, flags;
     static char hbuf[1024], pbuf[1024];
     char *hptr, *pptr;
     int fl;
@@ -1818,6 +1952,10 @@ sock_s_getnameinfo(argc, argv)
 		host = RARRAY(sa)->ptr[2];
 	    }
 	}
+	else {
+	    rb_raise(rb_eArgError, "array size should be 3 or 4, %d given",
+		     RARRAY(sa)->len);
+	}
 	if (NIL_P(host)) {
 	    hptr = NULL;
 	}
@@ -1831,7 +1969,7 @@ sock_s_getnameinfo(argc, argv)
 	    pptr = NULL;
 	}
 	else if (!NIL_P(port)) {
-	    snprintf(pbuf, sizeof(pbuf), "%d", NUM2INT(port));
+	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2INT(port));
 	    pptr = pbuf;
 	}
 	else {
@@ -1866,7 +2004,6 @@ sock_s_getnameinfo(argc, argv)
 	fl = NUM2INT(flags);
     }
 
-  gotsap:
     error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), fl);
     if (error) {
@@ -1875,7 +2012,7 @@ sock_s_getnameinfo(argc, argv)
     if (res)
 	freeaddrinfo(res);
 
-    return rb_ary_new3(2, rb_str_new2(hbuf), rb_str_new2(pbuf));
+    return rb_assoc_new(rb_tainted_str_new2(hbuf), rb_tainted_str_new2(pbuf));
 }
 
 static VALUE mConst;
@@ -2036,6 +2173,12 @@ Init_socket()
 #ifdef PF_INET6
     sock_define_const("PF_INET6", PF_INET6);
 #endif
+
+    sock_define_const("LOOKUP_INET", LOOKUP_ORDER_INET);
+    sock_define_const("LOOKUP_INET6", LOOKUP_ORDER_INET6);
+    sock_define_const("LOOKUP_UNSPEC", LOOKUP_ORDER_UNSPEC);
+    rb_define_singleton_method(rb_cBasicSocket, "lookup_order", lookup_order_get, 0);
+    rb_define_singleton_method(rb_cBasicSocket, "lookup_order=", lookup_order_set, 1);
 
     sock_define_const("MSG_OOB", MSG_OOB);
 #ifdef MSG_PEEK

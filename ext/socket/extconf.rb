@@ -2,8 +2,8 @@ require 'mkmf'
 $LDFLAGS += " -L/usr/local/lib" if File.directory?("/usr/local/lib")
 $CFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
 
-case PLATFORM
-when /mswin32/
+case RUBY_PLATFORM
+when /mswin32|mingw/
   test_func = "WSACleanup"
   have_library("wsock32", "WSACleanup")
   have_func("closesocket")
@@ -98,6 +98,10 @@ EOF
     $ipv6type = "zeta"
     $ipv6lib="inet6"
     $ipv6libdir="/usr/local/v6/lib"
+    $CFLAGS="-DINET6 "+$CFLAGS
+  else
+    $ipv6lib=with_config("ipv6-lib", nil)
+    $ipv6libdir=with_config("ipv6-libdir", nil)
     $CFLAGS="-DINET6 "+$CFLAGS
   end
   
@@ -273,6 +277,20 @@ EOS
   exit
 end
       
+case with_config("ipv6-lookup-order", "INET")
+when "INET"
+  $CFLAGS="-DDEFAULT_LOOKUP_ORDER_INET "+$CFLAGS
+when "INET6"
+  $CFLAGS="-DDEFAULT_LOOKUP_ORDER_INET6 "+$CFLAGS
+when "UNSPEC"
+  $CFLAGS="-DDEFAULT_LOOKUP_ORDER_UNSPEC "+$CFLAGS
+else
+  print <<EOS
+
+Fatal: invalid --ipv6-lookup-order (expected INET, INET6 or UNSPEC)
+EOS
+  exit
+end
 
 $objs = ["socket.#{$OBJEXT}"]
     

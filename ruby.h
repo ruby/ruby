@@ -71,16 +71,6 @@ extern "C" {
 #include <alloca.h>
 #endif
 
-#if defined(__CYGWIN32__)
-#if defined(USEIMPORTLIB)
-#include "import.h"
-#else
-#if !defined(__CYGWIN__)
-#define environ (*__imp___cygwin_environ)
-#endif
-#endif
-#endif
-
 #ifdef _AIX
 #pragma alloca
 #endif

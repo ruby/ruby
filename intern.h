@@ -209,8 +209,8 @@ VALUE rb_Float _((VALUE));
 VALUE rb_String _((VALUE));
 VALUE rb_Array _((VALUE));
 /* parse.y */
-extern int   ruby_sourceline;
-extern char *ruby_sourcefile;
+EXTERN int   ruby_sourceline;
+EXTERN char *ruby_sourcefile;
 #define yyparse rb_yyparse
 #define yylex rb_yylex
 #define yyerror rb_yyerror

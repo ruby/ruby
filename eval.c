@@ -4688,8 +4688,15 @@ find_file(file)
     else {
 	path = 0;
     }
+    file = dln_find_file(file, path);
+    if (file) {
+	FILE *f = fopen(file, "r");
 
-    return dln_find_file(file, path);
+	if (f == NULL) return 0;
+	fclose(f);
+	return file;
+    }
+    return 0;
 }
 
 void

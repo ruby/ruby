@@ -1219,6 +1219,7 @@ re_compile_pattern(pattern, size, bufp)
   int had_char_class = 0;
 
   int options = bufp->options;
+  int old_options = 0;
 
   bufp->fastmap_accurate = 0;
   bufp->must = 0;
@@ -1624,6 +1625,7 @@ re_compile_pattern(pattern, size, bufp)
       break;
 
     case '(':
+      old_options = options;
       PATFETCH(c);
       if (c == '?') {
 	int negative = 0;
@@ -1754,7 +1756,7 @@ re_compile_pattern(pattern, size, bufp)
 	break;
       }
       *stackp++ = c;
-      *stackp++ = options;
+      *stackp++ = old_options;
       fixup_alt_jump = 0;
       laststart = 0;
       begalt = b;

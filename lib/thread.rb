@@ -1,7 +1,10 @@
 #
 #		thread.rb - thread support classes
 #			$Date$
-#			by Yukihiro Matsumoto <matz@caelum.co.jp>
+#			by Yukihiro Matsumoto <matz@netlab.co.jp>
+#
+# Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
+# Copyright (C) 2000  Information-technology Promotion Agency, Japan
 #
 
 unless defined? Thread
@@ -154,12 +157,16 @@ class Queue
       t.wakeup if t
     rescue ThreadError
       retry
+    ensure
+      Thread.critical = false
     end
-    Thread.critical = false
+    t.run if t
   end
-  alias enq push
+  def enq(obj)
+    push(obj)
+  end
 
-  def pop non_block=false
+  def pop(non_block=false)
     Thread.critical = true
     begin
       loop do
@@ -177,8 +184,10 @@ class Queue
       Thread.critical = false
     end
   end
-  alias shift pop
-  alias deq pop
+  def shift(non_block=false)
+    pop(non_block=false)
+  end
+  alias deq shift
 
   def empty?
     @que.length == 0
@@ -191,8 +200,9 @@ class Queue
   def length
     @que.length
   end
-  alias size length
-
+  def size
+    length
+  end
 
   def num_waiting
     @waiting.size
@@ -247,10 +257,13 @@ class SizedQueue<Queue
     if @que.length < @max
       begin
 	t = @queue_wait.shift
-	t.run if t
+	t.wakeup if t
       rescue ThreadError
 	retry
+      ensure
+	Thread.critical = false
       end
+      t.run if t
     end
     super
   end

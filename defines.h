@@ -34,6 +34,15 @@
 #include "win32/win32.h"
 #endif
 
+#if defined __CYGWIN__
+# undef EXTERN
+# if defined USEIMPORTLIB
+#  define EXTERN extern __declspec(dllimport)
+# else
+#  define EXTERN extern __declspec(dllexport)
+# endif
+#endif
+
 #ifndef EXTERN
 #define EXTERN extern
 #endif

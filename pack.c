@@ -23,9 +23,9 @@
 
 #ifdef NATINT_PACK
 # define NATINT_LEN(type,len) (natint?sizeof(type):(len))
-# ifndef WORDS_BIGENDIAN
-#   define OFF16(p) ((char*)(p) + (natint?(sizeof(short) - 2):0))
-#   define OFF32(p) ((char*)(p) + (natint?(sizeof(long) - 4):0))
+# ifdef WORDS_BIGENDIAN
+#   define OFF16(p) ((char*)(p) + (natint?0:(sizeof(short) - 2)))
+#   define OFF32(p) ((char*)(p) + (natint?0:(sizeof(long) - 4)))
 # endif
 #else
 # define NATINT_LEN(type,len) sizeof(type)

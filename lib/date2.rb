@@ -1,5 +1,5 @@
-# date2.rb: Written by Tadayoshi Funaba 1998, 1999
-# $Id: date2.rb,v 1.17 1999/09/15 05:34:07 tadf Exp $
+# date2.rb: Written by Tadayoshi Funaba 1998-2000
+# $Id: date2.rb,v 1.21 2000/05/14 15:47:09 tadf Exp $
 
 class Date
 
@@ -110,6 +110,12 @@ class Date
     def jd_to_mjd(jd) jd - 2400000.5 end
     def tjd_to_jd(tjd) tjd + 2440000.5 end
     def jd_to_tjd(jd) jd - 2440000.5 end
+    def tjd2_to_jd(cycle, tjd) tjd_to_jd(cycle * 10000 + tjd) end
+    def jd_to_tjd2(jd) clfloor(jd_to_tjd(jd), 10000) end
+    def ld_to_jd(ld) ld + 2299160 end
+    def jd_to_ld(jd) jd - 2299160 end
+
+    def jd_to_wday(jd) (jd + 1) % 7 end
 
     def julian_leap? (y) y % 4 == 0 end
     def gregorian_leap? (y) y % 4 == 0 and y % 100 != 0 or y % 400 == 0 end
@@ -123,8 +129,8 @@ class Date
 	m += 13
       end
       if d < 0
-	ny, nm = Date.clfloor(y * 12 + m, 12)
-	nm,    = Date.clfloor(m + 1, 1)
+	ny, nm = clfloor(y * 12 + m, 12)
+	nm,    = clfloor(m + 1, 1)
 	la = nil
 	31.downto 1 do |z|
 	  break if la = exist3?(y, m, z, sg)
@@ -195,10 +201,9 @@ class Date
     def once(*ids)
       for id in ids
 	module_eval <<-"end;"
-	  alias_method :__#{id}__, #{id}
+	  alias_method :__#{id.to_i}__, :#{id.id2name}
 	  def #{id.id2name}(*args, &block)
-	    def self.#{id.id2name}(*args, &block); @__#{id}__ end
-	    @__#{id}__ = __#{id}__(*args, &block)
+	    (@__#{id.to_i}__ ||= [__#{id.to_i}__(*args, &block)])[0]
 	  end
 	end;
       end
@@ -211,76 +216,76 @@ class Date
   def initialize(rjd=0, sg=ITALY) @rjd, @sg = rjd, sg end
 
   def rjd() @rjd end
-  def rmjd() Date.jd_to_mjd(@rjd) end
-  def rtjd() Date.jd_to_tjd(@rjd) end
+  def rmjd() type.jd_to_mjd(@rjd) end
+  def rtjd() type.jd_to_tjd(@rjd) end
+  def rtjd2() type.jd_to_tjd2(@rjd) end
 
-  once :rmjd, :rtjd
+  once :rmjd, :rtjd, :rtjd2
 
-  def jd() Date.rjd_to_jd(@rjd)[0] end
-  def fr1() Date.rjd_to_jd(@rjd)[1] end
-  def mjd() Date.jd_to_mjd(jd) end
-  def tjd() Date.jd_to_tjd(jd) end
+  def jd() type.rjd_to_jd(@rjd)[0] end
+  def fr1() type.rjd_to_jd(@rjd)[1] end
+  def mjd() type.jd_to_mjd(jd) end
+  def tjd() type.jd_to_tjd(jd) end
+  def tjd2() type.jd_to_tjd2(jd) end
+  def ld() type.jd_to_ld(jd) end
 
-  once :jd, :fr1, :mjd, :tjd
+  once :jd, :fr1, :mjd, :tjd, :tjd2, :ld
 
-  def civil() Date.jd_to_civil(jd, @sg) end
-  def ordinal() Date.jd_to_ordinal(jd, @sg) end
-  def commercial() Date.jd_to_commercial(jd, @sg) end
+  def civil() type.jd_to_civil(jd, @sg) end
+  def ordinal() type.jd_to_ordinal(jd, @sg) end
+  def commercial() type.jd_to_commercial(jd, @sg) end
 
   once :civil, :ordinal, :commercial
+  private :civil, :ordinal, :commercial
 
   def year() civil[0] end
   def yday() ordinal[1] end
   def mon() civil[1] end
 
   alias_method :month, :mon
-  once :year, :yday, :mon, :month
 
   def mday() civil[2] end
 
   alias_method :day, :mday
-  once :mday, :day
 
   def cwyear() commercial[0] end
   def cweek() commercial[1] end
   def cwday() commercial[2] end
 
-  once :cwyear, :cweek, :cwday
-
-  def wday() (jd + 1) % 7 end
+  def wday() type.jd_to_wday(jd) end
 
   once :wday
 
-  def os? () Date.os?(jd, @sg) end
-  def ns? () Date.ns?(jd, @sg) end
+  def os? () type.os?(jd, @sg) end
+  def ns? () type.ns?(jd, @sg) end
 
   once :os?, :ns?
 
   def leap?
-    Date.jd_to_civil(Date.civil_to_jd(year, 3, 1, ns?) - 1,
+    type.jd_to_civil(type.civil_to_jd(year, 3, 1, ns?) - 1,
 		     ns?)[-1] == 29
   end
 
   once :leap?
 
   def sg() @sg end
-  def newsg(sg=Date::ITALY) Date.new(@rjd, sg) end
+  def newsg(sg=type::ITALY) type.new(@rjd, sg) end
 
-  def italy() newsg(Date::ITALY) end
-  def england() newsg(Date::ENGLAND) end
-  def julian() newsg(Date::JULIAN) end
-  def gregorian() newsg(Date::GREGORIAN) end
+  def italy() newsg(type::ITALY) end
+  def england() newsg(type::ENGLAND) end
+  def julian() newsg(type::JULIAN) end
+  def gregorian() newsg(type::GREGORIAN) end
 
   def + (n)
     case n
-    when Numeric; return Date.new(@rjd + n, @sg)
+    when Numeric; return type.new(@rjd + n, @sg)
     end
     fail TypeError, 'expected numeric'
   end
 
   def - (x)
     case x
-    when Numeric; return Date.new(@rjd - x, @sg)
+    when Numeric; return type.new(@rjd - x, @sg)
     when Date;    return @rjd - x.rjd
     end
     fail TypeError, 'expected numeric or date'
@@ -303,27 +308,21 @@ class Date
   end
 
   def >> (n)
-    y, m = Date.clfloor(year * 12 + (mon - 1) + n, 12)
-    m,   = Date.clfloor(m + 1, 1)
+    y, m = type.clfloor(year * 12 + (mon - 1) + n, 12)
+    m,   = type.clfloor(m + 1, 1)
     d = mday
-    d -= 1 until jd2 = Date.exist3?(y, m, d, ns?)
+    d -= 1 until jd2 = type.exist3?(y, m, d, ns?)
     self + (jd2 - jd)
   end
 
   def << (n) self >> -n end
 
   def step(limit, step)
-    rjd = @rjd
-    if (step > 0)
-      while rjd <= limit.rjd
-	yield Date.new(rjd, @sg)
-	rjd += step
-      end
-    else
-      while rjd >= limit.rjd
-	yield Date.new(rjd, @sg)
-	rjd += step
-      end
+    da = self
+    op = [:-,:<=,:>=][step<=>0]
+    while da.__send__(op, limit)
+      yield da
+      da += step
     end
     self
   end
@@ -336,11 +335,12 @@ class Date
   alias_method :next, :succ
 
   def eql? (other) Date === other and self == other end
-  def hash() Date.clfloor(@rjd)[0] end
-  def inspect() format('#<Date: %s,%s>', @rjd, @sg) end
+  def hash() type.clfloor(@rjd)[0] end
+
+  def inspect() format('#<%s: %s,%s>', type, @rjd, @sg) end
   def to_s() format('%.4d-%02d-%02d', year, mon, mday) end
 
   def _dump(limit) Marshal.dump([@rjd, @sg], -1) end
-  def Date._load(str) Date.new(*Marshal.load(str)) end
+  def self._load(str) new(*Marshal.load(str)) end
 
 end

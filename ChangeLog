@@ -3,6 +3,23 @@ Wed May 24 16:03:06 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 	* lib/cgi.rb bug fix: CGI::escape(), CGI::Cookie::new()
 	* lib/net/telnet.rb improve: binmode(), telnetmode() interface
 
+Tue May 23 08:36:24 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): forgot to restore old option
+	  status by (?ix-ix).
+
+Mon May 22 15:10:39 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (find_file): should check if the file really exists.
+
+Sun May 21 20:58:08 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* pack.c: fix OFF16 and OFF32 definitions for Alpha and IRIX64.
+
+Wed May 17 02:22:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (expr): avoid calling value_expr() twice.
+
 Fri May 12 17:33:44 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): charset_not should not exclude

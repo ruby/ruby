@@ -540,6 +540,11 @@ proc_options(argcp, argvp)
     if (ruby_verbose) ruby_verbose = Qtrue;
     if (ruby_debug) ruby_debug = Qtrue;
 
+    if (rb_safe_level() == 0) {
+	rb_ary_push(rb_load_path, rb_str_new2("."));
+	addpath(getenv("RUBYLIB"));
+    }
+
     xflag = Qfalse;
     *argvp = argv;
     *argcp = argc;
@@ -636,11 +641,6 @@ load_file(fname, script)
 		    while (p < pend && !ISSPACE(*p))
 			p++;
 		    *p++ = '\0';
-    if (rb_safe_level() == 0) {
-	rb_ary_push(rb_load_path, rb_str_new2("."));
-	addpath(getenv("RUBYLIB"));
-    }
-
 
 		    if (p < pend) {
 			argv = ALLOCA_N(char*, origargc+3);
