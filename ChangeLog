@@ -1,3 +1,8 @@
+Tue May 26 01:09:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): (?XI) for turns off the
+	  corresponding option.
+
 Mon May 25 12:38:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): inline i option (?i).

@@ -295,8 +295,8 @@ enum regexpcode
                     one byte containing the register number. Register
                     numbers must be in the range 0 through RE_NREGS.  */
     start_paren,   /* Just a mark for starting(?:). */
-    start_casefold, /* Start casefold region. */
-    stop_casefold,  /* End casefold region. */
+    casefold_on,   /* Turn on casefold flag. */
+    casefold_off,  /* Turn off casefold flag. */
     start_nowidth, /* Save string point to the stack. */
     stop_nowidth,  /* Restore string place at the point start_nowidth. */
     pop_and_fail,  /* Fail after popping nowidth entry from stack. */
@@ -664,12 +664,12 @@ print_partial_compiled_pattern(start, end)
 	  printf ("/start_paren");
 	  break;
 
-	case start_casefold:
-	  printf ("/start_casefold");
+	case casefold_on:
+	  printf ("/casefold_on");
 	  break;
 
-	case stop_casefold:
-	  printf ("/stop_casefold");
+	case casefold_off:
+	  printf ("/casefold_off");
 	  break;
 
 	case start_nowidth:
@@ -876,8 +876,8 @@ calculate_must_string(start, end)
           p++;
           break;
 
-	case start_casefold:
-	case stop_casefold:
+	case casefold_on:
+	case casefold_off:
 	case start_paren:
 	case start_nowidth:
 	case stop_nowidth:
@@ -1426,10 +1426,10 @@ re_compile_pattern(pattern, size, bufp)
 	case '(':
 	  PATFETCH(c);
 	  if (c == '?') {
-	      PATFETCH(c);
+	      PATFETCH_RAW(c);
 	      switch (c) {
-		case 'x':
-		case 'i':
+		case 'x': case 'X':
+		case 'i': case 'I':
 		  for (;;) {
 		    switch (c) {
 		    case ')':
@@ -1438,16 +1438,27 @@ re_compile_pattern(pattern, size, bufp)
 		    case 'x':
 		      options |= RE_OPTION_EXTENDED;
 		      break;
+		    case 'X':
+		      options &= ~RE_OPTION_EXTENDED;
+		      break;
 		    case 'i':
-		      options |= RE_OPTION_IGNORECASE;
-		      BUFPUSH(start_casefold);
+		      if (!(options&RE_OPTION_IGNORECASE)) {
+			options |= RE_OPTION_IGNORECASE;
+			BUFPUSH(casefold_on);
+		      }
+		      break;
+		    case 'I':
+		      if (options&RE_OPTION_IGNORECASE) {
+			options &= ~RE_OPTION_IGNORECASE;
+			BUFPUSH(casefold_off);
+		      }
 		      break;
 
 		    default:
 		      FREE_AND_RETURN(stackb, "undefined (?...) inline option");
 		    }
 		    if (c == ')') break;
-		    PATFETCH(c);
+		    PATFETCH_RAW(c);
 		  }
 		  c = '#';	/* read whole in-line options */
 		  break;
@@ -1531,7 +1542,7 @@ re_compile_pattern(pattern, size, bufp)
 	case ')':
 	  if (stackp == stackb) goto unmatched_close;
 	  if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
-	    BUFPUSH(stop_casefold);
+	    BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
 	  }
 	  options = *--stackp;
 	  switch (c = *--stackp) {
@@ -1896,6 +1907,8 @@ re_compile_pattern(pattern, size, bufp)
 
 	case ' ':
 	case '\t':
+	case '\f':
+	case '\r':
 	case '\n':
 	  if (options & RE_OPTION_EXTENDED)
 	    break;
@@ -2232,8 +2245,8 @@ re_compile_fastmap(bufp)
 	case wordend:
 	case pop_and_fail:
 	case start_paren:
-	case start_casefold:
-	case stop_casefold:
+	case casefold_on:
+	case casefold_off:
 	  continue;
 
 	case endline:
@@ -3363,11 +3376,11 @@ re_match(bufp, string_arg, size, pos, regs)
         case start_paren:
 	  continue;
 
-        case start_casefold:
+        case casefold_on:
 	  options |= RE_OPTION_IGNORECASE;
 	  continue;
 
-        case stop_casefold:
+        case casefold_off:
 	  options &= ~RE_OPTION_IGNORECASE;
 	  continue;
 
