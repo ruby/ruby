@@ -1,3 +1,7 @@
+Fri Jul 11 18:37:37 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* instruby: do not handle directories. [ruby-dev:20613]
+
 Fri Jul 11 16:09:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* util.c (ruby_strtod): exp should be less than MDMAXEXPT.
