@@ -458,8 +458,7 @@ class RubyLex
 	ungetc
 	identify_number
       else
-	# for obj.if
-	# (JP: obj.if などの対応)
+	# for "obj.if" etc.
 	@lex_state = EXPR_DOT
 	Token(TkDOT)
       end
@@ -693,7 +692,6 @@ class RubyLex
       token.concat getc
     end
     # almost fix token
-    # (JP: 大体fix token)
 
     case token
     when /^\$/
@@ -709,13 +707,11 @@ class RubyLex
       token_c, *trans = TkReading2Token[token]
       if token_c
 	# reserved word?
-	# (JP: 予約語かどうか?)
 
 	if (@lex_state != EXPR_BEG &&
 	    @lex_state != EXPR_FNAME &&
 	    trans[1])
 	  # modifiers
-	  # (JP: 修飾子)
 	  token_c = TkSymbol2Token[trans[1]]
 	  @lex_state = trans[0]
 	else
@@ -960,7 +956,6 @@ class RubyLex
       end
     else
       # other characters 
-      #(JP:その他の文字)
     end
   end
 end

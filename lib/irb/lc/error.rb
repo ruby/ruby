@@ -13,7 +13,7 @@ require "e2mmap"
 
 module IRB
 
-  # exceptions (JP: 例外定義)
+  # exceptions
   extend Exception2MessageMapper
   def_exception :UnrecognizedSwitch, "Unrecognized switch: %s"
   def_exception :NotImplementError, "Need to define `%s'"

@@ -44,7 +44,6 @@ module IRB
   end
 
   # initialize IRB and start TOP_LEVEL irb
-  # (JP: IRB初期化とトップレベルirb起動)
   def IRB.start(ap_path = nil)
     $0 = File::basename(ap_path, ".rb") if ap_path
 
@@ -85,7 +84,6 @@ module IRB
 
   #
   # irb interpriter main routine 
-  # (JP: irbインタプリタ本体)
   #
   class Irb
     def initialize(workspace = nil, input_method = nil)
@@ -218,9 +216,9 @@ module IRB
       when :IN_LOAD
 	IRB.irb_abort(self, LoadAbort)
       when :IN_IRB
-	# ignore (JP: 何もしない.)
+	# ignore
       else
-	# ignore (JP: その他の場合も何もしない.)
+	# ignore other cases as well
       end
     end
 

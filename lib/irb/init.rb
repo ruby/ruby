@@ -13,7 +13,6 @@
 module IRB
 
   # initialize config
-  # (JP: configの初期化)
   def IRB.initialize(ap_path)
     IRB.init_config(ap_path)
     IRB.init_error
@@ -27,7 +26,6 @@ module IRB
     @MATHN_INITIALIZED = false
 
     # default configurations
-    # (JP: デフォルトコンフィギュレーション)
     unless ap_path and @CONF[:AP_NAME]
       ap_path = File.join(File.dirname(File.dirname(__FILE__)), "irb.rb")
     end
@@ -102,7 +100,6 @@ module IRB
   end
 
   # option analyzing
-  # (JP: オプション解析)
   def IRB.parse_opts
     while opt = ARGV.shift
       case opt
@@ -205,7 +202,6 @@ module IRB
   end
 
   # initialize tracing function
-  # (JP: トレーサ初期設定)
   def IRB.initialize_tracer
     unless @TRACER_INITIALIZED
       require("tracer")
@@ -219,7 +215,6 @@ module IRB
   end
 
   # initialize mathn function
-  # (JP: mathn初期設定)
   def IRB.initialize_mathn
     unless @MATHN_INITIALIZED
       require "mathn"
@@ -228,7 +223,6 @@ module IRB
   end
 
   # initialize loader function
-  # (JP: loader初期設定)
   def IRB.initialize_loader
     unless @LOADER_INITIALIZED
       require "irb/loader"

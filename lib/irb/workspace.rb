@@ -12,8 +12,8 @@
 module IRB
   class WorkSpace
     # create new workspace. 
-    # (JP: 新たなworkspaceを作る. mainをselfとする. 省略したら, 
-    #      TOPLEVEL_BINDINGのmainをそのまま使う. )
+    # set self to main if specified, otherwise inherit main
+    # from TOPLEVEL_BINDING.
     def initialize(*main)
       if IRB.conf[:SINGLE_IRB]
 	@binding = TOPLEVEL_BINDING
