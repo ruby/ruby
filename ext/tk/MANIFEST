@@ -6,6 +6,7 @@ depend
 tkutil.c
 lib/README
 lib/multi-tk.rb
+lib/remote-tk.rb
 lib/tk.rb
 lib/tkafter.rb
 lib/tkbgerror.rb
@@ -95,6 +96,8 @@ sample/propagate.rb
 sample/resource.en
 sample/resource.ja
 sample/safe-tk.rb
+sample/remote-ip_sample.rb
+sample/remote-ip_sample2.rb
 sample/tkalignbox.rb
 sample/tkballoonhelp.rb
 sample/tkbiff.rb
@@ -194,6 +197,7 @@ sample/demos-en/unicodeout.rb
 sample/demos-en/vscale.rb
 sample/demos-en/widget
 sample/demos-jp/README
+sample/demos-jp/README.1st
 sample/demos-jp/arrow.rb
 sample/demos-jp/bind.rb
 sample/demos-jp/bitmap.rb
@@ -292,6 +296,7 @@ sample/msgs_rb2/README
 sample/msgs_rb2/de.msg
 sample/msgs_rb2/ja.msg
 sample/msgs_tk/README
+sample/msgs_tk/license.terms
 sample/msgs_tk/cs.msg
 sample/msgs_tk/de.msg
 sample/msgs_tk/el.msg

@@ -1,3 +1,9 @@
+Sat May 22 11:54:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* MANIFEST: add test/openssl/test_x509store.rb.
+
+	* ext/tk/MANIFEST: add recent files.
+
 Sat May 22 05:37:11 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/remote-tk.rb: (NEW library) controll Tk interpreters

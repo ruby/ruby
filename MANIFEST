@@ -806,6 +806,7 @@ test/openssl/test_x509cert.rb
 test/openssl/test_x509crl.rb
 test/openssl/test_x509name.rb
 test/openssl/test_x509req.rb
+test/openssl/test_x509store.rb
 test/openssl/utils.rb
 test/optparse/test_noarg.rb
 test/optparse/test_optarg.rb
