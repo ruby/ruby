@@ -1080,11 +1080,14 @@ module DRb
 	return succ, result
 
       ensure
-	@mutex.synchronize do
-	  if @pool.size > POOL_SIZE or ! succ
-	    conn.close if conn
+	if conn
+	  if succ
+	    @mutex.synchronize do
+	      @pool.unshift(conn)
+	      @pool.pop.close while @pool.size > POOL_SIZE
+	    end
 	  else
-	    @pool.unshift(conn)
+	    conn.close
 	  end
 	end
       end
