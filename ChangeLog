@@ -1,3 +1,13 @@
+Wed Jul  7 15:53:14 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* string.c (rb_str_match): raise TypeError when both arguments are
+	  strings. [ruby-dev:22869] (backported from HEAD)
+
+	* string.c (rb_str_match2): removed.
+
+	* Makefile.in, bcc32/Makefile.sub, win32/Makefile.sub,
+	  wince/Makefile.sub (string.c): now not depend on version.h.
+
 Wed Jul  7 00:48:34 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tk/lib/tkextlib/tktrans.rb,
