@@ -1,3 +1,9 @@
+Wed Aug 28 11:37:35 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.h: define SIGINT and SIGKILL if not defined.
+
+	* win32/win32.c: remove definition of SIGINT and SIGKILL.
+
 Tue Aug 27 19:50:27 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ruby.c (require_libraries): prevent ruby_sorcefile from GC.

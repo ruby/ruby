@@ -2332,13 +2332,6 @@ chown(const char *path, int owner, int group)
 	return 0;
 }
 
-#include <signal.h>
-#ifndef SIGINT
-#define SIGINT 2
-#endif
-#ifndef SIGKILL
-#define SIGKILL	9
-#endif
 int
 kill(int pid, int sig)
 {

@@ -53,6 +53,7 @@ extern "C++" {
 #include <process.h>
 #include <time.h>
 #include <math.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #if !defined(__BORLANDC__)
@@ -270,6 +271,14 @@ extern char *rb_w32_strerror(int);
 #define LOCK_UN 8
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK 10035 /* EBASEERR + 35 (winsock.h) */
+#endif
+
+
+#ifndef SIGINT
+#define SIGINT 2
+#endif
+#ifndef SIGKILL
+#define SIGKILL	9
 #endif
 
 
