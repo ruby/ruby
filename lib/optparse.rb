@@ -83,6 +83,7 @@ Keyword completion module.
       pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+(?=.)/, '\&\w*'),
                          ignore_case?)
       canon, sw, k, v, cn = nil
+      candidates = []
       each do |k, *v|
 	(if Regexp === k
 	   kn = nil
@@ -92,14 +93,20 @@ Keyword completion module.
 	   pat === kn
 	 end) or next
 	v << k if v.empty?
-	if !canon
-	  canon, sw, cn = k, v, kn
-	elsif sw != v
+        candidates << [k, v, kn]
+      end
+      candidates = candidates.sort_by {|k, v, kn| kn.size}
+      if candidates.size == 1
+        canon, sw, * = candidates[0]
+      elsif candidates.size > 1
+        canon, sw, cn = candidates.shift
+        candidates.each do |k, v, kn|
+          next if sw == v
 	  if String === cn and String === kn
 	    if cn.rindex(kn, 0)
 	      canon, sw, cn = k, v, kn
 	      next
-	    elsif kn.rindex(canon, 0)
+	    elsif kn.rindex(cn, 0)
 	      next
 	    end
 	  end

@@ -1,3 +1,8 @@
+Mon Nov 17 10:50:27 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Completion::complete): allow least
+	  common completion for three or more candidates.
+
 Mon Nov 17 09:41:38 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/test/unit/ui/tk/testrunner.rb,
