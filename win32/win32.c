@@ -1722,9 +1722,6 @@ StartSockets ()
     interrupted_event = CreateSignal();
     if (!interrupted_event)
 	rb_fatal("Unable to create interrupt event!\n");
-    interrupted_event = CreateSignal();
-    if (!interrupted_event)
-	rb_fatal("Unable to create interrupt event!\n");
 }
 
 #undef accept
