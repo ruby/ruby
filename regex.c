@@ -1406,7 +1406,8 @@ re_compile_pattern(pattern, size, bufp)
 	  case 'W':
 	    for (c = 0; c < (1 << BYTEWIDTH); c++) {
 	      if (SYNTAX(c) != Sword &&
-		  (current_mbctype || SYNTAX(c) != Sword2))
+		  (current_mbctype && !re_mbctab[c] ||
+		  !current_mbctype && SYNTAX(c) != Sword2))
 		SET_LIST_BIT(c);
 	    }
 	    last = -1;

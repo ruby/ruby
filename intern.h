@@ -210,6 +210,12 @@ VALUE rb_Array _((VALUE));
 /* parse.y */
 extern int   ruby_sourceline;
 extern char *ruby_sourcefile;
+#define yyparse rb_yyparse
+#define yylex rb_yylex
+#define yyerror rb_yyerror
+#define yylval rb_yylval
+#define yychar rb_yychar
+#define yydebug rb_yydebug
 int yyparse _((void));
 ID rb_id_attrset _((ID));
 void rb_parser_append_print _((void));

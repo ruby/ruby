@@ -756,6 +756,7 @@ rb_str_upto(beg, end, excl)
     int excl;
 {
     VALUE current;
+    ID succ = rb_intern("succ");
 
     if (TYPE(end) != T_STRING) end = rb_str_to_str(end);
 
@@ -763,7 +764,7 @@ rb_str_upto(beg, end, excl)
     while (rb_str_cmp(current, end) <= 0) {
 	rb_yield(current);
 	if (!excl && rb_str_equal(current, end)) break;
-	current = rb_str_succ(current);
+	current = rb_funcall(current, succ, 0, 0);
 	if (excl && rb_str_equal(current, end)) break;
 	if (RSTRING(current)->len > RSTRING(end)->len)
 	    break;
