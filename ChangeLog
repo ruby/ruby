@@ -8,12 +8,8 @@ Thu Oct  9 06:43:33 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_yield_0): nothing to do for empty node.
 
-Thu Oct  9 06:43:33 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
 	* eval.c (call_end_proc, proc_invoke): adjust backtrace in END.
 	  [ruby-dev:21551]
-
-Thu Oct  9 06:43:33 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_start_0): set the value by break as the result.
 	  [ruby-dev:21552]
