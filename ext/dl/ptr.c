@@ -155,9 +155,30 @@ rb_dlptr2cptr(VALUE val)
 }
 
 static VALUE
-rb_dlptr_s_new(int argc, VALUE argv[], VALUE klass)
+rb_dlptr_s_allocate(VALUE klass)
+{
+  VALUE obj;
+  struct ptr_data *data;
+
+  obj = Data_Make_Struct(klass, struct ptr_data, 0, dlptr_free, data);
+  data->ptr = 0;
+  data->free = 0;
+  data->ctype = DLPTR_CTYPE_UNKNOWN;
+  data->stype = NULL;
+  data->ssize = NULL;
+  data->slen  = 0;
+  data->size  = 0;
+  data->ids   = NULL;
+  data->ids_num = 0;
+
+  return obj;
+}
+
+static VALUE
+rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
 {
   VALUE ptr, sym, obj, size;
+  struct ptr_data *data;
   void *p = NULL;
   freefunc_t f = NULL;
   long s = 0;
@@ -179,11 +200,14 @@ rb_dlptr_s_new(int argc, VALUE argv[], VALUE klass)
     rb_bug("rb_dlptr_s_new");
   };
 
-  obj = rb_dlptr_new(p,s,f);
+  if( p ){
+    Data_Get_Struct(self, struct ptr_data, data);
+    data->ptr  = p;
+    data->size = s;
+    data->free = f;
+  }
 
-  rb_obj_call_init(obj, argc, argv);
-
-  return obj;
+  return Qnil;
 }
 
 static VALUE
@@ -208,12 +232,6 @@ rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
   obj = rb_dlptr_malloc(s,f);
 
   return obj;
-}
-
-static VALUE
-rb_dlptr_init(int argc, VALUE argv[], VALUE self)
-{
-  return Qnil;
 }
 
 VALUE
@@ -1002,10 +1020,10 @@ rb_dlmem_each(VALUE self)
 void
 Init_dlptr()
 {
-  rb_cDLPtrData = rb_define_class_under(rb_mDL, "PtrData", rb_cData);
-  rb_define_singleton_method(rb_cDLPtrData, "new", rb_dlptr_s_new, -1);
+  rb_cDLPtrData = rb_define_class_under(rb_mDL, "PtrData", rb_cObject);
+  rb_define_singleton_method(rb_cDLPtrData, "allocate", rb_dlptr_s_allocate, 0);
   rb_define_singleton_method(rb_cDLPtrData, "malloc", rb_dlptr_s_malloc, -1);
-  rb_define_method(rb_cDLPtrData, "initialize", rb_dlptr_init, -1);
+  rb_define_method(rb_cDLPtrData, "initialize", rb_dlptr_initialize, -1);
   rb_define_method(rb_cDLPtrData, "free=", rb_dlptr_free_set, 1);
   rb_define_method(rb_cDLPtrData, "free",  rb_dlptr_free_get, 0);
   rb_define_method(rb_cDLPtrData, "to_i",  rb_dlptr_to_i, 0);

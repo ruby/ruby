@@ -18,8 +18,6 @@ rb_cDLHandle
 rb_dlhandle_close
 rb_dlhandle_disable_close
 rb_dlhandle_enable_close
-rb_dlhandle_init
-rb_dlhandle_s_new
 rb_dlhandle_sym
 Init_dlptr
 rb_cDLPtrData
@@ -54,10 +52,8 @@ rb_cDLSymbol
 rb_dlsym2csym
 rb_dlsym_call
 rb_dlsym_cproto
-rb_dlsym_initialize
 rb_dlsym_inspect
 rb_dlsym_name
 rb_dlsym_new
 rb_dlsym_proto
-rb_dlsym_s_new
 rb_dlsym_to_ptr

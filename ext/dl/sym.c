@@ -127,10 +127,26 @@ rb_dlsym2csym(VALUE val)
 }
 
 VALUE
-rb_dlsym_s_new(int argc, VALUE argv[], VALUE self)
+rb_dlsym_s_allocate(VALUE klass)
+{
+  VALUE obj;
+  struct sym_data *data;
+
+  obj = Data_Make_Struct(klass, struct sym_data, 0, dlsym_free, data);
+  data->func = 0;
+  data->name = 0;
+  data->type = 0;
+  data->len  = 0;
+
+  return obj;
+}
+
+VALUE
+rb_dlsym_initialize(int argc, VALUE argv[], VALUE self)
 {
   VALUE addr, name, type;
   VALUE val;
+  struct sym_data *data;
   void *saddr;
   const char *sname, *stype;
 
@@ -140,18 +156,14 @@ rb_dlsym_s_new(int argc, VALUE argv[], VALUE self)
   sname = NIL_P(name) ? NULL : StringValuePtr(name);
   stype = NIL_P(type) ? NULL : StringValuePtr(type);
 
-  val = rb_dlsym_new((void (*)())saddr, sname, stype);
+  if( saddr ){
+    Data_Get_Struct(self, struct sym_data, data);
+    data->func = saddr;
+    data->name = sname ? strdup(sname) : 0;
+    data->type = stype ? strdup(stype) : 0;
+    data->len  = stype ? strlen(stype) : 0;
+  }
 
-  if( val != Qnil ){
-    rb_obj_call_init(val, argc, argv);
-  };
-
-  return val;
-}
-
-VALUE
-rb_dlsym_initialize(int argc, VALUE argv[], VALUE self)
-{
   return Qnil;
 }
 
@@ -807,8 +819,8 @@ rb_dlsym_to_ptr(VALUE self)
 void
 Init_dlsym()
 {
-  rb_cDLSymbol = rb_define_class_under(rb_mDL, "Symbol", rb_cData);
-  rb_define_singleton_method(rb_cDLSymbol, "new", rb_dlsym_s_new, -1);
+  rb_cDLSymbol = rb_define_class_under(rb_mDL, "Symbol", rb_cObject);
+  rb_define_singleton_method(rb_cDLSymbol, "allocate", rb_dlsym_s_allocate, 0);
   rb_define_singleton_method(rb_cDLSymbol, "char2type", rb_s_dlsym_char2type, 1);
   rb_define_method(rb_cDLSymbol, "initialize", rb_dlsym_initialize, -1);
   rb_define_method(rb_cDLSymbol, "call", rb_dlsym_call, -1);

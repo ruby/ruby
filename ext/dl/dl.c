@@ -538,7 +538,7 @@ rb_io_to_ptr(VALUE self)
 VALUE
 rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
 {
-  return rb_dlhandle_s_new(argc, argv, rb_cDLHandle);
+  return rb_class_new_instance(argc, argv, rb_cDLHandle);
 }
 
 VALUE

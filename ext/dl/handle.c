@@ -26,10 +26,24 @@ rb_dlhandle_close(VALUE self)
 }
 
 VALUE
-rb_dlhandle_s_new(int argc, VALUE argv[], VALUE self)
+rb_dlhandle_s_allocate(VALUE klass)
+{
+  VALUE obj;
+  struct dl_handle *dlhandle;
+
+  obj = Data_Make_Struct(rb_cDLHandle, struct dl_handle, 0,
+			 dlhandle_free, dlhandle);
+  dlhandle->ptr  = 0;
+  dlhandle->open = 0;
+  dlhandle->enable_close = 0;
+
+  return obj;
+}
+
+VALUE
+rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
 {
   void *ptr;
-  VALUE val;
   struct dl_handle *dlhandle;
   VALUE lib, flag;
   char  *clib;
@@ -60,24 +74,15 @@ rb_dlhandle_s_new(int argc, VALUE argv[], VALUE self)
     rb_raise(rb_eRuntimeError, err);
   };
 #endif
-  val = Data_Make_Struct(rb_cDLHandle, struct dl_handle, 0,
-			 dlhandle_free, dlhandle);
+  Data_Get_Struct(self, struct dl_handle, dlhandle);
   dlhandle->ptr = ptr;
   dlhandle->open = 1;
   dlhandle->enable_close = 0;
 
-  rb_obj_call_init(val, argc, argv);
-
   if( rb_block_given_p() ){
-    rb_ensure(rb_yield, val, rb_dlhandle_close, val);
+    rb_ensure(rb_yield, self, rb_dlhandle_close, self);
   };
 
-  return val;
-}
-
-VALUE
-rb_dlhandle_init(int argc, VALUE argv[], VALUE self)
-{
   return Qnil;
 }
 
@@ -153,6 +158,9 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
 
 
   Data_Get_Struct(self, struct dl_handle, dlhandle);
+  if( ! dlhandle->open ){
+    rb_raise(rb_eRuntimeError, "Closed handle.");
+  }
   handle = dlhandle->ptr;
 
   func = dlsym(handle, name);
@@ -192,9 +200,9 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
 void
 Init_dlhandle()
 {
-  rb_cDLHandle = rb_define_class_under(rb_mDL, "Handle", rb_cData);
-  rb_define_singleton_method(rb_cDLHandle, "new", rb_dlhandle_s_new, -1);
-  rb_define_method(rb_cDLHandle, "initialize", rb_dlhandle_init, -1);
+  rb_cDLHandle = rb_define_class_under(rb_mDL, "Handle", rb_cObject);
+  rb_define_singleton_method(rb_cDLHandle, "allocate", rb_dlhandle_s_allocate, 0);
+  rb_define_method(rb_cDLHandle, "initialize", rb_dlhandle_initialize, -1);
   rb_define_method(rb_cDLHandle, "to_i", rb_dlhandle_to_i, 0);
   rb_define_method(rb_cDLHandle, "to_ptr", rb_dlhandle_to_ptr, 0);
   rb_define_method(rb_cDLHandle, "close", rb_dlhandle_close, 0);
