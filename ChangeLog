@@ -1,5 +1,14 @@
 Fri Jul 14 12:49:50 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* io.c (argf_eof): need to check stdin, when next_p == -1.
+
+	* io.c (read_all): use io_fread() instead of fread(3).
+
+	* io.c (io_reopen): should clearerr FILE if fd < 3.
+
+	* re.c (rb_reg_match_m): the result is exported, so it should be
+	  declared as busy.
+
 	* eval.c (rb_eval): should preserve errinfo even if return, break,
 	  etc. is called in rescue clause.
 
