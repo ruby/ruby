@@ -185,10 +185,10 @@ class CGI
   CR  = "\015"
   LF  = "\012"
   EOL = CR + LF
-  VERSION = '2.1.3'
-  RELEASE_DATE = '2001-03-18'
+  VERSION = '2.1.4'
+  RELEASE_DATE = '2001-04-18'
   VERSION_CODE = 214
-  RELEASE_CODE = 20010318
+  RELEASE_CODE = 20010418
   REVISION = '$Id$'
 
   NEEDS_BINMODE = true if /WIN/ni.match(RUBY_PLATFORM)
@@ -643,13 +643,9 @@ convert string charset, and set language to "ja".
       # simple support for IE
       if options["path"]
         @path = options["path"]
-      elsif ENV["REQUEST_URI"]
-        @path = ENV["REQUEST_URI"].sub(/\?.*/n,'')
-        if ENV["PATH_INFO"]
-          @path = @path[0...@path.rindex(ENV["PATH_INFO"])]
-        end
       else
-        @path = (ENV["SCRIPT_NAME"] or "")
+        %r|^(.*/)|.match(ENV["SCRIPT_NAME"])
+        @path = ($1 or "")
       end
       @domain = options["domain"]
       @expires = options["expires"]

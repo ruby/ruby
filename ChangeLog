@@ -1,3 +1,7 @@
+Wed Apr 18 04:37:51 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: CGI::Cookie: no use PATH_INFO.
+
 Sat Apr 14 13:37:32 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/config.status.in: no longer use missing/alloca.c.
@@ -239,17 +243,17 @@ Mon Mar 19 10:55:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sun Mar 18 08:58:18 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
-	* lib/net/cgi.rb: // === '' --> //.match('')
+	* lib/cgi.rb: // === '' --> //.match('')
 
-	* lib/net/cgi.rb: cgi#header(): improvement for mod_ruby.
+	* lib/cgi.rb: cgi#header(): improvement for mod_ruby.
 
-	* lib/net/cgi.rb: cgi#rfc1123date(): improvement.
+	* lib/cgi.rb: cgi#rfc1123date(): improvement.
 	  thanks to TADA Tadashi <sho@spc.gr.jp>.
 
-	* lib/net/cgi.rb: cgi#rfc1123date(): document bug fix.
+	* lib/cgi.rb: cgi#rfc1123date(): document bug fix.
 	  thanks to Kazuhiro NISHIYAMA <zn@mbf.nifty.com>.
 
-	* lib/net/cgi.rb: cgi#header(): bug fix.
+	* lib/cgi.rb: cgi#header(): bug fix.
 	  thanks to IWATSUKI Hiroyuki <don@na.rim.or.jp>.
 
 Sat Mar 17 11:11:24 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
