@@ -1,3 +1,16 @@
+Wed Feb 20 15:15:03 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* intern.h: prototypes; rb_io_addstr(), rb_io_printf(),
+	  rb_io_print(), rb_io_puts()
+
+	* io.c (rb_io_addstr): make extern.
+
+	* io.c (rb_io_printf): ditto.
+
+	* io.c (rb_io_print): ditto.
+
+	* io.c (rb_io_puts): ditto.
+
 Wed Feb 20 12:41:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_any_cmp): should handle Qundef in keys.

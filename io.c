@@ -272,7 +272,7 @@ rb_io_write(io, str)
     return rb_funcall(io, id_write, 1, str);
 }
 
-static VALUE
+VALUE
 rb_io_addstr(io, str)
     VALUE io, str;
 {
@@ -1994,7 +1994,7 @@ rb_io_clone(io)
     return (VALUE)clone;
 }
 
-static VALUE
+VALUE
 rb_io_printf(argc, argv, out)
     int argc;
     VALUE argv[];
@@ -2025,7 +2025,7 @@ rb_f_printf(argc, argv)
     return Qnil;
 }
 
-static VALUE
+VALUE
 rb_io_print(argc, argv, out)
     int argc;
     VALUE *argv;
@@ -2098,8 +2098,6 @@ rb_f_putc(recv, ch)
     return rb_io_putc(rb_defout, ch);
 }
 
-static VALUE rb_io_puts _((int, VALUE*, VALUE));
-
 static VALUE
 io_puts_ary(ary, out)
     VALUE ary, out;
@@ -2117,7 +2115,7 @@ io_puts_ary(ary, out)
     return Qnil;
 }
 
-static VALUE
+VALUE
 rb_io_puts(argc, argv, out)
     int argc;
     VALUE *argv;

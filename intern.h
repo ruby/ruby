@@ -216,6 +216,10 @@ VALUE rb_io_ungetc _((VALUE, VALUE));
 VALUE rb_io_close _((VALUE));
 VALUE rb_io_eof _((VALUE));
 VALUE rb_io_binmode _((VALUE));
+VALUE rb_io_addstr _((VALUE, VALUE));
+VALUE rb_io_printf _((int, VALUE*, VALUE));
+VALUE rb_io_print _((int, VALUE*, VALUE));
+VALUE rb_io_puts _((int, VALUE*, VALUE));
 VALUE rb_file_open _((const char*, const char*));
 VALUE rb_gets _((void));
 /* numeric.c */
