@@ -186,6 +186,7 @@ EXPORTS
 	rb_big_plus
 	rb_big_minus
 	rb_big_mul
+	rb_big_divmod
 	rb_big_pow
 	rb_big_and
 	rb_big_or

@@ -1133,7 +1133,7 @@ VALUE
 rb_io_binmode(io)
     VALUE io;
 {
-#if defined _IOBIN || defined O_BINARY
+#if defined(NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);

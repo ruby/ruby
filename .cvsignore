@@ -3,6 +3,7 @@ newver.rb
 ruby
 miniruby
 README.fat-patch
+configure
 config.cache
 config.h
 config.log

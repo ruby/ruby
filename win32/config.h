@@ -38,7 +38,8 @@
 
 #define RSHIFT(x,y) ((x)>>y)
 #define FILE_COUNT _cnt
-#define DLEXT ".dll"
+#define DLEXT ".so"
+#define DLEXT2 ".dll"
 #define RUBY_LIB "/usr/local/lib/ruby/1.5"
 #define RUBY_SITE_LIB "/usr/local/lib/ruby/site_ruby"
 #define RUBY_SITE_LIB2 "/usr/local/lib/ruby/site_ruby/1.5"

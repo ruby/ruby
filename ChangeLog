@@ -1,3 +1,15 @@
+Wed May 17 00:45:57 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* io.c (rb_io_binmode): should check PLATFORMs, not O_BINARY, sigh...
+
+Wed May 17 00:40:15 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/config.h: add DLEXT2, now DLEXT on mswin32 is "so".
+
+	* win32/config.status: ditto.
+
+	* win32/ruby.def: add symbol "rb_big_divmod".
+
 Mon May 15 15:38:09 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.h: exported symbols should be for xmalloc etc. are now
@@ -15,7 +27,7 @@ Sun May 14 18:05:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* Makefile.in: missing/nt.c -> win32/win32.c
 
-	* configure.in: bug fix; static linking on mingw32
+	* configure.in: bug fix; static linking on mingw32.
 
 	* cygwin/GNUmakefile.in: remove VPATH.
 
@@ -43,7 +55,7 @@ Sun May 14 00:54:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* file.c: should check S_IXGRP, S_ISGID, not NT.
 
-	* io.c: should check _IOBIN, O_BINARY, not PLATFORMs.
+	* io.c (rb_io_binmode): should check _IOBIN, O_BINARY, not PLATFORMs.
 
 Sat May 13 14:21:15 2000  Koji Arai  <JCA02266@nifty.ne.jp>
 
