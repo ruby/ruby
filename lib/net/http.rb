@@ -1,157 +1,27 @@
 #
 # = net/http.rb
 #
-#--
 # Copyright (c) 1999-2003 Yukihiro Matsumoto
 # Copyright (c) 1999-2003 Minero Aoki
 # 
-# written & maintained by Minero Aoki <aamine@loveruby.net>.
+# Written & maintained by Minero Aoki <aamine@loveruby.net>.
+#
 # This file is derived from "http-access.rb".
+#
+# Documented by Minero Aoki; converted to RDoc by William Webber.
 # 
 # This program is free software. You can re-distribute and/or
 # modify this program under the same terms of ruby itself ---
-# Ruby Distribute License or GNU General Public License.
+# Ruby Distribution License or GNU General Public License.
+#
+# See Net:::HTTP for an overview and examples. 
 # 
 # NOTE: You can find Japanese version of this document here:
-# ((<URL:http://www.ruby-lang.org/ja/man-1.6/?cmd=view;name=net%2Fhttp.rb>))
+# http://www.ruby-lang.org/ja/man-1.6/?cmd=view;name=net%2Fhttp.rb
 # 
+#--
 # $Id$
 #++ 
-#
-# == What Is This Library?
-# 
-# This library provides your program functions to access WWW
-# documents via HTTP, Hyper Text Transfer Protocol version 1.1.
-# For details of HTTP, refer [RFC2616]
-# ((<URL:http://www.ietf.org/rfc/rfc2616.txt>)).
-# 
-# == Examples
-# 
-# === Getting Document From WWW Server
-# 
-# (formal version)
-# 
-#     require 'net/http'
-#     Net::HTTP.start('www.example.com', 80) {|http|
-#         response = http.get('/index.html')
-#         puts response.body
-#     }
-# 
-# (shorter version)
-# 
-#     require 'net/http'
-#     Net::HTTP.get_print 'www.example.com', '/index.html'
-# 
-#             or
-# 
-#     require 'net/http'
-#     require 'uri'
-#     Net::HTTP.get_print URI.parse('http://www.example.com/index.html')
-# 
-# === Posting Form Data
-# 
-#     require 'net/http'
-#     Net::HTTP.start('some.www.server', 80) {|http|
-#         response = http.post('/cgi-bin/search.rb', 'query=ruby')
-#     }
-# 
-# === Accessing via Proxy
-# 
-# Net::HTTP.Proxy creates http proxy class. It has same
-# methods of Net::HTTP but its instances always connect to
-# proxy, instead of given host.
-# 
-#     require 'net/http'
-# 
-#     proxy_addr = 'your.proxy.host'
-#     proxy_port = 8080
-#             :
-#     Net::HTTP::Proxy(proxy_addr, proxy_port).start('www.example.com') {|http|
-#         # always connect to your.proxy.addr:8080
-#             :
-#     }
-# 
-# Since Net::HTTP.Proxy returns Net::HTTP itself when proxy_addr is nil,
-# there's no need to change code if there's proxy or not.
-# 
-# There are two additional parameters in Net::HTTP.Proxy which allow to
-# specify proxy user name and password:
-# 
-#     Net::HTTP::Proxy(proxy_addr, proxy_port, proxy_user = nil, proxy_pass = nil)
-# 
-# You may use them to work with authorization-enabled proxies:
-# 
-#     require 'net/http'
-#     require 'uri'
-#     
-#     proxy_host = 'your.proxy.host'
-#     proxy_port = 8080
-#     uri = URI.parse(ENV['http_proxy'])
-#     proxy_user, proxy_pass = uri.userinfo.split(/:/) if uri.userinfo
-#     Net::HTTP::Proxy(proxy_host, proxy_port,
-#                      proxy_user, proxy_pass).start('www.example.com') {|http|
-#       # always connect to your.proxy.addr:8080 using specified username and password
-#             :
-#     }
-#     
-# 
-# === Following Redirection
-# 
-#     require 'net/http'
-#     require 'uri'
-# 
-#     def fetch( uri_str, limit = 10 )
-#       # You should choose better exception. 
-#       raise ArgumentError, 'http redirect too deep' if limit == 0
-# 
-#       response = Net::HTTP.get_response(URI.parse(uri_str))
-#       case response
-#       when Net::HTTPSuccess     then response
-#       when Net::HTTPRedirection then fetch(response['location'], limit - 1)
-#       else
-#         response.error!
-#       end
-#     end
-# 
-#     print fetch('http://www.ruby-lang.org')
-# 
-# Net::HTTPSuccess and Net::HTTPRedirection is a HTTPResponse class.
-# All HTTPResponse objects belong to its own response class which
-# indicate HTTP result status. For details of response classes,
-# see section "HTTP Response Classes".
-# 
-# === Basic Authentication
-# 
-#     require 'net/http'
-# 
-#     Net::HTTP.start('www.example.com') {|http|
-#       req = Net::HTTP::Get.new('/secret-page.html')
-#       req.basic_auth 'account', 'password'
-#       response = http.request(req)
-#       print response.body
-#     }
-# 
-# === HTTP Response Classes
-#
-# TODO: write me.
-# 
-# == Switching Net::HTTP versions
-# 
-# You can use net/http.rb 1.1 features (bundled with Ruby 1.6)
-# by calling HTTP.version_1_1. Calling Net::HTTP.version_1_2
-# allows you to use 1.2 features again.
-# 
-#     # example
-#     Net::HTTP.start {|http1| ...(http1 has 1.2 features)... }
-# 
-#     Net::HTTP.version_1_1
-#     Net::HTTP.start {|http2| ...(http2 has 1.1 features)... }
-# 
-#     Net::HTTP.version_1_2
-#     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
-# 
-# This function is NOT multithread-safe.
-#
 
 require 'net/protocol'
 require 'uri'
@@ -164,11 +34,139 @@ module Net # :nodoc:
   class HTTPHeaderSyntaxError < StandardError; end
   # :startdoc:
 
+  # == What Is This Library?
+  # 
+  # This library provides your program functions to access WWW
+  # documents via HTTP, Hyper Text Transfer Protocol version 1.1.
+  # For details of HTTP, refer [RFC2616]
+  # ((<URL:http://www.ietf.org/rfc/rfc2616.txt>)).
+  # 
+  # == Examples
+  # 
+  # === Getting Document From WWW Server
+  # 
+  # (formal version)
+  # 
+  #     require 'net/http'
+  #     Net::HTTP.start('www.example.com', 80) { |http|
+  #         response = http.get('/index.html')
+  #         puts response.body
+  #     }
+  # 
+  # (shorter version)
+  # 
+  #     require 'net/http'
+  #     Net::HTTP.get_print 'www.example.com', '/index.html'
+  # 
+  #             or
+  # 
+  #     require 'net/http'
+  #     require 'uri'
+  #     Net::HTTP.get_print URI.parse('http://www.example.com/index.html')
+  # 
+  # === Posting Form Data
+  # 
+  #     require 'net/http'
+  #     Net::HTTP.start('some.www.server', 80) { |http|
+  #         response = http.post('/cgi-bin/search.rb', 'query=ruby')
+  #     }
+  # 
+  # === Accessing via Proxy
+  # 
+  # Net::HTTP.Proxy creates http proxy class. It has same
+  # methods of Net::HTTP but its instances always connect to
+  # proxy, instead of given host.
+  # 
+  #     require 'net/http'
+  # 
+  #     proxy_addr = 'your.proxy.host'
+  #     proxy_port = 8080
+  #             :
+  #     Net::HTTP::Proxy(proxy_addr, proxy_port).start('www.example.com') {|http|
+  #         # always connect to your.proxy.addr:8080
+  #             :
+  #     }
+  # 
+  # Since Net::HTTP.Proxy returns Net::HTTP itself when proxy_addr is nil,
+  # there's no need to change code if there's proxy or not.
+  # 
+  # There are two additional parameters in Net::HTTP.Proxy which allow to
+  # specify proxy user name and password:
+  # 
+  #     Net::HTTP::Proxy(proxy_addr, proxy_port, proxy_user = nil, proxy_pass = nil)
+  # 
+  # You may use them to work with authorization-enabled proxies:
+  # 
+  #     require 'net/http'
+  #     require 'uri'
+  #     
+  #     proxy_host = 'your.proxy.host'
+  #     proxy_port = 8080
+  #     uri = URI.parse(ENV['http_proxy'])
+  #     proxy_user, proxy_pass = uri.userinfo.split(/:/) if uri.userinfo
+  #     Net::HTTP::Proxy(proxy_host, proxy_port,
+  #                      proxy_user, proxy_pass).start('www.example.com') {|http|
+  #       # always connect to your.proxy.addr:8080 using specified username and password
+  #             :
+  #     }
+  #     
+  # 
+  # === Following Redirection
+  # 
+  #     require 'net/http'
+  #     require 'uri'
+  # 
+  #     def fetch( uri_str, limit = 10 )
+  #       # You should choose better exception. 
+  #       raise ArgumentError, 'http redirect too deep' if limit == 0
+  # 
+  #       response = Net::HTTP.get_response(URI.parse(uri_str))
+  #       case response
+  #       when Net::HTTPSuccess     then response
+  #       when Net::HTTPRedirection then fetch(response['location'], limit - 1)
+  #       else
+  #         response.error!
+  #       end
+  #     end
+  # 
+  #     print fetch('http://www.ruby-lang.org')
+  # 
+  # Net::HTTPSuccess and Net::HTTPRedirection is a HTTPResponse class.
+  # All HTTPResponse objects belong to its own response class which
+  # indicate HTTP result status. For details of response classes,
+  # see section "HTTP Response Classes".
+  # 
+  # === Basic Authentication
+  # 
+  #     require 'net/http'
+  # 
+  #     Net::HTTP.start('www.example.com') {|http|
+  #       req = Net::HTTP::Get.new('/secret-page.html')
+  #       req.basic_auth 'account', 'password'
+  #       response = http.request(req)
+  #       print response.body
+  #     }
+  # 
+  # === HTTP Response Classes
   #
-  # Class providing both short-cut class methods for retrieving entities,
-  # and instance methods for fuller HTTP functionality.
-  #
-  # See comment to the file http.rb for examples of usage.
+  # TODO: write me.
+  # 
+  # == Switching Net::HTTP versions
+  # 
+  # You can use net/http.rb 1.1 features (bundled with Ruby 1.6)
+  # by calling HTTP.version_1_1. Calling Net::HTTP.version_1_2
+  # allows you to use 1.2 features again.
+  # 
+  #     # example
+  #     Net::HTTP.start { |http1| ...(http1 has 1.2 features)... }
+  # 
+  #     Net::HTTP.version_1_1
+  #     Net::HTTP.start { |http2| ...(http2 has 1.1 features)... }
+  # 
+  #     Net::HTTP.version_1_2
+  #     Net::HTTP.start { |http3| ...(http3 has 1.2 features)... }
+  # 
+  # This function is NOT thread-safe.
   #
   class HTTP < Protocol
 
@@ -190,7 +188,7 @@ module Net # :nodoc:
       @@newimpl = true
     end
 
-    # Turns on net/http 1.2 (ruby 1.8) features.
+    # Turns on net/http 1.1 (ruby 1.6) features.
     # Defaults to OFF in ruby 1.8.
     def HTTP.version_1_1
       @@newimpl = false
@@ -359,7 +357,7 @@ module Net # :nodoc:
     end
 
     # *WARNING* This method causes serious security hole.
-    # Never use this method in product code.
+    # Never use this method in production code.
     #
     # Set an output stream for debugging.
     #
