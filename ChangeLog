@@ -1,3 +1,8 @@
+Mon Feb 16 12:29:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_s_list): new method Iconv.list
+	  (libiconv only).
+
 Mon Feb 16 10:29:52 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (CompareImpl): File.fnmatch and Dir.glob get better performance

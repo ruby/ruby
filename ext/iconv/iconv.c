@@ -611,6 +611,15 @@ iconv_s_iconv
     return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
 }
 
+/*
+=begin
+--- Iconv.conv(to, from, str)
+    Shorthand for
+      Iconv.iconv(to, from, str).join
+    see ((<Iconv.iconv>))
+=end
+*/
+
 static VALUE
 iconv_s_conv
 #ifdef HAVE_PROTOTYPES
@@ -628,6 +637,72 @@ iconv_s_conv
     arg.ret = rb_str_new(0, 0);
     arg.cd = iconv_create(to, from);
     return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
+}
+
+/*
+=begin
+--- Iconv.list {|*aliases| ... }
+    Iterates each alias sets.
+=end
+ */
+
+#ifdef HAVE_ICONVLIST
+struct iconv_name_list {
+    unsigned int namescount;
+    const char *const *names;
+};
+
+static VALUE
+list_iconv_i
+#ifdef HAVE_PROTOTYPES
+    (VALUE ptr)
+#else /* HAVE_PROTOTYPES */
+    (ptr)
+    VALUE ptr;
+#endif /* HAVE_PROTOTYPES */
+{
+    struct iconv_name_list *p = (struct iconv_name_list *)ptr;
+    unsigned int i, namescount = p->namescount;
+    const char *const *names = p->names;
+    VALUE ary = rb_ary_new2(namescount);
+
+    for (i = 0; i < namescount; i++) {
+	rb_ary_push(ary, rb_str_new2(names[i]));
+    }
+    return rb_yield(ary);
+}
+
+static int
+list_iconv
+#ifdef HAVE_PROTOTYPES
+    (unsigned int namescount, const char *const *names, void *data)
+#else /* HAVE_PROTOTYPES */
+    (namescount, names, data)
+    unsigned int namescount;
+    const char *const *names;
+    void *data;
+#endif /* HAVE_PROTOTYPES */
+{
+    int *state = data;
+    struct iconv_name_list list;
+
+    list.namescount = namescount;
+    list.names = names;
+    rb_protect(list_iconv_i, (VALUE)&list, state);
+    return *state;
+}
+#endif
+
+static VALUE
+iconv_s_list _((void))
+{
+#ifdef HAVE_ICONVLIST
+    int state = 0;
+    iconvlist(list_iconv, &state);
+#else
+    rb_notimplement();
+#endif
+    return Qnil;
 }
 
 
@@ -843,6 +918,7 @@ Init_iconv _((void))
     rb_define_singleton_method(rb_cIconv, "open", iconv_s_open, 2);
     rb_define_singleton_method(rb_cIconv, "iconv", iconv_s_iconv, -1);
     rb_define_singleton_method(rb_cIconv, "conv", iconv_s_conv, 3);
+    rb_define_singleton_method(rb_cIconv, "list", iconv_s_list, 0);
     rb_define_method(rb_cIconv, "initialize", iconv_initialize, 2);
     rb_define_method(rb_cIconv, "close", iconv_finish, 0);
     rb_define_method(rb_cIconv, "iconv", iconv_iconv, -1);
