@@ -1,3 +1,7 @@
+Sat Jan 22 22:27:28 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/unix.rb: fail if UNIXFileOwner is set. [druby-ja:111]
+
 Fri Jan 21 20:07:02 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Config.resolv): don't raise ResolvError.
