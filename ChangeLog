@@ -1,3 +1,8 @@
+Wed Mar 27 14:38:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (READ_DATA_PENDING): uClibc 0.9.10 support.
+	  use !feof(fp) for default behavior.
+
 Wed Mar 27 04:44:48 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* file.c (rb_file_s_expand_path): Do not free the pointer obtained

@@ -111,12 +111,10 @@ static VALUE lineno;
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #elif defined(__BEOS__)
 #  define READ_DATA_PENDING(fp) (fp->_state._eof == 0)
-#elif defined(__UCLIBC__)
-#  define READ_DATA_PENDING(fp) ((fp)->bufpos < (fp)->bufend)
+#elif defined(__UCLIBC__) && !defined(_UC_IOFBF)
+#  define READ_DATA_PENDING(fp) ((fp)->bufpos < (fp)->bufread)
 #else
-/* requires systems own version of the ReadDataPending() */
-extern int ReadDataPending();
-#  define READ_DATA_PENDING(fp) ReadDataPending(fp)
+#  define READ_DATA_PENDING(fp) (!feof(fp))
 #endif
 
 #define READ_CHECK(fp) do {\
