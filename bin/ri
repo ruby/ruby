@@ -16,6 +16,7 @@ require 'rdoc/ri/ri_cache'
 require 'rdoc/ri/ri_util'
 require 'rdoc/ri/ri_reader'
 require 'rdoc/ri/ri_formatter'
+require 'rdoc/ri/ri_options'
 
 ######################################################################
 
@@ -33,19 +34,50 @@ end
 class  RiDisplay
 
   def initialize
+    @options = RI::Options.instance
+    @options.parse
     paths = RI::Paths::PATH
     if paths.empty?
       $stderr.puts "No ri documentation found in:"
       [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR].each do |d|
         $stderr.puts "     #{d}"
       end
-      $stderr.puts "\nIs ri correctly installed?"
+      $stderr.puts "\nWas rdoc run to create documentation?"
       exit 1                   
     end
     @ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
-    @formatter = RI::RiFormatter.new(72, "     ")
+    @formatter = RI::RiFormatter.new(@options.width, "     ")
   end    
   
+  
+  ######################################################################
+
+  def setup_pager
+    require 'tempfile'
+
+    @save_stdout = STDOUT.clone
+    STDOUT.reopen(Tempfile.new("ri_"))
+  end
+
+  ######################################################################
+
+  def page_output
+    path = STDOUT.path
+    STDOUT.reopen(@save_stdout)
+    @save_stdout = nil
+    paged = false
+    for pager in [ ENV['pager'], "less", "more <" ].compact.uniq
+      if system("#{pager} #{path}")
+        paged = true
+        break
+      end
+    end
+    if !paged
+      @options.use_stdout = true
+      puts File.read(path)
+    end
+  end
+
   ######################################################################
   
   def display_params(method)
@@ -175,18 +207,26 @@ def display_info_for(arg)
     end
   end
 
-  if desc.method_name.nil?
-    report_class_stuff(namespaces)
-  else
-    methods = @ri_reader.find_methods(desc.method_name, 
-                                      desc.is_class_method,
-                                      namespaces)
-
-    if methods.empty?
-      raise RiError.new("Nothing known about #{arg}")
+  setup_pager unless @options.use_stdout
+  
+  begin
+    if desc.method_name.nil?
+      report_class_stuff(namespaces)
     else
-      report_method_stuff(desc.method_name, methods)
+      methods = @ri_reader.find_methods(desc.method_name, 
+                                        desc.is_class_method,
+                                        namespaces)
+      
+      if methods.empty?
+        raise RiError.new("Nothing known about #{arg}")
+      else
+        report_method_stuff(desc.method_name, methods)
+      end
     end
+
+    page_output unless @options.use_stdout
+  ensure
+    STDOUT.reopen(@save_stdout) if @save_stdout
   end
     
 end

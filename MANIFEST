@@ -262,6 +262,7 @@ lib/rdoc/parsers/parserfactory.rb
 lib/rdoc/ri/ri_cache.rb
 lib/rdoc/ri/ri_descriptions.rb
 lib/rdoc/ri/ri_formatter.rb
+lib/rdoc/ri/ri_options.rb
 lib/rdoc/ri/ri_paths.rb
 lib/rdoc/ri/ri_reader.rb
 lib/rdoc/ri/ri_util.rb
