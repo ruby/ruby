@@ -60,7 +60,7 @@ static VALUE cWindow;
 static VALUE cMouseEvent;
 #endif
 
-VALUE rb_stdscr;
+static VALUE rb_stdscr;
 
 struct windata {
     WINDOW *window;
@@ -106,7 +106,8 @@ prep_window(class, window)
 	rb_raise(rb_eRuntimeError, "failed to create window");
     }
 
-    obj = Data_Make_Struct(class, struct windata, 0, free_window, winp);
+    obj = rb_obj_alloc(class);
+    Data_Get_Struct(obj, struct windata, winp);
     winp->window = window;
     
     return obj;    
@@ -118,6 +119,7 @@ prep_window(class, window)
 static VALUE
 curses_init_screen()
 {
+    if (rb_stdscr) return rb_stdscr;
     initscr();
     if (stdscr == 0) {
 	rb_raise(rb_eRuntimeError, "cannot initialize curses");
@@ -128,12 +130,7 @@ curses_init_screen()
 }
 
 /* def stdscr */
-static VALUE
-curses_stdscr()
-{
-    if (rb_stdscr == 0) curses_init_screen();
-    return rb_stdscr;
-}
+#define curses_stdscr curses_init_screen
 
 /* def close_screen */
 static VALUE
@@ -143,6 +140,7 @@ curses_close_screen()
     if (!isendwin())
 #endif
 	endwin();
+    rb_stdscr = 0;
     return Qnil;
 }
 
@@ -155,6 +153,8 @@ curses_finalize()
 #endif
 	)
 	endwin();
+    rb_stdscr = 0;
+    rb_gc_unregister_address(&rb_stdscr);
 }
 
 /* def closed? */
@@ -661,25 +661,36 @@ DEFINE_MOUSE_GET_MEMBER(curs_mouse_bstate, bstate);
 
 /*-------------------------- class Window --------------------------*/
 
-/* def new(h, w, top, left) */
+/* def self.allocate */
 static VALUE
-window_s_new(class, h, w, top, left)
+window_s_allocate(class)
     VALUE class;
+{
+    struct windata *winp;
+
+    return Data_Make_Struct(class, struct windata, 0, free_window, winp);
+}
+
+/* def initialize(h, w, top, left) */
+static VALUE
+window_initialize(obj, h, w, top, left)
+    VALUE obj;
     VALUE h;
     VALUE w;
     VALUE top;
     VALUE left;
 {
-    VALUE win;
+    struct windata *winp;
     WINDOW *window;
-    VALUE args[4];
-    
+
+    curses_init_screen();
+    Data_Get_Struct(obj, struct windata, winp);
+    if (winp->window) delwin(winp->window);
     window = newwin(NUM2INT(h), NUM2INT(w), NUM2INT(top), NUM2INT(left));
     wclear(window);
-    win = prep_window(class, window);
-    args[0] = h; args[1] = w; args[2] = top; args[3] = left;
+    winp->window = window;
 
-    return win;
+    return obj;
 }
 
 /* def subwin(h, w, top, left) */
@@ -694,13 +705,11 @@ window_subwin(obj, h, w, top, left)
     struct windata *winp;
     WINDOW *window;
     VALUE win;
-    VALUE args[4];
 
     GetWINDOW(obj, winp);
     window = subwin(winp->window, NUM2INT(h), NUM2INT(w),
 		                  NUM2INT(top), NUM2INT(left));
-    win = prep_window(cWindow, window);
-    args[0] = h; args[1] = w; args[2] = top; args[3] = left;
+    win = prep_window(rb_obj_class(obj), window);
 
     return win;
 }
@@ -1227,8 +1236,10 @@ window_keypad(VALUE obj, VALUE val)
 void
 Init_curses()
 {
-  mCurses    = rb_define_module("Curses");
-  mKey       = rb_define_module_under(mCurses, "Key");
+    mCurses    = rb_define_module("Curses");
+    mKey       = rb_define_module_under(mCurses, "Key");
+
+    rb_gc_register_address(&rb_stdscr);
 
 #ifdef USE_MOUSE
     cMouseEvent = rb_define_class_under(mCurses,"MouseEvent",rb_cObject);
@@ -1303,8 +1314,9 @@ Init_curses()
     rb_define_module_function(mCurses, "mousemask", curses_mousemask, 1);
 #endif /* USE_MOUSE */
 
-    cWindow = rb_define_class_under(mCurses, "Window", rb_cObject);
-    rb_define_singleton_method(cWindow, "new", window_s_new, 4);
+    cWindow = rb_define_class_under(mCurses, "Window", rb_cData);
+    rb_define_singleton_method(cWindow, "allocate", window_s_allocate, 0);
+    rb_define_method(cWindow, "initialize", window_initialize, 4);
     rb_define_method(cWindow, "subwin", window_subwin, 4);
     rb_define_method(cWindow, "close", window_close, 0);
     rb_define_method(cWindow, "clear", window_clear, 0);
