@@ -1,3 +1,12 @@
+Wed Feb 27 07:08:16 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/sha2/sha2.c: Merge from rough.  Fix a couple of
+	  off-by-one errors in Aaron Gifford's code.
+
+	  Obtained from:  KAME via FreeBSD
+	  KAME PR:        393
+	  FreeBSD PR:     kern/34242
+
 Tue Feb 26 21:36:01 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* bignum.c (rb_big_2comp): void function cannot return any value.

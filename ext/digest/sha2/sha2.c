@@ -33,7 +33,7 @@
  *
  */
 
-/* $RoughId: sha2.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
+/* $RoughId: sha2.c,v 1.3 2002/02/26 22:03:36 knu Exp $ */
 /* $Id$ */
 
 #include <stdio.h>
@@ -533,7 +533,7 @@ void SHA256_Final(sha2_byte digest[], SHA256_CTX* context) {
 			/* Begin padding with a 1 bit: */
 			context->buffer[usedspace++] = 0x80;
 
-			if (usedspace < SHA256_SHORT_BLOCK_LENGTH) {
+			if (usedspace <= SHA256_SHORT_BLOCK_LENGTH) {
 				/* Set-up for the last transform: */
 				MEMSET_BZERO(&context->buffer[usedspace], SHA256_SHORT_BLOCK_LENGTH - usedspace);
 			} else {
@@ -824,7 +824,7 @@ void SHA512_Last(SHA512_CTX* context) {
 		/* Begin padding with a 1 bit: */
 		context->buffer[usedspace++] = 0x80;
 
-		if (usedspace < SHA512_SHORT_BLOCK_LENGTH) {
+		if (usedspace <= SHA512_SHORT_BLOCK_LENGTH) {
 			/* Set-up for the last transform: */
 			MEMSET_BZERO(&context->buffer[usedspace], SHA512_SHORT_BLOCK_LENGTH - usedspace);
 		} else {
