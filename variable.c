@@ -1054,8 +1054,8 @@ rb_autoload_load(id)
 
     st_delete(autoload_tbl, &id, &modname);
     module = rb_str_new2(modname);
-    FL_UNSET(module, FL_TAINT);
     free(modname);
+    FL_UNSET(module, FL_TAINT);
     rb_f_require(Qnil, module);
 }
 
@@ -1393,6 +1393,55 @@ rb_cvar_defined(klass, id)
     }
 
     return Qfalse;
+}
+
+int
+rb_cvar_defined_singleton(obj, id)
+    VALUE obj;
+    ID id;
+{
+    switch (TYPE(obj)) {
+      case T_MODULE:
+      case T_CLASS:
+	break;
+      default:
+	obj = CLASS_OF(obj);
+	break;
+    }
+    return rb_cvar_defined(obj, id);
+}
+
+void
+rb_cvar_set_singleton(obj, id, value)
+    VALUE obj;
+    ID id;
+    VALUE value;
+{
+    switch (TYPE(obj)) {
+      case T_MODULE:
+      case T_CLASS:
+	break;
+      default:
+	obj = CLASS_OF(obj);
+	break;
+    }
+    rb_cvar_set(obj, id, value);
+}
+
+VALUE
+rb_cvar_get_singleton(obj, id)
+    VALUE obj;
+    ID id;
+{
+    switch (TYPE(obj)) {
+      case T_MODULE:
+      case T_CLASS:
+	break;
+      default:
+	obj = CLASS_OF(obj);
+	break;
+    }
+    return rb_cvar_get(obj, id);
 }
 
 void

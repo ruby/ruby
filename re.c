@@ -12,7 +12,7 @@
 #include "ruby.h"
 #include "re.h"
 
-static VALUE rb_eRegxpError;
+static VALUE rb_eRegexpError;
 
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]
@@ -351,7 +351,7 @@ rb_reg_raise(s, len, err, re)
     if (ruby_in_compile)
 	rb_compile_error("%s: %s", err, RSTRING(desc)->ptr);
     else
-	rb_raise(rb_eRegxpError, "%s: %s", err, RSTRING(desc)->ptr);
+	rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING(desc)->ptr);
 }
 
 static VALUE
@@ -1321,7 +1321,7 @@ match_setter(val)
 void
 Init_Regexp()
 {
-    rb_eRegxpError = rb_define_class("RegxpError", rb_eStandardError);
+    rb_eRegexpError = rb_define_class("RegexpError", rb_eStandardError);
 
     re_set_casetable(casetable);
 #if DEFAULT_KCODE == KCODE_EUC

@@ -30,7 +30,7 @@ $hdrdir.gsub!('/', '\\') if RUBY_PLATFORM =~ /mswin32/
 CFLAGS = CONFIG["CFLAGS"]
 if RUBY_PLATFORM == "m68k-human"
   CFLAGS.gsub!(/-c..-stack=[0-9]+ */, '')
-elsif RUBY_PLATFORM =~ /-nextstep|-rhapsody/
+elsif RUBY_PLATFORM =~ /-nextstep|-rhapsody|-darwin/
   CFLAGS.gsub!( /-arch\s\w*/, '' )
 end
 

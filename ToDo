@@ -47,6 +47,7 @@ Hacking Interpreter
 * generational GC ?
 * give warnings to assign magic variables.
 * export rb_io_{addstr,printf,puts,print}
+* autoload should work with threads [ruby-talk:4589]
 
 Standard Libraries
 

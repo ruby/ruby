@@ -1717,8 +1717,11 @@ is_defined(self, node, buf)
       case NODE_DASGN:
       case NODE_DASGN_CURR:
       case NODE_GASGN:
-      case NODE_IASGN:
-      case NODE_CASGN:
+      case NODE_CDECL:
+      case NODE_CVDECL:
+      case NODE_CVASGN:
+      case NODE_CVASGN2:
+      case NODE_CVASGN3:
 	return "assignment";
 
       case NODE_LVAR:
@@ -1741,6 +1744,24 @@ is_defined(self, node, buf)
       case NODE_CONST:
 	if (ev_const_defined(RNODE(ruby_frame->cbase), node->nd_vid)) {
 	    return "constant";
+	}
+	break;
+
+      case NODE_CVAR:
+	if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
+	    return "class variable";
+	}
+	break;
+
+      case NODE_CVAR2:
+	if (rb_cvar_defined(CLASS_OF(self), node->nd_vid)) {
+	    return "class variable";
+	}
+	break;
+
+      case NODE_CVAR3:
+	if (rb_cvar_defined_singleton(self, node->nd_vid)) {
+	    return "class variable";
 	}
 	break;
 
@@ -2554,14 +2575,6 @@ rb_eval(self, n)
 	rb_ivar_set(self, node->nd_vid, result);
 	break;
 
-      case NODE_CASGN:
-	if (NIL_P(ruby_cbase)) {
-	    rb_raise(rb_eTypeError, "no class/module to define constant");
-	}
-	result = rb_eval(self, node->nd_value);
-	ev_const_set(RNODE(ruby_frame->cbase), node->nd_vid, result);
-	break;
-
       case NODE_CDECL:
 	if (NIL_P(ruby_class)) {
 	    rb_raise(rb_eTypeError, "no class/module to define constant");
@@ -2576,6 +2589,16 @@ rb_eval(self, n)
 	}
 	result = rb_eval(self, node->nd_value);
 	rb_cvar_set(ruby_cbase, node->nd_vid, result);
+	break;
+
+      case NODE_CVASGN2:
+	result = rb_eval(self, node->nd_value);
+	rb_cvar_set(CLASS_OF(self), node->nd_vid, result);
+	break;
+
+      case NODE_CVASGN3:
+	result = rb_eval(self, node->nd_value);
+	rb_cvar_set_singleton(self, node->nd_vid, result);
 	break;
 
       case NODE_CVDECL:
@@ -2611,6 +2634,14 @@ rb_eval(self, n)
 
       case NODE_CVAR:
 	result = rb_cvar_get(ruby_cbase, node->nd_vid);
+	break;
+
+      case NODE_CVAR2:
+	result = rb_cvar_get(CLASS_OF(self), node->nd_vid);
+	break;
+
+      case NODE_CVAR3:
+	result = rb_cvar_get_singleton(self, node->nd_vid);
 	break;
 
       case NODE_BLOCK_ARG:
@@ -3581,10 +3612,6 @@ assign(self, lhs, val, check)
 	dvar_asgn_curr(lhs->nd_vid, val);
 	break;
 
-      case NODE_CASGN:
-	ev_const_set(RNODE(ruby_frame->cbase), lhs->nd_vid, val);
-	break;
-
       case NODE_CDECL:
 	rb_const_set(ruby_class, lhs->nd_vid, val);
 	break;
@@ -3595,6 +3622,10 @@ assign(self, lhs, val, check)
 
       case NODE_CVASGN:
 	rb_cvar_set(ruby_cbase, lhs->nd_vid, val);
+	break;
+
+      case NODE_CVASGN2:
+	rb_cvar_set(CLASS_OF(self), lhs->nd_vid, val);
 	break;
 
       case NODE_MASGN:
@@ -5027,8 +5058,7 @@ rb_f_require(obj, fname)
     volatile int safe = ruby_safe_level;
 
     Check_SafeStr(fname);
-    if (rb_provided(RSTRING(fname)->ptr))
-	return Qfalse;
+    if (rb_thread_loading(RSTRING(fname)->ptr)) return Qfalse;
 
     ext = strrchr(RSTRING(fname)->ptr, '.');
     if (ext) {
@@ -5107,8 +5137,8 @@ rb_f_require(obj, fname)
 
   load_dyna:
     if (rb_thread_loading(feature)) return Qfalse;
-
     rb_provide(feature);
+
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	load = rb_str_new2(file);

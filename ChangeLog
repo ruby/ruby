@@ -1,6 +1,23 @@
+Mon Aug 28 18:43:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): now handles class variables.
+
+	* eval.c (rb_eval): class variable behavior revisited.
+
+	* parse.y (assignable): ditto.
+
+	* parse.y (gettable): ditto.
+
+	* regex.c (PUSH_FAILURE_COUNT): push/pop interval count on failure
+	  stack.
+
 Fri Aug 25 15:24:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_cvar_get): should not follow __attached__.
+
+	* variable.c (rb_cvar_set): ditto.
+
+	* variable.c (rb_cvar_declare): ditto.
 
 	* variable.c (mod_av_set): second class variable assignment at the
 	  toplevel shoule not give warning.

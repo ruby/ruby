@@ -969,6 +969,9 @@ EOF
     *:Rhapsody:*:*)
 	echo ${UNAME_MACHINE}-apple-rhapsody${UNAME_RELEASE}
 	exit 0 ;;
+    *:Darwin:*:*)
+	echo ${UNAME_MACHINE}-apple-darwin${UNAME_RELEASE}
+	exit 0 ;;
 esac
 
 #echo '(No uname command or uname output not recognized.)' 1>&2

@@ -119,6 +119,15 @@ class DEBUGGER__
       end
     end
 
+    def debug_silent_eval(str, binding)
+      begin
+	val = eval(str, binding)
+	val
+      rescue StandardError, ScriptError
+	nil
+      end
+    end
+
     def var_list(ary, binding)
       ary.sort!
       if false # ary.size < 0
@@ -307,9 +316,9 @@ class DEBUGGER__
 
 	  when /^\s*disp(?:lay)?\s+(.+)$/
 	    exp = $1
-	    display.push.push [true, exp]
-	    stdout.printf "  %d: %s = %s\n", display.size, exp,
-	      eval(exp, binding) rescue "--"
+	    display.push [true, exp]
+	    stdout.printf "%d: ", display.size
+	    display_expression(exp, binding)
 
 	  when /^\s*disp(?:lay)?$/
 	    display_expressions(binding)
@@ -493,10 +502,15 @@ EOHELP
       n = 1
       for d in display
 	if d[0]
-	  stdout.printf "%d: %s = %s\n", n, d[1], debug_eval(d[1], binding).to_s
+          stdout.printf "%d: ", n
+	  display_expression(d[1], binding)
 	end
 	n += 1
       end
+    end
+
+    def display_expression(exp, binding)
+      stdout.printf "%s = %s\n", exp, debug_silent_eval(exp, binding).to_s
     end
 
     def frame_set_pos(file, line)
@@ -559,22 +573,25 @@ EOHELP
     end
 
     def check_break_points(file, pos, binding, id)
+      return false if break_points.empty?
+      MUTEX.lock
       file = File.basename(file)
       n = 1
       for b in break_points
 	if b[0]
 	  if b[1] == 0 and b[2] == file and b[3] == pos
-	    MUTEX.lock
 	    stdout.printf "breakpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
 	    return true
-	  elsif b[1] == 1 and debug_eval(b[2], binding)
-	    MUTEX.lock
-	    stdout.printf "watchpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
-	    return true
+	  elsif b[1] == 1
+	    if debug_silent_eval(b[2], binding)
+	      stdout.printf "watchpoint %d, %s at %s:%s\n", n, debug_funcname(id), file, pos
+	      return true
+	    end
 	  end
 	end
 	n += 1
       end
+      MUTEX.unlock
       return false
     end
 

@@ -3944,7 +3944,10 @@ gettable(id)
 	return NEW_CONST(id);
     }
     else if (is_class_id(id)) {
-	return NEW_CVAR(id);
+	if (in_single) return NEW_CVAR3(id);
+	if (class_nest ==0 && cur_mid)
+	    return NEW_CVAR2(id);
+	else return NEW_CVAR(id);
     }
     rb_bug("invalid id for gettable");
     return 0;
@@ -3955,8 +3958,6 @@ assignable(id, val)
     ID id;
     NODE *val;
 {
-    NODE *lhs = 0;
-
     value_expr(val);
     if (id == kSELF) {
 	yyerror("Can't change the value of self");
@@ -3978,42 +3979,43 @@ assignable(id, val)
     }
     else if (is_local_id(id)) {
 	if (rb_dvar_curr(id)) {
-	    lhs = NEW_DASGN_CURR(id, val);
+	    return NEW_DASGN_CURR(id, val);
 	}
 	else if (rb_dvar_defined(id)) {
-	    lhs = NEW_DASGN(id, val);
+	    return NEW_DASGN(id, val);
 	}
 	else if (local_id(id) || !dyna_in_block()) {
-	    lhs = NEW_LASGN(id, val);
+	    return NEW_LASGN(id, val);
 	}
 	else{
 	    rb_dvar_push(id, Qnil);
-	    lhs = NEW_DASGN_CURR(id, val);
+	    return NEW_DASGN_CURR(id, val);
 	}
     }
     else if (is_global_id(id)) {
-	lhs = NEW_GASGN(id, val);
+	return NEW_GASGN(id, val);
     }
     else if (is_instance_id(id)) {
-	lhs = NEW_IASGN(id, val);
+	return NEW_IASGN(id, val);
     }
     else if (is_const_id(id)) {
 	if (cur_mid || in_single)
 	    yyerror("dynamic constant assignment");
-	lhs = NEW_CDECL(id, val);
+	return NEW_CDECL(id, val);
     }
     else if (is_class_id(id)) {
-	if (cur_mid || in_single) {
-	    lhs = NEW_CVASGN(id, val);
+	if (in_single) return NEW_CVASGN3(id, val);
+	if (cur_mid) {
+	    if (class_nest == 0)
+		return NEW_CVASGN2(id, val);
+	    return NEW_CVASGN(id, val);
 	}
-	else {
-	    lhs = NEW_CVDECL(id, val);
-	}
+	return NEW_CVDECL(id, val);
     }
     else {
 	rb_bug("bad id for variable");
     }
-    return lhs;
+    return 0;
 }
 
 static NODE *
@@ -4095,7 +4097,6 @@ node_assign(lhs, rhs)
       case NODE_DASGN:
       case NODE_DASGN_CURR:
       case NODE_MASGN:
-      case NODE_CASGN:
       case NODE_CDECL:
       case NODE_CVASGN:
       case NODE_CVDECL:
@@ -4287,7 +4288,6 @@ assign_in_cond(node)
       case NODE_DASGN:
       case NODE_GASGN:
       case NODE_IASGN:
-      case NODE_CASGN:
 	break;
 
       case NODE_NEWLINE:

@@ -149,6 +149,22 @@ char *alloca();
 	stacke = stackb + 2 * len;					\
     } while (0)
 
+#define ENSURE_FAIL_STACK(n)						\
+  do {									\
+    if (stacke - stackp <= (n)) {					\
+	unsigned char **stackx;						\
+	unsigned int len = stacke - stackb;				\
+	/* if (len > re_max_failures * MAX_NUM_FAILURE_ITEMS)		\
+	   {								\
+	   FREE_VARIABLES();						\
+	   FREE_AND_RETURN(stackb,(-2));				\
+	   }*/								\
+									\
+        /* Roughly double the size of the stack.  */			\
+        EXPAND_FAIL_STACK(stackx, stackb, len);				\
+      }									\
+  } while (0)
+
 /* Get the interface, including the syntax bits.  */
 #include "regex.h"
 
@@ -2069,7 +2085,7 @@ re_compile_pattern(pattern, size, bufp)
 	     jump back only `upper_bound - 1' times.  */
 	  GET_BUFFER_SPACE(5);
 	  store_jump_n(b, greedy?jump_n:finalize_push_n, laststart + 5,
-		       upper_bound/* - 1*/);
+		       upper_bound - 1);
 	  b += 5;
 
 	  /* The location we want to set is the second
@@ -2087,7 +2103,7 @@ re_compile_pattern(pattern, size, bufp)
 	     so that if we fail during matching, we'll
 	     reinitialize the bounds.  */
 	  insert_op_2(set_number_at, laststart, b, b - laststart,
-		      upper_bound/* - 1*/);
+		      upper_bound - 1);
 	  b += 5;
 	}
       }
@@ -3329,6 +3345,9 @@ re_search(bufp, string, size, startpos, range, regs)
 /* I.e., regstart, regend, and reg_info.  */
 #define NUM_REG_ITEMS  3
 
+/* I.e., ptr and count.  */
+#define NUM_COUNT_ITEMS 2
+
 /* Individual items aside from the registers.  */
 #define NUM_NONREG_ITEMS 3
 
@@ -3338,8 +3357,18 @@ re_search(bufp, string, size, startpos, range, regs)
 #define MAX_NUM_FAILURE_ITEMS   (num_regs * NUM_REG_ITEMS + NUM_NONREG_ITEMS)
 
 /* We push this many things on the stack whenever we fail.  */
-#define NUM_FAILURE_ITEMS  (last_used_reg * NUM_REG_ITEMS + NUM_REG_ITEMS)
+#define NUM_FAILURE_ITEMS  (last_used_reg * NUM_REG_ITEMS + NUM_REG_ITEMS + 1)
 
+/* This pushes counter information for succeed_n and jump_n */
+#define PUSH_FAILURE_COUNT(ptr)						\
+  do {									\
+    int c;								\
+    EXTRACT_NUMBER(c, ptr);						\
+    ENSURE_FAIL_STACK(NUM_COUNT_ITEMS);					\
+    *stackp++ = (unsigned char*)c;					\
+    *stackp++ = (ptr);							\
+    num_failure_counts++;						\
+  } while (0)
 
 /* This pushes most of the information about the current state we will want
    if we ever fail back to it.  */
@@ -3354,18 +3383,9 @@ re_search(bufp, string, size, startpos, range, regs)
       if (!REG_UNSET(regstart[last_used_reg]))				\
         break;								\
 									\
-    if (stacke - stackp <= NUM_FAILURE_ITEMS) {				\
-	unsigned char **stackx;						\
-	unsigned int len = stacke - stackb;				\
-	/* if (len > re_max_failures * MAX_NUM_FAILURE_ITEMS)		\
-	   {								\
-	   FREE_VARIABLES();						\
-	   FREE_AND_RETURN(stackb,(-2));				\
-	   }*/								\
-									\
-        /* Roughly double the size of the stack.  */			\
-        EXPAND_FAIL_STACK(stackx, stackb, len);				\
-      }									\
+    ENSURE_FAIL_STACK(NUM_FAILURE_ITEMS);				\
+    *stackp++ = (unsigned char*)num_failure_counts;			\
+    num_failure_counts = 0;						\
 									\
     /* Now push the info for each of those registers.  */		\
     for (this_reg = 1; this_reg <= last_used_reg; this_reg++) {		\
@@ -3384,7 +3404,14 @@ re_search(bufp, string, size, startpos, range, regs)
 
 #define NON_GREEDY ((unsigned char*)1)
 
-     /* This pops what PUSH_FAILURE_POINT pushes.  */
+#define POP_FAILURE_COUNT()						\
+  do {									\
+    unsigned char *ptr = *--stackp;					\
+    int count = (long)*--stackp;					\
+    STORE_NUMBER(ptr, count);						\
+  } while (0)
+
+/* This pops what PUSH_FAILURE_POINT pushes.  */
 
 #define POP_FAILURE_POINT()						\
   do {									\
@@ -3393,6 +3420,11 @@ re_search(bufp, string, size, startpos, range, regs)
     temp = (long)*--stackp;	/* How many regs pushed.  */	        \
     temp *= NUM_REG_ITEMS;	/* How much to take off the stack.  */	\
     stackp -= temp; 		/* Remove the register info.  */	\
+    temp = (long)*--stackp;	/* How many counters pushed.  */	\
+    while (temp--) {							\
+      POP_FAILURE_COUNT();      /* Remove the counter info.  */		\
+    }									\
+    num_failure_counts = 0;	/* Reset num_failure_counts.  */	\
   } while(0)
 
      /* Registers are set to a sentinel when they haven't yet matched.  */
@@ -3539,6 +3571,8 @@ re_match(bufp, string_arg, size, pos, regs)
   unsigned best_regs_set = 0;
   unsigned char **best_regstart = bufp->best_regstart;
   unsigned char **best_regend = bufp->best_regend;
+
+  int num_failure_counts = 0;
 
   if (regs) {
     init_regs(regs, num_regs);
@@ -3901,7 +3935,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	   pattern follows its end. If we can establish that there
 	   is nothing that they would both match, i.e., that we
 	   would have to backtrack because of (as in, e.g., `a*a')
-	   then we can change to pop_failure_jump, because we'll
+	   then we can change to finalize_jump, because we'll
 	   never have to backtrack.
 
 	   This is not true in the case of alternatives: in
@@ -4025,15 +4059,14 @@ re_match(bufp, string_arg, size, pos, regs)
       case succeed_n: 
 	EXTRACT_NUMBER(mcnt, p + 2);
 	/* Originally, this is how many times we HAVE to succeed.  */
-	if (mcnt > 0) {
+	if (mcnt != 0) {
 	  mcnt--;
 	  p += 2;
+	  PUSH_FAILURE_COUNT(p);
 	  STORE_NUMBER_AND_INCR(p, mcnt);
 	  PUSH_FAILURE_POINT(0, 0);
 	}
-	else if (mcnt == 0) {
-	  p[2] = unused;
-	  p[3] = unused;
+	else  {
 	  goto on_failure;
 	}
 	continue;
@@ -4043,6 +4076,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	/* Originally, this is how many times we CAN jump.  */
 	if (mcnt) {
 	  mcnt--;
+	  PUSH_FAILURE_COUNT(p + 2);
 	  STORE_NUMBER(p + 2, mcnt);
 	  goto nofinalize;	     /* Do the jump without taking off
 					any failure points.  */
@@ -4259,6 +4293,10 @@ re_match(bufp, string_arg, size, pos, regs)
 	reg_info[this_reg].word = *--stackp;
 	regend[this_reg] = *--stackp;
 	regstart[this_reg] = *--stackp;
+      }
+      mcnt = (long)*--stackp;
+      while (mcnt--) {
+	POP_FAILURE_COUNT();
       }
       if (p < pend) {
 	int is_a_jump_n = 0;

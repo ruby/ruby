@@ -366,8 +366,12 @@ void rb_const_assign _((VALUE, ID, VALUE));
 VALUE rb_mod_constants _((VALUE));
 void rb_autoload_load _((ID));
 void rb_cvar_declare _((VALUE, ID, VALUE));
-VALUE rb_cvar_get _((VALUE, ID));
+int rb_cvar_defined _((VALUE, ID));
 void rb_cvar_set _((VALUE, ID, VALUE));
+VALUE rb_cvar_get _((VALUE, ID));
+int rb_cvar_defined_singleton _((VALUE, ID));
+void rb_cvar_set_singleton _((VALUE, ID, VALUE));
+VALUE rb_cvar_get_singleton _((VALUE, ID));
 /* version.c */
 void ruby_show_version _((void));
 void ruby_show_copyright _((void));

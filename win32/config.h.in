@@ -40,12 +40,12 @@
 #define FILE_COUNT _cnt
 #define DLEXT ".so"
 #define DLEXT2 ".dll"
-#define RUBY_LIB "/lib/ruby/1.5"
+#define RUBY_LIB "/lib/ruby/1.6"
 #define RUBY_SITE_LIB "/lib/ruby/site_ruby"
-#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/1.5"
+#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/1.6"
 #define RUBY_PLATFORM "i586-mswin32"
-#define RUBY_ARCHLIB "/lib/ruby/1.5/i586-mswin32"
-#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.5/i586-mswin32"
+#define RUBY_ARCHLIB "/lib/ruby/1.6/i586-mswin32"
+#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.6/i586-mswin32"
 
 #define SIZEOF_INT   4
 #define SIZEOF_SHORT 2
