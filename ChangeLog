@@ -1,3 +1,9 @@
+Tue Nov  4 23:38:43 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* class.c, hash.c, string.c: remove #include "version.h".
+
+	* Makefile.in: remove needless version.h dependency.
+
 Tue Nov  4 06:54:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (read_all): fptr->f may be NULL, if IO is closed in the
