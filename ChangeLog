@@ -1,3 +1,10 @@
+Sat Dec 13 18:09:42 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (thread_timer): use timer by sub-thread and nanosleep.
+	  [ruby-talk:87519]
+
+	* gc.c (Init_stack): no stack adjustment for THREAD_SAFE.
+
 Sat Dec 13 17:17:59 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (proc_alloc): cache the created object at first time.

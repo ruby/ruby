@@ -9486,7 +9486,63 @@ rb_thread_alloc(klass)
     return th;
 }
 
-#if defined(HAVE_SETITIMER)
+static int thread_init = 0;
+
+#if defined(HAVE_LIBPTHREAD) && defined(_REENTRANT)
+# define PTHREAD_TIMER
+#endif
+
+#if defined(POSIX_SIGNAL)
+# define ruby_signal(x,y) posix_signal((x), (y))
+#else
+# define ruby_signal(x,y) signal((x), (y))
+#endif
+
+#if defined(PTHREAD_TIMER)
+static pthread_t time_thread;
+
+static void
+catch_timer(sig)
+    int sig;
+{
+#if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
+    signal(sig, catch_timer);
+#endif
+    rb_thread_schedule();
+}
+
+static void*
+thread_timer(dummy)
+    void *dummy;
+{
+    struct timespec req, rem;
+
+    for (;;) {
+	if (!rb_thread_critical) {
+	    if (rb_trap_immediate) {
+		pthread_kill(ruby_thid, SIGVTALRM);
+	    }
+	    else {
+		rb_thread_pending = 1;
+	    }
+	    req.tv_sec = 0;
+	    req.tv_nsec = 10000000;
+	    nanosleep(&req, &rem);
+	}
+    }
+}
+
+void
+rb_thread_start_timer()
+{
+}
+
+void
+rb_thread_stop_timer()
+{
+}
+#elif defined(HAVE_SETITIMER)
+
 static void
 catch_timer(sig)
     int sig;
@@ -9501,12 +9557,6 @@ catch_timer(sig)
 	else rb_thread_pending = 1;
     }
 }
-#else
-int rb_thread_tick = THREAD_TICK;
-#endif
-
-#if defined(HAVE_SETITIMER)
-static int thread_init = 0;
 
 void
 rb_thread_start_timer()
@@ -9531,6 +9581,8 @@ rb_thread_stop_timer()
     tval.it_value = tval.it_interval;
     setitimer(ITIMER_VIRTUAL, &tval, NULL);
 }
+#else
+int rb_thread_tick = THREAD_TICK;
 #endif
 
 static VALUE
@@ -9550,18 +9602,18 @@ rb_thread_start_0(fn, arg, th)
 		 "can't start a new thread (frozen ThreadGroup)");
     }
 
-#if defined(HAVE_SETITIMER)
     if (!thread_init) {
-#ifdef POSIX_SIGNAL
-	posix_signal(SIGVTALRM, catch_timer);
-#else
-	signal(SIGVTALRM, catch_timer);
-#endif
-
 	thread_init = 1;
+#if defined(HAVE_SETITIMER) || defined(PTHREAD_TIMER)
+	ruby_signal(SIGVTALRM, catch_timer);
+
+#ifdef PTHREAD_TIMER
+	pthread_create(&time_thread, 0, thread_timer, 0);
+#else
 	rb_thread_start_timer();
-    }
 #endif
+#endif
+    }
 
     if (THREAD_SAVE_CONTEXT(curr_thread)) {
 	return thread;

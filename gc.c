@@ -423,11 +423,11 @@ stack_growup_p(addr)
 # define STACK_UPPER(x, a, b) (stack_growup_p(x) ? a : b)
 #endif
 
-#define GC_WARTER_MARK 512
+#define GC_WATER_MARK 512
 
 #define CHECK_STACK(ret) do {\
     SET_STACK_END;\
-    (ret) = (STACK_LENGTH > STACK_LEVEL_MAX + GC_WARTER_MARK);\
+    (ret) = (STACK_LENGTH > STACK_LEVEL_MAX + GC_WATER_MARK);\
 } while (0)
 
 int
@@ -1392,9 +1392,6 @@ Init_stack(addr)
 #define IA64_MAGIC_STACK_LIMIT 49152
     if (STACK_LEVEL_MAX > IA64_MAGIC_STACK_LIMIT)
 	STACK_LEVEL_MAX = IA64_MAGIC_STACK_LIMIT;
-#endif
-#ifdef _THREAD_SAFE
-    STACK_LEVEL_MAX /= 4;
 #endif
 #endif
 }
