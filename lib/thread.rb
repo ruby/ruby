@@ -74,7 +74,10 @@ class Mutex
       retry
     end
     Thread.critical = false
-    t.run if t
+    begin
+      t.run if t
+    rescue ThreadError
+    end
     self
   end
 
@@ -160,7 +163,10 @@ class Queue
     ensure
       Thread.critical = false
     end
-    t.run if t
+    begin
+      t.run if t
+    rescue ThreadError
+    end
   end
   def enq(obj)
     push(obj)
@@ -262,7 +268,10 @@ class SizedQueue<Queue
       ensure
 	Thread.critical = false
       end
-      t.run if t
+      begin
+	t.run if t
+      rescue ThreadError
+      end
     end
     retval
   end

@@ -1,3 +1,8 @@
+Fri May 18 05:42:28 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/thread.rb: rescue ThreadError in case the thread is dead
+	  just before calling Thread#run.
+
 Fri May 18 05:29:21 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb (xsystem): make a temporary fix to get $(...) macros
