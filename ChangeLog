@@ -1,3 +1,10 @@
+Tue Nov 25 20:02:14 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb: do test in more deep
+	  directory.
+
+	* test/fileutils/test_nowrite.rb: ditto.
+
 Tue Nov 25 19:04:23 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): ENV case sensitivity test

@@ -16,7 +16,7 @@ class TestNoWrite < Test::Unit::TestCase
 
   def my_rm_rf( path )
     if File.exist?('/bin/rm')
-      system "/bin/rm -rf #{path}"
+      system %Q[/bin/rm -rf "#{path}"]
     else
       FileUtils.rm_rf path
     end
@@ -27,17 +27,19 @@ class TestNoWrite < Test::Unit::TestCase
 
   def setup
     @prevdir = Dir.pwd
-    Dir.chdir Dir.tmpdir
-    my_rm_rf 'date'; Dir.mkdir 'data'
+    tmproot = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
+    Dir.mkdir tmproot unless File.directory?(tmproot)
+    Dir.chdir tmproot
+    my_rm_rf 'data'; Dir.mkdir 'data'
     my_rm_rf 'tmp'; Dir.mkdir 'tmp'
     File.open(SRC,  'w') {|f| f.puts 'dummy' }
     File.open(COPY, 'w') {|f| f.puts 'dummy' }
   end
 
   def teardown
-    my_rm_rf 'data'
-    my_rm_rf 'tmp'
+    tmproot = Dir.pwd
     Dir.chdir @prevdir
+    my_rm_rf tmproot
   end
 
   def test_cp
