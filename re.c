@@ -71,20 +71,27 @@ static const char casetable[] = {
 #define MIN(a,b) (((a)>(b))?(b):(a))
 
 int
+rb_memcmp(p1, p2, len)
+    char *p1, *p2;
+    size_t len;
+{
+    int tmp;
+
+    if (!ruby_ignorecase) {
+	return memcmp(p1, p2, len);
+    }
+
+    while (len--) {
+	if (tmp = casetable[(unsigned)*p1++] - casetable[(unsigned)*p2++])
+	    return tmp;
+    }
+    return 0;
+}
+
+int
 rb_str_cicmp(str1, str2)
     VALUE str1, str2;
 {
-    int len, i;
-    char *p1, *p2;
-
-    len = MIN(RSTRING(str1)->len, RSTRING(str2)->len);
-    p1 = RSTRING(str1)->ptr; p2 = RSTRING(str2)->ptr;
-
-    for (i = 0; i < len; i++, p1++, p2++) {
-	if (casetable[(unsigned)*p1] != casetable[(unsigned)*p2])
-	    return casetable[(unsigned)*p1] - casetable[(unsigned)*p2];
-    }
-    return RSTRING(str1)->len - RSTRING(str2)->len;
 }
 
 #define REG_CASESTATE  FL_USER0

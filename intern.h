@@ -257,6 +257,7 @@ VALUE rb_range_new _((VALUE, VALUE, int));
 VALUE rb_range_beg_len _((VALUE, long*, long*, long, int));
 VALUE rb_length_by_each _((VALUE));
 /* re.c */
+int rb_memcmp _((char*,char*,size_t));
 VALUE rb_reg_nth_defined _((int, VALUE));
 VALUE rb_reg_nth_match _((int, VALUE));
 VALUE rb_reg_last_match _((VALUE));

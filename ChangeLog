@@ -8,6 +8,33 @@ Wed Jun 14 14:07:38 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: add include <time.h> when daylight checking.
 
+Wed Jun 14 11:36:52 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* marshal.c (r_object): modified for symbols.
+
+	* marshal.c (w_object): ditto.
+
+Wed Jun 14 10:04:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_memcmp): should compare according to ruby_ignorecase.
+
+	* string.c (rb_str_cmp): use rb_memcmp.
+
+	* string.c (rb_str_index): ditto.
+
+	* string.c (rb_str_rindex): ditto.
+
+	* string.c (rb_str_each_line): ditto.
+
+Wed 14 Jun 04:58:53 2000  Dave Thomas  <dave@thomases.com>
+
+	* io.c (rb_io_set_lineno): should have returned VALUE, not
+	  integer.
+
+Wed Jun 14 09:29:42 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_dup): dup should always propagate taintness.
+
 Wed Jun 14 00:50:14 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: read_multipart(): if no content body then raise EOFError.
@@ -50,7 +77,7 @@ Thu Jun  8 14:25:45 2000  Hiroshi Igarashi  <iga@ruby-lang.org>
 	* lib/mkmf.rb: add target `distclean' in Makefile for extlib.
 	target `clean' doesn't remove Makefile.
 
-Thu Jun  8 13:34:03 2000  Dave Thomas   <dave@thomases.com>
+Thu Jun  8 13:34:03 2000  Dave Thomas  <dave@thomases.com>
 
 	* numeric.c: add nan?, infinite?, and finite? to Float
 	

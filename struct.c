@@ -496,12 +496,14 @@ rb_struct_aset(s, idx, val)
 
     i = NUM2LONG(idx);
     if (i < 0) i = RSTRUCT(s)->len + i;
-    if (i < 0)
+    if (i < 0) {
         rb_raise(rb_eIndexError, "offset %d too small for struct(size:%d)",
 		 i, RSTRUCT(s)->len);
-    if (RSTRUCT(s)->len <= i)
+    }
+    if (RSTRUCT(s)->len <= i) {
         rb_raise(rb_eIndexError, "offset %d too large for struct(size:%d)",
 		 i, RSTRUCT(s)->len);
+    }
     if (OBJ_FROZEN(s)) rb_error_frozen("Struct");
     return RSTRUCT(s)->ptr[i] = val;
 }

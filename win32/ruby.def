@@ -462,7 +462,7 @@ EXPORTS
 	rb_range_new
 	rb_range_beg_len
 ;re.c
-	rb_str_cicmp
+	rb_memcmp
 	rb_reg_mbclen2
 	rb_match_busy
 	rb_reg_adjust_startpos

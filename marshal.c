@@ -384,7 +384,7 @@ w_object(obj, arg, limit)
 		    rb_raise(rb_eTypeError, "uninitialized struct");
 		}
 		for (i=0; i<len; i++) {
-		    w_symbol(FIX2LONG(RARRAY(mem)->ptr[i]), arg);
+		    w_symbol(SYM2ID(RARRAY(mem)->ptr[i]), arg);
 		    w_object(RSTRUCT(obj)->ptr[i], arg, limit);
 		}
 	    }
@@ -826,11 +826,11 @@ r_object(arg)
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
-		if (RARRAY(mem)->ptr[i] != INT2FIX(slot)) {
+		if (RARRAY(mem)->ptr[i] != ID2SYM(slot)) {
 		    rb_raise(rb_eTypeError, "struct %s not compatible (:%s for :%s)",
 			     rb_class2name(klass),
 			     rb_id2name(slot),
-			     rb_id2name(FIX2INT(RARRAY(mem)->ptr[i])));
+			     rb_id2name(SYM2ID(RARRAY(mem)->ptr[i])));
 		}
 		rb_struct_aset(v, INT2FIX(i), r_object(arg));
 	    }

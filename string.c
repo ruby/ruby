@@ -87,6 +87,7 @@ rb_str_new3(str)
     str2->len = RSTRING(str)->len;
     str2->ptr = RSTRING(str)->ptr;
     str2->orig = str;
+    OBJ_INFECT(str2, str);
 
     return (VALUE)str2;
 }
@@ -179,24 +180,28 @@ VALUE
 rb_str_dup(str)
     VALUE str;
 {
-    VALUE shadow;
+    VALUE str2;
 
     if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
     if (OBJ_FROZEN(str)) return rb_str_new3(str);
     if (FL_TEST(str, STR_NO_ORIG)) {
-	VALUE s = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
-	OBJ_INFECT(s, str);
-	return s;
+	str2 = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
+	OBJ_INFECT(str2, str);
+	return str2;
     }
-    if (RSTRING(str)->orig) return rb_str_new3(RSTRING(str)->orig);
+    if (RSTRING(str)->orig) {
+	str2 = rb_str_new3(RSTRING(str)->orig);
+	OBJ_INFECT(str2, str);
+	return str2;
+    }
 
-    shadow = rb_str_new4(str);
+    str2 = rb_str_new4(str);
     {
 	NEWOBJ(dup, struct RString);
 	OBJSETUP(dup, rb_cString, T_STRING);
-	dup->len = RSTRING(shadow)->len;
-	dup->ptr = RSTRING(shadow)->ptr;
-	dup->orig = shadow;
+	dup->len = RSTRING(str2)->len;
+	dup->ptr = RSTRING(str2)->ptr;
+	dup->orig = str2;
 	OBJ_INFECT(dup, str);
 
 	return (VALUE)dup;
@@ -515,12 +520,8 @@ rb_str_cmp(str1, str2)
     long len;
     int retval;
 
-    if (ruby_ignorecase) {
-	return rb_str_cicmp(str1, str2);
-    }
-
     len = lesser(RSTRING(str1)->len, RSTRING(str2)->len);
-    retval = memcmp(RSTRING(str1)->ptr, RSTRING(str2)->ptr, len);
+    retval = rb_memcmp(RSTRING(str1)->ptr, RSTRING(str2)->ptr, len);
     if (retval == 0) {
 	if (RSTRING(str1)->len == RSTRING(str2)->len) return 0;
 	if (RSTRING(str1)->len > RSTRING(str2)->len) return 1;
@@ -606,7 +607,7 @@ rb_str_index(str, sub, offset)
     if (len == 0) return offset;
     e = RSTRING(str)->ptr + RSTRING(str)->len - len + 1;
     while (s < e) {
-	if (*s == *(RSTRING(sub)->ptr) && memcmp(s, p, len) == 0) {
+	if (rb_memcmp(s, p, len) == 0) {
 	    return (s-(RSTRING(str)->ptr));
 	}
 	s++;
@@ -706,7 +707,7 @@ rb_str_rindex(argc, argv, str)
 	t = RSTRING(sub)->ptr;
 	if (len) {
 	    while (sbeg <= s) {
-		if (*s == *t && memcmp(s, t, len) == 0) {
+		if (rb_memcmp(s, t, len) == 0) {
 		    return INT2NUM(s - RSTRING(str)->ptr);
 		}
 		s--;
@@ -2286,7 +2287,7 @@ rb_str_each_line(argc, argv, str)
 	}
 	if (p[-1] == newline &&
 	    (rslen <= 1 ||
-	     memcmp(RSTRING(rs)->ptr, p-rslen, rslen) == 0)) {
+	     rb_memcmp(RSTRING(rs)->ptr, p-rslen, rslen) == 0)) {
 	    line = rb_str_new(s, p - s);
 	    rb_yield(line);
 	    if (RSTRING(str)->ptr != ptr || RSTRING(str)->len != len)
@@ -2398,7 +2399,7 @@ rb_str_chomp_bang(argc, argv, str)
 
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
-	 memcmp(RSTRING(rs)->ptr, p+len-rslen, rslen) == 0)) {
+	 rb_memcmp(RSTRING(rs)->ptr, p+len-rslen, rslen) == 0)) {
 	rb_str_modify(str);
 	RSTRING(str)->len -= rslen;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
