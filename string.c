@@ -2828,9 +2828,7 @@ rb_str_rstrip_bang(str)
     e = t = s + RSTRING(str)->len;
 
     /* remove trailing spaces */
-    t--;
-    while (s <= t && ISSPACE(*t)) t--;
-    t++;
+    while (s < t && ISSPACE(*(t-1))) t--;
 
     RSTRING(str)->len = t-s;
     if (t < e) {
