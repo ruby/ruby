@@ -1636,10 +1636,10 @@ id2ref(obj, id)
     }
 
     ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
-    if (!is_pointer_to_heap((void *)ptr)) {
+    if (!is_pointer_to_heap((void *)ptr)|| BUILTIN_TYPE(ptr) >= T_BLKTAG) {
 	rb_raise(rb_eRangeError, "0x%lx is not id value", p0);
     }
-    if (RBASIC(ptr)->klass == 0) {
+    if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0) {
 	rb_raise(rb_eRangeError, "0x%lx is recycled object", p0);
     }
     return (VALUE)ptr;

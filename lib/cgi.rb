@@ -973,7 +973,7 @@ class CGI
       bufsize = 10 * 1024
 
       # start multipart/form-data
-      stdinput.binmode
+      stdinput.binmode if defined? stdinput.binmode
       boundary_size = boundary.size + EOL.size
       content_length -= boundary_size
       status = stdinput.read(boundary_size)
@@ -997,7 +997,7 @@ class CGI
             body = Tempfile.new("CGI")
           end
         end
-        body.binmode
+        body.binmode if defined? body.binmode
 
         until head and /#{boundary}(?:#{EOL}|--)/n.match(buf)
 
@@ -1123,7 +1123,7 @@ class CGI
                         env_table['QUERY_STRING'] or ""
                       end
                     when "POST"
-                      stdinput.binmode
+                      stdinput.binmode if defined? stdinput.binmode
                       stdinput.read(Integer(env_table['CONTENT_LENGTH'])) or ''
                     else
                       read_from_cmdline

@@ -95,7 +95,10 @@ class << Singleton
         @__instance__ = new
       ensure
         if @__instance__
-          def self.instance; @__instance__ end
+          class <<self
+            remove_method :instance
+            def instance; @__instance__ end
+          end
         else
           @__instance__ = nil #  failed instance creation
         end
@@ -109,7 +112,10 @@ class << Singleton
         @__instance__ = new
       ensure
         if @__instance__
-          def self.instance; @__instance__ end
+          class <<self
+            remove_method :instance
+            def instance; @__instance__ end
+          end
         else
           @__instance__ = nil
         end

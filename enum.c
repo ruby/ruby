@@ -187,7 +187,7 @@ inject_i(i, memo)
         memo->u1.value = i;
     }
     else {
-        memo->u1.value = rb_yield(rb_assoc_new(memo->u1.value, i));
+        memo->u1.value = rb_yield_values(2, memo->u1.value, i);
     }
     return Qnil;
 }
@@ -499,7 +499,7 @@ each_with_index_i(val, memo)
     VALUE val;
     NODE *memo;
 {
-    rb_yield(rb_assoc_new(val, INT2FIX(memo->u3.cnt)));
+    rb_yield_values(val, INT2FIX(memo->u3.cnt));
     memo->u3.cnt++;
     return Qnil;
 }

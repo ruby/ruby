@@ -4230,7 +4230,7 @@ VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
 rb_yield_values(int n, ...)
 #else
-rb_yield_values(int n, va_alist)
+rb_yield_values(n, va_alist)
     int n;
     va_dcl
 #endif
@@ -4248,6 +4248,16 @@ rb_yield_values(int n, va_alist)
     }
     va_end(args);
     return rb_yield_0(ary, 0, 0, Qfalse, Qtrue);
+}
+
+VALUE
+rb_yield_splat(values)
+    VALUE values;
+{
+    if (RARRAY(value)->len == 0) {
+	return rb_yield_0(Qundef, 0, 0, Qfalse, Qfalse);
+    }
+    return rb_yield_0(values, 0, 0, Qfalse, Qtrue);
 }
 
 static VALUE
@@ -9375,7 +9385,7 @@ rb_thread_start_0(fn, arg, th_arg)
 {
     volatile rb_thread_t th = th_arg;
     volatile VALUE thread = th->thread;
-    struct BLOCK* saved_block = 0;
+    volatile struct BLOCK* saved_block = 0;
     enum thread_status status;
     int state;
 
@@ -9434,12 +9444,12 @@ rb_thread_start_0(fn, arg, th_arg)
     rb_thread_remove(th);
 
     while (saved_block) {
-	struct BLOCK *tmp = saved_block;
+	volatile struct BLOCK *tmp = saved_block;
 
 	if (tmp->frame.argc > 0)
 	    free(tmp->frame.argv);
 	saved_block = tmp->prev;
-	free(tmp);
+	free((void*)tmp);
     }
 
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {

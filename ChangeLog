@@ -1,3 +1,13 @@
+Fri Aug 22 17:07:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (inject_i): use rb_yield_values.
+
+	* enum.c (each_with_index_i): ditto.
+
+	* eval.c (rb_yield_splat): new function to call "yield *values".
+
+	* string.c (rb_str_scan): use rb_yield_splat().
+
 Fri Aug 22 06:13:22 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/rubyext.c: refactoring of the transfer method
