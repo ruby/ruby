@@ -1,3 +1,8 @@
+Tue Feb 22 23:50:26 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (ruby_signal, ruby_nativethread_signal): must be valid as
+	  expressions, not only statements.
+
 Tue Feb 22 07:24:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): identifier after dot must not be a variable.
