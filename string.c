@@ -27,7 +27,6 @@
 
 VALUE rb_cString;
 
-#define STR_NO_ORIG FL_USER2
 #define STR_ASSOC   FL_USER3
 
 VALUE rb_fs;
@@ -41,13 +40,13 @@ rb_str_s_alloc(klass)
 
     str->ptr = 0;
     str->len = 0;
-    str->orig = 0;
+    str->aux.capa = 0;
 
     return (VALUE)str;
 }
 
-VALUE
-rb_str_new0(klass, ptr, len)
+static VALUE
+str_new(klass, ptr, len)
     VALUE klass;
     const char *ptr;
     long len;
@@ -55,6 +54,7 @@ rb_str_new0(klass, ptr, len)
     VALUE str = rb_obj_alloc(klass);
 
     RSTRING(str)->len = len;
+    RSTRING(str)->aux.capa = len;
     RSTRING(str)->ptr = ALLOC_N(char,len+1);
     if (ptr) {
 	memcpy(RSTRING(str)->ptr, ptr, len);
@@ -68,7 +68,7 @@ rb_str_new(ptr, len)
     const char *ptr;
     long len;
 {
-    return rb_str_new0(rb_cString, ptr, len);
+    return str_new(rb_cString, ptr, len);
 }
 
 VALUE
@@ -99,51 +99,52 @@ rb_tainted_str_new2(ptr)
     return str;
 }
 
-VALUE
-rb_str_new3(str)
-    VALUE str;
+static VALUE
+str_new3(klass, str)
+    VALUE klass, str;
 {
-    VALUE str2 = rb_obj_alloc(rb_obj_class(str));
+    VALUE str2 = rb_obj_alloc(klass);
 
     RSTRING(str2)->len = RSTRING(str)->len;
     RSTRING(str2)->ptr = RSTRING(str)->ptr;
-    RSTRING(str2)->orig = str;
+    RSTRING(str2)->aux.shared = str;
+    FL_SET(str2, ELTS_SHARED);
     OBJ_INFECT(str2, str);
 
     return str2;
 }
 
 VALUE
+rb_str_new3(str)
+    VALUE str;
+{
+    return str_new3(rb_obj_class(str), str);
+}
+
+VALUE
 rb_str_new4(orig)
     VALUE orig;
 {
-    VALUE klass;
+    VALUE klass, str;
 
     klass = rb_obj_class(orig);
-    if (RSTRING(orig)->orig) {
-	VALUE str;
-
-	if (FL_TEST(orig, STR_NO_ORIG)) {
-	    str = rb_str_new0(klass, RSTRING(orig)->ptr, RSTRING(orig)->len);
-	}
-	else {
-	    str = rb_str_new3(RSTRING(orig)->orig);
-	    RBASIC(str)->klass = klass;
-	}
-	OBJ_FREEZE(str);
-	return str;
+    if (FL_TEST(orig, ELTS_SHARED)) {
+	str = str_new3(klass, RSTRING(orig)->aux.shared);
+    }
+    else if (FL_TEST(orig, STR_ASSOC)) {
+	str = str_new(klass, RSTRING(orig)->ptr, RSTRING(orig)->len);
     }
     else {
-	VALUE str = rb_obj_alloc(klass);
+	str = rb_obj_alloc(klass);
 
 	RSTRING(str)->len = RSTRING(orig)->len;
 	RSTRING(str)->ptr = RSTRING(orig)->ptr;
-	RSTRING(orig)->orig = str;
-	OBJ_INFECT(str, orig);
-	OBJ_FREEZE(str);
-
-	return str;
+	RSTRING(orig)->aux.shared = str;
+	FL_SET(orig, ELTS_SHARED);
     }
+    OBJ_INFECT(str, orig);
+    OBJ_FREEZE(str);
+    return str;
 }
 
 VALUE
@@ -152,7 +153,7 @@ rb_str_new5(obj, ptr, len)
     const char *ptr;
     long len;
 {
-    return rb_str_new0(rb_obj_class(obj), ptr, len);
+    return str_new(rb_obj_class(obj), ptr, len);
 }
 
 #define STR_BUF_MIN_SIZE 128
@@ -163,12 +164,11 @@ rb_str_buf_new(capa)
 {
     VALUE str = rb_obj_alloc(rb_cString);
 
-    FL_SET(str, STR_NO_ORIG);
     if (capa < STR_BUF_MIN_SIZE)
 	capa = STR_BUF_MIN_SIZE;
     RSTRING(str)->ptr = 0;
     RSTRING(str)->len = 0;
-    RSTRING(str)->orig = LONG2FIX(capa);
+    RSTRING(str)->aux.capa = capa;
     RSTRING(str)->ptr = ALLOC_N(char, capa+1);
     RSTRING(str)->ptr[0] = '\0';
 
@@ -210,16 +210,23 @@ rb_str_become(str, str2)
     if (NIL_P(str2)) {
 	RSTRING(str)->ptr = 0;
 	RSTRING(str)->len = 0;
-	RSTRING(str)->orig = 0;
+	RSTRING(str)->aux.capa = 0;
 	return;
     }
-    if ((!RSTRING(str)->orig||FL_TEST(str,STR_NO_ORIG))&&RSTRING(str)->ptr)
-	free(RSTRING(str)->ptr);
+    if (FL_TEST(str, ELTS_SHARED)) free(RSTRING(str)->ptr);
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
     RSTRING(str)->len = RSTRING(str2)->len;
-    RSTRING(str)->orig = RSTRING(str2)->orig;
+    if (FL_TEST(str2, ELTS_SHARED|STR_ASSOC)) {
+	FL_SET(str, RBASIC(str2)->flags & (ELTS_SHARED|STR_ASSOC));
+	RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
+    }
+    else {
+	RSTRING(str)->aux.capa = RSTRING(str2)->aux.capa;
+    }
     RSTRING(str2)->ptr = 0;	/* abandon str2 */
     RSTRING(str2)->len = 0;
+    RSTRING(str2)->aux.capa = 0;
+    FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
     if (OBJ_TAINTED(str2)) OBJ_TAINT(str);
 }
 
@@ -227,22 +234,23 @@ void
 rb_str_associate(str, add)
     VALUE str, add;
 {
-    if (FL_TEST(str, STR_NO_ORIG|STR_ASSOC) != (STR_NO_ORIG|STR_ASSOC)) {
-	if (FL_TEST(str, STR_NO_ORIG)) {
+    if (FL_TEST(str, STR_ASSOC)) {
+	/* already associated */
+	rb_ary_concat(RSTRING(str)->aux.shared, add);
+    }
+    else {
+	if (FL_TEST(str, ELTS_SHARED)) {
+	    rb_str_modify(str);
+	}
+	else if (RSTRING(str)->aux.shared) {
 	    /* str_buf */
-	    if (FIX2LONG(RSTRING(str)->orig) != RSTRING(str)->len) {
+	    if (RSTRING(str)->aux.capa != RSTRING(str)->len) {
 		REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len + 1);
 	    }
 	}
-	else if (RSTRING(str)->orig) {
-	    rb_str_modify(str);
-	}
-	RSTRING(str)->orig = add;
-	FL_SET(str, STR_NO_ORIG|STR_ASSOC);
-    }
-    else {
-	/* already associated */
-	rb_ary_concat(RSTRING(str)->orig, add);
+	RSTRING(str)->aux.shared = add;
+	FL_UNSET(str, ELTS_SHARED);
+	FL_SET(str, STR_ASSOC);
     }
 }
 
@@ -250,10 +258,10 @@ VALUE
 rb_str_associated(str)
     VALUE str;
 {
-    if (FL_TEST(str, STR_NO_ORIG|STR_ASSOC) != (STR_NO_ORIG|STR_ASSOC)) {
-	return Qfalse;
+    if (FL_TEST(str, STR_ASSOC)) {
+	return RSTRING(str)->aux.shared;
     }
-    return RSTRING(str)->orig;
+    return Qfalse;
 }
 
 static ID id_to_s;
@@ -274,45 +282,53 @@ rb_obj_as_string(obj)
     return str;
 }
 
-VALUE
-rb_str_dup(str)
+static VALUE
+str_copy(str, clone)
     VALUE str;
+    int clone;
 {
     VALUE str2;
     VALUE klass;
+    int flags;
 
     StringValue(str);
-    klass = rb_obj_class(str);
 
-    if (OBJ_FROZEN(str)) str2 = rb_str_new3(str);
-    else if (FL_TEST(str, STR_NO_ORIG)) {
-	str2 = rb_str_new0(klass, RSTRING(str)->ptr, RSTRING(str)->len);
+    if (FL_TEST(str, ELTS_SHARED)) {
+	str2 = rb_str_new3(RSTRING(str)->aux.shared);
     }
-    else if (RSTRING(str)->orig) {
-	str2 = rb_str_new3(RSTRING(str)->orig);
-	RBASIC(str2)->klass = klass;
-	FL_UNSET(str2, FL_TAINT);
-	OBJ_INFECT(str2, str);
+    else if (FL_TEST(str, STR_ASSOC)) {
+	str2 = str_new(RSTRING(str)->ptr, RSTRING(str)->len);
+	RSTRING(str2)->aux.shared = RSTRING(str)->aux.shared;
+    }
+    else if (OBJ_FROZEN(str)) {
+	str2 = rb_str_new3(str);
     }
     else {
 	str2 = rb_str_new3(rb_str_new4(str));
     }
-    if (FL_TEST(str, FL_EXIVAR))
-	rb_copy_generic_ivar(str2, str);
-    OBJ_INFECT(str2, str);
+    flags = FL_TEST(str2, ELTS_SHARED|STR_ASSOC);
+    if (clone) {
+	CLONESETUP(str2, str);
+    }
+    else {
+	DUPSETUP(str2, str);
+    } 
+    if (flags) FL_SET(str2, flags);
     return str2;
+}
+
+VALUE
+rb_str_dup(str)
+    VALUE str;
+{
+    return str_copy(str, Qfalse);
 }
 
 static VALUE
 rb_str_clone(str)
     VALUE str;
 {
-    VALUE clone = rb_str_dup(str);
-    if (FL_TEST(str, STR_NO_ORIG))
-	RSTRING(clone)->orig = RSTRING(str)->orig;
-    CLONESETUP(clone, str);
-
-    return clone;
+    return str_copy(str, Qtrue);
 }
 
 static VALUE rb_str_replace _((VALUE, VALUE));
@@ -446,9 +462,7 @@ str_independent(str)
     if (OBJ_FROZEN(str)) rb_error_frozen("string");
     if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
-    if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return 1;
-    if (RBASIC(str)->flags == 0) abort();
-    if (TYPE(RSTRING(str)->orig) != T_STRING) rb_bug("non string str->orig");
+    if (!FL_TEST(str, ELTS_SHARED)) return 1;
     return 0;
 }
 
@@ -465,7 +479,8 @@ rb_str_modify(str)
     }
     ptr[RSTRING(str)->len] = 0;
     RSTRING(str)->ptr = ptr;
-    RSTRING(str)->orig = 0;
+    RSTRING(str)->aux.capa = RSTRING(str)->len;
+    FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
 }
 
 VALUE
@@ -479,9 +494,9 @@ VALUE
 rb_str_dup_frozen(str)
     VALUE str;
 {
-    if (RSTRING(str)->orig && !FL_TEST(str, STR_NO_ORIG)) {
-	OBJ_FREEZE(RSTRING(str)->orig);
-	return RSTRING(str)->orig;
+    if (FL_TEST(str, ELTS_SHARED)) {
+	OBJ_FREEZE(RSTRING(str)->aux.shared);
+	return RSTRING(str)->aux.shared;
     }
     if (OBJ_FROZEN(str)) return str;
     str = rb_str_dup(str);
@@ -516,21 +531,17 @@ rb_str_buf_cat(str, ptr, len)
 {
     long i, capa, total;
 
-    if (RSTRING(str)->orig == 0) {
-	capa = RSTRING(str)->len;
-	FL_SET(str, STR_NO_ORIG);
+    if (FL_TEST(str, ELTS_SHARED)) {
+	rb_str_modify(str);
     }
-    else {
-	capa = FIX2LONG(RSTRING(str)->orig);
-    }
-
+    capa = RSTRING(str)->aux.capa;
     total = RSTRING(str)->len+len;
     if (capa <= total) {
 	while (total > capa) {
 	    capa = (capa + 1) * 2;
 	}
 	REALLOC_N(RSTRING(str)->ptr, char, capa+1);
-	RSTRING(str)->orig = LONG2FIX(capa);
+	RSTRING(str)->aux.capa = capa;
     }
     memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
     RSTRING(str)->len = total;
@@ -557,8 +568,7 @@ rb_str_cat(str, ptr, len)
 
     rb_str_modify(str);
     if (len > 0) {
-	if (RSTRING(str)->orig == 0 ||
-	    (FL_TEST(str, STR_NO_ORIG) && !FL_TEST(str, STR_ASSOC))) {
+	if (!FL_TEST(str, ELTS_SHARED) && !FL_TEST(str, STR_ASSOC)) {
 	    return rb_str_buf_cat(str, ptr, len);
 	}
 	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+len+1);
@@ -589,13 +599,10 @@ rb_str_buf_append(str, str2)
 {
     long i, capa, len;
 
-    if (RSTRING(str)->orig == 0) {
-	capa = RSTRING(str)->len;
-	FL_SET(str, STR_NO_ORIG);
+    if (FL_TEST(str, ELTS_SHARED)) {
+	rb_str_modify(str);
     }
-    else {
-	capa = FIX2LONG(RSTRING(str)->orig);
-    }
+    capa = RSTRING(str)->aux.capa;
 
     len = RSTRING(str)->len+RSTRING(str2)->len;
     if (capa <= len) {
@@ -603,7 +610,7 @@ rb_str_buf_append(str, str2)
 	    capa = (capa + 1) * 2;
 	}
 	REALLOC_N(RSTRING(str)->ptr, char, capa+1);
-	RSTRING(str)->orig = LONG2FIX(capa);
+	RSTRING(str)->aux.capa = capa;
     }
     memcpy(RSTRING(str)->ptr + RSTRING(str)->len,
 	   RSTRING(str2)->ptr, RSTRING(str2)->len);
@@ -623,11 +630,9 @@ rb_str_append(str, str2)
     rb_str_modify(str);
     if (RSTRING(str2)->len > 0) {
 	len = RSTRING(str)->len+RSTRING(str2)->len;
-	if (RSTRING(str)->orig == 0 ||
-	    (FL_TEST(str, STR_NO_ORIG) && !FL_TEST(str, STR_ASSOC))) {
+	if (!FL_TEST(str, ELTS_SHARED) && !FL_TEST(str, STR_ASSOC)) {
 	    rb_str_buf_append(str, str2);
 	    OBJ_INFECT(str, str2);
-	    
 	    return str;
 	}
 	REALLOC_N(RSTRING(str)->ptr, char, len+1);
@@ -808,6 +813,13 @@ rb_str_match2(str)
     VALUE str;
 {
     return rb_reg_match2(rb_reg_regcomp(str));
+}
+
+static VALUE
+rb_str_match_m(str, re)
+    VALUE str, re;
+{
+    return rb_funcall(re, rb_intern("match"), 1, str);
 }
 
 static long
@@ -1529,20 +1541,18 @@ str_gsub(argc, argv, str, bang)
 	if (str_independent(str)) {
 	    free(RSTRING(str)->ptr);
 	}
-	else {
-	    RSTRING(str)->orig = 0;
-	}
+	FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
     }
     else {
 	VALUE dup = rb_obj_alloc(rb_obj_class(str));
 
 	OBJ_INFECT(dup, str);
 	str = dup;
-	RSTRING(dup)->orig = 0;
     }
     RSTRING(str)->ptr = buf;
     RSTRING(str)->len = len = bp - buf;
     RSTRING(str)->ptr[len] = '\0';
+    RSTRING(str)->aux.capa = len;
 
     if (tainted) OBJ_TAINT(str);
     return str;
@@ -1573,13 +1583,19 @@ rb_str_replace(str, str2)
     if (str == str2) return str;
 
     StringValue(str2);
-    if (RSTRING(str2)->orig && !FL_TEST(str2, STR_NO_ORIG)) {
+    if (FL_TEST(str2, ELTS_SHARED)) {
 	if (str_independent(str)) {
 	    free(RSTRING(str)->ptr);
 	}
 	RSTRING(str)->len = RSTRING(str2)->len;
 	RSTRING(str)->ptr = RSTRING(str2)->ptr;
-	RSTRING(str)->orig = RSTRING(str2)->orig;
+	if (FL_TEST(str2, ELTS_SHARED|STR_ASSOC)) {
+	    FL_SET(str, RBASIC(str2)->flags & (ELTS_SHARED|STR_ASSOC));
+	    RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
+	}
+	else {
+	    RSTRING(str)->aux.capa = RSTRING(str2)->aux.capa;
+	}
     }
     else {
 	rb_str_modify(str);
@@ -3113,6 +3129,7 @@ Init_String()
     rb_define_method(rb_cString, "empty?", rb_str_empty, 0);
     rb_define_method(rb_cString, "=~", rb_str_match, 1);
     rb_define_method(rb_cString, "~", rb_str_match2, 0);
+    rb_define_method(rb_cString, "match", rb_str_match_m, 1);
     rb_define_method(rb_cString, "succ", rb_str_succ, 0);
     rb_define_method(rb_cString, "succ!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "next", rb_str_succ, 0);

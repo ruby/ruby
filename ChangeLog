@@ -1,14 +1,52 @@
-Sun Dec  9 23:00:54 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
-	* matrix.rb: Vector#* bug. reported from Massimiliano Mirra
-	<info@chromatic-harp.com>. 
-	
-Sun Dec  9 22:15:59 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Mon Dec 10 02:09:28 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* enum.c (enum_sort_by): should replace with last elements.
+	* array.c (rb_ary_modify): should copy the internal buffer if the
+	  modifying buffer is shared.
+
+	* array.c (ary_make_shared): make an internal buffer of an array
+	  to be shared.
+
+	* array.c (rb_ary_shift): avoid sliding an internal buffer by
+	  using shared buffer.
+
+	* array.c (rb_ary_subseq): avoid copying the buffer.
+
+Mon Dec 10 01:06:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (gettable): should freeze __LINE__ string.
 
 Sun Dec  9 18:06:26 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: calls on_connect before conn_command
+
+Sat Dec  8 23:27:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_puts): old behavoir restored.  rationale: a) if you
+	  want to call to_s for arrays, you can just call print a, "\n".
+	  b) to_s wastes memory if array (and sum of its contents) is
+	  huge.  c) now any object that has to_ary is treated as an array,
+	  using rb_check_convert_type().
+
+Sat Dec  8 22:40:38 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_initialize): now accepts a block to calculate
+	  the default value. [new]
+
+	* hash.c (rb_hash_aref): call "default" method to get the value
+	  corrensponding to the non existing key.  
+
+	* hash.c (rb_hash_default): get the default value based on the
+	  block given to 'new'.  Now it takes an optinal "key" argument.
+	  "default" became the method to get the value for non existing
+	  key.  Users may override "default" method to change the hash
+	  behavior.
+
+	* hash.c (rb_hash_set_default): clear the flag if a block is given
+	  to 'new'
+
+Sat Dec  8 02:29:54 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (Init_Object): undef Data.allocate, left Data.new.
 
 Fri Dec  7 19:12:14 2001  Minero Aoki  <aamine@loveruby.net>
 
@@ -27,11 +65,82 @@ Fri Dec  7 15:49:39 2001  Usaku Nakamura <usa@ruby-lang.org>
 	* ext/extmk.rb.in: ignore adding -Wl,-R to DLDFLAGS when the directory
 	  is $topdir.
 
+Fri Dec  7 13:58:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/curses.c (window_scrollok): use RTEST().
+
+	* ext/curses/curses.c (window_idlok): ditto.
+
+	* ext/curses/curses.c (window_keypad): ditto.
+
+	* ext/curses/curses.c (window_idlok): idlok() may return void on
+	  some platforms; so don't use return value.
+
+	* ext/curses/curses.c (window_scrollok): ditto for consistency.
+
+	* ext/curses/curses.c: replace FIX2INT() by typechecking NUM2INT().
+
+Fri Dec  7 09:51:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): should not process immature #$x and
+	  #@x interpolation, e.g #@#@ etc.
+
+Fri Dec  7 03:21:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_sort_by): sort_by does not have to be stable always.
+
+	* enum.c (enum_sort_by): call qsort directly to gain performance.
+
 Thu Dec  6 18:52:28 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* ext/extmk.rb.in: add -Wl,-R flags to DLDFLAGS on netbsdelf.
 
 	* lib/mkmf.rb: ditto.
+
+Thu Dec  6 09:15:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_qsort): ruby_qsort(qs6) is now native thread safe.
+
+	* error.c (rb_sys_fail): it must be a bug if it's called when
+	  errno == 0.
+
+Wed Dec  5 23:36:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (WC2MBC1ST): should not pass through > 0x80 number in UTF-8.
+
+Tue Dec  4 17:43:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h (DUPSETUP): new SETUP macro for duplication.
+
+	* time.c (time_dup): implement in Time class using DUPSETUP.
+
+	* time.c (time_getlocaltime): new method;  probably requires
+	  better name than getlocaltime. [new,experimental]
+
+	* time.c (time_getgmtime): ditto.
+
+	* array.c (rb_ary_dup): uses DUPSETUP.
+
+	* string.c (rb_str_dup): uses DUPSETUP.  now properly copies
+	  instance variables too.
+
+Tue Dec  4 03:49:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fread): EAGAIN/EWOULDBLOCK should not terminate and
+	  throw away the input.
+
+	* time.c (time_new_internal): underflow adjustment must not use
+	  negative div/mod.
+
+	* time.c (time_cmp): should consider tv_usec on non Fixnum number
+	  comparison.
+Sun Dec  9 23:00:54 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
+	* matrix.rb: Vector#* bug. reported from Massimiliano Mirra
+	<info@chromatic-harp.com>. 
+	
+Sun Dec  9 22:15:59 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* enum.c (enum_sort_by): should replace with last elements.
 
 Mon Dec  3 16:06:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -42,6 +151,13 @@ Mon Dec  3 16:06:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 Mon Dec  3 16:04:16 2001  Usaku Nakamura <usa@ruby-lang.org>
 
 	* configure.in: not use X11BASE, since it's not always set.
+
+Mon Dec  3 13:53:49 2001  Tanaka Akira  <akr@m17n.org>
+
+	* time.c (rb_strftime): buffer length condition was wrong.
+
+	* time.c (time_strftime): should backup buf to the original
+	  buffer.
 
 Mon Dec  3 09:59:08 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -470,6 +470,18 @@ test_ok(($x * 0).join(":") == '')
 test_ok($x.size == 7)
 test_ok($x == [1, 2, 3, 4, 5, 6, 7])
 
+$x = [1,2,3]
+$x[1,0] = $x
+test_ok($x == [1,1,2,3,2,3])
+
+$x = [1,2,3]
+$x[-1,0] = $x
+test_ok($x == [1,2,1,2,3,3])
+
+$x = [1,2,3]
+$x.concat($x)
+test_ok($x == [1,2,3,1,2,3])
+
 test_check "hash"
 $x = {1=>2, 2=>4, 3=>6}
 $y = {1, 2, 2, 4, 3, 6}
@@ -505,17 +517,40 @@ $z = [1,2]
 $y[$z] = 256
 test_ok($y[$z] == 256)
 
-$x = [1,2,3]
-$x[1,0] = $x
-test_ok($x == [1,1,2,3,2,3])
+$x = Hash.new(0)
+$x[1] = 1
+test_ok($x[1] == 1)
+test_ok($x[2] == 0)
 
-$x = [1,2,3]
-$x[-1,0] = $x
-test_ok($x == [1,2,1,2,3,3])
+$x = Hash.new([])
+test_ok($x[22] == [])
+test_ok($x[22].equal?($x[22]))
 
-$x = [1,2,3]
-$x.concat($x)
-test_ok($x == [1,2,3,1,2,3])
+$x = Hash.new{[]}
+test_ok($x[22] == [])
+test_ok(!$x[22].equal?($x[22]))
+
+$x = Hash.new{|h,k| $z = k; h[k] = k*2}
+$z = 0
+test_ok($x[22] == 44)
+test_ok($z == 22)
+$z = 0
+test_ok($x[22] == 44)
+test_ok($z == 0)
+$x.default = 5
+test_ok($x[23] == 5)
+
+$x = Hash.new
+def $x.default(k)
+  $z = k
+  self[k] = k*2
+end
+$z = 0
+test_ok($x[22] == 44)
+test_ok($z == 22)
+$z = 0
+test_ok($x[22] == 44)
+test_ok($z == 0)
 
 test_check "iterator"
 

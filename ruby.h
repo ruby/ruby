@@ -247,6 +247,10 @@ VALUE rb_newobj _((void));
     rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);\
     if (FL_TEST(obj, FL_EXIVAR)) rb_copy_generic_ivar((VALUE)clone,(VALUE)obj);\
 } while (0)
+#define DUPSETUP(dup,obj) do {\
+    OBJSETUP(dup,rb_obj_class(obj),(RBASIC(obj)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT));\
+    if (FL_TEST(obj, FL_EXIVAR)) rb_copy_generic_ivar((VALUE)dup,(VALUE)obj);\
+} while (0)
 
 struct RBasic {
     unsigned long flags;
@@ -270,16 +274,25 @@ struct RFloat {
     double value;
 };
 
+#define ELTS_SHARED FL_USER2
+
 struct RString {
     struct RBasic basic;
     long len;
     char *ptr;
-    VALUE orig;
+    union {
+	int capa;
+	VALUE shared;
+    } aux;
 };
 
 struct RArray {
     struct RBasic basic;
-    long len, capa;
+    long len;
+    union {
+	int capa;
+	VALUE shared;
+    } aux;
     VALUE *ptr;
 };
 

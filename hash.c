@@ -18,6 +18,7 @@
 #include "rubysig.h"
 
 #define HASH_DELETED  FL_USER1
+#define HASH_PROC_DEFAULT FL_USER2
 
 static void
 rb_hash_modify(hash)
@@ -38,13 +39,13 @@ rb_hash_freeze(hash)
 VALUE rb_cHash;
 
 static VALUE envtbl;
-static ID hash;
+static ID id_hash, id_yield, id_default;
 
 VALUE
 rb_hash(obj)
     VALUE obj;
 {
-    return rb_funcall(obj, hash, 0);
+    return rb_funcall(obj, id_hash, 0);
 }
 
 static VALUE
@@ -93,7 +94,7 @@ rb_any_hash(a)
 
       default:
 	DEFER_INTS;
-	hval = rb_funcall(a, hash, 0);
+	hval = rb_funcall(a, id_hash, 0);
 	if (FIXNUM_P(hval)) {
 	    hval %= 536870917;
 	}
@@ -198,9 +199,18 @@ rb_hash_initialize(argc, argv, hash)
 {
     VALUE ifnone;
 
-    rb_scan_args(argc, argv, "01", &ifnone);
     rb_hash_modify(hash);
-    RHASH(hash)->ifnone = ifnone;
+    if (rb_block_given_p()) {
+	if (argc > 1) {
+	    rb_raise(rb_eArgError, "wrong number of arguments", argc);
+	}
+	RHASH(hash)->ifnone = rb_f_lambda();
+	FL_SET(hash, HASH_PROC_DEFAULT);
+    }
+    else {
+	rb_scan_args(argc, argv, "01", &ifnone);
+	RHASH(hash)->ifnone = ifnone;
+    }
 
     return hash;
 }
@@ -284,7 +294,7 @@ rb_hash_aref(hash, key)
     VALUE val;
 
     if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
-	return RHASH(hash)->ifnone;
+	return rb_funcall(hash, id_default, 1, key);
     }
     return val;
 }
@@ -316,9 +326,17 @@ rb_hash_fetch(argc, argv, hash)
 }
 
 static VALUE
-rb_hash_default(hash)
+rb_hash_default(argc, argv, hash)
+    int argc;
+    VALUE *argv;
     VALUE hash;
 {
+    VALUE key;
+
+    rb_scan_args(argc, argv, "01", &key);
+    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
+	return rb_funcall(RHASH(hash)->ifnone, id_yield, 2, hash, key);
+    }
     return RHASH(hash)->ifnone;
 }
 
@@ -328,6 +346,7 @@ rb_hash_set_default(hash, ifnone)
 {
     rb_hash_modify(hash);
     RHASH(hash)->ifnone = ifnone;
+    FL_UNSET(hash, HASH_PROC_DEFAULT);
     return hash;
 }
 
@@ -392,7 +411,7 @@ rb_hash_delete(hash, key)
     if (rb_block_given_p()) {
 	return rb_yield(key);
     }
-    return RHASH(hash)->ifnone;
+    return Qnil;
 }
 
 struct shift_var {
@@ -1433,7 +1452,9 @@ env_reject()
 void
 Init_Hash()
 {
-    hash = rb_intern("hash");
+    id_hash = rb_intern("hash");
+    id_yield = rb_intern("yield");
+    id_default = rb_intern("default");
 
     rb_cHash = rb_define_class("Hash", rb_cObject);
 
@@ -1456,7 +1477,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"fetch", rb_hash_fetch, -1);
     rb_define_method(rb_cHash,"[]=", rb_hash_aset, 2);
     rb_define_method(rb_cHash,"store", rb_hash_aset, 2);
-    rb_define_method(rb_cHash,"default", rb_hash_default, 0);
+    rb_define_method(rb_cHash,"default", rb_hash_default, -1);
     rb_define_method(rb_cHash,"default=", rb_hash_set_default, 1);
     rb_define_method(rb_cHash,"index", rb_hash_index, 1);
     rb_define_method(rb_cHash,"indexes", rb_hash_indexes, -1);

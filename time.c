@@ -72,9 +72,9 @@ time_new_internal(klass, sec, usec)
 	sec += usec / 1000000;
 	usec %= 1000000;
     }
-    if (usec < 0) {		/* usec underflow */
-	sec -= (-usec) / 1000000;
-	usec %= 1000000;
+    while (usec < 0) {		/* usec underflow */
+	sec--;
+	usec += 1000000;
     }
 #ifndef NEGATIVE_TIME_T
     if (sec < 0 || (sec == 0 && usec < 0))
@@ -643,7 +643,13 @@ time_cmp(time1, time2)
 	return INT2FIX(-1);
     }
     i = NUM2LONG(time2);
-    if (tobj1->tv.tv_sec == i) return INT2FIX(0);
+    if (tobj1->tv.tv_sec == i) {
+	if (tobj1->tv.tv_usec == 0)
+	    return INT2FIX(0);
+	if (tobj1->tv.tv_usec > 0)
+	    return INT2FIX(1);
+	return INT2FIX(-1);
+    }
     if (tobj1->tv.tv_sec > i) return INT2FIX(1);
     return INT2FIX(-1);
 }
@@ -757,6 +763,35 @@ time_gmtime(time)
     tobj->tm_got = 1;
     tobj->gmt = 1;
     return time;
+}
+
+static VALUE
+time_dup(time)
+    VALUE time;
+{
+    VALUE clone;
+    struct time_object *tobj, *tclone;
+
+    GetTimeval(time, tobj);
+    clone = Data_Make_Struct(0, struct time_object, 0, free, tclone);
+    DUPSETUP(clone, time);
+    MEMCPY(tclone, tobj, struct time_object, 1);
+
+    return clone;
+}
+
+static VALUE
+time_getlocaltime(time)
+    VALUE time;
+{
+    return time_localtime(time_dup(time));
+}
+
+static VALUE
+time_getgmtime(time)
+    VALUE time;
+{
+    return time_gmtime(time_dup(time));
 }
 
 static VALUE
@@ -1071,7 +1106,7 @@ rb_strftime(buf, format, time)
 	 * if the buffer is 1024 times bigger than the length of the
 	 * format string, it's not failing for lack of room.
 	 */
-	if (len > 0 || len >= 1024 * flen) return len;
+	if (len > 0 || size >= 1024 * flen) return len;
 	free(*buf);
     }
     /* not reached */
@@ -1109,7 +1144,10 @@ time_strftime(time, format)
 	    p += strlen(p) + 1;
 	    if (p <= pe)
 		rb_str_cat(str, "\0", 1);
-	    if (len > SMALLBUF) free(buf);
+	    if (buf != buffer) {
+		free(buf);
+		buf = buffer;
+	    }
 	}
 	return str;
     }
@@ -1231,10 +1269,15 @@ Init_Time()
     rb_define_method(rb_cTime, "eql?", time_eql, 1);
     rb_define_method(rb_cTime, "hash", time_hash, 0);
     rb_define_method(rb_cTime, "clone", time_clone, 0);
+    rb_define_method(rb_cTime, "dup", time_dup, 0);
 
     rb_define_method(rb_cTime, "localtime", time_localtime, 0);
     rb_define_method(rb_cTime, "gmtime", time_gmtime, 0);
     rb_define_method(rb_cTime, "utc", time_gmtime, 0);
+    rb_define_method(rb_cTime, "getlocal", time_getlocaltime, 0);
+    rb_define_method(rb_cTime, "getgm", time_getgmtime, 0);
+    rb_define_method(rb_cTime, "getutc", time_getgmtime, 0);
+
     rb_define_method(rb_cTime, "ctime", time_asctime, 0);
     rb_define_method(rb_cTime, "asctime", time_asctime, 0);
     rb_define_method(rb_cTime, "to_s", time_to_s, 0);

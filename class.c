@@ -87,7 +87,8 @@ rb_mod_dup(mod)
     VALUE mod;
 {
     VALUE dup = rb_mod_clone(mod);
-    OBJSETUP(dup, RBASIC(mod)->klass, BUILTIN_TYPE(mod));
+
+    DUPSETUP(dup, mod);
     if (FL_TEST(mod, FL_SINGLETON)) {
 	FL_SET(dup, FL_SINGLETON);
     }

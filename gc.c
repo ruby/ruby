@@ -756,6 +756,8 @@ rb_gc_mark_children(ptr)
 	    for (i=0; i < len; i++)
 		rb_gc_mark(*ptr++);
 	}
+	if (FL_TEST(obj, ELTS_SHARED))
+	    rb_gc_mark(obj->as.array.aux.shared);
 	break;
 
       case T_HASH:
@@ -764,8 +766,9 @@ rb_gc_mark_children(ptr)
 	break;
 
       case T_STRING:
-	if (obj->as.string.orig) {
-	    rb_gc_mark((VALUE)obj->as.string.orig);
+#define STR_ASSOC FL_USER2   /* copied from string.c */
+	if (FL_TEST(obj, ELTS_SHARED|STR_ASSOC)) {
+	    rb_gc_mark(obj->as.string.aux.shared);
 	}
 	break;
 
@@ -945,13 +948,12 @@ obj_free(obj)
 	}
 	break;
       case T_STRING:
-#define STR_NO_ORIG FL_USER2   /* copied from string.c */
-	if (!RANY(obj)->as.string.orig || FL_TEST(obj, STR_NO_ORIG)) {
+	if (RANY(obj)->as.string.ptr && !FL_TEST(obj, ELTS_SHARED)) {
 	    RUBY_CRITICAL(free(RANY(obj)->as.string.ptr));
 	}
 	break;
       case T_ARRAY:
-	if (RANY(obj)->as.array.ptr) {
+	if (RANY(obj)->as.array.ptr && !FL_TEST(obj, ELTS_SHARED)) {
 	    RUBY_CRITICAL(free(RANY(obj)->as.array.ptr));
 	}
 	break;

@@ -513,6 +513,10 @@ io_fread(ptr, len, f)
 	  eof:
 	    if (ferror(f)) {
 		if (errno == EINTR) continue;
+		if (errno == EAGAIN) return len - n;
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+		if (errno == EWOULDBLOCK) return len - n;
+#endif
 		rb_sys_fail(0);
 	    }
 	    *ptr = '\0';
@@ -2187,6 +2191,25 @@ rb_f_putc(recv, ch)
     return rb_io_putc(rb_defout, ch);
 }
 
+static VALUE rb_io_puts _((int, VALUE*, VALUE));
+
+static VALUE
+io_puts_ary(ary, out)
+    VALUE ary, out;
+{
+    VALUE tmp;
+    int i;
+
+    for (i=0; i<RARRAY(ary)->len; i++) {
+	tmp = RARRAY(ary)->ptr[i];
+	if (rb_inspecting_p(tmp)) {
+	    tmp = rb_str_new2("[...]");
+	}
+	rb_io_puts(1, &tmp, out);
+    }
+    return Qnil;
+}
+
 static VALUE
 rb_io_puts(argc, argv, out)
     int argc;
@@ -2206,11 +2229,11 @@ rb_io_puts(argc, argv, out)
 	    line = rb_str_new2("nil");
 	}
 	else {
-#if 0
-	    if (TYPE(argv[i]) == T_ARRAY) {
-		rb_warn("puts behavior changed for Array");
+	    line = rb_check_convert_type(argv[i], T_ARRAY, "Array", "to_ary");
+	    if (!NIL_P(line)) {
+		rb_protect_inspect(io_puts_ary, line, out);
+		continue;
 	    }
-#endif
 	    line = rb_obj_as_string(argv[i]);
 	}
 	rb_io_write(out, line);

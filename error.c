@@ -718,6 +718,10 @@ rb_sys_fail(mesg)
     int n = errno;
     VALUE ee;
 
+    if (errno == 0) {
+	rb_bug("rb_sys_fail() - errno == 0");
+    }
+
     err = strerror(errno);
     if (mesg) {
 	volatile VALUE tmp = rb_str_inspect(rb_str_new2(mesg));

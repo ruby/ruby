@@ -71,9 +71,11 @@ Standard Libraries
 - fork_and_kill_other_threads.
 - signal list (Signal::trap, Signal::list).
 - move NameError under StandardError.
+- Integer#to_s(base)
+- Hash::new{default}
+- hash etc. should handle self referenceing array/hash
 * String#scanf(?)
 * Object#fmt(?)
-* Integer#{bin,oct,hex,heX}
 * Time::strptime
 * Integer[num], Float[num];  Fixnum[num]?
 * method to retrieve non-number trailer for to_i/to_f.
@@ -86,16 +88,16 @@ Standard Libraries
 * Array#&, Array#| to allow duplication. ???
 * way to specify immortal (fork endurance) thread;
 * or raise ForkException to every thread but fork caller.
-* Hash::new{default} or recommend Hash#fetch?
 * new user-defined marshal scheme. _dump(dumper), _load(restorer)
-* hash etc. should handle self referenceing array/hash
 * library to load per-user profile seeking .ruby_profile or ruby.ini file.
 * warning framework (warn, warning for Ruby level)
-* marshal should not depend on sprintf/strtod (works bad for locale).
+* marshal should not depend on sprintf/strtod (works bad with locale).
 * ternary arg pow: a.pow(b,c) == a**b%c
 * new caller(), e.g. call_stack; needs better name.
 * remove dependency on MAXPATHLEN.
 * pointer share mechanism similar to one in String for Array.
+* Array#select(n1,n2...) works like Array#indexes(n1,n2...)
+* deprecate Array#indexes, and Array#indices.
 
 Extension Libraries
 

@@ -384,31 +384,25 @@ __crt0_glob_function(char *path)
 
 /* mm.c */
 
-static int mmkind, mmsize, high, low;
-
 #define A ((int*)a)
 #define B ((int*)b)
 #define C ((int*)c)
 #define D ((int*)d)
 
-static void mmprepare(base, size) void *base; int size;
-{
-#ifdef DEBUG
- if (sizeof(int) != 4) die("sizeof(int) != 4");
- if (size <= 0) die("mmsize <= 0");
-#endif
+#define mmprepare(base, size) do {\
+ if (((long)base & (0x3)) == 0)\
+   if (size >= 16) mmkind = 1;\
+   else            mmkind = 0;\
+ else              mmkind = -1;\
+ high = (size & (~0xf));\
+ low  = (size &  0x0c);\
+} while (0)\
 
- if (((long)base & (4-1)) == 0 && ((long)base & (4-1)) == 0)
-   if (size >= 16) mmkind = 1;
-   else            mmkind = 0;
- else              mmkind = -1;
- 
- mmsize = size;
- high = (size & (-16));
- low  = (size & 0x0c);
-}
+#define mmarg mmkind, size, high, low
 
-static void mmswap(a, b) register char *a, *b;
+static void mmswap_(a, b, mmarg)
+    register char *a, *b;
+    int mmarg;
 {
  register int s;
  if (a == b) return;
@@ -427,12 +421,15 @@ static void mmswap(a, b) register char *a, *b;
        if (low == 12) {s = A[2]; A[2] = B[2]; B[2] = s;}}}
  }
  else {
-   register char *t = a + mmsize;
+   register char *t = a + size;
    do {s = *a; *a++ = *b; *b++ = s;} while (a < t);
  }
 }
+#define mmswap(a,b) mmswap_((a),(b),mmarg)
 
-static void mmrot3(a, b, c) register char *a, *b, *c;
+static void mmrot3_(a, b, c, mmarg)
+    register char *a, *b, *c;
+    int mmarg;
 {
  register int s;
  if (mmkind >= 0) {
@@ -450,10 +447,11 @@ static void mmrot3(a, b, c) register char *a, *b, *c;
        if (low == 12) {s = A[2]; A[2] = B[2]; B[2] = C[2]; C[2] = s;}}}
  }
  else {
-   register char *t = a + mmsize;
+   register char *t = a + size;
    do {s = *a; *a++ = *b; *b++ = *c; *c++ = s;} while (a < t);
  }
 }
+#define mmrot3(a,b,c) mmrot3_((a),(b),(c),mmarg)
 
 /* qs6.c */
 /*****************************************************/
@@ -472,14 +470,19 @@ typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
                        ((*cmp)(b,c)<0 ? b : ((*cmp)(a,c)<0 ? c : a)) : \
                        ((*cmp)(b,c)>0 ? b : ((*cmp)(a,c)<0 ? a : c)))
 
-void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)();
+void ruby_qsort (base, nel, size, cmp)
+     void* base;
+     const int nel;
+     const int size;
+     int (*cmp)();
 {
   register char *l, *r, *m;          	/* l,r:left,right group   m:median point */
   register int  t, eq_l, eq_r;       	/* eq_l: all items in left group are equal to S */
   char *L = base;                    	/* left end of curren region */
-  char *R = (char*)base + size*(nel-1); 	/* right end of current region */
-  int  chklim = 63;                      /* threshold of ordering element check */
-  stack_node stack[32], *top = stack;    /* 32 is enough for 32bit CPU */
+  char *R = (char*)base + size*(nel-1); /* right end of current region */
+  int  chklim = 63;                     /* threshold of ordering element check */
+  stack_node stack[32], *top = stack;   /* 32 is enough for 32bit CPU */
+  int mmkind, high, low;
 
   if (nel <= 1) return;        /* need not to sort */
   mmprepare(base, size);
@@ -491,7 +494,9 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
 
   for (;;) {
     start:
-    if (L + size == R) {if ((*cmp)(L,R) > 0) mmswap(L,R); goto nxt;}/* 2 elements */
+    if (L + size == R) {       /* 2 elements */
+      if ((*cmp)(L,R) > 0) mmswap(L,R); goto nxt;
+    }
 
     l = L; r = R;
     t = (r - l + size) / size;  /* number of elements */
@@ -559,7 +564,7 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
     if ((t = (*cmp)(m,r)) < 0)  {goto loopA;}                /*5-5-7*/
     if (t > 0) {mmswap(l,r); goto loopB;}                    /*5-5-3*/
 
-    /* deteming splitting type in case 5-5-5 */              /*5-5-5*/
+    /* determining splitting type in case 5-5-5 */           /*5-5-5*/
     for (;;) {
       if ((l += size) == r)      goto nxt;                   /*5-5-5*/
       if (l == m) continue;

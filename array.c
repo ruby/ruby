@@ -17,7 +17,7 @@
 #include "st.h"
 
 VALUE rb_cArray;
-static ID cmp;
+static ID id_cmp;
 
 #define ARY_DEFAULT_SIZE 16
 
@@ -45,7 +45,7 @@ memfill(mem, size, val)
 #define ARY_TMPLOCK  FL_USER1
 
 static void
-rb_ary_modify(ary)
+rb_ary_modify_check(ary)
     VALUE ary;
 {
     if (OBJ_FROZEN(ary)) rb_error_frozen("array");
@@ -53,6 +53,21 @@ rb_ary_modify(ary)
 	rb_raise(rb_eTypeError, "can't modify array during sort");
     if (!OBJ_TAINTED(ary) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
+}
+
+static void
+rb_ary_modify(ary)
+    VALUE ary;
+{
+    VALUE *ptr;
+
+    rb_ary_modify_check(ary);
+    if (!FL_TEST(ary, ELTS_SHARED)) return;
+    ptr = ALLOC_N(VALUE, RARRAY(ary)->len);
+    FL_UNSET(ary, ELTS_SHARED);
+    RARRAY(ary)->aux.capa = RARRAY(ary)->len;
+    MEMCPY(ptr, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
+    RARRAY(ary)->ptr = ptr;
 }
 
 VALUE
@@ -79,14 +94,14 @@ rb_ary_s_alloc(klass)
     OBJSETUP(ary, klass, T_ARRAY);
 
     ary->len = 0;
-    ary->capa = 0;
     ary->ptr = 0;
+    ary->aux.capa = 0;
 
     return (VALUE)ary;
 }
 
-VALUE
-rb_ary_new0(klass, len)
+static VALUE
+ary_new(klass, len)
     VALUE klass;
     long len;
 {
@@ -100,7 +115,7 @@ rb_ary_new0(klass, len)
     }
     if (len == 0) len++;
     RARRAY(ary)->ptr = ALLOC_N(VALUE, len);
-    RARRAY(ary)->capa = len;
+    RARRAY(ary)->aux.capa = len;
 
     return ary;
 }
@@ -109,7 +124,7 @@ VALUE
 rb_ary_new2(len)
     long len;
 {
-    return rb_ary_new0(rb_cArray, len);
+    return ary_new(rb_cArray, len);
 }
 
 
@@ -228,9 +243,9 @@ rb_ary_initialize(argc, argv, ary)
     if (len > 0 && len*sizeof(VALUE) <= 0) {
 	rb_raise(rb_eArgError, "array size too big");
     }
-    if (len > RARRAY(ary)->capa) {
-	RARRAY(ary)->capa = len;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
+    if (len > RARRAY(ary)->aux.capa) {
+	RARRAY(ary)->aux.capa = len;
+	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
     memfill(RARRAY(ary)->ptr, len, val);
     RARRAY(ary)->len = len;
@@ -250,7 +265,7 @@ rb_ary_s_create(argc, argv, klass)
 	RARRAY(ary)->ptr = ALLOC_N(VALUE, argc);
 	MEMCPY(RARRAY(ary)->ptr, argv, VALUE, argc);
     }
-    RARRAY(ary)->len = RARRAY(ary)->capa = argc;
+    RARRAY(ary)->len = RARRAY(ary)->aux.capa = argc;
 
     return ary;
 }
@@ -270,13 +285,13 @@ rb_ary_store(ary, idx, val)
 	}
     }
 
-    if (idx >= RARRAY(ary)->capa) {
-	long capa_inc = RARRAY(ary)->capa / 2;
+    if (idx >= RARRAY(ary)->aux.capa) {
+	long capa_inc = RARRAY(ary)->aux.capa / 2;
 	if (capa_inc < ARY_DEFAULT_SIZE) {
 	    capa_inc = ARY_DEFAULT_SIZE;
 	}
-	RARRAY(ary)->capa = idx + capa_inc;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
+	RARRAY(ary)->aux.capa = idx + capa_inc;
+	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
     if (idx > RARRAY(ary)->len) {
 	rb_mem_clear(RARRAY(ary)->ptr+RARRAY(ary)->len,
@@ -319,13 +334,30 @@ VALUE
 rb_ary_pop(ary)
     VALUE ary;
 {
-    rb_ary_modify(ary);
+    rb_ary_modify_check(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
-    if (RARRAY(ary)->len * 10 < RARRAY(ary)->capa && RARRAY(ary)->capa > ARY_DEFAULT_SIZE) {
-	RARRAY(ary)->capa = RARRAY(ary)->len * 2;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
+    if (RARRAY(ary)->len * 10 < RARRAY(ary)->aux.capa && RARRAY(ary)->aux.capa > ARY_DEFAULT_SIZE) {
+	RARRAY(ary)->aux.capa = RARRAY(ary)->len * 2;
+	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
     return RARRAY(ary)->ptr[--RARRAY(ary)->len];
+}
+
+static void
+ary_make_shared(ary)
+    VALUE ary;
+{
+    if (FL_TEST(ary, ELTS_SHARED)) return;
+    else {
+	NEWOBJ(shared, struct RArray);
+	OBJSETUP(shared, rb_cArray, T_ARRAY);
+
+	shared->len = RARRAY(ary)->len;
+	shared->ptr = RARRAY(ary)->ptr;
+	shared->aux.capa = RARRAY(ary)->aux.capa;
+	RARRAY(ary)->aux.shared = (VALUE)shared;
+	FL_SET(ary, ELTS_SHARED);
+    }
 }
 
 VALUE
@@ -334,18 +366,12 @@ rb_ary_shift(ary)
 {
     VALUE top;
 
-    rb_ary_modify(ary);
+    rb_ary_modify_check(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
-
     top = RARRAY(ary)->ptr[0];
+    ary_make_shared(ary);
+    RARRAY(ary)->ptr++;		/* shift ptr */
     RARRAY(ary)->len--;
-
-    /* sliding items */
-    MEMMOVE(RARRAY(ary)->ptr, RARRAY(ary)->ptr+1, VALUE, RARRAY(ary)->len);
-    if (RARRAY(ary)->len * 10 < RARRAY(ary)->capa && RARRAY(ary)->capa > ARY_DEFAULT_SIZE) {
-	RARRAY(ary)->capa = RARRAY(ary)->len * 2;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
-    }
 
     return top;
 }
@@ -355,13 +381,13 @@ rb_ary_unshift(ary, item)
     VALUE ary, item;
 {
     rb_ary_modify(ary);
-    if (RARRAY(ary)->len >= RARRAY(ary)->capa) {
-	long capa_inc = RARRAY(ary)->capa / 2;
+    if (RARRAY(ary)->len >= RARRAY(ary)->aux.capa) {
+	long capa_inc = RARRAY(ary)->aux.capa / 2;
 	if (capa_inc < ARY_DEFAULT_SIZE) {
 	    capa_inc = ARY_DEFAULT_SIZE;
 	}
-	RARRAY(ary)->capa+=capa_inc;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
+	RARRAY(ary)->aux.capa+=capa_inc;
+	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
 
     /* sliding items */
@@ -429,11 +455,14 @@ rb_ary_subseq(ary, beg, len)
 	len = 0;
     }
     klass = rb_obj_class(ary);
-    if (len == 0) return rb_ary_new0(klass,0);
+    if (len == 0) return ary_new(klass,0);
 
-    ary2 = rb_ary_new0(klass, len);
-    MEMCPY(RARRAY(ary2)->ptr, RARRAY(ary)->ptr+beg, VALUE, len);
+    ary_make_shared(ary);
+    ary2 = rb_obj_alloc(klass);
+    RARRAY(ary2)->ptr = RARRAY(ary)->ptr+beg;
     RARRAY(ary2)->len = len;
+    RARRAY(ary2)->aux.shared = RARRAY(ary)->aux.shared;
+    FL_SET(ary2, ELTS_SHARED);
 
     return ary2;
 }
@@ -609,9 +638,9 @@ rb_ary_update(ary, beg, len, rpl)
     rb_ary_modify(ary);
     if (beg >= RARRAY(ary)->len) {
 	len = beg + rlen;
-	if (len >= RARRAY(ary)->capa) {
-	    RARRAY(ary)->capa=len;
-	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
+	if (len >= RARRAY(ary)->aux.capa) {
+	    RARRAY(ary)->aux.capa=len;
+	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
 	}
 	rb_mem_clear(RARRAY(ary)->ptr+RARRAY(ary)->len, beg-RARRAY(ary)->len);
 	MEMCPY(RARRAY(ary)->ptr+beg, RARRAY(rpl)->ptr, VALUE, rlen);
@@ -625,9 +654,9 @@ rb_ary_update(ary, beg, len, rpl)
 	}
 
 	alen = RARRAY(ary)->len + rlen - len;
-	if (alen >= RARRAY(ary)->capa) {
-	    RARRAY(ary)->capa = alen;
-	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
+	if (alen >= RARRAY(ary)->aux.capa) {
+	    RARRAY(ary)->aux.capa = alen;
+	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
 	}
 
 	if (len != rlen) {
@@ -749,32 +778,51 @@ rb_ary_empty_p(ary)
 }
 
 static VALUE
+ary_copy(ary, clone)
+    VALUE ary;
+    int clone;
+{
+    VALUE copy;
+
+    ary_make_shared(ary);
+    copy = rb_obj_alloc(rb_cArray);
+    if (clone) CLONESETUP(copy, ary);
+    else DUPSETUP(copy, ary);
+    RARRAY(copy)->ptr = RARRAY(ary)->ptr;
+    RARRAY(copy)->len = RARRAY(ary)->len;
+    RARRAY(copy)->aux.shared = RARRAY(ary)->aux.shared;
+    FL_SET(copy, ELTS_SHARED);
+
+    return copy;
+}
+
+static VALUE
 rb_ary_clone(ary)
     VALUE ary;
 {
-    VALUE clone = rb_ary_new2(RARRAY(ary)->len);
-
-    CLONESETUP(clone, ary);
-    MEMCPY(RARRAY(clone)->ptr, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
-    RARRAY(clone)->len = RARRAY(ary)->len;
-    return clone;
+    return ary_copy(ary, Qtrue);
 }
 
 VALUE
 rb_ary_dup(ary)
     VALUE ary;
 {
+    return ary_copy(ary, Qfalse);
+}
+
+static VALUE
+ary_dup(ary)
+    VALUE ary;
+{
     VALUE dup = rb_ary_new2(RARRAY(ary)->len);
 
-    OBJSETUP(dup, rb_obj_class(ary), T_ARRAY);
+    DUPSETUP(dup, ary);
     MEMCPY(RARRAY(dup)->ptr, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
     RARRAY(dup)->len = RARRAY(ary)->len;
-    OBJ_INFECT(dup, ary);
     return dup;
 }
 
 extern VALUE rb_output_fs;
-extern VALUE rb_default_rs;
 
 static VALUE
 inspect_join(ary, arg)
@@ -861,9 +909,6 @@ rb_ary_to_s(ary)
 
     if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
     sep = rb_output_fs;
-#if 1
-    if (NIL_P(rb_output_fs)) sep = rb_default_rs; /* newline */
-#endif
     str = rb_ary_join(ary, sep);
     return str;
 }
@@ -1006,7 +1051,7 @@ static VALUE
 rb_ary_reverse_m(ary)
     VALUE ary;
 {
-    return rb_ary_reverse(rb_ary_dup(ary));
+    return rb_ary_reverse(ary_dup(ary));
 }
 
 int
@@ -1018,8 +1063,8 @@ rb_cmpint(cmp)
 	if (RBIGNUM(cmp)->sign) return 1;
 	return -1;
     }
-    if (rb_funcall(cmp, '>', 1, INT2FIX(0))) return 1;
-    if (rb_funcall(cmp, '<', 1, INT2FIX(0))) return -1;
+    if (rb_funcall(id_cmp, '>', 1, INT2FIX(0))) return 1;
+    if (rb_funcall(id_cmp, '<', 1, INT2FIX(0))) return -1;
     return 0;
 }
 
@@ -1044,7 +1089,7 @@ sort_2(a, b)
 	return rb_str_cmp(*a, *b);
     }
 
-    retval = rb_funcall(*a, cmp, 1, *b);
+    retval = rb_funcall(*a, id_cmp, 1, *b);
     return rb_cmpint(retval);
 }
 
@@ -1081,28 +1126,8 @@ VALUE
 rb_ary_sort(ary)
     VALUE ary;
 {
-    ary = rb_ary_dup(ary);
+    ary = ary_dup(ary);
     rb_ary_sort_bang(ary);
-    return ary;
-}
-
-static VALUE
-sort_inplace(ary)
-    VALUE ary;
-{
-    qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE),sort_2);
-    return ary;
-}
-
-VALUE
-rb_ary_sort_inplace(ary)
-    VALUE ary;
-{
-    rb_ary_modify(ary);
-    if (RARRAY(ary)->len <= 1) return ary;
-
-    FL_SET(ary, ARY_TMPLOCK);	/* prohibit modification during sort */
-    rb_ensure(sort_inplace, ary, sort_unlock, ary);
     return ary;
 }
 
@@ -1269,7 +1294,7 @@ static VALUE
 rb_ary_reject(ary)
     VALUE ary;
 {
-    ary = rb_ary_dup(ary);
+    ary = ary_dup(ary);
     rb_ary_reject_bang(ary);
     return ary;
 }
@@ -1297,9 +1322,9 @@ rb_ary_clear(ary)
 {
     rb_ary_modify(ary);
     RARRAY(ary)->len = 0;
-    if (ARY_DEFAULT_SIZE*3 < RARRAY(ary)->capa) {
-	RARRAY(ary)->capa = ARY_DEFAULT_SIZE * 2;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
+    if (ARY_DEFAULT_SIZE*3 < RARRAY(ary)->aux.capa) {
+	RARRAY(ary)->aux.capa = ARY_DEFAULT_SIZE * 2;
+	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
     return ary;
 }
@@ -1337,9 +1362,9 @@ rb_ary_fill(argc, argv, ary)
     rb_ary_modify(ary);
     end = beg + len;
     if (end > RARRAY(ary)->len) {
-	if (end >= RARRAY(ary)->capa) {
-	    RARRAY(ary)->capa = end;
-	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
+	if (end >= RARRAY(ary)->aux.capa) {
+	    RARRAY(ary)->aux.capa = end;
+	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
 	}
 	if (beg > RARRAY(ary)->len) {
 	    rb_mem_clear(RARRAY(ary)->ptr+RARRAY(ary)->len,end-RARRAY(ary)->len);
@@ -1397,7 +1422,7 @@ rb_ary_times(ary, times)
     }
     len *= RARRAY(ary)->len;
 
-    ary2 = rb_ary_new0(rb_obj_class(ary), len);
+    ary2 = ary_new(rb_obj_class(ary), len);
     RARRAY(ary2)->len = len;
 
     for (i=0; i<len; i+=RARRAY(ary)->len) {
@@ -1521,7 +1546,7 @@ rb_ary_cmp(ary, ary2)
 	len = RARRAY(ary2)->len;
     }
     for (i=0; i<len; i++) {
-	VALUE v = rb_funcall(RARRAY(ary)->ptr[i],cmp,1,RARRAY(ary2)->ptr[i]);
+	VALUE v = rb_funcall(RARRAY(ary)->ptr[i],id_cmp,1,RARRAY(ary2)->ptr[i]);
 	if (v != INT2FIX(0)) {
 	    return v;
 	}
@@ -1646,7 +1671,7 @@ static VALUE
 rb_ary_uniq(ary)
     VALUE ary;
 {
-    ary = rb_ary_dup(ary);
+    ary = ary_dup(ary);
     rb_ary_uniq_bang(ary);
     return ary;
 }
@@ -1667,7 +1692,7 @@ rb_ary_compact_bang(ary)
     if (RARRAY(ary)->len == (p - RARRAY(ary)->ptr)) {
 	return Qnil;
     }
-    RARRAY(ary)->len = RARRAY(ary)->capa = (p - RARRAY(ary)->ptr);
+    RARRAY(ary)->len = RARRAY(ary)->aux.capa = (p - RARRAY(ary)->ptr);
     REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
 
     return ary;
@@ -1677,7 +1702,7 @@ static VALUE
 rb_ary_compact(ary)
     VALUE ary;
 {
-    ary = rb_ary_dup(ary);
+    ary = ary_dup(ary);
     rb_ary_compact_bang(ary);
     return ary;
 }
@@ -1755,7 +1780,7 @@ static VALUE
 rb_ary_flatten(ary)
     VALUE ary;
 {
-    ary = rb_ary_dup(ary);
+    ary = ary_dup(ary);
     rb_ary_flatten_bang(ary);
     return ary;
 }
@@ -1847,5 +1872,5 @@ Init_Array()
     rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, 0);
     rb_define_method(rb_cArray, "nitems", rb_ary_nitems, 0);
 
-    cmp = rb_intern("<=>");
+    id_cmp = rb_intern("<=>");
 }

@@ -3938,6 +3938,10 @@ str_extend(list, term, paren)
 	  case '-':
 	    tokadd(c);
 	    c = nextc();
+	    if (!is_identchar(c)) {
+		pushback();
+		goto invalid_interporate;
+	    }
 	    tokadd(c);
 	    goto fetch_id;
 
@@ -3956,9 +3960,14 @@ str_extend(list, term, paren)
 		goto refetch;
 	    }
 	    if (!is_identchar(c)) {
-		yyerror("bad global variable in string");
-		newtok();
-		return list;
+	      invalid_interporate:
+		{
+		    VALUE s = rb_str_new2("#");
+		    rb_str_cat(s, tok(), toklen());
+		    list_append(list, NEW_STR(s));
+		    newtok();
+		    return list;
+		}
 	    }
 	}
 
@@ -3997,6 +4006,9 @@ str_extend(list, term, paren)
 	    c = nextc();
 	}
 	pushback(c);
+	if (toklen() == 1) {
+	    goto invalid_interporate;
+	}
 	break;
 
       case '{':
@@ -4264,7 +4276,9 @@ gettable(id)
 	return NEW_FALSE();
     }
     else if (id == k__FILE__) {
-	return NEW_STR(rb_str_new2(ruby_sourcefile));
+	VALUE f = rb_str_new2(ruby_sourcefile);
+	OBJ_FREEZE(f);
+	return NEW_STR(f);
     }
     else if (id == k__LINE__) {
 	return NEW_LIT(INT2FIX(ruby_sourceline));

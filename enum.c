@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 #include "node.h"
+#include "util.h"
 
 VALUE rb_mEnumerable;
 static ID id_each, id_eqq, id_cmp;
@@ -204,53 +205,41 @@ enum_sort(obj)
 }
 
 static VALUE
-sort_by_i(i, memo)
-    VALUE i;
-    NODE *memo;
+sort_by_i(i, ary)
+    VALUE i, ary;
 {
     VALUE v, e;
 
     v = rb_yield(i);
-    if (TYPE(v) == T_ARRAY) {
-	int j, len = RARRAY(v)->len;
-
-	e = rb_ary_new2(len+2);
-	for (j=0; j<len; j++) {
-	    RARRAY(e)->ptr[j] = RARRAY(v)->ptr[j];
-	}
-	RARRAY(e)->ptr[j++] = INT2NUM(memo->u3.cnt);
-	RARRAY(e)->ptr[j] = i;
-	RARRAY(e)->len = len + 2;
-    }
-    else {
-	e = rb_ary_new3(3, v, INT2NUM(memo->u3.cnt), i);
-    }
-    rb_ary_push(memo->u1.value, e);
-    memo->u3.cnt++;
+    e = rb_assoc_new(v, i);
+    rb_ary_push(ary, e);
     return Qnil;
 }
 
-static VALUE
-sort_by_sort_body(a)
-    VALUE a;
+static int
+sort_by_cmp(a, b)
+    VALUE *a, *b;
 {
-    return rb_ary_cmp(RARRAY(a)->ptr[0], RARRAY(a)->ptr[1]);
+    VALUE retval;
+
+    retval = rb_funcall(RARRAY(*a)->ptr[0], id_cmp, 1, RARRAY(*b)->ptr[0]);
+    return rb_cmpint(retval);
 }
 
 static VALUE
 enum_sort_by(obj)
     VALUE obj;
 {
-    VALUE ary = rb_ary_new2(2000);
-    NODE *memo = rb_node_newnode(NODE_MEMO, ary, 0, 0);
+    VALUE ary;
     long i;
 
-    rb_iterate(rb_each, obj, sort_by_i, (VALUE)memo);
-    rb_gc_force_recycle((VALUE)memo);
-    rb_ary_sort_inplace(ary);
+    ary  = rb_ary_new2((TYPE(obj) == T_ARRAY) ? RARRAY(obj)->len : 2000);
+    rb_iterate(rb_each, obj, sort_by_i, ary);
+    if (RARRAY(ary)->len <= 1) return ary;
+    qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	VALUE e = RARRAY(ary)->ptr[i];
-	RARRAY(ary)->ptr[i] = RARRAY(e)->ptr[RARRAY(e)->len - 1];
+	RARRAY(ary)->ptr[i] = RARRAY(e)->ptr[1];
     }
 
     return ary;

@@ -313,7 +313,6 @@ rb_obj_freeze(obj)
 	if (rb_safe_level() >= 4 && !OBJ_TAINTED(obj)) {
 	    rb_raise(rb_eSecurityError, "Insecure: can't freeze object");
 	}
-
 	OBJ_FREEZE(obj);
     }
     return obj;
@@ -1292,7 +1291,7 @@ Init_Object()
     rb_undef_method(rb_cClass, "append_features");
 
     rb_cData = rb_define_class("Data", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cData), "new");
+    rb_undef_method(CLASS_OF(rb_cData), "allocate");
 
     ruby_top_self = rb_obj_alloc(rb_cObject);
     rb_global_variable(&ruby_top_self);

@@ -477,7 +477,7 @@ re_set_syntax(syntax)
   } while(0)
 
 #define WC2MBC1ST(c)							\
- ((c<0x100)?(c):((current_mbctype != MBCTYPE_UTF8)?(((c)>>8)&0xff):utf8_firstbyte(c)))
+ ((current_mbctype != MBCTYPE_UTF8) ? ((c<0x100) ? (c) : (((c)>>8)&0xff)) : utf8_firstbyte(c))
 
 static unsigned int
 utf8_firstbyte(c)

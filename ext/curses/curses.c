@@ -460,18 +460,20 @@ static VALUE
 curses_curs_set(VALUE obj, VALUE visibility)
 {
   int n;
-  return (n = curs_set(FIX2INT(visibility)) != ERR) ? INT2FIX(n) : Qnil;
+  return (n = curs_set(NUM2INT(visibility)) != ERR) ? INT2FIX(n) : Qnil;
 }
 
 static VALUE
 curses_scrl(VALUE obj, VALUE n)
 {
+  /* may have to raise exception on ERR */
   return (scrl(NUM2INT(n)) == OK) ? Qtrue : Qfalse;
 }
 
 static VALUE
 curses_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 {
+  /* may have to raise exception on ERR */
   return (setscrreg(NUM2INT(top), NUM2INT(bottom)) == OK) ? Qtrue : Qfalse;
 }
 
@@ -479,21 +481,21 @@ static VALUE
 curses_attroff(VALUE obj, VALUE attrs)
 {
   return window_attroff(rb_stdscr,attrs);  
-  /* return INT2FIX(attroff(FIX2INT(attrs))); */
+  /* return INT2FIX(attroff(NUM2INT(attrs))); */
 }
 
 static VALUE
 curses_attron(VALUE obj, VALUE attrs)
 {
   return window_attron(rb_stdscr,attrs);
-  /* return INT2FIX(attroff(FIX2INT(attrs))); */
+  /* return INT2FIX(attroff(NUM2INT(attrs))); */
 }
 
 static VALUE
 curses_attrset(VALUE obj, VALUE attrs)
 {
   return window_attrset(rb_stdscr,attrs);
-  /* return INT2FIX(attroff(FIX2INT(attrs))); */
+  /* return INT2FIX(attroff(NUM2INT(attrs))); */
 }
 
 static VALUE
@@ -513,20 +515,23 @@ curses_bkgd(VALUE obj, VALUE ch)
 static VALUE
 curses_start_color(VALUE obj)
 {
+  /* may have to raise exception on ERR */
   return (start_color() == OK) ? Qtrue : Qfalse;
 }
 
 static VALUE
 curses_init_pair(VALUE obj, VALUE pair, VALUE f, VALUE b)
 {
-  return (init_pair(FIX2INT(pair),FIX2INT(f),FIX2INT(b)) == OK) ? Qtrue : Qfalse;
+  /* may have to raise exception on ERR */
+  return (init_pair(NUM2INT(pair),NUM2INT(f),NUM2INT(b)) == OK) ? Qtrue : Qfalse;
 }
 
 static VALUE
 curses_init_color(VALUE obj, VALUE color, VALUE r, VALUE g, VALUE b)
 {
-  return (init_color(FIX2INT(color),FIX2INT(r),
-		     FIX2INT(g),FIX2INT(b)) == OK) ? Qtrue : Qfalse;
+  /* may have to raise exception on ERR */
+  return (init_color(NUM2INT(color),NUM2INT(r),
+		     NUM2INT(g),NUM2INT(b)) == OK) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -546,7 +551,7 @@ curses_color_content(VALUE obj, VALUE color)
 {
   short r,g,b;
 
-  color_content(FIX2INT(color),&r,&g,&b);
+  color_content(NUM2INT(color),&r,&g,&b);
   return rb_ary_new3(3,INT2FIX(r),INT2FIX(g),INT2FIX(b));
 }
 
@@ -555,20 +560,20 @@ curses_pair_content(VALUE obj, VALUE pair)
 {
   short f,b;
 
-  pair_content(FIX2INT(pair),&f,&b);
+  pair_content(NUM2INT(pair),&f,&b);
   return rb_ary_new3(2,INT2FIX(f),INT2FIX(b));
 }
 
 static VALUE
 curses_color_pair(VALUE obj, VALUE attrs)
 {
-  return INT2FIX(COLOR_PAIR(FIX2INT(attrs)));
+  return INT2FIX(COLOR_PAIR(NUM2INT(attrs)));
 }
 
 static VALUE
 curses_pair_number(VALUE obj, VALUE attrs)
 {
-  return INT2FIX(PAIR_NUMBER(FIX2INT(attrs)));
+  return INT2FIX(PAIR_NUMBER(NUM2INT(attrs)));
 }
 #endif
 
@@ -591,7 +596,7 @@ no_mevent()
 static void
 curses_mousedata_free(struct mousedata *mdata)
 {
-  if( mdata->mevent )
+  if (mdata->mevent)
     free(mdata->mevent);
 };
 
@@ -604,7 +609,7 @@ curses_getmouse(VALUE obj)
   val = Data_Make_Struct(cMouseEvent,struct mousedata,
 			 0,curses_mousedata_free,mdata);
   mdata->mevent = (MEVENT*)malloc(sizeof(MEVENT));
-  return ( getmouse(mdata->mevent) == OK ) ? val : Qnil;
+  return (getmouse(mdata->mevent) == OK) ? val : Qnil;
 };
 
 static VALUE
@@ -898,8 +903,8 @@ window_box(argc, argv, self)
 
       c = NUM2CHR(corn);
       getyx(winp->window, cur_y, cur_x);
-      x = FIX2INT(window_maxx(self)) - 1;
-      y = FIX2INT(window_maxy(self)) - 1;
+      x = NUM2INT(window_maxx(self)) - 1;
+      y = NUM2INT(window_maxy(self)) - 1;
       wmove(winp->window, 0, 0);
       waddch(winp->window, c);
       wmove(winp->window, y, 0);
@@ -1062,11 +1067,10 @@ static VALUE
 window_scrollok(VALUE obj, VALUE bf)
 {
   struct windata *winp;
-  int res;
 
   GetWINDOW(obj, winp);
-  res = scrollok(winp->window, (bf == Qtrue) ? TRUE : FALSE);
-  return (res == OK) ? Qtrue : Qfalse;
+  scrollok(winp->window, RTEST(bf) ? TRUE : FALSE);
+  return Qnil;
 }
 
 static VALUE
@@ -1076,8 +1080,8 @@ window_idlok(VALUE obj, VALUE bf)
   int res;
 
   GetWINDOW(obj, winp);
-  res = idlok(winp->window, (bf == Qtrue) ? TRUE : FALSE);
-  return (res == OK) ? Qtrue : Qfalse;
+  idlok(winp->window, RTEST(bf) ? TRUE : FALSE);
+  return Qnil;
 }
 
 static VALUE
@@ -1088,6 +1092,7 @@ window_setscrreg(VALUE obj, VALUE top, VALUE bottom)
 
   GetWINDOW(obj, winp);
   res = wsetscrreg(winp->window, NUM2INT(top), NUM2INT(bottom));
+  /* may have to raise exception on ERR */
   return (res == OK) ? Qtrue : Qfalse;
 };
 
@@ -1097,6 +1102,7 @@ window_scroll(VALUE obj)
   struct windata *winp;
 
   GetWINDOW(obj, winp);
+  /* may have to raise exception on ERR */
   return (scroll(winp->window) == OK) ? Qtrue : Qfalse;
 }
 
@@ -1106,6 +1112,7 @@ window_scrl(VALUE obj, VALUE n)
   struct windata *winp;
 
   GetWINDOW(obj, winp);
+  /* may have to raise exception on ERR */
   return (wscrl(winp->window,NUM2INT(n)) == OK) ? Qtrue : Qfalse;
 }
 
@@ -1115,7 +1122,7 @@ window_attroff(VALUE obj, VALUE attrs)
   struct windata *winp;
 
   GetWINDOW(obj,winp);
-  return INT2FIX(wattroff(winp->window,FIX2INT(attrs)));
+  return INT2FIX(wattroff(winp->window,NUM2INT(attrs)));
 };
 
 static VALUE
@@ -1125,10 +1132,10 @@ window_attron(VALUE obj, VALUE attrs)
   VALUE val;
 
   GetWINDOW(obj,winp);
-  val = INT2FIX(wattron(winp->window,FIX2INT(attrs)));
+  val = INT2FIX(wattron(winp->window,NUM2INT(attrs)));
   if( rb_block_given_p() ){
     rb_yield(val);
-    wattroff(winp->window,FIX2INT(attrs));
+    wattroff(winp->window,NUM2INT(attrs));
     return val;
   }
   else{
@@ -1142,7 +1149,7 @@ window_attrset(VALUE obj, VALUE attrs)
   struct windata *winp;
 
   GetWINDOW(obj,winp);
-  return INT2FIX(wattrset(winp->window,FIX2INT(attrs)));
+  return INT2FIX(wattrset(winp->window,NUM2INT(attrs)));
 }
 
 static VALUE
@@ -1182,10 +1189,11 @@ window_keypad(VALUE obj, VALUE val)
   GetWINDOW(obj,winp);
   /* keypad() of NetBSD's libcurses returns no value */
 #if defined(__NetBSD__) && !defined(NCURSES_VERSION)
-  keypad(winp->window,(val == Qtrue ? TRUE : FALSE));
+  keypad(winp->window,(RTEST(val) ? TRUE : FALSE));
   return Qnil;
 #else
-  return (keypad(winp->window,(val == Qtrue) ? TRUE : FALSE)) == OK ?
+  /* may have to raise exception on ERR */
+  return (keypad(winp->window,RTEST(val) ? TRUE : FALSE)) == OK ?
     Qtrue : Qfalse;
 #endif
 };
