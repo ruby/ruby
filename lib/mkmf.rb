@@ -77,16 +77,11 @@ def map_dir(dir, map = nil)
   map.inject(dir) {|dir, (orig, new)| dir.gsub(orig, new)}
 end
 
-if not $extmk and File.exist? Config::CONFIG["archdir"] + "/ruby.h"
-  $hdrdir = $archdir
-elsif File.exist? $srcdir + "/ruby.h"
+if not $extmk and File.exist?(Config::CONFIG["archdir"] + "/ruby.h")
+  $topdir = $hdrdir = $archdir
+elsif File.exist?($srcdir + "/ruby.h") and
+    File.exist?((compile_dir = Config::CONFIG['compile_dir']) + "/config.h")
   $hdrdir = $srcdir
-else
-  abort "can't find header files for ruby."
-end
-if File.exist?($hdrdir + "/config.h")
-  $topdir = $hdrdir
-elsif File.exist?((compile_dir = Config::CONFIG['compile_dir']) + "/config.h")
   $topdir = compile_dir
 else
   abort "can't find header files for ruby."

@@ -1,3 +1,8 @@
+Wed Mar  3 09:52:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb ($topdir): use compile_dir only when not installed yet.
+	  [ruby-talk:94098]
+
 Wed Mar  3 01:18:52 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/converter.rb: handled Uconv::Error.
