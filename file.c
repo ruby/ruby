@@ -11,7 +11,7 @@
 ************************************************/
 
 #include "ruby.h"
-#include "io.h"
+#include "rubyio.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

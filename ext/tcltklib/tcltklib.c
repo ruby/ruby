@@ -5,7 +5,7 @@
  */
 
 #include "ruby.h"
-#include "sig.h"
+#include "rubysig.h"
 #include <stdio.h>
 #include <string.h>
 #include <tcl.h>

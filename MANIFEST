@@ -37,7 +37,6 @@ install-sh
 instruby.rb
 intern.h
 io.c
-io.h
 keywords
 lex.c
 main.c
@@ -59,8 +58,9 @@ regex.h
 ruby.1
 ruby.c
 ruby.h
+rubyio.h
+rubysig.h
 rubytest.rb
-sig.h
 signal.c
 sprintf.c
 st.c

@@ -13,7 +13,7 @@
 #include "ruby.h"
 #include "node.h"
 #include "env.h"
-#include "sig.h"
+#include "rubysig.h"
 
 #include <stdio.h>
 #include <setjmp.h>
@@ -360,7 +360,7 @@ rb_attr(klass, id, read, write, ex)
 
 static ID init, eqq, each, aref, aset, match;
 VALUE errinfo = Qnil;
-extern NODE *eval_tree0;
+extern NODE *eval_tree_begin;
 extern NODE *eval_tree;
 extern int nerrs;
 
@@ -883,7 +883,6 @@ ruby_options(argc, argv)
 	ruby_process_options(argc, argv);
 	ext_init = 1;	/* Init_ext() called in ruby_process_options */
 	save = eval_tree;
-	eval_tree = 0;
 	ruby_require_modules();
 	eval_tree = save;
     }
@@ -901,9 +900,9 @@ eval_node(self)
     VALUE result = Qnil;
     NODE *tree;
 
-    if (eval_tree0) {
-	tree = eval_tree0;
-	eval_tree0 = 0;
+    if (eval_tree_begin) {
+	tree = eval_tree_begin;
+	eval_tree_begin = 0;
 	rb_eval(self, tree);
     }
 
@@ -2251,8 +2250,8 @@ rb_eval(self, node)
 		else {
 		    if (nd_type(list->nd_head) == NODE_EVSTR) {
 			rb_in_eval++;
-			eval_tree = 0;
 			list->nd_head = compile(list->nd_head->nd_lit,0);
+			eval_tree = 0;
 			rb_in_eval--;
 			if (nerrs > 0) {
 			    compile_error("string expansion");
@@ -3818,7 +3817,6 @@ eval(self, src, scope, file, line)
     }
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	eval_tree = 0;
 	sourcefile = file;
 	sourceline = line;
 	compile(src, file);
@@ -4640,7 +4638,8 @@ Init_eval()
     match = rb_intern("=~");
 
     rb_global_variable((VALUE*)&top_scope);
-    rb_global_variable((VALUE*)&eval_tree0);
+    rb_global_variable((VALUE*)&eval_tree_begin);
+
     rb_global_variable((VALUE*)&eval_tree);
     rb_global_variable((VALUE*)&the_dyna_vars);
 
@@ -6173,7 +6172,7 @@ thread_create(fn, arg)
 	posix_signal(SIGALRM, catch_timer);
 #else
 	signal(SIGVTALRM, catch_timer);
-	posix_signal(SIGALRM, catch_timer);
+	signal(SIGALRM, catch_timer);
 #endif
 
 	tval.it_interval.tv_sec = 0;

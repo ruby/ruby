@@ -812,11 +812,11 @@ module TkGrid
   end
 
   def columnconfigure(master, index, *args)
-    tk_call "grid", 'columnconfigure', master, index, *hash_kv(keys)
+    tk_call "grid", 'columnconfigure', master, index, *hash_kv(args)
   end
 
   def rowconfigure(master, index, *args)
-    tk_call "grid", 'rowconfigure', master, index, *hash_kv(keys)
+    tk_call "grid", 'rowconfigure', master, index, *hash_kv(args)
   end
 
   def add(widget, *args)
@@ -1301,10 +1301,10 @@ class TkMenu<TkWindow
   def index(index)
     tk_send 'index', index
   end
-  def invoke
-    tk_send 'invoke'
+  def invoke(index)
+    tk_send 'invoke', index
   end
-  def insert(index, type, *keys)
+  def insert(index, type, keys=nil)
     tk_send 'add', index, type, *hash_kv(keys)
   end
   def post(x, y)

@@ -12,7 +12,7 @@
 
 #include "ruby.h"
 #include "st.h"
-#include "sig.h"
+#include "rubysig.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

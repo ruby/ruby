@@ -211,8 +211,6 @@ rb_name_class(klass, id)
     VALUE klass;
     ID id;
 {
-    extern VALUE cString;
-
     if (cString) {
 	rb_iv_set(klass, "__classpath__", str_new2(rb_id2name(id)));
     }
@@ -619,7 +617,6 @@ rb_gvar_set(entry, val)
     struct trace_data trace;
 
     if (rb_safe_level() >= 4) {
-	extern VALUE eSecurityError;
 	Raise(eSecurityError, "cannot change global variable value");
     }
     (*entry->setter)(val, entry->id, entry->data, entry);
@@ -725,7 +722,6 @@ rb_ivar_set(obj, id, val)
     VALUE val;
 {
     if (rb_safe_level() >= 5) {
-	extern VALUE eSecurityError;
 	Raise(eSecurityError, "cannot change object status");
     }
     switch (TYPE(obj)) {

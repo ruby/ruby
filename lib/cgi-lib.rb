@@ -60,7 +60,11 @@ class CGI < SimpleDelegator
       read_from_cmdline
     end.split(/&/).each do |x|
       key, val = x.split(/=/,2).collect{|x|unescape(x)}
-      @inputs[key] += ("\0" if @inputs[key]) + (val or "")
+      if @inputs.include?('key')
+        @inputs[key] += "\0" + (val or "")
+      else
+        @inputs[key] = (val or "")
+      end
     end
 
     super(@inputs)

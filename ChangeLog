@@ -1,3 +1,19 @@
+Tue Jun 16 12:30:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (str2inum): handles `+ddd'.
+
+	* struct.c (make_struct): name parameter can be nil for unnamed
+	  structures.
+
+pMon Jun 15 16:30:10 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (class_s_inherited): prohibiting to make subclass of
+	  class Class.
+
+	* object.c (module_s_new): support for making subclass of Module.
+
+	* parse.y (yycompile): clear eval_tree before compiling.
+
 Fri Jun 12 17:58:18 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (eval): write back the_dyna_var into the block.

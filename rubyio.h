@@ -1,6 +1,6 @@
 /************************************************
 
-  io.h -
+  rubyio.h -
 
   $Author$
   $Revision$
@@ -14,7 +14,7 @@
 #ifndef IO_H
 #define IO_H
 
-#include "sig.h"
+#include "rubysig.h"
 #include <stdio.h>
 #include <errno.h>
 

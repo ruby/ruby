@@ -332,6 +332,16 @@ $(TARGET): $(OBJS)
 $(TARGET): $(OBJS)
 	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
 "
+    elsif PLATFORM =~ "-openstep"
+      mfile.printf "\
+$(TARGET): $(OBJS)
+	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
+"
+    elsif PLATFORM =~ "-rhapsody"
+      mfile.printf "\
+$(TARGET): $(OBJS)
+	cc -r $(CFLAGS) -o $(TARGET) $(OBJS)
+"
     elsif $static
       mfile.printf "\
 $(TARGET): $(OBJS)
@@ -379,7 +389,7 @@ def extmake(target)
   return if $nodynamic and not $static
 
   $objs = nil
-  $libs = PLATFORM =~ /cygwin32|beos/ ? nil : "-lc"
+  $libs = PLATFORM =~ /cygwin32|beos|openstep|nextstep|rhapsody/ ? nil : "-lc"
   $local_libs = nil		# to be assigned in extconf.rb
   $CFLAGS = nil
   $LDFLAGS = nil

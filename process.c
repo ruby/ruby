@@ -11,7 +11,7 @@
 ************************************************/
 
 #include "ruby.h"
-#include "sig.h"
+#include "rubysig.h"
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>

@@ -136,11 +136,17 @@ make_struct(name, member, klass)
     ID id;
     int i;
 
-    id = rb_intern(RSTRING(name)->ptr);
-    if (!rb_is_const_id(id)) {
-	NameError("identifier %s needs to be constant", RSTRING(name)->ptr);
+    if (NIL_P(name)) {
+	nstr = class_new(klass);
     }
-    nstr = rb_define_class_under(klass, RSTRING(name)->ptr, klass);
+    else {
+	char *cname = STR2CSTR(name);
+	id = rb_intern(cname);
+	if (!rb_is_const_id(id)) {
+	    NameError("identifier %s needs to be constant", cname);
+	}
+	nstr = rb_define_class_under(klass, cname, klass);
+    }
     rb_iv_set(nstr, "__size__", INT2FIX(RARRAY(member)->len));
     rb_iv_set(nstr, "__member__", member);
 
@@ -206,7 +212,6 @@ struct_s_def(argc, argv, klass)
     VALUE st;
 
     rb_scan_args(argc, argv, "1*", &name, &rest);
-    Check_Type(name, T_STRING);
     for (i=0; i<rest->len; i++) {
 	ID id = rb_to_id(rest->ptr[i]);
 	rest->ptr[i] = INT2FIX(id);

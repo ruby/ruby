@@ -529,10 +529,11 @@ mod_cmp(mod, arg)
 }
 
 VALUE
-module_s_new()
+module_s_new(klass)
 {
     VALUE mod = module_new();
 
+    RBASIC(mod)->klass = klass;
     obj_call_init(mod);
     return mod;
 }
@@ -559,6 +560,12 @@ class_s_new(argc, argv)
     obj_call_init(klass);
 
     return klass;
+}
+
+static VALUE
+class_s_inherited()
+{
+    TypeError("can't make subclass of Class");
 }
 
 VALUE mod_name();
@@ -1039,6 +1046,7 @@ Init_Object()
     rb_define_singleton_method(cClass, "new", class_s_new, -1);
     rb_undef_method(cClass, "extend_object");
     rb_undef_method(cClass, "append_features");
+    rb_define_singleton_method(cClass, "inherited", class_s_inherited, 1);
 
     cData = rb_define_class("Data", cObject);
     rb_undef_method(CLASS_OF(cData), "new");

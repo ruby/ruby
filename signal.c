@@ -9,7 +9,7 @@
 ************************************************/
 
 #include "ruby.h"
-#include "sig.h"
+#include "rubysig.h"
 #include <signal.h>
 #include <stdio.h>
 

@@ -10,7 +10,7 @@
 ************************************************/
 
 #include "ruby.h"
-#include "io.h"
+#include "rubyio.h"
 #include "st.h"
 
 #define MARSHAL_MAJOR   4

@@ -175,7 +175,11 @@ str2inum(str, base)
     USHORT *zds;
 
     while (ISSPACE(*str)) str++;
-    if (*str == '-') {
+
+    if (*str == '|') {
+	str++;
+    }
+    else if (*str == '-') {
 	str++;
 	sign = 0;
     }

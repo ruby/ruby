@@ -9,7 +9,7 @@
 ************************************************/
 
 #include "ruby.h"
-#include "io.h"
+#include "rubyio.h"
 #include <stdio.h>
 #include <sys/types.h>
 #ifndef NT

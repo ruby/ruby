@@ -11,7 +11,7 @@
 ************************************************/
 
 #include "ruby.h"
-#include "io.h"
+#include "rubyio.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -38,10 +38,6 @@ struct timeval {
 #endif
 
 #include <sys/stat.h>
-
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(__human68k__)
-#include <fcntl.h>
-#endif
 
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>

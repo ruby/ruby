@@ -44,7 +44,7 @@ struct op_tbl {
     char *name;
 };
 
-NODE *eval_tree0 = 0;
+NODE *eval_tree_begin = 0;
 NODE *eval_tree = 0;
 
 char *sourcefile;		/* current source file */
@@ -354,7 +354,8 @@ stmt		: iterator iter_do_block
 		    }
 		  '{' compstmt '}'
 		    {
-			eval_tree0 = block_append(eval_tree0,NEW_PREEXE($4));
+			eval_tree_begin = block_append(eval_tree_begin,
+						       NEW_PREEXE($4));
 		        local_pop();
 		        $$ = 0;
 		    }
@@ -1596,6 +1597,7 @@ yycompile(f)
 {
     int n;
 
+    eval_tree = 0;
     newline_seen = 0;
     sourcefile = strdup(f);
     rb_in_compile = 1;

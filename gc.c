@@ -11,7 +11,7 @@
 ************************************************/
 
 #include "ruby.h"
-#include "sig.h"
+#include "rubysig.h"
 #include "st.h"
 #include "node.h"
 #include "env.h"

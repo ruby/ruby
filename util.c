@@ -93,6 +93,9 @@ int *retlen;
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if defined(HAVE_FCNTL)
+#include <fcntl.h>
+#endif
 
 #ifndef S_ISDIR
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
