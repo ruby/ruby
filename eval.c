@@ -2584,7 +2584,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_ARGSPUSH:
-	result = rb_ary_push(rb_obj_dup(rb_eval(self, node->nd_head)),
+	result = rb_ary_push(rb_ary_dup(rb_eval(self, node->nd_head)),
 			     rb_eval(self, node->nd_body));
 	break;
 
@@ -4421,11 +4421,14 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	}
 	break;
 
+	/* for attr get/set */
+      case NODE_IVAR:
+	if (argc != 0) {
+	    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)", argc);
+	}
+      case NODE_ATTRSET:
 	/* for re-scoped/renamed method */
       case NODE_ZSUPER:
-	/* for attr get/set */
-      case NODE_ATTRSET:
-      case NODE_IVAR:
 	result = rb_eval(recv, body);
 	break;
 
@@ -5217,8 +5220,8 @@ rb_load(fname, wrap)
     VALUE fname;
     int wrap;
 {
+    VALUE tmp;
     int state;
-    char *file;
     volatile ID last_func;
     volatile VALUE wrapper = 0;
     volatile VALUE self = ruby_top_self;
@@ -5231,10 +5234,11 @@ rb_load(fname, wrap)
     else {
 	SafeStringValue(fname);
     }
-    file = rb_find_file(RSTRING(fname)->ptr);
-    if (!file) {
+    tmp = rb_find_file(fname);
+    if (!tmp) {
 	rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
     }
+    fname = tmp;
 
     ruby_errinfo = Qnil;	/* ensure */
     PUSH_VARS();
@@ -5269,7 +5273,7 @@ rb_load(fname, wrap)
 
 	DEFER_INTS;
 	ruby_in_eval++;
-	rb_load_file(file);
+	rb_load_file(RSTRING(fname)->ptr);
 	ruby_in_eval--;
 	node = ruby_eval_tree;
 	ALLOW_INTS;
@@ -5382,33 +5386,39 @@ rb_provided(feature)
     return rb_feature_p(feature, Qfalse);
 }
 
-void
-rb_provide(feature)
-    const char *feature;
+static void
+rb_provide_feature(feature)
+    VALUE feature;
 {
-    char *buf, *ext;
+    char *ext;
+    char *f = RSTRING(feature)->ptr;
 
-    ext = strrchr(feature, '.');
+    ext = strrchr(f, '.');
     if (ext && (strcmp(DLEXT, ext) == 0
 #ifdef DLEXT2
 	     || strcmp(DLEXT2, ext) == 0
 #endif
 	)) {
-	buf = ALLOCA_N(char, strlen(feature)+4);
-	strcpy(buf, feature);
-	ext = strrchr(buf, '.');
-	strcpy(ext, ".so");
-	feature = buf;
+	feature = rb_str_new(RSTRING(feature)->ptr, ext-RSTRING(feature)->ptr);
+	rb_str_cat2(feature, ".so");
     }
-    if (rb_feature_p(feature, Qtrue)) return;
-    rb_ary_push(rb_features, rb_str_new2(feature));
+    if (rb_feature_p(RSTRING(feature)->ptr, Qtrue)) return;
+    rb_ary_push(rb_features, feature);
+}
+
+void
+rb_provide(feature)
+    const char *feature;
+{
+    rb_provide_feature(rb_str_new2(feature));
 }
 
 VALUE
 rb_f_require(obj, fname)
     VALUE obj, fname;
 {
-    char *ext, *file, *feature, *buf; /* OK */
+    VALUE feature, tmp;
+    char *ext, *ftptr; /* OK */
     volatile VALUE load;
     int state;
     volatile int safe = ruby_safe_level;
@@ -5418,68 +5428,70 @@ rb_f_require(obj, fname)
 	return Qfalse;
     ext = strrchr(RSTRING(fname)->ptr, '.');
     if (ext) {
-	feature = file = RSTRING(fname)->ptr;
 	if (strcmp(".rb", ext) == 0) {
-	    file = rb_find_file(file);
-	    if (file) goto load_rb;
+	    feature = rb_str_dup(fname);
+	    tmp = rb_find_file(fname);
+	    if (tmp) {
+		fname = tmp;
+		goto load_rb;
+	    }
 	}
 	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
-	    if (strcmp(ext, DLEXT) != 0) {
-		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT)+4);
-		strcpy(buf, feature);
-		ext = strrchr(buf, '.');
-		strcpy(ext, DLEXT);
-		file = feature = buf;
+	    fname = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
+	    tmp = rb_str_dup(fname);
+	    rb_str_cat2(tmp, DLEXT);
+	    tmp = rb_find_file(tmp);
+	    if (tmp) {
+		feature = fname = tmp;
+		goto load_dyna;
 	    }
-	    file = rb_find_file(file);
-	    if (file) goto load_dyna;
 #ifdef DLEXT2
-	    file = feature = RSTRING(fname)->ptr;
-	    if (strcmp(ext, DLEXT2) != 0) {
-		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT2)+4);
-		strcpy(buf, feature);
-		ext = strrchr(buf, '.');
-		strcpy(ext, DLEXT2);
-		file = feature = buf;
+	    tmp = rb_str_dup(fname);
+	    rb_str_cat2(tmp, DLEXT);
+	    tmp = rb_find_file(tmp);
+	    if (tmp) {
+		feature = fname = tmp;
+		goto load_dyna;
 	    }
-	    file = rb_find_file(file);
-	    if (file) goto load_dyna;
 #endif
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
-	    feature = RSTRING(fname)->ptr;
-	    file = rb_find_file(feature);
-	    if (file) goto load_dyna;
+	    tmp = rb_find_file(fname);
+	    if (tmp) {
+		feature = fname = tmp;
+		goto load_dyna;
+	    }
 	}
 #ifdef DLEXT2
 	else if (strcmp(DLEXT2, ext) == 0) {
-	    feature = RSTRING(fname)->ptr;
-	    file = rb_find_file(feature);
-	    if (file) goto load_dyna;
+	    tmp = rb_find_file(fname);
+	    if (tmp) {
+		feature = fname = tmp;
+		goto load_dyna;
+	    }
 	}
 #endif
     }
-    buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
-    strcpy(buf, RSTRING(fname)->ptr);
-    switch (rb_find_file_noext(buf)) {
+    tmp = fname;
+    switch (rb_find_file_noext(&tmp)) {
       case 0:
 	break;
 
       case 1:
-	fname = rb_str_new2(buf);
-	file = feature = buf;
+	feature = fname;
+	fname = tmp;
 	goto load_rb;
 
       default:
-	feature = buf;
-	file = rb_find_file(buf);
+	feature = fname;
+	fname = rb_find_file(tmp);
 	goto load_dyna;
     }
     rb_raise(rb_eLoadError, "No such file to load -- %s",
 	     RSTRING(fname)->ptr);
 
   load_dyna:
-    rb_provide(feature);
+    rb_provide_feature(feature);
     {
 	int volatile old_vmode = scope_vmode;
 
@@ -5488,9 +5500,7 @@ rb_f_require(obj, fname)
 	    void *handle;
 
 	    SCOPE_SET(SCOPE_PUBLIC);
-	    load = rb_str_new2(file);
-	    file = RSTRING(load)->ptr;
-	    handle = dln_load(file);
+	    handle = dln_load(RSTRING(fname)->ptr);
 	    rb_ary_push(ruby_dln_librefs, INT2NUM((long)handle));
 	}
 	POP_TAG();
@@ -5502,21 +5512,22 @@ rb_f_require(obj, fname)
 
   load_rb:
     ruby_safe_level = 0;
-    rb_provide(feature);
+    rb_provide_feature(feature);
     /* loading ruby library should be serialized. */
     if (!loading_tbl) {
 	loading_tbl = st_init_strtable();
     }
     /* partial state */
-    st_insert(loading_tbl, strdup(feature), curr_thread);
+    ftptr = ruby_strdup(RSTRING(feature)->ptr);
+    st_insert(loading_tbl, ftptr, curr_thread);
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	rb_load(fname, 0);
     }
     POP_TAG();
-    st_delete(loading_tbl, &feature, 0); /* loading done */
-    free(feature);
+    st_delete(loading_tbl, &ftptr, 0); /* loading done */
+    free(ftptr);
     ruby_safe_level = safe;
     if (state) JUMP_TAG(state);
 

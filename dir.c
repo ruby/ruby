@@ -399,12 +399,15 @@ dir_chdir(path)
 }
 
 static int chdir_blocking = 0;
+static VALUE chdir_thread = Qnil;
 
 static VALUE
 chdir_restore(path)
     const char *path;
 {
     chdir_blocking--;
+    if (chdir_blocking == 0)
+	chdir_thread = Qnil;
     dir_chdir(path);
     return Qnil;
 }
@@ -436,14 +439,18 @@ dir_s_chdir(argc, argv, obj)
 	}
     }
 
-    if (chdir_blocking > 0)
-	rb_warn("chdir during chdir block");
+    if (chdir_blocking > 0) {
+	if (!rb_block_given_p() || rb_thread_current() != chdir_thread)
+	    rb_warn("conflicting chdir during another chdir block");
+    }
 
     if (rb_block_given_p()) {
 	char cwd[MAXPATHLEN];
 
 	GETCWD(cwd);
 	chdir_blocking++;
+	if (chdir_thread == Qnil)
+	    chdir_thread = rb_thread_current();
 	dir_chdir(dist);
 	return rb_ensure(rb_yield, path, chdir_restore, (VALUE)cwd);
     }
@@ -618,7 +625,7 @@ static void
 glob_helper(path, flags, func, arg)
     char *path;
     int flags;
-    void (*func)();
+    void (*func) _((const char*, VALUE));
     VALUE arg;
 {
     struct stat st;
@@ -763,7 +770,7 @@ rb_glob(path, func, arg)
 void
 rb_globi(path, func, arg)
     char *path;
-    void (*func)();
+    void (*func) _((const char*, VALUE));
     VALUE arg;
 {
     glob_helper(path, FNM_PERIOD|FNM_CASEFOLD, func, arg);

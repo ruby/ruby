@@ -190,7 +190,7 @@ rb_read_check(fp)
 }
 
 static int
-rb_dup(orig)
+ruby_dup(orig)
     int orig;
 {
     int fd;
@@ -329,7 +329,7 @@ rb_io_seek(io, offset, whence)
     long pos;
 
     GetOpenFile(io, fptr);
-    pos = fseek(fptr->f, NUM2INT(offset), whence);
+    pos = fseek(fptr->f, NUM2LONG(offset), whence);
     if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -360,7 +360,7 @@ rb_io_set_pos(io, offset)
     long pos;
 
     GetOpenFile(io, fptr);
-    pos = fseek(fptr->f, NUM2INT(offset), SEEK_SET);
+    pos = fseek(fptr->f, NUM2LONG(offset), SEEK_SET);
     if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -2042,11 +2042,11 @@ rb_io_clone(io)
 	else          mode = "r+";
 	break;
     }
-    fd = rb_dup(fileno(orig->f));
+    fd = ruby_dup(fileno(orig->f));
     fptr->f = rb_fdopen(fd, mode);
     if (fptr->f2) {
 	if (fileno(orig->f) != fileno(orig->f2)) {
-	    fd = rb_dup(fileno(orig->f2));
+	    fd = ruby_dup(fileno(orig->f2));
 	}
 	fptr->f = rb_fdopen(fd, "w");
     }

@@ -142,9 +142,6 @@ classname(klass)
     VALUE path = Qnil;
     ID classpath = rb_intern("__classpath__");
 
-    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
-	klass = (VALUE)RCLASS(klass)->super;
-    }
     if (!klass) klass = rb_cObject;
     if (!ROBJECT(klass)->iv_tbl)
 	ROBJECT(klass)->iv_tbl = st_init_numtable();
@@ -173,7 +170,7 @@ VALUE
 rb_mod_name(mod)
     VALUE mod;
 {
-    VALUE path = classname(mod);
+    VALUE path = classname(rb_obj_type(mod));
 
     if (path) return rb_str_dup(path);
     return rb_str_new(0,0);
@@ -183,7 +180,7 @@ VALUE
 rb_class_path(klass)
     VALUE klass;
 {
-    VALUE path = classname(klass);
+    VALUE path = classname(rb_class_real(klass));
 
     if (path) return path;
     else {
@@ -871,7 +868,7 @@ rb_free_generic_ivar(obj)
 }
 
 void
-rb_clone_generic_ivar(clone, obj)
+rb_copy_generic_ivar(clone, obj)
     VALUE clone, obj;
 {
     st_table *tbl;

@@ -16,6 +16,10 @@ Sat Jul 14 02:55:02 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/.cvsignore: let cvs ignore extinit.c.
 
+Fri Jul 13 23:47:35 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_search): should consider reverse search.
+
 Fri Jul 13 22:26:09 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb: use File::split to split a target into a prefix and
@@ -23,6 +27,11 @@ Fri Jul 13 22:26:09 2001  Akinori MUSHA  <knu@iDaemons.org>
 	  String#rindex.
 
 	* ext/extmk.rb.in: ditto.
+
+Fri Jul 13 02:36:10 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* dir.c (dir_s_chdir): warn only when invoked from multiple
+	  threads or block is not given.
 
 Thu Jul 12 15:11:48 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -45,9 +54,52 @@ Sun Jul  8 16:04:35 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb (ProtoSocket#read): modify typo.
 
+Sat Jul  7 17:45:35 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_convert_type): should use rb_rescue(), not rb_rescue2().
+
+	* range.c (range_init): ditto.
+
+Fri Jul  6 18:01:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_dup): should free generic_ivar if original owns
+	  them.
+
 Fri Jul  6 02:15:06 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb: a tempfile must be created with mode 0600.
+
+Thu Jul  5 20:28:53 2001  Tietew <tietew@tietew.net>
+
+	* string.c (rb_str_each_line): should propagate taint mark. 
+
+	* ext/nkf/nkf.c (rb_nkf_kconv): ditto.
+
+Fri Jul  6 14:54:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_require): revamp for simpler implementation.
+
+	* file.c (rb_find_file_noext): use String object, instead of
+	  passing char* around.
+
+	* file.c (rb_find_file): ditto.
+
+Thu Jul  5 22:01:02 2001  Mitsuhiro Kondo  <kondo@nik-prt.co.jp>
+
+	* dln.c (dln_load): should use NSLINKMODULE_OPTION_BINDNOW.
+
+Thu Jul  5 13:44:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (load_file): local variables 'c' remain uninitialized on
+	  xflag.
+
+Thu Jul  5 10:00:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_match): prefetched escaped character too early.
+
+Wed Jul  4 08:58:30 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): add argument check for attr_readers.
 
 Wed Jul  4 04:22:44 2001  Minero Aoki  <aamine@loveruby.net>
 

@@ -3264,7 +3264,7 @@ re_search(bufp, string, size, startpos, range, regs)
     }
 
     if (startpos > size) return -1;
-    if ((anchor || !bufp->can_be_null) && size > 0 && startpos == size)
+    if ((anchor || !bufp->can_be_null) && range > 0 && size > 0 && startpos == size)
       return -1;
     val = re_match(bufp, string, size, startpos, regs);
     if (val >= 0) return startpos;
@@ -4237,7 +4237,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	    unsigned char c;
 
 	    PREFETCH;
-	    c = *d++;
 	    if (*p == 0xff) {
 	      p++;  
 	      if (!--mcnt
@@ -4246,6 +4245,7 @@ re_match(bufp, string_arg, size, pos, regs)
 		goto fail;
 	      continue;
 	    }
+	    c = *d++;
 	    if (ismbchar(c)) {
 	      int n;
 

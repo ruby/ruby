@@ -1383,7 +1383,7 @@ dln_load(file)
 	    rb_loaderror("Failed to load %.200s", file);
 	}
 
-	NSLinkModule(obj_file, file, TRUE);
+	NSLinkModule(obj_file, file, NSLINKMODULE_OPTION_BINDNOW);
 
 	/* lookup the initial function */
 	/*NSIsSymbolNameDefined require function name without "_" */

@@ -70,16 +70,21 @@ rb_obj_id(obj)
     return (VALUE)((long)obj|FIXNUM_FLAG);
 }
 
-static VALUE
-rb_obj_type(obj)
-    VALUE obj;
+VALUE
+rb_class_real(cl)
+    VALUE cl;
 {
-    VALUE cl = CLASS_OF(obj);
-
     while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
 	cl = RCLASS(cl)->super;
     }
     return cl;
+}
+
+VALUE
+rb_obj_type(obj)
+    VALUE obj;
+{
+    return rb_class_real(CLASS_OF(obj));
 }
 
 VALUE
@@ -113,6 +118,9 @@ rb_obj_dup(obj)
     if (!SPECIAL_CONST_P(dup)) {
 	OBJSETUP(dup, rb_obj_type(obj), BUILTIN_TYPE(obj));
 	OBJ_INFECT(dup, obj);
+	if (FL_TEST(obj, FL_EXIVAR)) {
+	    FL_SET(dup, FL_EXIVAR);
+	}
     }
     return dup;
 }
@@ -866,7 +874,7 @@ rb_convert_type(val, type, tname, method)
     arg1.val = arg2.val = val;
     arg1.s = method;
     arg2.s = tname;
-    val = rb_rescue2(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
+    val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
     if (TYPE(val) != type) {
 	rb_raise(rb_eTypeError, "%s#%s should return %s",
 		 rb_class2name(CLASS_OF(arg1.val)), method, tname);

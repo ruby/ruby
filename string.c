@@ -100,11 +100,7 @@ rb_str_new4(orig)
 {
     VALUE klass;
 
-    klass = CLASS_OF(orig);
-    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
-	klass = (VALUE)RCLASS(klass)->super;
-    }
-
+    klass = rb_obj_type(orig);
     if (RSTRING(orig)->orig) {
 	VALUE str;
 
@@ -252,10 +248,7 @@ rb_str_dup(str)
     VALUE klass;
 
     StringValue(str);
-    klass = CLASS_OF(str);
-    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
-	klass = (VALUE)RCLASS(klass)->super;
-    }
+    klass = rb_obj_type(str);
 
     if (OBJ_FROZEN(str)) str2 = rb_str_new3(str);
     else if (FL_TEST(str, STR_NO_ORIG)) {
@@ -267,6 +260,8 @@ rb_str_dup(str)
     else {
 	str2 = rb_str_new3(rb_str_new4(str));
     }
+    if (FL_TEST(str, FL_EXIVAR))
+	rb_copy_generic_ivar(str2, str);
     OBJ_INFECT(str2, str);
     RBASIC(str2)->klass = klass;
     return str2;

@@ -726,6 +726,18 @@ rb_ary_clone(ary)
     return clone;
 }
 
+VALUE
+rb_ary_dup(ary)
+    VALUE ary;
+{
+    VALUE dup = rb_ary_new2(RARRAY(ary)->len);
+
+    OBJSETUP(dup, rb_obj_type(ary), T_ARRAY);
+    MEMCPY(RARRAY(dup)->ptr, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
+    RARRAY(dup)->len = RARRAY(ary)->len;
+    return dup;
+}
+
 static VALUE
 to_ary(ary)
     VALUE ary;
@@ -973,7 +985,7 @@ static VALUE
 rb_ary_reverse_m(ary)
     VALUE ary;
 {
-    return rb_ary_reverse(rb_obj_dup(ary));
+    return rb_ary_reverse(rb_ary_dup(ary));
 }
 
 static int
@@ -1034,7 +1046,7 @@ VALUE
 rb_ary_sort(ary)
     VALUE ary;
 {
-    ary = rb_obj_dup(ary);
+    ary = rb_ary_dup(ary);
     rb_ary_sort_bang(ary);
     return ary;
 }
@@ -1047,7 +1059,7 @@ rb_ary_collect(ary)
     VALUE collect;
 
     if (!rb_block_given_p()) {
-	return rb_obj_dup(ary);
+	return rb_ary_new4(RARRAY(ary)->len, RARRAY(ary)->ptr);
     }
 
     len = RARRAY(ary)->len;
@@ -1566,7 +1578,7 @@ static VALUE
 rb_ary_uniq(ary)
     VALUE ary;
 {
-    ary = rb_obj_dup(ary);
+    ary = rb_ary_dup(ary);
     rb_ary_uniq_bang(ary);
     return ary;
 }
@@ -1597,7 +1609,7 @@ static VALUE
 rb_ary_compact(ary)
     VALUE ary;
 {
-    ary = rb_obj_dup(ary);
+    ary = rb_ary_dup(ary);
     rb_ary_compact_bang(ary);
     return ary;
 }
@@ -1675,7 +1687,7 @@ static VALUE
 rb_ary_flatten(ary)
     VALUE ary;
 {
-    ary = rb_obj_dup(ary);
+    ary = rb_ary_dup(ary);
     rb_ary_flatten_bang(ary);
     return ary;
 }
@@ -1724,6 +1736,7 @@ Init_Array()
     rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "indices", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "clone", rb_ary_clone, 0);
+    rb_define_method(rb_cArray, "clone", rb_ary_dup, 0);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse_bang, 0);
@@ -1731,6 +1744,7 @@ Init_Array()
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
     rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
+    rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "filter", rb_ary_filter, 0);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
