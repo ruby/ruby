@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 # This script generates a counter with start and stop buttons.
 
 require "tk"

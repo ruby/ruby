@@ -4,11 +4,10 @@
 # このスクリプトは Tom LaStrange の rolodex の一部です。
 # 
 # Copyright (C) 1998 by Takaaki Tateishi <ttate@jaist.ac.jp>
-# Time-stamp: "98/07/20 12:00:36 ttate"
+# Time-stamp: "03/08/02 14:02:04 nagai"
 #
 
 require "tk"
-require 'tkencoding'
 
 Tk.encoding = "euc-jp"
 $font = TkFont.new('k14')
@@ -198,8 +197,8 @@ end
 class Rolodex < TkRoot
   attr_reader :frame, :buttons, :menu
 
-  def initialize
-    super
+  def initialize(*args)
+    super(*args)
     @frame = RolodexFrame.new(self)
     @frame.pack("side"=>"top",
 		"fill"=>"y",
@@ -318,7 +317,7 @@ Ctrl+S:		検索
 EOF
 
 $helpTopics["バージョン情報"] = <<EOF
-バージョンは 1.0 です。
+バージョンは 1.0.1e です。
 EOF
 
 Tk.mainloop

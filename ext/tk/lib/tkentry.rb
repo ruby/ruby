@@ -158,7 +158,7 @@ class TkEntry<TkLabel
     self
   end
   def delete(first, last=None)
-    tk_send 'insert', first, last
+    tk_send 'delete', first, last
     self
   end
   def mark(pos)

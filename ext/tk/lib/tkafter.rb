@@ -11,7 +11,7 @@ class TkTimer
 
   TkCommandNames = ['after'.freeze].freeze
 
-  Tk_CBID = ['a'.freeze, '00000']
+  Tk_CBID = ['a'.freeze, '00000'].freeze
   Tk_CBTBL = {}
 
   TkCore::INTERP.add_tk_procs('rb_after', 'id', <<-'EOL')
@@ -307,6 +307,22 @@ class TkTimer
     else
       set_next_callback(@init_args)
     end
+
+    self
+  end
+
+  def reset(*reset_args)
+    restart() if @running
+
+    if @init_proc
+      @return_value = @init_proc.call(self)
+    else
+      @return_value = nil
+    end
+
+    @current_pos   = 0
+    @current_args  = @init_args
+    @set_next = false if @in_callback
 
     self
   end

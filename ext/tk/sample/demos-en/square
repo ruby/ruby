@@ -15,13 +15,20 @@ require 'tkafter'
 
 class TkSquare<TkWindow
   def create_self
-    tk_call 'square', path
+    begin
+      tk_call 'square', path
+    rescue
+      STDERR.print "\nSorry. Your Tk interpreter does not contain " +
+	'a "square" demonstration widget.' + 
+	"\n ( See documents included the Tcl/Tk source archive. )\n\n"
+      exit
+    end
   end
   def size(amount=nil)
     if amount
       tk_send 'size', amount
     else
-      number(tk_send 'size')
+      number(tk_send('size'))
     end
   end
   def position(x,y)

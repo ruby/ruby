@@ -1,21 +1,14 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 #
 # rolodex --
 # このスクリプトは Tom LaStrange の rolodex の一部です。
 # 
 # Copyright (C) 1998 by Takaaki Tateishi <ttate@jaist.ac.jp>
-# Time-stamp: "98/07/20 12:00:36 ttate"
+# Time-stamp: "03/08/02 14:01:54 nagai"
 #
 
 require "tk"
-
-# UTF8への変換を行なう。
-
-$encoding = "euc-jp"
-def j(str)
-  Tk.toUTF8(str,$encoding)
-end
-
+Tk.encoding = "euc-jp"
 
 def show_help(topic,x=0,y=0)
   if( topic.is_a?(TkWindow) )
@@ -33,17 +26,17 @@ def show_help(topic,x=0,y=0)
     msg = "このトピックについてのヘルプはまだ使用できません"
   end
   TkDialog.new("title"=>"Rolodex Help",
-	       "message"=>j("「#{topic}」\n\n#{msg}"),
+	       "message"=>"「#{topic}」\n\n#{msg}",
 	       "default_button"=>0,
 	       "buttons"=>["OK"])
 end
 
 def fillCard
   clearAction
-  $root.frame.entry[1].insert(0,j("立石 孝彰"))
-  $root.frame.entry[2].insert(0,j("923-1292 石川県"))
-  $root.frame.entry[3].insert(0,j("辰口町 旭台 1-1"))
-  $root.frame.entry[4].insert(0,j("北陸先端科学技術大学院大学"))
+  $root.frame.entry[1].insert(0, "立石 孝彰")
+  $root.frame.entry[2].insert(0, "923-1292 石川県")
+  $root.frame.entry[3].insert(0, "辰口町 旭台 1-1")
+  $root.frame.entry[4].insert(0, "北陸先端科学技術大学院大学")
   $root.frame.entry[5].insert(0,"private")
   $root.frame.entry[6].insert(0,"***-***-****")
   $root.frame.entry[7].insert(0,"***-***-****")
@@ -53,7 +46,7 @@ def addAction
   for i in 1..7
     STDERR.print format("%-12s %s\n",
 			RolodexFrame::LABEL[i],
-			Tk.fromUTF8($root.frame.entry[i].value,$encoding))
+			$root.frame.entry[i].value)
   end
 end
 
@@ -65,7 +58,7 @@ end
 
 def fileAction
   TkDialog.new("title"=>"File Selection",
-	       "message"=>j("これはファイル選択ダイアログのダミーです。\n"),
+	       "message"=>"これはファイル選択ダイアログのダミーです。\n",
 	       "default_button"=>0,
 	       "buttons"=>["OK"])
   STDERR.print "dummy file name\n"
@@ -73,9 +66,9 @@ end
 
 def deleteAction
   result = TkDialog.new("title"=>"Confirm Action",
-			"message"=>j("よろしいですか？"),
+			"message"=>"よろしいですか？",
 			"default_button"=>0,
-			"buttons"=>[j("キャンセル")])
+			"buttons"=>["キャンセル"])
   if( result.value == 0 )
     clearAction
   end
@@ -90,7 +83,6 @@ class RolodexFrame < TkFrame
   def initialize(parent=nil,keys=nil)
     super(parent,keys)
     self["relief"] = "flat"
-    
     @i = []
     @label = []
     @entry = []
@@ -100,7 +92,7 @@ class RolodexFrame < TkFrame
 		 "pady"=>2,
 		 "anchor"=>"e")
       @label[i] = TkLabel.new(@i[i],
-			      "text"=>j(LABEL[i]),
+			      "text"=>LABEL[i],
 			      "anchor"=>"e")
       @entry[i] = TkEntry.new(@i[i],
 			      "width"=>30,
@@ -116,14 +108,10 @@ class RolodexButtons < TkFrame
 
   def initialize(parent,keys=nil)
     super(parent,keys)
-    @clear = TkButton.new(self,
-			  "text" => j("クリアー"))
-    @add = TkButton.new(self,
-			"text" => j("追加"))
-    @search = TkButton.new(self,
-			   "text" => j("検索"))
-    @delete = TkButton.new(self,
-			   "text" => j("消去"))
+    @clear = TkButton.new(self,"text" => "クリアー")
+    @add = TkButton.new(self,  "text" => "追加")
+    @search = TkButton.new(self, "text" => "検索")
+    @delete = TkButton.new(self,  "text" => "消去")
     for w in [@clear,@add,@search,@delete]
       w.pack("side"=>"left", "padx"=>2)
     end
@@ -139,42 +127,42 @@ class RolodexMenuFrame < TkFrame
 	      "borderwidth"=>1)
 
     @file = TkMenubutton.new(self,
-			     "text"=>j("ファイル"),
+			     "text"=> "ファイル",
 			     "underline"=>0)
     @file_menu = TkMenu.new(@file)
     @file_menu.add("command",
-		   "label" => j("読み込み ..."),
+		   "label" => "読み込み ...",
 		   "command" => proc{fileAction},
 		   "underline" => 0)
     @file_menu.add("command",
-		   "label" => j("終了"),
+		   "label" => "終了",
 		   "command" => proc{$root.destroy},
 		   "underline" => 0)
     @file.menu(@file_menu)
     @file.pack("side"=>"left")
 
     @help = TkMenubutton.new(self,
-			     "text"=>j("ヘルプ"),
+			     "text"=> "ヘルプ",
 			     "underline"=>0)
     @help_menu = TkMenu.new(@help)
     @help_menu.add("command",
-		   "label"=>j("コンテキストについて"),
+		   "label"=> "コンテキストについて",
 		   "command"=>proc{show_help("コンテキスト")},
 		   "underline"=>3)
     @help_menu.add("command",
-		   "label"=>j("ヘルプについて"),
+		   "label"=> "ヘルプについて",
 		   "command"=>proc{show_help("ヘルプ")},
 		   "underline"=>3)
     @help_menu.add("command",
-		   "label"=>j("ウィンドウについて"),
+		   "label"=> "ウィンドウについて",
 		   "command"=>proc{show_help("ウィンドウ")},
 		   "underline"=>3)
     @help_menu.add("command",
-		   "label"=>j("キー操作について"),
+		   "label"=> "キー操作について",
 		   "command"=>proc{show_help("キー操作")},
 		   "underline"=>3)
     @help_menu.add("command",
-		   "label"=>j("バージョン情報"),
+		   "label"=> "バージョン情報",
 		   "command"=>proc{show_help("バージョン情報")},
 		   "underline"=>3)
     @help.menu(@help_menu)
@@ -185,8 +173,8 @@ end
 class Rolodex < TkRoot
   attr_reader :frame, :buttons, :menu
 
-  def initialize
-    super
+  def initialize(*args)
+    super(*args)
     @frame = RolodexFrame.new(self)
     @frame.pack("side"=>"top",
 		"fill"=>"y",
@@ -209,16 +197,16 @@ $root.buttons.add.configure("command"=>proc{addAction})
 $root.buttons.clear.configure("command"=>proc{clearAction})
 $root.buttons.search.configure("command"=>proc{addAction; fillCard})
 
-$root.buttons.clear.configure("text"=>j("クリアー   Ctrl+C"))
+$root.buttons.clear.configure("text"=> "クリアー   Ctrl+C")
 $root.bind("Control-c",proc{clearAction})
 
-$root.buttons.add.configure("text"=>j("追加   Ctrl+A"))
+$root.buttons.add.configure("text"=> "追加   Ctrl+A")
 $root.bind("Control-a",proc{addAction})
 
-$root.buttons.search.configure("text"=>j("検索   Ctrl+S"))
+$root.buttons.search.configure("text"=> "検索   Ctrl+S")
 $root.bind("Control-s",proc{addAction; fillCard})
 
-$root.buttons.delete.configure("text"=>j("消去   Ctrl+D"))
+$root.buttons.delete.configure("text"=> "消去   Ctrl+D")
 $root.bind("Control-d",proc{deleteAction})
 
 $root.menu.file_menu.entryconfigure(1, "accel"=>"Ctrl+F")
@@ -305,7 +293,7 @@ Ctrl+S:		検索
 EOF
 
 $helpTopics["バージョン情報"] = <<EOF
-バージョンは 1.0 です。
+バージョンは 1.0.1j です。
 EOF
 
 Tk.mainloop

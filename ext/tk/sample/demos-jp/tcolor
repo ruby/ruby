@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 #
 # tcolor --
 # このスクリプトはRGB,HSB,CYM形式をサポートする
@@ -28,6 +28,12 @@ $command = TkVariable.new("")
 $label1 = TkVariable.new("label1")
 $label2 = TkVariable.new("label2")
 $label3 = TkVariable.new("label3")
+
+
+# リソースデータベースの設定
+if (TkVarAccess.new('tcl_platform')['platform'] == 'unix')
+  TkOptionDB.add('*Entry.background', 'white')
+end
 
 
 # 各イベント用のメソッド
@@ -132,7 +138,7 @@ def tc_scaleChanged
   scale2 = $root.middle.middle.scale2
   scale3 = $root.middle.middle.scale3
 
-  case $colorSpace.to_i
+  case $colorSpace.value.intern
   when :rgb
     $red = (scale1.get * 65.535).to_i
     $green = (scale2.get * 65.535).to_i
@@ -167,7 +173,7 @@ def tc_setScales
   scale2 = $root.middle.middle.scale2
   scale3 = $root.middle.middle.scale3
   
-  case $colorSpace.to_i
+  case $colorSpace.value.intern
   when :rgb
     scale1.set($red / 65.535)
     scale2.set($green / 65.535)
@@ -289,7 +295,7 @@ class TkColorMenuFrame<TkFrame
 	  "command" => proc{changeColorSpace(:hsb)}
 	add "separator"
 	add "radio",
-	  "label" => "Qutomatic updates",
+	  "label" => "Automatic updates",
 	  "variable" => $autoUpdate,
 	  "value" => "1",
 	  "underline" => "0"
@@ -367,7 +373,7 @@ class TkColorMiddleLeftFrame<TkFrame
 			     "relief"=>"sunken",
 			     "borderwidth"=>"2",
 			     "exportselection"=>"false")
-      @scroll.command(proc{|*args| @names.yview *args})
+      @scroll.command(proc{|*args| @names.yview(*args)})
       @names.bind("Double-1",proc{
 		    tc_loadNamedColor(@names.get(@names.curselection))})
       @names.pack("side"=>"left")
@@ -490,8 +496,8 @@ end
 class TkColor<TkRoot
   attr_reader :menu, :bottom, :middle
 
-  def initialize
-    super
+  def initialize(*args)
+    super(*args)
     @menu = TkColorMenuFrame.new(self)
     @menu.pack("side"=>"top", "fill"=>"x")
 

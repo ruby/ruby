@@ -11,7 +11,7 @@ class TkFont
 
   TkCommandNames = ['font'.freeze].freeze
 
-  Tk_FontID = ["@font".freeze, "00000"]
+  Tk_FontID = ["@font".freeze, "00000"].freeze
   Tk_FontNameTBL = TkCore::INTERP.create_table
   Tk_FontUseTBL  = TkCore::INTERP.create_table
 

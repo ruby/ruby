@@ -9,7 +9,7 @@ class TkVirtualEvent<TkObject
 
   TkCommandNames = ['event'.freeze].freeze
 
-  TkVirtualEventID = ["<VirtEvent".freeze, "00000", ">".freeze]
+  TkVirtualEventID = ["<VirtEvent".freeze, "00000", ">".freeze].freeze
   TkVirtualEventTBL = TkCore::INTERP.create_table
 
   TkCore::INTERP.init_ip_env{ TkVirtualEventTBL.clear }

@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 #
 # This script generates a directory browser, which lists the working
 # directory and allows you to open files or subdirectories by

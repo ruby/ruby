@@ -1,10 +1,10 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 #
 # rolodex --
 # This script is a part of Tom LaStrange's rolodex
 # 
 # Copyright (C) 1998 by Takaaki Tateishi <ttate@jaist.ac.jp>
-# Time-stamp: "98/07/20 12:00:02 ttate"
+# Time-stamp: "03/08/02 12:45:21 nagai"
 #
 
 require "tk"
@@ -176,8 +176,8 @@ end
 class Rolodex < TkRoot
   attr_reader :frame, :buttons, :menu
 
-  def initialize
-    super
+  def initialize(*args)
+    super(*args)
     @frame = RolodexFrame.new(self)
     @frame.pack("side"=>"top",
 		"fill"=>"y",
@@ -314,7 +314,7 @@ Ctrl+S:		Search (dummy operation)
 EOF
 
 $helpTopics["version"] = <<EOF
-This is version 1.0.
+This is version 1.0.1.
 EOF
 
 Tk.mainloop

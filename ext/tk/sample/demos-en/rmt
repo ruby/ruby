@@ -53,10 +53,8 @@ class Rmt
 
     # Create text window and scrollbar. 
 
-    @txt = TkText.new(root, 'relief'=>'sunken', 'bd'=>2, 'setgrid'=>true) {|t|
-      TkScrollbar.new(root, 'command'=>proc{|*args| t.yview *args}) {
-	pack('side'=>'right', 'fill'=>'both')
-      }
+    @txt = TkText.new(root, 'relief'=>'sunken', 'bd'=>2, 'setgrid'=>true) {
+      yscrollbar(TkScrollbar.new(root){pack('side'=>'right', 'fill'=>'y')})
       pack('side'=>'left')
     }
 
@@ -247,13 +245,18 @@ class Rmt
     rescue
     end
     TkWinfo.interps.sort.each{|ip|
-      if Tk.appsend(ip, false, 'info commands ruby') == ""
-	mode = 'Tcl'
-      else
-	mode = 'Ruby'
+      begin
+	if Tk.appsend(ip, false, 'info commands ruby') == ""
+	  mode = 'Tcl'
+	else
+	  mode = 'Ruby'
+	end
+	menu.add('command', 'label'=>format("%s    (#{mode}/Tk)", ip), 
+		 'command'=>proc{win.newApp ip, mode})
+      rescue
+	menu.add('command', 'label'=>format("%s (unknown Tk)", ip), 
+		 'command'=>proc{win.newApp ip, mode}, 'state'=>'disabled')
       end
-      menu.add('command', 'label'=>format("%s    (#{mode}/Tk)", ip), 
-	       'command'=>proc{win.newApp ip, mode})
     }
     menu.add('command', 'label'=>format("local    (Ruby/Tk)"), 
 	     'command'=>proc{win.newApp 'local', 'Ruby'})

@@ -33,7 +33,7 @@ MultiTkIp_OK.freeze
 ################################################
 # methods for construction
 class MultiTkIp
-  SLAVE_IP_ID = ['slave'.freeze, '0']
+  SLAVE_IP_ID = ['slave'.freeze, '0'].freeze
 
   @@IP_TABLE = {}
 
@@ -234,7 +234,12 @@ class MultiTkIp
 
   ######################################
 
-  SAFE_OPT_LIST = ['accessPath', 'statics', 'nested', 'deleteHook']
+  SAFE_OPT_LIST = [
+    'accessPath'.freeze, 
+    'statics'.freeze, 
+    'nested'.freeze, 
+    'deleteHook'.freeze
+  ].freeze
   def _parse_slaveopts(keys)
     name = nil
     safe = false

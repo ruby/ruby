@@ -1,4 +1,4 @@
-#! /usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 if ARGV[0] != '-d'
   unless $DEBUG

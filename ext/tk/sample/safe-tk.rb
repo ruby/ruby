@@ -32,6 +32,7 @@ cmd = Proc.new{|txt|
 
   timer = TkTimer.new(50, -1, tick).start(0, proc{ label.text('0.00'); 0 })
 
+=begin
   TkButton.new(:text=>'Start') {
     command proc{ timer.continue unless timer.running? }
     pack(:side=>:left, :fill=>:both, :expand=>true)
@@ -43,6 +44,30 @@ cmd = Proc.new{|txt|
   TkButton.new(:text=>'Stop') {
     command proc{ timer.stop if timer.running? }
     pack('side'=>'right','fill'=>'both','expand'=>'yes')
+  }
+=end
+  b_start = TkButton.new(:text=>'Start', :state=>:disabled) {
+    pack(:side=>:left, :fill=>:both, :expand=>true)
+  }
+  b_stop  = TkButton.new(:text=>'Stop', :state=>:normal) {
+    pack('side'=>'left', 'fill'=>'both', 'expand'=>'yes')
+  }
+
+  b_start.command {
+    timer.continue
+    b_stop.state(:normal)
+    b_start.state(:disabled)
+  }
+
+  b_stop.command {
+    timer.stop
+    b_start.state(:normal)
+    b_stop.state(:disabled)
+  }
+
+  TkButton.new(:text=>'Reset', :state=>:normal) {
+    command { timer.reset }
+    pack('side'=>'right', 'fill'=>'both', 'expand'=>'yes')
   }
 
   ev_quit = TkVirtualEvent.new('Control-c', 'Control-q')

@@ -1,4 +1,4 @@
-
+#
 #		tk.rb - Tk interface module using tcltklib
 #			$Date$
 #			by Yukihiro Matsumoto <matz@netlab.jp>
@@ -17,7 +17,7 @@ module TkComm
 
   #Tk_CMDTBL = {}
   #Tk_WINDOWS = {}
-  Tk_IDs = ["00000", "00000"]		# [0]-cmdid, [1]-winid
+  Tk_IDs = ["00000", "00000"].freeze	# [0]-cmdid, [1]-winid
 
   # for backward compatibility
   Tk_CMDTBL = Object.new
@@ -1651,7 +1651,7 @@ class TkBindTag
 
   #BTagID_TBL = {}
   BTagID_TBL = TkCore::INTERP.create_table
-  Tk_BINDTAG_ID = ["btag".freeze, "00000"]
+  Tk_BINDTAG_ID = ["btag".freeze, "00000"].freeze
 
   TkCore::INTERP.init_ip_env{ BTagID_TBL.clear }
 
@@ -1726,7 +1726,7 @@ class TkVariable
   #TkVar_ID_TBL = {}
   TkVar_CB_TBL = TkCore::INTERP.create_table
   TkVar_ID_TBL = TkCore::INTERP.create_table
-  Tk_VARIABLE_ID = ["v".freeze, "00000"]
+  Tk_VARIABLE_ID = ["v".freeze, "00000"].freeze
 
   TkCore::INTERP.add_tk_procs('rb_var', 'args', 
 	"ruby [format \"TkVariable.callback %%Q!%s!\" $args]")
@@ -1839,6 +1839,10 @@ class TkVariable
     string(value).to_s
   end
 
+  def to_sym
+    value.intern
+  end
+
   def inspect
     format "#<TkVariable: %s>", @id
   end
@@ -1849,6 +1853,8 @@ class TkVariable
       self.equal?(other)
     when String
       self.to_s == other
+    when Symbol
+      self.to_sym == other
     when Integer
       self.to_i == other
     when Float
@@ -4630,7 +4636,7 @@ end
 module TkTreatListItemFont
   include TkTreatItemFont
 
-  ItemCMD = ['itemconfigure', TkComm::None]
+  ItemCMD = ['itemconfigure'.freeze, TkComm::None].freeze
   def __conf_cmd(idx)
     ItemCMD[idx]
   end
@@ -4770,7 +4776,7 @@ end
 module TkTreatMenuEntryFont
   include TkTreatItemFont
 
-  ItemCMD = ['entryconfigure', TkComm::None]
+  ItemCMD = ['entryconfigure'.freeze, TkComm::None].freeze
   def __conf_cmd(idx)
     ItemCMD[idx]
   end

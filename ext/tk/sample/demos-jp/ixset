@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/env ruby
 
 # ixset --
 # A nice interface to "xset" to change X server settings
@@ -166,7 +166,7 @@ class Xsettings
     l = TkLabel.new(bell, 'text'=>'Bell Settings')
     @w_bellvol = TkScale.new(bell, 'from'=>0, 'to'=>100, 'length'=>200, 
 			     'tickinterval'=>20, 'orient'=>'horizontal', 
-			     'label'=>"Volume (%)")
+			     'label'=>"Volume (%)") 
 
     f = TkFrame.new(bell)
     @w_bellpit = LabelEntry.new(f, "Pitch (Hz)", 6)
