@@ -1,6 +1,6 @@
 Thu Mar 14 08:57:41 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* dir.c (rb_push_glob): avoid SEGV when no block given.
+	* dir.c (rb_push_glob): avoid SEGV when a block given.
 
 Wed Mar 13 19:05:15 2002  Akinori MUSHA  <knu@iDaemons.org>
 
