@@ -1,3 +1,6 @@
+lib: $(LIBRUBY);
+dll: $(LIBRUBY_SO);
+
 EXTCONF       = extconf.rb
 RBCONFIG      = ./.rbconfig.time
 

@@ -1481,5 +1481,9 @@ fi
 : > confdefs.h
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
-AC_CONFIG_FILES(Makefile, [[sed 's/{\$([^(){}]*)[^{}]*}//g' ${srcdir}/common.mk >> Makefile]])
+AC_CONFIG_FILES(Makefile, [{
+	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
+	test "$RUBY_INSTALL_NAME$EXEEXT" = ruby || echo 'ruby: $(PROGRAM);'
+	sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
+} >> Makefile], [RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT])
 AC_OUTPUT

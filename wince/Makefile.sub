@@ -180,8 +180,6 @@ WINMAINOBJ    = wincemain.$(OBJEXT)
 
 all: $(srcdir)/wince/Makefile.sub $(srcdir)/common.mk
 ruby: $(PROGRAM)
-lib: $(LIBRUBY)
-dll: $(LIBRUBY_SO)
 
 config: config.h config.status
 

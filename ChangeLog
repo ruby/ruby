@@ -1,3 +1,11 @@
+Thu Mar 25 14:01:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, */Makefile.sub (lib, dll): phony targets.
+
+	* configure.in (ruby, miniruby): ditto.
+
+	* cygwin/GNUmakefile.in (rubyw): ditto.
+
 Thu Mar 25 04:16:18 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_options.rb (RI::Options): Add the --list-names option,
@@ -11,7 +19,7 @@ Thu Mar 25 03:57:47 2004  Dave Thomas  <dave@pragprog.com>
 
 Thu Mar 25 02:00:18 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/template/html/one_page_html.rb (Page): 
+	* lib/rdoc/generators/template/html/one_page_html.rb (Page):
 	  Fix to work with C modules.
 
 Wed Mar 24 20:49:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>

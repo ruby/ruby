@@ -188,12 +188,10 @@ WINMAINOBJ    = winmain.$(OBJEXT)
 
 all: $(srcdir)bcc32/Makefile.sub $(srcdir)common.mk
 
-!include $(srcdir)/common.mk
-
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
-lib: $(LIBRUBY)
-dll: $(LIBRUBY_SO)
+
+!include $(srcdir)/common.mk
 
 config: config.h config.status
 
