@@ -111,11 +111,20 @@ class Pathname
   # it may return relative pathname.
   # Otherwise it returns absolute pathname.
   def realpath(force_absolute=true)
+    # Check file existence at first by File.stat.
+    # This test detects ELOOP.
+    #
+    # /tmp/a -> a
+    # /tmp/b -> b/b
+    # /tmp/c -> ./c
+    # /tmp/d -> ../tmp/d
+
     File.stat(@path)
 
     top = %r{\A/} =~ @path ? '/' : ''
     unresolved = @path.scan(%r{[^/]+})
     resolved = []
+    checked_path = {}
     
     until unresolved.empty?
       case unresolved.last
@@ -125,7 +134,9 @@ class Pathname
         resolved.unshift unresolved.pop
       else
         path = top + unresolved.join('/')
-        if FileTest.symlink? path
+        raise Errno::ELOOP.new(path) if checked_path[path]
+        checked_path[path] = true
+        if File.lstat(path).symlink?
           link = File.readlink(path)
           if %r{\A/} =~ link
             top = '/'
@@ -211,14 +222,27 @@ class Pathname
   end
 
   # Pathname#children returns the children of the directory as an array of
-  # pathnames.  I.e. it is similar to Pathname#entries except '.' and '..'
-  # is not returned.
+  # pathnames.  
+  #
+  # By default, self is prepended to each pathname in the result.
+  # It is disabled if false is given for the optional argument
+  # prepend_directory.
+  #
+  # Note that the result never contain '.' and '..' because they are not
+  # child.
   #
   # This method is exist since 1.8.1.
-  def children
-    Dir.entries(@path).map {|f|
-      f == '.' || f == '..' ? nil : Pathname.new(f)
-    }.compact
+  def children(prepend_directory=true)
+    result = []
+    Dir.foreach(@path) {|e|
+      next if e == '.' || e == '..'
+      if prepend_directory
+        result << Pathname.new(File.join(@path, e))
+      else
+        result << Pathname.new(e)
+      end
+    }
+    result
   end
 
   # Pathname#relative_path_from returns a relative path from the argument to
@@ -355,14 +379,20 @@ class Pathname
   def Pathname.getwd() Pathname.new(Dir.getwd) end
   class << self; alias pwd getwd end
 
-  # This method is obsoleted at 1.8.1.
+  # Pathname#chdir is obsoleted at 1.8.1.
   #
   def chdir(&block) # compatibility to 1.8.0.
     warn "Pathname#chdir is obsoleted.  Use Dir.chdir."
     Dir.chdir(@path, &block)
   end
 
-  def chroot() Dir.chroot(@path) end
+  # Pathname#chroot is obsoleted at 1.8.1.
+  #
+  def chroot # compatibility to 1.8.0.
+    warn "Pathname#chroot is obsoleted.  Use Dir.chroot."
+    Dir.chroot(@path)
+  end
+
   def rmdir() Dir.rmdir(@path) end
   def entries() Dir.entries(@path).map {|f| Pathname.new(f) } end
 

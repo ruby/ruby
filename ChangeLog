@@ -1,3 +1,9 @@
+Tue Oct 14 04:43:55 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (realpath): make ELOOP check bit more robust.
+	  (children): prepend self by default.
+	  (chroot): obsoleted.
+
 Tue Oct 14 02:29:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_require_safe): segfault after loading .so.
