@@ -306,7 +306,7 @@ class TkTimer
 	fail format("%s need to be Proc", @init_proc.inspect)
       end
       @current_proc = @init_proc
-      set_callback(sleep, @init_args)
+      set_callback(@init_sleep, @init_args)
       @set_next = false if @in_callback
     else
       set_next_callback(@init_args)

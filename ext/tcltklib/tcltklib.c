@@ -503,7 +503,9 @@ lib_eventloop_core(check_root, check_var)
 	    rb_trap_exec();
 	} else {
             DUMP1("thread scheduling");
-	    rb_thread_schedule();
+	    if (is_ruby_native_thread()) {
+		rb_thread_schedule();
+	    }
 	}
     }
     return 1;

@@ -4261,6 +4261,9 @@ class TkWindow<TkObject
   def grab_current
     grab('current')
   end
+  def grab_release
+    grab('release')
+  end
   def grab_set
     grab('set')
   end
@@ -5681,8 +5684,8 @@ module TkComposite
 
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
-      parent = keys['parent']
-      keys['parent'] = @frame = TkFrame.new(parent)
+      parent = keys.delete('parent')
+      @frame = TkFrame.new(parent)
       @delegates['DEFAULT'] = @frame
       @path = @epath = @frame.path
       initialize_composite(keys)

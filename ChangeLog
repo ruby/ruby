@@ -1,3 +1,13 @@
+Sat Nov 22 22:48:46 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: add Tk.grab_release and fix bug of TkComposite
+
+	* ext/tk/lib/tkafter.rb: bug fix of TkAfter#start
+
+	* ext/tk/sample/tkcombobox.rb: new sample script
+
+	* ext/tcltklib/tcltklib.c: add native thread check
+
 Sat Nov 22 18:49:47 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/curses/curses.c (window_nodelay): nodelay() of NetBSD's

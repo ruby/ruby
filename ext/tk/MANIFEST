@@ -26,6 +26,7 @@ sample/safe-tk.rb
 sample/tkballoonhelp.rb
 sample/tkbiff.rb
 sample/tkbrowse.rb
+sample/tkcombobox.rb
 sample/tkdialog.rb
 sample/tkfrom.rb
 sample/tkhello.rb
