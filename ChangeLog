@@ -13,6 +13,12 @@ Thu Jun 24 01:25:21 2004  Shugo Maeda  <shugo@ruby-lang.org>
 	* version.h: added declarations of ruby_version,
 	ruby_release_date, ruby_platform.
 
+Thu Jun 24 01:07:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_sockaddr): Socket#gethostbyname()
+	  should give us packed address, not struct sockaddr.
+	  [ruby-core:03053]
+
 Wed Jun 23 22:19:10 2004  Dave Thomas  <dave@pragprog.com>
 
 	* ext/socket/socket.c (sock_s_gethostbyaddr): Work around problem

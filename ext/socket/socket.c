@@ -2095,7 +2095,24 @@ sock_sockaddr(addr, len)
     struct sockaddr *addr;
     size_t len;
 {
-    return rb_str_new((char*)addr, len);
+    char *ptr;
+
+    switch (addr->sa_family) {
+      case AF_INET:
+	ptr = (char*)&((struct sockaddr_in*)addr)->sin_addr.s_addr;
+	len = sizeof(((struct sockaddr_in*)addr)->sin_addr.s_addr);
+	break;
+#ifdef INET6
+      case AF_INET6:
+	ptr = (char*)&((struct sockaddr_in6*)addr)->sin6_addr.s6_addr;
+	len = sizeof(((struct sockaddr_in6*)addr)->sin6_addr.s6_addr);
+	break;
+#endif
+      default:
+        rb_raise(rb_eSocket, "unknown socket family:%d", addr->sa_family);
+	break;
+    }
+    return rb_str_new(ptr, len);
 }
 
 static VALUE

@@ -644,7 +644,7 @@ rb_io_set_pos(io, offset)
 
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, NUM2OFFT(offset), SEEK_SET);
-    if (pos != 0) rb_sys_fail(fptr->path);
+    if (pos < 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
     return OFFT2NUM(pos);
@@ -671,7 +671,7 @@ rb_io_rewind(io)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
-    if (io_seek(fptr, 0L, 0) != 0) rb_sys_fail(fptr->path);
+    if (io_seek(fptr, 0L, 0) < 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
     if (io == current_file) {
 	gets_lineno -= fptr->lineno;
@@ -1937,7 +1937,7 @@ rb_io_close_read(io)
     fptr->mode &= ~FMODE_READABLE;
     fptr->f = fptr->f2;
     fptr->f2 = 0;
-    if (n != 0) rb_sys_fail(fptr->path);
+    if (n < 0) rb_sys_fail(fptr->path);
 
     return Qnil;
 }
@@ -1981,7 +1981,7 @@ rb_io_close_write(io)
     n = fclose(fptr->f2);
     fptr->f2 = 0;
     fptr->mode &= ~FMODE_WRITABLE;
-    if (n != 0) rb_sys_fail(fptr->path);
+    if (n < 0) rb_sys_fail(fptr->path);
 
     return Qnil;
 }
@@ -2381,7 +2381,7 @@ rb_fopen(fname, mode)
 	}
     }
 #ifdef USE_SETVBUF
-    if (setvbuf(file, NULL, _IOFBF, 0) != 0)
+    if (setvbuf(file, NULL, _IOFBF, 0) < 0)
 	rb_warn("setvbuf() can't be honoured for %s", fname);
 #endif
 #ifdef __human68k__
@@ -2424,7 +2424,7 @@ rb_fdopen(fd, mode)
     }
 
 #ifdef USE_SETVBUF
-    if (setvbuf(file, NULL, _IOFBF, 0) != 0)
+    if (setvbuf(file, NULL, _IOFBF, 0) < 0)
 	rb_warn("setvbuf() can't be honoured (fd=%d)", fd);
 #endif
     return file;
@@ -3278,7 +3278,7 @@ rb_io_reopen(argc, argv, file)
 	rb_sys_fail(fptr->path);
     }
 #ifdef USE_SETVBUF
-    if (setvbuf(fptr->f, NULL, _IOFBF, 0) != 0)
+    if (setvbuf(fptr->f, NULL, _IOFBF, 0) < 0)
 	rb_warn("setvbuf() can't be honoured for %s", RSTRING(fname)->ptr);
 #endif
 

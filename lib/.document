@@ -19,6 +19,7 @@ find.rb
 generator.rb
 logger.rb
 matrix.rb
+net
 observer.rb
 optionparser.rb
 pathname.rb
