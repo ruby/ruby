@@ -1,3 +1,7 @@
+Fri Jan 24 18:15:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: tMINUS should have lower precedence than tPOW.
+
 Fri Jan 24 05:12:55 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): deal

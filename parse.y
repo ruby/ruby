@@ -307,9 +307,9 @@ static void top_local_setup();
 %left  tLSHFT tRSHFT
 %left  '+' '-'
 %left  '*' '/' '%'
-%right tUMINUS_NUM
+%right tUMINUS_NUM tUMINUS
 %right tPOW
-%right '!' '~' tUPLUS tUMINUS
+%right '!' '~' tUPLUS
 
 %token tLAST_TOKEN
 

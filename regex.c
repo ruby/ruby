@@ -1447,8 +1447,7 @@ re_compile_pattern(pattern, size, bufp)
 	int size;
 	unsigned last = (unsigned)-1;
 
-	if ((size = EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH]))
-	    || current_mbctype) {
+	if ((size = EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH])) || current_mbctype) {
 	  /* Ensure the space is enough to hold another interval
 	     of multi-byte chars in charset(_not)?.  */
 	  size = (1 << BYTEWIDTH) / BYTEWIDTH + 2 + size*8 + 8;
@@ -1687,7 +1686,7 @@ re_compile_pattern(pattern, size, bufp)
 	}
 	else if (had_mbchar == 0 && (!current_mbctype || !had_num_literal)) {
 	  SET_LIST_BIT(c);
-	  had_num_literal = 0;
+ 	  had_num_literal = 0;
 	}
 	else 
 	  set_list_bits(c, c, b);
