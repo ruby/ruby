@@ -31,7 +31,40 @@ cmd = TkOptionDB.new_proc_class(:BTN_CMD, [:show_msg, :bye_msg], 2) {
   end
 }
 
+# following two frame widgets use same database entry
 TkFrame.new(:class=>'BtnFrame'){|f|
+  pack(:padx=>5, :pady=>5)
+  TkButton.new(:parent=>f, :widgetname=>'hello'){ 
+    command proc{
+      print "($SAFE=#{$SAFE}) : "
+      cmd.show_msg(TkOptionDB.inspect)
+    } 
+    pack(:fill=>:x, :padx=>10, :pady=>10)
+  }
+  TkButton.new(:command=>proc{print "($SAFE=#{$SAFE}) : "; cmd.bye_msg; exit}, 
+	       :parent=>f, :widgetname=>'quit'){
+    pack(:fill=>:x, :padx=>10, :pady=>10)
+  }
+}
+
+class BtnFrame < TkFrame; end
+BtnFrame.new{|f|
+  pack(:padx=>5, :pady=>5)
+  TkButton.new(:parent=>f, :widgetname=>'hello'){ 
+    command proc{
+      print "($SAFE=#{$SAFE}) : "
+      cmd.show_msg(TkOptionDB.inspect)
+    } 
+    pack(:fill=>:x, :padx=>10, :pady=>10)
+  }
+  TkButton.new(:command=>proc{print "($SAFE=#{$SAFE}) : "; cmd.bye_msg; exit}, 
+	       :parent=>f, :widgetname=>'quit'){
+    pack(:fill=>:x, :padx=>10, :pady=>10)
+  }
+}
+
+# if unknown class, use default option values
+TkFrame.new(:class=>'BtnFrame2'){|f|
   pack(:padx=>5, :pady=>5)
   TkButton.new(:parent=>f, :widgetname=>'hello'){ 
     command proc{

@@ -1501,6 +1501,10 @@ class TkBindTag
     bind(*args, &b) if args != []
   end
 
+  def name
+    @id
+  end
+
   def to_eval
     @id
   end
@@ -3283,8 +3287,22 @@ class TkWindow<TkObject
     @db_class || self.class()
   end
 
-  def database_class
+  def database_classname
     TkWinfo.classname(self)
+  end
+  def database_class
+    name = database_classname()
+    if WidgetClassNames[name]
+      WidgetClassNames[name]
+    else
+      TkDatabaseClass.new(name)
+    end
+  end
+  def self.database_classname
+    self::WidgetClassName
+  end
+  def self.database_class
+    WidgetClassNames[self::WidgetClassName]
   end
 
   def pack(keys = nil)
@@ -3717,6 +3735,11 @@ class TkToplevel<TkWindow
   private :_wm_command_option_chk
 
   def initialize(parent=nil, screen=nil, classname=nil, keys=nil)
+    my_class_name = nil
+    if self.class < WidgetClassNames[WidgetClassName]
+      my_class_name = self.class.name
+      my_class_name = nil if my_class_name == ''
+    end
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
       if keys.key?('classname')
@@ -3728,6 +3751,9 @@ class TkToplevel<TkWindow
       @screen    = keys['screen']
       @use       = keys['use']
       @visual    = keys['visual']
+      if !@classname && my_class_name
+	keys['class'] = @classname = my_class_name 
+      end
       if @classname.kind_of? TkBindTag
 	@db_class = @classname
 	@classname = @classname.id
@@ -3770,6 +3796,11 @@ class TkToplevel<TkWindow
       @screen    = keys['screen'] unless @screen
       @use       = keys['use']
       @visual    = keys['visual']
+    else
+      keys = {}
+    end
+    if !@classname && my_class_name
+      keys['class'] = @classname = my_class_name 
     end
     if @classname.kind_of? TkBindTag
       @db_class = @classname
@@ -3802,6 +3833,46 @@ class TkToplevel<TkWindow
   def specific_class
     @classname
   end
+
+  def self.database_class
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      self
+    else
+      TkDatabaseClass.new(self.name)
+    end
+  end
+  def self.database_classname
+    self.database_class.name
+  end
+
+  def self.bind(*args)
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      super(*args)
+    else
+      TkDatabaseClass.new(self.name).bind(*args)
+    end
+  end
+  def self.bind_append(*args)
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      super(*args)
+    else
+      TkDatabaseClass.new(self.name).bind_append(*args)
+    end
+  end
+  def self.bind_remove(*args)
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      super(*args)
+    else
+      TkDatabaseClass.new(self.name).bind_remove(*args)
+    end
+  end
+  def self.bindinfo(*args)
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      super(*args)
+    else
+      TkDatabaseClass.new(self.name).bindinfo(*args)
+    end
+  end
 end
 
 class TkFrame<TkWindow
@@ -3831,6 +3902,11 @@ class TkFrame<TkWindow
 #################
 
   def initialize(parent=nil, keys=nil)
+    my_class_name = nil
+    if self.class < WidgetClassNames[WidgetClassName]
+      my_class_name = self.class.name
+      my_class_name = nil if my_class_name == ''
+    end
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
     else
@@ -3848,6 +3924,9 @@ class TkFrame<TkWindow
     @colormap  = keys['colormap']
     @container = keys['container']
     @visual    = keys['visual']
+    if !@classname && my_class_name
+      keys['class'] = @classname = my_class_name
+    end
     if @classname.kind_of? TkBindTag
       @db_class = @classname
       @classname = @classname.id
@@ -3868,8 +3947,48 @@ class TkFrame<TkWindow
     end
   end
 
-  def specific_class
+  def database_classname
     @classname
+  end
+
+  def self.database_class
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      self
+    else
+      TkDatabaseClass.new(self.name)
+    end
+  end
+  def self.database_classname
+    self.database_class.name
+  end
+
+  def self.bind(*args)
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      super(*args)
+    else
+      TkDatabaseClass.new(self.name).bind(*args)
+    end
+  end
+  def self.bind_append(*args)
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      super(*args)
+    else
+      TkDatabaseClass.new(self.name).bind_append(*args)
+    end
+  end
+  def self.bind_remove(*args)
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      super(*args)
+    else
+      TkDatabaseClass.new(self.name).bind_remove(*args)
+    end
+  end
+  def self.bindinfo(*args)
+    if self == WidgetClassNames[WidgetClassName] || self.name == ''
+      super(*args)
+    else
+      TkDatabaseClass.new(self.name).bindinfo(*args)
+    end
   end
 end
 
