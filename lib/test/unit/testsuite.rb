@@ -1,7 +1,7 @@
 # :nodoc:
 #
 # Author:: Nathaniel Talbott.
-# Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
+# Copyright:: Copyright (c) 2000-2003 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
 
 module Test
@@ -58,6 +58,13 @@ module Test
       # creation.
       def to_s
         @name
+      end
+      
+      # It's handy to be able to compare TestSuite instances.
+      def ==(other)
+        return false unless(other.kind_of?(self.class))
+        return false unless(@name == other.name)
+        @tests == other.tests
       end
     end
   end

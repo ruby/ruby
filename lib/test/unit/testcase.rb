@@ -1,7 +1,7 @@
 # :nodoc:
 #
 # Author:: Nathaniel Talbott.
-# Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
+# Copyright:: Copyright (c) 2000-2003 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
 
 require 'test/unit/assertions'
@@ -146,6 +146,13 @@ module Test
       # Overriden to return #name.
       def to_s
         name
+      end
+      
+      # It's handy to be able to compare TestCase instances.
+      def ==(other)
+        return false unless(other.kind_of?(self.class))
+        return false unless(@method_name == other.method_name)
+        self.class == other.class
       end
     end
   end
