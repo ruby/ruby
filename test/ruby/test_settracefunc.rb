@@ -71,13 +71,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)     # when 3
     assert_equal(["line", 20, :test_event, TestSetTraceFunc],
                  events.shift)     # c = "b == 3"
-
-    # 1.8
-    # assert_equal(["line", 23, :test_event, TestSetTraceFunc],
-    #              events.shift)     # begin
-    assert_equal(["line", 24, :test_event, TestSetTraceFunc],
+    assert_equal(["line", 23, :test_event, TestSetTraceFunc],
                  events.shift)     # begin
-
     assert_equal(["line", 24, :test_event, TestSetTraceFunc],
                  events.shift)     # raise "error"
     assert_equal(["c-call", 24, :raise, Kernel],

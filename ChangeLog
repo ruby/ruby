@@ -1,3 +1,7 @@
+Wed Mar 23 16:12:40 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* parse.y (primary): fix lineno of rescue and ensure.
+
 Wed Mar 23 00:39:05 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_settracefunc.rb (test_event): added tests for

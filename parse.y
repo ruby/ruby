@@ -2448,10 +2448,15 @@ primary		: literal
 		  kEND
 		    {
 		    /*%%%*/
-			if ($3 == NULL)
+			if ($3 == NULL) {
 			    $$ = NEW_NIL();
-			else
+			}
+			else {
+			    if (nd_type($3) == NODE_RESCUE ||
+				nd_type($3) == NODE_ENSURE)
+				nd_set_line($3, $<num>1);
 			    $$ = NEW_BEGIN($3);
+			}
 			nd_set_line($$, $<num>1);
 		    /*%
 			$$ = dispatch1(begin, $3);
