@@ -159,8 +159,8 @@ HANDLE GetCurrentThreadHandle(void)
 /* simulate flock by locking a range on the file */
 
 
-#define LK_ERR(f,i) ((f) ? (i = 0) : (errno = GetLastError()))
-#define LK_LEN      0xffff0000
+#define LK_ERR(f,i) ((f) ? (i = 0) : (errno = GetLastError() == ERROR_LOCK_VIOLATION ? EWOULDBLOCK : EACCES))
+#define LK_LEN      ULONG_MAX
 
 static VALUE
 flock_winnt(VALUE self, int argc, VALUE* argv)
@@ -174,31 +174,21 @@ flock_winnt(VALUE self, int argc, VALUE* argv)
 
     switch(oper) {
       case LOCK_SH:		/* shared lock */
-	LK_ERR(LockFileEx(fh, 0, 0, LK_LEN, 0, &o), i);
+	LK_ERR(LockFileEx(fh, 0, 0, LK_LEN, LK_LEN, &o), i);
 	break;
       case LOCK_EX:		/* exclusive lock */
-	LK_ERR(LockFileEx(fh, LOCKFILE_EXCLUSIVE_LOCK, 0, LK_LEN, 0, &o), i);
+	LK_ERR(LockFileEx(fh, LOCKFILE_EXCLUSIVE_LOCK, 0, LK_LEN, LK_LEN, &o), i);
 	break;
       case LOCK_SH|LOCK_NB:	/* non-blocking shared lock */
-	LK_ERR(LockFileEx(fh, LOCKFILE_FAIL_IMMEDIATELY, 0, LK_LEN, 0, &o), i);
+	LK_ERR(LockFileEx(fh, LOCKFILE_FAIL_IMMEDIATELY, 0, LK_LEN, LK_LEN, &o), i);
 	break;
       case LOCK_EX|LOCK_NB:	/* non-blocking exclusive lock */
 	LK_ERR(LockFileEx(fh,
 			  LOCKFILE_EXCLUSIVE_LOCK|LOCKFILE_FAIL_IMMEDIATELY,
-			  0, LK_LEN, 0, &o), i);
-	if (errno == EDOM)
-	    errno = EWOULDBLOCK;
+			  0, LK_LEN, LK_LEN, &o), i);
 	break;
       case LOCK_UN:		/* unlock lock */
-	if (UnlockFileEx(fh, 0, LK_LEN, 0, &o)) {
-	    i = 0;
-	    if (errno == EDOM)
-		errno = EWOULDBLOCK;
-	}
-	else {
-	    /* GetLastError() must returns `ERROR_NOT_LOCKED' */
-	    errno = EWOULDBLOCK;
-	}
+	LK_ERR(UnlockFileEx(fh, 0, LK_LEN, LK_LEN, &o), i);
 	break;
       default:            /* unknown */
 	errno = EINVAL;
@@ -217,20 +207,15 @@ flock_win95(VALUE self, int argc, VALUE* argv)
 
     switch(oper) {
       case LOCK_EX:
-	while(i == -1) {
-	    LK_ERR(LockFile(fh, 0, 0, LK_LEN, 0), i);
-	    if (errno != EDOM && i == -1) break;
-	}
+	do {
+	    LK_ERR(LockFile(fh, 0, 0, LK_LEN, LK_LEN), i);
+	} while (i && errno == EWOULDBLOCK);
 	break;
-      case LOCK_EX | LOCK_NB:
-	LK_ERR(LockFile(fh, 0, 0, LK_LEN, 0), i);
-	if (errno == EDOM)
-	    errno = EWOULDBLOCK;
+      case LOCK_EX|LOCK_NB:
+	LK_ERR(LockFile(fh, 0, 0, LK_LEN, LK_LEN), i);
 	break;
       case LOCK_UN:
-	LK_ERR(UnlockFile(fh, 0, 0, LK_LEN, 0), i);
-	if (errno == EDOM)
-	    errno = EWOULDBLOCK;
+	LK_ERR(UnlockFile(fh, 0, 0, LK_LEN, LK_LEN), i);
 	break;
       default:
 	errno = EINVAL;
@@ -241,7 +226,6 @@ flock_win95(VALUE self, int argc, VALUE* argv)
 #endif
 
 #undef LK_ERR
-#undef LK_LEN
 
 int
 flock(int fd, int oper)
@@ -2950,6 +2934,7 @@ int rb_w32_putc(int c, FILE* stream)
 struct asynchronous_arg_t {
     /* output field */
     void* stackaddr;
+    int errnum;
 
     /* input field */
     VALUE (*func)(VALUE self, int argc, VALUE* argv);
@@ -2961,13 +2946,17 @@ struct asynchronous_arg_t {
 static DWORD WINAPI
 call_asynchronous(PVOID argp)
 {
+    DWORD ret;
     struct asynchronous_arg_t *arg = argp;
     arg->stackaddr = &argp;
-    return (DWORD)arg->func(arg->self, arg->argc, arg->argv);
+    ret = (DWORD)arg->func(arg->self, arg->argc, arg->argv);
+    arg->errnum = errno;
+    return ret;
 }
 
-VALUE rb_w32_asynchronize(asynchronous_func_t func,
-			 VALUE self, int argc, VALUE* argv, VALUE intrval)
+VALUE
+rb_w32_asynchronize(asynchronous_func_t func, VALUE self,
+		    int argc, VALUE* argv, VALUE intrval)
 {
     DWORD val;
     BOOL interrupted = FALSE;
@@ -2977,6 +2966,7 @@ VALUE rb_w32_asynchronize(asynchronous_func_t func,
 	struct asynchronous_arg_t arg;
 
 	arg.stackaddr = NULL;
+	arg.errnum = 0;
 	arg.func = func;
 	arg.self = self;
 	arg.argc = argc;
@@ -3011,6 +3001,10 @@ VALUE rb_w32_asynchronize(asynchronous_func_t func,
 		    Debug(fprintf(stderr, "couldn't release stack:%p:%d\n",
 				  m.AllocationBase, GetLastError()));
 		}
+		errno = EINTR;
+	    }
+	    else {
+		errno = arg.errnum;
 	    }
 	}
     });
@@ -3020,7 +3014,6 @@ VALUE rb_w32_asynchronize(asynchronous_func_t func,
     }
 
     if (interrupted) {
-	errno = EINTR;
 	CHECK_INTS;
     }
 
@@ -3086,6 +3079,7 @@ rb_w32_fclose(FILE *fp)
 
     if (fflush(fp)) return -1;
     if (!is_socket(sock)) {
+	UnlockFile((HANDLE)sock, 0, 0, LK_LEN, LK_LEN);
 	return fclose(fp);
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
@@ -3103,6 +3097,7 @@ rb_w32_close(int fd)
     SOCKET sock = TO_SOCKET(fd);
 
     if (!is_socket(sock)) {
+	UnlockFile((HANDLE)sock, 0, 0, LK_LEN, LK_LEN);
 	return _close(fd);
     }
     if (closesocket(sock) == SOCKET_ERROR) {
