@@ -183,7 +183,7 @@ class CGI
       md5.update(String($$))
       md5.update('foobar')
       @new_session = true
-      md5.hexdigest[0,16]
+      md5.hexdigest
     end
     private :create_new_id
 
@@ -365,7 +365,7 @@ class CGI
       #          on Unix systems).
       # prefix:: the prefix to add to the session id when generating
       #          the filename for this session's FileStore file.
-      #          Defaults to "cgi_sid_".
+      #          Defaults to the empty string.
       # suffix:: the prefix to add to the session id when generating
       #          the filename for this session's FileStore file.
       #          Defaults to the empty string.
@@ -374,7 +374,7 @@ class CGI
       # not exist, or opened if it does.
       def initialize(session, option={})
 	dir = option['tmpdir'] || Dir::tmpdir
-	prefix = option['prefix'] || 'cgi_sid_'
+       prefix = option['prefix'] || ''
 	suffix = option['suffix'] || ''
 	id = session.session_id
         require 'digest/md5'
