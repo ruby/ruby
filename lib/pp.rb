@@ -6,47 +6,25 @@
 == Which seems better?
 
 non-pretty-printed output by (({p})) is:
-  #<PP:0x81a0d10 @stack=[], @genspace=#<Proc:0x81a0cc0>, @nest=[0], @newline="\n", @buf=#<PrettyPrint::Group:0x81a0c98 @group=0, @tail=0, @buf=[#<PrettyPrint::Group:0x81a0ba8 @group=1, @tail=0, @buf=[#<PrettyPrint::Text:0x81a0b30 @tail=2, @width=1, @text="[">, #<PrettyPrint::Group:0x81a0a68 @group=2, @tail=1, @buf=[#<PrettyPrint::Text:0x81a09f0 @tail=1, @width=1, @text="1">], @singleline_width=1>, #<PrettyPrint::Text:0x81a0a7c @tail=0, @width=1, @text=",">, #<PrettyPrint::Breakable:0x81a0a2c @group=2, @genspace=#<Proc:0x81a0cc0>, @newline="\n", @indent=1, @tail=2, @sep=" ", @width=1>, #<PrettyPrint::Group:0x81a09c8 @group=2, @tail=1, @buf=[#<PrettyPrint::Text:0x81a0950 @tail=1, @width=1, @text="2">], @singleline_width=1>, #<PrettyPrint::Text:0x81a0af4 @tail=0, @width=1, @text="]">], @singleline_width=6>], @singleline_width=6>, @sharing_detection=false>
+  #<PP:0x81fedf0 @genspace=#<Proc:0x81feda0>, @group_queue=#<PrettyPrint::GroupQueue:0x81fed3c @queue=[[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], []]>, @buffer=[], @newline="\n", @group_stack=[#<PrettyPrint::Group:0x81fed78 @breakables=[], @depth=0, @break=false>], @buffer_width=0, @indent=0, @maxwidth=79, @output_width=2, @output=#<IO:0x8114ee4>>
 
 pretty-printed output by (({pp})) is:
-  #<PP:0x40d0688
-   @buf=
-    #<PrettyPrint::Group:0x40d064c
-     @buf=
-      [#<PrettyPrint::Group:0x40d05d4
-        @buf=
-         [#<PrettyPrint::Text:0x40d0598 @tail=2, @text="[", @width=1>,
-          #<PrettyPrint::Group:0x40d0534
-           @buf=[#<PrettyPrint::Text:0x40d04f8 @tail=1, @text="1", @width=1>],
-           @group=2,
-           @singleline_width=1,
-           @tail=1>,
-          #<PrettyPrint::Text:0x40d053e @tail=0, @text=",", @width=1>,
-          #<PrettyPrint::Breakable:0x40d0516
-           @genspace=#<Proc:0x40d0656>,
-           @group=2,
-           @indent=1,
-           @newline="\n",
-           @sep=" ",
-           @tail=2,
-           @width=1>,
-          #<PrettyPrint::Group:0x40d04e4
-           @buf=[#<PrettyPrint::Text:0x40d04a8 @tail=1, @text="2", @width=1>],
-           @group=2,
-           @singleline_width=1,
-           @tail=1>,
-          #<PrettyPrint::Text:0x40d057a @tail=0, @text="]", @width=1>],
-        @group=1,
-        @singleline_width=6,
-        @tail=0>],
-     @group=0,
-     @singleline_width=6,
-     @tail=0>,
-   @genspace=#<Proc:0x40d0656>,
-   @nest=[0],
+  #<PP:0x81fedf0
+   @buffer=[],
+   @buffer_width=0,
+   @genspace=#<Proc:0x81feda0>,
+   @group_queue=
+    #<PrettyPrint::GroupQueue:0x81fed3c
+     @queue=
+      [[#<PrettyPrint::Group:0x81fed78 @break=false, @breakables=[], @depth=0>],
+       []]>,
+   @group_stack=
+    [#<PrettyPrint::Group:0x81fed78 @break=false, @breakables=[], @depth=0>],
+   @indent=0,
+   @maxwidth=79,
    @newline="\n",
-   @sharing_detection=false,
-   @stack=[]>
+   @output=#<IO:0x8114ee4>,
+   @output_width=2>
 
 I like the latter.  If you do too, this library is for you.
 
@@ -131,6 +109,12 @@ PP#pp to print the object.
 
     This method should return an array of names of instance variables as symbols or strings as:
     (({[:@a, :@b]})).
+
+--- pretty_print_inspect
+    is (({inspect})) implementation using (({pretty_print})).
+    If you implement (({pretty_print})), it can be used as follows.
+
+      alias inspect pretty_print_inspect
 =end
 
 require 'prettyprint'
@@ -254,38 +238,16 @@ class PP < PrettyPrint
 
   module ObjectMixin
     # 1. specific pretty_print
-    # 2. specific inspect
+    # 2. specific inspect or to_s
     # 3. generic pretty_print
-
-    Key = :__pp_instead_of_inspect__
 
     def pretty_print(pp)
       # specific pretty_print is not defined, try specific inspect.
-      begin
-        old = Thread.current[Key]
-        result1 = sprintf('#<%s:0x%x pretty_printed>', self.class.name, self.__id__ * 2)
-        Thread.current[Key] = [pp, result1]
-        result2 = ObjectMixin.pp_call_inspect(self)
-      ensure
-        Thread.current[Key] = old
-      end
-
-      unless result1.equal? result2
-        pp.text result2
-      end
-    end
-
-    def ObjectMixin.pp_call_inspect(obj); obj.inspect; end
-    CallInspectFrame = "#{__FILE__}:#{__LINE__ - 1}:in `pp_call_inspect'"
-
-    def inspect
-      if CallInspectFrame == caller[0]
-        # specific inspect is also not defined, use generic pretty_print. 
-        pp, result = Thread.current[Key]
-        pp.pp_object(self)
-        result
+      if /\(Kernel\)#/ !~ method(:inspect).inspect ||
+         /\(Kernel\)#/ !~ method(:to_s).inspect
+        pp.text inspect
       else
-        super
+        pp.pp_object(self)
       end
     end
 
@@ -298,6 +260,13 @@ class PP < PrettyPrint
 
     def pretty_print_instance_variables
       instance_variables.sort
+    end
+
+    def pretty_print_inspect
+      if /\(PP::ObjectMixin\)#/ =~ method(:pretty_print).inspect
+        raise "pretty_print is not overriden."
+      end
+      PP.singleline_pp(self, '')
     end
   end
 end
