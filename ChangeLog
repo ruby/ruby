@@ -1,3 +1,9 @@
+Mon Feb 16 20:41:32 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: show more warnings. (refering to mingw)
+
+	* bcc32/setup.mak: ditto.
+
 Mon Feb 16 13:39:44 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (rb_glob, rb_globi): add const.
