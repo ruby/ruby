@@ -17,8 +17,8 @@ and LoadLibrary() on Windows.
 
 = Using Ruby/DL
 
-We should usually use DL::Importable module provided by dl/import.rb.
-It has high-level functions to access to library functions. We use
+We should usually use DL::Importable module provided by "dl/import.rb".
+It has high-level functions to access library functions. We use
 DL::Importable module to extend a module as follows:
 
   require "dl/import"
@@ -26,22 +26,22 @@ DL::Importable module to extend a module as follows:
     extend DL::Importable
   end
 
-Now we can use methods dlload() and extern() in this module. We load the
-libraries using dlload(), and define wrapper methods to library functions
-using extern() respectively as follows:
+Now we can use methods dlload and extern in this module. We load the
+libraries using dlload, and define wrapper methods to library functions
+using extern respectively as follows:
 
   module LIBC
     extend DL::Importable
     dlload "libc.so.6","libm.so.6"
     extern "int strlen(char*)"
   end
+  # Note that we should not include the module LIBC from some reason.
 
-Note that we should not include the module LIBC from some reason.
-We can call the library function strlen() using LIBC.strlen(). If the first
+We can call the library function strlen() using LIBC.strlen. If the first
 character of given function name is an uppercase, the first character of the
 defined method name becomes lowercase.
 We can also construct memory images of structures and unions using functions
-struct and union which are defined in dl/struct.rb as follows:
+struct and union which are defined in "dl/struct.rb" as follows:
 
   require "dl/import"
   require "dl/struct"
