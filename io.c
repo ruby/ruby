@@ -126,9 +126,6 @@ static VALUE lineno = INT2FIX(0);
 #    define READ_DATA_PENDING_COUNT(fp) ((fp)->_egptr - (fp)->_gptr)
 #    define READ_DATA_PENDING_PTR(fp) ((fp)->_gptr)
 #  endif
-#elif defined(HAVE___FPENDING)
-#  define READ_DATA_PENDING(fp) (__fpending(fp) > 0)
-#  define READ_DATA_PENDING_COUNT(fp) (__fpending(fp))
 #elif defined(FILE_COUNT)
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_COUNT)
@@ -577,8 +574,9 @@ rb_io_seek(io, offset, whence)
     OpenFile *fptr;
     off_t pos;
 
+    pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
-    pos = io_seek(fptr, NUM2OFFT(offset), whence);
+    pos = io_seek(fptr, pos, whence);
     if (pos < 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -640,8 +638,9 @@ rb_io_set_pos(io, offset)
     OpenFile *fptr;
     off_t pos;
 
+    pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
-    pos = io_seek(fptr, NUM2OFFT(offset), SEEK_SET);
+    pos = io_seek(fptr, pos, SEEK_SET);
     if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -1014,7 +1013,6 @@ read_all(fptr, siz, str)
 	str = rb_tainted_str_new(0, siz);
     }
     else {
-	StringValue(str);
 	rb_str_resize(str, siz);
     }
     for (;;) {
@@ -1065,18 +1063,16 @@ io_read(argc, argv, io)
 
     rb_scan_args(argc, argv, "02", &length, &str);
 
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
     if (NIL_P(length)) {
+	GetOpenFile(io, fptr);
+	rb_io_check_readable(fptr);	
 	return read_all(fptr, remain_size(fptr), str);
     }
-
     len = NUM2LONG(length);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative length %ld given", len);
     }
 
-    if (feof(fptr->f)) return Qnil;
     if (NIL_P(str)) {
 	str = rb_str_new(0, len);
     }
@@ -1085,6 +1081,10 @@ io_read(argc, argv, io)
 	rb_str_modify(str);
 	rb_str_resize(str,len);
     }
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+    if (feof(fptr->f)) return Qnil;
     if (len == 0) return str;
 
     rb_str_locktmp(str);
@@ -1279,13 +1279,16 @@ rscheck(rsptr, rslen, rs)
     return 1;
 }
 
+static VALUE rb_io_getline(VALUE rs, VALUE io);
+
 static VALUE
-rb_io_getline(rs, fptr)
-    VALUE rs;
-    OpenFile *fptr;
+rb_io_getline(rs, io)
+    VALUE rs, io;
 {
     VALUE str = Qnil;
+    OpenFile *fptr;
 
+    GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (NIL_P(rs)) {
 	str = read_all(fptr, 0, Qnil);
@@ -1300,7 +1303,6 @@ rb_io_getline(rs, fptr)
 	long rslen;
 	int rspara = 0;
 
-	StringValue(rs);
 	rslen = RSTRING(rs)->len;
 	if (rslen == 0) {
 	    rsptr = "\n\n";
@@ -1379,9 +1381,9 @@ rb_io_gets_m(argc, argv, io)
     }
     else {
 	rb_scan_args(argc, argv, "1", &rs);
+	if (!NIL_P(rs)) StringValue(rs);
     }
-    GetOpenFile(io, fptr);
-    str = rb_io_getline(rs, fptr);
+    str = rb_io_getline(rs, io);
     rb_lastline_set(str);
 
     return str;
@@ -1523,10 +1525,10 @@ rb_io_readlines(argc, argv, io)
     }
     else {
 	rb_scan_args(argc, argv, "1", &rs);
+	if (!NIL_P(rs)) StringValue(rs);
     }
-    GetOpenFile(io, fptr);
     ary = rb_ary_new();
-    while (!NIL_P(line = rb_io_getline(rs, fptr))) {
+    while (!NIL_P(line = rb_io_getline(rs, io))) {
 	rb_ary_push(ary, line);
     }
     return ary;
@@ -1567,9 +1569,9 @@ rb_io_each_line(argc, argv, io)
     }
     else {
 	rb_scan_args(argc, argv, "1", &rs);
+	if (!NIL_P(rs)) StringValue(rs);
     }
-    GetOpenFile(io, fptr);
-    while (!NIL_P(str = rb_io_getline(rs, fptr))) {
+    while (!NIL_P(str = rb_io_getline(rs, io))) {
 	rb_yield(str);
     }
     return io;
@@ -2025,7 +2027,7 @@ rb_io_sysseek(argc, argv, io)
     if (rb_scan_args(argc, argv, "11", &offset, &ptrname) == 2) {
 	whence = NUM2INT(ptrname);
     }
-
+    pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
     if ((fptr->mode & FMODE_READABLE) && READ_DATA_BUFFERED(fptr->f)) {
 	rb_raise(rb_eIOError, "sysseek for buffered IO");
@@ -2033,7 +2035,7 @@ rb_io_sysseek(argc, argv, io)
     if ((fptr->mode & FMODE_WRITABLE) && (fptr->mode & FMODE_WBUF)) {
 	rb_warn("sysseek for buffered IO");
     }
-    pos = lseek(fileno(fptr->f), NUM2OFFT(offset), whence);
+    pos = lseek(fileno(fptr->f), pos, whence);
     if (pos == -1) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -2108,12 +2110,7 @@ rb_io_sysread(argc, argv, io)
 
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2LONG(len);
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
 
-    if (READ_DATA_BUFFERED(fptr->f)) {
-	rb_raise(rb_eIOError, "sysread for buffered IO");
-    }
     if (NIL_P(str)) {
 	str = rb_str_new(0, ilen);
     }
@@ -2124,6 +2121,12 @@ rb_io_sysread(argc, argv, io)
     }
     if (ilen == 0) return str;
 
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+
+    if (READ_DATA_BUFFERED(fptr->f)) {
+	rb_raise(rb_eIOError, "sysread for buffered IO");
+    }
     n = fileno(fptr->f);
     rb_thread_wait_fd(fileno(fptr->f));
     TRAP_BEG;
@@ -3782,7 +3785,7 @@ rb_io_initialize(argc, argv, io)
     }
     MakeOpenFile(io, fp);
     fp->mode = rb_io_modenum_flags(flags);
-	fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags));
+    fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags));
 
     return io;
 }
@@ -4043,16 +4046,15 @@ argf_getline(argc, argv)
     }
     else {
 	VALUE rs;
-	OpenFile *fptr;
 
 	if (argc == 0) {
 	    rs = rb_rs;
 	}
 	else {
 	    rb_scan_args(argc, argv, "1", &rs);
+	    if (!NIL_P(rs)) StringValue(rs);
 	}
-	GetOpenFile(current_file, fptr);
-	line = rb_io_getline(rs, fptr);
+	line = rb_io_getline(rs, current_file);
     }
     if (NIL_P(line) && next_p != -1) {
 	argf_close(current_file);
@@ -4748,7 +4750,6 @@ struct foreach_arg {
     int argc;
     VALUE sep;
     VALUE io;
-    OpenFile *fptr;
 };
 
 static VALUE
@@ -4757,7 +4758,7 @@ io_s_foreach(arg)
 {
     VALUE str;
 
-    while (!NIL_P(str = rb_io_getline(arg->sep, arg->fptr))) {
+    while (!NIL_P(str = rb_io_getline(arg->sep, arg->io))) {
 	rb_yield(str);
     }
     return Qnil;
@@ -4785,7 +4786,7 @@ rb_io_s_foreach(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE fname, io;
+    VALUE fname;
     OpenFile *fptr;
     struct foreach_arg arg;
 
@@ -4795,12 +4796,13 @@ rb_io_s_foreach(argc, argv)
     if (argc == 1) {
 	arg.sep = rb_default_rs;
     }
-    io = rb_io_open(RSTRING(fname)->ptr, "r");
-    if (NIL_P(io)) return Qnil;
-    GetOpenFile(io, fptr);
-    arg.fptr = fptr;
+    else if (!NIL_P(arg.sep)) {
+	StringValue(arg.sep);
+    }
+    arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
+    if (NIL_P(arg.io)) return Qnil;
 
-    return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, io);
+    return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
 }
 
 static VALUE
