@@ -1,3 +1,10 @@
+Sun Mar  6 16:41:33 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: HTTPHeader holds its header fields as an array
+	  (backport from CVS HEAD rev 1.112-1.123). [ruby-list:40629]
+
+	* test/net/http/test_httpheader.rb: new file.
+
 Sun Mar  6 11:47:10 2005  Sam Roberts  <sroberts@uniserve.com>
 
 	* lib/pp.rb: rdoced.  [ruby-core:4490]

@@ -1,8 +1,8 @@
 #
 # = net/http.rb
 #
-# Copyright (c) 1999-2003 Yukihiro Matsumoto
-# Copyright (c) 1999-2003 Minero Aoki
+# Copyright (c) 1999-2005 Yukihiro Matsumoto
+# Copyright (c) 1999-2005 Minero Aoki
 # 
 # Written & maintained by Minero Aoki <aamine@loveruby.net>.
 #
@@ -26,7 +26,6 @@
 require 'net/protocol'
 require 'uri'
 
-
 module Net # :nodoc:
 
   # :stopdoc:
@@ -48,9 +47,9 @@ module Net # :nodoc:
   # (formal version)
   # 
   #     require 'net/http'
-  #     Net::HTTP.start('www.example.com', 80) { |http|
-  #         response = http.get('/index.html')
-  #         puts response.body
+  #     Net::HTTP.start('www.example.com', 80) {|http|
+  #       response = http.get('/index.html')
+  #       puts response.body
   #     }
   # 
   # (shorter version)
@@ -67,8 +66,8 @@ module Net # :nodoc:
   # === Posting Form Data
   # 
   #     require 'net/http'
-  #     Net::HTTP.start('some.www.server', 80) { |http|
-  #         response = http.post('/cgi-bin/search.rb', 'query=ruby')
+  #     Net::HTTP.start('some.www.server', 80) {|http|
+  #       response = http.post('/cgi-bin/search.rb', 'query=ruby')
   #     }
   # 
   # === Accessing via Proxy
@@ -83,7 +82,7 @@ module Net # :nodoc:
   #     proxy_port = 8080
   #             :
   #     Net::HTTP::Proxy(proxy_addr, proxy_port).start('www.example.com') {|http|
-  #         # always connect to your.proxy.addr:8080
+  #       # always connect to your.proxy.addr:8080
   #             :
   #     }
   # 
@@ -118,7 +117,7 @@ module Net # :nodoc:
   #     require 'net/http'
   #     require 'uri'
   # 
-  #     def fetch( uri_str, limit = 10 )
+  #     def fetch(uri_str, limit = 10)
   #       # You should choose better exception. 
   #       raise ArgumentError, 'HTTP redirect too deep' if limit == 0
   # 
@@ -160,13 +159,13 @@ module Net # :nodoc:
   # allows you to use 1.2 features again.
   # 
   #     # example
-  #     Net::HTTP.start { |http1| ...(http1 has 1.2 features)... }
+  #     Net::HTTP.start {|http1| ...(http1 has 1.2 features)... }
   # 
   #     Net::HTTP.version_1_1
-  #     Net::HTTP.start { |http2| ...(http2 has 1.1 features)... }
+  #     Net::HTTP.start {|http2| ...(http2 has 1.1 features)... }
   # 
   #     Net::HTTP.version_1_2
-  #     Net::HTTP.start { |http3| ...(http3 has 1.2 features)... }
+  #     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
   # 
   # This function is NOT thread-safe.
   #
@@ -831,7 +830,7 @@ module Net # :nodoc:
         req.exec @socket, @curr_http_version, edit_path(req.path), body
         begin
           res = HTTPResponse.read_new(@socket)
-        end while HTTPContinue === res
+        end while res.kind_of?(HTTPContinue)
         res.reading_body(@socket, req.response_body_permitted?) {
           yield res if block_given?
         }
@@ -913,6 +912,17 @@ module Net # :nodoc:
   #
   module HTTPHeader
 
+    def initialize_http_header(h)
+      @header = {}
+      return unless h
+      h.each do |k,v|
+        key = k.downcase
+        $stderr.puts "net/http: warning: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
+        @header[key] = [v.strip]
+      end
+    end
+    private :initialize_http_header
+
     def size   #:nodoc: obsolete
       @header.size
     end
@@ -920,26 +930,83 @@ module Net # :nodoc:
     alias length size   #:nodoc: obsolete
 
     # Returns the header field corresponding to the case-insensitive key.
-    # For example, a key of "Content-Type" might return "text/html"
+    # See also #get_fields.
+    #
+    #   p response['Content-Type']   #=> "text/html; charset=utf-8"
+    #   p response['cOnTeNt-tYpE']   #=> "text/html; charset=utf-8"
+    #
     def [](key)
-      @header[key.downcase]
+      a = @header[key.downcase] or return nil
+      a.join(', ')
+    end
+
+    # [Ruby 1.8.3]
+    # Returns an array of header field strings corresponding to the
+    # case-insensitive +key+.  This method allows you to get duplicated
+    # header fields without any processing.  See also #[].
+    #
+    #   p response.get_fields('Set-Cookie')
+    #     #=> ["session=al98axx; expires=Fri, 31-Dec-1999 23:58:23",
+    #          "query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"]
+    #   p response['Set-Cookie']
+    #     #=> "session=al98axx; expires=Fri, 31-Dec-1999 23:58:23, query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"
+    #
+    def get_fields(key)
+      return nil unless @header[key.downcase]
+      @header[key.downcase].dup
     end
 
     # Sets the header field corresponding to the case-insensitive key.
+    # See also #add_field.
+    #
+    #   request['My-Header'] = 'a'
+    #   p request['My-Header']      #=> "a"
+    #   request['My-Header'] = 'b'
+    #   p request['My-Header']      #=> "b"
+    #
     def []=(key, val)
-      @header[key.downcase] = val
+      unless val
+        @header.delete key.downcase
+        return val
+      end
+      @header[key.downcase] = [val].flatten.map {|s| s.to_str }
+    end
+
+    # [Ruby 1.8.3]
+    # Adds header field instead of replace.
+    # Second argument +val+ must be a String.
+    # See also #[]=, #[] and #get_fields.
+    #
+    #   request.add_field 'X-My-Header', 'a'
+    #   p request['X-My-Header']              #=> "a"
+    #   p request.get_fields('X-My-Header')   #=> ["a"]
+    #   request.add_field 'X-My-Header', 'b'
+    #   p request['X-My-Header']              #=> "a, b"
+    #   p request.get_fields('X-My-Header')   #=> ["a", "b"]
+    #   request.add_field 'X-My-Header', 'c'
+    #   p request['X-My-Header']              #=> "a, b, c"
+    #   p request.get_fields('X-My-Header')   #=> ["a", "b", "c"]
+    #
+    def add_field(key, val)
+      if @header[key.downcase]
+        @header[key.downcase].push val
+      else
+        @header[key.downcase] = [val]
+      end
     end
 
     # Returns the header field corresponding to the case-insensitive key.
     # Returns the default value +args+, or the result of the block, or nil,
     # if there's no header field named key.  See Hash#fetch
     def fetch(key, *args, &block)   #:yield: +key+
-      @header.fetch(key.downcase, *args, &block)
+      @header.fetch(key.downcase, *args, &block).join(', ')
     end
 
     # Iterates for each header names and values.
     def each_header(&block)   #:yield: +key+, +value+
-      @header.each(&block)
+      @header.each do |k, va|
+        yield k, va.join(', ')
+      end
     end
 
     alias each each_header
@@ -951,7 +1018,9 @@ module Net # :nodoc:
 
     # Iterates for each header values.
     def each_value(&block)   #:yield: +value+
-      @header.each_value(&block)
+      @header.each_value do |va|
+        yield va.join(', ')
+      end
     end
 
     # Removes a header field.
@@ -966,17 +1035,21 @@ module Net # :nodoc:
 
     # Returns a Hash consist of header names and values.
     def to_hash
-      @header.dup
+      h = {}
+      @header.each do |k, va|
+        h[k] = va.join(', ')
+      end
+      h
     end
 
     # As for #each_header, except the keys are provided in capitalized form.
     def canonical_each
-      @header.each do |k,v|
-        yield canonical(k), v
+      @header.each do |k, va|
+        yield canonical(k), va.join(', ')
       end
     end
 
-    def canonical( k )
+    def canonical(k)
       k.split(/-/).map {|i| i.capitalize }.join('-')
     end
     private :canonical
@@ -984,8 +1057,8 @@ module Net # :nodoc:
     # Returns a Range object which represents Range: header field,
     # or +nil+ if there is no such header.
     def range
-      s = @header['range'] or return nil
-      s.split(/,/).map {|spec|
+      return nil unless @header['range']
+      self['Range'].split(/,/).map {|spec|
         m = /bytes\s*=\s*(\d+)?\s*-\s*(\d+)?/i.match(spec) or
                 raise HTTPHeaderSyntaxError, "wrong Range: #{spec}"
         d1 = m[1].to_i
@@ -1025,7 +1098,7 @@ module Net # :nodoc:
         raise TypeError, 'Range/Integer is required'
       end
 
-      @header['range'] = "bytes=#{s}"
+      @header['range'] = ["bytes=#{s}"]
       r
     end
 
@@ -1034,10 +1107,10 @@ module Net # :nodoc:
     # Returns an Integer object which represents the Content-Length: header field
     # or +nil+ if that field is not provided.
     def content_length
-      s = @header['content-length'] or return nil
-      m = /\d+/.match(s) or
+      return nil unless @header['content-length']
+      len = self['Content-Length'].slice(/\d+/) or
               raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
-      m[0].to_i
+      len.to_i
     end
 
     # Returns "true" if the "transfer-encoding" header is present and
@@ -1045,34 +1118,35 @@ module Net # :nodoc:
     # the content to be sent in "chunks" without at the outset
     # stating the entire content length.
     def chunked?
-      s = @header['transfer-encoding']
-      (s and /(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i === s) ? true : false
+      return false unless @header.key?('transfer-encoding')
+      s = self['Transfer-Encoding']
+      /(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i =~ s ? true : false
     end
 
     # Returns a Range object which represents Content-Range: header field.
     # This indicates, for a partial entity body, where this fragment
     # fits inside the full entity body, as range of byte offsets.
     def content_range
-      s = @header['content-range'] or return nil
-      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>i.match(s) or
+      return nil unless @header['content-range']
+      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>i.match(self['Content-Range']) or
               raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
       m[1].to_i .. m[2].to_i + 1
     end
 
     # The length of the range represented in Range: header.
     def range_length
-      r = self.content_range
-      r and (r.end - r.begin)
+      r = content_range() or return nil
+      r.end - r.begin
     end
 
     # Set the Authorization: header for "Basic" authorization.
     def basic_auth(account, password)
-      @header['authorization'] = basic_encode(account, password)
+      @header['authorization'] = [basic_encode(account, password)]
     end
 
     # Set Proxy-Authorization: header for "Basic" authorization.
     def proxy_basic_auth(account, password)
-      @header['proxy-authorization'] = basic_encode(account, password)
+      @header['proxy-authorization'] = [basic_encode(account, password)]
     end
 
     def basic_encode(account, password)
@@ -1097,15 +1171,8 @@ module Net # :nodoc:
       @request_has_body = reqbody
       @response_has_body = resbody
       @path = path
-
-      @header = {}
-      return unless initheader
-      initheader.each do |k,v|
-        key = k.downcase
-        $stderr.puts "net/http: warning: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
-        @header[key] = v.strip
-      end
-      @header['accept'] ||= '*/*'
+      initialize_http_header initheader
+      self['Accept'] ||= '*/*'
     end
 
     attr_reader :method
@@ -1145,15 +1212,13 @@ module Net # :nodoc:
           raise ArgumentError, 'HTTP request body is not permitted'
     end
 
-    def send_request_with_body( sock, ver, path, body )
-      @header['content-length'] = body.length.to_s
-      @header.delete 'transfer-encoding'
-
-      unless @header['content-type']
+    def send_request_with_body(sock, ver, path, body)
+      self['Content-Length'] = body.length.to_s
+      self.delete 'Transfer-Encoding'
+      unless self['Content-Type']
         $stderr.puts 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
-        @header['content-type'] = 'application/x-www-form-urlencoded'
+        self['Content-Type'] = 'application/x-www-form-urlencoded'
       end
-
       request sock, ver, path
       sock.write body
     end
@@ -1538,13 +1603,8 @@ module Net # :nodoc:
         httpv, code, msg = read_status_line(sock)
         res = response_class(code).new(httpv, code, msg)
         each_response_header(sock) do |k,v|
-          if res.key?(k)
-            res[k] << ', ' << v
-          else
-            res[k] = v
-          end
+          res.add_field k, v
         end
-
         res
       end
 
@@ -1585,8 +1645,7 @@ module Net # :nodoc:
       @http_version = httpv
       @code         = code
       @message      = msg
-
-      @header = {}
+      initialize_http_header nil
       @body = nil
       @read = false
     end
