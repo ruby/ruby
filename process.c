@@ -976,6 +976,7 @@ rb_f_system(argc, argv)
 
     if (argc == 1 && prog == 0) {
 #if defined(_WIN32)
+	SafeStringValue(argv[0]);
 	status = do_spawn(P_WAIT, RSTRING(argv[0])->ptr);
 #else
 	status = proc_spawn(argv[0]);

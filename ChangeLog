@@ -1,3 +1,8 @@
+Thu Oct 30 09:32:26 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* process.c (rb_f_system): fixed lack of security check before
+	  calling do_spawn() on win32. [ruby-talk:84555]
+
 Thu Oct 30 02:46:35 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): single array value to normal Proc#call
