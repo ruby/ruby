@@ -1,3 +1,10 @@
+Mon Dec 22 20:38:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi.rb: reduce eval.
+
+	* lib/cgi.rb (CGI::QueryExtension::read_multipart): alias path to
+	  local_path.  [ruby-list:38883]
+
 Mon Dec 22 20:09:31 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/test_property.rb: remove duplicated test method.

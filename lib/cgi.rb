@@ -921,27 +921,23 @@ class CGI
   #
   module QueryExtension
 
-    for env in %w[ CONTENT_LENGTH SERVER_PORT ]
-      eval( <<-END )
-        def #{env.sub(/^HTTP_/n, '').downcase}
-          env_table["#{env}"] && Integer(env_table["#{env}"])
-        end
-      END
+    %w[ CONTENT_LENGTH SERVER_PORT ].each do |env|
+      define_method(env.sub(/^HTTP_/n, '').downcase) do
+        val = env_table[env] && Integer(val)
+      end
     end
 
-    for env in %w[ AUTH_TYPE CONTENT_TYPE GATEWAY_INTERFACE PATH_INFO
+    %w[ AUTH_TYPE CONTENT_TYPE GATEWAY_INTERFACE PATH_INFO
         PATH_TRANSLATED QUERY_STRING REMOTE_ADDR REMOTE_HOST
         REMOTE_IDENT REMOTE_USER REQUEST_METHOD SCRIPT_NAME
         SERVER_NAME SERVER_PROTOCOL SERVER_SOFTWARE
 
         HTTP_ACCEPT HTTP_ACCEPT_CHARSET HTTP_ACCEPT_ENCODING
         HTTP_ACCEPT_LANGUAGE HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST
-        HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT ]
-      eval( <<-END )
-        def #{env.sub(/^HTTP_/n, '').downcase}
-          env_table["#{env}"]
-        end
-      END
+        HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT ].each do |env|
+      define_method(env.sub(/^HTTP_/n, '').downcase) do
+        env_table[env]
+      end
     end
 
     # Get the raw cookies as a string.
@@ -1034,34 +1030,22 @@ class CGI
 
         body.rewind
 
-        eval <<-END
-          def body.local_path
-            #{(body.class == StringIO)? "" : body.path.dump}
-          end
-        END
-
         /Content-Disposition:.* filename="?([^\";]*)"?/ni.match(head)
-        eval <<-END
-          def body.original_filename
-            #{
-              filename = ($1 or "").dup
-              if /Mac/ni.match(env_table['HTTP_USER_AGENT']) and
-                 /Mozilla/ni.match(env_table['HTTP_USER_AGENT']) and
-                 (not /MSIE/ni.match(env_table['HTTP_USER_AGENT']))
-                CGI::unescape(filename)
-              else
-                filename
-              end.dump.untaint
-            }.taint
-          end
-        END
-
+	filename = ($1 or "")
+	if /Mac/ni.match(env_table['HTTP_USER_AGENT']) and
+	    /Mozilla/ni.match(env_table['HTTP_USER_AGENT']) and
+	    (not /MSIE/ni.match(env_table['HTTP_USER_AGENT']))
+	  filename = CGI::unescape(filename)
+	end
+        
         /Content-Type: (.*)/ni.match(head)
-        eval <<-END
-          def body.content_type
-            #{($1 or "").dump.untaint}.taint
-          end
-        END
+        content_type = ($1 or "")
+
+        (class << body; self; end).class_eval do
+          alias local_path path
+          define_method(:original_filename) {filename.dup.taint}
+          define_method(:content_type) {content_type.dup.taint}
+        end
 
         /Content-Disposition:.* name="?([^\";]*)"?/ni.match(head)
         name = $1.dup
@@ -1239,31 +1223,22 @@ class CGI
     #
     #   - -
     def nn_element_def(element)
-      <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
-          "<element.upcase" + attributes.collect{|name, value|
-            next unless value
-            " " + CGI::escapeHTML(name) +
-            if true == value
-              ""
-            else
-              '="' + CGI::escapeHTML(value) + '"'
-            end
-          }.to_s + ">" +
+      nOE_element_def(element, <<-END)
           if block_given?
             yield.to_s
           else
             ""
           end +
-          "</element.upcase>"
+          "</#{element.upcase}>"
       END
     end
 
     # Generate code for an empty element.
     #
     #   - O EMPTY
-    def nOE_element_def(element)
-      <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
-          "<element.upcase" + attributes.collect{|name, value|
+    def nOE_element_def(element, append = nil)
+      s = <<-END
+          "<#{element.upcase}" + attributes.collect{|name, value|
             next unless value
             " " + CGI::escapeHTML(name) +
             if true == value
@@ -1273,6 +1248,8 @@ class CGI
             end
           }.to_s + ">"
       END
+      s.sub!(/\Z/, " +") << append if append
+      s
     end
 
     # Generate code for an element for which the end (and possibly the
@@ -1280,18 +1257,9 @@ class CGI
     #
     #   O O or - O
     def nO_element_def(element)
-      <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
-          "<element.upcase" + attributes.collect{|name, value|
-            next unless value
-            " " + CGI::escapeHTML(name) +
-            if true == value
-              ""
-            else
-              '="' + CGI::escapeHTML(value) + '"'
-            end
-          }.to_s + ">" +
+      nOE_element_def(element, <<-END)
           if block_given?
-            yield.to_s + "</element.upcase>"
+            yield.to_s + "</#{element.upcase}>"
           else
             ""
           end
@@ -2301,15 +2269,21 @@ class CGI
         @cookies = CGI_COOKIES.nil? ? nil : CGI_COOKIES.dup
       else
         initialize_query()  # set @params, @cookies
-        eval "CGI_PARAMS  = @params.nil?  ? nil : @params.dup"
-        eval "CGI_COOKIES = @cookies.nil? ? nil : @cookies.dup"
+        params  = @params.nil?  ? nil : @params.dup
+        cookies = @cookies.nil? ? nil : @cookies.dup
+        (class << self; self; end).class_eval do
+          const_set(:CGI_PARAMS,  params)
+          const_set(:CGI_COOKIES, cookies)
+        end
         if defined?(MOD_RUBY) and (RUBY_VERSION < "1.4.3")
           raise "Please, use ruby1.4.3 or later."
         else
           at_exit() do
             if defined?(CGI_PARAMS)
-              CGI.class_eval("remove_const(:CGI_PARAMS)")
-              CGI.class_eval("remove_const(:CGI_COOKIES)")
+              CGI.class_eval do
+                remove_const(:CGI_PARAMS)
+                remove_const(:CGI_COOKIES)
+              end
             end
           end
         end
