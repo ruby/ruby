@@ -313,6 +313,9 @@ static VALUE var_getter();
 static void  var_setter();
 static void  var_marker();
 
+static VALUE alias_getter();
+static void  alias_setter();
+
 struct global_entry*
 rb_global_entry(id)
     ID id;
@@ -420,6 +423,44 @@ readonly_setter(val, id, var)
     void *var;
 {
     rb_name_error(id, "can't set variable %s", rb_id2name(id));
+}
+
+static int
+alias_fixup(entry1, entry2)
+    struct global_entry *entry1, *entry2;
+{
+    if (entry2->getter != val_getter) return 0;
+    entry1->data   = &entry2->data;
+    entry1->getter = var_getter;
+    if (entry2->setter == val_setter)
+	entry1->setter = var_setter;
+    else
+	entry1->setter = entry2->setter;
+    return 1;
+}
+
+static VALUE
+alias_getter(id, data, entry)
+    ID id;
+    void *data;
+    struct global_entry *entry;
+{
+    struct global_entry *entry2 = data;
+    VALUE val = (*entry2->getter)(id, entry2->data, entry2);
+    alias_fixup(entry, entry2);
+    return val;
+}
+
+static void
+alias_setter(val, id, data, entry)
+    VALUE val;
+    ID id;
+    void *data;
+    struct global_entry *entry;
+{
+    struct global_entry *entry2 = data;
+    (*entry2->setter)(val, id, entry2->data, entry2);
+    alias_fixup(entry, entry2);
 }
 
 static int
@@ -605,6 +646,7 @@ rb_f_untrace_var(argc, argv)
     }
     return Qnil;
 }
+
 VALUE
 rb_gvar_get(entry)
     struct global_entry *entry;
@@ -684,6 +726,8 @@ VALUE
 rb_gvar_defined(entry)
     struct global_entry *entry;
 {
+    if (entry->getter == alias_getter && !alias_fixup(entry, entry->data))
+	entry = entry->data;
     if (entry->getter == undef_getter) return Qfalse;
     return Qtrue;
 }
@@ -727,10 +771,17 @@ rb_alias_variable(name1, name2)
     entry1 = rb_global_entry(name1);
     entry2 = rb_global_entry(name2);
 
-    entry1->data   = entry2->data;
-    entry1->getter = entry2->getter;
-    entry1->setter = entry2->setter;
-    entry1->marker = entry2->marker;
+    if (entry2->getter == undef_getter) {
+	entry1->data   = entry2;
+	entry1->getter = alias_getter;
+	entry1->setter = alias_setter;
+    }
+    else if (!alias_fixup(entry1, entry2)) {
+	entry1->data   = entry2->data;
+	entry1->getter = entry2->getter;
+	entry1->setter = entry2->setter;
+    }
+    entry1->marker = undef_marker;
 }
 
 static int special_generic_ivar = 0;
