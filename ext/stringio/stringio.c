@@ -14,6 +14,11 @@
 
 #include "ruby.h"
 #include "rubyio.h"
+#if defined(HAVE_FCNTL_H) || defined(_WIN32)
+#include <fcntl.h>
+#elif defined(HAVE_SYS_FCNTL_H)
+#include <sys/fcntl.h>
+#endif
 
 #define STRIO_EOF FMODE_SYNC
 
