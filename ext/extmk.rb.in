@@ -492,6 +492,15 @@ EOS
     mfile.puts "
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+
+.cc.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+.cpp.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+.cxx.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+.C.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
 "
   elsif /nmake/i =~ $make
     mfile.print "
@@ -505,9 +514,6 @@ EOS
     mfile.print "
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
-
-.cc.@OBJEXT@ .cpp.@OBJEXT@ .cxx.@OBJEXT@ .C.@OBJEXT@:
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
 "
   end
 
