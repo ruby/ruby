@@ -1,3 +1,8 @@
+Mon Apr 17 15:16:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_close): to detect some exceptional status, writable
+	  IO should be flushed before close;
+
 Fri Apr 14 23:29:45 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* stable version 1.4.4 released.

@@ -211,7 +211,7 @@ io_write(io, str)
     }
 #endif
     if (fptr->mode & FMODE_SYNC) {
-	fflush(f);
+	if (fflush(f) == EOF) rb_sys_fail(fptr->path);
     }
 
     return INT2FIX(n);
@@ -243,7 +243,7 @@ rb_io_flush(io)
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
-    if (fflush(f) == EOF) rb_sys_fail(0);
+    if (fflush(f) == EOF) rb_sys_fail(fptr->path);
 
     return io;
 }
@@ -958,6 +958,9 @@ rb_io_close(io)
     OpenFile *fptr;
 
     fptr = RFILE(io)->fptr;
+    if (fptr->mode & FMODE_WRITABLE) {
+	rb_io_flush(io);
+    }
     rb_io_fptr_close(fptr);
     if (fptr->pid) {
 	rb_syswait(fptr->pid);
@@ -1698,10 +1701,10 @@ rb_io_reopen(io, nfile)
 
     if (fptr == orig) return io;
     if (orig->f2) {
-	fflush(orig->f2);
+	if (fflush(orig->f2) == EOF) rb_sys_fail(orig->path);
     }
     else if (orig->mode & FMODE_WRITABLE) {
-	fflush(orig->f);
+	if (fflush(orig->f) == EOF) rb_sys_fail(orig->path);
     }
     rb_thread_fd_close(fileno(fptr->f));
 
@@ -1814,10 +1817,10 @@ rb_io_clone(io)
     MakeOpenFile(obj, fptr);
 
     if (orig->f2) {
-	fflush(orig->f2);
+	if (fflush(orig->f2) == EOF) rb_sys_fail(orig->path);
     }
     else if (orig->mode & FMODE_WRITABLE) {
-	fflush(orig->f);
+	if (fflush(orig->f) == EOF) rb_sys_fail(orig->path);
     }
 
     /* copy OpenFile structure */
@@ -1941,8 +1944,9 @@ rb_io_putc(io, ch)
 
     if (fputc(c, f) == EOF)
 	rb_sys_fail(fptr->path);
-    if (fptr->mode & FMODE_SYNC)
-	fflush(f);
+    if (fptr->mode & FMODE_SYNC) {
+	if (fflush(f) == EOF) rb_sys_fail(fptr->path);
+    }
 
     return ch;
 }

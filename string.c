@@ -855,6 +855,10 @@ rb_str_replace(str, beg, len, val)
     int beg;
     int len;
 {
+    if (RSTRING(str)->len < beg + len) {
+	len = RSTRING(str)->len - beg;
+    }
+
     if (len < RSTRING(val)->len) {
 	/* expand string */
 	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+RSTRING(val)->len-len+1);

@@ -671,7 +671,11 @@ $x.each_byte {|i|
 }
 ok(!$bad)
 
-check "asignment"
+s = "a string"
+s[0..s.size]="another string"
+ok(s == "another string")
+
+check "assignment"
 a = nil
 ok(defined?(a))
 ok(a == nil)
