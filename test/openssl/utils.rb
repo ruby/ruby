@@ -100,6 +100,7 @@ Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxXoXi9OAIUBG98h4tilg6S
                 issuer, issuer_key, digest)
     crl = OpenSSL::X509::CRL.new
     crl.version = 1
+    crl.issuer = issuer.subject
     crl.last_update = lastup
     crl.next_update = nextup
     revoke_info.each{|serial, time, reason_code|
