@@ -1947,8 +1947,6 @@ yycompile(f, line)
     int n;
     NODE *node = 0;
 
-    f = strdup(f);
-
     if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
 	VALUE hash, fname;
