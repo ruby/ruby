@@ -73,6 +73,8 @@
 # <tt>:verbose</tt> flags to methods in FileUtils.
 # 
 
+require 'find'
+
 
 module FileUtils
 
@@ -148,9 +150,8 @@ module FileUtils
     fu_output_message "mkdir #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
     return if options[:noop]
 
-    mode = options[:mode] || (0777 & ~File.umask)
     list.each do |dir|
-      Dir.mkdir dir.sub(%r</\z>, ''), mode
+      fu_mkdir dir, options[:mode]
     end
   end
 
@@ -176,11 +177,10 @@ module FileUtils
     fu_output_message "mkdir -p #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
     return *list if options[:noop]
 
-    mode = options[:mode] || (0777 & ~File.umask)
     list.map {|path| path.sub(%r</\z>, '') }.each do |path|
       # optimize for the most common case
       begin
-        Dir.mkdir path, mode
+        fu_mkdir path, options[:mode]
         next
       rescue SystemCallError
         next if File.directory?(path)
@@ -193,7 +193,7 @@ module FileUtils
       end
       stack.reverse_each do |path|
         begin
-          Dir.mkdir path, mode
+          fu_mkdir path, options[:mode]
         rescue SystemCallError => err
           raise unless File.directory?(path)
         end
@@ -205,6 +205,17 @@ module FileUtils
 
   alias mkpath    mkdir_p
   alias makedirs  mkdir_p
+
+  def fu_mkdir(path, mode)
+    path = path.sub(%r</\z>, '')
+    if mode
+      Dir.mkdir path, mode
+      File.chmod mode, path
+    else
+      Dir.mkdir path
+    end
+  end
+  private :fu_mkdir
 
 
   #
@@ -795,6 +806,115 @@ module FileUtils
   #
   # Options: noop verbose
   # 
+  # Changes permission bits on the named files and directories (in +list+)
+  # to the bit pattern represented by +mode+.
+  # 
+  #   FileUtils.chmod 0700, '/home/test/.ssh', :verbose => true
+  # 
+  def chmod_R(mode, list, options = {})
+    fu_check_options options, :noop, :verbose
+    list = fu_list(list)
+    fu_output_message sprintf('chmod -R %o %s',
+                              mode, list.join(' ')) if options[:verbose]
+    return if options[:noop]
+    list.each do |prefix|
+      Find.find(prefix) do |path|
+        File.chmod mode, path
+      end
+    end
+  end
+
+
+  #
+  # Options: noop verbose
+  # 
+  # Changes owner and group on the named files (in +list+)
+  # to the user +user+ and the group +group.  +user+ and +group+
+  # may be an ID (Integer/String) or a name (String).
+  # If +user+ or +group+ is nil, this method does not change
+  # the attribute.
+  # 
+  #   FileUtils.chown 'root', 'staff', '/usr/local/bin/ruby'
+  #   FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), :verbose => true
+  # 
+  def chown(user, group, list, options = {})
+    fu_check_options options, :noop, :verbose
+    list = fu_list(list)
+    fu_output_message sprintf('chown %s%s',
+                              [user,group].compact.join(':') + ' ',
+                              list.join(' ')) if options[:verbose]
+    return if options[:noop]
+    File.chown fu_get_uid(user), fu_get_gid(group), *list
+  end
+
+
+  #
+  # Options: noop verbose
+  # 
+  # Changes owner and group on the named files (in +list+)
+  # to the user +user+ and the group +group.  +user+ and +group+
+  # may be an ID (Integer/String) or a name (String).
+  # If +user+ or +group+ is nil, this method does not change
+  # the attribute.
+  # 
+  #   FileUtils.chmod_R 'www', 'www', '/var/www/htdocs'
+  #   FileUtils.chmod_R 'cvs', 'cvs', '/var/cvs', :verbose => true
+  # 
+  def chown_R(mode, list, options = {})
+    fu_check_options options, :noop, :verbose
+    list = fu_list(list)
+    fu_output_message sprintf('chown -R %s%s',
+                              [user,group].compact.join(':') + ' ',
+                              list.join(' ')) if options[:verbose]
+    return if options[:noop]
+    uid = fu_get_uid(user)
+    gid = fu_get_gid(group)
+    return unless uid or gid
+    list.each do |prefix|
+      Find.find(prefix) do |path|
+        File.chown uid, gid, path
+      end
+    end
+  end
+
+  begin
+    require 'etc'
+
+    def fu_get_uid(user)
+      return nil unless user
+      user = user.to_s
+      if /\A\d+\z/ =~ user
+      then user.to_i
+      else Etc.getpwnam(user).uid
+      end
+    end
+    private :fu_get_uid
+
+    def fu_get_gid(group)
+      return nil unless group
+      if /\A\d+\z/ =~ group
+      then group.to_i
+      else Etc.getgrnam(group).gid
+      end
+    end
+    private :fu_get_gid
+
+  rescue LoadError
+    # need Win32 support???
+
+    def fu_get_uid(user)
+      user    # FIXME
+    end
+
+    def fu_get_gid(group)
+      group   # FIXME
+    end
+  end
+
+
+  #
+  # Options: noop verbose
+  # 
   # Updates modification time (mtime) and access time (atime) of file(s) in
   # +list+.  Files are created if they don't exist.
   # 
@@ -918,6 +1038,9 @@ module FileUtils
     'cd'           => %w( noop verbose ),
     'chdir'        => %w( noop verbose ),
     'chmod'        => %w( noop verbose ),
+    'chmod_R'      => %w( noop verbose ),
+    'chown'        => %w( noop verbose ),
+    'chown_R'      => %w( noop verbose ),
     'copy'         => %w( noop verbose preserve ),
     'cp'           => %w( noop verbose preserve ),
     'cp_r'         => %w( noop verbose preserve ),

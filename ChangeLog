@@ -1,3 +1,8 @@
+Sat Dec  4 20:45:52 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mkdir, mkdir_p): should chmod explicitly.
+	  [ruby-core:03881]
+
 Sat Dec  4 18:54:09 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: removed empty lines from output.

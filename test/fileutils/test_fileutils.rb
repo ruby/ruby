@@ -16,7 +16,7 @@ Dir.mkdir tmproot unless File.directory?(tmproot)
 Dir.chdir tmproot
 
 def have_drive_letter?
-  /djgpp|mswin(?!ce)|mingw|bcc|emx/ === RUBY_PLATFORM
+  /djgpp|mswin(?!ce)|mingw|bcc|emx/ =~ RUBY_PLATFORM
 end
 
 def have_file_perm?
@@ -579,10 +579,17 @@ end
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
     Dir.rmdir 'tmp/tmp'
 
+if have_file_perm?
+    mkdir 'tmp/tmp', :mode => 07777
+    assert_directory 'tmp/tmp'
+    assert_equal 07777, (File.stat('tmp/tmp').mode & 07777)
+    Dir.rmdir 'tmp/tmp'
+end
+
 if lf_in_path_allowed?
-      mkdir "tmp-first-line\ntmp-second-line"
-      assert_directory "tmp-first-line\ntmp-second-line"
-      Dir.rmdir "tmp-first-line\ntmp-second-line"
+    mkdir "tmp-first-line\ntmp-second-line"
+    assert_directory "tmp-first-line\ntmp-second-line"
+    Dir.rmdir "tmp-first-line\ntmp-second-line"
 end
 
     # pathname
@@ -640,6 +647,14 @@ end
     # (rm(1) try to chdir to parent directory, it fails to remove directory.)
     Dir.rmdir 'tmp/tmp'
     Dir.rmdir 'tmp'
+
+if have_file_perm?
+    mkdir_p 'tmp/tmp/tmp', :mode => 07777
+    assert_directory 'tmp/tmp/tmp'
+    assert_equal 07777, (File.stat('tmp/tmp/tmp').mode & 07777)
+    Dir.rmdir 'tmp/tmp/tmp'
+    Dir.rmdir 'tmp/tmp'
+end
 
     # pathname
     assert_nothing_raised {
