@@ -60,18 +60,30 @@ Summary of the changes since 1.6.4:
 
   Added.
 
-: require
+: require / $LOAD_PATH
 
-  Changed to search directories for ".rb" and ".so" at the same time,
-  instead of search directories for ".rb" then for ".so".  The
-  previous behavior had a security risk. [ruby-bugs (PR#140)]
+  Changed to use a new algorithm to locate a library.
 
-  Which means, now:
+  Now when requiring "foo", the following directories are searched for
+  the library in the order listed.
 
-    require "socket"
+    $prefix/lib/ruby/site_ruby/$ver/foo.rb
+    $prefix/lib/ruby/site_ruby/$ver/foo.so
+    $prefix/lib/ruby/site_ruby/$ver/$arch/foo.rb
+    $prefix/lib/ruby/site_ruby/$ver/$arch/foo.so
+    $prefix/lib/ruby/site_ruby/foo.rb
+    $prefix/lib/ruby/site_ruby/foo.so
+    $prefix/lib/ruby/$ver/foo.rb
+    $prefix/lib/ruby/$ver/foo.so
+    $prefix/lib/ruby/$ver/$arch/foo.rb
+    $prefix/lib/ruby/$ver/$arch/foo.so
+    ./foo.rb
+    ./foo.so
 
-  will find the standard socket.so prior to a socket.rb in the current
-  directory.
+  The previous behavior had a potential security risk because a
+  foo.rb (if exists) in the current directory is located prior to a
+  foo.so in $prefix/lib/ruby/site_ruby/$ver/$arch.
+  [ruby-bugs (PR#140)]
 
 : lib/sync.rb
 : lib/mutex_m.rb
