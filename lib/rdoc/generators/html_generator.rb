@@ -155,7 +155,7 @@ module Generators
 
         "<img src=\"#{url}\">"
       else
-        "<a href=\"#{url}\">#{text.sub(%r{^\w+:/*}, '')}</a>"
+        "<a href=\"#{url}\">#{text.sub(%r{^#{type}:/*}, '')}</a>"
       end
     end
 
