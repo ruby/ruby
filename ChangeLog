@@ -26,6 +26,14 @@ Thu May 16 15:14:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* djgpp/config.hin, djgpp/config.sed: catch up with the latest change.
 
+Wed May 15 06:13:35 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): need to preserve errno before
+	  calling rb_trap_exec().
+
+	* regex.c (calculate_must_string): a bug in charset/charset_not
+	  parsing.
+
 Tue May 14 14:49:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* gc.c (is_pointer_to_heap): avoid GCC 3.1 warnings.

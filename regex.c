@@ -1045,7 +1045,7 @@ calculate_must_string(start, end)
       p += mcnt;
       mcnt = EXTRACT_UNSIGNED_AND_INCR(p);
       while (mcnt--) {
-	p += 4;
+	p += 8;
       }
       break;
 

@@ -7638,10 +7638,12 @@ rb_thread_schedule()
 
 	n = select(max+1, &readfds, &writefds, &exceptfds, delay_ptr);
 	if (n < 0) {
+	    int e = errno;
+
 	    if (rb_trap_pending) rb_trap_exec();
-	    if (errno == EINTR) goto again;
+	    if (e == EINTR) goto again;
 #ifdef ERESTART
-	    if (errno == ERESTART) goto again;
+	    if (e == ERESTART) goto again;
 #endif
 	    FOREACH_THREAD_FROM(curr, th) {
 		if (th->wait_for & WAIT_SELECT) {
