@@ -18,7 +18,6 @@ class Shell
   #
   class Filter
     include Enumerable
-    include Error
 
     def initialize(sh)
       @shell = sh	  # parent shell
@@ -47,7 +46,7 @@ class Shell
 	self.input = src
 	self
       else
-	Filter.Fail CantApplyMethod, "<", to.class
+	Shell.Fail Error::CantApplyMethod, "<", to.class
       end
     end
 
@@ -63,7 +62,7 @@ class Shell
       when IO
 	each(){|l| to << l}
       else
-	Filter.Fail CantApplyMethod, ">", to.class
+	Shell.Fail Error::CantApplyMethod, ">", to.class
       end
       self
     end
@@ -72,7 +71,7 @@ class Shell
       begin
 	Shell.cd(@shell.pwd).append(to, self)
       rescue CantApplyMethod
-	Shell.Fail CantApplyMethod, ">>", to.class
+	Shell.Fail Error::CantApplyMethod, ">>", to.class
       end
     end
 

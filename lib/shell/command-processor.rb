@@ -21,6 +21,7 @@ require "shell/builtin-command"
 
 class Shell
   class CommandProcessor
+#    include Error
 
     #
     # initialize of Shell and related classes.
@@ -220,6 +221,13 @@ class Shell
     #	  sh.system("ls", "-l") | sh.head > STDOUT
     # 
     def system(command, *opts)
+      if opts.empty?
+	if command =~ /\*|\?|\{|\}|\[|\]|<|>|\(|\)|~|&|\||\\|\$|;|'|`|"|\n/
+	  return SystemCommand.new(@shell, find_system_command("sh"), "-c", command)
+	else
+	  command, *opts = command.split(/\s+/)
+	end
+      end
       SystemCommand.new(@shell, find_system_command(command), *opts)
     end
 
@@ -277,7 +285,7 @@ class Shell
       when IO
 	AppendIO.new(@shell, to, filter)
       else
-	Shell.Fail CantApplyMethod, "append", to.class
+	Shell.Fail Error::CantApplyMethod, "append", to.class
       end
     end
 
@@ -327,10 +335,10 @@ class Shell
 	if exists?(path)
 	  return path
 	else
-	  Shell.Fail CommandNotFound, command
+	  Shell.Fail Error::CommandNotFound, command
 	end
       when false
-	Shell.Fail CommandNotFound, command
+	Shell.Fail Error::CommandNotFound, command
       end
 
       for p in @shell.system_path
@@ -341,7 +349,7 @@ class Shell
 	end
       end
       @system_commands[command] = false
-      Shell.Fail CommandNotFound, command
+      Shell.Fail Error::CommandNotFound, command
     end
 
     #
