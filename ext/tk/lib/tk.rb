@@ -3165,9 +3165,9 @@ class TkObject<TkKernel
   end
 
   def tk_trace_variable(v)
-    unless v.kind_of?(TkVariable)
-      fail(ArgumentError, "type error (#{v.class}); must be TkVariable object")
-    end
+    #unless v.kind_of?(TkVariable)
+    #  fail(ArgumentError, "type error (#{v.class}); must be TkVariable object")
+    #end
     v
   end
   private :tk_trace_variable

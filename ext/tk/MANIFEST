@@ -671,6 +671,7 @@ sample/tkextlib/tktable/command.rb
 sample/tkextlib/tktable/debug.rb
 sample/tkextlib/tktable/dynarows.rb
 sample/tkextlib/tktable/maxsize.rb
+sample/tkextlib/tktable/spreadsheet.rb
 sample/tkextlib/tktable/valid.rb
 sample/tkextlib/vu/LICENSE.orig
 sample/tkextlib/vu/README.txt
