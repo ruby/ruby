@@ -48,8 +48,6 @@ Net::Protocol
 
   class POP3 < Protocol
 
-    Version = '1.1.3'
-
     protocol_param :port,         '110'
     protocol_param :command_type, '::Net::POP3Command'
 
