@@ -7527,7 +7527,9 @@ rb_thread_ready(th)
     rb_thread_t th;
 {
     th->wait_for = 0;
-    th->status = THREAD_RUNNABLE;
+    if (th->status != THREAD_TO_KILL) {
+	th->status = THREAD_RUNNABLE;
+    }
 }
 
 static void
@@ -7538,6 +7540,7 @@ rb_thread_remove(th)
 
     rb_thread_ready(th);
     th->status = THREAD_KILLED;
+    th->gid = 0;
     th->prev->next = th->next;
     th->next->prev = th->prev;
 }
@@ -7843,7 +7846,6 @@ rb_thread_schedule()
 	}
 	END_FOREACH_FROM(curr, th);
 	next = main_thread;
-	next->gid = 0;
 	rb_thread_ready(next);
 	next->status = THREAD_TO_KILL;
 	rb_thread_save_context(curr_thread);
@@ -8121,6 +8123,7 @@ rb_thread_list()
 	switch (th->status) {
 	  case THREAD_RUNNABLE:
 	  case THREAD_STOPPED:
+	  case THREAD_TO_KILL:
 	    rb_ary_push(ary, th->thread);
 	  default:
 	    break;
@@ -8936,12 +8939,12 @@ rb_thread_inspect(thread)
 void
 rb_thread_atfork()
 {
-#if 1				/* enable on 1.7 */
     rb_thread_t th;
 
     if (rb_thread_alone()) return;
     FOREACH_THREAD(th) {
 	if (th != curr_thread) {
+	    th->gid = 0;
 	    th->status = THREAD_KILLED;
 	}
     }
@@ -8949,7 +8952,6 @@ rb_thread_atfork()
     main_thread = curr_thread;
     curr_thread->next = curr_thread;
     curr_thread->prev = curr_thread;
-#endif
 }
 
 static VALUE rb_cCont;

@@ -1,12 +1,42 @@
+Mon Mar 25 13:24:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (bsock_do_not_rev_lookup_set): should not be
+	  allowed when $SAFE > 3.
+
+	* eval.c (rb_thread_ready): THREAD_TO_KILL threads should not turn
+	  into THREAD_RUNNABLE on wakeup.
+
+	* eval.c (rb_thread_list): THREAD_TO_KILL threads should be in the
+	  list. 
+
+	* eval.c (thgroup_list): ditto; by moving gid clearance from
+	  rb_thread_cleanup().
+
 Mon Mar 25 11:06:19 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* dln.c (dln_argv0): unused unless USE_DLN_A_OUT.
 
 	* regex.c (mbc_startpos_func): should be static.
 
+Sun Mar 24 12:19:09 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* dir.c (fnmatch): "*/bar" (with FNM_PATHNAME flag) does not
+	  match "foo/bar".
+
 Sun Mar 24 00:46:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* util.c (push_element): avoid warning for djgpp.
+
+Sat Mar 23 01:50:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): files on /proc filesystem with zero stat size,
+	  may have contents.
+
+Fri Mar 22 18:07:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (tcp_s_gethostbyname): refactored.
+
+	* ext/socket/socket.c (sock_s_gethostbyname): ditto.
 
 Fri Mar 22 16:46:54 2002  Minero Aoki  <aamine@loveruby.net>
 
@@ -53,6 +83,10 @@ Fri Mar 22 13:51:11 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/bigfloat/.cvsignore, ext/bigfloat/MANIFEST: BigFloat 1.1.8
 	  has been imported.  Add .cvsignore and MANIFEST.
+
+Fri Mar 22 04:07:55 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* sprintf.c (rb_f_printf): discard meaningless prefix ".." for '%u'.
 
 Thu Mar 21 01:11:37 2002  Usaku Nakamura <usa@ruby-lang.org>
 

@@ -438,8 +438,13 @@ rb_f_sprintf(argc, argv)
 		    }
 		    s = nbuf;
 		    if (v < 0) {
-			strcpy(s, "..");
-			s += 2;
+			if (base == 10) {
+			    rb_warning("negative number for %%u specifier");
+			}
+			else {
+			    strcpy(s, "..");
+			    s += 2;
+			}
 		    }
 		    sprintf(fbuf, "%%l%c", *p);
 		    sprintf(s, fbuf, v);
@@ -491,8 +496,13 @@ rb_f_sprintf(argc, argv)
 		    remove_sign_bits(++s, base);
 		    val = rb_str_new(0, 3+strlen(s));
 		    t = RSTRING(val)->ptr;
-		    strcpy(t, "..");
-		    t += 2;
+		    if (base == 10) {
+			rb_warning("negative number for %%u specifier");
+		    }
+		    else {
+                        strcpy(t, "..");
+                        t += 2;
+                    }
 		    switch (base) {
 		      case 16:
 			if (s[0] != 'f') strcpy(t++, "f"); break;

@@ -626,17 +626,21 @@ read_all(port)
 #endif
 	)
     {
+	off_t pos;
+
 	if (st.st_size == 0) {
-	    getc(fptr->f);	/* force EOF */
-	    return rb_str_new(0, 0);
+	    int c = getc(fptr->f);
+
+	    if (c == EOF) {
+		return rb_str_new(0, 0);
+	    }
+	    ungetc(c, fptr->f);
 	}
-	else {
-	    off_t pos = ftello(fptr->f);
-	    if (st.st_size > pos && pos >= 0) {
-		siz = st.st_size - pos + 1;
-		if (siz > LONG_MAX) {
-		    rb_raise(rb_eIOError, "file too big for single read");
-		}
+	pos = ftello(fptr->f);
+	if (st.st_size > pos && pos >= 0) {
+	    siz = st.st_size - pos + 1;
+	    if (siz > LONG_MAX) {
+		rb_raise(rb_eIOError, "file too big for single read");
 	    }
 	}
     }

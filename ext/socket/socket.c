@@ -125,7 +125,7 @@ static int lookup_order_table[LOOKUP_ORDERS] = {
 };
 
 static int
-rb_getaddrinfo(nodename, servname, hints, res)
+ruby_getaddrinfo(nodename, servname, hints, res)
      char *nodename;
      char *servname;
      struct addrinfo *hints;
@@ -155,7 +155,7 @@ rb_getaddrinfo(nodename, servname, hints, res)
 
     return error;
 }
-#define getaddrinfo(node,serv,hints,res) rb_getaddrinfo((node),(serv),(hints),(res))
+#define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo((node),(serv),(hints),(res))
 #endif
 
 #ifdef NT
@@ -495,6 +495,7 @@ bsock_do_not_rev_lookup()
 static VALUE
 bsock_do_not_rev_lookup_set(self, val)
 {
+    rb_secure(4);
     do_not_reverse_lookup = RTEST(val);
     return val;
 }
@@ -539,8 +540,9 @@ mkinetaddr(host, buf, len)
 }
 
 static struct addrinfo*
-ip_addrsetup(host, port)
+sock_addrinfo(host, port, flags)
     VALUE host, port;
+    int flags;
 {
     struct addrinfo hints, *res;
     char *hostp, *portp;
@@ -561,7 +563,7 @@ ip_addrsetup(host, port)
 
 	SafeStringValue(host);
 	name = RSTRING(host)->ptr;
-	if (*name == 0) {
+	if (*name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
 	    mkinetaddr(INADDR_ANY, hbuf, sizeof(hbuf));
 	}
 	else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
@@ -589,8 +591,7 @@ ip_addrsetup(host, port)
 
     MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = PF_UNSPEC;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_CANONNAME;
+    hints.ai_flags = flags;
     error = getaddrinfo(hostp, portp, &hints, &res);
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
@@ -605,9 +606,9 @@ ip_addrsetup(host, port)
 static void
 setipaddr(name, addr)
     VALUE name;
-    struct sockaddr *addr;
+    struct sockaddr_storage *addr;
 {
-    struct addrinfo *res = ip_addrsetup(name, Qnil);
+    struct addrinfo *res = sock_addrinfo(name, Qnil, 0);
 
     /* just take the first one */
     memcpy(addr, res->ai_addr, res->ai_addrlen);
@@ -822,7 +823,6 @@ load_addr_info(h, serv, type, res)
     }
     MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = PF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
     if (type == INET_SERVER) {
 	hints.ai_flags = AI_PASSIVE;
     }
@@ -841,14 +841,16 @@ init_inetsock(sock, remote_host, remote_serv, local_host, local_serv, type)
     int fd, status;
     char *syscall;
 
-    load_addr_info(remote_host, remote_serv, type, &res_remote);
-
+    res_remote = sock_addrinfo(remote_host, remote_serv,
+			       (type == INET_SERVER) ? AI_PASSIVE : 0);
     /*
      * Maybe also accept a local address
      */
 
-    if (type != INET_SERVER && (!NIL_P(local_host) || !NIL_P(local_serv)))
-	load_addr_info(local_host, local_serv, type, &res_local);
+    if (type != INET_SERVER && (!NIL_P(local_host) || !NIL_P(local_serv))) {
+	res_local = sock_addrinfo(local_host, local_serv,
+				  (type == INET_SERVER) ? AI_PASSIVE : 0);
+    }
 
     fd = -1;
     for (res = res_remote; res; res = res->ai_next) {
@@ -969,32 +971,18 @@ socks_s_close(sock)
  * NOTE: using gethostbyname() against AF_INET6 is a bad idea, as it
  * does not initialize sin_flowinfo nor sin_scope_id properly.
  */
-static VALUE
-tcp_s_gethostbyname(obj, host)
-    VALUE obj, host;
+
+struct hostent*
+sock_hostbyname(host)
+    VALUE host;
 {
     struct sockaddr_storage addr;
     struct hostent *h;
-    char **pch;
-    VALUE ary, names;
-    size_t size;
 
     rb_secure(3);
-    if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	long i = NUM2LONG(host);
-	struct sockaddr_in *sin;
-
-	sin = (struct sockaddr_in*)&addr;
-	MEMZERO(sin, struct sockaddr_in, 1);
-	sin->sin_family = AF_INET;
-	SET_SIN_LEN(sin, sizeof(*sin));
-	sin->sin_addr.s_addr = htonl(i);
-    }
-    else {
-	setipaddr(host, &addr);
-    }
+    setipaddr(host, &addr);
     switch (addr.ss_family) {
-    case AF_INET:
+      case AF_INET:
       {
 	struct sockaddr_in *sin;
 	sin = (struct sockaddr_in*)&addr;
@@ -1004,7 +992,7 @@ tcp_s_gethostbyname(obj, host)
 	break;
       }
 #ifdef INET6
-    case AF_INET6:
+      case AF_INET6:
       {
 	struct sockaddr_in6 *sin6;
 	sin6 = (struct sockaddr_in6*)&addr;
@@ -1014,8 +1002,9 @@ tcp_s_gethostbyname(obj, host)
 	break;
       }
 #endif
-    default:
+      default:
 	h = NULL;
+	break;
     }
 
     if (h == NULL) {
@@ -1026,6 +1015,18 @@ tcp_s_gethostbyname(obj, host)
 	rb_raise(rb_eSocket, "host not found");
 #endif
     }
+    return h;
+}
+
+static VALUE
+tcp_s_gethostbyname(obj, host)
+    VALUE obj, host;
+{
+    struct hostent *h = sock_hostbyname(host);
+    VALUE ary, names;
+    char **pch;
+    size_t size;
+
     ary = rb_ary_new();
     rb_ary_push(ary, rb_tainted_str_new2(h->h_name));
     names = rb_ary_new();
@@ -1035,47 +1036,33 @@ tcp_s_gethostbyname(obj, host)
     }
     rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr
-    for (pch = h->h_addr_list; *pch; pch++)
-	;
-    pch++;
-    size = (char*)pch - (char*)h->h_addr_list;
-    pch = (char**)alloca(size);
-    memcpy((char*)pch, (char *)h->h_addr_list, size);
-    size = h->h_length;
-    for (; *pch && h; pch++) {
-	switch (addr.ss_family) {
-	  case AF_INET: {
+    for (pch = h->h_addr_list; *pch; pch++) {
+	switch (h->h_length) {
+	  case 4: /* AF_INET */ {
 	    struct sockaddr_in sin;
 
 	    MEMZERO(&sin, struct sockaddr_in, 1);
 	    sin.sin_family = AF_INET;
 	    SET_SIN_LEN(&sin, sizeof(sin));
-	    memcpy((char*)&sin.sin_addr, *pch, size);
-	    h = gethostbyaddr((char*)&sin.sin_addr,
-			      sizeof(sin.sin_addr),
-			      sin.sin_family);
+	    memcpy((char*)&sin.sin_addr, *pch, h->h_length);
 	    rb_ary_push(ary, mkipaddr((struct sockaddr*)&sin));
 	    break;
 	  }
 #ifdef INET6
-	  case AF_INET6: {
+	  case 8: /* AF_INET6 */ {
 	    struct sockaddr_in6 sin6;
 
 	    MEMZERO(&sin6, struct sockaddr_in6, 1);
-	    sin6.sin6_family = AF_INET;
+	    sin6.sin6_family = AF_INET6;
 #ifdef SIN6_LEN
 	    sin6.sin6_len = sizeof(sin6);
 #endif
 	    memcpy((char*)&sin6.sin6_addr, *pch, size);
-	    h = gethostbyaddr((char*)&sin6.sin6_addr,
-			      sizeof(sin6.sin6_addr),
-			      sin6.sin6_family);
 	    rb_ary_push(ary, mkipaddr((struct sockaddr*)&sin6));
 	    break;
 	  }
 #endif
 	  default:
-	    h = NULL;
 	    break;
 	}
     }
@@ -1282,7 +1269,7 @@ udp_connect(sock, host, port)
     rb_secure(3);
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
-    res0 = ip_addrsetup(host, port);
+    res0 = sock_addrinfo(host, port, 0);
     for (res = res0; res; res = res->ai_next) {
 	if (ruby_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
 	    freeaddrinfo(res0);
@@ -1304,7 +1291,7 @@ udp_bind(sock, host, port)
 
     rb_secure(3);
     GetOpenFile(sock, fptr);
-    res0 = ip_addrsetup(host, port);
+    res0 = sock_addrinfo(host, port, 0);
     for (res = res0; res; res = res->ai_next) {
 	if (bind(fileno(fptr->f), res->ai_addr, res->ai_addrlen) < 0) {
 	    continue;
@@ -1336,7 +1323,7 @@ udp_send(argc, argv, sock)
     rb_scan_args(argc, argv, "4", &mesg, &flags, &host, &port);
 
     GetOpenFile(sock, fptr);
-    res0 = ip_addrsetup(host, port);
+    res0 = sock_addrinfo(host, port, 0);
     f = GetWriteFile(fptr);
     StringValue(mesg);
     for (res = res0; res; res = res->ai_next) {
@@ -1877,7 +1864,7 @@ sock_gethostname(obj)
 #endif
 
 static VALUE
-mkhostent(h)
+sock_mkhostent(h)
     struct hostent *h;
 {
     char **pch;
@@ -1931,55 +1918,11 @@ mkaddrinfo(res0)
     return base;
 }
 
-/*
- * NOTE: using gethostbyname() against AF_INET6 is a bad idea, as it
- * does not initialize sin_flowinfo nor sin_scope_id properly.
- */
 static VALUE
 sock_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
-    struct sockaddr_storage addr;
-    struct hostent *h;
-
-    if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	long i = NUM2LONG(host);
-	struct sockaddr_in *sin;
-	sin = (struct sockaddr_in*)&addr;
-	MEMZERO(sin, struct sockaddr_in, 1);
-	sin->sin_family = AF_INET;
-	SET_SIN_LEN(sin, sizeof(*sin));
-	sin->sin_addr.s_addr = htonl(i);
-    }
-    else {
-	setipaddr(host, (struct sockaddr*)&addr);
-    }
-    switch (addr.ss_family) {
-    case AF_INET:
-      {
-	struct sockaddr_in *sin;
-	sin = (struct sockaddr_in*)&addr;
-	h = gethostbyaddr((char*)&sin->sin_addr,
-			  sizeof(sin->sin_addr),
-			  sin->sin_family);
-	break;
-      }
-#ifdef INET6
-    case AF_INET6:
-      {
-	struct sockaddr_in6 *sin6;
-	sin6 = (struct sockaddr_in6*)&addr;
-	h = gethostbyaddr((char*)&sin6->sin6_addr,
-			  sizeof(sin6->sin6_addr),
-			  sin6->sin6_family);
-	break;
-      }
-#endif
-    default:
-	h = NULL;
-    }
-
-    return mkhostent(h);
+    return sock_mkhostent(sock_hostbyname(host));
 }
 
 static VALUE
@@ -2004,7 +1947,7 @@ sock_s_gethostbyaddr(argc, argv)
 #endif
     h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len, t);
 
-    return mkhostent(h);
+    return sock_mkhostent(h);
 }
 
 static VALUE
@@ -2251,7 +2194,7 @@ static VALUE
 sock_s_pack_sockaddr_in(self, port, host)
     VALUE self, port, host;
 {
-    struct addrinfo *res = ip_addrsetup(host, port);
+    struct addrinfo *res = sock_addrinfo(host, port, 0);
     VALUE addr = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
 
     freeaddrinfo(res);
