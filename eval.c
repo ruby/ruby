@@ -7643,6 +7643,7 @@ Init_load()
 
     rb_features = rb_ary_new();
     rb_define_readonly_variable("$\"", &rb_features);
+    rb_define_readonly_variable("$LOADED_FEATURES", &rb_features);
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);

@@ -24,9 +24,6 @@ alias $ERROR_INFO              $!
 # exception. <tt>See Kernel.caller</tt> for details. Thread local.
 alias $ERROR_POSITION          $@
 
-# An array containing the filenames of modules loaded by +require+.
-alias $LOADED_FEATURES         $"
-
 # The default separator pattern used by <tt>String.split</tt>.  May be
 # set from the command line using the <tt>-F</tt> flag.
 alias $FS                      $;
@@ -129,12 +126,6 @@ alias $LAST_MATCH_INFO         $~
 # will be case insensitive, string comparisons will ignore case, and
 # string hash values will be case insensitive. Deprecated
 alias $IGNORECASE              $=
-
-# The name of the top-level Ruby program being executed.  Typically
-# this will be the program's filename. On some operating systems,
-# assigning to this variable will change the name of the process
-# reported (for example) by the <tt>ps(1)</tt> command.
-alias $PROGRAM_NAME            $0
 
 # An array of strings containing the command-line
 # options from the invocation of the program. Options

@@ -1,3 +1,12 @@
+Fri Apr  2 11:36:20 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* eval.c (Init_load): make $LOADED_FEATURES built-in.
+	  [ruby-dev:23299]
+
+	* ruby.c (ruby_prog_init): make $PROGRAM_NAME built-in.
+
+	* lib/English.rb: remove $LOADED_FEATURES and $PROGRAM_NAME.
+
 Fri Apr  2 07:31:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c: mistakingly removed do_not_reverse_lookup.

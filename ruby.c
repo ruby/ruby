@@ -1081,6 +1081,7 @@ ruby_prog_init()
     rb_define_readonly_variable("$-l", &do_line);
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
+    rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
     rb_argv = rb_ary_new();
     rb_define_readonly_variable("$*", &rb_argv);
