@@ -2,12 +2,11 @@ Sat Jul 12 01:21:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (avalue_to_svalue): typo.
 
-	* eval.c (rb_load): rb_prohibit_interrupt should not underflow.
+	* eval.c (rb_load): rb_prohibit_interrupt must not underflow.
 
-Sat Jul 12 01:21:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
-
-	* parse.y (NODE_STRTERM, tokadd_string, parse_string): moved string
-	  nest level from a static variable to NODE_STRTERM.
+	* parse.y (NODE_STRTERM, tokadd_string, parse_string): moved
+	  string nest level from a static variable to NODE_STRTERM, to
+	  preserve it from word to word in %W/%w.
 
 Fri Jul 11 22:37:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
