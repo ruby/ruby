@@ -18,33 +18,33 @@ class WeakRef<Delegator
 
   ID_MAP =  {}		    # obj -> [ref,...]
   ID_REV_MAP =  {}          # ref -> obj
-  ObjectSpace.add_finalizer(lambda{|id|
-			      __old_status = Thread.critical
-			      Thread.critical = true
-			      begin
-				rids = ID_MAP[id]
-				if rids
-				  for rid in rids
-				    ID_REV_MAP[rid] = nil
-				  end
-				  ID_MAP[id] = nil
-				end
-				rid = ID_REV_MAP[id]
-				if rid
-				  ID_REV_MAP[id] = nil
-				  ID_MAP[rid].delete(id)
-				  ID_MAP[rid] = nil if ID_MAP[rid].empty?
-				end
-			      ensure
-				Thread.critical = __old_status
-			      end
-			    })
+  @@final = lambda{|id|
+    __old_status = Thread.critical
+    Thread.critical = true
+    begin
+      rids = ID_MAP[id]
+      if rids
+	for rid in rids
+	  ID_REV_MAP[rid] = nil
+	end
+	ID_MAP[id] = nil
+      end
+      rid = ID_REV_MAP[id]
+      if rid
+	ID_REV_MAP[id] = nil
+	ID_MAP[rid].delete(id)
+	ID_MAP[rid] = nil if ID_MAP[rid].empty?
+      end
+    ensure
+      Thread.critical = __old_status
+    end
+  }
 
   def initialize(orig)
     super
     @__id = orig.__id__
-    ObjectSpace.call_finalizer orig
-    ObjectSpace.call_finalizer self
+        ObjectSpace.define_finalizer orig, @@final
+    ObjectSpace.defin_finalizer self, @@final
     ID_MAP[@__id] = [] unless ID_MAP[@__id]
     ID_MAP[@__id].push self.__id__
     ID_REV_MAP[self.id] = @__id
@@ -63,10 +63,6 @@ class WeakRef<Delegator
     else
       false
     end
-  end
-
-  def []
-    __getobj__
   end
 end
 

@@ -32,6 +32,7 @@ VALUE rb_obj_alloc();
 
 static ID eq, eql;
 static ID inspect;
+static ID clone;
 
 VALUE
 rb_equal(obj1, obj2)
@@ -41,16 +42,15 @@ rb_equal(obj1, obj2)
 
     if (obj1 == obj2) return Qtrue;
     result = rb_funcall(obj1, eq, 1, obj2);
-    if (result == Qfalse || NIL_P(result))
-	return Qfalse;
-    return Qtrue;
+    if (RTEST(result)) return Qtrue;
+    return Qfalse;
 }
 
 int
 rb_eql(obj1, obj2)
     VALUE obj1, obj2;
 {
-    return rb_funcall(obj1, eql, 1, obj2) == Qtrue;
+    return RTEST(rb_funcall(obj1, eql, 1, obj2));
 }
 
 static VALUE
@@ -61,21 +61,14 @@ rb_obj_equal(obj1, obj2)
     return Qfalse;
 }
 
-static VALUE
-rb_obj_hash(obj)
-    VALUE obj;
-{
-    return ((long)obj)|FIXNUM_FLAG;
-}
-
 VALUE
 rb_obj_id(obj)
     VALUE obj;
 {
-    if (rb_special_const_p(obj)) {
+    if (SPECIAL_CONST_P(obj)) {
 	return INT2NUM((long)obj);
     }
-    return (long)obj|FIXNUM_FLAG;
+    return (VALUE)((long)obj|FIXNUM_FLAG);
 }
 
 static VALUE
@@ -109,24 +102,21 @@ rb_obj_clone(obj)
     return clone;
 }
 
-static VALUE
+VALUE
 rb_obj_dup(obj)
     VALUE obj;
 {
-    if (TYPE(obj) == T_OBJECT) {
-	VALUE klass = CLASS_OF(obj);
-	VALUE dup;
+    VALUE dup;
 
-	while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
-	    klass = (VALUE)RCLASS(klass)->super;
-	}
-	dup = rb_obj_alloc(klass);
-	if (ROBJECT(obj)->iv_tbl) {
-	    ROBJECT(dup)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
-	}
-	return dup;
+    dup = rb_funcall(obj, clone, 0, 0);
+    if (TYPE(dup) != TYPE(obj)) {
+	rb_raise(rb_eTypeError, "dupulicated object must be same type");
     }
-    return rb_funcall(obj, rb_intern("clone"), 0, 0);
+    if (!SPECIAL_CONST_P(dup)) {
+	OBJSETUP(dup, rb_obj_type(obj), BUILTIN_TYPE(obj));
+	OBJ_INFECT(dup, obj);
+    }
+    return dup;
 }
 
 static VALUE
@@ -226,8 +216,6 @@ VALUE
 rb_obj_is_instance_of(obj, c)
     VALUE obj, c;
 {
-    VALUE cl;
-
     switch (TYPE(c)) {
       case T_MODULE:
       case T_CLASS:
@@ -250,11 +238,7 @@ rb_obj_is_instance_of(obj, c)
 	rb_raise(rb_eTypeError, "class or module required");
     }
 
-    cl = CLASS_OF(obj);
-    while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
-	cl = RCLASS(cl)->super;
-    }
-    if (c == cl) return Qtrue;
+    if (rb_obj_type(obj) == c) return Qtrue;
     return Qfalse;
 }
 
@@ -1087,7 +1071,7 @@ Init_Object()
 
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
 
-    rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0);
+    rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "id", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "type", rb_obj_type, 0);
@@ -1217,4 +1201,5 @@ Init_Object()
     eq = rb_intern("==");
     eql = rb_intern("eql?");
     inspect = rb_intern("inspect");
+    clone = rb_intern("clone");
 }

@@ -265,27 +265,6 @@ rb_hash_clone(hash)
 }
 
 static VALUE
-rb_hash_dup(hash)
-    VALUE hash;
-{
-    VALUE klass = CLASS_OF(hash);
-
-    NEWOBJ(dup, struct RHash);
-    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
-	klass = (VALUE)RCLASS(klass)->super;
-    }
-    OBJSETUP(dup, klass, T_HASH);
-
-    dup->iter_lev = 0;
-    dup->ifnone = RHASH(hash)->ifnone;
-    dup->tbl = 0;		/* avoid GC crashing  */
-    dup->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
-
-    if (OBJ_TAINTED(hash)) OBJ_TAINT(dup);
-    return (VALUE)dup;
-}
-
-static VALUE
 to_hash(hash)
     VALUE hash;
 {
@@ -489,7 +468,7 @@ static VALUE
 rb_hash_reject(hash)
     VALUE hash;
 {
-    return rb_hash_delete_if(rb_hash_dup(hash));
+    return rb_hash_delete_if(rb_obj_dup(hash));
 }
 
 static int
@@ -1417,7 +1396,6 @@ Init_Hash()
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
 
     rb_define_method(rb_cHash,"clone", rb_hash_clone, 0);
-    rb_define_method(rb_cHash,"dup", rb_hash_dup, 0);
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);

@@ -76,7 +76,6 @@ Standard Libraries
 - consistent /, %, divmod
 - unbound method object
 - integrate final.rb into the core.
-* make clone depend on dup
 * Enumerable#sort_by for Schwartzian transformation
 * String#scanf(?)
 * Object#fmt(?)

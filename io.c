@@ -1793,7 +1793,7 @@ io_reopen(io, nfile)
     fd = fileno(fptr->f);
     if (fd < 3) {
 	clearerr(fptr->f);
-	/* need to keep stdio */
+	/* need to keep stdio objects */
 	if (dup2(fileno(orig->f), fd) < 0)
 	    rb_sys_fail(orig->path);
     }
@@ -1802,10 +1802,10 @@ io_reopen(io, nfile)
 	if (dup2(fileno(orig->f), fd) < 0)
 	    rb_sys_fail(orig->path);
 	fptr->f = rb_fdopen(fd, mode);
-	if (orig->mode & FMODE_READABLE && pos >= 0) {
-	    fseek(fptr->f, pos, SEEK_SET);
-	    fseek(orig->f, pos, SEEK_SET);
-	}
+    }
+    if ((orig->mode & FMODE_READABLE) && pos >= 0) {
+	fseek(fptr->f, pos, SEEK_SET);
+	fseek(orig->f, pos, SEEK_SET);
     }
 
     if (fptr->f2) {
@@ -1887,6 +1887,7 @@ static VALUE
 rb_io_clone(io)
     VALUE io;
 {
+    VALUE klass;
     OpenFile *fptr, *orig;
     int fd;
     char *mode;

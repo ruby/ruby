@@ -677,21 +677,6 @@ rb_ary_clone(ary)
 }
 
 static VALUE
-rb_ary_dup(ary)
-    VALUE ary;
-{
-    VALUE klass = CLASS_OF(ary);
-    VALUE dup;
-
-    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
-	klass = (VALUE)RCLASS(klass)->super;
-    }
-    dup = rb_ary_s_create(RARRAY(ary)->len, RARRAY(ary)->ptr, klass);
-    if (OBJ_TAINTED(ary)) OBJ_TAINT(dup);
-    return dup;
-}
-
-static VALUE
 to_ary(ary)
     VALUE ary;
 {
@@ -928,7 +913,7 @@ static VALUE
 rb_ary_reverse_m(ary)
     VALUE ary;
 {
-    return rb_ary_reverse(rb_ary_dup(ary));
+    return rb_ary_reverse(rb_obj_dup(ary));
 }
 
 static ID cmp;
@@ -991,7 +976,7 @@ VALUE
 rb_ary_sort(ary)
     VALUE ary;
 {
-    ary = rb_ary_dup(ary);
+    ary = rb_obj_dup(ary);
     rb_ary_sort_bang(ary);
     return ary;
 }
@@ -1004,7 +989,7 @@ rb_ary_collect(ary)
     VALUE collect;
 
     if (!rb_block_given_p()) {
-	return rb_ary_dup(ary);
+	return rb_obj_dup(ary);
     }
 
     len = RARRAY(ary)->len;
@@ -1492,7 +1477,7 @@ static VALUE
 rb_ary_uniq(ary)
     VALUE ary;
 {
-    ary = rb_ary_dup(ary);
+    ary = rb_obj_dup(ary);
     rb_ary_uniq_bang(ary);
     return ary;
 }
@@ -1523,7 +1508,7 @@ static VALUE
 rb_ary_compact(ary)
     VALUE ary;
 {
-    ary = rb_ary_dup(ary);
+    ary = rb_obj_dup(ary);
     rb_ary_compact_bang(ary);
     return ary;
 }
@@ -1582,7 +1567,7 @@ static VALUE
 rb_ary_flatten(ary)
     VALUE ary;
 {
-    ary = rb_ary_dup(ary);
+    ary = rb_obj_dup(ary);
     rb_ary_flatten_bang(ary);
     return ary;
 }
@@ -1629,7 +1614,6 @@ Init_Array()
     rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "indices", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "clone", rb_ary_clone, 0);
-    rb_define_method(rb_cArray, "dup", rb_ary_dup, 0);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse, 0);

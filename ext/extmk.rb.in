@@ -404,6 +404,10 @@ archdir = $(pkglibdir)/@arch@
       f.sub!(/(#{SRC_EXT.join(%q{|})})$/, $OBJEXT)
       $objs.push f
     end
+  else
+    for i in $objs
+      i.sub!(/\.o\z/, ".#{$OBJEXT}")
+    end
   end
   mfile.printf $objs.join(" ")
   mfile.printf "\n"
@@ -485,7 +489,7 @@ $(DLLIB): $(OBJS)
     dfile = open("#{$srcdir}/depend", "r")
     mfile.printf "###\n"
     while line = dfile.gets()
-      line.gsub!(/\.o/, ".#{$OBJEXT}")
+      line.gsub!(/\.o\b/, ".#{$OBJEXT}")
       mfile.printf "%s", line.gsub('\$\(hdrdir\)/config.h', '$(topdir)/config.h')
     end
     dfile.close

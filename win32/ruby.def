@@ -426,6 +426,7 @@ EXPORTS
 	rb_eql
 	rb_obj_id
 	rb_obj_clone
+	rb_obj_dup
 	rb_any_to_s
 	rb_inspect
 	rb_obj_is_instance_of

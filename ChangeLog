@@ -1,8 +1,19 @@
+Mon Jul 17 04:29:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/mkmf.rb: converts extention of $objs into $OBJEXT.
+
+Sun Jul 16 03:02:34 2000  Dave Thomas <dave@thomases.com>
+
+	* lib/weakref.rb: Change to use new ObjectSpace calls.
+
 Sat Jul 15 21:59:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): should not redefine __id__ nor __send__.
 
 	* gc.c (define_final): integrate final.rb features into the
 	  interpreter.  define_finalizer and undefine_finalizer was
-	  added to ObjectSpace.
+	  added to ObjectSpace.  plus, add_finalizer, remove_finalizer,
+	  and call_finalizer are deprecated now.
 
 Sat Jul 15 01:32:34 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

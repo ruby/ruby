@@ -1171,10 +1171,9 @@ run_final(obj)
     VALUE obj;
 {
     int i, status;
-    VALUE id, args[2], table;
+    VALUE args[2], table;
 
-    id = rb_obj_id(obj);	/* make obj into id */
-    args[1] = rb_ary_new3(1, id);
+    args[1] = rb_ary_new3(1, rb_obj_id(obj)); /* make obj into id */
     for (i=0; i<RARRAY(finalizers)->len; i++) {
 	args[0] = RARRAY(finalizers)->ptr[i];
 	rb_protect(run_single_final, (VALUE)args, &status);

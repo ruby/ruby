@@ -365,6 +365,10 @@ def create_makefile(target)
       f.sub!(/(#{SRC_EXT.join(%q{|})})$/, $OBJEXT)
       $objs.push f
     end
+  else
+    for i in $objs
+      i.sub!(/\.o\z/, ".#{$OBJEXT}")
+    end
   end
   $objs = $objs.join(" ")
 
@@ -459,7 +463,7 @@ EOMF
     dfile = open("depend", "r")
     mfile.printf "###\n"
     while line = dfile.gets()
-      mfile.printf "%s", line.gsub(/\.o/, ".#{$OBJEXT}")
+      mfile.printf "%s", line.gsub(/\.o\b/, ".#{$OBJEXT}")
     end
     dfile.close
   end

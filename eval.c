@@ -432,6 +432,7 @@ rb_method_boundp(klass, id, ex)
 }
 
 static ID init, eqq, each, aref, aset, match, missing, added, singleton_added;
+static ID __id__, __send__;
 
 void
 rb_attr(klass, id, read, write, ex)
@@ -2786,6 +2787,10 @@ rb_eval(self, n)
 	    if (ruby_class == rb_cObject && node->nd_mid == init) {
 		rb_warn("re-defining Object#initialize may cause infinite loop");
 	    }
+	    if (node->nd_mid == __id__ || node->nd_mid == __send__) {
+		rb_warn("redefining `%s' may cause serious problem",
+			rb_id2name(node->nd_mid));
+	    }
 	    frozen_class_p(ruby_class);
 	    body = search_method(ruby_class, node->nd_mid, &origin);
 	    if (body){
@@ -2794,7 +2799,7 @@ rb_eval(self, n)
 		}
 		rb_clear_cache_by_id(node->nd_mid);
 		if (node->nd_noex) { /* toplevel */
-		    /* should be upgrade to rb_warn() if no super was called? */
+		    /* should upgrade to rb_warn() if no super was called inside? */
 		    rb_warning("overriding global function `%s'",
 			       rb_id2name(node->nd_mid));
 		}
@@ -5509,6 +5514,9 @@ Init_eval()
     added = rb_intern("method_added");
     singleton_added = rb_intern("singleton_method_added");
 
+    __id__ = rb_intern("__id__");
+    __send__ = rb_intern("__send__");
+
     rb_global_variable((VALUE*)&top_scope);
     rb_global_variable((VALUE*)&ruby_eval_tree_begin);
 
@@ -6131,7 +6139,7 @@ mnew(klass, obj, id, mklass)
 }
 
 static VALUE
-method_unbound(obj)
+method_unbind(obj)
     VALUE obj;
 {
     VALUE method;
@@ -6140,18 +6148,18 @@ method_unbound(obj)
     Data_Get_Struct(obj, struct METHOD, orig);
     method = Data_Make_Struct(rb_cUnboundMethod, struct METHOD, bm_mark, free, data);
     data->klass = orig->klass;
-    data->recv = 0;
+    data->recv = obj;
     data->id = orig->id;
     data->body = orig->body;
     data->oklass = orig->oklass;
     data->oid = orig->oid;
-    OBJ_INFECT(method, orig->klass);
+    OBJ_INFECT(method, obj);
 
     return method;
 }
 
 static VALUE
-umethod_unbound(obj)
+umethod_unbind(obj)
     VALUE obj;
 {
     return obj;
@@ -6189,10 +6197,10 @@ method_clone(self)
 }
 
 static VALUE
-mcall(argc, argv, method, recv)
+method_call(argc, argv, method)
     int argc;
     VALUE *argv;
-    VALUE method, recv;
+    VALUE method;
 {
     VALUE result;
     struct METHOD *data;
@@ -6206,7 +6214,7 @@ mcall(argc, argv, method, recv)
 	if (ruby_safe_level < 4) ruby_safe_level = 4;
     }
     if ((state = EXEC_TAG()) == 0) {
-	result = rb_call0(data->klass,recv,data->id,argc,argv,data->body,0);
+	result = rb_call0(data->klass,data->recv,data->id,argc,argv,data->body,0);
     }
     POP_TAG();
     POP_ITER();
@@ -6216,31 +6224,21 @@ mcall(argc, argv, method, recv)
 }
 
 static VALUE
-method_call(argc, argv, method)
-    int argc;
-    VALUE *argv;
-    VALUE method;
-{
-    struct METHOD *data;
-
-    Data_Get_Struct(method, struct METHOD, data);
-    return mcall(argc, argv, method, data->recv);
-}
-
-static VALUE
 umethod_call(argc, argv, method)
     int argc;
     VALUE *argv;
     VALUE method;
 {
-    struct METHOD *data;
-    VALUE recv;
+    rb_raise(rb_eTypeError, "you cannot call unbound method; bind first");
+    return Qnil;		/* not reached */
+}
 
-    if (argc < 1) {
-	rb_raise(rb_eArgError, "wrong # of arguments");
-    }
+static VALUE
+umethod_bind(method, recv)
+    VALUE method, recv;
+{
+    struct METHOD *data, *bound;
 
-    recv = argv[0];
     Data_Get_Struct(method, struct METHOD, data);
     if (data->oklass != CLASS_OF(recv)) {
 	if (FL_TEST(data->oklass, FL_SINGLETON)) {
@@ -6255,7 +6253,12 @@ umethod_call(argc, argv, method)
 		     rb_class2name(data->oklass));
 	}
     }
-    return mcall(argc-1, argv+1, method, recv);
+
+    method = Data_Make_Struct(rb_cMethod,struct METHOD,bm_mark,free,bound);
+    *bound = *data;
+    bound->recv = recv;
+
+    return method;
 }
 
 static VALUE
@@ -6391,15 +6394,16 @@ Init_Proc()
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_proc", method_proc, 0);
-    rb_define_method(rb_cMethod, "unbound", method_unbound, 0);
+    rb_define_method(rb_cMethod, "unbind", method_unbind, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
 
     rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cMethod);
     rb_define_method(rb_cUnboundMethod, "call", umethod_call, -1);
     rb_define_method(rb_cUnboundMethod, "[]", umethod_call, -1);
     rb_define_method(rb_cUnboundMethod, "to_proc", umethod_proc, 0);
+    rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
+    rb_define_method(rb_cUnboundMethod, "unbind", umethod_unbind, 0);
     rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
-    rb_define_method(rb_cMethod, "unbound", umethod_unbound, 0);
 }
 
 static VALUE rb_eThreadError;
