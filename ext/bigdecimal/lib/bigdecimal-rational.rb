@@ -1,10 +1,10 @@
 #
 # BigDecimal <-> Rational 
 #
-class BigDecimal
+class BigDecimal < Numeric
     # Convert BigDecimal to Rational
     def to_r 
-       sign,digits,base,power = self.to_parts
+       sign,digits,base,power = self.split
        numerator = sign*digits.to_i
        denomi_power = power - digits.size # base is always 10
        if denomi_power < 0
@@ -12,11 +12,11 @@ class BigDecimal
        else
           denominator = base ** denomi_power
        end
-       Rational.new(numerator,denominator)
+       Rational(numerator,denominator)
     end
 end
 
-class Rational
+class Rational < Numeric
   # Convert Rational to BigDecimal
   # to_d returns an array [quotient,residue]
   def to_d(nFig=0)
