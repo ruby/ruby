@@ -2317,5 +2317,3 @@ class CGI
   end
 
 end   # class CGI
-
-?
