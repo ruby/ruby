@@ -818,7 +818,7 @@ Wed Jun 16 16:03:59 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Jun 16 16:01:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* gc.c (stack_grow_direction): memoize the direction.
+	* gc.c (stack_grow_direction): memorize the direction.
 
 	* gc.c (Init_stack): should always move to end of VALUE.
 
@@ -1151,14 +1151,13 @@ Tue May 18 09:30:25 2004  SASADA Koichi  <ko1@atdot.net>
 
 Mon May 17 16:04:06 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* numeric.c (flo_to_s): p 0.0 should be '0.0' not '0.0e+00'.
+	* numeric.c (flo_to_s): as a result of "p 0.0", "0.0" is prefered
+	  to "0.0e+00". [ruby-dev:23480]
 
-	* numeric.c (flo_to_s): the number of significand is correctly handled,
-	  there is assumption that DBL_DIG == 15 though.
-	  (p 0.00000000000000000001 was '9.999999999999999e-21', now is
-	  '1.0e-20')
-
-	 [ruby-dev:23480]
+	* numeric.c (flo_to_s): as a result of "p 0.00000000000000000001",
+	  "1.0e-20" is prefered to "9.999999999999999e-21". (the precision
+	  is considered, but there is assumption DBL_DIG == 15 in current
+	  implementation)
 
 Mon May 17 10:13:33 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
