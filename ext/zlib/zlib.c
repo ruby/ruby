@@ -469,6 +469,7 @@ zstream_expand_buffer_into(z, size)
 	z->buf_filled = 0;
 	z->stream.next_out = RSTRING(z->buf)->ptr;
 	z->stream.avail_out = size;
+	RBASIC(z->buf)->klass = 0;
     }
     else if (z->stream.avail_out != size) {
 	rb_str_resize(z->buf, z->buf_filled + size);
@@ -489,6 +490,7 @@ zstream_append_buffer(z, src, len)
 	z->buf_filled = len;
 	z->stream.next_out = RSTRING(z->buf)->ptr;
 	z->stream.avail_out = 0;
+	RBASIC(z->buf)->klass = 0;
 	return;
     }
 
@@ -524,13 +526,14 @@ zstream_detach_buffer(z)
     else {
 	dst = z->buf;
 	rb_str_resize(dst, z->buf_filled);
+	RBASIC(dst)->klass = rb_cString;
+	RBASIC(dst)->klass = rb_cString;
     }
 
     z->buf = Qnil;
     z->buf_filled = 0;
     z->stream.next_out = 0;
     z->stream.avail_out = 0;
-    RBASIC(dst)->klass = rb_cString;
     return dst;
 }
 
@@ -546,6 +549,7 @@ zstream_shift_buffer(z, len)
     }
 
     dst = rb_str_substr(z->buf, 0, len);
+    RBASIC(dst)->klass = rb_cString;
     z->buf_filled -= len;
     memmove(RSTRING(z->buf)->ptr, RSTRING(z->buf)->ptr + len,
 	    z->buf_filled);
