@@ -621,6 +621,7 @@ test/csv/bom.csv
 test/csv/mac.csv
 test/csv/test_csv.rb
 test/digest/test_digest.rb
+test/drb/drbtest.rb
 test/drb/test_acl.rb
 test/drb/test_drb.rb
 test/drb/test_drbssl.rb
