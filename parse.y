@@ -5509,4 +5509,3 @@ rb_lastline_set(val)
 	special_local_set('_', val);
     }
 }
-%%
