@@ -994,7 +994,8 @@ glob_make_pattern(p, flags)
     while (*p) {
 	tmp = ALLOC(struct glob_pattern);
 	if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
-	    do { p += 3; } while (p[0] == '*' && p[1] == '*' && p[2] == '/'); /* fold continuous RECURSIVEs */
+	    /* fold continuous RECURSIVEs */
+	    do { p += 3; } while (p[0] == '*' && p[1] == '*' && p[2] == '/');
 	    tmp->type = RECURSIVE;
 	    tmp->str = 0;
 	    dirsep = 1;
@@ -1149,38 +1150,40 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	}
     }
 
-    if (match_all && exist == UNKNOWN) {
-	if (do_lstat(path, &st) == 0) {
-	    exist = YES;
-	    isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
+    if (*path) {
+	if (match_all && exist == UNKNOWN) {
+	    if (do_lstat(path, &st) == 0) {
+		exist = YES;
+		isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
+	    }
+	    else {
+		exist = NO;
+		isdir = NO;
+	    }
 	}
-	else {
-	    exist = NO;
-	    isdir = NO;
-	}
-    }
 
-    if (match_dir && isdir == UNKNOWN) {
-	if (do_stat(path, &st) == 0) {
-	    exist = YES;
-	    isdir = S_ISDIR(st.st_mode) ? YES : NO;
+	if (match_dir && isdir == UNKNOWN) {
+	    if (do_stat(path, &st) == 0) {
+		exist = YES;
+		isdir = S_ISDIR(st.st_mode) ? YES : NO;
+	    }
+	    else {
+		exist = NO;
+		isdir = NO;
+	    }
 	}
-	else {
-	    exist = NO;
-	    isdir = NO;
+
+	if (match_all && exist == YES) {
+	    status = glob_call_func(func, path, arg);
+	    if (status) return status;
 	}
-    }
 
-    if (match_all && exist == YES) {
-	status = glob_call_func(func, path, arg);
-	if (status) return status;
-    }
-
-    if (match_dir && isdir == YES) {
-	char *buf = join_path(path, dirsep, "");
-	status = glob_call_func(func, buf, arg);
-	free(buf);
-	if (status) return status;
+	if (match_dir && isdir == YES) {
+	    char *buf = join_path(path, dirsep, "");
+	    status = glob_call_func(func, buf, arg);
+	    free(buf);
+	    if (status) return status;
+	}
     }
 
     if (exist == NO || isdir == NO) return 0;
