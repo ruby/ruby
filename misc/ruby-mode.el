@@ -37,6 +37,10 @@
   "and\\|or\\|not"
   )
 
+(defconst ruby-block-hanging-re
+  (concat ruby-modifier-re "\\|" ruby-block-op-re)
+  )
+
 (defconst ruby-block-end-re "end")
 
 (defconst ruby-delimiter
@@ -224,30 +228,30 @@ The variable ruby-indent-level controls the amount of indentation.
 
 (defun ruby-expr-beg (&optional option)
   (save-excursion
-    (if (looking-at "\\?")
-	(progn
-	  (or (bolp) (forward-char -1))
-	  (not (looking-at "\\sw")))
-      (store-match-data nil)
-      (skip-chars-backward " \t")
+    (store-match-data nil)
+    (skip-chars-backward " \t")
+    (cond
+     ((bolp) t)
+     ((looking-at "\\?")
       (or (bolp) (forward-char -1))
-      (or (bolp)
-	  (looking-at ruby-operator-re)
-	  (looking-at "[\\[({]")
+      (not (looking-at "\\sw")))
+     (t
+      (forward-char -1)
+      (or (looking-at ruby-operator-re)
+	  (looking-at "[\\[({,;]")
 	  (and (not (eq option 'modifier))
 	       (looking-at "[!?]"))
 	  (and (looking-at ruby-symbol-re)
 	       (skip-chars-backward ruby-symbol-chars)
-	       (if (and (not (eq option 'modifier)) (bolp))
-		   t
-		 (if (or (looking-at ruby-block-beg-re)
-			 (looking-at ruby-block-op-re)
-			 (looking-at ruby-block-mid-re))
-		     (progn
-		       (goto-char (match-end 0))
-		       (looking-at "\\>"))
-		   (and (not (eq option 'expr-arg))
-			(looking-at "[a-zA-Z][a-zA-z0-9_]* +/[^ \t]")))))))))
+	       (cond
+		((or (looking-at ruby-block-beg-re)
+		     (looking-at ruby-block-op-re)
+		     (looking-at ruby-block-mid-re))
+		 (goto-char (match-end 0))
+		 (looking-at "\\>"))
+		(t
+		 (and (not (eq option 'expr-arg))
+		      (looking-at "[a-zA-Z][a-zA-z0-9_]* +/[^ \t]"))))))))))
 
 (defun ruby-parse-region (start end)
   (let ((indent-point end)
@@ -375,11 +379,12 @@ The variable ruby-indent-level controls the amount of indentation.
 		      (setq depth (1+ depth))))
 		(goto-char (match-end 0)))
 	       ((looking-at ruby-block-beg-re)
-		(and 
-		 (or (not (looking-at "do\\>[^_]"))
-		     (save-excursion
-		       (back-to-indentation)
-		       (not (looking-at ruby-non-block-do-re))))
+		(and
+		 (save-match-data
+                   (or (not (looking-at "do\\>[^_]"))
+                       (save-excursion
+                         (back-to-indentation)
+			 (not (looking-at ruby-non-block-do-re)))))
 		 (or (bolp)
 		     (progn
 		       (forward-char -1)
@@ -392,42 +397,9 @@ The variable ruby-indent-level controls the amount of indentation.
 		 (not (eq ?! w))
 		 (not (eq ?? w))
 		 (skip-chars-forward " \t")
-		 (if (not (eolp))
-		     (progn
-		       (goto-char (match-beginning 0))
-		       (if (looking-at ruby-modifier-re)
-			   (ruby-expr-beg 'modifier)
-			 t))
-		   t)
-		 (goto-char pnt)
-		 (setq nest (cons (cons nil pnt) nest))
-		 (setq depth (1+ depth)))
-		(goto-char pnt))
-	       ((looking-at ruby-block-beg-re)
-		(and 
-		 (or (not (looking-at "do\\>[^_]"))
-		     (save-excursion
-		       (back-to-indentation)
-		       (not (looking-at ruby-non-block-do-re))))
-		 (or (bolp)
-		     (progn
-		       (forward-char -1)
-		       (setq w (char-after (point)))
-		       (not (or (eq ?_ w)
-				(eq ?. w)))))
-		 (goto-char pnt)
-		 (setq w (char-after (point)))
-		 (not (eq ?_ w))
-		 (not (eq ?! w))
-		 (not (eq ?? w))
-		 (skip-chars-forward " \t")
-		 (if (not (eolp))
-		     (progn
-		       (goto-char (match-beginning 0))
-		       (if (looking-at ruby-modifier-re)
-			   (ruby-expr-beg 'modifier)
-			 t))
-		   t)
+		 (goto-char (match-beginning 0))
+		 (or (not (looking-at ruby-modifier-re))
+		     (ruby-expr-beg 'modifier))
 		 (goto-char pnt)
 		 (setq nest (cons (cons nil pnt) nest))
 		 (setq depth (1+ depth)))
@@ -560,7 +532,8 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (and
 	     (or (and (looking-at ruby-symbol-re)
 		      (skip-chars-backward ruby-symbol-chars)
-		      (looking-at ruby-block-op-re)
+		      (looking-at ruby-block-hanging-re)
+		      (not (eq (point) (nth 3 state)))
 		      (save-excursion
 			(goto-char (match-end 0))
 			(not (looking-at "[a-z_]"))))

@@ -3137,7 +3137,7 @@ re_search(bufp, string, size, startpos, range, regs)
 
   /* If the search isn't to be a backwards one, don't waste time in a
      search for a pattern that must be anchored.  */
-  if (bufp->used>0) {
+  if (bufp->used > 0) {
     switch ((enum regexpcode)bufp->buffer[0]) {
     case begbuf:
     begbuf_match:
@@ -3196,6 +3196,7 @@ re_search(bufp, string, size, startpos, range, regs)
     if (range > 0 && (bufp->options & RE_OPTIMIZE_EXACTN)) {
       startpos += pos;
       range -= pos;
+      if (range < 0) return -1;
     }
   }
 

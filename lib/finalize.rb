@@ -32,7 +32,7 @@
 #	finalize all dependants connected by dependency R_*(obj, dependtant).
 #   finalize_by_dependant(dependant, method = :finalize)
 #	finalize the dependant connected by dependency R_method(*, dependtant).
-#   fainalize_all_by_dependant(dependant)
+#   finalize_all_by_dependant(dependant)
 #	finalize all dependants connected by dependency R_*(*, dependant).
 #   finalize_all
 #	finalize all dependency registered to the Finalizer.
@@ -138,7 +138,7 @@ module Finalizer
   end
   
   # finalize all dependants connected by dependency R_*(*, dependtant)
-  def fainalize_all_by_dependant(dependant)
+  def finalize_all_by_dependant(dependant)
     for id in @dependency.keys
       finalize_all_dependency(id, dependant)
     end
@@ -190,7 +190,7 @@ module Finalizer
   module_function :finalize_dependency
   module_function :finalize_all_dependency
   module_function :finalize_by_dependant
-  module_function :fainalize_all_by_dependant
+  module_function :finalize_all_by_dependant
   module_function :finalize_all
 
   module_function :safe

@@ -101,7 +101,6 @@ enum node_type {
     NODE_SCLASS,
     NODE_COLON2,
     NODE_COLON3,
-    NODE_CNAME,
     NODE_CREF,
     NODE_DOT2,
     NODE_DOT3,

@@ -1,6 +1,40 @@
-Mon Sep  4 12:58:31 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Wed Sep  6 17:06:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.
+
+Thu Sep  7 14:17:51 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cat): should work even for concatenating same
+	  string.
+
+Wed Sep  6 17:06:38 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_cvar_declare): should check superclass's class
+	  variable first.
+
+Wed Sep  6 10:42:02 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-calculate-indent): shift continuing line
+	  if previous line ends with modifier keyword.
+
+	* misc/ruby-mode.el (ruby-parse-region): should not give up if
+	  modifiers are at the end of line.
+
+	* misc/ruby-mode.el (ruby-expr-beg): indented wrongly if modified
+	  statement was size 1.
+
+Wed Sep  6 10:41:19 2000  Kenichi Komiya  <kom@mail1.accsnet.ne.jp>
+
+	* misc/ruby-mode.el (ruby-parse-region): modifier was not handled
+	  well on emacs19.
+
+Tue Sep  5 17:10:12 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_to_s): fixed zone string UTC for utc time object.
+
+Tue Sep  5 00:26:06 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_search): range worked wrongly on bm_search().
 
 Mon Sep  4 13:40:40 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 

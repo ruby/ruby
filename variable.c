@@ -1332,11 +1332,11 @@ rb_cvar_set(klass, id, val)
 {
     VALUE tmp;
 
-    if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
     tmp = klass;
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
+	    if (!OBJ_TAINTED(tmp) && rb_safe_level() >= 4)
+		rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
 	    st_insert(RCLASS(tmp)->iv_tbl,id,val);
 	    return;
 	}
@@ -1353,6 +1353,19 @@ rb_cvar_declare(klass, id, val)
     ID id;
     VALUE val;
 {
+    VALUE tmp;
+
+    tmp = klass;
+    while (tmp) {
+	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
+	    if (!OBJ_TAINTED(tmp) && rb_safe_level() >= 4)
+		rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
+	    st_insert(RCLASS(tmp)->iv_tbl,id,val);
+	    return;
+	}
+	tmp = RCLASS(tmp)->super;
+    }
+
     mod_av_set(klass, id, val, "class variable", Qfalse);
 }
 

@@ -51,7 +51,14 @@ class CGI
       @dbman = dbman::new(self, option)
       request.instance_eval do
 	@output_hidden = {session_key => id}
-	@output_cookies =  [Cookie::new(session_key,id)]
+	@output_cookies =  [
+          Cookie::new(session_key => id,
+		      "path" => if ENV["SCRIPT_NAME"] then
+				  File::dirname(ENV["SCRIPT_NAME"])
+				else
+				  ""
+				end)
+        ]
       end
       ObjectSpace::define_finalizer(self, Session::callback(@dbman))
     end
