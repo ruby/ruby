@@ -1,7 +1,7 @@
 # 
 # = fileutils.rb
 # 
-# Copyright (c) 2000-2004 Minero Aoki <aamine@loveruby.net>
+# Copyright (C) 2000-2005 Minero Aoki <aamine@loveruby.net>
 # 
 # This program is free software.
 # You can distribute/modify this program under the same terms of ruby.

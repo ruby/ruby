@@ -1,8 +1,8 @@
 #
 # = net/http.rb
 #
-# Copyright (C) 1999-2004 Yukihiro Matsumoto
-# Copyright (C) 1999-2004 Minero Aoki
+# Copyright (C) 1999-2005 Yukihiro Matsumoto
+# Copyright (C) 1999-2005 Minero Aoki
 # Copyright (C) 2001 GOTOU Yuuzou
 # 
 # Written and maintained by Minero Aoki <aamine@loveruby.net>.
