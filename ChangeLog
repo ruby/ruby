@@ -1,3 +1,8 @@
+Tue Jan 20 15:19:59 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* file.c (rb_stat): most of the FileTest methods (and function
+ 	  `test') accept File objects as the argument.
+
 Tue Jan 19 18:19:24 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* ext/extmk.rb.in (install): there should be no newline after install:
