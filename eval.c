@@ -3946,7 +3946,7 @@ assign(self, lhs, val, pcall)
 	break;
 
       case NODE_MASGN:
-	massign(self, lhs, val, pcall);
+	massign(self, lhs, svalue_to_mvalue(val), pcall);
 	break;
 
       case NODE_CALL:

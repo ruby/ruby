@@ -1,3 +1,7 @@
+Tue Apr 16 08:59:50 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (assign): convert mrhs to mvalue.
+
 Mon Apr 15 09:27:31 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_unpack): should treat 'U' in character unit, not in
