@@ -1,3 +1,5 @@
+/* public domain rewrite of isnan(3) */
+
 #ifdef _MSC_VER
 
 #include <float.h>

@@ -44,6 +44,7 @@ Hacking Interpreter
 * warn for inconsistent local variable usage (lv m and method m at the same time). 
 * MicroRuby
 * Built-in Interactive Ruby.
+* trap every method invocation, which can be enabled by e.g. trap_call :method.
 
 Standard Libraries
 

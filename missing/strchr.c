@@ -1,45 +1,30 @@
-/*
- * strchr --- search a string for a character
- *
- * We supply this routine for those systems that aren't standard yet.
- */
-
-#include <stdio.h>
+/* public domain rewrite of strchr(3) and strrchr(3) */
 
 char *
-strchr(str, c)
-register const char *str, c;
+strchr(s, c)
+    char *s;
+    int c;
 {
-	if (c == '\0') {
-		/* thanks to Mike Brennan ... */
-		do {
-			if (*str == c)
-				return (char *) str;
-		} while (*str++);
-	} else {
-		for (; *str; str++)
-			if (*str == c)
-				return (char *) str;
-	}
-
-	return NULL;
+    if (c == 0) return s + strlen(s);
+    while (*s) {
+	if (*s == c)
+	    return s;
+	s++;
+    }
+    return 0;
 }
 
-/*
- * strrchr --- find the last occurrence of a character in a string
- *
- * We supply this routine for those systems that aren't standard yet.
- */
-
 char *
-strrchr(str, c)
-register const char *str, c;
+strrchr(s, c)
+    char *s;
+    int c;
 {
-	register const char *save = NULL;
+    char *save = 0;
 
-	for (; *str; str++)
-		if (*str == c)
-			save = str;
-
-	return (char *) save;
+    while (*s) {
+	if (*s == c)
+	    save = s;
+	s++;
+    }
+    return save;
 }

@@ -1,6 +1,4 @@
-/*
- * strerror.c --- Map an integer error number into a printable string.
- */
+/* public domain rewrite of strerror(3) */
 
 extern int sys_nerr;
 extern char *sys_errlist[];
@@ -11,9 +9,9 @@ char *
 strerror(error)
     int error;
 {
-    if ((error <= sys_nerr) && (error > 0)) {
+    if (error <= sys_nerr && error > 0) {
 	return sys_errlist[error];
     }
-    sprintf (msg, "Unknown error (%d)", error);
+    sprintf(msg, "Unknown error (%d)", error);
     return msg;
 }

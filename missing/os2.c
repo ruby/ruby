@@ -1,3 +1,5 @@
+/* os/2 compatibility functions -- follows Ruby's lisence */
+
 #include "ruby.h"
 #include <stdio.h>
 #include <stdlib.h>

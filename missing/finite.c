@@ -1,3 +1,5 @@
+/* public domain rewrite of finite(3) */
+
 int
 finite(n)
     double n;

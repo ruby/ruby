@@ -1,7 +1,4 @@
-/*
- * memcmp --- compare memories.
- *
- */
+/* public domain rewrite of memcmp(3) */
 
 int
 memcmp(s1,s2,len)

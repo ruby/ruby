@@ -1,3 +1,5 @@
+/* public domain rewrite of isinf(3) */
+
 #ifdef __osf__
 
 #define _IEEE 1

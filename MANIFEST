@@ -163,7 +163,6 @@ misc/rubydb2x.el
 misc/rubydb3x.el
 missing/alloca.c
 missing/crypt.c
-missing/dir.h
 missing/dup2.c
 missing/file.h
 missing/finite.c

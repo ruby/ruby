@@ -1457,56 +1457,52 @@ ev_const_get(cref, id)
 	}
 	cbase = cbase->nd_next;
     }
-#if 1
-    return rb_const_get(ruby_class, id);
-#else
     return rb_const_get(cref->nd_clss, id);
-#endif
 }
 
- static VALUE
- ev_const_set(cref, id, val)
-     NODE *cref;
-     ID id;
-     VALUE val;
- {
-     NODE *cbase = cref;
+static VALUE
+ev_const_set(cref, id, val)
+    NODE *cref;
+    ID id;
+    VALUE val;
+{
+    NODE *cbase = cref;
 
-     while (cbase && cbase->nd_clss != rb_cObject) {
-	 struct RClass *klass = RCLASS(cbase->nd_clss);
+    while (cbase && cbase->nd_clss != rb_cObject) {
+	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	 if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
-	     st_insert(klass->iv_tbl, id, val);
-	     return val;
-	 }
-	 cbase = cbase->nd_next;
-     }
-     rb_const_assign(cbase->nd_clss, id, val);
-     return val;
- }
+	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
+	    st_insert(klass->iv_tbl, id, val);
+	    return val;
+	}
+	cbase = cbase->nd_next;
+    }
+    rb_const_assign(cbase->nd_clss, id, val);
+    return val;
+}
 
- static VALUE
- rb_mod_nesting()
- {
-     NODE *cbase = RNODE(ruby_frame->cbase);
-     VALUE ary = rb_ary_new();
+static VALUE
+rb_mod_nesting()
+{
+    NODE *cbase = RNODE(ruby_frame->cbase);
+    VALUE ary = rb_ary_new();
 
-     while (cbase && cbase->nd_clss != rb_cObject) {
-	 rb_ary_push(ary, cbase->nd_clss);
-	 cbase = cbase->nd_next;
-     }
-     return ary;
- }
+    while (cbase && cbase->nd_clss != rb_cObject) {
+	rb_ary_push(ary, cbase->nd_clss);
+	cbase = cbase->nd_next;
+    }
+    return ary;
+}
 
- static VALUE
- rb_mod_s_constants()
- {
-     NODE *cbase = RNODE(ruby_frame->cbase);
-     VALUE ary = rb_ary_new();
+static VALUE
+rb_mod_s_constants()
+{
+    NODE *cbase = RNODE(ruby_frame->cbase);
+    VALUE ary = rb_ary_new();
 
-     while (cbase && cbase->nd_clss != rb_cObject) {
-	 rb_mod_const_at(cbase->nd_clss, ary);
-		cbase = cbase->nd_next;
+    while (cbase && cbase->nd_clss != rb_cObject) {
+	rb_mod_const_at(cbase->nd_clss, ary);
+	cbase = cbase->nd_next;
     }
 
     rb_mod_const_of(ruby_cbase, ary);
@@ -6363,6 +6359,23 @@ proc_eq(self, other)
 }
 
 static VALUE
+proc_to_s(self, other)
+    VALUE self, other;
+{
+    struct BLOCK *data;
+    char *cname = rb_class2name(CLASS_OF(self));
+    VALUE str;
+
+    Data_Get_Struct(self, struct BLOCK, data);
+    str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
+    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, data->tag);
+    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+    if (OBJ_TAINTED(self)) OBJ_TAINT(str);
+
+    return str;
+}
+
+static VALUE
 block_pass(self, node)
     VALUE self;
     NODE *node;
@@ -6780,6 +6793,7 @@ Init_Proc()
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "[]", proc_call, -2);
     rb_define_method(rb_cProc, "==", proc_eq, 1);
+    rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_global_function("proc", rb_f_lambda, 0);
     rb_define_global_function("lambda", rb_f_lambda, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
@@ -7181,15 +7195,15 @@ void
 rb_thread_fd_close(fd)
     int fd;
 {
-    rb_thread_t th, curr = curr_thread;
+    rb_thread_t th;
 
-    FOREACH_THREAD_FROM(curr, th) {
+    FOREACH_THREAD(th) {
 	if ((th->wait_for & WAIT_FD) && fd == th->fd) {
 	    VALUE exc = rb_exc_new2(rb_eIOError, "stream closed");
 	    rb_thread_raise(1, &exc, th);
 	}
     }
-    END_FOREACH_FROM(curr, th);
+    END_FOREACH(th);
 }
 
 static void
