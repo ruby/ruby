@@ -48,7 +48,8 @@
 # There are some `low level' methods, which does not accept any option:
 #
 #   uptodate?(file, cmp_list)
-#   copy_file(srcpath, destpath)
+#   copy_entry(src, dest, preserve = false, dereference = false)
+#   copy_file(src, dest, preserve = false, dereference = true)
 #   copy_stream(srcstream, deststream)
 #   compare_file(path_a, path_b)
 #   compare_stream(stream_a, stream_b)
@@ -177,6 +178,14 @@ module FileUtils
 
     mode = options[:mode] || (0777 & ~File.umask)
     list.map {|path| path.sub(%r</\z>, '') }.each do |path|
+      # optimize for the most common case
+      begin
+        Dir.mkdir path
+        next
+      rescue SystemCallError
+        next if File.directory?(path)
+      end
+
       stack = []
       until path == stack.last   # dirname("/")=="/", dirname("C:/")=="C:/"
         stack.push path
@@ -322,9 +331,7 @@ module FileUtils
     return if options[:noop]
 
     fu_each_src_dest(src, dest) do |s,d|
-      fu_preserve_attr(options[:preserve], s, d) {
-          copy_file s, d
-      }
+      copy_file s, d, options[:preserve]
     end
   end
 
@@ -346,6 +353,12 @@ module FileUtils
   #   # Examples of copying several files to target directory.
   #   FileUtils.cp_r %w(mail.rb field.rb debug/), site_ruby + '/tmail'
   #   FileUtils.cp_r Dir.glob('*.rb'), '/home/aamine/lib/ruby', :noop, :verbose
+  #
+  #   # If you want to copy all contents of a directory instead of the
+  #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
+  #   # use following code.
+  #   FileUtils.cp_r 'src/.', 'dest'     # cp_r('src', 'dest') makes src/dest,
+  #                                      # but this doesn't.
   # 
   def cp_r(src, dest, options = {})
     fu_check_options options, :preserve, :noop, :verbose
@@ -354,68 +367,53 @@ module FileUtils
 
     fu_each_src_dest(src, dest) do |s,d|
       if File.directory?(s)
-        fu_copy_dir s, d, '.', options[:preserve]
+        fu_traverse(s) {|rel, deref, st|
+          ctx = CopyContext_.new(options[:preserve], deref, st)
+          ctx.copy_entry "#{s}/#{rel}", "#{d}/#{rel}"
+        }
       else
-        fu_p_copy s, d, options[:preserve]
+        copy_file s, d, options[:preserve]
       end
     end
   end
 
-  def fu_copy_dir(src, dest, rel, preserve) #:nodoc:
-    fu_preserve_attr(preserve, "#{src}/#{rel}", "#{dest}/#{rel}") {|s,d|
-        begin
-          Dir.mkdir File.expand_path(d)
-        rescue => err
-          raise unless File.directory?(d)
-        end
-    }
-    Dir.entries("#{src}/#{rel}").each do |fname|
-      if File.directory?(File.join(src,rel,fname))
-        next if /\A\.\.?\z/ === fname
-        fu_copy_dir src, dest, "#{rel}/#{fname}", preserve
-      else
-        fu_p_copy File.join(src,rel,fname), File.join(dest,rel,fname), preserve
+  def fu_traverse(prefix, dereference_root = true)   #:nodoc:
+    stack = ['.']
+    deref = dereference_root
+    while rel = stack.pop
+      st = File.lstat("#{prefix}/#{rel}")
+      if st.directory? and (deref or not st.symlink?)
+        stack.concat Dir.entries("#{prefix}/#{rel}")\
+                         .reject {|ent| ent == '.' or ent == '..' }\
+                         .map {|ent| "#{rel}/#{ent}" }.reverse
       end
+      yield rel, deref, st
+      deref = false
     end
   end
-  private :fu_copy_dir
-
-  def fu_p_copy(src, dest, really = true) #:nodoc:
-    fu_preserve_attr(really, src, dest) {
-      copy_file src, dest
-    }
-  end
-  private :fu_p_copy
-
-  def fu_preserve_attr(really, src, dest) #:nodoc:
-    unless really
-      yield src, dest
-      return
-    end
-
-    st = File.stat(src)
-    yield src, dest
-    File.utime st.atime, st.mtime, dest
-    begin
-      File.chown st.uid, st.gid, dest
-    rescue Errno::EPERM
-      File.chmod st.mode & 01777, dest   # clear setuid/setgid
-    else
-      File.chmod st.mode, dest
-    end
-  end
-  private :fu_preserve_attr
+  private :fu_traverse
 
   #
-  # Copies file +src+ to +dest+.
-  # Both of +src+ and +dest+ must be a filename.
+  # Copies a file system entry +src+ to +dest+.
+  # This method preserves file types, c.f. FIFO, device files, directory....
   #
-  def copy_file(src, dest)
-    File.open(src,  'rb') {|r|
-      File.open(dest, 'wb', r.stat.mode) {|w|
-        copy_stream r, w
-      }
-    }
+  # Both of +src+ and +dest+ must be a path name.
+  # +src+ must exist, +dest+ must not exist.
+  #
+  # If +preserve+ is true, this method preserves owner, group and permissions.
+  # If +dereference+ is true, this method copies a target of symbolic link
+  # instead of a symbolic link itself.
+  #
+  def copy_entry(src, dest, preserve = false, dereference = false)
+    CopyContext_.new(preserve, dereference).copy_entry src, dest
+  end
+
+  #
+  # Copies file contents of +src+ to +dest+.
+  # Both of +src+ and +dest+ must be a path name.
+  #
+  def copy_file(src, dest, preserve = false, dereference = true)
+    CopyContext_.new(preserve, dereference).copy_content src, dest
   end
 
   #
@@ -423,12 +421,126 @@ module FileUtils
   # Both of +src+ and +dest+ must be a IO.
   #
   def copy_stream(src, dest)
-    bsize = fu_stream_blksize(src, dest)
+    fu_copy_stream0 src, dest, fu_stream_blksize(src, dest)
+  end
+
+  def fu_copy_stream0(src, dest, blksize)   #:nodoc:
     begin
       while true
-        dest.syswrite src.sysread(bsize)
+        dest.syswrite src.sysread(blksize)
       end
     rescue EOFError
+    end
+  end
+  private :fu_copy_stream0
+
+  class CopyContext_
+    include ::FileUtils
+
+    def initialize(preserve = false, dereference = false, stat = nil)
+      @preserve = preserve
+      @dereference = dereference
+      @stat = stat
+    end
+
+    def copy_entry(src, dest)
+      preserve(src, dest) {
+        _copy_entry src, dest
+      }
+    end
+
+    def copy_content(src, dest)
+      preserve(src, dest) {
+        _copy_content src, dest
+      }
+    end
+
+    private
+
+    def _copy_entry(src, dest)
+      st = stat(src)
+      case
+      when st.file?
+        _copy_content src, dest
+      when st.directory?
+        begin
+          Dir.mkdir File.expand_path(dest)
+        rescue => err
+          raise unless File.directory?(dest)
+        end
+      when st.symlink?
+        File.symlink File.readlink(src), dest
+      when st.chardev?
+        raise "cannot handle device file" unless File.respond_to?(:mknod)
+        mknod dest, ?c, 0666, st.rdev
+      when st.blockdev?
+        raise "cannot handle device file" unless File.respond_to?(:mknod)
+        mknod dest, ?b, 0666, st.rdev
+      when st.socket?
+        raise "cannot handle socket" unless File.respond_to?(:mknod)
+        mknod dest, nil, st.mode, 0
+      when st.pipe?
+        raise "cannot handle FIFO" unless File.respond_to?(:mkfifo)
+        mkfifo dest, 0666
+      when (st.mode & 0xF000) == (_S_IF_DOOR = 0xD000)   # door
+        raise "cannot handle door: #{src}"
+      else
+        raise "unknown file type: #{src}"
+      end
+    end
+
+    def _copy_content(src, dest)
+      st = stat(src)
+      File.open(src,  'rb') {|r|
+        File.open(dest, 'wb', st.mode) {|w|
+          fu_copy_stream0 r, w, (fu_blksize(st) || fu_default_blksize())
+        }
+      }
+    end
+
+    def preserve(src, dest)
+      return yield unless @preserve
+      st = stat(src)
+      yield
+      File.utime st.atime, st.mtime, dest
+      begin
+        chown st.uid, st.gid, dest
+      rescue Errno::EPERM
+        # clear setuid/setgid
+        chmod st.mode & 01777, dest
+      else
+        chmod st.mode, dest
+      end
+    end
+
+    def stat(path)
+      @stat ||= ::File.stat(path)
+    end
+
+    def chmod(mode, path)
+      if @dereference
+        ::File.chmod mode, path
+      else
+        begin
+          ::File.lchmod mode, path
+        rescue NotImplementedError
+          # just ignore this because chmod(symlink) changes attributes of
+          # symlink target, which is not our intent.
+        end
+      end
+    end
+
+    def chown(uid, gid, path)
+      if @dereference
+        ::File.chown uid, gid, path
+      else
+        begin
+          ::File.lchown uid, gid, path
+        rescue NotImplementedError
+          # just ignore this because chown(symlink) changes attributes of
+          # symlink target, which is not our intent.
+        end
+      end
     end
   end
 
@@ -461,11 +573,7 @@ module FileUtils
         File.rename s, d
       rescue SystemCallError
         begin
-          if File.symlink?(s)
-            File.symlink File.readlink(s), d
-          else
-            fu_p_copy s, d
-          end
+          copy_entry s, d, true
           File.unlink s
         rescue SystemCallError
           raise unless options[:force]
@@ -486,7 +594,7 @@ module FileUtils
   # Options: force noop verbose
   # 
   # Remove file(s) specified in +list+.  This method cannot remove directories.
-  # All errors are ignored when the :force option is set.
+  # All StandardErrors are ignored when the :force option is set.
   # 
   #   FileUtils.rm %w( junk.txt dust.txt )
   #   FileUtils.rm Dir.glob('*.so')
@@ -767,9 +875,20 @@ module FileUtils
   def fu_stream_blksize(*streams)
     streams.each do |s|
       next unless s.respond_to?(:stat)
-      size = s.stat.blksize
-      return size unless size.nil? or size.zero?
+      size = fu_blksize(s.stat)
+      return size if size
     end
+    fu_default_blksize()
+  end
+
+  def fu_blksize(st)
+    s = st.blksize
+    return nil unless s
+    return nil if s == 0
+    s
+  end
+
+  def fu_default_blksize
     1024
   end
 

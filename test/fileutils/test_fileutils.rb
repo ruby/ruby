@@ -1,6 +1,4 @@
-#
-# test/fileutils/test_fileutils.rb
-#
+# $Id$
 
 require 'fileutils'
 require 'fileasserts'
@@ -96,13 +94,12 @@ class TestFileUtils
   end
 
 
-  TARGETS = %w( data/same data/all data/random data/zero )
+  TARGETS = %w( data/a data/all data/random data/zero )
 
   def prepare_data_file
-    same_chars = 'a' * 50
-    File.open('data/same', 'w') {|f|
+    File.open('data/a', 'w') {|f|
       32.times do
-        f.puts same_chars
+        f.puts 'a' * 50
       end
     }
 
@@ -235,6 +232,44 @@ end
     TARGETS.each do |fname|
       assert_same_file fname, "tmp/#{fname}"
     end
+
+    cp_r 'data', 'tmp2', :preserve => true
+    TARGETS.each do |fname|
+      assert_same_entry fname, "tmp/#{fname}"
+      assert_same_file fname, "tmp/#{fname}"
+    end
+
+    # a/* -> b/*
+    mkdir 'tmp/cpr_src'
+    mkdir 'tmp/cpr_dest'
+    File.open('tmp/cpr_src/a', 'w') {|f| f.puts 'a' }
+    File.open('tmp/cpr_src/b', 'w') {|f| f.puts 'b' }
+    File.open('tmp/cpr_src/c', 'w') {|f| f.puts 'c' }
+    mkdir 'tmp/cpr_src/d'
+    cp_r 'tmp/cpr_src/.', 'tmp/cpr_dest'
+    assert_same_file 'tmp/cpr_src/a', 'tmp/cpr_dest/a'
+    assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
+    assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
+    assert_directory 'tmp/cpr_dest/d'
+    rm_rf 'tmp/cpr_src'
+    rm_rf 'tmp/cpr_dest'
+
+if have_symlink?
+    # symlink in a directory
+    mkdir 'tmp/cpr_src'
+    ln_s 'SLdest', 'tmp/cpr_src/symlink'
+    cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+    assert_symlink 'tmp/cpr_dest/symlink'
+    assert_equal 'SLdest', File.readlink('tmp/cpr_dest/symlink')
+
+    # root is a symlink
+    ln_s 'cpr_src', 'tmp/cpr_src2'
+    cp_r 'tmp/cpr_src2', 'tmp/cpr_dest2'
+    assert_directory 'tmp/cpr_dest2'
+    assert_not_symlink 'tmp/cpr_dest2'
+    assert_symlink 'tmp/cpr_dest2/symlink'
+    assert_equal 'SLdest', File.readlink('tmp/cpr_dest2/symlink')
+end
 
     # pathname
     touch 'tmp/cprtmp'

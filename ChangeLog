@@ -1,3 +1,12 @@
+Mon Aug  9 06:33:06 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (cp_r): copies symlink to symlink, except
+	  root entries of cp_r.
+
+	* lib/fileutils.rb: new method FileUtils.copy_entry.
+
+	* test/fileutils/test_fileutils.rb: more cp_r tests.
+
 Sun Aug  8 00:43:31 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/implicit.c: added sexagecimal float#base60.
