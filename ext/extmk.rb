@@ -45,21 +45,20 @@ def relative_from(path, base)
   end
 end
 
-def extract_makefile(makefile, force = false)
+def extract_makefile(makefile, keep = true)
   m = File.read(makefile)
   if !(target = m[/^TARGET[ \t]*=[ \t]*(\S*)/, 1])
-    return force
+    return keep
   end
   installrb = {}
   m.scan(/^install-rb-default:[ \t]*(\S+)\n\1:[ \t]*(\S+)/) {installrb[$2] = $1}
   oldrb = installrb.keys.sort
   newrb = install_rb(nil, "").collect {|d, *f| f}.flatten.sort
-  unless (oldrb -= newrb).empty?
-    FileUtils.rm_f(oldrb.collect {|old| Config.expand(installrb[old])}, :verbose => true)
-    return false
-  end
   if target_prefix = m[/^target_prefix[ \t]*=[ \t]*\/(.*)/, 1]
     target = "#{target_prefix}/#{target}"
+    unless (oldrb -= newrb).empty?
+      return false
+    end
   end
   $target = target
   /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
@@ -113,6 +112,7 @@ def extmake(target)
 	    !(t = modified?(makefile, MTIMES)) ||
             %W"#{$srcdir}/makefile.rb #{$srcdir}/extconf.rb #{$srcdir}/depend".any? {|f| modified?(f, [t])})
         then
+	  ok = false
           init_mkmf
 	  Logging::logfile 'mkmf.log'
 	  rm_f makefile

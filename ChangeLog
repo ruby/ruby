@@ -1,3 +1,10 @@
+Thu Feb 10 12:09:16 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extract_makefile): default to true if not compiled
+	  previously.
+
+	* ext/extmk.rb (extmake): create dummy makefile if extconf failed.
+
 Thu Feb 10 12:07:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (init_stdhandle): assign standard file handles.
