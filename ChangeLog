@@ -3,6 +3,10 @@ Thu Oct  4 14:11:03 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* ext/socket/socket.c (ruby_connect): EALREADY is the equivalent
 	  for EINPROGRESS in ws2_32.lib.
 
+Wed Oct  3 20:11:06 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* re.c (rb_reg_s_alloc): avoid inifinte recursion.
+
 Wed Oct  3 16:49:49 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/gdbm/gdbm.c (rb_gdbm_fetch): str is a VALUE now.
