@@ -1,3 +1,12 @@
+Mon Mar  7 21:35:02 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#start): should
+	  restore @token if accept failure. suggested by Dominique Brezinski.
+	  [ruby-core:04518]
+
+	* sample/webrick/httpsd.rb: fix typo in comment. suggested by
+	  Kazuhiko Shiozaki.
+
 Wed Feb 16 02:55:21 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_start_ssl, ossl_ssl_read,
