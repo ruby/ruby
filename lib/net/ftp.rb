@@ -87,8 +87,20 @@ module Net
     #
     # A synonym for +FTP.new+, but with a mandatory host parameter.
     #
+    # If a block is given, it is passed the +FTP+ object, which will be closed
+    # when the block finishes, or when an exception is raised.
+    #
     def FTP.open(host, user = nil, passwd = nil, acct = nil)
-      new(host, user, passwd, acct)
+      if block_given?
+        ftp = new(host, user, passwd, acct)
+        begin
+          yield ftp
+        ensure
+          ftp.close
+        end
+      else
+        new(host, user, passwd, acct)
+      end
     end
     
     #

@@ -1063,6 +1063,9 @@ rb_str_match2(str)
     VALUE str;
 {
     StringValue(str);
+#if RUBY_VERSION_CODE < 181
+	rb_warn("~string will be obsolete; use explicit regexp");
+#endif
     return rb_reg_match2(rb_reg_regcomp(rb_reg_quote(str)));
 }
 

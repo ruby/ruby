@@ -1,3 +1,11 @@
+Sat Jul 19 22:25:47 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_match2): add warning to "~string".
+	  [ruby-list:37751]
+
+	* lib/net/ftp.rb (Net::FTP::open): takes block.  suggested by Gavin
+	  Sinclair in [ruby-core:01237].
+
 Sat Jul 19 19:03:24 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/stdlib.c: add bsearch().
