@@ -24,14 +24,38 @@ class TestTime < Test::Unit::TestCase
                 -Time.utc(2000, 3, 21, 3, 30), -3*3600)
   end
 
-  def test_timegm_negative
+  def test_timegm
     begin
       Time.at(-1)
+      negative_time_t_supported = true
     rescue ArgumentError
-      return
+      negative_time_t_supported = false
     end
-    assert_equal(-1, Time.utc(1969, 12, 31, 23, 59, 59).tv_sec)
-    assert_equal(-2, Time.utc(1969, 12, 31, 23, 59, 58).tv_sec)
-    assert_equal(-0x80000000, Time.utc(1901, 12, 13, 20, 45, 52).tv_sec)
+    if negative_time_t_supported
+      assert_equal(-0x80000000, Time.utc(1901, 12, 13, 20, 45, 52).tv_sec)
+      assert_equal(-2, Time.utc(1969, 12, 31, 23, 59, 58).tv_sec)
+      assert_equal(-1, Time.utc(1969, 12, 31, 23, 59, 59).tv_sec)
+    end
+
+    assert_equal(0, Time.utc(1970, 1, 1, 0, 0, 0).tv_sec) # the Epoch
+    assert_equal(1, Time.utc(1970, 1, 1, 0, 0, 1).tv_sec)
+    assert_equal(31535999, Time.utc(1970, 12, 31, 23, 59, 59).tv_sec)
+    assert_equal(31536000, Time.utc(1971, 1, 1, 0, 0, 0).tv_sec)
+    assert_equal(78796799, Time.utc(1972, 6, 30, 23, 59, 59).tv_sec)
+
+    # 1972-06-30T23:59:60Z is the first leap second.
+    if Time.utc(1972, 7, 1, 0, 0, 0) - Time.utc(1972, 6, 30, 23, 59, 59) == 1
+      # no leap second.
+      assert_equal(78796800, Time.utc(1972, 7, 1, 0, 0, 0).tv_sec)
+      assert_equal(78796801, Time.utc(1972, 7, 1, 0, 0, 1).tv_sec)
+      assert_equal(946684800, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
+      assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
+    else
+      # leap seconds supported.
+      assert_equal(78796800, Time.utc(1972, 6, 30, 23, 59, 60).tv_sec)
+      assert_equal(78796801, Time.utc(1972, 7, 1, 0, 0, 0).tv_sec)
+      assert_equal(78796802, Time.utc(1972, 7, 1, 0, 0, 1).tv_sec)
+      assert_equal(946684822, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
+    end
   end
 end
