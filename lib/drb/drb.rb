@@ -582,6 +582,8 @@ module DRb
       end
       ary.push(dump(b))
       stream.write(ary.join(''))
+    rescue
+      raise(DRbConnError, $!.message, $!.backtrace)
     end
     
     def recv_request(stream) # :nodoc:
@@ -600,6 +602,8 @@ module DRb
 
     def send_reply(stream, succ, result)  # :nodoc:
       stream.write(dump(succ) + dump(result))
+    rescue
+      raise(DRbConnError, $!.message, $!.backtrace)
     end
 
     def recv_reply(stream)  # :nodoc:
