@@ -116,7 +116,7 @@ class CGI
 	begin
 	  @f = open(path, "r+")
 	rescue Errno::ENOENT
-	  @f = open(path, "w+")
+	  @f = File.open(@path, File::CREAT|File::RDWR, 0600)
 	end
       end
 
