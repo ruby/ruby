@@ -365,6 +365,15 @@ end
     assert_file_not_exist 'tmp/tmpdir'
     assert_file_exist     'tmp'
 
+if have_symlink?
+    # [ruby-talk:94635] a symlink to the directory
+    Dir.mkdir 'tmp/tmpdir'
+    File.symlink '..', 'tmp/tmpdir/symlink_to_dir'
+    rm_r 'tmp/tmpdir'
+    assert_file_not_exist 'tmp/tmpdir'
+    assert_file_exist     'tmp'
+end
+
     # pathname
     Dir.mkdir 'tmp/tmpdir1'; touch 'tmp/tmpdir1/tmp'
     Dir.mkdir 'tmp/tmpdir2'; touch 'tmp/tmpdir2/tmp'
