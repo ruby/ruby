@@ -1,3 +1,7 @@
+Thu May 27 20:22:05  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* io.c (rb_io_fwrite): check all case errno != 0 [ruby-dev:23648]
+
 Thu May 27 14:53:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (rb_io_fwrite): workaround for bcc32's fwrite bug.
