@@ -1,3 +1,8 @@
+Tue May 20 18:59:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_save_context): prohibit rb_gc_force_recycle()
+	  on thread saved ruby_dyna_vars. [ruby-dev:20236]
+
 Tue May 20 17:39:15 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (init_copy): call initialize_copy at the end of copy

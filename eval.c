@@ -7982,6 +7982,7 @@ rb_thread_save_context(th)
     th->stk_pos = (rb_gc_stack_start<pos)?rb_gc_stack_start
 				         :rb_gc_stack_start - len;
     if (len > th->stk_max) {
+	rb_gc();
 	REALLOC_N(th->stk_ptr, VALUE, len);
 	th->stk_max = len;
     }
@@ -7998,6 +7999,7 @@ rb_thread_save_context(th)
     th->wrapper = ruby_wrapper;
     th->cref = ruby_cref;
     th->dyna_vars = ruby_dyna_vars;
+    FL_SET(ruby_dyna_vars, DVAR_DONT_RECYCLE);
     th->block = ruby_block;
     th->flags &= THREAD_FLAGS_MASK;
     th->flags |= (rb_trap_immediate<<8) | scope_vmode;
