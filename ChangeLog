@@ -1,3 +1,10 @@
+Wed Oct 16 13:36:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* variable.c (rb_global_entry): not add global entry until
+	  initialized to avoid accessing it while GC.  [ruby-dev:18514]
+
+	* variable.c (rb_alias_variable): ditto.
+
 Sat Oct 12 23:44:11 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (rb_w32_putc): wrong condition to fill or flush on

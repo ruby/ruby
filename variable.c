@@ -354,7 +354,6 @@ rb_global_entry(id)
     if (!st_lookup(rb_global_tbl, id, &entry)) {
 	struct global_variable *var;
 	entry = ALLOC(struct global_entry);
-	st_add_direct(rb_global_tbl, id, entry);
 	var = ALLOC(struct global_variable);
 	entry->id = id;
 	entry->var = var;
@@ -366,6 +365,7 @@ rb_global_entry(id)
 
 	var->block_trace = 0;
 	var->trace = 0;
+	st_add_direct(rb_global_tbl, id, entry);
     }
     return entry;
 }
@@ -768,8 +768,8 @@ rb_alias_variable(name1, name2)
     entry2 = rb_global_entry(name2);
     if (!st_lookup(rb_global_tbl, name1, &entry1)) {
 	entry1 = ALLOC(struct global_entry);
-	st_add_direct(rb_global_tbl, name1, entry1);
 	entry1->id = name1;
+	st_add_direct(rb_global_tbl, name1, entry1);
     }
     else if (entry1->var != entry2->var) {
 	struct global_variable *var = entry1->var;
