@@ -1,3 +1,14 @@
+Tue Feb 10 20:49:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (method_proc): return bound Proc object.  [ruby-dev:22854]
+
+	* eval.c (rb_mod_define_method): bind method body itself for Method
+	  object.
+
+	* node.h (NODE_DMETHOD): deprecated.
+
+	* object.c (rb_class_inherited_p): export.
+
 Tue Feb 10 16:43:50 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (umethod_bind): perge unused check.  [ruby-dev:22850]

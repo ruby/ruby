@@ -5437,10 +5437,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	result = rb_eval(recv, body);
 	break;
 
-      case NODE_DMETHOD:
-	result = method_call(argc, argv, umethod_bind(body->nd_cval, recv));
-	break;
-
       case NODE_BMETHOD:
 	result = proc_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass);
 	break;
@@ -8781,7 +8777,6 @@ method_arity(method)
       case NODE_IVAR:
 	return INT2FIX(0);
       case NODE_BMETHOD:
-      case NODE_DMETHOD:
        return proc_arity(body->nd_cval);
       default:
 	body = body->nd_next;	/* skip NODE_SCOPE */
@@ -8907,8 +8902,11 @@ method_proc(method)
     struct METHOD *mdata;
     struct BLOCK *bdata;
 
-    proc = rb_iterate((VALUE(*)_((VALUE)))mproc, 0, bmcall, method);
     Data_Get_Struct(method, struct METHOD, mdata);
+    if (nd_type(mdata->body) == NODE_BMETHOD) {
+	return mdata->body->nd_cval;
+    }
+    proc = rb_iterate((VALUE(*)_((VALUE)))mproc, 0, bmcall, method);
     Data_Get_Struct(proc, struct BLOCK, bdata);
     bdata->body->nd_file = mdata->body->nd_file;
     nd_set_line(bdata->body, nd_line(mdata->body));
@@ -8991,7 +8989,18 @@ rb_mod_define_method(argc, argv, mod)
 	rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)", argc);
     }
     if (RDATA(body)->dmark == (RUBY_DATA_FUNC)bm_mark) {
-	node = NEW_DMETHOD(method_unbind(body));
+	struct METHOD *method = (struct METHOD *)DATA_PTR(body);
+	VALUE rklass = method->rklass;
+	if (rklass != mod) {
+	    if (FL_TEST(rklass, FL_SINGLETON)) {
+		rb_raise(rb_eTypeError, "cannot bind singleton method to a different class");
+	    }
+	    if (RCLASS(rklass)->super && !RTEST(rb_class_inherited_p(mod, rklass))) {
+		rb_raise(rb_eTypeError, "bind argument must be a subclass of %s",
+			 rb_class2name(rklass));
+	    }
+	}
+	node = method->body;
     }
     else if (RDATA(body)->dmark == (RUBY_DATA_FUNC)blk_mark) {
 	struct BLOCK *block;
