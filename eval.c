@@ -231,6 +231,22 @@ rb_clear_cache_for_undef(klass, id)
     }
 }
 
+static void
+rb_clear_cache_by_id(id)
+    ID id;
+{
+    struct cache_entry *ent, *end;
+
+    if (!ruby_running) return;
+    ent = cache; end = ent + CACHE_SIZE;
+    while (ent < end) {
+	if (ent->mid == id) {
+	    ent->mid = 0;
+	}
+	ent++;
+    }
+}
+
 void
 rb_clear_cache_by_class(klass)
     VALUE klass;
@@ -276,7 +292,7 @@ rb_add_method(klass, mid, node, noex)
 	mid = ID_ALLOCATOR;
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
-    rb_clear_cache_for_undef(klass, mid);
+    rb_clear_cache_by_id(mid);
     body = NEW_METHOD(node, noex);
     st_insert(RCLASS(klass)->m_tbl, mid, (st_data_t)body);
     if (node && mid != ID_ALLOCATOR && ruby_running) {
@@ -1820,7 +1836,6 @@ rb_undef(klass, id)
 	rb_name_error(id, "undefined method `%s' for%s `%s'",
 		      rb_id2name(id),s0,rb_class2name(c));
     }
-    if (klass != origin) rb_clear_cache_for_undef(origin, id);
     rb_add_method(klass, id, 0, NOEX_PUBLIC);
     if (FL_TEST(klass, FL_SINGLETON)) {
 	rb_funcall(rb_iv_get(klass, "__attached__"),
@@ -1879,7 +1894,7 @@ rb_alias(klass, name, def)
 	body = body->nd_head;
     }
 
-    rb_clear_cache_for_undef(klass, name);
+    rb_clear_cache_by_id(name);
     st_insert(RCLASS(klass)->m_tbl, name,
       (st_data_t)NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
     if (singleton) {

@@ -1,3 +1,9 @@
+Tue Jul 15 19:50:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_add_method, rb_alias): need to clear cache by
+	  ID when method defined in parent class is cached for
+	  grand child classes.  [ruby-dev:20672]
+
 Tue Jul 15 14:38:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/matrix.rb: remove elements conversion to_f, to_i, to_r.
