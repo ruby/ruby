@@ -370,6 +370,7 @@ enum regexpcode
     duplicate,   /* Match a duplicate of something remembered.
 		    Followed by one byte containing the index of the memory 
                     register.  */
+    fail,        /* always fails. */
     wordchar,    /* Matches any word-constituent character.  */
     notwordchar, /* Matches any char that is not a word-constituent.  */
     wordbeg,	 /* Succeeds if at word beginning.  */
@@ -2246,48 +2247,23 @@ re_compile_pattern(pattern, size, bufp)
       case '1': case '2': case '3':
       case '4': case '5': case '6':
       case '7': case '8': case '9':
-	{
-	  const char *p_save;
-
 	  PATUNFETCH;
-	  p_save = p;
+	p0 = p;
 
 	  had_mbchar = 0;
 	  c1 = 0;
 	  GET_UNSIGNED_NUMBER(c1);
 	  if (!ISDIGIT(c)) PATUNFETCH;
 
-	  if (c1 >= regnum) {
-         need_to_get_octal:
+	if (9 < c1 && c1 >= regnum) {
 	    /* need to get octal */
-	    p = p_save;
-	    c = scan_oct(p_save, 3, &numlen) & 0xff;
-	    p = p_save + numlen;
+	  c = scan_oct(p0, 3, &numlen) & 0xff;
+	  p = p0 + numlen;
 	    c1 = 0;
 	    had_num_literal = 1;
 	    goto numeric_char;
 	  }
-	}
 
-	/* Can't back reference to a subexpression if inside of it.  */
-       for (stackt = stackp - 2;  stackt > stackb;  ) {
-           switch (*stackt) {
-           case '(':
-               if (stackt[-2] == c1)
-                   goto need_to_get_octal;
-               stackt -= 5;
-               break;
-           case '!':
-               stackt--;
-           case '=':
-           case '>':
-               stackt -= 4;
-               break;
-           default:
-               stackt -= 3;
-               break;
-           }
-       }
 	laststart = b;
 	BUFPUSH(duplicate);
 	BUFPUSH(c1);
@@ -3752,11 +3728,12 @@ re_match(bufp, string_arg, size, pos, regs)
 	  int regno = *p++;   /* Get which register to match against */
 	  register unsigned char *d2, *dend2;
 
-	  if (IS_ACTIVE(reg_info[regno])) break;
+	  /* Check if corresponding group is still open */
+	  if (IS_ACTIVE(reg_info[regno])) goto fail;
 
 	  /* Where in input to try to start matching.  */
 	  d2 = regstart[regno];
-	  if (REG_UNSET(d2)) break;
+	  if (REG_UNSET(d2)) goto fail;
 
 	  /* Where to stop matching; if both the place to start and
 	     the place to stop matching are in the same string, then
@@ -3764,7 +3741,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	     the end of the first string.  */
 
 	  dend2 = regend[regno];
-	  if (REG_UNSET(dend2)) break;
+	  if (REG_UNSET(dend2)) goto fail;
 	  for (;;) {
 	    /* At end of register contents => success */
 	    if (d2 == dend2) break;

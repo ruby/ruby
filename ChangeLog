@@ -1,3 +1,11 @@
+Tue May 29 18:46:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): * \1 .. \9 should be
+	  backreferences always.
+
+	* regex.c (re_match): backreferences corresponding to
+	  unclosed/unmatched parentheses should fail always.
+
 Mon May 28 23:20:43 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: remove unnecessary AC_CANONICAL_BUILD
@@ -139,11 +147,6 @@ Thu May 17 06:37:14 2001  Akinori MUSHA  <knu@iDaemons.org>
 Thu May 17 05:23:52 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 	* lib/irb.rb lib/irb/multi-irb.rb lib/irb/ruby-lex.rb lib/irb/version.rb
 	  resolve ctrl-c problem
-
-Wed May 16 01:48:34 2001  Guy Decoux  <decoux@moulon.inra.fr>
-
-	* regex.c (re_compile_pattern): no back reference to a
-	  subexpression if inside of it.
 
 Tue May 15 17:46:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
