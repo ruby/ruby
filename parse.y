@@ -2324,20 +2324,11 @@ read_escape()
       case '0': case '1': case '2': case '3': /* octal constant */
       case '4': case '5': case '6': case '7':
 	{
-	    char buf[3];
-	    int i;
+	    int numlen;
 
 	    pushback(c);
-	    for (i=0; i<3; i++) {
-		c = nextc();
-		if (c == -1) goto eof;
-		if (c < '0' || '7' < c) {
-		    pushback(c);
-		    break;
-		}
-		buf[i] = c;
-	    }
-	    c = scan_oct(buf, i, &i);
+	    c = scan_oct(lex_p, 3, &numlen);
+	    lex_p += numlen;
 	}
 	return c;
 
