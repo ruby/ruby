@@ -569,10 +569,11 @@ reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
 		| kTHEN | kTRUE | kUNDEF | kUNLESS_MOD | kUNTIL_MOD | kWHEN
 		| kWHILE_MOD | kYIELD
 
-arg		: variable '=' arg
+arg		: variable '=' {$$ = assignable($1, 0);} arg
 		    {
-			$$ = assignable($1, $3);
-		        fixpos($$, $3);
+		        $$ = $<node>3;
+		        $$->nd_value = $4;
+		        fixpos($$, $4);
 		    }
 		| primary '[' aref_args ']' '=' arg
 		    {
@@ -2384,6 +2385,9 @@ retry:
 
       case '=':
 	if (lex_p == lex_pbeg + 1) {
+	    if (!lex_input) {
+		Error("embedded document not available in eval");
+	    }
 	    /* skip embedded rd document */
 	    if (strncmp(lex_p, "begin", 5) == 0 && ISSPACE(lex_p[5])) {
 		for (;;) {
@@ -2430,7 +2434,7 @@ retry:
  	    int c2 = nextc();
 	    if (!ISSPACE(c2) && (strchr("\"'`", c2) || is_identchar(c2))) {
 		if (!lex_input) {
-		    ArgError("here document not available");
+		    ArgError("here document not available in eval");
 		}
 		return here_document(c2);
 	    }
@@ -4065,8 +4069,12 @@ rb_intern(name)
 
 	    strncpy(buf, name, last);
 	    buf[last] = '\0';
-	    id = id_attrset(rb_intern(buf));
-	    goto id_regist;
+	    id = rb_intern(buf);
+	    if (id > LAST_TOKEN) {
+		id = id_attrset(id);
+		goto id_regist;
+	    }
+	    id |= ID_ATTRSET;
 	}
 	else if (ISUPPER(name[0])) {
 	    id = ID_CONST;

@@ -1,3 +1,99 @@
+Mon Nov  9 17:55:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c7 released.
+
+Fri Nov  6 19:25:27 1998  Takao KAWAMURA  <kawamura@ike.tottori-u.ac.jp>
+
+	* sample/ruby-mode.el: font-lock patch.
+
+Thu Nov  5 15:42:22 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sample/README, lib/README: simple description for each file.
+
+Wed Nov  4 18:14:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (assign): attribute assignment should be called as public.
+
+Mon Nov  2 18:24:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (thread_create): was accessing modified status.
+
+Sun Nov  1 01:18:52 1998  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* gc.c (xrealloc): size 0 needs round up to 1.
+
+Sat Oct 31 23:18:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): negative LIMIT means number of
+	  splitted fields are unlimited, as in perl.
+
+	* string.c (rb_str_split_method): if LIMIT is unspecified,
+	  trailing null fields are stripped.
+
+Sat Oct 31 04:16:14 1998  Inaba Hiroto   <inaba@st.rim.or.jp>
+
+	* string.c (str_aref): regexp index SEGVed.
+
+Fri Oct 30 14:33:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (reg_match): returns nil for unmatch.
+
+	* dir.c (dir_entries): new method.
+
+	* eval.c (block_pass): do not push block, substitute it.
+
+Wed Oct 28 11:37:42 1998  TAMITO  <tommy@valley.ne.jp>
+
+	* io.c (f_select): fd number comparison bug.
+
+Sun Oct 25 22:59:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (set_list_bits): was using wrong offset.
+
+Mon Oct 19 11:50:00 1998  Motoyuki Kasahara  <m-kasahr@sra.co.jp>
+
+	* ext/extmk.rb: Load '@top_srcdir@/lib/find.rb', not
+	'../lib/find.rb'.
+	* ext/extmk.rb: Distinguish between `top_srcdir' and `topdir'.
+	* Makefile.in (CFLAGS): Add `-I.'.
+	* Makefile.in (lex.c): Give `@srcdir@/keywords' to gperf, not
+	`keywords'.
+	* instruby.rb: Use `CONFIG["bindir"]', instead of `prefix + "/bin"'.
+	* instruby.rb: Use `CONFIG["libdir"]', instead of `prefix + "/lib"'.
+	* instruby.rb Use `CONFIG["mandir"]', instead of `prefix + "/man"'.
+	* instruby.rb (wdir): Add the variable to preserve the current
+	working directory.
+	* instruby.rb: Chdir to wdir before install `config.h' and
+	`rbconfig.rb'.
+
+Mon Oct 19 10:07:01 1998  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* eval.c (rb_eval): reduce recursive calls to rb_eval().
+
+Thu Oct 15 13:54:48 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (arg): local variabls can be accessed within right side
+ 	  expression in assignment, notably in blocks.
+
+Mon Oct 12 13:27:15 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_call0): check stack depth more frequently.
+
+Fri Oct  9 17:01:14 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (read_all): read() returns "" at immediate EOF.
+
+	* io.c (io_read): read(nil) read all until EOF.
+
+Thu Oct  8 13:32:13 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_dump): marshal can dump Time object now.
+
+	* marshal.c (Init_marshal): rename marshal methods `_dump_to' to
+ 	  `_dump', `_load_from' to `_load'.
+
+	* parse.y (rb_intern): "+=".intern generates proper symbol.
+
 Mon Oct  5 18:31:53 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c6 released.

@@ -370,13 +370,14 @@ read_all(port)
     GetOpenFile(port, fptr);
     io_readable(fptr);
 
-#ifdef __BEOS__
+    str = str_new(0, siz);
     if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)
-		&& (st.st_dev > 3)) {
-#else	
-    if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)) {
+#ifdef __BEOS__
+	&& (st.st_dev > 3)
 #endif
-	if (st.st_size == 0) return Qnil;
+	)
+    {
+	if (st.st_size == 0) return str_new(0, 0);
 	else {
 	    int pos = ftell(fptr->f);
 	    if (st.st_size > pos && pos >= 0) {
@@ -384,7 +385,6 @@ read_all(port)
 	    }
 	}
     }
-    str = str_new(0, siz);
     for (;;) {
 	READ_CHECK(fptr->f);
 	TRAP_BEG;
@@ -392,14 +392,14 @@ read_all(port)
 	TRAP_END;
 	if (n <= 0) {
 	    if (ferror(fptr->f)) rb_sys_fail(fptr->path);
-	    return Qnil;
+	    return str_new(0, 0);
 	}
 	bytes += n;
 	if (bytes <  siz) break;
 	siz += BUFSIZ;
 	str_resize(str, siz);
     }
-    if (bytes == 0) return Qnil;
+    if (bytes == 0) return str_new(0, 0);
     if (bytes != siz) str_resize(str, bytes);
     return str_taint(str);
 }
@@ -414,7 +414,7 @@ io_read(argc, argv, io)
     int n, len;
     VALUE length, str;
 
-    if (rb_scan_args(argc, argv, "01", &length) == 0) {
+    if (rb_scan_args(argc, argv, "01", &length) == 0 || NIL_P(length)) {
 	return read_all(io);
     }
 
@@ -2037,10 +2037,10 @@ f_select(argc, argv, obj)
 
 	    GetOpenFile(io, fptr);
 	    FD_SET(fileno(fptr->f), wp);
-	    if (max > fileno(fptr->f)) max = fileno(fptr->f);
+	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
 		FD_SET(fileno(fptr->f2), wp);
-		if (max < (int)fileno(fptr->f2)) max = fileno(fptr->f2);
+		if (max < fileno(fptr->f2)) max = fileno(fptr->f2);
 	    }
 	}
     }
@@ -2059,7 +2059,7 @@ f_select(argc, argv, obj)
 	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
 		FD_SET(fileno(fptr->f2), ep);
-		if (max > (int)fileno(fptr->f2)) max = fileno(fptr->f2);
+		if (max < fileno(fptr->f2)) max = fileno(fptr->f2);
 	    }
 	}
     }

@@ -802,8 +802,8 @@ str_aref(str, indx)
 	return INT2FIX(RSTRING(str)->ptr[idx] & 0xff);
 
       case T_REGEXP:
-	if (str_match(str, indx))
-	    return reg_last_match(0);
+	if (reg_match(indx, str))
+	    return reg_last_match(backref_get());
 	return Qnil;
 
       case T_STRING:
@@ -1551,7 +1551,7 @@ str_dump(str)
 	}
 	else {
 	    *q++ = '\\';
-	    sprintf(q, "%03o", c);
+	    sprintf(q, "%03o", c&0xff);
 	    q += 3;
 	}
     }
@@ -2011,12 +2011,12 @@ str_split_method(argc, argv, str)
     VALUE spat;
     VALUE limit;
     int char_sep = -1;
-    int beg, end, lim, i;
+    int beg, end, i, lim = 0;
     VALUE result, tmp;
 
     if (rb_scan_args(argc, argv, "02", &spat, &limit) == 2) {
 	lim = NUM2INT(limit);
-	if (lim == 0) limit = Qnil;
+	if (lim <= 0) limit = Qnil;
 	else if (lim == 1) return ary_new3(1, str);
 	i = 1;
     }
@@ -2119,8 +2119,9 @@ str_split_method(argc, argv, str)
 	    last_null = 0;
 
 	    for (idx=1; idx < regs->num_regs; idx++) {
-		if (BEG(idx) == -1) continue;
-		if (BEG(idx) == END(idx))
+		if (BEG(idx) == -1)
+		    tmp = Qnil;
+		else if (BEG(idx) == END(idx))
 		    tmp = str_new(0, 0);
 		else
 		    tmp = str_subseq(str, BEG(idx), END(idx)-1);
@@ -2129,8 +2130,13 @@ str_split_method(argc, argv, str)
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
     }
-    if (RSTRING(str)->len > beg) {
+    if (!NIL_P(limit) || RSTRING(str)->len > beg || lim < 0) {
 	ary_push(result, str_subseq(str, beg, -1));
+    }
+    if (NIL_P(limit) && lim == 0) {
+	while (RARRAY(result)->len > 0 &&
+	       RSTRING(RARRAY(result)->ptr[RARRAY(result)->len-1])->len == 0)
+	    ary_pop(result);
     }
 
     return result;

@@ -252,7 +252,7 @@ w_object(obj, arg, limit)
 	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
 	    v = rb_funcall(obj, s_dump, 1, limit);
 	    if (TYPE(v) != T_STRING) {
-		TypeError("_dump_to must return String");
+		TypeError("_dump must return String");
 	    }
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
 	    return;
@@ -753,7 +753,7 @@ r_object(arg)
 		v = rb_funcall(klass, s_load, 1, r_string(arg));
 		return r_regist(v, arg);
 	    }
-	    TypeError("class %s needs to have method `_load_from'",
+	    TypeError("class %s needs to have method `_load'",
 		      rb_class2name(klass));
 	}
         break;
@@ -859,8 +859,8 @@ Init_marshal()
 {
     VALUE mMarshal = rb_define_module("Marshal");
 
-    s_dump = rb_intern("_dump_to");
-    s_load = rb_intern("_load_from");
+    s_dump = rb_intern("_dump");
+    s_load = rb_intern("_load");
     rb_define_module_function(mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(mMarshal, "load", marshal_load, -1);
     rb_define_module_function(mMarshal, "restore", marshal_load, 1);

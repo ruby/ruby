@@ -103,23 +103,13 @@ time_timeval(time)
 
     switch (TYPE(time)) {
       case T_FIXNUM:
-	t.tv_sec = FIX2UINT(time);
-	if (t.tv_sec < 0)
-	    ArgError("time must be positive");
+	t.tv_sec = FIX2INT(time);
 	t.tv_usec = 0;
 	break;
 
       case T_FLOAT:
-	{
-	    double seconds, microseconds;
-
-	    if (RFLOAT(time)->value < 0.0)
-		ArgError("time must be positive");
-	    seconds = floor(RFLOAT(time)->value);
-	    microseconds = (RFLOAT(time)->value - seconds) * 1000000.0;
-	    t.tv_sec = seconds;
-	    t.tv_usec = microseconds;
-	}
+	t.tv_sec = RFLOAT(time)->value;
+	t.tv_usec = (RFLOAT(time)->value - t.tv_sec) * 1000000.0;
 	break;
 
       case T_BIGNUM:
@@ -231,8 +221,8 @@ time_arg(argc, argv, args)
 	|| args[1] < 0 || args[1] > 11
 	|| args[2] < 1 || args[2] > 31
 	|| args[3] < 0 || args[3] > 23
-	|| args[4] < 0 || args[4] > 60
-	|| args[5] < 0 || args[5] > 61)
+	|| args[4] < 0 || args[4] > 59
+	|| args[5] < 0 || args[5] > 60)
 	ArgError("argument out of range");
 }
 
@@ -800,6 +790,55 @@ time_s_times(obj)
 #endif
 }
 
+static VALUE
+time_dump(time, limit)
+    VALUE time, limit;
+{
+    struct time_object *tobj;
+    int sec, usec;
+    unsigned char buf[8];
+    int i;
+
+    GetTimeval(time, tobj);
+    sec = tobj->tv.tv_sec;
+    usec = tobj->tv.tv_usec;
+
+    for (i=0; i<4; i++) {
+	buf[i] = sec & 0xff;
+	sec = RSHIFT(sec, 8);
+    }
+    printf("::");
+    for (i=4; i<8; i++) {
+	buf[i] = usec & 0xff;
+	usec = RSHIFT(usec, 8);
+    }
+    return str_new(buf, 8);
+}
+
+static VALUE
+time_load(klass, str)
+    VALUE klass, str;
+{
+    int sec, usec;
+    unsigned char *buf;
+    int i;
+
+    buf = str2cstr(str, &i);
+    if (i != 8) {
+	TypeError("marshaled time format differ");
+    }
+
+    sec = usec = 0;
+    for (i=0; i<4; i++) {
+	sec |= buf[i]<<(8*i);
+    }
+    for (i=4; i<8; i++) {
+	usec |= buf[i]<<(8*(i-4));
+    }
+
+    return time_new_internal(klass, sec, usec);
+}
+
 void
 Init_Time()
 {
@@ -854,4 +893,8 @@ Init_Time()
 #if defined(HAVE_TIMES) || defined(NT)
     S_Tms = struct_define("Tms", "utime", "stime", "cutime", "cstime", 0);
 #endif
+
+    /* methods for marshaling */
+    rb_define_singleton_method(cTime, "_load", time_load, 1);
+    rb_define_method(cTime, "_dump", time_dump, 1);
 }

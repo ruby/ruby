@@ -370,32 +370,29 @@ beg_len(range, begp, lenp, len)
     int len;
 {
     int beg, end;
+    int b, e;
 
     if (!range_beg_end(range, &beg, &end)) return FALSE;
-
-    if ((beg > 0 && end > 0 || beg < 0 && end < 0) && beg > end) {
-	IndexError("end smaller than beg [%d..%d]", beg, end);
-    }
+    b = beg; e = end;
 
     if (beg < 0) {
 	beg = len + beg;
 	if (beg < 0) beg = 0;
     }
+    if (end < 0) {
+	end = len + end;
+	if (end < 0) end = -1;
+    }
+    if (beg > end) {
+	IndexError("end smaller than beg [%d..%d]", b, e);
+    }
+
     *begp = beg;
     if (beg > len) {
 	*lenp = 0;
     }
     else {
-	if (end < 0) {
-	    end = len + end;
-	    if (end < 0) end = -1;
-	}
-	if (beg > end) {
-	    *lenp = 0;
-	}
-	else {
-	    *lenp = end - beg +1;
-	}
+	*lenp = end - beg +1;
     }
     return TRUE;
 }

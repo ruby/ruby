@@ -1,7 +1,16 @@
 #
 # telnet.rb
-# ver0.141 1998/09/22
+# ver0.16 1998/10/09
 # Wakou Aoyama <wakou@fsinet.or.jp>
+#
+# ver0.16 1998/10/09
+# preprocess method change for the better
+# add binmode method.
+# change default Binmode
+# TRUE --> FALSE
+#
+# ver0.15 1998/10/04
+# add telnetmode method.
 #
 # ver0.141 1998/09/22
 # change default prompt
@@ -33,7 +42,7 @@
 # first release.
 #
 # == make new Telnet object
-# host = Telnet.new({"Binmode" => TRUE,              default: TRUE
+# host = Telnet.new({"Binmode" => FALSE,             default: FALSE
 #                    "Host" => "localhost",          default: "localhost"
 #                    "Output_log" => "output_log",   default: not output
 #                    "Dump_log" => "dump_log",       default: not output
@@ -75,6 +84,16 @@
 #
 # == send string
 # host.print("string")
+#
+# == turn telnet command interpretation
+# host.telnetmode        # turn on/off
+# host.telnetmode(TRUE)  # on
+# host.telnetmode(FALSE) # off
+#
+# == toggle newline translation
+# host.binmode        # turn TRUE/FALSE
+# host.binmode(TRUE)  # no translate newline
+# host.binmode(FALSE) # translate newline
 #
 # == login
 # host.login("username", "password")
@@ -204,6 +223,7 @@ class Telnet < SimpleDelegator
   OPT_AUTHENTICATION =  37.chr  # Authentication Option
   OPT_ENCRYPT        =  38.chr  # Encryption Option
   OPT_NEW_ENVIRON    =  39.chr  # New Environment Option
+  OPT_EXOPL          = 255.chr  # Extended-Options-List
 
   NULL = "\000"
   CR   = "\015"
@@ -212,7 +232,7 @@ class Telnet < SimpleDelegator
 
   def initialize(options)
     @options = options
-    @options["Binmode"]    = TRUE         if not @options.include?("Binmode")
+    @options["Binmode"]    = FALSE        if not @options.include?("Binmode")
     @options["Host"]       = "localhost"  if not @options.include?("Host")
     @options["Port"]       = 23           if not @options.include?("Port")
     @options["Prompt"]     = /[$%#>] \Z/  if not @options.include?("Prompt")
@@ -225,7 +245,7 @@ class Telnet < SimpleDelegator
     if @options.include?("Output_log")
       @log = File.open(@options["Output_log"], 'a+')
       @log.sync = TRUE
-      @log.binmode if @options["Binmode"]
+      @log.binmode
     end
 
     if @options.include?("Dump_log")
@@ -250,7 +270,7 @@ class Telnet < SimpleDelegator
     }
     raise TimeOut, "timed-out; opening of the host" if is_timeout
     @sock.sync = TRUE
-    @sock.binmode if @options["Binmode"]
+    @sock.binmode
 
     message = "Connected to " + @options["Host"] + ".\n"
     STDOUT.write(message)
@@ -260,46 +280,62 @@ class Telnet < SimpleDelegator
     super(@sock)
   end
 
+  def telnetmode(mode = 'turn')
+    if 'turn' == mode
+      @options["Telnetmode"] = @options["Telnetmode"] ? FALSE : TRUE
+    else
+      @options["Telnetmode"] = mode ? TRUE : FALSE
+    end
+  end
+
+  def binmode(mode = 'turn')
+    if 'turn' == mode
+      @options["Binmode"] = @options["Binmode"] ? FALSE : TRUE
+    else
+      @options["Binmode"] = mode ? TRUE : FALSE
+    end
+  end
+
   def preprocess(str)
-    str.gsub!(/#{CR}#{NULL}/no, CR) # combine CR+NULL into CR
-    str.gsub!(/#{EOL}/no, "\n")     # combine EOL into "\n"
+
+    if not @options["Binmode"]
+      str.gsub!(/#{CR}#{NULL}/no, CR) # combine CR+NULL into CR
+      str.gsub!(/#{EOL}/no, "\n")     # combine EOL into "\n"
+    end
 
     # respond to "IAC DO x"
-    str.gsub!(/([^#{IAC}])?#{IAC}#{DO}(.|\n)/no){
-      if OPT_BINARY == $2
+    str.gsub!(/(?:(?!#{IAC}))?#{IAC}#{DO}([#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}])/no){
+      if OPT_BINARY == $1
         @telnet_option["BINARY"] = TRUE
         @sock.write(IAC + WILL + OPT_BINARY)
-        $1
       else
-        @sock.write(IAC + WONT + $2)
-        $1
+        @sock.write(IAC + WONT + $1)
       end
+      ''
     }
 
     # respond to "IAC DON'T x" with "IAC WON'T x"
-    str.gsub!(/([^#{IAC}])?#{IAC}#{DONT}(.|\n)/no){
-      @sock.write(IAC + WONT + $2)
-      $1
+    str.gsub!(/(?:(?!#{IAC}))?#{IAC}#{DONT}([#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}])/no){
+      @sock.write(IAC + WONT + $1)
+      ''
     }
 
     # respond to "IAC WILL x"
-    str.gsub!(/([^#{IAC}])?#{IAC}#{WILL}(.|\n)/no){
-      if OPT_SGA == $2
+    str.gsub!(/(?:(?!#{IAC}))?#{IAC}#{WILL}([#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}])/no){
+      if OPT_SGA == $1
         @telnet_option["SGA"] = TRUE
         @sock.write(IAC + DO + OPT_SGA)
-        $1
-      else
-        $1
       end
+      ''
     }
 
     # ignore "IAC WON'T x"
-    str.gsub!(/([^#{IAC}])?#{IAC}#{WONT}(.|\n)/no, '\1')
+    str.gsub!(/(?:(?!#{IAC}))?#{IAC}#{WONT}[#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}]/no, '')
 
     # respond to "IAC AYT" (are you there)
-    str.gsub!(/([^#{IAC}])?#{IAC}#{AYT}/no){
+    str.gsub!(/(?:(?!#{IAC}))?#{IAC}#{AYT}/no){
       @sock.write("nobody here but us pigeons" + EOL)
-      $1
+      ''
     }
 
     str.gsub(/#{IAC}#{IAC}/no, IAC) # handle escaped IAC characters
@@ -340,15 +376,20 @@ class Telnet < SimpleDelegator
   end
 
   def print(string)
-    if @telnet_option["BINARY"] and @telnet_option["SGA"]
-      # IAC WILL SGA IAC DO BIN send EOL --> CR
-      @sock.write(string.gsub(/\n/, CR) + CR)
-    elsif @telnet_option["SGA"]
-      # IAC WILL SGA send EOL --> CR+NULL
-      @sock.write(string.gsub(/\n/, CR + NULL) + CR + NULL)
+    string.gsub!(/#{IAC}/no, IAC + IAC) if @options["Telnetmode"]
+    if @options["Binmode"]
+      @sock.write(string)
     else
-      # NONE send EOL --> LF
-      @sock.write(string.gsub(/\n/, LF) + LF)
+      if @telnet_option["BINARY"] and @telnet_option["SGA"]
+        # IAC WILL SGA IAC DO BIN send EOL --> CR
+        @sock.write(string.gsub(/\n/, CR) + CR)
+      elsif @telnet_option["SGA"]
+        # IAC WILL SGA send EOL --> CR+NULL
+        @sock.write(string.gsub(/\n/, CR + NULL) + CR + NULL)
+      else
+        # NONE send EOL --> LF
+        @sock.write(string.gsub(/\n/, LF) + LF)
+      end
     end
   end
 

@@ -33,7 +33,7 @@ File.foreach "config.status" do |$_|
     val = $2 || ""
     next if name =~ /^(INSTALL|DEFS|configure_input|srcdir|top_srcdir)$/
     v = "  CONFIG[\"" + name + "\"] = " +
-      val.sub(/^\s*(.*)\s*$/, '"\1"').gsub(/\$\{?([^}]*)\}?/) {
+      val.sub(/^\s*(.*)\s*$/, '"\1"').gsub(/\$[{(]?([^})]+)[})]?/) {
       "\#{CONFIG[\\\"#{$1}\\\"]}"
     } + "\n"
     if fast[name]

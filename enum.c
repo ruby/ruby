@@ -377,6 +377,7 @@ Init_Enumerable()
     mEnumerable = rb_define_module("Enumerable");
 
     rb_define_method(mEnumerable,"to_a", enum_to_a, 0);
+    rb_define_method(mEnumerable,"entries", enum_to_a, 0);
 
     rb_define_method(mEnumerable,"sort", enum_sort, 0);
     rb_define_method(mEnumerable,"grep", enum_grep, 1);

@@ -33,23 +33,26 @@
 #
 #=end
 
+require 'timeout'
+
 module Ping
   require "socket"
   def pingecho(host, timeout=5)
     begin
-      x = Thread.current
-      y = Thread.start {
-	sleep timeout
-	x.raise RuntimeError if x.status
-      }
-      s = TCPsocket.new(host, "echo")
-      s.close
-      return TRUE
+      timeout(timeout) do
+	s = TCPsocket.new(host, "echo")
+	s.close
+      end
     rescue
-      return FALSE;
-    ensure
-      Thread.kill y if y.status
+      return false
     end
+    return true
   end
   module_function "pingecho"
+end
+
+if $0 == __FILE__
+  host = ARGV[0]
+  host ||= "localhost"
+  printf("%s alive? - %s\n", host,  Ping.pingecho(host, 5))
 end

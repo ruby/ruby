@@ -9,6 +9,12 @@
  *
  */
 
+#if defined(IMPORT)
+#define EXTERN extern __declspec(dllimport)
+#elif defined(EXPORT)
+#define EXTERN extern __declspec(dllexport)
+#endif
+
 //
 // Definitions for NT port of Perl
 //

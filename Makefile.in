@@ -11,7 +11,7 @@ PURIFY =
 @SET_MAKE@
 
 prefix = @prefix@
-CFLAGS = @CFLAGS@ -I@srcdir@ -I@includedir@
+CFLAGS = @CFLAGS@ -I. -I@srcdir@ -I@includedir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXTLIBS = 
 LIBS = @LIBS@ $(EXTLIBS)
@@ -84,7 +84,7 @@ ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS)
 
 libruby.a:	$(OBJS) dmyext.o
 		@AR@ rcu $@ $(OBJS) dmyext.o
-		@-@RANLIB@ $(LIBRUBY) 2> /dev/null || true
+		@-@RANLIB@ $@ 2> /dev/null || true
 
 libruby.so:	$(OBJS) dmyext.o
 		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.o -o $@
@@ -117,7 +117,7 @@ rbconfig.rb:	config.status miniruby$(binsuffix)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
 lex.c: keywords
-	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ keywords > lex.c
+	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ @srcdir@/keywords > lex.c
 
 parse.c: parse.y
 	$(YACC) $<
@@ -147,8 +147,8 @@ mkdir.o: @srcdir@/missing/mkdir.c
 setenv.o: @srcdir@/missing/setenv.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/setenv.c
 
-snprintf.o: @srcdir@/missing/snprintf.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/snprintf.c
+vsnprintf.o: @srcdir@/missing/vsnprintf.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/vsnprintf.c
 
 strcasecmp.o: @srcdir@/missing/strcasecmp.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strcasecmp.c

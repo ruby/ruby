@@ -567,8 +567,8 @@ set_list_bits(c1, c2, b)
   if (beg != end) {
     if (c1 > EXTRACT_MBC(&b[beg*4]))
       c1 = EXTRACT_MBC(&b[beg*4]);
-    if (c2 < EXTRACT_MBC(&b[(end - 1)*4]))
-      c2 = EXTRACT_MBC(&b[(end - 1)*4]);
+    if (c2 < EXTRACT_MBC(&b[(end - 1)*4+2]))
+      c2 = EXTRACT_MBC(&b[(end - 1)*4+2]);
   }
   if (end < mbc_size && end != beg + 1)
     /* NOTE: memcpy() would not work here.  */
@@ -2021,25 +2021,27 @@ re_compile_pattern(pattern, size, bufp)
 
   /* set optimize flags */
   laststart = bufp->buffer;
-  if (*laststart == start_memory) laststart += 3;
-  if (*laststart == dummy_failure_jump) laststart += 3;
-  else if (*laststart == try_next) laststart += 3;
-  if (*laststart == on_failure_jump) {
-    int mcnt;
+  if (laststart != b) {
+    if (*laststart == start_memory) laststart += 3;
+    if (*laststart == dummy_failure_jump) laststart += 3;
+    else if (*laststart == try_next) laststart += 3;
+    if (*laststart == on_failure_jump) {
+      int mcnt;
 
-    laststart++;
-    EXTRACT_NUMBER_AND_INCR(mcnt, laststart);
-    if (mcnt == 4 && *laststart == anychar) {
-      bufp->options |= RE_OPTIMIZE_ANCHOR;
-    }
-    else if (*laststart == charset || *laststart == charset_not) {
-      p0 = laststart;
-      mcnt = *++p0 ;
-      p0 += mcnt+1;
-      mcnt = EXTRACT_UNSIGNED_AND_INCR(p0);
-      p0 += 4*mcnt;
-      if (*p0 == maybe_finalize_jump) {
-	bufp->stclass = laststart;
+      laststart++;
+      EXTRACT_NUMBER_AND_INCR(mcnt, laststart);
+      if (mcnt == 4 && *laststart == anychar) {
+	bufp->options |= RE_OPTIMIZE_ANCHOR;
+      }
+      else if (*laststart == charset || *laststart == charset_not) {
+	p0 = laststart;
+	mcnt = *++p0 ;
+	p0 += mcnt+1;
+	mcnt = EXTRACT_UNSIGNED_AND_INCR(p0);
+	p0 += 4*mcnt;
+	if (*p0 == maybe_finalize_jump) {
+	  bufp->stclass = laststart;
+	}
       }
     }
   }
@@ -2047,10 +2049,12 @@ re_compile_pattern(pattern, size, bufp)
   bufp->used = b - bufp->buffer;
   bufp->re_nsub = regnum;
   laststart = bufp->buffer;
-  if (*laststart == start_memory) laststart += 3;
-  if (*laststart == exactn) {
-    bufp->options |= RE_OPTIMIZE_EXACTN;
-    bufp->must = laststart+1;
+  if (laststart != b) {
+    if (*laststart == start_memory) laststart += 3;
+    if (*laststart == exactn) {
+      bufp->options |= RE_OPTIMIZE_EXACTN;
+      bufp->must = laststart+1;
+    }
   }
   else {
     bufp->must = calculate_must_string(bufp->buffer, b);
@@ -3917,6 +3921,7 @@ re_match(bufp, string_arg, size, pos, regs)
                   EXTRACT_NUMBER_AND_INCR (mcnt, p1);
                   p1 += mcnt;
 
+		  if (p1 >= pend) break;
                   if ((is_a_jump_n && (enum regexpcode) *p1 == succeed_n)
                       || (!is_a_jump_n
                           && (enum regexpcode) *p1 == on_failure_jump))

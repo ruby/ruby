@@ -95,6 +95,7 @@ xrealloc(ptr, size)
 	ArgError("negative re-allocation size");
     }
     if (!ptr) return xmalloc(size);
+    if (size == 0) size = 1;
     malloc_memories += size;
     mem = realloc(ptr, size);
     if (!mem) {

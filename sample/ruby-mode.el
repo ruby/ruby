@@ -253,7 +253,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	       ((looking-at "%")
 		(cond
 		 ((and (not (eobp)) (ruby-expr-beg)
-		       (looking-at "%[Qqrx]?\\(.\\)"))
+		       (looking-at "%[Qqrxw]?\\(.\\)"))
 		  (setq w (buffer-substring (match-beginning 1)
 					    (match-end 1)))
 		  (cond
@@ -618,6 +618,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "break"
 	       "case"
 	       "class"
+	       "def"
 	       "do"
 	       "elsif"
 	       "else"
@@ -646,7 +647,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "while"
 	       )
 	     "\\|")
-	    "\\)[ \n\t()]")
+	    "\\)\\b")
 	   2)
      ;; variables
      '("\\(^\\|[^_]\\)\\b\\(nil\\|self\\|true\\|false\\)\\b\\([^_]\\|$\\)"
@@ -658,8 +659,8 @@ An end of a defun is found by moving forward from the beginning of one."
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+[a-zA-Z0-9_]*\\)"
        2 font-lock-type-face)
      ;; functions
-     '("^\\s *def[ \t]+[^ \t(]*"
-       0 font-lock-function-name-face t))
+     '("^\\s *def[ \t]+\\([^ \t(]*\\)"
+       1 font-lock-function-name-face t))
     "*Additional expressions to highlight in ruby mode.")
   (if (and (>= (string-to-int emacs-version) 19)
           (not (featurep 'xemacs)))

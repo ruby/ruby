@@ -58,6 +58,9 @@
 */
 
 #include <sys/types.h>
+#define u_long unsigned long
+#define u_short unsigned short
+#define u_int unsigned int
 
 #undef __P
 #if defined(__STDC__)
@@ -101,27 +104,6 @@
 
 #ifndef NULL
 #define	NULL	0
-#endif
-
-/*
- * This is fairly grotesque, but pure ANSI code must not inspect the
- * innards of an fpos_t anyway.  The library internally uses off_t,
- * which we assume is exactly as big as eight chars.  (When we switch
- * to gcc 2.4 we will use __attribute__ here.)
- *
- * WARNING: the alignment constraints on an off_t and the struct below
- * differ on (e.g.) the SPARC.  Hence, the placement of an fpos_t object
- * in a structure will change if fpos_t's are not aligned on 8-byte
- * boundaries.  THIS IS A CROCK, but for now there is no way around it.
- */
-#if !defined(_ANSI_SOURCE) && !defined(__STRICT_ANSI__)
-#if !defined(__hpux)
-typedef off_t fpos_t;
-#endif
-#else
-typedef struct __sfpos {
-	char	_pos[8];
-} fpos_t;
 #endif
 
 /*
@@ -171,29 +153,6 @@ typedef	struct __sFILE {
 	short	_file;		/* fileno, if Unix descriptor, else -1 */
 	struct	__sbuf _bf;	/* the buffer (at least 1 byte, if !NULL) */
 	int	_lbfsize;	/* 0 or -_bf._size, for inline putc */
-
-	/* operations */
-	void	*_cookie;	/* cookie passed to io functions */
-	int	(*_close) __P((void *));
-	int	(*_read)  __P((void *, char *, int));
-	fpos_t	(*_seek)  __P((void *, fpos_t, int));
-	int	(*_write) __P((void *, const char *, int));
-
-	/* separate buffer for long sequences of ungetc() */
-	struct	__sbuf _ub;	/* ungetc buffer */
-	unsigned char *_up;	/* saved _p when _p is doing ungetc data */
-	int	_ur;		/* saved _r when _r is counting ungetc data */
-
-	/* tricks to meet minimum requirements even when malloc() fails */
-	unsigned char _ubuf[3];	/* guarantee an ungetc() buffer */
-	unsigned char _nbuf[1];	/* guarantee a getc() buffer */
-
-	/* separate buffer for fgetln() when line crosses buffer boundary */
-	struct	__sbuf _lb;	/* buffer for fgetln() */
-
-	/* Unix stdio files get aligned to block boundaries on fseek() */
-	int	_blksize;	/* stat.st_blksize (may be != _bf._size) */
-	fpos_t	_offset;	/* current lseek offset (see WARNING) */
 } FILE;
 
 
@@ -366,16 +325,8 @@ err:
  * This code is large and complicated...
  */
 
-#include <sys/types.h>
-#define u_long unsigned long
-#define u_short unsigned short
-#define u_int unsigned int
-
 #if !defined(__CYGWIN32__) && defined(__hpux) && !defined(__GNUC__)
 #include <stdlib.h>
-#endif
-#if defined(__hpux) && !defined(__GNUC__)
-#include <string.h>
 #endif
 
 /*
@@ -1135,6 +1086,7 @@ exponent(p0, exp, fmtch)
 }
 #endif /* FLOATING_POINT */
 
+int
 vsnprintf(str, n, fmt, ap)
 	char *str;
 	size_t n;
@@ -1166,6 +1118,7 @@ static char sccsid[] = "@(#)snprintf.c	8.1 (Berkeley) 6/4/93";
 # include <varargs.h>
 #endif
 
+int
 #if defined(__STDC__)
 snprintf(char *str, size_t n, char const *fmt, ...)
 #else

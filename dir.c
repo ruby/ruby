@@ -426,6 +426,16 @@ dir_foreach(io, dirname)
     return rb_ensure(dir_each, dir, dir_close, dir);
 }
 
+static VALUE
+dir_entries(io, dirname)
+    VALUE io, dirname;
+{
+    VALUE dir;
+
+    dir = rb_funcall(cDir, rb_intern("open"), 1, dirname);
+    return rb_ensure(rb_Array, dir, dir_close, dir);
+}
+
 void
 Init_Dir()
 {
@@ -436,6 +446,7 @@ Init_Dir()
     rb_define_singleton_method(cDir, "new", dir_s_open, 1);
     rb_define_singleton_method(cDir, "open", dir_s_open, 1);
     rb_define_singleton_method(cDir, "foreach", dir_foreach, 1);
+    rb_define_singleton_method(cDir, "entries", dir_entries, 1);
 
     rb_define_method(cDir,"read", dir_read, 0);
     rb_define_method(cDir,"each", dir_each, 0);

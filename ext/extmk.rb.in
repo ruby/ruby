@@ -1,7 +1,7 @@
 #! /usr/local/bin/ruby
 
 $".push 'mkmf.rb' #"
-load '../lib/find.rb'
+load '@top_srcdir@/lib/find.rb'
 
 if ARGV[0] == 'static'
   $force_static = TRUE
@@ -20,8 +20,16 @@ $cache_mod = FALSE;
 $lib_cache = {}
 $func_cache = {}
 $hdr_cache = {}
-$topdir = "@top_srcdir@"
-if $topdir !~ "^/"
+$top_srcdir = "@top_srcdir@"
+if $top_srcdir !~ "^/"
+  # get absolute path
+  save = Dir.pwd
+  Dir.chdir $top_srcdir
+  $top_srcdir = Dir.pwd
+  Dir.chdir save
+end
+$topdir = ".."
+if $topdir !~ "^/"  
   # get absolute path
   save = Dir.pwd
   Dir.chdir $topdir
@@ -63,8 +71,8 @@ CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
 else
 CFLAGS = "@CFLAGS@"
 end
-LINK = "@CC@ -o conftest -I#{$topdir} -I@includedir@ " + CFLAGS + " %s @LDFLAGS@ %s conftest.c @LIBS@ %s"
-CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} -I@includedir@ " + CFLAGS + " %s conftest.c"
+LINK = "@CC@ -o conftest -I#{$topdir} -I#{$top_srcdir} -I@includedir@ " + CFLAGS + " %s @LDFLAGS@ %s conftest.c @LIBS@ %s"
+CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} -I#{$top_srcdir} -I@includedir@ " + CFLAGS + " %s conftest.c"
 
 if /win32|djgpp|mingw32|m68k-human/i =~ PLATFORM
   $null = open("nul", "w")
@@ -255,7 +263,7 @@ def create_makefile(target)
     $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
   end
 
-  $srcdir = $topdir + "/ext/" + target
+  $srcdir = $top_srcdir + "/ext/" + target
   mfile = open("Makefile", "w")
   mfile.printf "\
 SHELL = /bin/sh
@@ -270,7 +278,7 @@ hdrdir = #{$topdir}
 CC = @CC@
 
 prefix = @prefix@
-CFLAGS   = %s -I#{$topdir} -I@includedir@ %s #$CFLAGS %s
+CFLAGS   = %s -I#{$topdir} -I#{$top_srcdir} -I@includedir@ %s #$CFLAGS %s
 DLDFLAGS = #$DLDFLAGS #$LDFLAGS
 LDSHARED = @LDSHARED@
 ", if $static then "" else "@CCDLFLAGS@" end, CFLAGS, $defs.join(" ")
@@ -294,7 +302,7 @@ archdir = $(libdir)/@arch@
   mfile.printf "OBJS = "
   if !$objs then
     $objs = []
-    for f in Dir["#{$topdir}/ext/#{target}/*.{c,cc}"]
+    for f in Dir["#{$top_srcdir}/ext/#{target}/*.{c,cc}"]
       f = File.basename(f)
       f.sub!(/\.(c|cc)$/, ".o")
       $objs.push f
@@ -409,13 +417,13 @@ def extmake(target)
     Dir.chdir target
     if $static_ext.size > 0 ||
       !File.exist?("./Makefile") ||
-      older("./Makefile", "#{$topdir}/ext/@setup@") ||
+      older("./Makefile", "#{$top_srcdir}/ext/@setup@") ||
       older("./Makefile", "../extmk.rb") ||
-      older("./Makefile", "#{$topdir}/ext/#{target}/extconf.rb")
+      older("./Makefile", "#{$top_srcdir}/ext/#{target}/extconf.rb")
     then
       $defs = []
-      if File.exist?("#{$topdir}/ext/#{target}/extconf.rb")
-	load "#{$topdir}/ext/#{target}/extconf.rb"
+      if File.exist?("#{$top_srcdir}/ext/#{target}/extconf.rb")
+	load "#{$top_srcdir}/ext/#{target}/extconf.rb"
       else
 	create_makefile(target);
       end
@@ -445,7 +453,7 @@ end
 
 # get static-link modules
 $static_ext = {}
-for setup in ["@setup@", "#{$topdir}/ext/@setup@"]
+for setup in ["@setup@", "#{$top_srcdir}/ext/@setup@"]
   if File.file? setup
     f = open(setup) 
     while f.gets()
@@ -463,7 +471,7 @@ for setup in ["@setup@", "#{$topdir}/ext/@setup@"]
   end
 end
 
-for d in Dir["#{$topdir}/ext/*"]
+for d in Dir["#{$top_srcdir}/ext/*"]
   File.directory?(d) || next
   File.file?(d + "/MANIFEST") || next
   
@@ -511,7 +519,7 @@ if $extlist.size > 0
     end
   end
 
-  if older("extinit.c", "#{$topdir}/ext/@setup@")
+  if older("extinit.c", "#{$top_srcdir}/ext/@setup@")
     f = open("extinit.c", "w")
     f.printf "void Init_ext() {\n"
     f.printf $extinit
@@ -526,7 +534,7 @@ if $extlist.size > 0
 
   Dir.chdir ".."
 
-  if older("ruby@binsuffix@", "#{$topdir}/ext/@setup@") or older("ruby@binsuffix@", "miniruby@binsuffix@")
+  if older("ruby@binsuffix@", "#{$top_srcdir}/ext/@setup@") or older("ruby@binsuffix@", "miniruby@binsuffix@")
     `rm -f ruby@binsuffix@`
   end
 

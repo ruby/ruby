@@ -718,13 +718,11 @@ reg_match(re, str)
 {
     int start;
 
-    if (NIL_P(str)) return FALSE;
+    if (NIL_P(str)) return Qnil;
     str = str_to_str(str);
     start = reg_search(re, str, 0, 0);
-    if (start < 0) {
-	return FALSE;
-    }
-    return INT2FIX(start);
+    if (start >= 0) return INT2FIX(start);
+    return Qnil;
 }
 
 VALUE
@@ -734,14 +732,10 @@ reg_match2(re)
     int start;
     VALUE line = lastline_get();
 
-    if (TYPE(line) != T_STRING)
-	return FALSE;
-
+    if (TYPE(line) != T_STRING) return Qnil;
     start = reg_search(re, line, 0, 0);
-    if (start < 0) {
-	return FALSE;
-    }
-    return INT2FIX(start);
+    if (start >= 0) return INT2FIX(start);
+    return Qnil;
 }
 
 static VALUE

@@ -287,7 +287,7 @@ struct RData {
     void *data;
 };
 
-extern VALUE cData;
+EXTERN VALUE cData;
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
@@ -458,7 +458,7 @@ void rb_const_set _((VALUE, ID, VALUE));
 
 VALUE rb_equal _((VALUE,VALUE));
 
-extern VALUE verbose, debug;
+EXTERN VALUE verbose, debug;
 
 int rb_safe_level _((void));
 void rb_set_safe_level _((int));
@@ -487,54 +487,54 @@ VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_catch _((char*,VALUE(*)(),VALUE));
 void rb_throw _((char*,VALUE)) NORETURN;
 
-extern VALUE mKernel;
-extern VALUE mComparable;
-extern VALUE mEnumerable;
-extern VALUE mErrno;
-extern VALUE mFileTest;
-extern VALUE mGC;
-extern VALUE mMath;
-extern VALUE mProcess;
+EXTERN VALUE mKernel;
+EXTERN VALUE mComparable;
+EXTERN VALUE mEnumerable;
+EXTERN VALUE mErrno;
+EXTERN VALUE mFileTest;
+EXTERN VALUE mGC;
+EXTERN VALUE mMath;
+EXTERN VALUE mProcess;
 
 #ifdef __MACOS__ /* name conflict, AERegistory.h */
-extern VALUE cRubyObject;
+EXTERN VALUE cRubyObject;
 #else
-extern VALUE cObject;
+EXTERN VALUE cObject;
 #endif
-extern VALUE cArray;
-extern VALUE cBignum;
-extern VALUE cClass;
-extern VALUE cData;
-extern VALUE cFile;
-extern VALUE cFixnum;
-extern VALUE cFloat;
-extern VALUE cHash;
-extern VALUE cInteger;
-extern VALUE cIO;
-extern VALUE cModule;
-extern VALUE cNumeric;
-extern VALUE cProc;
-extern VALUE cRegexp;
-extern VALUE cString;
-extern VALUE cThread;
-extern VALUE cStruct;
+EXTERN VALUE cArray;
+EXTERN VALUE cBignum;
+EXTERN VALUE cClass;
+EXTERN VALUE cData;
+EXTERN VALUE cFile;
+EXTERN VALUE cFixnum;
+EXTERN VALUE cFloat;
+EXTERN VALUE cHash;
+EXTERN VALUE cInteger;
+EXTERN VALUE cIO;
+EXTERN VALUE cModule;
+EXTERN VALUE cNumeric;
+EXTERN VALUE cProc;
+EXTERN VALUE cRegexp;
+EXTERN VALUE cString;
+EXTERN VALUE cThread;
+EXTERN VALUE cStruct;
 
-extern VALUE eException;
-extern VALUE eStandardError;
-extern VALUE eSystemExit, eInterrupt, eFatal;
-extern VALUE eArgError;
-extern VALUE eEOFError;
-extern VALUE eIndexError;
-extern VALUE eIOError;
-extern VALUE eLoadError;
-extern VALUE eNameError;
-extern VALUE eRuntimeError;
-extern VALUE eSecurityError;
-extern VALUE eSyntaxError;
-extern VALUE eSystemCallError;
-extern VALUE eTypeError;
-extern VALUE eZeroDiv;
-extern VALUE eNotImpError;
+EXTERN VALUE eException;
+EXTERN VALUE eStandardError;
+EXTERN VALUE eSystemExit, eInterrupt, eFatal;
+EXTERN VALUE eArgError;
+EXTERN VALUE eEOFError;
+EXTERN VALUE eIndexError;
+EXTERN VALUE eIOError;
+EXTERN VALUE eLoadError;
+EXTERN VALUE eNameError;
+EXTERN VALUE eRuntimeError;
+EXTERN VALUE eSecurityError;
+EXTERN VALUE eSyntaxError;
+EXTERN VALUE eSystemCallError;
+EXTERN VALUE eTypeError;
+EXTERN VALUE eZeroDiv;
+EXTERN VALUE eNotImpError;
 
 #include "intern.h"
 

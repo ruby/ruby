@@ -422,12 +422,6 @@ static struct BLOCK *the_block;
     _block.vmode = scope_vmode;		\
     the_block = &_block;
 
-#define PUSH_BLOCK2(b) {		\
-    struct BLOCK _block;		\
-    _block = *b;			\
-    _block.prev = the_block;		\
-    the_block = &_block;
-
 #define POP_BLOCK() 			\
    the_block = _block.prev; 		\
 }
@@ -530,7 +524,7 @@ dvar_asgn_push(id, value)
 	the_dyna_vars->next = vars;
     }
     else {
-	dyna_var_push(id, value);
+	dyna_var_asgn(id, value);
     }
 }
 
@@ -703,10 +697,6 @@ rb_check_safe_str(x)
 	if (safe_level > 0){
 	    Raise(eSecurityError, "Insecure operation - %s",
 		  rb_id2name(the_frame->last_func));
-	}
-	if (verbose) {
-	    Warning("Insecure operation - %s",
-		    rb_id2name(the_frame->last_func));
 	}
     }
 }
@@ -1611,7 +1601,11 @@ rb_eval(self, node)
     if (!node) RETURN(Qnil);
 
     switch (nd_type(node)) {
-      case NODE_BLOCK:
+      case NODE_BLOCK:	
+	if (!node->nd_next) {
+	    node = node->nd_head;
+	    goto again;
+	}
 	while (node) {
 	    result = rb_eval(self, node->nd_head);
 	    node = node->nd_next;
@@ -2337,6 +2331,7 @@ rb_eval(self, node)
 		}
 		if (str2) {
 		    str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+		    if (str_tainted(str2)) str_taint(str);
 		}
 		list = list->nd_next;
 	    }
@@ -3050,7 +3045,7 @@ assign(self, lhs, val)
 	    recv = rb_eval(self, lhs->nd_recv);
 	    if (!lhs->nd_args->nd_head) {
 		/* attr set */
-		rb_funcall2(recv, lhs->nd_mid, 1, &val);
+		rb_call(CLASS_OF(recv), recv, lhs->nd_mid, 1, &val, 0);
 	    }
 	    else {
 		/* array set */
@@ -3058,7 +3053,8 @@ assign(self, lhs, val)
 
 		args = rb_eval(self, lhs->nd_args);
 		RARRAY(args)->ptr[RARRAY(args)->len-1] = val;
-		rb_apply(recv, lhs->nd_mid, args);
+		rb_call(CLASS_OF(recv), recv, lhs->nd_mid,
+			RARRAY(args)->len, RARRAY(args)->ptr, 0);
 	    }
 	}
 	break;
@@ -3353,7 +3349,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	break;
     }
 
-    if ((++tick & 0xfff) == 0 && stack_length() > STACK_LEVEL_MAX)
+    if ((++tick & 0x3ff) == 0 && stack_length() > STACK_LEVEL_MAX)
 	Raise(eSysStackError, "stack level too deep");
 
     PUSH_ITER(itr);
@@ -5014,6 +5010,7 @@ static VALUE
 proc_call(proc, args)
     VALUE proc, args;		/* OK */
 {
+    struct BLOCK * volatile old_block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
     int state;
@@ -5035,7 +5032,8 @@ proc_call(proc, args)
     orphan = blk_orphan(data);
 
     /* PUSH BLOCK from data */
-    PUSH_BLOCK2(data);
+    old_block = the_block;
+    the_block = data;
     PUSH_ITER(ITER_CUR);
     the_frame->iter = ITER_CUR;
 
@@ -5073,7 +5071,7 @@ proc_call(proc, args)
     if (the_block->tag->dst == state) {
 	state &= TAG_MASK;
     }
-    POP_BLOCK();
+    the_block = old_block;
     safe_level = safe;
 
     if (state) {
@@ -5101,6 +5099,7 @@ block_pass(self, node)
     NODE *node;
 {
     VALUE block = rb_eval(self, node->nd_body);
+    struct BLOCK * volatile old_block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
     int state;
@@ -5122,7 +5121,8 @@ block_pass(self, node)
     orphan = blk_orphan(data);
 
     /* PUSH BLOCK from data */
-    PUSH_BLOCK2(data);
+    old_block = the_block;
+    the_block = data;
     PUSH_ITER(ITER_PRE);
     the_frame->iter = ITER_PRE;
     if (FL_TEST(block, PROC_TAINT)) {
@@ -5151,7 +5151,7 @@ block_pass(self, node)
 	state &= TAG_MASK;
 	orphan = 2;
     }
-    POP_BLOCK();
+    the_block = old_block;
     safe_level = safe;
 
     if (state) {
@@ -6251,6 +6251,7 @@ thread_create(fn, arg)
 {
     thread_t th = thread_alloc();
     int state;
+    enum thread_status status;
 
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
     static init = 0;
@@ -6288,8 +6289,9 @@ thread_create(fn, arg)
 	}
     }
     POP_TAG();
+    status = th->status;
     thread_remove();
-    if (state && th->status != THREAD_TO_KILL && !NIL_P(errinfo)) {
+    if (state &&  status != THREAD_TO_KILL && !NIL_P(errinfo)) {
 	if (state == TAG_FATAL) { 
 	    /* fatal error within this thread, need to stop whole script */
 	    main_thread->errinfo = errinfo;

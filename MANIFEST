@@ -14,7 +14,8 @@ compar.c
 configure
 configure.bat
 configure.in
-config.dj
+config_h.dj
+config_s.dj
 config.guess
 config.sub
 defines.h
@@ -47,6 +48,7 @@ node.h
 numeric.c
 object.c
 pack.c
+parse.c
 parse.y
 process.c
 random.c
@@ -85,6 +87,7 @@ ext/extmk.rb.in
 ext/extmk.rb.nt
 lib/English.rb
 lib/Env.rb
+lib/README
 lib/base64.rb
 lib/cgi-lib.rb
 lib/complex.rb
@@ -125,6 +128,7 @@ lib/telnet.rb
 lib/tempfile.rb
 lib/thread.rb
 lib/thwait.rb
+lib/timeout.rb
 lib/tk.rb
 lib/tkafter.rb
 lib/tkbgerror.rb
@@ -153,7 +157,6 @@ missing/mkdir.c
 missing/nt.c
 missing/nt.h
 missing/setenv.c
-missing/snprintf.c
 missing/strcasecmp.c
 missing/strchr.c
 missing/strdup.c
@@ -162,7 +165,9 @@ missing/strftime.c
 missing/strstr.c
 missing/strtol.c
 missing/strtoul.c
+missing/vsnprintf.c
 missing/x68.c
+sample/README
 sample/biorhythm.rb
 sample/cal.rb
 sample/cbreak.rb

@@ -100,6 +100,7 @@ int rb_method_boundp _((VALUE, ID, int));
 VALUE dyna_var_defined _((ID));
 VALUE dyna_var_ref _((ID));
 VALUE dyna_var_asgn _((ID, VALUE));
+void dyna_var_push _((ID, VALUE));
 void ruby_init _((void));
 void ruby_options _((int, char**));
 void ruby_run _((void));
