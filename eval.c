@@ -663,6 +663,7 @@ static unsigned long frame_unique = 0;
     _frame.node = ruby_current_node;	\
     _frame.iter = ruby_iter->iter;	\
     _frame.argc = 0;			\
+    _frame.flags = 0;			\
     _frame.uniq = frame_unique++;	\
     ruby_frame = &_frame
 

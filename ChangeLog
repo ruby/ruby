@@ -4,6 +4,8 @@ Tue Nov 30 14:58:33 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Tue Nov 30 00:49:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* eval.c (PUSH_FRAME): flags should have been initialized.
+
 	* eval.c (rb_eval): [ruby-core:03856]
 
 	* io.c (rb_io_sysread): use temporary lock.  [ruby-dev:24992]
