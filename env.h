@@ -16,7 +16,6 @@
 RUBY_EXTERN struct FRAME {
     VALUE self;
     int argc;
-    VALUE *argv;
     ID last_func;
     ID orig_func;
     VALUE last_class;

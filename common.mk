@@ -229,7 +229,8 @@ marshal.$(OBJEXT): {$(VPATH)}marshal.c {$(VPATH)}ruby.h config.h \
 math.$(OBJEXT): {$(VPATH)}math.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 numeric.$(OBJEXT): {$(VPATH)}numeric.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
+  {$(VPATH)}env.h {$(VPATH)}defines.h {$(VPATH)}intern.h \
+  {$(VPATH)}missing.h
 object.$(OBJEXT): {$(VPATH)}object.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}st.h {$(VPATH)}util.h

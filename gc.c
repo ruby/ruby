@@ -1243,7 +1243,6 @@ void
 rb_gc_mark_frame(frame)
     struct FRAME *frame;
 {
-    mark_locations_array(frame->argv, frame->argc);
     gc_mark((VALUE)frame->node, 0);
 }
 
@@ -1767,8 +1766,8 @@ run_final(obj)
     if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
 	    VALUE final = RARRAY(table)->ptr[i];
-	    args[0] = FIX2INT(RARRAY(final)->ptr[0]);
-	    args[2] = RARRAY(final)->ptr[1];
+	    args[0] = RARRAY(final)->ptr[1];
+	    args[2] = FIX2INT(RARRAY(final)->ptr[0]);
 	    rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
 	}
     }

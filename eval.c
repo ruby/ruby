@@ -668,7 +668,6 @@ static unsigned long frame_unique = 0;
     _frame.node = ruby_current_node;	\
     _frame.iter = ruby_iter->iter;	\
     _frame.argc = 0;			\
-    _frame.argv = 0;			\
     _frame.flags = FRAME_ALLOCA;	\
     _frame.uniq = frame_unique++;	\
     ruby_frame = &_frame
@@ -3261,7 +3260,7 @@ rb_eval(self, n)
 	    }
 	    if (nd_type(node) == NODE_ZSUPER) {
 		argc = ruby_frame->argc;
-		argv = ruby_frame->argv;
+		argv = ruby_scope->local_vars + 2;
 	    }
 	    else {
 		BEGIN_CALLARGS;
@@ -3390,7 +3389,6 @@ rb_eval(self, n)
 	if (ruby_scope->local_vars == 0)
 	    rb_bug("unexpected local variable assignment");
 	result = rb_eval(self, node->nd_value);
-	if (node->nd_cnt < ruby_frame->argc + 2) scope_dup(ruby_scope);
 	ruby_scope->local_vars[node->nd_cnt] = result;
 	break;
 
@@ -3651,13 +3649,6 @@ rb_eval(self, n)
 
       case NODE_LIT:
 	result = node->nd_lit;
-	break;
-
-      case NODE_ATTRSET:
-	if (ruby_frame->argc != 1)
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)",
-		     ruby_frame->argc);
-	result = rb_ivar_set(self, node->nd_vid, ruby_frame->argv[0]);
 	break;
 
       case NODE_DEFN:
@@ -4953,7 +4944,6 @@ assign(self, lhs, val, pcall)
       case NODE_LASGN:
 	if (ruby_scope->local_vars == 0)
 	    rb_bug("unexpected local variable assignment");
-	if (lhs->nd_cnt < ruby_frame->argc + 2) scope_dup(ruby_scope);
 	ruby_scope->local_vars[lhs->nd_cnt] = val;
 	break;
 
@@ -5475,6 +5465,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     volatile VALUE result = Qnil;
     int itr;
     static int tick;
+    volatile VALUE args;
     TMP_PROTECT;
 
     switch (ruby_iter->iter) {
@@ -5494,12 +5485,17 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     PUSH_ITER(itr);
     PUSH_FRAME();
 
+    if (argc < 0) {
+	argc = -argc-1;
+	args = rb_ary_concat(rb_ary_new4(argc, argv), splat_value(argv[argc]));
+	argc = RARRAY(args)->len;
+	argv = RARRAY(args)->ptr;
+    }
     ruby_frame->last_func = id;
     ruby_frame->orig_func = oid;
     ruby_frame->last_class = nosuper?0:klass;
     ruby_frame->self = recv;
     ruby_frame->argc = argc;
-    ruby_frame->argv = argv;
 
     switch (nd_type(body)) {
       case NODE_CFUNC:
@@ -5538,7 +5534,11 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	break;
 
       case NODE_ATTRSET:
-	/* for re-scoped/renamed method */
+	if (argc != 1)
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
+	result = rb_ivar_set(recv, body->nd_vid, argv[0]);
+	break;
+
       case NODE_ZSUPER:
 	result = rb_eval(recv, body);
 	break;
@@ -5595,8 +5595,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
 		    i = node->nd_cnt;
 		    if (i > argc) {
-			rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-				 argc, i);
+			rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, i);
 		    }
 		    if ((long)node->nd_rest == -1) {
 			int opt = i;
@@ -5611,13 +5610,12 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 				     argc, opt);
 			}
 			ruby_frame->argc = opt;
-			ruby_frame->argv = local_vars+2;
 		    }
 
 		    if (local_vars) {
 			if (i > 0) {
 			    /* +2 for $_ and $~ */
-			    MEMCPY(local_vars+2, argv, VALUE, ruby_frame->argc);
+			    MEMCPY(local_vars+2, argv, VALUE, i);
 			}
 			argv += i; argc -= i;
 			if (node->nd_opt) {
@@ -5641,8 +5639,10 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 				v = rb_ary_new2(0);
 			    ruby_scope->local_vars[node->nd_rest] = v;
 			}
-			ruby_frame->argv = ruby_scope->local_vars + 2;
 		    }
+		}
+		if ((long)node->nd_rest >= 0) {
+		    ruby_frame->argc = -(ruby_frame->argc - argc)-1;
 		}
 
 		if (trace_func) {
@@ -6240,7 +6240,6 @@ exec_under(func, under, cbase, args)
     ruby_frame->last_func = _frame.prev->last_func;
     ruby_frame->last_class = _frame.prev->last_class;
     ruby_frame->argc = _frame.prev->argc;
-    ruby_frame->argv = _frame.prev->argv;
     if (cbase) {
 	PUSH_CREF(cbase);
     }
@@ -7743,24 +7742,6 @@ static void
 blk_free(data)
     struct BLOCK *data;
 {
-    struct FRAME *frame;
-    void *tmp;
-
-    frame = data->frame.prev;
-    while (frame) {
-	if (frame->argc > 0 && (frame->flags & FRAME_MALLOC))
-	    free(frame->argv);
-	tmp = frame;
-	frame = frame->prev;
-	free(tmp);
-    }
-    while (data) {
-	if (data->frame.argc > 0)
-	    free(data->frame.argv);
-	tmp = data;
-	data = data->prev;
-	free(tmp);
-    }
 }
 
 static void
@@ -7773,11 +7754,6 @@ blk_copy_prev(block)
     while (block->prev) {
 	tmp = ALLOC_N(struct BLOCK, 1);
 	MEMCPY(tmp, block->prev, struct BLOCK, 1);
-	if (tmp->frame.argc > 0) {
-	    tmp->frame.argv = ALLOC_N(VALUE, tmp->frame.argc);
-	    MEMCPY(tmp->frame.argv, block->prev->frame.argv, VALUE, tmp->frame.argc);
-	    tmp->frame.flags |= FRAME_MALLOC;
-	}
 	scope_dup(tmp->scope);
 
 	for (vars = tmp->dyna_vars; vars; vars = vars->next) {
@@ -7798,12 +7774,6 @@ frame_dup(frame)
     struct FRAME *tmp;
 
     for (;;) {
-	if (frame->argc > 0) {
-	    argv = ALLOC_N(VALUE, frame->argc);
-	    MEMCPY(argv, frame->argv, VALUE, frame->argc);
-	    frame->argv = argv;
-	    frame->flags |= FRAME_MALLOC;
-	}
 	frame->tmp = 0;		/* should not preserve tmp */
 	if (!frame->prev) break;
 	tmp = ALLOC(struct FRAME);
@@ -7812,7 +7782,6 @@ frame_dup(frame)
 	frame = tmp;
     }
 }
-
 
 
 /*
@@ -9655,25 +9624,6 @@ timeofday()
 
 #define STACK(addr) (th->stk_pos<(VALUE*)(addr) && (VALUE*)(addr)<th->stk_pos+th->stk_len)
 #define ADJ(addr) (void*)(STACK(addr)?(((VALUE*)(addr)-th->stk_pos)+th->stk_ptr):(VALUE*)(addr))
-#ifdef C_ALLOCA
-# define MARK_FRAME_ADJ(f) rb_gc_mark_frame(f)
-#else
-# define MARK_FRAME_ADJ(f) mark_frame_adj(f, th)
-static void
-mark_frame_adj(frame, th)
-    struct FRAME *frame;
-    rb_thread_t th;
-{
-    if (frame->flags & FRAME_MALLOC) {
-	rb_gc_mark_locations(frame->argv, frame->argv+frame->argc);
-    }
-    else {
-	VALUE *start = ADJ(frame->argv);
-	rb_gc_mark_locations(start, start+frame->argc);
-    }
-    rb_gc_mark((VALUE)frame->node);
-}
-#endif
 
 static void
 thread_mark(th)
@@ -9715,13 +9665,13 @@ thread_mark(th)
     frame = th->frame;
     while (frame && frame != top_frame) {
 	frame = ADJ(frame);
-	MARK_FRAME_ADJ(frame);
+	rb_gc_mark_frame(frame);
 	if (frame->tmp) {
 	    struct FRAME *tmp = frame->tmp;
 
 	    while (tmp && tmp != top_frame) {
 		tmp = ADJ(tmp);
-		MARK_FRAME_ADJ(tmp);
+		rb_gc_mark_frame(tmp);
 		tmp = tmp->prev;
 	    }
 	}
@@ -9730,7 +9680,7 @@ thread_mark(th)
     block = th->block;
     while (block) {
 	block = ADJ(block);
-	MARK_FRAME_ADJ(&block->frame);
+	rb_gc_mark_frame(&block->frame);
 	block = block->prev;
     }
 }
@@ -11415,15 +11365,6 @@ rb_thread_start_0(fn, arg, th)
 
     if (th == main_thread) ruby_stop(state);
     rb_thread_remove(th);
-
-    for (block = saved_block; block;) {
-	struct BLOCK *tmp = block;
-
-	if (tmp->frame.argc > 0)
-	    free(tmp->frame.argv);
-	block = tmp->prev;
-	free((void*)tmp);
-    }
 
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {
 	th->flags |= THREAD_RAISED;

@@ -1,3 +1,20 @@
+Wed Jul 28 01:04:44 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* env.h: remove argv from ruby_frame.
+
+	* eval.c (rb_eval): no more copy on write.
+
+	* eval.c (assign): ditto.
+
+	* eval.c (rb_call0): can receive *rest by specifying negative
+	  argc.  (-1 means 0 arg and *rest, -2 means 1 arg and *rest...)
+
+	* eval.c (rb_call0): properly set frame's argc counter.
+
+	* gc.c (rb_gc_mark_frame): need not to mark frame's argv
+
+	* gc.c (run_final): wrong order of data. [ruby-dev:23948]
+
 Tue Jul 27 07:05:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): copy on write for argument local variable

@@ -4001,7 +4001,7 @@ static VALUE
 argf_forward()
 {
     return rb_funcall3(current_file, ruby_frame->last_func,
-		       ruby_frame->argc, ruby_frame->argv);
+		       ruby_frame->argc, ruby_scope->local_vars + 2);
 }
 
 #define ARGF_FORWARD() do { if (TYPE(current_file) != T_FILE) return argf_forward(); } while (0)
