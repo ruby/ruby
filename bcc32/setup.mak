@@ -92,5 +92,5 @@ PROCESSOR_LEVEL = $(PROCESSOR_LEVEL)
 \# EXTLIBS = cw32.lib import32.lib user32.lib kernel32.lib
 $(INCLUDE) $$(srcdir)bcc32/Makefile.sub
 |
-	@$(srcdir)\win32\rm.bat config.h config.status
+	@$(srcdir:/=\)\win32\rm.bat config.h config.status
 	@echo type "`$(MAKE)'" to make ruby for $(OS).

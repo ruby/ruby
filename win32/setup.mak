@@ -91,5 +91,5 @@ $(CPU) = $(PROCESSOR_LEVEL)
 
 $(INCLUDE) $$(srcdir)/win32/Makefile.sub
 <<
-	@$(srcdir)\win32\rm.bat config.h config.status
+	@$(srcdir:/=\)\win32\rm.bat config.h config.status
 	@echo type `$(MAKE)' to make ruby for $(OS).
