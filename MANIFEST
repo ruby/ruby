@@ -80,6 +80,7 @@ bcc32/README.bcc32
 bcc32/configure.bat
 bcc32/mkexports.rb
 bcc32/setup.mak
+bin/erb
 bin/irb
 cygwin/GNUmakefile.in
 djgpp/README.djgpp
