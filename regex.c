@@ -1064,24 +1064,24 @@ re_compile_pattern(pattern, size, bufp)
 	{
 	case '$':
 	  {
-	    char *p1 = p;
+	    p0 = p;
 	    /* When testing what follows the $,
 	       look past the \-constructs that don't consume anything.  */
 
-	    while (p1 != pend)
+	    while (p0 != pend)
 	      {
-		if (*p1 == '\\' && p1 + 1 != pend
-		    && (p1[1] == 'b' || p1[1] == 'B'))
-		  p1 += 2;
+		if (*p0 == '\\' && p0 + 1 != pend
+		    && (p0[1] == 'b' || p0[1] == 'B'))
+		  p0 += 2;
 		else
 		  break;
 	      }
 	    /* $ means succeed if at end of line, but only in special contexts.
 	      If validly in the middle of a pattern, it is a normal character. */
 
-	    if (p1 == pend || *p1 == '\n'
-		|| *p1 == ')'
-		|| *p1 == '|')
+	    if (p0 == pend || *p0 == '\n'
+		|| *p0 == ')'
+		|| *p0 == '|')
 	      {
 		BUFPUSH(endline);
 		break;
@@ -1544,7 +1544,8 @@ re_compile_pattern(pattern, size, bufp)
 	  break;
 
 	case ')':
-	  if (stackp == stackb) goto unmatched_close;
+	  if (stackp == stackb) 
+	    FREE_AND_RETURN(stackb, "unmatched )");
 	  if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
 	    BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
 	  }
@@ -1749,7 +1750,12 @@ re_compile_pattern(pattern, size, bufp)
 
 		GET_BUFFER_SPACE(5);
 		BUFPUSH(set_number_at);
-		STORE_NUMBER_AND_INCR(b, -5);
+		STORE_NUMBER_AND_INCR(b, laststart - b + 11);
+		STORE_NUMBER_AND_INCR(b, lower_bound);
+
+		GET_BUFFER_SPACE(5);
+		BUFPUSH(set_number_at);
+		STORE_NUMBER_AND_INCR(b, -10);
 		STORE_NUMBER_AND_INCR(b, upper_bound - 1);
 	      }
 	    pending_exact = 0;
@@ -1951,7 +1957,8 @@ re_compile_pattern(pattern, size, bufp)
   if (fixup_jump)
     store_jump(fixup_jump, jump, b);
 
-  if (stackp != stackb) goto unmatched_open;
+  if (stackp != stackb)
+    FREE_AND_RETURN(stackb, "unmatched (");
 
   bufp->used = b - bufp->buffer;
   bufp->re_nsub = regnum;
@@ -1960,12 +1967,6 @@ re_compile_pattern(pattern, size, bufp)
 
  invalid_pattern:
   FREE_AND_RETURN(stackb, "invalid regular expression");
-
- unmatched_open:
-  FREE_AND_RETURN(stackb, "unmatched (");
-
- unmatched_close:
-  FREE_AND_RETURN(stackb, "unmatched )");
 
  end_of_pattern:
   FREE_AND_RETURN(stackb, "premature end of regular expression");
@@ -2249,6 +2250,7 @@ re_compile_fastmap(bufp)
 	  continue;
 
 	case casefold_on:
+	  bufp->options |= RE_MAY_IGNORECASE;
 	case casefold_off:
 	  options ^= RE_OPTION_IGNORECASE;
 	  continue;
@@ -2530,17 +2532,17 @@ re_search(bufp, string, size, startpos, range, regs)
     }
   }
 
+  /* Update the fastmap now if not correct already.  */
+  if (fastmap && !bufp->fastmap_accurate) {
+      re_compile_fastmap(bufp);
+  }
+
   if (range > 0
       && bufp->must
       && !must_instr(bufp->must+1, bufp->must[0],
 		     string+startpos, size-startpos,
 		     TRY_TRANSLATE()?translate:0)) {
     return -1;
-  }
-
-  /* Update the fastmap now if not correct already.  */
-  if (fastmap && !bufp->fastmap_accurate) {
-      re_compile_fastmap(bufp);
   }
 
   for (;;)
@@ -2660,14 +2662,25 @@ int re_max_failures = 2000;
 
 /* Structure and accessing macros used in re_match:  */
 
-struct register_info
+typedef union
 {
-  unsigned is_active : 1;
-  unsigned matched_something : 1;
-};
+  unsigned char *word;
+  struct
+  {
+      /* This field is one if this group can match the empty string,
+         zero if not.  If not yet determined,  `MATCH_NULL_UNSET_VALUE'.  */
+#define MATCH_NULL_UNSET_VALUE 3
+    unsigned match_null_string_p : 2;
+    unsigned is_active : 1;
+    unsigned matched_something : 1;
+    unsigned ever_matched_something : 1;
+  } bits;
+} register_info_type;
 
-#define IS_ACTIVE(R)  ((R).is_active)
-#define MATCHED_SOMETHING(R)  ((R).matched_something)
+#define REG_MATCH_NULL_STRING_P(R)  ((R).bits.match_null_string_p)
+#define IS_ACTIVE(R)  ((R).bits.is_active)
+#define MATCHED_SOMETHING(R)  ((R).bits.matched_something)
+#define EVER_MATCHED_SOMETHING(R)  ((R).bits.ever_matched_something)
 
 
 /* Macros used by re_match:  */
@@ -2698,7 +2711,7 @@ struct register_info
     /* Find out how many registers are active or have been matched.	\
        (Aside from register zero, which is only set at the end.) */	\
     for (last_used_reg = num_regs - 1; last_used_reg > 0; last_used_reg--)\
-      if (regstart[last_used_reg] != (unsigned char *)(-1L))		\
+      if (!REG_UNSET(regstart[last_used_reg]))				\
         break;								\
 									\
     if (stacke - stackp <= NUM_FAILURE_ITEMS)				\
@@ -2720,7 +2733,7 @@ struct register_info
       {									\
         *stackp++ = regstart[this_reg];					\
         *stackp++ = regend[this_reg];					\
-        *stackp++ = (unsigned char *)&reg_info[this_reg];		\
+        *stackp++ = reg_info[this_reg].word;				\
       }									\
 									\
     /* Push how many registers we saved.  */				\
@@ -2742,6 +2755,10 @@ struct register_info
     temp *= NUM_REG_ITEMS;	/* How much to take off the stack.  */	\
     stackp -= temp; 		/* Remove the register info.  */	\
   }
+
+/* Registers are set to a sentinel when they haven't yet matched.  */
+#define REG_UNSET_VALUE ((unsigned char *) -1)
+#define REG_UNSET(e) ((e) == REG_UNSET_VALUE)
 
 #define PREFETCH if (d == dend) goto fail
 
@@ -2867,7 +2884,7 @@ re_match(bufp, string_arg, size, pos, regs)
      subexpression.  These two fields get reset each time through any
      loop their register is in.  */
 
-  struct register_info *reg_info = RE_TALLOC(num_regs, struct register_info);
+  register_info_type *reg_info = RE_TALLOC(num_regs, register_info_type);
 
   /* The following record the register info as found in the above
      variables when we find a match better than any we've seen before. 
@@ -2896,9 +2913,11 @@ re_match(bufp, string_arg, size, pos, regs)
      inactive and mark them as not having matched anything or ever
      failed. */
   for (mcnt = 0; mcnt < num_regs; mcnt++) {
-      regstart[mcnt] = regend[mcnt] = (unsigned char *) (-1L);
-      IS_ACTIVE(reg_info[mcnt]) = 0;
-      MATCHED_SOMETHING(reg_info[mcnt]) = 0;
+      regstart[mcnt] = regend[mcnt] 
+        = best_regstart[mcnt] = best_regend[mcnt] = REG_UNSET_VALUE;
+      reg_info[mcnt].word = 0;
+      IS_ACTIVE (reg_info[mcnt]) = 0;
+      MATCHED_SOMETHING (reg_info[mcnt]) = 0;
   }
 
   /* Set up pointers to ends of strings.
@@ -2977,7 +2996,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	      regs->end[0] = d - string;
 	      for (mcnt = 1; mcnt < num_regs; mcnt++)
 		{
-		  if (regend[mcnt] == (unsigned char *)(-1L))
+		  if (REG_UNSET(regend[mcnt]))
 		    {
 		      regs->beg[mcnt] = -1;
 		      regs->end[mcnt] = -1;
@@ -3058,8 +3077,11 @@ re_match(bufp, string_arg, size, pos, regs)
 	    int regno = *p++;   /* Get which register to match against */
 	    register unsigned char *d2, *dend2;
 
+	    if (IS_ACTIVE(reg_info[regno])) break;
+
 	    /* Where in input to try to start matching.  */
             d2 = regstart[regno];
+	    if (REG_UNSET(d2)) break;
 
             /* Where to stop matching; if both the place to start and
                the place to stop matching are in the same string, then
@@ -3067,6 +3089,7 @@ re_match(bufp, string_arg, size, pos, regs)
                the end of the first string.  */
 
             dend2 = regend[regno];
+	    if (REG_UNSET(dend2)) break;
 	    for (;;)
 	      {
 		/* At end of register contents => success */
@@ -3380,7 +3403,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	  continue;
 
         case casefold_on:
-	  bufp->options |= RE_MAY_IGNORECASE;
 	  options |= RE_OPTION_IGNORECASE;
 	  continue;
 
@@ -3511,7 +3533,7 @@ re_match(bufp, string_arg, size, pos, regs)
           /* And restore the rest from the stack.  */
           for ( ; this_reg > 0; this_reg--)
             {
-              reg_info[this_reg] = *(struct register_info *) *--stackp;
+              reg_info[this_reg].word = *--stackp;
               regend[this_reg] = *--stackp;
               regstart[this_reg] = *--stackp;
             }

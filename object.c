@@ -287,6 +287,7 @@ nil_type(obj)
     return cNilClass;
 }
 
+#ifdef NIL_PLUS
 static VALUE
 nil_plus(x, y)
     VALUE x, y;
@@ -306,6 +307,7 @@ nil_plus(x, y)
     }
     /* not reached */
 }
+#endif
 
 static VALUE
 main_to_s(obj)
@@ -996,7 +998,9 @@ Init_Object()
     rb_define_global_const("NIL", Qnil);
 
     /* default addition */
+#ifdef NIL_PLUS
     rb_define_method(cNilClass, "+", nil_plus, 1);
+#endif
 
     rb_define_global_function("initialize", obj_dummy, -1);
     rb_define_global_function("singleton_method_added", obj_dummy, 1);

@@ -4,7 +4,7 @@ freq = {}
 while gets
   while sub!(/\w+/, '')
     word = $&
-    freq[word] +=1
+    freq[word] = freq.fetch(word, 0)+1
   end
 end
 

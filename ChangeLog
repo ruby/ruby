@@ -1,3 +1,7 @@
+Thu May 28 18:02:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (nil_plus): no more `+' method for nil.
+
 Wed May 27 17:33:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* hash.c (hash_fetch): new method.
