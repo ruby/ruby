@@ -1,3 +1,7 @@
+Thu Mar 31 00:18:27 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/ifchange.bat, win32/rm.bat: backported from HEAD.
+
 Wed Mar 30 23:44:50 2005  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* Makefile.in, */Makefile.sub, */configure.bat,
@@ -32,7 +36,7 @@ Mon Mar 28 23:40:40 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	* lib/drb/drb.rb: move method DRbObject#reinit to DRbObject.new_with.
 	  extract method DRbObject.prepare_backtrace. add DRb.regist_server,
 	  remove_server, fetch_server. change server in thread variable if
-	  in-proc sesrver. [druby-ja:113]
+	  in-proc server. [druby-ja:113]
 
 	* lib/drb/gw.rb: ditto.
 
