@@ -1,3 +1,8 @@
+Sun Oct  6 00:49:15 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* eval.c (rb_load): should not pass blocks to the loaded file.
+	  [ruby-dev:18458]
+
 Fri Oct  4 20:25:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_thread_interrupt, rb_thread_signal_raise): no need to
