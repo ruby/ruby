@@ -1,3 +1,14 @@
+Wed Mar 23 19:08:10 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/utils.rb (WEBrick::Utils.create_listeners):
+	  - should raise ArgumentError if no port is specified.
+	  - even if the specified port is 0, all TCPServers should be
+	    initialized with the port given to the first one.
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#initialize): if :Port
+	  parameter is 0, it should be updated with the port number which
+	  ectually listened.
+
 Wed Mar 23 16:12:40 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* parse.y (primary): fix lineno of rescue and ensure.
