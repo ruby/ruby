@@ -69,9 +69,37 @@ class Mutex
       unlock
     end
   end
+end
 
-  def num_waiting
-    @waiting.size
+class ConditionVariable
+  def initialize
+    @waiters = []
+    @waiters_mutex = Mutex.new
+  end
+  
+  def wait(mutex)
+    mutex.unlock
+    @waiters_mutex.synchronize {
+      @waiters.push(Thread.current)
+    }
+    Thread.stop
+    mutex.lock
+  end
+  
+  def signal
+    @waiters_mutex.synchronize {
+      t = @waiters.shift
+      t.run if t
+    }
+  end
+    
+  def broadcast
+    @waiters_mutex.synchronize {
+      for t in @waiters
+	t.run
+      end
+      @waiters.clear
+    }
   end
 end
 
@@ -116,6 +144,11 @@ class Queue
     @que.length
   end
   alias size length
+
+
+  def num_waiting
+    @waiting.size
+  end
 end
 
 class SizedQueue<Queue
@@ -130,19 +163,20 @@ class SizedQueue<Queue
   end
 
   def max=(max)
+    Thread.critical = TRUE
     if @max >= max
       @max = max
+      Thread.critical = FALSE
     else
-      Thread.critical = TRUE
       diff = max - @max
       @max = max
+      Thread.critical = FALSE
       diff.times do
 	t = @queue_wait.shift
 	t.run if t
       end
-      Thread.critical = FALSE
-      @max
     end
+    max
   end
 
   def push(obj)
@@ -150,6 +184,7 @@ class SizedQueue<Queue
     while @que.length >= @max
       @queue_wait.push Thread.current
       Thread.stop
+      Thread.critical = true
     end
     super
   end
@@ -160,8 +195,7 @@ class SizedQueue<Queue
       t = @queue_wait.shift
       t.run if t
     end
-    pop = super
-    pop
+    super
   end
 
   def num_waiting

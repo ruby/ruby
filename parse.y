@@ -485,6 +485,11 @@ fname		: IDENTIFIER
 			lex_state = EXPR_END;
 			$$ = $1;
 		    }
+		| reswords
+		    {
+			lex_state = EXPR_END;
+			$$ = $<id>1;
+		    }
 
 undef_list	: fname
 		    {
@@ -522,6 +527,14 @@ op		: DOT2		{ $$ = DOT2; }
 		| AREF		{ $$ = AREF; }
 		| ASET		{ $$ = ASET; }
 		| '`'		{ $$ = '`'; }
+
+reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
+		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
+		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
+		| kFOR | kIF_MOD | kIN | kMODULE | kNEXT | kNIL | kNOT
+		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
+		| kTHEN | kTRUE | kUNDEF | kUNLESS_MOD | kUNTIL_MOD | kWHEN
+		| kWHILE_MOD | kYIELD
 
 arg		: variable '=' arg
 		    {
@@ -2586,12 +2599,16 @@ retry:
       case ':':
 	c = nextc();
 	if (c == ':') {
-	    if (lex_state == EXPR_BEG ||
-		(lex_state == EXPR_ARG && space_seen)) {
+	    if (lex_state == EXPR_BEG) {
 		lex_state = EXPR_BEG;
 		return COLON3;
 	    }
-	    lex_state = EXPR_BEG;
+	    if (lex_state == EXPR_ARG && space_seen) {
+		arg_ambiguous();
+		lex_state = EXPR_BEG;
+		return COLON3;
+	    }
+	    lex_state = EXPR_DOT;
 	    return COLON2;
 	}
 	pushback(c);
@@ -2877,12 +2894,15 @@ retry:
 	    result = IVAR;
 	    break;
 	  default:
-	    if (lex_state != EXPR_FNAME && lex_state != EXPR_DOT) {
+	    if (lex_state != EXPR_DOT) {
 		/* See if it is a reserved word.  */
 		kw = rb_reserved_word(tok(), toklen());
 		if (kw) {
 		    enum lex_state state = lex_state;
 		    lex_state = kw->state;
+		    if (lex_state == EXPR_FNAME) {
+			yylval.id = rb_intern(kw->name);
+		    }
 		    return kw->id[state != EXPR_BEG];
 		}
 	    }
