@@ -3970,7 +3970,7 @@ path_check_1(path)
 #ifdef S_ISVTX
 	    && !(st.st_mode & S_ISVTX)
 #endif
-	    ) {
+	    && !access(p0, W_OK)) {
 	    rb_warn("Insecure world writable dir %s, mode 0%o", p0, st.st_mode);
 	    if (p) *p = '/';
 	    return 0;

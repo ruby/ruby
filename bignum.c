@@ -982,10 +982,11 @@ rb_big_eq(x, y)
 	break;
       case T_FLOAT:
         {
-	    double a, b;
+	    volatile double a, b;
 
 	    a = RFLOAT(y)->value;
 	    b = rb_big2dbl(x);
+	    if (isnan(a) || isnan(b)) return Qfalse;
 	    return (a == b)?Qtrue:Qfalse;
 	}
       default:

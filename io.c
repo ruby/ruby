@@ -1367,10 +1367,8 @@ rb_io_gets_m(argc, argv, io)
     }
     GetOpenFile(io, fptr);
     str = rb_io_getline(rs, fptr);
+    rb_lastline_set(str);
 
-    if (!NIL_P(str)) {
-	rb_lastline_set(str);
-    }
     return str;
 }
 

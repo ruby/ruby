@@ -1,3 +1,8 @@
+Wed Jun  2 12:41:53 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_gets_m): set lastline ($_) even when read line is
+	  nil.  [ruby-dev:23663]
+
 Fri May 28 11:20:31 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval): bad influence on frame node.
