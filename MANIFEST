@@ -878,6 +878,9 @@ test/optparse/test_placearg.rb
 test/optparse/test_reqarg.rb
 test/ostruct/test_ostruct.rb
 test/rinda/test_rinda.rb
+test/ripper/dummyparser.rb
+test/ripper/test_parser_events.rb
+test/ripper/test_scanner_events.rb
 test/rss/rss-assertions.rb
 test/rss/rss-testcase.rb
 test/rss/test_1.0.rb

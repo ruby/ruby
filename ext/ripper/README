@@ -1,0 +1,31 @@
+Ripper README
+=============
+
+  Ripper is a Ruby script parser.  You can get information
+  by event-based style from the parser.
+
+  !! WARNING !!
+
+  Ripper is still early-alpha version.
+  I never assure any kind of backward compatibility.
+  
+Requirements
+------------
+
+  * ruby 1.9 (support CVS HEAD only)
+  * bison 1.28 or later (You MUST use bison)
+
+Usage
+-----
+
+  See test/ripper/* and sample/ripper/*.
+  To know thrown events, see lib/ripper.rb.
+
+License
+-------
+
+  Ruby License.
+
+                                                Minero Aoki
+                                        aamine@loveruby.net
+                                      http://i.loveruby.net
