@@ -1,3 +1,8 @@
+Sat Dec 18 16:36:23 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (rb_deflate_s_deflate, rb_inflate_s_inflate):
+	  disallow interrupt by type conversion.  fixed: [ruby-dev:25226]
+
 Sat Dec 18 15:16:41 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/webrick/httpauth.rb,
@@ -52,7 +57,7 @@ Fri Dec 17 16:28:12 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Fri Dec 17 13:50:00 2004  Akiyoshi, Masamichi (akiyoshi@hp.com)
 
-	* vms/vmsruby_private.c, vms/vmsruby_private.h: private routines 
+	* vms/vmsruby_private.c, vms/vmsruby_private.h: private routines
 	  for VMS port are added.
 
 	* eval.c (ruby_init): change to call VMS private intialization routine.
@@ -1285,7 +1290,7 @@ Thu Oct 21 21:32:30 2004  IWATSUKI Hiroyuki  <don@na.rim.or.jp>
 
 	* lib/pstore.rb (PStore#transaction): Use the empty content when a
 	  file is not found.  [ruby-dev:24561]
-	
+
 Thu Oct 21 19:06:15 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#send_body_io):
