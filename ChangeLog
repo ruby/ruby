@@ -1,3 +1,12 @@
+Mon Feb 21 18:31:12 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* signal.c: Standard signal handlers ignore signals on non-Ruby native
+	  threads. When a handler is entried with ruby_signal() (like as the
+	  standard signal handlers), the handler for the signal is marked as
+	  it cannot accept non-Ruby native threads. If a handler can treat all
+	  signals on all native threads, please use ruby_nativethread_signal()
+	  to entry it. 
+
 Sun Feb 20 00:48:48 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::FTP#buffer_open): access mechanism
