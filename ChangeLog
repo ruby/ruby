@@ -1,3 +1,15 @@
+Thu Feb  5 23:56:55 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/prettyprint.rb (PrettyPrint#seplist): added.
+
+	* lib/pp.rb (PPMethods#pp_object): use seplist.
+	  (PPMethods#pp_hash): ditto.
+	  (Array#pretty_print): ditto.
+	  (Struct#pretty_print): ditto.
+	  (MatchData#pretty_print): ditto.
+
+	* lib/set.rb (Set#pretty_print): use seplist.
+
 Wed Feb  4 02:12:06 2004  Tanaka Akira  <akr@m17n.org>
 
 	* file.c (test_l): fix wrong method name in document.
