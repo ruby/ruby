@@ -576,7 +576,7 @@ replace_i(key, val, hash)
 }
 
 static VALUE
-rb_hash_become(hash, hash2)
+rb_hash_replace(hash, hash2)
     VALUE hash, hash2;
 {
     hash2 = to_hash(hash2);
@@ -1599,7 +1599,7 @@ Init_Hash()
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
 
-    rb_define_method(rb_cHash,"become", rb_hash_become, 1);
+    rb_define_method(rb_cHash,"copy_object", rb_hash_replace, 1);
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);
@@ -1640,7 +1640,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash,"invert", rb_hash_invert, 0);
     rb_define_method(rb_cHash,"update", rb_hash_update, 1);
-    rb_define_method(rb_cHash,"replace", rb_hash_become, 1);
+    rb_define_method(rb_cHash,"replace", rb_hash_replace, 1);
 
     rb_define_method(rb_cHash,"include?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash,"member?", rb_hash_has_key, 1);

@@ -33,7 +33,7 @@ VALUE rb_cSymbol;
 
 static ID eq, eql;
 static ID inspect;
-static ID become;
+static ID copy_obj;
 static ID alloc;
 
 VALUE
@@ -115,7 +115,7 @@ copy_object(dest, obj)
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
-    rb_funcall(dest, become, 1, obj);
+    rb_funcall(dest, copy_obj, 1, obj);
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_copy_generic_ivar(dest, obj);
     }
@@ -167,13 +167,13 @@ rb_obj_dup(obj)
 }
 
 VALUE
-rb_obj_become(obj, orig)
+rb_obj_copy_object(obj, orig)
     VALUE obj, orig;
 {
     if (obj == orig) return obj;
     rb_check_frozen(obj);
     if (TYPE(obj) != TYPE(orig) || rb_obj_class(obj) != rb_obj_class(orig)) {
-	rb_raise(rb_eTypeError, "become should take same class object");
+	rb_raise(rb_eTypeError, "copy_object should take same class object");
     }
     return obj;
 }
@@ -1333,7 +1333,7 @@ Init_Object()
 
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
-    rb_define_method(rb_mKernel, "become", rb_obj_become, 1);
+    rb_define_method(rb_mKernel, "copy_object", rb_obj_copy_object, 1);
 
     rb_define_method(rb_mKernel, "taint", rb_obj_taint, 0);
     rb_define_method(rb_mKernel, "tainted?", rb_obj_tainted, 0);
@@ -1470,5 +1470,5 @@ Init_Object()
     eq = rb_intern("==");
     eql = rb_intern("eql?");
     inspect = rb_intern("inspect");
-    become = rb_intern("become");
+    copy_obj = rb_intern("copy_object");
 }

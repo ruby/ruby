@@ -2376,17 +2376,17 @@ rb_io_reopen(argc, argv, file)
 }
 
 static VALUE
-rb_io_become(clone, io)
-    VALUE clone, io;
+rb_io_copy_object(dest, io)
+    VALUE dest, io;
 {
     OpenFile *fptr, *orig;
     int fd;
     char *mode;
 
     io = rb_io_get_io(io);
-    if (clone == io) return clone;
+    if (dest == io) return dest;
     GetOpenFile(io, orig);
-    MakeOpenFile(clone, fptr);
+    MakeOpenFile(dest, fptr);
 
     if (orig->f2) {
 	io_fflush(orig->f2, orig);
@@ -2422,10 +2422,10 @@ rb_io_become(clone, io)
 	fptr->f2 = rb_fdopen(fd, "w");
     }
     if (fptr->mode & FMODE_BINMODE) {
-	rb_io_binmode(clone);
+	rb_io_binmode(dest);
     }
 
-    return clone;
+    return dest;
 }
 
 VALUE
@@ -3906,7 +3906,7 @@ Init_IO()
     rb_define_hooked_variable("$.", &lineno, 0, lineno_setter);
     rb_define_virtual_variable("$_", rb_lastline_get, rb_lastline_set);
 
-    rb_define_method(rb_cIO, "become", rb_io_become, 1);
+    rb_define_method(rb_cIO, "copy_object", rb_io_copy_object, 1);
     rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);
 
     rb_define_method(rb_cIO, "print", rb_io_print, -1);

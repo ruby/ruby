@@ -527,7 +527,7 @@ match_alloc(klass)
 }
 
 static VALUE
-match_become(obj, orig)
+match_copy_object(obj, orig)
     VALUE obj, orig;
 {
     if (obj == orig) return obj;
@@ -1309,7 +1309,7 @@ rb_reg_options(re)
 }
 
 static VALUE
-rb_reg_become(copy, re)
+rb_reg_copy_object(copy, re)
     VALUE copy, re;
 {
     if (copy == re) return copy;
@@ -1562,7 +1562,7 @@ Init_Regexp()
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
-    rb_define_method(rb_cRegexp, "become", rb_reg_become, 1);
+    rb_define_method(rb_cRegexp, "copy_object", rb_reg_copy_object, 1);
     rb_define_method(rb_cRegexp, "==", rb_reg_equal, 1);
     rb_define_method(rb_cRegexp, "=~", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "===", rb_reg_match, 1);
@@ -1586,7 +1586,7 @@ Init_Regexp()
     rb_define_singleton_method(rb_cMatch, "allocate", match_alloc, 0);
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
 
-    rb_define_method(rb_cMatch, "become", match_become, 1);
+    rb_define_method(rb_cMatch, "copy_object", match_copy_object, 1);
     rb_define_method(rb_cMatch, "size", match_size, 0);
     rb_define_method(rb_cMatch, "length", match_size, 0);
     rb_define_method(rb_cMatch, "offset", match_offset, 1);

@@ -3154,7 +3154,7 @@ Init_String()
     rb_include_module(rb_cString, rb_mEnumerable);
     rb_define_singleton_method(rb_cString, "allocate", rb_str_s_alloc, 0);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
-    rb_define_method(rb_cString, "become", rb_str_replace, 1); 
+    rb_define_method(rb_cString, "copy_object", rb_str_replace, 1); 
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
     rb_define_method(rb_cString, "===", rb_str_equal, 1);

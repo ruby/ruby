@@ -3,6 +3,34 @@ Tue Dec 10 12:01:15 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* eval.c (mnew): original class of method defined in module should
 	  be the module not intermediate class.  [ruby-dev:19040]
 
+Tue Dec 10 01:16:52 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): preceding ".." for negative numbers
+	  still left;  removed.
+
+	* sprintf.c (rb_f_sprintf): should not prepend '0' if width > prec
+	  for example "%5.3d".
+
+Sat Dec  7 18:14:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (Init_process): add Process.exit and Process.abort
+
+	* pack.c (utf8_to_uv): raise ArgumentError for malformed/redundant
+	  UTF-8 sequences.
+
+Fri Dec  6 03:46:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (last_status_set): add pid attribute to Process::Status.
+
+Wed Dec  4 17:31:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (uv_to_utf8): limit maximum length of the encoded string
+	  to 6 bytes, even when the platform supports 8 bytes long integers.
+
+	* pack.c (utf8_to_uv): do not decode sequences longer than 6 bytes.
+
+	* object.c (copy_object): use "copy_object" method, not "become".
+
 Wed Dec  4 16:37:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (copy_object): copy finalizers as well if any.

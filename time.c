@@ -781,7 +781,7 @@ time_modify(time)
 }
 
 static VALUE
-time_become(copy, time)
+time_copy_object(copy, time)
     VALUE copy, time;
 {
     struct time_object *tobj, *tcopy;
@@ -803,7 +803,7 @@ time_dup(time)
     VALUE time;
 {
     VALUE dup = time_s_alloc(rb_cTime);
-    time_become(dup, time);
+    time_copy_object(dup, time);
     return dup;
 }
 
@@ -1411,7 +1411,7 @@ Init_Time()
     rb_define_method(rb_cTime, "<=>", time_cmp, 1);
     rb_define_method(rb_cTime, "eql?", time_eql, 1);
     rb_define_method(rb_cTime, "hash", time_hash, 0);
-    rb_define_method(rb_cTime, "become", time_become, 1);
+    rb_define_method(rb_cTime, "copy_object", time_copy_object, 1);
 
     rb_define_method(rb_cTime, "localtime", time_localtime, 0);
     rb_define_method(rb_cTime, "gmtime", time_gmtime, 0);

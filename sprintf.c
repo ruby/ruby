@@ -436,16 +436,14 @@ rb_f_sprintf(argc, argv)
 		    if (s[0] == '-') {
 			s++;
 			sc = '-';
-			width--;
 		    }
 		    else if (flags & FPLUS) {
 			sc = '+';
-			width--;
 		    }
 		    else if (flags & FSPACE) {
 			sc = ' ';
-			width--;
 		    }
+		    width--;
 		    goto format_integer;
 		}
 		if (!RBIGNUM(val)->sign) {
@@ -492,11 +490,17 @@ rb_f_sprintf(argc, argv)
 			pp++;
 		    }
 		}
-		if (prec < len) prec = len;
-		width -= prec;
-		if (!(flags&(FZERO|FMINUS)) && v >= 0) {
+		if ((flags&(FZERO|FPREC)) == FZERO) {
+		    prec = width;
+		    width = 0;
+		}
+		else {
+		    if (prec < len) prec = len;
+		    width -= prec;
+		}
+		if (!(flags&FMINUS)) {
 		    CHECK(width);
-		    while (width-->0) {
+		    while (width-- > 0) {
 			buf[blen++] = ' ';
 		    }
 		}
@@ -504,36 +508,9 @@ rb_f_sprintf(argc, argv)
 		if (prefix) {
 		    int plen = strlen(prefix);
 		    PUSH(prefix, plen);
-		    if (pos) pos += plen;
-		}
-		if (!(flags & FMINUS)) {
-		    char c = ' ';
-
-		    if (v < 0) {
-			c = '.';
-			if ((flags & FPREC) && prec > len) {
-			    pos = blen;
-			}
-			else {
-			    pos = blen + 2;
-			}
-		    }
-		    else if (flags & FZERO) c = '0';
-		    CHECK(width);
-		    while (width-->0) {
-			buf[blen++] = c;
-		    }
 		}
 		CHECK(prec - len);
-		while (len < prec--) {
-		    buf[blen++] = v < 0 ? '.' : '0';
-		}
-		PUSH(s, len);
-		CHECK(width);
-		while (width-->0) {
-		    buf[blen++] = ' ';
-		}
-		if (pos >= 0 && buf[pos] == '.') {
+		if (v < 0) {
 		    char c = '.';
 
 		    switch (base) {
@@ -546,10 +523,19 @@ rb_f_sprintf(argc, argv)
 		      case 2:
 			c = '1'; break;
 		    }
-		    s = &buf[pos];
-		    while (*s && *s == '.') {
-			*s++ = c;
+		    while (len < prec--) {
+			buf[blen++] = c;
 		    }
+		}
+		else {
+		    while (len < prec--) {
+			buf[blen++] = '0';
+		    }
+		}
+		PUSH(s, len);
+		CHECK(width);
+		while (width-- > 0) {
+		    buf[blen++] = ' ';
 		}
 	    }
 	    break;

@@ -1833,21 +1833,7 @@ uv_to_utf8(buf, uv)
 	buf[5] = (uv&0x3f)|0x80;
 	return 6;
     }
-#if SIZEOF_LONG > 4
-    if (uv <= 0xfffffffff) {
-#endif
-	buf[0] = 0xfe;
-	buf[1] = ((uv>>30)&0x3f)|0x80;
-	buf[2] = ((uv>>24)&0x3f)|0x80;
-	buf[3] = ((uv>>18)&0x3f)|0x80;
-	buf[4] = ((uv>>12)&0x3f)|0x80;
-	buf[5] = ((uv>>6)&0x3f)|0x80;
-	buf[6] = (uv&0x3f)|0x80;
-	return 7;
-#if SIZEOF_LONG > 4
-    }
     rb_raise(rb_eArgError, "uv_to_utf8(); too big value");
-#endif
 }
 
 static const long utf8_limits[] = {
@@ -1866,7 +1852,7 @@ utf8_to_uv(p, lenp)
     long *lenp;
 {
     int c = *p++ & 0xff;
-    unsigned long uv = c;
+    unsigned LONG_LONG uv = c;
     long n;
 
     if (!(uv & 0x80)) {
@@ -1874,9 +1860,8 @@ utf8_to_uv(p, lenp)
         return uv;
     }
     if (!(uv & 0x40)) {
-	rb_warning("malformed UTF-8 character");
 	*lenp = 1;
-        return uv;
+	rb_raise(rb_eArgError, "malformed UTF-8 character");
     }
 
     if      (!(uv & 0x20)) { n = 2; uv &= 0x1f; }
@@ -1884,21 +1869,21 @@ utf8_to_uv(p, lenp)
     else if (!(uv & 0x08)) { n = 4; uv &= 0x07; }
     else if (!(uv & 0x04)) { n = 5; uv &= 0x03; }
     else if (!(uv & 0x02)) { n = 6; uv &= 0x01; }
-    else if (!(uv & 0x01)) { n = 7;  uv = 0; }
-    else                   { n = 13; uv = 0; }
+    else {
+	*lenp = 1;
+	rb_raise(rb_eArgError, "malformed UTF-8 character");
+    }
     if (n > *lenp) {
-	rb_warning("malformed UTF-8 character (expected %d bytes, given %d bytes)",
-		   n, *lenp);
-	return 0xfffd;
+	rb_raise(rb_eArgError, "malformed UTF-8 character (expected %d bytes, given %d bytes)",
+		 n, *lenp);
     }
     *lenp = n--;
     if (n != 0) {
 	while (n--) {
 	    c = *p++ & 0xff;
 	    if ((c & 0xc0) != 0x80) {
-		rb_warning("malformed UTF-8 character");
 		*lenp -= n + 1;
-		return 0xfffd;
+		rb_raise(rb_eArgError, "malformed UTF-8 character");
 	    }
 	    else {
 		c &= 0x3f;
@@ -1907,10 +1892,8 @@ utf8_to_uv(p, lenp)
 	}
     }
     n = *lenp - 1;
-    if (n < 6) {
-	if (uv < utf8_limits[n] || utf8_limits[n+1] <= uv) {
-	    rb_warning("redundant UTF-8 sequence");
-	}
+    if (uv < utf8_limits[n]) {
+	rb_raise(rb_eArgError, "redundant UTF-8 sequence");
     }
     return uv;
 }

@@ -790,7 +790,8 @@ class RubyLex
 		valid = false unless peek_match?(/^\s*(<<|\w)/)
 
 	      when "def"
-		valid = false if peek_match?(/^\s*(([+-\/*&\|^]|<<|>>|\|\||\&\&)?=|\&\&|\|\|)/)
+		valid = false if peek_match?(/^\s*(([+-\/*&\|^]|<<|>>|\|\||\&\&)=|\&\&|\|\|)/)
+#		valid = false if peek_match?(/^\s*(([+-\/*&\|^]|<<|>>|\|\||\&\&)?=|\&\&|\|\|)/)
 	      when "do"
 		valid = false if peek_match?(/^\s*([+-\/*]?=|\*|<|>|\&)/)
 	      when *ENINDENT_CLAUSE

@@ -138,6 +138,8 @@ EXTERN struct RNode *ruby_current_node;
 void ruby_set_current_source _((void));
 NORETURN(void rb_exc_raise _((VALUE)));
 NORETURN(void rb_exc_fatal _((VALUE)));
+VALUE rb_f_exit _((int,VALUE*));
+VALUE rb_f_abort _((int,VALUE*));
 void rb_remove_method _((VALUE, const char*));
 void rb_disable_super _((VALUE, const char*));
 void rb_enable_super _((VALUE, const char*));

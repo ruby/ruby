@@ -3588,11 +3588,10 @@ rb_exit(status)
     exit(status);
 }
 
-static VALUE
-rb_f_exit(argc, argv, obj)
+VALUE
+rb_f_exit(argc, argv)
     int argc;
     VALUE *argv;
-    VALUE obj;
 {
     VALUE status;
     int istatus;
@@ -3608,7 +3607,7 @@ rb_f_exit(argc, argv, obj)
     return Qnil;		/* not reached */
 }
 
-static VALUE
+VALUE
 rb_f_abort(argc, argv)
     int argc;
     VALUE *argv;
@@ -9458,6 +9457,7 @@ Init_Thread()
     rb_define_method(rb_cThread, "run", rb_thread_run, 0);
     rb_define_method(rb_cThread, "wakeup", rb_thread_wakeup, 0);
     rb_define_method(rb_cThread, "kill", rb_thread_kill, 0);
+    rb_define_method(rb_cThread, "terminate", rb_thread_kill, 0);
     rb_define_method(rb_cThread, "exit", rb_thread_kill, 0);
     rb_define_method(rb_cThread, "value", rb_thread_value, 0);
     rb_define_method(rb_cThread, "status", rb_thread_status, 0);

@@ -85,11 +85,12 @@ static VALUE rb_cProcStatus;
 VALUE rb_last_status = Qnil;
 
 static void
-last_status_set(status)
-    int status;
+last_status_set(status, pid)
+    int status, pid;
 {
     rb_last_status = rb_obj_alloc(rb_cProcStatus);
     rb_iv_set(rb_last_status, "status", INT2FIX(status));
+    rb_iv_set(rb_last_status, "pid", INT2FIX(pid));
 }
 
 static VALUE
@@ -104,6 +105,13 @@ pst_to_s(st)
     VALUE st;
 {
     return rb_fix2str(pst_to_i(st), 10);
+}
+
+static VALUE
+pst_pid(st)
+    VALUE st;
+{
+    return rb_iv_get(st, "pid");
 }
 
 static VALUE
@@ -258,7 +266,7 @@ rb_waitpid(pid, st, flags)
     }
 #else  /* NO_WAITPID */
     if (pid_tbl && st_lookup(pid_tbl, pid, st)) {
-	last_status_set(*st);
+	last_status_set(*st, pid);
 	st_delete(pid_tbl, &pid, NULL);
 	return pid;
     }
@@ -287,7 +295,9 @@ rb_waitpid(pid, st, flags)
 	if (!rb_thread_alone()) rb_thread_schedule();
     }
 #endif
-    last_status_set(*st);
+    if (result > 0) {
+	last_status_set(*st, result);
+    }
     return result;
 }
 
@@ -298,24 +308,24 @@ struct wait_data {
 };
 
 static int
-wait_each(key, value, data)
-    int key, value;
+wait_each(pid, status, data)
+    int pid, status;
     struct wait_data *data;
 {
     if (data->status != -1) return ST_STOP;
 
-    data->pid = key;
-    data->status = value;
+    data->pid = pid;
+    data->status = status;
     return ST_DELETE;
 }
 
 static int
-waitall_each(key, value, data)
-    int key, value;
-    VALUE data;
+waitall_each(pid, status, ary)
+    int pid, status;
+    VALUE ary;
 {
-    last_status_set(value);
-    rb_ary_push(data, rb_assoc_new(INT2NUM(key), rb_last_status));
+    last_status_set(status, pid);
+    rb_ary_push(ary, rb_assoc_new(INT2NUM(pid), rb_last_status));
     return ST_DELETE;
 }
 #endif
@@ -342,8 +352,7 @@ proc_wait(argc, argv)
     if ((pid = rb_waitpid(pid, &status, flags)) < 0)
 	rb_sys_fail(0);
     if (pid == 0) {
-	rb_last_status = Qnil;
-	return Qnil;
+	return rb_last_status = Qnil;
     }
     return INT2FIX(pid);
 }
@@ -381,7 +390,7 @@ proc_waitall()
 	    }
 	    rb_sys_fail(0);
 	}
-	last_status_set(status);
+	last_status_set(status, pid);
 	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), rb_last_status));
     }
 #else
@@ -817,7 +826,7 @@ rb_f_system(argc, argv)
 
     SafeStringValue(cmd);
     status = do_spawn(RSTRING(cmd)->ptr);
-    last_status_set(status);
+    last_status_set(status, 0);
 
     if (status == 0) return Qtrue;
     return Qfalse;
@@ -840,7 +849,7 @@ rb_f_system(argc, argv)
 
     SafeStringValue(cmd);
     status = system(RSTRING(cmd)->ptr);
-    last_status_set((status & 0xff) << 8);
+    last_status_set((status & 0xff) << 8, 0);
 
     if (status == 0) return Qtrue;
     return Qfalse;
@@ -870,7 +879,7 @@ rb_f_system(argc, argv)
     else {
 	status = proc_spawn_n(argc, argv, prog);
     }
-    last_status_set(status == -1 ? 127 : status);
+    last_status_set(status == -1 ? 127 : status, 0);
     return status == 0 ? Qtrue : Qfalse;
 #elif defined(__VMS)
     VALUE cmd;
@@ -891,7 +900,7 @@ rb_f_system(argc, argv)
 
     SafeStringValue(cmd);
     status = system(RSTRING(cmd)->ptr);
-    last_status_set((status & 0xff) << 8);
+    last_status_set((status & 0xff) << 8, 0);
 
     if (status == 0) return Qtrue;
     return Qfalse;
@@ -1301,6 +1310,8 @@ Init_process()
 
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
+    rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);
+    rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1);
 
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
     rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
@@ -1319,6 +1330,8 @@ Init_process()
     rb_define_method(rb_cProcStatus, "to_int", pst_to_i, 0);
     rb_define_method(rb_cProcStatus, "to_s", pst_to_s, 0);
     rb_define_method(rb_cProcStatus, "inspect", pst_to_s, 0);
+
+    rb_define_method(rb_cProcStatus, "pid", pst_pid, 0);
 
     rb_define_method(rb_cProcStatus, "stopped?", pst_wifstopped, 0);
     rb_define_method(rb_cProcStatus, "stopsig", pst_wstopsig, 0);
