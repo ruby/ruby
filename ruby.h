@@ -638,9 +638,7 @@ rb_class_of(obj)
 	if (obj == Qnil)   return rb_cNilClass;
 	if (obj == Qfalse) return rb_cFalseClass;
     }
-    else{
-	return RBASIC(obj)->klass;
-    }
+    return RBASIC(obj)->klass;
 }
 
 static inline int
@@ -661,9 +659,7 @@ rb_type(obj)
 	if (obj == Qnil) return T_NIL;
 	if (obj == Qfalse) return T_FALSE;
     }
-    else{
-	return BUILTIN_TYPE(obj);
-    }
+    return BUILTIN_TYPE(obj);
 }
 
 static inline int

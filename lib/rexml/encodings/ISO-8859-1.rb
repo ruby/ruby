@@ -1,6 +1,6 @@
 module REXML
   module Encoding
-    @@__REXML_encoding_methods =<<-EOL
+    @@__REXML_encoding_methods =<<-'EOL'
     # Convert from UTF-8
     def encode content
       array_utf8 = content.unpack('U*')

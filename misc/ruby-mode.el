@@ -1013,10 +1013,6 @@ balanced expression is found."
 	  ("\\(^\\|[=(,~?:;]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
 	   (4 (7 . ?/))
 	   (6 (7 . ?/)))
-	  ;; %Q!...!
-	  ("\\(^\\|[[ \t\n<+(,=]\\)%[xrqQwW]?\\([^<[{(a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\2\\)"
-	   (2 (7 . nil))
-	   (4 (7 . nil)))
 	  ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
 	  ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
 
@@ -1098,7 +1094,6 @@ balanced expression is found."
 	    t)
           nil)))
 
-
   (defvar ruby-font-lock-keywords
     (list
      ;; functions
@@ -1168,6 +1163,9 @@ balanced expression is found."
        0 font-lock-string-face t)
      `(,ruby-here-doc-beg-re
        0 font-lock-string-face t)
+     ;; general delimited string
+     '("\\(^\\|[[ \t\n<+(,=]\\)\\(%[xrqQwW]?\\([^<[{(a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\3\\)\\)"
+       (2 font-lock-string-face))
      ;; constants
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
        2 font-lock-type-face)

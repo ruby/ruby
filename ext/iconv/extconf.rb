@@ -20,7 +20,7 @@ test(iconv_t cd, char **inptr, size_t *inlen, char **outptr, size_t *outlen)
   else
     $defs.push('-DICONV_INPTR_CAST="(char **)"')
   end
-  have_library("iconv")
+  have_library("iconv", "iconv")
   if conf
     prefix = '$(srcdir)'
     prefix =  $nmake ? "{#{prefix}}" : "#{prefix}/"

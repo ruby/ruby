@@ -21,7 +21,11 @@
 #elif defined(HAVE_NCURSES_CURSES_H)
 # include <ncurses/curses.h>
 #elif defined(HAVE_CURSES_COLR_CURSES_H)
-# include <varargs.h>
+# ifdef HAVE_STDARG_PROTOTYPES
+#  include <stdarg.h>
+# else
+#  include <varargs.h>
+# endif
 # include <curses_colr/curses.h>
 #else
 # include <curses.h>

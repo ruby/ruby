@@ -27,6 +27,7 @@ class Delegator
       preserved |= t.protected_instance_methods(false)
       break if t == Delegator
     end
+    preserved << "singleton_method_added"
     for method in obj.methods
       next if preserved.include? method
       begin
@@ -37,7 +38,7 @@ class Delegator
 	    rescue Exception
 	      $@.delete_if{|s| /:in `__getobj__'$/ =~ s} #`
 	      $@.delete_if{|s| /^\\(eval\\):/ =~ s}
-	      raise
+	      ::Kernel::raise
 	    end
 	  end
 	EOS

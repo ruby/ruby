@@ -41,8 +41,7 @@ class WeakRef<Delegator
   }
 
   def initialize(orig)
-    super
-    @__id = orig.__id__
+    @__id = orig.object_id
     ObjectSpace.define_finalizer orig, @@final
     ObjectSpace.define_finalizer self, @@final
     __old_status = Thread.critical
@@ -52,23 +51,24 @@ class WeakRef<Delegator
     ensure
       Thread.critical = __old_status
     end
-    @@id_map[@__id].push self.__id__
-    @@id_rev_map[self.__id__] = @__id
+    @@id_map[@__id].push self.object_id
+    @@id_rev_map[self.object_id] = @__id
+    super 
   end
 
   def __getobj__
-    unless @@id_rev_map[self.__id__] == @__id
-      raise RefError, "Illegal Reference - probably recycled", caller(2)
+    unless @@id_rev_map[self.object_id] == @__id
+      Kernel::raise RefError, "Illegal Reference - probably recycled", Kernel::caller(2)
     end
     begin
       ObjectSpace._id2ref(@__id)
     rescue RangeError
-      raise RefError, "Illegal Reference - probably recycled", caller(2)
+      Kernel::raise RefError, "Illegal Reference - probably recycled", Kernel::caller(2)
     end
   end
 
   def weakref_alive?
-    @@id_rev_map[self.__id__] == @__id
+    @@id_rev_map[self.object_id] == @__id
   end
 end
 

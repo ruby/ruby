@@ -1,3 +1,8 @@
+Tue Jan 27 15:00:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el: better support for general delimited
+	  strings.  [ruby-dev:22695]
+
 Tue Jan 27 11:04:40 2004  FUKUMOTO Atsushi  <fukumoto@nospam.imasy.or.jp>
 
 	* ext/socket/socket.c (s_recvfrom): sending length should be an
@@ -15,6 +20,17 @@ Tue Jan 27 02:26:31 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Mon Jan 26 22:53:04 2004  Dave Thomas  <dave@pragprog.com>
 
 	* io.c: Remove documentation references to $defout.
+
+Mon Jan 26 14:41:46 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/weakref.rb (WeakRef::initialize): set up @__id before
+	  calling "super".
+
+	* lib/delegate.rb (Delegator::initialize): preserve
+	  singleton_method_added method [ruby-dev:22685]
+
+	* lib/delegate.rb (Delegator::initialize): use Kernel::raise
+	  instead of mere raise.  [ruby-dev:22681]
 
 Mon Jan 26 12:45:23 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
