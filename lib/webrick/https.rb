@@ -129,6 +129,7 @@ module WEBrick
     def run(sock)
       if @config[:SSLEnable] 
         ssl = OpenSSL::SSL::SSLSocket.new(sock, @ctx)
+        ssl.sync = true
         ssl.accept
         Thread.current[:WEBrickSocket] = ssl
         orig_run(ssl)
