@@ -1,3 +1,7 @@
+Fri Feb 27 18:16:26 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1b9 released.
+
 Fri Feb 27 09:36:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* hash.c (hash_delete_nil): needed to compare value to nil, since
