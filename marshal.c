@@ -14,7 +14,7 @@
 #include "rubyio.h"
 #include "st.h"
 
-#ifndef atof
+#if !defined(atof) && !defined(HAVE_STDLIB_H)
 double strtod();
 #endif
 

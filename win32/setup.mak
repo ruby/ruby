@@ -18,7 +18,7 @@ Makefile:
 	@echo ### makefile for ruby $(OS) ###> $@
 	@echo srcdir = $(srcdir:\=/)>> $@
 	@echo RUBY_INSTALL_NAME = ruby>> $@
-	@echo RUBY_SO_NAME = $(OS)-$$(RUBY_INSTALL_NAME)16>> $@
+	@echo RUBY_SO_NAME = $(OS)-$$(RUBY_INSTALL_NAME)17>> $@
 	@echo !INCLUDE $$(srcdir)/win32/Makefile.sub>> $@
 
 config.h config.status: $(srcdir)/win32/$$@.in

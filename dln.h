@@ -13,13 +13,11 @@
 #ifndef DLN_H
 #define DLN_H
 
-#ifndef _
-#ifndef __STDC__
-# define _(args) ()
-# define const
-#else
+#undef _
+#ifdef HAVE_PROTOTYPES
 # define _(args) args
-#endif
+#else
+# define _(args) ()
 #endif
 
 char *dln_find_exe _((const char*,const char*));

@@ -1316,15 +1316,19 @@ static VALUE
 rb_str_replace_m(str, str2)
     VALUE str, str2;
 {
+    if (str == str2) return str;
     if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
-    rb_str_modify(str);
 
-    if (RSTRING(str2)->orig && FL_TEST(str2, STR_NO_ORIG)) {
+    if (RSTRING(str2)->orig && !FL_TEST(str2, STR_NO_ORIG)) {
+	if (str_independent(str)) {
+	    free(RSTRING(str)->ptr);
+	}
 	RSTRING(str)->len = RSTRING(str2)->len;
 	RSTRING(str)->ptr = RSTRING(str2)->ptr;
 	RSTRING(str)->orig = RSTRING(str2)->orig;
     }
     else {
+	rb_str_modify(str);
 	rb_str_resize(str, RSTRING(str2)->len);
 	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
     }

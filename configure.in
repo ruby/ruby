@@ -163,6 +163,33 @@ if test "$rb_cv_have_attr_noreturn" = yes; then
   AC_DEFINE(HAVE_ATTR_NORETURN)
 fi
 
+AC_MSG_CHECKING(for inline)
+AC_CACHE_VAL(rb_cv_inline,
+[AC_TRY_COMPILE([
+extern __inline__ int foo() {return 0;}
+static __inline__ char* bar() {return "";}
+], [], rb_cv_inline="__inline__", )
+if test "$rb_cv_inline" = ""; then
+  AC_TRY_COMPILE([
+extern __inline int foo() {return 0;}
+static __inline char bar() {return "";}
+], [], rb_cv_inline="__inline", )
+fi
+if test "$rb_cv_inline" = ""; then
+  AC_TRY_COMPILE([
+extern inline int foo() {return 0;}
+static inline char bar() {return "";}
+], [], rb_cv_inline="inline", )
+fi])
+if test "$rb_cv_inline" = ""; then
+  AC_MSG_RESULT([not work])
+  AC_DEFINE(INLINE, /*inline*/)
+else
+  AC_MSG_RESULT($rb_cv_inline)
+  AC_DEFINE(HAVE_INLINE)
+  AC_DEFINE_UNQUOTED(INLINE, $rb_cv_inline)
+fi
+
 dnl Checks for libraries.
 case "$target_os" in
 nextstep*)	;;

@@ -5980,7 +5980,7 @@ static VALUE
 rb_f_binding(self)
     VALUE self;
 {
-    struct BLOCK *data;
+    struct BLOCK *data, *p;
     struct RVarmap *vars;
     VALUE bind;
 
@@ -6003,9 +6003,11 @@ rb_f_binding(self)
 	data->prev = 0;
     }
 
-    for (vars = data->dyna_vars; vars; vars = vars->next) {
-	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
-	FL_SET(vars, DVAR_DONT_RECYCLE);
+    for (p = data; p; p = p->prev) {
+	for (vars = p->dyna_vars; vars; vars = vars->next) {
+	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
+	    FL_SET(vars, DVAR_DONT_RECYCLE);
+	}
     }
     scope_dup(data->scope);
     POP_BLOCK();
@@ -6063,7 +6065,7 @@ proc_new(klass)
     VALUE klass;
 {
     volatile VALUE proc;
-    struct BLOCK *data;
+    struct BLOCK *data, *p;
     struct RVarmap *vars;
 
     if (!rb_block_given_p() && !rb_f_block_given_p()) {
@@ -6085,9 +6087,11 @@ proc_new(klass)
     }
     data->flags |= BLOCK_DYNAMIC;
 
-    for (vars = data->dyna_vars; vars; vars = vars->next) {
-	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
-	FL_SET(vars, DVAR_DONT_RECYCLE);
+    for (p = data; p; p = p->prev) {
+	for (vars = p->dyna_vars; vars; vars = vars->next) {
+	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
+	    FL_SET(vars, DVAR_DONT_RECYCLE);
+	}
     }
     scope_dup(data->scope);
     proc_save_safe_level(proc);

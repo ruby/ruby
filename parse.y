@@ -2043,10 +2043,7 @@ rb_compile_file(f, file, start)
     return yycompile(strdup(f), start);
 }
 
-#if defined(__GNUC__) && __GNUC__ >= 2
-__inline__
-#endif
-static int
+static INLINE int
 nextc()
 {
     int c;
@@ -2794,7 +2791,7 @@ arg_ambiguous()
     rb_warning("ambiguous first argument; make sure");
 }
 
-#ifndef strtod
+#if !defined(strtod) && !defined(HAVE_STDLIB_H)
 double strtod ();
 #endif
 

@@ -1,3 +1,20 @@
+Tue Dec 26 16:53:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_binding): recycling should be stopped for outer
+	  scope too.
+
+	* eval.c (proc_new): ditto.
+
+Mon Dec 25 17:49:08 2000  K.Kosako  <kosako@sofnec.co.jp>
+
+	* string.c (rb_str_replace_m): unexpected string share happens if
+	  replace is done for associated (STR_NO_ORIG) string.
+
+Tue Dec 26 15:01:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_p): should not call rb_io_flush() if rb_defout is not
+	  a IO (T_FILE).
+
 Mon Dec 25 15:52:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.2 released.
