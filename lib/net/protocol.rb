@@ -1,6 +1,6 @@
 =begin
 
-= net/protocol.rb version 1.1.36
+= net/protocol.rb version 1.1.37
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -31,7 +31,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.36'
+    Version = '1.1.37'
 
     class << self
 

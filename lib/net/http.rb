@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.1.36
+= net/http.rb version 1.1.37
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -591,11 +591,11 @@ module Net
     define_http_method_interface :Post, true,  true
     define_http_method_interface :Put,  false, true
 
-    def request( req, body = nil )
+    def request( req, body = nil, &block )
       unless active? then
         start {
           req['connection'] = 'close'
-          return request(req, body)
+          return request(req, body, &block)
         }
       end
         

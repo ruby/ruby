@@ -1,3 +1,11 @@
+Fri Dec  7 19:20:44 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: uses Digest::MD5 instead of MD5 (again).
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/http.rb (HTTP#request): must pass block.
+
 Fri Dec  7 18:47:54 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: SMTP.new requires at least one arg.

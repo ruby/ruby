@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb version 1.1.36
+= net/smtp.rb version 1.1.37
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -191,7 +191,7 @@ SMTP objects raise these exceptions:
 =end
 
 require 'net/protocol'
-require 'md5'
+require 'digest/md5'
 
 
 module Net
@@ -317,7 +317,7 @@ module Net
       critical {
         rep = getok( 'AUTH CRAM-MD5', ContinueCode )
         challenge = rep.msg.split(' ')[1].unpack('m')[0]
-        secret = MD5.new( secret ).digest if secret.size > 64
+        secret = Digest::MD5.digest( secret ) if secret.size > 64
 
         isecret = secret + "\0" * (64 - secret.size)
         osecret = isecret.dup
@@ -325,8 +325,8 @@ module Net
           isecret[i] ^= 0x36
           osecret[i] ^= 0x5c
         end
-        tmp = MD5.new( isecret + challenge ).digest
-        tmp = MD5.new( osecret + tmp ).hexdigest
+        tmp = Digest::MD5.digest( isecret + challenge )
+        tmp = Digest::MD5.hexdigest( osecret + tmp )
 
         getok [user + ' ' + tmp].pack('m').chomp
       }
