@@ -1,3 +1,8 @@
+Sun Jan 18 00:23:55 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (class2path): check anonymous class/module before
+	  checking referable, and allow singleton classes.
+
 Sat Jan 17 23:58:51 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (NameError::Message): new class for lazy evaluation of
