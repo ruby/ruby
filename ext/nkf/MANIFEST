@@ -1,7 +1,0 @@
-MANIFEST
-depend
-extconf.rb
-lib/kconv.rb
-nkf.c
-nkf1.7/nkf.c
-test.rb

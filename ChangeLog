@@ -5,6 +5,8 @@ Mon Nov  1 13:59:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* ext/enumerator/extconf.rb, ext/fcntl/extconf.rb,
 	  ext/stringio/extconf.rb: added.
 
+	* MANIFEST, ext/**/MANIFEST: removed.
+
 Mon Nov  1 00:36:48 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* main.c (_stklen): move to gc.c.

@@ -1,6 +1,0 @@
-MANIFEST
-README
-depend
-extconf.rb
-gdbm.c
-testgdbm.rb
