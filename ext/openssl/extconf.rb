@@ -112,9 +112,13 @@ test-link: $(OBJS)
 
 dep: $(SRCS)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $^ -MM | \\
-	sed -e 's|$(topdir)/|$$(topdir)/|g' \\
-	    -e 's|$(srcdir)/|$$(srcdir)/|g' \\
-	    -e 's|$(hdrdir)/|$$(hdrdir)/|g' \\
+	$(RUBY) -p -e 'BEGIN{S = []' \\
+		-e 'while !ARGV.empty? and /^(\\w+)=(.*)/ =~ ARGV[0]' \\
+		  -e 'S << [/\#{Regexp.quote($$2)}/, "$$(\#{$$1})"]' \\
+		  -e 'ARGV.shift' \\
+		-e 'end' \\
+		-e '}' -e 'S.each(&method(:gsub!))' -- \\
+            'topdir=$(topdir)' 'srcdir=$(srcdir)' 'hdrdir=$(hdrdir)' \\
 	> dep
 
 include dep

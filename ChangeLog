@@ -1,3 +1,7 @@
+Fri Aug  1 17:13:23 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/extconf.rb: should replace literally.
+
 Fri Aug  1 16:22:57 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_check_readable, rb_io_check_writable): ensure not
