@@ -155,6 +155,9 @@ class CGI
   #
   class Session
 
+    #:nodoc:
+    class NoSession < RuntimeError; end
+
     # The id of this session.
     attr_reader :session_id, :new_session
 
@@ -243,35 +246,43 @@ class CGI
     def initialize(request, option={})
       @new_session = false
       session_key = option['session_key'] || '_session_id'
-      id = option['session_id']
-      unless id
+      session_id = option['session_id']
+      unless session_id
 	if option['new_session']
-	  id = create_new_id
+	  session_id = create_new_id
 	end
       end
-      unless id
+      unless session_id
 	if request.key?(session_key)
-	  id = request[session_key] 
-	  id = id.read if id.respond_to?(:read)
+	  session_id = request[session_key] 
+	  session_id = session_id.read if session_id.respond_to?(:read)
 	end
-	unless id
-	  id, = request.cookies[session_key]
+	unless session_id
+	  session_id, = request.cookies[session_key]
 	end
-	unless id
+	unless session_id
 	  if option.key?('new_session') and not option['new_session']
 	    raise ArgumentError, "session_key `%s' should be supplied"%session_key
 	  end
-	  id = create_new_id
+	  session_id = create_new_id
 	end
       end
-      @session_id = id
+      @session_id = session_id
       dbman = option['database_manager'] || FileStore
-      @dbman = dbman::new(self, option)
+      begin
+        @dbman = dbman::new(self, option)
+      rescue NoSession
+        if option.key?('new_session') and not option['new_session']
+          raise ArgumentError, "invalid session_id `%s'"%session_id
+        end
+        session_id = @session_id = create_new_id
+        retry
+      end
       request.instance_eval do
-	@output_hidden = {session_key => id}
+	@output_hidden = {session_key => session_id}
 	@output_cookies =  [
           Cookie::new("name" => session_key,
-		      "value" => id,
+		      "value" => session_id,
 		      "expires" => option['session_expires'],
 		      "domain" => option['session_domain'],
 		      "secure" => option['session_secure'],
@@ -371,7 +382,7 @@ class CGI
 	@path = dir+"/"+prefix+md5+suffix
 	unless File::exist? @path
           unless session.new_session
-            raise RuntimeError, "uninitialized session"
+            raise CGI::Session::NoSession, "uninitialized session"
           end
 	  @hash = {}
 	end
@@ -441,7 +452,7 @@ class CGI
 	@session_id = session.session_id
         unless GLOBAL_HASH_TABLE.key?(@session_id)
           unless session.new_session
-            raise RuntimeError, "uninitialized session"
+            raise CGI::Session::NoSession, "uninitialized session"
           end
           GLOBAL_HASH_TABLE[@session_id] = {}
         end

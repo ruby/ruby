@@ -119,8 +119,8 @@ ossl_config_copy(VALUE self, VALUE other)
     VALUE str;
     CONF *conf;
 
-    GetConfig(other, conf);
     str = rb_funcall(self, rb_intern("to_s"), 0);
+    GetConfig(other, conf);
     parse_config(str, conf);
 
     return self;
@@ -134,11 +134,11 @@ ossl_config_initialize(int argc, VALUE *argv, VALUE self)
     char *filename;
     VALUE path;
 
-    GetConfig(self, conf);
     rb_scan_args(argc, argv, "01", &path);
     if(!NIL_P(path)){
 	SafeStringValue(path);
         filename = StringValuePtr(path);
+	GetConfig(self, conf);
 	if (!NCONF_load(conf, filename, &eline)){
 	    if (eline <= 0)
 		ossl_raise(eConfigError, "wrong config file %s", filename);
@@ -149,7 +149,10 @@ ossl_config_initialize(int argc, VALUE *argv, VALUE self)
 #ifdef OSSL_NO_CONF_API
     else rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
 #else
-    else _CONF_new_data(conf);
+    else {
+	GetConfig(self, conf);
+	_CONF_new_data(conf);
+    }
 #endif
     
     return self;
@@ -164,10 +167,10 @@ ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
     CONF *conf;
     CONF_VALUE *sv, *cv;
 
-    GetConfig(self, conf);
     StringValue(section);
     StringValue(name);
     StringValue(value);
+    GetConfig(self, conf);
     if(!(sv = _CONF_get_section(conf, RSTRING(section)->ptr))){
 	if(!(sv = _CONF_new_section(conf, RSTRING(section)->ptr))){
 	    ossl_raise(eConfigError, NULL);
@@ -195,9 +198,9 @@ ossl_config_get_value(VALUE self, VALUE section, VALUE name)
     CONF *conf;
     char *str;
 
-    GetConfig(self, conf);
     StringValue(section);
     StringValue(name);
+    GetConfig(self, conf);
     str = NCONF_get_string(conf, RSTRING(section)->ptr, RSTRING(name)->ptr);
     if(!str){
 	ERR_clear_error();
@@ -261,6 +264,7 @@ ossl_config_get_section(VALUE self, VALUE section)
     VALUE hash;
 
     hash = rb_hash_new();
+    StringValue(section);
     GetConfig(self, conf);
     if (!(sk = NCONF_get_section(conf, StringValuePtr(section)))) {
 	ERR_clear_error();

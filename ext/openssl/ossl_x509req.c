@@ -240,10 +240,10 @@ ossl_x509req_set_version(VALUE self, VALUE version)
     X509_REQ *req;
     long ver;
 
-    GetX509Req(self, req);
     if ((ver = FIX2LONG(version)) < 0) {
 	ossl_raise(eX509ReqError, "version must be >= 0!");
     }
+    GetX509Req(self, req);
     if (!X509_REQ_set_version(req, ver)) {
 	ossl_raise(eX509ReqError, NULL);
     }
@@ -400,13 +400,13 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
     X509_REQ *req;
     X509_ATTRIBUTE *attr;
     int i;
-    VALUE item;
+    VALUE tmp, item;
 
-    GetX509Req(self, req);
     Check_Type(ary, T_ARRAY);
     for (i=0;i<RARRAY(ary)->len; i++) {
 	OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Attr);
     }
+    GetX509Req(self, req);
     sk_X509_ATTRIBUTE_pop_free(req->req_info->attributes, X509_ATTRIBUTE_free);
     req->req_info->attributes = NULL;
     for (i=0;i<RARRAY(ary)->len; i++) {

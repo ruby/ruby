@@ -85,16 +85,16 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
     char *name;
     VALUE type, data;
 
-    GetDigest(self, ctx);
-
     rb_scan_args(argc, argv, "11", &type, &data);
-    name = StringValuePtr(type);
+    StringValue(type);
     if (!NIL_P(data)) StringValue(data);
+    name = StringValuePtr(type);
     
     md = EVP_get_digestbyname(name);
     if (!md) {
 	ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
     }
+    GetDigest(self, ctx);
     EVP_DigestInit_ex(ctx, md, NULL);
     
     if (!NIL_P(data)) return ossl_digest_update(self, data);
@@ -134,8 +134,8 @@ ossl_digest_update(VALUE self, VALUE data)
 {
     EVP_MD_CTX *ctx;
 
-    GetDigest(self, ctx);
     StringValue(data);
+    GetDigest(self, ctx);
     EVP_DigestUpdate(ctx, RSTRING(data)->ptr, RSTRING(data)->len);
 
     return self;
@@ -218,13 +218,13 @@ ossl_digest_equal(VALUE self, VALUE other)
     EVP_MD_CTX *ctx;
     VALUE str1, str2;
 
-    GetDigest(self, ctx);
     if (rb_obj_is_kind_of(other, cDigest) == Qtrue) {
 	str2 = ossl_digest_digest(other);
     } else {
 	StringValue(other);
 	str2 = other;
     }
+    GetDigest(self, ctx);
     if (RSTRING(str2)->len == EVP_MD_CTX_size(ctx)) {
 	str1 = ossl_digest_digest(self);
     } else {

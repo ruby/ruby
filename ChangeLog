@@ -1,3 +1,7 @@
+Wed Dec 15 10:30:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/openssl/ossl_digest.c (ossl_digest_initialize): [ruby-dev:25198]
+
 Tue Dec 14 17:10:09 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_close): need to reset osfhnd().
@@ -6,6 +10,11 @@ Tue Dec 14 14:03:57 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.c (ossl_raise): avoid buffer overrun.
 	  [ruby-dev:25187]
+
+Tue Dec 14 12:36:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session::initialize): generate new
+	  session if given session_id does not exist.  [ruby-list:40368]
 
 Mon Dec 13 18:13:52 2004  Tanaka Akira  <akr@m17n.org>
 
@@ -47,6 +56,10 @@ Sat Dec 11 20:12:21 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	* test/drb/drbtest.rb: ditto.
 
 	* test/drb/ut_drb.rb: ditto.
+
+Sat Dec 11 15:38:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/jcode.rb (String::succ): [ruby-dev:25156]
 
 Sat Dec 11 12:41:55 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 

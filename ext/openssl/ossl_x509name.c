@@ -119,19 +119,22 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
     if (rb_scan_args(argc, argv, "02", &arg, &template) == 0) {
 	return self;
     }
-    else if (rb_obj_is_kind_of(arg, rb_cArray) == Qtrue){
-	VALUE args;
-        if(NIL_P(template)) template = OBJECT_TYPE_TEMPLATE;
-        args = rb_ary_new3(2, self, template);
-	rb_iterate(rb_each, arg, ossl_x509name_init_i, args);
-    }
-    else{
-	unsigned char *p;
-	VALUE str = ossl_to_der_if_possible(arg);
-	StringValue(str);
-	p = RSTRING(str)->ptr;
-	if(!d2i_X509_NAME((X509_NAME**)&DATA_PTR(self), &p, RSTRING(str)->len)){
-	    ossl_raise(eX509NameError, NULL);
+    else {
+	VALUE tmp = rb_check_array_type(arg);
+	if (!NIL_P(tmp)) {
+	    VALUE args;
+	    if(NIL_P(template)) template = OBJECT_TYPE_TEMPLATE;
+	    args = rb_ary_new3(2, self, template);
+	    rb_iterate(rb_each, tmp, ossl_x509name_init_i, args);
+	}
+	else{
+	    unsigned char *p;
+	    VALUE str = ossl_to_der_if_possible(arg);
+	    StringValue(str);
+	    p = RSTRING(str)->ptr;
+	    if(!d2i_X509_NAME((X509_NAME**)&DATA_PTR(self), &p, RSTRING(str)->len)){
+		ossl_raise(eX509NameError, NULL);
+	    }
 	}
     }
 
@@ -182,13 +185,13 @@ ossl_x509name_to_a(VALUE self)
     const char *short_name;
     VALUE ary, ret;
 	
-    GetX509Name(self, name);
     entries = X509_NAME_entry_count(name);
     if (entries < 0) {
 	OSSL_Debug("name entries < 0!");
 	return rb_ary_new();
     }
     ret = rb_ary_new2(entries);
+    GetX509Name(self, name);
     for (i=0; i<entries; i++) {
 	if (!(entry = X509_NAME_get_entry(name, i))) {
 	    ossl_raise(eX509NameError, NULL);

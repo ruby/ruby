@@ -129,8 +129,8 @@ ossl_x509revoked_set_time(VALUE self, VALUE time)
     X509_REVOKED *rev;
     time_t sec;
 
-    GetX509Rev(self, rev);
     sec = time_to_time_t(time);
+    GetX509Rev(self, rev);
     if (!X509_time_adj(rev->revocationDate, 0, &sec)) {
 	ossl_raise(eX509RevError, NULL);
     }
@@ -174,11 +174,11 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
     int i;
     VALUE item;
 
-    GetX509Rev(self, rev);
     Check_Type(ary, T_ARRAY);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Ext);
     }
+    GetX509Rev(self, rev);
     sk_X509_EXTENSION_pop_free(rev->extensions, X509_EXTENSION_free);
     rev->extensions = NULL;
     for (i=0; i<RARRAY(ary)->len; i++) {

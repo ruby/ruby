@@ -215,7 +215,6 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     VALUE oid, value, critical, valstr, obj;
     int nid;
 
-    GetX509ExtFactory(self, ctx);
     rb_scan_args(argc, argv, "21", &oid, &value, &critical);
     StringValue(oid);
     StringValue(value);
@@ -226,6 +225,7 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     if(!nid) ossl_raise(eX509ExtError, "unknown OID `%s'", RSTRING(oid)->ptr);
     valstr = rb_str_new2(RTEST(critical) ? "critical," : "");
     rb_str_append(valstr, value);
+    GetX509ExtFactory(self, ctx);
     ext = X509V3_EXT_conf_nid(NULL, ctx, nid, RSTRING(valstr)->ptr);
     if (!ext){
 	ossl_raise(eX509ExtError, "%s = %s",
@@ -284,11 +284,11 @@ ossl_x509ext_set_oid(VALUE self, VALUE oid)
     ASN1_OBJECT *obj;
     char *s;
 
-    GetX509Ext(self, ext);
     s = StringValuePtr(oid);
     obj = OBJ_txt2obj(s, 0);
     if(!obj) obj = OBJ_txt2obj(s, 1);
     if(!obj) ossl_raise(eX509ExtError, NULL);
+    GetX509Ext(self, ext);
     X509_EXTENSION_set_object(ext, obj);
 
     return oid;
@@ -301,7 +301,6 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
     ASN1_OCTET_STRING *asn1s;
     char *s;
 
-    GetX509Ext(self, ext);
     data = ossl_to_der_if_possible(data);
     StringValue(data);
     if(!(s = OPENSSL_malloc(RSTRING(data)->len)))
@@ -316,6 +315,7 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
 	ASN1_OCTET_STRING_free(asn1s);
 	ossl_raise(eX509ExtError, NULL);
     }
+    GetX509Ext(self, ext);
     X509_EXTENSION_set_data(ext, asn1s);
 
     return data;
@@ -376,6 +376,7 @@ static VALUE
 ossl_x509ext_get_critical(VALUE obj)
 {
     X509_EXTENSION *ext;
+
     GetX509Ext(obj, ext);
     return X509_EXTENSION_get_critical(ext) ? Qtrue : Qfalse;
 }

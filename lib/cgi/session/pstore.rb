@@ -63,7 +63,7 @@ class CGI
 	path.untaint
 	unless File::exist?(path)
           unless session.new_session
-            raise RuntimeError, "uninitialized session"
+            raise CGI::Session::NoSession, "uninitialized session"
           end
 	  @hash = {}
 	end

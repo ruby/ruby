@@ -146,9 +146,10 @@ ossl_x509store_set_flags(VALUE self, VALUE flags)
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
+    long f = NUM2LONG(flags);
 
     GetX509Store(self, store);
-    X509_STORE_set_flags(store, NUM2LONG(flags));
+    X509_STORE_set_flags(store, f);
 #else
     rb_iv_set(self, "@flags", flags);
 #endif
@@ -161,9 +162,10 @@ ossl_x509store_set_purpose(VALUE self, VALUE purpose)
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
+    long p = NUM2LONG(purpose);
     
     GetX509Store(self, store);
-    X509_STORE_set_purpose(store, NUM2LONG(purpose));
+    X509_STORE_set_purpose(store, p);
 #else
     rb_iv_set(self, "@purpose", purpose);
 #endif
@@ -176,9 +178,10 @@ ossl_x509store_set_trust(VALUE self, VALUE trust)
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
+    long t = NUM2LONG(trust);
 
     GetX509Store(self, store);
-    X509_STORE_set_trust(store, NUM2LONG(trust));
+    X509_STORE_set_trust(store, t);
 #else
     rb_iv_set(self, "@trust", trust);
 #endif
@@ -338,8 +341,8 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     X509 *x509 = NULL;
     STACK_OF(X509) *x509s = NULL;
 
-    GetX509StCtx(self, ctx);
     rb_scan_args(argc, argv, "12", &store, &cert, &chain);
+    GetX509StCtx(self, ctx);
     SafeGetX509Store(store, x509st);
     if(!NIL_P(cert)) x509 = DupX509CertPtr(cert); /* NEED TO DUP */
     if(!NIL_P(chain)) x509s = ossl_x509_ary2sk(chain);
@@ -483,9 +486,10 @@ static VALUE
 ossl_x509stctx_set_flags(VALUE self, VALUE flags)
 {
     X509_STORE_CTX *store;
+    long f = NUM2LONG(flags);
 
     GetX509StCtx(self, store);
-    X509_STORE_CTX_set_flags(store, NUM2LONG(flags));
+    X509_STORE_CTX_set_flags(store, f);
 
     return flags;
 }
@@ -494,9 +498,10 @@ static VALUE
 ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
 {
     X509_STORE_CTX *store;
+    long p = NUM2LONG(purpose);
 
     GetX509StCtx(self, store);
-    X509_STORE_CTX_set_purpose(store, NUM2LONG(purpose));
+    X509_STORE_CTX_set_purpose(store, p);
 
     return purpose;
 }
@@ -505,9 +510,10 @@ static VALUE
 ossl_x509stctx_set_trust(VALUE self, VALUE trust)
 {
     X509_STORE_CTX *store;
+    long t = NUM2LONG(trust);
 
     GetX509StCtx(self, store);
-    X509_STORE_CTX_set_trust(store, NUM2LONG(trust));
+    X509_STORE_CTX_set_trust(store, t);
 
     return trust;
 }

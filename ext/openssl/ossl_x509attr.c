@@ -115,11 +115,11 @@ ossl_x509attr_set_oid(VALUE self, VALUE oid)
     ASN1_OBJECT *obj;
     char *s;
  
-    GetX509Attr(self, attr);
     s = StringValuePtr(oid);
     obj = OBJ_txt2obj(s, 0);
     if(!obj) obj = OBJ_txt2obj(s, 1);
     if(!obj) ossl_raise(eX509AttrError, NULL);
+    GetX509Attr(self, attr);
     X509_ATTRIBUTE_set1_object(attr, obj);
  
     return oid;
@@ -162,13 +162,13 @@ ossl_x509attr_set_value(VALUE self, VALUE value)
     X509_ATTRIBUTE *attr;
     ASN1_TYPE *a1type;
 
-    GetX509Attr(self, attr);
     if(!(a1type = ossl_asn1_get_asn1type(value)))
 	ossl_raise(eASN1Error, "could not get ASN1_TYPE");
     if(ASN1_TYPE_get(a1type) == V_ASN1_SEQUENCE){
 	ASN1_TYPE_free(a1type);
 	ossl_raise(eASN1Error, "couldn't set SEQUENCE for attribute value.");
     }
+    GetX509Attr(self, attr);
     if(attr->value.set){
 	if(OSSL_X509ATTR_IS_SINGLE(attr)) ASN1_TYPE_free(attr->value.single);
 	else sk_ASN1_TYPE_free(attr->value.set);
