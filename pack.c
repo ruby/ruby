@@ -1491,8 +1491,8 @@ pack_unpack(str, fmt)
 
 	  case 'u':
 	    {
-		VALUE str = infected_str_new(0, (send - s)*3/4, str);
-		char *ptr = RSTRING(str)->ptr;
+		VALUE buf = infected_str_new(0, (send - s)*3/4, str);
+		char *ptr = RSTRING(buf)->ptr;
 		int total = 0;
 
 		while (s < send && *s > ' ' && *s < 'a') {
@@ -1502,9 +1502,9 @@ pack_unpack(str, fmt)
 		    hunk[3] = '\0';
 		    len = (*s++ - ' ') & 077;
 		    total += len;
-		    if (total > RSTRING(str)->len) {
-			len -= total - RSTRING(str)->len;
-			total = RSTRING(str)->len;
+		    if (total > RSTRING(buf)->len) {
+			len -= total - RSTRING(buf)->len;
+			total = RSTRING(buf)->len;
 		    }
 
 		    while (len > 0) {
@@ -1539,16 +1539,16 @@ pack_unpack(str, fmt)
 			s += 2;	/* possible checksum byte */
 		}
 		
-		RSTRING(str)->ptr[total] = '\0';
-		RSTRING(str)->len = total;
-		rb_ary_push(ary, str);
+		RSTRING(buf)->ptr[total] = '\0';
+		RSTRING(buf)->len = total;
+		rb_ary_push(ary, buf);
 	    }
 	    break;
 
 	  case 'm':
 	    {
-		VALUE str = infected_str_new(0, (send - s)*3/4, str);
-		char *ptr = RSTRING(str)->ptr;
+		VALUE buf = infected_str_new(0, (send - s)*3/4, str);
+		char *ptr = RSTRING(buf)->ptr;
 		int a,b,c = 0,d;
 		static int first = 1;
 		static int b64_xtable[256];
@@ -1583,15 +1583,15 @@ pack_unpack(str, fmt)
 		    *ptr++ = b << 4 | c >> 2;
 		}
 		*ptr = '\0';
-		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
-		rb_ary_push(ary, str);
+		RSTRING(buf)->len = ptr - RSTRING(buf)->ptr;
+		rb_ary_push(ary, buf);
 	    }
 	    break;
 
 	  case 'M':
 	    {
-		VALUE str = infected_str_new(0, send - s, str);
-		char *ptr = RSTRING(str)->ptr;
+		VALUE buf = infected_str_new(0, send - s, str);
+		char *ptr = RSTRING(buf)->ptr;
 		int c1, c2;
 
 		while (s < send) {
@@ -1610,8 +1610,8 @@ pack_unpack(str, fmt)
 		    s++;
 		}
 		*ptr = '\0';
-		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
-		rb_ary_push(ary, str);
+		RSTRING(buf)->len = ptr - RSTRING(buf)->ptr;
+		rb_ary_push(ary, buf);
 	    }
 	    break;
 
