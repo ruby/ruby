@@ -1,3 +1,13 @@
+Wed Feb  4 02:12:06 2004  Tanaka Akira  <akr@m17n.org>
+
+	* file.c (test_l): fix wrong method name in document.
+	  (test_S): ditto.
+	  (test_b): ditto.
+	  (test_c): ditto.
+	  (test_suid): ditto.
+	  (test_sgid): ditto.
+	  (test_sticky): ditto.
+
 Tue Feb  3 22:36:25 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/2.0.rb, lib/rss/content.rb, lib/rss/dublincore.rb,

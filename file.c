@@ -822,7 +822,7 @@ test_p(obj, fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   =>  true or false
+ *   File.symlink?(file_name)   =>  true or false
  *
  * Returns <code>true</code> if the named file is a symbolic link.
  */
@@ -858,7 +858,7 @@ test_l(obj, fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   =>  true or false
+ *   File.socket?(file_name)   =>  true or false
  *
  * Returns <code>true</code> if the named file is a socket.
  */
@@ -893,7 +893,7 @@ test_S(obj, fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   =>  true or false
+ *   File.blockdev?(file_name)   =>  true or false
  *
  * Returns <code>true</code> if the named file is a block device.
  */
@@ -922,7 +922,7 @@ test_b(obj, fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   =>  true or false
+ *   File.chardev?(file_name)   =>  true or false
  *
  * Returns <code>true</code> if the named file is a character device.
  */
@@ -1260,7 +1260,7 @@ check3rdbyte(fname, mode)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   =>  true or false
+ *   File.setuid?(file_name)   =>  true or false
  *
  * Returns <code>true</code> if the named file is a has the setuid bit set.
  */
@@ -1278,7 +1278,7 @@ test_suid(obj, fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   =>  true or false
+ *   File.setgid?(file_name)   =>  true or false
  *
  * Returns <code>true</code> if the named file is a has the setgid bit set.
  */
@@ -1296,7 +1296,7 @@ test_sgid(obj, fname)
 
 /*
  * call-seq:
- *   File.pipe?(file_name)   =>  true or false
+ *   File.sticky?(file_name)   =>  true or false
  *
  * Returns <code>true</code> if the named file is a has the sticky bit set.
  */
