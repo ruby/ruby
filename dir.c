@@ -939,18 +939,18 @@ glob_helper(pv, sub, flags, func, arg)
     p = sub ? sub : path;
     if (!has_magic(p, 0, flags)) {
 #if defined DOSISH
-	remove_backslashes(RSTRING(path)->ptr);
+	remove_backslashes(path);
 #else
 	if (!(flags & FNM_NOESCAPE)) remove_backslashes(p);
 #endif
-	if (lstat(RSTRING(path)->ptr, &st) == 0) {
-	    status = glob_call_func(func, path, arg);
+	if (lstat(path, &st) == 0) {
+	    status = glob_call_func(func, pv, arg);
 	    if (status) return status;
 	}
 	else if (errno != ENOENT) {
 	    /* In case stat error is other than ENOENT and
 	       we may want to know what is wrong. */
-	    rb_sys_warning(RSTRING(path)->ptr);
+	    rb_sys_warning(path);
 	}
 	return 0;
     }
@@ -1119,7 +1119,7 @@ rb_glob(path, func, arg)
 
     args.func = func;
     args.arg = arg;
-    status = rb_glob2(rb_str_new2(path), 0, func, &args);
+    status = rb_glob2(rb_str_new2(path), 0, rb_glob_caller, &args);
 
     if (status) rb_jump_tag(status);
 }
@@ -1254,6 +1254,10 @@ rb_push_glob(str, flags)
 	/* else unmatched braces */
     }
     if (status) rb_jump_tag(status);
+    if (rb_block_given_p()) {
+	rb_ary_each(ary);
+	return Qnil;
+    }
     return ary;
 }
 
