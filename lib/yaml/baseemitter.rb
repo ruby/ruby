@@ -45,9 +45,13 @@ module YAML
                 else
                     '>'
                 end 
-                if valx =~ /\A[ \t#]/
-                    block += options(:Indent).to_s
+
+                indt = $&.to_i if block =~ /\d+/
+                if valx =~ /(\A[ \t#]|^---\s+)/
+                    indt = options(:Indent) unless indt.to_i > 0
+                    block += indt.to_s
                 end
+
             block +=
                 if valx =~ /\n\Z\n/
                     "+"
@@ -63,8 +67,6 @@ module YAML
 			if block[0] == ?> 
 				valx = fold( valx ) 
 			end
-            indt = nil
-            indt = $&.to_i if block =~ /\d+/
             #p [block, indt]
 			self << block + indent_text( valx, indt ) + "\n"
 		end
@@ -125,25 +127,9 @@ module YAML
 		# Folding paragraphs within a column
 		#
 		def fold( value )
-			value.gsub!( /\A\n+/, '' )
-			folded = $&.to_s
-			width = (0..options(:BestWidth))
-			while not value.empty?
-				last = value.index( /(\n+)/ )
-				chop_s = false
-				if width.include?( last )
-					last += $1.length - 1
-				elsif width.include?( value.length )
-					last = value.length
-				else
-					last = value.rindex( /[ \t]/, options(:BestWidth) )
-					chop_s = true
-				end
-				folded += value.slice!( 0, width.include?( last ) ? last + 1 : options(:BestWidth) )
-				folded.chop! if chop_s
-				folded += "\n" unless value.empty?
-			end
-			folded
+            value.gsub( /(^[ \t]+.*$)|(\S.{0,#{options(:BestWidth) - 1}})(?:[ \t]+|(\n+(?=[ \t]))|$)/ ) do |s| 
+                $1 || $2 + ( $3 || "\n" )
+            end
 		end
 
         #

@@ -1,3 +1,13 @@
+Wed May 26 00:00:00 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/syck.c (syck_new_parser): clear parser on init.
+	  thanks, ts. [ruby-core:02931]
+
+	* ext/syck/token.c (sycklex_yaml_utf8): buffer underflow.
+	  thanks, ts. [ruby-core:02929]
+
+	* lib/yaml/baseemitter.rb (indent_text): simpler flow block code.
+
 Tue May 25 11:54:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_yield_0, proc_invoke, proc_arity): allow passing a block

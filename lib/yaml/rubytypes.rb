@@ -392,7 +392,9 @@ class Range
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( self.object_id, opts ) { |out|
-            if self.begin.is_complex_yaml? or self.end.is_complex_yaml? or not to_yaml_properties.empty?
+            if self.begin.is_complex_yaml? or self.begin.respond_to? :to_str or
+              self.end.is_complex_yaml? or self.end.respond_to? :to_str or
+              not to_yaml_properties.empty?
                 out.map( to_yaml_type ) { |map|
                     map.add( 'begin', self.begin )
                     map.add( 'end', self.end )
