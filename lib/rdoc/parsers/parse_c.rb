@@ -351,7 +351,7 @@ module RDoc
 
         # see if we can find the whole body
         
-        re = Regexp.escape(body_text) + "[^(]*^{.*?^}"
+        re = Regexp.escape(body_text) + '[^(]*^\{.*?^\}'
         if Regexp.new(re, Regexp::MULTILINE).match(body)
           body_text = $&
         end

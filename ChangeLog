@@ -1,3 +1,7 @@
+Mon Feb  9 17:16:00 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb: escape '{' and '}' to avoid warnings.
+
 Mon Feb  9 13:00:55 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (fnmatch):
