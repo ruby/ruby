@@ -42,4 +42,10 @@ class TestFile < Test::Unit::TestCase
   alias open_file_rw open_file
 
   include TestEOF::Seek
+
+  def test_fnmatch
+    # from [ruby-dev:22815] and [ruby-dev:22819]
+    assert(true, File.fnmatch('\[1\]' , '[1]'))
+    assert(true, File.fnmatch('*?', 'a'))
+  end
 end

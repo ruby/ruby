@@ -1,3 +1,8 @@
+Sun Feb  8 15:51:57 2004  akira yamada  <akira@ruby-lang.org>
+
+	* test/ruby/test_file.rb (TestFile::test_fnmatch): added tests for
+	  File.fnmatch. [ruby-dev:22815][ruby-dev:22819]
+
 Sun Feb  8 15:41:45 2004  akira yamada  <akira@ruby-lang.org>
 
 	* test/yaml/test_yaml.rb (YAML_Unit_Tests::test_range_cycle):
