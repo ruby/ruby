@@ -79,7 +79,7 @@ module Net
     # :startdoc:
     
     # When +true+, transfers are performed in binary mode.  Default: +true+.
-    attr_accessor :binary
+    attr_reader :binary
 
     # When +true+, the connection is in passive mode.  Default: +false+.
     attr_accessor :passive
@@ -128,7 +128,7 @@ module Net
     #
     def initialize(host = nil, user = nil, passwd = nil, acct = nil)
       super()
-      @binary = true
+      @binary = false
       @passive = false
       @debug_mode = false
       @resume = false
@@ -139,6 +139,24 @@ module Net
 	end
       end
     end
+
+    def binary=(newmode)
+      if newmode != @binary
+        @binary = newmode
+        @binary ? voidcmd("TYPE I") : voidcmd("TYPE A")
+      end
+    end
+
+    def with_binary(newmode)
+      oldmode = binary
+      self.binary = newmode
+      begin
+        yield
+      ensure
+        self.binary = oldmode
+      end
+    end
+    private :with_binary
 
     # Obsolete
     def return_code
@@ -387,6 +405,7 @@ module Net
 	raise FTPReplyError, resp
       end
       @welcome = resp
+      self.binary = true
     end
     
     #
@@ -397,15 +416,16 @@ module Net
     #
     def retrbinary(cmd, blocksize, rest_offset = nil) # :yield: data
       synchronize do
-	voidcmd("TYPE I")
-	conn = transfercmd(cmd, rest_offset)
-	loop do
-	  data = conn.read(blocksize)
-	  break if data == nil
-	  yield(data)
-	end
-	conn.close
-	voidresp
+	with_binary(true) do
+          conn = transfercmd(cmd, rest_offset)
+          loop do
+            data = conn.read(blocksize)
+            break if data == nil
+            yield(data)
+          end
+          conn.close
+          voidresp
+        end
       end
     end
     
@@ -417,20 +437,21 @@ module Net
     #
     def retrlines(cmd) # :yield: line
       synchronize do
-	voidcmd("TYPE A")
-	conn = transfercmd(cmd)
-	loop do
-	  line = conn.gets
-	  break if line == nil
-	  if line[-2, 2] == CRLF
-	    line = line[0 .. -3]
-	  elsif line[-1] == ?\n
-	    line = line[0 .. -2]
-	  end
-	  yield(line)
-	end
-	conn.close
-	voidresp
+	with_binary(false) do
+          conn = transfercmd(cmd)
+          loop do
+            line = conn.gets
+            break if line == nil
+            if line[-2, 2] == CRLF
+              line = line[0 .. -3]
+            elsif line[-1] == ?\n
+              line = line[0 .. -2]
+            end
+            yield(line)
+          end
+          conn.close
+          voidresp
+        end
       end
     end
     
@@ -445,16 +466,17 @@ module Net
         file.seek(rest_offset, IO::SEEK_SET)
       end
       synchronize do
-	voidcmd("TYPE I")
-	conn = transfercmd(cmd, rest_offset)
-	loop do
-	  buf = file.read(blocksize)
-	  break if buf == nil
-	  conn.write(buf)
-	  yield(buf) if block
-	end
-	conn.close
-	voidresp
+	with_binary(true) do
+          conn = transfercmd(cmd, rest_offset)
+          loop do
+            buf = file.read(blocksize)
+            break if buf == nil
+            conn.write(buf)
+            yield(buf) if block
+          end
+          conn.close
+          voidresp
+        end
       end
     end
     
@@ -466,19 +488,20 @@ module Net
     #
     def storlines(cmd, file, &block) # :yield: line
       synchronize do
-	voidcmd("TYPE A")
-	conn = transfercmd(cmd)
-	loop do
-	  buf = file.gets
-	  break if buf == nil
-	  if buf[-2, 2] != CRLF
-	    buf = buf.chomp + CRLF
-	  end
-	  conn.write(buf)
-	  yield(buf) if block
-	end
-	conn.close
-	voidresp
+	with_binary(false) do
+          conn = transfercmd(cmd)
+          loop do
+            buf = file.gets
+            break if buf == nil
+            if buf[-2, 2] != CRLF
+              buf = buf.chomp + CRLF
+            end
+            conn.write(buf)
+            yield(buf) if block
+          end
+          conn.close
+          voidresp
+        end
       end
     end
 
@@ -530,10 +553,10 @@ module Net
     #
     def get(remotefile, localfile = File.basename(remotefile),
 	    blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
-      unless @binary
-	gettextfile(remotefile, localfile, &block)
-      else
+      if @binary
 	getbinaryfile(remotefile, localfile, blocksize, &block)
+      else
+	gettextfile(remotefile, localfile, &block)
       end
     end
     
@@ -582,10 +605,10 @@ module Net
     #
     def put(localfile, remotefile = File.basename(localfile),
 	    blocksize = DEFAULT_BLOCKSIZE, &block)
-      unless @binary
-	puttextfile(localfile, remotefile, &block)
-      else
+      if @binary
 	putbinaryfile(localfile, remotefile, blocksize, &block)
+      else
+	puttextfile(localfile, remotefile, &block)
       end
     end
 
@@ -681,12 +704,13 @@ module Net
     # Returns the size of the given (remote) filename.
     #
     def size(filename)
-      voidcmd("TYPE I")
-      resp = sendcmd("SIZE " + filename)
-      if resp[0, 3] != "213" 
-	raise FTPReplyError, resp
+      with_binary(true) do
+        resp = sendcmd("SIZE " + filename)
+        if resp[0, 3] != "213" 
+          raise FTPReplyError, resp
+        end
+        return resp[3..-1].strip.to_i
       end
-      return resp[3..-1].strip.to_i
     end
     
     MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)/  # :nodoc:
