@@ -117,7 +117,7 @@ private
   def exception_complextype
     type = XMLSchema::ComplexType.new(XSD::QName.new(
 	::SOAP::Mapping::RubyCustomTypeNamespace, 'SOAPException'))
-    excn_name = XMLSchema::Element.new(XSD::QName.new(nil, 'exceptionTypeName'), XSD::XSDString::Type)
+    excn_name = XMLSchema::Element.new(XSD::QName.new(nil, 'excn_type_name'), XSD::XSDString::Type)
     cause = XMLSchema::Element.new(XSD::QName.new(nil, 'cause'), XSD::AnyTypeName)
     backtrace = XMLSchema::Element.new(XSD::QName.new(nil, 'backtrace'), ::SOAP::ValueArrayName)
     message = XMLSchema::Element.new(XSD::QName.new(nil, 'message'), XSD::XSDString::Type)

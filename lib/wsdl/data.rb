@@ -35,6 +35,7 @@ require 'wsdl/import'
 module WSDL
 
 
+ArrayTypeAttrName = XSD::QName.new(Namespace, 'arrayType')
 BindingName = XSD::QName.new(Namespace, 'binding')
 DefinitionsName = XSD::QName.new(Namespace, 'definitions')
 DocumentationName = XSD::QName.new(Namespace, 'documentation')

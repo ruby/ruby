@@ -44,10 +44,29 @@ class Factory
       klass.allocate
     end
   else
+    MARSHAL_TAG = {
+      String => ['"', 1],
+      Regexp => ['/', 2],
+      Array => ['[', 1],
+      Hash => ['{', 1]
+    }
     def create_empty_object(klass)
+      if klass <= Struct
+	name = klass.name
+	return ::Marshal.load(sprintf("\004\006S:%c%s\000", name.length + 5, name))
+      end
+      if MARSHAL_TAG.has_key?(klass)
+	tag, terminate = MARSHAL_TAG[klass]
+	return ::Marshal.load(sprintf("\004\006%s%s", tag, "\000" * terminate))
+      end
+      MARSHAL_TAG.each do |k, v|
+	if klass < k
+	  name = klass.name
+	  tag, terminate = v
+	  return ::Marshal.load(sprintf("\004\006C:%c%s%s%s", name.length + 5, name, tag, "\000" * terminate))
+	end
+      end
       name = klass.name
-      # Below line is from TANAKA, Akira's amarshal.rb.
-      # See http://cvs.m17n.org/cgi-bin/viewcvs/amarshal/?cvsroot=ruby
       ::Marshal.load(sprintf("\004\006o:%c%s\000", name.length + 5, name))
     end
   end

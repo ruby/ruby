@@ -426,10 +426,21 @@ private
     Mapping.set_instance_vars(obj, vars)
   end
 
-  def addextend2obj(obj, attr)
-    return unless attr
-    attr.split(/ /).reverse_each do |mstr|
-      obj.extend(Mapping.class_from_name(mstr))
+  if RUBY_VERSION >= '1.8.0'
+    def addextend2obj(obj, attr)
+      return unless attr
+      attr.split(/ /).reverse_each do |mstr|
+	obj.extend(Mapping.class_from_name(mstr))
+      end
+    end
+  else
+    # (class < false; self; end).ancestors includes "TrueClass" under 1.6...
+    def addextend2obj(obj, attr)
+      return unless attr
+      attr.split(/ /).reverse_each do |mstr|
+	m = Mapping.class_from_name(mstr)
+	obj.extend(m) if m.class == Module
+      end
     end
   end
 

@@ -1,3 +1,22 @@
+Sat Nov  8 18:50:20 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/wsdl/raa/*: add new testcase for WSDL loading, parsing and
+	  reading.
+
+	* test/soap/marshal/*: backport from soap4r/1.5.1.  all differences are
+	  for ruby/1.6.
+
+	* lib/soap/*: backport from soap4r/1.5.1.  all differences are for
+	  ruby/1.6.
+
+	* lib/wsdl/data.rb, lib/wsdl/xmlSchema/data.rb: move definition of
+	  ArrayTypeAttrName from ::WSDL::XMLSchema::* to ::WSDL::*.
+	  [ruby-talk:84813]
+
+	* lib/wsdl/soap/definitions.rb: element name typo in custom exception
+	  struct definition which is needed for wsdlDriver; camelCase ->
+	  underscore_name.
+
 Sat Nov  8 13:49:50 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* configure.in: improvement of pthread check
