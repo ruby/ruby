@@ -920,7 +920,7 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
   mfile.print CLEANINGS
   dirs = []
   mfile.print "install: install-so install-rb\n\n"
-  dirs << (dir = "$(RUBYARCHDIR)")
+  sodir = dir = "$(RUBYARCHDIR)"
   mfile.print("install-so: #{dir}\n")
   if target
     f = "$(DLLIB)"
@@ -946,6 +946,7 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
       end
     end
   end
+  dirs.unshift(sodir) if target and !dirs.include?(sodir)
   dirs.each {|dir| mfile.print "#{dir}:\n\t@$(MAKEDIRS) $@\n"}
 
   mfile.print <<-SITEINSTALL

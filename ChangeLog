@@ -1,3 +1,8 @@
+Thu Dec 16 23:31:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): create RUBYARCHDIR also when no extension
+	  is installed.  fixed: [ruby-dev:25215]
+
 Thu Dec 16 22:36:57 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/test_drb.rb: adjust and reduce sleep.
@@ -105,7 +110,7 @@ Tue Dec 14 17:08:15 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Dec 14 14:03:57 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.c (ossl_raise): avoid buffer overrun.
-          [ruby-dev:25187]
+	  [ruby-dev:25187]
 
 Tue Dec 14 12:36:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
