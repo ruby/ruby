@@ -989,6 +989,7 @@ ruby_set_argv(argc, argv)
     if (origargv) dln_argv0 = origargv[0];
     else          dln_argv0 = argv[0];
 #endif
+    rb_ary_clear(rb_argv);
     for (i=0; i < argc; i++) {
 	rb_ary_push(rb_argv, rb_tainted_str_new2(argv[i]));
     }

@@ -4160,7 +4160,7 @@ stack_length(p)
 #endif
     if (p) *p = STACK_END;
 
-#ifdef sparc
+#ifdef __sparc__
     return rb_gc_stack_start - STACK_END + 0x80;
 #else
     return (STACK_END < rb_gc_stack_start) ? rb_gc_stack_start - STACK_END
@@ -6450,7 +6450,7 @@ block_pass(self, node)
 	break;
       case TAG_BREAK:
 	if (orphan) {
-	    rb_raise(rb_eLocalJumpError, "retry from proc-closure");
+	    rb_raise(rb_eLocalJumpError, "break from proc-closure");
 	}
 	break;
       case TAG_RETRY:

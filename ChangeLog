@@ -1,3 +1,7 @@
+Tue Mar 13 14:41:16 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_seek): wrong calling sequence of rb_io_seek().
+
 Mon Mar 12 18:59:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): save/restore $libs and $LIBPATH.
@@ -18,6 +22,14 @@ Wed Mar  7 14:26:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* math.c (math_log, math_log10): should return NaN if x < 0.0
 	  on Cygwin.
+
+Thu Mar  7 10:31:26 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (stmt): while/until modifier must work for empty body.
+
+Tue Mar  6 22:53:58 2001  Kazuhiro Yoshida   <moriq.kazuhiro@nifty.ne.jp>
+
+	* ruby.c (ruby_set_argv): clear ARGV contents before adding args.
 
 Tue Mar  6 10:50:29 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

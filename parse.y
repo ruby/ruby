@@ -360,31 +360,21 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		| stmt kWHILE_MOD expr
 		    {
 			value_expr($3);
-			if ($1) {
-			    if (nd_type($1) == NODE_BEGIN) {
-				$$ = NEW_WHILE(cond($3), $1->nd_body, 0);
-			    }
-			    else {
-				$$ = NEW_WHILE(cond($3), $1, 1);
-			    }
+			if ($1 && nd_type($1) == NODE_BEGIN) {
+			    $$ = NEW_WHILE(cond($3), $1->nd_body, 0);
 			}
 			else {
-			    $$ = 0;
+			    $$ = NEW_WHILE(cond($3), $1, 1);
 			}
 		    }
 		| stmt kUNTIL_MOD expr
 		    {
 			value_expr($3);
-			if ($1) {
-			    if (nd_type($1) == NODE_BEGIN) {
-				$$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
-			    }
-			    else {
-				$$ = NEW_UNTIL(cond($3), $1, 1);
-			    }
+			if ($1 && nd_type($1) == NODE_BEGIN) {
+			    $$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
 			}
 			else {
-			    $$ = 0;
+			    $$ = NEW_UNTIL(cond($3), $1, 1);
 			}
 		    }
 		| stmt kRESCUE_MOD stmt

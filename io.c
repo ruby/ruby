@@ -3095,8 +3095,9 @@ argf_tell()
 }
 
 static VALUE
-argf_seek(self, offset, ptrname)
-     VALUE self, offset, ptrname;
+argf_seek(argc, argv)
+    int argc;
+    VALUE *argv;
 {
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to seek");
@@ -3105,7 +3106,7 @@ argf_seek(self, offset, ptrname)
     if (TYPE(current_file) != T_FILE) {
 	return argf_forward();
     }
-    return rb_io_seek(current_file, offset, ptrname);
+    return rb_io_seek(argc, argv, current_file);
 }
 
 static VALUE
@@ -3474,7 +3475,7 @@ Init_IO()
     rb_define_singleton_method(argf, "getc", argf_getc, 0);
     rb_define_singleton_method(argf, "readchar", argf_readchar, 0);
     rb_define_singleton_method(argf, "tell", argf_tell, 0);
-    rb_define_singleton_method(argf, "seek", argf_seek, 2);
+    rb_define_singleton_method(argf, "seek", argf_seek, -1);
     rb_define_singleton_method(argf, "rewind", argf_rewind, 0);
     rb_define_singleton_method(argf, "pos", argf_tell, 0);
     rb_define_singleton_method(argf, "pos=", argf_set_pos, 1);
