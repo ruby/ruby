@@ -1,3 +1,13 @@
+Sat Nov 27 21:43:39 2004  Tanaka Akira  <akr@m17n.org>
+
+	* io.c: avoid avoid data loss with nonblocking fd and
+	  stdio buffering in sync mode.  [ruby-dev:24966]
+	  based on matz's patch [ruby-dev:24967]
+	  (io_fwrite): new primitive writing function which writes
+	  directly if sync mode.
+	  (rb_io_fwrite): wrapper for io_fwrite now.
+	  (io_write): call io_fwrite instead of rb_io_fwrite.
+
 Sat Nov 27 17:43:21 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/{0.9,1.0,2.0,trackback,xml-stylesheet}.rb: added
@@ -27,7 +37,9 @@ Sat Nov 27 17:21:30 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 Sat Nov 27 09:41:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* io.c (io_fread): [ruby-dev:24964]
+	* io.c (io_fread): old rb_io_fread with file closing checking.
+	  (rb_io_fread): wrapper for io_fread now.
+	  [ruby-dev:24964]
 
 Fri Nov 26 18:02:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -41,9 +53,10 @@ Fri Nov 26 18:02:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Fri Nov 26 14:29:39 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* io.c (rb_io_initialize): [ruby-dev:24963]
+	* io.c (rb_io_initialize): uninitialized fd was checked to see open
+	  mode.  [ruby-dev:24963]
 
-	* io.c (rb_io_initialize): [ruby-dev:24962]
+	* io.c (rb_io_initialize): uninitialized fd was used.  [ruby-dev:24962]
 
 Fri Nov 26 13:49:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -53,7 +66,7 @@ Fri Nov 26 13:49:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (method_missing): raise TypeError for classes do not
 	  have allocators.  [ruby-core:03752]
 
-	* lib/erb.rb: [ruby-core:03786]
+	* lib/erb.rb: add RDoc by James Edward Gray II.  [ruby-core:03786]
 
 Fri Nov 26 13:29:02 2004  Dave Thomas  <dave@pragprog.com>
 

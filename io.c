@@ -398,14 +398,34 @@ rb_io_wait_writable(f)
 
 /* writing functions */
 long
-rb_io_fwrite(ptr, len, f)
+io_fwrite(ptr, len, fptr)
     const char *ptr;
     long len;
-    FILE *f;
+    OpenFile *fptr;
 {
     long n, r;
+    FILE *f = GetWriteFile(fptr);
 
     if ((n = len) <= 0) return n;
+    if (fptr->mode & FMODE_SYNC) {
+	io_fflush(f, fptr);
+	if (!rb_thread_fd_writable(fileno(f))) {
+	    rb_io_check_closed(fptr);
+	}
+      retry:
+	r = write(fileno(f), ptr, n);
+        if (r == n) return len;
+        if (0 <= r) {
+            ptr += r;
+            n -= r;
+            errno = EAGAIN;
+        }
+        if (rb_io_wait_writable(fileno(f))) {
+            rb_io_check_closed(fptr);
+            goto retry;
+        }
+        return -1L;
+    }
 #if defined __human68k__
     do {
 	if (fputc(*ptr++, f) == EOF) {
@@ -424,6 +444,7 @@ rb_io_fwrite(ptr, len, f)
 	    if (!errno) errno = EAGAIN;
 #endif
 	    if (rb_io_wait_writable(fileno(f))) {
+		rb_io_check_closed(fptr);
 		clearerr(f);
 		continue;
 	    }
@@ -432,6 +453,21 @@ rb_io_fwrite(ptr, len, f)
     }
 #endif
     return len - n;
+}
+
+long
+rb_io_fwrite(ptr, len, f)
+    const char *ptr;
+    long len;
+    FILE *f;
+{
+    OpenFile of;
+
+    of.f = f;
+    of.f2 = NULL;
+    of.mode = FMODE_WRITABLE;
+    of.path = "(rb_io_fwrite)";
+    return io_fwrite(ptr, len, &of);
 }
 
 /*
@@ -457,7 +493,6 @@ io_write(io, str)
     VALUE io, str;
 {
     OpenFile *fptr;
-    FILE *f;
     long n;
     VALUE tmp;
 
@@ -473,16 +508,12 @@ io_write(io, str)
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
-    f = GetWriteFile(fptr);
 
     rb_str_locktmp(str);
-    n = rb_io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, f);
+    n = io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, fptr);
     rb_str_unlocktmp(str);
     if (n == -1L) rb_sys_fail(fptr->path);
-    if (fptr->mode & FMODE_SYNC) {
-	io_fflush(f, fptr);
-    }
-    else {
+    if (!(fptr->mode & FMODE_SYNC)) {
 	fptr->mode |= FMODE_WBUF;
     }
 
@@ -1524,7 +1555,6 @@ rb_io_gets_m(argc, argv, io)
     VALUE io;
 {
     VALUE rs, str;
-    OpenFile *fptr;
 
     if (argc == 0) {
 	rs = rb_rs;
@@ -1668,7 +1698,6 @@ rb_io_readlines(argc, argv, io)
 {
     VALUE line, ary;
     VALUE rs;
-    OpenFile *fptr;
 
     if (argc == 0) {
 	rs = rb_rs;
@@ -1711,7 +1740,6 @@ rb_io_each_line(argc, argv, io)
     VALUE io;
 {
     VALUE str;
-    OpenFile *fptr;
     VALUE rs;
 
     if (argc == 0) {
@@ -5028,7 +5056,6 @@ rb_io_s_foreach(argc, argv)
     VALUE *argv;
 {
     VALUE fname;
-    OpenFile *fptr;
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
