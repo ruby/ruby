@@ -1933,6 +1933,7 @@ Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  [ruby-dev:24383]
 
 	* string.c (rb_str_sum): string may be altered.  [ruby-dev:24381]
+
 Mon Oct 11 17:51:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_popen): get mode string via rb_io_flags_mode() to
@@ -1951,6 +1952,10 @@ Mon Oct 11 17:51:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  prevent access to recycled object (via continuation for
 	  example).  [ruby-dev:24463]
 
+Sat Oct  9 00:25:39 2004  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_io_fread): rb_thread_wait_fd() was lost.
+	  [ruby-dev:24457]
 
 Fri Oct  1 11:40:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1981,11 +1986,6 @@ Fri Oct  1 11:25:20 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/place.rb: revive TkPlace.place
 
 Thu Sep 30 00:50:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
-
-Sat Oct  9 00:25:39 2004  Tanaka Akira  <akr@m17n.org>
-
-	* io.c (rb_io_fread): rb_thread_wait_fd() was lost.
-	  [ruby-dev:24457]
 
 	* ext/tcltklib/tcltklib.c (ip_init): bug fix
 
