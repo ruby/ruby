@@ -2359,7 +2359,7 @@ rb_Array(val)
 	ID id = rb_intern("to_a");
 
 	if (search_method(CLASS_OF(val), id, &origin) &&
-	    origin != RCLASS(rb_cObject)->super) { /* exclude Object#to_a */
+	    RCLASS(origin)->m_tbl != RCLASS(rb_mKernel)->m_tbl) { /* exclude Kernel#to_a */
 	    val = rb_funcall(val, id, 0);
 	    if (TYPE(val) != T_ARRAY) {
 		rb_raise(rb_eTypeError, "`to_a' did not return Array");

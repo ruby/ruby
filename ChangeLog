@@ -1,15 +1,28 @@
+Fri May 30 14:55:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_Array): exclude Kernel#to_a instead of Object#to_a.
+	 (ruby-bugs-ja:PR#483)
+
+	* lib/optparse.rb (OptionParser::Switch#parse_arg): not splat.
+
+	* lib/optparse.rb (OptionParser::Switch#conv_arg): splat if no
+	  conversion supplied.
+
+	* lib/optparse.rb (OptionParser::Switch::PlacedArgument#parse):
+	  override next switch after argument conversion.
+
 Fri May 30 00:01:05 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/token.c: preserve any indentation passed an explicit
-      indentation.
+	* ext/syck/token.c: preserve any indentation passed an explicit
+	  indentation.
 
 Thu May 29 23:41:34 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/handler.c, ext/syck/syck.h: removed syck_fold_format().
+	* ext/syck/handler.c, ext/syck/syck.h: removed syck_fold_format().
 
-    * ext/syck/gram.c: flexibility for aliases and anchors.
+	* ext/syck/gram.c: flexibility for aliases and anchors.
 
-    * ext/syck/token.c: folding now handled in the tokenizer.
+	* ext/syck/token.c: folding now handled in the tokenizer.
 
 Fri May 30 06:21:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

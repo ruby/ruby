@@ -196,17 +196,17 @@ Individual switch class.
       else
 	m = m.to_a
 	s = m[0]
-	return nil, *m unless String === s
+	return nil, m unless String === s
       end
       raise InvalidArgument, arg unless arg.rindex(s, 0)
-      return nil, *m if s.length == arg.length
+      return nil, m if s.length == arg.length
       yield(InvalidArgument, arg) # didn't match whole arg
-      return arg[s.length..-1], *m
+      return arg[s.length..-1], m
     end
     private :parse_arg
 
-=begin
---- OptionParser::Switch#parse(arg, val) {semi-error handler}
+=begin private
+--- OptionParser::Switch#conv_arg(arg, val) {semi-error handler}
     Parses argument, convert and returns ((|arg|)), ((|block|)) and
     result of conversion.
     : Arguments to ((|@conv|))
@@ -220,14 +220,19 @@ Individual switch class.
       : (({block}))
         (({yields})) at semi-error condition, instead of raises exception.
 =end #'#"#`#
-    def parse(arg, *val)
+    def conv_arg(arg, val = nil)
       if block
-	val = conv.call(*val) if conv
+        if conv
+          val = conv.call(*val)
+        else
+          val = *val
+        end
 	return arg, block, val
       else
 	return arg, nil
       end
     end
+    private :conv_arg
 
 =begin private
 --- OptionParser::Switch#summarize(sdone, ldone, width, max, indent)
@@ -294,7 +299,7 @@ Switch that takes no arguments.
     class NoArgument < self
       def parse(arg, argv, &error)
 	yield(NeedlessArgument, arg) if arg
-	super(arg)
+	conv_arg(arg)
       end
       def self.incompatible_argument_styles(*)
       end
@@ -318,7 +323,7 @@ Switch that takes an argument.
 	  raise MissingArgument if argv.empty?
 	  arg = argv.shift
 	end
-	super(*parse_arg(arg, &error))
+	conv_arg(*parse_arg(arg, &error))
       end
     end
 
@@ -334,9 +339,9 @@ Switch that can omit argument.
     class OptionalArgument < self
       def parse(arg, argv, &error)
 	if arg
-	  super(*parse_arg(arg, &error))
+	  conv_arg(*parse_arg(arg, &error))
 	else
-	  super(arg)
+	  conv_arg(arg)
 	end
       end
     end
@@ -346,13 +351,13 @@ Switch that can omit argument.
 	if !(val = arg) and (argv.empty? or /\A-/ =~ (val = argv[0]))
 	  return nil, block, nil
 	end
-        if (val = parse_arg(val, &error))[1]
-          arg = nil
+        opt = (val = parse_arg(val, &error))[1]
+        val = conv_arg(*val)
+        if opt
+          argv.shift
         else
-          val[0] = arg
+          val[0] = nil
         end
-        *val = super(*val)
-        argv.shift unless arg
         val
       end
     end
