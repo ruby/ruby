@@ -8,7 +8,7 @@ It is possible to lookup various resources of DNS using DNS module directly.
 
 == example
   Resolv.getaddress("www.ruby-lang.org")
-  Resolv.getname("210.251.121.214").to_s
+  Resolv.getname("210.251.121.214")
   Resolv::DNS.new.getresources("www.ruby-lang.org", Resolv::DNS::Resource::IN::A).collect {|r| r.address}
   Resolv::DNS.new.getresources("ruby-lang.org", Resolv::DNS::Resource::IN::MX).collect {|r| [r.exchange.to_s, r.preference]}
 
@@ -168,8 +168,9 @@ DNS stub resolver.
     regular expression for IPv6 address.
 
 == Bugs
-NIS is not supported.
-/etc/nsswitch.conf is not supported.
+* NIS is not supported.
+* /etc/nsswitch.conf is not supported.
+* IPv6 is not supported.
 
 =end
 
@@ -690,9 +691,9 @@ class Resolv
                   when 'nameserver'
                     @nameserver += args
                   when 'domain'
-                    @search = [args[0]]
+                    @search = [Label.split(args[0])]
                   when 'search'
-                    @search = args
+                    @search = args.map {|arg| Label.split(arg)}
                   end
                 }
               }
@@ -703,9 +704,9 @@ class Resolv
             unless @search
               hostname = Socket.gethostname
               if /\./ =~ hostname
-                @search = [$']
+                @search = [Label.split($')]
               else
-                @search = ['']
+                @search = [[]]
               end
             end
             @initialized = true
@@ -724,20 +725,17 @@ class Resolv
 
       def generate_candidates(name)
         candidates = nil
-        name = name.to_s if Name === name
-        if /\.\z/ =~ name
+	name = Name.create(name)
+	if name.absolute?
           candidates = [name]
-        elsif @ndots <= name.tr('^.', '').length
-          candidates = [name, *@search.collect {|domain| name + '.' + domain}]
-        else
-          candidates = [*@search.collect {|domain| name + '.' + domain}]
-        end
-        candidates.collect! {|c|
-          c = c.dup
-          c.gsub!(/\.\.+/, '.')
-          c.chomp!('.')
-          c
-        }
+	else
+	  if @ndots <= name.length - 1
+	    candidates = [Name.new(name.to_a)]
+	  else
+	    candidates = []
+	  end
+	  candidates.concat(@search.map {|domain| Name.new(name.to_a + domain)})
+	end
         return candidates
       end
 
@@ -859,26 +857,28 @@ class Resolv
         when Name
           return arg
         when String
-          return Name.new(Label.split(arg))
+          return Name.new(Label.split(arg), /\.\z/ =~ arg ? true : false)
         else
-          raise ArgumentError.new("cannot interprete as DNS name: #{arg.inspect}")
+          raise ArgumentError.new("cannot interpret as DNS name: #{arg.inspect}")
         end
       end
 
-      def initialize(labels)
+      def initialize(labels, absolute=true)
         @labels = labels
+	@absolute = absolute
+      end
+
+      def absolute?
+        return @absolute
       end
 
       def ==(other)
-        return @labels == other.to_a
+        return @labels == other.to_a && @absolute == other.absolute?
       end
-
-      def eql?(other)
-        return self == other
-      end
+      alias eql? ==
 
       def hash
-        return @labels.hash
+        return @labels.hash ^ @absolute.hash
       end
 
       def to_a
@@ -1532,8 +1532,8 @@ class Resolv
     end
 
     def to_name
-      return DNS::Name.new(
-        @address.unpack("CCCC").reverse + ['in-addr', 'arpa'])
+      return DNS::Name.create(
+        '%d.%d.%d.%d.in-addr.arpa.' % @address.unpack('CCCC').reverse)
     end
 
     def ==(other)
@@ -1644,6 +1644,7 @@ class Resolv
     end
 
     def to_name
+      # ip6.arpa should be searched too. [RFC3152]
       return DNS::Name.new(
         @address.unpack("H32")[0].split(//).reverse + ['ip6', 'int'])
     end

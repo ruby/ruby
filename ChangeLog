@@ -1,3 +1,7 @@
+Tue Mar 12 17:12:06 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv.rb: don't complete domains for absolute FQNs.
+
 Mon Mar 11 23:08:48 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/tsort.rb: new file.
