@@ -12,14 +12,12 @@ dnl checks for alternative programs
 AC_ARG_WITH(gcc, [--without-gcc             never use gcc], [
 	case $withval in
 	no)	: ${CC=cc}
-		without_gcc=yes;;
+		;;
 	yes)	: ${CC=gcc}
-		without_gcc=no;;
+		;;
 	*)	CC=$withval
-		without_gcc=$withval;;
-	esac], [
-	  : ${CC=gcc}
-	  without_gcc=no])
+		;;
+	esac])
 dnl If the user switches compilers, we can't believe the cache
 if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
 then
@@ -242,10 +240,10 @@ linux*)		LIBS="-lm $LIBS"
 		    CFLAGS="-mieee $CFLAGS" ;;
 		esac ;;
 osf*)		LIBS="-lm $LIBS"
-		case "$target_cpu"::"$without_gcc" in
-		alpha*::no)
-		    CFLAGS="-mieee $CFLAGS" ;;
+		case "$target_cpu"::"$GCC" in
 		alpha*::yes)
+		    CFLAGS="-mieee $CFLAGS" ;;
+		alpha*::no|alpha*::)
 		    CFLAGS="-ieee $CFLAGS" ;;
 		esac ;;
 *) LIBS="-lm $LIBS";;
@@ -892,7 +890,7 @@ case "$target_os" in
     	CFLAGS="$CFLAGS -DOS2"
 	;;
     osf*)
-	if test "$without_gcc" = "yes" ; then
+	if test "$GCC" != "yes" ; then
 	  # compile something small: taint.c is fine for this.
 	  # the main point is the '-v' flag of 'cc'.
 	  case "`cc -v -I. -c main.c -o /tmp/main.o 2>&1`" in

@@ -1,3 +1,9 @@
+Sun Dec  2 22:01:52 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: use GCC, not without_gcc. remove without_gcc.
+
+	* ext/curses/extconf.rb: check for curses.h.
+
 Fri Nov 30 00:30:00 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* README.EXT: Appendix B is duplicated.

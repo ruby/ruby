@@ -14,7 +14,7 @@ elsif have_header("curses_colr/curses.h") and have_library("cur_colr", "initscr"
   make=true
 else
   have_library("termcap", "tgetent") 
-  if have_library("curses", "initscr")
+  if have_header("curses.h") and have_library("curses", "initscr")
     make=true
   end
 end
