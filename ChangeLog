@@ -1,3 +1,11 @@
+Mon Dec  6 23:00:45 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (ac_cv_sizeof_rlim_t): setup for DJGPP.
+
+	* io.c (is_socket, shutdown): define dummy macros for DJGPP.
+
+	* process.c: use SIZEOF_RLIM_T instead of HAVE_RLIM_T for DJGPP.
+
 Mon Dec  6 21:19:40 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (is_socket): fix typos. [ruby-core:03900]

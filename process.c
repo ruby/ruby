@@ -1941,7 +1941,7 @@ proc_setpriority(obj, which, who, prio)
 #endif
 }
 
-#ifdef HAVE_RLIM_T
+#if SIZEOF_RLIM_T
 #if SIZEOF_RLIM_T == SIZEOF_INT
 # define RLIM2NUM(v) UINT2NUM(v)
 # define NUM2RLIM(v) NUM2UINT(v)

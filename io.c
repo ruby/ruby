@@ -20,7 +20,7 @@
 #include <errno.h>
 
 #include <sys/types.h>
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__DJGPP__)
 # if defined(__BEOS__)
 #  include <net/socket.h>
 # else
@@ -139,6 +139,9 @@ static VALUE lineno = INT2FIX(0);
 
 #if defined(_WIN32)
 #define is_socket(fd, path)	rb_w32_is_socket(fd)
+#elif defined(__DJGPP__)
+#define is_socket(fd, path)	0
+#define shutdown(a,b)	0
 #else
 static int
 is_socket(fd, path)
