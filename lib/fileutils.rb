@@ -464,8 +464,8 @@ module FileUtils
 
   alias move mv
 
-  def cannot_overwrite_file? #:nodoc:
-    /djgpp|cygwin|mswin|mingw|bccwin/ === RUBY_PLATFORM
+  def cannot_overwrite_file?   #:nodoc:
+    /djgpp|cygwin|mswin|mingw|bccwin|wince/ === RUBY_PLATFORM
   end
   private :cannot_overwrite_file?
 
@@ -740,7 +740,9 @@ module FileUtils
 
   def fu_same?( a, b )
     if have_st_ino?
-      File.stat(a).dev == File.stat(b).dev and File.stat(a).ino == File.stat(b).ino
+      st1 = File.stat(a)
+      st2 = File.stat(b)
+      st1.dev == st2.dev and st1.ino == st2.ino
     else
       File.expand_path(a) == File.expand_path(b)
     end
@@ -749,7 +751,7 @@ module FileUtils
   end
 
   def have_st_ino?
-    /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+    /djgpp|mswin|mingw|bccwin|wince/ !~ RUBY_PLATFORM
   end
 
   def fu_stream_blksize( *streams )
