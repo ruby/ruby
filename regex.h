@@ -76,8 +76,8 @@ void re_mbcinit ();
 struct re_pattern_buffer
   {
     char *buffer;	/* Space holding the compiled pattern commands.  */
-    size_t allocated;	/* Size of space that `buffer' points to. */
-    size_t used;		/* Length of portion of buffer actually occupied  */
+    int allocated;	/* Size of space that `buffer' points to. */
+    int used;		/* Length of portion of buffer actually occupied  */
     char *fastmap;	/* Pointer to fastmap, if any, or zero if none.  */
 			/* re_search uses the fastmap, if there is one,
 			   to skip over totally implausible characters.  */
@@ -113,8 +113,8 @@ typedef struct re_pattern_buffer regex_t;
 
 struct re_registers
   {
-    size_t allocated;
-    size_t num_regs;
+    int allocated;
+    int num_regs;
     int *beg;
     int *end;
   };
@@ -138,13 +138,13 @@ typedef struct
 
 #ifdef __STDC__
 
-extern char *re_compile_pattern (char *, size_t, struct re_pattern_buffer *);
+extern char *re_compile_pattern (char *, int, struct re_pattern_buffer *);
 void re_free_pattern (struct re_pattern_buffer *);
 /* Is this really advertised?  */
 extern void re_compile_fastmap (struct re_pattern_buffer *);
-extern int re_search (struct re_pattern_buffer *, char*, size_t, size_t, size_t,
+extern int re_search (struct re_pattern_buffer *, char*, int, int, int,
 		      struct re_registers *);
-extern int re_match (struct re_pattern_buffer *, char *, size_t, size_t,
+extern int re_match (struct re_pattern_buffer *, char *, int, int,
 		     struct re_registers *);
 extern void re_set_casetable (char *table);
 extern void re_copy_registers (struct re_registers*, struct re_registers*);

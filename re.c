@@ -5,7 +5,7 @@
   $Author$
   created at: Mon Aug  9 18:24:49 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -330,7 +330,7 @@ rb_reg_kcode_method(re)
 static Regexp*
 make_regexp(s, len, flag)
     char *s;
-    size_t len, flag;
+    int len, flag;
 {
     Regexp *rp;
     char *err;
@@ -653,7 +653,7 @@ static VALUE
 rb_reg_new_1(klass, s, len, options)
     VALUE klass;
     char *s;
-    size_t len;
+    int len;
     int options;		/* CASEFOLD  = 1 */
 				/* EXTENDED  = 2 */
 				/* CODE_NONE = 4 */
@@ -711,7 +711,7 @@ rb_reg_new_1(klass, s, len, options)
 VALUE
 rb_reg_new(s, len, options)
     char *s;
-    size_t len;
+    int len;
     int options;
 {
     return rb_reg_new_1(rb_cRegexp, s, len, options);
@@ -826,6 +826,9 @@ rb_reg_s_new(argc, argv, self)
 	  case 's': case 'S':
 	    flag |= 12;
 	    break;
+	  case 'u': case 'U':
+	    flag |= 16;
+	    break;
 	  default:
 	    break;
 	}
@@ -837,7 +840,7 @@ rb_reg_s_new(argc, argv, self)
     }
     else {
 	char *p;
-	size_t len;
+	int len;
 
 	p = str2cstr(src, &len);
 	return rb_reg_new_1(self, p, len, flag);
@@ -886,6 +889,8 @@ rb_kcode()
 	return MBCTYPE_EUC;
       case KCODE_SJIS:
 	return MBCTYPE_SJIS;
+      case KCODE_UTF8:
+	return MBCTYPE_UTF8;
       case KCODE_NONE:
 	return MBCTYPE_ASCII;
     }
@@ -905,6 +910,8 @@ rb_reg_get_kcode(re)
 	kcode |= 8; break;
       case KCODE_SJIS:
 	kcode |= 12; break;
+      case KCODE_UTF8:
+	kcode |= 16; break;
       default:
 	break;
     }

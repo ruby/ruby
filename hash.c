@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 22 18:51:18 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -21,6 +21,10 @@
 char *strchr _((char*,char));
 #endif
 
+#ifdef USE_CWGUSI
+char* strdup(const char*);
+#endif
+
 #define HASH_FREEZE   FL_USER1
 #define HASH_DELETED  FL_USER2
 
@@ -30,7 +34,7 @@ rb_hash_modify(hash)
 {
     if (FL_TEST(hash, HASH_FREEZE))
 	rb_raise(rb_eTypeError, "can't modify frozen hash");
-    if (rb_safe_level() >= 4 && !FL_TEST(hash, FL_TAINT))
+    if (!FL_TEST(hash, FL_TAINT) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
 }
 
@@ -455,7 +459,7 @@ delete_if_i(key, value)
     VALUE key, value;
 {
     if (key == Qnil) return ST_CONTINUE;
-    if (rb_yield(rb_assoc_new(key, value)))
+    if (RTEST(rb_yield(rb_assoc_new(key, value))))
 	return ST_DELETE;
     return ST_CONTINUE;
 }
@@ -841,7 +845,6 @@ rb_hash_update(hash1, hash2)
     return hash1;
 }
 
-#ifndef __MACOS__ /* no environment variables on MacOS. */
 static int path_tainted = -1;
 
 #ifndef NT
@@ -1112,7 +1115,7 @@ rb_f_setenv(obj, nm, val)
     }
 
     name = str2cstr(nm, &nlen);
-    value = STR2CSTR(val &vlen);
+    value = str2cstr(val, &vlen);
     if (strlen(name) != nlen)
 	rb_raise(rb_eArgError, "Bad environment name");
     if (strlen(value) != vlen)
@@ -1362,8 +1365,6 @@ env_to_hash(obj)
     }
     return hash;
 }
-
-#endif  /* ifndef __MACOS__  no environment variables on MacOS. */
 
 void
 Init_Hash()

@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -598,7 +598,8 @@ rb_gc_mark(ptr)
 	break;
 
       case T_SCOPE:
-	if (obj->as.scope.local_vars) {
+	if (obj->as.scope.local_vars &&
+            obj->as.scope.flag != SCOPE_ALLOCA) {
 	    int n = obj->as.scope.local_tbl[0]+1;
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 
@@ -807,7 +808,8 @@ obj_free(obj)
 	return;			/* no need to free iv_tbl */
 
       case T_SCOPE:
-	if (RANY(obj)->as.scope.local_vars) {
+	if (RANY(obj)->as.scope.local_vars &&
+            RANY(obj)->as.scope.flag != SCOPE_ALLOCA) {
 	    VALUE *vars = RANY(obj)->as.scope.local_vars-1;
 	    if (vars[0] == 0)
 		free(RANY(obj)->as.scope.local_tbl);
