@@ -1006,7 +1006,7 @@ File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
 File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
 $bad = false
-if (dir = File.dirname(File.dirname(dir))) == '.'
+if (dir = File.dirname(File.dirname($0))) == '.'
   dir = ""
 else
   dir << "/"
