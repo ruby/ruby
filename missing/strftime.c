@@ -45,6 +45,8 @@
  * January 1996
  */
 
+#include "config.h"
+
 #ifndef GAWK
 #include <stdio.h>
 #include <ctype.h>

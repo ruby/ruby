@@ -130,7 +130,7 @@ VALUE rb_int2inum _((long));
 #define Qtrue  2
 #define Qnil   4
 
-# define RTEST(v) rb_test_false_or_nil((VALUE)(v))
+#define RTEST(v) rb_test_false_or_nil((VALUE)(v))
 #define NIL_P(v) ((VALUE)(v) == Qnil)
 
 #define CLASS_OF(v) rb_class_of((VALUE)(v))
@@ -265,7 +265,6 @@ struct RHash {
 
 struct RFile {
     struct RBasic basic;
-    struct st_table *iv_tbl;
     struct OpenFile *fptr;
 };
 

@@ -530,10 +530,11 @@ rb_reg_search(reg, str, pos, reverse)
     }
     regs = RMATCH(match)->regs;
 
-    range = RSTRING(str)->len - pos;
     if (reverse) {
-	range = -range;
-	pos = RSTRING(str)->len;
+	range = -pos;
+    }
+    else {
+	range = RSTRING(str)->len - pos;
     }
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
 		       pos, range, regs);

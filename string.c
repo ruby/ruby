@@ -623,10 +623,10 @@ rb_str_rindex(argc, argv, str)
 
     if (rb_scan_args(argc, argv, "11", &sub, &position) == 2) {
 	pos = NUM2INT(position);
-	if (pos > RSTRING(str)->len) return Qnil;
+	if (pos > RSTRING(str)->len) pos = RSTRING(str)->len;
     }
     else {
-	pos = 0;
+	pos = RSTRING(str)->len;
     }
 
     switch (TYPE(sub)) {
@@ -637,9 +637,9 @@ rb_str_rindex(argc, argv, str)
 
       case T_STRING:
 	/* substring longer than string */
-	if (RSTRING(str)->len - pos < RSTRING(sub)->len) return Qnil;
-	sbeg = RSTRING(str)->ptr + pos;
-	s = RSTRING(str)->ptr + RSTRING(str)->len - RSTRING(sub)->len;
+	if (pos < RSTRING(sub)->len) return Qnil;
+	sbeg = RSTRING(str)->ptr;
+	s = RSTRING(str)->ptr + pos - RSTRING(sub)->len;
 	t = RSTRING(sub)->ptr;
 	len = RSTRING(sub)->len;
 	while (sbeg <= s) {
@@ -653,8 +653,8 @@ rb_str_rindex(argc, argv, str)
       case T_FIXNUM:
       {
 	  int c = FIX2INT(sub);
-	  char *p = RSTRING(str)->ptr + RSTRING(str)->len - 1;
-	  char *pbeg = RSTRING(str)->ptr + pos;
+	  char *p = RSTRING(str)->ptr + pos - 1;
+	  char *pbeg = RSTRING(str)->ptr;
 
 	  while (pbeg <= p) {
 	      if (*p == c) return INT2NUM(p - RSTRING(str)->ptr);

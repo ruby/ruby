@@ -4017,7 +4017,7 @@ echo "configure:3939: checking whether OS depend dynamic link works" >&5
 			rb_cv_dlopen=yes ;;
 	aix*)		LDSHARED='/usr/ccs/bin/ld'
 			XLDFLAGS='-Wl,-bE:ruby.imp'
-			DLDFLAGS='-eInit_$(TARGET) -bI:$(hdrdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
+			DLDFLAGS='-eInit_$(TARGET) -bI:$(topdir)/ruby.imp -bM:SRE -T512 -H512 -lc'
 			rb_cv_dlopen=yes ;;
 
 	human*)		DLDFLAGS=''
@@ -4477,7 +4477,11 @@ if test "$enable_shared" = 'yes'; then
   LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   case "$host_os" in
-    sunos4*|linux*)
+    sunos4*)
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
+	;;
+    linux*)
+	XLDFLAGS='-Wl,-rpath,${prefix}/lib':/usr/lib:/lib
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     freebsd*)

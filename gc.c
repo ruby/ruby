@@ -459,7 +459,6 @@ rb_gc_mark(ptr)
 	  case NODE_OR:
 	  case NODE_CASE:
 	  case NODE_SCLASS:
-	  case NODE_ARGS:
 	  case NODE_DOT2:
 	  case NODE_DOT3:
 	  case NODE_FLIP2:
@@ -493,6 +492,7 @@ rb_gc_mark(ptr)
 	  case NODE_RETURN:
 	  case NODE_YIELD:
 	  case NODE_COLON2:
+	  case NODE_ARGS:
 	    obj = RANY(obj->as.node.u1.node);
 	    goto Top;
 

@@ -1708,10 +1708,6 @@ rb_eval(self, node)
 {
     int state;
     volatile VALUE result = Qnil;
-#ifdef NOBLOCK_RECUR
-    NODE * volatile next = 0;
-    NODE * volatile nstack = 0;
-#endif
 
 #define RETURN(v) { result = (v); goto finish; }
 
@@ -1720,7 +1716,6 @@ rb_eval(self, node)
 
     switch (nd_type(node)) {
       case NODE_BLOCK:
-#ifndef NOBLOCK_RECUR
 	if (!node->nd_next) {
 	    node = node->nd_head;
 	    goto again;
@@ -1730,14 +1725,6 @@ rb_eval(self, node)
 	    node = node->nd_next;
 	}
 	break;
-#else
-	if (next) {
-	    nstack = rb_node_newnode(NODE_CREF,next,0,nstack);
-	}
-	next = node->nd_next;
-	node = node->nd_head;
-	goto again;
-#endif
       case NODE_POSTEXE:
 	rb_f_END();
 	nd_set_type(node, NODE_NIL); /* exec just once */
@@ -1795,11 +1782,7 @@ rb_eval(self, node)
 
       case NODE_IF:
 	ruby_sourceline = nd_line(node);
-#ifdef NOBLOCK_RECUR
-	if (RTEST(result)){
-#else
 	if (RTEST(rb_eval(self, node->nd_cond))) {
-#endif
 	    node = node->nd_body;
 	}
 	else {
@@ -1811,11 +1794,7 @@ rb_eval(self, node)
 	{
 	    VALUE val;
 
-#ifdef NOBLOCK_RECUR
-	    val = result;
-#else
 	    val = rb_eval(self, node->nd_head);
-#endif
 	    node = node->nd_body;
 	    while (node) {
 		NODE *tag;
@@ -2161,13 +2140,7 @@ rb_eval(self, node)
 	    TMP_PROTECT;
 
 	    BEGIN_CALLARGS;
-#ifdef NOBLOCK_RECUR_incomplete
-	    printf("mid %s recv: ", rb_id2name(node->nd_mid));
-	    rb_p(result);
-	    recv = result;
-#else
 	    recv = rb_eval(self, node->nd_recv);
-#endif
 	    SETUP_ARGS(node->nd_args);
 	    END_CALLARGS;
 
@@ -2845,18 +2818,6 @@ rb_eval(self, node)
     }
   finish:
     CHECK_INTS;
-#ifdef NOBLOCK_RECUR
-    if (next) {
-	node = next;
-	next = 0;
-	goto again;
-    }
-    if (nstack) {
-	node = nstack->nd_head;
-	nstack = nstack->nd_next;
-	goto again;
-    }
-#endif
     return result;
 }
 

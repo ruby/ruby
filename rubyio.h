@@ -36,7 +36,6 @@ typedef struct OpenFile {
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(obj)->fptr)
 
 #define MakeOpenFile(obj, fp) do {\
-    RFILE(obj)->iv_tbl = 0;\
     fp = RFILE(obj)->fptr = ALLOC(OpenFile);\
     fp->f = fp->f2 = NULL;\
     fp->mode = 0;\

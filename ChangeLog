@@ -1,3 +1,40 @@
+Fri Jun 25 13:07:20 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
+
+	* missing/isinf.c: include "config.h" added.
+
+Fri Jun 25 13:09:12 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* pack.c (pack_unpack): needed to initialize natint.
+
+	* regex.c (re_compile_pattern): add start_paren to avoid too much
+	  finalization on maybe_finalize_jump.
+
+Fri Jun 25 07:25:05 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* lib/mkmf.rb: initialize $(topdir).
+
+	* ext/extmk.rb.in (install_rb): install lib/*.rb properly.
+
+	* configure.in (linux): specifies -rpath on --enable-shared.
+
+	* configure.in (aix): ruby.imp must reside in $(topdir).
+
+Thu Jun 24 19:11:29 1999  Yoshida Masato  <yoshidam@yoshidam.net>
+
+	* parse.y (rb_str_extend): multi-byte identifier in expression
+	  interpolation in strings.
+
+	* parse.y (yylex): support multi-byte char identifiers.
+
+Thu Jun 24 15:27:13 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (f_arg): check duplicate argument names.
+
+	* gc.c (rb_gc_mark): marking wrong member for NODE_ARGS.
+
+	* string.c (rb_str_rindex): POSITION specifies start point, not
+	  end point.
+
 Thu Jun 24 13:00:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (print_mbc): wrong boundary.
@@ -7,6 +44,11 @@ Thu Jun 24 13:00:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Thu Jun 24 11:02:51 1999  Yoshida Masato  <yoshidam@yoshidam.net>
 
 	* pack.c (uv_to_utf8): mask needed.
+
+Wed Jun 23 21:03:56 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* ruby.h (struct RFile): remove iv_tbl from struct. instance
+	  variables are handled as generic ivs.
 
 Wed Jun 23 22:06:26 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
 
@@ -615,7 +657,7 @@ Mon Apr 19 13:49:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (eval): should restore ruby_dyna_vars.
 
-Fri Apr 16 21:40:43 1999  Nobuyoshu Nakada  <gea02117@nifty.ne.jp>
+Fri Apr 16 21:40:43 1999  Nobuyoshi Nakada  <gea02117@nifty.ne.jp>
 
 	* io.c (f_backquote): pipe_open may return nil.
 
@@ -641,7 +683,7 @@ Thu Apr 15 23:46:20 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* ruby.c (rubylib_mangle): mangle path by RUBYLIB_PREFIX.
 
-Wed Apr 14 23:52:51 1999  SHIROYAMA Takayuki  <psi@tokyo.stellar.co.jp>
+Wed Apr 14 23:52:51 1999  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
 
 	* node.h (NODE_LMASK): should be long to avoid overflow.
 

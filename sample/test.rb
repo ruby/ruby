@@ -609,6 +609,14 @@ ABCD
 ABCD
 END
 
+ok(/^(ab+)+b/ =~ "ababb" && $& == "ababb")
+ok(/^(?:ab+)+b/ =~ "ababb" && $& == "ababb")
+ok(/^(ab+)+/ =~ "ababb" && $& == "ababb")
+ok(/^(?:ab+)+/ =~ "ababb" && $& == "ababb")
+
+ok(/(\s+\d+){2}/ =~ " 1 2" && $& == " 1 2")
+ok(/(?:\s+\d+){2}/ =~ " 1 2" && $& == " 1 2")
+
 $x.gsub!(/((.|\n)*?)B((.|\n)*?)D/){$1+$3}
 ok($x == "AC\nAC\n")
 

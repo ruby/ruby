@@ -349,6 +349,7 @@ SHELL = /bin/sh
 #### Start of system configuration section. ####
 
 srcdir = #{$srcdir}
+topdir = #{$hdrdir}
 hdrdir = #{$hdrdir}
 
 CC = #{CONFIG["CC"]}

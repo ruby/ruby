@@ -35,7 +35,12 @@ Init_version()
 void
 ruby_show_version()
 {
+#if RUBY_VERSION_CODE < 140
+    printf("ruby %s-%d [%s]\n", RUBY_VERSION, RUBY_RELEASE_CODE % 1000000,
+	   RUBY_PLATFORM);
+#else
     printf("ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
+#endif
 }
 
 void

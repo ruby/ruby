@@ -147,12 +147,13 @@ def try_run(src, opt="")
   end
 end
 
-def install_rb(mfile)
+def install_rb(mfile, srcdir)
+  libdir = srcdir + "/lib"
   path = []
   dir = []
-  Find.find("lib") do |f|
+  Find.find(libdir) do |f|
     next unless /\.rb$/ =~ f
-    f = f[4..-1]
+    f = f[libdir.length+1..-1]
     path.push f
     dir |= File.dirname(f)
   end
@@ -161,7 +162,7 @@ def install_rb(mfile)
     mfile.printf "\t@test -d $(DESTDIR)$(pkglibdir)/%s || mkdir $(DESTDIR)$(pkglibdir)/%s\n", f, f
   end
   for f in path
-    mfile.printf "\t$(INSTALL_DATA) lib/%s $(DESTDIR)$(pkglibdir)/%s\n", f, f
+    mfile.printf "\t$(INSTALL_DATA) $(srcdir)/lib/%s $(DESTDIR)$(pkglibdir)/%s\n", f, f
   end
 end
 
@@ -347,13 +348,14 @@ SHELL = /bin/sh
 srcdir = #{$srcdir}
 VPATH = #{$srcdir}
 
-hdrdir = #{$topdir}
+topdir = #{$topdir}
+hdrdir = #{$top_srcdir}
 DESTDIR = 
 
 CC = @CC@
 
 prefix = @prefix@
-CFLAGS   = %s -I#{$topdir} -I#{$top_srcdir} -I@includedir@ #{CFLAGS} #$CFLAGS %s
+CFLAGS   = %s -I$(topdir) -I$(hdrdir) -I@includedir@ #{CFLAGS} #$CFLAGS %s
 DLDFLAGS = #$DLDFLAGS #$LDFLAGS
 LDSHARED = @LDSHARED@ #{defflag}
 ", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
@@ -418,7 +420,7 @@ EOS
 	$(INSTALL_DLLIB) $(DLLIB) $(DESTDIR)$(archdir)/$(DLLIB)
 "
   end
-  install_rb(mfile)
+  install_rb(mfile, $srcdir)
   mfile.printf "\n"
 
   if $static
@@ -449,11 +451,11 @@ $(DLLIB): $(OBJS)
 "
   end
 
-  if File.exist?("depend")
-    dfile = open("depend", "r")
+  if File.exist?("#{$srcdir}/depend")
+    dfile = open("#{$srcdir}/depend", "r")
     mfile.printf "###\n"
     while line = dfile.gets()
-      mfile.printf "%s", line
+      mfile.printf "%s", line.gsub('\$\(hdrdir\)/config.h', '$(topdir)/config.h')
     end
     dfile.close
   end

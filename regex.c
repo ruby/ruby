@@ -344,6 +344,7 @@ enum regexpcode
 		    and store it in a memory register.  Followed by
                     one byte containing the register number. Register
                     numbers must be in the range 0 through RE_NREGS.  */
+    start_paren,    /* Place holder at the start of (?:..). */
     stop_paren,    /* Place holder at the end of (?:..). */
     casefold_on,   /* Turn on casefold flag. */
     casefold_off,  /* Turn off casefold flag. */
@@ -464,7 +465,7 @@ re_set_syntax(syntax)
 
 static unsigned int
 utf8_firstbyte(c)
-     unsigned int c;
+     unsigned long c;
 {
   if (c < 0x80) return c;
   if (c <= 0x7ff) return ((c>>6)&0xff)|0xc0;
@@ -472,12 +473,16 @@ utf8_firstbyte(c)
   if (c <= 0x1fffff) return ((c>>18)&0xff)|0xf0;
   if (c <= 0x3ffffff) return ((c>>24)&0xff)|0xf8;
   if (c <= 0x7fffffff) return ((c>>30)&0xff)|0xfc;
+#if SIZEOF_INT > 4
   if (c <= 0xfffffffff) return 0xfe;
+#else
+  return 0xfe;
+#endif
 }
 
 static void
 print_mbc(c)
-     unsigned int c;
+     unsigned long c;
 {
   if (current_mbctype == MBCTYPE_UTF8) {
     if (c < 0x80)
@@ -587,13 +592,13 @@ print_mbc(c)
   } while (0)
 
 #define EXTRACT_MBC(p) 							\
-  ((unsigned short)((unsigned char)(p)[0] << 24 |			\
+  ((unsigned long)((unsigned char)(p)[0] << 24 |			\
 		    (unsigned char)(p)[1] << 16 |			\
                     (unsigned char)(p)[2] <<  8 |			\
 		    (unsigned char)(p)[3]))
 
 #define EXTRACT_MBC_AND_INCR(p) 					\
-  ((unsigned short)((p) += 4, 						\
+  ((unsigned long)((p) += 4, 						\
 		    (unsigned char)(p)[-4] << 24 |			\
 		    (unsigned char)(p)[-3] << 16 |			\
                     (unsigned char)(p)[-2] <<  8 |			\
@@ -614,14 +619,14 @@ print_mbc(c)
        unsigned char sbc_map[sbc_size];	same as charset(_not)? up to here.
        unsigned short mbc_size;		number of intervals.
        struct {
-	 unsigned int beg;		beginning of interval.
-	 unsigned int end;		end of interval.
+	 unsigned long beg;		beginning of interval.
+	 unsigned long end;		end of interval.
        } intervals[mbc_size];
      }; */
 
 static void
 set_list_bits(c1, c2, b)
-    unsigned int c1, c2;
+    unsigned long c1, c2;
     unsigned char *b;
 {
   unsigned char sbc_size = b[-1];
@@ -667,7 +672,7 @@ set_list_bits(c1, c2, b)
 
 static int
 is_in_list(c, b)
-    unsigned int c;
+    unsigned long c;
     const unsigned char *b;
 {
   unsigned short size;
@@ -734,6 +739,10 @@ print_partial_compiled_pattern(start, end)
     case stop_memory:
       mcnt = *p++;
       printf("/stop_memory/%d/%d", mcnt, *p++);
+      break;
+
+    case start_paren:
+      printf("/start_paren");
       break;
 
     case stop_paren:
@@ -997,6 +1006,7 @@ calculate_must_string(start, end)
     case endbuf:
     case endbuf2:
     case push_dummy_failure:
+    case start_paren:
     case stop_paren:
     case posix_on:
     case posix_off:
@@ -1699,6 +1709,7 @@ re_compile_pattern(pattern, size, bufp)
 	break;
 
       case ':':
+	BUFPUSH(start_paren);
 	pending_exact = 0;
       default:
 	break;
@@ -2617,6 +2628,7 @@ re_compile_fastmap(bufp)
       case wordend:
       case pop_and_fail:
       case push_dummy_failure:
+      case start_paren:
       case stop_paren:
 	continue;
 
@@ -2785,7 +2797,7 @@ re_compile_fastmap(bufp)
 	  }
 	{
 	  unsigned short size;
-	  unsigned int c, beg, end;
+	  unsigned long c, beg, end;
 
 	  p += p[-1] + 2;
 	  size = EXTRACT_UNSIGNED(&p[-2]);
@@ -2834,7 +2846,7 @@ re_compile_fastmap(bufp)
 	}
 	{
 	  unsigned short size;
-	  unsigned int c, beg, end;
+	  unsigned long c, beg, end;
 
 	  p += p[-1] + 2;
 	  size = EXTRACT_UNSIGNED(&p[-2]);
@@ -3042,7 +3054,7 @@ re_search(bufp, string, size, startpos, range, regs)
       }
       else if (fastmap && (bufp->stclass)) {
 	register unsigned char *p;
-	unsigned int c;
+	unsigned long c;
 	int irange = range;
 
 	p = (unsigned char*)string+startpos;
@@ -3476,6 +3488,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	p += 2;
 	continue;
 
+      case start_paren:
       case stop_paren:
 	break;
 
@@ -3698,7 +3711,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  if ((enum regexpcode)*p1 == stop_memory ||
 	      (enum regexpcode)*p1 == start_memory)
 	    p1 += 3;	/* Skip over args, too.  */
-	  else if ((enum regexpcode)*p1 == stop_paren)
+	  else if (/*(enum regexpcode)*p1 == start_paren ||*/
+		   (enum regexpcode)*p1 == stop_paren)
 	      p1 += 1;
 	  else
 	    break;
@@ -3790,7 +3804,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  if ((enum regexpcode)*p1 == stop_memory ||
 	      (enum regexpcode)*p1 == start_memory)
 	    p1 += 3;	/* Skip over args, too.  */
-	  else if ((enum regexpcode)*p1 == stop_paren)
+	  else if (/*(enum regexpcode)*p1 == start_paren ||*/
+		   (enum regexpcode)*p1 == stop_paren)
 	      p1 += 1;
 	  else
 	    break;
@@ -4052,10 +4067,11 @@ re_match(bufp, string_arg, size, pos, regs)
       pop_loop:
 	switch ((enum regexpcode)*p1) {
 	case stop_paren:
+#if 0
 	  failed_paren = 1;
 	  p1++;
 	  goto pop_loop;
-
+#endif
 	case jump_n:
 	case finalize_push_n:
 	  is_a_jump_n = 1;

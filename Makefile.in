@@ -107,12 +107,12 @@ install:	rbconfig.rb
 clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.o dmyext.o
 		@-./miniruby$(binsuffix) -Xext extmk.rb clean 2> /dev/null || true
+		@rm -f $(PROGRAM) miniruby$(binsuffix)
 
 distclean:	clean
 		@rm -f Makefile ext/extmk.rb config.h
 		@rm -f ext/config.cache config.cache config.log config.status
 		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
-		@rm -f $(PROGRAM) miniruby$(binsuffix)
 
 realclean:	distclean
 		@rm -f parse.c

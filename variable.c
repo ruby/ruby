@@ -833,7 +833,6 @@ rb_ivar_get(obj, id)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
-      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl && st_lookup(ROBJECT(obj)->iv_tbl, id, &val))
 	    return val;
 	break;
@@ -860,7 +859,6 @@ rb_ivar_set(obj, id, val)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
-      case T_FILE:
 	if (!ROBJECT(obj)->iv_tbl) ROBJECT(obj)->iv_tbl = st_init_numtable();
 	st_insert(ROBJECT(obj)->iv_tbl, id, val);
 	break;
@@ -880,7 +878,6 @@ rb_ivar_defined(obj, id)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
-      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl && st_lookup(ROBJECT(obj)->iv_tbl, id, 0))
 	    return Qtrue;
 	break;
@@ -916,7 +913,6 @@ rb_obj_instance_variables(obj)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
-      case T_FILE:
 	ary = rb_ary_new();
 	if (ROBJECT(obj)->iv_tbl) {
 	    st_foreach(ROBJECT(obj)->iv_tbl, ivar_i, ary);
@@ -955,7 +951,6 @@ rb_obj_remove_instance_variable(obj, name)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
-      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl) {
 	    st_delete(ROBJECT(obj)->iv_tbl, &id, &val);
 	}

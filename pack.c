@@ -984,7 +984,7 @@ hex2num(c)
 
 #ifdef NATINT_PACK
 #define PACK_LENGTH_ADJUST(type,sz) do {	\
-    int t__len = NATINT_LEN((type),(sz));	\
+    int t__len = NATINT_LEN(type,(sz));		\
     tmp = 0;					\
     if (len > (send-s)/t__len) {		\
         if (!star) {				\
@@ -1018,7 +1018,7 @@ pack_unpack(str, fmt)
     char type;
     int len, tmp, star;
 #ifdef NATINT_PACK
-    int natint;		/* native integer */
+    int natint;			/* native integer */
 #endif
 
     s = str2cstr(str, &len);
@@ -1028,6 +1028,9 @@ pack_unpack(str, fmt)
 
     ary = rb_ary_new();
     while (p < pend) {
+#ifdef NATINT_PACK
+	natint = 0;
+#endif
 	star = 0;
 	type = *p++;
 	if (*p == '_') {
@@ -1630,7 +1633,9 @@ uv_to_utf8(buf, uv)
 	buf[5] = (uv&0x3f)|0x80;
 	return 6;
     }
+#if SIZEOF_LONG > 4
     if (uv <= 0xfffffffff) {
+#endif
 	buf[0] = 0xfe;
 	buf[1] = ((uv>>30)&0x3f)|0x80;
 	buf[2] = ((uv>>24)&0x3f)|0x80;
@@ -1639,8 +1644,10 @@ uv_to_utf8(buf, uv)
 	buf[5] = ((uv>>6)&0x3f)|0x80;
 	buf[6] = (uv&0x3f)|0x80;
 	return 7;
+#if SIZEOF_LONG > 4
     }
     rb_raise(rb_eArgError, "uv_to_utf8(); too big value");
+#endif
 }
 
 static unsigned long

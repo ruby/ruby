@@ -180,7 +180,7 @@ static void top_local_setup();
 %type <node> mlhs mlhs_head mlhs_tail mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   variable symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg
-%type <num>  f_arg
+%type <num>  f_norm_arg f_arg
 %token tUPLUS 		/* unary+ */
 %token tUMINUS 		/* unary- */
 %token tPOW		/* ** */
@@ -1505,18 +1505,19 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 			$$ = NEW_ARGS(0, 0, -1);
 		    }
 
-f_arg		: tIDENTIFIER
+f_norm_arg	: tIDENTIFIER
 		    {
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
+			else if (local_id($1))
+			    yyerror("duplicate argument name");
 			local_cnt($1);
 			$$ = 1;
 		    }
-		| f_arg ',' tIDENTIFIER
+
+f_arg		: f_norm_arg
+		| f_arg ',' f_norm_arg
 		    {
-			if (!is_local_id($3))
-			    yyerror("formal argument must be local variable");
-			local_cnt($3);
 			$$ += 1;
 		    }
 
@@ -1524,6 +1525,8 @@ f_opt		: tIDENTIFIER '=' arg
 		    {
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
+			else if (local_id($1))
+			    yyerror("duplicate optional argument name");
 			$$ = assignable($1, $3);
 		    }
 
@@ -1541,6 +1544,8 @@ f_rest_arg	: tSTAR tIDENTIFIER
 		    {
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
+			else if (local_id($2))
+			    yyerror("duplicate rest argument name");
 			$$ = local_cnt($2);
 		    }
 		| tSTAR
@@ -2703,9 +2708,6 @@ yylex()
 	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
 	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
- 	    if (ISDIGIT(c)) {
-		goto start_num;
-	    }
 	    pushback(c);
 	    lex_state = EXPR_BEG;
 	    return tUPLUS;
@@ -3165,7 +3167,6 @@ yylex()
 	if (ismbchar(c)) {
 	    int i, len = mbclen(c)-1;
 
-	    tokadd(c);
 	    for (i = 0; i < len; i++) {
 		c = nextc();
 		tokadd(c);
@@ -3326,7 +3327,21 @@ rb_str_extend(list, term)
 		return list;
 	    }
 	}
-	/* through */
+
+	while (is_identchar(c)) {
+	    tokadd(c);
+	    if (ismbchar(c)) {
+		int i, len = mbclen(c)-1;
+
+		for (i = 0; i < len; i++) {
+		    c = nextc();
+		    tokadd(c);
+		}
+	    }
+	    c = nextc();
+	}
+	pushback(c);
+	break;
 
       case '@':
 	tokadd(c);
@@ -3336,7 +3351,6 @@ rb_str_extend(list, term)
 	    if (ismbchar(c)) {
 		int i, len = mbclen(c)-1;
 
-		tokadd(c);
 		for (i = 0; i < len; i++) {
 		    c = nextc();
 		    tokadd(c);
