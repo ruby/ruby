@@ -762,7 +762,7 @@ end
     end
 
     httpserver = WEBrick::HTTPServer.new(:Port => 8080)    
-    httpserver.mount("RPC2", s)
+    httpserver.mount("/RPC2", s)
     trap("HUP") { httpserver.shutdown }   # use 1 instead of "HUP" on Windows
     httpserver.start
 == Description
