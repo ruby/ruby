@@ -910,22 +910,27 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
 
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
-    shell = NULL;
     if (prog) {
 	shell = prog;
     }
-    else if (has_redirection(cmd)) {
-	if (shell = getenv("RUBYSHELL")) {
+    else {
+	int redir = -1;
+	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd))) {
 	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
-				 sizeof (" -c "));
-	    sprintf(tmp, "%s -c %s", shell, cmd);
+				 sizeof (" -c ") + 2);
+	    sprintf(tmp, "%s -c \"%s\"", shell, cmd);
 	    cmd = tmp;
 	}
-	else if ((shell = getenv("COMSPEC")) && isInternalCmd(cmd, shell)) {
+	else if ((shell = getenv("COMSPEC")) &&
+		 ((redir < 0 ? has_redirection(cmd) : redir) ||
+		  isInternalCmd(cmd, shell))) {
 	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
 				 sizeof (" /c "));
 	    sprintf(tmp, "%s /c %s", shell, cmd);
 	    cmd = tmp;
+	}
+	else {
+	    shell = NULL;
 	}
     }
 
