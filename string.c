@@ -1650,7 +1650,6 @@ rb_str_splice(str, beg, len, val)
 	memmove(RSTRING(str)->ptr + beg + RSTRING(val)->len,
 		RSTRING(str)->ptr + beg + len,
 		RSTRING(str)->len - (beg + len));
-    rb_str_modify(str);
     }
     if (RSTRING(str)->len < beg && len < 0) {
 	MEMZERO(RSTRING(str)->ptr + RSTRING(str)->len, char, -len);
@@ -2750,7 +2749,6 @@ rb_str_upcase_bang(str)
  *  Returns a copy of <i>str</i> with all lowercase letters replaced with their
  *  uppercase counterparts. The operation is locale insensitive---only
  *  characters ``a'' to ``z'' are affected.
-	    rb_str_modify(str);
  *     
  *     "hEllO".upcase   #=> "HELLO"
  */
