@@ -792,27 +792,27 @@ class WEBrickServlet < BasicServer
 
   def service(request, response)
     if request.request_method != "POST"
-      raise HTTPStatus::MethodNotAllowed,
+      raise WEBrick::HTTPStatus::MethodNotAllowed,
             "unsupported method `#{request.request_method}'."
     end
 
     if parse_content_type(request['Content-type']).first != "text/xml" 
-      raise HTTPStatus::BadRequest
+      raise WEBrick::HTTPStatus::BadRequest
     end 
 
     length = (request['Content-length'] || 0).to_i
 
-    raise HTTPStatus::LengthRequired unless length > 0
+    raise WEBrick::HTTPStatus::LengthRequired unless length > 0
 
     data = request.body
 
     if data.nil? or data.size != length
-      raise HTTPStatus::BadRequest
+      raise WEBrick::HTTPStatus::BadRequest
     end
 
     resp = process(data)
     if resp.nil? or resp.size <= 0  
-      raise HTTPStatus::InternalServerError
+      raise WEBrick::HTTPStatus::InternalServerError
     end
 
     response.status = 200
