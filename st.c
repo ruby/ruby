@@ -165,7 +165,7 @@ st_init_table_with_size(type, size)
     tbl = alloc(st_table);
     tbl->type = type;
     tbl->num_entries = 0;
-    tbl->num_bins = size-1;
+    tbl->num_bins = size;
     tbl->bins = (st_table_entry **)Calloc(size, sizeof(st_table_entry*));
 
     return tbl;
@@ -211,7 +211,7 @@ st_free_table(table)
     register st_table_entry *ptr, *next;
     int i;
 
-    for(i = 0; i <= table->num_bins; i++) {
+    for(i = 0; i < table->num_bins; i++) {
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
@@ -267,7 +267,7 @@ st_lookup(table, key, value)
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
 {\
     st_table_entry *entry;\
-    if (table->num_entries/(table->num_bins+1) > ST_DEFAULT_MAX_DENSITY) {\
+    if (table->num_entries/(table->num_bins) > ST_DEFAULT_MAX_DENSITY) {\
 	rehash(table);\
         bin_pos = hash_val % table->num_bins;\
     }\
@@ -328,8 +328,7 @@ rehash(table)
     new_num_bins = new_size(old_num_bins+1);
     new_bins = (st_table_entry**)Calloc(new_num_bins, sizeof(st_table_entry*));
 
-    new_num_bins--;
-    for(i = 0; i <= old_num_bins; i++) {
+    for(i = 0; i < old_num_bins; i++) {
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
@@ -350,7 +349,7 @@ st_copy(old_table)
 {
     st_table *new_table;
     st_table_entry *ptr, *entry;
-    int i, num_bins = old_table->num_bins+1;
+    int i, num_bins = old_table->num_bins;
 
     new_table = alloc(st_table);
     if (new_table == 0) {
@@ -487,7 +486,7 @@ st_foreach(table, func, arg)
     enum st_retval retval;
     int i;
 
-    for(i = 0; i <= table->num_bins; i++) {
+    for(i = 0; i < table->num_bins; i++) {
 	last = 0;
 	for(ptr = table->bins[i]; ptr != 0;) {
 	    retval = (*func)(ptr->key, ptr->record, arg);

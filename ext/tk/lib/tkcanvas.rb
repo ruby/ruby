@@ -1,4 +1,4 @@
-#
+
 #		tkcanvas.rb - Tk canvas classes
 #			$Date$
 #			by Yukihiro Matsumoto <matz@caelum.co.jp>
@@ -9,116 +9,18 @@ require "tk"
 require 'tkfont'
 
 module TkTreatCItemFont
-  def tagfont_configinfo(tagOrId)
+  include TkTreatItemFont
+
+  ItemCMD = ['itemconfigure', TkComm::None]
+  def __conf_cmd(idx)
+    ItemCMD[idx]
+  end
+
+  def __item_pathname(tagOrId)
     if tagOrId.kind_of?(TkcItem) || tagOrId.kind_of?(TkcTag)
-      pathname = self.path + ';' + tagOrId.id.to_s
+      self.path + ';' + tagOrId.id.to_s
     else
-      pathname = self.path + ';' + tagOrId.to_s
-    end
-    ret = TkFont.used_on(pathname)
-    if ret == nil
-      ret = TkFont.init_widget_font(pathname, 
-				    self.path, 'itemconfigure', tagOrId)
-    end
-    ret
-  end
-  alias tagfontobj tagfont_configinfo
-
-  def tagfont_configure(tagOrId, slot)
-    if tagOrId.kind_of?(TkcItem) || tagOrId.kind_of?(TkcTag)
-      pathname = self.path + ';' + tagOrId.id.to_s
-    else
-      pathname = self.path + ';' + tagOrId.to_s
-    end
-    if (fnt = slot.delete('font'))
-      if fnt.kind_of? TkFont
-	return fnt.call_font_configure(pathname, 
-				       self.path,'itemconfigure',tagOrId,slot)
-      else
-	latintagfont_configure(tagOrId, fnt) if fnt
-      end
-    end
-    if (ltn = slot.delete('latinfont'))
-      latintagfont_configure(tagOrId, ltn) if ltn
-    end
-    if (ltn = slot.delete('asciifont'))
-      latintagfont_configure(tagOrId, ltn) if ltn
-    end
-    if (knj = slot.delete('kanjifont'))
-      kanjitagfont_configure(tagOrId, knj) if knj
-    end
-
-    tk_call(self.path, 'itemconfigure', tagOrId, *hash_kv(slot)) if slot != {}
-    self
-  end
-
-  def latintagfont_configure(tagOrId, ltn, keys=nil)
-    fobj = tagfontobj(tagOrId)
-    if ltn.kind_of? TkFont
-      conf = {}
-      ltn.latin_configinfo.each{|key,val| conf[key] = val if val != []}
-      if conf == {}
-	fobj.latin_replace(ltn)
-	fobj.latin_configure(keys) if keys
-      elsif keys
-	fobj.latin_configure(conf.update(keys))
-      else
-	fobj.latin_configure(conf)
-      end
-    else
-      fobj.latin_replace(ltn)
-    end
-  end
-  alias asciitagfont_configure latintagfont_configure
-
-  def kanjitagfont_configure(tagOrId, knj, keys=nil)
-    fobj = tagfontobj(tagOrId)
-    if knj.kind_of? TkFont
-      conf = {}
-      knj.kanji_configinfo.each{|key,val| conf[key] = val if val != []}
-      if conf == {}
-	fobj.kanji_replace(knj)
-	fobj.kanji_configure(keys) if keys
-      elsif keys
-	fobj.kanji_configure(conf.update(keys))
-      else
-	fobj.kanji_configure(conf)
-      end
-    else
-      fobj.kanji_replace(knj)
-    end
-  end
-
-  def tagfont_copy(tagOrId, window, wintag=nil)
-    if wintag
-      window.tagfontobj(wintag).configinfo.each{|key,value|
-	tagfontobj(tagOrId).configure(key,value)
-      }
-      tagfontobj(tagOrId).replace(window.tagfontobj(wintag).latin_font, 
-				  window.tagfontobj(wintag).kanji_font)
-    else
-      window.tagfont(tagOrId).configinfo.each{|key,value|
-	tagfontobj(tagOrId).configure(key,value)
-      }
-      tagfontobj(tagOrId).replace(window.fontobj.latin_font, 
-				  window.fontobj.kanji_font)
-    end
-  end
-
-  def latintagfont_copy(tagOrId, window, wintag=nil)
-    if wintag
-      tagfontobj(tagOrId).latin_replace(window.tagfontobj(wintag).latin_font)
-    else
-      tagfontobj(tagOrId).latin_replace(window.fontobj.latin_font)
-    end
-  end
-  alias asciitagfont_copy latintagfont_copy
-
-  def kanjitagfont_copy(tagOrId, window, wintag=nil)
-    if wintag
-      tagfontobj(tagOrId).kanji_replace(window.tagfontobj(wintag).kanji_font)
-    else
-      tagfontobj(tagOrId).kanji_replace(window.fontobj.kanji_font)
+      self.path + ';' + tagOrId.to_s
     end
   end
 end
@@ -133,8 +35,12 @@ class TkCanvas<TkWindow
     WidgetClassName
   end
 
-  def create_self
-    tk_call 'canvas', path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'canvas', @path, *hash_kv(keys)
+    else
+      tk_call 'canvas', @path
+    end
   end
 
   def tagid(tag)
@@ -736,16 +642,32 @@ class TkcItem<TkObject
     end
     @parent = @c = parent
     @path = parent.path
+    fontkeys = {}
     if args[-1].kind_of? Hash
+      args = args.dup
       keys = args.pop
+      ['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
+	fontkeys[key] = keys.delete(key) if keys.key?(key)
+      }
+      args += hash_kv(keys)
     end
     @id = create_self(*args).to_i ;# 'canvas item id' is integer number
     CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
     CItemID_TBL[@path][@id] = self
-    if keys
-      # tk_call @path, 'itemconfigure', @id, *hash_kv(keys)
-      configure(keys) if keys
-    end
+    font_configure(fontkeys) unless fontkeys.empty?
+
+######## old version
+#    if args[-1].kind_of? Hash
+#      keys = args.pop
+#    end
+#    @id = create_self(*args).to_i ;# 'canvas item id' is integer number
+#    CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
+#    CItemID_TBL[@path][@id] = self
+#    if keys
+#      # tk_call @path, 'itemconfigure', @id, *hash_kv(keys)
+#      configure(keys) if keys
+#    end
+########
   end
   def create_self(*args); end
   private :create_self

@@ -5791,12 +5791,12 @@ rb_mod_include(argc, argv, module)
     VALUE *argv;
     VALUE module;
 {
-    int i;
+    while (argc--) {
+	VALUE m = argv[argc];
 
-    for (i=0; i<argc; i++) {
-	Check_Type(argv[i], T_MODULE);
-	rb_funcall(argv[i], rb_intern("append_features"), 1, module);
-	rb_funcall(argv[i], rb_intern("included"), 1, module);
+	Check_Type(m, T_MODULE);
+	rb_funcall(m, rb_intern("append_features"), 1, module);
+	rb_funcall(m, rb_intern("included"), 1, module);
     }
     return module;
 }

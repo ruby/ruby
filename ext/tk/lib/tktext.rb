@@ -7,121 +7,24 @@ require 'tk.rb'
 require 'tkfont'
 
 module TkTreatTextTagFont
-  def tagfont_configinfo(tag)
-    if tag.kind_of? TkTextTag
-      pathname = self.path + ';' + tag.id
-    else
-      pathname = self.path + ';' + tag
-    end
-    ret = TkFont.used_on(pathname)
-    if ret == nil
-      ret = TkFont.init_widget_font(pathname, 
-				    self.path, 'tag', 'configure', tag)
-    end
-    ret
-  end
-  alias tagfontobj tagfont_configinfo
+  include TkTreatItemFont
 
-  def tagfont_configure(tag, slot)
-    if tag.kind_of? TkTextTag
-      pathname = self.path + ';' + tag.id
-    else
-      pathname = self.path + ';' + tag
-    end
-    if (fnt = slot.delete('font'))
-      if fnt.kind_of? TkFont
-	return fnt.call_font_configure(pathname, 
-				       self.path,'tag','configure',tag,slot)
-      else
-	latintagfont_configure(tag, fnt) if fnt
-      end
-    end
-    if (ltn = slot.delete('latinfont'))
-      latintagfont_configure(tag, ltn) if ltn
-    end
-    if (ltn = slot.delete('asciifont'))
-      latintagfont_configure(tag, ltn) if ltn
-    end
-    if (knj = slot.delete('kanjifont'))
-      kanjitagfont_configure(tag, knj) if knj
-    end
-
-    tk_call(self.path, 'tag', 'configure', tag, *hash_kv(slot)) if slot != {}
-    self
+  ItemCMD = ['tag', 'configure']
+  def __conf_cmd(idx)
+    ItemCMD[idx]
   end
 
-  def latintagfont_configure(tag, ltn, keys=nil)
-    fobj = tagfontobj(tag)
-    if ltn.kind_of? TkFont
-      conf = {}
-      ltn.latin_configinfo.each{|key,val| conf[key] = val if val != []}
-      if conf == {}
-	fobj.latin_replace(ltn)
-	fobj.latin_configure(keys) if keys
-      elsif keys
-	fobj.latin_configure(conf.update(keys))
-      else
-	fobj.latin_configure(conf)
-      end
+  def __item_pathname(tagOrId)
+    if tagOrId.kind_of?(TkTextTag)
+      self.path + ';' + tagOrId.id
     else
-      fobj.latin_replace(ltn)
-    end
-  end
-  alias asciitagfont_configure latintagfont_configure
-
-  def kanjitagfont_configure(tag, knj, keys=nil)
-    fobj = tagfontobj(tag)
-    if knj.kind_of? TkFont
-      conf = {}
-      knj.kanji_configinfo.each{|key,val| conf[key] = val if val != []}
-      if conf == {}
-	fobj.kanji_replace(knj)
-	fobj.kanji_configure(keys) if keys
-      elsif keys
-	fobj.kanji_configure(conf.update(keys))
-      else
-	fobj.kanji_configure(conf)
-      end
-    else
-      fobj.kanji_replace(knj)
-    end
-  end
-
-  def tagfont_copy(tag, window, wintag=nil)
-    if wintag
-      window.tagfontobj(wintag).configinfo.each{|key,value|
-	tagfontobj(tag).configure(key,value)
-      }
-      tagfontobj(tag).replace(window.tagfontobj(wintag).latin_font, 
-			      window.tagfontobj(wintag).kanji_font)
-    else
-      window.tagfont(wintag).configinfo.each{|key,value|
-	tagfontobj(tag).configure(key,value)
-      }
-      tagfontobj(tag).replace(window.fontobj.latin_font, 
-			      window.fontobj.kanji_font)
-    end
-  end
-
-  def latintagfont_copy(tag, window, wintag=nil)
-    if wintag
-      tagfontobj(tag).latin_replace(window.tagfontobj(wintag).latin_font)
-    else
-      tagfontobj(tag).latin_replace(window.fontobj.latin_font)
-    end
-  end
-  alias asciitagfont_copy latintagfont_copy
-
-  def kanjitagfont_copy(tag, window, wintag=nil)
-    if wintag
-      tagfontobj(tag).kanji_replace(window.tagfontobj(wintag).kanji_font)
-    else
-      tagfontobj(tag).kanji_replace(window.fontobj.kanji_font)
+      self.path + ';' + tagOrId
     end
   end
 end
 
 class TkText<TkTextWin
+  ItemConfCMD = ['tag', 'configure']
   include TkTreatTextTagFont
   include Scrollable
 
@@ -143,8 +46,12 @@ class TkText<TkTextWin
     @tags = {}
   end
 
-  def create_self
-    tk_call 'text', @path
+  def create_self(keys)
+    if keys and keys != None
+      tk_call 'text', @path, *hash_kv(keys)
+    else
+      tk_call 'text', @path
+    end
     init_instance_variable
   end
 
@@ -298,7 +205,7 @@ class TkText<TkTextWin
     else
       if  key == 'font' || key == 'kanjifont' ||
 	  key == 'latinfont' || key == 'asciifont'
-	tagfont_configure({key=>val})
+	tagfont_configure(tag, {key=>val})
       else
 	tk_send 'tag', 'configure', tag, "-#{key}", val
       end
