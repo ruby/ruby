@@ -28,16 +28,16 @@ remove_sign_bits(str, base)
     if (base == 16) {
       x_retry:
 	switch (*t) {
-	  case 'c':
+	  case 'c': case 'C':
 	    *t = '4';
 	    break;
-	  case 'd':
+	  case 'd': case 'D':
 	    *t = '5';
 	    break;
-	  case 'e':
+	  case 'e': case 'E':
 	    *t = '2';
 	    break;
-	  case 'f':
+	  case 'f': case 'F':
 	    if (t[1] > '8') {
 		t++;
 		goto x_retry;
@@ -102,27 +102,14 @@ remove_sign_bits(str, base)
 
 double big2dbl _((VALUE));
 
-VALUE
-f_sprintf(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    VALUE fmt;
-    char *buf, *p, *end;
-    int blen, bsiz;
-    VALUE result;
-
 #define FNONE  0
 #define FSHARP 1
 #define FMINUS 2
 #define FPLUS  4
 #define FZERO  8
-#define FWIDTH 16
-#define FPREC  32
-
-    int width = 0, prec = 0, flags = FNONE;
-    VALUE str;
-
+#define FSPACE 16
+#define FWIDTH 32
+#define FPREC  64
 
 #define CHECK(l) {\
     while (blen + (l) >= bsiz) {\
@@ -139,6 +126,20 @@ f_sprintf(argc, argv)
 
 #define GETARG() \
     ((argc == 0)?(ArgError("too few argument."),0):(argc--,((argv++)[0])))
+
+VALUE
+f_sprintf(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE fmt;
+    char *buf, *p, *end;
+    int blen, bsiz;
+    VALUE result;
+
+    int width, prec, flags = FNONE;
+    VALUE tmp;
+    VALUE str;
 
     fmt = GETARG();
     p = str2cstr(fmt, &blen);
@@ -159,6 +160,7 @@ f_sprintf(argc, argv)
 	}
 	p = t + 1;		/* skip `%' */
 
+	width = prec = -1;
       retry:
 	switch (*p) {
 	  default:
@@ -169,6 +171,7 @@ f_sprintf(argc, argv)
 	    break;
 
 	  case ' ':
+	    flags |= FSPACE;
 	    p++;
 	    goto retry;
 
@@ -210,11 +213,11 @@ f_sprintf(argc, argv)
 	    }
 
 	    flags |= FWIDTH;
-	    width = GETARG();
-	    width = NUM2INT(width);
+	    tmp = GETARG();
+	    width = NUM2INT(tmp);
 	    if (width < 0) {
 		flags |= FMINUS;
-		width = - width;
+		width = -width;
 	    }
 	    p++;
 	    goto retry;
@@ -226,10 +229,9 @@ f_sprintf(argc, argv)
 
 	    prec = 0;
 	    p++;
-	    if (*p == '0') flags |= FZERO;
 	    if (*p == '*') {
-		prec = GETARG();
-		prec = NUM2INT(prec);
+		tmp = GETARG();
+		prec = NUM2INT(tmp);
 		if (prec > 0)
 		    flags |= FPREC;
 		p++;
@@ -258,8 +260,13 @@ f_sprintf(argc, argv)
 		VALUE val = GETARG();
 		char c;
 
+		if (!(flags & FMINUS))
+		    while (--width > 0)
+			PUSH(" ", 1);
 		c = NUM2INT(val) & 0xff;
 		PUSH(&c, 1);
+		while (--width > 0)
+		    PUSH(" ", 1);
 	    }
 	    break;
 
@@ -303,17 +310,45 @@ f_sprintf(argc, argv)
 	    }
 	    break;
 
-	  case 'b':
-	  case 'B':
+	  case 'd':
+	  case 'i':
 	  case 'o':
 	  case 'x':
+	  case 'X':
+	  case 'b':
 	  case 'u':
 	    {
 		volatile VALUE val = GETARG();
 		char fbuf[32], nbuf[64], *s, *t;
+		char *prefix = 0;
+		int sign = 0;
+		char sc = 0;
 		long v;
 		int base, bignum = 0;
-		int len, slen, pos;
+		int len, pos;
+
+		switch (*p) {
+		  case 'd':
+		  case 'i':
+		    sign = 1; break;
+		  case 'o':
+		  case 'x':
+		  case 'X':
+		  case 'b':
+		  case 'u':
+		  default:
+		    if (flags & FPLUS) sign = 1;
+		    break;
+		}
+		if (flags & FSHARP) {
+		    if (*p == 'o') prefix = "0";
+		    else if (*p == 'x') prefix = "0x";
+		    else if (*p == 'X') prefix = "0X";
+		    else if (*p == 'b') prefix = "0b";
+		    if (prefix) {
+			width -= strlen(prefix);
+		    }
+		}
 
 	      bin_retry:
 		switch (TYPE(val)) {
@@ -335,49 +370,88 @@ f_sprintf(argc, argv)
 		    break;
 		}
 
-		if (*p == 'x') base = 16;
+		if (*p == 'u' || *p == 'd' || *p == 'i') base = 10;
+		else if (*p == 'x' || *p == 'X') base = 16;
 		else if (*p == 'o') base = 8;
-		else if (*p == 'u' || *p == 'd') base = 10;
-		else if (*p == 'b' || *p == 'B') base = 2;
+		else if (*p == 'b') base = 2;
 		if (!bignum) {
 		    if (base == 2) {
 			val = int2big(v);
+			goto bin_retry;
 		    }
-		    else {
-			s = nbuf;
+		    if (sign) {
+			char c = *p;
+			if (c == 'i') c = 'd'; /* %d and %i are identical */
 			if (v < 0) {
-			    strcpy(s, "..");
-			    s += 2;
-			    bignum = 2;
+			    v = -v;
+			    sc = '-';
+			    width--;
 			}
-			sprintf(fbuf, "%l%%c", *p);
-			sprintf(s, fbuf, v);
-			if (v < 0) {
-			    char d = 0;
+			else if (flags & FPLUS) {
+			    sc = '+';
+			    width--;
+			}
+			else if (flags & FSPACE) {
+			    sc = ' ';
+			    width--;
+			}
+			sprintf(fbuf, "%l%%c", c);
+			sprintf(nbuf, fbuf, v);
+			s = nbuf;
+			goto format_integer;
+		    }
+		    s = nbuf;
+		    if (v < 0) {
+			strcpy(s, "..");
+			s += 2;
+		    }
+		    sprintf(fbuf, "%l%%c", *p);
+		    sprintf(s, fbuf, v);
+		    if (v < 0) {
+			char d = 0;
 
-			    remove_sign_bits(s, base);
-			    switch (base) {
-			      case 16:
-				d = 'f'; break;
-			      case 8:
-				d = '7'; break;
-			    }
-			    if (d && *s != d) {
-				memmove(s+1, s, strlen(s)+1);
-				*s = d;
-			    }
+			remove_sign_bits(s, base);
+			switch (base) {
+			  case 16:
+			    d = 'f'; 
+			    break;
+			  case 8:
+			    d = '7'; break;
 			}
-			s = nbuf;
-			goto unsigned_format;
+			if (d && *s != d) {
+			    memmove(s+1, s, strlen(s)+1);
+			    *s = d;
+			}
 		    }
+		    s = nbuf;
+		    goto format_integer;
 		}
-		if (*p != 'B' && !RBIGNUM(val)->sign) {
+
+		if (sign) {
+		    val = big2str(val, base);
+		    s = RSTRING(val)->ptr;
+		    if (s[0] == '-') {
+			s++;
+			sc = '-';
+			width--;
+		    }
+		    else if (flags & FPLUS) {
+			sc = '+';
+			width--;
+		    }
+		    else if (flags & FSPACE) {
+			sc = ' ';
+			width--;
+		    }
+		    goto format_integer;
+		}
+		if (!RBIGNUM(val)->sign) {
 		    val = big_clone(val);
 		    big_2comp(val);
 		}
 		val = big2str(val, base);
 		s = RSTRING(val)->ptr;
-		if (*s == '-' && *p != 'B') {
+		if (*s == '-') {
 		    remove_sign_bits(++s, base);
 		    val = str_new(0, 3+strlen(s));
 		    t = RSTRING(val)->ptr;
@@ -394,167 +468,79 @@ f_sprintf(argc, argv)
 		}
 		s  = RSTRING(val)->ptr;
 
-	      unsigned_format:
-		slen = len = strlen(s);
-		pos = blen;
-		if (flags&FWIDTH) {
-		    if (width <= len) flags &= ~FWIDTH;
-		    else {
-			slen = width;
+	      format_integer:
+		pos = -1;
+		len = strlen(s);
+
+		if (*p == 'X') {
+		    char *pp = s;
+		    while (*pp) {
+			*pp = toupper(*pp);
+			pp++;
 		    }
 		}
-		if (flags&FPREC) {
-		    if (prec <= len) flags &= ~FPREC;
-		    else {
-			if (prec >= slen) {
-			    flags &= ~FWIDTH;
-			    slen = prec;
+		if (prec < len) prec = len;
+		width -= prec;
+		if (!(flags&(FZERO|FMINUS)) && s[0] != '.') {
+		    CHECK(width);
+		    while (width-->0) {
+			buf[blen++] = ' ';
+		    }
+		}
+		if (sc) PUSH(&sc, 1);
+		if (prefix) {
+		    int plen = strlen(prefix);
+		    CHECK(plen);
+		    strcpy(&buf[blen], prefix);
+		    blen += plen;
+		    if (pos) pos += plen;
+		}
+		if (!(flags & FMINUS)) {
+		    char c = ' ';
+
+		    if (s[0] == '.') {
+			c = '.';
+			if ((flags & FPREC) && prec > len) {
+			    pos = blen;
+			}
+			else {
+			    pos = blen + 2;
 			}
 		    }
-		}
-		if (slen > len) {
-		    int n = slen-len;
-		    char d = ' ';
-		    if (flags & FZERO) d = '0';
-		    if (s[0] == '.') d = '.';
-		    CHECK(n);
-		    while (n--) {
-			buf[blen++] = d;
+		    else if (flags & FZERO) c = '0';
+		    CHECK(width);
+		    while (width-->0) {
+			buf[blen++] = c;
 		    }
 		}
-		if ((flags&(FWIDTH|FPREC)) == (FWIDTH|FPREC)) {
-		    if (prec < width) {
-			pos = width - prec;
-		    }
+		CHECK(prec - len);
+		while (len < prec--) {
+		    buf[blen++] = s[0]=='.'?'.':'0';
 		}
 		CHECK(len);
 		strcpy(&buf[blen], s);
 		blen += len;
-		t = &buf[pos];
-		if (bignum == 2) {
-		    char d = '.';
+		CHECK(width);
+		while (width-->0) {
+		    buf[blen++] = ' ';
+		}
+		if (pos >= 0 && buf[pos] == '.') {
+		    char c = '.';
 
 		    switch (base) {
 		      case 16:
-			d = 'f'; break;
+			if (*p == 'X') c = 'F';
+			else c = 'f';
+			break;
 		      case 8:
-			d = '7'; break;
+			c = '7'; break;
 		      case '2':
-			d = '1'; break;
+			c = '1'; break;
 		    }
-
-		    if ((flags & FPREC) == 0 || prec <= len-2) {
-			*t++ = '.'; *t++ = '.';
+		    s = &buf[pos];
+		    while (*s && *s == '.') {
+			*s++ = c;
 		    }
-		    while (*t == ' ' || *t == '.') {
-			*t++ = d;
-		    }
-		}
-		else if (flags & (FPREC|FZERO)) {
-		    while (*t == ' ') {
-			*t++ = '0';
-		    }
-		}
-	    }
-	    break;
-
-	  case 'd':
-	  case 'D':
-	  case 'O':
-	  case 'X':
-	    {
-		volatile VALUE val = GETARG();
-		char fbuf[32], c = *p;
-		int bignum = 0, base;
-		int v;
-
-		if (c == 'D') c = 'd';
-		if (c == 'O') c = 'o';
-	      int_retry:
-		switch (TYPE(val)) {
-		  case T_FIXNUM:
-		    v = FIX2LONG(val);
-		    break;
-		  case T_FLOAT:
-		    v = RFLOAT(val)->value;
-		    break;
-		  case T_STRING:
-		    val = str2inum(RSTRING(val)->ptr, 0);
-		    goto int_retry;
-		  case T_BIGNUM:
-		    if (c == 'd') base = 10;
-		    else if (c == 'X') base = 16;
-		    else if (c == 'O') base = 8;
-		    val = big2str(val, base);
-		    bignum = 1;
-		    break;
-		  default:
-		    val = num2fix(val);
-		    goto int_retry;
-		}
-
-		if (bignum) {
-		    char *s = RSTRING(val)->ptr;
-		    int slen, len, pos_b, pos;
-
-		    slen = len = strlen(s);
-		    pos = pos_b = blen;
-		    if (flags&FWIDTH) {
-			if (width <= len) flags &= ~FWIDTH;
-			else {
-			    slen = width;
-			}
-		    }
-		    if (flags&FPREC) {
-			if (prec <= len) flags &= ~FPREC;
-			else {
-			    if (prec >= slen) {
-				flags &= ~FWIDTH;
-				slen = prec;
-			    }
-			}
-		    }
-		    if (slen > len) {
-			int n = slen-len;
-			CHECK(n);
-			while (n--) {
-			    buf[blen++] = ' ';
-			}
-		    }
-		    if ((flags&(FWIDTH|FPREC)) == (FWIDTH|FPREC)) {
-			if (prec < width) {
-			    pos = width - prec;
-			}
-		    }
-		    CHECK(len);
-		    strcpy(&buf[blen], s);
-		    blen += len;
-		    if (flags & (FPREC|FZERO)) {
-			char *t = &buf[pos];
-			char *b = &buf[pos_b];
-
-			if (s[0] == '-') {
-			    if (slen > len && t != b ) t[-1] = '-';
-			    else *t++ = '-';
-			}
-			while (*t == ' ' || *t == '-') {
-			    *t++ = '0';
-			}
-		    }
-		}
-		else {
-		    int max = 12;
-
-		    if ((flags & FPREC) && prec > max) max = prec;
-		    if ((flags & FWIDTH) && width > max) max = width;
-		    CHECK(max);
-		    if (v < 0 && (c == 'X' || c == 'O')) {
-			v = -v;
-			PUSH("-", 1);
-		    }
-		    fmt_setup(fbuf, c, flags, width, prec);
-		    sprintf(&buf[blen], fbuf, v);
-		    blen += strlen(&buf[blen]);
 		}
 	    }
 	    break;
@@ -562,6 +548,7 @@ f_sprintf(argc, argv)
 	  case 'f':
 	  case 'g':
 	  case 'e':
+	  case 'E':
 	    {
 		VALUE val = GETARG();
 		double fval;
@@ -616,6 +603,7 @@ fmt_setup(buf, c, flags, width, prec)
     if (flags & FPLUS)  *buf++ = '+';
     if (flags & FMINUS) *buf++ = '-';
     if (flags & FZERO)  *buf++ = '0';
+    if (flags & FSPACE) *buf++ = ' ';
 
     if (flags & FWIDTH) {
 	sprintf(buf, "%d", width);
@@ -627,9 +615,6 @@ fmt_setup(buf, c, flags, width, prec)
 	buf += strlen(buf);
     }
 
-    if (strchr("doOXx", c)) {
-	*buf++ = 'l';
-    }
     *buf++ = c;
     *buf = '\0';
 }

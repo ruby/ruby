@@ -1,3 +1,13 @@
+Tue Jul 21 01:25:10 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (f_sprintf): integer formatter totally re-written.
+
+	* sprintf.c (remove_sign_bits): support uppercase hexadecimal.
+
+Sat Jul 18 00:14:13 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (f_sprintf): proper sign position for %X and %O.
+
 Fri Jul 17 14:10:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c0 released.
