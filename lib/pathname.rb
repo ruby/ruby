@@ -1182,5 +1182,9 @@ if $0 == __FILE__
       assert_not_same(str, obj.to_s)
       assert_not_same(obj.to_s, obj.to_s)
     end
+
+    def test_kernel_open
+      assert_equal(1, Kernel.open(Pathname.new("/dev/null")) {|f| 1 })
+    end
   end
 end
