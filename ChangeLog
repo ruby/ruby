@@ -6,6 +6,8 @@ Wed Jun 14 14:07:38 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* time.c: remove unneeded declare(daylight, timezone).
 
+	* configure.in: add include <time.h> when daylight checking.
+
 Wed Jun 14 00:50:14 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: read_multipart(): if no content body then raise EOFError.
