@@ -1,11 +1,18 @@
+Thu May 20 17:02:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (check_sizeof): define result size.  [ruby-core:02911]
+
+	* lib/mkmf.rb (create_header): macro name should not include equal
+	  sign.
+
 Thu May 20 15:59:50  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/socket/socket.c: fix SEGV. [ruby-dev:23550]
 
 Thu May 20 14:35:52 2004  Tanaka Akira  <akr@m17n.org>
 
-	* ext/socket/socket.c: check SCM_RIGHTS macro addition to 
-	  the msg_control field to test existence of file descriptor passing 
+	* ext/socket/socket.c: check SCM_RIGHTS macro addition to
+	  the msg_control field to test existence of file descriptor passing
 	  by msg_control.
 
 Thu May 20 12:38:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -15,7 +22,7 @@ Thu May 20 12:38:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu May 20 12:34:39 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_visibility): 
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_visibility):
 	  At Ryan Davis' suggestion, honor visibility modifers if guarded by a
 	  statement modifier
 
