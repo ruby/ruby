@@ -5232,8 +5232,18 @@ rb_set_end_proc(func, data)
     link->next = end_proc_data;
     link->func = func;
     link->data = data;
-    rb_global_variable(&link->data);
     end_proc_data = link;
+}
+
+void
+rb_mark_end_proc()
+{
+    struct end_proc_data *link = end_proc_data;
+
+    while (link) {
+	rb_gc_mark(link->data);
+	link = link->next;
+    }
 }
 
 static void
@@ -5266,17 +5276,15 @@ rb_f_at_exit()
 void
 rb_exec_end_proc()
 {
-    struct end_proc_data *link = end_proc_data;
-    struct end_proc_data *tmp;
+    struct end_proc_data *link;
     int status;
 
-    while (link) {
+    while (end_proc_data) {
+	link = end_proc_data;
+	end_proc_data = link->next;
 	rb_protect((VALUE(*)())link->func, link->data, &status);
-	tmp = link->next;
 	free(link);
-	link = tmp;
     }
-    end_proc_data = 0;
 }
 
 void
