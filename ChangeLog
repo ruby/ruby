@@ -1,3 +1,8 @@
+Wed Jun  2 20:16:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_new4): should share shared instance if it already
+	  exists.  [ruby-dev:23665]
+
 Wed Jun  2 12:41:53 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_gets_m): set lastline ($_) even when read line is
