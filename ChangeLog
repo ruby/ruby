@@ -1,3 +1,8 @@
+Fri Dec 27 02:56:58 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* instruby.rb: check only `-' option, and use fileutils instead of
+	  ftools.
+
 Fri Dec 27 02:45:17 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/net/telnet.rb: Telnet#print not add "\n".

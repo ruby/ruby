@@ -3,56 +3,30 @@
 load "./rbconfig.rb"
 include Config
 
+$:.unshift File.join(CONFIG["srcdir"], "lib")
+require 'fileutils'
+require 'shellwords'
+
 File.umask(0)
 
 while arg = ARGV.shift
   case arg
-  when /^--/			# ignore
+  when /^--make-flags=(.*)/
+    Shellwords.shellwords($1).grep(/^-[^-]*n/) {break $dryrun = true}
+  when "-n"
+    $dryrun = true
   when /^-/
-    $dryrun = /n/ =~ arg
-  when /=/			# ignore
   else
     destdir ||= arg
-    break
   end
 end
 destdir ||= ''
 
-$:.unshift File.join(CONFIG["srcdir"], "lib")
-require 'ftools'
-require 'shellwords'
-
-class Installer < File; end
-class << Installer
-  if $dryrun
-    def makedirs(*dirs)
-      String === dirs.last or dirs.pop
-      for dir in dirs
-	File.directory?(dir) or print "mkdir -p #{dir}\n"
-      end
-    end
-    def install(file, dir, mode = nil, verbose = false)
-      to = catname(file, dir)
-      unless FileTest.exist? to and cmp file, to
-	print "install#{' -m %#o'%mode if mode} #{file} #{dir}\n"
-      end
-    end
-    def makelink(orig, link, verbose = false)
-      unless File.symlink?(link) and File.readlink(link) == orig
-	print "ln -sf #{orig} #{link}\n"
-      end
-    end
-  else
-    require "ftools"
-    def makelink(orig, link, verbose = false)
-      if exist? link
-	delete link
-      end
-      symlink orig, link
-      print "link #{orig} -> #{link}\n"
-    end
-  end
-end
+include FileUtils::Verbose
+include FileUtils::NoWrite if $dryrun
+@fileutils_output = STDOUT
+@fileutils_label = ''
+alias makelink ln_sf
 
 exeext = CONFIG["EXEEXT"]
 
@@ -73,26 +47,26 @@ dll = CONFIG["LIBRUBY_SO"]
 lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
 
-Installer.makedirs bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir, mandir, true
+makedirs bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir, mandir
 
-Installer.install ruby_install_name+exeext, File.join(bindir, ruby_install_name+exeext), 0755, true
+install ruby_install_name+exeext, File.join(bindir, ruby_install_name+exeext), 0755
 if rubyw_install_name and !rubyw_install_name.empty?
-  Installer.install rubyw_install_name+exeext, bindir, 0755, true
+  install rubyw_install_name+exeext, bindir, 0755
 end
-Installer.install dll, bindir, 0755, true if enable_shared and dll != lib
-Installer.install lib, libdir, 0555, true unless lib == arc
-Installer.install arc, libdir, 0644, true
-Installer.install "config.h", archlibdir, 0644, true
-Installer.install "rbconfig.rb", archlibdir, 0644, true
+install dll, bindir, 0755 if enable_shared and dll != lib
+install lib, libdir, 0555 unless lib == arc
+install arc, libdir, 0644
+install "config.h", archlibdir, 0644
+install "rbconfig.rb", archlibdir, 0644
 if CONFIG["ARCHFILE"]
   for file in CONFIG["ARCHFILE"].split
-    Installer.install file, archlibdir, 0644, true
+    install file, archlibdir, 0644
   end
 end
 
 if dll == lib and dll != arc
   for link in CONFIG["LIBRUBY_ALIASES"].split
-    Installer.makelink(dll, File.join(libdir, link), true)
+    makelink(dll, File.join(libdir, link))
   end
 end
 
@@ -105,7 +79,7 @@ for src in Dir["bin/*"]
   name = ruby_install_name.sub(/ruby/, File.basename(src))
   dest = File.join(bindir, name)
 
-  Installer.install src, dest, 0755, true
+  install src, dest, 0755
 
   open(dest, "r+") { |f|
     shebang = f.gets.sub(/ruby/, ruby_install_name)
@@ -137,19 +111,18 @@ end
 
 Dir.glob("lib/**/*{.rb,help-message}") do |f|
   dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
-  Installer.makedirs dir, true unless File.directory? dir
-  Installer.install f, dir, 0644, true
+  makedirs dir unless File.directory? dir
+  install f, dir, 0644
 end
 
 for f in Dir["*.h"]
-  Installer.install f, archlibdir, 0644, true
+  install f, archlibdir, 0644
 end
 if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
-  Installer.makedirs File.join(archlibdir, "win32"), true
-  Installer.install "win32/win32.h", File.join(archlibdir, "win32"), 0644, true
+  makedirs File.join(archlibdir, "win32")
+  install "win32/win32.h", File.join(archlibdir, "win32"), 0644
 end
 
-Installer.makedirs mandir, true
-Installer.install "ruby.1", File.join(mandir, ruby_install_name+".1"), 0644, true
+install "ruby.1", File.join(mandir, ruby_install_name+".1"), 0644
 
 # vi:set sw=2:
