@@ -87,7 +87,7 @@ VALUE
 rb_obj_type(obj)
     VALUE obj;
 {
-    rb_warn("`type' is deprecated; use `class'");
+    rb_warn("Object#type is deprecated; use Object#class");
     return rb_class_real(CLASS_OF(obj));
 }
 
