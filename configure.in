@@ -1223,6 +1223,16 @@ fi
 XLDFLAGS="$XLDFLAGS -L."
 AC_SUBST(ARCHFILE)
 
+dnl build rdoc index if requested
+RDOCTARGET=""
+AC_ARG_ENABLE(install-doc,
+       [  --enable-install-doc    build and install rdoc indexes during install ],
+       [install_doc=$enableval], [install_doc=no])
+if test "$install_doc" != no; then
+   RDOCTARGET="install-doc"
+fi
+AC_SUBST(RDOCTARGET)
+
 case "$target_os" in
     netbsd*)
     	CFLAGS="$CFLAGS -pipe"

@@ -1,3 +1,9 @@
+Thu Jan  8 23:49:21 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (RDOCTARGET): new macro.  if you want to install
+	  rdoc documentation, you need to run configure with
+	  --enable-install-doc.
+
 Thu Jan  8 21:17:43 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkey.c (ossl_pkey_to_der): removed; it returns 
