@@ -1,3 +1,20 @@
+Wed Jul 30 15:10:02 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* error.c (rb_raise): snprintf() termination moved to
+	  win32/win32.c.
+
+	* win32/win32.c (valid_filename, str_grow): unused.
+
+	* win32/win32.c (NTLoginName, ChildRecord): make static.
+
+	* win32/win32.c (CreateChild): argument check.
+
+	* win32/win32.c (kill): should not call CloseHandle() when
+	  OpenProcess() failed.
+
+	* win32/win32.c (rb_w32_vsnprintf, rb_w32_snprintf): ensure buffer
+	  terminated.  [ruby-talk:69672]
+
 Wed Jul 30 10:54:10 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (get): fix wrong argument name. Thanks to William

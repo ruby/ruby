@@ -91,9 +91,7 @@ bool NtSyncProcess = TRUE;
 static struct ChildRecord *CreateChild(char *, char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static int make_cmdvector(const char *, char ***);
 static bool has_redirection(const char *);
-static int valid_filename(char *s);
 static void StartSockets ();
-static char *str_grow(struct RString *str, size_t new_size);
 static DWORD wait_events(HANDLE event, DWORD timeout);
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 static int rb_w32_open_osfhandle(long osfhandle, int flags);
@@ -203,7 +201,7 @@ static int map_errno(void)
     return EINVAL;
 }
 
-char *NTLoginName;
+static char *NTLoginName;
 
 #ifdef WIN95
 DWORD Win32System = (DWORD)-1;
@@ -380,8 +378,8 @@ NtInitialize(int *argc, char ***argv)
     StartSockets();
 
 #ifdef _WIN32_WCE
-	// free commandline buffer
-	wce_FreeCommandLine();
+    // free commandline buffer
+    wce_FreeCommandLine();
 #endif
 }
 
@@ -406,7 +404,7 @@ char *getlogin()
 
 #define MAXCHILDNUM 256	/* max num of child processes */
 
-struct ChildRecord {
+static struct ChildRecord {
     HANDLE hProcess;	/* process handle */
     pid_t pid;		/* process id */
 } ChildRecord[MAXCHILDNUM];
@@ -829,6 +827,11 @@ CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HAND
     SECURITY_ATTRIBUTES sa;
     char *shell;
     struct ChildRecord *child;
+
+    if (!cmd && !prog) {
+	errno = EFAULT;
+	return NULL;
+    }
 
     child = FindFreeChildSlot();
     if (!child) {
@@ -1294,13 +1297,7 @@ rb_w32_opendir(const char *filename)
 
     if (rb_w32_stat(filename, &sbuf) < 0)
 	return NULL;
-    if (((
-#ifdef __BORLANDC__
-	 (unsigned short)(sbuf.st_mode)
-#else
-	 sbuf.st_mode
-#endif
-	 & _S_IFDIR) == 0) &&
+    if (!(sbuf.st_mode & S_IFDIR) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
 	errno = ENOTDIR;
@@ -1456,31 +1453,6 @@ rb_w32_closedir(DIR *dirp)
 {
 	free(dirp->start);
 	free(dirp);
-}
-
-static int 
-valid_filename(char *s)
-{
-    int fd;
-
-    //
-    // if the file exists, then it's a valid filename!
-    //
-
-    if (_access(s, 0) == 0) {
-	return 1;
-    }
-
-    //
-    // It doesn't exist, so see if we can open it.
-    //
-    
-    if ((fd = _open(s, _O_CREAT, 0666)) >= 0) {
-	close(fd);
-	_unlink (s);	// don't leave it laying around
-	return 1;
-    }
-    return 0;
 }
 
 EXTERN_C void __cdecl _lock_fhandle(int);
@@ -2457,21 +2429,6 @@ rb_w32_getcwd(buffer, size)
     return buffer;
 }
 
-static char *
-str_grow(struct RString *str, size_t new_size)
-{
-	char *p;
-
-	p = realloc(str->ptr, new_size);
-	if (p == NULL)
-                rb_fatal("cannot grow string\n");
-
-	str->len = new_size;
-	str->ptr = p;
-
-	return p;
-}
-
 int
 chown(const char *path, int owner, int group)
 {
@@ -2543,11 +2500,13 @@ kill(int pid, int sig)
 		}
 		ret = -1;
 	    }
-	    else if (!TerminateProcess(hProc, 0)) {
-		errno = EPERM;
-		ret = -1;
+	    else {
+		if (!TerminateProcess(hProc, 0)) {
+		    errno = EPERM;
+		    ret = -1;
+		}
+		CloseHandle(hProc);
 	    }
-	    CloseHandle(hProc);
 	});
 	break;
 
@@ -2982,12 +2941,11 @@ int rb_w32_getc(FILE* stream)
     }
     else 
 #endif
-	{
+    {
 	c = _filbuf(stream);
 #if defined __BORLANDC__ || defined _WIN32_WCE
-        if( ( c == EOF )&&( errno == EPIPE ) )
-        {
-          clearerr(stream);
+        if ((c == EOF) && (errno == EPIPE)) {
+	    clearerr(stream);
         }
 #endif
 	rb_trap_immediate = trap_immediate;
@@ -3007,7 +2965,7 @@ int rb_w32_putc(int c, FILE* stream)
     }
     else 
 #endif
-	{
+    {
 	c = _flsbuf(c, stream);
 	rb_trap_immediate = trap_immediate;
 	catch_interrupt();
@@ -3230,7 +3188,7 @@ rb_w32_utime(const char *path, struct utimbuf *times)
     if (rb_w32_stat(path, &stat)) {
 	return -1;
     }
-    if ((stat.st_mode & S_IFDIR) == 0 || IsWin95()) {
+    if (!(stat.st_mode & S_IFDIR) || IsWin95()) {
 	return utime(path, times);
     }
 
@@ -3253,5 +3211,25 @@ rb_w32_utime(const char *path, struct utimbuf *times)
     }
     CloseHandle(hDir);
 
+    return ret;
+}
+
+int
+rb_w32_vsnprintf(char *buf, size_t size, const char *format, va_list va)
+{
+    int ret = _vsnprintf(buf, size, format, va);
+    if (size > 0) buf[size - 1] = 0;
+    return ret;
+}
+
+int
+rb_w32_snprintf(char *buf, size_t size, const char *format, ...)
+{
+    int ret;
+    va_list va;
+
+    va_start(va, format);
+    ret = vsnprintf(buf, size, format, va);
+    va_end(va);
     return ret;
 }
