@@ -16,7 +16,7 @@ Thu Jul  3 14:22:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  at the top.
 
 	* sprintf.c (rb_f_sprintf): "%p" specifier for inspect output.
-	  (RCR#68)
+	  (RCR#69)
 
 	* eval.c (rb_mod_undef_method): allow "undef_method" to accept
 	  multiple arguments. (RCR#146)
@@ -40,8 +40,6 @@ Wed Jul  2 23:27:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  is frozen or already have copy-on-write entry. [ruby-talk:74940]
 
 Wed Jul  2 13:22:39 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* string.c (rb_str_new4): 
 
 	* string.c (rb_str_shared_replace): clear flags before copy.
 

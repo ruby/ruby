@@ -700,7 +700,6 @@ EOHELP
     @line = line
     case event
     when 'line'
-      p [line, @stop_next]
       frame_set_pos(file, line)
       if !@no_step or @frames.size == @no_step
 	@stop_next -= 1
