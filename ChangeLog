@@ -1,3 +1,7 @@
+Fri May 11 02:00:44 2001  Ryo HAYASAKA  <ryoh@jaist.ac.jp>
+
+	* bignum.c (bigdivrem): access boundary bug.
+
 Tue May  8 17:12:43 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* eval.c (is_defined): core dumped during instance_eval for

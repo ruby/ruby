@@ -96,10 +96,19 @@ class CGI
     end
 
     class FileStore
+      def check_id(id)
+	/[^0-9a-zA-Z]/ =~ id.to_s ? false : true
+      end
+      module_function :check_id
+
       def initialize(session, option={})
 	dir = option['tmpdir'] || ENV['TMP'] || '/tmp'
 	prefix = option['prefix'] || ''
-	path = dir+"/"+prefix+session.session_id
+	id = session.session_id
+	unless check_id(id)
+	  raise ArgumentError, "session_id `%s' is invalid" % id
+	end
+	path = dir+"/"+prefix+id
 	path.untaint
 	unless File::exist? path
 	  @hash = {}
@@ -149,9 +158,9 @@ class CGI
     class MemoryStore
       GLOBAL_HASH_TABLE = {}
 
-      def initialize(session, option={})
+      def initialize(session, option=nil)
 	@session_id = session.session_id
-	GLOBAL_HASH_TABLE[@session_id] = {}
+	GLOBAL_HASH_TABLE[@session_id] ||= {}
       end
 
       def restore
@@ -167,7 +176,7 @@ class CGI
       end
 
       def delete
-	GLOBAL_HASH_TABLE[@session_id] = nil
+	GLOBAL_HASH_TABLE.delete(@session_id)
       end
     end
   end
