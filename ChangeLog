@@ -2,6 +2,8 @@ Sun Jan  2 15:42:10 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: add lazy stop_service.
 
+	* lib/drb/extserv.rb: ditto.
+
 Sun Jan  2 01:17:17 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/drbtest.rb: add method DRbService.ext_service.
