@@ -15,12 +15,9 @@
 #include "ruby.h"
 #include <ctype.h>
 #include <math.h>
+#include "util.h"
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
-
-#if !defined(atof) && !defined(HAVE_STDLIB_H)
-double strtod();
-#endif
 
 static void fmt_setup _((char*,int,int,int,int));
 
@@ -30,78 +27,26 @@ remove_sign_bits(str, base)
     int base;
 {
     char *s, *t, *end;
+    unsigned long len;
     
     s = t = str;
-    end = str + strlen(str);
+    len = strlen(str);
+    end = str + len;
 
     if (base == 16) {
-      x_retry:
-	switch (*t) {
-	  case 'c': case 'C':
-	    *t = '4';
-	    break;
-	  case 'd': case 'D':
-	    *t = '5';
-	    break;
-	  case 'e': case 'E':
-	    *t = '2';
-	    break;
-	  case 'f': case 'F':
-	    if (t[1] > '8') {
-		t++;
-		goto x_retry;
-	    }
-	    *t = '1';
-	    break;
-	  case '1':
-	  case '3':
-	  case '7':
-	    if (t[1] > '8') {
-		t++;
-		goto x_retry;
-	    }
-	    break;
-	}
-	switch (*t) {
-	  case '1': *t = 'f'; break;
-	  case '2': *t = 'e'; break;
-	  case '3': *t = 'f'; break;
-	  case '4': *t = 'c'; break;
-	  case '5': *t = 'd'; break;
-	  case '6': *t = 'e'; break;
-	  case '7': *t = 'f'; break;
+	while (t<end && *t == 'f') {
+	    t++;
 	}
     }
     else if (base == 8) {
-      o_retry:
-	switch (*t) {
-	  case '6':
-	    *t = '2';
-	    break;
-	  case '7':
-	    if (t[1] > '3') {
-		t++;
-		goto o_retry;
-	    }
-	    *t = '1';
-	    break;
-	  case '1':
-	  case '3':
-	    if (t[1] > '3') {
-		t++;
-		goto o_retry;
-	    }
-	    break;
-	}
-	switch (*t) {
-	  case '1': *t = '7'; break;
-	  case '2': *t = '6'; break;
-	  case '3': *t = '7'; break;
+	while (t<end && *t == '7') {
+	    t++;
 	}
     }
     else if (base == 2) {
-	while (t<end && *t == '1') t++;
-	t--;
+	while (t<end && *t == '1') {
+	    t++;
+	}
     }
     while (*t) *s++ = *t++;
     *s = '\0';
@@ -118,23 +63,34 @@ remove_sign_bits(str, base)
 #define FWIDTH 32
 #define FPREC  64
 
-#define CHECK(l) {\
+#define CHECK(l) do {\
     while (blen + (l) >= bsiz) {\
-	REALLOC_N(buf, char, bsiz*2);\
 	bsiz*=2;\
     }\
-}
+    rb_str_resize(result, bsiz);\
+    buf = RSTRING(result)->ptr;\
+} while (0)
 
-#define PUSH(s, l) { \
+#define PUSH(s, l) do { \
     CHECK(l);\
     memcpy(&buf[blen], s, l);\
     blen += (l);\
-}
+} while (0)
 
-#define GETARG() \
-    ((nextarg >= argc) ? (rb_raise(rb_eArgError, "too few argument."), 0) : argv[nextarg++])
+#define GETARG() (nextvalue != Qundef ? nextvalue : \
+    posarg < 0 ? \
+    (rb_raise(rb_eArgError, "unnumbered(%d) mixed with numbered", nextarg), 0) : \
+    (posarg = nextarg++, GETNTHARG(posarg)))
 
-#define GETASTER(val) { \
+#define GETPOSARG(n) (posarg > 0 ? \
+    (rb_raise(rb_eArgError, "numbered(%d) after unnumbered(%d)", n, posarg), 0) : \
+    ((n < 1) ? (rb_raise(rb_eArgError, "invalid index - %d$", n), 0) : \
+	       (posarg = -1, GETNTHARG(n))))
+
+#define GETNTHARG(nth) \
+    ((nth >= argc) ? (rb_raise(rb_eArgError, "too few argument."), 0) : argv[nth])
+
+#define GETASTER(val) do { \
     t = p++; \
     n = 0; \
     for (; p < end && ISDIGIT(*p); p++) { \
@@ -144,17 +100,14 @@ remove_sign_bits(str, base)
 	rb_raise(rb_eArgError, "malformed format string - %%*[0-9]"); \
     } \
     if (*p == '$') { \
-	int curarg = nextarg; \
-	nextarg = n; \
-	tmp = GETARG(); \
-	nextarg = curarg; \
+	tmp = GETPOSARG(n); \
     } \
     else { \
 	tmp = GETARG(); \
 	p = t; \
     } \
     val = NUM2INT(tmp); \
-}
+} while (0)
 
 VALUE
 rb_f_sprintf(argc, argv)
@@ -167,25 +120,27 @@ rb_f_sprintf(argc, argv)
     VALUE result;
 
     int width, prec, flags = FNONE;
-    int nextarg = 0;
+    int nextarg = 1;
+    int posarg = 0;
     int tainted = 0;
+    VALUE nextvalue;
     VALUE tmp;
     VALUE str;
 
-    fmt = GETARG();
+    fmt = GETNTHARG(0);
     if (OBJ_TAINTED(fmt)) tainted = 1;
     p = rb_str2cstr(fmt, &blen);
     end = p + blen;
     blen = 0;
     bsiz = 120;
-    buf = ALLOC_N(char, bsiz);
+    result = rb_str_new(0, bsiz);
+    buf = RSTRING(result)->ptr;
 
     for (; p < end; p++) {
 	char *t;
 	int n;
 
 	for (t = p; t < end && *t != '%'; t++) ;
-	CHECK(t - p);
 	PUSH(p, t - p);
 	if (t >= end) {
 	    /* end of fmt string */
@@ -194,6 +149,7 @@ rb_f_sprintf(argc, argv)
 	p = t + 1;		/* skip `%' */
 
 	width = prec = -1;
+	nextvalue = Qundef;
       retry:
 	switch (*p) {
 	  default:
@@ -238,7 +194,10 @@ rb_f_sprintf(argc, argv)
 		rb_raise(rb_eArgError, "malformed format string - %%[0-9]");
 	    }
 	    if (*p == '$') {
-		nextarg = n;
+		if (nextvalue != Qundef) {
+		    rb_raise(rb_eArgError, "value given twice - %d$", n);
+		}
+		nextvalue = GETPOSARG(n);
 		p++;
 		goto retry;
 	    }
@@ -313,7 +272,7 @@ rb_f_sprintf(argc, argv)
 	  case 's':
 	    {
 		VALUE arg = GETARG();
-		int len;
+		long len;
 
 		str = rb_obj_as_string(arg);
 		if (OBJ_TAINTED(str)) tainted = 1;
@@ -342,9 +301,7 @@ rb_f_sprintf(argc, argv)
 			break;
 		    }
 		}
-		CHECK(len);
-		memcpy(&buf[blen], RSTRING(str)->ptr, len);
-		blen += len;
+		PUSH(RSTRING(str)->ptr, len);
 	    }
 	    break;
 
@@ -354,6 +311,7 @@ rb_f_sprintf(argc, argv)
 	  case 'x':
 	  case 'X':
 	  case 'b':
+	  case 'B':
 	  case 'u':
 	    {
 		volatile VALUE val = GETARG();
@@ -373,6 +331,7 @@ rb_f_sprintf(argc, argv)
 		  case 'x':
 		  case 'X':
 		  case 'b':
+		  case 'B':
 		  case 'u':
 		  default:
 		    if (flags&(FPLUS|FSPACE)) sign = 1;
@@ -383,6 +342,7 @@ rb_f_sprintf(argc, argv)
 		    else if (*p == 'x') prefix = "0x";
 		    else if (*p == 'X') prefix = "0X";
 		    else if (*p == 'b') prefix = "0b";
+		    else if (*p == 'B') prefix = "0B";
 		    if (prefix) {
 			width -= strlen(prefix);
 		    }
@@ -401,18 +361,18 @@ rb_f_sprintf(argc, argv)
 		  case T_BIGNUM:
 		    bignum = 1;
 		    break;
-		  default:
-		    val = rb_Integer(val);
-		    goto bin_retry;
 		  case T_FIXNUM:
 		    v = FIX2LONG(val);
 		    break;
+		  default:
+		    val = rb_Integer(val);
+		    goto bin_retry;
 		}
 
 		if (*p == 'u' || *p == 'd' || *p == 'i') base = 10;
 		else if (*p == 'x' || *p == 'X') base = 16;
 		else if (*p == 'o') base = 8;
-		else if (*p == 'b') base = 2;
+		else if (*p == 'b' || *p == 'B') base = 2;
 		if (!bignum) {
 		    if (base == 2) {
 			val = rb_int2big(v);
@@ -457,8 +417,7 @@ rb_f_sprintf(argc, argv)
 			remove_sign_bits(s, base);
 			switch (base) {
 			  case 16:
-			    d = 'f'; 
-			    break;
+			    d = 'f'; break;
 			  case 8:
 			    d = '7'; break;
 			}
@@ -477,16 +436,14 @@ rb_f_sprintf(argc, argv)
 		    if (s[0] == '-') {
 			s++;
 			sc = '-';
-			width--;
 		    }
 		    else if (flags & FPLUS) {
 			sc = '+';
-			width--;
 		    }
 		    else if (flags & FSPACE) {
 			sc = ' ';
-			width--;
 		    }
+		    width--;
 		    goto format_integer;
 		}
 		if (!RBIGNUM(val)->sign) {
@@ -496,21 +453,29 @@ rb_f_sprintf(argc, argv)
 		val = rb_big2str(val, base);
 		s = RSTRING(val)->ptr;
 		if (*s == '-') {
-		    remove_sign_bits(++s, base);
-		    val = rb_str_new(0, 3+strlen(s));
-		    t = RSTRING(val)->ptr;
-		    if (!(flags&FPREC)) {
-			strcpy(t, "..");
-			t += 2;
+		    if (base == 10) {
+			rb_warning("negative number for %%u specifier");
+			s++;
 		    }
-		    switch (base) {
-		      case 16:
-			if (s[0] != 'f') strcpy(t++, "f"); break;
-		      case 8:
-			if (s[0] != '7') strcpy(t++, "7"); break;
+		    else {
+			remove_sign_bits(++s, base);
+			val = rb_str_new(0, 3+strlen(s));
+			t = RSTRING(val)->ptr;
+			if (!(flags&FPREC)) {
+			    strcpy(t, "..");
+			    t += 2;
+			}
+			switch (base) {
+			  case 16:
+			    if (s[0] != 'f') strcpy(t++, "f"); break;
+			  case 8:
+			    if (s[0] != '7') strcpy(t++, "7"); break;
+			  case 2:
+			    if (s[0] != '1') strcpy(t++, "1"); break;
+			}
+			strcpy(t, s);
+			bignum = 2;
 		    }
-		    strcpy(t, s);
-		    bignum = 2;
 		}
 		s  = RSTRING(val)->ptr;
 
@@ -525,52 +490,27 @@ rb_f_sprintf(argc, argv)
 			pp++;
 		    }
 		}
-		if (prec < len) prec = len;
-		width -= prec;
-		if (!(flags&(FZERO|FMINUS)) && v >= 0) {
+		if ((flags&(FZERO|FPREC)) == FZERO) {
+		    prec = width;
+		    width = 0;
+		}
+		else {
+		    if (prec < len) prec = len;
+		    width -= prec;
+		}
+		if (!(flags&FMINUS)) {
 		    CHECK(width);
-		    while (width-->0) {
+		    while (width-- > 0) {
 			buf[blen++] = ' ';
 		    }
 		}
 		if (sc) PUSH(&sc, 1);
 		if (prefix) {
 		    int plen = strlen(prefix);
-		    CHECK(plen);
-		    strcpy(&buf[blen], prefix);
-		    blen += plen;
-		    if (pos) pos += plen;
-		}
-		if (!(flags & FMINUS)) {
-		    char c = ' ';
-
-		    if (v < 0) {
-			c = '.';
-			if ((flags & FPREC) && prec > len) {
-			    pos = blen;
-			}
-			else {
-			    pos = blen + 2;
-			}
-		    }
-		    else if (flags & FZERO) c = '0';
-		    CHECK(width);
-		    while (width-->0) {
-			buf[blen++] = c;
-		    }
+		    PUSH(prefix, plen);
 		}
 		CHECK(prec - len);
-		while (len < prec--) {
-		    buf[blen++] = v < 0 ? '.' : '0';
-		}
-		CHECK(len);
-		strcpy(&buf[blen], s);
-		blen += len;
-		CHECK(width);
-		while (width-->0) {
-		    buf[blen++] = ' ';
-		}
-		if (pos >= 0 && buf[pos] == '.') {
+		if (v < 0) {
 		    char c = '.';
 
 		    switch (base) {
@@ -583,10 +523,19 @@ rb_f_sprintf(argc, argv)
 		      case 2:
 			c = '1'; break;
 		    }
-		    s = &buf[pos];
-		    while (*s && *s == '.') {
-			*s++ = c;
+		    while (len < prec--) {
+			buf[blen++] = c;
 		    }
+		}
+		else {
+		    while (len < prec--) {
+			buf[blen++] = '0';
+		    }
+		}
+		PUSH(s, len);
+		CHECK(width);
+		while (width-- > 0) {
+		    buf[blen++] = ' ';
 		}
 	    }
 	    break;
@@ -602,24 +551,7 @@ rb_f_sprintf(argc, argv)
 		int i, need = 6;
 		char fbuf[32];
 
-		switch (TYPE(val)) {
-		  case T_FIXNUM:
-		    fval = (double)FIX2LONG(val);
-		    break;
-		  case T_FLOAT:
-		    fval = RFLOAT(val)->value;
-		    break;
-		  case T_BIGNUM:
-		    fval = rb_big2dbl(val);
-		    break;
-		  case T_STRING:
-		    fval = strtod(RSTRING(val)->ptr, 0);
-		    break;
-		  default:
-		    fval = NUM2DBL(val);
-		    break;
-		}
-
+		fval = RFLOAT(rb_Float(val))->value;
 		fmt_setup(fbuf, *p, flags, width, prec);
 		need = 0;
 		if (*p != 'e' && *p != 'E') {
@@ -651,8 +583,7 @@ rb_f_sprintf(argc, argv)
 	rb_raise(rb_eArgError, "too many argument for format string");
     }
 #endif
-    result = rb_str_new(buf, blen);
-    free(buf);
+    rb_str_resize(result, blen);
 
     if (tainted) OBJ_TAINT(result);
     return result;
