@@ -1,3 +1,13 @@
+Fri Dec 25 13:07:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.2 (stable) released.
+
+Fri Dec 25 11:56:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (gc_mark): proper scanning for temporary region.
+
+	* eval.c (TMP_ALLOC): protection for C_ALLOCA was broken.
+
 Wed Dec  9 13:37:12 1998  MAEDA shugo  <shugo@aianet.ne.jp>
 
 	* pack.c (encodes): use buffering for B-encoding.

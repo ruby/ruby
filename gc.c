@@ -30,7 +30,9 @@ void io_fptr_finalize _((struct OpenFile*));
 #endif
 
 #ifdef C_ALLOCA
+#ifndef alloca
 void *alloca();
+#endif
 #endif
 
 static void run_final();
@@ -411,9 +413,6 @@ gc_mark(ptr)
 	  case NODE_DREGX_ONCE:
 	  case NODE_FBODY:
 	  case NODE_CALL:
-#ifdef C_ALLOCA
-	  case NODE_ALLOCA:
-#endif
 	    gc_mark(obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
@@ -469,6 +468,13 @@ gc_mark(ptr)
 	  case NODE_NIL:
 	  case NODE_POSTEXE:
 	    break;
+#ifdef C_ALLOCA
+	  case NODE_ALLOCA:
+	    mark_locations_array((VALUE*)obj->as.node.u1.value,
+				 obj->as.node.u3.cnt);
+	    obj = RANY(obj->as.node.u2.node);
+	    goto Top;
+#endif
 
 	  default:
 	    if (looks_pointerp(obj->as.node.u1.node)) {

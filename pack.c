@@ -1029,7 +1029,7 @@ pack_unpack(str, fmt)
 		while (s < send) {
 		    if (*s == '=') {
 			if (++s == send) break;
-			if (*s != '\n' && s < send - 1) {
+			if (*s != '\n') {
 			    if ((c1 = hex2num(*s)) == -1) break;
 			    if (++s == send) break;
 			    if ((c2 = hex2num(*s)) == -1) break;
