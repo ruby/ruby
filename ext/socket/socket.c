@@ -1958,19 +1958,21 @@ sock_s_getnameinfo(argc, argv)
     error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), fl);
     if (error) goto error_exit;
-    for (r = res->ai_next; r; r = r->ai_next) {
-	char hbuf2[1024], pbuf2[1024];
+    if (res) {
+	for (r = res->ai_next; r; r = r->ai_next) {
+	    char hbuf2[1024], pbuf2[1024];
 
-	sap = r->ai_addr;
-	error = getnameinfo(sap, SA_LEN(sap), hbuf2, sizeof(hbuf2),
-			    pbuf2, sizeof(pbuf2), fl);
-	if (error) goto error_exit;
-	if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
-	    freeaddrinfo(res);
-	    rb_raise(rb_eSocket, "sockaddr resolved to multiple nodename");
+	    sap = r->ai_addr;
+	    error = getnameinfo(sap, SA_LEN(sap), hbuf2, sizeof(hbuf2),
+				pbuf2, sizeof(pbuf2), fl);
+	    if (error) goto error_exit;
+	    if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
+		freeaddrinfo(res);
+		rb_raise(rb_eSocket, "sockaddr resolved to multiple nodename");
+	    }
 	}
+	freeaddrinfo(res);
     }
-    freeaddrinfo(res);
     return rb_assoc_new(rb_tainted_str_new2(hbuf), rb_tainted_str_new2(pbuf));
 
   error_exit:

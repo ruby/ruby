@@ -1,3 +1,8 @@
+Sun Jun 25 00:55:03 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/socket.c (sock_s_getnameinfo): `res' would not
+	  be assigned if TYPE(sa) == T_STRING.
+
 Sat Jun 24 19:02:34 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* stable version 1.4.5 released.
