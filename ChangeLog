@@ -1,3 +1,7 @@
+Wed Aug 28 16:36:40 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (ar): don't check twice for ar.
+
 Wed Aug 28 15:00:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_delete_bang): should check if str->ptr is 0.
