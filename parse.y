@@ -4452,14 +4452,6 @@ assign_in_cond(node)
     return 1;
 }
 
-static void
-warn_unless_e_option(str)
-    const char *str;
-{
-    if (strcmp(ruby_sourcefile, "-e") != 0)
-	rb_warning(str);
-}
-
 static NODE*
 cond0(node)
     NODE *node;

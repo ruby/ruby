@@ -400,7 +400,7 @@ rb_ary_subseq(ary, beg, len)
 {
     VALUE ary2;
 
-    if (beg > RARRAY(ary)->len) return Qnil;
+    if (beg >= RARRAY(ary)->len) return Qnil;
     if (beg < 0 || len < 0) return Qnil;
 
     if (beg + len > RARRAY(ary)->len) {
