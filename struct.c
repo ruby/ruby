@@ -210,17 +210,15 @@ make_struct(name, members, klass)
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     for (i=0; i< RARRAY(members)->len; i++) {
 	ID id = SYM2ID(RARRAY(members)->ptr[i]);
-	if (!rb_is_local_id(id)) {
-	    rb_raise(rb_eNameError, "`%s' is not proper name for a struct member",
-		     rb_id2name(id));
+	if (rb_is_local_id(id)) {
+	    if (i<sizeof(ref_func)) {
+		rb_define_method_id(nstr, id, ref_func[i], 0);
+	    }
+	    else {
+		rb_define_method_id(nstr, id, rb_struct_ref, 0);
+	    }
+	    rb_define_method_id(nstr, rb_id_attrset(id), rb_struct_set, 1);
 	}
-	if (i<sizeof(ref_func)) {
-	    rb_define_method_id(nstr, id, ref_func[i], 0);
-	}
-	else {
-	    rb_define_method_id(nstr, id, rb_struct_ref, 0);
-	}
-	rb_define_method_id(nstr, rb_id_attrset(id), rb_struct_set, 1);
     }
 
     return nstr;
@@ -489,18 +487,24 @@ inspect_struct(s, dummy, recur)
     rb_str_cat2(str, cname);
     rb_str_cat2(str, " ");
     for (i=0; i<RSTRUCT(s)->len; i++) {
-	VALUE str2, slot;
+	VALUE slot;
+	ID id;
 	char *p;
 
 	if (i > 0) {
 	    rb_str_cat2(str, ", ");
 	}
 	slot = RARRAY(members)->ptr[i];
-	p = rb_id2name(SYM2ID(slot));
-	rb_str_cat2(str, p);
+	id = SYM2ID(slot);
+	if (rb_is_local_id(id)) {
+	    p = rb_id2name(id);
+	    rb_str_cat2(str, p);
+	}
+	else {
+	    rb_str_append(str, rb_inspect(slot));
+	}
 	rb_str_cat2(str, "=");
-	str2 = rb_inspect(RSTRUCT(s)->ptr[i]);
-	rb_str_append(str, str2);
+	rb_str_append(str, rb_inspect(RSTRUCT(s)->ptr[i]));
     }
     rb_str_cat2(str, ">");
     OBJ_INFECT(str, s);

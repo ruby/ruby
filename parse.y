@@ -8942,4 +8942,3 @@ Init_ripper()
     rb_intern("&&");
 }
 #endif /* RIPPER */
-
