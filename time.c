@@ -150,6 +150,17 @@ static char *months [12] = {
     "jul", "aug", "sep", "oct", "nov", "dec",
 };
 
+static int
+obj2int(obj)
+    VALUE obj;
+{
+    if (TYPE(obj) == T_STRING) {
+	obj = str2inum(RSTRING(obj)->ptr, 10);
+    }
+
+    return NUM2INT(obj);
+}
+
 static void
 time_arg(argc, argv, args)
     int argc;
@@ -171,7 +182,7 @@ time_arg(argc, argv, args)
 	rb_scan_args(argc, argv, "15", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5]);
     }
 
-    args[0] = rb_obj2int(v[0]);
+    args[0] = obj2int(v[0]);
     if (args[0] < 70) args[0] += 100;
     if (args[0] > 1900) args[0] -= 1900;
     if (NIL_P(v[1])) {
@@ -189,25 +200,25 @@ time_arg(argc, argv, args)
 	    char c = RSTRING(v[1])->ptr[0];
 
 	    if ('0' <= c && c <= '9') {
-		args[1] = rb_obj2int(v[1])-1;
+		args[1] = obj2int(v[1])-1;
 	    }
 	}
     }
     else {
-	args[1] = rb_obj2int(v[1]) - 1;
+	args[1] = obj2int(v[1]) - 1;
     }
     if (NIL_P(v[2])) {
 	args[2] = 1;
     }
     else {
-	args[2] = rb_obj2int(v[2]);
+	args[2] = obj2int(v[2]);
     }
     for (i=3;i<6;i++) {
 	if (NIL_P(v[i])) {
 	    args[i] = 0;
 	}
 	else {
-	    args[i] = rb_obj2int(v[i]);
+	    args[i] = obj2int(v[i]);
 	}
     }
 

@@ -1,3 +1,17 @@
+Wed Apr 22 16:52:37 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_14.
+
+	* string.c (str_modify): check for embedded pointer reference.
+
+	* gc.c (obj_free): ditto.
+
+	* pack.c (pack_pack): p/P template to embed pointers.
+
+Wed Apr 22 00:07:10 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* array.c (ary_rindex): embarrassing typo.
+
 Tue Apr 21 12:31:48 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_13.

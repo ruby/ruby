@@ -418,6 +418,11 @@ gc_mark(ptr)
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
 	  case NODE_NOT:
+	  case NODE_GASGN:
+	  case NODE_LASGN:
+	  case NODE_DASGN:
+	  case NODE_IASGN:
+	  case NODE_CASGN:
 	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
 
@@ -652,7 +657,9 @@ obj_free(obj)
 	}
 	break;
       case T_STRING:
-	if (!RANY(obj)->as.string.orig) free(RANY(obj)->as.string.ptr);
+#define STR_NO_ORIG FL_USER3	/* copied from string.c */
+	if (!RANY(obj)->as.string.orig && FL_TEST(obj, STR_NO_ORIG))
+	    free(RANY(obj)->as.string.ptr);
 	break;
       case T_ARRAY:
 	if (RANY(obj)->as.array.ptr) free(RANY(obj)->as.array.ptr);

@@ -83,6 +83,18 @@ static char *toofew = "too few arguments";
 
 static void encodes();
 
+static void
+pack_add_ptr(str, add)
+    VALUE str, add;
+{
+#define STR_NO_ORIG FL_USER3	/* copied from string.c */
+    if (!RSTRING(str)->orig) {
+	RSTRING(str)->orig = ary_new();
+	FL_SET(str, STR_NO_ORIG);
+    }
+    ary_push(RSTRING(str)->orig, add);
+}
+
 static VALUE
 pack_pack(ary, fmt)
     VALUE ary, fmt;
@@ -460,6 +472,22 @@ pack_pack(ary, fmt)
 		encodes(res, ptr, todo, type);
 		plen -= todo;
 		ptr += todo;
+	    }
+	    break;
+
+	  case 'P':
+	    len = 1;
+	    /* FALL THROUGH */
+	  case 'p':
+	    while (len-- > 0) {
+		char *t;
+		from = NEXTFROM;
+		if (NIL_P(from)) t = "";
+		else {
+		    t = STR2CSTR(from);
+		    pack_add_ptr(res, from);
+		}
+		str_cat(res, (char*)&t, sizeof(char*));
 	    }
 	    break;
 
@@ -924,6 +952,36 @@ pack_unpack(str, fmt)
 	    if (len > send - s)
 		ArgError("x outside of string");
 	    s += len;
+	    break;
+
+	  case 'P':
+	    if (sizeof(char *) <= send - s) {
+		char *t;
+		VALUE str = str_new(0, 0);
+		memcpy(&t, s, sizeof(char *));
+		s += sizeof(char *);
+		if (t)
+		    str_cat(str, t, len);
+		ary_push(ary, str);
+	    }
+	    break;
+
+	  case 'p':
+	    if (len > (send - s) / sizeof(char *))
+		len = (send - s) / sizeof(char *);
+	    while (len-- > 0) {
+		if (send - s < sizeof(char *))
+		    break;
+		else {
+		    char *t;
+		    VALUE str = str_new(0, 0);
+		    memcpy(&t, s, sizeof(char *));
+		    s += sizeof(char *);
+		    if (t)
+			str_cat(str, t, strlen(t));
+		    ary_push(ary, str);
+		}
+	    }
 	    break;
 
 	  default:

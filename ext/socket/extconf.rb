@@ -1,3 +1,4 @@
+require 'mkmf'
 $LDFLAGS = "-L/usr/local/lib"
 case PLATFORM
 when /mswin32/

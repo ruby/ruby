@@ -28,6 +28,7 @@ VALUE cString;
 
 #define STR_FREEZE FL_USER1
 #define STR_TAINT  FL_USER2
+#define STR_NO_ORIG FL_USER3
 void reg_prepare_re _((VALUE));
 void kcode_reset_option _((void));
 
@@ -84,11 +85,11 @@ VALUE
 str_new4(orig)
     VALUE orig;
 {
-    if (RSTRING(orig)->orig) {
-	return str_freeze(RSTRING(orig)->orig);
-    }
-    else if (FL_TEST(orig, STR_FREEZE)) {
+    if (FL_TEST(orig, STR_FREEZE)) {
 	return orig;
+    }
+    else if (RSTRING(orig)->orig && !FL_TEST(orig, STR_NO_ORIG)) {
+	return str_freeze(RSTRING(orig)->orig);
     }
     else {
 	NEWOBJ(str, struct RString);
@@ -110,7 +111,7 @@ str_assign(str, str2)
     VALUE str, str2;
 {
     if (NIL_P(str2) || str == str2) return;
-    if (!RSTRING(str)->orig && RSTRING(str)->ptr)
+    if ((!RSTRING(str)->orig||FL_TEST(str, STR_NO_ORIG)) && RSTRING(str)->ptr)
 	free(RSTRING(str)->ptr);
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
     RSTRING(str)->len = RSTRING(str2)->len;
@@ -143,7 +144,7 @@ str_clone(orig)
 {
     VALUE str;
 
-    if (RSTRING(orig)->orig)
+    if (RSTRING(orig)->orig && !FL_TEST(orig, STR_NO_ORIG))
 	str = str_new3(RSTRING(orig)->orig);
     else
 	str = str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
@@ -336,7 +337,7 @@ str_modify(str)
     }
     if (FL_TEST(str, STR_FREEZE))
 	TypeError("can't modify frozen string");
-    if (!RSTRING(str)->orig) return;
+    if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return;
     ptr = RSTRING(str)->ptr;
     RSTRING(str)->ptr = ALLOC_N(char, RSTRING(str)->len+1);
     if (RSTRING(str)->ptr) {
@@ -367,7 +368,7 @@ VALUE
 str_dup_frozen(str)
     VALUE str;
 {
-    if (RSTRING(str)->orig) {
+    if (RSTRING(str)->orig && !FL_TEST(str, STR_NO_ORIG)) {
 	return str_freeze(RSTRING(str)->orig);
     }
     if (FL_TEST(str, STR_FREEZE))

@@ -743,14 +743,6 @@ rb_Integer(val)
     return f_integer(Qnil, val);
 }
 
-int
-rb_obj2int(obj)
-    VALUE obj;
-{
-    VALUE i = f_integer(Qnil, obj);
-    return NUM2INT(i);
-}
-
 static VALUE
 to_flo(val)
     VALUE val;

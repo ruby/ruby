@@ -1,3 +1,4 @@
+require 'mkmf'
 have_library("sun", "getpwnam")	# NIS (== YP) interface for IRIX 4
 a = have_func("getlogin")
 b = have_func("getpwent")

@@ -36,6 +36,7 @@ $install = CONFIG["INSTALL_PROGRAM"]
 $install_data = CONFIG["INSTALL_DATA"]
 if $install !~ /^\// then
   $install = CONFIG["srcdir"]+"/"+$install
+  $install_data = CONFIG["srcdir"]+"/"+$install_data
 end
 
 if File.exist? $archdir + "/ruby.h"
@@ -47,25 +48,38 @@ else
   exit 1
 end
 
-nul = "> /dev/null"
-
 CFLAGS = CONFIG["CFLAGS"]
 if PLATFORM == "m68k-human"
-  nul = "> nul"
   CFLAGS.gsub!(/-c..-stack=[0-9]+ */, '')
 end
-if $DEBUG
-  nul = ""
+if /win32|djgpp|mingw32|m68k-human/i =~ PLATFORM
+  $null = open("nul", "w")
+else
+  $null = open("/dev/null", "w")
 end
-LINK = CONFIG["CC"]+" -o conftest -I#{$srcdir} " + CFLAGS + " %s " + CONFIG["LDFLAGS"] + " %s conftest.c " + CONFIG["LIBS"] + "%s " + nul + " 2>&1"
-CPP = CONFIG["CPP"] + " -E  -I#{$srcdir} " + CFLAGS + " %s conftest.c " + nul + " 2>&1"
+LINK = "#{CONFIG['CC']} -o conftest } -I#{CONFIG['includedir']} -I#{$srcdir} #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c #{CONFIG['LIBS']} %s"
+CPP = "#{CONFIG['CPP']} -E -I#{CONFIG['includedir']} -I#{$srcdir} #{CFLAGS} %s conftest.c"
+
+$orgerr = $stderr.dup
+$orgout = $stdout.dup
+def xsystem command
+  if $DEBUG
+    return system(command)
+  end
+  $stderr.reopen($null) 
+  $stdout.reopen($null) 
+  r = system(command)
+  $stderr.reopen($orgerr)
+  $stdout.reopen($orgout)
+  return r
+end
 
 def try_link(libs)
-  system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+  xsystem(format(LINK, $CFLAGS, $LDFLAGS, libs))
 end
 
 def try_cpp
-  system(format(CPP, $CFLAGS))
+  xsystem(format(CPP, $CFLAGS))
 end
 
 def have_library(lib, func)
@@ -241,7 +255,8 @@ hdrdir = #{$hdrdir}
 
 CC = gcc
 
-CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I#{$hdrdir} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
+prefix = #{CONFIG["prefix"]}
+CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I#{CONFIG["includedir"]} -I#{$hdrdir} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
 DLDFLAGS = #{CONFIG["DLDFLAGS"]} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]}
 
@@ -258,6 +273,7 @@ OBJS = #{$objs}
 TARGET = #{target}.#{CONFIG["DLEXT"]}
 
 INSTALL = #{$install}
+INSTALL_DATA = #{$install_data}
 
 binsuffix = #{CONFIG["binsuffix"]}
 
@@ -276,7 +292,7 @@ $(libdir)/$(TARGET): $(TARGET)
 	$(INSTALL) $(TARGET) $(libdir)/$(TARGET)
 EOMF
   for rb in Dir["lib/*.rb"]
-    mfile.printf "\t$(INSTALL) %s %s\n", rb, $libdir
+    mfile.printf "\t$(INSTALL_DATA) %s %s\n", rb, $libdir
   end
   mfile.printf "\n"
 
@@ -335,9 +351,8 @@ EOMF
 end
 
 $local_libs = nil
-$libs = nil
+$libs = PLATFORM =~ /cygwin32/ ? nil : "-lc"
 $objs = nil
 $CFLAGS = nil
 $LDFLAGS = nil
 $defs = []
-

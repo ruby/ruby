@@ -1,3 +1,4 @@
+require 'mkmf'
 $CFLAGS="-I/usr/include/ncurses -I/usr/local/include/ncurses"
 $LDFLAGS="-L/usr/local/lib"
 make=FALSE

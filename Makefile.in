@@ -10,7 +10,8 @@ YACC = @YACC@
 PURIFY =
 @SET_MAKE@
 
-CFLAGS = @CFLAGS@ -I@srcdir@
+prefix = @prefix@
+CFLAGS = @CFLAGS@ -I@includedir@ -I@srcdir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@

@@ -416,7 +416,7 @@ ary_rindex(ary, val)
     VALUE ary;
     VALUE val;
 {
-    int i = i<RARRAY(ary)->len;
+    int i = RARRAY(ary)->len;
 
     while (i--) {
 	if (rb_equal(RARRAY(ary)->ptr[i], val))
