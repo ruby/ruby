@@ -121,7 +121,7 @@ class CGI < SimpleDelegator
   RFC822_MONTHS = %w[ Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ]
 
   # make rfc1123 date string
-  def rfc1123_date(time)
+  def CGI::rfc1123_date(time)
     t = time.clone.gmtime
     return format("%s, %.2d %s %d %.2d:%.2d:%.2d GMT",
                 RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
@@ -129,21 +129,19 @@ class CGI < SimpleDelegator
   end
 
   # escape url encode
-  def escape(str)
+  def CGI::escape(str)
     str.gsub(/[^a-zA-Z0-9_\-.]/n){ sprintf("%%%02X", $&.unpack("C")[0]) }
   end
 
   # unescape url encoded
-  def unescape(str)
+  def CGI::unescape(str)
     str.gsub(/\+/, ' ').gsub(/%([0-9a-fA-F]{2})/){ [$1.hex].pack("c") }
   end
 
   # escape HTML
-  def escapeHTML(str)
+  def CGI::escapeHTML(str)
     str.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
   end
-
-  module_function :escape, :unescape, :escapeHTML, :rfc1123_date
 
   # offline mode. read name=value pairs on standard input.
   def read_from_cmdline
@@ -172,7 +170,7 @@ class CGI < SimpleDelegator
     else
       read_from_cmdline
     end.split(/[&;]/).each do |x|
-      key, val = x.split(/=/,2).collect{|x|unescape(x)}
+      key, val = x.split(/=/,2).collect{|x|CGI::unescape(x)}
       if @inputs.include?(key)
         @inputs[key] += "\0" + (val or "")
       else
@@ -185,8 +183,8 @@ class CGI < SimpleDelegator
     if ENV.has_key?('HTTP_COOKIE') or ENV.has_key?('COOKIE')
       (ENV['HTTP_COOKIE'] or ENV['COOKIE']).split("; ").each do |x|
         key, val = x.split(/=/,2)
-        key = unescape(key)
-        val = val.split(/&/).collect{|x|unescape(x)}.join("\0")
+        key = CGI::unescape(key)
+        val = val.split(/&/).collect{|x|CGI::unescape(x)}.join("\0")
         if @cookie.include?(key)
           @cookie[key] += "\0" + val
         else

@@ -92,9 +92,9 @@ static int scope_vmode;
 int ruby_safe_level = 0;
 /* safe-level:
    0 - strings from streams/environment/ARGV are tainted (default)
-   1 - no dangerous operation by tainted string
+   1 - no dangerous operation by tainted value
    2 - process/file operations prohibited
-   3 - all genetated strings are tainted
+   3 - all genetated objects are tainted
    4 - no global (non-tainted) variable modification/no direct output
 */
 
@@ -5222,6 +5222,10 @@ rb_mod_modfunc(argc, argv, module)
     int i;
     ID id;
     NODE *body;
+
+    if (TYPE(module) != T_MODULE) {
+	rb_raise(rb_eTypeError, "module_function must be called for modules");
+    }
 
     if (argc == 0) {
 	SCOPE_SET(SCOPE_MODFUNC);

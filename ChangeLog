@@ -1,3 +1,7 @@
+Wed Jul 19 15:14:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (bigdivrem): should use rb_int2big(), not rb_uint2big().
+
 Tue Jul 18 14:58:30 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (ruby_options): should treat SystemExit etc. properly.

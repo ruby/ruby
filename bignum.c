@@ -804,7 +804,7 @@ bigdivrem(x, y, divp, modp)
 	}
 	RBIGNUM(z)->sign = RBIGNUM(x)->sign==RBIGNUM(y)->sign;
 	if (!RBIGNUM(x)->sign) t2 = -(long)t2;
-	if (modp) *modp = rb_uint2big(t2);
+	if (modp) *modp = rb_int2big((long)t2);
 	if (divp) *divp = z;
 	return;
     }
