@@ -47,7 +47,7 @@ ruby_tcltk_stubs()
     } else {
 	snprintf(tcl_name, sizeof tcl_name, TCL_NAME, DLEXT);
 	snprintf(tk_name, sizeof tk_name, TK_NAME, DLEXT);
-	/* examin from 8.9 to 8.1 */
+	/* examine from 8.9 to 8.1 */
 	for (n = '9'; n > '0'; n--) {
 	    tcl_name[TCL_INDEX] = n;
 	    tk_name[TK_INDEX] = n;
