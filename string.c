@@ -888,7 +888,7 @@ rb_str_equal(str1, str2)
     if (str1 == str2) return Qtrue;
     if (TYPE(str2) != T_STRING) {
 	if (!rb_respond_to(str2, rb_intern("to_str"))) {
-	    return Qnil;
+	    return Qfalse;
 	}
 	return rb_equal(str2, str1);
     }
@@ -1080,7 +1080,7 @@ rb_str_index_m(argc, argv, str)
       {
 	  int c = FIX2INT(sub);
 	  long len = RSTRING(str)->len;
-	  char *p = RSTRING(str)->ptr;
+	  unsigned char *p = RSTRING(str)->ptr;
 
 	  for (;pos<len;pos++) {
 	      if (p[pos] == c) return LONG2NUM(pos);
@@ -1202,15 +1202,15 @@ rb_str_rindex_m(argc, argv, str)
       case T_FIXNUM:
       {
 	  int c = FIX2INT(sub);
-	  char *p = RSTRING(str)->ptr + pos;
-	  char *pbeg = RSTRING(str)->ptr;
+	  unsigned char *p = RSTRING(str)->ptr + pos;
+	  unsigned char *pbeg = RSTRING(str)->ptr;
 
 	  if (pos == RSTRING(str)->len) {
 	      if (pos == 0) return Qnil;
 	      --p;
 	  }
 	  while (pbeg <= p) {
-	      if (*p == c) return LONG2NUM(p - RSTRING(str)->ptr);
+	      if (*p == c) return LONG2NUM((char*)p - RSTRING(str)->ptr);
 	      p--;
 	  }
 	  return Qnil;

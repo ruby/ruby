@@ -490,37 +490,29 @@ flo_to_s(flt)
     VALUE flt;
 {
     char buf[32];
-    char *fmt = "%.15g";
+    char *fmt = "%.15f";
     double value = RFLOAT(flt)->value;
     double avalue, d1, d2;
+    char *p, *e;
 
     if (isinf(value))
 	return rb_str_new2(value < 0 ? "-Infinity" : "Infinity");
     else if(isnan(value))
 	return rb_str_new2("NaN");
-    
-    avalue = fabs(value);
-    if (avalue == 0.0) {
-	fmt = "%.1f";
-    }
-    else if (avalue < 1.0e-3) {
-	d1 = avalue;
-	while (d1 < 1.0) d1 *= 10.0;
-	d1 = modf(d1, &d2);
-	if (d1 == 0) fmt = "%.1e";
-    }    
-    else if (avalue >= 1.0e15) {
-	d1 = avalue;
-	while (d1 > 10.0) d1 /= 10.0;
-	d1 = modf(d1, &d2);
-	if (d1 == 0) fmt = "%.1e";
-	else fmt = "%.16e";
-    }    
-    else if ((d1 = modf(value, &d2)) == 0) {
-	fmt = "%.1f";
-    }
-    sprintf(buf, fmt, value);
 
+    avalue = fabs(value);
+    if (avalue < 1.0e-7 || avalue >= 1.0e15) {
+	fmt = "%.16e";
+    }    
+    sprintf(buf, fmt, value);
+    if (!(e = strchr(buf, 'e'))) {
+	e = buf + strlen(buf);
+    }
+    p = e;
+    while (*--p=='0')
+	;
+    if (*p == '.') *p++;
+    memmove(p+1, e, strlen(e)+1);
     return rb_str_new2(buf);
 }
 

@@ -464,6 +464,9 @@ rb_cstr_to_inum(str, base, badcheck)
 	    }
 	    continue;
 	}
+	else if (!ISASCII(c)) {
+	    break;
+	}
 	else if (isdigit(c)) {
 	    c -= '0';
 	}

@@ -62,6 +62,7 @@ enum node_type {
     NODE_ZSUPER,
     NODE_ARRAY,
     NODE_ZARRAY,
+    NODE_VALUES,
     NODE_HASH,
     NODE_RETURN,
     NODE_YIELD,

@@ -87,20 +87,27 @@ def DelegateClass(superclass)
   methods = superclass.public_instance_methods(true)
   methods -= ::Kernel.public_instance_methods(false)
   methods |= ["to_s","to_a","inspect","==","=~","==="]
-  klass.module_eval <<-EOS
-  def initialize(obj)
-    @_dc_obj = obj
-  end
-  def __getobj__
-    @_dc_obj
-  end
-  def __setobj__(obj)
-    @_dc_obj = obj
-  end
-  EOS
+  klass.module_eval {
+    def initialize(obj)
+      @_dc_obj = obj
+    end
+    def method_missing(m, *args)
+      p [m, *args]
+      unless @_dc_obj.respond_to?(m)
+        super(m, *args)
+      end
+      @_dc_obj.__send__(m, *args)
+    end
+    def __getobj__
+      @_dc_obj
+    end
+    def __setobj__(obj)
+      @_dc_obj = obj
+    end
+  }
   for method in methods
     begin
-      klass.module_eval <<-EOS
+      klass.module_eval <<-EOS, __FILE__, __LINE__+1
         def #{method}(*args, &block)
 	  begin
 	    @_dc_obj.__send__(:#{method}, *args, &block)

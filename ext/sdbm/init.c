@@ -268,6 +268,16 @@ fsdbm_values_at(argc, argv, obj)
     return new;
 }
 
+static void
+fdbm_modify(obj)
+    VALUE obj;
+{
+    rb_secure(4);
+    if (OBJ_FROZEN_P(obj)) {
+	if (OBJ_FROZEN(obj)) rb_error_frozen("SDBM");
+    }
+}
+
 static VALUE
 fsdbm_delete(obj, keystr)
     VALUE obj, keystr;
@@ -277,7 +287,7 @@ fsdbm_delete(obj, keystr)
     DBM *dbm;
     VALUE valstr;
 
-    rb_secure(4);
+    fdbm_modify(obj);
     StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
@@ -314,7 +324,7 @@ fsdbm_shift(obj)
     DBM *dbm;
     VALUE keystr, valstr;
 
-    rb_secure(4);
+    fdbm_modify(obj);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
 
@@ -342,7 +352,7 @@ fsdbm_delete_if(obj)
     VALUE ret, ary = rb_ary_new();
     int i, status = 0, n;
 
-    rb_secure(4);
+    fdbm_modify(obj);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
     n = dbmp->di_size;
@@ -378,7 +388,7 @@ fsdbm_clear(obj)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    rb_secure(4);
+    fdbm_modify(obj);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
     dbmp->di_size = -1;
@@ -466,7 +476,7 @@ fsdbm_store(obj, keystr, valstr)
 	return Qnil;
     }
 
-    rb_secure(4);
+    fdbm_modify(obj);
     keystr = rb_obj_as_string(keystr);
 
     key.dptr = RSTRING(keystr)->ptr;

@@ -2573,14 +2573,14 @@ svalue_to_mrhs(v, lhs)
 {
     VALUE tmp;
 
-    if (v == Qundef) return rb_ary_new2(0);
+    if (v == Qundef) return rb_values_new2(0, 0);
     tmp = rb_check_array_type(v);
     if (NIL_P(tmp)) {
-	return rb_ary_new3(1, v);
+	return rb_values_new(1, v);
     }
     /* no lhs means splat lhs only */
     if (!lhs) {
-	return rb_ary_new3(1, v);
+	return rb_values_new(1, v);
     }
     return tmp;
 }
@@ -2602,8 +2602,11 @@ static VALUE
 splat_value(v)
     VALUE v;
 {
-    if (NIL_P(v)) return rb_ary_new3(1, Qnil);
-    return rb_Array(v);
+    VALUE val;
+
+    if (NIL_P(v)) val = rb_ary_new3(1, Qnil);
+    else val = rb_Array(v);
+    return rb_values_from_ary(val);
 }
 
 static VALUE
@@ -3566,6 +3569,22 @@ rb_eval(self, n)
 	    }
 
 	    result = ary;
+	}
+	break;
+
+      case NODE_VALUES:
+	{
+	    VALUE val;
+	    long i;
+
+	    i = node->nd_alen;
+	    val = rb_values_new2(i, 0);
+	    for (i=0;node;node=node->nd_next) {
+		RARRAY(val)->ptr[i++] = rb_eval(self, node->nd_head);
+		RARRAY(val)->len = i;
+	    }
+
+	    result = val;
 	}
 	break;
 

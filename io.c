@@ -2396,15 +2396,27 @@ rb_fdopen(fd, mode)
 {
     FILE *file;
 
+#if defined(sun)
+    errno = 0;
+#endif
     file = fdopen(fd, mode);
     if (!file) {
+#if defined(sun)
+	if (errno == 0 || errno == EMFILE || errno == ENFILE) {
+#else
 	if (errno == EMFILE || errno == ENFILE) {
+#endif
 	    rb_gc();
+#if defined(sun)
+	    errno = 0;
+#endif
 	    file = fdopen(fd, mode);
 	}
 	if (!file) {
 #ifdef _WIN32
 	    if (errno == 0) errno = EINVAL;
+#elif defined(sun)
+	    if (errno == 0) errno = EMFILE;
 #endif
 	    rb_sys_fail(0);
 	}

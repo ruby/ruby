@@ -234,6 +234,50 @@ rb_values_new2(n, elts)
     return val;
 }
 
+static void
+ary_make_shared(ary)
+    VALUE ary;
+{
+    if (!FL_TEST(ary, ELTS_SHARED)) {
+	NEWOBJ(shared, struct RArray);
+	OBJSETUP(shared, rb_cArray, T_ARRAY);
+
+	shared->len = RARRAY(ary)->len;
+	shared->ptr = RARRAY(ary)->ptr;
+	shared->aux.capa = RARRAY(ary)->aux.capa;
+	RARRAY(ary)->aux.shared = (VALUE)shared;
+	FL_SET(ary, ELTS_SHARED);
+    }
+}
+
+static VALUE
+ary_shared_array(klass, ary)
+    VALUE klass, ary;
+{
+    VALUE val = ary_alloc(klass);
+
+    ary_make_shared(ary);
+    RARRAY(val)->ptr = RARRAY(ary)->ptr;
+    RARRAY(val)->len = RARRAY(ary)->len;
+    RARRAY(val)->aux.shared = RARRAY(ary)->aux.shared;
+    FL_SET(val, ELTS_SHARED);
+    return val;
+}
+
+VALUE
+rb_values_from_ary(ary)
+    VALUE ary;
+{
+    return ary_shared_array(rb_cValues, ary);
+}
+
+VALUE
+rb_ary_from_values(val)
+    VALUE val;
+{
+    return ary_shared_array(rb_cArray, val);
+}
+
 VALUE
 rb_assoc_new(car, cdr)
     VALUE car, cdr;
@@ -498,22 +542,6 @@ rb_ary_pop(ary)
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
     return RARRAY(ary)->ptr[--RARRAY(ary)->len];
-}
-
-static void
-ary_make_shared(ary)
-    VALUE ary;
-{
-    if (!FL_TEST(ary, ELTS_SHARED)) {
-	NEWOBJ(shared, struct RArray);
-	OBJSETUP(shared, rb_cArray, T_ARRAY);
-
-	shared->len = RARRAY(ary)->len;
-	shared->ptr = RARRAY(ary)->ptr;
-	shared->aux.capa = RARRAY(ary)->aux.capa;
-	RARRAY(ary)->aux.shared = (VALUE)shared;
-	FL_SET(ary, ELTS_SHARED);
-    }
 }
 
 /*

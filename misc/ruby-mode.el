@@ -325,7 +325,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		       (looking-at ruby-block-op-re)
 		       (looking-at ruby-block-mid-re))
 		   (goto-char (match-end 0))
-		   (looking-at "\\>"))
+                  (not (looking-at "\\s_")))
 		  ((eq option 'expr-qstr)
 		   (looking-at "[a-zA-Z][a-zA-z0-9_]* +%[^ \t]"))
 		  ((eq option 'expr-re)

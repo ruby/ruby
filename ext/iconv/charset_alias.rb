@@ -43,7 +43,7 @@ def charset_alias(config_charset, mapfile, target = OS)
   st = Hash.new(0)
   map = map.sort.collect do |can, *sys|
     if sys.grep(/^en_us(?=.|$)/i) {break true} == true
-      noen = %r"^(?!en_us)\w+_\w+#{Regexp.new($')}$"i
+      noen = %r"^(?!en_us)\w+_\w+#{Regexp.new($')}$"i #"
       sys.reject! {|s| noen =~ s}
     end
     sys = sys.first
@@ -67,7 +67,7 @@ def charset_alias(config_charset, mapfile, target = OS)
       else
         sys = "'#{sys}'.freeze"
       end
-      f.puts("  charset_map['#{can}'.freeze] = #{sys}")
+      f.puts("  charset_map['#{can}'] = #{sys}")
     end
     f.puts("end")
   end

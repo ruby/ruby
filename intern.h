@@ -32,6 +32,8 @@ VALUE rb_ary_new3 __((long,...));
 VALUE rb_ary_new4 _((long, const VALUE *));
 VALUE rb_values_new __((long,...));
 VALUE rb_values_new2 _((long, const VALUE *));
+VALUE rb_values_from_ary _((VALUE));
+VALUE rb_ary_from_values _((VALUE));
 VALUE rb_ary_freeze _((VALUE));
 VALUE rb_ary_aref _((int, VALUE*, VALUE));
 void rb_ary_store _((VALUE, long, VALUE));

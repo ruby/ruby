@@ -85,6 +85,12 @@ Tue Apr 27 14:43:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* common.mk: LIBURUBY_A is needed for extconf.rb even when
 	  cross-compiling.
 
+Tue Apr 27 13:33:50 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (string_content): turn off NODE_NEWLINE flag to avoid
+	  unnecessary line trace for inlined expression.
+	  (ruby-bugs PR#1320)
+
 Tue Apr 27 08:15:13 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: passing Range tests.
@@ -164,6 +170,14 @@ Thu Apr 22 04:17:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (aref_args): should pass expanded list.  [ruby-core:02793]
 
+Thu Apr 22 01:12:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_to_s): tweak output string based to preserve
+	  decimal point and to remove trailing zeros.  [ruby-talk:97891]
+
+	* string.c (rb_str_index_m): use unsigned comparison for T_FIXNUM
+	  search.  [ruby-talk:97342]
+
 Wed Apr 21 23:04:42 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb, test/rinda/test_rinda.rb: check Hash tuple size.
@@ -215,6 +229,14 @@ Mon Apr 19 20:58:44  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c: Updated RDocs.
 
+Mon Apr 19 18:11:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_equal): returns true if two hashes have same set
+	  of key-value set.  [ruby-talk:97559]
+
+	* hash.c (rb_hash_eql): returns true if two hashes are equal and
+	  have same default values.
+
 Mon Apr 19 08:19:11 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
 
 	* dln.c, io.c, pack.c, lib/benchmark.rb, lib/cgi.rb, lib/csv.rb,
@@ -231,6 +253,11 @@ Mon Apr 19 08:14:18 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_body): Allow for
 	  #ifdef HAVE_PROTOTYPES
+
+Fri Apr 16 17:04:07 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_equal): always returns true or false, never
+	  returns nil. [ruby-dev:23404]
 
 Fri Apr 16 12:38:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

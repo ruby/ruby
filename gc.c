@@ -1718,12 +1718,10 @@ rb_gc_copy_finalizer(dest, obj)
 
     if (!finalizer_table) return;
     if (!FL_TEST(obj, FL_FINALIZE)) return;
-    if (FL_TEST(dest, FL_FINALIZE)) {
-	rb_warn("copy_finalizer: discarding old finalizers");
-    }
     if (st_lookup(finalizer_table, obj, &table)) {
 	st_insert(finalizer_table, dest, table);
     }
+    RBASIC(dest)->flags |= FL_FINALIZE;
 }
 
 static VALUE

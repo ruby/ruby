@@ -387,6 +387,16 @@ fgdbm_values_at(argc, argv, obj)
     return new;
 }
 
+static void
+rb_gdbm_modify(obj)
+    VALUE obj;
+{
+    rb_secure(4);
+    if (OBJ_FROZEN_P(obj)) {
+	if (OBJ_FROZEN(obj)) rb_error_frozen("GDBM");
+    }
+}
+
 static VALUE
 rb_gdbm_delete(obj, keystr)
     VALUE obj, keystr;
@@ -395,7 +405,7 @@ rb_gdbm_delete(obj, keystr)
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
-    rb_secure(4);
+    rb_gdbm_modify(obj);
     StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
@@ -436,7 +446,7 @@ fgdbm_shift(obj)
     GDBM_FILE dbm;
     VALUE keystr, valstr;
 
-    rb_secure(4);
+    rb_gdbm_modify(obj);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
 
@@ -458,7 +468,7 @@ fgdbm_delete_if(obj)
     VALUE ret, ary = rb_ary_new();
     int i, status = 0, n;
 
-    rb_secure(4);
+    rb_gdbm_modify(obj);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
     n = dbmp->di_size;
@@ -489,7 +499,7 @@ fgdbm_clear(obj)
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
-    rb_secure(4);
+    rb_gdbm_modify(obj);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
     dbmp->di_size = -1;
@@ -588,7 +598,7 @@ fgdbm_store(obj, keystr, valstr)
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
-    rb_secure(4);
+    rb_gdbm_modify(obj);
     StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
@@ -830,7 +840,7 @@ fgdbm_reorganize(obj)
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
-    rb_secure(4);
+    rb_gdbm_modify(obj);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
     gdbm_reorganize(dbm);
@@ -844,7 +854,7 @@ fgdbm_sync(obj)
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
-    rb_secure(4);
+    rb_gdbm_modify(obj);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
     gdbm_sync(dbm);

@@ -539,6 +539,7 @@ private
 
     def create_logfile(filename)
       logdev = open(filename, (File::WRONLY | File::APPEND | File::CREAT))
+      logdev.sync = true
       add_log_header(logdev)
       logdev
     end

@@ -3195,7 +3195,8 @@ EOF
   end
 
   parser = GetoptLong.new
-  parser.set_options(['--help', GetoptLong::NO_ARGUMENT],
+  parser.set_options(['--debug', GetoptLong::NO_ARGUMENT],
+  		     ['--help', GetoptLong::NO_ARGUMENT],
 		     ['--port', GetoptLong::REQUIRED_ARGUMENT],
 		     ['--user', GetoptLong::REQUIRED_ARGUMENT],
 		     ['--auth', GetoptLong::REQUIRED_ARGUMENT])
@@ -3208,6 +3209,8 @@ EOF
 	$user = arg
       when "--auth"
 	$auth = arg
+      when "--debug"
+	Net::IMAP.debug = true
       when "--help"
 	usage
 	exit(1)

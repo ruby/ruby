@@ -1391,6 +1391,35 @@ equal_i(key, val1, data)
     return ST_CONTINUE;
 }
 
+static VALUE
+hash_equal(hash1, hash2, eql)
+    VALUE hash1, hash2;
+    int eql;			/* compare default value if true */
+{
+    struct equal_data data;
+
+    if (hash1 == hash2) return Qtrue;
+    if (TYPE(hash2) != T_HASH) {
+	if (!rb_respond_to(hash2, rb_intern("to_hash"))) {
+	    return Qfalse;
+	}
+	return rb_equal(hash2, hash1);
+    }
+    if (RHASH(hash1)->tbl->num_entries != RHASH(hash2)->tbl->num_entries)
+	return Qfalse;
+    if (eql) {
+	if (!(rb_equal(RHASH(hash1)->ifnone, RHASH(hash2)->ifnone) &&
+	      FL_TEST(hash1, HASH_PROC_DEFAULT) == FL_TEST(hash2, HASH_PROC_DEFAULT)))
+	    return Qfalse;
+    }
+
+    data.tbl = RHASH(hash2)->tbl;
+    data.result = Qtrue;
+    st_foreach(RHASH(hash1)->tbl, equal_i, (st_data_t)&data);
+
+    return data.result;
+}
+
 /*
  *  call-seq:
  *     hsh == other_hash    => true or false
@@ -1414,26 +1443,23 @@ static VALUE
 rb_hash_equal(hash1, hash2)
     VALUE hash1, hash2;
 {
-    struct equal_data data;
+    return hash_equal(hash1, hash2, Qfalse);
+}
 
-    if (hash1 == hash2) return Qtrue;
-    if (TYPE(hash2) != T_HASH) {
-	if (!rb_respond_to(hash2, rb_intern("to_hash"))) {
-	    return Qfalse;
-	}
-	return rb_equal(hash2, hash1);
-    }
-    if (RHASH(hash1)->tbl->num_entries != RHASH(hash2)->tbl->num_entries)
-	return Qfalse;
-    if (!(rb_equal(RHASH(hash1)->ifnone, RHASH(hash2)->ifnone) &&
-	  FL_TEST(hash1, HASH_PROC_DEFAULT) == FL_TEST(hash2, HASH_PROC_DEFAULT)))
-	return Qfalse;
+/*
+ *  call-seq:
+ *     hsh.eql?(other_hash)    => true or false
+ *  
+ *  Returns true if two hashes are equal, i.e they have same key-value set,
+ *  and same default values.
+ *     
+ */
 
-    data.tbl = RHASH(hash2)->tbl;
-    data.result = Qtrue;
-    st_foreach(RHASH(hash1)->tbl, equal_i, (st_data_t)&data);
-
-    return data.result;
+static VALUE
+rb_hash_eql(hash1, hash2)
+    VALUE hash1, hash2;
+{
+    return hash_equal(hash1, hash2, Qtrue);
 }
 
 static int
@@ -2365,6 +2391,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"inspect", rb_hash_inspect, 0);
 
     rb_define_method(rb_cHash,"==", rb_hash_equal, 1);
+    rb_define_method(rb_cHash,"eql?", rb_hash_eql, 1);
     rb_define_method(rb_cHash,"[]", rb_hash_aref, 1);
     rb_define_method(rb_cHash,"fetch", rb_hash_fetch, -1);
     rb_define_method(rb_cHash,"[]=", rb_hash_aset, 2);

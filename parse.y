@@ -1455,7 +1455,8 @@ primary		: literal
 		    }
 		| tLPAREN compstmt ')'
 		    {
-			$$ = $2;
+			if (!$2) $$ = NEW_NIL();
+			else $$ = $2;
 		    }
 		| primary_value tCOLON2 tCONSTANT
 		    {
@@ -2090,6 +2091,7 @@ string_content	: tSTRING_CONTENT
 			lex_strterm = $<node>2;
 			COND_LEXPOP();
 			CMDARG_LEXPOP();
+		        FL_UNSET($3, NODE_NEWLINE);
 			$$ = new_evstr($3);
 		    }
 		;
@@ -5432,10 +5434,15 @@ ret_args(node)
 {
     if (node) {
 	no_blockarg(node);
-	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
-	    node = node->nd_head;
+	if (nd_type(node) == NODE_ARRAY) {
+	    if (node->nd_next == 0) {
+		node = node->nd_head;
+	    }
+	    else {
+		nd_set_type(node, NODE_VALUES);
+	    }
 	}
-	else if (node && nd_type(node) == NODE_SPLAT) {
+	else if (nd_type(node) == NODE_SPLAT) {
 	    node = NEW_SVALUE(node);
 	}
     }
