@@ -3,4 +3,6 @@ sha1.c
 sha1.h
 sha1hl.c
 sha1init.c
+sha1ossl.c
+sha1ossl.h
 depend

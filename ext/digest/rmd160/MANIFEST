@@ -3,4 +3,6 @@ rmd160.c
 rmd160.h
 rmd160hl.c
 rmd160init.c
+rmd160ossl.c
+rmd160ossl.h
 depend
