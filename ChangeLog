@@ -1,3 +1,8 @@
+Wed May 12 13:20:19 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/composite.rb: improve configure methods (based on 
+	  the proposal of [ruby-talk:99671]). 
+
 Wed May 12 11:51:08 2004  Dave Thomas  <dave@pragprog.com>
 
 	* class.c (rb_obj_singleton_methods): fix rdoc
