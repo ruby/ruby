@@ -1,6 +1,26 @@
+Mon Mar 26 17:21:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c: remove TMP_PROTECT_END to prevent C_ALLOCA crash.
+
 Mon Mar 26 14:04:41 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/Win32API/Win32API.c: remove Init_win32api().
+
+Sat Mar 24 23:44:50 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ev_const_defined): should ignore toplevel cbase (Object).
+
+	* eval.c (ev_const_get): ditto.
+
+Fri Mar 23 12:18:44 2001  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
+
+	* ext/curses/curses.c: curses on Mac OS X public beta does not
+	  have _maxx etc.
+
+Fri Mar 23 10:50:31 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): should truncate trailing zero short for
+	  bignums.
 
 Thu Mar 22 22:15:45 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 

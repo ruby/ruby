@@ -378,7 +378,7 @@ w_object(obj, arg, limit)
 		    for (i=0; i<SIZEOF_BDIGITS; i+=sizeof(short)) {
 			w_short(num & SHORTMASK, arg);
 			num = SHORTDN(num);
-			if (num == 0) break;
+			if (len == 0 && num == 0) break;
 		    }
 #else
 		    w_short(*d, arg);

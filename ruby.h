@@ -542,14 +542,24 @@ EXTERN VALUE rb_eNameError;
 EXTERN VALUE rb_eSyntaxError;
 EXTERN VALUE rb_eLoadError;
 
-extern inline VALUE rb_class_of _((VALUE));
-extern inline int rb_type _((VALUE));
-extern inline int rb_special_const_p _((VALUE));
+#ifdef INLINE_DEFINE
+#define INLINE
+#else
+#define INLINE inline
+#endif
+
+extern INLINE VALUE rb_class_of _((VALUE));
+extern INLINE int rb_type _((VALUE));
+extern INLINE int rb_special_const_p _((VALUE));
 
 #if !defined(NO_C_INLINE) || defined(INLINE_DEFINE)
-extern inline VALUE
+extern INLINE VALUE
+#if defined(__cplusplus)
+rb_class_of(VALUE obj)
+#else
 rb_class_of(obj)
     VALUE obj;
+#endif
 {
     if (FIXNUM_P(obj)) return rb_cFixnum;
     if (obj == Qnil) return rb_cNilClass;
@@ -560,9 +570,13 @@ rb_class_of(obj)
     return RBASIC(obj)->klass;
 }
 
-extern inline int
+extern INLINE int
+#if defined(__cplusplus)
+rb_type(VALUE obj)
+#else
 rb_type(obj)
-    VALUE obj;
+   VALUE obj;
+#endif
 {
     if (FIXNUM_P(obj)) return T_FIXNUM;
     if (obj == Qnil) return T_NIL;
@@ -573,14 +587,20 @@ rb_type(obj)
     return BUILTIN_TYPE(obj);
 }
 
-extern inline int
+extern INLINE int
+#if defined(__cplusplus)
+rb_special_const_p(VALUE obj)
+#else
 rb_special_const_p(obj)
     VALUE obj;
+#endif
 {
     if (SPECIAL_CONST_P(obj)) return Qtrue;
     return Qfalse;
 }
 #endif
+
+#undef INLINE
 
 #include "intern.h"
 

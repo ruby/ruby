@@ -174,7 +174,7 @@ rb_str_associate(str, add)
     rb_ary_push(RSTRING(str)->orig, add);
 }
 
-static ID to_str;
+static ID id_to_s;
 
 VALUE
 rb_obj_as_string(obj)
@@ -185,7 +185,7 @@ rb_obj_as_string(obj)
     if (TYPE(obj) == T_STRING) {
 	return obj;
     }
-    str = rb_funcall(obj, to_str, 0);
+    str = rb_funcall(obj, id_to_s, 0);
     if (TYPE(str) != T_STRING)
 	return rb_any_to_s(obj);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
@@ -1126,7 +1126,7 @@ rb_str_sub_bang(argc, argv, str)
 	iter = 1;
     }
     else if (argc == 2) {
-	repl = rb_obj_as_string(argv[1]);;
+	repl = rb_str_to_str(argv[1]);;
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
@@ -1199,7 +1199,7 @@ str_gsub(argc, argv, str, bang)
 	iter = 1;
     }
     else if (argc == 2) {
-	repl = rb_obj_as_string(argv[1]);
+	repl = rb_str_to_str(argv[1]);
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
@@ -2890,7 +2890,7 @@ Init_String()
     rb_define_method(rb_cString, "slice", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "slice!", rb_str_slice_bang, -1);
 
-    to_str = rb_intern("to_s");
+    id_to_s = rb_intern("to_s");
 
     rb_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_str_setter);
