@@ -1,3 +1,7 @@
+Mon Sep 25 13:31:45 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* dir.c (rb_glob): DOSISH support.
+
 Mon Sep 25 00:35:01 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* defines.h: #undef HAVE_SETITIMER on cygwin.
