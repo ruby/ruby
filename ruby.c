@@ -255,6 +255,7 @@ ruby_init_loadpath()
     _execname(libpath, FILENAME_MAX);
 #endif
 
+    libpath[FILENAME_MAX] = '\0';
 #ifdef DOSISH
     translate_char(libpath, '\\', '/');
 #endif
@@ -704,14 +705,14 @@ proc_options(argc, argv)
       OBJ_TAINT(rb_load_path);
     }
 
-    if (!e_script && argc == 0) { /* no more args */
-	if (verbose) exit(0);
-	script = "-";
-    }
-    else {
+    if (argc == 0) {		/* no more args */
 	if (!e_script) {
-	    script = argv[0];
+	    if (verbose) exit(0);
+	    script = "-";
 	}
+    }
+    else if (!e_script) {
+	script = argv[0];
 	if (script[0] == '\0') {
 	    script = "-";
 	}
@@ -728,13 +729,11 @@ proc_options(argc, argv)
 		}
 		if (!script) script = argv[0];
 	    }
-	}
-	if (!e_script) {
-	    argc--; argv++;
-	}
 #ifdef DOSISH
-	translate_char(script, '\\', '/');
+	    translate_char(script, '\\', '/');
 #endif
+	}
+	argc--; argv++;
     }
 
     ruby_script(script);
