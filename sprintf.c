@@ -12,6 +12,9 @@
 
 #include "ruby.h"
 #include <ctype.h>
+#include <math.h>
+
+#define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
 static void fmt_setup _((char*,char,int,int,int));
 
@@ -553,6 +556,7 @@ f_sprintf(argc, argv)
 	    {
 		VALUE val = GETARG();
 		double fval;
+		int i, need = 6;
 		char fbuf[32];
 
 		switch (TYPE(val)) {
@@ -574,8 +578,20 @@ f_sprintf(argc, argv)
 		}
 
 		fmt_setup(fbuf, *p, flags, width, prec);
-
-		CHECK(22);
+#if 1
+		need = 0;
+		if (*p != 'e' && *p != 'E') {
+		    i = INT_MIN;
+		    frexp(fval, &i);
+		    if (i > 0)
+			need = BIT_DIGITS(i);
+		}
+		need += (flags&FPREC) ? prec : 6;
+		if ((flags&FWIDTH) && need < width)
+		    need = width;
+		need += 20;
+		CHECK(need);
+#endif
 		sprintf(&buf[blen], fbuf, fval);
 		blen += strlen(&buf[blen]);
 	    }

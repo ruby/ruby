@@ -1,3 +1,8 @@
+Mon Apr 26 16:46:59 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (rb_f_sprintf): should allocate proper sized buffer
+	  for float numbers.
+
 Tue Apr 20 11:24:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (str_dump): `#' should be escaped.
