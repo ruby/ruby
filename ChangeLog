@@ -1,3 +1,8 @@
+Mon May 10 12:11:37 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Hack to search parents
+	  for unqualified constant names.
+
 Mon May 10 01:18:15 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb (loggin): append "\n".
