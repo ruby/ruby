@@ -41,14 +41,9 @@ class WeakRef<Delegator
 
   def __getobj__
     unless ID_MAP[@__id]
-      $@ = caller(1)
-      $! = RefError.new("Illegal Reference - probably recycled")
-      raise
+      raise RefError, "Illegal Reference - probably recycled", caller(2)
     end
     ObjectSpace._id2ref(@__id)
-#    ObjectSpace.each_object do |obj|
-#      return obj if obj.id == @__id
-#    end
   end
 
   def weakref_alive?
@@ -66,9 +61,9 @@ end
 
 if __FILE__ == $0
   foo = Object.new
-  p foo.hash
+  p foo.hash			# original's hash value
   foo = WeakRef.new(foo)
-  p foo.hash
+  p foo.hash			# should be same hash value
   ObjectSpace.garbage_collect
-  p foo.hash
+  p foo.hash			# should raise exception (recycled)
 end

@@ -21,7 +21,17 @@ class Delegator
     preserved -= ["__getobj__","to_s","nil?","to_a","hash","dup","==","=~"]
     for method in obj.methods
       next if preserved.include? method
-      eval "def self.#{method}(*args,&block); __getobj__.__send__(:#{method}, *args,&block); end"
+      eval <<EOS
+def self.#{method}(*args, &block)
+  begin
+    __getobj__.__send__(:#{method}, *args, &block)
+  rescue Exception
+    n = if /:in `__getobj__'$/ =~ $@[0] then 1 else 2 end #`
+    $@[1,n] = nil
+    raise
+  end
+end
+EOS
     end
   end
 
@@ -53,6 +63,10 @@ SimpleDelegater = SimpleDelegator
 
 if __FILE__ == $0
   foo = Object.new
+  def foo.test
+    raise 'this is OK'
+  end
   foo2 = SimpleDelegator.new(foo)
-  p foo.hash == foo2.hash # => true
+  p foo.hash == foo2.hash	# => true
+  foo.test			# raise error!
 end

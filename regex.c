@@ -897,8 +897,6 @@ calculate_must_string(start, end)
 	case casefold_off:
 	  return 0;		/* should not check must_string */
 
-	case start_nowidth:
-	case stop_nowidth:
 	case pop_and_fail:
 	case anychar:
 	case begline:
@@ -943,6 +941,8 @@ calculate_must_string(start, end)
 	  if (mcnt > 0) p += mcnt;
           break;
 
+	case start_nowidth:
+	case stop_nowidth:
         case finalize_jump:
         case maybe_finalize_jump:
 	case finalize_push:
@@ -1622,7 +1622,7 @@ re_compile_pattern(pattern, size, bufp)
 	case '|':
 	  /* Insert before the previous alternative a jump which
 	     jumps to this alternative if the former fails.  */
-	  GET_BUFFER_SPACE(6);
+	  GET_BUFFER_SPACE(3);
 	  insert_jump(on_failure_jump, begalt, b + 6, b);
 	  pending_exact = 0;
 	  b += 3;
@@ -1645,9 +1645,11 @@ re_compile_pattern(pattern, size, bufp)
 	  if (fixup_alt_jump)
 	    store_jump(fixup_alt_jump, jump_past_alt, b);
 
-	  /* Leave space for a jump after previous alternative---to be 
-	     filled in later.  */
+	  /* Mark and leave space for a jump after this alternative,
+	     to be filled in later either by next alternative or
+	     when know we're at the end of a series of alternatives.  */
 	  fixup_alt_jump = b;
+	  GET_BUFFER_SPACE(3);
 	  b += 3;
 
 	  laststart = 0;
@@ -2630,8 +2632,13 @@ re_search(bufp, string, size, startpos, range, regs)
 	    }
 	}
 
-      if (anchor && startpos > 0 && startpos < size
-	  && string[startpos-1] != '\n') goto advance;
+      if (anchor && startpos < size && string[startpos-1] != '\n') {
+	while (range > 0 && string[startpos] != '\n') {
+	  range--;
+	  startpos++;
+	}
+	goto advance;
+      }
 
       if (fastmap && startpos == size && range >= 0
 	  && (bufp->can_be_null == 0 ||
@@ -2725,26 +2732,25 @@ typedef union
 /* Macros used by re_match:  */
 
 /* I.e., regstart, regend, and reg_info.  */
-
 #define NUM_REG_ITEMS  3
+
+/* Individual items aside from the registers.  */
+#define NUM_NONREG_ITEMS 3
 
 /* We push at most this many things on the stack whenever we
    fail.  The `+ 2' refers to PATTERN_PLACE and STRING_PLACE, which are
    arguments to the PUSH_FAILURE_POINT macro.  */
-
-#define MAX_NUM_FAILURE_ITEMS   (num_regs * NUM_REG_ITEMS + 2)
-
+#define MAX_NUM_FAILURE_ITEMS   (num_regs * NUM_REG_ITEMS + NUM_NONREG_ITEMS)
 
 /* We push this many things on the stack whenever we fail.  */
-
-#define NUM_FAILURE_ITEMS  (last_used_reg * NUM_REG_ITEMS + 2)
+#define NUM_FAILURE_ITEMS  (last_used_reg * NUM_REG_ITEMS + NUM_REG_ITEMS)
 
 
 /* This pushes most of the information about the current state we will want
    if we ever fail back to it.  */
 
 #define PUSH_FAILURE_POINT(pattern_place, string_place)			\
-  {									\
+  do {									\
     long last_used_reg, this_reg;					\
 									\
     /* Find out how many registers are active or have been matched.	\
@@ -2781,19 +2787,19 @@ typedef union
     *stackp++ = pattern_place;                                          \
     *stackp++ = string_place;                                           \
     *stackp++ = (unsigned char *)0; /* non-greedy flag */		\
-  }
+  } while(0)
 
 
 /* This pops what PUSH_FAILURE_POINT pushes.  */
 
 #define POP_FAILURE_POINT()						\
-  {									\
+  do {									\
     int temp;								\
-    stackp -= 3;		/* Remove failure points (and flag). */	\
+    stackp -= NUM_NONREG_ITEMS;	/* Remove failure points (and flag). */	\
     temp = (int) *--stackp;	/* How many regs pushed.  */	        \
     temp *= NUM_REG_ITEMS;	/* How much to take off the stack.  */	\
     stackp -= temp; 		/* Remove the register info.  */	\
-  }
+  } while(0)
 
 /* Registers are set to a sentinel when they haven't yet matched.  */
 #define REG_UNSET_VALUE ((unsigned char *) -1)
@@ -2805,7 +2811,7 @@ typedef union
    registers corresponding to the subexpressions of which we currently
    are inside.  */
 #define SET_REGS_MATCHED 						\
-  { unsigned this_reg;							\
+  do { unsigned this_reg;						\
     for (this_reg = 0; this_reg < num_regs; this_reg++) 		\
       { 								\
         if (IS_ACTIVE(reg_info[this_reg]))				\
@@ -2815,7 +2821,7 @@ typedef union
         else								\
           MATCHED_SOMETHING(reg_info[this_reg]) = 0;			\
       } 								\
-  }
+  } while(0)
 
 #define AT_STRINGS_BEG(d)  (d == string)
 #define AT_STRINGS_END(d)  (d == dend)	
@@ -2891,7 +2897,6 @@ re_match(bufp, string_arg, size, pos, regs)
   register unsigned char *d, *dend;
   register int mcnt;			/* Multipurpose.  */
   int options = bufp->options;
-  unsigned is_a_jump_n = 0;
 
  /* Failure point stack.  Each place that can handle a failure further
     down the line pushes a failure point on this stack.  It consists of
@@ -2998,7 +3003,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	      p - (unsigned char *) bufp->buffer,
 	      *p);
 #endif
-      is_a_jump_n = 0;
       /* End of pattern means we might have succeeded.  */
       if (p == pend)
 	{
@@ -3114,7 +3118,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	       || (enum regexpcode) p[-3] == start_memory)
 	      && (p + 1) != pend)              
             {
-	      register unsigned char *p2 = p + 1;
+	      int is_a_jump_n = 0;
+	      register unsigned char *p2 = p + 2;
               mcnt = 0;
               switch (*p2++)
                 {
@@ -3136,8 +3141,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	         to an on_failure_jump, exit from the loop by forcing a
                  failure after pushing on the stack the on_failure_jump's 
                  jump in the pattern, and d.  */
-	      if (mcnt < 0 && (enum regexpcode) *p2++ == on_failure_jump
-                  && (enum regexpcode) p1[3] == start_memory && p1[4] == *p)
+	      if (mcnt < 0 && (enum regexpcode) *p2 == on_failure_jump
+                  && (enum regexpcode) p2[3] == start_memory && p2[4] == *p)
 		{
                   /* If this group ever matched anything, then restore
                      what its registers were before trying this last
@@ -3654,8 +3659,8 @@ re_match(bufp, string_arg, size, pos, regs)
           /* Make the ones that weren't saved -1 or 0 again. */
           for (this_reg = num_regs - 1; this_reg > last_used_reg; this_reg--)
             {
-              regend[this_reg] = (unsigned char *)(-1L);
-              regstart[this_reg] = (unsigned char *)(-1L);
+              regend[this_reg] = REG_UNSET_VALUE;
+              regstart[this_reg] = REG_UNSET_VALUE;
               IS_ACTIVE(reg_info[this_reg]) = 0;
               MATCHED_SOMETHING(reg_info[this_reg]) = 0;
             }
@@ -3667,7 +3672,6 @@ re_match(bufp, string_arg, size, pos, regs)
               regend[this_reg] = *--stackp;
               regstart[this_reg] = *--stackp;
             }
-
           if (p < pend)
             {
               int is_a_jump_n = 0;
@@ -3684,7 +3688,7 @@ re_match(bufp, string_arg, size, pos, regs)
                 case finalize_jump:
                 case finalize_push:
                 case jump:
-                  p1 = p + 1;
+                  p1++;
                   EXTRACT_NUMBER_AND_INCR (mcnt, p1);
                   p1 += mcnt;
 
@@ -3799,10 +3803,10 @@ group_match_null_string_p (p, end, reg_info)
                  of the `jump_past_alt' just before it.  `mcnt' contains
                  the length of the alternative.  */
               EXTRACT_NUMBER (mcnt, p1 - 2);
-
+#if 0
               if (!alt_match_null_string_p (p1, p1 + mcnt, reg_info))
                 return 0;
-
+#endif
               p1 += mcnt;	/* Get past the n-th alternative.  */
             } /* if mcnt > 0 */
           break;
