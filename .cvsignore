@@ -6,6 +6,7 @@
 .ccmalloc
 .ppack
 .ext
+.rbconfig.time
 COPYING.LIB
 ChangeLog.pre-alpha
 ChangeLog.pre1_1

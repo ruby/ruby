@@ -1125,7 +1125,7 @@ error_print()
 
     eclass = CLASS_OF(ruby_errinfo);
     if (EXEC_TAG() == 0) {
-	e = rb_obj_as_string(ruby_errinfo);
+	e = rb_funcall(ruby_errinfo, rb_intern("message"), 0, 0);
 	einfo = RSTRING(e)->ptr;
 	elen = RSTRING(e)->len;
     }

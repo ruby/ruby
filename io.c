@@ -3039,10 +3039,17 @@ rb_f_open(argc, argv)
     VALUE *argv;
 {
     if (argc >= 1) {
-	char *str = StringValuePtr(argv[0]);
+	ID to_open = rb_intern("to_open");
 
-	if (str[0] == '|') {
-	    return rb_io_popen(str+1, argc, argv, rb_cIO);
+	if (rb_respond_to(argv[0], to_open)) {
+	    return rb_funcall2(argv[0], to_open, argc-1, argv+1);
+	}
+	else {
+	    char *str = StringValuePtr(argv[0]);
+
+	    if (str[0] == '|') {
+		return rb_io_popen(str+1, argc, argv, rb_cIO);
+	    }
 	}
     }
     return rb_io_s_open(argc, argv, rb_cFile);

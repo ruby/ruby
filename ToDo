@@ -2,6 +2,10 @@ Language Spec.
 
 - Class#allocate - basicNew
 - class Foo::Bar<Baz .. end, module Boo::Bar .. end
+- raise exception by `` error
+- a +1 to be a+1, not a(+1).
+- clarify evaluation order of operator argument (=~, .., ...)
+- :symbol => value hash in the form of {symbol: value, ...} ??
 * operator !! for rescue. ???
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -14,7 +18,6 @@ Language Spec.
 * def Class#method .. end ??
 * def Foo::Bar::baz() .. end ??
 * I18N (or M17N) script/string/regexp
-* Fixnum 0 as false ????
 * discourage use of symbol variables (e.g. $/, etc.) in manual
 * discourage use of Perlish features by giving warnings.
 * non confusing in-block local variable (is it possible?)
@@ -22,12 +25,9 @@ Language Spec.
   + variables appears within block may have independent values.
 * Regexp: make /o thread safe.
 * decide whether begin with rescue or ensure make do..while loop.
-* a +1 to be a+1, not a(+1).
 * unify == and eql? again
 * to_i returns nil if str contains no digit.
-* raise exception by `` error
 * jar like combined library package. -> RubyGems?
-* resumable Exception via Exception#resume.
 * method combination, e.g. before, after, around, etc.
 * .. or something like defadvice in Emacs.
 * property - for methods, or for objects in general.
@@ -35,8 +35,6 @@ Language Spec.
 * selector namespace - something like generic-flet in CLOS, to help RubyBehavior
 * private instance variable (as in Python?) @_foo in class Foo => @_Foo_foo
 * warn/error "bare word" method, like "foo",  you should type "foo()"
-* clarify evaluation order of operator argument (=~, .., ...)
-* :symbol => value hash in the form of {symbol: value, ...} ??
 
 Hacking Interpreter
 
@@ -83,7 +81,7 @@ Standard Libraries
 - use Mersenne Twister RNG for random.
 - deprecate Array#indexes, and Array#indices.
 - remove dependency on MAXPATHLEN.
-* String#scanf(?)
+- String#scanf(?)
 * Object#fmt(?)
 * Time::strptime
 * Integer[num], Float[num];  Fixnum[num]?
@@ -117,7 +115,7 @@ Extension Libraries
 
 Ruby Libraries
 
-* urllib.rb, nttplib.rb, etc.
+- urllib.rb, nttplib.rb, etc.
 * format like perl's
 
 Tools

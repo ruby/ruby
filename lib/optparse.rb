@@ -1584,7 +1584,6 @@ Base class of exceptions from ((<OptionParser>))
     Returns inspection string.
 --- OptionParser::ParseError#message
 --- OptionParser::ParseError#to_s
---- OptionParser::ParseError#to_str
     Default stringizing method to emit standard error message.
 =end #'#"#`#
   class ParseError < RuntimeError
@@ -1625,7 +1624,6 @@ Base class of exceptions from ((<OptionParser>))
     end
 
     alias to_s message
-    alias to_str message
   end
 
 =begin

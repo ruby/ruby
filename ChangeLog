@@ -1,3 +1,13 @@
+Tue Apr  6 00:14:43 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (Init_Exception): remove Exception#to_str. [Ruby2]
+
+	* eval.c (error_print): should no call "to_str" anymore use
+	  "message" method instead.
+
+	* io.c (rb_f_open): Kernel#open() calls "to_open" if the first
+	  argument responds to it. [Ruby2]
+
 Tue Apr  6 00:13:43 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb: add require 'drb/drb'

@@ -405,7 +405,6 @@ exc_to_s(exc)
 /*
  * call-seq:
  *   exception.message   =>  string
- *   exception.to_str    =>  string
  *
  * Returns the result of invoking <code>exception.to_s</code>.
  * Normally this returns the exception's message or name. By
@@ -414,7 +413,7 @@ exc_to_s(exc)
  */
 
 static VALUE
-exc_to_str(exc)
+exc_message(exc)
     VALUE exc;
 {
     return rb_funcall(exc, rb_intern("to_s"), 0, 0);
@@ -962,8 +961,7 @@ Init_Exception()
     rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
-    rb_define_method(rb_eException, "to_str", exc_to_str, 0);
-    rb_define_method(rb_eException, "message", exc_to_str, 0);
+    rb_define_method(rb_eException, "message", exc_message, 0);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
