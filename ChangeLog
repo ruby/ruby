@@ -1,3 +1,8 @@
+Tue Jan 11 09:44:40 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* numeric.c (Init_Numeric): turn off floating point exceptions
+	  on bcc32. "1e300".to_f had crashed by overflow.
+
 Tue Jan 11 03:10:10 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (copy_entry): could not copy symbolic link.
