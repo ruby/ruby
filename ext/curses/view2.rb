@@ -77,7 +77,7 @@ while true
     result = scroll_down
   when Curses::KEY_UP, Curses::KEY_CTRL_P
     result = scroll_up
-  when Curses::KEY_NPAGE, ?  # white space
+  when Curses::KEY_NPAGE, ?\s  # white space
     for i in 0..($screen.maxy - 2)
       if( ! scroll_down )
 	if( i == 0 )

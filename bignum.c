@@ -798,6 +798,7 @@ rb_big2dbl(x)
     while (i--) {
 	d = ds[i] + BIGRAD*d;
     }
+    if (isinf(d)) d = HUGE_VAL;
     if (!RBIGNUM(x)->sign) d = -d;
     return d;
 }
@@ -855,6 +856,8 @@ static VALUE
 rb_big_eq(x, y)
     VALUE x, y;
 {
+    double d;
+
     switch (TYPE(y)) {
       case T_FIXNUM:
 	y = rb_int2big(FIX2LONG(y));

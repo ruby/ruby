@@ -495,7 +495,7 @@ Init_Range()
     rb_include_module(rb_cRange, rb_mEnumerable);
     rb_define_method(rb_cRange, "initialize", range_initialize, -1);
     rb_define_method(rb_cRange, "==", range_eq, 1);
-    rb_define_method(rb_cRange, "===", range_member, 1);
+    rb_define_method(rb_cRange, "===", range_include, 1);
     rb_define_method(rb_cRange, "eql?", range_eql, 1);
     rb_define_method(rb_cRange, "hash", range_hash, 0);
     rb_define_method(rb_cRange, "each", range_each, 0);

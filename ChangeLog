@@ -13,11 +13,25 @@ Mon Jun 17 10:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* dln.c (dln_load): need to preserve dln_strerror() result,
 	  calling other dl family can clear it.
 
+Sat Jun 15 22:56:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): obsolete '?<whitespace>'; use '?\s', '?\n',
+	  etc, instead.
+
 Sat Jun 15 18:51:13 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* dir.c (glob_helper): Use lstat() instead of stat() so it catches
 	  a dead symlink.  Given a dead symlink named "a", Dir.glob("?") 
 	  did catch it but Dir.glob("a") somehow didn't.
+
+Sat Jun 15 01:59:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): no here document after a dot.
+
+	* parse.y (yylex): should have set lex_state after '`'.
+
+	* parse.y (yylex): should have set lex_state properly after
+	  tOP_ASGN.
 
 Fri Jun 14 21:01:48 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
@@ -35,6 +49,10 @@ Fri Jun 14 15:22:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* parse.y (tokadd_escape): ditto.
 
 	* regex.c (re_compile_pattern): ditto.
+
+Fri Jun 14 00:49:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big2dbl): return canonical HUGE_VAL for infinity.
 
 Thu Jun 13 09:43:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

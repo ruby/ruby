@@ -2991,11 +2991,16 @@ rb_str_crypt(str, salt)
     VALUE str, salt;
 {
     extern char *crypt();
+    VALUE result;
 
     StringValue(salt);
     if (RSTRING(salt)->len < 2)
 	rb_raise(rb_eArgError, "salt too short(need >=2 bytes)");
-    return rb_tainted_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
+
+    result = rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
+    OBJ_INFECT(result, str);
+    OBJ_INFECT(result, salt);
+    return result;
 }
 
 static VALUE
