@@ -285,9 +285,7 @@ fdbm_modify(obj)
     VALUE obj;
 {
     rb_secure(4);
-    if (OBJ_FROZEN_P(obj)) {
-	if (OBJ_FROZEN(obj)) rb_error_frozen("DBM");
-    }
+    if (OBJ_FROZEN(obj)) rb_error_frozen("DBM");
 }
 
 static VALUE

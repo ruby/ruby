@@ -392,9 +392,7 @@ rb_gdbm_modify(obj)
     VALUE obj;
 {
     rb_secure(4);
-    if (OBJ_FROZEN_P(obj)) {
-	if (OBJ_FROZEN(obj)) rb_error_frozen("GDBM");
-    }
+    if (OBJ_FROZEN(obj)) rb_error_frozen("GDBM");
 }
 
 static VALUE

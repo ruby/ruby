@@ -1,3 +1,8 @@
+Sat May  8 10:53:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_open): open should not ignore block when "to_open"
+	  method is used.  [ruby-dev:23478]
+
 Fri May  7 22:07:39 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mv): new option `force'. [ruby-talk:99457]
@@ -21,6 +26,10 @@ Fri May  7 21:03:51 2004  Minero Aoki  <aamine@loveruby.net>
 	  [ruby-core:02843]
 
 	* test/fileutils/test_fileutils.rb (mkdir): test "\n" in path.
+
+Fri May  7 20:53:25 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dbm/dbm.c (fdbm_modify): typo fixed. [ruby-dev:23473]
 
 Fri May  7 11:17:27  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

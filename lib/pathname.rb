@@ -234,10 +234,6 @@ class Pathname
     "#<#{self.class}:#{@path}>"
   end
 
-  def to_open(*args) # :nodoc:
-    Kernel::open(@path, *args)
-  end
-
   #
   # Returns clean pathname of +self+ with consecutive slashes and useless dots
   # removed.  The filesystem is not accessed.

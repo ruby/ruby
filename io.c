@@ -3071,7 +3071,11 @@ rb_f_open(argc, argv)
 	ID to_open = rb_intern("to_open");
 
 	if (rb_respond_to(argv[0], to_open)) {
-	    return rb_funcall2(argv[0], to_open, argc-1, argv+1);
+	    VALUE io = rb_funcall2(argv[0], to_open, argc-1, argv+1);
+	    if (rb_block_given_p()) {
+		return rb_ensure(rb_yield, io, io_close, io);
+	    }
+	    return io;
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(argv[0]);
