@@ -364,7 +364,7 @@ class CGI
 	unless check_id(id)
 	  raise ArgumentError, "session_id `%s' is invalid" % id
 	end
-	@path = dir+"/"+prefix+id
+	@path = dir+"/"+prefix+id.dup.untaint
 	unless File::exist? @path
 	  @hash = {}
 	end
