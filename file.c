@@ -506,7 +506,7 @@ rb_stat_ctime(self)
  * call-seq:
  *   stat.inspect  =>  string
  *
- * Produce a nicely formatted descriptin of <i>stat</i>.
+ * Produce a nicely formatted description of <i>stat</i>.
  *
  *   File.stat("/etc/passwd").inspect
  *      #=> "#<File::Stat dev=0xe000005, ino=1078078, mode=0100644, 

@@ -1,3 +1,8 @@
+Wed Apr 14 13:06:09 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
+
+	* array.c, enum.c, eval.c, file.c, io.c, numeric.c, object.c, prec.c,
+	  process.c, re.c, string.c: typos in RDoc comments.  [ruby-core:02783]
+
 Wed Apr 14 11:29:56 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* numeric.c (flo_eq): workaround for bcc32's bug.
@@ -9,7 +14,7 @@ Wed Apr 14 10:57:40  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Tue Apr 13 23:00:55 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/rinda/rinda.rb: change pattern matching. 
+	* lib/rinda/rinda.rb: change pattern matching.
 	  a === b -> a == b || a === b. [druby-ja:98]
 
 	* test/rinda/test_rinda.rb: ditto.

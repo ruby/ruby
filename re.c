@@ -410,7 +410,7 @@ rb_reg_inspect(re)
  *  call-seq:
  *     rxp.to_s   => str
  *  
- *  Returns a string containing the regular expression and its options (usng the
+ *  Returns a string containing the regular expression and its options (using the
  *  <code>(?xxx:yyy)</code> notation. This string can be fed back in to
  *  <code>Regexp::new</code> to a regular expression with the same semantics as
  *  the original. (However, <code>Regexp#==</code> may not return true when
@@ -1129,7 +1129,7 @@ match_array(match, start)
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     m.to_a   #=> ["HX1138", "H", "X", "113", "8"]
  *     
- *  Because <code>to_a</code> is called when exanding
+ *  Because <code>to_a</code> is called when expanding
  *  <code>*</code><em>variable</em>, there's a useful assignment
  *  shortcut for extracting matched fields. This is slightly slower than
  *  accessing the fields directly (as an intermediate array is

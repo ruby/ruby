@@ -1337,7 +1337,7 @@ rb_io_gets(io)
  *  <i>sep_string</i>. A separator of <code>nil</code> reads the entire
  *  contents, and a zero-length separator reads the input a paragraph at
  *  a time (two successive newlines in the input separate paragraphs).
- *  The stream must be opened for reading or an <code>IOerror</code>
+ *  The stream must be opened for reading or an <code>IOError</code>
  *  will be raised. The line read in will be returned and also assigned
  *  to <code>$_</code>. Returns <code>nil</code> if called at end of
  *  file.
@@ -1485,7 +1485,7 @@ rb_io_readline(argc, argv, io)
  *  <i>sep_string</i>. If <i>set_string</i> is <code>nil</code>, the
  *  rest of the stream is returned as a single record.
  *  The stream must be opened for reading or an
- *  <code>IOerror</code> will be raised.
+ *  <code>IOError</code> will be raised.
  *     
  *     f = File.new("testfile")
  *     f.readlines[0]   #=> "This is line one\n"
@@ -1522,7 +1522,7 @@ rb_io_readlines(argc, argv, io)
  *  
  *  Executes the block for every line in <em>ios</em>, where lines are
  *  separated by <i>sep_string</i>. <em>ios</em> must be opened for
- *  reading or an <code>IOerror</code> will be raised.
+ *  reading or an <code>IOError</code> will be raised.
  *     
  *     f = File.new("testfile")
  *     f.each {|line| puts "#{f.lineno}: #{line}" }
@@ -1564,7 +1564,7 @@ rb_io_each_line(argc, argv, io)
  *  
  *  Calls the given block once for each byte (0..255) in <em>ios</em>,
  *  passing the byte as an argument. The stream must be opened for
- *  reading or an <code>IOerror</code> will be raised.
+ *  reading or an <code>IOError</code> will be raised.
  *     
  *     f = File.new("testfile")
  *     checksum = 0

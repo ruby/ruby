@@ -5219,7 +5219,7 @@ static int last_call_status;
  *  Invoked by Ruby when <i>obj</i> is sent a message it cannot handle.
  *  <i>symbol</i> is the symbol for the method called, and <i>args</i>
  *  are any arguments that were passed to it. By default, the interpreter
- *  raises an error when this method is called. However, it is possibe
+ *  raises an error when this method is called. However, it is possible
  *  to override the method to provide more dynamic behavior.
  *  The example below creates
  *  a class <code>Roman</code>, which responds to methods with names

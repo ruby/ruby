@@ -37,7 +37,7 @@ static ID id_eq, id_eql, id_inspect, id_init_copy;
  *  call-seq:
  *     obj === other   => true or false
  *  
- *  Case Equality---For class <code>Object</code>, effectivelt the same
+ *  Case Equality---For class <code>Object</code>, effectively the same
  *  as calling  <code>#==</code>, but typically overridden by descendents
  *  to provide meaningful semantics in <code>case</code> statements.
  */
@@ -1140,7 +1140,7 @@ sym_to_s(sym)
  * call-seq:
  *   sym.to_sym   => sym
  *
- * In general, <code>to_sym</code> returns the <code>Symbol</code> correspopnding
+ * In general, <code>to_sym</code> returns the <code>Symbol</code> corresponding
  * to an object. As <i>sym</i> is already a symbol, <code>self</code> is returned
  * in this case.
  */

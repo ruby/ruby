@@ -2042,7 +2042,7 @@ rb_ary_delete_if(ary)
  *  <i>self</i> with corresponding elements from each argument. This
  *  generates a sequence of <code>self#size</code> <em>n</em>-element
  *  arrays, where <em>n</em> is one more that the count of arguments. If
- *  the size of any arguemnt is less than <code>enumObj#size</code>,
+ *  the size of any argument is less than <code>enumObj#size</code>,
  *  <code>nil</code> values are supplied. If a block given, it is
  *  invoked for each output array, otherwise an array of arrays is
  *  returned.
@@ -2384,7 +2384,7 @@ rb_ary_times(ary, times)
  *   comparing _obj_ with the first element of each contained array
  *   using obj.==.
  *   Returns the first contained array that matches (that
- *   is, the first assoc}iated array,
+ *   is, the first associated array),
  *   or +nil+ if no match is found.
  *   See also Array.rassoc.
  *

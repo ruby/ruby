@@ -3375,11 +3375,11 @@ rb_str_count(argc, argv, str)
  *  split on whitespace as if ` ' were specified.
  *     
  *  If the <i>limit</i> parameter is omitted, trailing null fields are
- *  supressed. If <i>limit</i> is a positive number, at most that number of
+ *  suppressed. If <i>limit</i> is a positive number, at most that number of
  *  fields will be returned (if <i>limit</i> is <code>1</code>, the entire
  *  string is returned as the only entry in an array). If negative, there is no
  *  limit to the number of fields returned, and trailing null fields are not
- *  supressed.
+ *  suppressed.
  *     
  *     " now's  the time".split        #=> ["now's", "the", "time"]
  *     " now's  the time".split(' ')   #=> ["now's", "the", "time"]

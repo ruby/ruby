@@ -683,7 +683,7 @@ flodivmod(x, y, divp, modp)
  *     flt % other         => float
  *     flt.modulo(other)   => float
  *  
- *  Return the modulo after dividion of <code>flt</code> by <code>other</code>.
+ *  Return the modulo after division of <code>flt</code> by <code>other</code>.
  *     
  *     6543.21.modulo(137)      #=> 104.21
  *     6543.21.modulo(137.24)   #=> 92.9299999999996
