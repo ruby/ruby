@@ -1,3 +1,9 @@
+Thu Nov 25 07:59:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: AC_PREREQ(2.53) [ruby-core:03800]
+
+	* io.c (read_all): [ruby-dev:24955]
+
 Wed Nov 24 01:01:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_read): [ruby-dev:24952]
@@ -785,6 +791,11 @@ Fri Oct 29 17:18:22 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* parse.y (ripper_s_allocate): add prototype for Microsoft compiler.
 
 	* range.c (range_step, range_each): need cast.
+
+Fri Oct 29 16:34:19 2004  Daiki Ueno  <ueno@unixuser.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): Parse the rest of the
+	line after opening heredoc identifier.  [ruby-dev:24635]
 
 Fri Oct 29 11:35:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

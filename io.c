@@ -1030,9 +1030,10 @@ read_all(fptr, siz, str)
 
     if (siz == 0) siz = BUFSIZ;
     if (NIL_P(str)) {
-	str = rb_tainted_str_new(0, siz);
+	str = rb_str_new(0, siz);
     }
     else {
+	StringValue(str);
 	rb_str_resize(str, siz);
     }
     for (;;) {
@@ -1053,6 +1054,7 @@ read_all(fptr, siz, str)
 	rb_str_resize(str, siz);
     }
     if (bytes != siz) rb_str_resize(str, bytes);
+    OBJ_TAINT(str);
 
     return str;
 }
@@ -1206,7 +1208,7 @@ io_read(argc, argv, io)
     }
 
     if (NIL_P(str)) {
-	str = rb_str_new(0, len);
+	str = rb_tainted_str_new(0, len);
     }
     else {
 	StringValue(str);

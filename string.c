@@ -669,8 +669,8 @@ rb_str_resize(str, len)
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
+    rb_str_modify(str);
     if (len != RSTRING(str)->len) {
-	rb_str_modify(str);
 	if (RSTRING(str)->len < len || RSTRING(str)->len - len > 1024) {
 	    REALLOC_N(RSTRING(str)->ptr, char, len+1);
 	    if (!FL_TEST(str, STR_NOCAPA)) {
