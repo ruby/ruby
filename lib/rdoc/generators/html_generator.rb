@@ -922,6 +922,11 @@ module Generators
         p = "(" + p + ")" unless p[0] == ?(
         
         if (block = @context.block_params)
+         # If this method has explicit block parameters, remove any
+         # explicit &block
+
+         p.sub!(/,?\s*&\w+/, '')
+
           block.gsub!(/\s*\#.*/, '')
           block = block.tr("\n", " ").squeeze(" ")
           if block[0] == ?(
