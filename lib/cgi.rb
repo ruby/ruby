@@ -4,8 +4,6 @@
 
 cgi.rb - cgi support library
 
-Version 2.1.4
-
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 
 Copyright (C) 2000  Information-technology Promotion Agency, Japan
@@ -169,9 +167,9 @@ HTTP_REFERER HTTP_USER_AGENT
 
   # add HTML generation methods
   CGI.new("html3")    # html3.2
-  CGI.new("html4")    # html4.0 (Strict)
-  CGI.new("html4Tr")  # html4.0 Transitional
-  CGI.new("html4Fr")  # html4.0 Frameset
+  CGI.new("html4")    # html4.01 (Strict)
+  CGI.new("html4Tr")  # html4.01 Transitional
+  CGI.new("html4Fr")  # html4.01 Frameset
 
 
 =end
@@ -185,10 +183,6 @@ class CGI
   CR  = "\015"
   LF  = "\012"
   EOL = CR + LF
-  VERSION = '2.1.4'
-  RELEASE_DATE = '2001-04-18'
-  VERSION_CODE = 214
-  RELEASE_CODE = 20010418
   REVISION = '$Id$'
 
   NEEDS_BINMODE = true if /WIN/ni.match(RUBY_PLATFORM)
@@ -411,8 +405,11 @@ status:
 
     buf = ""
 
-    if options.kind_of?(String)
+    case options
+    when String
       options = { "type" => options }
+    when Hash
+      options = options.dup
     end
 
     unless options.has_key?("type")
@@ -420,21 +417,15 @@ status:
     end
 
     if options.has_key?("charset")
-      options["type"].concat( "; charset=" )
-      options["type"].concat( options.delete("charset") )
+      options["type"] += "; charset=" + options.delete("charset")
     end
 
     options.delete("nph") if defined?(MOD_RUBY)
     if options.delete("nph") or /IIS/n.match(env_table['SERVER_SOFTWARE'])
-      buf.concat( (env_table["SERVER_PROTOCOL"] or "HTTP/1.0")  + " " )
-      buf.concat( (HTTP_STATUS[options["status"]] or
-                      options["status"] or
-                      "200 OK"
-                     ) + EOL
-      )
-      buf.concat(
-        "Date: " + CGI::rfc1123_date(Time.now) + EOL
-      )
+      buf += (env_table["SERVER_PROTOCOL"] or "HTTP/1.0")  + " " +
+             (HTTP_STATUS[options["status"]] or options["status"] or "200 OK") +
+             EOL +
+             "Date: " + CGI::rfc1123_date(Time.now) + EOL
 
       unless options.has_key?("server")
         options["server"] = (env_table['SERVER_SOFTWARE'] or "")
@@ -448,55 +439,55 @@ status:
     end
 
     if options.has_key?("status")
-      status = (HTTP_STATUS[options["status"]] or options["status"])
-      buf.concat("Status: " + status + EOL)
+      buf += "Status: " +
+             (HTTP_STATUS[options["status"]] or options["status"]) + EOL
       options.delete("status")
     end
 
     if options.has_key?("server")
-      buf.concat("Server: " + options.delete("server") + EOL)
+      buf += "Server: " + options.delete("server") + EOL
     end
 
     if options.has_key?("connection")
-      buf.concat("Connection: " + options.delete("connection") + EOL)
+      buf += "Connection: " + options.delete("connection") + EOL
     end
 
-    buf.concat("Content-Type: " + options.delete("type") + EOL)
+    buf += "Content-Type: " + options.delete("type") + EOL
 
     if options.has_key?("length")
-      buf.concat("Content-Length: " + options.delete("length").to_s + EOL)
+      buf += "Content-Length: " + options.delete("length").to_s + EOL
     end
 
     if options.has_key?("language")
-      buf.concat("Content-Language: " + options.delete("language") + EOL)
+      buf += "Content-Language: " + options.delete("language") + EOL
     end
 
     if options.has_key?("expires")
-      buf.concat("Expires: " + CGI::rfc1123_date( options.delete("expires") ) + EOL)
+      buf += "Expires: " + CGI::rfc1123_date( options.delete("expires") ) + EOL
     end
 
     if options.has_key?("cookie")
       if options["cookie"].kind_of?(String) or
            options["cookie"].kind_of?(Cookie)
-        buf.concat("Set-Cookie: " + options.delete("cookie").to_s + EOL)
+        buf += "Set-Cookie: " + options.delete("cookie").to_s + EOL
       elsif options["cookie"].kind_of?(Array)
         options.delete("cookie").each{|cookie|
-          buf.concat("Set-Cookie: " + cookie.to_s + EOL)
+          buf += "Set-Cookie: " + cookie.to_s + EOL
         }
       elsif options["cookie"].kind_of?(Hash)
         options.delete("cookie").each_value{|cookie|
-          buf.concat("Set-Cookie: " + cookie.to_s + EOL)
+          buf += "Set-Cookie: " + cookie.to_s + EOL
         }
       end
     end
     if @output_cookies
       for cookie in @output_cookies
-        buf.concat("Set-Cookie: " + cookie.to_s + EOL)
+        buf += "Set-Cookie: " + cookie.to_s + EOL
       end
     end
 
     options.each{|key, value|
-      buf.concat(key + ": " + value + EOL)
+      buf += key + ": " + value + EOL
     }
 
     if defined?(MOD_RUBY)
@@ -663,28 +654,28 @@ convert string charset, and set language to "ja".
 
     def to_s
       buf = ""
-      buf.concat(@name + '=')
+      buf += @name + '='
 
       if @value.kind_of?(String)
-        buf.concat CGI::escape(@value)
+        buf += CGI::escape(@value)
       else
-        buf.concat(@value.collect{|v| CGI::escape(v) }.join("&"))
+        buf += @value.collect{|v| CGI::escape(v) }.join("&")
       end
 
       if @domain
-        buf.concat('; domain=' + @domain)
+        buf += '; domain=' + @domain
       end
 
       if @path
-        buf.concat('; path=' + @path)
+        buf += '; path=' + @path
       end
 
       if @expires
-        buf.concat('; expires=' + CGI::rfc1123_date(@expires))
+        buf += '; expires=' + CGI::rfc1123_date(@expires)
       end
 
       if @secure == true
-        buf.concat('; secure')
+        buf += '; secure'
       end
 
       buf
@@ -826,7 +817,7 @@ convert string charset, and set language to "ja".
               else
                 stdinput.read(content_length) or ''
               end
-          buf.concat c
+          buf += c
           content_length -= c.size
 
         end
@@ -1274,7 +1265,7 @@ The hash keys are case sensitive. Ask the samples.
         hidden = @output_hidden.collect{|k,v|
           "<INPUT TYPE=HIDDEN NAME=\"#{k}\" VALUE=\"#{v}\">"
         }.to_s
-        body.concat hidden
+        body += hidden
       end
       super(attributes){body}
     end
@@ -1348,18 +1339,18 @@ The hash keys are case sensitive. Ask the samples.
 
       if attributes.has_key?("DOCTYPE")
         if attributes["DOCTYPE"]
-          buf.concat( attributes.delete("DOCTYPE") )
+          buf += attributes.delete("DOCTYPE")
         else
           attributes.delete("DOCTYPE")
         end
       else
-        buf.concat( doctype )
+        buf += doctype
       end
 
       if block_given?
-        buf.concat( super(attributes){ yield } )
+        buf += super(attributes){ yield }
       else
-        buf.concat( super(attributes) )
+        buf += super(attributes)
       end
 
       if pretty
@@ -1738,7 +1729,7 @@ The hash keys are case sensitive. Ask the samples.
           APPLET PRE XMP LISTING DL OL UL DIR MENU SELECT table TITLE
           STYLE SCRIPT H1 H2 H3 H4 H5 H6 TEXTAREA FORM BLOCKQUOTE
           CAPTION ]
-        methods.concat( <<-BEGIN + nn_element_def(element) + <<-END )
+        methods += <<-BEGIN + nn_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1748,7 +1739,7 @@ The hash keys are case sensitive. Ask the samples.
       # - O EMPTY
       for element in %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT
           ISINDEX META ]
-        methods.concat( <<-BEGIN + nOE_element_def(element) + <<-END )
+        methods += <<-BEGIN + nOE_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1758,7 +1749,7 @@ The hash keys are case sensitive. Ask the samples.
       # O O or - O
       for element in %w[ HTML HEAD BODY P PLAINTEXT DT DD LI OPTION tr
           th td ]
-        methods.concat( <<-BEGIN + nO_element_def(element) + <<-END )
+        methods += <<-BEGIN + nO_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1785,7 +1776,7 @@ The hash keys are case sensitive. Ask the samples.
         H1 H2 H3 H4 H5 H6 PRE Q INS DEL DL OL UL LABEL SELECT OPTGROUP
         FIELDSET LEGEND BUTTON TABLE TITLE STYLE SCRIPT NOSCRIPT
         TEXTAREA FORM A BLOCKQUOTE CAPTION ]
-        methods.concat( <<-BEGIN + nn_element_def(element) + <<-END )
+        methods += <<-BEGIN + nn_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1794,7 +1785,7 @@ The hash keys are case sensitive. Ask the samples.
 
       # - O EMPTY
       for element in %w[ IMG BASE BR AREA LINK PARAM HR INPUT COL META ]
-        methods.concat( <<-BEGIN + nOE_element_def(element) + <<-END )
+        methods += <<-BEGIN + nOE_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1804,7 +1795,7 @@ The hash keys are case sensitive. Ask the samples.
       # O O or - O
       for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
           COLGROUP TR TH TD HEAD]
-        methods.concat( <<-BEGIN + nO_element_def(element) + <<-END )
+        methods += <<-BEGIN + nO_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1832,7 +1823,7 @@ The hash keys are case sensitive. Ask the samples.
           INS DEL DL OL UL DIR MENU LABEL SELECT OPTGROUP FIELDSET
           LEGEND BUTTON TABLE IFRAME NOFRAMES TITLE STYLE SCRIPT
           NOSCRIPT TEXTAREA FORM A BLOCKQUOTE CAPTION ]
-        methods.concat( <<-BEGIN + nn_element_def(element) + <<-END )
+        methods += <<-BEGIN + nn_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1842,7 +1833,7 @@ The hash keys are case sensitive. Ask the samples.
       # - O EMPTY
       for element in %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT
           COL ISINDEX META ]
-        methods.concat( <<-BEGIN + nOE_element_def(element) + <<-END )
+        methods += <<-BEGIN + nOE_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1852,7 +1843,7 @@ The hash keys are case sensitive. Ask the samples.
       # O O or - O
       for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
           COLGROUP TR TH TD HEAD ]
-        methods.concat( <<-BEGIN + nO_element_def(element) + <<-END )
+        methods += <<-BEGIN + nO_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1871,13 +1862,10 @@ The hash keys are case sensitive. Ask the samples.
     end
 
     def element_init
-      extend TagMaker
-      extend Html4Tr
-      element_init()
       methods = ""
       # - -
       for element in %w[ FRAMESET ]
-        methods.concat( <<-BEGIN + nn_element_def(element) + <<-END )
+        methods += <<-BEGIN + nn_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1886,7 +1874,7 @@ The hash keys are case sensitive. Ask the samples.
 
       # - O EMPTY
       for element in %w[ FRAME ]
-        methods.concat( <<-BEGIN + nOE_element_def(element) + <<-END )
+        methods += <<-BEGIN + nOE_element_def(element) + <<-END
           def #{element.downcase}(attributes = {})
         BEGIN
           end
@@ -1925,6 +1913,8 @@ The hash keys are case sensitive. Ask the samples.
       element_init()
       extend HtmlExtension
     when "html4Fr"
+      extend Html4Tr
+      element_init()
       extend Html4Fr
       element_init()
       extend HtmlExtension
