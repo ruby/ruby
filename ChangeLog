@@ -1,3 +1,12 @@
+Tue Mar 31 13:23:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (num2int): raise exception for too big Fixnums on
+ 	  platforms that sizeof(int) < sizeof(INT).
+
+	* string.c (str_center): SEGV on negative width.
+
+	* eval.c (eval): forgot to set sourcefile.
+
 Mon Mar 30 11:12:29 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* file.c (f_test): raises exception for unkown command.

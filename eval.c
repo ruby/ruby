@@ -3713,8 +3713,11 @@ eval(self, src, scope, file, line)
 	file = sourcefile;
 	line = sourceline;
     }
-    else if (line > 0) {
-	sourceline = line;
+    else {
+	sourcefile = file;
+	if (line > 0) {
+	    sourceline = line;
+	}
     }
     if (!NIL_P(scope)) {
 	if (TYPE(scope) != T_DATA || RDATA(scope)->dfree != blk_free) {

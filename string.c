@@ -2530,7 +2530,7 @@ str_ljust(str, w)
     VALUE res;
     UCHAR *p, *pend;
 
-    if (RSTRING(str)->len >= width) return str;
+    if (width < 0 || RSTRING(str)->len >= width) return str;
     res = str_new(0, width);
     memcpy(RSTRING(res)->ptr, RSTRING(str)->ptr, RSTRING(str)->len);
     p = RSTRING(res)->ptr + RSTRING(str)->len; pend = RSTRING(res)->ptr + width;
@@ -2549,7 +2549,7 @@ str_rjust(str, w)
     VALUE res;
     UCHAR *p, *pend;
 
-    if (RSTRING(str)->len >= width) return str;
+    if (width < 0 || RSTRING(str)->len >= width) return str;
     res = str_new(0, width);
     p = RSTRING(res)->ptr; pend = p + width - RSTRING(str)->len;
     while (p < pend) {
@@ -2569,7 +2569,7 @@ str_center(str, w)
     UCHAR *p, *pend;
     int n;
 
-    if (RSTRING(str)->len >= width) return str;
+    if (width < 0 || RSTRING(str)->len >= width) return str;
     res = str_new(0, width);
     n = (width - RSTRING(str)->len)/2;
     p = RSTRING(res)->ptr; pend = p + n;

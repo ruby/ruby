@@ -165,7 +165,7 @@ void rb_check_safe_str _((VALUE));
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 void rb_secure _((int));
 
-int   num2int _((VALUE));
+int num2int _((VALUE));
 #define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):num2int(x))
 
 double num2dbl _((VALUE));

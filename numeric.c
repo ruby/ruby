@@ -588,6 +588,18 @@ num2int(val)
 
     switch (TYPE(val)) {
       case T_FIXNUM:
+	if (sizeof(int) < sizeof(INT)) {
+#ifndef INT_MAX
+/* assuming 32bit(2's compliment) int */
+#  define INT_MAX       2147483647
+#  define INT_MIN       (- INT_MAX - 1)
+#endif
+	    INT i = FIX2INT(val);
+	    if (INT_MIN < i && i < INT_MAX) {
+		return i;
+	    }
+	    ArgError("Fixnum too big to convert into `int'");
+	}
 	return FIX2INT(val);
 
       case T_FLOAT:
