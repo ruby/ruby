@@ -1224,11 +1224,11 @@ rb_push_glob(str, flags)
 
     ary = rb_ary_new();
     SafeStringValue(str);
-    buf = rb_str_new(0, RSTRING(str)->len + 1);
     p = RSTRING(str)->ptr;
     pend = p + RSTRING(str)->len;
 
     while (p < pend) {
+	buf = rb_str_new(0, pend - p + 1);
 	t = RSTRING(buf)->ptr;
 	nest = maxnest = 0;
 	while (p < pend && isdelim(*p)) p++;
