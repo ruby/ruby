@@ -1,3 +1,13 @@
+Sun Jan 25 18:25:26 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_add_entry): third
+	  argument become optional.
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_initialize): ditto.
+
+	* ext/openssl/ossl_x509name.c (Init_x509name): emailAddress and
+	  domainComponent should be IA5String.
+
 Sun Jan 25 01:45:38 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): support
