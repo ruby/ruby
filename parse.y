@@ -3046,6 +3046,9 @@ yylex()
 		return here_document(c2, indent);
 	    }
 	    pushback(c2);
+	    if (indent) {
+		pushback('-');
+	    }
 	}
 	switch (lex_state) {
 	  case EXPR_FNAME: case EXPR_DOT:

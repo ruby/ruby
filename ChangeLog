@@ -1,3 +1,7 @@
+Wed May 22 18:40:22 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (yylex): case '<': here-document has eaten '-'.
+
 Tue May 21 13:25:18 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-font-lock-keywords): symbols end with
