@@ -3896,10 +3896,10 @@ rb_f_exit(argc, argv)
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &status) == 1) {
 	switch (status) {
-	  case T_TRUE:
+	  case Qtrue:
 	    istatus = EXIT_SUCCESS;
 	    break;
-	  case T_FALSE:
+	  case Qfalse:
 	    istatus = EXIT_FAILURE;
 	    break;
 	  default:

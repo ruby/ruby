@@ -1,10 +1,13 @@
-Fri Nov 28 00:34:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Nov 28 00:47:29 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_f_exit), process.c (rb_f_exit_bang): treat true as
 	  success, false as failure.  [ruby-dev:22067]
 
 	* eval.c (rb_f_abort, rb_thread_switch), process.c (rb_f_system): use
 	  ANSI macro instead of hard coded value.
+
+	* eval.c (rb_f_exit), process.c (rb_f_exit_bang): use VALUEs not but
+	  TYPEs.
 
 Thu Nov 27 22:05:48 2003  Akinori MUSHA  <knu@iDaemons.org>
 
