@@ -7294,6 +7294,9 @@ rb_thread_safe_level(thread)
     thread_t th;
 
     th = rb_thread_check(thread);
+    if (th == curr_thread) {
+	return INT2NUM(rb_safe_level());
+    }
     return INT2NUM(th->safe);
 }
 
