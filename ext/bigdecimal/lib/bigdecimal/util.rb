@@ -10,7 +10,6 @@
 #     to_d      ... to BigDecimal
 #
 #   BigDecimal#
-#     to_digits ... to xxxxx.yyyy form digit string(not 0.zzzE?? form).
 #     to_r      ... to Rational
 #
 #   Rational#
@@ -32,6 +31,7 @@ end
 
 class BigDecimal < Numeric
   # to "nnnnnn.mmm" form digit string
+  # Use BigDecimal#to_s("F") instead.
   def to_digits
      if self.nan? || self.infinite? || self.zero?
         self.to_s
