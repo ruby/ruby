@@ -1234,13 +1234,11 @@ dln_load(file)
     /* Load file */
     if ((handle =
 	LoadLibraryExA(winfile, NULL, LOAD_WITH_ALTERED_SEARCH_PATH)) == NULL) {
-        printf("LoadLibraryExA: %s\n", winfile);
 	goto failed;
     }
 
     if ((init_fct = (void(*)())GetProcAddress(handle, buf)) == NULL) {
-        printf("GetProcAddress %s\n", buf);
-	goto failed;
+	rb_loaderror("%s - %s\n%s", dln_strerror(), buf, file);
     }
     /* Call the init code */
     (*init_fct)();
