@@ -1053,7 +1053,6 @@ if test "$enable_shared" = 'yes'; then
     linux*)
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
-	test "$rb_cv_prog_gnu_ld" = yes && DLDFLAGS="$DLDFLAGS -Wl,-no-undefined"
 	;;
     gnu*)
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'

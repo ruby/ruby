@@ -1,3 +1,13 @@
+Wed Nov 13 16:22:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (DLDFLAGS): removed -Wl,-no-undefined to
+	  ext/extmk.rb, in order to allow references to symbols in other
+	  extension libraries for mkmf.rb.  [ruby-dev:18724]
+
+	* ext/extmk.rb (extmake): ditto.
+
+	* ext/extmk.rb (extmake): exit when make failed.
+
 Sun Nov 10 03:46:18 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb: retire contain?() and add superset?(),

@@ -41,6 +41,10 @@ def extmake(target)
 
   init_mkmf
 
+  if /linux/ =~ RUBY_PLATFORM and $configure_args['--enable-shared'] and CONFIG["GNU_LD"] == "yes"
+    $DLDFLAGS << " -Wl,-no-undefined"
+  end
+
   begin
     dir = Dir.pwd
     File.mkpath target unless File.directory?(target)
@@ -70,7 +74,7 @@ def extmake(target)
 	$extlist.push [$static, $target, File.basename($target)]
       end
       unless system($make, *$mflags)
-	$ignore or $continue or exit(1)
+	$ignore or $continue or return false
       end
     else
       open("./Makefile", "w") {|f|
@@ -91,6 +95,7 @@ def extmake(target)
     rm_f "conftest*"
     Dir.chdir dir
   end
+  true
 end
 
 require 'getopts'
@@ -175,7 +180,7 @@ ext_prefix = "#{$top_srcdir}/ext"
 Dir.glob("#{ext_prefix}/**/MANIFEST") do |d|
   d = File.dirname(d)
   d.slice!(0, ext_prefix.length + 1)
-  extmake(d)
+  extmake(d) or exit(1)
 end
 
 if $ignore
