@@ -1036,27 +1036,32 @@ make_hostent(addr, ipaddr)
     char **pch;
 
     ary = rb_ary_new();
-    rb_ary_push(ary, rb_str_new2(addr->ai_canonname));
+    if (addr->ai_canonname) {
+	rb_ary_push(ary, rb_str_new2(addr->ai_canonname));
+    }
+    else {
+	rb_ary_push(ary, Qnil);
+    }
+    if (addr->ai_canonname) {
 #if defined(HAVE_GETIPNODEBYNAME)
-    {
 	int error;
 
 	h = getipnodebyname(addr->ai_canonname, addr->ai_family, AI_ALL, &error);
-    }
 #elif defined(HAVE_GETHOSTBYNAME2)
-    h = gethostbyname2(addr->ai_canonname, addr->ai_family);
+	h = gethostbyname2(addr->ai_canonname, addr->ai_family);
 #else
-    h = gethostbyname(addr->ai_canonname);
+	h = gethostbyname(addr->ai_canonname);
 #endif
-    if (h) {
-	names = rb_ary_new();
-	if (h->h_aliases != NULL) {
-	    for (pch = h->h_aliases; *pch; pch++) {
-		rb_ary_push(names, rb_str_new2(*pch));
+	if (h) {
+	    names = rb_ary_new();
+	    if (h->h_aliases != NULL) {
+		for (pch = h->h_aliases; *pch; pch++) {
+		    rb_ary_push(names, rb_str_new2(*pch));
+		}
 	    }
-	}
 #if defined(HAVE_GETIPNODEBYNAME)
-	freehostent(h);
+	    freehostent(h);
+	}
 #endif
     }
     else {

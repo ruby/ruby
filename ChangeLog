@@ -1,7 +1,26 @@
+Sun Jan 11 02:35:53 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in: install rdoc by default. if you do not want to
+	  install rdoc, specify --disable-install-doc.
+
 Sun Jan 11 02:07:47 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList): 
 	  Also accept command line options via the 'RI' environment variable.
+
+Sat Jan 10 21:27:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): need to add message delimiter. [ruby-dev:22561]
+
+Sat Jan 10 01:54:50 2004  Eric Sunshine  <sunshine@sunshineco.com>
+
+	* defines.h (__NeXT__): Ensure that all standard S_IRUSR, S_IWGRP,
+	  S_IRWXO, etc. macros are defined since future code might require
+	  them (even though present code only requires a subset).
+
+	* defines.h (__NeXT__): Bug fix: WORDS_BIGENDIAN was not being set
+	  correctly on Rhapsody when -arch compiler flag was used (via
+	  configure's --enable-fat-binary option).
 
 Sat Jan 10 23:01:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -15,6 +34,11 @@ Sat Jan 10 23:01:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Jan 10 22:46:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_inspect): new method, Dir#inspect.  [ruby-dev:22562]
+
+Fri Jan  9 17:36:51 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (make_hostent): getaddrinfo(3) on BSD do not
+	  fill ai_canonname if serv is not supplied.  (ruby-bugs PR#1243)
 
 Fri Jan  9 13:14:59 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 

@@ -1226,8 +1226,8 @@ AC_SUBST(ARCHFILE)
 dnl build rdoc index if requested
 RDOCTARGET=""
 AC_ARG_ENABLE(install-doc,
-       [  --enable-install-doc    build and install rdoc indexes during install ],
-       [install_doc=$enableval], [install_doc=no])
+       [  --disable-install-doc    do not install rdoc indexes during install ],
+       [install_doc=$enableval], [install_doc=yes])
 if test "$install_doc" != no; then
    RDOCTARGET="install-doc"
 fi
