@@ -68,6 +68,14 @@ time_new_internal(klass, sec, usec)
     VALUE obj;
     struct time_object *tobj;
 
+    if (usec >= 1000000) {	/* usec overflow */
+	sec += usec / 1000000;
+	usec %= 1000000;
+    }
+    if (usec < 0) {		/* usec underflow */
+	sec -= (-usec) / 1000000;
+	usec %= 1000000;
+    }
 #ifndef NEGATIVE_TIME_T
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
@@ -601,7 +609,13 @@ time_cmp(time1, time2)
     switch (TYPE(time2)) {
       case T_FIXNUM:
 	i = FIX2LONG(time2);
-	if (tobj1->tv.tv_sec == i) return INT2FIX(0);
+	if (tobj1->tv.tv_sec == i) {
+	    if (tobj1->tv.tv_usec == 0)
+		return INT2FIX(0);
+	    if (tobj1->tv.tv_usec > 0)
+		return INT2FIX(1);
+	    return INT2FIX(-1);
+	}
 	if (tobj1->tv.tv_sec > i) return INT2FIX(1);
 	return INT2FIX(-1);
 	
@@ -706,8 +720,11 @@ time_localtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got) {
-	if (!tobj->gmt) return time;
+    if (!tobj->gmt) {
+	if (tobj->tm_got)
+	    return time;
+    }
+    else {
 	time_modify(time);
     }
     t = tobj->tv.tv_sec;
@@ -727,8 +744,11 @@ time_gmtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got) {
-	if (tobj->gmt) return time;
+    if (tobj->gmt) {
+	if (tobj->tm_got)
+	    return time;
+    }
+    else {
 	time_modify(time);
     }
     t = tobj->tv.tv_sec;
@@ -804,14 +824,12 @@ time_plus(time1, time2)
     usec = tobj->tv.tv_usec + (time_t)((f - (double)sec)*1e6);
     sec = tobj->tv.tv_sec + sec;
 
-    if (usec >= 1000000) {	/* usec overflow */
-	sec++;
-	usec -= 1000000;
+#ifdef NEGATIVE_TIME_T
+    if ((tobj->tv.tv_sec > 0 && f > 0 && sec < 0) ||
+	(tobj->tv.tv_sec < 0 && f < 0 && sec > 0)) {
+	rb_raise(rb_eRangeError, "time + %f out of Time range", f);
     }
-    if (usec < 0) {		/* usec underflow */
-	sec--;
-	usec += 1000000;
-    }
+#endif
     time2 = rb_time_new(sec, usec);
     if (tobj->gmt) {
 	GetTimeval(time2, tobj);
@@ -833,8 +851,8 @@ time_minus(time1, time2)
 	struct time_object *tobj2;
 
 	GetTimeval(time2, tobj2);
-	f = tobj->tv.tv_sec - tobj2->tv.tv_sec;
-	f += (tobj->tv.tv_usec - tobj2->tv.tv_usec)*1e-6;
+	f = (double)tobj->tv.tv_sec - (double)tobj2->tv.tv_sec;
+	f += ((double)tobj->tv.tv_usec - (double)tobj2->tv.tv_usec)*1e-6;
 
 	return rb_float_new(f);
     }
@@ -844,16 +862,14 @@ time_minus(time1, time2)
 	usec = tobj->tv.tv_usec - (time_t)((f - (double)sec)*1e6);
 	sec = tobj->tv.tv_sec - sec;
     }
+#ifdef NEGATIVE_TIME_T
+    if ((tobj->tv.tv_sec < 0 && f > 0 && sec > 0) ||
+	(tobj->tv.tv_sec > 0 && f < 0 && sec < 0)) {
+	rb_raise(rb_eRangeError, "time - %f out of Time range", f);
+    }
+#endif
 
-    if (usec >= 1000000) {	/* usec overflow */
-	sec++;
-	usec -= 1000000;
-    }
-    if (usec < 0) {		/* usec underflow */
-	sec--;
-	usec += 1000000;
-    }
-    time2 = time_new_internal(rb_obj_class(time1), sec, usec);
+    time2 = rb_time_new(sec, usec);
     if (tobj->gmt) {
 	GetTimeval(time2, tobj);
 	tobj->gmt = 1;

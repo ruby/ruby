@@ -44,60 +44,64 @@
 #    of a previous state of ``the instance'' - see third example.
 #
 module Singleton
-    def Singleton.included (klass)
-        # should this be checked?
-        # raise TypeError.new "..."  if klass.type == Module
-        class << klass
-            def inherited(sub_klass)
-                # @__instance__ takes on one of the following values
-                # * nil    - before (and after a failed) creation
-                # * false - during creation
-                # * sub_class instance - after a successful creation
-                sub_klass.instance_eval { @__instance__ = nil }
-                def sub_klass.instance
-                    unless @__instance__.nil?
-                        # is the extra flexiblity having the hook method
-                        # _wait() around ever useful?
-                        _wait() 
-                        # check for instance creation
-                        return @__instance__ if @__instance__
-                    end
-                    Thread.critical = true
-                    unless @__instance__
-                        @__instance__  = false
-                        Thread.critical = false
-                        begin
-                            @__instance__ = new
-                        ensure
-                            if @__instance__
-                                define_method(:instance) {@__instance__ }
-                            else
-                                # failed instance creation
-                                @__instance__ = nil
-                            end
-                        end
-                    else
-                        Thread.critical = false
-                    end
-                    return @__instance__
-                end
-            end
-            def _load(str)
-                instance
-            end
-            def _wait
-                sleep(0.05)  while false.equal?(@__instance__)
-            end
-            private  :new, :allocate
-            # hook methods are also marked private
-            private :_load,:_wait
-        end
-        klass.inherited klass
+  def Singleton.included (klass)
+    # should this be checked?
+    # raise TypeError.new "..."  if klass.type == Module
+    klass.module_eval {
+      undef_method :clone
+      undef_method :dup
+    }
+    class << klass
+      def inherited(sub_klass)
+	# @__instance__ takes on one of the following values
+	# * nil    - before (and after a failed) creation
+	# * false - during creation
+	# * sub_class instance - after a successful creation
+	sub_klass.instance_eval { @__instance__ = nil }
+	def sub_klass.instance
+	  unless @__instance__.nil?
+	    # is the extra flexiblity having the hook method
+	    # _wait() around ever useful?
+	    _wait() 
+	    # check for instance creation
+	    return @__instance__ if @__instance__
+	  end
+	  Thread.critical = true
+	  unless @__instance__
+	    @__instance__  = false
+	    Thread.critical = false
+	    begin
+	      @__instance__ = new
+	    ensure
+	      if @__instance__
+		define_method(:instance) {@__instance__ }
+	      else
+		# failed instance creation
+		@__instance__ = nil
+	      end
+	    end
+	  else
+	    Thread.critical = false
+	  end
+	  return @__instance__
+	end
+      end
+      def _load(str)
+	instance
+      end
+      def _wait
+	sleep(0.05)  while false.equal?(@__instance__)
+      end
+      private  :new, :allocate
+      # hook methods are also marked private
+      private :_load,:_wait
     end
-    private
-    def _dump(depth)
-        return ""
-    end
+    klass.inherited klass
+  end
+  private
+  def _dump(depth)
+    return ""
+  end
 end
 
 if __FILE__ == $0
