@@ -1,4 +1,7 @@
 require 'test/unit'
+require 'tempfile'
+$:.replace([File.dirname(File.expand_path(__FILE__))] | $:)
+require 'ut_eof'
 
 $KCODE = 'none'
 
@@ -28,5 +31,13 @@ class TestFile < Test::Unit::TestCase
       r.close
       File.unlink(filename) if File.exist?(filename)
     end
+  end
+
+  include TestEOF
+  def open_file(content)
+    f = Tempfile.new("test-eof")
+    f << content
+    f.rewind
+    yield f
   end
 end

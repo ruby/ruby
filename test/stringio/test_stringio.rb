@@ -1,15 +1,14 @@
 require 'test/unit'
 require 'stringio'
+dir = File.expand_path(__FILE__)
+2.times {dir = File.dirname(dir)}
+$:.replace([File.join(dir, "ruby")] | $:)
+require 'ut_eof'
 
 class TestStringIO < Test::Unit::TestCase
-  def test_empty_file
-    f = StringIO.new("")
-    assert_equal("", f.read(0))
-    assert_equal("", f.read)
-    assert_equal(nil, f.read(0))
-    f = StringIO.new("")
-    assert_equal(nil, f.read(1))
-    assert_equal(nil, f.read)
-    assert_equal(nil, f.read(1))
+  include TestEOF
+  def open_file(content)
+    f = StringIO.new(content)
+    yield f
   end
 end

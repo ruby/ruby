@@ -1,6 +1,6 @@
 require 'test/unit'
 require 'tempfile'
-$:.unshift(File.dirname(File.expand_path(__FILE__)))
+$:.replace([File.dirname(File.expand_path(__FILE__))] | $:)
 require 'envutil'
 
 class TestBeginEndBlock < Test::Unit::TestCase

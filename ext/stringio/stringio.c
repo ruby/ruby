@@ -866,9 +866,11 @@ strio_read(argc, argv, self)
 	rb_raise(rb_eArgError, "wrong number arguments (%d for 0)", argc);
     }
     str = rb_str_substr(ptr->string, ptr->pos, len);
-    if (len > 0 &&
-	(NIL_P(str) || (ptr->pos += RSTRING(str)->len) >= RSTRING(ptr->string)->len)) {
+    if (NIL_P(str)) {
 	ptr->flags |= STRIO_EOF;
+    }
+    else {
+	ptr->pos += RSTRING(str)->len;
     }
     return str;
 }

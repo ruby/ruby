@@ -1,3 +1,10 @@
+Fri Dec  5 11:54:45 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_read): follow IO#read.
+
+	* test/ruby/ut_eof.rb, test/ruby/test_file.rb, test/ruby/test_pipe.rb,
+	  test/stringio/test_stringio.rb: add EOF test.
+
 Fri Dec  5 02:49:35 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions::assert_raises):
@@ -15,7 +22,7 @@ Thu Dec  4 23:32:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (read_all): do not depend on lseek position.
 	  [ruby-dev:22026]
-	
+
 Thu Dec  4 22:37:26 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval): preserve $! value when retry happens in the
