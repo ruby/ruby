@@ -207,9 +207,9 @@ class OptionParser
   # and resolved against a list of acceptable values.
   #
   module Completion
-    def complete(key, pat = nil)
+    def complete(key, icase = false, pat = nil)
       pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'),
-                         ignore_case?)
+                         icase)
       canon, sw, k, v, cn = nil
       candidates = []
       each do |k, *v|
@@ -250,10 +250,6 @@ class OptionParser
     def convert(opt = nil, val = nil, *)
       val
     end
-
-    def ignore_case?
-      false
-    end
   end
 
 
@@ -262,11 +258,6 @@ class OptionParser
   #
   class OptionMap < Hash
     include Completion
-  end
-  class OptionCaseMap < OptionMap
-    def ignore_case?
-      true
-    end
   end
 
 
@@ -523,7 +514,7 @@ class OptionParser
     def initialize
       @atype = {}
       @short = OptionMap.new
-      @long = OptionCaseMap.new
+      @long = OptionMap.new
       @list = []
     end
 
@@ -632,13 +623,15 @@ class OptionParser
     #      searching list.
     #    : ((|opt|))
     #      searching key.
+    #    : ((|icase|))
+    #      search case insensitive if true.
     #    : ((|*pat|))
     #      optional pattern for completion.
     #    : (({block}))
     #      yielded with the found value when succeeded.
     #
-    def complete(id, opt, *pat, &block)
-      __send__(id).complete(opt, *pat, &block)
+    def complete(id, opt, icase = false, *pat, &block)
+      __send__(id).complete(opt, icase, *pat, &block)
     end
 
     #
@@ -1277,7 +1270,7 @@ class OptionParser
         when /\A--([^=]*)(?:=(.*))?/
           opt, rest = $1, $2
           begin
-            sw, = complete(:long, opt)
+            sw, = complete(:long, opt, true)
           rescue ParseError
             raise $!.set_option(arg, true)
           end
@@ -1431,17 +1424,19 @@ class OptionParser
         searching table.
       : ((|opt|))
         searching key.
+      : ((|icase|))
+        search case insensitive if true.
       : ((|*pat|))
         optional pattern for completion.
       : (({block}))
         yielded with the found value when succeeded.
 =end #'#"#`#
-  def complete(typ, opt, *pat)
+  def complete(typ, opt, icase = false, *pat)
     if pat.empty?
       search(typ, opt) {|sw| return [sw, opt]} # exact match or...
     end
     raise AmbiguousOption, catch(:ambiguous) {
-      visit(:complete, typ, opt, *pat) {|opt, *sw| return sw}
+      visit(:complete, typ, opt, icase, *pat) {|opt, *sw| return sw}
       raise InvalidOption, opt
     }
   end

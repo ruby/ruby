@@ -31,8 +31,8 @@ module TestOptionParser::NoArg
     assert_equal(%w"", no_error {@opt.parse!(%w"-o")})
     assert_equal(true, @flag)
     @flag = nil
-    no_error {@opt.parse!(%w"-O")}
-    assert_equal(true, @flag)
+    assert_raises(OptionParser::InvalidOption) {@opt.parse!(%w"-O")}
+    assert_nil(@flag)
     @flag = nil
     assert_equal(%w"foo", no_error {@opt.parse!(%w"-o foo")})
     assert_equal(true, @flag)

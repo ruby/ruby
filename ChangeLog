@@ -1,3 +1,11 @@
+Sun Dec  5 19:39:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Completion#complete): new parameter
+	  to direct case insensitiveness.
+
+	* lib/optparse.rb (OptionParser#order!): ignore case only for long
+	  option.  [ruby-dev:25048]
+
 Sun Dec  5 00:54:32 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* mkconfig.rb: setup library paths before requiring library.
@@ -36,7 +44,7 @@ Sat Dec  4 14:28:56 2004  Dave Thomas  <dave@pragprog.com>
 	      # :section: Dave's Section
 	      # comment material
 	      # -----------
-	   The lines before :section: are removed, and identical lines at the end are 
+	   The lines before :section: are removed, and identical lines at the end are
 	   also removed if present.
 
 Fri Dec  3 12:25:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
