@@ -425,6 +425,10 @@ class WSDLDriver
 	add_document_method_interface(name)
       when :rpc
 	parts_names = op_info.bodyparts.collect { |part| part.name }
+        orgname = op_info.op_name.name
+        if orgname != name and orgname.capitalize == name.capitalize
+          add_rpc_method_interface(orgname, parts_names)
+        end
 	add_rpc_method_interface(name, parts_names)
       else
 	raise RuntimeError.new("Unknown style: #{op_info.style}")
