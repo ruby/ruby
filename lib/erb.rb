@@ -387,8 +387,10 @@ class ERB
     compiler = ERB::Compiler.new(trim_mode)
     set_eoutvar(compiler, eoutvar)
     @src = compiler.compile(str)
+    @filename = nil
   end
-  attr :src
+  attr_reader :src
+  attr_accessor :filename
 
   def set_eoutvar(compiler, eoutvar = '_erbout')
     compiler.put_cmd = "#{eoutvar}.concat"
@@ -416,7 +418,7 @@ class ERB
       }
       return th.value
     else
-      return eval(@src, b)
+      return eval(@src, b, (@filename || '(erb)'), 1)
     end
   end
 
