@@ -1,3 +1,8 @@
+Thu Apr 22 04:16:34 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_mod_define_method): allow binding methods to modules.
+	  [ruby-dev:23410]
+
 Wed Apr 21 23:04:42 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb, test/rinda/test_rinda.rb: check Hash tuple size.

@@ -9098,7 +9098,8 @@ rb_mod_define_method(argc, argv, mod)
 	    if (FL_TEST(rklass, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError, "cannot bind singleton method to a different class");
 	    }
-	    if (RCLASS(rklass)->super && !RTEST(rb_class_inherited_p(mod, rklass))) {
+	    if (RCLASS(mod)->super && RCLASS(rklass)->super &&
+		!RTEST(rb_class_inherited_p(mod, rklass))) {
 		rb_raise(rb_eTypeError, "bind argument must be a subclass of %s",
 			 rb_class2name(rklass));
 	    }
