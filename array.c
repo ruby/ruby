@@ -962,7 +962,7 @@ sort_2(ap, bp)
     VALUE *ap, *bp;
 {
     VALUE retval;
-    long a = (long)*ap, b = (long)*ap;
+    long a = (long)*ap, b = (long)*bp;
 
     if (FIXNUM_P(a) && FIXNUM_P(b)) {
 	if (a > b) return 1;
