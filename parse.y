@@ -485,10 +485,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    $$ = 0;
 			}
 		    }
-		| expr kRESCUE_MOD expr
-		    {
-			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
-		    }
 		| primary_value '[' aref_args ']' tOP_ASGN command_call
 		    {
                         NODE *args;
