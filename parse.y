@@ -3280,12 +3280,12 @@ yylex()
 
       case '^':
 	lex_state = EXPR_BEG;
-	if (nextc() == '=') {
+	if ((c = nextc()) == '=') {
 	    yylval.id = '^';
 	    return tOP_ASGN;
 	}
 	pushback(c);
-	return c;
+	return '^';
 
       case ',':
       case ';':

@@ -1,3 +1,15 @@
+Fri Nov 10 16:15:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): eval("^") caused infinite loop.
+
+Thu Nov  9 14:22:13 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_taint_check): should check IO taintness; no
+	  operation for untainted IO should be allowed in the sandbox.
+
+	* rubyio.h (GetOpenFile): check IO taintness inside using
+	  rb_io_taint_check().
+
 Wed Nov  8 03:08:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_fflush): ensure fflush(3) would not block by calling

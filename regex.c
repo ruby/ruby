@@ -3766,6 +3766,7 @@ re_match(bufp, string_arg, size, pos, regs)
 
       case start_nowidth:
 	PUSH_FAILURE_POINT(0, d);
+	printf("%d > %d\n", stackp - stackb, RE_DUP_MAX);
 	if (stackp - stackb > RE_DUP_MAX) {
 	   FREE_AND_RETURN(stackb,(-2));
 	}

@@ -143,6 +143,15 @@ rb_eof_error()
     rb_raise(rb_eEOFError, "End of file reached");
 }
 
+VALUE
+rb_io_taint_check(io)
+    VALUE io;
+{
+    if (!OBJ_TAINTED(io) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: operation on untainted IO");
+    return io;
+}
+
 void
 rb_io_check_closed(fptr)
     OpenFile *fptr;
