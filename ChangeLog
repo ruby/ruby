@@ -1,3 +1,8 @@
+Thu Feb 19 22:39:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/rinda/test_rinda.rb: DRb.start_service only once in testsuites.
+	  DRb.start_service could handle this.
+
 Thu Feb 19 22:24:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/soap/mapping/rubytypeFactory.rb: should not dump singleton class.
