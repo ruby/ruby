@@ -124,15 +124,21 @@
 == class Net::HTTP::Get, Head, Post
 
 HTTP request classes. These classes wraps request header and
-entity path. All "key" is case-insensitive.
+entity path. All arguments named "key" is case-insensitive.
+
+=== Class Methods
+
+: new
+    creats HTTP request object.
 
 === Methods
 
 : self[ key ]
-  returns header field for "key".
+    returns the header field corresponding to the case-insensitive key.
+    For example, a key of "Content-Type" might return "text/html"
 
 : self[ key ] = val
-  set header to "val".
+    sets the header field corresponding to the case-insensitive key.
 
 
 == class Net::HTTPResponse
@@ -143,15 +149,14 @@ All arguments named KEY is case-insensitive.
 === Methods
 
 : self[ key ]
-    returns header field for KEY.
-    for HTTP, value is a string like 'text/plain' (for Content-Type),
-    '2045' (for Content-Length), 'bytes 0-1024/10024' (for Content-Range).
+    returns the header field corresponding to the case-insensitive key.
+    For example, a key of "Content-Type" might return "text/html".
+    A key of "Content-Length" might do "2045".
+
     More than one fields which has same names are joined with ','.
-    KEY is case insensitive.
 
 : self[ key ] = val
-    set field value for KEY.
-    KEY is inseisitive.
+    sets the header field corresponding to the case-insensitive key.
 
 : key?( key )
     true if key exists.
@@ -183,7 +188,7 @@ All arguments named KEY is case-insensitive.
     and returns it.
 
 
-== Swithing Net::HTTP versions
+== Switching Net::HTTP versions
 
 You can use Net::HTTP 1.1 features by calling HTTP.version_1_1 .
 And calling Net::HTTP.version_1_2 allows you to use 1.2 features
@@ -654,9 +659,9 @@ module Net
 
         d1 = m[1].to_i
         d2 = m[2].to_i
-        if    m[1] and m[2] then arr.push d1 .. d2
-        elsif m[1]          then arr.push d1 .. -1
-        elsif          m[2] then arr.push -d2 .. -1
+        if    m[1] and m[2] then arr.push (d1 .. d2)
+        elsif m[1]          then arr.push (d1 .. -1)
+        elsif          m[2] then arr.push (-d2 .. -1)
         else
           raise HTTPHeaderSyntaxError, 'range is not specified'
         end
@@ -1028,12 +1033,12 @@ module Net
     # header (for backward compatibility)
     #
 
-    def read_header
+    def response
       self
     end
 
-    alias header read_header
-    alias response read_header
+    alias header response
+    alias read_header response
 
     #
     # body

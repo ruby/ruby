@@ -696,8 +696,7 @@ module Net
 
     def writeline( str )
       writing {
-        do_write str
-        do_write "\r\n"
+        do_write str + "\r\n"
       }
     end
 
