@@ -1148,6 +1148,7 @@ error_print()
 	if (elen == 0) {
 	    warn_print(": ");
 	    warn_print2(RSTRING(epath)->ptr, RSTRING(epath)->len);
+	    warn_print("\n");
 	}
 	else {
 	    char *tail  = 0;

@@ -11,6 +11,11 @@ Sat Nov 20 23:56:54 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/options.rb (Options::parse): Force --inline-source if
 	  --one-file option given
 
+Sat Nov 20 23:55:19 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_splice): should place index wrapping after
+	  possible modification.  [ruby-dev:24940]
+
 Sat Nov 20 23:25:12 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* io.c (rb_io_getline): f.gets("") did not work. [ruby-core:03771]
@@ -39,6 +44,11 @@ Sat Nov 20 01:45:04 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* test/xmlrpc/test_webrick_server.rb : move `requrie "webrick/https"'
 	  into #setup_http_server mohtod to avoid soap test errors.
+
+Sat Nov 20 01:37:34 2004  Johan Holmberg  <holmberg@iar.se>
+
+	* eval.c (error_print): nicer traceback at interrupt.
+	  [ruby-core:03774]
 
 Sat Nov 20 00:07:16 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
