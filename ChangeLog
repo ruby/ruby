@@ -1,5 +1,7 @@
 Fri Nov 10 16:15:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* error.c: T_SYMBOL was misplaced my T_UNDEF.
+
 	* parse.y (yylex): eval("^") caused infinite loop.
 
 Thu Nov  9 14:22:13 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>

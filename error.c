@@ -196,13 +196,13 @@ static struct types {
     T_FILE,	"File",
     T_TRUE,	"true",
     T_FALSE,	"false",
-    T_UNDEF,	"Symbol",	/* :symbol */
-    T_UNDEF,	"undef",	/* internal use: #undef */
+    T_SYMBOL,	"Symbol",	/* :symbol */
     T_DATA,	"Data",		/* internal use: wrapped C pointers */
     T_MATCH,	"Match",	/* data of $~ */
     T_VARMAP,	"Varmap",	/* internal use: dynamic variables */
     T_SCOPE,	"Scope",	/* internal use: variable scope */
     T_NODE,	"Node",		/* internal use: syntax tree node */
+    T_UNDEF,	"undef",	/* internal use: #undef; should not happen */
     -1,		0,
 };
 
@@ -212,9 +212,12 @@ rb_check_type(x, t)
     int t;
 {
     struct types *type = builtin_types;
-    int tt = TYPE(x);
 
-    if (tt != t) {
+    if (x == Qundef) {
+	rb_bug("undef leaked to the Ruby space");
+    }
+
+    if (TYPE(x) != t) {
 	while (type->type >= 0) {
 	    if (type->type == t) {
 		char *etype;
