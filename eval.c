@@ -7886,6 +7886,9 @@ rb_thread_select(max, read, write, except, timeout)
 	    tv = *timeout;
 	    tvp = &tv;
 	}
+#else
+	struct timeval *const tvp = timeout;
+#endif
 	for (;;) {
 	    TRAP_BEG;
 	    n = select(max, read, write, except, tvp);
@@ -7896,14 +7899,16 @@ rb_thread_select(max, read, write, except, timeout)
 #ifdef ERESTART
 		  case ERESTART:
 #endif
+#ifndef linux
 		    if (timeout) {
-                       double d = limit - timeofday();
+			double d = limit - timeofday();
 
 			tv.tv_sec = (unsigned int)d;
 			tv.tv_usec = (long)((d-(double)tv.tv_sec)*1e6);
 			if (tv.tv_sec < 0)  tv.tv_sec = 0;
 			if (tv.tv_usec < 0) tv.tv_usec = 0;
 		    }
+#endif
 		    continue;
 		  default:
 		    break;
@@ -7911,24 +7916,6 @@ rb_thread_select(max, read, write, except, timeout)
 	    }
 	    return n;
 	}
-#else
-	for (;;) {
-	    TRAP_BEG;
-	    n = select(max, read, write, except, timeout);
-	    TRAP_END;
-	    if (n < 0) {
-		switch (errno) {
-		  case EINTR:
-#ifdef ERESTART
-		  case ERESTART:
-#endif
-		    continue;
-		}
-	    }
-	    return n;
-	}
-#endif
-
     }
 
     curr_thread->status = THREAD_STOPPED;
