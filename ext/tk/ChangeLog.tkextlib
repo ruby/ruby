@@ -1,5 +1,18 @@
 2005-03-31  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
+	* sample/tkextlib/iwidgets/sample/hierarchy.rb: show basename
+	  only [ruby-dev:25970]
+
+	* sample/tkextlib/treectrl/demo.rb: add check for existence of 
+	  'backgroundimage' option.
+
+	* sample/tkextlib/treectrl/bitmaps.rb: ditto.
+
+	* sample/tkextlib/treectrl/outlook-newgroup.rb: lack of '%I'
+	  event callback argument.
+
+2005-03-31  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
 	* sample/tkextlib/iwidgets/sample/hierarchy.rb: fail to treat
 	  Japanese (i18n?) filenames.
 

@@ -387,7 +387,7 @@ def demoOutlookNewsgroup2(t)
                 }, '%T')
 
   t.notify_bind(t, 'Expand-after', 
-                proc{|w|
+                proc{|w, i|
                   if @Messge[:read][i] && anyUnreadDescendants(t, i)
                     # read2 -> read
                     t.item_style_map(i, 'subject', 'read', 
@@ -400,10 +400,10 @@ def demoOutlookNewsgroup2(t)
                     t.item_style_map(i, 'size', 'read.w', 
                                      ['text.unread', 'text.read'])
                   end
-                }, '%T')
+                }, '%T %I')
 
   t.notify_bind(t, 'Collapse-after', 
-                proc{|w|
+                proc{|w, i|
                   if @Messge[:read][i] && anyUnreadDescendants(t, i)
                     # read -> read2
                     t.item_style_map(i, 'subject', 'read2', 
@@ -416,7 +416,7 @@ def demoOutlookNewsgroup2(t)
                     t.item_style_map(i, 'size', 'unread.w', 
                                      ['text.read', 'text.unread'])
                   end
-                }, '%T')
+                }, '%T %I')
 
   (1...(msgCnt)).each{|i|
     if rand(2) == 0
