@@ -1,0 +1,42 @@
+ActiveTcl is ActiveState's quality-assured distribution of Tcl. 
+
+# see <http://www.activestate.com/Products/ActiveTcl/>
+#     <http://www.tcl.tk/>
+
+If you want to use ActiveTcl binary package as the Tcl/Tk libraries, 
+please use the following configure options.
+
+   --with-tcl-dir=<ActiveTcl_root>
+   --with-tk-dir=<ActiveTcl_root>
+
+And use the followings if you need.
+
+   --with-tcllib=<libname>
+   --with-tklib=<libname>
+   --enable-tcltk-stubs
+
+For example, when you install ActiveTcl-8.4.x to '/usr/local/ActiveTcl', 
+
+   configure --with-tcl-dir=/usr/local/ActiveTcl/  \
+             --with-tk-dir=/usr/local/ActiveTcl/   \
+             --with-tcllib=tcl8.4                  \
+             --with-tklib=tk8.4                    \
+             --enable-tcltk-stubs
+
+It depends on your environment that you have to add the directory of 
+ActiveTcl's dynamic link libraries to your library path when execute 
+Ruby/Tk. 
+
+# For example, on Linux, one of the ways is to use LD_LIBRARY_PATH 
+# environment variable. 
+# 
+#   [bash]$ LD_LIBRARY_PATH=/usr/local/ActiveTcl/lib:$LD_LIBRARY_PATH \
+#           ruby your-Ruby/Tk-script
+#
+#   [bash]$ LD_LIBRARY_PATH=/usr/local/ActiveTcl/lib:$LD_LIBRARY_PATH irb
+
+Then, you'll be able to use Tcl/Tk extension libraries included in the
+ActiveTcl package (e.g. call TkPackage.require('BWidget'), and then,
+use functions/widgets of BWidget extention). 
+
+                                  Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

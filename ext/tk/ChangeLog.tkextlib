@@ -1,0 +1,3 @@
+2004-07-01  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* 1st release of tkextlib ( to support Tcl/Tk extensions )
