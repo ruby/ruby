@@ -1,3 +1,8 @@
+Thu May  8 08:56:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* numeric.c (int_upto, int_downto): should fail unless the
+	  argument is comparable.  (ruby-bugs-ja:PR#454)
+
 Wed May  7 01:21:23 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (num_step): remove epsilon; add margin of 0.5, to make

@@ -1654,6 +1654,28 @@ fix_size(fix)
 }
 
 static VALUE
+int_compare(i, to, id)
+    VALUE i, to;
+    ID id;
+{
+    VALUE cmp = rb_funcall(i, id, 1, to);
+    if (NIL_P(cmp)) {
+	char *toclass;
+
+	if (SPECIAL_CONST_P(to)) {
+	    to = rb_inspect(to);
+	    toclass = StringValuePtr(to);
+	}
+	else {
+	    toclass = rb_obj_classname(to);
+	}
+	rb_raise(rb_eArgError, "cannot compare %s with %s",
+		 rb_obj_classname(i), toclass);
+    }
+    return cmp;
+}
+
+static VALUE
 int_upto(from, to)
     VALUE from, to;
 {
@@ -1668,8 +1690,7 @@ int_upto(from, to)
     else {
 	VALUE i = from;
 
-	for (;;) {
-	    if (RTEST(rb_funcall(i, '>', 1, to))) break;
+	while (!int_compare(i, to, '>')) {
 	    rb_yield(i);
 	    i = rb_funcall(i, '+', 1, INT2FIX(1));
 	}
@@ -1692,8 +1713,7 @@ int_downto(from, to)
     else {
 	VALUE i = from;
 
-	for (;;) {
-	    if (RTEST(rb_funcall(i, '<', 1, to))) break;
+	while (!int_compare(i, to, '<')) {
 	    rb_yield(i);
 	    i = rb_funcall(i, '-', 1, INT2FIX(1));
 	}
