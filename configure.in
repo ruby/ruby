@@ -271,7 +271,7 @@ cygwin*)	rb_cv_have_daylight=no
 		ac_cv_func__setjmp=no
 		ac_cv_func_setitimer=no
 		;;
-mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
+mingw*)		LIBS="-lwsock32 $LIBS"
 		rb_cv_need_io_flush_between_rw=no
 		rb_cv_need_io_flush_before_seek=no
 		ac_cv_header_a_out_h=no
@@ -287,7 +287,7 @@ mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_func_vsnprintf=yes
 		ac_cv_func_seekdir=yes
 		ac_cv_func_telldir=yes
-		ac_cv_func_crypt=no
+		ac_cv_lib_crypt_crypt=no
 		;;
 os2_emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;
@@ -1156,7 +1156,6 @@ case "$target_os" in
 	    COMMON_LIBS=m
 	    COMMON_MACROS="WIN32_LEAN_AND_MEAN="
 	    COMMON_HEADERS="windows.h winsock.h"
-	    CFLAGS="-D__NO_ISOCEXT $CFLAGS"
 	    CCDLFLAGS=-DIMPORT ;;
 	esac
 	if test x"$enable_shared" = xyes; then
