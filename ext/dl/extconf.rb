@@ -11,13 +11,13 @@ if( ARGV.include?("--help") )
   --with-type-char   strictly use type 'char'
   --with-type-short  strictly use type 'short'
   --with-type-float  strictly use type 'float'
-  --with-asm         use the embedded assembler for passing arguments.
-                     (this option is available for i386 machine now.)
-  --with-dlstack     use a stack emulation for constructing function call. [experimental]
   --with-args=<max_arg>,<max_cbarg>,<max_cbent>
                      <max_arg>:   maximum number of arguments of the function
                      <max_cbarg>: maximum number of arguments of the callback
                      <max_cbent>: maximum number of callback entries
+  --enable-asm       use the embedded assembler for passing arguments.
+                     (this option is available for i386 machine now.)
+  --enable-dlstack   use a stack emulation for constructing function call. [experimental]
 EOF
   exit(0)
 end
