@@ -1197,17 +1197,19 @@ io_read(argc, argv, io)
 
     rb_scan_args(argc, argv, "02", &length, &str);
 
+    if (!NIL_P(length)) {
+	len = NUM2LONG(length);
+	if (len < 0) {
+	    rb_raise(rb_eArgError, "negative length %ld given", len);
+	}
+    }
+
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
+
     if (NIL_P(length)) {
 	return read_all(fptr, remain_size(fptr), str);
     }
-
-    len = NUM2LONG(length);
-    if (len < 0) {
-	rb_raise(rb_eArgError, "negative length %ld given", len);
-    }
-
     if (feof(fptr->f)) return Qnil;
     if (NIL_P(str)) {
 	str = rb_str_new(0, len);
