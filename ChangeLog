@@ -1,3 +1,7 @@
+Thu Dec 30 00:41:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_justify): [ruby-dev:25367]
+
 Wed Dec 29 11:07:07 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/html/kilmer.rb: Update to use new
@@ -46,6 +50,10 @@ Mon Dec 27 16:55:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509name.c (Init_ossl_x509name): should use
 	  rb_hash_new to get exactly a Hash. fix [ruby-dev:25325].
+
+Mon Dec 27 16:29:56 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_justify): [ruby-dev:25341]
 
 Mon Dec 27 15:47:48 2004  Minero Aoki  <aamine@loveruby.net>
 
