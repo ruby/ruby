@@ -9,3 +9,4 @@ lib/md5.rb
 lib/sha1.rb
 test.rb
 test.sh
+depend

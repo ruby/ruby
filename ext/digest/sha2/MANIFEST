@@ -4,3 +4,4 @@ sha2.c
 sha2.h
 sha2hl.c
 sha2init.c
+depend
