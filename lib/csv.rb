@@ -11,7 +11,7 @@
 class CSV
   class IllegalFormatError < RuntimeError; end
 
-  def CSV.open(path, mode, fs = ',', rs = nil, &block)
+  def CSV.open(path, mode, fs = nil, rs = nil, &block)
     if mode == 'r' or mode == 'rb'
       open_reader(path, mode, fs, rs, &block)
     elsif mode == 'w' or mode == 'wb'
@@ -51,7 +51,7 @@ class CSV
   # RETURNS
   #   reader instance.  To get parse result, see CSV::Reader#each.
   #
-  def CSV.parse(path, fs = ',', rs = nil, &block)
+  def CSV.parse(path, fs = nil, rs = nil, &block)
     open_reader(path, 'r', fs, rs, &block)
   end
 
@@ -80,7 +80,7 @@ class CSV
   #   writer instance.  See CSV::Writer#<< and CSV::Writer#add_row to know how
   #   to generate CSV string.
   #
-  def CSV.generate(path, fs = ',', rs = nil, &block)
+  def CSV.generate(path, fs = nil, rs = nil, &block)
     open_writer(path, 'w', fs, rs, &block)
   end
 
@@ -90,8 +90,9 @@ class CSV
   #
   # If you don't know whether a target string to parse is exactly 1 line or
   # not, use CSV.parse_row instead of this method.
-  def CSV.parse_line(src, fs = ',', rs = nil)
-    if !fs.nil? and fs.is_a?(Fixnum)
+  def CSV.parse_line(src, fs = nil, rs = nil)
+    fs ||= ','
+    if fs.is_a?(Fixnum)
       fs = fs.chr
     end
     if !rs.nil? and rs.is_a?(Fixnum)
@@ -101,7 +102,7 @@ class CSV
     res_type = :DT_COLSEP
     row = []
     begin
-      while (res_type.equal?(:DT_COLSEP))
+      while res_type == :DT_COLSEP
         res_type, idx, cell = parse_body(src, idx, fs, rs)
         row << cell
       end
@@ -112,11 +113,12 @@ class CSV
   end
 
   # Create a line from cells.  each cell is stringified by to_s.
-  def CSV.generate_line(row, fs = ',', rs = nil)
-    if (row.size == 0)
+  def CSV.generate_line(row, fs = nil, rs = nil)
+    if row.size == 0
       return ''
     end
-    if !fs.nil? and fs.is_a?(Fixnum)
+    fs ||= ','
+    if fs.is_a?(Fixnum)
       fs = fs.chr
     end
     if !rs.nil? and rs.is_a?(Fixnum)
@@ -165,8 +167,9 @@ class CSV
   #   parsed_cells: num of parsed cells.
   #   idx: index of next parsing location of 'src'.
   #
-  def CSV.parse_row(src, idx, out_dev, fs = ',', rs = nil)
-    if !fs.nil? and fs.is_a?(Fixnum)
+  def CSV.parse_row(src, idx, out_dev, fs = nil, rs = nil)
+    fs ||= ','
+    if fs.is_a?(Fixnum)
       fs = fs.chr
     end
     if !rs.nil? and rs.is_a?(Fixnum)
@@ -176,9 +179,9 @@ class CSV
     parsed_cells = 0
     res_type = :DT_COLSEP
     begin
-      while (!res_type.equal?(:DT_ROWSEP))
+      while res_type != :DT_ROWSEP
         res_type, idx, cell = parse_body(src, idx, fs, rs)
-        if res_type.equal?(:DT_EOS)
+        if res_type == :DT_EOS
           if idx == idx_backup #((parsed_cells == 0) and cell.nil?)
             return 0, 0
           end
@@ -225,8 +228,9 @@ class CSV
   # RETURNS
   #   parsed_cells: num of converted cells.
   #
-  def CSV.generate_row(src, cells, out_dev, fs = ',', rs = nil)
-    if !fs.nil? and fs.is_a?(Fixnum)
+  def CSV.generate_row(src, cells, out_dev, fs = nil, rs = nil)
+    fs ||= ','
+    if fs.is_a?(Fixnum)
       fs = fs.chr
     end
     if !rs.nil? and rs.is_a?(Fixnum)
@@ -299,30 +303,46 @@ class CSV
     def parse_body(src, idx, fs, rs)
       fs_str = fs
       fs_size = fs_str.size
-      fs_idx = 0
       rs_str = rs || "\n"
       rs_size = rs_str.size
-      rs_idx = 0
+      fs_idx = rs_idx = 0
       cell = ''
       state = :ST_START
-      quoted = false
-      cr = false
+      quoted = cr = false
       c = nil
       last_idx = idx
-      while (c = src[idx])
+      while c = src[idx]
+        unless quoted
+          fschar = (c == fs_str[fs_idx])
+          rschar = (c == rs_str[rs_idx])
+          # simple 1 char backtrack
+          if !fschar and c == fs_str[0]
+            fs_idx = 0
+            fschar = true
+            if state == :ST_START
+              state = :ST_DATA
+            elsif state == :ST_QUOTE
+              raise IllegalFormatError
+            end
+          end
+          if !rschar and c == rs_str[0]
+            rs_idx = 0
+            rschar = true
+            if state == :ST_START
+              state = :ST_DATA
+            elsif state == :ST_QUOTE
+              raise IllegalFormatError
+            end
+          end
+        end
         if c == ?"
-          cell << src[last_idx, (idx - last_idx)]
-          last_idx = idx
+          fs_idx = rs_idx = 0
           if cr
             raise IllegalFormatError
           end
-          if fs_idx != 0
-            fs_idx = 0
-          end
-          if rs_idx != 0
-            rs_idx = 0
-          end
-          if state.equal?(:ST_DATA)
+          cell << src[last_idx, (idx - last_idx)]
+          last_idx = idx
+          if state == :ST_DATA
             if quoted
               last_idx += 1
               quoted = false
@@ -330,7 +350,7 @@ class CSV
             else
               raise IllegalFormatError
             end
-          elsif state.equal?(:ST_QUOTE)
+          elsif state == :ST_QUOTE
             cell << c.chr
             last_idx += 1
             quoted = true
@@ -340,62 +360,48 @@ class CSV
             last_idx += 1
             state = :ST_DATA
           end
-        elsif c == fs_str[fs_idx]
-          fs_idx += 1
-          cell << src[last_idx, (idx - last_idx)]
-          last_idx = idx
-          if rs_idx != 0
-            rs_idx = 0
+        elsif fschar or rschar
+          if fschar
+            fs_idx += 1
           end
+          if rschar
+            rs_idx += 1
+          end
+          sep = nil
           if fs_idx == fs_size
-            fs_idx = 0
+            if state == :ST_START and rs_idx > 0 and fs_idx < rs_idx
+              state = :ST_DATA
+            end
+            cell << src[last_idx, (idx - last_idx - (fs_size - 1))]
+            last_idx = idx
+            fs_idx = rs_idx = 0
             if cr
               raise IllegalFormatError
             end
-            if state.equal?(:ST_DATA)
-              if rs_idx != 0
-                cell << rs_str[0, rs_idx]
-                rs_idx = 0
-              end
-              if quoted
-                true    # ToDo: delete; dummy line for coverage
-              else
-                return :DT_COLSEP, idx + 1, cell;
-              end
-            elsif state.equal?(:ST_QUOTE)
-              if rs_idx != 0
-                raise IllegalFormatError
-              end
-              return :DT_COLSEP, idx + 1, cell;
-            else  # :ST_START
-              return :DT_COLSEP, idx + 1, nil
+            sep = :DT_COLSEP
+          elsif rs_idx == rs_size
+            if state == :ST_START and fs_idx > 0 and rs_idx < fs_idx
+              state = :ST_DATA
             end
+            if !(rs.nil? and cr)
+              cell << src[last_idx, (idx - last_idx - (rs_size - 1))]
+              last_idx = idx
+            end
+            fs_idx = rs_idx = 0
+            sep = :DT_ROWSEP
           end
-        elsif c == rs_str[rs_idx]
-          rs_idx += 1
-          unless (rs.nil? and cr)
-            cell << src[last_idx, (idx - last_idx)]
-            last_idx = idx
-          end
-          if fs_idx != 0
-            fs_idx = 0
-          end
-          if rs_idx == rs_size
-            rs_idx = 0
-            if state.equal?(:ST_DATA)
-              if quoted
-                true    # ToDo: delete; dummy line for coverage
-              else
-                return :DT_ROWSEP, idx + 1, cell
-              end
-            elsif state.equal?(:ST_QUOTE)
-              return :DT_ROWSEP, idx + 1, cell
+          if sep
+            if state == :ST_DATA
+              return sep, idx + 1, cell;
+            elsif state == :ST_QUOTE
+              return sep, idx + 1, cell;
             else  # :ST_START
-              return :DT_ROWSEP, idx + 1, nil
+              return sep, idx + 1, nil
             end
           end
         elsif rs.nil? and c == ?\r
           # special \r treatment for backward compatibility
+          fs_idx = rs_idx = 0
           if cr
             raise IllegalFormatError
           end
@@ -407,13 +413,8 @@ class CSV
             cr = true
           end
         else
-          if fs_idx != 0
-            fs_idx = 0
-          end
-          if rs_idx != 0
-            rs_idx = 0
-          end
-          if state.equal?(:ST_DATA) or state.equal?(:ST_START)
+          fs_idx = rs_idx = 0
+          if state == :ST_DATA or state == :ST_START
             if cr
               raise IllegalFormatError
             end
@@ -424,8 +425,12 @@ class CSV
         end
         idx += 1
       end
-      if state.equal?(:ST_START)
-        return :DT_EOS, idx, nil
+      if state == :ST_START
+        if fs_idx > 0 or rs_idx > 0
+          state = :ST_DATA
+        else
+          return :DT_EOS, idx, nil
+        end
       elsif quoted
         raise IllegalFormatError
       elsif cr
@@ -440,6 +445,7 @@ class CSV
       if cell.nil?
         # empty
       else
+        cell = cell.to_s
         row_data = cell.dup
         if (row_data.gsub!('"', '""') or
             row_data.index(fs) or

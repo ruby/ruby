@@ -639,6 +639,12 @@ public
       buf = CSV.generate_line(col, ?\t)
       assert_equal(str + "\n", tsv2csv(buf))
     end
+
+    str = CSV.generate_line(['a', 'b'], nil, ?|)
+    assert_equal('a,b', str)
+
+    str = CSV.generate_line(['a', 'b'], nil, "a")
+    assert_equal('"a",b', str)
   end
 
   def test_s_generate_row
@@ -818,6 +824,15 @@ public
       assert_equal(col, row)
     end
 
+    row = CSV.parse_line("a,b,c", nil, nil)
+    assert_equal(['a', 'b', 'c'], row)
+
+    row = CSV.parse_line("a,b,c", nil, ?b)
+    assert_equal(['a', nil], row)
+
+    row = CSV.parse_line("a,b,c", nil, "c")
+    assert_equal(['a', 'b', nil], row)
+
     # Illegal format.
     buf = []
     row = CSV.parse_line("a,b,\"c\"\ra")
@@ -922,6 +937,18 @@ public
       assert_equal(col.size, buf.size, "Size.")
       assert_equal(col, buf, str)
     end
+
+    buf = []
+    CSV.parse_row("a,b,c", 0, buf, nil, nil)
+    assert_equal(['a', 'b', 'c'], buf)
+
+    buf = []
+    CSV.parse_row("a,b,c", 0, buf, nil, ?b)
+    assert_equal(['a', nil], buf)
+
+    buf = []
+    CSV.parse_row("a,b,c", 0, buf, nil, "c")
+    assert_equal(['a', 'b', nil], buf)
 
     buf = Array.new
     cols, idx = CSV.parse_row("a,b,\"c\r\"", 0, buf)
@@ -1576,5 +1603,131 @@ public
       end
     end
     assert_equal(csvStrTerminated, buf)
+  end
+
+  def test_writer_fs_rs_generate
+    buf = ''
+    CSV::Writer.generate(buf, ",,") do |writer|
+      writer << []
+    end
+    assert_equal("\n", buf)
+
+    buf = ''
+    CSV::Writer.generate(buf, ",,") do |writer|
+      writer << [] << []
+    end
+    assert_equal("\n\n", buf)
+
+    buf = ''
+    CSV::Writer.generate(buf, ",,") do |writer|
+      writer << [1]
+    end
+    assert_equal("1\n", buf)
+
+    buf = ''
+    CSV::Writer.generate(buf, ",,") do |writer|
+      writer << [1, 2, 3]
+      writer << [4, ",,", 5]
+    end
+    assert_equal("1,,2,,3\n4,,\",,\",,5\n", buf)
+
+    buf = ''
+    CSV::Writer.generate(buf, ",,:", ",,;") do |writer|
+      writer << [nil, nil, nil]
+      writer << [nil, ",,", nil]
+    end
+    assert_equal(",,:,,:,,;,,:,,,,:,,;", buf)
+
+    buf = ''
+    CSV::Writer.generate(buf, "---") do |writer|
+      writer << [1, 2, 3]
+      writer << [4, "---\"---", 5]
+    end
+    assert_equal("1---2---3\n4---\"---\"\"---\"---5\n", buf)
+
+    buf = ''
+    CSV::Writer.generate(buf, nil) do |writer|
+      writer << [1, 2, 3]
+      writer << [4, ",\",", 5]
+    end
+    assert_equal("1,2,3\n4,\",\"\",\",5\n", buf)
+  end
+
+  def test_writer_fs_rs_parse
+    reader = CSV::Reader.create('a||b--c||d', '||', '--')
+    assert_equal(['a', 'b'], reader.shift)
+    assert_equal(['c', 'd'], reader.shift)
+
+    reader = CSV::Reader.create("a@|b@-c@|d", "@|", "@-")
+    assert_equal(['a', 'b'], reader.shift)
+    assert_equal(['c', 'd'], reader.shift)
+
+    reader = CSV::Reader.create("ababfsababrs", "abfs", "abrs")
+    assert_equal(['ab', 'ab'], reader.shift)
+
+    reader = CSV::Reader.create('"ab"abfsababrs', "abfs", "abrs")
+    assert_equal(['ab', 'ab'], reader.shift)
+
+    reader = CSV::Reader.create('"ab"aabfsababrs', "abfs", "abrs")
+    assert_raises(CSV::IllegalFormatError) do
+      reader.shift
+    end
+
+    # fs match while matching rs progress
+    reader = CSV::Reader.create("ab,ababrs", nil, "abrs")
+    assert_equal(['ab', 'ab'], reader.shift)
+
+    reader = CSV::Reader.create(',ababrs', nil, "abrs")
+    assert_equal([nil, 'ab'], reader.shift)
+
+    reader = CSV::Reader.create('"",ababrs', nil, "abrs")
+    assert_equal(['', 'ab'], reader.shift)
+
+    reader = CSV::Reader.create('ab,"ab"abrs', nil, "abrs")
+    assert_equal(['ab', 'ab'], reader.shift)
+
+    reader = CSV::Reader.create('ab,"ab"aabrs', nil, "abrs")
+    assert_raises(CSV::IllegalFormatError) do
+      reader.shift
+    end
+
+    # rs match while matching fs progress
+    reader = CSV::Reader.create("ab|abc", 'ab-', "ab|")
+    assert_equal([nil], reader.shift)
+    assert_equal(['abc'], reader.shift)
+
+    # EOF while fs/rs matching
+    reader = CSV::Reader.create("ab", 'ab-', "xyz")
+    assert_equal(['ab'], reader.shift)
+
+    reader = CSV::Reader.create("ab", 'xyz', "ab|")
+    assert_equal(['ab'], reader.shift)
+
+    reader = CSV::Reader.create("ab", 'ab-', "ab|")
+    assert_equal(['ab'], reader.shift)
+
+    reader = CSV::Reader.create(",,:,,:,,;,,:,,,,:,,;", ",,:", ",,;")
+    assert_equal([nil, nil, nil], reader.shift)
+    assert_equal([nil, ",,", nil], reader.shift)
+  end
+
+  def test_foreach
+    File.open(@outfile, "w") do |f|
+      f << "1,2,3\n4,5,6"
+    end
+    row = []
+    CSV.foreach(@outfile) { |line|
+      row << line
+    }
+    assert_equal([['1', '2', '3'], ['4', '5', '6']], row)
+
+    File.open(@outfile, "w") do |f|
+      f << "1,2,3\r4,5,6"
+    end
+    row = []
+    CSV.foreach(@outfile, "\r") { |line|
+      row << line
+    }
+    assert_equal([['1', '2', '3'], ['4', '5', '6']], row)
   end
 end

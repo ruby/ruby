@@ -1,3 +1,9 @@
+Fri May 21 02:21:11 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/csv.rb: fixed a few bugs around multi char record/field separator.
+
+	* test/csv/test_csv.rb: added boundary test for above feature.
+
 Thu May 20 17:02:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (check_sizeof): define result size.  [ruby-core:02911]
