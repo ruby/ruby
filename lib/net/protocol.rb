@@ -2,8 +2,8 @@
 # = net/protocol.rb
 #
 #--
-# Copyright (c) 1999-2003 Yukihiro Matsumoto
-# Copyright (c) 1999-2003 Minero Aoki
+# Copyright (c) 1999-2004 Yukihiro Matsumoto
+# Copyright (c) 1999-2004 Minero Aoki
 #
 # written and maintained by Minero Aoki <aamine@loveruby.net>
 #
@@ -25,7 +25,7 @@ module Net # :nodoc:
 
   class Protocol   #:nodoc: internal use only
     private
-    def Protocol.protocol_param( name, val )
+    def Protocol.protocol_param(name, val)
       module_eval(<<-End, __FILE__, __LINE__ + 1)
         def #{name}
           #{val}
@@ -33,6 +33,7 @@ module Net # :nodoc:
       End
     end
   end
+
 
   class ProtocolError          < StandardError; end
   class ProtoSyntaxError       < ProtocolError; end
@@ -46,14 +47,11 @@ module Net # :nodoc:
 
 
   class InternetMessageIO   #:nodoc: internal use only
-
     class << self
       alias open new
     end
 
-    def initialize( addr, port,
-                    open_timeout = nil, read_timeout = nil,
-                    debug_output = nil )
+    def initialize(addr, port, open_timeout = nil, read_timeout = nil, debug_output = nil)
       @address      = addr
       @port         = port
       @read_timeout = read_timeout
@@ -65,19 +63,7 @@ module Net # :nodoc:
       LOG 'opened'
     end
 
-    attr_reader :address
-    attr_reader :port
-
-    def ip_address
-      return '' unless @socket
-      @socket.addr[3]
-    end
-
-    attr_accessor :read_timeout
-
-    attr_reader :socket
-
-    def connect( open_timeout )
+    def connect(open_timeout)
       LOG "opening connection to #{@address}..."
       timeout(open_timeout) {
         @socket = TCPsocket.new(@address, @port)
@@ -97,7 +83,7 @@ module Net # :nodoc:
       @rbuf = ''
     end
 
-    def reopen( open_timeout = nil )
+    def reopen(open_timeout = nil)
       LOG 'reopening...'
       close
       connect open_timeout
@@ -118,53 +104,50 @@ module Net # :nodoc:
 
     public
 
-    def read( len, dest = '', ignore_eof = false )
+    def read(len, dest = '', ignore_eof = false)
       LOG "reading #{len} bytes..."
-      # LOG_off()   # experimental: [ruby-list:38800]
       read_bytes = 0
       begin
         while read_bytes + @rbuf.size < len
-          read_bytes += rbuf_moveto(dest, @rbuf.size)
+          dest << (s = rbuf_consume(@rbuf.size))
+          read_bytes += s.size
           rbuf_fill
         end
-        rbuf_moveto dest, len - read_bytes
+        dest << (s = rbuf_consume(len - read_bytes))
+        read_bytes += s.size
       rescue EOFError
         raise unless ignore_eof
       end
-      # LOG_on()
       LOG "read #{read_bytes} bytes"
       dest
     end
 
-    def read_all( dest = '' )
+    def read_all(dest = '')
       LOG 'reading all...'
-      # LOG_off()   # experimental: [ruby-list:38800]
       read_bytes = 0
       begin
         while true
-          read_bytes += rbuf_moveto(dest, @rbuf.size)
+          dest << (s = rbuf_consume(@rbuf.size))
+          read_bytes += s.size
           rbuf_fill
         end
       rescue EOFError
         ;
       end
-      # LOG_on()
       LOG "read #{read_bytes} bytes"
       dest
     end
 
-    def readuntil( terminator, ignore_eof = false )
-      dest = ''
+    def readuntil(terminator, ignore_eof = false)
       begin
         until idx = @rbuf.index(terminator)
           rbuf_fill
         end
-        rbuf_moveto dest, idx + terminator.size
+        return rbuf_consume(idx + terminator.size)
       rescue EOFError
         raise unless ignore_eof
-        rbuf_moveto dest, @rbuf.size
+        return rbuf_consume(@rbuf.size)
       end
-      dest
     end
         
     def readline
@@ -199,10 +182,10 @@ module Net # :nodoc:
       @rbuf << @socket.sysread(1024)
     end
 
-    def rbuf_moveto( dest, len )
-      dest << (s = @rbuf.slice!(0, len))
+    def rbuf_consume(len)
+      s = @rbuf.slice!(0, len)
       @debug_output << %Q[-> #{s.dump}\n] if @debug_output
-      len
+      s
     end
 
     ###
@@ -211,38 +194,42 @@ module Net # :nodoc:
 
     public
 
-    def write( str )
+    def write(str)
       writing {
         write0 str
       }
     end
 
-    def writeline( str )
+    def writeline(str)
       writing {
         write0 str + "\r\n"
       }
     end
 
-    def write_message( src )
+    def write_message(src)
       LOG "writing message from #{src.class}"
       LOG_off()
-      len = using_each_crlf_line {
-        write_message_0 src
+      len = writing {
+        using_each_crlf_line {
+          write_message_0 src
+        }
       }
       LOG_on()
       LOG "wrote #{len} bytes"
       len
     end
 
-    def write_message_by_block( &block )
+    def write_message_by_block(&block)
       LOG 'writing message from block'
       LOG_off()
-      len = using_each_crlf_line {
-        begin
-          block.call(WriteAdapter.new(self, :write_message_0))
-        rescue LocalJumpError
-          # allow `break' from writer block
-        end
+      len = writing {
+        using_each_crlf_line {
+          begin
+            block.call(WriteAdapter.new(self, :write_message_0))
+          rescue LocalJumpError
+            # allow `break' from writer block
+          end
+        }
       }
       LOG_on()
       LOG "wrote #{len} bytes"
@@ -262,7 +249,7 @@ module Net # :nodoc:
       bytes
     end
 
-    def write0( str )
+    def write0(str)
       @debug_output << str.dump if @debug_output
       len = @socket.write(str)
       @written_bytes += len
@@ -273,7 +260,7 @@ module Net # :nodoc:
     # Reads string from src calling :each, and write to @socket.
     # Escapes '.' on the each line head.
     #
-    def write_message_0( src )
+    def write_message_0(src)
       prev = @written_bytes
       each_crlf_line(src) do |line|
         if line[0] == ?.
@@ -288,69 +275,44 @@ module Net # :nodoc:
     # setup @wbuf for each_crlf_line.
     #
     def using_each_crlf_line
-      writing {
-          @wbuf = ''
-          yield
-          if not @wbuf.empty?       # unterminated last line
-            if @wbuf[-1] == ?\r
-              @wbuf.chop!
-            end
-            @wbuf.concat "\r\n"
-            write0 @wbuf
-          elsif @written_bytes == 0   # empty src
-            write0 "\r\n"
-          end
-          write0 ".\r\n"
-          @wbuf = nil
-      }
+      @wbuf = ''
+      yield
+      if not @wbuf.empty?   # unterminated last line
+        write0 @wbuf.chomp + "\r\n"
+        @wbuf.string = ''
+      elsif @written_bytes == 0   # empty src
+        write0 "\r\n"
+      end
+      write0 ".\r\n"
+      @wbuf = nil
     end
 
-    #
-    # extract a CR-LF-terminating-line from @wbuf and yield it.
-    #
-    def each_crlf_line( src )
-      adding(src) do
-        beg = 0
-        buf = @wbuf
-        while buf.index(/\n|\r\n|\r/, beg)
-          m = Regexp.last_match
-          if (m.begin(0) == buf.length - 1) and buf[-1] == ?\r
-            # "...\r" : can follow "\n..."
-            break
-          end
-          str = buf[beg ... m.begin(0)]
-          str.concat "\r\n"
-          yield str
-          beg = m.end(0)
+    def each_crlf_line(src)
+      buffer_filling(@wbuf, src) do
+        while line = @wbuf.slice!(/\A.*(?:\n|\r\n|\r(?!\z))/n)
+          yield line.chomp("\n") + "\r\n"
         end
-        @wbuf = buf[beg ... buf.length]
       end
     end
 
-    #
-    # Reads strings from SRC and add to @wbuf, then yield.
-    #
-    def adding( src )
+    def buffer_filling(buf, src)
       case src
       when String    # for speeding up.
-        0.step(src.size - 1, 2048) do |i|
-          @wbuf << src[i,2048]
+        0.step(src.size - 1, 1024) do |i|
+          buf << src[i, 1024]
           yield
         end
-
       when File    # for speeding up.
-        while s = src.read(2048)
-          s[0,0] = @wbuf
-          @wbuf = s
+        while s = src.read(1024)
+          buf << s
           yield
         end
-
       else    # generic reader
         src.each do |s|
-          @wbuf << s
-          yield if @wbuf.size > 2048
+          buf << s
+          yield if buf.size > 1024
         end
-        yield unless @wbuf.empty?
+        yield unless buf.empty?
       end
     end
 
@@ -369,12 +331,10 @@ module Net # :nodoc:
       @debug_output = @save_debug_out
     end
 
-    def LOG( msg )
+    def LOG(msg)
       return unless @debug_output
-      @debug_output << msg
-      @debug_output << "\n"
+      @debug_output << msg + "\n"
     end
-  
   end
 
 
@@ -382,41 +342,38 @@ module Net # :nodoc:
   # The writer adapter class
   #
   class WriteAdapter
-
-    def initialize( sock, mid )
-      @socket = sock
-      @method_id = mid
+    def initialize(socket, method)
+      @socket = socket
+      @method_id = method
     end
 
     def inspect
       "#<#{self.class} socket=#{@socket.inspect}>"
     end
 
-    def write( str )
+    def write(str)
       @socket.__send__(@method_id, str)
     end
 
     alias print write
 
-    def <<( str )
+    def <<(str)
       write str
       self
     end
 
-    def puts( str = '' )
-      write str.sub(/\n?\z/, "\n")
+    def puts(str = '')
+      write str.chomp("\n") + "\n"
     end
 
-    def printf( *args )
+    def printf(*args)
       write sprintf(*args)
     end
-  
   end
 
 
   class ReadAdapter   #:nodoc: internal use only
-
-    def initialize( block )
+    def initialize(block)
       @block = block
     end
 
@@ -424,21 +381,18 @@ module Net # :nodoc:
       "#<#{self.class}>"
     end
 
-    def <<( str )
+    def <<(str)
       call_block(str, &@block) if @block
     end
 
     private
 
-    #
     # This method is needed because @block must be called by yield,
     # not Proc#call.  You can see difference when using `break' in
     # the block.
-    #
-    def call_block( str )
+    def call_block(str)
       yield str
     end
-  
   end
 
 
