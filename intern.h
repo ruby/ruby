@@ -246,6 +246,7 @@ VALUE str_new2 _((UCHAR *));
 VALUE str_new3 _((VALUE));
 VALUE str_new4 _((VALUE));
 VALUE obj_as_string _((VALUE));
+VALUE str_to_str _((VALUE));
 VALUE str_dup _((VALUE));
 VALUE str_plus _((VALUE, VALUE));
 VALUE str_times _((VALUE, VALUE));

@@ -12,7 +12,8 @@ require "delegate"
 
 class WeakRef<Delegator
 
-  Exception :RefError
+  class RefError<StandardError
+  end
 
   ID_MAP =  {}
   ID_REV_MAP =  {}

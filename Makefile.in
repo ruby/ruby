@@ -199,7 +199,7 @@ process.o: process.c ruby.h config.h defines.h intern.h sig.h st.h
 random.o: random.c ruby.h config.h defines.h intern.h
 range.o: range.c ruby.h config.h defines.h intern.h
 re.o: re.c ruby.h config.h defines.h intern.h re.h regex.h
-ruby.o: ruby.c ruby.h config.h defines.h intern.h re.h regex.h dln.h
+ruby.o: ruby.c ruby.h config.h defines.h intern.h dln.h
 signal.o: signal.c ruby.h config.h defines.h intern.h sig.h
 sprintf.o: sprintf.c ruby.h config.h defines.h intern.h
 st.o: st.c config.h st.h

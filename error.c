@@ -214,7 +214,6 @@ rb_check_type(x, t)
 extern VALUE cString;
 VALUE eException;
 VALUE eSystemExit, eInterrupt, eFatal;
-VALUE eDefaultRescue;
 VALUE eStandardError;
 VALUE eRuntimeError;
 VALUE eSyntaxError;
@@ -222,9 +221,9 @@ VALUE eTypeError;
 VALUE eArgError;
 VALUE eNameError;
 VALUE eIndexError;
-VALUE eNotImpError;
 VALUE eLoadError;
 VALUE eSecurityError;
+VALUE eNotImpError;
 
 VALUE eSystemCallError;
 VALUE mErrno;
@@ -235,17 +234,10 @@ exc_new(etype, ptr, len)
     char *ptr;
     UINT len;
 {
-    NEWOBJ(exc, struct RString);
-    OBJSETUP(exc, etype, T_STRING);
+    VALUE exc = obj_alloc(etype);
 
-    exc->len = len;
-    exc->orig = 0;
-    exc->ptr = ALLOC_N(char,len+1);
-    if (ptr) {
-	memcpy(exc->ptr, ptr, len);
-    }
-    exc->ptr[len] = '\0';
-    return (VALUE)exc;
+    rb_iv_set(exc, "mesg", str_new(ptr, len));
+    return exc;
 }
 
 VALUE
@@ -268,38 +260,49 @@ exc_new3(etype, str)
 }
 
 static VALUE
-exc_s_new(argc, argv, etype)
+exc_initialize(argc, argv, exc)
     int argc;
     VALUE *argv;
-    VALUE etype;
+    VALUE exc;
 {
-    VALUE arg, exc;
+    VALUE mesg;
 
-    if (rb_scan_args(argc, argv, "01", &arg) == 0) {
-	exc = exc_new(etype, 0, 0);
+    rb_scan_args(argc, argv, "01", &mesg);
+    if (NIL_P(mesg)) {
+	mesg = str_new(0, 0);
     }
     else {
-	exc = exc_new3(etype, obj_as_string(arg));
+	STR2CSTR(mesg);		/* ensure mesg can be converted to String */
     }
-    obj_call_init(exc);
+    rb_iv_set(exc, "mesg", mesg);
+
     return exc;
 }
 
 static VALUE
-exc_new_method(self, str)
-    VALUE self, str;
+exc_new_method(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
-    VALUE etype;
-    char *s;
-    int len;
+    VALUE etype, exc;
 
-    if (self == str) return self;
+    if (argc == 1 && self == argv[0]) return self;
     etype = CLASS_OF(self);
     while (FL_TEST(etype, FL_SINGLETON)) {
 	etype = RCLASS(etype)->super;
     }
-    s = str2cstr(str, &len);
-    return exc_new(etype, s, len);
+    exc = obj_alloc(etype);
+    obj_call_init(exc);
+
+    return exc;
+}
+
+static VALUE
+exc_to_s(exc)
+    VALUE exc;
+{
+    return rb_iv_get(exc, "mesg");
 }
 
 static VALUE
@@ -309,18 +312,56 @@ exc_inspect(exc)
     VALUE str, klass;
 
     klass = CLASS_OF(exc);
+    exc = obj_as_string(exc);
     if (RSTRING(exc)->len == 0) {
 	return str_dup(rb_class_path(klass));
     }
 
     str = str_new2("#<");
     klass = rb_class_path(klass);
-    str_cat(str, RSTRING(klass)->ptr, RSTRING(klass)->len);
+    str_concat(str, klass);
     str_cat(str, ":", 1);
-    str_cat(str, RSTRING(exc)->ptr, RSTRING(exc)->len);
+    str_concat(str, exc);
     str_cat(str, ">", 1);
 
     return str;
+}
+
+static VALUE
+exc_backtrace(exc)
+    VALUE exc;
+{
+    return rb_iv_get(exc, "bt");
+}
+
+static VALUE
+check_backtrace(bt)
+    VALUE bt;
+{
+    int i;
+    static char *err = "backtrace must be Array of String";
+
+    if (!NIL_P(bt)) {
+	int t = TYPE(bt);
+
+	if (t == T_STRING) return ary_new3(1, bt);
+	if (t != T_ARRAY) {
+	    TypeError(err);
+	}
+	for (i=0;i<RARRAY(bt)->len;i++) {
+	    if (TYPE(RARRAY(bt)->ptr[i]) != T_STRING) {
+		TypeError(err);
+	    }
+	}
+    }
+    return bt;
+}
+
+static VALUE
+exc_set_backtrace(exc, bt)
+    VALUE exc;
+{
+    return rb_iv_set(exc, "bt", check_backtrace(bt));
 }
 
 static VALUE
@@ -329,31 +370,35 @@ exception(argc, argv)
     VALUE *argv;
 {
     void ArgError();
-    VALUE etype = eStandardError;
     VALUE v = Qnil;
+    VALUE etype = eStandardError;
     int i;
     ID id;
 
     if (argc == 0) {
 	ArgError("wrong # of arguments");
     }
+    Warn("Exception() is now obsolete");
     if (TYPE(argv[argc-1]) == T_CLASS) {
 	etype = argv[argc-1];
-	argc--; argv++;
+	argc--;
+	if (!rb_funcall(etype, '<', 1, eException)) {
+	    TypeError("exception should be subclass of Exception");
+	}
     }
     for (i=0; i<argc; i++) {	/* argument check */
 	id = rb_to_id(argv[i]);
+	if (!rb_is_const_id(id)) {
+	    ArgError("identifier `%s' needs to be constant", rb_id2name(id));
+	}
 	if (!rb_id2name(id)) {
 	    ArgError("argument needs to be symbol or string");
-	}
-	if (!rb_is_const_id(id)) {
-	    ArgError("identifier %s needs to be constant", rb_id2name(id));
 	}
     }
     for (i=0; i<argc; i++) {
 	v = rb_define_class_under(the_class,
 				  rb_id2name(rb_to_id(argv[i])),
-				  etype);
+				  eStandardError);
     }
     return v;
 }
@@ -380,28 +425,31 @@ static void init_syserr();
 void
 Init_Exception()
 {
-    eException   = rb_define_class("Exception", cString);
-    rb_define_singleton_method(eException, "new", exc_s_new, -1);
-    rb_define_method(eException, "new", exc_new_method, 1);
+    eException   = rb_define_class("Exception", cObject);
+    rb_define_method(eException, "new", exc_new_method, -1);
+    rb_define_method(eException, "initialize", exc_initialize, -1);
+    rb_define_method(eException, "to_s", exc_to_s, 0);
+    rb_define_method(eException, "to_str", exc_to_s, 0);
+    rb_define_method(eException, "message", exc_to_s, 0);
     rb_define_method(eException, "inspect", exc_inspect, 0);
+    rb_define_method(eException, "backtrace", exc_backtrace, 0);
+    rb_define_private_method(eException, "set_backtrace", exc_set_backtrace, 1);
 
     eSystemExit  = rb_define_class("SystemExit", eException);
     eFatal  	 = rb_define_class("fatal", eException);
     eInterrupt   = rb_define_class("Interrupt", eException);
 
-    eDefaultRescue = rb_define_module("DefaultRescue");
     eStandardError = rb_define_class("StandardError", eException);
-    rb_include_module(eStandardError, eDefaultRescue);
     eSyntaxError = rb_define_class("SyntaxError", eStandardError);
     eTypeError   = rb_define_class("TypeError", eStandardError);
     eArgError    = rb_define_class("ArgumentError", eStandardError);
     eNameError   = rb_define_class("NameError", eStandardError);
     eIndexError  = rb_define_class("IndexError", eStandardError);
-    eNotImpError = rb_define_class("NotImplementError", eStandardError);
     eLoadError   = rb_define_class("LoadError", eStandardError);
 
     eRuntimeError = rb_define_class("RuntimeError", eStandardError);
     eSecurityError = rb_define_class("SecurityError", eStandardError);
+    eNotImpError = rb_define_class("NotImplementError", eException);
 
     init_syserr();
 

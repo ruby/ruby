@@ -411,37 +411,38 @@ reg_prepare_re(reg)
 }
 
 int
-reg_search(reg, str, start, regs)
+reg_search(reg, str, start, reverse)
     VALUE reg, str;
-    int start;
-    struct re_registers *regs;
+    int start, reverse;
 {
     int result;
     int casefold = RTEST(ignorecase);
     VALUE match = 0;
-    struct re_registers *regs0 = 0;
+    struct re_registers *regs = 0;
+    int range;
     int need_recompile = 0;
 
     if (start > RSTRING(str)->len) return -1;
 
     reg_prepare_re(reg);
 
-    if (regs == (struct re_registers*)-1) {
-	regs = 0;
+    if (matchcache) {
+	match = matchcache;
+	matchcache = 0;
     }
     else {
-	if (matchcache) {
-	    match = matchcache;
-	    matchcache = 0;
-	}
-	else {
-	    match = match_alloc();
-	}
-	regs0 = RMATCH(match)->regs;
+	match = match_alloc();
     }
+    regs = RMATCH(match)->regs;
 
+    if (reverse) {
+	range = -start;
+    }
+    else {
+	range = RSTRING(str)->len-start;
+    }
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
-		       start,RSTRING(str)->len-start,regs0);
+		       start, range, regs);
     kcode_reset_option();
 
     if (start == -2) {
@@ -456,7 +457,6 @@ reg_search(reg, str, start, regs)
 	RMATCH(match)->str = str_new4(str);
 	backref_set(match);
     }
-    if (regs && regs0) re_copy_registers(regs, regs0);
 
     return result;
 }
@@ -725,7 +725,7 @@ reg_match(re, str)
 {
     int start;
 
-    if (TYPE(str) != T_STRING) return FALSE;
+    str = str_to_str(str);
     start = reg_search(re, str, 0, 0);
     if (start < 0) {
 	return FALSE;

@@ -674,7 +674,7 @@ if defined? Process.kill
   rescue
     x = $!
   end
-  ok(x && x =~ /Interrupt/)
+  ok(x && /Interrupt/ =~ x)
 end
 
 check "eval"

@@ -15,7 +15,8 @@
 require "marshal"
 
 class PStore
-  Exception(:Error)
+  class Error < StandardError
+  end
 
   def initialize(file)
     dir = File::dirname(file)
@@ -90,13 +91,17 @@ class PStore
 	end
       ensure
 	unless @abort
-	  File::rename @filename, @filename+"~"
+	  begin
+	    File::rename @filename, @filename+"~"
+	  rescue Errno::ENOENT
+	    no_orig = true
+	  end
 	  begin
 	    File::open(@filename, "w") do |file|
 	      Marshal::dump(@table, file)
 	    end
 	  rescue
-	    File::rename @filename+"~", @filename
+	    File::rename @filename+"~", @filename unless no_orig
 	  end
 	end
 	@abort = false

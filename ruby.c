@@ -14,7 +14,6 @@
 #include <windows.h>
 #endif
 #include "ruby.h"
-#include "re.h"
 #include "dln.h"
 #include <stdio.h>
 #include <ctype.h>
@@ -191,6 +190,7 @@ proc_options(argcp, argvp)
 
 	  case 'd':
 	    debug = TRUE;
+	    verbose |= 1;
 	    s++;
 	    goto reswitch;
 
@@ -781,9 +781,6 @@ ruby_process_options(argc, argv)
     int argc;
     char **argv;
 {
-    extern VALUE errat;
-    int i;
-
     origargc = argc; origargv = argv;
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = str_taint(str_new2(argv[0]));

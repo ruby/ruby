@@ -831,7 +831,7 @@ str2cstr(str, len)
 {
     if (NIL_P(str)) return NULL;
     if (TYPE(str) != T_STRING) {
-	str = rb_convert_type(str, T_STRING, "String", "to_str");
+	str = str_to_str(str);
     }
     if (len) *len = RSTRING(str)->len;
     return RSTRING(str)->ptr;

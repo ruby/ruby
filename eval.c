@@ -354,7 +354,7 @@ rb_attr(klass, id, read, write, ex)
 }
 
 static ID init, eqq, each, aref, aset, match;
-VALUE errinfo = Qnil, errat = Qnil;
+VALUE errinfo = Qnil;
 extern NODE *eval_tree0;
 extern NODE *eval_tree;
 extern int nerrs;
@@ -362,7 +362,6 @@ extern int nerrs;
 extern VALUE mKernel;
 extern VALUE cModule;
 extern VALUE eFatal;
-extern VALUE eDefaultRescue;
 extern VALUE eStandardError;
 extern VALUE eInterrupt;
 extern VALUE eSystemExit;
@@ -453,15 +452,15 @@ new_dvar(id, value)
 {
     NEWOBJ(vars, struct RVarmap);
     OBJSETUP(vars, 0, T_VARMAP);
+    vars->id = id;
+    vars->val = value;
+    vars->next = the_dyna_vars;
     if (id == 0) {
 	vars->id = (ID)value;
 	vars->val = 0;
-	vars->next = the_dyna_vars;
 	the_dyna_vars = vars;
     }
     else if (the_dyna_vars) {
-	vars->id = id;
-	vars->val = value;
 	vars->next = the_dyna_vars->next;
 	the_dyna_vars->next = vars;
     }
@@ -504,12 +503,14 @@ dyna_var_asgn(id, value)
 {
     struct RVarmap *vars = the_dyna_vars;
 
-    while (vars) {
-	if (vars->id == id) {
-	    vars->val = value;
-	    return value;
+    if (id) {
+	while (vars) {
+	    if (vars->id == id) {
+		vars->val = value;
+		return value;
+	    }
+	    vars = vars->next;
 	}
-	vars = vars->next;
     }
     new_dvar(id, value);
     return value;
@@ -719,14 +720,31 @@ error_pos()
     }
 }
 
+static VALUE
+get_backtrace(info)
+    VALUE info;
+{
+    if (NIL_P(info)) return Qnil;
+    return rb_funcall(info, rb_intern("backtrace"), 0);
+}
+
+static void
+set_backtrace(info, bt)
+    VALUE info, bt;
+{
+    rb_funcall(info, rb_intern("set_backtrace"), 1, bt);
+}
+
 static void
 error_print()
 {
+    VALUE errat;
     VALUE eclass;
     VALUE einfo;
 
     if (NIL_P(errinfo)) return;
 
+    errat = get_backtrace(errinfo);
     if (!NIL_P(errat)) {
 	VALUE mesg = RARRAY(errat)->ptr[0];
 
@@ -909,7 +927,6 @@ ruby_run()
     if (nerrs > 0) exit(nerrs);
 
     init_stack();
-    errat = Qnil;		/* clear for execution */
 
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
@@ -985,19 +1002,20 @@ static void
 compile_error(at)
     char *at;
 {
+    VALUE str;
     char *mesg;
     int len;
 
     mesg = str2cstr(errinfo, &len);
     nerrs = 0;
-    errinfo = exc_new2(eSyntaxError, "compile error");
+    str = str_new2("compile error");
     if (at) {
-	str_cat(errinfo, " in ", 4);
-	str_cat(errinfo, at, strlen(at));
+	str_cat(str, " in ", 4);
+	str_cat(str, at, strlen(at));
     }
-    str_cat(errinfo, "\n", 1);
-    str_cat(errinfo, mesg, len);
-    rb_raise(errinfo);
+    str_cat(str, "\n", 1);
+    str_cat(str, mesg, len);
+    rb_raise(exc_new3(eSyntaxError, str));
 }
 
 VALUE
@@ -1797,7 +1815,7 @@ rb_eval(self, node)
       case NODE_RESCUE:
       retry_entry:
         {
-	    volatile VALUE e_info = errinfo, e_at = errat;
+	    volatile VALUE e_info = errinfo;
 
 	    PUSH_TAG(PROT_NONE);
 	    if ((state = EXEC_TAG()) == 0) {
@@ -1817,7 +1835,6 @@ rb_eval(self, node)
 			POP_TAG();
 			if (state == 0) {
 			    errinfo = e_info;
-			    errat = e_at;
 			}
 			else if (state == TAG_RETRY) {
 			    state = 0;
@@ -2664,52 +2681,31 @@ static volatile voidfn rb_longjmp;
 
 static VALUE make_backtrace _((void));
 
-static VALUE
-check_errat(val)
-    VALUE val;
-{
-    int i;
-    static char *err = "value of $@ must be Array of String";
-
-    if (!NIL_P(val)) {
-	int t = TYPE(val);
-
-	if (t == T_STRING) return ary_new3(1, val);
-	if (t != T_ARRAY) {
-	    TypeError(err);
-	}
-	for (i=0;i<RARRAY(val)->len;i++) {
-	    if (TYPE(RARRAY(val)->ptr[i]) != T_STRING) {
-		TypeError(err);
-	    }
-	}
-    }
-    return val;
-}
-
 static void
-rb_longjmp(tag, mesg, at)
+rb_longjmp(tag, mesg)
     int tag;
-    VALUE mesg, at;
+    VALUE mesg;
 {
-    if (NIL_P(errinfo) && NIL_P(mesg)) {
-	errinfo = exc_new(eRuntimeError, 0, 0);
+    VALUE at;
+
+    if (NIL_P(mesg)) mesg = errinfo;
+    if (NIL_P(mesg)) {
+	mesg = exc_new(eRuntimeError, 0, 0);
+    }
+
+    at = get_backtrace(mesg);
+    if (NIL_P(at) && sourcefile && !NIL_P(mesg)) {
+	at = make_backtrace();
+	set_backtrace(mesg, at);
+    }
+    if (!NIL_P(mesg)) {
+	errinfo = mesg;
     }
 
     if (debug && !NIL_P(errinfo)) {
 	fprintf(stderr, "Exception `%s' at %s:%d\n",
 		rb_class2name(CLASS_OF(errinfo)),
 		sourcefile, sourceline);
-    }
-    if (!NIL_P(at)) {
-	errat = check_errat(at);
-    }
-    else if (sourcefile && (NIL_P(errat) || !NIL_P(mesg))) {
-	errat = make_backtrace();
-    }
-
-    if (!NIL_P(mesg)) {
-	errinfo = mesg;
     }
 
     trap_restore_mask();
@@ -2724,14 +2720,14 @@ void
 rb_raise(mesg)
     VALUE mesg;
 {
-    rb_longjmp(TAG_RAISE, mesg, Qnil);
+    rb_longjmp(TAG_RAISE, mesg);
 }
 
 void
 rb_fatal(mesg)
     VALUE mesg;
 {
-    rb_longjmp(TAG_FATAL, mesg, Qnil);
+    rb_longjmp(TAG_FATAL, mesg);
 }
 
 void
@@ -2755,8 +2751,8 @@ f_raise(argc, argv)
       case 1:
 	mesg = arg1;
 	break;
-      case 2:
       case 3:
+      case 2:
 	etype = arg1;
 	mesg = arg2;
 	break;
@@ -2769,11 +2765,15 @@ f_raise(argc, argv)
 	else if (TYPE(mesg) == T_STRING) {
 	    mesg = exc_new3(eRuntimeError, mesg);
 	}
+	if (!obj_is_kind_of(mesg, eException)) {
+	    TypeError("casting non-exception");
+	}
+	set_backtrace(mesg, arg3);
     }
 
     PUSH_FRAME();		/* fake frame */
     *the_frame = *_frame.prev->prev;
-    rb_longjmp(TAG_RAISE, mesg, arg3);
+    rb_longjmp(TAG_RAISE, mesg);
     POP_FRAME();
 }
 
@@ -3037,7 +3037,7 @@ handle_rescue(self, node)
     TMP_PROTECT;
 
     if (!node->nd_args) {
-	return obj_is_kind_of(errinfo, eDefaultRescue);
+	return obj_is_kind_of(errinfo, eStandardError);
     }
 
     PUSH_ITER(ITER_NOT);
@@ -3060,13 +3060,14 @@ rb_rescue(b_proc, data1, r_proc, data2)
 {
     int state;
     volatile VALUE result;
+    volatile VALUE e_info = errinfo;
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
       retry_entry:
 	result = (*b_proc)(data1);
     }
-    else if (state == TAG_RAISE && obj_is_kind_of(errinfo, eDefaultRescue)) {
+    else if (state == TAG_RAISE && obj_is_kind_of(errinfo, eStandardError)) {
 	if (r_proc) {
 	    PUSH_TAG(PROT_NONE);
 	    if ((state = EXEC_TAG()) == 0) {
@@ -3083,7 +3084,7 @@ rb_rescue(b_proc, data1, r_proc, data2)
 	    state = 0;
 	}
 	if (state == 0) {
-	    errat = Qnil;
+	    errinfo = e_info;
 	}
     }
     POP_TAG();
@@ -3826,9 +3827,11 @@ eval(self, src, scope, file, line)
     sourcefile = filesave;
     sourceline = linesave;
     if (state) {
-	VALUE err;
-
 	if (state == TAG_RAISE) {
+	    VALUE err;
+	    VALUE errat;
+
+	    errat = get_backtrace(errinfo);
 	    if (strcmp(file, "(eval)") == 0) {
 		if (sourceline > 1) {
 		    err = RARRAY(errat)->ptr[0];
@@ -3841,7 +3844,7 @@ eval(self, src, scope, file, line)
 		errat = Qnil;
 		rb_raise(exc_new3(CLASS_OF(errinfo), err));
 	    }
-	    rb_raise(Qnil);
+	    rb_raise(errinfo);
 	}
 	JUMP_TAG(state);
     }
@@ -4062,6 +4065,7 @@ f_load(obj, fname)
     file = find_file(RSTRING(fname)->ptr);
     if (!file) LoadError("No such file to load -- %s", RSTRING(fname)->ptr);
 
+    PUSH_VARS();
     PUSH_TAG(PROT_NONE);
     PUSH_CLASS();
     the_class = cObject;
@@ -4097,6 +4101,7 @@ f_load(obj, fname)
     POP_SCOPE();
     POP_CLASS();
     POP_TAG();
+    POP_VARS();
     if (nerrs > 0) {
 	rb_raise(errinfo);
     }
@@ -4472,7 +4477,24 @@ obj_extend(argc, argv, obj)
 VALUE f_trace_var();
 VALUE f_untrace_var();
 
-extern void rb_str_setter();
+static void
+errinfo_setter(val, id, var)
+    VALUE val;
+    ID id;
+    VALUE *var;
+{
+    if (!obj_is_kind_of(val, eException)) {
+	TypeError("assigning non-exception to $!");
+    }
+    *var = val;
+}
+
+static VALUE
+errat_getter(id)
+    ID id;
+{
+    return get_backtrace(errinfo);
+}
 
 static void
 errat_setter(val, id, var)
@@ -4480,7 +4502,10 @@ errat_setter(val, id, var)
     ID id;
     VALUE *var;
 {
-    *var = check_errat(val);
+    if (NIL_P(errinfo)) {
+	ArgError("$! not set");
+    }
+    set_backtrace(errinfo, val);
 }
 
 VALUE f_global_variables();
@@ -4589,8 +4614,8 @@ Init_eval()
     rb_global_variable((VALUE*)&eval_tree);
     rb_global_variable((VALUE*)&the_dyna_vars);
 
-    rb_define_hooked_variable("$@", &errat, 0, errat_setter);
-    rb_define_variable("$!", &errinfo);
+    rb_define_virtual_variable("$@", errat_getter, errat_setter);
+    rb_define_hooked_variable("$!", &errinfo, 0, errinfo_setter);
 
     rb_define_global_function("eval", f_eval, -1);
     rb_define_global_function("iterator?", f_iterator_p, 0);
@@ -5253,7 +5278,7 @@ struct thread {
     char *file;
     int   line;
 
-    VALUE errat, errinfo;
+    VALUE errinfo;
     VALUE last_status;
     VALUE last_line;
     VALUE last_match;
@@ -5315,7 +5340,6 @@ thread_mark(th)
 
     gc_mark(th->scope);
     gc_mark(th->dyna_vars);
-    gc_mark(th->errat);
     gc_mark(th->errinfo);
     gc_mark(th->last_line);
     gc_mark(th->last_match);
@@ -5398,7 +5422,6 @@ thread_save_context(th)
     th->misc = scope_vmode | (trap_immediate<<8);
     th->iter = the_iter;
     th->tag = prot_tag;
-    th->errat = errat;
     th->errinfo = errinfo;
     th->last_status = last_status;
     th->last_line = lastline_get();
@@ -5459,7 +5482,6 @@ thread_restore_context(th, exit)
     trap_immediate = th->misc>>8;
     the_iter = th->iter;
     prot_tag = th->tag;
-    errat = th->errat;
     errinfo = th->errinfo;
     last_status = th->last_status;
     safe_level = th->safe;
@@ -6051,7 +6073,6 @@ thread_alloc()
     th->status = 0;
     th->result = 0;
     th->errinfo = Qnil;
-    th->errat = Qnil;
 
     th->stk_ptr = 0;
     th->stk_len = 0;
@@ -6068,7 +6089,6 @@ thread_alloc()
     th->block = 0;
     th->iter = 0;
     th->tag = 0;
-    th->errat = 0;
     th->errinfo = 0;
     th->last_status = 0;
     th->last_line = 0;
@@ -6157,7 +6177,6 @@ thread_create(fn, arg)
 	if (state == TAG_FATAL || obj_is_kind_of(errinfo, eSystemExit)) {
 	    /* fatal error or global exit within this thread */
 	    /* need to stop whole script */
-	    main_thread->errat = errat;
 	    main_thread->errinfo = errinfo;
 	    thread_cleanup();
 	}
@@ -6165,7 +6184,6 @@ thread_create(fn, arg)
 	    f_abort();
 	}
 	else {
-	    curr_thread->errat = errat;
 	    curr_thread->errinfo = errinfo;
 	}
     }
@@ -6199,9 +6217,11 @@ thread_value(thread)
 
     thread_join(0, thread);
     if (!NIL_P(th->errinfo)) {
-	errat = make_backtrace();
-	ary_unshift(errat, ary_entry(th->errat, 0));
-	sourcefile = 0;		/* kludge to print errat */
+	VALUE oldbt = get_backtrace(th->errinfo);
+	VALUE errat = make_backtrace();
+
+	ary_unshift(errat, ary_entry(oldbt, 0));
+	set_backtrace(th->errinfo, errat);
 	rb_raise(th->errinfo);
     }
 

@@ -1,4 +1,26 @@
+Wed May  6 01:37:39 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c: remove global variable `errat'.
+
+	* eval.c (rb_longjmp): embed error position information in the
+ 	  exception object.
+
+Sat May  2 12:20:02 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (reg_search): supports reverse search.
+
+	* string.c (str_index_method): does update $~ etc.
+
+	* eval.c (f_load): needed to clear the_dyna_vars.
+
+	* eval.c (dyna_var_asgn): do not push dyna_var, which is id == 0.
+
+	* error.c (Init_Exception): NotImplementError is no longer
+	  StandardError, which is not handled by default rescue.
+
 Fri May  1 00:35:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (proc_options): `-d' turns on verbose flag too.
 
 	* error.c (exception): last argument may be the superclass of the
 	  defining exception(s).
