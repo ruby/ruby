@@ -1257,6 +1257,12 @@ rb_f_fork(obj)
     int pid;
 
     rb_secure(2);
+
+#ifndef __VMS
+    fflush(stdout);
+    fflush(stderr);
+#endif
+
     switch (pid = fork()) {
       case 0:
 #ifdef linux

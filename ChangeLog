@@ -1,3 +1,8 @@
+Tue Nov  2 16:05:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (rb_f_fork): need to flush stdout and stderr before
+	  fork(2).  [ruby-talk:117715]
+
 Tue Nov  2 01:20:09 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): nail down dyna_var node when Proc object
