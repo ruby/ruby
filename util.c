@@ -636,14 +636,25 @@ ruby_strdup(str)
 char *
 ruby_getcwd()
 {
+#ifdef HAVE_GETCWD
     int size = 200;
     char *buf = xmalloc(size);
 
     while (!getcwd(buf, size)) {
-	if (errno != ERANGE) rb_sys_fail(0);
+	if (errno != ERANGE) rb_sys_fail("getcwd");
 	size *= 2;
 	buf = xrealloc(buf, size);
     }
+#else
+# ifndef PATH_MAX
+#  define PATH_MAX 8192
+# endif
+    char *buf = xmalloc(PATH_MAX+1);
+
+    if (!getwd(buf)) {
+	rb_sys_fail("getwd");
+    }
+#endif
     return buf;
 }
 

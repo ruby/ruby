@@ -1,8 +1,7 @@
 #												vim:sw=4:ts=4
 # $Id$
 #
-require 'test/unit/testsuite'
-require 'test/unit/testcase'
+require 'test/unit'
 require 'yaml'
 
 class YAML_Unit_Tests < Test::Unit::TestCase

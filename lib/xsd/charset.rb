@@ -41,7 +41,7 @@ public
       EncodingConvertMap[['UTF8', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", "utf-8", str) }
       EncodingConvertMap[['EUC' , 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", "euc-jp", str) }
       EncodingConvertMap[['EUC' , 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("shift-jis", "euc-jp", str) }
-      if /(mswin|bccwin|mingw|cygwin)/ =~ RUBY_PLATFORM
+      if /(mswin|bccwin|mingw|cygwin|emx)/ =~ RUBY_PLATFORM
 	EncodingConvertMap[['UTF8', 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("cp932", "utf-8", str) }
        	EncodingConvertMap[['SJIS', 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", "cp932", str) }
 	EncodingConvertMap[['SJIS', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", "cp932", str) }

@@ -1139,12 +1139,15 @@ dln_sym(name)
 #include <mach-o/rld.h>
 #else
 #include <mach-o/dyld.h>
+#ifndef NSLINKMODULE_OPTION_BINDNOW
+#define NSLINKMODULE_OPTION_BINDNOW 1
 #endif
 #endif
+#else
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
-
+#endif
 
 #if defined _WIN32 && !defined __CYGWIN__
 #include <windows.h>
@@ -1389,30 +1392,41 @@ dln_load(file)
    Special Thanks...
     Yu tomoak-i@is.aist-nara.ac.jp,
     Mi hisho@tasihara.nest.or.jp,
+    sunshine@sunshineco.com,
     and... Miss ARAI Akino(^^;)
  ----------------------------------------------------*/
 #if defined(NeXT) && (NS_TARGET_MAJOR < 4)/* NeXTSTEP rld functions */
 
     {
+        NXStream* s;
 	unsigned long init_address;
 	char *object_files[2] = {NULL, NULL};
 
 	void (*init_fct)();
 	
-	object_files[0] = file;
+	object_files[0] = (char*)file;
 	
+	s = NXOpenFile(2,NX_WRITEONLY);
+
 	/* Load object file, if return value ==0 ,  load failed*/
-	if(rld_load(NULL, NULL, object_files, NULL) == 0) {
+	if(rld_load(s, NULL, object_files, NULL) == 0) {
+	    NXFlush(s);
+	    NXClose(s);
 	    rb_loaderror("Failed to load %.200s", file);
 	}
 
 	/* lookup the initial function */
-	if(rld_lookup(NULL, buf, &init_address) == 0) {
+	if(rld_lookup(s, buf, &init_address) == 0) {
+	    NXFlush(s);
+	    NXClose(s);
 	    rb_loaderror("Failed to lookup Init function %.200s", file);
 	}
 
-	 /* Cannot call *init_address directory, so copy this value to
-	    funtion pointer */
+	NXFlush(s);
+	NXClose(s);
+
+	/* Cannot call *init_address directory, so copy this value to
+	   funtion pointer */
 	init_fct = (void(*)())init_address;
 	(*init_fct)();
 	return (void*)init_address;

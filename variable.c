@@ -1493,7 +1493,14 @@ mod_av_set(klass, id, val, isconst)
 
     if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);
-    if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
+    if (OBJ_FROZEN(klass)) {
+	if (BUILTIN_TYPE(klass) == T_MODULE) {
+	    rb_error_frozen("module");
+	}
+	else {
+	    rb_error_frozen("class");
+	}
+    }
     if (!RCLASS(klass)->iv_tbl) {
 	RCLASS(klass)->iv_tbl = st_init_numtable();
     }

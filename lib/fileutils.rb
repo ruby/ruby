@@ -751,7 +751,7 @@ module FileUtils
   end
 
   def have_st_ino?
-    /mswin|mingw|bccwin|wince|emx/ !~ RUBY_PLATFORM
+    /djgpp|mswin|mingw|bccwin|wince|emx/ !~ RUBY_PLATFORM
   end
 
   def fu_stream_blksize( *streams )

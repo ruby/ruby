@@ -13,7 +13,7 @@ class TestFile < Test::Unit::TestCase
     w.close
     r = File.open(filename, "r")
     begin
-      if /(mswin|bccwin|mingw)/ =~ RUBY_PLATFORM
+      if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
 	begin
 	  File.unlink(filename)
 	  assert(false)

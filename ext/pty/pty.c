@@ -24,6 +24,7 @@
 
 #include "ruby.h"
 #include "rubyio.h"
+#include "util.h"
 
 #include <signal.h>
 #ifdef HAVE_SYS_STROPTS_H

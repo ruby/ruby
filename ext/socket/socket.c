@@ -13,6 +13,7 @@
 #include "ruby.h"
 #include "rubyio.h"
 #include "rubysig.h"
+#include "util.h"
 #include <stdio.h>
 #include <sys/types.h>
 
@@ -31,6 +32,9 @@
 # include <sys/socket.h>
 #endif
 #include <netinet/in.h>
+#ifdef HAVE_NETINET_IN_SYSTM_H
+# include <netinet/in_systm.h>
+#endif
 #ifdef HAVE_NETINET_TCP_H
 # include <netinet/tcp.h>
 #endif
@@ -2016,7 +2020,7 @@ sock_s_gethostbyaddr(argc, argv)
 	t = AF_INET6;
     }
 #endif
-    h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len, t);
+    h = gethostbyaddr((char*)RSTRING(addr)->ptr, RSTRING(addr)->len, t);
     if (h == NULL) {
 #ifdef HAVE_HSTRERROR
 	extern int h_errno;
@@ -2061,7 +2065,7 @@ sock_s_getservbyaname(argc, argv)
     else proto = StringValuePtr(protocol);
 
     StringValue(service);
-    sp = getservbyname(RSTRING(service)->ptr, proto);
+    sp = getservbyname((char*)RSTRING(service)->ptr, proto);
     if (sp) {
 	port = ntohs(sp->s_port);
     }

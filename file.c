@@ -1419,14 +1419,12 @@ has_drive_letter(buf)
     }
 }
 
-static void
-getcwdofdrv(drv, buf, len)
+static char*
+getcwdofdrv(drv)
     int drv;
-    char *buf;
-    int len;
 {
     char drive[4];
-    char oldcwd[MAXPATHLEN+1];
+    char *drvcwd, *oldcwd;
 
     drive[0] = drv;
     drive[1] = ':';
@@ -1436,15 +1434,17 @@ getcwdofdrv(drv, buf, len)
        of a particular drive is to change chdir() to that drive,
        so save the old cwd before chdir()
     */
-    getcwd(oldcwd, MAXPATHLEN);
+    oldcwd = my_getcwd();
     if (chdir(drive) == 0) {
-	getcwd(buf, len);
+	drvcwd = my_getcwd();
 	chdir(oldcwd);
+	free(oldcwd);
     }
     else {
 	/* perhaps the drive is not exist. we return only drive letter */
-	strncpy(buf, drive, len);
+	drvcwd = strdup(drive);
     }
+    return drvcwd;
 }
 #endif
 
@@ -1630,9 +1630,13 @@ file_expand_path(fname, dname, result)
 		}
 	    }
 	    if (!same) {
-		BUFCHECK(buflen < MAXPATHLEN);
-		getcwdofdrv(*s, buf, MAXPATHLEN);
+		char *dir = getcwdofdrv(*s);
+
 		tainted = 1;
+		dirlen = strlen(dir);
+		BUFCHECK(dirlen > buflen);
+		strcpy(buf, dir);
+		free(dir);
 	    }
 	    p = chompdirsep(skiproot(buf));
 	    s += 2;

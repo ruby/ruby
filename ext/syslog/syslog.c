@@ -8,6 +8,7 @@
  */
 
 #include "ruby.h"
+#include "util.h"
 #include <syslog.h>
 
 /* Syslog class */

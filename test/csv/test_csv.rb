@@ -1,5 +1,4 @@
-require 'test/unit/testsuite'
-require 'test/unit/testcase'
+require 'test/unit'
 require 'tempfile'
 require 'fileutils'
 

@@ -345,14 +345,15 @@ hash_each(key, value, arg)
 }
 
 static void
-w_extended(klass, arg)
+w_extended(klass, arg, check)
     VALUE klass;
     struct dump_arg *arg;
+    int check;
 {
     char *path;
 
     if (FL_TEST(klass, FL_SINGLETON)) {
-	if (RCLASS(klass)->m_tbl->num_entries ||
+	if (check && RCLASS(klass)->m_tbl->num_entries ||
 	    (RCLASS(klass)->iv_tbl && RCLASS(klass)->iv_tbl->num_entries > 1)) {
 	    rb_raise(rb_eTypeError, "singleton can't be dumped");
 	}
@@ -367,15 +368,16 @@ w_extended(klass, arg)
 }
 
 static void
-w_class(type, obj, arg)
+w_class(type, obj, arg, check)
     int type;
     VALUE obj;
     struct dump_arg *arg;
+    int check;
 {
     char *path;
 
     VALUE klass = CLASS_OF(obj);
-    w_extended(klass, arg);
+    w_extended(klass, arg, check);
     w_byte(type, arg);
     path = rb_class2name(klass);
     w_unique(path, arg);
@@ -388,7 +390,7 @@ w_uclass(obj, base_klass, arg)
 {
     VALUE klass = CLASS_OF(obj);
 
-    w_extended(klass, arg);
+    w_extended(klass, arg, Qtrue);
     klass = rb_class_real(klass);
     if (klass != base_klass) {
 	w_byte(TYPE_UCLASS, arg);
@@ -429,6 +431,7 @@ w_object(obj, arg, limit)
 {
     struct dump_call_arg c_arg;
     st_table *ivtbl = 0;
+    st_data_t num;
 
     if (limit == 0) {
 	rb_raise(rb_eArgError, "exceed depth limit");
@@ -437,6 +440,12 @@ w_object(obj, arg, limit)
     limit--;
     c_arg.limit = limit;
     c_arg.arg = arg;
+
+    if (st_lookup(arg->data, obj, &num)) {
+	w_byte(TYPE_LINK, arg);
+	w_long((long)num, arg);
+	return;
+    }
 
     if (ivtbl = rb_generic_ivar_table(obj)) {
 	w_byte(TYPE_IVAR, arg);
@@ -468,14 +477,6 @@ w_object(obj, arg, limit)
 	w_symbol(SYM2ID(obj), arg);
     }
     else {
-	st_data_t num;
-
-	if (st_lookup(arg->data, obj, &num)) {
-	    w_byte(TYPE_LINK, arg);
-	    w_long((long)num, arg);
-	    return;
-	}
-
 	if (OBJ_TAINTED(obj)) arg->taint = Qtrue;
 
 	st_add_direct(arg->data, obj, arg->data->num_entries);
@@ -483,7 +484,7 @@ w_object(obj, arg, limit)
 	    VALUE v;
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
-	    w_class(TYPE_USRMARSHAL, obj, arg);
+	    w_class(TYPE_USRMARSHAL, obj, arg, Qfalse);
 	    w_object(v, arg, limit);
 	    if (ivtbl) w_ivar(0, &c_arg);
 	    return;
@@ -498,7 +499,7 @@ w_object(obj, arg, limit)
 	    if (!ivtbl && (ivtbl = rb_generic_ivar_table(v))) {
 		w_byte(TYPE_IVAR, arg);
 	    }
-	    w_class(TYPE_USERDEF, obj, arg);
+	    w_class(TYPE_USERDEF, obj, arg, Qfalse);
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
 	    if (ivtbl) {
 		w_ivar(ivtbl, &c_arg);
@@ -614,7 +615,7 @@ w_object(obj, arg, limit)
 	    break;
 
 	  case T_STRUCT:
-	    w_class(TYPE_STRUCT, obj, arg);
+	    w_class(TYPE_STRUCT, obj, arg, Qtrue);
 	    {
 		long len = RSTRUCT(obj)->len;
 		VALUE mem;
@@ -633,7 +634,7 @@ w_object(obj, arg, limit)
 	    break;
 
 	  case T_OBJECT:
-	    w_class(TYPE_OBJECT, obj, arg);
+	    w_class(TYPE_OBJECT, obj, arg, Qtrue);
 	    w_ivar(ROBJECT(obj)->iv_tbl, &c_arg);
 	    break;
 
@@ -641,10 +642,10 @@ w_object(obj, arg, limit)
 	    {
 		VALUE v;
 
-		w_class(TYPE_DATA, obj, arg);
+		w_class(TYPE_DATA, obj, arg, Qtrue);
 		if (!rb_respond_to(obj, s_dump_data)) {
 		    rb_raise(rb_eTypeError,
-			     "class %s needs to have instance method `_dump_data'",
+			     "no marshal_dump is defined for class %s",
 			     rb_obj_classname(obj));
 		}
 		v = rb_funcall(obj, s_dump_data, 0);

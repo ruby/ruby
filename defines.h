@@ -98,15 +98,23 @@ void xfree _((void*));
 #endif
 #endif
 
-#ifdef NeXT
-#define DYNAMIC_ENDIAN		/* determine endian at runtime */
-#ifndef __APPLE__
-#define S_IXUSR _S_IXUSR        /* execute/search permission, owner */
-#endif
+#ifdef __NeXT__
 #define S_IXGRP 0000010         /* execute/search permission, group */
 #define S_IXOTH 0000001         /* execute/search permission, other */
-
-#define HAVE_SYS_WAIT_H         /* configure fails to find this */
+#ifndef __APPLE__
+#define S_IXUSR _S_IXUSR        /* execute/search permission, owner */
+#define GETPGRP_VOID 1
+#define WNOHANG 01
+#define WUNTRACED 02
+#define X_OK 1
+typedef int pid_t;
+/* Do not trust WORDS_BIGENDIAN from configure since -arch compiler flag may
+   result in a different endian. */
+#undef WORDS_BIGENDIAN
+#ifdef __BIG_ENDIAN__
+#define WORDS_BIGENDIAN
+#endif
+#endif
 #endif /* NeXT */
 
 #ifdef __CYGWIN__

@@ -1036,7 +1036,7 @@ class CGI
 
         eval <<-END
           def body.local_path
-            #{body.path.dump}
+            #{(body.class == StringIO)? "" : body.path.dump}
           end
         END
 

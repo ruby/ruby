@@ -29,7 +29,7 @@ int _CRT_glob = 0;
 #endif
 
 /* to link startup code with ObjC support */
-#if defined(__APPLE__) && defined(__MACH__)
+#if (defined(__APPLE__) || defined(__NeXT__)) && defined(__MACH__)
 static void objcdummyfunction( void ) { objc_msgSend(); }
 #endif
 

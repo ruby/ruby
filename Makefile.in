@@ -121,7 +121,11 @@ $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) $(SETUP) miniruby$(EXEEXT)
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINLIBS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
+# We must `rm' the library each time this rule is invoked because "updating" a
+# MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
+# supported.
 $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
+		@rm -f $@
 		@AR@ rcu $@ $(OBJS) $(DMYEXT)
 		@-@RANLIB@ $@ 2> /dev/null || true
 

@@ -74,48 +74,57 @@ fi
 AC_CANONICAL_TARGET
 
 dnl checks for fat-binary
-fat_binary=no
 AC_ARG_ENABLE(fat-binary,
-       [  --enable-fat-binary     build a NeXT/Apple Multi Architecture Binary. ],
-       [fat_binary=$enableval])
- if test "$fat_binary" = yes ; then
+       [  --enable-fat-binary=ARCHS
+                          build an Apple/NeXT Multi Architecture Binary (MAB);
+                          ARCHS is a comma-delimited list of architectures for
+                          which to build; if ARCHS is omitted, then the package
+                          will be built for all architectures supported by the
+                          platform ("ppc" for MacOS/X and Darwin; "ppc,i386"
+                          for Rhapsody; "m68k,i386,sparc" for OpenStep;
+                          "m68k,i386,sparc,hppa" for NextStep); if this option
+                          is disabled or omitted entirely, then the package
+                          will be built only for the target platform],
+       [fat_binary=$enableval], [fat_binary=no])
+ if test "$fat_binary" != no; then
 
-    AC_MSG_CHECKING(target architecture)
+    AC_MSG_CHECKING([target architectures])
 
-    case "$target_os" in
-    rhapsody*)
-        echo -n "MacOS X Server: "
-	  	if test "$TARGET_ARCHS" = "" ; then
-   	        TARGET_ARCHS="ppc i386"
-  		fi
-	;;
-    nextstep*|openstep*)
-  	    echo -n "NeXTSTEP/OPENSTEP: "
-	    if test "$TARGET_ARCHS" = "" ; then
-	       if test `/usr/bin/arch` = "m68k" ; then
-		   TARGET_ARCHS="m68k i486"
-	       else # Black and Native one
-		   TARGET_ARCHS="m68k `/usr/bin/arch`"
-	       fi
-	    fi
-	# to ensure AC_HEADER_SYS_WAIT works
-	AC_DEFINE(_POSIX_SOURCE)
-        ;;
-    macos*|darwin*)
-        echo -n "MacOS X (Darwin): "
-            if test "$TARGET_ARCHS" = "" ; then
-                TARGET_ARCHS="ppc i386"
-            fi
-	;;
-    esac
+    # Respect TARGET_ARCHS setting from environment if available.
+    if test -z "$TARGET_ARCHS"; then
+	# Respect ARCH given to --enable-fat-binary if present.
+	if test "$fat_binary" != yes; then
+	    TARGET_ARCHS=`echo "$fat_binary" | tr ',' ' '`
+	else
+	    # Choose a default set of architectures based upon platform.
+	    case "$target_os" in
+	    darwin*)
+		TARGET_ARCHS="ppc"
+		;;
+	    rhapsody*)
+		TARGET_ARCHS="ppc i386"
+		;;
+	    openstep*)
+		TARGET_ARCHS="m68k i386 sparc"
+		;;
+	    nextstep*)
+		TARGET_ARCHS="m68k i386 sparc hppa"
+		;;
+	    *)
+		TARGET_ARCHS=`arch`
+	    esac
+	fi
+    fi
+
+    AC_MSG_RESULT([$TARGET_ARCHS])
+
     # /usr/lib/arch_tool -archify_list $TARGET_ARCHS
+    ARCH_FLAG=
     for archs in $TARGET_ARCHS 
     do
-        ARCH_FLAG="$ARCH_FLAG -arch $archs "
-        echo -n " $archs"
+        ARCH_FLAG="$ARCH_FLAG -arch $archs"
     done
     AC_DEFINE(NEXT_FAT_BINARY)
-    echo "."
 fi 
 
 case $target_cpu in
@@ -350,7 +359,7 @@ AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
-		 sys/mkdev.h sys/utime.h float.h pthread.h)
+		 sys/mkdev.h sys/utime.h netinet/in_systm.h float.h pthread.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -367,7 +376,7 @@ AC_FUNC_MEMCMP
 AC_FUNC_FSEEKO
 AC_CHECK_FUNCS(ftello)
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
-		 strchr strstr strtoul crypt flock vsnprintf\
+		 strchr strstr strtoul getcwd crypt flock vsnprintf\
 		 isinf isnan finite hypot acosh erf)
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync\
 	      truncate chsize times utimes fcntl lockf lstat symlink readlink\
@@ -735,9 +744,6 @@ AC_ARG_WITH(dln-a-out,
 	*)   with_dln_a_out=no;;
 	esac], [with_dln_a_out=no])
 
-AC_SUBST(XCFLAGS)dnl
-AC_SUBST(XLDFLAGS)dnl
-
 AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
 [AC_TRY_RUN([
 /* Test for whether ELF binaries are produced */
@@ -801,9 +807,9 @@ if test "$with_dln_a_out" != yes; then
   AC_MSG_CHECKING(whether OS depend dynamic link works)
   if test "$GCC" = yes; then
     case "$target_os" in
-    nextstep*)	;;
-    openstep*)	;;
-    rhapsody*)	;;
+    nextstep*)	CCDLFLAGS=-fno-common;;
+    openstep*)	CCDLFLAGS=-fno-common;;
+    rhapsody*)	CCDLFLAGS=-fno-common;;
     darwin*)	CCDLFLAGS=-fno-common;;
     human*)	;;
     bsdi*)	;;
@@ -1094,7 +1100,7 @@ if test "$prefix" = NONE; then
   prefix=$ac_default_prefix
 fi
 
-if test "$fat_binary" = yes ; then
+if test "$fat_binary" != no ; then
   XCFLAGS="$ARCH_FLAG"
 fi
 
@@ -1225,17 +1231,22 @@ case "$target_os" in
     netbsd*)
     	CFLAGS="$CFLAGS -pipe"
 	;;
-    nextstep*)
-    	CFLAGS="$CFLAGS -pipe"
-	;;
-    openstep*)
-    	CFLAGS="$CFLAGS -pipe"
+    nextstep*|openstep*)
+	# The -fno-common is needed if we wish to embed the Ruby interpreter
+	# into a plugin module of some project (as opposed to embedding it
+	# within the project's application).  The -I/usr/local/include is
+	# needed because CPP as discovered by configure (cc -E -traditional)
+	# fails to consult /usr/local/include by default.  This causes
+	# mkmf.rb's have_header() to fail if the desired resource happens to be
+	# installed in the /usr/local tree.
+    	CFLAGS="$CFLAGS -pipe -fno-common"
+	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 	;;
     rhapsody*)
-    	CFLAGS="$CFLAGS -pipe -no-precomp"
+    	CFLAGS="$CFLAGS -pipe -no-precomp -fno-common"
 	;;
     darwin*)
-    	CFLAGS="$CFLAGS -pipe"
+    	CFLAGS="$CFLAGS -pipe -fno-common"
 	;;
     os2-emx)
     	CFLAGS="$CFLAGS -DOS2 -Zmts"
@@ -1314,6 +1325,8 @@ case "$build_os" in
   *msdosdjgpp*) FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in;;
 esac
 
+AC_SUBST(XCFLAGS)dnl
+AC_SUBST(XLDFLAGS)dnl
 AC_SUBST(LIBRUBY_LDSHARED)
 AC_SUBST(LIBRUBY_DLDFLAGS)
 AC_SUBST(RUBY_INSTALL_NAME)
@@ -1390,7 +1403,7 @@ AC_SUBST(sitedir)dnl
 configure_args=$ac_configure_args
 AC_SUBST(configure_args)dnl
 
-if test "$fat_binary" = yes ; then
+if test "$fat_binary" != no ; then
     arch="fat-${target_os}"
 
     AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB,

@@ -1358,6 +1358,9 @@ Init_stack(addr)
     if (STACK_LEVEL_MAX > IA64_MAGIC_STACK_LIMIT)
 	STACK_LEVEL_MAX = IA64_MAGIC_STACK_LIMIT;
 #endif
+#ifdef _THREAD_SAFE
+    STACK_LEVEL_MAX /= 4;
+#endif
 #endif
 }
 

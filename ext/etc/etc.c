@@ -49,6 +49,16 @@ etc_getlogin(obj)
     return Qnil;
 }
 
+#if defined(HAVE_GETPWENT) || defined(HAVE_GETGRENT)
+static VALUE
+safe_setup_str(str)
+    const char *str;
+{
+    if (str == 0) str = "";
+    return rb_tainted_str_new2(str);
+}
+#endif
+
 #ifdef HAVE_GETPWENT
 static VALUE
 setup_passwd(pwd)
@@ -56,15 +66,15 @@ setup_passwd(pwd)
 {
     if (pwd == 0) rb_sys_fail("/etc/passwd");
     return rb_struct_new(sPasswd,
-			 rb_tainted_str_new2(pwd->pw_name),
-			 rb_tainted_str_new2(pwd->pw_passwd),
+			 safe_setup_str(pwd->pw_name),
+			 safe_setup_str(pwd->pw_passwd),
 			 INT2FIX(pwd->pw_uid),
 			 INT2FIX(pwd->pw_gid),
 #ifdef HAVE_ST_PW_GECOS
-			 rb_tainted_str_new2(pwd->pw_gecos),
+			 safe_setup_str(pwd->pw_gecos),
 #endif
-			 rb_tainted_str_new2(pwd->pw_dir),
-			 rb_tainted_str_new2(pwd->pw_shell),
+			 safe_setup_str(pwd->pw_dir),
+			 safe_setup_str(pwd->pw_shell),
 #ifdef HAVE_ST_PW_CHANGE
 			 INT2FIX(pwd->pw_change),
 #endif
@@ -75,10 +85,10 @@ setup_passwd(pwd)
 			 INT2FIX(pwd->pw_age),
 #endif
 #ifdef HAVE_ST_PW_CLASS
-			 rb_tainted_str_new2(pwd->pw_class),
+			 safe_setup_str(pwd->pw_class),
 #endif
 #ifdef HAVE_ST_PW_COMMENT
-			 rb_tainted_str_new2(pwd->pw_comment),
+			 safe_setup_str(pwd->pw_comment),
 #endif
 #ifdef HAVE_ST_PW_EXPIRE
 			 INT2FIX(pwd->pw_expire),
@@ -220,12 +230,12 @@ setup_group(grp)
     mem = rb_ary_new();
     tbl = grp->gr_mem;
     while (*tbl) {
-	rb_ary_push(mem, rb_tainted_str_new2(*tbl));
+	rb_ary_push(mem, safe_setup_str(*tbl));
 	tbl++;
     }
     return rb_struct_new(sGroup,
-			 rb_tainted_str_new2(grp->gr_name),
-			 rb_tainted_str_new2(grp->gr_passwd),
+			 safe_setup_str(grp->gr_name),
+			 safe_setup_str(grp->gr_passwd),
 			 INT2FIX(grp->gr_gid),
 			 mem);
 }

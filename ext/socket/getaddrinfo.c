@@ -397,7 +397,7 @@ getaddrinfo(hostname, servname, hints, res)
 				fprintf(stderr, "panic!\n");
 				break;
 			}
-			if ((sp = getservbyname(servname, proto)) == NULL)
+			if ((sp = getservbyname((char*)servname, proto)) == NULL)
 				ERR(EAI_SERVICE);
 			port = sp->s_port;
 			if (pai->ai_socktype == ANY)
@@ -554,7 +554,7 @@ get_name(addr, afd, res, numaddr, pai, port0)
 #ifdef INET6
 	hp = getipnodebyaddr(addr, afd->a_addrlen, afd->a_af, &h_error);
 #else
-	hp = gethostbyaddr(addr, afd->a_addrlen, AF_INET);
+	hp = gethostbyaddr((char*)addr, afd->a_addrlen, AF_INET);
 #endif
 	if (hp && hp->h_name && hp->h_name[0] && hp->h_addr_list[0]) {
 		GET_AI(cur, afd, hp->h_addr_list[0], port);
@@ -606,7 +606,7 @@ get_addr(hostname, af, res, pai, port0)
 	} else
 		hp = getipnodebyname(hostname, af, AI_ADDRCONFIG, &h_error);
 #else
-	hp = gethostbyname(hostname);
+	hp = gethostbyname((char*)hostname);
 	h_error = h_errno;
 #endif
 	if (hp == NULL) {
