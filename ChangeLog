@@ -1,3 +1,12 @@
+Fri Feb 28 22:53:55 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* win32/win32.c (flock): maps error code.
+
+	* win32/win32.c (win32_asynchronize): returns errno from child
+	  thread.
+
+	* win32/win32.c (win32_fclose, win32_close): ensures unlocked.
+
 Wed Feb 26 00:02:41 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* string.c (rb_str_dup): set FL_EXIVAR when copied generic ivar.
