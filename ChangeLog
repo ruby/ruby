@@ -1,3 +1,8 @@
+Fri Feb 21 17:19:27 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (rb_f_require): do not need to abort if a DLEXT file
+	  is not found.
+
 Thu Feb 20 23:11:42 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* mdoc2man.rb: New file.  A mdoc to man converter ported from

@@ -5444,7 +5444,6 @@ rb_f_require(obj, fname)
 		goto load_dyna;
 	    }
 #endif
-	    goto not_found;
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
 	    tmp = rb_find_file(fname);
@@ -5453,7 +5452,6 @@ rb_f_require(obj, fname)
 		fname = tmp;
 		goto load_dyna;
 	    }
-	    goto not_found;
 	}
 #ifdef DLEXT2
 	else if (strcmp(DLEXT2, ext) == 0) {
@@ -5463,7 +5461,6 @@ rb_f_require(obj, fname)
 		fname = tmp;
 		goto load_dyna;
 	    }
-	    goto not_found;
 	}
 #endif
     }
