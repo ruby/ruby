@@ -22,10 +22,10 @@ Object
       port on the named host.
 
 : debug
-      Returns the debug mode
+      Returns the debug mode.
 
 : debug = val
-      Sets the debug mode
+      Sets the debug mode.
 
 : add_authenticator(auth_type, authenticator)
       Adds an authenticator for Net::IMAP#authenticate.

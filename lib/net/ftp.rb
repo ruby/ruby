@@ -174,7 +174,7 @@ module Net
     def makeport
       sock = TCPserver.open(@sock.addr[3], 0)
       port = sock.addr[1]
-      host = TCPsocket.getaddress(@sock.addr[2])
+      host = sock.addr[3]
       resp = sendport(host, port)
       return sock
     end
