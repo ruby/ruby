@@ -1,3 +1,7 @@
+Thu Dec  9 16:28:35 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/sdbm/init.c (GetDBM): typo.
+
 Thu Dec  9 16:21:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI#setup_header): avoid
