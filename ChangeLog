@@ -51,6 +51,12 @@ Tue Apr 13 01:30:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 Mon Apr 12 19:11:29 2004  Eric Hodel  <drbrain@segment7.net>
 
+Wed Apr 14 11:06:38 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::scan): Changed
+	  behavior of :enddoc: -- it now unconditionally terminates
+	  processing of the current file.
+
 	* gc.c (rb_gc_copy_finalizer): typo.  [ruby-core:02774]
 
 Mon Apr 12 18:52:32 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>

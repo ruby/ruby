@@ -1400,22 +1400,24 @@ module RDoc
       @unget_read = []
       @read = []
       catch(:eof) do
-        begin
-          parse_toplevel_statements(@top_level)
-        rescue Exception => e
-          $stderr.puts "\n\n"
-          $stderr.puts "RDoc failure in #@input_file_name at or around " +
-                       "line #{@scanner.line_no} column #{@scanner.char_no}"
-          $stderr.puts 
-          $stderr.puts "Before reporting this, could you check that the file"
-          $stderr.puts "you're documenting compiles cleanly--RDoc is not a"
-          $stderr.puts "full Ruby parser, and gets confused easily if fed"
-          $stderr.puts "invalid programs."
-          $stderr.puts
-          $stderr.puts "The internal error was:\n\n"
-          
-          e.set_backtrace(e.backtrace[0,4])
-          raise
+        catch(:enddoc) do
+          begin
+            parse_toplevel_statements(@top_level)
+          rescue Exception => e
+            $stderr.puts "\n\n"
+            $stderr.puts "RDoc failure in #@input_file_name at or around " +
+                         "line #{@scanner.line_no} column #{@scanner.char_no}"
+            $stderr.puts 
+            $stderr.puts "Before reporting this, could you check that the file"
+            $stderr.puts "you're documenting compiles cleanly--RDoc is not a"
+            $stderr.puts "full Ruby parser, and gets confused easily if fed"
+            $stderr.puts "invalid programs."
+            $stderr.puts
+            $stderr.puts "The internal error was:\n\n"
+            
+            e.set_backtrace(e.backtrace[0,4])
+            raise
+          end
         end
       end
       @top_level
@@ -2278,8 +2280,9 @@ module RDoc
           ""
 
         when "enddoc"
-          context.done_documenting = true
-          ""
+          #context.done_documenting = true
+          #""
+          throw :enddoc
 
         when "main"
           options = Options.instance
