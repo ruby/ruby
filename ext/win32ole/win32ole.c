@@ -956,7 +956,7 @@ reg_enum_key(hkey, i)
     DWORD i;
 {
     char buf[BUFSIZ];
-    LONG size_buf = sizeof(buf);
+    DWORD size_buf = sizeof(buf);
     FILETIME ft;
     LONG err = RegEnumKeyEx(hkey, i, buf, &size_buf,
                             NULL, NULL, NULL, &ft);
@@ -2278,7 +2278,7 @@ ole_methods_sub(pOwnerTypeInfo, pTypeInfo, methods, mask)
     char *pstr;
     FUNCDESC *pFuncDesc;
     VALUE method;
-    DWORD i;
+    WORD i;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, "Fail to GetTypeAttr");
@@ -2345,8 +2345,8 @@ ole_methods(self,mask)
     VALUE self;
     int mask;
 {
-    int iVar;
-    int count;
+    UINT iVar;
+    UINT count;
     ITypeInfo *pTypeInfo;
     HRESULT hr;
     VALUE methods;
@@ -2661,7 +2661,6 @@ ole_typedesc2val(pTypeInfo, pTypeDesc, typedetails)
         rb_str_concat(str, rb_fix2str(INT2FIX(pTypeDesc->vt), 10));
         return str;
     }
-    return Qnil;
 }
 
 /*
@@ -3573,7 +3572,7 @@ ole_method_sub(self, pOwnerTypeInfo, pTypeInfo, name)
     TYPEATTR *pTypeAttr;
     BSTR bstr;
     FUNCDESC *pFuncDesc;
-    DWORD i;
+    WORD i;
     VALUE fname;
     VALUE method = Qnil;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
@@ -3912,7 +3911,7 @@ static ole_method_event(pTypeInfo, method_index, method_name)
 {
     TYPEATTR *pTypeAttr;
     HRESULT hr;
-    DWORD i;
+    WORD i;
     int flags;
     HREFTYPE href;
     ITypeInfo *pRefTypeInfo;
@@ -4640,7 +4639,7 @@ ary2ptr_dispparams(ary, pdispparams)
     int i;
     VALUE v;
     VARIANT *pvar;
-    for(i = 0; i < RARRAY(ary)->len && i < pdispparams->cArgs; i++) {
+    for(i = 0; i < RARRAY(ary)->len && (unsigned int) i < pdispparams->cArgs; i++) {
         v = rb_ary_entry(ary, i);
         pvar = &pdispparams->rgvarg[pdispparams->cArgs-i-1];
         val2ptr_variant(v, pvar);
@@ -4766,7 +4765,7 @@ find_iid(ole, pitf, piid, ppTypeInfo)
     struct oledata *pole;
     unsigned int index;
     unsigned int count;
-    unsigned int type;
+    int type;
     BSTR bstr;
     char *pstr;
 
@@ -4875,7 +4874,7 @@ find_default_source(ole, piid, ppTypeInfo)
     IDispatch *pDispatch;
     ITypeInfo *pTypeInfo;
     TYPEATTR *pTypeAttr;
-    unsigned int i;
+    int i;
     int iFlags;
     HREFTYPE hRefType;
 
