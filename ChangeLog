@@ -2753,13 +2753,14 @@ Sun Feb 29 23:14:53 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_class):
 	  Handle :nodoc: on singleton classes.
 
-Sat Feb 28 21:50:20 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Sat Feb 28 21:50:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/Makefile.sub, bcc32/README.bcc32, bcc32/configure.bat,
 	  bcc32/setup.mak: new configure scheme. use ``configure --prefix=dir''
 	  instead of ``make DESTDIR=dir install''.
 	  --with-static-linked-ext support on bccwin32. [ruby-dev:23034]
-	  (by Nakada. Thanks.)
+
+Sat Feb 28 21:50:20 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/setup.mak: "configure --disable-install-doc" is now working.
 
