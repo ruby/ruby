@@ -9,8 +9,8 @@ Mon Dec  6 20:13:28 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (pipe_open): win32 pipe support (experimental).
 
-	* win32/win32.[ch] (rb_w32_pipe_exec): return file descripters
-	  instead of FILE structure.
+	* win32/win32.[ch] (rb_w32_pipe_exec): return file descriptors
+	  instead of FILE structure objects.
 
 	* win32/win32.[ch] (rb_w32_is_socket): new function.
 
