@@ -300,7 +300,6 @@ class Context
           end
 
 	when /^\s*b(?:reak)?\s+(?:(.+):)?([^.:]+)$/
-          p $~.to_a
 	  pos = $2
           if $1
             klass = debug_silent_eval($1, binding)

@@ -1,3 +1,7 @@
+Mon Oct 20 09:45:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* lib/debug.rb (debug_command): remove debug print.
+
 Sun Oct 19 13:12:30 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (foreachline, dir_foreach): add obsolete warning.
