@@ -127,6 +127,7 @@ module Kernel
     }
     nil
   end
+  module_function :pp
 end
 
 class PP < PrettyPrint
@@ -407,6 +408,18 @@ class File
         }
       }
     end
+  end
+end
+
+class MatchData
+  def pretty_print(pp)
+    pp.object_group(self) {
+      pp.breakable
+      1.upto(self.size) {|i|
+        pp.breakable unless pp.first?
+        pp.pp self[i-1]
+      }
+    }
   end
 end
 

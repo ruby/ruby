@@ -1,3 +1,8 @@
+Fri Mar  7 21:57:25 2003  Tanaka Akira  <akr@m17n.org>
+
+        * lib/pp.rb (Kernel.pp): module function.
+          (MatchData#pretty_print): new method.
+
 Fri Mar  7 20:27:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/tcltklib/extconf.rb (find_tcl, find_tk): return true if
