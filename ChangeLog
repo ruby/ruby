@@ -1,3 +1,8 @@
+Mon Nov 22 22:33:02 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::parse_require): Don't use names
+	  of variables or constants when parsing 'require'
+
 Mon Nov 22 00:13:35 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_seek): should retrieve dir_data after NUM2INT().

@@ -2389,12 +2389,12 @@ module RDoc
     case tk
     when TkSTRING
       name = tk.text
-    when TkCONSTANT, TkIDENTIFIER, TkIVAR, TkGVAR
-      name = tk.name
+#    when TkCONSTANT, TkIDENTIFIER, TkIVAR, TkGVAR
+#      name = tk.name
     when TkDSTRING
       warn "Skipping require of dynamic string: #{tk.text}"
-    else
-      warn "'require' used as variable"
+ #   else
+ #     warn "'require' used as variable"
     end
     if name
       context.add_require(Require.new(name, comment))
