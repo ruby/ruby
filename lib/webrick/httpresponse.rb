@@ -63,6 +63,24 @@ module WEBrick
       @header[field.downcase] = value.to_s
     end
 
+    def content_length
+      if len = self['content-length']
+        return Integer(len)
+      end
+    end
+
+    def content_length=(len)
+      self['content-length'] = len.to_s
+    end
+
+    def content_type
+      self['content-type']
+    end
+
+    def content_type=(type)
+      self['content-type'] = type
+    end
+
     def each
       @header.each{|k, v|  yield(k, v) }
     end
@@ -250,7 +268,7 @@ module WEBrick
         _write_data(socket, "0#{CRLF}#{CRLF}")
       else
         size = @header['content-length'].to_i
-        _send_file(socket, @body, 0, size.to_i)
+        _send_file(socket, @body, 0, size)
         @sent_size = size
       end
       @body.close

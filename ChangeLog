@@ -1,3 +1,32 @@
+Tue Oct 12 21:22:50 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/config.rb:
+	  add WEBrick::Config::FileHandler[:AcceptableLanguages].
+
+	* lib/webrick/httpservlet/filehandler.rb
+	  (WEBrick::HTTPServlet::FileHandler#set_filename): search files
+	  having suffix of language-name which Accept-Language header field
+	  includes if :AcceptableLanguages options is present.
+
+	* lib/webrick/httpservlet/filehandler.rb
+	  (WEBrick::HTTPServlet::FileHandler#get_servlet): new method to
+	  search servlet correspond to the suffix of filename.
+
+	* lib/webrick/httprequest.rb: add attributes access methods: accept,
+	  accept_charset, accept_encoding, accept_language, content_length
+	  and content_type.
+
+	* lib/webrick/httpresponse.rb: add attribute access methods:
+	  content_length, content_length=, content_type and content_type=.
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.mime_types):
+	  use the second suffix to detect media type. (the first suffix
+	  may be a language name.)
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.parse_qvalues):
+	  add method to parse Accept header field. it returns an Array of
+	  values sorted by the qvalues.
+
 Tue Oct 12 15:05:32 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (MODE_BINMODE, MODE_BINARY): fixed reversed condition.

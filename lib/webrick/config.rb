@@ -72,6 +72,7 @@ module WEBrick
       :DirectoryCallback => nil,
       :FileCallback      => nil,
       :UserDir           => "public_html",
+      :AcceptableLanguages => []  # ["en", "ja", ... ]
     }
 
     BasicAuth = {

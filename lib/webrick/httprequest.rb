@@ -32,6 +32,8 @@ module WEBrick
 
     # Header and entity body
     attr_reader :raw_header, :header, :cookies
+    attr_reader :accept, :accept_charset
+    attr_reader :accept_encoding, :accept_language
 
     # Misc
     attr_accessor :user
@@ -56,6 +58,8 @@ module WEBrick
       @raw_header = Array.new
       @header = nil
       @cookies = []
+      @accept = @accept_charset =
+        @accept_encoding = @accept_language = nil
       @body = ""
 
       @addr = @peeraddr = nil
@@ -83,6 +87,10 @@ module WEBrick
         @header['cookie'].each{|cookie|
           @cookies += Cookie::parse(cookie)
         }
+        @accept = HTTPUtils.parse_qvalues(self['accept'])
+        @accept_charset = HTTPUtils.parse_qvalues(self['accept-charset'])
+        @accept_encoding = HTTPUtils.parse_qvalues(self['accept-encoding'])
+        @accept_language = HTTPUtils.parse_qvalues(self['accept-language'])
       end
       return if @request_method == "CONNECT"
       return if @unparsed_uri == "*"
@@ -122,6 +130,14 @@ module WEBrick
         parse_query()
       end
       @query
+    end
+
+    def content_length
+      return Integer(self['content-length'])
+    end
+
+    def content_type
+      return self['content-type']
     end
 
     def [](header_name)
