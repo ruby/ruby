@@ -360,8 +360,8 @@ module RDoc
 
     def find_override_comment(meth_name)
       comment = nil
-      puts "Override #{meth_name}"
-      if @body =~ %r{Document-method:\s#{meth_name}.*?\n((?>.*?\*/))}m
+      name = Regexp.escape(meth_name)
+      if @body =~ %r{Document-method:\s#{name}.*?\n((?>.*?\*/))}m
         comment = $1
       end
       comment

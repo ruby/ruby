@@ -1,3 +1,8 @@
+Sun Dec 28 03:50:05 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_override_comment): 
+	  Escape method names used in regexp
+
 Sun Dec 28 01:46:02 2003  Dave Thomas  <dave@wireless_3.local.thomases.com>
 
 	* lib/rdoc/ri/ri_formatter.rb (RI::TextFormatter::display_flow_item):
