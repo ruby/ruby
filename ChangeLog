@@ -1,3 +1,7 @@
+Tue Feb 17 10:51:23 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_emitter_end_object): takes only one arg.
+
 Tue Feb 17 01:35:28 2004  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (rb_eval): care that another thread replace NODE_DREGX_ONCE
