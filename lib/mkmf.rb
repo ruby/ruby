@@ -733,6 +733,9 @@ def configuration(srcdir)
   if !CROSS_COMPILING && CONFIG['build_os'] == 'cygwin' && CONFIG['target_os'] != 'cygwin'
     vpath.each {|p| p.sub!(/.*/, '$(shell cygpath -u \&)')}
   end
+  if !CROSS_COMPILING && CONFIG['build_os'] == 'msdosdjgpp'
+    CONFIG['PATH_SEPARATOR'] = ';'
+  end
   mk << %{
 SHELL = /bin/sh
 

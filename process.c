@@ -600,7 +600,7 @@ rb_waitpid(pid, st, flags)
 	goto retry;
     }
 #else  /* NO_WAITPID */
-    if (pid_tbl && st_lookup(pid_tbl, pid, st)) {
+    if (pid_tbl && st_lookup(pid_tbl, pid, (st_data_t *)st)) {
 	last_status_set(*st, pid);
 	st_delete(pid_tbl, (st_data_t*)&pid, NULL);
 	return pid;
@@ -626,7 +626,7 @@ rb_waitpid(pid, st, flags)
 	}
 	if (!pid_tbl)
 	    pid_tbl = st_init_numtable();
-	st_insert(pid_tbl, pid, st);
+	st_insert(pid_tbl, pid, (st_data_t)st);
 	if (!rb_thread_alone()) rb_thread_schedule();
     }
 #endif
@@ -1141,6 +1141,7 @@ proc_spawn_v(argv, prog)
 #endif
     before_exec();
     status = spawnv(P_WAIT, prog, argv);
+    last_status_set(status == -1 ? 127 : status, 0);
     after_exec();
     return status;
 #endif
@@ -1181,6 +1182,7 @@ proc_spawn(str)
 	    char *shell = dln_find_exe("sh", 0);
 	    before_exec();
 	    status = shell?spawnl(P_WAIT,shell,"sh","-c",str,(char*)NULL):system(str);
+	    last_status_set(status == -1 ? 127 : status, 0);
 	    after_exec();
 	    return status;
 	}
@@ -1597,7 +1599,7 @@ rb_spawn(argc, argv)
     if (prog && argc) argv[0] = prog;
 #else
     if (prog && argc) argv[0] = prog;
-    prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+    if (argc) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     status = system(StringValuePtr(prog));
 # if defined(__human68k__) || defined(__DJGPP__)
     last_status_set(status == -1 ? 127 : status, 0);
