@@ -1,6 +1,6 @@
 Sat Jan 17 21:49:50 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* lib/test.rb (test_rfc2822, test_rfc3339, test_encode_xmlschema):
+	* lib/time.rb (test_rfc2822, test_rfc3339, test_encode_xmlschema):
 	  should not expect that all platforms handle negative time_t value.
 
 Fri Jan 16 23:53:09 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
