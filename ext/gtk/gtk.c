@@ -1925,7 +1925,7 @@ clist_initialize(self, titles)
 	Check_Type(RARRAY(titles)->ptr[i], T_STRING);
 	buf[i] = RSTRING(RARRAY(titles)->ptr[i])->ptr;
     }
-    set_widget(self, gtk_clist_new(len, buf));
+    set_widget(self, gtk_clist_new(len));
     return Qnil;
 }
 
@@ -5850,7 +5850,7 @@ Init_gtk()
     rb_define_const(mGtk, "ANCHORED", INT2FIX(GTK_ANCHORED));
     rb_define_const(mGtk, "BASIC", INT2FIX(GTK_BASIC));
     rb_define_const(mGtk, "USER_STYLE", INT2FIX(GTK_USER_STYLE));
-    rb_define_const(mGtk, "GRAB_ALL", INT2FIX(GTK_GRAB_ALL));
+/*    rb_define_const(mGtk, "GRAB_ALL", INT2FIX(GTK_GRAB_ALL)); */
     rb_define_const(mGtk, "REDRAW_PENDING", INT2FIX(GTK_REDRAW_PENDING));
     rb_define_const(mGtk, "RESIZE_PENDING", INT2FIX(GTK_RESIZE_PENDING));
     rb_define_const(mGtk, "RESIZE_NEEDED", INT2FIX(GTK_RESIZE_NEEDED));
