@@ -1,3 +1,8 @@
+Thu Dec  4 03:48:59 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#link, Pathname#symlink): obsoleted.
+	  (Pathname#make_link, Pathname#make_symlink): new method.
+
 Thu Dec  4 01:45:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_read): should not terminate on empty string; wait

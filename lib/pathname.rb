@@ -360,13 +360,13 @@ class Pathname
   def fnmatch(pattern, *args) File.fnmatch(pattern, @path, *args) end
   def fnmatch?(pattern, *args) File.fnmatch?(pattern, @path, *args) end
   def ftype() File.ftype(@path) end
-  def link(old) File.link(old, @path) end
+  def make_link(old) File.link(old, @path) end
   def open(*args, &block) File.open(@path, *args, &block) end
   def readlink() Pathname.new(File.readlink(@path)) end
   def rename(to) File.rename(@path, to) end
   def stat() File.stat(@path) end
   def lstat() File.lstat(@path) end
-  def symlink(old) File.symlink(old, @path) end
+  def make_symlink(old) File.symlink(old, @path) end
   def truncate(length) File.truncate(@path, length) end
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
   def basename(*args) Pathname.new(File.basename(@path, *args)) end
@@ -374,6 +374,20 @@ class Pathname
   def extname() File.extname(@path) end
   def expand_path(*args) Pathname.new(File.expand_path(@path, *args)) end
   def split() File.split(@path).map {|f| Pathname.new(f) } end
+
+  # Pathname#link is confusing and obsoleted because the receiver/argument
+  # order is inverted to corresponding system call.
+  def link(old)
+    warn 'Pathname#link is obsoleted.  Use Pathname#make_link.'
+    File.link(old, @path)
+  end
+
+  # Pathname#symlink is confusing and obsoleted because the receiver/argument
+  # order is inverted to corresponding system call.
+  def symlink(old)
+    warn 'Pathname#symlink is obsoleted.  Use Pathname#make_symlink.'
+    File.symlink(old, @path)
+  end
 end
 
 # FileTest
