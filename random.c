@@ -172,6 +172,20 @@ random_seed()
     return tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
 }
 
+/*
+ *  call-seq:
+ *     srand(number=0)    => old_seed
+ *  
+ *  Seeds the pseudorandom number generator to the value of
+ *  <i>number</i>.<code>to_i.abs</code>. If <i>number</i> is omitted
+ *  or zero, seeds the generator using a combination of the time, the
+ *  process id, and a sequence number. (This is also the behavior if
+ *  <code>Kernel::rand</code> is called without previously calling
+ *  <code>srand</code>, but without the sequence.) By setting the seed
+ *  to a known value, scripts can be made deterministic during testing.
+ *  The previous seed value is returned. Also see <code>Kernel::rand</code>.
+ */
+
 static VALUE
 rb_f_srand(argc, argv, obj)
     int argc;
@@ -192,6 +206,26 @@ rb_f_srand(argc, argv, obj)
 
     return ULONG2NUM(old);
 }
+
+/*
+ *  call-seq:
+ *     rand(max=0)    => number
+ *  
+ *  Converts <i>max</i> to an integer using max1 =
+ *  max<code>.to_i.abs</code>. If the result is zero, returns a
+ *  pseudorandom floating point number greater than or equal to 0.0 and
+ *  less than 1.0. Otherwise, returns a pseudorandom integer greater
+ *  than or equal to zero and less than max1. <code>Kernel::srand</code>
+ *  may be used to ensure repeatable sequences of random numbers between
+ *  different runs of the program. Ruby currently uses a modified
+ *  Mersenne Twister with a period of 219937-1.
+ *     
+ *     srand 1234                 #=> 0
+ *     [ rand,  rand ]            #=> [0.191519450163469, 0.49766366626136]
+ *     [ rand(10), rand(1000) ]   #=> [6, 817]
+ *     srand 1234                 #=> 1234
+ *     [ rand,  rand ]            #=> [0.191519450163469, 0.49766366626136]
+ */
 
 static VALUE
 rb_f_rand(argc, argv, obj)

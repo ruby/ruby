@@ -262,7 +262,9 @@ module RDoc
         |type, var_name, meth_name, meth_body, param_count, source_file|
        #" 
         next if meth_name == "initialize_copy"
-        next if var_name  == "ruby_top_self"
+
+        # Ignore top-object and weird struct.c dynamic stuff
+        next if var_name  == "ruby_top_self" || var_name == "nstr"
                           
         var_name = "rb_cObject" if var_name == "rb_mKernel"
         handle_method(type, var_name, meth_name, 
