@@ -69,14 +69,6 @@ struct timeval {
 
 #include <sys/stat.h>
 
-#if !defined HAVE_PAUSE
-# if defined _WIN32 && !defined __CYGWIN__
-#  define pause() Sleep(INFINITE)
-# else
-#  define pause() sleep(0x7fffffff)
-# endif
-#endif
-
 VALUE rb_cProc;
 static VALUE rb_cBinding;
 static VALUE proc_call _((VALUE,VALUE));
@@ -7254,16 +7246,20 @@ rb_thread_sleep(sec)
     rb_thread_wait_for(rb_time_timeval(INT2FIX(sec)));
 }
 
+#if !defined HAVE_PAUSE
+# if defined _WIN32 && !defined __CYGWIN__
+#  define pause() Sleep(INFINITE)
+# else
+#  define pause() sleep(0x7fffffff)
+# endif
+#endif
+
 void
 rb_thread_sleep_forever()
 {
     if (curr_thread == curr_thread->next) {
 	TRAP_BEG;
-#ifdef HAVE_PAUSE
 	pause();
-#else
-	sleep((32767<<16)+32767);
-#endif
 	TRAP_END;
 	return;
     }

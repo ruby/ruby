@@ -1,3 +1,7 @@
+Thu Jun 22 13:37:19 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* eval.c (rb_thread_sleep_forever): merge pause() macro.
+
 Tue Jun 20 10:54:19 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: add eval sitedir.
