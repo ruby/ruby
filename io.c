@@ -1337,7 +1337,7 @@ rb_io_sysseek(argc, argv, io)
 
     GetOpenFile(io, fptr);
     if ((fptr->mode & FMODE_READABLE) && READ_DATA_PENDING(fptr->f)) {
-	rb_raise(rb_eIOError, "syseek for buffered IO");
+	rb_raise(rb_eIOError, "sysseek for buffered IO");
     }
     if ((fptr->mode & FMODE_WRITABLE) && (fptr->mode & FMODE_WBUF)) {
 	rb_warn("sysseek for buffered IO");
