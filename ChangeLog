@@ -4,6 +4,8 @@ Tue Jan 29 17:59:20 2002  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: add check for `sys/mkdev.h'.
 
+	* lib/pp.rb: don't print a mode File::Stat as decimal number.
+
 Mon Jan 28 19:16:58 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* array.c (rb_ary_fill): shouldn't yield unless block given.

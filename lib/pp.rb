@@ -361,10 +361,10 @@ class File
 	pp.breakable
 	pp.group {
 	  m = self.mode
-	  pp.text "mode="; pp.pp m
+	  pp.text "mode="; pp.text sprintf("0%o", m)
 	  pp.breakable
-	  pp.text sprintf("(0%o %s %c%c%c%c%c%c%c%c%c)",
-	    m, self.ftype,
+	  pp.text sprintf("(%s %c%c%c%c%c%c%c%c%c)",
+	    self.ftype,
 	    (m & 0400 == 0 ? ?- : ?r),
 	    (m & 0200 == 0 ? ?- : ?w),
 	    (m & 0100 == 0 ? (m & 04000 == 0 ? ?- : ?S) :
