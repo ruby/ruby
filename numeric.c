@@ -789,7 +789,7 @@ fix2str(x, base)
     else if (base == 8) fmt[2] = 'o';
     else Fatal("fixnum cannot treat base %d", base);
 
-    sprintf(buf, fmt, FIX2INT(x));
+    sprintf(buf, fmt, FIX2LONG(x));
     return str_new2(buf);
 }
 
@@ -1099,7 +1099,7 @@ fix_lshift(x, y)
     val = NUM2LONG(x);
     width = NUM2LONG(y);
     if (width > (sizeof(VALUE)*CHAR_BIT-1)
-	|| (unsigned)val>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
+	|| (unsigned long)val>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
 	return big_lshift(int2big(val), y);
     }
     val = val << width;

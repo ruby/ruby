@@ -45,7 +45,7 @@ search_header("X11/Xlib.h",
 	      "/usr/openwin/include",
 	      "/usr/X11*/include")
 
-$CFLAGS = "-Wall " + $includes.collect{|path| "-I" + path}.join(" ")
+$CFLAGS = $includes.collect{|path| "-I" + path}.join(" ")
 
 $libraries = []
 def search_lib(file, func, *path)

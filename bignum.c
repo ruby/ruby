@@ -917,7 +917,7 @@ big_pow(x, y)
     VALUE x, y;
 {
     double d;
-    VALUE z;
+    long yy;
     
     if (y == INT2FIX(0)) return INT2FIX(1);
     switch (TYPE(y)) {
@@ -926,32 +926,34 @@ big_pow(x, y)
 	break;
 
       case T_BIGNUM:
-	if (RBIGNUM(y)->sign) goto pos_big;
+	Warn("in a**b, b may be too big");
 	d = big2dbl(y);
 	break;
 
       case T_FIXNUM:
-	if (FIX2LONG(y) > 0) goto pos_big;
-	d = (double)FIX2LONG(y);
+	yy = NUM2LONG(y);
+	if (yy > 0) {
+	    VALUE z;
+
+	    z = x;
+	    for (;;) {
+		yy = yy - 1;
+		if (yy == 0) break;
+		while (yy % 2 == 0) {
+		    yy = yy / 2;
+		    x = big_mul(x, x);
+		}
+		z = big_mul(z, x);
+	    }
+	    return z;
+	}
+	d = (double)yy;
 	break;
 
       default:
 	return num_coerce_bin(x, y);
     }
     return float_new(pow(big2dbl(x), d));
-
-  pos_big:
-    z = x;
-    for (;;) {
-	y = rb_funcall(y, '-', 1, INT2FIX(1));
-	if (y == INT2FIX(0)) break;
-	while (rb_funcall(y, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
-	    y = rb_funcall(y, '/', 1, INT2FIX(2));
-	    x = big_mul(x, x);
-	}
-	z = big_mul(z, x);
-    }
-    return z;
 }
 
 VALUE

@@ -13,6 +13,7 @@ PURIFY =
 prefix = @prefix@
 CFLAGS = @CFLAGS@ -I@srcdir@ -I@includedir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
+EXTLIBS = 
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@
 LDSHARED = @LDSHARED@

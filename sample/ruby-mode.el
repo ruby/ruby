@@ -319,7 +319,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		  (setq nest (cdr nest))
 		  (setq depth (1- depth)))
 		(goto-char pnt))
-	       ((looking-at "def\\s *[^\n;]*\\(\\|$\\)")
+	       ((looking-at "def\\s +[^(\n;]*")
 		(if (or (bolp)
 			(progn
 			  (forward-char -1)

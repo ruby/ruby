@@ -66,9 +66,8 @@ get_ppid()
 
 VALUE last_status = Qnil;
 
-#if defined(HAVE_WAITPID) || defined(HAVE_WAIT4)
-# define WAIT_CALL
-#else
+#if !defined(HAVE_WAITPID) && !defined(HAVE_WAIT4)
+#define NO_WAITPID
 static st_table *pid_tbl;
 #endif
 
@@ -79,7 +78,7 @@ rb_waitpid(pid, flags, st)
     int *st;
 {
     int result;
-#ifdef WAIT_CALL
+#ifndef NO_WAITPID
 #if defined(THREAD)
     int oflags = flags;
     if (!thread_alone()) {	/* there're other threads to run */
@@ -110,7 +109,7 @@ rb_waitpid(pid, flags, st)
 	goto retry;
     }
 #endif
-#else  /* WAIT_CALL */
+#else  /* NO_WAITPID */
     if (pid_tbl && st_lookup(pid_tbl, pid, st)) {
 	last_status = INT2FIX(*st);
 	st_delete(pid_tbl, &pid, NULL);
@@ -147,7 +146,7 @@ rb_waitpid(pid, flags, st)
     return result;
 }
 
-#ifndef WAIT_CALL
+#ifdef NO_WAITPID
 struct wait_data {
     int pid;
     int status;
@@ -170,7 +169,7 @@ static VALUE
 f_wait()
 {
     int pid, state;
-#ifndef WAIT_CALL
+#ifdef NO_WAITPID
     struct wait_data data;
 
     data.status = -1;
@@ -847,7 +846,7 @@ proc_setsid()
     int pid = setsid();
 
     if (pid < 0) rb_sys_fail(0);
-    return NUM2INT(pid);
+    return INT2FIX(pid);
 #else
     rb_notimplement();
 #endif

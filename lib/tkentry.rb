@@ -6,6 +6,12 @@
 require 'tk.rb'
 
 class TkEntry<TkLabel
+  WidgetClassName = 'Entry'.freeze
+  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  def self.to_eval
+    WidgetClassName
+  end
+
   def create_self
     tk_call 'entry', @path
   end

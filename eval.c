@@ -2066,7 +2066,17 @@ rb_eval(self, node)
 	    rval = node->nd_args->nd_head;
 	    SETUP_ARGS(node->nd_args->nd_next);
 	    val = rb_funcall2(recv, aref, argc-1, argv);
-	    val = rb_funcall(val, node->nd_mid, 1, rb_eval(self, rval));
+	    if (node->nd_mid == 0) {      /* OR */
+		if (RTEST(val)) break;
+		val = rb_eval(self, rval);
+	    }
+	    else if (node->nd_mid == 1) { /* AND */
+		if (!RTEST(val)) break;
+		val = rb_eval(self, rval);
+	    }
+	    else {
+		val = rb_funcall(val, node->nd_mid, 1, rb_eval(self, rval));
+	    }
 	    argv[argc-1] = val;
 	    val = rb_funcall2(recv, aset, argc, argv);
 	    result = val;
@@ -2080,12 +2090,35 @@ rb_eval(self, node)
 
 	    recv = rb_eval(self, node->nd_recv);
 	    val = rb_funcall(recv, id, 0);
+	    if (node->nd_next->nd_mid == 0) {      /* OR */
+		if (RTEST(val)) break;
+		val = rb_eval(self, node->nd_value);
+	    }
+	    else if (node->nd_next->nd_mid == 1) { /* AND */
+		if (!RTEST(val)) break;
+		val = rb_eval(self, node->nd_value);
+	    }
+	    else {
+		val = rb_funcall(val, node->nd_next->nd_mid, 1,
+				 rb_eval(self, node->nd_value));
+	    }
 
-	    val = rb_funcall(val, node->nd_next->nd_mid, 1,
-			     rb_eval(self, node->nd_value));
-
-	    rb_funcall2(recv, id_attrset(id), 1, &val);
+	    rb_funcall2(recv, node->nd_next->nd_aid, 1, &val);
 	    result = val;
+	}
+	break;
+
+      case NODE_OP_ASGN_AND:
+	result = rb_eval(self, node->nd_head);
+	if (RTEST(result)) {
+	    result = rb_eval(self, node->nd_value);
+	}
+	break;
+
+      case NODE_OP_ASGN_OR:
+	result = rb_eval(self, node->nd_head);
+	if (!RTEST(result)) {
+	    result = rb_eval(self, node->nd_value);
 	}
 	break;
 
@@ -6223,12 +6256,6 @@ thread_create(fn, arg)
 	tval.it_interval.tv_usec = 100000;
 	tval.it_value = tval.it_interval;
 	setitimer(ITIMER_VIRTUAL, &tval, NULL);
-#if 1
-	tval.it_interval.tv_sec =  2; /* unblock system calls */
-	tval.it_interval.tv_usec = 0;
-	tval.it_value = tval.it_interval;
-	setitimer(ITIMER_REAL, &tval, NULL);
-#endif
 	init = 1;
     }
 #endif
@@ -6248,15 +6275,29 @@ thread_create(fn, arg)
     }
     POP_TAG();
     if (state && th->status != THREAD_TO_KILL && !NIL_P(errinfo)) {
-	if (state == TAG_FATAL || obj_is_kind_of(errinfo, eSystemExit)) {
+	if (state == TAG_FATAL || obj_is_kind_of(errinfo, eSystemExit) ||
+	    thread_abort || curr_thread->abort || RTEST(debug)) {
 	    /* fatal error or global exit within this thread */
 	    /* need to stop whole script */
 	    main_thread->errinfo = errinfo;
 	    thread_cleanup();
 	}
+#if 0
 	else if (thread_abort || curr_thread->abort || RTEST(debug)) {
-	    f_abort();
+	    thread_critical = 0;
+	    thread_ready(main_thread);
+	    main_thread->errinfo = errinfo;
+	    if (curr_thread == main_thread) {
+		rb_raise(errinfo);
+	    }
+	    curr_thread = main_thread;
+	    th_raise_argc = 1;
+	    th_raise_argv[0] = errinfo;
+	    th_raise_file = sourcefile;
+	    th_raise_line = sourceline;
+	    thread_restore_context(curr_thread, 4);
 	}
+#endif
 	else {
 	    curr_thread->errinfo = errinfo;
 	}
@@ -6531,6 +6572,25 @@ f_catch(dmy, tag)
 }
 
 static VALUE
+catch_i(tag)
+    ID tag;
+{
+    return f_catch(0, FIX2INT(tag));
+}
+
+VALUE
+rb_catch(tag, proc, data)
+    char *tag;
+    VALUE (*proc)();
+    VALUE data;
+{
+    return rb_iterate(catch_i, rb_intern(tag), proc, data);
+}
+
+
+static VALUE f_throw _((int,VALUE*)) NORETURN;
+
+static VALUE
 f_throw(argc, argv)
     int argc;
     VALUE *argv;
@@ -6563,6 +6623,19 @@ f_throw(argc, argv)
     trap_restore_mask();
     JUMP_TAG(TAG_THROW);
     /* not reached */
+}
+
+void
+rb_throw(tag, val)
+    char *tag;
+    VALUE val;
+{
+    VALUE argv[2];
+    ID t = rb_intern(tag);
+
+    argv[0] = FIX2INT(t);
+    argv[1] = val;
+    f_throw(2, argv);
 }
 
 static void

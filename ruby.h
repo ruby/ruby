@@ -480,6 +480,8 @@ int iterator_p _((void));
 VALUE rb_iterate _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_rescue _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
+VALUE rb_catch _((char*,VALUE(*)(),VALUE));
+void rb_throw _((char*,VALUE)) NORETURN;
 
 extern VALUE mKernel;
 extern VALUE mComparable;

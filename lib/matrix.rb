@@ -1,8 +1,9 @@
+#!/usr/local/bin/ruby
 #
 #   matrix.rb - 
 #   	$Release Version: 1.0$
-#   	$Revision: 1.0 $
-#   	$Date: 97/05/23 11:35:28 $
+#   	$Revision: 1.4 $
+#   	$Date: 1998/07/08 06:39:13 $
 #       Original Version from Smalltalk-80 version
 #	   on July 23, 1985 at 8:37:17 am
 #   	by Keiju ISHITSUKA
@@ -20,6 +21,150 @@
 #   column: 列
 #   row:    行
 #
+# module ExceptionForMatrix::
+#   Exceptions:
+#	ErrDimensionMismatch
+#	    行または列数が一致していない.
+#	ErrNotRegular
+#	    正則行列でない.
+#	ErrOperationNotDefined
+#	    その演算子はまだ定義されていない.
+#
+# class Matrix
+#   include ExceptionForMatrix
+#
+#   Methods:
+#   class methods:
+#	Matrix.[](*rows)
+#	    rowsで渡された行列を生成する. rowsは配列の配列
+#	    Matrix[[11, 12], [21, 22]]
+#	Matrix.rows(rows, copy = TRUE)
+#	    rowsを行ベクトルの集合として行列を生成する. copy=FALSE の
+#	    時はその配列をそのまま用いる.
+#	Matrix.columns(columns)
+#	    rowsを列ベクトルの集合として行列を生成する. 
+#	Matrix.diagonal(*values)
+#	    valuesを対角成分とした対角行列を生成する.
+#	Matrix.scalar(n, value)
+#	    valueを対角成分とするn次ののスカラー行列を生成する.
+#	Matrix.identity(n)
+#	Matrix.unit(n)
+#	Matrix.I(n)
+#	    n次の単位行列を生成する.
+#	Matrix.zero(n)
+#	    n次の0-行列を生成する.
+#	Matrix.row_vector(row)
+#	    rowを行ベクトルとする1-n行列を生成する. rowはVectorかArray
+#	    が可能.
+#	Matrix.column_vector(column)
+#	    columnを列ベクトルとするn-1行列を生成する. rowはVectorかArray
+#	    が可能.
+#   accessing:
+#	[](i, j)
+#	    行列の(i, j)成分を返す.
+#	row_size
+#	    行数を返す.
+#	column_size
+#	    列数を返す.
+#	row(i)
+#	    i番目の行ベクトルを返す. イテレータとして使われた時は, 行
+#	    ベクトルを順番にイテーレータブロックに渡す.
+#	column(j)
+#	    j番目の列ベクトルを返す. 列ベクトルを順番にイテーレータブ
+#	    ロックに渡す. 
+#	collect
+#	map
+#	    全ての要素をイテレートしその戻り値を値とする行列を新たに生
+#	    成する.
+#	minor(*param)
+#	    マイナー行列を返す. パラメータとしては, 以下のパターンがあ
+#	    る:
+#	    1. from_row, row_size, from_col, size_col
+#	    2. from_row..to_row, from_col..to_col
+#   TESTING:
+#	regular?
+#	    正則かどうか?
+#	singular?
+#	    正則ではないかどうか?
+#	square?
+#	    正方行列かどうか?
+#   ARITHMETIC:
+#	*(m)
+#	    乗法
+#	+(m)
+#	    加法
+#	-(m)
+#	    減法
+#	/(m)
+#	    self * m.inv
+#	inverse
+#	inv
+#	    逆行列
+#	**
+#	    冪乗
+#   Matrix functions:
+#	determinant
+#	det
+#	    行列式
+#	rank
+#	    ランク
+#	trace
+#	tr
+#	    トレース
+#	transpose
+#	t
+#	    転置行列
+#   CONVERTING:
+#	coerce(other)
+#	row_vectors
+#	    rowベクトルの配列
+#	column_vectors
+#	    columベクトルの配列
+#	to_a
+#	    (2重)配列に変換
+#	to_f
+#	    各要素をFloatに変換
+#	to_i
+#	    各要素をIntegerに変換
+#	to_r
+#	    各要素をRationalに変換
+#   PRINTING:
+#	to_s
+#	    文字列としての表現
+#	inspect
+#
+# class Vector
+#   include ExceptionForMatrix
+#
+#   INSTANCE CREATION:
+#	Vector.[](*array)
+#	Vector.elements(array, copy = TRUE)
+#   ACCSESSING:
+#	[](i)
+#	size
+#   ENUMRATIONS:
+#	each2(v)
+#	collect2(v)
+#   ARITHMETIC:
+#	*(x) "is matrix or number"
+#	+(v)
+#	-(v)
+#   VECTOR FUNCTIONS:
+#	inner_product(v)
+#	collect
+#	map
+#	map2(v)
+#	r
+#   CONVERTING:
+#	covector
+#	to_a
+#	to_f
+#	to_i
+#	to_r
+#	coerce(other)
+#   PRINTING:
+#	to_s
+#	inspect
 
 require "e2mmap.rb"
 
@@ -35,7 +180,7 @@ module ExceptionForMatrix
 end
 
 class Matrix
-  RCS_ID='-$Header: matrix.rb,v 1.2 91/04/20 17:24:57 keiju Locked $-'
+  @RCS_ID='-$Id: matrix.rb,v 1.4 1998/07/08 06:39:13 keiju Exp keiju $-'
   
   include ExceptionForMatrix
   
@@ -143,6 +288,7 @@ class Matrix
     if iterator?
       for e in @rows[i]
 	yield e
+
       end
     else
       Vector.elements(@rows[i])
@@ -208,6 +354,38 @@ class Matrix
 
   def square?
     column_size == row_size
+  end
+  
+  # COMPARING
+  def ==(other)
+    return FALSE unless Matrix === other
+    
+    other.compare_by_row_vectors(@rows)
+  end
+  alias eqn? ==
+  
+  def compare_by_row_vectors(rows)
+    return FALSE unless @rows.size == rows.size
+    
+    0.upto(@rows.size - 1) do
+      |i|
+      return FALSE unless @rows[i] == rows[i]
+    end
+    TRUE
+  end
+  
+  def clone
+    Matrix.rows(@rows)
+  end
+  
+  def hash
+    value = 0
+    for row in @rows
+      for e in row
+	value ^= e.hash
+      end
+    end
+    return value
   end
   
   # ARITHMETIC
@@ -296,6 +474,25 @@ class Matrix
     }
     Matrix.rows(rows, FALSE)
   end
+  
+  def /(other)
+    case other
+    when Numeric
+      rows = @rows.collect {
+	|row|
+	row.collect {
+	  |e|
+	  e / other
+	}
+      }
+      return Matrix.rows(rows, FALSE)
+    when Matrix
+      return self * other.inverse
+    else
+      x, y = other.coerce(self)
+      rerurn x / y
+    end
+  end
 
   def inverse
     Matrix.fail ErrDimensionMismatch unless square?
@@ -319,7 +516,7 @@ class Matrix
       end
       
       for i in 0 .. size
-	next if i == k
+	continue if i == k
 	q = a[i][k] / akk
 	a[i][k] = 0
 	
@@ -424,7 +621,7 @@ class Matrix
 	    break
 	  end
 	end while a[i][k] == 0
-	next if nothing
+	continue if nothing
 	a[i], a[k] = a[k], a[i]
 	akk = a[k][k]
       end
@@ -596,7 +793,6 @@ end
 #----------------------------------------------------------------------
 class Vector
   include ExceptionForMatrix
-
   
   #INSTANCE CREATION
   
@@ -648,6 +844,26 @@ class Vector
     end
   end
 
+  # COMPARING
+  def ==(other)
+    return FALSE unless Vector === other
+    
+    other.compare_by(@elements)
+  end
+  alias eqn? ==
+  
+  def compare_by(elements)
+    @elements == elements
+  end
+  
+  def clone
+    Vector.elements(@rows)
+  end
+  
+  def hash
+    @elements.hash
+  end
+  
   # ARITHMETIC
   
   def *(x) "is matrix or number"
@@ -732,7 +948,7 @@ class Vector
     for e in @elements
       v += e*e
     end
-    return v.sqrt
+    return Math.sqrt(v)
   end
   
   # CONVERTING

@@ -1,65 +1,103 @@
 #
 # telnet.rb
-# ver0.11 1998/04/21
+# ver0.12 1998/06/01
 # Wakou Aoyama <wakou@fsinet.or.jp>
 #
 # == make new Telnet object
-# host = Telnet.new("Binmode" => TRUE,              default: TRUE
-#                   "Host" => "localhost",          default: "localhost"
-#                   "Output_log" => "output_log",   default: not output
-#                   "Port" => 23,                   default: 23
-#                   "Prompt" => /[$%#>] $/,         default: /[$%#>] $/
-#                   "Telnetmode" => TRUE,           default: TRUE
-#                   "Timeout" => 10)                default: 10
+# host = Telnet.new({"Binmode" => TRUE,              default: TRUE
+#                    "Host" => "localhost",          default: "localhost"
+#                    "Output_log" => "output_log",   default: not output
+#                    "Port" => 23,                   default: 23
+#                    "Prompt" => /[$%#>] $/,         default: /[$%#>] $/
+#                    "Telnetmode" => TRUE,           default: TRUE
+#                    "Timeout" => 10,                default: 10
+#                    "Waittime" => 0})               default: 0
 #
 # if set "Telnetmode" option FALSE. not TELNET command interpretation.
+# "Waittime" is time to confirm "Prompt". There is a possibility that
+# the same character as "Prompt" is included in the data, and, when
+# the network or the host is very heavy, the value is enlarged.
 #
 # == wait for match
-# print host.waitfor(/match/)
-# print host.waitfor("Match"   => /match/,
-#                    "String"  => "string",
-#                    "Timeout" => secs)
+# line = host.waitfor(/match/)
+# line = host.waitfor({"Match"   => /match/,
+#                      "String"  => "string",
+#                      "Timeout" => secs})
 # if set "String" option. Match = Regexp.new(quote(string))
 #
 # realtime output. of cource, set sync=TRUE or flush is necessary.
 # host.waitfor(/match/){|c| print c }
-# host.waitfor("Match"   => /match/,
-#              "String"  => "string",
-#              "Timeout" => secs){|c| print c}
+# host.waitfor({"Match"   => /match/,
+#               "String"  => "string",
+#               "Timeout" => secs}){|c| print c}
 #
 # == send string and wait prompt
-# print host.cmd("string")
-# print host.cmd("String" => "string",
-#                "Prompt" => /[$%#>] $//,
-#                "Timeout" => 10)
+# line = host.cmd("string")
+# line = host.cmd({"String" => "string",
+#                  "Prompt" => /[$%#>] $//,
+#                  "Timeout" => 10})
 #
 # realtime output. of cource, set sync=TRUE or flush is necessary.
 # host.cmd("string"){|c| print c }
-# host.cmd("String" => "string",
-#          "Prompt" => /[$%#>] $//,
-#          "Timeout" => 10){|c| print c }
+# host.cmd({"String" => "string",
+#           "Prompt" => /[$%#>] $//,
+#           "Timeout" => 10}){|c| print c }
 #
 # == login
 # host.login("username", "password")
-# host.login("Name" => "username",
-#            "Password" => "password",
-#            "Prompt" => /[$%#>] $/,
-#            "Timeout" => 10)
+# host.login({"Name" => "username",
+#             "Password" => "password",
+#             "Prompt" => /[$%#>] $/,
+#             "Timeout" => 10})
+#
+# realtime output. of cource, set sync=TRUE or flush is necessary.
+# host.login("username", "password"){|c| print c }
+# host.login({"Name" => "username",
+#             "Password" => "password",
+#             "Prompt" => /[$%#>] $/,
+#             "Timeout" => 10}){|c| print c }
 #
 # and Telnet object has socket class methods
 #
 # == sample
-# localhost = Telnet.new("Host" => "localhost",
-#                        "Timeout" => 10,
-#                        "Prompt" => /[$%#>] $/)
-# localhost.login("username", "password")
-# print localhost.cmd("command")
+# localhost = Telnet.new({"Host" => "localhost",
+#                         "Timeout" => 10,
+#                         "Prompt" => /[$%#>] $/})
+# localhost.login("username", "password"){|c| print c }
+# localhost.cmd("command"){|c| print c }
 # localhost.close
 
 require "socket"
 require "delegate"
+require "thread"
+
+class TimeOut < Exception
+end
 
 class Telnet < SimpleDelegator
+
+  def timeout(sec)
+    is_timeout = FALSE 
+    begin
+      x = Thread.current
+      y = Thread.start {
+        sleep sec
+        if x.alive?
+          #print "timeout!\n"
+          x.raise TimeOut, "timeout"
+        end
+      }
+      begin
+        yield
+      rescue TimeOut
+        is_timeout = TRUE
+      end
+    ensure
+      Thread.kill y if y && y.alive?
+    end
+    is_timeout
+  end
+
   # For those who are curious, here are some of the special characters
   # interpretted by the telnet protocol:
   # Name     Octal    Dec.  Description
@@ -85,29 +123,41 @@ class Telnet < SimpleDelegator
   # EOR   = "\357"  # 239   /* end of record (transparent mode) */
 
   def initialize(options)
-    @options = {}
-    @options["Binmode"] = options["Binmode"] || TRUE
-    @options["Dump_Log"] = options["Dump_Log"]
-    @options["Errmode"] = options["Errmode"]
-    @options["Fhopen"] = options["Fhopen"]
-    @options["Host"] = options["Host"] || "localhost"
-    @options["Input_log"] = options["Input_log"]
-    @options["Input_record_separator"] = options["Input_record_separator"]
-    @options["Output_log"] = options["Output_log"]
-    @options["Output_record_separator"] = options["Output_record_separator"]
-    @options["Port"] = options["Port"] || 23
-    @options["Prompt"] = options["Prompt"] || /[$%#>] $/
-    @options["Telnetmode"] = options["Telnetmode"] || TRUE
-    @options["Timeout"] = options["Timeout"] || 10
+    @options = options
+    @options["Binmode"]    = TRUE        if not @options.include?("Binmode")
+    @options["Host"]       = "localhost" if not @options.include?("Host")
+    @options["Port"]       = 23          if not @options.include?("Port")
+    @options["Prompt"]     = /[$%#>] $/  if not @options.include?("Prompt")
+    @options["Telnetmode"] = TRUE        if not @options.include?("Telnetmode")
+    @options["Timeout"]    = 10          if not @options.include?("Timeout")
+    @options["Waittime"]   = 0           if not @options.include?("Waittime")
 
     if @options.include?("Output_log")
       @log = File.open(@options["Output_log"], 'a+')
       @log.sync = TRUE
       @log.binmode if @options["Binmode"]
     end
-    @sock = TCPsocket.open(@options["Host"], @options["Port"])
+
+    message = "Trying " + @options["Host"] + "...\n"
+    STDOUT << message
+    @log << message if @options.include?("Output_log")
+
+    is_timeout = timeout(@options["Timeout"]){
+      begin
+        @sock = TCPsocket.open(@options["Host"], @options["Port"])
+      rescue
+        @log << $! << "\n" if @options.include?("Output_log")
+        raise
+      end
+    }
+    raise TimeOut, "timed-out; opening of the host" if is_timeout
     @sock.sync = TRUE
     @sock.binmode if @options["Binmode"]
+
+    message = "Connected to " + @options["Host"] + ".\n"
+    STDOUT << message
+    @log << message if @options.include?("Output_log")
+
     super(@sock)
   end
 
@@ -133,48 +183,54 @@ class Telnet < SimpleDelegator
   end
 
   def waitfor(options)
-    prompt = @options["Prompt"]
-    timeout = @options["Timeout"]
+    timeout  = @options["Timeout"]
+    waittime = @options["Waittime"]
+
     if options.kind_of?(Hash)
-      prompt = options["Prompt"] if options.include?("Prompt")
-      timeout = options["Timeout"] if options.include?("Timeout")
-      prompt = Regexp.new( Regexp.quote(options["String"]) ) if
+      prompt   = options["Prompt"]   if options.include?("Prompt")
+      timeout  = options["Timeout"]  if options.include?("Timeout")
+      waittime = options["Waittime"] if options.include?("Waittime")
+      prompt   = Regexp.new( Regexp.quote(options["String"]) ) if
         options.include?("String")
     else
       prompt = options
     end
+
     line = ''
-    while (not prompt === line and not @sock.closed?)
-      next if not select([@sock], nil, nil, timeout)
+    until(not select([@sock], nil, nil, waittime) and prompt === line)
+      raise TimeOut, "timed-out; wait for the next data" if
+        not select([@sock], nil, nil, timeout)
+      buf = ''
       begin
         buf = if @options["Telnetmode"]
                 preprocess( @sock.sysread(1024 * 1024) )
               else
                 @sock.sysread(1024 * 1024)
               end
-      rescue
-        buf = "\nConnection closed by foreign host.\n"
-        @sock.close
+      rescue EOFError # End of file reached
+        break
+      ensure
+        @log.print(buf) if @options.include?("Output_log")
+        yield buf if iterator?
+        line += buf
       end
-      @log.print(buf) if @options.include?("Output_log")
-      if iterator?
-        yield buf
-      end
-      line += buf
     end
     line
   end
 
   def cmd(options)
-    match = @options["Prompt"]
+    match   = @options["Prompt"]
     timeout = @options["Timeout"]
+
     if options.kind_of?(Hash)
-      string = options["String"]
-      match = options["Match"] if options.include?("Match")
+      string  = options["String"]
+      match   = options["Match"]   if options.include?("Match")
       timeout = options["Timeout"] if options.include?("Timeout")
     else
       string = options
     end
+
+    select(nil, [@sock])
     @sock << string.gsub(/\n/, CR) << CR
     if iterator?
       waitfor({"Prompt" => match, "Timeout" => timeout}){|c| yield c }
@@ -183,7 +239,7 @@ class Telnet < SimpleDelegator
     end
   end
 
-  def login(options, password = nil)
+  def login(options, password = '')
     if options.kind_of?(Hash)
       username = options["Name"]
       password = options["Password"]
@@ -191,9 +247,17 @@ class Telnet < SimpleDelegator
       username = options
     end
 
-    line = waitfor(/login[: ]*$/)
-    line += cmd({"String" => username, "Match" => /Password[: ]*$/})
-    line += cmd(password)
+    if iterator?
+      line = waitfor(/login[: ]*$/){|c| yield c }
+      line += cmd({"String" => username,
+                   "Match" => /Password[: ]*$/}){|c| yield c }
+      line += cmd(password){|c| yield c }
+    else
+      line = waitfor(/login[: ]*$/)
+      line += cmd({"String" => username,
+                   "Match" => /Password[: ]*$/})
+      line += cmd(password)
+    end
     line
   end
 

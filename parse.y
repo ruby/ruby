@@ -32,12 +32,12 @@
 #define ID_ATTRSET  0x04
 #define ID_CONST    0x05
 
-#define is_id_nonop(id) ((id)>LAST_TOKEN)
-#define is_local_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
-#define is_global_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_GLOBAL)
-#define is_instance_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
-#define is_attrset_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
-#define is_const_id(id) (is_id_nonop(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
+#define is_id_notop(id) ((id)>LAST_TOKEN)
+#define is_local_id(id) (is_id_notop(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
+#define is_global_id(id) (is_id_notop(id)&&((id)&ID_SCOPE_MASK)==ID_GLOBAL)
+#define is_instance_id(id) (is_id_notop(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
+#define is_attrset_id(id) (is_id_notop(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
+#define is_const_id(id) (is_id_notop(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
 
 struct op_tbl {
     ID token;
@@ -600,10 +600,12 @@ arg		: variable '=' arg
 			    }
 			}
 			if ($2 == tOROP) {
-			    $$ = NEW_UNLESS(gettable($1), assignable($1, $3), 0);
+			    $$ = NEW_OP_ASGN_OR(gettable($1),
+						assignable($1, $3));
 			}
 			else if ($2 == tANDOP) {
-			    $$ = NEW_IF(gettable($1), assignable($1, $3), 0);
+			    $$ = NEW_OP_ASGN_AND(gettable($1),
+		                                 assignable($1, $3));
 			}
 			else {
 			    $$ = assignable($1,call_op(gettable($1),$2,1,$3));
@@ -612,45 +614,39 @@ arg		: variable '=' arg
 		    }
 		| primary '[' aref_args ']' tOP_ASGN arg
 		    {
+			NODE *args = NEW_LIST($6);
+
+			list_append($3, NEW_NIL());
+			list_concat(args, $3);
 			if ($5 == tOROP) {
-			    $$ = NEW_UNLESS(NEW_CALL($1, tAREF, $3), aryset($1, $3, $6), 0);
+			    $5 = 0;
 			}
 			else if ($5 == tANDOP) {
-			    $$ = NEW_IF(NEW_CALL($1, tAREF, $3), aryset($1, $3, $6), 0);
+			    $5 = 1;
 			}
-			else {
-			    NODE *args = NEW_LIST($6);
-
-			    list_append($3, NEW_NIL());
-			    list_concat(args, $3);
-			    $$ = NEW_OP_ASGN1($1, $5, args);
-			}
+			$$ = NEW_OP_ASGN1($1, $5, args);
 		        fixpos($$, $1);
 		    }
 		| primary '.' tIDENTIFIER tOP_ASGN arg
 		    {
 			if ($4 == tOROP) {
-			    $$ = NEW_UNLESS(new_call($1, $3, 0), attrset($1, $3, $5), 0);
+			    $4 = 0;
 			}
 			else if ($4 == tANDOP) {
-			    $$ = NEW_IF(new_call($1, $3, 0), attrset($1, $3, $5), 0);
+			    $4 = 1;
 			}
-			else {
-			    $$ = NEW_OP_ASGN2($1, $3, $4, $5);
-			}
+			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
 		        fixpos($$, $1);
 		    }
 		| primary '.' tCONSTANT tOP_ASGN arg
 		    {
 			if ($4 == tOROP) {
-			    $$ = NEW_UNLESS(new_call($1, $3, 0), attrset($1, $3, $5), 0);
+			    $4 = 0;
 			}
 			else if ($4 == tANDOP) {
-			    $$ = NEW_IF(new_call($1, $3, 0), attrset($1, $3, $5), 0);
+			    $4 = 1;
 			}
-			else {
-			    $$ = NEW_OP_ASGN2($1, $3, $4, $5);
-			}
+			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
 		        fixpos($$, $1);
 		    }
 		| backref tOP_ASGN arg

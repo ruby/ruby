@@ -1,3 +1,32 @@
+Thu Jul  9 17:38:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_30.
+
+Thu Jul  9 16:01:48 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (fmt_setup): format specifier for long needed.
+
+	* sprintf.c (f_sprintf): ditto.
+
+	* numeric.c (fix2str): ditto.
+
+	* eval.c (thread_create): no more ITIMER_REAL.
+
+	* eval.c (thread_create): thread finalization needed before
+	  aborting thread if thread_abort is set.
+
+Wed Jul  8 18:17:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (big_pow): abandon power by bignum (too big).
+
+Tue Jul  7 13:58:43 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_catch): add C level catch/throw feature.
+
+Mon Jul  6 15:18:09 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (arg): proper return values for `||=' and `&&='.
+
 Fri Jul  3 16:05:11 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_29.
@@ -9,7 +38,7 @@ Fri Jul  3 11:20:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* numeric.c (fix_mul): use FIX2LONG() instead of FIX2INT() for
 	  64bit architectures.
 
-	* marshal.c (r_bytes): use weird casting bwetween pointer and int.
+	* marshal.c (r_bytes): remove weird casting bwetween pointer and int.
 
 	* process.c (proc_setsid): new method Process#setsid().
 
@@ -121,7 +150,7 @@ Tue Jun 16 12:30:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* struct.c (make_struct): name parameter can be nil for unnamed
 	  structures.
 
-pMon Jun 15 16:30:10 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Mon Jun 15 16:30:10 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* object.c (class_s_inherited): prohibiting to make subclass of
 	  class Class.

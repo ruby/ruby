@@ -448,9 +448,6 @@ trap(arg)
     if (sig == SIGVTALRM) {
 	ArgError("SIGVTALRM reserved for Thread; cannot set handler");
     }
-    if (sig == SIGALRM) {
-	ArgError("SIGALRM reserved for Thread; cannot set handler");
-    }
 #endif
     if (func == SIG_DFL) {
 	switch (sig) {

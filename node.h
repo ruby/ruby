@@ -47,6 +47,8 @@ enum node_type {
     NODE_CASGN,
     NODE_OP_ASGN1,
     NODE_OP_ASGN2,
+    NODE_OP_ASGN_AND,
+    NODE_OP_ASGN_OR,
     NODE_CALL,
     NODE_FCALL,
     NODE_VCALL,
@@ -255,8 +257,10 @@ typedef struct RNode {
 #define NEW_IASGN(v,val) node_newnode(NODE_IASGN,v,val,0)
 #define NEW_CASGN(v,val) node_newnode(NODE_CASGN,v,val,0)
 #define NEW_OP_ASGN1(p,id,a) node_newnode(NODE_OP_ASGN1,p,id,a)
-#define NEW_OP_ASGN2(r,i,o,val) node_newnode(NODE_OP_ASGN2,r,val,NEW_OP_ASGN3(i,o))
-#define NEW_OP_ASGN3(i,o) node_newnode(NODE_OP_ASGN2,i,o,0)
+#define NEW_OP_ASGN2(r,i,o,val) node_newnode(NODE_OP_ASGN2,r,val,NEW_OP_ASGN22(i,o))
+#define NEW_OP_ASGN22(i,o) node_newnode(NODE_OP_ASGN2,i,o,id_attrset(i))
+#define NEW_OP_ASGN_OR(i,val) node_newnode(NODE_OP_ASGN_OR,i,val,0)
+#define NEW_OP_ASGN_AND(i,val) node_newnode(NODE_OP_ASGN_AND,i,val,0)
 #define NEW_GVAR(v) node_newnode(NODE_GVAR,v,0,rb_global_entry(v))
 #define NEW_LVAR(v) node_newnode(NODE_LVAR,v,0,local_cnt(v))
 #define NEW_DVAR(v) node_newnode(NODE_DVAR,v,0,0);

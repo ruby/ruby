@@ -25,7 +25,7 @@ class CGI < SimpleDelegator
     words = Shellwords.shellwords(if not ARGV.empty? then
                          ARGV.join(' ')
                        else
-                         STDERR.print "(offline mode: enter name=value pairs on standard input)\n" if STDOUT.tty?
+                         STDERR.print "(offline mode: enter name=value pairs on standard input)\n" if STDIN.tty?
                          readlines.join(' ').gsub(/\n/, '')
                        end.gsub(/\\=/, '%3D').gsub(/\\&/, '%26'))
 

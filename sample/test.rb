@@ -24,6 +24,24 @@ end
 
 # make sure conditional operators work
 
+check "assignment"
+
+a=[]; a[0] ||= "bar";
+ok(a[0] == "bar")
+h={}; h["foo"] ||= "bar";
+ok(h["foo"] == "bar")
+
+aa = 5
+aa ||= 25
+ok(aa == 5)
+bb ||= 25
+ok(bb == 25)
+cc &&=33
+ok(cc == nil)
+cc = 5
+cc &&=44
+ok(cc == 44)
+
 check "condition"
 
 $x = '0';
@@ -518,9 +536,6 @@ $good = true;
 for i in 4000..4096
   n1 = 1 << i;
   if (n1**2-1) / (n1+1) != (n1-1)
-    p i
-    p (n1**2-1)/(n1+1)
-    p (n1-1)
     $good = false
   end
 end

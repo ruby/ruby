@@ -26,6 +26,10 @@ fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); }
 #define DUMP2(ARG1, ARG2)
 */
 
+/* for callback break & continue */
+VALUE eTkCallbackBreak;
+VALUE eTkCallbackContinue;
+
 /* from tkAppInit.c */
 
 /*
@@ -136,8 +140,15 @@ ip_ruby(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 
     Tcl_ResetResult(interp);
     if (failed) {
+        VALUE eclass = CLASS_OF(failed);
 	Tcl_AppendResult(interp, STR2CSTR(failed), (char*)NULL);
-	return TCL_ERROR;
+        if (eclass == eTkCallbackBreak) {
+	  return TCL_BREAK;
+	} else if (eclass == eTkCallbackContinue) {
+	  return TCL_CONTINUE;
+	} else {
+	  return TCL_ERROR;
+	}
     }
 
     /* result must be string or nil */
@@ -337,6 +348,9 @@ void Init_tcltklib()
 
     VALUE lib = rb_define_module("TclTkLib");
     VALUE ip = rb_define_class("TclTkIp", cObject);
+
+    eTkCallbackBreak = rb_define_class("TkCallbackBreak", eStandardError);
+    eTkCallbackContinue = rb_define_class("TkCallbackContinue",eStandardError);
 
     rb_define_module_function(lib, "mainloop", lib_mainloop, 0);
 

@@ -152,7 +152,7 @@ static int group_match_null_string_p ();
 
 static char re_syntax_table[256];
 static void init_syntax_once P((void));
-static char *translate = 0;
+static unsigned char *translate = 0;
 
 #undef P
 

@@ -8,6 +8,12 @@
 require "tk"
 
 class TkCanvas<TkWindow
+  WidgetClassName = 'Canvas'.freeze
+  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  def self.to_eval
+    WidgetClassName
+  end
+
   def create_self
     tk_call 'canvas', path
   end
@@ -51,18 +57,31 @@ class TkCanvas<TkWindow
   end
 
   def itembind(tag, context, cmd=Proc.new, args=nil)
-    context = context.join("><") if context.kind_of? Array
-    if /,/ =~ context
-      context = context.split(/\s*,\s*/).join("><")
-    end
     id = install_bind(cmd, args)
     begin
-      tk_send 'bind', tagid(tag), "<#{context}>", id
+      tk_send 'bind', tagid(tag), "<#{tk_event_sequence(context)}>", id
     rescue
       uninstall_cmd(cmd)
       fail
     end
     # @cmdtbl.push id
+  end
+
+  def itembindinfo(tag, context=nil)
+    if context
+      (tk_send('bind', tagid(tag), 
+	       "<#{tk_event_sequence(context)}>")).collect{|cmdline|
+	if cmdline =~ /^rb_out (c\d+)\s+(.*)$/
+	  [Tk_CMDTBL[$1], $2]
+	else
+	  cmdline
+	end
+      }
+    else
+      tk_split_list(tk_send 'bind', tagid(tag)).filter{|seq|
+	seq[1..-2].gsub(/></,',')
+      }
+    end
   end
 
   def canvasx(x, *args)
@@ -250,6 +269,10 @@ module TkcTagAccess
 
   def bind(seq, cmd=Proc.new, args=nil)
     @c.itembind @id, seq, cmd, args
+  end
+
+  def bindinfo(seq=nil)
+    @c.itembindinfo @id, seq
   end
 
   def cget(option)

@@ -350,7 +350,7 @@ f_sprintf(argc, argv)
 			    s += 2;
 			    bignum = 2;
 			}
-			sprintf(fbuf, "%%%c", *p);
+			sprintf(fbuf, "%l%%c", *p);
 			sprintf(s, fbuf, v);
 			if (v < 0) {
 			    char d = 0;
@@ -469,6 +469,7 @@ f_sprintf(argc, argv)
 		int v;
 
 		if (c == 'D') c = 'd';
+		if (c == 'O') c = 'o';
 	      int_retry:
 		switch (TYPE(val)) {
 		  case T_FIXNUM:
@@ -542,7 +543,7 @@ f_sprintf(argc, argv)
 		    }
 		}
 		else {
-		    int max = 11;
+		    int max = 12;
 
 		    if ((flags & FPREC) && prec > max) max = prec;
 		    if ((flags & FWIDTH) && width > max) max = width;
@@ -611,6 +612,9 @@ fmt_setup(buf, c, flags, width, prec)
     int flags, width, prec;
 {
     *buf++ = '%';
+    if (strchr("doOXx", c)) {
+	*buf++ = 'l';
+    }
     if (flags & FSHARP) *buf++ = '#';
     if (flags & FPLUS)  *buf++ = '+';
     if (flags & FMINUS) *buf++ = '-';
