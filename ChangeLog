@@ -1,3 +1,8 @@
+Sat Jul 10 09:30:24 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/soap/marshal/test_struct.rb: use qualified build-tin class name
+	  (::Struct) to avoid name crash.
+
 Sat Jul 10 04:21:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: better operation for SIGINT when processing 
@@ -10,7 +15,7 @@ Sat Jul 10 04:21:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  function of Tk::ValidateConfigure to define validatecommand 
 	  methods easier
 
-Fri Jul  9 22:18:59  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+Fri Jul  9 22:18:59 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c, enum.c, pack.c: rdoc patch from Johan Holmberg
 	  <holmberg@iar.se> [ruby-core:3132] [ruby-core:3136]
