@@ -9959,7 +9959,7 @@ static int
 rb_thread_switch(n)
     int n;
 {
-    rb_trap_immediate = (curr_thread->flags&0x100)?1:0;
+    rb_trap_immediate = (curr_thread->flags&(1<<8))?1:0;
     switch (n) {
       case 0:
 	return 0;

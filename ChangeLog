@@ -1,3 +1,8 @@
+Wed Dec  1 02:21:02 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (sighandler): call handler immediately only for default
+	  handlers.  [ruby-dev:25003]
+
 Tue Nov 30 23:49:12 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (pipe_open): errno should be preserved for rb_sys_fail() when

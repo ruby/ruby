@@ -417,7 +417,7 @@ sighandler(sig)
     ruby_signal(sig, sighandler);
 #endif
 
-    if (ATOMIC_TEST(rb_trap_immediate)) {
+    if (trap_list[sig].cmd == 0 && ATOMIC_TEST(rb_trap_immediate)) {
 	IN_MAIN_CONTEXT(signal_exec, sig);
 	ATOMIC_SET(rb_trap_immediate, 1);
     }
