@@ -44,8 +44,12 @@ Object#eql? and Object#hash, since Set uses Hash as storage.
 
 === Class Methods
 --- Set::new(enum = nil)
+--- Set::new(enum = nil) { |o| ... }
     Creates a new set containing the elements of the given enumerable
     object.
+
+    If a block is given, the elements of enum are preprocessed by the
+    given block.
 
 --- Set[*ary]
     Creates a new set containing the given objects.
@@ -95,13 +99,24 @@ Object#eql? and Object#hash, since Set uses Hash as storage.
 --- << o
     Adds the given object to the set and returns self.
 
+--- add?(o)
+    Adds the given object to the set and returns self.  If it the
+    object is already in the set, returns nil.
+
 --- delete(o)
-    Deletes the given object from the set and returns the object.  If
-    the object is not found, returns nil.
+    Deletes the given object from the set and returns self.
+
+--- delete?(o)
+    Deletes the given object from the set and returns self.  If the
+    object is not in the set, returns nil.
 
 --- delete_if { |o| ... }
     Deletes every element of the set for which block evaluates to
     true, and returns self.
+
+--- collect! { |o| ... }
+--- map! { |o| ... }
+    Do collect() destructively.
 
 --- reject! { |o| ... }
     Equivalent to Set#delete_if, but returns nil if no changes were
@@ -154,7 +169,6 @@ Object#eql? and Object#hash, since Set uses Hash as storage.
 
 --- divide { |o| ... }
 --- divide { |o1, o2| ... }
-
     Divides the set into a set of subsets according to the commonality
     defined by the given block.
 
@@ -176,6 +190,19 @@ Object#eql? and Object#hash, since Set uses Hash as storage.
     Returns a string containing a human-readable representation of the
     set. ("#<Set: {element1, element2, ...}>")
 
+== SortedSet class
+SortedSet implements a set which elements are sorted in order.
+
+=== Super class
+    Set
+
+== Enumerable module
+
+=== Instance Methods
+--- to_set(klass = Set, *args)
+--- to_set(klass = Set, *args) { |o| ... }
+    Makes a set from the enumerable object with given arguments.
+
 =end
 
 class Set
@@ -185,19 +212,24 @@ class Set
     new(ary)
   end
 
-  def initialize(enum = nil)
-    @hash = {}
+  def initialize(enum = nil, &block)
+    @hash ||= Hash.new
 
     enum.nil? and return
 
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-    enum.each { |o| @hash[o] = true } 
+    if block
+      enum.each { |o| add(block[o]) }
+    else
+      merge(enum)
+    end
   end
 
   def dup
-    n = type.new
-    @hash.each_key { |o| n.add(o) }
-    n
+    myhash = @hash
+    type.new.instance_eval {
+      @hash.replace(myhash)
+      self
+    }
   end
 
   def size
@@ -215,9 +247,14 @@ class Set
   end
 
   def replace(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-    clear
-    enum.each { |o| add(o) }
+    if enum.type == type
+      @hash.replace(enum.instance_eval { @hash })
+    else
+      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
+      clear
+      enum.each { |o| add(o) }
+    end
+
     self
   end
 
@@ -267,7 +304,7 @@ class Set
   end
 
   def each
-    @hash.each_key { |o| yield o }
+    @hash.each_key { |o| yield(o) }
   end
 
   def add(o)
@@ -276,24 +313,53 @@ class Set
   end
   alias << add
 
-  def delete(o)
-    @hash.delete(o) ? o : nil
+  def add?(o)
+    if include?(o)
+      nil
+    else
+      add(o)
+    end
   end
 
-  def delete_if
-    @hash.delete_if { |key, value| yield(key) }
+  def delete(o)
+    @hash.delete(o)
     self
   end
 
+  def delete?(o)
+    if include?(o)
+      delete(o)
+    else
+      nil
+    end
+  end
+
+  def delete_if
+    @hash.delete_if { |o,| yield(o) }
+    self
+  end
+
+  def collect!
+    set = type.new
+    each { |o| set << yield(o) }
+    replace(set)
+  end
+  alias map! collect!
+
   def reject!
-    n = @hash.size
-    @hash.delete_if { |key, value| yield(key) }
-    @hash.size == n ? nil : self
+    n = size
+    delete_if { |o| yield(o) }
+    size == n ? nil : self
   end
 
   def merge(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-    enum.each { |o| add(o) }
+    if enum.type == type
+      @hash.update(enum.instance_eval { @hash })
+    else
+      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
+      enum.each { |o| add(o) }
+    end
+
     self
   end
 
@@ -305,17 +371,13 @@ class Set
 
   def +(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-    n = dup
-    enum.each { |o| n.add(o) }
-    n
+    dup.merge(enum)
   end
   alias | +	##
 
   def -(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-    n = dup
-    enum.each { |o| n.delete(o) }
-    n
+    dup.subtract(enum)
   end
 
   def &(enum)
@@ -377,13 +439,13 @@ class Set
 	each{ |v| func.call(u, v) and a << v }
       }
 
-      set = type.new()
+      set = Set.new()
       dig.each_strongly_connected_component { |css|
-	set.add(Set.new(css))
+	set.add(type.new(css))
       }
       set
     else
-      type.new(classify(&func).values)
+      Set.new(classify(&func).values)
     end
   end
 
@@ -425,6 +487,185 @@ class Set
     pp.text sprintf('#<%s: {%s}>', type.name, empty? ? '' : '...')
   end
 end
+
+class SortedSet < Set
+  @@setup = false
+
+  class << self
+    def [](*ary)
+      new(ary)
+    end
+
+    def setup
+      @@setup and return
+
+      begin
+	require 'rbtree'
+
+	module_eval %{
+	  def initialize(*args, &block)
+	    @hash = RBTree.new
+	    super
+	  end
+	}
+      rescue LoadError
+	module_eval %{
+	  def initialize(*args, &block)
+	    @keys = nil
+	    super
+	  end
+
+	  def clear
+	    @keys = nil
+	    super
+	  end
+
+	  def replace(enum)
+	    @keys = nil
+	    super
+	  end
+
+	  def add(o)
+	    @keys = nil
+	    @hash[o] = true
+	    self
+	  end
+	  alias << add
+
+	  def delete(o)
+	    @keys = nil
+	    @hash.delete(o)
+	    self
+	  end
+
+	  def delete_if
+	    n = @hash.size
+	    @hash.delete_if { |o,| yield(o) }
+	    @keys = nil if @hash.size != n
+	    self
+	  end
+
+	  def merge(enum)
+	    @keys = nil
+	    super
+	  end
+
+	  def each
+	    to_a.each { |o| yield(o) }
+	  end
+
+	  def to_a
+	    (@keys = @hash.keys).sort! unless @keys
+	    @keys
+	  end
+	}
+      end
+
+      @@setup = true
+    end
+  end
+
+  def initialize(*args, &block)
+    SortedSet.setup
+    initialize(*args, &block)
+  end
+end
+
+module Enumerable
+  def to_set(klass = Set, *args, &block)
+    klass.new(self, *args, &block)
+  end
+end
+
+# =begin
+# == RestricedSet class
+# RestricedSet implements a set with restrictions defined by a given
+# block.
+# 
+# === Super class
+#     Set
+# 
+# === Class Methods
+# --- RestricedSet::new(enum = nil) { |o| ... }
+# --- RestricedSet::new(enum = nil) { |rset, o| ... }
+#     Creates a new restricted set containing the elements of the given
+#     enumerable object.  Restrictions are defined by the given block.
+# 
+#     If the block's arity is 2, it is called with the RestrictedSet
+#     itself and an object to see if the object is allowed to be put in
+#     the set.
+# 
+#     Otherwise, the block is called with an object to see if the object
+#     is allowed to be put in the set.
+# 
+# === Instance Methods
+# --- restriction_proc
+#     Returns the restriction procedure of the set.
+# 
+# =end
+# 
+# class RestricedSet < Set
+#   def initialize(*args, &block)
+#     @proc = block or raise ArgumentError, "missing a block"
+# 
+#     if @proc.arity == 2
+#       instance_eval %{
+# 	def add(o)
+# 	  @hash[o] = true if @proc.call(self, o)
+# 	  self
+# 	end
+# 	alias << add
+# 
+# 	def add?(o)
+# 	  if include?(o) || !@proc.call(self, o)
+# 	    nil
+# 	  else
+# 	    @hash[o] = true
+# 	    self
+# 	  end
+# 	end
+# 
+# 	def replace(enum)
+# 	  enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
+# 	  clear
+# 	  enum.each { |o| add(o) }
+# 
+# 	  self
+# 	end
+# 
+# 	def merge(enum)
+# 	  enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
+# 	  enum.each { |o| add(o) }
+# 
+# 	  self
+# 	end
+#       }
+#     else
+#       instance_eval %{
+# 	def add(o)
+# 	  @hash[o] = true if @proc.call(o)
+# 	  self
+# 	end
+# 	alias << add
+# 
+# 	def add?(o)
+# 	  if include?(o) || !@proc.call(o)
+# 	    nil
+# 	  else
+# 	    @hash[o] = true
+# 	    self
+# 	  end
+# 	end
+#       }
+#     end
+# 
+#     super(*args)
+#   end
+# 
+#   def restriction_proc
+#     @proc
+#   end
+# end
 
 if $0 == __FILE__
   eval DATA.read
@@ -481,6 +722,11 @@ class TC_Set < Test::Unit::TestCase
     ary.clear
     assert_equal(false, set.empty?)
     assert_equal(3, set.size)
+
+    ary = [1,2,3]
+
+    s = Set.new(ary) { |o| o * 2 }
+    assert_equal([2,4,6], s.sort)
   end
 
   def test_dup
@@ -655,21 +901,37 @@ class TC_Set < Test::Unit::TestCase
     assert_same(set, ret)
     assert_equal(Set[1,2,3], set)
 
+    ret = set.add?(2)
+    assert_nil(ret)
+    assert_equal(Set[1,2,3], set)
+
     ret = set.add(4)
     assert_same(set, ret)
     assert_equal(Set[1,2,3,4], set)
+
+    ret = set.add?(5)
+    assert_same(set, ret)
+    assert_equal(Set[1,2,3,4,5], set)
   end
 
   def test_delete
     set = Set[1,2,3]
 
     ret = set.delete(4)
-    assert_same(nil, ret)
+    assert_same(set, ret)
+    assert_equal(Set[1,2,3], set)
+
+    ret = set.delete?(4)
+    assert_nil(ret)
     assert_equal(Set[1,2,3], set)
 
     ret = set.delete(2)
-    assert_equal(2, ret)
+    assert_equal(set, ret)
     assert_equal(Set[1,3], set)
+
+    ret = set.delete?(1)
+    assert_equal(set, ret)
+    assert_equal(Set[3], set)
   end
 
   def test_delete_if
@@ -684,14 +946,32 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[1,2,4,5,7,8,10], set)
   end
 
+  def test_collect!
+    set = Set[1,2,3,'a','b','c',-1..1,2..4]
+
+    ret = set.collect! { |i|
+      case i
+      when Numeric
+	i * 2
+      when String
+	i.upcase
+      else
+	nil
+      end
+    }
+
+    assert_same(set, ret)
+    assert_equal(Set[2,4,6,'A','B','C',nil], set)
+  end
+
   def test_reject!
     set = Set.new(1..10)
+
     ret = set.reject! { |i| i > 10 }
-    assert_same(nil, ret)
+    assert_nil(ret)
     assert_equal(Set.new(1..10), set)
 
-    set = Set.new(1..10)
-    ret = set.delete_if { |i| i % 3 == 0 }
+    ret = set.reject! { |i| i % 3 == 0 }
     assert_same(set, ret)
     assert_equal(Set[1,2,4,5,7,8,10], set)
   end
@@ -824,4 +1104,82 @@ class TC_Set < Test::Unit::TestCase
   # end
 end
 
-Test::Unit::UI::Console::TestRunner.run(TC_Set)
+class TC_SortedSet < Test::Unit::TestCase
+  def test_sortedset
+    s = SortedSet[4,5,3,1,2]
+
+    assert_equal([1,2,3,4,5], s.to_a)
+
+    prev = nil
+    s.each { |o| assert(prev < o) if prev; prev = o }
+    assert_not_nil(prev)
+
+    s.map! { |o| -2 * o }
+
+    assert_equal([-10,-8,-6,-4,-2], s.to_a)
+
+    prev = nil
+    s.each { |o| assert(prev < o) if prev; prev = o }
+    assert_not_nil(prev)
+
+    s = SortedSet.new([2,1,3]) { |o| o * -2 }
+    assert_equal([-6,-4,-2], s.to_a)
+  end
+end
+
+class TC_Enumerable < Test::Unit::TestCase
+  def test_to_set
+    ary = [2,5,4,3,2,1,3]
+
+    set = ary.to_set
+    assert_instance_of(Set, set)
+    assert_equal([1,2,3,4,5], set.sort)
+
+    set = ary.to_set { |o| o * -2 }
+    assert_instance_of(Set, set)
+    assert_equal([-10,-8,-6,-4,-2], set.sort)
+
+    set = ary.to_set(SortedSet)
+    assert_instance_of(SortedSet, set)
+    assert_equal([1,2,3,4,5], set.to_a)
+
+    set = ary.to_set(SortedSet) { |o| o * -2 }
+    assert_instance_of(SortedSet, set)
+    assert_equal([-10,-8,-6,-4,-2], set.sort)
+  end
+end
+
+# class TC_RestricedSet < Test::Unit::TestCase
+#   def test_s_new
+#     assert_raises(ArgumentError) { RestricedSet.new }
+# 
+#     s = RestricedSet.new([-1,2,3]) { |o| o > 0 }
+#     assert_equal([2,3], s.sort)
+#   end
+# 
+#   def test_restriction_proc
+#     s = RestricedSet.new([-1,2,3]) { |o| o > 0 }
+# 
+#     f = s.restriction_proc
+#     assert_instance_of(Proc, f)
+#     assert(f[1])
+#     assert(!f[0])
+#   end
+# 
+#   def test_replace
+#     s = RestricedSet.new(-3..3) { |o| o > 0 }
+#     assert_equal([1,2,3], s.sort)
+# 
+#     s.replace([-2,0,3,4,5])
+#     assert_equal([3,4,5], s.sort)
+#   end
+# 
+#   def test_merge
+#     s = RestricedSet.new { |o| o > 0 }
+#     s.merge(-5..5)
+#     assert_equal([1,2,3,4,5], s.sort)
+# 
+#     s.merge([10,-10,-8,8])
+#     assert_equal([1,2,3,4,5,8,10], s.sort)
+#   end
+# end
