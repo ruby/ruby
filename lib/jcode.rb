@@ -130,7 +130,8 @@ class String
   public
 
   def tr!(from, to)
-    return self.delete!(from) if to.length == 0
+    return nil if from == ""
+    return self.delete!(from) if to == ""
 
     pattern = TrPatternCache[from] ||= /[#{_regex_quote(from)}]/
     if from[0] == ?^
