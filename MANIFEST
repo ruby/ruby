@@ -330,6 +330,9 @@ lib/tempfile.rb
 lib/test/unit.rb
 lib/test/unit/assertionfailederror.rb
 lib/test/unit/assertions.rb
+lib/test/unit/autorunner.rb
+lib/test/unit/collector.rb
+lib/test/unit/collector/dir.rb
 lib/test/unit/collector/objectspace.rb
 lib/test/unit/error.rb
 lib/test/unit/failure.rb
@@ -676,6 +679,7 @@ test/soap/marshal/test_struct.rb
 test/soap/test_basetype.rb
 test/soap/test_soapelement.rb
 test/strscan/test_stringscanner.rb
+test/testunit/collector/test_dir.rb
 test/testunit/collector/test_objectspace.rb
 test/testunit/runit/test_assert.rb
 test/testunit/runit/test_testcase.rb
