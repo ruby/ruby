@@ -353,6 +353,7 @@ class TkTimer
     Tk_CBTBL[@id] = self
     @do_loop = @loop_exec
     @current_pos = 0
+    @return_value = nil
     @after_id = nil
 
     @init_sleep = 0
