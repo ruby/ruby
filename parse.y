@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-2000 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -527,6 +527,10 @@ mlhs_node	: variable
 		    {
 			$$ = attrset($1, $3);
 		    }
+		| primary tCOLON2 tIDENTIFIER
+		    {
+			$$ = attrset($1, $3);
+		    }
 		| backref
 		    {
 		        rb_backref_error($1);
@@ -542,6 +546,10 @@ lhs		: variable
 			$$ = aryset($1, $3);
 		    }
 		| primary '.' tIDENTIFIER
+		    {
+			$$ = attrset($1, $3);
+		    }
+		| primary tCOLON2 tIDENTIFIER
 		    {
 			$$ = attrset($1, $3);
 		    }
@@ -678,6 +686,17 @@ arg		: lhs '=' arg
 			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
 		        fixpos($$, $1);
 		    }
+		| primary tCOLON2 tIDENTIFIER tOP_ASGN arg
+		    {
+			if ($4 == tOROP) {
+			    $4 = 0;
+			}
+			else if ($4 == tANDOP) {
+			    $4 = 1;
+			}
+			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
+		        fixpos($$, $1);
+		    }
 		| backref tOP_ASGN arg
 		    {
 		        rb_backref_error($1);
@@ -721,7 +740,7 @@ arg		: lhs '=' arg
 			    $$ = $2;
 			}
 			else {
-			    $$ = call_op($2, tUPLUS, 0);
+			    $$ = call_op($2, tUPLUS, 0, 0);
 			}
 		    }
 		| tUMINUS arg
@@ -733,7 +752,7 @@ arg		: lhs '=' arg
 			    $$ = $2;
 			}
 			else {
-			    $$ = call_op($2, tUMINUS, 0);
+			    $$ = call_op($2, tUMINUS, 0, 0);
 			}
 		    }
 		| arg '|' arg
@@ -795,7 +814,7 @@ arg		: lhs '=' arg
 		    }
 		| '~' arg
 		    {
-			$$ = call_op($2, '~', 0);
+			$$ = call_op($2, '~', 0, 0);
 		    }
 		| arg tLSHFT arg
 		    {
@@ -3779,7 +3798,7 @@ arg_add(node1, node2)
 	return list_append(node1, node2);
     }
     else {
-	return NEW_ARGSCAT(node1, NEW_LIST(node2));
+	return NEW_ARGSCAT(node1, node2);
     }
 }
 

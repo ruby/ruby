@@ -510,7 +510,7 @@ extract_path(p, pend)
     len = pend - p;
     alloc = ALLOC_N(char, len+1);
     memcpy(alloc, p, len);
-    if (len > 0 && pend[-1] == '/') {
+    if (len > 1 && pend[-1] == '/') {
 	alloc[len-1] = 0;
     }
     else {
@@ -579,8 +579,9 @@ glob(path, func, arg)
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 		if (fnmatch(magic, dp->d_name, FNM_PERIOD|FNM_PATHNAME) == 0) {
 		    char *fix = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
+		    #define BASE (*base && !(*base == '/' && !base[1]))
 
-		    sprintf(fix, "%s%s%s", base, (*base)?"/":"", dp->d_name);
+		    sprintf(fix, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (!m) {
 			(*func)(fix, arg);
 			free(fix);

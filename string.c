@@ -1043,10 +1043,11 @@ rb_str_sub(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_sub_bang(argc, argv, str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_sub_bang(argc, argv, dup)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -1150,10 +1151,11 @@ rb_str_gsub(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_gsub_bang(argc, argv, str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_gsub_bang(argc, argv, dup)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -1195,13 +1197,13 @@ rb_f_sub(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE line, v;
+    VALUE line = uscore_get();
+    VALUE dup = rb_str_dup(line);
 
-    line = uscore_get();
-    v = rb_str_sub_bang(argc, argv, line = rb_str_dup(line));
-    if (NIL_P(v)) return line;
-    rb_lastline_set(v);
-    return v;
+    if (NIL_P(rb_str_sub_bang(argc, argv, dup)))
+	return line;
+    rb_lastline_set(dup);
+    return dup;
 }
 
 static VALUE
@@ -1217,13 +1219,13 @@ rb_f_gsub(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE line, v;
+    VALUE line = uscore_get();
+    VALUE dup = rb_str_dup(line);
 
-    line = uscore_get();
-    v = rb_str_gsub_bang(argc, argv, line = rb_str_dup(line));
-    if (NIL_P(v)) return line;
-    rb_lastline_set(v);
-    return v;
+    if (NIL_P(rb_str_gsub_bang(argc, argv, dup)))
+	return line;
+    rb_lastline_set(dup);
+    return dup;
 }
 
 static VALUE
@@ -1518,10 +1520,11 @@ static VALUE
 rb_str_upcase(str)
     VALUE str;
 {
-    VALUE val = rb_str_upcase_bang(str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_upcase_bang(dup)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -1552,10 +1555,11 @@ static VALUE
 rb_str_downcase(str)
     VALUE str;
 {
-    VALUE val = rb_str_downcase_bang(str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_downcase_bang(dup)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -1588,10 +1592,11 @@ static VALUE
 rb_str_capitalize(str)
     VALUE str;
 {
-    VALUE val = rb_str_capitalize_bang(str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_capitalize_bang(dup)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -1626,10 +1631,11 @@ static VALUE
 rb_str_swapcase(str)
     VALUE str;
 {
-    VALUE val = rb_str_swapcase_bang(str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_swapcase_bang(dup)))
+	return str;
+    return dup;
 }
 
 typedef unsigned char *USTR;
@@ -1777,10 +1783,11 @@ static VALUE
 rb_str_tr(str, src, repl)
     VALUE str, src, repl;
 {
-    VALUE val = tr_trans(str = rb_str_dup(str), src, repl, 0);
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(tr_trans(dup, src, repl, 0)))
+	return str;
+    return dup;
 }
 
 static void
@@ -1861,10 +1868,11 @@ rb_str_delete(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_delete_bang(argc, argv, str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_delete_bang(argc, argv, dup)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -1922,10 +1930,11 @@ rb_str_squeeze(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_squeeze_bang(argc, argv, str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_squeeze_bang(argc, argv, dup)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -1939,10 +1948,11 @@ static VALUE
 rb_str_tr_s(str, src, repl)
     VALUE str, src, repl;
 {
-    VALUE val = tr_trans(str = rb_str_dup(str), src, repl, 1);
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(tr_trans(dup, src, repl, 1)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -2231,10 +2241,11 @@ static VALUE
 rb_str_chop(str)
     VALUE str;
 {
-    VALUE val = rb_str_chop_bang(str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_chop_bang(dup)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -2248,11 +2259,12 @@ static VALUE
 rb_f_chop()
 {
     VALUE str = uscore_get();
-    VALUE val = rb_str_chop_bang(str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    rb_lastline_set(val);
-    return val;
+    if (NIL_P(rb_str_chop_bang(dup)))
+	return str;
+    rb_lastline_set(dup);
+    return dup;
 }
 
 static VALUE
@@ -2304,10 +2316,11 @@ rb_str_chomp(argc, argv, str)
     VALUE *argv;
     VALUE str;
 {
-    VALUE val = rb_str_chomp_bang(argc, argv, str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_chomp_bang(argc, argv, dup)))
+	return str;
+    return dup;
 }
 
 static VALUE
@@ -2324,11 +2337,12 @@ rb_f_chomp(argc, argv)
     VALUE *argv;
 {
     VALUE str = uscore_get();
-    VALUE val = rb_str_chomp_bang(argc, argv, str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    rb_lastline_set(val);
-    return val;
+    if (NIL_P(rb_str_chomp_bang(argc, argv, dup)))
+	return str;
+    rb_lastline_set(dup);
+    return dup;
 }
 
 static VALUE
@@ -2371,10 +2385,11 @@ static VALUE
 rb_str_strip(str)
     VALUE str;
 {
-    VALUE val = rb_str_strip_bang(str = rb_str_dup(str));
+    VALUE dup = rb_str_dup(str);
 
-    if (NIL_P(val)) return str;
-    return val;
+    if (NIL_P(rb_str_strip_bang(dup)))
+	return str;
+    return dup;
 }
 
 static VALUE

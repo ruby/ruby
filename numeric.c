@@ -330,8 +330,7 @@ flo_modulo(x, y, modulo)
 	result = value1 - value2 * value;
     }
 #endif
-    if (modulo &&
-	(RFLOAT(x)->value < 0.0) != (result < 0.0) && result != 0.0) {
+    if (modulo && value*result<0.0) {
 	result += value;
     }
     return rb_float_new(result);

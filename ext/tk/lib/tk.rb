@@ -196,7 +196,9 @@ module TkComm
 
   def _get_eval_string(str)
     return nil if str == None
-    if str.kind_of?(Hash)
+    if str.kind_of?(String)
+      # do nothing
+    elsif str.kind_of?(Hash)
       str = hash_kv(str).join(" ")
     elsif str.kind_of?(Array)
       str = array2tk_list(str)
@@ -417,11 +419,11 @@ module TkCore
   INTERP._invoke("proc", "rb_out", "args", "if {[set st [catch {ruby [format \"TkCore.callback %%Q!%s!\" $args]} ret]] != 0} {if {[regsub -all {!} $args {\\!} newargs] == 0} {return -code $st $ret} {if {[set st [catch {ruby [format \"TkCore.callback %%Q!%s!\" $newargs]} ret]] != 0} {return -code $st $ret} {return $ret}}} {return $ret}")
 
   def callback_break
-    raise TkCallbackBreak, "Tk callback returns 'break' status"
+    fail TkCallbackBreak, "Tk callback returns 'break' status"
   end
 
   def callback_continue
-    raise TkCallbackContinue, "Tk callback returns 'continue' status"
+    fail TkCallbackContinue, "Tk callback returns 'continue' status"
   end
 
   def after(ms, cmd=Proc.new)
@@ -527,8 +529,8 @@ module TkCore
         args.unshift "unknown"
         res = INTERP._invoke(*args)
       rescue
-	raise unless /^invalid command/ =~ $!
-	raise err
+	fail unless /^invalid command/ =~ $!
+	fail err
       end
     end
     if  INTERP._return_value() != 0
@@ -582,6 +584,32 @@ module Tk
     end
     def yscrollcommand(cmd=Proc.new)
       configure_cmd 'yscrollcommand', cmd
+    end
+    def xview(*index)
+      v = tk_send('xview', *index)
+      list(v) if index.size == 0
+    end
+    def yview(*index)
+      v = tk_send('yview', *index)
+      list(v) if index.size == 0
+    end
+    def xscrollbar(bar=nil)
+      if bar
+	@xscrollbar = bar
+	@xscrollbar.orient 'horizontal'
+	self.xscrollcommand {|arg| @xscrollbar.set *arg}
+	@xscrollbar.command {|arg| self.xview *arg}
+      end
+      @xscrollbar
+    end
+    def yscrollbar(bar=nil)
+      if bar
+	@yscrollbar = bar
+	@yscrollbar.orient 'vertical'
+	self.yscrollcommand {|arg| @yscrollbar.set *arg}
+	@yscrollbar.command {|arg| self.yview *arg}
+      end
+      @yscrollbar
     end
   end
 
@@ -784,7 +812,7 @@ class TkVariable
       INTERP._eval(format('global %s; set %s', @id, @id))
     rescue
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
-	raise
+	fail
       else
 	Hash[*tk_split_simplelist(INTERP._eval(format('global %s; array get %s', 
 						      @id, @id)))]
@@ -798,7 +826,7 @@ class TkVariable
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     rescue
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
-	raise
+	fail
       else
 	if val == []
 	  INTERP._eval(format('global %s; unset %s; set %s(0) 0; unset %s(0)', 
@@ -815,7 +843,7 @@ class TkVariable
 	  INTERP._eval(format('global %s; unset %s; array set %s %s', 
 			      @id, @id, @id, s))
 	else
-	  raise
+	  fail
 	end
       end
     end
@@ -2149,7 +2177,7 @@ end
 
 class TkTextWin<TkWindow
   def create_self
-    raise TypeError, "TkTextWin is abstract class"
+    fail TypeError, "TkTextWin is abstract class"
   end
 
   def bbox(index)
@@ -2195,6 +2223,14 @@ class TkListbox<TkTextWin
   def curselection
     list(tk_send('curselection'))
   end
+  def get(*index)
+    v = tk_send('get', *index)
+    if index.size == 1
+      v
+    else
+      tk_split_simplelist(v)
+    end
+  end
   def nearest(y)
     tk_send('nearest', y).to_i
   end
@@ -2212,14 +2248,6 @@ class TkListbox<TkTextWin
   end
   def selection_set(first, last=None)
     tk_send 'selection', 'set', first, last
-  end
-  def xview(cmd, *more)
-    v = tk_send('xview', cmd, *more)
-    v.to_i if more.size == 0
-  end
-  def yview(cmd, *more)
-    v = tk_send('yview', cmd, *more)
-    v.to_i if more.size == 0
   end
 end
 

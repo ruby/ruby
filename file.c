@@ -423,7 +423,7 @@ test_c(obj, fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (S_ISBLK(st.st_mode)) return Qtrue;
+    if (S_ISCHR(st.st_mode)) return Qtrue;
 
     return Qfalse;
 }

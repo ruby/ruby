@@ -3783,7 +3783,7 @@ else
 int
 main()
 {
-  if (-1==(-1>>(unsigned)1))
+  if (-1==(-1>>1))
     return 0;
   return 1;
 }
@@ -3806,7 +3806,7 @@ fi
 echo "$ac_t""$rb_cv_rshift_sign" 1>&6
 if test "$rb_cv_rshift_sign" = yes; then
   cat >> confdefs.h <<\EOF
-#define RSHIFT(x,y) ((x)>>y)
+#define RSHIFT(x,y) ((x)>>(int)y)
 EOF
 
 else
@@ -3931,19 +3931,23 @@ if test "${with_default_kcode+set}" = set; then
 	utf8) cat >> confdefs.h <<\EOF
 #define DEFAULT_KCODE KCODE_UTF8
 EOF
-;;
+
+	      DEFAULT_KCODE="KCODE_UTF8";;
 	euc)  cat >> confdefs.h <<\EOF
 #define DEFAULT_KCODE KCODE_EUC
 EOF
-;;
+
+	      DEFAULT_KCODE="KCODE_EUC";;
 	sjis) cat >> confdefs.h <<\EOF
 #define DEFAULT_KCODE KCODE_SJIS
 EOF
-;;
+
+	      DEFAULT_KCODE="KCODE_SJIS";;
 	none) cat >> confdefs.h <<\EOF
 #define DEFAULT_KCODE KCODE_NONE
 EOF
-;;
+
+	      DEFAULT_KCODE="KCODE_NONE";;
         *)    echo "configure: warning: $withval is not valid kcode; ignored" 1>&2;;
 	esac
 fi
@@ -3963,10 +3967,8 @@ fi
 
 
 
-case "$host_os" in
-    linux*)
-  echo $ac_n "checking whether ELF binaries are produced""... $ac_c" 1>&6
-echo "configure:3970: checking whether ELF binaries are produced" >&5
+echo $ac_n "checking whether ELF binaries are produced""... $ac_c" 1>&6
+echo "configure:3972: checking whether ELF binaries are produced" >&5
 if eval "test \"`echo '$''{'rb_cv_binary_elf'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -3974,7 +3976,7 @@ else
   rb_cv_binary_elf=yes
 else
   cat > conftest.$ac_ext <<EOF
-#line 3978 "configure"
+#line 3980 "configure"
 #include "confdefs.h"
 
 /* Test for whether ELF binaries are produced */
@@ -3994,7 +3996,7 @@ main() {
 }
 
 EOF
-if { (eval echo configure:3998: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:4000: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   rb_cv_binary_elf=yes
 else
@@ -4009,6 +4011,16 @@ fi
 fi
 
 echo "$ac_t""$rb_cv_binary_elf" 1>&6
+
+if test "$rb_cv_binary_elf" = yes; then
+  cat >> confdefs.h <<\EOF
+#define USE_ELF 1
+EOF
+
+fi
+
+case "$target_os" in
+    linux*)
   if test "$rb_cv_binary_elf" = no; then
     with_dln_a_out=yes
     host_os=${host_os}-a_out
@@ -4032,7 +4044,7 @@ STATIC=
 if test "$with_dln_a_out" != yes; then
   rb_cv_dlopen=unknown
   echo $ac_n "checking whether OS depend dynamic link works""... $ac_c" 1>&6
-echo "configure:4036: checking whether OS depend dynamic link works" >&5
+echo "configure:4048: checking whether OS depend dynamic link works" >&5
   if test "$GCC" = yes; then
     case "$host_os" in
     nextstep*)	;;
@@ -4051,9 +4063,8 @@ echo "configure:4036: checking whether OS depend dynamic link works" >&5
   else
     case "$host_os" in
 	hpux*)		CCDLFLAGS='+z';;
-	solaris*)	CCDLFLAGS='-K PIC' ;;
+	solaris*|irix*)	CCDLFLAGS='-K PIC' ;;
 	sunos*)		CCDLFLAGS='-PIC' ;;
-	irix*)		CCDLFLAGS='-KPIC' ;;
 	esix*|uxpds*)   CCDLFLAGS='-KPIC' ;;
 	*)		CCDLFLAGS='' ;;
     esac
@@ -4073,7 +4084,7 @@ echo "configure:4036: checking whether OS depend dynamic link works" >&5
 			rb_cv_dlopen=yes;;
 	sunos*) 	LDSHARED='ld -assert nodefinitions'
 			rb_cv_dlopen=yes;;
-	irix*) 	 	LDSHARED='ld -shared'
+	irix*) 	 	LDSHARED='ld -ignore_unresolved'
 			rb_cv_dlopen=yes;;
 	sysv4*) 	LDSHARED='ld -G'
 			rb_cv_dlopen=yes;;
@@ -4084,19 +4095,17 @@ echo "configure:4036: checking whether OS depend dynamic link works" >&5
 	linux*) 	LDSHARED="$CC -shared"
 			rb_cv_dlopen=yes ;;
 	freebsd*)       LDSHARED="$CC -shared"
-			if test -x /usr/bin/objformat && \
-			   test `/usr/bin/objformat` = "elf" ; then
+			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="-rdynamic"
 			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
-			    rb_cv_freebsd_elf=yes
 			else
 			  test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null || LDSHARED="ld -Bshareable"
 			fi
 			rb_cv_dlopen=yes ;;
-	netbsd*)	if test x"$netbsd_elf" = x"yes"; then
-				LDFLAGS="-export-dynamic"
+	netbsd*)	LDSHARED="ld -shared"
+			if test "$rb_cv_binary_elf" = yes; then
+                          LDFLAGS="-export-dynamic"
 			fi
-			LDSHARED="ld -shared"
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
 			rb_cv_dlopen=yes ;;
@@ -4153,12 +4162,12 @@ if test "$ac_cv_header_a_out_h" = yes; then
   if test "$with_dln_a_out" = yes || test "$rb_cv_dlopen" = unknown; then
     cat confdefs.h > config.h
     echo $ac_n "checking whether matz's dln works""... $ac_c" 1>&6
-echo "configure:4157: checking whether matz's dln works" >&5
+echo "configure:4166: checking whether matz's dln works" >&5
 if eval "test \"`echo '$''{'rb_cv_dln_a_out'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 4162 "configure"
+#line 4171 "configure"
 #include "confdefs.h"
 
 #define USE_DLN_A_OUT
@@ -4168,7 +4177,7 @@ int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:4172: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:4181: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   rb_cv_dln_a_out=yes
 else
@@ -4275,7 +4284,7 @@ fi
 case "$host_os" in
   human*)
     echo $ac_n "checking for _harderr in -lsignal""... $ac_c" 1>&6
-echo "configure:4279: checking for _harderr in -lsignal" >&5
+echo "configure:4288: checking for _harderr in -lsignal" >&5
 ac_lib_var=`echo signal'_'_harderr | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -4283,7 +4292,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lsignal  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 4287 "configure"
+#line 4296 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -4294,7 +4303,7 @@ int main() {
 _harderr()
 ; return 0; }
 EOF
-if { (eval echo configure:4298: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:4307: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -4322,7 +4331,7 @@ else
 fi
 
     echo $ac_n "checking for hmemset in -lhmem""... $ac_c" 1>&6
-echo "configure:4326: checking for hmemset in -lhmem" >&5
+echo "configure:4335: checking for hmemset in -lhmem" >&5
 ac_lib_var=`echo hmem'_'hmemset | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -4330,7 +4339,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lhmem  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 4334 "configure"
+#line 4343 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -4341,7 +4350,7 @@ int main() {
 hmemset()
 ; return 0; }
 EOF
-if { (eval echo configure:4345: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:4354: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -4371,12 +4380,12 @@ fi
     for ac_func in select gettimeofday
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
-echo "configure:4375: checking for $ac_func" >&5
+echo "configure:4384: checking for $ac_func" >&5
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 4380 "configure"
+#line 4389 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -4399,7 +4408,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:4403: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:4412: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
@@ -4424,7 +4433,7 @@ fi
 done
 
     echo $ac_n "checking whether PD libc _dtos18 fail to convert big number""... $ac_c" 1>&6
-echo "configure:4428: checking whether PD libc _dtos18 fail to convert big number" >&5
+echo "configure:4437: checking whether PD libc _dtos18 fail to convert big number" >&5
 if eval "test \"`echo '$''{'rb_cv_missing__dtos18'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -4432,7 +4441,7 @@ else
   rb_cv_missing__dtos18=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 4436 "configure"
+#line 4445 "configure"
 #include "confdefs.h"
 
 #include <stdio.h>
@@ -4444,7 +4453,7 @@ main ()
 }
 
 EOF
-if { (eval echo configure:4448: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:4457: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   rb_cv_missing__dtos18=yes
 else
@@ -4466,7 +4475,7 @@ EOF
 
     fi
     echo $ac_n "checking whether PD libc fconvert fail to round""... $ac_c" 1>&6
-echo "configure:4470: checking whether PD libc fconvert fail to round" >&5
+echo "configure:4479: checking whether PD libc fconvert fail to round" >&5
 if eval "test \"`echo '$''{'rb_cv_missing_fconvert'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -4474,7 +4483,7 @@ else
   rb_cv_missing_fconvert=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 4478 "configure"
+#line 4487 "configure"
 #include "confdefs.h"
 
 #include <stdio.h>
@@ -4487,7 +4496,7 @@ main ()
 }
 
 EOF
-if { (eval echo configure:4491: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:4500: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   rb_cv_missing_fconvert=yes
 else
@@ -4585,15 +4594,17 @@ if test "$enable_shared" = 'yes'; then
 	;;
     freebsd*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
-	if test "$rb_cv_freebsd_elf" != "yes" ; then
+	if test "$rb_cv_binary_elf" != "yes" ; then
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
 	    LIBRUBY_ALIASES=''
 	fi
 	;;
     netbsd*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
- 	if test x"$netbsd_elf" = "xyes"; then
-	    LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so'
+	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
+	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so'
+	else
+	   LIBRUBY_ALIASES=   # a.out platforms
 	fi
  	;;
     solaris*)

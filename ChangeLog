@@ -1,3 +1,16 @@
+Mon Jan 31 15:24:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_sub): no bang method returns original string if
+	  no change is made.
+
+Wed Jan 26 22:30:47 2000  Shigeo Kobayashi  <shigeo@tinyforest.gr.jp>
+
+	* numeric.c (flo_modulo): wrong result for negative modulo.
+
+Wed Jan 26 11:43:41 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* file.c (test_c): should use S_ISCHR.
+
 Sun Jan 16 20:12:13 2000  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* eval.c (dvar_asgn): may need to push dvar.
