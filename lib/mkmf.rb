@@ -17,6 +17,7 @@ unless defined? $configure_args
   end
   for arg in Shellwords::shellwords(args)
     arg, val = arg.split('=', 2)
+    next unless arg
     if arg.sub!(/^(?!--)/, '--')
       val or next
       arg.downcase!
@@ -26,6 +27,7 @@ unless defined? $configure_args
   end
   for arg in ARGV
     arg, val = arg.split('=', 2)
+    next unless arg
     if arg.sub!(/^(?!--)/, '--')
       val or next
       arg.downcase!

@@ -1170,12 +1170,13 @@ autoload_delete(mod, id)
 {
     VALUE val, file = Qnil;
 
+    st_delete(RCLASS(mod)->iv_tbl, &id, 0);
     if (st_lookup(RCLASS(mod)->iv_tbl, autoload, &val)) {
 	struct st_table *tbl = check_autoload_table(val);
 
 	if (!st_delete(tbl, &id, &file)) file = Qnil;
 
-	if (!tbl->num_entries) {
+	if (tbl->num_entries == 0) {
 	    DATA_PTR(val) = 0;
 	    st_free_table(tbl);
 	    id = autoload;

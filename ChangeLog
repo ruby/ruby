@@ -1,7 +1,12 @@
+Wed Jun 25 00:14:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (autoload_delete): should delete Qundef from iv_tbl.
+	  (ruby-bugs-ja PR#504)
+
 Tue Jun 24 14:22:41 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-    * lib/yaml/types.rb: replaced Kernel::Hash reference with Object::Hash
-      from [ruby-talk:74270]
+	* lib/yaml/types.rb: replaced Kernel::Hash reference with Object::Hash
+	  from [ruby-talk:74270]
 
 Tue Jun 24 17:59:30 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
