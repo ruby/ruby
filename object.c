@@ -684,10 +684,14 @@ static VALUE
 rb_class_allocate_instance(klass)
     VALUE klass;
 {
-    NEWOBJ(obj, struct RObject);
-    OBJSETUP(obj, klass, T_OBJECT);
-
-    return (VALUE)obj;
+    if (rb_frame_last_func() != alloc) {
+	return rb_obj_alloc(klass);
+    }
+    else {
+	NEWOBJ(obj, struct RObject);
+	OBJSETUP(obj, klass, T_OBJECT);
+	return (VALUE)obj;
+    }
 }
 
 VALUE

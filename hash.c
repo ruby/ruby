@@ -24,6 +24,7 @@ static void
 rb_hash_modify(hash)
     VALUE hash;
 {
+    if (!RHASH(hash)->tbl) rb_raise(rb_eTypeError, "uninitialized Hash");
     if (OBJ_FROZEN(hash)) rb_error_frozen("hash");
     if (!OBJ_TAINTED(hash) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
@@ -226,7 +227,7 @@ rb_hash_s_create(argc, argv, klass)
     int i;
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	VALUE hash = rb_obj_alloc(klass);
+	hash = rb_obj_alloc(klass);
 	    
 	RHASH(hash)->ifnone = Qnil;
 	RHASH(hash)->tbl = st_copy(RHASH(argv[0])->tbl);
@@ -237,8 +238,8 @@ rb_hash_s_create(argc, argv, klass)
     if (argc % 2 != 0) {
 	rb_raise(rb_eArgError, "odd number args for Hash");
     }
-    hash = rb_hash_s_alloc(klass);
 
+    hash = rb_obj_alloc(klass);
     for (i=0; i<argc; i+=2) {
         rb_hash_aset(hash, argv[i], argv[i + 1]);
     }
@@ -280,6 +281,7 @@ rb_hash_rehash(hash)
 {
     st_table *tbl;
 
+    rb_hash_modify(hash);
     tbl = st_init_table_with_size(&objhash, RHASH(hash)->tbl->num_entries);
     st_foreach(RHASH(hash)->tbl, rb_hash_rehash_i, tbl);
     st_free_table(RHASH(hash)->tbl);
@@ -851,6 +853,8 @@ rb_hash_equal(hash1, hash2)
     if (hash1 == hash2) return Qtrue;
     if (TYPE(hash2) != T_HASH) return Qfalse;
     if (RHASH(hash1)->tbl->num_entries != RHASH(hash2)->tbl->num_entries)
+	return Qfalse;
+    if (!rb_equal(RHASH(hash1)->ifnone, RHASH(hash2)->ifnone))
 	return Qfalse;
 
     data.tbl = RHASH(hash2)->tbl;

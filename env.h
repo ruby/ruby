@@ -18,6 +18,7 @@ extern struct FRAME {
     int argc;
     VALUE *argv;
     ID last_func;
+    ID orig_func;
     VALUE last_class;
     VALUE cbase;
     struct FRAME *prev;

@@ -214,7 +214,7 @@ rb_stat_rdev(self)
 #ifdef HAVE_ST_RDEV
     return ULONG2NUM(get_stat(self)->st_rdev);
 #else
-    return INT2FIX(0);
+    return Qnil;
 #endif
 }
 
@@ -226,7 +226,7 @@ rb_stat_rdev_major(self)
     long rdev = get_stat(self)->st_rdev;
     return ULONG2NUM(major(rdev));
 #else
-    return INT2FIX(0);
+    return Qnil;
 #endif
 }
 
@@ -238,7 +238,7 @@ rb_stat_rdev_minor(self)
     long rdev = get_stat(self)->st_rdev;
     return ULONG2NUM(minor(rdev));
 #else
-    return INT2FIX(0);
+    return Qnil;
 #endif
 }
 
@@ -256,7 +256,7 @@ rb_stat_blksize(self)
 #ifdef HAVE_ST_BLKSIZE
     return ULONG2NUM(get_stat(self)->st_blksize);
 #else
-    return INT2FIX(0);
+    return Qnil;
 #endif
 }
 
@@ -267,7 +267,7 @@ rb_stat_blocks(self)
 #ifdef HAVE_ST_BLOCKS
     return ULONG2NUM(get_stat(self)->st_blocks);
 #else
-    return INT2FIX(0);
+    return Qnil;
 #endif
 }
 

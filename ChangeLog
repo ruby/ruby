@@ -10,6 +10,14 @@ Sun Aug 11 09:34:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* marshal.c (r_object): register TYPE_BIGNUM regardless real type.
 
+Sat Aug 10 23:47:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_cmp): use dbl2big() for Floats, instead of
+	  big2dbl().
+
+	* bignum.c (Init_Bignum): rb_big_zero_p() removed.  There may be
+	  Bignum zero.
+
 Fri Aug  9 13:31:40 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/Win32API/extconf.rb: check existence of <windows.h>.
@@ -19,6 +27,23 @@ Thu Aug  8 09:37:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* lib/optparse.rb (NilClass): must provide conversion block.
 
 	* lib/optparse.rb (String): ditto.
+
+Thu Aug  8 00:45:15 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): new argument added for original method name.
+	  preserve original method name in frame->orig_func.
+
+	* eval.c (is_defined): use frame->orig_func, not last_func.
+
+	* eval.c (rb_eval): ditto.
+
+	* eval.c (method_call): supply data->oid also to rb_call0().
+
+	* object.c (rb_class_allocate_instance): call rb_obj_alloc() when
+	  called from alias, thus invoke original "allocate".
+
+	* eval.c (remove_method): removing allocate from classes should
+	  cause NameError.
 
 Wed Aug  7 22:12:54 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -34,6 +59,10 @@ Wed Aug  7 22:12:54 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse/uri.rb: require standard uri module.  thanks to
 	  Minero Aoki.
+
+Wed Aug  7 09:51:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_equal): should check default values.
 
 Wed Aug  7 08:44:32 2002  Minero Aoki  <aamine@loveruby.net>
 
@@ -64,6 +93,10 @@ Sat Aug  3 21:23:56 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Fri Aug  2 09:12:32 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: follow allocation framework.
+
+Fri Aug  2 01:21:52 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (s_recvfrom): update RSTRING len.
 
 Thu Aug  1 17:47:15 2002  Tachino Nobuhiro <tachino@jp.fujitsu.com>
 

@@ -1700,13 +1700,6 @@ rb_big_size(big)
     return INT2FIX(RBIGNUM(big)->len*SIZEOF_BDIGITS);
 }
 
-static VALUE
-rb_big_zero_p(big)
-    VALUE big;
-{
-    return Qfalse;
-}
-
 void
 Init_Bignum()
 {
@@ -1740,5 +1733,4 @@ Init_Bignum()
     rb_define_method(rb_cBignum, "to_f", rb_big_to_f, 0);
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "size", rb_big_size, 0);
-    rb_define_method(rb_cBignum, "zero?", rb_big_zero_p, 0);
 }

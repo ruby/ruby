@@ -315,6 +315,10 @@ rb_get_method_body(klassp, idp, noexp)
     return body;
 }
 
+static ID init, alloc, eqq, each, aref, aset, match, missing;
+static ID added, singleton_added;
+static ID __id__, __send__;
+
 static void
 remove_method(klass, mid)
     VALUE klass;
@@ -329,6 +333,16 @@ remove_method(klass, mid)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
+    if (mid == __id__ || mid == __send__ || mid == init) {
+	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
+    }
+    if (mid == alloc) {
+	if (klass == rb_cClass ||
+	    (FL_TEST(klass, FL_SINGLETON) &&
+	     rb_obj_is_kind_of(rb_iv_get(klass, "__attached__"), rb_cClass))) {
+	    rb_name_error(mid, "removing `%s'", rb_id2name(mid));
+	}
+    }
     if (!st_delete(RCLASS(klass)->m_tbl, &mid, &body) || !body->nd_body) {
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
@@ -453,10 +467,6 @@ rb_method_boundp(klass, id, ex)
     }
     return Qfalse;
 }
-
-static ID init, alloc, eqq, each, aref, aset, match, missing;
-static ID added, singleton_added;
-static ID __id__, __send__;
 
 void
 rb_attr(klass, id, read, write, ex)
@@ -1324,6 +1334,7 @@ rb_eval_string_wrap(str, state)
     rb_extend_object(ruby_top_self, ruby_wrapper);
     PUSH_FRAME();
     ruby_frame->last_func = 0;
+    ruby_frame->orig_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = self;
     ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_wrapper,0,0);
@@ -1415,6 +1426,7 @@ rb_eval_cmd(cmd, arg, tcheck)
     ruby_scope = top_scope;
     PUSH_FRAME();
     ruby_frame->last_func = 0;
+    ruby_frame->orig_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = ruby_top_self;
     ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,0,0,0);
@@ -1621,13 +1633,10 @@ rb_undef(klass, id)
 	rb_secure(4);
     }
     if (ruby_safe_level >= 4 && !OBJ_TAINTED(klass)) {
-	rb_raise(rb_eSecurityError, "Insecure: can't undef");
-	if (id == __id__ || id == __send__ || id == init) {
-	    rb_name_error(id, "undefining `%s' prohibited", rb_id2name(id));
-	}
+	rb_raise(rb_eSecurityError, "Insecure: can't undef `%s'", rb_id2name(id));
     }
     rb_frozen_class_p(klass);
-    if (id == __id__ || id == __send__ || id == init) {
+    if (id == __id__ || id == __send__ || id == init || id == alloc) {
 	rb_warn("undefining `%s' may cause serious problem", rb_id2name(id));
     }
     body = search_method(klass, id, &origin);
@@ -1844,10 +1853,10 @@ is_defined(self, node, buf)
     switch (nd_type(node)) {
       case NODE_SUPER:
       case NODE_ZSUPER:
-	if (ruby_frame->last_func == 0) return 0;
+	if (ruby_frame->orig_func == 0) return 0;
 	else if (ruby_frame->last_class == 0) return 0;
 	else if (rb_method_boundp(RCLASS(ruby_frame->last_class)->super,
-				  ruby_frame->last_func, 0)) {
+				  ruby_frame->orig_func, 0)) {
 	    if (nd_type(node) == NODE_SUPER) {
 		return arg_defined(self, node->nd_args, buf, "super");
 	    }
@@ -2759,10 +2768,10 @@ rb_eval(self, n)
 	    TMP_PROTECT;
 
 	    if (ruby_frame->last_class == 0) {	
-		if (ruby_frame->last_func) {
+		if (ruby_frame->orig_func) {
 		    rb_name_error(ruby_frame->last_func,
 				  "superclass method `%s' disabled",
-				  rb_id2name(ruby_frame->last_func));
+				  rb_id2name(ruby_frame->orig_func));
 		}
 		else {
 		    rb_raise(rb_eNoMethodError, "super called outside of method");
@@ -2780,7 +2789,7 @@ rb_eval(self, n)
 
 	    PUSH_ITER(ruby_iter->iter?ITER_PRE:ITER_NOT);
 	    result = rb_call(RCLASS(ruby_frame->last_class)->super,
-			     ruby_frame->self, ruby_frame->last_func,
+			     ruby_frame->self, ruby_frame->orig_func,
 			     argc, argv, 3);
 	    POP_ITER();
 	}
@@ -4458,9 +4467,10 @@ call_cfunc(func, recv, len, argc, argv)
 }
 
 static VALUE
-rb_call0(klass, recv, id, argc, argv, body, nosuper)
+rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     VALUE klass, recv;
     ID    id;
+    ID    oid;
     int argc;			/* OK */
     VALUE *argv;		/* OK */
     NODE *body;			/* OK */
@@ -4490,6 +4500,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
     PUSH_FRAME();
 
     ruby_frame->last_func = id;
+    ruby_frame->orig_func = oid;
     ruby_frame->last_class = nosuper?0:klass;
     ruby_frame->self = recv;
     ruby_frame->argc = argc;
@@ -4747,7 +4758,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	}
     }
 
-    return rb_call0(klass, recv, id, argc, argv, body, noex & NOEX_UNDEF);
+    return rb_call0(klass, recv, mid, id, argc, argv, body, noex & NOEX_UNDEF);
 }
 
 VALUE
@@ -6914,7 +6925,7 @@ method_call(argc, argv, method)
 	ruby_safe_level = 4;
     }
     if ((state = EXEC_TAG()) == 0) {
-	result = rb_call0(data->klass,data->recv,data->id,argc,argv,data->body,0);
+	result = rb_call0(data->klass,data->recv,data->id,data->oid,argc,argv,data->body,0);
     }
     POP_TAG();
     POP_ITER();
