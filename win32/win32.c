@@ -1472,22 +1472,24 @@ is_socket(SOCKET fd)
     char sockbuf[80];
     int optlen;
     int retval;
+    int result = TRUE;
 
     optlen = sizeof(sockbuf);
-    retval = getsockopt(fd, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
-    if (retval == SOCKET_ERROR) {
-	int iRet;
-
-	iRet = WSAGetLastError();
-	if (iRet == WSAENOTSOCK || iRet == WSANOTINITIALISED)
-	    return FALSE;
-    }
+    RUBY_CRITICAL({
+	retval = getsockopt(fd, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
+	if (retval == SOCKET_ERROR) {
+	    int iRet;
+	    iRet = WSAGetLastError();
+	    if (iRet == WSAENOTSOCK || iRet == WSANOTINITIALISED)
+		result = FALSE;
+	}
+    });
 
     //
     // If we get here, then fd is actually a socket.
     //
 
-    return TRUE;
+    return result;
 }
 
 int
@@ -1746,15 +1748,17 @@ rb_w32_select (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     ex = &trap;
 #endif /* USE_INTERRUPT_WINSOCK */
 
-    RUBY_CRITICAL(r = select (nfds, rd, wr, ex, timeout));
-    if (r == SOCKET_ERROR) {
-	errno = WSAGetLastError();
-	switch (errno) {
-	  case WSAEINTR:
-	    errno = EINTR;
-	    break;
+    RUBY_CRITICAL({
+	r = select(nfds, rd, wr, ex, timeout);
+	if (r == SOCKET_ERROR) {
+	    errno = WSAGetLastError();
+	    switch (errno) {
+	      case WSAEINTR:
+		errno = EINTR;
+		break;
+	    }
 	}
-    }
+    });
     return r;
 }
 
@@ -1814,9 +1818,11 @@ rb_w32_accept (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = accept (TO_SOCKET(s), addr, addrlen));
-    if (r == INVALID_SOCKET)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = accept(TO_SOCKET(s), addr, addrlen);
+	if (r == INVALID_SOCKET)
+	    errno = WSAGetLastError();
+    });
     return rb_w32_open_osfhandle(r, O_RDWR|O_BINARY);
 }
 
@@ -1830,9 +1836,11 @@ rb_w32_bind (SOCKET s, struct sockaddr *addr, int addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = bind (TO_SOCKET(s), addr, addrlen));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = bind(TO_SOCKET(s), addr, addrlen);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1845,9 +1853,11 @@ rb_w32_connect (SOCKET s, struct sockaddr *addr, int addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = connect (TO_SOCKET(s), addr, addrlen));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = connect(TO_SOCKET(s), addr, addrlen);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1861,9 +1871,11 @@ rb_w32_getpeername (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = getpeername (TO_SOCKET(s), addr, addrlen));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = getpeername(TO_SOCKET(s), addr, addrlen);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1876,9 +1888,11 @@ rb_w32_getsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = getsockname (TO_SOCKET(s), addr, addrlen));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = getsockname(TO_SOCKET(s), addr, addrlen);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1889,9 +1903,11 @@ rb_w32_getsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = getsockopt (TO_SOCKET(s), level, optname, optval, optlen));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = getsockopt(TO_SOCKET(s), level, optname, optval, optlen);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1904,9 +1920,11 @@ rb_w32_ioctlsocket (SOCKET s, long cmd, u_long *argp)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = ioctlsocket (TO_SOCKET(s), cmd, argp));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = ioctlsocket(TO_SOCKET(s), cmd, argp);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1919,9 +1937,11 @@ rb_w32_listen (SOCKET s, int backlog)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = listen (TO_SOCKET(s), backlog));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = listen(TO_SOCKET(s), backlog);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1934,9 +1954,11 @@ rb_w32_recv (SOCKET s, char *buf, int len, int flags)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = recv (TO_SOCKET(s), buf, len, flags));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = recv(TO_SOCKET(s), buf, len, flags);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1950,9 +1972,11 @@ rb_w32_recvfrom (SOCKET s, char *buf, int len, int flags,
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = recvfrom (TO_SOCKET(s), buf, len, flags, from, fromlen));
-    if (r == SOCKET_ERROR)
-	errno =  WSAGetLastError();
+    RUBY_CRITICAL({
+	r = recvfrom(TO_SOCKET(s), buf, len, flags, from, fromlen);
+	if (r == SOCKET_ERROR)
+	    errno =  WSAGetLastError();
+    });
     return r;
 }
 
@@ -1965,9 +1989,11 @@ rb_w32_send (SOCKET s, char *buf, int len, int flags)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = send (TO_SOCKET(s), buf, len, flags));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = send(TO_SOCKET(s), buf, len, flags);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1981,9 +2007,11 @@ rb_w32_sendto (SOCKET s, char *buf, int len, int flags,
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = sendto (TO_SOCKET(s), buf, len, flags, to, tolen));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = sendto(TO_SOCKET(s), buf, len, flags, to, tolen);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -1996,9 +2024,11 @@ rb_w32_setsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = setsockopt (TO_SOCKET(s), level, optname, optval, optlen));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = setsockopt(TO_SOCKET(s), level, optname, optval, optlen);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
     
@@ -2011,9 +2041,11 @@ rb_w32_shutdown (SOCKET s, int how)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = shutdown (TO_SOCKET(s), how));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = shutdown(TO_SOCKET(s), how);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -2026,11 +2058,11 @@ rb_w32_socket (int af, int type, int protocol)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(s = socket (af, type, protocol));
-    if (s == INVALID_SOCKET) {
-	errno = WSAGetLastError();
-	//fprintf(stderr, "socket fail (%d)", WSAGetLastError());
-    }
+    RUBY_CRITICAL({
+	s = socket(af, type, protocol);
+	if (s == INVALID_SOCKET)
+	    errno = WSAGetLastError();
+    });
 #ifdef __BORLANDC__
     return _open_osfhandle(s, O_RDWR|O_BINARY);
 #else
@@ -2047,9 +2079,11 @@ rb_w32_gethostbyaddr (char *addr, int len, int type)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = gethostbyaddr (addr, len, type));
-    if (r == NULL)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = gethostbyaddr(addr, len, type);
+	if (r == NULL)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -2062,9 +2096,11 @@ rb_w32_gethostbyname (char *name)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = gethostbyname (name));
-    if (r == NULL)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = gethostbyname(name);
+	if (r == NULL)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -2077,9 +2113,11 @@ rb_w32_gethostname (char *name, int len)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = gethostname (name, len));
-    if (r == SOCKET_ERROR)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = gethostname(name, len);
+	if (r == SOCKET_ERROR)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -2092,9 +2130,11 @@ rb_w32_getprotobyname (char *name)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = getprotobyname (name));
-    if (r == NULL)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = getprotobyname(name);
+	if (r == NULL)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -2107,9 +2147,11 @@ rb_w32_getprotobynumber (int num)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = getprotobynumber (num));
-    if (r == NULL)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = getprotobynumber(num);
+	if (r == NULL)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -2122,9 +2164,11 @@ rb_w32_getservbyname (char *name, char *proto)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = getservbyname (name, proto));
-    if (r == NULL)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = getservbyname(name, proto);
+	if (r == NULL)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
@@ -2137,9 +2181,11 @@ rb_w32_getservbyport (int port, char *proto)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    RUBY_CRITICAL(r = getservbyport (port, proto));
-    if (r == NULL)
-	errno = WSAGetLastError();
+    RUBY_CRITICAL({
+	r = getservbyport(port, proto);
+	if (r == NULL)
+	    errno = WSAGetLastError();
+    });
     return r;
 }
 
