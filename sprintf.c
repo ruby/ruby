@@ -249,6 +249,7 @@ rb_f_sprintf(argc, argv)
     fmt = GETNTHARG(0);
     if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
+    fmt = rb_str_new4(fmt);
     p = RSTRING(fmt)->ptr;
     end = p + RSTRING(fmt)->len;
     blen = 0;

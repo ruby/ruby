@@ -417,7 +417,7 @@ io_fwrite(str, fptr)
     }
 #if defined(__human68k__) || defined(__vms)
     do {
-	if (fputc(*(RSTRING(str)->ptr+(offset++)), f) == EOF) {
+	if (fputc(RSTRING(str)->ptr[offset++], f) == EOF) {
 	    if (ferror(f)) return -1L;
 	    break;
 	}

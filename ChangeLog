@@ -1,3 +1,9 @@
+Wed Dec  8 14:31:36 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fwrite): change dereference for cosmetic reason.
+
+	* sprintf.c (rb_f_sprintf): [ruby-dev:25104]
+
 Tue Dec  7 19:08:00 2004  Akiyoshi, Masamichi <akiyoshi@hp.com>
 
 	* io.c (io_fwrite): fix offset incrementation (for VMS and Human68k)
@@ -65,15 +71,6 @@ Sat Dec  4 22:54:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ext/socket/socket.c (bsock_send): ditto.
 
 	* ext/socket/socket.c (s_recvfrom): ditto.
-
-	* hash.c (rb_hash_hash): should provide "hash" method where "eql?"
-	  is redefined.  [ruby-talk:122482]
-
-Sat Dec  4 00:35:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* ext/socket/socket.c (bsock_setsockopt): [ruby-dev:25039]
-
-Sat Dec  4 22:54:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_hash): should provide "hash" method where "eql?"
 	  is redefined.  [ruby-talk:122482]
