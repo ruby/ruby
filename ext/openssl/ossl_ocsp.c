@@ -261,11 +261,11 @@ ossl_ocspreq_to_der(VALUE self)
     unsigned char *p;
     long len;
 
+    GetOCSPReq(self, req);
     if((len = i2d_OCSP_REQUEST(req, NULL)) <= 0)
 	ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
     p = RSTRING(str)->ptr;
-    GetOCSPReq(self, req);
     if(i2d_OCSP_REQUEST(req, &p) <= 0)
 	ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
