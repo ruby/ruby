@@ -570,6 +570,14 @@ dir_s_glob(dir, str)
     }
     if (buf != buffer)
 	free(buf);
+    if (rb_iterator_p()) {
+	long len = RARRAY(ary)->len;
+	VALUE *ptr = RARRAY(ary)->ptr;
+
+	while (len--) {
+	    rb_yield(*ptr++);
+	}
+    }
     return ary;
 }
 

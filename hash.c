@@ -264,7 +264,6 @@ rb_hash_s_create(argc, argv, klass)
     hash = rb_hash_new2(klass);
 
     for (i=0; i<argc; i+=2) {
-	if (NIL_P(argv[i+1])) continue;
 	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);
     }
 
@@ -362,6 +361,9 @@ rb_hash_fetch(argc, argv, hash)
 		rb_raise(rb_eArgError, "wrong # of arguments", argc);
 	    }
 	    return rb_yield(argv[0]);
+	}
+	if (argc == 1) {
+	    rb_raise(rb_eIndexError, "key not found");
 	}
 	return if_none;
     }
@@ -521,10 +523,6 @@ rb_hash_aset(hash, key, val)
     VALUE hash, key, val;
 {
     rb_hash_modify(hash);
-    if (NIL_P(val)) {
-	rb_hash_delete(hash, key);
-	return Qnil;
-    }
     if (TYPE(key) != T_STRING || st_lookup(RHASH(hash)->tbl, key, 0)) {
 	st_insert(RHASH(hash)->tbl, key, val);
     }

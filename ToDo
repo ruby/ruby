@@ -1,5 +1,6 @@
 Language Spec.
 
+- def foo; .. rescue .. end
 * compile time string concatenation, "hello" "world" => "helloworld"
 * ../... outside condition invokes operator method too.
 * %w(a\ b\ c abc) => ["a b c", "abc"]
@@ -15,7 +16,6 @@ Language Spec.
 
 Hacking Interpreter
 
-* hash[key] = nil may not remove entry; hashes may have nil as the value.
 * RUBYOPT environment variable
 * non-blocking open (e.g. named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr
@@ -27,7 +27,9 @@ Hacking Interpreter
 
 Standard Libraries
 
-* Array#{first,last,at}
+- hash[key] = nil may not remove entry; hashes may have nil as the value.
+- Array#{first,last,at}
+- Dir.glob(pat){|f|...}
 * Struct::new([name,]member,...) ??
 * String#scanf(?)
 * Object#fmt(?)
@@ -37,11 +39,10 @@ Standard Libraries
 * Stream or Port, abstract superclass of IO ?
 * String#{pred,prev}, String#downto
 * optional stepsize argument for succ()
-* Dir.glob(pat){|f|...}
 
 Extension Libraries
 
-* FastCGI ruby
+- FastCGI ruby
 * ptk.rb pTk wrapper that is compatible to tk.rb
 
 Ruby Libraries
@@ -56,4 +57,4 @@ Tools
 
 Misc
 
-* publish Ruby books
+- publish Ruby books

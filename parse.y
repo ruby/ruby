@@ -1182,8 +1182,18 @@ primary		: literal
 		    }
 		  f_arglist
 		  compstmt
+		  rescue
+		  opt_else
+		  ensure
 		  kEND
 		    {
+		        if ($6) $5 = NEW_RESCUE($5, $6, $7);
+			else if ($7) {
+			    rb_warn("else without rescue is useless");
+			    $5 = block_append($5, $7);
+			}
+			if ($8) $5 = NEW_ENSURE($5, $8);
+
 		        /* NOEX_PRIVATE for toplevel */
 			$$ = NEW_DEFN($2, $4, $5, class_nest?0:1);
 		        fixpos($$, $4);

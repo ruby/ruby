@@ -298,7 +298,7 @@ posix_signal(signum, handler)
     sigact.sa_flags |= SA_RESTART; /* SVR4, 4.3+BSD */
 #endif
 #ifdef SA_NOCLDWAIT
-    if (signum == SIGCHLD && handler == (RETSIGTYPE)SIG_IGN)
+    if (signum == SIGCHLD && handler == SIG_IGN)
 	sigact.sa_flags |= SA_NOCLDWAIT;
 #endif
     sigaction(signum, &sigact, 0);

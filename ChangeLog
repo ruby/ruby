@@ -1,3 +1,30 @@
+Wed Oct 13 02:17:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (dir_s_glob): iterate over generated matching filenames if
+	  the block is given to the method.
+
+	* array.c (rb_ary_at): new methods; at, first, last.
+
+	* hash.c (rb_hash_fetch): raises exception unless the default
+	  value is supplied.
+
+	* hash.c (rb_hash_s_create): need not remove nil from value.
+
+	* hash.c (rb_hash_aset): setting value to nil does not remove key
+	  anymore.
+
+Tue Oct 12 22:29:04 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_read): length may be 0 or negative.
+
+Tue Oct 12 13:26:27 1999  Jun-ichiro itojun Hagino  <itojun@itojun.org>
+
+	* signal.c (posix_signal): RETSIGTYPE may be void.
+
+Tue Oct 12 03:28:03 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* array.c (rb_ary_delete_at): allows negative position.
+
 Mon Oct 11 17:42:25 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (rb_intern): should generate distinct ID_ATTRSET symbols

@@ -417,6 +417,29 @@ rb_ary_aref(argc, argv, ary)
 }
 
 static VALUE
+rb_ary_at(ary, pos)
+    VALUE ary, pos;
+{
+    return rb_ary_entry(ary, NUM2LONG(pos));
+}
+
+static VALUE
+rb_ary_first(ary)
+    VALUE ary;
+{
+    if (RARRAY(ary)->len == 0) return Qnil;
+    return RARRAY(ary)->ptr[0];
+}
+
+static VALUE
+rb_ary_last(ary)
+    VALUE ary;
+{
+    if (RARRAY(ary)->len == 0) return Qnil;
+    return RARRAY(ary)->ptr[RARRAY(ary)->len-1];
+}
+
+static VALUE
 rb_ary_index(ary, val)
     VALUE ary;
     VALUE val;
@@ -940,22 +963,19 @@ rb_ary_delete_at(ary, at)
     VALUE ary;
     VALUE at;
 {
-    long i1, i2, pos;
+    long i, pos = NUM2LONG(at), len = RARRAY(ary)->len;
     VALUE del = Qnil;
 
+    if (pos >= len) return Qnil;
+    if (pos < 0) pos += len;
+    if (pos < 0) return Qnil;
+
     rb_ary_modify(ary);
-    pos = NUM2LONG(at);
-    for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
-	if (i1 == pos) {
-	    del = RARRAY(ary)->ptr[i1];
-	    continue;
-	}
-	if (i1 != i2) {
-	    RARRAY(ary)->ptr[i2] = RARRAY(ary)->ptr[i1];
-	}
-	i2++;
+    del = RARRAY(ary)->ptr[pos];
+    for (i = pos + 1; i < len; i++, pos++) {
+	RARRAY(ary)->ptr[pos] = RARRAY(ary)->ptr[i];
     }
-    RARRAY(ary)->len = i2;
+    RARRAY(ary)->len = pos;
 
     return del;
 }
@@ -1445,6 +1465,9 @@ Init_Array()
 
     rb_define_method(rb_cArray, "[]", rb_ary_aref, -1);
     rb_define_method(rb_cArray, "[]=", rb_ary_aset, -1);
+    rb_define_method(rb_cArray, "at", rb_ary_at, 1);
+    rb_define_method(rb_cArray, "first", rb_ary_first, 0);
+    rb_define_method(rb_cArray, "last", rb_ary_last, 0);
     rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_method, -1);
