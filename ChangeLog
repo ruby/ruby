@@ -1,3 +1,8 @@
+Mon Oct  6 11:57:06 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_beginendblock.rb, test/ruby/beginmainend.rb: added
+	  test for eval-ed BEGIN END order.
+
 Mon Oct  6 09:19:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_object): should pass "weak" value to next level.

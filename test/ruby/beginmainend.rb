@@ -27,6 +27,24 @@ END {
   puts "should not be dumped"
 }
 
+eval <<EOE
+  BEGIN {
+    puts "innerbegin1"
+  }
+
+  BEGIN {
+    puts "innerbegin2"
+  }
+
+  END {
+    puts "innerend2"
+  }
+
+  END {
+    puts "innerend1"
+  }
+EOE
+
 END {
   exit
   puts "should not be dumped"
