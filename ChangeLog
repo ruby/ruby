@@ -1,3 +1,7 @@
+Thu Jan 10 11:30:52 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* win32/resource.rb: Modify copyright in resource script.
+
 Wed Jan  9 20:21:09 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* misc/ruby-mode.el (ruby-calculate-indent): indentation after
