@@ -65,6 +65,7 @@ ruby.h
 rubyio.h
 rubysig.h
 rubytest.rb
+runruby.rb
 signal.c
 sprintf.c
 st.c
