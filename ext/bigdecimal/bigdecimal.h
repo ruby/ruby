@@ -131,7 +131,7 @@ VP_EXPORT S_LONG VpExponent10(Real *a);
 VP_EXPORT void VpSzMantissa(Real *a,char *psz);
 VP_EXPORT void VpToString(Real *a,char *psz,int fFmt);
 VP_EXPORT int VpCtoV(Real *a,char *int_chr,U_LONG ni,char *frac,U_LONG nf,char *exp_chr,U_LONG ne);
-VP_EXPORT void VpVtoD(double *d,S_LONG *e,Real *m);
+VP_EXPORT int VpVtoD(double *d,S_LONG *e,Real *m);
 VP_EXPORT void VpDtoV(Real *m,double d);
 VP_EXPORT void VpItoV(Real *m,S_INT ival);
 VP_EXPORT int VpSqrt(Real *y,Real *x);

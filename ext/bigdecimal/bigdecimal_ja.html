@@ -84,7 +84,7 @@ bigdecimal.c,bigdecimal.h
 <PRE>
 require 'bigdecimal'
 a=BigDecimal::new("0.123456789123456789")
-b=BigDecimal::new("123456.78912345678",40)
+b=BigDecimal("123456.78912345678",40)
 c=a+b
 </PRE>
 </CODE>
@@ -92,18 +92,27 @@ c=a+b
 というような感じで使用します。
 
 <H3>メソッド一覧</H3>
-以下のようなメソッドが利用可能です。<BR>
-記述上、BigDecimal オブジェクトを a,b,c,rで、String（文字列）オブジェクトを
- s、整数を n で表記します。また、「有効桁数」とは BigDecimal が精度を保証する
-桁数です。ぴったりではありません、若干の余裕を持って計算されます。また、
+以下のメソッドが利用可能です。
+「有効桁数」とは BigDecimal が精度を保証する桁数です。
+ぴったりではありません、若干の余裕を持って計算されます。また、
 例えば３２ビットのシステムでは１０進で４桁毎に計算します。従って、現状では、
 内部の「有効桁数」は４の倍数となっています。
+<P>
+以下のメソッド以外にも、(C ではない) Ruby ソースの形で
+提供されているものもあります。例えば、文字列から BigDecimal への
+変換や、"0.xxxxxEn" という形式ではなく "nnnnn.mmmm" の形式の文字列
+へ変換するメソッド等があります。利用するには
+<PRE><CODE>
+require "bigdecimal/util.rb"
+</CODE></PRE>
+のようにします。詳細は util.rb の内容を参照して下さい。
 
 <H4><U>クラスメソッド</U></H4>
 <UL>
 <LI><B>new</B></LI><BLOCKQUOTE>
 新しい BigDecimal オブジェクトを生成します。<BR>
-a=BigDecimal::new(s[,n])<BR>
+a=BigDecimal::new(s[,n]) または<BR>
+a=BigDecimal(s[,n])<BR>
 s は初期値を文字列で指定します．
 n は必要な有効桁数（a の最大有効桁数）を整数で指定します。
 n が 0 または省略されたときは、n の値は s の有効桁数とみなされます。
@@ -194,17 +203,6 @@ double_figは以下の C プログラムの結果と同じです。
 <LI><B>BASE</B></LI><BLOCKQUOTE>
 内部で使用される基数の値です。整数が 32 ビットの処理系では10000です。<BR>
 b = BigDecimal::BASE<BR>
-</BLOCKQUOTE>
-
-<LI><B>E</B></LI><BLOCKQUOTE>
-自然対数の底e(=2.718281828....)を計算します（正直にテイラー展開で）。<BR>
-e = BigDecimal::E(n)<BR>
-nは必要な有効桁数を整数で指定します。
-</BLOCKQUOTE>
-<LI><B>PI</B></LI><BLOCKQUOTE>
-円周率(=3.14159265358979....)を計算します（J．Machinの公式を用います）。<BR>
-e = BigDecimal::PI(n)<BR>
-n は必要な有効桁数を整数で指定します。
 </BLOCKQUOTE>
 </UL>
 
@@ -374,8 +372,9 @@ i は値に応じて Fixnum か Bignum になります。
 a が Infinity や NaN のとき、i は nil になります。
 </BLOCKQUOTE>
 <LI><B>to_f</B></LI><BLOCKQUOTE>
-dup と全く同じです。
-同じ値の BigDecimal オブジェクトを生成します。
+Float オブジェクトに変換します。
+よりきめ細かい値が必要ならば split メソッドを利用して
+ください。
 </BLOCKQUOTE>
 <LI><B>to_s[(n)]</B></LI><BLOCKQUOTE>
 文字列に変換します("0.xxxxxEn"の形になります）。<BR>
@@ -391,7 +390,7 @@ n = a.exponent <BR>
 </BLOCKQUOTE>
 
 <LI><B>sign</B></LI><BLOCKQUOTE>
-値の属性を返します。
+値が正(sign &gt; 0)、負(sign &lt; 0)、その他(sigh==0)であるかの情報を返します。
 n = a.sign <BR>
 としたとき n の値は a が以下のときを意味します。<BR>
 () の中の数字は、実際の値です(<A HREF="#STRUCT">「内部構造」</A>を参照)。<BR>
@@ -443,28 +442,6 @@ p a=BigDecimal::new("3.14",10)<BR>
 最初の16進数はオブジェクトのアドレス、次の '0.314E1' は値、
 次の4は現在の有効桁数(表示より若干大きいことがあります)、
 最後はオブジェクトが取り得る最大桁数になります。
-
-</BLOCKQUOTE>
-<LI><B>dup</B></LI><BLOCKQUOTE>
-同じ値の BigDecimal オブジェクトを生成します。
-</BLOCKQUOTE>
-<LI><B>sqrt</B></LI><BLOCKQUOTE>
-aの有効桁 n 桁の平方根（n の平方根ではありません）。
-これまた、正直にニュートン法で計算します。<BR>
-c = a.sqrt(n)<BR>
-</BLOCKQUOTE>
-<LI><B>sincos</B></LI><BLOCKQUOTE>
-a の有効桁 n 桁の sin と cos を同時に（テイラー展開で）計算して、
- sin と cos の配列を返します。
-n は必要な有効桁数です（ n の sin や cos を計算するわけではありません）。
-<BR>
-sin,cos = a.sincos(n)<BR>
-|a|<2*3.1415....でないと正しい答えを計算できないこともあります。
-</BLOCKQUOTE>
-<LI><B>exp</B></LI><BLOCKQUOTE>
-自然対数の底e(=2.718281828....)の a 乗を計算します。<BR>
-c = a.exp(n)<BR>
-n は必要な有効桁数です。
 </BLOCKQUOTE>
 <LI><B>**</B></LI><BLOCKQUOTE>
 a の n 乗を計算します。ｎは整数。<BR>
@@ -475,6 +452,11 @@ c = a ** n<BR>
 ** と同じで、a の n 乗を計算します。ｎは整数。<BR>
 c = a.power(n)<BR>
 結果として c の有効桁は a の n 倍以上になるので注意。
+</BLOCKQUOTE>
+<LI><B>sqrt</B></LI><BLOCKQUOTE>
+aの有効桁 n 桁の平方根（n の平方根ではありません）を
+ニュートン法で計算します。<BR>
+c = a.sqrt(n)<BR>
 </BLOCKQUOTE>
 
 <LI><B>&lt=&gt</B></LI><BLOCKQUOTE>
@@ -493,11 +475,56 @@ c = a &lt=&gt b
 <LI><B>&gt</B></LI>
 <LI><B>&gt=</B></LI>
 </UL>
+
+<H4><U>(評価段階の)クラスメソッド</U></H4>
+以下のクラスメソッドは、まだ評価段階ですので、通常では
+使用できません。使用するには bigdecimal.c の
+「/* #define ENABLE_TRIAL_METHOD   */」
+のコメントを外し、再コンパイル・再インストールが必要です。
+
+<UL>
+<LI><B>E</B></LI><BLOCKQUOTE>
+自然対数の底e(=2.718281828....)を計算します（正直にテイラー展開で）。<BR>
+e = BigDecimal::E(n)<BR>
+nは必要な有効桁数を整数で指定します。
+</BLOCKQUOTE>
+<LI><B>PI</B></LI><BLOCKQUOTE>
+円周率(=3.14159265358979....)を計算します（J．Machinの公式を用います）。<BR>
+e = BigDecimal::PI(n)<BR>
+n は必要な有効桁数を整数で指定します。
+</BLOCKQUOTE>
+</UL>
+
+<H4><U>(評価段階の)インスタンスメソッド</U></H4>
+以下のインスタンスメソッドは、まだ評価段階ですので、通常では
+使用できません。使用するには bigdecimal.c の
+「/* #define ENABLE_TRIAL_METHOD   */」
+のコメントを外して、再コンパイル・再インストールが必要です。
+<UL>
+<LI><B>sincos</B></LI><BLOCKQUOTE>
+a の有効桁 n 桁の sin と cos を同時に（テイラー展開で）計算して、
+ sin と cos の配列を返します。
+n は必要な有効桁数です（ n の sin や cos を計算するわけではありません）。
+<BR>
+sin,cos = a.sincos(n)<BR>
+|a| &lt; 2*3.1415....でないと正しい答えを計算できないこともあります。
+</BLOCKQUOTE>
+<LI><B>exp</B></LI><BLOCKQUOTE>
+自然対数の底e(=2.718281828....)の a 乗を計算します。<BR>
+c = a.exp(n)<BR>
+n は必要な有効桁数です。
+</BLOCKQUOTE>
+</UL>
+
 <H3>coerceについて</H3>
 BigDecimal オブジェクトが算術演算子の左にあるときは、BigDecimal オブジェクトが
 右にあるオブジェクトを(必要なら) BigDecimal に変換してから計算します。
 従って、BigDecimal オブジェクト以外でも数値を意味するものなら右に置けば
-演算は可能です。<BR><BR>
+演算は可能です。<BR>
+ただし、文字列は（通常）数値に自動変換することはできません。
+文字列を数値に自動変換に自動変換したい場合は bigfloat.c の
+「/* #define ENABLE_NUMERIC_STRING */」のコメントを外してから、
+再コンパイル、再インストールする必要があります。
 文字列で数値を与える場合は注意が必要です。数値に変換できない文字があると、
 単に変換を止めるだけでエラーにはなりません。"10XX"なら１０、"XXXX"は０
 と扱われます。<BR>
