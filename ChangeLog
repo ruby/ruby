@@ -1,3 +1,22 @@
+Thu Jan 29 15:33:23 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509hame.c (ossl_x509name_initialize): change
+	  second argument. it expected to be a Hash not an Integer.
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_add_entry): add new
+	  function for OpenSSL::X509::Name#add_entry.
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_to_a): append ASN.1
+	  tag number to each element of return value.
+
+	* ext/openssl/ossl_x509name.c (Init_ossl_x509name): add constants
+	  OpenSSL::X509::Name::DEFAULT_OBJECT_TYPE and OBJECT_TYPE_TEMPLATE.
+
+	* ext/openssl/lib/openssl/x509.rb (OpenSSL::X509::Name#initialize):
+	  second argument takes OBJECT_TYPE_TEMPLATE by default.
+
+	* sample/openssl/gen_csr.rb: use OpenSSL::X509::Name.parse.
+
 Tue Jan 27 11:09:29 2004  FUKUMOTO Atsushi  <fukumoto@nospam.imasy.or.jp>
 
 	* ext/socket/socket.c (s_recvfrom): sending length should be an
