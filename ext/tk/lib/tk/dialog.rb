@@ -2,6 +2,7 @@
 #   tk/dialog.rb : create dialog boxes
 #
 require 'tk'
+require 'tk/variable.rb'
 
 class TkDialogObj < TkWindow
   extend Tk
@@ -49,13 +50,14 @@ class TkDialogObj < TkWindow
         end
       }
     end
-    @config = 'after idle {' + @config + '};' if @config != ""
+    # @config = 'after idle {' + @config + '};' if @config != ""
+    @config = array2tk_list['after', 'idle', @config] << ';' if @config != ""
   end
   private :_set_button_config
 
   # initialize tk_dialog
   def create_self(keys)
-    #@var = TkVariable.new
+    # @var = TkVariable.new
     @val = nil
 
     @title   = title
@@ -82,7 +84,8 @@ class TkDialogObj < TkWindow
       @title   = keys['title'] if keys.key? 'title'
       @message = keys['message'] if keys.key? 'message'
       @bitmap  = keys['bitmap'] if keys.key? 'bitmap'
-      @bitmap  = '{}' if @bitmap == nil || @bitmap == ""
+      # @bitmap  = '{}' if @bitmap == nil || @bitmap == ""
+      @bitmap  = '' unless @bitmap
       @default_button = keys['default'] if keys.key? 'default'
       @buttons = keys['buttons'] if keys.key? 'buttons'
 
@@ -95,9 +98,9 @@ class TkDialogObj < TkWindow
       @btnframe_config = keys['btnframe_config'] if keys.key? 'btnframe_config'
     end
 
-    if @title.include? ?\s
-      @title = '{' + @title + '}'
-    end
+    #if @title.include? ?\s
+    #  @title = '{' + @title + '}'
+    #end
 
     if @buttons.kind_of?(Array)
       _set_button_config(@buttons.collect{|cfg| 
@@ -109,6 +112,8 @@ class TkDialogObj < TkWindow
       @buttons = @buttons.keys
     end
     @buttons = tk_split_simplelist(@buttons) if @buttons.kind_of?(String)
+    @buttons = [] unless @buttons
+=begin
     @buttons = @buttons.collect{|s|
       if s.kind_of?(Array)
         s = s.join(' ')
@@ -119,6 +124,7 @@ class TkDialogObj < TkWindow
         s
       end
     }
+=end
 
     if @message_config.kind_of?(Hash)
       # @config << Kernel.format("%s.msg configure %s;", 
@@ -167,7 +173,8 @@ class TkDialogObj < TkWindow
     else
       default_button = @default_button
     end
-    default_button = '{}' if default_button == nil
+    # default_button = '{}' if default_button == nil
+    default_button = '' if default_button == nil
     #Tk.ip_eval('eval {global '+@var.id+';'+@config+
     #          'set '+@var.id+' [tk_dialog '+ 
     #          @path+" "+@title+" {#{@message}} "+@bitmap+" "+
@@ -176,9 +183,14 @@ class TkDialogObj < TkWindow
     # @val = Tk.ip_eval('tk_dialog ' + @path + ' ' + @title + 
     #                 ' {' + @message + '} ' + @bitmap + ' ' + 
     #                 String(default_button) + ' ' + @buttons.join(' ')).to_i
-    @val = Tk.ip_eval(self.class::TkCommandNames[0] + ' ' + @path + ' ' + 
-                      @title + ' {' + @message + '} ' + @bitmap + ' ' + 
-                      String(default_button) + ' ' + @buttons.join(' ')).to_i
+    # @val = Tk.ip_eval(self.class::TkCommandNames[0] + ' ' + @path + ' ' + 
+    #                   @title + ' {' + @message + '} ' + @bitmap + ' ' + 
+    #                   String(default_button) + ' ' + @buttons.join(' ')).to_i
+    @val = Tk.ip_eval(array2tk_list([
+                                      self.class::TkCommandNames[0], 
+                                      @path, @title, @message, @bitmap, 
+                                      String(default_button)
+                                    ].concat(@buttons))).to_i
   end
 
   def value

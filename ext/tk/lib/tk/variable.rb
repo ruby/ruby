@@ -1545,14 +1545,15 @@ class TkVarAccess<TkVariable
   end
 end
 
-
 module Tk
   begin
+    INTERP._invoke_without_enc('global', 'auto_path')
     auto_path = INTERP._invoke('set', 'auto_path')
-  rescue
+  rescue => e
     begin
+      INTERP._invoke_without_enc('global', 'env')
       auto_path = INTERP._invoke('set', 'env(TCLLIBPATH)')
-    rescue
+    rescue => e
       auto_path = Tk::LIBRARY
     end
   end

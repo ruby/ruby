@@ -78,7 +78,8 @@ BLT          2.4z   http://sourceforge.net/projects/blt
                                 (http://raa.ruby-lang.org/)
                       ==> blt
 
-TkTreeCtrl   1.1     http://tktreectrl.sourceforge.net/          ==> treectrl
+TkTreeCtrl   CVS/Hd(2005-03-25)
+                    http://tktreectrl.sourceforge.net/          ==> treectrl
 
 
 

@@ -78,10 +78,12 @@ class Tk::TreeCtrl::NotifyEvent
     [ ?I, ?n, :id ], 
     [ ?l, ?n, :lower_bound ], 
     [ ?p, ?n, :active_id ], 
+    [ ?P, ?e, :pattern ], 
     [ ?S, ?l, :sel_items ], 
     [ ?T, ?w, :widget ], 
     [ ?u, ?n, :upper_bound ], 
     [ ?W, ?o, :object ], 
+    [ ??, ?x, :parm_info ], 
     nil
   ]
 
@@ -105,6 +107,27 @@ class Tk::TreeCtrl::NotifyEvent
     ], 
 
     [ ?o, proc{|val| TkComm.tk_tcl2ruby(val)} ], 
+
+    [ ?x, proc{|val|
+        begin
+          inf = {}
+          Hash[*(TkComm.list(val))].each{|k, v|
+            if keyinfo = KEY_TBL.assoc(k[0])
+              if cmd = PROC_TBL.assoc(keyinfo[1])
+                begin
+                  new_v = cmd.call(v)
+                  v = new_v
+                rescue
+                end
+              end
+            end
+            inf[k] = v
+          }
+          inf
+        rescue
+          val
+        end
+      } ], 
 
     nil
   ]
@@ -434,12 +457,15 @@ module Tk::TreeCtrl::ConfigMethod
   end
 
   def notify_cget(win, pattern, option)
+    pattern = "<#{pattern}>"
     itemconfigure(['notify', [win, pattern]], option)
   end
   def notify_configure(win, pattern, slot, value=None)
+    pattern = "<#{pattern}>"
     itemconfigure(['notify', [win, pattern]], slot, value)
   end
   def notify_configinfo(win, pattern, slot=nil)
+    pattern = "<#{pattern}>"
     itemconfiginfo(['notify', [win, pattern]], slot)
   end
   alias current_notify_configinfo notify_configinfo
@@ -485,7 +511,7 @@ class Tk::TreeCtrl
   def __boolval_optkeys
     [
       'showbuttons', 'showheader', 'showlines', 'showroot', 
-      'showrootbutton', 
+      'showrootbutton', 'showrootlines',
     ]
   end
   private :__boolval_optkeys
@@ -1089,7 +1115,7 @@ class Tk::TreeCtrl
   end
 
   #def notify_bind_append(obj, event, cmd=Proc.new, *args)
-  #  _bind([@path, 'notify', 'bind', obj], event, cmd, *args)
+  #  _bind_append([@path, 'notify', 'bind', obj], event, cmd, *args)
   #  self
   #end
   def notify_bind_append(obj, event, *args)
@@ -1099,7 +1125,7 @@ class Tk::TreeCtrl
     else
       cmd = Proc.new
     end
-    _bind([@path, 'notify', 'bind', obj], event, cmd, *args)
+    _bind_append([@path, 'notify', 'bind', obj], event, cmd, *args)
     self
   end
 
@@ -1120,9 +1146,20 @@ class Tk::TreeCtrl
     list(tk_send('notify', 'eventnames'))
   end
 
-  def notify_generate(pattern, char_map=None)
-    tk_send('notify', 'generate', pattern, char_map)
+  def notify_generate(pattern, char_map=None, percents_cmd=None)
+    pattern = "<#{pattern}>"
+    tk_send('notify', 'generate', pattern, char_map, percents_cmd)
     self
+  end
+
+  def notify_install(pattern, percents_cmd=nil, &b)
+    pattern = "<#{pattern}>"
+    percents_cmd = Proc.new(&b) if !percents_cmd && b
+    if percents_cmd
+      procedure(tk_send('notify', 'install', pattern, percents_cmd))
+    else
+      procedure(tk_send('notify', 'install', pattern))
+    end
   end
 
   def notify_install_detail(event, detail, percents_cmd=nil, &b)
@@ -1143,8 +1180,36 @@ class Tk::TreeCtrl
     end
   end
 
-  def notify_linkage(event, detail=None)
-    tk_send('notify', 'linkage', event, detail)
+  def notify_linkage(pattern, detail=None)
+    if detail != None
+      tk_send('notify', 'linkage', pattern, detail)
+    else
+      begin
+        if pattern.to_s.index(?-)
+          # TreeCtrl 1.1 format?
+          begin
+            tk_send('notify', 'linkage', "<#{pattern}>")
+          rescue
+            # TreeCtrl 1.0?
+            tk_send('notify', 'linkage', pattern)
+          end
+        else
+          # TreeCtrl 1.0 format?
+          begin
+            tk_send('notify', 'linkage', pattern)
+          rescue
+            # TreeCtrl 1.1?
+            tk_send('notify', 'linkage', "<#{pattern}>")
+          end
+        end
+      end
+    end
+  end
+
+  def notify_uninstall(pattern)
+    pattern = "<#{pattern}>"
+    tk_send('notify', 'uninstall', pattern)
+    self
   end
 
   def notify_uninstall_detail(event, detail)
@@ -1884,6 +1949,9 @@ module Tk::TreeCtrl::BindCallback
 end
 
 class << Tk::TreeCtrl::BindCallback
+  def percentsCmd(*args)
+    tk_call('::TreeCtrl::PercentsCmd', *args)
+  end
   def cursorCheck(w, x, y)
     tk_call('::TreeCtrl::CursorCheck', w, x, y)
   end
@@ -1999,7 +2067,7 @@ class << Tk::TreeCtrl::BindCallback
   end
 
   def entryOpen(w, item, col, elem)
-    tk_call('::::TreeCtrl::EntryOpen', w, item, col, elem)
+    tk_call('::TreeCtrl::EntryOpen', w, item, col, elem)
   end
   def entryExpanderOpen(w, item, col, elem)
     tk_call('::TreeCtrl::EntryExpanderOpen', w, item, col, elem)
