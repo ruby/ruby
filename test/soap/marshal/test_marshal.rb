@@ -1,7 +1,13 @@
 require 'test/unit'
 require 'soap/marshal'
-require File.join(File.dirname(File.expand_path(__FILE__)), '../../ruby/marshaltestlib')
-
+dir = File.join(File.dirname(File.expand_path(__FILE__)), '../../ruby')
+orgpath = $:.dup
+begin
+  $:.push(dir)
+  require 'marshaltestlib'
+ensure
+  $:.replace(orgpath)
+end
 
 module SOAP
 module Marshal

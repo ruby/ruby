@@ -1,3 +1,8 @@
+Tue Feb 17 23:28:45 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/soap/marshal/test_marshal.rb, test/ruby/test_marshal.rb: do $:
+	  trick to share the testcase test/ruby/marshaltestlib.rb.
+
 Tue Feb 17 23:13:23 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/ruby/marshaltestlib.rb: common marshal testcase added.
