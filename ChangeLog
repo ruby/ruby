@@ -1,8 +1,8 @@
 Tue Mar  8 13:54:40 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* ext/socket/socket.rb: workaround for some of 4.4BSD-Lite derived OSs.
+	* ext/socket/socket.c: workaround for some of 4.4BSD-Lite derived OSs.
 
-Sat Mar  8 01:27:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+Tue Mar  8 01:27:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
         * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.66
           fixed: [ruby-dev:25828]
@@ -63,7 +63,7 @@ Mon Mar  7 09:18:42 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Mar  7 01:22:14 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil.c: remove the some codes which depend on the
-	  defference between Ruby1.8 and 1.9, because st.c on Ruby1.9 
+	  difference between Ruby1.8 and 1.9, because st.c on Ruby1.9 
 	  was changed. 
 
 Mon Mar  7 00:01:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
@@ -126,7 +126,7 @@ Fri Mar  4 10:15:30 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/set.rb (SortedSet::setup): a hack to shut up warning.
 	  [ruby-talk:132866]
 
-Thu Mar  4 07:07:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+Fri Mar  4 07:07:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.63
 
@@ -218,7 +218,7 @@ Mon Feb 28 09:03:09 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  constants.  Patch from Sam Roberts <sroberts@uniserve.com>.
 	  [ruby-core:04409]
 
-Thu Feb 23 15:04:32 2005  akira yamada  <akira@ruby-lang.org>
+Wed Feb 23 15:04:32 2005  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (split_userinfo): should split ":pass" into ""
 	  and "pass".  [ruby-dev:25667]
@@ -272,7 +272,7 @@ Sat Feb 19 13:52:02 2005  Tanaka Akira  <akr@m17n.org>
 
 Sat Feb 19 01:32:03 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* ext/bigdecimal/lib/bigdecimal/newton.rb: resolve LoadError.
+	* ext/bigdecimal/lib/bigdecimal/newton.rb: resolved LoadError.
 	  [ruby-dev:25685]
 
 	* ext/bigdecimal/sample/linear.rb: ditto.
@@ -1761,7 +1761,7 @@ Sat Dec  4 03:33:45 2004  Shugo Maeda  <shugo@ruby-lang.org>
 	* test/readline/test_readline.rb: added tests for readline.
 	  (backported from CVS HEAD)
 
-Fri Dec  4 02:24:00 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+Sat Dec  4 02:24:00 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c: add constant NKF::VERSION
 
@@ -2045,11 +2045,11 @@ Sat Nov 20 23:55:19 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (rb_str_splice): should place index wrapping after
 	  possible modification.  [ruby-dev:24940]
 
-Tue Nov 20 13:26:03 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+Sat Nov 20 13:26:03 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/utf8tbl.c: original revision 1.7
 
-Tue Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+Sat Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: original nkf.c rev:1.40
 
@@ -3457,7 +3457,7 @@ Thu Aug 19 15:15:24 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* dir.c (free_dir): fix memory leak.  reported by yamamoto
 	  madoka.
 
-Thu Aug 20 11:00:00 2004 Akiyoshi, Masamichi <masamichi.akiyoshi@hp.com>
+Thu Aug 19 11:00:00 2004 Akiyoshi, Masamichi <masamichi.akiyoshi@hp.com>
 
 	* dln.c (dln_load): Modify to call lib$find_image_symbol for VMS.
 	* io.c (rb_io_fwrite): Use fputc() for VMS non-stream file.
