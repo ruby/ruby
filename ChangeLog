@@ -1,3 +1,8 @@
+Wed Aug 18 12:52:55 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_obj_instance_eval): evaluates under special singleton
+	  classes as for special constants.
+
 Tue Aug 17 17:20:59 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_reopen): should clear allocated OpenFile.  pointed
