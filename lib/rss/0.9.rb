@@ -59,7 +59,7 @@ module RSS
 #{indent}<rss version="#{@rss_version}"#{ns_declaration(next_indent)}>
 #{channel_element(false, next_indent)}
 #{other_element(false, next_indent)}
-#{indent}}</rss>
+#{indent}</rss>
 EOR
       rv = @converter.convert(rv) if convert and @converter
       remove_empty_newline(rv)
