@@ -2,7 +2,8 @@
 # ludcmp.rb
 #
 module LUSolve
-  def ludecomp(a,n,zero=0.0,one=1.0)
+  def ludecomp(a,n,zero=0,one=1)
+    prec = BigDecimal.limit(nil)
     ps     = []
     scales = []
     for i in 0...n do  # pick up largest(abs. val.) element in each row.
@@ -14,7 +15,7 @@ module LUSolve
          nrmrow = biggst if biggst>nrmrow
       end
       if nrmrow>zero then
-         scales <<= one/nrmrow
+         scales <<= one.div(nrmrow,prec)
       else 
          raise "Singular matrix"
       end
@@ -38,11 +39,11 @@ module LUSolve
       pivot   = a[ps[k]*n+k]
       for i in (k+1)...n do
         psin = ps[i]*n
-        a[psin+k] = mult = a[psin+k]/pivot
+        a[psin+k] = mult = a[psin+k].div(pivot,prec)
         if mult!=zero then
            pskn = ps[k]*n
            for j in (k+1)...n do
-             a[psin+j] -= mult*a[pskn+j]
+             a[psin+j] -= mult.mult(a[pskn+j],prec)
            end
         end
       end
@@ -52,13 +53,14 @@ module LUSolve
   end
 
   def lusolve(a,b,ps,zero=0.0)
+    prec = BigDecimal.limit(nil)
     n = ps.size
     x = []
     for i in 0...n do
       dot = zero
       psin = ps[i]*n
       for j in 0...i do
-        dot = a[psin+j]*x[j] + dot
+        dot = a[psin+j].mult(x[j],prec) + dot
       end
       x <<= b[ps[i]] - dot
     end
@@ -66,9 +68,9 @@ module LUSolve
        dot = zero
        psin = ps[i]*n
        for j in (i+1)...n do
-         dot = a[psin+j]*x[j] + dot
+         dot = a[psin+j].mult(x[j],prec) + dot
        end
-       x[i]  = (x[i]-dot)/a[psin+i]
+       x[i]  = (x[i]-dot).div(a[psin+i],prec)
     end
     x
   end
