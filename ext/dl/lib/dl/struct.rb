@@ -30,7 +30,12 @@ module DL
 	    instance_eval [
 	      "def #{name}",
 	      "  v = @ptr[\"#{name}\"]",
-	      "  v = @dec[\"#{name}\"].call(v,#{@len}) if @dec[\"#{name}\"]",
+	      "  v = @dec[\"#{name}\"].call(v,@len[\"#{name}\"]) if @dec[\"#{name}\"]",
+	      "  return v",
+	      "end",
+	      "def #{name}=(v)",
+	      "  v = @enc[\"#{name}\"].call(v,@len[\"#{name}\"]) if @enc[\"#{name}\"]",
+	      "  @ptr[\"#{name}\"] = v",
 	      "  return v",
 	      "end",
 	    ].join("\n")
