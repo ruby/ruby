@@ -1,3 +1,11 @@
+Wed Mar 16 22:57:43 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_call0): call_cfunc() should be protected.
+
+	* eval.c (rb_add_event_hook): use K&R style.
+
+	* eval.c (rb_remove_event_hook): ditto.
+
 Wed Mar 16 22:03:15 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_add_event_hook): new function to add a hook function for

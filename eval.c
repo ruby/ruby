@@ -2434,7 +2434,9 @@ rb_obj_is_proc(proc)
 }
 
 void
-rb_add_event_hook(rb_event_hook_func_t func, rb_event_t events)
+rb_add_event_hook(func, events)
+    rb_event_hook_func_t func;
+    rb_event_t events;
 {
     rb_event_hook_t *hook;
 
@@ -2446,7 +2448,8 @@ rb_add_event_hook(rb_event_hook_func_t func, rb_event_t events)
 }
 
 int
-rb_remove_event_hook(rb_event_hook_func_t func)
+rb_remove_event_hook(func)
+    rb_event_hook_func_t func;
 {
     rb_event_hook_t *prev, *hook;
 
@@ -5626,7 +5629,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     int itr;
     static int tick;
     volatile VALUE args;
-    volatile int trace_status = 0; /* 0:none 1:cfunc 2:rfunc */
     TMP_PROTECT;
 
     switch (ruby_iter->iter) {
@@ -5668,11 +5670,23 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		       len, rb_class2name(klass), rb_id2name(id));
 	    }
 	    if (event_hooks) {
+		int state;
+
 		EXEC_EVENT_HOOK(RUBY_EVENT_C_CALL, ruby_current_node,
 				recv, id, klass);
-		trace_status = 1; /* cfunc */
+		PUSH_TAG(PROT_FUNC);
+		if ((state = EXEC_TAG()) == 0) {
+		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
+		}
+		POP_TAG();
+		ruby_current_node = ruby_frame->node;
+		EXEC_EVENT_HOOK(RUBY_EVENT_C_RETURN, ruby_current_node,
+				recv, id, klass);
+		if (state) JUMP_TAG(state);
 	    }
-	    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
+	    else {
+		result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
+	    }
 	}
 	break;
 
@@ -5704,6 +5718,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    int state;
 	    VALUE *local_vars;	/* OK */
 	    NODE *saved_cref = 0;
+	    int hook_return = 0;
 
 	    PUSH_SCOPE();
 
@@ -5799,7 +5814,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
 		if (event_hooks) {
 		    EXEC_EVENT_HOOK(RUBY_EVENT_CALL, b2, recv, id, klass);
-		    trace_status = 2; /* rfunc */
+		    hook_return = 1;
 		}
 		result = rb_eval(recv, body);
 	    }
@@ -5812,14 +5827,8 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
-	    switch (trace_status) {
-	      case 0: break;	/* none  */
-	      case 1: 		/* cfunc */
-		EXEC_EVENT_HOOK(RUBY_EVENT_C_RETURN, body, recv, id, klass);
-		break;
-	      case 2: 		/* rfunc */
+	    if (hook_return) {
 		EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
-		break;
 	    }
 	    switch (state) {
 	      case 0:

@@ -379,8 +379,8 @@ typedef unsigned int rb_event_t;
 #define RUBY_EVENT_ALL      0xff
 
 typedef void (*rb_event_hook_func_t)_((rb_event_t,NODE*,VALUE,ID,VALUE));
-void rb_add_event_hook(rb_event_hook_func_t,rb_event_t);
-int rb_remove_event_hook(rb_event_hook_func_t);
+void rb_add_event_hook _((rb_event_hook_func_t,rb_event_t));
+int rb_remove_event_hook _((rb_event_hook_func_t));
 
 #if defined(__cplusplus)
 }  /* extern "C" { */
