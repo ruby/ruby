@@ -185,6 +185,11 @@ static int current_mbctype = MBCTYPE_ASCII;
 
 #ifdef RUBY
 #include "util.h"
+# re_warning(x) rb_warn(x)
+#endif
+
+#ifndef re_warning
+# define re_warning(x)
 #endif
 
 static void
@@ -1464,6 +1469,7 @@ re_compile_pattern(pattern, size, bufp)
 	  if (p == p0 + 1) {
 	    if (p == pend)
 	      FREE_AND_RETURN(stackb, "invalid regular expression; empty character class");
+            re_warning("character class has `]' without escape");
 	  }
 	  else 
 	    /* Stop if this isn't merely a ] inside a bracket
@@ -1480,6 +1486,9 @@ re_compile_pattern(pattern, size, bufp)
 	  had_mbchar++;
 	}
 	had_char_class = 0;
+
+	if (c == '-')
+          re_warning("character class has `-' without escape");
 
 	/* \ escapes characters when inside [...].  */
 	if (c == '\\') {
@@ -1678,6 +1687,7 @@ re_compile_pattern(pattern, size, bufp)
 	    c1++;
 	    while (c1--)    
 	      PATUNFETCH;
+            re_warning("character class has `[' without escape");
 	    SET_LIST_BIT(TRANSLATE_P()?translate['[']:'[');
 	    SET_LIST_BIT(TRANSLATE_P()?translate[':']:':');
 	    had_char_class = 0;
@@ -1685,6 +1695,8 @@ re_compile_pattern(pattern, size, bufp)
 	  }
 	}
 	else if (had_mbchar == 0 && (!current_mbctype || !had_num_literal)) {
+          if (c == '[')
+            re_warning("character class has `[' without escape");
 	  SET_LIST_BIT(c);
  	  had_num_literal = 0;
 	}
