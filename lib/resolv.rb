@@ -854,7 +854,7 @@ class Resolv
           raise DecodeError.new("limit exceed") if @limit < @index + len
           arr = @data.unpack("@#{@index}#{template}")
           @index += len
-          return *arr
+          return arr
         end
 
         def get_string

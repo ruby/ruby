@@ -83,6 +83,7 @@ Standard Libraries
 * hash etc. should handle self referenceing array/hash
 * move NameError under StandardError.
 * library to load per-user profile seeking .ruby_profile or ruby.ini file.
+* warning framework
 
 Extension Libraries
 

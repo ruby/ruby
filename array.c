@@ -17,6 +17,7 @@
 #include "st.h"
 
 VALUE rb_cArray;
+static ID cmp;
 
 #define ARY_DEFAULT_SIZE 16
 
@@ -729,6 +730,20 @@ to_ary(ary)
     return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
+VALUE
+rb_ary_to_ary(obj)
+    VALUE obj;
+{
+    if (NIL_P(obj)) return rb_ary_new2(0);
+    if (TYPE(obj) == T_ARRAY) {
+	return obj;
+    }
+    if (rb_respond_to(obj, rb_intern("to_ary"))) {
+	return rb_convert_type(obj, T_ARRAY, "Array", "to_ary");
+    }
+    return rb_ary_new3(1, obj);
+}
+
 extern VALUE rb_output_fs;
 
 static VALUE
@@ -957,8 +972,6 @@ rb_ary_reverse_m(ary)
 {
     return rb_ary_reverse(rb_obj_dup(ary));
 }
-
-static ID cmp;
 
 static int
 sort_1(a, b)

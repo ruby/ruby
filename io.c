@@ -3462,10 +3462,8 @@ opt_i_set(val)
     VALUE val;
 {
     if (ruby_inplace_mode) free(ruby_inplace_mode);
-    if (!RTEST(val)) {
-	ruby_inplace_mode = 0;
-	return;
-    }
+    ruby_inplace_mode = 0;
+    if (!RTEST(val)) return;
     StringValue(val);
     ruby_inplace_mode = strdup(RSTRING(val)->ptr);
 }

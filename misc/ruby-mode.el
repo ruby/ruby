@@ -660,21 +660,24 @@ An end of a defun is found by moving forward from the beginning of one."
 
 (cond
  ((featurep 'font-lock)
+  (or (boundp 'font-lock-variable-name-face)
+      (setq font-lock-variable-name-face font-lock-type-face))
 
-  (setq ruby-font-lock-syntactic-keywords
- 	'(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
- 	  ("\\(#\\)[{$@]" 1 (1 . nil))
- 	  ("\\(/\\)\\([^/\n]\\|\\/\\)*\\(/\\)"
- 	   (1 (7 . ?'))
- 	   (3 (7 . ?')))
-	  ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
-	  ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
-  (put major-mode 'font-lock-defaults
-       '((ruby-font-lock-keywords)
-	 nil nil nil
-	 beginning-of-line
-	 (font-lock-syntactic-keywords
-	  . ruby-font-lock-syntactic-keywords)))
+
+  (add-hook 'ruby-mode-hook
+	    '(lambda ()
+	       (make-local-variable 'font-lock-syntactic-keywords)
+	       (setq font-lock-syntactic-keywords
+		     '(("\\$\\([#\"'`$\\]\\)" 1 (1 . nil))
+		       ("\\(#\\)[{$@]" 1 (1 . nil))
+		       ("\\(/\\)\\([^/\n]\\|\\/\\)*\\(/\\)"
+			(1 (7 . ?'))
+			(3 (7 . ?')))
+		       ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
+		       ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
+	       (make-local-variable 'font-lock-defaults)
+	       (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
+	       (setq font-lock-keywords ruby-font-lock-keywords)))
 
   (defun ruby-font-lock-docs (limit)
     (if (re-search-forward "^=begin\\(\\s \\|$\\)" limit t)
@@ -686,6 +689,21 @@ An end of a defun is found by moving forward from the beginning of one."
 	      (progn
 		(set-match-data (list beg (point)))
 		t)))))
+
+  (defun ruby-font-lock-maybe-docs (limit)
+    (let (beg)
+      (save-excursion
+	(if (and (re-search-backward "^=\\(begin\\|end\\)\\(\\s \\|$\\)" nil t)
+		 (string= (match-string-no-properties 1) "begin"))
+	    (progn
+	      (beginning-of-line)
+	      (setq beg (point)))))
+      (if (and beg (and (re-search-forward "^=\\(begin\\|end\\)\\(\\s \\|$\\)" nil t)
+			(string= (match-string-no-properties 1) "end")))
+	  (progn
+	    (set-match-data (list beg (point)))
+	    t)
+	nil)))
 
   (defvar ruby-font-lock-keywords
     (list
@@ -740,6 +758,8 @@ An end of a defun is found by moving forward from the beginning of one."
        0 font-lock-variable-name-face)
      ;; embedded document
      '(ruby-font-lock-docs
+       0 font-lock-comment-face t)
+     '(ruby-font-lock-maybe-docs
        0 font-lock-comment-face t)
      ;; constants
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"

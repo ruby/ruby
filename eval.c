@@ -1676,7 +1676,7 @@ copy_node_scope(node, rval)
 	char *file = ruby_sourcefile;\
 	int line = ruby_sourceline;\
 	if (TYPE(args) != T_ARRAY)\
-	    args = rb_Array(args);\
+	    args = rb_ary_to_ary(args);\
         argc = RARRAY(args)->len;\
 	argv = ALLOCA_N(VALUE, argc);\
 	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
@@ -2129,7 +2129,7 @@ rb_eval(self, n)
 		    VALUE v = rb_eval(self, tag->nd_head->nd_head);
 		    int i;
 
-		    if (TYPE(v) != T_ARRAY) v = rb_Array(v);
+		    if (TYPE(v) != T_ARRAY) v = rb_ary_to_ary(v);
 		    for (i=0; i<RARRAY(v)->len; i++) {
 			if (RTEST(RARRAY(v)->ptr[i])) {
 			    node = node->nd_body;
@@ -2174,7 +2174,7 @@ rb_eval(self, n)
 			VALUE v = rb_eval(self, tag->nd_head->nd_head);
 			int i;
 
-			if (TYPE(v) != T_ARRAY) v = rb_Array(v);
+			if (TYPE(v) != T_ARRAY) v = rb_ary_to_ary(v);
 			for (i=0; i<RARRAY(v)->len; i++) {
 			    if (RTEST(rb_funcall2(RARRAY(v)->ptr[i], eqq, 1, &val))){
 				node = node->nd_body;
@@ -2347,14 +2347,14 @@ rb_eval(self, n)
       case NODE_RESTARY:
 	result = rb_eval(self, node->nd_head);
 	if (TYPE(result) != T_ARRAY) {
-	    result = rb_Array(result);
+	    result = rb_ary_to_ary(result);
 	}
 	break;
 
       case NODE_REXPAND:
 	result = rb_eval(self, node->nd_head);
 	if (TYPE(result) != T_ARRAY) {
-	    result = rb_Array(result);
+	    result = rb_ary_to_ary(result);
 	}
 	if (RARRAY(result)->len == 0) {
 	    result = Qnil;
@@ -2520,7 +2520,7 @@ rb_eval(self, n)
 
       case NODE_ARGSCAT:
 	result = rb_ary_concat(rb_eval(self, node->nd_head),
-			       rb_Array(rb_eval(self, node->nd_body)));
+			       rb_ary_to_ary(rb_eval(self, node->nd_body)));
 	break;
 
       case NODE_ARGSPUSH:
@@ -3546,16 +3546,20 @@ rb_f_block_given_p()
     return Qfalse;
 }
 
+#define PC_NONE   0x0
+#define PC_ACHECK 0x1
+#define PC_PCALL  0x2
+
 static VALUE
-rb_yield_0(val, self, klass, acheck)
+rb_yield_0(val, self, klass, pcall)
     VALUE val, self, klass;	/* OK */
-    int acheck;
+    int pcall;
 {
     NODE *node;
     volatile VALUE result = Qnil;
     volatile VALUE old_cref;
-    struct BLOCK *block;
-    struct SCOPE *old_scope;
+    struct BLOCK * volatile block;
+    struct SCOPE * volatile old_scope;
     struct FRAME frame;
     int state;
     static unsigned serial = 1;
@@ -3591,7 +3595,7 @@ rb_yield_0(val, self, klass, acheck)
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    if (block->var == (NODE*)1) {
-		if (acheck && val != Qundef &&
+		if ((pcall&PC_ACHECK) && val != Qundef &&
 		    TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
 		    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)",
 			     RARRAY(val)->len);
@@ -3605,14 +3609,14 @@ rb_yield_0(val, self, klass, acheck)
 	    }
 	    else {
 		if (nd_type(block->var) == NODE_MASGN)
-		    massign(self, block->var, val, acheck);
+		    massign(self, block->var, val, (pcall&PC_ACHECK));
 		else {
 		    /* argument adjust for proc_call etc. */
-		    if (acheck && val != Qundef && 
+		    if (pcall && val != Qundef && 
 			TYPE(val) == T_ARRAY && RARRAY(val)->len == 1) {
 			val = RARRAY(val)->ptr[0];
 		    }
-		    assign(self, block->var, val, acheck);
+		    assign(self, block->var, val, (pcall&PC_ACHECK));
 		}
 	    }
 	}
@@ -3621,7 +3625,7 @@ rb_yield_0(val, self, klass, acheck)
     }
     else {
 	/* argument adjust for proc_call etc. */
-	if (acheck && val != Qundef &&
+	if (pcall && val != Qundef &&
 	    TYPE(val) == T_ARRAY && RARRAY(val)->len == 1) {
 	    val = RARRAY(val)->ptr[0];
 	}
@@ -5171,7 +5175,12 @@ rb_load(fname, wrap)
     NODE *saved_cref = ruby_cref;
     TMP_PROTECT;
 
-    SafeStringValue(fname);
+    if (wrap && ruby_safe_level >= 4) {
+	StringValue(fname);
+    }
+    else {
+	SafeStringValue(fname);
+    }
     file = rb_find_file(RSTRING(fname)->ptr);
     if (!file) {
 	rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
@@ -5402,28 +5411,20 @@ rb_f_require(obj, fname)
     }
     buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
     strcpy(buf, RSTRING(fname)->ptr);
-    strcat(buf, ".rb");
-    if (rb_find_file(buf)) {
+    switch (rb_find_file_noext(buf)) {
+      case 0:
+	break;
+
+      case 1:
 	fname = rb_str_new2(buf);
-	feature = buf;
+	file = feature = buf;
 	goto load_rb;
-    }
-    strcpy(buf, RSTRING(fname)->ptr);
-    strcat(buf, DLEXT);
-    file = rb_find_file(buf);
-    if (file) {
+
+      default:
 	feature = buf;
+	file = rb_find_file(buf);
 	goto load_dyna;
     }
-#ifdef DLEXT2
-    strcpy(buf, RSTRING(fname)->ptr);
-    strcat(buf, DLEXT2);
-    file = rb_find_file(buf);
-    if (file) {
-	feature = buf;
-	goto load_dyna;
-    }
-#endif
     rb_raise(rb_eLoadError, "No such file to load -- %s",
 	     RSTRING(fname)->ptr);
 
@@ -6330,8 +6331,9 @@ callargs(args)
 }
 
 static VALUE
-proc_call(proc, args)
+proc_invoke(proc, args, pcall)
     VALUE proc, args;		/* OK */
+    int pcall;
 {
     struct BLOCK * volatile old_block;
     struct BLOCK _block;
@@ -6340,6 +6342,13 @@ proc_call(proc, args)
     int state;
     volatile int orphan;
     volatile int safe = ruby_safe_level;
+
+    if (pcall) {
+	pcall = PC_ACHECK|PC_PCALL;
+    }
+    else {
+	pcall = PC_PCALL;
+    }
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	rb_warning("block for %s#%s is useless",
@@ -6367,7 +6376,7 @@ proc_call(proc, args)
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
-	result = rb_yield_0(args, 0, 0, Qtrue);
+	result = rb_yield_0(args, 0, 0, pcall);
     }
     POP_TAG();
 
@@ -6396,6 +6405,20 @@ proc_call(proc, args)
 	JUMP_TAG(state);
     }
     return result;
+}
+
+static VALUE
+proc_call(proc, args)
+    VALUE proc, args;		/* OK */
+{
+    return proc_invoke(proc, args, Qtrue);
+}
+
+static VALUE
+proc_yield(proc, args)
+    VALUE proc, args;		/* OK */
+{
+    return proc_invoke(proc, args, Qfalse);
 }
 
 static VALUE
@@ -6899,6 +6922,7 @@ Init_Proc()
     rb_define_singleton_method(rb_cProc, "new", proc_s_new, -1);
 
     rb_define_method(rb_cProc, "call", proc_call, -2);
+    rb_define_method(rb_cProc, "yield", proc_yield, -2);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "[]", proc_call, -2);
     rb_define_method(rb_cProc, "==", proc_eq, 1);
@@ -8210,7 +8234,11 @@ rb_thread_start_0(fn, arg, th_arg)
     }
 #endif
 
-    if (ruby_block) {		/* should nail down higher scopes */
+    if (THREAD_SAVE_CONTEXT(curr_thread)) {
+	return thread;
+    }
+
+    if (ruby_block) {		/* should nail down higher blocks */
 	struct BLOCK dummy;
 
 	dummy.prev = ruby_block;
@@ -8219,9 +8247,6 @@ rb_thread_start_0(fn, arg, th_arg)
     }
     scope_dup(ruby_scope);
     FL_SET(ruby_scope, SCOPE_SHARED);
-    if (THREAD_SAVE_CONTEXT(curr_thread)) {
-	return thread;
-    }
 
     if (!th->next) {
 	/* merge in thread list */
@@ -8243,17 +8268,21 @@ rb_thread_start_0(fn, arg, th_arg)
     POP_TAG();
     status = th->status;
 
+    if (th == main_thread) ruby_stop(state);
+    rb_thread_remove(th);
+
     while (saved_block) {
 	struct BLOCK *tmp = saved_block;
 
+	if (curr_thread == main_thread) {
+	    printf("free(%p)\n", saved_block);
+	}
 	if (tmp->frame.argc > 0)
 	    free(tmp->frame.argv);
 	saved_block = tmp->prev;
 	free(tmp);
     }
 
-    if (th == main_thread) ruby_stop(state);
-    rb_thread_remove(th);
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {
 	th->flags |= THREAD_RAISED;
 	if (state == TAG_FATAL) { 

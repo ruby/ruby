@@ -27,6 +27,7 @@ VALUE rb_ary_new4 _((long, VALUE *));
 VALUE rb_ary_freeze _((VALUE));
 VALUE rb_ary_aref _((int, VALUE*, VALUE));
 void rb_ary_store _((VALUE, long, VALUE));
+VALUE rb_ary_to_ary _((VALUE));
 VALUE rb_ary_to_s _((VALUE));
 VALUE rb_ary_push _((VALUE, VALUE));
 VALUE rb_ary_pop _((VALUE));
@@ -179,6 +180,7 @@ void rb_thread_atfork _((void));
 int eaccess _((const char*, int));
 VALUE rb_file_s_expand_path _((int, VALUE *));
 void rb_file_const _((const char*, VALUE));
+int rb_find_file_noext _((char*));
 char *rb_find_file _((char*));
 /* gc.c */
 void rb_gc_mark_locations _((VALUE*, VALUE*));

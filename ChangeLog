@@ -1,8 +1,41 @@
+Mon Jun 18 17:38:50 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_require): searches ".rb" and ".so" at the same
+	  time.  previous behavior (search ".rb", then ".so") has a
+	  security risk (ruby-bugs#PR140).
+
+	* array.c (rb_ary_to_ary): new function to replace internal
+	  rb_Array(), which never calls to_a, but to_ary (rb_Array() might
+	  call both). [new]
+
+Mon Jun 18 00:43:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (PUSH_FAILURE_POINT): push option status again.
+
+	* regex.c (re_compile_pattern): avoid pushing unnecessary
+	  option_set.
+
+Sat Jun 16 10:58:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_load): tainted string is OK if wrapped *and*
+	  $SAFE >= 4.
+
+Thu Jun 14 16:27:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0): should not nail down higher blocks
+	  before preserving original context (i.e. should not alter
+	  original context).
+
 Wed Jun 13 19:34:59 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* dir.c (Init_Dir): add a new method File::fnmatch? along with
 	  File::Constants::FNM_*.  While I am here, FNM_NOCASE is renamed
 	  to FNM_CASEFOLD which is commonly used by *BSD and GNU libc.
+
+Wed Jun 13 09:33:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_yield): new method equivalent to Proc#call but no
+	  check for number of arguments. [new]
 
 Tue Jun 12 14:21:28 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

@@ -1874,8 +1874,10 @@ re_compile_pattern(pattern, size, bufp)
 	if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
 	  BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
 	}
-	BUFPUSH(option_set);
-	BUFPUSH(stackp[-1]);
+	if ((options ^ stackp[-1]) != RE_OPTION_IGNORECASE) {
+	  BUFPUSH(option_set);
+	  BUFPUSH(stackp[-1]);
+	}
       }
       p0 = b;
       options = *--stackp;
@@ -3262,7 +3264,8 @@ re_search(bufp, string, size, startpos, range, regs)
     }
 
     if (startpos > size) return -1;
-    if (anchor && size > 0 && startpos == size) return -1;
+    if ((anchor || !bufp->can_be_null) && size > 0 && startpos == size)
+      return -1;
     val = re_match(bufp, string, size, startpos, regs);
     if (val >= 0) return startpos;
     if (val == -2) return -2;
@@ -3362,7 +3365,7 @@ re_search(bufp, string, size, startpos, range, regs)
 #define NUM_COUNT_ITEMS 2
 
 /* Individual items aside from the registers.  */
-#define NUM_NONREG_ITEMS 3
+#define NUM_NONREG_ITEMS 4
 
 /* We push at most this many things on the stack whenever we
    fail.  The `+ 2' refers to PATTERN_PLACE and STRING_PLACE, which are
@@ -3412,6 +3415,7 @@ re_search(bufp, string, size, startpos, range, regs)
 									\
     *stackp++ = pattern_place;                                          \
     *stackp++ = string_place;                                           \
+    *stackp++ = (unsigned char*)options; /* current option status */	\
     *stackp++ = (unsigned char*)0; /* non-greedy flag */		\
   } while(0)
 
@@ -3735,15 +3739,11 @@ re_match(bufp, string_arg, size, pos, regs)
 	  int regno = *p++;   /* Get which register to match against */
 	  register unsigned char *d2, *dend2;
 
-#if 0
 	  /* Check if corresponding group is still open */
 	  if (IS_ACTIVE(reg_info[regno])) goto fail;
 
 	  /* Where in input to try to start matching.  */
 	  d2 = regstart[regno];
-#else
-          d2 = IS_ACTIVE(reg_info[regno])?old_regstart[regno]:regstart[regno];
-#endif
 	  if (REG_UNSET(d2)) goto fail;
 
 	  /* Where to stop matching; if both the place to start and
@@ -3791,7 +3791,7 @@ re_match(bufp, string_arg, size, pos, regs)
       case stop_nowidth:
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	stackp = stackb + mcnt;
-	d = stackp[-2];
+	d = stackp[-3];
 	POP_FAILURE_POINT();
 	continue;
 
@@ -4015,8 +4015,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	   because didn't fail.  Also remove the register information
 	   put on by the on_failure_jump.  */
       case finalize_jump:
-	if (stackp > stackb && stackp[-2] == d) {
-	  p = stackp[-3];
+	if (stackp > stackb && stackp[-3] == d) {
+	  p = stackp[-4];
 	  POP_FAILURE_POINT();
 	  continue;
 	}
@@ -4032,7 +4032,7 @@ re_match(bufp, string_arg, size, pos, regs)
       case jump:
       nofinalize:
         EXTRACT_NUMBER_AND_INCR(mcnt, p);
-        if (mcnt < 0 && stackp > stackb && stackp[-2] == d) /* avoid infinite loop */
+        if (mcnt < 0 && stackp > stackb && stackp[-3] == d) /* avoid infinite loop */
 	   goto fail;
         p += mcnt;
         continue;
@@ -4123,7 +4123,7 @@ re_match(bufp, string_arg, size, pos, regs)
       case finalize_push:
 	POP_FAILURE_POINT();
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
-        if (mcnt < 0 && stackp > stackb  && stackp[-2] == d) /* avoid infinite loop */
+        if (mcnt < 0 && stackp > stackb  && stackp[-3] == d) /* avoid infinite loop */
 	   goto fail;
 	PUSH_FAILURE_POINT(p + mcnt, d);
 	stackp[-1] = NON_GREEDY;
@@ -4288,11 +4288,12 @@ re_match(bufp, string_arg, size, pos, regs)
 
       /* If this failure point is from a dummy_failure_point, just
 	 skip it.  */
-      if (stackp[-3] == 0 || (best_regs_set && stackp[-1] == NON_GREEDY)) {
+      if (stackp[-4] == 0 || (best_regs_set && stackp[-1] == NON_GREEDY)) {
 	POP_FAILURE_POINT();
 	goto fail;
       }
-      stackp--;		/* discard flag */
+      stackp--;		/* discard greedy flag */
+      options = (int)*--stackp;
       d = *--stackp;
       p = *--stackp;
       /* Restore register info.  */
