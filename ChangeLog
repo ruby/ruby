@@ -1,3 +1,8 @@
+Thu Sep 12 00:52:15 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): Merge from 1.7: link with
+	  CONFIG["LIBS"].
+
 Thu Sep 12 00:09:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_trap_eval): preserve thread status and so on.

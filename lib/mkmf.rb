@@ -398,7 +398,7 @@ def create_makefile(target, srcdir = $srcdir)
   end
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
-  $libs = CONFIG["LIBRUBYARG"] + " " + $libs
+  $libs = CONFIG["LIBRUBYARG"] + " " + $libs + " " + CONFIG["LIBS"]
   $configure_args['--enable-shared'] or $LIBPATH |= [$topdir]
   $LIBPATH |= [CONFIG["libdir"]]
 
