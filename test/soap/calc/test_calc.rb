@@ -16,7 +16,7 @@ class TestCalc < Test::Unit::TestCase
 
   def setup
     @server = CalcServer.new(self.class.name, nil, '0.0.0.0', Port)
-    @server.level = Logger::Severity::FATAL
+    @server.level = Logger::Severity::ERROR
     @t = Thread.new {
       @server.start
     }
@@ -27,7 +27,8 @@ class TestCalc < Test::Unit::TestCase
 	raise
       end
     end
-    @calc = SOAP::RPC::Driver.new("http://localhost:#{Port}/", 'http://tempuri.org/calcService')
+    @endpoint = "http://localhost:#{Port}/"
+    @calc = SOAP::RPC::Driver.new(@endpoint, 'http://tempuri.org/calcService')
     @calc.add_method('add', 'lhs', 'rhs')
     @calc.add_method('sub', 'lhs', 'rhs')
     @calc.add_method('multi', 'lhs', 'rhs')
@@ -38,6 +39,7 @@ class TestCalc < Test::Unit::TestCase
     @server.server.shutdown
     @t.kill
     @t.join
+    @calc.reset_stream
   end
 
   def test_calc

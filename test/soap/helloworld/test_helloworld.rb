@@ -16,7 +16,7 @@ class TestHelloWorld < Test::Unit::TestCase
 
   def setup
     @server = HelloWorldServer.new('hws', 'urn:hws', '0.0.0.0', Port)
-    @server.level = Logger::Severity::UNKNOWN
+    @server.level = Logger::Severity::ERROR
     @t = Thread.new {
       Thread.current.abort_on_exception = true
       @server.start
@@ -28,7 +28,8 @@ class TestHelloWorld < Test::Unit::TestCase
 	raise
       end
     end
-    @client = SOAP::RPC::Driver.new("http://localhost:#{Port}/", 'urn:hws')
+    @endpoint = "http://localhost:#{Port}/"
+    @client = SOAP::RPC::Driver.new(@endpoint, 'urn:hws')
     @client.add_method("hello_world", "from")
   end
 
@@ -36,6 +37,7 @@ class TestHelloWorld < Test::Unit::TestCase
     @server.server.shutdown
     @t.kill
     @t.join
+    @client.reset_stream
   end
 
   def test_hello_world

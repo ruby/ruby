@@ -20,8 +20,7 @@ class TestCalcCGI < Test::Unit::TestCase
 
   def setup
     logger = Logger.new(STDERR)
-    logger.level = Logger::Severity::FATAL
-    logger.level = Logger::Severity::DEBUG if $DEBUG
+    logger.level = Logger::Severity::ERROR
     @server = WEBrick::HTTPServer.new(
       :BindAddress => "0.0.0.0",
       :Logger => logger,
@@ -42,7 +41,8 @@ class TestCalcCGI < Test::Unit::TestCase
 	raise
       end
     end
-    @calc = SOAP::RPC::Driver.new("http://localhost:#{Port}/server.cgi", 'http://tempuri.org/calcService')
+    @endpoint = "http://localhost:#{Port}/server.cgi"
+    @calc = SOAP::RPC::Driver.new(@endpoint, 'http://tempuri.org/calcService')
     @calc.add_method('add', 'lhs', 'rhs')
     @calc.add_method('sub', 'lhs', 'rhs')
     @calc.add_method('multi', 'lhs', 'rhs')
@@ -53,6 +53,7 @@ class TestCalcCGI < Test::Unit::TestCase
     @server.shutdown
     @t.kill
     @t.join
+    @calc.reset_stream
   end
 
   def test_calc

@@ -1,3 +1,8 @@
+Thu Oct 23 00:41:45 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/soap/calc/*, test/soap/helloworld/*: set logging threshold
+	  to ERROR.
+
 Wed Oct 22 12:53:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb (Test::Unit::Collector::Dir#collect_file):
