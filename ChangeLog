@@ -1,3 +1,7 @@
+Thu Dec  9 12:31:53 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (pipe_open): should set prog if argc != 0.
+
 Thu Dec  9 10:54:36 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dbm/dbm.c (fdbm_select): [ruby-dev:25132]

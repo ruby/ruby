@@ -2915,7 +2915,8 @@ pipe_open(argc, argv, mode)
 	}
     }
 #else
-    prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+    if (argc)
+	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     fp = popen(StringValueCStr(prog), mode);
     if (!fp) rb_sys_fail(RSTRING(prog)->ptr);
     fd = fileno(fp);
