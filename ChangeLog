@@ -1,3 +1,24 @@
+Tue May 13 14:48:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (error_pos): use $deferr for output instead of stderr
+	  directly.
+
+	* eval.c (error_print,error_handle,rb_longjmp,rb_thread_schedule):
+	  ditto.
+
+Mon May 12 18:08:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (Init_IO): new variable $deferr which is default output
+	  port of error messages.
+
+	* io.c (rb_warn_m): new method "warn". [new]
+
+	* error.c (warn_print): use $deferr.
+
+	* error.c (rb_bug): ditto.
+
+	* error.c (err_append): ditto.
+
 Sun May 11 13:50:12 2003  Tanaka Akira  <akr@m17n.org>
 
         * lib/pp.rb: refine to_s test.

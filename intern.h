@@ -264,6 +264,8 @@ VALUE rb_io_print _((int, VALUE*, VALUE));
 VALUE rb_io_puts _((int, VALUE*, VALUE));
 VALUE rb_file_open _((const char*, const char*));
 VALUE rb_gets _((void));
+void rb_write_deferr _((const char*));
+void rb_write_deferr2 _((const char*, long));
 /* marshal.c */
 VALUE rb_marshal_dump _((VALUE, VALUE));
 VALUE rb_marshal_load _((VALUE));

@@ -973,19 +973,40 @@ ruby_set_current_source()
 }
 
 static void
+#ifdef HAVE_STDARG_PROTOTYPES
+warn_printf(const char *fmt, ...)
+#else
+warn_printf(fmt, va_alist)
+    const char *fmt;
+    va_dcl
+#endif
+{
+    char buf[BUFSIZ];
+    va_list args;
+
+    va_init_list(args, fmt);
+    vsnprintf(buf, BUFSIZ, fmt, args);
+    va_end(args);
+    rb_write_deferr(buf);
+}
+
+#define warn_print(x) rb_write_deferr(x)
+#define warn_print2(x,l) rb_write_deferr2(x,l)
+
+static void
 error_pos()
 {
     ruby_set_current_source();
     if (ruby_sourcefile) {
 	if (ruby_frame->last_func) {
-	    fprintf(stderr, "%s:%d:in `%s'", ruby_sourcefile, ruby_sourceline,
-		    rb_id2name(ruby_frame->last_func));
+	    warn_printf("%s:%d:in `%s'", ruby_sourcefile, ruby_sourceline,
+			rb_id2name(ruby_frame->last_func));
 	}
 	else if (ruby_sourceline == 0) {
-	    fprintf(stderr, "%s", ruby_sourcefile);
+	    warn_printf("%s", ruby_sourcefile);
 	}
 	else {
-	    fprintf(stderr, "%s:%d", ruby_sourcefile, ruby_sourceline);
+	    warn_printf("%s:%d", ruby_sourcefile, ruby_sourceline);
 	}
     }
 }
@@ -1026,9 +1047,9 @@ error_print()
     if (NIL_P(errat)){
 	ruby_set_current_source();
 	if (ruby_sourcefile)
-	    fprintf(stderr, "%s:%d", ruby_sourcefile, ruby_sourceline);
+	    warn_printf("%s:%d", ruby_sourcefile, ruby_sourceline);
 	else
-	    fprintf(stderr, "%d", ruby_sourceline);
+	    warn_printf("%d", ruby_sourceline);
     }
     else if (RARRAY(errat)->len == 0) {
 	error_pos();
@@ -1038,7 +1059,7 @@ error_print()
 
 	if (NIL_P(mesg)) error_pos();
 	else {
-	    fwrite(RSTRING(mesg)->ptr, 1, RSTRING(mesg)->len, stderr);
+	    warn_print2(RSTRING(mesg)->ptr, RSTRING(mesg)->len);
 	}
     }
 
@@ -1055,16 +1076,15 @@ error_print()
     }
     POP_TAG();
     if (eclass == rb_eRuntimeError && elen == 0) {
-	fprintf(stderr, ": unhandled exception\n");
+	warn_print(": unhandled exception\n");
     }
     else {
 	VALUE epath;
 
 	epath = rb_class_path(eclass);
 	if (elen == 0) {
-	    fprintf(stderr, ": ");
-	    fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
-	    putc('\n', stderr);
+	    warn_print(": ");
+	    warn_print2(RSTRING(epath)->ptr, RSTRING(epath)->len);
 	}
 	else {
 	    char *tail  = 0;
@@ -1075,16 +1095,15 @@ error_print()
 		len = tail - einfo;
 		tail++;		/* skip newline */
 	    }
-	    fprintf(stderr, ": ");
-	    fwrite(einfo, 1, len, stderr);
+	    warn_print(": ");
+	    warn_print2(einfo, len);
 	    if (epath) {
-		fprintf(stderr, " (");
-		fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
-		fprintf(stderr, ")\n");
+		warn_print(" (");
+		warn_print2(RSTRING(epath)->ptr, RSTRING(epath)->len);
+		warn_print(")\n");
 	    }
 	    if (tail) {
-		fwrite(tail, 1, elen-len-1, stderr);
-		putc('\n', stderr);
+		warn_print2(tail, elen-len-1);
 	    }
 	}
     }
@@ -1100,16 +1119,15 @@ error_print()
 	ep = RARRAY(errat);
 	for (i=1; i<ep->len; i++) {
 	    if (TYPE(ep->ptr[i]) == T_STRING) {
-		fprintf(stderr, "\tfrom %s\n", RSTRING(ep->ptr[i])->ptr);
+		warn_printf("\tfrom %s\n", RSTRING(ep->ptr[i])->ptr);
 	    }
 	    if (i == TRACE_HEAD && ep->len > TRACE_MAX) {
-		fprintf(stderr, "\t ... %ld levels...\n",
+		warn_printf("\t ... %ld levels...\n",
 			ep->len - TRACE_HEAD - TRACE_TAIL);
 		i = ep->len - TRACE_TAIL;
 	    }
 	}
     }
-    fflush(stderr);
 }
 
 #if defined(__APPLE__)
@@ -1206,38 +1224,38 @@ error_handle(ex)
 
       case TAG_RETURN:
 	error_pos();
-	fprintf(stderr, ": unexpected return\n");
+	warn_print(": unexpected return\n");
 	ex = 1;
 	break;
       case TAG_NEXT:
 	error_pos();
-	fprintf(stderr, ": unexpected next\n");
+	warn_print(": unexpected next\n");
 	ex = 1;
 	break;
       case TAG_BREAK:
 	error_pos();
-	fprintf(stderr, ": unexpected break\n");
+	warn_print(": unexpected break\n");
 	ex = 1;
 	break;
       case TAG_REDO:
 	error_pos();
-	fprintf(stderr, ": unexpected redo\n");
+	warn_print(": unexpected redo\n");
 	ex = 1;
 	break;
       case TAG_RETRY:
 	error_pos();
-	fprintf(stderr, ": retry outside of rescue clause\n");
+	warn_print(": retry outside of rescue clause\n");
 	ex = 1;
 	break;
       case TAG_THROW:
 	if (prot_tag && prot_tag->frame && prot_tag->frame->node) {
 	    NODE *tag = prot_tag->frame->node;
-	    fprintf(stderr, "%s:%d: uncaught throw\n",
+	    warn_printf("%s:%d: uncaught throw\n",
 		    tag->nd_file, nd_line(tag));
 	}
 	else {
 	    error_pos();
-	    fprintf(stderr, ": unexpected throw\n");
+	    warn_printf(": unexpected throw\n");
 	}
 	ex = 1;
 	break;
@@ -3762,7 +3780,7 @@ rb_f_abort(argc, argv)
 
 	rb_scan_args(argc, argv, "1", &mesg);
 	StringValue(argv[0]);
-	rb_io_puts(argc, argv, rb_stderr);
+	rb_io_puts(argc, argv, rb_deferr);
 	terminate_process(1, RSTRING(argv[0])->ptr, RSTRING(argv[0])->len);
     }
     return Qnil;		/* not reached */
@@ -3806,11 +3824,10 @@ rb_longjmp(tag, mesg)
 	VALUE e = ruby_errinfo;
 
 	StringValue(e);
-	fprintf(stderr, "Exception `%s' at %s:%d - %s\n",
-		rb_obj_classname(ruby_errinfo),
-		ruby_sourcefile, ruby_sourceline,
-		RSTRING(e)->ptr);
-	fflush(stderr);
+	warn_printf("Exception `%s' at %s:%d - %s\n",
+		    rb_obj_classname(ruby_errinfo),
+		    ruby_sourcefile, ruby_sourceline,
+		    RSTRING(e)->ptr);
     }
 
     rb_trap_restore_mask();
@@ -8372,21 +8389,20 @@ rb_thread_schedule()
 	    TRAP_END;
 	}
 	FOREACH_THREAD_FROM(curr, th) {
-	    fprintf(stderr, "deadlock 0x%lx: %s:",
-		    th->thread, thread_status_name(th->status));
-	    if (th->wait_for & WAIT_FD) fprintf(stderr, "F(%d)", th->fd);
-	    if (th->wait_for & WAIT_SELECT) fprintf(stderr, "S");
-	    if (th->wait_for & WAIT_TIME) fprintf(stderr, "T(%f)", th->delay);
+	    warn_printf("deadlock 0x%lx: %s:",
+			th->thread, thread_status_name(th->status));
+	    if (th->wait_for & WAIT_FD) warn_printf("F(%d)", th->fd);
+	    if (th->wait_for & WAIT_SELECT) warn_printf("S");
+	    if (th->wait_for & WAIT_TIME) warn_printf("T(%f)", th->delay);
 	    if (th->wait_for & WAIT_JOIN)
-		fprintf(stderr, "J(0x%lx)", th->join ? th->join->thread : 0);
-	    if (th->wait_for & WAIT_PID) fprintf(stderr, "P");
-	    if (!th->wait_for) fprintf(stderr, "-");
-	    fprintf(stderr, " %s - %s:%d\n",
-		    th==main_thread ? "(main)" : "",
-		    th->node->nd_file, nd_line(th->node));
+		warn_printf("J(0x%lx)", th->join ? th->join->thread : 0);
+	    if (th->wait_for & WAIT_PID) warn_printf("P");
+	    if (!th->wait_for) warn_printf("-");
+	    warn_printf(" %s - %s:%d\n",
+			th==main_thread ? "(main)" : "",
+			th->node->nd_file, nd_line(th->node));
 	}
 	END_FOREACH_FROM(curr, th);
-	fflush(stderr);
 	next = main_thread;
 	rb_thread_ready(next);
 	next->status = THREAD_TO_KILL;

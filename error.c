@@ -106,9 +106,8 @@ warn_print(fmt, args)
     char buf[BUFSIZ];
 
     err_snprintf(buf, BUFSIZ, fmt, args);
-    fputs(buf, stderr);
-    fputs("\n", stderr);
-    fflush(stderr);
+    rb_write_deferr(buf);
+    rb_write_deferr("\n");
 }
 
 void
@@ -170,7 +169,9 @@ rb_bug(fmt, va_alist)
     va_init_list(args, fmt);
     warn_print(buf, args);
     va_end(args);
-    fprintf(stderr, "ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
+    snprintf(buf, BUFSIZ, "ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
+    rb_write_deferr(buf);
+    rb_write_deferr("\n");
     abort();
 }
 
@@ -1124,8 +1125,7 @@ err_append(s)
 	}
     }
     else {
-	fputs(s, stderr);
-	fputs("\n", stderr);
-	fflush(stderr);
+	rb_write_deferr(s);
+	rb_write_deferr("\n");
     }
 }

@@ -94,7 +94,7 @@ VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
 
-VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
+VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout, rb_deferr;
 static VALUE orig_stdin, orig_stdout, orig_stderr;
 static int saved_fd[3] = {0, 1, 2};
 
@@ -2714,6 +2714,30 @@ rb_obj_display(argc, argv, self)
     return Qnil;
 }
 
+void
+rb_write_deferr2(mesg, len)
+    const char *mesg;
+    long len;
+{
+    rb_io_write(rb_deferr, rb_str_new(mesg, len));
+}
+
+void
+rb_write_deferr(mesg)
+    const char *mesg;
+{
+    rb_write_deferr2(mesg, strlen(mesg));
+}
+
+static VALUE
+rb_warn_m(self, mesg)
+    VALUE self, mesg;
+{
+    rb_io_write(rb_deferr, mesg);
+    rb_io_write(rb_deferr, rb_default_rs);
+    return mesg;
+}
+
 static void
 must_respond_to(mid, val, id)
     ID mid;
@@ -2728,12 +2752,13 @@ must_respond_to(mid, val, id)
 }
 
 static void
-rb_io_defset(val, id)
+rb_io_defset(val, id, variable)
     VALUE val;
     ID id;
+    VALUE *variable;
 {
     must_respond_to(id_write, val, id);
-    rb_defout = val;
+    *variable = val;
 }
 
 static void
@@ -4044,6 +4069,8 @@ Init_IO()
     rb_defout = rb_stdout;
     rb_define_hooked_variable("$>", &rb_defout, 0, rb_io_defset);
     rb_define_hooked_variable("$defout", &rb_defout, 0, rb_io_defset);
+    rb_deferr = rb_stderr;
+    rb_define_hooked_variable("$deferr", &rb_deferr, 0, rb_io_defset);
 
     rb_define_global_const("STDIN", rb_stdin);
     rb_define_global_const("STDOUT", rb_stdout);
@@ -4125,4 +4152,6 @@ Init_IO()
 #ifdef O_SYNC
     rb_file_const("SYNC", INT2FIX(O_SYNC));
 #endif
+
+    rb_define_global_function("warn", rb_warn_m, 1);
 }
