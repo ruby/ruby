@@ -5632,7 +5632,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 				rb_eval(recv, opt);
 			    }
 			}
-			local_vars = ruby_scope->local_vars;
 			if ((long)node->nd_rest >= 0) {
 			    VALUE v;
 
@@ -5642,6 +5641,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 				v = rb_ary_new2(0);
 			    ruby_scope->local_vars[node->nd_rest] = v;
 			}
+			ruby_frame->argv = ruby_scope->local_vars + 2;
 		    }
 		}
 
