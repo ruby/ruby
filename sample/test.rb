@@ -343,7 +343,7 @@ ok(($x * 5).join(":") == '1:1:1:1:1')
 ok(($x * 1).join(":") == '1')
 ok(($x * 0).join(":") == '')
 
-*$x = 1..7
+*$x = (1..7).to_a
 ok($x.size == 7)
 ok($x == [1, 2, 3, 4, 5, 6, 7])
 
@@ -716,8 +716,11 @@ ok(a == 1 && b == 2 && c == 3 && d == 4)
 *a = 1, 2, 3
 ok(a == [1, 2, 3])
 
-*a = 1..3			# array conversion
-ok(a == [1, 2, 3])
+*a = 4
+ok(a == [4])
+
+*a = nil
+ok(a == [])
 
 check "call"
 def aaa(a, b=100, *rest)
@@ -1042,7 +1045,7 @@ test = struct_test.new(1, 2)
 ok(test.foo == 1 && test.bar == 2)
 ok(test[0] == 1 && test[1] == 2)
 
-a, b = test
+a, b = test.to_a
 ok(a == 1 && b == 2)
 
 test[0] = 22

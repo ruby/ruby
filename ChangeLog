@@ -1,3 +1,7 @@
+Tue Jan 18 12:24:28 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* struct.c (Init_Struct): remove Struct's own hash and eql?.
+
 Sat Jan 15 22:21:08 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (search_method): argument klass may be 0.

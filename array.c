@@ -1301,11 +1301,12 @@ rb_ary_hash(ary)
     VALUE ary;
 {
     long i;
-    int h;
+    int n, h;
 
     h = RARRAY(ary)->len;
     for (i=0; i<RARRAY(ary)->len; i++) {
-	int n = rb_hash(RARRAY(ary)->ptr[i]);
+	h = (h<<1) | (h<0 ? 1 : 0);
+	n = rb_hash(RARRAY(ary)->ptr[i]);
 	h ^= NUM2LONG(n);
     }
     return INT2FIX(h);

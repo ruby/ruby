@@ -59,17 +59,10 @@ rb_obj_equal(obj1, obj2)
 }
 
 static VALUE
-rb_any_to_a(obj)
-    VALUE obj;
-{
-    return rb_ary_new3(1, obj);
-}
-
-static VALUE
 rb_obj_hash(obj)
     VALUE obj;
 {
-    return (long)obj|FIXNUM_FLAG;
+    return ((long)obj)|FIXNUM_FLAG;
 }
 
 VALUE
@@ -119,6 +112,13 @@ rb_obj_dup(obj)
     VALUE obj;
 {
     return rb_funcall(obj, rb_intern("clone"), 0, 0);
+}
+
+static VALUE
+rb_any_to_a(obj)
+    VALUE obj;
+{
+    return rb_ary_new3(1, obj);
 }
 
 VALUE
