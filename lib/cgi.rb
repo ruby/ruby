@@ -698,9 +698,7 @@ convert string charset, and set language to "ja".
       name = CGI::unescape(name)
       values ||= ""
       values = values.split('&').collect{|v| CGI::unescape(v) }
-      if cookies.has_key?(name)
-        cookies[name].value.push(*values)
-      else
+      unless cookies.has_key?(name)
         cookies[name] = Cookie::new({ "name" => name, "value" => values })
       end
     end

@@ -1,3 +1,8 @@
+Wed Oct 31 02:44:06 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: CGI::Cookie::parse(): Ignore duplicate keys caused by
+	  Netscape bug.
+
 Tue Oct 30 14:04:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_f_eval): can't modify untainted binding.
