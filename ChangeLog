@@ -1,3 +1,7 @@
+Wed Jan 21 16:01:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/rmd160/extconf.rb: have_library appends found library.
+
 Tue Jan 20 14:48:28 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: should check <openssl/conf_api.h> instead
@@ -13,10 +17,10 @@ Tue Jan 20 14:25:51 2004  Dave Thomas  <dave@pragprog.com>
 
 Tue Jan 20 13:22:39 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/html_generator.rb: Document aliases at 
+	* lib/rdoc/generators/html_generator.rb: Document aliases at
 	  top-most level.
 
-	* lib/English.rb: Document English.rb. 
+	* lib/English.rb: Document English.rb.
 
 Tue Jan 20 04:41:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
