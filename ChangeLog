@@ -1,3 +1,7 @@
+Thu Jun 27 23:55:50 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_stat): fix buffer overflow. (ruby-bugs:PR#329)
+
 Thu Jun 27 20:57:45 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/prettyprint.rb, lib/pp.rb: convenience methods added.
