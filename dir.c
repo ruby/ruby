@@ -600,7 +600,7 @@ dir_seek(dir, pos)
     VALUE dir, pos;
 {
     struct dir_data *dirp;
-    off_t p = NUM2LONG(pos);
+    off_t p = NUM2OFFT(pos);
 
     GetDIR(dir, dirp);
 #ifdef HAVE_SEEKDIR

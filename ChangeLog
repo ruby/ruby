@@ -1,3 +1,16 @@
+Tue Nov 23 00:10:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_chown): integer conversion should be prior to
+	  GetOpenFile().  [ruby-dev:24947]
+
+	* file.c (rb_file_truncate): ditto.
+
+	* file.c (rb_file_s_truncate): ditto.
+
+	* dir.c (dir_seek): use NUM2OFFT().
+
+	* misc/ruby-mode.el (ruby-non-block-do-re): [ruby-core:03719]
+
 Mon Nov 22 22:33:02 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::parse_require): Don't use names

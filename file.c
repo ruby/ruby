@@ -1829,15 +1829,18 @@ rb_file_chown(obj, owner, group)
     VALUE obj, owner, group;
 {
     OpenFile *fptr;
+    int o, g;
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
+    o = NUM2INT(owner);
+    g = NUM2INT(group);
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(_WIN32) || defined(__EMX__)
     if (!fptr->path) return Qnil;
-    if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
+    if (chown(fptr->path, o, g) == -1)
 	rb_sys_fail(fptr->path);
 #else
-    if (fchown(fileno(fptr->f), NUM2INT(owner), NUM2INT(group)) == -1)
+    if (fchown(fileno(fptr->f), o, g) == -1)
 	rb_sys_fail(fptr->path);
 #endif
 
@@ -2916,11 +2919,13 @@ static VALUE
 rb_file_s_truncate(klass, path, len)
     VALUE klass, path, len;
 {
-    rb_secure(2);
-    FilePathValue(path);
+    off_t pos;
 
+    rb_secure(2);
+    pos = NUM2OFFT(len);
+    FilePathValue(path);
 #ifdef HAVE_TRUNCATE
-    if (truncate(StringValueCStr(path), NUM2OFFT(len)) < 0)
+    if (truncate(StringValueCStr(path), pos) < 0)
 	rb_sys_fail(RSTRING(path)->ptr);
 #else
 # ifdef HAVE_CHSIZE
@@ -2936,7 +2941,7 @@ rb_file_s_truncate(klass, path, len)
 	    rb_sys_fail(RSTRING(path)->ptr);
 	}
 #  endif
-	if (chsize(tmpfd, NUM2OFFT(len)) < 0) {
+	if (chsize(tmpfd, pos) < 0) {
 	    close(tmpfd);
 	    rb_sys_fail(RSTRING(path)->ptr);
 	}
@@ -2969,8 +2974,10 @@ rb_file_truncate(obj, len)
 {
     OpenFile *fptr;
     FILE *f;
+    off_t pos;
 
     rb_secure(2);
+    pos = NUM2OFFT(len);
     GetOpenFile(obj, fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
@@ -2979,11 +2986,11 @@ rb_file_truncate(obj, len)
     fflush(f);
     fseeko(f, (off_t)0, SEEK_CUR);
 #ifdef HAVE_TRUNCATE
-    if (ftruncate(fileno(f), NUM2OFFT(len)) < 0)
+    if (ftruncate(fileno(f), pos) < 0)
 	rb_sys_fail(fptr->path);
 #else
 # ifdef HAVE_CHSIZE
-    if (chsize(fileno(f), NUM2OFFT(len)) < 0)
+    if (chsize(fileno(f), pos) < 0)
 	rb_sys_fail(fptr->path);
 # else
     rb_notimplement();
@@ -3070,15 +3077,17 @@ rb_file_flock(obj, operation)
 {
 #ifndef __CHECKER__
     OpenFile *fptr;
+    int op;
 
     rb_secure(2);
+    op = NUM2INT(operation);
     GetOpenFile(obj, fptr);
 
     if (fptr->mode & FMODE_WRITABLE) {
 	fflush(GetWriteFile(fptr));
     }
   retry:
-    if (flock(fileno(fptr->f), NUM2INT(operation)) < 0) {
+    if (flock(fileno(fptr->f), op) < 0) {
         switch (errno) {
           case EAGAIN:
           case EACCES:

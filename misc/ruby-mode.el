@@ -18,7 +18,7 @@
   )
 
 (defconst ruby-non-block-do-re
-  "\\(while\\|until\\|for\\|rescue\\)\\>"
+  "\\(while\\|until\\|for\\|rescue\\)\\>[^_]"
   )
 
 (defconst ruby-indent-beg-re
