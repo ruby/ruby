@@ -1,3 +1,8 @@
+Mon Oct 13 23:55:59 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* test/ruby/envutil.rb: use Config::CONFIG["ruby_install_name"],
+	  not "ruby".
+
 Mon Oct 13 23:57:29 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_feature_p): match by classified suffix.

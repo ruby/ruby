@@ -5,9 +5,17 @@ module EnvUtil
       if File.exist? miniruby or File.exist? miniruby+".exe"
         return File.expand_path(miniruby)
       end
-      miniruby = "../"+miniruby
+      miniruby = File.join("..", miniruby)
     end
-    "ruby"
+    begin
+      require "rbconfig"
+      File.join(
+        Config::CONFIG["bindir"],
+	Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
+      )
+    rescue LoadError
+      "ruby"
+    end
   end
   module_function :rubybin
 end
