@@ -1,3 +1,8 @@
+Wed Mar  9 13:37:57 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/tktextio.rb: fix bug of handling 'end' position.
+	  support initial text, overwrite setting and pos_gravity control.
+
 Tue Mar  8 18:16:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tktextio.rb: New sample script. TkTextIO class in this

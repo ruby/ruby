@@ -18,46 +18,58 @@ require 'tk'
 class TkTextIO < TkText
   def create_self(keys)
     mode = nil
+    ovwt = false
+    text = nil
     wrap = 'char'
+
     if keys.kind_of?(Hash)
       mode = keys.delete('mode')
-      wrap = nil if keys.has_key?('wrap')
+      ovwt = keys.delete('overwrite')
+      text = keys.delete('text')
+      wrap = keys.delete('wrap') || 'char'
     end
 
     super(keys)
 
-    self['wrap'] = wrap if wrap
+    self['wrap'] = wrap
+    insert('1.0', text)
 
-    @open  = {:r => true,  :w => true}
-    @close = {:r => false, :w => false}
     @txtpos = TkTextMark.new(self, '1.0')
+    @txtpos.gravity = :left
+
     @sync = true
+    @overwrite = (ovwt)? true: false
+
     @lineno = 0
     @line_offset = 0
     @count_var = TkVariable.new
 
+    @open  = {:r => true,  :w => true}  # default is 'r+'
+
     case mode
     when 'r'
-      @open[:r] = true;  @open[:w] = false
+      @open[:r] = true; @open[:w] = nil
 
     when 'r+'
-      @open[:r] = true;  @open[:w] = true
+      @open[:r] = true; @open[:w] = true
 
     when 'w'
-      @open[:r] = false; @open[:w] = true
+      @open[:r] = nil;  @open[:w] = true
       self.value=''
 
     when 'w+'
-      @open[:r] = true;  @open[:w] = true
+      @open[:r] = true; @open[:w] = true
       self.value=''
 
     when 'a'
-      @open[:r] = false; @open[:w] = true
-      @txtpos.set('end - 1 char')
+      @open[:r] = nil;  @open[:w] = true
+      @txtpos = TkTextMark.new(self, 'end - 1 char')
+      @txtpos.gravity = :right
 
     when 'a+'
       @open[:r] = true;  @open[:w] = true
-      @txtpos.set('end - 1 char')
+      @txtpos = TkTextMark.new(self, 'end - 1 char')
+      @txtpos.gravity = :right
     end
   end
 
@@ -78,35 +90,36 @@ class TkTextIO < TkText
   end
 
   def close
-    @close[:r] = true; @close[:w] = true
+    close_read
+    close_write
     nil
   end
   def close_read
-    @close[:r] = true
+    @open[:r] = false if @open[:r]
     nil
   end
   def close_write
-    @close[:w] = true
+    @open[:w] = false if @opne[:w]
     nil
   end
 
   def closed?
-    @close[:r] && @close[:w]
+    close_read? && close_write?
   end
   def closed_read?
-    @close[:r]
+    !@open[:r]
   end
   def closed_write?
-    @close[:w]
+    !@open[:w]
   end
 
   def _check_readable
-    fail IOError, "not opened for reading" unless @open[:r]
-    fail IOError, "closed stream" if @close[:r]
+    fail IOError, "not opened for reading" if @open[:r].nil?
+    fail IOError, "closed stream" if !@open[:r]
   end
   def _check_writable
-    fail IOError, "not opened for writing" unless @open[:w]
-    fail IOError, "closed stream" if @close[:w]
+    fail IOError, "not opened for writing" if @open[:w].nil?
+    fail IOError, "closed stream" if !@open[:w]
   end
   private :_check_readable, :_check_writable
 
@@ -184,6 +197,14 @@ class TkTextIO < TkText
     num
   end
 
+  def overwrite?
+    @overwrite
+  end
+
+  def overwrite=(ovwt)
+    @overwrite = (ovwt)? true: false
+  end
+
   def pid
     nil
   end
@@ -193,9 +214,15 @@ class TkTextIO < TkText
   end
   alias tell_index index_pos
 
+  def index_pos=(idx)
+    @txtpos.set(idx)
+    @txtpos.set('end - 1 char') if compare(@txtpos, '>=', :end)
+    idx
+  end
+
   def pos
     s = get('1.0', @txtpos)
-    tk_call('string', 'length', s)
+    number(tk_call('string', 'length', s))
   end
   alias tell pos
 
@@ -203,6 +230,15 @@ class TkTextIO < TkText
     # @txtpos.set((idx.kind_of?(Numeric))? "1.0 + #{idx} char": idx)
     seek(idx, IO::SEEK_SET)
     idx
+  end
+
+  def pos_gravity
+    @txtpos.gravity
+  end
+
+  def pos_gravity=(side)
+    @txtpos.gravity = side
+    side
   end
 
   def print(arg=$_, *args)
@@ -257,6 +293,7 @@ class TkTextIO < TkText
     epos = @txtpos + "#{len} char"
     s = get(@txtpos, epos)
     @txtpos.set(epos)
+    @txtpos.set('end - 1 char') if compare(@txtpos, '>=', :end)
     s
   end
   private :_read
@@ -293,6 +330,7 @@ class TkTextIO < TkText
       if idx
         s = get(@txtpos, idx) << "\n"
         @txtpos.set("#{idx} + #{@count_var.value} char")
+        @txtpos.set('end - 1 char') if compare(@txtpos, '>=', :end)
       else
         s = get(@txtpos, 'end - 1 char')
         @txtpos.set('end - 1 char')
@@ -365,6 +403,8 @@ class TkTextIO < TkText
       fail Errno::EINVAL, 'invalid whence argument'
     end
 
+    @txtpos.set('end - 1 char') if compare(@txtpos, '>=', :end)
+
     0
   end
   alias sysseek seek
@@ -406,8 +446,12 @@ class TkTextIO < TkText
     _check_readable
     c = c.chr if c.kind_of?(Fixnum)
     if compare(@txtpos, '>', '1.0')
-      delete(@txtpos - '1 char')
+      @txtpos.set(@txtpos - '1 char')
+      delete(@txtpos)
       insert(@txtpos, tk_call('string', 'range', c, 0, 1))
+      @txtpos.set(@txtpos - '1 char') if @txtpos.gravity == 'right'
+    else
+      fail IOError, 'cannot ungetc at head of stream'
     end
     nil
   end
@@ -415,7 +459,7 @@ class TkTextIO < TkText
   def _write(obj)
     s = _get_eval_string(obj)
     n = number(tk_call('string', 'length', s))
-    delete(@txtpos, @txtpos + "#{n} char")
+    delete(@txtpos, @txtpos + "#{n} char") if @overwrite
     self.insert(@txtpos, s)
     @txtpos.set(@txtpos + "#{n} char")
     Tk.update if @sync
@@ -434,7 +478,7 @@ end
 ####################
 if __FILE__ == $0
   f = TkFrame.new.pack
-  tio = TkTextIO.new(f){
+  tio = TkTextIO.new(f, :text=>">>> This is an initial text line. <<<\n\n"){
     yscrollbar(TkScrollbar.new(f).pack(:side=>:right, :fill=>:y))
     pack(:side=>:left, :fill=>:both, :expand=>true)
   }
@@ -443,6 +487,14 @@ if __FILE__ == $0
   $stdout = tio
   $stderr = tio
 
+  STDOUT.print("\n========= TkTextIO#gets for inital text ========\n\n")
+
+  while(s = gets)
+    STDOUT.print(s)
+  end
+
+  STDOUT.print("\n============ put strings to TkTextIO ===========\n\n")
+
   puts "On this sample, a text widget works as if it is a I/O stream."
   puts "Please see the code."
   puts
@@ -450,7 +502,7 @@ if __FILE__ == $0
   puts
   p tio
   puts
-  warn("This is a warning message generated by 'warn' method.\n")
+  warn("This is a warning message generated by 'warn' method.")
   puts
   print("---------------------------------------------------------\n")
 
@@ -458,7 +510,7 @@ if __FILE__ == $0
 
   tio.seek(0)
   lines = readlines
-  STDOUT.puts(lines)
+  STDOUT.puts(lines.inspect)
 
   STDOUT.print("\n================== TkTextIO#each ===============\n\n")
 
