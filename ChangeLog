@@ -1,3 +1,8 @@
+Sun Feb 15 19:13:33 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb: read(tpl,0), raise RequestExpiredError
+	  if not found.
+
 Sun Feb 15 15:48:57 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add IDispatch wrapper in val2variant.
