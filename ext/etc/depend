@@ -1,0 +1,1 @@
+etc.o : etc.c ../../ruby.h ../../config.h ../../defines.h 

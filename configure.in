@@ -1,0 +1,474 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(ruby.h)
+
+dnl checks for alternative programs
+AC_ARG_WITH(gcc, [--without-gcc             never use gcc], [
+	case $withval in
+	no)	CC=cc
+		without_gcc=yes;;
+	yes)	CC=gcc
+		without_gcc=no;;
+	*)	CC=$withval
+		without_gcc=$withval;;
+	esac], [without_gcc=no])
+dnl If the user switches compilers, we can't believe the cache
+if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
+then
+  AC_ERROR(cached CC is different -- throw away $cache_file
+(it is also a good idea to do 'make clean' before compiling))
+fi
+
+dnl checks for thread
+rb_thread=yes
+AC_ARG_ENABLE(thread, [--disable-thread          never use user-level thread], [
+	rb_thread=$enableval
+])
+if test $rb_thread = yes; then
+  AC_DEFINE(THREAD)
+fi
+
+AC_CANONICAL_HOST
+
+
+dnl checks for fat-binary
+fat_binary=no
+AC_ARG_ENABLE( fat-binary,
+       [--enable-fat-binary       build a NeXT Multi Architecture Binary. ],
+       [ fat_binary=$enableval ] )
+if test "$fat_binary" = yes ; then
+
+    AC_MSG_CHECKING( target architecture )
+
+    if test "$TARGET_ARCHS" = "" ; then
+        if test `/usr/bin/arch` = "m68k" ; then
+            TARGET_ARCHS="m68k i486"
+        else
+            TARGET_ARCHS="m68k `/usr/bin/arch`"
+        fi
+    fi
+    # /usr/lib/arch_tool -archify_list $TARGET_ARCHS
+    for archs in $TARGET_ARCHS 
+    do
+        ARCH_FLAG="$ARCH_FLAG -arch $archs "
+        echo -n " $archs"
+    done
+    AC_DEFINE( NEXT_FAT_BINARY )
+    echo "."
+fi 
+
+
+AC_ARG_PROGRAM
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_GCC_TRADITIONAL
+AC_PROG_YACC
+AC_PROG_RANLIB
+AC_SUBST(AR)
+AC_CHECK_PROGS(AR, ar aal, ar)
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+
+# checks for UNIX variants that set C preprocessor variables
+AC_MINIX
+
+dnl Checks for libraries.
+case "$host_os" in
+nextstep*)	;;
+human*)		;;
+*) LIBS="-lm $LIBS";;
+esac
+AC_CHECK_LIB(crypt, crypt)
+AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
+AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
+
+dnl Checks for header files.
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_CHECK_HEADERS(stdlib.h unistd.h limits.h sys/file.h sys/ioctl.h pwd.h \
+		 sys/select.h sys/time.h sys/times.h sys/param.h sys/wait.h\
+		 syscall.h a.out.h string.h utime.h memory.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_UID_T
+AC_TYPE_SIZE_T
+AC_STRUCT_ST_BLKSIZE
+save_LIBOJBS="$LIBOBJS"
+AC_STRUCT_ST_BLOCKS
+LIBOBJS="$save_LIBOBJS"
+AC_STRUCT_ST_RDEV
+
+AC_CHECK_SIZEOF(short)
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(void*)
+
+dnl Checks for library functions.
+AC_TYPE_GETGROUPS
+AC_TYPE_SIGNAL
+AC_FUNC_ALLOCA
+AC_FUNC_VFORK
+AC_REPLACE_FUNCS(dup2 setenv memmove mkdir strcasecmp strerror strftime\
+		 strstr strtoul strdup crypt flock)
+AC_CHECK_FUNCS(fmod killpg random wait4 waitpid syscall getcwd\
+	      truncate chsize times utimes fcntl lockf setitimer\
+	      setruid seteuid setreuid setrgid setegid setregid\
+	      setpgrp2 getpgid getgroups getpriority\
+	      dlopen sigprocmask sigaction _setjmp)
+if test "$ac_cv_func_strftime" = no; then
+    AC_STRUCT_TIMEZONE
+    AC_TRY_LINK([],
+	 [extern int daylight; int i = daylight;], AC_DEFINE(HAVE_DAYLIGHT))
+fi
+
+if test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = yes; then
+   AC_DEFINE(POSIX_SIGNAL)
+else
+  AC_MSG_CHECKING(for BSD signal semantics)
+  AC_CACHE_VAL(rb_cv_bsd_signal,
+    [AC_TRY_RUN([
+#include <stdio.h>
+#include <signal.h>
+
+void
+sig_handler(dummy)
+     int dummy;
+{
+}
+
+int
+main()
+{
+  signal(SIGINT, sig_handler);
+  kill(getpid(), SIGINT);
+  kill(getpid(), SIGINT);
+  return 0;
+}
+],
+	rb_cv_bsd_signal=yes,
+	rb_cv_bsd_signal=no)])
+  AC_MSG_RESULT($rb_cv_bsd_signal)
+  if test "$rb_cv_bsd_signal" = yes; then
+    AC_DEFINE(BSD_SIGNAL)
+  fi
+fi
+
+if test "$ac_cv_func_setpgrp2" = yes; then
+  AC_DEFINE(BSD_GETPGRP, getpgrp2)
+  AC_DEFINE(BSD_SETPGRP, setpgrp2)
+else
+  AC_MSG_CHECKING(whether getpgrp() has arg)
+  AC_CACHE_VAL(rb_cv_bsdgetpgrp,
+    [AC_TRY_COMPILE([#include <unistd.h>], [getpgrp(0);],
+      rb_cv_bsdgetpgrp=yes,
+      rb_cv_bsdgetpgrp=no)])
+  AC_MSG_RESULT($rb_cv_bsdgetpgrp)
+  if test "$rb_cv_bsdgetpgrp" = yes; then
+    AC_DEFINE(BSD_GETPGRP, getpgrp)
+  fi
+
+  AC_MSG_CHECKING(whether setpgrp() has args)
+  AC_CACHE_VAL(rb_cv_bsdsetpgrp,
+    [AC_TRY_COMPILE([#include <unistd.h>], [setpgrp(1, 1);],
+	rb_cv_bsdsetpgrp=yes,
+	rb_cv_bsdsetpgrp=no)])
+  AC_MSG_RESULT($rb_cv_bsdsetpgrp)
+  if test "$rb_cv_bsdsetpgrp" = yes; then
+    AC_DEFINE(BSD_SETPGRP, setpgrp)
+  fi
+fi
+
+AC_C_BIGENDIAN
+AC_CHAR_UNSIGNED
+
+AC_MSG_CHECKING([count field in FILE structures])
+AC_CACHE_VAL(rb_cv_fcnt,
+[AC_TRY_COMPILE([#include <stdio.h>],
+	[FILE *f = stdin; f->_cnt = 0;], rb_cv_fcnt="_cnt", )
+if test "$rb_cv_fcnt" = ""; then
+    AC_TRY_COMPILE([#include <stdio.h>],
+	[FILE *f = stdin; f->__cnt = 0;], rb_cv_fcnt="__cnt", )
+fi
+if test "$rb_cv_fcnt" = ""; then
+    AC_TRY_COMPILE([#include <stdio.h>],
+	[FILE *f = stdin; f->_r = 0;], rb_cv_fcnt="_r", )
+fi
+if test "$rb_cv_fcnt" = ""; then
+    AC_TRY_COMPILE([#include <stdio.h>],
+	[FILE *f = stdin; f->readCount = 0;],
+	rb_cv_fcnt="readCount", rb_cv_fcnt="not found")
+fi])
+if test "$rb_cv_fcnt" = "not found"; then
+  AC_MSG_RESULT([not found(OK if using GNU libc)])
+else
+  AC_MSG_RESULT($rb_cv_fcnt)
+  AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)
+fi
+
+if test "$ac_cv_func_getpwent" = yes; then
+  AC_MSG_CHECKING(struct passwd)
+  AC_EGREP_HEADER(pw_change, pwd.h, AC_DEFINE(PW_CHANGE))
+  AC_EGREP_HEADER(pw_quota, pwd.h, AC_DEFINE(PW_QUOTA))
+  AC_EGREP_HEADER(pw_age, pwd.h, AC_DEFINE(PW_AGE))
+  AC_EGREP_HEADER(pw_class, pwd.h, AC_DEFINE(PW_CLASS))
+  AC_EGREP_HEADER(pw_comment, pwd.h, AC_DEFINE(PW_COMMENT))
+  AC_EGREP_HEADER(pw_expire, pwd.h, AC_DEFINE(PW_EXPIRE))
+  AC_MSG_RESULT(done)
+fi
+
+dnl wheather use dln_a_out ot not
+AC_ARG_WITH(dln-a-out, [--with-dln-a-out          use dln_a_out if possible], [
+	case $withval in
+	yes) with_dln_a_out=yes;;
+	*)   with_dln_a_out=no;;
+	esac], [with_dln_a_out=no])
+
+case "$host_os" in
+    linux*)
+  AC_MSG_CHECKING(whether ELF binaries are produced)
+  AC_CACHE_VAL(rb_cv_linux_elf,
+  [AC_TRY_RUN([
+/* Test for whether ELF binaries are produced */
+#include <fcntl.h>
+#include <stdlib.h>
+main() {
+	char buffer[4];
+	int i=open("conftest",O_RDONLY);
+	if(i==-1)
+		exit(1); /* fail */
+	if(read(i,&buffer[0],4)<4)
+		exit(1); /* fail */
+	if(buffer[0] != 127 || buffer[1] != 'E' ||
+           buffer[2] != 'L' || buffer[3] != 'F')
+		exit(1); /* fail */
+	exit(0); /* succeed (yes, it's ELF) */
+}
+],
+	rb_cv_linux_elf=yes,
+	rb_cv_linux_elf=no,
+	[:])])
+  AC_MSG_RESULT($rb_cv_linux_elf)
+  if test "$rb_cv_linux_elf" = no; then
+    with_dln_a_out=yes
+    host_os=linux-a.out
+  else
+    LDFLAGS="-rdynamic"
+  fi;;
+esac
+
+AC_SUBST(DLDFLAGS)dnl
+
+AC_SUBST(STATIC)dnl
+AC_SUBST(CCDLFLAGS)dnl
+AC_SUBST(LDSHARED)dnl
+AC_SUBST(DLEXT)dnl
+
+STATIC=
+
+if test "$with_dln_a_out" != yes; then
+  rb_cv_dlopen=unknown
+  AC_MSG_CHECKING(whether OS depend dynamic link works)
+  if test "$GCC" = yes; then
+    case "$host_os" in
+    nextstep*)	;;
+    human*)	;;
+    *) CCDLFLAGS=-fpic;;
+    esac
+  else
+    case "$host_os" in
+	hpux*)		CCDLFLAGS='+z';;
+	solaris*|irix*)	CCDLFLAGS='-K pic' ;;
+	sunos*)		CCDLFLAGS='-pic' ;;
+	esix*|uxpds*)   CCDLFLAGS='-Kpic' ;;
+	*)		CCDLFLAGS='' ;;
+    esac
+  fi
+
+  case "$host_os" in
+	hpux*)		DLDFLAGS="-E"
+			LDSHARED='ld -b'
+			LDFLAGS="-Wl,-E"
+			rb_cv_dlopen=yes;;
+	solaris*) 	LDSHARED='ld -G'
+			rb_cv_dlopen=yes;;
+	sunos*) 	LDSHARED='ld -assert nodefinitions'
+			rb_cv_dlopen=yes;;
+	irix*) 	 	LDSHARED='ld -ignore_unresolved'
+			rb_cv_dlopen=yes;;
+	sysv4*) 	LDSHARED='ld -G'
+			rb_cv_dlopen=yes;;
+	esix*|uxpds*) 	LDSHARED="ld -G"
+			rb_cv_dlopen=yes ;;
+	linux*) 	LDSHARED="gcc -shared"
+			rb_cv_dlopen=yes ;;
+	freebsd*) 	LDSHARED="ld -Bshareable"
+			rb_cv_dlopen=yes ;;
+	netbsd*) 	LDSHARED="ld -Bshareable"
+			rb_cv_dlopen=yes ;;
+	openbsd*) 	LDSHARED="ld -Bshareable"
+			rb_cv_dlopen=yes ;;
+	nextstep*)	LDSHARED='cc -r'
+			LDFLAGS="-u libsys_s"
+			DLDFLAGS="$ARCH_FLAG" 
+			rb_cv_dlopen=yes ;;
+	aix*)		LDSHARED='../../miniruby ../aix_ld.rb $(TARGET)'
+			rb_cv_dlopen=yes ;;
+	human*)		DLDFLAGS=''
+			LDSHARED=''
+			LDFLAGS='' ;;
+	*) 		LDSHARED='ld' ;;
+  esac
+  AC_MSG_RESULT($rb_cv_dlopen)
+fi
+
+dln_a_out_works=no
+if test "$ac_cv_header_a_out_h" = yes; then
+  if test "$with_dln_a_out" = yes || test "$rb_cv_dlopen" = unknown; then
+    AC_MSG_CHECKING(whether matz's dln works)
+    cat confdefs.h > config.h
+    AC_CACHE_VAL(rb_cv_dln_a_out,
+    [AC_TRY_COMPILE([
+#define USE_DLN_A_OUT
+#include "dln.c"
+],
+	[], 
+	rb_cv_dln_a_out=yes,
+	rb_cv_dln_a_out=no)])
+    AC_MSG_RESULT($rb_cv_dln_a_out)
+    if test "$rb_cv_dln_a_out" = yes; then
+      dln_a_out_works=yes
+      AC_DEFINE(USE_DLN_A_OUT)
+    fi
+  fi
+fi
+
+if test "$dln_a_out_works" = yes; then
+  if test "$GCC" = yes; then
+    STATIC=-static
+  else
+    STATIC=-Bstatic
+  fi
+  DLEXT=o
+  AC_DEFINE(DLEXT, ".o")
+  CCDLFLAGS=
+else
+  case "$host_os" in
+    hpux*)	DLEXT=sl
+	 	AC_DEFINE(DLEXT, ".sl");;
+    nextstep*)	DLEXT=o
+	 	AC_DEFINE(DLEXT, ".o");;
+    *)		DLEXT=so
+    		AC_DEFINE(DLEXT, ".so");;
+  esac
+fi
+
+AC_SUBST(STRIP)dnl
+if test "$with_dln_a_out" = yes; then
+  STRIP=true
+else
+  STRIP=strip
+fi
+
+case "$host_os" in
+  linux*)
+	STRIP='strip -S -x';;
+  nextstep*)
+	STRIP='strip -A -n';;
+esac
+
+EXTSTATIC=
+AC_SUBST(EXTSTATIC)dnl
+AC_ARG_WITH(static-linked-ext,
+	    [--with-static-linked-ext  link external modules statically],
+            [case $withval in
+	     yes) STATIC=
+		  EXTSTATIC=static;;
+	     *)	;;
+	     esac])
+
+case "$host_os" in
+  human*)
+    AC_CHECK_LIB(signal, _harderr)
+    AC_CHECK_LIB(hmem, hmemset)
+    AC_CHECK_FUNCS(select)
+    AC_MSG_CHECKING(whether PD libc _dtos18 fail to convert big number)
+    AC_CACHE_VAL(rb_cv_missing__dtos18,
+    [AC_TRY_RUN(
+changequote(<<, >>)dnl
+<<
+#include <stdio.h>
+main ()
+{
+   char buf[256];
+   sprintf (buf, "%g", 1e+300);
+   exit (strcmp (buf, "1e+300") ? 0 : 1);
+}
+>>,
+changequote([, ])dnl
+rb_cv_missing__dtos18=yes, rb_cv_missing__dtos18=no)])
+    AC_MSG_RESULT($rb_cv_missing__dtos18)
+    if test "$rb_cv_missing__dtos18" = yes; then
+      AC_DEFINE(MISSING__DTOS18)
+    fi
+    AC_MSG_CHECKING(whether PD libc fconvert fail to round)
+    AC_CACHE_VAL(rb_cv_missing_fconvert,
+    [AC_TRY_RUN(
+changequote(<<, >>)dnl
+<<
+#include <stdio.h>
+#include <math.h>
+main ()
+{
+  char buf[256];
+  sprintf (buf, "%f", log(exp(1.0)));
+  exit (strcmp (buf, "1.000000") ? 0 : 1);
+}
+>>,
+changequote([, ])dnl
+rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no)])
+    AC_MSG_RESULT($rb_cv_missing_fconvert)
+    if test "$rb_cv_missing_fconvert" = yes; then
+      AC_DEFINE(MISSING_FCONVERT)
+    fi
+    LIBOBJS="$LIBOBJS x68.o"
+    CFLAGS="$CFLAGS -fansi-only -cc1-stack=196608 -cpp-stack=2694144"
+    binsuffix=.x
+    setup=Setup.x68
+    ;;
+  *)
+    binsuffix=
+    setup=Setup
+    ;;
+esac
+AC_SUBST(binsuffix)
+AC_SUBST(setup)
+
+if test "$prefix" = NONE; then
+  prefix=$ac_default_prefix
+fi
+
+if test "$fat_binary" = yes ; then
+  CFLAGS="$CFLAGS -pipe $ARCH_FLAG"
+fi
+
+AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/ruby")
+AC_SUBST(arch)dnl
+
+if test "$fat_binary" = yes ; then
+    arch="fat-${host_os}"
+
+    AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB,
+                 "${prefix}/lib/ruby/" __ARCHITECTURE__ "-${host_os}" )
+
+    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/ruby/${arch}")
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM,  __ARCHITECTURE__ "-${host_os}" )
+else
+    arch="${host_cpu}-${host_os}"
+    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/ruby/${arch}")
+    AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
+fi
+
+echo "creating config.h"
+cat confdefs.h > config.h
+
+AC_OUTPUT(Makefile ext/extmk.rb)

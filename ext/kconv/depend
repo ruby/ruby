@@ -1,0 +1,1 @@
+kconv.o: kconv.c ../../ruby.h ../../config.h ../../defines.h

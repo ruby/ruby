@@ -1,0 +1,4 @@
+MANIFEST
+dbm.c
+depend
+extconf.rb

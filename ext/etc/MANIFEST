@@ -1,0 +1,5 @@
+MANIFEST
+etc.c
+etc.doc
+depend
+extconf.rb

@@ -1,0 +1,2 @@
+marshal.o: marshal.c ../../ruby.h ../../config.h ../../defines.h ../../io.h \
+  ../../st.h

@@ -1,0 +1,4 @@
+MANIFEST
+depend
+extconf.rb
+socket.c

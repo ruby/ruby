@@ -1,0 +1,1 @@
+tkutil.o: tkutil.c ../../ruby.h ../../config.h ../../defines.h
