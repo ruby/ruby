@@ -736,6 +736,7 @@ if test "$with_dln_a_out" != yes; then
     beos*)	;;
     cygwin*)	;;
     mingw*)	;;
+    aix*)	;;
     netbsd*) CCDLFLAGS=-fPIC;;
     *) CCDLFLAGS=-fPIC;;
     esac

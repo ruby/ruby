@@ -216,7 +216,7 @@ rb_clear_cache()
 }
 
 static void
-rb_clear_cache_by_id(id)
+rb_clear_cache_for_undef(klass, id)
     ID id;
 {
     struct cache_entry *ent, *end;
@@ -224,14 +224,14 @@ rb_clear_cache_by_id(id)
     if (!ruby_running) return;
     ent = cache; end = ent + CACHE_SIZE;
     while (ent < end) {
-	if (ent->mid == id) {
+	if (ent->origin == klass && ent->mid == id) {
 	    ent->mid = 0;
 	}
 	ent++;
     }
 }
 
-static void
+void
 rb_clear_cache_by_class(klass)
     VALUE klass;
 {
@@ -276,7 +276,7 @@ rb_add_method(klass, mid, node, noex)
 	 mid = ID_ALLOCATOR;
      }
      if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
-     rb_clear_cache_by_id(mid);
+     rb_clear_cache_for_undef(klass, mid);
      body = NEW_METHOD(node, noex);
      st_insert(RCLASS(klass)->m_tbl, mid, (st_data_t)body);
      if (node && mid != ID_ALLOCATOR && ruby_running) {
@@ -349,6 +349,7 @@ rb_get_method_body(klassp, idp, noexp)
 
     if (ruby_running) {
 	/* store in cache */
+	if (BUILTIN_TYPE(origin) == T_ICLASS) origin = RBASIC(origin)->klass;
 	ent = cache + EXPR1(klass, id);
 	ent->klass  = klass;
 	ent->noex   = body->nd_noex;
@@ -362,7 +363,6 @@ rb_get_method_body(klassp, idp, noexp)
 	    body = ent->method = body->nd_head;
 	}
 	else {
-	    if (BUILTIN_TYPE(origin) == T_ICLASS) origin = RBASIC(origin)->klass;
 	    *klassp = origin;
 	    ent->origin = origin;
 	    ent->mid = ent->mid0 = id;
@@ -407,7 +407,7 @@ remove_method(klass, mid)
 	rb_name_error(mid, "method `%s' not defined in %s",
 		      rb_id2name(mid), rb_class2name(klass));
     }
-    rb_clear_cache_by_id(mid);
+    rb_clear_cache_for_undef(klass, mid);
     if (FL_TEST(klass, FL_SINGLETON)) {
 	rb_funcall(rb_iv_get(klass, "__attached__"), singleton_removed, 1, ID2SYM(mid));
     }
@@ -425,10 +425,16 @@ rb_remove_method(klass, name)
 }
 
 static VALUE
-rb_mod_remove_method(mod, name)
-    VALUE mod, name;
+rb_mod_remove_method(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
 {
-    remove_method(mod, rb_to_id(name));
+    int i;
+
+    for (i=0; i<argc; i++) {
+	remove_method(mod, rb_to_id(argv[i]));
+    }
     return mod;
 }
 
@@ -1872,7 +1878,7 @@ rb_alias(klass, name, def)
 	body = body->nd_head;
     }
 
-    rb_clear_cache_by_id(name);
+    rb_clear_cache_for_undef(klass, name);
     st_insert(RCLASS(klass)->m_tbl, name,
       (st_data_t)NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
     if (singleton) {
@@ -5092,7 +5098,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	if ((noex & NOEX_PRIVATE) && scope == 0)
 	    return rb_undefined(recv, mid, argc, argv, CSTAT_PRIV);
 
-	/* self must be kind of a specified form for private method */
+	/* self must be kind of a specified form for protected method */
 	if ((noex & NOEX_PROTECTED)) {
 	    VALUE defined_class = klass;
 
@@ -5216,6 +5222,11 @@ rb_call_super(argc, argv)
 			 rb_class2name(klass),
 			 rb_class2name(CLASS_OF(self)));
 	    }
+	}
+	if (RCLASS(k)->super == 0) {
+	    rb_name_error(ruby_frame->last_func,
+			  "super: no superclass method `%s'",
+			  rb_id2name(ruby_frame->last_func));
 	}
 	klass = k;
     }
@@ -6527,7 +6538,7 @@ Init_eval()
 
     rb_undef_method(rb_cClass, "module_function");
 
-    rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, 1);
+    rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, -1);
     rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);
     rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
     rb_define_private_method(rb_cModule, "define_method", rb_mod_define_method, -1);

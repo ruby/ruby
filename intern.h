@@ -152,6 +152,7 @@ void rb_enable_super _((VALUE, const char*));
 void rb_define_alloc_func _((VALUE, VALUE (*)(VALUE)));
 void rb_undef_alloc_func _((VALUE));
 void rb_clear_cache _((void));
+void rb_clear_cache_by_class _((VALUE));
 void rb_alias _((VALUE, ID, ID));
 void rb_attr _((VALUE,ID,int,int,int));
 int rb_method_boundp _((VALUE, ID, int));

@@ -7,6 +7,18 @@ Sat Jul  5 00:22:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* node.h (NEW_NODE): cast arguments to rb_node_newnode().
 
+Mon Jul  7 01:34:49 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call_super): k->super maybe NULL if klass is Kernel.
+	   [ruby-dev:20519]
+
+	* gc.c (obj_free): clear method cache when freeing class/module.
+
+Sat Jul  5  23:32:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_remove_method): allow "remove_method" to accept
+	  multiple arguments.
+
 Fri Jul  4 21:48:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/syck/rubyext.c, ext/syck/syck.c, ext/syck/syck.h,
