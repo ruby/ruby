@@ -1,3 +1,8 @@
+Sun Mar 27 00:56:58 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (remove_file): ignore Errno::E* if force option
+	  is set. [ruby-dev:25944]
+
 Sat Mar 26 22:51:33 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb (_callback_entry_class?): add for checking whether
