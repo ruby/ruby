@@ -1,3 +1,10 @@
+Fri Feb  8 23:07:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): singleton chech should be moved from yycompile
+	  to here.
+
+	* eval.c (is_defined): check should be added here too.
+
 Fri Feb  8 05:39:15 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: HTTP.Proxy should use self for proxy-class's
