@@ -231,9 +231,9 @@ rb_add_method(klass, mid, node, noex)
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
+    rb_clear_cache_by_id(mid);
     body = NEW_METHOD(node, noex);
-    if (st_insert(RCLASS(klass)->m_tbl, mid, body))
-	rb_clear_cache_by_id(mid);
+    st_insert(RCLASS(klass)->m_tbl, mid, body);
 }
 
 static NODE*
@@ -354,7 +354,6 @@ rb_disable_super(klass, name)
 	body->nd_noex |= NOEX_UNDEF;
     }
     else {
-	rb_clear_cache_by_id(mid);
 	rb_add_method(klass, mid, 0, NOEX_UNDEF);
     }
 }
@@ -404,7 +403,6 @@ rb_export_method(klass, name, noex)
 	    body->nd_noex = noex;
 	}
 	else {
-	    rb_clear_cache_by_id(name);
 	    rb_add_method(klass, name, NEW_ZSUPER(), noex);
 	}
     }
@@ -474,14 +472,12 @@ rb_attr(klass, id, read, write, ex)
     sprintf(buf, "@%s", name);
     attriv = rb_intern(buf);
     if (read) {
-	rb_clear_cache_by_id(id);
 	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
 	rb_funcall(klass, added, 1, ID2SYM(id));
     }
     if (write) {
 	sprintf(buf, "%s=", name);
 	id = rb_intern(buf);
-	rb_clear_cache_by_id(id);
 	rb_add_method(klass, id, NEW_ATTRSET(attriv), noex);
 	rb_funcall(klass, added, 1, ID2SYM(id));
     }
@@ -1550,7 +1546,6 @@ rb_undef(klass, id)
 	rb_raise(rb_eNameError, "undefined method `%s' for%s `%s'",
 		 rb_id2name(id),s0,rb_class2name(c));
     }
-    rb_clear_cache_by_id(id);
     rb_add_method(klass, id, 0, NOEX_PUBLIC);
 }
 
@@ -2982,7 +2977,6 @@ rb_eval(self, n)
 	    }
 
 	    defn = copy_node_scope(node->nd_defn, ruby_cref);
-	    rb_clear_cache_by_id(node->nd_mid);
 	    rb_add_method(ruby_class, node->nd_mid, defn, noex);
 	    if (scope_vmode == SCOPE_MODFUNC) {
 		rb_add_method(rb_singleton_class(ruby_class),
@@ -3028,7 +3022,6 @@ rb_eval(self, n)
 	    }
 	    defn = copy_node_scope(node->nd_defn, ruby_cref);
 	    defn->nd_rval = (VALUE)ruby_cref;
-	    rb_clear_cache_by_id(node->nd_mid);
 	    rb_add_method(klass, node->nd_mid, defn, 
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
 	    rb_funcall(recv, singleton_added, 1, ID2SYM(node->nd_mid));
@@ -5646,7 +5639,6 @@ rb_mod_modfunc(argc, argv, module)
 	if (body == 0 || body->nd_body == 0) {
 	    rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
 	}
-	rb_clear_cache_by_id(id);
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
 	rb_funcall(module, singleton_added, 1, ID2SYM(id));
     }
@@ -6912,7 +6904,6 @@ rb_mod_define_method(argc, argv, mod)
     else {
 	noex = NOEX_PUBLIC;
     }
-    rb_clear_cache_by_id(id);
     rb_add_method(mod, id, node, noex);
     if (scope_vmode == SCOPE_MODFUNC) {
 	rb_add_method(rb_singleton_class(mod), id, node, NOEX_PUBLIC);

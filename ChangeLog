@@ -1,3 +1,22 @@
+Thu Jan 10 19:15:15 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_add_method): should clear cache by id always.
+
+	* eval.c (rb_disable_super): no longer need to clear cache before
+	  rb_add_method().
+
+	* eval.c (rb_export_method): ditto.
+
+	* eval.c (rb_attr): ditto.
+
+	* eval.c (rb_undef): ditto.
+
+	* eval.c (rb_eval): ditto.
+
+	* eval.c (rb_mod_modfunc): ditto.
+
+	* eval.c (rb_mod_define_method): ditto.
+
 Thu Jan 10 11:30:52 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/resource.rb: Modify copyright in resource script.
