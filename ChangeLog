@@ -1,3 +1,11 @@
+Fri Oct 18 23:39:00 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (value_expr0): allow return/break/next/redo/retry in rhs
+	  of logical operator.  [ruby-dev:18534]
+
+	* parse.y (remove_begin): eliminate useless NODE_BEGIN.
+	  [ruby-dev:18535]
+
 Fri Oct 18 01:25:51 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* hash.c, eval.c: Use (*_NSGetEnviron()) instead of environ on

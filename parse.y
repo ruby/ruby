@@ -97,9 +97,12 @@ static NODE *logop();
 static NODE *newline_node();
 static void fixpos();
 
-static int value_expr();
-static void void_expr();
+static int value_expr0();
+static void void_expr0();
 static void void_stmts();
+static NODE *remove_begin();
+#define value_expr(node) value_expr0((node) = remove_begin(node))
+#define void_expr(node) void_expr0((node) = remove_begin(node))
 
 static NODE *block_append();
 static NODE *list_append();
@@ -4537,53 +4540,62 @@ node_assign(lhs, rhs)
 }
 
 static int
-value_expr(node)
+value_expr0(node)
     NODE *node;
 {
-    if (node == 0) return Qtrue;
+    int cond = 0;
 
-    switch (nd_type(node)) {
-      case NODE_RETURN:
-      case NODE_BREAK:
-      case NODE_NEXT:
-      case NODE_REDO:
-      case NODE_RETRY:
-      case NODE_WHILE:
-      case NODE_UNTIL:
-      case NODE_CLASS:
-      case NODE_MODULE:
-      case NODE_DEFN:
-      case NODE_DEFS:
-	yyerror("void value expression");
-	return Qfalse;
-	break;
+    while (node) {
+	switch (nd_type(node)) {
+	  case NODE_RETURN:
+	  case NODE_BREAK:
+	  case NODE_NEXT:
+	  case NODE_REDO:
+	  case NODE_RETRY:
+	  case NODE_WHILE:
+	  case NODE_UNTIL:
+	  case NODE_CLASS:
+	  case NODE_MODULE:
+	  case NODE_DEFN:
+	  case NODE_DEFS:
+	    if (!cond) yyerror("void value expression");
+	    return Qfalse;
 
-      case NODE_BLOCK:
-	while (node->nd_next) {
+	  case NODE_BLOCK:
+	    while (node->nd_next) {
+		node = node->nd_next;
+	    }
+	    node = node->nd_head;
+	    break;
+
+	  case NODE_BEGIN:
+	    node = node->nd_body;
+	    break;
+
+	  case NODE_IF:
+	    if (!value_expr(node->nd_body)) return Qfalse;
+	    node = node->nd_else;
+	    break;
+
+	  case NODE_AND:
+	  case NODE_OR:
+	    cond = 1;
+	    node = node->nd_2nd;
+	    break;
+
+	  case NODE_NEWLINE:
 	    node = node->nd_next;
+	    break;
+
+	  default:
+	    return Qtrue;
 	}
-	return value_expr(node->nd_head);
-
-      case NODE_BEGIN:
-	return value_expr(node->nd_body);
-
-      case NODE_IF:
-	return value_expr(node->nd_body) && value_expr(node->nd_else);
-
-      case NODE_AND:
-      case NODE_OR:
-	return value_expr(node->nd_2nd);
-
-      case NODE_NEWLINE:
-	return value_expr(node->nd_next);
-
-      default:
-	return Qtrue;
     }
+    return Qtrue;
 }
 
 static void
-void_expr(node)
+void_expr0(node)
     NODE *node;
 {
     char *useless = 0;
@@ -4694,6 +4706,25 @@ void_stmts(node)
 	void_expr(node->nd_head);
 	node = node->nd_next;
     }
+}
+
+static NODE *
+remove_begin(node)
+    NODE *node;
+{
+    NODE **n = &node;
+    while (*n) {
+	switch (nd_type(*n)) {
+	  case NODE_NEWLINE:
+	    n = &(*n)->nd_next;
+	    continue;
+	  case NODE_BEGIN:
+	    *n = (*n)->nd_body;
+	  default:
+	    return node;
+	}
+    }
+    return node;
 }
 
 static int
