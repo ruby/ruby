@@ -3183,8 +3183,6 @@ argf_seek_m(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE args[2];
-
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to seek");
     }

@@ -4522,7 +4522,7 @@ cond0(node, logop)
 	if (type == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (type == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
 	node->nd_cnt = local_append(0);
-	warn_unless_e_option("range literal in condition");
+	warning_unless_e_option("range literal in condition");
 	break;
 
       case NODE_LIT:
