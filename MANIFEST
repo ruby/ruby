@@ -533,6 +533,7 @@ lib/wsdl/xmlSchema/parser.rb
 lib/wsdl/xmlSchema/schema.rb
 lib/wsdl/xmlSchema/sequence.rb
 lib/wsdl/xmlSchema/unique.rb
+lib/xmlrpc/README.txt
 lib/xmlrpc/base64.rb
 lib/xmlrpc/client.rb
 lib/xmlrpc/config.rb
