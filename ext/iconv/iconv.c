@@ -214,7 +214,8 @@ iconv_try
     size_t *outlen;
 #endif /* HAVE_PROTOTYPES */
 {
-    if (iconv(cd, ICONV_INPTR_CAST inptr, inlen, outptr, outlen) == (size_t)-1) {
+    size_t ret = iconv(cd, ICONV_INPTR_CAST inptr, inlen, outptr, outlen);
+    if (ret == (size_t)-1) {
 	if (!*inlen)
 	    return Qfalse;
 	switch (errno) {
@@ -232,6 +233,9 @@ iconv_try
     else if (*inlen > 0) {
 	/* something goes wrong */
 	return rb_class_new_instance(0, 0, rb_eIconvIllegalSeq);
+    }
+    else if (ret) {
+	return Qnil;		/* conversion */
     }
     return Qfalse;
 }
@@ -284,7 +288,8 @@ iconv_fail
 {
     error = iconv_failure_initialize(error, success, failed, env);
     if (!rb_block_given_p()) rb_exc_raise(error);
-    return rb_yield(error);
+    ruby_errinfo = error;
+    return rb_yield(failed);
 }
 
 static VALUE
@@ -327,6 +332,7 @@ iconv_convert
 {
     VALUE ret = Qfalse;
     VALUE error = Qfalse;
+    VALUE rescue;
     const char *inptr, *instart;
     size_t inlen;
     /* I believe ONE CHARACTER never exceed this. */
@@ -344,9 +350,12 @@ iconv_convert
 	outptr = buffer;
 	outlen = sizeof(buffer);
 	error = iconv_try(cd, &inptr, &inlen, &outptr, &outlen);
-	if (error) {
+	if (RTEST(error)) {
 	    unsigned int i;
-	    str = iconv_fail(error, Qnil, Qnil, env);
+	    rescue = iconv_fail(error, Qnil, Qnil, env);
+	    if (TYPE(rescue) == T_ARRAY) {
+		str = RARRAY(rescue)->len > 0 ? RARRAY(rescue)->ptr[0] : Qnil;
+	    }
 	    if (FIXNUM_P(str) && (i = FIX2INT(str)) <= 0xff) {
 		char c = i;
 		str = rb_str_new(&c, 1);
@@ -387,7 +396,8 @@ iconv_convert
 
 	if (0 <= outlen && outlen <= sizeof(buffer)) {
 	    outlen = sizeof(buffer) - outlen;
-	    if (outlen > inptr - tmpstart || /* input can't contain output */
+	    if (NIL_P(error) ||	/* something converted */
+		outlen > inptr - tmpstart || /* input can't contain output */
 		(outlen < inptr - tmpstart && inlen > 0) || /* something skipped */
 		memcmp(buffer, tmpstart, outlen)) /* something differs */
 	    {
@@ -417,11 +427,27 @@ iconv_convert
 	    error = rb_exc_new2(rb_eIconvOutOfRange, errmsg);
 	}
 
-	if (error) {
+	if (RTEST(error)) {
+	    long len = 0;
+
 	    if (!ret)
 		ret = rb_str_derive(str, instart, inptr - instart);
 	    str = rb_str_derive(str, inptr, inlen);
-	    rb_str_concat(str, iconv_fail(error, ret, str, env));
+	    rescue = iconv_fail(error, ret, str, env);
+	    if (TYPE(rescue) == T_ARRAY) {
+		if ((len = RARRAY(rescue)->len) > 0)
+		    rb_str_concat(ret, RARRAY(rescue)->ptr[0]);
+		if (len > 1 && !NIL_P(str = RARRAY(rescue)->ptr[1])) {
+		    StringValue(str);
+		    inlen = length = RSTRING(str)->len;
+		    instart = inptr = RSTRING(str)->ptr;
+		    continue;
+		}
+	    }
+	    else if (!NIL_P(rescue)) {
+		rb_str_concat(ret, rescue);
+	    }
+	    break;
 	}
     } while (inlen > 0);
 
