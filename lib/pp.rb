@@ -91,31 +91,35 @@ class PP < PrettyPrint
   end
 
   module PPMethods
-    InspectKey = :__inspect_key__
-
     def guard_inspect_key
-      if Thread.current[InspectKey] == nil
-        Thread.current[InspectKey] = {inspect: []}
+      if Thread.current[:__recursive_key__] == nil
+        Thread.current[:__recursive_key__] = {}
       end
 
-      save = Thread.current[InspectKey][:inspect]
+      if Thread.current[:__recursive_key__][:inspect] == nil
+        Thread.current[:__recursive_key__][:inspect] = []
+      end
+
+      save = Thread.current[:__recursive_key__][:inspect]
 
       begin
-        Thread.current[InspectKey][:inspect] = []
+        Thread.current[:__recursive_key__][:inspect] = []
         yield
       ensure
-        Thread.current[InspectKey][:inspect] = save
+        Thread.current[:__recursive_key__][:inspect] = save
       end
     end
 
     def check_inspect_key(id)
-      Thread.current[InspectKey][:inspect].include?(id)
+      Thread.current[:__recursive_key__] &&
+      Thread.current[:__recursive_key__][:inspect] &&
+      Thread.current[:__recursive_key__][:inspect].include?(id)
     end
     def push_inspect_key(id)
-      Thread.current[InspectKey][:inspect] << id
+      Thread.current[:__recursive_key__][:inspect] << id
     end
     def pop_inspect_key
-      Thread.current[InspectKey][:inspect].pop
+      Thread.current[:__recursive_key__][:inspect].pop
     end
 
     # Adds +obj+ to the pretty printing buffer

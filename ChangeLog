@@ -1,3 +1,8 @@
+Wed Mar  9 23:55:34 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (PP::PPMethods#guard_inspect_key): support
+	  __recursive_key__.  [ruby-dev:25821]
+
 Wed Mar  9 19:42:21 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c: OpenSSL::SSL::SSLContexts suports callbacks:
