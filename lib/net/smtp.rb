@@ -1,11 +1,12 @@
 =begin
 
-= net/smtp.rb version 1.1.27
+= net/smtp.rb version 1.1.28
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
-This library is distributed under the terms of the Ruby license.
-You can freely distribute/modify this library.
+This program is free software.
+You can distribute/modify this program under
+the terms of the Ruby Distribute License.
 
 
 == Net::SMTP
@@ -21,7 +22,7 @@ Net::Protocol
 
 : start( address = 'localhost', port = 25, *protoargs )
 : start( address = 'localhost', port = 25, *protoargs ) {|smtp| .... }
-  same to Net::SMTP.new( address, port ).start( *protoargs )
+  is equal to Net::SMTP.new( address, port ).start( *protoargs )
 
 === Methods
 
@@ -38,20 +39,26 @@ Net::Protocol
   If account and password are given, is trying to get authentication
   by using AUTH command. "authtype" is :plain (symbol) or :cram_md5.
 
-: send_mail( mailsrc, from_addr, to_addrs )
-: sendmail( mailsrc, from_addr, to_addrs )
-  This method sends 'mailsrc' as mail. SMTPSession read strings
+: send_mail( mailsrc, from_addr, *to_addrs )
+: sendmail( mailsrc, from_addr, *to_addrs )
+  This method sends 'mailsrc' as mail. SMTP read strings
   from 'mailsrc' by calling 'each' iterator, and convert them
   into "\r\n" terminated string when write.
 
   from_addr must be String.
-  to_addrs must be Array of String, or String.
+  to_addrs must be a String(s) or an Array of String.
 
   Exceptions which SMTP raises are:
   * Net::ProtoSyntaxError: syntax error (errno.500)
   * Net::ProtoFatalError: fatal error (errno.550)
   * Net::ProtoUnknownError: unknown error
   * Net::ProtoServerBusy: temporary error (errno.420/450)
+
+    # usage example
+
+    Net::SMTP.start( 'localhost', 25 ) do |smtp|
+      smtp.send_mail mail_string, 'from-addr@foo.or.jp', 'to-addr@bar.or.jp'
+    end
 
 : ready( from_addr, to_addrs ) {|adapter| .... }
   This method stands by the SMTP object for sending mail.
@@ -60,7 +67,7 @@ Net::Protocol
 
     # usage example
 
-    SMTP.start( 'localhost', 25 ) do |smtp|
+    Net::SMTP.start( 'localhost', 25 ) do |smtp|
       smtp.ready( from, to ) do |adapter|
         adapter.write str1
         adapter.write str2
@@ -69,8 +76,8 @@ Net::Protocol
     end
 
 : finish
-  This method ends SMTP.
-  If protocol had not started, do nothind and return false.
+  finishes SMTP session.
+  If SMTP session had not started, do nothing and return false.
 
 =end
 
@@ -92,17 +99,17 @@ module Net
       @esmtp = true
     end
 
-
     attr :esmtp
 
-    def send_mail( mailsrc, from_addr, to_addrs )
-      do_ready from_addr, to_addrs
+    def send_mail( mailsrc, from_addr, *to_addrs )
+      do_ready from_addr, to_addrs.flatten
       @command.write_mail mailsrc, nil
     end
+
     alias sendmail send_mail
 
-    def ready( from_addr, to_addrs, &block )
-      do_ready from_addr, to_addrs
+    def ready( from_addr, *to_addrs, &block )
+      do_ready from_addr, to_addrs.flatten
       @command.write_mail nil, block
     end
 
@@ -111,7 +118,9 @@ module Net
 
 
     def do_ready( from_addr, to_addrs )
-      to_addrs = [to_addrs] if String === to_addrs
+      if to_addrs.empty? then
+        raise ArgumentError, 'mail destination does not given'
+      end
       @command.mailfrom from_addr
       @command.rcpt to_addrs
       @command.data
@@ -119,12 +128,10 @@ module Net
 
     def do_start( helodom = nil,
                   user = nil, secret = nil, authtype = nil )
+      helodom ||= ::Socket.gethostname
       unless helodom then
-        helodom = ::Socket.gethostname
-        unless helodom then
-          raise ArgumentError,
-            "cannot get localhost name; try 'smtp.start(local_host_name)'"
-        end
+        raise ArgumentError,
+          "cannot get localhost name; try 'smtp.start(local_host_name)'"
       end
 
       begin
@@ -234,13 +241,11 @@ module Net
       getok 'DATA', ContinueCode
     end
 
-
     def write_mail( mailsrc, block )
       @socket.write_pendstr mailsrc, block
       check_reply SuccessCode
       end_critical
     end
-    alias sendmail write_mail
 
 
     def quit
@@ -276,7 +281,6 @@ module Net
 
     def read_reply
       arr = []
-
       while true do
         str = @socket.readline
         break unless str[3] == ?-   # ex: "210-..."
@@ -284,7 +288,7 @@ module Net
       end
       arr.push str
 
-      return arr
+      arr
     end
 
   end

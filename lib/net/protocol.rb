@@ -1,11 +1,12 @@
 =begin
 
-= net/protocol.rb version 1.1.27
+= net/protocol.rb version 1.1.28
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
-This library is distributed under the terms of the Ruby license.
-You can freely distribute/modify this library.
+This program is free software.
+You can distribute/modify this program under
+the terms of the Ruby Distribute License.
 
 
 == Net::Protocol
@@ -64,7 +65,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.27'
+    Version = '1.1.28'
 
 
     class << self
@@ -75,7 +76,7 @@ module Net
         if iterator? then
           instance.start( *args ) { yield instance }
         else
-          instance.start *args
+          instance.start( *args )
           instance
         end
       end
@@ -164,7 +165,7 @@ module Net
 
       begin
         connect
-        do_start *args
+        do_start( *args )
         @active = true
         yield self if iterator?
       ensure
@@ -639,10 +640,13 @@ module Net
 
     def wpend_in( src )
       line = nil
+      pre = @writtensize
       each_crlf_line( src ) do |line|
         do_write '.' if line[0] == ?.
         do_write line
       end
+
+      @writtensize - pre
     end
 
     def use_each_crlf_line

@@ -1,3 +1,11 @@
+Thu Aug 17 04:26:31 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.27.
+
+	* lib/net/protocol.rb: writing methods returns written byte size.
+
+	* lib/net/smtp.rb: send_mail accepts many destinations.
+
 Tue Aug 15 17:30:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (frame_dup): should set flag FRAME_MALLOC after

@@ -1,11 +1,12 @@
 =begin
 
-= net/pop.rb version 1.1.27
+= net/pop.rb version 1.1.28
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
-This library is distributed under the terms of the Ruby license.
-You can freely distribute/modify this library.
+This program is free software.
+You can distribute/modify this program under
+the terms of the Ruby Distribute License.
 
 
 == Net::POP3

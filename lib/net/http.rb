@@ -1,12 +1,13 @@
 =begin
 
-= net/http.rb version 1.1.27
+= net/http.rb version 1.1.28
 
 maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This file is derived from "http-access.rb".
 
-This library is distributed under the terms of the Ruby license.
-You can freely distribute/modify this library.
+This program is free software.
+You can distribute/modify this program under
+the terms of the Ruby Distribute License.
 
 
 = class HTTP
