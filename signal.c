@@ -282,12 +282,14 @@ rb_gc_mark_trap_list()
 }
 
 #ifdef POSIX_SIGNAL
-void
-posix_signal(signum, handler)
+typedef RETSIGTYPE (*sighandler_t)_((int));
+
+static sighandler_t
+ruby_signal(signum, handler)
     int signum;
-    RETSIGTYPE (*handler)_((int));
+    sighandler_t handler;
 {
-    struct sigaction sigact;
+    struct sigaction sigact, old;
 
     sigact.sa_handler = handler;
     sigemptyset(&sigact.sa_mask);
@@ -304,11 +306,19 @@ posix_signal(signum, handler)
     if (signum == SIGCHLD && handler == SIG_IGN)
 	sigact.sa_flags |= SA_NOCLDWAIT;
 #endif
-    sigaction(signum, &sigact, 0);
+    sigaction(signum, &sigact, &old);
+    return old.sa_handler;
 }
-#define ruby_signal(sig,handle) posix_signal((sig),(handle))
+
+void
+posix_signal(signum, handler)
+    int signum;
+    sighandler_t handler;
+{
+    ruby_signal(signum, handler);
+}
 #else
-#define ruby_signal(sig,handle) signal((sig),(handle))
+#define ruby_signal(sig,handler) signal((sig),(handler))
 #endif
 
 static void signal_exec _((int sig));
@@ -345,9 +355,9 @@ signal_exec(sig)
     }
 }
 
-static RETSIGTYPE sighandle _((int));
+static RETSIGTYPE sighandler _((int));
 static RETSIGTYPE
-sighandle(sig)
+sighandler(sig)
     int sig;
 {
 #ifdef NT
@@ -361,7 +371,7 @@ sighandle(sig)
     }
 
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
-    ruby_signal(sig, sighandle);
+    ruby_signal(sig, sighandler);
 #endif
 
     if (ATOMIC_TEST(rb_trap_immediate)) {
@@ -462,12 +472,12 @@ static VALUE
 trap(arg)
     struct trap_arg *arg;
 {
-    RETSIGTYPE (*func)_((int));
+    sighandler_t func;
     VALUE command, old;
     int sig;
     char *s;
 
-    func = sighandle;
+    func = sighandler;
     command = arg->cmd;
     if (NIL_P(command)) {
 	func = SIG_IGN;
@@ -550,7 +560,7 @@ trap(arg)
 #ifdef SIGUSR2
 	  case SIGUSR2:
 #endif
-	    func = sighandle;
+	    func = sighandler;
 	    break;
 #ifdef SIGBUS
 	  case SIGBUS:
@@ -663,6 +673,19 @@ sig_list()
     return h;
 }
 
+static void
+install_sighandler(signum, handler)
+    int signum;
+    sighandler_t handler;
+{
+    sighandler_t old;
+
+    old = ruby_signal(signum, handler);
+    if (old != SIG_DFL) {
+	ruby_signal(signum, old);
+    }
+}
+
 void
 Init_signal()
 {
@@ -673,31 +696,31 @@ Init_signal()
     rb_define_module_function(mSignal, "trap", sig_trap, -1);
     rb_define_module_function(mSignal, "list", sig_list, 0);
 
-    ruby_signal(SIGINT, sighandle);
+    install_sighandler(SIGINT, sighandler);
 #ifdef SIGHUP
-    ruby_signal(SIGHUP, sighandle);
+    install_sighandler(SIGHUP, sighandler);
 #endif
 #ifdef SIGQUIT
-    ruby_signal(SIGQUIT, sighandle);
+    install_sighandler(SIGQUIT, sighandler);
 #endif
 #ifdef SIGALRM
-    ruby_signal(SIGALRM, sighandle);
+    install_sighandler(SIGALRM, sighandler);
 #endif
 #ifdef SIGUSR1
-    ruby_signal(SIGUSR1, sighandle);
+    install_sighandler(SIGUSR1, sighandler);
 #endif
 #ifdef SIGUSR2
-    ruby_signal(SIGUSR2, sighandle);
+    install_sighandler(SIGUSR2, sighandler);
 #endif
 
 #ifdef SIGBUS
-    ruby_signal(SIGBUS, sigbus);
+    install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
-    ruby_signal(SIGSEGV, sigsegv);
+    install_sighandler(SIGSEGV, sigsegv);
 #endif
 #ifdef SIGPIPE
-    ruby_signal(SIGPIPE, sigpipe);
+    install_sighandler(SIGPIPE, sigpipe);
 #endif
 #endif /* MACOS_UNUSE_SIGNAL */
 }

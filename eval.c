@@ -1193,6 +1193,8 @@ ruby_stop(ex)
     POP_ITER();
     POP_TAG();
 
+    trace_func = 0;
+    tracing = 0;
     ex = error_handle(ex);
     ruby_finalize();
     exit(ex);

@@ -1,3 +1,14 @@
+Mon Jan 21 08:25:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_stop): should not trace error handler.
+
+	* signal.c (install_sighandler): do not install sighandler unless
+	  the old value is SIG_DFL.
+
+	* io.c (io_write): should not raise exception on O_NONBLOCK io.
+
+	* dir.c (dir_set_pos): seek should return dir, pos= should not.
+
 Sat Jan 19 02:31:45 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): need not to clar method cache for NODE_CLASS,

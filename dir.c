@@ -389,10 +389,18 @@ dir_seek(dir, pos)
 #ifdef HAVE_SEEKDIR
     GetDIR(dir, dirp);
     seekdir(dirp->dir, NUM2INT(pos));
-    return pos;
+    return dir;
 #else
     rb_notimplement();
 #endif
+}
+
+static VALUE
+dir_set_pos(dir, pos)
+    VALUE dir, pos;
+{
+    dir_seek(dir, pos);
+    return pos;
 }
 
 static VALUE
@@ -1004,7 +1012,7 @@ Init_Dir()
     rb_define_method(rb_cDir,"tell", dir_tell, 0);
     rb_define_method(rb_cDir,"seek", dir_seek, 1);
     rb_define_method(rb_cDir,"pos", dir_tell, 0);
-    rb_define_method(rb_cDir,"pos=", dir_seek, 1);
+    rb_define_method(rb_cDir,"pos=", dir_set_pos, 1);
     rb_define_method(rb_cDir,"close", dir_close, 0);
 
     rb_define_singleton_method(rb_cDir,"chdir", dir_s_chdir, -1);

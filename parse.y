@@ -4288,6 +4288,11 @@ gettable(id)
 	if (dyna_in_block() && rb_dvar_defined(id)) return NEW_DVAR(id);
 	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
+#if 0
+	/* Rite will warn this */
+	rb_warn("ambiguous identifier; %s() or self.%s is better for method call",
+		rb_id2name(id), rb_id2name(id));
+#endif
 	return NEW_VCALL(id);
     }
     else if (is_global_id(id)) {

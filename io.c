@@ -255,14 +255,14 @@ io_write(io, str)
 	n = (int)RSTRING(str)->len;
 	while (--n >= 0)
 	    if (fputc(*ptr++, f) == EOF)
-		rb_sys_fail(fptr->path);
+		break;
 	n = ptr - RSTRING(str)->ptr;
     }
-    if (ferror(f))
+    if (n == 0 && ferror(f))
 	rb_sys_fail(fptr->path);
 #else
     n = fwrite(RSTRING(str)->ptr, 1, RSTRING(str)->len, f);
-    if (ferror(f)) {
+    if (n == 0 && ferror(f)) {
 	rb_sys_fail(fptr->path);
     }
 #endif
