@@ -10,13 +10,114 @@ module YAML
 
     begin
         require 'syck'
-        Parser = YAML::Syck::Parser
+        @@parser = YAML::Syck::Parser
+        @@loader = YAML::Syck::DefaultLoader
     rescue LoadError
         require 'yaml/parser'
-        Parser = YAML::Parser
+        @@parser = YAML::Parser
+        @@loader = YAML::DefaultLoader
     end
     require 'yaml/emitter'
-    require 'yaml/rubytypes'
+    require 'yaml/loader'
+    require 'yaml/stream'
+
+	#
+	# Load a single document from the current stream
+	#
+	def YAML.load( io )
+		yp = @@parser.new.load( io )
+	end
+
+	#
+	# Parse a single document from the current stream
+	#
+	def YAML.parse( io )
+		yp = @@parser.new( :Model => :Generic ).load( io )
+	end
+
+	#
+	# Load all documents from the current stream
+	#
+	def YAML.each_document( io, &doc_proc )
+		yp = @@parser.new.load_documents( io, &doc_proc )
+    end
+
+	#
+	# Identical to each_document
+	#
+	def YAML.load_documents( io, &doc_proc )
+		YAML.each_document( io, &doc_proc )
+    end
+
+	#
+	# Parse all documents from the current stream
+	#
+	def YAML.each_node( io, &doc_proc )
+		yp = @@parser.new( :Model => :Generic ).load_documents( io, &doc_proc )
+    end
+
+	#
+	# Parse all documents from the current stream
+	#
+	def YAML.parse_documents( io, &doc_proc )
+		YAML.each_node( io, &doc_proc )
+    end
+
+	#
+	# Load all documents from the current stream
+	#
+	def YAML.load_stream( io )
+		yp = @@parser.new
+		d = nil
+		yp.load_documents( io ) { |doc|
+			d = YAML::Stream.new( yp.options ) if not d
+			d.add( doc ) 
+		}
+		return d
+	end
+
+	#
+	# Add a transfer method to a domain
+	#
+	def YAML.add_domain_type( domain, type_re, &transfer_proc )
+        @@loader.add_domain_type( domain, type_re, &transfer_proc )
+	end
+
+	#
+	# Add a transfer method for a builtin type
+	#
+	def YAML.add_builtin_type( type_re, &transfer_proc )
+	    @@loader.add_builtin_type( type_re, &transfer_proc )
+	end
+
+	#
+	# Add a transfer method for a builtin type
+	#
+	def YAML.add_ruby_type( type, &transfer_proc )
+        @@loader.add_ruby_type( type, &transfer_proc )
+	end
+
+	#
+	# Add a private document type
+	#
+	def YAML.add_private_type( type_re, &transfer_proc )
+	    @@loader.add_private_type( type_re, &transfer_proc )
+	end
+
+    #
+    # Method to extract colon-seperated type and class, returning
+    # the type and the constant of the class
+    #
+    def YAML.read_type_class( type, obj_class )
+        type =~ /^([^:]+):(.+)/i
+        if $2
+            type = $1
+            $2.split( "::" ).each { |c|
+                obj_class = obj_class.const_get( c )
+            }
+        end
+        return [ type, obj_class ]
+    end
 
     #
     # Allocate blank object
@@ -34,66 +135,9 @@ module YAML
         end
     end
 
-	#
-	# Input methods
-	#
-
-	#
-	# Load a single document from the current stream
-	#
-	def YAML.load( io )
-		yp = YAML::Parser.new.parse( io )
-	end
-
-	#
-	# Parse a single document from the current stream
-	#
-	def YAML.parse( io )
-		yp = YAML::Parser.new( :Model => :Generic ).parse( io )
-	end
-
-	#
-	# Load all documents from the current stream
-	#
-	def YAML.each_document( io, &doc_proc )
-		yp = YAML::Parser.new.parse_documents( io, &doc_proc )
-    end
-
-	#
-	# Identical to each_document
-	#
-	def YAML.load_documents( io, &doc_proc )
-		YAML.each_document( io, &doc_proc )
-    end
-
-	#
-	# Parse all documents from the current stream
-	#
-	def YAML.each_node( io, &doc_proc )
-		yp = YAML::Parser.new( :Model => :Generic ).parse_documents( io, &doc_proc )
-    end
-
-	#
-	# Parse all documents from the current stream
-	#
-	def YAML.parse_documents( io, &doc_proc )
-		YAML.each_node( io, &doc_proc )
-    end
-
-	#
-	# Load all documents from the current stream
-	#
-	def YAML.load_stream( io )
-		yp = YAML::Parser.new
-		d = nil
-		yp.parse_documents( io ) { |doc|
-			d = YAML::Stream.new( yp.options ) if not d
-			d.add( doc ) 
-		}
-		return d
-	end
-
 end
+
+require 'yaml/rubytypes'
 
 #
 # ryan: You know how Kernel.p is a really convenient way to dump ruby

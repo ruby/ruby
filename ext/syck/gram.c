@@ -1076,7 +1076,7 @@ yyreduce:
                    SyckNode *n = syck_new_str( "" ); 
                    if ( ((SyckParser *)parser)->taguri_expansion == 1 )
                    {
-                       syck_taguri( n, "yaml.org,2002", "null", 4 );
+                       n->type_id = syck_taguri( YAML_DOMAIN, "null", 4 );
                    }
                    else
                    {
@@ -1111,7 +1111,7 @@ yyreduce:
                SyckNode *n = yyvsp[0].nodeData;
                if ( ((SyckParser *)parser)->taguri_expansion == 1 )
                {
-                   syck_taguri( n, "yaml.org,2002", "str", 3 );
+                   n->type_id = syck_taguri( YAML_DOMAIN, "str", 3 );
                }
                else
                {

@@ -11,6 +11,7 @@
 #define SYCK_H
 
 #define SYCK_VERSION    "0.25"
+#define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
 #ifdef HAVE_ST_H
@@ -196,13 +197,15 @@ SYMID syck_hdlr_add_node( SyckParser *, SyckNode * );
 SyckNode *syck_hdlr_add_anchor( SyckParser *, char *, SyckNode * );
 SyckNode *syck_hdlr_add_alias( SyckParser *, char * );
 void syck_add_transfer( char *, SyckNode *, int );
-void syck_xprivate( SyckNode *, char *, int );
-void syck_taguri( SyckNode *, char *, char *, int );
+char *syck_xprivate( char *, int );
+char *syck_taguri( char *, char *, int );
 int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );
+char *syck_type_id_to_uri( char * );
 void syck_fold_format( struct SyckStr *, int, int, int );
 void try_tag_implicit( SyckNode *, int );
+char *syck_match_implicit( char *, size_t );
 
 //
 // API prototypes

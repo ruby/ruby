@@ -109,7 +109,7 @@ syck_parser_reset_levels( SyckParser *p )
 {
     p->lvl_idx = 1;
     p->levels[0].spaces = -1;
-    p->levels[0].domain = "yaml.org,2002/";
+    p->levels[0].domain = "";  // YAML_DOMAIN + "/";
     p->levels[0].status = syck_lvl_header;
 }
 
@@ -166,7 +166,7 @@ syck_add_sym( SyckParser *p, char *data )
         p->syms = st_init_numtable();
     }
     id = p->syms->num_entries;
-    st_insert( p->syms, id, (st_data_t)data );
+    st_insert( p->syms, id, data );
     return id;
 }
 
@@ -174,10 +174,10 @@ int
 syck_lookup_sym( SyckParser *p, SYMID id, char **data )
 {
     if ( p->syms == NULL ) return 0;
-    return st_lookup( p->syms, id, (st_data_t *)data );
+    return st_lookup( p->syms, id, data );
 }
 
-int
+enum st_retval 
 syck_st_free_nodes( char *key, SyckNode *n, char *arg )
 {
     syck_free_node( n );
@@ -201,7 +201,7 @@ syck_free_parser( SyckParser *p )
     //
     // Free the anchor table
     //
-    st_foreach( p->anchors, syck_st_free_nodes, (st_data_t)NULL );
+    st_foreach( p->anchors, syck_st_free_nodes, NULL );
     st_free_table( p->anchors );
 
     //
