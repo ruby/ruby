@@ -595,3 +595,13 @@ module URI
   end
 
 end
+
+module Kernel
+  # alias for URI.parse.
+  #
+  # This method is introduced at 1.8.2.
+  def URI(uri_str) # :doc:
+    URI.parse(uri_str)
+  end
+  module_function :URI
+end

@@ -43,6 +43,13 @@ class TestCommon < Test::Unit::TestCase
     assert_equal nil, ':'.slice(URI.regexp)
     assert_equal 'From:', 'From:'.slice(URI.regexp)
   end
+
+  def test_kernel_uri
+    expected = URI.parse("http://www.ruby-lang.org/")
+    assert_equal(expected, URI("http://www.ruby-lang.org/"))
+    assert_equal(expected, Kernel::URI("http://www.ruby-lang.org/"))
+    assert_raise(NoMethodError) { Object.new.URI("http://www.ruby-lang.org/") }
+  end
 end
 
 
