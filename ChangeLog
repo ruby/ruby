@@ -1,3 +1,16 @@
+Sat Oct  4 07:33:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/testsuite.rb: changed #<< to return self, and added
+	  #delete.
+
+	* test/testunit/test_testsuite.rb: ditto. Also slightly refactored
+	  #test_size.
+
+	* lib/test/unit/collector/objectspace.rb: collector now preserves the
+	  hierarchy of suites.
+
+	* test/testunit/collector/test_objectspace.rb: ditto.
+
 Sat Oct  4 04:48:49 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/rubyext.c: default keys handled.

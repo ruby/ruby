@@ -2,8 +2,7 @@
 # Copyright:: Copyright (c) 2000-2003 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
 
-require 'test/unit/testcase'
-require 'test/unit/testsuite'
+require 'test/unit'
 
 module Test
   module Unit
@@ -28,15 +27,29 @@ module Test
         end
       end
 
+      def test_add
+        s = TestSuite.new
+        assert_equal(s, s << self.class.new("test_add"))
+      end
+
+      def test_delete
+        s = TestSuite.new
+        t1 = self.class.new("test_delete")
+        s << t1
+        t2 = self.class.new("test_add")
+        s << t2
+        assert_equal(t1, s.delete(t1))
+        assert_nil(s.delete(t1))
+        assert_equal(TestSuite.new << t2, s)
+      end
+
       def test_size
-        assert_block("The count should be correct") do
-          suite = TestSuite.new
-          suite2 = TestSuite.new
-          suite2 << self.class.new("test_size")
-          suite << suite2
-          suite << self.class.new("test_size")
-          suite.size == 2
-        end
+        suite = TestSuite.new
+        suite2 = TestSuite.new
+        suite2 << self.class.new("test_size")
+        suite << suite2
+        suite << self.class.new("test_size")
+        assert_equal(2, suite.size, "The count should be correct")
       end
       
       def test_run

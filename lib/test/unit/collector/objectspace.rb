@@ -15,11 +15,16 @@ module Test
         
         def collect(name=NAME)
           suite = TestSuite.new(name)
-          tests = []
+          sub_suites = []
           @source.each_object(Class) do |klass|
-            tests.concat(klass.suite.tests) if(Test::Unit::TestCase > klass)
+            if(Test::Unit::TestCase > klass)
+              sub_suite = klass.suite
+              to_delete = sub_suite.tests.find_all{|t| !include(t)}
+              to_delete.each{|t| sub_suite.delete(t)}
+              sub_suites << sub_suite unless(sub_suite.size == 0)
+            end
           end
-          tests.sort_by{|t| t.name}.each{|test| suite << test if(include(test))}
+          sub_suites.sort_by{|s| s.name}.each{|s| suite << s}
           suite
         end
         

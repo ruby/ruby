@@ -39,6 +39,11 @@ module Test
       # Adds the test to the suite.
       def <<(test)
         @tests << test
+        self
+      end
+
+      def delete(test)
+        @tests.delete(test)
       end
 
       # Retuns the rolled up number of tests in this suite;
