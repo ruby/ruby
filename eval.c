@@ -10046,7 +10046,7 @@ rb_thread_switch(n)
 NORETURN(static void rb_thread_restore_context _((rb_thread_t,int)));
 
 # if _MSC_VER >= 1300
-__declspec(noinline)
+__declspec(noinline) static void stack_extend(rb_thread_t, int);
 # endif
 static void
 stack_extend(th, exit)

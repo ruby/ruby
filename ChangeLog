@@ -1,3 +1,8 @@
+Sun Feb  6 19:20:05 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (stack_extend): add prototype because VC++8 doesn't
+	  accept __declspec(noinline) with K&R style function definitions.
+
 Sun Feb  6 13:56:19 2005  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (new_with_hash): changed messages of exception.
