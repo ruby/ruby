@@ -1,3 +1,7 @@
+: stringio module
+
+  Imported.  Pseudo (({IO})) class from/to (({String})).
+
 : Array#pack, String#unpack
 
   allows comment in template strings.
