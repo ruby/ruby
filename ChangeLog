@@ -1,3 +1,8 @@
+Mon Jul 23 00:26:04 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_provide_feature): should not tweak extension used for
+	  loading.
+
 Sun Jul 22 21:23:00 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: introduce a couple of new make
@@ -21,6 +26,12 @@ Thu Jul 19 19:16:50 2001 Stephen White <spwhite@chariot.net.au>
 	* lib/irb/input-method.rb: patch to irb to remove blank lines from
 	  the readline history buffer.
 	
+Thu Jul 19 13:03:15 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_f_require): should not include path in $" value
+
+	* file.c (rb_find_file): should return 0 explicitly on failure.
+
 Sun Jul 19 06:01:12 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* doc/net/smtp.rd.ja, pop.rd.ja, http.rd.ja: new files.

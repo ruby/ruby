@@ -2270,6 +2270,7 @@ rb_find_file(path)
     if (file_load_ok(f)) {
 	return rb_str_new2(f);
     }
+    return 0;
 }
 
 static void
