@@ -663,7 +663,7 @@ time_to_s(time)
     VALUE time;
 {
     struct time_object *tobj;
-    char buf[128];
+    unsigned char buf[128];
     int len;
 
     GetTimeval(time, tobj);

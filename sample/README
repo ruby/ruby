@@ -27,7 +27,7 @@ list.rb		stupid object sample
 list2.rb	stupid object sample
 list3.rb	stupid object sample
 mine.rb		simple mine sweeper	
-mkproto.rb	extract protptype from C
+mkproto.rb     extract prototype from C
 mpart.rb	split file int multi part
 mrshtest.rb	test marshal
 observ.rb	observer design pattern sample

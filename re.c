@@ -366,7 +366,7 @@ rb_reg_kcode_m(re)
 	  case KCODE_UTF8:
 	    kcode = "utf8"; break;
 	  default:
-	    rb_bug("unknow kcode - should not happen");
+	    rb_bug("unknown kcode - should not happen");
 	    break;
 	}
 	return rb_str_new2(kcode);

@@ -9203,6 +9203,9 @@ rb_f_throw(argc, argv)
     return_value(value);
     rb_trap_restore_mask();
     JUMP_TAG(TAG_THROW);
+#ifndef __GNUC__
+    return Qnil; 		/* not reached */
+#endif
 }
 
 void

@@ -428,11 +428,15 @@ set_syserr(n, name)
 	rb_define_const(error, "Errno", INT2NUM(n));
 	st_add_direct(syserr_tbl, n, error);
     }
+    else {
+	rb_define_const(rb_mErrno, name, error);
+    }
     return error;
 }
 
 static VALUE
-get_syserr(int n)
+get_syserr(n)
+    int n
 {
     VALUE error;
 
