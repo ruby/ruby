@@ -1,3 +1,8 @@
+Mon Dec 15 09:27:46 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/ossl_pkcs12.c (ossl_pkcs12_initialize): first argument
+	  of rb_protect should take an argument of VALUE.
+
 Sun Dec 14 18:46:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/socket.c (Init_socket): IPv6 is not supported although

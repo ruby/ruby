@@ -95,12 +95,14 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
     pkey = cert = ca = Qnil;
     if(!PKCS12_parse((PKCS12*)DATA_PTR(self), passphrase, &key, &x509, &x509s))
 	ossl_raise(ePKCS12Error, NULL);
-    pkey = rb_protect((VALUE(*)())ossl_pkey_new, (VALUE)key, &st); /* NO DUP */
+    pkey = rb_protect((VALUE(*)_((VALUE)))ossl_pkey_new, (VALUE)key,
+		      &st); /* NO DUP */
     if(st) goto err;
-    cert = rb_protect((VALUE(*)())ossl_x509_new, (VALUE)x509, &st);
+    cert = rb_protect((VALUE(*)_((VALUE)))ossl_x509_new, (VALUE)x509, &st);
     if(st) goto err;
     if(x509s){
-	ca = rb_protect((VALUE(*)())ossl_x509_sk2ary, (VALUE)x509s, &st);
+	ca =
+	    rb_protect((VALUE(*)_((VALUE)))ossl_x509_sk2ary, (VALUE)x509s, &st);
 	if(st) goto err;
     }
 
