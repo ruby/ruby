@@ -1,3 +1,7 @@
+Mon Jan 28 19:16:58 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* array.c (rb_ary_fill): shouldn't yield unless block given.
+
 Mon Jan 28 18:33:18 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (yylex): strict check for numbers.

@@ -1390,7 +1390,7 @@ rb_ary_fill(argc, argv, ary)
     VALUE item, arg1, arg2;
     long beg, end, len;
     VALUE *p, *pend;
-    int block_p;
+    int block_p = Qfalse;
 
     if (rb_block_given_p()) {
 	block_p = Qtrue;
