@@ -248,13 +248,14 @@ rb_reg_desc(s, len, re)
 {
     VALUE str = rb_str_new2("/");
 
-    rb_reg_check(re);
     rb_reg_expr_str(str, s, len);
     rb_str_cat2(str, "/");
     if (re) {
+	rb_reg_check(re);
 	if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
 	    rb_str_cat2(str, "m");
-	if (RREGEXP(re)->ptr->options & RE_OPTION_POSIXLINE)
+	/* /p is obsolete; to be removed */
+	if ((RREGEXP(re)->ptr->options & RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE)
 	    rb_str_cat2(str, "p");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
 	    rb_str_cat2(str, "i");
