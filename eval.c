@@ -1924,6 +1924,7 @@ is_defined(self, node, buf)
 	goto check_bound;
 
       case NODE_ATTRASGN:
+	val = self;
 	if (node->nd_recv == (NODE *)1) goto check_bound;
       case NODE_CALL:
 	PUSH_TAG(PROT_NONE);
