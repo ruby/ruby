@@ -2623,9 +2623,9 @@ insert_op_2(op, there, current_end, num_1, num_2)
 #define trans_eq(c1, c2, translate) (translate?(translate[c1]==translate[c2]):((c1)==(c2)))
 static int
 slow_match(little, lend, big, bend, translate)
-     unsigned char *little, *lend;
-     unsigned char *big, *bend;
-     unsigned char *translate;
+     const unsigned char *little, *lend;
+     const unsigned char *big, *bend;
+     const unsigned char *translate;
 {
   int c;
 

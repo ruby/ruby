@@ -1,3 +1,7 @@
+Tue Nov  9 00:53:53 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* regex.c (slow_match): avoid GCC 3.4.x warnings.
+
 Tue Nov  9 00:50:06 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb: Change version numbering of RDoc and ri
@@ -6,7 +10,6 @@ Mon Nov  8 23:38:35 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/extservm.rb: add DRb::ExtServManager#uri=.
 	  [ruby-dev:24743]
-
 
 Mon Nov  8 22:20:19 2004  Dave Thomas  <dave@pragprog.com>
 
