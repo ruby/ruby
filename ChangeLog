@@ -1,3 +1,7 @@
+Wed Sep  1 19:28:37 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_proc_exec): label cannot precede variable declarations.
+
 Tue Aug 31 18:20:49 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tkutil.c (cbsubst_init): fix memory leak

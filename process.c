@@ -1033,11 +1033,10 @@ rb_proc_exec(str)
 		if (*p == '\n') nl = p;
 	    }
 	    if (!*p) break;
-	    if (nl) goto via_shell;
+	    if (nl) s = nl;
 	}
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    int status;
-	  via_shell:
 #if defined(MSDOS)
 	    before_exec();
 	    status = system(str);
