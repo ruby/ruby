@@ -1,0 +1,7 @@
+Makefile
+mkmf.log
+dlconfig.h
+dlconfig.rb
+*.func
+*.o
+*~
