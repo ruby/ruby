@@ -459,12 +459,20 @@ class MultiTkIp
   ######################################
 
   def initialize(master, safeip=true, keys={})
-    if safeip == nil && !master.master?
-      fail SecurityError, "slave-ip cannot create master-ip"
+    if $SAFE >= 4
+      fail SecurityError, "cannot create a new interpreter at level #{$SAFE}"
     end
 
-    if safeip == nil && $SAFE >= 4
-      fail SecurityError, "cannot create master-ip at level #{$SAFE}"
+    if safeip == nil && $SAFE >= 2
+      fail SecurityError, "cannot create a master-ip at level #{$SAFE}"
+    end
+
+    if !master.master? && master.safe?
+      fail SecurityError, "safe-slave-ip cannot create a new interpreter"
+    end
+
+    if safeip == nil && !master.master?
+      fail SecurityError, "slave-ip cannot create a master-ip"
     end
 
     unless keys.kind_of? Hash
