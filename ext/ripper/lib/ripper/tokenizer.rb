@@ -24,11 +24,13 @@ class Ripper
     def tokenize
       @tokens = []
       parse
-      @tokens
+      @tokens.sort_by {|tok, pos| pos }.map {|tok,| tok }
     end
 
+    private
+
     def on__scan(type, tok)
-      @tokens.push tok
+      @tokens.push [tok, [lineno(),column()]]
     end
   end
 
