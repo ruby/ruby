@@ -98,7 +98,13 @@ end
 
 Dir.chdir CONFIG["srcdir"]
 
-Installer.install "sample/irb.rb", "#{bindir}/irb", 0755, true
+for f in Dir["bin/*"]
+  next unless File.file?(f)
+
+  name = ruby_install_name.sub(/ruby/, File.basename(f))
+
+  Installer.install f, File.join(bindir, name), 0755, true
+end
 
 Dir.glob("lib/**/*{.rb,help-message}") do |f|
   dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
