@@ -476,6 +476,10 @@ io_fread(ptr, len, f)
 	if (c == EOF) {
 	    if (ferror(f)) {
 		if (errno == EINTR) continue;
+		if (errno == EAGAIN) return len - n;
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+		if (errno == EWOULDBLOCK) return len - n;
+#endif
 		rb_sys_fail(0);
 	    }
 	    *ptr = '\0';

@@ -239,6 +239,7 @@ VALUE rb_obj_freeze _((VALUE));
 VALUE rb_obj_id _((VALUE));
 VALUE rb_obj_class _((VALUE));
 VALUE rb_convert_type _((VALUE,int,const char*,const char*));
+VALUE rb_check_convert_type _((VALUE,int,const char*,const char*));
 VALUE rb_to_int _((VALUE));
 VALUE rb_Integer _((VALUE));
 VALUE rb_Float _((VALUE));

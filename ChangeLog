@@ -1,3 +1,14 @@
+Tue Dec  4 03:49:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fread): EAGAIN/EWOULDBLOCK should not terminate and
+	  throw away the input.
+
+	* time.c (time_new_internal): underflow adjustment must not use
+	  negative div/mod.
+
+	* time.c (time_cmp): should consider tv_usec on non Fixnum number
+	  comparison.
+
 Mon Dec  3 16:06:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/extconf.rb: remove -L/usr/local/lib.

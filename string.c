@@ -563,27 +563,13 @@ rb_str_cmp(str1, str2)
     return -1;
 }
 
-VALUE
-to_str(str)
-    VALUE str;
-{
-    return rb_funcall(str, rb_intern("to_str"), 0);
-}
-
-static VALUE
-str_or_nil(str)
-    VALUE str;
-{
-    return rb_rescue(to_str, str, 0, 0);
-}
-
 static VALUE
 rb_str_equal(str1, str2)
     VALUE str1, str2;
 {
     if (str1 == str2) return Qtrue;
     if (TYPE(str2) != T_STRING) {
-	str2 = str_or_nil(str2);
+	str2 = rb_check_convert_type(str2, T_STRING, "String", "to_str");
 	if (NIL_P(str2)) return Qfalse;
     }
 

@@ -845,6 +845,27 @@ rb_convert_type(val, type, tname, method)
     return val;
 }
 
+VALUE
+rb_check_convert_type(val, type, tname, method)
+    VALUE val;
+    int type;
+    const char *tname, *method;
+{
+    struct arg_to arg1, arg2;
+
+    if (TYPE(val) == type) return val;
+    arg1.val = arg2.val = val;
+    arg1.s = method;
+    arg2.s = tname;
+    val = rb_rescue2(to_type, (VALUE)&arg1, 0, 0,
+		     rb_eStandardError, rb_eNameError, 0);
+    if (!NIL_P(val) && TYPE(val) != type) {
+	rb_raise(rb_eTypeError, "%s#%s should return %s",
+		 rb_class2name(CLASS_OF(arg1.val)), method, tname);
+    }
+    return val;
+}
+
 static VALUE
 rb_to_integer(val, method)
     VALUE val;

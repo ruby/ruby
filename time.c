@@ -91,9 +91,9 @@ time_new_internal(klass, sec, usec)
 	sec += usec / 1000000;
 	usec %= 1000000;
     }
-    if (usec < 0) {		/* usec underflow */
-	sec -= (-usec) / 1000000;
-	usec %= 1000000;
+    while (usec < 0) {		/* usec underflow */
+	sec--;
+	usec += 1000000;
     }
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
@@ -501,7 +501,13 @@ time_cmp(time1, time2)
 	return INT2FIX(-1);
     }
     i = NUM2LONG(time2);
-    if (tobj1->tv.tv_sec == i) return INT2FIX(0);
+    if (tobj1->tv.tv_sec == i) {
+	if (tobj1->tv.tv_usec == 0)
+	    return INT2FIX(0);
+	if (tobj1->tv.tv_usec > 0)
+	    return INT2FIX(1);
+	return INT2FIX(-1);
+    }
     if (tobj1->tv.tv_sec > i) return INT2FIX(1);
     return INT2FIX(-1);
 }
@@ -914,7 +920,7 @@ rb_strftime(buf, format, time)
 	 * if the buffer is 1024 times bigger than the length of the
 	 * format string, it's not failing for lack of room.
 	 */
-	if (len > 0 || len >= 1024 * flen) return len;
+	if (len > 0 || size >= 1024 * flen) return len;
 	free(*buf);
     }
     /* not reached */
@@ -950,7 +956,10 @@ time_strftime(time, format)
 	    p += strlen(p) + 1;
 	    if (p <= pe)
 		rb_str_cat(str, "\0", 1);
-	    if (len > SMALLBUF) free(buf);
+	    if (buf != buffer) {
+		free(buf);
+		buf = buffer;
+	    }
 	}
 	return str;
     }
