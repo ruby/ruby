@@ -1,3 +1,8 @@
+Sat Apr 10 00:00:19 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/markup/simple_markup/inline.rb: Fix problem 
+	  with \_cat_<b>dog</b>
+
 Wed Apr  7 00:19:50 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb: fix hash tuple bug.

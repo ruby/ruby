@@ -141,6 +141,9 @@ class TestInline < Test::Unit::TestCase
                   @am.flow("cat <i>and</i> \\<B>dog</b>"))
     
     assert_equal(["*word* or <b>text</b>"], @am.flow("\\*word* or \\<b>text</b>"))
+
+    assert_equal(["_cat_", @em_on, "dog", @em_off], 
+                  @am.flow("\\_cat_<i>dog</i>"))
   end
 
   def test_adding

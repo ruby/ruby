@@ -97,20 +97,6 @@ module SM
     # be optimistic
     #
 
-=begin
-    ATTR_FLAG  = 001
-    A_START    = 002
-    A_END      = 003
-    A_SPECIAL_START = 005
-    A_SPECIAL_END   = 006
-
-    START_ATTR   = ATTR_FLAG.chr + A_START.chr
-    END_ATTR     = ATTR_FLAG.chr + A_END.chr
-
-    START_SPECIAL = ATTR_FLAG.chr + A_SPECIAL_START.chr
-    END_SPECIAL   = ATTR_FLAG.chr + A_SPECIAL_END.chr
-
-=end
     A_PROTECT  = 004
     PROTECT_ATTR  = A_PROTECT.chr
 
@@ -216,7 +202,7 @@ module SM
     end
 
     def unmask_protected_sequences
-      @str.gsub!(/(.)#{PROTECT_ATTR}/, '\1')
+      @str.gsub!(/(.)#{PROTECT_ATTR}/, "\\1\000")
     end
 
     def initialize
@@ -257,10 +243,13 @@ module SM
 
     def flow(str)
       @str = str
-      @attrs = AttrSpan.new(str.length)
 
       puts("Before flow, str='#{@str.dump}'") if $DEBUG
       mask_protected_sequences
+ 
+      @attrs = AttrSpan.new(@str.length)
+
+      puts("After protecting, str='#{@str.dump}'") if $DEBUG
       convert_attrs(@str, @attrs)
       convert_html(@str, @attrs)
       convert_specials(str, @attrs)
