@@ -193,7 +193,7 @@ class << File
   #	* /usr/lib/ruby
   #
   # You can pass several directories, each as a parameter. If the last
-  # parameter isn't a String, verbose mode wil be enabled.
+  # parameter isn't a String, verbose mode will be enabled.
   #
   def makedirs(*dirs)
     verbose = if dirs[-1].is_a? String then false else dirs.pop end

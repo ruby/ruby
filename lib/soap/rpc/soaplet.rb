@@ -25,7 +25,7 @@ public
   end
 
   # Add servant klass whose object has request scope.  A servant object is
-  # instanciated for each request.
+  # instantiated for each request.
   #
   # Bare in mind that servant klasses are distinguished by HTTP SOAPAction
   # header in request.  Client which calls request-scoped servant must have a

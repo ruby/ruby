@@ -389,12 +389,12 @@ module Net # :nodoc:
     attr_reader :port
 
     # Seconds to wait until connection is opened.
-    # If the HTTP object cannot open a conection in this many seconds,
+    # If the HTTP object cannot open a connection in this many seconds,
     # it raises a TimeoutError exception.
     attr_accessor :open_timeout
 
     # Seconds to wait until reading one block (by one read(2) call).
-    # If the HTTP object cannot open a conection in this many seconds,
+    # If the HTTP object cannot open a connection in this many seconds,
     # it raises a TimeoutError exception.
     attr_reader :read_timeout
 
@@ -693,7 +693,7 @@ module Net # :nodoc:
     # 
     # In version 1.1 (ruby 1.6), this method returns a pair of objects, a
     # Net::HTTPResponse object and an entity body string.
-    # In version 1.2 (ruby 1.8), this method returns a Net::HTTPReponse object.
+    # In version 1.2 (ruby 1.8), this method returns a Net::HTTPResponse object.
     # 
     # If called with a block, yields each fragment of the
     # entity body in turn as a string as it are read from
@@ -1600,7 +1600,7 @@ e      @header.each_key(&block)
   #     xxx        HTTPUnknownResponse
   #
   class HTTPResponse
-    # true if the reponse has body.
+    # true if the response has body.
     def HTTPResponse.body_permitted?
       self::HAS_BODY
     end

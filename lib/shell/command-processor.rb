@@ -146,7 +146,7 @@ class Shell
     #	  file2:   String(optional)
     #	  return: Boolean
     #	same as:
-    #	  test()	   (when command is char or length 1 string or sumbol)
+    #	  test()	   (when command is char or length 1 string or symbol)
     #	  FileTest.command (others)
     #	example:
     #	  sh[?e, "foo"]
@@ -214,7 +214,7 @@ class Shell
     # CommandProcessor#system(command, *opts)
     #	  command: String
     #	  opts:	   String
-    #	  retuen:  SystemCommand
+    #	  return:  SystemCommand
     #	Same as system() function
     #	example:
     #	  print sh.system("ls", "-l")

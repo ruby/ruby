@@ -81,7 +81,7 @@ EOF
       eval(statements, @binding, file, line)
     end
   
-    # error message manupilator
+    # error message manipulator
     def filter_backtrace(bt)
       case IRB.conf[:CONTEXT_MODE]
       when 0

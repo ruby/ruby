@@ -54,14 +54,14 @@ class GetoptLong
 
     #
     # Hash table of option names.
-    # Keyes of the table are option names, and their values are canonical
+    # Keys of the table are option names, and their values are canonical
     # names of the options.
     #
     @canonical_names = Hash.new
 
     #
     # Hash table of argument flags.
-    # Keyes of the table are option names, and their values are argument
+    # Keys of the table are option names, and their values are argument
     # flags of the options.
     #
     @argument_flags = Hash.new
@@ -87,7 +87,7 @@ class GetoptLong
     @error_message = nil
 
     #
-    # Rest of catinated short options.
+    # Rest of catenated short options.
     #
     @rest_singles = ''
 
@@ -223,7 +223,7 @@ class GetoptLong
   alias quiet? quiet
 
   #
-  # Termintate option processing.
+  # Terminate option processing.
   #
   def terminate
     return nil if @status == STATUS_TERMINATED
@@ -243,7 +243,7 @@ class GetoptLong
   end
 
   #
-  # Examine whether option processing is termintated or not.
+  # Examine whether option processing is terminated or not.
   #
   def terminated?
     return @status == STATUS_TERMINATED
@@ -393,7 +393,7 @@ class GetoptLong
     elsif argument =~ /^(-(.))(.*)/
       #
       # This is a short style option, which start with `-' (not `--').
-      # Short options may be catinated (e.g. `-l -g' is equivalent to
+      # Short options may be catenated (e.g. `-l -g' is equivalent to
       # `-lg').
       #
       option_name, ch, @rest_singles = $1, $2, $3

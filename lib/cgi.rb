@@ -528,7 +528,7 @@ class CGI
   #   "METHOD_NOT_ALLOWED"  --> "405 Method Not Allowed"
   #   "NOT_ACCEPTABLE"      --> "406 Not Acceptable"
   #   "LENGTH_REQUIRED"     --> "411 Length Required"
-  #   "PRECONDITION_FAILED" --> "412 Rrecondition Failed"
+  #   "PRECONDITION_FAILED" --> "412 Precondition Failed"
   #   "SERVER_ERROR"        --> "500 Internal Server Error"
   #   "NOT_IMPLEMENTED"     --> "501 Method Not Implemented"
   #   "BAD_GATEWAY"         --> "502 Bad Gateway"
@@ -1290,7 +1290,7 @@ class CGI
     #
     # +href+ can either be a string, giving the URL
     # for the HREF attribute, or it can be a hash of
-    # the elements's attributes.
+    # the element's attributes.
     #
     # The body of the element is the string returned by the no-argument
     # block passed in.
@@ -1589,9 +1589,9 @@ class CGI
     # Generate a top-level HTML element as a string.
     #
     # The attributes of the element are specified as a hash.  The
-    # psuedo-attribute "PRETTY" can be used to specify that the generated
+    # pseudo-attribute "PRETTY" can be used to specify that the generated
     # HTML string should be indented.  "PRETTY" can also be specified as
-    # a string as the sole argument to this method.  The psuedo-attribute
+    # a string as the sole argument to this method.  The pseudo-attribute
     # "DOCTYPE", if given, is used as the leading DOCTYPE SGML tag; it
     # should include the entire text of this tag, including angle brackets.
     #

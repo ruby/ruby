@@ -134,7 +134,7 @@ module Test
         "#{@method_name}(#{self.class.name})"
       end
 
-      # Overriden to return #name.
+      # Overridden to return #name.
       def to_s
         name
       end

@@ -45,7 +45,7 @@ module Racc
     Racc_Runtime_Core_Revision_R = '$raccRevision: 1.4 $'.split[1]
     begin
       require 'racc/cparse'
-    # Racc_Runtime_Core_Version_C  = (defined in extention)
+    # Racc_Runtime_Core_Version_C  = (defined in extension)
       Racc_Runtime_Core_Revision_C = Racc_Runtime_Core_Id_C.split[2]
       unless new.respond_to?(:_racc_do_parse_c, true)
         raise LoadError, 'old cparse.so'

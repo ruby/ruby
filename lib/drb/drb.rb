@@ -692,7 +692,7 @@ module DRb
     #
     # The DRbProtocol module asks each registered protocol in turn to
     # try to open the URI.  Each protocol signals that it does not handle that
-    # URIby raising a DRbBadScheme error.  If no protocol recognises the
+    # URI by raising a DRbBadScheme error.  If no protocol recognises the
     # URI, then a DRbBadURI error is raised.  If a protocol accepts the
     # URI, but an error occurs in opening it, a DRbConnError is raised.
     def open(uri, config, first=true) 
@@ -1200,7 +1200,7 @@ module DRb
     #
     # :idconv :: an id-to-object conversion object.  This defaults
     #            to an instance of the class DRb::DRbIdConv.
-    # :verbose :: if true, all unsucessful remote calls on objects
+    # :verbose :: if true, all unsuccessful remote calls on objects
     #             in the server will be logged to $stdout. false
     #             by default.
     # :tcp_acl :: the access control list for this server.  See

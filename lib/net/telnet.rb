@@ -241,7 +241,7 @@ module Net # :nodoc:
     # Timeout:: the number of seconds to wait before timing out both the
     #           initial attempt to connect to host (in this constructor),
     #           and all attempts to read data from the host (in #waitfor(),
-    #           #cmd(), and #login()).  Exceding this timeout causes a
+    #           #cmd(), and #login()).  Exceeding this timeout causes a
     #           TimeoutError to be raised.  The default value is 10 seconds.
     #           You can disable the timeout by setting this value to false.
     #           In this case, the connect attempt will eventually timeout

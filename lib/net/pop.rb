@@ -425,7 +425,7 @@ module Net
     # to OpenSSL::SSL::VERIFY_PEER.
     # +certs+ is a file or directory holding CA certs to use to verify the 
     # server cert; Defaults to nil.
-    # +port+ is port to establish the SSL conection on; Defaults to 995.
+    # +port+ is port to establish the SSL connection on; Defaults to 995.
     def enable_ssl(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil, 
                    port = POP3.default_pop3s_port)
       @usessl = true

@@ -343,7 +343,7 @@ num2i32(x)
     if (TYPE(x) == T_BIGNUM) {
 	return rb_big2ulong_pack(x);
     }
-    rb_raise(rb_eTypeError, "cannot conver %s to `integer'", rb_obj_classname(x));
+    rb_raise(rb_eTypeError, "cannot convert %s to `integer'", rb_obj_classname(x));
     return 0;			/* not reached */
 }
 

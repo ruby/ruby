@@ -499,7 +499,7 @@ class CSV
   # CSV formatted string/stream reader.
   #
   # EXAMPLE
-  #   read CSV lines untill the first column is 'stop'.
+  #   read CSV lines until the first column is 'stop'.
   #
   #   CSV::Reader.parse(File.open('bigdata', 'rb')) do |row|
   #     p row
@@ -756,7 +756,7 @@ class CSV
   #     end
   #
   #     # define my own 'read' method.
-  #     # CAUTION: Returning nil means EnfOfStream.
+  #     # CAUTION: Returning nil means EndOfStream.
   #     def read(size)
   #       @s.read(size)
   #     end
@@ -912,7 +912,7 @@ class CSV
 
     # protected method 'read' must be defined in derived classes.
     # CAUTION: Returning a string which size is not equal to 'size' means
-    # EnfOfStream.  When it is not at EOS, you must block the callee, try to
+    # EndOfStream.  When it is not at EOS, you must block the callee, try to
     # read and return the sized string.
     def read(size) # raise EOFError
       raise NotImplementedError.new(

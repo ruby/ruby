@@ -211,7 +211,7 @@ module Benchmark
   # Sometimes benchmark results are skewed because code executed
   # earlier encounters different garbage collection overheads than
   # that run later. #bmbm attempts to minimize this effect by running
-  # the tests twice, the first time as a rehersal in order to get the
+  # the tests twice, the first time as a rehearsal in order to get the
   # runtime environment stable, the second time for
   # real. <tt>GC.start</tt> is executed before the start of each of
   # the real timings; the cost of this is not included in the
@@ -414,9 +414,9 @@ module Benchmark
     attr_reader :label
 
     #
-    # Returns a initialized Tms object which has
+    # Returns an initialized Tms object which has
     # _u_ as the user CPU time, _s_ as the system CPU time, 
-    # _cu_ as the childrens' user CPU time, _cs_ as the childrens'
+    # _cu_ as the children's user CPU time, _cs_ as the children's
     # system CPU time, _real_ as the elapsed real time and _l_
     # as the label. 
     # 
@@ -482,8 +482,8 @@ module Benchmark
     #
     # <tt>%u</tt>::     Replaced by the user CPU time, as reported by Tms#utime.
     # <tt>%y</tt>::     Replaced by the system CPU time, as reported by #stime (Mnemonic: y of "s*y*stem")
-    # <tt>%U</tt>::     Replaced by the childrens' user CPU time, as reported by Tms#cutime 
-    # <tt>%Y</tt>::     Replaced by the childrens' system CPU time, as reported by Tms#cstime
+    # <tt>%U</tt>::     Replaced by the children's user CPU time, as reported by Tms#cutime 
+    # <tt>%Y</tt>::     Replaced by the children's system CPU time, as reported by Tms#cstime
     # <tt>%t</tt>::     Replaced by the total CPU time, as reported by Tms#total
     # <tt>%r</tt>::     Replaced by the elapsed real time, as reported by Tms#real
     # <tt>%n</tt>::     Replaced by the label string, as reported by Tms#label (Mnemonic: n of "*n*ame")
@@ -512,8 +512,8 @@ module Benchmark
 
     # 
     # Returns a new 6-element array, consisting of the
-    # label, user CPU time, system CPU time, childrens'
-    # user CPU time, childrens' system CPU time and elapsed
+    # label, user CPU time, system CPU time, children's
+    # user CPU time, children's system CPU time and elapsed
     # real time.
     # 
     def to_a

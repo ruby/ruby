@@ -1,3 +1,15 @@
+Mon Apr 19 08:19:11 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
+
+	* dln.c, io.c, pack.c, lib/benchmark.rb, lib/cgi.rb, lib/csv.rb,
+	  lib/date.rb, lib/ftools.rb, lib/getoptlong.rb, lib/logger.rb,
+	  lib/matrix.rb, lib/monitor.rb, lib/set.rb, lib/thwait.rb,
+	  lib/timeout.rb, lib/yaml.rb, lib/drb/drb.rb, lib/irb/workspace.rb,
+	  lib/net/ftp.rb, lib/net/http.rb, lib/net/imap.rb, lib/net/pop.rb,
+	  lib/net/telnet.rb, lib/racc/parser.rb, lib/rinda/rinda.rb,
+	  lib/rinda/tuplespace.rb, lib/shell/command-processor.rb,
+	  lib/soap/rpc/soaplet.rb, lib/test/unit/testcase.rb,
+	  lib/test/unit/testsuite.rb: typo fix.
+
 Mon Apr 19 08:14:18 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_body): Allow for

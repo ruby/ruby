@@ -59,7 +59,7 @@ module Test
         tests.empty?
       end
 
-      # Overriden to return the name given the suite at
+      # Overridden to return the name given the suite at
       # creation.
       def to_s
         @name

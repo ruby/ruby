@@ -28,7 +28,7 @@
 # In common usage, the date is reckoned in years since or
 # before the Common Era (CE/BCE, also known as AD/BC), then
 # as a month and day-of-the-month within the current year.
-# This is known as the *Civil* *Date*, and abbrevated
+# This is known as the *Civil* *Date*, and abbreviated
 # as +civil+ in the Date class.
 #
 # Instead of year, month-of-the-year,  and day-of-the-month,
@@ -239,7 +239,7 @@ class Date
 
   # Full names of days of the week, in English.  Days of the week
   # count from 0 to 6 (except in the commercial week); a day's numerical
-  # represenation indexed into this array gives the name of that day.
+  # representation indexed into this array gives the name of that day.
   DAYNAMES = %w(Sunday Monday Tuesday Wednesday Thursday Friday Saturday)
 
   # Abbreviated month names, in English.
@@ -442,7 +442,7 @@ class Date
   # Astronomical Julian Day Number.
   def self.amjd_to_ajd(amjd) amjd + 4800001.to_r/2 end
 
-  # Convert an Astronimcal Julian Day Number to an
+  # Convert an Astronomical Julian Day Number to an
   # Astronomical Modified Julian Day Number.
   def self.ajd_to_amjd(ajd) ajd - 4800001.to_r/2 end
 
@@ -622,7 +622,7 @@ class Date
     jd
   end
 
-  # Create a new Date object for the Commercial Date specifed by
+  # Create a new Date object for the Commercial Date specified by
   # year +y+, week-of-year +w+, and day-of-week +d+.
   #
   # Monday is day-of-week 1; Sunday is day-of-week 7.

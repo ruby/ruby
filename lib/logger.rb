@@ -78,7 +78,7 @@
 #
 # See http://raa.ruby-lang.org/list.rhtml?name=log4r for Log4r, which contains
 # many advanced features like file-based configuration, a wide range of
-# logging targets, simultaneous logging, and heirachical logging.
+# logging targets, simultaneous logging, and hierarchical logging.
 #
 #
 # == HOWTOs
@@ -626,7 +626,7 @@ private
   #
   # 1. Define your application class as a sub-class of this class.
   # 2. Override 'run' method in your class to do many things.
-  # 3. Instanciate it and invoke 'start'.
+  # 3. Instantiate it and invoke 'start'.
   #
   # == Example
   #

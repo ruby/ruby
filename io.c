@@ -2381,7 +2381,7 @@ rb_fopen(fname, mode)
     }
 #ifdef USE_SETVBUF
     if (setvbuf(file, NULL, _IOFBF, 0) != 0)
-	rb_warn("setvbuf() can't be honered for %s", fname);
+	rb_warn("setvbuf() can't be honoured for %s", fname);
 #endif
 #ifdef __human68k__
     fmode(file, _IOTEXT);
@@ -2412,7 +2412,7 @@ rb_fdopen(fd, mode)
 
 #ifdef USE_SETVBUF
     if (setvbuf(file, NULL, _IOFBF, 0) != 0)
-	rb_warn("setvbuf() can't be honered (fd=%d)", fd);
+	rb_warn("setvbuf() can't be honoured (fd=%d)", fd);
 #endif
     return file;
 }
@@ -3258,7 +3258,7 @@ rb_io_reopen(argc, argv, file)
     }
 #ifdef USE_SETVBUF
     if (setvbuf(fptr->f, NULL, _IOFBF, 0) != 0)
-	rb_warn("setvbuf() can't be honered for %s", RSTRING(fname)->ptr);
+	rb_warn("setvbuf() can't be honoured for %s", RSTRING(fname)->ptr);
 #endif
 
     if (fptr->f2) {

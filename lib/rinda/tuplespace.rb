@@ -55,7 +55,7 @@ module Rinda
     # the argument is:
     #
     # +nil+::    it is set to expire in the far future.
-    # +false+::  it has epired.
+    # +false+::  it has expired.
     # Numeric::  it will expire in that many seconds.
     #
     # Otherwise the argument refers to some kind of renewer object
@@ -105,7 +105,7 @@ module Rinda
     
     private
     # Given +true+, +nil+, or +Numeric+, returns that (suitable input to
-    # make_epires) and +nil+ (no actual +renewer+), else it return the
+    # make_expires) and +nil+ (no actual +renewer+), else it return the
     # time data from the supplied +renewer+.
     def get_renewer(it)
       case it
@@ -146,7 +146,7 @@ module Rinda
   end
 
   #
-  # <i>Documenation?</i>
+  # <i>Documentation?</i>
   #
   class WaitTemplateEntry < TemplateEntry
     def initialize(place, ary, expires=nil)
@@ -179,7 +179,7 @@ module Rinda
   end
 
   #
-  # <i>Documenation?</i>
+  # <i>Documentation?</i>
   #
   class NotifyTemplateEntry < TemplateEntry
     def initialize(place, event, tuple, expires=nil)
@@ -276,7 +276,7 @@ module Rinda
 
   # 
   # The Tuplespace manages access to the tuples it contains,
-  # ensuring mutual exclusion requirments are met.
+  # ensuring mutual exclusion requirements are met.
   #
   class TupleSpace
     include DRbUndumped

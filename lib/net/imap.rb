@@ -449,7 +449,7 @@ module Net # :nodoc:
     # the complete set of all names available to the client.
     # +refname+ provides a context (for instance, a base directory
     # in a directory-based mailbox hierarchy).  +mailbox+ specifies
-    # a mailbox or (via wilcards) mailboxes under that context.
+    # a mailbox or (via wildcards) mailboxes under that context.
     # Two wildcards may be used in +mailbox+: '*', which matches
     # all characters *including* the hierarchy delimiter (for instance,
     # '/' on a UNIX-hosted directory-based mailbox hierarchy); and '%',
@@ -572,7 +572,7 @@ module Net # :nodoc:
 
     # Sends a APPEND command to append the +message+ to the end of
     # the +mailbox+. The optional +flags+ argument is an array of 
-    # flags to initially assing to the new message.  The optional
+    # flags to initially passing to the new message.  The optional
     # +date_time+ argument specifies the creation time to assign to the 
     # new message; it defaults to the current time.
     # For example:

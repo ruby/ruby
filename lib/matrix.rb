@@ -948,7 +948,7 @@ end
 
 #
 # The +Vector+ class represents a mathematical vector, which is useful in its own right, and
-# also consitutes a row or column of a Matrix.
+# also constitutes a row or column of a Matrix.
 #
 # == Method Catalogue
 #
@@ -1026,7 +1026,7 @@ class Vector
     end
   end
   
-  # ACCSESSING
+  # ACCESSING
          
   #
   # Returns element number +i+ (starting at zero) of the vector.
@@ -1043,7 +1043,7 @@ class Vector
   end
   
   #--
-  # ENUMRATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  # ENUMERATIONS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   #++
 
   #

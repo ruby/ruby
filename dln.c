@@ -1167,7 +1167,7 @@ dln_strerror()
       case DLN_ECONFL:
 	return "Symbol name conflict";
       case DLN_ENOINIT:
-	return "No inititalizer given";
+	return "No initializer given";
       case DLN_EUNDEF:
 	return "Unresolved symbols";
       case DLN_ENOTLIB:
@@ -1228,7 +1228,7 @@ aix_loaderror(const char *pathname)
 	{L_ERROR_MEMBER,
 	     "file not an archive or does not contain requested member:"},
 	{L_ERROR_TYPE,		"symbol table mismatch:"},
-	{L_ERROR_ALIGN,		"text allignment in file is wrong."},
+	{L_ERROR_ALIGN,		"text alignment in file is wrong."},
 	{L_ERROR_SYSTEM,	"System error:"},
 	{L_ERROR_ERRNO,		NULL}
     };
