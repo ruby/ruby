@@ -331,7 +331,7 @@ pack_pack(ary, fmt)
     static char *nul10 = "\0\0\0\0\0\0\0\0\0\0";
     static char *spc10 = "          ";
     char *p, *pend;
-    VALUE res, from;
+    VALUE res, from, associates = 0;
     char type;
     int items, len, idx;
     char *ptr;
@@ -872,7 +872,10 @@ pack_pack(ary, fmt)
 		    StringValue(from);
 		    t = RSTRING(from)->ptr;
 		}
-		rb_str_associate(res, from);
+		if (!associates) {
+		    associates = rb_ary_new();
+		}
+		rb_ary_push(associates, from);
 		rb_str_buf_cat(res, (char*)&t, sizeof(char*));
 	    }
 	    break;
@@ -926,6 +929,10 @@ pack_pack(ary, fmt)
 	  default:
 	    break;
 	}
+    }
+
+    if (associates) {
+	rb_str_associate(res, associates);
     }
     return res;
 }

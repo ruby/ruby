@@ -1,3 +1,11 @@
+Mon Aug  6 23:47:46 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* pack.c (pack_unpack): associates p/P strings once at
+	  last(reverted to 1.26).
+
+	* string.c (rb_str_associate): associates an Array at once, not
+	  but a String. realloc's when str_buf.
+
 Mon Aug  6 14:31:37 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* numeric.c (num_divmod): fix typo.

@@ -203,13 +203,22 @@ rb_str_associate(str, add)
     VALUE str, add;
 {
     if (FL_TEST(str, STR_NO_ORIG|STR_ASSOC) != (STR_NO_ORIG|STR_ASSOC)) {
-	if (RSTRING(str)->orig) {
+	if (FL_TEST(str, STR_NO_ORIG)) {
+	    /* str_buf */
+	    if (FIX2LONG(RSTRING(str)->orig) != RSTRING(str)->len) {
+		REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len + 1);
+	    }
+	}
+	else if (RSTRING(str)->orig) {
 	    rb_str_modify(str);
 	}
-	RSTRING(str)->orig = rb_ary_new();
+	RSTRING(str)->orig = add;
 	FL_SET(str, STR_NO_ORIG|STR_ASSOC);
     }
-    rb_ary_push(RSTRING(str)->orig, add);
+    else {
+	/* already associated */
+	rb_ary_concat(RSTRING(str)->orig, add);
+    }
 }
 
 VALUE
