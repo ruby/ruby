@@ -321,11 +321,11 @@ freebsd*)	LIBS="-lm $LIBS"
 			   rb_cv_supplementary_lib_c_r=yes,
 			   rb_cv_supplementary_lib_c_r=yes)])
 			if test "$rb_cv_supplementary_lib_c_r" = yes; then
-				MAINLIBS="-lc_r $MAINLIBS"			
+				MAINLIBS="-lc_r $MAINLIBS"
 			else
 				AC_DEFINE(HAVE_LIBPTHREAD)
-				MAINLIBS="-pthread $MAINLIBS"			
-				CFLAGS="-D_THREAD_SAFE $CFLAGS"
+				MAINLIBS="-pthread $MAINLIBS"
+				CFLAGS="-D_THREAD_SAFE -D_REENTRANT $CFLAGS"
 			fi
 		fi
 		;;
@@ -667,8 +667,47 @@ DEFAULT_KCODE="KCODE_NONE"
 
 AC_ARG_WITH(pthread-ext, 
 	[  --with-pthread-ext      use pthread library on external modules ],
-	[AC_CHECK_LIB(pthread, pthread_mutex_trylock)
-	 AC_DEFINE(USE_PTHREAD_EXTLIB)])
+	[AC_DEFINE(USE_PTHREAD_EXTLIB)
+	 AC_CHECK_LIB(pthread, pthread_mutex_init, 
+	              rb_use_pthread_ext=yes, rb_use_pthread_ext=no)
+	 if test "$rb_use_pthread_ext" = "no"; then
+	    AC_CHECK_LIB(pthread, __pthread_mutex_init, 
+	    	         rb_use_pthread_ext=yes, rb_use_pthread_ext=no)
+	 fi
+	 if test "$rb_use_pthread_ext" = "yes"; then
+	    LIBS="-lpthread $LIBS"
+	    AC_DEFINE(_REENTRANT)
+	    AC_DEFINE(_THREAD_SAFE)
+	    AC_DEFINE(HAVE_LIBPTHREAD)
+	 else
+	    AC_CHECK_LIB(pthreads, pthread_mutex_init, 
+	    	         rb_use_pthread_ext=yes, rb_use_pthread_ext=no)
+	    if test "$rb_use_pthread_ext" = "yes"; then
+	       LIBS="-lpthreads $LIBS"
+	       AC_DEFINE(_REENTRANT)
+	       AC_DEFINE(_THREAD_SAFE)
+	       AC_DEFINE(HAVE_LIBPTHREAD)
+	    else
+		AC_CHECK_LIB(c_r, pthread_mutex_init, 
+			     rb_use_pthread_ext=yes, rb_use_pthread_ext=no)
+		if test "$rb_use_pthread_ext" = "yes"; then
+		   if test "$with_libc_r" = "yes"; then
+		      if test "$rb_cv_supplementary_lib_c_r" = "yes"; then
+			 AC_DEFINE(_REENTRANT)
+			 AC_DEFINE(_THREAD_SAFE)
+			 AC_DEFINE(HAVE_LIBPTHREAD)
+			 MAINLIBS="-pthread $MAINLIBS"
+		      fi
+		   else
+		      MAINLIBS="-pthread $MAINLIBS"
+		      AC_DEFINE(_REENTRANT)
+		      AC_DEFINE(_THREAD_SAFE)
+		      AC_DEFINE(HAVE_LIBPTHREAD)
+		   fi
+		fi
+	    fi
+	 fi
+	])
 
 AC_ARG_WITH(default-kcode, 
 	[  --with-default-kcode=CODE specify default value for \$KCODE (utf8|euc|sjis|none)], 

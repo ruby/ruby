@@ -1,3 +1,7 @@
+Sat Nov  8 13:49:50 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* configure.in: improvement of pthread check
+
 Sat Nov  8 13:28:46 2003 Takaaki Tateishi <ttate@ttsky.net>
 	* ext/dl/sym.c: Add DL.win32_last_error and DL.last_error.
 	  Thanks, Kaoru Shirai.
