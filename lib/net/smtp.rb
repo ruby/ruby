@@ -1,16 +1,19 @@
 =begin
 
-= Net module version 1.0.3 reference manual
+= net/smtp.rb
 
-smtp.rb written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
-This library is distributed under the terms of Ruby style license.
-You can freely redistribute/modify/copy this file.
+This library is distributed under the terms of Ruby license.
+You can freely distribute/modify this file.
 
 =end
 
 
 require 'net/session'
+
+
+module Net
 
 
 =begin
@@ -27,18 +30,6 @@ Net::Session
 
   This method create new SMTPSession object.
 
-=end
-
-module Net
-
-  class SMTPSession < Session
-
-    def proto_initialize
-      @proto_type = SMTPCommand
-      @port       = 25
-    end
-
-=begin
 
 === Methods
 
@@ -65,26 +56,30 @@ module Net
 
 =end
 
+  class SMTPSession < Session
+
+    Version = '1.1.0'
+
+    session_setvar :port,         '25'
+    session_setvar :command_type, 'SMTPCommand'
+
+
     def sendmail( mailsrc, fromaddr, toaddrs )
-      @proto.mailfrom( fromaddr )
-      @proto.rcpt( toaddrs )
+      @proto.mailfrom fromaddr
+      @proto.rcpt toaddrs
       @proto.data
-      @proto.sendmail( mailsrc )
+      @proto.sendmail mailsrc
     end
 
 
     private
 
 
-    def do_start( helodom = nil )
+    def do_start( helodom = ENV['HOSTNAME'] )
       unless helodom then
-        helodom = ENV[ 'HOSTNAME' ]
+        raise ArgumentError, "cannot get hostname"
       end
-      @proto.helo( helodom )
-    end
-
-    def do_finish
-      @proto.quit
+      @proto.helo helodom
     end
 
   end
@@ -111,17 +106,17 @@ Net::Command
 
 : helo( helo_domain )
 
-  This method send "HELO" command and start SMTP session.<br>
+  This method send "HELO" command and start SMTP session.
   helo_domain is localhost's FQDN.
 
 : mailfrom( from_addr )
 
-  This method sends "MAIL FROM" command.<br>
+  This method sends "MAIL FROM" command.
   from_addr is your mail address(????@????).
 
 : rcpt( to_addrs )
 
-  This method sends "RCPT TO" command.<br>
+  This method sends "RCPT TO" command.
   to_addrs is array of mail address(???@???) of destination.
 
 : data( mailsrc )
@@ -136,6 +131,12 @@ Net::Command
 =end
 
   class SMTPCommand < Command
+
+    def initialize( sock )
+      super
+      check_reply SuccessCode
+    end
+
 
     def helo( fromdom )
       @socket.writeline( 'HELO ' << fromdom )
@@ -163,10 +164,11 @@ Net::Command
     end
 
 
-    def sendmail( mailsrc )
+    def writemail( mailsrc )
       @socket.write_pendstr( mailsrc )
       check_reply( SuccessCode )
     end
+    alias sendmail writemail
 
 
     private
@@ -209,11 +211,6 @@ Net::Command
       return arr
     end
 
-  end
-
-
-  unless Session::Version == '1.0.3' then
-    $stderr.puts "WARNING: wrong version of session.rb & smtp.rb"
   end
 
 end

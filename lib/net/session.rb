@@ -1,11 +1,11 @@
 =begin
 
-= Net module version 1.0.3 reference manual
+= net/session.rb version 1.1.0
 
-session.rb written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
 This library is distributed under the terms of Ruby style license.
-You can freely distribute/modify/copy this file.
+You can freely distribute/modify this file.
 
 =end
 
@@ -13,16 +13,7 @@ You can freely distribute/modify/copy this file.
 require 'socket'
 
 
-class String
-
-  def doquote
-    str = self.gsub( "\n", '\\n' )
-    str.gsub!( "\r", '\\r' )
-    str.gsub!( "\t", '\\t' )
-    return str
-  end
-
-end
+module Net
 
 
 =begin
@@ -39,18 +30,8 @@ Object
 
 : Version
 
-  The version of Session class. It is a string like "1.0.3".
+  The version of Session class. It is a string like "1.1.0".
 
-=end
-
-
-module Net
-
-  class Session
-
-    Version = '1.0.3'
-
-=begin
 
 === Class Methods
 
@@ -65,31 +46,6 @@ module Net
   If you call this method with block, Session object give itself
   to block and finish session when block returns.
 
-=end
-
-    def initialize( addr = 'localhost', port = nil )
-      proto_initialize
-      @address = addr
-      @port    = port if port
-
-      @active  = false
-      @pipe    = nil
-    end
-
-    class << self
-      def start( address = 'localhost', port = nil, *args )
-        inst = new( address, port )
-        ret = inst.start( *args )
-
-        if iterator? then
-          ret = yield( inst )
-          inst.finish
-        end
-        return ret
-      end
-    end
-
-=begin
 
 === Methods
 
@@ -100,18 +56,6 @@ module Net
 : port
 
   connecting port number
-
-=end
-
-    attr :address
-    attr :port
-
-    attr :socket
-
-    attr :proto_type
-    attr :proto, true
-
-=begin
 
 : start( *args )
 
@@ -131,28 +75,96 @@ module Net
 
 =end
 
+  class Session
+
+    Version = '1.1.0'
+
+    class << self
+
+      def start( address = 'localhost', port = nil, *args )
+        session = new( address, port )
+
+        if iterator? then
+          session.start( *args ) { yield session }
+        else
+          session.start *args
+          session
+        end
+      end
+
+      private
+
+      def session_setvar( name, val )
+        module_eval %-
+          def self.#{name.id2name}
+            #{val}
+          end
+        -
+      end
+        
+    end
+
+
+    #
+    # sub-class requirements
+    #
+    # class method command_type
+    # class method port
+    #
+    # private method proto_initialize
+    # private method do_start  (optional)
+    # private method do_finish (optional)
+    #
+
+    session_setvar :port,         'nil'
+    session_setvar :command_type, 'nil'
+    session_setvar :socket_type,  'ProtocolSocket'
+
+
+    def initialize( addr = 'localhost', port = nil )
+      @address = addr
+      @port    = port || self.type.port
+
+      @active  = false
+      @pipe    = nil
+
+      @proto   = nil
+      @socket  = nil
+    end
+
+
+    attr :address
+    attr :port
+
+    attr :socket
+
+
     def start( *args )
       return false if active?
       @active = true
 
-      if Class === args[0] then
-        c = args.shift
-      else
-        c = ProtocolSocket
+      begin
+        connect
+        do_start *args
+        yield if iterator?
+      ensure
+        finish if iterator?
       end
-      @socket = c.open( @address, @port, @pipe )
-      @pipe = nil
-
-      @proto = @proto_type.new( @socket )
-      do_start( *args )
     end
 
     def finish
-      @active = false
-
       if @proto then
         do_finish
-        @proto = nil
+        disconnect
+      end
+
+      if @socket and not @socket.closed? then
+        @socket.close
+        @socket = nil
+      end
+
+      if active? then
+        @active = false
 
         return true
       else
@@ -160,10 +172,34 @@ module Net
       end
     end
 
-    def active?() @active end
+    def active?
+      @active
+    end
 
-    def set_pipe( arg )
+    def set_pipe( arg )   # un-documented
       @pipe = arg
+    end
+
+
+    private
+
+
+    def do_start
+    end
+
+    def do_finish
+    end
+
+
+    def connect
+      @socket = self.type.socket_type.open( @address, @port, @pipe )
+      @proto  = self.type.command_type.new( @socket )
+    end
+
+    def disconnect
+      @proto.quit
+      @proto  = nil
+      @socket = nil
     end
 
   end
@@ -197,7 +233,6 @@ Object
 
     def initialize( sock )
       @socket = sock
-      check_reply( SuccessCode )
     end
 
     attr :socket, true
@@ -248,39 +283,47 @@ Object
     attr :msg
 
     def error!( sending )
-      err, tag = Errors[ self.type ]
-      mes = sprintf( <<MES, tag, @code, sending.doquote, @msg.doquote )
+      mes = <<MES
 
-%s: status %s
+status %s
 writing string is:
 %s
 
 error message from server is:
 %s
 MES
-      raise err, mes
+      raise self.type::Error,
+        sprintf( mes, @code, Net.quote(sending), Net.quote(@msg) )
     end
 
   end
 
-  class SuccessCode     < ReplyCode ; end
-  class ContinueCode    < SuccessCode ; end
-  class ErrorCode       < ReplyCode ; end
-  class SyntaxErrorCode < ErrorCode ; end
-  class FatalErrorCode  < ErrorCode ; end
-  class ServerBusyCode  < ErrorCode ; end
-  class UnknownCode     < ReplyCode ; end
+  class SuccessCode < ReplyCode
+    Error = ProtoUnknownError
+  end
 
-  class ReplyCode
-    Errors = {
-      SuccessCode     => [ ProtoUnknownError, 'unknown error' ],
-      ContinueCode    => [ ProtoUnknownError, 'unknown error' ],
-      ErrorCode       => [ ProtocolError, 'protocol error' ],
-      SyntaxErrorCode => [ ProtoSyntaxError, 'syntax error' ],
-      FatalErrorCode  => [ ProtoFatalError, 'fatal error' ],
-      ServerBusyCode  => [ ProtoServerError, 'probably server busy' ],
-      UnknownCode     => [ ProtoUnknownError, 'unknown error' ]
-    }
+  class ContinueCode < SuccessCode
+    Error = ProtoUnknownError
+  end
+
+  class ErrorCode < ReplyCode
+    Error = ProtocolError
+  end
+
+  class SyntaxErrorCode < ErrorCode
+    Error = ProtoSyntaxError
+  end
+
+  class FatalErrorCode < ErrorCode
+    Error = ProtoFatalError
+  end
+
+  class ServerBusyCode < ErrorCode
+    Error = ProtoServerError
+  end
+
+  class UnknownCode < ReplyCode
+    Error = ProtoUnknownError
   end
 
 
@@ -298,31 +341,6 @@ Object
 
   This create new ProtocolSocket object, and connect to server.
 
-=end
-
-  class ProtocolSocket
-
-    def initialize( addr, port, pipe = nil )
-      @address = addr
-      @port    = port
-      @pipe    = pipe
-
-      @ipaddr  = ''
-      @closed  = false
-      @sending = ''
-      @buffer  = ''
-
-      @socket = TCPsocket.new( addr, port )
-      @ipaddr = @socket.addr[3]
-    end
-
-    attr :pipe, true
-
-    class << self
-      alias open new
-    end
-
-=begin
 
 === Methods
 
@@ -330,11 +348,11 @@ Object
 
   This method closes socket.
 
-: addr
+: address, addr
 
   a FQDN address of server
 
-: ipaddr
+: ip_address, ipaddr
 
   an IP address of server
 
@@ -346,30 +364,6 @@ Object
 
   true if ProtocolSokcet have been closed already
 
-=end
-
-    attr :socket, true
-
-    def close
-      @socket.close
-      @closed = true
-    end
-
-    def closed?() @closed end
-
-    def addr() @address.dup end
-    def port() @port end
-    def ipaddr() @ipaddr.dup end
-
-    attr :sending
-
-
-    CRLF    = "\r\n"
-    D_CRLF  = ".\r\n"
-    TERMEXP = /\n|\r\n|\r/o
-
-
-=begin
 
 : read( length )
 
@@ -397,92 +391,6 @@ Object
 
   When this method was called with block, evaluate it for each reading a line.
 
-=end
-
-    def read( len, ret = '' )
-      rsize = 0
-
-      while rsize + @buffer.size < len do
-        rsize += @buffer.size
-        ret << fetch_rbuf( @buffer.size )
-        fill_rbuf
-      end
-      ret << fetch_rbuf( len - rsize )
-
-      return ret
-    end
-
-
-    def readuntil( target )
-      until idx = @buffer.index( target ) do
-        fill_rbuf
-      end
-
-      return fetch_rbuf( idx + target.size )
-    end
-
-        
-    def readline
-      ret = readuntil( CRLF )
-      ret.chop!
-      return ret
-    end
-
-
-    def read_pendstr( dest = '' )
-      @pipe << "reading text...\n" if pre = @pipe ; @pipe = nil
-
-      rsize = 0
-
-      while (str = readuntil( CRLF )) != D_CRLF do
-        rsize += str.size
-        str.gsub!( /\A\./o, '' )
-        dest << str
-      end
-
-      @pipe << "read #{rsize} bytes\n" if @pipe = pre
-      return dest
-    end
-
-
-    def read_pendlist
-      @pipe << "reading list...\n" if pre = @pipe ; @pipe = nil
-
-      arr = []
-      str = nil
-      call = iterator?
-
-      while (str = readuntil( CRLF )) != D_CRLF do
-        str.chop!
-        arr.push str
-        yield str if iterator?
-      end
-
-      @pipe << "read #{arr.size} lines\n" if @pipe = pre
-      return arr
-    end
-
-
-    private
-
-
-    READ_BLOCK = 1024 * 8
-
-    def fill_rbuf
-      @buffer << @socket.sysread( READ_BLOCK )
-    end
-
-    def fetch_rbuf( len )
-      bsi = @buffer.size
-      ret = @buffer[ 0, len ]
-      @buffer = @buffer[ len, bsi - len ]
-
-      @pipe << %{read  "#{debugstr ret}"\n} if @pipe
-      return ret
-    end
-
-
-=begin
 
 : write( src )
 
@@ -506,6 +414,159 @@ Object
 
 =end
 
+  class ProtocolSocket
+
+    def initialize( addr, port, pipe = nil )
+      @addr = addr
+      @port = port
+      @pipe = pipe
+
+      @closed  = true
+      @ipaddr  = ''
+      @sending = ''
+      @buffer  = ''
+
+      @socket = TCPsocket.new( addr, port )
+      @closed = false
+      @ipaddr = @socket.addr[3]
+    end
+
+    attr :pipe, true
+
+    class << self
+      alias open new
+    end
+
+    def reopen
+      unless closed? then
+        @socket.close
+        flush_rbuf
+      end
+      @socket = TCPsocket.new( @addr, @port )
+    end
+
+
+    attr :socket, true
+
+    def close
+      @socket.close
+      @closed = true
+    end
+
+    def closed?
+      @closed
+    end
+
+    def address
+      @addr.dup
+    end
+    alias addr address
+
+    attr :port
+
+    def ip_address
+      @ipaddr.dup
+    end
+    alias ipaddr ip_address
+
+    attr :sending
+
+
+    CRLF    = "\r\n"
+    D_CRLF  = ".\r\n"
+    TERMEXP = /\n|\r\n|\r/o
+
+
+    def read( len, ret = '' )
+      @pipe << "reading #{len} bytes...\n" if pre = @pipe ; @pipe = nil
+
+      rsize = 0
+
+      while rsize + @buffer.size < len do
+        rsize += @buffer.size
+        ret << fetch_rbuf( @buffer.size )
+        fill_rbuf
+      end
+      ret << fetch_rbuf( len - rsize )
+
+      @pipe << "read #{len} bytes\n" if @pipe = pre
+      ret
+    end
+
+
+    def readuntil( target )
+      until idx = @buffer.index( target ) do
+        fill_rbuf
+      end
+
+      fetch_rbuf( idx + target.size )
+    end
+
+        
+    def readline
+      ret = readuntil( CRLF )
+      ret.chop!
+      ret
+    end
+
+
+    def read_pendstr( dest = '' )
+      @pipe << "reading text...\n" if pre = @pipe ; @pipe = nil
+
+      rsize = 0
+
+      while (str = readuntil( CRLF )) != D_CRLF do
+        rsize += str.size
+        str.gsub!( /\A\./o, '' )
+        dest << str
+      end
+
+      @pipe << "read #{rsize} bytes\n" if @pipe = pre
+      dest
+    end
+
+
+    def read_pendlist
+      @pipe << "reading list...\n" if pre = @pipe ; @pipe = nil
+
+      arr = []
+      str = nil
+      call = iterator?
+
+      while (str = readuntil( CRLF )) != D_CRLF do
+        str.chop!
+        arr.push str
+        yield str if iterator?
+      end
+
+      @pipe << "read #{arr.size} lines\n" if @pipe = pre
+      arr
+    end
+
+
+    private
+
+
+    READ_BLOCK = 1024 * 8
+
+    def fill_rbuf
+      @buffer << @socket.sysread( READ_BLOCK )
+    end
+
+    def fetch_rbuf( len )
+      bsi = @buffer.size
+      ret = @buffer[ 0, len ]
+      @buffer = @buffer[ len, bsi - len ]
+
+      @pipe << %{read  "#{Net.quote ret}"\n} if @pipe
+      ret
+    end
+
+    def flush_rbuf
+      @buffer = ''
+    end
+
+
     public
 
 
@@ -514,7 +575,7 @@ Object
       each_crlf_line( src ) do |line|
         do_write_do line
       end
-      return do_write_fin
+      do_write_fin
     end
 
 
@@ -523,7 +584,7 @@ Object
       src.each do |bin|
         do_write_do bin
       end
-      return do_write_fin
+      do_write_fin
     end
 
 
@@ -531,7 +592,7 @@ Object
       do_write_beg
       do_write_do str
       do_write_do CRLF
-      return do_write_fin
+      do_write_fin
     end
 
 
@@ -547,7 +608,7 @@ Object
       wsize = do_write_fin
 
       @pipe << "wrote #{wsize} bytes text" if @pipe = pre
-      return wsize
+      wsize
     end
 
 
@@ -587,48 +648,41 @@ Object
 
 
     def do_write_beg
-      @wtmp = 'write "' if @pipe
-
       @writtensize = 0
       @sending = ''
     end
 
     def do_write_do( arg )
-      @wtmp << debugstr( arg ) if @pipe
-
-      if @sending.size < 128 then
-        @sending << arg
+      if @pipe or @sending.size < 128 then
+        @sending << Net.quote( arg )
       else
         @sending << '...' unless @sending[-1] == ?.
       end
 
       s = @socket.write( arg )
       @writtensize += s
-      return s
+      s
     end
 
     def do_write_fin
       if @pipe then
-        @wtmp << "\n"
-        @pipe << @wtmp
-        @wtmp = nil
+        @pipe << 'write "'
+        @pipe << @sending
+        @pipe << "\"\n"
       end
 
       @socket.flush
-      return @writtensize
-    end
-
-
-    def debugstr( str )
-      ret = ''
-      while str and tmp = str[ 0, 50 ] do
-        str = str[ 50, str.size - 50 ]
-        tmp = tmp.inspect
-        ret << tmp[ 1, tmp.size - 2 ]
-      end
-      ret
+      @writtensize
     end
 
   end
 
-end
+
+  def Net.quote( str )
+    str = str.gsub( "\n", '\\n' )
+    str.gsub!( "\r", '\\r' )
+    str.gsub!( "\t", '\\t' )
+    str
+  end
+
+end   # module Net

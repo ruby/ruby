@@ -1,11 +1,11 @@
 =begin
 
-= Net module version 1.0.3 reference manual
+= net/pop.rb
 
-pop.rb written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
-This library is distributed under the terms of Ruby style license.
-You can freely distribute/modify/copy this file.
+This library is distributed under the terms of Ruby license.
+You can freely distribute/modify this file.
 
 =end
 
@@ -15,6 +15,7 @@ require 'md5'
 
 
 module Net
+
 
 =begin
 
@@ -28,14 +29,9 @@ Net::Session
 
 : new( address = 'localhost', port = 110 )
 
-  This method create a new POP3Session object but this will not open connection.
+  This method create a new POP3Session object.
+  This will not open connection yet.
 
-=end
-
-  class POP3Session < Session
-
-
-=begin
 
 === Methods
 
@@ -45,29 +41,34 @@ Net::Session
 
 : each{|popmail| ...}
 
-  This method is equals to "POP3Session.mails.each"
+  This method is equals to "pop3session.mails.each"
 
 : mails
 
-  This method returns an array of <a href="#popi">POP3Session::POPMail</a>.
+  This method returns an array of ((URL:#POPMail)).
   This array is renewed when login.
 
 =end
 
+  class POP3Session < Session
+
+    session_setvar :port,         '110'
+    session_setvar :command_type, 'POP3Command'
+
+        
     attr :mails
 
-    def each() @mails.each{|m| yield m} end
+    def each
+      @mails.each {|m| yield m }
+    end
 
 
     private
 
 
     def proto_initialize
-      @proto_type = POP3Command
-      @port       = 110
       @mails      = [].freeze
     end
-
 
     def do_start( acnt, pwd )
       @proto.auth( acnt, pwd )
@@ -80,15 +81,15 @@ Net::Session
       @mails.freeze
     end
 
+  end   # POP3Session
 
-    def do_finish
-      @proto.quit
-    end
+  POPSession = POP3Session
+  POP3       = POP3Session
 
 
 =begin
 
-== Net::POP3Session::POPMail
+== Net::POPMail
 
 A class of mail which exists on POP server.
 
@@ -96,19 +97,6 @@ A class of mail which exists on POP server.
 
 Object
 
-=end
-
-    class POPMail
-
-      def initialize( idx, siz, pro )
-        @num     = idx
-        @size    = siz
-        @proto   = pro
-
-        @deleted = false
-      end
-
-=begin
 
 === Method
 
@@ -141,42 +129,48 @@ Object
 
 =end
 
-      attr :size
+  class POPMail
 
-      def all( dest = '' )
-        @proto.retr( @num, dest )
-      end
-      alias pop all
-      alias mail all
+    def initialize( idx, siz, pro )
+      @num     = idx
+      @size    = siz
+      @proto   = pro
 
-      def top( lines, dest = '' )
-        @proto.top( @num, lines, dest )
-      end
-
-      def header( dest = '' )
-        top( 0, dest )
-      end
-
-      def delete
-        @proto.dele( @num )
-        @deleted = true
-      end
-      alias delete! delete
-
-      def deleted?
-        @deleted
-      end
-
-      def uidl
-        @proto.uidl @num
-      end
-
+      @deleted = false
     end
 
-  end   # POP3Session
 
-  POPSession = POP3Session
-  POP3       = POP3Session
+    attr :size
+
+    def all( dest = '' )
+      @proto.retr( @num, dest )
+    end
+    alias pop all
+    alias mail all
+
+    def top( lines, dest = '' )
+      @proto.top( @num, lines, dest )
+    end
+
+    def header( dest = '' )
+      top( 0, dest )
+    end
+
+    def delete
+      @proto.dele( @num )
+      @deleted = true
+    end
+    alias delete! delete
+
+    def deleted?
+      @deleted
+    end
+
+    def uidl
+      @proto.uidl @num
+    end
+
+  end
 
 
 =begin
@@ -193,10 +187,7 @@ Net::POP3Session
 
   class APOPSession < POP3Session
 
-    def proto_initialize
-      super
-      @proto_type = APOPCommand
-    end
+    session_setvar :command_type, 'APOPCommand'
 
   end
 
@@ -219,17 +210,6 @@ Net::Command
 
   This method creates new POP3Command object. 'socket' must be ProtocolSocket.
 
-=end
-
-  class POP3Command < Command
-
-    def initialize( sock )
-      @uidl = nil
-      super
-    end
-
-
-=begin
 
 === Methods
 
@@ -283,6 +263,15 @@ Net::Command
   This method deletes a mail on server by 'DELE'.
 
 =end
+
+
+  class POP3Command < Command
+
+    def initialize( sock )
+      super
+      check_reply SuccessCode
+    end
+
 
     def auth( acnt, pass )
       @socket.writeline( 'USER ' + acnt )
@@ -385,7 +374,7 @@ Net::Command
 
 === Super Class
 
-POP3
+POP3Command
 
 === Methods
 
@@ -426,11 +415,6 @@ POP3
       return ret
     end
       
-  end
-
-
-  unless Session::Version == '1.0.3' then
-    $stderr.puts "WARNING: wrong version of session.rb & pop.rb"
   end
 
 end
