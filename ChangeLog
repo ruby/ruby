@@ -64,6 +64,10 @@ Mon Feb 25 13:32:13 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/shell.rb (Shell::expand_path): relative to @cwd.
 
+Mon Feb 25 05:41:52 2002  Tanaka Akira  <akr@m17n.org>
+
+        * lib/time.rb: fix unit tests before Unix Epoch.
+
 Sun Feb 24 17:20:50 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/*/*.h: Merge from rough.
@@ -415,10 +419,6 @@ Mon Jan  7 14:38:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (convert_type): backport from 1.7 to avoid NameError
 	  messages with -d option.
-
-Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
-
-        * lib/time.rb: fix unit tests before Unix Epoch.
 
 Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
 
