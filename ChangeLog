@@ -1,3 +1,8 @@
+Tue Nov 11 22:44:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (appendline): file may not end with newline.  a bug if
+	  READ_DATA_PENDING_PTR is defined. [ruby-talk:84925]
+
 Tue Nov 11 10:42:41 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: raise an exception when creating TkWindow

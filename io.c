@@ -873,7 +873,7 @@ appendline(fptr, delim, strp)
 #ifndef READ_DATA_PENDING_PTR
     char buf[8192];
     char *bp = buf, *bpe = buf + sizeof buf - 3;
-    int cnt;
+    int update = Qfalse;
 #endif
 
     do {
@@ -925,11 +925,13 @@ appendline(fptr, delim, strp)
 		    rb_sys_fail(fptr->path);
 		continue;
 	    }
+#ifdef READ_DATA_PENDING_PTR
 	    return c;
+#endif
 	}
 #ifndef READ_DATA_PENDING_PTR
-	if ((*bp++ = c) == delim || bp == bpe) {
-	    cnt = bp - buf;
+	if (c == EOF || (*bp++ = c) == delim || bp == bpe) {
+	    int cnt = bp - buf;
 
 	    if (cnt > 0) {
 		if (!NIL_P(str))
@@ -937,8 +939,14 @@ appendline(fptr, delim, strp)
 		else
 		    *strp = str = rb_str_new(buf, cnt);
 	    }
+	    if (c == EOF) {
+		if (update)
+		    return (int)RSTRING(str)->ptr[RSTRING(str)->len-1];
+		return c;
+	    }
 	    bp = buf;
 	}
+	update = Qtrue;
 #endif
     } while (c != delim);
 
