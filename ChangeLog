@@ -1,3 +1,8 @@
+Sun Oct 10 12:32:08 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::parse_require): Allow 'require'
+	  to be used as a variable name
+
 Sun Oct 10 02:49:14 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/lib/ripper/filter.rb: require ripper/tokenizer.
