@@ -3670,6 +3670,8 @@ rb_yield_0(val, self, klass, pcall)
     struct BLOCK * volatile block;
     struct SCOPE * volatile old_scope;
     struct FRAME frame;
+    char *const file = ruby_sourcefile;
+    int line = ruby_sourceline;
     int state;
     static unsigned serial = 1;
 
@@ -3794,6 +3796,8 @@ rb_yield_0(val, self, klass, pcall)
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
        scope_dup(old_scope);
     ruby_scope = old_scope;
+    ruby_sourcefile = file;
+    ruby_sourceline = line;
     if (state) {
 	if (!block->tag) {
 	    switch (state & TAG_MASK) {
