@@ -331,52 +331,21 @@ endian()
 #define VTOHD(x,y)	vtohd(x)
 #endif
 
-#if SIZEOF_LONG == SIZE32
-typedef long I32;
-typedef unsigned long U32;
-#define NUM2I32(x) NUM2LONG(x)
-#define NUM2U32(x) NUM2ULONG(x)
-#else
-typedef int I32;
-typedef unsigned int U32;
-# if SIZEOF_INT == SIZE32
-#  define NUM2I32(x) NUM2INT(x)
-#  define NUM2U32(x) NUM2UINT(x)
-# else
+unsigned long rb_big2ulong_pack _((VALUE x));
 
-#define I32_MAX 2147483647
-#define I32_MIN (-I32_MAX-1)
-
-static I32
+static unsigned long
 num2i32(x)
     VALUE x;
 {
-    long num = NUM2LONG(x);
+    x = rb_to_int(x); /* is nil OK? (should not) */
 
-    if (num < I32_MIN || I32_MAX < num) {
-	rb_raise(rb_eRangeError, "integer %ld too big to convert to `I32'", num);
+    if (FIXNUM_P(x)) return FIX2LONG(x);
+    if (TYPE(x) == T_BIGNUM) {
+	return rb_big2ulong_pack(x);
     }
-    return (I32)num;
+    rb_raise(rb_eTypeError, "cannot convert %s to `integer'", rb_obj_classname(x));
+    return 0;			/* not reached */
 }
-    
-#define U32_MAX 4294967295
-
-static U32
-num2u32(x)
-    VALUE x;
-{
-    unsigned long num = NUM2ULONG(x);
-
-    if (U32_MAX < num) {
-	rb_raise(rb_eRangeError, "integer %ld too big to convert to `U32'", num);
-    }
-    return (U32)num;
-}
-
-#  define NUM2I32(x) num2i32(x)
-#  define NUM2U32(x) num2u32(x)
-# endif
-#endif
 
 #if SIZEOF_LONG == SIZE32 || SIZEOF_INT == SIZE32
 # define EXTEND32(x) 
@@ -704,7 +673,7 @@ pack_pack(ary, fmt)
 		char c;
 
 		from = NEXTFROM;
-		c = NUM2I32(from);
+		c = num2i32(from);
 		rb_str_buf_cat(res, &c, sizeof(char));
 	    }
 	    break;
@@ -715,7 +684,7 @@ pack_pack(ary, fmt)
 		short s;
 
 		from = NEXTFROM;
-		s = NUM2I32(from);
+		s = num2i32(from);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
 	    break;
@@ -726,26 +695,18 @@ pack_pack(ary, fmt)
 		long i;
 
 		from = NEXTFROM;
-		i = NUM2I32(from);
+		i = num2i32(from);
 		rb_str_buf_cat(res, OFF32(&i), NATINT_LEN(int,4));
 	    }
 	    break;
 
 	  case 'l':		/* signed long */
-	    while (len-- > 0) {
-		long l;
-
-		from = NEXTFROM;
-		l = NUM2I32(from);
-		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
-	    }
-	    break;
 	  case 'L':		/* unsigned long */
 	    while (len-- > 0) {
 		long l;
 
 		from = NEXTFROM;
-		l = NUM2U32(from);
+		l = num2i32(from);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
 	    break;
@@ -766,7 +727,7 @@ pack_pack(ary, fmt)
 		unsigned short s;
 
 		from = NEXTFROM;
-		s = NUM2I32(from);
+		s = num2i32(from);
 		s = NATINT_HTONS(s);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
@@ -777,7 +738,7 @@ pack_pack(ary, fmt)
 		unsigned long l;
 
 		from = NEXTFROM;
-		l = NUM2U32(from);
+		l = num2i32(from);
 		l = NATINT_HTONL(l);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
@@ -788,7 +749,7 @@ pack_pack(ary, fmt)
 		unsigned short s;
 
 		from = NEXTFROM;
-		s = NUM2I32(from);
+		s = num2i32(from);
 		s = NATINT_HTOVS(s);
 		rb_str_buf_cat(res, OFF16(&s), NATINT_LEN(short,2));
 	    }
@@ -799,7 +760,7 @@ pack_pack(ary, fmt)
 		unsigned long l;
 
 		from = NEXTFROM;
-		l = NUM2U32(from);
+		l = num2i32(from);
 		l = NATINT_HTOVL(l);
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
@@ -912,7 +873,7 @@ pack_pack(ary, fmt)
 
 		from = NEXTFROM;
 		from = rb_to_int(from);
-		l = NUM2UINT(from);
+		l = NUM2INT(from);
 		if (l < 0) {
 		    rb_raise(rb_eRangeError, "pack(U): value out of range");
 		}
@@ -2072,7 +2033,7 @@ uv_to_utf8(buf, uv)
 	buf[5] = (uv&0x3f)|0x80;
 	return 6;
     }
-    rb_raise(rb_eArgError, "pack(U): value out of range");
+    rb_raise(rb_eRangeError, "pack(U): value out of range");
 }
 
 static const long utf8_limits[] = {

@@ -748,6 +748,17 @@ big2ulong(x, type)
 }
 
 unsigned long
+rb_big2ulong_pack(x)   
+    VALUE x;  
+{   
+    unsigned long num = big2ulong(x, "unsigned long", Qfalse);
+    if (!RBIGNUM(x)->sign) {
+	return -num;
+    }
+    return num;
+}  
+
+unsigned long
 rb_big2ulong(x)
     VALUE x;
 {

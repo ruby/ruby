@@ -1,3 +1,9 @@
+Wed Nov 17 04:33:01 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* pack.c: all features are backport from 1.9. [ruby-dev:24826]
+
+	* bignum.c (rb_big2ulong_pack): new function to pack Bignums. 
+
 Tue Nov 16 23:45:07 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_divmod): protect float values from GC by
