@@ -1,5 +1,7 @@
 Thu Dec 30 00:41:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* eval.c (svalue_to_avalue): [ruby-dev:25366]
+
 	* string.c (rb_str_justify): [ruby-dev:25367]
 
 Wed Dec 29 11:07:07 2004  Dave Thomas  <dave@pragprog.com>

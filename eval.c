@@ -2545,7 +2545,7 @@ svalue_to_avalue(v)
     if (RARRAY(tmp)->len == 1) {
 	top = rb_check_array_type(RARRAY(tmp)->ptr[0]);
 	if (!NIL_P(top) && RARRAY(top)->len > 1) {
-	    return v;
+	    return tmp;
 	}
 	return rb_ary_new3(1, v);
     }
