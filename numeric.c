@@ -19,10 +19,6 @@
 #include <floatingpoint.h>
 #endif
 
-#ifdef _UNICOSMP
-#include <intrinsics.h>
-#endif
-
 #ifdef HAVE_FLOAT_H
 #include <float.h>
 #endif

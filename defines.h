@@ -184,15 +184,6 @@ flush_register_windows(void)
 #define ENV_IGNORECASE
 #endif
 
-#if defined(__human68k__)
-#undef HAVE_RANDOM
-#undef HAVE_SETITIMER
-#endif
-
-#if defined(DJGPP) || defined(__BOW__)
-#undef HAVE_SETITIMER
-#endif
-
 #ifndef RUBY_PLATFORM
 #define RUBY_PLATFORM "unknown-unknown"
 #endif

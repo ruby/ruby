@@ -1,3 +1,19 @@
+Mon Dec 22 17:23:42 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func_setitimer): moved from defines.h
+
+	* defines.h, rubysig.h, signal.c: removed macro handling which
+	  should be done in configure.
+
+	* configure.in (intrinsics.h): check if present.
+
+	* ruby.h: include intrinsics.h if available.
+
+	* bignum.c, marshal.c: include ieeefp.h if available.
+
+	* missing.h (isinf): define as a macro if finite() and isnan()
+	  are available.  [ruby-core:02032]
+
 Mon Dec 22 17:07:31 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (mingw): set isnan, finite and isinf to yes.

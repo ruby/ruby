@@ -553,7 +553,7 @@ trap(arg)
     if (sig < 0 || sig > NSIG) {
 	rb_raise(rb_eArgError, "invalid signal number (%d)", sig);
     }
-#if defined(HAVE_SETITIMER) && !defined(__BOW__)
+#if defined(HAVE_SETITIMER)
     if (sig == SIGVTALRM) {
 	rb_raise(rb_eArgError, "SIGVTALRM reserved for Thread; cannot set handler");
     }

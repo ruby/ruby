@@ -278,7 +278,9 @@ rhapsody*)	;;
 darwin*)	LIBS="-lobjc $LIBS";;
 hpux*)		LIBS="-lm $LIBS"
 		ac_cv_c_inline=no;;
-human*)		ac_cv_func_getpgrp_void=yes;;
+human*)		ac_cv_func_getpgrp_void=yes
+		ac_cv_func_setitimer=no
+		;;
 beos*)		;;
 cygwin*)	rb_cv_have_daylight=no
 		ac_cv_var_tzname=no
@@ -309,7 +311,9 @@ mingw*)		LIBS="-lwsock32 $LIBS"
 os2-emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;
 msdosdjgpp*)	LIBS="-lm $LIBS"
-		ac_cv_func_getpgrp_void=yes;;
+		ac_cv_func_getpgrp_void=yes
+		ac_cv_func_setitimer=no
+		;;
 freebsd*)	LIBS="-lm $LIBS"
 		AC_CACHE_CHECK([whether -lxpg4 has to be linked],
 		  rb_cv_lib_xpg4_needed,
@@ -343,6 +347,8 @@ freebsd*)	LIBS="-lm $LIBS"
 			fi
 		fi
 		;;
+bow)		ac_cv_func_setitimer=no
+		;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)
@@ -364,7 +370,7 @@ AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
 		 sys/mkdev.h sys/utime.h netinet/in_systm.h float.h ieeefp.h pthread.h \
-		 ucontext.h)
+		 ucontext.h intrinsics.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -654,7 +660,8 @@ if test $rb_cv_huge_st_ino = yes; then
 fi
 
 case "$target_cpu" in
-m68*|i?86|sparc) rb_cv_stack_grow_dir=-1;;
+m68*|i?86|ia64|sparc*|alpha*) rb_cv_stack_grow_dir=-1;;
+hppa*) rb_cv_stack_grow_dir=+1;;
 esac
 AC_CACHE_CHECK(stack growing direction, rb_cv_stack_grow_dir,
   [AC_TRY_RUN([

@@ -70,7 +70,7 @@ void rb_trap_restore_mask _((void));
 
 RUBY_EXTERN int rb_thread_critical;
 void rb_thread_schedule _((void));
-#if defined(HAVE_SETITIMER) && !defined(__BOW__)
+#if defined(HAVE_SETITIMER)
 RUBY_EXTERN int rb_thread_pending;
 # define CHECK_INTS do {\
     if (!rb_prohibit_interrupt) {\

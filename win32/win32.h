@@ -183,9 +183,6 @@ extern pid_t rb_w32_getpid(void);
 #ifndef isnan
 #define isnan(x) _isnan(x)
 #endif
-#ifndef isinf
-#define isinf(x) (!_finite(x) && !_isnan(x))
-#endif
 #ifndef finite
 #define finite(x) _finite(x)
 #endif

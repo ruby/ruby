@@ -19,6 +19,9 @@
 #ifdef HAVE_FLOAT_H
 #include <float.h>
 #endif
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)

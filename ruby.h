@@ -31,6 +31,10 @@ extern "C" {
 # include <strings.h>
 #endif
 
+#ifdef HAVE_INTRINSICS_H
+# include <intrinsics.h>
+#endif
+
 #include <stddef.h>
 #include <stdio.h>
 

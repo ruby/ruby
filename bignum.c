@@ -14,6 +14,9 @@
 
 #include <math.h>
 #include <ctype.h>
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
 
 VALUE rb_cBignum;
 

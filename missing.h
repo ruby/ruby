@@ -60,7 +60,11 @@ extern double erfc _((double));
 #endif
 
 #ifndef HAVE_ISINF
+# if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
+# define isinf(x) (!finite(x) && !isnan(x))
+# else
 extern int isinf _((double));
+# endif
 #endif
 
 #ifndef HAVE_ISNAN
