@@ -1,3 +1,7 @@
+Wed Mar 18 17:46:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): forwading failure point popped too much. 
+
 Tue Mar 17 18:23:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* math.c (math_frexp): newly added.

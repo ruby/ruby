@@ -120,7 +120,7 @@ $bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
   if gsub!('vt100', 'VT100')
-    p gsub!('VT100', 'Vt100')
+    gsub!('VT100', 'Vt100')
     redo;
   end
   $bad = 1 if /vt100/;
@@ -296,7 +296,7 @@ ok(defined? "a".chomp)
 ok("abc".scan(/./) == ["a", "b", "c"])
 ok("1a2b3c".scan(/(\d.)/) == [["1a"], ["2b"], ["3c"]])
 # non-greedy match
-ok("a=12;b=22".scan(/(.*?)=(\d*?);?/) == [["a", "12"], ["b", "22"]])
+ok("a=12;b=22".scan(/(.*?)=(\d*);?/) == [["a", "12"], ["b", "22"]])
 
 $x = [1]
 ok(($x * 5).join(":") == '1:1:1:1:1')

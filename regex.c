@@ -1848,7 +1848,7 @@ re_compile_pattern(pattern, size, bufp)
 
 		  c1 = 0;
 		  GET_UNSIGNED_NUMBER(c1);
-		  if (p < pend) PATUNFETCH;
+		  if (!ISDIGIT(c)) PATUNFETCH;
 
 		  if (c1 >= regnum) {
 		      /* need to get octal */
@@ -2892,9 +2892,11 @@ re_match(bufp, string_arg, size, pos, regs)
 	  /* If not end of string, try backtracking.  Otherwise done.  */
           if (d != dend)
 	    {
+	      while (stackp != stackb && (int)stackp[-1] == 1)
+		POP_FAILURE_POINT();
               if (stackp != stackb)
                 {
-                  /* More failure points to try.  */
+		  /* More failure points to try.  */
 
                   /* If exceeds best match so far, save it.  */
                   if (! best_regs_set || (d > best_regend[0]))
@@ -3419,8 +3421,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	  SET_REGS_MATCHED;
           break;
 	}
-      if (stackp != stackb && (int)stackp[-1] == 1)
-	  POP_FAILURE_POINT();
       continue;  /* Successfully executed one pattern command; keep going.  */
 
     /* Jump here if any matching operation fails. */
