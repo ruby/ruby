@@ -113,7 +113,7 @@ TESTS =
 RDOCTARGET = install-doc
 !endif
 !ifndef CFLAGS
-CFLAGS = -q $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w- -wsus
+CFLAGS = -q $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
 !endif
 !ifndef CPPFLAGS
 CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)missing

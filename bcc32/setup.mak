@@ -78,7 +78,7 @@ PROCESSOR_LEVEL = $(PROCESSOR_LEVEL)
 \# RUBY_INSTALL_NAME = ruby
 \# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
 \# prefix = /usr
-\# CFLAGS = -q $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) -w- -wsus
+\# CFLAGS = -q $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
 \# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
 \# STACK = 0x2000000
 \# LDFLAGS = -S:$$(STACK)
