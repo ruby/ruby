@@ -1167,7 +1167,7 @@ static VALUE
 sock_s_socketpair(class, domain, type, protocol)
     VALUE class, domain, type, protocol;
 {
-#if !defined(NT)
+#if !defined(NT) && !defined(__BEOS__)
     int fd;
     int d, t, sp[2];
 
@@ -1368,9 +1368,9 @@ sock_s_gethostbyaddr(argc, argv)
     struct sockaddr_in *addr;
     struct hostent *h;
 
-    rb_scan_args(argc, argv, "11", &addr, &type);
+    rb_scan_args(argc, argv, "11", &addr, &vtype);
     Check_Type(addr, T_STRING);
-    if (!NIL_P(type)) {
+    if (!NIL_P(vtype)) {
 	type = NUM2INT(vtype);
     }
     else {

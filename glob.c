@@ -25,6 +25,10 @@
   #pragma alloca
 #endif /* _AIX && RISC6000 && !__GNUC__ */
 
+#if defined (HAVE_ALLOCA_H)
+#  include <alloca.h>
+#endif
+
 #if defined (HAVE_UNISTD_H)
 #  include <unistd.h>
 #endif
@@ -72,7 +76,7 @@
 #  include <strings.h>
 #endif /* !HAVE_STRING_H */
 
-#if !defined (HAVE_BCOPY)
+#if !defined (HAVE_BCOPY) && !defined (bcopy)
 #  define bcopy(s, d, n) ((void) memcpy ((d), (s), (n)))
 #endif /* !HAVE_BCOPY */
 

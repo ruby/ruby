@@ -1,5 +1,17 @@
-Mon May 18 14:52:21 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Mon May 18 16:40:50 1998  MAEDA shugo  <shugo@aianet.ne.jp>
 
+	* error.c (get_syserr): BeOS support.
+
+	* configure.in: modified for BeOS.
+
+	* string.c (str_dump): do not call isascii().
+
+	* sprintf.c (remove_sign_bits): forgot to initialize end pointer.
+
+	* glob.c: #include <alloca.h> added.
+
+Mon May 18 14:52:21 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+	
 	* experimental release 1.1b9_21.
 
 Mon May 18 03:27:57 1998  MAEDA shugo  <shugo@aianet.ne.jp>

@@ -3481,7 +3481,7 @@ echo "configure:3435: checking whether OS depend dynamic link works" >&5
 			LDSHARED=''
 			LDFLAGS='' ;;
 	beos*) 		LDSHARED="mwld -xms"
-			DLDFLAGS="-f ruby.exp"
+			DLDFLAGS=""
 			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac

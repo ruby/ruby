@@ -1512,7 +1512,7 @@ str_dump(str)
 	    *q++ = '\\';
 	    *q++ = c;
 	}
-	else if (isascii(c) && isprint(c)) {
+	else if (ISPRINT(c)) {
 	    *q++ = c;
 	}
 	else if (c == '\n') {

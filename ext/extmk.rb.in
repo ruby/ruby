@@ -355,7 +355,7 @@ def extmake(target)
   return if $nodynamic and not $static
 
   $objs = nil
-  $libs = PLATFORM =~ /cygwin32/ ? nil : "-lc"
+  $libs = PLATFORM =~ /cygwin32|beos/ ? nil : "-lc"
   $local_libs = nil		# to be assigned in extconf.rb
   $CFLAGS = nil
   $LDFLAGS = nil
@@ -485,7 +485,7 @@ if $extlist.size > 0
   end
 
   $extobjs = "ext/extinit.o " + $extobjs
-  if PLATFORM == "m68k-human"
+  if PLATFORM =~ /m68k-human|beos/
     $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
   end
   system format('make ruby@binsuffix@ EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)

@@ -507,6 +507,27 @@ syserr_errno(self)
     return rb_iv_get(self, "errno");
 }
 
+#ifdef __BEOS__
+static VALUE
+get_syserr(int i)
+{
+   VALUE *list;
+   int ix, offset;
+   
+   i -= B_GENERAL_ERROR_BASE;
+   ix = (i >> 12) & 0xf;
+   offset = (i >> 8) & 0xf;
+   if (offset < syserr_index[ix].n) {
+      ix = syserr_index[ix].ix;
+      if ((i & 0xff) < syserr_list[ix + offset].n) {
+	 list = syserr_list[ix + offset].list;
+	 return list[i & 0xff];
+      }
+   }
+   return 0;
+}
+#endif /* __BEOS__ */
+
 static void init_syserr _((void));
 
 void

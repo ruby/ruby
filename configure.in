@@ -359,7 +359,7 @@ if test "$with_dln_a_out" != yes; then
 			LDSHARED=''
 			LDFLAGS='' ;;
 	beos*) 		LDSHARED="mwld -xms"
-			DLDFLAGS="-f ruby.exp"
+			DLDFLAGS=""
 			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac

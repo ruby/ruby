@@ -1,11 +1,14 @@
 require 'mkmf'
-$LDFLAGS = "-L/usr/local/lib"
+$LDFLAGS = "-L/usr/local/lib" if File.directory?("/usr/local/lib")
 case PLATFORM
 when /mswin32/
   test_func = "WSACleanup"
   have_library("wsock32", "WSACleanup")
 when /cygwin32/
   test_func = "socket"
+when /beos/
+  test_func = "socket"
+  have_library("net", "socket")
 else
   test_func = "socket"
   have_library("socket", "socket")

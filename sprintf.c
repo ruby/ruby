@@ -23,6 +23,7 @@ remove_sign_bits(str, base)
     char *s, *t, *end;
     
     s = t = str;
+    end = str + strlen(str);
 
     if (base == 16) {
       x_retry:
