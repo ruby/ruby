@@ -312,7 +312,7 @@ rb_clear_cache_by_class(klass)
 
 static ID init, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
-static ID __id__, __send__;
+static ID __id__, __send__, respond_to;
 
 void
 rb_add_method(klass, mid, node, noex)
@@ -1006,7 +1006,8 @@ static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 
 #define YIELD_LAMBDA_CALL 1
 #define YIELD_PROC_CALL   2
-#define YIELD_PUBLIC_DEF  4
+#define YIELD_PROC_BLOCK  4
+#define YIELD_PUBLIC_DEF  8
 #define YIELD_FUNC_AVALUE 1
 #define YIELD_FUNC_SVALUE 2
 
@@ -3922,16 +3923,24 @@ module_setup(module, n)
     return result;
 }
 
+static NODE *basic_respond_to = 0;
+
 int
 rb_respond_to(obj, id)
     VALUE obj;
     ID id;
 {
-    if (rb_method_boundp(CLASS_OF(obj), id, 0)) {
+    VALUE klass = CLASS_OF(obj);
+    if (rb_method_node(klass, respond_to) == basic_respond_to &&
+	rb_method_boundp(klass, id, 0)) {
 	return Qtrue;
+    }
+    else{
+	return rb_funcall(obj, respond_to, 1, ID2SYM(id));
     }
     return Qfalse;
 }
+
 
 /*
  *  call-seq:
@@ -4712,7 +4721,21 @@ rb_yield_0(val, self, klass, flags, avalue)
 		if (val == Qundef && node->nd_state != YIELD_FUNC_SVALUE)
 		    val = Qnil;
 	    }
-	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
+	    if ((flags&YIELD_PROC_BLOCK) && RTEST(block->block_obj)) {
+		struct BLOCK *data, _block;
+		Data_Get_Struct(block->block_obj, struct BLOCK, data);
+		_block = *data;
+		_block.outer = ruby_block;
+		_block.uniq = block_unique++;
+		ruby_block = &_block;
+		PUSH_ITER(ITER_PRE);
+		ruby_frame->iter = ITER_CUR;
+		result = (*node->nd_cfnc)(val, node->nd_tval, self);
+		POP_ITER();
+	    }
+	    else {
+		result = (*node->nd_cfnc)(val, node->nd_tval, self);
+	    }
 	}
 	else {
 	    result = rb_eval(self, node);
@@ -7585,7 +7608,10 @@ Init_eval()
     rb_define_global_function("loop", rb_f_loop, 0);
 
     rb_define_method(rb_mKernel, "respond_to?", rb_obj_respond_to, -1);
-
+    respond_to   = rb_intern("respond_to?");
+    basic_respond_to = rb_method_node(rb_cObject, respond_to);
+    rb_global_variable((VALUE*)&basic_respond_to);
+    
     rb_define_global_function("raise", rb_f_raise, -1);
     rb_define_global_function("fail", rb_f_raise, -1);
 
@@ -8164,18 +8190,19 @@ proc_invoke(proc, args, self, klass)
     volatile int pcall, avalue = Qtrue;
     VALUE bvar = Qnil;
 
-    if (rb_block_given_p() && ruby_frame->last_func) {
-	if (klass != ruby_frame->last_class)
-	    klass = rb_obj_class(proc);
-	bvar = rb_block_proc();
-    }
-
     Data_Get_Struct(proc, struct BLOCK, data);
     pcall = (data->flags & BLOCK_LAMBDA) ? YIELD_LAMBDA_CALL : 0;
     if (!pcall && RARRAY(args)->len == 1) {
 	avalue = Qfalse;
 	args = RARRAY(args)->ptr[0];
     }
+    if (rb_block_given_p() && ruby_frame->last_func) {
+	if (klass != ruby_frame->last_class)
+	    klass = rb_obj_class(proc);
+	bvar = rb_block_proc();
+	pcall |= YIELD_PROC_BLOCK;
+    }
+
 
     PUSH_VARS();
     ruby_wrapper = data->wrapper;
@@ -8190,7 +8217,7 @@ proc_invoke(proc, args, self, klass)
 
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
-    PUSH_TAG(pcall ? PROT_LAMBDA : PROT_NONE);
+    PUSH_TAG((pcall&YIELD_LAMBDA_CALL) ? PROT_LAMBDA : PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
@@ -8519,7 +8546,6 @@ block_pass(self, node)
     orphan = block_orphan(data);
 
     /* PUSH BLOCK from data */
-    old_block = ruby_block;
     _block = *data;
     _block.outer = ruby_block;
     _block.uniq = block_unique++;
@@ -8547,7 +8573,7 @@ block_pass(self, node)
     }
     POP_TAG();
     POP_ITER();
-    ruby_block = old_block;
+    ruby_block = _block.outer;
     if (proc_safe_level_p(proc)) ruby_safe_level = safe;
 
     switch (state) {/* escape from orphan block */

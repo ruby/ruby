@@ -59,21 +59,17 @@ class OpenStruct
     @table = @table.dup
   end
 
-  module Marshaler
-    def marshal_dump
-      table = @table
-      OpenStruct.new.instance_eval{@table=table; self}
-    end
-    def marshal_load(x)
-      @table = x.instance_variable_get("@table")
-      @table.each_key{|key| new_ostruct_member(key)}
-    end
+  def marshal_dump
+    @table
+  end
+  def marshal_load(x)
+    @table = x
+    @table.each_key{|key| new_ostruct_member(key)}
   end
 
   def new_ostruct_member(name)
     unless self.respond_to?(name)
       self.instance_eval %{
-        extend OpenStruct::Marshaler
         def #{name}; @table[:#{name}]; end
         def #{name}=(x); @table[:#{name}] = x; end
       }
