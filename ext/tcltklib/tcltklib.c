@@ -202,19 +202,18 @@ lib_mainloop_core(check_root_widget)
     return Qnil;
 }
 
-
 VALUE
 lib_mainloop_ensure(parent_evloop)
     VALUE parent_evloop;
 {
-    if (ruby_debug) { 
-      fprintf(stderr, "tcltklib: eventloop-thread : %lx -> %lx\n", 
-	      eventloop_thread, parent_evloop);
-    }
-
     Tk_DeleteTimerHandler(timer_token);
     timer_token = (Tcl_TimerToken)NULL;
-    eventloop_thread = parent_evloop;
+    DUMP2("mainloop-ensure: current-thread : %lx\n", rb_thread_current());
+    DUMP2("mainloop-ensure: eventloop-thread : %lx\n", eventloop_thread);
+    if (eventloop_thread == rb_thread_current()) {
+      DUMP2("tcltklib: eventloop-thread -> %lx\n", parent_evloop);
+      eventloop_thread = parent_evloop;
+    }
     return Qnil;
 }
 
@@ -255,26 +254,14 @@ lib_mainloop(argc, argv, self)
     return lib_mainloop_launcher(check_rootwidget);
 }
 
-static VALUE
-lib_mainloop_watchdog(argc, argv, self)
-    int   argc;
-    VALUE *argv;
-    VALUE self;
-{
+VALUE
+lib_watchdog_core(check_rootwidget)
     VALUE check_rootwidget;
+{
+    VALUE current = eventloop_thread;
     VALUE evloop;
-    int   check;
-    ID    stop;
-
-    if (rb_scan_args(argc, argv, "01", &check_rootwidget) == 0) {
-      check_rootwidget = Qtrue;
-    } else if (RTEST(check_rootwidget)) {
-      check_rootwidget = Qtrue;
-    } else {
-      check_rootwidget = Qfalse;
-    }
-    check = (check_rootwidget == Qtrue);
-    stop = rb_intern("stop?");
+    int   check = (check_rootwidget == Qtrue);
+    ID    stop = rb_intern("stop?");
 
     /* check other watchdog thread */
     if (watchdog_thread != 0) {
@@ -296,11 +283,40 @@ lib_mainloop_watchdog(argc, argv, self)
 				  (void*)&check_rootwidget);
 	DUMP2("create new eventloop thread %lx", evloop);
 	rb_thread_run(evloop);
+      } else {
+	rb_thread_schedule();
       }
-      rb_thread_schedule();
     } while(!check || Tk_GetNumMainWindows() != 0);
 
     return Qnil;
+}
+
+VALUE
+lib_watchdog_ensure(arg)
+    VALUE arg;
+{
+    eventloop_thread = 0; /* stop eventloops */
+    return Qnil;
+}
+
+static VALUE
+lib_mainloop_watchdog(argc, argv, self)
+    int   argc;
+    VALUE *argv;
+    VALUE self;
+{
+    VALUE check_rootwidget;
+
+    if (rb_scan_args(argc, argv, "01", &check_rootwidget) == 0) {
+      check_rootwidget = Qtrue;
+    } else if (RTEST(check_rootwidget)) {
+      check_rootwidget = Qtrue;
+    } else {
+      check_rootwidget = Qfalse;
+    }
+
+    return rb_ensure(lib_watchdog_core, check_rootwidget, 
+		     lib_watchdog_ensure, Qnil);
 }
 
 static VALUE
