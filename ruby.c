@@ -683,9 +683,20 @@ proc_options(argc, argv)
 	    }
 	    break;
 
+	  case '\r':
+	    if (!s[1]) break;
+
 	  default:
-	    fprintf(stderr, "%s: invalid option -%c  (-h will show valid options)\n",
-		    origargv[0], *s);
+	    {
+		const char *format;
+		if (ISPRINT(*s)) {
+		    format = "%s: invalid option -%c  (-h will show valid options)\n";
+		}
+		else {
+		    format = "%s: invalid option -\\%03o  (-h will show valid options)\n";
+		}
+		fprintf(stderr, format, origargv[0], (int)(unsigned char)*s);
+	    }
 	    exit(2);
 
 	  case 0:
