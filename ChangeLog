@@ -1,3 +1,20 @@
+Tue Sep 30 03:12:02 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (finish): revert to 1.93.
+
+	* lib/net/pop.rb (finish): revert to 1.60.
+
+	* lib/net/smtp.rb (finish): revert to 1.67.
+
+	* lib/net/http.rb (do_start): ensure to close socket if failed to
+	  start session.
+
+	* lib/net/pop.rb (do_start): ditto.
+
+	* lib/net/smtp.rb (do_start): ditto.
+
+	* lib/net/smtp.rb: SMTP#started? wrongly returned false always.
+
 Tue Sep 30 02:54:49 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_iterator.rb: new test

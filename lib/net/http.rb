@@ -416,7 +416,7 @@ module Net # :nodoc:
           do_start
           return yield(self)
         ensure
-          finish
+          do_finish
         end
       end
       do_start
@@ -437,12 +437,18 @@ module Net # :nodoc:
     private :on_connect
 
     # Finishes HTTP session and closes TCP connection.
+    # Raises IOError if not started.
     def finish
+      raise IOError, 'HTTP session not started yet' unless started?
+      do_finish
+    end
+
+    def do_finish
+      @started = false
       @socket.close if @socket and not @socket.closed?
       @socket = nil
-      @started = false
-      nil
     end
+    private :do_finish
 
     #
     # proxy

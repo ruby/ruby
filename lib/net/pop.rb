@@ -415,7 +415,7 @@ module Net
           do_start account, password
           return yield(self)
         ensure
-          finish
+          do_finish
         end
       else
         do_start account, password
@@ -434,6 +434,8 @@ module Net
         @command.auth account, password
       end
       @started = true
+    ensure
+      do_finish if not @started
     end
     private :do_start
 
@@ -443,13 +445,20 @@ module Net
 
     # Finishes a POP3 session and closes TCP connection.
     def finish
+      raise IOError, 'POP session not started yet' unless started?
+      do_finish
+    end
+
+    def do_finish
       @mails = nil
       @command.quit if @command
+    ensure
+      @started = false
       @command = nil
       @socket.close if @socket and not @socket.closed?
       @socket = nil
-      @started = false
     end
+    private :do_finish
 
     def command
       raise IOError, 'POP session not opened yet' \
