@@ -14,6 +14,8 @@ Fri Aug 23 17:06:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/Makefile.sub, win32/setup.mak (sitearch): ditto.
 
+	* instruby.rb: ditto.
+
 Wed Aug 21 16:53:00 2002  Michal Rokos  <michal@ruby-lang.org>
 
 	* *.c: int, long types cleanup.

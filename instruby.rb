@@ -20,13 +20,14 @@ end
 ruby_install_name = CONFIG["ruby_install_name"]
 version = "/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
 arch = "/"+CONFIG["arch"]
+sitearch = "/"+CONFIG["sitearch"]
 
 bindir = destdir+CONFIG["bindir"]
 libdir = destdir+CONFIG["libdir"]
 rubylibdir = destdir+CONFIG["prefix"]+"/lib/ruby"+version
 archlibdir = rubylibdir+arch
 sitelibdir = destdir+CONFIG["sitedir"]+version
-sitearchlibdir = sitelibdir+arch
+sitearchlibdir = sitelibdir+sitearch
 mandir = destdir+CONFIG["mandir"] + "/man1"
 wdir = Dir.getwd
 
