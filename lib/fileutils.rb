@@ -632,9 +632,6 @@ module FileUtils
 
   def fu_parseargs( optargs, *optdecl )
     table = Hash.new(false)
-    if optargs.last == true or optargs.last == false
-      table[:verbose] = optargs.pop
-    end
     optargs.each do |opt|
       table[opt] = true
     end
