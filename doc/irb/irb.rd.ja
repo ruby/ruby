@@ -1,23 +1,19 @@
 irb -- interactive ruby
-				$Release Version: 0.6 $
+				$Release Version: 0.9 $
 			   	$Revision$
 			   	$Date$
 			   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 =begin
 = irbとは?
 
-irbはinteractive rubyの略です. rubyの式を標準入力から簡単に入力/実行す
-るためのツールです.
+irbはinteractive rubyの略です. rubyの式を標準入力から簡単に入力/実行する
+ためのツールです.
 
 = 起動
 
-  % ruby -r irb -e0
   % irb
 
-のいずれかで行ないます. 前者の場合irbへのオプション指定は, 以下のように
-なります.
-
-  % ruby -r irb -e0 -- -v
+で行ないます. 
 
 = 使い方
 
@@ -47,7 +43,12 @@ irbの使い方は, Rubyさえ知っていればいたって簡単です. 基本的には irb と
   -f		    ~/.irbrc を読み込まない.
   -m		    bcモード(分数, 行列の計算ができる)
   -d                $DEBUG をtrueにする(ruby -d と同じ)
+  -Kc		    ruby -Kcと同じ
   -r load-module    ruby -r と同じ.
+  --verbose	    これから実行する行を表示する(デフォルト)
+  --noverbose	    これから実行する行を表示しない
+  --echo	    実行結果を表示する(デフォルト)
+  --noecho	    実行結果を表示しない
   --inspect	    結果出力にinspectを用いる(bcモード以外はデフォルト). 
   --noinspect	    結果出力にinspectを用いない.
   --readline	    readlineライブラリを利用する.
@@ -168,13 +169,17 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両方定義されて
 --- exit, quit, irb_exit	
     終了する. 
     サブirbの場合, そのサブirbを終了する.
-    cbしている場合, そのバインディングのモードを終了する.
 
 --- conf, irb_context
     irbの現在の設定を表示する. 設定の変更は, confにメッセージを送るこ
     とによって行なえる. 
 
---- conf.back_trace_limit
+--- conf.eval_history = N
+    実行結果のヒストリ機能の設定.
+    nnは整数かnilで nn>0 であればその数だけヒストリにためる。nn==0の時は
+    無制限に記憶する、nilだとヒストリ機能はやめる(デフォルト). 
+
+--- Conf.back_trace_limit
     バックトレース表示をバックトレースの頭からn, 後ろからnだけ行なう.
     デフォルトは16
     
@@ -200,9 +205,6 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両方定義されて
     false: 通常のprintで表示する.
     nil: 通常モードであれば, inspect modeとなり, mathモードの時は, non
 	 inspect modeとなる.   
-
---- conf.irb_level
-    参照のみ. irbが何段cbしているか?
 
 --- conf.math_mode
     参照のみ. bcモード(分数, 行列の計算ができます)かどうか?
@@ -232,13 +234,19 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両方定義されて
     false: readlineを使わない.
     nil: (デフォルト)inf-reuby-mode以外でreadlineライブラリを利用しよ
          うとする.  
+#
+#--- conf.verbose=T/F
+#    irbからいろいろなメッセージを出力するか?
 
---- conf.verbose=T/F
-    irbからいろいろなメッセージを出力するか?
+--- cws, chws, irb_cws, irb_chws, irb_change_workspace [obj]
+    objをselfとする. objが省略されたときは, home workspace, すなわち
+    irbを起動したときのmain objectをselfとする.
 
---- cb, irb_change_binding [obj]
-    ローカル変数のスコープが違う新たなbindingに移る.  objが指定された
-    時は, そのobjをselfとする. 
+--- pushws, irb_pushws, irb_push_workspace [obj]
+    UNIXシェルコマンドのpushdと同様.
+
+--- popws, irb_popws, irb_pop_workspace
+    UNIXシェルコマンドのpopdと同様.
 
 --- irb [obj]
     サブirbを立ちあげる. objが指定された時は, そのobjをselfとする.
@@ -257,10 +265,22 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両方定義されて
 --- kill n, irb_kill n
       サブirbをkillする. nはfgと同じ.
 
+--- souce, irb_source  path
+    UNIXシェルコマンドのsourceと似ている. 現在の環境上でpath内のスクリ
+    プトを評価する.
+
+--- irb_load path, prev
+
+    Rubyのloadのirb版.
 
 = システム変数
 
-   _  前の計算の実行結果を覚えている(ローカル変数).
+--- _  
+    前の計算の実行結果を覚えている(ローカル変数).
+___ __ 
+    実行結果の履歴を覚えている.
+    __[line_no]で、その行で実行した結果を得ることができる. line_noが負の
+    時には、最新の結果から-line_no前の結果を得ることができる.
 
 =  使用例
 
