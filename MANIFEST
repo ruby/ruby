@@ -123,6 +123,7 @@ lib/date2.rb
 lib/debug.rb
 lib/delegate.rb
 lib/drb.rb
+lib/drb/acl.rb
 lib/drb/drb.rb
 lib/drb/eq.rb
 lib/drb/extserv.rb
@@ -130,6 +131,7 @@ lib/drb/extservm.rb
 lib/drb/gw.rb
 lib/drb/invokemethod.rb
 lib/drb/observer.rb
+lib/drb/ssl.rb
 lib/drb/timeridconv.rb
 lib/drb/unix.rb
 lib/e2mmap.rb
