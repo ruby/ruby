@@ -454,24 +454,25 @@ new_dvar(id, value)
     return vars;
 }
 
-static struct RVarmap*
+static void
 push_dvar(id, value)
     ID id;
     VALUE value;
 {
-    struct RVarmap* vars = new_dvar(id, value);
+    the_dyna_vars = new_dvar(id, value);
+}
 
-    if (the_dyna_vars) {
-	vars->next = the_dyna_vars->next;
+static void
+mark_dvar(vars)
+    struct RVarmap* vars;
+{
+    if (!vars) {
+	the_dyna_vars = new_dvar(0, 0);
 	the_dyna_vars->next = vars;
     }
     else {
-	vars->id = id;
-	vars->val = 0;
 	the_dyna_vars = vars;
     }
-
-    return vars;
 }
 
 VALUE
@@ -502,42 +503,21 @@ dyna_var_ref(id)
     return Qnil;
 }
 
-static void
-dvar_add_compiling(id)
-    ID id;
-{
-    struct RVarmap *vars = the_dyna_vars;
-
-    while (vars) {
-	if (vars->id == 0) break;
-	if (vars->id == id) {
-	    return;
-	}
-	vars = vars->next;
-    }
-    the_dyna_vars = new_dvar(id, 0);
-}
-
 VALUE
 dyna_var_asgn(id, value)
     ID id;
     VALUE value;
 {
-    if (id == 0) {
-	dvar_add_compiling((ID)value);
-    }
-    else {
-	struct RVarmap *vars = the_dyna_vars;
+    struct RVarmap *vars = the_dyna_vars;
 
-	while (vars) {
-	    if (vars->id == id) {
-		vars->val = value;
-		return value;
-	    }
-	    vars = vars->next;
+    while (vars) {
+	if (vars->id == id) {
+	    vars->val = value;
+	    return value;
 	}
-	push_dvar(id, value);
+	vars = vars->next;
     }
+    push_dvar(id, value);
     return value;
 }
 
@@ -2844,8 +2824,7 @@ rb_yield_0(val, self)
     old_scope = the_scope;
     the_scope = block->scope;
     the_block = block->prev;
-    the_dyna_vars = new_dvar(0, 0);
-    the_dyna_vars->next = block->d_vars;
+    mark_dvar(block->d_vars);
     the_class = block->klass;
     if (!self) self = block->self;
     node = block->body;
@@ -3018,7 +2997,6 @@ rb_iterate(it_proc, data1, bl_proc, data2)
   iter_retry:
     PUSH_ITER(ITER_PRE);
     PUSH_BLOCK(0, node);
-    _block.d_vars = new_dvar(0,0);
     PUSH_TAG(PROT_NONE);
 
     state = EXEC_TAG();
@@ -3819,7 +3797,7 @@ eval(self, src, scope, file, line)
 	old_block = the_block;
 	the_block = data->prev;
 	old_d_vars = the_dyna_vars;
-	the_dyna_vars = data->d_vars;
+	mark_dvar(data->d_vars);
 	old_vmode = scope_vmode;
 	scope_vmode = data->vmode;
 
@@ -3856,6 +3834,7 @@ eval(self, src, scope, file, line)
 	the_frame = the_frame->prev;
 	the_scope = old_scope;
 	the_block = old_block;
+	data->d_vars = the_dyna_vars;
 	the_dyna_vars = old_d_vars;
 	data->vmode = scope_vmode; /* write back visibility mode */
 	scope_vmode = old_vmode;

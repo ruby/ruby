@@ -653,7 +653,6 @@ ok(!defined?(iii))		# out of scope
 $x=0
 $proc.call(5)
 $proc2.call
-p $x
 ok($x == 5)
 
 if defined? Process.kill
@@ -738,6 +737,17 @@ rescue NameError		# must raise error
   $bad = false
 end
 ok(!$bad)
+
+x = proc{}
+eval "i = 1", x
+ok(eval("i", x) == 1)
+x = proc{proc{}}.call
+eval "i = 22", x
+ok(eval("i", x) == 22)
+$x = []
+x = proc{proc{}}.call
+eval "(0..9).each{|i4| $x[i4] = proc{i4*2}}", x
+ok($x[4].call == 8)
 
 check "system"
 ok(`echo foobar` == "foobar\n")

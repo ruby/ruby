@@ -1,3 +1,7 @@
+Fri Jun 12 17:58:18 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (eval): write back the_dyna_var into the block.
+
 Thu Jun 11 18:19:18 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_25.

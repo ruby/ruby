@@ -236,6 +236,7 @@ static void top_local_setup();
 
 %%
 program		:  {
+		        $<vars>$ = the_dyna_vars;
 			lex_state = EXPR_BEG;
                         top_local_init();
 			NEW_CREF0(); /* initialize constant c-ref */
@@ -248,6 +249,7 @@ program		:  {
                         top_local_setup();
 			cur_cref = 0;
 			class_nest = 0;
+		        the_dyna_vars = $<vars>1;
 		    }
 
 compstmt	: stmts opt_terms
@@ -3424,7 +3426,7 @@ assignable(id, val)
 	}
 	else{
 	    if (!dyna_var_defined(id)) {
-		dyna_var_asgn(0, id);
+		dyna_var_asgn(id, 0);
 	    }
 	    lhs = NEW_DASGN(id, val);
 	}
