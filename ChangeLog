@@ -149,7 +149,7 @@ Mon Jan 31 10:29:18 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/context.rb (IRB::Context::initialize): [ruby-core:04330]
 
-	Sat Jan 29 09:42:12 2005  Sam Roberts  <sroberts@uniserve.com>
+Sat Jan 29 09:42:12 2005  Sam Roberts  <sroberts@uniserve.com>
 
 	* lib/resolv.rb (Resolv::DNS::Resource::IN::SRV): Added RFC2782 SRV
 	  resource record for specifying location of services.
