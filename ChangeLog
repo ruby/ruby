@@ -1,3 +1,8 @@
+Fri Dec 10 08:39:27 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_listen): get OpenFile just before calling
+	  listen(2).  fixed: [ruby-dev:25149]
+
 Thu Dec  9 17:00:00 2004  Akiyoshi, Masamichi <akiyoshi@hp.com>
 
 	* ext/socket/socket.c, ext/socket/getaddrinfo.c: port to VMS
