@@ -1,3 +1,8 @@
+Tue Apr 15 16:05:11 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* numeric.c (rb_fix2str): buffer was insufficient.
+	  (ruby-bugs-ja:PR#431)
+
 Mon Apr 14 19:45:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (file_expand_path): root must follow buf when

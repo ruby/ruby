@@ -1179,7 +1179,7 @@ rb_fix2str(x, base)
     int base;
 {
     extern const char ruby_digitmap[];
-    char buf[SIZEOF_LONG*CHAR_BIT/2 + 2], *b = buf + sizeof buf;
+    char buf[SIZEOF_LONG*CHAR_BIT + 2], *b = buf + sizeof buf;
     long val = FIX2LONG(x);
     int neg = 0;
 
