@@ -57,6 +57,7 @@ end
 #
 #   -p		preserve file attributes if possible
 #   -r		copy recursively
+#   -v		verbose
 #
 def cp
   setup("pr") do |argv, options, opt|
@@ -75,6 +76,7 @@ end
 #
 #   -s		make symbolic links instead of hard links
 #   -f		remove existing destination files
+#   -v		verbose
 #
 def ln
   setup("sf") do |argv, options, opt|
@@ -91,6 +93,8 @@ end
 #
 #   ruby -run -e mv SOURCE DEST
 #
+#   -v		verbose
+#
 def mv
   setup do |argv, options|
     dest = argv.pop
@@ -106,6 +110,7 @@ end
 #
 #   -f		ignore nonexistent files
 #   -r		remove the contents of directories recursively
+#   -v		verbose
 #
 def rm
   setup("fr") do |argv, options, opt|
@@ -121,6 +126,7 @@ end
 #   ruby -run -e mkdir -- [OPTION] DIR
 #
 #   -p		no error if existing, make parent directories as needed
+#   -v		verbose
 #
 def mkdir
   setup("p") do |argv, options, opt|
@@ -134,6 +140,8 @@ end
 # Remove the DIR.
 #
 #   ruby -run -e rmdir DIR
+#
+#   -v		verbose
 #
 def rmdir
   setup do |argv, options|
@@ -149,6 +157,7 @@ end
 #   -p		apply access/modification times of SOURCE files to
 #  		corresponding destination files
 #   -m		set permission mode (as in chmod), instead of 0755
+#   -v		verbose
 #
 def install
   setup("pm:") do |argv, options, opt|
@@ -164,6 +173,8 @@ end
 #
 #   ruby -run -e chmod OCTAL-MODE FILE
 #
+#   -v		verbose
+#
 def chmod
   setup do |argv, options|
     mode = argv.shift.oct
@@ -175,6 +186,8 @@ end
 # Update the access and modification times of each FILE to the current time.
 #
 #   ruby -run -e touch FILE
+#
+#   -v		verbose
 #
 def touch
   setup do |argv, options|
