@@ -1,6 +1,7 @@
 Tue Dec  7 13:42:07 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* io.c (dir_s_mkdir): win32 special processing doesn't need any longer.
+	* dir.c (dir_s_mkdir): win32 special processing doesn't need any
+	  longer.
 
 	* win32/win32.[ch] (rb_w32_mkdir): new function. POSIX.1 compatible
 	  interface.
