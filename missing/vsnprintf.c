@@ -416,7 +416,15 @@ BSD__ultoa(val, endp, base, octzero, xdigs)
 
 #ifdef FLOATING_POINT
 #include <math.h>
-#include "floatio.h"
+/* #include "floatio.h" */
+
+#ifndef MAXEXP
+# define MAXEXP 1024
+#endif
+
+#ifndef MAXFRACT
+# define MAXFRACT 64
+#endif
 
 #define	BUF		(MAXEXP+MAXFRACT+1)	/* + decimal point */
 #define	DEFPREC		6

@@ -482,6 +482,9 @@ rb_reg_search(reg, str, start, reverse)
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
 		       start, range, regs);
 
+    if (FL_TEST(reg, KCODE_FIXED))
+	kcode_reset_option();
+
     if (result == -2) {
 	rb_reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len,
 		  "Stack overfow in regexp matcher", reg);

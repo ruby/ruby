@@ -279,6 +279,10 @@ proc_options(argcp, argvp)
 
 	  case 'e':
 	    forbid_setid("-e");
+	    if (!argv[1]) {
+		fprintf(stderr, "%s: no code specified for -e\n", origargv[0]);
+		exit(2);
+	    }
 	    if (!e_fp) {
 		e_tmpname = ruby_mktemp();
 		if (!e_tmpname) rb_fatal("Can't mktemp");
@@ -288,11 +292,9 @@ proc_options(argcp, argvp)
 		}
 		if (script == 0) script = e_tmpname;
 	    }
-	    if (argv[1]) {
-		fputs(argv[1], e_fp);
-		argc--, argv++;
-	    }
+	    fputs(argv[1], e_fp);
 	    putc('\n', e_fp);
+	    argc--, argv++;
 	    break;
 
 	  case 'r':
@@ -404,8 +406,8 @@ proc_options(argcp, argvp)
 		exit(0);
 	    }
 	    else {
-		printf("%s: invalid option --%s  (-h will show valid options)\n",
-		       origargv[0], s);
+		fprintf(stderr, "%s: invalid option --%s  (-h will show valid options)\n",
+			origargv[0], s);
 		exit(2);
 	    }
 	    break;
@@ -416,8 +418,8 @@ proc_options(argcp, argvp)
 	    break;
 
 	  default:
-	    printf("%s: invalid option -%c  (-h will show valid options)\n",
-		   origargv[0], *s);
+	    fprintf(stderr, "%s: invalid option -%c  (-h will show valid options)\n",
+		    origargv[0], *s);
 	    exit(2);
 
 	  case 0:

@@ -4590,6 +4590,7 @@ yycompile(f)
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
     newline_seen = 0;
+    heredoc_end = 0;
     ruby_sourcefile = f;
     ruby_in_compile = 1;
     n = yyparse();
@@ -5331,8 +5332,8 @@ arg_ambiguous()
     rb_warning("ambiguous first argument; make sure");
 }
 
-#ifndef atof
-double atof();
+#ifndef strtod
+double strtod ();
 #endif
 
 static int
@@ -5777,7 +5778,8 @@ retry:
 	    if (is_float) {
 		double d = strtod(tok(), 0);
 		if (errno == ERANGE) {
-		    yyerror("Float out of range");
+		    rb_warn("Float %s out of range", tok());
+		    errno = 0;
 		}
 		yylval.val = rb_float_new(d);
 		return tFLOAT;

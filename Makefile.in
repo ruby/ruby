@@ -18,7 +18,7 @@ AUTOCONF = autoconf
 @SET_MAKE@
 
 prefix = @prefix@
-CFLAGS = @CFLAGS@ -I@srcdir@ -I@includedir@
+CFLAGS = @CFLAGS@ -I. -I@srcdir@ -I@includedir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXTLIBS = 
 LIBS = @LIBS@ $(EXTLIBS)
@@ -185,6 +185,9 @@ strftime.o: @srcdir@/missing/strftime.c
 
 strstr.o: @srcdir@/missing/strstr.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strstr.c
+
+strtod.o: @srcdir@/missing/strtod.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strtod.c
 
 strtol.o: @srcdir@/missing/strtol.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strtol.c

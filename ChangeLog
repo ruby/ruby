@@ -1,3 +1,38 @@
+Fri Feb  5 03:26:56 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* ruby.c (proc_options): -e without program prints error.
+
+Fri Feb  5 00:01:50 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (terms): needed to clear heredoc_end.
+
+	* numeric.c (flo_div): allow float division by zero.
+
+Thu Feb  4 11:56:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* missing/strtod.c: for compatibility.
+
+	* configure.in (strtod): add strtod compatible check.
+
+	* numeric.c (rb_num2long): missing/vsnprintf.c does not supprt
+	  floating points.
+
+	* numeric.c (flo_to_s): ditto.
+
+Wed Feb  3 23:02:12 1999  Yoshida Masato  <yoshidam@yoshidam.net>
+
+	* regex.c (re_compile_pattern): use ismbchar() to get next char.
+
+	* regex.c (re_search): wrong mbchar shift.
+
+	* re.c (rb_reg_search): needed to reset $KCODE after match.
+
+	* regex.c (re_compile_fastmap): mbchars should match with \w.
+
+Wed Feb  3 22:35:12 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* parse.y (yylex): too big float raise warning, not error.
+
 Tue Feb  2 23:41:42 1999  Yoshida Masato  <yoshidam@yoshidam.net>
 
 	* regex.c (re_match): wrong boundary.

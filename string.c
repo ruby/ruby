@@ -1140,7 +1140,7 @@ rb_str_gsub_bang(argc, argv, str)
     }
     if (RSTRING(str)->len > offset) {
 	len = bp - buf;
-	if (blen - len < RSTRING(str)->len - offset) {
+	if (blen - len < RSTRING(str)->len - offset + 1) {
 	    REALLOC_N(buf, char, len + RSTRING(str)->len - offset + 1);
 	    bp = buf + len;
 	}

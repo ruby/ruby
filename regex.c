@@ -1025,6 +1025,7 @@ re_compile_pattern(pattern, size, bufp)
 {
     register char *b = bufp->buffer;
     register char *p = pattern;
+    char *nextp;
     char *pend = pattern + size;
     register unsigned c, c1;
     char *p0;
@@ -2018,15 +2019,16 @@ re_compile_pattern(pattern, size, bufp)
 	normal_char:		/* Expects the character in `c'.  */
 	  had_mbchar = 0;
 	  if (ismbchar(c)) {
-	    had_mbchar = 0;
+	    had_mbchar = 1;
 	    c1 = p - pattern;
 	  }
 	numeric_char:
+	  nextp = p + ismbchar(c);
 	  if (!pending_exact || pending_exact + *pending_exact + 1 != b
 	      || *pending_exact >= (c1 ? 0176 : 0177)
-	      || *p == '+' || *p == '?'
-	      || *p == '*' || *p == '^'
-	      || *p == '{') {
+	      || *nextp == '+' || *nextp == '?'
+	      || *nextp == '*' || *nextp == '^'
+	      || *nextp == '{') {
 	    laststart = b;
 	    BUFPUSH(exactn);
 	    pending_exact = b;
@@ -2637,7 +2639,7 @@ re_compile_fastmap(bufp)
 	      {
 		if (TRANSLATE_P())
 		  j = translate[j];
-		fastmap[j] = (j>0x7f?2:1);
+		fastmap[j] = (j>0x7f?(ismbchar(j)?0:2):1);
 	      }
 	  {
 	    unsigned short size;
@@ -2846,15 +2848,17 @@ re_search(bufp, string, size, startpos, range, regs)
 		  int len = ismbchar(c);
 		  if (fastmap[c])
 		    break;
-		  c = *p++;
-		  range -= len;
+		  p += len;
+		  range -= len + 1;
+		  c = *p;
 		  if (fastmap[c] == 2)
 		    break;
 		}
-		else 
+		else {
 		  if (fastmap[MAY_TRANSLATE() ? translate[c] : c])
 		    break;
-		range--;
+		  range--;
+		}
 	      }
 	      startpos += irange - range;
 	    }

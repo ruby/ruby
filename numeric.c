@@ -184,11 +184,14 @@ flo_to_s(flt)
     VALUE flt;
 {
     char buf[24];
+    char *s;
 
-    snprintf(buf, 24, "%.10g", RFLOAT(flt)->value);
-    if (strchr(buf, '.') == 0 &&
-	strcmp(buf, "Inf") != 0 &&
-	strcmp(buf, "NaN") != 0) {
+    sprintf(buf, "%-.10g", RFLOAT(flt)->value);
+    if (s = strchr(buf, ' ')) *s = '\0';
+    s = buf; if (s[0] == '-') s++;
+    if (strchr(s, '.') == 0 &&
+	strcmp(s, "Inf") != 0 &&
+	strcmp(s, "NaN") != 0) {
 	int len = strlen(buf);
 	char *ind = strchr(buf, 'e');
 
@@ -276,14 +279,11 @@ flo_div(x, y)
     switch (TYPE(y)) {
       case T_FIXNUM:
 	f_y = FIX2LONG(y);
-	if (f_y == 0) rb_num_zerodiv();
 	return rb_float_new(RFLOAT(x)->value / (double)f_y);
       case T_BIGNUM:
 	d = rb_big2dbl(y);
-	if (d == 0.0) rb_num_zerodiv();
 	return rb_float_new(RFLOAT(x)->value / d);
       case T_FLOAT:
-	if (RFLOAT(y)->value == 0.0) rb_num_zerodiv();
 	return rb_float_new(RFLOAT(x)->value / RFLOAT(y)->value);
       default:
 	return rb_num_coerce_bin(x, y);
@@ -668,8 +668,12 @@ rb_num2long(val)
 	    return (long)(RFLOAT(val)->value);
 	}
 	else {
-	    rb_raise(rb_eTypeError, "float %g out of rang of integer",
-		     RFLOAT(val)->value);
+	    char buf[24];
+	    char *s;
+
+	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
+	    if (s = strchr(buf, ' ')) *s = '\0';
+	    rb_raise(rb_eTypeError, "float %s out of rang of integer", buf);
 	}
 
       case T_BIGNUM:

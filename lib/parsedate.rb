@@ -9,7 +9,7 @@ module ParseDate
     'thu' => 4, 'fri' => 5, 'sat' => 6 }
   DAYPAT = DAYS.keys.join('|')
 
-  def parsedate(date) 
+  def parsedate(date, guess=false) 
     # part of ISO 8601
     # yyyy-mm-dd | yyyy-mm | yyyy
     # date hh:mm:ss | date Thh:mm:ss
@@ -57,6 +57,19 @@ module ParseDate
       mday = $2.to_i
       if $3
 	year = $3.to_i
+      end
+    elsif date.sub!(/(\d+)-(#{MONTHPAT})-(\d+)/i, ' ')
+      mday = $1.to_i
+      mon = MONTHS[$2.downcase]
+      year = $3.to_i
+    end
+    if guess
+      if year < 100
+	if year >= 69
+	  year += 1900
+	else
+	  year += 2000
+	end
       end
     elsif date.sub!(/(\d+)-(#{MONTHPAT})-(\d+)/i, ' ')
       mday = $1.to_i

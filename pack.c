@@ -16,7 +16,7 @@
 
 #define define_swapx(x, xtype)		\
 static xtype				\
-TAKEN_PASTE(swap,x)(z)			\
+TOKEN_PASTE(swap,x)(z)			\
     xtype z;				\
 {					\
     xtype r;				\
@@ -64,9 +64,8 @@ define_swapx(s,short);
 			+(((x)&0x0000000000FF0000)<<24)	\
 			+(((x)&0x0000FF0000000000)>>24)	\
 			+(((x)&0x00000000FF000000)<<8)	\
-			+(((x)&0x000000FF00000000)>>8)
+			+(((x)&0x000000FF00000000)>>8) )
 #else
-
 define_swapx(l,long);
 #endif
 #endif
@@ -223,7 +222,7 @@ endian()
 #ifdef FLOAT_SWAPPER
 #define FLOAT_CONVWITH(y)	FLOAT_SWAPPER y;
 #define HTONF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
-			 x = htonf((FLOAT_SWAPPER)y),	\
+			 y = htonf((FLOAT_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(float)),	\
 			 x)
 #define HTOVF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
@@ -249,7 +248,7 @@ endian()
 #ifdef DOUBLE_SWAPPER
 #define DOUBLE_CONVWITH(y)	DOUBLE_SWAPPER y;
 #define HTOND(x,y)	(memcpy(&y,&x,sizeof(double)),	\
-			 x = htond((DOUBLE_SWAPPER)y),	\
+			 y = htond((DOUBLE_SWAPPER)y),	\
 			 memcpy(&x,&y,sizeof(double)),	\
 			 x)
 #define HTOVD(x,y)	(memcpy(&y,&x,sizeof(double)),	\

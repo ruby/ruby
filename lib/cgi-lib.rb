@@ -25,6 +25,20 @@
 #
 # print CGI.header("HTTP/1.0 200 OK", "Content-Type: text/html")
 # print CGI.header # == print CGI.header("Content-Type: text/html")
+#
+# make HTML tag string
+# CGI.tag("element", {"attribute_name"=>"attribute_value"}){"content"}
+#
+# print CGI.tag("HTML"){
+#         CGI.tag("HEAD"){ CGI.tag("TITLE"){"TITLE"} } +
+#         CGI.tag("BODY"){
+#           CGI.tag("FORM", {"ACTION"=>"test.rb", "METHOD"=>"POST"}){
+#             CGI.tag("INPUT", {"TYPE"=>"submit", "VALUE"=>"submit"})
+#           } +
+#           CGI.tag("HR")
+#         }
+#       }
+
 
 # if running on Windows(IIS or PWS) then change cwd.
 if ENV['SERVER_SOFTWARE'] =~ /^Microsoft-/ then
@@ -67,7 +81,13 @@ class CGI < SimpleDelegator
     str.gsub!(/%([0-9a-fA-F]{2})/){ [$1.hex].pack("c") }
     str
   end
-  module_function :escape, :unescape
+
+  # escape HTML
+  def escapeHTML(str)
+    str.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
+  end
+
+  module_function :escape, :unescape, :escapeHTML
 
   def initialize(input = $stdin)
 
@@ -97,12 +117,12 @@ class CGI < SimpleDelegator
     if ENV.has_key?('HTTP_COOKIE')
       @cookie = {}
       ENV['HTTP_COOKIE'].split("; ").each do |x|
-	key, val = x.split(/=/,2).collect{|x|unescape(x)}
-	if @cookie.include?(key)
-	  @cookie[key] += "\0" + (val or "")
-	else
-	  @cookie[key] = (val or "")
-	end
+        key, val = x.split(/=/,2).collect{|x|unescape(x)}
+        if @cookie.include?(key)
+          @cookie[key] += "\0" + (val or "")
+        else
+          @cookie[key] = (val or "")
+        end
       end
     end
   end
@@ -121,6 +141,13 @@ class CGI < SimpleDelegator
     (options['path']    ? '; path='    + options['path']   : '') +
     (options['expires'] ? '; expires=' + options['expires'].strftime("%a, %d %b %Y %X %Z") : '') +
     (options['secure']  ? '; secure' : '')
+  end
+
+  def CGI.tag(element, attributes = {})
+    "<" + escapeHTML(element) + attributes.collect{|name, value|
+      " " + escapeHTML(name) + '="' + escapeHTML(value) + '"'
+    }.to_s + ">" +
+    (iterator? ? yield.to_s + "</" + escapeHTML(element) + ">" : "")
   end
 
   def CGI.message(msg, title = "", header = ["Content-Type: text/html"])
