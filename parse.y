@@ -4957,8 +4957,6 @@ value_expr0(node)
 
     while (node) {
 	switch (nd_type(node)) {
-	  case NODE_CLASS:
-	  case NODE_MODULE:
 	  case NODE_DEFN:
 	  case NODE_DEFS:
 	    parser_warning(node, "void value expression");

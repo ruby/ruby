@@ -1,3 +1,18 @@
+Sat Jun  7 22:22:03 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (value_expr0): class and module statements should not be
+	  warned for "void value expression". [ruby-talk:72989]
+
+Sat Jun  7 01:46:41 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (add_final): should determine type by respond_to?
+
+	* gc.c (define_final): ditto.
+
+	* io.c (rb_io_ctl): should not depend on respond_to?
+
+	* range.c (range_step): rb_check_string_type().
+
 Fri Jun  6 20:29:14 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (error_print): needs to be exception proof.
@@ -12,6 +27,10 @@ Fri Jun  6 20:29:14 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (cmd_brace_block, do_block, brace_block): initialize block
 	  variables at the beginning of the block.  [ruby-talk:72521]
+
+Fri Jun  6 18:49:11 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_setgroups): new functions.
 
 Fri Jun  6 18:33:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -3338,32 +3338,35 @@ rb_io_ctl(io, req, arg, io_p)
     else if (arg == Qtrue) {
 	narg = 1;
     }
-    else if (rb_obj_is_kind_of(arg, rb_cInteger)) {
-	narg = NUM2LONG(arg);
-    }
     else {
-	StringValue(arg);
+	VALUE tmp = rb_check_string_type(arg);
 
+	if (NIL_P(tmp)) {
+	    narg = NUM2LONG(arg);
+	}
+	else {
+	    arg = tmp;
 #ifdef IOCPARM_MASK
 #ifndef IOCPARM_LEN
 #define IOCPARM_LEN(x)  (((x) >> 16) & IOCPARM_MASK)
 #endif
 #endif
 #ifdef IOCPARM_LEN
-	len = IOCPARM_LEN(cmd);	/* on BSDish systems we're safe */
+	    len = IOCPARM_LEN(cmd);	/* on BSDish systems we're safe */
 #else
-	len = 256;		/* otherwise guess at what's safe */
+	    len = 256;		/* otherwise guess at what's safe */
 #endif
-	rb_str_modify(arg);
+	    rb_str_modify(arg);
 
-	if (len <= RSTRING(arg)->len) {
-	    len = RSTRING(arg)->len;
+	    if (len <= RSTRING(arg)->len) {
+		len = RSTRING(arg)->len;
+	    }
+	    if (RSTRING(arg)->len < len) {
+		rb_str_resize(arg, len+1);
+	    }
+	    RSTRING(arg)->ptr[len] = 17;	/* a little sanity check here */
+	    narg = (long)RSTRING(arg)->ptr;
 	}
-	if (RSTRING(arg)->len < len) {
-	    rb_str_resize(arg, len+1);
-	}
-	RSTRING(arg)->ptr[len] = 17;	/* a little sanity check here */
-	narg = (long)RSTRING(arg)->ptr;
     }
     retval = io_cntl(fileno(fptr->f), cmd, narg, io_p);
     if (retval < 0) rb_sys_fail(fptr->path);

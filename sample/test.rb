@@ -1031,7 +1031,7 @@ test_ok(block.clone.call == 11)
 test_ok(proc.clone.call == 44)
 
 test_ok(get_block(&block).class == Block)
-test_ok(get_block(&proc).class == Proc)
+test_ok(get_block(&proc).class == Block)
 
 test_ok(Block.new{|a,| a}.call(1,2,3) == 1)
 argument_test(false, Proc.new{|a,| p a}, 1,2)

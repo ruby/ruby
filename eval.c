@@ -6838,14 +6838,15 @@ block_alloc(klass, proc)
     struct RVarmap *vars;
 
     if (!rb_block_given_p() && !rb_f_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to create Block object without a block");
+	rb_raise(rb_eArgError, "tried to create %s object without a block",
+		 proc ? "Proc" : "Block");
+    }
+    if (proc && !rb_block_given_p()) {
+	rb_warn("tried to create Proc object without a block");
     }
 
-    if (ruby_block->block_obj) {
-	if ((proc && (ruby_block->flags & BLOCK_PROC)) ||
-	    (!proc && !(ruby_block->flags & BLOCK_PROC)))
-	    return ruby_block->block_obj;
-	ruby_block->flags &= ~BLOCK_PROC;
+    if (!proc && ruby_block->block_obj) {
+	return ruby_block->block_obj;
     }
     block = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);
     *data = *ruby_block;
@@ -6873,9 +6874,10 @@ block_alloc(klass, proc)
     block_save_safe_level(block);
     if (proc) {
 	data->flags |= BLOCK_PROC;
-	ruby_block->flags |= BLOCK_PROC;
     }
-    ruby_block->block_obj = block;
+    else {
+	ruby_block->block_obj = block;
+    }
 
     return block;
 }
@@ -6895,12 +6897,7 @@ block_s_new(argc, argv, klass)
 VALUE
 rb_block_new()
 {
-    if (ruby_block->flags & BLOCK_PROC) {
-	return block_alloc(rb_cProc, Qtrue);
-    }
-    else {
-	return block_alloc(rb_cBlock, Qfalse);
-    }
+    return block_alloc(rb_cBlock, Qfalse);
 }
 
 static VALUE

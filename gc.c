@@ -1415,8 +1415,8 @@ add_final(os, block)
     VALUE os, block;
 {
     rb_warn("ObjectSpace::add_finalizer is deprecated; use define_finalizer");
-    if (!rb_obj_is_kind_of(block, rb_cBlock)) {
-	rb_raise(rb_eArgError, "wrong type argument %s (Block required)",
+    if (!rb_respond_to(block, rb_intern("call"))) {
+	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
 		 rb_obj_classname(block));
     }
     rb_ary_push(finalizers, block);
@@ -1471,8 +1471,8 @@ define_final(argc, argv, os)
     if (argc == 1) {
 	block = rb_block_new();
     }
-    else if (!rb_obj_is_kind_of(block, rb_cBlock)) {
-	rb_raise(rb_eArgError, "wrong type argument %s (Block required)",
+    else if (!rb_respond_to(block, rb_intern("call"))) {
+	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
 		 rb_obj_classname(block));
     }
     need_call_final = 1;

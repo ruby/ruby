@@ -257,36 +257,41 @@ range_step(argc, argv, range)
 	    rb_yield(LONG2NUM(i));
 	}
     }
-    else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
-	ID c = rb_intern(EXCL(range) ? "<" : "<=");
-
-	if (rb_equal(step, INT2FIX(0))) rb_raise(rb_eArgError, "step can't be 0");
-	while (RTEST(rb_funcall(b, c, 1, e))) {
-	    rb_yield(b);
-	    b = rb_funcall(b, '+', 1, step);
-	}
-    }
-    else if (TYPE(b) == T_STRING) {
-	VALUE args[5];
-	long iter[2];
-
-	if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
-	args[0] = b; args[1] = e; args[2] = range;
-	iter[0] = 1; iter[1] = unit;
-	rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i, (VALUE)iter);
-    }
     else {
-	long args[2];
+	VALUE tmp = rb_check_string_type(b);
 
-	if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
-	if (!rb_respond_to(b, id_succ)) {
-	    rb_raise(rb_eTypeError, "cannot iterate from %s",
-		     rb_obj_classname(b));
+	if (!NIL_P(tmp)) {
+	    VALUE args[5];
+	    long iter[2];
+
+	    b = tmp;
+	    if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
+	    args[0] = b; args[1] = e; args[2] = range;
+	    iter[0] = 1; iter[1] = unit;
+	    rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i, (VALUE)iter);
 	}
+	else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
+	    ID c = rb_intern(EXCL(range) ? "<" : "<=");
+
+	    if (rb_equal(step, INT2FIX(0))) rb_raise(rb_eArgError, "step can't be 0");
+	    while (RTEST(rb_funcall(b, c, 1, e))) {
+		rb_yield(b);
+		b = rb_funcall(b, '+', 1, step);
+	    }
+	}
+	else {
+	    long args[2];
+
+	    if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
+	    if (!rb_respond_to(b, id_succ)) {
+		rb_raise(rb_eTypeError, "cannot iterate from %s",
+			 rb_obj_classname(b));
+	    }
 	
-	args[0] = 1;
-	args[1] = unit;
-	range_each_func(range, step_i, b, e, args);
+	    args[0] = 1;
+	    args[1] = unit;
+	    range_each_func(range, step_i, b, e, args);
+	}
     }
     return range;
 }

@@ -45,6 +45,8 @@ struct timeval rb_time_interval _((VALUE));
 #include <sys/times.h>
 #endif
 
+#include <grp.h>
+
 #if defined(HAVE_TIMES) || defined(_WIN32)
 static VALUE S_Tms;
 #endif
@@ -1219,6 +1221,92 @@ proc_setgid(obj, id)
     return INT2FIX(gid);
 }
 
+
+static size_t maxgroups = 32;
+
+static VALUE
+proc_getgroups(VALUE obj)
+{
+    VALUE ary;
+    size_t ngroups = 32;
+    gid_t *groups;
+    int i;
+
+    groups = ALLOCA_N(gid_t, maxgroups);
+
+    ngroups = getgroups(ngroups, groups);
+    if (ngroups == -1)
+        rb_sys_fail(0);
+
+    ary = rb_ary_new();
+    for (i = 0; i < ngroups; i++)
+        rb_ary_push(ary, INT2NUM(groups[i]));
+
+    return ary;
+}
+
+static VALUE
+proc_setgroups(VALUE obj, VALUE ary)
+{
+    size_t ngroups;
+    gid_t *groups;
+    int i;
+    struct group *gr;
+
+    Check_Type(ary, T_ARRAY);
+
+    ngroups = RARRAY(ary)->len;
+    if (ngroups > maxgroups)
+        rb_raise(rb_eArgError, "too many groups, %d max", maxgroups);
+
+    groups = ALLOCA_N(gid_t, ngroups);
+
+    for (i = 0; i < ngroups; i++) {
+        VALUE g = RARRAY(ary)->ptr[i];
+
+	if (FIXNUM_P(g)) {
+            groups[i] = FIX2INT(g);
+	}
+	else {
+	    VALUE tmp = rb_check_string_type(g);
+
+	    if (NIL_P(tmp)) {
+		groups[i] = NUM2INT(g);
+	    }
+	    else {
+		gr = getgrnam(RSTRING(g)->ptr);
+	    }
+	}
+    }
+
+    i = setgroups(ngroups, groups);
+    if (i == -1)
+        rb_sys_fail(0);
+
+    return proc_getgroups(obj);
+}
+
+static VALUE
+proc_getmaxgroups(obj)
+    VALUE obj;
+{
+    return INT2FIX(maxgroups);
+}
+
+static VALUE
+proc_setmaxgroups(obj, val)
+    VALUE obj;
+{
+    size_t  ngroups = INT2FIX(val);
+
+    if (ngroups > 4096)
+         ngroups = 4096;
+
+    maxgroups = ngroups;
+
+    return INT2FIX(maxgroups);
+}
+
 static VALUE
 proc_geteuid(obj)
     VALUE obj;
@@ -1396,6 +1484,10 @@ Init_process()
     rb_define_module_function(rb_mProcess, "euid=", proc_seteuid, 1);
     rb_define_module_function(rb_mProcess, "egid", proc_getegid, 0);
     rb_define_module_function(rb_mProcess, "egid=", proc_setegid, 1);
+    rb_define_module_function(rb_mProcess, "groups", proc_getgroups, 0);
+    rb_define_module_function(rb_mProcess, "groups=", proc_setgroups, 1);
+    rb_define_module_function(rb_mProcess, "maxgroups", proc_getmaxgroups, 0);
+    rb_define_module_function(rb_mProcess, "maxgroups=", proc_setmaxgroups, 1);
 
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
 
