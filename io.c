@@ -2883,7 +2883,7 @@ rb_open_file(argc, argv, io)
     int flags, fmode;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    fname = rb_get_path(fname);
+    FilePathValue(fname);
     path = RSTRING(fname)->ptr;
 
     if (FIXNUM_P(vmode) || !NIL_P(perm)) {
@@ -2953,7 +2953,7 @@ rb_io_s_sysopen(argc, argv)
     int flags, fmode, fd;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    fname = rb_get_path(fname);
+    FilePathValue(fname);
 
     if (NIL_P(vmode)) flags = O_RDONLY;
     else if (FIXNUM_P(vmode)) flags = FIX2INT(vmode);
@@ -3221,7 +3221,7 @@ rb_io_reopen(argc, argv, file)
 	}
     }
 
-    fname = rb_get_path(fname);
+    FilePathValue(fname);
     rb_io_taint_check(file);
     fptr = RFILE(file)->fptr;
     if (!fptr) {
@@ -4869,7 +4869,7 @@ rb_io_s_foreach(argc, argv)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
-    fname = rb_get_path(fname);
+    FilePathValue(fname);
     if (argc == 1) {
 	arg.sep = rb_default_rs;
     }
@@ -4911,7 +4911,7 @@ rb_io_s_readlines(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
-    fname = rb_get_path(fname);
+    FilePathValue(fname);
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
     if (NIL_P(arg.io)) return Qnil;
@@ -4948,7 +4948,7 @@ rb_io_s_read(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "12", &fname, &arg.sep, &offset);
-    fname = rb_get_path(fname);
+    FilePathValue(fname);
     arg.argc = argc ? 1 : 0;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
     if (NIL_P(arg.io)) return Qnil;

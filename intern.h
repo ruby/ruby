@@ -224,7 +224,6 @@ VALUE rb_thread_local_aset _((VALUE, ID, VALUE));
 void rb_thread_atfork _((void));
 /* file.c */
 int eaccess _((const char*, int));
-VALUE rb_get_path _((VALUE));
 VALUE rb_file_s_expand_path _((int, VALUE *));
 void rb_file_const _((const char*, VALUE));
 int rb_find_file_ext _((VALUE*, const char* const*));

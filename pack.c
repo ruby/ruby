@@ -867,7 +867,7 @@ pack_pack(ary, fmt)
 
 		from = NEXTFROM;
 		from = rb_to_int(from);
-		l = num2i32(from);
+		l = NUM2INT(from);
 		if (l < 0) {
 		    rb_raise(rb_eRangeError, "pack(U): value out of range");
 		}

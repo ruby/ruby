@@ -4778,19 +4778,20 @@ rb_yield_values(n, va_alist)
     va_dcl
 #endif
 {
+    int i;
     va_list args;
-    VALUE ary;
+    VALUE val;
 
     if (n == 0) {
 	return rb_yield_0(Qundef, 0, 0, 0, Qfalse);
     }
-    ary = rb_ary_new2(n);
+    val = rb_values_new2(n, 0);
     va_init_list(args, n);
-    while (n--) {
-	rb_ary_push(ary, va_arg(args, VALUE));
+    for (i=0; i<n; i++) {
+	RARRAY(val)->ptr[i] = va_arg(args, VALUE);
     }
     va_end(args);
-    return rb_yield_0(ary, 0, 0, 0, Qtrue);
+    return rb_yield_0(val, 0, 0, 0, Qtrue);
 }
 
 VALUE
@@ -6385,12 +6386,8 @@ rb_load(fname, wrap)
     NODE *saved_cref = ruby_cref;
     TMP_PROTECT;
 
-    if (wrap && ruby_safe_level >= 4 && OBJ_TAINTED(fname)) {
-	StringValue(fname);
-    }
-    else {
-	fname = rb_get_path(fname);
-    }
+    if (!wrap) rb_secure(4);
+    FilePathValue(fname);
     tmp = rb_find_file(fname);
     if (!tmp) {
 	load_failed(fname);
@@ -6714,7 +6711,7 @@ rb_require_safe(fname, safe)
     } volatile saved;
     char *volatile ftptr = 0;
 
-    fname = rb_get_path(fname);
+    FilePathValue(fname);
     saved.vmode = scope_vmode;
     saved.node = ruby_current_node;
     saved.func = ruby_frame->last_func;

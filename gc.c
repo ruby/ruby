@@ -1786,7 +1786,7 @@ rb_gc_call_finalizer_at_exit()
 	}
     }
     /* run data object's finalizers */
-    for (i = heaps_used-1; 0 <= i; i--) {
+    for (i = 0; i < heaps_used; i++) {
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
