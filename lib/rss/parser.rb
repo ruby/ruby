@@ -229,7 +229,7 @@ module RSS
       ns = @ns_stack.last.dup
       attrs = {}
       attributes.each do |n, v|
-        if n =~ /\Axmlns:?/
+        if /\Axmlns(?:\z|:)/ =~ n
           ns[$POSTMATCH] = v
         else
           attrs[n] = v
@@ -256,6 +256,7 @@ module RSS
       tags = @tag_stack.pop
       pr = @proc_stack.pop
       pr.call(text, tags) unless pr.nil?
+      @ns_stack.pop
     end
 
     def text(data)

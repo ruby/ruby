@@ -1,3 +1,8 @@
+Mon Feb 14 23:58:17 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb (RSS::ListenerMixin::tag_end):
+	  fixed invalid namespace handling bug.
+
 Mon Feb 14 13:12:38 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb
