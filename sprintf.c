@@ -28,10 +28,10 @@ remove_sign_bits(str, base)
       x_retry:
 	switch (*t) {
 	  case 'c':
-	    *t = '8';
+	    *t = '4';
 	    break;
 	  case 'd':
-	    *t = '9';
+	    *t = '5';
 	    break;
 	  case 'e':
 	    *t = '2';
@@ -418,6 +418,7 @@ f_sprintf(argc, argv)
 		    int n = slen-len;
 		    char d = ' ';
 		    if (flags & FZERO) d = '0';
+		    if (s[0] == '.') d = '.';
 		    CHECK(n);
 		    while (n--) {
 			buf[blen++] = d;

@@ -2165,8 +2165,8 @@ rb_eval(self, node)
 			   1, INT2FIX(node->nd_mid));
 	    }
 	    if (FL_TEST(the_class, FL_SINGLETON)) {
-		VALUE recv = rb_iv_get(the_class, "__attached__");
-		rb_funcall(recv, rb_intern("singleton_method_added"),
+		rb_funcall(rb_iv_get(the_class, "__attached__"),
+			   rb_intern("singleton_method_added"),
 			   1, INT2FIX(node->nd_mid));
 	    }
 	    else {
@@ -2215,8 +2215,20 @@ rb_eval(self, node)
 
 	    body = search_method(the_class, node->nd_mid, &origin);
 	    if (!body || !body->nd_body) {
-		NameError("undefined method `%s' for class `%s'",
-			  rb_id2name(node->nd_mid), rb_class2name(the_class));
+		char *s0 = " class";
+		VALUE klass = the_class;
+
+		if (FL_TEST(the_class, FL_SINGLETON)) {
+		    VALUE obj = rb_iv_get(the_class, "__attached__");
+		    switch (TYPE(obj)) {
+		      case T_MODULE:
+		      case T_CLASS:
+			klass = obj;
+			s0 = "";
+		    }
+		}
+		NameError("undefined method `%s' for%s `%s'",
+			  rb_id2name(node->nd_mid),s0,rb_class2name(klass));
 	    }
 	    rb_clear_cache_by_id(node->nd_mid);
 	    rb_add_method(the_class, node->nd_mid, 0, NOEX_PUBLIC);

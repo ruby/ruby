@@ -1375,10 +1375,14 @@ str_inspect(str)
 
     while (p < pend) {
 	UCHAR c = *p++;
-	if (ismbchar(c) && p < pend && ismbchar2(*p)) {
+	if (ismbchar(c) && p < pend) {
 	    CHECK(2);
 	    *b++ = c;
 	    *b++ = *p++;
+	}
+	if (c & 0x80) {
+	    CHECK(1);
+	    *b++ = c;
 	}
 	else if (c == '"') {
 	    CHECK(2);

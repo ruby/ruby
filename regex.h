@@ -165,43 +165,17 @@ extern long re_syntax_options;
                         | RE_NO_HYPHEN_RANGE_END)
 
 /* For multi-byte char support */
-#define RE_MBCTYPE_EUC (1L << 20)
-#define RE_MBCTYPE_SJIS (1L << 21)
-#define RE_MBCTYPE_MASK (RE_MBCTYPE_EUC | RE_MBCTYPE_SJIS)
+#define MBCTYPE_ASCII 0
+#define MBCTYPE_EUC 1
+#define MBCTYPE_SJIS 2
 
-#ifdef EUC
-#define DEFAULT_MBCTYPE RE_MBCTYPE_EUC
-#else
-#ifdef SJIS
-#define DEFAULT_MBCTYPE RE_MBCTYPE_SJIS
-#else
-#define DEFAULT_MBCTYPE 0
-#endif
-#endif
+extern const unsigned char *mbctab;
+extern int current_mbctype;
+
+void mbcinit (int);
 
 #undef ismbchar
-#define ismbchar(c) \
-  (re_syntax_options & RE_MBCTYPE_EUC		\
-   ? (   0xa1 <= (unsigned char) (c)		\
-      && (unsigned char) (c) <= 0xfe)		\
-   : (re_syntax_options & RE_MBCTYPE_SJIS	\
-      ? ((   0x81 <= (unsigned char) (c)	\
-	  && (unsigned char) (c) <= 0x9f)	\
-	||  ((0xe0 <= (unsigned char) (c))	\
-	  && (unsigned char) (c) <= 0xef))	\
-      : 0))
-
-#undef ismbchar2
-#define ismbchar2(c) \
-  (re_syntax_options & RE_MBCTYPE_EUC		\
-   ? (   0xa1 <= (unsigned char) (c)		\
-      && (unsigned char) (c) <= 0xfe)		\
-   : (re_syntax_options & RE_MBCTYPE_SJIS	\
-      ? ((   0x40 <= (unsigned char) (c)	\
-	  && (unsigned char) (c) <= 0x7e)	\
-	||  ((0x80 <= (unsigned char) (c))	\
-	  && (unsigned char) (c) <= 0xfc))	\
-      : 0))
+#define ismbchar(c) mbctab[(unsigned char)(c)]
 
 /* This data structure is used to represent a compiled pattern.  */
 

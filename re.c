@@ -139,35 +139,33 @@ kcode_set_option(reg)
 {
     if (!FL_TEST(reg, KCODE_FIXED)) return;
 
-    re_syntax_options &= ~RE_MBCTYPE_MASK;
     switch ((RBASIC(reg)->flags & KCODE_MASK)) {
       case KCODE_NONE:
+	mbcinit(MBCTYPE_ASCII);
 	break;
       case KCODE_EUC:
-	re_syntax_options |= RE_MBCTYPE_EUC;
+	mbcinit(MBCTYPE_EUC);
 	break;
       case KCODE_SJIS:
-	re_syntax_options |= RE_MBCTYPE_SJIS;
+	mbcinit(MBCTYPE_EUC);
 	break;
     }
-    re_set_syntax(re_syntax_options);
 }	  
 
 void
 kcode_reset_option()
 {
-    re_syntax_options &= ~RE_MBCTYPE_MASK;
     switch (reg_kcode) {
       case KCODE_NONE:
+	mbcinit(MBCTYPE_ASCII);
 	break;
       case KCODE_EUC:
-	re_syntax_options |= RE_MBCTYPE_EUC;
+	mbcinit(MBCTYPE_EUC);
 	break;
       case KCODE_SJIS:
-	re_syntax_options |= RE_MBCTYPE_SJIS;
+	mbcinit(MBCTYPE_SJIS);
 	break;
     }
-    re_set_syntax(re_syntax_options);
 }
 
 extern int rb_in_eval;
@@ -997,28 +995,29 @@ void
 rb_set_kcode(code)
     char *code;
 {
-    re_syntax_options &= ~RE_MBCTYPE_MASK;
     if (code == 0) goto set_no_conversion;
 
     switch (code[0]) {
       case 'E':
       case 'e':
 	reg_kcode = KCODE_EUC;
-	re_syntax_options |= RE_MBCTYPE_EUC;
+	mbcinit(MBCTYPE_EUC);
 	break;
       case 'S':
       case 's':
 	reg_kcode = KCODE_SJIS;
-	re_syntax_options |= RE_MBCTYPE_SJIS;
+	mbcinit(MBCTYPE_SJIS);
 	break;
       default:
       case 'N':
       case 'n':
+      case 'A':
+      case 'a':
       set_no_conversion:
 	reg_kcode = KCODE_NONE;
+	mbcinit(MBCTYPE_ASCII);
 	break;
     }
-    re_set_syntax(re_syntax_options);
 }
 
 static void
@@ -1056,11 +1055,7 @@ Init_Regexp()
 		  | RE_INTERVALS
 		  | RE_NO_BK_BRACES
 		  | RE_CONTEXTUAL_INVALID_OPS
-		  | RE_BACKSLASH_ESCAPE_IN_LISTS
-#ifdef DEFAULT_MBCTYPE
-		  | DEFAULT_MBCTYPE
-#endif
-	);
+		  | RE_BACKSLASH_ESCAPE_IN_LISTS);
 
     rb_define_virtual_variable("$~", match_getter, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);

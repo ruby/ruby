@@ -1,7 +1,7 @@
 #option nodynamic
 
 #GD
-curses
+#curses
 #dbm
 #etc
 #fcntl

@@ -73,7 +73,11 @@ char *alloca();
 #endif
 
 #define RE_ALLOCATE alloca
+#ifdef C_ALLOCA
 #define FREE_VARIABLES() alloca(0)
+#else
+#define FREE_VARIABLES() 0
+#endif
 
 #define FREE_AND_RETURN_VOID(stackb)	return
 #define FREE_AND_RETURN(stackb,val)	return(val)
@@ -113,7 +117,7 @@ char *alloca();
 	stackp = stackx + (stackp - stackb);				\
 	stackb = stackx;						\
 	stacke = stackb + 2 * len;					\
-    } while (0);									\
+    } while (0)
 
 /* Get the interface, including the syntax bits.  */
 #include "regex.h"
@@ -176,10 +180,42 @@ init_syntax_once()
    done = 1;
 }
 
-/* Sequents are missing isgraph.  */
-#ifndef isgraph
-#define isgraph(c) (isprint((c)) && !isspace((c)))
+/* Jim Meyering writes:
+
+   "... Some ctype macros are valid only for character codes that
+   isascii says are ASCII (SGI's IRIX-4.0.5 is one such system --when
+   using /bin/cc or gcc but without giving an ansi option).  So, all
+   ctype uses should be through macros like ISPRINT...  If
+   STDC_HEADERS is defined, then autoconf has verified that the ctype
+   macros don't need to be guarded with references to isascii. ...
+   Defining isascii to 1 should let any compiler worth its salt
+   eliminate the && through constant folding."  */
+#if ! defined (isascii) || defined (STDC_HEADERS)
+#undef isascii
+#define isascii(c) 1
 #endif
+
+#ifdef isblank
+#define ISBLANK(c) (isascii (c) && isblank (c))
+#else
+#define ISBLANK(c) ((c) == ' ' || (c) == '\t')
+#endif
+#ifdef isgraph
+#define ISGRAPH(c) (isascii (c) && isgraph (c))
+#else
+#define ISGRAPH(c) (isascii (c) && isprint (c) && !isspace (c))
+#endif
+
+#define ISPRINT(c) (isascii (c) && isprint (c))
+#define ISDIGIT(c) (isascii (c) && isdigit (c))
+#define ISALNUM(c) (isascii (c) && isalnum (c))
+#define ISALPHA(c) (isascii (c) && isalpha (c))
+#define ISCNTRL(c) (isascii (c) && iscntrl (c))
+#define ISLOWER(c) (isascii (c) && islower (c))
+#define ISPUNCT(c) (isascii (c) && ispunct (c))
+#define ISSPACE(c) (isascii (c) && isspace (c))
+#define ISUPPER(c) (isascii (c) && isupper (c))
+#define ISXDIGIT(c) (isascii (c) && isxdigit (c))
 
 /* These are the command codes that appear in compiled regular
    expressions, one per byte.  Some command codes are followed by
@@ -328,7 +364,7 @@ re_set_syntax(syntax)
 }
 
 /* Set by re_set_syntax to the current regexp syntax to recognize.  */
-long re_syntax_options = DEFAULT_MBCTYPE;
+long re_syntax_options = 0;
 
 
 /* Macros for re_compile_pattern, which is found below these definitions.  */
@@ -404,7 +440,7 @@ long re_syntax_options = DEFAULT_MBCTYPE;
   { if (p != pend) 							\
       { 								\
         PATFETCH(c); 							\
-	while (isdigit(c)) 						\
+	while (ISDIGIT(c)) 						\
 	  { 								\
 	    if (num < 0) 						\
 	       num = 0; 						\
@@ -1205,7 +1241,7 @@ re_compile_pattern(pattern, size, bufp)
 		      for (c = 0; c < (1 << BYTEWIDTH); c++)
 		          if (SYNTAX(c) != Sword)
 			      SET_LIST_BIT(c);
-		      if (re_syntax_options & RE_MBCTYPE_MASK) {
+		      if (current_mbctype) {
 			  set_list_bits(0x8000, 0xffff, (unsigned char*)b);
 		      }
 		      last = -1;
@@ -1213,16 +1249,16 @@ re_compile_pattern(pattern, size, bufp)
 
 		    case 's':
 		      for (c = 0; c < 256; c++)
-			  if (isspace(c))
+			  if (ISSPACE(c))
 			      SET_LIST_BIT(c);
 		      last = -1;
 		      continue;
 
 		    case 'S':
 		      for (c = 0; c < 256; c++)
-			  if (!isspace(c))
+			  if (!ISSPACE(c))
 			      SET_LIST_BIT(c);
-		      if (re_syntax_options & RE_MBCTYPE_MASK) {
+		      if (current_mbctype) {
 			  set_list_bits(0x8000, 0xffff, (unsigned char*)b);
 		      }
 		      last = -1;
@@ -1236,9 +1272,9 @@ re_compile_pattern(pattern, size, bufp)
 
 		    case 'D':
 		      for (c = 0; c < 256; c++)
-			  if (!isdigit(c))
+			  if (!ISDIGIT(c))
 			      SET_LIST_BIT(c);
-		      if (re_syntax_options & RE_MBCTYPE_MASK) {
+		      if (current_mbctype) {
 			  set_list_bits(0x8000, 0xffff, (unsigned char*)b);
 		      }
 		      last = -1;
@@ -1246,7 +1282,7 @@ re_compile_pattern(pattern, size, bufp)
 
 		    case 'x':
 		      c = scan_hex(p, 2, &numlen);
-		      if ((re_syntax_options & RE_MBCTYPE_MASK) && c > 0x7f)
+		      if (current_mbctype && c > 0x7f)
 			  c = 0xff00 | c;
 		      p += numlen;
 		      break;
@@ -1255,8 +1291,8 @@ re_compile_pattern(pattern, size, bufp)
 		    case '5': case '6': case '7': case '8': case '9':
 		      PATUNFETCH;
 		      c = scan_oct(p, 3, &numlen);
-		      if ((re_syntax_options & RE_MBCTYPE_MASK) && ismbchar(c))
-			  c = 0xff00 | c;
+		      if (ismbchar(c))
+			  c |= 0xff00;
 		      p += numlen;
 		      break;
 
@@ -1693,7 +1729,7 @@ re_compile_pattern(pattern, size, bufp)
 	      c1 = 0;
 	      c = scan_hex(p, 2, &numlen);
 	      p += numlen;
-	      if ((re_syntax_options & RE_MBCTYPE_MASK) && c > 0x7f)
+	      if (current_mbctype && c > 0x7f)
 		  c1 = 0xff;
 	      goto numeric_char;
 
@@ -1702,7 +1738,7 @@ re_compile_pattern(pattern, size, bufp)
 	      c1 = 0;
 	      c = scan_oct(p, 3, &numlen);
 	      p += numlen;
-	      if ((re_syntax_options & RE_MBCTYPE_MASK) && c > 0x7f)
+	      if (current_mbctype && c > 0x7f)
 		  c1 = 0xff;
 	      goto numeric_char;
 
@@ -1726,7 +1762,7 @@ re_compile_pattern(pattern, size, bufp)
 		      c = scan_oct(p_save, 3, &numlen);
 		      p = p_save + numlen;
 		      c1 = 0;
-		      if ((re_syntax_options & RE_MBCTYPE_MASK) && c > 0x7f)
+		      if (current_mbctype && c > 0x7f)
 			  c1 = 0xff;
 		      goto numeric_char;
 		  }
@@ -3393,4 +3429,101 @@ re_free_registers(regs)
     if (regs->allocated == 0) return;
     if (regs->beg) free(regs->beg);
     if (regs->end) free(regs->end);
+}
+
+/* Functions for multi-byte support.
+   Created for grep multi-byte extension Jul., 1993 by t^2 (Takahiro Tanimoto)
+   Last change: Jul. 9, 1993 by t^2  */
+static const unsigned char mbctab_ascii[] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+static const unsigned char mbctab_euc[] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+};
+
+static const unsigned char mbctab_sjis[] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+};
+
+#ifdef EUC
+const unsigned char *mbctab = mbctab_euc;
+int current_mbctype = MBCTYPE_EUC;
+#else
+#ifdef SJIS
+const unsigned char *mbctab = mbctab_sjis;
+int current_mbctype = MBCTYPE_SJIS;
+#else
+const unsigned char *mbctab = mbctab_ascii;
+int current_mbctype = MBCTYPE_ASCII;
+#endif
+#endif
+
+void
+#ifdef __STDC__
+mbcinit(int mbctype)
+#else
+mbcinit(mbctype)
+     int mbctype;
+#endif
+{
+  switch (mbctype) {
+  case MBCTYPE_ASCII:
+    mbctab = mbctab_ascii;
+    current_mbctype = MBCTYPE_ASCII;
+    break;
+  case MBCTYPE_EUC:
+    mbctab = mbctab_euc;
+    current_mbctype = MBCTYPE_EUC;
+    break;
+  case MBCTYPE_SJIS:
+    mbctab = mbctab_sjis;
+    current_mbctype = MBCTYPE_SJIS;
+    break;
+  }
 }

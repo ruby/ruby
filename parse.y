@@ -3649,6 +3649,14 @@ logop(type, left, right)
 {
     value_expr(left);
 
+    switch (nd_type(left)) {
+      case NODE_NIL:		/* always false */
+      case NODE_FALSE:
+	return type == NODE_OR ? right : left;
+      case NODE_LIT:		/* always true */
+	return type == NODE_AND ? right : left;
+    }
+
     return node_newnode(type, cond(left), cond(right));
 }
 

@@ -1,4 +1,17 @@
+Mon Mar  9 16:53:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (f_sprintf): zero padding failed for negative
+	  integers.
+
+	* sprintf.c (remove_sign_bits): failed to remove some bits.
+
+Sat Mar  7 00:43:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (logop): short cut syntax tree.
+
 Fri Mar  6 17:23:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (mbcinit): table driven mbchar detection.
 
 	* object.c (obj_alloc): check for allocating instance for the
 	  primitive classes (mostly perfect).

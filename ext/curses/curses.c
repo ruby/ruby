@@ -109,9 +109,11 @@ curses_close_screen()
 static void
 curses_finalize()
 {
+    if (stdscr
 #ifdef HAVE_ISENDWIN
-    if (!isendwin())
+	&& !isendwin()
 #endif
+	)
 	endwin();
 }
 
