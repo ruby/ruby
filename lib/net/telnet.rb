@@ -510,12 +510,7 @@ module Net
       end
     end
 
-    def print(string)
-      if $VERBOSE
-        $stderr.puts 'WARNING: Telnet#print("string") NOT adds "\n" to the last of "string", in the future.'
-        $stderr.puts '         cf. Telnet#puts().'
-      end
-      string = string + "\n"
+    def _print(string)
       string = string.gsub(/#{IAC}/no, IAC + IAC) if @options["Telnetmode"]
 
       if @options["Binmode"]
@@ -535,7 +530,15 @@ module Net
     end
 
     def puts(string)
-      self.print(string)
+      self._print(string + "\n")
+    end
+
+    def print(string)
+      if $VERBOSE
+        $stderr.puts 'WARNING: Telnet#print("string") NOT adds "\n" to the last of "string", in the future.'
+        $stderr.puts '         cf. Telnet#puts().'
+      end
+      self.puts(string)
     end
 
     def cmd(options)
@@ -550,7 +553,7 @@ module Net
         string = options
       end
 
-      self.print(string)
+      self.puts(string)
       if iterator?
         waitfor({"Prompt" => match, "Timeout" => time_out}){|c| yield c }
       else
