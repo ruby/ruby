@@ -895,8 +895,7 @@ void
 ruby_set_current_source()
 {
     if (ruby_current_node) {
-	ruby_sourcefile = ruby_current_node->nd_file;
-	ruby_sourceline = nd_line(ruby_current_node);
+	SET_CURRENT_SOURCE();
     }
 }
 
@@ -2061,6 +2060,7 @@ call_trace_func(event, node, self, id, klass)
 
     if (!trace_func) return;
     if (tracing) return;
+    if (ruby_in_compile) return;
 
     node_save[0] = ruby_last_node;
     if (!(node_save[1] = ruby_current_node)) {
@@ -4501,17 +4501,21 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    }
 	    if (trace_func) {
 		int state;
+		NODE *volatile node = ruby_current_node;
 
 		call_trace_func("c-call", ruby_current_node, recv, id, klass);
+		ruby_current_node = 0;
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
 		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
 		}
 		POP_TAG();
+		ruby_current_node = node;
 		call_trace_func("c-return", ruby_current_node, recv, id, klass);
 		if (state) JUMP_TAG(state);
 	    }
 	    else {
+		ruby_current_node = 0;
 		result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
 	    }
 	}

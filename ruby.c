@@ -321,19 +321,20 @@ require_libraries()
     ruby_eval_tree = ruby_eval_tree_begin = 0;
     req_list_last = 0;
     while (list) {
+	ruby_current_node = 0;
 	rb_require(list->name);
 	tmp = list->next;
 	free(list->name);
 	free(list);
 	list = tmp;
+	ruby_current_node = save[2];
+	ruby_set_current_source();
     }
     req_list_head.next = 0;
     ruby_eval_tree = save[0];
     ruby_eval_tree_begin = save[1];
-    ruby_current_node = save[2];
-    ruby_set_current_source();
-    ruby_current_node = 0;
     rb_gc_force_recycle((VALUE)save[2]);
+    ruby_current_node = 0;
 }
 
 static void

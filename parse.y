@@ -2335,6 +2335,7 @@ yycompile(f, line)
     NODE *node = 0;
     struct RVarmap *vp, *vars = ruby_dyna_vars;
 
+    ruby_in_compile = 1;
     if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
 	VALUE hash, fname;
@@ -2365,7 +2366,6 @@ yycompile(f, line)
     quoted_term = -1;
     ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
-    ruby_in_compile = 1;
     n = yyparse();
     ruby_debug_lines = 0;
     compile_for_eval = 0;
