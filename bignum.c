@@ -804,7 +804,10 @@ bigdivmod(x, y, div, mod, modulo)
 	RBIGNUM(z)->sign = RBIGNUM(x)->sign==RBIGNUM(y)->sign;
 	if (div) *div = bignorm(z);
 	if (mod) {
-	    if (!RBIGNUM(y)->sign) t2 = -(long)t2;
+	    if (!RBIGNUM(x)->sign) t2 = -(long)t2;
+	    if (modulo && RBIGNUM(x)->sign != RBIGNUM(y)->sign) {
+		t2 = t2 + yds[0] * (RBIGNUM(y)->sign ? 1 : -1);
+	    }
 	    *mod = INT2NUM(t2);
 	}
 	return;
