@@ -357,7 +357,7 @@ isInternalCmd(char *cmd)
         int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
 
         for( i = 0; szInternalCmds[i] ; i++){
-	    if(!strcmp(szInternalCmds[i], vec[0])){
+	    if(!strcasecmp(szInternalCmds[i], vec[0])){
 		fRet = 1;
 		break;
 	    }
@@ -735,6 +735,8 @@ char *cmd;
     int status = -1;
     char *shell, *cmd2;
     int mode = NtSyncProcess ? P_WAIT : P_NOWAIT;
+    char quote;
+    char *exec;
 
     /* save an extra exec if possible */
     if ((shell = getenv("RUBYSHELL")) != 0) {
@@ -778,20 +780,47 @@ char *cmd;
     a = argv;
     for (s = cmd2; *s;) {
 	while (*s && isspace(*s)) s++;
-	if (*s)
+	if (*s == '"') {
+	    quote = *s;
+	    *(a++) = s++;
+	    while (*s) {
+		if (*s == '\\' && *(s + 1) == quote) {
+		    memmove(s, s + 1, strlen(s) + 1);
+		    s++;
+		}
+		else if (*s == quote) {
+		    s++;
+		    break;
+		}
+		s++;
+	    }
+	}
+	else if (*s) {
 	    *(a++) = s;
-	while (*s && !isspace(*s)) s++;
+	    while (*s && !isspace(*s)) s++;
+	}
 	if (*s)
 	    *s++ = '\0';
     }
     *a = NULL;
+    exec = NULL;
     if (argv[0]) {
-	if ((status = spawnvpe(mode, argv[0], argv, environ)) == -1) {
+	exec = ALLOC_N(char, (strlen(argv[0]) + 1));
+	if (argv[0][0] == '"' && argv[0][strlen(argv[0]) - 1] == '"') {
+	    strcpy(exec, &argv[0][1]);
+	    exec[strlen(exec) - 1] = '\0';
+	}
+	else {
+	    strcpy(exec, argv[0]);
+	}
+	if ((status = spawnvpe(mode, exec, argv, environ)) == -1) {
+	    free(exec);
 	    free(argv);
 	    free(cmd2);
 	    return -1;
 	}
     }
+    free(exec);
     free(cmd2);
     free(argv);
     return (int)((status & 0xff) << 8);

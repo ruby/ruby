@@ -1,3 +1,12 @@
+Sun Jan 14 18:21:30 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* win32/config.status.in: add some field.
+
+	* win32/win32.c (isInternalCmd): ignore case for shell's internal
+	  command.
+
+	* win32/win32.c (do_spawn): recognize quoted command line.
+
 Sun Jan 14 04:10:27 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb (adding): too few "yield" in case of arg is
