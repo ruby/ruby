@@ -13,8 +13,6 @@ end
 # ERB::Compiler
 class ERB
   class Compiler
-    private
-
     class ParcentLine
       def initialize(compiler, str)
 	@compiler = compiler
@@ -93,7 +91,6 @@ class ERB
       list
     end
 
-    public
     def push_line(list, line)
       re = SplitRegexp
       line = line.split(re)
