@@ -1,3 +1,7 @@
+Wed Jul 26 10:09:01 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: set SOLIBS to LIBS on Cygwin.
+
 Tue Jul 25 19:03:04 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* cygwin/GNUmakefile: use puts instead of print, because
