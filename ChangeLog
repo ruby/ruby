@@ -1,3 +1,22 @@
+Wed Mar 10 16:28:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (return_jump): set return value to the return
+	  destination.  separated from localjump_destination().
+
+	* eval.c (break_jump): break innermost loop (or thread or proc).
+
+	* eval.c (rb_yield_0): set exit_value for block break.
+
+Wed Mar 10 15:58:43 2004  Ryan Davis  <ryand@zenspider.com>
+
+	* eval.c (eval): Only print backtrace if generating the backtrace
+	  doesn't generate an exception.  [ruby-core:02621]
+
+Tue Mar  9 13:04:26 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_ungetc): raise IOError instead of calling
+	  rb_sys_fail().  [ruby-talk:23181]
+
 Mon Mar  8 19:32:28 2004  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/common.rb (URI::REGEXP::PATTERN::HOSTPORT): (?:#{PORT})
@@ -149,6 +168,11 @@ Sat Feb 21 11:12:15 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/os2.c, missing/x68.c: typo fix.  pointed out by greentea.
 
+Fri Feb 20 18:59:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/init.rb (IRB::IRB.parse_opts): add -I option to
+	  irb. [ruby-dev:39243]
+
 Thu Feb 19 23:24:16 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb (Generators::HtmlClass::build_attribute_list):
@@ -200,6 +224,16 @@ Wed Feb 18 22:03:11 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 Wed Feb 18 17:18:01 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c: need to include <olectl.h> on Cygwin.
+
+Wed Feb 18 10:40:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): do not prepend dots for negative
+	  numbers if FZERO is specified.  [ruby-dev:39218]
+
+Tue Feb 17 23:40:34 2004  Guy Decoux  <ts@moulon.inra.fr>
+
+	* sprintf.c (rb_f_sprintf): preserve original val for
+	  format_integer. [ruby-talk:92975]
 
 Tue Feb 17 23:28:45 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 

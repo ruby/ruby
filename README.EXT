@@ -115,7 +115,7 @@ can be cast to retrieve the pointer to the struct.  The casting macro
 will be of the form RXXXX for each data type; for instance, RARRAY(obj). 
 See "ruby.h".
 
-For example, `RSTRING(size)->len' is the way to get the size of the
+For example, `RSTRING(str)->len' is the way to get the size of the
 Ruby String object.  The allocated region can be accessed by
 `RSTRING(str)->ptr'.  For arrays, use `RARRAY(ary)->len' and
 `RARRAY(ary)->ptr' respectively.
