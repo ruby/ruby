@@ -1,3 +1,9 @@
+Fri Mar  5 23:13:08 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: support WebDAV methods, PROPPATCH, LOCK,
+	  UNLOCK, OPTIONS, PROPFIND, DELETE, MOVE, COPY, MKCOL.
+	  This patch is contributed by Tatsuki Sugiura.
+
 Fri Mar  5 20:58:37 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: Net::HTTPResponse#response is obsolete.

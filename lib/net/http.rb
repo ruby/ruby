@@ -705,6 +705,60 @@ module Net # :nodoc:
       res
     end
 
+    # Sends a PROPPATCH request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def proppatch(path, body, initheader = nil)
+      request(Proppatch.new(path, initheader), body)
+    end
+
+    # Sends a LOCK request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def lock(path, body, initheader = nil)
+      request(Lock.new(path, initheader), body)
+    end
+
+    # Sends a UNLOCK request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def unlock(path, body, initheader = nil)
+      request(Unlock.new(path, initheader), body)
+    end
+
+    # Sends a OPTIONS request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def options(path, initheader = nil)
+      request(Options.new(path, initheader))
+    end
+
+    # Sends a PROPFIND request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def propfind(path, body = nil, initheader = {'Depth' => '0'})
+      request(Propfind.new(path, initheader), body)
+    end
+
+    # Sends a DELETE request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def delete(path, initheader = {'Depth' => 'Infinity'})
+      request(Delete.new(path, initheader))
+    end
+
+    # Sends a MOVE request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def move(path, initheader = nil)
+      request(Move.new(path, initheader))
+    end
+
+    # Sends a COPY request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def copy(path, initheader = nil)
+      request(Copy.new(path, initheader))
+    end
+
+    # Sends a MKCOL request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def mkcol(path, body = nil, initheader = nil)
+      request(Mkcol.new(path, initheader), body)
+    end
+
     # Sends a GET request to the +path+ and gets a response,
     # as an HTTPResponse object.
     # 
@@ -1201,6 +1255,60 @@ module Net # :nodoc:
 
     class Put < HTTPRequest
       METHOD = 'PUT'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Proppatch < HTTPRequest
+      METHOD = 'PROPPATCH'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Lock < HTTPRequest
+      METHOD = 'LOCK'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Unlock < HTTPRequest
+      METHOD = 'UNLOCK'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Options < HTTPRequest
+      METHOD = 'OPTIONS'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = false
+    end
+
+    class Propfind < HTTPRequest
+      METHOD = 'PROPFIND'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Delete < HTTPRequest
+      METHOD = 'DELETE'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Move < HTTPRequest
+      METHOD = 'MOVE'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Copy < HTTPRequest
+      METHOD = 'COPY'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Mkcol < HTTPRequest
+      METHOD = 'MKCOL'
       REQUEST_HAS_BODY = true
       RESPONSE_HAS_BODY = true
     end
