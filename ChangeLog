@@ -1,3 +1,7 @@
+Tue Apr  6 00:13:43 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/rinda.rb: add require 'drb/drb'
+
 Mon Apr  5 22:25:32 2004  Tanaka Akira  <akr@m17n.org>
 
 	* test/zlib/test_zlib.rb: new file.
