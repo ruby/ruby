@@ -19,7 +19,8 @@ module WEBrick
     class CGIHandler < AbstractServlet
       Ruby = File::join(::Config::CONFIG['bindir'],
                         ::Config::CONFIG['ruby_install_name'])
-      CGIRunner = "#{Ruby} #{Config::LIBDIR}/httpservlet/cgi_runner.rb"
+      Ruby << ::Config::CONFIG['EXEEXT']
+      CGIRunner = "\"#{Ruby}\" \"#{Config::LIBDIR}/httpservlet/cgi_runner.rb\""
 
       def initialize(server, name)
         super
@@ -32,7 +33,7 @@ module WEBrick
         data = nil
         status = -1
 
-        cgi_in = IO::popen(@cgicmd, "w")
+        cgi_in = IO::popen(@cgicmd, "wb")
         cgi_out = Tempfile.new("webrick.cgiout.", @tempdir)
         cgi_err = Tempfile.new("webrick.cgierr.", @tempdir)
         begin
@@ -55,6 +56,7 @@ module WEBrick
         ensure
           cgi_in.close
           status = $? >> 8
+          sleep 0.1 if /mswin/ =~ RUBY_PLATFORM
           data = cgi_out.read
           cgi_out.close(true)
           if errmsg = cgi_err.read
