@@ -1,3 +1,9 @@
+Tue May  6 17:51:54 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/pop.rb: rename method: POP3#mail_size -> n_mails
+
+	* lib/net/pop.rb: rename method: POP3#bytes -> n_bytes
+
 Tue May  6 17:21:01 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/bigdecimal/.cvsignore: new file.

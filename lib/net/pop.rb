@@ -226,6 +226,7 @@ Normally unique-id is a hash of the message.
 
 : auth_only( address, port = 110, account, password, isapop = false )
     (just for POP-before-SMTP)
+
     opens POP3 session and does autholize and quit.
     This method must not be called while POP3 session is opened.
     This method raises POPAuthenticationError if authentication is failed.
@@ -272,6 +273,12 @@ Normally unique-id is a hash of the message.
     finishes POP3 session.
     If POP3 session had not be started, raises an IOError.
 
+: n_mails
+    returns the number of mails on the POP server.
+
+: n_bytes
+    returns the bytes of all mails on the POP server.
+
 : mails
     an array of Net::POPMail objects.
     This array is renewed when session restarts.
@@ -297,21 +304,6 @@ Normally unique-id is a hash of the message.
         end
 
     This method raises POPError if any problem happend.
-
-: auth_only( account, password )
-    (just for POP-before-SMTP)
-
-    opens POP3 session, does authorization, then quit.
-    You must not call this method after POP3 session is opened.
-
-    This method raises POPAuthenticationError if authentication is failed.
-
-        # Typical usage
-        pop = Net::POP3.new('your.pop3.server')
-        pop.auth_only('Your account', 'Your password')
-        Net::SMTP.start(....) {|smtp|
-            ....
-        }
 
 : reset
     reset the session. All "deleted mark" are removed.
@@ -477,8 +469,8 @@ module Net
       @debug_output = nil
 
       @mails = nil
-      @nmails = nil
-      @bytes = nil
+      @n_mails = nil
+      @n_bytes = nil
     end
 
     def apop?
@@ -565,21 +557,21 @@ module Net
     # POP protocol wrapper
     #
 
-    def mail_size
-      return @nmails if @nmails
-      @nmails, @bytes = command().stat
-      @nmails
+    def n_mails
+      return @n_mails if @n_mails
+      @n_mails, @n_bytes = command().stat
+      @n_mails
     end
 
-    def bytes
-      return @bytes if @bytes
-      @nmails, @bytes = command().stat
-      @bytes
+    def n_bytes
+      return @n_bytes if @n_bytes
+      @n_mails, @n_bytes = command().stat
+      @n_bytes
     end
 
     def mails
       return @mails.dup if @mails
-      if mail_size() == 0
+      if n_mails() == 0
         # some popd raises error for LIST on the empty mailbox.
         @mails = []
         return []
