@@ -1,3 +1,10 @@
+Sat Dec  6 17:23:00 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/soap.rb(SOAP::Env.getenv): allow upcase environment variable
+	  as well as downcase one.
+
+	* lib/soap/netHttpClient.rb(SOAP::NetHttpClient#proxy=): check URI.
+
 Fri Dec  5 23:22:30 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions::assert_raises,

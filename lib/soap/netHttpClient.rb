@@ -40,6 +40,11 @@ class NetHttpClient
       @proxy = nil
     else
       @proxy = URI.parse(proxy_str)
+      if @proxy.scheme == nil or @proxy.scheme.downcase != 'http' or
+	  @proxy.host == nil or @proxy.port == nil
+	raise ArgumentError.new("unsupported proxy `#{proxy_str}'")
+      end
+      @proxy
     end
   end
 

@@ -100,7 +100,7 @@ end
 
 module Env
   def self.getenv(name)
-    ENV[name.downcase] || ENV[name]
+    ENV[name.downcase] || ENV[name.upcase]
   end
 
   use_proxy = getenv('soap_use_proxy') == 'on'
