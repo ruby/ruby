@@ -621,7 +621,7 @@ curses_pair_number(VALUE obj, VALUE attrs)
 {
   return INT2FIX(PAIR_NUMBER(NUM2INT(attrs)));
 }
-#endif
+#endif /* USE_COLOR */
 
 #ifdef USE_MOUSE
 struct mousedata {
@@ -1443,7 +1443,7 @@ Init_curses()
 #endif /* USE_COLOR */
 #ifdef USE_MOUSE
     rb_define_module_function(mCurses, "getmouse", curses_getmouse, 0);
-    rb_define_module_function(mCurses, "ungetmouse", curses_getmouse, 1);
+    rb_define_module_function(mCurses, "ungetmouse", curses_ungetmouse, 1);
     rb_define_module_function(mCurses, "mouseinterval", curses_mouseinterval, 1);
     rb_define_module_function(mCurses, "mousemask", curses_mousemask, 1);
 #endif /* USE_MOUSE */
@@ -1489,14 +1489,12 @@ Init_curses()
     rb_define_method(cWindow, "keypad", window_keypad, 1);
     rb_define_method(cWindow, "keypad=", window_keypad, 1);
 
-#ifdef USE_COLOR
     rb_define_method(cWindow, "attroff", window_attroff, 1);
     rb_define_method(cWindow, "attron", window_attron, 1);
     rb_define_method(cWindow, "attrset", window_attrset, 1);
     rb_define_method(cWindow, "bkgdset", window_bkgdset, 1);
     rb_define_method(cWindow, "bkgd", window_bkgd, 1);
     rb_define_method(cWindow, "getbkgd", window_getbkgd, 0);
-#endif /* USE_COLOR */
 
     rb_define_method(cWindow, "nodelay=", window_nodelay, 1);
     rb_define_method(cWindow, "timeout=", window_timeout, 1);

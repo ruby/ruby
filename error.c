@@ -642,8 +642,6 @@ syserr_eqq(self, exc)
     return Qfalse;
 }
 
-static void init_syserr _((void));
-
 void
 Init_Exception()
 {

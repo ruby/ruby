@@ -16,24 +16,24 @@ class WeakRef<Delegator
   class RefError<StandardError
   end
 
-  ID_MAP =  {}		    # obj -> [ref,...]
-  ID_REV_MAP =  {}          # ref -> obj
+  @@id_map =  {}                # obj -> [ref,...]
+  @@id_rev_map =  {}            # ref -> obj
   @@final = lambda{|id|
     __old_status = Thread.critical
     Thread.critical = true
     begin
-      rids = ID_MAP[id]
+      rids = @@id_map[id]
       if rids
 	for rid in rids
-	  ID_REV_MAP.delete(rid)
+	  @@id_rev_map.delete(rid)
 	end
-	ID_MAP.delete(id)
+	@@id_map.delete(id)
       end
-      rid = ID_REV_MAP[id]
+      rid = @@id_rev_map[id]
       if rid
-	ID_REV_MAP.delete(id)
-	ID_MAP[rid].delete(id)
-	ID_MAP.delete(rid) if ID_MAP[rid].empty?
+	@@id_rev_map.delete(id)
+	@@id_map[rid].delete(id)
+	@@id_map.delete(rid) if @@id_map[rid].empty?
       end
     ensure
       Thread.critical = __old_status
@@ -48,16 +48,16 @@ class WeakRef<Delegator
     __old_status = Thread.critical
     begin
       Thread.critical = true
-      ID_MAP[@__id] = [] unless ID_MAP[@__id]
+      @@id_map[@__id] = [] unless @@id_map[@__id]
     ensure
       Thread.critical = __old_status
     end
-    ID_MAP[@__id].push self.__id__
-    ID_REV_MAP[self.__id__] = @__id
+    @@id_map[@__id].push self.__id__
+    @@id_rev_map[self.__id__] = @__id
   end
 
   def __getobj__
-    unless ID_REV_MAP[self.__id__] == @__id
+    unless @@id_rev_map[self.__id__] == @__id
       raise RefError, "Illegal Reference - probably recycled", caller(2)
     end
     begin
@@ -68,7 +68,7 @@ class WeakRef<Delegator
   end
 
   def weakref_alive?
-    ID_REV_MAP[self.__id__] == @__id
+    @@id_rev_map[self.__id__] == @__id
   end
 end
 

@@ -1,3 +1,8 @@
+Wed Dec 10 17:17:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): should return given string even if data read is
+	  empty.  [ruby-dev:22207]
+
 Wed Dec 10 17:16:06 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_read): adjust behavior at reading

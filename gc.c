@@ -579,7 +579,6 @@ void
 rb_gc_mark_locations(start, end)
     VALUE *start, *end;
 {
-    VALUE *tmp;
     long n;
 
     n = end - start;
@@ -655,7 +654,6 @@ gc_mark(ptr, lev)
     VALUE ptr;
     int lev;
 {
-    int ret;
     register RVALUE *obj;
 
     obj = RANY(ptr);

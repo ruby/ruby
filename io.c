@@ -801,7 +801,6 @@ read_all(fptr, siz, str)
 	siz += BUFSIZ;
 	rb_str_resize(str, siz);
     }
-    if (bytes == 0) return rb_str_new(0,0);
     if (bytes != siz) rb_str_resize(str, bytes);
 
     return str;
@@ -3456,7 +3455,7 @@ rb_io_ctl(io, req, arg, io_p)
 	rb_raise(rb_eArgError, "return value overflowed string");
     }
 
-    if (fptr->f2 && fileno(fptr->f) != fileno(fptr->f2)) {
+   if (fptr->f2 && fileno(fptr->f) != fileno(fptr->f2)) {
 	/* call on f2 too; ignore result */
 	io_cntl(fileno(fptr->f2), cmd, narg, io_p);
     }

@@ -426,7 +426,7 @@ iconv_convert
 	}
 	else {
 	    /* Some iconv() have a bug, return *outlen out of range */
-	    sprintf(errmsg, "bug?(output length = %d)", sizeof(buffer) - outlen);
+	    sprintf(errmsg, "bug?(output length = %ld)", sizeof(buffer) - outlen);
 	    error = rb_eIconvOutOfRange;
 	}
 
@@ -836,7 +836,6 @@ void
 Init_iconv _((void))
 {
     VALUE rb_cIconv = rb_define_class("Iconv", rb_cData);
-    VALUE metaclass = RBASIC(rb_cIconv)->klass;
 
     rb_define_alloc_func(rb_cIconv, iconv_s_allocate);
     rb_define_singleton_method(rb_cIconv, "open", iconv_s_open, 2);
