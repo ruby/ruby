@@ -2,7 +2,7 @@
 # usege: ruby occur.rb file..
 freq = Hash.new(0)
 while gets()
-  for word in $_.split(/\W+/)
+  for word in split(/\W+/)
     freq[word] += 1
   end
 end
