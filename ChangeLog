@@ -1,3 +1,11 @@
+Sun Mar 13 02:09:03 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_pkey_dh.c (ossl_create_dh): fix typo.
+	  patch from IWATSUKI Hiroyuki. [ruby-dev:25867]
+
+	* ext/openssl/ossl_ssl.c (ossl_tmp_dh_callback): ditto.
+	  (ossl_call_tmp_dh_callback): ditto
+
 Thu Mar 10 19:10:29 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (lib_eventloop_ensure): mis-delete a timer handler

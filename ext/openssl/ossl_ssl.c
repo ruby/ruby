@@ -223,7 +223,7 @@ ossl_call_tmp_dh_callback(VALUE *args)
     dh = rb_funcall(cb, rb_intern("call"), 3, args[0], args[1], args[2]);
     pkey = GetPKeyPtr(dh);
     if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) return Qfalse;
-    ossl_ssl_set_tmp_dh_key(args[0], dh);
+    ossl_ssl_set_tmp_dh(args[0], dh);
 
     return Qtrue;
 }
@@ -241,7 +241,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
                          (VALUE)args, &status);
     if (status || !success) return NULL;
 
-    return GetPKeyPtr(ossl_ssl_get_dh(obj))->pkey.dh;
+    return GetPKeyPtr(ossl_ssl_get_tmp_dh(obj))->pkey.dh;
 }
 
 static DH*
