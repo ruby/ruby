@@ -1057,6 +1057,25 @@ rb_reg_cur_kcode(re)
 }
 
 static VALUE
+rb_reg_hash(re)
+    VALUE re;
+{
+    int hashval, len;
+    char *p;
+
+    rb_reg_check(re);
+    hashval = RREGEXP(re)->ptr->options;
+    len = RREGEXP(re)->len;
+    p  = RREGEXP(re)->str;
+    while (len--) {
+	hashval = hashval * 33 + *p++;
+    }
+    hashval = hashval + (hashval>>5);
+    
+    return INT2FIX(hashval);
+}
+
+static VALUE
 rb_reg_equal(re1, re2)
     VALUE re1, re2;
 {
@@ -1560,6 +1579,8 @@ Init_Regexp()
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
     rb_define_method(rb_cRegexp, "copy_object", rb_reg_copy_object, 1);
+    rb_define_method(rb_cRegexp, "hash", rb_reg_hash, 0);
+    rb_define_method(rb_cRegexp, "eql?", rb_reg_equal, 1);
     rb_define_method(rb_cRegexp, "==", rb_reg_equal, 1);
     rb_define_method(rb_cRegexp, "=~", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "===", rb_reg_match, 1);
