@@ -1,3 +1,11 @@
+Mon Apr 12 10:27:37  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: backport SIZEOF_TIME_T definition from 1.9.
+
+	* win32/Makefile.sub: ditto.
+
+	* wince/Makefile.sub: ditto.
+
 Sun Apr 11 19:12:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (require_libraries): restore source file/line after
