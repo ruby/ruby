@@ -238,30 +238,33 @@ For the resulting number of significant digits of c,see <A HREF="#PREC">Resultin
 
 <LI><B>add(b,n)</B></LI><BLOCKQUOTE>
 c = a.add(b,n)<BR>
-c = a.add(b,n) performs c = a + b.
+c = a.add(b,n) performs c = a + b.<BR>
 If n is less than the actual significant digits of a + b,
-then c is rounded properly according to the BigDecimal.limit.
-
+then c is rounded properly according to the BigDecimal.limit.<BR>
+If n is zero,then the result is the same as +'s.
 </BLOCKQUOTE>
 <LI><B>sub(b,n)</B></LI><BLOCKQUOTE>
 c = a.sub(b,n)<BR>
-c = a.sub(b,n) performs c = a - b.
+c = a.sub(b,n) performs c = a - b.<BR>
 If n is less than the actual significant digits of a - b,
-then c is rounded properly according to the BigDecimal.limit.
+then c is rounded properly according to the BigDecimal.limit.<BR>
+If n is zero,then the result is the same as -'s.
 
 </BLOCKQUOTE>
 <LI><B>mult(b,n)</B></LI><BLOCKQUOTE>
 c = a.mult(b,n)<BR>
-c = a.mult(b,n) performs c = a * b.
+c = a.mult(b,n) performs c = a * b.<BR>
 If n is less than the actual significant digits of a * b,
-then c is rounded properly according to the BigDecimal.limit.
+then c is rounded properly according to the BigDecimal.limit.<BR>
+If n is zero,then the result is the same as *'s.
 
 </BLOCKQUOTE>
 <LI><B>div(b[,n])</B></LI><BLOCKQUOTE>
 c = a.div(b,n)<BR>
-c = a.div(b,n) performs c = a / b.
+c = a.div(b,n) performs c = a / b.<BR>
 If n is less than the actual significant digits of a / b,
 then c is rounded properly according to the BigDecimal.limit.<BR>
+If n is zero,then the result is the same as /'s.
 If n is not given,then the result will be an integer(BigDecimal) like Float#div.
 </BLOCKQUOTE>
 

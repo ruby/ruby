@@ -284,7 +284,7 @@ GetPositiveInt(VALUE v)
     S_INT n;
     Check_Type(v, T_FIXNUM);
     n = FIX2INT(v);
-    if(n <= 0) {
+    if(n < 0) {
         rb_raise(rb_eArgError, "argument must be positive");
     }
     return n;
@@ -785,33 +785,36 @@ BigDecimal_divmod(VALUE self, VALUE r)
 static VALUE
 BigDecimal_div2(int argc, VALUE *argv, VALUE self)
 {
-    ENTER(10);
-    VALUE obj;
+    ENTER(5);
     VALUE b,n;
     int na = rb_scan_args(argc,argv,"11",&b,&n);
     if(na==1) { /* div in Float sense */
+       VALUE obj;
        Real *div=NULL;
        Real *mod;
        obj = BigDecimal_DoDivmod(self,b,&div,&mod);
        if(obj!=(VALUE)0) return obj;
        return ToValue(div);
     } else {    /* div in BigDecimal sense */
-       Real *res=NULL;
-       Real *av=NULL, *bv=NULL, *cv=NULL;
        U_LONG ix = (U_LONG)GetPositiveInt(n);
-       U_LONG mx = (ix+VpBaseFig()*2);
-       U_LONG pl = VpSetPrecLimit(0);
+       if(ix==0) return BigDecimal_div(self,b);
+       else {
+          Real *res=NULL;
+          Real *av=NULL, *bv=NULL, *cv=NULL;
+          U_LONG mx = (ix+VpBaseFig()*2);
+          U_LONG pl = VpSetPrecLimit(0);
 
-       GUARD_OBJ(cv,VpCreateRbObject(mx,"0"));
-       GUARD_OBJ(av,GetVpValue(self,1));
-       GUARD_OBJ(bv,GetVpValue(b,1));
-       mx = av->Prec + bv->Prec + 2;
-       if(mx <= cv->MaxPrec) mx = cv->MaxPrec+1;
-       GUARD_OBJ(res,VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0"));
-       VpDivd(cv,res,av,bv);
-       VpSetPrecLimit(pl);
-       VpLeftRound(cv,VpGetRoundMode(),ix);
-       return ToValue(cv);
+          GUARD_OBJ(cv,VpCreateRbObject(mx,"0"));
+          GUARD_OBJ(av,GetVpValue(self,1));
+          GUARD_OBJ(bv,GetVpValue(b,1));
+          mx = av->Prec + bv->Prec + 2;
+          if(mx <= cv->MaxPrec) mx = cv->MaxPrec+1;
+          GUARD_OBJ(res,VpCreateRbObject((mx * 2  + 2)*VpBaseFig(), "#0"));
+          VpDivd(cv,res,av,bv);
+          VpSetPrecLimit(pl);
+          VpLeftRound(cv,VpGetRoundMode(),ix);
+          return ToValue(cv);
+       }
     }
 }
 
@@ -821,12 +824,15 @@ BigDecimal_add2(VALUE self, VALUE b, VALUE n)
     ENTER(2);
     Real   *cv;
     U_LONG mx = (U_LONG)GetPositiveInt(n);
-    U_LONG pl = VpSetPrecLimit(0);
-    VALUE   c = BigDecimal_add(self,b);
-    VpSetPrecLimit(pl);
-    GUARD_OBJ(cv,GetVpValue(c,1));
-    VpLeftRound(cv,VpGetRoundMode(),mx);
-    return ToValue(cv);
+    if(mx==0) return BigDecimal_add(self,b);
+    else {
+       U_LONG pl = VpSetPrecLimit(0);
+       VALUE   c = BigDecimal_add(self,b);
+       VpSetPrecLimit(pl);
+       GUARD_OBJ(cv,GetVpValue(c,1));
+       VpLeftRound(cv,VpGetRoundMode(),mx);
+       return ToValue(cv);
+    }
 }
 
 static VALUE
@@ -835,12 +841,15 @@ BigDecimal_sub2(VALUE self, VALUE b, VALUE n)
     ENTER(2);
     Real *cv;
     U_LONG mx = (U_LONG)GetPositiveInt(n);
-    U_LONG pl = VpSetPrecLimit(0);
-    VALUE   c = BigDecimal_sub(self,b);
-    VpSetPrecLimit(pl);
-    GUARD_OBJ(cv,GetVpValue(c,1));
-    VpLeftRound(cv,VpGetRoundMode(),mx);
-    return ToValue(cv);
+    if(mx==0) return BigDecimal_sub(self,b);
+    else {
+       U_LONG pl = VpSetPrecLimit(0);
+       VALUE   c = BigDecimal_sub(self,b);
+       VpSetPrecLimit(pl);
+       GUARD_OBJ(cv,GetVpValue(c,1));
+       VpLeftRound(cv,VpGetRoundMode(),mx);
+       return ToValue(cv);
+    }
 }
 
 static VALUE
@@ -849,12 +858,15 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
     ENTER(2);
     Real *cv;
     U_LONG mx = (U_LONG)GetPositiveInt(n);
-    U_LONG pl = VpSetPrecLimit(0);
-    VALUE   c = BigDecimal_mult(self,b);
-    VpSetPrecLimit(pl);
-    GUARD_OBJ(cv,GetVpValue(c,1));
-    VpLeftRound(cv,VpGetRoundMode(),mx);
-    return ToValue(cv);
+    if(mx==0) BigDecimal_mult(self,b);
+    else {
+       U_LONG pl = VpSetPrecLimit(0);
+       VALUE   c = BigDecimal_mult(self,b);
+       VpSetPrecLimit(pl);
+       GUARD_OBJ(cv,GetVpValue(c,1));
+       VpLeftRound(cv,VpGetRoundMode(),mx);
+       return ToValue(cv);
+    }
 }
 
 static VALUE

@@ -1,3 +1,8 @@
+Fri Aug 29 22:35:00 2003  Shigeo Kobayashi <shigek@ruby-lang.org>
+
+	* bigdecimal.c *.html: The 2nd arg. for add,sub,mult, and div is 0,
+	  then result will be the same as +,-,*,/ respectively.
+
 Fri Aug 29 17:30:15 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* process.c: bug fix

@@ -252,22 +252,24 @@ c の精度については「<A HREF="#PREC">計算精度について</A>」を参照してください。
 <LI><B>add(b,n)</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
 c = a.add(b,n)<BR>
-c = a + b を最大で n 桁まで計算します。
-a + b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。
-
+c = a + b を最大で n 桁まで計算します。<BR>
+a + b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。<BR>
+n がゼロなら + と同じです。
 </BLOCKQUOTE>
 <LI><B>sub(b,n)</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
 c = a.sub(b,n)<BR>
-c = a - b を最大で n 桁まで計算します。
-a - b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。
+c = a - b を最大で n 桁まで計算します。<BR>
+a - b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。<BR>
+n がゼロなら - と同じです。
 
 </BLOCKQUOTE>
 <LI><B>mult(b,n)</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
 c = a.mult(b,n)<BR>
-c = a * b を最大で n 桁まで計算します。
-a * b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。
+c = a * b を最大で n 桁まで計算します。<BR>
+a * b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。<BR>
+n がゼロなら * と同じです。
 
 </BLOCKQUOTE>
 <LI><B>div(b[,n])</B></LI><BLOCKQUOTE>
@@ -275,6 +277,7 @@ a * b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます
 c = a.div(b,n)<BR>
 c = a / b を最大で n 桁まで計算します。
 a / b の精度が n より大きいときは BigDecimal.mode で指定された方法で丸められます。<BR>
+n がゼロなら / と同じです。<BR>
 n が省略されたときは Float#div と同様に結果が整数(BigDecimal)になります。
 </BLOCKQUOTE>
 
