@@ -542,7 +542,7 @@ rb_mod_dup(module)
 {
     VALUE dup = rb_mod_clone(module);
     OBJSETUP(dup, RBASIC(module)->klass, BUILTIN_TYPE(module));
-    if (FL_TEST(mod, FL_SINGLETON)) {
+    if (FL_TEST(module, FL_SINGLETON)) {
 	FL_SET(dup, FL_SINGLETON);
     }
     return dup;
