@@ -1,3 +1,8 @@
+Wed Jan 21 16:44:15 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (merge_libs): squeeze successive same libraries.
+	  [ruby-dev:22652]
+
 Wed Jan 21 16:10:36 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/base64.rb: enclosed in a module.  [ruby-core:02285]

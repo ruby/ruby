@@ -117,6 +117,7 @@ def merge_libs(*libs)
   libs.inject([]) do |x, y|
     xy = x & y
     xn = yn = 0
+    y = y.inject([]) {|ary, e| ary.last == e ? ary : ary << e}
     y.each_with_index do |v, yi|
       if xy.include?(v)
         xi = [x.index(v), xn].max()
