@@ -111,6 +111,8 @@ TESTS =
 !ifndef RDOCTARGET
 RDOCTARGET = install-doc
 !endif
+
+OUTFLAG       = -o
 !ifndef CFLAGS
 CFLAGS = -q $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
 !endif
@@ -353,7 +355,7 @@ s,@LIBRUBYARG_SHARED@,$$(LIBRUBY),;t t
 s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
-s,@OUTFLAG@,-o,;t t
+s,@OUTFLAG@,$(OUTFLAG),;t t
 s,@CPPOUTFILE@,,;t t
 s,@LIBPATHFLAG@, -L"%s",;t t
 s,@RPATHFLAG@,,;t t

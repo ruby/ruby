@@ -1,3 +1,7 @@
+Fri Apr  2 19:28:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bcc32/Makefile.sub (OUTFLAG): needed for static-linked-ext.
+
 Fri Apr  2 18:00:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): extract necessary variables for static link
