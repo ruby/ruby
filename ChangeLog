@@ -1,3 +1,15 @@
+Tue Feb 16 12:40:55 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.2.3 (stable) released.
+
+Wed Feb 10 15:20:03 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): empty pattern should not cause infinite
+	  pattern match loop.
+
+	* regex.c (re_compile_pattern): RE_OPTIMIZE_ANCHOR for /.*/, not
+	  for /(.|\n)/.
+
 Mon Feb  8 23:53:58 1999  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
 
 	* dln.c (FUNCNAME_PATTERN): FreeBSD for alpha/mips
