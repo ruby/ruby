@@ -1,4 +1,4 @@
-Thu Nov 13 20:34:17 2003  Tanaka Akira  <akr@m17n.org>
+Thu Nov 13 20:53:35 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (Kernel[#.]open): hard coded URI schemes removed.
 	  [ruby-ext:02251]

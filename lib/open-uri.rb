@@ -77,7 +77,7 @@ module Kernel
   # http:// and ftp://.  In this http and ftp case, the opened file object
   # is extended by OpenURI::Meta.
   def open(name, *rest, &block)
-    if name.respond_to?("open")
+    if name.respond_to?(:open)
       name.open(*rest, &block)
     elsif name.respond_to?("to_str") &&
           %r{\A[A-Za-z][A-Za-z0-9+\-\.]*://} =~ name &&
