@@ -1127,7 +1127,8 @@ error_print()
 
     eclass = CLASS_OF(ruby_errinfo);
     if (EXEC_TAG() == 0) {
-	e = rb_obj_as_string(ruby_errinfo);
+  	e = rb_funcall(ruby_errinfo, rb_intern("message"), 0, 0);
+ 	StringValue(e);
 	einfo = RSTRING(e)->ptr;
 	elen = RSTRING(e)->len;
     }
@@ -1441,13 +1442,11 @@ ruby_cleanup(ex)
     return ex;
 }
 
-int
-ruby_exec()
+static int
+ruby_exec_internal()
 {
     int state;
-    volatile NODE *tmp;
 
-    Init_stack((void*)&tmp);
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     /* default visibility is private at toplevel */
@@ -1465,6 +1464,15 @@ ruby_stop(ex)
     int ex;
 {
     exit(ruby_cleanup(ex));
+}
+
+int
+ruby_exec()
+{
+    volatile NODE *tmp;
+
+    Init_stack((void*)&tmp);
+    return ruby_exec_internal();
 }
 
 void
@@ -5472,6 +5480,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     if ((++tick & 0xff) == 0) {
 	CHECK_INTS;		/* better than nothing */
 	stack_check();
+	rb_gc_finalize_deferred();
     }
     PUSH_ITER(itr);
     PUSH_FRAME();
@@ -7800,6 +7809,21 @@ blk_copy_prev(block)
 }
 
 
+static void
+blk_dup(dup, orig)
+    struct BLOCK *dup, *orig;
+{
+    MEMCPY(dup, orig, struct BLOCK, 1);
+    frame_dup(&dup->frame);
+
+    if (dup->iter) {
+	blk_copy_prev(dup);
+    }
+    else {
+	dup->prev = 0;
+    }
+}
+
 /*
  * MISSING: documentation
  */
@@ -7814,15 +7838,25 @@ proc_clone(self)
     Data_Get_Struct(self, struct BLOCK, orig);
     bind = Data_Make_Struct(rb_obj_class(self),struct BLOCK,blk_mark,blk_free,data);
     CLONESETUP(bind, self);
-    MEMCPY(data, orig, struct BLOCK, 1);
-    frame_dup(&data->frame);
+    blk_dup(data, orig);
 
-    if (data->iter) {
-	blk_copy_prev(data);
-    }
-    else {
-	data->prev = 0;
-    }
+    return bind;
+}
+
+/*
+ * MISSING: documentation
+ */
+
+static VALUE
+proc_dup(self)
+    VALUE self;
+{
+    struct BLOCK *orig, *data;
+    VALUE bind;
+
+    Data_Get_Struct(self, struct BLOCK, orig);
+    bind = Data_Make_Struct(rb_obj_class(self),struct BLOCK,blk_mark,blk_free,data);
+    blk_dup(data, orig);
 
     return bind;
 }
@@ -9159,6 +9193,7 @@ Init_Proc()
     rb_define_singleton_method(rb_cProc, "new", proc_s_new, -1);
 
     rb_define_method(rb_cProc, "clone", proc_clone, 0);
+    rb_define_method(rb_cProc, "dup", proc_dup, 0);
     rb_define_method(rb_cProc, "call", proc_call, -2);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "[]", proc_call, -2);

@@ -39,13 +39,21 @@
  */
 #define __libc_ia64_register_backing_store_base (4ULL<<61)
 #else
+#ifdef HAVE_UNWIND_H
+#include <unwind.h>
+#else
 #pragma weak __libc_ia64_register_backing_store_base
 extern unsigned long __libc_ia64_register_backing_store_base;
 #endif
 #endif
+#endif
+
+#if defined _WIN32 || defined __CYGWIN__
+#include <windows.h>
+#endif
 
 void re_free_registers _((struct re_registers*));
-void rb_io_fptr_finalize _((struct OpenFile*));
+int rb_io_fptr_finalize _((struct OpenFile*));
 
 #if !defined(setjmp) && defined(HAVE__SETJMP)
 #define setjmp(env) _setjmp(env)
@@ -84,6 +92,7 @@ static unsigned long malloc_increase = 0;
 static unsigned long malloc_limit = GC_MALLOC_LIMIT;
 static void run_final();
 static VALUE nomem_error;
+static void garbage_collect();
 
 void
 rb_memerror()
@@ -111,11 +120,11 @@ ruby_xmalloc(size)
     malloc_increase += size;
 
     if (malloc_increase > malloc_limit) {
-	rb_gc();
+	garbage_collect();
     }
     RUBY_CRITICAL(mem = malloc(size));
     if (!mem) {
-	rb_gc();
+	garbage_collect();
 	RUBY_CRITICAL(mem = malloc(size));
 	if (!mem) {
 	    rb_memerror();
@@ -152,7 +161,7 @@ ruby_xrealloc(ptr, size)
     malloc_increase += size;
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
-	rb_gc();
+	garbage_collect();
 	RUBY_CRITICAL(mem = realloc(ptr, size));
 	if (!mem) {
 	    rb_memerror();
@@ -170,7 +179,6 @@ ruby_xfree(x)
 	RUBY_CRITICAL(free(x));
 }
 
-extern int ruby_in_compile;
 static int dont_gc;
 static int during_gc;
 static int need_call_final = 0;
@@ -373,7 +381,7 @@ rb_newobj()
 {
     VALUE obj;
 
-    if (!freelist) rb_gc();
+    if (!freelist) garbage_collect();
 
     obj = (VALUE)freelist;
     freelist = freelist->as.free.next;
@@ -405,20 +413,21 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
+#ifdef DJGPP
+/* set stack size (http://www.delorie.com/djgpp/v2faq/faq15_9.html) */
+unsigned int _stklen = 0x180000; /* 1.5 kB */
+#endif
+
 #if defined(DJGPP) || defined(_WIN32_WCE)
 static unsigned int STACK_LEVEL_MAX = 65535;
-#else
-#ifdef __human68k__
-extern unsigned int _stacksize;
+#elif defined(__human68k__)
+unsigned int _stacksize = 262144;
 # define STACK_LEVEL_MAX (_stacksize - 4096)
 # undef HAVE_GETRLIMIT
-#else
-#ifdef HAVE_GETRLIMIT
+#elif defined(HAVE_GETRLIMIT)
 static unsigned int STACK_LEVEL_MAX = 655300;
 #else
 # define STACK_LEVEL_MAX 655300
-#endif
-#endif
 #endif
 
 #ifdef C_ALLOCA
@@ -983,25 +992,47 @@ gc_mark_children(ptr, lev)
 static void obj_free _((VALUE));
 
 static void
+finalize_list(p)
+    RVALUE *p;
+{
+    while (p) {
+	RVALUE *tmp = p->as.free.next;
+	run_final((VALUE)p);
+	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
+	    p->as.free.flags = 0;
+	    p->as.free.next = freelist;
+	    freelist = p;
+	}
+	p = tmp;
+    }
+}
+
+static void
+free_unused_heaps()
+{
+    int i, j;
+
+    for (i = j = 1; j < heaps_used; i++) {
+	if (heaps[i].limit == 0) {
+	    free(heaps[i].slot);
+	    heaps_used--;
+	}
+	else {
+	    if (i != j) {
+		heaps[j] = heaps[i];
+	    }
+	    j++;
+	}
+    }
+}
+
+static void
 gc_sweep()
 {
     RVALUE *p, *pend, *final_list;
     int freed = 0;
-    int i, j;
+    int i;
     unsigned long live = 0;
-
-    if (ruby_in_compile && ruby_parser_stack_on_heap()) {
-	/* should not reclaim nodes during compilation
-           if yacc's semantic stack is not allocated on machine stack */
-	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i].slot; pend = p + heaps[i].limit;
-	    while (p < pend) {
-		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
-		    gc_mark((VALUE)p, 0);
-		p++;
-	    }
-	}
-    }
 
     mark_source_filename(ruby_sourcefile);
     st_foreach(source_filenames, sweep_source_filename, 0);
@@ -1067,35 +1098,10 @@ gc_sweep()
 
     /* clear finalization list */
     if (final_list) {
-	RVALUE *tmp;
-
-	if (rb_prohibit_interrupt || ruby_in_compile) {
-	    deferred_final_list = final_list;
-	    return;
-	}
-
-	for (p = final_list; p; p = tmp) {
-	    tmp = p->as.free.next;
-	    run_final((VALUE)p);
-	    if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
-		p->as.free.flags = 0;
-		p->as.free.next = freelist;
-		freelist = p;
-	    }
-	}
+	deferred_final_list = final_list;
+	return;
     }
-    for (i = j = 1; j < heaps_used; i++) {
-	if (heaps[i].limit == 0) {
-	    free(heaps[i].slot);
-	    heaps_used--;
-	}
-	else {
-	    if (i != j) {
-		heaps[j] = heaps[i];
-	    }
-	    j++;
-	}
-    }
+    free_unused_heaps();
 }
 
 void
@@ -1281,8 +1287,8 @@ int rb_setjmp (rb_jmp_buf);
 #endif /* __human68k__ or DJGPP */
 #endif /* __GNUC__ */
 
-void
-rb_gc()
+static void
+garbage_collect()
 {
     struct gc_list *list;
     struct FRAME * volatile frame; /* gcc 2.7.2.3 -O2 bug??  */
@@ -1342,14 +1348,21 @@ rb_gc()
     {
 	ucontext_t ctx;
 	VALUE *top, *bot;
+#ifdef HAVE_UNWIND_H
+	_Unwind_Context *unwctx = _UNW_createContextForSelf();
+#endif
+
 	getcontext(&ctx);
 	mark_locations_array((VALUE*)&ctx.uc_mcontext,
 			     ((size_t)(sizeof(VALUE)-1 + sizeof ctx.uc_mcontext)/sizeof(VALUE)));
-	bot = (VALUE*)__libc_ia64_register_backing_store_base;
-#if defined(__FreeBSD__)
-	top = (VALUE*)ctx.uc_mcontext.mc_special.bspstore;
+#ifdef HAVE_UNWIND_H
+	_UNW_currentContext(unwctx);
+	bot = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
+	top = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSPSTORE);
+	_UNW_destroyContext(unwctx);
 #else
-	top = (VALUE*)ctx.uc_mcontext.sc_ar_bsp;
+	bot = (VALUE*)__libc_ia64_register_backing_store_base;
+	top = (VALUE*)ctx.uc_mcontext.IA64_BSPSTORE;
 #endif
 	rb_gc_mark_locations(bot, top);
     }
@@ -1387,6 +1400,13 @@ rb_gc()
     gc_sweep();
 }
 
+void
+rb_gc()
+{
+    garbage_collect();
+    rb_gc_finalize_deferred();
+}
+
 /*
  *  call-seq:
  *     GC.start                     => nil
@@ -1408,9 +1428,16 @@ void
 Init_stack(addr)
     VALUE *addr;
 {
-#if defined(__human68k__)
-    extern void *_SEND;
-    rb_gc_stack_start = _SEND;
+#if defined(_WIN32) || defined(__CYGWIN__)
+    MEMORY_BASIC_INFORMATION m;
+    memset(&m, 0, sizeof(m));
+    VirtualQuery(&m, &m, sizeof(m));
+    rb_gc_stack_start =
+	STACK_UPPER((VALUE *)&m, (VALUE *)m.BaseAddress,
+		    (VALUE *)((char *)m.BaseAddress + m.RegionSize) - 1);
+#elif defined(STACK_END_ADDRESS)
+    extern void *STACK_END_ADDRESS;
+    rb_gc_stack_start = STACK_END_ADDRESS;
 #else
     if (!addr) addr = (VALUE *)&addr;
     STACK_UPPER(&addr, addr, ++addr);
@@ -1765,6 +1792,18 @@ run_final(obj)
 }
 
 void
+rb_gc_finalize_deferred()
+{
+    RVALUE *p = deferred_final_list;
+
+    deferred_final_list = 0;
+    if (p) {
+	finalize_list(p);
+	free_unused_heaps();
+    }
+}
+
+void
 rb_gc_call_finalizer_at_exit()
 {
     RVALUE *p, *pend;
@@ -1772,14 +1811,7 @@ rb_gc_call_finalizer_at_exit()
 
     /* run finalizers */
     if (need_call_final) {
-	if (deferred_final_list) {
-	    p = deferred_final_list;
-	    while (p) {
-		RVALUE *tmp = p;
-		p = p->as.free.next;
-		run_final((VALUE)tmp);
-	    }
-	}
+	finalize_list(deferred_final_list);
 	for (i = 0; i < heaps_used; i++) {
 	    p = heaps[i].slot; pend = p + heaps[i].limit;
 	    while (p < pend) {

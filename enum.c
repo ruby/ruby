@@ -389,6 +389,9 @@ sort_by_i(i, ary)
     NODE *memo;
 
     v = rb_yield(i);
+    if (RBASIC(ary)->klass) {
+	rb_raise(rb_eRuntimeError, "sort_by reentered");
+    }
     memo = rb_node_newnode(NODE_MEMO, v, i, 0);
     rb_ary_push(ary, (VALUE)memo);
     return Qnil;
@@ -486,6 +489,7 @@ enum_sort_by(obj)
     else {
 	ary = rb_ary_new();
     }
+    RBASIC(ary)->klass = 0;
     rb_iterate(rb_each, obj, sort_by_i, ary);
     if (RARRAY(ary)->len > 1) {
 	qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp, 0);
@@ -493,6 +497,7 @@ enum_sort_by(obj)
     for (i=0; i<RARRAY(ary)->len; i++) {
 	RARRAY(ary)->ptr[i] = RNODE(RARRAY(ary)->ptr[i])->u2.value;
     }
+    RBASIC(ary)->klass = rb_cArray;
     return ary;
 }
 
@@ -879,7 +884,7 @@ enum_zip(argc, argv, obj)
     NODE *memo;
 
     for (i=0; i<argc; i++) {
-	argv[i] = rb_convert_type(argv[i], T_ARRAY, "Array", "to_ary");
+	argv[i] = rb_convert_type(argv[i], T_ARRAY, "Array", "to_a");
     }
     result = rb_block_given_p() ? Qnil : rb_ary_new();
     memo = rb_node_newnode(NODE_MEMO, result, rb_ary_new4(argc, argv), 0);

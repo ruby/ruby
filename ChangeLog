@@ -1,3 +1,29 @@
+Wed Oct 20 19:45:13 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): 	reentrant check.  [ruby-dev:24432]
+
+	* backport all SEGV bug fixes from CVS HEAD.  [ruby-dev:24536]
+
+Wed Oct 20 04:17:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dbm/dbm.c (fdbm_delete_if): should check if deleting element
+	  is a string.  [ruby-dev:24490]
+
+	* ext/sdbm/init.c (fsdbm_delete_if): ditto.
+
+Wed Oct 20 01:37:18 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_times): Array#* should return an instance of
+	  the class of right operand.  [ruby-dev:24526]
+
+	* ext/zlib/zlib.c (zstream_detach_buffer): should not expose
+	  class-less object to Ruby world. [ruby-dev:24530]
+
+	* eval.c (proc_dup): provide Proc#dup as well.  [ruby-talk:116915]
+
+	* eval.c (ruby_exec): stack marking position may be higher than
+	  expected.  thanks to Guy Decoux.  [ruby-core:03527]
+
 Tue Oct 19 22:43:12 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_attr): If
@@ -35,6 +61,8 @@ Tue Oct 19 08:54:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Oct 19 08:46:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_upto): method result must be checked.  [ruby-dev:24504]
+
+	* eval.c (error_print): ditto.  [ruby-dev:24519]
 
 Mon Oct 18 23:37:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -6025,6 +6053,11 @@ Mon Oct 20 09:45:12 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* lib/debug.rb (debug_command): remove debug print.
 
+Wed Oct 20 00:25:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (search_required): required name must not be changed before
+	  loading.  [ruby-dev:24492]
+
 Sun Oct 19 13:12:30 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (foreachline, dir_foreach): add obsolete warning.
@@ -7008,6 +7041,35 @@ Thu Oct  2 00:21:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	* test/soap/calc/*: give httpd config param "CGIInterpreter".
 	  "/usr/bin/env ruby" thing does not work under non-Unix boxes.
 
+Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_byte): retrieve pointer from string value for each
+	  time.  [ruby-dev:24404]
+
+	* marshal.c (r_bytes0): ditto.
+
+	* enum.c (sort_by_i): re-entrance check added.  [ruby-dev:24399]
+
+	* io.c (io_read): should freeze all reading buffer.
+	  [ruby-dev:24400]
+
+	* string.c (rb_str_sum): should use bignums when bits is greater
+	  than or equals to sizeof(long)*CHAR_BITS. [ruby-dev:24395]
+
+	* eval.c (specific_eval): defer pointer retrieval to prevent
+	  unsafe sourcefile string modification.  [ruby-dev:24382]
+
+	* string.c (rb_str_sum): wrong cast caused wrong result.
+	  [ruby-dev:24385]
+
+	* enum.c (enum_sort_by): hide temporary array from
+	  ObjectSpace.each_object.  [ruby-dev:24386]
+
+	* string.c (rb_str_sum): check was done with false pointer.
+	  [ruby-dev:24383]
+
+	* string.c (rb_str_sum): string may be altered.  [ruby-dev:24381]
+
 Thu Oct  2 00:25:21 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (ruby_signal_name): adjust to the prototype.
@@ -7170,6 +7232,20 @@ Sat Sep 27 09:44:18 2003  Minero Aoki  <aamine@loveruby.net>
 	  [ruby-dev:21417]
 
 	* test/fileutils/test_nowrite.rb: ditto.
+
+Mon Sep 27 09:14:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_delete): comparison may change the capacity.
+	  [ruby-dev:24348]
+
+	* array.c (rb_ary_fill): fill should honor length argument.
+	  [ruby-dev:24346]
+
+	* array.c (rb_ary_replace): should not use ptr from shared array.
+	  [ruby-dev:24345]
+
+	* ext/socket/socket.c (s_accept): don't retry for EWOULDBLOCK.
+	  [ruby-talk:113807]
 
 Sat Sep 27 04:57:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 

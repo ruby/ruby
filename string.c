@@ -2037,6 +2037,9 @@ str_gsub(argc, argv, str, bang)
 	if (iter) {
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	    if (RSTRING(str)->ptr == buf) {
+		rb_raise(rb_eRuntimeError, "gsub reentered");
+	    }
 	    rb_backref_set(match);
 	}
 	else {
@@ -4297,7 +4300,7 @@ rb_str_crypt(str, salt)
 {
     extern char *crypt();
     VALUE result;
-    char *s, *cr;
+    char *s;
 
     StringValue(salt);
     if (RSTRING(salt)->len < 2)
@@ -4305,10 +4308,7 @@ rb_str_crypt(str, salt)
 
     if (RSTRING(str)->ptr) s = RSTRING(str)->ptr;
     else s = "";
-    cr = crypt(s, RSTRING(salt)->ptr);
-    s = ALLOCA_N(char, strlen(cr));
-    strcpy(s, cr);
-    result = rb_str_new2(s);
+    result = rb_str_new2(crypt(s, RSTRING(salt)->ptr));
     OBJ_INFECT(result, str);
     OBJ_INFECT(result, salt);
     return result;
