@@ -1057,6 +1057,10 @@ case "$target_os" in
 	;;	
 esac
 
+case "$build_os" in
+  *djgpp*) FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in;;
+esac
+
 AC_SUBST(LIBRUBY_LDSHARED)
 AC_SUBST(LIBRUBY_DLDFLAGS)
 AC_SUBST(RUBY_INSTALL_NAME)

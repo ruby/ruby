@@ -75,12 +75,13 @@ variable.c
 version.c
 version.h
 bin/irb
+cygwin/GNUmakefile.in
+djgpp/GNUmakefile.in
 djgpp/README.djgpp
 djgpp/config.hin
 djgpp/config.sed
 djgpp/configure.bat
 djgpp/mkver.sed
-cygwin/GNUmakefile.in
 doc/NEWS
 doc/forwardable.rd
 doc/forwardable.rd.ja

@@ -2460,6 +2460,12 @@ next_argv()
 {
     extern VALUE rb_argv;
     char *fn;
+    OpenFile *fptr;
+    int defout_binmode = 0;
+
+    GetOpenFile(rb_defout, fptr);
+    if (fptr->mode | FMODE_BINMODE)
+	defout_binmode = 1;
 
     if (init_p == 0) {
 	if (RARRAY(rb_argv)->len > 0) {
@@ -2552,6 +2558,7 @@ next_argv()
 		prep_path(current_file, fn);
 	    }
 	    if (binmode) rb_io_binmode(current_file);
+	    if (defout_binmode) rb_io_binmode(rb_defout);
 	}
 	else {
 	    init_p = 0;
