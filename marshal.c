@@ -76,11 +76,10 @@ shortlen(len, ds)
 
 static ID s_dump, s_load;
 static ID s_dump_data, s_load_data, s_alloc;
-static ID s_getc, s_read, s_write;
+static ID s_getc, s_read, s_write, s_binmode;
 
 struct dump_arg {
     VALUE obj;
-    FILE *fp;
     VALUE str, dest;
     st_table *symbol;
     st_table *data;
@@ -96,23 +95,17 @@ struct dump_call_arg {
 static void w_long _((long, struct dump_arg*));
 
 static void
-w_byten(s, n, arg)
+w_nbyte(s, n, arg)
     char *s;
     int n;
     struct dump_arg *arg;
 {
-    if (arg->fp) {
-	if (rb_io_fwrite(s, n, arg->fp) < 0)
-	    rb_sys_fail(0);
-    }
-    else {
-	VALUE buf = arg->str;
-	rb_str_buf_cat(buf, s, n);
-	if (arg->dest && RSTRING(buf)->len >= BUFSIZ) {
-	    if (arg->taint) OBJ_TAINT(buf);
-	    rb_io_write(arg->dest, buf);
-	    rb_str_resize(buf, 0);
-	}
+    VALUE buf = arg->str;
+    rb_str_buf_cat(buf, s, n);
+    if (arg->dest && RSTRING(buf)->len >= BUFSIZ) {
+	if (arg->taint) OBJ_TAINT(buf);
+	rb_io_write(arg->dest, buf);
+	rb_str_resize(buf, 0);
     }
 }
 
@@ -121,7 +114,7 @@ w_byte(c, arg)
     char c;
     struct dump_arg *arg;
 {
-    w_byten(&c, 1, arg);
+    w_nbyte(&c, 1, arg);
 }
 
 static void
@@ -131,7 +124,7 @@ w_bytes(s, n, arg)
     struct dump_arg *arg;
 {
     w_long(n, arg);
-    w_byten(s, n, arg);
+    w_nbyte(s, n, arg);
 }
 
 static void
@@ -580,7 +573,7 @@ dump_ensure(arg)
 {
     st_free_table(arg->symbol);
     st_free_table(arg->data);
-    if (!arg->fp && arg->taint) {
+    if (arg->taint) {
 	OBJ_TAINT(arg->str);
     }
     return 0;
@@ -608,25 +601,16 @@ marshal_dump(argc, argv)
     }
     arg.dest = 0;
     if (port) {
-	if (rb_obj_is_kind_of(port, rb_cIO)) {
-	    OpenFile *fptr;
-
-	    rb_io_binmode(port);
-	    GetOpenFile(port, fptr);
-	    rb_io_check_writable(fptr);
-	    arg.fp = (fptr->f2) ? fptr->f2 : fptr->f;
-	}
-	else if (rb_respond_to(port, s_write)) {
-	    arg.fp = 0;
-	    arg.str = rb_str_buf_new(0);
-	    arg.dest = port;
-	}
-	else {
+	if (!rb_respond_to(port, s_write)) {
 	    rb_raise(rb_eTypeError, "instance of IO needed");
+	}
+	arg.str = rb_str_buf_new(0);
+	arg.dest = port;
+	if (rb_respond_to(port, s_binmode)) {
+	    rb_funcall2(port, s_binmode, 0, 0);
 	}
     }
     else {
-	arg.fp = 0;
 	port = rb_str_buf_new(0);
 	arg.str = port;
     }
@@ -647,7 +631,6 @@ marshal_dump(argc, argv)
 }
 
 struct load_arg {
-    FILE *fp;
     char *ptr, *end;
     st_table *symbol;
     VALUE data;
@@ -663,11 +646,7 @@ r_byte(arg)
 {
     int c;
 
-    if (arg->fp) {
-	c = rb_getc(arg->fp);
-	if (c == EOF) rb_eof_error();
-    }
-    else if (!arg->end) {
+    if (!arg->end) {
 	VALUE src = (VALUE)arg->ptr;
 	VALUE v = rb_funcall2(src, s_getc, 0, 0);
 	if (NIL_P(v)) rb_eof_error();
@@ -741,14 +720,7 @@ r_bytes0(len, arg)
 {
     VALUE str;
 
-    if (arg->fp) {
-	str = rb_str_new(0, len);
-	if (rb_io_fread(RSTRING(str)->ptr, len, arg->fp) != len) {
-	  too_short:
-	    rb_raise(rb_eArgError, "marshal data too short");
-	}
-    }
-    else if (!arg->end) {
+    if (!arg->end) {
 	VALUE src = (VALUE)arg->ptr;
 	VALUE n = LONG2NUM(len);
 	str = rb_funcall2(src, s_read, 1, &n);
@@ -759,7 +731,8 @@ r_bytes0(len, arg)
     }
     else {
 	if (arg->ptr + len > arg->end) {
-	    goto too_short;
+	  too_short:
+	    rb_raise(rb_eArgError, "marshal data too short");
 	}
 	str = rb_str_new(arg->ptr, len);
 	arg->ptr += len;
@@ -1214,23 +1187,17 @@ marshal_load(argc, argv)
     volatile VALUE hash;	/* protect from GC */
 
     rb_scan_args(argc, argv, "11", &port, &proc);
-    if (rb_obj_is_kind_of(port, rb_cIO)) {
-	rb_io_binmode(port);
-	GetOpenFile(port, fptr);
-	rb_io_check_readable(fptr);
-	arg.fp = fptr->f;
-	arg.taint = Qtrue;
-    }
-    else if (rb_respond_to(port, rb_intern("to_str"))) {
+    if (rb_respond_to(port, rb_intern("to_str"))) {
 	arg.taint = OBJ_TAINTED(port); /* original taintedness */
 	StringValue(port);	       /* possible conversion */
-	arg.fp = 0;
 	arg.ptr = RSTRING(port)->ptr;
 	arg.end = arg.ptr + RSTRING(port)->len;
     }
     else if (rb_respond_to(port, s_getc) && rb_respond_to(port, s_read)) {
+	if (rb_respond_to(port, s_binmode)) {
+	    rb_funcall2(port, s_binmode, 0, 0);
+	}
 	arg.taint = Qfalse;
-	arg.fp = 0;
 	arg.ptr = (char *)port;
 	arg.end = 0;
     }
@@ -1273,6 +1240,7 @@ Init_marshal()
     s_getc = rb_intern("getc");
     s_read = rb_intern("read");
     s_write = rb_intern("write");
+    s_binmode = rb_intern("binmode");
 
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);

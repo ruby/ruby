@@ -1,3 +1,18 @@
+Sun Mar  2 09:51:47 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* marshal.c (w_nbyte): should output always via rb_io_write().
+
+	* marshal.c (dump_ensure): ditto.
+
+	* marshal.c (marshal_dump): should call "binmode" method, if it
+	  responds to.
+
+	* marshal.c (r_byte): should input always via "getc" method.
+
+	* marshal.c (r_bytes0): should input always via "read" method.
+
+	* marshal.c (marshal_load): need not to set up FILE* fp;
+
 Mon Mar  3 11:29:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (arg): parse 'lhs = a rescue b' as 'lhs=(a rescue b)'.
