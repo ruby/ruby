@@ -1,3 +1,8 @@
+Sat Sep 25 04:04:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c: iterator functions for hash_foreach() should return enum
+	  st_retval.
+
 Sat Sep 25 01:52:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_s_members): wrong call of struct_members.
@@ -287,7 +292,7 @@ Fri Sep 17 15:01:57 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: support calling 'mainloop' on slave
 	  interpreters (however, the 'real' eventloop must be run on the
-	  Default Master IP) 
+	  Default Master IP)
 
 	* ext/tk/lib/remote-tk.rb: follow the changes of ext/tk/lib/multi-tk.rb
 
@@ -513,7 +518,7 @@ Sun Sep 12 23:53:17 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Sun Sep 12 02:41:58 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c: add TclTkIp#allow_ruby_exit? and 
+	* ext/tcltklib/tcltklib.c: add TclTkIp#allow_ruby_exit? and
 	  allow_ruby_exit=
 
 	* ext/tk/lib/multi-tk.rb: ditto.
@@ -562,7 +567,7 @@ Fri Sep 10 02:43:54 2004  Dave Thomas  <dave@pragprog.com>
 
 Thu Sep  9 13:58:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c (ip_init): change flag value for setting 
+	* ext/tcltklib/tcltklib.c (ip_init): change flag value for setting
 	  'argv' and 'argv0' variable
 
 	* ext/tk/lib/remote-tk.rb: follow changes of multi-tk.rb

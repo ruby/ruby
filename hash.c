@@ -318,7 +318,7 @@ to_hash(hash)
     return rb_convert_type(hash, T_HASH, "Hash", "to_hash");
 }
 
-static int
+static enum st_retval
 rb_hash_rehash_i(key, value, tbl)
     VALUE key, value;
     st_table *tbl;
@@ -537,7 +537,7 @@ rb_hash_default_proc(hash)
     return Qnil;
 }
 
-static int
+static enum st_retval
 key_i(key, value, args)
     VALUE key, value;
     VALUE *args;
@@ -628,7 +628,7 @@ struct shift_var {
     VALUE val;
 };
 
-static int
+static enum st_retval
 shift_i(key, value, var)
     VALUE key, value;
     struct shift_var *var;
@@ -802,7 +802,7 @@ rb_hash_select(hash)
     return result;
 }
 
-static int
+static enum st_retval
 clear_i(key, value, dummy)
     VALUE key, value, dummy;
 {
@@ -866,7 +866,7 @@ rb_hash_aset(hash, key, val)
     return val;
 }
 
-static int
+static enum st_retval
 replace_i(key, val, hash)
     VALUE key, val, hash;
 {
@@ -1084,7 +1084,7 @@ rb_hash_each(hash)
     return hash;
 }
 
-static int
+static enum st_retval
 to_a_i(key, value, ary)
     VALUE key, value, ary;
 {
@@ -1141,7 +1141,7 @@ rb_hash_sort(hash)
     return entries;
 }
 
-static int
+static enum st_retval
 inspect_i(key, value, str)
     VALUE key, value, str;
 {
@@ -1235,7 +1235,7 @@ rb_hash_to_hash(hash)
     return hash;
 }
 
-static int
+static enum st_retval
 keys_i(key, value, ary)
     VALUE key, value, ary;
 {
@@ -1268,7 +1268,7 @@ rb_hash_keys(hash)
     return ary;
 }
 
-static int
+static enum st_retval
 values_i(key, value, ary)
     VALUE key, value, ary;
 {
@@ -1327,7 +1327,7 @@ rb_hash_has_key(hash, key)
     return Qfalse;
 }
 
-static int
+static enum st_retval
 rb_hash_search_value(key, value, data)
     VALUE key, value, *data;
 {
@@ -1370,7 +1370,7 @@ struct equal_data {
     st_table *tbl;
 };
 
-static int
+static enum st_retval
 equal_i(key, val1, data)
     VALUE key, val1;
     struct equal_data *data;
@@ -1460,7 +1460,7 @@ rb_hash_eql(hash1, hash2)
     return hash_equal(hash1, hash2, Qtrue);
 }
 
-static int
+static enum st_retval
 rb_hash_invert_i(key, value, hash)
     VALUE key, value;
     VALUE hash;
@@ -1492,7 +1492,7 @@ rb_hash_invert(hash)
     return h;
 }
 
-static int
+static enum st_retval
 rb_hash_update_i(key, value, hash)
     VALUE key, value;
     VALUE hash;
@@ -1502,7 +1502,7 @@ rb_hash_update_i(key, value, hash)
     return ST_CONTINUE;
 }
 
-static int
+static enum st_retval
 rb_hash_update_block_i(key, value, hash)
     VALUE key, value;
     VALUE hash;
@@ -2273,7 +2273,7 @@ env_invert()
     return rb_hash_invert(env_to_hash());
 }
 
-static int
+static enum st_retval
 env_replace_i(key, val, keys)
     VALUE key, val, keys;
 {
@@ -2303,7 +2303,7 @@ env_replace(env, hash)
     return env;
 }
 
-static int
+static enum st_retval
 env_update_i(key, val)
     VALUE key, val;
 {
