@@ -2,6 +2,10 @@ Wed Jan 17 13:28:26 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: remove DEFS definition.
 
+	* mkconfig.rb: ditto.
+
+	* win32/config.status.in: ditto.
+
 Tue Jan 16 16:59:14 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: ignore EOFError for read
