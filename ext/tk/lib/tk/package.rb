@@ -35,12 +35,12 @@ module TkPackage
       # set proc
       cmd = arg[0]
       if cmd
-	tk_call('package', 'ifneeded', pkg, ver, cmd)
-	cmd
+        tk_call('package', 'ifneeded', pkg, ver, cmd)
+        cmd
       else
-	# remove proc
-	tk_call('package', 'ifneeded', pkg, ver, '')
-	nil
+        # remove proc
+        tk_call('package', 'ifneeded', pkg, ver, '')
+        nil
       end
 
     else
@@ -112,12 +112,12 @@ module TkPackage
       # set proc
       cmd = arg[0]
       if cmd
-	tk_call('package', 'unknown', cmd)
-	cmd
+        tk_call('package', 'unknown', cmd)
+        cmd
       else
-	# remove proc
-	tk_call('package', 'unknown', '')
-	nil
+        # remove proc
+        tk_call('package', 'unknown', '')
+        nil
       end
 
     else

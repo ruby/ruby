@@ -17,11 +17,11 @@ module Tk
   module Tcllib
     class CText < TkText
       def self.package_version
-	begin
-	  TkPackage.require('ctext')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('ctext')
+        rescue
+          ''
+        end
       end
     end
   end
@@ -80,19 +80,19 @@ class Tk::Tcllib::CText
 
   def add_highlight_class_for_special_chars(klass, col, *chrs)
     tk_call('ctext::addHighlightClassForSpecialChars', 
-	    @path, klass, col, chrs.join(''))
+            @path, klass, col, chrs.join(''))
     self
   end
 
   def add_highlight_class_for_regexp(klass, col, tcl_regexp)
     tk_call('ctext::addHighlightClassForRegexp', 
-	    @path, klass, col, tcl_regexp)
+            @path, klass, col, tcl_regexp)
     self
   end
 
   def add_highlight_class_with_only_char_start(klass, col, chr)
     tk_call('ctext::addHighlightClassWithOnlyCharStart', 
-	    @path, klass, col, chr)
+            @path, klass, col, chr)
     self
   end
 

@@ -33,19 +33,19 @@ module TkTreatItemFont
     if key
       pathname = [win, tag, key].join(';')
       TkFont.used_on(pathname) || 
-	TkFont.init_widget_font(pathname, *(__item_config_cmd(tagid(tagOrId))))
+        TkFont.init_widget_font(pathname, *(__item_config_cmd(tagid(tagOrId))))
     elsif optkeys.size == 1
       pathname = [win, tag, optkeys[0]].join(';')
       TkFont.used_on(pathname) || 
-	TkFont.init_widget_font(pathname, *(__item_config_cmd(tagid(tagOrId))))
+        TkFont.init_widget_font(pathname, *(__item_config_cmd(tagid(tagOrId))))
     else
       fonts = {}
       optkeys.each{|key|
-	key = key.to_s
-	pathname = [win, tag, key].join(';')
-	fonts[key] = 
-	  TkFont.used_on(pathname) || 
-	  TkFont.init_widget_font(pathname, *(__item_config_cmd(tagid(tagOrId))))
+        key = key.to_s
+        pathname = [win, tag, key].join(';')
+        fonts[key] = 
+          TkFont.used_on(pathname) || 
+          TkFont.init_widget_font(pathname, *(__item_config_cmd(tagid(tagOrId))))
       }
       fonts
     end
@@ -64,38 +64,38 @@ module TkTreatItemFont
       k_optkey = 'kanji' << optkey
 
       if slot.key?(optkey)
-	fnt = slot.delete(optkey)
-	if fnt.kind_of?(TkFont)
-	  slot.delete(l_optkey)
-	  slot.delete(a_optkey)
-	  slot.delete(k_optkey)
+        fnt = slot.delete(optkey)
+        if fnt.kind_of?(TkFont)
+          slot.delete(l_optkey)
+          slot.delete(a_optkey)
+          slot.delete(k_optkey)
 
-	  fnt.call_font_configure([pathname, optkey], 
-				  *(__item_config_cmd(tagid(tagOrId)) << {}))
-	  next
-	else
-	  if fnt
-	    if (slot.key?(l_optkey) || 
-		slot.key?(a_optkey) || 
-		slot.key?(k_optkey))
-	      fnt = TkFont.new(fnt)
+          fnt.call_font_configure([pathname, optkey], 
+                                  *(__item_config_cmd(tagid(tagOrId)) << {}))
+          next
+        else
+          if fnt
+            if (slot.key?(l_optkey) || 
+                slot.key?(a_optkey) || 
+                slot.key?(k_optkey))
+              fnt = TkFont.new(fnt)
 
-	      lfnt = slot.delete(l_optkey)
-	      lfnt = slot.delete(a_optkey) if slot.key?(a_optkey)
-	      kfnt = slot.delete(k_optkey)
+              lfnt = slot.delete(l_optkey)
+              lfnt = slot.delete(a_optkey) if slot.key?(a_optkey)
+              kfnt = slot.delete(k_optkey)
 
-	      fnt.latin_replace(lfnt) if lfnt
-	      fnt.kanji_replace(kfnt) if kfnt
+              fnt.latin_replace(lfnt) if lfnt
+              fnt.kanji_replace(kfnt) if kfnt
 
-	      fnt.call_font_configure([pathname, optkey], 
-				      *(__item_config_cmd(tagid(tagOrId)) << {}))
-	      next
-	    else
-	      tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << fnt))
-	    end
-	  end
-	  next
-	end
+              fnt.call_font_configure([pathname, optkey], 
+                                      *(__item_config_cmd(tagid(tagOrId)) << {}))
+              next
+            else
+              tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << fnt))
+            end
+          end
+          next
+        end
       end
 
       lfnt = slot.delete(l_optkey)
@@ -103,12 +103,12 @@ module TkTreatItemFont
       kfnt = slot.delete(k_optkey)
 
       if lfnt && kfnt
-	TkFont.new(lfnt, kfnt).call_font_configure([pathname, optkey], 
-						   *(__item_config_cmd(tagid(tagOrId)) << {}))
+        TkFont.new(lfnt, kfnt).call_font_configure([pathname, optkey], 
+                                                   *(__item_config_cmd(tagid(tagOrId)) << {}))
       elsif lfnt
-	latintagfont_configure([lfnt, optkey])
+        latintagfont_configure([lfnt, optkey])
       elsif kfnt
-	kanjitagfont_configure([kfnt, optkey])
+        kanjitagfont_configure([kfnt, optkey])
       end
     }
 
@@ -140,26 +140,26 @@ module TkTreatItemFont
       pathname = [win, tag, optkey].join(';')
 
       if (fobj = TkFont.used_on(pathname))
-	fobj = TkFont.new(fobj) # create a new TkFont object
+        fobj = TkFont.new(fobj) # create a new TkFont object
       elsif Tk::JAPANIZED_TK
-	fobj = fontobj          # create a new TkFont object
+        fobj = fontobj          # create a new TkFont object
       else
-	tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << ltn))
-	next
+        tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << ltn))
+        next
       end
 
       if fobj.kind_of?(TkFont)
-	if ltn.kind_of?(TkFont)
-	  conf = {}
-	  ltn.latin_configinfo.each{|key,val| conf[key] = val}
-	  if keys
-	    fobj.latin_configure(conf.update(keys))
-	  else
-	    fobj.latin_configure(conf)
-	  end
-	else
-	  fobj.latin_replace(ltn)
-	end
+        if ltn.kind_of?(TkFont)
+          conf = {}
+          ltn.latin_configinfo.each{|key,val| conf[key] = val}
+          if keys
+            fobj.latin_configure(conf.update(keys))
+          else
+            fobj.latin_configure(conf)
+          end
+        else
+          fobj.latin_replace(ltn)
+        end
       end
 
       fobj.call_font_configure([pathname, optkey], *(__item_config_cmd(tagid(tagOrId)) << {}))
@@ -191,26 +191,26 @@ module TkTreatItemFont
       pathname = [win, tag, optkey].join(';')
 
       if (fobj = TkFont.used_on(pathname))
-	fobj = TkFont.new(fobj) # create a new TkFont object
+        fobj = TkFont.new(fobj) # create a new TkFont object
       elsif Tk::JAPANIZED_TK
-	fobj = fontobj          # create a new TkFont object
+        fobj = fontobj          # create a new TkFont object
       else
-	tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << knj))
-	next
+        tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << knj))
+        next
       end
 
       if fobj.kind_of?(TkFont)
-	if knj.kind_of?(TkFont)
-	  conf = {}
-	  knj.kanji_configinfo.each{|key,val| conf[key] = val}
-	  if keys
-	    fobj.kanji_configure(conf.update(keys))
-	  else
-	    fobj.kanji_configure(conf)
-	  end
-	else
-	  fobj.kanji_replace(knj)
-	end
+        if knj.kind_of?(TkFont)
+          conf = {}
+          knj.kanji_configinfo.each{|key,val| conf[key] = val}
+          if keys
+            fobj.kanji_configure(conf.update(keys))
+          else
+            fobj.kanji_configure(conf)
+          end
+        else
+          fobj.kanji_replace(knj)
+        end
       end
 
       fobj.call_font_configure([pathname, optkey], *(__item_config_cmd(tagid(tagOrId)) << {}))
@@ -221,24 +221,24 @@ module TkTreatItemFont
   def tagfont_copy(tagOrId, window, wintag=nil, winkey=nil, targetkey=nil)
     if wintag
       if winkey
-	fnt = window.tagfontobj(wintag, winkey).dup
+        fnt = window.tagfontobj(wintag, winkey).dup
       else
-	fnt = window.tagfontobj(wintag).dup
+        fnt = window.tagfontobj(wintag).dup
       end
     else
       if winkey
-	fnt = window.fontobj(winkey).dup
+        fnt = window.fontobj(winkey).dup
       else
-	fnt = window.fontobj.dup
+        fnt = window.fontobj.dup
       end
     end
 
     if targetkey
       fnt.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey], 
-			      *(__item_config_cmd(tagid(tagOrId)) << {}))
+                              *(__item_config_cmd(tagid(tagOrId)) << {}))
     else
       fnt.call_font_configure(__item_pathname(tagid(tagOrId)), 
-			      *(__item_config_cmd(tagid(tagOrId)) << {}))
+                              *(__item_config_cmd(tagid(tagOrId)) << {}))
     end
     self
   end
@@ -247,23 +247,23 @@ module TkTreatItemFont
   def latintagfont_copy(tagOrId, window, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
       fontobj(targetkey).dup.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey], 
-						 *(__item_config_cmd(tagid(tagOrId)) << {}))
+                                                 *(__item_config_cmd(tagid(tagOrId)) << {}))
     else
       fontobj.dup.call_font_configure(__item_pathname(tagid(tagOrId)), 
-				      *(__item_config_cmd(tagid(tagOrId)) << {}))
+                                      *(__item_config_cmd(tagid(tagOrId)) << {}))
     end
 
     if wintag
       if winkey
-	fontobj.latin_replace(window.tagfontobj(wintag, winkey).latin_font_id)
+        fontobj.latin_replace(window.tagfontobj(wintag, winkey).latin_font_id)
       else
-	fontobj.latin_replace(window.tagfontobj(wintag).latin_font_id)
+        fontobj.latin_replace(window.tagfontobj(wintag).latin_font_id)
       end
     else
       if winkey
-	fontobj.latin_replace(window.fontobj(winkey).latin_font_id)
+        fontobj.latin_replace(window.fontobj(winkey).latin_font_id)
       else
-	fontobj.latin_replace(window.fontobj.latin_font_id)
+        fontobj.latin_replace(window.fontobj.latin_font_id)
       end
     end
     self
@@ -273,23 +273,23 @@ module TkTreatItemFont
   def kanjifont_copy(tagOrId, window, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
       fontobj(targetkey).dup.call_font_configure([__item_pathname(tagid(tagOrId)), targetkey], 
-						 *(__item_config_cmd(tagid(tagOrId)) << {}))
+                                                 *(__item_config_cmd(tagid(tagOrId)) << {}))
     else
-	fontobj.dup.call_font_configure(__item_pathname(tagid(tagOrId)), 
-					*(__item_config_cmd(tagid(tagOrId)) << {}))
+        fontobj.dup.call_font_configure(__item_pathname(tagid(tagOrId)), 
+                                        *(__item_config_cmd(tagid(tagOrId)) << {}))
     end
 
     if wintag
       if winkey
-	fontobj.kanji_replace(window.tagfontobj(wintag, winkey).kanji_font_id)
+        fontobj.kanji_replace(window.tagfontobj(wintag, winkey).kanji_font_id)
       else
-	fontobj.kanji_replace(window.tagfontobj(wintag).kanji_font_id)
+        fontobj.kanji_replace(window.tagfontobj(wintag).kanji_font_id)
       end
     else
       if winkey
-	fontobj.kanji_replace(window.fontobj(winkey).kanji_font_id)
+        fontobj.kanji_replace(window.fontobj(winkey).kanji_font_id)
       else
-	fontobj.kanji_replace(window.fontobj.kanji_font_id)
+        fontobj.kanji_replace(window.fontobj.kanji_font_id)
       end
     end
     self

@@ -35,11 +35,11 @@ class TkTextTag<TkObject
     if args != [] then
       keys = args.pop
       if keys.kind_of? Hash then
-	add(*args) if args != []
-	configure(keys)
+        add(*args) if args != []
+        configure(keys)
       else
-	args.push keys
-	add(*args)
+        args.push keys
+        add(*args)
       end
     end
     @t._addtag id, self
@@ -67,13 +67,13 @@ class TkTextTag<TkObject
 
   def add(*indices)
     tk_call_without_enc(@t.path, 'tag', 'add', @id, 
-			*(indices.collect{|idx| _get_eval_enc_str(idx)}))
+                        *(indices.collect{|idx| _get_eval_enc_str(idx)}))
     self
   end
 
   def remove(*indices)
     tk_call_without_enc(@t.path, 'tag', 'remove', @id, 
-			*(indices.collect{|idx| _get_eval_enc_str(idx)}))
+                        *(indices.collect{|idx| _get_eval_enc_str(idx)}))
     self
   end
 
@@ -88,14 +88,14 @@ class TkTextTag<TkObject
 
   def nextrange(first, last=None)
     tk_split_list(tk_call_without_enc(@t.path, 'tag', 'nextrange', @id, 
-				      _get_eval_enc_str(first), 
-				      _get_eval_enc_str(last)))
+                                      _get_eval_enc_str(first), 
+                                      _get_eval_enc_str(last)))
   end
 
   def prevrange(first, last=None)
     tk_split_list(tk_call_without_enc(@t.path, 'tag', 'prevrange', @id, 
-				      _get_eval_enc_str(first), 
-				      _get_eval_enc_str(last)))
+                                      _get_eval_enc_str(first), 
+                                      _get_eval_enc_str(last)))
   end
 
   def [](key)
@@ -118,19 +118,19 @@ class TkTextTag<TkObject
     when 'font', 'kanjifont'
       #fnt = tk_tcl2ruby(tk_call(@t.path, 'tag', 'cget', @id, "-#{key}"))
       fnt = tk_tcl2ruby(_fromUTF8(tk_call_without_enc(@t.path, 'tag', 'cget', 
-						      @id, '-font')))
+                                                      @id, '-font')))
       unless fnt.kind_of?(TkFont)
-	fnt = tagfontobj(@id, fnt)
+        fnt = tagfontobj(@id, fnt)
       end
       if key.to_s == 'kanjifont' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
-	# obsolete; just for compatibility
-	fnt.kanji_font
+        # obsolete; just for compatibility
+        fnt.kanji_font
       else
-	fnt
+        fnt
       end
     else
       tk_tcl2ruby(_fromUTF8(tk_call_without_enc(@t.path, 'tag', 'cget', 
-						@id, "-#{key}")))
+                                                @id, "-#{key}")))
     end
   end
 =end
@@ -183,13 +183,13 @@ class TkTextTag<TkObject
 
   def raise(above=None)
     tk_call_without_enc(@t.path, 'tag', 'raise', @id, 
-			_get_eval_enc_str(above))
+                        _get_eval_enc_str(above))
     self
   end
 
   def lower(below=None)
     tk_call_without_enc(@t.path, 'tag', 'lower', @id, 
-			_get_eval_enc_str(below))
+                        _get_eval_enc_str(below))
     self
   end
 
@@ -205,14 +205,14 @@ class TkTextNamedTag<TkTextTag
     if TTagID_TBL[parent.path] && TTagID_TBL[parent.path][name]
       tagobj = TTagID_TBL[parent.path][name]
       if args != [] then
-	keys = args.pop
-	if keys.kind_of? Hash then
-	  tagobj.add(*args) if args != []
-	  tagobj.configure(keys)
-	else
-	  args.push keys
-	  tagobj.add(*args)
-	end
+        keys = args.pop
+        if keys.kind_of? Hash then
+          tagobj.add(*args) if args != []
+          tagobj.configure(keys)
+        else
+          args.push keys
+          tagobj.add(*args)
+        end
       end
       return tagobj
     else
@@ -235,11 +235,11 @@ class TkTextNamedTag<TkTextTag
     if args != [] then
       keys = args.pop
       if keys.kind_of? Hash then
-	add(*args) if args != []
-	configure(keys)
+        add(*args) if args != []
+        configure(keys)
       else
-	args.push keys
-	add(*args)
+        args.push keys
+        add(*args)
       end
     end
     @t._addtag id, self

@@ -43,7 +43,7 @@ class Tk::BWidget::Dialog
     cmd = self.class::TkCommandNames[0]
     if keys and keys != None
       tk_call_without_enc(cmd, @path, '-parent', @relative, 
-			  *hash_kv(keys, true))
+                          *hash_kv(keys, true))
     else
       tk_call_without_enc(cmd, @path, '-parent', @relative)
     end
@@ -64,9 +64,9 @@ class Tk::BWidget::Dialog
       super(slot)
     else
       if slot.to_s == 'relative'
-	super('parent', value)
+        super('parent', value)
       else
-	super(slot, value)
+        super(slot, value)
       end
     end
   end
@@ -74,16 +74,16 @@ class Tk::BWidget::Dialog
   def configinfo(slot=nil)
     if slot
       if slot.to_s == 'relative'
-	super('parent')
+        super('parent')
       else
-	super(slot)
+        super(slot)
       end
     else
       ret = super()
       if TkComm::GET_CONFIGINFO_AS_ARRAY
-	ret << ['relative', 'parent']
+        ret << ['relative', 'parent']
       else
-	ret['relative'] = 'parent'
+        ret['relative'] = 'parent'
       end
     end
   end

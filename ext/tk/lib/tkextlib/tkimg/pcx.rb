@@ -17,11 +17,11 @@ module Tk
   module Img
     module PCX
       def self.package_version
-	begin
-	  TkPackage.require('img::pcx')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::pcx')
+        rescue
+          ''
+        end
       end
     end
   end

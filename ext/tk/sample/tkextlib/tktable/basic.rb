@@ -23,19 +23,19 @@ cols = 8
 lbl = TkLabel.new(:text=>"TkTable v1 Example")
 
 table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary, 
-			:width=>6, :height=>6, 
-			:titlerows=>1, :titlecols=>2, 
-			:roworigin=>-1, :colorigin=>-2, 
-			:rowstretchmode=>:last, :colstretchmode=>:last,
-			:rowtagcommand=>proc{|row|
-			  row = Integer(row)
-			  return 'OddRow' if row>0 && row%2 == 1
-			}, 
-			:coltagcommand=>proc{|col|
-			  col = Integer(col)
-			  return 'OddCol' if col>0 && col%2 == 1
-			}, 
-			:selectmode=>:extended, :sparsearray=>false)
+                        :width=>6, :height=>6, 
+                        :titlerows=>1, :titlecols=>2, 
+                        :roworigin=>-1, :colorigin=>-2, 
+                        :rowstretchmode=>:last, :colstretchmode=>:last,
+                        :rowtagcommand=>proc{|row|
+                          row = Integer(row)
+                          return 'OddRow' if row>0 && row%2 == 1
+                        }, 
+                        :coltagcommand=>proc{|col|
+                          col = Integer(col)
+                          return 'OddCol' if col>0 && col%2 == 1
+                        }, 
+                        :selectmode=>:extended, :sparsearray=>false)
 
 sx = table.xscrollbar(TkScrollbar.new)
 sy = table.yscrollbar(TkScrollbar.new)

@@ -17,11 +17,11 @@ module Tk
   module Img
     module TIFF
       def self.package_version
-	begin
-	  TkPackage.require('img::tiff')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::tiff')
+        rescue
+          ''
+        end
       end
     end
   end

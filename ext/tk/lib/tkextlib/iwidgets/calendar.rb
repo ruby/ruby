@@ -30,7 +30,7 @@ class Tk::Iwidgets::Calendar
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
-	val
+        val
       end
     end
 

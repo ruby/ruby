@@ -13,21 +13,21 @@ Tk.pack(c1,c2, :fill=>:both, :side=>:top)
 # Set up a strip chart
 ###############################
 slipchart = Tk::Tcllib::Plotchart::Stripchart.new(c1, [0.0, 100.0, 10.0], 
-						      [0.0, 100.0, 20.0])
+                                                      [0.0, 100.0, 20.0])
 
 TkTimer.new(500, -1, proc{|obj| # obj --> TkTimer object
-	      slipchart, xold, xd, yold, yd = obj.return_value
-	      xnew = xold + xd
-	      ynew = yold + (rand() - 0.5) * yd
-	      ynew2 = yold + (rand() - 0.5) * 2.0 * yd
-	      slipchart.plot('series1', xnew, ynew)
-	      slipchart.plot('series2', xnew, ynew2)
-	      obj.stop if xnew >= 200
-	      [slipchart, xnew, xd, ynew, yd] # return_value
-	    }).start(100, proc{
-		       # init return_value
-		       [slipchart, 0.0, 15.0, 50.0, 30.0]
-		     })
+              slipchart, xold, xd, yold, yd = obj.return_value
+              xnew = xold + xd
+              ynew = yold + (rand() - 0.5) * yd
+              ynew2 = yold + (rand() - 0.5) * 2.0 * yd
+              slipchart.plot('series1', xnew, ynew)
+              slipchart.plot('series2', xnew, ynew2)
+              obj.stop if xnew >= 200
+              [slipchart, xnew, xd, ynew, yd] # return_value
+            }).start(100, proc{
+                       # init return_value
+                       [slipchart, 0.0, 15.0, 50.0, 30.0]
+                     })
 
 slipchart.title "Aha!"
 
@@ -35,7 +35,7 @@ slipchart.title "Aha!"
 # Set up an isometric plot
 ###############################
 s = Tk::Tcllib::Plotchart::IsometricPlot.new(c2, [0.0, 100.0], [0.0, 200.0], 
-					     :noaxes)
+                                             :noaxes)
 
 s.set_zoom_pan
 
@@ -51,7 +51,7 @@ h = TkToplevel.new(:title=>'h')
 c = TkCanvas.new(h, :bg=>'white', :width=>400, :height=>200).pack(:fill=>:both)
 
 s = Tk::Tcllib::Plotchart::XYPlot.new(c, [0.0, 100.0, 10.0], 
-				         [0.0, 100.0, 20.0]) 
+                                         [0.0, 100.0, 20.0]) 
 s.dataconfig('series1', :colour=>'red',   :type=>:symbol)
 s.dataconfig('series2', :colour=>'green', :type=>:both)
 

@@ -40,11 +40,11 @@ menu_spec = [
 ]
 
 mbar = Tk.root.add_menubar(menu_spec, 
-			   # followings are default configure options
-			   'tearoff'=>'false',
-			   'foreground'=>'grey40', 
-			   'activeforeground'=>'red',
-			   'font'=>'Helvetia 12 bold')
+                           # followings are default configure options
+                           'tearoff'=>'false',
+                           'foreground'=>'grey40', 
+                           'activeforeground'=>'red',
+                           'font'=>'Helvetia 12 bold')
 # This (default configure options) is NOT same the following.
 #
 #  mbar = Tk.root.add_menubar(menu_spec)

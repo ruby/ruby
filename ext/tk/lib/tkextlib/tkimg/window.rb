@@ -17,11 +17,11 @@ module Tk
   module Img
     module WINDOW
       def self.package_version
-	begin
-	  TkPackage.require('img::window')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::window')
+        rescue
+          ''
+        end
       end
     end
   end

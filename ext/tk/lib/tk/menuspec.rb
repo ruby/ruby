@@ -36,7 +36,7 @@
 
 module TkMenuSpec
   def _create_menu(parent, menu_info, menu_name = nil, 
-		   tearoff = false, default_opts = nil)
+                   tearoff = false, default_opts = nil)
     if tearoff.kind_of?(Hash)
       default_opts = tearoff
       tearoff = false
@@ -64,79 +64,79 @@ module TkMenuSpec
 
     for item_info in menu_info
       if item_info.kind_of?(Hash)
-	options = orig_opts.dup
-	options.update(_symbolkey2str(item_info))
-	item_type = (options.delete('type') || 'command').to_s
-	menu_name = options.delete('menu_name')
-	menu_opts = orig_opts.dup
-	menu_opts.update(_symbolkey2str(options.delete('menu_config') || {}))
-	if item_type == 'cascade' && options['menu'].kind_of?(Array)
-	  # create cascade menu
-	  submenu = _create_menu(menu, options['menu'], menu_name, 
-				 tearoff, menu_opts)
-	  options['menu'] = submenu
-	end
-	menu.add(item_type, options)
+        options = orig_opts.dup
+        options.update(_symbolkey2str(item_info))
+        item_type = (options.delete('type') || 'command').to_s
+        menu_name = options.delete('menu_name')
+        menu_opts = orig_opts.dup
+        menu_opts.update(_symbolkey2str(options.delete('menu_config') || {}))
+        if item_type == 'cascade' && options['menu'].kind_of?(Array)
+          # create cascade menu
+          submenu = _create_menu(menu, options['menu'], menu_name, 
+                                 tearoff, menu_opts)
+          options['menu'] = submenu
+        end
+        menu.add(item_type, options)
 
       elsif item_info.kind_of?(Array)
-	options = orig_opts.dup
+        options = orig_opts.dup
 
-	options['label'] = item_info[0] if item_info[0]
+        options['label'] = item_info[0] if item_info[0]
 
-	case item_info[1]
-	when TkVariable
-	  # checkbutton
-	  item_type = 'checkbutton'
-	  options['variable'] = item_info[1]
-	  options['onvalue']  = true
-	  options['offvalue'] = false
+        case item_info[1]
+        when TkVariable
+          # checkbutton
+          item_type = 'checkbutton'
+          options['variable'] = item_info[1]
+          options['onvalue']  = true
+          options['offvalue'] = false
 
-	when Array
-	  # radiobutton or cascade
-	  if item_info[1][0].kind_of?(TkVariable)
-	    # radiobutton
-	    item_type = 'radiobutton'
-	    options['variable'] = item_info[1][0]
-	    options['value'] = item_info[1][1] if item_info[1][1]
+        when Array
+          # radiobutton or cascade
+          if item_info[1][0].kind_of?(TkVariable)
+            # radiobutton
+            item_type = 'radiobutton'
+            options['variable'] = item_info[1][0]
+            options['value'] = item_info[1][1] if item_info[1][1]
 
-	  else
-	    # cascade
-	    item_type = 'cascade'
-	    menu_opts = orig_opts.dup
-	    if item_info[4] && item_info[4].kind_of?(Hash)
-	      opts = _symbolkey2str(item_info[4])
-	      menu_name = opts.delete('menu_name')
-	      menu_config = opts.delete('menu_config') || {}
-	      menu_opts.update(_symbolkey2str(menu_config))
-	    end
-	    submenu = _create_menu(menu, item_info[1], menu_name, 
-				   tearoff, menu_opts)
-	    options['menu'] = submenu
-	  end
+          else
+            # cascade
+            item_type = 'cascade'
+            menu_opts = orig_opts.dup
+            if item_info[4] && item_info[4].kind_of?(Hash)
+              opts = _symbolkey2str(item_info[4])
+              menu_name = opts.delete('menu_name')
+              menu_config = opts.delete('menu_config') || {}
+              menu_opts.update(_symbolkey2str(menu_config))
+            end
+            submenu = _create_menu(menu, item_info[1], menu_name, 
+                                   tearoff, menu_opts)
+            options['menu'] = submenu
+          end
 
-	else
-	  # command
-	  item_type = 'command'
-	  options['command'] = item_info[1] if item_info[1]
-	end
+        else
+          # command
+          item_type = 'command'
+          options['command'] = item_info[1] if item_info[1]
+        end
 
-	options['underline'] = item_info[2] if item_info[2]
-	options['accelerator'] = item_info[3] if item_info[3]
-	if item_info[4] && item_info[4].kind_of?(Hash)
-	  opts = _symbolkey2str(item_info[4])
-	  if item_type == 'cascade'
-	    opts.delete('menu_name')
-	    opts.delete('menu_config')
-	  end
-	  options.update(opts)
-	end
-	menu.add(item_type, options)
+        options['underline'] = item_info[2] if item_info[2]
+        options['accelerator'] = item_info[3] if item_info[3]
+        if item_info[4] && item_info[4].kind_of?(Hash)
+          opts = _symbolkey2str(item_info[4])
+          if item_type == 'cascade'
+            opts.delete('menu_name')
+            opts.delete('menu_config')
+          end
+          options.update(opts)
+        end
+        menu.add(item_type, options)
 
       elsif /^-+$/ =~ item_info
-	menu.add('separator')
+        menu.add('separator')
 
       else
-	menu.add('command', 'label' => item_info)
+        menu.add('command', 'label' => item_info)
       end
     end
 
@@ -150,8 +150,8 @@ module TkMenuSpec
       return true 
     else
       begin
-	parent.cget('menu')
-	return true 
+        parent.cget('menu')
+        return true 
       rescue
       end
     end
@@ -192,22 +192,22 @@ module TkMenuSpec
       menu_name = nil
 
       if btn_info.kind_of?(Hash)
-	keys.update(_symbolkey2str(btn_info))
-	menu_name = keys.delete('menu_name')
-	keys['label'] = keys.delete('text') if keys.key?('text')
+        keys.update(_symbolkey2str(btn_info))
+        menu_name = keys.delete('menu_name')
+        keys['label'] = keys.delete('text') if keys.key?('text')
       elsif btn_info.kind_of?(Array)
-	keys['label'] = btn_info[0] if btn_info[0]
-	keys['underline'] = btn_info[1] if btn_info[1]
-	if btn_info[2]&&btn_info[2].kind_of?(Hash)
-	  keys.update(_symbolkey2str(btn_info[2]))
-	  menu_name = keys.delete('menu_name')
-	end
+        keys['label'] = btn_info[0] if btn_info[0]
+        keys['underline'] = btn_info[1] if btn_info[1]
+        if btn_info[2]&&btn_info[2].kind_of?(Hash)
+          keys.update(_symbolkey2str(btn_info[2]))
+          menu_name = keys.delete('menu_name')
+        end
       else
-	keys = {:label=>btn_info}
+        keys = {:label=>btn_info}
       end
 
       menu = _create_menu(mbar, menu_info[1..-1], menu_name, 
-			  tearoff, default_opts)
+                          tearoff, default_opts)
       menu.tearoff(tearoff)
 
       keys['menu'] = menu
@@ -222,27 +222,27 @@ module TkMenuSpec
       menu_name = nil
 
       if btn_info.kind_of?(Hash)
-	keys.update(_symbolkey2str(btn_info))
-	menu_name = keys.delete('menu_name')
-	keys['text'] = keys.delete('label') if keys.key?('label')
-	mbtn.configure(keys)
+        keys.update(_symbolkey2str(btn_info))
+        menu_name = keys.delete('menu_name')
+        keys['text'] = keys.delete('label') if keys.key?('label')
+        mbtn.configure(keys)
       elsif btn_info.kind_of?(Array)
-	mbtn.configure('text', btn_info[0]) if btn_info[0]
-	mbtn.configure('underline', btn_info[1]) if btn_info[1]
-	# mbtn.configure('accelerator', btn_info[2]) if btn_info[2]
-	if btn_info[2]&&btn_info[2].kind_of?(Hash)
-	  keys.update(_symbolkey2str(btn_info[2]))
-	  menu_name = keys.delete('menu_name')
-	  mbtn.configure(keys)
-	end
+        mbtn.configure('text', btn_info[0]) if btn_info[0]
+        mbtn.configure('underline', btn_info[1]) if btn_info[1]
+        # mbtn.configure('accelerator', btn_info[2]) if btn_info[2]
+        if btn_info[2]&&btn_info[2].kind_of?(Hash)
+          keys.update(_symbolkey2str(btn_info[2]))
+          menu_name = keys.delete('menu_name')
+          mbtn.configure(keys)
+        end
       else
-	mbtn.configure('text', btn_info)
+        mbtn.configure('text', btn_info)
       end
 
       mbtn.pack('side' => 'left')
 
       menu = _create_menu(mbtn, menu_info[1..-1], menu_name, 
-			  tearoff, default_opts)
+                          tearoff, default_opts)
     
       mbtn.menu(menu)
 
@@ -255,8 +255,8 @@ module TkMenuSpec
     menus = []
     (0..(menu.index('last'))).each{|idx|
       if menu.menutype(idx) == 'cascade'
-	submenu = menu.entrycget(idx, 'menu')
-	menus << [submenu, _get_cascade_menus(submenu)]
+        submenu = menu.entrycget(idx, 'menu')
+        menus << [submenu, _get_cascade_menus(submenu)]
       end
     }
     menus

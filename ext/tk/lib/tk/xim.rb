@@ -13,14 +13,14 @@ module TkXIM
     if value == None
       if window
         bool(tk_call_without_enc('tk', 'useinputmethods', 
-				 '-displayof', window))
+                                 '-displayof', window))
       else
         bool(tk_call_without_enc('tk', 'useinputmethods'))
       end
     else
       if window
-	bool(tk_call_without_enc('tk', 'useinputmethods', 
-				 '-displayof', window, value))
+        bool(tk_call_without_enc('tk', 'useinputmethods', 
+                                 '-displayof', window, value))
       else
         bool(tk_call_without_enc('tk', 'useinputmethods', value))
       end
@@ -39,7 +39,7 @@ module TkXIM
       lst = tk_split_list(tk_call_without_enc('tk', 'caret', window))
       info = {}
       while key = lst.shift
-	info[key[1..-1]] = lst.shift
+        info[key[1..-1]] = lst.shift
       end
       info
     end
@@ -61,22 +61,22 @@ module TkXIM
   def TkXIM.configinfo(window, slot=nil)
     if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
       begin
-	if /^8\.*/ === Tk::TK_VERSION  && JAPANIZED_TK
-	  if slot
-	    conf = tk_split_list(tk_call('imconfigure', window, "-#{slot}"))
-	    conf[0] = conf[0][1..-1]
-	    conf
-	  else
-	    tk_split_list(tk_call('imconfigure', window)).collect{|conf|
-	      conf[0] = conf[0][1..-1]
-	      conf
-	    }
-	  end
-	else
-	  []
-	end
+        if /^8\.*/ === Tk::TK_VERSION  && JAPANIZED_TK
+          if slot
+            conf = tk_split_list(tk_call('imconfigure', window, "-#{slot}"))
+            conf[0] = conf[0][1..-1]
+            conf
+          else
+            tk_split_list(tk_call('imconfigure', window)).collect{|conf|
+              conf[0] = conf[0][1..-1]
+              conf
+            }
+          end
+        else
+          []
+        end
       rescue
-	[]
+        []
       end
     else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
       TkXIM.current_configinfo(window, slot)
@@ -86,18 +86,18 @@ module TkXIM
   def TkXIM.current_configinfo(window, slot=nil)
     begin
       if /^8\.*/ === Tk::TK_VERSION  && JAPANIZED_TK
-	if slot
-	  conf = tk_split_list(tk_call('imconfigure', window, "-#{slot}"))
-	  { conf[0][1..-1] => conf[1] }
-	else
-	  ret = {}
-	  tk_split_list(tk_call('imconfigure', window)).each{|conf|
-	    ret[conf[0][1..-1]] = conf[1]
-	  }
-	  ret
-	end
+        if slot
+          conf = tk_split_list(tk_call('imconfigure', window, "-#{slot}"))
+          { conf[0][1..-1] => conf[1] }
+        else
+          ret = {}
+          tk_split_list(tk_call('imconfigure', window)).each{|conf|
+            ret[conf[0][1..-1]] = conf[1]
+          }
+          ret
+        end
       else
-	{}
+        {}
       end
     rescue
       {}

@@ -1,7 +1,7 @@
 # tof
 
 #### tcltk library, more direct manipulation of tcl/tk
-####	Sep. 5, 1997	Y. Shigehiro
+####    Sep. 5, 1997    Y. Shigehiro
 
 require "tcltklib"
 
@@ -103,14 +103,14 @@ class TclTkInterpreter
     def @ip._get_eval_string(*args)
       argstr = ""
       args.each{|arg|
-	argstr += " " if argstr != ""
-	# call to_eval if it is defined
-	if (arg.respond_to?(:to_eval))
-	  argstr += arg.to_eval()
-	else
-	  # call to_s unless defined
-	  argstr += arg.to_s()
-	end
+        argstr += " " if argstr != ""
+        # call to_eval if it is defined
+        if (arg.respond_to?(:to_eval))
+          argstr += arg.to_eval()
+        else
+          # call to_s unless defined
+          argstr += arg.to_s()
+        end
       }
       return argstr
     end
@@ -126,9 +126,9 @@ class TclTkInterpreter
       print("_eval: \"", argstr, "\"") if $DEBUG
       res = _eval(argstr)
       if $DEBUG
-	print(" -> \"", res, "\"\n")
+        print(" -> \"", res, "\"\n")
       elsif  _return_value() != 0
-	print(res, "\n")
+        print(res, "\n")
       end
       fail(%Q/can't eval "#{argstr}"/) if _return_value() != 0 #'
       return res
@@ -139,12 +139,12 @@ class TclTkInterpreter
     # for all commands registered in tcl/tk interpreter:
     @ip._eval("info command").split(/ /).each{|comname|
       if comname =~ /^[.]/
-	# if command is a widget (path), generate TclTkWidget,
-	# and register it in the hash
-	@commands[comname] = TclTkWidget.new(@ip, comname)
+        # if command is a widget (path), generate TclTkWidget,
+        # and register it in the hash
+        @commands[comname] = TclTkWidget.new(@ip, comname)
       else
-	# otherwise, generate TclTkCommand
-	@commands[comname] = TclTkCommand.new(@ip, comname)
+        # otherwise, generate TclTkCommand
+        @commands[comname] = TclTkCommand.new(@ip, comname)
       end
     }
   end

@@ -12,7 +12,7 @@ pw.pack(:fill=>:both, :expand=>true)
 
 pw.child_site_list.each{|pane|
   TkButton.new(pane, :text=>pane.path, :relief=>:raised, 
-	       :borderwidth=>2).pack(:fill=>:both, :expand=>true)
+               :borderwidth=>2).pack(:fill=>:both, :expand=>true)
 }
 
 pw.fraction(50,30,20)

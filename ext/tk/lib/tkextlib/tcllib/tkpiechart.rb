@@ -48,7 +48,7 @@ module Tk::Tcllib::Tkpiechart
 
     def __configinfo_struct
       {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil, 
-	:default_value=>1, :current_value=>2}
+        :default_value=>1, :current_value=>2}
     end
     private :__configinfo_struct
   end
@@ -69,10 +69,10 @@ module Tk::Tcllib::Tkpiechart
 
     def create_self(x, y, width, height, keys=None)
       if keys and keys != None
-	@tag_key = tk_call_without_enc('::stooop::new', 'pie', 
-				       @c, x, y, *hash_kv(keys, true))
+        @tag_key = tk_call_without_enc('::stooop::new', 'pie', 
+                                       @c, x, y, *hash_kv(keys, true))
       else
-	@tag_key = tk_call_without_enc('::stooop::new', 'pie', @c, x, y)
+        @tag_key = tk_call_without_enc('::stooop::new', 'pie', @c, x, y)
       end
 
       @slice_tbl = {}
@@ -114,20 +114,20 @@ module Tk::Tcllib::Tkpiechart
 
     def delete_slice(slice)
       unless slice.kind_of?(Slice)
-	unless (slice = @slice_tbl[slice])
-	  return tk_call_without_enc('pie::deleteSlice', @tag_key, slice)
-	end
+        unless (slice = @slice_tbl[slice])
+          return tk_call_without_enc('pie::deleteSlice', @tag_key, slice)
+        end
       end
       unless slice.kind_of?(Slice) && slice.pie == self
-	fail ArgumentError, "argument is not a slice of self"
+        fail ArgumentError, "argument is not a slice of self"
       end
       slice.delete
     end
 
     def selected_slices
       tk_split_simplelist(tk_call_without_enc('pie::selectedSlices', 
-					      @tag_key)).collect{|slice|
-	@slice_tbl[slice] || Slice.new(:no_create, self, slice)
+                                              @tag_key)).collect{|slice|
+        @slice_tbl[slice] || Slice.new(:no_create, self, slice)
       }
     end
   end
@@ -145,15 +145,15 @@ module Tk::Tcllib::Tkpiechart
 
     def initialize(pie, *args)
       unless pie.kind_of?(Pie) && pie != :no_create
-	fail ArgumentError, "expects TkPiechart::Pie for 1st argument"
+        fail ArgumentError, "expects TkPiechart::Pie for 1st argument"
       end
 
       if pie == :no_create
-	@pie, @tag_key = args
+        @pie, @tag_key = args
       else
-	text = args[0] || None
-	@pie = pie
-	@tag_key = tk_call_without_enc('pie::newSlice', @pie.tag_key, text)
+        text = args[0] || None
+        @pie = pie
+        @tag_key = tk_call_without_enc('pie::newSlice', @pie.tag_key, text)
       end
       @parent = @c = @pie.canvas
       @path = @parent.path
@@ -186,7 +186,7 @@ module Tk::Tcllib::Tkpiechart
 
     def size(share, disp=None)
       tk_call_without_enc('pie::sizeSlice', 
-			  @pie.tag_key, @tag_key, share, disp)
+                          @pie.tag_key, @tag_key, share, disp)
       self
     end
 
@@ -209,10 +209,10 @@ module Tk::Tcllib::Tkpiechart
 
     def create_self(keys=None)
       if keys and keys != None
-	@tag_key = tk_call_without_enc('::stooop::new', 'pieBoxLabeler', 
-				       *hash_kv(keys, true))
+        @tag_key = tk_call_without_enc('::stooop::new', 'pieBoxLabeler', 
+                                       *hash_kv(keys, true))
       else
-	@tag_key = tk_call_without_enc('::stooop::new', 'pieBoxLabeler')
+        @tag_key = tk_call_without_enc('::stooop::new', 'pieBoxLabeler')
       end
 
       id = "pieBoxLabeler(#{@tag_key})"
@@ -241,11 +241,11 @@ module Tk::Tcllib::Tkpiechart
 
     def create_self(keys=None)
       if keys and keys != None
-	@tag_key = tk_call_without_enc('::stooop::new', 
-				       'piePeripheralLabeler', 
-				       *hash_kv(keys, true))
+        @tag_key = tk_call_without_enc('::stooop::new', 
+                                       'piePeripheralLabeler', 
+                                       *hash_kv(keys, true))
       else
-	@tag_key = tk_call_without_enc('::stooop::new', 'piePeripheralLabeler')
+        @tag_key = tk_call_without_enc('::stooop::new', 'piePeripheralLabeler')
       end
 
       id = "piePeripheralLabeler(#{@tag_key})"
@@ -269,12 +269,12 @@ module Tk::Tcllib::Tkpiechart
 
     def create_self(x, y, keys=None)
       if keys and keys != None
-	@tag_key = tk_call_without_enc('::stooop::new', 'canvasLabel', 
-				       @c, x, y, width, height, 
-				       *hash_kv(keys, true))
+        @tag_key = tk_call_without_enc('::stooop::new', 'canvasLabel', 
+                                       @c, x, y, width, height, 
+                                       *hash_kv(keys, true))
       else
-	@tag_key = tk_call_without_enc('::stooop::new', 'canvasLabel', 
-				       @c, x, y, width, height)
+        @tag_key = tk_call_without_enc('::stooop::new', 'canvasLabel', 
+                                       @c, x, y, width, height)
       end
 
       id = "canvasLabel(#{@tag_key})"

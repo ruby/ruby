@@ -33,7 +33,7 @@ end
 # listbox from the directory named in the demo's entry.
 #
 # Arguments:
-# w -			Name of the toplevel window of the demo.
+# w -                   Name of the toplevel window of the demo.
 def selectAndLoadDir(w, lbox)
   dir = Tk.chooseDirectory(:initialdir=>$dirName, :parent=>w, :mustexist=>true)
   if dir.length > 0
@@ -90,11 +90,11 @@ image3_f = TkFrame.new($image3_demo).pack(:fill=>:both, :expand=>true)
 image3_df = TkLabelFrame.new($image3_demo, :text=>'Directory:')
 
 image3_ff = TkLabelFrame.new($image3_demo, :text=>'File:', 
-			     :padx=>'2m', :pady=>'2m')
+                             :padx=>'2m', :pady=>'2m')
 image3_lbx = TkListbox.new(image3_ff, :width=>20, :height=>10) {
   pack(:side=>:left, :fill=>:y, :expand=>true)
   yscrollbar(TkScrollbar.new(image3_ff).pack(:side=>:left, :fill=>:y, 
-					     :expand=>true))
+                                             :expand=>true))
   insert(0, *(%w(earth.gif earthris.gif teapot.ppm)))
   bind('Double-1', proc{|x,y| loadImage(self, x, y)}, '%x %y')
 }
@@ -105,7 +105,7 @@ image3_ent = TkEntry.new(image3_df, :width=>30, :textvariable=>$dirName){
 }
 
 TkButton.new(image3_df, :pady=>0, :padx=>'2m', :text=>"Select Dir.", 
-	     :command=>proc{selectAndLoadDir(image3_ent, image3_lbx)}) {
+             :command=>proc{selectAndLoadDir(image3_ent, image3_lbx)}) {
   pack(:side=>:left, :fill=>:y, :padx=>[0, '2m'], :pady=>'2m')
 }
 
@@ -114,8 +114,8 @@ image3_if = TkLabelFrame.new($image3_demo, :text=>'Image:') {|f|
 }
 
 Tk.grid(image3_df,  '-',
-	:sticky=>:ew, :padx=>'1m', :pady=>'1m', :in=>image3_f)
+        :sticky=>:ew, :padx=>'1m', :pady=>'1m', :in=>image3_f)
 Tk.grid(image3_ff, image3_if, 
-	:sticky=>:nw, :padx=>'1m', :pady=>'1m', :in=>image3_f)
+        :sticky=>:nw, :padx=>'1m', :pady=>'1m', :in=>image3_f)
 TkGrid.columnconfigure(image3_f, 1, :weight=>1)
 

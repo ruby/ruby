@@ -20,7 +20,7 @@ $clrpick_demo = TkToplevel.new {|w|
 
 # label
 TkLabel.new($clrpick_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
-	    'text'=>"Press the buttons below to choose the foreground and background colors for the widgets in this window.").pack('side'=>'top')
+            'text'=>"Press the buttons below to choose the foreground and background colors for the widgets in this window.").pack('side'=>'top')
 
 # frame
 TkFrame.new($clrpick_demo) {|frame|
@@ -42,7 +42,7 @@ TkFrame.new($clrpick_demo) {|frame|
 # button 
 TkButton.new($clrpick_demo, 'text'=>'Set background color ...') {|b|
   command(proc{setColor $clrpick_demo, b, 'background', 
-	      ['background', 'highlightbackground']})
+              ['background', 'highlightbackground']})
   pack('side'=>'top', 'anchor'=>'c', 'pady'=>'2m')
 }
 
@@ -55,7 +55,7 @@ def setColor(w,button,name,options)
   w.grab
   initialColor = button[name]
   color = Tk.chooseColor('title'=>"Choose a #{name} color", 'parent'=>w, 
-			 'initialcolor'=>initialColor)
+                         'initialcolor'=>initialColor)
   if color != ""
     setColor_helper(w,options,color)
   end

@@ -1,6 +1,6 @@
 require 'tk'
 TkOptionDB.readfile(File.expand_path('cmd_resource', 
-				     File.dirname(__FILE__)))
+                                     File.dirname(__FILE__)))
 f = TkFrame.new(:class=>'BtnFrame').pack
 b = TkButton.new(:parent=>f, :widgetname=>'hello').pack
 cmd1 = TkOptionDB.new_proc_class(b, [:show_msg, :bye_msg], 3)

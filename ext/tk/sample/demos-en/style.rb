@@ -65,13 +65,13 @@ TkText.new($style_demo){|t|
 #    unless $style_demo_do_first
 #      $style_demo_do_first = true
 #      Tk.tk_call('font', 'create', '@bigascii', 
-#		 '-copy', '-*-Courier-Bold-R-Normal--*-140-*-*-*-*-*-*')
+#                '-copy', '-*-Courier-Bold-R-Normal--*-140-*-*-*-*-*-*')
 #      Tk.tk_call('font', 'create', '@smallascii', 
-#		 '-copy', '-Adobe-Helvetica-Bold-R-Normal-*-100-*')
+#                '-copy', '-Adobe-Helvetica-Bold-R-Normal-*-100-*')
 #      Tk.tk_call('font', 'create', '@cBigFont', 
-#		 '-compound', '@bigascii @msg_knj')
+#                '-compound', '@bigascii @msg_knj')
 #      Tk.tk_call('font', 'create', '@cSmallFont', 
-#		 '-compound', '@smallascii @kanji')
+#                '-compound', '@smallascii @kanji')
 #    end
 #    style_tag_big = TkTextTag.new(t, 'font'=>'@cBigFont')
 #    style_tag_small = TkTextTag.new(t, 'font'=>'@cSmallFont')
@@ -85,24 +85,24 @@ TkText.new($style_demo){|t|
     style_tag_sunken = TkTextTag.new(t, 'relief'=>'sunken', 'borderwidth'=>1)
   else
     style_tag_color1 = TkTextTag.new(t, 'background'=>'black', 
-				     'foreground'=>'white')
+                                     'foreground'=>'white')
     style_tag_color2 = TkTextTag.new(t, 'background'=>'black', 
-				     'foreground'=>'white')
+                                     'foreground'=>'white')
     style_tag_raised = TkTextTag.new(t, 'background'=>'white', 
-				     'relief'=>'raised', 'borderwidth'=>1)
+                                     'relief'=>'raised', 'borderwidth'=>1)
     style_tag_sunken = TkTextTag.new(t, 'background'=>'white', 
-				     'relief'=>'sunken', 'borderwidth'=>1)
+                                     'relief'=>'sunken', 'borderwidth'=>1)
   end
 
   # 
   if $tk_version =~ /^4\.[01]/
     style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black', 
-					'borderwidth'=>0, 
-					'bgstipple'=>'gray25')
+                                        'borderwidth'=>0, 
+                                        'bgstipple'=>'gray25')
   else
     style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black', 
-					'borderwidth'=>0, 
-					'bgstipple'=>'gray12')
+                                        'borderwidth'=>0, 
+                                        'bgstipple'=>'gray12')
   end
   style_tag_fgstipple = TkTextTag.new(t, 'fgstipple'=>'gray50')
   style_tag_underline = TkTextTag.new(t, 'underline'=>'on')
@@ -112,10 +112,10 @@ TkText.new($style_demo){|t|
   style_tag_super = TkTextTag.new(t, 'offset'=>'4p', 'font'=>'-Adobe-Courier-Medium-R-Normal--*-100-*-*-*-*-*-*')
   style_tag_sub = TkTextTag.new(t, 'offset'=>'-2p', 'font'=>'-Adobe-Courier-Medium-R-Normal--*-100-*-*-*-*-*-*')
   style_tag_margins = TkTextTag.new(t, 'lmargin1'=>'12m', 'lmargin2'=>'6m',
-				    'rmargin'=>'10m')
+                                    'rmargin'=>'10m')
   style_tag_spacing = TkTextTag.new(t, 'spacing1'=>'10p', 'spacing2'=>'2p',
-				    'lmargin1'=>'12m', 'lmargin2'=>'6m',
-				    'rmargin'=>'10m')
+                                    'lmargin1'=>'12m', 'lmargin2'=>'6m',
+                                    'rmargin'=>'10m')
 
   # 
   insert('end', 'Text widgets like this one allow you to display information in a

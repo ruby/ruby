@@ -88,7 +88,7 @@ order = [3,1,6,2,5,7,15,13,4,11,8,9,14,10,12]
     highlightthickness 0
     command def_puzzleswitch_proc(w, num)
   }.place('relx'=>$xpos[num], 'rely'=>$ypos[num], 
-	  'relwidth'=>0.25, 'relheight'=>0.25)
+          'relwidth'=>0.25, 'relheight'=>0.25)
 }
 $xpos['space'] = 0.75
 $ypos['space'] = 0.75
@@ -105,9 +105,9 @@ def puzzleSwitch(w, num)
       && ($xpos[num] >= ($xpos['space'] - 0.26))   \
       && ($xpos[num] <= ($xpos['space'] + 0.26)))  \
     || (($xpos[num] >= ($xpos['space'] - 0.01))    \
-	&& ($xpos[num] <= ($xpos['space'] + 0.01)) \
-	&& ($ypos[num] >= ($ypos['space'] - 0.26)) \
-	&& ($ypos[num] <= ($ypos['space'] + 0.26)))
+        && ($xpos[num] <= ($xpos['space'] + 0.01)) \
+        && ($ypos[num] >= ($ypos['space'] - 0.26)) \
+        && ($ypos[num] <= ($ypos['space'] + 0.26)))
     tmp = $xpos['space']
     $xpos['space'] = $xpos[num]
     $xpos[num] = tmp

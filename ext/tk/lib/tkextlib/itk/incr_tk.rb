@@ -22,9 +22,9 @@ module Tk
 
     def self.package_version
       begin
-	TkPackage.require('Itk')
+        TkPackage.require('Itk')
       rescue
-	''
+        ''
       end
     end
 
@@ -44,59 +44,59 @@ module Tk
       # WidgetClassNames[WidgetClassName] = self
 
       def self.to_eval
-	'::itk::' << self::WidgetClassName
+        '::itk::' << self::WidgetClassName
       end
 
       def __destroy_hook__
-	Tk::Itk::Component::ComponentID_TBL.delete(self.path)
+        Tk::Itk::Component::ComponentID_TBL.delete(self.path)
       end
 
       #### [incr Tk] public methods
       def component
-	simplelist(tk_send('component'))
+        simplelist(tk_send('component'))
       end
 
       def component_path(name)
-	window(tk_send('component', name))
+        window(tk_send('component', name))
       end
       alias component_widget component_path
 
       def component_invoke(name, cmd, *args)
-	window(tk_send('component', name, cmd, *args))
+        window(tk_send('component', name, cmd, *args))
       end
 
       def component_obj(*names)
-	names = component if names.empty?
-	names.collect{|name| Tk::Itk::Component.new(self.path, name) }
+        names = component if names.empty?
+        names.collect{|name| Tk::Itk::Component.new(self.path, name) }
       end
 
       #### [incr Tk] protected methods
 =begin
       def itk_component_add(visibility, name, create_cmds, option_cmds=None)
-	args = []
-	visibility.each{|v| v = v.to_s; args << ( (v[0] == ?-)? v: "-#{v}" )}
-	args << '--' << name << create_cmd << option_cmds
-	tk_call('itk_component', 'add', *args)
+        args = []
+        visibility.each{|v| v = v.to_s; args << ( (v[0] == ?-)? v: "-#{v}" )}
+        args << '--' << name << create_cmd << option_cmds
+        tk_call('itk_component', 'add', *args)
       end
 
       def itk_component_delete(*names)
-	tk_call('itk_component', 'delete', *names)
+        tk_call('itk_component', 'delete', *names)
       end
 
       def itk_initialize(keys={})
-	tk_call('itk_initialize', keys)
+        tk_call('itk_initialize', keys)
       end
 
       def itk_option_add(*args)
-	tk_call('itk_option', 'add', *args)
+        tk_call('itk_option', 'add', *args)
       end
 
       def itk_option_define(name, resource, klass, init, config=None)
-	tk_call('itk_option', 'define', name, resource, klass, init, config)
+        tk_call('itk_option', 'define', name, resource, klass, init, config)
       end
       
       def itk_option_remove(*args)
-	tk_call('itk_option', 'remove', *args)
+        tk_call('itk_option', 'remove', *args)
       end
 =end
     end
@@ -125,11 +125,11 @@ module Tk
 
     class Component < TkObject
       def __cget_cmd
-	[self.master, 'component', self.name, 'cget']
+        [self.master, 'component', self.name, 'cget']
       end
 
       def __config_cmd
-	[self.master, 'component', self.name, 'configure']
+        [self.master, 'component', self.name, 'configure']
       end
 
       ComponentID_TBL = TkCore::INTERP.create_table
@@ -138,242 +138,242 @@ module Tk
       TkCore::INTERP.init_ip_env{ ComponentID_TBL.clear }
 
       def self.id2obj(master, id)
-	if master.kind_of?(TkObject)
-	  master = master.path
-	else
-	  master = master.to_s
-	end
-	return id unless ComponentID_TBL.key?(master)
-	(ComponentID_TBL.key?(id))? ComponentID_TBL[master][id]: id
+        if master.kind_of?(TkObject)
+          master = master.path
+        else
+          master = master.to_s
+        end
+        return id unless ComponentID_TBL.key?(master)
+        (ComponentID_TBL.key?(id))? ComponentID_TBL[master][id]: id
       end
 
       def self.new(master, component=nil)
-	if master.kind_of?(TkObject)
-	  master = master.path
-	else
-	  master = master.to_s
-	end
+        if master.kind_of?(TkObject)
+          master = master.path
+        else
+          master = master.to_s
+        end
 
-	if component.kind_of?(Tk::Itk::Component)
-	  component = component.name
-	elsif component
-	  component = component.to_s
-	else
-	  component = Itk_Component_ID.join(TkCore::INTERP._ip_id_)
-	  Itk_Component_ID[1].succ!
-	end
+        if component.kind_of?(Tk::Itk::Component)
+          component = component.name
+        elsif component
+          component = component.to_s
+        else
+          component = Itk_Component_ID.join(TkCore::INTERP._ip_id_)
+          Itk_Component_ID[1].succ!
+        end
 
-	if ComponentID_TBL.key?(master)
-	  if ComponentID_TBL[master].key?(component)
-	    return ComponentID_TBL[master][component] 
-	  end
-	else
-	  ComponentID_TBL[master] = {}
-	end
+        if ComponentID_TBL.key?(master)
+          if ComponentID_TBL[master].key?(component)
+            return ComponentID_TBL[master][component] 
+          end
+        else
+          ComponentID_TBL[master] = {}
+        end
 
-	super(master, component)
+        super(master, component)
       end
 
       def initialize(master, component)
-	@master = master
-	@component = component
+        @master = master
+        @component = component
 
-	ComponentID_TBL[@master][@component] = self
+        ComponentID_TBL[@master][@component] = self
 
-	begin
-	  @widget = window(tk_call(@master, 'component', @component))
-	  @path = @widget.path
-	rescue
-	  @widget = nil
-	  @path = nil
-	end
+        begin
+          @widget = window(tk_call(@master, 'component', @component))
+          @path = @widget.path
+        rescue
+          @widget = nil
+          @path = nil
+        end
       end
 
       def path
-	unless @path
-	  begin
-	    @widget = window(tk_call(@master, 'component', @component))
-	    @path = @widget.path
-	  rescue
-	    fail RuntimeError, 'component is not assigned to a widget'
-	  end
-	end
-	@path
+        unless @path
+          begin
+            @widget = window(tk_call(@master, 'component', @component))
+            @path = @widget.path
+          rescue
+            fail RuntimeError, 'component is not assigned to a widget'
+          end
+        end
+        @path
       end
 
       def epath
-	path()
+        path()
       end
 
       def to_eval
-	path()
+        path()
       end
 
       def master
-	@master
+        @master
       end
 
       def name
-	@component
+        @component
       end
 
       def widget
-	unless @widget
-	  begin
-	    @widget = window(tk_call(@master, 'component', @component))
-	    @path = @widget.path
-	  rescue
-	    fail RuntimeError, 'component is not assigned to a widget'
-	  end
-	end
-	@widget
+        unless @widget
+          begin
+            @widget = window(tk_call(@master, 'component', @component))
+            @path = @widget.path
+          rescue
+            fail RuntimeError, 'component is not assigned to a widget'
+          end
+        end
+        @widget
       end
 
       def widget_class
-	unless @widget
-	  begin
-	    @widget = window(tk_call(@master, 'component', @component))
-	    @path = @widget.path
-	    @widget.classname
-	  rescue
-	    nil
-	  end
-	end
+        unless @widget
+          begin
+            @widget = window(tk_call(@master, 'component', @component))
+            @path = @widget.path
+            @widget.classname
+          rescue
+            nil
+          end
+        end
       end
 
       def method_missing(id, *args)
-	name = id.id2name
+        name = id.id2name
 
-	# try 1 : component command
-	begin
-	  return tk_call(@master, 'component', @component, name, *args)
-	rescue
-	end
+        # try 1 : component command
+        begin
+          return tk_call(@master, 'component', @component, name, *args)
+        rescue
+        end
 
-	# try 2 : component configure
-	len = args.length
-	begin
-	  case len
-	  when 1
-	    if name[-1] == ?=
-	      return configure(name[0..-2], args[0])
-	    else
-	      return configure(name, args[0])
-	    end
-	  when 0
-	    return cget(name)
-	  end
-	rescue
-	end
+        # try 2 : component configure
+        len = args.length
+        begin
+          case len
+          when 1
+            if name[-1] == ?=
+              return configure(name[0..-2], args[0])
+            else
+              return configure(name, args[0])
+            end
+          when 0
+            return cget(name)
+          end
+        rescue
+        end
 
-	# try 3 : widget method or widget configure
-	begin
-	  unless @widget
-	    @widget = window(tk_call(@master, 'component', @component))
-	    @path = @widget.path
-	  end
-	  @widget.__send__(id, *args)
-	rescue
-	end
+        # try 3 : widget method or widget configure
+        begin
+          unless @widget
+            @widget = window(tk_call(@master, 'component', @component))
+            @path = @widget.path
+          end
+          @widget.__send__(id, *args)
+        rescue
+        end
 
-	# unknown method
-	fail RuntimeError, "unknown method '#{name}' for #{self.inspect}"
+        # unknown method
+        fail RuntimeError, "unknown method '#{name}' for #{self.inspect}"
       end
 
       def tk_send(cmd, *rest)
-	begin
-	  tk_call(@master, 'component', @component, cmd, *rest)
-	rescue
-	  unless @path
-	    begin
-	      @widget = window(tk_call(@master, 'component', @component))
-	      @path = @widget.path
-	    rescue
-	      fail RuntimeError, 'component is not assigned to a widget'
-	    end
-	  end
-	  tk_call(@path, cmd, *rest)
-	end
+        begin
+          tk_call(@master, 'component', @component, cmd, *rest)
+        rescue
+          unless @path
+            begin
+              @widget = window(tk_call(@master, 'component', @component))
+              @path = @widget.path
+            rescue
+              fail RuntimeError, 'component is not assigned to a widget'
+            end
+          end
+          tk_call(@path, cmd, *rest)
+        end
       end
 
       def tk_send_without_enc(cmd, *rest)
-	begin
-	  tk_call_without_enc(@master, 'component', @component, cmd, *rest)
-	rescue
-	  unless @path
-	    begin
-	      @widget = window(tk_call(@master, 'component', @component))
-	      @path = @widget.path
-	    rescue
-	      fail RuntimeError, 'component is not assigned to a widget'
-	    end
-	  end
-	  tk_call_without_enc(@path, cmd, *rest)
-	end
+        begin
+          tk_call_without_enc(@master, 'component', @component, cmd, *rest)
+        rescue
+          unless @path
+            begin
+              @widget = window(tk_call(@master, 'component', @component))
+              @path = @widget.path
+            rescue
+              fail RuntimeError, 'component is not assigned to a widget'
+            end
+          end
+          tk_call_without_enc(@path, cmd, *rest)
+        end
       end
 
       def tk_send_with_enc(cmd, *rest)
-	begin
-	  tk_call_with_enc(@master, 'component', @component, cmd, *rest)
-	rescue
-	  unless @path
-	    begin
-	      @widget = window(tk_call(@master, 'component', @component))
-	      @path = @widget.path
-	    rescue
-	      fail RuntimeError, 'component is not assigned to a widget'
-	    end
-	  end
-	  tk_call_with_enc(@path, cmd, *rest)
-	end
+        begin
+          tk_call_with_enc(@master, 'component', @component, cmd, *rest)
+        rescue
+          unless @path
+            begin
+              @widget = window(tk_call(@master, 'component', @component))
+              @path = @widget.path
+            rescue
+              fail RuntimeError, 'component is not assigned to a widget'
+            end
+          end
+          tk_call_with_enc(@path, cmd, *rest)
+        end
       end
 
       def bind(*args)
-	unless @widget
-	  begin
-	    @widget = window(tk_call(@master, 'component', @component))
-	    @path = @widget.path
-	  rescue
-	    fail RuntimeError, 'component is not assigned to a widget'
-	  end
-	end
-	@widget.bind(*args)
+        unless @widget
+          begin
+            @widget = window(tk_call(@master, 'component', @component))
+            @path = @widget.path
+          rescue
+            fail RuntimeError, 'component is not assigned to a widget'
+          end
+        end
+        @widget.bind(*args)
       end
 
       def bind_append(*args)
-	unless @widget
-	  begin
-	    @widget = window(tk_call(@master, 'component', @component))
-	    @path = @widget.path
-	  rescue
-	    fail RuntimeError, 'component is not assigned to a widget'
-	  end
-	end
-	@widget.bind_append(*args)
+        unless @widget
+          begin
+            @widget = window(tk_call(@master, 'component', @component))
+            @path = @widget.path
+          rescue
+            fail RuntimeError, 'component is not assigned to a widget'
+          end
+        end
+        @widget.bind_append(*args)
       end
 
       def bind_remove(*args)
-	unless @widget
-	  begin
-	    @widget = window(tk_call(@master, 'component', @component))
-	    @path = @widget.path
-	  rescue
-	    fail RuntimeError, 'component is not assigned to a widget'
-	  end
-	end
-	@widget.bind_remove(*args)
+        unless @widget
+          begin
+            @widget = window(tk_call(@master, 'component', @component))
+            @path = @widget.path
+          rescue
+            fail RuntimeError, 'component is not assigned to a widget'
+          end
+        end
+        @widget.bind_remove(*args)
       end
 
       def bindinfo(*args)
-	unless @widget
-	  begin
-	    @widget = window(tk_call(@master, 'component', @component))
-	    @path = @widget.path
-	  rescue
-	    fail RuntimeError, 'component is not assigned to a widget'
-	  end
-	end
-	@widget.bindinfo(*args)
+        unless @widget
+          begin
+            @widget = window(tk_call(@master, 'component', @component))
+            @path = @widget.path
+          rescue
+            fail RuntimeError, 'component is not assigned to a widget'
+          end
+        end
+        @widget.bindinfo(*args)
       end
 
     end

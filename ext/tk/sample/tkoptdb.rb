@@ -12,12 +12,12 @@ if __FILE__ == $0 || !TkCore::INTERP.safe?
   if ENV['LANG'] =~ /^ja/
     # read Japanese resource
     TkOptionDB.read_with_encoding(File.expand_path('resource.ja', 
-						   File.dirname(__FILE__)), 
-				  'euc-jp')
+                                                   File.dirname(__FILE__)), 
+                                  'euc-jp')
   else
     # read English resource
     TkOptionDB.readfile(File.expand_path('resource.en', 
-					 File.dirname(__FILE__)))
+                                         File.dirname(__FILE__)))
   end
 end
 
@@ -49,12 +49,12 @@ TkFrame.new(:class=>'BtnFrame'){|f|
     pack(:fill=>:x, :padx=>10, :pady=>10)
   }
   TkButton.new(:command=>proc{
-		 print "($SAFE=#{$SAFE} >>>) : "
-		 cmd.bye_msg
-		 print "(<<< $SAFE=#{$SAFE} ) : "
-		 exit
-	       }, 
-	       :parent=>f, :widgetname=>'quit'){
+                 print "($SAFE=#{$SAFE} >>>) : "
+                 cmd.bye_msg
+                 print "(<<< $SAFE=#{$SAFE} ) : "
+                 exit
+               }, 
+               :parent=>f, :widgetname=>'quit'){
     pack(:fill=>:x, :padx=>10, :pady=>10)
   }
 }
@@ -71,12 +71,12 @@ BtnFrame.new{|f|
     pack(:fill=>:x, :padx=>10, :pady=>10)
   }
   TkButton.new(:command=>proc{
-		 print "($SAFE=#{$SAFE} >>>) : "
-		 cmd.bye_msg
-		 print "(<<< $SAFE=#{$SAFE})"
-		 exit
-	       }, 
-	       :parent=>f, :widgetname=>'quit'){
+                 print "($SAFE=#{$SAFE} >>>) : "
+                 cmd.bye_msg
+                 print "(<<< $SAFE=#{$SAFE})"
+                 exit
+               }, 
+               :parent=>f, :widgetname=>'quit'){
     pack(:fill=>:x, :padx=>10, :pady=>10)
   }
 }
@@ -93,12 +93,12 @@ TkFrame.new(:class=>'BtnFrame2'){|f|
     pack(:fill=>:x, :padx=>10, :pady=>10)
   }
   TkButton.new(:command=>proc{
-		 print "($SAFE=#{$SAFE} >>>) : "
-		 cmd.bye_msg
-		 print "(<<< $SAFE=#{$SAFE})"
-		 exit
-	       }, 
-	       :parent=>f, :widgetname=>'quit'){
+                 print "($SAFE=#{$SAFE} >>>) : "
+                 cmd.bye_msg
+                 print "(<<< $SAFE=#{$SAFE})"
+                 exit
+               }, 
+               :parent=>f, :widgetname=>'quit'){
     pack(:fill=>:x, :padx=>10, :pady=>10)
   }
 }

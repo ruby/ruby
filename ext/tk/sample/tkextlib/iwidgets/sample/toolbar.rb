@@ -89,7 +89,7 @@ EOD
 ##########################################
 
 bmp_dir = File.join(File.dirname(File.expand_path(__FILE__)), 
-		    '../catalog_demo/images')
+                    '../catalog_demo/images')
 
 ##########################################
 

@@ -1,6 +1,6 @@
 #
-#		remote-tk.rb - supports to control remote Tk interpreters
-#			by Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
+#               remote-tk.rb - supports to control remote Tk interpreters
+#                       by Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 if defined? MultiTkIp
   fail RuntimeError, "'remote-tk' library must be required before requiring 'multi-tk'"
@@ -137,14 +137,14 @@ class RemoteTkIp
     return nil if timeout < 1
     @ret_val.value = ''
     @interp._invoke('send', '-async', @remote, 
-		    'send', '-async', Tk.appname, 
-		    "set #{@ret_val.id} ready")
+                    'send', '-async', Tk.appname, 
+                    "set #{@ret_val.id} ready")
     Tk.update
     if @ret_val != 'ready'
       (1..(timeout*5)).each{
-	sleep 0.2 
-	Tk.update
-	break if @ret_val == 'ready'
+        sleep 0.2 
+        Tk.update
+        break if @ret_val == 'ready'
       }
     end
     @ret_val.value == 'ready'
@@ -154,16 +154,16 @@ class RemoteTkIp
   def _create_connection
     ip_id = '_' + @interp._invoke('send', @remote, <<-'EOS') + '_'
       if {[catch {set _rubytk_control_ip_id_} ret] != 0} {
-	set _rubytk_control_ip_id_ 0
+        set _rubytk_control_ip_id_ 0
       } else {
-	set _rubytk_control_ip_id_ [expr $ret + 1]
+        set _rubytk_control_ip_id_ [expr $ret + 1]
       }
       return $_rubytk_control_ip_id_
     EOS
 
     @interp._invoke('send', @remote, <<-EOS)
       proc rb_out#{ip_id} args {
-	send #{@appname} rb_out \$args
+        send #{@appname} rb_out \$args
       }
     EOS
 
@@ -182,17 +182,17 @@ class RemoteTkIp
     cmds = @interp._merge_tklist(*_conv_args([], enc_mode, *cmds))
     if @displayof
       if async
-	@interp.__invoke('send', '-async', '-displayof', @displayof, 
-			 '--', @remote, *cmds)
+        @interp.__invoke('send', '-async', '-displayof', @displayof, 
+                         '--', @remote, *cmds)
       else
-	@interp.__invoke('send', '-displayof', @displayof, 
-			 '--', @remote, *cmds)
+        @interp.__invoke('send', '-displayof', @displayof, 
+                         '--', @remote, *cmds)
       end
     else
       if async
-	@interp.__invoke('send', '-async', '--', @remote, *cmds)
+        @interp.__invoke('send', '-async', '--', @remote, *cmds)
       else
-	@interp.__invoke('send', '--', @remote, *cmds)
+        @interp.__invoke('send', '--', @remote, *cmds)
       end
     end
   end
@@ -271,7 +271,7 @@ class RemoteTkIp
   def deleted?
     if @displayof
       lst = @interp._invoke_without_enc('winfo', 'interps', 
-					'-displayof', @displayof)
+                                        '-displayof', @displayof)
     else
       lst = @interp._invoke_without_enc('winfo', 'interps')
     end

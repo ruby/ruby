@@ -19,25 +19,27 @@ module TkWinDDE
     tk_call_without_enc('package', 'require', 'dde')
   end
 
-  def servername(topic=None)
-    tk_call('dde', 'servername', topic)
-  end
+  #def servername(topic=None)
+  #  tk_call('dde', 'servername', topic)
+  #end
   def servername(*args)
     if args.size == 0
       tk_call('dde', 'servername')
     else
-      if args[-1].kind_of?(Hash)
-	keys = _symbolkey2str(args.pop)
-	force = (keys.delete('force'))? '-force': None
-	exact = (keys.delete('exact'))? '-exact': None
-	if keys.size == 0
-	  tk_call('dde', 'servername', force, exact)
-	elsif args.size == 0
-	  tk_call('dde', 'servername', force, exact, *hash_kv(keys))
-	else
-	  tk_call('dde', 'servername', force, exact, 
-		  *((hash_kv(keys) << '--') + args))
-	end
+      if args[-1].kind_of?(Hash)  # dde 1.2 +
+        keys = _symbolkey2str(args.pop)
+        force = (keys.delete('force'))? '-force': None
+        exact = (keys.delete('exact'))? '-exact': None
+        if keys.size == 0
+          tk_call('dde', 'servername', force, exact)
+        elsif args.size == 0
+          tk_call('dde', 'servername', force, exact, *hash_kv(keys))
+        else
+          tk_call('dde', 'servername', force, exact, 
+                  *((hash_kv(keys) << '--') + args))
+        end
+      else
+        tk_call('dde', 'servername', *args)
       end
     end
   end

@@ -84,13 +84,13 @@ class TkMenu<TkWindow
   end
   def insert(index, type, keys=nil)
     tk_send_without_enc('insert', _get_eval_enc_str(index), 
-			type, *hash_kv(keys, true))
+                        type, *hash_kv(keys, true))
     self
   end
   def delete(first, last=nil)
     if last
       tk_send_without_enc('delete', _get_eval_enc_str(first), 
-			  _get_eval_enc_str(last))
+                          _get_eval_enc_str(last))
     else
       tk_send_without_enc('delete', _get_eval_enc_str(first))
     end
@@ -99,7 +99,7 @@ class TkMenu<TkWindow
   def popup(x, y, index=nil)
     if index
       tk_call_without_enc('tk_popup', path, x, y, 
-			  _get_eval_enc_str(index))
+                          _get_eval_enc_str(index))
     else
       tk_call_without_enc('tk_popup', path, x, y)
     end
@@ -140,18 +140,18 @@ class TkMenu<TkWindow
     case key.to_s
     when 'text', 'label', 'show'
       _fromUTF8(tk_send_without_enc('entrycget', 
-				    _get_eval_enc_str(index), "-#{key}"))
+                                    _get_eval_enc_str(index), "-#{key}"))
     when 'font', 'kanjifont'
       #fnt = tk_tcl2ruby(tk_send('entrycget', index, "-#{key}"))
       fnt = tk_tcl2ruby(_fromUTF8(tk_send_without_enc('entrycget', _get_eval_enc_str(index), '-font')))
       unless fnt.kind_of?(TkFont)
-	fnt = tagfontobj(index, fnt)
+        fnt = tagfontobj(index, fnt)
       end
       if key.to_s == 'kanjifont' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
-	# obsolete; just for compatibility
-	fnt.kanji_font
+        # obsolete; just for compatibility
+        fnt.kanji_font
       else
-	fnt
+        fnt
       end
     else
       tk_tcl2ruby(_fromUTF8(tk_send_without_enc('entrycget', _get_eval_enc_str(index), "-#{key}")))
@@ -161,26 +161,26 @@ class TkMenu<TkWindow
     if key.kind_of? Hash
       if (key['font'] || key[:font] || 
           key['kanjifont'] || key[:kanjifont] || 
-	  key['latinfont'] || key[:latinfont] || 
+          key['latinfont'] || key[:latinfont] || 
           key['asciifont'] || key[:asciifont])
-	tagfont_configure(index, _symbolkey2str(key))
+        tagfont_configure(index, _symbolkey2str(key))
       else
-	tk_send_without_enc('entryconfigure', _get_eval_enc_str(index), 
-			    *hash_kv(key, true))
+        tk_send_without_enc('entryconfigure', _get_eval_enc_str(index), 
+                            *hash_kv(key, true))
       end
 
     else
       if (key == 'font' || key == :font || 
           key == 'kanjifont' || key == :kanjifont || 
-	  key == 'latinfont' || key == :latinfont || 
+          key == 'latinfont' || key == :latinfont || 
           key == 'asciifont' || key == :asciifont )
-	if val == None
-	  tagfontobj(index)
-	else
-	  tagfont_configure(index, {key=>val})
-	end
+        if val == None
+          tagfontobj(index)
+        else
+          tagfont_configure(index, {key=>val})
+        end
       else
-	tk_call('entryconfigure', index, "-#{key}", val)
+        tk_call('entryconfigure', index, "-#{key}", val)
       end
     end
     self
@@ -189,100 +189,100 @@ class TkMenu<TkWindow
   def entryconfiginfo(index, key=nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if key
-	case key.to_s
-	when 'text', 'label', 'show'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
-	when 'font', 'kanjifont'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
-	  conf[4] = tagfont_configinfo(index, conf[4])
-	else
-	  conf = tk_split_list(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
-	end
-	conf[0] = conf[0][1..-1]
-	conf
+        case key.to_s
+        when 'text', 'label', 'show'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
+        when 'font', 'kanjifont'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
+          conf[4] = tagfont_configinfo(index, conf[4])
+        else
+          conf = tk_split_list(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
+        end
+        conf[0] = conf[0][1..-1]
+        conf
       else
-	ret = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure', _get_eval_enc_str(index)))).collect{|conflist|
-	  conf = tk_split_simplelist(conflist)
-	  conf[0] = conf[0][1..-1]
-	  case conf[0]
-	  when 'text', 'label', 'show'
-	  else
-	    if conf[3]
-	      if conf[3].index('{')
-		conf[3] = tk_split_list(conf[3]) 
-	      else
-		conf[3] = tk_tcl2ruby(conf[3]) 
-	      end
-	    end
-	    if conf[4]
-	      if conf[4].index('{')
-		conf[4] = tk_split_list(conf[4]) 
-	      else
-		conf[4] = tk_tcl2ruby(conf[4]) 
-	      end
-	    end
-	  end
-	  conf[1] = conf[1][1..-1] if conf.size == 2 # alias info
-	  conf
-	}
-	if fontconf
-	  ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
-	  fontconf[4] = tagfont_configinfo(index, fontconf[4])
-	  ret.push(fontconf)
-	else
-	  ret
-	end
+        ret = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure', _get_eval_enc_str(index)))).collect{|conflist|
+          conf = tk_split_simplelist(conflist)
+          conf[0] = conf[0][1..-1]
+          case conf[0]
+          when 'text', 'label', 'show'
+          else
+            if conf[3]
+              if conf[3].index('{')
+                conf[3] = tk_split_list(conf[3]) 
+              else
+                conf[3] = tk_tcl2ruby(conf[3]) 
+              end
+            end
+            if conf[4]
+              if conf[4].index('{')
+                conf[4] = tk_split_list(conf[4]) 
+              else
+                conf[4] = tk_tcl2ruby(conf[4]) 
+              end
+            end
+          end
+          conf[1] = conf[1][1..-1] if conf.size == 2 # alias info
+          conf
+        }
+        if fontconf
+          ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
+          fontconf[4] = tagfont_configinfo(index, fontconf[4])
+          ret.push(fontconf)
+        else
+          ret
+        end
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       if key
-	case key.to_s
-	when 'text', 'label', 'show'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
-	when 'font', 'kanjifont'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
-	  conf[4] = tagfont_configinfo(index, conf[4])
-	else
-	  conf = tk_split_list(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
-	end
-	key = conf.shift[1..-1]
-	{ key => conf }
+        case key.to_s
+        when 'text', 'label', 'show'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
+        when 'font', 'kanjifont'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
+          conf[4] = tagfont_configinfo(index, conf[4])
+        else
+          conf = tk_split_list(_fromUTF8(tk_send_without_enc('entryconfigure',_get_eval_enc_str(index),"-#{key}")))
+        end
+        key = conf.shift[1..-1]
+        { key => conf }
       else
-	ret = {}
-	tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure', _get_eval_enc_str(index)))).each{|conflist|
-	  conf = tk_split_simplelist(conflist)
-	  key = conf.shift[1..-1]
-	  case key
-	  when 'text', 'label', 'show'
-	  else
-	    if conf[2]
-	      if conf[2].index('{')
-		conf[2] = tk_split_list(conf[2]) 
-	      else
-		conf[2] = tk_tcl2ruby(conf[2]) 
-	      end
-	    end
-	    if conf[3]
-	      if conf[3].index('{')
-		conf[3] = tk_split_list(conf[3]) 
-	      else
-		conf[3] = tk_tcl2ruby(conf[3]) 
-	      end
-	    end
-	  end
-	  if conf.size == 1
-	    ret[key] = conf[0][1..-1]  # alias info
-	  else
-	    ret[key] = conf
-	  end
-	}
-	fontconf = ret['font']
-	if fontconf
-	  ret.delete('font')
-	  ret.delete('kanjifont')
-	  fontconf[3] = tagfont_configinfo(index, fontconf[3])
-	  ret['font'] = fontconf
-	end
-	ret
+        ret = {}
+        tk_split_simplelist(_fromUTF8(tk_send_without_enc('entryconfigure', _get_eval_enc_str(index)))).each{|conflist|
+          conf = tk_split_simplelist(conflist)
+          key = conf.shift[1..-1]
+          case key
+          when 'text', 'label', 'show'
+          else
+            if conf[2]
+              if conf[2].index('{')
+                conf[2] = tk_split_list(conf[2]) 
+              else
+                conf[2] = tk_tcl2ruby(conf[2]) 
+              end
+            end
+            if conf[3]
+              if conf[3].index('{')
+                conf[3] = tk_split_list(conf[3]) 
+              else
+                conf[3] = tk_tcl2ruby(conf[3]) 
+              end
+            end
+          end
+          if conf.size == 1
+            ret[key] = conf[0][1..-1]  # alias info
+          else
+            ret[key] = conf
+          end
+        }
+        fontconf = ret['font']
+        if fontconf
+          ret.delete('font')
+          ret.delete('kanjifont')
+          fontconf[3] = tagfont_configinfo(index, fontconf[3])
+          ret['font'] = fontconf
+        end
+        ret
       end
     end
   end
@@ -290,19 +290,19 @@ class TkMenu<TkWindow
   def current_entryconfiginfo(index, key=nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if key
-	conf = entryconfiginfo(index, key)
-	{conf[0] => conf[4]}
+        conf = entryconfiginfo(index, key)
+        {conf[0] => conf[4]}
       else
-	ret = {}
-	entryconfiginfo(index).each{|conf|
-	  ret[conf[0]] = conf[4] if conf.size > 2
-	}
-	ret
+        ret = {}
+        entryconfiginfo(index).each{|conf|
+          ret[conf[0]] = conf[4] if conf.size > 2
+        }
+        ret
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       ret = {}
       entryconfiginfo(index, key).each{|k, conf|
-	ret[k] = conf[-1] if conf.kind_of?(Array)
+        ret[k] = conf[-1] if conf.kind_of?(Array)
       }
       ret
     end
@@ -422,7 +422,7 @@ class TkOptionMenubutton<TkMenubutton
     @variable.value = firstval
     install_win(if parent then parent.path end)
     @menu = OptionMenu.new(tk_call('tk_optionMenu', @path, @variable.id, 
-				   firstval, *vals))
+                                   firstval, *vals))
   end
 
   def value
@@ -435,7 +435,7 @@ class TkOptionMenubutton<TkMenubutton
   end
   def add(value)
     @menu.add('radiobutton', 'variable'=>@variable, 
-	      'label'=>value, 'value'=>value)
+              'label'=>value, 'value'=>value)
     self
   end
   def index(index)
@@ -446,7 +446,7 @@ class TkOptionMenubutton<TkMenubutton
   end
   def insert(index, value)
     @menu.insert(index, 'radiobutton', 'variable'=>@variable, 
-	      'label'=>value, 'value'=>value)
+              'label'=>value, 'value'=>value)
     self
   end
   def delete(index, last=None)

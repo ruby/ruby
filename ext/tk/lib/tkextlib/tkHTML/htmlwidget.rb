@@ -18,9 +18,9 @@ module Tk
   class HTML_Widget < TkWindow
     def self.package_version
       begin
-	TkPackage.require('Tkhtml')
+        TkPackage.require('Tkhtml')
       rescue
-	''
+        ''
       end
     end
 
@@ -55,7 +55,7 @@ class Tk::HTML_Widget::ClippingWindow
     if widgetname =~ /^(.*)\.[^.]+$/
       ppath2 = $1
       if ppath2[0] != ?.
-	ppath2 = ppath + '.' + ppath2
+        ppath2 = ppath + '.' + ppath2
       end
       return HtmlClip_TBL[ppath2] if HtmlClip_TBL[ppath2]
 

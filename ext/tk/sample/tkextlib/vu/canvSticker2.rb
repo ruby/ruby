@@ -11,7 +11,7 @@ begin
   st = Tk::Vu::TkcSticker.new(c, 0, 0, 10, 10)
 rescue
   Tk.messageBox(:type=>'ok', :title=>"No sticker Item", 
-		:message=>"This build of vu does not include the sticker item")
+                :message=>"This build of vu does not include the sticker item")
   exit
 end
 
@@ -21,7 +21,7 @@ c.destroy
 #--- set STRING {{x0 y0 x1 y1} {...text...} {resize point: center}
 
 #sti_conf = [ [10, 10, 180, 180], "Sticker äöüß@²³¼½¾",  :center ]
-#txt_conf = [ [210, 210], 	 "Text    äöüß@²³¼½¾",  :center ]
+#txt_conf = [ [210, 210],        "Text    äöüß@²³¼½¾",  :center ]
 sti_conf = [ [10, 10, 350, 350], 
              Tk::UTF8_String("Sticker äöüß@²³¼½¾"),  :center ]
 txt_conf = [ [250, 250],
@@ -65,32 +65,32 @@ txt = TkcText.new(c, txt_conf[0]){
   anchor          txt_conf[2]
   disabledfill    ''
   disabledstipple ''
-  fill	          'blue'
-  font	          fnt
+  fill            'blue'
+  font            fnt
   justify         :left
   offset          '0,0'
   state           ''
   stipple         ''
-  tags	          ['tex']
+  tags            ['tex']
   text            txt_conf[1]
   width           0
 }
 
 #---BINDINGS
 c.bind('2', proc{
-	 sti[:orient] = :horizontal
-	 txt[:width] = 0  # horizontal
+         sti[:orient] = :horizontal
+         txt[:width] = 0  # horizontal
        })
 
 c.bind('3', proc{
-	 sti[:orient] = :vertical
-	 txt[:width] = 1  # top down
+         sti[:orient] = :vertical
+         txt[:width] = 1  # top down
        })
 
 Tk.root.bind('p', proc{
-	       c.postscript(:file=>'DEMO.ps')
-	       puts "DEMO.ps printed"
-	     })
+               c.postscript(:file=>'DEMO.ps')
+               puts "DEMO.ps printed"
+             })
 
 Tk.root.bind('q', proc{exit})
 

@@ -17,11 +17,11 @@ module Tk
   module Img
     module SGI
       def self.package_version
-	begin
-	  TkPackage.require('img::sgi')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::sgi')
+        rescue
+          ''
+        end
       end
     end
   end

@@ -14,12 +14,12 @@ t3 = TkText.new(:height=>5).pack
 src_str = IO.readlines('iso2022-kr.txt').join
 
 t1.insert('end', 
-	  "use neither Tk::EncodedString class nor Tk.encoding= method\n\n")
+          "use neither Tk::EncodedString class nor Tk.encoding= method\n\n")
 t1.insert('end', src_str)
 
 enc_str = Tk::EncodedString(src_str, 'iso2022-kr')
 t2.insert('end', 
-	  "use Tk::EncodedString class (Tk.encoding => '#{Tk.encoding}')\n\n")
+          "use Tk::EncodedString class (Tk.encoding => '#{Tk.encoding}')\n\n")
 t2.insert('end', enc_str)
 
 Tk.encoding = 'iso2022-kr'

@@ -7,7 +7,7 @@ mainloop = Thread.new{Tk.mainloop}
 TkOption.add('*textBackground', 'white')
 
 pd = Tk::Iwidgets::Promptdialog.new(:modality=>:global, :title=>'Password', 
-				    :labeltext=>'Password:', :show=>'*')
+                                    :labeltext=>'Password:', :show=>'*')
 pd.hide('Apply')
 
 if TkComm.bool(pd.activate)

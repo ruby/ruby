@@ -19,11 +19,11 @@ class TkRoot<TkWindow
     new = super(:without_creating=>true, :widgetname=>'.')
     if keys  # wm commands
       keys.each{|k,v|
-	if v.kind_of? Array
-	  new.send(k,*v)
-	else
-	  new.send(k,v)
-	end
+        if v.kind_of? Array
+          new.send(k,*v)
+        else
+          new.send(k,v)
+        end
       }
     end
     ROOT[0] = new
@@ -33,16 +33,16 @@ class TkRoot<TkWindow
   def TkRoot.new(keys=nil, &b)
     unless TkCore::INTERP.tk_windows['.']
       TkCore::INTERP.tk_windows['.'] = 
-	super(:without_creating=>true, :widgetname=>'.'){}
+        super(:without_creating=>true, :widgetname=>'.'){}
     end
     root = TkCore::INTERP.tk_windows['.']
     if keys  # wm commands
       keys.each{|k,v|
-	if v.kind_of? Array
-	  root.__send__(k,*v)
-	else
-	  root.__send__(k,v)
-	end
+        if v.kind_of? Array
+          root.__send__(k,*v)
+        else
+          root.__send__(k,v)
+        end
       }
     end
     root.instance_eval(&b) if block_given?

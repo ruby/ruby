@@ -92,16 +92,16 @@ TkText.new($text_demo){|t|
 コントロール-K は挿入カーソルから行末までを削除し、その位置に改行
 しかなかった場合は、改行を削除します。#{
       if undo_support
-	undo_text = "Control-z は最後に行った変更の取り消し(undo)を行い、"
-	case $tk_platform['platform']
-	when "unix", "macintosh"
-	  undo_text << "Control-Shift-z"
-	else # 'windows'
-	  undo_text << "Control-y"
-	end
-	undo_text << "はundoした変更の再適用(redo)を行います。"
+        undo_text = "Control-z は最後に行った変更の取り消し(undo)を行い、"
+        case $tk_platform['platform']
+        when "unix", "macintosh"
+          undo_text << "Control-Shift-z"
+        else # 'windows'
+          undo_text << "Control-y"
+        end
+        undo_text << "はundoした変更の再適用(redo)を行います。"
       else
-	""
+        ""
       end
 }
 

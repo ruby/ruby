@@ -29,7 +29,7 @@ class TkTextMark<TkObject
     TMarkID_TBL[@tpath][@id] = self
     Tk_TextMark_ID[1].succ!
     tk_call_without_enc(@t.path, 'mark', 'set', @id, 
-			_get_eval_enc_str(index))
+                        _get_eval_enc_str(index))
     @t._addtag id, self
   end
 
@@ -54,7 +54,7 @@ class TkTextMark<TkObject
 
   def set(where)
     tk_call_without_enc(@t.path, 'mark', 'set', @id, 
-			_get_eval_enc_str(where))
+                        _get_eval_enc_str(where))
     self
   end
 
@@ -111,7 +111,7 @@ class TkTextNamedMark<TkTextMark
     TMarkID_TBL[@tpath] = {} unless TMarkID_TBL[@tpath]
     TMarkID_TBL[@tpath][@id] = self unless TMarkID_TBL[@tpath][@id]
     tk_call_without_enc(@t.path, 'mark', 'set', @id, 
-			_get_eval_enc_str(index)) if index
+                        _get_eval_enc_str(index)) if index
     @t._addtag id, self
   end
 end

@@ -130,12 +130,12 @@ applet_cmd = proc{|w, arglist|
 # Construct the main HTML viewer
 #
 html = Tk::HTML_Widget.new(:padx=>5, :pady=>9, 
-			   :formcommand=>form_cmd, 
-			   :imagecommand=>image_cmd, 
-			   :scriptcommand=>script_cmd, 
-			   :appletcommand=>applet_cmd, 
-			   :underlinehyperlinks=>0, 
-			   :bg=>'white', :tablerelief=>:raised)
+                           :formcommand=>form_cmd, 
+                           :imagecommand=>image_cmd, 
+                           :scriptcommand=>script_cmd, 
+                           :appletcommand=>applet_cmd, 
+                           :underlinehyperlinks=>0, 
+                           :bg=>'white', :tablerelief=>:raised)
 vscr = html.yscrollbar(TkScrollbar.new)
 hscr = html.xscrollbar(TkScrollbar.new)
 
@@ -162,7 +162,7 @@ read_file = proc{|name|
     ret = nil
     fp = nil
     Tk.messageBox(:icon=>'error', :message=>"fail to open '#{name}'", 
-		  :type=>:ok)
+                  :type=>:ok)
   ensure
     fp.close if fp
   end
@@ -212,15 +212,15 @@ html.clipping_window.bind('1', href_binding, '%x %y')
 
 # marking text with the mouse and copying to the clipboard just with tkhtml2.0 working
 html.clipping_window.bind('B1-Motion', proc{|w, x, y|
-			    w.selection_set(priv['mark'], "@#{x},#{y}")
-			    TkClipboard.clear
-			    # avoid tkhtml0.0 errors 
-			    # anyone can fix this for tkhtml0.0
-			    begin
-			      TkClipboard.append(TkSelection.get)
-			    rescue
-			    end
-			  }, '%W %x %y')
+                            w.selection_set(priv['mark'], "@#{x},#{y}")
+                            TkClipboard.clear
+                            # avoid tkhtml0.0 errors 
+                            # anyone can fix this for tkhtml0.0
+                            begin
+                              TkClipboard.append(TkSelection.get)
+                            rescue
+                            end
+                          }, '%W %x %y')
 
 # This procedure is called when the user selects the File/Open
 # menu option.
@@ -249,14 +249,14 @@ refresh = proc{|*args|
 # top of a hyperlink.
 #
 Tk::HTML_Widget::ClippingWindow.bind('Motion', proc{|w, x, y|
-				       parent = w.winfo_parent
-				       url = parent.href(x, y)
-				       unless url.empty?
-					 parent[:cursor] = 'hand2'
-				       else
-					 parent[:cursor] = ''
-				       end
-				     }, '%W %x %y')
+                                       parent = w.winfo_parent
+                                       url = parent.href(x, y)
+                                       unless url.empty?
+                                         parent[:cursor] = 'hand2'
+                                       else
+                                         parent[:cursor] = ''
+                                       end
+                                     }, '%W %x %y')
 #
 # Setup menu
 #
@@ -279,18 +279,18 @@ mbar = Tk.root.add_menubar(menu_spec)
 # Setup trace
 #
 ul_hyper.trace('w', proc{ 
-		 html[:underlinehyperlinks] = ul_hyper.value
-		 refresh.call
-	       })
+                 html[:underlinehyperlinks] = ul_hyper.value
+                 refresh.call
+               })
 
 show_tbl.trace('w', proc{
-		 if show_tbl.bool
-		   html[:tablerelief] = :flat
-		 else
-		   html[:tablerelief] = :raised
-		 end
-		 refresh.call
-	       })
+                 if show_tbl.bool
+                   html[:tablerelief] = :flat
+                 else
+                   html[:tablerelief] = :raised
+                 end
+                 refresh.call
+               })
 
 show_img.trace('w', refresh)
 

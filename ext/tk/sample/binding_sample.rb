@@ -24,17 +24,17 @@ class Button_clone < TkLabel
 
     self.bind('Enter', proc{self.background(self.activebackground)})
     self.bind('Leave', proc{
-		@press = false
-		self.background(self.highlightbackground)
-		self.relief('raised')
-	      })
+                @press = false
+                self.background(self.highlightbackground)
+                self.relief('raised')
+              })
 
     self.bind('ButtonPress-1', proc{@press = true; self.relief('sunken')})
     self.bind('ButtonRelease-1', proc{
-		self.relief('raised')
-		@command.call if @press && @command
-		@press = false
-	      })
+                self.relief('raised')
+                @command.call if @press && @command
+                @press = false
+              })
   end
 
   def command(cmd = Proc.new)
@@ -67,20 +67,20 @@ TkFrame.new{|f|
 }.pack
 
 TkButton.new(:text=>'normal Button widget', 
-	     :command=>proc{
-	       puts 'button is clicked!!'
-	       lbl.text 'button is clicked!!'
-	       v.numeric += 1
-	     }){
+             :command=>proc{
+               puts 'button is clicked!!'
+               lbl.text 'button is clicked!!'
+               v.numeric += 1
+             }){
   pack(:fill=>:x, :expand=>true)
 }
 
 Button_clone.new(:text=>'Label with Button binding', 
-		 :command=>proc{
-		   puts 'label is clicked!!'
-		   lbl.text 'label is clicked!!'
-		   v.numeric += 1
-		 }){
+                 :command=>proc{
+                   puts 'label is clicked!!'
+                   lbl.text 'label is clicked!!'
+                   v.numeric += 1
+                 }){
   pack(:fill=>:x, :expand=>true)
 }
 

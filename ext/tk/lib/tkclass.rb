@@ -1,9 +1,9 @@
 #
-#		tkclass.rb - Tk classes
-#			Date: 2000/11/27 09:23:36
-#			by Yukihiro Matsumoto <matz@caelum.co.jp>
+#               tkclass.rb - Tk classes
+#                       Date: 2000/11/27 09:23:36
+#                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 #
-#			$Id$
+#                       $Id$
 
 require "tk"
 

@@ -33,7 +33,7 @@ class Tk::Iwidgets::Hierarchy
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
-	val
+        val
       end
     end
 
@@ -46,21 +46,21 @@ class Tk::Iwidgets::Hierarchy
   class IndicatorCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL  = [ 
-	[ ?n, ?s, :node ], 
-	[ ?s, ?b, :status ], 
-	nil
+        [ ?n, ?s, :node ], 
+        [ ?s, ?b, :status ], 
+        nil
       ]
 
       PROC_TBL = [ 
-	[ ?s, TkComm.method(:string) ], 
-	[ ?b, TkComm.method(:bool) ], 
-	nil
+        [ ?s, TkComm.method(:string) ], 
+        [ ?b, TkComm.method(:bool) ], 
+        nil
       ]
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
-	val
+        val
       end
     end
 
@@ -73,15 +73,15 @@ class Tk::Iwidgets::Hierarchy
   class IconCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL  = [ 
-	[ ?n, ?s, :node ], 
-	[ ?i, ?s, :icon ], 
-	nil
+        [ ?n, ?s, :node ], 
+        [ ?i, ?s, :icon ], 
+        nil
       ]
       PROC_TBL = [ [ ?s, TkComm.method(:string) ], nil ]
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
-	val
+        val
       end
     end
 
@@ -200,7 +200,7 @@ class Tk::Iwidgets::Hierarchy
 
   def compare(idx1, op, idx2)
     bool(tk_send_without_enc('compare', _get_eval_enc_str(idx1), 
-			     op, _get_eval_enc_str(idx2)))
+                             op, _get_eval_enc_str(idx2)))
   end
 
   def debug
@@ -234,16 +234,16 @@ class Tk::Iwidgets::Hierarchy
       # multiple chars-taglist argument :: str, [tag,...], str, [tag,...], ...
       args = [chars]
       while tags.size > 0
-	args << tags.shift.collect{|x|_get_eval_string(x)}.join(' ')  # taglist
-	args << tags.shift if tags.size > 0                           # chars
+        args << tags.shift.collect{|x|_get_eval_string(x)}.join(' ')  # taglist
+        args << tags.shift if tags.size > 0                           # chars
       end
       super index, *args
     else
       # single chars-taglist argument :: str, tag, tag, ...
       if tags.size == 0
-	super index, chars
+        super index, chars
       else
-	super index, chars, tags.collect{|x|_get_eval_string(x)}.join(' ')
+        super index, chars, tags.collect{|x|_get_eval_string(x)}.join(' ')
       end
     end
   end

@@ -11,19 +11,19 @@ default_locale = msgcat.locale
 msgcat.load_tk(msgcat_dir)
 
 col_proc = TkComm.install_bind(proc{|w, color, frame, label|
-				 TkComm.window(frame).background(color)
-				 Tk.update
-				 TkComm.window(label).text(
-					  msgcat.mc("%1$s:: %2$s", 'Color', 
-						    color.capitalize))
-				 w.flash; w.flash
-				 Tk.callback_break;
-			      }, "%W")
+                                 TkComm.window(frame).background(color)
+                                 Tk.update
+                                 TkComm.window(label).text(
+                                          msgcat.mc("%1$s:: %2$s", 'Color', 
+                                                    color.capitalize))
+                                 w.flash; w.flash
+                                 Tk.callback_break;
+                              }, "%W")
 
 del_proc = TkComm.install_cmd(proc{top_win.destroy; top_win = nil})
 
 err_proc = TkComm.install_cmd(proc{fail(RuntimeError, 
-					msgcat.mc('Application Error'))})
+                                        msgcat.mc('Application Error'))})
 
 show_sample = proc{|loc|
   top_win = TkToplevel.new(:title=>loc)
@@ -37,41 +37,41 @@ show_sample = proc{|loc|
   }
 
   lbl = TkLabel.new(top_win, :text=>msgcat.mc("%1$s:: %2$s", 
-					      'Color', '')).pack(:anchor=>'w')
+                                              'Color', '')).pack(:anchor=>'w')
 
   bg = TkFrame.new(top_win).pack(:ipadx=>20, :ipady=>10, 
-				 :expand=>true, :fill=>:both)
+                                 :expand=>true, :fill=>:both)
 
   TkFrame.new(bg){|f|
     ['blue', 'green', 'red'].each{|col|
       TkButton.new(f, :text=>msgcat.mc(col)){
-	bind('ButtonRelease-1', col_proc, "#{col} #{bg.path} #{lbl.path}")
+        bind('ButtonRelease-1', col_proc, "#{col} #{bg.path} #{lbl.path}")
       }.pack(:fill=>:x)
 =begin
       TkButton.new(f, :text=>msgcat.mc(col), 
-		   :command=>proc{
-		     bg.background col
-		     lbl.text msgcat.mc("%1$s:: %2$s", 'Color', col.capitalize)
-		   }).pack(:fill=>:x)
+                   :command=>proc{
+                     bg.background col
+                     lbl.text msgcat.mc("%1$s:: %2$s", 'Color', col.capitalize)
+                   }).pack(:fill=>:x)
 =end
     }
   }.pack(:anchor=>'center', :pady=>15)
 
   TkFrame.new(top_win){|f|
     TkButton.new(f, :text=>msgcat.mc('Delete'), 
-		 :command=>del_proc).pack(:side=>:right, :padx=>5)
+                 :command=>del_proc).pack(:side=>:right, :padx=>5)
     TkButton.new(f, :text=>msgcat.mc('Error'), 
-		 :command=>err_proc).pack(:side=>:left, :padx=>5)
+                 :command=>err_proc).pack(:side=>:left, :padx=>5)
 =begin
     TkButton.new(f, :text=>msgcat.mc('Delete'), 
-		 :command=>proc{
-		   top_win.destroy
-		   top_win = nil
-		 }).pack(:side=>:right, :padx=>5)
+                 :command=>proc{
+                   top_win.destroy
+                   top_win = nil
+                 }).pack(:side=>:right, :padx=>5)
     TkButton.new(f, :text=>msgcat.mc('Error'), 
-		 :command=>proc{
-		   fail RuntimeError, msgcat.mc('Application Error')
-		 }).pack(:side=>:left, :padx=>5)
+                 :command=>proc{
+                   fail RuntimeError, msgcat.mc('Application Error')
+                 }).pack(:side=>:left, :padx=>5)
 =end
   }.pack(:side=>:bottom, :fill=>:x)
 
@@ -84,7 +84,7 @@ TkLabel.new(:text=>"Please click a locale.").pack(:padx=>5, :pady=>3)
 
 TkFrame.new{|f|
   TkButton.new(f, :text=>msgcat.mc('Exit'), 
-	       :command=>proc{exit}).pack(:side=>:right, :padx=>5)
+               :command=>proc{exit}).pack(:side=>:right, :padx=>5)
 }.pack(:side=>:bottom, :fill=>:x)
 
 f = TkFrame.new.pack(:side=>:top, :fill=>:both, :expand=>true)

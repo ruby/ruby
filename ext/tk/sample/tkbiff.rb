@@ -40,13 +40,13 @@ class Mail
     @body = []
     while line = f.gets()
       line.chop!
-      next if /^From / =~ line	# skip From-line  
-      break if /^$/ =~ line	# end of header
+      next if /^From / =~ line  # skip From-line  
+      break if /^$/ =~ line     # end of header
       if /^(\S+):\s*(.*)/ =~ line
-	@header[attr = $1.capitalize] = $2
+        @header[attr = $1.capitalize] = $2
       elsif attr
-	sub(/^\s*/, '')
-	@header[attr] += "\n" + $_
+        sub(/^\s*/, '')
+        @header[attr] += "\n" + $_
       end
     end
 
@@ -112,7 +112,7 @@ if defined? Thread
     loop do
       sleep 600
       if Time.now - $check_time > 200
-	Tk.after 5000, proc{check}
+        Tk.after 5000, proc{check}
       end
     end
   end

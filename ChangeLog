@@ -1,3 +1,7 @@
+Mon Oct 11 13:48:20 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/*: untabify
+
 Sun Oct 10 12:32:08 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::parse_require): Allow 'require'

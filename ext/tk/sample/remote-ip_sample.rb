@@ -28,6 +28,6 @@ end
 ip.eval_proc{TkButton.new(:command=>'exit', :text=>'QUIT').pack(:fill=>:x)}
 
 TkButton.new(:command=>proc{exit}, :text=>'QUIT', 
-	     :padx=>10, :pady=>7).pack(:padx=>10, :pady=>7)
+             :padx=>10, :pady=>7).pack(:padx=>10, :pady=>7)
 
 Tk.mainloop

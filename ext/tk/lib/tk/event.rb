@@ -33,7 +33,7 @@ module TkEvent
       CreateNotify     = 16
       DestroyNotify    = 17
       UnmapNotify      = 18
-      MapNotify	       = 19
+      MapNotify        = 19
       MapRequest       = 20
       ReparentNotify   = 21
       ConfigureNotify  = 22
@@ -93,12 +93,12 @@ module TkEvent
       [ ?w, TkComm.method(:window) ], 
 
       [ ?x, proc{|val|
-	  begin
-	    TkComm::number(val)
-	  rescue ArgumentError
-	    val
-	  end
-	}
+          begin
+            TkComm::number(val)
+          rescue ArgumentError
+            val
+          end
+        }
       ], 
 
       nil
@@ -141,14 +141,14 @@ module TkEvent
       keys = klass._get_subst_key(args)
 
       if cmd.kind_of?(String)
-	id = cmd
+        id = cmd
       elsif cmd.kind_of?(TkCallbackEntry)
-	id = install_cmd(cmd)
+        id = install_cmd(cmd)
       else
-	id = install_cmd(proc{|*arg|
-	  ex_args = []
-	  extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
-	  TkUtil.eval_cmd(cmd, *(ex_args.concat(klass.scan_args(keys, arg))))
+        id = install_cmd(proc{|*arg|
+          ex_args = []
+          extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
+          TkUtil.eval_cmd(cmd, *(ex_args.concat(klass.scan_args(keys, arg))))
         })
       end
       id + ' ' + args
@@ -156,15 +156,15 @@ module TkEvent
       keys, args = klass._get_all_subst_keys
 
       if cmd.kind_of?(String)
-	id = cmd
+        id = cmd
       elsif cmd.kind_of?(TkCallbackEntry)
-	id = install_cmd(cmd)
+        id = install_cmd(cmd)
       else
         id = install_cmd(proc{|*arg|
-	  ex_args = []
-	  extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
-	  TkUtil.eval_cmd(cmd, 
-			  *(ex_args << klass.new(*klass.scan_args(keys, arg))))
+          ex_args = []
+          extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
+          TkUtil.eval_cmd(cmd, 
+                          *(ex_args << klass.new(*klass.scan_args(keys, arg))))
         })
       end
       id + ' ' + args

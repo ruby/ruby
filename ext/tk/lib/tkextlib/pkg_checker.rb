@@ -100,29 +100,29 @@ def check_pkg(file, verbose=false)
     begin
       case type
       when :package
-	ver = TkPackage.require(name)
-	success_list[name] = ver
-	error_list.delete_if{|n, t| n == name}
+        ver = TkPackage.require(name)
+        success_list[name] = ver
+        error_list.delete_if{|n, t| n == name}
 
       when :library
-	Tk.load_tcllibrary(name)
-	success_list[name] = :library
-	error_list.delete_if{|n, t| n == name}
+        Tk.load_tcllibrary(name)
+        success_list[name] = :library
+        error_list.delete_if{|n, t| n == name}
 
       when :script
-	Tk.load_tclscript(name)
-	success_list[name] = :script
-	error_list.delete_if{|n, t| n == name}
+        Tk.load_tclscript(name)
+        success_list[name] = :script
+        error_list.delete_if{|n, t| n == name}
 
       when :require_ruby_lib
-	require name
+        require name
 
       end
     rescue => e
       if verbose
-	error_list << [name, type, e.message]
+        error_list << [name, type, e.message]
       else
-	error_list << [name, type]
+        error_list << [name, type]
       end
     end
   }
@@ -130,8 +130,8 @@ def check_pkg(file, verbose=false)
   success_list.dup.each{|name, ver|
     unless ver.kind_of?(String)
       begin
-	ver = TkPackage.require(name)
-	sccess_list[name] = ver
+        ver = TkPackage.require(name)
+        sccess_list[name] = ver
       rescue
       end
     end
@@ -149,10 +149,10 @@ def subdir_check(dir, verbose=false)
       path = File.join(dir, f)
       suc, err = check_pkg(path, verbose)
       if err.empty?
-	print 'Ready : ', path, ' : require->', suc.inspect, "\n"
+        print 'Ready : ', path, ' : require->', suc.inspect, "\n"
       else
-	print '*LACK : ', path, ' : require->', suc.inspect, 
-	  '  FAIL->', err.inspect, "\n"
+        print '*LACK : ', path, ' : require->', suc.inspect, 
+          '  FAIL->', err.inspect, "\n"
       end
     end
   }

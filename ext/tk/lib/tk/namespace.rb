@@ -24,19 +24,19 @@ class TkNamespace < TkObject
       #super('namespace', 'eval', @namespace, *args)
       args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
       super('namespace', 'eval', @namespace, 
-	    TkCore::INTERP._merge_tklist(*args))
+            TkCore::INTERP._merge_tklist(*args))
     end
     def tk_call_without_enc(*args)
       #super('namespace', 'eval', @namespace, *args)
       args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
       super('namespace', 'eval', @namespace, 
-	    TkCore::INTERP._merge_tklist(*args))
+            TkCore::INTERP._merge_tklist(*args))
     end
     def tk_call_with_enc(*args)
       #super('namespace', 'eval', @namespace, *args)
       args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
       super('namespace', 'eval', @namespace, 
-	    TkCore::INTERP._merge_tklist(*args))
+            TkCore::INTERP._merge_tklist(*args))
     end
 
     def initialize(namespace, *args)
@@ -68,19 +68,19 @@ class TkNamespace < TkObject
     #super('namespace', 'eval', @fullname, *args)
     args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
     super('namespace', 'eval', @fullname, 
-	  TkCore::INTERP._merge_tklist(*args))
+          TkCore::INTERP._merge_tklist(*args))
   end
   def tk_call_without_enc(*args)
     #super('namespace', 'eval', @fullname, *args)
     args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
     super('namespace', 'eval', @fullname,  
-	  TkCore::INTERP._merge_tklist(*args))
+          TkCore::INTERP._merge_tklist(*args))
   end
   def tk_call_with_enc(*args)
     #super('namespace', 'eval', @fullname, *args)
     args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
     super('namespace', 'eval', @fullname, 
-	  TkCore::INTERP._merge_tklist(*args))
+          TkCore::INTERP._merge_tklist(*args))
   end
   alias ns_tk_call             tk_call
   alias ns_tk_call_without_enc tk_call_without_enc
@@ -95,27 +95,27 @@ class TkNamespace < TkObject
     name = __tk_call('namespace', 'current') if name == ''
     if parent
       if parent =~ /^::/
-	if name =~ /^::/
-	  @fullname = parent + name
-	else
-	  @fullname = parent +'::'+ name
-	end
+        if name =~ /^::/
+          @fullname = parent + name
+        else
+          @fullname = parent +'::'+ name
+        end
       else
-	ancestor = __tk_call('namespace', 'current')
-	ancestor = '' if ancestor == '::'
-	if name =~ /^::/
-	  @fullname = ancestor + '::' + parent + name
-	else
-	  @fullname = ancestor + '::'+ parent +'::'+ name
-	end
+        ancestor = __tk_call('namespace', 'current')
+        ancestor = '' if ancestor == '::'
+        if name =~ /^::/
+          @fullname = ancestor + '::' + parent + name
+        else
+          @fullname = ancestor + '::'+ parent +'::'+ name
+        end
       end
     else # parent == nil
       ancestor = __tk_call('namespace', 'current')
       ancestor = '' if ancestor == '::'
       if name =~ /^::/
-	@fullname = name
+        @fullname = name
       else
-	@fullname = ancestor + '::' + name
+        @fullname = ancestor + '::' + name
       end
     end
     @path = @fullname
@@ -134,9 +134,9 @@ class TkNamespace < TkObject
     tk_split_simplelist(tk_call('namespace', 'children', *args)).collect{|ns|
       # ns is fullname
       if Tk_Namespace_ID_TBL.key?(ns)
-	Tk_Namespace_ID_TBL[ns]
+        Tk_Namespace_ID_TBL[ns]
       else
-	ns
+        ns
       end
     }
   end
@@ -156,7 +156,7 @@ class TkNamespace < TkObject
       fail ArgumentError, "String or Proc is expected"
     end
     TkNamespace::NsCode.new(tk_call_without_enc('namespace', 'code', 
-						_get_eval_string(cmd, false)))
+                                                _get_eval_string(cmd, false)))
   end
 
   def self.current

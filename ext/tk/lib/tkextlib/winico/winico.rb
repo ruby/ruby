@@ -18,9 +18,9 @@ module Tk
   class Winico < TkObject
     def self.package_version
       begin
-	TkPackage.require('winico')
+        TkPackage.require('winico')
       rescue
-	''
+        ''
       end
     end
   end
@@ -61,9 +61,9 @@ class Tk::Winico
     if resource_name
       # from resource
       if file_name
-	@id = Tk.tk_call('winico', 'load', resource_name, file_name)
+        @id = Tk.tk_call('winico', 'load', resource_name, file_name)
       else
-	@id = Tk.tk_call('winico', 'load', resource_name)
+        @id = Tk.tk_call('winico', 'load', resource_name)
       end
     elsif file_name
       # from .ico file
@@ -72,7 +72,7 @@ class Tk::Winico
       @id = winico_id
     else
       fail ArgumentError, 
-	   "must be given proper information from where loading icons"
+           "must be given proper information from where loading icons"
     end
     @path = @id
     WinicoID_TBL[@id] = self
@@ -104,35 +104,35 @@ class Tk::Winico
   class Winico_callback < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-	[ ?m, ?s, :message ], 
-	[ ?i, ?x, :icon ], 
-	[ ?x, ?n, :x ], 
-	[ ?y, ?n, :y ], 
-	[ ?X, ?n, :last_x ], 
-	[ ?Y, ?n, :last_y ], 
-	[ ?t, ?n, :tickcount ], 
-	[ ?w, ?n, :icon_idnum ], 
-	[ ?l, ?n, :msg_idnum ], 
-	nil
+        [ ?m, ?s, :message ], 
+        [ ?i, ?x, :icon ], 
+        [ ?x, ?n, :x ], 
+        [ ?y, ?n, :y ], 
+        [ ?X, ?n, :last_x ], 
+        [ ?Y, ?n, :last_y ], 
+        [ ?t, ?n, :tickcount ], 
+        [ ?w, ?n, :icon_idnum ], 
+        [ ?l, ?n, :msg_idnum ], 
+        nil
       ]
 
       PROC_TBL = [
-	[ ?n, TkComm.method(:number) ], 
-	[ ?s, TkComm.method(:string) ], 
-	[ ?x, proc{|id| 
-	    if Tk::Winico::WinicoID_TBL.key?(id)
-	      Tk::Winico::WinicoID_TBL[id]
-	    else
-	      Tk::Winico.new(nil, nil, id)
-	    end
-	  } ], 
-	nil
+        [ ?n, TkComm.method(:number) ], 
+        [ ?s, TkComm.method(:string) ], 
+        [ ?x, proc{|id| 
+            if Tk::Winico::WinicoID_TBL.key?(id)
+              Tk::Winico::WinicoID_TBL[id]
+            else
+              Tk::Winico.new(nil, nil, id)
+            end
+          } ], 
+        nil
       ]
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
-	val
+        val
       end
     end
 
@@ -147,10 +147,10 @@ class Tk::Winico
     keys = _symbolkey2str(keys)
     Winico_callback._config_keys.each{|k|
       if keys[k].kind_of?(Array)
-	cmd, *args = keys[k]
-	keys[k] = Winico_callback.new(cmd, args.join(' '))
+        cmd, *args = keys[k]
+        keys[k] = Winico_callback.new(cmd, args.join(' '))
       elsif keys[k].kind_of?(Proc)
-	keys[k] = Winico_callback.new(keys[k])
+        keys[k] = Winico_callback.new(keys[k])
       end
     }
     tk_call('winico', 'taskbar', 'add', @id, *(hash_kv(keys)))
@@ -162,10 +162,10 @@ class Tk::Winico
     keys = _symbolkey2str(keys)
     Winico_callback._config_keys.each{|k|
       if keys[k].kind_of?(Array)
-	cmd, *args = keys[k]
-	keys[k] = Winico_callback.new(cmd, args.join(' '))
+        cmd, *args = keys[k]
+        keys[k] = Winico_callback.new(cmd, args.join(' '))
       elsif keys[k].kind_of?(Proc)
-	keys[k] = Winico_callback.new(keys[k])
+        keys[k] = Winico_callback.new(keys[k])
       end
     }
     tk_call('winico', 'taskbar', 'modify', @id, *(hash_kv(keys)))

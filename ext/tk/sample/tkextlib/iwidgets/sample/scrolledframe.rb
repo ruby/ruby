@@ -3,7 +3,7 @@ require 'tk'
 require 'tkextlib/iwidgets'
 
 sf = Tk::Iwidgets::Scrolledframe.new(:width=>150, :height=>180, 
-				     :labeltext=>'scrolledframe')
+                                     :labeltext=>'scrolledframe')
 cs = sf.child_site
 
 TkButton.new(cs, :text=>'Hello').pack(:pady=>10)

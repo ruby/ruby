@@ -45,9 +45,9 @@ EOD
     @scr.command(proc{|*args| @lbox.yview(*args); _config_proc})
 
     @up_arrow   = TkLabel.new(@lbox, :image=>@@up_bmp, 
-			      :relief=>:raised, :borderwidth=>1)
+                              :relief=>:raised, :borderwidth=>1)
     @down_arrow = TkLabel.new(@lbox, :image=>@@down_bmp, 
-			      :relief=>:raised, :borderwidth=>1)
+                              :relief=>:raised, :borderwidth=>1)
 
     _init_binding
 
@@ -198,10 +198,10 @@ EOD
     @lbox.bind('Configure', proc{_config_proc})
     @lbox.bind('Enter', proc{|y| _set_sel(@lbox.nearest(y))}, '%y')
     @lbox.bind('Motion', proc{|y| 
-		 @up_timer.stop if @up_timer.running?
-		 @down_timer.stop if @down_timer.running?
-		 _check_sel(@lbox.nearest(y))
-	       }, '%y')
+                 @up_timer.stop if @up_timer.running?
+                 @down_timer.stop if @down_timer.running?
+                 _check_sel(@lbox.nearest(y))
+               }, '%y')
 
     @lbox.bind('Up', proc{_key_UP_proc})
     @lbox.bind('Down', proc{_key_DOWN_proc})
@@ -267,7 +267,7 @@ EOD
     begin
       @var.tkwait
       if (idx = @var.to_i) >= 0
-	@ent.value = @lst.get(idx)
+        @ent.value = @lst.get(idx)
       end
       @top.withdraw
       @btn.relief(:raised)
@@ -275,8 +275,8 @@ EOD
     rescue
     ensure
       begin
-	@top.grab(:release)
-	@ent.focus
+        @top.grab(:release)
+        @ent.focus
       rescue
       end
     end
@@ -299,8 +299,8 @@ EOD
     keys = _symbolkey2str(keys)
 
     @btn = TkLabel.new(@frame, :relief=>:raised, :borderwidth=>3, 
-		       :image=>@@down_btn_bmp).pack(:side=>:right, 
-						    :ipadx=>2, :fill=>:y)
+                       :image=>@@down_btn_bmp).pack(:side=>:right, 
+                                                    :ipadx=>2, :fill=>:y)
     @ent = TkEntry.new(@frame).pack(:side=>:left)
     @path = @ent.path
 
@@ -313,9 +313,9 @@ EOD
     startwait = keys.delete('startwait'){300}
     interval = keys.delete('interval'){150}
     @lst = TkAutoScrollbox.new(@top, 
-			       :startwait=>startwait, 
-			       :interval=>interval).pack(:fill=>:both, 
-							 :expand=>true)
+                               :startwait=>startwait, 
+                               :interval=>interval).pack(:fill=>:both, 
+                                                         :expand=>true)
     @ent_list = []
 
     @var = TkVariable.new
@@ -397,8 +397,8 @@ end
 if __FILE__ == $0
   v = TkVariable.new
   e = TkCombobox.new(:height=>7, :scrollbar=>true, :textvariable=>v, 
-		     :arrowrelief=>:flat, :arrowborderwidth=>0, 
-		     :startwait=>400, :interval=>200).pack
+                     :arrowrelief=>:flat, :arrowborderwidth=>0, 
+                     :startwait=>400, :interval=>200).pack
   e.values(%w(aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu))
   #e.see(e.list_index('end') - 2)
   e.value = 'cc'
@@ -409,17 +409,17 @@ if __FILE__ == $0
   }.pack
 
   TkFrame.new(:relief=>:raised, :borderwidth=>2, 
-	      :height=>3).pack(:fill=>:x, :expand=>true, :padx=>5, :pady=>3)
+              :height=>3).pack(:fill=>:x, :expand=>true, :padx=>5, :pady=>3)
 
   l = TkAutoScrollbox.new(nil, :relief=>:groove, :borderwidth=>4, 
-			  :width=>20).pack(:fill=>:both, :expand=>true)
+                          :width=>20).pack(:fill=>:both, :expand=>true)
   (0..20).each{|i| l.insert('end', "line #{i}")}
 
   TkFrame.new(:relief=>:ridge, :borderwidth=>3){
     TkButton.new(self, :text=>'ON', 
-		 :command=>proc{l.scrollbar(true)}).pack(:side=>:left)
+                 :command=>proc{l.scrollbar(true)}).pack(:side=>:left)
     TkButton.new(self, :text=>'OFF', 
-		 :command=>proc{l.scrollbar(false)}).pack(:side=>:right)
+                 :command=>proc{l.scrollbar(false)}).pack(:side=>:right)
     pack(:fill=>:x)
   }
   Tk.mainloop

@@ -70,41 +70,41 @@ class Tk::Iwidgets::Menubar
       next unless spec
 
       if spec.kind_of?(Hash)
-	args = [spec]
-	type = 'options'
+        args = [spec]
+        type = 'options'
       else
-	type, *args = spec
+        type, *args = spec
       end
 
       type = type.to_s
       case type
       when 'options'
-	keys = args[0]
-	ary = [type]
-	ary.concat(hash_kv(keys))
-	ret << array2tk_list(ary) << "\n"
+        keys = args[0]
+        ary = [type]
+        ary.concat(hash_kv(keys))
+        ret << array2tk_list(ary) << "\n"
 
       when 'menubutton', 'cascade'
-	name, keys = args
-	if keys
-	  ary = [type, name]
-	  keys = _symbolkey2str(keys)
-	  keys['menu'] = _parse_menu_spec(keys['menu']) if keys.key?('menu')
-	  ary.concat(hash_kv(keys))
-	  ret << array2tk_list(ary) << "\n"
-	else
-	  ret << array2tk_list([type, name]) << "\n"
-	end
+        name, keys = args
+        if keys
+          ary = [type, name]
+          keys = _symbolkey2str(keys)
+          keys['menu'] = _parse_menu_spec(keys['menu']) if keys.key?('menu')
+          ary.concat(hash_kv(keys))
+          ret << array2tk_list(ary) << "\n"
+        else
+          ret << array2tk_list([type, name]) << "\n"
+        end
 
       else
-	name, keys = args
-	if keys
-	  ary = [type, name]
-	  ary.concat(hash_kv(keys))
-	  ret << array2tk_list(ary) << "\n"
-	else
-	  ret << array2tk_list([type, name]) << "\n"
-	end
+        name, keys = args
+        if keys
+          ary = [type, name]
+          ary.concat(hash_kv(keys))
+          ret << array2tk_list(ary) << "\n"
+        else
+          ret << array2tk_list([type, name]) << "\n"
+        end
       end
     }
     ret

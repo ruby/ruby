@@ -27,9 +27,9 @@ class TkDialog_Demo2 < TkDialog
 end
 
 ret =  TkDialog_Demo2.new('message_config'=>{'wraplength'=>'4i'},
-			  'prev_command'=>proc{|dialog|
-			    Tk.after 100, proc{dialog.grab('global')}
-			  }).value
+                          'prev_command'=>proc{|dialog|
+                            Tk.after 100, proc{dialog.grab('global')}
+                          }).value
 case ret
 when 0
   print "\You pressed OK\n"

@@ -13,9 +13,9 @@
 # not affected, however.
 #
 # Arguments:
-# w -		The window into which to load the file.  Must be a
-#		text widget.
-# file -	The name of the file to load.  Must be readable.
+# w -           The window into which to load the file.  Must be a
+#               text widget.
+# file -        The name of the file to load.  Must be readable.
 
 def textLoadFile(w,file)
   w.delete('1.0', 'end')
@@ -31,10 +31,10 @@ end
 # apply a given tag to each instance found.
 #
 # Arguments:
-# w -		The window in which to search.  Must be a text widget.
-# string -	The string to search for.  The search is done using
-#		exact matching only;  no special characters.
-# tag -		Tag to apply to each instance of a matching string.
+# w -           The window in which to search.  Must be a text widget.
+# string -      The string to search for.  The search is done using
+#               exact matching only;  no special characters.
+# tag -         Tag to apply to each instance of a matching string.
 
 def textSearch(w, string, tag)
   tag.remove('0.0', 'end')
@@ -55,15 +55,15 @@ end
 # deleted) then it doesn't reschedule itself.
 #
 # Arguments:
-# cmd1 -	Command to execute when method is called.
-# sleep1 -	Ms to sleep after executing cmd1 before executing cmd2.
-# cmd2 -	Command to execute in the *next* invocation of this method.
-# sleep2 -	Ms to sleep after executing cmd2 before executing cmd1 again.
+# cmd1 -        Command to execute when method is called.
+# sleep1 -      Ms to sleep after executing cmd1 before executing cmd2.
+# cmd2 -        Command to execute in the *next* invocation of this method.
+# sleep2 -      Ms to sleep after executing cmd2 before executing cmd1 again.
 
 def textToggle(cmd1,sleep1,cmd2,sleep2)
   sleep_list = [sleep2, sleep1]
   TkAfter.new(proc{sleep = sleep_list.shift; sleep_list.push(sleep); sleep}, 
-	      -1, cmd1, cmd2).start(sleep1)
+              -1, cmd1, cmd2).start(sleep1)
 end
 
 # toplevel widget
@@ -100,35 +100,35 @@ $search_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 # frame
 TkFrame.new($search_demo) {|f|
   TkLabel.new(f, 'text'=>'File name:', 
-	      'width'=>13, 'anchor'=>'w').pack('side'=>'left')
+              'width'=>13, 'anchor'=>'w').pack('side'=>'left')
   $search_fileName = TkVariable.new
   TkEntry.new(f, 'width'=>40, 
-	      'textvariable'=>$search_fileName) {
+              'textvariable'=>$search_fileName) {
     pack('side'=>'left')
     bind('Return', proc{textLoadFile($search_text, $search_fileName.value)
-	                $search_string_entry.focus})
+                        $search_string_entry.focus})
     focus
   }
   TkButton.new(f, 'text'=>'Load File', 
-	       'command'=>proc{textLoadFile($search_text, 
-					    $search_fileName.value)})\
+               'command'=>proc{textLoadFile($search_text, 
+                                            $search_fileName.value)})\
   .pack('side'=>'left', 'pady'=>5, 'padx'=>10)
 }.pack('side'=>'top', 'fill'=>'x')
 
 TkFrame.new($search_demo) {|f|
   TkLabel.new(f, 'text'=>'Search string:', 
-	      'width'=>13, 'anchor'=>'w').pack('side'=>'left')
+              'width'=>13, 'anchor'=>'w').pack('side'=>'left')
   $search_searchString = TkVariable.new
   $search_string_entry = TkEntry.new(f, 'width'=>40, 
-				     'textvariable'=>$search_searchString) {
+                                     'textvariable'=>$search_searchString) {
     pack('side'=>'left')
     bind('Return', proc{textSearch($search_text, $search_searchString.value, 
-				   $search_Tag)})
+                                   $search_Tag)})
   }
   TkButton.new(f, 'text'=>'Highlight', 
-	       'command'=>proc{textSearch($search_text, 
-					  $search_searchString.value, 
-					  $search_Tag)}) {
+               'command'=>proc{textSearch($search_text, 
+                                          $search_searchString.value, 
+                                          $search_Tag)}) {
     pack('side'=>'left', 'pady'=>5, 'padx'=>10)
   }
 }.pack('side'=>'top', 'fill'=>'x')
@@ -146,24 +146,24 @@ $search_text = TkText.new($search_demo, 'setgrid'=>true, 'wrap'=>'word') {|t|
 
 if TkWinfo.depth($search_demo) > 1
   textToggle(proc{
-	       $search_Tag.configure('background'=>'#ce5555', 
-				     'foreground'=>'white')
-	     },
-	     800, 
-	     proc{
-	       $search_Tag.configure('background'=>'', 'foreground'=>'')
-	     },
-	     200 )
+               $search_Tag.configure('background'=>'#ce5555', 
+                                     'foreground'=>'white')
+             },
+             800, 
+             proc{
+               $search_Tag.configure('background'=>'', 'foreground'=>'')
+             },
+             200 )
 else
   textToggle(proc{
-	       $search_Tag.configure('background'=>'black', 
-				     'foreground'=>'white')
-	     },
-	     800, 
-	     proc{
-	       $search_Tag.configure('background'=>'', 'foreground'=>'')
-	     },
-	     200 )
+               $search_Tag.configure('background'=>'black', 
+                                     'foreground'=>'white')
+             },
+             800, 
+             proc{
+               $search_Tag.configure('background'=>'', 'foreground'=>'')
+             },
+             200 )
 end
 $search_text.insert('1.0', "\
 This window demonstrates how to use the tagging facilities in text \

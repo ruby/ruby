@@ -33,9 +33,9 @@ module TkGrid
     args.each{|win|
       case win
       when '-', 'x', '^'  # RELATIVE PLACEMENT
-	params.push(win)
+        params.push(win)
       else
-	params.push(_epath(win))
+        params.push(_epath(win))
       end
     }
     opts.each{|k, v|
@@ -50,7 +50,7 @@ module TkGrid
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
     tk_call_without_enc("grid", 'columnconfigure', 
-			master, index, *hash_kv(args))
+                        master, index, *hash_kv(args))
   end
 
   def rowconfigure(master, index, args)
@@ -65,24 +65,24 @@ module TkGrid
     if slot
       case slot
       when 'uniform', :uniform
-	tk_call_without_enc('grid', 'columnconfigure', 
-			    master, index, "-#{slot}")
+        tk_call_without_enc('grid', 'columnconfigure', 
+                            master, index, "-#{slot}")
       else
-	num_or_str(tk_call_without_enc('grid', 'columnconfigure', 
-				       master, index, "-#{slot}"))
+        num_or_str(tk_call_without_enc('grid', 'columnconfigure', 
+                                       master, index, "-#{slot}"))
       end
     else
       #ilist = list(tk_call_without_enc('grid','columnconfigure',master,index))
       ilist = simplelist(tk_call_without_enc('grid', 'columnconfigure', 
-					     master, index))
+                                             master, index))
       info = {}
       while key = ilist.shift
-	case key
-	when 'uniform'
-	  info[key[1..-1]] = ilist.shift
-	else
-	  info[key[1..-1]] = tk_tcl2ruby(ilist.shift)
-	end
+        case key
+        when 'uniform'
+          info[key[1..-1]] = ilist.shift
+        else
+          info[key[1..-1]] = tk_tcl2ruby(ilist.shift)
+        end
       end
       info
     end
@@ -94,24 +94,24 @@ module TkGrid
     if slot
       case slot
       when 'uniform', :uniform
-	tk_call_without_enc('grid', 'rowconfigure', 
-			    master, index, "-#{slot}")
+        tk_call_without_enc('grid', 'rowconfigure', 
+                            master, index, "-#{slot}")
       else
-	num_or_str(tk_call_without_enc('grid', 'rowconfigure', 
-				       master, index, "-#{slot}"))
+        num_or_str(tk_call_without_enc('grid', 'rowconfigure', 
+                                       master, index, "-#{slot}"))
       end
     else
       #ilist = list(tk_call_without_enc('grid', 'rowconfigure', master, index))
       ilist = simplelist(tk_call_without_enc('grid', 'rowconfigure', 
-					     master, index))
+                                             master, index))
       info = {}
       while key = ilist.shift
-	case key
-	when 'uniform'
-	  info[key[1..-1]] = ilist.shift
-	else
-	  info[key[1..-1]] = tk_tcl2ruby(ilist.shift)
-	end
+        case key
+        when 'uniform'
+          info[key[1..-1]] = ilist.shift
+        else
+          info[key[1..-1]] = tk_tcl2ruby(ilist.shift)
+        end
       end
       info
     end

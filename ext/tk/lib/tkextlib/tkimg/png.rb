@@ -17,11 +17,11 @@ module Tk
   module Img
     module PNG
       def self.package_version
-	begin
-	  TkPackage.require('img::png')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::png')
+        rescue
+          ''
+        end
       end
     end
   end

@@ -31,11 +31,11 @@ def fill_table(tbl_list, page, r=10, c=10)
   (0...r).each{|i|
     (0...c).each{|j|
       if i!=0 && j!=0
-	ary[i,j] = "#{page} #{i},#{j}"
+        ary[i,j] = "#{page} #{i},#{j}"
       elsif i!=0
-	ary[i,j] = i.to_s
+        ary[i,j] = i.to_s
       else
-	ary[i,j] = (64+j).chr
+        ary[i,j] = (64+j).chr
       end
     }
   }
@@ -68,16 +68,16 @@ fill_table(table_list, page.value)
 fill_table(table_list, 'BB', Integer(rows/2), Integer(cols/2))
 
 table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :width=>5, :height=>5, 
-			:variable=>table_list[page.value], 
-			:titlerows=>1, :titlecols=>1, 
-			:coltagcommand=>proc{|n| colorize(n)},
-			:flashmode=>true, :selectmode=>:extended, 
-			:colstretch=>:unset, :rowstretch=>:unset, 
-			:browsecommand=>proc{|e| cur_var.value = e.new_index})
+                        :variable=>table_list[page.value], 
+                        :titlerows=>1, :titlecols=>1, 
+                        :coltagcommand=>proc{|n| colorize(n)},
+                        :flashmode=>true, :selectmode=>:extended, 
+                        :colstretch=>:unset, :rowstretch=>:unset, 
+                        :browsecommand=>proc{|e| cur_var.value = e.new_index})
 
 page.trace(:w, proc{|var, elem, op| 
-	     changepage(table_list, table, entry, color, var, elem, op)
-	   })
+             changepage(table_list, table, entry, color, var, elem, op)
+           })
 
 table.tag_configure('colored', :bg=>color[page.value])
 table.tag_configure('title',   :fg=>'red', :relief=>:groove)
@@ -107,29 +107,29 @@ Tk.root.grid_rowconfig(2, :weight=>1)
 table.grid_configure(:sticky=>:news)
 
 entry.bind('Return', proc{
-	     r = table.row_index(:active)
-	     c = table.col_index(:active)
-	     rmax = table[:rows]
-	     cmax = table[:cols]
+             r = table.row_index(:active)
+             c = table.col_index(:active)
+             rmax = table[:rows]
+             cmax = table[:cols]
 
-	     c += 1
-	     if c == cmax
-	       c = table[:titlecols]
-	       r += 1
-	       if r == rmax
-		 r = table[:titlerows]
-	       end
-	     end
-	     table.activate([r, c])
-	     table.see('active')
-	   })
+             c += 1
+             if c == cmax
+               c = table[:titlecols]
+               r += 1
+               if r == rmax
+                 r = table[:titlerows]
+               end
+             end
+             table.activate([r, c])
+             table.see('active')
+           })
 
 menu = TkMenu.new
 m_file = TkMenu.new(menu)
 Tk.root.menu(menu)
 menu.add(:cascade, :label=>'File', :underline=>0, :menu=>m_file)
 m_file.add(:command, :label=>'Fill Array', 
-	   :command=>proc{ fill_table(table_list, page.value) })
+           :command=>proc{ fill_table(table_list, page.value) })
 m_file.add(:command, :label=>'Quit', :command=>proc{exit})
 
 puts "Table is #{table.path} with array #{(table['variable'])}"

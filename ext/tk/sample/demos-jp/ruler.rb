@@ -7,8 +7,8 @@
 # represent a tab stop.
 #
 # Arguments:
-# c -		The canvas window.
-# x, y -	Coordinates at which to create the tab stop.
+# c -           The canvas window.
+# x, y -        Coordinates at which to create the tab stop.
 
 def rulerMkTab(c,x,y)
   v = $demo_rulerInfo
@@ -30,7 +30,7 @@ $ruler_demo = TkToplevel.new {|w|
 
 # label 生成
 TkLabel.new($ruler_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
-	    'text'=>"このキャンバスwidgetはルーラーの模型です。ルーラーの右にあるのはタブストップの井戸で、ここから引っ張ってくることによってタブストップを作ることができます。また、すでにあるタブストップを動かすこともできます。タブストップを上方または下方にかすれて表示されるまでドラッグすると、マウスボタンを離した時にそのタブストップは消えます。"){
+            'text'=>"このキャンバスwidgetはルーラーの模型です。ルーラーの右にあるのはタブストップの井戸で、ここから引っ張ってくることによってタブストップを作ることができます。また、すでにあるタブストップを動かすこともできます。タブストップを上方または下方にかすれて表示されるまでドラッグすると、マウスボタンを離した時にそのタブストップは消えます。"){
   pack('side'=>'top')
 }
 
@@ -60,8 +60,8 @@ $ruler_canvas.pack('side'=>'top', 'fill'=>'x')
 # 値設定
 unless Struct.const_defined?("RulerInfo")
   $demo_rulerInfo = Struct.new("RulerInfo", :grid, :left, :right, :x, :y, 
-			       :top, :bottom, :size, :normalStyle, 
-			       :activeStyle, :deleteStyle).new
+                               :top, :bottom, :size, :normalStyle, 
+                               :activeStyle, :deleteStyle).new
 end
 $demo_rulerInfo.grid = '.25c'
 $demo_rulerInfo.left = TkWinfo.fpixels($ruler_canvas, '1c')
@@ -83,7 +83,7 @@ else
 end
 
 TkcLine.new($ruler_canvas, 
-	    '1c', '0.5c', '1c', '1c', '13c', '1c', '13c', '0.5c', 'width'=>1)
+            '1c', '0.5c', '1c', '1c', '13c', '1c', '13c', '0.5c', 'width'=>1)
 (0..11).each{|i|
   x = i+1
   TkcLine.new($ruler_canvas, "#{x}c", '1c', "#{x}c", '0.6c', 'width'=>1)
@@ -96,22 +96,22 @@ TkcLine.new($ruler_canvas,
 $rulerTag_well = TkcTag.new($ruler_canvas)
 $ruler_canvas\
 .addtag_withtag($rulerTag_well,
-		TkcRectangle.new($ruler_canvas, 
-				 '13.2c', '1c', '13.8c', '0.5c', 
-				 'outline'=>'black', 
-				 'fill'=>($ruler_canvas\
-					  .configinfo('background'))[4]) )
+                TkcRectangle.new($ruler_canvas, 
+                                 '13.2c', '1c', '13.8c', '0.5c', 
+                                 'outline'=>'black', 
+                                 'fill'=>($ruler_canvas\
+                                          .configinfo('background'))[4]) )
 $ruler_canvas\
 .addtag_withtag($rulerTag_well,
-		rulerMkTab($ruler_canvas, 
-			   TkWinfo.pixels($ruler_canvas, '13.5c'), 
-			   TkWinfo.pixels($ruler_canvas, '.65c') ) )
+                rulerMkTab($ruler_canvas, 
+                           TkWinfo.pixels($ruler_canvas, '13.5c'), 
+                           TkWinfo.pixels($ruler_canvas, '.65c') ) )
 
 $rulerTag_well.bind('1', proc{|x,y| rulerNewTab($ruler_canvas,x,y)}, '%x %y')
 $ruler_canvas.itembind('tab', '1', 
-		       proc{|x,y| rulerSelectTab($ruler_canvas,x,y)}, '%x %y')
+                       proc{|x,y| rulerSelectTab($ruler_canvas,x,y)}, '%x %y')
 $ruler_canvas.bind('B1-Motion', 
-		   proc{|x,y| rulerMoveTab($ruler_canvas,x,y)}, '%x %y')
+                   proc{|x,y| rulerMoveTab($ruler_canvas,x,y)}, '%x %y')
 $ruler_canvas.bind('Any-ButtonRelease-1', proc{rulerReleaseTab($ruler_canvas)})
 
 # rulerNewTab --
@@ -119,8 +119,8 @@ $ruler_canvas.bind('Any-ButtonRelease-1', proc{rulerReleaseTab($ruler_canvas)})
 # triangle object and adding tags to it to give it tab behavior.
 #
 # Arguments:
-# c -		The canvas window.
-# x, y -	The coordinates of the tab stop.
+# c -           The canvas window.
+# x, y -        The coordinates of the tab stop.
 
 def rulerNewTab(c,x,y)
   v = $demo_rulerInfo
@@ -137,9 +137,9 @@ end
 # be dragged interactively.
 #
 # Arguments:
-# c -		The canvas widget.
-# x, y -	The coordinates of the mouse (identifies the point by
-#		which the tab was picked up for dragging).
+# c -           The canvas widget.
+# x, y -        The coordinates of the mouse (identifies the point by
+#               which the tab was picked up for dragging).
 
 def rulerSelectTab(c,x,y)
   v = $demo_rulerInfo
@@ -156,8 +156,8 @@ end
 # it is about to be dragged out of the ruler.
 #
 # Arguments:
-# c -		The canvas widget.
-# x, y -	The coordinates of the mouse.
+# c -           The canvas widget.
+# x, y -        The coordinates of the mouse.
 
 def rulerMoveTab(c,x,y)
   v = $demo_rulerInfo
@@ -184,8 +184,8 @@ end
 # it was dragged out of the ruler.
 #
 # Arguments:
-# c -		The canvas widget.
-# x, y -	The coordinates of the mouse.
+# c -           The canvas widget.
+# x, y -        The coordinates of the mouse.
 
 def rulerReleaseTab(c)
   v = $demo_rulerInfo

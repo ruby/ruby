@@ -67,11 +67,11 @@ module Tk
   module Tcllib
     module Plotchart
       def self.package_version
-	begin
-	  TkPackage.require('Plotchart')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('Plotchart')
+        rescue
+          ''
+        end
       end
     end
   end
@@ -85,13 +85,13 @@ module Tk::Tcllib::Plotchart
 
   def self.world_coordinates(w, *args) # args := xmin, ymin, xmax, ymax
     tk_call_without_enc('::Plotchart::worldCoordinates', 
-			w.path, *(args.flatten))
+                        w.path, *(args.flatten))
   end
 
   def self.world_3D_coordinates(w, *args) 
     # args := xmin, ymin, zmin, xmax, ymax, zmax
     tk_call_without_enc('::Plotchart::world3DCoordinates', 
-			w.path, *(args.flatten))
+                        w.path, *(args.flatten))
   end
 
   def self.coords_to_pixel(w, x, y)
@@ -148,20 +148,20 @@ module Tk::Tcllib::Plotchart
 
     def xconfig(key, value=None)
       if key.kind_of?(Hash)
-	tk_call_without_enc(@chart, 'xconfig', *hash_kv(key, true))
+        tk_call_without_enc(@chart, 'xconfig', *hash_kv(key, true))
       else
-	tk_call_without_enc(@chart, 'xconfig', 
-			    "-#{key}", _get_eval_enc_str(value))
+        tk_call_without_enc(@chart, 'xconfig', 
+                            "-#{key}", _get_eval_enc_str(value))
       end
       self
     end
 
     def yconfig(key, value=None)
       if key.kind_of?(Hash)
-	tk_call_without_enc(@chart, 'yconfig', *hash_kv(key, true))
+        tk_call_without_enc(@chart, 'yconfig', *hash_kv(key, true))
       else
-	tk_call_without_enc(@chart, 'yconfig', 
-			    "-#{key}", _get_eval_enc_str(value))
+        tk_call_without_enc(@chart, 'yconfig', 
+                            "-#{key}", _get_eval_enc_str(value))
       end
       self
     end
@@ -174,14 +174,14 @@ module Tk::Tcllib::Plotchart
 
     def world_coordinates(*args) # args := xmin, ymin, xmax, ymax
       tk_call_without_enc('::Plotchart::worldCoordinates', 
-			  @path, *(args.flatten))
+                          @path, *(args.flatten))
       self
     end
 
     def world_3D_coordinates(*args) 
       # args := xmin, ymin, zmin, xmax, ymax, zmax
       tk_call_without_enc('::Plotchart::world3DCoordinates', 
-			  @path, *(args.flatten))
+                          @path, *(args.flatten))
       self
     end
 
@@ -230,21 +230,21 @@ module Tk::Tcllib::Plotchart
                           # xaxis := Array of [minimum, maximum, stepsize]
                           # yaxis := Array of [minimum, maximum, stepsize]
       if args[0].kind_of?(Array)
-	@xaxis = args.shift
-	@yaxis = args.shift
+        @xaxis = args.shift
+        @yaxis = args.shift
 
-	super(*args) # create canvas widget
+        super(*args) # create canvas widget
       else
-	parent = args.shift
+        parent = args.shift
 
-	@xaxis = args.shift
-	@yaxis = args.shift
+        @xaxis = args.shift
+        @yaxis = args.shift
 
-	if parent.kind_of?(TkCanvas)
-	  @path = parent.path
-	else
-	  super(parent, *args) # create canvas widget
-	end
+        if parent.kind_of?(TkCanvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
       end
 
       @chart = _create_chart
@@ -253,7 +253,7 @@ module Tk::Tcllib::Plotchart
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
       tk_call_without_enc(self.class::TkCommandNames[1], @path, 
-			  array2tk_list(@xaxis), array2tk_list(@yaxis))
+                          array2tk_list(@xaxis), array2tk_list(@yaxis))
     end
     private :_create_chart
 
@@ -268,10 +268,10 @@ module Tk::Tcllib::Plotchart
 
     def dataconfig(series, key, value=None)
       if key.kind_of?(Hash)
-	tk_call_without_enc(@chart, 'dataconfig', series, *hash_kv(key, true))
+        tk_call_without_enc(@chart, 'dataconfig', series, *hash_kv(key, true))
       else
-	tk_call_without_enc(@chart, 'dataconfig', series, 
-			    "-#{key}", _get_eval_enc_str(value))
+        tk_call_without_enc(@chart, 'dataconfig', series, 
+                            "-#{key}", _get_eval_enc_str(value))
       end
     end
   end
@@ -296,19 +296,19 @@ module Tk::Tcllib::Plotchart
     def initialize(*args) # args := ([parent,] radius_data [, keys])
                           # radius_data := Array of [maximum_radius, stepsize]
       if args[0].kind_of?(Array)
-	@radius_data = args.shift
+        @radius_data = args.shift
 
-	super(*args) # create canvas widget
+        super(*args) # create canvas widget
       else
-	parent = args.shift
+        parent = args.shift
 
-	@radius_data = args.shift
+        @radius_data = args.shift
 
-	if parent.kind_of?(TkCanvas)
-	  @path = parent.path
-	else
-	  super(parent, *args) # create canvas widget
-	end
+        if parent.kind_of?(TkCanvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
       end
 
       @chart = _create_chart
@@ -317,7 +317,7 @@ module Tk::Tcllib::Plotchart
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
       tk_call_without_enc(self.class::TkCommandNames[1], @path, 
-			  array2tk_list(@radius_data))
+                          array2tk_list(@radius_data))
     end
     private :_create_chart
 
@@ -327,16 +327,16 @@ module Tk::Tcllib::Plotchart
 
     def plot(series, radius, angle)
       tk_call_without_enc(@chart, 'plot', _get_eval_enc_str(series), 
-			  radius, angle)
+                          radius, angle)
       self
     end
 
     def dataconfig(series, key, value=None)
       if key.kind_of?(Hash)
-	tk_call_without_enc(@chart, 'dataconfig', series, *hash_kv(key, true))
+        tk_call_without_enc(@chart, 'dataconfig', series, *hash_kv(key, true))
       else
-	tk_call_without_enc(@chart, 'dataconfig', series, 
-			    "-#{key}", _get_eval_enc_str(value))
+        tk_call_without_enc(@chart, 'dataconfig', series, 
+                            "-#{key}", _get_eval_enc_str(value))
       end
     end
   end
@@ -356,33 +356,33 @@ module Tk::Tcllib::Plotchart
                           # yaxis := Array of [minimum, maximum]
                           # step := Float of stepsize | "noaxes" | :noaxes
       if args[0].kind_of?(Array)
-	@xaxis = args.shift
-	@yaxis = args.shift
+        @xaxis = args.shift
+        @yaxis = args.shift
 
-	if args[0].kind_of?(Hash)
-	  @stepsize = :noaxes
-	else
-	  @stepsize = args.shift
-	end
+        if args[0].kind_of?(Hash)
+          @stepsize = :noaxes
+        else
+          @stepsize = args.shift
+        end
 
-	super(*args) # create canvas widget
+        super(*args) # create canvas widget
       else
-	parent = args.shift
+        parent = args.shift
 
-	@xaxis = args.shift
-	@yaxis = args.shift
+        @xaxis = args.shift
+        @yaxis = args.shift
 
-	if args[0].kind_of?(Hash)
-	  @stepsize = :noaxes
-	else
-	  @stepsize = args.shift
-	end
+        if args[0].kind_of?(Hash)
+          @stepsize = :noaxes
+        else
+          @stepsize = args.shift
+        end
 
-	if parent.kind_of?(TkCanvas)
-	  @path = parent.path
-	else
-	  super(parent, *args) # create canvas widget
-	end
+        if parent.kind_of?(TkCanvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
       end
 
       @chart = _create_chart
@@ -391,8 +391,8 @@ module Tk::Tcllib::Plotchart
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
       tk_call_without_enc(self.class::TkCommandNames[1], @path, 
-			  array2tk_list(@xaxis), array2tk_list(@yaxis), 
-			  @stepsize)
+                          array2tk_list(@xaxis), array2tk_list(@yaxis), 
+                          @stepsize)
     end
     private :_create_chart
 
@@ -436,23 +436,23 @@ module Tk::Tcllib::Plotchart
                           # yaxis := Array of [minimum, maximum, stepsize]
                           # zaxis := Array of [minimum, maximum, stepsize]
       if args[0].kind_of?(Array)
-	@xaxis = args.shift
-	@yaxis = args.shift
-	@zaxis = args.shift
+        @xaxis = args.shift
+        @yaxis = args.shift
+        @zaxis = args.shift
 
-	super(*args) # create canvas widget
+        super(*args) # create canvas widget
       else
-	parent = args.shift
+        parent = args.shift
 
-	@xaxis = args.shift
-	@yaxis = args.shift
-	@zaxis = args.shift
+        @xaxis = args.shift
+        @yaxis = args.shift
+        @zaxis = args.shift
 
-	if parent.kind_of?(TkCanvas)
-	  @path = parent.path
-	else
-	  super(parent, *args) # create canvas widget
-	end
+        if parent.kind_of?(TkCanvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
       end
 
       @chart = _create_chart
@@ -461,9 +461,9 @@ module Tk::Tcllib::Plotchart
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
       tk_call_without_enc(self.class::TkCommandNames[1], @path, 
-			  array2tk_list(@xaxis), 
-			  array2tk_list(@yaxis), 
-			  array2tk_list(@zaxis))
+                          array2tk_list(@xaxis), 
+                          array2tk_list(@yaxis), 
+                          array2tk_list(@zaxis))
     end
     private :_create_chart
 
@@ -508,10 +508,10 @@ module Tk::Tcllib::Plotchart
 
     def initialize(*args) # args := ([parent] [, keys])
       if args[0].kind_of?(TkCanvas)
-	parent = args.shift
-	@path = parent.path
+        parent = args.shift
+        @path = parent.path
       else
-	super(*args) # create canvas widget
+        super(*args) # create canvas widget
       end
       @chart = _create_chart
     end
@@ -545,33 +545,33 @@ module Tk::Tcllib::Plotchart
       # axis := Array of [minimum, maximum, stepsize]
       # series := Integer number of data series | 'stacked' | :stacked
       if args[0].kind_of?(Array)
-	@xlabels = args.shift
-	@ylabels  = args.shift
+        @xlabels = args.shift
+        @ylabels  = args.shift
 
-	if args[0].kind_of?(Hash)
-	  @series_size = :stacked
-	else
-	  @series_size  = args.shift
-	end
+        if args[0].kind_of?(Hash)
+          @series_size = :stacked
+        else
+          @series_size  = args.shift
+        end
 
-	super(*args) # create canvas widget
+        super(*args) # create canvas widget
       else
-	parent = args.shift
+        parent = args.shift
 
-	@xlabels = args.shift
-	@ylabels = args.shift
+        @xlabels = args.shift
+        @ylabels = args.shift
 
-	if args[0].kind_of?(Hash)
-	  @series_size = :stacked
-	else
-	  @series_size  = args.shift
-	end
+        if args[0].kind_of?(Hash)
+          @series_size = :stacked
+        else
+          @series_size  = args.shift
+        end
 
-	if parent.kind_of?(TkCanvas)
-	  @path = parent.path
-	else
-	  super(parent, *args) # create canvas widget
-	end
+        if parent.kind_of?(TkCanvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
       end
 
       @chart = _create_chart
@@ -580,8 +580,8 @@ module Tk::Tcllib::Plotchart
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
       tk_call_without_enc(self.class::TkCommandNames[1], @path, 
-			  array2tk_list(@xlabels), array2tk_list(@ylabels), 
-			  @series_size)
+                          array2tk_list(@xlabels), array2tk_list(@ylabels), 
+                          @series_size)
     end
     private :_create_chart
 
@@ -628,23 +628,23 @@ module Tk::Tcllib::Plotchart
       # items := Expected/maximum number of items
       #          ( This determines the vertical spacing. )
       if args[0].kind_of?(Array)
-	@time_begin = args.shift
-	@time_end   = args.shift
-	@items      = args.shift
+        @time_begin = args.shift
+        @time_end   = args.shift
+        @items      = args.shift
 
-	super(*args) # create canvas widget
+        super(*args) # create canvas widget
       else
-	parent = args.shift
+        parent = args.shift
 
-	@time_begin = args.shift
-	@time_end   = args.shift
-	@items      = args.shift
+        @time_begin = args.shift
+        @time_end   = args.shift
+        @items      = args.shift
 
-	if parent.kind_of?(TkCanvas)
-	  @path = parent.path
-	else
-	  super(parent, *args) # create canvas widget
-	end
+        if parent.kind_of?(TkCanvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
       end
 
       @chart = _create_chart
@@ -653,7 +653,7 @@ module Tk::Tcllib::Plotchart
     def _create_chart
       p self.class::TkCommandNames[1] if $DEBUG
       tk_call_without_enc(self.class::TkCommandNames[1], @path, 
-			  @time_begin, @time_end, @items)
+                          @time_begin, @time_end, @items)
     end
     private :_create_chart
 

@@ -21,7 +21,7 @@ class Tk::BWidget::PasswdDlg
 
   def create
     login, passwd = simplelist(tk_call(self.class::TkCommandNames[0], 
-				       @path, *hash_kv(@keys)))
+                                       @path, *hash_kv(@keys)))
     [login, passwd]
   end
 end

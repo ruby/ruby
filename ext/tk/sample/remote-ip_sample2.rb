@@ -19,14 +19,14 @@ btns = []
 ip.eval_proc{
   btns << 
     TkButton.new(:command=>proc{
-		   puts 'This procesure is on the controller-ip (Ruby-side)'
-		 }, 
-		 :text=>'print on controller-ip (Ruby-side)').pack(:fill=>:x)
+                   puts 'This procesure is on the controller-ip (Ruby-side)'
+                 }, 
+                 :text=>'print on controller-ip (Ruby-side)').pack(:fill=>:x)
 
   btns << 
     TkButton.new(:command=>
-		   'puts {This procesure is on the remote-ip (Tk-side)}',
-		 :text=>'print on remote-ip (Tk-side)').pack(:fill=>:x)
+                   'puts {This procesure is on the remote-ip (Tk-side)}',
+                 :text=>'print on remote-ip (Tk-side)').pack(:fill=>:x)
 
   btns << 
     TkButton.new(:command=>
@@ -34,7 +34,7 @@ ip.eval_proc{
                      puts "This procedure is on the remote-ip (Ruby-side)"
                      p Array.new(3,"ruby")
                     }', 
-		 :text=>'ruby cmd on the remote-ip').pack(:fill=>:x)
+                 :text=>'ruby cmd on the remote-ip').pack(:fill=>:x)
 
   TkButton.new(:command=>'exit', :text=>'QUIT').pack(:fill=>:x)
 }
@@ -45,12 +45,12 @@ btns.each_with_index{|btn, idx|
   # the enternal. If you want to pass local values to the eval-block, 
   # use arguments of eval_proc method. They are passed to block-arguments.
   TkButton.new(:command=>proc{ip.eval_proc(btn){|b| b.flash}}, 
-	       :text=>"flash button-#{idx}", 
-	       :padx=>10).pack(:padx=>10, :pady=>2)
+               :text=>"flash button-#{idx}", 
+               :padx=>10).pack(:padx=>10, :pady=>2)
 }
 
 TkButton.new(:command=>proc{exit}, :text=>'QUIT', 
-	     :padx=>10, :pady=>7).pack(:padx=>10, :pady=>7)
+             :padx=>10, :pady=>7).pack(:padx=>10, :pady=>7)
 
 # start eventloop
 Tk.mainloop

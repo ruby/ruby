@@ -37,11 +37,11 @@ module TkPalette
 
     colors.each{|key, value|
       begin
-	if window.cget(key) == tk_call('set', "tkPalette(#{key})")
-	  window[key] = colors[key]
-	end
+        if window.cget(key) == tk_call('set', "tkPalette(#{key})")
+          window[key] = colors[key]
+        end
       rescue
-	# ignore
+        # ignore
       end
     }
 

@@ -55,18 +55,18 @@ TkFrame.new($radio2_demo) {|frame|
     text '変数参照'
     command proc{
       showVars($radio2_demo, 
-	       ['size', size], ['color', color], ['compound', align])
+               ['size', size], ['color', color], ['compound', align])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 
 f_left  = TkLabelFrame.new($radio2_demo, 'text'=>'文字サイズ', 
-			   'pady'=>2, 'padx'=>2)
+                           'pady'=>2, 'padx'=>2)
 f_mid   = TkLabelFrame.new($radio2_demo, 'text'=>'色', 
-			   'pady'=>2, 'padx'=>2)
+                           'pady'=>2, 'padx'=>2)
 f_right = TkLabelFrame.new($radio2_demo, 'text'=>'ビットマップ配置', 
-			   'pady'=>2, 'padx'=>2)
+                           'pady'=>2, 'padx'=>2)
 f_left.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_mid.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
@@ -92,14 +92,14 @@ f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 }
 
 label = TkLabel.new(f_right, 'text'=>'ラベル', 'bitmap'=>'questhead', 
-		    'compound'=>'left')
+                    'compound'=>'left')
 label.configure('width'=>TkWinfo.reqwidth(label), 'compound'=>'top')
 label.height(TkWinfo.reqheight(label))
 abtn = ['Top', 'Left', 'Right', 'Bottom'].collect{|a|
   lower = a.downcase
   TkRadioButton.new(f_right, 'text'=>a, 'variable'=>align, 'relief'=>'flat', 
-		    'value'=>lower, 'indicatoron'=>0, 'width'=>7, 
-		    'command'=>proc{label.compound(align.value)})
+                    'value'=>lower, 'indicatoron'=>0, 'width'=>7, 
+                    'command'=>proc{label.compound(align.value)})
 }
 
 Tk.grid('x', abtn[0])

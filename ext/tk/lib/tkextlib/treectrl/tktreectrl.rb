@@ -18,9 +18,9 @@ module Tk
   class TreeCtrl < TkWindow
     def self.package_version
       begin
-	TkPackage.require('treectrl')
+        TkPackage.require('treectrl')
       rescue
-	''
+        ''
       end
     end
 
@@ -81,14 +81,14 @@ class Tk::TreeCtrl::NotifyEvent
     [ ?b, proc{|val| list(val)} ], 
 
     [ ?e, proc{|val|
-	case val
-	when /^<<[^<>]+>>$/
-	  TkVirtualEvent.getobj(val[1..-2])
-	when /^<[^<>]+>$/
-	  val[1..-2]
-	else
-	  val
-	end
+        case val
+        when /^<<[^<>]+>>$/
+          TkVirtualEvent.getobj(val[1..-2])
+        when /^<[^<>]+>$/
+          val[1..-2]
+        else
+          val
+        end
       }
     ], 
 
@@ -194,12 +194,12 @@ module Tk::TreeCtrl::ConfigMethod
     if id.kind_of?(Array)
       key = id[0]
       if key.kind_of?(Array)
-	key = key.join(' ')
+        key = key.join(' ')
       end
 
       tag = id[1]
       if tag.kind_of?(Array)
-	tag = tag.join(' ')
+        tag = tag.join(' ')
       end
 
       id = [key, tag].join(':')
@@ -211,10 +211,10 @@ module Tk::TreeCtrl::ConfigMethod
   def __item_configinfo_struct(id)
     if id.kind_of?(Array) && id[0].to_s == 'notify'
       {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil, 
-	:default_value=>nil, :current_value=>1}
+        :default_value=>nil, :current_value=>1}
     else
       {:key=>0, :alias=>1, :db_name=>1, :db_class=>2, 
-	:default_value=>3, :current_value=>4}
+        :default_value=>3, :current_value=>4}
     end
   end
   private :__item_configinfo_struct
@@ -621,13 +621,13 @@ class Tk::TreeCtrl
 
     opts = opts.collect{|opt|
       if opt.kind_of?(Array)
-	key = "-#{opt[0]}"
-	flag = true if key == '-notreally'
-	["-#{opt[0]}", opt[1]]
+        key = "-#{opt[0]}"
+        flag = true if key == '-notreally'
+        ["-#{opt[0]}", opt[1]]
       else
-	key = "-#{opt}"
-	flag = true if key == '-notreally'
-	key
+        key = "-#{opt}"
+        flag = true if key == '-notreally'
+        key
       end
     }.flatten
 
@@ -664,9 +664,9 @@ class Tk::TreeCtrl
   def item_style_set(item, column=nil, *args)
     if args.empty?
       if column
-	tk_send('item', 'style', 'set', item, column)
+        tk_send('item', 'style', 'set', item, column)
       else
-	list(tk_send('item', 'style', 'set', item))
+        list(tk_send('item', 'style', 'set', item))
       end
     else
       tk_send('item', 'style', 'set', item, *(args.flatten))
@@ -677,10 +677,10 @@ class Tk::TreeCtrl
   def item_text(item, column, txt=nil, *args)
     if args.empty?
       if txt
-	tk_send('item', 'text', item, column, txt)
-	self
+        tk_send('item', 'text', item, column, txt)
+        self
       else
-	tk_send('item', 'text', item, column)
+        tk_send('item', 'text', item, column)
       end
     else
       tk_send('item', 'text', item, txt, *args)
@@ -897,10 +897,10 @@ class Tk::TreeCtrl
   def style_layout(style, elem, keys=None)
     if keys && keys != None
       if keys.kind_of?(Hash)
-	tk_send('style', 'layout', style, elem, *hash_kv(keys))
-	self
+        tk_send('style', 'layout', style, elem, *hash_kv(keys))
+        self
       else
-	tk_send('style', 'layout', style, elem, "-#{keys}")
+        tk_send('style', 'layout', style, elem, "-#{keys}")
       end
     else
       list(tk_send('style', 'layout', style, elem))

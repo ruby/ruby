@@ -48,13 +48,13 @@ module TkKinput
   def TkKinput.attribute_info(window, slot=nil)
     if slot
       conf = tk_split_list(tk_call('kanjiInput', 'attribute', 
-				   window, "-#{slot}"))
+                                   window, "-#{slot}"))
       conf[0] = conf[0][1..-1]
       conf
     else
       tk_split_list(tk_call('kanjiInput', 'attribute', window)).collect{|conf|
-	conf[0] = conf[0][1..-1]
-	conf
+        conf[0] = conf[0][1..-1]
+        conf
       }
     end
   end

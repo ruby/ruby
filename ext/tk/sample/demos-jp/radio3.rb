@@ -36,43 +36,43 @@ align = TkVariable.new
 # frame 
 TkFrame.new($radio3_demo) {|frame|
   TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
-	 :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
+         :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x', 
-	 TkButton.new(frame, :text=>'変数参照', 
-		      :image=>$image['view'], :compound=>:left, 
-		      :command=>proc{
-			showVars($radio3_demo, ['size', size], 
-				 ['color', color], ['compound', align])
-		      }), 
-	 TkButton.new(frame, :text=>'コード参照', 
-		      :image=>$image['view'], :compound=>:left, 
-		      :command=>proc{showCode 'radio3'}), 
-	 TkButton.new(frame, :text=>'閉じる', 
-		      :image=>$image['delete'], :compound=>:left, 
-		      :command=>proc{
-			tmppath = $radio3_demo
-			$radio3_demo = nil
-			$showVarsWin[tmppath.path] = nil
-			tmppath.destroy
-		      }), 
-	 :padx=>4, :pady=>4)
+         TkButton.new(frame, :text=>'変数参照', 
+                      :image=>$image['view'], :compound=>:left, 
+                      :command=>proc{
+                        showVars($radio3_demo, ['size', size], 
+                                 ['color', color], ['compound', align])
+                      }), 
+         TkButton.new(frame, :text=>'コード参照', 
+                      :image=>$image['view'], :compound=>:left, 
+                      :command=>proc{showCode 'radio3'}), 
+         TkButton.new(frame, :text=>'閉じる', 
+                      :image=>$image['delete'], :compound=>:left, 
+                      :command=>proc{
+                        tmppath = $radio3_demo
+                        $radio3_demo = nil
+                        $showVarsWin[tmppath.path] = nil
+                        tmppath.destroy
+                      }), 
+         :padx=>4, :pady=>4)
   frame.grid_columnconfigure(0, :weight=>1)
   TkGrid(frame, :row=>3, :column=>0, :columnspan=>3, :sticky=>'nsew')
 }
 
 # frame 
 f_left  = TkLabelFrame.new($radio3_demo, 'text'=>'文字サイズ', 
-			   'pady'=>2, 'padx'=>2)
+                           'pady'=>2, 'padx'=>2)
 f_mid   = TkLabelFrame.new($radio3_demo, 'text'=>'色', 
-			   'pady'=>2, 'padx'=>2)
+                           'pady'=>2, 'padx'=>2)
 f_right = TkLabelFrame.new($radio3_demo, 'text'=>'ビットマップ配置', 
-			   'pady'=>2, 'padx'=>2)
+                           'pady'=>2, 'padx'=>2)
 f_left .grid('column'=>0, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c', 'rowspan'=>2)
 f_mid  .grid('column'=>1, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c', 'rowspan'=>2)
 f_right.grid('column'=>2, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c')
 
 TkButton.new($radio3_demo, 'text'=>'トライステート', 
-	     'command'=>proc{size.value = 'multi'; color.value = 'multi'}){
+             'command'=>proc{size.value = 'multi'; color.value = 'multi'}){
   grid('column'=>2, 'row'=>2, 'pady'=>'.5c', 'padx'=>'.5c')
 }
 
@@ -100,13 +100,13 @@ TkButton.new($radio3_demo, 'text'=>'トライステート',
 }
 
 label = TkLabel.new(f_right, 'text'=>'ラベル', 'bitmap'=>'questhead', 
-		    'compound'=>'left')
+                    'compound'=>'left')
 label.configure('width'=>TkWinfo.reqwidth(label), 'compound'=>'top')
 label.height(TkWinfo.reqheight(label))
 a_btn = ['Top', 'Left', 'Right', 'Bottom'].collect{|a|
   TkRadioButton.new(f_right, 'text'=>a, 'variable'=>align, 'relief'=>'flat', 
-		    'value'=>a.downcase, 'indicatoron'=>0, 'width'=>7, 
-		    'command'=>proc{label.compound(align.value)})
+                    'value'=>a.downcase, 'indicatoron'=>0, 'width'=>7, 
+                    'command'=>proc{label.compound(align.value)})
 }
 
 Tk.grid('x', a_btn[0])

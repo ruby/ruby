@@ -1,7 +1,7 @@
 #
-#		tk.rb - Tk interface module using tcltklib
-#			$Date$
-#			by Yukihiro Matsumoto <matz@netlab.jp>
+#               tk.rb - Tk interface module using tcltklib
+#                       $Date$
+#                       by Yukihiro Matsumoto <matz@netlab.jp>
 
 # use Shigehiro's tcltklib
 require 'tcltklib'
@@ -96,32 +96,32 @@ module TkComm
     else # ruby_class == nil
       mods = TkExtlibAutoloadModule.find_all{|m| m.const_defined?(tk_class)}
       mods.each{|mod|
-	begin
-	  mod.const_get(tk_class)  # auto_load
-	  break if (ruby_class = WidgetClassNames[tk_class])
-	rescue LoadError
-	  # ignore load error
-	end
+        begin
+          mod.const_get(tk_class)  # auto_load
+          break if (ruby_class = WidgetClassNames[tk_class])
+        rescue LoadError
+          # ignore load error
+        end
       }
 
       unless ruby_class
-	std_class = 'Tk' << tk_class
-	if Object.const_defined?(std_class)
-	  Object.const_get(std_class)  # auto_load
-	  ruby_class = WidgetClassNames[tk_class]
-	end
+        std_class = 'Tk' << tk_class
+        if Object.const_defined?(std_class)
+          Object.const_get(std_class)  # auto_load
+          ruby_class = WidgetClassNames[tk_class]
+        end
       end
 
       if ruby_class
-	# found
-	ruby_class_name = ruby_class.name
-	gen_class_name = ruby_class_name
-	classname_def = ''
+        # found
+        ruby_class_name = ruby_class.name
+        gen_class_name = ruby_class_name
+        classname_def = ''
       else
-	# unknown
-	ruby_class_name = 'TkWindow'
-	gen_class_name = 'TkWidget_' + tk_class
-	classname_def = "WidgetClassName = '#{tk_class}'.freeze"
+        # unknown
+        ruby_class_name = 'TkWindow'
+        gen_class_name = 'TkWidget_' + tk_class
+        classname_def = "WidgetClassName = '#{tk_class}'.freeze"
       end
     end
 
@@ -135,19 +135,19 @@ module TkComm
     else
       mod = TkExtlibAutoloadModule.find{|m| m.const_defined?(tk_class)}
       if mod
-	ruby_class_name = mod.name + '::' + tk_class
-	gen_class_name = ruby_class_name
-	classname_def = ''
+        ruby_class_name = mod.name + '::' + tk_class
+        gen_class_name = ruby_class_name
+        classname_def = ''
       elsif Object.const_defined?('Tk' + tk_class)
-	ruby_class_name = 'Tk' + tk_class
-	# gen_class_name = ruby_class_name + 'GeneratedOnTk'
-	gen_class_name = ruby_class_name
-	classname_def = ''
+        ruby_class_name = 'Tk' + tk_class
+        # gen_class_name = ruby_class_name + 'GeneratedOnTk'
+        gen_class_name = ruby_class_name
+        classname_def = ''
       else
-	ruby_class_name = 'TkWindow'
-	# gen_class_name = ruby_class_name + tk_class + 'GeneratedOnTk'
-	gen_class_name = 'TkWidget_' + tk_class
-	classname_def = "WidgetClassName = '#{tk_class}'.freeze"
+        ruby_class_name = 'TkWindow'
+        # gen_class_name = ruby_class_name + tk_class + 'GeneratedOnTk'
+        gen_class_name = 'TkWidget_' + tk_class
+        classname_def = "WidgetClassName = '#{tk_class}'.freeze"
       end
     end
 =end
@@ -165,9 +165,9 @@ module TkComm
     gen_class_name.split('::').each{|klass|
       next if klass == ''
       if base.const_defined?(klass)
-	base = base.class_eval klass
+        base = base.class_eval klass
       else
-	base = base.class_eval "class #{klass}<#{ruby_class_name}
+        base = base.class_eval "class #{klass}<#{ruby_class_name}
                                   #{classname_def}
                                 end
                                 #{klass}"
@@ -215,19 +215,19 @@ module TkComm
       val.gsub(/\\ /, ' ')
     when /[^\\] /
       if listobj
-	tk_split_escstr(val).collect{|elt|
-	  tk_tcl2ruby(elt, enc_mode, listobj)
-	}
+        tk_split_escstr(val).collect{|elt|
+          tk_tcl2ruby(elt, enc_mode, listobj)
+        }
       elsif enc_mode
-	_fromUTF8(val)
+        _fromUTF8(val)
       else
-	val
+        val
       end
     else
       if enc_mode
-	_fromUTF8(val)
+        _fromUTF8(val)
       else
-	val
+        val
       end
     end
   end
@@ -288,14 +288,14 @@ if USE_TCLs_LIST_FUNCTIONS
 
     dst = ary.collect{|e|
       if e.kind_of? Array
-	array2tk_list(e)
+        array2tk_list(e)
       elsif e.kind_of? Hash
-	tmp_ary = []
-	#e.each{|k,v| tmp_ary << k << v }
-	e.each{|k,v| tmp_ary << "-#{_get_eval_string(k)}" << v }
-	array2tk_list(tmp_ary)
+        tmp_ary = []
+        #e.each{|k,v| tmp_ary << k << v }
+        e.each{|k,v| tmp_ary << "-#{_get_eval_string(k)}" << v }
+        array2tk_list(tmp_ary)
       else
-	_get_eval_string(e)
+        _get_eval_string(e)
       end
     }
     TkCore::INTERP._merge_tklist(*dst)
@@ -402,7 +402,7 @@ else
       if c == '\\' && !escape
         escape = true
         token = (token || "") << c if brace > 0
-	next
+        next
       end
       brace += 1 if c == '{' && !escape
       brace -= 1 if c == '}' && !escape
@@ -421,14 +421,14 @@ else
   def array2tk_list(ary)
     ary.collect{|e|
       if e.kind_of? Array
-	"{#{array2tk_list(e)}}"
+        "{#{array2tk_list(e)}}"
       elsif e.kind_of? Hash
-	# "{#{e.to_a.collect{|ee| array2tk_list(ee)}.join(' ')}}"
-	e.each{|k,v| tmp_ary << "-#{_get_eval_string(k)}" << v }
-	array2tk_list(tmp_ary)
+        # "{#{e.to_a.collect{|ee| array2tk_list(ee)}.join(' ')}}"
+        e.each{|k,v| tmp_ary << "-#{_get_eval_string(k)}" << v }
+        array2tk_list(tmp_ary)
       else
-	s = _get_eval_string(e)
-	(s.index(/\s/) || s.size == 0)? "{#{s}}": s
+        s = _get_eval_string(e)
+        (s.index(/\s/) || s.size == 0)? "{#{s}}": s
       end
     }.join(" ")
   end
@@ -466,13 +466,13 @@ end
     dst = []
     if keys and keys != None
       keys.each{|k, v|
-	#dst.push("-#{k}")
-	dst.push('-' + k.to_s)
-	if v != None
-	  # v = _get_eval_string(v, enc_mode) if (enc_mode || flat)
-	  v = _get_eval_string(v, enc_mode) if enc_mode
-	  dst.push(v)
-	end
+        #dst.push("-#{k}")
+        dst.push('-' + k.to_s)
+        if v != None
+          # v = _get_eval_string(v, enc_mode) if (enc_mode || flat)
+          v = _get_eval_string(v, enc_mode) if enc_mode
+          dst.push(v)
+        end
       }
     end
     if conf
@@ -600,7 +600,7 @@ end
     else
       str = str.to_s() || ''
       unless str.kind_of? String
-	fail RuntimeError, "fail to convert the object to a string" 
+        fail RuntimeError, "fail to convert the object to a string" 
       end
       str = _toUTF8(str) if enc_mode
     end
@@ -634,14 +634,14 @@ end
       nil
     else
       if (obj.respond_to?(:to_eval))
-	(enc_mode)? _toUTF8(obj.to_eval): obj.to_eval
+        (enc_mode)? _toUTF8(obj.to_eval): obj.to_eval
       else
-	begin
-	  obj = obj.to_s || ''
-	rescue
-	  fail RuntimeError, "fail to convert object '#{obj}' to string" 
-	end
-	(enc_mode)? _toUTF8(obj): obj
+        begin
+          obj = obj.to_s || ''
+        rescue
+          fail RuntimeError, "fail to convert object '#{obj}' to string" 
+        end
+        (enc_mode)? _toUTF8(obj): obj
       end
     end
   end
@@ -751,12 +751,12 @@ end
   def install_win(ppath,name=nil)
     if name
       if name == ''
-	raise ArgumentError, "invalid wiget-name '#{name}'"
+        raise ArgumentError, "invalid wiget-name '#{name}'"
       end
       if name[0] == ?.
-	@path = '' + name
-	@path.freeze
-	return TkCore::INTERP.tk_windows[@path] = self
+        @path = '' + name
+        @path.freeze
+        return TkCore::INTERP.tk_windows[@path] = self
       end
     else
       name = "w" + TkCore::INTERP._ip_id_ + Tk_IDs[1]
@@ -800,11 +800,11 @@ module TkComm
     end
     if context.kind_of? Array
       context = context.collect{|ev|
-	if ev.kind_of? TkVirtualEvent
-	  ev.path
-	else
-	  ev
-	end
+        if ev.kind_of? TkVirtualEvent
+          ev.path
+        else
+          ev
+        end
       }.join("><")
     end
     if /,/ =~ context
@@ -818,7 +818,7 @@ module TkComm
     id = install_bind(cmd, args) if cmd
     begin
       tk_call_without_enc(*(what + ["<#{tk_event_sequence(context)}>", 
-			      mode + id]))
+                              mode + id]))
     rescue
       uninstall_cmd(id) if cmd
       fail
@@ -840,26 +840,26 @@ module TkComm
   def _bindinfo(what, context=nil)
     if context
       tk_call_without_enc(*what+["<#{tk_event_sequence(context)}>"]) .collect {|cmdline|
-	if cmdline =~ /^rb_out\S* (c(?:_\d+_)?\d+)\s+(.*)$/
-	  #[Tk_CMDTBL[$1], $2]
-	  [TkCore::INTERP.tk_cmd_tbl[$1], $2]
-	else
-	  cmdline
-	end
+        if cmdline =~ /^rb_out\S* (c(?:_\d+_)?\d+)\s+(.*)$/
+          #[Tk_CMDTBL[$1], $2]
+          [TkCore::INTERP.tk_cmd_tbl[$1], $2]
+        else
+          cmdline
+        end
       }
     else
       tk_split_simplelist(tk_call_without_enc(*what)).collect!{|seq|
-	l = seq.scan(/<*[^<>]+>*/).collect!{|subseq|
-	  case (subseq)
-	  when /^<<[^<>]+>>$/
-	    TkVirtualEvent.getobj(subseq[1..-2])
-	  when /^<[^<>]+>$/
-	    subseq[1..-2]
-	  else
-	    subseq.split('')
-	  end
-	}.flatten
-	(l.size == 1) ? l[0] : l
+        l = seq.scan(/<*[^<>]+>*/).collect!{|subseq|
+          case (subseq)
+          when /^<<[^<>]+>>$/
+            TkVirtualEvent.getobj(subseq[1..-2])
+          when /^<[^<>]+>$/
+            subseq[1..-2]
+          else
+            subseq.split('')
+          end
+        }.flatten
+        (l.size == 1) ? l[0] : l
       }
     end
   end
@@ -868,7 +868,7 @@ module TkComm
     id = install_bind_for_event_class(klass, cmd, args) if cmd
     begin
       tk_call_without_enc(*(what + ["<#{tk_event_sequence(context)}>", 
-			      mode + id]))
+                              mode + id]))
     rescue
       uninstall_cmd(id) if cmd
       fail
@@ -950,9 +950,9 @@ module TkCore
     end
     if self.const_defined? :IP_OPTS
       if IP_OPTS.kind_of?(Hash)
-	opts = hash_kv(IP_OPTS).join(' ')
+        opts = hash_kv(IP_OPTS).join(' ')
       else
-	opts = IP_OPTS.to_s
+        opts = IP_OPTS.to_s
       end
     else
       opts = ''
@@ -974,25 +974,25 @@ module TkCore
       @add_tk_procs = [].taint  # table of [name, args, body]
 
       @cb_entry_class = Class.new(TkCallbackEntry){|c|
-	class << c
-	  def inspect
-	    sprintf("#<Class(TkCallbackEntry):%0x>", self.__id__)
-	  end
-	  alias to_s inspect
-	end
+        class << c
+          def inspect
+            sprintf("#<Class(TkCallbackEntry):%0x>", self.__id__)
+          end
+          alias to_s inspect
+        end
 
-	def initialize(ip, cmd)
-	  @ip = ip
-	  @cmd = cmd
-	end
-	attr_reader :ip, :cmd
-	def call(*args)
-	  @ip.cb_eval(@cmd, *args)
-	end
-	def inspect
-	  sprintf("#<cb_entry:%0x>", self.__id__)
-	end
-	alias to_s inspect
+        def initialize(ip, cmd)
+          @ip = ip
+          @cmd = cmd
+        end
+        attr_reader :ip, :cmd
+        def call(*args)
+          @ip.cb_eval(@cmd, *args)
+        end
+        def inspect
+          sprintf("#<cb_entry:%0x>", self.__id__)
+        end
+        alias to_s inspect
       }.freeze
     }
 
@@ -1008,10 +1008,10 @@ module TkCore
 
     class Tk_OBJECT_TABLE
       def initialize(id)
-	@id = id
+        @id = id
       end
       def method_missing(m, *args, &b)
-	TkCore::INTERP.tk_object_table(@id).__send__(m, *args, &b)
+        TkCore::INTERP.tk_object_table(@id).__send__(m, *args, &b)
       end
     end
 
@@ -1025,7 +1025,7 @@ module TkCore
 #      obj = Object.new
 #      obj.instance_eval <<-EOD
 #        def self.method_missing(m, *args)
-#	  TkCore::INTERP.tk_object_table(#{id}).send(m, *args)
+#         TkCore::INTERP.tk_object_table(#{id}).send(m, *args)
 #        end
 #      EOD
 #      return obj
@@ -1056,23 +1056,23 @@ module TkCore
 
   WIDGET_DESTROY_HOOK = '<WIDGET_DESTROY_HOOK>'
   INTERP._invoke_without_enc('event', 'add', 
-			     "<#{WIDGET_DESTROY_HOOK}>", 'Destroy')
+                             "<#{WIDGET_DESTROY_HOOK}>", 'Destroy')
   INTERP._invoke_without_enc('bind', 'all', "<#{WIDGET_DESTROY_HOOK}>",
-			     install_bind(proc{|xpath|
-				path = xpath[1..-1]
-				unless TkCore::INTERP.deleted?
-				  if (widget = TkCore::INTERP.tk_windows[path])
-				    if widget.respond_to?(:__destroy_hook__)
-				      begin
-					widget.__destroy_hook__
-				      rescue Exception
-				      end
-				    end
-				  end
-				end
-			     }, 'x%W'))
+                             install_bind(proc{|xpath|
+                                path = xpath[1..-1]
+                                unless TkCore::INTERP.deleted?
+                                  if (widget = TkCore::INTERP.tk_windows[path])
+                                    if widget.respond_to?(:__destroy_hook__)
+                                      begin
+                                        widget.__destroy_hook__
+                                      rescue Exception
+                                      end
+                                    end
+                                  end
+                                end
+                             }, 'x%W'))
   INTERP.add_tk_procs(TclTkLib::FINALIZE_PROC_NAME, '', 
-		      "bind all <#{WIDGET_DESTROY_HOOK}> {}")
+                      "bind all <#{WIDGET_DESTROY_HOOK}> {}")
 
   INTERP.add_tk_procs('rb_out', 'args', <<-'EOL')
     if {[set st [catch {eval {ruby_cmd TkCore callback} $args} ret]] != 0} {
@@ -1087,7 +1087,7 @@ module TkCore
           return -code $st $ret
        }
     } else {
-	return $ret
+        return $ret
     }
   EOL
 =begin
@@ -1108,7 +1108,7 @@ module TkCore
           return -code $st $ret
        }
     } else {
-	return $ret
+        return $ret
     }
   EOL
 =end
@@ -1132,17 +1132,17 @@ module TkCore
       exit!(1)
     rescue Exception => e
       begin
-	msg = _toUTF8(e.class.inspect) + ': ' + 
-	      _toUTF8(e.message) + "\n" + 
-	      "\n---< backtrace of Ruby side >-----\n" + 
-	      _toUTF8(e.backtrace.join("\n")) + 
-	      "\n---< backtrace of Tk side >-------"
-	msg.instance_variable_set(:@encoding, 'utf-8')
+        msg = _toUTF8(e.class.inspect) + ': ' + 
+              _toUTF8(e.message) + "\n" + 
+              "\n---< backtrace of Ruby side >-----\n" + 
+              _toUTF8(e.backtrace.join("\n")) + 
+              "\n---< backtrace of Tk side >-------"
+        msg.instance_variable_set(:@encoding, 'utf-8')
       rescue Exception
-	msg = e.class.inspect + ': ' + e.message + "\n" + 
-	      "\n---< backtrace of Ruby side >-----\n" + 
-	      e.backtrace.join("\n") + 
-	      "\n---< backtrace of Tk side >-------"
+        msg = e.class.inspect + ': ' + e.message + "\n" + 
+              "\n---< backtrace of Ruby side >-----\n" + 
+              e.backtrace.join("\n") + 
+              "\n---< backtrace of Tk side >-------"
       end
       fail(e, msg)
     end
@@ -1153,7 +1153,7 @@ module TkCore
     arg = tk_split_simplelist(arg_str)
     #_get_eval_string(TkUtil.eval_cmd(Tk_CMDTBL[arg.shift], *arg))
     #_get_eval_string(TkUtil.eval_cmd(TkCore::INTERP.tk_cmd_tbl[arg.shift], 
-    #  			     *arg))
+    #                        *arg))
     # TkCore::INTERP.tk_cmd_tbl[arg.shift].call(*arg)
     begin
       TkCore::INTERP.tk_cmd_tbl[arg.shift].call(*arg)
@@ -1169,17 +1169,17 @@ module TkCore
 #      cb_obj.call(*arg)
 #    else
 #      begin
-#	raise 'check backtrace'
+#       raise 'check backtrace'
 #      rescue
-#	# ignore backtrace before 'callback'
-#	pos = -($!.backtrace.size)
+#       # ignore backtrace before 'callback'
+#       pos = -($!.backtrace.size)
 #      end
 #      begin
-#	cb_obj.call(*arg)
+#       cb_obj.call(*arg)
 #      rescue
-#	trace = $!.backtrace
-#	raise $!, "\n#{trace[0]}: #{$!.message} (#{$!.class})\n" + 
-#	          "\tfrom #{trace[1..pos].join("\n\tfrom ")}"
+#       trace = $!.backtrace
+#       raise $!, "\n#{trace[0]}: #{$!.message} (#{$!.class})\n" + 
+#                 "\tfrom #{trace[1..pos].join("\n\tfrom ")}"
 #      end
 #    end
 #=end
@@ -1203,10 +1203,10 @@ module TkCore
 #    return
 #    if false #defined? Thread
 #      Thread.start do
-#	ms = Float(ms)/1000
-#	ms = 10 if ms == 0
-#	sleep ms/1000
-#	cmd.call
+#       ms = Float(ms)/1000
+#       ms = 10 if ms == 0
+#       sleep ms/1000
+#       cmd.call
 #      end
 #    else
 #      cmdid = install_cmd(cmd)
@@ -1383,11 +1383,11 @@ module TkCore
     #window = window.path if window.kind_of?(TkObject)
     if keys
       tk_call_without_enc('event', 'generate', window, 
-			  "<#{tk_event_sequence(context)}>", 
-			  *hash_kv(keys, true))
+                          "<#{tk_event_sequence(context)}>", 
+                          *hash_kv(keys, true))
     else
       tk_call_without_enc('event', 'generate', window, 
-			  "<#{tk_event_sequence(context)}>")
+                          "<#{tk_event_sequence(context)}>")
     end
     nil
   end
@@ -1488,10 +1488,10 @@ module TkCore
         #res = INTERP._invoke(*args).taint 
         #res = INTERP._invoke(enc_mode, *args) 
         res = _ip_invoke_core(enc_mode, *args) 
-	# >>>>>  _invoke returns a TAINTED string  <<<<<
+        # >>>>>  _invoke returns a TAINTED string  <<<<<
       rescue StandardError => err2
-	fail err2 unless /^invalid command/ =~ err2.message
-	fail err
+        fail err2 unless /^invalid command/ =~ err2.message
+        fail err
       end
     end
     if  INTERP._return_value() != 0
@@ -1535,7 +1535,7 @@ module Tk
   TK_MINOR_VERSION = minor.to_i
 
   JAPANIZED_TK = (INTERP._invoke_without_enc("info", "commands", 
-					     "kanji") != "").freeze
+                                             "kanji") != "").freeze
 
   def Tk.const_missing(sym)
     case(sym)
@@ -1560,11 +1560,11 @@ module Tk
 
     when :PLATFORM, :TCL_PLATFORM
       if $SAFE >= 4
-	fail SecurityError, "can't get #{sym} when $SAFE >= 4"
+        fail SecurityError, "can't get #{sym} when $SAFE >= 4"
       end
       INTERP._invoke_without_enc('global', 'tcl_platform')
       Hash[*tk_split_simplelist(INTERP._invoke_without_enc('array', 'get', 
-							   'tcl_platform'))]
+                                                           'tcl_platform'))]
 
     when :ENV
       INTERP._invoke_without_enc('global', 'env')
@@ -1583,22 +1583,22 @@ module Tk
     when :PRIV, :PRIVATE, :TK_PRIV
       priv = {}
       if INTERP._invoke_without_enc('info', 'vars', 'tk::Priv') != ""
-	var_nam = 'tk::Priv'
+        var_nam = 'tk::Priv'
       else
-	var_nam = 'tkPriv'
+        var_nam = 'tkPriv'
       end
       INTERP._invoke_without_enc('global', var_nam)
       Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 
-					       var_nam))].each{|k,v|
-	k.freeze
-	case v
-	when /^-?\d+$/
-	  priv[k] = v.to_i
-	when /^-?\d+\.?\d*(e[-+]?\d+)?$/
-	  priv[k] = v.to_f
-	else
-	  priv[k] = v.freeze
-	end
+                                               var_nam))].each{|k,v|
+        k.freeze
+        case v
+        when /^-?\d+$/
+          priv[k] = v.to_i
+        when /^-?\d+\.?\d*(e[-+]?\d+)?$/
+          priv[k] = v.to_f
+        else
+          priv[k] = v.freeze
+        end
       }
       priv
 
@@ -1618,8 +1618,8 @@ module Tk
     case code[0]
     when 'CHILDKILLED', 'CHILDSTATUS', 'CHILDSUSP'
       begin
-	pid = Integer(code[1])
-	code[1] = pid
+        pid = Integer(code[1])
+        code[1] = pid
       rescue
       end
     end
@@ -1840,45 +1840,45 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
     def _toUTF8(str, encoding = nil)
       # decide encoding
       if encoding
-	encoding = encoding.to_s
+        encoding = encoding.to_s
       elsif str.kind_of?(Tk::EncodedString) && str.encoding != nil
-	encoding = str.encoding.to_s
+        encoding = str.encoding.to_s
       elsif str.instance_variable_get(:@encoding)
-	encoding = str.instance_variable_get(:@encoding).to_s
+        encoding = str.instance_variable_get(:@encoding).to_s
       elsif defined?(@encoding) && @encoding != nil
-	encoding = @encoding.to_s
+        encoding = @encoding.to_s
       else
-	encoding = __invoke('encoding', 'system')
+        encoding = __invoke('encoding', 'system')
       end
 
       # convert
       case encoding
       when 'utf-8', 'binary'
-	str
+        str
       else
-	__toUTF8(str, encoding)
+        __toUTF8(str, encoding)
       end
     end
 
     def _fromUTF8(str, encoding = nil)
       unless encoding
-	if defined?(@encoding) && @encoding != nil
-	  encoding = @encoding.to_s
-	else
-	  encoding = __invoke('encoding', 'system')
-	end
+        if defined?(@encoding) && @encoding != nil
+          encoding = @encoding.to_s
+        else
+          encoding = __invoke('encoding', 'system')
+        end
       end
 
       if str.kind_of?(Tk::EncodedString)
-	if str.encoding == 'binary'
-	  str
-	else
-	  __fromUTF8(str, encoding)
-	end
+        if str.encoding == 'binary'
+          str
+        else
+          __fromUTF8(str, encoding)
+        end
       elsif str.instance_variable_get(:@encoding).to_s == 'binary'
-	str
+        str
       else
-	__fromUTF8(str, encoding)
+        __fromUTF8(str, encoding)
       end
     end
 =end
@@ -1897,53 +1897,53 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
 =begin
     def _eval(cmd)
       if defined?(@encoding) && @encoding != 'utf-8'
-	ret = if cmd.kind_of?(Tk::EncodedString)
-		case cmd.encoding
-		when 'utf-8', 'binary'
-		  __eval(cmd)
-		else
-		  __eval(_toUTF8(cmd, cmd.encoding))
-		end
-	      elsif cmd.instance_variable_get(:@encoding) == 'binary'
-		__eval(cmd)
-	      else
-		__eval(_toUTF8(cmd, @encoding))
-	      end
-	if ret.kind_of?(String) && ret.instance_variable_get(:@encoding) == 'binary'
-	  ret
-	else
-	  _fromUTF8(ret, @encoding)
-	end
+        ret = if cmd.kind_of?(Tk::EncodedString)
+                case cmd.encoding
+                when 'utf-8', 'binary'
+                  __eval(cmd)
+                else
+                  __eval(_toUTF8(cmd, cmd.encoding))
+                end
+              elsif cmd.instance_variable_get(:@encoding) == 'binary'
+                __eval(cmd)
+              else
+                __eval(_toUTF8(cmd, @encoding))
+              end
+        if ret.kind_of?(String) && ret.instance_variable_get(:@encoding) == 'binary'
+          ret
+        else
+          _fromUTF8(ret, @encoding)
+        end
       else
-	__eval(cmd)
+        __eval(cmd)
       end
     end
 
     def _invoke(*cmds)
       if defined?(@encoding) && @encoding != 'utf-8'
-	cmds = cmds.collect{|cmd|
-	  if cmd.kind_of?(Tk::EncodedString)
-	    case cmd.encoding
-	    when 'utf-8', 'binary'
-	      cmd
-	    else
-	      _toUTF8(cmd, cmd.encoding)
-	    end
-	  elsif cmd.instance_variable_get(:@encoding) == 'binary'
-	    cmd
-	  else
-	    _toUTF8(cmd, @encoding)
-	  end
-	}
-	ret = __invoke(*cmds)
-	if ret.kind_of?(String) && ret.instance_variable_get(:@encoding) == 'binary'
-	  ret
-	else
-	  _fromUTF8(ret, @encoding)
-	end
+        cmds = cmds.collect{|cmd|
+          if cmd.kind_of?(Tk::EncodedString)
+            case cmd.encoding
+            when 'utf-8', 'binary'
+              cmd
+            else
+              _toUTF8(cmd, cmd.encoding)
+            end
+          elsif cmd.instance_variable_get(:@encoding) == 'binary'
+            cmd
+          else
+            _toUTF8(cmd, @encoding)
+          end
+        }
+        ret = __invoke(*cmds)
+        if ret.kind_of?(String) && ret.instance_variable_get(:@encoding) == 'binary'
+          ret
+        else
+          _fromUTF8(ret, @encoding)
+        end
       else
-	__invoke(*cmds)
-	end
+        __invoke(*cmds)
+        end
     end
 =end
   end
@@ -1955,39 +1955,39 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
       TkCommandNames = ['encoding'.freeze].freeze
 
       def encoding=(name)
-	TkCore::INTERP.encoding = name
+        TkCore::INTERP.encoding = name
       end
 
       def encoding
-	TkCore::INTERP.encoding
+        TkCore::INTERP.encoding
       end
 
       def encoding_names
-	tk_split_simplelist(tk_call('encoding', 'names'))
+        tk_split_simplelist(tk_call('encoding', 'names'))
       end
 
       def encoding_system
-	tk_call('encoding', 'system')
+        tk_call('encoding', 'system')
       end
 
       def encoding_system=(enc)
-	tk_call('encoding', 'system', enc)
+        tk_call('encoding', 'system', enc)
       end
 
       def encoding_convertfrom(str, enc=nil)
-	# str must be a Tcl's internal string expression in enc. 
-	# the return value is a UTF-8 string.
-	enc = encoding_system unless enc
-	TkCore::INTERP.__invoke('encoding', 'convertfrom', enc, str)
+        # str must be a Tcl's internal string expression in enc. 
+        # the return value is a UTF-8 string.
+        enc = encoding_system unless enc
+        TkCore::INTERP.__invoke('encoding', 'convertfrom', enc, str)
       end
       alias encoding_convert_from encoding_convertfrom
 
       def encoding_convertto(str, enc=nil)
-	# str must be a UTF-8 string.
-	# The return value is a Tcl's internal string expression in enc. 
+        # str must be a UTF-8 string.
+        # The return value is a Tcl's internal string expression in enc. 
         # To get an usual enc string, use Tk.fromUTF8(ret_val, enc).
-	enc = encoding_system unless enc
-	TkCore::INTERP.__invoke('encoding', 'convertto', enc, str)
+        enc = encoding_system unless enc
+        TkCore::INTERP.__invoke('encoding', 'convertto', enc, str)
       end
       alias encoding_convert_to encoding_convertto
     end
@@ -2026,28 +2026,28 @@ else
       extend Encoding
 
       def encoding=(name)
-	nil
+        nil
       end
       def encoding
-	nil
+        nil
       end
       def encoding_names
-	nil
+        nil
       end
       def encoding_system
-	nil
+        nil
       end
       def encoding_system=(enc)
-	nil
+        nil
       end
 
       def encoding_convertfrom(str, enc=None)
-	str
+        str
       end
       alias encoding_convert_from encoding_convertfrom
 
       def encoding_convertto(str, enc=None)
-	str
+        str
       end
       alias encoding_convert_to encoding_convertto
     end
@@ -2098,19 +2098,19 @@ module TkTreatFont
     if key
       pathname = [win, tag, key].join(';')
       TkFont.used_on(pathname) || 
-	TkFont.init_widget_font(pathname, *__config_cmd)
+        TkFont.init_widget_font(pathname, *__config_cmd)
     elsif optkeys.size == 1
       pathname = [win, tag, optkeys[0]].join(';')
       TkFont.used_on(pathname) || 
-	TkFont.init_widget_font(pathname, *__config_cmd)
+        TkFont.init_widget_font(pathname, *__config_cmd)
     else
       fonts = {}
       optkeys.each{|key|
-	key = key.to_s
-	pathname = [win, tag, key].join(';')
-	fonts[key] = 
-	  TkFont.used_on(pathname) || 
-	  TkFont.init_widget_font(pathname, *__config_cmd)
+        key = key.to_s
+        pathname = [win, tag, key].join(';')
+        fonts[key] = 
+          TkFont.used_on(pathname) || 
+          TkFont.init_widget_font(pathname, *__config_cmd)
       }
       fonts
     end
@@ -2129,38 +2129,38 @@ module TkTreatFont
       k_optkey = 'kanji' << optkey
 
       if slot.key?(optkey)
-	fnt = slot.delete(optkey)
-	if fnt.kind_of?(TkFont)
-	  slot.delete(l_optkey)
-	  slot.delete(a_optkey)
-	  slot.delete(k_optkey)
+        fnt = slot.delete(optkey)
+        if fnt.kind_of?(TkFont)
+          slot.delete(l_optkey)
+          slot.delete(a_optkey)
+          slot.delete(k_optkey)
 
-	  fnt.call_font_configure([pathname, optkey], *(__config_cmd << {}))
-	  next
-	else
-	  if fnt
-	    if (slot.key?(l_optkey) || 
-		slot.key?(a_optkey) || 
-		slot.key?(k_optkey))
-	      fnt = TkFont.new(fnt)
+          fnt.call_font_configure([pathname, optkey], *(__config_cmd << {}))
+          next
+        else
+          if fnt
+            if (slot.key?(l_optkey) || 
+                slot.key?(a_optkey) || 
+                slot.key?(k_optkey))
+              fnt = TkFont.new(fnt)
 
-	      lfnt = slot.delete(l_optkey)
-	      lfnt = slot.delete(a_optkey) if slot.key?(a_optkey)
-	      kfnt = slot.delete(k_optkey)
+              lfnt = slot.delete(l_optkey)
+              lfnt = slot.delete(a_optkey) if slot.key?(a_optkey)
+              kfnt = slot.delete(k_optkey)
 
-	      fnt.latin_replace(lfnt) if lfnt
-	      fnt.kanji_replace(kfnt) if kfnt
+              fnt.latin_replace(lfnt) if lfnt
+              fnt.kanji_replace(kfnt) if kfnt
 
-	      fnt.call_font_configure([pathname, optkey], 
-				      *(__config_cmd << {}))
-	      next
-	    else
-	      fnt = hash_kv(fnt) if fnt.kind_of?(Hash)
-	      tk_call(*(__config_cmd << "-#{optkey}" << fnt))
-	    end
-	  end
-	  next
-	end
+              fnt.call_font_configure([pathname, optkey], 
+                                      *(__config_cmd << {}))
+              next
+            else
+              fnt = hash_kv(fnt) if fnt.kind_of?(Hash)
+              tk_call(*(__config_cmd << "-#{optkey}" << fnt))
+            end
+          end
+          next
+        end
       end
 
       lfnt = slot.delete(l_optkey)
@@ -2168,12 +2168,12 @@ module TkTreatFont
       kfnt = slot.delete(k_optkey)
 
       if lfnt && kfnt
-	TkFont.new(lfnt, kfnt).call_font_configure([pathname, optkey], 
-						   *(__config_cmd << {}))
+        TkFont.new(lfnt, kfnt).call_font_configure([pathname, optkey], 
+                                                   *(__config_cmd << {}))
       elsif lfnt
-	latinfont_configure([lfnt, optkey])
+        latinfont_configure([lfnt, optkey])
       elsif kfnt
-	kanjifont_configure([kfnt, optkey])
+        kanjifont_configure([kfnt, optkey])
       end
     }
 
@@ -2205,27 +2205,27 @@ module TkTreatFont
       pathname = [win, tag, optkey].join(';')
 
       if (fobj = TkFont.used_on(pathname))
-	fobj = TkFont.new(fobj) # create a new TkFont object
+        fobj = TkFont.new(fobj) # create a new TkFont object
       elsif Tk::JAPANIZED_TK
-	fobj = fontobj          # create a new TkFont object
+        fobj = fontobj          # create a new TkFont object
       else
-	ltn = hash_kv(ltn) if ltn.kind_of?(Hash)
-	tk_call(*(__config_cmd << "-#{optkey}" << ltn))
-	next
+        ltn = hash_kv(ltn) if ltn.kind_of?(Hash)
+        tk_call(*(__config_cmd << "-#{optkey}" << ltn))
+        next
       end
 
       if fobj.kind_of?(TkFont)
-	if ltn.kind_of?(TkFont)
-	  conf = {}
-	  ltn.latin_configinfo.each{|key,val| conf[key] = val}
-	  if keys
-	    fobj.latin_configure(conf.update(keys))
-	  else
-	    fobj.latin_configure(conf)
-	  end
-	else
-	  fobj.latin_replace(ltn)
-	end
+        if ltn.kind_of?(TkFont)
+          conf = {}
+          ltn.latin_configinfo.each{|key,val| conf[key] = val}
+          if keys
+            fobj.latin_configure(conf.update(keys))
+          else
+            fobj.latin_configure(conf)
+          end
+        else
+          fobj.latin_replace(ltn)
+        end
       end
 
       fobj.call_font_configure([pathname, optkey], *(__config_cmd << {}))
@@ -2257,27 +2257,27 @@ module TkTreatFont
       pathname = [win, tag, optkey].join(';')
 
       if (fobj = TkFont.used_on(pathname))
-	fobj = TkFont.new(fobj) # create a new TkFont object
+        fobj = TkFont.new(fobj) # create a new TkFont object
       elsif Tk::JAPANIZED_TK
-	fobj = fontobj          # create a new TkFont object
+        fobj = fontobj          # create a new TkFont object
       else
-	knj = hash_kv(knj) if knj.kind_of?(Hash)
-	tk_call(*(__config_cmd << "-#{optkey}" << knj))
-	next
+        knj = hash_kv(knj) if knj.kind_of?(Hash)
+        tk_call(*(__config_cmd << "-#{optkey}" << knj))
+        next
       end
 
       if fobj.kind_of?(TkFont)
-	if knj.kind_of?(TkFont)
-	  conf = {}
-	  knj.kanji_configinfo.each{|key,val| conf[key] = val}
-	  if keys
-	    fobj.kanji_configure(conf.update(keys))
-	  else
-	    fobj.kanji_configure(conf)
-	  end
-	else
-	  fobj.kanji_replace(knj)
-	end
+        if knj.kind_of?(TkFont)
+          conf = {}
+          knj.kanji_configinfo.each{|key,val| conf[key] = val}
+          if keys
+            fobj.kanji_configure(conf.update(keys))
+          else
+            fobj.kanji_configure(conf)
+          end
+        else
+          fobj.kanji_replace(knj)
+        end
       end
 
       fobj.call_font_configure([pathname, optkey], *(__config_cmd << {}))
@@ -2288,15 +2288,15 @@ module TkTreatFont
   def font_copy(window, wintag=nil, winkey=nil, targetkey=nil)
     if wintag
       if winkey
-	fnt = window.tagfontobj(wintag, winkey).dup
+        fnt = window.tagfontobj(wintag, winkey).dup
       else
-	fnt = window.tagfontobj(wintag).dup
+        fnt = window.tagfontobj(wintag).dup
       end
     else
       if winkey
-	fnt = window.fontobj(winkey).dup
+        fnt = window.fontobj(winkey).dup
       else
-	fnt = window.fontobj.dup
+        fnt = window.fontobj.dup
       end
     end
 
@@ -2311,22 +2311,22 @@ module TkTreatFont
   def latinfont_copy(window, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
       fontobj(targetkey).dup.call_font_configure([__pathname, targetkey], 
-						 *(__config_cmd << {}))
+                                                 *(__config_cmd << {}))
     else
       fontobj.dup.call_font_configure(__pathname, *(__config_cmd << {}))
     end
 
     if wintag
       if winkey
-	fontobj.latin_replace(window.tagfontobj(wintag, winkey).latin_font_id)
+        fontobj.latin_replace(window.tagfontobj(wintag, winkey).latin_font_id)
       else
-	fontobj.latin_replace(window.tagfontobj(wintag).latin_font_id)
+        fontobj.latin_replace(window.tagfontobj(wintag).latin_font_id)
       end
     else
       if winkey
-	fontobj.latin_replace(window.fontobj(winkey).latin_font_id)
+        fontobj.latin_replace(window.fontobj(winkey).latin_font_id)
       else
-	fontobj.latin_replace(window.fontobj.latin_font_id)
+        fontobj.latin_replace(window.fontobj.latin_font_id)
       end
     end
     self
@@ -2336,22 +2336,22 @@ module TkTreatFont
   def kanjifont_copy(window, wintag=nil, winkey=nil, targetkey=nil)
     if targetkey
       fontobj(targetkey).dup.call_font_configure([__pathname, targetkey], 
-						 *(__config_cmd << {}))
+                                                 *(__config_cmd << {}))
     else
-	fontobj.dup.call_font_configure(__pathname, *(__config_cmd << {}))
+        fontobj.dup.call_font_configure(__pathname, *(__config_cmd << {}))
     end
 
     if wintag
       if winkey
-	fontobj.kanji_replace(window.tagfontobj(wintag, winkey).kanji_font_id)
+        fontobj.kanji_replace(window.tagfontobj(wintag, winkey).kanji_font_id)
       else
-	fontobj.kanji_replace(window.tagfontobj(wintag).kanji_font_id)
+        fontobj.kanji_replace(window.tagfontobj(wintag).kanji_font_id)
       end
     else
       if winkey
-	fontobj.kanji_replace(window.fontobj(winkey).kanji_font_id)
+        fontobj.kanji_replace(window.fontobj(winkey).kanji_font_id)
       else
-	fontobj.kanji_replace(window.fontobj.kanji_font_id)
+        fontobj.kanji_replace(window.fontobj.kanji_font_id)
       end
     end
     self
@@ -2426,16 +2426,16 @@ module TkConfigMethod
     keys.each{|k, v|
       optkey = keyonly.find{|kk,vv| kk.to_s == k.to_s}
       if optkey
-	defkey, undefkey = optkey
-	if v
-	  keys2[defkey.to_s] = None
-	elsif undefkey
-	  keys2[undefkey.to_s] = None
-	else
-	  # remove key
-	end
+        defkey, undefkey = optkey
+        if v
+          keys2[defkey.to_s] = None
+        elsif undefkey
+          keys2[undefkey.to_s] = None
+        else
+          # remove key
+        end
       else
-	keys2[k.to_s] = v
+        keys2[k.to_s] = v
       end
     }
     keys2
@@ -2466,9 +2466,9 @@ module TkConfigMethod
     case slot
     when /^(#{__numval_optkeys.join('|')})$/
       begin
-	number(tk_call_without_enc(*(__cget_cmd << "-#{slot}")))
+        number(tk_call_without_enc(*(__cget_cmd << "-#{slot}")))
       rescue
-	nil
+        nil
       end
 
     when /^(#{__numstrval_optkeys.join('|')})$/
@@ -2476,9 +2476,9 @@ module TkConfigMethod
 
     when /^(#{__boolval_optkeys.join('|')})$/
       begin
-	bool(tk_call_without_enc(*(__cget_cmd << "-#{slot}")))
+        bool(tk_call_without_enc(*(__cget_cmd << "-#{slot}")))
       rescue
-	nil
+        nil
       end
 
     when /^(#{__listval_optkeys.join('|')})$/
@@ -2487,9 +2487,9 @@ module TkConfigMethod
     when /^(#{__numlistval_optkeys.join('|')})$/
       conf = tk_call_without_enc(*(__cget_cmd << "-#{slot}"))
       if conf =~ /^[0-9+-]/
-	list(conf)
+        list(conf)
       else
-	conf
+        conf
       end
 
     when /^(#{__strval_optkeys.join('|')})$/
@@ -2500,13 +2500,13 @@ module TkConfigMethod
       fontkey  = $2
       fnt = tk_tcl2ruby(tk_call_without_enc(*(__cget_cmd << "-#{fontkey}")), true)
       unless fnt.kind_of?(TkFont)
-	fnt = fontobj(fontkey)
+        fnt = fontobj(fontkey)
       end
       if fontcode == 'kanji' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
-	# obsolete; just for compatibility
-	fnt.kanji_font
+        # obsolete; just for compatibility
+        fnt.kanji_font
       else
-	fnt
+        fnt
       end
 
     else
@@ -2519,48 +2519,48 @@ module TkConfigMethod
       slot = _symbolkey2str(slot)
 
       __methodcall_optkeys.each{|key, method|
-	value = slot.delete(key.to_s)
-	self.__send__(method, value) if value
+        value = slot.delete(key.to_s)
+        self.__send__(method, value) if value
       }
 
       __keyonly_optkeys.each{|defkey, undefkey|
-	conf = slot.find{|kk, vv| kk == defkey.to_s}
-	if conf
-	  k, v = conf
-	  if v
-	    slot[k] = None
-	  else
-	    slot[undefkey.to_s] = None if undefkey
-	    slot.delete(k)
-	  end
-	end
+        conf = slot.find{|kk, vv| kk == defkey.to_s}
+        if conf
+          k, v = conf
+          if v
+            slot[k] = None
+          else
+            slot[undefkey.to_s] = None if undefkey
+            slot.delete(k)
+          end
+        end
       }
 
       if (slot.find{|k, v| k =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/})
-	font_configure(slot)
+        font_configure(slot)
       elsif slot.size > 0
-	tk_call(*(__config_cmd.concat(hash_kv(slot))))
+        tk_call(*(__config_cmd.concat(hash_kv(slot))))
       end
 
     else
       slot = slot.to_s
       if ( conf = __keyonly_optkeys.find{|k, v| k.to_s == slot} )
-	defkey, undefkey = conf
-	if value
-	  tk_call(*(__config_cmd << "-#{defkey}"))
-	elsif undefkey
-	  tk_call(*(__config_cmd << "-#{undefkey}"))
-	end
+        defkey, undefkey = conf
+        if value
+          tk_call(*(__config_cmd << "-#{defkey}"))
+        elsif undefkey
+          tk_call(*(__config_cmd << "-#{undefkey}"))
+        end
       elsif ( method = _symbolkey2str(__methodcall_optkeys)[slot] )
-	self.__send__(method, value)
+        self.__send__(method, value)
       elsif (slot =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
-	if value == None
-	  fontobj($2)
-	else
-	  font_configure({slot=>value})
-	end
+        if value == None
+          fontobj($2)
+        else
+          font_configure({slot=>value})
+        end
       else
-	tk_call(*(__config_cmd << "-#{slot}" << value))
+        tk_call(*(__config_cmd << "-#{slot}" << value))
       end
     end
     self
@@ -2573,529 +2573,529 @@ module TkConfigMethod
   def configinfo(slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if (slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
-	fontkey  = $2
-	conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{fontkey}"))))
-	conf[__configinfo_struct[:key]] = 
-	  conf[__configinfo_struct[:key]][1..-1]
-	if ( ! __configinfo_struct[:alias] \
-	    || conf.size > __configinfo_struct[:alias] + 1 )
-	  conf[__configinfo_struct[:current_value]] = fontobj(fontkey)
-	elsif ( __configinfo_struct[:alias] \
-	       && conf.size == __configinfo_struct[:alias] + 1 \
-	       && conf[__configinfo_struct[:alias]][0] == ?- )
-	  conf[__configinfo_struct[:alias]] = 
-	    conf[__configinfo_struct[:alias]][1..-1]
-	end
-	conf
+        fontkey  = $2
+        conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{fontkey}"))))
+        conf[__configinfo_struct[:key]] = 
+          conf[__configinfo_struct[:key]][1..-1]
+        if ( ! __configinfo_struct[:alias] \
+            || conf.size > __configinfo_struct[:alias] + 1 )
+          conf[__configinfo_struct[:current_value]] = fontobj(fontkey)
+        elsif ( __configinfo_struct[:alias] \
+               && conf.size == __configinfo_struct[:alias] + 1 \
+               && conf[__configinfo_struct[:alias]][0] == ?- )
+          conf[__configinfo_struct[:alias]] = 
+            conf[__configinfo_struct[:alias]][1..-1]
+        end
+        conf
       else
-	if slot
-	  slot = slot.to_s
-	  case slot
-	  when /^(#{__methodcall_optkeys.keys.join('|')})$/
-	    method = _symbolkey2str(__methodcall_optkeys)[slot]
-	    return [slot, '', '', '', self.__send__(method)]
+        if slot
+          slot = slot.to_s
+          case slot
+          when /^(#{__methodcall_optkeys.keys.join('|')})$/
+            method = _symbolkey2str(__methodcall_optkeys)[slot]
+            return [slot, '', '', '', self.__send__(method)]
 
-	  when /^(#{__numval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__numval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]])
-	      begin
-		conf[__configinfo_struct[:default_value]] = 
-		  number(conf[__configinfo_struct[:default_value]])
-	      rescue
-		conf[__configinfo_struct[:default_value]] = nil
-	      end
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] )
-	      begin
-		conf[__configinfo_struct[:current_value]] = 
-		  number(conf[__configinfo_struct[:current_value]])
-	      rescue
-		conf[__configinfo_struct[:current_value]] = nil
-	      end
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]])
+              begin
+                conf[__configinfo_struct[:default_value]] = 
+                  number(conf[__configinfo_struct[:default_value]])
+              rescue
+                conf[__configinfo_struct[:default_value]] = nil
+              end
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              begin
+                conf[__configinfo_struct[:current_value]] = 
+                  number(conf[__configinfo_struct[:current_value]])
+              rescue
+                conf[__configinfo_struct[:current_value]] = nil
+              end
+            end
 
-	  when /^(#{__numstrval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__numstrval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]])
-	      conf[__configinfo_struct[:default_value]] = 
-		num_or_str(conf[__configinfo_struct[:default_value]])
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] )
-	      conf[__configinfo_struct[:current_value]] = 
-		num_or_str(conf[__configinfo_struct[:current_value]])
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]])
+              conf[__configinfo_struct[:default_value]] = 
+                num_or_str(conf[__configinfo_struct[:default_value]])
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              conf[__configinfo_struct[:current_value]] = 
+                num_or_str(conf[__configinfo_struct[:current_value]])
+            end
 
-	  when /^(#{__boolval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__boolval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]])
-	      begin
-		conf[__configinfo_struct[:default_value]] = 
-		  bool(conf[__configinfo_struct[:default_value]])
-	      rescue
-		conf[__configinfo_struct[:default_value]] = nil
-	      end
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] )
-	      begin
-		conf[__configinfo_struct[:current_value]] = 
-		  bool(conf[__configinfo_struct[:current_value]])
-	      rescue
-		conf[__configinfo_struct[:current_value]] = nil
-	      end
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]])
+              begin
+                conf[__configinfo_struct[:default_value]] = 
+                  bool(conf[__configinfo_struct[:default_value]])
+              rescue
+                conf[__configinfo_struct[:default_value]] = nil
+              end
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              begin
+                conf[__configinfo_struct[:current_value]] = 
+                  bool(conf[__configinfo_struct[:current_value]])
+              rescue
+                conf[__configinfo_struct[:current_value]] = nil
+              end
+            end
 
-	  when /^(#{__listval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__listval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]])
-	      conf[__configinfo_struct[:default_value]] = 
-		simplelist(conf[__configinfo_struct[:default_value]])
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] )
-	      conf[__configinfo_struct[:current_value]] = 
-		simplelist(conf[__configinfo_struct[:current_value]])
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]])
+              conf[__configinfo_struct[:default_value]] = 
+                simplelist(conf[__configinfo_struct[:default_value]])
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              conf[__configinfo_struct[:current_value]] = 
+                simplelist(conf[__configinfo_struct[:current_value]])
+            end
 
-	  when /^(#{__numlistval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__numlistval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]] \
-		&& conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
-	      conf[__configinfo_struct[:default_value]] = 
-		list(conf[__configinfo_struct[:default_value]])
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] \
-		&& conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
-	      conf[__configinfo_struct[:current_value]] = 
-		list(conf[__configinfo_struct[:current_value]])
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]] \
+                && conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
+              conf[__configinfo_struct[:default_value]] = 
+                list(conf[__configinfo_struct[:default_value]])
+            end
+            if ( conf[__configinfo_struct[:current_value]] \
+                && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
+              conf[__configinfo_struct[:current_value]] = 
+                list(conf[__configinfo_struct[:current_value]])
+            end
 
-	  when /^(#{__strval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
-	  else
-	    conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
-	  end
-	  conf[__configinfo_struct[:key]] = 
-	    conf[__configinfo_struct[:key]][1..-1]
+          when /^(#{__strval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          else
+            conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          end
+          conf[__configinfo_struct[:key]] = 
+            conf[__configinfo_struct[:key]][1..-1]
 
-	  if ( __configinfo_struct[:alias] \
-	      && conf.size == __configinfo_struct[:alias] + 1 \
-	      && conf[__configinfo_struct[:alias]][0] == ?- )
-	    conf[__configinfo_struct[:alias]] = 
-	      conf[__configinfo_struct[:alias]][1..-1]
-	  end
+          if ( __configinfo_struct[:alias] \
+              && conf.size == __configinfo_struct[:alias] + 1 \
+              && conf[__configinfo_struct[:alias]][0] == ?- )
+            conf[__configinfo_struct[:alias]] = 
+              conf[__configinfo_struct[:alias]][1..-1]
+          end
 
-	  conf
+          conf
 
-	else
-	  ret = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__config_cmd))).collect{|conflist|
-	    conf = tk_split_simplelist(conflist)
-	    conf[__configinfo_struct[:key]] = 
-	      conf[__configinfo_struct[:key]][1..-1]
+        else
+          ret = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__config_cmd))).collect{|conflist|
+            conf = tk_split_simplelist(conflist)
+            conf[__configinfo_struct[:key]] = 
+              conf[__configinfo_struct[:key]][1..-1]
 
-	    case conf[__configinfo_struct[:key]]
-	    when /^(#{__strval_optkeys.join('|')})$/
-	      # do nothing
+            case conf[__configinfo_struct[:key]]
+            when /^(#{__strval_optkeys.join('|')})$/
+              # do nothing
 
-	    when /^(#{__numval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		begin
-		  conf[__configinfo_struct[:default_value]] = 
-		    number(conf[__configinfo_struct[:default_value]])
-		rescue
-		  conf[__configinfo_struct[:default_value]] = nil
-		end
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] )
-		begin
-		  conf[__configinfo_struct[:current_value]] = 
-		    number(conf[__configinfo_struct[:current_value]])
-		rescue
-		  conf[__configinfo_struct[:current_value]] = nil
-		end
-	      end
+            when /^(#{__numval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                begin
+                  conf[__configinfo_struct[:default_value]] = 
+                    number(conf[__configinfo_struct[:default_value]])
+                rescue
+                  conf[__configinfo_struct[:default_value]] = nil
+                end
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                begin
+                  conf[__configinfo_struct[:current_value]] = 
+                    number(conf[__configinfo_struct[:current_value]])
+                rescue
+                  conf[__configinfo_struct[:current_value]] = nil
+                end
+              end
 
-	    when /^(#{__numstrval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		conf[__configinfo_struct[:default_value]] = 
-		  num_or_str(conf[__configinfo_struct[:default_value]])
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] )
-		conf[__configinfo_struct[:current_value]] = 
-		  num_or_str(conf[__configinfo_struct[:current_value]])
-	      end
+            when /^(#{__numstrval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                conf[__configinfo_struct[:default_value]] = 
+                  num_or_str(conf[__configinfo_struct[:default_value]])
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                conf[__configinfo_struct[:current_value]] = 
+                  num_or_str(conf[__configinfo_struct[:current_value]])
+              end
 
-	    when /^(#{__boolval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		begin
-		  conf[__configinfo_struct[:default_value]] = 
-		    bool(conf[__configinfo_struct[:default_value]])
-		rescue
-		  conf[__configinfo_struct[:default_value]] = nil
-		end
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] )
-		begin
-		  conf[__configinfo_struct[:current_value]] = 
-		    bool(conf[__configinfo_struct[:current_value]])
-		rescue
-		  conf[__configinfo_struct[:current_value]] = nil
-		end
-	      end
+            when /^(#{__boolval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                begin
+                  conf[__configinfo_struct[:default_value]] = 
+                    bool(conf[__configinfo_struct[:default_value]])
+                rescue
+                  conf[__configinfo_struct[:default_value]] = nil
+                end
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                begin
+                  conf[__configinfo_struct[:current_value]] = 
+                    bool(conf[__configinfo_struct[:current_value]])
+                rescue
+                  conf[__configinfo_struct[:current_value]] = nil
+                end
+              end
 
-	    when /^(#{__listval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		conf[__configinfo_struct[:default_value]] = 
-		  simplelist(conf[__configinfo_struct[:default_value]])
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] )
-		conf[__configinfo_struct[:current_value]] = 
-		  simplelist(conf[__configinfo_struct[:current_value]])
-	      end
+            when /^(#{__listval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                conf[__configinfo_struct[:default_value]] = 
+                  simplelist(conf[__configinfo_struct[:default_value]])
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                conf[__configinfo_struct[:current_value]] = 
+                  simplelist(conf[__configinfo_struct[:current_value]])
+              end
 
-	    when /^(#{__numlistval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] \
-		  && conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
-		conf[__configinfo_struct[:default_value]] = 
-		  list(conf[__configinfo_struct[:default_value]])
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] \
-		  && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
-		conf[__configinfo_struct[:current_value]] = 
-		  list(conf[__configinfo_struct[:current_value]])
-	      end
+            when /^(#{__numlistval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] \
+                  && conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
+                conf[__configinfo_struct[:default_value]] = 
+                  list(conf[__configinfo_struct[:default_value]])
+              end
+              if ( conf[__configinfo_struct[:current_value]] \
+                  && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
+                conf[__configinfo_struct[:current_value]] = 
+                  list(conf[__configinfo_struct[:current_value]])
+              end
 
-	    else
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		if conf[__configinfo_struct[:default_value]].index('{')
-		  conf[__configinfo_struct[:default_value]] = 
-		    tk_split_list(conf[__configinfo_struct[:default_value]]) 
-		else
-		  conf[__configinfo_struct[:default_value]] = 
-		    tk_tcl2ruby(conf[__configinfo_struct[:default_value]]) 
-		end
-	      end
-	      if conf[__configinfo_struct[:current_value]]
-		if conf[__configinfo_struct[:current_value]].index('{')
-		  conf[__configinfo_struct[:current_value]] = 
-		    tk_split_list(conf[__configinfo_struct[:current_value]]) 
-		else
-		  conf[__configinfo_struct[:current_value]] = 
-		    tk_tcl2ruby(conf[__configinfo_struct[:current_value]]) 
-		end
-	      end
-	    end
+            else
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                if conf[__configinfo_struct[:default_value]].index('{')
+                  conf[__configinfo_struct[:default_value]] = 
+                    tk_split_list(conf[__configinfo_struct[:default_value]]) 
+                else
+                  conf[__configinfo_struct[:default_value]] = 
+                    tk_tcl2ruby(conf[__configinfo_struct[:default_value]]) 
+                end
+              end
+              if conf[__configinfo_struct[:current_value]]
+                if conf[__configinfo_struct[:current_value]].index('{')
+                  conf[__configinfo_struct[:current_value]] = 
+                    tk_split_list(conf[__configinfo_struct[:current_value]]) 
+                else
+                  conf[__configinfo_struct[:current_value]] = 
+                    tk_tcl2ruby(conf[__configinfo_struct[:current_value]]) 
+                end
+              end
+            end
 
-	    if ( __configinfo_struct[:alias] \
-		&& conf.size == __configinfo_struct[:alias] + 1 \
-		&& conf[__configinfo_struct[:alias]][0] == ?- )
-	      conf[__configinfo_struct[:alias]] = 
-		conf[__configinfo_struct[:alias]][1..-1]
-	    end
+            if ( __configinfo_struct[:alias] \
+                && conf.size == __configinfo_struct[:alias] + 1 \
+                && conf[__configinfo_struct[:alias]][0] == ?- )
+              conf[__configinfo_struct[:alias]] = 
+                conf[__configinfo_struct[:alias]][1..-1]
+            end
 
-	    conf
-	  }
+            conf
+          }
 
-	  __font_optkeys.each{|optkey|
-	    optkey = optkey.to_s
-	    fontconf = ret.assoc(optkey)
-	    if fontconf && fontconf.size > 2
-	      ret.delete_if{|inf| inf[0] =~ /^(|latin|ascii|kanji)#{optkey}$/}
-	      fontconf[__configinfo_struct[:current_value]] = fontobj(optkey)
-	      ret.push(fontconf)
-	    end
-	  }
+          __font_optkeys.each{|optkey|
+            optkey = optkey.to_s
+            fontconf = ret.assoc(optkey)
+            if fontconf && fontconf.size > 2
+              ret.delete_if{|inf| inf[0] =~ /^(|latin|ascii|kanji)#{optkey}$/}
+              fontconf[__configinfo_struct[:current_value]] = fontobj(optkey)
+              ret.push(fontconf)
+            end
+          }
 
-	  __methodcall_optkeys.each{|optkey, method|
-	    ret << [optkey.to_s, '', '', '', self.__send__(method)]
-	  }
+          __methodcall_optkeys.each{|optkey, method|
+            ret << [optkey.to_s, '', '', '', self.__send__(method)]
+          }
 
-	  ret
-	end
+          ret
+        end
       end
 
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       if (slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
-	fontkey  = $2
-	conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{fontkey}"))))
-	conf[__configinfo_struct[:key]] = 
-	  conf[__configinfo_struct[:key]][1..-1]
+        fontkey  = $2
+        conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{fontkey}"))))
+        conf[__configinfo_struct[:key]] = 
+          conf[__configinfo_struct[:key]][1..-1]
 
-	if ( ! __configinfo_struct[:alias] \
-	    || conf.size > __configinfo_struct[:alias] + 1 )
-	  conf[__configinfo_struct[:current_value]] = fontobj(fontkey)
-	  { conf.shift => conf }
-	elsif ( __configinfo_struct[:alias] \
-	       && conf.size == __configinfo_struct[:alias] + 1 )
-	  if conf[__configinfo_struct[:alias]][0] == ?-
-	    conf[__configinfo_struct[:alias]] = 
-	      conf[__configinfo_struct[:alias]][1..-1]
-	  end
-	  { conf[0] => conf[1] }
-	else
-	  { conf.shift => conf }
-	end
+        if ( ! __configinfo_struct[:alias] \
+            || conf.size > __configinfo_struct[:alias] + 1 )
+          conf[__configinfo_struct[:current_value]] = fontobj(fontkey)
+          { conf.shift => conf }
+        elsif ( __configinfo_struct[:alias] \
+               && conf.size == __configinfo_struct[:alias] + 1 )
+          if conf[__configinfo_struct[:alias]][0] == ?-
+            conf[__configinfo_struct[:alias]] = 
+              conf[__configinfo_struct[:alias]][1..-1]
+          end
+          { conf[0] => conf[1] }
+        else
+          { conf.shift => conf }
+        end
       else
-	if slot
-	  slot = slot.to_s
-	  case slot
-	  when /^(#{__methodcall_optkeys.keys.join('|')})$/
-	    method = _symbolkey2str(__methodcall_optkeys)[slot]
-	    return {slot => ['', '', '', self.__send__(method)]}
+        if slot
+          slot = slot.to_s
+          case slot
+          when /^(#{__methodcall_optkeys.keys.join('|')})$/
+            method = _symbolkey2str(__methodcall_optkeys)[slot]
+            return {slot => ['', '', '', self.__send__(method)]}
 
-	  when /^(#{__numval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__numval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]] )
-	      begin
-		conf[__configinfo_struct[:default_value]] = 
-		  number(conf[__configinfo_struct[:default_value]])
-	      rescue
-		conf[__configinfo_struct[:default_value]] = nil
-	      end
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] )
-	      begin
-		conf[__configinfo_struct[:current_value]] = 
-		  number(conf[__configinfo_struct[:current_value]])
-	      rescue
-		conf[__configinfo_struct[:current_value]] = nil
-	      end
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]] )
+              begin
+                conf[__configinfo_struct[:default_value]] = 
+                  number(conf[__configinfo_struct[:default_value]])
+              rescue
+                conf[__configinfo_struct[:default_value]] = nil
+              end
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              begin
+                conf[__configinfo_struct[:current_value]] = 
+                  number(conf[__configinfo_struct[:current_value]])
+              rescue
+                conf[__configinfo_struct[:current_value]] = nil
+              end
+            end
 
-	  when /^(#{__numstrval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__numstrval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]] )
-	      conf[__configinfo_struct[:default_value]] = 
-		num_or_str(conf[__configinfo_struct[:default_value]])
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] )
-	      conf[__configinfo_struct[:current_value]] = 
-		num_or_str(conf[__configinfo_struct[:current_value]])
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]] )
+              conf[__configinfo_struct[:default_value]] = 
+                num_or_str(conf[__configinfo_struct[:default_value]])
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              conf[__configinfo_struct[:current_value]] = 
+                num_or_str(conf[__configinfo_struct[:current_value]])
+            end
 
-	  when /^(#{__boolval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__boolval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]] )
-	      begin
-		conf[__configinfo_struct[:default_value]] = 
-		  bool(conf[__configinfo_struct[:default_value]])
-	      rescue
-		conf[__configinfo_struct[:default_value]] = nil
-	      end
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] )
-	      begin
-		conf[__configinfo_struct[:current_value]] = 
-		  bool(conf[__configinfo_struct[:current_value]])
-	      rescue
-		conf[__configinfo_struct[:current_value]] = nil
-	      end
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]] )
+              begin
+                conf[__configinfo_struct[:default_value]] = 
+                  bool(conf[__configinfo_struct[:default_value]])
+              rescue
+                conf[__configinfo_struct[:default_value]] = nil
+              end
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              begin
+                conf[__configinfo_struct[:current_value]] = 
+                  bool(conf[__configinfo_struct[:current_value]])
+              rescue
+                conf[__configinfo_struct[:current_value]] = nil
+              end
+            end
 
-	  when /^(#{__listval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__listval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]] )
-	      conf[__configinfo_struct[:default_value]] = 
-		simplelist(conf[__configinfo_struct[:default_value]])
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] )
-	      conf[__configinfo_struct[:current_value]] = 
-		simplelist(conf[__configinfo_struct[:current_value]])
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]] )
+              conf[__configinfo_struct[:default_value]] = 
+                simplelist(conf[__configinfo_struct[:default_value]])
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              conf[__configinfo_struct[:current_value]] = 
+                simplelist(conf[__configinfo_struct[:current_value]])
+            end
 
-	  when /^(#{__numlistval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          when /^(#{__numlistval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
 
-	    if ( __configinfo_struct[:default_value] \
-		&& conf[__configinfo_struct[:default_value]] \
-		&& conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
-	      conf[__configinfo_struct[:default_value]] = 
-		list(conf[__configinfo_struct[:default_value]])
-	    end
-	    if ( conf[__configinfo_struct[:current_value]] \
-		&& conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
-	      conf[__configinfo_struct[:current_value]] = 
-		list(conf[__configinfo_struct[:current_value]])
-	    end
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]] \
+                && conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
+              conf[__configinfo_struct[:default_value]] = 
+                list(conf[__configinfo_struct[:default_value]])
+            end
+            if ( conf[__configinfo_struct[:current_value]] \
+                && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
+              conf[__configinfo_struct[:current_value]] = 
+                list(conf[__configinfo_struct[:current_value]])
+            end
 
-	  when /^(#{__strval_optkeys.join('|')})$/
-	    conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
-	  else
-	    conf = tk_split_list(_fromUTF8(tk_send_without_enc(*(__config_cmd << "-#{slot}"))))
-	  end
-	  conf[__configinfo_struct[:key]] = 
-	    conf[__configinfo_struct[:key]][1..-1]
+          when /^(#{__strval_optkeys.join('|')})$/
+            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__config_cmd << "-#{slot}"))))
+          else
+            conf = tk_split_list(_fromUTF8(tk_send_without_enc(*(__config_cmd << "-#{slot}"))))
+          end
+          conf[__configinfo_struct[:key]] = 
+            conf[__configinfo_struct[:key]][1..-1]
 
-	  if ( __configinfo_struct[:alias] \
-	      && conf.size == __configinfo_struct[:alias] + 1 )
-	    if conf[__configinfo_struct[:alias]][0] == ?-
-	      conf[__configinfo_struct[:alias]] = 
-		conf[__configinfo_struct[:alias]][1..-1]
-	    end
-	    { conf[0] => conf[1] }
-	  else
-	    { conf.shift => conf }
-	  end
+          if ( __configinfo_struct[:alias] \
+              && conf.size == __configinfo_struct[:alias] + 1 )
+            if conf[__configinfo_struct[:alias]][0] == ?-
+              conf[__configinfo_struct[:alias]] = 
+                conf[__configinfo_struct[:alias]][1..-1]
+            end
+            { conf[0] => conf[1] }
+          else
+            { conf.shift => conf }
+          end
 
-	else
-	  ret = {}
-	  tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__config_cmd))).each{|conflist|
-	    conf = tk_split_simplelist(conflist)
-	    conf[__configinfo_struct[:key]] = 
-	      conf[__configinfo_struct[:key]][1..-1]
+        else
+          ret = {}
+          tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__config_cmd))).each{|conflist|
+            conf = tk_split_simplelist(conflist)
+            conf[__configinfo_struct[:key]] = 
+              conf[__configinfo_struct[:key]][1..-1]
 
-	    case conf[__configinfo_struct[:key]]
-	    when /^(#{__strval_optkeys.join('|')})$/
-	      # do nothing
+            case conf[__configinfo_struct[:key]]
+            when /^(#{__strval_optkeys.join('|')})$/
+              # do nothing
 
-	    when /^(#{__numval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		begin
-		  conf[__configinfo_struct[:default_value]] = 
-		    number(conf[__configinfo_struct[:default_value]])
-		rescue
-		  conf[__configinfo_struct[:default_value]] = nil
-		end
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] )
-		begin
-		  conf[__configinfo_struct[:current_value]] = 
-		    number(conf[__configinfo_struct[:current_value]])
-		rescue
-		  conf[__configinfo_struct[:current_value]] = nil
-		end
-	      end
+            when /^(#{__numval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                begin
+                  conf[__configinfo_struct[:default_value]] = 
+                    number(conf[__configinfo_struct[:default_value]])
+                rescue
+                  conf[__configinfo_struct[:default_value]] = nil
+                end
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                begin
+                  conf[__configinfo_struct[:current_value]] = 
+                    number(conf[__configinfo_struct[:current_value]])
+                rescue
+                  conf[__configinfo_struct[:current_value]] = nil
+                end
+              end
 
-	    when /^(#{__numstrval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		conf[__configinfo_struct[:default_value]] = 
-		  num_or_str(conf[__configinfo_struct[:default_value]])
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] )
-		conf[__configinfo_struct[:current_value]] = 
-		  num_or_str(conf[__configinfo_struct[:current_value]])
-	      end
+            when /^(#{__numstrval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                conf[__configinfo_struct[:default_value]] = 
+                  num_or_str(conf[__configinfo_struct[:default_value]])
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                conf[__configinfo_struct[:current_value]] = 
+                  num_or_str(conf[__configinfo_struct[:current_value]])
+              end
 
-	    when /^(#{__boolval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		begin
-		  conf[__configinfo_struct[:default_value]] = 
-		    bool(conf[__configinfo_struct[:default_value]])
-		rescue
-		  conf[__configinfo_struct[:default_value]] = nil
-		end
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] )
-		begin
-		  conf[__configinfo_struct[:current_value]] = 
-		    bool(conf[__configinfo_struct[:current_value]])
-		rescue
-		  conf[__configinfo_struct[:current_value]] = nil
-		end
-	      end
+            when /^(#{__boolval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                begin
+                  conf[__configinfo_struct[:default_value]] = 
+                    bool(conf[__configinfo_struct[:default_value]])
+                rescue
+                  conf[__configinfo_struct[:default_value]] = nil
+                end
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                begin
+                  conf[__configinfo_struct[:current_value]] = 
+                    bool(conf[__configinfo_struct[:current_value]])
+                rescue
+                  conf[__configinfo_struct[:current_value]] = nil
+                end
+              end
 
-	    when /^(#{__listval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		conf[__configinfo_struct[:default_value]] = 
-		  simplelist(conf[__configinfo_struct[:default_value]])
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] )
-		conf[__configinfo_struct[:current_value]] = 
-		  simplelist(conf[__configinfo_struct[:current_value]])
-	      end
+            when /^(#{__listval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                conf[__configinfo_struct[:default_value]] = 
+                  simplelist(conf[__configinfo_struct[:default_value]])
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                conf[__configinfo_struct[:current_value]] = 
+                  simplelist(conf[__configinfo_struct[:current_value]])
+              end
 
-	    when /^(#{__numlistval_optkeys.join('|')})$/
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] \
-		  && conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
-		conf[__configinfo_struct[:default_value]] = 
-		  list(conf[__configinfo_struct[:default_value]])
-	      end
-	      if ( conf[__configinfo_struct[:current_value]] \
-		  && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
-		conf[__configinfo_struct[:current_value]] = 
-		  list(conf[__configinfo_struct[:current_value]])
-	      end
+            when /^(#{__numlistval_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] \
+                  && conf[__configinfo_struct[:default_value]] =~ /^[0-9]/ )
+                conf[__configinfo_struct[:default_value]] = 
+                  list(conf[__configinfo_struct[:default_value]])
+              end
+              if ( conf[__configinfo_struct[:current_value]] \
+                  && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
+                conf[__configinfo_struct[:current_value]] = 
+                  list(conf[__configinfo_struct[:current_value]])
+              end
 
-	    else
-	      if ( __configinfo_struct[:default_value] \
-		  && conf[__configinfo_struct[:default_value]] )
-		if conf[__configinfo_struct[:default_value]].index('{')
-		  conf[__configinfo_struct[:default_value]] = 
-		    tk_split_list(conf[__configinfo_struct[:default_value]]) 
-		else
-		  conf[__configinfo_struct[:default_value]] = 
-		    tk_tcl2ruby(conf[__configinfo_struct[:default_value]]) 
-		end
-	      end
-	      if conf[__configinfo_struct[:current_value]]
-		if conf[__configinfo_struct[:current_value]].index('{')
-		  conf[__configinfo_struct[:current_value]] = 
-		    tk_split_list(conf[__configinfo_struct[:current_value]]) 
-		else
-		  conf[__configinfo_struct[:current_value]] = 
-		    tk_tcl2ruby(conf[__configinfo_struct[:current_value]]) 
-		end
-	      end
-	    end
+            else
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                if conf[__configinfo_struct[:default_value]].index('{')
+                  conf[__configinfo_struct[:default_value]] = 
+                    tk_split_list(conf[__configinfo_struct[:default_value]]) 
+                else
+                  conf[__configinfo_struct[:default_value]] = 
+                    tk_tcl2ruby(conf[__configinfo_struct[:default_value]]) 
+                end
+              end
+              if conf[__configinfo_struct[:current_value]]
+                if conf[__configinfo_struct[:current_value]].index('{')
+                  conf[__configinfo_struct[:current_value]] = 
+                    tk_split_list(conf[__configinfo_struct[:current_value]]) 
+                else
+                  conf[__configinfo_struct[:current_value]] = 
+                    tk_tcl2ruby(conf[__configinfo_struct[:current_value]]) 
+                end
+              end
+            end
 
-	    if ( __configinfo_struct[:alias] \
-		&& conf.size == __configinfo_struct[:alias] + 1 )
-	      if conf[__configinfo_struct[:alias]][0] == ?-
-		conf[__configinfo_struct[:alias]] = 
-		  conf[__configinfo_struct[:alias]][1..-1]
-	      end
-	      ret[conf[0]] = conf[1]
-	    else
-	      ret[conf.shift] = conf
-	    end
-	  }
+            if ( __configinfo_struct[:alias] \
+                && conf.size == __configinfo_struct[:alias] + 1 )
+              if conf[__configinfo_struct[:alias]][0] == ?-
+                conf[__configinfo_struct[:alias]] = 
+                  conf[__configinfo_struct[:alias]][1..-1]
+              end
+              ret[conf[0]] = conf[1]
+            else
+              ret[conf.shift] = conf
+            end
+          }
 
-	  __font_optkeys.each{|optkey|
-	    optkey = optkey.to_s
-	    fontconf = ret[optkey]
-	    if fontconf.kind_of?(Array)
-	      ret.delete(optkey)
-	      ret.delete('latin' << optkey)
-	      ret.delete('ascii' << optkey)
-	      ret.delete('kanji' << optkey)
-	      fontconf[__configinfo_struct[:current_value]] = fontobj(optkey)
-	      ret[optkey] = fontconf
-	    end
-	  }
+          __font_optkeys.each{|optkey|
+            optkey = optkey.to_s
+            fontconf = ret[optkey]
+            if fontconf.kind_of?(Array)
+              ret.delete(optkey)
+              ret.delete('latin' << optkey)
+              ret.delete('ascii' << optkey)
+              ret.delete('kanji' << optkey)
+              fontconf[__configinfo_struct[:current_value]] = fontobj(optkey)
+              ret[optkey] = fontconf
+            end
+          }
 
-	  __methodcall_optkeys.each{|optkey, method|
-	    ret[optkey.to_s] = ['', '', '', self.__send__(method)]
-	  }
+          __methodcall_optkeys.each{|optkey, method|
+            ret[optkey.to_s] = ['', '', '', self.__send__(method)]
+          }
 
-	  ret
-	end
+          ret
+        end
       end
     end
   end
@@ -3103,31 +3103,31 @@ module TkConfigMethod
   def current_configinfo(slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if slot
-	org_slot = slot
-	begin
-	  conf = configinfo(slot)
-	  if ( ! __configinfo_struct[:alias] \
-	      || conf.size > __configinfo_struct[:alias] + 1 )
-	    return {conf[0] => conf[-1]}
-	  end
-	  slot = conf[__configinfo_struct[:alias]]
-	end while(org_slot != slot)
-	fail RuntimeError, 
-	  "there is a configure alias loop about '#{org_slot}'"
+        org_slot = slot
+        begin
+          conf = configinfo(slot)
+          if ( ! __configinfo_struct[:alias] \
+              || conf.size > __configinfo_struct[:alias] + 1 )
+            return {conf[0] => conf[-1]}
+          end
+          slot = conf[__configinfo_struct[:alias]]
+        end while(org_slot != slot)
+        fail RuntimeError, 
+          "there is a configure alias loop about '#{org_slot}'"
       else
-	ret = {}
-	configinfo().each{|conf|
-	  if ( ! __configinfo_struct[:alias] \
-	      || conf.size > __configinfo_struct[:alias] + 1 )
-	    ret[conf[0]] = conf[-1]
-	  end
-	}
-	ret
+        ret = {}
+        configinfo().each{|conf|
+          if ( ! __configinfo_struct[:alias] \
+              || conf.size > __configinfo_struct[:alias] + 1 )
+            ret[conf[0]] = conf[-1]
+          end
+        }
+        ret
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       ret = {}
-      configinfo(slot).each{|key, conf|	
-	ret[key] = conf[-1] if conf.kind_of?(Array)
+      configinfo(slot).each{|key, conf| 
+        ret[key] = conf[-1] if conf.kind_of?(Array)
       }
       ret
     end
@@ -3169,17 +3169,17 @@ class TkObject<TkKernel
     case args.length
     when 1
       if name[-1] == ?=
-	configure name[0..-2], args[0]
+        configure name[0..-2], args[0]
       else
-	configure name, args[0]
+        configure name, args[0]
       end
     when 0
       begin
-	cget(name)
+        cget(name)
       rescue
-	fail NameError, 
-	     "undefined local variable or method `#{name}' for #{self.to_s}", 
-	     error_at
+        fail NameError, 
+             "undefined local variable or method `#{name}' for #{self.to_s}", 
+             error_at
       end
     else
       fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
@@ -3200,14 +3200,14 @@ class TkObject<TkKernel
   def event_generate(context, keys=nil)
     if keys
       #tk_call('event', 'generate', path, 
-      #	      "<#{tk_event_sequence(context)}>", *hash_kv(keys))
+      #       "<#{tk_event_sequence(context)}>", *hash_kv(keys))
       tk_call_without_enc('event', 'generate', path, 
-			  "<#{tk_event_sequence(context)}>", 
-			  *hash_kv(keys, true))
+                          "<#{tk_event_sequence(context)}>", 
+                          *hash_kv(keys, true))
     else
       #tk_call('event', 'generate', path, "<#{tk_event_sequence(context)}>")
       tk_call_without_enc('event', 'generate', path, 
-			  "<#{tk_event_sequence(context)}>")
+                          "<#{tk_event_sequence(context)}>")
     end
   end
 
@@ -3277,24 +3277,24 @@ class TkWindow<TkObject
         #['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
         #  fontkeys[key] = keys.delete(key) if keys.key?(key)
         #}
-	__font_optkeys.each{|key|
-	  fkey = key.to_s
-	  fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+        __font_optkeys.each{|key|
+          fkey = key.to_s
+          fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
 
-	  fkey = "kanji#{key}"
-	  fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+          fkey = "kanji#{key}"
+          fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
 
-	  fkey = "latin#{key}"
-	  fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+          fkey = "latin#{key}"
+          fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
 
-	  fkey = "ascii#{key}"
-	  fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
-	}
+          fkey = "ascii#{key}"
+          fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+        }
 
-	__methodcall_optkeys.each{|key|
-	  key = key.to_s
-	  methodkeys[key] = keys.delete(key) if keys.key?(key)
-	}
+        __methodcall_optkeys.each{|key|
+          key = key.to_s
+          methodkeys[key] = keys.delete(key) if keys.key?(key)
+        }
       end
       if without_creating && keys
         #configure(keys)
@@ -3491,7 +3491,7 @@ class TkWindow<TkObject
     #  ilist = list(tk_call('grid', 'columnconfigure', epath, index))
     #  info = {}
     #  while key = ilist.shift
-    #	info[key[1..-1]] = ilist.shift
+    #   info[key[1..-1]] = ilist.shift
     #  end
     #  info
     #end
@@ -3505,7 +3505,7 @@ class TkWindow<TkObject
     #  ilist = list(tk_call('grid', 'rowconfigure', epath, index))
     #  info = {}
     #  while key = ilist.shift
-    #	info[key[1..-1]] = ilist.shift
+    #   info[key[1..-1]] = ilist.shift
     #  end
     #  info
     #end
@@ -3596,10 +3596,10 @@ class TkWindow<TkObject
     #  conf
     #else
     #  tk_split_simplelist(tk_call('place', 
-    #				  'configure', epath)).collect{|conflist|
-    #	conf = tk_split_simplelist(conflist)
-    #	conf[0] = conf[0][1..-1]
-    #	conf
+    #                             'configure', epath)).collect{|conflist|
+    #   conf = tk_split_simplelist(conflist)
+    #   conf[0] = conf[0][1..-1]
+    #   conf
     #  }
     #end
     TkPlace.configinfo(self, slot)
@@ -3718,15 +3718,15 @@ class TkWindow<TkObject
     }
     if defined?(@cmdtbl)
       for id in @cmdtbl
-	uninstall_cmd id
+        uninstall_cmd id
       end
     end
 
     children.each{|path, obj|
       if defined?(@cmdtbl)
-	for id in @cmdtbl
-	  uninstall_cmd id
-	end
+        for id in @cmdtbl
+          uninstall_cmd id
+        end
       end
       TkCore::INTERP.tk_windows.delete(path)
     }
@@ -3801,17 +3801,17 @@ class TkWindow<TkObject
       taglist
     else
       list(tk_call('bindtags', path)).collect{|tag|
-	if tag.kind_of?(String) 
-	  if cls = WidgetClassNames[tag]
-	    cls
-	  elsif btag = TkBindTag.id2obj(tag)
-	    btag
-	  else
-	    tag
-	  end
-	else
-	  tag
-	end
+        if tag.kind_of?(String) 
+          if cls = WidgetClassNames[tag]
+            cls
+          elsif btag = TkBindTag.id2obj(tag)
+            btag
+          else
+            tag
+          end
+        else
+          tag
+        end
       }
     end
   end

@@ -50,12 +50,12 @@ TkFrame.new($label_demo) {|frame|
 f_left = TkFrame.new($label_demo)
 f_right = TkFrame.new($label_demo)
 [f_left, f_right].each{|w| w.pack('side'=>'left', 'expand'=>'yes', 
-				  'padx'=>10, 'pady'=>10, 'fill'=>'both')}
+                                  'padx'=>10, 'pady'=>10, 'fill'=>'both')}
 
 # label 
 [ TkLabel.new(f_left, 'text'=>'First label'),
   TkLabel.new(f_left, 'text'=>'Second label, raised', 
-	      'relief'=>'raised'),
+              'relief'=>'raised'),
   TkLabel.new(f_left, 'text'=>'Third label, sunken', 'relief'=>'sunken')
 ].each{|w| w.pack('side'=>'top', 'expand'=>'yes', 'pady'=>2, 'anchor'=>'w')}
 

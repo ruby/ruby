@@ -52,7 +52,7 @@ TkFrame.new($check_demo) {|frame|
     text '変数参照'
     command proc{
       showVars($check_demo, 
-	       ['wipers', wipers], ['brakes', brakes], ['sober', sober])
+               ['wipers', wipers], ['brakes', brakes], ['sober', sober])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
 

@@ -12,16 +12,16 @@ class TkScrollbar<TkWindow
     @assigned = []
     @scroll_proc = proc{|*args| 
       if self.orient == 'horizontal'
-	@assigned.each{|w| w.xview(*args)}
+        @assigned.each{|w| w.xview(*args)}
       else # 'vertical'
-	@assigned.each{|w| w.yview(*args)}
+        @assigned.each{|w| w.yview(*args)}
       end
     }
 
     if keys and keys != None
       #tk_call_without_enc('scrollbar', @path, *hash_kv(keys, true))
       tk_call_without_enc(self.class::TkCommandNames[0], @path, 
-			  *hash_kv(keys, true))
+                          *hash_kv(keys, true))
     else
       #tk_call_without_enc('scrollbar', @path)
       tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -48,9 +48,9 @@ class TkScrollbar<TkWindow
     wins.each{|w|
       @assigned << w unless @assigned.index(w)
       if orient == 'horizontal'
-	w.xscrollcommand proc{|first, last| self.propagate_set(w, first, last)}
+        w.xscrollcommand proc{|first, last| self.propagate_set(w, first, last)}
       else # 'vertical'
-	w.yscrollcommand proc{|first, last| self.propagate_set(w, first, last)}
+        w.yscrollcommand proc{|first, last| self.propagate_set(w, first, last)}
       end
     }
     Tk.update  # avoid scrollbar trouble

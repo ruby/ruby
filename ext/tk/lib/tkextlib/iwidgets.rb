@@ -25,9 +25,9 @@ module Tk
 
     def self.package_version
       begin
-	TkPackage.require('Iwidgets')
+        TkPackage.require('Iwidgets')
       rescue
-	''
+        ''
       end
     end
 

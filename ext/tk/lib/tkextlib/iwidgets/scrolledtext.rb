@@ -77,7 +77,7 @@ class Tk::Iwidgets::Scrolledtext
   end
   def compare(idx1, op, idx2)
     bool(tk_send_without_enc('compare', _get_eval_enc_str(idx1), 
-			     op, _get_eval_enc_str(idx2)))
+                             op, _get_eval_enc_str(idx2)))
   end
 
   def debug
@@ -110,24 +110,24 @@ class Tk::Iwidgets::Scrolledtext
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
       _fromUTF8(tk_send_without_enc('image', 'cget', 
-				    _get_eval_enc_str(index), "-#{slot}"))
+                                    _get_eval_enc_str(index), "-#{slot}"))
     else
       tk_tcl2ruby(_fromUTF8(tk_send_without_enc('image', 'cget', 
-						_get_eval_enc_str(index), 
-						"-#{slot}")))
+                                                _get_eval_enc_str(index), 
+                                                "-#{slot}")))
     end
   end
 
   def image_configure(index, slot, value=None)
     if slot.kind_of? Hash
       _fromUTF8(tk_send_without_enc('image', 'configure', 
-				    _get_eval_enc_str(index), 
-				    *hash_kv(slot, true)))
+                                    _get_eval_enc_str(index), 
+                                    *hash_kv(slot, true)))
     else
       _fromUTF8(tk_send_without_enc('image', 'configure', 
-				    _get_eval_enc_str(index), 
-				    "-#{slot}", 
-				    _get_eval_enc_str(value)))
+                                    _get_eval_enc_str(index), 
+                                    "-#{slot}", 
+                                    _get_eval_enc_str(value)))
     end
     self
   end
@@ -135,80 +135,80 @@ class Tk::Iwidgets::Scrolledtext
   def image_configinfo(index, slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if slot
-	case slot.to_s
-	when 'text', 'label', 'show', 'data', 'file'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
-	else
-	  conf = tk_split_list(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
-	end
-	conf[0] = conf[0][1..-1]
-	conf
+        case slot.to_s
+        when 'text', 'label', 'show', 'data', 'file'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+        else
+          conf = tk_split_list(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+        end
+        conf[0] = conf[0][1..-1]
+        conf
       else
-	tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)))).collect{|conflist|
-	  conf = tk_split_simplelist(conflist)
-	  conf[0] = conf[0][1..-1]
-	  case conf[0]
-	  when 'text', 'label', 'show', 'data', 'file'
-	  else
-	    if conf[3]
-	      if conf[3].index('{')
-		conf[3] = tk_split_list(conf[3]) 
-	      else
-		conf[3] = tk_tcl2ruby(conf[3]) 
-	      end
-	    end
-	    if conf[4]
-	      if conf[4].index('{')
-		conf[4] = tk_split_list(conf[4]) 
-	      else
-		conf[4] = tk_tcl2ruby(conf[4]) 
-	      end
-	    end
-	  end
-	  conf[1] = conf[1][1..-1] if conf.size == 2 # alias info
-	  conf
-	}
+        tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)))).collect{|conflist|
+          conf = tk_split_simplelist(conflist)
+          conf[0] = conf[0][1..-1]
+          case conf[0]
+          when 'text', 'label', 'show', 'data', 'file'
+          else
+            if conf[3]
+              if conf[3].index('{')
+                conf[3] = tk_split_list(conf[3]) 
+              else
+                conf[3] = tk_tcl2ruby(conf[3]) 
+              end
+            end
+            if conf[4]
+              if conf[4].index('{')
+                conf[4] = tk_split_list(conf[4]) 
+              else
+                conf[4] = tk_tcl2ruby(conf[4]) 
+              end
+            end
+          end
+          conf[1] = conf[1][1..-1] if conf.size == 2 # alias info
+          conf
+        }
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       if slot
-	case slot.to_s
-	when 'text', 'label', 'show', 'data', 'file'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
-	else
-	  conf = tk_split_list(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
-	end
-	key = conf.shift[1..-1]
-	{ key => conf }
+        case slot.to_s
+        when 'text', 'label', 'show', 'data', 'file'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+        else
+          conf = tk_split_list(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+        end
+        key = conf.shift[1..-1]
+        { key => conf }
       else
-	ret = {}
-	tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)))).each{|conflist|
-	  conf = tk_split_simplelist(conflist)
-	  key = conf.shift[1..-1]
-	  case key
-	  when 'text', 'label', 'show', 'data', 'file'
-	  else
-	    if conf[2]
-	      if conf[2].index('{')
-		conf[2] = tk_split_list(conf[2]) 
-	      else
-		conf[2] = tk_tcl2ruby(conf[2]) 
-	      end
-	    end
-	    if conf[3]
-	      if conf[3].index('{')
-		conf[3] = tk_split_list(conf[3]) 
-	      else
-		conf[3] = tk_tcl2ruby(conf[3]) 
-	      end
-	    end
-	  end
-	  if conf.size == 1
-	    ret[key] = conf[0][1..-1]  # alias info
-	  else
-	    ret[key] = conf
-	  end
-	}
-	ret
+        ret = {}
+        tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)))).each{|conflist|
+          conf = tk_split_simplelist(conflist)
+          key = conf.shift[1..-1]
+          case key
+          when 'text', 'label', 'show', 'data', 'file'
+          else
+            if conf[2]
+              if conf[2].index('{')
+                conf[2] = tk_split_list(conf[2]) 
+              else
+                conf[2] = tk_tcl2ruby(conf[2]) 
+              end
+            end
+            if conf[3]
+              if conf[3].index('{')
+                conf[3] = tk_split_list(conf[3]) 
+              else
+                conf[3] = tk_tcl2ruby(conf[3]) 
+              end
+            end
+          end
+          if conf.size == 1
+            ret[key] = conf[0][1..-1]  # alias info
+          else
+            ret[key] = conf
+          end
+        }
+        ret
       end
     end
   end
@@ -216,19 +216,19 @@ class Tk::Iwidgets::Scrolledtext
   def current_image_configinfo(index, slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if slot
-	conf = image_configinfo(index, slot)
-	{conf[0] => conf[4]}
+        conf = image_configinfo(index, slot)
+        {conf[0] => conf[4]}
       else
-	ret = {}
-	image_configinfo(index).each{|conf|
-	  ret[conf[0]] = conf[4] if conf.size > 2
-	}
-	ret
+        ret = {}
+        image_configinfo(index).each{|conf|
+          ret[conf[0]] = conf[4] if conf.size > 2
+        }
+        ret
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       ret = {}
       image_configinfo(index, slot).each{|k, conf|
-	ret[k] = conf[-1] if conf.kind_of?(Array)
+        ret[k] = conf[-1] if conf.kind_of?(Array)
       }
       ret
     end
@@ -258,7 +258,7 @@ class Tk::Iwidgets::Scrolledtext
   def mark_gravity(mark, direction=nil)
     if direction
       tk_send_without_enc('mark', 'gravity', 
-			  _get_eval_enc_str(mark), direction)
+                          _get_eval_enc_str(mark), direction)
       self
     else
       tk_send_without_enc('mark', 'gravity', _get_eval_enc_str(mark))
@@ -267,27 +267,27 @@ class Tk::Iwidgets::Scrolledtext
 
   def mark_set(mark, index)
     tk_send_without_enc('mark', 'set', _get_eval_enc_str(mark), 
-			_get_eval_enc_str(index))
+                        _get_eval_enc_str(index))
     self
   end
   alias set_mark mark_set
 
   def mark_unset(*marks)
     tk_send_without_enc('mark', 'unset', 
-			*(marks.collect{|mark| _get_eval_enc_str(mark)}))
+                        *(marks.collect{|mark| _get_eval_enc_str(mark)}))
     self
   end
   alias unset_mark mark_unset
 
   def mark_next(index)
     tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'next', 
-					    _get_eval_enc_str(index))))
+                                            _get_eval_enc_str(index))))
   end
   alias next_mark mark_next
 
   def mark_previous(index)
     tagid2obj(_fromUTF8(tk_send_without_enc('mark', 'previous', 
-					    _get_eval_enc_str(index))))
+                                            _get_eval_enc_str(index))))
   end
   alias previous_mark mark_previous
 
@@ -309,14 +309,14 @@ class Tk::Iwidgets::Scrolledtext
     # $KCODE == 'NONE'
     if JAPANIZED_TK
       tk_call_without_enc('kstring', 'length', 
-			  _get_eval_enc_str(txt)).to_i
+                          _get_eval_enc_str(txt)).to_i
     else
       begin
-	tk_call_without_enc('encoding', 'convertto', 'ascii', 
-			    _get_eval_enc_str(txt)).length
+        tk_call_without_enc('encoding', 'convertto', 'ascii', 
+                            _get_eval_enc_str(txt)).length
       rescue StandardError, NameError
-	# sorry, I have no plan
-	txt.length
+        # sorry, I have no plan
+        txt.length
       end
     end
   end
@@ -368,53 +368,53 @@ class Tk::Iwidgets::Scrolledtext
       return ["", 0] if compare(start,'>=',stop)
       txt = get(start,stop)
       if (pos = txt.index(pat))
-	match = $&
-	#pos = txt[0..(pos-1)].split('').length if pos > 0
-	pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-	if pat.kind_of? String
-	  #return [index(start + " + #{pos} chars"), pat.split('').length]
-	  return [index(start + " + #{pos} chars"), 
-		  _ktext_length(pat), pat.dup]
-	else
-	  #return [index(start + " + #{pos} chars"), $&.split('').length]
-	  return [index(start + " + #{pos} chars"), 
-		  _ktext_length(match), match]
-	end
+        match = $&
+        #pos = txt[0..(pos-1)].split('').length if pos > 0
+        pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
+        if pat.kind_of? String
+          #return [index(start + " + #{pos} chars"), pat.split('').length]
+          return [index(start + " + #{pos} chars"), 
+                  _ktext_length(pat), pat.dup]
+        else
+          #return [index(start + " + #{pos} chars"), $&.split('').length]
+          return [index(start + " + #{pos} chars"), 
+                  _ktext_length(match), match]
+        end
       else
-	return ["", 0]
+        return ["", 0]
       end
     else
       txt = get(start,'end - 1 char')
       if (pos = txt.index(pat))
-	match = $&
-	#pos = txt[0..(pos-1)].split('').length if pos > 0
-	pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-	if pat.kind_of? String
-	  #return [index(start + " + #{pos} chars"), pat.split('').length]
-	  return [index(start + " + #{pos} chars"), 
-		  _ktext_length(pat), pat.dup]
-	else
-	  #return [index(start + " + #{pos} chars"), $&.split('').length]
-	  return [index(start + " + #{pos} chars"), 
-		  _ktext_length(match), match]
-	end
+        match = $&
+        #pos = txt[0..(pos-1)].split('').length if pos > 0
+        pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
+        if pat.kind_of? String
+          #return [index(start + " + #{pos} chars"), pat.split('').length]
+          return [index(start + " + #{pos} chars"), 
+                  _ktext_length(pat), pat.dup]
+        else
+          #return [index(start + " + #{pos} chars"), $&.split('').length]
+          return [index(start + " + #{pos} chars"), 
+                  _ktext_length(match), match]
+        end
       else
-	txt = get('1.0','end - 1 char')
-	if (pos = txt.index(pat))
-	  match = $&
-	  #pos = txt[0..(pos-1)].split('').length if pos > 0
-	  pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-	  if pat.kind_of? String
-	    #return [index("1.0 + #{pos} chars"), pat.split('').length]
-	    return [index("1.0 + #{pos} chars"), 
-		    _ktext_length(pat), pat.dup]
-	  else
-	    #return [index("1.0 + #{pos} chars"), $&.split('').length]
-	    return [index("1.0 + #{pos} chars"), _ktext_length(match), match]
-	  end
-	else
-	  return ["", 0]
-	end
+        txt = get('1.0','end - 1 char')
+        if (pos = txt.index(pat))
+          match = $&
+          #pos = txt[0..(pos-1)].split('').length if pos > 0
+          pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
+          if pat.kind_of? String
+            #return [index("1.0 + #{pos} chars"), pat.split('').length]
+            return [index("1.0 + #{pos} chars"), 
+                    _ktext_length(pat), pat.dup]
+          else
+            #return [index("1.0 + #{pos} chars"), $&.split('').length]
+            return [index("1.0 + #{pos} chars"), _ktext_length(match), match]
+          end
+        else
+          return ["", 0]
+        end
       end
     end
   end
@@ -429,48 +429,48 @@ class Tk::Iwidgets::Scrolledtext
       return ["", 0] if compare(start,'<=',stop)
       txt = get(stop,start)
       if (pos = txt.rindex(pat))
-	match = $&
-	#pos = txt[0..(pos-1)].split('').length if pos > 0
-	pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-	if pat.kind_of? String
-	  #return [index(stop + " + #{pos} chars"), pat.split('').length]
-	  return [index(stop + " + #{pos} chars"), _ktext_length(pat), pat.dup]
-	else
-	  #return [index(stop + " + #{pos} chars"), $&.split('').length]
-	  return [index(stop + " + #{pos} chars"), _ktext_length(match), match]
-	end
+        match = $&
+        #pos = txt[0..(pos-1)].split('').length if pos > 0
+        pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
+        if pat.kind_of? String
+          #return [index(stop + " + #{pos} chars"), pat.split('').length]
+          return [index(stop + " + #{pos} chars"), _ktext_length(pat), pat.dup]
+        else
+          #return [index(stop + " + #{pos} chars"), $&.split('').length]
+          return [index(stop + " + #{pos} chars"), _ktext_length(match), match]
+        end
       else
-	return ["", 0]
+        return ["", 0]
       end
     else
       txt = get('1.0',start)
       if (pos = txt.rindex(pat))
-	match = $&
-	#pos = txt[0..(pos-1)].split('').length if pos > 0
-	pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-	if pat.kind_of? String
-	  #return [index("1.0 + #{pos} chars"), pat.split('').length]
-	  return [index("1.0 + #{pos} chars"), _ktext_length(pat), pat.dup]
-	else
-	  #return [index("1.0 + #{pos} chars"), $&.split('').length]
-	  return [index("1.0 + #{pos} chars"), _ktext_length(match), match]
-	end
+        match = $&
+        #pos = txt[0..(pos-1)].split('').length if pos > 0
+        pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
+        if pat.kind_of? String
+          #return [index("1.0 + #{pos} chars"), pat.split('').length]
+          return [index("1.0 + #{pos} chars"), _ktext_length(pat), pat.dup]
+        else
+          #return [index("1.0 + #{pos} chars"), $&.split('').length]
+          return [index("1.0 + #{pos} chars"), _ktext_length(match), match]
+        end
       else
-	txt = get('1.0','end - 1 char')
-	if (pos = txt.rindex(pat))
-	  match = $&
-	  #pos = txt[0..(pos-1)].split('').length if pos > 0
-	  pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-	  if pat.kind_of? String
-	    #return [index("1.0 + #{pos} chars"), pat.split('').length]
-	    return [index("1.0 + #{pos} chars"), _ktext_length(pat), pat.dup]
-	  else
-	    #return [index("1.0 + #{pos} chars"), $&.split('').length]
-	    return [index("1.0 + #{pos} chars"), _ktext_length(match), match]
-	  end
-	else
-	  return ["", 0]
-	end
+        txt = get('1.0','end - 1 char')
+        if (pos = txt.rindex(pat))
+          match = $&
+          #pos = txt[0..(pos-1)].split('').length if pos > 0
+          pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
+          if pat.kind_of? String
+            #return [index("1.0 + #{pos} chars"), pat.split('').length]
+            return [index("1.0 + #{pos} chars"), _ktext_length(pat), pat.dup]
+          else
+            #return [index("1.0 + #{pos} chars"), $&.split('').length]
+            return [index("1.0 + #{pos} chars"), _ktext_length(match), match]
+          end
+        else
+          return ["", 0]
+        end
       end
     end
   end

@@ -25,16 +25,16 @@ module Tk
 
     def self.package_version
       begin
-	TkPackage.require('BWidget')
+        TkPackage.require('BWidget')
       rescue
-	''
+        ''
       end
     end
 
     def self.XLFDfont(cmd, *args)
       if args[-1].kind_of?(Hash)
-	keys = args.pop
-	args.concat(hash_kv(keys))
+        keys = args.pop
+        args.concat(hash_kv(keys))
       end
       tk_call('BWidget::XLFDfont', cmd, *args)
     end
@@ -93,8 +93,8 @@ module Tk
 
     def self.place(path, w, h, *args)
       if args[-1].kind_of?(Hash)
-	keys = args.pop
-	args.concat(hash_kv(keys))
+        keys = args.pop
+        args.concat(hash_kv(keys))
       end
       tk_call('BWidget::place', path, w, h, *(args.flatten))
     end

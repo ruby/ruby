@@ -17,11 +17,11 @@ module Tk
   module Img
     module PPM
       def self.package_version
-	begin
-	  TkPackage.require('img::ppm')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::ppm')
+        rescue
+          ''
+        end
       end
     end
   end

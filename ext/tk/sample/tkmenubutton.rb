@@ -11,7 +11,7 @@ TkFrame.new{|f|
 
 
   TkMenubutton.new(:parent=>f, :text=>'Right', :underline=>0, 
-		   :direction=>:right, :relief=>:raised){|mb|
+                   :direction=>:right, :relief=>:raised){|mb|
     menu TkMenu.new(:parent=>mb, :tearoff=>0){
       add(:command, :label=>'Right menu: first item', 
                     :command=>proc{print 'You have selected the first item' + 
@@ -24,7 +24,7 @@ TkFrame.new{|f|
   }
 
   TkMenubutton.new(:parent=>f, :text=>'Below', :underline=>0, 
-		   :direction=>:below, :relief=>:raised){|mb|
+                   :direction=>:below, :relief=>:raised){|mb|
     menu(TkMenu.new(:parent=>mb, :tearoff=>0){
       add(:command, :label=>'Below menu: first item', 
                     :command=>proc{print 'You have selected the first item' + 
@@ -37,7 +37,7 @@ TkFrame.new{|f|
   }
 
   TkMenubutton.new(:parent=>f, :text=>'Above', :underline=>0, 
-		   :direction=>:above, :relief=>:raised){|mb|
+                   :direction=>:above, :relief=>:raised){|mb|
     menu TkMenu.new(:parent=>mb, :tearoff=>0){
       add(:command, :label=>'Above menu: first item', 
                     :command=>proc{print 'You have selected the first item' + 
@@ -50,7 +50,7 @@ TkFrame.new{|f|
   }
 
   TkMenubutton.new(:parent=>f, :text=>'Left', :underline=>0, 
-		   :direction=>:left, :relief=>:raised){|mb|
+                   :direction=>:left, :relief=>:raised){|mb|
     menu(TkMenu.new(:parent=>mb, :tearoff=>0){
       add(:command, :label=>'Left menu: first item', 
                     :command=>proc{print 'You have selected the first item' + 
@@ -65,7 +65,7 @@ TkFrame.new{|f|
 
 ############################
 TkFrame.new(:borderwidth=>2, :relief=>:sunken, 
-	    :height=>5).pack(:side=>:top, :fill=>:x, :padx=>20)
+            :height=>5).pack(:side=>:top, :fill=>:x, :padx=>20)
 ############################
 
 TkLabel.new(:text=>'Sample of TkOptionMenu').pack(:side=>:top)
@@ -83,21 +83,21 @@ TkFrame.new{|f|
   b2 = TkOptionMenubutton.new(:parent=>f, :values=>colors) {|optMB|
     colors.each{|color|
       no_sel = TkPhotoImage.new(:height=>16, :width=>16){
-	put 'gray50', *[ 0,  0, 16,  1]
-	put 'gray50', *[ 0,  1,  1, 16]
-	put 'gray75', *[ 0, 15, 16, 16]
-	put 'gray75', *[15,  1, 16, 16]
-	put color,    *[ 1,  1, 15, 15]
+        put 'gray50', *[ 0,  0, 16,  1]
+        put 'gray50', *[ 0,  1,  1, 16]
+        put 'gray75', *[ 0, 15, 16, 16]
+        put 'gray75', *[15,  1, 16, 16]
+        put color,    *[ 1,  1, 15, 15]
       }
       sel = TkPhotoImage.new(:height=>16, :width=>16){
-	put 'Black',  *[ 0,  0, 16,  2]
-	put 'Black',  *[ 0,  2,  2, 16]
-	put 'Black',  *[ 2, 14, 16, 16]
-	put 'Black',  *[14,  2, 16, 14]
-	put color,    *[ 2,  2, 14, 14]
+        put 'Black',  *[ 0,  0, 16,  2]
+        put 'Black',  *[ 0,  2,  2, 16]
+        put 'Black',  *[ 2, 14, 16, 16]
+        put 'Black',  *[14,  2, 16, 14]
+        put color,    *[ 2,  2, 14, 14]
       }
       optMB.entryconfigure(color, :hidemargin=>1, 
-			   :image=>no_sel, :selectimage=>sel)
+                           :image=>no_sel, :selectimage=>sel)
     }
     optMB.menuconfigure(:tearoff, 1)
     %w(Black gray75 gray50 White).each{|color|
@@ -115,7 +115,7 @@ TkFrame.new{|f|
 
 ############################
 TkFrame.new(:borderwidth=>2, :relief=>:sunken, 
-	    :height=>5).pack(:side=>:top, :fill=>:x, :padx=>20)
+            :height=>5).pack(:side=>:top, :fill=>:x, :padx=>20)
 ############################
 
 root = TkRoot.new(:title=>'menubutton samples')
@@ -127,8 +127,8 @@ TkButton.new(root, :text=>'exit', :command=>proc{exit}){
 # VirtualEvent <<MenuSelect>> on Tcl/Tk ==> '<MenuSelect>' on Ruby/Tk
 # ( remove the most external <, > for Ruby/Tk notation )
 TkMenu.bind('<MenuSelect>', proc{|widget|
-	      p widget.entrycget('active', :label)
-	    }, '%W')
+              p widget.entrycget('active', :label)
+            }, '%W')
 
 ############################
 
