@@ -3317,7 +3317,7 @@ Init_IO()
     rb_define_method(rb_cIO, "<<",    rb_io_addstr, 1);
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
     rb_define_method(rb_cIO, "tell", rb_io_tell, 0);
-    rb_define_method(rb_cIO, "seek", rb_io_seek, 2);
+    rb_define_method(rb_cIO, "seek", rb_io_seek, -1);
     rb_define_const(rb_cIO, "SEEK_SET", INT2FIX(SEEK_SET));
     rb_define_const(rb_cIO, "SEEK_CUR", INT2FIX(SEEK_CUR));
     rb_define_const(rb_cIO, "SEEK_END", INT2FIX(SEEK_END));
