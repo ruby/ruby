@@ -160,7 +160,7 @@ static int dln_errno;
 
 #define DLN_ENOEXEC	ENOEXEC	/* Exec format error */
 #define DLN_ECONFL	1201	/* Symbol name conflict */
-#define DLN_ENOINIT	1202	/* No inititalizer given */
+#define DLN_ENOINIT	1202	/* No initializer given */
 #define DLN_EUNDEF	1203	/* Undefine symbol remains */
 #define DLN_ENOTLIB	1204	/* Not a library file */
 #define DLN_EBADLIB	1205	/* Malformed library file */
@@ -395,7 +395,7 @@ dln_init(prog)
 	if (c != '!') goto err_noexec;
 
 	p = buf;
-	/* skip forwading spaces */
+	/* skip forwarding spaces */
 	while (read(fd, &c, 1) == 1) {
 	    if (c == '\n') goto err_noexec;
 	    if (c != '\t' && c != ' ') {
