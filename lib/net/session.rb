@@ -1,11 +1,11 @@
 =begin
 
-= net/session.rb version 1.1.2
+= net/session.rb version 1.1.3
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
-This library is distributed under the terms of Ruby style license.
-You can freely distribute/modify this file.
+This library is distributed under the terms of the Ruby license.
+You can freely distribute/modify this library.
 
 =end
 
@@ -18,9 +18,9 @@ module Net
 
 =begin
 
-== Net::Session
+== Net::Protocol
 
-the abstruct class for Internet protocol session
+the abstruct class for Internet protocol
 
 === Super Class
 
@@ -30,21 +30,26 @@ Object
 
 : Version
 
-  The version of Session class. It is a string like "1.1.2".
+  The version of Session class. It is a string like "1.1.3".
 
 
 === Class Methods
 
 : new( address = 'localhost', port = nil )
 
-  This method Create a new Session object.
+  This method Creates a new Session object.
 
 : start( address = 'localhost', port = nil, *args )
 : start( address = 'localhost', port = nil, *args ){|session| .... }
 
-  This method create a new Session object and start session.
+  This method creates a new Session object and start session.
   If you call this method with block, Session object give itself
   to block and finish session when block returns.
+
+: Proxy( address, port )
+
+  This method creates a proxy class of its protocol.
+  Arguments are address/port of proxy host.
 
 
 === Methods
@@ -59,14 +64,14 @@ Object
 
 : start( *args )
 
-  This method start session. If you call this method when the session
+  This method start protocol. If you call this method when the protocol
   is already started, this only returns false without doing anything.
 
   '*args' are specified in subclasses.
 
 : finish
 
-  This method finish session. If you call this method before session starts,
+  This method ends protocol. If you call this method before protocol starts,
   it only return false without doing anything.
 
 : active?
@@ -75,20 +80,20 @@ Object
 
 =end
 
-  class Session
+  class Protocol
 
-    Version = '1.1.2'
+    Version = '1.1.3'
 
     class << self
 
       def start( address = 'localhost', port = nil, *args )
-        session = new( address, port )
+        instance = new( address, port )
 
         if iterator? then
-          session.start( *args ) { yield session }
+          instance.start( *args ) { yield instance }
         else
-          session.start *args
-          session
+          instance.start *args
+          instance
         end
       end
 
@@ -104,11 +109,8 @@ Object
             @port    = port
           end
 
-          def connect
-            tmpa, tmpp      = @address, @port
-            @address, @port = @proxyaddr, @proxyport
-            super
-            @address, @port = tmpa, tmpp
+          def connect( addr, port )
+            super @proxyaddr, @proxyport
           end
           private :connect
             
@@ -129,7 +131,7 @@ Object
 
       private
 
-      def session_setvar( name, val )
+      def protocol_param( name, val )
         module_eval %-
           def self.#{name.id2name}
             #{val}
@@ -143,26 +145,26 @@ Object
     #
     # sub-class requirements
     #
-    # session_setvar command_type
-    # session_setvar port
+    # protocol_param command_type
+    # protocol_param port
     #
     # private method do_start  (optional)
     # private method do_finish (optional)
     #
 
-    session_setvar :port,         'nil'
-    session_setvar :command_type, 'nil'
-    session_setvar :socket_type,  'Net::ProtocolSocket'
+    protocol_param :port,         'nil'
+    protocol_param :command_type, 'nil'
+    protocol_param :socket_type,  '::Net::ProtocolSocket'
 
 
-    def initialize( addr = 'localhost', port = nil )
-      @address = addr
+    def initialize( addr = nil, port = nil )
+      @address = addr || 'localhost'
       @port    = port || self.type.port
 
       @active  = false
       @pipe    = nil
 
-      @proto   = nil
+      @command = nil
       @socket  = nil
     end
 
@@ -170,6 +172,7 @@ Object
     attr :address
     attr :port
 
+    attr :command
     attr :socket
 
 
@@ -178,7 +181,7 @@ Object
       @active = true
 
       begin
-        connect
+        connect @address, @port
         do_start *args
         yield if iterator?
       ensure
@@ -187,7 +190,7 @@ Object
     end
 
     def finish
-      if @proto then
+      if @command then
         do_finish
         disconnect
       end
@@ -225,18 +228,20 @@ Object
     end
 
 
-    def connect
-      @socket = self.type.socket_type.open( @address, @port, @pipe )
-      @proto  = self.type.command_type.new( @socket )
+    def connect( addr, port )
+      @socket  = self.type.socket_type.open( addr, port, @pipe )
+      @command = self.type.command_type.new( @socket )
     end
 
     def disconnect
-      @proto.quit
-      @proto  = nil
-      @socket = nil
+      @command.quit
+      @command = nil
+      @socket  = nil
     end
 
   end
+
+  Session = Protocol
 
 
 =begin
@@ -259,7 +264,7 @@ Object
 
 : quit
 
-  This method finishes protocol.
+  This method dispatch command which ends the protocol.
 
 =end
 
@@ -300,6 +305,11 @@ Object
 
       @error_occured = true
       rep.error! @socket.sending
+    end
+
+    def getok( line, ok = SuccessCode )
+      @socket.writeline line
+      check_reply ok
     end
     
   end

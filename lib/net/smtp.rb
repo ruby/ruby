@@ -4,8 +4,8 @@
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
-This library is distributed under the terms of Ruby license.
-You can freely distribute/modify this file.
+This library is distributed under the terms of the Ruby license.
+You can freely distribute/modify this library.
 
 =end
 
@@ -18,57 +18,57 @@ module Net
 
 =begin
 
-== Net::SMTPSession
+== Net::SMTP
 
 === Super Class
 
-Net::Session
+Net::Protocol
 
 === Class Methods
 
 : new( address = 'localhost', port = 25 )
 
-  This method create new SMTPSession object.
+  This method create new SMTP object.
 
 
 === Methods
 
 : start( helo_domain = ENV['HOSTNAME'] )
 
-  This method opens TCP connection and start SMTP session.
-  If session had been started, do nothing and return false.
+  This method opens TCP connection and start SMTP.
+  If protocol had been started, do nothing and return false.
 
 : sendmail( mailsrc, from_domain, to_addrs )
 
   This method sends 'mailsrc' as mail. SMTPSession read strings from 'mailsrc'
   by calling 'each' iterator, and convert them into "\r\n" terminated string when write.
 
-  SMTPSession's Exceptions are:
-  * Protocol::ProtoSyntaxError: syntax error (errno.500)
-  * Protocol::ProtoFatalError: fatal error (errno.550)
-  * Protocol::ProtoUnknownError: unknown error
-  * Protocol::ProtoServerBusy: temporary error (errno.420/450)
+  Exceptions which SMTP raises are:
+  * Net::ProtoSyntaxError: syntax error (errno.500)
+  * Net::ProtoFatalError: fatal error (errno.550)
+  * Net::ProtoUnknownError: unknown error
+  * Net::ProtoServerBusy: temporary error (errno.420/450)
 
 : finish
 
-  This method closes SMTP session.
-  If session had not started, do nothind and return false.
+  This method ends SMTP.
+  If protocol had not started, do nothind and return false.
 
 =end
 
-  class SMTPSession < Session
+  class SMTP < Protocol
 
-    Version = '1.1.2'
+    Version = '1.1.3'
 
-    session_setvar :port,         '25'
-    session_setvar :command_type, 'Net::SMTPCommand'
+    protocol_param :port,         '25'
+    protocol_param :command_type, '::Net::SMTPCommand'
 
 
     def sendmail( mailsrc, fromaddr, toaddrs )
-      @proto.mailfrom fromaddr
-      @proto.rcpt toaddrs
-      @proto.data
-      @proto.sendmail mailsrc
+      @command.mailfrom fromaddr
+      @command.rcpt toaddrs
+      @command.data
+      @command.sendmail mailsrc
     end
 
 
@@ -79,12 +79,12 @@ Net::Session
       unless helodom then
         raise ArgumentError, "cannot get hostname"
       end
-      @proto.helo helodom
+      @command.helo helodom
     end
 
   end
 
-  SMTP = SMTPSession
+  SMTPSession = SMTP
 
 
 =begin
@@ -99,14 +99,14 @@ Net::Command
 
 : new( socket )
 
-  This method creates new SMTPCommand object, and open SMTP session.
+  This method creates new SMTPCommand object, and open SMTP.
 
 
 === Methods
 
 : helo( helo_domain )
 
-  This method send "HELO" command and start SMTP session.
+  This method send "HELO" command and start SMTP.
   helo_domain is localhost's FQDN.
 
 : mailfrom( from_addr )
@@ -139,34 +139,30 @@ Net::Command
 
 
     def helo( fromdom )
-      @socket.writeline( 'HELO ' << fromdom )
-      check_reply( SuccessCode )
+      getok sprintf( 'HELO %s', fromdom )
     end
 
 
     def mailfrom( fromaddr )
-      @socket.writeline( 'MAIL FROM:<' + fromaddr + '>' )
-      check_reply( SuccessCode )
+      getok sprintf( 'MAIL FROM:<%s>', fromaddr )
     end
 
 
     def rcpt( toaddrs )
       toaddrs.each do |i|
-        @socket.writeline( 'RCPT TO:<' + i + '>' )
-        check_reply( SuccessCode )
+        getok sprintf( 'RCPT TO:<%s>', i )
       end
     end
 
 
     def data
-      @socket.writeline( 'DATA' )
-      check_reply( ContinueCode )
+      getok 'DATA', ContinueCode
     end
 
 
     def writemail( mailsrc )
-      @socket.write_pendstr( mailsrc )
-      check_reply( SuccessCode )
+      @socket.write_pendstr mailsrc
+      check_reply SuccessCode
     end
     alias sendmail writemail
 
@@ -175,8 +171,7 @@ Net::Command
 
 
     def do_quit
-      @socket.writeline( 'QUIT' )
-      check_reply( SuccessCode )
+      getok 'QUIT'
     end
 
 
@@ -184,19 +179,19 @@ Net::Command
       arr = read_reply
       stat = arr[0][0,3]
 
-      cls = UnknownCode
-      case stat[0]
-      when ?2 then cls = SuccessCode
-      when ?3 then cls = ContinueCode
-      when ?4 then cls = ServerBusyCode
-      when ?5 then
-        case stat[1]
-        when ?0 then cls = SyntaxErrorCode
-        when ?5 then cls = FatalErrorCode
-        end
-      end
+      klass = UnknownCode
+      klass = case stat[0]
+              when ?2 then SuccessCode
+              when ?3 then ContinueCode
+              when ?4 then ServerBusyCode
+              when ?5 then
+                case stat[1]
+                when ?0 then SyntaxErrorCode
+                when ?5 then FatalErrorCode
+                end
+              end
 
-      return cls.new( stat, arr.join('') )
+      klass.new( stat, arr.join('') )
     end
 
 

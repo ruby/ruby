@@ -4,8 +4,8 @@
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
-This library is distributed under the terms of Ruby license.
-You can freely distribute/modify this file.
+This library is distributed under the terms of the Ruby license.
+You can freely distribute/modify this library.
 
 =end
 
@@ -19,17 +19,17 @@ module Net
 
 =begin
 
-== Net::POP3Session
+== Net::POP3
 
 === Super Class
 
-Net::Session
+Net::Protocol
 
 === Class Methods
 
 : new( address = 'localhost', port = 110 )
 
-  This method create a new POP3Session object.
+  This method create a new POP3 object.
   This will not open connection yet.
 
 
@@ -37,11 +37,11 @@ Net::Session
 
 : start( account, password )
 
-  This method start POP session.
+  This method start POP3.
 
 : each{|popmail| ...}
 
-  This method is equals to "pop3session.mails.each"
+  This method is equals to "pop3.mails.each"
 
 : mails
 
@@ -50,12 +50,19 @@ Net::Session
 
 =end
 
-  class POP3Session < Session
+  class POP3 < Protocol
 
-    Version = '1.1.2'
+    Version = '1.1.3'
 
-    session_setvar :port,         '110'
-    session_setvar :command_type, 'Net::POP3Command'
+    protocol_param :port,         '110'
+    protocol_param :command_type, '::Net::POP3Command'
+
+    protocol_param :mail_type,    '::Net::POPMail'
+
+    def initialize( addr = nil, port = nil )
+      super
+      @mails = [].freeze
+    end
 
         
     attr :mails
@@ -68,25 +75,23 @@ Net::Session
     private
 
 
-    def proto_initialize
-      @mails      = [].freeze
-    end
-
     def do_start( acnt, pwd )
-      @proto.auth( acnt, pwd )
+      @command.auth( acnt, pwd )
+      t = self.type.mail_type
       @mails = []
-      @proto.list.each_with_index do |size,idx|
+      @command.list.each_with_index do |size,idx|
         if size then
-          @mails.push POPMail.new( idx, size, @proto )
+          @mails.push t.new( idx, size, @command )
         end
       end
       @mails.freeze
     end
 
-  end   # POP3Session
+  end
 
-  POPSession = POP3Session
-  POP3       = POP3Session
+  POP         = POP3
+  POPSession  = POP3
+  POP3Session = POP3
 
 
 =begin
@@ -133,10 +138,10 @@ Object
 
   class POPMail
 
-    def initialize( idx, siz, pro )
-      @num     = idx
-      @size    = siz
-      @proto   = pro
+    def initialize( n, s, cmd )
+      @num     = n
+      @size    = s
+      @command = cmd
 
       @deleted = false
     end
@@ -145,13 +150,13 @@ Object
     attr :size
 
     def all( dest = '' )
-      @proto.retr( @num, dest )
+      @command.retr( @num, dest )
     end
     alias pop all
     alias mail all
 
     def top( lines, dest = '' )
-      @proto.top( @num, lines, dest )
+      @command.top( @num, lines, dest )
     end
 
     def header( dest = '' )
@@ -159,7 +164,7 @@ Object
     end
 
     def delete
-      @proto.dele( @num )
+      @command.dele( @num )
       @deleted = true
     end
     alias delete! delete
@@ -169,7 +174,7 @@ Object
     end
 
     def uidl
-      @proto.uidl @num
+      @command.uidl @num
     end
 
   end
@@ -177,30 +182,30 @@ Object
 
 =begin
 
-== Net::APOP3Session
+== Net::APOP
 
 This class has no new methods. Only way of authetication is changed.
 
 === Super Class
 
-Net::POP3Session
+Net::POP3
 
 =end
 
-  class APOPSession < POP3Session
+  class APOP < POP3
 
-    session_setvar :command_type, 'Net::APOPCommand'
+    protocol_param :command_type, 'Net::APOPCommand'
 
   end
 
-  APOP = APOPSession
+  APOPSession = APOP
 
 
 =begin
 
 == Net::POP3Command
 
-POP3 protocol class.
+POP3 command class.
 
 === Super Class
 
@@ -240,7 +245,7 @@ Net::Command
 
 : quit
 
-  This method finishes POP3 session.
+  This method ends POP using 'QUIT' commmand.
 
 : rset
 
@@ -276,7 +281,7 @@ Net::Command
 
 
     def auth( acnt, pass )
-      @socket.writeline( 'USER ' + acnt )
+      @socket.writeline 'USER ' + acnt
       check_reply_auth
 
       @socket.writeline( 'PASS ' + pass )
@@ -287,8 +292,7 @@ Net::Command
 
 
     def list
-      @socket.writeline( 'LIST' )
-      check_reply( SuccessCode )
+      getok 'LIST'
       
       arr = []
       @socket.read_pendlist do |line|
@@ -301,36 +305,29 @@ Net::Command
 
 
     def rset
-      @socket.writeline( 'RSET' )
-      check_reply( SuccessCode )
+      getok 'RSET'
     end
 
 
     def top( num, lines = 0, dest = '' )
-      @socket.writeline( sprintf( 'TOP %d %d', num, lines ) )
-      check_reply( SuccessCode )
-
-      return @socket.read_pendstr( dest )
+      getok sprintf( 'TOP %d %d', num, lines )
+      @socket.read_pendstr( dest )
     end
 
 
     def retr( num, dest = '', &block )
-      @socket.writeline( sprintf( 'RETR %d', num ) )
-      check_reply( SuccessCode )
-
-      return @socket.read_pendstr( dest, &block )
+      getok sprintf( 'RETR %d', num )
+      @socket.read_pendstr( dest, &block )
     end
 
     
     def dele( num )
-      @socket.writeline( 'DELE ' + num.to_s )
-      check_reply( SuccessCode )
+      getok sprintf( 'DELE %d', num )
     end
 
 
     def uidl( num )
-      @socket.writeline( 'UIDL ' + num.to_s )
-      rep = check_reply( SuccessCode )
+      rep = getok( sprintf 'UIDL %d', num )
       uid = rep.msg.split(' ')[1]
 
       uid
@@ -341,8 +338,7 @@ Net::Command
 
 
     def do_quit
-      @socket.writeline( 'QUIT' )
-      check_reply( SuccessCode )
+      getok 'QUIT'
     end
 
 
