@@ -1303,6 +1303,10 @@ struct input_code * find_inputcode_byfunc(iconv_func)
     return 0;
 }
 
+#ifdef CHECK_OPTION
+static int (*iconv_for_check)() = 0;
+#endif
+
 #ifdef ANSI_C_PROTOTYPE
 void set_iconv(int f, int (*iconv_func)(int c2,int c1,int c0))
 #else
@@ -1311,9 +1315,6 @@ void set_iconv(f, iconv_func)
      int (*iconv_func)();
 #endif
 {
-#ifdef CHECK_OPTION
-    static int (*iconv_for_check)() = 0;
-#endif
 #ifdef INPUT_CODE_FIX
     if (f || !input_f)
 #endif
@@ -4292,6 +4293,9 @@ reinit()
     broken_counter = 0;
     broken_last = 0;
     z_prev2=0,z_prev1=0;
+#ifdef CHECK_OPTION
+    iconv_for_check = 0;
+#endif
 
 }
 #endif

@@ -1,3 +1,8 @@
+Tue Dec 28 15:41:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (reinit): should initialize all static
+	  variables.  fixed: [ruby-list:40445]
+
 Tue Dec 28 15:25:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb (Kconv::RegexpEucjp): second byte is up to
