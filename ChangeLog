@@ -1,3 +1,8 @@
+Thu Nov 25 20:14:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/thwait.rb (ThreadsWait#join_nowait): abnormally terminated
+	  threads should be also processed.  [ruby-talk:121320]
+
 Thu Nov 25 10:14:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (push_braces): do not reuse buffer strings.  [ruby-core:03806]

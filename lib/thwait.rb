@@ -117,8 +117,11 @@ class ThreadsWait
     @threads.concat threads
     for th in threads
       Thread.start(th) do |t|
-	t.join
-	@wait_queue.push t
+	begin
+	  t.join
+	ensure
+	  @wait_queue.push t
+	end
       end
     end
   end
