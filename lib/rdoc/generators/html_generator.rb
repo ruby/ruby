@@ -326,13 +326,18 @@ module Generators
     end
 
 
-    # Build a list of aliases fo which we couldn't find a corresponding method
+    # Build a list of aliases for which we couldn't find a
+    # corresponding method
     def build_alias_summary_list
       @context.aliases.map do |al|
-        {
+        res = {
           'old_name' => al.old_name,
           'new_name' => al.new_name,
         }
+        if al.comment && !al.comment.empty?
+          res['desc'] = markup(al.comment, true)
+        end
+        res
       end
     end
     
@@ -749,6 +754,9 @@ module Generators
 
       co = build_constants_summary_list
       @values["constants"] = co unless co.empty?
+
+      al = build_alias_summary_list
+      @values["aliases"] = al unless al.empty?
 
       if @options.promiscuous
         file_context = nil

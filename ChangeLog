@@ -1,3 +1,10 @@
+Tue Jan 20 13:22:39 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Document aliases at 
+	  top-most level.
+
+	* lib/English.rb: Document English.rb. 
+
 Tue Jan 20 02:49:22 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: add check for OpenSSL version.

@@ -324,9 +324,21 @@ IF:aliases
 			<h2 class="section-bar">External Aliases</h2>
 
 			<div class="name-list">
+                        <table summary="aliases">
 START:aliases
-			%old_name% -> %new_name% <br />
+				<tr class="top-aligned-row context-row">
+					<td class="context-item-name">%old_name%</td>
+					<td>-></td>
+					<td class="context-item-value">%new_name%</td>
+				</tr>
+IF:desc
+			<tr class="top-aligned-row context-row">
+				<td>&nbsp;</td>
+				<td colspan="2" class="context-item-desc">%desc%</td>
+			</tr>
+ENDIF:desc
 END:aliases
+                        </table>
 			</div>
 		</div>
 ENDIF:aliases
@@ -630,6 +642,8 @@ INDEX = %{<?xml version="1.0" encoding="%charset%"?>
 }
 
 
+
 	end # module Page
 end # class RDoc
 
+require 'rdoc/generators/template/html/one_page_html'

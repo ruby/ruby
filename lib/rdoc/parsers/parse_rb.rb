@@ -2313,6 +2313,7 @@ module RDoc
       skip_tkspace
       new_name = get_symbol_or_name
       @scanner.instance_eval{@lex_state = EXPR_FNAME}
+
       skip_tkspace
       if (peek_tk.kind_of? TkCOMMA)
         get_tk

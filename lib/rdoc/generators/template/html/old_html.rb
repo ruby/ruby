@@ -721,48 +721,8 @@ END:method_list
 ENDIF:method_list
 }
 
-########################################################################
-
-ONE_PAGE = %{
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
-  <title>%title%</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=%charset%" />
-</head>
-<body>
-START:files
-<h2>File: %short_name%</h2>
-<table>
-  <tr><td>Path:</td><td>%full_path%</td></tr>
-  <tr><td>Modified:</td><td>%dtm_modified%</td></tr>
-</table>
-} + CONTENTS_XML + %{
-END:files
-
-IF:classes
-<h2>Classes</h2>
-START:classes
-IF:parent
-<h3>%classmod% %full_name% &lt; HREF:par_url:parent:</h3>
-ENDIF:parent
-IFNOT:parent
-<h3>%classmod% %full_name%</h3>
-ENDIF:parent
-
-IF:infiles
-(in files
-START:infiles
-HREF:full_path_url:full_path:
-END:infiles
-)
-ENDIF:infiles
-} + CONTENTS_XML + %{
-END:classes
-ENDIF:classes
-</body>
-</html>
-}
 
 end
 end
+
+require 'rdoc/generators/template/html/one_page_html'
