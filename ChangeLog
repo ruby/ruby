@@ -1,3 +1,8 @@
+Wed Dec 10 19:28:56 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_read): set EOF flag at short read.
+	  [ruby-dev:22223], [ruby-dev:22224]
+
 Wed Dec 10 18:07:25 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/erb.rb: new method ERB#filename(=). [ruby-dev:22208]

@@ -857,10 +857,13 @@ strio_read(argc, argv, self)
 	/* fall through */
       case 0:
 	olen = -1;
-	len = RSTRING(ptr->string)->len - ptr->pos;
-	if (len == 0 && ptr->pos == RSTRING(ptr->string)->len) {
+	len = RSTRING(ptr->string)->len;
+	if (len <= ptr->pos) {
 	    if (ptr->flags & STRIO_EOF) return Qnil;
-	    ptr->flags |= STRIO_EOF;
+	    len = 0;
+	}
+	else {
+	    len -= ptr->pos;
 	}
 	break;
       default:
@@ -869,11 +872,12 @@ strio_read(argc, argv, self)
     str = rb_str_substr(ptr->string, ptr->pos, len);
     if (NIL_P(str)) {
 	if (!(ptr->flags & STRIO_EOF)) str = rb_str_new(0, 0);
-	if (olen) ptr->flags |= STRIO_EOF;
+	len = 0;
     }
     else {
-	ptr->pos += RSTRING(str)->len;
+	ptr->pos += len = RSTRING(str)->len;
     }
+    if (olen < 0 || olen > len) ptr->flags |= STRIO_EOF;
     return str;
 }
 
