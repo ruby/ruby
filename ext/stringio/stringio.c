@@ -32,7 +32,7 @@ static struct StringIO* check_strio _((VALUE));
 static struct StringIO* get_strio _((VALUE));
 static struct StringIO* readable _((struct StringIO *));
 static struct StringIO* writable _((struct StringIO *));
-static struct void check_modifiable _((struct StringIO *));
+static void check_modifiable _((struct StringIO *));
 
 #define IS_STRIO(obj) (RDATA(obj)->dmark == (RUBY_DATA_FUNC)strio_mark)
 #define error_inval(msg) (errno = EINVAL, rb_sys_fail(msg))
@@ -118,7 +118,7 @@ writable(ptr)
     return ptr;
 }
 
-static struct void
+static void
 check_modifiable(ptr)
     struct StringIO *ptr;
 {

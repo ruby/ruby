@@ -1,3 +1,7 @@
+Mon Mar 18 22:19:52 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/stringio/stringio.c (check_modifiable): wrong declaration.
+
 Mon Mar 18 18:04:05 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/digest: add depend file.
