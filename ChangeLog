@@ -1,3 +1,7 @@
+Sun Sep 24 03:01:53 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, http.rb: typo.
+
 Sat Sep 23 03:06:25 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_autoload_load): should not require already

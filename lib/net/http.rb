@@ -55,7 +55,7 @@ You can get it from RAA
   Note:
   If status is not 2xx(success), ProtocolError exception is
   raised. At that time, you can get HTTPResponse object from 
-  execption object. (same in head/post)
+  exception object. (same in head/post)
 
     # example
     begin
@@ -112,7 +112,7 @@ You can get it from RAA
 
     # but this is ok
     http.get2( '/index.html' ) do |recv|
-      recv.body                  # read body and set recv.header.body
+      recv.body                  # read body and set recv.response.body
       print recv.response.body   # ref
     end
 
@@ -444,10 +444,10 @@ module Net
 
     def HTTP.Proxy( p_addr, p_port = nil )
       klass = super
-      klass.module_eval( <<SRC, 'http.rb', __LINE__ + 1 )
+      klass.module_eval( <<'SRC', 'http.rb', __LINE__ + 1 )
         def edit_path( path )
           'http://' + address +
-              (@port == HTTP.port ? '' : ':' + @port.to_s) +
+              (@port == HTTP.port ? '' : ":#{@port}") +
               path
         end
 SRC

@@ -15,7 +15,7 @@ You can get it from RAA
 
 == Net::Protocol
 
-the abstruct class for Internet protocol
+the abstract class for Internet protocol
 
 === Super Class
 
