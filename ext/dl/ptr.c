@@ -621,33 +621,34 @@ cary2ary(void *ptr, char t, int len)
 
   if( len == 1 ){
     switch( t ){
-    case 'I': case 'i':
+    case 'I':
       elem = INT2NUM(*((int*)ptr));
       ptr = (char *)ptr + sizeof(int);
       break;
-    case 'L': case 'l':
+    case 'L':
       elem = DLLONG2NUM(*((long*)ptr));
       ptr = (char *)ptr + sizeof(long);
       break;
-    case 'P': case 'p':
+    case 'P':
       elem = rb_dlptr_new(*((void**)ptr),0, 0);
       ptr = (char *)ptr + sizeof(void*);
       break;
-    case 'F': case 'f':
+    case 'F':
       elem = rb_float_new(*((float*)ptr));
       ptr = (char *)ptr + sizeof(float);
       break;
-    case 'D': case 'd':
+    case 'D':
       elem = rb_float_new(*((float*)ptr));
       ptr = (char *)ptr + sizeof(double);
       break;
-    case 'C': case 'c':
+    case 'C':
       elem = INT2NUM(*((char*)ptr));
       ptr = (char *)ptr + sizeof(char);
       break;
-    case 'H': case 'h':
+    case 'H':
       elem = INT2NUM(*((short*)ptr));
       ptr = (char *)ptr + sizeof(short);
+      break;
     default:
       rb_raise(rb_eDLTypeError, "unsupported type '%c'", t);
     };
@@ -657,33 +658,34 @@ cary2ary(void *ptr, char t, int len)
   ary = rb_ary_new();
   for( i=0; i < len; i++ ){
     switch( t ){
-    case 'I': case 'i':
+    case 'I':
       elem = INT2NUM(*((int*)ptr));
       ptr = (char *)ptr + sizeof(int);
       break;
-    case 'L': case 'l':
+    case 'L':
       elem = DLLONG2NUM(*((long*)ptr));
       ptr = (char *)ptr + sizeof(long);
       break;
-    case 'P': case 'p':
+    case 'P':
       elem = rb_dlptr_new(*((void**)ptr), 0, 0);
       ptr = (char *)ptr + sizeof(void*);
       break;
-    case 'F': case 'f':
+    case 'F':
       elem = rb_float_new(*((float*)ptr));
       ptr = (char *)ptr + sizeof(float);
       break;
-    case 'D': case 'd':
+    case 'D':
       elem = rb_float_new(*((float*)ptr));
       ptr = (char *)ptr + sizeof(double);
       break;
-    case 'C': case 'c':
+    case 'C':
       elem = INT2NUM(*((char*)ptr));
       ptr = (char *)ptr + sizeof(char);
       break;
-    case 'H': case 'h':
+    case 'H':
       elem = INT2NUM(*((short*)ptr));
       ptr = (char *)ptr + sizeof(short);
+      break;
     default:
       rb_raise(rb_eDLTypeError, "unsupported type '%c'", t);
     };
@@ -733,6 +735,7 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	  break;
 	case 'P':
 	  DLALIGN(data->ptr,offset,VOIDP_ALIGN);
+	  break;
 	case 'F':
 	  DLALIGN(data->ptr,offset,FLOAT_ALIGN);
 	  break;

@@ -264,11 +264,26 @@ assert("data_aref", :must,
        ptr["name"].collect{|c| c.chr}.join.split("\0")[0] == "name2")
 assert("data_aref", :must,
        ptr["name"].collect{|c| c.chr}.join.split("\0")[0] == "name2") unless (Fixnum === :-)
+
 ptr = ptr["next"]
 ptr.struct!("C1024P", :name, :next)
 assert("data_aref", :must,
        ptr["name"].collect{|c| c.chr}.join.split("\0")[0] == "name1")
 assert("data_aref", :must,
        ptr["name"].collect{|c| c.chr}.join.split("\0")[0] == "name1") unless (Fixnum === :-)
+
+GC.start
+
+ptr = DL::malloc(1024)
+ptr.struct!("CHIL", "c", "h", "i", "l")
+ptr["c"] = 1
+ptr["h"] = 2
+ptr["i"] = 3
+ptr["l"] = 4
+assert("struct!", :must,
+       ptr["c"] == 1 &&
+       ptr["h"] == 2 &&
+       ptr["i"] == 3 &&
+       ptr["l"] == 4)
 
 GC.start
