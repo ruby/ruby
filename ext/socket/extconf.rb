@@ -321,6 +321,24 @@ $objs = ["socket.#{$OBJEXT}"]
     
 if $getaddr_info_ok and have_func("getaddrinfo") and have_func("getnameinfo")
   have_getaddrinfo = true
+else
+  if try_link(<<EOF)
+#include <sys/types.h>
+#include <netdb.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+int
+main()
+{
+   struct in6_addr addr;
+   unsigned char c;
+   c = addr.s6_addr8;
+   return 0;
+}
+EOF
+    $CFLAGS="-DHAVE_ADDR8 "+$CFLAGS
+  end
 end
 
 if have_getaddrinfo

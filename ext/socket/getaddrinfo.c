@@ -480,7 +480,11 @@ getaddrinfo(hostname, servname, hints, res)
 				break;
 #ifdef INET6
 			case AF_INET6:
+#ifdef HAVE_ADDR8
 				pfx = ((struct in6_addr *)pton)->s6_addr8[0];
+#else
+				pfx = ((struct in6_addr *)pton)->s6_addr[0];
+#endif
 				if (pfx == 0 || pfx == 0xfe || pfx == 0xff)
 					pai->ai_flags &= ~AI_CANONNAME;
 				break;

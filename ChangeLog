@@ -1,3 +1,13 @@
+Tue Sep  2 14:09:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/extconf.rb: check s6_addr8 in in6_addr (Tru64 UNIX).
+	  the patch is submitted by nmu <nmu@users.sourceforge.jp>.
+
+	* ext/socket/getaddrinfo.c (getaddrinfo): should use in6_addr8 on
+	  some platforms.
+
+	* ext/socket/getnameinfo.c (getnameinfo): ditto.
+
 Tue Sep  2 14:02:19 2003    <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_invoke): fixed bug on passing a exception
@@ -141,8 +151,8 @@ Thu Aug 28 17:30:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  included modules, if klass is Object. [ruby-talk:79302]
 
 	* numeric.c (check_uint): check should be done using UINT_MAX, not
-	  INT_MAX. this fix is submitted by <lyle@knology.net> in
-	  [ruby-core:01486]
+	  INT_MAX. this fix is submitted by Lyle Johnson
+	  <lyle@knology.net> in [ruby-core:01486]
 
 Thu Aug 28 05:02:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
