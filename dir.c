@@ -162,7 +162,7 @@ range(pat, test, flags)
 	    return ok == not ? 0 : ++pat;
 	else if (escape && *pstart == '\\')
 	    pstart = pend = ++pat;
-		Inc(pat);
+	Inc(pat);
 	if (*pat == '-' && pat[1] != ']') {
 	    if (escape && pat[1] == '\\')
 		pat++;
@@ -197,13 +197,14 @@ fnmatch(pat, string, flags)
 
     while (c = *pat) {
 	switch (c) {
-	case '?':
+	  case '?':
 	    if (!*s || ISDIRSEP(*s) || PERIOD_S())
 		return FNM_NOMATCH;
 	    INC_S();
 	    ++pat;
 	    break;
-	case '*':
+
+	  case '*':
 	    while ((c = *++pat) == '*')
 		;
 
@@ -236,7 +237,7 @@ fnmatch(pat, string, flags)
 	    }
 	    return FNM_NOMATCH;
 
-	case '[':
+	  case '[':
 	    if (!*s || ISDIRSEP(*s) || PERIOD_S())
 		return FNM_NOMATCH;
 	    pat = range(pat+1, s, flags);
@@ -245,7 +246,7 @@ fnmatch(pat, string, flags)
 	    INC_S();
 	    break;
 
-	case '\\':
+	  case '\\':
 	    if (escape && pat[1]
 #if defined DOSISH
 		&& strchr("*?[\\", pat[1])
@@ -255,13 +256,13 @@ fnmatch(pat, string, flags)
 	    }
 	    /* FALLTHROUGH */
 
-	default:
+	  default:
 #if defined DOSISH
 	    if (ISDIRSEP(c) && isdirsep(*s))
 		;
 	    else
 #endif
-	    if(Compare(pat, s) != 0)
+	    if (Compare(pat, s) != 0)
 		return FNM_NOMATCH;
 	    INC_S();
 	    Inc(pat);
@@ -1129,6 +1130,7 @@ glob_helper(path, sub, separator, flags, func, arg) /* if separator p[-1] is rem
 	    strcpy(buf+n1, link->name);
 	    strcpy(buf+n2, m);
 	    status = glob_helper(buf, buf+n2+1, 1, flags, func, arg);
+	    free(buf);
 	}
 	tmp = link;
 	link = link->next;

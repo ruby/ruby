@@ -1,3 +1,7 @@
+Wed Jan  7 22:28:12 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): fix memory leak.
+
 Wed Jan  7 21:15:07 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* sample/webrick/*: new files.
