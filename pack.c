@@ -866,8 +866,12 @@ pack_pack(ary, fmt)
 		int le;
 
 		from = NEXTFROM;
+		from = rb_to_int(from);
 		l = num2i32(from);
 		le = uv_to_utf8(buf, l);
+		if (TYPE(from) == T_BIGNUM) {
+		    rb_raise(rb_eRangeError, "pack(U): value out of range");
+		}
 		rb_str_buf_cat(res, (char*)buf, le);
 	    }
 	    break;
@@ -2024,7 +2028,7 @@ uv_to_utf8(buf, uv)
 	buf[5] = (uv&0x3f)|0x80;
 	return 6;
     }
-    rb_raise(rb_eArgError, "pack(U): value out of range");
+    rb_raise(rb_eRangeError, "pack(U): value out of range");
 }
 
 static const long utf8_limits[] = {

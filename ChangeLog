@@ -3,6 +3,14 @@ Wed Mar 31 11:52:39 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/delegate.rb (DelegateClass): define internal methods of the
 	  result class, but not metaclass of the caller.
 
+Wed Mar 31 11:17:16 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): raises RangeError if uv is out of UTF8 value
+	  range.  [ruby-dev:23281]
+
+	* io.c (rb_io_binmode): stdio buffer should be empty when calling
+	  IO#binmode.  [ruby-talk:96155]
+
 Tue Mar 30 20:25:34 2004  Tanaka Akira  <akr@m17n.org>
 
 	* time.c (search_time_t): limit guess range by mktime if it is

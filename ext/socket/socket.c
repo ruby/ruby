@@ -529,6 +529,15 @@ bsock_do_not_rev_lookup_set(self, val)
 }
 
 static void
+raise_socket_error(reason, error)
+    char *reason;
+    int error;
+{
+    if (error == EAI_SYSTEM) rb_sys_fail(reason);
+    rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
+}
+
+static void
 make_ipaddr0(addr, buf, len)
     struct sockaddr *addr;
     char *buf;
@@ -538,7 +547,7 @@ make_ipaddr0(addr, buf, len)
 
     error = getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0, NI_NUMERICHOST);
     if (error) {
-	rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
+	raise_socket_error("getnameinfo", error);
     }
 }
 
@@ -680,7 +689,7 @@ sock_addrinfo(host, port, socktype, flags)
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
 	}
-	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
+	raise_socket_error("getaddrinfo", error);
     }
 
 #if defined(__APPLE__) && defined(__MACH__)
@@ -744,14 +753,14 @@ ipaddr(sockaddr, norevlookup)
 	error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			    NULL, 0, 0);
 	if (error) {
-	    rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
+	    raise_socket_error("getnameinfo", error);
 	}
 	addr1 = rb_str_new2(hbuf);
     }
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
-	rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
+	raise_socket_error("getnameinfo", error);
     }
     addr2 = rb_str_new2(hbuf);
     if (norevlookup) {
@@ -2210,7 +2219,7 @@ sock_s_getaddrinfo(argc, argv)
     }
     error = getaddrinfo(hptr, pptr, &hints, &res);
     if (error) {
-	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
+	raise_socket_error("getaddrinfo", error);
     }
 
     ret = make_addrinfo(res);
@@ -2347,11 +2356,11 @@ sock_s_getnameinfo(argc, argv)
 
   error_exit_addr:
     if (res) freeaddrinfo(res);
-    rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
+    raise_socket_error("getaddrinfo", error);
 
   error_exit_name:
     if (res) freeaddrinfo(res);
-    rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
+    raise_socket_error("getnameinfo", error);
 }
 
 static VALUE
