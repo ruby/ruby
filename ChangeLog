@@ -16,7 +16,7 @@ Tue Mar  8 10:05:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (Init_syserr): Errno::NOERROR(0) for fallback exception.
 
-Sat Mar  8 01:19:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+Tue Mar  8 01:19:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.66
 	  fixed: [ruby-dev:25828]
@@ -196,7 +196,7 @@ Fri Mar  4 08:09:12 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/parsedate.rb (ParseDate::strptime): ditto.
 
-Thu Mar  4 07:07:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+Fri Mar  4 07:07:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.63
 
@@ -379,7 +379,7 @@ Wed Feb 23 21:45:29 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 	  regparse.c, regparse.h, sjis.c, utf8.c: imported Oni Guruma
 	  3.7.0.
 
-Thu Feb 23 15:04:32 2005  akira yamada  <akira@ruby-lang.org>
+Wed Feb 23 15:04:32 2005  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (split_userinfo): should split ":pass" into ""
 	  and "pass".  [ruby-dev:25667]
@@ -468,7 +468,7 @@ Sat Feb 19 13:31:28 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Feb 19 01:28:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* ext/bigdecimal/lib/bigdecimal/newton.rb: resolve LoadError.
+	* ext/bigdecimal/lib/bigdecimal/newton.rb: resolved LoadError.
 	  [ruby-dev:25685]
 
 	* ext/bigdecimal/sample/linear.rb: ditto.
@@ -868,7 +868,7 @@ Thu Feb  3 16:12:57 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (parser_yylex): the first expression in the parentheses
 	  should not be a command.  [ruby-dev:25492]
 
-Wed Feb  3 03:31:20 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+Thu Feb  3 03:31:20 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: follow original v 1.57
 
@@ -1801,7 +1801,7 @@ Fri Dec 17 13:33:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/cgi/session.rb (CGI::Session#initialize): control adding
 	  session_id hidden fields.  fixed: [ruby-talk:123850]
 
-Sun Dec 17 00:01:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 17 00:01:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_proc_arity, rb_node_arity, rb_mod_method_arity,
 	  rb_obj_method_arity): new functions to obtain method arity.
@@ -2724,7 +2724,7 @@ Sat Nov 20 17:48:29 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* io.c (io_reopen): work around problem with Cygwin fseeko
 	  returning ESPIPE.
 
-Tue Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+Sat Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: original nkf.c rev:1.40
 
