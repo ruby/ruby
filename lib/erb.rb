@@ -130,7 +130,7 @@ class ERB
 	end
       end
 
-      ExplicitTrimRegexp = /(^[ \t]*<%-)|(-%>\n?$)|(<%-)|(-%>)|(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
+      ExplicitTrimRegexp = /(^[ \t]*<%-)|(-%>\n?\z)|(<%-)|(-%>)|(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
       def explicit_trim_line(line)
 	line.split(ExplicitTrimRegexp).each do |token|
 	  next if token.empty?
@@ -172,8 +172,8 @@ class ERB
       require 'strscan'
       class SimpleScanner2 < Scanner
         def scan
-          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\n|$)/
-          etag_reg = /(.*?)(%%>|%>|\n|$)/
+          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\n|\z)/
+          etag_reg = /(.*?)(%%>|%>|\n|\z)/
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
             scanner.scan(@stag ? etag_reg : stag_reg)
@@ -189,8 +189,8 @@ class ERB
       class PercentScanner < Scanner
 	def scan
 	  new_line = true
-          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\n|$)/
-          etag_reg = /(.*?)(%%>|%>|\n|$)/
+          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\n|\z)/
+          etag_reg = /(.*?)(%%>|%>|\n|\z)/
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
 	    if new_line && @stag.nil?
@@ -199,7 +199,7 @@ class ERB
 		new_line = false
 		next
 	      elsif scanner.scan(/%/)
-		yield(PercentLine.new(scanner.scan(/.*?(\n|$)/).chomp))
+		yield(PercentLine.new(scanner.scan(/.*?(\n|\z)/).chomp))
 		next
 	      end
 	    end
@@ -217,8 +217,8 @@ class ERB
       class ExplicitScanner < Scanner
 	def scan
 	  new_line = true
-          stag_reg = /(.*?)(<%%|<%=|<%#|<%-|<%|\n|$)/
-          etag_reg = /(.*?)(%%>|-%>|%>|\n|$)/
+          stag_reg = /(.*?)(<%%|<%=|<%#|<%-|<%|\n|\z)/
+          etag_reg = /(.*?)(%%>|-%>|%>|\n|\z)/
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
 	    if new_line && @stag.nil? && scanner.scan(/[ \t]*<%-/)
@@ -233,7 +233,7 @@ class ERB
             yield(text) unless text.empty?
 	    if elem == '-%>'
 	      yield('%>')
-	      if scanner.scan(/(\n|$)/)
+	      if scanner.scan(/(\n|\z)/)
 		yield(:cr)
 		new_line = true
 	      end
