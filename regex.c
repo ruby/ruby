@@ -43,7 +43,6 @@
 #endif
 
 #include "config.h"
-#include "defines.h"
 
 void *xmalloc P((unsigned long));
 void *xcalloc P((unsigned long,unsigned long));
@@ -54,17 +53,17 @@ void free P((void*));
 #ifndef NO_ALLOCA
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
-#ifndef atarist
-#ifndef alloca
-#define alloca __builtin_alloca
-#endif
-#endif /* atarist */
+# ifndef atarist
+#  ifndef alloca
+#   define alloca __builtin_alloca
+#  endif
+# endif /* atarist */
 #else
-#if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
-#include <alloca.h>
-#else
+# if defined(HAVE_ALLOCA_H)
+#  include <alloca.h>
+# else
 char *alloca();
-#endif
+# endif
 #endif /* __GNUC__ */
 
 #ifdef _AIX
@@ -4120,18 +4119,8 @@ static const unsigned char mbctab_sjis[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 };
 
-#ifdef EUC
-const unsigned char *mbctab = mbctab_euc;
-int current_mbctype = MBCTYPE_EUC;
-#else
-#ifdef SJIS
-const unsigned char *mbctab = mbctab_sjis;
-int current_mbctype = MBCTYPE_SJIS;
-#else
 const unsigned char *mbctab = mbctab_ascii;
 int current_mbctype = MBCTYPE_ASCII;
-#endif
-#endif
 
 void
 mbcinit(mbctype)

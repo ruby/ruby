@@ -98,10 +98,10 @@ str_cicmp(str1, str2)
 #define KCODE_MASK (KCODE_EUC|KCODE_SJIS)
 
 static int reg_kcode = 
-#ifdef EUC
+#ifdef RUBY_USE_EUC
     KCODE_EUC;
 #else
-# ifdef SJIS
+# ifdef RUBY_USE_SJIS
     KCODE_SJIS;
 # else
     KCODE_NONE;
@@ -783,20 +783,16 @@ reg_s_new(argc, argv, self)
     }
 
     src = argv[0];
-    switch (TYPE(src)) {
-      case T_STRING:
-	return reg_new_1(self, RSTRING(src)->ptr, RSTRING(src)->len, flag);
-	break;
-
-      case T_REGEXP:
+    if (TYPE(src) == T_REGEXP) {
 	return reg_new_1(self, RREGEXP(src)->str, RREGEXP(src)->len, flag);
-	break;
-
-      default:
-	Check_Type(src, T_STRING);
     }
+    else {
+	char *p;
+	int len;
 
-    return Qnil;		/* not reached */
+	p = str2cstr(src, &len);
+	return reg_new_1(self, p, len, flag);
+    }
 }
 
 static VALUE
@@ -992,8 +988,7 @@ static void
 kcode_setter(val)
     struct RString *val;
 {
-    Check_Type(val, T_STRING);
-    rb_set_kcode(val->ptr);
+    rb_set_kcode(STR2CSTR(val));
 }
 
 static VALUE
@@ -1022,6 +1017,16 @@ Init_Regexp()
 		  | RE_CHAR_CLASSES
 		  | RE_BACKSLASH_ESCAPE_IN_LISTS);
     re_set_casetable(casetable);
+
+#ifdef RUBY_USE_EUC
+    mbcinit(MBCTYPE_EUC);
+#else
+#ifdef RUBY_USE_SJIS
+    mbcinit(MBCTYPE_SJIS);
+#else
+    mbcinit(MBCTYPE_ASCII);
+#endif
+#endif
 
     rb_define_virtual_variable("$~", match_getter, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);

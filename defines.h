@@ -12,13 +12,13 @@
 
 #define RUBY
 
-/* define EUC/SJIS for default kanji-code */
+/* define RUBY_USE_EUC/SJIS for default kanji-code */
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(__human68k__) || defined(__MACOS__)
-#undef EUC
-#define SJIS
+#undef RUBY_USE_EUC
+#define RUBY_USE_SJIS
 #else
-#define EUC
-#undef SJIS
+#define RUBY_USE_EUC
+#undef RUBY_USE_SJIS
 #endif
 
 #ifdef NeXT
