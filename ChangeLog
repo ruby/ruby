@@ -1,3 +1,8 @@
+Sun Feb 23 17:57:06 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/fileutils (fu_stream_blksize): wrong logial condition.
+	  (and -> or).
+
 Sat Feb 22 02:45:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_create): may called from place higher than

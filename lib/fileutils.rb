@@ -725,7 +725,7 @@ module FileUtils
     streams.each do |s|
       next unless s.respond_to?(:stat)
       size = s.stat.blksize
-      return size unless size.nil? and size.zero?
+      return size unless size.nil? or size.zero?
     end
     1024
   end
