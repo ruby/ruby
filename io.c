@@ -1772,7 +1772,7 @@ rb_io_clone(io)
     char *mode;
 
     NEWOBJ(obj, struct RFile);
-    OBJSETUP(obj, CLASS_OF(io), T_FILE);
+    CLONESETUP(obj, io);
 
     GetOpenFile(io, orig);
     MakeOpenFile(obj, fptr);

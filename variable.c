@@ -717,11 +717,9 @@ generic_ivar_set(obj, id, val)
     VALUE val;
 {
     st_table *tbl;
-    int special = Qfalse;
 
     if (rb_special_const_p(obj)) {
 	special_generic_ivar = 1;
-	special = Qtrue;
     }
     if (!generic_iv_tbl) {
 	generic_iv_tbl = st_init_numtable();
@@ -771,6 +769,18 @@ generic_ivar_remove(obj, id)
     return val;
 }
 
+void
+rb_mark_generic_ivar(obj)
+    VALUE obj;
+{
+    st_table *tbl;
+
+    if (!generic_iv_tbl) return;
+    if (st_lookup(generic_iv_tbl, obj, &tbl)) {
+	rb_mark_tbl(tbl);
+    }
+}
+
 static int
 givar_mark_i(key, value)
     ID key;
@@ -778,17 +788,6 @@ givar_mark_i(key, value)
 {
     rb_gc_mark(value);
     return ST_CONTINUE;
-}
-
-void
-rb_mark_generic_ivar(obj)
-    VALUE obj;
-{
-    st_table *tbl;
-
-    if (st_lookup(generic_iv_tbl, obj, &tbl)) {
-	rb_mark_tbl(tbl);
-    }
 }
 
 static int
@@ -805,8 +804,8 @@ givar_i(obj, tbl)
 void
 rb_mark_generic_ivar_tbl()
 {
-    if (special_generic_ivar == 0) return;
     if (!generic_iv_tbl) return;
+    if (special_generic_ivar == 0) return;
     st_foreach(generic_iv_tbl, givar_i, 0);
 }
 
@@ -818,6 +817,18 @@ rb_free_generic_ivar(obj)
 
     if (st_delete(generic_iv_tbl, &obj, &tbl))
 	st_free_table(tbl);
+}
+
+void
+rb_clone_generic_ivar(clone, obj)
+    VALUE clone, obj;
+{
+    st_table *tbl;
+
+    if (!generic_iv_tbl) return;
+    if (st_lookup(generic_iv_tbl, obj, &tbl)) {
+	st_add_direct(generic_iv_tbl, clone, st_copy(tbl));
+    }
 }
 
 VALUE

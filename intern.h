@@ -309,6 +309,7 @@ VALUE rb_f_untrace_var _((int, VALUE*));
 VALUE rb_gvar_set2 _((const char*, VALUE));
 VALUE rb_f_global_variables _((void));
 void rb_alias_variable _((ID, ID));
+void rb_clone_generic_ivar _((VALUE,VALUE));
 void rb_mark_generic_ivar _((VALUE));
 void rb_mark_generic_ivar_tbl _((void));
 void rb_free_generic_ivar _((VALUE));
