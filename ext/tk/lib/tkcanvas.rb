@@ -862,6 +862,13 @@ end
 class TkcWindow<TkcItem
   CItemTypeToClass['window'] = self
   def create_self(*args)
+    keys = args.pop
+    if keys && keys.kind_of?(Hash)
+      keys = _symbolkey2str(keys)
+      win = keys['window']
+      keys['window'] = win.epath if win.kind_of?(TkWindow)
+    end
+    args.push(keys) if keys
     tk_call(@path, 'create', 'window', *args)
   end
   private :create_self

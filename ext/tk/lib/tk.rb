@@ -4830,16 +4830,18 @@ class TkPanedWindow<TkWindow
     fail ArgumentError, "no window in arguments" unless keys
     if keys && keys.kind_of?(Hash)
       fail ArgumentError, "no window in arguments" if args == []
-      args += hash_kv(keys)
+      args = args.collect{|w| w.epath}
+      args.push(hash_kv(keys))
     else
       args.push(keys) if keys
+      args = args.collect{|w| w.epath}
     end
     tk_send('add', *args)
     self
   end
 
   def forget(win, *wins)
-    tk_send('forget', win, *wins)
+    tk_send('forget', win.epath, *(wins.collect{|w| w.epath}))
     self
   end
   alias del forget
@@ -4879,14 +4881,14 @@ class TkPanedWindow<TkWindow
   end
 
   def panecget(win, key)
-    tk_tcl2ruby(tk_send('panecget', win, "-#{key}"))
+    tk_tcl2ruby(tk_send('panecget', win.epath, "-#{key}"))
   end
 
   def paneconfigure(win, key, value=nil)
     if key.kind_of? Hash
-      tk_send('paneconfigure', win, *hash_kv(key))
+      tk_send('paneconfigure', win.epath, *hash_kv(key))
     else
-      tk_send('paneconfigure', win, "-#{key}", value)
+      tk_send('paneconfigure', win.epath, "-#{key}", value)
     end
     self
   end
@@ -4894,11 +4896,12 @@ class TkPanedWindow<TkWindow
 
   def paneconfiginfo(win, key=nil)
     if key
-      conf = tk_split_list(tk_send('paneconfigure', win, "-#{key}"))
+      conf = tk_split_list(tk_send('paneconfigure', win.epath, "-#{key}"))
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_simplelist(tk_send('paneconfigure', win)).collect{|conflist|
+      tk_split_simplelist(tk_send('paneconfigure', 
+				  win.epath)).collect{|conflist|
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	if conf[3]
