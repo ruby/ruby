@@ -650,6 +650,7 @@ def create_makefile(target, srcprefix = nil)
   Config::expand(srcdir = srcprefix.dup)
 
   cleanfiles = []
+  distcleanfiles = []
   if EXPORT_PREFIX
     origdef = target + '.def'
     deffile = EXPORT_PREFIX + origdef
@@ -668,14 +669,13 @@ def create_makefile(target, srcprefix = nil)
 	    end
 	  end
 	end
-	cleanfiles << deffile
       else
 	open(deffile, 'wb') do |f|
 	  f.print "EXPORTS\n", EXPORT_PREFIX, "Init_", target, "\n"
 	end
-	cleanfiles << deffile
       end
     end
+    distcleanfiles << deffile unless deffile == origdef
   end
 
   libpath = libpathflag(libpath)
@@ -699,7 +699,7 @@ LIBPATH = #{libpath}
 DEFFILE = #{deffile}
 
 CLEANFILES = #{cleanfiles.join(' ')}
-DISTCLEANFILES =
+DISTCLEANFILES = #{distcleanfiles.join(' ')}
 }
   mfile.print makerules(target, target_prefix)
   dirs = []
@@ -791,7 +791,7 @@ def init_mkmf(config = CONFIG)
   $objs = nil
   $libs = ""
   if $configure_args['--enable-shared'] or config["LIBRUBY"] != config["LIBRUBY_A"]
-  $LIBPATH = ["$(topdir)"]
+    $LIBPATH = ["$(topdir)"]
     $LIBPATH << "$(libdir)" unless $extmk or defined? CROSS_COMPILING
   end
   $LIBPATH << "$(archdir)"

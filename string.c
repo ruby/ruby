@@ -1873,7 +1873,7 @@ rb_str_inspect(str)
     return result;
 }
 
-static VALUE
+VALUE
 rb_str_dump(str)
     VALUE str;
 {
@@ -3003,7 +3003,7 @@ rb_str_crypt(str, salt)
     return result;
 }
 
-static VALUE
+VALUE
 rb_str_intern(str)
     VALUE str;
 {

@@ -3089,6 +3089,7 @@ rb_eval(self, n)
       case NODE_DXSTR:
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
+      case NODE_DSYM:
 	{
 	    VALUE str, str2;
 	    NODE *list = node->nd_next;
@@ -3122,6 +3123,9 @@ rb_eval(self, n)
 		break;
 	      case NODE_DXSTR:
 		result = rb_funcall(self, '`', 1, str);
+		break;
+	      case NODE_DSYM:
+		result = rb_str_intern(str);
 		break;
 	      default:
 		result = str;

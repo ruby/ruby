@@ -519,11 +519,16 @@ sym_inspect(sym)
 {
     VALUE str;
     char *name;
+    ID id = SYM2ID(sym);
 
-    name = rb_id2name(SYM2ID(sym));
+    name = rb_id2name(id);
     str = rb_str_new(0, strlen(name)+1);
     RSTRING(str)->ptr[0] = ':';
     strcpy(RSTRING(str)->ptr+1, name);
+    if (rb_is_junk_id(id)) {
+	str = rb_str_dump(str);
+	strncpy(RSTRING(str)->ptr, ":\"", 2);
+    }
     return str;
 }
 

@@ -48,6 +48,7 @@
 #define is_attrset_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
 #define is_const_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
 #define is_class_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CLASS)
+#define is_junk_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_JUNK)
 
 #define is_asgn_or_id(id) ((is_notop_id(id)) && \
 	(((id)&ID_SCOPE_MASK) == ID_GLOBAL || \
@@ -238,7 +239,7 @@ static void top_local_setup();
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents string_content
 %type <node> words qwords word_list qword_list word
-%type <node> literal numeric
+%type <node> literal numeric dsym
 %type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
@@ -1740,6 +1741,7 @@ literal		: numeric
 		    {
 			$$ = NEW_LIT(ID2SYM($1));
 		    }
+		| dsym
 		;
 
 strings		: string
@@ -1955,6 +1957,31 @@ sym		: fname
 		| tIVAR
 		| tGVAR
 		| tCVAR
+		;
+
+dsym		: tSYMBEG xstring_contents tSTRING_END
+		    {
+		        lex_state = EXPR_END;
+			if (!$2) {
+			    yyerror("empty symbol literal");
+			}
+			else {
+			    $$ = $2;
+			    switch (nd_type($$)) {
+			      case NODE_STR:
+				$$->nd_lit = ID2SYM(rb_intern(RSTRING($$->nd_lit)->ptr));
+				nd_set_type($$, NODE_LIT);
+				break;
+			      case NODE_DSTR:
+				nd_set_type($$, NODE_DSYM);
+				break;
+			      default:
+				$$ = rb_node_newnode(NODE_DSYM, rb_str_new(0, 0),
+						     1, NEW_LIST($$));
+				break;
+			    }
+			}
+		    }
 		;
 
 numeric		: tINTEGER
@@ -2770,6 +2797,7 @@ regx_options()
 #define STR_FUNC_EXPAND 0x02
 #define STR_FUNC_REGEXP 0x04
 #define STR_FUNC_QWORDS 0x08
+#define STR_FUNC_SYMBOL 0x10
 #define STR_FUNC_INDENT 0x20
 
 enum string_type {
@@ -2779,6 +2807,8 @@ enum string_type {
     str_regexp = (STR_FUNC_REGEXP|STR_FUNC_ESCAPE|STR_FUNC_EXPAND),
     str_sword  = (STR_FUNC_QWORDS),
     str_dword  = (STR_FUNC_QWORDS|STR_FUNC_EXPAND),
+    str_ssym   = (STR_FUNC_SYMBOL),
+    str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND),
 };
 
 static int
@@ -2850,6 +2880,11 @@ tokadd_string(func, term, paren)
 	else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 	    pushback(c);
 	    break;
+	}
+	if (!c && (func & STR_FUNC_SYMBOL)) {
+	    func &= ~STR_FUNC_SYMBOL;
+	    rb_compile_error("symbol cannot contain '\\0'");
+	    continue;
 	}
 	tokadd(c);
     }
@@ -3762,10 +3797,21 @@ yylex()
 	    lex_state = EXPR_DOT;
 	    return tCOLON2;
 	}
-	pushback(c);
 	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG || ISSPACE(c)) {
+	    pushback(c);
 	    lex_state = EXPR_BEG;
 	    return ':';
+	}
+	switch (c) {
+	  case '\'':
+	    lex_strterm = NEW_STRTERM(str_ssym, c, 0);
+	    break;
+	  case '"':
+	    lex_strterm = NEW_STRTERM(str_dsym, c, 0);
+	    break;
+	  default:
+	    pushback(c);
+	    break;
 	}
 	lex_state = EXPR_FNAME;
 	return tSYMBEG;
@@ -3967,6 +4013,11 @@ yylex()
 	      case 'r':
 		lex_strterm = NEW_STRTERM(str_regexp, term, paren);
 		return tREGEXP_BEG;
+
+	      case 's':
+		lex_strterm = NEW_STRTERM(str_ssym, term, paren);
+		lex_state = EXPR_FNAME;
+		return tSYMBEG;
 
 	      default:
 		yyerror("unknown type of %string");
@@ -5602,6 +5653,14 @@ rb_is_local_id(id)
     ID id;
 {
     if (is_local_id(id)) return Qtrue;
+    return Qfalse;
+}
+
+int
+rb_is_junk_id(id)
+    ID id;
+{
+    if (is_junk_id(id)) return Qtrue;
     return Qfalse;
 }
 
