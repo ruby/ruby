@@ -1,3 +1,17 @@
+Sat Jan 24 13:06:26 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509hame.c (ossl_x509name_initialize): change
+	  second argument. it expected to be a Hash not an Integer.
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_add_entry): add new
+	  function for OpenSSL::X509::Name#add_entry.
+
+	* ext/openssl/ossl_x509name.c (Init_ossl_x509name): add constants
+	  OpenSSL::X509::Name::DEFAULT_OBJECT_TYPE and OBJECT_TYPE_TEMPLATE.
+
+	* ext/openssl/lib/openssl/x509.rb (OpenSSL::X509::Name#initialize):
+	  second argument takes OBJECT_TYPE_TEMPLATE by default.
+
 Fri Jan 23 02:26:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (num2i32): pack should not raise RangeError.

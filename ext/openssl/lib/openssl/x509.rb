@@ -14,9 +14,7 @@
   $Id$
 =end
 
-##
-# Should we care what if somebody require this file directly?
-#require 'openssl'
+require "openssl"
 
 module OpenSSL
   module X509
@@ -44,7 +42,7 @@ module OpenSSL
       def create_ext_from_hash(hash)
         create_ext(hash["oid"], hash["value"], hash["critical"])
       end
-    end # ExtensionFactory
+    end
     
     class Extension
       def to_s # "oid = critical, value"
@@ -61,14 +59,13 @@ module OpenSSL
       def to_a
         [ self.oid, self.value, self.critical? ]
       end
-    end # Extension
-    
-    class Name
-      def self.parse(str, type=ASN1::UTF8STRING)
-        ary = str.scan(/\s*([^\/,]+)\s*/).collect{|i| i[0].split("=") }
-        self.new(ary, type)
-      end
-    end # Name
+    end
 
-  end # X509
-end # OpenSSL
+    class Name
+      def self.parse(str, template=OBJECT_TYPE_TEMPLATE)
+        ary = str.scan(/\s*([^\/,]+)\s*/).collect{|i| i[0].split("=", 2) }
+        self.new(ary, template)
+      end
+    end
+  end
+end

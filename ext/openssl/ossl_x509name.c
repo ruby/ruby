@@ -27,6 +27,11 @@
     GetX509Name(obj, name); \
 } while (0)
 
+#define OBJECT_TYPE_TEMPLATE \
+  rb_const_get(cX509Name, rb_intern("OBJECT_TYPE_TEMPLATE"))
+#define DEFAULT_OBJECT_TYPE \
+  rb_const_get(cX509Name, rb_intern("DEFAULT_OBJECT_TYPE"))
+
 /*
  * Classes
  */
@@ -82,42 +87,67 @@ ossl_x509name_alloc(VALUE klass)
     return obj;
 }
 
+static int id_aref;
+static VALUE ossl_x509name_add_entry(VALUE, VALUE, VALUE, VALUE);
+#define rb_aref(obj, key) rb_funcall(obj, id_aref, 1, key)
+
+static VALUE
+ossl_x509name_init_i(VALUE i, VALUE args)
+{
+    VALUE self = rb_ary_entry(args, 0);
+    VALUE template = rb_ary_entry(args, 1);
+    VALUE oid, val, type;
+
+    Check_Type(i, T_ARRAY);
+    oid = rb_ary_entry(i, 0);
+    val = rb_ary_entry(i, 1);
+    type = rb_ary_entry(i, 2);
+    if(NIL_P(type)) type = rb_aref(template, oid);
+    if(NIL_P(type)) type = DEFAULT_OBJECT_TYPE;
+
+    ossl_x509name_add_entry(self, oid, val, type);
+}
+
 static VALUE
 ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 {
     X509_NAME *name;
-    int i, type;
-    VALUE arg, str_type, item, key, value;
+    VALUE arg, template;
 
     GetX509Name(self, name);
-    if (rb_scan_args(argc, argv, "02", &arg, &str_type) == 0) {
+    if (rb_scan_args(argc, argv, "02", &arg, &template) == 0) {
 	return self;
     }
-    if (argc == 1 && rb_respond_to(arg, ossl_s_to_der)){
-	unsigned char *p;
-	VALUE str = rb_funcall(arg, ossl_s_to_der, 0);
-	StringValue(str);
-	p  = RSTRING(str)->ptr;
-	if(!d2i_X509_NAME(&name, &p, RSTRING(str)->len))
-	    ossl_raise(eX509NameError, NULL);
-        return self;
+    else if (rb_obj_is_kind_of(arg, rb_cArray) == Qtrue){
+	VALUE args;
+        if(NIL_P(template)) template = OBJECT_TYPE_TEMPLATE;
+        args = rb_ary_new3(2, self, template);
+	rb_iterate(rb_each, arg, ossl_x509name_init_i, args);
     }
-    Check_Type(arg, T_ARRAY);
-    type = NIL_P(str_type) ? V_ASN1_UTF8STRING : NUM2INT(str_type);
-    for (i=0; i<RARRAY(arg)->len; i++) {
-	item = RARRAY(arg)->ptr[i];
-	Check_Type(item, T_ARRAY);
-	if (RARRAY(item)->len != 2) {
-	    ossl_raise(rb_eArgError, "Unsupported structure.");
-	}
-	key = RARRAY(item)->ptr[0];
-	value = RARRAY(item)->ptr[1];
-	StringValue(key);
-	StringValue(value);
-	if (!X509_NAME_add_entry_by_txt(name, RSTRING(key)->ptr, type,
-			RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
+    else{
+	unsigned char *p;
+	VALUE str = ossl_to_der_if_possible(arg);
+	StringValue(str);
+	p = RSTRING(str)->ptr;
+	if(!d2i_X509_NAME(&name, &p, RSTRING(str)->len)){
 	    ossl_raise(eX509NameError, NULL);
 	}
+    }
+
+    return self;
+}
+
+static
+VALUE ossl_x509name_add_entry(VALUE self, VALUE oid, VALUE val, VALUE type)
+{
+    X509_NAME *name;
+
+    GetX509Name(self, name);
+    StringValue(oid);
+    StringValue(val);
+    if (!X509_NAME_add_entry_by_txt(name, RSTRING(oid)->ptr, NUM2INT(type),
+		RSTRING(val)->ptr, RSTRING(val)->len, -1, 0)) {
+	ossl_raise(eX509NameError, NULL);
     }
 
     return self;
@@ -146,7 +176,7 @@ ossl_x509name_to_a(VALUE self)
     int i,entries;
     char long_name[512];
     const char *short_name;
-    VALUE ary;
+    VALUE ary, ret;
 	
     GetX509Name(self, name);
     entries = X509_NAME_entry_count(name);
@@ -154,7 +184,7 @@ ossl_x509name_to_a(VALUE self)
 	OSSL_Debug("name entries < 0!");
 	return rb_ary_new();
     }
-    ary = rb_ary_new2(entries);
+    ret = rb_ary_new2(entries);
     for (i=0; i<entries; i++) {
 	if (!(entry = X509_NAME_get_entry(name, i))) {
 	    ossl_raise(eX509NameError, NULL);
@@ -163,11 +193,12 @@ ossl_x509name_to_a(VALUE self)
 	    ossl_raise(eX509NameError, NULL);
 	}
 	short_name = OBJ_nid2sn(OBJ_ln2nid(long_name));
-	
-	rb_ary_push(ary, rb_assoc_new(rb_str_new2(short_name),
-		rb_str_new(entry->value->data, entry->value->length)));
+	ary = rb_ary_new3(3, rb_str_new2(short_name),
+        		  rb_str_new(entry->value->data, entry->value->length),
+        		  INT2FIX(entry->value->type));
+	rb_ary_push(ret, ary);
     }
-    return ary;
+    return ret;
 }
 
 static int
@@ -243,12 +274,15 @@ ossl_x509name_to_der(VALUE self)
 void 
 Init_ossl_x509name()
 {
-    eX509NameError = rb_define_class_under(mX509, "NameError", eOSSLError);
+    VALUE utf8str, ptrstr, hash;
 
+    id_aref = rb_intern("[]");
+    eX509NameError = rb_define_class_under(mX509, "NameError", eOSSLError);
     cX509Name = rb_define_class_under(mX509, "Name", rb_cObject);
 
     rb_define_alloc_func(cX509Name, ossl_x509name_alloc);
     rb_define_method(cX509Name, "initialize", ossl_x509name_initialize, -1);
+    rb_define_method(cX509Name, "add_entry", ossl_x509name_add_entry, 3);
     rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, 0);
     rb_define_method(cX509Name, "to_a", ossl_x509name_to_a, 0);
     rb_define_method(cX509Name, "cmp", ossl_x509name_cmp, 1);
@@ -256,4 +290,14 @@ Init_ossl_x509name()
     rb_define_method(cX509Name, "eql?", ossl_x509name_eql, 1);
     rb_define_method(cX509Name, "hash", ossl_x509name_hash, 0);
     rb_define_method(cX509Name, "to_der", ossl_x509name_to_der, 0);
+
+    utf8str = INT2NUM(V_ASN1_UTF8STRING);
+    ptrstr = INT2NUM(V_ASN1_PRINTABLESTRING);
+    rb_define_const(cX509Name, "DEFAULT_OBJECT_TYPE", utf8str);
+    hash = rb_funcall(rb_cHash, rb_intern("new"), 1, DEFAULT_OBJECT_TYPE);
+    rb_hash_aset(hash, rb_str_new2("C"), ptrstr);
+    rb_hash_aset(hash, rb_str_new2("countryName"), ptrstr);
+    rb_hash_aset(hash, rb_str_new2("serialNumber"), ptrstr);
+    rb_hash_aset(hash, rb_str_new2("dnQualifier"), ptrstr);
+    rb_define_const(cX509Name, "OBJECT_TYPE_TEMPLATE", hash);
 }
