@@ -582,7 +582,7 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
   }
 
   Check_Type(type, T_STRING);
-  switch( STR2CSTR(type)[0] ){
+  switch( RSTRING(type)->ptr[0] ){
   case '0':
     rettype = 0x00;
     break;
@@ -608,7 +608,7 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
     rettype = 0x07;
     break;
   default:
-    rb_raise(rb_eDLTypeError, "unsupported type `%c'", STR2CSTR(type)[0]);
+    rb_raise(rb_eDLTypeError, "unsupported type `%c'", RSTRING(type)->ptr[0]);
   }
 
   entry = -1;
@@ -626,7 +626,8 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
 	       rb_assoc_new(INT2NUM(rettype),INT2NUM(entry)),
 	       rb_assoc_new(type,proc));
   sprintf(fname, "rb_dl_callback_func_%d_%d", rettype, entry);
-  return rb_dlsym_new((void (*)())rb_dl_callback_table[rettype][entry], fname, STR2CSTR(type));
+  return rb_dlsym_new((void (*)())rb_dl_callback_table[rettype][entry],
+		      fname, RSTRING(type)->ptr);
 }
 
 static VALUE

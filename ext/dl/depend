@@ -5,7 +5,7 @@ LDSHARED_TEST = $(LDSHARED) $(LDFLAGS) test/test.o -o test/libtest.so $(LOCAL_LI
 
 libtest.so: test/libtest.so
 
-test/libtest.so: test/test.o test/libtest.def
+test/libtest.so: test/test.o $(srcdir)/test/libtest.def
 	$(RUBY) -rftools -e 'ARGV.each do|d|File.mkpath(File.dirname(d))end' $@
 	$(LDSHARED_TEST:dl.def=test/libtest.def)
 
