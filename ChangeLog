@@ -1,3 +1,10 @@
+Mon Mar 14 19:39:33 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/timer.rb (TkTimer): forgot to clear @return_value
+	  when restarting
+
+	* ext/tk/lib/tk/sample/cd_timer.rb: new sample of TkRTTimer
+
 Mon Mar 14 12:21:03 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb (TkRTTimer): forgot to reset the callback
