@@ -2931,7 +2931,6 @@ rb_eval(self, n)
 	      iter_retry:
 		PUSH_ITER(ITER_PRE);
 		if (nd_type(node) == NODE_ITER) {
-		    ruby_frame->node = node;
 		    result = rb_eval(self, node->nd_iter);
 		}
 		else {
@@ -6043,7 +6042,7 @@ eval(self, src, scope, file, line)
 	ruby_cref = data->cref;
 	old_wrapper = ruby_wrapper;
 	ruby_wrapper = data->wrapper;
-	if (file == 0 || (line == 1 && strcmp(file, "(eval)") == 0)) {
+	if ((file == 0 || (line == 1 && strcmp(file, "(eval)") == 0)) && data->frame.node) {
 	    file = data->frame.node->nd_file;
 	    if (!file) file = "__builtin__";
 	    line = nd_line(data->frame.node);
@@ -8033,7 +8032,6 @@ proc_invoke(proc, args, self, klass)
     struct BLOCK *data;
     volatile VALUE result = Qundef;
     int state;
-    volatile int orphan;
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
     struct RVarmap * volatile old_dvars = ruby_dyna_vars;
@@ -8048,7 +8046,6 @@ proc_invoke(proc, args, self, klass)
 
     Data_Get_Struct(proc, struct BLOCK, data);
     pcall = (data->flags & BLOCK_LAMBDA) ? YIELD_LAMBDA_CALL : 0;
-//    orphan = pcall ? 0 : block_orphan(data);
     if (!pcall && RARRAY(args)->len == 1) {
 	avalue = Qfalse;
 	args = RARRAY(args)->ptr[0];

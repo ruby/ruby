@@ -1,3 +1,9 @@
+Fri May 28 11:20:31 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): bad influence on frame node.
+
+	* eval.c (eval): reverted wrongly removed condition.  [ruby-dev:23638]
+
 Thu May 27 21:37:50 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#initialize): fix pathname initialization
@@ -11,7 +17,7 @@ Thu May 27 15:54:02 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (MDTM_REGEXP): fix for demon's ftp server.
 	Thanks, Rutger Nijlunsing.
-	
+
 Thu May 27 14:53:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (rb_io_fwrite): workaround for bcc32's fwrite bug.
