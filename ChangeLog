@@ -1,3 +1,7 @@
+Fri Jun 28 00:51:19 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_stat): fix buffer overflow. (ruby-bugs:PR#329)
+
 Tue Jun 25 18:40:50 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* dln.c: remove definition rb_loaderror().

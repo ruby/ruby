@@ -2626,7 +2626,7 @@ int
 win32_stat(const char *path, struct stat *st)
 {
     const char *p;
-    char *buf1 = ALLOCA_N(char, strlen(path) + 1);
+    char *buf1 = ALLOCA_N(char, strlen(path) + 2);
     char *buf2 = ALLOCA_N(char, MAXPATHLEN);
     char *s;
     int len;
