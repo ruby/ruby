@@ -2758,6 +2758,10 @@ here_document(term, indent)
     int offset_save;
     NODE *list = 0;
     int linesave = ruby_sourceline;
+    int firstline;
+
+    if (heredoc_end > 0) ruby_sourceline = heredoc_end;
+    firstline = ruby_sourceline;
 
     newtok();
     switch (term) {
@@ -2866,7 +2870,7 @@ here_document(term, indent)
     ruby_sourceline = linesave;
 
     if (list) {
-	nd_set_line(list, linesave+1);
+	nd_set_line(list, firstline+1);
 	yylval.node = list;
     }
     switch (term) {
