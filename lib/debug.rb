@@ -1,11 +1,11 @@
 class DEBUGGER__
   begin
     require 'readline'
-    def readline(prompt)
-      Readline::readline(prompt, true)
+    def readline(prompt, hist)
+      Readline::readline(prompt, hist)
     end
   rescue LoadError
-    def readline(prompt)
+    def readline(prompt, hist)
       STDOUT.print prompt
       STDOUT.flush
       line = STDIN.gets
@@ -60,7 +60,7 @@ class DEBUGGER__
     end
     @frames[0] = binding
     display_expressions(binding)
-    while input = readline("(rdb:-) ")
+    while input = readline("(rdb:-) ", true)
       if input == ""
 	input = DEBUG_LAST_CMD[0]
       else
@@ -112,9 +112,7 @@ class DEBUGGER__
       when /^del(?:ete)?(?:\s+(\d+))?$/
 	pos = $1
 	unless pos
-	  STDOUT.print "clear all breakpoints? (y/n) "
-	  STDOUT.flush
-	  input = readline
+	  input = readline("clear all breakpoints? (y/n) ", false)
 	  if input == "y"
 	    for b in @break_points
 	      b[0] = false
@@ -141,7 +139,7 @@ class DEBUGGER__
       when /^undisp(?:lay)?(?:\s+(\d+))?$/
 	pos = $1
 	unless pos
-	  input = readline("clear all expressions? (y/n) ")
+	  input = readline("clear all expressions? (y/n) ", false)
 	  if input == "y"
 	    for d in @display
 	      d[0] = false
@@ -261,7 +259,7 @@ class DEBUGGER__
 	return
 
       when /^q(?:uit)?$/
-	input = readline("really quit? (y/n) ")
+	input = readline("really quit? (y/n) ", false)
 	exit if input == "y"
 
       when /^p\s+/
