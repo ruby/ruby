@@ -656,10 +656,11 @@ class IO
 # Sub-ideal, since another FS gets created in scanf.
 # But used here to determine the number of specifiers.
     fstr = Scanf::FormatString.new(str)
+    last_spec = fstr.last_spec
     begin
       current = scanf(str)
       final.push(yield(current)) unless current.empty?
-    end until eof || current.size < fstr.spec_count
+    end until eof || fstr.last_spec_tried == last_spec
     return final
   end
 end
