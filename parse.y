@@ -8567,6 +8567,16 @@ obj_respond_to(obj, mid)
 
 #define ripper_initialized_p(r) ((r)->ripper_lex_input != 0)
 
+/*
+ *  call-seq:
+ *    Ripper.new(src, filename="(ripper)", lineno=1) -> ripper
+ *
+ *  Create a new Ripper object.
+ *  _src_ must be a String, a IO, or an Object which has #gets method.
+ *
+ *  This method does not starts parsing.
+ *  See also Ripper#parse and Ripper.parse.
+ */
 static VALUE
 ripper_initialize(argc, argv, self)
     int argc;
@@ -8595,6 +8605,8 @@ ripper_initialize(argc, argv, self)
     }
     parser->ripper_ruby_sourcefile = fname;
     parser->ripper_ruby_sourceline = NIL_P(lineno) ? 0 : NUM2INT(lineno) - 1;
+    parser->current_position = 0;
+    parser->current_column = 0;
 
     parser->result = Qnil;
     parser->toplevel_p = Qtrue;
@@ -8624,6 +8636,12 @@ ripper_initialize(argc, argv, self)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    Ripper.yydebug   -> true or false
+ *
+ *  Get yydebug.
+ */
 static VALUE
 ripper_s_get_yydebug(self)
     VALUE self;
@@ -8631,6 +8649,12 @@ ripper_s_get_yydebug(self)
     return ripper_yydebug ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    Ripper.yydebug = flag
+ *
+ *  Set yydebug.
+ */
 static VALUE
 ripper_s_set_yydebug(self, flag)
     VALUE self, flag;
@@ -8669,6 +8693,12 @@ ripper_ensure(parser_v)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    ripper#parse
+ *
+ *  Start parsing and returns the value of the root action.
+ */
 static VALUE
 ripper_parse(self)
     VALUE self;
@@ -8691,6 +8721,13 @@ ripper_parse(self)
     return parser->result;
 }
 
+/*
+ *  call-seq:
+ *    ripper#pos   -> Integer
+ *
+ *  Return the byte index of the current lexer pointer in whole input.
+ *  This number starts from 0.
+ */
 static VALUE
 ripper_pos(self)
     VALUE self;
@@ -8705,6 +8742,13 @@ ripper_pos(self)
     return LONG2NUM(parser->current_position);
 }
 
+/*
+ *  call-seq:
+ *    ripper#column   -> Integer
+ *
+ *  Return column number of current parsing line.
+ *  This number starts from 0.
+ */
 static VALUE
 ripper_column(self)
     VALUE self;
@@ -8719,6 +8763,13 @@ ripper_column(self)
     return LONG2NUM(parser->current_column);
 }
 
+/*
+ *  call-seq:
+ *    ripper#lineno   -> Integer
+ *
+ *  Return line number of current parsing line.
+ *  This number starts from 1.
+ */
 static VALUE
 ripper_lineno(self)
     VALUE self;
