@@ -562,7 +562,7 @@ rb_big_eq(x, y)
     }
     if (RBIGNUM(x)->sign != RBIGNUM(y)->sign) return Qfalse;
     if (RBIGNUM(x)->len != RBIGNUM(y)->len) return Qfalse;
-    if (memcmp(BDIGITS(x),BDIGITS(y),RBIGNUM(y)->len) != 0) return Qfalse;
+    if (MEMCMP(BDIGITS(x),BDIGITS(y),USHORT,RBIGNUM(y)->len) != 0) return Qfalse;
     return Qtrue;
 }
 

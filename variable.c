@@ -1167,11 +1167,10 @@ rb_mod_const_of(mod, ary)
     VALUE mod;
     VALUE ary;
 {
-    rb_mod_const_at(mod, ary);
     for (;;) {
+	rb_mod_const_at(mod, ary);
 	mod = RCLASS(mod)->super;
 	if (!mod) break;
-	rb_mod_const_at(mod, ary);
     }
     return ary;
 }
@@ -1486,6 +1485,40 @@ rb_define_class_variable(klass, name, val)
 	rb_raise(rb_eNameError, "wrong class variable name %s", name);
     }
     rb_cvar_declare(klass, id, val);
+}
+
+static int
+cv_i(key, value, ary)
+    ID key;
+    VALUE value;
+    VALUE ary;
+{
+    if (rb_is_class_id(key)) {
+	VALUE kval = rb_str_new2(rb_id2name(key));
+	if (!rb_ary_includes(ary, kval)) {
+	    rb_ary_push(ary, kval);
+	}
+    }
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_mod_class_variables(obj)
+    VALUE obj;
+{
+    VALUE ary = rb_ary_new();
+
+    if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
+
+    for (;;) {
+	if (RCLASS(obj)->iv_tbl) {
+	    st_foreach(RCLASS(obj)->iv_tbl, cv_i, ary);
+	}
+	obj = RCLASS(obj)->super;
+	if (!obj) break;
+    }
+    return ary;
 }
 
 VALUE

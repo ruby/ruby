@@ -3397,7 +3397,15 @@ yylex()
 	  case '~':		/* $~: match-data */
             /* fall through */
 	  case '_':		/* $_: last read line string */
-	    local_cnt(c);
+	    c = nextc();
+	    if (is_identchar(c)) {
+		tokadd('$');
+		tokadd('_');
+		break;
+	    }
+	    pushback(c);
+	    c = '_';
+	    local_cnt('_');
 	    /* fall through */
 	  case '*':		/* $*: argv */
 	  case '$':		/* $$: pid */

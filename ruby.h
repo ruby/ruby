@@ -394,6 +394,7 @@ void xfree _((void*));
 #define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
+#define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
 
 void rb_glob _((char*,void(*)(),VALUE));
 

@@ -372,6 +372,7 @@ VALUE rb_cvar_get _((VALUE, ID));
 int rb_cvar_defined_singleton _((VALUE, ID));
 void rb_cvar_set_singleton _((VALUE, ID, VALUE));
 VALUE rb_cvar_get_singleton _((VALUE, ID));
+VALUE rb_mod_class_variables _((VALUE));
 /* version.c */
 void ruby_show_version _((void));
 void ruby_show_copyright _((void));

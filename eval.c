@@ -815,8 +815,8 @@ static rb_thread_t curr_thread = 0;
 static VALUE rb_eval _((VALUE,NODE*));
 static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
 static NODE *compile _((VALUE, char*, int));
-static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int));
 
+static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int));
 static VALUE rb_call _((VALUE,VALUE,ID,int,VALUE*,int));
 static VALUE module_setup _((VALUE,NODE*));
 
@@ -2226,7 +2226,7 @@ rb_eval(self, n)
 	else {
 	    result = Qnil;
 	}
-	result = rb_yield_0(result, 0, 0, Qfalse);
+	result = rb_yield_0(result, 0, 0, 0);
 	break;
 
       case NODE_RESCUE:
@@ -3503,14 +3503,14 @@ VALUE
 rb_yield(val)
     VALUE val;
 {
-    return rb_yield_0(val, 0, 0, Qfalse);
+    return rb_yield_0(val, 0, 0, 0);
 }
 
 static VALUE
 rb_f_loop()
 {
     for (;;) {
-	rb_yield_0(Qnil, 0, 0, Qfalse);
+	rb_yield_0(Qnil, 0, 0, 0);
 	CHECK_INTS;
     }
     return Qnil;		/* dummy */
@@ -4809,7 +4809,7 @@ yield_under_i(self)
 
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
-	    result = rb_yield_0(self, self, ruby_class, Qfalse);
+	    result = rb_yield_0(self, self, ruby_class, 0);
 	}
 	POP_TAG();
 	ruby_block = old_block;
@@ -4819,7 +4819,7 @@ yield_under_i(self)
     }
     /* static block, no need to restore */
     ruby_block->frame.cbase = ruby_frame->cbase;
-    return rb_yield_0(self, self, ruby_class, Qfalse);
+    return rb_yield_0(self, self, ruby_class, 0);
 }
 
 /* block eval under the class/module context */
@@ -5451,9 +5451,6 @@ errat_setter(val, id, var)
     }
     set_backtrace(ruby_errinfo, val);
 }
-
-VALUE rb_f_global_variables();
-VALUE f_instance_variables();
 
 static VALUE
 rb_f_local_variables()
@@ -7781,7 +7778,7 @@ rb_thread_yield(arg, th)
     rb_thread_t th;
 {
     scope_dup(ruby_block->scope);
-    return rb_yield_0(callargs(arg), 0, 0, Qfalse);
+    return rb_yield_0(callargs(arg), 0, 0, Qtrue);
 }
 
 static VALUE
@@ -8335,7 +8332,7 @@ rb_f_catch(dmy, tag)
     t = rb_to_id(tag);
     PUSH_TAG(t);
     if ((state = EXEC_TAG()) == 0) {
-	val = rb_yield_0(tag, 0, 0, Qfalse);
+	val = rb_yield_0(tag, 0, 0, 0);
     }
     else if (state == TAG_THROW && t == prot_tag->dst) {
 	val = prot_tag->retval;

@@ -1,10 +1,27 @@
+Wed Sep 13 17:11:19 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.0 released.
+
+Thu Sep 14 02:46:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_yield): array strip should be done in this
+	  function. 
+
+Wed Sep 13 17:01:03 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_eq): imcomplete value compare of bignums.
+
+Wed Sep 13 06:39:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_mod_class_variables): Module#class_variables added.
+
 Wed Sep 13 06:09:26 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: bug fix: CGI::header(): output status header.
 
-Tue Sep 12 22:34:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Wed Sep 13 01:09:12 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* stable version 1.6.0 released.
+	* parse.y (yylex): allow global variables like '$__a'.
 
 Tue Sep 12 22:28:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -17,8 +34,8 @@ Tue Sep 12 16:01:58 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 Tue Sep 12 15:37:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_yield_0): stripped array too much, should be just for
-	  proc_call(). 
+	* eval.c (rb_yield_0): stripped array too much, should remove just
+	  for proc_call().
 
 Tue Sep 12 07:05:24 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -98,7 +115,7 @@ Sun Sep  3 23:44:04 2000  Noriaki Harada  <tenmei@maoh.office.ne.jp>
 
 Sun Sep  3 11:31:53 2000  Takaaki Tateishi  <ttate@jaist.ac.jp>
 
-	* parse.y (rescue): no assignment was done if rescue body as
+	* parse.y (rescue): no assignment was done if rescue body was
 	  empty.
 
 Sat Sep  2 10:52:21 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -146,8 +163,7 @@ Wed Aug 30 23:21:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* numeric.c (rb_num2long): use rb_Integer() instead of independent
 	  convert routine.
 
-	* eval.c (rb_rescue2): now arbitrary number of exception types can
-	  be specified.
+	* eval.c (rb_rescue2): now takes arbitrary number of exception types.
 
 	* object.c (rb_convert_type): use rb_rescue2 now to handle NameError.
 
