@@ -4,17 +4,16 @@
 #  by A. Ito
 #
 #  This program reports the latest version of ruby interpreter
-#  by connecting to ftp server at netlab.co.jp.
+#  by connecting to ftp server at ruby-lang.org.
 #
 require 'pty'
 require 'expect'
 
 fnames = []
-PTY.spawn("ftp ftp.netlab.co.jp") do
-  |r_f,w_f,pid|
+PTY.spawn("ftp ftp.ruby-lang.org") do |r_f,w_f,pid|
   w_f.sync = true
   
-  $expect_verbose = true
+  $expect_verbose = false
   
   r_f.expect(/^Name.*: /) do
     w_f.print "ftp\n"
@@ -31,14 +30,14 @@ PTY.spawn("ftp ftp.netlab.co.jp") do
   r_f.expect('word:') do
     w_f.print username+"@\n"
   end
-  r_f.expect("ftp> ") do
-    w_f.print "cd pub/lang/ruby\n"
+  r_f.expect("> ") do
+    w_f.print "cd pub/ruby\n"
   end
-  r_f.expect("ftp> ") do
+  r_f.expect("> ") do
     w_f.print "dir\n"
   end
   
-  r_f.expect("ftp> ") do |output|
+  r_f.expect("> ") do |output|
     for x in output[0].split("\n")
       if x =~ /(ruby.*\.tar\.gz)/ then
          fnames.push $1

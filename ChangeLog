@@ -35,6 +35,18 @@ Wed Nov  5 22:55:16 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk.rb : add TkMenu#set_focus support Tcl/Tk's
 	  tk_menuSetFocus
 
+Wed Nov  5 17:33:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_load): allow interrupt during loaded program
+	  evaluation.  [ruby-dev:21834]
+
+	* hash.c (rb_hash_fetch): always warn if default argument and a
+	  block are supplied at the same time. [ruby-dev:21842]
+
+	* hash.c (env_fetch): ditto.
+
+	* array.c (rb_ary_fetch): ditto.
+
 Wed Nov  5 19:08:47 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Switch::PlacedArgument::parse):

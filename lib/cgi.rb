@@ -984,7 +984,7 @@ class CGI
         raise EOFError, "bad content body"
       end
 
-      until -1 == content_length
+      loop do
         head = nil
         if 10240 < content_length
           require "tempfile"
@@ -1020,14 +1020,13 @@ class CGI
               else
                 stdinput.read(content_length) or ''
               end
-          buf += c
+          buf.concat(c)
           content_length -= c.size
-
         end
 
         buf = buf.sub(/\A((?:.|\n)*?)(?:#{EOL})?#{boundary}(#{EOL}|--)/n) do
           body.print $1
-          if "--" == $2 or EOL == $2
+          if "--" == $2
             content_length = -1
           end
           ""
@@ -1072,7 +1071,8 @@ class CGI
         else
           params[name] = [body]
         end
-
+        break if buf.size == 0
+        break if content_length === -1
       end
 
       params
@@ -1115,6 +1115,7 @@ class CGI
         @multipart = true
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
+        @multipart = false
         @params = CGI::parse(
                     case env_table['REQUEST_METHOD']
                     when "GET", "HEAD"
@@ -1133,9 +1134,12 @@ class CGI
       end
 
       @cookies = CGI::Cookie::parse((env_table['HTTP_COOKIE'] or env_table['COOKIE']))
-
     end
     private :initialize_query
+
+    def multipart?
+      @multipart
+    end
 
     class Value < String    # :nodoc:
       def initialize(str, params)

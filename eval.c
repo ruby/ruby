@@ -5836,11 +5836,11 @@ rb_load(fname, wrap)
 	ruby_in_eval--;
 	node = ruby_eval_tree;
 	rb_thread_critical = critical;
+	ALLOW_INTS;
 	if (ruby_nerrs == 0) {
 	    eval_node(self, node);
 	}
     }
-    ALLOW_INTS;
     ruby_frame->last_func = last_func;
     ruby_current_node = last_node;
     ruby_sourcefile = 0;
@@ -9812,22 +9812,6 @@ rb_thread_trap_eval(cmd, sig)
     VALUE cmd;
     int sig;
 {
-#if 0
-    rb_thread_critical = 0;
-    if (!rb_thread_dead(curr_thread)) {
-	rb_thread_ready(curr_thread);
-	rb_trap_eval(cmd, sig);
-	return;
-    }
-    rb_thread_ready(main_thread);
-    if (THREAD_SAVE_CONTEXT(curr_thread)) {
-	return;
-    }
-    th_cmd = cmd;
-    th_sig = sig;
-    curr_thread = main_thread;
-    rb_thread_restore_context(curr_thread, RESTORE_TRAP);
-#else
     rb_thread_critical = 0;
     if (!rb_thread_dead(curr_thread)) {
 	if (THREAD_SAVE_CONTEXT(curr_thread)) {
@@ -9838,7 +9822,6 @@ rb_thread_trap_eval(cmd, sig)
     th_sig = sig;
     curr_thread = main_thread;
     rb_thread_restore_context(curr_thread, RESTORE_TRAP);
-#endif
 }
 
 static VALUE

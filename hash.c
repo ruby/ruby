@@ -300,16 +300,16 @@ rb_hash_fetch(argc, argv, hash)
 {
     VALUE key, if_none;
     VALUE val;
+    long block_given;
 
     rb_scan_args(argc, argv, "11", &key, &if_none);
 
+    block_given = rb_block_given_p();
+    if (block_given && argc == 2) {
+	rb_warn("block supersedes default value argument");
+    }
     if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
-	if (rb_block_given_p()) {
-	    if (argc > 1) {
-               rb_raise(rb_eArgError, "wrong number of arguments");
-	    }
-	    return rb_yield(key);
-	}
+	if (block_given) return rb_yield(key);
 	if (argc == 1) {
 	    rb_raise(rb_eIndexError, "key not found");
 	}
@@ -1086,9 +1086,14 @@ env_fetch(argc, argv)
     VALUE *argv;
 {
     VALUE key, if_none;
+    long block_given;
     char *nam, *env;
 
     rb_scan_args(argc, argv, "11", &key, &if_none);
+    block_given = rb_block_given_p();
+    if (block_given && argc == 2) {
+	rb_warn("block supersedes default value argument");
+    }
     StringValue(key);
     nam = RSTRING(key)->ptr;
     if (strlen(nam) != RSTRING(key)->len) {
@@ -1096,12 +1101,7 @@ env_fetch(argc, argv)
     }
     env = getenv(nam);
     if (!env) {
-	if (rb_block_given_p()) {
-	    if (argc > 1) {
-		rb_raise(rb_eArgError, "wrong number of arguments");
-	    }
-	    return rb_yield(key);
-	}
+	if (block_given) return rb_yield(key);
 	if (argc == 1) {
 	    rb_raise(rb_eIndexError, "key not found");
 	}

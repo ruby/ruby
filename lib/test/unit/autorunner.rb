@@ -29,6 +29,10 @@ module Test
           require 'test/unit/ui/fox/testrunner'
           Test::Unit::UI::Fox::TestRunner.run(r.suite)
         end,
+        :tk => proc do |r|
+          require 'test/unit/ui/tk/testrunner'
+          Test::Unit::UI::Tk::TestRunner.run(r.suite)
+        end,
       }
 
       OUTPUT_LEVELS = {

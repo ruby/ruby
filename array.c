@@ -595,21 +595,21 @@ rb_ary_fetch(argc, argv, ary)
     VALUE ary;
 {
     VALUE pos, ifnone;
+    long block_given;
     long idx;
 
     rb_scan_args(argc, argv, "11", &pos, &ifnone);
+    block_given = rb_block_given_p();
+    if (block_given && argc == 2) {
+	rb_warn("block supersedes default value argument");
+    }
     idx = NUM2LONG(pos);
 
     if (idx < 0) {
 	idx +=  RARRAY(ary)->len;
     }
     if (idx < 0 || RARRAY(ary)->len <= idx) {
-	if (rb_block_given_p()) {
-	    if (argc > 1) {
-		rb_raise(rb_eArgError, "wrong number of arguments");
-	    }
-	    return rb_yield(pos);
-	}
+	if (block_given) return rb_yield(pos);
 	if (argc == 1) {
 	    rb_raise(rb_eIndexError, "index %ld out of array", idx);
 	}

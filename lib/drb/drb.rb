@@ -1295,6 +1295,7 @@ module DRb
     end
 
     def run
+      raise if Thread.critical
       Thread.start do
 	begin
 	  while true
