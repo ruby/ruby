@@ -2108,10 +2108,8 @@ void
 rb_p(obj)			/* for debug print within C code */
     VALUE obj;
 {
-    obj = rb_obj_as_string(rb_inspect(obj));
-    fwrite(RSTRING(obj)->ptr, 1, RSTRING(obj)->len, stdout);
-    obj = rb_default_rs;
-    fwrite(RSTRING(obj)->ptr, 1, RSTRING(obj)->len, stdout);
+    rb_io_write(rb_defout, rb_obj_as_string(rb_inspect(obj)));
+    rb_io_write(rb_defout, rb_default_rs);
 }
 
 static VALUE

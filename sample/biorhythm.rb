@@ -28,6 +28,7 @@
 include Math
 require "date.rb"
 require "parsearg.rb"
+require "parsedate.rb"
 
 def usage()
   print "Usage:\n"
@@ -56,22 +57,31 @@ def getPosition(z)
   return phys, emot, geist
 end
 
+def parsedate(s)
+  ParseDate::parsedate(s).indexes(0, 1, 2)
+end
+
+def name_of_week(date)
+  Date::DAYNAMES[(date.jd + 1) % 7]
+end
+
 #
 # main program
 #
 parseArgs(0, nil, "vg", "D:", "sdate", "date:", "birthday:", "days:")
 
 if $OPT_D
-  dd = Date.new(Time.now.strftime("%Y%m%d"))
-  bd = Date.new($OPT_D)
+  now = Time.now
+  dd = Date.new(now.year, now.month, now.day)
+  bd = Date.new(*parsedate($OPT_D))
   ausgabeart = "g"
 else
   if $OPT_birthday
-    bd = Date.new($OPT_birthday)
+    bd = Date.new(*parsedate($OPT_birthday))
   else
     printf(STDERR, "Birthday                      (YYYYMMDD) : ")
     if (si = STDIN.gets.chop) != ""
-      bd = Date.new(si)
+      bd = Date.new(*parsedate(si))
     end
   end
   if !bd
@@ -80,17 +90,19 @@ else
   end
   
   if $OPT_sdate
-    dd = Date.new(Time.now.strftime("%Y%m%d"))
+    now = Time.now
+    dd = Date.new(now.year, now.month, now.day)
   elsif $OPT_date
-    dd = Date.new($OPT_date)
+    dd = Date.new(*parsedate($OPT_date))
   else
     printf(STDERR, "Date        [<RETURN> for Systemdate] (YYYYMMDD) : ")
     if (si = STDIN.gets.chop) != ""
-      dd = Date.new(si)
+      dd = Date.new(*parsedate(si))
     end
   end
   if !dd
-    dd = Date.new(Time.now.strftime("%Y%m%d"))
+    now = Time.now
+    dd = Date.new(now.year, now.month, now.day)
   end
 
   if $OPT_v
@@ -103,10 +115,10 @@ else
   end
 end
 if (ausgabeart == "v")
-  printHeader(bd.year, bd.month, bd.day, dd.period - bd.period, bd.name_of_week)
+  printHeader(bd.year, bd.month, bd.day, dd.jd - bd.jd, name_of_week(bd))
   print "\n"
   
-  phys, emot, geist = getPosition(dd.period - bd.period)
+  phys, emot, geist = getPosition(dd.jd - bd.jd)
   printf "Biorhythm:   %04d.%02d.%02d\n", dd.year, dd.month, dd.day
   printf "Physical:    %d%%\n", phys
   printf "Emotional:   %d%%\n", emot
@@ -127,13 +139,13 @@ else
     end
   end
 
-  printHeader(bd.year, bd.month, bd.day, dd.period - bd.period, bd.name_of_week)
+  printHeader(bd.year, bd.month, bd.day, dd.jd - bd.jd, name_of_week(bd))
   print "                     P=physical, E=emotional, M=mental\n"
   print "             -------------------------+-------------------------\n"
   print "                     Bad Condition    |    Good Condition\n"
   print "             -------------------------+-------------------------\n"
   
-  for z in (dd.period - bd.period)..(dd.period - bd.period + display_period)
+  for z in (dd.jd - bd.jd)..(dd.jd - bd.jd + display_period)
     phys, emot, geist = getPosition(z)
     
     printf "%04d.%02d.%02d : ", dd.year, dd.month, dd.day
