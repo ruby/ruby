@@ -2,6 +2,8 @@ Mon Jan 19 22:24:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* sample/exyacc.rb: escape '}' to avoid warning.
 
+	* lib/rdoc/parsers/parse_c.rb: escape '{' and '}' to avoid warnings.
+
 Mon Jan 19 21:28:06 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/defs.h, win32/win3.c, win32/win32.h, file.c: remove
