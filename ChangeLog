@@ -1,3 +1,10 @@
+Thu May 22 01:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (strings, word_list): must create new instance always.
+	  http://yowaken.dip.jp/tdiary/20030521.html#p02
+
+	* parse.y (yylex): slight optimization.
+
 Wed May 21 20:51:47 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* Makefile.in, bcc32/Makefile.sub, win32/Makefile.sub,
