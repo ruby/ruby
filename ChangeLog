@@ -1,3 +1,8 @@
+Wed Nov 17 13:09:40 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* {bcc32,win32,wince}/Makefile.sub (test): should build ruby.exe
+	  before running test. [ruby-core:03756]
+
 Wed Nov 17 04:33:01 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* pack.c: all features are backport from 1.9. [ruby-dev:24826]

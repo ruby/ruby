@@ -485,7 +485,7 @@ realclean:	distclean
 		@if exist parse.c del parse.c
 		@if exist lex.c del lex.c
 
-test:		miniruby$(EXEEXT) NUL
+test:		miniruby$(EXEEXT) rbconfig.rb $(PROGRAM) NUL
 		@miniruby$(EXEEXT) $(srcdir)/rubytest.rb
 
 rbconfig.rb:	miniruby$(EXEEXT) config.status
