@@ -1,3 +1,9 @@
+Tue Feb 24 07:23:30 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Deal with :stopdoc: when
+	  choosing a default main page to display (ie. don't select a page
+	  if we don't have documentation for it).
+
 Tue Feb 24 06:40:14 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_identifier): Handle 
