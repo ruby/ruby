@@ -13,9 +13,10 @@
 === ウェブサーバからドキュメントを得る (GET)
 
     require 'net/http'
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
-      response , = http.get('/index.html')
-      puts response.body
+        response, body = http.get('/index.html')
+        print body
     }
 
 また以下は同じ意味で短く書いたものです。
@@ -26,8 +27,9 @@
 === フォームの情報を送信する (POST)
 
     require 'net/http'
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
-        response , = http.post( '/cgi-bin/any.rhtml',
+        response, body = http.post( '/cgi-bin/any.rhtml',
                                 'querytype=subject&target=ruby' )
     }
 
@@ -38,12 +40,13 @@ Net::HTTP のクラスメソッド Net::HTTP.Proxy は、常にプロクシ経由で
 Net::HTTP を継承しているので Net::HTTP と全く同じように使えます。
 
     require 'net/http'
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
 
     $proxy_addr = 'your.proxy.addr'
     $proxy_port = 8080
           :
     Net::HTTP::Proxy($proxy_addr, $proxy_port).start( 'some.www.server' ) {|http|
-      # always connect to your.proxy.addr:8080
+        # always connect to your.proxy.addr:8080
           :
     }
 
@@ -53,7 +56,7 @@ Net::HTTP を継承しているので Net::HTTP と全く同じように使えます。
 === リダイレクトに対応する
 
     require 'net/http'
-    Net::HTTP.version_1_1
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
 
     host = 'www.ruby-lang.org'
     path = '/'
@@ -76,16 +79,18 @@ Net::HTTP を継承しているので Net::HTTP と全く同じように使えます。
 === Basic 認証
 
     require 'net/http'
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
 
     Net::HTTP.start( 'auth.some.domain' ) {|http|
-        response , = http.get( '/need-auth.cgi',
-                'Authentication' => ["#{account}:#{password}"].pack('m').strip )
-        print response.body
+        response, body = http.get( '/need-auth.cgi',
+                'Authorization' => 'Basic ' + ["#{account}:#{password}"].pack('m').strip )
+        print body
     }
 
 バージョン 1.2 (Ruby 1.7 以降に添付) では次のように書けます。
 
     require 'net/http'
+    Net::HTTP.version_1_2   # declear to use 1.2 features.
 
     req = Net::HTTP::Get.new('/need-auth.cgi')
     req.basic_auth 'account', 'password'

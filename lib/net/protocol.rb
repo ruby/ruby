@@ -2,7 +2,7 @@
 
 = net/protocol.rb
 
-Copyright (c) 1999-2001 Yukihiro Matsumoto
+Copyright (c) 1999-2002 Yukihiro Matsumoto
 
 written & maintained by Minero Aoki <aamine@loveruby.net>
 

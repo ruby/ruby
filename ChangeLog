@@ -1,3 +1,15 @@
+Tue Feb 19 22:49:29 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: remove unused class Accumulator.
+
+	* lib/net/http.rb: read response in HTTP#request. not
+	  HTTPRequest#exec.
+
+	* lib/net/http.rb: proxy related class instance variables are not
+	  initialized correctly.
+
+	* doc/net/http.rb: modify typo in the description of basic auth.
+
 Tue Feb 19 14:45:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (r_object): complete restoration before calling

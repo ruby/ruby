@@ -2,7 +2,7 @@
 
 = net/http.rb
 
-Copyright (c) 1999-2001 Yukihiro Matsumoto
+Copyright (c) 1999-2002 Yukihiro Matsumoto
 
 written & maintained by Minero Aoki <aamine@loveruby.net>
 This file is derived from "http-access.rb".
@@ -27,13 +27,11 @@ For details of HTTP, refer [RFC2616]
 
 === Getting Document From Server
 
-Be care to ',' (comma) putted after "response".
-This is required for compatibility.
-
     require 'net/http'
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
-      response , = http.get('/index.html')
-      puts response.body
+        response, body = http.get('/index.html')
+        print body
     }
 
 (shorter version)
@@ -44,8 +42,9 @@ This is required for compatibility.
 === Posting Form Data
 
     require 'net/http'
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
-        response , = http.post( '/cgi-bin/any.rhtml',
+        response, body = http.post( '/cgi-bin/any.rhtml',
                                 'querytype=subject&target=ruby' )
     }
 
@@ -56,12 +55,13 @@ methods of Net::HTTP but its instances always connect to
 proxy, instead of given host.
 
     require 'net/http'
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
 
     $proxy_addr = 'your.proxy.addr'
     $proxy_port = 8080
           :
     Net::HTTP::Proxy($proxy_addr, $proxy_port).start( 'some.www.server' ) {|http|
-      # always connect to your.proxy.addr:8080
+        # always connect to your.proxy.addr:8080
           :
     }
 
@@ -71,7 +71,7 @@ there's no need to change code if there's proxy or not.
 === Redirect
 
     require 'net/http'
-    Net::HTTP.version_1_1
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
 
     host = 'www.ruby-lang.org'
     path = '/'
@@ -94,16 +94,18 @@ URI class will be included in ruby standard library.
 === Basic Authentication
 
     require 'net/http'
+    Net::HTTP.version_1_1   # declear to use 1.1 features.
 
     Net::HTTP.start( 'auth.some.domain' ) {|http|
-        response , = http.get( '/need-auth.cgi',
-                'Authentication' => ["#{account}:#{password}"].pack('m').strip )
-        print response.body
+        response, body = http.get( '/need-auth.cgi',
+                'Authorization' => 'Basic ' + ["#{account}:#{password}"].pack('m').strip )
+        print body
     }
 
 In version 1.2 (Ruby 1.7 or later), you can write like this:
 
     require 'net/http'
+    Net::HTTP.version_1_2   # declear to use 1.2 features.
 
     req = Net::HTTP::Get.new('/need-auth.cgi')
     req.basic_auth 'account', 'password'
@@ -127,7 +129,7 @@ you to use 1.2 features again.
     Net::HTTP.version_1_2
     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
 
-Yes, this is not thread-safe.
+This function is not thread-safe.
 
 == class Net::HTTP
 
@@ -404,6 +406,62 @@ module Net
 
   class HTTP < Protocol
 
+    HTTPVersion = '1.1'
+
+    protocol_param :port, '80'
+
+
+    #
+    # for backward compatibility
+    #
+
+    @@newimpl = false
+
+    class << self
+
+      def version_1_2
+        @@newimpl = true
+      end
+
+      def version_1_1
+        @@newimpl = false
+      end
+
+      def is_version_1_2?
+        @@newimpl
+      end
+
+      private
+
+      def setimplversion( obj )
+        f = @@newimpl
+        obj.instance_eval { @newimpl = f }
+      end
+
+    end
+
+
+    #
+    # short cut methods
+    #
+
+    def HTTP.get( addr, path, port = nil )
+      req = Get.new( path )
+      resp = nil
+      new( addr, port || HTTP.port ).start {|http|
+          resp = http.request( req )
+      }
+      resp.body
+    end
+
+    def HTTP.get_print( addr, path, port = nil )
+      new( addr, port || HTTP.port ).start {|http|
+          http.get path, nil, $stdout
+      }
+      nil
+    end
+
+
     #
     # constructors
     #
@@ -435,10 +493,6 @@ module Net
     # connection
     #
 
-    protocol_param :port, '80'
-
-    HTTPVersion = '1.1'
-
     private
 
     def do_start
@@ -451,31 +505,15 @@ module Net
 
 
     #
-    # short cut methods
-    #
-
-    def HTTP.get( addr, path, port = nil )
-      req = Get.new( path )
-      resp = nil
-      new( addr, port || HTTP.port ).start {|http|
-          resp = http.request( req )
-      }
-      resp.body
-    end
-
-    def HTTP.get_print( addr, path, port = nil )
-      new( addr, port || HTTP.port ).start {|http|
-          http.get path, nil, $stdout
-      }
-      nil
-    end
-
-
-    #
     # proxy
     #
 
     public
+
+    # without proxy
+    @is_proxy_class = false
+    @proxy_addr = nil
+    @proxy_port = nil
 
     class << self
       def Proxy( p_addr, p_port = nil )
@@ -486,16 +524,13 @@ module Net
         proxyclass = Class.new(self)
         proxyclass.module_eval {
             include mod
+            # with proxy
             @is_proxy_class = true
             @proxy_address = p_addr
             @proxy_port    = p_port
         }
         proxyclass
       end
-
-      @is_proxy_class = false
-      @proxy_addr = nil
-      @proxy_port = nil
 
       def proxy_class?
         @is_proxy_class
@@ -552,40 +587,6 @@ module Net
       def edit_path( path )
         'http://' + addr_port() + path
       end
-    end
-
-
-    #
-    # for backward compatibility
-    #
-
-    if Version < '1.2.0' then   ###noupdate
-      @@newimpl = false
-    else
-      @@newimpl = true
-    end
-
-    class << self
-
-      def version_1_2
-        @@newimpl = true
-      end
-
-      def version_1_1
-        @@newimpl = false
-      end
-
-      def is_version_1_2?
-        @@newimpl
-      end
-
-      private
-
-      def setimplversion( obj )
-        f = @@newimpl
-        obj.instance_eval { @newimpl = f }
-      end
-
     end
 
 
@@ -668,17 +669,21 @@ module Net
         }
       end
         
-      connecting( req ) {
-          req.__send__( :exec,
-                  @socket, @curr_http_version, edit_path(req.path), body )
-          yield req.response if block_given?
-      }
-      req.response
+      begin_transport(req)
+          req.__send__(:exec,
+                       @socket, @curr_http_version, edit_path(req.path), body)
+          begin
+            res = HTTPResponse.read_new(@socket, req.response_body_permitted?)
+          end while ContinueCode === res
+          yield res if block_given?
+      end_transport(req, res)
+
+      res
     end
 
     private
 
-    def connecting( req )
+    def begin_transport( req )
       if @socket.closed? then
         reconn_socket
       end
@@ -686,14 +691,15 @@ module Net
         req['connection'] = 'close'
       end
       req['host'] = addr_port()
+    end
 
-      yield req
-      req.response.__send__ :terminate
-      @curr_http_version = req.response.http_version
+    def end_transport( req, res )
+      res.__send__ :terminate
+      @curr_http_version = res.http_version
 
-      if not req.response.body then
+      if not res.body then
         @socket.close
-      elsif keep_alive? req, req.response then
+      elsif keep_alive? req, res then
         D 'Conn keep-alive'
         if @socket.closed? then   # (only) read stream had been closed
           D 'Conn (but seems 1.0 server)'
@@ -739,6 +745,7 @@ module Net
 
   end
 
+  HTTPSession = HTTP
 
 
   class Code
@@ -1003,39 +1010,17 @@ module Net
     # write
     #
 
-    def exec( sock, ver, path, body, &block )
+    def exec( sock, ver, path, body )
       if body then
-        check_body_premitted
-        check_arg_b body, block
-        sendreq_with_body sock, ver, path, body, &block
+        raise ArgumentError, 'HTTP request body is not premitted'\
+                                        unless request_body_permitted?
+        send_request_with_body sock, ver, path, body
       else
-        check_arg_n body
-        sendreq_no_body sock, ver, path
+        request sock, ver, path
       end
-      @response = r = get_response(sock)
-      r
     end
 
-    def check_body_premitted
-      request_body_permitted? or
-          raise ArgumentError, 'HTTP request body is not premitted'
-    end
-
-    def check_arg_b( data, block )
-      (data and block) and raise ArgumentError, 'both of data and block given'
-      (data or block) or raise ArgumentError, 'str or block required'
-    end
-
-    def check_arg_n( data )
-      data and raise ArgumentError, "data is not permitted for #{@method}"
-    end
-
-
-    def sendreq_no_body( sock, ver, path )
-      request sock, ver, path
-    end
-
-    def sendreq_with_body( sock, ver, path, body )
+    def send_request_with_body( sock, ver, path, body )
       if block_given? then
         ac = Accumulator.new
         yield ac              # must be yield, DO NOT USE block.call
@@ -1062,17 +1047,6 @@ module Net
       end
       sock.writeline ''
     end
-
-    #
-    # read
-    #
-
-    def get_response( sock )
-      begin
-        resp = HTTPResponse.new_from_socket(sock, response_body_permitted?)
-      end while ContinueCode === resp
-      resp
-    end
   
   end
 
@@ -1086,30 +1060,6 @@ module Net
             path, initheader
     end
 
-  end
-
-
-  class Accumulator
-  
-    def initialize
-      @buf = ''
-    end
-
-    def write( s )
-      @buf.concat s
-    end
-
-    def <<( s )
-      @buf.concat s
-      self
-    end
-
-    def terminate
-      ret = @buf
-      @buf = nil
-      ret
-    end
-  
   end
 
 
@@ -1206,37 +1156,38 @@ module Net
 
     class << self
 
-      def new_from_socket( sock, hasbody )
-        resp = readnew( sock, hasbody )
+      def read_new( sock, hasbody )
+        httpv, code, msg = read_status(sock)
+        res = new(code, msg, sock, hasbody, httpv)
+        each_response_header(sock) do |k,v|
+          if res.key? k then
+            res[k] << ', ' << v
+          else
+            res[k] = v
+          end
+        end
+        res
+      end
 
+      private
+
+      def read_status( sock )
+        str = sock.readline
+        m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match( str )
+        m or raise HTTPBadResponse, "wrong status line: #{str}"
+        m.to_a[1,3]
+      end
+
+      def each_response_header( sock )
         while true do
           line = sock.readuntil( "\n", true )   # ignore EOF
           line.sub!( /\s+\z/, '' )              # don't use chop!
           break if line.empty?
 
-          m = /\A([^:]+):\s*/.match( line )
-          m or raise HTTPBadResponse, 'wrong header line format'
-          nm = m[1]
-          line = m.post_match
-          if resp.key? nm then
-            resp[nm] << ', ' << line
-          else
-            resp[nm] = line
-          end
+          m = /\A([^:]+):\s*/.match(line) or
+                  raise HTTPBadResponse, 'wrong header line format'
+          yield m[1], m.post_match
         end
-
-        resp
-      end
-
-      private
-
-      def readnew( sock, hasbody )
-        str = sock.readline
-        m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match( str )
-        m or raise HTTPBadResponse, "wrong status line: #{str}"
-        discard, httpv, stat, desc = *m.to_a
-        
-        new( stat, desc, sock, hasbody, httpv )
       end
 
     end
@@ -1367,14 +1318,10 @@ module Net
 
 
   # for backward compatibility
-
-  HTTPSession = HTTP
-
   module NetPrivate
     HTTPResponse         = ::Net::HTTPResponse
     HTTPGenericRequest   = ::Net::HTTPGenericRequest
     HTTPRequest          = ::Net::HTTPRequest
-    Accumulator          = ::Net::Accumulator
     HTTPHeader           = ::Net::HTTPHeader
   end
   HTTPResponceReceiver = HTTPResponse
