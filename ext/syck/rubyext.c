@@ -845,7 +845,7 @@ syck_loader_initialize( self )
 {
     VALUE families;
 
-       rb_iv_set(self, "@families", rb_hash_new() );
+	rb_iv_set(self, "@families", rb_hash_new() );
     rb_iv_set(self, "@private_types", rb_hash_new() );
     rb_iv_set(self, "@anchors", rb_hash_new() );
     families = rb_iv_get(self, "@families");
@@ -853,7 +853,7 @@ syck_loader_initialize( self )
     rb_hash_aset(families, rb_str_new2( YAML_DOMAIN ), rb_hash_new());
     rb_hash_aset(families, rb_str_new2( RUBY_DOMAIN ), rb_hash_new());
 
-       return self;
+	return self;
 }
 
 /*

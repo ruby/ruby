@@ -1,3 +1,8 @@
+Mon Dec 22 00:32:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/emitter.c (syck_emitter_write): str bigger than
+	  e->bufsize causes buffer overflow.  [ruby-dev:22307]
+
 Sun Dec 21 17:29:00 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_check_inheritable): new function.  [ruby-dev:22316]
