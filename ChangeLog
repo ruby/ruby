@@ -3,6 +3,14 @@ Fri May 23 15:16:16 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* pack.c (pack_unpack): sign-extend if sizeof long is bigger than
 	  32.  (ruby-bugs-ja:PR#472)
 
+Fri May 23 14:19:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_finalize): turn off ruby_debug flag before calling
+	  at_exit procs and finalizers. (ruby-bugs-ja:PR473)
+
+	* ext/tcltklib/tcltklib.c (lib_mainloop_core): OK to block if
+	  there's no other thread. (ruby-bugs:PR#861)
+
 Thu May 22 18:07:46 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
 	* lib/token.c: single- and double-quoted root-level fix.

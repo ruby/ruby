@@ -1309,6 +1309,7 @@ ruby_finalize()
 {
     int state;
 
+    ruby_debug = Qfalse;
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	rb_trap_exit();

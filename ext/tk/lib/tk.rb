@@ -354,7 +354,7 @@ module TkComm
       })
       id + " " + args
     else
-      id = install_cmd(proc{|arg|
+      id = install_cmd(proc{|*arg|
 	TkUtil.eval_cmd cmd, Event.new(*arg)
       })
       id + ' %# %a %b %c %d %f %h %k %m %o %p %s %t %w %x %y' + 

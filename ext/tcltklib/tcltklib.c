@@ -58,7 +58,6 @@ struct invoke_queue {
     VALUE thread;
 };
  
-static VALUE main_thread;
 static VALUE eventloop_thread;
 static VALUE watchdog_thread;
 Tcl_Interp  *current_interp;
@@ -151,7 +150,7 @@ set_eventloop_weight(self, loop_max, no_event)
     int no_ev = NUM2INT(no_event);
 
     if (lpmax <= 0 || no_ev <= 0) {
-      rb_raise(rb_eArgError, "weight parameters must be plus number");
+      rb_raise(rb_eArgError, "weight parameters must be positive numbers");
     }
 
     event_loop_max = lpmax;
@@ -185,7 +184,7 @@ lib_mainloop_core(check_root_widget)
     for(;;) {
       tick_counter = 0;
       while(tick_counter < event_loop_max) {
-        if (Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT)) {
+        if (Tcl_DoOneEvent(TCL_ALL_EVENTS | (rb_thread_alone() ? 0 : TCL_DONT_WAIT))) {
           tick_counter++;
 	} else {
           tick_counter += no_event_tick;
@@ -886,7 +885,6 @@ Init_tcltklib()
     rb_define_method(ip, "get_eventloop_weight", get_eventloop_weight, 0);
     rb_define_method(ip, "restart", lib_restart, 0);
 
-    main_thread = rb_thread_current();
     eventloop_thread = 0;
     watchdog_thread  = 0;
 
