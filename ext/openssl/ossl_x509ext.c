@@ -223,11 +223,14 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
 
     nid = OBJ_ln2nid(RSTRING(oid)->ptr);
     if(!nid) nid = OBJ_sn2nid(RSTRING(oid)->ptr);
-    if(!nid) ossl_raise(eX509ExtError, NULL);
+    if(!nid) ossl_raise(eX509ExtError, "unknown OID `%s'", RSTRING(oid)->ptr);
     valstr = rb_str_new2(RTEST(critical) ? "critical," : "");
     rb_str_append(valstr, value);
     ext = X509V3_EXT_conf_nid(NULL, ctx, nid, RSTRING(valstr)->ptr);
-    if (!ext) ossl_raise(eX509ExtError, NULL);
+    if (!ext){
+	ossl_raise(eX509ExtError, "%s = %s",
+		   RSTRING(oid)->ptr, RSTRING(value)->ptr);
+    }
     WrapX509Ext(cX509Ext, obj, ext);
 
     return obj;

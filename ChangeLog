@@ -1,3 +1,8 @@
+Sat Nov 15 22:16:42 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* /ext/openssl/ossl_x509ext.c (ossl_x509extfactory_create_ext):
+	  refine error message.
+
 Sat Nov 15 10:05:40 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (OpenURI.open_loop, OpenURI::HTTP#proxy_open): 
