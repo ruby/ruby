@@ -5,16 +5,16 @@
 Copyright (c) 1999-2003 Yukihiro Matsumoto
 Copyright (c) 1999-2003 Minero Aoki
 
-written & maintained by Minero Aoki <aamine@loveruby.net>
+written and maintained by Minero Aoki <aamine@loveruby.net>
 
 This program is free software. You can re-distribute and/or
 modify this program under the same terms as Ruby itself,
 Ruby Distribute License or GNU General Public License.
 
-NOTE: You can find Japanese version of this document in
-the doc/net directory of the standard ruby interpreter package.
-
 $Id$
+
+WARNING: This file is going to remove.
+Do not rely on the implementation written in this file.
 
 =end
 

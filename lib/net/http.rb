@@ -1181,7 +1181,7 @@ module Net
       return unless initheader
       initheader.each do |k,v|
         key = k.downcase
-        $stderr.puts "net/http: WARNING: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
+        $stderr.puts "net/http: warning: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
         @header[key] = v.strip
       end
       @header['accept'] ||= '*/*'
@@ -1230,7 +1230,7 @@ module Net
       @header.delete 'transfer-encoding'
 
       unless @header['content-type']
-        $stderr.puts 'net/http: WARNING: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
+        $stderr.puts 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
         @header['content-type'] = 'application/x-www-form-urlencoded'
       end
 
@@ -1598,10 +1598,20 @@ module Net
     attr_reader :http_version
     attr_reader :code
     attr_reader :message
-    alias msg message
+    alias msg message       # for backward compatibility
 
     def inspect
       "#<#{self.class} #{@code} readbody=#{@read}>"
+    end
+
+    # For backward compatibility.
+    # To allow Net::HTTP 1.1 style assignment
+    # e.g.
+    #    response, body = Net::HTTP.get(....)
+    # 
+    def to_ary
+      warn "net/http: warning: old style assignment found at #{caller(1)[0]}" if $VERBOSE
+      [self, body()]
     end
 
     #

@@ -1,3 +1,10 @@
+Fri Jun  6 16:10:01 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: define Net::HTTPResponse#to_ary for backward
+	  compatibility.  [ruby-talk:72927]
+
+	* lib/net/protocol.rb: add warning.
+
 Thu Jun  5 21:31:55 2003  Takaaki Uematsu <uema2x@jcom.home.ne.jp>
 
 	* wince/stdlib.c: add mblen().
