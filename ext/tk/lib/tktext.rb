@@ -428,8 +428,16 @@ class TkText<TkTextWin
     rsearch_with_length(pat,start,stop)[0]
   end
 
-  def _dump(type, *index)
-    str = tk_send('dump', type, *index)
+  def dump(type_info, *index)
+    args = type_info.collect{|inf|
+                 if inf.kind_of? Array
+                   inf[0] = '-' + inf[0]
+                   inf
+                 else
+                   '-' + inf
+                 end
+               }.flatten
+    str = tk_send('dump', *(args + index))
     result = []
     sel = nil
     i = 0
@@ -501,24 +509,64 @@ class TkText<TkTextWin
     end
     kvis  # result is [[key1, value1, index1], [key2, value2, index2], ...]
   end
-  private :_dump
+
+  def _retrieve_braced_text(str, i)
+    cnt = 0
+    idx = i
+    while idx < str.size
+      case str[idx]
+      when ?{
+	cnt += 1
+      when ?}
+	cnt -= 1
+	if cnt == 0
+	  break
+	end
+      end
+      idx += 1
+    end
+    return str[i+1..idx-1], idx + 2
+  end
+  private :_retrieve_braced_text
+
+  def _retrieve_backslashed_text(str, i)
+    j = i
+    idx = nil
+    loop {
+      idx = str.index(/ /, j)
+      if str[idx-1] == ?\\
+	j += 1
+      else
+	break
+      end
+    }
+    val = str[i..(idx-1)]
+    val.gsub!(/\\( |\{|\})/, '\1')
+    return val, idx + 1
+  end
+  private :_retrieve_backslashed_text
 
   def dump_all(*index)
-    _dump('-all', *index)
+    dump(['all'], *index)
+  end
+  def dump_command(cmd, *index)
+    dump([['command', cmd]], *index)
   end
   def dump_mark(*index)
-    _dump('-mark', *index)
+    dump(['mark'], *index)
   end
   def dump_tag(*index)
-    _dump('-tag', *index)
+    dump(['tag'], *index)
   end
   def dump_text(*index)
-    _dump('-text', *index)
+    dump(['text'], *index)
   end
   def dump_window(*index)
-    _dump('-window', *index)
+    dump(['window'], *index)
   end
-
+  def dump_image(*index)
+    dump(['image'], *index)
+  end
 end
 
 class TkTextTag<TkObject
@@ -830,42 +878,6 @@ class TkTextWindow<TkObject
       }
     end
   end
-
-  def _retrieve_braced_text(str, i)
-    cnt = 0
-    idx = i
-    while idx < str.size
-      case str[idx]
-      when ?{
-	cnt += 1
-      when ?}
-	cnt -= 1
-	if cnt == 0
-	  break
-	end
-      end
-      idx += 1
-    end
-    return str[i+1..idx-1], idx + 2
-  end
-  private :_retrieve_braced_text
-
-  def _retrieve_backslashed_text(str, i)
-    j = i
-    idx = nil
-    loop {
-      idx = str.index(/ /, j)
-      if str[idx-1] == ?\\
-	j += 1
-      else
-	break
-      end
-    }
-    val = str[i..(idx-1)]
-    val.gsub!(/\\( |\{|\})/, '\1')
-    return val, idx + 1
-  end
-  private :_retrieve_backslashed_text
 
 end
 
