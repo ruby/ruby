@@ -1,3 +1,12 @@
+Fri Nov 21 01:40:00 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* configure.in: check <pthread.h>
+
+	* ruby.h: include pthread.h if existence. 
+	  define is_ruby_native() macro when not HAVE_NATIVETHREAD
+
+	* eval.c: undef is_ruby_native() function when not HAVE_NATIVETHREAD
+
 Thu Nov 21 00:43:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb: use #__send__ instead of #send.

@@ -672,6 +672,9 @@ static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 #endif
 
 #if defined(HAVE_LIBPTHREAD)
+#ifdef HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
 typedef pthread_t rb_nativethread_t;
 # define NATIVETHREAD_CURRENT() pthread_self()
 # define NATIVETHREAD_EQUAL(t1,t2) pthread_equal((t1),(t2))
@@ -682,7 +685,11 @@ typedef DWORD rb_nativethread_t;
 # define NATIVETHREAD_EQUAL(t1,t2) ((t1) == (t2))
 # define HAVE_NATIVETHREAD
 #endif
+#ifdef HAVE_NATIVETHREAD
 RUBY_EXTERN int is_ruby_native_thread();
+#else
+#define is_ruby_native_thread() (1)
+#endif
 
 #if defined(__cplusplus)
 }  /* extern "C" { */
