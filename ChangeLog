@@ -1,3 +1,12 @@
+Mon Apr  4 23:17:52 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb (TkComm#array2tk_list): accept enc-mode argument to
+	  decide whether convert encoding of each element or not.
+
+	* ext/tk/lib/tk/variable.rb (TkVariable#value=): fail to convert the
+	  encoding of array elements when assign an array to an TkVariable
+	  object.
+
 Mon Apr  4 10:26:48 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/lib/tk/dialog.rb: fixed typo.

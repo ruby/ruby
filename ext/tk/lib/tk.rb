@@ -287,19 +287,19 @@ if USE_TCLs_LIST_FUNCTIONS
     TkCore::INTERP._split_tklist(str)
   end
 
-  def array2tk_list(ary)
+  def array2tk_list(ary, enc=nil)
     return "" if ary.size == 0
 
     dst = ary.collect{|e|
       if e.kind_of? Array
-        array2tk_list(e)
+        array2tk_list(e, enc)
       elsif e.kind_of? Hash
         tmp_ary = []
         #e.each{|k,v| tmp_ary << k << v }
         e.each{|k,v| tmp_ary << "-#{_get_eval_string(k)}" << v }
-        array2tk_list(tmp_ary)
+        array2tk_list(tmp_ary, enc)
       else
-        _get_eval_string(e)
+        _get_eval_string(e, enc)
       end
     }
     TkCore::INTERP._merge_tklist(*dst)
@@ -422,16 +422,16 @@ else
     list
   end
 
-  def array2tk_list(ary)
+  def array2tk_list(ary, enc=nil)
     ary.collect{|e|
       if e.kind_of? Array
-        "{#{array2tk_list(e)}}"
+        "{#{array2tk_list(e, enc)}}"
       elsif e.kind_of? Hash
         # "{#{e.to_a.collect{|ee| array2tk_list(ee)}.join(' ')}}"
         e.each{|k,v| tmp_ary << "-#{_get_eval_string(k)}" << v }
-        array2tk_list(tmp_ary)
+        array2tk_list(tmp_ary, enc)
       else
-        s = _get_eval_string(e)
+        s = _get_eval_string(e, enc)
         (s.index(/\s/) || s.size == 0)? "{#{s}}": s
       end
     }.join(" ")
@@ -3120,7 +3120,7 @@ module TkConfigMethod
           when /^(#{__strval_optkeys.join('|')})$/
             conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
           else
-            conf = tk_split_list(_fromUTF8(tk_send_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
           end
           conf[__configinfo_struct[:key]] = 
             conf[__configinfo_struct[:key]][1..-1]

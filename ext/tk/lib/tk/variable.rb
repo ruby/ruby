@@ -468,7 +468,7 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
                                 _get_eval_string(v, true))
       }
       self.value
-    elsif val.kind_of?(Array)
+#    elsif val.kind_of?(Array)
 =begin
       INTERP._set_global_var(@id, '')
       val.each{|v|
@@ -481,7 +481,7 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
       }
       self.value
 =end
-      _fromUTF8(INTERP._set_global_var(@id, array2tk_list(val)))
+#      _fromUTF8(INTERP._set_global_var(@id, array2tk_list(val, true)))
     else
       #_fromUTF8(INTERP._set_global_var(@id, _toUTF8(_get_eval_string(val))))
       _fromUTF8(INTERP._set_global_var(@id, _get_eval_string(val, true)))
@@ -576,7 +576,7 @@ else
           #INTERP._invoke_without_enc('unset', @id+'(0)')
         elsif val.kind_of?(Array)
           a = []
-          val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e))}
+          val.each_with_index{|e,i| a.push(i); a.push(array2tk_list(e, true))}
           #s = '"' + a.join(" ").gsub(/[\[\]$"]/, '\\\\\&') + '"'
           s = '"' + a.join(" ").gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
           INTERP._eval(Kernel.format('global %s; unset %s; array set %s %s', 
@@ -588,7 +588,7 @@ else
         elsif  val.kind_of?(Hash)
           #s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
           #                      .gsub(/[\[\]$"]/, '\\\\\&') + '"'
-          s = '"' + val.to_a.collect{|e| array2tk_list(e)}.join(" ")\
+          s = '"' + val.to_a.collect{|e| array2tk_list(e, true)}.join(" ")\
                                 .gsub(/[\[\]$\\"]/, '\\\\\&') + '"'
           INTERP._eval(Kernel.format('global %s; unset %s; array set %s %s', 
                                      @id, @id, @id, s))
