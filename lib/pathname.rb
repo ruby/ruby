@@ -2,9 +2,14 @@
 #
 # Author:: Tanaka Akira <akr@m17n.org>
 
+# Pathname represents a pathname which locates a file in a filesystem.
+#
+# Pathname is immutable.  It has no method for destructive update.
+#
 class Pathname
   def initialize(path)
-    @path = path.to_str
+    @path = path.to_str.dup
+    @path.freeze
   end
 
   def ==(other)
@@ -24,7 +29,7 @@ class Pathname
   end
 
   def to_s
-    @path
+    @path.dup
   end
   alias to_str to_s
 
@@ -230,11 +235,22 @@ class Pathname
     end
   end
 
+  # Pathname#children returns the children of the directory as an array of
+  # pathnames.  I.e. it is similar to Pathname#entries except '.' and '..'
+  # is not returned.
+  def children
+    Dir.entries(@path).map {|f|
+      f == '.' || f == '..' ? nil : Pathname.new(f)
+    }.compact
+  end
+
 end
 
 # IO
 class Pathname
   def foreachline(*args, &block) IO.foreach(@path, *args, &block) end
+  alias each_line foreachline
+
   def read(*args) IO.read(@path, *args) end
   def readlines(*args) IO.readlines(@path, *args) end
   def sysopen(*args) IO.sysopen(@path, *args) end
@@ -481,7 +497,6 @@ if $0 == __FILE__
       assert_equal('a/b/../../../../c/../d', Pathname.new('a/b/../../../../c/../d').cleanpath(true).to_s)
     end
 
-
     def test_cleanpath_no_symlink
       assert_equal('/', Pathname.new('/').cleanpath.to_s)
       assert_equal('/', Pathname.new('//').cleanpath.to_s)
@@ -519,6 +534,12 @@ if $0 == __FILE__
 
       assert_equal('/a', Pathname.new('/../.././../a').cleanpath.to_s)
       assert_equal('../../d', Pathname.new('a/b/../../../../c/../d').cleanpath.to_s)
+    end
+
+    def test_destructive_update
+      path = Pathname.new("a")
+      path.to_s.replace "b"
+      assert_equal(Pathname.new("a"), path)
     end
 
   end

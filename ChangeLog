@@ -1,3 +1,10 @@
+Sat Oct  4 01:33:46 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (initialize): duplicate and freeze argument.
+	  (to_s): return duplicated string.
+	  (children): new method.
+	  (each_line): new alias to foreachline.
+
 Fri Oct  3 16:13:19 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.c: add DER encoder and decoder.
