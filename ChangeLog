@@ -1,3 +1,14 @@
+Tue May 14 09:15:39 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (blk_orphan): the wrong condition; backported from 1.7
+
+Tue May 14 03:07:35 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_clear_cache_by_class): new function.
+
+	* eval.c (set_method_visibility): should have clear cache forq
+	  updated visibility.
+
 Fri May 10 19:00:47 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (here_document): preserve line number begins here
@@ -17,6 +28,10 @@ Sat May  4 20:55:10 2002  Akinori MUSHA  <knu@iDaemons.org>
 	* eval.c, gc.c, intern.h, variable.c: declare rb_gc_mark{,maybe}()
 	  canonically in order not to confuse C++ compilers. (backported
 	  from 1.7, problem noted by ttate)
+
+Thu May  2 23:42:40 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_s_quote): # also should be quoted.
 
 Thu May  2 18:27:13 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 

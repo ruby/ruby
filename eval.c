@@ -221,6 +221,21 @@ rb_clear_cache_by_id(id)
     }
 }
 
+static void
+rb_clear_cache_by_class(klass)
+    VALUE klass;
+{
+    struct cache_entry *ent, *end;
+
+    ent = cache; end = ent + CACHE_SIZE;
+    while (ent < end) {
+	if (ent->origin == klass) {
+	    ent->mid = 0;
+	}
+	ent++;
+    }
+}
+
 void
 rb_add_method(klass, mid, node, noex)
     VALUE klass;
@@ -5534,6 +5549,7 @@ set_method_visibility(self, argc, argv, ex)
     for (i=0; i<argc; i++) {
 	rb_export_method(self, rb_to_id(argv[i]), ex);
     }
+    rb_clear_cache_by_class(self);
 }
 
 static VALUE
@@ -6349,8 +6365,10 @@ static int
 blk_orphan(data)
     struct BLOCK *data;
 {
-    if (data->scope && data->scope != top_scope &&
-	(data->scope->flag & SCOPE_NOSTACK)) {
+    if (!(data->scope->flag & SCOPE_NOSTACK)) {
+	return 0;
+    }
+    if ((data->tag->flags & BLOCK_ORPHAN)) {
 	return 1;
     }
     if (data->orig_thread != rb_thread_current()) {

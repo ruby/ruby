@@ -106,6 +106,13 @@ cygwin*|mingw*)
     ;;
 esac
 
+# by TOYODA Eizi <toyoda@npd.kishou.go.jp>
+case "$target_os" in
+hiuxmpp*)
+    AC_DEFINE(__HIUX_MPP__)
+    ;;
+esac
+
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
@@ -621,6 +628,7 @@ if test "$with_dln_a_out" != yes; then
 	cygwin*|mingw*)	: ${LDSHARED="${DLLWRAP} --target=${target_os} --as=${AS} --dlltool-name=${DLLTOOL} --driver-name=${CC} --export-all -s"}
 			LDFLAGS='-Wl,--stack,0x02000000'
 			rb_cv_dlopen=yes ;;
+	hiuxmpp)	LDSHARED='ld -r' ;;
 	*) 		LDSHARED='ld' ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
@@ -879,7 +887,7 @@ if test "$enable_shared" = 'yes'; then
     darwin*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).$(TEENY).dylib'
 	LIBRUBY_LDSHARED='cc -dynamiclib -undefined suppress -flat_namespace'
-	LIBRUBY_DLDFLAGS='-install_name lib$(RUBY_INSTALL_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(MAJOR).$(MINOR)'
+	LIBRUBY_DLDFLAGS='-install_name $(prefix)/lib/lib$(RUBY_INSTALL_NAME).dylib -current_version $(MAJOR).$(MINOR).$(TEENY) -compatibility_version $(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
 	;;
     *)
