@@ -9,7 +9,7 @@ srcdir = $(WIN32DIR:/win32=)
 !else
 srcdir = $(WIN32DIR)/..
 !endif
-!if "$(prefix)" == ""
+!ifndef prefix
 prefix = /usr
 !endif
 OS = mswin32
@@ -23,6 +23,7 @@ MAKEFILE = Makefile
 !endif
 ARCH = PROCESSOR_ARCHITECTURE
 CPU = PROCESSOR_LEVEL
+CPP = cl -nologo -EP
 
 all: -prologue- -generic- -epilogue-
 i386-$(OS): -prologue- -i386- -epilogue-
@@ -41,7 +42,7 @@ EXTSTATIC = $(EXTSTATIC)
 RDOCTARGET = $(RDOCTARGET)
 !endif
 <<
-	@cl -nologo -EP -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
+	@$(CPP) -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
