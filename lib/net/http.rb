@@ -170,6 +170,7 @@ All "key" is case-insensitive.
       resp
     end
 
+
     def post( path, data, u_header = nil, dest = nil, &block )
       u_header = procheader( u_header )
       dest, ret = HTTP.procdest( dest, block )
@@ -192,6 +193,7 @@ All "key" is case-insensitive.
         tmp.off
       }
     end
+
 
     # not tested because I could not setup apache  (__;;;
     def put( path, src, u_header = nil )
@@ -592,7 +594,7 @@ All "key" is case-insensitive.
       str = @socket.readline
       m = /\AHTTP\/(\d+\.\d+)?\s+(\d\d\d)\s*(.*)\z/i.match( str )
       unless m then
-        raise HTTPBadResponse, "wrong status line format: #{str}"
+        raise HTTPBadResponse, "wrong status line: #{str}"
       end
       @http_version = m[1]
       status  = m[2]
@@ -605,7 +607,6 @@ All "key" is case-insensitive.
     end
 
     def read_chunked( ret, header )
-      line = nil
       len = nil
       total = 0
 
@@ -613,20 +614,16 @@ All "key" is case-insensitive.
         line = @socket.readline
         m = /[0-9a-hA-H]+/.match( line )
         unless m then
-          raise HTTPBadResponse, "chunk size not given"
+          raise HTTPBadResponse, "wrong chunk size line: #{line}"
         end
         len = m[0].hex
         break if len == 0
         @socket.read( len, ret ); total += len
         @socket.read 2   # \r\n
       end
-      while true do
-        line = @socket.readline
-        break if line.empty?
+      until @socket.readline.empty? do
+        ;
       end
-
-      header.delete 'transfer-encoding'
-      header[ 'content-length' ] = total.to_s
     end
 
     
@@ -644,7 +641,7 @@ All "key" is case-insensitive.
 
     def chunked?( header )
       str = header[ 'transfer-encoding' ]
-      if str and /(\A|\s+)chunked(?:\s+|\z)/i === str then
+      if str and /(?:\A|\s+)chunked(?:\s+|\z)/i === str then
         true
       else
         false

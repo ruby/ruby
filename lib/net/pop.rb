@@ -329,11 +329,11 @@ Net::POP3
     def initialize( sock )
       rep = super( sock )
 
-      /<[^@]+@[^@>]+>/o === rep.msg
-      @stamp = $&
-      unless @stamp then
+      m = /<.+>/.match( rep.msg )
+      unless m then
         raise ProtoAuthError, "This is not APOP server: can't login"
       end
+      @stamp = m[0]
     end
 
 
