@@ -107,6 +107,13 @@ class DRbEx
     DRbObject.new(@xary2_hash)
   end
 
+  def simple_hash
+    unless @hash
+      @hash = { 'a'=>:a, 'b'=>:b }
+    end
+    DRbObject.new(@hash)
+  end
+
   def [](key)
     key.to_s
   end
@@ -129,7 +136,7 @@ if __FILE__ == $0
   end
 
   DRb::DRbServer.default_argc_limit(8)
-  DRb::DRbServer.default_load_limit(2048)
+  DRb::DRbServer.default_load_limit(4096)
   DRb.start_service(nil, DRbEx.new)
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join

@@ -17,7 +17,7 @@ if __FILE__ == $0
     [ ["C","JP"], ["O","Foo.DRuby.Org"], ["CN", "Sample"] ]
 
   DRb::DRbServer.default_argc_limit(8)
-  DRb::DRbServer.default_load_limit(1024)
+  DRb::DRbServer.default_load_limit(4096)
   DRb.start_service('drbssl://:0', DRbEx.new, config)
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join

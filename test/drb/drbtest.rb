@@ -127,7 +127,7 @@ module DRbCore
       @there.sum(1, 1, 1, 1, 1, 1, 1, 1, 1)
     end
     assert_raises(DRb::DRbConnError) do
-      @there.sum('1' * 2048)
+      @there.sum('1' * 4096)
     end
   end
 
@@ -215,8 +215,15 @@ module DRbCore
     assert_equal(DRb::DRbURIOption.new('?hello?world'), ro.__drbref)
   end
 
+  def test_10_yield
+    @there.simple_hash.each do |k, v|
+      assert_kind_of(String, k)
+      assert_kind_of(Symbol, v)
+    end
+  end
+
   def test_10_yield_undumped
-    @there.xarray2_hash.each_pair do |k, v|
+    @there.xarray2_hash.each do |k, v|
       assert_kind_of(String, k)
       assert_kind_of(DRbObject, v)
     end
