@@ -5,8 +5,9 @@
 $:.unshift File.dirname(__FILE__)
 
 require 'fileutils'
-require 'test/unit'
 require 'fileasserts'
+require 'tmpdir'
+require 'test/unit'
 
 
 def have_drive_letter?
@@ -43,6 +44,8 @@ class TestFileUtils < Test::Unit::TestCase
   end
 
   def setup
+    @prevdir = Dir.pwd
+    Dir.chdir Dir.tmpdir
     my_rm_rf 'data'; Dir.mkdir 'data'
     my_rm_rf 'tmp';  Dir.mkdir 'tmp'
     prepare_data_file
@@ -52,6 +55,7 @@ class TestFileUtils < Test::Unit::TestCase
   def teardown
     my_rm_rf 'data'
     my_rm_rf 'tmp'
+    Dir.chdir @prevdir
   end
 
 

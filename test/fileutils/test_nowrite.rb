@@ -5,8 +5,9 @@
 $:.unshift File.dirname(__FILE__)
 
 require 'fileutils'
-require 'test/unit'
 require 'fileasserts'
+require 'tmpdir'
+require 'test/unit'
 
 
 class TestNoWrite < Test::Unit::TestCase
@@ -25,6 +26,8 @@ class TestNoWrite < Test::Unit::TestCase
   COPY = 'data/copy'
 
   def setup
+    @prevdir = Dir.pwd
+    Dir.chdir Dir.tmpdir
     my_rm_rf 'date'; Dir.mkdir 'data'
     my_rm_rf 'tmp'; Dir.mkdir 'tmp'
     File.open(SRC,  'w') {|f| f.puts 'dummy' }
@@ -34,6 +37,7 @@ class TestNoWrite < Test::Unit::TestCase
   def teardown
     my_rm_rf 'data'
     my_rm_rf 'tmp'
+    Dir.chdir @prevdir
   end
 
   def test_cp
