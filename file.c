@@ -1015,6 +1015,14 @@ test_R(obj, fname)
     return Qtrue;
 }
 
+#ifndef S_IRUGO
+#  define S_IRUGO		(S_IRUSR | S_IRGRP | S_IROTH)
+#endif
+
+#ifndef S_IWUGO
+#  define S_IWUGO		(S_IWUSR | S_IWGRP | S_IWOTH)
+#endif
+
 /*
  * call-seq:
  *    File.world_readable?(file_name)   => fixnum or nil
@@ -1029,14 +1037,6 @@ test_R(obj, fname)
  *    sprintf("%o", m)				    # => "644"
  */
 
-#ifndef S_IRUGO
-#  define S_IRUGO		(S_IRUSR | S_IRGRP | S_IROTH)
-#endif
-
-#ifndef S_IWUGO
-#  define S_IWUGO		(S_IWUSR | S_IWGRP | S_IWOTH)
-#endif
-
 static VALUE
 test_wr(obj, fname)
     VALUE obj, fname;
@@ -1044,7 +1044,7 @@ test_wr(obj, fname)
 #ifdef S_IROTH
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return Qfalse;
+    if (rb_stat(fname, &st) < 0) return Qnil;
     if ((st.st_mode & (S_IROTH)) == S_IROTH) {
 #ifdef __BORLANDC__
       return UINT2NUM((unsigned short)(st.st_mode &
@@ -1053,11 +1053,8 @@ test_wr(obj, fname)
       return UINT2NUM(st.st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
 #endif
     }
-    else {
-      return Qnil;
-    }
 #endif
-    return Qfalse;
+    return Qnil;
 }
 
 /*
@@ -1124,11 +1121,8 @@ test_ww(obj, fname)
       return UINT2NUM(st.st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
 #endif
     }
-    else {
-      return Qnil;
-    }
 #endif
-    return Qfalse;
+    return Qnil;
 }
 
 /*
