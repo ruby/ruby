@@ -52,17 +52,17 @@ module Finalizer
       ObjectSpace.call_finalizer(obj)
       method = method.intern unless method.kind_of?(Integer)
       assoc = [dependant, method].concat(opt)
-      if dep = @dependency[obj.id]
+      if dep = @dependency[obj.object_id]
 	dep.push assoc
       else
-	@dependency[obj.id] = [assoc]
+	@dependency[obj.object_id] = [assoc]
       end
     end
     alias add add_dependency
 
     # delete dependency R_method(obj, dependant)
     def delete_dependency(id, dependant, method = :finalize)
-      id = id.id unless id.kind_of?(Integer)
+      id = id.object_id unless id.kind_of?(Integer)
       method = method.intern unless method.kind_of?(Integer)
       for assoc in @dependency[id]
 	assoc.delete_if do
@@ -76,7 +76,7 @@ module Finalizer
 
     # delete dependency R_*(obj, dependant)
     def delete_all_dependency(id, dependant)
-      id = id.id unless id.kind_of?(Integer)
+      id = id.object_id unless id.kind_of?(Integer)
       method = method.intern unless method.kind_of?(Integer)
       for assoc in @dependency[id]
 	assoc.delete_if do
@@ -104,7 +104,7 @@ module Finalizer
 
     # finalize the depandant connected by dependency R_method(obj, dependtant)
     def finalize_dependency(id, dependant, method = :finalize)
-      id = id.id unless id.kind_of?(Integer)
+      id = id.object_id unless id.kind_of?(Integer)
       method = method.intern unless method.kind_of?(Integer)
       for assocs in @dependency[id]
 	assocs.delete_if do
@@ -119,7 +119,7 @@ module Finalizer
 
     # finalize all dependants connected by dependency R_*(obj, dependtant)
     def finalize_all_dependency(id, dependant)
-      id = id.id unless id.kind_of?(Integer)
+      id = id.object_id unless id.kind_of?(Integer)
       method = method.intern unless method.kind_of?(Integer)
       for assoc in @dependency[id]
 	assoc.delete_if do

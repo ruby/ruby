@@ -684,10 +684,13 @@ rb_define_method(klass, name, func, argc)
     int argc;
 {
     ID id = rb_intern(name);
+    int ex = NOEX_PUBLIC;
 
-    rb_add_method(klass, id, NEW_CFUNC(func, argc), 
-		  ((name[0] == 'i' && id == rb_intern("initialize"))?
-		   NOEX_PRIVATE:NOEX_PUBLIC)|NOEX_CFUNC);
+
+    if (BUILTIN_TYPE(klass) == T_CLASS) {
+	ex |= NOEX_CFUNC;
+    }
+    rb_add_method(klass, id, NEW_CFUNC(func, argc), ex);
 }
 
 void

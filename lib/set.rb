@@ -265,7 +265,7 @@ class Set
   def flatten_merge(set, seen = Set.new)
     set.each { |e|
       if e.is_a?(Set)
-	if seen.include?(e_id = e.id)
+	if seen.include?(e_id = e.object_id)
 	  raise ArgumentError, "tried to flatten recursive Set"
 	end
 

@@ -1130,7 +1130,7 @@ Object
 =begin
 =end
     def inspect
-      sprintf("#<%s:0x%x URL:%s>", self.class.to_s, self.id, self.to_s)
+      sprintf("#<%s:0x%x URL:%s>", self.class.to_s, self.object_id, self.to_s)
     end
 
 =begin

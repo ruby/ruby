@@ -384,7 +384,7 @@ rb_disable_super(klass, name)
 	print_undef(klass, mid);
     }
     if (origin == klass) {
-	body->nd_noex |= NOEX_UNDEF;
+	body->nd_noex |= NOEX_NOSUPER;
     }
     else {
 	rb_add_method(klass, mid, 0, NOEX_UNDEF);
@@ -408,7 +408,7 @@ rb_enable_super(klass, name)
 	remove_method(klass, mid);
     }
     else {
-	body->nd_noex &= ~NOEX_UNDEF;
+	body->nd_noex &= ~NOEX_NOSUPER;
     }
 }
 
@@ -3204,8 +3204,8 @@ rb_eval(self, n)
 	    else {
 		noex = NOEX_PUBLIC;
 	    }
-	    if (body && origin == ruby_class && body->nd_noex & NOEX_UNDEF) {
-		noex |= NOEX_UNDEF;
+	    if (body && origin == ruby_class && body->nd_body == 0) {
+		noex |= NOEX_NOSUPER;
 	    }
 
 	    defn = copy_node_scope(node->nd_defn, ruby_cref);
@@ -4807,7 +4807,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	}
     }
 
-    return rb_call0(klass, recv, mid, id, argc, argv, body, noex & NOEX_UNDEF);
+    return rb_call0(klass, recv, mid, id, argc, argv, body, noex & NOEX_NOSUPER);
 }
 
 VALUE

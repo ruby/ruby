@@ -39,9 +39,9 @@ class Tracer
   def initialize
     @threads = Hash.new
     if defined? Thread.main
-      @threads[Thread.main.id] = 0
+      @threads[Thread.main.object_id] = 0
     else
-      @threads[Thread.current.id] = 0
+      @threads[Thread.current.object_id] = 0
     end
 
     @get_line_procs = {}
@@ -105,10 +105,10 @@ class Tracer
   end
   
   def get_thread_no
-    if no = @threads[Thread.current.id]
+    if no = @threads[Thread.current.object_id]
       no
     else
-      @threads[Thread.current.id] = @threads.size
+      @threads[Thread.current.object_id] = @threads.size
     end
   end
   

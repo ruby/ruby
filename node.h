@@ -334,11 +334,13 @@ typedef struct RNode {
 #define NEW_BMETHOD(b) rb_node_newnode(NODE_BMETHOD,0,0,b)
 
 #define NOEX_PUBLIC    0
-#define NOEX_UNDEF     1
-#define NOEX_CFUNC     1
+#define NOEX_NOSUPER   1
 #define NOEX_PRIVATE   2
 #define NOEX_PROTECTED 4 
 #define NOEX_MASK      6 
+
+#define NOEX_UNDEF     NOEX_NOSUPER
+#define NOEX_CFUNC     NOEX_NOSUPER
 
 NODE *rb_compile_cstr _((const char*, const char*, int, int));
 NODE *rb_compile_string _((const char*, VALUE, int));

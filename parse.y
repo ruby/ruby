@@ -485,6 +485,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    $$ = 0;
 			}
 		    }
+		| expr kRESCUE_MOD expr
+		    {
+			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
+		    }
 		| primary_value '[' aref_args ']' tOP_ASGN command_call
 		    {
                         NODE *args;
@@ -1416,6 +1420,10 @@ primary		: literal
 		| kCASE opt_terms case_body kEND
 		    {
 			$$ = $3;
+		    }
+		| kCASE opt_terms kELSE compstmt kEND
+		    {
+			$$ = $4;
 		    }
 		| kFOR block_var kIN {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
