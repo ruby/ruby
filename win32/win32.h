@@ -105,7 +105,6 @@ extern "C++" {
 #define eof()			_eof()
 #define filelength(h)		_filelength(h)
 #define mktemp(t)		_mktemp(t)
-#define perror(s)		_perror(s)
 #define read(h, b, l)		_read(h, b, l)
 #define tell(h)			_tell(h)
 #define umask(m)		_umask(m)
@@ -125,8 +124,10 @@ extern "C++" {
 #define stat(path,st)		rb_w32_stat(path,st)
 #undef execv
 #define execv(path,argv)	do_aspawn(P_OVERLAY,path,argv)
+#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 #undef isatty
 #define isatty(h)		rb_w32_isatty(h)
+#endif
 
 #ifdef __MINGW32__
 struct timezone {
@@ -183,7 +184,10 @@ extern int do_spawn(int, char *);
 extern int do_aspawn(int, char *, char **);
 extern int kill(int, int);
 extern pid_t rb_w32_getpid(void);
+
+#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 extern int rb_w32_isatty(int);
+#endif
 
 #ifdef __BORLANDC__
 extern FILE *rb_w32_fopen(const char *, const char *);
