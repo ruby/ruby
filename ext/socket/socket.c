@@ -1303,8 +1303,7 @@ static VALUE
 unixsock_connect_internal(arg)
     struct unixsock_arg *arg;
 {
-    return (VALUE)ruby_connect(arg->fd, arg->sockaddr, sizeof(*arg->sockaddr),
-			       0);
+    return (VALUE)ruby_connect(arg->fd, arg->sockaddr, sizeof(*arg->sockaddr), 0);
 }
 
 static VALUE
@@ -1984,18 +1983,21 @@ sock_connect(sock, addr)
     VALUE sock, addr;
 {
     OpenFile *fptr;
-    int fd;
+    int fd, n;
 
     StringValue(addr);
     rb_str_modify(addr);
 
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
-    if (ruby_connect(fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len, 0) < 0) {
+    rb_str_locktmp(addr);
+    n = ruby_connect(fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len, 0);
+    rb_str_unlocktmp(addr);
+    if (n < 0) {
 	rb_sys_fail("connect(2)");
     }
 
-    return INT2FIX(0);
+    return INT2FIX(n);
 }
 
 static VALUE

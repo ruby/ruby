@@ -1,3 +1,8 @@
+Thu Nov  4 21:25:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): string modify check no longer based on
+	  tmplock.  [ruby-dev:24706]
+
 Thu Nov  4 21:13:48 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c(typelib_file_from_typelib): search "win16" 

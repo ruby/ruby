@@ -464,7 +464,6 @@ str_independent(str)
     VALUE str;
 {
     if (FL_TEST(str, STR_TMPLOCK)) {
-	FL_UNSET(str, STR_TMPLOCK);
 	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
     }
     if (OBJ_FROZEN(str)) rb_error_frozen("string");
@@ -2045,9 +2044,9 @@ str_gsub(argc, argv, str, bang)
     VALUE pat, val, repl, match, dest;
     struct re_registers *regs;
     long beg, n;
-    long offset, blen, len;
+    long offset, blen, slen, len;
     int iter = 0;
-    char *buf, *bp, *cp;
+    char *buf, *bp, *sp, *cp;
     int tainted = 0;
 
     if (argc == 1 && rb_block_given_p()) {
@@ -2074,9 +2073,9 @@ str_gsub(argc, argv, str, bang)
     dest = rb_str_new5(str, 0, blen);
     buf = RSTRING(dest)->ptr;
     bp = buf;
-    cp = RSTRING(str)->ptr;
+    sp = cp = RSTRING(str)->ptr;
+    slen = RSTRING(str)->len;
 
-    rb_str_locktmp(str);
     rb_str_locktmp(dest);
     while (beg >= 0) {
 	n++;
@@ -2085,7 +2084,7 @@ str_gsub(argc, argv, str, bang)
 	if (iter) {
 	    rb_match_busy(match);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
-	    str_mod_check(dest, buf, blen);
+	    str_mod_check(str, sp, slen);
 	    rb_backref_set(match);
 	}
 	else {
