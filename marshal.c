@@ -799,6 +799,9 @@ r_object(arg)
 	{
 	    VALUE c = rb_path2class(r_unique(arg));
 
+	    if (FL_TEST(c, FL_SINGLETON)) {
+		rb_raise(rb_eTypeError, "singleton can't be loaded");
+	    }
 	    v = r_object(arg);
 	    if (rb_special_const_p(v) || TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS) {
 	      format_error:
