@@ -34,7 +34,7 @@ class TestIterator < Test::Unit::TestCase
     for i in $x
       $y.push i
     end
-    assert($x == $y)
+    assert_equal($x, $y)
   end
 
   def tt
@@ -54,7 +54,7 @@ class TestIterator < Test::Unit::TestCase
   def test_nested_iterator
     i = 0
     tt{|i| break if i == 5}
-    assert(i == 5)
+    assert_equal(5, i)
 
     $x = false
     begin
@@ -99,8 +99,8 @@ class TestIterator < Test::Unit::TestCase
     for i in 1 .. 7
       $x.push i
     end
-    assert($x.size == 7)
-    assert($x == [1, 2, 3, 4, 5, 6, 7])
+    assert_equal(7, $x.size)
+    assert_equal([1, 2, 3, 4, 5, 6, 7], $x)
 
     $done = false
     $x = []
@@ -111,13 +111,13 @@ class TestIterator < Test::Unit::TestCase
       end
       $x.push(i)
     end
-    assert($x.size == 10)
-    assert($x == [1, 2, 3, 1, 2, 3, 4, 5, 6, 7])
+    assert_equal(10, $x.size)
+    assert_equal([1, 2, 3, 1, 2, 3, 4, 5, 6, 7], $x)
   end
 
   def test_append_method_to_built_in_class
     $x = [[1,2],[3,4],[5,6]]
-    assert($x.iter_test1{|x|x} == $x.iter_test2{|x|x})
+    assert_equal($x.iter_test1{|x|x}, $x.iter_test2{|x|x})
   end
 
   class IterTest
@@ -139,36 +139,36 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_itertest
-    assert(IterTest.new(nil).method(:f).to_proc.call([1]) == [1])
+    assert_equal([1], IterTest.new(nil).method(:f).to_proc.call([1]))
     m = /\w+/.match("abc")
-    assert(IterTest.new(nil).method(:f).to_proc.call([m]) == [m])
+    assert_equal([m], IterTest.new(nil).method(:f).to_proc.call([m]))
 
-    IterTest.new([0]).each0 {|x| assert(x == 0)}
-    IterTest.new([1]).each1 {|x| assert(x == 1)}
-    IterTest.new([2]).each2 {|x| assert(x == [2])}
-    IterTest.new([3]).each3 {|x| assert(x == 3)}
-    IterTest.new([4]).each4 {|x| assert(x == 4)}
-    IterTest.new([5]).each5 {|x| assert(x == 5)}
-    IterTest.new([6]).each6 {|x| assert(x == [6])}
-    IterTest.new([7]).each7 {|x| assert(x == 7)}
-    IterTest.new([8]).each8 {|x| assert(x == 8)}
+    IterTest.new([0]).each0 {|x| assert_equal(0, x)}
+    IterTest.new([1]).each1 {|x| assert_equal(1, x)}
+    IterTest.new([2]).each2 {|x| assert_equal([2], x)}
+    IterTest.new([3]).each3 {|x| assert_equal(3, x)}
+    IterTest.new([4]).each4 {|x| assert_equal(4, x)}
+    IterTest.new([5]).each5 {|x| assert_equal(5, x)}
+    IterTest.new([6]).each6 {|x| assert_equal([6], x)}
+    IterTest.new([7]).each7 {|x| assert_equal(7, x)}
+    IterTest.new([8]).each8 {|x| assert_equal(8, x)}
 
-    IterTest.new([[0]]).each0 {|x| assert(x == [0])}
-    IterTest.new([[1]]).each1 {|x| assert(x == [1])}
-    IterTest.new([[2]]).each2 {|x| assert(x == [[2]])}
-    IterTest.new([[3]]).each3 {|x| assert(x == 3)}
-    IterTest.new([[4]]).each4 {|x| assert(x == [4])}
-    IterTest.new([[5]]).each5 {|x| assert(x == [5])}
-    IterTest.new([[6]]).each6 {|x| assert(x == [[6]])}
-    IterTest.new([[7]]).each7 {|x| assert(x == 7)}
-    IterTest.new([[8]]).each8 {|x| assert(x == [8])}
+    IterTest.new([[0]]).each0 {|x| assert_equal([0], x)}
+    IterTest.new([[1]]).each1 {|x| assert_equal([1], x)}
+    IterTest.new([[2]]).each2 {|x| assert_equal([[2]], x)}
+    IterTest.new([[3]]).each3 {|x| assert_equal(3, x)}
+    IterTest.new([[4]]).each4 {|x| assert_equal([4], x)}
+    IterTest.new([[5]]).each5 {|x| assert_equal([5], x)}
+    IterTest.new([[6]]).each6 {|x| assert_equal([[6]], x)}
+    IterTest.new([[7]]).each7 {|x| assert_equal(7, x)}
+    IterTest.new([[8]]).each8 {|x| assert_equal([8], x)}
 
-    IterTest.new([[0,0]]).each0 {|x| assert(x == [0,0])}
-    IterTest.new([[8,8]]).each8 {|x| assert(x == [8,8])}
+    IterTest.new([[0,0]]).each0 {|x| assert_equal([0,0], x)}
+    IterTest.new([[8,8]]).each8 {|x| assert_equal([8,8], x)}
   end
 
   def m(var)
-    assert(var)
+    var
   end
 
   def m1
@@ -179,9 +179,11 @@ class TestIterator < Test::Unit::TestCase
     m(block_given?,&proc{})
   end
 
-  def test_foo
-    m1{p 'test'}
-    m2{p 'test'}
+  def test_block_in_arg
+    assert(m1{p 'test'})
+    assert(m2{p 'test'})
+    assert(!m1)
+    assert(!m2)
   end
 
   class C
@@ -195,40 +197,26 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_collect
-    assert(C.new.collect{|n| n} == [1,2,3])
+    assert_equal([1,2,3], C.new.collect{|n| n})
   end
 
   def test_proc
-    assert(Proc == lambda{}.class)
-    assert(Proc == Proc.new{}.class)
+    assert_instance_of(Proc, lambda{})
+    assert_instance_of(Proc, Proc.new{})
     lambda{|a|assert(a==1)}.call(1)
   end
 
-  def block_test(klass, &block)
-    assert(klass === block)
-  end
-
   def test_block
-    block_test(NilClass)
-    block_test(Proc){}
-  end
-
-  def argument_test(state, proc, *args)
-    x = state
-    begin
-      proc.call(*args)
-    rescue ArgumentError
-      x = !x
-    end
-    assert(x,2)
+    assert_instance_of(NilClass, get_block)
+    assert_instance_of(Proc, get_block{})
   end
 
   def test_argument
-    argument_test(true, lambda{||})
-    argument_test(false, lambda{||}, 1)
-    argument_test(true, lambda{|a,|}, 1)
-    argument_test(false, lambda{|a,|})
-    argument_test(false, lambda{|a,|}, 1,2)
+    assert_nothing_raised {lambda{||}.call}
+    assert_raises(ArgumentError) {lambda{||}.call(1)}
+    assert_nothing_raised {lambda{|a,|}.call(1)}
+    assert_raises(ArgumentError) {lambda{|a,|}.call()}
+    assert_raises(ArgumentError) {lambda{|a,|}.call(1,2)}
   end
 
   def get_block(&block)
@@ -236,32 +224,32 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_get_block
-    assert(Proc == get_block{}.class)
-    argument_test(true, get_block{||})
-    argument_test(true, get_block{||}, 1)
-    argument_test(true, get_block{|a,|}, 1)
-    argument_test(true, get_block{|a,|})
-    argument_test(true, get_block{|a,|}, 1,2)
+    assert_instance_of(Proc, get_block{})
+    assert_nothing_raised {get_block{||}.call()}
+    assert_nothing_raised {get_block{||}.call(1)}
+    assert_nothing_raised {get_block{|a,|}.call(1)}
+    assert_nothing_raised {get_block{|a,|}.call()}
+    assert_nothing_raised {get_block{|a,|}.call(1,2)}
 
-    argument_test(true, get_block(&lambda{||}))
-    argument_test(false, get_block(&lambda{||}),1)
-    argument_test(true, get_block(&lambda{|a,|}),1)
-    argument_test(false, get_block(&lambda{|a,|}),1,2)
+    assert_nothing_raised {get_block(&lambda{||}).call()}
+    assert_raises(ArgumentError) {get_block(&lambda{||}).call(1)}
+    assert_nothing_raised {get_block(&lambda{|a,|}).call(1)}
+    assert_raises(ArgumentError) {get_block(&lambda{|a,|}).call(1,2)}
 
     block = get_block{11}
-    assert(block.class == Proc)
-    assert(block.to_proc.class == Proc)
+    assert_instance_of(Proc, block)
+    assert_instance_of(Proc, block.to_proc)
     assert(block.clone.call == 11)
-    assert(get_block(&block).class == Proc)
+    assert_instance_of(Proc, get_block(&block))
 
     lambda = lambda{44}
-    assert(lambda.class == Proc)
-    assert(lambda.to_proc.class == Proc)
+    assert_instance_of(Proc, lambda)
+    assert_instance_of(Proc, lambda.to_proc)
     assert(lambda.clone.call == 44)
-    assert(get_block(&lambda).class == Proc)
+    assert_instance_of(Proc, get_block(&lambda))
 
-    assert(Proc.new{|a,| a}.call(1,2,3) == 1)
-    argument_test(true, Proc.new{|a,|}, 1,2)
+    assert_equal(1, Proc.new{|a,| a}.call(1,2,3))
+    assert_nothing_raised {Proc.new{|a,|}.call(1,2)}
   end
 
   def return1_test	# !! test_return1 -> return1_test
@@ -271,7 +259,7 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_return1
-    assert(return1_test() == 55)
+    assert_equal(55, return1_test())
   end
 
   def return2_test	# !! test_return2 -> return2_test
@@ -281,7 +269,7 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_return2
-    assert(return2_test() == 60)
+    assert_equal(60, return2_test())
   end
 
   def proc_call(&b)
@@ -295,7 +283,7 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_proc_return1
-    assert(proc_return1() == 42)
+    assert_equal(42, proc_return1())
   end
 
   def proc_return2
@@ -303,36 +291,26 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_proc_return2
-    assert(proc_return2() == 42)
-  end
-
-  def ljump_test(state, proc, *args)
-    x = state
-    begin
-      proc.call(*args)
-    rescue LocalJumpError
-      x = !x
-    end
-    assert(x,2)
+    assert_equal(42, proc_return2())
   end
 
   def test_ljump
     block = get_block{11}
     lambda = lambda{44}
-    # ljump_test(false, get_block{break})	# !! This line terminates testrunner...  please sombody fix it.
-    ljump_test(true, lambda{break})
+    assert_raises(LocalJumpError) {get_block{break}.call}
+    assert_nothing_raised {lambda{break}.call}
 
-    assert(block.arity == -1)
-    assert(lambda.arity == -1)
-    assert(lambda{||}.arity == 0)
-    assert(lambda{|a|}.arity == 1)
-    assert(lambda{|a,|}.arity == 1)
-    assert(lambda{|a,b|}.arity == 2)
+    assert_equal(-1, block.arity)
+    assert_equal(-1, lambda.arity)
+    assert_equal(0, lambda{||}.arity)
+    assert_equal(1, lambda{|a|}.arity)
+    assert_equal(1, lambda{|a,|}.arity)
+    assert_equal(2, lambda{|a,b|}.arity)
   end
 
   def marity_test(m)
     method = method(m)
-    assert(method.arity == method.to_proc.arity)
+    assert_equal(method.arity, method.to_proc.arity)
   end
 
   def test_marity
@@ -372,8 +350,8 @@ class TestIterator < Test::Unit::TestCase
   class ITER_TEST4 < ITER_TEST3
     include Test::Unit::Assertions
     def foo x
-      assert(super == yield)
-      assert(super(x, &nil) == x)
+      assert_equal(super, yield)
+      assert_equal(x, super(x, &nil))
     end
   end
 
