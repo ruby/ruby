@@ -1,3 +1,10 @@
+Tue Apr 13 23:00:55 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/rinda.rb: change pattern matching. 
+	  a === b -> a == b || a === b. [druby-ja:98]
+
+	* test/rinda/test_rinda.rb: ditto.
+
 Tue Apr 13 21:50:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/Makefile.sub (PHONY): Borland make disallows empty command
