@@ -125,6 +125,8 @@ extern "C++" {
 #define stat(path,st)		rb_w32_stat(path,st)
 #undef execv
 #define execv(path,argv)	do_aspawn(P_OVERLAY,path,argv)
+#undef isatty
+#define isatty(h)		rb_w32_isatty(h)
 
 #ifdef __MINGW32__
 struct timezone {
@@ -181,6 +183,7 @@ extern int do_spawn(int, char *);
 extern int do_aspawn(int, char *, char **);
 extern int kill(int, int);
 extern pid_t rb_w32_getpid(void);
+extern int rb_w32_isatty(int);
 
 #ifdef __BORLANDC__
 extern FILE *rb_w32_fopen(const char *, const char *);

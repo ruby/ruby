@@ -3322,6 +3322,20 @@ rb_w32_snprintf(char *buf, size_t size, const char *format, ...)
     return ret;
 }
 
+int
+rb_w32_isatty(int fd)
+{
+    if (!(_osfile(fd) & FOPEN)) {
+	errno = EBADF;
+	return 0;
+    }
+    if (!(_osfile(fd) & FDEV)) {
+	errno = ENOTTY;
+	return 0;
+    }
+    return 1;
+}
+
 //
 // Fix bcc32's stdio bug
 //

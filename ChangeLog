@@ -1,3 +1,8 @@
+Wed Dec 15 17:03:50 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.[ch] (rb_w32_isatty): new function to replace MSVCRT's
+	  isatty because it never sets errno. (backported from CVS HEAD)
+
 Wed Dec 15 15:39:32 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509name.c (ossl_x509name_to_a): avoid SEGV
