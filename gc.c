@@ -1089,7 +1089,7 @@ Init_stack(addr)
     extern void *_SEND;
     rb_gc_stack_start = _SEND;
 #else
-    if (!addr) addr = &addr;
+    if (!addr) addr = (VALUE *)&addr;
     rb_gc_stack_start = addr;
 #endif
 }
