@@ -1554,7 +1554,7 @@ primary		: literal
 			    nd_set_type($$, NODE_UNTIL);
 			}
 		    }
-		| kUNTIL {COND_PUSH(1);} expr_value do {COND_POP();} 
+		| kUNTIL {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
 		  kEND
 		    {
@@ -3458,7 +3458,7 @@ yylex()
 	if (c == '<' &&
 	    lex_state != EXPR_END &&
 	    lex_state != EXPR_DOT &&
-	    lex_state != EXPR_ENDARG && 
+	    lex_state != EXPR_ENDARG &&
 	    lex_state != EXPR_CLASS &&
 	    (!IS_ARG() || space_seen)) {
 	    int token = heredoc_identifier();
@@ -4334,6 +4334,7 @@ yylex()
 
     {
 	int result = 0;
+	enum lex_state last_state = lex_state;
 
 	switch (tok()[0]) {
 	  case '$':
@@ -4419,6 +4420,7 @@ yylex()
 	}
 	yylval.id = rb_intern(tok());
 	if (is_local_id(yylval.id) &&
+	    last_state != EXPR_DOT &&
 	    ((dyna_in_block() && rb_dvar_defined(yylval.id)) || local_id(yylval.id))) {
 	    lex_state = EXPR_END;
 	}
