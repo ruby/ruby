@@ -1,3 +1,10 @@
+Tue Dec 30 12:30:30 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/code_objects.rb (RDoc::Context::find_symbol): If a
+	  class and a method have the same name, finding Xxx.abc was trying
+	  to find 'abc' in method 'Xxx', not class 'Xxx'.
+
+
 Tue Dec 30 08:32:32 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method):

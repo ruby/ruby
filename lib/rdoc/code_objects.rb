@@ -320,17 +320,28 @@ module RDoc
           end
         end
       else
-        result = find_local_symbol(symbol)
-        if result.nil?
-          if symbol =~ /^[A-Z]/
-            result = parent
-            while result && result.name != symbol
-              result = result.parent
+        # if a method is specified, then we're definitely looking for
+        # a module, otherwise it could be any symbol
+        if method
+          result = find_module_named(symbol)
+        else
+          result = find_local_symbol(symbol)
+          if result.nil?
+            if symbol =~ /^[A-Z]/
+              result = parent
+              while result && result.name != symbol
+                result = result.parent
+              end
             end
           end
         end
       end
       if result && method
+        if !result.respond_to?(:find_local_symbol)
+          p result.name
+          p method
+          fail
+        end
         result = result.find_local_symbol(method)
       end
       result
