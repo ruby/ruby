@@ -1,3 +1,9 @@
+Mon Mar  8 23:16:07 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: HTTPHeader did not initialized correctly.
+
+	* lib/net/http.rb (connect): does same debug output.
+
 Mon Mar  8 21:38:18 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (add_header): remove warning. [ruby-dev:23170]

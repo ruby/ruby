@@ -448,7 +448,9 @@ module Net # :nodoc:
     private :do_start
 
     def connect
+      D "opening connection to #{conn_address()}..."
       s = timeout(@open_timeout) { TCPSocket.open(conn_address(), conn_port()) }
+      D "opened"
       if use_ssl?
         unless @ssl_context.verify_mode
           warn "warning: peer certificate won't be verified in this SSL session"
@@ -1012,6 +1014,15 @@ module Net # :nodoc:
   #
   module HTTPHeader
 
+    def initialize_http_header(initheader)
+      @header = {}
+      return unless initheader
+      initheader.each do |key, value|
+        warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
+        @header[key.downcase] = [value.strip]
+      end
+    end
+
     def size   #:nodoc: obsolete
       @header.size
     end
@@ -1295,17 +1306,8 @@ e      @header.each_key(&block)
       @response_has_body = resbody
       raise ArgumentError, "HTTP request path is empty" if path.empty?
       @path = path
-
-      @header = {}
-      if initheader
-        initheader.each do |k,v|
-          key = k.downcase
-          warn "net/http: warning: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
-          @header[key] = v.strip
-        end
-      end
-      @header['accept'] ||= '*/*'
-
+      initialize_http_header initheader
+      self['Accept'] ||= '*/*'
       @body = nil
       @body_stream = nil
     end
@@ -1868,8 +1870,7 @@ e      @header.each_key(&block)
       @http_version = httpv
       @code         = code
       @message      = msg
-
-      @header = {}
+      initialize_http_header nil
       @body = nil
       @read = false
     end
