@@ -188,10 +188,10 @@ class Set
   def initialize(enum = nil)
     @hash = {}
 
-    if enum
-      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-      enum.each { |o| @hash[o] = true } 
-    end
+    enum.nil? and return
+
+    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
+    enum.each { |o| @hash[o] = true } 
   end
 
   def dup
@@ -465,6 +465,9 @@ class TC_Set < Test::Unit::TestCase
       Set.new('XYZ')
     }
     assert_raises(ArgumentError) {
+      Set.new(false)
+    }
+    assert_raises(ArgumentError) {
       Set.new(1)
     }
     assert_raises(ArgumentError) {
@@ -577,6 +580,23 @@ class TC_Set < Test::Unit::TestCase
     assert_raises(ArgumentError) {
       set1.flatten!
     }
+
+    # test5; miscellaneus
+    empty = Set[]
+    set =  Set[Set[empty, "a"],Set[empty, "b"]]
+
+    assert_nothing_raised {
+      set.flatten
+    }
+
+    set1 = empty.merge(Set["no_more", set])
+
+    assert_nil(Set.new(0..31).flatten!)
+
+    x = Set[Set[],Set[1,2]].flatten!
+    y = Set[1,2]
+
+    assert_equal(x, y)
   end
 
   def test_include?
@@ -726,6 +746,15 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(set1, set1)
     assert_equal(set1, set2)
     assert_not_equal(Set[1], [1])
+
+    set1 = Class.new(Set)["a", "b"]
+    set2 = Set["a", "b", set1]
+    set1 = set1.add(set1.clone)
+
+    assert_equal(set1, set2)
+    assert_equal(set2, set1)
+    assert_equal(set2, set2.clone)
+    assert_equal(set1.clone, set1)
   end
 
   # def test_hash
