@@ -1614,7 +1614,7 @@ module RDoc
               look_for_directives_in(container, comment) 
               if container.done_documenting
                 container.ongoing_visibility = save_visibility
-                return
+#                return
               end
             end
             keep_comment = true
