@@ -1514,6 +1514,7 @@ fole_s_connect(argc, argv, self)
  *     WIN32OLE.const_load( ole, mod = WIN32OLE)
  * 
  *  Defines the constants of OLE Automation server as mod's constants.
+ *  The first argument is WIN32OLE object or type library name.
  *  If 2nd argument is omitted, the default is WIN32OLE.
  *  The first letter of Ruby's constant variable name is upper case,
  *  so constant variable name of WIN32OLE object is capitalized.
@@ -1531,6 +1532,11 @@ fole_s_connect(argc, argv, self)
  *     
  *     WIN32OLE.const_load(excel)
  *     puts WIN32OLE::XlTop # => -4160
+ *
+ *     module MSO
+ *     end
+ *     WIN32OLE.const_load('Microsoft Office 9.0 Object Library', MSO)
+ *     puts MSO::MsoLineSingle # => 1
  */
 static VALUE
 fole_s_const_load(argc, argv, self)
@@ -2064,6 +2070,7 @@ ole_invoke(argc, argv, self, wFlags)
     hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
                                          &IID_NULL, lcid, wFlags, &op.dp, 
                                          &result, &excepinfo, &argErr);
+
     if (FAILED(hr)) {
         /* retry to call args by value */
         if(op.dp.cArgs > cNamedArgs) {
@@ -2078,6 +2085,7 @@ ole_invoke(argc, argv, self, wFlags)
                                                  &IID_NULL, lcid, wFlags,
                                                  &op.dp, &result,
                                                  &excepinfo, &argErr);
+
             for(i = cNamedArgs; i < op.dp.cArgs; i++) {
                 n = op.dp.cArgs - i + cNamedArgs - 1;
                 VariantClear(&op.dp.rgvarg[n]);
@@ -4286,6 +4294,9 @@ ole_type_src_type(pTypeInfo)
  *     WIN32OLE_TYPE#src_type #=> OLE source class
  * 
  *  Returns source class when the OLE class is 'Alias'.
+ *     tobj =  WIN32OLE_TYPE.new('Microsoft Office 9.0 Object Library', 'MsoRGBType')
+ *     puts tobj.src_type # => I4
+ *
  */
 static VALUE
 foletype_src_type(self)
@@ -4313,7 +4324,10 @@ ole_type_helpfile(pTypeInfo)
  *  call-seq:
  *     WIN32OLE_TYPE#helpfile
  * 
- *  Returns helpfile
+ *  Returns helpfile path. If helpfile is not found, then returns nil.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *     puts tobj.helpfile # => C:\...\VBAXL9.CHM
+ *
  */
 static VALUE
 foletype_helpfile(self)
@@ -4341,7 +4355,9 @@ ole_type_helpcontext(pTypeInfo)
  *  call-seq:
  *     WIN32OLE_TYPE#helpcontext
  * 
- *  Returns helpcontext.
+ *  Returns helpcontext. If helpcontext is not found, then returns nil.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *     puts tobj.helpfile # => 131185
  */
 static VALUE
 foletype_helpcontext(self)
@@ -4403,6 +4419,19 @@ ole_variables(pTypeInfo)
  * 
  *  Returns array of WIN32OLE_VARIABLE objects which represent variables 
  *  defined in OLE class.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     vars = tobj.variables
+ *     vars.each do |v|
+ *       puts "#{v.name} = #{v.value}"
+ *     end
+ *     
+ *     The result of above sample script is follows:
+ *       xlChart = -4109
+ *       xlDialogSheet = -4116
+ *       xlExcel4IntlMacroSheet = 4
+ *       xlExcel4MacroSheet = 3
+ *       xlWorksheet = -4167
+ *
  */
 static VALUE
 foletype_variables(self)
@@ -4419,6 +4448,11 @@ foletype_variables(self)
  * 
  *  Returns array of WIN32OLE_METHOD objects which represent OLE method defined in 
  *  OLE type library.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *    methods = tobj.ole_methods.collect{|m|
+ *      m.name
+ *    }                                       
+ *    # => ['Activate', 'Copy', 'Delete',....]
  */
 static VALUE
 foletype_methods(argc, argv, self)
@@ -4432,10 +4466,30 @@ foletype_methods(argc, argv, self)
 }
 
 /*
+ * Document-class: WIN32OLE_VARIABLE
+ *
+ *   <code>WIN32OLE_VARIABLE</code> objects represent OLE variable information.
+ */
+
+/*
  *  call-seq:
  *     WIN32OLE_VARIABLE#name
  * 
- *  Returns the name.
+ *  Returns the name of variable.
+ *
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     variables = tobj.variables
+ *     variables.each do |variable|
+ *       puts "#{variable.name}"
+ *     end
+ *
+ *     The result of above script is following:
+ *       xlChart
+ *       xlDialogSheet
+ *       xlExcel4IntlMacroSheet
+ *       xlExcel4MacroSheet
+ *       xlWorksheet
+ *
  */
 static VALUE
 folevariable_name(self)
@@ -4464,7 +4518,21 @@ ole_variable_ole_type(pTypeInfo, var_index)
  *   call-seq:
  *      WIN32OLE_VARIABLE#ole_type
  * 
- *   Returns OLE type.
+ *   Returns OLE type string.
+ *
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     variables = tobj.variables
+ *     variables.each do |variable|
+ *       puts "#{variable.ole_type} #{variable.name}"
+ *     end
+ *
+ *     The result of above script is following:
+ *       INT xlChart
+ *       INT xlDialogSheet
+ *       INT xlExcel4IntlMacroSheet
+ *       INT xlExcel4MacroSheet
+ *       INT xlWorksheet
+ *
  */
 static VALUE
 folevariable_ole_type(self)
@@ -4496,6 +4564,12 @@ ole_variable_ole_type_detail(pTypeInfo, var_index)
  *     WIN32OLE_VARIABLE#ole_type_detail
  * 
  *  Returns detail information of type. The information is array of type.
+ *
+ *     tobj = WIN32OLE_TYPE.new('DirectX 7 for Visual Basic Type Library', 'D3DCLIPSTATUS')
+ *     variable = tobj.variables.find {|variable| variable.name == 'lFlags'}
+ *     tdetail  = variable.ole_type_detail
+ *     p tdetail # => ["USERDEFINED", "CONST_D3DCLIPSTATUSFLAGS"]
+ *
  */
 static VALUE
 folevariable_ole_type_detail(self)
@@ -4529,6 +4603,20 @@ ole_variable_value(pTypeInfo, var_index)
  * 
  *  Returns value if value is exists. If the value does not exist, 
  *  this method returns nil.
+ *
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     variables = tobj.variables
+ *     variables.each do |variable|
+ *       puts "#{variable.name} #{variable.value}"
+ *     end
+ *
+ *     The result of above script is following:
+ *       xlChart = -4109
+ *       xlDialogSheet = -4116
+ *       xlExcel4IntlMacroSheet = 4
+ *       xlExcel4MacroSheet = 3
+ *       xlWorksheet = -4167
+ *
  */    
 static VALUE
 folevariable_value(self)
@@ -4564,6 +4652,20 @@ ole_variable_visible(pTypeInfo, var_index)
  *     WIN32OLE_VARIABLE#visible?
  * 
  *  Returns true if the variable is public.
+ *
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     variables = tobj.variables
+ *     variables.each do |variable|
+ *       puts "#{variable.name} #{variable.visible?}"
+ *     end
+ *
+ *     The result of above script is following:
+ *       xlChart true
+ *       xlDialogSheet true
+ *       xlExcel4IntlMacroSheet true
+ *       xlExcel4MacroSheet true
+ *       xlWorksheet true
+ *       
  */
 static VALUE
 folevariable_visible(self)
@@ -4609,7 +4711,20 @@ ole_variable_kind(pTypeInfo, var_index)
  * call-seq:
  *   WIN32OLE_VARIABLE#variable_kind
  * 
- *   Returns variable kind string.
+ * Returns variable kind string.
+ *
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *    variables = tobj.variables
+ *    variables.each do |variable|
+ *      puts "#{variable.name} #{variable.variable_kind}"
+ *    end
+ *
+ *    The result of above script is following:
+ *      xlChart CONSTANT
+ *      xlDialogSheet CONSTANT
+ *      xlExcel4IntlMacroSheet CONSTANT
+ *      xlExcel4MacroSheet CONSTANT
+ *      xlWorksheet CONSTANT
  */
 static VALUE
 folevariable_variable_kind(self)
@@ -4637,9 +4752,22 @@ ole_variable_varkind(pTypeInfo, var_index)
 }
 
 /*
- * WIN32OLE_VARIABLE#varkind
- * ----
- * Returns the number which represents variable kind.
+ *  call-seq:
+ *     WIN32OLE_VARIABLE#varkind
+ * 
+ *  Returns the number which represents variable kind.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *    variables = tobj.variables
+ *    variables.each do |variable|
+ *      puts "#{variable.name} #{variable.varkind}"
+ *    end
+ *
+ *    The result of above script is following:
+ *       xlChart 2
+ *       xlDialogSheet 2
+ *       xlExcel4IntlMacroSheet 2
+ *       xlExcel4MacroSheet 2
+ *       xlWorksheet 2
  */
 static VALUE
 folevariable_varkind(self)
@@ -4649,6 +4777,12 @@ folevariable_varkind(self)
     Data_Get_Struct(self, struct olevariabledata, pvar);
     return ole_variable_varkind(pvar->pTypeInfo, pvar->index);
 }
+
+/*
+ * Document-class: WIN32OLE_METHOD
+ *
+ *   <code>WIN32OLE_METHOD</code> objects represent OLE method information.
+ */
 
 static VALUE
 olemethod_set_member(self, pTypeInfo, pOwnerTypeInfo, index, name)
@@ -4693,6 +4827,9 @@ folemethod_s_allocate(klass)
  *  The first argument <i>ole_type</i> specifies WIN32OLE_TYPE object.
  *  The second argument <i>method</i> specifies OLE method name defined OLE class
  *  which represents WIN32OLE_TYPE object.
+ *
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
  */
 static VALUE
 folemethod_initialize(self, oletype, method)
@@ -4718,9 +4855,15 @@ folemethod_initialize(self, oletype, method)
 }
 
 /*
- * WIN32OLE_METHOD#name
- * ----
- * Returns the name of the method.
+ *  call-seq
+ *     WIN32OLE_METHOD#name
+ *
+ *  Returns the name of the method.
+ *
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     puts method.name # => SaveAs
+ *     
  */
 static VALUE
 folemethod_name(self)
@@ -4748,9 +4891,14 @@ ole_method_return_type(pTypeInfo, method_index)
 }
 
 /*
- * WIN32OLE_METHOD#return_type
- * ----
- * Returns string of return value type of method.
+ *  call-seq:
+ *     WIN32OLE_METHOD#return_type
+ * 
+ *  Returns string of return value type of method.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     puts method.return_type # => Workbook
+ *
  */
 static VALUE
 folemethod_return_type(self)
@@ -4780,9 +4928,14 @@ ole_method_return_vtype(pTypeInfo, method_index)
 }
 
 /*
- * WIN32OLE_METHOD#return_vtype
- * ----
- * Returns number of return value type of method.
+ *  call-seq:
+ *     WIN32OLE_METHOD#return_vtype
+ * 
+ *  Returns number of return value type of method.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     puts method.return_vtype # => 26
+ *
  */
 static VALUE
 folemethod_return_vtype(self)
@@ -4812,10 +4965,14 @@ ole_method_return_type_detail(pTypeInfo, method_index)
 }
 
 /*
- * WIN32OLE_METHOD#return_type_detail
- * -----
- * Returns detail information of return value type of method.
- * The information is array.
+ *  call-seq:
+ *     WIN32OLE_METHOD#return_type_detail
+ * 
+ *  Returns detail information of return value type of method.
+ *  The information is array.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     p method.return_type_detail # => ["PTR", "USERDEFINED", "Workbook"]
  */
 static VALUE
 folemethod_return_type_detail(self)
@@ -4865,9 +5022,14 @@ ole_method_invoke_kind(pTypeInfo, method_index)
 }
 
 /*
- * WIN32OLE_MTHOD#invkind
- * ----
- * Returns invkind.
+ *   call-seq:
+ *      WIN32OLE_MTHOD#invkind
+ * 
+ *   Returns the method invoke kind. 
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     puts method.invkind # => 1
+ *
  */
 static VALUE
 folemethod_invkind(self)
@@ -4879,9 +5041,15 @@ folemethod_invkind(self)
 }
 
 /*
- * WIN32OLE_METHOD#invoke_kind
- * ----
- * Returns invoke kind string.
+ *  call-seq:
+ *     WIN32OLE_METHOD#invoke_kind
+ * 
+ *  Returns the method kind string. The string is "UNKNOWN" or "PROPERTY" 
+ *  or "PROPERTY" or "PROPERTYGET" or "PROPERTYPUT" or "PROPERTYPPUTREF" 
+ *  or "FUNC".
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     puts method.invoke_kind # => "FUNC"
  */
 static VALUE
 folemethod_invoke_kind(self)
@@ -4915,9 +5083,13 @@ ole_method_visible(pTypeInfo, method_index)
 }
 
 /*
- * WIN32OLE_METHOD#visible?
- * ----
- * Returns true if the method is public.
+ *  call-seq:
+ *     WIN32OLE_METHOD#visible?
+ * 
+ *  Returns true if the method is public.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     puts method.visible? # => true
  */
 static VALUE
 folemethod_visible(self) 
@@ -4996,9 +5168,14 @@ ole_method_event(pTypeInfo, method_index, method_name)
 }
 
 /*
- * WIN32OLE_METHOD#event?
- * ----
- * Returns true if the method is event.
+ *  call-seq:
+ *     WIN32OLE_METHOD#event?
+ * 
+ *  Returns true if the method is event.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SheetActivate')
+ *     puts method.event? # => true
+ *
  */
 static VALUE
 folemethod_event(self)
@@ -5018,6 +5195,9 @@ folemethod_event(self)
  *     WIN32OLE_METHOD#event_interface
  *
  *  Returns event interface name if the method is event.
+ *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *    method = WIN32OLE_METHOD.new(tobj, 'SheetActivate')
+ *    puts method.event_interface # =>  WorkbookEvents
  */
 static VALUE
 folemethod_event_interface(self)
@@ -5075,7 +5255,12 @@ ole_method_helpstring(pTypeInfo, method_index)
  *  call-seq:
  *     WIN32OLE_METHOD#helpstring
  *
- *  Returns help string of OLE method.
+ *  Returns help string of OLE method. If the help string is not found, 
+ *  then the method returns nil.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', 'IWebBrowser')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Navigate')
+ *     puts method.helpstring # => Navigates to a URL or file.
+ *
  */
 static VALUE
 folemethod_helpstring(self)
@@ -5101,9 +5286,14 @@ ole_method_helpfile(pTypeInfo, method_index)
 }
 
 /*
- * WIN32OLE_METHOD#helpfile
- * ---
- * Returns help file.
+ *  call-seq:
+ *     WIN32OLE_METHOD#helpfile
+ * 
+ *  Returns help file. If help file is not found, then 
+ *  the method returns nil.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     puts method.helpfile # => C:\...\VBAXL9.CHM
  */
 static VALUE
 folemethod_helpfile(self)
@@ -5130,9 +5320,13 @@ ole_method_helpcontext(pTypeInfo, method_index)
 }
 
 /* 
- * WIN32OLE_METHOD#helpcontext
- * -----
- * Returns help context.
+ *  call-seq:
+ *     WIN32OLE_METHOD#helpcontext
+ * 
+ *  Returns help context.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     puts method.helpcontext # => 65717
  */
 static VALUE
 folemethod_helpcontext(self)
@@ -5160,9 +5354,13 @@ ole_method_dispid(pTypeInfo, method_index)
 }
 
 /*
- * WIN32OLE_METHOD#dispid
- * ----
- * Returns dispatch ID.
+ *  call-seq:
+ *     WIN32OLE_METHOD#dispid
+ * 
+ *  Returns dispatch ID.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     puts method.dispid # => 181
  */
 static VALUE
 folemethod_dispid(self)
@@ -5190,9 +5388,13 @@ ole_method_offset_vtbl(pTypeInfo, method_index)
 }
 
 /*
- * WIN32OLE_METHOD#offset_vtbl
- * ----
- * Returns the offset ov VTBL.
+ *  call-seq:
+ *     WIN32OLE_METHOD#offset_vtbl
+ * 
+ *  Returns the offset ov VTBL.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbooks')
+ *     method = WIN32OLE_METHOD.new(tobj, 'Add')
+ *     puts method.offset_vtbl # => 40
  */
 static VALUE
 folemethod_offset_vtbl(self)
@@ -5220,9 +5422,14 @@ ole_method_size_params(pTypeInfo, method_index)
 }
 
 /*
- * WIN32OLE_METHOD#size_params
- * ----
- * Returns the size of arguments.
+ *  call-seq:
+ *     WIN32OLE_METHOD#size_params
+ * 
+ *  Returns the size of arguments of the method.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     puts method.size_params # => 11
+ *  
  */
 static VALUE
 folemethod_size_params(self)
@@ -5254,6 +5461,9 @@ ole_method_size_opt_params(pTypeInfo, method_index)
  *     WIN32OLE_METHOD#size_opt_params
  * 
  *  Returns the size of optional parameters.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     puts method.size_opt_params # => 4
  */
 static VALUE
 folemethod_size_opt_params(self)
@@ -5306,10 +5516,18 @@ ole_method_params(pTypeInfo, method_index)
      return params;
 }
 
+
 /*
- * WIN32OLE_METHOD#params
- * ----
- * returns array of WIN32OLE_PARAM object corresponding with method parameters.
+ *  call-seq:
+ *     WIN32OLE_METHOD#params
+ * 
+ *  returns array of WIN32OLE_PARAM object corresponding with method parameters.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     p method.params # => [Filename, FileFormat, Password, WriteResPassword, 
+ *                           ReadOnlyRecommended, CreateBackup, AccessMode, 
+ *                           ConflictResolution, AddToMru, TextCodepage, 
+ *                           TextVisualLayout]
  */
 static VALUE
 folemethod_params(self)
@@ -5321,9 +5539,21 @@ folemethod_params(self)
 }
 
 /*
- * WIN32OLE_PARAM#name
- * ----
- * Returns name.
+ * Document-class: WIN32OLE_PARAM
+ *
+ *   <code>WIN32OLE_PARAM</code> objects represent param information of 
+ *   the OLE method.
+ */
+
+/*
+ *  call-seq:
+ *     WIN32OLE_PARAM#name
+ * 
+ *  Returns name.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     param1 = method.params[0]
+ *     puts param1.name # => Filename
  */
 static VALUE
 foleparam_name(self)
@@ -5355,6 +5585,10 @@ ole_param_ole_type(pTypeInfo, method_index, index)
  *     WIN32OLE_PARAM#ole_type
  *
  *  Returns OLE type of WIN32OLE_PARAM object(parameter of OLE method).
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     param1 = method.params[0]
+ *     puts param1.ole_type # => VARIANT
  */
 static VALUE 
 foleparam_ole_type(self)
@@ -5387,7 +5621,12 @@ ole_param_ole_type_detail(pTypeInfo, method_index, index)
 /*
  *  call-seq:
  *     WIN32OLE_PARAM#ole_type_detail
+ *
  *  Returns detail information of type of argument.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'IWorksheetFunction')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SumIf')
+ *     param1 = method.params[0]
+ *     p param1.ole_type_detail # => ["PTR", "USERDEFINED", "Range"]
  */
 static VALUE 
 foleparam_ole_type_detail(self)
@@ -5419,9 +5658,14 @@ ole_param_flag_mask(pTypeInfo, method_index, index, mask)
 }
 
 /*
- * WIN32OLE_PARAM#input?
- * ----
- * Returns true if the parameter is input.
+ *  call-seq:
+ *     WIN32OLE_PARAM#input?
+ * 
+ *  Returns true if the parameter is input.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     param1 = method.params[0]
+ *     puts param1.input? # => true
  */
 static VALUE foleparam_input(self)
     VALUE self;
@@ -5433,9 +5677,23 @@ static VALUE foleparam_input(self)
 }
 
 /*
- * WIN32OLE#output?
- * ----
- * Returns true if argument is output.
+ *  call-seq:
+ *     WIN32OLE#output?
+ * 
+ *  Returns true if argument is output.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', 'DWebBrowserEvents')
+ *     method = WIN32OLE_METHOD.new(tobj, 'NewWindow')
+ *     method.params.each do |param|
+ *       puts "#{param.name} #{param.output?}"
+ *     end
+ *
+ *     The result of above script is following:
+ *       URL false
+ *       Flags false
+ *       TargetFrameName false
+ *       PostData false
+ *       Headers false
+ *       Processed true
  */
 static VALUE foleparam_output(self)
     VALUE self;
@@ -5447,9 +5705,14 @@ static VALUE foleparam_output(self)
 }
 
 /*
- * WIN32OLE_PARAM#optional?
- * -----
- * Returns true if argument is output.
+ *  call-seq:
+ *     WIN32OLE_PARAM#optional?
+ * 
+ *  Returns true if argument is optional.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     param1 = method.params[0]
+ *     puts "#{param1.name} #{param1.optional?}" # => Filename true
  */
 static VALUE foleparam_optional(self)
     VALUE self;
@@ -5465,6 +5728,11 @@ static VALUE foleparam_optional(self)
  *     WIN32OLE_PARAM#retval?
  *
  *  Returns true if argument is return value.
+ *     tobj = WIN32OLE_TYPE.new('DirectX 7 for Visual Basic Type Library', 
+ *                              'DirectPlayLobbyConnection')
+ *     method = WIN32OLE_METHOD.new(tobj, 'GetPlayerShortName')
+ *     param = method.params[0]
+ *     puts "#{param.name} #{param.retval?}"  # => name true
  */
 static VALUE foleparam_retval(self)
     VALUE self;
@@ -5502,10 +5770,33 @@ ole_param_default(pTypeInfo, method_index, index)
 }
 
 /*
- * WIN32OLE_PARAM#default
- * ----
- * Returns default value. If the default value does not exist, 
- * this method returns nil.
+ *  call-seq:
+ *     WIN32OLE_PARAM#default
+ * 
+ *  Returns default value. If the default value does not exist, 
+ *  this method returns nil.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     method.params.each do |param|
+ *       if param.default
+ *         puts "#{param.name} (= #{param.default})"
+ *       else
+ *         puts "#{param}"
+ *       end
+ *     end
+ *
+ *     The above script result is following:
+ *         Filename
+ *         FileFormat
+ *         Password
+ *         WriteResPassword
+ *         ReadOnlyRecommended
+ *         CreateBackup
+ *         AccessMode (= 1)
+ *         ConflictResolution
+ *         AddToMru
+ *         TextCodepage
+ *         TextVisualLayout
  */
 static VALUE foleparam_default(self)
     VALUE self;
@@ -5515,6 +5806,13 @@ static VALUE foleparam_default(self)
     return ole_param_default(pparam->pTypeInfo, pparam->method_index,
                              pparam->index);
 }
+
+
+/*
+ * Document-class: WIN32OLE_EVENT
+ *
+ *   <code>WIN32OLE_EVENT</code> objects controls OLE event.
+ */
 
 static IEventSinkVtbl vtEventSink;
 static BOOL g_IsEventSinkVtblInitialized = FALSE;
@@ -6053,6 +6351,8 @@ fev_s_allocate(klass)
  *  Returns OLE event object.
  *  The first argument specifies WIN32OLE object.
  *  The second argument specifies OLE event name.
+ *     ie = WIN32OLE.new('InternetExplorer.Application')
+ *     ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')
  */     
 static VALUE
 fev_initialize(argc, argv, self)
@@ -6187,6 +6487,9 @@ ev_on_event(argc, argv, self, is_ary_arg)
  * 
  *  Defines the callback event.
  *  If argument is omitted, this method defines the callback of all events.
+ *    ie = WIN32OLE.new('InternetExplorer.Application')
+ *    ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')
+ *    ev.on_event("NavigateComplete") {|url| puts url}
  */
 static VALUE
 fev_on_event(argc, argv, self)
