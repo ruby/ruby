@@ -2782,6 +2782,7 @@ re_compile_fastmap(bufp)
 
       case begline:
       case begbuf:
+      case begpos:
       case endbuf:
       case endbuf2:
       case wordbound:
@@ -3049,7 +3050,6 @@ re_compile_fastmap(bufp)
 	}
 	break;
 
-      case begpos:
       case unused:	/* pacify gcc -Wall */
 	break;
       }

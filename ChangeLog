@@ -59,6 +59,10 @@ Mon Feb 11 04:25:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_cvar_singleton): removed.
 
+Mon Feb 11 00:10:41 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* regex.c (re_compile_fastmap): skip begpos.
+
 Sun Feb 10 16:52:53 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ruby.c (load_file): avoid SEGV on '#' only input.
