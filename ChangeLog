@@ -1,3 +1,7 @@
+Fri Oct 13 17:08:09 2000  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: new file.
+
 Thu Oct 12 18:56:28 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/pop.rb: POP3#reset
