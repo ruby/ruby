@@ -77,6 +77,14 @@ rb_ary_freeze(ary)
     return rb_obj_freeze(ary);
 }
 
+/*
+ * call-seq:
+ *   array.frozen?  => true or false
+ *
+ * Return <code>true</code> if this array is frozen (or temporarily frozen
+ * while being sorted).
+ */
+
 static VALUE
 rb_ary_frozen_p(ary)
     VALUE ary;
@@ -1417,6 +1425,13 @@ inspect_ary(ary)
     return str;
 }
 
+/*
+ * call-seq:
+ *   array.inspect  => string
+ *
+ * Create a printable version of <i>array</i>.
+ */
+
 static VALUE
 rb_ary_inspect(ary)
     VALUE ary;
@@ -1428,7 +1443,7 @@ rb_ary_inspect(ary)
 
 /*
  *  call-seq:
- *     array.to_a -> array
+ *     array.to_a     => array
  *  
  *  Returns _self_. If called on a subclass of Array, converts
  *  the receiver to an Array object.
@@ -1561,7 +1576,6 @@ sort_unlock(ary)
     return ary;
 }
 
-VALUE
 /*
  *  call-seq:
  *     array.sort!                   => array
@@ -1578,6 +1592,7 @@ VALUE
  *     a.sort {|x,y| y <=> x }   #=> ["e", "d", "c", "b", "a"]
  */
 
+VALUE
 rb_ary_sort_bang(ary)
     VALUE ary;
 {
@@ -2430,6 +2445,14 @@ rb_ary_equal(ary1, ary2)
     return Qtrue;
 }
 
+/*
+ * call-seq:
+ *   array.eql?(other)  => true or false
+ *
+ * Returns <code>true</code> if _array_ and _other_ are the same object,
+ * or are both arrays with the same content.
+ */
+
 static VALUE
 rb_ary_eql(ary1, ary2)
     VALUE ary1, ary2;
@@ -2445,6 +2468,14 @@ rb_ary_eql(ary1, ary2)
     }
     return Qtrue;
 }
+
+/*
+ * call-seq:
+ *   array.hash   => fixnum
+ *
+ * Compute a hash-code for this array. Two arrays with the same content
+ * will have the same hash code (and will compare using <code>eql?</code>).
+ */
 
 static VALUE
 rb_ary_hash(ary)
