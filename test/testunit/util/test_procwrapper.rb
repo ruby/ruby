@@ -28,7 +28,7 @@ module Test
           assert_equal(@wrapped_original, @wrapped_munged, "The wrappers should be equivalent")
           
           a_hash = {@wrapped_original => @original}
-          assert_not_nil(a_hash[@wrapped_original], "Should be able to access the wrapper in the hash")
+          assert(a_hash[@wrapped_original], "Should be able to access the wrapper in the hash")
         end
       end
     end
