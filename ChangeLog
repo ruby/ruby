@@ -51,6 +51,11 @@ Sat Jul 17 18:29:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt): not to show same error messages twice.
 
+Sat Jul 17 13:13:32 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb (RubyLex::identify_string): %s string do not
+	  process expression interpolation.  [ruby-talk:106691]
+
 Sat Jul 17 05:26:27 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/diagram.rb: Incorporate Micheal Neuman's

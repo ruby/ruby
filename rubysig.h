@@ -12,6 +12,7 @@
 
 #ifndef SIG_H
 #define SIG_H
+#include <errno.h>
 
 #ifdef _WIN32
 typedef LONG rb_atomic_t;
@@ -23,10 +24,13 @@ typedef LONG rb_atomic_t;
 
 /* Windows doesn't allow interrupt while system calls */
 # define TRAP_BEG do {\
+    int saved_errno = 0;\
     rb_atomic_t trap_immediate = ATOMIC_SET(rb_trap_immediate, 1)
 # define TRAP_END\
-	ATOMIC_SET(rb_trap_immediate, trap_immediate);\
-	CHECK_INTS;\
+    ATOMIC_SET(rb_trap_immediate, trap_immediate);\
+    saved_errno = errno;\
+    CHECK_INTS;\
+    errno = saved_errno;\
 } while (0)
 # define RUBY_CRITICAL(statements) do {\
     rb_w32_enter_critical();\
