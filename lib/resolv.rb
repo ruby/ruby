@@ -235,7 +235,7 @@ class Resolv
     @resolvers.each {|r|
       r.each_address(name) {|address|
         yield address.to_s
-	yielded = true
+        yielded = true
       }
       return if yielded
     }
@@ -257,7 +257,7 @@ class Resolv
     @resolvers.each {|r|
       r.each_name(address) {|name|
         yield name.to_s
-	yielded = true
+        yielded = true
       }
       return if yielded
     }
@@ -270,7 +270,12 @@ class Resolv
   end
 
   class Hosts
-    DefaultFileName = '/etc/hosts'
+    if /mswin32|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM
+      require 'win32/resolv'
+      DefaultFileName = Win32::Resolv.get_hosts_path
+    else
+      DefaultFileName = '/etc/hosts'
+    end
 
     def initialize(filename = DefaultFileName)
       @filename = filename
@@ -288,15 +293,15 @@ class Resolv
               line.sub!(/#.*/, '')
               addr, hostname, *aliases = line.split(/\s+/)
               next unless addr
-	      addr.untaint
-	      hostname.untaint
+              addr.untaint
+              hostname.untaint
               @addr2name[addr] = [] unless @addr2name.include? addr
               @addr2name[addr] << hostname
               @addr2name[addr] += aliases
               @name2addr[hostname] = [] unless @name2addr.include? hostname
               @name2addr[hostname] << addr
               aliases.each {|n|
-		n.untaint
+                n.untaint
                 @name2addr[n] = [] unless @name2addr.include? n
                 @name2addr[n] << addr
               }
@@ -322,7 +327,7 @@ class Resolv
     def each_address(name, &proc)
       lazy_initialize
       if @name2addr.include?(name)
-	@name2addr[name].each(&proc)
+        @name2addr[name].each(&proc)
       end
     end
 
@@ -358,9 +363,9 @@ class Resolv
       dns = new(*args)
       return dns unless block_given?
       begin
-	yield dns
+        yield dns
       ensure
-	dns.close
+        dns.close
       end
     end
 
@@ -466,7 +471,7 @@ class Resolv
           case reply.rcode
           when RCode::NoError
             extract_resources(reply, reply_name, typeclass, &proc)
-	    return
+            return
           when RCode::NXDomain
             raise Config::NXDomain.new(reply_name.to_s)
           else
@@ -480,10 +485,10 @@ class Resolv
 
     def extract_resources(msg, name, typeclass)
       if typeclass < Resource::ANY
-	n0 = Name.create(name)
+        n0 = Name.create(name)
         msg.each_answer {|n, ttl, data|
-	  yield data if n0 == n
-	}
+          yield data if n0 == n
+        }
       end
       yielded = false
       n0 = Name.create(name)
@@ -491,8 +496,8 @@ class Resolv
         if n0 == n
           case data
           when typeclass
-	    yield data
-	    yielded = true
+            yield data
+            yielded = true
           when Resource::CNAME
             n0 = data.name
           end
@@ -503,7 +508,7 @@ class Resolv
         if n0 == n
           case data
           when typeclass
-	    yield data
+            yield data
           end
         end
       }
@@ -555,11 +560,11 @@ class Resolv
         def initialize
           super()
           @sock = UDPSocket.new
-          @sock.fcntl(Fcntl::F_SETFD, 1)
+          @sock.fcntl(Fcntl::F_SETFD, 1) if defined? Fcntl::F_SETFD
           @id = {}
           @id.default = -1
           @thread = Thread.new {
-	    DNSThreadGroup.add Thread.current
+            DNSThreadGroup.add Thread.current
             loop {
               reply, from = @sock.recvfrom(UDPSize)
               msg = begin
@@ -608,10 +613,10 @@ class Resolv
           @port = port
           @sock = UDPSocket.new
           @sock.connect(host, port)
-          @sock.fcntl(Fcntl::F_SETFD, 1)
+          @sock.fcntl(Fcntl::F_SETFD, 1) if defined? Fcntl::F_SETFD
           @id = -1
           @thread = Thread.new {
-	    DNSThreadGroup.add Thread.current
+            DNSThreadGroup.add Thread.current
             loop {
               reply = @sock.recv(UDPSize)
               msg = begin
@@ -653,11 +658,11 @@ class Resolv
           @port = port
           @sock = TCPSocket.new
           @sock.connect(host, port)
-          @sock.fcntl(Fcntl::F_SETFD, 1)
+          @sock.fcntl(Fcntl::F_SETFD, 1) if defined? Fcntl::F_SETFD
           @id = -1
           @senders = {}
           @thread = Thread.new {
-	    DNSThreadGroup.add Thread.current
+            DNSThreadGroup.add Thread.current
             loop {
               len = @sock.read(2).unpack('n')
               reply = @sock.read(len)
@@ -702,7 +707,7 @@ class Resolv
       def initialize(filename="/etc/resolv.conf")
         @mutex = Mutex.new
         @filename = filename
-	@initialized = nil
+        @initialized = nil
       end
 
       def lazy_initialize
@@ -716,9 +721,9 @@ class Resolv
                 f.each {|line|
                   line.sub!(/[#;].*/, '')
                   keyword, *args = line.split(/\s+/)
-		  args.each { |arg|
-		    arg.untaint
-		  }
+                  args.each { |arg|
+                    arg.untaint
+                  }
                   next unless keyword
                   case keyword
                   when 'nameserver'
@@ -731,6 +736,11 @@ class Resolv
                 }
               }
             rescue Errno::ENOENT
+              if /mswin32|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM
+                search, nameserver = Win32::Resolv.get_resolv_info
+                @search = [search] if search
+                @nameserver = nameserver if nameserver
+              end
             end
 
             @nameserver = ['0.0.0.0'] if @nameserver.empty?
@@ -758,17 +768,17 @@ class Resolv
 
       def generate_candidates(name)
         candidates = nil
-	name = Name.create(name)
-	if name.absolute?
+        name = Name.create(name)
+        if name.absolute?
           candidates = [name]
-	else
-	  if @ndots <= name.length - 1
-	    candidates = [Name.new(name.to_a)]
-	  else
-	    candidates = []
-	  end
-	  candidates.concat(@search.map {|domain| Name.new(name.to_a + domain)})
-	end
+        else
+          if @ndots <= name.length - 1
+            candidates = [Name.new(name.to_a)]
+          else
+            candidates = []
+          end
+          candidates.concat(@search.map {|domain| Name.new(name.to_a + domain)})
+        end
         return candidates
       end
 
@@ -866,9 +876,9 @@ class Resolv
           return @string
         end
 
-	def inspect
-	  return "#<#{self.class} #{self.to_s}>"
-	end
+        def inspect
+          return "#<#{self.class} #{self.to_s}>"
+        end
 
         def ==(other)
           return @downcase == other.downcase
@@ -898,7 +908,7 @@ class Resolv
 
       def initialize(labels, absolute=true)
         @labels = labels
-	@absolute = absolute
+        @absolute = absolute
       end
 
       def absolute?
@@ -1585,7 +1595,7 @@ class Resolv
   class IPv6
     Regex_8Hex = /\A
       (?:[0-9A-Fa-f]{1,4}:){7}
-	 [0-9A-Fa-f]{1,4}
+         [0-9A-Fa-f]{1,4}
       \z/x
 
     Regex_CompressedHex = /\A
