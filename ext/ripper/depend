@@ -1,4 +1,4 @@
-ripper.o: $(hdrdir)/lex.c eventids1.c eventids2.c
+ripper.o: ripper.c $(hdrdir)/lex.c eventids1.c $(srcdir)/eventids2.c
 
 ripper.c: ripper.y
 	bison -t -v -o$@ ripper.y

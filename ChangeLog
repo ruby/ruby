@@ -1,3 +1,7 @@
+Sat Nov 20 20:42:42 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/depend: fix ripper.o dependency.
+
 Sat Nov 20 17:48:29 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (io_reopen): work around problem with Cygwin fseeko
