@@ -564,7 +564,7 @@ module FileUtils
     sa = sb = nil
     st = File.stat(filea)
     bsize = fu_blksize(st.blksize)
-    return true unless File.size(fileb) == st.size
+    return false unless File.size(fileb) == st.size
 
     File.open(filea, 'rb') {|a|
     File.open(fileb, 'rb') {|b|
