@@ -203,7 +203,7 @@ class TestIterator < Test::Unit::TestCase
   def test_proc
     assert_instance_of(Proc, lambda{})
     assert_instance_of(Proc, Proc.new{})
-    lambda{|a|assert(a==1)}.call(1)
+    lambda{|a|assert_equal(a, 1)}.call(1)
   end
 
   def test_block

@@ -18,9 +18,9 @@ class TestMarshal < Test::Unit::TestCase
   def test_marshal
     $x = [1,2,3,[4,5,"foo"],{1=>"bar"},2.5,fact(30)]
     $y = Marshal.dump($x)
-    assert($x == Marshal.load($y))
+    assert_equal($x, Marshal.load($y))
 
-    assert(Marshal.load(Marshal.dump(StrClone.new("abc"))).class == StrClone)
+    assert_equal(Marshal.load(Marshal.dump(StrClone.new("abc"))).class, StrClone)
 
     [[1,2,3,4], [81, 2, 118, 3146]].each { |w,x,y,z|
       a = (x.to_f + y.to_f / z.to_f) * Math.exp(w.to_f / (x.to_f + y.to_f / z.to_f))
