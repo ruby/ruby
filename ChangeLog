@@ -1,5 +1,9 @@
 Fri Apr 16 15:09:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* bignum.c (rb_str2inum): strtoul() returns long, not int.
+
+	* eval.c (rb_load): size of VALUE and ID may be different.
+
 	* util.c (mmprepare): int is too small to cast from pointers.
 
 	* config.guess: avoid 'linux-gnu' for alpha-unknown-linux.

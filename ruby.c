@@ -149,7 +149,7 @@ rubylib_mangle(s, l)
 		newp++;			/* Skip whitespace. */
 	    }
 	    newl = strlen(newp);
-	    if (newl == 0 || oldl == 0) {
+	    if (newl == 0 || oldl == 0 || newl > STATIC_FILE_LENGTH) {
 		Fatal("malformed RUBYLIB_PREFIX");
 	    }
 	    strcpy(ret, newp);
