@@ -3373,7 +3373,7 @@ re_search(bufp, string, size, startpos, range, regs)
 #define MAX_NUM_FAILURE_ITEMS   (num_regs * NUM_REG_ITEMS + NUM_NONREG_ITEMS)
 
 /* We push this many things on the stack whenever we fail.  */
-#define NUM_FAILURE_ITEMS  (last_used_reg * NUM_REG_ITEMS + NUM_NOREG_ITEMS + 1)
+#define NUM_FAILURE_ITEMS  (last_used_reg * NUM_REG_ITEMS + NUM_NONREG_ITEMS + 1)
 
 /* This pushes counter information for succeed_n and jump_n */
 #define PUSH_FAILURE_COUNT(ptr)						\

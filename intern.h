@@ -179,7 +179,8 @@ void rb_thread_atfork _((void));
 int eaccess _((const char*, int));
 VALUE rb_file_s_expand_path _((int, VALUE *));
 void rb_file_const _((const char*, VALUE));
-char *rb_find_file _((char*));
+int rb_find_file_noext _((VALUE*));
+VALUE rb_find_file _((VALUE));
 /* gc.c */
 void rb_gc_mark_locations _((VALUE*, VALUE*));
 void rb_mark_tbl _((struct st_table*));
