@@ -26,7 +26,16 @@
 : start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
 : start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
   is equals to
+
     Net::HTTP.new( address, port, proxy_addr, proxy_port ).start(&block)
+
+: get( address, path, port = 80 )
+  gets entity body from path and returns it.
+  return value is a String.
+
+: get_print( address, path, port = 80 )
+  gets entity body from path and print it.
+  return value is an entity body (a String).
 
 : Proxy( address, port )
   creates a HTTP proxy class.
@@ -190,6 +199,7 @@ require 'net/protocol'
 module Net
 
   class HTTPBadResponse < StandardError; end
+  class HTTPHeaderSyntaxError < StandardError; end
 
 
   class HTTP < Protocol
@@ -396,7 +406,6 @@ module Net
                    #{hasdata ? 'data,' : ''} &block )
         end
       ----
-#puts src
       module_eval src, __FILE__, lineno
     end
 
@@ -449,9 +458,9 @@ module Net
 
     def header_defaults
       h = {}
-      h['Host']       = addr_port
-      h['Connection'] = 'Keep-Alive'
-      h['Accept']     = '*/*'
+      h['host']       = addr_port
+      h['connection'] = 'Keep-Alive'
+      h['accept']     = '*/*'
       h
     end
 
@@ -479,6 +488,24 @@ module Net
 
     def addr_port
       address + (port == HTTP.port ? '' : ":#{port}")
+    end
+
+
+    #
+    # utils
+    #
+
+    def self.get( addr, path, port = nil )
+      req = Get.new( path )
+      resp = nil
+      new( addr, port || HTTP.port ).start {|http|
+        resp = http.request( req )
+      }
+      resp.body
+    end
+
+    def self.get_print( addr, path, port = nil )
+      print get( addr, path, port )
     end
 
   end
@@ -558,14 +585,147 @@ module Net
 
   net_private {
 
+  module HTTPHeader
+
+    def size
+      @header.size
+    end
+
+    alias length size
+
+    def []( key )
+      @header[ key.downcase ]
+    end
+
+    def []=( key, val )
+      @header[ key.downcase ] = val
+    end
+
+    def each( &block )
+      @header.each( &block )
+    end
+
+    def each_key( &block )
+      @header.each_key( &block )
+    end
+
+    def each_value( &block )
+      @header.each_value( &block )
+    end
+
+    def delete( key )
+      @header.delete key.downcase
+    end
+
+    def key?( key )
+      @header.key? key.downcase
+    end
+
+    def to_hash
+      @header.dup
+    end
+
+    def canonical_each
+      @header.each do |k,v|
+        yield canonical(k), v
+      end
+    end
+
+    def canonical( k )
+      k.split('-').collect {|i| i.capitalize }.join('-')
+    end
+
+    def range
+      s = @header['range']
+      s or return nil
+
+      arr = []
+      s.split(',').each do |spec|
+        m = /bytes\s*=\s*(\d+)?\s*-\s*(\d+)?/i.match( spec )
+        m or raise HTTPHeaderSyntaxError, "wrong Range: #{spec}"
+
+        d1 = m[1].to_i
+        d2 = m[2].to_i
+        if    m[1] and m[2] then arr.push d1 .. d2
+        elsif m[1]          then arr.push d1 .. -1
+        elsif          m[2] then arr.push -d2 .. -1
+        else
+          raise HTTPHeaderSyntaxError, 'range is not specified'
+        end
+      end
+
+      return *arr
+    end
+
+    def range=( r )
+      case r
+      when Numeric
+        s = r > 0 ? "0-#{r - 1}" : "-#{-r}"
+      when Range
+        first = r.first
+        last = r.last
+        if r.exclude_end? then
+          last -= 1
+        end
+
+        if last == -1 then
+          s = first > 0 ? "#{first}-" : "-#{-first}"
+        else
+          first >= 0 or raise HTTPHeaderSyntaxError, 'range.first is negative' 
+          last > 0  or raise HTTPHeaderSyntaxError, 'range.last is negative' 
+          first < last or raise HTTPHeaderSyntaxError, 'must be .first < .last'
+          s = "#{first}-#{last}"
+        end
+      else
+        raise TypeError, 'Range/Integer is required'
+      end
+
+      @header['range'] = "bytes=#{s}"
+      r
+    end
+
+    def content_length
+      s = @header['content-length']
+      s or return nil
+
+      m = /\d+/.match(s)
+      m or raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
+      m[0].to_i
+    end
+
+    def chunked?
+      s = @header['transfer-encoding']
+      s and /(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i === s
+    end
+
+    def content_range
+      s = @header['content-range']
+      s or return nil
+
+      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>i.match( s )
+      m or raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
+
+      m[1].to_i .. m[2].to_i + 1
+    end
+
+    def range_length
+      r = content_range
+      r and r.length
+    end
+
+  end
+
+
   class HTTPRequest
+
+    include ::Net::NetPrivate::HTTPHeader
 
     def initialize( path, uhead = nil )
       @path = path
-      @u_header = tmp = {}
+      @header = tmp = {}
       return unless uhead
       uhead.each do |k,v|
-        key = canonical(k)
+        key = k.downcase
         if tmp.key? key then
           $stderr.puts "WARNING: duplicated HTTP header: #{k}" if $VERBOSE
         end
@@ -583,40 +743,8 @@ module Net
       "\#<#{type}>"
     end
 
-    def []( key )
-      @u_header[ canonical key ]
-    end
-
-    def []=( key, val )
-      @u_header[ canonical key ] = val
-    end
-
-    def key?( key )
-      @u_header.key? canonical(key)
-    end
-
-    def delete( key )
-      @u_header.delete canonical(key)
-    end
-
-    def each( &block )
-      @u_header.each( &block )
-    end
-
-    def each_key( &block )
-      @u_header.each_key( &block )
-    end
-
-    def each_value( &block )
-      @u_header.each_value( &block )
-    end
-
 
     private
-
-    def canonical( k )
-      k.split('-').collect {|i| i.capitalize }.join('-')
-    end
 
     #
     # write
@@ -632,7 +760,7 @@ module Net
     def ready( sock, ihead )
       @response = nil
       @socket = sock
-      ihead.update @u_header
+      ihead.update @header
       yield ihead
       @response = get_response
       @sock = nil
@@ -641,7 +769,7 @@ module Net
     def request( ver, path, header )
       @socket.writeline sprintf('%s %s HTTP/%s', type::METHOD, path, ver)
       header.each do |n,v|
-        @socket.writeline n + ': ' + v
+        @socket.writeline canonical(n) + ': ' + v
       end
       @socket.writeline ''
     end
@@ -682,9 +810,7 @@ module Net
     def get_resline
       str = @socket.readline
       m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/i.match( str )
-      unless m then
-        raise HTTPBadResponse, "wrong status line: #{str}"
-      end
+      m or raise HTTPBadResponse, "wrong status line: #{str}"
       httpver = m[1]
       status  = m[2]
       discrip = m[3]
@@ -789,6 +915,8 @@ module Net
 
   class HTTPResponse < Response
 
+    include ::Net::NetPrivate::HTTPHeader
+
     CODE_CLASS_TO_OBJ = {
       '1' => HTTPInformationCode,
       '2' => HTTPSuccessCode,
@@ -841,7 +969,6 @@ module Net
       '505' => HTTPVersionNotSupported
     }
 
-
     def initialize( stat, msg, sock, be, hv )
       code = CODE_TO_OBJ[stat] ||
              CODE_CLASS_TO_OBJ[stat[0,1]] ||
@@ -860,38 +987,6 @@ module Net
 
     def inspect
       "#<#{type} #{code}>"
-    end
-
-    def []( key )
-      @header[ key.downcase ]
-    end
-
-    def []=( key, val )
-      @header[ key.downcase ] = val
-    end
-
-    def each( &block )
-      @header.each( &block )
-    end
-
-    def each_key( &block )
-      @header.each_key( &block )
-    end
-
-    def each_value( &block )
-      @header.each_value( &block )
-    end
-
-    def delete( key )
-      @header.delete key.downcase
-    end
-
-    def key?( key )
-      @header.key? key.downcase
-    end
-
-    def to_hash
-      @header.dup
     end
 
     def value
@@ -973,9 +1068,7 @@ module Net
       while true do
         line = @socket.readline
         m = /[0-9a-fA-F]+/.match( line )
-        unless m then
-          raise HTTPBadResponse, "wrong chunk size line: #{line}"
-        end
+        m or raise HTTPBadResponse, "wrong chunk size line: #{line}"
         len = m[0].hex
         break if len == 0
         @socket.read( len, dest ); total += len
@@ -986,37 +1079,6 @@ module Net
       end
     end
 
-    def content_length
-      if @header.key? 'content-length' then
-        m = /\d+/.match( @header['content-length'] )
-        unless m then
-          raise HTTPBadResponse, 'wrong Content-Length format'
-        end
-        m[0].to_i
-      else
-        nil
-      end
-    end
-
-    def chunked?
-      tmp = @header['transfer-encoding']
-      tmp and /\bchunked\b/i === tmp
-     end
-
-    def range_length
-      s = @header['content-range']
-      s or return nil
-
-      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>.match( s )
-      m or raise HTTPBadResponse, 'wrong Content-Range format'
-
-      low = m[1].to_i
-      up  = m[2].to_i
-      return nil if low > up
-
-      up - low + 1
-    end
-
     def stream_check
       if @socket.closed? then
         raise IOError, 'try to read body out of block'
@@ -1025,8 +1087,7 @@ module Net
 
     def procdest( dest, block )
       if dest and block then
-        raise ArgumentError,
-              'both of arg and block are given for HTTP method'
+        raise ArgumentError, 'both of arg and block are given for HTTP method'
       end
       if block then
         ::Net::NetPrivate::ReadAdapter.new block

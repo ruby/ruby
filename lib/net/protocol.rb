@@ -490,17 +490,21 @@ module Net
 
       @debugout = dout
 
-      @closed  = true
-      @ipaddr  = ''
+      @socket = nil
       @sending = ''
       @buffer  = ''
 
-      timeout( otime ) {
-        @socket = TCPsocket.new( addr, port )
-      }
-      @closed = false
-      @ipaddr = @socket.addr[3]
+      connect otime
+      D 'opened'
     end
+
+    def connect( otime )
+      D "opening connection to #{@addr}..."
+      timeout( otime ) {
+        @socket = TCPsocket.new( @addr, @port )
+      }
+    end
+    private :connect
 
     attr :pipe, true
 
@@ -509,29 +513,31 @@ module Net
     end
 
     def inspect
-      "#<#{type} open=#{!@closed}>"
+      "#<#{type} #{closed? ? 'closed' : 'opened'}>"
     end
 
     def reopen( otime = nil )
-      unless closed? then
-        close
-        @buffer = ''
-      end
-      timeout( otime ) {
-        @socket = TCPsocket.new( @addr, @port )
-      }
-      @closed = false
+      D 'reopening...'
+      close
+      connect otime
+      D 'reopened'
     end
 
     attr :socket, true
 
     def close
-      @socket.close
-      @closed = true
+      if @socket then
+        @socket.close
+        D 'closed'
+      else
+        D 'close call for already closed socket'
+      end
+      @socket = nil
+      @buffer = ''
     end
 
     def closed?
-      @closed
+      not @socket
     end
 
     def address
@@ -543,7 +549,8 @@ module Net
     attr_reader :port
 
     def ip_address
-      @ipaddr.dup
+      @socket or return ''
+      @socket.addr[3]
     end
 
     alias ipaddr ip_address
@@ -560,7 +567,7 @@ module Net
     CRLF = "\r\n"
 
     def read( len, dest = '', ignerr = false )
-      D_off "reading #{len} bytes...\n"
+      D_off "reading #{len} bytes..."
 
       rsize = 0
       begin
@@ -573,12 +580,12 @@ module Net
         raise unless igneof
       end
 
-      D_on "read #{len} bytes\n"
+      D_on "read #{len} bytes"
       dest
     end
 
     def read_all( dest = '' )
-      D_off "reading all...\n"
+      D_off 'reading all...'
 
       rsize = 0
       begin
@@ -590,7 +597,7 @@ module Net
         ;
       end
 
-      D_on "read #{rsize} bytes\n"
+      D_on "read #{rsize} bytes"
       dest
     end
 
@@ -617,7 +624,7 @@ module Net
     end
 
     def read_pendstr( dest )
-      D_off "reading text...\n"
+      D_off 'reading text...'
 
       rsize = 0
       while (str = readuntil("\r\n")) != ".\r\n" do
@@ -626,13 +633,13 @@ module Net
         dest << str
       end
 
-      D_on "read #{rsize} bytes\n"
+      D_on "read #{rsize} bytes"
       dest
     end
 
     # private use only (can not handle 'break')
     def read_pendlist
-      D_off "reading list...\n"
+      D_off 'reading list...'
 
       str = nil
       i = 0
@@ -642,7 +649,7 @@ module Net
         yield str
       end
 
-      D_on "read #{i} items\n"
+      D_on "read #{i} items"
     end
 
 
@@ -705,7 +712,7 @@ module Net
     end
 
     def write_pendstr( src, block )
-      D_off "writing text from #{src.type}\n"
+      D_off "writing text from #{src.type}"
 
       wsize = use_each_crlf_line {
         if block then
@@ -715,7 +722,7 @@ module Net
         end
       }
 
-      D_on "wrote #{wsize} bytes text\n"
+      D_on "wrote #{wsize} bytes text"
       wsize
     end
 
@@ -762,17 +769,17 @@ module Net
         beg = 0
         buf = @wbuf
         while buf.index( /\n|\r\n|\r/, beg ) do
-          m = $~
+          m = Regexp.last_match
           if m.begin(0) == buf.size - 1 and buf[-1] == ?\r then
             # "...\r" : can follow "\n..."
             break
           end
-          str = buf[ beg, m.begin(0) - beg ]
+          str = buf[ beg ... m.begin(0) ]
           str.concat "\r\n"
           yield str
           beg = m.end(0)
         end
-        @wbuf = buf[ beg, buf.size - beg ]
+        @wbuf = buf[ beg ... buf.size ]
       end
     end
 
@@ -836,14 +843,19 @@ module Net
 
 
     def D_off( msg )
-      @debugout << msg if @debugout
+      D msg
       @savedo, @debugout = @debugout, nil
     end
 
     def D_on( msg )
       @debugout = @savedo
-      @savedo = nil
-      @debugout << msg if @debugout
+      D msg
+    end
+
+    def D( msg )
+      @debugout or return
+      @debugout << msg
+      @debugout << "\n"
     end
 
   end

@@ -1,3 +1,11 @@
+Fri Feb 23 08:28:58 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb: clear read buffer after reopen.
+
+	* lib/net/protocol.rb: refactoring.
+
+	* lib/net/http.rb: split module HTTPHeader from HTTPResponse.
+
 Tue Feb 20 23:45:35 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* process.c: add W* macro if not available.
