@@ -64,6 +64,7 @@ static VALUE main_thread;
 static Tcl_TimerToken timer_token;
 
 /* timer callback */
+static void _timer_for_tcl _((ClientData));
 static void
 _timer_for_tcl(clientData)
     ClientData clientData;
@@ -89,6 +90,12 @@ _timer_for_tcl(clientData)
     }
     rb_thread_schedule();
 }
+
+#if TCL_MAJOR_VERSION >= 8
+static int ip_ruby _((ClientData, Tcl_Interp *, int, Tcl_Obj *CONST*));
+#else
+static int ip_ruby _((ClientData, Tcl_Interp *, int, char **));
+#endif
 
 /* execute Tk_MainLoop */
 static VALUE

@@ -282,6 +282,8 @@ catch_scaniter(arr, data, self)
     return Qnil;
 }
 
+static VALUE call_scaniter _((VALUE));
+
 static void
 wrap_yyparse(v)
     struct cparse_params *v;

@@ -420,6 +420,8 @@ update_i(pair, dbm)
     return Qnil;
 }
 
+static VALUE each_pair _((VALUE));
+
 static VALUE
 fsdbm_update(obj, other)
     VALUE obj, other;

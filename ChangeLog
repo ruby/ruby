@@ -1,3 +1,12 @@
+Mon Apr  1 15:11:40 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/racc/cparse/cparse.c: prototype; call_scaniter().
+
+	* ext/sdbm/init.c: prototype; each_pair().
+
+	* ext/tcltklib/tcltklib.c: prototypes; _timer_for_tcl() and ip_ruby(),
+	  Nobu's patch at [ruby-dev:14483].
+
 Fri Mar 29 20:21:58 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/mkmf.rb (create_makefile): default FLAGS to empty strings.
