@@ -3832,7 +3832,7 @@ Wed Dec 11 00:45:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/getoptlong.rb (GetoptLong::Error): provide a common ancestor
 	  for GetoptLong error classes (RCR#129).
 
-Tue Dec 10 17:42:39 2002 2002  K.Kosako  <kosako@sofnec.co.jp>
+Tue Dec 10 17:42:39 2002  K.Kosako  <kosako@sofnec.co.jp>
 
 	* re.c (rb_reg_copy_object): fixed memory leak.
 
@@ -12317,7 +12317,7 @@ Tue Mar 20 15:10:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_s_glob): gives warning if no match found.
 
-Tue Mar 20 14:13:45  Koji Arai  <JCA02266@nifty.ne.jp>
+Tue Mar 20 14:13:45 2001  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* object.c (sym_inspect): did allocate extra byte space.
 
