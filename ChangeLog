@@ -1,3 +1,8 @@
+Mon Sep 13 16:23:27 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: MultiTkIp.new_master and new_slave accept
+	  safe-level value argument
+
 Mon Sep 13 10:48:37 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_getpid): don't need to use _getpid() on
