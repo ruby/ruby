@@ -2799,7 +2799,7 @@ primary		: literal
 			cur_mid = $<id>3;
 		    /*%
 			$$ = dispatch3(def, $2, $4, $5);
-			class_nest--;
+			in_def--;
 			cur_mid = $<id>3;
 		    %*/
 		    }

@@ -1,19 +1,23 @@
+Sun Feb 27 05:55:38 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y [ripper]: fix typo. [ruby-core:04494]
+
 Sat Feb 26 16:58:20 2005  K.Kosako <sndgk393@ybb.ne.jp>
 
 	* parse.y, re.c, regex.h, LEGAL, ext/strscan/strscan.c:
-	remove oniggnu.h (GNU regex API).
+	  remove oniggnu.h (GNU regex API).
 
 Wed Feb 23 22:08:16 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* st.c, st.h: imported additional file changes on
-	Oniguruma 3.7.0.
+	  Oniguruma 3.7.0.
 
 Wed Feb 23 21:45:29 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* ascii.c, euc_jp.c, oniggnu.h, oniguruma.h, regcomp.c,
-	regenc.c, regenc.h, regerror.c, regexec.c, regint.h,
-	regparse.c, regparse.h, sjis.c, utf8.c: imported Oni Guruma
-	3.7.0.
+	  regenc.c, regenc.h, regerror.c, regexec.c, regint.h,
+	  regparse.c, regparse.h, sjis.c, utf8.c: imported Oni Guruma
+	  3.7.0.
 
 Thu Feb 23 15:04:32 2005  akira yamada  <akira@ruby-lang.org>
 
