@@ -1464,12 +1464,7 @@ f_test(argc, argv)
     int cmd;
 
     if (argc == 0) ArgError("Wrong # of arguments");
-    if (TYPE(argv[0]) == T_STRING && RSTRING(argv[0])->len == 1) {
-	cmd = RSTRING(argv[0])->ptr[0];
-    }
-    else {
-	cmd = NUM2INT(argv[0]);
-    }
+    cmd = NUM2CHR(argv[0]);
     if (cmd == 0) return FALSE;
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {
 	CHECK(1);
@@ -1587,7 +1582,9 @@ f_test(argc, argv)
 	    break;
 	}
     }
-    return FALSE;
+    /* unknown command */
+    ArgError("unknow command ?%c", cmd);
+    return Qnil;		/* not reached */
 }
 
 extern VALUE mKernel;

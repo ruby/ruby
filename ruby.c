@@ -68,6 +68,9 @@ extern char *sourcefile;
 #ifndef RUBY_LIB
 #define RUBY_LIB "/usr/local/lib/ruby"
 #endif
+#ifndef RUBY_SITE_LIB
+#define RUBY_SITE_LIB "/usr/local/lib/site_ruby"
+#endif
 
 #if defined(MSDOS) || defined(NT)
 #define RUBY_LIB_SEP ';'
@@ -703,9 +706,7 @@ ruby_prog_init()
     addpath(RUBY_THIN_ARCHLIB);
 #endif
 
-#ifdef RUBY_SITE_LIB
     addpath(RUBY_SITE_LIB);
-#endif
 #ifdef RUBY_SITE_ARCHLIB
     addpath(RUBY_SITE_ARCHLIB);
 #endif

@@ -289,7 +289,7 @@ module TkCore
 	str = arg.to_s()
       end
       argstr += " " if argstr != ""
-      argstr += '"' + str.gsub(/[][$"]/, '\\\\\&') + '"'
+      argstr += '"' + str.gsub(/[][$"]/, '\\\\\&') + '"' #'
     }
     return argstr
   end

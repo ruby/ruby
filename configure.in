@@ -463,7 +463,7 @@ if test "$fat_binary" = yes ; then
                  "${prefix}/lib/ruby/" __ARCHITECTURE__ "-${host_os}" )
 
     AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB,
-                 "${prefix}/lib/site_ruby/" __ARCHITECTURE__ "-${host_os}" )
+                 "${prefix}/lib/ruby/" __ARCHITECTURE__ "-${host_os}" )
 
     AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/ruby/${arch}")
     AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/site_ruby/${arch}")

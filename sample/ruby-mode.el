@@ -361,6 +361,9 @@ The variable ruby-indent-level controls the amount of indentation.
 			       )))))))
 	(list in-string (car nest) depth (car (car pcol))))))
 
+(defun ruby-indent-size (pos nest)
+  (+ pos (* (if nest nest 1) ruby-indent-level)))
+
 (defun ruby-calculate-indent (&optional parse-start)
   (save-excursion
     (beginning-of-line)
@@ -388,19 +391,19 @@ The variable ruby-indent-level controls the amount of indentation.
 		 ((and (nth 2 s) (> (nth 2 s) 0))
 		  (goto-char (cdr (nth 1 s)))
 		  (forward-word -1)
-		  (setq indent (+ (current-column) ruby-indent-level)))
+		  (setq indent (ruby-indent-size (current-column) (nth 2 state))))
 		 (t 
 		  (setq indent (current-column)))))
 	    (cond
 	     ((nth 3 state)
 	      (goto-char (nth 3 state))
-	      (setq indent (+ (current-column) ruby-indent-level)))
+	      (setq indent (ruby-indent-size (current-column) (nth 2 state))))
 	     (t
 	      (goto-char parse-start)
 	      (back-to-indentation)
-	      (setq indent (+ (current-column) (* (nth 2 state) ruby-indent-level)))))
+	      (setq indent (ruby-indent-size (current-column) (nth 2 state)))))
 	    ))
-
+	  
 	 ((and (nth 2 state)(> (nth 2 state) 0)) ; in nest
 	  (if (null (cdr (nth 1 state)))
 	      (error "invalid nest"))
@@ -411,17 +414,17 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (cond
 	     ((nth 3 state)
 	      (goto-char (nth 3 state))
-	      (setq indent (+ (current-column) ruby-indent-level)))
+	      (setq indent (ruby-indent-size (current-column) (nth 2 state))))
 	     (t
 	      (goto-char parse-start)
 	      (back-to-indentation)
-	      (setq indent (+ (current-column) (* (nth 2 state) ruby-indent-level))))))
+	      (setq indent (ruby-indent-size (current-column) (nth 2 state))))))
 	   (t
 	    (setq indent (+ (current-column) ruby-indent-level)))))
 
 	 ((and (nth 2 state) (< (nth 2 state) 0)) ; in negative nest
-	  (setq indent (+ (current-column) (* (nth 2 state) ruby-indent-level)))))
-
+	  (setq indent (ruby-indent-size (current-column) (nth 2 state)))))
+	 
 	(cond
 	 (indent
 	  (goto-char indent-point)

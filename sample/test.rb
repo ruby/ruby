@@ -109,8 +109,8 @@ tmp.close
 $bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
-    next if /vt100/;
-    $bad = 1 if /vt100/;
+  next if /vt100/;
+  $bad = 1 if /vt100/;
 end
 ok(!(!tmp.eof? || /vt100/ || $bad))
 tmp.close
@@ -240,6 +240,18 @@ while true
 end
 ok(!$bad)
 
+ok(catch(:foo) {
+     loop do
+       loop do
+	 throw :foo, true
+	 break
+       end
+       break
+       ok(false)			# should no reach here
+     end
+     false
+   })
+
 check "array"
 ok([1, 2] + [3, 4] == [1, 2, 3, 4])
 ok([1, 2] * 2 == [1, 2, 1, 2])
@@ -287,7 +299,8 @@ ok($x == [7,5,3,2,1])
 
 # split test
 $x = "The Book of Mormon"
-ok($x.split(//).reverse!.join == "nomroM fo kooB ehT")
+ok($x.split(//).reverse!.join == $x.reverse)
+ok($x.reverse == $x.reverse!)
 ok("1 byte string".split(//).reverse.join(":") == "g:n:i:r:t:s: :e:t:y:b: :1")
 $x = "a b c  d"
 ok($x.split == ['a', 'b', 'c', 'd'])
@@ -539,6 +552,8 @@ ok(?\M-\C-a == 129)
 ok("a".upcase![0] == ?A)
 ok("A".downcase![0] == ?a)
 ok("abc".tr!("a-z", "A-Z") == "ABC")
+ok("aabbcccc".tr_s!("a-z", "A-Z") == "ABC")
+ok("abc".tr!("0-9", "A-Z") == nil)
 ok("abcc".squeeze!("a-z") == "abc")
 ok("abcd".delete!("bc") == "ad")
 

@@ -114,7 +114,9 @@ bsock_shutdown(argc, argv, sock)
 	how = 2;
     else {
 	how = NUM2INT(howto);
-	if (how < 0 && how > 2) how = 2;
+#if 0
+	if (how < 0 || 2 < how) how = 2;
+#endif
     }
     GetOpenFile(sock, fptr);
     if (shutdown(fileno(fptr->f), how) == -1)

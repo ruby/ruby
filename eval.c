@@ -359,7 +359,6 @@ extern int nerrs;
 
 extern VALUE mKernel;
 extern VALUE cModule;
-extern VALUE cClass;
 extern VALUE eFatal;
 extern VALUE eGlobalExit;
 extern VALUE eInterrupt;
@@ -3818,8 +3817,10 @@ f_eval(argc, argv, self)
 }
 
 static VALUE
-eval_under(under, self, src)
-    VALUE under, self, src;
+exec_under(func, under, args)
+    VALUE (*func)();
+    VALUE under;
+    void *args;
 {
     VALUE val;			/* OK */
     int state;
@@ -3828,14 +3829,14 @@ eval_under(under, self, src)
     PUSH_CLASS();
     the_class = under;
     PUSH_FRAME();
-    the_frame->last_func = _frame.last_func;
-    the_frame->last_class = _frame.last_class;
-    the_frame->argc = 1;
-    the_frame->argv = &src;
+    the_frame->last_func = _frame.prev->last_func;
+    the_frame->last_class = _frame.prev->last_class;
+    the_frame->argc = _frame.prev->argc;
+    the_frame->argv = _frame.prev->argv;
     the_frame->cbase = (VALUE)node_newnode(NODE_CREF,under,0,cbase);
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	val = eval(self, src, Qnil, 0, 0);
+	val = (*func)(args);
     }
     POP_TAG();
     POP_FRAME();
@@ -3846,29 +3847,101 @@ eval_under(under, self, src)
 }
 
 static VALUE
-obj_instance_eval(self, src)
-    VALUE self, src;
+eval_under_i(args)
+    VALUE *args;
 {
-    return eval_under(CLASS_OF(self), self, src);
+    return eval(args[0], args[1], Qnil, 0, 0);
 }
 
 static VALUE
-mod_module_eval(mod, src)
-    VALUE mod, src;
+eval_under(under, self, src)
+    VALUE under, self, src;
+{
+    VALUE args[2];
+
+    args[0] = self;
+    args[1] = src;
+    return exec_under(eval_under_i, under, args);
+}
+
+static VALUE
+yield_under_i(self)
+    VALUE self;
+{
+    return rb_yield_0(self, self);
+}
+
+static VALUE
+yield_under(under, self)
+    VALUE under, self;
+{
+    return exec_under(yield_under_i, under, self);
+}
+
+static VALUE
+obj_instance_eval(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    VALUE src;
+
+    if (argc == 0) {
+	if (!iterator_p()) {
+	    ArgError("block not supplied");
+	}
+	return yield_under(CLASS_OF(self), self);
+    }
+    if (argc == 1) {
+	Check_SafeStr(argv[0]);
+    }
+    else {
+	ArgError("Wrong # of arguments: %s(src) or %s{..}",
+		 rb_id2name(the_frame->last_func),
+		 rb_id2name(the_frame->last_func));
+    }
+
+    return eval_under(CLASS_OF(self), self, argv[0]);
+}
+
+static VALUE
+mod_module_eval(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
 {
     int state;
     int mode;
     VALUE result = Qnil;
 
+    if (argc == 0) {
+	if (!iterator_p()) {
+	    ArgError("block not supplied");
+	}
+    }
+    else if (argc == 1) {
+	Check_SafeStr(argv[0]);
+    }
+    else {
+	ArgError("Wrong # of arguments: %s(src) or %s{..}",
+		 rb_id2name(the_frame->last_func),
+		 rb_id2name(the_frame->last_func));
+    }
+
     mode = FL_TEST(the_scope, SCOPE_MASK);
-    PUSH_TAG(PROT_NONE)
+    SCOPE_SET(the_scope, SCOPE_PUBLIC);
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	result = eval_under(mod, mod, src);
+	if (argc == 0) {
+	    result = yield_under(mod, mod);
+	}
+	else {
+	    result = eval_under(mod, mod, argv[0]);
+	}
     }
     POP_TAG();
     SCOPE_SET(the_scope, mode);
     if (state) JUMP_TAG(state);
-
     return result;
 }
 
@@ -4470,7 +4543,7 @@ Init_eval()
 
     rb_define_method(mKernel, "send", f_send, -1);
     rb_define_method(mKernel, "__send__", f_send, -1);
-    rb_define_method(mKernel, "instance_eval", obj_instance_eval, 1);
+    rb_define_method(mKernel, "instance_eval", obj_instance_eval, -1);
 
     rb_define_private_method(cModule, "append_features", mod_append_features, 1);
     rb_define_private_method(cModule, "extend_object", mod_extend_object, 1);
@@ -4482,7 +4555,8 @@ Init_eval()
     rb_define_method(cModule, "method_defined?", mod_method_defined, 1);
     rb_define_method(cModule, "public_class_method", mod_public_method, -1);
     rb_define_method(cModule, "private_class_method", mod_private_method, -1);
-    rb_define_method(cModule, "module_eval", mod_module_eval, 1);
+    rb_define_method(cModule, "module_eval", mod_module_eval, -1);
+    rb_define_method(cModule, "class_eval", mod_module_eval, -1);
 
     rb_define_method(cModule, "remove_method", mod_remove_method, 1);
     rb_define_method(cModule, "undef_method", mod_undef_method, 1);
@@ -6220,7 +6294,7 @@ f_catch(dmy, tag)
     if ((state = EXEC_TAG()) == 0) {
 	val = rb_yield(tag);
     }
-    else if (state == TAG_THROW && prot_tag->tag == prot_tag->dst) {
+    else if (state == TAG_THROW && t == prot_tag->dst) {
 	val = prot_tag->retval;
 	state = 0;
     }
@@ -6245,7 +6319,6 @@ f_throw(argc, argv)
     while (tt) {
 	if (tt->tag == t) {
 	    tt->dst = t;
-	    tt->retval = value;
 	    break;
 	}
 #ifdef THREAD
@@ -6257,10 +6330,10 @@ f_throw(argc, argv)
 #endif
 	tt = tt->prev;
     }
-
     if (!tt) {
 	NameError("uncaught throw `%s'", rb_id2name(t));
     }
+    return_value(value);
     trap_restore_mask();
     JUMP_TAG(TAG_THROW);
     /* not reached */

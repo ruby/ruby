@@ -3774,7 +3774,7 @@ EOF
 
 
     cat >> confdefs.h <<EOF
-#define RUBY_SITE_THIN_ARCHLIB "${prefix}/lib/site_ruby/" __ARCHITECTURE__ "-${host_os}" 
+#define RUBY_SITE_THIN_ARCHLIB "${prefix}/lib/ruby/" __ARCHITECTURE__ "-${host_os}" 
 EOF
 
 
