@@ -1882,6 +1882,7 @@ word		: string_content
 		    {
 			$$ = literal_concat($1, $2);
 		    }
+		;
 
 qwords		: tQWORDS_BEG ' ' tSTRING_END
 		    {
