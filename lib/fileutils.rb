@@ -60,12 +60,20 @@
 # 
 
 
-#
-# See exp.rb for a summary of methods.
-#
 module FileUtils
 
   # All methods are module_function.
+
+  #
+  # Options: (none)
+  #
+  # Returns the name of the current directory.
+  #
+  def pwd
+    Dir.pwd
+  end
+
+  alias getwd pwd
 
   #
   # Options: noop verbose
@@ -88,16 +96,15 @@ module FileUtils
 
 
   #
-  # Options: verbose
+  # Options: (none)
   # 
   # Returns true if +newer+ is newer than all +old_list+.
   # Non-existent files are older than any file.
   # 
-  #   FileUtils.uptodate? 'hello.o', 'hello.c', 'hello.h' or system 'make'
+  #   FileUtils.uptodate? 'hello.o', %w(hello.c hello.h) or system 'make'
   # 
   def uptodate?( new, old_list, *options )
-    verbose, = fu_parseargs(options, :verbose)
-    fu_output_message "uptodate? #{new} #{old_list.join ' '}" if verbose
+    raise ArgumentError, 'uptodate? does not accept any option' unless options.empty?
 
     return false unless FileTest.exist? new
     new_time = File.ctime(new)
@@ -550,7 +557,7 @@ module FileUtils
 
 
   #
-  # Options: verbose
+  # Options: (none)
   # 
   # Returns true if the contents of a file A and a file B are identical.
   # 
@@ -558,8 +565,7 @@ module FileUtils
   #   FileUtils.cmp '/bin/cp', '/bin/mv'    #=> maybe false
   #
   def cmp( filea, fileb, *options )
-    verbose, = fu_parseargs(options, :verbose)
-    fu_output_message "cmp #{filea} #{fileb}" if verbose
+    raise ArgumentError, 'cmp does not accept any option' unless options.empty?
 
     sa = sb = nil
     st = File.stat(filea)
@@ -719,15 +725,15 @@ module FileUtils
 
 
   OPT_TABLE = {
-    'pwd'          => %w( verbose ),
+    'pwd'          => %w(),
     'cd'           => %w( noop verbose ),
     'chdir'        => %w( noop verbose ),
     'chmod'        => %w( noop verbose ),
-    'cmp'          => %w( verbose ),
+    'cmp'          => %w(),
     'copy'         => %w( preserve noop verbose ),
     'cp'           => %w( preserve noop verbose ),
     'cp_r'         => %w( preserve noop verbose ),
-    'identical?'   => %w( verbose ),
+    'identical?'   => %w(),
     'install'      => %w( noop verbose ),
     'link'         => %w( force noop verbose ),
     'ln'           => %w( force noop verbose ),
@@ -748,7 +754,7 @@ module FileUtils
     'safe_unlink'  => %w( noop verbose ),
     'symlink'      => %w( force noop verbose ),
     'touch'        => %w( noop verbose ),
-    'uptodate?'    => %w( verbose )
+    'uptodate?'    => %w()
   }
 
 

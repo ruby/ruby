@@ -1,3 +1,10 @@
+Sun Feb  9 07:07:26 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: new method FileUtils.pwd (really).
+
+	* lib/fileutils.rb: FileUtils.pwd, cmp, identical?, uptodate? does
+	  not accept any option.
+
 Sat Feb  8 18:35:30 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-forward-string): fixed void variable
