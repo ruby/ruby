@@ -13,6 +13,10 @@ Tue Oct  9 17:08:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* eval.c (rb_thread_priority_set): return the priority not but
 	  self.
 
+Sat Oct  6 23:07:08 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): NODE_MATCH3 was confusing left and right. sigh.
+
 Fri Oct  5 15:19:46 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_unique): should not dump anonymous class.
