@@ -1,3 +1,7 @@
+Fri Dec 21 20:33:34 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* parse.y (str_extend): make up "#$;" handling.
+
 Fri Dec 21 16:18:17 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* dln.h, ruby.h, util.h: enable prototypes in C++.

@@ -952,6 +952,7 @@ time_plus(time1, time2)
     }
     v = NUM2DBL(time2);
     d = modf(v, &f);
+    sec = (time_t)f;
     if (f != (double)sec || d >= 1.0 || d <= -1.0) {
 	rb_raise(rb_eRangeError, "time + %f out of Time range", v);
     }
@@ -998,6 +999,7 @@ time_minus(time1, time2)
     }
     v = NUM2DBL(time2);
     d = modf(v, &f);
+    sec = (time_t)f;
     if (f != (double)sec || d >= 1.0 || d <= -1.0) {
 	rb_raise(rb_eRangeError, "time - %f out of Time range", v);
     }
