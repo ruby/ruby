@@ -2018,7 +2018,7 @@ call_trace_func(event, file, line, self, id, klass)
 					    id?ID2SYM(id):Qnil,
 					    self?rb_f_binding(self):Qnil,
 					    klass),
-		    Qtrue, 0);
+		    Qtrue, Qundef);
     }
     POP_TMPTAG();		/* do not propagate retval */
     POP_FRAME();
@@ -5931,7 +5931,7 @@ call_end_proc(data)
     ruby_frame->self = ruby_frame->prev->self;
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
-    proc_invoke(data, rb_ary_new2(0), Qfalse, 0);
+    proc_invoke(data, rb_ary_new2(0), Qfalse, Qundef);
     POP_FRAME();
     POP_ITER();
 }
@@ -6451,7 +6451,7 @@ proc_invoke(proc, args, pcall, self)
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
-	result = rb_yield_0(args, self, self?self:ruby_block->self, pcall);
+	result = rb_yield_0(args, self, self!=Qundef?CLASS_OF(self):0, pcall);
     }
     POP_TAG();
 
@@ -6488,14 +6488,14 @@ static VALUE
 proc_call(proc, args)
     VALUE proc, args;		/* OK */
 {
-    return proc_invoke(proc, args, Qtrue, 0);
+    return proc_invoke(proc, args, Qtrue, Qundef);
 }
 
 static VALUE
 proc_yield(proc, args)
     VALUE proc, args;		/* OK */
 {
-    return proc_invoke(proc, args, Qfalse, 0);
+    return proc_invoke(proc, args, Qfalse, Qundef);
 }
 
 static VALUE

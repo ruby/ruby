@@ -1,3 +1,17 @@
+Tue Oct 23 01:21:19 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (proc_invoke): fix self switching in Proc#call
+	  (ruby-bugs-ja#PR108) and GC failure.  use Qundef instead of 0
+	  to direct not switching self.
+
+	* eval.c (call_trace_func): ditto.
+
+	* eval.c (call_end_proc): ditto.
+
+	* eval.c (proc_call): ditto.
+
+	* eval.c (proc_yield): ditto.
+
 Tue Oct 23 01:15:43 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* variable.c (rb_global_entry): reconstruct global variable
