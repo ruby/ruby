@@ -16,7 +16,7 @@ VALUE rb_cRange;
 static ID id_cmp, id_succ, id_beg, id_end, id_excl;
 
 #define EXCL(r) RTEST(rb_ivar_get((r), id_excl))
-#define SET_EXCL(r,v) rb_ivar_set((r), id_excl, (v)?Qtrue:Qfalse)
+#define SET_EXCL(r,v) rb_ivar_set((r), id_excl, (v) ? Qtrue : Qfalse)
 
 static VALUE
 range_check(args)
@@ -43,7 +43,9 @@ range_init(range, beg, end, exclude_end)
 {
     VALUE args[2];
 
-    args[0] = beg; args[1] = end;
+    args[0] = beg;
+    args[1] = end;
+    
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
 	rb_rescue(range_check, (VALUE)args, range_failed, 0);
     }
@@ -85,7 +87,7 @@ static VALUE
 range_exclude_end_p(range)
     VALUE range;
 {
-    return EXCL(range)?Qtrue:Qfalse;
+    return EXCL(range) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -176,7 +178,7 @@ range_hash(range)
     hash ^= v << 9;
     hash ^= EXCL(range) << 24;
 
-    return INT2FIX(hash);
+    return LONG2FIX(hash);
 }
 
 static VALUE
@@ -203,11 +205,11 @@ static void
 range_each_func(range, func, v, e, arg)
     VALUE range;
     void (*func) _((VALUE, void*));
+    VALUE v, e;
     void *arg;
 {
     if (EXCL(range)) {
 	while (r_lt(v, e)) {
-	    if (r_eq(v, e)) break;
 	    (*func)(v, arg);
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
@@ -215,7 +217,6 @@ range_each_func(range, func, v, e, arg)
     else {
 	while (r_le(v, e)) {
 	    (*func)(v, arg);
-	    if (r_eq(v, e)) break;
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
     }
@@ -272,6 +273,7 @@ range_step(argc, argv, range)
 	    rb_raise(rb_eTypeError, "cannot iterate from %s",
 		     rb_class2name(CLASS_OF(b)));
 	}
+	
 	args[0] = 1;
 	args[1] = unit;
 	range_each_func(range, step_i, b, e, args);
