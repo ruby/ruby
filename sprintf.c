@@ -556,6 +556,7 @@ rb_f_sprintf(argc, argv)
 
 	  case 'f':
 	  case 'g':
+	  case 'G':
 	  case 'e':
 	  case 'E':
 	    {

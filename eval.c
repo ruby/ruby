@@ -6104,44 +6104,20 @@ rb_thread_fd_close(fd)
 }
 
 static void
-rb_thread_badf()
-{
-    thread_t th;
-    int max;
-    struct timeval delay_tv;
-    fd_set readfds;
-
-    delay_tv.tv_sec = 0;
-    delay_tv.tv_usec = 0;
-    FOREACH_THREAD(th) {
-	if (th->wait_for & WAIT_FD) {
-	    FD_ZERO(&readfds);
-	    FD_SET(th->fd, &readfds);
-	    if (select(th->fd+1, &readfds, 0, 0, &delay_tv) < 0 &&
-		errno == EBADF) {
-		rb_thread_ready(th);
-		th->status = THREAD_TO_KILL;
-	    }
-	}
-    }
-    END_FOREACH(th);
-}
-
-static void
 rb_thread_deadlock()
 {
-    static int invoked = 0;
-
-    if (invoked) return;
-    invoked = 1;
+#if 1
     curr_thread = main_thread;
-#if 0
     th_raise_argc = 1;
     th_raise_argv[0] = rb_exc_new2(rb_eFatal, "Thread: deadlock");
     th_raise_file = ruby_sourcefile;
     th_raise_line = ruby_sourceline;
     rb_thread_restore_context(main_thread, RESTORE_RAISE);
 #else
+    static int invoked = 0;
+
+    if (invoked) return;
+    invoked = 1;
     rb_prohibit_interrupt = 1;
     ruby_errinfo = rb_exc_new2(rb_eFatal, "Thread: deadlock");
     set_backtrace(ruby_errinfo, make_backtrace());
@@ -6250,7 +6226,6 @@ rb_thread_schedule()
 		    if (rb_trap_pending) rb_trap_exec();
 		    switch (errno) {
 		      case EBADF:
-			rb_thread_badf();
 		      case ENOMEM:
 			n = 0;
 			break;
@@ -6775,6 +6750,7 @@ rb_thread_create_0(fn, arg, klass)
     VALUE klass;
 {
     thread_t th = rb_thread_alloc(klass);
+    volatile VALUE thread = th->thread;
     enum thread_status status;
     int state;
 
@@ -6794,7 +6770,7 @@ rb_thread_create_0(fn, arg, klass)
     FL_SET(ruby_scope, SCOPE_SHARED);
     rb_thread_save_context(curr_thread);
     if (setjmp(curr_thread->context)) {
-	return th->thread;
+	return thread;
     }
 
     PUSH_TAG(PROT_THREAD);

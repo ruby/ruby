@@ -230,26 +230,8 @@ main()
   fi
 fi
 
-if test "$ac_cv_func_setpgrp2" = yes; then
-  AC_DEFINE(BSD_GETPGRP, getpgrp2)
-  AC_DEFINE(BSD_SETPGRP, setpgrp2)
-else
-  AC_CACHE_CHECK(whether getpgrp() has arg, rb_cv_bsdgetpgrp,
-    [AC_TRY_COMPILE([#include <unistd.h>], [getpgrp(0);],
-      rb_cv_bsdgetpgrp=yes,
-      rb_cv_bsdgetpgrp=no)])
-  if test "$rb_cv_bsdgetpgrp" = yes; then
-    AC_DEFINE(BSD_GETPGRP, getpgrp)
-  fi
-
-  AC_CACHE_CHECK(whether setpgrp() has args, rb_cv_bsdsetpgrp,
-    [AC_TRY_COMPILE([#include <unistd.h>], [setpgrp(1, 1);],
-	rb_cv_bsdsetpgrp=yes,
-	rb_cv_bsdsetpgrp=no)])
-  if test "$rb_cv_bsdsetpgrp" = yes; then
-    AC_DEFINE(BSD_SETPGRP, setpgrp)
-  fi
-fi
+AC_FUNC_GETPGRP
+AC_FUNC_SETPGRP  
 
 AC_CACHE_CHECK(for working strtod, rb_cv_func_strtod,
 [AC_TRY_RUN([
@@ -402,7 +384,7 @@ if test "$with_dln_a_out" != yes; then
 			LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	LDSHARED='ld -G'
-			LDFLAGS="-Wl,-E"
+			test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	sunos*) 	LDSHARED='ld -assert nodefinitions'
 			rb_cv_dlopen=yes;;
@@ -681,7 +663,7 @@ ri_prefix=
 test "$program_prefix" != NONE &&
   ri_prefix=$program_prefix
 
-ri_suffix="${MAJOR}.${MINOR}"
+ri_suffix=
 test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 

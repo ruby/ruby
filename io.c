@@ -1136,7 +1136,7 @@ static int
 rb_open(fname, flag, mode)
     char *fname;
     int flag;
-    mode_t mode;
+    unsigned int mode;
 {
     int fd;
 

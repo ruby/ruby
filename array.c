@@ -821,7 +821,7 @@ rb_inspecting_p(obj)
     inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
     if (NIL_P(inspect_tbl)) return Qfalse;
 #else
-    if (!inspect_tbl) return Qnil;
+    if (!inspect_tbl) return Qfalse;
 #endif
     return rb_ary_includes(inspect_tbl, obj);
 }

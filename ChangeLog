@@ -1,3 +1,19 @@
+Mon Feb 15 15:48:30 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* configure.in: specify `-Wl,-E' only for GNU ld.
+
+Mon Feb 15 11:43:22 1999  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
+
+	* array.c (rb_inspecting_p): should return Qfalse.
+
+Sun Feb 14 22:36:40 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* sprintf.c (rb_f_sprintf): `%G' was ommited.
+
+Sat Feb 13 01:24:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_create_0): should protect th->thread.
+
 Fri Feb 12 16:16:47 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
 
 	* string.c (rb_str_inspect): wrong mbc position.

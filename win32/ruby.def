@@ -272,11 +272,9 @@ EXPORTS
 	rb_io_fptr_finalize
 	rb_io_close
 	rb_io_binmode
-	rb_io_mode_flags
 	rb_fopen
 	rb_fdopen
 	rb_io_unbuffered
-	rb_io_reopen
 	rb_str_setter
 ; numeric.c
 	rb_num_zerodiv
