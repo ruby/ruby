@@ -30,7 +30,7 @@ class Tk::BWidget::ListBox
   class Event_for_Items < TkEvent::Event
     def self._get_extra_args_tbl
       [ 
-	TkComm.method(:string)   # item idenfier
+        TkComm.method(:string)   # item idenfier
       ]
     end
   end
@@ -135,19 +135,19 @@ class Tk::BWidget::ListBox
 
   def selection_set(*args)
     tk_send_without_enc('selection', 'set', 
-			*(args.collect{|item| tagid(item)}))
+                        *(args.collect{|item| tagid(item)}))
     self
   end
 
   def selection_add(*args)
     tk_send_without_enc('selection', 'add', 
-			*(args.collect{|item| tagid(item)}))
+                        *(args.collect{|item| tagid(item)}))
     self
   end
 
   def selection_remove(*args)
     tk_send_without_enc('selection', 'remove', 
-			*(args.collect{|item| tagid(item)}))
+                        *(args.collect{|item| tagid(item)}))
     self
   end
 
@@ -177,7 +177,7 @@ class Tk::BWidget::ListBox::Item
       @listbox = lbox
     else
       fail RuntimeError, 
-	"expect Tk::BWidget::ListBox or Tk::BWidget::ListBox::Item for 1st argument"
+        "expect Tk::BWidget::ListBox or Tk::BWidget::ListBox::Item for 1st argument"
     end
 
     if args[-1].kind_of?(Hash)

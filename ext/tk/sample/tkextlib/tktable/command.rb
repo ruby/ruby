@@ -28,44 +28,44 @@ ent_var = TkVariable.new
 entry = TkEntry.new(:textvariable=>ent_var)
 
 table = Tk::TkTable.new(:rows=>rows, :cols=>cols, 
-			:command=>[proc{|mode, cell, val|
-			  if (mode == :w)
-			    data[cell] = val
-			  else
-			    begin
-			      data[cell]  # exist
-			    rescue
-			      ''          # not exist
-			    end
-			  end
-			}, '%i %C %s'], 
-			:width=>6, :height=>6, 
-			:titlerows=>1, :titlecols=>1, 
-			:roworigin=>-1, :colorigin=>-1, 
-			:rowstretchmode=>:last, :colstretchmode=>:last,
-			:rowtagcommand=>proc{|row|
-			  row = Integer(row)
-			  return 'OddRow' if row>0 && row%2 == 1
-			},
-			:coltagcommand=>proc{|col|
-			  col = Integer(col)
-			  return 'OddCol' if col>0 && col%2 == 1
-			}, 
-			:selectmode=>:extended, :flashmode=>true, 
-			:rowstretch=>:unset, :colstretch=>:unset,
-			:browsecommand=>[proc{|w, s|
-			  cur_var.value = s
-			  ent_var.value = w.get(s)
-			}, '%W %S'], 
-			:validate=>true, 
-			:validatecommand=>proc{|e| 
-			  ent_var.value = e.new_value; true
-			})
+                        :command=>[proc{|mode, cell, val|
+                          if (mode == :w)
+                            data[cell] = val
+                          else
+                            begin
+                              data[cell]  # exist
+                            rescue
+                              ''          # not exist
+                            end
+                          end
+                        }, '%i %C %s'], 
+                        :width=>6, :height=>6, 
+                        :titlerows=>1, :titlecols=>1, 
+                        :roworigin=>-1, :colorigin=>-1, 
+                        :rowstretchmode=>:last, :colstretchmode=>:last,
+                        :rowtagcommand=>proc{|row|
+                          row = Integer(row)
+                          return 'OddRow' if row>0 && row%2 == 1
+                        },
+                        :coltagcommand=>proc{|col|
+                          col = Integer(col)
+                          return 'OddCol' if col>0 && col%2 == 1
+                        }, 
+                        :selectmode=>:extended, :flashmode=>true, 
+                        :rowstretch=>:unset, :colstretch=>:unset,
+                        :browsecommand=>[proc{|w, s|
+                          cur_var.value = s
+                          ent_var.value = w.get(s)
+                        }, '%W %S'], 
+                        :validate=>true, 
+                        :validatecommand=>proc{|e| 
+                          ent_var.value = e.new_value; true
+                        })
 =begin
-			:validatecommand=>[
-			  proc{|s| 
-			    ent_var.value = s; true
-			  }, '%S'])
+                        :validatecommand=>[
+                          proc{|s| 
+                            ent_var.value = s; true
+                          }, '%S'])
 =end
 
 sx = table.xscrollbar(TkScrollbar.new)

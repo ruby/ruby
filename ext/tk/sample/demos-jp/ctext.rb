@@ -17,7 +17,7 @@ $ctext_demo = TkToplevel.new {|w|
 
 # label 生成
 TkLabel.new($ctext_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
-	    'text'=>"このウィンドウにはキャンバスwidgetのテキスト機能をデモするためのテキスト文字列が表示されています。マウスを四角の中に持っていき、クリックすると位置ぎめ用の点からの相対位置を変えたり、行揃えを変えたりすることができます。また以下のような編集のための簡単なバインディングをサポートしています。
+            'text'=>"このウィンドウにはキャンバスwidgetのテキスト機能をデモするためのテキスト文字列が表示されています。マウスを四角の中に持っていき、クリックすると位置ぎめ用の点からの相対位置を変えたり、行揃えを変えたりすることができます。また以下のような編集のための簡単なバインディングをサポートしています。
 
   1. マウスを持っていき、クリックし、入力できます。
   2. ボタン1で選択できます。
@@ -48,7 +48,7 @@ $ctext_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # canvas 生成
 $ctext_canvas = TkCanvas.new($ctext_demo, 'relief'=>'flat', 
-			     'borderwidth'=>0, 'width'=>500, 'height'=>350)
+                             'borderwidth'=>0, 'width'=>500, 'height'=>350)
 $ctext_canvas.pack('side'=>'top', 'expand'=>'yes', 'fill'=>'both')
 
 # font 設定
@@ -56,37 +56,37 @@ textFont = '-*-Helvetica-Medium-R-Normal--*-240-*-*-*-*-*-*'
 
 # canvas 設定
 TkcRectangle.new($ctext_canvas, 245, 195, 255, 205, 
-		 'outline'=>'black', 'fill'=>'red')
+                 'outline'=>'black', 'fill'=>'red')
 
 $ctag_text = TkcTag.new($ctext_canvas)
 $ctag_text.withtag(TkcText.new($ctext_canvas, 250, 200, 
-			       'text'=>"これはキャンバスwidgetのテキスト機能をデモするための文字列です。マウスを持っていき、クリックして入力できます。選択してコントロール-Dで消去することもできます。",
-			       'width'=>440, 'anchor'=>'n', 
-			       'font'=>'-*-Helvetica-Medium-R-Normal--*-240-*-*-*-*-*-*', 
-			       'kanjifont'=>'-*-r-*--24-*-jisx0208.1983-0', 
-			       'justify'=>'left') )
+                               'text'=>"これはキャンバスwidgetのテキスト機能をデモするための文字列です。マウスを持っていき、クリックして入力できます。選択してコントロール-Dで消去することもできます。",
+                               'width'=>440, 'anchor'=>'n', 
+                               'font'=>'-*-Helvetica-Medium-R-Normal--*-240-*-*-*-*-*-*', 
+                               'kanjifont'=>'-*-r-*--24-*-jisx0208.1983-0', 
+                               'justify'=>'left') )
 
 $ctag_text.bind('1', proc{|x,y| textB1Press $ctext_canvas,x,y}, "%x %y")
 $ctag_text.bind('B1-Motion', proc{|x,y| textB1Move $ctext_canvas,x,y}, "%x %y")
 $ctag_text.bind('Shift-1', 
-	proc{|x,y| $ctext_canvas.seleect_adjust 'current', "@#{x},#{y}"}, 
-	"%x %y")
+        proc{|x,y| $ctext_canvas.seleect_adjust 'current', "@#{x},#{y}"}, 
+        "%x %y")
 $ctag_text.bind('Shift-B1-Motion', 
-		proc{|x,y| textB1Move $ctext_canvas,x,y}, "%x %y")
+                proc{|x,y| textB1Move $ctext_canvas,x,y}, "%x %y")
 $ctag_text.bind('KeyPress', proc{|a| textInsert $ctext_canvas,a}, "%A")
 $ctag_text.bind('Return', proc{textInsert $ctext_canvas,"\n"})
 $ctag_text.bind('Control-h', proc{textBs $ctext_canvas})
 $ctag_text.bind('BackSpace', proc{textBs $ctext_canvas})
 $ctag_text.bind('Delete', proc{textDel $ctext_canvas})
 $ctag_text.bind('2', proc{|x,y| textPaste $ctext_canvas, "@#{x},#{y}"}, 
-		"%x %y")
+                "%x %y")
 
 # Next, create some items that allow the text's anchor position 
 # to be edited.
 
 def mkTextConfig(w,x,y,option,value,color)
   item = TkcRectangle.new(w, x, y, x+30, y+30, 
-			  'outline'=>'black', 'fill'=>color, 'width'=>1)
+                          'outline'=>'black', 'fill'=>color, 'width'=>1)
   item.bind('1', proc{$ctag_text.configure option, value})
   w.addtag_withtag('config', item)
 end
@@ -104,11 +104,11 @@ mkTextConfig $ctext_canvas, x, y+60, 'anchor', 'ne', color
 mkTextConfig $ctext_canvas, x+30, y+60, 'anchor', 'n', color
 mkTextConfig $ctext_canvas, x+60, y+60, 'anchor', 'nw', color
 item = TkcRectangle.new($ctext_canvas, x+40, y+40, x+50, y+50, 
-			'outline'=>'black', 'fill'=>'red')
+                        'outline'=>'black', 'fill'=>'red')
 item.bind('1', proc{$ctag_text.configure 'anchor', 'center'})
 TkcText.new($ctext_canvas, x+45, y-5, 'text'=>'Text Position', 'anchor'=>'s', 
-	    'font'=>'-*-times-medium-r-normal--*-240-*-*-*-*-*-*', 
-	    'fill'=>'brown')
+            'font'=>'-*-times-medium-r-normal--*-240-*-*-*-*-*-*', 
+            'fill'=>'brown')
 
 # Lastly, create some items that allow the text's justification to be
 # changed.
@@ -120,14 +120,14 @@ mkTextConfig $ctext_canvas, x, y, 'justify', 'left', color
 mkTextConfig $ctext_canvas, x+30, y, 'justify', 'center', color
 mkTextConfig $ctext_canvas, x+60, y, 'justify', 'right', color
 TkcText.new($ctext_canvas, x+45, y-5, 'text'=>'Justification', 'anchor'=>'s', 
-	    'font'=>'-*-times-medium-r-normal--*-240-*-*-*-*-*-*', 
-	    'fill'=>'brown')
+            'font'=>'-*-times-medium-r-normal--*-240-*-*-*-*-*-*', 
+            'fill'=>'brown')
 
 $ctext_canvas.itembind('config', 'Enter', proc{textEnter $ctext_canvas})
 $ctext_canvas.itembind('config', 'Leave', 
-		       proc{$ctext_canvas\
-			     .itemconfigure('current', 
-					    'fill'=>$textConfigFill)})
+                       proc{$ctext_canvas\
+                             .itemconfigure('current', 
+                                            'fill'=>$textConfigFill)})
 
 $textConfigFill = ''
 

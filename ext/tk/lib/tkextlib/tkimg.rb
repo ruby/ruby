@@ -19,9 +19,9 @@ module Tk
   module Img
     def self.package_version
       begin
-	TkPackage.require('Img')
+        TkPackage.require('Img')
       rescue
-	''
+        ''
       end
     end
   end

@@ -42,7 +42,7 @@ def find_tcl(tcllib, stubs)
   else
     %w[8.5 8.4 8.3 8.2 8.1 8.0 7.6].find { |ver|
       find_library("tcl#{ver}", func, *paths) or
-	find_library("tcl#{ver.delete('.')}", func, *paths)
+        find_library("tcl#{ver.delete('.')}", func, *paths)
     }
   end
 end
@@ -63,7 +63,7 @@ def find_tk(tklib, stubs)
   else
     %w[8.5 8.4 8.3 8.2 8.1 8.0 4.2].find { |ver|
       find_library("tk#{ver}", func, *paths) or
-	find_library("tk#{ver.delete('.')}", func, *paths)
+        find_library("tk#{ver.delete('.')}", func, *paths)
     }
   end
 end
@@ -90,47 +90,47 @@ def pthread_check()
     else
       # tcl-thread is unknown and tclConfig.sh is given
       begin
-	open(tclConfig, "r") do |cfg|
-	  while line = cfg.gets()
-	    if line =~ /^\s*TCL_THREADS=(0|1)/
-	      tcl_enable_thread = ($1 == "1")
-	      break
-	    end
+        open(tclConfig, "r") do |cfg|
+          while line = cfg.gets()
+            if line =~ /^\s*TCL_THREADS=(0|1)/
+              tcl_enable_thread = ($1 == "1")
+              break
+            end
 
-	    if line =~ /^\s*TCL_MAJOR_VERSION=("|')(\d+)\1/
-	      tcl_major_ver = $2
-	      if tcl_major_ver =~ /^[1-7]$/
-		tcl_enable_thread = false
-		break
-	      end
-	      if tcl_major_ver == "8" && tcl_minor_ver == "0"
-		tcl_enable_thread = false
-		break
-	      end
-	    end
+            if line =~ /^\s*TCL_MAJOR_VERSION=("|')(\d+)\1/
+              tcl_major_ver = $2
+              if tcl_major_ver =~ /^[1-7]$/
+                tcl_enable_thread = false
+                break
+              end
+              if tcl_major_ver == "8" && tcl_minor_ver == "0"
+                tcl_enable_thread = false
+                break
+              end
+            end
 
-	    if line =~ /^\s*TCL_MINOR_VERSION=("|')(\d+)\1/
-	      tcl_minor_ver = $2
-	      if tcl_major_ver == "8" && tcl_minor_ver == "0"
-		tcl_enable_thread = false
-		break
-	      end
-	    end
-	  end
-	end
+            if line =~ /^\s*TCL_MINOR_VERSION=("|')(\d+)\1/
+              tcl_minor_ver = $2
+              if tcl_major_ver == "8" && tcl_minor_ver == "0"
+                tcl_enable_thread = false
+                break
+              end
+            end
+          end
+        end
 
-	if tcl_enable_thread == nil
-	  # not find definition
-	  if tcl_major_ver
-	    puts("Warning: '#{tclConfig}' doesn't include TCL_THREADS definition.")
-	  else
-	    puts("Warning: '#{tclConfig}' may not be a tclConfig file.")
-	  end
-	  tclConfig = false
-	end
+        if tcl_enable_thread == nil
+          # not find definition
+          if tcl_major_ver
+            puts("Warning: '#{tclConfig}' doesn't include TCL_THREADS definition.")
+          else
+            puts("Warning: '#{tclConfig}' may not be a tclConfig file.")
+          end
+          tclConfig = false
+        end
       rescue Exception
-	puts("Warning: fail to read '#{tclConfig}'!! --> ignore the file")
-	tclConfig = false
+        puts("Warning: fail to read '#{tclConfig}'!! --> ignore the file")
+        tclConfig = false
       end
     end
   end

@@ -27,7 +27,7 @@ class Tk::BWidget::Tree
   class Event_for_Items < TkEvent::Event
     def self._get_extra_args_tbl
       [ 
-	TkComm.method(:string)   # item idenfier
+        TkComm.method(:string)   # item idenfier
       ]
     end
   end
@@ -147,7 +147,7 @@ class Tk::BWidget::Tree
 
   def selection_add(*args)
     tk_send_without_enc('selection', 'add', 
-			*(args.collect{|node| tagid(node)}))
+                        *(args.collect{|node| tagid(node)}))
     self
   end
 
@@ -162,30 +162,30 @@ class Tk::BWidget::Tree
 
   def selection_include?(*args)
     bool(tk_send_without_enc('selection', 'get', 
-			     *(args.collect{|node| tagid(node)})))
+                             *(args.collect{|node| tagid(node)})))
   end
 
   def selection_range(*args)
     tk_send_without_enc('selection', 'range', 
-			*(args.collect{|node| tagid(node)}))
+                        *(args.collect{|node| tagid(node)}))
     self
   end
 
   def selection_remove(*args)
     tk_send_without_enc('selection', 'remove', 
-			*(args.collect{|node| tagid(node)}))
+                        *(args.collect{|node| tagid(node)}))
     self
   end
 
   def selection_set(*args)
     tk_send_without_enc('selection', 'set', 
-			*(args.collect{|node| tagid(node)}))
+                        *(args.collect{|node| tagid(node)}))
     self
   end
 
   def selection_toggle(*args)
     tk_send_without_enc('selection', 'toggle', 
-			*(args.collect{|node| tagid(node)}))
+                        *(args.collect{|node| tagid(node)}))
     self
   end
 
@@ -218,16 +218,16 @@ class Tk::BWidget::Tree::Node
       @tree = tree
       parent = args.shift
       if parent.kind_of?(Tk::BWidget::Tree::Node)
-	if parent.tree.path != @tree.path
-	  fail RuntimeError, 'tree of parent node is not match'
-	end
+        if parent.tree.path != @tree.path
+          fail RuntimeError, 'tree of parent node is not match'
+        end
       end
     elsif tree.kind_of?(Tk::BWidget::Tree::Node)
       @tree = tree.tree
       parent = tree.parent
     else
       fail RuntimeError, 
-	"expect Tk::BWidget::Tree or Tk::BWidget::Tree::Node for 1st argument"
+        "expect Tk::BWidget::Tree or Tk::BWidget::Tree::Node for 1st argument"
     end
 
     if args[-1].kind_of?(Hash)

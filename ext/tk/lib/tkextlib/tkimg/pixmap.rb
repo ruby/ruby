@@ -17,11 +17,11 @@ module Tk
   module Img
     module PIXMAP
       def self.package_version
-	begin
-	  TkPackage.require('img::pixmap')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::pixmap')
+        rescue
+          ''
+        end
       end
     end
   end

@@ -50,14 +50,14 @@ TkFrame.new($icon_demo) {|frame|
 flagup = \
 TkBitmapImage.new('file'=>[$demo_dir,'..',
                            'images','flagup.xbm'].join(File::Separator),
-		  'maskfile'=>\
-		  [$demo_dir,'..','images','flagup.xbm'].join(File::Separator))
+                  'maskfile'=>\
+                  [$demo_dir,'..','images','flagup.xbm'].join(File::Separator))
 flagdown = \
 TkBitmapImage.new('file'=>[$demo_dir,'..',
                            'images','flagdown.xbm'].join(File::Separator),
-		  'maskfile'=>\
-		  [$demo_dir,'..',
-		    'images','flagdown.xbm'].join(File::Separator))
+                  'maskfile'=>\
+                  [$demo_dir,'..',
+                    'images','flagdown.xbm'].join(File::Separator))
 
 # create variable
 letters = TkVariable.new
@@ -67,14 +67,14 @@ TkFrame.new($icon_demo, 'borderwidth'=>10){|w|
   TkFrame.new(w) {|f|
     TkRadioButton.new(f){
       bitmap '@' + [$demo_dir,'..',
-	            'images','letters.xbm'].join(File::Separator)
+                    'images','letters.xbm'].join(File::Separator)
       variable letters
       value 'full'
     }.pack('side'=>'top', 'expand'=>'yes')
 
     TkRadioButton.new(f){
       bitmap '@' + [$demo_dir,'..',
-	             'images','noletter.xbm'].join(File::Separator)
+                     'images','noletter.xbm'].join(File::Separator)
       variable letters
       value 'empty'
     }.pack('side'=>'top', 'expand'=>'yes')

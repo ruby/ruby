@@ -27,7 +27,7 @@ Tk.grid(pie, :sticky=>:news)
 Tk.grid(f, :sticky=>:ew)
 
 Tk.pack(fast_btn, slow_btn, quit_btn, 
-	:in=>f, :side=>:left, :fill=>:both, :expand=>true, :padx=>6, :pady=>4)
+        :in=>f, :side=>:left, :fill=>:both, :expand=>true, :padx=>6, :pady=>4)
 
 Tk.root.grid_columnconfigure(0, :weight=>1)
 Tk.root.grid_rowconfigure(0, :weight=>1)
@@ -37,20 +37,20 @@ priv = {
 }
 
 pie.bind('ButtonPress-1', proc{|w, x, y|
-	     priv[:x] = x
-	     priv[:y] = y
-	     priv[:pie_in] = (w.winfo_width/1.8 > x)
-	     priv[:angle]  = w[:angle]
-	     priv[:origin] = w[:origin]
-	 }, '%W %x %y')
+             priv[:x] = x
+             priv[:y] = y
+             priv[:pie_in] = (w.winfo_width/1.8 > x)
+             priv[:angle]  = w[:angle]
+             priv[:origin] = w[:origin]
+         }, '%W %x %y')
 
 pie.bind('B1-Motion', proc{|w, x, y|
-	   if priv[:pie_in]
-	     w.configure(:angle=>priv[:angle] + (priv[:y] - y)/3, 
-			 :origin=>(priv[:origin] + 
-				   ((w.winfo_height/2.2 > y)? -1: 1) * 
-				   (priv[:x] - x)/3) % 360)
-	   end
-	 }, '%W %x %y')
+           if priv[:pie_in]
+             w.configure(:angle=>priv[:angle] + (priv[:y] - y)/3, 
+                         :origin=>(priv[:origin] + 
+                                   ((w.winfo_height/2.2 > y)? -1: 1) * 
+                                   (priv[:x] - x)/3) % 360)
+           end
+         }, '%W %x %y')
 
 Tk.mainloop

@@ -17,11 +17,11 @@ module Tk
   module Img
     module GIF
       def self.package_version
-	begin
-	  TkPackage.require('img::gif')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::gif')
+        rescue
+          ''
+        end
       end
     end
   end

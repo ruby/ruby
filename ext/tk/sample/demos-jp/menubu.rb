@@ -187,7 +187,7 @@ TkFrame.new(center) {|f|
   menubuttonoptions = TkVariable.new
   mbutton = TkMenubutton.new(f)
   options = optionMenu(mbutton, menubuttonoptions, 
-		       'one', 'two', 'three')
+                       'one', 'two', 'three')
   mbutton.pack('side'=>'left', 'padx'=>25, 'pady'=>25)
   paletteColor = TkVariable.new
   colors = ['Black','red4','DarkGreen','NavyBlue', 'gray75',

@@ -8,8 +8,8 @@ def start_random
   if defined? Thread
     Thread.start do
       loop do
-	sleep 2
-	Line.new($c, rand(400), rand(200), rand(400), rand(200))
+        sleep 2
+        Line.new($c, rand(400), rand(200), rand(400), rand(200))
       end
     end
   end

@@ -17,7 +17,7 @@ $filebox_demo = TkToplevel.new {|w|
 
 # label 生成
 TkLabel.new($filebox_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
-	    'text'=>"エントリにファイル名を直接入力するか、\"Browse\" ボタンを押してファイル選択ダイアログからファイル名を選んで下さい。").pack('side'=>'top')
+            'text'=>"エントリにファイル名を直接入力するか、\"Browse\" ボタンを押してファイル選択ダイアログからファイル名を選んで下さい。").pack('side'=>'top')
 
 # frame 生成
 TkFrame.new($filebox_demo) {|frame|
@@ -47,7 +47,7 @@ TkFrame.new($filebox_demo) {|frame|
       pack('side'=>'left', 'expand'=>'yes', 'fill'=>'x')
 
       TkButton.new(f, 'text'=>'Browse ...', 
-		   'command'=>proc{fileDialog $filebox_demo,e,type})\
+                   'command'=>proc{fileDialog $filebox_demo,e,type})\
       .pack('side'=>'left')
     }
 
@@ -58,9 +58,9 @@ TkFrame.new($filebox_demo) {|frame|
 $tk_strictMotif = TkVarAccess.new('tk_strictMotif')
 if ($tk_platform['platform'] == 'unix')
   TkCheckButton.new($filebox_demo, 
-		    'text'=>'Motifスタイルのダイアログを用いる', 
-		    'variable'=>$tk_strictMotif, 
-		    'onvalue'=>1, 'offvalue'=>0 ).pack('anchor'=>'c')
+                    'text'=>'Motifスタイルのダイアログを用いる', 
+                    'variable'=>$tk_strictMotif, 
+                    'onvalue'=>1, 'offvalue'=>0 ).pack('anchor'=>'c')
 end
 
 def fileDialog(w,ent,operation)
@@ -84,8 +84,8 @@ def fileDialog(w,ent,operation)
     file = Tk.getOpenFile('filetypes'=>types, 'parent'=>w)
   else
     file = Tk.getSaveFile('filetypes'=>types, 'parent'=>w, 
-			  'initialfile'=>'Untitled', 
-			  'defaultextension'=>'.txt')
+                          'initialfile'=>'Untitled', 
+                          'defaultextension'=>'.txt')
   end
   if file != ""
     ent.delete 0, 'end'

@@ -16,9 +16,9 @@ class TkTimer
 
   TkCore::INTERP.add_tk_procs('rb_after', 'id', <<-'EOL')
     if {[set st [catch {eval {ruby_cmd TkTimer callback} $id} ret]] != 0} {
-	return -code $st $ret
+        return -code $st $ret
     } {
-	return $ret
+        return $ret
     }
   EOL
 
@@ -36,19 +36,19 @@ class TkTimer
   def self.info(obj = nil)
     if obj
       if obj.kind_of?(TkTimer)
-	if obj.after_id
-	  inf = tk_split_list(tk_call_without_enc('after','info',obj.after_id))
-	  [Tk_CBTBL[inf[0][1]], inf[1]]
-	else
-	  nil
-	end
+        if obj.after_id
+          inf = tk_split_list(tk_call_without_enc('after','info',obj.after_id))
+          [Tk_CBTBL[inf[0][1]], inf[1]]
+        else
+          nil
+        end
       else
-	fail ArgumentError, "TkTimer object is expected"
+        fail ArgumentError, "TkTimer object is expected"
       end
     else
       tk_call_without_enc('after', 'info').split(' ').collect!{|id|
-	ret = Tk_CBTBL.find{|key,val| val.after_id == id}
-	(ret == nil)? id: ret[1]
+        ret = Tk_CBTBL.find{|key,val| val.after_id == id}
+        (ret == nil)? id: ret[1]
       }
     end
   end
@@ -67,13 +67,13 @@ class TkTimer
       exit!(1)
     rescue Exception => e
       if @cancel_on_exception && 
-	  @cancel_on_exception.find{|exc| e.kind_of?(exc)}
-	cancel
-	@return_value = e
-	@in_callback = false
-	return e
+          @cancel_on_exception.find{|exc| e.kind_of?(exc)}
+        cancel
+        @return_value = e
+        @in_callback = false
+        return e
       else
-	fail e
+        fail e
       end
     end
     if @set_next
@@ -106,12 +106,12 @@ class TkTimer
     end
     if @current_pos >= @proc_max
       if @do_loop < 0 || (@do_loop -= 1) > 0
-	@current_pos = 0
+        @current_pos = 0
       else
-	Tk_CBTBL.delete(@id) ;# for GC
-	@running = false
-	@wait_var.value = 0
-	return
+        Tk_CBTBL.delete(@id) ;# for GC
+        @running = false
+        @wait_var.value = 0
+        return
       end
     end
 
@@ -237,9 +237,9 @@ class TkTimer
     @loop_proc = []
     procs.each{|e|
       if e.kind_of? Proc
-	@loop_proc.push([e])
+        @loop_proc.push([e])
       else
-	@loop_proc.push(e)
+        @loop_proc.push(e)
       end
     }
     @proc_max = @loop_proc.size
@@ -248,14 +248,14 @@ class TkTimer
     @do_loop = 0
     if loop_exec
       if loop_exec.kind_of?(Integer) && loop_exec < 0
-	@loop_exec = -1
+        @loop_exec = -1
       elsif loop_exec == nil || loop_exec == false || loop_exec == 0
-	@loop_exec = 1
+        @loop_exec = 1
       else
-	if not loop_exec.kind_of?(Integer)
-	  fail ArguemntError, "expect Integer for 2nd argument"
-	end
-	@loop_exec = loop_exec
+        if not loop_exec.kind_of?(Integer)
+          fail ArguemntError, "expect Integer for 2nd argument"
+        end
+        @loop_exec = loop_exec
       end
       @do_loop = @loop_exec
     end
@@ -266,9 +266,9 @@ class TkTimer
   def add_procs(*procs)
     procs.each{|e|
       if e.kind_of? Proc
-	@loop_proc.push([e])
+        @loop_proc.push([e])
       else
-	@loop_proc.push(e)
+        @loop_proc.push(e)
       end
     }
     @proc_max = @loop_proc.size
@@ -279,9 +279,9 @@ class TkTimer
   def delete_procs(*procs)
     procs.each{|e|
       if e.kind_of? Proc
-	@loop_proc.delete([e])
+        @loop_proc.delete([e])
       else
-	@loop_proc.delete(e)
+        @loop_proc.delete(e)
       end
     }
     @proc_max = @loop_proc.size
@@ -327,7 +327,7 @@ class TkTimer
     if argc > 0
       sleep = init_args.shift
       if !sleep == 'idle' && !sleep.kind_of?(Integer)
-	fail ArguemntError, "expect Integer or 'idle' for 1st argument"
+        fail ArguemntError, "expect Integer or 'idle' for 1st argument"
       end
       @init_sleep = sleep
     end
@@ -340,7 +340,7 @@ class TkTimer
     @running = true
     if @init_proc
       if not @init_proc.kind_of? Proc
-	fail ArgumentError, "Argument '#{@init_proc}' need to be Proc"
+        fail ArgumentError, "Argument '#{@init_proc}' need to be Proc"
       end
       @current_proc = @init_proc
       set_callback(@init_sleep, @init_args)
@@ -393,7 +393,7 @@ class TkTimer
     fail RuntimeError, "no procedure to continue" unless cmd
     if wait
       unless wait.kind_of? Integer
-	fail ArguemntError, "expect Integer for 1st argument"
+        fail ArguemntError, "expect Integer for 1st argument"
       end
       sleep = wait
     end
@@ -428,9 +428,9 @@ class TkTimer
 
     unless @running
       if @return_value.kind_of?(Exception)
-	fail @return_value 
+        fail @return_value 
       else
-	return @return_value 
+        return @return_value 
       end
     end
 

@@ -30,36 +30,36 @@ class TkFont
     if JAPANIZED_TK
       begin
         fontnames = tk_call('font', 'names')
-	case fontnames
-	when /defaultgui/
+        case fontnames
+        when /defaultgui/
           # Tcl/Tk-JP for Windows
           ltn = 'defaultgui'
           knj = 'defaultgui'
-	when /Mincho:Helvetica-Bold-12/
+        when /Mincho:Helvetica-Bold-12/
           # Tcl/Tk-JP for UNIX/X
           ltn, knj = tk_split_simplelist(tk_call('font', 'configure', 
                                                  'Mincho:Helvetica-Bold-12', 
                                                  '-compound'))
         else
           # unknown Tcl/Tk-JP
-	  platform = tk_call('set', 'tcl_platform(platform)')
-	  case platform
-	  when 'unix'
-	    ltn = {'family'=>'Helvetica'.freeze, 
-	           'size'=>-12, 'weight'=>'bold'.freeze}
-	    #knj = 'k14'
-	    #knj = '-misc-fixed-medium-r-normal--14-*-*-*-c-*-jisx0208.1983-0'
-	    knj = '-*-fixed-bold-r-normal--12-*-*-*-c-*-jisx0208.1983-0'
-	  when 'windows'
-	    ltn = {'family'=>'MS Sans Serif'.freeze, 'size'=>8}
-	    knj = 'mincho'
-	  when 'macintosh'
-	    ltn = 'system'
-	    knj = 'mincho'
-	  else # unknown
-	    ltn = 'Helvetica'
-	    knj = 'mincho'
-	  end
+          platform = tk_call('set', 'tcl_platform(platform)')
+          case platform
+          when 'unix'
+            ltn = {'family'=>'Helvetica'.freeze, 
+                   'size'=>-12, 'weight'=>'bold'.freeze}
+            #knj = 'k14'
+            #knj = '-misc-fixed-medium-r-normal--14-*-*-*-c-*-jisx0208.1983-0'
+            knj = '-*-fixed-bold-r-normal--12-*-*-*-c-*-jisx0208.1983-0'
+          when 'windows'
+            ltn = {'family'=>'MS Sans Serif'.freeze, 'size'=>8}
+            knj = 'mincho'
+          when 'macintosh'
+            ltn = 'system'
+            knj = 'mincho'
+          else # unknown
+            ltn = 'Helvetica'
+            knj = 'mincho'
+          end
         end
       rescue
         ltn = 'Helvetica'
@@ -68,20 +68,20 @@ class TkFont
 
     else # not JAPANIZED_TK
       begin
-	platform = tk_call('set', 'tcl_platform(platform)')
-	case platform
-	when 'unix'
-	  ltn = {'family'=>'Helvetica'.freeze, 
-	         'size'=>-12, 'weight'=>'bold'.freeze}
-	when 'windows'
-	  ltn = {'family'=>'MS Sans Serif'.freeze, 'size'=>8}
-	when 'macintosh'
-	  ltn = 'system'
-	else # unknown
-	  ltn = 'Helvetica'
-	end
+        platform = tk_call('set', 'tcl_platform(platform)')
+        case platform
+        when 'unix'
+          ltn = {'family'=>'Helvetica'.freeze, 
+                 'size'=>-12, 'weight'=>'bold'.freeze}
+        when 'windows'
+          ltn = {'family'=>'MS Sans Serif'.freeze, 'size'=>8}
+        when 'macintosh'
+          ltn = 'system'
+        else # unknown
+          ltn = 'Helvetica'
+        end
       rescue
-	ltn = 'Helvetica'
+        ltn = 'Helvetica'
       end
 
       knj = ltn.dup
@@ -106,14 +106,14 @@ class TkFont
   class DescendantFont
     def initialize(compound, type)
       unless compound.kind_of?(TkFont)
-	fail ArgumentError, "a TkFont object is expected for the 1st argument"
+        fail ArgumentError, "a TkFont object is expected for the 1st argument"
       end
       @compound = compound
       case type
       when 'kanji', 'latin', 'ascii'
-	@type = type
+        @type = type
       else
-	fail ArgumentError, "unknown type '#{type}'"
+        fail ArgumentError, "unknown type '#{type}'"
       end
     end
 
@@ -155,9 +155,9 @@ class TkFont
 
     when /^8\.*/
       if window
-	tk_split_simplelist(tk_call('font', 'families', '-displayof', window))
+        tk_split_simplelist(tk_call('font', 'families', '-displayof', window))
       else
-	tk_split_simplelist(tk_call('font', 'families'))
+        tk_split_simplelist(tk_call('font', 'families'))
       end
     end
   end
@@ -205,11 +205,11 @@ class TkFont
       regexp = /^-(|kanji)#{key} /
 
       conf_list = tk_split_simplelist(tk_call(*args)).
-	find_all{|prop| prop =~ regexp}.
-	collect{|prop| tk_split_simplelist(prop)}
+        find_all{|prop| prop =~ regexp}.
+        collect{|prop| tk_split_simplelist(prop)}
 
       if conf_list.size == 0
-	raise RuntimeError, "the widget may not support 'font' option"
+        raise RuntimeError, "the widget may not support 'font' option"
       end
 
       args << {}
@@ -231,11 +231,11 @@ class TkFont
       regexp = /^-#{key} /
 
       conf_list = tk_split_simplelist(tk_call(*args)).
-	find_all{|prop| prop =~ regexp}.
-	collect{|prop| tk_split_simplelist(prop)}
+        find_all{|prop| prop =~ regexp}.
+        collect{|prop| tk_split_simplelist(prop)}
 
       if conf_list.size == 0
-	raise RuntimeError, "the widget may not support 'font' option"
+        raise RuntimeError, "the widget may not support 'font' option"
       end
 
       args << {}
@@ -247,23 +247,23 @@ class TkFont
       fnt = nil if fnt == [] || fnt == ""
 
       unless fnt
-	TkFont.new(nil, nil).call_font_configure([path, key], *args)
+        TkFont.new(nil, nil).call_font_configure([path, key], *args)
       else
-	begin
-	  compound = tk_split_simplelist(
+        begin
+          compound = tk_split_simplelist(
               Hash[*tk_split_simplelist(tk_call('font', 'configure', 
-						fnt))].collect{|key,value|
+                                                fnt))].collect{|key,value|
                 [key[1..-1], value]
               }.assoc('compound')[1])
-	rescue
-	  compound = []
-	end
-	if compound == []
-	  TkFont.new(fnt).call_font_configure([path, key], *args)
-	else
-	  TkFont.new(compound[0], 
-		     compound[1]).call_font_configure([path, key], *args)
-	end
+        rescue
+          compound = []
+        end
+        if compound == []
+          TkFont.new(fnt).call_font_configure([path, key], *args)
+        else
+          TkFont.new(compound[0], 
+                     compound[1]).call_font_configure([path, key], *args)
+        end
       end
     end
   end
@@ -307,33 +307,33 @@ class TkFont
     # compound font check
     if Tk::TK_VERSION == '8.0' && JAPANIZED_TK
       begin
-	compound = tk_split_simplelist(tk_call('font', 'configure', 
-					       ltn, '-compound'))
-	if knj == nil
-	  if compound != []
-	    ltn, knj = compound
-	  end
-	else
-	  if compound != []
-	    ltn = compound[0]
-	  end
-	  compound = tk_split_simplelist(tk_call('font', 'configure', 
-						 knj, '-compound'))
-	  if compound != []
-	    knj = compound[1]
-	  end
-	end
+        compound = tk_split_simplelist(tk_call('font', 'configure', 
+                                               ltn, '-compound'))
+        if knj == nil
+          if compound != []
+            ltn, knj = compound
+          end
+        else
+          if compound != []
+            ltn = compound[0]
+          end
+          compound = tk_split_simplelist(tk_call('font', 'configure', 
+                                                 knj, '-compound'))
+          if compound != []
+            knj = compound[1]
+          end
+        end
       rescue
       end
     end
 
     if ltn
       if JAPANIZED_TK && !knj
-	if Tk::TK_VERSION =~ /^4.*/
-	  knj = DEFAULT_KANJI_FONT_NAME
-	else
-	  knj = ltn 
-	end
+        if Tk::TK_VERSION =~ /^4.*/
+          knj = DEFAULT_KANJI_FONT_NAME
+        else
+          knj = ltn 
+        end
       end
     else
       ltn = DEFAULT_LATIN_FONT_NAME
@@ -372,28 +372,28 @@ class TkFont
       finfo = {}
       finfo['family'] = font[0].to_s
       if font[1]
-	fsize = font[1].to_s
-	if fsize != '0' && fsize =~ /^(|\+|-)([0-9]+)$/
-	  if $1 == '-'
-	    finfo['pixels'] = $2
-	  else
-	    finfo['points'] = $2
-	  end
-	else
-	  finfo['points'] = '13'
-	end
+        fsize = font[1].to_s
+        if fsize != '0' && fsize =~ /^(|\+|-)([0-9]+)$/
+          if $1 == '-'
+            finfo['pixels'] = $2
+          else
+            finfo['points'] = $2
+          end
+        else
+          finfo['points'] = '13'
+        end
       end
       font[2..-1].each{|style|
-	case (style)
-	when 'normal'
-	  finfo['weight'] = style
-	when 'bold'
-	  finfo['weight'] = style
-	when 'roman'
-	  finfo['slant'] = 'r'
-	when 'italic'
-	  finfo['slant'] = 'i'
-	end
+        case (style)
+        when 'normal'
+          finfo['weight'] = style
+        when 'bold'
+          finfo['weight'] = style
+        when 'roman'
+          finfo['slant'] = 'r'
+        when 'italic'
+          finfo['slant'] = 'i'
+        end
       }
 
       @latinfont = '-' + _get_font_info_from_hash(finfo).join('-') + '-'
@@ -424,28 +424,28 @@ class TkFont
       finfo = {}
       finfo['family'] = font[0].to_s
       if font[1]
-	fsize = font[1].to_s
-	if fsize != '0' && fsize =~ /^(|\+|-)([0-9]+)$/
-	  if $1 == '-'
-	    finfo['pixels'] = $2
-	  else
-	    finfo['points'] = $2
-	  end
-	else
-	  finfo['points'] = '13'
-	end
+        fsize = font[1].to_s
+        if fsize != '0' && fsize =~ /^(|\+|-)([0-9]+)$/
+          if $1 == '-'
+            finfo['pixels'] = $2
+          else
+            finfo['points'] = $2
+          end
+        else
+          finfo['points'] = '13'
+        end
       end
       font[2..-1].each{|style|
-	case (style)
-	when 'normal'
-	  finfo['weight'] = style
-	when 'bold'
-	  finfo['weight'] = style
-	when 'roman'
-	  finfo['slant'] = 'r'
-	when 'italic'
-	  finfo['slant'] = 'i'
-	end
+        case (style)
+        when 'normal'
+          finfo['weight'] = style
+        when 'bold'
+          finfo['weight'] = style
+        when 'roman'
+          finfo['slant'] = 'r'
+        when 'italic'
+          finfo['slant'] = 'i'
+        end
       }
 
       @kanjifont = '-' + _get_font_info_from_hash(finfo).join('-') + '-'
@@ -478,42 +478,42 @@ class TkFont
 
     if JAPANIZED_TK
       if font.kind_of? Hash
-	if font[:charset] || font['charset']
-	  tk_call('font', 'create', @latinfont, *hash_kv(font))
-	else
-	  tk_call('font', 'create', @latinfont, 
+        if font[:charset] || font['charset']
+          tk_call('font', 'create', @latinfont, *hash_kv(font))
+        else
+          tk_call('font', 'create', @latinfont, 
                   '-charset', 'iso8859', *hash_kv(font))
-	end
+        end
       elsif font.kind_of? Array
-	tk_call('font', 'create', @latinfont, '-copy', array2tk_list(font))
+        tk_call('font', 'create', @latinfont, '-copy', array2tk_list(font))
         tk_call('font', 'configure', @latinfont, '-charset', 'iso8859')
       elsif font.kind_of? TkFont
-	tk_call('font', 'create', @latinfont, '-copy', font.latin_font)
+        tk_call('font', 'create', @latinfont, '-copy', font.latin_font)
       elsif font
-	tk_call('font', 'create', @latinfont, '-copy', font, 
+        tk_call('font', 'create', @latinfont, '-copy', font, 
                 '-charset', 'iso8859')
       else
-	tk_call('font', 'create', @latinfont, '-charset', 'iso8859')
+        tk_call('font', 'create', @latinfont, '-charset', 'iso8859')
       end
     else
       if font.kind_of? Hash
-	tk_call('font', 'create', @latinfont, *hash_kv(font))
+        tk_call('font', 'create', @latinfont, *hash_kv(font))
       else
-	keys = {}
-	if font.kind_of? Array
-	  actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
-	elsif font.kind_of? TkFont
-	  actual_core(font.latin_font).each{|key,val| keys[key] = val}
-	elsif font
-	  actual_core(font).each{|key,val| keys[key] = val}
-	end
-	tk_call('font', 'create', @latinfont, *hash_kv(keys))
+        keys = {}
+        if font.kind_of? Array
+          actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
+        elsif font.kind_of? TkFont
+          actual_core(font.latin_font).each{|key,val| keys[key] = val}
+        elsif font
+          actual_core(font).each{|key,val| keys[key] = val}
+        end
+        tk_call('font', 'create', @latinfont, *hash_kv(keys))
       end
 
       if font && @compoundfont
         keys = {}
         actual_core(@latinfont).each{|key,val| keys[key] = val}
-	tk_call('font', 'configure', @compoundfont, *hash_kv(keys))
+        tk_call('font', 'configure', @compoundfont, *hash_kv(keys))
       end
     end
   end
@@ -524,10 +524,10 @@ class TkFont
     if JAPANIZED_TK
       if font.kind_of? Hash
         if font[:charset] || font['charset']
-	  tk_call('font', 'create', @kanjifont, *hash_kv(font))
+          tk_call('font', 'create', @kanjifont, *hash_kv(font))
         else
-	  tk_call('font', 'create', @kanjifont, 
-		  '-charset', 'jisx0208.1983', *hash_kv(font))
+          tk_call('font', 'create', @kanjifont, 
+                  '-charset', 'jisx0208.1983', *hash_kv(font))
         end
       elsif font.kind_of? Array
         tk_call('font', 'create', @kanjifont, '-copy', array2tk_list(font))
@@ -536,7 +536,7 @@ class TkFont
         tk_call('font', 'create', @kanjifont, '-copy', font.kanji_font_id)
       elsif font
         tk_call('font', 'create', @kanjifont, '-copy', font, 
-	        '-charset', 'jisx0208.1983')
+                '-charset', 'jisx0208.1983')
       else
         tk_call('font', 'create', @kanjifont, '-charset', 'jisx0208.1983')
       end
@@ -548,11 +548,11 @@ class TkFont
       else
         keys = {}
         if font.kind_of? Array
-	  actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
+          actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
         elsif font.kind_of? TkFont
-	  actual_core(font.kanji_font_id).each{|key,val| keys[key] = val}
+          actual_core(font.kanji_font_id).each{|key,val| keys[key] = val}
         elsif font
-	  actual_core(font).each{|key,val| keys[key] = val}
+          actual_core(font).each{|key,val| keys[key] = val}
         end
         tk_call('font', 'create', @kanjifont, *hash_kv(keys))
       end
@@ -572,87 +572,87 @@ class TkFont
     @compoundfont = @id + 'c'
     if JAPANIZED_TK
       unless keys
-	keys = {}
+        keys = {}
       else
-	keys = keys.dup
+        keys = keys.dup
       end
       if (tk_call('font', 'configure', @latinfont, '-underline') == '1' &&
-	  tk_call('font', 'configure', @kanjifont, '-underline') == '1' &&
-	  !keys.key?('underline'))
-	keys['underline'] = true
+          tk_call('font', 'configure', @kanjifont, '-underline') == '1' &&
+          !keys.key?('underline'))
+        keys['underline'] = true
       end
       if (tk_call('font', 'configure', @latinfont, '-overstrike') == '1' &&
-	  tk_call('font', 'configure', @kanjifont, '-overstrike') == '1' &&
-	  !keys.key?('overstrike'))
-	keys['overstrike'] = true
+          tk_call('font', 'configure', @kanjifont, '-overstrike') == '1' &&
+          !keys.key?('overstrike'))
+        keys['overstrike'] = true
       end
 
       @fontslot = {'font'=>@compoundfont}
       begin
-	tk_call('font', 'create', @compoundfont, 
-		'-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+        tk_call('font', 'create', @compoundfont, 
+                '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
       rescue RuntimeError => e
-	if ltn == knj
-	  if e.message =~ /kanji font .* specified/
-	    tk_call('font', 'delete', @latinfont)
-	    create_latinfont(DEFAULT_LATIN_FONT_NAME)
-	    opts = []
-	    Hash[*(tk_split_simplelist(tk_call('font', 'configure', 
-					       @kanjifont)))].each{|k,v|
-	      case k
-	      when '-size', '-weight', '-slant', '-underline', '-overstrike'
-		opts << k << v
-	      end
-	    }
-	    tk_call('font', 'configure', @latinfont, *opts)
-	    tk_call('font', 'create', @compoundfont, 
-		    '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+        if ltn == knj
+          if e.message =~ /kanji font .* specified/
+            tk_call('font', 'delete', @latinfont)
+            create_latinfont(DEFAULT_LATIN_FONT_NAME)
+            opts = []
+            Hash[*(tk_split_simplelist(tk_call('font', 'configure', 
+                                               @kanjifont)))].each{|k,v|
+              case k
+              when '-size', '-weight', '-slant', '-underline', '-overstrike'
+                opts << k << v
+              end
+            }
+            tk_call('font', 'configure', @latinfont, *opts)
+            tk_call('font', 'create', @compoundfont, 
+                    '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
 
-	  elsif e.message =~ /ascii font .* specified/
-	    tk_call('font', 'delete', @kanjifont)
-	    create_kanjifont(DEFAULT_KANJI_FONT_NAME)
-	    opts = []
-	    Hash[*(tk_split_simplelist(tk_call('font', 'configure', 
-					       @latinfont)))].each{|k,v|
-	      case k
-	      when '-size', '-weight', '-slant', '-underline', '-overstrike'
-		opts << k << v
-	      end
-	    }
-	    tk_call('font', 'configure', @kanjifont, *opts)
-	    tk_call('font', 'create', @compoundfont, 
-		    '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+          elsif e.message =~ /ascii font .* specified/
+            tk_call('font', 'delete', @kanjifont)
+            create_kanjifont(DEFAULT_KANJI_FONT_NAME)
+            opts = []
+            Hash[*(tk_split_simplelist(tk_call('font', 'configure', 
+                                               @latinfont)))].each{|k,v|
+              case k
+              when '-size', '-weight', '-slant', '-underline', '-overstrike'
+                opts << k << v
+              end
+            }
+            tk_call('font', 'configure', @kanjifont, *opts)
+            tk_call('font', 'create', @compoundfont, 
+                    '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
 
-	  else
-	    raise e
-	  end
-	else
-	  raise e
-	end
+          else
+            raise e
+          end
+        else
+          raise e
+        end
       end
     else
       tk_call('font', 'create', @compoundfont)
 
       latinkeys = {}
       begin
-	actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
+        actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
       rescue
-	latinkeys {}
+        latinkeys {}
       end
       if latinkeys != {}
-	tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
+        tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
       end
 
       if knj
-	kanjikeys = {}
-	begin
-	  actual_core(@kanjifont).each{|key,val| kanjikeys[key] = val}
-	rescue
-	  kanjikeys {}
-	end
-	if kanjikeys != {}
-	  tk_call('font', 'configure', @compoundfont, *hash_kv(kanjikeys))
-	end
+        kanjikeys = {}
+        begin
+          actual_core(@kanjifont).each{|key,val| kanjikeys[key] = val}
+        rescue
+          kanjikeys {}
+        end
+        if kanjikeys != {}
+          tk_call('font', 'configure', @compoundfont, *hash_kv(kanjikeys))
+        end
       end
 
       @fontslot = {'font'=>@compoundfont}
@@ -666,8 +666,8 @@ class TkFont
       ""
     else
       [['family',[]], ['size',[]], ['weight',[]], ['slant',[]], 
-	['underline',[]], ['overstrike',[]], ['charset',[]], 
-	['pointadjust',[]]]
+        ['underline',[]], ['overstrike',[]], ['charset',[]], 
+        ['pointadjust',[]]]
     end
   end
 
@@ -676,24 +676,24 @@ class TkFont
       ""
     elsif option
       if window
-	tk_call('font', 'actual', font, "-displayof", window, "-#{option}")
+        tk_call('font', 'actual', font, "-displayof", window, "-#{option}")
       else
-	tk_call('font', 'actual', font, "-#{option}")
+        tk_call('font', 'actual', font, "-#{option}")
       end
     else
       l = tk_split_simplelist(if window
-			 	 tk_call('font', 'actual', font, 
-					             "-displayof", window)
-			      else
-			  	 tk_call('font', 'actual', font)
-			      end)
+                                 tk_call('font', 'actual', font, 
+                                                     "-displayof", window)
+                              else
+                                 tk_call('font', 'actual', font)
+                              end)
       r = []
       while key=l.shift
-	if key == '-compound'
-	  l.shift
-	else
-	  r.push [key[1..-1], l.shift]
-	end
+        if key == '-compound'
+          l.shift
+        else
+          r.push [key[1..-1], l.shift]
+        end
       end
       r
     end
@@ -708,11 +708,11 @@ class TkFont
     # dummy
     if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
       if option
-	""
+        ""
       else
-	[['family',[]], ['size',[]], ['weight',[]], ['slant',[]], 
-	  ['underline',[]], ['overstrike',[]], ['charset',[]], 
-	  ['pointadjust',[]]]
+        [['family',[]], ['size',[]], ['weight',[]], ['slant',[]], 
+          ['underline',[]], ['overstrike',[]], ['charset',[]], 
+          ['pointadjust',[]]]
       end
     else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
       current_configinfo_core_tk4x(font, option)
@@ -724,69 +724,69 @@ class TkFont
       ""
     else
       {'family'=>'', 'size'=>'', 'weight'=>'', 'slant'=>'', 
-	'underline'=>'', 'overstrike'=>'', 'charset'=>'', 'pointadjust'=>''}
+        'underline'=>'', 'overstrike'=>'', 'charset'=>'', 'pointadjust'=>''}
     end
   end
 
   def configure_core_tk8x(font, slot, value=None)
     if JAPANIZED_TK
       begin
-	padjust = tk_call('font', 'configure', font, '-pointadjust')
+        padjust = tk_call('font', 'configure', font, '-pointadjust')
       rescue
-	padjust = nil
+        padjust = nil
       end
     else
       padjust = nil
     end
     if slot.kind_of? Hash
       if JAPANIZED_TK && (slot.key?('family') || slot.key?(:family))
-	slot = _symbolkey2str(slot)
-	configure_core_tk8x(font, 'family', slot.delete('family'))
+        slot = _symbolkey2str(slot)
+        configure_core_tk8x(font, 'family', slot.delete('family'))
       end
 
       if ((slot.key?('size') || slot.key?(:size)) && 
-	  padjust && !slot.key?('pointadjust') && !slot.key?(:pointadjust))
-	tk_call('font', 'configure', font, 
-		'-pointadjust', padjust, *hash_kv(slot))
+          padjust && !slot.key?('pointadjust') && !slot.key?(:pointadjust))
+        tk_call('font', 'configure', font, 
+                '-pointadjust', padjust, *hash_kv(slot))
       else
-	tk_call('font', 'configure', font, *hash_kv(slot))
+        tk_call('font', 'configure', font, *hash_kv(slot))
       end
     elsif (slot == 'size' || slot == :size) && padjust != nil
       tk_call('font', 'configure', font, 
-	      "-#{slot}", value, '-pointadjust', padjust)
+              "-#{slot}", value, '-pointadjust', padjust)
     elsif JAPANIZED_TK && (slot == 'family' || slot == :family)
       # coumpund font?
       begin
-	compound = tk_split_simplelist(tk_call('font', 'configure', 
-					       font, '-compound'))
+        compound = tk_split_simplelist(tk_call('font', 'configure', 
+                                               font, '-compound'))
       rescue
-	tk_call('font', 'configure', font, '-family', value)
-	return self
+        tk_call('font', 'configure', font, '-family', value)
+        return self
       end
       if compound == []
-	tk_call('font', 'configure', font, '-family', value)
-	return self
+        tk_call('font', 'configure', font, '-family', value)
+        return self
       end
       ltn, knj = compound
 
       lfnt = tk_call('font', 'create', '-copy', ltn)
       begin
-	tk_call('font', 'configure', lfnt, '-family', value)
-	latin_replace_core_tk8x(lfnt)
+        tk_call('font', 'configure', lfnt, '-family', value)
+        latin_replace_core_tk8x(lfnt)
       rescue RuntimeError => e
-	fail e if $DEBUG
+        fail e if $DEBUG
       ensure
-	tk_call('font', 'delete', lfnt) if lfnt != ''
+        tk_call('font', 'delete', lfnt) if lfnt != ''
       end
 
       kfnt = tk_call('font', 'create', '-copy', knj)
       begin
-	tk_call('font', 'configure', kfnt, '-family', value)
-	kanji_replace_core_tk8x(lfnt)
+        tk_call('font', 'configure', kfnt, '-family', value)
+        kanji_replace_core_tk8x(lfnt)
       rescue RuntimeError => e
-	fail e if $DEBUG
+        fail e if $DEBUG
       ensure
-	tk_call('font', 'delete', kfnt) if kfnt != ''
+        tk_call('font', 'delete', kfnt) if kfnt != ''
       end
       
     else
@@ -798,20 +798,20 @@ class TkFont
   def configinfo_core_tk8x(font, option=nil)
     if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
       if option == 'compound'
-	""
+        ""
       elsif option
-	tk_call('font', 'configure', font, "-#{option}")
+        tk_call('font', 'configure', font, "-#{option}")
       else
-	l = tk_split_simplelist(tk_call('font', 'configure', font))
-	r = []
-	while key=l.shift
-	  if key == '-compound'
-	    l.shift
-	  else
-	    r.push [key[1..-1], l.shift]
-	  end
-	end
-	r
+        l = tk_split_simplelist(tk_call('font', 'configure', font))
+        r = []
+        while key=l.shift
+          if key == '-compound'
+            l.shift
+          else
+            r.push [key[1..-1], l.shift]
+          end
+        end
+        r
       end
     else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
       current_configinfo_core_tk8x(font, option)
@@ -827,11 +827,11 @@ class TkFont
       l = tk_split_simplelist(tk_call('font', 'configure', font))
       r = {}
       while key=l.shift
-	if key == '-compound'
-	  l.shift
-	else
-	  r[key[1..-1]] = l.shift
-	end
+        if key == '-compound'
+          l.shift
+        else
+          r[key[1..-1]] = l.shift
+        end
       end
       r
     end
@@ -865,28 +865,28 @@ class TkFont
     @fontslot['font'] = @latinfont
     Tk_FontUseTBL.dup.each{|w, fobj|
       if self == fobj
-	begin
-	  if w.include?(';')
-	    win, tag, optkey = w.split(';')
-	    optkey = 'font' if optkey == nil || optkey == ''
-	    winobj = tk_tcl2ruby(win)
-#	    winobj.tagfont_configure(tag, {'font'=>@latinfont})
-	    if winobj.kind_of? TkText
-	      tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @latinfont)
-	    elsif winobj.kind_of? TkCanvas
-	      tk_call(win, 'itemconfigure', tag, "-#{optkey}", @latinfont)
-	    elsif winobj.kind_of? TkMenu
-	      tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
-	    else
-	      raise RuntimeError, "unknown widget type"
-	    end
-	  else
-#	    tk_tcl2ruby(w).font_configure('font'=>@latinfont)
-	    tk_call(w, 'configure', '-font', @latinfont)
-	  end
-	rescue
-	  Tk_FontUseTBL.delete(w)
-	end
+        begin
+          if w.include?(';')
+            win, tag, optkey = w.split(';')
+            optkey = 'font' if optkey == nil || optkey == ''
+            winobj = tk_tcl2ruby(win)
+#           winobj.tagfont_configure(tag, {'font'=>@latinfont})
+            if winobj.kind_of? TkText
+              tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @latinfont)
+            elsif winobj.kind_of? TkCanvas
+              tk_call(win, 'itemconfigure', tag, "-#{optkey}", @latinfont)
+            elsif winobj.kind_of? TkMenu
+              tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
+            else
+              raise RuntimeError, "unknown widget type"
+            end
+          else
+#           tk_tcl2ruby(w).font_configure('font'=>@latinfont)
+            tk_call(w, 'configure', '-font', @latinfont)
+          end
+        rescue
+          Tk_FontUseTBL.delete(w)
+        end
       end
     }
     self
@@ -900,28 +900,28 @@ class TkFont
     @fontslot['kanjifont'] = @kanjifont
     Tk_FontUseTBL.dup.each{|w, fobj|
       if self == fobj
-	begin
-	  if w.include?(';')
-	    win, tag, optkey = w.split(';')
-	    optkey = 'kanjifont' unless optkey
-	    winobj = tk_tcl2ruby(win)
-#	    winobj.tagfont_configure(tag, {'kanjifont'=>@kanjifont})
-	    if winobj.kind_of? TkText
-	      tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @kanjifont)
-	    elsif winobj.kind_of? TkCanvas
-	      tk_call(win, 'itemconfigure', tag, "-#{optkey}", @kanjifont)
-	    elsif winobj.kind_of? TkMenu
-	      tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
-	    else
-	      raise RuntimeError, "unknown widget type"
-	    end
-	  else
-#	    tk_tcl2ruby(w).font_configure('kanjifont'=>@kanjifont)
-	    tk_call(w, 'configure', '-kanjifont', @kanjifont)
-	  end
-	rescue
-	  Tk_FontUseTBL.delete(w)
-	end
+        begin
+          if w.include?(';')
+            win, tag, optkey = w.split(';')
+            optkey = 'kanjifont' unless optkey
+            winobj = tk_tcl2ruby(win)
+#           winobj.tagfont_configure(tag, {'kanjifont'=>@kanjifont})
+            if winobj.kind_of? TkText
+              tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @kanjifont)
+            elsif winobj.kind_of? TkCanvas
+              tk_call(win, 'itemconfigure', tag, "-#{optkey}", @kanjifont)
+            elsif winobj.kind_of? TkMenu
+              tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
+            else
+              raise RuntimeError, "unknown widget type"
+            end
+          else
+#           tk_tcl2ruby(w).font_configure('kanjifont'=>@kanjifont)
+            tk_call(w, 'configure', '-kanjifont', @kanjifont)
+          end
+        rescue
+          Tk_FontUseTBL.delete(w)
+        end
       end
     }
     self
@@ -930,14 +930,14 @@ class TkFont
   def latin_replace_core_tk8x(ltn)
     if JAPANIZED_TK
       begin
-	tk_call('font', 'delete', '@font_tmp')
+        tk_call('font', 'delete', '@font_tmp')
       rescue
       end
       begin
-	fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @latinfont)
+        fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @latinfont)
       rescue
-	#fnt_bup = ''
-	fnt_bup = DEFAULT_LATIN_FONT_NAME
+        #fnt_bup = ''
+        fnt_bup = DEFAULT_LATIN_FONT_NAME
       end
     end
 
@@ -951,40 +951,40 @@ class TkFont
       keys = self.configinfo
       tk_call('font', 'delete', @compoundfont)
       begin
-	tk_call('font', 'create', @compoundfont, 
-		'-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+        tk_call('font', 'create', @compoundfont, 
+                '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
 =begin
-	latinkeys = {}
-	begin
-	  actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
-	rescue
-	  latinkeys {}
-	end
-	if latinkeys != {}
-	  tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
-	end
+        latinkeys = {}
+        begin
+          actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
+        rescue
+          latinkeys {}
+        end
+        if latinkeys != {}
+          tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
+        end
 =end
       rescue RuntimeError => e
-	tk_call('font', 'delete', @latinfont)
-	if fnt_bup && fnt_bup != ''
-	  tk_call('font', 'create', @latinfont, '-copy', fnt_bup)
-	  tk_call('font', 'create', @compoundfont, 
-		  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
-	  tk_call('font', 'delete', fnt_bup)
-	else
-	  fail e
-	end
+        tk_call('font', 'delete', @latinfont)
+        if fnt_bup && fnt_bup != ''
+          tk_call('font', 'create', @latinfont, '-copy', fnt_bup)
+          tk_call('font', 'create', @compoundfont, 
+                  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+          tk_call('font', 'delete', fnt_bup)
+        else
+          fail e
+        end
       end
 
     else
       latinkeys = {}
       begin
-	actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
+        actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
       rescue
-	latinkeys {}
+        latinkeys {}
       end
       if latinkeys != {}
-	tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
+        tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
       end
     end    
     self
@@ -993,14 +993,14 @@ class TkFont
   def kanji_replace_core_tk8x(knj)
     if JAPANIZED_TK
       begin
-	tk_call('font', 'delete', '@font_tmp')
+        tk_call('font', 'delete', '@font_tmp')
       rescue
       end
       begin
-	fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @kanjifont)
+        fnt_bup = tk_call('font', 'create', '@font_tmp', '-copy', @kanjifont)
       rescue
-	#fnt_bup = ''
-	fnt_bup = DEFAULT_KANJI_FONT_NAME
+        #fnt_bup = ''
+        fnt_bup = DEFAULT_KANJI_FONT_NAME
       end
     end
 
@@ -1014,18 +1014,18 @@ class TkFont
       keys = self.configinfo
       tk_call('font', 'delete', @compoundfont)
       begin
-	tk_call('font', 'create', @compoundfont, 
-		'-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+        tk_call('font', 'create', @compoundfont, 
+                '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
       rescue RuntimeError => e
-	tk_call('font', 'delete', @kanjifont)
-	if fnt_bup && fnt_bup != ''
-	  tk_call('font', 'create', @kanjifont, '-copy', fnt_bup)
-	  tk_call('font', 'create', @compoundfont, 
-		  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
-	  tk_call('font', 'delete', fnt_bup)
-	else
-	  fail e
-	end
+        tk_call('font', 'delete', @kanjifont)
+        if fnt_bup && fnt_bup != ''
+          tk_call('font', 'create', @kanjifont, '-copy', fnt_bup)
+          tk_call('font', 'create', @compoundfont, 
+                  '-compound', [@latinfont, @kanjifont], *hash_kv(keys))
+          tk_call('font', 'delete', fnt_bup)
+        else
+          fail e
+        end
       end
     end    
     self
@@ -1038,7 +1038,7 @@ class TkFont
   def measure_core_tk8x(window, text)
     if window
       number(tk_call('font', 'measure', @compoundfont, 
-		     '-displayof', window, text))
+                     '-displayof', window, text))
     else
       number(tk_call('font', 'measure', @compoundfont, text))
     end
@@ -1056,20 +1056,20 @@ class TkFont
   def metrics_core_tk8x(font, window, option=nil)
     if option
       if window
-	number(tk_call('font', 'metrics', font, 
-		       "-displayof", window, "-#{option}"))
+        number(tk_call('font', 'metrics', font, 
+                       "-displayof", window, "-#{option}"))
       else
-	number(tk_call('font', 'metrics', font, "-#{option}"))
+        number(tk_call('font', 'metrics', font, "-#{option}"))
       end
     else
       l = tk_split_list(if window
-			  tk_call('font','metrics',font,"-displayof",window)
-			else
-			  tk_call('font','metrics',font)
-			end)
+                          tk_call('font','metrics',font,"-displayof",window)
+                        else
+                          tk_call('font','metrics',font)
+                        end)
       r = []
       while key=l.shift
-	r.push [key[1..-1], l.shift.to_i]
+        r.push [key[1..-1], l.shift.to_i]
       end
       r
     end
@@ -1133,9 +1133,9 @@ class TkFont
       configure name, args[0]
     when 0
       begin
-	configinfo name
+        configinfo name
       rescue
-	fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
+        fail NameError, "undefined local variable or method `#{name}' for #{self.to_s}", error_at
       end
     else
       fail NameError, "undefined method `#{name}' for #{self.to_s}", error_at
@@ -1171,49 +1171,49 @@ class TkFont
     Tk_FontUseTBL.each{|key,value|
       next unless self == value
       if key.include?(';')
-	win, tag, optkey = key.split(';')
-	winobj = tk_tcl2ruby(win)
-	if winobj.kind_of? TkText
-	  if optkey
-	    ret.push([winobj, winobj.tagid2obj(tag), optkey])
-	  else
-	    ret.push([winobj, winobj.tagid2obj(tag)])
-	  end
-	elsif winobj.kind_of? TkCanvas
-	  if (tagobj = TkcTag.id2obj(winobj, tag)).kind_of? TkcTag
-	    if optkey
-	      ret.push([winobj, tagobj, optkey])
-	    else
-	      ret.push([winobj, tagobj])
-	    end
-	  elsif (tagobj = TkcItem.id2obj(winobj, tag)).kind_of? TkcItem
-	    if optkey
-	      ret.push([winobj, tagobj, optkey])
-	    else
-	      ret.push([winobj, tagobj])
-	    end
-	  else
-	    if optkey
-	      ret.push([winobj, tag, optkey])
-	    else
-	      ret.push([winobj, tag])
-	    end
-	  end
-	elsif winobj.kind_of? TkMenu
-	  if optkey
-	    ret.push([winobj, tag, optkey])
-	  else
-	    ret.push([winobj, tag])
-	  end
-	else
-	  if optkey
-	    ret.push([win, tag, optkey])
-	  else
-	    ret.push([win, tag])
-	  end
-	end
+        win, tag, optkey = key.split(';')
+        winobj = tk_tcl2ruby(win)
+        if winobj.kind_of? TkText
+          if optkey
+            ret.push([winobj, winobj.tagid2obj(tag), optkey])
+          else
+            ret.push([winobj, winobj.tagid2obj(tag)])
+          end
+        elsif winobj.kind_of? TkCanvas
+          if (tagobj = TkcTag.id2obj(winobj, tag)).kind_of? TkcTag
+            if optkey
+              ret.push([winobj, tagobj, optkey])
+            else
+              ret.push([winobj, tagobj])
+            end
+          elsif (tagobj = TkcItem.id2obj(winobj, tag)).kind_of? TkcItem
+            if optkey
+              ret.push([winobj, tagobj, optkey])
+            else
+              ret.push([winobj, tagobj])
+            end
+          else
+            if optkey
+              ret.push([winobj, tag, optkey])
+            else
+              ret.push([winobj, tag])
+            end
+          end
+        elsif winobj.kind_of? TkMenu
+          if optkey
+            ret.push([winobj, tag, optkey])
+          else
+            ret.push([winobj, tag])
+          end
+        else
+          if optkey
+            ret.push([win, tag, optkey])
+          else
+            ret.push([win, tag])
+          end
+        end
       else
-	ret.push(tk_tcl2ruby(key))
+        ret.push(tk_tcl2ruby(key))
       end
     }
     ret

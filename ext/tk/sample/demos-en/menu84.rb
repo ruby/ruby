@@ -35,9 +35,9 @@ TkLabel.new($menu84_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
 menustatus = TkVariable.new("    ")
 TkFrame.new($menu84_demo) {|frame|
   TkLabel.new(frame, 'textvariable'=>menustatus, 'relief'=>'sunken', 
-	      'bd'=>1, 'font'=>['Helvetica', '10'], 
-	      'anchor'=>'w').pack('side'=>'left', 'padx'=>2, 
-				  'expand'=>true, 'fill'=>'both')
+              'bd'=>1, 'font'=>['Helvetica', '10'], 
+              'anchor'=>'w').pack('side'=>'left', 'padx'=>2, 
+                                  'expand'=>true, 'fill'=>'both')
   pack('side'=>'bottom', 'fill'=>'x', 'pady'=>2)
 }
 
@@ -91,8 +91,8 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   add('command', 'label'=>'Long entry that does nothing')
   ['A','B','C','D','E','F','G'].each{|c|
     add('command', 'label'=>"Print letter \"#{c}\"", 
-	'underline'=>14, 'accelerator'=>"Meta+#{c}", 
-	'command'=>proc{print c,"\n"}, 'accelerator'=>"#{modifier}+#{c}")
+        'underline'=>14, 'accelerator'=>"Meta+#{c}", 
+        'command'=>proc{print c,"\n"}, 'accelerator'=>"#{modifier}+#{c}")
     $menu84_demo.bind("#{modifier}-#{c.downcase}", proc{print c,"\n"})
   }
 }
@@ -110,7 +110,7 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
 
   TkMenu.new(m, 'tearoff'=>false) {|cascade_check|
     m.add('cascade', 'label'=>'Check buttons', 
-	  'menu'=>cascade_check, 'underline'=>0)
+          'menu'=>cascade_check, 'underline'=>0)
     oil = TkVariable.new(0)
     add('check', 'label'=>'Oil checked', 'variable'=>oil)
     trans = TkVariable.new(0)
@@ -121,18 +121,18 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
     add('check', 'label'=>'Lights checked', 'variable'=>lights)
     add('separator')
     add('command', 'label'=>'Show current values', 
-	'command'=>proc{showVars($menu84_demo, 
-				 ['oil', oil], 
-				 ['trans', trans], 
-				 ['brakes', brakes], 
-				 ['lights', lights])} )
+        'command'=>proc{showVars($menu84_demo, 
+                                 ['oil', oil], 
+                                 ['trans', trans], 
+                                 ['brakes', brakes], 
+                                 ['lights', lights])} )
     invoke 1
     invoke 3
   }
 
   TkMenu.new(m, 'tearoff'=>false) {|cascade_radio|
     m.add('cascade', 'label'=>'Radio buttons', 
-	  'menu'=>cascade_radio, 'underline'=>0)
+          'menu'=>cascade_radio, 'underline'=>0)
     pointSize = TkVariable.new
     add('radio', 'label'=>'10 point', 'variable'=>pointSize, 'value'=>10)
     add('radio', 'label'=>'14 point', 'variable'=>pointSize, 'value'=>14)
@@ -146,9 +146,9 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
     add('radio', 'label'=>'Italic', 'variable'=>style, 'value'=>'italic')
     add('separator')
     add('command', 'label'=>'Show current values', 
-	'command'=>proc{showVars($menu84_demo, 
-				 ['pointSize', pointSize], 
-				 ['style', style])} )
+        'command'=>proc{showVars($menu84_demo, 
+                                 ['pointSize', pointSize], 
+                                 ['style', style])} )
     invoke 1
     invoke 7
   }
@@ -158,14 +158,14 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   $menu84_frame.add('cascade', 'label'=>'Icons', 'menu'=>m, 'underline'=>0)
   add('command', 'hidemargin'=>1, 
       'bitmap'=>'@'+[$demo_dir,'..',
-	              'images','pattern.xbm'].join(File::Separator),
+                      'images','pattern.xbm'].join(File::Separator),
       'command'=>proc{TkDialog.new('title'=>'Bitmap Menu Entry', 
-				   'text'=>'The menu entry you invoked displays a bitmap rather than a text string.  Other than this, it is just like any other menu entry.',
-				   'bitmap'=>'', 'default'=>0, 
-				   'buttons'=>'Dismiss')} )
+                                   'text'=>'The menu entry you invoked displays a bitmap rather than a text string.  Other than this, it is just like any other menu entry.',
+                                   'bitmap'=>'', 'default'=>0, 
+                                   'buttons'=>'Dismiss')} )
   ['info', 'questhead', 'error'].each{|icon|
     add('command', 'bitmap'=>icon, 'hidemargin'=>1, 
-	'command'=>proc{print "You invoked the #{icon} bitmap\n"})
+        'command'=>proc{print "You invoked the #{icon} bitmap\n"})
   }
 
   entryconfigure(2, :columnbreak=>true)
@@ -176,38 +176,38 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   [ 'An entry','Another entry','Does nothing','Does almost nothing',
     'Make life meaningful' ].each{|i|
     add('command', 'label'=>i, 
-	'command'=>proc{print "You invoked \"#{i}\"\n"})
+        'command'=>proc{print "You invoked \"#{i}\"\n"})
   }
 
   m.entryconfigure('Does almost nothing', 
-		   'bitmap'=>'questhead', 'compound'=>'left', 
-		   'command'=>proc{
-		     TkDialog.new('title'=>'Compound Menu Entry', 
-				  'message'=>'The menu entry you invoked'+
-				             'displays both a bitmap and '+
-				             'a text string.  Other than '+
-				             'this, it isjust like any '+
-				             'other menu entry.', 
-				  'buttons'=>['OK'], 'bitmap'=>'')
-		   })
+                   'bitmap'=>'questhead', 'compound'=>'left', 
+                   'command'=>proc{
+                     TkDialog.new('title'=>'Compound Menu Entry', 
+                                  'message'=>'The menu entry you invoked'+
+                                             'displays both a bitmap and '+
+                                             'a text string.  Other than '+
+                                             'this, it isjust like any '+
+                                             'other menu entry.', 
+                                  'buttons'=>['OK'], 'bitmap'=>'')
+                   })
 }
 
 TkMenu.new($menu84_frame) {|m|
   $menu84_frame.add('cascade', 'label'=>'Colors', 'menu'=>m, 'underline'=>0)
   ['red', 'orange', 'yellow', 'green', 'blue'].each{|c|
     add('command', 'label'=>c, 'background'=>c, 
-	'command'=>proc{print "You invoked \"#{c}\"\n"})
+        'command'=>proc{print "You invoked \"#{c}\"\n"})
   }
 }
 
 $menu84_demo.menu($menu84_frame)
 
 TkMenu.bind('<MenuSelect>', proc{|w|
-	      begin
-		label = w.entrycget('active', 'label')
-	      rescue
-		label = "    "
-	      end
-	      menustatus.value = label
-	      Tk.update(true)
-	    }, '%W')
+              begin
+                label = w.entrycget('active', 'label')
+              rescue
+                label = "    "
+              end
+              menustatus.value = label
+              Tk.update(true)
+            }, '%W')

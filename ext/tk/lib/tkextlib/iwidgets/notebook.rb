@@ -72,7 +72,7 @@ class Tk::Iwidgets::Notebook
     end
     if idx2
       if (new_idx2 = self.index(idx2)) < 0
-	new_idx2 = tagid(idx2)
+        new_idx2 = tagid(idx2)
       end
       tk_call(@path, 'delete', new_idx1, new_idx2)
     else

@@ -22,9 +22,9 @@ module Tk
 
     def self.package_version
       begin
-	TkPackage.require('vu')
+        TkPackage.require('vu')
       rescue
-	''
+        ''
       end
     end
 

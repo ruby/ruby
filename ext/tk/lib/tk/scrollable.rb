@@ -18,10 +18,10 @@ module Tk
 
     def xview(*index)
       if index.size == 0
-	list(tk_send_without_enc('xview'))
+        list(tk_send_without_enc('xview'))
       else
-	tk_send_without_enc('xview', *index)
-	self
+        tk_send_without_enc('xview', *index)
+        self
       end
     end
     def xview_moveto(*index)
@@ -33,10 +33,10 @@ module Tk
 
     def yview(*index)
       if index.size == 0
-	list(tk_send_without_enc('yview'))
+        list(tk_send_without_enc('yview'))
       else
-	tk_send_without_enc('yview', *index)
-	self
+        tk_send_without_enc('yview', *index)
+        self
       end
     end
     def yview_moveto(*index)
@@ -48,21 +48,21 @@ module Tk
 
     def xscrollbar(bar=nil)
       if bar
-	@xscrollbar = bar
-	@xscrollbar.orient 'horizontal'
-	self.xscrollcommand {|*arg| @xscrollbar.set(*arg)}
-	@xscrollbar.command {|*arg| self.xview(*arg)}
-	Tk.update  # avoid scrollbar trouble
+        @xscrollbar = bar
+        @xscrollbar.orient 'horizontal'
+        self.xscrollcommand {|*arg| @xscrollbar.set(*arg)}
+        @xscrollbar.command {|*arg| self.xview(*arg)}
+        Tk.update  # avoid scrollbar trouble
       end
       @xscrollbar
     end
     def yscrollbar(bar=nil)
       if bar
-	@yscrollbar = bar
-	@yscrollbar.orient 'vertical'
-	self.yscrollcommand {|*arg| @yscrollbar.set(*arg)}
-	@yscrollbar.command {|*arg| self.yview(*arg)}
-	Tk.update  # avoid scrollbar trouble
+        @yscrollbar = bar
+        @yscrollbar.orient 'vertical'
+        self.yscrollcommand {|*arg| @yscrollbar.set(*arg)}
+        @yscrollbar.command {|*arg| self.yview(*arg)}
+        Tk.update  # avoid scrollbar trouble
       end
       @yscrollbar
     end

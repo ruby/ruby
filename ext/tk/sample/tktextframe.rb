@@ -147,16 +147,16 @@ if __FILE__ == $0
   f = TkFrame.new.pack('fill'=>'x')
   #t = TkTextFrame.new.pack
   t = TkTextFrame.new(:textborderwidth=>3, 
-		      :textrelief=>:ridge, 
-		      :scrollbarrelief=>:ridge).pack
+                      :textrelief=>:ridge, 
+                      :scrollbarrelief=>:ridge).pack
   p t.configinfo
   TkButton.new(f, 'text'=>'vscr OFF', 
-	       'command'=>proc{t.vscroll(false)}).pack('side'=>'right')
+               'command'=>proc{t.vscroll(false)}).pack('side'=>'right')
   TkButton.new(f, 'text'=>'vscr ON', 
-	       'command'=>proc{t.vscroll(true)}).pack('side'=>'right')
+               'command'=>proc{t.vscroll(true)}).pack('side'=>'right')
   TkButton.new(f, 'text'=>'hscr ON', 
-	       'command'=>proc{t.hscroll(true)}).pack('side'=>'left')
+               'command'=>proc{t.hscroll(true)}).pack('side'=>'left')
   TkButton.new(f, 'text'=>'hscr OFF', 
-	       'command'=>proc{t.hscroll(false)}).pack('side'=>'left')
+               'command'=>proc{t.hscroll(false)}).pack('side'=>'left')
   Tk.mainloop
 end

@@ -8,9 +8,9 @@ require 'tkextlib/tcllib/plotchart'
 ###############################
 
 Tk::Tcllib::Plotchart::Stripchart.new([0.0, 100.0, 10.0], 
-				      [0.0, 100.0, 20.0], 
-				      :background=>'white', 
-				      :width=>400, :height=>200){|chart|
+                                      [0.0, 100.0, 20.0], 
+                                      :background=>'white', 
+                                      :width=>400, :height=>200){|chart|
   title "Aha!"
   pack(:fill=>:both, :side=>:top)
 
@@ -21,26 +21,26 @@ Tk::Tcllib::Plotchart::Stripchart.new([0.0, 100.0, 10.0],
   yd = 30.0
 
   TkTimer.new(500, -1, proc{|obj| # obj --> TkTimer object
-		xold, yold = obj.return_value
-		xnew = xold + xd
-		ynew = yold + (rand() - 0.5) * yd
-		ynew2 = yold + (rand() - 0.5) * 2.0 * yd
+                xold, yold = obj.return_value
+                xnew = xold + xd
+                ynew = yold + (rand() - 0.5) * yd
+                ynew2 = yold + (rand() - 0.5) * 2.0 * yd
 
-		series1.plot(xnew, ynew)
-		series2.plot(xnew, ynew2)
+                series1.plot(xnew, ynew)
+                series2.plot(xnew, ynew2)
 
-		obj.stop if xnew >= 200
+                obj.stop if xnew >= 200
 
-		[xnew, ynew] # return_value
-	      }).start(100, proc{ [0.0, 50.0] }) # init return_value
+                [xnew, ynew] # return_value
+              }).start(100, proc{ [0.0, 50.0] }) # init return_value
 }
 
 ###############################
 # Set up an isometric plot
 ###############################
 Tk::Tcllib::Plotchart::IsometricPlot.new([0.0, 100.0], [0.0, 200.0], :noaxes, 
-					 :background=>'white', 
-					 :width=>400, :height=>200){|chart|
+                                         :background=>'white', 
+                                         :width=>400, :height=>200){|chart|
   pack(:fill=>:both, :side=>:top)
   set_zoom_pan
 
@@ -55,17 +55,17 @@ Tk::Tcllib::Plotchart::IsometricPlot.new([0.0, 100.0], [0.0, 200.0], :noaxes,
 ###############################
 TkToplevel.new(:title=>'h'){|h|
   Tk::Tcllib::Plotchart::XYPlot.new(h, [0.0, 100.0, 10.0], 
-				       [0.0, 100.0, 20.0], 
-				    :bg=>'white', 
-				    :width=>400, :height=>200){|chart|
+                                       [0.0, 100.0, 20.0], 
+                                    :bg=>'white', 
+                                    :width=>400, :height=>200){|chart|
     pack(:fill=>:both)
 
     yconfig(:format=>"%12.2e")
 
     series1 = Tk::Tcllib::Plotchart::PlotSeries.new(chart, :colour=>'red', 
-						    :type=>:symbol)
+                                                    :type=>:symbol)
     series2 = Tk::Tcllib::Plotchart::PlotSeries.new(chart, :colour=>'green', 
-						    :type=>:both)
+                                                    :type=>:both)
 
     x = 5.0
     %w(plus cross circle up down dot upfilled downfilled).each{|sym|

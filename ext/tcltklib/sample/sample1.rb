@@ -189,8 +189,8 @@ class Test1
       grid.e(w, "-row", ro, "-column", co, "-sticky news")
       ro += 1
       if ro == 7
-	ro = 0
-	co += 1
+        ro = 0
+        co += 1
       end
     }
   end

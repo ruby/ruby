@@ -12,14 +12,14 @@ class TkTextWindow<TkObject
     @t = parent
     if index == 'end'
       @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', 
-						     'end - 1 chars'))
+                                                     'end - 1 chars'))
     elsif index.kind_of? TkTextMark
       if tk_call_without_enc(@t.path,'index',index.path) == tk_call_without_enc(@t.path,'index','end')
-	@path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', 
-						       'end - 1 chars'))
+        @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', 
+                                                       'end - 1 chars'))
       else
-	@path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', 
-						       index.path))
+        @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', 
+                                                       index.path))
       end
     else
       @path = TkTextMark.new(@t, tk_call_without_enc(@t.path, 'index', _get_eval_enc_str(index)))
@@ -34,20 +34,20 @@ class TkTextWindow<TkObject
       @p_create = keys['create']
       if @p_create.kind_of? Proc
 =begin
-	keys['create'] = install_cmd(proc{
-				       @id = @p_create.call
-				       if @id.kind_of?(TkWindow)
-					 @id.epath
-				       else
-					 @id
-				       end
-				     })
+        keys['create'] = install_cmd(proc{
+                                       @id = @p_create.call
+                                       if @id.kind_of?(TkWindow)
+                                         @id.epath
+                                       else
+                                         @id
+                                       end
+                                     })
 =end
-	keys['create'] = install_cmd(proc{@id = @p_create.call; _epath(@id)})
+        keys['create'] = install_cmd(proc{@id = @p_create.call; _epath(@id)})
       end
     end
     tk_call_without_enc(@t.path, 'window', 'create', @index, 
-			*hash_kv(keys, true))
+                        *hash_kv(keys, true))
   end
 
   def [](slot)
@@ -66,28 +66,28 @@ class TkTextWindow<TkObject
     if slot.kind_of? Hash
       slot = _symbolkey2str(slot)
       if slot['window']
-	@id = slot['window'] 
-	# slot['window'] = @id.epath if @id.kind_of?(TkWindow)
-	slot['window'] = _epath(@id) if @id
+        @id = slot['window'] 
+        # slot['window'] = @id.epath if @id.kind_of?(TkWindow)
+        slot['window'] = _epath(@id) if @id
       end
       if slot['create']
-	self.create=slot.delete('create')
+        self.create=slot.delete('create')
       end
       if slot.size > 0
-	tk_call_without_enc(@t.path, 'window', 'configure', @index, 
-			    *hash_kv(slot, true))
+        tk_call_without_enc(@t.path, 'window', 'configure', @index, 
+                            *hash_kv(slot, true))
       end
     else
       if slot == 'window' || slot == :window
-	@id = value 
-	# value = @id.epath if @id.kind_of?(TkWindow)
-	value = _epath(@id) if @id
+        @id = value 
+        # value = @id.epath if @id.kind_of?(TkWindow)
+        value = _epath(@id) if @id
       end
       if slot == 'create' || slot == :create
-	self.create=value
+        self.create=value
       else
-	tk_call_without_enc(@t.path, 'window', 'configure', @index, 
-			    "-#{slot}", _get_eval_enc_str(value))
+        tk_call_without_enc(@t.path, 'window', 'configure', @index, 
+                            "-#{slot}", _get_eval_enc_str(value))
       end
     end
     self
@@ -110,7 +110,7 @@ class TkTextWindow<TkObject
     # value = @id.epath if @id.kind_of?(TkWindow)
     value = _epath(@id) if @id
     tk_call_without_enc(@t.path, 'window', 'configure', @index, 
-			'-window', _get_eval_enc_str(value))
+                        '-window', _get_eval_enc_str(value))
     value
   end
 
@@ -122,16 +122,16 @@ class TkTextWindow<TkObject
     @p_create = value
     if @p_create.kind_of? Proc
       value = install_cmd(proc{
-			    @id = @p_create.call
-			    if @id.kind_of?(TkWindow)
-			      @id.epath
-			    else
-			      @id
-			    end
-			  })
+                            @id = @p_create.call
+                            if @id.kind_of?(TkWindow)
+                              @id.epath
+                            else
+                              @id
+                            end
+                          })
     end
     tk_call_without_enc(@t.path, 'window', 'configure', @index, 
-			'-create', _get_eval_enc_str(value))
+                        '-create', _get_eval_enc_str(value))
     value
   end
 end

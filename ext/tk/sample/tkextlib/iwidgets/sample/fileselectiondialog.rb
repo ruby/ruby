@@ -9,9 +9,9 @@ mainloop = Thread.new{Tk.mainloop}
 #
 nmfsd = Tk::Iwidgets::Fileselectiondialog.new(:title=>'Non-Modal')
 nmfsd.buttonconfigure('OK', :command=>proc{
-			puts "You selected #{nmfsd.get}"
-			nmfsd.deactivate
-		      })
+                        puts "You selected #{nmfsd.get}"
+                        nmfsd.deactivate
+                      })
 nmfsd.activate
 
 #

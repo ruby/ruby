@@ -1,9 +1,7 @@
 #
-#		tk/canvas.rb - Tk canvas classes
-#			$Date$
-#			by Yukihiro Matsumoto <matz@caelum.co.jp>
-#			$Date$
-#			by Hidetoshi Nagai <nagai@ai.kyutech.ac.jp>
+#               tk/canvas.rb - Tk canvas classes
+#                       $Date$
+#                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 #
 require 'tk'
 require 'tk/canvastag'
@@ -93,7 +91,7 @@ class TkCanvas<TkWindow
 
   def bbox(tagOrId, *tags)
     list(tk_send_without_enc('bbox', tagid(tagOrId), 
-			     *tags.collect{|t| tagid(t)}))
+                             *tags.collect{|t| tagid(t)}))
   end
 
   def itembind(tag, context, cmd=Proc.new, args=nil)
@@ -135,14 +133,14 @@ class TkCanvas<TkWindow
 
   def dchars(tag, first, last=None)
     tk_send_without_enc('dchars', tagid(tag), 
-			_get_eval_enc_str(first), _get_eval_enc_str(last))
+                        _get_eval_enc_str(first), _get_eval_enc_str(last))
     self
   end
 
   def delete(*args)
     if TkcItem::CItemID_TBL[self.path]
       find('withtag', *args).each{|item| 
-	TkcItem::CItemID_TBL[self.path].delete(item.id)
+        TkcItem::CItemID_TBL[self.path].delete(item.id)
       }
     end
     tk_send_without_enc('delete', *args.collect{|t| tagid(t)})
@@ -189,9 +187,9 @@ class TkCanvas<TkWindow
     else
       ret = tk_send_without_enc('focus')
       if ret == ""
-	nil
+        nil
       else
-	TkcItem.id2obj(self, ret)
+        TkcItem.id2obj(self, ret)
       end
     end
   end
@@ -213,7 +211,7 @@ class TkCanvas<TkWindow
 
   def insert(tagOrId, index, string)
     tk_send_without_enc('insert', tagid(tagOrId), index, 
-			_get_eval_enc_str(string))
+                        _get_eval_enc_str(string))
     self
   end
 
@@ -223,9 +221,9 @@ class TkCanvas<TkWindow
     when 'dash', 'activedash', 'disableddash'
       conf = tk_send_without_enc('itemcget', tagid(tagOrId), "-#{option}")
       if conf =~ /^[0-9]/
-	list(conf)
+        list(conf)
       else
-	conf
+        conf
       end
     when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
       _fromUTF8(tk_send_without_enc('itemcget', tagid(tagOrId), "-#{option}"))
@@ -233,17 +231,17 @@ class TkCanvas<TkWindow
       #fnt = tk_tcl2ruby(tk_send('itemcget', tagid(tagOrId), "-#{option}"))
       fnt = tk_tcl2ruby(_fromUTF8(tk_send_with_enc('itemcget', tagid(tagOrId), '-font')))
       unless fnt.kind_of?(TkFont)
-	fnt = tagfontobj(tagid(tagOrId), fnt)
+        fnt = tagfontobj(tagid(tagOrId), fnt)
       end
       if option.to_s == 'kanjifont' && JAPANIZED_TK && TK_VERSION =~ /^4\.*/
-	# obsolete; just for compatibility
-	fnt.kanji_font
+        # obsolete; just for compatibility
+        fnt.kanji_font
       else
-	fnt
+        fnt
       end
     else
       tk_tcl2ruby(_fromUTF8(tk_send_without_enc('itemcget', tagid(tagOrId), 
-						"-#{option}")))
+                                                "-#{option}")))
     end
   end
 
@@ -254,28 +252,28 @@ class TkCanvas<TkWindow
       self.coords(tagOrId, coords) if coords
 
       if ( key['font'] || key['kanjifont'] \
-	  || key['latinfont'] || key['asciifont'] )
-	tagfont_configure(tagid(tagOrId), key.dup)
+          || key['latinfont'] || key['asciifont'] )
+        tagfont_configure(tagid(tagOrId), key.dup)
       else
-	_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), 
-				      *hash_kv(key, true)))
+        _fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), 
+                                      *hash_kv(key, true)))
       end
 
     else
       if ( key == 'coords' || key == :coords )
-	self.coords(tagOrId, value)
+        self.coords(tagOrId, value)
       elsif ( key == 'font' || key == :font || 
-	      key == 'kanjifont' || key == :kanjifont || 
-	      key == 'latinfont' || key == :latinfont || 
-	      key == 'asciifont' || key == :asciifont )
-	if value == None
-	  tagfontobj(tagid(tagOrId))
-	else
-	  tagfont_configure(tagid(tagOrId), {key=>value})
-	end
+              key == 'kanjifont' || key == :kanjifont || 
+              key == 'latinfont' || key == :latinfont || 
+              key == 'asciifont' || key == :asciifont )
+        if value == None
+          tagfontobj(tagid(tagOrId))
+        else
+          tagfont_configure(tagid(tagOrId), {key=>value})
+        end
       else
-	_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), 
-				      "-#{key}", _get_eval_enc_str(value)))
+        _fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), 
+                                      "-#{key}", _get_eval_enc_str(value)))
       end
     end
     self
@@ -294,142 +292,142 @@ class TkCanvas<TkWindow
   def itemconfiginfo(tagOrId, key=nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if key
-	case key.to_s
-	when 'coords'
-	  return ['coords', '', '', '', self.coords(tagOrId)]
-	when 'dash', 'activedash', 'disableddash'
-	  conf = tk_split_simplelist(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}"))
-	  if conf[3] && conf[3] =~ /^[0-9]/
-	    conf[3] = list(conf[3])
-	  end
-	  if conf[4] && conf[4] =~ /^[0-9]/
-	    conf[4] = list(conf[4])
-	  end
-	when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}")))
-	when 'font', 'kanjifont'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId),"-#{key}")))
-	  conf[4] = tagfont_configinfo(tagid(tagOrId), conf[4])
-	else
-	  conf = tk_split_list(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}")))
-	end
-	conf[0] = conf[0][1..-1]
-	conf
+        case key.to_s
+        when 'coords'
+          return ['coords', '', '', '', self.coords(tagOrId)]
+        when 'dash', 'activedash', 'disableddash'
+          conf = tk_split_simplelist(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}"))
+          if conf[3] && conf[3] =~ /^[0-9]/
+            conf[3] = list(conf[3])
+          end
+          if conf[4] && conf[4] =~ /^[0-9]/
+            conf[4] = list(conf[4])
+          end
+        when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}")))
+        when 'font', 'kanjifont'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId),"-#{key}")))
+          conf[4] = tagfont_configinfo(tagid(tagOrId), conf[4])
+        else
+          conf = tk_split_list(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}")))
+        end
+        conf[0] = conf[0][1..-1]
+        conf
       else
-	ret = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId)))).collect{|conflist|
-	  conf = tk_split_simplelist(conflist)
-	  conf[0] = conf[0][1..-1]
-	  case conf[0]
-	  when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
-	  when 'dash', 'activedash', 'disableddash'
-	    if conf[3] && conf[3] =~ /^[0-9]/
-	      conf[3] = list(conf[3])
-	    end
-	    if conf[4] && conf[4] =~ /^[0-9]/
-	      conf[4] = list(conf[4])
-	    end
-	  else
-	    if conf[3]
-	      if conf[3].index('{')
-		conf[3] = tk_split_list(conf[3]) 
-	      else
-		conf[3] = tk_tcl2ruby(conf[3]) 
-	      end
-	    end
-	    if conf[4]
-	      if conf[4].index('{')
-		conf[4] = tk_split_list(conf[4]) 
-	      else
-		conf[4] = tk_tcl2ruby(conf[4]) 
-	      end
-	    end
-	  end
-	  conf[1] = conf[1][1..-1] if conf.size == 2 # alias info
-	  conf
-	}
+        ret = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId)))).collect{|conflist|
+          conf = tk_split_simplelist(conflist)
+          conf[0] = conf[0][1..-1]
+          case conf[0]
+          when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
+          when 'dash', 'activedash', 'disableddash'
+            if conf[3] && conf[3] =~ /^[0-9]/
+              conf[3] = list(conf[3])
+            end
+            if conf[4] && conf[4] =~ /^[0-9]/
+              conf[4] = list(conf[4])
+            end
+          else
+            if conf[3]
+              if conf[3].index('{')
+                conf[3] = tk_split_list(conf[3]) 
+              else
+                conf[3] = tk_tcl2ruby(conf[3]) 
+              end
+            end
+            if conf[4]
+              if conf[4].index('{')
+                conf[4] = tk_split_list(conf[4]) 
+              else
+                conf[4] = tk_tcl2ruby(conf[4]) 
+              end
+            end
+          end
+          conf[1] = conf[1][1..-1] if conf.size == 2 # alias info
+          conf
+        }
 
-	fontconf = ret.assoc('font')
-	if fontconf
-	  ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
-	  fontconf[4] = tagfont_configinfo(tagid(tagOrId), fontconf[4])
-	  ret.push(fontconf)
-	end
+        fontconf = ret.assoc('font')
+        if fontconf
+          ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
+          fontconf[4] = tagfont_configinfo(tagid(tagOrId), fontconf[4])
+          ret.push(fontconf)
+        end
 
-	ret << ['coords', '', '', '', self.coords(tagOrId)]
+        ret << ['coords', '', '', '', self.coords(tagOrId)]
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       if key
-	case key.to_s
-	when 'coords'
-	  {'coords' => ['', '', '', self.coords(tagOrId)]}
-	when 'dash', 'activedash', 'disableddash'
-	  conf = tk_split_simplelist(tk_send_without_enc('itemconfigure', 
-							 tagid(tagOrId), 
-							 "-#{key}"))
-	  if conf[3] && conf[3] =~ /^[0-9]/
-	    conf[3] = list(conf[3])
-	  end
-	  if conf[4] && conf[4] =~ /^[0-9]/
-	    conf[4] = list(conf[4])
-	  end
-	when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}")))
-	when 'font', 'kanjifont'
-	  conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId),"-#{key}")))
-	  conf[4] = tagfont_configinfo(tagid(tagOrId), conf[4])
-	else
-	  conf = tk_split_list(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}")))
-	end
-	key = conf.shift[1..-1]
-	{ key => conf }
+        case key.to_s
+        when 'coords'
+          {'coords' => ['', '', '', self.coords(tagOrId)]}
+        when 'dash', 'activedash', 'disableddash'
+          conf = tk_split_simplelist(tk_send_without_enc('itemconfigure', 
+                                                         tagid(tagOrId), 
+                                                         "-#{key}"))
+          if conf[3] && conf[3] =~ /^[0-9]/
+            conf[3] = list(conf[3])
+          end
+          if conf[4] && conf[4] =~ /^[0-9]/
+            conf[4] = list(conf[4])
+          end
+        when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}")))
+        when 'font', 'kanjifont'
+          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId),"-#{key}")))
+          conf[4] = tagfont_configinfo(tagid(tagOrId), conf[4])
+        else
+          conf = tk_split_list(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId), "-#{key}")))
+        end
+        key = conf.shift[1..-1]
+        { key => conf }
       else
-	ret = {}
-	tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId)))).each{|conflist|
-	  conf = tk_split_simplelist(conflist)
-	  key = conf.shift[1..-1]
-	  case key
-	  when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
-	  when 'dash', 'activedash', 'disableddash'
-	    if conf[2] && conf[2] =~ /^[0-9]/
-	      conf[2] = list(conf[2])
-	    end
-	    if conf[3] && conf[3] =~ /^[0-9]/
-	      conf[3] = list(conf[3])
-	    end
-	  else
-	    if conf[2]
-	      if conf[2].index('{')
-		conf[2] = tk_split_list(conf[2]) 
-	      else
-		conf[2] = tk_tcl2ruby(conf[2]) 
-	      end
-	    end
-	    if conf[3]
-	      if conf[3].index('{')
-		conf[3] = tk_split_list(conf[3]) 
-	      else
-		conf[3] = tk_tcl2ruby(conf[3]) 
-	      end
-	    end
-	  end
-	  if conf.size == 1
-	    ret[key] = conf[0][1..-1]  # alias info
-	  else
-	    ret[key] = conf
-	  end
-	}
+        ret = {}
+        tk_split_simplelist(_fromUTF8(tk_send_without_enc('itemconfigure', tagid(tagOrId)))).each{|conflist|
+          conf = tk_split_simplelist(conflist)
+          key = conf.shift[1..-1]
+          case key
+          when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
+          when 'dash', 'activedash', 'disableddash'
+            if conf[2] && conf[2] =~ /^[0-9]/
+              conf[2] = list(conf[2])
+            end
+            if conf[3] && conf[3] =~ /^[0-9]/
+              conf[3] = list(conf[3])
+            end
+          else
+            if conf[2]
+              if conf[2].index('{')
+                conf[2] = tk_split_list(conf[2]) 
+              else
+                conf[2] = tk_tcl2ruby(conf[2]) 
+              end
+            end
+            if conf[3]
+              if conf[3].index('{')
+                conf[3] = tk_split_list(conf[3]) 
+              else
+                conf[3] = tk_tcl2ruby(conf[3]) 
+              end
+            end
+          end
+          if conf.size == 1
+            ret[key] = conf[0][1..-1]  # alias info
+          else
+            ret[key] = conf
+          end
+        }
 
-	fontconf = ret['font']
-	if fontconf
-	  ret.delete('font')
-	  ret.delete('kanjifont')
-	  fontconf[3] = tagfont_configinfo(tagid(tagOrId), fontconf[3])
-	  ret['font'] = fontconf
-	end
+        fontconf = ret['font']
+        if fontconf
+          ret.delete('font')
+          ret.delete('kanjifont')
+          fontconf[3] = tagfont_configinfo(tagid(tagOrId), fontconf[3])
+          ret['font'] = fontconf
+        end
 
-	ret['coords'] = ['', '', '', self.coords(tagOrId)]
+        ret['coords'] = ['', '', '', self.coords(tagOrId)]
 
-	ret
+        ret
       end
     end
   end
@@ -437,19 +435,19 @@ class TkCanvas<TkWindow
   def current_itemconfiginfo(tagOrId, key=nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if key
-	conf = itemconfiginfo(tagOrId, key)
-	{conf[0] => conf[4]}
+        conf = itemconfiginfo(tagOrId, key)
+        {conf[0] => conf[4]}
       else
-	ret = {}
-	itemconfiginfo(tagOrId).each{|conf|
-	  ret[conf[0]] = conf[4] if conf.size > 2
-	}
-	ret
+        ret = {}
+        itemconfiginfo(tagOrId).each{|conf|
+          ret[conf[0]] = conf[4] if conf.size > 2
+        }
+        ret
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       ret = {}
       itemconfiginfo(tagOrId, key).each{|k, conf|
-	ret[k] = conf[-1] if conf.kind_of?(Array)
+        ret[k] = conf[-1] if conf.kind_of?(Array)
       }
       ret
     end
@@ -551,32 +549,32 @@ class TkcItem<TkObject
     if args[-1].kind_of? Hash
       keys = _symbolkey2str(args.pop)
       if args.size == 0
-	args = keys.delete('coords')
-	unless args.kind_of?(Array)
-	  fail "coords parameter must be given by an Array"
-	end
+        args = keys.delete('coords')
+        unless args.kind_of?(Array)
+          fail "coords parameter must be given by an Array"
+        end
       end
 
       #['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
       #  fontkeys[key] = keys.delete(key) if keys.key?(key)
       #}
       __item_font_optkeys(nil).each{|key|
-	fkey = key.to_s
-	fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+        fkey = key.to_s
+        fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
 
-	fkey = "kanji#{key}"
-	fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+        fkey = "kanji#{key}"
+        fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
 
-	fkey = "latin#{key}"
-	fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+        fkey = "latin#{key}"
+        fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
 
-	fkey = "ascii#{key}"
-	fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+        fkey = "ascii#{key}"
+        fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
       }
 
       __item_methodcall_optkeys(nil).each{|key|
-	key = key.to_s
-	methodkeys[key] = keys.delete(key) if keys.key?(key)
+        key = key.to_s
+        methodkeys[key] = keys.delete(key) if keys.key?(key)
       }
 
       #args = args.flatten.concat(hash_kv(keys))
@@ -595,7 +593,7 @@ class TkcItem<TkObject
     end
     args, fontkeys = _parse_create_args(args)
     idnum = tk_call_without_enc(canvas.path, 'create', 
-				self::CItemTypeName, *args)
+                                self::CItemTypeName, *args)
     canvas.itemconfigure(idnum, fontkeys) unless fontkeys.empty?
     idnum.to_i  # 'canvas item id' is an integer number
   end

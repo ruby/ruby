@@ -17,11 +17,11 @@ module Tk
   module Img
     module XPM
       def self.package_version
-	begin
-	  TkPackage.require('img::xpm')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::xpm')
+        rescue
+          ''
+        end
       end
     end
   end

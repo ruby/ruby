@@ -20,20 +20,20 @@ module Tk
 
     def self.package_version
       begin
-	TkPackage.require('icons')
+        TkPackage.require('icons')
       rescue
-	''
+        ''
       end
     end
 
     def self.create(*args)  # icon, icon, ..., ?option=>value, ...?
       if args[-1].kind_of?(Hash)
-	keys = args.pop
-	icons = simplelist(tk_call('::icons::icons', 'create', 
-				   *(hash_kv(keys) << (args.flatten))))
+        keys = args.pop
+        icons = simplelist(tk_call('::icons::icons', 'create', 
+                                   *(hash_kv(keys) << (args.flatten))))
       else
-	icons = simplelist(tk_call('::icons::icons', 'create', 
-				   args.flatten))
+        icons = simplelist(tk_call('::icons::icons', 'create', 
+                                   args.flatten))
       end
 
       icons.collect{|icon| self.new(icon, :without_creating=>true)}
@@ -43,28 +43,28 @@ module Tk
       icons = icons.flatten
       return if icons.empty?
       icons.map!{|icon|
-	if icon.kind_of?(Tk::ICONS)
-	  Tk_IMGTBL.delete(icon.path)
-	  icon.name
-	elsif icon.to_s =~ /^::icon::(.*)/
-	  name = $1
-	  Tk_IMGTBL.delete(icon)
-	  name
-	else
-	  Tk_IMGTBL.delete("::icon::#{icon}")
-	  icon
-	end
+        if icon.kind_of?(Tk::ICONS)
+          Tk_IMGTBL.delete(icon.path)
+          icon.name
+        elsif icon.to_s =~ /^::icon::(.*)/
+          name = $1
+          Tk_IMGTBL.delete(icon)
+          name
+        else
+          Tk_IMGTBL.delete("::icon::#{icon}")
+          icon
+        end
       }
       tk_call('::icons::icons', 'delete', icons)
     end
 
     def self.query(*args)  # icon, icon, ..., ?option=>value, ...?
       if args[-1].kind_of?(Hash)
-	keys = args.pop
-	simplelist(tk_call('::icons::icons', 'query', 
-			   *(hash_kv(keys) << (args.flatten))))
+        keys = args.pop
+        simplelist(tk_call('::icons::icons', 'query', 
+                           *(hash_kv(keys) << (args.flatten))))
       else
-	simplelist(tk_call('::icons::icons', 'query', args.flatten))
+        simplelist(tk_call('::icons::icons', 'query', args.flatten))
       end . map{|inf| list(inf) }
     end
 
@@ -76,15 +76,15 @@ module Tk
 
     def initialize(name, keys=nil)
       if name.kind_of?(String) && name =~ /^::icon::(.+)$/
-	  @name = $1
-	  @path = name
+          @name = $1
+          @path = name
       else
-	@name = name.to_s
-	@path = "::icon::#{@name}"
+        @name = name.to_s
+        @path = "::icon::#{@name}"
       end
       keys = _symbolkey2str(keys)
       unless keys.delete('without_creating')
-	tk_call('::icons::icons', 'create', *(hash_kv(keys) << @name))
+        tk_call('::icons::icons', 'create', *(hash_kv(keys) << @name))
       end
       Tk_IMGTBL[@path] = self
     end
@@ -101,8 +101,8 @@ module Tk
 
     def query(keys={})
       list(simplelist(tk_call('::icons::icons', 'query', 
-			       *(hash_kv(keys) << @name))
-		      )[0])
+                               *(hash_kv(keys) << @name))
+                      )[0])
     end
   end
 end

@@ -65,9 +65,9 @@ class TkPhotoImage<TkImage
     keys = _symbolkey2str(keys)
     NullArgOptionKeys.collect{|opt|
       if keys[opt]
-	keys[opt] = None
+        keys[opt] = None
       else
-	keys.delete(opt)
+        keys.delete(opt)
       end
     }
     hash_kv(keys).flatten
@@ -101,11 +101,11 @@ class TkPhotoImage<TkImage
     else
       # for backward compatibility
       args = opts.collect{|term|
-	if term.kind_of?(String) && term.include?(?\s)
-	  term.split
-	else
-	  term
-	end
+        if term.kind_of?(String) && term.include?(?\s)
+          term.split
+        else
+          term
+        end
       }.flatten
       tk_send('copy', src, *args)
     end
@@ -141,11 +141,11 @@ class TkPhotoImage<TkImage
     else
       # for backward compatibility
       args = opts.collect{|term|
-	if term.kind_of?(String) && term.include?(?\s)
-	  term.split
-	else
-	  term
-	end
+        if term.kind_of?(String) && term.include?(?\s)
+          term.split
+        else
+          term
+        end
       }.flatten
       tk_send('read', file, *args)
     end
@@ -173,11 +173,11 @@ class TkPhotoImage<TkImage
     else
       # for backward compatibility
       args = opts.collect{|term|
-	if term.kind_of?(String) && term.include?(?\s)
-	  term.split
-	else
-	  term
-	end
+        if term.kind_of?(String) && term.include?(?\s)
+          term.split
+        else
+          term
+        end
       }.flatten
       tk_send('write', file, *args)
     end

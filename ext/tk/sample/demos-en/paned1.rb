@@ -17,8 +17,8 @@ $paned1_demo = TkToplevel.new {|w|
 }
 
 TkLabel.new($paned1_demo, 
-	    :font=>$font, :wraplength=>'4i', :justify=>:left, 
-	    :text=><<EOL).pack(:side=>:top)
+            :font=>$font, :wraplength=>'4i', :justify=>:left, 
+            :text=><<EOL).pack(:side=>:top)
 The sash between the two coloured windows below can be used to divide the area between them.  Use the left mouse button to resize without redrawing by just moving the sash, and use the middle mouse button to resize opaquely (always redrawing the windows in each position.)
 If your Tk library linked to Ruby doesn't include a 'panedwindow', this demo doesn't work. Please use later version of Tk which supports a 'panedwindow'.
 EOL
@@ -28,13 +28,13 @@ TkFrame.new($paned1_demo){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
   TkButton.new(f, :text=>'Dismiss', :width=>15, :command=>proc{
-		 $paned1_demo.destroy
-		 $paned1_demo = nil
-	       }).pack(:side=>:left, :expand=>true)
+                 $paned1_demo.destroy
+                 $paned1_demo = nil
+               }).pack(:side=>:left, :expand=>true)
 
   TkButton.new(f, :text=>'See Code', :width=>15, :command=>proc{
-		 showCode 'paned1'
-	       }).pack(:side=>:left, :expand=>true)
+                 showCode 'paned1'
+               }).pack(:side=>:left, :expand=>true)
 }
 
 TkPanedwindow.new($paned1_demo){|f|

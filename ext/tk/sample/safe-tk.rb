@@ -8,8 +8,8 @@ require "multi-tk"
 TkLabel.new(:text=>'This is the Default Master Ipnterpreter').pack(:padx=>5, :pady=>3)
 TkButton.new(:text=>'QUIT', :command=>proc{exit}).pack(:pady=>3)
 TkFrame.new(:borderwidth=>2, :height=>3, 
-	    :relief=>:sunken).pack(:fill=>:x, :expand=>true,
-				   :padx=>10, :pady=>7)
+            :relief=>:sunken).pack(:fill=>:x, :expand=>true,
+                                   :padx=>10, :pady=>7)
 
 ###############################
 
@@ -20,17 +20,17 @@ puts "\n---- create procs ----------"
 puts 'x = proc{p [\'proc x\', "$SAFE==#{$SAFE}"]; exit}'
 x = proc{p ['proc x', "$SAFE==#{$SAFE}"]; exit}
 TkLabel.new(:text=>'x = proc{p [\'proc x\', "$SAFE==#{$SAFE}"]; exit}', 
-	    :anchor=>:w).pack(:fill=>:x)
+            :anchor=>:w).pack(:fill=>:x)
 
 puts 'y = proc{|label| p [\'proc y\', "$SAFE==#{$SAFE}", label]; label.text($SAFE)}'
 y = proc{|label| p ['proc y', "$SAFE==#{$SAFE}", label]; label.text($SAFE)}
 TkLabel.new(:text=>'y = proc{|label| p [\'proc y\', "$SAFE==#{$SAFE}", label]; label.text($SAFE)}', 
-	    :anchor=>:w).pack(:fill=>:x)
+            :anchor=>:w).pack(:fill=>:x)
 
 puts 'z = proc{p [\'proc z\', "$SAFE==#{$SAFE}"]; exit}'
 z = proc{p ['proc z', "$SAFE==#{$SAFE}"]; exit}
 TkLabel.new(:text=>'z = proc{p [\'proc z\', "$SAFE==#{$SAFE}"]; exit}', 
-	    :anchor=>:w).pack(:fill=>:x)
+            :anchor=>:w).pack(:fill=>:x)
 
 puts "\n---- call 1st eval_proc ----------"
 print 'lbl = '
@@ -43,13 +43,13 @@ p lbl = ip.eval_proc{
   l = TkLabel.new(f).pack(:side=>:right)
 
   TkButton.new(:text=>':command=>proc{l.text($SAFE)}', 
-	       :command=>proc{l.text($SAFE)}).pack(:fill=>:x, :padx=>5)
+               :command=>proc{l.text($SAFE)}).pack(:fill=>:x, :padx=>5)
   TkButton.new(:text=>':command=>x', :command=>x).pack(:fill=>:x, :padx=>5)
   TkButton.new(:text=>':command=>proc{exit}', 
-	       :command=>proc{exit}).pack(:fill=>:x, :padx=>5)
+               :command=>proc{exit}).pack(:fill=>:x, :padx=>5)
   TkFrame.new(:borderwidth=>2, :height=>3, 
-	      :relief=>:sunken).pack(:fill=>:x, :expand=>true,
-				     :padx=>10, :pady=>7)
+              :relief=>:sunken).pack(:fill=>:x, :expand=>true,
+                                     :padx=>10, :pady=>7)
   l # return the label widget
 }
 
@@ -58,26 +58,26 @@ ip.safe_level = 3
 
 puts "\n---- call 2nd eval_proc ----------"
 p ip.eval_proc(proc{
-		 TkLabel.new(:text=>"2nd eval_proc : $SAFE == #{$SAFE}").pack
-		 f = TkFrame.new.pack
-		 TkLabel.new(f, :text=>"$SAFE == ").pack(:side=>:left)
-		 l = TkLabel.new(f, :text=>$SAFE).pack(:side=>:right)
-		 TkButton.new(:text=>':command=>proc{l.text($SAFE)}', 
-			      :command=>proc{l.text($SAFE)}).pack(:fill=>:x, 
-								  :padx=>5)
-		 TkButton.new(:text=>':command=>proc{y.call(l)}', 
-			      :command=>proc{y.call(l)}).pack(:fill=>:x, 
-							      :padx=>5)
-		 TkButton.new(:text=>':command=>proc{Thread.new(l, &y).value}',
-			      :command=>proc{
-				Thread.new(l, &y).value
-			      }).pack(:fill=>:x, :padx=>5)
-		 TkButton.new(:text=>':command=>proc{z.call}', 
-			      :command=>proc{z.call}).pack(:fill=>:x, :padx=>5)
-		 TkFrame.new(:borderwidth=>2, :height=>3, 
-			     :relief=>:sunken).pack(:fill=>:x, :expand=>true,
-						    :padx=>10, :pady=>7)
-	       })
+                 TkLabel.new(:text=>"2nd eval_proc : $SAFE == #{$SAFE}").pack
+                 f = TkFrame.new.pack
+                 TkLabel.new(f, :text=>"$SAFE == ").pack(:side=>:left)
+                 l = TkLabel.new(f, :text=>$SAFE).pack(:side=>:right)
+                 TkButton.new(:text=>':command=>proc{l.text($SAFE)}', 
+                              :command=>proc{l.text($SAFE)}).pack(:fill=>:x, 
+                                                                  :padx=>5)
+                 TkButton.new(:text=>':command=>proc{y.call(l)}', 
+                              :command=>proc{y.call(l)}).pack(:fill=>:x, 
+                                                              :padx=>5)
+                 TkButton.new(:text=>':command=>proc{Thread.new(l, &y).value}',
+                              :command=>proc{
+                                Thread.new(l, &y).value
+                              }).pack(:fill=>:x, :padx=>5)
+                 TkButton.new(:text=>':command=>proc{z.call}', 
+                              :command=>proc{z.call}).pack(:fill=>:x, :padx=>5)
+                 TkFrame.new(:borderwidth=>2, :height=>3, 
+                             :relief=>:sunken).pack(:fill=>:x, :expand=>true,
+                                                    :padx=>10, :pady=>7)
+               })
 
 puts "\n---- call 1st and 2nd eval_str ----------"
 p bind = ip.eval_str('
@@ -92,10 +92,10 @@ p bind = ip.eval_str('
 
 p ip.eval_str("
   TkButton.new(:text=>':command=>proc{ l.text = $SAFE }', 
-	       :command=>proc{ l.text = $SAFE }).pack(:fill=>:x, :padx=>5)
+               :command=>proc{ l.text = $SAFE }).pack(:fill=>:x, :padx=>5)
   TkFrame.new(:borderwidth=>2, :height=>3, 
-	      :relief=>:sunken).pack(:fill=>:x, :expand=>true,
-				     :padx=>10, :pady=>7)
+              :relief=>:sunken).pack(:fill=>:x, :expand=>true,
+                                     :padx=>10, :pady=>7)
 ", bind)
 
 puts "\n---- change the safe slave IP's safe-level ==> 4 ----------"
@@ -107,7 +107,7 @@ p ip.eval_proc{
 }
 p ip.eval_proc{
   TkButton.new(:text=>':command=>proc{ lbl.text = $SAFE }', 
-	       :command=>proc{ lbl.text = $SAFE }).pack(:fill=>:x, :padx=>5)
+               :command=>proc{ lbl.text = $SAFE }).pack(:fill=>:x, :padx=>5)
 }
 
 puts "\n---- start event-loop ( current $SAFE == #{$SAFE} ) ----------"

@@ -55,28 +55,28 @@ class TkMultiColumnList < TkText
 
     # virtical scrollbar
     @v_scroll = TkYScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
-				 'borderwidth'=>@scrbar_border, 
-				 'width'=>@scrbar_width)
+                                 'borderwidth'=>@scrbar_border, 
+                                 'width'=>@scrbar_width)
 
     # horizontal scrollbar
     @h_scroll = TkXScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick, 
-				 'borderwidth'=>@scrbar_border, 
-				 'width'=>@scrbar_width)
+                                 'borderwidth'=>@scrbar_border, 
+                                 'width'=>@scrbar_width)
 
     # create base flames
     @c_title = TkCanvas.new(@frame, 'highlightthickness'=>@h_l_thick, 
-			    'width'=>@window_width)
+                            'width'=>@window_width)
     @f_title = TkFrame.new(@c_title, 'width'=>@width_total)
     @w_title = TkcWindow.new(@c_title, 0, 0, 
-			     'window'=>@f_title, 'anchor'=>'nw')
+                             'window'=>@f_title, 'anchor'=>'nw')
 
     @c_lbox  = TkCanvas.new(@frame, 'highlightthickness'=>@h_l_thick, 
-			    'width'=>@window_width)
+                            'width'=>@window_width)
     @f_lbox  = TkFrame.new(@c_lbox, 'width'=>@width_total)
     @w_lbox  = TkcWindow.new(@c_lbox, 0, 0, 'window'=>@f_lbox, 'anchor'=>'nw')
 
     @c_hscr  = TkCanvas.new(@frame, 'highlightthickness'=>@h_l_thick, 
-			    'width'=>@window_width)
+                            'width'=>@window_width)
     @f_hscr  = TkFrame.new(@c_hscr, 'width'=>@width_total)
     @w_hscr  = TkcWindow.new(@c_hscr, 0, 0, 'window'=>@f_hscr, 'anchor'=>'nw')
 
@@ -86,9 +86,9 @@ class TkMultiColumnList < TkText
     title_info.each_with_index{|(label, width), idx|
       # set relation between label and index
       if @name_index.include?(label)
-	@name_index[label] << idx
+        @name_index[label] << idx
       else
-	@name_index[label] = [idx]
+        @name_index[label] = [idx]
       end
 
       # calculate relative positioning
@@ -100,69 +100,69 @@ class TkMultiColumnList < TkText
       base = [f]
 
       title = TkLabel.new(f, 'text'=>label, 'borderwidth'=>@title_border, 
-			  'relief'=>'raised', 'highlightthickness'=>@h_l_thick)
+                          'relief'=>'raised', 'highlightthickness'=>@h_l_thick)
       title_binding(title, idx)
       title.pack('fill'=>'x')
 
       @title_list << title
 
       f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>1, 
-	      'relheight'=>1.0, 
-	      'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
+              'relheight'=>1.0, 
+              'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
 
       # listbox field
       f = TkFrame.new(@f_lbox, 'width'=>width)
       base << f
       @lbox_list << TkText.new(f, 'highlightthickness'=>@h_l_thick, 
-			       'borderwidth'=>@lbox_border, 
-			       'takefocus'=>false, 
-			       'wrap'=>'none') {
+                               'borderwidth'=>@lbox_border, 
+                               'takefocus'=>false, 
+                               'wrap'=>'none') {
 
-	bindtags(bindtags - [TkText])
+        bindtags(bindtags - [TkText])
 
-	@seltag = TkTextTag.new(self, 'background'=>'#b3b3b3', 
-				'borderwidth'=>1, 'relief'=>'raised')
-	def self.nearest(y)
-	  self.index("@1,#{y}").split('.')[0].to_i
-	end
+        @seltag = TkTextTag.new(self, 'background'=>'#b3b3b3', 
+                                'borderwidth'=>1, 'relief'=>'raised')
+        def self.nearest(y)
+          self.index("@1,#{y}").split('.')[0].to_i
+        end
 
-	def self.select_clear(first, last=nil)
-	  first = "#{first}.0" if first.kind_of?(Integer)
-	  first = self.index(first.to_s + ' linestart')
-	  last = first unless last
-	  last = "#{last}.0" if first.kind_of?(Integer)
-	  last = self.index(last.to_s + ' + 1 lines linestart')
-	  @seltag.remove(first, last)
-	end
+        def self.select_clear(first, last=nil)
+          first = "#{first}.0" if first.kind_of?(Integer)
+          first = self.index(first.to_s + ' linestart')
+          last = first unless last
+          last = "#{last}.0" if first.kind_of?(Integer)
+          last = self.index(last.to_s + ' + 1 lines linestart')
+          @seltag.remove(first, last)
+        end
 
-	def self.select_set(first, last=nil)
-	  first = "#{first}.0" if first.kind_of?(Integer)
-	  first = self.index(first.to_s + ' linestart')
-	  last = first unless last
-	  last = "#{last}.0" if first.kind_of?(Integer)
-	  last = self.index(last.to_s + ' + 1 lines linestart')
-	  @seltag.add(first, last)
-	end
+        def self.select_set(first, last=nil)
+          first = "#{first}.0" if first.kind_of?(Integer)
+          first = self.index(first.to_s + ' linestart')
+          last = first unless last
+          last = "#{last}.0" if first.kind_of?(Integer)
+          last = self.index(last.to_s + ' + 1 lines linestart')
+          @seltag.add(first, last)
+        end
 
-	def self.select_index
-	  self.index(@seltag.first).split('.')[0].to_i
-	end
+        def self.select_index
+          self.index(@seltag.first).split('.')[0].to_i
+        end
 
-	pack('fill'=>'both', 'expand'=>true)
+        pack('fill'=>'both', 'expand'=>true)
       }
 
       f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>1, 
-	      'relwidth'=>@rel_list[idx+1] - @rel_list[idx], 'relheight'=>1.0)
+              'relwidth'=>@rel_list[idx+1] - @rel_list[idx], 'relheight'=>1.0)
 
       # scrollbar field
       f = TkFrame.new(@f_hscr, 'width'=>width)
       base << f
       @hscr_list << TkXScrollbar.new(f, 'width'=>@scrbar_width, 
-				     'borderwidth'=>@scrbar_border, 
-				     'highlightthickness'=>@h_l_thick
-				    ).pack('fill'=>'x', 'anchor'=>'w')
+                                     'borderwidth'=>@scrbar_border, 
+                                     'highlightthickness'=>@h_l_thick
+                                    ).pack('fill'=>'x', 'anchor'=>'w')
       f.place('relx'=>@rel_list[idx], 'y'=>0, 'anchor'=>'nw', 'width'=>1, 
-	      'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
+              'relwidth'=>@rel_list[idx+1] - @rel_list[idx])
 
       @lbox_list[idx].xscrollbar(@hscr_list[idx])
 
@@ -172,12 +172,12 @@ class TkMultiColumnList < TkText
 
     # pad
     @f_title_pad = TkFrame.new(@frame, 'relief'=>'raised', 
-			       'borderwidth'=>@title_border, 
-			       'highlightthickness'=>@h_l_thick)
+                               'borderwidth'=>@title_border, 
+                               'highlightthickness'=>@h_l_thick)
 
     @f_scr_pad = TkFrame.new(@frame, 'relief'=>'sunken', 
-			     'borderwidth'=>1, 
-			     'highlightthickness'=>@h_l_thick)
+                             'borderwidth'=>1, 
+                             'highlightthickness'=>@h_l_thick)
 
     # height check
     title_height = 0
@@ -205,27 +205,27 @@ class TkMultiColumnList < TkText
     # binding for listboxes
     @lbox_list.each_with_index{|l, idx| 
       l.bind('Button-1', proc{|w, y| 
-	       @frame.focus
-	       select_line(w, w.nearest(y))
-	     }, '%W %y')
+               @frame.focus
+               select_line(w, w.nearest(y))
+             }, '%W %y')
       l.bind('B1-Motion', proc{|w, y| 
-	       select_line(w, w.nearest(y))
-	     }, '%W %y')
+               select_line(w, w.nearest(y))
+             }, '%W %y')
       l.bind('Double-Button-1', proc{
-	       @command.call(get_select) if @command
-	     })
+               @command.call(get_select) if @command
+             })
 
       l.bind('Control-Home', proc{|w| select_line(w, 0)}, '%W')
       l.bind('Control-End', proc{|w| select_line(w, 'end')}, '%W')
 
       l.bind('Button-2', proc{|x, y| 
-	       @lbox_mark_x = x
-	       @lbox_list.each{|lbox| lbox.scan_mark(x, y)}
-	     }, '%x %y')
+               @lbox_mark_x = x
+               @lbox_list.each{|lbox| lbox.scan_mark(x, y)}
+             }, '%x %y')
       l.bind('B2-Motion', proc{|x, y| 
-	       @lbox_list.each{|lbox| lbox.scan_dragto(@lbox_mark_x, y)}
-	       l.scan_dragto(x, y)
-	     }, '%x %y')
+               @lbox_list.each{|lbox| lbox.scan_dragto(@lbox_mark_x, y)}
+               l.scan_dragto(x, y)
+             }, '%x %y')
     }
 
     bbox = @w_title.bbox
@@ -266,8 +266,8 @@ class TkMultiColumnList < TkText
 
     # binding for 'Configure' event
     @c_lbox.bind('Configure', 
-		 proc{|height, width| reconstruct(height, width)}, 
-		 '%h %w')
+                 proc{|height, width| reconstruct(height, width)}, 
+                 '%h %w')
 
     # set default receiver of method calls
     @path = @frame.path
@@ -433,9 +433,9 @@ class TkMultiColumnList < TkText
   def delete(*idx)
     idx = idx.collect{|i|
       if i.kind_of?(Integer)
-	"#{i}.0"
+        "#{i}.0"
       else
-	i.to_s
+        i.to_s
       end
     }
     @lbox_list.collect{|lbox| lbox.delete(*idx)}
@@ -444,30 +444,30 @@ class TkMultiColumnList < TkText
   def get(idx_s, idx_e=nil)
     unless idx_e
       if idx_s.kind_of?(Integer)
-	idx_s = "#{idx_s}.0"
-	idx_e = "#{idx_s} lineend"
+        idx_s = "#{idx_s}.0"
+        idx_e = "#{idx_s} lineend"
       else
-	idx_s = idx_s.to_s
-	idx_e = "#{idx_s} lineend"
+        idx_s = idx_s.to_s
+        idx_e = "#{idx_s} lineend"
       end
       @lbox_list.collect{|lbox|
-	lbox.get(idx_s, idx_e)
+        lbox.get(idx_s, idx_e)
       }
     else
       if idx_s.kind_of?(Integer)
-	idx_s = "#{idx_s}.0"
+        idx_s = "#{idx_s}.0"
       else
-	idx_s = idx_s.to_s
+        idx_s = idx_s.to_s
       end
       if idx_e.kind_of?(Integer)
-	idx_e = "#{idx_e}.end"
+        idx_e = "#{idx_e}.end"
       else
-	idx_e = "#{idx_e} lineend"
+        idx_e = "#{idx_e} lineend"
       end
       list = @lbox_list.collect{|lbox| lbox.get(idx_s, idx_e).split(/\n/)}
       result = []
       list[0].each_with_index{|line, index|
-	result << list.collect{|lines| lines[index]}
+        result << list.collect{|lines| lines[index]}
       }
       result
     end
@@ -481,9 +481,9 @@ class TkMultiColumnList < TkText
     result = {}
     @name_index.each_pair{|label, indices|
       if indices.size == 1
-	result[label] = line[indices[0]]
+        result[label] = line[indices[0]]
       else
-	result[label] = indices.collect{|index| line[index]}
+        result[label] = indices.collect{|index| line[index]}
       end
     }
     result
@@ -517,31 +517,31 @@ class TkMultiColumnList < TkText
 
     lines.each{|line|
       if line.kind_of? Hash
-	array = []
-	@name_index.each_pair{|label, indices|
-	  if indices.size == 1
-	    array[indices[0]] = line[label]
-	  else
-	    if line[label].kind_of? Array
-	      indices.each_with_index{|index, num| 
-		array[index] = line[label][num]
-	      }
-	    else
-	      array[indices[0]] = line[label]
-	    end
-	  end
-	}
-	line = array
+        array = []
+        @name_index.each_pair{|label, indices|
+          if indices.size == 1
+            array[indices[0]] = line[label]
+          else
+            if line[label].kind_of? Array
+              indices.each_with_index{|index, num| 
+                array[index] = line[label][num]
+              }
+            else
+              array[indices[0]] = line[label]
+            end
+          end
+        }
+        line = array
       end
 
       @name_index.each_pair{|label, indices|
-	if indices.size == 1
-	  lbox_ins[indices[0]] << line[indices[0]]
-	else
-	  indices.each{|index| lbox_ins[index] << line[index]}
-	end
+        if indices.size == 1
+          lbox_ins[indices[0]] << line[indices[0]]
+        else
+          indices.each{|index| lbox_ins[index] << line[index]}
+        end
       }
-    }	
+    }   
 
     @lbox_list.each_with_index{|lbox, index| 
       lbox.insert(idx, cr + lbox_ins[index].join("\n")) if lbox_ins[index]
@@ -582,7 +582,7 @@ class TkMultiColumnList < TkText
       title, lbox, hscr = @base_list[idx]
       title.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx])
       lbox.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
-		 'relheight'=>1.0)
+                 'relheight'=>1.0)
       hscr.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx])
     }
   end
@@ -609,11 +609,11 @@ class TkMultiColumnList < TkText
     # adjustment of rightside widget of the sash
     title, lbox, hscr = @base_list[idx]
     title.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
-		'relx'=>@rel_list[idx])
+                'relx'=>@rel_list[idx])
     lbox.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
-	       'relx'=>@rel_list[idx], 'relheight'=>1.0)
+               'relx'=>@rel_list[idx], 'relheight'=>1.0)
     hscr.place('relwidth'=>@rel_list[idx+1] - @rel_list[idx], 
-	       'relx'=>@rel_list[idx])
+               'relx'=>@rel_list[idx])
 
     # update reference position
     @x = x
@@ -637,34 +637,34 @@ class TkMultiColumnList < TkText
 
   def title_binding(title, index)
     title.bind('Motion', proc{|w, x, idx| motion_cb(w, x, idx.to_i)}, 
-	       "%W %x #{index}")
+               "%W %x #{index}")
 
     title.bind('Enter', proc{|w, x, idx| motion_cb(w, x, idx.to_i)}, 
-	       "%W %x #{index}")
+               "%W %x #{index}")
 
     title.bind('Leave', proc{|w| w.cursor ""}, "%W")
 
     title.bind('Button-1', 
-	       proc{|w, x| 
-		 if @mode == :sash
-		   @x = x
-		   @frame_width = TkWinfo.width(@f_title).to_f
-		 else
-		   title.relief 'sunken'
-		 end
-	       }, 
-	       '%W %X')
+               proc{|w, x| 
+                 if @mode == :sash
+                   @x = x
+                   @frame_width = TkWinfo.width(@f_title).to_f
+                 else
+                   title.relief 'sunken'
+                 end
+               }, 
+               '%W %X')
 
     title.bind('ButtonRelease-1', 
-	       proc{|w, x, idx| 
-		 i = idx.to_i
-		 if @mode == :title && @title_cmd[i].kind_of?(Proc)
-		   @title_cmd[i].call
-		 end
-		 title.relief 'raised'
-		 motion_cb(w,x,i)
-	       }, 
-	       "%W %x #{index}")
+               proc{|w, x, idx| 
+                 i = idx.to_i
+                 if @mode == :title && @title_cmd[i].kind_of?(Proc)
+                   @title_cmd[i].call
+                 end
+                 title.relief 'raised'
+                 motion_cb(w,x,i)
+               }, 
+               "%W %x #{index}")
 
     title.bind('B1-Motion', proc{|x| resize(x) if @mode == :sash}, "%X")
   end
@@ -706,21 +706,21 @@ end
 ################################################
 if __FILE__ == $0
   l = TkMultiColumnList.new(nil, 200, 
-			    [ ['L1', 200, proc{p 'click L1'}], 
-			      ['L2', 100], 
-			      ['L3', 200] ], 
-			    'width'=>350, 
-			    #'titleforeground'=>'yellow', 
-			    'titleforeground'=>'white', 
-			    #'titlebackground'=>'navy',
-			    'titlebackground'=>'blue',
-			    'titlefont'=>'courier'
-			    ).pack('fill'=>'both', 'expand'=>true)
+                            [ ['L1', 200, proc{p 'click L1'}], 
+                              ['L2', 100], 
+                              ['L3', 200] ], 
+                            'width'=>350, 
+                            #'titleforeground'=>'yellow', 
+                            'titleforeground'=>'white', 
+                            #'titlebackground'=>'navy',
+                            'titlebackground'=>'blue',
+                            'titlefont'=>'courier'
+                            ).pack('fill'=>'both', 'expand'=>true)
   l.insert('end', [1,2,3])
   l.insert('end', [4,5,6])
   l.insert('end', [4,5,6], [4,5,6])
   l.insert('end', ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 
-	           'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+                   'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
                    'cccccccccccccccccccccccccccccccccccccccccccccccccccc'])
   l.insert('end', [1,2,3])
   l.insert('end', [4,5,6], [4,5,6])

@@ -24,15 +24,15 @@ cols = 10
 lbl = TkLabel.new(:text=>"TkTable v2 Example")
 
 table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary, 
-			:width=>6, :height=>8, 
-			:titlerows=>1, :titlecols=>1, 
-			:coltagcommand=>proc{|col|
-			  col = Integer(col)
-			  return 'OddCol' if col>0 && col%2 == 1
-			}, 
-			:selectmode=>:extended, 
-			:colstretch=>:unset, :rowstretch=>:unset, 
-			:selecttitles=>false, :drawmode=>:slow)
+                        :width=>6, :height=>8, 
+                        :titlerows=>1, :titlecols=>1, 
+                        :coltagcommand=>proc{|col|
+                          col = Integer(col)
+                          return 'OddCol' if col>0 && col%2 == 1
+                        }, 
+                        :selectmode=>:extended, 
+                        :colstretch=>:unset, :rowstretch=>:unset, 
+                        :selecttitles=>false, :drawmode=>:slow)
 
 sx = table.xscrollbar(TkScrollbar.new)
 sy = table.yscrollbar(TkScrollbar.new)

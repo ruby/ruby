@@ -94,7 +94,7 @@ class Tk::Iwidgets::Scrolledcanvas
 
   def bbox(tagOrId, *tags)
     list(tk_send_without_enc('bbox', tagid(tagOrId), 
-			     *tags.collect{|t| tagid(t)}))
+                             *tags.collect{|t| tagid(t)}))
   end
 
   def itembind(tag, context, cmd=Proc.new, args=nil)
@@ -136,14 +136,14 @@ class Tk::Iwidgets::Scrolledcanvas
 
   def dchars(tag, first, last=None)
     tk_send_without_enc('dchars', tagid(tag), 
-			_get_eval_enc_str(first), _get_eval_enc_str(last))
+                        _get_eval_enc_str(first), _get_eval_enc_str(last))
     self
   end
 
   def delete(*args)
     if TkcItem::CItemID_TBL[self.path]
       find('withtag', *args).each{|item| 
-	TkcItem::CItemID_TBL[self.path].delete(item.id)
+        TkcItem::CItemID_TBL[self.path].delete(item.id)
       }
     end
     tk_send_without_enc('delete', *args.collect{|t| tagid(t)})
@@ -190,9 +190,9 @@ class Tk::Iwidgets::Scrolledcanvas
     else
       ret = tk_send_without_enc('focus')
       if ret == ""
-	nil
+        nil
       else
-	TkcItem.id2obj(self, ret)
+        TkcItem.id2obj(self, ret)
       end
     end
   end
@@ -214,7 +214,7 @@ class Tk::Iwidgets::Scrolledcanvas
 
   def insert(tagOrId, index, string)
     tk_send_without_enc('insert', tagid(tagOrId), index, 
-			_get_eval_enc_str(string))
+                        _get_eval_enc_str(string))
     self
   end
 

@@ -16,9 +16,9 @@ module Tk
   module TkTrans
     def self.package_version
       begin
-	TkPackage.require('tktrans')
+        TkPackage.require('tktrans')
       rescue
-	''
+        ''
       end
     end
   end

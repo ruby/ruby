@@ -8,7 +8,7 @@ module Tk
     def self.__def_validcmd(scope, klass, keys=nil)
       keys = klass._config_keys unless keys
       keys.each{|key|
-	eval("def #{key}(*args, &b)
+        eval("def #{key}(*args, &b)
                  __validcmd_call(#{klass.name}, '#{key}', *args, &b)
               end", scope)
       }
@@ -20,11 +20,11 @@ module Tk
       cmd = (b)? proc(&b) : args.shift
 
       if cmd.kind_of?(klass)
-	configure(key, cmd)
+        configure(key, cmd)
       elsif !args.empty?
-	configure(key, [cmd, args])
+        configure(key, [cmd, args])
       else
-	configure(key, cmd)
+        configure(key, cmd)
       end
     end
 
@@ -36,9 +36,9 @@ module Tk
     def __get_validate_key2class
       k2c = {}
       __validation_class_list.each{|klass|
-	klass._config_keys.each{|key|
-	  k2c[key.to_s] = klass
-	}
+        klass._config_keys.each{|key|
+          k2c[key.to_s] = klass
+        }
       }
       k2c
     end
@@ -48,12 +48,12 @@ module Tk
 
       keys = _symbolkey2str(keys)
       key2class.each{|key, klass|
-	if keys[key].kind_of?(Array)
-	  cmd, *args = keys[key]
-	  keys[key] = klass.new(cmd, args.join(' '))
-	elsif keys[key].kind_of?(Proc) ||  keys[key].kind_of?(Method)
-	  keys[key] = klass.new(keys[key])
-	end
+        if keys[key].kind_of?(Array)
+          cmd, *args = keys[key]
+          keys[key] = klass.new(cmd, args.join(' '))
+        elsif keys[key].kind_of?(Proc) ||  keys[key].kind_of?(Method)
+          keys[key] = klass.new(keys[key])
+        end
       }
       keys
     end
@@ -65,9 +65,9 @@ module Tk
 
     def configure(slot, value=TkComm::None)
       if slot.kind_of?(Hash)
-	super(__conv_vcmd_on_hash_kv(slot))
+        super(__conv_vcmd_on_hash_kv(slot))
       else
-	super(__conv_vcmd_on_hash_kv(slot=>value))
+        super(__conv_vcmd_on_hash_kv(slot=>value))
       end
       self
     end
@@ -76,28 +76,28 @@ module Tk
       key2class = __get_validate_key2class
 
       if slot.kind_of?(Hash)
-	slot = _symbolkey2str(slot)
-	key2class.each{|key, klass|
-	  if slot[key].kind_of?(Array)
-	    cmd, *args = slot[key]
-	    slot[key] = klass.new(cmd, args.join(' '))
-	  elsif slot[key].kind_of?(Proc) || slot[key].kind_of?(Method)
-	    slot[key] = klass.new(slot[key])
-	  end
-	}
-	super(slot)
+        slot = _symbolkey2str(slot)
+        key2class.each{|key, klass|
+          if slot[key].kind_of?(Array)
+            cmd, *args = slot[key]
+            slot[key] = klass.new(cmd, args.join(' '))
+          elsif slot[key].kind_of?(Proc) || slot[key].kind_of?(Method)
+            slot[key] = klass.new(slot[key])
+          end
+        }
+        super(slot)
 
       else
-	slot = slot.to_s
-	if (klass = key2class[slot])
-	  if value.kind_of?(Array)
-	    cmd, *args = value
-	    value = klass.new(cmd, args.join(' '))
-	  elsif value.kind_of?(Proc) || value.kind_of?(Method)
-	    value = klass.new(value)
-	  end
-	end
-	super(slot, value)
+        slot = slot.to_s
+        if (klass = key2class[slot])
+          if value.kind_of?(Array)
+            cmd, *args = value
+            value = klass.new(cmd, args.join(' '))
+          elsif value.kind_of?(Proc) || value.kind_of?(Method)
+            value = klass.new(value)
+          end
+        end
+        super(slot, value)
       end
 
       self
@@ -109,7 +109,7 @@ module Tk
     def self.__def_validcmd(scope, klass, keys=nil)
       keys = klass._config_keys unless keys
       keys.each{|key|
-	eval("def item_#{key}(id, *args, &b)
+        eval("def item_#{key}(id, *args, &b)
                  __item_validcmd_call(#{klass.name}, '#{key}', id, *args, &b)
               end", scope)
       }
@@ -121,11 +121,11 @@ module Tk
       cmd = (b)? proc(&b) : args.shift
 
       if cmd.kind_of?(klass)
-	itemconfigure(tagid(tagOrId), key, cmd)
+        itemconfigure(tagid(tagOrId), key, cmd)
       elsif !args.empty?
-	itemconfigure(tagid(tagOrId), key, [cmd, args])
+        itemconfigure(tagid(tagOrId), key, [cmd, args])
       else
-	itemconfigure(tagid(tagOrId), key, cmd)
+        itemconfigure(tagid(tagOrId), key, cmd)
       end
     end
 
@@ -137,9 +137,9 @@ module Tk
     def __get_item_validate_key2class(id)
       k2c = {}
       __item_validation_class_list(id).each{|klass|
-	klass._config_keys.each{|key|
-	  k2c[key.to_s] = klass
-	}
+        klass._config_keys.each{|key|
+          k2c[key.to_s] = klass
+        }
       }
     end
 
@@ -148,21 +148,21 @@ module Tk
 
       keys = _symbolkey2str(keys)
       key2class.each{|key, klass|
-	if keys[key].kind_of?(Array)
-	  cmd, *args = keys[key]
-	  keys[key] = klass.new(cmd, args.join(' '))
-	elsif keys[key].kind_of?(Proc) || keys[key].kind_of?(Method)
-	  keys[key] = klass.new(keys[key])
-	end
+        if keys[key].kind_of?(Array)
+          cmd, *args = keys[key]
+          keys[key] = klass.new(cmd, args.join(' '))
+        elsif keys[key].kind_of?(Proc) || keys[key].kind_of?(Method)
+          keys[key] = klass.new(keys[key])
+        end
       }
       keys
     end
 
     def itemconfigure(tagOrId, slot, value=TkComm::None)
       if slot.kind_of?(Hash)
-	super(__conv_item_vcmd_on_hash_kv(slot))
+        super(__conv_item_vcmd_on_hash_kv(slot))
       else
-	super(__conv_item_vcmd_on_hash_kv(slot=>value))
+        super(__conv_item_vcmd_on_hash_kv(slot=>value))
       end
       self
     end
@@ -171,28 +171,28 @@ module Tk
       key2class = __get_item_validate_key2class(tagid(tagOrId))
 
       if slot.kind_of?(Hash)
-	slot = _symbolkey2str(slot)
-	key2class.each{|key, klass|
-	  if slot[key].kind_of?(Array)
-	    cmd, *args = slot[key]
-	    slot[key] = klass.new(cmd, args.join(' '))
-	  elsif slot[key].kind_of?(Proc) ||  slot[key].kind_of?(Method)
-	    slot[key] = klass.new(slot[key])
-	  end
-	}
-	super(slot)
+        slot = _symbolkey2str(slot)
+        key2class.each{|key, klass|
+          if slot[key].kind_of?(Array)
+            cmd, *args = slot[key]
+            slot[key] = klass.new(cmd, args.join(' '))
+          elsif slot[key].kind_of?(Proc) ||  slot[key].kind_of?(Method)
+            slot[key] = klass.new(slot[key])
+          end
+        }
+        super(slot)
 
       else
-	slot = slot.to_s
-	if (klass = key2class[slot])
-	  if value.kind_of?(Array)
-	    cmd, *args = value
-	    value = klass.new(cmd, args.join(' '))
-	  elsif value.kind_of?(Proc) || value.kind_of?(Method)
-	    value = klass.new(value)
-	  end
-	end
-	super(slot, value)
+        slot = slot.to_s
+        if (klass = key2class[slot])
+          if value.kind_of?(Array)
+            cmd, *args = value
+            value = klass.new(cmd, args.join(' '))
+          elsif value.kind_of?(Proc) || value.kind_of?(Method)
+            value = klass.new(value)
+          end
+        end
+        super(slot, value)
       end
 
       self
@@ -224,23 +224,23 @@ class TkValidateCommand
       [ ?w, TkComm.method(:window) ], 
 
       [ ?e, proc{|val|
-	  enc = Tk.encoding
-	  if enc
-	    Tk.fromUTF8(TkComm::string(val), enc)
-	  else
-	    TkComm::string(val)
-	  end
-	}
+          enc = Tk.encoding
+          if enc
+            Tk.fromUTF8(TkComm::string(val), enc)
+          else
+            TkComm::string(val)
+          end
+        }
       ], 
 
       [ ?x, proc{|val|
-	  idx = TkComm::number(val)
-	  if idx < 0
-	    nil
-	  else
-	    idx
-	  end
-	}
+          idx = TkComm::number(val)
+          if idx < 0
+            nil
+          else
+            idx
+          end
+        }
       ], 
 
       nil
@@ -277,32 +277,32 @@ class TkValidateCommand
       args = args.join(' ')
       keys = klass._get_subst_key(args)
       if cmd.kind_of?(String)
-	id = cmd
+        id = cmd
       elsif cmd.kind_of?(TkCallbackEntry)
-	@id = install_cmd(cmd)
+        @id = install_cmd(cmd)
       else
-	@id = install_cmd(proc{|*arg|
-	     ex_args = []
-	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
-	     klass.ret_val(cmd.call(
+        @id = install_cmd(proc{|*arg|
+             ex_args = []
+             extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
+             klass.ret_val(cmd.call(
                *(ex_args.concat(klass.scan_args(keys, arg)))
              ))
-	}) + ' ' + args
+        }) + ' ' + args
       end
     else
       keys, args = klass._get_all_subst_keys
       if cmd.kind_of?(String)
-	id = cmd
+        id = cmd
       elsif cmd.kind_of?(TkCallbackEntry)
-	@id = install_cmd(cmd)
+        @id = install_cmd(cmd)
       else
-	@id = install_cmd(proc{|*arg|
-	     ex_args = []
-	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
-	     klass.ret_val(cmd.call(
+        @id = install_cmd(proc{|*arg|
+             ex_args = []
+             extra_args_tbl.reverse_each{|conv| ex_args << conv.call(arg.pop)}
+             klass.ret_val(cmd.call(
                *(ex_args << klass.new(*klass.scan_args(keys, arg)))
-	     ))
-	}) + ' ' + args
+             ))
+        }) + ' ' + args
       end
     end
   end

@@ -55,7 +55,7 @@ TkFrame.new($check_demo) {|frame|
     text 'See Variables'
     command proc{
       showVars($check_demo, 
-	       ['wipers', wipers], ['brakes', brakes], ['sober', sober])
+               ['wipers', wipers], ['brakes', brakes], ['sober', sober])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
 

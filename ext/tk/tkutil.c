@@ -95,7 +95,7 @@ tk_do_callback(argc, argv, self)
     return rb_apply(rb_hash_aref(CALLBACK_TABLE, id), ID_call, rest);
 #endif
     return rb_funcall2(rb_hash_aref(CALLBACK_TABLE, argv[0]), 
-		       ID_call, argc - 1, argv + 1);
+                       ID_call, argc - 1, argv + 1);
 }
 
 static char *cmd_id_head = "ruby_cmd TkUtil callback ";
@@ -124,14 +124,14 @@ tk_install_cmd(argc, argv, self)
 
 #if 0
     if (rb_scan_args(argc, argv, "01", &cmd) == 0) {
-	cmd = rb_block_proc();
+        cmd = rb_block_proc();
     }
     return tk_install_cmd_core(cmd);
 #endif
     if (argc == 0) {
-	cmd = rb_block_proc();
+        cmd = rb_block_proc();
     } else {
-	cmd = argv[0];
+        cmd = argv[0];
     }
     return tk_install_cmd_core(cmd);
 }
@@ -146,15 +146,15 @@ tk_uninstall_cmd(self, cmd_id)
 
     StringValue(cmd_id);
     if (strncmp(cmd_id_head, RSTRING(cmd_id)->ptr, head_len) != 0) {
-	return Qnil;
+        return Qnil;
     }
     if (strncmp(cmd_id_prefix, 
-		RSTRING(cmd_id)->ptr + head_len, prefix_len) != 0) {
-	return Qnil;
+                RSTRING(cmd_id)->ptr + head_len, prefix_len) != 0) {
+        return Qnil;
     }
 
     return rb_hash_delete(CALLBACK_TABLE, 
-			  rb_str_new2(RSTRING(cmd_id)->ptr + head_len));
+                          rb_str_new2(RSTRING(cmd_id)->ptr + head_len));
 }
 
 static VALUE
@@ -203,7 +203,7 @@ hash_check(err)
     int err;
 {
     if (err) {
-	rb_raise(rb_eRuntimeError, "hash modified");
+        rb_raise(rb_eRuntimeError, "hash modified");
     }
 }
 
@@ -251,53 +251,53 @@ ary2list(ary, self)
     /* size = RARRAY(ary)->len; */
     size = 0;
     for(idx = 0; idx < RARRAY(ary)->len; idx++) {
-	if (TYPE(RARRAY(ary)->ptr[idx]) == T_HASH) {
-	    size += 2 * RHASH(RARRAY(ary)->ptr[idx])->tbl->num_entries;
-	} else {
-	    size++;
-	}
+        if (TYPE(RARRAY(ary)->ptr[idx]) == T_HASH) {
+            size += 2 * RHASH(RARRAY(ary)->ptr[idx])->tbl->num_entries;
+        } else {
+            size++;
+        }
     }
 
     dst = rb_ary_new2(size);
     RARRAY(dst)->len = 0;
     for(idx = 0; idx < RARRAY(ary)->len; idx++) {
-	val = RARRAY(ary)->ptr[idx];
-	switch(TYPE(val)) {
-	case T_ARRAY:
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] = ary2list(val, self);
-	    break;
+        val = RARRAY(ary)->ptr[idx];
+        switch(TYPE(val)) {
+        case T_ARRAY:
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = ary2list(val, self);
+            break;
 
-	case T_HASH:
-	    /* RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self); */
-	    val = hash2kv(val, Qnil, self);
-	    size2 = RARRAY(val)->len;
-	    for(idx2 = 0; idx2 < size2; idx2++) {
-		val2 = RARRAY(val)->ptr[idx2];
-		switch(TYPE(val2)) {
-		case T_ARRAY:
-		    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-			= ary2list(val2, self);
-		    break;
+        case T_HASH:
+            /* RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self); */
+            val = hash2kv(val, Qnil, self);
+            size2 = RARRAY(val)->len;
+            for(idx2 = 0; idx2 < size2; idx2++) {
+                val2 = RARRAY(val)->ptr[idx2];
+                switch(TYPE(val2)) {
+                case T_ARRAY:
+                    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                        = ary2list(val2, self);
+                    break;
 
-		case T_HASH:
-		    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-			= hash2list(val2, self);
+                case T_HASH:
+                    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                        = hash2list(val2, self);
 
-		default:
-		    if (val2 != TK_None) {
-			RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-			    = get_eval_string_core(val2, Qnil, self);
-		    }
-		}
-	    }
-	    break;
+                default:
+                    if (val2 != TK_None) {
+                        RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                            = get_eval_string_core(val2, Qnil, self);
+                    }
+                }
+            }
+            break;
 
-	default:
-	    if (val != TK_None) {
-		RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		    = get_eval_string_core(val, Qnil, self);
-	    }
-	}
+        default:
+            if (val != TK_None) {
+                RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                    = get_eval_string_core(val, Qnil, self);
+            }
+        }
     }
     return rb_apply(cTclTkLib, ID_merge_tklist, dst);
 }
@@ -315,22 +315,22 @@ ary2list2(ary, self)
     dst = rb_ary_new2(size);
     RARRAY(dst)->len = 0;
     for(idx = 0; idx < RARRAY(ary)->len; idx++) {
-	val = RARRAY(ary)->ptr[idx];
-	switch(TYPE(val)) {
-	case T_ARRAY:
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] = ary2list(val, self);
-	    break;
+        val = RARRAY(ary)->ptr[idx];
+        switch(TYPE(val)) {
+        case T_ARRAY:
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = ary2list(val, self);
+            break;
 
-	case T_HASH:
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self);
-	    break;
+        case T_HASH:
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self);
+            break;
 
-	default:
-	    if (val != TK_None) {
-		RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		    = get_eval_string_core(val, Qnil, self);
-	    }
-	}
+        default:
+            if (val != TK_None) {
+                RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                    = get_eval_string_core(val, Qnil, self);
+            }
+        }
     }
     return rb_apply(cTclTkLib, ID_merge_tklist, dst);
 }
@@ -356,40 +356,40 @@ assoc2kv(assoc, ary, self)
     len = RARRAY(assoc)->len;
 
     for(i = 0; i < len; i++) {
-	pair = RARRAY(assoc)->ptr[i];
-	if (TYPE(pair) != T_ARRAY) {
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] = key2keyname(pair);
-	    continue;
-	}
-	switch(RARRAY(assoc)->len) {
-	case 2:
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] = RARRAY(pair)->ptr[2];
+        pair = RARRAY(assoc)->ptr[i];
+        if (TYPE(pair) != T_ARRAY) {
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = key2keyname(pair);
+            continue;
+        }
+        switch(RARRAY(assoc)->len) {
+        case 2:
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = RARRAY(pair)->ptr[2];
 
-	case 1:
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		= key2keyname(RARRAY(pair)->ptr[0]);
+        case 1:
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                = key2keyname(RARRAY(pair)->ptr[0]);
 
-	case 0:
-	    continue;
+        case 0:
+            continue;
 
-	default:
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		= key2keyname(RARRAY(pair)->ptr[0]);
+        default:
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                = key2keyname(RARRAY(pair)->ptr[0]);
 
-	    val = rb_ary_new2(RARRAY(pair)->len - 1);
-	    RARRAY(val)->len = 0;
-	    for(j = 1; j < RARRAY(pair)->len; j++) {
-		RARRAY(val)->ptr[RARRAY(val)->len++] = RARRAY(pair)->ptr[j];
-	    }
+            val = rb_ary_new2(RARRAY(pair)->len - 1);
+            RARRAY(val)->len = 0;
+            for(j = 1; j < RARRAY(pair)->len; j++) {
+                RARRAY(val)->ptr[RARRAY(val)->len++] = RARRAY(pair)->ptr[j];
+            }
 
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] = val;
-	}
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = val;
+        }
     }
 
     if (NIL_P(ary)) {
-	return dst;
+        return dst;
     } else {
-	return rb_ary_plus(ary, dst);
+        return rb_ary_plus(ary, dst);
     }
 }
 
@@ -407,42 +407,42 @@ assoc2kv_enc(assoc, ary, self)
     len = RARRAY(assoc)->len;
 
     for(i = 0; i < len; i++) {
-	pair = RARRAY(assoc)->ptr[i];
-	if (TYPE(pair) != T_ARRAY) {
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] = key2keyname(pair);
-	    continue;
-	}
-	switch(RARRAY(assoc)->len) {
-	case 2:
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		= get_eval_string_core(RARRAY(pair)->ptr[2], Qtrue, self);
+        pair = RARRAY(assoc)->ptr[i];
+        if (TYPE(pair) != T_ARRAY) {
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = key2keyname(pair);
+            continue;
+        }
+        switch(RARRAY(assoc)->len) {
+        case 2:
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                = get_eval_string_core(RARRAY(pair)->ptr[2], Qtrue, self);
 
-	case 1:
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		= key2keyname(RARRAY(pair)->ptr[0]);
+        case 1:
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                = key2keyname(RARRAY(pair)->ptr[0]);
 
-	case 0:
-	    continue;
+        case 0:
+            continue;
 
-	default:
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		= key2keyname(RARRAY(pair)->ptr[0]);
+        default:
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                = key2keyname(RARRAY(pair)->ptr[0]);
 
-	    val = rb_ary_new2(RARRAY(pair)->len - 1);
-	    RARRAY(val)->len = 0;
-	    for(j = 1; j < RARRAY(pair)->len; j++) {
-		RARRAY(val)->ptr[RARRAY(val)->len++] = RARRAY(pair)->ptr[j];
-	    }
+            val = rb_ary_new2(RARRAY(pair)->len - 1);
+            RARRAY(val)->len = 0;
+            for(j = 1; j < RARRAY(pair)->len; j++) {
+                RARRAY(val)->ptr[RARRAY(val)->len++] = RARRAY(pair)->ptr[j];
+            }
 
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		= get_eval_string_core(val, Qtrue, self);
-	}
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                = get_eval_string_core(val, Qtrue, self);
+        }
     }
 
     if (NIL_P(ary)) {
-	return dst;
+        return dst;
     } else {
-	return rb_ary_plus(ary, dst);
+        return rb_ary_plus(ary, dst);
     }
 }
 
@@ -468,7 +468,7 @@ push_kv(key, val, args, err)
     if (val == TK_None) return ST_CHECK;
 
     RARRAY(ary)->ptr[RARRAY(ary)->len++]
-	= get_eval_string_core(val, Qnil, RARRAY(args)->ptr[1]);
+        = get_eval_string_core(val, Qnil, RARRAY(args)->ptr[1]);
 
     return ST_CHECK;
 }
@@ -490,9 +490,9 @@ hash2kv(hash, ary, self)
     st_foreach(RHASH(hash)->tbl, push_kv, args);
 
     if (NIL_P(ary)) {
-	return dst;
+        return dst;
     } else {
-	return rb_ary_concat(ary, dst);
+        return rb_ary_concat(ary, dst);
     }
 }
 
@@ -512,8 +512,8 @@ push_kv_enc(key, val, args, err)
 #if 0
     rb_ary_push(ary, key2keyname(key));
     if (val != TK_None) {
-	rb_ary_push(ary, get_eval_string_core(val, Qtrue, 
-					      RARRAY(args)->ptr[1]));
+        rb_ary_push(ary, get_eval_string_core(val, Qtrue, 
+                                              RARRAY(args)->ptr[1]));
     }
 #endif
     RARRAY(ary)->ptr[RARRAY(ary)->len++] = key2keyname(key);
@@ -521,7 +521,7 @@ push_kv_enc(key, val, args, err)
     if (val == TK_None) return ST_CHECK;
 
     RARRAY(ary)->ptr[RARRAY(ary)->len++] 
-	= get_eval_string_core(val, Qtrue, RARRAY(args)->ptr[1]);
+        = get_eval_string_core(val, Qtrue, RARRAY(args)->ptr[1]);
 
     return ST_CHECK;
 }
@@ -543,9 +543,9 @@ hash2kv_enc(hash, ary, self)
     st_foreach(RHASH(hash)->tbl, push_kv_enc, args);
 
     if (NIL_P(ary)) {
-	return dst;
+        return dst;
     } else {
-	return rb_ary_concat(ary, dst);
+        return rb_ary_concat(ary, dst);
     }
 }
 
@@ -578,49 +578,49 @@ tk_hash_kv(argc, argv, self)
     enc_flag = Qnil;
     switch(argc) {
     case 3:
-	ary = argv[2];
+        ary = argv[2];
     case 2:
-	enc_flag = argv[1];
+        enc_flag = argv[1];
     case 1:
-	hash = argv[0];
-	break;
+        hash = argv[0];
+        break;
     case 0:
-	rb_raise(rb_eArgError, "too few arguments");
+        rb_raise(rb_eArgError, "too few arguments");
     default: /* >= 3 */
-	rb_raise(rb_eArgError, "too many arguments");
+        rb_raise(rb_eArgError, "too many arguments");
     }
 
     switch(TYPE(hash)) {
     case T_ARRAY:
-	if (RTEST(enc_flag)) {
-	    return assoc2kv_enc(hash, ary, self);
-	} else {
-	    return assoc2kv(hash, ary, self);
-	}
+        if (RTEST(enc_flag)) {
+            return assoc2kv_enc(hash, ary, self);
+        } else {
+            return assoc2kv(hash, ary, self);
+        }
 
     case T_HASH:
-	if (RTEST(enc_flag)) {
-	    return hash2kv_enc(hash, ary, self);
-	} else {
-	    return hash2kv(hash, ary, self);
-	}
+        if (RTEST(enc_flag)) {
+            return hash2kv_enc(hash, ary, self);
+        } else {
+            return hash2kv(hash, ary, self);
+        }
 
     case T_NIL:
-	if (NIL_P(ary)) {
-	    return rb_ary_new();
-	} else {
-	    return ary;
-	}
+        if (NIL_P(ary)) {
+            return rb_ary_new();
+        } else {
+            return ary;
+        }
 
     default:
-	if (hash == TK_None) {
-	    if (NIL_P(ary)) {
-		return rb_ary_new();
-	    } else {
-		return ary;
-	    }
-	}
-	rb_raise(rb_eArgError, "Hash is expected for 1st argument");
+        if (hash == TK_None) {
+            if (NIL_P(ary)) {
+                return rb_ary_new();
+            } else {
+                return ary;
+            }
+        }
+        rb_raise(rb_eArgError, "Hash is expected for 1st argument");
     }
 }
 
@@ -634,91 +634,91 @@ get_eval_string_core(obj, enc_flag, self)
     case T_FLOAT:
     case T_FIXNUM:
     case T_BIGNUM:
-	return rb_funcall(obj, ID_to_s, 0, 0);
+        return rb_funcall(obj, ID_to_s, 0, 0);
 
     case T_STRING:
-	if (RTEST(enc_flag)) {
-	    if (rb_respond_to(self, ID_toUTF8)) {
-		return rb_funcall(self, ID_toUTF8, 1, obj);
-	    } else {
-		return fromDefaultEnc_toUTF8(obj, self);
-	    }
-	} else {
-	    return obj;
-	}
+        if (RTEST(enc_flag)) {
+            if (rb_respond_to(self, ID_toUTF8)) {
+                return rb_funcall(self, ID_toUTF8, 1, obj);
+            } else {
+                return fromDefaultEnc_toUTF8(obj, self);
+            }
+        } else {
+            return obj;
+        }
 
     case T_SYMBOL:
-	if (RTEST(enc_flag)) {
-	    if (rb_respond_to(self, ID_toUTF8)) {
-		return rb_funcall(self, ID_toUTF8, 1, 
-				  rb_str_new2(rb_id2name(SYM2ID(obj))));
-	    } else {
-		return fromDefaultEnc_toUTF8(rb_str_new2(rb_id2name(SYM2ID(obj))), self);
-	    }
-	} else {
-	    return rb_str_new2(rb_id2name(SYM2ID(obj)));
-	}
+        if (RTEST(enc_flag)) {
+            if (rb_respond_to(self, ID_toUTF8)) {
+                return rb_funcall(self, ID_toUTF8, 1, 
+                                  rb_str_new2(rb_id2name(SYM2ID(obj))));
+            } else {
+                return fromDefaultEnc_toUTF8(rb_str_new2(rb_id2name(SYM2ID(obj))), self);
+            }
+        } else {
+            return rb_str_new2(rb_id2name(SYM2ID(obj)));
+        }
 
     case T_HASH:
-	if (RTEST(enc_flag)) {
-	    return hash2list_enc(obj, self);
-	} else {
-	    return hash2list(obj, self);
-	}
+        if (RTEST(enc_flag)) {
+            return hash2list_enc(obj, self);
+        } else {
+            return hash2list(obj, self);
+        }
 
     case T_ARRAY:
-	if (RTEST(enc_flag)) {
-	    return fromDefaultEnc_toUTF8(ary2list(obj, self), self);
-	} else {
-	    return ary2list(obj, self);
-	}
+        if (RTEST(enc_flag)) {
+            return fromDefaultEnc_toUTF8(ary2list(obj, self), self);
+        } else {
+            return ary2list(obj, self);
+        }
 
     case T_FALSE:
-	return rb_str_new2("0");
+        return rb_str_new2("0");
 
     case T_TRUE:
-	return rb_str_new2("1");
+        return rb_str_new2("1");
 
     case T_NIL:
-	return rb_str_new2("");
+        return rb_str_new2("");
 
     case T_REGEXP:
-	return rb_funcall(obj, ID_source, 0, 0);
+        return rb_funcall(obj, ID_source, 0, 0);
 
     default:
-	if (rb_obj_is_kind_of(obj, cTkObject)) {
-	    /* return rb_str_new3(rb_funcall(obj, ID_path, 0, 0)); */
-	    return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0), 
-					enc_flag, self);
-	}
+        if (rb_obj_is_kind_of(obj, cTkObject)) {
+            /* return rb_str_new3(rb_funcall(obj, ID_path, 0, 0)); */
+            return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0), 
+                                        enc_flag, self);
+        }
 
-	if (rb_obj_is_kind_of(obj, rb_cProc)
-	    || rb_obj_is_kind_of(obj, cMethod)
-	    || rb_obj_is_kind_of(obj, cTkCallbackEntry)) {
-	    if (rb_respond_to(self, ID_install_cmd)) {
-		return rb_funcall(self, ID_install_cmd, 1, obj);
-	    } else {
-		return tk_install_cmd_core(obj);
-	    }
-	}
+        if (rb_obj_is_kind_of(obj, rb_cProc)
+            || rb_obj_is_kind_of(obj, cMethod)
+            || rb_obj_is_kind_of(obj, cTkCallbackEntry)) {
+            if (rb_respond_to(self, ID_install_cmd)) {
+                return rb_funcall(self, ID_install_cmd, 1, obj);
+            } else {
+                return tk_install_cmd_core(obj);
+            }
+        }
 
-	if (obj == TK_None)  return Qnil;
+        if (obj == TK_None)  return Qnil;
 
-	if (rb_respond_to(obj, ID_to_eval)) {
-	    /* return rb_funcall(obj, ID_to_eval, 0, 0); */
-	    return get_eval_string_core(rb_funcall(obj, ID_to_eval, 0, 0), 
-					enc_flag, self);
-	} else if (rb_respond_to(obj, ID_path)) {
-	    /* return rb_funcall(obj, ID_path, 0, 0); */
-	    return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0), 
-					enc_flag, self);
-	} else if (rb_respond_to(obj, ID_to_s)) {
-	    return rb_funcall(obj, ID_to_s, 0, 0);
-	}
+        if (rb_respond_to(obj, ID_to_eval)) {
+            /* return rb_funcall(obj, ID_to_eval, 0, 0); */
+            return get_eval_string_core(rb_funcall(obj, ID_to_eval, 0, 0), 
+                                        enc_flag, self);
+        } else if (rb_respond_to(obj, ID_path)) {
+            /* return rb_funcall(obj, ID_path, 0, 0); */
+            return get_eval_string_core(rb_funcall(obj, ID_path, 0, 0), 
+                                        enc_flag, self);
+        } else if (rb_respond_to(obj, ID_to_s)) {
+            return rb_funcall(obj, ID_to_s, 0, 0);
+        }
     }
 
     rb_warning("fail to convert '%s' to string for Tk", 
-	       RSTRING(rb_funcall(obj, rb_intern("inspect"), 0, 0))->ptr);
+               RSTRING(rb_funcall(obj, rb_intern("inspect"), 0, 0))->ptr);
 
     return obj;
 }
@@ -732,7 +732,7 @@ tk_get_eval_string(argc, argv, self)
     volatile VALUE obj, enc_flag;
 
     if (rb_scan_args(argc, argv, "11", &obj, &enc_flag) == 1) {
-	enc_flag = Qnil;
+        enc_flag = Qnil;
     }
 
     return get_eval_string_core(obj, enc_flag, self);
@@ -744,9 +744,9 @@ tk_get_eval_enc_str(self, obj)
     VALUE obj;
 {
     if (obj == TK_None) {
-	return obj;
+        return obj;
     } else {
-	return get_eval_string_core(obj, Qtrue, self);
+        return get_eval_string_core(obj, Qtrue, self);
     }
 }
 
@@ -770,26 +770,26 @@ tk_conv_args(argc, argv, self)
       rb_raise(rb_eArgError, "too few arguments");
     }
     for(size = 0, idx = 2; idx < argc; idx++) {
-	if (TYPE(argv[idx]) == T_HASH) {
-	    size += 2 * RHASH(argv[idx])->tbl->num_entries;
-	} else {
-	    size++;
-	}
+        if (TYPE(argv[idx]) == T_HASH) {
+            size += 2 * RHASH(argv[idx])->tbl->num_entries;
+        } else {
+            size++;
+        }
     }
     /* dst = rb_ary_new2(argc - 2); */
     dst = rb_ary_new2(size);
     RARRAY(dst)->len = 0;
     for(idx = 2; idx < argc; idx++) {
-	if (TYPE(argv[idx]) == T_HASH) {
-	    if (RTEST(argv[1])) {
-		hash2kv_enc(argv[idx], dst, self);
-	    } else {
-		hash2kv(argv[idx], dst, self);
-	    }
-	} else if (argv[idx] != TK_None) {
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		= get_eval_string_core(argv[idx], argv[1], self);
-	}
+        if (TYPE(argv[idx]) == T_HASH) {
+            if (RTEST(argv[1])) {
+                hash2kv_enc(argv[idx], dst, self);
+            } else {
+                hash2kv(argv[idx], dst, self);
+            }
+        } else if (argv[idx] != TK_None) {
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                = get_eval_string_core(argv[idx], argv[1], self);
+        }
     }
 
     if (old_gc == Qfalse) rb_gc_enable();
@@ -807,15 +807,15 @@ tcl2rb_bool(self, value)
     VALUE value;
 {
     if (TYPE(value) == T_FIXNUM) {
-	if (NUM2INT(value) == 0) {
-	    return Qfalse;
-	} else {
-	    return Qtrue;
-	}
+        if (NUM2INT(value) == 0) {
+            return Qfalse;
+        } else {
+            return Qtrue;
+        }
     }
 
     if (TYPE(value) == T_TRUE || TYPE(value) == T_FALSE) {
-	return value;
+        return value;
     }
 
     rb_check_type(value, T_STRING);
@@ -823,13 +823,13 @@ tcl2rb_bool(self, value)
     value = rb_funcall(value, ID_downcase, 0);
 
     if (RSTRING(value)->ptr[0] == '\0'
-	|| strcmp(RSTRING(value)->ptr, "0") == 0
-	|| strcmp(RSTRING(value)->ptr, "no") == 0
-	|| strcmp(RSTRING(value)->ptr, "off") == 0
-	|| strcmp(RSTRING(value)->ptr, "false") == 0) {
-	return Qfalse;
+        || strcmp(RSTRING(value)->ptr, "0") == 0
+        || strcmp(RSTRING(value)->ptr, "no") == 0
+        || strcmp(RSTRING(value)->ptr, "off") == 0
+        || strcmp(RSTRING(value)->ptr, "false") == 0) {
+        return Qfalse;
     } else {
-	return Qtrue;
+        return Qtrue;
     }
 }
 
@@ -859,7 +859,7 @@ tkstr_invalid_numstr(value)
     VALUE value;
 {
     rb_raise(rb_eArgError, 
-	     "invalid value for Number: '%s'", RSTRING(value)->ptr);
+             "invalid value for Number: '%s'", RSTRING(value)->ptr);
     return Qnil; /*dummy*/
 }
 
@@ -868,8 +868,8 @@ tkstr_rescue_float(value)
     VALUE value;
 {
     return rb_rescue2(tkstr_to_float, value, 
-		      tkstr_invalid_numstr, value, 
-		      rb_eArgError, 0);
+                      tkstr_invalid_numstr, value, 
+                      rb_eArgError, 0);
 }
 
 static VALUE
@@ -879,8 +879,8 @@ tkstr_to_number(value)
     rb_check_type(value, T_STRING);
 
     return rb_rescue2(tkstr_to_int, value, 
-		      tkstr_rescue_float, value, 
-		      rb_eArgError, 0);
+                      tkstr_rescue_float, value, 
+                      rb_eArgError, 0);
 }
 
 static VALUE
@@ -902,7 +902,7 @@ tkstr_to_str(value)
     len = RSTRING(value)->len;
 
     if (len > 1 && *ptr == '{' && *(ptr + len - 1) == '}') {
-	return rb_str_new(ptr + 1, len - 2);
+        return rb_str_new(ptr + 1, len - 2);
     }
     return value;
 }
@@ -925,8 +925,8 @@ tcl2rb_num_or_str(self, value)
     rb_check_type(value, T_STRING);
 
     return rb_rescue2(tkstr_to_number, value, 
-		      tkstr_to_str, value, 
-		      rb_eArgError, 0);
+                      tkstr_to_str, value, 
+                      rb_eArgError, 0);
 }
 
 
@@ -952,10 +952,10 @@ subst_free(ptr)
     struct cbsubst_info *ptr;
 {
     if (ptr) {
-	if (ptr->key != (char*)NULL) free(ptr->key);
-	if (ptr->type != (char*)NULL) free(ptr->type);
-	if (ptr->ivar != (ID*)NULL) free(ptr->ivar);
-	free(ptr);
+        if (ptr->key != (char*)NULL) free(ptr->key);
+        if (ptr->type != (char*)NULL) free(ptr->type);
+        if (ptr->ivar != (ID*)NULL) free(ptr->ivar);
+        free(ptr);
     }
 }
 
@@ -983,7 +983,7 @@ cbsubst_init()
     inf->proc = proc;
 
     rb_const_set(cCB_SUBST, ID_SUBST_INFO, 
-		 Data_Wrap_Struct(cSUBST_INFO, subst_mark, subst_free, inf));
+                 Data_Wrap_Struct(cSUBST_INFO, subst_mark, subst_free, inf));
 }
 
 static VALUE
@@ -997,10 +997,10 @@ cbsubst_initialize(argc, argv, self)
     int idx;
 
     Data_Get_Struct(rb_const_get(rb_obj_class(self), ID_SUBST_INFO), 
-		    struct cbsubst_info, inf);
+                    struct cbsubst_info, inf);
 
     for(idx = 0; idx < argc; idx++) {
-	rb_ivar_set(self, inf->ivar[idx], argv[idx]);
+        rb_ivar_set(self, inf->ivar[idx], argv[idx]);
     }
 
     return self;
@@ -1032,12 +1032,12 @@ cbsubst_get_subst_key(self, str)
     buf = ALLOC_N(char, len + 1);
 
     for(i = 0; i < len; i++) {
-	ptr = RSTRING(RARRAY(list)->ptr[i])->ptr;
-	if (*ptr == '%' && *(ptr + 2) == '\0') {
-	    *(buf + i) = *(ptr + 1);
-	} else {
-	    *(buf + i) = ' ';
-	}
+        ptr = RSTRING(RARRAY(list)->ptr[i])->ptr;
+        if (*ptr == '%' && *(ptr + 2) == '\0') {
+            *(buf + i) = *(ptr + 1);
+        } else {
+            *(buf + i) = ' ';
+        }
     }
     *(buf + len) = '\0';
 
@@ -1056,15 +1056,15 @@ cbsubst_get_all_subst_keys(self)
     volatile VALUE ret;
 
     Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
-		    struct cbsubst_info, inf);
+                    struct cbsubst_info, inf);
 
     len = strlen(inf->key);
     buf = ALLOC_N(char, 3*len + 1);
     ptr = buf;
     for(i = 0; i < len; i++) {
-	*(ptr++) = '%';
-	*(ptr++) = *(inf->key + i);
-	*(ptr++) = ' ';
+        *(ptr++) = '%';
+        *(ptr++) = *(inf->key + i);
+        *(ptr++) = ' ';
     }
     *(buf + 3*len) = '\0';
 
@@ -1106,21 +1106,21 @@ cbsubst_table_setup(self, key_inf, proc_inf)
      *         ivar  ==> symbol
      */
     for(idx = 0; idx < len; idx++) {
-	inf = RARRAY(key_inf)->ptr[idx];
-	if (TYPE(inf) != T_ARRAY) continue;
-	*(key  + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[0]);
-	*(type + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[1]);
+        inf = RARRAY(key_inf)->ptr[idx];
+        if (TYPE(inf) != T_ARRAY) continue;
+        *(key  + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[0]);
+        *(type + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[1]);
 
-	*(ivar + real_len) 
-	    = rb_intern(
-		RSTRING(
-		  rb_str_cat2(rb_str_new2("@"), 
-			      rb_id2name(SYM2ID(RARRAY(inf)->ptr[2])))
-		)->ptr
-	      );
+        *(ivar + real_len) 
+            = rb_intern(
+                RSTRING(
+                  rb_str_cat2(rb_str_new2("@"), 
+                              rb_id2name(SYM2ID(RARRAY(inf)->ptr[2])))
+                )->ptr
+              );
 
-	rb_attr(self, SYM2ID(RARRAY(inf)->ptr[2]), 1, 0, Qtrue);
-	real_len++;
+        rb_attr(self, SYM2ID(RARRAY(inf)->ptr[2]), 1, 0, Qtrue);
+        real_len++;
     }
     *(key + real_len) = '\0';
     *(type + real_len) = '\0';
@@ -1133,14 +1133,14 @@ cbsubst_table_setup(self, key_inf, proc_inf)
      */
     len = RARRAY(proc_inf)->len;
     for(idx = 0; idx < len; idx++) {
-	inf = RARRAY(proc_inf)->ptr[idx];
-	if (TYPE(inf) != T_ARRAY) continue;
-	rb_hash_aset(proc, RARRAY(inf)->ptr[0], RARRAY(inf)->ptr[1]);
+        inf = RARRAY(proc_inf)->ptr[idx];
+        if (TYPE(inf) != T_ARRAY) continue;
+        rb_hash_aset(proc, RARRAY(inf)->ptr[0], RARRAY(inf)->ptr[1]);
     }
 
     rb_const_set(self, ID_SUBST_INFO, 
-		 Data_Wrap_Struct(cSUBST_INFO, subst_mark, 
-				  subst_free, subst_inf));
+                 Data_Wrap_Struct(cSUBST_INFO, subst_mark, 
+                                  subst_free, subst_inf));
 
     return self;
 }
@@ -1174,30 +1174,30 @@ cbsubst_scan_args(self, arg_key, val_ary)
     old_gc = rb_gc_disable();
 
     Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
-		    struct cbsubst_info, inf);
+                    struct cbsubst_info, inf);
 
     RARRAY(dst)->len = 0;
     for(idx = 0; idx < len; idx++) {
-	if (idx >= RSTRING(arg_key)->len) {
-	    proc = Qnil;
-	} else if (*(RSTRING(arg_key)->ptr + idx) == ' ') {
-	    proc = Qnil;
-	} else {
-	  ptr = strchr(inf->key, *(RSTRING(arg_key)->ptr + idx));
-	  if (ptr == (char*)NULL) {
-	    proc = Qnil;
-	  } else {
-	    c = *(inf->type + (ptr - inf->key));
-	    proc = rb_hash_aref(inf->proc, INT2FIX(c));
-	  }
-	}
+        if (idx >= RSTRING(arg_key)->len) {
+            proc = Qnil;
+        } else if (*(RSTRING(arg_key)->ptr + idx) == ' ') {
+            proc = Qnil;
+        } else {
+          ptr = strchr(inf->key, *(RSTRING(arg_key)->ptr + idx));
+          if (ptr == (char*)NULL) {
+            proc = Qnil;
+          } else {
+            c = *(inf->type + (ptr - inf->key));
+            proc = rb_hash_aref(inf->proc, INT2FIX(c));
+          }
+        }
 
-	if (NIL_P(proc)) {
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] = RARRAY(val_ary)->ptr[idx];
-	} else {
-	    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-		= rb_funcall(proc, ID_call, 1, RARRAY(val_ary)->ptr[idx]);
-	}
+        if (NIL_P(proc)) {
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = RARRAY(val_ary)->ptr[idx];
+        } else {
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
+                = rb_funcall(proc, ID_call, 1, RARRAY(val_ary)->ptr[idx]);
+        }
     }
 
     if (old_gc == Qfalse) rb_gc_enable();
@@ -1273,13 +1273,13 @@ Init_tkutil()
     rb_define_singleton_method(cCB_SUBST, "ret_val", cbsubst_ret_val, 1);
     rb_define_singleton_method(cCB_SUBST, "scan_args", cbsubst_scan_args, 2);
     rb_define_singleton_method(cCB_SUBST, "_get_subst_key", 
-			       cbsubst_get_subst_key,  1);
+                               cbsubst_get_subst_key,  1);
     rb_define_singleton_method(cCB_SUBST, "_get_all_subst_keys", 
-			       cbsubst_get_all_subst_keys,  0);
+                               cbsubst_get_all_subst_keys,  0);
     rb_define_singleton_method(cCB_SUBST, "_setup_subst_table", 
-			       cbsubst_table_setup, 2);
+                               cbsubst_table_setup, 2);
     rb_define_singleton_method(cCB_SUBST, "_get_extra_args_tbl", 
-			       cbsubst_get_extra_args_tbl,  0);
+                               cbsubst_get_extra_args_tbl,  0);
 
     rb_define_method(cCB_SUBST, "initialize", cbsubst_initialize, -1);
 
@@ -1326,9 +1326,9 @@ Init_tkutil()
     rb_define_singleton_method(mTK, "_symbolkey2str", tk_symbolkey2str, 1);
     rb_define_singleton_method(mTK, "hash_kv", tk_hash_kv, -1);
     rb_define_singleton_method(mTK, "_get_eval_string", 
-			       tk_get_eval_string, -1);
+                               tk_get_eval_string, -1);
     rb_define_singleton_method(mTK, "_get_eval_enc_str", 
-			       tk_get_eval_enc_str, 1);
+                               tk_get_eval_enc_str, 1);
 
     rb_define_singleton_method(mTK, "bool", tcl2rb_bool, 1);
     rb_define_singleton_method(mTK, "number", tcl2rb_number, 1);

@@ -19,8 +19,8 @@ $labelframe_demo = TkToplevel.new {|w|
 
 # Some information
 TkLabel.new($labelframe_demo, 
-	    :font=>$font, :wraplength=>'4i', :justify=>:left, 
-	    :text=><<EOL).pack(:side=>:top)
+            :font=>$font, :wraplength=>'4i', :justify=>:left, 
+            :text=><<EOL).pack(:side=>:top)
 TkLabelFrame ウィジェットは関連する widget 
 群をまとめて取り扱うために用いられます。ラ
 ベルは通常の文字列でも何らかのウィジェット
@@ -38,28 +38,28 @@ TkFrame.new($labelframe_demo){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
   TkButton.new(f, :text=>'閉じる', :width=>15, :command=>proc{
-		 $labelframe_demo.destroy
-		 $labelframe_demo = nil
-	       }).pack(:side=>:left, :expand=>true)
+                 $labelframe_demo.destroy
+                 $labelframe_demo = nil
+               }).pack(:side=>:left, :expand=>true)
 
   TkButton.new(f, :text=>'コード参照', :width=>15, :command=>proc{
-		 showCode 'labelframe'
-	       }).pack(:side=>:left, :expand=>true)
+                 showCode 'labelframe'
+               }).pack(:side=>:left, :expand=>true)
 }
 
 # Demo area
 w = TkFrame.new($labelframe_demo).pack(:side=>:bottom, :fill=>:both, 
-				       :expand=>true)
+                                       :expand=>true)
 
 # A group of radiobuttons in a labelframe
 TkLabelFrame.new(w, :text=>'選択値', 
-		 :padx=>2, :pady=>2) {|f|
+                 :padx=>2, :pady=>2) {|f|
   grid(:row=>0, :column=>0, :pady=>'2m', :padx=>'2m')
 
   v = TkVariable.new
   (1..4).each{|i|
     TkRadiobutton.new(f, :text=>"This is value #{i}", 
-		      :variable=>v, :value=>i) {
+                      :variable=>v, :value=>i) {
       pack(:side=>:top, :fill=>:x, :pady=>2)
     }
   }
@@ -82,7 +82,7 @@ end
 
 TkLabelFrame.new(w, :pady=>2, :padx=>2){|f|
   TkCheckButton.new(f, :widgetname=>'cb', :variable=>$lfdummy, 
-		    :text=>"オプションを使用", :padx=>0) {|cb|
+                    :text=>"オプションを使用", :padx=>0) {|cb|
     command proc{lfEnableButtons(f)}
     f.labelwidget(cb)
   }

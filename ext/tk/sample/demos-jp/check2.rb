@@ -33,35 +33,35 @@ sober  = TkVariable.new(0)
 # frame 生成
 TkFrame.new($check2_demo) {|frame|
   TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
-	 :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
+         :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x', 
-	 TkButton.new(frame, :text=>'変数参照', 
-		      :image=>$image['view'], :compound=>:left, 
-		      :command=>proc{
-			showVars($check2_demo, 
-				 ['safety', safety], ['wipers', wipers], 
-				 ['brakes', brakes], ['sober', sober])
-		      }), 
-	 TkButton.new(frame, :text=>'コード参照', 
-		      :image=>$image['view'], :compound=>:left, 
-		      :command=>proc{showCode 'check2'}), 
-	 TkButton.new(frame, :text=>'閉じる', 
-		      :image=>$image['delete'], :compound=>:left, 
-		      :command=>proc{
-			tmppath = $check2_demo
-			$check2_demo = nil
-			$showVarsWin[tmppath.path] = nil
-			tmppath.destroy
-		      }), 
-	 :padx=>4, :pady=>4)
+         TkButton.new(frame, :text=>'変数参照', 
+                      :image=>$image['view'], :compound=>:left, 
+                      :command=>proc{
+                        showVars($check2_demo, 
+                                 ['safety', safety], ['wipers', wipers], 
+                                 ['brakes', brakes], ['sober', sober])
+                      }), 
+         TkButton.new(frame, :text=>'コード参照', 
+                      :image=>$image['view'], :compound=>:left, 
+                      :command=>proc{showCode 'check2'}), 
+         TkButton.new(frame, :text=>'閉じる', 
+                      :image=>$image['delete'], :compound=>:left, 
+                      :command=>proc{
+                        tmppath = $check2_demo
+                        $check2_demo = nil
+                        $showVarsWin[tmppath.path] = nil
+                        tmppath.destroy
+                      }), 
+         :padx=>4, :pady=>4)
   frame.grid_columnconfigure(0, :weight=>1)
 }.pack('side'=>'bottom', 'fill'=>'x')
 
 
 # checkbutton 生成
 TkCheckButton.new($check2_demo, :text=>'安全性検査', :variable=>safety, 
-		  :relief=>:flat, :onvalue=>'all', :offvalue=>'none', 
-		  :tristatevalue=>'partial'){
+                  :relief=>:flat, :onvalue=>'all', :offvalue=>'none', 
+                  :tristatevalue=>'partial'){
   pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')
 }
 
@@ -82,21 +82,21 @@ tristate_check = proc{|n1,n2,op|
   begin
     if n1 == safety
       if safety == 'none'
-	wipers.value = 0
-	brakes.value = 0
-	sober.value  = 0
+        wipers.value = 0
+        brakes.value = 0
+        sober.value  = 0
       elsif safety == 'all'
-	wipers.value = 1
-	brakes.value = 1
-	sober.value  = 1
+        wipers.value = 1
+        brakes.value = 1
+        sober.value  = 1
       end
     else
       if wipers == 1 && brakes == 1 && sober == 1
-	safety.value = 'all'
+        safety.value = 'all'
       elsif wipers == 1 || brakes == 1 || sober == 1
-	safety.value = 'partial'
+        safety.value = 'partial'
       else
-	safety.value = 'none'
+        safety.value = 'none'
       end
     end
   ensure

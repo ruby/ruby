@@ -41,7 +41,7 @@ module TkOptionDB
   def read_entries(file, f_enc=nil)
     if TkCore::INTERP.safe?
       fail SecurityError, 
-	"can't call 'TkOptionDB.read_entries' on a safe interpreter"
+        "can't call 'TkOptionDB.read_entries' on a safe interpreter"
     end
 
     i_enc = Tk.encoding()
@@ -54,29 +54,29 @@ module TkOptionDB
     cline = ''
     open(file, 'r') {|f|
       while line = f.gets
-	#cline += line.chomp!
-	cline.concat(line.chomp!)
-	case cline
-	when /\\$/    # continue
-	  cline.chop!
-	  next
-	when /^\s*(!|#)/     # coment
-	  cline = ''
-	  next
-	when /^([^:]+):(.*)$/
-	  pat = $1.strip
-	  val = $2.lstrip
-	  p "ResourceDB: #{[pat, val].inspect}" if $DEBUG
-	  pat = TkCore::INTERP._toUTF8(pat, f_enc)
-	  pat = TkCore::INTERP._fromUTF8(pat, i_enc)
-	  val = TkCore::INTERP._toUTF8(val, f_enc)
-	  val = TkCore::INTERP._fromUTF8(val, i_enc)
-	  ent << [pat, val]
-	  cline = ''
-	else          # unknown --> ignore
-	  cline = ''
-	  next
-	end
+        #cline += line.chomp!
+        cline.concat(line.chomp!)
+        case cline
+        when /\\$/    # continue
+          cline.chop!
+          next
+        when /^\s*(!|#)/     # coment
+          cline = ''
+          next
+        when /^([^:]+):(.*)$/
+          pat = $1.strip
+          val = $2.lstrip
+          p "ResourceDB: #{[pat, val].inspect}" if $DEBUG
+          pat = TkCore::INTERP._toUTF8(pat, f_enc)
+          pat = TkCore::INTERP._fromUTF8(pat, i_enc)
+          val = TkCore::INTERP._toUTF8(val, f_enc)
+          val = TkCore::INTERP._fromUTF8(val, i_enc)
+          ent << [pat, val]
+          cline = ''
+        else          # unknown --> ignore
+          cline = ''
+          next
+        end
       end
     }
     ent
@@ -99,28 +99,28 @@ module TkOptionDB
     cline = ''
     open(file, 'r') {|f|
       while line = f.gets
-	cline += line.chomp!
-	case cline
-	when /\\$/    # continue
-	  cline.chop!
-	  next
-	when /^\s*!/     # coment
-	  cline = ''
-	  next
-	when /^([^:]+):\s(.*)$/
-	  pat = $1
-	  val = $2
-	  p "ResourceDB: #{[pat, val].inspect}" if $DEBUG
-	  pat = TkCore::INTERP._toUTF8(pat, f_enc)
-	  pat = TkCore::INTERP._fromUTF8(pat, i_enc)
-	  val = TkCore::INTERP._toUTF8(val, f_enc)
-	  val = TkCore::INTERP._fromUTF8(val, i_enc)
-	  add(pat, val, pri)
-	  cline = ''
-	else          # unknown --> ignore
-	  cline = ''
-	  next
-	end
+        cline += line.chomp!
+        case cline
+        when /\\$/    # continue
+          cline.chop!
+          next
+        when /^\s*!/     # coment
+          cline = ''
+          next
+        when /^([^:]+):\s(.*)$/
+          pat = $1
+          val = $2
+          p "ResourceDB: #{[pat, val].inspect}" if $DEBUG
+          pat = TkCore::INTERP._toUTF8(pat, f_enc)
+          pat = TkCore::INTERP._fromUTF8(pat, i_enc)
+          val = TkCore::INTERP._toUTF8(val, f_enc)
+          val = TkCore::INTERP._fromUTF8(val, i_enc)
+          add(pat, val, pri)
+          cline = ''
+        else          # unknown --> ignore
+          cline = ''
+          next
+        end
       end
     }
 =end
@@ -133,7 +133,7 @@ module TkOptionDB
   @@resource_proc_class.const_set(:CARRIER, '.'.freeze)
 
   @@resource_proc_class.instance_variable_set('@method_tbl', 
-					      TkCore::INTERP.create_table)
+                                              TkCore::INTERP.create_table)
   @@resource_proc_class.instance_variable_set('@add_method', false)
   @@resource_proc_class.instance_variable_set('@safe_mode', 4)
 
@@ -151,14 +151,14 @@ module TkOptionDB
     def __closed_block_check__(str)
       depth = 0
       str.scan(/[{}]/){|x|
-	if x == "{"
-	  depth += 1
-	elsif x == "}"
-	  depth -= 1
-	end
-	if depth <= 0 && !($' =~ /\A\s*\Z/)
-	  fail RuntimeError, "bad string for procedure : #{str.inspect}"
-	end
+        if x == "{"
+          depth += 1
+        elsif x == "}"
+          depth -= 1
+        end
+        if depth <= 0 && !($' =~ /\A\s*\Z/)
+          fail RuntimeError, "bad string for procedure : #{str.inspect}"
+        end
       }
       str
     end
@@ -184,20 +184,20 @@ module TkOptionDB
           raise NoMethodError, 
                 "not support resource-proc '#{id.id2name}' for #{self.name}"
         end
-	proc_str = proc_source
+        proc_str = proc_source
         proc_str = '{' + proc_str + '}' unless /\A\{.*\}\Z/ =~ proc_str
-	#proc_str = __closed_block_check__(proc_str)
+        #proc_str = __closed_block_check__(proc_str)
         proc_str = __check_proc_string__(proc_str)
         res_proc = proc{ 
-	  begin
-	    #eval("$SAFE = #{self::SAFE_MODE};\nProc.new" + proc_str)
-	    eval("$SAFE = #{@safe_mode};\nProc.new" + proc_str)
-	  rescue SyntaxError=>err
-	    raise SyntaxError, 
-	      TkCore::INTERP._toUTF8(err.message.gsub(/\(eval\):\d:/, 
-						      "(#{id.id2name}):"))
-	  end
-	}.call
+          begin
+            #eval("$SAFE = #{self::SAFE_MODE};\nProc.new" + proc_str)
+            eval("$SAFE = #{@safe_mode};\nProc.new" + proc_str)
+          rescue SyntaxError=>err
+            raise SyntaxError, 
+              TkCore::INTERP._toUTF8(err.message.gsub(/\(eval\):\d:/, 
+                                                      "(#{id.id2name}):"))
+          end
+        }.call
         #self::METHOD_TBL[id] = [res_proc, proc_source]
         @method_tbl[id] = [res_proc, proc_source]
       end
@@ -255,16 +255,16 @@ module TkOptionDB
     else
       klass = klass.to_s if klass.kind_of? Symbol
       unless (?A..?Z) === klass[0]
-	fail ArgumentError, "bad string '#{klass}' for class name"
+        fail ArgumentError, "bad string '#{klass}' for class name"
       end
       if parent == nil
-	install_win(nil)
+        install_win(nil)
       elsif parent.kind_of?(TkWindow)
-	install_win(parent.path)
+        install_win(parent.path)
       elsif parent <= @@resource_proc_class
-	install_win(parent::CARRIER)
+        install_win(parent::CARRIER)
       else
-	fail ArgumentError, "parent must be Resource-Proc class"
+        fail ArgumentError, "parent must be Resource-Proc class"
       end
       carrier = Tk.tk_call_without_enc('frame', @path, '-class', klass)
     end
@@ -304,16 +304,16 @@ module TkOptionDB
     class << klass
       def __null_method(*args); nil; end
       [ :class_eval, :name, :superclass, :clone, :dup, :autoload, :autoload?, 
-	:ancestors, :const_defined?, :const_get, :const_set, :const_missing, 
-	:class_variables, :constants, :included_modules, :instance_methods, 
-	:method_defined?, :module_eval, :private_instance_methods, 
-	:protected_instance_methods, :public_instance_methods, 
-	:singleton_methods, :remove_const, :remove_method, :undef_method, 
-	:to_s, :inspect, :display, :method, :methods, :respond_to?, 
+        :ancestors, :const_defined?, :const_get, :const_set, :const_missing, 
+        :class_variables, :constants, :included_modules, :instance_methods, 
+        :method_defined?, :module_eval, :private_instance_methods, 
+        :protected_instance_methods, :public_instance_methods, 
+        :singleton_methods, :remove_const, :remove_method, :undef_method, 
+        :to_s, :inspect, :display, :method, :methods, :respond_to?, 
         :instance_variable_get, :instance_variable_set, :instance_method, 
-	:instance_eval, :instance_variables, :kind_of?, :is_a?,
-	:private_methods, :protected_methods, :public_methods ].each{|m|
-	alias_method(m, :__null_method)
+        :instance_eval, :instance_variables, :kind_of?, :is_a?,
+        :private_methods, :protected_methods, :public_methods ].each{|m|
+        alias_method(m, :__null_method)
       }
     end
   end
@@ -351,7 +351,7 @@ module TkOptionDB
 
   def eval_under_random_base(parent = nil, &b)
     new_klass = __create_new_class(__get_random_basename(), 
-				   [], 4, false, parent)
+                                   [], 4, false, parent)
     ret = new_klass.class_eval(&b) if block_given?
     __remove_methods_of_proc_class(new_klass)
     new_klass.freeze

@@ -17,7 +17,7 @@ $clrpick_demo = TkToplevel.new {|w|
 
 # label 生成
 TkLabel.new($clrpick_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
-	    'text'=>"以下のボタンを押して、このウィンドウ上にあるウィジェットの前景色と背景色を選択して下さい。").pack('side'=>'top')
+            'text'=>"以下のボタンを押して、このウィンドウ上にあるウィジェットの前景色と背景色を選択して下さい。").pack('side'=>'top')
 
 # frame 生成
 TkFrame.new($clrpick_demo) {|frame|
@@ -40,7 +40,7 @@ TkFrame.new($clrpick_demo) {|frame|
 # button 生成
 TkButton.new($clrpick_demo, 'text'=>'背景色を設定 ...') {|b|
   command(proc{setColor $clrpick_demo, b, 'background', 
-	      ['background', 'highlightbackground']})
+              ['background', 'highlightbackground']})
   pack('side'=>'top', 'anchor'=>'c', 'pady'=>'2m')
 }
 
@@ -53,7 +53,7 @@ def setColor(w,button,name,options)
   w.grab
   initialColor = button[name]
   color = Tk.chooseColor('title'=>"Choose a #{name} color", 'parent'=>w, 
-			 'initialcolor'=>initialColor)
+                         'initialcolor'=>initialColor)
   if color != ""
     setColor_helper(w,options,color)
   end

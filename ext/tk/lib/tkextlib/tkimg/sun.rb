@@ -17,11 +17,11 @@ module Tk
   module Img
     module SUN
       def self.package_version
-	begin
-	  TkPackage.require('img::sun')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::sun')
+        rescue
+          ''
+        end
       end
     end
   end

@@ -19,7 +19,7 @@ module TkSelection
   def self.clear_on_display(win, sel=nil)
     if sel
       tk_call_without_enc('selection', 'clear', 
-			  '-displayof', win, '-selection', sel)
+                          '-displayof', win, '-selection', sel)
     else
       tk_call_without_enc('selection', 'clear', '-displayof', win)
     end
@@ -36,7 +36,7 @@ module TkSelection
   def self.get_on_display(win, keys=nil)
     #tk_call('selection', 'get', '-displayof', win, *hash_kv(keys))
     _fromUTF8(tk_call_without_enc('selection', 'get', '-displayof', 
-				  win, *hash_kv(keys)))
+                                  win, *hash_kv(keys)))
   end
   def get(keys=nil)
     TkSelection.get_on_display(self, sel)
@@ -66,7 +66,7 @@ module TkSelection
   def self.get_owner_on_display(win, sel=nil)
     if sel
       window(tk_call_without_enc('selection', 'own', 
-				 '-displayof', win, '-selection', sel))
+                                 '-displayof', win, '-selection', sel))
     else
       window(tk_call_without_enc('selection', 'own', '-displayof', win))
     end

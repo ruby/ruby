@@ -30,37 +30,37 @@ module DemoBasic
 
   def self._label(parent)
     lab = Tk::BWidget::Label.new(parent, :text=>'This is a Label widget', 
-				 :helptext=>'Label widget')
+                                 :helptext=>'Label widget')
     chk = TkCheckbutton.new(parent, :text=>'Disabled', 
-			    :variable=>@@var.ref(lab, 'state'), 
-			    :onvalue=>'disabled', :offvalue=>'normal', 
-			    :command=>proc{lab[:state] = @@var[lab, 'state']})
+                            :variable=>@@var.ref(lab, 'state'), 
+                            :onvalue=>'disabled', :offvalue=>'normal', 
+                            :command=>proc{lab[:state] = @@var[lab, 'state']})
     lab.pack(:anchor=>:w, :pady=>4)
     chk.pack(:anchor=>:w)
   end
 
   def self._entry(parent)
     ent = Tk::BWidget::Entry.new(parent, :text=>'Press enter', 
-				 :helptext=>'Entry widtet', 
-				 :command=>proc{
-				   @@var['entcmd'] = 'command called'
-				   Tk.after(500, proc{@@var['entcmd'] = ''})
-				 })
+                                 :helptext=>'Entry widtet', 
+                                 :command=>proc{
+                                   @@var['entcmd'] = 'command called'
+                                   Tk.after(500, proc{@@var['entcmd'] = ''})
+                                 })
 
     chk1 = TkCheckbutton.new(parent, :text=>'Disabled', 
-			     :variable=>@@var.ref(ent, 'state'), 
-			     :onvalue=>'disabled', :offvalue=>'normal', 
-			     :command=>proc{ent.state = @@var[ent, 'state']})
+                             :variable=>@@var.ref(ent, 'state'), 
+                             :onvalue=>'disabled', :offvalue=>'normal', 
+                             :command=>proc{ent.state = @@var[ent, 'state']})
 
     chk2 = TkCheckbutton.new(parent, :text=>'Non editable', 
-			     :variable=>@@var.ref(ent, 'editable'), 
-			     :onvalue=>false, :offvalue=>true, 
-			     :command=>proc{
-			       ent.editable = @@var[ent, 'editable']
-			     })
+                             :variable=>@@var.ref(ent, 'editable'), 
+                             :onvalue=>false, :offvalue=>true, 
+                             :command=>proc{
+                               ent.editable = @@var[ent, 'editable']
+                             })
 
     lab = TkLabel.new(parent, :textvariable=>@@var.ref('entcmd'), 
-		      :foreground=>'red')
+                      :foreground=>'red')
 
     ent.pack(:pady=>4, :anchor=>:w)
     Tk.pack(chk1, chk2, :anchor=>:w)
@@ -70,22 +70,22 @@ module DemoBasic
   def self._button(parent)
     frame = TkFrame.new(parent)
     but  = Tk::BWidget::Button.new(frame, :text=>'Press me!', 
-				   :repeatdelay=>300, 
-				   :command=>proc{_butcmd('command')}, 
-				   :helptext=>'This is a Button widget')
+                                   :repeatdelay=>300, 
+                                   :command=>proc{_butcmd('command')}, 
+                                   :helptext=>'This is a Button widget')
 
     sep1 = Tk::BWidget::Separator.new(frame, :orient=>:vertical)
     arr1 = Tk::BWidget::ArrowButton.new(frame, :type=>:button, 
-		:width=>25, :height=>25, :repeatdelay=>300, 
-		:command=>proc{_butcmd('command')}, 
-		:helptext=>"This is an ArrowButton widget\nof type button")
+                :width=>25, :height=>25, :repeatdelay=>300, 
+                :command=>proc{_butcmd('command')}, 
+                :helptext=>"This is an ArrowButton widget\nof type button")
 
     sep2 = Tk::BWidget::Separator.new(frame, :orient=>:vertical)
     arr2 = Tk::BWidget::ArrowButton.new(frame, :type=>:arrow, 
-		:width=>25, :height=>25, :relief=>:sunken, 
-		:ipadx=>0, :ipady=>0, :repeatdelay=>300, 
-		:command=>proc{_butcmd('command')}, 
-		:helptext=>"This is an ArrowButton widget\nof type arrow")
+                :width=>25, :height=>25, :relief=>:sunken, 
+                :ipadx=>0, :ipady=>0, :repeatdelay=>300, 
+                :command=>proc{_butcmd('command')}, 
+                :helptext=>"This is an ArrowButton widget\nof type arrow")
 
     but.pack(:side=>:left, :padx=>4)
     sep1.pack(:side=>:left, :padx=>4, :fill=>:y)
@@ -95,51 +95,51 @@ module DemoBasic
     frame.pack
 
     Tk::BWidget::Separator.new(parent, 
-			       :orient=>:horizontal).pack(:fill=>:x, :pady=>10)
+                               :orient=>:horizontal).pack(:fill=>:x, :pady=>10)
 
     labf1 = Tk::BWidget::LabelFrame.new(parent, :text=>'Command', 
-					:side=>:top, :anchor=>:w, 
-					:relief=>:sunken, :borderwidth=>1)
+                                        :side=>:top, :anchor=>:w, 
+                                        :relief=>:sunken, :borderwidth=>1)
     subf = labf1.get_frame
     chk1 = TkCheckbutton.new(subf, :text=>'Disabled', 
-			     :variable=>@@var.ref('bstate'), 
-			     :onvalue=>'disabled', :offvalue=>'normal', 
-			     :command=>proc{_bstate(@@var['bstate'], 
-						     but, arr1, arr2)})
+                             :variable=>@@var.ref('bstate'), 
+                             :onvalue=>'disabled', :offvalue=>'normal', 
+                             :command=>proc{_bstate(@@var['bstate'], 
+                                                     but, arr1, arr2)})
     chk2 = TkCheckbutton.new(subf, :text=>"Use armcommand/\ndisarmcommand", 
-			     :variable=>@@var.ref('barmcmd'), 
-			     :command=>proc{_barmcmd(@@var['barmcmd'], 
-						     but, arr1, arr2)})
+                             :variable=>@@var.ref('barmcmd'), 
+                             :command=>proc{_barmcmd(@@var['barmcmd'], 
+                                                     but, arr1, arr2)})
     Tk.pack(chk1, chk2, :anchor=>:w)
 
     label = TkLabel.new(parent, :textvariable=>@@var.ref('butcmd'), 
-			:foreground=>'red').pack(:side=>:bottom, :pady=>4)
+                        :foreground=>'red').pack(:side=>:bottom, :pady=>4)
 
     labf2 = Tk::BWidget::LabelFrame.new(parent, :text=>'Direction', 
-					:side=>:top, :anchor=>:w, 
-					:relief=>:sunken, :borderwidth=>1)
+                                        :side=>:top, :anchor=>:w, 
+                                        :relief=>:sunken, :borderwidth=>1)
     subf = labf2.get_frame
     @@var['bside'] = :top
     [:top, :left, :bottom, :right].each{|dir|
       TkRadiobutton.new(subf, :text=>"#{dir} arrow", 
-			:variable=>@@var.ref('bside'), :value=>dir, 
-			:command=>proc{_bside(@@var['bside'], arr1, arr2)}
-			).pack(:anchor=>:w)
+                        :variable=>@@var.ref('bside'), :value=>dir, 
+                        :command=>proc{_bside(@@var['bside'], arr1, arr2)}
+                        ).pack(:anchor=>:w)
     }
 
     labf3 = Tk::BWidget::LabelFrame.new(parent, :text=>'Relief', 
-					:side=>:top, :anchor=>:w, 
-					:relief=>:sunken, :borderwidth=>1)
+                                        :side=>:top, :anchor=>:w, 
+                                        :relief=>:sunken, :borderwidth=>1)
     subf = labf3.get_frame
     @@var['brelief'] = :raised
     [ %w(raised sunken ridge groove), %w(flat solid link)].each{|lrelief|
       f = TkFrame.new(subf)
       lrelief.each{|relief|
-	TkRadiobutton.new(f, :text=>relief, 
-			  :variable=>@@var.ref('brelief'), :value=>relief, 
-			  :command=>proc{
-			    _brelief(@@var['brelief'], but, arr1, arr2)
-			  }).pack(:anchor=>:w)
+        TkRadiobutton.new(f, :text=>relief, 
+                          :variable=>@@var.ref('brelief'), :value=>relief, 
+                          :command=>proc{
+                            _brelief(@@var['brelief'], but, arr1, arr2)
+                          }).pack(:anchor=>:w)
       }
       f.pack(:side=>:left, :padx=>2, :anchor=>:n)
     }
@@ -164,19 +164,19 @@ module DemoBasic
   def self._barmcmd(value, but, arr1, arr2)
     if TkComm.bool(value)
       but.configure(:armcommand=>proc{_butcmd('arm')}, 
-		    :disarmcommand=>proc{_butcmd('disarm')}, 
-		    :command=>'')
+                    :disarmcommand=>proc{_butcmd('disarm')}, 
+                    :command=>'')
       [arr1, arr2].each{|arr|
-	arr.configure(:armcommand=>proc{_butcmd('arm')}, 
-		      :disarmcommand=>proc{_butcmd('disarm')}, 
-		      :command=>'')
+        arr.configure(:armcommand=>proc{_butcmd('arm')}, 
+                      :disarmcommand=>proc{_butcmd('disarm')}, 
+                      :command=>'')
       }
     else
       but.configure(:armcommand=>'', :disarmcommand=>'', 
-		    :command=>proc{_butcmd('command')})
+                    :command=>proc{_butcmd('command')})
       [arr1, arr2].each{|arr|
-	arr.configure(:armcommand=>'', :disarmcommand=>'', 
-		      :command=>proc{_butcmd('command')})
+        arr.configure(:armcommand=>'', :disarmcommand=>'', 
+                      :command=>proc{_butcmd('command')})
       }
     end
   end

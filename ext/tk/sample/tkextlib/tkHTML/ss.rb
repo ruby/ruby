@@ -198,7 +198,7 @@ read_file = proc{|name|
     ret = nil
     fp = nil
     Tk.messageBox(:icon=>'error', :message=>"fail to open '#{name}'", 
-		  :type=>:ok)
+                  :type=>:ok)
   ensure
     fp.close if fp
   end
@@ -291,20 +291,20 @@ fullscreen = proc{
   width  =  root.winfo_screenwidth
   height =  root.winfo_screenheight
   fswin = TkToplevel.new(:overrideredirect=>true, 
-			 :geometry=>"#{width}x#{height}+0+0")
+                         :geometry=>"#{width}x#{height}+0+0")
 
   html_fs = Tk::HTML_Widget.new(fswin, :padx=>5, :pady=>9, 
-				:formcommand=>form_cmd, 
-				:imagecommand=>proc{image_cmd.call(0)}, 
-				:scriptcommand=>script_cmd, 
-				:appletcommand=>applet_cmd, 
-				:hyperlinkcommand=>hyper_cmd, 
-				:bg=>'white', :tablerelief=>:raised, 
-				:appletcommand=>proc{|*args|
-				  run_applet('big', *args)
-				}, 
-				:fontcommand=>pick_font_fs, 
-				:cursor=>:tcross) {
+                                :formcommand=>form_cmd, 
+                                :imagecommand=>proc{image_cmd.call(0)}, 
+                                :scriptcommand=>script_cmd, 
+                                :appletcommand=>applet_cmd, 
+                                :hyperlinkcommand=>hyper_cmd, 
+                                :bg=>'white', :tablerelief=>:raised, 
+                                :appletcommand=>proc{|*args|
+                                  run_applet('big', *args)
+                                }, 
+                                :fontcommand=>pick_font_fs, 
+                                :cursor=>:tcross) {
     pack(:fill=>:both, :expand=>true)
     token_handler('meta', proc{|*args| meta.call(self, *args)})
   }
@@ -361,19 +361,19 @@ menu_spec = [
 mbar = root.add_menubar(menu_spec)
 
 html = Tk::HTML_Widget.new(:width=>512, :height=>384, 
-			   :padx=>5, :pady=>9, 
-			   :formcommand=>form_cmd, 
-			   :imagecommand=>proc{|*args| 
-			     image_cmd.call(1, *args)
-			   }, 
-			   :scriptcommand=>script_cmd, 
-			   :appletcommand=>applet_cmd, 
-			   :hyperlinkcommand=>hyper_cmd, 
-			   :fontcommand=>pick_font, 
-			   :appletcommand=>proc{|*args|
-			     run_applet.call('small', *args)
-			   }, 
-			   :bg=>'white', :tablerelief=>:raised)
+                           :padx=>5, :pady=>9, 
+                           :formcommand=>form_cmd, 
+                           :imagecommand=>proc{|*args| 
+                             image_cmd.call(1, *args)
+                           }, 
+                           :scriptcommand=>script_cmd, 
+                           :appletcommand=>applet_cmd, 
+                           :hyperlinkcommand=>hyper_cmd, 
+                           :fontcommand=>pick_font, 
+                           :appletcommand=>proc{|*args|
+                             run_applet.call('small', *args)
+                           }, 
+                           :bg=>'white', :tablerelief=>:raised)
 
 html.token_handler('meta', proc{|*args| meta.call(html, *args)})
 

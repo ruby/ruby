@@ -58,7 +58,7 @@ class Tk::Vu::Dial < TkWindow
       ret = []
       lst = simplelist(tk_call(@path, 'label'))
       while lst.size > 0
-	ret << ([num_or_str(lst.shift)] << lst.shift)
+        ret << ([num_or_str(lst.shift)] << lst.shift)
       end
     end
   end
@@ -80,7 +80,7 @@ class Tk::Vu::Dial < TkWindow
       ret = []
       lst = simplelist(tk_call(@path, 'tag'))
       while lst.size > 0
-	ret << ([num_or_str(lst.shift)] << lst.shift)
+        ret << ([num_or_str(lst.shift)] << lst.shift)
       end
     end
   end

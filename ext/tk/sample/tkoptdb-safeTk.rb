@@ -19,12 +19,12 @@ EOM
 if ENV['LANG'] =~ /^ja/
   # read Japanese resource
   ent = TkOptionDB.read_entries(File.expand_path('resource.ja', 
-						 File.dirname(__FILE__)),
-				'euc-jp')
+                                                 File.dirname(__FILE__)),
+                                'euc-jp')
 else
   # read English resource
   ent = TkOptionDB.read_entries(File.expand_path('resource.en', 
-						File.dirname(__FILE__)))
+                                                File.dirname(__FILE__)))
 end
 
 file = File.expand_path('tkoptdb.rb', File.dirname(__FILE__))

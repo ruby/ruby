@@ -24,16 +24,16 @@ cols = 20
 lbl = TkLabel.new(:text=>"TkTable v2 Example")
 
 table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary, 
-			:width=>6, :height=>6, 
-			:titlerows=>1, :titlecols=>2, 
-			:roworigin=>-5, :colorigin=>-2, 
-			:coltagcommand=>proc{|col|
-			  col = Integer(col)
-			  return 'OddCol' if col>0 && col%2 == 1
-			}, 
-			:selectmode=>:extended, :flashmode=>true, 
-			:rowstretch=>:unset, :colstretch=>:unset,
-			:selecttitles=>false, :drawmode=>:single)
+                        :width=>6, :height=>6, 
+                        :titlerows=>1, :titlecols=>2, 
+                        :roworigin=>-5, :colorigin=>-2, 
+                        :coltagcommand=>proc{|col|
+                          col = Integer(col)
+                          return 'OddCol' if col>0 && col%2 == 1
+                        }, 
+                        :selectmode=>:extended, :flashmode=>true, 
+                        :rowstretch=>:unset, :colstretch=>:unset,
+                        :selecttitles=>false, :drawmode=>:single)
 
 sx = table.xscrollbar(TkScrollbar.new)
 sy = table.yscrollbar(TkScrollbar.new)
@@ -68,8 +68,8 @@ table.tag_cell('dis', [2,1], [1,-1], [3,0])
 table.set_width([-2,8], [-1,9], [0, 12], [4, 14])
 
 table.set([1,1], "multi-line\ntext\nmight be\ninteresting", 
-	  [3,2], "more\nmulti-line\nplaying\n", 
-	  [2,2], "null\0byte")
+          [3,2], "more\nmulti-line\nplaying\n", 
+          [2,2], "null\0byte")
 
 # This is in the row span
 l = TkLabel.new(table, :text=>'Window s', :bg=>'yellow')

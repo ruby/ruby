@@ -17,11 +17,11 @@ module Tk
   module Img
     module ICO
       def self.package_version
-	begin
-	  TkPackage.require('img::ico')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::ico')
+        rescue
+          ''
+        end
       end
     end
   end

@@ -24,9 +24,9 @@ module Tk
 
     def self.package_version
       begin
-	TkPackage.require('Itcl')
+        TkPackage.require('Itcl')
       rescue
-	''
+        ''
       end
     end
 
@@ -39,59 +39,59 @@ module Tk
       ITCL_OBJ_TBL = {}.taint
 
       def initialize(*args)
-	if (@klass = self.class::ITCL_CLASSNAME).empty?
-	  fail RuntimeError, 'unknown itcl class (abstract class?)'
-	end
-	@id = Tk::Itcl::ItclObject::TCL_OBJ_ID.join(TkCore::INTERP._ip_id_)
-	@path = @id
-	Tk::Itcl::ItclObject::ITCL_OBJ_ID[1].succ!
+        if (@klass = self.class::ITCL_CLASSNAME).empty?
+          fail RuntimeError, 'unknown itcl class (abstract class?)'
+        end
+        @id = Tk::Itcl::ItclObject::TCL_OBJ_ID.join(TkCore::INTERP._ip_id_)
+        @path = @id
+        Tk::Itcl::ItclObject::ITCL_OBJ_ID[1].succ!
       end
 
       def self.call_proc(name, *args)
-	tk_call("#{ITCL_CLASSNAME}::#{cmd}", *args)
+        tk_call("#{ITCL_CLASSNAME}::#{cmd}", *args)
       end
 
       def call_method(name, *args)
-	tk_call(@path, name, *args)
+        tk_call(@path, name, *args)
       end
 
       def isa(klass)
-	bool(tk_call(@path, 'isa', klass))
+        bool(tk_call(@path, 'isa', klass))
       end
       alias itcl_kind_of? isa
 
       def info_class
-	tk_call(@path, 'info', 'class')
+        tk_call(@path, 'info', 'class')
       end
 
       def info_inherit
-	simplelist(tk_call(@path, 'info', 'inherit'))
+        simplelist(tk_call(@path, 'info', 'inherit'))
       end
 
       def info_heritage
-	list(tk_call(@path, 'info', 'heritage'))
+        list(tk_call(@path, 'info', 'heritage'))
       end
 
       def info_function(*args)
-	if args[-1].kind_of?(Array)
-	  params = args.pop
-	  params.each{|param|
-	    param = param.to_s
-	    args << ( (param[0] == ?-)? param: "-#{param}" )
-	  }
-	end
-	list(tk_call(@path, 'info', 'function', *args))
+        if args[-1].kind_of?(Array)
+          params = args.pop
+          params.each{|param|
+            param = param.to_s
+            args << ( (param[0] == ?-)? param: "-#{param}" )
+          }
+        end
+        list(tk_call(@path, 'info', 'function', *args))
       end
 
       def info_variable(*args)
-	if args[-1].kind_of?(Array)
-	  params = args.pop
-	  params.each{|param|
-	    param = param.to_s
-	    args << ( (param[0] == ?-)? param: "-#{param}" )
-	  }
-	end
-	list(tk_call(@path, 'info', 'variable', *args))
+        if args[-1].kind_of?(Array)
+          params = args.pop
+          params.each{|param|
+            param = param.to_s
+            args << ( (param[0] == ?-)? param: "-#{param}" )
+          }
+        end
+        list(tk_call(@path, 'info', 'variable', *args))
       end
     end
 

@@ -9,6 +9,6 @@ ds.add('Cancel', :text=>'Cancel', :command=>proc{puts 'Cancel'; ds.deactivate})
 ds.default('OK')
 
 TkButton.new(:text=>'ACTIVATE', :padx=>7, :pady=>7, 
-	     :command=>proc{puts ds.activate}).pack(:padx=>10, :pady=>10)
+             :command=>proc{puts ds.activate}).pack(:padx=>10, :pady=>10)
 
 Tk.mainloop

@@ -62,13 +62,13 @@ TkText.new($style_demo){|t|
 #    unless $style_demo_do_first
 #      $style_demo_do_first = true
 #      Tk.tk_call('font', 'create', '@bigascii', 
-#		 '-copy', '-*-Courier-Bold-R-Normal--*-140-*-*-*-*-*-*')
+#                '-copy', '-*-Courier-Bold-R-Normal--*-140-*-*-*-*-*-*')
 #      Tk.tk_call('font', 'create', '@smallascii', 
-#		 '-copy', '-Adobe-Helvetica-Bold-R-Normal-*-100-*')
+#                '-copy', '-Adobe-Helvetica-Bold-R-Normal-*-100-*')
 #      Tk.tk_call('font', 'create', '@cBigFont', 
-#		 '-compound', '@bigascii @msg_knj')
+#                '-compound', '@bigascii @msg_knj')
 #      Tk.tk_call('font', 'create', '@cSmallFont', 
-#		 '-compound', '@smallascii @kanji')
+#                '-compound', '@smallascii @kanji')
 #    end
 #    style_tag_big = TkTextTag.new(t, 'font'=>'@cBigFont')
 #    style_tag_small = TkTextTag.new(t, 'font'=>'@cSmallFont')
@@ -82,24 +82,24 @@ TkText.new($style_demo){|t|
     style_tag_sunken = TkTextTag.new(t, 'relief'=>'sunken', 'borderwidth'=>1)
   else
     style_tag_color1 = TkTextTag.new(t, 'background'=>'black', 
-				     'foreground'=>'white')
+                                     'foreground'=>'white')
     style_tag_color2 = TkTextTag.new(t, 'background'=>'black', 
-				     'foreground'=>'white')
+                                     'foreground'=>'white')
     style_tag_raised = TkTextTag.new(t, 'background'=>'white', 
-				     'relief'=>'raised', 'borderwidth'=>1)
+                                     'relief'=>'raised', 'borderwidth'=>1)
     style_tag_sunken = TkTextTag.new(t, 'background'=>'white', 
-				     'relief'=>'sunken', 'borderwidth'=>1)
+                                     'relief'=>'sunken', 'borderwidth'=>1)
   end
 
   # テキストタグ設定 (その他)
   if $tk_version =~ /^4\.[01]/
     style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black', 
-					'borderwidth'=>0, 
-					'bgstipple'=>'gray25')
+                                        'borderwidth'=>0, 
+                                        'bgstipple'=>'gray25')
   else
     style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black', 
-					'borderwidth'=>0, 
-					'bgstipple'=>'gray12')
+                                        'borderwidth'=>0, 
+                                        'bgstipple'=>'gray12')
   end
   style_tag_fgstipple = TkTextTag.new(t, 'fgstipple'=>'gray50')
   style_tag_underline = TkTextTag.new(t, 'underline'=>'on')
@@ -109,10 +109,10 @@ TkText.new($style_demo){|t|
   style_tag_super = TkTextTag.new(t, 'offset'=>'4p', 'font'=>'-Adobe-Courier-Medium-R-Normal--*-100-*-*-*-*-*-*')
   style_tag_sub = TkTextTag.new(t, 'offset'=>'-2p', 'font'=>'-Adobe-Courier-Medium-R-Normal--*-100-*-*-*-*-*-*')
   style_tag_margins = TkTextTag.new(t, 'lmargin1'=>'12m', 'lmargin2'=>'6m',
-				    'rmargin'=>'10m')
+                                    'rmargin'=>'10m')
   style_tag_spacing = TkTextTag.new(t, 'spacing1'=>'10p', 'spacing2'=>'2p',
-				    'lmargin1'=>'12m', 'lmargin2'=>'6m',
-				    'rmargin'=>'10m')
+                                    'lmargin1'=>'12m', 'lmargin2'=>'6m',
+                                    'rmargin'=>'10m')
 
   # テキスト挿入
   insert('end', 'このようにテキスト widget は情報を様々なスタイルで表示すること
@@ -198,9 +198,9 @@ X')
   insert('end', 'テキストの左側に余分な空白を置くことができます:
 ')
   insert('end', 'この段落はマージンの使用例です。スクリーン', 
-	 style_tag_margins)
+         style_tag_margins)
   insert('end', '上で折り返されて表示されている1行のテキストです。', 
-	 style_tag_margins)
+         style_tag_margins)
   insert('end', '左側には2種類のマージンを持ちます。', style_tag_margins)
   insert('end', '1行目に対するものと、', style_tag_margins)
   insert('end', '2行目以降の連続したマージン', style_tag_margins)
@@ -222,9 +222,9 @@ spacing3')
 くかを示します。
 ')
   insert('end', 'これらのインデントされた段落はどのように', 
-	 style_tag_spacing)
+         style_tag_spacing)
   insert('end', 'スペーシングがが行われるのかを示します。', 
-	 style_tag_spacing)
+         style_tag_spacing)
   insert('end', '各段落は実際はテキストwidget', style_tag_spacing)
   insert('end', 'の1行で、widgetによって折り畳まれています。
 ', style_tag_spacing)
@@ -234,11 +234,11 @@ spacing3')
   insert('end', '存在しています。', style_tag_spacing)
   insert('end', 'Spacing2は2pointに設定されています。', style_tag_spacing)
   insert('end', 'これで段落の中にほんの少し間隔が存在しています。', 
-	 style_tag_spacing)
+         style_tag_spacing)
   insert('end', 'Spacing3はこの例では使用されていません。
 ', style_tag_spacing)
   insert('end', '間隔がどこにあるかを見たければ、これらの段落の', 
-	 style_tag_spacing)
+         style_tag_spacing)
   insert('end', 'なかでテキストを選択してください。選択の', style_tag_spacing)
   insert('end', '反転した部分には余分にとられた間隔が', style_tag_spacing)
   insert('end', '含まれています。

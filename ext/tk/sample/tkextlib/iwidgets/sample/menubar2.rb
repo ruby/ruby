@@ -9,10 +9,10 @@ mb = Tk::Iwidgets::Menubar.new
 mb.menubuttons = [
   [:menubutton, 'file', {
       :text=>'File', :menu=>[
-	[:command,   'new',   {:label=>'New'}], 
-	[:command,   'close', {:label=>'Close'}], 
-	[:separator, 'sep1'], 
-	[:command,   'quit',  {:label=>'Quit'}]
+        [:command,   'new',   {:label=>'New'}], 
+        [:command,   'close', {:label=>'Close'}], 
+        [:separator, 'sep1'], 
+        [:command,   'quit',  {:label=>'Quit'}]
       ]
     }
   ], 
@@ -26,17 +26,17 @@ mb.add(:command, '.edit.copy',  :label=>'Copy',  :underline=>1)
 mb.add(:command, '.edit.paste', :label=>'Paste', :underline=>0)
 
 mb.add(:menubutton, '.options', :text=>'Options', :menu=>[
-	 [:radiobutton, 'byName', {
-	     :variable=>viewmode, :value=>'NAME', :label=>'by Name'}
-	 ], 
-	 [:radiobutton, 'byDate', {
-	     :variable=>viewmode, :value=>'DATE', :label=>'by Date'}
-	 ]
+         [:radiobutton, 'byName', {
+             :variable=>viewmode, :value=>'NAME', :label=>'by Name'}
+         ], 
+         [:radiobutton, 'byDate', {
+             :variable=>viewmode, :value=>'DATE', :label=>'by Date'}
+         ]
        ])
 
 mb.add(:cascade, '.options.prefs', :label=>'Preferences', :menu=>[
-	 [:command, 'colors', {:label=>'Colors...'}], 
-	 [:command, 'fonts',  {:label=>'Fonts...'}]
+         [:command, 'colors', {:label=>'Colors...'}], 
+         [:command, 'fonts',  {:label=>'Fonts...'}]
        ])
 
 mb.pack(:side=>:left, :anchor=>:nw, :fill=>:x, :expand=>true)

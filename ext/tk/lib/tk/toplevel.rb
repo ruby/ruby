@@ -51,19 +51,19 @@ class TkToplevel<TkWindow
     wm_cmds = {}
     keys.each{|k,v|
       if Wm.method_defined?(k)
-	case k
-	when 'screen','class','colormap','container','use','visual'
-	  new_keys[k] = v
-	else
-	  case self.method(k).arity
-	  when -1,1
-	    wm_cmds[k] = v
-	  else
-	    new_keys[k] = v
-	  end
-	end
+        case k
+        when 'screen','class','colormap','container','use','visual'
+          new_keys[k] = v
+        else
+          case self.method(k).arity
+          when -1,1
+            wm_cmds[k] = v
+          else
+            new_keys[k] = v
+          end
+        end
       else
-	new_keys[k] = v
+        new_keys[k] = v
       end
     }
     [new_keys, wm_cmds]
@@ -79,7 +79,7 @@ class TkToplevel<TkWindow
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
       if keys.key?('classname')
-	keys['class'] = keys.delete('classname')
+        keys['class'] = keys.delete('classname')
       end
       @classname = keys['class']
       @colormap  = keys['colormap']
@@ -88,25 +88,25 @@ class TkToplevel<TkWindow
       @use       = keys['use']
       @visual    = keys['visual']
       if !@classname && my_class_name
-	keys['class'] = @classname = my_class_name 
+        keys['class'] = @classname = my_class_name 
       end
       if @classname.kind_of? TkBindTag
-	@db_class = @classname
-	@classname = @classname.id
+        @db_class = @classname
+        @classname = @classname.id
       elsif @classname
-	@db_class = TkDatabaseClass.new(@classname)
+        @db_class = TkDatabaseClass.new(@classname)
       else
-	@db_class = self.class
-	@classname = @db_class::WidgetClassName
+        @db_class = self.class
+        @classname = @db_class::WidgetClassName
       end
       keys, cmds = _wm_command_option_chk(keys)
       super(keys)
       cmds.each{|k,v| 
-	if v.kind_of? Array
-	  self.__send__(k,*v)
-	else
-	  self.__send__(k,v)
-	end
+        if v.kind_of? Array
+          self.__send__(k,*v)
+        else
+          self.__send__(k,v)
+        end
       }
       return
     end
@@ -116,15 +116,15 @@ class TkToplevel<TkWindow
     else
       @screen = screen
       if classname.kind_of? Hash
-	keys = classname
+        keys = classname
       else
-	@classname = classname
+        @classname = classname
       end
     end
     if keys.kind_of? Hash
       keys = _symbolkey2str(keys)
       if keys.key?('classname')
-	keys['class'] = keys.delete('classname')
+        keys['class'] = keys.delete('classname')
       end
       @classname = keys['class']  unless @classname
       @colormap  = keys['colormap']
@@ -151,9 +151,9 @@ class TkToplevel<TkWindow
     super(parent, keys)
     cmds.each{|k,v| 
       if v.kind_of? Array
-	self.send(k,*v)
+        self.send(k,*v)
       else
-	self.send(k,v)
+        self.send(k,v)
       end
     }
   end

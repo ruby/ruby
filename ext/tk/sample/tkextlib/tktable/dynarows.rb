@@ -25,21 +25,21 @@ def table_validate(w, idx)
     time = Tk.tk_call('clock', 'scan', val)
     date = []
     Tk.tk_call('clock', 'format', time, 
-	       :format=>'%m %d %Y').split(' ').each{|item|
+               :format=>'%m %d %Y').split(' ').each{|item|
       date << item.sub(/^\s*0*/,'')
     }
     w.set(idx, date.join('/'))
     if row == nrows - 1
       if w.get([row,1]) != '' && w.get([row,2]) != ''
-	w.tag_row_reset(row)
-	w.set([row,0], row)
-	nrows += 1
-	row += 1
-	w.configure(:rows=>nrows)
-	w.tag_row('unset', row)
-	w.set([row,0], '*')
-	w.see([row,1])
-	w.activate([row,1])
+        w.tag_row_reset(row)
+        w.set([row,0], row)
+        nrows += 1
+        row += 1
+        w.configure(:rows=>nrows)
+        w.tag_row('unset', row)
+        w.set([row,0], '*')
+        w.see([row,1])
+        w.activate([row,1])
       end
     end
   rescue
@@ -55,13 +55,13 @@ end
 lbl = TkLabel.new(:text=>"Dynamic Date Validated Rows")
 
 table = Tk::TkTable.new(:rows=>2, :cols=>3, :cache=>1, :selecttype=>:row, 
-			:titlerows=>1, :titlecols=>1, :height=>5, 
-			:colstretch=>:unset, :rowstretch=>:unset, 
-			:autoclear=>true, 
-			:browsecommand=>[
-			  proc{|w,s| table_validate(w, s)}, 
-			  '%W %s'
-			])
+                        :titlerows=>1, :titlecols=>1, :height=>5, 
+                        :colstretch=>:unset, :rowstretch=>:unset, 
+                        :autoclear=>true, 
+                        :browsecommand=>[
+                          proc{|w,s| table_validate(w, s)}, 
+                          '%W %s'
+                        ])
 table.set([0,1], 'Begin', [0,2], 'End', [1,0], '*')
 table.tag_configure('unset', :fg=>'#008811')
 table.tag_configure('title', :fg=>'red')

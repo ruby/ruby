@@ -18,10 +18,10 @@
 #     ['Paste', proc{puts('Paste clicked')}, 0]]
 # ]
 # menubar = TkMenubar.new(nil, menu_spec,
-# 			'tearoff'=>false,
-# 			'foreground'=>'grey40',
-# 			'activeforeground'=>'red',
-# 			'font'=>'-adobe-helvetica-bold-r-*--12-*-iso8859-1')
+#                       'tearoff'=>false,
+#                       'foreground'=>'grey40',
+#                       'activeforeground'=>'red',
+#                       'font'=>'-adobe-helvetica-bold-r-*--12-*-iso8859-1')
 # menubar.pack('side'=>'top', 'fill'=>'x')
 #
 #
@@ -30,13 +30,13 @@
 #
 # menubar = TkMenubar.new
 # menubar.add_menu([['File', 0],
-# 		   ['Open', proc{puts('Open clicked')}, 0],
-# 		   '---',
-# 		   ['Quit', proc{exit}, 0]])
+#                  ['Open', proc{puts('Open clicked')}, 0],
+#                  '---',
+#                  ['Quit', proc{exit}, 0]])
 # menubar.add_menu([['Edit', 0],
-# 		   ['Cut', proc{puts('Cut clicked')}, 2],
-# 		   ['Copy', proc{puts('Copy clicked')}, 0],
-# 		   ['Paste', proc{puts('Paste clicked')}, 0]])
+#                  ['Cut', proc{puts('Cut clicked')}, 2],
+#                  ['Copy', proc{puts('Copy clicked')}, 0],
+#                  ['Paste', proc{puts('Paste clicked')}, 0]])
 # menubar.configure('tearoff', false)
 # menubar.configure('foreground', 'grey40')
 # menubar.configure('activeforeground', 'red')

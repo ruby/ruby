@@ -81,7 +81,7 @@ class Tk::Iwidgets::Toolbar
       tag = Tk::Itk::Component.new(self)
     end
     window(tk_call(@path, 'insert', index(idx), type, 
-		   tagid(tag), *hash_kv(keys)))
+                   tagid(tag), *hash_kv(keys)))
     tag
   end
 end

@@ -13,27 +13,27 @@ module Tk
   module Tcllib
     module Cursor
       def self.package_version
-	begin
-	  TkPackage.require('cursor')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('cursor')
+        rescue
+          ''
+        end
       end
 
       def self.not_available
-	fail RuntimeError, "'tkextlib/tcllib/cursor' extension is not available on your current environment."
+        fail RuntimeError, "'tkextlib/tcllib/cursor' extension is not available on your current environment."
       end
 
       def self.cursor_display(win=None)
-	Tk::Tcllib::Cursor.not_available
+        Tk::Tcllib::Cursor.not_available
       end
 
       def self.cursor_propagate(win, cursor)
-	Tk::Tcllib::Cursor.not_available
+        Tk::Tcllib::Cursor.not_available
       end
 
       def self.cursor_restore(win, cursor = None)
-	Tk::Tcllib::Cursor.not_available
+        Tk::Tcllib::Cursor.not_available
       end
     end
   end
@@ -74,15 +74,15 @@ module Tk
 
     module Cursor
       def self.cursor_display(win=None)
-	tk_call_without_enc('::cursor::display', win)
+        tk_call_without_enc('::cursor::display', win)
       end
 
       def self.cursor_propagate(win, cursor)
-	tk_call_without_enc('::cursor::propagate', win.path, cursor)
+        tk_call_without_enc('::cursor::propagate', win.path, cursor)
       end
 
       def self.cursor_restore(win, cursor = None)
-	tk_call_without_enc('::cursor::restore', win.path, cursor)
+        tk_call_without_enc('::cursor::restore', win.path, cursor)
       end
     end
   end

@@ -19,9 +19,9 @@ module Tk
   class TkTable < TkWindow
     def self.package_version
       begin
-	TkPackage.require('Tktable')
+        TkPackage.require('Tktable')
       rescue
-	''
+        ''
       end
     end
 
@@ -200,28 +200,28 @@ class Tk::TkTable
   class BrowseCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-	[ ?c, ?n, :column ], 
-	[ ?C, ?s, :index ], 
-	[ ?i, ?x, :cursor ], 
-	[ ?r, ?n, :row ], 
-	[ ?s, ?s, :last_index ], 
-	[ ?S, ?s, :new_index ], 
-	[ ?W, ?w, :widget ], 
-	nil
+        [ ?c, ?n, :column ], 
+        [ ?C, ?s, :index ], 
+        [ ?i, ?x, :cursor ], 
+        [ ?r, ?n, :row ], 
+        [ ?s, ?s, :last_index ], 
+        [ ?S, ?s, :new_index ], 
+        [ ?W, ?w, :widget ], 
+        nil
       ]
 
       PROC_TBL = [
-	[ ?n, TkComm.method(:number) ], 
-	[ ?x, TkComm.method(:num_or_str) ], 
-	[ ?s, TkComm.method(:string) ], 
-	[ ?w, TkComm.method(:window) ], 
-	nil
+        [ ?n, TkComm.method(:number) ], 
+        [ ?x, TkComm.method(:num_or_str) ], 
+        [ ?s, TkComm.method(:string) ], 
+        [ ?w, TkComm.method(:window) ], 
+        nil
       ]
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
-	val
+        val
       end
     end
 
@@ -233,28 +233,28 @@ class Tk::TkTable
   class CellCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-	[ ?c, ?n, :column ], 
-	[ ?C, ?s, :index ], 
-	[ ?i, ?m, :rw_mode ], 
-	[ ?r, ?n, :row ], 
-	[ ?s, ?v, :value ], 
-	[ ?W, ?w, :widget ], 
-	nil
+        [ ?c, ?n, :column ], 
+        [ ?C, ?s, :index ], 
+        [ ?i, ?m, :rw_mode ], 
+        [ ?r, ?n, :row ], 
+        [ ?s, ?v, :value ], 
+        [ ?W, ?w, :widget ], 
+        nil
       ]
 
       PROC_TBL = [
-	[ ?n, TkComm.method(:number) ], 
-	[ ?s, TkComm.method(:string) ], 
-	[ ?w, TkComm.method(:window) ], 
-	[ ?m, proc{|val| (val == '0')? (:r) : (:w)} ], 
-	[ ?v, proc{|val| TkComm.tk_tcl2ruby(val, true, false)} ], 
-	nil
+        [ ?n, TkComm.method(:number) ], 
+        [ ?s, TkComm.method(:string) ], 
+        [ ?w, TkComm.method(:window) ], 
+        [ ?m, proc{|val| (val == '0')? (:r) : (:w)} ], 
+        [ ?v, proc{|val| TkComm.tk_tcl2ruby(val, true, false)} ], 
+        nil
       ]
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
-	TkComm._get_eval_string(val)
+        TkComm._get_eval_string(val)
       end
     end
 
@@ -266,26 +266,26 @@ class Tk::TkTable
   class SelectionCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-	[ ?c, ?n, :sel_columns ], 
-	[ ?C, ?s, :sel_area ], 
-	[ ?i, ?n, :total ], 
-	[ ?r, ?n, :sel_rows ], 
-	[ ?s, ?s, :value ], 
-	[ ?W, ?w, :widget ], 
-	nil
+        [ ?c, ?n, :sel_columns ], 
+        [ ?C, ?s, :sel_area ], 
+        [ ?i, ?n, :total ], 
+        [ ?r, ?n, :sel_rows ], 
+        [ ?s, ?s, :value ], 
+        [ ?W, ?w, :widget ], 
+        nil
       ]
 
       PROC_TBL = [
-	[ ?n, TkComm.method(:number) ], 
-	[ ?s, TkComm.method(:string) ], 
-	[ ?w, TkComm.method(:window) ], 
-	nil
+        [ ?n, TkComm.method(:number) ], 
+        [ ?s, TkComm.method(:string) ], 
+        [ ?w, TkComm.method(:window) ], 
+        nil
       ]
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
-	val.to_s
+        val.to_s
       end
     end
 
@@ -297,23 +297,23 @@ class Tk::TkTable
   class ValidateCommand < TkValidateCommand
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL = [
-	[ ?c, ?n, :column ], 
-	[ ?C, ?s, :index ], 
-	[ ?i, ?x, :cursor ], 
-	[ ?r, ?n, :row ], 
-	[ ?s, ?v, :current_value ], 
-	[ ?S, ?v, :new_value ], 
-	[ ?W, ?w, :widget ], 
-	nil
+        [ ?c, ?n, :column ], 
+        [ ?C, ?s, :index ], 
+        [ ?i, ?x, :cursor ], 
+        [ ?r, ?n, :row ], 
+        [ ?s, ?v, :current_value ], 
+        [ ?S, ?v, :new_value ], 
+        [ ?W, ?w, :widget ], 
+        nil
       ]
 
       PROC_TBL = [
-	[ ?n, TkComm.method(:number) ], 
-	[ ?x, TkComm.method(:num_or_str) ], 
-	[ ?s, TkComm.method(:string) ], 
-	[ ?w, TkComm.method(:window) ], 
-	[ ?v, proc{|val| TkComm.tk_tcl2ruby(val, true, false)} ], 
-	nil
+        [ ?n, TkComm.method(:number) ], 
+        [ ?x, TkComm.method(:num_or_str) ], 
+        [ ?s, TkComm.method(:string) ], 
+        [ ?w, TkComm.method(:window) ], 
+        [ ?v, proc{|val| TkComm.tk_tcl2ruby(val, true, false)} ], 
+        nil
       ]
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
@@ -447,9 +447,9 @@ class Tk::TkTable
   def hidden?(idx, *args)
     if args.empty?
       if (ret = tk_send('hidden', tagid(idx))) == ''
-	false
+        false
       else
-	ret
+        ret
       end
     else
       bool(tk_send('hidden', tagid(idx), *(args.collect{|i| tagid(i)})))
@@ -582,8 +582,8 @@ class Tk::TkTable
       # idx, val, idx, val, ... 
       args = []
       0.step(pairs.size-1, 2){|i|
-	args << tagid(pairs[i])
-	args << pairs[i+1]
+        args << tagid(pairs[i])
+        args << pairs[i+1]
       }
       tk_send('set', *args)
     end
@@ -599,8 +599,8 @@ class Tk::TkTable
       # idx, val, idx, val, ... 
       args = []
       0.step(pairs.size-1, 2){|i|
-	args << tagid(pairs[i])
-	args << pairs[i+1]
+        args << tagid(pairs[i])
+        args << pairs[i+1]
       }
       tk_send('set', 'row', *args)
     end
@@ -616,8 +616,8 @@ class Tk::TkTable
       # idx, val, idx, val, ... 
       args = []
       0.step(pairs.size-1, 2){|i|
-	args << tagid(pairs[i])
-	args << pairs[i+1]
+        args << tagid(pairs[i])
+        args << pairs[i+1]
       }
       tk_send('set', 'col', *args)
     end
@@ -647,9 +647,9 @@ class Tk::TkTable
       args << tagid(pairs[i])
       val = pairs[i+1]
       if val.kind_of?(Array)
-	args << val.join(',')
+        args << val.join(',')
       else
-	args << val
+        args << val
       end
     }
     tk_send('spans', *args)
@@ -661,25 +661,25 @@ class Tk::TkTable
       # [idx, val], [idx, val], ...
       args = []
       pairs.each{|idx, val|
-	args << tagid(idx)
-	if val.kind_of?(Array)
-	  args << val.join(',')
-	else
-	  args << val
-	end
+        args << tagid(idx)
+        if val.kind_of?(Array)
+          args << val.join(',')
+        else
+          args << val
+        end
       }
       tk_send('spans', *args)
     else
       # idx, val, idx, val, ... 
       args = []
       0.step(pairs.size-1, 2){|i|
-	args << tagid(pairs[i])
-	val = pairs[i+1]
-	if val.kind_of?(Array)
-	  args << val.join(',')
-	else
-	  args << val
-	end
+        args << tagid(pairs[i])
+        val = pairs[i+1]
+        if val.kind_of?(Array)
+          args << val.join(',')
+        else
+          args << val
+        end
       }
       tk_send('spans', *args)
     end
@@ -692,10 +692,10 @@ class Tk::TkTable
       tag.id
     elsif tag.kind_of?(Array)
       if tag[0].kind_of?(Integer) && tag[1].kind_of?(Integer)
-	# [row, col]
-	tag.join(',')
+        # [row, col]
+        tag.join(',')
       else
-	tag
+        tag
       end
     else
       tag
@@ -705,9 +705,9 @@ class Tk::TkTable
   def tagid2obj(tagid)
     if Tk::TkTable::CellTag::CellTagID_TBL.key?(@path)
       if Tk::TkTable::CellTag::CellTagID_TBL[@path].key?(tagid)
-	Tk::TkTable::CellTag::CellTagID_TBL[@path][tagid]
+        Tk::TkTable::CellTag::CellTagID_TBL[@path][tagid]
       else
-	tagid
+        tagid
       end
     else
       tagid
@@ -734,9 +734,9 @@ class Tk::TkTable
     tk_send('tag', 'delete', tagid(tag))
     if Tk::TkTable::CellTag::CellTagID_TBL[@path]
       if tag.kind_of? Tk::TkTable::CellTag
-	Tk::TkTable::CellTag::CellTagID_TBL[@path].delete(tag.id) 
+        Tk::TkTable::CellTag::CellTagID_TBL[@path].delete(tag.id) 
       else
-	Tk::TkTable::CellTag::CellTagID_TBL[@path].delete(tag) 
+        Tk::TkTable::CellTag::CellTagID_TBL[@path].delete(tag) 
       end
     end
     self

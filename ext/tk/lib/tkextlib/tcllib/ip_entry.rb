@@ -20,11 +20,11 @@ module Tk
   module Tcllib
     class IP_Entry < TkEntry
       def self.package_version
-	begin
-	  TkPackage.require('ipentry')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('ipentry')
+        rescue
+          ''
+        end
       end
     end
     IPEntry = IP_Entry

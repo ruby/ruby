@@ -28,17 +28,17 @@ class ViewIcons
     ent_groups  = TkEntry.new(base, :width=>50, :textvariable=>@groups)
 
     btn_browse = TkButton.new(base, :text=>'Browse', 
-			            :command=>method(:select_icons))
+                                    :command=>method(:select_icons))
     btn_view   = TkButton.new(base, :text=>'View',
-			            :command=>method(:display_icons))
+                                    :command=>method(:display_icons))
     btn_exit   = TkButton.new(base, :text=>'Exit', :command=>proc{exit})
 
     @column_btns = {}
     6.step(20, 2){|i|
       @column_btns[i] = TkButton.new(columns, 
-				     :text=>i.to_s, :width=>2, 
-				     :command=>proc{set_columns(i)}
-				     ).pack(:side=>:left)
+                                     :text=>i.to_s, :width=>2, 
+                                     :command=>proc{set_columns(i)}
+                                     ).pack(:side=>:left)
     }
     @column_btns[@columns][:relief] = :sunken
 
@@ -91,15 +91,15 @@ class ViewIcons
 
   def _create_info_window
     @info_window = TkToplevel.new(:background=>'lightyellow', :borderwidth=>1, 
-				  :relief=>:solid){|w|
+                                  :relief=>:solid){|w|
       lbl_name = TkLabel.new(w, :text=>'Name', :background=>'lightyellow', 
-			     :font=>@boldfont, :justify=>:left)
+                             :font=>@boldfont, :justify=>:left)
       lbl_grps = TkLabel.new(w, :text=>'Groups', :background=>'lightyellow', 
-			     :font=>@boldfont, :justify=>:left)
+                             :font=>@boldfont, :justify=>:left)
       lbl_type = TkLabel.new(w, :text=>'Type', :background=>'lightyellow', 
-			     :font=>@boldfont, :justify=>:left)
+                             :font=>@boldfont, :justify=>:left)
       lbl_size = TkLabel.new(w, :text=>'Size', :background=>'lightyellow', 
-			     :font=>@boldfont, :justify=>:left)
+                             :font=>@boldfont, :justify=>:left)
 
       lbl_name.grid(:row=>0, :column=>0, :sticky=>:w)
       lbl_grps.grid(:row=>1, :column=>0, :sticky=>:w)
@@ -117,16 +117,16 @@ class ViewIcons
       @size.grid(:row=>3, :column=>1, :sticky=>:w)
 
       def name(txt)
-	@name['text'] = txt
+        @name['text'] = txt
       end
       def groups(txt)
-	@grps['text'] = txt
+        @grps['text'] = txt
       end
       def type(txt)
-	@type['text'] = txt
+        @type['text'] = txt
       end
       def size(txt)
-	@size['text'] = txt
+        @size['text'] = txt
       end
 
       overrideredirect(true)
@@ -243,9 +243,9 @@ class ViewIcons
 
     if Tk::PLATFORM['platform'] == 'unix'
       TkSelection.handle(Tk.root, method(:primary_transfer), 
-			 :selection=>'PRIMARY')
+                         :selection=>'PRIMARY')
       TkSelection.set_owner(Tk.root, :selection=>'PRIMARY', 
-			    :command=>method(:lost_selection))
+                            :command=>method(:lost_selection))
     end
 
     Tk.bell
@@ -257,18 +257,18 @@ class ViewIcons
     width = @controls.winfo_width - @icons_window.yscrollbar.winfo_width - 8
 
     @icons_window.configure(:width=>width, :scrollregion=>bbox, 
-			    :xscrollincrement=>'0.1i', 
-			    :yscrollincrement=>'0.1i')
+                            :xscrollincrement=>'0.1i', 
+                            :yscrollincrement=>'0.1i')
   end
 
   def select_icons
     new_lib = Tk.getOpenFile(:initialdir=>@initial_dir, 
-			     :initialfile=>'tkIcons', 
-			     :title=>'Select Icon Library', 
-			     :filetypes=>[
-			       ['Icon Libraries', ['tkIcons*']], 
-			       ['All Files', ['*']]
-			     ])
+                             :initialfile=>'tkIcons', 
+                             :title=>'Select Icon Library', 
+                             :filetypes=>[
+                               ['Icon Libraries', ['tkIcons*']], 
+                               ['All Files', ['*']]
+                             ])
 
     @library.value = new_lib if new_lib.length != 0
     display_icons
@@ -281,7 +281,7 @@ class ViewIcons
 
     unless File.exist?(@library.value)
       Tk.messageBox(:icon=>'warning', :message=>'File does not exist', 
-		    :title=>'viewIcons')
+                    :title=>'viewIcons')
       return
     end
 
@@ -306,10 +306,10 @@ class ViewIcons
       init_info(lbl, name)
 
       if column == limit
-	column = 0
-	row += 1
+        column = 0
+        row += 1
       else
-	column += 1
+        column += 1
       end
     }
 

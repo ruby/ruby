@@ -69,11 +69,11 @@ TkFrame.new($sayings_demo, 'borderwidth'=>10) {|w|
 
   else
     sayings_lbox.grid('row'=>0, 'column'=>0, 
-		      'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
+                      'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
     sv.grid('row'=>0, 'column'=>1, 
-	    'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
+            'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
     sh.grid('row'=>1, 'column'=>0, 
-	    'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
+            'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
     TkGrid.rowconfigure(w, 0, 'weight'=>1, 'minsize'=>0)
     TkGrid.columnconfigure(w, 0, 'weight'=>1, 'minsize'=>0)
   end

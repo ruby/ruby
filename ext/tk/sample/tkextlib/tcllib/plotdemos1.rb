@@ -24,7 +24,7 @@ Tk.pack(vc1,vc2,vc3, :fill=>:both, :side=>:top)
 ###############################
 
 s = Tk::Tcllib::Plotchart::XYPlot.new(c1, [0.0, 100.0, 10.0], 
-				          [0.0, 100.0, 20.0])
+                                          [0.0, 100.0, 20.0])
 
 
 xd =    5.0
@@ -57,7 +57,7 @@ s.save_plot "aha.ps"
 s = Tk::Tcllib::Plotchart::Piechart.new(c2)
 
 s.plot([ ["Long names", 10], ["Short names", 30], 
-	 ["Average", 40],    ["Ultra-short names", 5] ])
+         ["Average", 40],    ["Ultra-short names", 5] ])
 
 #
 # Note: title should be shifted up
@@ -79,7 +79,7 @@ s.title "Cardioid"
 ###############################
 
 s = Tk::Tcllib::Plotchart::Barchart.new(hc1, %w(A B C D E), 
-					[0.0, 10.0, 2.0], 2)
+                                        [0.0, 10.0, 2.0], 2)
 
 s.plot('series1', [1.0, 4.0, 6.0, 1.0, 7.0], 'red')
 s.plot('series2', [0.0, 3.0, 7.0, 9.3, 2.0], 'green')
@@ -88,7 +88,7 @@ s.title "Arbitrary data"
 ###############################
 
 s = Tk::Tcllib::Plotchart::Barchart.new(hc2, %w(A B C D E), 
-					[0.0, 20.0, 5.0], :stacked)
+                                        [0.0, 20.0, 5.0], :stacked)
 
 s.plot('series1', [1.0, 4.0, 6.0, 1.0, 7.0], 'red')
 s.plot('series2', [0.0, 3.0, 7.0, 9.3, 2.0], 'green')
@@ -97,7 +97,7 @@ s.title "Stacked diagram"
 ###############################
 
 s = Tk::Tcllib::Plotchart::HorizontalBarchart.new(vc1, [0.0, 10.0, 2.0], 
-						  %w(A B C D E), 2)
+                                                  %w(A B C D E), 2)
 
 s.plot('series1', [1.0, 4.0, 6.0, 1.0, 7.0], 'red')
 s.plot('series2', [0.0, 3.0, 7.0, 9.3, 2.0], 'green')
@@ -106,7 +106,7 @@ s.title "Arbitrary data"
 ###############################
 
 s = Tk::Tcllib::Plotchart::HorizontalBarchart.new(vc2, [0.0, 20.0, 5.0], 
-						  %w(A B C D E), :stacked)
+                                                  %w(A B C D E), :stacked)
 
 s.plot('series1', [1.0, 4.0, 6.0, 1.0, 7.0], 'red')
 s.plot('series2', [0.0, 3.0, 7.0, 9.3, 2.0], 'green')
@@ -115,7 +115,7 @@ s.title "Stacked diagram"
 ###############################
 
 s = Tk::Tcllib::Plotchart::Timechart.new(vc3, "1 january 2004", 
-					      "31 december 2004", 4)
+                                              "31 december 2004", 4)
 
 s.period("Spring", "1 march 2004", "1 june 2004", 'green')
 s.period("Summer", "1 june 2004", "1 september 2004", 'yellow')
@@ -135,7 +135,7 @@ zc2 = TkCanvas.new(z, :background=>'white', :width=>400, :height=>250)
 Tk.pack(zc1,zc2)
 
 s = Tk::Tcllib::Plotchart::Plot3D.new(zc1, 
-				      [0, 10, 3], [-10, 10, 10], [0, 10, 2.5])
+                                      [0, 10, 3], [-10, 10, 10], [0, 10, 2.5])
 
 s.title "3D Plot"
 s.plot_function{|x, y|
@@ -146,12 +146,12 @@ s.plot_function{|x, y|
 }
 
 s = Tk::Tcllib::Plotchart::Plot3D.new(zc2, 
-				      [0, 10, 3], [-10, 10, 10], [0, 10, 2.5])
+                                      [0, 10, 3], [-10, 10, 10], [0, 10, 2.5])
 s.title "3D Plot - data "
 s.colour("green", "black")
 s.plot_data([ [1.0, 2.0, 1.0, 0.0], 
-	      [1.1, 3.0, 1.1, -0.5], 
-	      [3.0, 1.0, 4.0, 5.0] ])
+              [1.1, 3.0, 1.1, -0.5], 
+              [3.0, 1.0, 4.0, 5.0] ])
 
 ###############################
 

@@ -13,9 +13,9 @@ module Tk::Tcllib
   module Style
     def self.package_version
       begin
-	TkPackage.require('style')
+        TkPackage.require('style')
       rescue
-	''
+        ''
       end
     end
 

@@ -17,11 +17,11 @@ module Tk
   module Img
     module TGA
       def self.package_version
-	begin
-	  TkPackage.require('img::tga')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('img::tga')
+        rescue
+          ''
+        end
       end
     end
   end

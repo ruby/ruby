@@ -102,16 +102,16 @@ a new line by inserting a newline character to the right of the insertion
 cursor.  Control-t transposes the two characters on either side of the
 insertion cursor. #{
       if undo_support
-	undo_text = "Control-z undoes the last editing action performed,\nand "
-	case $tk_platform['platform']
-	when "unix", "macintosh"
-	  undo_text << "Control-Shift-z"
-	else # 'windows'
-	  undo_text << "Control-y"
-	end
-	undo_text << "redoes undone edits."
+        undo_text = "Control-z undoes the last editing action performed,\nand "
+        case $tk_platform['platform']
+        when "unix", "macintosh"
+          undo_text << "Control-Shift-z"
+        else # 'windows'
+          undo_text << "Control-y"
+        end
+        undo_text << "redoes undone edits."
       else
-	""
+        ""
       end
 }
 

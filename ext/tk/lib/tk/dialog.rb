@@ -17,34 +17,34 @@ class TkDialog2 < TkWindow
   def _set_button_config(configs)
     set_config = proc{|c,i|
       if $VERBOSE && (c.has_key?('command') || c.has_key?(:command))
-	STDERR.print("Warning: cannot give a command option " + 
-		     "to the dialog button#{i}. It was removed.\n")
+        STDERR.print("Warning: cannot give a command option " + 
+                     "to the dialog button#{i}. It was removed.\n")
       end
       c.delete('command'); c.delete(:command)
       # @config << Kernel.format("%s.button%s configure %s; ", 
-      # 			       @path, i, hash_kv(c).join(' '))
+      #                                @path, i, hash_kv(c).join(' '))
       @config << @path+'.button'+i.to_s+'configure '+hash_kv(c).join(' ')+'; '
     }
     case configs
     when Proc
       @buttons.each_index{|i|
-	if (c = configs.call(i)).kind_of? Hash
-	  set_config.call(c,i)
-	end
+        if (c = configs.call(i)).kind_of? Hash
+          set_config.call(c,i)
+        end
       }
 
     when Array
       @buttons.each_index{|i|
-	if (c = configs[i]).kind_of? Hash
-	  set_config.call(c,i)
-	end
+        if (c = configs[i]).kind_of? Hash
+          set_config.call(c,i)
+        end
       }
 
     when Hash
       @buttons.each_with_index{|s,i|
-	if (c = configs[s]).kind_of? Hash
-	  set_config.call(c,i)
-	end
+        if (c = configs[s]).kind_of? Hash
+          set_config.call(c,i)
+        end
       }
     end
     @config = 'after idle {' + @config + '};' if @config != ""
@@ -99,7 +99,7 @@ class TkDialog2 < TkWindow
 
     if @buttons.kind_of? Array
       _set_button_config(@buttons.collect{|cfg| 
-			   (cfg.kind_of? Array)? cfg[1]: nil})
+                           (cfg.kind_of? Array)? cfg[1]: nil})
       @buttons = @buttons.collect{|cfg| (cfg.kind_of? Array)? cfg[0]: cfg}
     end
     if @buttons.kind_of? Hash 
@@ -109,36 +109,36 @@ class TkDialog2 < TkWindow
     @buttons = tk_split_simplelist(@buttons) if @buttons.kind_of? String
     @buttons = @buttons.collect{|s|
       if s.kind_of? Array
-	s = s.join(' ')
+        s = s.join(' ')
       end
       if s.include? ?\s
-	'{' + s + '}'
+        '{' + s + '}'
       else
-	s
+        s
       end
     }
 
     if @message_config.kind_of? Hash
       # @config << Kernel.format("%s.msg configure %s;", 
-      # 		       @path, hash_kv(@message_config).join(' '))
+      #                        @path, hash_kv(@message_config).join(' '))
       @config << @path+'.msg configure '+hash_kv(@message_config).join(' ')+';'
     end
 
     if @msgframe_config.kind_of? Hash
       # @config << Kernel.format("%s.top configure %s;", 
-      # 		       @path, hash_kv(@msgframe_config).join(' '))
+      #                        @path, hash_kv(@msgframe_config).join(' '))
       @config << @path+'.top configure '+hash_kv(@msgframe_config).join(' ')+';'
     end
 
     if @btnframe_config.kind_of? Hash
       # @config << Kernel.format("%s.bot configure %s;", 
-      # 		       @path, hash_kv(@btnframe_config).join(' '))
+      #                        @path, hash_kv(@btnframe_config).join(' '))
       @config << @path+'.bot configure '+hash_kv(@btnframe_config).join(' ')+';'
     end
 
     if @bitmap_config.kind_of? Hash
       # @config << Kernel.format("%s.bitmap configure %s;", 
-      # 		       @path, hash_kv(@bitmap_config).join(' '))
+      #                        @path, hash_kv(@bitmap_config).join(' '))
       @config << @path+'.bitmap configure '+hash_kv(@bitmap_config).join(' ')+';'
     end
 
@@ -158,16 +158,16 @@ class TkDialog2 < TkWindow
     end
     default_button = '{}' if default_button == nil
     #Tk.ip_eval('eval {global '+@var.id+';'+@config+
-    #	       'set '+@var.id+' [tk_dialog '+ 
-    #	       @path+" "+@title+" {#{@message}} "+@bitmap+" "+
-    #	       String(default_button)+" "+@buttons.join(' ')+']}')
+    #          'set '+@var.id+' [tk_dialog '+ 
+    #          @path+" "+@title+" {#{@message}} "+@bitmap+" "+
+    #          String(default_button)+" "+@buttons.join(' ')+']}')
     Tk.ip_eval(@config)
     # @val = Tk.ip_eval('tk_dialog ' + @path + ' ' + @title + 
-    #		      ' {' + @message + '} ' + @bitmap + ' ' + 
-    #		      String(default_button) + ' ' + @buttons.join(' ')).to_i
+    #                 ' {' + @message + '} ' + @bitmap + ' ' + 
+    #                 String(default_button) + ' ' + @buttons.join(' ')).to_i
     @val = Tk.ip_eval(self.class::TkCommandNames[0] + ' ' + @path + ' ' + 
-		      @title + ' {' + @message + '} ' + @bitmap + ' ' + 
-		      String(default_button) + ' ' + @buttons.join(' ')).to_i
+                      @title + ' {' + @message + '} ' + @bitmap + ' ' + 
+                      String(default_button) + ' ' + @buttons.join(' ')).to_i
   end
 
   def value
@@ -248,10 +248,10 @@ class TkWarning2 < TkDialog2
   def initialize(parent = nil, mes = nil)
     if !mes
       if parent.kind_of? TkWindow
-	mes = ""
+        mes = ""
       else
-	mes = parent.to_s
-	parent = nil
+        mes = parent.to_s
+        parent = nil
       end
     end
     super(parent, :message=>mes)

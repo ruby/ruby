@@ -15,7 +15,7 @@ begin
   st = Tk::Vu::TkcSticker.new(c, 0, 0, 10, 10)
 rescue
   Tk.messageBox(:type=>'ok', :title=>"No sticker Item", 
-		:message=>"This build of vu does not include the sticker item")
+                :message=>"This build of vu does not include the sticker item")
   exit
 end
 #st.delete
@@ -57,7 +57,7 @@ steps << proc{
 steps << proc{
   puts 'A vertical bar appears in the lower right region and text jumps to the left.'
   st.configure(:anchor=>:n, :relw=>0.3, :relh=>0.7, 
-	       :relx=>0.6, :rely=>0.3, :bar=>'red')
+               :relx=>0.6, :rely=>0.3, :bar=>'red')
 }
 
 steps << proc{

@@ -27,9 +27,9 @@ class TkVirtualEvent<TkObject
       obj
     else
       if tk_call_without_enc('event', 'info').index("<#{event}>")
-	PreDefVirtEvent.new(event)
+        PreDefVirtEvent.new(event)
       else
-	fail ArgumentError, "undefined virtual event '<#{event}>'"
+        fail ArgumentError, "undefined virtual event '<#{event}>'"
       end
     end
   end
@@ -50,9 +50,9 @@ class TkVirtualEvent<TkObject
   def add(*sequences)
     if sequences != []
       tk_call_without_enc('event', 'add', "<#{@id}>", 
-			  *(sequences.collect{|seq| 
-			      "<#{tk_event_sequence(seq)}>"
-			    }) )
+                          *(sequences.collect{|seq| 
+                              "<#{tk_event_sequence(seq)}>"
+                            }) )
       TkVirtualEventTBL[@id] = self
     end
     self
@@ -64,9 +64,9 @@ class TkVirtualEvent<TkObject
       TkVirtualEventTBL.delete(@id)
     else
       tk_call_without_enc('event', 'delete', "<#{@id}>", 
-			  *(sequences.collect{|seq| 
-			      "<#{tk_event_sequence(seq)}>"
-			    }) )
+                          *(sequences.collect{|seq| 
+                              "<#{tk_event_sequence(seq)}>"
+                            }) )
       TkVirtualEventTBL.delete(@id) if info == []
     end
     self
@@ -75,14 +75,14 @@ class TkVirtualEvent<TkObject
   def info
     tk_call_without_enc('event','info',"<#{@id}>").split(/\s+/).collect!{|seq|
       l = seq.scan(/<*[^<>]+>*/).collect!{|subseq|
-	case (subseq)
-	when /^<<[^<>]+>>$/
-	  TkVirtualEvent.getobj(subseq[1..-2])
-	when /^<[^<>]+>$/
-	  subseq[1..-2]
-	else
-	  subseq.split('')
-	end
+        case (subseq)
+        when /^<<[^<>]+>>$/
+          TkVirtualEvent.getobj(subseq[1..-2])
+        when /^<[^<>]+>$/
+          subseq[1..-2]
+        else
+          subseq.split('')
+        end
       }.flatten
       (l.size == 1) ? l[0] : l
     }

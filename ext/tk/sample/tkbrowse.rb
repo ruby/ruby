@@ -41,8 +41,8 @@ def browsedir (dir)
 
     list.bind "Double-Button-1", proc{
       for i in TkSelection.get.split
-	print "clicked ", i, "\n"
-	browse dir, i
+        print "clicked ", i, "\n"
+        browse dir, i
       end
     }
     $dirlist[dir] = list
@@ -56,9 +56,9 @@ def browse (dir, file)
   else
     if File.file? file
       if ENV['EDITOR']
-	system format("%s %s&", ENV['EDITOR'], file)
+        system format("%s %s&", ENV['EDITOR'], file)
       else
-	system "xedit #{file}&"
+        system "xedit #{file}&"
       end
     else
       STDERR.print "\"#{file}\" isn't a directory or regular file"

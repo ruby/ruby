@@ -47,12 +47,12 @@ TkFrame.new($label_demo) {|frame|
 f_left = TkFrame.new($label_demo)
 f_right = TkFrame.new($label_demo)
 [f_left, f_right].each{|w| w.pack('side'=>'left', 'expand'=>'yes', 
-				  'padx'=>10, 'pady'=>10, 'fill'=>'both')}
+                                  'padx'=>10, 'pady'=>10, 'fill'=>'both')}
 
 # label 生成
 [ TkLabel.new(f_left, 'text'=>'最初のラベル'),
   TkLabel.new(f_left, 'text'=>'2 番目。ちょっと浮き上がらせてみました', 
-	      'relief'=>'raised'),
+              'relief'=>'raised'),
   TkLabel.new(f_left, 'text'=>'3 番目。沈んでいます ', 'relief'=>'sunken')
 ].each{|w| w.pack('side'=>'top', 'expand'=>'yes', 'pady'=>2, 'anchor'=>'w')}
 

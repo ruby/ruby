@@ -8,45 +8,45 @@ module Tk
     def self.clicks(ms=nil)
       case ms
       when nil
-	tk_call_without_enc('clock','clicks').to_i
+        tk_call_without_enc('clock','clicks').to_i
       when /^mic/
-	tk_call_without_enc('clock','clicks','-microseconds').to_i
+        tk_call_without_enc('clock','clicks','-microseconds').to_i
       when /^mil/
-	tk_call_without_enc('clock','clicks','-milliseconds').to_i
+        tk_call_without_enc('clock','clicks','-milliseconds').to_i
       else
-	tk_call_without_enc('clock','clicks','-milliseconds').to_i
+        tk_call_without_enc('clock','clicks','-milliseconds').to_i
       end
     end
 
     def self.format(clk, form=nil)
       if form
-	tk_call('clock','format',clk,'-format',form)
+        tk_call('clock','format',clk,'-format',form)
       else
-	tk_call('clock','format',clk)
+        tk_call('clock','format',clk)
       end
     end
 
     def self.formatGMT(clk, form=nil)
       if form
-	tk_call('clock','format',clk,'-format',form,'-gmt','1')
+        tk_call('clock','format',clk,'-format',form,'-gmt','1')
       else
-	tk_call('clock','format',clk,'-gmt','1')
+        tk_call('clock','format',clk,'-gmt','1')
       end
     end
 
     def self.scan(str, base=nil)
       if base
-	tk_call('clock','scan',str,'-base',base).to_i
+        tk_call('clock','scan',str,'-base',base).to_i
       else
-	tk_call('clock','scan',str).to_i
+        tk_call('clock','scan',str).to_i
       end
     end
 
     def self.scanGMT(str, base=nil)
       if base
-	tk_call('clock','scan',str,'-base',base,'-gmt','1').to_i
+        tk_call('clock','scan',str,'-base',base,'-gmt','1').to_i
       else
-	tk_call('clock','scan',str,'-gmt','1').to_i
+        tk_call('clock','scan',str,'-gmt','1').to_i
       end
     end
 

@@ -17,9 +17,9 @@ module Tk
   module TclX
     def self.package_version
       begin
-	TkPackage.require('Tclx')
+        TkPackage.require('Tclx')
       rescue
-	''
+        ''
       end
     end
 
@@ -31,28 +31,28 @@ module Tk
 
     class XPG3_MsgCat
       class << self
-	alias open new
+        alias open new
       end
 
       def initialize(catname, fail_mode=false)
-	if fail_mode
-	  @msgcat_id = Tk.tk_call('catopen', '-fail', catname)
-	else
-	  @msgcat_id = Tk.tk_call('catopen', '-nofail', catname)
-	end
+        if fail_mode
+          @msgcat_id = Tk.tk_call('catopen', '-fail', catname)
+        else
+          @msgcat_id = Tk.tk_call('catopen', '-nofail', catname)
+        end
       end
 
       def close(fail_mode=false)
-	if fail_mode
-	  Tk.tk_call('catclose', '-fail', @msgcat_id)
-	else
-	  Tk.tk_call('catclose', '-nofail', @msgcat_id)
-	end
-	self
+        if fail_mode
+          Tk.tk_call('catclose', '-fail', @msgcat_id)
+        else
+          Tk.tk_call('catclose', '-nofail', @msgcat_id)
+        end
+        self
       end
 
       def get(setnum, msgnum, defaultstr)
-	Tk.tk_call('catgets', @msgcat_id, setnum, msgnum, defaultstr)
+        Tk.tk_call('catgets', @msgcat_id, setnum, msgnum, defaultstr)
       end
     end
   end

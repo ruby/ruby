@@ -65,22 +65,22 @@ class Tk::BWidget::MessageDlg
       @keys.update(slot)
 
       if @info
-	# update @info
-	slot.each{|k, v|
-	  if TkComm::GET_CONFIGINFO_AS_ARRAY
-	    if (inf = @info.assoc(k))
-	      inf[-1] = v
-	    else
-	      @info << [k, '', '', '', v]
-	    end
-	  else
-	    if (inf = @info[k])
-	      inf[-1] = v
-	    else
-	      @info[k] = ['', '', '', v]
-	    end
-	  end
-	}
+        # update @info
+        slot.each{|k, v|
+          if TkComm::GET_CONFIGINFO_AS_ARRAY
+            if (inf = @info.assoc(k))
+              inf[-1] = v
+            else
+              @info << [k, '', '', '', v]
+            end
+          else
+            if (inf = @info[k])
+              inf[-1] = v
+            else
+              @info[k] = ['', '', '', v]
+            end
+          end
+        }
       end
 
     else # ! Hash
@@ -89,20 +89,20 @@ class Tk::BWidget::MessageDlg
       @keys[slot] = value
 
       if @info
-	# update @info
-	if TkComm::GET_CONFIGINFO_AS_ARRAY
-	  if (inf = @info.assoc(slot))
-	    inf[-1] = value
-	  else
-	    @info << [slot, '', '', '', value]
-	  end
-	else
-	  if (inf = @info[slot])
-	    inf[-1] = value
-	  else
-	    @info[slot] = ['', '', '', value]
-	  end
-	end
+        # update @info
+        if TkComm::GET_CONFIGINFO_AS_ARRAY
+          if (inf = @info.assoc(slot))
+            inf[-1] = value
+          else
+            @info << [slot, '', '', '', value]
+          end
+        else
+          if (inf = @info[slot])
+            inf[-1] = value
+          else
+            @info[slot] = ['', '', '', value]
+          end
+        end
       end
     end
 
@@ -113,50 +113,50 @@ class Tk::BWidget::MessageDlg
     if winfo_exist?
       @info = super()
       if TkComm::GET_CONFIGINFO_AS_ARRAY
-	@info << ['relative', 'parent']
+        @info << ['relative', 'parent']
       else
-	@info['relative'] = 'parent'
+        @info['relative'] = 'parent'
       end
     end
 
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if @info
-	if winfo_exist?
-	  # update @keys
-	  @info.each{|inf| @keys[inf[0]] = inf[-1] if inf.size > 2 }
-	end
+        if winfo_exist?
+          # update @keys
+          @info.each{|inf| @keys[inf[0]] = inf[-1] if inf.size > 2 }
+        end
       else
-	@info = []
-	@keys.each{|k, v|
-	  @info << [k, '', '', '', v]
-	}
-	@info << ['relative', 'parent']
+        @info = []
+        @keys.each{|k, v|
+          @info << [k, '', '', '', v]
+        }
+        @info << ['relative', 'parent']
       end
 
       if slot
-	@info.asoc(slot.to_s).dup
+        @info.asoc(slot.to_s).dup
       else
-	@info.dup
+        @info.dup
       end
 
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       if @info
-	if winfo_exist?
-	  # update @keys
-	  @info.each{|k, inf| @keys[k] = inf[-1] if inf.size > 2 }
-	end
+        if winfo_exist?
+          # update @keys
+          @info.each{|k, inf| @keys[k] = inf[-1] if inf.size > 2 }
+        end
       else
-	@info = {}
-	@keys.each{|k, v|
-	  @info[k] = ['', '', '', v]
-	}
-	@info['relative'] = 'parent'
+        @info = {}
+        @keys.each{|k, v|
+          @info[k] = ['', '', '', v]
+        }
+        @info['relative'] = 'parent'
       end
 
       if slot
-	@info[slot.to_s].dup
+        @info[slot.to_s].dup
       else
-	@info.dup
+        @info.dup
       end
     end
   end

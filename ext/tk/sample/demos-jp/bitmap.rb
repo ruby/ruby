@@ -6,19 +6,19 @@
 # Create a row of bitmap items in a window.
 #
 # Arguments:
-# w -		The parent window that is to contain the row.
-# args -	The names of one or more bitmaps, which will be displayed
-#		in a new row across the bottom of w along with their
-#		names.
+# w -           The parent window that is to contain the row.
+# args -        The names of one or more bitmaps, which will be displayed
+#               in a new row across the bottom of w along with their
+#               names.
 
 def bitmapRow(w,*args)
   TkFrame.new(w){|row|
     pack('side'=>'top', 'fill'=>'both')
     for bitmap in args 
       TkFrame.new(row){|base|
-	pack('side'=>'left', 'fill'=>'both', 'pady'=>'.25c', 'padx'=>'.25c')
-	TkLabel.new(base, 'text'=>bitmap, 'width'=>9).pack('side'=>'bottom')
-	TkLabel.new(base, 'bitmap'=>bitmap).pack('side'=>'bottom')
+        pack('side'=>'left', 'fill'=>'both', 'pady'=>'.25c', 'padx'=>'.25c')
+        TkLabel.new(base, 'text'=>bitmap, 'width'=>9).pack('side'=>'bottom')
+        TkLabel.new(base, 'bitmap'=>bitmap).pack('side'=>'bottom')
       }
     end
   }
@@ -39,7 +39,7 @@ $bitmap_demo = TkToplevel.new {|w|
 
 # label 生成
 TkLabel.new($bitmap_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left', 
-	    'text'=>"このウィンドウには、Tk に組み込まれたすべてのビットマップが、それらの名前と共に表示されています。Tcl のスクリプト中では、それぞれの名前を用いて参照します。"){
+            'text'=>"このウィンドウには、Tk に組み込まれたすべてのビットマップが、それらの名前と共に表示されています。Tcl のスクリプト中では、それぞれの名前を用いて参照します。"){
   pack('side'=>'top')
 }
 

@@ -5,7 +5,7 @@ require 'tkextlib/iwidgets'
 # Create the tabnotebook widget and pack it.
 nb = Tk::Iwidgets::Notebook.new(:width=>100, :height=>100)
 nb.pack(:anchor=>:nw, :fill=>:both, :expand=>true, 
-	:side=>:top, :padx=>10, :pady=>0)
+        :side=>:top, :padx=>10, :pady=>0)
 
 # Add two pages to the tabnotebook,
 # labelled "Page One" and "Page Two"

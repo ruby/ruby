@@ -13,12 +13,12 @@ module Tk
     module ChartsConfig
       include TkItemConfigOptkeys
       def __item_boolval_optkeys(id)
-	super(id) << 'lefttrunc' << 'autocolor'
+        super(id) << 'lefttrunc' << 'autocolor'
       end
       private :__item_boolval_optkeys
 
       def __item_listval_optkeys(id)
-	super(id) << 'values' << 'tags'
+        super(id) << 'values' << 'tags'
       end
       private :__item_listval_optkeys
     end

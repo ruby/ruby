@@ -26,11 +26,11 @@ module Tk
   module Tcllib
     class Datefield < TkEntry
       def self.package_version
-	begin
-	  TkPackage.require('datefield')
-	rescue
-	  ''
-	end
+        begin
+          TkPackage.require('datefield')
+        rescue
+          ''
+        end
       end
     end
     DateField = Datefield
@@ -43,7 +43,7 @@ class Tk::Tcllib::Datefield
   def create_self(keys)
     if keys and keys != None
       tk_call_without_enc('::datefield::datefield', @path, 
-			  *hash_kv(keys, true))
+                          *hash_kv(keys, true))
     else
       tk_call_without_enc('::datefield::datefield', @path)
     end

@@ -22,13 +22,13 @@ class Mail
     @body = []
     while line = f.gets()
       $_.chop!
-      next if /^From / =~ line	# skip From-line  
-      break if /^$/ =~ line	# end of header
+      next if /^From / =~ line  # skip From-line  
+      break if /^$/ =~ line     # end of header
       if /^(\S+):\s*(.*)/ =~ line
-	@header[attr = $1.capitalize] = $2
+        @header[attr = $1.capitalize] = $2
       elsif attr
-	sub(/^\s*/, '')
-	@header[attr] += "\n" + $_
+        sub(/^\s*/, '')
+        @header[attr] += "\n" + $_
       end
     end
 
@@ -65,7 +65,7 @@ list = scroll = nil
 TkFrame.new{|f|
   list = TkListbox.new(f) {
     yscroll proc{|*idx|
-	scroll.set *idx
+        scroll.set *idx
     }
     relief 'raised'
 #    geometry "80x5"

@@ -13,13 +13,13 @@ b2 = TkButton.new(f, :text=>'BBB').pack(:fill=>:x)
 b3 = TkButton.new(f, :text=>'CCC').pack(:fill=>:x)
 
 optobj.assign( b1, 
-	      [ b2, 'configure', 
-		{ 'foreground'=>'background', 
-		  'background'=>'foreground' } ], 
-	      [ b3, nil, 
-		{ 'foreground'=>'background', 
-		  'activeforeground'=>nil, 
-		  'background'=>['foreground', 'activeforeground'] } ] )
+              [ b2, 'configure', 
+                { 'foreground'=>'background', 
+                  'background'=>'foreground' } ], 
+              [ b3, nil, 
+                { 'foreground'=>'background', 
+                  'activeforeground'=>nil, 
+                  'background'=>['foreground', 'activeforeground'] } ] )
 
 optobj.update('activeforeground'=>'yellow')
 
@@ -30,9 +30,9 @@ TkButton.new(f){
 
 TkButton.new(f){
   configure( optobj.assign([self, nil, 
-			     {'foreground'=>'activeforeground', 
-			      'background'=>'foreground', 
-			      'activeforeground'=>'background'}]) \
+                             {'foreground'=>'activeforeground', 
+                              'background'=>'foreground', 
+                              'activeforeground'=>'background'}]) \
              + {:text=>'EEE', :relief=>:groove, :borderwidth=>5} )
   pack(:fill=>:x)
 }

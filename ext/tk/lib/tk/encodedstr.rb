@@ -24,11 +24,11 @@ module Tk
 
     def self.utf_to_backslash_sequence(str)
       str.unpack('U*').collect{|c|
-	if c <= 0xFF  # ascii character
-	  c.chr
-	else
-	  format('\u%X', c)
-	end
+        if c <= 0xFF  # ascii character
+          c.chr
+        else
+          format('\u%X', c)
+        end
       }.join('')
     end
     def self.utf_to_backslash(str)
@@ -37,23 +37,23 @@ module Tk
 
     def self.to_backslash_sequence(str)
       str.unpack('U*').collect{|c|
-	if c <= 0x1F  # control character
-	  case c
-	  when 0x07; '\a'
-	  when 0x08; '\b'
-	  when 0x09; '\t'
-	  when 0x0a; '\n'
-	  when 0x0b; '\v'
-	  when 0x0c; '\f'
-	  when 0x0d; '\r'
-	  else
-	    format('\x%02X', c)
-	  end
-	elsif c <= 0xFF  # ascii character
-	  c.chr
-	else
-	  format('\u%X', c)
-	end
+        if c <= 0x1F  # control character
+          case c
+          when 0x07; '\a'
+          when 0x08; '\b'
+          when 0x09; '\t'
+          when 0x0a; '\n'
+          when 0x0b; '\v'
+          when 0x0c; '\f'
+          when 0x0d; '\r'
+          else
+            format('\x%02X', c)
+          end
+        elsif c <= 0xFF  # ascii character
+          c.chr
+        else
+          format('\u%X', c)
+        end
       }.join('')
     end
 
@@ -68,8 +68,8 @@ module Tk
     def initialize(str, enc = nil)
       super(str)
       @encoding = ( enc || 
-		   ((self.class::Encoding)? 
-		       self.class::Encoding : Tk.encoding_system) )
+                   ((self.class::Encoding)? 
+                       self.class::Encoding : Tk.encoding_system) )
     end
 
     attr_reader :encoding

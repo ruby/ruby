@@ -24,6 +24,6 @@ module TkConsole
     # I have no idea to support a Ruby script seamlessly.
     #
     _fromUTF8(tk_call_without_enc('console', 'eval', 
-				  _get_eval_enc_str(tcl_script)))
+                                  _get_eval_enc_str(tcl_script)))
   end
 end
