@@ -1,3 +1,8 @@
+Thu Mar 31 14:08:43 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should return
+	  value. [ruby-dev:25971]
+
 Thu Mar 31 11:07:50 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb: @@setter -> @@setters.
