@@ -1361,7 +1361,9 @@ module Net # :nodoc:
 
       def ensure_nz_number(num)
 	if num < -1 || num == 0 || num >= 4294967296
-	  raise DataFormatError, num.inspect
+          msg = "nz_number must be non-zero unsigned 32-bit integer: " +
+                num.inspect
+	  raise DataFormatError, msg
 	end
       end
     end
@@ -2006,30 +2008,37 @@ module Net # :nodoc:
 
       def envelope
 	@lex_state = EXPR_DATA
-	match(T_LPAR)
-	date = nstring
-	match(T_SPACE)
-	subject = nstring
-	match(T_SPACE)
-	from = address_list
-	match(T_SPACE)
-	sender = address_list
-	match(T_SPACE)
-	reply_to = address_list
-	match(T_SPACE)
-	to = address_list
-	match(T_SPACE)
-	cc = address_list
-	match(T_SPACE)
-	bcc = address_list
-	match(T_SPACE)
-	in_reply_to = nstring
-	match(T_SPACE)
-	message_id = nstring
-	match(T_RPAR)
-	@lex_state = EXPR_BEG
-	return Envelope.new(date, subject, from, sender, reply_to,
-			    to, cc, bcc, in_reply_to, message_id)
+        token = lookahead
+        if token.symbol == T_NIL
+          shift_token
+          result = nil
+        else
+          match(T_LPAR)
+          date = nstring
+          match(T_SPACE)
+          subject = nstring
+          match(T_SPACE)
+          from = address_list
+          match(T_SPACE)
+          sender = address_list
+          match(T_SPACE)
+          reply_to = address_list
+          match(T_SPACE)
+          to = address_list
+          match(T_SPACE)
+          cc = address_list
+          match(T_SPACE)
+          bcc = address_list
+          match(T_SPACE)
+          in_reply_to = nstring
+          match(T_SPACE)
+          message_id = nstring
+          match(T_RPAR)
+          result = Envelope.new(date, subject, from, sender, reply_to,
+                                to, cc, bcc, in_reply_to, message_id)
+        end
+        @lex_state = EXPR_BEG
+        return result
       end
 
       def flags_data
@@ -2082,14 +2091,20 @@ module Net # :nodoc:
 
       def body
 	@lex_state = EXPR_DATA
-	match(T_LPAR)
 	token = lookahead
-	if token.symbol == T_LPAR
-	  result = body_type_mpart
-	else
-	  result = body_type_1part
-	end
-	match(T_RPAR)
+        if token.symbol == T_NIL
+          shift_token
+          result = nil
+        else
+          match(T_LPAR)
+          token = lookahead
+          if token.symbol == T_LPAR
+            result = body_type_mpart
+          else
+            result = body_type_1part
+          end
+          match(T_RPAR)
+        end
 	@lex_state = EXPR_BEG
 	return result
       end
@@ -2855,6 +2870,11 @@ module Net # :nodoc:
       end
 
       def number
+        token = lookahead
+        if token.symbol == T_NIL
+          shift_token
+          return nil
+        end
 	token = match(T_NUMBER)
 	return token.value.to_i
       end
