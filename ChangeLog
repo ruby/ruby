@@ -6,6 +6,11 @@ Thu Aug 19 16:29:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/menu.rb: typo bug.
 
+Thu Aug 19 15:15:24 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (free_dir): fix memory leak.  reported by yamamoto
+	  madoka.
+
 Thu Aug 20 11:00:00 2004 Akiyoshi, Masamichi <masamichi.akiyoshi@hp.com>
 
 	* dln.c (dln_load): Modify to call lib$find_image_symbol for VMS.
@@ -24,7 +29,6 @@ Thu Aug 19 06:07:45 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: subtelties in handling strings with
 	  non-printable characters and odd whitespace patterns.
-
 
 Wed Aug 18 23:41:33 2004  Minero Aoki  <aamine@loveruby.net>
 
