@@ -1,3 +1,17 @@
+Sat Jun 28 12:28:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (rb_cv_stack_grow_dir): check stack growing direction.
+
+	* eval.c (rb_thread_restore_context): prior configuration macro.
+
+	* gc.c (ruby_stack_length): always return the address of lower edge.
+
+	* gc.c (rb_gc_mark_locations): remove margin.  [ruby-dev:20462]
+
+	* gc.c (rb_gc, Init_stack): prior configuration macro.
+
+	* gc.c (Init_stack): add safety margin.
+
 Fri Jun 27 14:41:22 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* string.c (rb_str_split_m): remove white spaces on the head of

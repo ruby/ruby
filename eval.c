@@ -8112,8 +8112,7 @@ rb_thread_save_context(th)
 
     len = ruby_stack_length(&pos);
     th->stk_len = 0;
-    th->stk_pos = (rb_gc_stack_start<pos)?rb_gc_stack_start
-				         :rb_gc_stack_start - len;
+    th->stk_pos = pos;
     if (len > th->stk_max) {
 	REALLOC_N(th->stk_ptr, VALUE, len);
 	th->stk_max = len;
@@ -8211,6 +8210,11 @@ rb_thread_restore_context(th, exit)
 
     if (!th->stk_ptr) rb_bug("unsaved context");
 
+#if STACK_GROW_DIRECTION < 0
+    if (&v > th->stk_pos) stack_extend(th, exit);
+#elif STACK_GROW_DIRECTION > 0
+    if (&v < th->stk_pos + th->stk_len) stack_extend(th, exit);
+#else
     if (&v < rb_gc_stack_start) {
 	/* Stack grows downward */
 	if (&v > th->stk_pos) stack_extend(th, exit);
@@ -8219,6 +8223,7 @@ rb_thread_restore_context(th, exit)
 	/* Stack grows upward */
 	if (&v < th->stk_pos + th->stk_len) stack_extend(th, exit);
     }
+#endif
 
     rb_trap_immediate = 0;	/* inhibit interrupts from here */
     ruby_frame = th->frame;

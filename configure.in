@@ -616,6 +616,30 @@ if test "$rb_cv_need_io_flush_before_seek" = yes; then
   AC_DEFINE(NEED_IO_FLUSH_BEFORE_SEEK, 1)
 fi
 
+case "$target_cpu" in
+m68*|i?86|sparc) rb_cv_stack_grow_dir=-1;;
+esac
+AC_CACHE_CHECK(stack growing direction, rb_cv_stack_grow_dir,
+  [AC_TRY_RUN([
+/* recurse to get rid of inlining */
+static int
+stack_growup_p(addr, n)
+    volatile int *addr, n;
+{
+    volatile int end;
+    if (n > 0)
+	return *addr = stack_growup_p(addr, n - 1);
+    else
+	return (&end > addr);
+}
+int main()
+{
+    int x;
+    return stack_growup_p(&x, 10);
+}
+], rb_cv_stack_grow_dir=-1, rb_cv_stack_grow_dir=+1, rb_cv_stack_grow_dir=0)])
+AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $rb_cv_stack_grow_dir)
+
 dnl default value for $KANJI
 DEFAULT_KCODE="KCODE_NONE"
 

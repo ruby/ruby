@@ -376,9 +376,29 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 #endif
 #if defined(sparc) || defined(__sparc__)
 # define STACK_LENGTH  (rb_gc_stack_start - STACK_END + 0x80)
+#elif STACK_GROW_DIRECTION < 0
+# define STACK_LENGTH  (rb_gc_stack_start - STACK_END)
+#elif STACK_GROW_DIRECTION > 0
+# define STACK_LENGTH  (STACK_END - rb_gc_stack_start)
 #else
 # define STACK_LENGTH  ((STACK_END < rb_gc_stack_start) ? rb_gc_stack_start - STACK_END\
                                            : STACK_END - rb_gc_stack_start)
+#endif
+#if STACK_GROW_DIRECTION > 0
+# define STACK_UPPER(x, a, b) a
+#elif STACK_GROW_DIRECTION < 0
+# define STACK_UPPER(x, a, b) b
+#else
+static int
+stack_growup_p(addr)
+    VALUE *addr;
+{
+    SET_STACK_END;
+
+    if (STACK_END > addr) return Qtrue;
+    return Qfalse;
+}
+# define STACK_UPPER(x, a, b) (stack_growup_p(x) ? a : b)
 #endif
 
 #define GC_WARTER_MARK 512
@@ -393,7 +413,7 @@ ruby_stack_length(p)
     VALUE **p;
 {
     SET_STACK_END;
-    if (p) *p = STACK_END;
+    if (p) *p = STACK_UPPER(STACK_END, rb_gc_stack_start, STACK_END);
     return STACK_LENGTH;
 }
 
@@ -544,7 +564,7 @@ rb_gc_mark_locations(start, end)
 	start = end;
 	end = tmp;
     }
-    n = end - start + 1;
+    n = end - start;
     mark_locations_array(start,n);
 }
 
@@ -1227,10 +1247,19 @@ rb_gc()
     /* This assumes that all registers are saved into the jmp_buf */
     setjmp(save_regs_gc_mark);
     mark_locations_array((VALUE*)save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
+#if STACK_GROW_DIRECTION < 0
+    rb_gc_mark_locations((VALUE*)STACK_END, rb_gc_stack_start);
+#elif STACK_GROW_DIRECTION > 0
     rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END);
+#else
+    if ((VALUE*)STACK_END < rb_gc_stack_start)
+	rb_gc_mark_locations((VALUE*)STACK_END, rb_gc_stack_start);
+    else
+	rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END);
+#endif
 #if defined(__human68k__) || defined(__mc68000__)
-    rb_gc_mark_locations((VALUE*)((char*)rb_gc_stack_start + 2),
-			 (VALUE*)((char*)STACK_END + 2));
+    rb_gc_mark_locations((VALUE*)((char*)STACK_END + 2),
+			 (VALUE*)((char*)rb_gc_stack_start + 2));
 #endif
     rb_gc_mark_threads();
 
@@ -1268,18 +1297,6 @@ rb_gc_start()
     return Qnil;
 }
 
-#if !defined(__human68k__)
-static int
-stack_growup_p(addr)
-    VALUE *addr;
-{
-    SET_STACK_END;
-
-    if (STACK_END > addr) return Qtrue;
-    return Qfalse;
-}
-#endif
-
 void
 Init_stack(addr)
     VALUE *addr;
@@ -1290,14 +1307,10 @@ Init_stack(addr)
 #else
     if (!addr) addr = (VALUE *)&addr;
     if (rb_gc_stack_start) {
-	if (stack_growup_p(addr)) {
-	    if (rb_gc_stack_start > addr)
-		rb_gc_stack_start = addr;
-	}
-	else {
-	    if (rb_gc_stack_start < addr)
-		rb_gc_stack_start = addr;
-	}
+	if (STACK_UPPER(&addr,
+			rb_gc_stack_start > --addr,
+			rb_gc_stack_start < ++addr))
+	    rb_gc_stack_start = addr;
 	return;
     }
     rb_gc_stack_start = addr;
