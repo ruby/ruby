@@ -78,7 +78,7 @@ if not $extmk and File.exist? Config::CONFIG["archdir"] + "/ruby.h"
 elsif File.exist? $srcdir + "/ruby.h"
   $hdrdir = $srcdir
 else
-  STDERR.print "can't find header files for ruby.\n"
+  warn "can't find header files for ruby."
   exit 1
 end
 $topdir = $hdrdir

@@ -369,27 +369,22 @@ rb_range_beg_len(range, begp, lenp, len, err)
     }
     if (err == 0 || err == 2) {
 	if (beg > len) goto out_of_range;
-	if (end > len || (!EXCL(range) && end == len))
+	if (end > len)
 	    end = len;
     }
     if (end < 0) {
 	end += len;
 	if (end < 0) {
-	    if (beg == 0 && end == -1 && !EXCL(range)) {
-		len = 0;
-		goto length_set;
-	    }
 	    goto out_of_range;
 	}
     }
+    if (!EXCL(range)) end++;	/* include end point */
     len = end - beg;
-    if (!EXCL(range)) len++;	/* include end point */
     if (len < 0) goto out_of_range;
 
   length_set:
     *begp = beg;
     *lenp = len;
-
     return Qtrue;
 
   out_of_range:

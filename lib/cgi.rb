@@ -494,7 +494,7 @@ status:
     if defined?(MOD_RUBY)
       table = Apache::request.headers_out
       buf.scan(/([^:]+): (.+)#{EOL}/n){ |name, value|
-        $stderr.printf("name:%s value:%s\n", name, value) if $DEBUG
+        warn sprintf("name:%s value:%s\n", name, value) if $DEBUG
         case name
         when 'Set-Cookie'
           table.add(name, value)
@@ -942,24 +942,30 @@ convert string charset, and set language to "ja".
     private :initialize_query
 
     class Value < String
-      def [](key)
-	  $stderr.puts <<END
-CAUTION! cgi['key'] == cgi.params['key'][0] If want Array, use cgi.params['key']
-END
-	  self
+      def initialize(str, params)
+        @params = params
+        super(str)
+      end
+      def [](idx)
+        p caller(1)
+        warn "#{caller(1)[0]}:CAUTION! cgi['key'] == cgi.params['key'][0]; if want Array, use cgi.params['key']"
+        self
       end
       def first
-	  $stderr.puts <<END
-CAUTION! cgi['key'] == cgi.params['key'][0] If want Array, use cgi.params['key']
-END
-	  self
+        warn "#{caller(1)[0]}:CAUTION! cgi['key'] == cgi.params['key'][0]; if want Array, use cgi.params['key']"
+        self
+      end
+      alias last first
+      def to_a
+        @params
       end
     end
 
     def [](key)
-      value = @params[key][0]
+      params = @params[key]
+      value = params[0]
       value ||= ""
-      Value.new(value)
+      Value.new(value,params)
     end
 
     def keys(*args)

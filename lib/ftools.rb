@@ -39,7 +39,7 @@ class << File
   end
 
   def copy from, to, verbose = false
-    $stderr.print from, " -> ", catname(from, to), "\n" if verbose
+    $deferr.print from, " -> ", catname(from, to), "\n" if verbose
     syscopy from, to
   end
 
@@ -49,7 +49,7 @@ class << File
 
   def move from, to, verbose = false
     to = catname(from, to)
-    $stderr.print from, " -> ", to, "\n" if verbose
+    $deferr.print from, " -> ", to, "\n" if verbose
 
     if RUBY_PLATFORM =~ /djgpp|(cyg|ms|bcc)win|mingw/ and FileTest.file? to
       unlink to
@@ -79,7 +79,7 @@ class << File
 #   false: not identical
 
   def compare from, to, verbose = false
-    $stderr.print from, " <=> ", to, "\n" if verbose
+    $deferr.print from, " <=> ", to, "\n" if verbose
 
     return false if stat(from).size != stat(to).size
 
@@ -116,11 +116,11 @@ class << File
   def safe_unlink(*files)
     verbose = if files[-1].is_a? String then false else files.pop end
     begin
-      $stderr.print files.join(" "), "\n" if verbose
+      $deferr.print files.join(" "), "\n" if verbose
       chmod 0777, *files
       unlink(*files)
     rescue
-#      STDERR.print "warning: Couldn't unlink #{files.join ' '}\n"
+#      $deferr.print "warning: Couldn't unlink #{files.join ' '}\n"
     end
   end
 
@@ -134,7 +134,7 @@ class << File
       next if FileTest.directory? dir
       parent = dirname(dir)
       makedirs parent unless FileTest.directory? parent
-      $stderr.print "mkdir ", dir, "\n" if verbose
+      $deferr.print "mkdir ", dir, "\n" if verbose
       if basename(dir) != ""
 	Dir.mkdir dir, mode
       end
@@ -148,7 +148,7 @@ class << File
   vsave, $VERBOSE = $VERBOSE, false
   def chmod(mode, *files)
     verbose = if files[-1].is_a? String then false else files.pop end
-    $stderr.printf "chmod %04o %s\n", mode, files.join(" ") if verbose
+    $deferr.printf "chmod %04o %s\n", mode, files.join(" ") if verbose
     o_chmod mode, *files
   end
   $VERBOSE = vsave

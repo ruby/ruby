@@ -26,6 +26,23 @@
 
 int ruby_nerrs;
 
+static int
+err_position(buf, len)
+    char *buf;
+    long len;
+{
+    ruby_set_current_source();
+    if (!ruby_sourcefile) {
+	return 0;
+    }
+    else if (ruby_sourceline == 0) {
+	return snprintf(buf, len, "%s: ", ruby_sourcefile);
+    }
+    else {
+	return snprintf(buf, len, "%s:%d: ", ruby_sourcefile, ruby_sourceline);
+    }
+}
+
 static void
 err_snprintf(buf, len, fmt, args)
     char *buf;
@@ -35,17 +52,7 @@ err_snprintf(buf, len, fmt, args)
 {
     long n;
 
-    ruby_set_current_source();
-    if (!ruby_sourcefile) {
-	vsnprintf(buf, len, fmt, args);
-	return;
-    }
-    else if (ruby_sourceline == 0) {
-	n = snprintf(buf, len, "%s: ", ruby_sourcefile);
-    }
-    else {
-	n = snprintf(buf, len, "%s:%d: ", ruby_sourcefile, ruby_sourceline);
-    }
+    n = err_position(buf, len);
     if (len > n) {
 	vsnprintf((char*)buf+n, len-n, fmt, args);
     }
@@ -149,6 +156,15 @@ rb_warning(fmt, va_alist)
     va_init_list(args, fmt);
     warn_print(buf, args);
     va_end(args);
+}
+
+static VALUE
+rb_warn_m(self, mesg)
+    VALUE self, mesg;
+{
+    rb_io_write(rb_deferr, mesg);
+    rb_io_write(rb_deferr, rb_default_rs);
+    return mesg;
 }
 
 void
@@ -653,6 +669,8 @@ Init_Exception()
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
 
     init_syserr();
+
+    rb_define_global_function("warn", rb_warn_m, 1);
 }
 
 void

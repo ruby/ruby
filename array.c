@@ -1179,6 +1179,31 @@ rb_ary_collect_bang(ary)
     return ary;
 }
 
+static void
+push_values_at(result, ary, arg)
+    VALUE result, ary, arg;
+{
+    long beg, len, i;
+
+    if (FIXNUM_P(arg)) {
+	rb_ary_push(result, rb_ary_entry(ary, FIX2LONG(arg)));
+	return;
+    }
+    /* check if idx is Range */
+    switch (rb_range_beg_len(arg, &beg, &len, RARRAY(ary)->len, 0)) {
+      case Qfalse:
+	break;
+      case Qnil:
+	return;
+      default:
+	for (i=0; i<len; i++) {
+	    rb_ary_push(result, rb_ary_entry(ary, i+beg));
+	}
+	return;
+    }
+    rb_ary_push(result, rb_ary_entry(ary, NUM2LONG(arg)));
+}
+
 static VALUE
 rb_ary_values_at(argc, argv, ary)
     int argc;
@@ -1189,7 +1214,7 @@ rb_ary_values_at(argc, argv, ary)
     long i;
 
     for (i=0; i<argc; i++) {
-	rb_ary_push(result, rb_ary_entry(ary, NUM2LONG(argv[i])));
+	push_values_at(result, ary, argv[i]);
     }
     return result;
 }

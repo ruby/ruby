@@ -1597,7 +1597,7 @@ Extends command line arguments array to parse itself.
       begin
 	yield @optparse
       rescue ParseError
-	STDERR.puts @optparse.program_name + ': ' + $!
+	warn @optparse.program_name + ': ' + $!
 	nil
       end
     end

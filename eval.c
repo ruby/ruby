@@ -5041,6 +5041,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     int    noex;
     ID     id = mid;
     struct cache_entry *ent;
+    VALUE k = klass;
 
     if (!klass) {
 	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (0x%lx)",
@@ -5051,16 +5052,29 @@ rb_call(klass, recv, mid, argc, argv, scope)
     if (ent->mid == mid && ent->klass == klass) {
 	if (!ent->method)
 	    return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
-	klass = ent->origin;
+	k = ent->origin;
 	id    = ent->mid0;
 	noex  = ent->noex;
 	body  = ent->method;
     }
-    else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
+    else if ((body = rb_get_method_body(&k, &id, &noex)) == 0) {
 	if (scope == 3) {
 	    return rb_undefined(recv, mid, argc, argv, CSTAT_SUPER);
 	}
 	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
+    }
+    if (BUILTIN_TYPE(k) == T_MODULE) {
+	while (!(BUILTIN_TYPE(klass) == T_ICLASS && RBASIC(klass)->klass == k)) {
+	    klass = RCLASS(klass)->super;
+	    if (!klass) {
+		rb_raise(rb_eTypeError, "%s is not included in %s",
+			 rb_class2name(k),
+			 rb_class2name(CLASS_OF(recv)));
+	    }
+	}
+    }
+    else {
+	klass = k;
     }
 
     if (mid != missing) {

@@ -1,3 +1,13 @@
+Mon Jun  2 02:20:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (push_values_at): Array#values_at should work with
+	  ranges too.
+
+	* range.c (rb_range_beg_len): length calculation was wrong.
+
+	* eval.c (rb_call): should set T_ICLASS in the frame->last_class.
+	  [ruby-core:01110]
+
 Sun Jun  1 21:50:01 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: should not use def file, use ld with

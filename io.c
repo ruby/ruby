@@ -2738,15 +2738,6 @@ rb_write_deferr(mesg)
     rb_write_deferr2(mesg, strlen(mesg));
 }
 
-static VALUE
-rb_warn_m(self, mesg)
-    VALUE self, mesg;
-{
-    rb_io_write(rb_deferr, mesg);
-    rb_io_write(rb_deferr, rb_default_rs);
-    return mesg;
-}
-
 static void
 must_respond_to(mid, val, id)
     ID mid;
@@ -4091,6 +4082,4 @@ Init_IO()
 #ifdef O_SYNC
     rb_file_const("SYNC", INT2FIX(O_SYNC));
 #endif
-
-    rb_define_global_function("warn", rb_warn_m, 1);
 }
