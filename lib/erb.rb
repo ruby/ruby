@@ -6,7 +6,7 @@ class ERB
   Revision = '$Date$' 	#'
 
   def self.version
-    "erb.rb [2.0 #{ERB::Revision.split[1]}]"
+    "erb.rb [2.0.1 #{ERB::Revision.split[1]}]"
   end
 end
 
@@ -219,7 +219,7 @@ class ERB
   end
 
   def def_class(superklass=Object, methodname='result')
-    cls = Class.new
+    cls = Class.new(superklass)
     def_method(cls, methodname)
     cls
   end
