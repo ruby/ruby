@@ -1,3 +1,7 @@
+Tue Feb 10 16:43:56 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (umethod_bind): perge unused check.  [ruby-dev:22850]
+
 Mon Feb  9 17:16:00 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb: escape '{' and '}' to avoid warnings.
