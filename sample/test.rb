@@ -1264,6 +1264,12 @@ def test_b14
 end
 test_ok(test_b14() == 144)
 
+def test_b15
+  [0].each {|c| yield 1 }
+  156
+end
+test_ok(test_b15{|e| break 155 } == 155)
+
 def marity_test(m)
   method = method(m)
   test_ok(method.arity == method.to_proc.arity, 2)
@@ -1992,7 +1998,7 @@ module Olympians
  @@rule ="Zeus"
  def ruler3
     @@rule
-  end
+ end
 end
 
 class Titans < Gods
