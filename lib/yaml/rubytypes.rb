@@ -85,7 +85,6 @@ hash_proc = Proc.new { |type, val|
 	end
 	val
 }
-YAML.add_builtin_type( 'map', &hash_proc )
 YAML.add_ruby_type( /^hash/, &hash_proc ) 
 
 module YAML
@@ -237,7 +236,6 @@ array_proc = Proc.new { |type, val|
         val.to_a
     end
 }
-YAML.add_builtin_type( 'seq', &array_proc )
 YAML.add_ruby_type( /^array/, &array_proc ) 
 
 #
@@ -318,16 +316,6 @@ class String
 		}
 	end
 end
-
-YAML.add_builtin_type( 'str' ) { |type,val| val.to_s }
-YAML.add_builtin_type( 'binary' ) { |type,val|
-	enctype = "m"
-	if String === val
-		val.gsub( /\s+/, '' ).unpack( enctype )[0]
-	else
-		raise YAML::Error, "Binary data must be represented by a string: " + val.inspect
-	end
-}
 
 #
 # Symbol#to_yaml
@@ -451,14 +439,6 @@ class Time
 	end
 end
 
-YAML.add_builtin_type( 'time#ymd' ) { |type, val|
-	if val =~ /\A(\d{4})\-(\d{1,2})\-(\d{1,2})\Z/
-		Date.new($1.to_i, $2.to_i, $3.to_i)
-    else
-        raise YAML::TypeError, "Invalid !time string: " + val.inspect
-    end
-}
-
 #
 # Emit a Date object as a simple implicit
 #
@@ -493,40 +473,6 @@ class Numeric
 	end
 end
 
-YAML.add_builtin_type( 'float' ) { |type, val|
-    if val =~ /\A[-+]?[\d][\d,]*\.[\d,]*[eE][-+][0-9]+\Z/						# Float (exponential)
-        $&.tr( ',', '' ).to_f
-    elsif val =~ /\A[-+]?[\d][\d,]*\.[\d,]*\Z/									# Float (fixed)
-        $&.tr( ',', '' ).to_f
-    elsif val =~ /\A([-+]?)\.(inf|Inf|INF)\Z/										# Float (english)
-        ( $1 == "-" ? -1.0/0.0 : 1.0/0.0 )
-    elsif val =~ /\A\.(nan|NaN|NAN)\Z/
-        0.0/0.0
-    elsif type == :Implicit
-        :InvalidType
-    else
-        val.to_f
-    end
-}
-
-YAML.add_builtin_type( 'int' ) { |type, val|
-    if val =~ /\A[-+]?0[0-7,]+\Z/												# Integer (octal)
-        $&.oct
-    elsif val =~ /\A[-+]?0x[0-9a-fA-F,]+\Z/										# Integer (hex)
-        $&.hex
-    elsif val =~ /\A[-+]?\d[\d,]*\Z/												# Integer (canonical)
-        $&.tr( ',', '' ).to_i
-    elsif val =~ /\A([-+]?)(\d[\d,]*(?::[0-5]?[0-9])+)\Z/
-        sign = ( $1 == '-' ? -1 : 1 )
-        digits = $2.split( /:/ ).collect { |x| x.to_i }
-        val = 0; digits.each { |x| val = ( val * 60 ) + x }; val *= sign
-    elsif type == :Implicit
-        :InvalidType
-    else
-        val.to_i
-    end
-}
-
 class TrueClass
     def is_complex_yaml?
         false
@@ -547,18 +493,6 @@ class FalseClass
 	end
 end
 
-YAML.add_builtin_type( 'bool' ) { |type, val|
-    if val =~ /\A(\+|true|True|TRUE|yes|Yes|YES|on|On|ON)\Z/
-        true
-    elsif val =~ /\A(\-|false|False|FALSE|no|No|NO|off|Off|OFF)\Z/
-        false
-    elsif type == :Implicit
-        :InvalidType
-    else
-        raise YAML::TypeError, "Invalid !bool string: " + val.inspect
-    end
-}
-
 class NilClass 
     def is_complex_yaml?
         false
@@ -568,16 +502,4 @@ class NilClass
 		"".to_yaml( opts )
 	end
 end
-
-YAML.add_builtin_type( 'null' ) { |type, val| 
-    if val =~ /\A(\~|null|Null|NULL)\Z/
-        nil
-    elsif val.empty?
-        nil
-    elsif type == :Implicit
-        :InvalidType
-    else
-        raise YAML::TypeError, "Invalid !null string: " + val.inspect
-    end
-}
 

@@ -40,7 +40,7 @@ typedef struct RVALUE {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match;
+static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
 VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cMergeKey, cEmitter;
@@ -112,7 +112,7 @@ syck_parser_assign_io(parser, port)
 	VALUE port;
 {
     int taint = Qtrue;
-    if (rb_respond_to(port, rb_intern("to_str"))) {
+    if (rb_respond_to(port, s_to_str)) {
 	    taint = OBJ_TAINTED(port); /* original taintedness */
 	    StringValue(port);	       /* possible conversion */
 	    syck_parser_str( parser, RSTRING(port)->ptr, RSTRING(port)->len, NULL );
@@ -306,79 +306,136 @@ syck_merge_i( entry, hsh )
 }
 
 /*
- * {native mode} node handler
- * - Converts data into native Ruby types
+ * build a syck node from a Ruby VALUE
  */
-SYMID
-rb_syck_load_handler(p, n)
-    SyckParser *p;
-    SyckNode *n;
+SyckNode *
+rb_new_syck_node( obj, type_id )
+    VALUE obj, type_id;
 {
-    VALUE obj = Qnil;
-    long i;
-    int check_transfers = 0;
-    struct parser_xtra *bonus;
+    long i = 0;
+    SyckNode *n = NULL;
 
+    if (rb_respond_to(obj, s_to_str)) 
+    {
+	    StringValue(obj);	       /* possible conversion */
+        n = syck_alloc_str();
+        n->data.str->ptr = RSTRING(obj)->ptr;
+        n->data.str->len = RSTRING(obj)->len;
+    }
+	else if ( rb_obj_is_kind_of( obj, rb_cArray ) )
+    {
+        n = syck_alloc_seq();
+        for ( i = 0; i < RARRAY(obj)->len; i++ )
+        {
+            syck_seq_add(n, rb_ary_entry(obj, i));
+        }
+    }
+    else if ( rb_obj_is_kind_of( obj, rb_cHash ) )
+    {
+        VALUE keys;
+        n = syck_alloc_map();
+        keys = rb_funcall( obj, s_keys, 0 );
+        for ( i = 0; i < RARRAY(keys)->len; i++ )
+        {
+            VALUE key = rb_ary_entry(keys, i);
+            syck_map_add(n, key, rb_hash_aref(obj, key));
+        }
+    }
+
+    if ( n!= NULL && rb_respond_to( type_id, s_to_str ) ) 
+    {
+        StringValue(type_id);
+        n->type_id = syck_strndup( RSTRING(type_id)->ptr, RSTRING(type_id)->len );
+    }
+
+    return n;
+}
+
+/*
+ * default handler for ruby.yaml.org types
+ */
+int
+yaml_org_handler( n, ref )
+    SyckNode *n;
+    VALUE *ref;
+{
+    char *type_id = n->type_id;
+    int transferred = 0;
+    long i = 0;
+    VALUE obj = Qnil;
+
+    /*
+     * If prefixed with YAML_DOMAIN, skip to type name
+     */
     switch (n->kind)
     {
         case syck_str_kind:
-            if ( n->type_id == NULL || strcmp( n->type_id, "str" ) == 0 )
+            transferred = 1;
+            if ( type_id == NULL || strcmp( type_id, "str" ) == 0 )
             {
                 obj = rb_str_new( n->data.str->ptr, n->data.str->len );
             }
-            else if ( strcmp( n->type_id, "null" ) == 0 )
+            else if ( strcmp( type_id, "null" ) == 0 )
             {
                 obj = Qnil;
             }
-            else if ( strcmp( n->type_id, "bool#yes" ) == 0 )
+            else if ( strcmp( type_id, "binary" ) == 0 )
+            {
+                VALUE arr;
+                obj = rb_str_new( n->data.str->ptr, n->data.str->len );
+                rb_funcall( obj, s_tr_bang, 2, rb_str_new2( "\n\t " ), rb_str_new2( "" ) );
+                arr = rb_funcall( obj, s_unpack, 1, rb_str_new2( "m" ) );
+                obj = rb_ary_shift( arr );
+            }
+            else if ( strcmp( type_id, "bool#yes" ) == 0 )
             {
                 obj = Qtrue;
             }
-            else if ( strcmp( n->type_id, "bool#no" ) == 0 )
+            else if ( strcmp( type_id, "bool#no" ) == 0 )
             {
                 obj = Qfalse;
             }
-            else if ( strcmp( n->type_id, "int#hex" ) == 0 )
+            else if ( strcmp( type_id, "int#hex" ) == 0 )
             {
                 obj = rb_cstr2inum( n->data.str->ptr, 16 );
             }
-            else if ( strcmp( n->type_id, "int#oct" ) == 0 )
+            else if ( strcmp( type_id, "int#oct" ) == 0 )
             {
                 obj = rb_cstr2inum( n->data.str->ptr, 8 );
             }
-            else if ( strncmp( n->type_id, "int", 3 ) == 0 )
+            else if ( strncmp( type_id, "int", 3 ) == 0 )
             {
                 syck_str_blow_away_commas( n );
                 obj = rb_cstr2inum( n->data.str->ptr, 10 );
             }
-            else if ( strcmp( n->type_id, "float#nan" ) == 0 )
+            else if ( strcmp( type_id, "float#nan" ) == 0 )
             {
                 obj = rb_float_new( S_nan() );
             }
-            else if ( strcmp( n->type_id, "float#inf" ) == 0 )
+            else if ( strcmp( type_id, "float#inf" ) == 0 )
             {
                 obj = rb_float_new( S_inf() );
             }
-            else if ( strcmp( n->type_id, "float#neginf" ) == 0 )
+            else if ( strcmp( type_id, "float#neginf" ) == 0 )
             {
                 obj = rb_float_new( -S_inf() );
             }
-            else if ( strncmp( n->type_id, "float", 5 ) == 0 )
+            else if ( strncmp( type_id, "float", 5 ) == 0 )
             {
                 double f;
                 syck_str_blow_away_commas( n );
                 f = strtod( n->data.str->ptr, NULL );
                 obj = rb_float_new( f );
             }
-            else if ( strcmp( n->type_id, "timestamp#iso8601" ) == 0 )
+            else if ( strcmp( type_id, "timestamp#iso8601" ) == 0 )
             {
                 obj = rb_syck_mktime( n->data.str->ptr );
             }
-            else if ( strcmp( n->type_id, "timestamp#spaced" ) == 0 )
+            else if ( strcmp( type_id, "timestamp#spaced" ) == 0 )
             {
                 obj = rb_syck_mktime( n->data.str->ptr );
             }
-            else if ( strcmp( n->type_id, "timestamp#ymd" ) == 0 )
+            else if ( strcmp( type_id, "timestamp#ymd" ) == 0 )
             {
                 char *ptr = n->data.str->ptr;
                 VALUE year, mon, day;
@@ -399,17 +456,17 @@ rb_syck_load_handler(p, n)
 
                 obj = rb_funcall( cDate, s_new, 3, year, mon, day );
             }
-            else if ( strncmp( n->type_id, "timestamp", 9 ) == 0 )
+            else if ( strncmp( type_id, "timestamp", 9 ) == 0 )
             {
                 obj = rb_syck_mktime( n->data.str->ptr );
             }
-			else if ( strncmp( n->type_id, "merge", 5 ) == 0 )
+			else if ( strncmp( type_id, "merge", 5 ) == 0 )
 			{
 				obj = rb_funcall( cMergeKey, s_new, 0 );
 			}
             else
             {
-                check_transfers = 1;
+                transferred = 0;
                 obj = rb_str_new( n->data.str->ptr, n->data.str->len );
             }
         break;
@@ -420,7 +477,10 @@ rb_syck_load_handler(p, n)
             {
                 rb_ary_store( obj, i, syck_seq_read( n, i ) );
             }
-            check_transfers = 1;
+            if ( type_id == NULL || strcmp( type_id, "seq" ) == 0 )
+            {
+                transferred = 1;
+            }
         break;
 
         case syck_map_kind:
@@ -463,8 +523,36 @@ rb_syck_load_handler(p, n)
 					rb_hash_aset( obj, k, v );
 				}
             }
-            check_transfers = 1;
+            if ( type_id == NULL || strcmp( type_id, "map" ) == 0 )
+            {
+                transferred = 1;
+            }
         break;
+    }
+
+    *ref = obj;
+    return transferred;
+}
+
+/*
+ * {native mode} node handler
+ * - Converts data into native Ruby types
+ */
+SYMID
+rb_syck_load_handler(p, n)
+    SyckParser *p;
+    SyckNode *n;
+{
+    VALUE obj = Qnil;
+    struct parser_xtra *bonus;
+
+    /*
+     * Attempt common transfers
+     */
+    int transferred = yaml_org_handler(n, &obj);
+    if ( transferred == 0 && n->type_id != NULL )
+    {
+        obj = rb_funcall( oDefaultLoader, s_transfer, 2, rb_str_new2( n->type_id ), obj );
     }
 
     /*
@@ -480,11 +568,6 @@ rb_syck_load_handler(p, n)
     bonus = (struct parser_xtra *)p->bonus;
     if ( bonus->taint)      OBJ_TAINT( obj );
 	if ( bonus->proc != 0 ) rb_funcall(bonus->proc, s_call, 1, obj);
-
-    if ( check_transfers == 1 && n->type_id != NULL )
-    {
-        obj = rb_funcall( oDefaultLoader, s_transfer, 2, rb_str_new2( n->type_id ), obj );
-    }
 
     rb_hash_aset(bonus->data, INT2FIX(RHASH(bonus->data)->tbl->num_entries), obj);
     return obj;
@@ -824,6 +907,7 @@ syck_loader_transfer( self, type, val )
          */
         if ( TYPE(val) == T_STRING )
         {
+            StringValue(val);
             taguri = syck_match_implicit( RSTRING(val)->ptr, RSTRING(val)->len );
             taguri = syck_taguri( YAML_DOMAIN, taguri, strlen( taguri ) );
         }
@@ -835,10 +919,12 @@ syck_loader_transfer( self, type, val )
 
     if ( taguri != NULL )
     {
+        int transferred = 0;
         VALUE scheme, name, type_hash, domain = Qnil, type_proc = Qnil;
         VALUE type_uri = rb_str_new2( taguri );
         VALUE str_taguri = rb_str_new2("taguri");
         VALUE str_xprivate = rb_str_new2("x-private");
+        VALUE str_yaml_domain = rb_str_new2(YAML_DOMAIN);
         VALUE parts = rb_str_split( type_uri, ":" );
 
         scheme = rb_ary_shift( parts );
@@ -854,6 +940,21 @@ syck_loader_transfer( self, type, val )
             name = rb_ary_join( parts, rb_str_new2( ":" ) );
             type_hash = rb_iv_get(self, "@families");
             type_hash = rb_hash_aref(type_hash, domain);
+
+            /*
+             * Route yaml.org types through the transfer
+             * method here in this extension
+             */
+            if ( rb_str_cmp( domain, str_yaml_domain ) == 0 )
+            {
+                SyckNode *n = rb_new_syck_node(val, name);
+                if ( n != NULL )
+                {
+                    transferred = yaml_org_handler(n, &val);
+                    S_FREE( n );
+                }
+            }
+
         }
         else
         {
@@ -861,30 +962,34 @@ syck_loader_transfer( self, type, val )
                        scheme);
         }
 
-        if ( rb_obj_is_instance_of( type_hash, rb_cHash ) )
+        if ( ! transferred )
         {
-            type_proc = rb_hash_aref( type_hash, name );
-            if ( NIL_P( type_proc ) )
+            if ( rb_obj_is_instance_of( type_hash, rb_cHash ) )
             {
-                VALUE col = rb_ary_new();
-                rb_ary_push( col, name );
-                rb_iterate(rb_each, type_hash, transfer_find_i, col );
-                name = rb_ary_shift( col );
-                type_proc = rb_ary_shift( col );
+                type_proc = rb_hash_aref( type_hash, name );
+                if ( NIL_P( type_proc ) )
+                {
+                    VALUE col = rb_ary_new();
+                    rb_ary_push( col, name );
+                    rb_iterate(rb_each, type_hash, transfer_find_i, col );
+                    name = rb_ary_shift( col );
+                    type_proc = rb_ary_shift( col );
+                }
             }
-        }
 
-        if ( rb_respond_to( type_proc, s_call ) )
-        {
-            val = rb_funcall(type_proc, s_call, 2, type_uri, val);
-        }
-        else if ( rb_str_cmp( scheme, str_xprivate ) == 0 )
-        {
-            val = rb_funcall(cPrivateType, s_new, 2, name, val);
-        }
-        else
-        {
-            val = rb_funcall(cDomainType, s_new, 3, domain, name, val);
+            if ( rb_respond_to( type_proc, s_call ) )
+            {
+                val = rb_funcall(type_proc, s_call, 2, type_uri, val);
+            }
+            else if ( rb_str_cmp( scheme, str_xprivate ) == 0 )
+            {
+                val = rb_funcall(cPrivateType, s_new, 2, name, val);
+            }
+            else 
+            {
+                val = rb_funcall(cDomainType, s_new, 3, domain, name, val);
+            }
+            transferred = 1;
         }
     }
 
@@ -996,7 +1101,7 @@ rb_syck_output_handler( emitter, str, len )
     long len;
 {
     VALUE dest = (VALUE)emitter->bonus;
-    if ( rb_respond_to( dest, rb_intern("to_str") ) ) {
+    if ( rb_respond_to( dest, s_to_str ) ) {
         rb_str_cat( dest, str, len );
     } else {
         rb_io_write( dest, rb_str_new( str, len ) );
@@ -1175,6 +1280,10 @@ Init_syck()
 	s_update = rb_intern("update");
 	s_dup = rb_intern("dup");
 	s_match = rb_intern("match");
+	s_keys = rb_intern("keys");
+	s_to_str = rb_intern("to_str");
+	s_tr_bang = rb_intern("tr!");
+    s_unpack = rb_intern("unpack");
 
 	sym_model = ID2SYM(rb_intern("Model"));
 	sym_generic = ID2SYM(rb_intern("Generic"));

@@ -1,3 +1,16 @@
+Fri Aug 22 06:13:22 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/rubyext.c: refactoring of the transfer method
+      dispatch.  added yaml_org_handler for faster dispatch of
+      transfers to base types.
+
+    * lib/yaml/rubytypes.rb: removed handling of builtins from
+      Ruby library.
+
+    * ext/syck/token.c: quoted and block scalars are now implicit !str
+      
+    * ext/syck/implicit.c: empty string detected as !null.
+
 Fri Aug 22 01:00:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (block_pass): improve passing current block.
