@@ -62,16 +62,27 @@ module Kernel
   private
   alias open_uri_original_open open # :nodoc:
 
-  # makes possible to open URIs.
-  # If the first argument is URI::HTTP, URI::FTP or 
-  # String beginning with http:// or ftp://,
-  # the URI is opened.
-  # The opened file object is extended by OpenURI::Meta.
+  # makes possible to open various resources including URIs.
+  # If the first argument respond to `open' method,
+  # the method is called with the rest arguments.
+  #
+  # If the first argument is a string and begins with xxx://, 
+  # it is parsed by URI.parse.  If the parsed object respond to `open' method,
+  # the method is called with the rest arguments.
+  #
+  # Otherwise original open is called.
+  #
+  # Since open-uri.rb provides URI::HTTP#open and URI::FTP#open,
+  # Kernel[#.]open can accepts such URIs and strings which begins with
+  # http:// and ftp://.  In this http and ftp case, the opened file object
+  # is extended by OpenURI::Meta.
   def open(name, *rest, &block)
     if name.respond_to?("open")
       name.open(*rest, &block)
-    elsif name.respond_to?("to_str") && %r{\A(http|ftp)://} =~ name
-      OpenURI.open_uri(name, *rest, &block)
+    elsif name.respond_to?("to_str") &&
+          %r{\A[A-Za-z][A-Za-z0-9+\-\.]*://} =~ name &&
+          (uri = URI.parse(name)).respond_to?(:open)
+      uri.open(*rest, &block)
     else
       open_uri_original_open(name, *rest, &block)
     end
@@ -307,7 +318,7 @@ module OpenURI
     end
   end
 
-  # Mixin for URIs.
+  # Mixin for HTTP and FTP URIs.
   module OpenRead
     # opens the URI.  
     def open(*rest, &block)
