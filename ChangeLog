@@ -3,6 +3,12 @@ Mon Sep  3 14:11:17 2001  Akinori MUSHA  <knu@iDaemons.org>
 	* error.c: unbreak the build on *BSD with gcc 3.0.1 by removing
 	  the conflicting declaration of sys_nerr for *BSD.
 
+Sat Sep  1 18:50:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): should not alter origargv[].
+
+	* ruby.c (set_arg0): long strings for $0 dumped core.
+
 Sat Sep  1 09:50:54 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ruby.c (set_arg0): prevent SEGV when val is longer than the
@@ -10,6 +16,31 @@ Sat Sep  1 09:50:54 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ruby.c (ruby_process_options): initialize total length of
 	  original arguments at first.
+
+Sat Sep  1 14:05:28 2001  Brian F. Feldman  <green@FreeBSD.org>
+
+	* ruby.c (set_arg0): use setprogtitle() if it's available.
+
+Sat Sep  1 03:49:11 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_popen): accept integer flags as mode.
+
+Fri Aug 31 19:46:05 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_find_file_ext): extension table can be supplied from
+	  outside.  renamed.
+
+	* eval.c (rb_f_require): replace rb_find_file_noext by
+	  rb_find_file_ext.
+
+Fri Aug 31 19:26:55 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_provided): should also check feature without
+	  extension.
+
+Fri Aug 31 13:06:33 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_to_s): do not rely on decimal point to be '.'
 
 Wed Aug 29 02:18:53 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

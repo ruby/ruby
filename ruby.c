@@ -60,7 +60,7 @@ static VALUE do_split = Qfalse;
 
 static char *script;
 
-static int origargc, origarglen;
+static int origargc;
 static char **origargv;
 
 static void
@@ -667,11 +667,6 @@ proc_options(argc, argv)
 	}
     }
 
-    if (e_script) {
-	argc++, argv--;
-	argv[0] = script;
-    }
-
     if (version) {
 	ruby_show_version();
 	exit(0);
@@ -690,7 +685,9 @@ proc_options(argc, argv)
 	script = "-";
     }
     else {
-	script = argv[0];
+	if (!e_script) {
+	    script = argv[0];
+	}
 	if (script[0] == '\0') {
 	    script = "-";
 	}
@@ -882,26 +879,13 @@ set_arg0(val, id)
 {
     char *s;
     int i;
-    int len = origarglen;
+    static int len;
 
     if (origargv == 0) rb_raise(rb_eRuntimeError, "$0 not initialized");
     StringValue(val);
     s = RSTRING(val)->ptr;
     i = RSTRING(val)->len;
-#ifndef __hpux
-    if (i >= len) {
-	memcpy(origargv[0], s, len);
-	origargv[0][len] = '\0';
-    }
-    else {
-	memcpy(origargv[0], s, i);
-	s = origargv[0]+i;
-	*s++ = '\0';
-	while (++i < len)
-	    *s++ = ' ';
-    }
-    rb_progname = rb_tainted_str_new2(origargv[0]);
-#else
+#ifdef __hpux
     if (i >= PST_CLEN) {
       union pstun j;
       j.pst_command = s;
@@ -916,7 +900,44 @@ set_arg0(val, id)
       pstat(PSTAT_SETCMD, j, i, 0, 0);
     }
     rb_progname = rb_tainted_str_new(s, i);
+#elif defined(HAVE_SETPROCTITLE)
+    setproctitle("%.*s", i, s);
+    rb_progname = rb_tainted_str_new(s, i);
+#else
+    if (len == 0) {
+	char *s = origargv[0];
+	int i;
+
+	s += strlen(s);
+	/* See if all the arguments are contiguous in memory */
+	for (i = 1; i < origargc; i++) {
+	    if (origargv[i] == s + 1) {
+		s++;
+		s += strlen(s);	/* this one is ok too */
+	    }
+	    else {
+		break;
+	    }
+	}
+	len = s - origargv[0];
+    }
+
+    if (i >= len) {
+	i = len;
+	memcpy(origargv[0], s, i);
+	origargv[0][i] = '\0';
+    }
+    else {
+	memcpy(origargv[0], s, i);
+	s = origargv[0]+i;
+	*s++ = '\0';
+	while (++i < len)
+	    *s++ = ' ';
+	for (i = 1; i < origargc; i++)
+	    origargv[i] = 0;
+    }
 #endif
+    rb_progname = rb_tainted_str_new2(origargv[0]);
 }
 
 void
@@ -1014,19 +1035,7 @@ ruby_process_options(argc, argv)
     char **argv;
 {
     origargc = argc; origargv = argv;
-#ifndef __hpux
-    if (origarglen == 0) {
-	int i;
-	char *s = origargv[0];
-	s += strlen(s);
-	/* See if all the arguments are contiguous in memory */
-	for (i = 1; i < origargc; i++) {
-	    if (origargv[i] == s + 1)
-		s += strlen(++s);	/* this one is ok too */
-	}
-	origarglen = s - origargv[0];
-    }
-#endif
+
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = rb_progname;
 #if defined(USE_DLN_A_OUT)

@@ -656,16 +656,7 @@ pack_pack(ary, fmt)
 		float f;
 
 		from = NEXTFROM;
-		switch (TYPE(from)) {
-		  case T_FLOAT:
-		    f = RFLOAT(from)->value;
-		    break;
-		  case T_STRING:
-		    f = strtod(RSTRING(from)->ptr, 0);
-		  default:
-		    f = (float)NUM2INT(from);
-		    break;
-		}
+		f = RFLOAT(rb_Float(from))->value;
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
@@ -676,16 +667,7 @@ pack_pack(ary, fmt)
 		FLOAT_CONVWITH(ftmp);
 
 		from = NEXTFROM;
-		switch (TYPE(from)) {
-		  case T_FLOAT:
-		    f = RFLOAT(from)->value;
-		    break;
-		  case T_STRING:
-		    f = strtod(RSTRING(from)->ptr, 0);
-		  default:
-		    f = (float)NUM2INT(from);
-		    break;
-		}
+		f = RFLOAT(rb_Float(from))->value;
 		f = HTOVF(f,ftmp);
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
@@ -697,16 +679,7 @@ pack_pack(ary, fmt)
 		DOUBLE_CONVWITH(dtmp);
 
 		from = NEXTFROM;
-		switch (TYPE(from)) {
-		  case T_FLOAT:
-		    d = RFLOAT(from)->value;
-		    break;
-		  case T_STRING:
-		    d = strtod(RSTRING(from)->ptr, 0);
-		  default:
-		    d = (double)NUM2INT(from);
-		    break;
-		}
+		d = RFLOAT(rb_Float(from))->value;
 		d = HTOVD(d,dtmp);
 		rb_str_buf_cat(res, (char*)&d, sizeof(double));
 	    }
@@ -718,16 +691,7 @@ pack_pack(ary, fmt)
 		double d;
 
 		from = NEXTFROM;
-		switch (TYPE(from)) {
-		  case T_FLOAT:
-		    d = RFLOAT(from)->value;
-		    break;
-		  case T_STRING:
-		    d = strtod(RSTRING(from)->ptr, 0);
-		  default:
-		    d = (double)NUM2INT(from);
-		    break;
-		}
+		d = RFLOAT(rb_Float(from))->value;
 		rb_str_buf_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
@@ -738,16 +702,7 @@ pack_pack(ary, fmt)
 		FLOAT_CONVWITH(ftmp);
 
 		from = NEXTFROM;
-		switch (TYPE(from)) {
-		  case T_FLOAT:
-		    f = RFLOAT(from)->value;
-		    break;
-		  case T_STRING:
-		    f = strtod(RSTRING(from)->ptr, 0);
-		  default:
-		    f = (float)NUM2INT(from);
-		    break;
-		}
+		f = RFLOAT(rb_Float(from))->value;
 		f = HTONF(f,ftmp);
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
@@ -759,16 +714,7 @@ pack_pack(ary, fmt)
 		DOUBLE_CONVWITH(dtmp);
 
 		from = NEXTFROM;
-		switch (TYPE(from)) {
-		  case T_FLOAT:
-		    d = RFLOAT(from)->value;
-		    break;
-		  case T_STRING:
-		    d = strtod(RSTRING(from)->ptr, 0);
-		  default:
-		    d = (double)NUM2INT(from);
-		    break;
-		}
+		d = RFLOAT(rb_Float(from))->value;
 		d = HTOND(d,dtmp);
 		rb_str_buf_cat(res, (char*)&d, sizeof(double));
 	    }

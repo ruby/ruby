@@ -589,24 +589,7 @@ rb_f_sprintf(argc, argv)
 		int i, need = 6;
 		char fbuf[32];
 
-		switch (TYPE(val)) {
-		  case T_FIXNUM:
-		    fval = (double)FIX2LONG(val);
-		    break;
-		  case T_FLOAT:
-		    fval = RFLOAT(val)->value;
-		    break;
-		  case T_BIGNUM:
-		    fval = rb_big2dbl(val);
-		    break;
-		  case T_STRING:
-		    fval = strtod(RSTRING(val)->ptr, 0);
-		    break;
-		  default:
-		    fval = NUM2DBL(val);
-		    break;
-		}
-
+		fval = RFLOAT(rb_Float(val))->value;
 		fmt_setup(fbuf, *p, flags, width, prec);
 		need = 0;
 		if (*p != 'e' && *p != 'E') {

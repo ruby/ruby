@@ -1339,7 +1339,7 @@ rb_io_binmode_flags(mode)
     return flags;
 }
 
-int
+static int
 rb_io_mode_binmode(mode)
     const char *mode;
 {
@@ -1378,10 +1378,9 @@ rb_io_mode_binmode(mode)
 }
 
 static char*
-rb_io_modestr(flags)
+rb_io_binmode_mode(flags, mode)
     int flags;
 {
-    static char mode[4];
     char *p = mode;
 
     switch (flags & (O_RDONLY|O_WRONLY|O_RDWR)) {
@@ -1517,11 +1516,12 @@ rb_file_sysopen_internal(io, fname, flags, mode)
     OpenFile *fptr;
     int fd;
     char *m;
+    char mbuf[4];
 
     MakeOpenFile(io, fptr);
 
     fd = rb_sysopen(fname, flags, mode);
-    m = rb_io_modestr(flags);
+    m = rb_io_binmode_mode(flags, mbuf);
     fptr->mode = rb_io_binmode_flags(flags);
     fptr->f = rb_fdopen(fd, m);
     fptr->path = strdup(fname);
@@ -1760,9 +1760,13 @@ rb_io_popen(str, argc, argv, klass)
 {
     char *mode;
     VALUE pname, pmode, port;
+    char mbuf[4];
 
     if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
 	mode = "r";
+    }
+    else if (FIXNUM_P(pmode)) {
+	mode = rb_io_binmode_mode(FIX2INT(pmode), mbuf);
     }
     else {
 	mode = StringValuePtr(pmode);
@@ -1817,7 +1821,7 @@ rb_open_file(argc, argv, io)
     if (FIXNUM_P(vmode) || !NIL_P(perm)) {
 	flags = FIXNUM_P(vmode) ? NUM2INT(vmode) : rb_io_mode_binmode(StringValuePtr(vmode));
 	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
-	
+
 	file = rb_file_sysopen_internal(io, path, flags, fmode);
     }
     else {

@@ -87,6 +87,7 @@ Standard Libraries
 * move NameError under StandardError.
 * library to load per-user profile seeking .ruby_profile or ruby.ini file.
 * warning framework
+* marshal should not depend on sprintf/strtod (works bad for locale).
 
 Extension Libraries
 
