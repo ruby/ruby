@@ -1,3 +1,11 @@
+Tue Jul 13 15:48:56 2004  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mkmf.rb (init_mkmf): Do not add $(libdir) to $LIBPATH in
+	   extmk mode.
+
+	* lib/mkmf.rb (dir_config): Prepend a new library path instead of
+	  appending so it is tried first.
+
 Tue Jul 13 00:50:48 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb: Support call-seq: for Ruby files.
