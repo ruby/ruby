@@ -1,3 +1,19 @@
+Thu Jan 09 17:05:24 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (RUBY_CHECK_IO_NEED): check whether fseek() and
+	  fflush() are needed.
+
+	* io.c (flush_before_seek): flush write stream only.
+
+	* io.c (rb_io_check_readable): seek instead of flush if the last
+	  operation was write.
+
+	* io.c (rb_io_check_writable): seek instead of flush if the last
+	  operation was read.
+
+	* bcc32/Makefile.sub, win32/Makefile.sub: needs to seek between
+	  R/W.
+
 Thu Jan  9 16:31:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): should not discard nested NODE_BLOCK.

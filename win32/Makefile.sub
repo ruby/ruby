@@ -260,7 +260,7 @@ config.h:
 #define HAVE_DAYLIGHT 1
 #define SETPGRP_VOID 1
 #define inline __inline
-#define NEED_IO_FLUSH_BETWEEN_RW 1
+#define NEED_IO_SEEK_BETWEEN_RW 1
 #define RSHIFT(x,y) ((x)>>(int)y)
 #define FILE_COUNT _cnt
 #define FILE_READPTR _ptr

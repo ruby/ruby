@@ -242,6 +242,7 @@ config.h:
 \#define HAVE_SINH 1
 \#define HAVE_TANH 1
 
+\#define NEED_IO_SEEK_BETWEEN_RW 1
 \#define RSHIFT(x,y) ((x)>>y)
 \#define FILE_COUNT level
 \#define FILE_READPTR curp
