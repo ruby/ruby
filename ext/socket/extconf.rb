@@ -1,6 +1,6 @@
 require 'mkmf'
 $LDFLAGS = "-L/usr/local/lib" if File.directory?("/usr/local/lib")
-$CFLAGS ||= ""
+$CFLAGS = "-Dss_family=__ss_family -Dss_len=__ss_len"
 
 case PLATFORM
 when /mswin32/
@@ -100,7 +100,7 @@ EOF
   end
   
   if $ipv6lib
-    if File.directory? $ipv6libdir and File.exist? "#{$ipv6libdir}/#{ipv6lib}.a"
+    if File.directory? $ipv6libdir and File.exist? "#{$ipv6libdir}/lib#{$ipv6lib}.a"
       $LDFLAGS += " -L#$ipv6libdir -l#$ipv6lib"
     else
       print <<EOS
@@ -236,7 +236,7 @@ end
 
 $objs = ["socket.o"]
     
-if $getaddr_info_ok or not $ipv6
+if $getaddr_info_ok
   if have_func("getaddrinfo") and
      have_func("getnameinfo")
     have_getaddrinfo = true
@@ -244,6 +244,7 @@ if $getaddr_info_ok or not $ipv6
 end
 
 if have_getaddrinfo
+  $CFLAGS="-DHAVE_GETADDRINFO "+$CFLAGS
   if try_link(<<EOF)
 #include <sys/types.h>
 #include <netdb.h>
@@ -256,12 +257,13 @@ main()
    struct sockaddr_storage storage;
    struct sockaddr_storage *addr = 0;
 
-   addr->_ss_family = &storage.__ss_family;
-   addr->_ss_len = &storage.__ss_len;
+   addr->__ss_family = &storage.__ss_family;
+   addr->__ss_len = &storage.__ss_len;
    return 0;
 }
 EOF
     sockaddr_storage=true
+    $CFLAGS+=" -DHAVE_SS_LEN"
   end
 else
   sockaddr_storage=true

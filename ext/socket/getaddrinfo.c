@@ -54,6 +54,7 @@
 #include <unistd.h>
 
 #include "addrinfo.h"
+#include "sockport.h"
 
 #if defined(__KAME__) && defined(INET6)
 # define FAITH
@@ -604,12 +605,4 @@ get_addr(hostname, af, res, pai, port0)
  bad:
 	*res = NULL;
 	return error;
-}
-
-int
-addrinfo_sockaddr_len(sa)
-    struct sockaddr *sa;
-{
-    /* should support other protocol families */
-    return sizeof(struct sockaddr_in);
 }

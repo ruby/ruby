@@ -47,16 +47,14 @@ extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /*
 #ifndef HAVE_GETADDRINFO
 # include "addrinfo.h"
 #endif
+#include "sockport.h"
 
 #ifdef SOCKADDR_STORAGE
-# define ss_family __ss_family
-# define SS_LEN(ss) (ss)->__ss_len
+# define SS_LEN(ss) (ss)->ss_len
 #else
 # define SOCKADDR_STORAGE sockaddr
+# undef ss_family
 # define ss_family sa_family
-# ifdef SA_LEN
-#  define SS_LEN(ss) SA_LEN(ss)
-# endif
 #endif
 
 VALUE rb_cBasicSocket;
@@ -478,7 +476,6 @@ ipaddr(sockaddr)
     return ary;
 }
 
-
 static void
 setipaddr(name, addr)
     char *name;
@@ -492,12 +489,12 @@ setipaddr(name, addr)
     if (name[0] == 0) {
 	memset(sin, 0, sizeof(*sin));
 	sin->sin_family = AF_INET;
-	SET_SIN_LEN(*sin, sizeof(*sin));
+	SET_SIN_LEN(sin, sizeof(*sin));
 	sin->sin_addr.s_addr = INADDR_ANY;
     }
     else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
 	sin->sin_family = AF_INET;
-	SET_SIN_LEN(*sin, sizeof(*sin));
+	SET_SIN_LEN(sin, sizeof(*sin));
 	sin->sin_addr.s_addr = INADDR_BROADCAST;
     }
     else {
@@ -769,7 +766,7 @@ tcp_s_gethostbyname(obj, host)
 	    struct sockaddr_in sin;
 	    memset(&sin, 0, sizeof(sin));
 	    sin.sin_family = AF_INET;
-	    SET_SIN_LEN(sin, sizeof(sin));
+	    SET_SIN_LEN(&sin, sizeof(sin));
 	    memcpy((char *) &sin.sin_addr, *pch, h->h_length);
 	    h = gethostbyaddr((char *)&sin.sin_addr,
 			      sizeof(sin.sin_addr),
@@ -955,7 +952,7 @@ ip_s_getaddress(obj, host)
 	sin = (struct sockaddr_in *)&addr;
 	memset(sin, 0, sizeof(*sin));
 	sin->sin_family = AF_INET;
-	SET_SIN_LEN(*sin, sizeof(*sin));
+	SET_SIN_LEN(sin, sizeof(*sin));
 	sin->sin_addr.s_addr = htonl(i);
     }
     else {
@@ -1004,10 +1001,10 @@ udp_addrsetup(fptr, host, port)
 	int i = NUM2INT(host);
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
-	SET_SIN_LEN(sin, sizeof(sin));
+	SET_SIN_LEN(&sin, sizeof(sin));
 	sin.sin_addr.s_addr = htonl(i);
-	error = getnameinfo((struct sockaddr *)&sin, SIN_LEN(sin),
-		    hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST);
+	error = getnameinfo((struct sockaddr *)&sin, SIN_LEN(&sin),
+			    hbuf, sizeof(hbuf), NULL, 0, NI_NUMERICHOST);
 	if (error) {
 	    rb_raise(rb_eSocket, gai_strerror(error));
 	}
@@ -1550,7 +1547,7 @@ sock_s_gethostbyname(obj, host)
 	sin = (struct sockaddr_in *)&addr;
 	memset(sin, 0, sizeof(*sin));
 	sin->sin_family = AF_INET;
-	SET_SIN_LEN(*sin, sizeof(*sin));
+	SET_SIN_LEN(sin, sizeof(*sin));
 	sin->sin_addr.s_addr = htonl(i);
     }
     else {
@@ -1723,7 +1720,7 @@ sock_s_getnameinfo(argc, argv)
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
 	}
 	memcpy(&ss, RSTRING(sa)->ptr, RSTRING(sa)->len);
-#ifdef SS_LEN
+#ifdef HAVE_SS_LEN
 	if (RSTRING(sa)->len != SS_LEN(&ss)) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}

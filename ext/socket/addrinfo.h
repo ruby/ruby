@@ -65,26 +65,6 @@
 #define freehostent freehostent__compat
 #define freeaddrinfo freeaddrinfo__compat
 
-#ifdef HAVE_SIN_LEN
-# define SIN_LEN(si) (si).sin_len
-# define SET_SIN_LEN(si,len) (si).sin_len = (len)
-#else
-# define SIN_LEN(si) sizeof(struct sockaddr_in)
-# define SET_SIN_LEN(si,len) (len)
-#endif
-
-#ifdef HAVE_SA_LEN
-#ifndef SA_LEN
-# define SA_LEN(sa) (sa).sin_len
-#endif
-#define SET_SA_LEN(sa, len) (sa).sin_len = len
-#else
-#ifndef SA_LEN
-extern int addrinfo_sockaddr_len __P((struct sockaddr*));
-# define SA_LEN(sa) addrinfo_sockaddr_len((sa))
-#endif
-#define SET_SA_LEN(sa, len) (len)
-#endif
 /* special compatibility hack -- end*/
 
 

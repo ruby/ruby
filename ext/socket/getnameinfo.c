@@ -45,6 +45,7 @@
 #include <stddef.h>
 
 #include "addrinfo.h"
+#include "sockport.h"
 
 #define SUCCESS 0
 #define ANY 0
