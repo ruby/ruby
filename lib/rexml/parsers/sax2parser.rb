@@ -45,7 +45,7 @@ module REXML
 					if args.size == 2
 						args[1].each { |match| @procs << [args[0], match, blok] }
 					else
-						add( [args[0], /.*/, blok] )
+						add( [args[0], nil, blok] )
 					end
 				elsif args[0].kind_of? Array
 					if args.size == 2
@@ -54,7 +54,7 @@ module REXML
 						args[0].each { |match| add( [ :start_element, match, blok ] ) }
 					end
 				else
-					add([nil, /.*/, args[0]])
+					add([nil, nil, args[0]])
 				end
 			end
 			
@@ -164,9 +164,10 @@ module REXML
 			def get_procs( symbol, name )
 				return nil if @procs.size == 0
 				@procs.find_all do |sym, match, block|
+          #puts sym.inspect+"=="+symbol.inspect+ "\t"+match.inspect+"=="+name.inspect+ "\t"+( (sym.nil? or symbol == sym) and ((name.nil? and match.nil?) or match.nil? or ( (name == match) or (match.kind_of? Regexp and name =~ match)))).to_s
 					(
 						(sym.nil? or symbol == sym) and 
-						(name.nil? or (
+						((name.nil? and match.nil?) or match.nil? or (
 							(name == match) or
 							(match.kind_of? Regexp and name =~ match)
 							)
@@ -179,7 +180,7 @@ module REXML
 				@listeners.find_all do |sym, match, block|
 					(
 						(sym.nil? or symbol == sym) and 
-						(name.nil? or (
+						((name.nil? and match.nil?) or match.nil? or (
 							(name == match) or
 							(match.kind_of? Regexp and name =~ match)
 							)

@@ -164,9 +164,54 @@ module REXML
 			end
 			@unnormalized = Text::unnormalize( @string, doctype )
 		end
+ 		
+ 		def wrap(string, width, addnewline=false)
+ 			# Recursivly wrap string at width.
+ 			return string if string.length <= width
+ 			place = string.rindex(' ', width) # Position in string with last ' ' before cutoff
+ 			if addnewline then
+ 				return "\n" + string[0,place] + "\n" + wrap(string[place+1..-1], width)
+ 			else
+ 				return string[0,place] + "\n" + wrap(string[place+1..-1], width)
+ 			end
+ 		end
 
+    # Sets the contents of this text node.  This expects the text to be 
+    # unnormalized.  It returns self.
+    #
+    #   e = Element.new( "a" )
+    #   e.add_text( "foo" )   # <a>foo</a>
+    #   e[0].value = "bar"    # <a>bar</a>
+    #   e[0].value = "<a>"    # <a>&lt;a&gt;</a>
+    def value=( val )
+			@string = val.gsub( /\r\n?/, "\n" )
+      @unnormalized = nil
+      @normalized = nil
+      @raw = false
+    end
+ 
+ 		def indent(string, level=1, style="\t", indentfirstline=true)
+      return string if level < 0
+ 			new_string = ''
+ 			string.each { |line|
+ 				indent_string = style * level
+ 				new_line = (indent_string + line).sub(/[\s]+$/,'')
+ 				new_string << new_line
+ 			}
+ 			new_string.strip! unless indentfirstline
+ 			return new_string
+ 		end
+ 
 		def write( writer, indent=-1, transitive=false, ie_hack=false ) 
-			writer << to_s()
+			s = to_s()
+      if not (@parent and @parent.whitespace) then
+        s = wrap(s, 60, false) if @parent and @parent.context[:wordwrap] == :all
+        if @parent and not @parent.context[:indentstyle].nil? and indent > 0 and s.count("\n") > 0
+          s = indent(s, indent, @parent.context[:indentstyle], false)
+        end
+        s.squeeze!(" \n\t") if @parent and !@parent.whitespace
+      end
+      writer << s
 		end
 
 		# Writes out text, substituting special characters beforehand.

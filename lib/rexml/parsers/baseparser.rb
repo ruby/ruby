@@ -122,14 +122,14 @@ module REXML
 
 			# Returns true if there are no more events
 			def empty?
-				!has_next?
+        #puts "@source.empty? = #{@source.empty?}"
+        #puts "@stack.empty? = #{@stack.empty?}"
+        return (@source.empty? and @stack.empty?)
 			end
 
 			# Returns true if there are more events.  Synonymous with !empty?
 			def has_next?
-				return true if @closed
-				@source.read if @source.buffer.size==0 and !@source.empty?
-				(!@source.empty? and @source.buffer.strip.size>0) or @stack.size>0 or @closed
+        return !(@source.empty? and @stack.empty?)
 			end
 
 			# Push an event back on the head of the stream.  This method
@@ -329,9 +329,12 @@ module REXML
 						end
 					else
 						md = @source.match( TEXT_PATTERN, true )
-						#md = @source.match_to_consume( '<', TEXT_PATTERN )
-						#@source.read
-						raise REXML::ParseException("no text to add") if md[0].length == 0
+            if md[0].length == 0
+              #puts "EMPTY = #{empty?}"
+              #puts "BUFFER = \"#{@source.buffer}\""
+              @source.match( /(\s+)/, true )
+            end
+            #return [ :text, "" ] if md[0].length == 0
 						# unnormalized = Text::unnormalize( md[1], self )
 						# return PullEvent.new( :text, md[1], unnormalized )
 						return [ :text, md[1] ]
