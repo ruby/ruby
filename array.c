@@ -589,10 +589,17 @@ ary_join(ary, sep)
     VALUE result, tmp;
     if (ary->len == 0) return str_new(0, 0);
 
-    if (TYPE(ary->ptr[0]) == T_STRING)
+    switch (TYPE(ary->ptr[0])) {
+      case T_STRING:
 	result = str_dup(ary->ptr[0]);
-    else
+	break;
+      case T_ARRAY:
+	result = ary_join(ary->ptr[0], sep);
+	break;
+      default:
 	result = obj_as_string(ary->ptr[0]);
+	break;
+    }
 
     for (i=1; i<ary->len; i++) {
 	tmp = ary->ptr[i];

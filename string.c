@@ -812,7 +812,7 @@ str_sub_s(str, pat, val, once)
 	     * Always consume at least one character of the input string
 	     * in order to prevent infinite loops.
 	     */
-	    str_cat(result, str->ptr+END(0), 1);
+	    if (str->len) str_cat(result, str->ptr+END(0), 1);
 	    offset = END(0)+1;
 	}
 	else {
@@ -898,7 +898,7 @@ str_sub_iter_s(str, pat, once)
 	val = rb_yield(reg_nth_match(0, backref_get()));
 	val = obj_as_string(val);
 	str_cat(result, RSTRING(val)->ptr, RSTRING(val)->len);
-	if (null) {
+	if (null && str->len) {
 	    str_cat(result, str->ptr+offset-1, 1);
 	}
 
@@ -1551,7 +1551,7 @@ tr_setup_table(str, table)
 {
     struct tr tr;
     int i, cflag = 0;
-    char c;
+    int c;
 
     tr.p = str->ptr; tr.pend = tr.p + str->len;
     tr.gen = tr.now = tr.max = 0;
@@ -1914,13 +1914,15 @@ str_chop_bang(str)
 {
     str_modify(str);
 
-    str->len--;
-    if (str->ptr[str->len] == '\n') {
-	if (str->len > 0 && str->ptr[str->len-1] == '\r') {
-	    str->len--;
+    if (str->len > 0) {
+	str->len--;
+	if (str->ptr[str->len] == '\n') {
+	    if (str->len > 0 && str->ptr[str->len-1] == '\r') {
+		str->len--;
+	    }
 	}
+	str->ptr[str->len] = '\0';
     }
-    str->ptr[str->len] = '\0';
 
     return (VALUE)str;
 }

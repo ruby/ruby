@@ -707,6 +707,9 @@ class TkListbox<TkTextWin
     tk_call 'listbox', path
   end
 
+  def curselection
+    tk_send 'curselection'
+  end
   def nearest(y)
     tk_send 'nearest', y
   end

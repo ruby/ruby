@@ -215,10 +215,11 @@ time_arg(argc, argv, args)
 }
 
 static VALUE
-time_gm_or_local(argc, argv, gm_or_local)
+time_gm_or_local(argc, argv, gm_or_local, class)
     int argc;
     VALUE *argv;
     int gm_or_local;
+    VALUE class;
 {
     int args[6];
     struct timeval tv;
@@ -253,28 +254,28 @@ time_gm_or_local(argc, argv, gm_or_local)
     guess += (args[4] - tm->tm_min) * 60;
     guess += args[5] - tm->tm_sec;
 
-    return time_new_internal(cTime, guess, 0);
+    return time_new_internal(class, guess, 0);
 
   error:
     ArgError("gmtime error");
 }
 
 static VALUE
-time_s_timegm(argc, argv, obj)
+time_s_timegm(argc, argv, class)
     int argc;
     VALUE *argv;
-    VALUE obj;
+    VALUE class;
 {
-    return time_gm_or_local(argc, argv, 1);
+    return time_gm_or_local(argc, argv, 1, class);
 }
 
 static VALUE
-time_s_timelocal(argc, argv, obj)
+time_s_timelocal(argc, argv, class)
     int argc;
     VALUE *argv;
-    VALUE obj;
+    VALUE class;
 {
-    return time_gm_or_local(argc, argv, 0);
+    return time_gm_or_local(argc, argv, 0, class);
 }
 
 static VALUE

@@ -57,15 +57,15 @@ range_eqq(rng, obj)
     first = rb_iv_get(rng, "first");
     last = rb_iv_get(rng, "last");
 
-    if (FIXNUM_P(first) && FIXNUM_P(obj)) {
+    if (FIXNUM_P(first) && FIXNUM_P(obj) && FIXNUM_P(last)) {
 	if (FIX2INT(first) <= FIX2INT(obj) && FIX2INT(obj) <= FIX2INT(last)) {
 	    return TRUE;
 	}
 	return FALSE;
     }
     else {
-	if (rb_funcall(first, rb_intern("<="), 1, obj) &&
-	    rb_funcall(last, rb_intern(">="), 1, obj)) {
+	if (RTEST(rb_funcall(first, rb_intern("<="), 1, obj)) &&
+	    RTEST(rb_funcall(last, rb_intern(">="), 1, obj))) {
 	    return TRUE;
 	}
 	return FALSE;

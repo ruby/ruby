@@ -1203,6 +1203,11 @@ re_compile_pattern(pattern, size, bufp)
 		                  b, lower_bound);
                    b += 5; 	/* Just increment for the succeed_n here.  */
 
+		   /* When hit this when matching, set the succeed_n's n.  */
+                   GET_BUFFER_SPACE(5);
+		   insert_op_2(set_number_at, laststart, b, 5, lower_bound);
+                   b += 5;
+
 		  /* More than one repetition is allowed, so put in at
 		     the end of the buffer a backward jump from b to the
                      succeed_n we put in above.  By the time we've gotten
@@ -1211,19 +1216,18 @@ re_compile_pattern(pattern, size, bufp)
 
                    if (upper_bound > 1)
                      {
-                       store_jump_n(b, jump_n, laststart, upper_bound - 1);
+		       GET_BUFFER_SPACE(15);
+                       store_jump_n(b, jump_n, laststart+5, upper_bound - 1);
                        b += 5;
                        /* When hit this when matching, reset the
                           preceding jump_n's n to upper_bound - 1.  */
+		       insert_op_2(set_number_at, laststart, b, b - laststart, upper_bound - 1);
+		       b += 5;
+
                        BUFPUSH(set_number_at);
-		       GET_BUFFER_SPACE(2);
                        STORE_NUMBER_AND_INCR(b, -5);
                        STORE_NUMBER_AND_INCR(b, upper_bound - 1);
                      }
-		   /* When hit this when matching, set the succeed_n's n.  */
-                   GET_BUFFER_SPACE(5);
-		   insert_op_2(set_number_at, laststart, b, 5, lower_bound);
-                   b += 5;
                  }
               pending_exact = 0;
 	      beg_interval = 0;
@@ -2006,7 +2010,7 @@ struct register_info
       if (regstart[last_used_reg] != (unsigned char *)(-1L))		\
         break;								\
 									\
-    if (stacke - stackp < NUM_FAILURE_ITEMS)				\
+    if (stacke - stackp <= NUM_FAILURE_ITEMS)				\
       {									\
 	unsigned char **stackx;						\
 	unsigned int len = stacke - stackb;				\

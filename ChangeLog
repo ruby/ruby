@@ -1,3 +1,45 @@
+Tue Nov 18 13:59:59 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.0-971118
+
+Tue Nov 18 10:13:08 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): insert initialize code for jump_n, 
+	  before entering loops.
+
+Sat Nov 15 00:11:36 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* io.c (io_s_popen): "rb" detection
+
+Wed Nov 12 13:44:47 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c: remove coerce from Time class.
+
+Wed Nov  2 16:00:00 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* string.c (str_sub_s): "".sub! "", "" => "\000"
+
+Thu Oct 30 16:54:01 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* string.c (str_chop_bang): "".chop caused SEGV.
+
+	* string.c (str_chomp_bang): method to chop out last newline.
+
+Mon Oct 27 13:49:13 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/extmk.rb.in: library may have pathname contains `.'
+
+	* eval.c (rb_rescue): should not protect SystemError.
+
+Thu Oct 23 11:17:44 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* range.c (range_eqq): fixnum check for last needed too.
+
+Wed Oct 22 12:52:30 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_join): call ary_join() recursively for the 1st
+ 	  array element.
+
 Tue Oct 21 13:31:29 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.0-971021

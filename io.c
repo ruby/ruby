@@ -1023,7 +1023,7 @@ io_s_popen(argc, argv, self)
     }
     else {
 	Check_Type(pmode, T_STRING);
-	if (RSTRING(pmode)->len == 0 || RSTRING(pmode)->len > 2)
+	if (RSTRING(pmode)->len == 0 || RSTRING(pmode)->len > 3)
 	    ArgError("illegal access mode");
 	mode = RSTRING(pmode)->ptr;
    }
@@ -1058,7 +1058,7 @@ f_open(argc, argv, self)
     }
     else {
 	Check_Type(pmode, T_STRING);
-	if (RSTRING(pmode)->len == 0 || RSTRING(pmode)->len > 2)
+	if (RSTRING(pmode)->len == 0 || RSTRING(pmode)->len > 3)
 	    ArgError("illegal access mode");
 	mode = RSTRING(pmode)->ptr;
     }
@@ -1246,9 +1246,6 @@ io_print(argc, argv, out)
 	  case T_ARRAY:
 	    ary_print_on(argv[i], out);
 	    break;
-	  case T_HASH:
-	    break;
-	  case T_STRING:
 	  default:
 	    io_write(out, argv[i]);
 	    break;

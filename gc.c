@@ -655,7 +655,6 @@ obj_free(obj)
       case T_DATA:
 	if (obj->as.data.dfree && DATA_PTR(obj))
 	    (*obj->as.data.dfree)(DATA_PTR(obj));
-	if (DATA_PTR(obj)) free(DATA_PTR(obj));
 	break;
       case T_MATCH:
 	re_free_registers(obj->as.match.regs);

@@ -307,8 +307,17 @@ push_braces(ary, s)
     p = s;
     lbrace = rbrace = 0;
     while (*p) {
-	if (*p == '{' && !lbrace) lbrace = p;
-	if (*p == '}' && lbrace) rbrace = p;
+	if (*p == '{') {
+	    lbrace = p;
+	    break;
+	}
+	p++;
+    }
+    while (*p) {
+	if (*p == '}' && lbrace) {
+	    rbrace = p;
+	    break;
+	}
 	p++;
     }
 
