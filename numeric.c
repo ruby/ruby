@@ -273,7 +273,7 @@ flo_to_s(flt)
     VALUE flt;
 {
     char buf[24];
-    char *fmt = "%.16g";
+    char *fmt = "%.15g";
     double value = RFLOAT(flt)->value;
     double avalue, d1, d2;
 
