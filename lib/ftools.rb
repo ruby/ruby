@@ -137,7 +137,9 @@ class << File
       parent = dirname(dir)
       makedirs parent unless FileTest.directory? parent
       $stderr.print "mkdir ", dir, "\n" if verbose
-      Dir.mkdir dir, mode
+      if basename(dir) != ""
+	Dir.mkdir dir, mode
+      end
     end
   end
 

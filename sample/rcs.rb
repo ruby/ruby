@@ -1,12 +1,12 @@
 # random dot steraogram
 # usage: rcs.rb rcs.dat
 
-sw = 40.0	# 元のパターンの幅
-dw = 78.0	# 生成される Random Character Streogram の幅
+sw = 40.0	# width of original pattern
+dw = 78.0	# width of generating Random Character Streogram
 hdw = dw / 2.0
-w = 20.0	# 両眼の幅
-h =1.0		# 画面と基準面の距離
-d = 0.2		# 単位当たりの浮き上がり方
+w = 20.0	# distance between eyes
+h =1.0		# distance from screen and base plane
+d = 0.2		# z value unit
 ss="abcdefghijklmnopqrstuvwxyz0123456789#!$%^&*()-=\\[];'`,./"
 rnd = srand()
 

@@ -21,11 +21,19 @@ LDSHARED = @LDSHARED@
 DLDFLAGS = @DLDFLAGS@
 SOLIBS = @SOLIBS@
 
+RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
 binsuffix = @binsuffix@
+PROGRAM=$(RUBY_INSTALL_NAME)$(binsuffix)
 
 #### End of system configuration section. ####
 
+MAJOR=	@MAJOR@
+MINOR=	@MINOR@
+TEENY=	@TEENY@
 
+LIBRUBY_A     = @LIBRUBY_A@
+LIBRUBY_SO    = @LIBRUBY_SO@
+LIBRUBY_ALIASES= @LIBRUBY_ALIASES@
 LIBRUBY	      = @LIBRUBY@
 LIBRUBYARG    = @LIBRUBYARG@
 
@@ -56,6 +64,7 @@ OBJS	      = array.o \
 		pack.o \
 		parse.o \
 		process.o \
+		prec.o \
 		random.o \
 		range.o \
 		re.o \
@@ -75,35 +84,36 @@ OBJS	      = array.o \
 all:		miniruby$(binsuffix) rbconfig.rb
 		@./miniruby$(binsuffix) -Xext extmk.rb @EXTSTATIC@
 
-miniruby$(binsuffix):	libruby.a $(MAINOBJ) dmyext.o
+miniruby$(binsuffix):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.o
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o libruby.a $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o $(LIBRUBY_A) $(LIBS) -o $@
 
-ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
+$(PROGRAM):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
-libruby.a:	$(OBJS) dmyext.o
+$(LIBRUBY_A):	$(OBJS) dmyext.o
 		@AR@ rcu $@ $(OBJS) dmyext.o
 		@-@RANLIB@ $@ 2> /dev/null || true
 
-libruby.so:	$(OBJS) dmyext.o
+$(LIBRUBY_SO):	$(OBJS) dmyext.o
 		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.o -o $@
+		@-./miniruby -e 'ARGV.each{|link| File.delete link if File.exist? link; \
+						  File.symlink "$(LIBRUBY_SO)", link}' \
+				$(LIBRUBY_ALIASES) || true
 
 install:	rbconfig.rb
 		./miniruby$(binsuffix) $(srcdir)/instruby.rb $(DESTDIR)
 
-clean:;		@rm -f $(OBJS) $(LIBRUBY) $(MAINOBJ) rbconfig.rb
+clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.o dmyext.o
-		@if test -f ./miniruby$(binsuffix); then \
-			./miniruby$(binsuffix) -Xext extmk.rb clean; \
-		fi
+		@-./miniruby$(binsuffix) -Xext extmk.rb clean 2> /dev/null || true
 
 distclean:	clean
 		@rm -f Makefile ext/extmk.rb config.h
 		@rm -f ext/config.cache config.cache config.log config.status
 		@rm -f parse.c *~ core *.core gmon.out y.tab.c y.output
-		@rm -f ruby$(binsuffix) miniruby$(binsuffix)
+		@rm -f $(PROGRAM) miniruby$(binsuffix)
 
 realclean:	distclean
 		@rm -f lex.c
@@ -111,7 +121,7 @@ realclean:	distclean
 test:		miniruby$(binsuffix)
 		@./miniruby$(binsuffix) $(srcdir)/rubytest.rb
 
-rbconfig.rb:	config.status miniruby$(binsuffix)
+rbconfig.rb:	miniruby$(binsuffix)
 		@./miniruby$(binsuffix) $(srcdir)/mkconfig.rb rbconfig.rb
 
 config.status:	$(srcdir)/configure
@@ -172,6 +182,9 @@ strftime.o: @srcdir@/missing/strftime.c
 strstr.o: @srcdir@/missing/strstr.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strstr.c
 
+strtod.o: @srcdir@/missing/strtod.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strtod.c
+
 strtol.o: @srcdir@/missing/strtol.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strtol.c
 
@@ -208,6 +221,7 @@ inits.o: inits.c ruby.h config.h defines.h intern.h
 io.o: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 main.o: main.c ruby.h config.h defines.h intern.h
 marshal.o: marshal.c ruby.h config.h defines.h intern.h rubyio.h st.h
+prec.o: prec.c ruby.h config.h defines.h intern.h
 math.o: math.c ruby.h config.h defines.h intern.h
 numeric.o: numeric.c ruby.h config.h defines.h intern.h
 object.o: object.c ruby.h config.h defines.h intern.h st.h

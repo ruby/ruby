@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Dec 28 14:31:59 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -79,8 +79,10 @@ time_new_internal(klass, sec, usec)
     VALUE obj;
     struct time_object *tobj;
 
+#ifndef USE_CWGUSI
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
+#endif
     obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
     tobj->tm_got = 0;
     tobj->tv.tv_sec = sec;

@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 15 12:24:34 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -58,106 +58,12 @@ char *strrchr _((char*,char));
  #include "macruby_missing.h"
  extern int fileno(FILE *stream);
  extern int utimes();
+ char* strdup(char*);
 #endif
 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 static VALUE sStat;
-
-VALUE
-rb_file_open(fname, mode)
-    char *fname, *mode;
-{
-    OpenFile *fptr;
-    NEWOBJ(port, struct RFile);
-    OBJSETUP(port, rb_cFile, T_FILE);
-    MakeOpenFile(port, fptr);
-
-    fptr->mode = rb_io_mode_flags(mode);
-    fptr->f = rb_fopen(fname, mode);
-    fptr->path = strdup(fname);
-    rb_obj_call_init((VALUE)port);
-
-    return (VALUE)port;
-}
-
-static VALUE
-rb_file_s_open(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE fname, vmode, file;
-    char *mode;
-
-    rb_scan_args(argc, argv, "11", &fname, &vmode);
-    Check_SafeStr(fname);
-    if (!NIL_P(vmode)) {
-	mode = STR2CSTR(vmode);
-    }
-    else {
-	mode = "r";
-    }
-    file = rb_file_open(RSTRING(fname)->ptr, mode);
-
-    RBASIC(file)->klass = klass;
-    rb_obj_call_init(file);
-    if (rb_iterator_p()) {
-	return rb_ensure(rb_yield, file, rb_io_close, file);
-    }
-
-    return file;
-}
-
-static VALUE
-rb_file_reopen(argc, argv, file)
-    int argc;
-    VALUE *argv;
-    VALUE file;
-{
-    VALUE fname, nmode;
-    char *mode;
-    OpenFile *fptr;
-
-    rb_secure(4);
-    if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
-	if (TYPE(fname) == T_FILE) { /* fname must be IO */
-	    return rb_io_reopen(file, fname);
-	}
-    }
-
-    Check_SafeStr(fname);
-    if (!NIL_P(nmode)) {
-	mode = STR2CSTR(nmode);
-    }
-    else {
-	mode = "r";
-    }
-
-    GetOpenFile(file, fptr);
-    if (fptr->path) free(fptr->path);
-    fptr->path = strdup(RSTRING(fname)->ptr);
-    fptr->mode = rb_io_mode_flags(mode);
-    if (!fptr->f) {
-	fptr->f = rb_fopen(RSTRING(fname)->ptr, mode);
-	if (fptr->f2) {
-	    fclose(fptr->f2);
-	    fptr->f2 = NULL;
-	}
-	return file;
-    }
-
-    if (freopen(RSTRING(fname)->ptr, mode, fptr->f) == NULL) {
-	rb_sys_fail(fptr->path);
-    }
-    if (fptr->f2) {
-	if (freopen(RSTRING(fname)->ptr, "w", fptr->f2) == NULL) {
-	    rb_sys_fail(fptr->path);
-	}
-    }
-
-    return file;
-}
 
 static int
 apply2files(func, vargs, arg)
@@ -1600,11 +1506,20 @@ rb_f_test(argc, argv)
     return Qnil;		/* not reached */
 }
 
+static VALUE rb_mConst;
+
+void
+rb_file_const(name, value)
+    char *name;
+    VALUE value;
+{
+    rb_define_const(rb_cFile, name, value);
+    rb_define_const(rb_mConst, name, value);
+}
+
 void
 Init_File()
 {
-    VALUE rb_mConst;
-
     rb_mFileTest = rb_define_module("FileTest");
 
     rb_define_module_function(rb_mFileTest, "directory?",  test_d, 1);
@@ -1637,9 +1552,6 @@ Init_File()
     rb_cFile = rb_define_class("File", rb_cIO);
     rb_extend_object(rb_cFile, CLASS_OF(rb_mFileTest));
 
-    rb_define_singleton_method(rb_cFile, "new",  rb_file_s_open, -1);
-    rb_define_singleton_method(rb_cFile, "open",  rb_file_s_open, -1);
-
     rb_define_singleton_method(rb_cFile, "stat",  rb_file_s_stat, 1);
     rb_define_singleton_method(rb_cFile, "lstat", rb_file_s_lstat, 1);
     rb_define_singleton_method(rb_cFile, "ftype", rb_file_s_ftype, 1);
@@ -1671,8 +1583,6 @@ Init_File()
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
-    rb_define_method(rb_cFile, "reopen",  rb_file_reopen, -1);
-
     rb_define_method(rb_cIO, "stat",  rb_io_stat, 0); /* this is IO's method */
     rb_define_method(rb_cFile, "lstat",  rb_file_lstat, 0);
 
@@ -1687,15 +1597,10 @@ Init_File()
     rb_define_method(rb_cFile, "flock", rb_file_flock, 1);
 
     rb_mConst = rb_define_module_under(rb_cFile, "Constants");
-    rb_define_const(rb_cFile, "LOCK_SH", INT2FIX(LOCK_SH));
-    rb_define_const(rb_cFile, "LOCK_EX", INT2FIX(LOCK_EX));
-    rb_define_const(rb_cFile, "LOCK_UN", INT2FIX(LOCK_UN));
-    rb_define_const(rb_cFile, "LOCK_NB", INT2FIX(LOCK_NB));
-
-    rb_define_const(rb_mConst, "LOCK_SH", INT2FIX(LOCK_SH));
-    rb_define_const(rb_mConst, "LOCK_EX", INT2FIX(LOCK_EX));
-    rb_define_const(rb_mConst, "LOCK_UN", INT2FIX(LOCK_UN));
-    rb_define_const(rb_mConst, "LOCK_NB", INT2FIX(LOCK_NB));
+    rb_file_const("LOCK_SH", INT2FIX(LOCK_SH));
+    rb_file_const("LOCK_EX", INT2FIX(LOCK_EX));
+    rb_file_const("LOCK_UN", INT2FIX(LOCK_UN));
+    rb_file_const("LOCK_NB", INT2FIX(LOCK_NB));
 
     rb_define_method(rb_cFile, "path",  rb_file_path, 0);
 
