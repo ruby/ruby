@@ -79,15 +79,13 @@ bigdecimal.c,bigdecimal.h
 <hr>
 <A NAME="#SPEC">
 <H2>使用方法とメソッドの一覧</H2>
-「Rubyは既に書ける」という前提で、<br><br>
-<CODE>
-<PRE>
+「Rubyは既に書ける」という前提で、
+<CODE><PRE>
 require 'bigdecimal'
 a=BigDecimal::new("0.123456789123456789")
 b=BigDecimal("123456.78912345678",40)
 c=a+b
-</PRE>
-</CODE>
+</PRE></CODE>
 <br>
 というような感じで使用します。
 
@@ -102,9 +100,9 @@ c=a+b
 提供されているものもあります。例えば、文字列から BigDecimal への
 変換や、"0.xxxxxEn" という形式ではなく "nnnnn.mmmm" の形式の文字列
 へ変換するメソッド等があります。利用するには
-<PRE><CODE>
+<CODE><PRE>
 require "bigdecimal/util.rb"
-</CODE></PRE>
+</PRE></CODE>
 のようにします。詳細は util.rb の内容を参照して下さい。
 
 <H4><U>クラスメソッド</U></H4>
@@ -118,7 +116,14 @@ n は必要な有効桁数（a の最大有効桁数）を整数で指定します。
 n が 0 または省略されたときは、n の値は s の有効桁数とみなされます。
 s の有効桁数より n が小さいときも n=0 のときと同じです。
 a の最大有効桁数は n より若干大い値が採用されます。
-現時点では n を指定しても余り意味がありません(予約)。
+最大有効桁数は以下のような割り算を実行するとき等に意味を持ちます。
+<CODE><PRE>
+BigDecimal("1")    / BigDecimal("3")    # => 0.3333333333 33E0
+BigDecimal("1",10) / BigDecimal("3",10) # => 0.3333333333 3333333333 33333333E0
+</PRE></CODE>
+ただし、個々の演算における最大有効桁数 n の取り扱いは将来のバージョンで
+若干変更される可能性があります。
+
 </BLOCKQUOTE>
 
 <LI><B>mode</B></LI><BLOCKQUOTE>
@@ -278,58 +283,58 @@ c = a.frac
 <LI><B>floor[(n)]</B></LI><BLOCKQUOTE>
 c = a.floor<BR>
 a 以下の最大整数（BigDecimal 値）を返します。
-<PRE><CODE>
+<CODE><PRE>
 c = BigDecimal("1.23456").floor  #  ==> 1
 c = BigDecimal("-1.23456").floor #  ==> -2
-</CODE></PRE>
+</PRE></CODE>
 以下のように引数 n を与えることもできます。<BR>
 n>=0 なら、小数点以下 n+1 位の数字を操作します(少数点以下を、最大 n 桁にします)。<BR>
 n が負のときは小数点以上 n 桁目を操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。<BR>
-<PRE><CODE>
+<CODE><PRE>
  c = BigDecimal::new("1.23456").floor(4)   #  ==> 1.2345
  c = BigDecimal::new("15.23456").floor(-1) #  ==> 10.0
-</CODE></PRE>
+</PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>ceil[(n)]</B></LI><BLOCKQUOTE>
 c = a.ceil<BR>
 a 以上の整数のうち、最も小さい整数を計算し、その値（BigDecimal 値）を返します。
-<PRE><CODE>
+<CODE><PRE>
 c = BigDecimal("1.23456").ceil  #  ==> 2
 c = BigDecimal("-1.23456").ceil #  ==> -1
-</CODE></PRE>
+</PRE></CODE>
 
 以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます。<BR>
 n>=0 なら、小数点以下 n+1 位の数字を操作します(少数点以下を、最大 n 桁にします)。<BR>
  n が負のときは小数点以上 n 桁目をを操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。<BR>
-<PRE><CODE>
+<CODE><PRE>
  c = BigDecimal::new("1.23456").ceil(4)   # ==> 1.2346
  c = BigDecimal::new("15.23456").ceil(-1) # ==> 20.0
-</CODE></PRE>
+</PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>round[(n[,b])]</B></LI><BLOCKQUOTE>
 c = a.round<BR>
 小数点以下第一位の数を四捨五入して整数（BigDecimal 値）にします。<BR>
-<PRE><CODE>
+<CODE><PRE>
  c = BigDecimal("1.23456").round  #  ==> 1
  c = BigDecimal("-1.23456").round #  ==> -1
-</CODE></PRE>
+</PRE></CODE>
 
 以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます。<BR>
 n が正の時は、小数点以下 n+1 位の数字を四捨五入します(少数点以下を、最大 n 桁にします)。<BR>
 n が負のときは小数点以上 n 桁目をを操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。
-<PRE><CODE>
+<CODE><PRE>
 c = BigDecimal::new("1.23456").round(4)   #  ==> 1.2346
 c = BigDecimal::new("15.23456").round(-1) #  ==> 20.0
-</CODE></PRE>
+</PRE></CODE>
 ２番目の引数（デフォルトは 0）にゼロ以外を指定すると、いわゆる Banker's rounding になります。<BR>
  Banker's rounding とは、四捨五入する数字を p として、p &lt; 5 なら切り捨て p &gt; 5 なら切り上げ、
 p がちょうど５のときだけは切り上げ先の数字＋１が偶数になるときだけ切り上げます。
-<PRE><CODE>
+<CODE><PRE>
 c = BigDecimal::new("1.23456").round(3,1)   #  ==> 1.234
 c = BigDecimal::new("1.23356").round(3,1)   #  ==> 1.234
-</CODE></PRE>
+</PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>truncate</B></LI><BLOCKQUOTE>
@@ -338,10 +343,10 @@ c = a.truncate<BR>
 以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます。<BR>
 n が正の時は、小数点以下 n+1 位の数字を切り捨てます(少数点以下を、最大 n 桁にします)。
 n が負のときは小数点以上 n 桁目をを操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。<BR>
-<PRE><CODE>
+<CODE><PRE>
 c = BigDecimal::new("1.23456").truncate(4)   #  ==> 1.2345
 c = BigDecimal::new("15.23456").truncate(-1) #  ==> 10.0
-</CODE></PRE>
+</PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>divmod</B></LI><BLOCKQUOTE>
@@ -387,6 +392,11 @@ s = a.to_s(n)
 指数部を整数値で返します。
 n = a.exponent <BR>
 は a の値が 0.xxxxxxx*10**n を意味します。
+</BLOCKQUOTE>
+
+<LI><B>prec</B></LI><BLOCKQUOTE>
+n,m  = a.prec<BR>
+a の有効数字 (n) と最大有効数字 (m) の配列を返します。
 
 </BLOCKQUOTE>
 
@@ -649,13 +659,13 @@ exponent=1、sign=2 なら数値が 1234.56784321 であるのは見れば直ぐに分かります。
 <DD>例えば、以下のようなプログラムは全く誤差無しで
 計算することができます。以下の例は、一行に一つの数値
 が書いてあるファイル file の合計数値を求めるものです。
-<PRE><CODE>
+<CODE><PRE>
    file = File::open(....,"r")
    s = BigDecimal::new("0")
    while line = file.gets
       s = s + line
    end
-</CODE></PRE>
+</PRE></CODE>
 この例を2進数でやると誤差が入り込む可能性があります。
 例えば 0.1 を2進で表現すると 0.1 = b1*2**(-1)+b1*2**(-2)+b3*2**(-3)+b4*2**(-4)....
 と無限に続いてしまいます(b1=0,b2=0,b3=0,b4=1...)。ここで bn(n=1,2,3,...) は
@@ -692,7 +702,8 @@ BigDecimal はユーザ入力を誤差無しで取り込むことができます。
 <H2>計算精度について</H2>
 c = a op b という計算(op は + - * /)をしたときの動作は
 以下のようになります。<BR><BR>
-１．乗算と除算は(a の有効桁数)+(a の有効桁数)分の最大桁数（実際は、余裕を持って、
+１．乗算は(a の有効桁数)+(b の有効桁数)、
+除算は(a の最大有効桁数)+(b の最大有効桁数)分の最大桁数（実際は、余裕を持って、
 もう少し大きくなります）を持つ変数 c を新たに生成します。
 加減算の場合は、誤差が出ないだけの精度を持つ c を生成します。例えば
  c = 0.1+0.1*10**(-100) のような場合、c の精度は１００桁以上の精度を
@@ -700,7 +711,7 @@ c = a op b という計算(op は + - * /)をしたときの動作は
 <BR>
 ２．次に c = a op b の計算を実行します。<BR><BR>
 このように、加減算と乗算での c は必ず「誤差が出ない」だけの精度を
-持って生成されます。除算は(a の有効桁数)+(a の有効桁数)分の最大桁数
+持って生成されます。除算は(a の最大有効桁数)+(b の最大有効桁数)分の最大桁数
 を持つ c が生成されますが、c = 1.0/3.0 のような計算で明らかなように、
  c の最大精度を超えるところで計算が打ち切られる場合があります。<BR><BR>
 いずれにせよ、c の最大精度は a や b より大きくなりますので c が必要とする

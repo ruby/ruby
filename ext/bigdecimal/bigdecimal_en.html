@@ -91,9 +91,9 @@ This means the number of significant digits in BigDecimal is always a multiple o
 <P>
 Some more methods are available in Ruby code (not C code). 
 To use them,just require util.rb as:
-<PRE><CODE>
+<CODE><PRE>
 require "bigdecimal/util.rb"
-</CODE></PRE>
+</PRE></CODE>
 String to BigDecimal conversion, BigDecimal to String conversion 
 (in "nnnnnn.mmmm" form not in "0.xxxxxEn" form) etc are defined.
 For details,see the util.rb code.
@@ -108,7 +108,13 @@ where:<BR>
 s: Initial value string.<BR>
 n: Maximum number of significant digits of a. n must be a Fixnum object.
 If n is omitted or is equal to 0,then the maximum number of significant digits of a is determined from the length of s.
-Currently, n has no actual meaning(reserved for future use).
+n is useful when performing divisions like
+<CODE><PRE>
+BigDecimal("1")    / BigDecimal("3")    # => 0.3333333333 33E0
+BigDecimal("1",10) / BigDecimal("3",10) # => 0.3333333333 3333333333 33333333E0
+</PRE></CODE>
+but the result may differ in future version.
+
 </BLOCKQUOTE>
 
 <LI><B>mode</B></LI><BLOCKQUOTE>
@@ -270,55 +276,55 @@ returns fraction part of a.<BR>
 <LI><B>floor[(n)]</B></LI><BLOCKQUOTE>
 c = a.floor<BR>
 returns the maximum integer value (in BigDecimal) which is less than or equal to a.
-<PRE><CODE>
+<CODE><PRE>
  c = BigDecimal("1.23456").floor  #  ==> 1
  c = BigDecimal("-1.23456").floor #  ==> -2
-</CODE></PRE>
+</PRE></CODE>
 
 As shown in the following example,an optional integer argument (n) specifying the position 
 of the target digit can be given.<BR>
 If n> 0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
-<PRE><CODE>
+<CODE><PRE>
  c = BigDecimal::new("1.23456").floor(4)   #  ==> 1.2345
  c = BigDecimal::new("15.23456").floor(-1) #  ==> 10.0
-</CODE></PRE>
+</PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>ceil[(n)]</B></LI><BLOCKQUOTE>
 c = a.ceil<BR>
 returns the minimum integer value (in BigDecimal) which is greater than or equal to a.
-<PRE><CODE>
+<CODE><PRE>
  c = BigDecimal("1.23456").ceil  #  ==> 2
  c = BigDecimal("-1.23456").ceil #  ==> -1
-</CODE></PRE>
+</PRE></CODE>
 
 As shown in the following example,an optional integer argument (n) specifying the position 
 of the target digit can be given.<BR>
 If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
-<PRE><CODE>
+<CODE><PRE>
  c = BigDecimal::new("1.23456").ceil(4)   # ==> 1.2346
  c = BigDecimal::new("15.23456").ceil(-1) # ==> 20.0
-</CODE></PRE>
+</PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>round[(n[,b])]</B></LI><BLOCKQUOTE>
 c = a.round<BR>
 round a to the nearest 1ÅD<BR>
-<PRE><CODE>
+<CODE><PRE>
  c = BigDecimal("1.23456").round  #  ==> 1
  c = BigDecimal("-1.23456").round #  ==> -1
-</CODE></PRE>
+</PRE></CODE>
 
 As shown in the following example,an optional integer argument (n) specifying the position 
 of the target digit can be given.<BR>
 If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
-<PRE><CODE>
+<CODE><PRE>
 c = BigDecimal::new("1.23456").round(4)   #  ==> 1.2346
 c = BigDecimal::new("15.23456").round(-1) #  ==> 20.0
-</CODE></PRE>
+</PRE></CODE>
 
 If the second optional argument b is given with the non-zero value(default is zero) then 
 so called Banker's rounding is performed.<BR>
@@ -326,10 +332,10 @@ Suppose the digit p is to be rounded,then:<BR>
  If p<5 then p is truncated<BR>
  If p>5 then p is rounded up<BR>
  If p is 5 then round up operation is taken only when the left hand side digit of p is odd.
-<PRE><CODE>
+<CODE><PRE>
 c = BigDecimal::new("1.23456").round(3,1)   #  ==> 1.234
 c = BigDecimal::new("1.23356").round(3,1)   #  ==> 1.234
-</CODE></PRE>
+</PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>truncate[(n)]</B></LI><BLOCKQUOTE>
@@ -340,10 +346,10 @@ of the target digit can be given.<BR>
 If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
 If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
 
-<PRE><CODE>
+<CODE><PRE>
 c = BigDecimal::new("1.23456").truncate(4)   #  ==> 1.2345
 c = BigDecimal::new("15.23456").truncate(-1) #  ==> 10.0
-</CODE></PRE>
+</PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>divmod</B></LI><BLOCKQUOTE>
@@ -388,8 +394,14 @@ s = a.to_s(n)
 returns an integer holding exponent value of a.<BR>
 n = a.exponent <BR>
 means a = 0.xxxxxxx*10**n.
-
 </BLOCKQUOTE>
+
+<LI><B>prec</B></LI><BLOCKQUOTE>
+n,m = a.prec <BR>
+prec returns number of significant digits (n) and maximum number of 
+significant digits (m) of a.
+</BLOCKQUOTE>
+
 <LI><B>to_f</B></LI><BLOCKQUOTE>
 Creates a new Float object having (nearly) the same value.
 Use split method if you want to convert by yourself.
@@ -583,7 +595,7 @@ Computation results including Infinity,NaN,+0.0 or -0.0 become complicated.
 Run following program and comfirm the results.
 Send me any incorrect result if you find.
 
-<PRE><CODE>
+<CODE><PRE>
  require "bigdecimal"
  aa  = %w(1 -1 +0.0 -0.0 +Infinity -Infinity NaN)
  ba  = %w(1 -1 +0.0 -0.0 +Infinity -Infinity NaN)
@@ -597,7 +609,7 @@ Send me any incorrect result if you find.
     end
   end
  end
-</CODE></PRE>
+</PRE></CODE>
 <hr>
 
 <A NAME="#STRUCT">
@@ -660,13 +672,13 @@ The reason why I adopted decimal number representation for BigDecimal is:<BR>
 <DD>Following program can add all numbers(in decimal) in a file
  without any error(no round operation).<BR>
 
-<PRE><CODE>
+<CODE><PRE>
    file = File::open(....,"r")
    s = BigDecimal::new("0")
    while line = file.gets
       s = s + line
    end
-</CODE></PRE>
+</PRE></CODE>
 
 If the internal representation is binary,translation from decimal to 
 binary is required and the translation error is inevitable.
@@ -704,8 +716,9 @@ multiplication,and division,I prepared 2 group of methods<BR>
 For the operation + - * /,you can not specify the resulting 
 number of significant digits.<BR>
 Resulting number of significant digits are defined as:<BR>
-1.1 For * and /,resulting number of significant digits is the sum of the 
-significant digits of both side of the operator.<BR>
+1.1 For *,resulting number of significant digits is the sum of the 
+significant digits of both side of the operator. For / ,resulting number of significant digits is the sum of the 
+maximum significant digits of both side of the operator.<BR>
 1.2 For + and -,resulting number of significant digits is determined so that
  no round operation is needed. <br>
 For example, c has more than 100 siginificant digits if c is computed as:<BR>
@@ -714,8 +727,7 @@ c = 0.1+0.1*10**(-100)<br>
 As +,-,and * are always exact(no round operation is performed),
 which means more momories are required to keep computation results.
 
-As for the division as c = a/b,the significant digits of c is the same 
-as a*b. Division such as c=1.0/3.0 will be rounded.<BR>
+Division such as c=1.0/3.0 will be rounded.<BR>
 
 <H3>2. assign,add,sub,mult,div</H3>
 The length of the significant digits obtained from +,-,*,/ 
