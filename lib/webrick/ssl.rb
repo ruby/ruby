@@ -18,6 +18,7 @@ module WEBrick
       :SSLCertificate       => nil,
       :SSLPrivateKey        => nil,
       :SSLClientCA          => nil,
+      :SSLExtraChainCert    => nil,
       :SSLCACertificateFile => nil,
       :SSLCACertificatePath => nil,
       :SSLCertificateStore  => nil,
@@ -110,6 +111,7 @@ module WEBrick
       ctx.key = config[:SSLPrivateKey]
       ctx.cert = config[:SSLCertificate]
       ctx.client_ca = config[:SSLClientCA]
+      ctx.extra_chain_cert = config[:SSLExtraChainCert]
       ctx.ca_file = config[:SSLCACertificateFile]
       ctx.ca_path = config[:SSLCACertificatePath]
       ctx.cert_store = config[:SSLCertificateStore]
