@@ -1,3 +1,7 @@
+Sat Dec  4 18:54:09 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: removed empty lines from output.
+
 Sat Dec  4 18:49:09 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::VERSION): 0.1.1 -> 0.1.2

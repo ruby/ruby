@@ -183,7 +183,8 @@ EOC
         <<-EOC
         rv = []
         @#{n}.each do |x|
-          rv << "\#{x.to_s(convert, indent)}"
+          value = "\#{x.to_s(convert, indent)}"
+          rv << value if /\\A\\s*\\z/ !~ value
         end
         rv.join("\n")
 EOC
