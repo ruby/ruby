@@ -301,18 +301,6 @@ static void qpencode _((VALUE,VALUE,int));
 static int uv_to_utf8 _((char*,unsigned long));
 static unsigned long utf8_to_uv _((char*,int*));
 
-static void
-pack_add_ptr(str, add)
-    VALUE str, add;
-{
-#define STR_NO_ORIG FL_USER2	/* copied from string.c */
-    if (!RSTRING(str)->orig) {
-	RSTRING(str)->orig = rb_ary_new();
-	FL_SET(str, STR_NO_ORIG);
-    }
-    rb_ary_push(RSTRING(str)->orig, add);
-}
-
 static VALUE
 pack_pack(ary, fmt)
     VALUE ary, fmt;
@@ -849,7 +837,7 @@ pack_pack(ary, fmt)
 		if (NIL_P(from)) t = "";
 		else {
 		    t = STR2CSTR(from);
-		    pack_add_ptr(res, from);
+		    rb_str_associate(res, from);
 		}
 		rb_str_cat(res, (char*)&t, sizeof(char*));
 	    }

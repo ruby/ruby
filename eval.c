@@ -1804,7 +1804,10 @@ call_trace_func(event, file, line, self, id, klass)
 	ruby_frame->file = ruby_sourcefile = file;
     }
     if (klass) {
-	if (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
+	if (TYPE(klass) == T_ICLASS) {
+	    klass = RBASIC(klass)->klass;
+	}
+	else if (FL_TEST(klass, FL_SINGLETON)) {
 	    klass = self;
 	}
     }
@@ -1814,7 +1817,7 @@ call_trace_func(event, file, line, self, id, klass)
 	proc_call(trace_func, rb_ary_new3(6, rb_str_new2(event),
 					  srcfile,
 					  INT2FIX(ruby_sourceline),
-					  INT2FIX(id),
+					  id?ID2SYM(id):Qnil,
 					  self?rb_f_binding(self):Qnil,
 					  klass));
     }
@@ -4002,7 +4005,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 		    line = ruby_sourceline;
 		}
 
-		call_trace_func("c-call", 0, 0, 0, id, klass);
+		call_trace_func("c-call", 0, 0, recv, id, klass);
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
 		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
@@ -4563,7 +4566,12 @@ rb_f_eval(argc, argv, self)
 	line = NUM2INT(vline);
     }
 
-    Check_SafeStr(src);
+    if (ruby_safe_level >= 3) {
+	Check_Type(src, T_STRING);
+    }
+    else {
+	Check_SafeStr(src);
+    }
     if (NIL_P(scope) && ruby_frame->prev) {
 	struct FRAME *prev;
 	VALUE val;

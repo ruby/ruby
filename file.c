@@ -1961,6 +1961,7 @@ path_check_1(path)
 #else
 	if (getwd(buf) == 0) return 0;
 #endif
+	strncat(buf, "/", MAXPATHLEN);
 	strncat(buf, path, MAXPATHLEN);
 	buf[MAXPATHLEN] = '\0';
 	return path_check_1(buf);

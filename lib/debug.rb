@@ -445,9 +445,9 @@ class DEBUGGER__
 	n += 1
 	break unless bind
 	if pos == n
-	  stdout.printf "--> #%d  %s:%s%s\n", n, file, line, id != 0 ? ":in `#{id.id2name}'":""
+	  stdout.printf "--> #%d  %s:%s%s\n", n, file, line, id ? ":in `#{id.id2name}'":""
 	else
-	  stdout.printf "    #%d  %s:%s%s\n", n, file, line, id != 0 ? ":in `#{id.id2name}'":""
+	  stdout.printf "    #%d  %s:%s%s\n", n, file, line, id ? ":in `#{id.id2name}'":""
 	end
       end
     end

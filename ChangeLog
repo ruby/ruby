@@ -1,3 +1,27 @@
+Fri Mar 17 15:02:45 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_autoload_id): defining new autoload should be
+	  prohibited for $SAFE > 4.
+
+	* variable.c (rb_autoload_load): autoload should be possible for
+	  $SAFE > 4.
+
+	* eval.c (call_trace_func): should handle T_ICLASS properly.
+
+Fri Mar 17 14:34:30 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_gsub): forgot to initialize str->orig.
+
+Fri Mar 17 01:24:59 2000  Dave Thomas  <Dave@thomases.com>
+
+	* string.c (rb_str_clone): forgot to copy str->orig if STR_NO_ORIG
+	  is set by Array#pack.
+
+Wed Mar 15 21:25:04 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* array.c (rb_ary_join): 'result' is always duplicated
+	  before concat string.
+
 Wed Mar 15 17:26:05 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* hash.c (rb_hash_s_create): unexpected recursive call removed.

@@ -132,7 +132,7 @@ class TkText<TkTextWin
     WidgetClassName
   end
 
-  def self.new(*args)
+  def self.new(*args, &block)
     obj = super(*args){}
     obj.init_instance_variable
     obj.instance_eval &block if defined? yield

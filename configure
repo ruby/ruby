@@ -4934,7 +4934,7 @@ case "$target_os" in
     	CFLAGS="$CFLAGS -pipe -no-precomp"
 		;;
 	osf*)
-	if  $without_gcc = "yes" ; then
+	if test "$without_gcc" = "no" ; then
 	  CFLAGS="$CFLAGS -ansi"
 	else
 	  # compile something small: taint.c is fine for this.

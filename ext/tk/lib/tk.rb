@@ -1062,15 +1062,13 @@ module TkSelection
     tk_call 'selection', 'get', type
   end
   def TkSelection.handle(win, func, type=None, format=None)
-    id = install_cmd(func)
-    tk_call 'selection', 'handle', win.path, id, type, format
+    tk_call 'selection', 'handle', win.path, func, type, format
   end
   def handle(func, type=None, format=None)
     TkSelection.handle self, func, type, format
   end
-  def TkSelection.own(win, func=None)
-    id = install_cmd(func)
-    tk_call 'selection', 'own', win.path, id
+  def TkSelection.own(win=None, func=None)
+    window(tk_call 'selection', 'own', win, func)
   end
   def own(func=None)
     TkSelection.own self, func

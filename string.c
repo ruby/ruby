@@ -141,6 +141,20 @@ rb_str_become(str, str2)
     if (OBJ_TAINTED(str2)) OBJ_TAINT(str);
 }
 
+void
+rb_str_associate(str, add)
+    VALUE str, add;
+{
+    if (!FL_TEST(str, STR_NO_ORIG)) {
+	if (RSTRING(str)->orig) {
+	    rb_str_modify(str);
+	}
+	RSTRING(str)->orig = rb_ary_new();
+	FL_SET(str, STR_NO_ORIG);
+    }
+    rb_ary_push(RSTRING(str)->orig, add);
+}
+
 static ID to_str;
 
 VALUE
@@ -163,6 +177,8 @@ VALUE
 rb_str_dup(str)
     VALUE str;
 {
+    VALUE shadow;
+
     if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
     if (OBJ_FROZEN(str)) return rb_str_new3(str);
     if (FL_TEST(str, STR_NO_ORIG)) {
@@ -171,14 +187,11 @@ rb_str_dup(str)
 	return s;
     }
     if (RSTRING(str)->orig) return rb_str_new3(RSTRING(str)->orig);
-    else {
-	VALUE shadow;
 
+    shadow = rb_str_new4(str);
+    {
 	NEWOBJ(dup, struct RString);
 	OBJSETUP(dup, rb_cString, T_STRING);
-
-	shadow = rb_str_new4(str);
-
 	dup->len = RSTRING(shadow)->len;
 	dup->ptr = RSTRING(shadow)->ptr;
 	dup->orig = shadow;
@@ -195,8 +208,9 @@ rb_str_clone(str)
 {
     VALUE clone = rb_str_dup(str);
     if (FL_TEST(str, STR_NO_ORIG))
-	RSTRING(str)->orig = RSTRING(str)->orig;
+	RSTRING(clone)->orig = RSTRING(str)->orig;
     CLONESETUP(clone, str);
+
     return clone;
 }
 
@@ -334,6 +348,7 @@ rb_str_modify(str)
     if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return;
+    if (TYPE(RSTRING(str)->orig) != T_STRING) abort();
     ptr = ALLOC_N(char, RSTRING(str)->len+1);
     if (RSTRING(str)->ptr) {
 	memcpy(ptr, RSTRING(str)->ptr, RSTRING(str)->len);
@@ -1214,6 +1229,7 @@ str_gsub(argc, argv, str, bang)
 	OBJSETUP(dup, rb_cString, T_STRING);
 	OBJ_INFECT(dup, str);
 	str = (VALUE)dup;
+	dup->orig = 0;
     }
     RSTRING(str)->ptr = buf;
     RSTRING(str)->len = len = bp - buf;

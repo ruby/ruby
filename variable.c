@@ -226,6 +226,7 @@ rb_autoload_id(id, filename)
     ID id;
     const char *filename;
 {
+    rb_secure(4);
     if (!rb_is_const_id(id)) {
 	rb_raise(rb_eNameError, "autoload must be constant name",
 		 rb_id2name(id));
@@ -1036,6 +1037,7 @@ rb_autoload_load(id)
 
     st_delete(autoload_tbl, &id, &modname);
     module = rb_str_new2(modname);
+    FL_UNSET(module, FL_TAINT);
     free(modname);
     rb_f_require(Qnil, module);
 }
