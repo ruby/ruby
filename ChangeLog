@@ -1,3 +1,8 @@
+Fri Dec  3 18:57:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/ostruct.rb: 1.9 marshaling support back-ported.
+	  [ruby-core:03871]
+
 Fri Dec  3 13:45:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): copy arguments to frame.argv.
