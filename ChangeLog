@@ -224,6 +224,10 @@ Thu Dec 26 19:22:00 2002  YOSHIDA Kazuhiro <moriq@moriq.com>
 	* win32/setup.mak (-prologue-): moved srcdir macro definition.
 	  [ruby-win32:420].
 
+Wed Dec 25 18:26:44 2002  K.Kosako  <kosako@sofnec.co.jp>
+
+	* regex.c (re_match):
+
 Wed Dec 25 16:41:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_match_exec): fix odd \G behavior based on the patch

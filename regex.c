@@ -3476,7 +3476,7 @@ re_match(bufp, string_arg, size, pos, regs)
      int size, pos;
      struct re_registers *regs;
 {
-  return re_match_exec(bufp, string_arg, size, pos, 0, regs);
+  return re_match_exec(bufp, string_arg, size, pos, pos, regs);
 }
 
 static int
