@@ -1,8 +1,14 @@
-#
-# pop.rb  version 1.0.1
-#
-#   author: Minero Aoki <aamine@dp.u-netsurf.ne.jp>
-#
+=begin
+
+= Net module version 1.0.2 reference manual
+
+pop.rb written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+
+This library is distributed under the terms of Ruby style license.
+You can freely distribute/modify/copy this file.
+
+=end
+
 
 require 'net/session'
 require 'md5'
@@ -10,7 +16,43 @@ require 'md5'
 
 module Net
 
+=begin
+
+== Net::POP3Session
+
+=== Super Class
+
+Net::Session
+
+=== Class Methods
+
+: new( address = 'localhost', port = 110 )
+
+  This method create a new POP3Session object but this will not open connection.
+
+=end
+
   class POP3Session < Session
+
+
+=begin
+
+=== Methods
+
+: start( account, password )
+
+  This method start POP session.
+
+: each{|popmail| ...}
+
+  This method is equals to "POP3Session.mails.each"
+
+: mails
+
+  This method returns an array of <a href="#popi">POP3Session::POPMail</a>.
+  This array is renewed when login.
+
+=end
 
     attr :mails
 
@@ -44,6 +86,17 @@ module Net
     end
 
 
+=begin
+
+== Net::POP3Session::POPMail
+
+A class of mail which exists on POP server.
+
+=== Super Class
+
+Object
+
+=end
 
     class POPMail
 
@@ -54,6 +107,39 @@ module Net
 
         @deleted = false
       end
+
+=begin
+
+=== Method
+
+: all
+: pop
+: mail
+
+  This method fetches a mail and return it.
+
+: header
+
+  This method fetches only mail header.
+
+: top( lines )
+
+  This method fetches mail header and 'lines' lines body.
+
+: delete
+: delete!
+
+  This method deletes mail.
+
+: size
+
+  size of mail(bytes)
+
+: deleted?
+
+  true if mail was deleted
+
+=end
 
       attr :size
 
@@ -83,8 +169,23 @@ module Net
 
     end
 
-  end
+  end   # POP3Session
 
+  POPSession = POP3Session
+  POP3       = POP3Session
+
+
+=begin
+
+== Net::APOP3Session
+
+This class has no new methods. Only way of authetication is changed.
+
+=== Super Class
+
+Net::POP3Session
+
+=end
 
   class APOPSession < POP3Session
 
@@ -95,13 +196,84 @@ module Net
 
   end
 
-
-  POPSession = POP3Session
-  POP3       = POP3Session
+  APOP = APOPSession
 
 
+=begin
+
+== Net::POP3Command
+
+POP3 protocol class.
+
+=== Super Class
+
+Net::Command
+
+=== Class Methods
+
+: new( socket )
+
+  This method creates new POP3Command object. 'socket' must be ProtocolSocket.
+
+=end
 
   class POP3Command < Command
+
+
+=begin
+
+=== Methods
+
+: auth( account, password )
+
+  This method do POP authorization (no RPOP)
+  In case of failed authorization, raises Protocol::ProtocolError exception.
+
+: list
+
+  a list of mails which existing on server.
+  The list is an array like "array[ number ] = size".
+
+  ex:
+
+    The list from server is
+
+    1 2452
+    2 3355
+    4 9842
+       :
+
+    then, an array is
+
+    [ nil, 2452, 3355, nil, 9842, ... ]
+
+: quit
+
+  This method finishes POP3 session.
+
+: rset
+
+  This method reset all changes done in current session,
+  by sending 'RSET' command.
+
+: top( num, lines = 0 )
+
+  This method gets all mail header and 'lines' lines body
+  by sending 'TOP' command.  'num' is mail number.
+
+  WARNING: the TOP command is 'Optional' in RFC1939 (POP3)
+
+
+: retr( num : Integer )
+
+  This method gets a mail by 'RETR' command. 'num' is mail number.
+
+
+: dele( num : Integer )
+
+  This method deletes a mail on server by 'DELE'.
+
+=end
 
     def auth( acnt, pass )
       @socket.writeline( 'USER ' + acnt )
@@ -190,6 +362,23 @@ module Net
   end
 
 
+=begin
+
+== APOPCommand
+
+=== Super Class
+
+POP3
+
+=== Methods
+
+: auth( account, password )
+
+  This method do authorization by sending 'APOP' command.
+  If server is not APOP server, this raises Net::ProtoAuthError exception.
+  On other errors, raises Net::ProtocolError.
+
+=end
 
   class APOPCommand < POP3Command
 
@@ -223,7 +412,7 @@ module Net
   end
 
 
-  unless Session::Version == '1.0.1' then
+  unless Session::Version == '1.0.2' then
     $stderr.puts "WARNING: wrong version of session.rb & pop.rb"
   end
 

@@ -1,11 +1,33 @@
-#
-# smtp.rb  version 1.0.1
-#
-#   author Minero Aoki <aamine@dp.u-netsurf.ne.jp>
-#
+=begin
+
+= Net module version 1.0.2 reference manual
+
+smtp.rb written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+
+This library is distributed under the terms of Ruby style license.
+You can freely redistribute/modify/copy this file.
+
+=end
+
 
 require 'net/session'
 
+
+=begin
+
+== Net::SMTPSession
+
+=== Super Class
+
+Net::Session
+
+=== Class Methods
+
+: new( address = 'localhost', port = 25 )
+
+  This method create new SMTPSession object.
+
+=end
 
 module Net
 
@@ -15,6 +37,33 @@ module Net
       @proto_type = SMTPCommand
       @port       = 25
     end
+
+=begin
+
+=== Methods
+
+: start( helo_domain = ENV['HOSTNAME'] )
+
+  This method opens TCP connection and start SMTP session.
+  If session had been started, do nothing and return false.
+
+: sendmail( mailsrc, from_domain, to_addrs )
+
+  This method sends 'mailsrc' as mail. SMTPSession read strings from 'mailsrc'
+  by calling 'each' iterator, and convert them into "\r\n" terminated string when write.
+
+  SMTPSession's Exceptions are:
+  * Protocol::ProtoSyntaxError: syntax error (errno.500)
+  * Protocol::ProtoFatalError: fatal error (errno.550)
+  * Protocol::ProtoUnknownError: unknown error
+  * Protocol::ProtoServerBusy: temporary error (errno.420/450)
+
+: finish
+
+  This method closes SMTP session.
+  If session had not started, do nothind and return false.
+
+=end
 
     def sendmail( mailsrc, fromaddr, toaddrs )
       @proto.mailfrom( fromaddr )
@@ -43,6 +92,48 @@ module Net
   SMTP = SMTPSession
 
 
+=begin
+
+== Net::SMTPCommand
+
+=== Super Class
+
+Net::Command
+
+=== Class Methods
+
+: new( socket )
+
+  This method creates new SMTPCommand object, and open SMTP session.
+
+
+=== Methods
+
+: helo( helo_domain )
+
+  This method send "HELO" command and start SMTP session.<br>
+  helo_domain is localhost's FQDN.
+
+: mailfrom( from_addr )
+
+  This method sends "MAIL FROM" command.<br>
+  from_addr is your mail address(????@????).
+
+: rcpt( to_addrs )
+
+  This method sends "RCPT TO" command.<br>
+  to_addrs is array of mail address(???@???) of destination.
+
+: data( mailsrc )
+
+  This method send 'mailsrc' as mail. SMTP reads strings from 'mailsrc'
+  by calling 'each' iterator. 
+
+: quit
+
+  This method sends "QUIT" command and ends SMTP session.
+
+=end
 
   class SMTPCommand < Command
 
@@ -121,7 +212,7 @@ module Net
   end
 
 
-  unless Session::Version == '1.0.1' then
+  unless Session::Version == '1.0.2' then
     $stderr.puts "WARNING: wrong version of session.rb & smtp.rb"
   end
 
