@@ -163,6 +163,33 @@ class TestGeneric < Test::Unit::TestCase
     u0 = URI.parse('mailto:foo@example.com')
     u1 = URI.parse('mailto:foo@example.com#bar')
     assert_equal(uri_to_ary(u0 + '#bar'), uri_to_ary(u1))
+
+    # [ruby-list:39838]
+    u0 = URI.parse('http://www.example.com/')
+    u1 = URI.parse('http://www.example.com/foo/..') + './'
+    assert_equal(u0, u1)
+    u0 = URI.parse('http://www.example.com/foo/')
+    u1 = URI.parse('http://www.example.com/foo/bar/..') + './'
+    assert_equal(u0, u1)
+    u0 = URI.parse('http://www.example.com/foo/bar/')
+    u1 = URI.parse('http://www.example.com/foo/bar/baz/..') + './'
+    assert_equal(u0, u1)
+    u0 = URI.parse('http://www.example.com/')
+    u1 = URI.parse('http://www.example.com/foo/bar/../..') + './'
+    assert_equal(u0, u1)
+    u0 = URI.parse('http://www.example.com/foo/')
+    u1 = URI.parse('http://www.example.com/foo/bar/baz/../..') + './'
+    assert_equal(u0, u1)
+
+    # [ruby-list:39844]
+    u = URI.parse('http://www.example.com/')
+    u0 = u + './foo/'
+    u1 = u + './foo/bar/..'
+    assert_equal(u0, u1)
+    u = URI.parse('http://www.example.com/')
+    u0 = u + './'
+    u1 = u + './foo/bar/../..'
+    assert_equal(u0, u1)
   end
 
   def test_route

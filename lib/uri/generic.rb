@@ -630,16 +630,20 @@ module URI
         base_path = split_path(base)
         rel_path  = split_path(rel)
 
+        # RFC2396, Section 5.2, 6), a)
+	base_path << '' if base_path.last == '..'
+	while i = base_path.index('..')
+	  base_path.slice!(i - 1, 2)
+        end
         if base_path.empty?
-          base_path = [''] # XXX
+          base_path = [''] # keep '/' for root directory
+        else
+	  base_path.pop
         end
 
-        # RFC2396, Section 5.2, 6), a)
-        base_path.pop unless base_path.size == 1
-
         # RFC2396, Section 5.2, 6), c)
-         # RFC2396, Section 5.2, 6), d)
-        rel_path.push('') if rel_path.last == '.'
+        # RFC2396, Section 5.2, 6), d)
+        rel_path.push('') if rel_path.last == '.' || rel_path.last == '..'
         rel_path.delete('.')
 
         # RFC2396, Section 5.2, 6), e)
