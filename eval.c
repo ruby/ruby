@@ -3172,7 +3172,7 @@ rb_eval(self, n)
 	    else {
 		if (rb_special_const_p(result)) {
 		    rb_raise(rb_eTypeError, "no virtual class for %s",
-			     rb_class2name(CLASS_OF(klass)));
+			     rb_class2name(CLASS_OF(result)));
 		}
 		if (rb_safe_level() >= 4 && !OBJ_TAINTED(result))
 		    rb_raise(rb_eSecurityError, "Insecure: can't extend object");
