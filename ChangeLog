@@ -1,3 +1,10 @@
+Mon Aug 11 22:31:50 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+	* lib/debug.rb(debug_command): inspection command should inspect
+	  resulting value even if it's nil.  [ruby-dev:21180] by OMAE, jun
+	  <jun66j5@ybb.ne.jp>.
+
+	* lib/debug.rb(debug_command): incomplete regexp.
+
 Mon Aug 11 17:33:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call_super): do not use rb_block_given_p() for

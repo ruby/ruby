@@ -505,21 +505,21 @@ class Context
 	    exit!	# exit -> exit!: No graceful way to stop threads...
 	  end
 
-	when /^\s*v(?:ar)?\s+/
+	when /^\s*v(?:ar)?\s+$/
 	  debug_variable_info($', binding)
 
-	when /^\s*m(?:ethod)?\s+/
+	when /^\s*m(?:ethod)?\s+$/
 	  debug_method_info($', binding)
 
-	when /^\s*th(?:read)?\s+/
+	when /^\s*th(?:read)?\s+$/
 	  if DEBUGGER__.debug_thread_info($', binding) == :cont
 	    prompt = false
 	  end
 
-	when /^\s*pp\s+/
+	when /^\s*pp\s+$/
 	  PP.pp(debug_eval($', binding), stdout)
 
-	when /^\s*p\s+/
+	when /^\s*p\s+$/
 	  stdout.printf "%s\n", debug_eval($', binding).inspect
 
 	when /^\s*h(?:elp)?$/
@@ -527,7 +527,7 @@ class Context
 
 	else
 	  v = debug_eval(input, binding)
-	  stdout.printf "%s\n", v.inspect unless (v == nil)
+	  stdout.printf "%s\n", v.inspect
 	end
       end
     end
