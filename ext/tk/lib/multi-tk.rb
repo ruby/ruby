@@ -140,16 +140,17 @@ class MultiTkIp
   ######################################
 
   def set_safe_level(safe)
-    @safe_level[0] = safe
-    @cmd_queue.enq([@system, 'set_safe_level', safe])
-    self
+    if safe > @safe_level[0]
+      @safe_level[0] = safe
+      @cmd_queue.enq([@system, 'set_safe_level', safe])
+    end
+    @safe_level[0]
   end
   def safe_level=(safe)
     set_safe_level(safe)
   end
   def self.set_safe_level(safe)
     __getip.set_safe_level(safe)
-    self
   end
   def self.safe_level=(safe)
     self.set_safe_level(safe)
@@ -222,7 +223,8 @@ class MultiTkIp
 	else
 	  # procedure
 	  begin
-	    ret = proc{$SAFE = safe_level; cmd.call(*args)}.call
+	    #ret = proc{$SAFE = safe_level; cmd.call(*args)}.call
+	    ret = cmd.call(safe_level, *args)
 	  rescue SystemExit => e
 	    # delete IP
 	    unless @interp.deleted?
@@ -1183,7 +1185,10 @@ class MultiTkIp
 
   def cb_eval(cmd, *args)
     #self.eval_callback{ TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *args)) }
-    ret = self.eval_callback{ TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *args)) }
+    #ret = self.eval_callback{ TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *args)) }
+    ret = self.eval_callback(*args){|safe, *params|
+      $SAFE=safe; TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *params))
+    }
     if ret.kind_of?(Exception)
       raise ret 
     end
@@ -1268,9 +1273,7 @@ class MultiTkIp
   end
   private :eval_proc_core
 
-  #def eval_callback(cmd = proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
-  #  eval_proc_core(false, cmd, *args)
-  #end
+=begin
   def eval_callback(*args)
     if block_given?
       eval_proc_core(false, proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
@@ -1278,10 +1281,16 @@ class MultiTkIp
       eval_proc_core(false, *args)
     end
   end
+=end
+  def eval_callback(*args)
+    if block_given?
+      eval_proc_core(false, Proc.new, *args)
+    else
+      eval_proc_core(false, *args)
+    end
+  end
 
-  #def eval_proc(cmd = proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
-  #  eval_proc_core(true, cmd, *args)
-  #end
+=begin
   def eval_proc(*args)
     if block_given?
       eval_proc_core(true, proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
@@ -1289,15 +1298,34 @@ class MultiTkIp
       eval_proc_core(true, *args)
     end
   end
+=end
+  def eval_proc(*args)
+    if block_given?
+      cmd = Proc.new
+    else
+      unless (cmd = args.shift)
+	fail ArgumentError, "A Proc or Method object is expected for 1st argument"
+      end
+    end
+    eval_proc_core(true, 
+		   proc{|safe, *params| 
+		     $SAFE=safe; Thread.new(*params, &cmd).value
+		   },
+		   *args)
+  end
   alias call eval_proc
   alias eval_string eval_proc
 end
+
 class << MultiTkIp
   # class method
-  # def eval_proc(cmd = proc{$SAFE=__getip.safe_level; Proc.new}.call, *args)
-  #   # class ==> interp object
-  #   __getip.eval_proc(cmd, *args)
-  # end
+=begin
+  def eval_proc(cmd = proc{$SAFE=__getip.safe_level; Proc.new}.call, *args)
+    # class ==> interp object
+    __getip.eval_proc(cmd, *args)
+  end
+=end
+=begin
   def eval_proc(*args)
     # class ==> interp object
     if block_given?
@@ -1306,6 +1334,13 @@ class << MultiTkIp
       __getip.eval_proc(*args)
     end
   end
+=end
+#=begin
+  def eval_proc(*args, &blk)
+    # class ==> interp object
+    __getip.eval_proc(*args, &blk)
+  end
+#=end
   alias call eval_proc
   alias eval_string eval_proc
 end

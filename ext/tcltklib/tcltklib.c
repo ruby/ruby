@@ -64,7 +64,7 @@ fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); fflush(stderr); }
 #define DUMP2(ARG1, ARG2)
 */
 
-/* finalize_proc_name */
+/*finalize_proc_name */
 static char *finalize_hook_name = "INTERP_FINALIZE_HOOK";
 
 /* for callback break & continue */
@@ -629,7 +629,7 @@ lib_eventloop_core(check_root, update_flag, check_var)
     int update_flag;
     int *check_var;
 {
-    VALUE current = eventloop_thread;
+    volatile VALUE current = eventloop_thread;
     int found_event = 1;
     int event_flag;
     struct timeval t;
@@ -1321,6 +1321,7 @@ ip_ruby_eval(clientData, interp, argc, argv)
 #endif
     /* arg.failed = 0; */
     RARRAY(exception)->ptr[0] = Qnil;
+    RARRAY(exception)->len = 1;
     arg->failed = exception;
 
     /* evaluate the argument string by ruby */
@@ -1717,6 +1718,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
     rb_thread_critical = thr_crit_bup;
 
     RARRAY(exception)->ptr[0] = Qnil;
+    RARRAY(exception)->len = 1;
 
     arg->receiver = receiver;
     arg->method = method;
@@ -3878,9 +3880,11 @@ eval_queue_handler(evPtr, flags)
 	    rb_bug("cross-thread violation on eval_queue_handler()");
 	}
 #endif
+	/* q_dat = Data_Wrap_Struct(rb_cData,0,0,q); */
 	q_dat = Data_Wrap_Struct(rb_cData,eval_queue_mark,0,q);
 	ret = rb_funcall(rb_proc_new(evq_safelevel_handler, q_dat), 
 			 ID_call, 0);
+	rb_gc_force_recycle(q_dat);
     } else {
 	DUMP2("call eval_real (for caller thread:%lx)", q->thread);
 	DUMP2("call eval_real (current thread:%lx)", rb_thread_current());
@@ -3912,9 +3916,9 @@ ip_eval(self, str)
     char *eval_str;
     int  *alloc_done;
     int  thr_crit_bup;
-    VALUE current = rb_thread_current();
+    volatile VALUE current = rb_thread_current();
     volatile VALUE ip_obj = self;
-    volatile VALUE result = rb_ary_new2(1);
+    volatile VALUE result;
     volatile VALUE ret;
     Tcl_QueuePosition position;
 
@@ -3951,6 +3955,11 @@ ip_eval(self, str)
 
     /* allocate memory (freed by Tcl_ServiceEvent) */
     evq = (struct eval_queue *)Tcl_Alloc(sizeof(struct eval_queue));
+
+    /* allocate result obj */
+    result = rb_ary_new2(1);
+    RARRAY(result)->ptr[0] = Qnil;
+    RARRAY(result)->len = 1;
 
     /* construct event data */
     evq->done = alloc_done;
@@ -4772,9 +4781,11 @@ invoke_queue_handler(evPtr, flags)
 
     /* check safe-level */
     if (rb_safe_level() != q->safe_level) {
+	/* q_dat = Data_Wrap_Struct(rb_cData,0,0,q); */
 	q_dat = Data_Wrap_Struct(rb_cData,invoke_queue_mark,0,q);
 	ret = rb_funcall(rb_proc_new(ivq_safelevel_handler, q_dat), 
 			 ID_call, 0);
+	rb_gc_force_recycle(q_dat);
     } else {
 	DUMP2("call invoke_real (for caller thread:%lx)", q->thread);
 	DUMP2("call invoke_real (current thread:%lx)", rb_thread_current());
@@ -4810,10 +4821,9 @@ ip_invoke_with_position(argc, argv, obj, position)
     int  i;
     int  *alloc_done;
     int  thr_crit_bup;
-    VALUE v;
-    VALUE current = rb_thread_current();
+    volatile VALUE current = rb_thread_current();
     volatile VALUE ip_obj = obj;
-    volatile VALUE result = rb_ary_new2(1);
+    volatile VALUE result;
     volatile VALUE ret;
 
 #if TCL_MAJOR_VERSION >= 8
@@ -4852,6 +4862,11 @@ ip_invoke_with_position(argc, argv, obj, position)
 
     /* allocate memory (freed by Tcl_ServiceEvent) */
     ivq = (struct invoke_queue *)Tcl_Alloc(sizeof(struct invoke_queue));
+
+    /* allocate result obj */
+    result = rb_ary_new2(1);
+    RARRAY(result)->ptr[0] = Qnil;
+    RARRAY(result)->len = 1;
 
     /* construct event data */
     ivq->done = alloc_done;
