@@ -1,3 +1,8 @@
+Tue Feb 24 17:07:17  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (fnmatch): File.fnmatch with FNM_PATHNAME was broken
+	  for the pattern including '*' followed by '/'.
+
 Tue Feb 24 13:22:21 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb (RDoc::RDoc::normalized_file_list): Attempt to get better

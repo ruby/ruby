@@ -250,6 +250,7 @@ fnmatch(pat, string, flags)
 		s = rb_path_next(s);
 		if (*s) {
 		    INC_S();
+		    ++pat;
 		    break;
                 }
 		return FNM_NOMATCH;
