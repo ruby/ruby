@@ -672,19 +672,19 @@ An end of a defun is found by moving forward from the beginning of one."
 		       ;; #{ }, #$hoge, #@foo are not comments
 		       ("\\(#\\)[{$@]" 1 (1 . nil))
 		       ;; the last $' in the string ,'...$' is not variable    
-		       ("\\(^\\|[[\\s <+(,]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*\\$\\('\\)"
+		       ("\\(^\\|[[\\s <+(,]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[\\?\\$]\\('\\)"
 			(2 (7 . nil))
 			(4 (7 . nil)))	
 		       ;; the last $` in the string ,`...$` is not variable   
-		       ("\\(^\\|[[\\s <+(,]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*\\$\\(`\\)"
+		       ("\\(^\\|[[\\s <+(,]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[\\?\\$]\\(`\\)"
 			(2 (7 . nil))
 			(4 (7 . nil)))
 		       ;; the last $" in the string ,"...$" is not variable   
-		       ("\\(^\\|[[\\s <+(,]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*\\$\\(\"\\)"
+		       ("\\(^\\|[[\\s <+(,]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[\\?\\$]\\(\"\\)"
 			(2 (7 . nil))
 			(4 (7 . nil)))
 		       ;; $' $" $` .... are variables
-		       ("\\$[#\"'`$\\]" 0 (1 . nil))
+		       ("[\\?\\$][#\"'`]" 0 (1 . nil))
 		       ;; regexps 
 		       ("\\(^\\|[=(,~?:;]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
 			(4 (7 . ?/))
@@ -714,12 +714,12 @@ An end of a defun is found by moving forward from the beginning of one."
     (let (beg)
       (save-excursion
 	(if (and (re-search-backward "^=\\(begin\\|end\\)\\(\\s \\|$\\)" nil t)
-		 (string= (match-string-no-properties 1) "begin"))
+		 (string= (match-string 1) "begin"))
 	    (progn
 	      (beginning-of-line)
 	      (setq beg (point)))))
       (if (and beg (and (re-search-forward "^=\\(begin\\|end\\)\\(\\s \\|$\\)" nil t)
-			(string= (match-string-no-properties 1) "end")))
+			(string= (match-string 1) "end")))
 	  (progn
 	    (set-match-data (list beg (point)))
 	    t)

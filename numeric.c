@@ -1566,6 +1566,8 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "truncate", num_truncate, 0);
 
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
+    rb_undef_method(CLASS_OF(rb_cInteger), "new");
+
     rb_define_method(rb_cInteger, "integer?", int_int_p, 0);
     rb_define_method(rb_cInteger, "upto", int_upto, 1);
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
@@ -1586,8 +1588,6 @@ Init_Numeric()
     rb_include_module(rb_cFixnum, rb_mPrecision);
     rb_define_singleton_method(rb_cFixnum, "induced_from", rb_fix_induced_from, 1);
     rb_define_singleton_method(rb_cInteger, "induced_from", rb_int_induced_from, 1);
-
-    rb_undef_method(CLASS_OF(rb_cFixnum), "new");
 
     rb_define_method(rb_cFixnum, "to_s", fix_to_s, 0);
     rb_define_method(rb_cFixnum, "type", fix_type, 0);

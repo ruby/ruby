@@ -26,7 +26,7 @@ typedef unsigned short BDIGIT;
 #define SIZEOF_BDIGITS SIZEOF_SHORT
 #endif
 
-#define BITSPERSHORT (sizeof(short)*CHAR_BIT)
+#define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
 #define SHORTDN(x) RSHIFT(x,BITSPERSHORT)
 
@@ -46,7 +46,7 @@ shortlen(len, ds)
 	num = SHORTDN(num);
 	offset++;
     }
-    return (len - 1)*sizeof(BDIGIT)/sizeof(short) + offset;
+    return (len - 1)*sizeof(BDIGIT)/2 + offset;
 }
 #define SHORTLEN(x) shortlen((x),d)
 #endif
@@ -129,11 +129,8 @@ w_short(x, arg)
     int x;
     struct dump_arg *arg;
 {
-    int i;
-
-    for (i=0; i<sizeof(short); i++) {
-	w_byte((x >> (i*8)) & 0xff, arg);
-    }
+    w_byte((x >> 0) & 0xff, arg);
+    w_byte((x >> 8) & 0xff, arg);
 }
 
 static void
@@ -145,7 +142,7 @@ w_long(x, arg)
     int i, len = 0;
 
 #if SIZEOF_LONG > 4
-    if (!(RSHIFT(x, 32) == 0 || RSHIFT(x, 32) == -1)) {
+    if (!(RSHIFT(x, 31) == 0 || RSHIFT(x, 31) == -1)) {
 	/* big long does not fit in 4 bytes */
 	rb_raise(rb_eTypeError, "long too big to dump");
     }
@@ -452,7 +449,7 @@ w_object(obj, arg, limit)
 
 		w_unique(rb_class2name(CLASS_OF(obj)), arg);
 		w_long(len, arg);
-		mem = rb_ivar_get(rb_obj_class(obj), rb_intern("__member__"));
+		mem = rb_struct_iv_get(rb_obj_class(obj), "__member__");
 		if (mem == Qnil) {
 		    rb_raise(rb_eTypeError, "uninitialized struct");
 		}
@@ -601,12 +598,9 @@ r_short(arg)
     struct load_arg *arg;
 {
     unsigned short x;
-    int i;
 
-    x = 0;
-    for (i=0; i<sizeof(short); i++) {
-	x |= r_byte(arg)<<(i*8);
-    }
+    x =  r_byte(arg);
+    x |= r_byte(arg)<<8;
 
     return x;
 }
@@ -619,13 +613,21 @@ long_toobig(size)
 	     sizeof(long), size);
 }
 
+#undef SIGN_EXTEND_CHAR
+#if __STDC__
+# define SIGN_EXTEND_CHAR(c) ((signed char)(c))
+#else  /* not __STDC__ */
+/* As in Harbison and Steele.  */
+# define SIGN_EXTEND_CHAR(c) ((((unsigned char)(c)) ^ 128) - 128)
+#endif
+
 static long
 r_long(arg)
     struct load_arg *arg;
 {
     register long x;
-    int c = (char)r_byte(arg);
-    int i;
+    int c = SIGN_EXTEND_CHAR(r_byte(arg));
+    long i;
 
     if (c == 0) return 0;
     if (c > 0) {
@@ -646,7 +648,7 @@ r_long(arg)
 	if (c > sizeof(long)) long_toobig(c);
 	x = -1;
 	for (i=0;i<c;i++) {
-	    x &= ~(0xff << (8*i));
+	    x &= ~((long)0xff << (8*i));
 	    x |= (long)r_byte(arg) << (8*i);
 	}
     }
@@ -795,7 +797,8 @@ r_object(arg)
 	{
 	    VALUE c = rb_path2class(r_unique(arg));
 	    v = r_object(arg);
-	    if (rb_special_const_p(v)) {
+	    if (rb_special_const_p(v) ||
+		!RTEST(rb_funcall(c, rb_intern("==="), 1, v))) {
 		rb_raise(rb_eArgError, "dump format error (user class)");
 	    }
 	    RBASIC(v)->klass = c;
@@ -838,7 +841,7 @@ r_object(arg)
 #if SIZEOF_BDIGITS == SIZEOF_SHORT
 	    big->len = len;
 #else
-	    big->len = (len + 1) * sizeof(short) / sizeof(BDIGIT);
+	    big->len = (len + 1) * 2 / sizeof(BDIGIT);
 #endif
 	    big->digits = digits = ALLOC_N(BDIGIT, big->len);
 	    while (len > 0) {
@@ -847,7 +850,7 @@ r_object(arg)
 		int shift = 0;
 		int i;
 
-		for (i=0; i<SIZEOF_BDIGITS; i+=sizeof(short)) {
+		for (i=0; i<SIZEOF_BDIGITS; i+=2) {
 		    int j = r_short(arg);
 		    num |= j << shift;
 		    shift += BITSPERSHORT;

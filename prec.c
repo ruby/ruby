@@ -51,7 +51,7 @@ prec_induced_from(module, x)
 }
 
 static VALUE
-prec_append_features(module, include)
+prec_included(module, include)
     VALUE module, include;
 {
     switch (TYPE(include)) {
@@ -62,7 +62,6 @@ prec_append_features(module, include)
        Check_Type(include, T_CLASS);
        break;
     }
-    rb_include_module(include, module);
     rb_define_singleton_method(include, "induced_from", prec_induced_from, 1);
     return module;
 }
@@ -72,7 +71,7 @@ void
 Init_Precision()
 {
     rb_mPrecision = rb_define_module("Precision");
-    rb_define_singleton_method(rb_mPrecision, "append_features", prec_append_features, 1);
+    rb_define_singleton_method(rb_mPrecision, "included", prec_included, 1);
     rb_define_method(rb_mPrecision, "prec", prec_prec, 1);
     rb_define_method(rb_mPrecision, "prec_i", prec_prec_i, 0);
     rb_define_method(rb_mPrecision, "prec_f", prec_prec_f, 0);

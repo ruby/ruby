@@ -2280,7 +2280,7 @@ rb_eval(self, n)
 		rb_eval(self, node->nd_body);
 	      while_next:
 		;
-	    } while (RTEST(rb_eval(self, node->nd_cond)));
+	    } while (RTEST(result = rb_eval(self, node->nd_cond)));
 	    break;
 
 	  case TAG_REDO:
@@ -2311,7 +2311,7 @@ rb_eval(self, n)
 		rb_eval(self, node->nd_body);
 	      until_next:
 		;
-	    } while (!RTEST(rb_eval(self, node->nd_cond)));
+	    } while (!RTEST(result = rb_eval(self, node->nd_cond)));
 	    break;
 
 	  case TAG_REDO:
@@ -2329,7 +2329,7 @@ rb_eval(self, n)
       until_out:
 	POP_TAG();
 	if (state) JUMP_TAG(state);
-	RETURN(Qnil);
+	RETURN(result);
 
       case NODE_BLOCK_PASS:
 	result = block_pass(self, node);
@@ -3976,7 +3976,7 @@ handle_rescue(self, node)
 	if (!rb_obj_is_kind_of(argv[0], rb_cModule)) {
 	    rb_raise(rb_eTypeError, "class or module required for rescue clause");
 	}
-	if (rb_funcall(*argv, eqq, 1, ruby_errinfo)) return 1;
+	if (RTEST(rb_funcall(*argv, eqq, 1, ruby_errinfo))) return 1;
 	argv++;
     }
     return 0;
@@ -5494,6 +5494,8 @@ rb_f_require(obj, fname)
 	fname = rb_find_file(tmp);
 	goto load_dyna;
     }
+    if (rb_feature_p(RSTRING(fname)->ptr, Qfalse))
+	return Qfalse;
     rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
 
   load_dyna:
@@ -8329,9 +8331,6 @@ rb_thread_start_0(fn, arg, th_arg)
     while (saved_block) {
 	struct BLOCK *tmp = saved_block;
 
-	if (curr_thread == main_thread) {
-	    printf("free(%p)\n", saved_block);
-	}
 	if (tmp->frame.argc > 0)
 	    free(tmp->frame.argv);
 	saved_block = tmp->prev;

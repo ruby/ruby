@@ -357,6 +357,7 @@ VALUE rb_struct_alloc _((VALUE, VALUE));
 VALUE rb_struct_aref _((VALUE, VALUE));
 VALUE rb_struct_aset _((VALUE, VALUE, VALUE));
 VALUE rb_struct_getmember _((VALUE, ID));
+VALUE rb_struct_iv_get _((VALUE, char*));
 /* time.c */
 VALUE rb_time_new(ANYARGS);
 /* variable.c */

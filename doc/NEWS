@@ -1,3 +1,11 @@
+: Enum#sort_by
+
+  Added.
+
+: Signal
+
+  new module, has module functions Signal::trap and Signal::list.
+
 : Curses
 
   Updated.  New methods and constants for using the mouse, character
