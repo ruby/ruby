@@ -254,7 +254,7 @@ BigDecimal_load(VALUE self, VALUE str)
     pch = RSTRING(str)->ptr;
     /* First get max prec */
     while((*pch)!=(unsigned char)'\0' && (ch=*pch++)!=(unsigned char)':') {
-        if(ch<'0' || ch>'9') {
+        if(!ISDIGIT(ch)) {
             rb_raise(rb_eTypeError, "Load failed: invalid character in the marshaled string");
         }
         m = m*10 + (unsigned long)(ch-'0');
@@ -325,7 +325,7 @@ GetPositiveInt(VALUE v)
     Check_Type(v, T_FIXNUM);
     n = FIX2INT(v);
     if(n <= 0) {
-        rb_fatal("Zero or negative argument not permitted.");
+        rb_raise(rb_eArgError, "argument must be positive");
     }
     return n;
 }
@@ -384,7 +384,17 @@ BigDecimal_to_i(VALUE self)
 
     GUARD_OBJ(p,GetVpValue(self,1));
 
-    if(!VpIsDef(p)) return Qnil; /* Infinity or NaN not converted. */
+    /* Infinity or NaN not converted. */
+    if(VpIsNaN(p)) {
+       VpException(VP_EXCEPTION_NaN,"Computation results to 'NaN'(Not a Number)",0);
+       return Qnil;
+    } else if(VpIsPosInf(p)) {
+       VpException(VP_EXCEPTION_INFINITY,"Computation results to 'Infinity'",0);
+       return Qnil;
+    } else if(VpIsNegInf(p)) {
+       VpException(VP_EXCEPTION_INFINITY,"Computation results to '-Infinity'",0);
+       return Qnil;
+    }
 
     e = VpExponent10(p);
     if(e<=0) return INT2FIX(0);
@@ -431,19 +441,17 @@ BigDecimal_to_f(VALUE self)
 {
     ENTER(1);
     Real *p;
-    double d, d2, da;
+    double d, d2;
     S_LONG e;
 
     GUARD_OBJ(p,GetVpValue(self,1));
     if(VpVtoD(&d, &e, p)!=1) return rb_float_new(d);
     errno = 0;
     d2 = pow(10.0,(double)e);
-    da = fabs(d);
-    if(errno == ERANGE  || da > (DBL_MAX / d2) || da < (DBL_MIN / d2)) {
-        U_LONG nc = VpNumOfChars(p)+1;
-        char *psz = ALLOCA_N(char, nc);
-        VpToString(p, psz, 0);
-        rb_raise(rb_eRangeError, "BigDecimal %s out of Float range", psz);
+    if((errno == ERANGE && e>0) || (d2>1.0 && (fabs(d) > (DBL_MAX / d2)))) {
+       VpException(VP_EXCEPTION_OVERFLOW,"BigDecimal to Float conversion.",0);
+       if(d>0.0) return rb_float_new(DBL_MAX);
+       else      return rb_float_new(-DBL_MAX);
     }
     return rb_float_new(d*d2);
 }
@@ -1955,7 +1963,7 @@ overflow:
 VP_EXPORT Real *
 VpAlloc(U_LONG mx, char *szVal)
 {
-    U_LONG i, ni, ipf, nf, ipe, ne, nalloc;
+    U_LONG i, ni, ipn, ipf, nf, ipe, ne, nalloc;
     char v;
     int  sign=1;
     Real *vp = NULL;
@@ -2007,12 +2015,13 @@ VpAlloc(U_LONG mx, char *szVal)
 
     /* check on number szVal[] */
     i = SkipWhiteChar(szVal);
-    if  (szVal[i] == '-') {sign=-1;++i;}
-    else if(szVal[i] == '+')  ++i;
+    ipn = i;
+    if     (szVal[i] == '-') {sign=-1;++i;}
+    else if(szVal[i] == '+')          ++i;
     /* Skip digits */
     ni = 0;            /* digits in mantissa */
     while(v = szVal[i]) {
-        if((v > '9') ||(v < '0')) break;
+        if(!ISDIGIT(v)) break;
         ++i;
         ++ni;
     }
@@ -2026,7 +2035,7 @@ VpAlloc(U_LONG mx, char *szVal)
             ++i;
             ipf = i;
             while(v = szVal[i]) {    /* get fraction part. */
-                if((v > '9') ||(v < '0')) break;
+                if(!ISDIGIT(v)) break;
                 ++i;
                 ++nf;
             }
@@ -2061,7 +2070,7 @@ VpAlloc(U_LONG mx, char *szVal)
     /* xmalloc() alway returns(or throw interruption) */
     vp->MaxPrec = mx;        /* set max precision */
     VpSetZero(vp,sign);
-    VpCtoV(vp, szVal, ni, &(szVal[ipf]), nf, &(szVal[ipe]), ne);
+    VpCtoV(vp, &(szVal[ipn]), ni, &(szVal[ipf]), nf, &(szVal[ipe]), ne);
     return vp;
 }
 
@@ -2868,7 +2877,6 @@ out_side:
     goto Exit;
 
 space_error:
-    rb_fatal("ERROR(VpDivd): space for remainder too small.\n");
 #ifdef _DEBUG
     if(gfDebug) {
         printf("   word_a=%lu\n", word_a);
@@ -2878,6 +2886,7 @@ space_error:
         printf("   ind_r =%lu\n", ind_r);
     }
 #endif /* _DEBUG */
+    rb_bug("ERROR(VpDivd): space for remainder too small.");
 
 Exit:
 #ifdef _DEBUG
