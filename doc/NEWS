@@ -1,5 +1,16 @@
 Summary of the changes since 1.6.7:
 
+: getopts.rb
+
+  Rewrote to fix some bugs and complete features.
+    - Accept options with the colon in the first argument;
+      getopts("a:bcd:") is equivalent to getopts("bc", "a:", "d:").
+    - Do not discard the argument that caused an error.
+    - Do not discard '-', which commonly stands for stdin or stdout.
+    - Allow specifying a long option with a value using '='.
+      (command --long-option=value)
+    - Stop reading options when it meets a non-option argument.
+
 : Marshal.dump
 
   Fixed where Marshal::dump(foo, proc{...}) fails. (which was

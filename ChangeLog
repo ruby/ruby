@@ -1,3 +1,15 @@
+Wed Mar 13 18:50:29 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/getopts.rb: Merge from 1.7.  Rewrite to fix some bugs and
+	  complete features.
+	    - Accept options with the colon in the first argument;
+	      getopts("a:bcd:") is equivalent to getopts("bc", "a:", "d:").
+	    - Do not discard the argument that caused an error.
+	    - Do not discard '-', which commonly stands for stdin or stdout.
+	    - Allow specifying a long option with a value using '='.
+	      (command --long-option=value)
+	    - Stop reading options when it meets a non-option argument.
+
 Mon Mar 11 18:03:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_compile_pattern): '\0111' should be '\011' plus '1',

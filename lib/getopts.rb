@@ -11,117 +11,106 @@
 # 2000-03-21
 # modified by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 #
+# 2002-03-05
+# rewritten by Akinori MUSHA <knu@ruby-lang.org>
+#
 
 $RCS_ID=%q$Header$
 
 
-def getopts( single_opts, *options )
-  single_opts_exp = (single_opts && !single_opts.empty?) ?
-                        /[#{single_opts}]/ : nil
-  single_colon_exp = nil
-  single_colon = nil
-  opt = arg = val = nil
+def getopts(single_options, *options)
   boolopts = {}
   valopts = {}
-  argv = ARGV
-  newargv = []
 
   #
-  # set default
+  # set defaults
   #
-  if single_opts then
-    single_opts.each_byte do |byte|
-      boolopts[ byte.chr ] = false
-  end
-end
-  unless options.empty? then
-    single_colon = ''
+  single_options.scan(/.:?/) do |opt|
+    if opt.size == 1
+      boolopts[opt] = false
+    else
+      valopts[opt[0, 1]] = nil
+    end
+  end if single_options
 
-    options.each do |opt|
-      m = /\A([^:]+):(.*)\z/.match( opt )
-      if m then
-        valopts[ m[1] ] = m[2].empty? ? 0 : m[2]
-      else
-        boolopts[ opt ] = false
-end
-  end
-    valopts.each do |opt, dflt|
-      if opt.size == 1 then
-        single_colon << opt
-end
-  end
+  options.each do |arg|
+    opt, val = arg.split(':', 2)
 
-    if single_colon.empty? then
-      single_colon = single_colon_exp = nil
-      else
-      single_colon_exp = /[#{single_colon}]/
+    if val
+      valopts[opt] = val.empty? ? nil : val
+    else
+      boolopts[opt] = false
     end
   end
-  
+
   #
   # scan
   #
   c = 0
-  arg = argv.shift
-  while arg do
+  argv = ARGV
+
+  while arg = argv.shift
     case arg
-    when /\A--?\z/                      # xinit -- -bpp 24
-      newargv.concat argv
-      break
-
     when /\A--(.*)/
-      opt = $1
-      if valopts.key? opt  then         # imclean --src +trash
-        return nil if argv.empty?
-        valopts[ opt ] = argv.shift
-      elsif boolopts.key? opt then      # ruby --verbose
-        boolopts[ opt ] = true
+      if $1.empty?			# xinit -- -bpp 24
+	break
+      end
+
+      opt, val = $1.split('=', 2)
+
+      if opt.size == 1
+	argv.unshift arg
+	return nil
+      elsif valopts.key? opt		# imclean --src +trash
+	valopts[opt] = val || argv.shift or return nil
+      elsif boolopts.key? opt		# ruby --verbose
+	boolopts[opt] = true
       else
-              return nil
-            end
+	argv.unshift arg
+	return nil
+      end
+
       c += 1
-
     when /\A-(.+)/
-      arg = $1
-      0.upto( arg.size - 1 ) do |idx|
-        opt = arg[idx, 1]
-        if single_opts and single_opts_exp === opt then
-          boolopts[ opt ] = true        # ruby -h
-          c += 1
+      opts = $1
 
-        elsif single_colon and single_colon_exp === opt then
-          val = arg[ (idx+1)..-1 ]
-          if val.empty? then            # ruby -e 'p $:'
-            return nil if argv.empty?
-            valopts[ opt ] = argv.shift
-          else                          # cc -ohello ...
-            valopts[ opt ] = val
+      until opts.empty?
+	opt = opts.slice!(0, 1)
+
+	if valopts.key? opt
+	  val = opts
+
+	  if val.empty?			# ruby -e 'p $:'
+	    valopts[opt] = argv.shift or return nil
+	  else				# cc -ohello ...
+	    valopts[opt] = val
+	  end
+
+	  c += 1
+	  break
+	elsif boolopts.key? opt
+	  boolopts[opt] = true		# ruby -h
+	  c += 1
+	else
+	  argv.unshift arg
+	  return nil
+	end
       end
-          c += 1
-
-          break
-          else
-          return nil
-          end
-        end
-
-    else                                # ruby test.rb
-      newargv.push arg
-      end
-
-    arg = argv.shift
+    else
+      argv.unshift arg
+      break
     end
-    
+  end
+
   #
   # set
   #
   boolopts.each do |opt, val|
     eval "$OPT_#{opt} = val"
-    end
-  valopts.each do |opt, val|
-    eval "$OPT_#{opt} = #{val == 0 ? 'nil' : 'val'}"
   end
-  argv.replace newargv
+  valopts.each do |opt, val|
+    eval "$OPT_#{opt} = val"
+  end
 
   c
 end
