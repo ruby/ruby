@@ -1,3 +1,10 @@
+Wed Feb 25 21:16:25 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (with_destdir): should return the given argument if no
+	  DESTDIR is given.
+
+	* instruby.rb: use path name expansion of cmd.exe.
+
 Wed Feb 25 09:35:22 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* error.c (NameError::Message): new class for lazy evaluation of
@@ -9,7 +16,7 @@ Wed Feb 25 09:35:22 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Feb 24 18:59:37  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* dir.c (glob_helper): '**/' should not match leading period 
+	* dir.c (glob_helper): '**/' should not match leading period
 	  unless File::FNM_DOTMATCH is set. (like '*/') [ruby-dev:23014]
 
 Tue Feb 24 13:22:21 2004  Dave Thomas  <dave@pragprog.com>
@@ -26,12 +33,12 @@ Tue Feb 24 07:23:30 2004  Dave Thomas  <dave@pragprog.com>
 
 Tue Feb 24 06:40:14 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_identifier): Handle 
+	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_identifier): Handle
 	  class variables in code listings
 
 Tue Feb 24 06:40:14 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_identifier): Handle 
+	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_identifier): Handle
 	  class variables in code listings
 
 Tue Feb 24 06:32:27 2004  Dave Thomas  <dave@pragprog.com>
@@ -46,7 +53,7 @@ Tue Feb 24 06:16:22 2004  Dave Thomas  <dave@pragprog.com>
 
 Tue Feb 24 06:08:47 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_constant): 
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_constant):
 	  Start collecting text of constant values earlier: was missing
 	  values in output if there was no space after '='
 
