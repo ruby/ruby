@@ -1,3 +1,7 @@
+Tue Apr 15 19:12:21 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* struct.c (rb_struct_hash): new methods Struct#hash, Struct#eql?.
+
 Tue Apr 15 16:05:11 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* numeric.c (rb_fix2str): buffer was insufficient.
