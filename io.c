@@ -781,8 +781,9 @@ read_all(fptr, siz, str)
     for (;;) {
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
 	if (pos > 0 && n == 0 && bytes == 0) {
+	    rb_str_resize(str,0);
 	    if (feof(fptr->f)) return Qnil;
-	    if (!ferror(fptr->f)) return rb_str_new(0, 0);
+	    if (!ferror(fptr->f)) return str;
 	    rb_sys_fail(fptr->path);
 	}
 	bytes += n;
@@ -827,18 +828,13 @@ io_read(argc, argv, io)
     else {
 	StringValue(str);
 	rb_str_modify(str);
-	if (len == 0) {
-	    rb_str_resize(str, 0);
-	    return str;
-	}
-	if (len > RSTRING(str)->len) {
-	    rb_str_resize(str,len);
-	}
+	rb_str_resize(str,len);
     }
 
     READ_CHECK(fptr->f);
     n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
     if (n == 0) {
+	rb_str_resize(str,0);
 	if (feof(fptr->f)) return Qnil;
 	rb_sys_fail(fptr->path);
     }
@@ -1579,8 +1575,12 @@ rb_io_sysread(argc, argv, io)
     n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
     TRAP_END;
 
-    if (n == -1) rb_sys_fail(fptr->path);
+    if (n == -1) {
+	rb_str_resize(str, 0);
+	rb_sys_fail(fptr->path);
+    }
     if (n == 0 && ilen > 0) {
+	rb_str_resize(str, 0);
 	rb_eof_error();
     }
 

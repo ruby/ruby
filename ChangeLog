@@ -2,20 +2,54 @@ Thu Mar 20 10:45:29 2003  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (bmcall): add volatile to avoid GC problem.
 
+Thu Mar 20 10:10:49 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (load_dyna): clear ruby_errinfo. (ruby-bugs-ja PR#409)
+
 Wed Mar 19 23:05:30 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 
 	* lib/tracer.rb (trace_func): save and recover Thread.critical state.
 	  Fixed by Fukumoto Atsushi <fukumoto@imasy.or.jp> [ruby-dev:19830]
+
+Wed Mar 19 02:55:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): make str empty if given. (ruby-bugs-ja PR#408)
+
+	* io.c (io_read): ditto.
+
+	* io.c (rb_io_sysread): ditto.
+
+Tue Mar 18 18:24:03 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c: do not override min and max.
 
 Sun Mar 16 12:29:55 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (object_address_group): use to_s instead of name
 	  to get name of class.
 
+Fri Mar 14 08:53:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (remove_sign_bits): octal left most digit for negative
+	  numbers may be '3'. (ruby-bugs-ja PR#407)
+
+	* sprintf.c (rb_f_sprintf): should prefix sign bits if bignum is
+	  negative, using sign_bits().
+
 Wed Mar 12 16:48:19 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (prep_stdio): set binmode only if the file descriptor
 	  is not connected to a terminal on Cygwin.
+
+Wed Mar 12 11:23:49 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (avalue_to_mrhs): split argument passing and assignment
+	  conversion.
+
+	* eval.c (svalue_to_mrhs): ditto.
+
+	* eval.c (avalue_to_svalue): avalue_to_svalue([[1,2]]) should be
+	  [[1,2]], not [1,2] to wrap-around.
 
 Tue Mar 11 21:00:59 2003  Minero Aoki  <aamine@loveruby.net>
 

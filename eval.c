@@ -2194,11 +2194,19 @@ avalue_to_svalue(v)
     if (NIL_P(tmp)) {
 	return v;
     }
-    if (RARRAY(tmp)->len == 0) {
+    v = tmp;
+    if (RARRAY(v)->len == 0) {
 	return Qundef;
     }
-    if (RARRAY(tmp)->len == 1) {
-	return RARRAY(tmp)->ptr[0];
+    if (RARRAY(v)->len == 1) {
+	tmp = rb_check_array_type(RARRAY(v)->ptr[0]);
+	if (NIL_P(tmp)) {
+	    return RARRAY(v)->ptr[0];
+	}
+	if (RARRAY(tmp)->len > 1) {
+	    return v;
+	}
+	return tmp;
     }
     return tmp;
 }
@@ -2215,8 +2223,33 @@ svalue_to_avalue(v)
     if (NIL_P(tmp)) {
 	return rb_ary_new3(1, v);
     }
-    if (RARRAY(tmp)->len <= 1) {
-	return rb_ary_new3(1, tmp);
+    v = tmp;
+    if (RARRAY(v)->len == 1) {
+	tmp = rb_check_array_type(RARRAY(v)->ptr[0]);
+	if (NIL_P(tmp)) return rb_ary_new3(1, v);
+	if (RARRAY(tmp)->len > 1) return v;
+	return tmp;
+    }
+    return v;
+}
+
+static VALUE
+avalue_to_mrhs(v)
+    VALUE v;
+{
+    VALUE tmp;
+
+    if (v == Qundef) return v;
+    tmp = rb_check_array_type(v);
+    if (NIL_P(tmp)) {
+	return v;
+    }
+    v = tmp;
+    if (RARRAY(v)->len == 0) {
+	return Qundef;
+    }
+    if (RARRAY(v)->len == 1) {
+	return RARRAY(v)->ptr[0];
     }
     return tmp;
 }
@@ -2624,7 +2657,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_REXPAND:
-	result = avalue_to_svalue(rb_eval(self, node->nd_head));
+	result = avalue_to_mrhs(rb_eval(self, node->nd_head));
 	break;
 
       case NODE_SVALUE:
@@ -5778,6 +5811,7 @@ load_dyna(feature, fname)
 	SCOPE_SET(old_vmode);
     }
     if (state) JUMP_TAG(state);
+    ruby_errinfo = Qnil;
 
     return Qtrue;
 }

@@ -424,18 +424,18 @@ detach_process_watcer(pid_p)
     }
 }
 
-void
+VALUE
 rb_detach_process(pid)
     int pid;
 {
-    rb_thread_create(detach_process_watcer, (void*)&pid);
+    return rb_thread_create(detach_process_watcer, (void*)&pid);
 }
 
 static VALUE
 proc_detach(obj, pid)
     VALUE pid;
 {
-    rb_detach_process(NUM2INT(pid));
+    return rb_detach_process(NUM2INT(pid));
 }
 
 #ifndef HAVE_STRING_H

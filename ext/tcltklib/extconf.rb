@@ -49,7 +49,7 @@ end
 
 if have_header("tcl.h") && have_header("tk.h") &&
     (/mswin32|mingw|cygwin|bccwin32/ =~ RUBY_PLATFORM || find_library("X11", "XOpenDisplay",
-	"/usr/X11/lib", "/usr/X11R6/lib", "/usr/openwin/lib")) &&
+	"/usr/X11/lib", "/usr/lib/X11", "/usr/X11R6/lib", "/usr/openwin/lib")) &&
     find_tcl(tcllib, stubs) &&
     find_tk(tklib, stubs)
   $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs

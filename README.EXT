@@ -35,6 +35,7 @@ The Ruby interpreter has the following data types:
 	T_HASH		associative array
 	T_STRUCT	(Ruby) structure
 	T_BIGNUM	multi precision integer
+	T_FILE		IO
 	T_TRUE		true
 	T_FALSE		false
 	T_DATA		data
@@ -93,7 +94,9 @@ The T_FIXNUM data is a 31bit length fixed integer (63bit length on
 some machines), which can be convert to a C integer by using the
 FIX2INT() macro.  There is also NUM2INT() which converts any Ruby
 numbers into C integers.  The NUM2INT() macro includes a type check, so
-an exception will be raised if the conversion failed.
+an exception will be raised if the conversion failed. There are also
+a macro NUM2DBL() to retrieve the double float value and STR2CSTR() is
+useful to get the string as char*.
 
 Other data types have corresponding C structures, e.g. struct RArray
 for T_ARRAY etc. The VALUE of the type which has corresponding structure
@@ -488,6 +491,8 @@ Init_dbm()
     rb_define_method(cDBM, "[]", fdbm_fetch, 1);
 		:
 
+    /* ID for a instance variable to store DBM data */
+    id_dbm = rb_intern("dbm");
 }
 --
 
@@ -756,6 +761,25 @@ sval, and returns the DATA encapsulating the pointer to memory region.
 This macro retrieves the pointer value from DATA, and assigns it to
 the variable sval. 
 
+** Checking data types
+
+TYPE(value)
+FIXNUM_P(value)
+NIL_P(value)
+void Check_Type(VALUE value, int type)
+void Check_SafeStr(VALUE value)
+
+** Data type conversion
+
+FIX2INT(value)
+INT2FIX(i)
+NUM2INT(value)
+INT2NUM(i)
+NUM2DBL(value)
+rb_float_new(f)
+STR2CSTR(value)
+rb_str_new2(s)
+
 ** defining class/module
 
  VALUE rb_define_class(const char *name, VALUE super)
@@ -943,6 +967,10 @@ Prints a warning message according to a printf-like format.
 
 Prints a warning message according to a printf-like format, if
 $VERBOSE is true.
+
+void rb_raise(rb_eRuntimeError, const char *fmt, ...)
+
+Raises RuntimeError.  The fmt is a format string just like printf().
 
  void rb_raise(VALUE exception, const char *fmt, ...)
 

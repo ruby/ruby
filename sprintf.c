@@ -38,6 +38,7 @@ remove_sign_bits(str, base)
 	}
     }
     else if (base == 8) {
+	if (*t == '3') t++;
 	while (t<end && *t == '7') {
 	    t++;
 	}
@@ -51,6 +52,26 @@ remove_sign_bits(str, base)
     *s = '\0';
 
     return str;
+}
+
+static char
+sign_bits(base, p)
+    int base;
+    char *p;
+{
+    char c = '.';
+
+    switch (base) {
+      case 16:
+	if (*p == 'X') c = 'F';
+	else c = 'f';
+	break;
+      case 8:
+	c = '7'; break;
+      case 2:
+	c = '1'; break;
+    }
+    return c;
 }
 
 #define FNONE  0
@@ -529,25 +550,15 @@ rb_f_sprintf(argc, argv)
 		}
 		CHECK(prec - len);
 		if (!bignum && v < 0) {
-		    char c = '.';
-
-		    switch (base) {
-		      case 16:
-			if (*p == 'X') c = 'F';
-			else c = 'f';
-			break;
-		      case 8:
-			c = '7'; break;
-		      case 2:
-			c = '1'; break;
-		    }
+		    char c = sign_bits(base, p);
 		    while (len < prec--) {
 			buf[blen++] = c;
 		    }
 		}
 		else {
+		    char c = sign_bits(base, p);
 		    while (len < prec--) {
-			buf[blen++] = '0';
+			buf[blen++] = c;
 		    }
 		}
 		PUSH(s, len);

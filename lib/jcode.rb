@@ -147,6 +147,7 @@ class String
   end
 
   def delete!(del)
+    return nil if del == ""
     self.gsub!(DeletePatternCache[del] ||= /[#{_regex_quote(del)}]+/, '')
   end
 
@@ -155,6 +156,7 @@ class String
   end
 
   def squeeze!(del=nil)
+    return nil if del == ""
     pattern =
       if del
 	SqueezePatternCache[del] ||= /([#{_regex_quote(del)}])\1+/
