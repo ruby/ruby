@@ -61,7 +61,7 @@ Fri Apr  2 11:36:20 2004  Minero Aoki  <aamine@loveruby.net>
 Fri Apr  2 07:31:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c: mistakingly removed do_not_reverse_lookup.
-	  [ruby-dev:39475]
+	  [ruby-list:39475]
 
 	* ext/socket/socket.c (make_hostent): fix memory leak, based on
 	  the patch from HORIKAWA Hisashi <vzw00011@nifty.ne.jp>.
