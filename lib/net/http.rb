@@ -1144,7 +1144,7 @@ module Net
 
     def range_length
       r = self.content_range
-      r and r.end - r.begin
+      r and (r.end - r.begin)
     end
 
     def basic_auth( account, password )

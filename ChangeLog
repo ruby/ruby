@@ -1,3 +1,9 @@
+Tue Jul 29 18:55:22 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: unify coding style.
+
+	* lib/net/http.rb: ditto.
+
 Tue Jul 29 17:27:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ruby.h (LLONG_MIN): fix typo.

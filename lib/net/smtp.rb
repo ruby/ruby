@@ -488,12 +488,12 @@ module Net
     private
 
     def send0( from_addr, to_addrs )
-      raise IOError, "closed session" unless @socket
+      raise IOError, 'closed session' unless @socket
       raise ArgumentError, 'mail destination does not given' if to_addrs.empty?
       raise SecurityError, 'tainted from_addr' if from_addr.tainted?
-      to_addrs.each{|to| 
+      to_addrs.each do |to| 
         raise SecurityError, 'tainted to_addr' if to.tainted?
-      }
+      end
 
       mailfrom from_addr
       to_addrs.each do |to|
