@@ -792,7 +792,7 @@ rb_str_equal(str1, str2)
     if (str1 == str2) return Qtrue;
     if (TYPE(str2) != T_STRING) {
 	if (!rb_respond_to(str2, rb_intern("to_str"))) {
-	    return Qfalse;
+	    return Qnil;
 	}
 	return rb_equal(str2, str1);
     }
