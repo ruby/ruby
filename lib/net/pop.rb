@@ -448,7 +448,7 @@ module Net
     end
 
     def auth_only( account, password )
-      raise IOError, 'opening already opened POP session' if active?
+      raise IOError, 'opening already opened POP session' if started?
       start(account, password) {
           ;
       }
@@ -511,14 +511,14 @@ module Net
     alias active? started?   # backward compatibility
 
     def start( account, password )
-      raise IOError, 'already closed POP session' if @started
+      raise IOError, 'POP session already started' if @started
 
       if block_given?
         begin
           do_start account, password
           return yield(self)
         ensure
-          finish unless @started
+          finish if @started
         end
       else
         do_start acount, password
@@ -715,12 +715,12 @@ module Net
     end
 
     def apop( account, password )
-      raise POPAuthenticationError.new('not APOP server; cannot login', nil)\
+      raise POPAuthenticationError, 'not APOP server; cannot login' \
                                                       unless @apop_stamp
       check_response_auth(critical {
-          get_reply('APOP %s %s',
-                    account,
-                    Digest::MD5.hexdigest(@apop_stamp + password))
+          get_response('APOP %s %s',
+                       account,
+                       Digest::MD5.hexdigest(@apop_stamp + password))
       })
     end
 
@@ -745,7 +745,7 @@ module Net
     end
 
     def rset
-      check_reply(critical { get_response 'RSET' })
+      check_response(critical { get_response 'RSET' })
     end
 
     def top( num, lines = 0, dest = '' )

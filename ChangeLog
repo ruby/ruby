@@ -1,3 +1,7 @@
+Sun May  4 15:06:37 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/pop.rb: APOP did not work.  [ruby-dev:20149]
+
 Sat May  3 00:58:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_class_protected_instance_methods): now gives
