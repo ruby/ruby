@@ -18,6 +18,13 @@ RUBYW_INSTALL_NAME = $(RUBY_INSTALL_NAME)w
 !ifndef RUBY_SO_NAME
 RUBY_SO_NAME = rubymw
 !endif
+!if !defined(icondirs) && defined(ICONDIRS)
+icondirs=$(ICONDIRS)
+!endif
+!if defined(icondirs)
+icondirs=$(icondirs:\=/)
+iconinc=-I$(icondirs)
+!endif
 ###############
 
 VPATH = $(srcdir):$(srcdir)/missing
@@ -153,21 +160,50 @@ $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 install:	rbconfig.rb
 		.\miniruby.exe $(srcdir)/instruby.rb $(DESTDIR)
 
-clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(MAINOBJ) rbconfig.rb
-		@rm -f ext/extinit.c ext/extinit.obj ext/vc*.pdb *.obj *.res
+clean:
+		@if exist $(LIBRUBY_A) del $(LIBRUBY_A)
+		@if exist $(MAINOBJ) del $(MAINOBJ)
+		@if exist rbconfig.rb del rbconfig.rb
+		@if exist ext\extinit.c del ext\extinit.c
+		@if exist ext\extinit.obj del ext\extinit.obj
+		@if exist ext\vc*.pdb del ext\vc*.pdb
+		@if exist *.obj del *.obj
+		@if exist *.res del *.res
 		@-.\miniruby$(EXEEXT) -Cext extmk.rb clean
 
 distclean:	clean
-		@rm -f Makefile ext/extmk.rb config.h
-		@rm -f ext/config.cache config.cache config.log config.status
-		@rm -f *~ core *.core gmon.out y.tab.c y.output ruby.imp
-		@rm -f *.map *.pdb *.ilk *.exp $(RUBYDEF)
-		@rm -f $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(LIBRUBY_SO).rc
-		@rm -f $(PROGRAM) $(WPROGRAM) $(LIBRUBY_SO) $(LIBRUBY) miniruby$(EXEEXT)
+		@if exist Makefile del Makefile
+		@if exist ext\extmk.rb del ext\extmk.rb
+		@if exist config.h del config.h
+		@if exist ext\config.cache del ext\config.cache
+		@if exist config.cache del config.cache
+		@if exist config.log del config.log
+		@if exist config.status del config.status
+		@if exist *~ del *~
+		@if exist *.bak del *.bak
+		@if exist *.stackdump del *.stackdump
+		@if exist *.core del *.core
+		@if exist gmon.out del gmon.out
+		@if exist y.tab.c del y.tab.c
+		@if exist y.output del y.output
+		@if exist *.map del *.map
+		@if exist *.pdb del *.pdb
+		@if exist *.ilk del *.ilk
+		@if exist *.exp del *.exp
+		@if exist $(RUBYDEF) del $(RUBYDEF)
+		@if exist $(RUBY_INSTALL_NAME).rc del $(RUBY_INSTALL_NAME).rc
+		@if exist $(RUBYW_INSTALL_NAME).rc del $(RUBYW_INSTALL_NAME).rc
+		@if exist $(LIBRUBY_SO).rc del $(LIBRUBY_SO).rc
+		@if exist $(PROGRAM) del $(PROGRAM)
+		@if exist $(WPROGRAM) del $(WPROGRAM)
+		@if exist $(LIBRUBY_SO) del $(LIBRUBY_SO)
+		@if exist $(LIBRUBY) del $(LIBRUBY)
+		@if exist ext\nul if not exist ext\* rmdir ext
+		@if exist miniruby$(EXEEXT) del miniruby$(EXEEXT)
 
 realclean:	distclean
-		@rm -f parse.c
-		@rm -f lex.c
+		@if exist parse.c del parse.c
+		@if exist lex.c del lex.c
 
 test:		miniruby$(EXEEXT)
 		@.\miniruby$(EXEEXT) $(srcdir)/rubytest.rb
@@ -197,7 +233,7 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(LIBRUBY_SO).rc: rbconfig.rb
 	$(CC) $(CFLAGS) -I. $(CPPFLAGS) -c $(<:/=\)
 
 .rc.res:
-	$(RC) -I. -I$(<D) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $<
+	$(RC) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
 
 {$(srcdir)}.y.c:
 	$(YACC) $(YFLAGS) $(<:\=/)
@@ -278,3 +314,4 @@ time.obj: $(srcdir)/time.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdi
 util.obj: $(srcdir)/util.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/util.h
 variable.obj: $(srcdir)/variable.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/env.h $(srcdir)/node.h $(srcdir)/st.h
 version.obj: $(srcdir)/version.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/version.h
+$(OBJS) $(MAINOBJ) $(WINMAINOBJ): $(srcdir)/win32/win32.h
