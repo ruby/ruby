@@ -275,7 +275,8 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
-		 syscall.h pwd.h a.out.h utime.h memory.h direct.h sys/resource.h)
+		 syscall.h pwd.h a.out.h utime.h memory.h direct.h sys/resource.h \
+		 sys/mkdev.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T

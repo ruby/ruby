@@ -1,3 +1,9 @@
+Tue Jan 29 17:59:20 2002  Tanaka Akira  <akr@m17n.org>
+
+	* file.c: `major' and `minor' macro needs sys/mkdev.h on SunOS 5.x.
+
+	* configure.in: add check for `sys/mkdev.h'.
+
 Mon Jan 28 19:16:58 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* array.c (rb_ary_fill): shouldn't yield unless block given.

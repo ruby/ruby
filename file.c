@@ -67,6 +67,10 @@ char *strrchr _((const char*,const char));
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef HAVE_SYS_MKDEV_H
+#include <sys/mkdev.h>
+#endif
+
 #ifndef HAVE_LSTAT
 #define lstat(path,st) stat(path,st)
 #endif
