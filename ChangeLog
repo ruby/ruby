@@ -1,3 +1,12 @@
+Fri Oct 18 01:25:51 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* hash.c, eval.c: Use (*_NSGetEnviron()) instead of environ on
+	  Darwin for namespace cleanness.  [ruby-core:00537]
+
+	* dln.c (dln_load): Fix Darwin support that has been disabled and
+	  switch to using it on Darwin instead of the system dlopen().
+	  [ruby-core:00541]
+
 Thu Oct 17 15:20:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): need to push empty varmap node only when

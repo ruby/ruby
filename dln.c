@@ -81,7 +81,7 @@ char *getenv();
 
 int eaccess();
 
-#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(_AIX)
+#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(_AIX) && !defined(__APPLE__)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
@@ -1394,12 +1394,9 @@ dln_load(file)
 	NSLinkModule(obj_file, file, NSLINKMODULE_OPTION_BINDNOW);
 
 	/* lookup the initial function */
-	/*NSIsSymbolNameDefined require function name without "_" */
-	if(NSIsSymbolNameDefined(buf + 1)) {
+	if(!NSIsSymbolNameDefined(buf)) {
 	    rb_loaderror("Failed to lookup Init function %.200s",file);
-	}
-
-	/* NSLookupAndBindSymbol require function name with "_" !! */
+	}	
 	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
 	(*init_fct)();
 

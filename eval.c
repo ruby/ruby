@@ -23,6 +23,10 @@
 #include "st.h"
 #include "dln.h"
 
+#ifdef __APPLE__
+#include <crt_externs.h>
+#endif
+
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
 # ifndef atarist
@@ -1001,7 +1005,9 @@ error_print()
     }
 }
 
-#if !defined(NT) && !defined(__MACOS__)
+#if defined(__APPLE__)
+#define environ (*_NSGetEnviron())
+#elif !defined(NT) && !defined(__MACOS__)
 extern char **environ;
 #endif
 char **rb_origenviron;

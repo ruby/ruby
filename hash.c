@@ -17,6 +17,10 @@
 #include "util.h"
 #include "rubysig.h"
 
+#ifdef __APPLE__
+#include <crt_externs.h>
+#endif
+
 #define HASH_DELETED  FL_USER1
 
 static void
@@ -863,6 +867,11 @@ static char **origenviron;
 static char **my_environ;
 #undef environ
 #define environ my_environ
+#elif defined(__APPLE__)
+#undef environ
+#define environ (*_NSGetEnviron())
+#define GET_ENVIRON(e) (e)
+#define FREE_ENVIRON(e)
 #else
 extern char **environ;
 #define GET_ENVIRON(e) (e)
