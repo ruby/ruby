@@ -10,25 +10,25 @@
 #   
 #
 Usage:  irb.rb [options] [programfile] [arguments]
-  -f		    suppress read ~/.irbrc 
-  -m		    bc mode (load mathn, fraction or matrix are available)
-  -d                set $DEBUG  to true (same as `ruby -d')
-  -r load-module    same as `ruby -r'
-  --inspect	    uses `inspect' for output (the default except bc mode)
-  --noinspect	    doesn't uses inspect for output
-  --readline	    uses Readline extension module
-  --noreadline	    doesn't use Readline extension module
+  -f		    Suppress read of ~/.irbrc 
+  -m		    Bc mode (load mathn, fraction or matrix are available)
+  -d                Set $DEBUG to true (same as `ruby -d')
+  -r load-module    Same as `ruby -r'
+  --inspect	    Use `inspect' for output (default except for bc mode)
+  --noinspect	    Don't use inspect for output
+  --readline	    Use Readline extension module
+  --noreadline	    Don't use Readline extension module
   --prompt prompt-mode
   --prompt-mode prompt-mode
-		    switches prompt mode. Pre-defined prompt modes are
+		    Switch prompt mode. Pre-defined prompt modes are
 		    `default', `simple', `xmp' and `inf-ruby'
-  --inf-ruby-mode   uses prompt appreciate for inf-ruby-mode on emacs. 
+  --inf-ruby-mode   Use prompt appropriate for inf-ruby-mode on emacs. 
 		    Suppresses --readline. 
-  --simple-prompt   simple prompt mode
-  --noprompt	    no prompt
-  --tracer	    display trace for each execution of commands.
+  --simple-prompt   Simple prompt mode
+  --noprompt	    No prompt mode
+  --tracer	    Display trace for each execution of commands.
   --back-trace-limit n
-		    displayes backtrace top n and tail n. The default
+		    Display backtrace top n and tail n. The default
 		    value is 16. 
-  --irb_debug n	    sets internal debug level to n (It shouldn't be used)
-  -v, --version	    prints the version of irb
+  --irb_debug n	    Set internal debug level to n (not for popular use)
+  -v, --version	    Print the version of irb

@@ -9,7 +9,7 @@
 #
 #   
 #
-IRB.fail CanNotGoMultiIrbMode unless defined?(Thread)
+IRB.fail CantShiftToMultiIrbMode unless defined?(Thread)
 require "thread"
 
 module IRB
@@ -54,7 +54,7 @@ module IRB
     def switch(key)
       th, irb = search(key)
       IRB.fail IrbAlreadyDead unless th.alive?
-      IRB.fail IrbSwitchToCurrentThread if th == Thread.current
+      IRB.fail IrbSwitchedToCurrentThread if th == Thread.current
       @current_job = irb
       th.run
       Thread.stop

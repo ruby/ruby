@@ -47,7 +47,7 @@ class Shell
 	self.input = src
 	self
       else
-	Filter.Fail CanNotMethodApply, "<", to.type
+	Filter.Fail CantApplyMethod, "<", to.type
       end
     end
 
@@ -63,7 +63,7 @@ class Shell
       when IO
 	each(){|l| to << l}
       else
-	Filter.Fail CanNotMethodApply, ">", to.type
+	Filter.Fail CantApplyMethod, ">", to.type
       end
       self
     end
@@ -71,8 +71,8 @@ class Shell
     def >> (to)
       begin
 	Shell.cd(@shell.pwd).append(to, self)
-      rescue CanNotMethodApply
-	Shell.Fail CanNotMethodApply, ">>", to.type
+      rescue CantApplyMethod
+	Shell.Fail CantApplyMethod, ">>", to.type
       end
     end
 

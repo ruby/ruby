@@ -1,3 +1,11 @@
+Sat Feb  8 04:04:13 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/irb/context.rb, lib/irb/multi-irb.rb, lib/irb/workspace.rb,
+	  lib/irb/lc/error.rb, lib/irb/lc/help-message,
+	  lib/irb/lc/ja/error.rb, lib/shell/command-processor.rb,
+	  lib/shell/error.rb, lib/shell/filter.rb: Fix typos and
+	  grammos. [approved by: keiju]
+
 Mon Feb  3 23:46:48 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (argf_getline): should not increment lineno at EOF.
