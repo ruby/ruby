@@ -1,3 +1,7 @@
+Tue Oct  7 04:15:25 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt): should not expand mrhs if lhs is solely starred.
+
 Tue Oct  7 02:57:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (stmt): rhs of multiple assignment should not be
