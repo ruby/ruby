@@ -455,7 +455,12 @@ module REXML
 		#  doc.root.text = 'Russell'   #-> '<a><b/>Russell<c/></a>'
 		#  doc.root.text = nil         #-> '<a><b/><c/></a>'
 		def text=( text )
-			text = Text.new( text, whitespace(), nil, raw() ) if text.kind_of? String
+      if text.kind_of? String
+        text = Text.new( text, whitespace(), nil, raw() )
+      else
+        text = Text.new( text.to_s, whitespace(), nil, raw() ) unless text.kind_of? Text
+      end
+        
 			old_text = get_text
 			if text.nil?
 				old_text.remove unless old_text.nil?
