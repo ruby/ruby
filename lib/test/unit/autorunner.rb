@@ -25,7 +25,7 @@ module Test
           require 'test/unit/ui/gtk/testrunner'
           Test::Unit::UI::GTK::TestRunner.run(r.suite)
         end,
-        :fox => proc do |suite|
+        :fox => proc do |r|
           require 'test/unit/ui/fox/testrunner'
           Test::Unit::UI::Fox::TestRunner.run(r.suite)
         end,
@@ -80,7 +80,7 @@ module Test
             o.on('-r', '--runner=RUNNER', RUNNERS.keys,
               "Use the given RUNNER.",
               "(" + keyword_display(RUNNERS.keys) + ")") do |r|
-              @runner = runners[r]
+              @runner = RUNNERS[r]
             end
 
             if(@standalone)
