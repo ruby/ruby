@@ -162,13 +162,13 @@ EOF
   end
 end
 
-Dir.glob("lib/**/*{.rb,help-message}") do |f|
+for f in Dir["lib/**/*{.rb,help-message}"]
   dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
   makedirs dir
   install f, dir, :mode => 0644
 end
 
-Dir.glob("*.h") do |f|
+for f in Dir["*.h"]
   install f, archlibdir, :mode => 0644
 end
 
@@ -177,7 +177,7 @@ if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
   install "win32/win32.h", File.join(archlibdir, "win32"), :mode => 0644
 end
 
-Dir.glob("*.[1-9]") do |mdoc|
+for mdoc in Dir["*.[1-9]"]
   next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
 
   section = mdoc[-1,1]

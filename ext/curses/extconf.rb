@@ -7,19 +7,25 @@ dir_config('termcap')
 make=false
 have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM
 have_library("tinfo", "tgetent") or have_library("termcap", "tgetent")
-if have_header("ncurses.h") and have_library("ncurses", "initscr")
+if have_header(*curses=%w"ncurses.h") and have_library("ncurses", "initscr")
   make=true
-elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr")
+elsif have_header(*curses=%w"ncurses/curses.h") and have_library("ncurses", "initscr")
   make=true
-elsif have_header("curses_colr/curses.h") and have_library("cur_colr", "initscr")
+elsif have_header(*curses=%w"curses_colr/curses.h") and have_library("cur_colr", "initscr")
+  curses.unshift("varargs.h")
   make=true
-elsif have_header("curses.h") and have_library("curses", "initscr")
-    make=true
+elsif have_header(*curses=%w"curses.h") and have_library("curses", "initscr")
+  make=true
 end
 
 if make
   for f in %w(isendwin ungetch beep getnstr wgetnstr doupdate flash deleteln wdeleteln keypad keyname init_color wresize resizeterm)
     have_func(f)
+  end
+  flag = "-D_XOPEN_SOURCE_EXTENDED"
+  src = "int test_var[(sizeof(char*)>sizeof(int))*2-1];"
+  if try_compile(cpp_include(%w[stdio.h stdlib.h]+curses)+src , flag)
+    $defs << flag
   end
   create_makefile("curses")
 end

@@ -1,3 +1,16 @@
+Tue Aug 19 01:24:34 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/curses.c (_XOPEN_SOURCE_EXTENDED): Mac OS X standard
+	  headers are inconsistent at this macro.  [ruby-core:01432]
+
+	* ext/curses/extconf.rb: check if _XOPEN_SOURCE_EXTENDED breaks.
+
+	* ext/tcltklib/stubs.c: Status macro in X11/Xthreads.h bothers
+	  winspool.h
+
+	* instruby.rb: make list at first instead of iterator.
+	  [ruby-talk:79347]
+
 Mon Aug 18 11:23:11 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): preserve raw order for **.

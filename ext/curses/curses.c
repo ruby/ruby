@@ -14,11 +14,8 @@
  */
 
 #include "ruby.h"
-
-#include <stdio.h>
 #include "rubyio.h"
 
-#define _XOPEN_SOURCE_EXTENDED 1
 #if defined(HAVE_NCURSES_H)
 # include <ncurses.h>
 #elif defined(HAVE_NCURSES_CURSES_H)
@@ -31,17 +28,17 @@
 # if defined(__bsdi__) || defined(__NetBSD__) || defined(__APPLE__)
 #  if !defined(_maxx)
 #  define _maxx maxx
-# endif
+#  endif
 #  if !defined(_maxy)
 #  define _maxy maxy
-# endif
+#  endif
 #  if !defined(_begx)
 #  define _begx begx
-# endif
+#  endif
 #  if !defined(_begy)
 #  define _begy begy
+#  endif
 # endif
-#endif
 #endif
 
 #ifdef HAVE_INIT_COLOR

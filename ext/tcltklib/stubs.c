@@ -1,8 +1,6 @@
 int ruby_tcltk_stubs();
 
 #if defined USE_TCL_STUBS && defined USE_TK_STUBS
-#include <tcl.h>
-#include <tk.h>
 #include "ruby.h"
 
 #if defined _WIN32 || defined __CYGWIN__
@@ -27,6 +25,9 @@ int ruby_tcltk_stubs();
 # define TCL_NAME "libtcl8.9%s"
 # define TK_NAME "libtk8.9%s"
 #endif
+
+#include <tcl.h>
+#include <tk.h>
 
 int
 ruby_tcltk_stubs()
