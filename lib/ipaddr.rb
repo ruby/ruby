@@ -207,6 +207,7 @@ class IPAddr
       break if str.sub!(/\b0:0\b/, ':')
       break
     end
+    str.sub!(/:{3,}/, '::')
 
     if /\A::(ffff:)?([\da-f]{1,4}):([\da-f]{1,4})\Z/i =~ str
       str = sprintf('::%s%d.%d.%d.%d', $1, $2.hex / 256, $2.hex % 256, $3.hex / 256, $3.hex % 256)
@@ -602,7 +603,6 @@ class TC_IPAddr < Test::Unit::TestCase
 	IPAddr.new(*args)
       }
     }
-  end
 
   def test_s_new_ntoh
     addr = ''
@@ -674,6 +674,10 @@ class TC_IPAddr < Test::Unit::TestCase
     }
   end
 
+  def test_to_s
+    assert_equal("3ffe:0505:0002:0000:0000:0000:0000:0001", IPAddr.new("3ffe:505:2::1").to_string)
+    assert_equal("3ffe:505:2::1", IPAddr.new("3ffe:505:2::1").to_s)
+  end
 end
 
 class TC_Operator < Test::Unit::TestCase
