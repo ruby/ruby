@@ -10,9 +10,8 @@ This program is free software. You can re-distribute and/or
 modify this program under the same terms as Ruby itself,
 Ruby Distribute License or GNU General Public License.
 
-NOTE: You can get Japanese version of this document from
-Ruby Documentation Project (RDP):
-((<URL:http://www.ruby-lang.org/~rubikitch/RDP.cgi>))
+NOTE: You can find Japanese version of this document in
+the doc/net directory of the standard ruby interpreter package.
 
 == What is This Module?
 
@@ -90,11 +89,11 @@ send or reject SMTP session by this data.
 
 === Class Methods
 
-: new( address = 'localhost', port = 25 )
+: new( address, port = 25 )
     creates a new Net::SMTP object.
 
-: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
-: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
+: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
+: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
     is equal to
         Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
 
@@ -192,7 +191,7 @@ SMTP objects raise these exceptions:
 =end
 
 require 'net/protocol'
-require 'digest/md5'
+require 'md5'
 
 
 module Net
@@ -204,7 +203,7 @@ module Net
     protocol_param :command_type, '::Net::NetPrivate::SMTPCommand'
 
 
-    def initialize( addr = nil, port = nil )
+    def initialize( addr, port = nil )
       super
       @esmtp = true
     end
@@ -318,7 +317,7 @@ module Net
       critical {
         rep = getok( 'AUTH CRAM-MD5', ContinueCode )
         challenge = rep.msg.split(' ')[1].unpack('m')[0]
-        secret = Digest::MD5.digest( secret ) if secret.size > 64
+        secret = MD5.new( secret ).digest if secret.size > 64
 
         isecret = secret + "\0" * (64 - secret.size)
         osecret = isecret.dup
@@ -326,8 +325,8 @@ module Net
           isecret[i] ^= 0x36
           osecret[i] ^= 0x5c
         end
-        tmp = Digest::MD5.digest( isecret + challenge )
-        tmp = Digest::MD5.hexdigest( osecret + tmp )
+        tmp = MD5.new( isecret + challenge ).digest
+        tmp = MD5.new( osecret + tmp ).hexdigest
 
         getok [user + ' ' + tmp].pack('m').chomp
       }

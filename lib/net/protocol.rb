@@ -10,9 +10,8 @@ This program is free software. You can re-distribute and/or
 modify this program under the same terms as Ruby itself,
 Ruby Distribute License or GNU General Public License.
 
-NOTE: You can get Japanese version of this document from
-Ruby Documentation Project (RDP):
-((<URL:http://www.ruby-lang.org/~rubikitch/RDP.cgi>))
+NOTE: You can find Japanese version of this document in
+the doc/net directory of the standard ruby interpreter package.
 
 =end
 
@@ -36,7 +35,7 @@ module Net
 
     class << self
 
-      def start( address = 'localhost', port = nil, *args )
+      def start( address, port = nil, *args )
         instance = new( address, port )
 
         if block_given? then
@@ -79,8 +78,8 @@ module Net
     protocol_param :socket_type,  '::Net::NetPrivate::Socket'
 
 
-    def initialize( addr = nil, port = nil )
-      @address = addr || 'localhost'
+    def initialize( addr, port = nil )
+      @address = addr
       @port    = port || type.port
 
       @command = nil
@@ -213,9 +212,9 @@ module Net
 
   class Response
 
-    def initialize( ctype, cno, msg )
+    def initialize( ctype, code, msg )
       @code_type = ctype
-      @code      = cno
+      @code      = code
       @message   = msg
       super()
     end

@@ -11,9 +11,8 @@ This program is free software. You can re-distribute and/or
 modify this program under the same terms as Ruby itself,
 Ruby Distribute License or GNU General Public License.
 
-NOTE: You can get Japanese version of this document from
-Ruby Documentation Project (RDP):
-((<URL:http://www.ruby-lang.org/~rubikitch/RDP.cgi>))
+NOTE: You can find Japanese version of this document in
+the doc/net directory of the standard ruby interpreter package.
 
 == What is this module?
 
@@ -132,12 +131,12 @@ Yes, this is not thread-safe.
 
 === Class Methods
 
-: new( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
+: new( address, port = 80, proxy_addr = nil, proxy_port = nil )
     creates a new Net::HTTP object.
     If proxy_addr is given, creates an Net::HTTP object with proxy support.
 
-: start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
-: start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
+: start( address, port = 80, proxy_addr = nil, proxy_port = nil )
+: start( address, port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
     is equals to
 
         Net::HTTP.new(address, port, proxy_addr, proxy_port).start(&block)
@@ -410,7 +409,7 @@ module Net
 
     protocol_param :port, '80'
 
-    def initialize( addr = nil, port = nil )
+    def initialize( addr, port = nil )
       super
 
       @curr_http_version = HTTPVersion
@@ -445,14 +444,14 @@ module Net
 
       alias orig_new new
 
-      def new( address = nil, port = nil, p_addr = nil, p_port = nil )
+      def new( address, port = nil, p_addr = nil, p_port = nil )
         c = p_addr ? self::Proxy(p_addr, p_port) : self
         i = c.orig_new( address, port )
         setvar i
         i
       end
 
-      def start( address = nil, port = nil, p_addr = nil, p_port = nil, &block )
+      def start( address, port = nil, p_addr = nil, p_port = nil, &block )
         new( address, port, p_addr, p_port ).start( &block )
       end
 
@@ -593,6 +592,13 @@ module Net
     define_http_method_interface :Put,  false, true
 
     def request( req, body = nil )
+      unless active? then
+        start {
+          req['connection'] = 'close'
+          return request(req, body)
+        }
+      end
+        
       connecting( req ) {
         req.__send__( :exec,
                 @socket, @curr_http_version, edit_path(req.path), body )
@@ -613,14 +619,7 @@ module Net
 
 
     def connecting( req )
-      unless active? then
-        implicit = true
-        req['connection'] ||= 'close'
-      end
-
-      if not @socket then
-        start
-      elsif @socket.closed? then
+      if @socket.closed? then
         re_connect
       end
       if not req.body_exist? or @seems_1_0_server then
@@ -644,10 +643,6 @@ module Net
       else
         D 'Conn close'
         @socket.close
-      end
-
-      if implicit then
-        finish
       end
     end
 

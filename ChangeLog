@@ -1,3 +1,15 @@
+Fri Dec  7 18:47:54 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: SMTP.new requires at least one arg.
+
+	* lib/net/pop.rb: POP.new requires at least one arg.
+
+	* lib/net/pop.rb: uses "raise *Error.new" instead of simple raise.
+
+	* lib/net/http.rb: HTTP.new requires at least one arg.
+
+	* lib/net/http.rb: changes implicit start algolithm.
+
 Fri Dec  7 15:52:05 2001  Usaku Nakamura <usa@ruby-lang.org>
 
 	* ext/extmk.rb.in: ignore adding -Wl,-R to DLDFLAGS when the directory
