@@ -2,11 +2,13 @@ Thu Nov 25 07:59:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: AC_PREREQ(2.53) [ruby-core:03800]
 
-	* io.c (read_all): [ruby-dev:24955]
+	* io.c (read_all): stringify non-nil buffer argument, and always
+	  taint the result.  [ruby-dev:24955]
 
 Wed Nov 24 01:01:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* io.c (io_read): [ruby-dev:24952]
+	* io.c (io_read): integer conversion should be prior to
+	  GetOpenFile().  [ruby-dev:24952]
 
 	* configure.in, io.c: cancel [ ruby-Patches-1074 ].
 
@@ -16,7 +18,8 @@ Tue Nov 23 08:09:50 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Tue Nov 23 02:00:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* file.c (rb_file_chown): [ruby-dev:24949]
+	* file.c (rb_file_chown): integer conversion should be prior to
+	  GetOpenFile().  [ruby-dev:24949]
 
 Tue Nov 23 00:10:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
