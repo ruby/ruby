@@ -1,3 +1,7 @@
+Thu Dec 16 03:27:10 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: remove junk.
+
 Thu Dec 16 00:57:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/rubyext.c (rb_syck_io_str_read): [ruby-core:03973]

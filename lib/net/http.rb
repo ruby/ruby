@@ -1101,7 +1101,7 @@ module Net # :nodoc:
 
     # Iterates for each header names.
     def each_name(&block)   #:yield: +key+
-e      @header.each_key(&block)
+      @header.each_key(&block)
     end
 
     alias each_key each_name
