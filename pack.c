@@ -489,7 +489,8 @@ pack_pack(ary, fmt)
 			c = byte & 0xff;
 			rb_str_buf_cat(res, &c, 1);
 		    }
-		    rb_str_buf_cat(res, 0, j);
+		    len = j;
+		    goto grow;
 		}
 		break;
 
@@ -518,7 +519,8 @@ pack_pack(ary, fmt)
 			c = byte & 0xff;
 			rb_str_buf_cat(res, &c, 1);
 		    }
-		    rb_str_buf_cat(res, 0, j);
+		    len = j;
+		    goto grow;
 		}
 		break;
 
@@ -548,7 +550,8 @@ pack_pack(ary, fmt)
 			char c = byte & 0xff;
 			rb_str_buf_cat(res, &c, 1);
 		    }
-		    rb_str_buf_cat(res, 0, j);
+		    len = 1;
+		    goto grow;
 		}
 		break;
 
@@ -578,7 +581,8 @@ pack_pack(ary, fmt)
 			char c = byte & 0xff;
 			rb_str_buf_cat(res, &c, 1);
 		    }
-		    rb_str_buf_cat(res, 0, j);
+		    len = j;
+		    goto grow;
 		}
 		break;
 	    }
