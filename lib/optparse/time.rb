@@ -1,9 +1,9 @@
 require 'optparse'
-require 'parsedate'
+require 'time'
 
 OptionParser.accept(Time) do |s|
   begin
-    Time::mktime(*ParseDate::parsedate(s)[0...6])
+    (Time.httpdate(s) rescue Time.parse(s)) if s
   rescue
     raise OptionParser::InvalidArgument, s
   end

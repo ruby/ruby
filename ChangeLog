@@ -1,4 +1,4 @@
-Wed Aug  7 21:58:01 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Wed Aug  7 22:12:54 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* optparse.rb (OptionParser::Completion::convert): returned all
 	  values not first one.
@@ -6,6 +6,8 @@ Wed Aug  7 21:58:01 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* optparse.rb (OptionParser::Switch::parse): return values as is.
 
 	* optparse.rb (OptionParser::order): ditto.
+
+	* lib/optparse/time.rb: prior time.rb.
 
 	* lib/optparse/uri.rb: require standard uri module.  thanks to
 	  Minero Aoki.
