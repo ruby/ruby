@@ -438,6 +438,9 @@ module Net
       # combine EOL into "\n"
       string = string.gsub(/#{EOL}/no, "\n") unless @options["Binmode"]
 
+      # remove NULL
+      string = string.gsub(/#{NULL}/no, '') unless @options["Binmode"]
+
       string.gsub(/#{IAC}(
                    [#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]|
                    [#{DO}#{DONT}#{WILL}#{WONT}]
