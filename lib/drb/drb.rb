@@ -1,10 +1,10 @@
 #
-# drb/drb.rb -- distributed Ruby --- dRuby 2.0.4
+# = drb/drb.rb
 #
-#--
-# 	Copyright (c) 1999-2003 Masatoshi SEKI You can redistribute it and/or
-# 	modify it under the same terms as Ruby.
-#++
+# Distributed Ruby: _dRuby_ version 2.0.4
+#
+# Copyright (c) 1999-2003 Masatoshi SEKI.  You can redistribute it and/or
+# modify it under the same terms as Ruby.
 #
 # Author: Masatoshi SEKI
 #
@@ -136,12 +136,12 @@ require 'drb/eq'
 # the collected values are finally returned to the local context as
 # the return value of the method invocation.
 # 
-# == Examples of usage.
+# == Examples of usage
 #
 # For more dRuby samples, see the +samples+ directory in the full
 # dRuby distribution.
 #
-# === dRuby in client/server mode.
+# === dRuby in client/server mode
 #
 # This illustrates setting up a simple client-server drb
 # system.  Run the server and client code in different terminals,
