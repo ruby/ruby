@@ -226,7 +226,7 @@ module WEBrick
 
         path_info.unshift("")  # dummy for checking @root dir
         while base = path_info.first
-          check_filename(base)
+          check_filename(req, res, base)
           break if base == "/"
           break unless File.directory?(res.filename + base)
           shift_path_info(req, res, path_info)
@@ -234,7 +234,7 @@ module WEBrick
         end
 
         if base = path_info.first
-          check_filename(base)
+          check_filename(req, res, base)
           if base == "/"
             if file = search_index_file(req, res)
               shift_path_info(req, res, path_info, file)
@@ -254,11 +254,13 @@ module WEBrick
         return false
       end
 
-      def check_filename(name)
-        if File.fnmatch("/#{@options[:NondisclosureName]}", name)
-          @logger.warn("the request refers nondisclosure name `#{name}'.")
-          raise HTTPStatus::NotFound, "`#{req.path}' not found."
-        end
+      def check_filename(req, res, name)
+        @options[:NondisclosureName].each{|pattern|
+          if File.fnmatch("/#{pattern}", name)
+            @logger.warn("the request refers nondisclosure name `#{name}'.")
+            raise HTTPStatus::NotFound, "`#{req.path}' not found."
+          end
+        }
       end
 
       def shift_path_info(req, res, path_info, base=nil)
@@ -306,6 +308,15 @@ module WEBrick
         end
       end
 
+      def nondisclosure_name?(name)
+        @options[:NondisclosureName].each{|pattern|
+          if File.fnmatch(pattern, name)
+            return true
+          end
+        }
+        return false
+      end
+
       def set_dir_list(req, res)
         redirect_to_directory_uri(req, res)
         unless @options[:FancyIndexing]
@@ -314,7 +325,7 @@ module WEBrick
         local_path = res.filename
         list = Dir::entries(local_path).collect{|name|
           next if name == "." || name == ".."
-          next if File::fnmatch(@options[:NondisclosureName], name)
+          next if nondisclosure_name?(name)
           st = (File::stat(local_path + name) rescue nil)
           if st.nil?
             [ name, nil, -1 ]

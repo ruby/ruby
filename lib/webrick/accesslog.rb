@@ -32,6 +32,7 @@ module WEBrick
       params["i"] = req
       params["l"] = "-"
       params["m"] = req.request_method
+      params["n"] = req.attributes
       params["o"] = res
       params["p"] = req.port
       params["q"] = req.query_string
@@ -46,15 +47,17 @@ module WEBrick
     end
 
     def format(format_string, params)
-      format_string.gsub(/\%(?:\{(.*?)\})?>?([a-zA-Z])/){
+      format_string.gsub(/\%(?:\{(.*?)\})?>?([a-zA-Z%])/){
          param, spec = $1, $2
          case spec[0]
-         when ?e, ?i, ?o
+         when ?e, ?i, ?n, ?o
            raise AccessLogError,
              "parameter is required for \"#{spec}\"" unless param
            params[spec][param] || "-"
          when ?t
            params[spec].strftime(param || CLF_TIME_FORMAT)
+         when ?%
+           "%"
          else
            params[spec]
          end
