@@ -1,3 +1,7 @@
+Wed May 21 13:26:08 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse.rb: get rid of warnings.
+
 Tue May 20 18:59:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_save_context): prohibit rb_gc_force_recycle()

@@ -1,7 +1,7 @@
 require 'optparse'
 require 'time'
 
-OptionParser.accept(Time) do |s|
+OptionParser.accept(Time) do |s,|
   begin
     (Time.httpdate(s) rescue Time.parse(s)) if s
   rescue

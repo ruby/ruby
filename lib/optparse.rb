@@ -844,8 +844,7 @@ Default options, which never appear in option summary.
 --- OptionParser#to_s
     Returns option summary string.
 =end #'#"#`#
-  def to_str; summarize(banner.to_s.sub(/\n?\z/, "\n")) end
-  alias to_s to_str
+  def to_s; summarize(banner.to_s.sub(/\n?\z/, "\n")) end
 
 =begin
 --- OptionParser#to_a
@@ -1325,9 +1324,9 @@ Default options, which never appear in option summary.
 : Object
   any string, and no conversion. this is fall-back.
 =end #'#"#`#
-  accept(Object) {|s|s or s.nil?}
+  accept(Object) {|s,|s or s.nil?}
 
-  accept(NilClass) {|s|s}
+  accept(NilClass) {|s,|s}
 
 =begin
 : String
@@ -1346,7 +1345,7 @@ Default options, which never appear in option summary.
   hex = 'x[\da-f]+(?:_[\da-f]+)*'
   octal = "0(?:[0-7]*(?:_[0-7]+)*|#{binary}|#{hex})"
   integer = "#{octal}|#{decimal}"
-  accept(Integer, %r"\A[-+]?(?:#{integer})"io) {|s| Integer(s) if s}
+  accept(Integer, %r"\A[-+]?(?:#{integer})"io) {|s,| Integer(s) if s}
 
 =begin
 : Float
@@ -1354,21 +1353,21 @@ Default options, which never appear in option summary.
 =end #'#"#`#
   float = "(?:#{decimal}(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[-+]?#{decimal})?"
   floatpat = %r"\A[-+]?#{float}"io
-  accept(Float, floatpat) {|s| s.to_f if s}
+  accept(Float, floatpat) {|s,| s.to_f if s}
 
 =begin
 : Numeric
   Generic numeric format, and converts to (({Integer})) for integer
   format, (({Float})) for float format.
 =end #'#"#`#
-  accept(Numeric, %r"\A[-+]?(?:#{octal}|#{float})"io) {|s| eval(s) if s}
+  accept(Numeric, %r"\A[-+]?(?:#{octal}|#{float})"io) {|s,| eval(s) if s}
 
 =begin
 : OptionParser::DecimalInteger
   Decimal integer format, to be converted to (({Integer})).
 =end #'#"#`#
   DecimalInteger = /\A[-+]?#{decimal}/io
-  accept(DecimalInteger) {|s| s.to_i if s}
+  accept(DecimalInteger) {|s,| s.to_i if s}
 
 =begin
 : OptionParser::OctalInteger
@@ -1376,7 +1375,7 @@ Default options, which never appear in option summary.
   to (({Integer})).
 =end #'#"#`#
   OctalInteger = /\A[-+]?(?:[0-7]+(?:_[0-7]+)*|0(?:#{binary}|#{hex}))/io
-  accept(OctalInteger) {|s| s.oct if s}
+  accept(OctalInteger) {|s,| s.oct if s}
 
 =begin
 : OptionParser::DecimalNumeric
@@ -1384,7 +1383,7 @@ Default options, which never appear in option summary.
   (({Integer})) for integer format, (({Float})) for float format.
 =end #'#"#`#
   DecimalNumeric = floatpat	# decimal integer is allowed as float also.
-  accept(DecimalNumeric) {|s| eval(s) if s}
+  accept(DecimalNumeric) {|s,| eval(s) if s}
 
 =begin
 : TrueClass
@@ -1405,7 +1404,7 @@ Default options, which never appear in option summary.
 : Array
   List of strings separated by ","
 =end #'#"#`#
-  accept(Array) do |s|
+  accept(Array) do |s,|
     if s
       s = s.split(',').collect {|s| s unless s.empty?}
     end
