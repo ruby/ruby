@@ -356,7 +356,7 @@ class File
       pp.nest(1) {
 	pp.text "#<"
 	pp.text self.class.name
-	pp.breakable; pp.text "dev="; pp.pp self.dev; pp.text ','
+	pp.breakable; pp.text sprintf("dev=0x%x", self.dev); pp.text ','
 	pp.breakable; pp.text "ino="; pp.pp self.ino; pp.text ','
 	pp.breakable
 	pp.group {
