@@ -176,6 +176,11 @@ module OpenURI
         unless OpenURI.redirectable?(uri, redirect)
           raise "redirection forbidden: #{uri} -> #{redirect}"
         end
+        if options.include? :http_basic_authentication
+          # send authentication only for the URI directly specified.
+          options = options.dup
+          options.delete :http_basic_authentication
+        end
         uri = redirect
         raise "HTTP redirection loop: #{uri}" if uri_set.include? uri.to_s
         uri_set[uri.to_s] = true
@@ -199,6 +204,11 @@ module OpenURI
   def OpenURI.open_http(buf, target, proxy, options) # :nodoc:
     if proxy
       raise "Non-HTTP proxy URI: #{proxy}" if proxy.class != URI::HTTP
+    end
+
+    if target.userinfo && "1.9.0" <= RUBY_VERSION
+      # don't raise for 1.8 because compatibility.
+      raise "userinfo not supported.  [RFC3986]"
     end
 
     require 'net/http'

@@ -1,3 +1,8 @@
+Sat Feb 12 17:29:19 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (OpenURI.open_loop): send authentication only for
+	  the URI directly specified.
+
 Sat Feb 12 15:07:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (rand_init): suppress warning.
