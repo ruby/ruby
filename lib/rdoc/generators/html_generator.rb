@@ -427,7 +427,7 @@ module Generators
             if m.document_self and m.visibility == vis and m.singleton == singleton
               row = {}
               if m.call_seq
-                row["callseq"] = m.call_seq
+                row["callseq"] = m.call_seq.gsub(/->/, '&rarr;')
               else
                 row["name"]        = CGI.escapeHTML(m.name)
                 row["params"]      = m.params
