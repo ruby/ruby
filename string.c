@@ -4491,9 +4491,10 @@ rb_str_justify(argc, argv, str, jflag)
     res = rb_str_new5(str, 0, width);
     if (argc == 2) {
 	StringValue(pad);
-	if (RSTRING(pad)->len > 0) {
-	    f = RSTRING(pad)->ptr;
-	    flen = RSTRING(pad)->len;
+	f = RSTRING(pad)->ptr;
+	flen = RSTRING(pad)->len;
+	if (flen == 0) {
+	    rb_raise(rb_eArgError, "zero width padding");
 	}
     }
     p = RSTRING(res)->ptr;

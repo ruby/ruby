@@ -1,3 +1,8 @@
+Tue Nov 16 01:41:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_update): pedantic check to detect
+	  rb_ary_to_ary() to modify the receiver.  [ruby-dev:24861]
+
 Mon Nov 15 18:58:05 2004  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: check rlim_t more portably. [ruby-core:3735]
@@ -472,6 +477,12 @@ Fri Oct 29 10:00:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): ruby_finalize_1 may cause exception,
 	  should be wrapped by PUSH_TAG/POP_TAG().  [ruby-dev:24627]
+
+Thu Oct 28 08:42:02 2004  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (argf_forward): use ANSI style.
+	  (argf_read): call argf_forward with argv argument.
+	  [ruby-dev:24624]
 
 Wed Oct 27 09:17:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

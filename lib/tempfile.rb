@@ -144,7 +144,7 @@ class Tempfile < DelegateClass(File)
   class << self
     def callback(data)	# :nodoc:
       pid = $$
-      lambda{
+      Proc.new {
 	if pid == $$ 
 	  path, tmpfile, cleanlist = *data
 

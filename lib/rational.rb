@@ -312,20 +312,22 @@ class Integer
     return a
   end
 
-  def lcm(int)
-    a = self.abs
-    b = int.abs
-    gcd = a.gcd(b)
-    (a.div(gcd)) * b
+  def lcm(other)
+    if self.zero? or other.zero?
+      0
+    else
+      (self.div(self.gcd(other)) * other).abs
+    end
   end
   
-  def gcdlcm(int)
-    a = self.abs
-    b = int.abs
-    gcd = a.gcd(b)
-    return gcd, (a.div(gcd)) * b
+  def gcdlcm(other)
+    gcd = self.gcd(other)
+    if self.zero? or other.zero?
+      [gcd, 0]
+    else
+      [gcd, (self.div(gcd) * other).abs]
+    end
   end
-  
 end
 
 class Fixnum
