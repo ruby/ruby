@@ -87,11 +87,11 @@ rb_f_srand(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE seed;
-    int old;
-    static int saved_seed;
+    VALUE a;
+    unsigned int seed, old;
+    static unsigned int saved_seed;
 
-    if (rb_scan_args(argc, argv, "01", &seed) == 0) {
+    if (rb_scan_args(argc, argv, "01", &a) == 0) {
 	static int n = 0;
 	struct timeval tv;
 
@@ -99,7 +99,7 @@ rb_f_srand(argc, argv, obj)
 	seed = tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
     }
     else {
-	seed = NUM2UINT(seed);
+	seed = NUM2UINT(a);
     }
 
 #ifdef HAVE_RANDOM
@@ -116,7 +116,7 @@ rb_f_srand(argc, argv, obj)
     old = saved_seed;
     saved_seed = seed;
 
-    return rb_int2inum(old);
+    return rb_uint2inum(old);
 }
 
 static VALUE
