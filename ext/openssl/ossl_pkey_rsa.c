@@ -222,6 +222,31 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+static VALUE
+ossl_rsa_to_der(VALUE self)
+{
+    EVP_PKEY *pkey;
+    int (*i2d_func)_((const RSA*, unsigned char**));
+    unsigned char *p;
+    long len;
+    VALUE str;
+
+    GetPKeyRSA(self, pkey);
+    if(RSA_HAS_PRIVATE(pkey->pkey.rsa))
+	i2d_func = i2d_RSAPrivateKey;
+    else
+	i2d_func = i2d_RSAPublicKey;
+    if((len = i2d_func(pkey->pkey.rsa, NULL)) <= 0)
+	ossl_raise(eRSAError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if(i2d_func(pkey->pkey.rsa, &p) < 0)
+	ossl_raise(eRSAError, NULL);
+    ossl_str_adjust(str, p);
+
+    return str;
+}
+
 #define ossl_rsa_buf_size(pkey) (RSA_size((pkey)->pkey.rsa)+16)
 
 static VALUE
@@ -440,6 +465,7 @@ Init_ossl_rsa()
     rb_define_method(cRSA, "export", ossl_rsa_export, -1);
     rb_define_alias(cRSA, "to_pem", "export");
     rb_define_alias(cRSA, "to_s", "export");
+    rb_define_method(cRSA, "to_der", ossl_rsa_to_der, 0);
     rb_define_method(cRSA, "public_key", ossl_rsa_to_public_key, 0);
     rb_define_method(cRSA, "public_encrypt", ossl_rsa_public_encrypt, 1);
     rb_define_method(cRSA, "public_decrypt", ossl_rsa_public_decrypt, 1);
