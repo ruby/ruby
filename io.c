@@ -1503,9 +1503,9 @@ VALUE
 rb_file_open(fname, mode)
     const char *fname, *mode;
 {
-    NEWOBJ(io, struct RFile);
-    OBJSETUP(io, rb_cFile, T_FILE);
-    return rb_file_open_internal((VALUE)io, fname, mode);
+    VALUE io = rb_obj_alloc(rb_cFile);
+
+    return rb_file_open_internal(io, fname, mode);
 }
 
 static VALUE
@@ -1535,9 +1535,9 @@ rb_file_sysopen(fname, flags, mode)
     const char *fname;
     int flags, mode;
 {
-    NEWOBJ(io, struct RFile);
-    OBJSETUP(io, rb_cFile, T_FILE);
-    return rb_file_sysopen_internal((VALUE)io, fname, flags, mode);
+    VALUE io = rb_obj_alloc(rb_cFile);
+
+    return rb_file_sysopen_internal(io, fname, flags, mode);
 }
 
 #if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__)
@@ -1650,8 +1650,8 @@ pipe_open(pname, mode)
 
     if (!f) rb_sys_fail(pname);
     else {
-	NEWOBJ(port, struct RFile);
-	OBJSETUP(port, rb_cIO, T_FILE);
+	VALUE port = rb_obj_alloc(rb_cIO);
+
 	MakeOpenFile(port, fptr);
 	fptr->finalize = pipe_finalize;
 	fptr->mode = modef;
@@ -1724,8 +1724,8 @@ pipe_open(pname, mode)
       default:			/* parent */
 	if (pid < 0) rb_sys_fail(pname);
 	else {
-	    NEWOBJ(port, struct RFile);
-	    OBJSETUP(port, rb_cIO, T_FILE);
+	    VALUE port = rb_obj_alloc(rb_cIO);
+
 	    MakeOpenFile(port, fptr);
 	    fptr->mode = modef;
 	    fptr->mode |= FMODE_SYNC;
@@ -1838,10 +1838,9 @@ rb_file_s_open(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    NEWOBJ(io, struct RFile);
-    OBJSETUP(io, klass, T_FILE);
-    RFILE(io)->fptr = 0;
+    VALUE io = rb_obj_alloc(klass);
 
+    RFILE(io)->fptr = 0;
     rb_open_file(argc, argv, (VALUE)io);
     if (rb_block_given_p()) {
 	return rb_ensure(rb_yield, (VALUE)io, rb_io_close, (VALUE)io);
@@ -2043,9 +2042,7 @@ rb_io_clone(io)
     OpenFile *fptr, *orig;
     int fd;
     char *mode;
-
-    NEWOBJ(clone, struct RFile);
-    CLONESETUP(clone, io);
+    VALUE clone = rb_obj_clone(io);
 
     GetOpenFile(io, orig);
     MakeOpenFile(clone, fptr);
@@ -2409,8 +2406,7 @@ prep_stdio(f, mode, klass)
     VALUE klass;
 {
     OpenFile *fp;
-    NEWOBJ(io, struct RFile);
-    OBJSETUP(io, klass, T_FILE);
+    VALUE io = rb_obj_alloc(klass);
 
     MakeOpenFile(io, fp);
     fp->f = f;
@@ -2432,16 +2428,13 @@ prep_path(io, path)
 }
 
 static VALUE
-rb_io_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
+rb_io_s_alloc(klass)
     VALUE klass;
 {
     NEWOBJ(io, struct RFile);
     OBJSETUP(io, klass, T_FILE);
     
     io->fptr = 0;
-    rb_obj_call_init((VALUE)io, argc, argv);
 
     return (VALUE)io;
 }
@@ -2456,11 +2449,6 @@ rb_io_initialize(argc, argv, io)
     OpenFile *fp;
     char *m = "r";
 
-    if (RFILE(io)->fptr) {
-	rb_io_close_m(io);
-	free(RFILE(io)->fptr);
-	RFILE(io)->fptr = 0;
-    }
     if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
 	SafeStringValue(mode);
 	m = RSTRING(mode)->ptr;
@@ -2500,9 +2488,8 @@ rb_io_s_for_fd(argc, argv, klass)
     VALUE fnum, mode;
     OpenFile *fp;
     char *m = "r";
-    NEWOBJ(io, struct RFile);
-    OBJSETUP(io, klass, T_FILE);
-    
+    VALUE io = rb_obj_alloc(klass);
+
     if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
 	SafeStringValue(mode);
 	m = RSTRING(mode)->ptr;
@@ -2512,7 +2499,7 @@ rb_io_s_for_fd(argc, argv, klass)
     fp->f = rb_fdopen(NUM2INT(fnum), m);
     fp->mode = rb_io_mode_flags(m);
 
-    return (VALUE)io;
+    return io;
 }
 
 static int binmode = 0;
@@ -3535,7 +3522,7 @@ Init_IO()
     rb_cIO = rb_define_class("IO", rb_cObject);
     rb_include_module(rb_cIO, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cIO, "new", rb_io_s_new, -1);
+    rb_define_singleton_method(rb_cIO, "allocate", rb_io_s_alloc, 0);
     rb_define_singleton_method(rb_cIO, "for_fd", rb_io_s_for_fd, -1);
     rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
     rb_define_singleton_method(rb_cIO, "popen", rb_io_s_popen, -1);

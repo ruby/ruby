@@ -61,18 +61,6 @@ time_s_now(klass)
 }
 
 static VALUE
-time_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE obj = time_s_now(klass);
-
-    rb_obj_call_init(obj, argc, argv);
-    return obj;
-}
-
-static VALUE
 time_new_internal(klass, sec, usec)
     VALUE klass;
     time_t sec, usec;
@@ -1212,7 +1200,7 @@ Init_Time()
     rb_include_module(rb_cTime, rb_mComparable);
 
     rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
-    rb_define_singleton_method(rb_cTime, "new", time_s_new, -1);
+    rb_define_singleton_method(rb_cTime, "allocate", time_s_now, 0);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
     rb_define_singleton_method(rb_cTime, "utc", time_s_mkutc, -1);
     rb_define_singleton_method(rb_cTime, "gm", time_s_mkutc, -1);

@@ -62,19 +62,18 @@ VALUE
 rb_mod_clone(module)
     VALUE module;
 {
-    NEWOBJ(clone, struct RClass);
-    CLONESETUP(clone, module);
+    VALUE clone = rb_obj_clone(module);
 
-    clone->super = RCLASS(module)->super;
+    RCLASS(clone)->super = RCLASS(module)->super;
     if (RCLASS(module)->iv_tbl) {
-	clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
+	RCLASS(clone)->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
     }
     if (RCLASS(module)->m_tbl) {
-	clone->m_tbl = st_init_numtable();
-	st_foreach(RCLASS(module)->m_tbl, clone_method, clone->m_tbl);
+	RCLASS(clone)->m_tbl = st_init_numtable();
+	st_foreach(RCLASS(module)->m_tbl, clone_method, RCLASS(clone)->m_tbl);
     }
 
-    return (VALUE)clone;
+    return clone;
 }
 
 VALUE

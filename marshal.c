@@ -796,11 +796,20 @@ r_object(arg)
       case TYPE_UCLASS:
 	{
 	    VALUE c = rb_path2class(r_unique(arg));
+	    VALUE tmp;
+
 	    v = r_object(arg);
 	    if (rb_special_const_p(v) ||
+		TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS || TYPE(v) == T_MODULE || 
 		!RTEST(rb_funcall(c, '<', 1, RBASIC(v)->klass))) {
 		rb_raise(rb_eArgError, "dump format error (user class)");
 	    }
+#if 0
+	    tmp = rb_obj_alloc(c);
+	    if (TYPE(v) != TYPE(tmp)) {
+		rb_raise(rb_eArgError, "dump format error (user class)");
+	    }
+#endif
 	    RBASIC(v)->klass = c;
 	    return v;
 	}
@@ -968,6 +977,9 @@ r_object(arg)
 
 	    klass = rb_path2class(r_unique(arg));
 	    v = rb_obj_alloc(klass);
+	    if (TYPE(v) != T_OBJECT) {
+		rb_raise(rb_eArgError, "dump format error");
+	    }
 	    r_regist(v, arg);
 	    r_ivar(v, arg);
 	    return v;

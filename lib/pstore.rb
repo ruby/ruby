@@ -86,11 +86,11 @@ class PStore
       value = nil
       backup = @filename+"~"
       begin
-	file = File::open(@filename, "r+")
+	file = File::open(@filename, "rb+")
 	orig = true
       rescue Errno::ENOENT
 	raise if read_only
-	file = File::open(@filename, "w+")
+	file = File::open(@filename, "wb+")
       end
       file.flock(read_only ? File::LOCK_SH : File::LOCK_EX)
       if read_only

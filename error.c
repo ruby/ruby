@@ -278,10 +278,7 @@ rb_exc_new(etype, ptr, len)
     const char *ptr;
     long len;
 {
-    VALUE exc = rb_obj_alloc(etype);
-
-    rb_iv_set(exc, "mesg", rb_str_new(ptr, len));
-    return exc;
+    return rb_funcall(etype, rb_intern("new"), 1, rb_str_new(ptr, len));
 }
 
 VALUE

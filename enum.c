@@ -235,7 +235,6 @@ enum_sort_by(obj)
     for (i=0; i<RARRAY(ary)->len; i++) {
 	VALUE e = RARRAY(ary)->ptr[i];
 	RARRAY(ary)->ptr[i] = rb_ary_entry(e, 2);
-	rb_gc_force_recycle(e);
     }
 
     return ary;

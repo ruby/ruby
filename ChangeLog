@@ -1,6 +1,33 @@
+Wed Oct  3 13:32:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object): better allocation type check for
+	  TYPE_UCLASS. usage of allocation framework is disabled for now.
+
+	* variable.c (rb_class_path): Module may have subclass.
+
+	* string.c (rb_str_update): should maintain original negative
+	  offset. 
+
+	* string.c (rb_str_subpat_set): ditto
+
+	* string.c (rb_str_aset): ditto.
+
+	* re.c (rb_reg_nth_match): should check negative nth.
+
+	* re.c (rb_reg_nth_defined): ditto.
+
 Tue Oct  2 19:12:47 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/ftools.rb (catname): allow trailing '/' for the destination.
+
+Tue Oct  2 18:31:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should override existing class.
+
+Tue Oct  2 17:08:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_alloc): general instance allocation framework.
+	  use of NEWOBJ() is deprecated except within 'allocate' method.
 
 Tue Oct  2 08:04:52 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

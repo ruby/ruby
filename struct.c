@@ -14,7 +14,7 @@
 
 VALUE rb_cStruct;
 
-static VALUE struct_alloc _((int, VALUE*, VALUE));
+static VALUE struct_alloc _((VALUE));
 
 VALUE
 rb_struct_iv_get(c, name)
@@ -168,8 +168,9 @@ make_struct(name, member, klass)
     rb_iv_set(nstr, "__size__", INT2NUM(RARRAY(member)->len));
     rb_iv_set(nstr, "__member__", member);
 
-    rb_define_singleton_method(nstr, "new", struct_alloc, -1);
-    rb_define_singleton_method(nstr, "[]", struct_alloc, -1);
+    rb_define_singleton_method(nstr, "allocate", struct_alloc, 0);
+    rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
+    rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members, 0);
     for (i=0; i< RARRAY(member)->len; i++) {
 	ID id = SYM2ID(RARRAY(member)->ptr[i]);
@@ -269,14 +270,11 @@ rb_struct_initialize(self, values)
 }
 
 static VALUE
-struct_alloc(argc, argv, klass)
-    int argc;
-    VALUE *argv;
+struct_alloc(klass)
     VALUE klass;
 {
     VALUE size;
     long n;
-
     NEWOBJ(st, struct RStruct);
     OBJSETUP(st, klass, T_STRUCT);
 
@@ -286,7 +284,6 @@ struct_alloc(argc, argv, klass)
     st->ptr = ALLOC_N(VALUE, n);
     rb_mem_clear(st->ptr, n);
     st->len = n;
-    rb_obj_call_init((VALUE)st, argc, argv);
 
     return (VALUE)st;
 }
@@ -295,7 +292,7 @@ VALUE
 rb_struct_alloc(klass, values)
     VALUE klass, values;
 {
-    return struct_alloc(RARRAY(values)->len, RARRAY(values)->ptr, klass);
+    return rb_class_new_instance(RARRAY(values)->len, RARRAY(values)->ptr, klass);
 }
 
 VALUE
@@ -320,7 +317,7 @@ rb_struct_new(klass, va_alist)
     }
     va_end(args);
 
-    return struct_alloc(size, mem, klass);
+    return rb_class_new_instance(size, mem, klass);
 }
 
 static VALUE
@@ -409,13 +406,13 @@ static VALUE
 rb_struct_clone(s)
     VALUE s;
 {
-    NEWOBJ(clone, struct RStruct);
-    CLONESETUP(clone, s);
-    clone->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
-    clone->len = RSTRUCT(s)->len;
-    MEMCPY(clone->ptr, RSTRUCT(s)->ptr, VALUE, clone->len);
+    VALUE clone = rb_obj_clone(s);
 
-    return (VALUE)clone;
+    RSTRUCT(clone)->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
+    RSTRUCT(clone)->len = RSTRUCT(s)->len;
+    MEMCPY(RSTRUCT(clone)->ptr, RSTRUCT(s)->ptr, VALUE, RSTRUCT(clone)->len);
+
+    return clone;
 }
 
 static VALUE

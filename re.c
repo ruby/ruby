@@ -665,7 +665,11 @@ rb_reg_nth_defined(nth, match)
 {
     if (NIL_P(match)) return Qnil;
     if (nth >= RMATCH(match)->regs->num_regs) {
-	return Qfalse;
+	return Qnil;
+    }
+    if (nth < 0) {
+	nth += RMATCH(match)->regs->num_regs;
+	if (nth <= 0) return Qnil;
     }
     if (RMATCH(match)->BEG(nth) == -1) return Qfalse;
     return Qtrue;
@@ -682,6 +686,10 @@ rb_reg_nth_match(nth, match)
     if (NIL_P(match)) return Qnil;
     if (nth >= RMATCH(match)->regs->num_regs) {
 	return Qnil;
+    }
+    if (nth < 0) {
+	nth += RMATCH(match)->regs->num_regs;
+	if (nth <= 0) return Qnil;
     }
     start = RMATCH(match)->BEG(nth);
     if (start == -1) return Qnil;
@@ -881,6 +889,7 @@ rb_reg_new(s, len, options)
     long len;
     int options;
 {
+    
     NEWOBJ(re, struct RRegexp);
     OBJSETUP(re, rb_cRegexp, T_REGEXP);
 
@@ -1033,16 +1042,16 @@ rb_reg_initialize_m(argc, argv, self)
 }
 
 static VALUE
-rb_reg_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
+rb_reg_s_alloc(klass)
     VALUE klass;
 {
-    NEWOBJ(re, struct RRegexp);
-    OBJSETUP(re, klass, T_REGEXP);
-    re->ptr = 0; re->len = 0; re->str = 0;
-    rb_obj_call_init((VALUE)re, argc, argv);
-    return (VALUE)re;
+    VALUE re = rb_obj_alloc(klass);
+
+    RREGEXP(re)->ptr = 0;
+    RREGEXP(re)->len = 0;
+    RREGEXP(re)->str = 0;
+
+    return re;
 }
 
 static VALUE
@@ -1152,13 +1161,15 @@ static VALUE
 rb_reg_clone(re)
     VALUE re;
 {
-    NEWOBJ(clone, struct RRegexp);
-    CLONESETUP(clone, re);
+    VALUE clone = rb_obj_clone(re);
+
+    RREGEXP(clone)->ptr = 0;
+    RREGEXP(clone)->len = 0;
+    RREGEXP(clone)->str = 0;
     rb_reg_check(re);
-    clone->ptr = 0; clone->len = 0; clone->str = 0;
     rb_reg_initialize(clone, RREGEXP(re)->str, RREGEXP(re)->len,
 		      rb_reg_options(re));
-    return (VALUE)re;
+    return clone;
 }
 
 VALUE
@@ -1387,8 +1398,8 @@ Init_Regexp()
     rb_define_virtual_variable("$-K", kcode_getter, kcode_setter);
 
     rb_cRegexp = rb_define_class("Regexp", rb_cObject);
-    rb_define_singleton_method(rb_cRegexp, "new", rb_reg_s_new, -1);
-    rb_define_singleton_method(rb_cRegexp, "compile", rb_reg_s_new, -1);
+    rb_define_singleton_method(rb_cRegexp, "allocate", rb_reg_s_alloc, 0);
+    rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, -1);
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, -1);
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
@@ -1415,6 +1426,7 @@ Init_Regexp()
 
     rb_cMatch  = rb_define_class("MatchData", rb_cObject);
     rb_define_global_const("MatchingData", rb_cMatch);
+    rb_undef_method(CLASS_OF(rb_cMatch), "allocate");
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
 
     rb_define_method(rb_cMatch, "clone", match_clone, 0);

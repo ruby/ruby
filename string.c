@@ -32,24 +32,35 @@ VALUE rb_cString;
 
 VALUE rb_fs;
 
+static VALUE
+rb_str_s_alloc(klass)
+    VALUE klass;
+{
+    NEWOBJ(str, struct RString);
+    OBJSETUP(str, klass, T_STRING);
+
+    str->ptr = 0;
+    str->len = 0;
+    str->orig = 0;
+
+    return (VALUE)str;
+}
+
 VALUE
 rb_str_new0(klass, ptr, len)
     VALUE klass;
     const char *ptr;
     long len;
 {
-    NEWOBJ(str, struct RString);
-    OBJSETUP(str, klass, T_STRING);
+    VALUE str = rb_obj_alloc(klass);
 
-    str->ptr = 0;
-    str->len = len;
-    str->orig = 0;
-    str->ptr = ALLOC_N(char,len+1);
+    RSTRING(str)->len = len;
+    RSTRING(str)->ptr = ALLOC_N(char,len+1);
     if (ptr) {
-	memcpy(str->ptr, ptr, len);
+	memcpy(RSTRING(str)->ptr, ptr, len);
     }
-    str->ptr[len] = '\0';
-    return (VALUE)str;
+    RSTRING(str)->ptr[len] = '\0';
+    return str;
 }
 
 VALUE
@@ -92,15 +103,14 @@ VALUE
 rb_str_new3(str)
     VALUE str;
 {
-    NEWOBJ(str2, struct RString);
-    OBJSETUP(str2, rb_cString, T_STRING);
+    VALUE str2 = rb_obj_alloc(rb_cString);
 
-    str2->len = RSTRING(str)->len;
-    str2->ptr = RSTRING(str)->ptr;
-    str2->orig = str;
+    RSTRING(str2)->len = RSTRING(str)->len;
+    RSTRING(str2)->ptr = RSTRING(str)->ptr;
+    RSTRING(str2)->orig = str;
     OBJ_INFECT(str2, str);
 
-    return (VALUE)str2;
+    return str2;
 }
 
 VALUE
@@ -124,17 +134,16 @@ rb_str_new4(orig)
 	return str;
     }
     else {
-	NEWOBJ(str, struct RString);
-	OBJSETUP(str, klass, T_STRING);
+	VALUE str = rb_obj_alloc(klass);
 
-	str->len = RSTRING(orig)->len;
-	str->ptr = RSTRING(orig)->ptr;
-	RSTRING(orig)->orig = (VALUE)str;
-	str->orig = 0;
+	RSTRING(str)->len = RSTRING(orig)->len;
+	RSTRING(str)->ptr = RSTRING(orig)->ptr;
+	RSTRING(orig)->orig = str;
+	RSTRING(str)->orig = 0;
 	OBJ_INFECT(str, orig);
 	OBJ_FREEZE(str);
 
-	return (VALUE)str;
+	return str;
     }
 }
 
@@ -153,19 +162,18 @@ VALUE
 rb_str_buf_new(capa)
     long capa;
 {
-    NEWOBJ(str, struct RString);
-    OBJSETUP(str, rb_cString, T_STRING);
+    VALUE str = rb_obj_alloc(rb_cString);
 
     FL_SET(str, STR_NO_ORIG);
     if (capa < STR_BUF_MIN_SIZE)
 	capa = STR_BUF_MIN_SIZE;
-    str->ptr = 0;
-    str->len = 0;
-    str->orig = LONG2FIX(capa);
-    str->ptr = ALLOC_N(char, capa+1);
-    str->ptr[0] = '\0';
+    RSTRING(str)->ptr = 0;
+    RSTRING(str)->len = 0;
+    RSTRING(str)->orig = LONG2FIX(capa);
+    RSTRING(str)->ptr = ALLOC_N(char, capa+1);
+    RSTRING(str)->ptr[0] = '\0';
 
-    return (VALUE)str;
+    return str;
 }
 
 VALUE
@@ -304,18 +312,6 @@ rb_str_clone(str)
     CLONESETUP(clone, str);
 
     return clone;
-}
-
-static VALUE
-rb_str_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE str = rb_str_new0(klass, 0, 0);
-
-    rb_obj_call_init(str, argc, argv);
-    return str;
 }
 
 static VALUE rb_str_replace _((VALUE, VALUE));
@@ -1071,12 +1067,12 @@ rb_str_upto_m(beg, end)
 }
 
 static VALUE
-rb_str_subpat(str, re, offset)
+rb_str_subpat(str, re, nth)
     VALUE str, re;
-    int offset;
+    int nth;
 {
     if (rb_reg_search(re, str, 0, 0) >= 0) {
-	return rb_reg_nth_match(offset, rb_backref_get());
+	return rb_reg_nth_match(nth, rb_backref_get());
     }
     return Qnil;
 }
@@ -1153,14 +1149,15 @@ rb_str_update(str, beg, len, val)
     VALUE val;
 {
     if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
-    if (beg < 0) {
-	beg += RSTRING(str)->len;
-    }
-    if (beg < 0 || RSTRING(str)->len < beg) {
-	if (beg < 0) {
-	    beg -= RSTRING(str)->len;
-	}
+    if (RSTRING(str)->len < beg) {
+      out_of_range:
 	rb_raise(rb_eIndexError, "index %d out of string", beg);
+    }
+    if (beg < 0) {
+	if (-beg > RSTRING(str)->len) {
+	    goto out_of_range;
+	}
+	beg += RSTRING(str)->len;
     }
     if (RSTRING(str)->len < beg + len) {
 	len = RSTRING(str)->len - beg;
@@ -1189,9 +1186,9 @@ rb_str_update(str, beg, len, val)
 }
 
 static void
-rb_str_subpat_set(str, re, offset, val)
+rb_str_subpat_set(str, re, nth, val)
     VALUE str, re;
-    int offset;
+    int nth;
     VALUE val;
 {
     VALUE match;
@@ -1201,15 +1198,22 @@ rb_str_subpat_set(str, re, offset, val)
 	rb_raise(rb_eIndexError, "regexp not matched");
     }
     match = rb_backref_get();
-    if (offset >= RMATCH(match)->regs->num_regs) {
-	rb_raise(rb_eIndexError, "index %d out of regexp", offset);
+    if (nth >= RMATCH(match)->regs->num_regs) {
+      out_of_range:
+	rb_raise(rb_eIndexError, "index %d out of regexp", nth);
+    }
+    if (nth < 0) {
+	if (-nth >= RMATCH(match)->regs->num_regs) {
+	    goto out_of_range;
+	}
+	nth += RMATCH(match)->regs->num_regs;
     }
 
-    start = RMATCH(match)->BEG(offset);
+    start = RMATCH(match)->BEG(nth);
     if (start == -1) {
-	rb_raise(rb_eIndexError, "regexp group %d not matched", offset);
+	rb_raise(rb_eIndexError, "regexp group %d not matched", nth);
     }
-    end = RMATCH(match)->END(offset);
+    end = RMATCH(match)->END(nth);
     len = end - start;
     rb_str_update(str, start, len, val);
 }
@@ -1225,11 +1229,14 @@ rb_str_aset(str, indx, val)
       case T_FIXNUM:
       num_index:
 	idx = NUM2INT(indx);
-	if (idx < 0) {
-	    idx += RSTRING(str)->len;
-	}
-	if (idx < 0 || RSTRING(str)->len <= idx) {
+	if (RSTRING(str)->len <= idx) {
+	  out_of_range:
 	    rb_raise(rb_eIndexError, "index %d out of string", idx);
+	}
+	if (idx < 0) {
+	    if (-idx > RSTRING(str)->len)
+		goto out_of_range;
+	    idx += RSTRING(str)->len;
 	}
 	if (FIXNUM_P(val)) {
 	    if (RSTRING(str)->len == idx) {
@@ -1522,12 +1529,11 @@ str_gsub(argc, argv, str, bang)
 	}
     }
     else {
-	NEWOBJ(dup, struct RString);
-	OBJSETUP(dup, rb_cString, T_STRING);
+	VALUE dup = rb_obj_alloc(rb_obj_class(str));
+
 	OBJ_INFECT(dup, str);
-	RBASIC(dup)->klass = rb_obj_class(str);
-	str = (VALUE)dup;
-	dup->orig = 0;
+	str = dup;
+	RSTRING(dup)->orig = 0;
     }
     RSTRING(str)->ptr = buf;
     RSTRING(str)->len = len = bp - buf;
@@ -2564,6 +2570,7 @@ rb_str_each_line(argc, argv, str)
 	    (rslen <= 1 ||
 	     rb_memcmp(RSTRING(rs)->ptr, p-rslen, rslen) == 0)) {
 	    line = rb_str_new5(str, s, p - s);
+	    OBJ_INFECT(line, str);
 	    rb_yield(line);
 	    if (RSTRING(str)->ptr != ptr || RSTRING(str)->len != len)
 		rb_raise(rb_eArgError, "string modified");
@@ -3054,7 +3061,7 @@ Init_String()
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
     rb_include_module(rb_cString, rb_mEnumerable);
-    rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
+    rb_define_singleton_method(rb_cString, "allocate", rb_str_s_alloc, 0);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "clone", rb_str_clone, 0);
     rb_define_method(rb_cString, "dup", rb_str_dup, 0);

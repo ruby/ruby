@@ -367,13 +367,10 @@ pty_getpty(self, shell)
     VALUE res, th;
     struct pty_info info;
     OpenFile *wfptr,*rfptr;
-    NEWOBJ(rport, struct RFile);
-    NEWOBJ(wport, struct RFile);
+    VALUE rport = rb_obj_alloc(rb_cFile);
+    VALUE wport = rb_obj_alloc(rb_cFile);
   
-    OBJSETUP(rport, rb_cFile, T_FILE);
     MakeOpenFile(rport, rfptr);
-
-    OBJSETUP(wport, rb_cFile, T_FILE);
     MakeOpenFile(wport, wfptr);
 
     establishShell(RSTRING(shell)->ptr,&info);
@@ -399,7 +396,7 @@ pty_getpty(self, shell)
 	return res;
     }
     else {
-	return (VALUE)res;
+	return res;
     }
 }
 

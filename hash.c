@@ -172,7 +172,7 @@ rb_hash_foreach(hash, func, farg)
 }
 
 static VALUE
-rb_hash_new2(klass)
+rb_hash_s_alloc(klass)
     VALUE klass;
 {
     NEWOBJ(hash, struct RHash);
@@ -187,19 +187,7 @@ rb_hash_new2(klass)
 VALUE
 rb_hash_new()
 {
-    return rb_hash_new2(rb_cHash);
-}
-
-static VALUE
-rb_hash_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE hash = rb_hash_new2(klass);
-
-    rb_obj_call_init(hash, argc, argv);
-    return hash;
+    return rb_hash_s_alloc(rb_cHash);
 }
 
 static VALUE
@@ -227,19 +215,18 @@ rb_hash_s_create(argc, argv, klass)
     int i;
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	NEWOBJ(hash, struct RHash);
-	OBJSETUP(hash, klass, T_HASH);
+	VALUE hash = rb_obj_alloc(klass);
 	    
-	hash->ifnone = Qnil;
-	hash->tbl = st_copy(RHASH(argv[0])->tbl);
+	RHASH(hash)->ifnone = Qnil;
+	RHASH(hash)->tbl = st_copy(RHASH(argv[0])->tbl);
 
-	return (VALUE)hash;
+	return hash;
     }
 
     if (argc % 2 != 0) {
 	rb_raise(rb_eArgError, "odd number args for Hash");
     }
-    hash = rb_hash_new2(klass);
+    hash = rb_hash_s_alloc(klass);
 
     for (i=0; i<argc; i+=2) {
 	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);
@@ -252,13 +239,12 @@ static VALUE
 rb_hash_clone(hash)
     VALUE hash;
 {
-    NEWOBJ(clone, struct RHash);
-    CLONESETUP(clone, hash);
+    VALUE clone = rb_obj_clone(hash);
 
-    clone->ifnone = RHASH(hash)->ifnone;
-    clone->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
+    RHASH(clone)->ifnone = RHASH(hash)->ifnone;
+    RHASH(clone)->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
 
-    return (VALUE)clone;
+    return clone;
 }
 
 static VALUE
@@ -1454,7 +1440,7 @@ Init_Hash()
 
     rb_include_module(rb_cHash, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cHash, "new", rb_hash_s_new, -1);
+    rb_define_singleton_method(rb_cHash, "allocate", rb_hash_s_alloc, 0);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
 

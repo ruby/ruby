@@ -159,18 +159,17 @@ rb_gdbm_fetch(dbm, key)
     datum key;
 {
     datum val;
-    NEWOBJ(str, struct RString);
-    OBJSETUP(str, rb_cString, T_STRING);
+    VALUE str = rb_obj_alloc(rb_cString);
 
     val = gdbm_fetch(dbm, key);
     if (val.dptr == 0)
         return Qnil;
 
-    str->ptr = 0;
-    str->len = val.dsize;
-    str->orig = 0;
-    str->ptr = REALLOC_N(val.dptr,char,val.dsize+1);
-    str->ptr[str->len] = '\0';
+    RSTRING(str)->ptr = 0;
+    RSTRING(str)->len = val.dsize;
+    RSTRING(str)->orig = 0;
+    RSTRING(str)->ptr = REALLOC_N(val.dptr,char,val.dsize+1);
+    RSTRING(str)->ptr[str->len] = '\0';
 
     OBJ_TAINT(str);
     return (VALUE)str;
@@ -207,18 +206,17 @@ rb_gdbm_firstkey(dbm)
     GDBM_FILE dbm;
 {
     datum key;
-    NEWOBJ(str, struct RString);
-    OBJSETUP(str, rb_cString, T_STRING);
+    VALUE str = rb_obj_alloc(rb_cString);
 
     key = gdbm_firstkey(dbm);
     if (key.dptr == 0)
         return Qnil;
 
-    str->ptr = 0;
-    str->len = key.dsize;
-    str->orig = 0;
-    str->ptr = REALLOC_N(key.dptr,char,key.dsize+1);
-    str->ptr[str->len] = '\0';
+    RSTRING(str)->ptr = 0;
+    RSTRING(str)->len = key.dsize;
+    RSTRING(str)->orig = 0;
+    RSTRING(str)->ptr = REALLOC_N(key.dptr,char,key.dsize+1);
+    RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 
     OBJ_TAINT(str);
     return (VALUE)str;
@@ -230,8 +228,7 @@ rb_gdbm_nextkey(dbm, keystr)
     VALUE keystr;
 {
     datum key, key2;
-    NEWOBJ(str, struct RString);
-    OBJSETUP(str, rb_cString, T_STRING);
+    VALUE str = rb_obj_alloc(rb_cString);
 
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
@@ -239,11 +236,11 @@ rb_gdbm_nextkey(dbm, keystr)
     if (key2.dptr == 0)
         return Qnil;
 
-    str->ptr = 0;
-    str->len = key2.dsize;
-    str->orig = 0;
-    str->ptr = REALLOC_N(key2.dptr,char,key2.dsize+1);
-    str->ptr[str->len] = '\0';
+    RSTRING(str)->ptr = 0;
+    RSTRING(str)->len = key2.dsize;
+    RSTRING(str)->orig = 0;
+    RSTRING(str)->ptr = REALLOC_N(key2.dptr,char,key2.dsize+1);
+    RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 
     OBJ_TAINT(str);
     return (VALUE)str;

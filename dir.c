@@ -249,9 +249,7 @@ free_dir(dir)
 static VALUE dir_close _((VALUE));
 
 static VALUE
-dir_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
+dir_s_alloc(klass)
     VALUE klass;
 {
     struct dir_data *dirp;
@@ -259,7 +257,6 @@ dir_s_new(argc, argv, klass)
 
     dirp->dir = NULL;
     dirp->path = NULL;
-    rb_obj_call_init(obj, argc, argv);
 
     return obj;
 }
@@ -995,7 +992,7 @@ Init_Dir()
 
     rb_include_module(rb_cDir, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cDir, "new", dir_s_new, -1);
+    rb_define_singleton_method(rb_cDir, "allocate", dir_s_alloc, 0);
     rb_define_singleton_method(rb_cDir, "open", dir_s_open, 1);
     rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, 1);
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, 1);

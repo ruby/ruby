@@ -113,11 +113,12 @@ stat_new_0(klass, st)
     VALUE klass;
     struct stat *st;
 {
-    struct stat *nst;
-    if (!st) rb_bug("stat_new() called with bad value");
+    struct stat *nst = 0;
 
-    nst = ALLOC(struct stat);
-    *nst = *st;
+    if (st) {
+	nst = ALLOC(struct stat);
+	*nst = *st;
+    }
     return Data_Wrap_Struct(klass, NULL, free, nst);
 }
 
@@ -134,7 +135,7 @@ get_stat(self)
 {
     struct stat* st;
     Data_Get_Struct(self, struct stat, st);
-    if (!st) rb_bug("collapsed File::Stat");
+    if (!st) rb_raise(rb_eTypeError, "uninitialized File::Stat");
     return st;
 }
 
@@ -1883,26 +1884,27 @@ rb_f_test(argc, argv)
 }
 
 static VALUE
-rb_stat_s_new(klass, fname)
-    VALUE klass, fname;
+rb_stat_s_alloc(klass)
+    VALUE klass;
 {
-    VALUE s;
-    struct stat st;
-
-    Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) == -1) {
-	rb_sys_fail(RSTRING(fname)->ptr);
-    }
-    s = stat_new_0(klass, &st);
-    rb_obj_call_init(s, 1, &fname);
-    return s;
+    return stat_new_0(klass, 0);
 }
 
 static VALUE
-rb_stat_init(klass, fname)
-    VALUE klass, fname;
+rb_stat_init(obj, fname)
+    VALUE obj, fname;
 {
-    /* do nothing */
+    struct stat st, *nst;
+
+    Check_SafeStr(fname);
+
+    if (stat(RSTRING(fname)->ptr, &st) == -1) {
+	rb_sys_fail(RSTRING(fname)->ptr);
+    }
+    nst = ALLOC(struct stat);
+    *nst = st;
+    DATA_PTR(obj) = nst;
+
     return Qnil;
 }
 
@@ -2505,7 +2507,7 @@ Init_File()
     rb_define_global_function("test", rb_f_test, -1);
 
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);
-    rb_define_singleton_method(rb_cStat, "new",  rb_stat_s_new, 1);
+    rb_define_singleton_method(rb_cStat, "allocate",  rb_stat_s_alloc, 0);
     rb_define_method(rb_cStat, "initialize", rb_stat_init, 1);
 
     rb_include_module(rb_cStat, rb_mComparable);

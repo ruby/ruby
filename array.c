@@ -71,12 +71,25 @@ rb_ary_frozen_p(ary)
     return Qfalse;
 }
 
+static VALUE
+rb_ary_s_alloc(klass)
+    VALUE klass;
+{
+    NEWOBJ(ary, struct RArray);
+    OBJSETUP(ary, rb_cArray, T_ARRAY);
+
+    ary->len = 0;
+    ary->capa = 0;
+    ary->ptr = 0;
+
+    return (VALUE)ary;
+}
+
 VALUE
 rb_ary_new2(len)
     long len;
 {
-    NEWOBJ(ary, struct RArray);
-    OBJSETUP(ary, rb_cArray, T_ARRAY);
+    VALUE ary = rb_obj_alloc(rb_cArray);
 
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
@@ -84,13 +97,11 @@ rb_ary_new2(len)
     if (len > 0 && len*sizeof(VALUE) <= 0) {
 	rb_raise(rb_eArgError, "array size too big");
     }
-    ary->len = 0;
-    ary->capa = len;
-    ary->ptr = 0;
     if (len == 0) len++;
-    ary->ptr = ALLOC_N(VALUE, len);
+    RARRAY(ary)->ptr = ALLOC_N(VALUE, len);
+    RARRAY(ary)->capa = len;
 
-    return (VALUE)ary;
+    return ary;
 }
 
 VALUE
@@ -143,7 +154,7 @@ rb_ary_new4(n, elts)
     VALUE ary;
 
     ary = rb_ary_new2(n);
-    if (elts) {
+    if (n > 0 && elts) {
 	MEMCPY(RARRAY(ary)->ptr, elts, VALUE, n);
     }
     RARRAY(ary)->len = n;
@@ -161,19 +172,6 @@ rb_assoc_new(car, cdr)
     RARRAY(ary)->ptr[0] = car;
     RARRAY(ary)->ptr[1] = cdr;
     RARRAY(ary)->len = 2;
-
-    return ary;
-}
-
-static VALUE
-rb_ary_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE ary = rb_ary_new();
-    OBJSETUP(ary, klass, T_ARRAY);
-    rb_obj_call_init(ary, argc, argv);
 
     return ary;
 }
@@ -237,20 +235,15 @@ rb_ary_s_create(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    NEWOBJ(ary, struct RArray);
-    OBJSETUP(ary, klass, T_ARRAY);
+    VALUE ary = rb_obj_alloc(klass);
 
-    ary->len = ary->capa = 0;
-    if (argc == 0) {
-	ary->ptr = 0;
+    if (argc != 0) {
+	RARRAY(ary)->ptr = ALLOC_N(VALUE, argc);
+	MEMCPY(RARRAY(ary)->ptr, argv, VALUE, argc);
     }
-    else {
-	ary->ptr = ALLOC_N(VALUE, argc);
-	MEMCPY(ary->ptr, argv, VALUE, argc);
-    }
-    ary->len = ary->capa = argc;
+    RARRAY(ary)->len = RARRAY(ary)->capa = argc;
 
-    return (VALUE)ary;
+    return ary;
 }
 
 void
@@ -1715,7 +1708,7 @@ Init_Array()
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
 
-    rb_define_singleton_method(rb_cArray, "new", rb_ary_s_new, -1);
+    rb_define_singleton_method(rb_cArray, "allocate", rb_ary_s_alloc, 0);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
     rb_define_method(rb_cArray, "to_s", rb_ary_to_s, 0);

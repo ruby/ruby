@@ -177,8 +177,7 @@ sock_new(class, fd)
     int fd;
 {
     OpenFile *fp;
-    NEWOBJ(sock, struct RFile);
-    OBJSETUP(sock, class, T_FILE);
+    VALUE sock = rb_obj_alloc(class);
 
     MakeOpenFile(sock, fp);
     fp->f = rb_fdopen(fd, "r");
@@ -190,7 +189,7 @@ sock_new(class, fd)
     fp->mode = FMODE_READWRITE;
     rb_io_synchronized(fp);
 
-    return (VALUE)sock;
+    return sock;
 }
 
 static VALUE

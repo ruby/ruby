@@ -32,6 +32,7 @@ VALUE rb_cSymbol;
 static ID eq, eql;
 static ID inspect;
 static ID clone;
+static ID alloc;
 
 VALUE
 rb_equal(obj1, obj2)
@@ -93,12 +94,9 @@ rb_obj_clone(obj)
 {
     VALUE clone;
 
-    if (TYPE(obj) != T_OBJECT) {
-	rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(obj)));
-    }
     clone = rb_obj_alloc(RBASIC(obj)->klass);
     CLONESETUP(clone,obj);
-    if (ROBJECT(obj)->iv_tbl) {
+    if (TYPE(clone) == T_OBJECT && ROBJECT(obj)->iv_tbl) {
 	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
     }
 
@@ -453,16 +451,6 @@ rb_false(obj)
     return Qfalse;
 }
 
-VALUE
-rb_obj_alloc(klass)
-    VALUE klass;
-{
-    NEWOBJ(obj, struct RObject);
-    OBJSETUP(obj, klass, T_OBJECT);
-
-    return (VALUE)obj;
-}
-
 static VALUE
 sym_to_i(sym)
     VALUE sym;
@@ -607,13 +595,12 @@ rb_mod_initialize(argc, argv)
 }
 
 static VALUE
-rb_module_s_new(klass)
+rb_module_s_alloc(klass)
     VALUE klass;
 {
     VALUE mod = rb_module_new();
 
     RBASIC(mod)->klass = klass;
-    rb_obj_call_init(klass, 0, 0);
     return mod;
 }
 
@@ -635,6 +622,45 @@ rb_class_s_new(argc, argv)
     rb_funcall(super, rb_intern("inherited"), 1, klass);
 
     return klass;
+}
+
+VALUE
+rb_obj_alloc(klass)
+    VALUE klass;
+{
+    VALUE obj = rb_funcall(klass, alloc, 0, 0);
+
+    if (rb_obj_class(obj) != rb_class_real(klass)) {
+	rb_raise(rb_eTypeError, "wrong instance allocation");
+    }
+    return obj;
+}
+
+static VALUE
+rb_class_allocate_instance(klass)
+    VALUE klass;
+{
+    NEWOBJ(obj, struct RObject);
+    OBJSETUP(obj, klass, T_OBJECT);
+
+    return (VALUE)obj;
+}
+
+VALUE
+rb_class_new_instance(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE obj;
+
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	rb_raise(rb_eTypeError, "can't create instance of virtual class");
+    }
+    obj = rb_obj_alloc(klass);
+    rb_obj_call_init(obj, argc, argv);
+
+    return obj;
 }
 
 static VALUE
@@ -1072,6 +1098,8 @@ Init_Object()
 {
     VALUE metaclass;
 
+    alloc = rb_intern("allocate");
+
     rb_cObject = boot_defclass("Object", 0);
     rb_cModule = boot_defclass("Module", rb_cObject);
     rb_cClass =  boot_defclass("Class",  rb_cModule);
@@ -1178,12 +1206,14 @@ Init_Object()
     rb_define_method(rb_cNilClass, "^", false_xor, 1);
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
+    rb_undef_method(CLASS_OF(rb_cNilClass), "allocate");
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
     rb_define_global_const("NIL", Qnil);
 
     rb_cSymbol = rb_define_class("Symbol", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0);
+    rb_undef_method(CLASS_OF(rb_cSymbol), "allocate");
+    rb_undef_method(CLASS_OF(rb_cSymbol), "new");
 
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "to_int", sym_to_i, 0);
@@ -1211,7 +1241,7 @@ Init_Object()
     rb_define_private_method(rb_cModule, "attr_writer", rb_mod_attr_writer, -1);
     rb_define_private_method(rb_cModule, "attr_accessor", rb_mod_attr_accessor, -1);
 
-    rb_define_singleton_method(rb_cModule, "new", rb_module_s_new, 0);
+    rb_define_singleton_method(rb_cModule, "allocate", rb_module_s_alloc, 0);
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, -1);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1);
     rb_define_method(rb_cModule, "public_instance_methods", rb_class_instance_methods, -1);
@@ -1226,8 +1256,10 @@ Init_Object()
     rb_define_method(rb_cModule, "class_variables", rb_mod_class_variables, 0);
     rb_define_private_method(rb_cModule, "remove_class_variable", rb_mod_remove_cvar, 1);
 
+    rb_define_method(rb_cClass, "allocate", rb_class_allocate_instance, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
+    rb_undef_method(CLASS_OF(rb_cClass), "allocate");
     rb_define_singleton_method(rb_cClass, "new", rb_class_s_new, -1);
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
@@ -1244,6 +1276,7 @@ Init_Object()
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
+    rb_undef_method(CLASS_OF(rb_cTrueClass), "allocate");
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
     rb_define_global_const("TRUE", Qtrue);
 
@@ -1252,6 +1285,7 @@ Init_Object()
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
+    rb_undef_method(CLASS_OF(rb_cFalseClass), "allocate");
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
     rb_define_global_const("FALSE", Qfalse);
 

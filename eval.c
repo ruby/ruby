@@ -3195,15 +3195,8 @@ rb_eval(self, n)
 			     rb_id2name(node->nd_cname));
 		}
 		if (super) {
-		    tmp = RCLASS(klass)->super;
-		    if (FL_TEST(tmp, FL_SINGLETON)) {
-			tmp = RCLASS(tmp)->super;
-		    }
-		    while (TYPE(tmp) == T_ICLASS) {
-			tmp = RCLASS(tmp)->super;
-		    }
+		    tmp = rb_class_real(RCLASS(klass)->super);
 		    if (tmp != super) {
-			super = tmp;
 			goto override_class;
 		    }
 		}
@@ -5768,23 +5761,6 @@ rb_obj_call_init(obj, argc, argv)
     POP_ITER();
 }
 
-VALUE
-rb_class_new_instance(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE obj;
-
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	rb_raise(rb_eTypeError, "can't create instance of virtual class");
-    }
-    obj = rb_obj_alloc(klass);
-    rb_obj_call_init(obj, argc, argv);
-
-    return obj;
-}
-
 static VALUE
 top_include(argc, argv)
     int argc;
@@ -6385,18 +6361,6 @@ proc_new(klass)
     scope_dup(data->scope);
     proc_save_safe_level(proc);
 
-    return proc;
-}
-
-static VALUE
-proc_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE proc = proc_new(klass);
-
-    rb_obj_call_init(proc, argc, argv);
     return proc;
 }
 
@@ -7005,7 +6969,7 @@ Init_Proc()
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);
-    rb_define_singleton_method(rb_cProc, "new", proc_s_new, -1);
+    rb_define_singleton_method(rb_cProc, "allocate", proc_new, 0);
 
     rb_define_method(rb_cProc, "call", proc_call, -2);
     rb_define_method(rb_cProc, "yield", proc_yield, -2);
@@ -7017,10 +6981,12 @@ Init_Proc()
     rb_define_global_function("lambda", rb_f_lambda, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
     rb_cBinding = rb_define_class("Binding", rb_cObject);
+    rb_undef_method(CLASS_OF(rb_cBinding), "allocate");
     rb_undef_method(CLASS_OF(rb_cBinding), "new");
     rb_define_method(rb_cBinding, "clone", bind_clone, 0);
 
     rb_cMethod = rb_define_class("Method", rb_cObject);
+    rb_undef_method(CLASS_OF(rb_cMethod), "allocate");
     rb_undef_method(CLASS_OF(rb_cMethod), "new");
     rb_define_method(rb_cMethod, "==", method_eq, 1);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
@@ -8913,9 +8879,7 @@ struct thgroup {
 };
 
 static VALUE
-thgroup_s_new(argc, argv, klass)
-    int argc;
-    VALUE *argv;
+thgroup_s_alloc(klass)
     VALUE klass;
 {
     VALUE group;
@@ -8925,7 +8889,6 @@ thgroup_s_new(argc, argv, klass)
     group = Data_Make_Struct(klass, struct thgroup, 0, free, data);
     data->gid = serial++;
 
-    rb_obj_call_init(group, argc, argv);
     return group;
 }
 
@@ -8972,6 +8935,7 @@ Init_Thread()
 
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
     rb_cThread = rb_define_class("Thread", rb_cObject);
+    rb_undef_method(CLASS_OF(rb_cThread), "allocate");
 
     rb_define_singleton_method(rb_cThread, "new", rb_thread_s_new, -1);
     rb_define_method(rb_cThread, "initialize", rb_thread_initialize, -2);
@@ -9022,15 +8986,16 @@ Init_Thread()
     curr_thread = main_thread->prev = main_thread->next = main_thread;
 
     rb_cCont = rb_define_class("Continuation", rb_cObject);
+    rb_undef_method(CLASS_OF(rb_cCont), "allocate");
     rb_undef_method(CLASS_OF(rb_cCont), "new");
     rb_define_method(rb_cCont, "call", rb_cont_call, -1);
     rb_define_global_function("callcc", rb_callcc, 0);
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
-    rb_define_singleton_method(cThGroup, "new", thgroup_s_new, -1);
+    rb_define_singleton_method(cThGroup, "allocate", thgroup_s_alloc, 0);
     rb_define_method(cThGroup, "list", thgroup_list, 0);
     rb_define_method(cThGroup, "add", thgroup_add, 1);
-    rb_define_const(cThGroup, "Default", thgroup_s_new(0, 0, cThGroup));
+    rb_define_const(cThGroup, "Default", rb_obj_alloc(cThGroup));
 }
 
 static VALUE
