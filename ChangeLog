@@ -1,3 +1,14 @@
+Wed May 17 02:22:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_polling): wait 0.06 second to let other
+	  processes run.
+
+	* process.c (rb_waitpid): avoid busy wait using rb_thread_polling.
+
+	* file.c (rb_thread_flock): ditto.
+
+	* parse.y (expr): avoid calling value_expr() twice.
+
 Wed May 17 00:45:57 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* io.c (rb_io_binmode): should check PLATFORMs, not O_BINARY, sigh...
@@ -9,6 +20,14 @@ Wed May 17 00:40:15 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 	* win32/config.status: ditto.
 
 	* win32/ruby.def: add symbol "rb_big_divmod".
+
+Tue May 16 17:00:05 2000  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* eval.c (rb_thread_select): should check whether fds are null.
+
+Tue May 16 11:51:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (pipe_open): syncronize subprocess stdout/stderr.
 
 Mon May 15 15:38:09 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

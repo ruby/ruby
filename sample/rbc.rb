@@ -127,7 +127,7 @@ module BC_APPLICATION__
 	    else
 	      print((cont._=eval(line, bind)), "\n")
 	    end
-	  rescue
+	  rescue StandardError, ScriptError
 	    #	$! = 'exception raised' unless $!
 	    #	print "ERR: ", $!, "\n"
 	    $! = RuntimeError.new("exception raised") unless $!
@@ -929,7 +929,7 @@ module BC_APPLICATION__
 	if File.exists?(rc)
 	  begin
 	    load rc
-	  rescue
+	  rescue LoadError
 	    print "load error: #{rc}\n"
 	    print $!.type, ": ", $!, "\n"
 	    for err in $@[0, $@.size - 2]
@@ -946,7 +946,7 @@ module BC_APPLICATION__
       for m in CONFIG[:LOAD_MODULES]
 	begin
 	  require m
-	rescue
+	rescue LoadError
 	  print $@[0], ":", $!.type, ": ", $!, "\n"
 	end
       end
@@ -1004,7 +1004,7 @@ module BC_APPLICATION__
 	  end
 	end
       end
-    rescue
+    rescue LoadError
       CONFIG[:USE_READLINE] = FALSE
     end
   end

@@ -149,6 +149,7 @@ void rb_thread_wait_fd _((int));
 int rb_thread_fd_writable _((int));
 void rb_thread_fd_close _((int));
 int rb_thread_alone _((void));
+void rb_thread_polling _((void));
 void rb_thread_sleep _((int));
 void rb_thread_sleep_forever _((void));
 VALUE rb_thread_stop _((void));

@@ -1250,6 +1250,6 @@ void
 xfree(ptr)
     void *ptr;
 {
-    return ruby_xfree(ptr);
+    ruby_xfree(ptr);
 }
 

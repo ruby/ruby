@@ -93,14 +93,14 @@ rb_waitpid(pid, flags, st)
 #endif
     if (result < 0) {
 	if (errno == EINTR) {
-	    rb_thread_schedule();
+	    rb_thread_polling();
 	    goto retry;
 	}
 	return -1;
     }
     if (result == 0) {
 	if (oflags & WNOHANG) return 0;
-	rb_thread_schedule();
+	rb_thread_polling();
 	if (rb_thread_alone()) flags = oflags;
 	goto retry;
     }

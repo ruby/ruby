@@ -1527,6 +1527,8 @@ pipe_open(pname, mode)
 		    ruby_sourcefile, ruby_sourceline, pname);
 	    _exit(127);
 	}
+	rb_io_synchronized(RFILE(orig_stdout)->fptr);
+	rb_io_synchronized(RFILE(orig_stderr)->fptr);
 	return Qnil;
 
       case -1:			/* fork failed */

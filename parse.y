@@ -401,14 +401,12 @@ expr		: mlhs '=' mrhs
 		    }
 		| kRETURN ret_args
 		    {
-			value_expr($2);
 			if (!compile_for_eval && !cur_mid && !in_single)
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN($2);
 		    }
 		| kYIELD ret_args
 		    {
-			value_expr($2);
 			$$ = NEW_YIELD($2);
 		    }
 		| command_call
@@ -4094,6 +4092,9 @@ value_expr(node)
 	    node = node->nd_next;
 	}
 	return value_expr(node->nd_head);
+
+      case NODE_BEGIN:
+	return value_expr(node->nd_body);
 
       case NODE_IF:
 	return value_expr(node->nd_body) && value_expr(node->nd_else);

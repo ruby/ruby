@@ -1468,9 +1468,9 @@ rb_thread_flock(fd, op, fptr)
     op |= LOCK_NB;
     while (flock(fd, op) < 0) {
 	switch (errno) {
-	  case EINTR:		/* can be happen? */
+	  case EINTR:			/* can be happen? */
 	  case EWOULDBLOCK:
-	    rb_thread_schedule();	/* busy wait */
+	    rb_thread_polling();	/* busy wait */
 	    rb_io_check_closed(fptr);
 	    break;
 	  default:
