@@ -1,3 +1,7 @@
+Thu Dec 13 10:03:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_cmp): should handle Bignums.
+
 Mon Dec 10 17:40:02 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* parse.y (str_extend): make up pushback call.

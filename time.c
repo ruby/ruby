@@ -500,6 +500,14 @@ time_cmp(time1, time2)
 	if (tobj1->tv.tv_sec > tobj2->tv.tv_sec) return INT2FIX(1);
 	return INT2FIX(-1);
     }
+    if (TYPE(time2) == T_BIGNUM) {
+	double a = (double)tobj1->tv.tv_sec+(double)tobj1->tv.tv_usec/1e6;
+	double b = rb_big2dbl(time2);
+
+	if (a == b) return INT2FIX(0);
+	if (a > b) return INT2FIX(1);
+	if (a < b) return INT2FIX(-1);
+    }
     i = NUM2LONG(time2);
     if (tobj1->tv.tv_sec == i) {
 	if (tobj1->tv.tv_usec == 0)
