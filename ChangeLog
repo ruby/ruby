@@ -1,3 +1,7 @@
+Fri Feb 22 19:59:33 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* win32/config.status.in: set LIBRUBY_SO.
+
 Fri Feb 22 03:34:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (get2comp): need to specify to carry or not.
