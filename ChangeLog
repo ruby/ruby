@@ -8,7 +8,7 @@ Fri Jan 21 17:09:44 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 Fri Jan 21 13:58:37 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* lib/net/imap.rb (u8tou16): fixed typo. fixed: [ruby-lis:40546]
+	* lib/net/imap.rb (u8tou16): fixed typo. fixed: [ruby-list:40546]
 
 Fri Jan 21 00:37:09 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
