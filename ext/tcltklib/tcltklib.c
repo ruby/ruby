@@ -5067,7 +5067,7 @@ lib_merge_tklist(argc, argv, obj)
     old_gc = rb_gc_disable();
 
     /* based on Tcl/Tk's Tcl_Merge() */
-    flagPtr = ALLOC_N(unsigned,  argc);
+    flagPtr = ALLOC_N(int, argc);
 
     /* pass 1 */
     len = 1;

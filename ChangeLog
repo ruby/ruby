@@ -1,3 +1,8 @@
+Fri Sep 10 20:20:53 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tcltklib/tcltklib.c (lib_merge_tklist): fix suspicious
+	  pointer conversion.
+
 Fri Sep 10 02:43:54 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/kilmer.rb: James Buck's
