@@ -1,10 +1,19 @@
+Tue Jul 29 12:22:28 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/token.c: prefixed many constants and definitions with YAML_ to
+      avoid name clash.
+
+    * ext/syck/gram.c: ditto.
+
+    * ext/syck/gram.h: ditto.
+
 Tue Jul 29 12:15:37 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/etc/etc.c: add real prototype to getenv().
 
 	* win32/win32.h: add arguments to definitions of functions if possible.
 
-Mon Jul 28 19:22:08 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+Tue Jul 29 04:22:08 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/syck.h: Added 'syck' yacc prefixes.
 

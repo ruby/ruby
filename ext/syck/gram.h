@@ -32,30 +32,30 @@
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
-     ANCHOR = 258,
-     ALIAS = 259,
-     TRANSFER = 260,
-     ITRANSFER = 261,
-     WORD = 262,
-     PLAIN = 263,
-     BLOCK = 264,
-     DOCSEP = 265,
-     IOPEN = 266,
-     INDENT = 267,
-     IEND = 268
+     YAML_ANCHOR = 258,
+     YAML_ALIAS = 259,
+     YAML_TRANSFER = 260,
+     YAML_ITRANSFER = 261,
+     YAML_WORD = 262,
+     YAML_PLAIN = 263,
+     YAML_BLOCK = 264,
+     YAML_DOCSEP = 265,
+     YAML_IOPEN = 266,
+     YAML_INDENT = 267,
+     YAML_IEND = 268
    };
 #endif
-#define ANCHOR 258
-#define ALIAS 259
-#define TRANSFER 260
-#define ITRANSFER 261
-#define WORD 262
-#define PLAIN 263
-#define BLOCK 264
-#define DOCSEP 265
-#define IOPEN 266
-#define INDENT 267
-#define IEND 268
+#define YAML_ANCHOR 258
+#define YAML_ALIAS 259
+#define YAML_TRANSFER 260
+#define YAML_ITRANSFER 261
+#define YAML_WORD 262
+#define YAML_PLAIN 263
+#define YAML_BLOCK 264
+#define YAML_DOCSEP 265
+#define YAML_IOPEN 266
+#define YAML_INDENT 267
+#define YAML_IEND 268
 
 
 

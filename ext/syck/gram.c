@@ -59,30 +59,30 @@
    /* Put the tokens into the symbol table, so that GDB and other debuggers
       know about them.  */
    enum yytokentype {
-     ANCHOR = 258,
-     ALIAS = 259,
-     TRANSFER = 260,
-     ITRANSFER = 261,
-     WORD = 262,
-     PLAIN = 263,
-     BLOCK = 264,
-     DOCSEP = 265,
-     IOPEN = 266,
-     INDENT = 267,
-     IEND = 268
+     YAML_ANCHOR = 258,
+     YAML_ALIAS = 259,
+     YAML_TRANSFER = 260,
+     YAML_ITRANSFER = 261,
+     YAML_WORD = 262,
+     YAML_PLAIN = 263,
+     YAML_BLOCK = 264,
+     YAML_DOCSEP = 265,
+     YAML_IOPEN = 266,
+     YAML_INDENT = 267,
+     YAML_IEND = 268
    };
 #endif
-#define ANCHOR 258
-#define ALIAS 259
-#define TRANSFER 260
-#define ITRANSFER 261
-#define WORD 262
-#define PLAIN 263
-#define BLOCK 264
-#define DOCSEP 265
-#define IOPEN 266
-#define INDENT 267
-#define IEND 268
+#define YAML_ANCHOR 258
+#define YAML_ALIAS 259
+#define YAML_TRANSFER 260
+#define YAML_ITRANSFER 261
+#define YAML_WORD 262
+#define YAML_PLAIN 263
+#define YAML_BLOCK 264
+#define YAML_DOCSEP 265
+#define YAML_IOPEN 266
+#define YAML_INDENT 267
+#define YAML_IEND 268
 
 
 
@@ -95,6 +95,7 @@
 
 #define YYPARSE_PARAM   parser
 #define YYLEX_PARAM     parser
+
 
 
 /* Enabling traces.  */
@@ -344,11 +345,12 @@ static const unsigned short yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals. */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "ANCHOR", "ALIAS", "TRANSFER", "ITRANSFER", 
-  "WORD", "PLAIN", "BLOCK", "DOCSEP", "IOPEN", "INDENT", "IEND", "'-'", 
-  "':'", "'+'", "'['", "']'", "'{'", "'}'", "','", "'?'", "$accept", 
-  "doc", "atom", "ind_rep", "atom_or_empty", "indent_open", "indent_end", 
-  "indent_sep", "indent_flex_end", "word_rep", "struct_rep", 
+  "$end", "error", "$undefined", "YAML_ANCHOR", "YAML_ALIAS", 
+  "YAML_TRANSFER", "YAML_ITRANSFER", "YAML_WORD", "YAML_PLAIN", 
+  "YAML_BLOCK", "YAML_DOCSEP", "YAML_IOPEN", "YAML_INDENT", "YAML_IEND", 
+  "'-'", "':'", "'+'", "'['", "']'", "'{'", "'}'", "','", "'?'", 
+  "$accept", "doc", "atom", "ind_rep", "atom_or_empty", "indent_open", 
+  "indent_end", "indent_sep", "indent_flex_end", "word_rep", "struct_rep", 
   "implicit_seq", "basic_seq", "top_imp_seq", "in_implicit_seq", 
   "inline_seq", "in_inline_seq", "implicit_map", "top_imp_map", 
   "basic_mapping", "complex_mapping", "in_implicit_map", "basic_mapping2", 
@@ -1459,7 +1461,7 @@ yyreduce:
     }
 
 /* Line 1016 of /usr/local/share/bison/yacc.c.  */
-#line 1463 "y.tab.c"
+#line 1464 "y.tab.c"
 
   yyvsp -= yylen;
   yyssp -= yylen;
