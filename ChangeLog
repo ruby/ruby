@@ -1,3 +1,9 @@
+Sun Mar  7 03:11:00 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: new method Net::HTTPRequest#body(=).
+
+	* lib/net/http.rb: new method Net::HTTPRequest#body_stream(=).
+
 Sun Mar  7 02:06:07 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: spin off https code again.

@@ -1,8 +1,9 @@
 #
 # = net/http.rb
 #
-# Copyright (C) 1999-2003 Yukihiro Matsumoto
-# Copyright (C) 1999-2003 Minero Aoki
+# Copyright (C) 1999-2004 Yukihiro Matsumoto
+# Copyright (C) 1999-2004 Minero Aoki
+# Copyright (C) 2001 GOTOU Yuuzou
 # 
 # Written and maintained by Minero Aoki <aamine@loveruby.net>.
 # HTTPS support added by GOTOU Yuuzou <gotoyuzo@notwork.org>.
@@ -920,8 +921,9 @@ module Net # :nodoc:
         req.proxy_basic_auth proxy_user(), proxy_pass()
       end
 
+      req.set_body_internal body
       begin_transport req
-        req.exec @socket, @curr_http_version, edit_path(req.path), body
+        req.exec @socket, @curr_http_version, edit_path(req.path)
         begin
           res = HTTPResponse.read_new(@socket)
         end while res.kind_of?(HTTPContinue)
@@ -1196,13 +1198,17 @@ module Net # :nodoc:
       @path = path
 
       @header = {}
-      return unless initheader
-      initheader.each do |k,v|
-        key = k.downcase
-        warn "net/http: warning: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
-        @header[key] = v.strip
+      if initheader
+        initheader.each do |k,v|
+          key = k.downcase
+          warn "net/http: warning: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
+          @header[key] = v.strip
+        end
       end
       @header['accept'] ||= '*/*'
+
+      @body = nil
+      @body_stream = nil
     end
 
     attr_reader :method
@@ -1220,19 +1226,43 @@ module Net # :nodoc:
       @response_has_body
     end
 
-    alias body_exist? response_body_permitted?
+    def body_exist?
+      warn "Net::HTTPRequest#body_exist? is obsolete; use response_body_permitted?" if $VERBOSE
+      response_body_permitted?
+    end
+
+    attr_reader :body
+
+    def body=(str)
+      @body = str
+      @body_stream = nil
+      str
+    end
+
+    attr_reader :body_stream
+
+    def body_stream=(input)
+      @body = nil
+      @body_stream = input
+      input
+    end
+
+    def set_body_internal(str)   #:nodoc: internal use only
+      raise ArgumentError, "both of body argument and HTTPRequest#body set" if str and (@body or @body_stream)
+      self.body = str if str
+    end
 
     #
     # write
     #
 
-    def exec(sock, ver, path, body)   #:nodoc: internal use only
-      if body
-        raise ArgumentError, 'HTTP request body is not permitted' \
-            unless request_body_permitted?
-        send_request_with_body sock, ver, path, body
+    def exec(sock, ver, path)   #:nodoc: internal use only
+      if @body
+        send_request_with_body sock, ver, path, @body
+      elsif @body_stream
+        send_request_with_body_stream sock, ver, path, @body_stream
       else
-        request sock, ver, path
+        write_header sock, ver, path
       end
     end
 
@@ -1245,14 +1275,35 @@ module Net # :nodoc:
         warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
         @header['content-type'] = 'application/x-www-form-urlencoded'
       end
-      request sock, ver, path
+      write_header sock, ver, path
       sock.write body
     end
 
-    def request(sock, ver, path)
+    def send_request_with_body_stream(sock, ver, path, f)
+      unless @header['content-length']
+        raise ArgumentError, "request body Content-Length not given but Transfer-Encoding is not `chunked'; give up" unless chunked?
+      end
+      unless @header['content-type']
+        warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
+        @header['content-type'] = 'application/x-www-form-urlencoded'
+      end
+      write_header sock, ver, path
+      if chunked?
+        while s = f.read(1024)
+          sock.write(sprintf("%x\r\n", s.length) << s << "\r\n")
+        end
+        sock.write "0\r\n\r\n"
+      else
+        while s = f.read(1024)
+          sock.write s
+        end
+      end
+    end
+
+    def write_header(sock, ver, path)
       buf = "#{@method} #{path} HTTP/#{ver}\r\n"
       each_capitalized do |k,v|
-        buf << k + ': ' + v + "\r\n"
+        buf << "#{k}: #{v}\r\n"
       end
       buf << "\r\n"
       sock.write buf
@@ -1743,7 +1794,7 @@ module Net # :nodoc:
     alias msg message   # :nodoc: obsolete
 
     def inspect
-      "#<#{self.class} #{@code} readbody=#{@read}>"
+      "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
     end
 
     # For backward compatibility.
