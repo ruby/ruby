@@ -74,7 +74,7 @@ def extmake(target)
       end
     else
       open("./Makefile", "w") {|f|
-        f.print configuration($srcdir), makerules(nil)
+        f.print configuration($srcdir), makerules(nil), "install:\n"
       }
     end
     if $static
