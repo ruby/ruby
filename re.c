@@ -861,7 +861,8 @@ match_to_a(match)
     for (i=0; i<regs->num_regs; i++) {
 	if (regs->beg[i] == -1) {
 	    rb_ary_push(ary, Qnil);
-	} else {
+	}
+	else {
 	    VALUE str = rb_str_new(ptr+regs->beg[i], regs->end[i]-regs->beg[i]);
 	    if (taint) OBJ_TAINT(str);
 	    rb_ary_push(ary, str);
@@ -1170,6 +1171,7 @@ rb_reg_s_quote(argc, argv)
     int kcode_saved = reg_kcode;
     char *s, *send, *t;
     VALUE tmp;
+    int c;
 
     rb_scan_args(argc, argv, "11", &str, &kcode);
     if (!NIL_P(kcode)) {
@@ -1184,24 +1186,41 @@ rb_reg_s_quote(argc, argv)
     t = RSTRING(tmp)->ptr;
 
     for (; s < send; s++) {
-	if (ismbchar(*s)) {
-	    int n = mbclen(*s);
+	c = *s;
+	if (ismbchar(c)) {
+	    int n = mbclen(c);
 
 	    while (n-- && s < send)
 		*t++ = *s++;
 	    s--;
 	    continue;
 	}
-	if (*s == '[' || *s == ']'
-	    || *s == '{' || *s == '}'
-	    || *s == '(' || *s == ')'
-	    || *s == '|' || *s == '-'
-	    || *s == '*' || *s == '.' || *s == '\\'
-	    || *s == '?' || *s == '+'
-	    || *s == '^' || *s == '$') {
+	switch (c) {
+	  case '\t':
+	    c = 't';
 	    *t++ = '\\';
+	    break;
+	  case '\f':
+	    c = 'f';
+	    *t++ = '\\';
+	    break;
+	  case '\r':
+	    c = 'r';
+	    *t++ = '\\';
+	    break;
+	  case '\n':
+	    c = 'n';
+	    *t++ = '\\';
+	    break;
+	  case '[': case ']': case '{': case '}':
+	  case '(': case ')': case '|': case '-':
+	  case '*': case '.': case '\\':
+	  case '?': case '+': case '^': case '$':
+	  case ' ':
+	    *t++ = '\\';
+	    break;
 	}
-	*t++ = *s;
+	*t++ = c;
     }
     kcode_reset_option();
     rb_str_resize(tmp, t - RSTRING(tmp)->ptr);

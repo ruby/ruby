@@ -1,6 +1,32 @@
+Tue Apr 30 09:23:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_step): better iteration condition for float
+	  values;  suggested by Masahiro TANAKA <masa@ir.isas.ac.jp>.
+
+Tue Apr 30 05:59:42 2002  Michal Rokos  <m.rokos@sh.cvut.cz>
+
+	* range.c (range_step): step (for Range#step method) <= 0 makes no
+	  sence, thus ArgError will be raised.
+
+	* range.c (range_each): Range#each method is special case for
+	  Range#step(1)
+
+Mon Apr 29 18:46:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_find_file): load must be done from an abolute path if
+	  $SAFE >= 4.
+
 Sun Apr 28 17:01:56 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (insert): fix prototype for ANSI C.
+
+Fri Apr 26 13:47:15 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_partition): new method. [new]
+
+Fri Apr 26 13:41:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_s_quote): quote whitespaces for /x cases.
 
 Fri Apr 26 06:48:23 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 

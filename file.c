@@ -2482,6 +2482,10 @@ rb_find_file(path)
 	if (file_load_ok(f)) return path;
     }
 
+    if (rb_safe_level() >= 4) {
+	rb_raise(rb_eSecurityError, "loading from non-absolute path %s", f);
+    }
+
     if (rb_load_path) {
 	int i;
 

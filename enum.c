@@ -217,6 +217,32 @@ enum_inject(argc, argv, obj)
 }
 
 static VALUE
+partition_i(i, ary)
+    VALUE i, *ary;
+{
+    if (RTEST(rb_yield(i))) {
+	rb_ary_push(ary[0], i);
+    }
+    else {
+	rb_ary_push(ary[1], i);
+    }
+    return Qnil;
+}
+
+static VALUE
+enum_partition(obj)
+    VALUE obj;
+{
+    VALUE ary[2];
+
+    ary[0] = rb_ary_new();
+    ary[1]  =  rb_ary_new();
+    rb_iterate(rb_each, obj, partition_i, (VALUE)ary);
+
+    return rb_assoc_new(ary[0], ary[1]);
+}
+
+static VALUE
 enum_sort(obj)
     VALUE obj;
 {
@@ -475,6 +501,7 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"map", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"inject", enum_inject, -1);
+    rb_define_method(rb_mEnumerable,"partition", enum_partition, 0);
     rb_define_method(rb_mEnumerable,"all?", enum_all, 0);
     rb_define_method(rb_mEnumerable,"any?", enum_any, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);

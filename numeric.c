@@ -788,6 +788,7 @@ num_step(argc, argv, from)
 	    while (i <= end) {
 		rb_yield(INT2FIX(i));
 		i += diff;
+		printf("<<%g>>\n", i - end);
 	    }
 	}
 	else {
@@ -798,21 +799,16 @@ num_step(argc, argv, from)
 	}
     }
     else if (TYPE(from) == T_FLOAT || TYPE(to) == T_FLOAT || TYPE(step) == T_FLOAT) {
+	const double epsilon = 2.2204460492503131E-16;
 	double beg = NUM2DBL(from);
 	double end = NUM2DBL(to);
 	double unit = NUM2DBL(step);
-	double n = beg;
-	long i = 0;
+	double n = (end - beg)/unit;
+	long i;
 
-	if (unit > 0) {
-	    for (i=0; n<=end; i++, n=beg+unit*i) {
-		rb_yield(rb_float_new(n));
-	    }
-	}
-	else {
-	    for (i=0; n>=end; i++, n=beg+unit*i) {
-		rb_yield(rb_float_new(n));
-	    }
+	n = floor(n + n*epsilon) + 1;
+	for (i=0; i<n; i++) {
+	    rb_yield(rb_float_new(i*unit+beg));
 	}
     }
     else {

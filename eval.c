@@ -227,7 +227,7 @@ rb_add_method(klass, mid, node, noex)
     NODE *body;
 
     if (NIL_P(klass)) klass = rb_cObject;
-    if (rb_safe_level() >= 4 && (klass == rb_cObject || !OBJ_TAINTED(klass))) {
+    if (ruby_safe_level >= 4 && (klass == rb_cObject || !OBJ_TAINTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
@@ -310,7 +310,7 @@ remove_method(klass, mid)
     if (klass == rb_cObject) {
 	rb_secure(4);
     }
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {
+    if (ruby_safe_level >= 4 && !OBJ_TAINTED(klass)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
@@ -1588,7 +1588,7 @@ rb_undef(klass, id)
     if (ruby_class == rb_cObject) {
 	rb_secure(4);
     }
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {
+    if (ruby_safe_level >= 4 && !OBJ_TAINTED(klass)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't undef");
 	if (id == __id__ || id == __send__ || id == init) {
 	    rb_name_error(id, "undefining `%s' prohibited", rb_id2name(id));
@@ -3166,7 +3166,7 @@ rb_eval(self, n)
 	    VALUE klass;
 	    NODE *body = 0, *defn;
 
-	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(recv)) {
+	    if (ruby_safe_level >= 4 && !OBJ_TAINTED(recv)) {
 		rb_raise(rb_eSecurityError, "Insecure: can't define singleton method");
 	    }
 	    if (FIXNUM_P(recv) || SYMBOL_P(recv)) {
@@ -3179,7 +3179,7 @@ rb_eval(self, n)
 	    if (OBJ_FROZEN(recv)) rb_error_frozen("object");
 	    klass = rb_singleton_class(recv);
 	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, &body)) {
-		if (rb_safe_level() >= 4) {
+		if (ruby_safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "redefining method prohibited");
 		}
 		if (RTEST(ruby_verbose)) {
@@ -3248,7 +3248,7 @@ rb_eval(self, n)
 			goto override_class;
 		    }
 		}
-		if (rb_safe_level() >= 4) {
+		if (ruby_safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "extending class prohibited");
 		}
 	    }
@@ -3288,7 +3288,7 @@ rb_eval(self, n)
 		    rb_raise(rb_eTypeError, "%s is not a module",
 			     rb_id2name(node->nd_cname));
 		}
-		if (rb_safe_level() >= 4) {
+		if (ruby_safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "extending module prohibited");
 		}
 	    }
@@ -3315,7 +3315,7 @@ rb_eval(self, n)
 		rb_raise(rb_eTypeError, "no virtual class for %s",
 			 rb_class2name(CLASS_OF(result)));
 	    }
-	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(result))
+	    if (ruby_safe_level >= 4 && !OBJ_TAINTED(result))
 		rb_raise(rb_eSecurityError, "Insecure: can't extend object");
 	    klass = rb_singleton_class(result);
 	    
@@ -5603,7 +5603,7 @@ static void
 secure_visibility(self)
     VALUE self;
 {
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(self)) {
+    if (ruby_safe_level >= 4 && !OBJ_TAINTED(self)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't change method visibility");
     }
 }
@@ -6315,7 +6315,7 @@ proc_save_safe_level(data)
     VALUE data;
 {
     if (OBJ_TAINTED(data)) {
-	switch (rb_safe_level()) {
+	switch (ruby_safe_level) {
 	  case 3:
 	    FL_SET(data, PROC_T3);
 	    break;
@@ -6323,7 +6323,7 @@ proc_save_safe_level(data)
 	    FL_SET(data, PROC_T4);
 	    break;
 	  default:
-	    if (rb_safe_level() > 4) {
+	    if (ruby_safe_level > 4) {
 		FL_SET(data, PROC_TMAX);
 	    }
 	    break;
@@ -6621,8 +6621,8 @@ block_pass(self, node)
 	block = b;
     }
 
-    if (rb_safe_level() >= 1 && OBJ_TAINTED(block)) {
-	if (rb_safe_level() > proc_get_safe_level(block)) {
+    if (ruby_safe_level >= 1 && OBJ_TAINTED(block)) {
+	if (ruby_safe_level > proc_get_safe_level(block)) {
 	    rb_raise(rb_eSecurityError, "Insecure: tainted block value");
 	}
     }
@@ -8316,7 +8316,7 @@ rb_thread_safe_level(thread)
 
     th = rb_thread_check(thread);
     if (th == curr_thread) {
-	return INT2NUM(rb_safe_level());
+	return INT2NUM(ruby_safe_level);
     }
     return INT2NUM(th->safe);
 }
@@ -8859,7 +8859,7 @@ rb_thread_local_aref(thread, id)
     VALUE val;
 
     th = rb_thread_check(thread);
-    if (rb_safe_level() >= 4 && th != curr_thread) {
+    if (ruby_safe_level >= 4 && th != curr_thread) {
 	rb_raise(rb_eSecurityError, "Insecure: thread locals");
     }
     if (!th->locals) return Qnil;
@@ -8884,7 +8884,7 @@ rb_thread_local_aset(thread, id, val)
 {
     rb_thread_t th = rb_thread_check(thread);
 
-    if (rb_safe_level() >= 4 && th != curr_thread) {
+    if (ruby_safe_level >= 4 && th != curr_thread) {
 	rb_raise(rb_eSecurityError, "Insecure: can't modify thread locals");
     }
     if (OBJ_FROZEN(thread)) rb_error_frozen("thread locals");

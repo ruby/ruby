@@ -75,7 +75,7 @@ range_initialize(argc, argv, obj)
     rb_scan_args(argc, argv, "21", &beg, &end, &flags);
     /* Ranges are immutable, so that they should be initialized only once. */
     if (rb_ivar_defined(obj, id_beg)) {
-	rb_name_error(rb_intern("initialized"), "`initialize' called twice");
+	rb_name_error(rb_intern("initialize"), "`initialize' called twice");
     }
     range_init(obj, beg, end, RTEST(flags));
     return Qnil;
@@ -231,59 +231,6 @@ range_hash(range, obj)
 }
 
 static VALUE
-range_each(range)
-    VALUE range;
-{
-    VALUE b, e;
-
-    b = rb_ivar_get(range, id_beg);
-    e = rb_ivar_get(range, id_end);
-
-    if (FIXNUM_P(b) && FIXNUM_P(e)) { /* fixnums are special */
-	long end = FIX2LONG(e);
-	long i;
-
-	if (!EXCL(range)) end += 1;
-	for (i=FIX2LONG(b); i<end; i++) {
-	    rb_yield(INT2NUM(i));
-	}
-    }
-    else if (TYPE(b) == T_STRING) {
-	rb_str_upto(b, e, EXCL(range));
-    }
-    else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
-	b = rb_Integer(b);
-	e = rb_Integer(e);
-
-	if (!EXCL(range)) e = rb_funcall(e, '+', 1, INT2FIX(1));
-	while (RTEST(rb_funcall(b, '<', 1, e))) {
-	    rb_yield(b);
-	    b = rb_funcall(b, '+', 1, INT2FIX(1));
-	}
-    }
-    else {			/* generic each */
-	VALUE v = b;
-
-	if (EXCL(range)) {
-	    while (r_lt(v, e)) {
-		if (r_eq(v, e)) break;
-		rb_yield(v);
-		v = rb_funcall(v, id_succ, 0, 0);
-	    }
-	}
-	else {
-	    while (r_le(v, e)) {
-		rb_yield(v);
-		if (r_eq(v, e)) break;
-		v = rb_funcall(v, id_succ, 0, 0);
-	    }
-	}
-    }
-
-    return range;
-}
-
-static VALUE
 r_step_str(args)
     VALUE *args;
 {
@@ -313,26 +260,52 @@ range_step(argc, argv, range)
 
     b = rb_ivar_get(range, id_beg);
     e = rb_ivar_get(range, id_end);
-    rb_scan_args(argc, argv, "01", &step);
+    if (rb_scan_args(argc, argv, "01", &step) == 0) {
+	step = INT2FIX(1);
+    }
 
     if (FIXNUM_P(b) && FIXNUM_P(e)) { /* fixnums are special */
-	long end = FIX2LONG(e);
-	long i, s = (argc == 0) ? 1 : NUM2LONG(step);
-
-	if (!EXCL(range)) end += 1;
-	for (i=FIX2LONG(b); i<end; i+=s) {
-	    rb_yield(INT2NUM(i));
+	long beg = FIX2LONG(b), end = FIX2LONG(e), s = NUM2LONG(step);
+	long i;
+	if (s <= 0) {
+	    rb_raise(rb_eArgError, "step can't be <= 0");
+	}
+	if ((end - beg) < 0) {
+	    if (!EXCL(range)) end -= 1;
+	    for (i=beg; i>end; i-=s) {
+		rb_yield(LONG2NUM(i));
+	    }
+	}
+	else {
+	    if (!EXCL(range)) end += 1;
+	    for (i=beg; i<end; i+=s) {
+		rb_yield(INT2NUM(i));
+	    }
 	}
     }
     else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
+	VALUE diff;
 	b = rb_Integer(b);
 	e = rb_Integer(e);
 	step = rb_Integer(step);
 
-	if (!EXCL(range)) e = rb_funcall(e, '+', 1, INT2FIX(1));
-	while (RTEST(rb_funcall(b, '<', 1, e))) {
-	    rb_yield(b);
-	    b = rb_funcall(b, '+', 1, step);
+	if (RTEST(rb_funcall(step, rb_intern("<="), 1, INT2FIX(0)))) {
+	    rb_raise(rb_eArgError, "step can't be <= 0");
+	}
+	diff = rb_funcall(e, '-', 1, b);
+	if (RTEST(rb_funcall(diff, '<', 1, INT2FIX(0)))) {
+	    if (!EXCL(range)) e = rb_funcall(e, '-', 1, INT2FIX(1));
+	    while (RTEST(rb_funcall(b, '>', 1, e))) {
+		rb_yield(b);
+		b = rb_funcall(b, '-', 1, step);
+	    }
+	}
+	else {
+	    if (!EXCL(range)) e = rb_funcall(e, '+', 1, INT2FIX(1));
+	    while (RTEST(rb_funcall(b, '<', 1, e))) {
+		rb_yield(b);
+		b = rb_funcall(b, '+', 1, step);
+	    }
 	}
     }
     else if (TYPE(b) == T_STRING) {
@@ -366,8 +339,14 @@ range_step(argc, argv, range)
 	    }
 	}
     }
-
     return range;
+}
+
+static VALUE
+range_each(range)
+    VALUE range;
+{
+    return range_step(0, NULL, range);
 }
 
 static VALUE
