@@ -1,3 +1,7 @@
+Thu Jan 29 18:36:25 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* process.c (rb_proc_exec): check `sh' to be exist.
+
 Thu Jan 29 14:18:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* class.c (mod_ancestors): should not include singleton classes.

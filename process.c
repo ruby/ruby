@@ -361,7 +361,7 @@ rb_proc_exec(str)
 	    if (state != -1)
 		exit(state);
 #else
-#if defined(__human68k__)
+#if defined(__human68k__) || defined(__CYGWIN32__)
 	    char *shell = dln_find_exe("sh", 0);
 	    int state = -1;
 	    before_exec();
