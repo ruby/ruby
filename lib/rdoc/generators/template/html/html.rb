@@ -187,7 +187,9 @@ div.method-source-code {
 div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
 /* --- Ruby keyword styles --------------------- */
-/* (requires a hacked html_generator.rb to add more class-types) */
+
+.standalone-code { background: #221111; color: #ffdead; overflow: hidden; }
+
 .ruby-constant	{ color: #7fffd4; background: transparent; }
 .ruby-keyword	{ color: #00ffff; background: transparent; }
 .ruby-ivar		{ color: #eedd82; background: transparent; }
@@ -561,18 +563,13 @@ BODY = HEADER + %{
 #####################################################################
 
 SRC_PAGE = XHTML_PREAMBLE + %{
-<!--
-
-    %title%
-
-  -->
 <html>
 <head>
 	<title>%title%</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=%charset%" />
-	<link rel="stylesheet" href="http://www.FaerieMUD.org/stylesheets/rdoc.css" type="text/css" />
+	<link rel="stylesheet" href="%style_url%" type="text/css" media="screen" />
 </head>
-<body>
+<body class="standalone-code">
 	<pre>%code%</pre>
 </body>
 </html>

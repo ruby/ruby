@@ -964,7 +964,7 @@ module Generators
         values = {
           'title'     => CGI.escapeHTML(index_name),
           'code'      => code_body,
-          'style_url' => style_url(path, @options.css),
+          'style_url' => style_url(file_path, @options.css),
           'charset'   => @options.charset
         }
         template.write_html_on(f, values)
