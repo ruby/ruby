@@ -48,6 +48,7 @@ class Resolv
     def initialize(filename = DefaultFileName)
       @filename = filename
       @mutex = Mutex.new
+      @initialized = nil
     end
 
     def lazy_initialize
@@ -106,6 +107,7 @@ class Resolv
     def initialize(config="/etc/resolv.conf")
       @mutex = Mutex.new
       @config = Config.new(config)
+      @initialized = nil
     end
 
     def lazy_initialize
@@ -157,7 +159,7 @@ class Resolv
           end
           sender.send
           reply = reply_name = nil
-          timeout (tout) { reply, reply_name = q.pop }
+          timeout(tout) { reply, reply_name = q.pop }
           case reply.rcode
           when RCode::NoError
             return extract_resource(reply, reply_name, typeclass)
@@ -385,6 +387,7 @@ class Resolv
       def initialize(filename="/etc/resolv.conf")
         @mutex = Mutex.new
         @filename = filename
+	@initialized = nil
       end
 
       def lazy_initialize

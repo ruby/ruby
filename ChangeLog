@@ -2,6 +2,11 @@ Mon Sep  3 20:26:08 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* intern.h (rb_find_file_ext): changed from rb_find_file_noext().
 
+Mon Sep  3 15:12:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): should not adjust argc/argv if -e option
+	  is supplied.
+
 Mon Sep  3 14:38:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c (rb_f_require): should check static linked libraries
@@ -103,6 +108,12 @@ Wed Aug 17 13:55:33 2001  Usaku Nakamura  <usa@ruby-lang.org>
 Fri Aug 17 00:49:51 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parse_regx): handle backslash escaping of delimiter here.
+
+Thu Aug 16 23:03:40 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+       * io.c: prevent recursive malloc calls on NEC UX/4800.
+
+       * ext/socket/socket.c: ditto.
 
 Thu Aug 16 19:53:19 2001  Akinori MUSHA  <knu@iDaemons.org>
 

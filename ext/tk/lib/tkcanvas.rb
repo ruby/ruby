@@ -876,7 +876,7 @@ class TkPhotoImage<TkImage
 
   def cget(option)
     case option
-    when 'data', 'flie'
+    when 'data', 'file'
       tk_send 'cget', option
     else
       tk_tcl2ruby tk_send 'cget', option

@@ -450,8 +450,8 @@ s_recvfrom(sock, argc, argv, from)
 
     str = rb_tainted_str_new(0, NUM2INT(len));
 
-    rb_thread_wait_fd(fd);
   retry:
+    rb_thread_wait_fd(fd);
     TRAP_BEG;
     RSTRING(str)->len = recvfrom(fd, RSTRING(str)->ptr, RSTRING(str)->len, flags,
 				 (struct sockaddr*)buf, &alen);
@@ -467,7 +467,6 @@ s_recvfrom(sock, argc, argv, from)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_wait_fd(fd);
 	    goto retry;
 	}
 	rb_sys_fail("recvfrom(2)");
@@ -1066,9 +1065,13 @@ s_accept(class, fd, sockaddr, len)
     rb_secure(3);
   retry:
     rb_thread_wait_fd(fd);
+#if defined(_nec_ews)
+    fd2 = accept(fd, sockaddr, len);
+#else
     TRAP_BEG;
     fd2 = accept(fd, sockaddr, len);
     TRAP_END;
+#endif
     if (fd2 < 0) {
 	switch (errno) {
 	  case EMFILE:
@@ -1085,7 +1088,6 @@ s_accept(class, fd, sockaddr, len)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_wait_fd(fd);
 	    goto retry;
 	}
 	rb_sys_fail(0);

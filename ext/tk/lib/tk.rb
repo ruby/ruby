@@ -2233,7 +2233,7 @@ class TkObject<TkKernel
 
   def cget(slot)
     case slot
-    when 'text', 'label', 'show', 'data', 'flie'
+    when 'text', 'label', 'show', 'data', 'file'
       tk_call path, 'cget', "-#{slot}"
     else
       tk_tcl2ruby tk_call path, 'cget', "-#{slot}"
@@ -2273,7 +2273,7 @@ class TkObject<TkKernel
     else
       if slot
 	case slot
-	when 'text', 'label', 'show', 'data', 'flie'
+	when 'text', 'label', 'show', 'data', 'file'
 	  conf = tk_split_simplelist(tk_send('configure', "-#{slot}") )
 	else
 	  conf = tk_split_list(tk_send('configure', "-#{slot}") )
@@ -2285,7 +2285,7 @@ class TkObject<TkKernel
 	  conf = tk_split_simplelist(conflist)
 	  conf[0] = conf[0][1..-1]
 	  case conf[0]
-	  when 'text', 'label', 'show', 'data', 'flie'
+	  when 'text', 'label', 'show', 'data', 'file'
 	  else
 	    if conf[3]
 	      if conf[3].index('{')
