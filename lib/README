@@ -8,6 +8,7 @@ cgi.rb		CGI support library
 cgi/session	CGI session class
 complex.rb	complex number suppor
 date.rb		date object
+date/format.rb	date parsing and formatting
 date2.rb	date object (obsolete; use date)
 debug.rb	ruby debugger
 delegate.rb	delegates messages to other object
