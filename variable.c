@@ -315,7 +315,7 @@ char *
 rb_obj_classname(obj)
     VALUE obj;
 {
-    return rb_obj_classname(obj);
+    return rb_class2name(CLASS_OF(obj));
 }
 
 struct trace_var {
