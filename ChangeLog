@@ -1,3 +1,9 @@
+Sat Oct 16 13:42:49 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/: untabified.
+	* test/rss/: untabified.
+	* lib/rss/0.9.rb (RSS::Rss#to_s): inent -> indent.
+
 Sat Oct 16 13:34:56 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss: supported prety print.
