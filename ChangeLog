@@ -1,3 +1,8 @@
+Mon Mar 28 08:39:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_create): Iconv::Failure requires 3
+	  arguments.  (pointed out by NaHi)
+
 Sun Mar 27 00:56:58 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (remove_file): ignore Errno::E* if force option
@@ -6,7 +11,7 @@ Sun Mar 27 00:56:58 2005  Minero Aoki  <aamine@loveruby.net>
 Sat Mar 26 22:51:33 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb (_callback_entry_class?): add for checking whether
-	  a class is available for a callback entry. 
+	  a class is available for a callback entry.
 
 	* ext/tk/lib/tk.rb (after_cancel): add Tk.after_cancel(afterID) method.
 
@@ -14,7 +19,7 @@ Sat Mar 26 22:51:33 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  of TkComm to public module method.
 
 	* ext/tk/lib/tk.rb (cget): add check that slot argument is not
-	  empty string. 
+	  empty string.
 
 	* ext/tk/lib/tk.rb (configinfo): ditto.
 
@@ -24,16 +29,16 @@ Sat Mar 26 22:51:33 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/itemconfig.rb (itemconfiginfo): ditto.
 
 	* ext/tk/lib/tk/entry.rb: add TkEntry#icursor and icursor= (alias of
-	  cursor and cursor= method). 
+	  cursor and cursor= method).
 
 	* ext/tk/lib/tk/font.rb: improve font treatment when the font name is
 	  empty string.
 
 	* ext/tk/lib/tk/variable.rb: add :variable, :window and :procedure
-	  type. 
+	  type.
 
 	* ext/tk/lib/tk/variable.rb: improve treatment of array-type
-	  tkvariable. 
+	  tkvariable.
 
 	* ext/tk/lib/tkextlib/blt.rb: add commands for zooming.
 
