@@ -188,7 +188,7 @@ class Set
   end
   alias << add
 
-  # Adds the given object to the set and returns self.  If it the
+  # Adds the given object to the set and returns self.  If the
   # object is already in the set, returns nil.
   def add?(o)
     if include?(o)
