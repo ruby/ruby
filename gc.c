@@ -1236,7 +1236,7 @@ rb_gc()
 
     /* mark protected global variables */
     for (list = global_List; list; list = list->next) {
-	rb_gc_mark(*list->varptr);
+	rb_gc_mark_maybe(*list->varptr);
     }
     rb_mark_end_proc();
     rb_gc_mark_global_tbl();

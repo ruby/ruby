@@ -27,6 +27,12 @@ Sat Apr 19 21:55:10 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/Setup*: Add zlib and remove bogus and obsolete entries.
 
+Sat Apr 19 14:47:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc): use rb_gc_mark_maybe() to mark registered C
+	  addresses.  C variables may not hold valid reference to Ruby
+	  objects. [ruby-core:00975]
+
 Sat Apr 19 00:56:13 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_eql): should compare values with "eql?".
