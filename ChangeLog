@@ -1,3 +1,7 @@
+Sun Oct  1 00:43:34 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: exp-name was wrong on cygwin and mingw32.
+
 Wed Sep 27 18:40:05 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.1 released.
