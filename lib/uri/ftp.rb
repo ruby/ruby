@@ -132,7 +132,7 @@ module URI
 
 =begin
 =end
-    def to_str
+    def to_s
       save_path = nil
       if @typecode
 	save_path = @path

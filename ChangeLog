@@ -1,3 +1,7 @@
+Sat Oct  4 12:44:45 2003  akira yamada <akira@ruby-lang.org>
+
+	* lib/uri/ftp.rb, lib/uri/mailto.rb: renamed to #to_s from #to_str.
+
 Sat Oct  4 07:33:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/testsuite.rb: changed #<< to return self, and added

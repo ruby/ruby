@@ -217,7 +217,7 @@ module URI
       v
     end
 
-    def to_str
+    def to_s
       @scheme + ':' + 
 	if @to 
 	  @to
