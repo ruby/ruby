@@ -1,3 +1,7 @@
+: String#lstrip, rstrip, lstrip!, rstrip!
+
+  Added.  These strip only left or right part of a string.
+
 : Socket::pack_sockaddr_in(), Socket::unpack_sockaddr_in()
 
   Added.  Utility for direct Socket access.
