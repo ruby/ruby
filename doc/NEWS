@@ -1,5 +1,18 @@
 Summary of the changes since 1.6.4:
 
+: require
+
+  Changed to search directories for ".rb" and ".so" at the same time,
+  instead of search directories for ".rb" then for ".so".  The
+  previous behavior had a security risk. [ruby-bugs (PR#140)]
+
+  Which means, now:
+
+    require "socket"
+
+  will find the standard socket.so prior to a socket.rb in the current
+  directory.
+
 : lib/sync.rb
 : lib/mutex_m.rb
 
@@ -7,8 +20,8 @@ Summary of the changes since 1.6.4:
 
 : $SAFE / load
 
-  Fixed a bug that a file with a tainted filename can be loaded even
-  under $SAFE == 1 when the second argument is true.  [ruby-dev:13481]
+  Fixed a bug that a file with a tainted filename can be loaded when
+  1 <= $SAFE <= 3 and the second argument is true.  [ruby-dev:13481]
 
     $SAFE = 1
     filename = "foo"
