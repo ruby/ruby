@@ -2,18 +2,6 @@
 # benchmark.rb
 #
 =begin
-  2002-04-25: bmbm(): killed unused parameter @fmtstr (gotoken)
-  2001-11-26: Time.times renamed Process.times for ruby17 (gotoken#notwork.org)
-  2001-01-12: made bmbm module func.  bmbm return Tms array. 
-  2001-01-10: added bmbm, Job and INSTALL.rb (gotoken#notwork.org)
-  2000-04-00: report() prints tag before eval block (gotoken#notwork.org)
-  2000-02-22: report(): measure -> Benchmark::measure (nakahiro#sarion.co.jp)
-  2000-01-02: bug fix, documentation (gotoken#notwork.org)
-  2000-01-01: measure can take a tag as opt. (nobu.nakada#nifty.ne.jp)
-  2000-01-01: first release (gotoken#notwork.org)
-=end
-
-=begin
 = benchmark.rb
 
 == NAME
@@ -432,7 +420,8 @@ returns a new array as follows
 same as (({format()})). See also ((<format>)).
 
 == HISTORY
-<<< benchmark.rb
+
+A benchmark.rb appeared in RAA January 1st 2000. 
 
 == AUTHOR
 
