@@ -2959,7 +2959,7 @@ rb_eval(self, n)
 		result = prot_tag->retval;
 		state = 0;
 	    }
-	    else if (state == TAG_RETRY) {
+	    else if (state == TAG_RETRY && ruby_block == &_block) {
 		state = 0;
 		goto iter_retry;
 	    }
@@ -4537,7 +4537,6 @@ break_jump(retval)
     VALUE retval;
 {
     struct tag *tt = prot_tag;
-    int yield = Qfalse;
 
     if (retval == Qundef) retval = Qnil;
     while (tt) {
