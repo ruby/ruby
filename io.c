@@ -762,7 +762,7 @@ remain_size(fptr)
 	)
     {
 	pos = io_tell(fptr);
-	if (st.st_size > pos && pos >= 0) {
+	if (st.st_size >= pos && pos >= 0) {
 	    siz = st.st_size - pos + 1;
 	    if (siz > LONG_MAX) {
 		rb_raise(rb_eIOError, "file too big for single read");
@@ -780,25 +780,23 @@ read_all(fptr, siz, str)
 {
     long bytes = 0;
     long n;
-    off_t pos = 0;
 
     if (feof(fptr->f)) return Qnil;
     READ_CHECK(fptr->f);
-    if (!siz) siz = BUFSIZ;
+    if (siz == 0) siz = BUFSIZ;
     if (NIL_P(str)) {
 	str = rb_tainted_str_new(0, siz);
     }
     else {
 	rb_str_resize(str, siz);
     }
-    pos = io_tell(fptr);
     for (;;) {
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
-	if (pos > 0 && n == 0 && bytes == 0) {
+	if (n == 0 && bytes == 0) {
 	    rb_str_resize(str,0);
-	    if (!fptr->f) return Qnil;
-	    if (feof(fptr->f)) return Qnil;
-	    if (!ferror(fptr->f)) return str;
+	    if (!fptr->f) break;
+	    if (feof(fptr->f)) break;
+	    if (!ferror(fptr->f)) break;
 	    rb_sys_fail(fptr->path);
 	}
 	bytes += n;

@@ -1221,7 +1221,7 @@ aix_loaderror(const char *pathname)
     int i,j;
 
     struct errtab { 
-	int errno;
+	int errnum;
 	char *errstr;
     } load_errtab[] = {
 	{L_ERROR_TOOMANY,	"too many errors, rest skipped."},
@@ -1248,7 +1248,7 @@ aix_loaderror(const char *pathname)
     for(i = 0; message[i] && *message[i]; i++) {
 	int nerr = atoi(message[i]);
 	for (j=0; j<LOAD_ERRTAB_LEN; j++) {
-	    if (nerr == load_errtab[i].errno && load_errtab[i].errstr)
+           if (nerr == load_errtab[i].errnum && load_errtab[i].errstr)
 		ERRBUF_APPEND(load_errtab[i].errstr);
 	}
 	while (isdigit(*message[i])) message[i]++; 

@@ -2856,6 +2856,7 @@ rb_eval(self, n)
 
 	    PUSH_TAG(PROT_NONE);
 	    if ((state = EXEC_TAG()) == 0) {
+	      retry_entry:
 		result = rb_eval(self, node->nd_head);
 	    }
 	    else if (rescuing) {
@@ -2864,11 +2865,10 @@ rb_eval(self, n)
 		}
 		else if (state == TAG_RETRY) {
 		    rescuing = state = 0;
-		    e_info = ruby_errinfo = Qnil;
-		    result = rb_eval(self, node->nd_head);
+		    ruby_errinfo = e_info;
+		    goto retry_entry;
 		}
 		else if (state != TAG_RAISE) {
-		    ruby_errinfo = e_info;
 		    result = prot_tag->retval;
 		}
 	    }
@@ -2882,7 +2882,6 @@ rb_eval(self, n)
 			state = 0;
 			rescuing = 1;
 			result = rb_eval(self, resq->nd_body);
-			ruby_errinfo = e_info;
 			break;
 		    }
 		    resq = resq->nd_head; /* next rescue */
@@ -2892,6 +2891,7 @@ rb_eval(self, n)
 		result = prot_tag->retval;
 	    }
 	    POP_TAG();
+	    if (state != TAG_RAISE) ruby_errinfo = e_info;
 	    if (state) {
 		if (state == TAG_NEXT) prot_tag->retval = result;
 		JUMP_TAG(state);
