@@ -14,9 +14,7 @@
 #include "st.h"
 #include "sig.h"
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifndef HAVE_STRING_H

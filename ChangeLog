@@ -1,3 +1,12 @@
+Tue Feb 10 17:29:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_aset): string insertion by `str[n] = str2'.
+
+	* string.c (str_oct): does recognize `0x'.
+
+ 	* sprintf.c (f_sprintf): use baes 10 for conversion from string to
+ 	  integer.
+
 Mon Feb  9 14:51:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* numeric.c (do_coerce): proper error message.

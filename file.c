@@ -46,6 +46,7 @@ struct timeval {
 char *strrchr();
 #endif
 
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #ifndef NT
@@ -261,7 +262,6 @@ file_path(obj)
     return str_new2(fptr->path);
 }
 
-#include <sys/types.h>
 #ifndef NT
 #include <sys/file.h>
 #else

@@ -327,7 +327,7 @@ f_sprintf(argc, argv)
 		    bignum = 1;
 		    break;
 		  case T_STRING:
-		    val = str2inum(RSTRING(val)->ptr, 0);
+		    val = str2inum(RSTRING(val)->ptr, 10);
 		    goto bin_retry;
 		  case T_BIGNUM:
 		    bignum = 1;
@@ -339,10 +339,10 @@ f_sprintf(argc, argv)
 
 		if (*p == 'x') base = 16;
 		else if (*p == 'o') base = 8;
-		else if (*p == 'u') base = 10;
+		else if (*p == 'u' || *p == 'd') base = 10;
 		else if (*p == 'b' || *p == 'B') base = 2;
 		if (!bignum) {
-		    if (*p == 'b' || *p == 'B') {
+		    if (base == 2) {
 			val = int2big(v);
 		    }
 		    else {

@@ -1034,7 +1034,12 @@ str_aset(str, indx, val)
 	if (idx < 0 || RSTRING(str)->len <= idx) {
 	    IndexError("index %d out of range [0..%d]", idx, RSTRING(str)->len-1);
 	}
-	RSTRING(str)->ptr[idx] = FIX2INT(val) & 0xff;
+	if (TYPE(val) == T_STRING) {
+	    str_replace(str, idx, 1, val);
+	}
+	else {
+	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
+	}
 	return val;
 
       case T_REGEXP:
@@ -2243,7 +2248,13 @@ static VALUE
 str_oct(str)
     VALUE str;
 {
-    return str2inum(RSTRING(str)->ptr, 8);
+    int base = 8;
+
+    if (RSTRING(str)->len > 2 && RSTRING(str)->ptr[0] == '0' &&
+	(RSTRING(str)->ptr[1] == 'x' || RSTRING(str)->ptr[1] == 'X')) {
+	base = 16;
+    }
+    return str2inum(RSTRING(str)->ptr, base);
 }
 
 static VALUE
