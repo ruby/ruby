@@ -1,3 +1,5 @@
+require "forwardable"
+
 require "rss/rss"
 
 module RSS
@@ -19,6 +21,14 @@ module RSS
 	class XMLParserNotFound < Error
 		def initialize
 			super("available XML parser does not found in " <<
+						"#{AVAILABLE_PARSER_LIBRARIES.inspect}.")
+		end
+	end
+
+	class NotValidXMLParser < Error
+		def initialize(parser)
+			super("#{parser} is not available XML parser. " <<
+						"available XML parser is " <<
 						"#{AVAILABLE_PARSERS.inspect}.")
 		end
 	end
@@ -32,10 +42,49 @@ module RSS
 		end
 	end
 
+	class Parser
+
+		extend Forwardable
+
+		class << self
+
+			@@default_parser = nil
+
+			def default_parser
+				@@default_parser || AVAILABLE_PARSERS.first
+			end
+
+			def default_parser=(new_value)
+				if AVAILABLE_PARSERS.include?(new_value)
+					@@default_parser = new_value
+				else
+					raise NotValidXMLParser.new(new_value)
+				end
+			end
+
+			def parse(rss, do_validate=true, ignore_unknown_element=true, parser_class=default_parser)
+				parser = new(rss, parser_class)
+				parser.do_validate = do_validate
+				parser.ignore_unknown_element = ignore_unknown_element
+				parser.parse
+			end
+
+		end
+
+		def_delegators(:@parser, :parse, :rss,
+									 :ignore_unknown_element,
+									 :ignore_unknown_element=, :do_validate,
+									 :do_validate=)
+
+		def initialize(rss, parser_class=self.class.default_parser)
+			@parser = parser_class.new(rss)
+		end
+	end
+
 	class BaseParser
 
 		def initialize(rss)
-			@listener = Listener.new
+			@listener = listener.new
 			@rss = rss
 		end
 
@@ -66,15 +115,6 @@ module RSS
 			@listener.rss
 		end
 
-		class << self
-			def parse(rss, do_validate=true, ignore_unknown_element=true)
-				parser = new(rss)
-				parser.do_validate = do_validate
-				parser.ignore_unknown_element = ignore_unknown_element
-				parser.parse
-			end
-		end
-		
 	end
 
 	class BaseListener
@@ -296,7 +336,7 @@ module RSS
 			@last_element.send(setter, next_element)
 			@last_element = next_element
 			@proc_stack.push Proc.new { |text, tags|
-				p @last_element.class if $DEBUG
+				p(@last_element.class) if $DEBUG
 				@last_element.content = text if klass.have_content?
 				@last_element.validate_for_stream(tags) if @do_validate
 				@last_element = previous
@@ -305,26 +345,25 @@ module RSS
 
 	end
 
-	unless const_defined? :AVAILABLE_PARSERS
-		AVAILABLE_PARSERS = [
-			"rss/xmlparser",
-			"rss/xmlscanner",
-			"rss/rexmlparser",
+	unless const_defined? :AVAILABLE_PARSER_LIBRARIES
+		AVAILABLE_PARSER_LIBRARIES = [
+			["rss/xmlparser", :XMLParserParser],
+			["rss/xmlscanner", :XMLScanParser],
+			["rss/rexmlparser", :REXMLParser],
 		]
 	end
 
-	loaded = false
-	AVAILABLE_PARSERS.each do |parser|
+	AVAILABLE_PARSERS = []
+
+	AVAILABLE_PARSER_LIBRARIES.each do |lib, parser|
 		begin
-			require parser
-			loaded = true
-			break
+			require lib
+			AVAILABLE_PARSERS.push(const_get(parser))
 		rescue LoadError
 		end
 	end
 
-	unless loaded
+	if AVAILABLE_PARSERS.empty?
 		raise XMLParserNotFound
 	end
 end
-

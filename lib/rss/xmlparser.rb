@@ -13,7 +13,7 @@ end
 
 module RSS
 	
-	class XMLParser < ::XML::Parser
+	class REXMLLikeXMLParser < ::XML::Parser
 		
 		include XML::Encoding_ja
 
@@ -39,12 +39,16 @@ module RSS
 
 	end
 
-	class Parser < BaseParser
+	class XMLParserParser < BaseParser
 
 		private
+		def listener
+			XMLParserListener
+		end
+
 		def _parse
 			begin
-				parser = XMLParser.new
+				parser = REXMLLikeXMLParser.new
 				parser.listener = @listener
 				parser.parse(@rss)
 			rescue XMLParserError => e
@@ -54,7 +58,7 @@ module RSS
 		
 	end
 	
-	class Listener < BaseListener
+	class XMLParserListener < BaseListener
 
 		include ListenerMixin
 		

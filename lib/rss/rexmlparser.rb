@@ -8,9 +8,14 @@ end
 
 module RSS
 	
-	class Parser < BaseParser
+	class REXMLParser < BaseParser
 
 		private
+
+		def listener
+			REXMLListener
+		end
+
 		def _parse
 			begin
 				REXML::Document.parse_stream(@rss, @listener)
@@ -25,11 +30,10 @@ module RSS
 		
 	end
 	
-	class Listener < BaseListener
+	class REXMLListener < BaseListener
 
 		include REXML::StreamListener
 		include ListenerMixin
-		
 
 		def xmldecl(version, encoding, standalone)
 			super

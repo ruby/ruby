@@ -417,4 +417,14 @@ EOR
 
 	end
 
+	def test_default_parser
+		assert_nothing_raised() do
+			Parser.default_parser = RSS::AVAILABLE_PARSERS.first
+		end
+
+		assert_raise(RSS::NotValidXMLParser) do
+			Parser.default_parser = RSS::Parser
+		end
+	end
+
 end

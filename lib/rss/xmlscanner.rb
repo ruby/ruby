@@ -2,9 +2,13 @@ require 'xmlscan/scanner'
 
 module RSS
 	
-	class Parser < BaseParser
+	class XMLScanParser < BaseParser
 		
 		private
+		def listener
+			XMLScanListener
+		end
+
 		def _parse
 			begin
 				XMLScan::XMLScanner.new(@listener).parse(@rss)
@@ -15,7 +19,7 @@ module RSS
 		
 	end
 
-	class Listener < BaseListener
+	class XMLScanListener < BaseListener
 		
 		include XMLScan::Visitor
 		include ListenerMixin

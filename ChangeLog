@@ -1,3 +1,10 @@
+Sun Feb  1 00:57:41 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb (RSS::Parser): added @@default_parser. Used
+	  XML parser became selectable.
+	* test/rss/test_parser.rb: added tests for
+	  RSS::Parser.default_parser.
+
 Sat Jan 31 02:28:15 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RPATHFLAG): set to -Wl,-R like NetBSD on Interix.
