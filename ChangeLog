@@ -1,3 +1,8 @@
+Thu Jul  8 00:05:23 2004  akira yamada  <akira@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile::initialize): got out code of
+	  generating tmpname.  [ruby-dev:23832][ruby-dev:23837]
+
 Wed Jul  7 02:31:41 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/{rss,parser,0.9,1.0,2.0}.rb: supported RSS 0.9x/2.0

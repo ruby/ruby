@@ -33,7 +33,7 @@ class Tempfile < DelegateClass(File)
       Thread.critical = true
 
       begin
-	tmpname = sprintf('%s/%s%d.%d', tmpdir, basename, $$, n)
+	tmpname = File.join(tmpdir, make_tmpname(basename, n))
 	lock = tmpname + '.lock'
 	n += 1
       end while @@cleanlist.include?(tmpname) or
@@ -65,6 +65,11 @@ class Tempfile < DelegateClass(File)
 
     Dir.rmdir(lock)
   end
+
+  def make_tmpname(basename, n)
+    sprintf('%s%d.%d', basename, $$, n)
+  end
+  private :make_tmpname
 
   # Opens or reopens the file with mode "r+".
   def open
