@@ -1,3 +1,17 @@
+Summary of the changes since 1.6.4:
+
+: $SAFE
+
+  Fixed so defining a new method is allowed under $SAFE == 4, which
+  previously wasn't.
+
+    ruby -e '$SAFE = 4; def a; end'
+    => -e:1: Insecure operation `(null)' at level 4 (SecurityError)
+
+: IO#ioctl
+
+  Fixed to accept a Bignum as the second argument.
+
 Summary of the changes since 1.6.3:
 
 : Hash#replace
@@ -78,8 +92,8 @@ Summary of the changes since 1.6.3:
 
 : $SAFE
 
-  Fixed so aliasing global valiables is disallowed under $SAFE = 4.
- ((<ruby-dev:13287>))
+  Fixed so aliasing global valiables is disallowed under $SAFE == 4.
+  ((<ruby-dev:13287>))
 
 : Open3::popen3
 
