@@ -174,6 +174,8 @@ class MultiTkIp
 
   @@DEFAULT_MASTER = self.allocate
   @@DEFAULT_MASTER.instance_eval{
+    @encoding = []
+
     @tk_windows = {}
 
     @tk_table_list = []
@@ -432,6 +434,8 @@ class MultiTkIp
     unless keys.kind_of? Hash
       fail ArgumentError, "expecting a Hash object for the 2nd argument"
     end
+
+    @encoding = []
 
     @tk_windows = {}
 
@@ -792,6 +796,10 @@ end
 
 # class methods to delegate to TclTkIp
 class << MultiTkIp
+  def method_missing(id, *args)
+    __getip.send(id, *args)
+  end
+
   def make_safe
     __getip.make_safe
   end
@@ -1140,6 +1148,41 @@ class MultiTkIp
     self
   end
 end
+
+
+# encoding convert
+class MultiTkIp
+  # from tkencoding.rb by ttate@jaist.ac.jp
+  alias __eval _eval
+  alias __invoke _invoke
+  private :__eval
+  private :__invoke
+
+  def encoding
+    @encoding[0]
+  end
+  def encoding=(enc)
+    @encoding[0] = enc
+  end
+    
+  def _eval(cmd)
+    if @encoding[0] != nil
+      _fromUTF8(__eval(_toUTF8(cmd, @encoding[0])), @encoding[0])
+    else
+      __eval(cmd)
+    end
+  end
+
+  def _invoke(*cmds)
+    if defined?(@encoding[0]) && @encoding[0] != nil
+      cmds = cmds.collect{|cmd| _toUTF8(cmd, @encoding[0])}
+      _fromUTF8(__invoke(*cmds), @encoding[0])
+    else
+      __invoke(*cmds)
+    end
+  end
+end
+
 
 # end of MultiTkIp definition
 

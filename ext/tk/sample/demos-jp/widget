@@ -1,0 +1,504 @@
+#!/usr/local/bin/ruby
+
+# tk 関係ライブラリの読み込み
+require 'tk'
+require 'tkafter'
+
+# widget demo directory 位置の獲得
+$demo_dir = File.dirname($0)
+
+# root の生成
+$root = TkRoot.new{title "Widget Demonstration"}
+
+# tk バージョンの取得
+$tk_version = Tk::TK_VERSION
+
+# tcl_platform 情報へのアクセスオブジェクト
+$tk_platform = TkVarAccess.new('tcl_platform')
+
+# フォント設定
+$font = TkFont.new('-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*', nil)
+knjfont = '-*--16-*-jisx0208.1983-0'
+$kanji_font = TkFont.new('-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*',
+			 knjfont)
+TkOption.add('*kanjiFont', knjfont, 'startupFile')
+$msg_kanji_font = TkFont.new('-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*',
+			     '-*--24-*-jisx0208.1983-0')
+#######
+#case($tk_version)
+#when /^4.*/
+#  $font = '-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*'
+#  $kanji_font = '-*--16-*-jisx0208.1983-0'
+#  $msg_kanji_font = '-*--24-*-jisx0208.1983-0'
+#  $knjfont_opt = 'kanjifont'
+#  TkOption.add('*kanjiFont', $kanji_font, 'startupFile')
+#
+#when /^8.*/
+#  Tk.tk_call('font', 'create', '@ascii', 
+#	     '-copy', '-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*')
+#  Tk.tk_call('font', 'create', '@kanji', 
+#	     '-copy', '-*--16-*-jisx0208.1983-0')
+#  Tk.tk_call('font', 'create', '@msg_knj', 
+#	     '-copy', '-*--24-*-jisx0208.1983-0')
+#  Tk.tk_call('font', 'create', '@cFont', '-compound', '@ascii @kanji')
+#  Tk.tk_call('font', 'create', '@cMsgFont', '-compound', '@ascii @msg_knj')
+#  $font = '-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*'
+#  $kanji_font = '@cFont'
+#  $msg_kanji_font = '@cMsgFont'
+#  $knjfont_opt = 'font'
+#end
+#######
+
+# メニュー設定
+TkMenubar.new($root, 
+	      [[['File', 0], 
+		  ['About ... ', proc{aboutBox}, 0, '<F1>'],
+		  '---', 
+		  ['Quit', proc{exit}, 0, 'Meta-Q']
+		]]).pack('side'=>'top', 'fill'=>'x')
+$root.bind('F1', proc{aboutBox})
+
+=begin
+TkFrame.new($root){|frame|
+  TkMenubutton.new(frame){|button|
+    m = TkMenu.new(button) {
+      add 'command', 'label'=>'Quit', 'command'=>proc{exit}, 'underline'=>0
+    }
+    menu m
+    text 'File'
+    underline 0
+  }.pack('side'=>'left')
+}.pack('side'=>'top', 'fill'=>'x')
+=end
+
+# テキストボックスの生成
+if $tk_version =~ /^4\.[01]/
+  scr = TkScrollbar.new($root, 'orient'=>'vertical')
+  txt = TkText.new($root) {
+    #wrap 'word'
+    wrap 'char'
+    width 60
+    height 30
+    font $font
+    setgrid 'yes'
+    yscrollcommand proc{|first,last| scr.set first,last}
+  }
+  scr.command(proc{|*args| txt.yview(*args)})
+  scr.pack('side'=>'right', 'fill'=>'y')
+  txt.pack('expand'=>'yes', 'fill'=>'both')
+else
+  textFrame = TkFrame.new($root)
+  scr = TkScrollbar.new($root, 'orient'=>'vertical', 
+			'highlightthickness'=>0, 'takefocus'=>1) {
+    pack('in'=>textFrame, 'side'=>'right', 'fill'=>'y', 'padx'=>1)
+  }
+  txt = TkText.new($root) {
+    #wrap 'word'
+    wrap 'char'
+    width 60
+    height 30
+    font $font
+    setgrid 'yes'
+    highlightthickness 0
+    padx 4
+    pady 2
+    takefocus 0
+    yscrollcommand proc{|first,last| scr.set first,last}
+  }
+  scr.command(proc{|*args| txt.yview(*args)})
+#  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both', 'padx'=>1)
+  txt.pack('in'=>textFrame, 'expand'=>'yes', 'fill'=>'both')
+#  textFrame.pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>2)
+  textFrame.pack('expand'=>'yes', 'fill'=>'both')
+
+  statusBar = TkFrame.new($root) {|f|
+    $statusBarLabel = \
+    TkLabel.new(f, 'text'=>"   ", 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w', 
+		'font'=>'-*-Helvetica-Medium-R-Normal--*-120-*-*-*-*-*-*') \
+    .pack('side'=>'left', 'padx'=>2, 'expand'=>'yes', 'fill'=>'both')
+    TkLabel.new(f, 'width'=>8, 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w', 
+		'font'=>'-*-Helvetica-Medium-R-Normal--*-120-*-*-*-*-*-*') \
+    .pack('side'=>'left', 'padx'=>2)
+  }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>2)
+end
+
+# テキストタグ設定
+tag_title = TkTextTag.new(txt, 'font'=>'-*-Helvetica-Bold-R-Normal--*-180-*-*-*-*-*-*')
+tag_kanji_title = TkTextTag.new(txt, 'kanjifont'=>$msg_kanji_font)
+tag_middle = TkTextTag.new(txt, 'kanjifont'=>$kanji_font)
+tag_demospace = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c')
+
+if TkWinfo.depth($root) == '1'
+  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+			   'underline'=>1)
+  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+			      'underline'=>1)
+  tag_hot = TkTextTag.new(txt, 'background'=>'black', 'foreground'=>'white')
+else
+  tag_demo = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+			   'foreground'=>'blue', 'underline'=>1)
+  $tag_visited = TkTextTag.new(txt, 'lmargin1'=>'1c', 'lmargin2'=>'1c', 
+			      'foreground'=>'#303080', 'underline'=>1)
+#  tag_hot = TkTextTag.new(txt, 'relief'=>'raised', 'borderwidth'=>1, 
+#			  'background'=>'SeaGreen3')
+  tag_hot = TkTextTag.new(txt, 'borderwidth'=>1, 'foreground'=>'red')
+end
+
+#tag_demo.bind('Button-1', proc{invoke txt, txt.index('current')})
+tag_demo.bind('ButtonRelease-1', 
+	      proc{|x,y|invoke txt, txt.index("@#{x},#{y}")}, '%x %y')
+
+lastLine = TkVariable.new("")
+newLine  = TkVariable.new("")
+tag_demo.bind('Enter', proc{|x,y|
+		lastLine.value = txt.index("@#{x},#{y} linestart")
+		tag_hot.add(lastLine.value, "#{lastLine.value} lineend")
+		showStatus txt, txt.index("@#{x},#{y}")
+	      },
+	      '%x %y')
+tag_demo.bind('Leave', 
+	      proc{
+		tag_hot.remove('1.0','end')
+		txt.configure('cursor','xterm')
+		$statusBarLabel.configure('text'=>"")
+	      })
+tag_demo.bind('Motion', proc{|x, y|
+		newLine.value = txt.index("@#{x},#{y} linestart")
+		if newLine.value != lastLine.value
+		  tag_hot.remove('1.0','end')
+		  lastLine.value = newLine.value
+		  if ( txt.tag_names("@#{x},#{y}").find{|t| 
+			t.kind_of?(String) && t =~ /^demo-/
+		      } )
+		    tag_hot.add(lastLine.value, 
+				"#{lastLine.value} lineend -1 chars")
+		  end
+		end
+		showStatus txt, txt.index("@#{x},#{y}")
+	      },
+	      '%x %y')
+
+# テキスト生成
+txt.insert('end', 'Ruby/Tk : Widget', tag_title)
+#txt.insert('end', "  デモンストレーション\n", tag_middle)
+txt.insert('end', "  デモンストレーション\n", tag_kanji_title)
+txt.insert('end', <<"EOT")
+
+このアプリケーションは、Tk Widget を用いてどのようなことができるか\
+を示すための、いくつかの小さなスクリプトに対するフロントエンドを提\
+供しています。以下に順番に挙げられているデモンストレーションを実行\
+するにはマウスでクリックしてください。デモンストレーションのウィン\
+ドウが現れると、デモンストレーションを生成した Ruby/Tk のコードを見\
+るために、"コード参照"ボタンをクリックすることができます。あなたが\
+望むなら、そのコードを修正することができます。修正したコードでデモ\
+ンストレーションを再実行するためには、コードが書かれたウィンドウに\
+ある"デモ再実行" ボタンをクリックしてください。
+
+EOT
+
+#txt.insert('end',"ラベル, ボタン, チェックボタン, ラジオボタン\n",tag_middle)
+txt.insert('end', "ラベル, ボタン, チェックボタン, ラジオボタン\n", 
+	   tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. ラベル (テキスト, ビットマップ)\n", 
+	   tag_demo, "demo-label")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. ボタン \n", tag_demo, "demo-button")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. チェックボタン (複数を選択可能)\n", 
+	   tag_demo, "demo-check")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "4. ラジオボタン (任意の一つを選択可能)\n", 
+	   tag_demo, "demo-radio")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "5. ボタンで作られた15-パズルゲーム\n", 
+	   tag_demo, "demo-puzzle")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "6. ビットマップを使用したアイコンボタン\n", 
+	   tag_demo, "demo-icon")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "7. 画像を表示する二つのラベル\n", 
+	   tag_demo, "demo-image1")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "8. 画像を見るための簡単なユーザインターフェース\n", 
+	   tag_demo, "demo-image2")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+#txt.insert('end', "リストボックス\n", tag_middle)
+txt.insert('end', "リストボックス\n", tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. 都道府県.\n", tag_demo, "demo-states")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. 色: アプリケーションのための配色を変える\n", 
+	   "#{tag_demo.id} demo-colors")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. 格言集\n", tag_demo, "demo-sayings")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+#txt.insert('end', "エントリ\n", tag_middle)
+txt.insert('end', "エントリ\n", tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. スクロールバーなし\n", tag_demo, "demo-entry1")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. スクロールバーあり\n", tag_demo, "demo-entry2")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. 簡単なフォーム\n", tag_demo, "demo-form")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+#txt.insert('end', "テキスト\n", tag_middle)
+txt.insert('end', "テキスト\n", tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. 基本的なテキスト\n", tag_demo, "demo-text")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. 表示スタイル.\n", tag_demo, "demo-style")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. ハイパーテキスト(タグバインド).\n", 
+	   tag_demo, "demo-bind")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "4. ウィンドウを埋め込んだテキスト\n", 
+	   tag_demo, "demo-twind")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "5. 検索\n", tag_demo, "demo-search")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+#txt.insert('end', "キャンバス\n", tag_middle)
+txt.insert('end', "キャンバス\n", tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. アイテムの型\n", tag_demo, "demo-items")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. 2 次元のプロット\n", tag_demo, "demo-plot")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. テキスト\n", tag_demo, "demo-ctext")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "4. 矢印の形\n", tag_demo, "demo-arrow")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "5. ルーラー\n", tag_demo, "demo-ruler")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "6. フロアプラン\n", tag_demo, "demo-floor")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "7. スクロール可能なキャンバス\n", 
+	   tag_demo, "demo-cscroll")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+#txt.insert('end', "スケール\n", tag_middle)
+txt.insert('end', "スケール\n", tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. 垂直\n", tag_demo.id, "demo-vscale")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. 水平\n", tag_demo.id, "demo-hscale")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+#txt.insert('end', "メニュー\n", tag_middle)
+txt.insert('end', "メニュー\n", tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. メニューとカスケードを含んだウィンドウ\n", 
+	   tag_demo, "demo-menu")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. メニューとカスケードを含んだウィンドウ (Tk8.x 専用)\n", 
+	   tag_demo, "demo-menu8x")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. メニューボタン (Tk8.x 専用)\n", 
+	   tag_demo, "demo-menubu")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+#txt.insert('end', "ダイアログウィンドウ\n", tag_middle)
+txt.insert('end', "ダイアログウィンドウ\n", tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. メッセージボックス\n", tag_demo, "demo-msgbox")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. ファイル選択ダイアログ\n", tag_demo, "demo-filebox")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. 色選択ダイアログ\n", tag_demo, "demo-clrpick")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.insert('end', "\n")
+#txt.insert('end', "その他\n", tag_middle)
+txt.insert('end', "その他\n", tag_kanji_title)
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "1. 組み込みのビットマップ\n", tag_demo, "demo-bitmap")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "2. モーダルダイアログ(ローカルグラブ)\n", 
+	   tag_demo, "demo-dialog1")
+txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "3. モーダルダイアログ(グローバルグラブ)\n", 
+	   tag_demo, "demo-dialog2")
+txt.insert('end', " \n ", tag_demospace)
+
+txt.state('disabled')
+scr.focus
+
+################################
+# method 定義
+################################
+def positionWindow(w)
+  w.geometry('+300+300')
+end
+
+# 親ウィジェットと，変数名と TkVariable との組(配列)の並びを渡す
+$showVarsWin = {}
+def showVars (parent, *args)
+  if $showVarsWin[parent.path]
+    begin
+      $showVarsWin[parent.path].destroy 
+    rescue
+    end
+  end
+  w = TkToplevel.new(parent) {|w|
+    title "Variable values"
+    TkLabel.new(w) {
+      text "変数値:"
+      width 20
+      anchor 'center'
+      font '-Adobe-helvetica-medium-r-normal--*-180-*-*-*-*-*-*'
+    }.pack('side'=>'top', 'fill'=>'x')
+    len = 1
+    args.each{|vnam,vbody|
+      len = vnam.to_s.length if vnam.to_s.length > len
+    }
+    args.each{|vnam,vbody|
+      TkFrame.new(w){|f|
+	#TkLabel.new(f, 'text'=>"#{vnam}: ").pack('side'=>'left')
+	TkLabel.new(f, 'text'=>"#{vnam}: ",'width'=>len+2).pack('side'=>'left')
+	TkLabel.new(f, 'textvariable'=>vbody, 'anchor'=>'w')\
+	           .pack('side'=>'left', 'expand'=>'yes', 'fill'=>'x')
+      }.pack('side'=>'top', 'anchor'=>'w', 'fill'=>'x')
+    }
+    TkButton.new(w) {
+      text "了解"
+      command proc{w.destroy}
+    }.pack('side'=>'bottom', 'pady'=>2)
+  }
+  $showVarsWin[parent.path] = w
+end
+
+# テキスト上での click に対する動作
+def invoke (txt, index)
+  tag = txt.tag_names(index).find{|t| t.kind_of?(String) && t =~ /^demo-/}
+  return unless tag
+  cursor = txt.cget('cursor')
+  txt.cursor('watch')
+  Tk.update
+#  eval `cat #{tag[5..-1]}.rb`
+  eval `cat #{[$demo_dir, tag[5..-1]].join(File::Separator)}.rb`
+  Tk.update
+#  txt.cursor('xterm')
+  txt.cursor(cursor)
+
+  $tag_visited.add("#{index} linestart +1 chars", "#{index} lineend +1 chars")
+end
+
+# 状態表示
+def showStatus (txt, index)
+  tag = txt.tag_names(index).find{|t| t.kind_of?(String) && t =~ /^demo-/}
+  cursor = txt.cget('cursor')
+  unless tag
+    $statusBarLabel.configure('text', " ")
+    newcursor = 'xterm'
+  else
+    demoname = tag[5..-1]
+    $statusBarLabel.configure('text', 
+			     "サンプルプログラム \"#{demoname}\" の実行 ")
+    newcursor = 'hand2'
+  end
+  txt.configure('cursor'=>newcursor) if cursor != newcursor
+end
+
+# ソースコードの表示
+def showCode (demo)
+  file = "#{demo}.rb"
+  $code_window = nil unless defined? $code_window
+  if $code_window == nil || TkWinfo.exist?($code_window) == '0'
+    $code_window = TkToplevel.new(nil)
+    f = TkFrame.new($code_window)
+    TkButton.new(f) {
+      text "了解"
+      command proc{
+	$code_window.destroy
+	$code_window = nil
+      }
+    }.pack('side'=>'left', 'expand'=>'yes', 'pady'=>2)
+    TkButton.new(f) {
+      text "再実行"
+      command proc{eval($code_text.get('1.0','end'))}
+    }.pack('side'=>'left', 'expand'=>'yes', 'pady'=>2)
+#    f.pack('side'=>'bottom', 'expand'=>'yes', 'fill'=>'x')
+    f.pack('side'=>'bottom', 'fill'=>'x')
+
+    if $tk_version =~ /^4\.[01]/
+      s = TkScrollbar.new($code_window, 'orient'=>'vertical')
+      $code_text = TkText.new($code_window) {
+	height 40
+	setgrid 'yes'
+	yscrollcommand proc{|first,last| s.set first,last}
+      }
+      s.command(proc{|*args| $code_text.yview(*args)})
+      s.pack('side'=>'right', 'fill'=>'y')
+      $code_text.pack('side'=>'left', 'expand'=>'yes', 'fill'=>'both')
+    else
+      TkFrame.new($code_window) {|f|
+	pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>1)
+
+	hs = TkScrollbar.new($code_window, 'highlightthickness'=>0, 
+			     'orient'=>'horizontal')
+	vs = TkScrollbar.new($code_window, 'highlightthickness'=>0, 
+			     'orient'=>'vertical')
+	$code_text = TkText.new($code_window) {|t|
+	  height 40
+	  #wrap 'word'
+	  wrap 'char'
+	  xscrollcommand proc{|first,last| hs.set first,last}
+	  yscrollcommand proc{|first,last| vs.set first,last}
+	  setgrid 'yes'
+	  highlightthickness 0
+	  pady 2
+	  padx 3
+	  hs.command(proc{|*args| $code_text.xview(*args)})
+	  vs.command(proc{|*args| $code_text.yview(*args)})
+	}
+
+	$code_text.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>0, 
+			'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
+	vs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>0, 'column'=>1, 
+		'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
+#	xs.grid('in'=>f, 'padx'=>1, 'pady'=>1, 'row'=>1, 'column'=>0, 
+#		'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
+	TkGrid.rowconfigure(f, 0, 'weight'=>1, 'minsize'=>0)
+	TkGrid.columnconfigure(f, 0, 'weight'=>1, 'minsize'=>0)
+      }
+    end
+  else
+    $code_window.deiconify
+    $code_window.raise
+  end
+  $code_window.title("Demo code: #{file}")
+  $code_window.iconname(file)
+#  fid = open(file, 'r')
+  fid = open([$demo_dir, file].join(File::Separator), 'r')
+  $code_text.delete('1.0', 'end')
+  #$code_text.insert('1.0', `cat #{file}`)
+  $code_text.insert('1.0', fid.read)
+  #$code_mark = TkTextMark.new($code_text, '1.0')
+  #$code_text.set_insert('1.0')
+  TkTextMarkInsert.new($code_text,'1.0')
+  fid.close
+end
+
+# aboutBox
+#
+#      Pops up a message box with an "about" message
+#
+def aboutBox
+  Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
+		'message'=>"Ruby/Tk ウィジェットデモ Ver.1.2.2\n\n( based on Tk ウィジェットデモ :: Copyright (c) 1996-1997 Sun Microsystems, Inc. )\n\nRunning Version :: Ruby#{VERSION}/Tk#{$tk_version}#{(Tk::JAPANIZED_TK)? 'jp': ''}")
+end
+
+################################
+# イベント待ちに入る
+Tk.mainloop

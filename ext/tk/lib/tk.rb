@@ -407,7 +407,13 @@ module TkComm
 	  if num = EV_KEY.index($1)
 	    case EV_TYPE[num]
 	    when ?n
-	      arg_cnv << TkComm::number(arg_val[idx])
+	      begin
+		val = TkComm::number(arg_val[idx])
+	      rescue ArgumentError
+		# ignore --> no convert
+		val = TkComm::string(arg_val[idx])
+	      end
+	      arg_cnv << val
 	    when ?s
 	      arg_cnv << TkComm::string(arg_val[idx])
 	    when ?b
@@ -3748,24 +3754,28 @@ class TkWindow<TkObject
     self
   end
 
-  def _destroy_children
+  def destroy
+    super
     children = []
     rexp = /^#{self.path}\.[^.]+$/
     TkCore::INTERP.tk_windows.each{|path, obj|
-      children << obj if path =~ rexp
+      children << [path, obj] if path =~ rexp
     }
-    children.each{|obj| obj.destroy}
-  end
-  private :_destroy_children
-
-  def destroy
-    super
-    _destroy_children
     if defined?(@cmdtbl)
       for id in @cmdtbl
 	uninstall_cmd id
       end
     end
+
+    children.each{|path, obj|
+      if defined?(@cmdtbl)
+	for id in @cmdtbl
+	  uninstall_cmd id
+	end
+      end
+      TkCore::INTERP.tk_windows.delete(path)
+    }
+
     tk_call 'destroy', epath
     uninstall_win
   end
@@ -5020,6 +5030,9 @@ module TkComposite
   extend Tk
 
   def initialize(parent=nil, *args)
+    @delegates = {} 
+    @delegates['DEFAULT'] = @frame
+
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
       parent = keys['parent']
@@ -5030,10 +5043,6 @@ module TkComposite
       @frame = TkFrame.new(parent)
       @path = @epath = @frame.path
       initialize_composite(*args)
-    end
-    unless defined? @delegates
-      @delegates = {} 
-      @delegates['DEFAULT'] = @frame
     end
   end
 
@@ -5148,21 +5157,17 @@ end
 
 # widget_destroy_hook
 require 'tkvirtevent'
-TkBindTag::ALL.bind(TkVirtualEvent.new('Destroy'), proc{|widget| 
-		      if widget.respond_to?(:path)
-			w = widget.path
-		      else
-			w = widget.to_s
-		      end
-		      if widget.respond_to?(:__destroy_hook__)
-			begin
-			  if TkCore::INTERP._invoke('winfo','exist',w) == '1'
+TkBindTag::ALL.bind(TkVirtualEvent.new('Destroy'), proc{|xpath| 
+		      path = xpath[1..-1]
+		      if (widget = TkCore::INTERP.tk_windows[path])
+			if widget.respond_to?(:__destroy_hook__)
+			  begin
 			    widget.__destroy_hook__
+			  rescue Exception
 			  end
-			rescue Exception
 			end
 		      end
-		    }, '%W')
+		    }, 'x%W')
 
 # autoload
 autoload :TkCanvas, 'tkcanvas'
