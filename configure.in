@@ -387,20 +387,6 @@ AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 ucontext.h intrinsics.h unwind.h)
 
 dnl Check additional types.
-AC_CHECK_TYPE(rlim_t, [AC_DEFINE(HAVE_RLIM_T)], [], [
-  #ifdef HAVE_SYS_TYPES_H
-  # include <sys/types.h>
-  #endif
-  #ifdef HAVE_SYS_TIME_H
-  # include <sys/time.h>
-  #endif
-  #ifdef HAVE_SYS_RESOURCE_H
-  # include <sys/resource.h>
-  #endif
-  #ifdef HAVE_UNISTD_H
-  # include <unistd.h>
-  #endif
-])
 AC_CHECK_SIZEOF(rlim_t, 0, [
   #ifdef HAVE_SYS_TYPES_H
   # include <sys/types.h>

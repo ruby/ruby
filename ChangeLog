@@ -1,3 +1,7 @@
+Fri Dec 31 00:08:02 2004  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in (HAVE_RLIM_T): removed because not used.
+
 Thu Dec 30 22:45:39 2004  Tanaka Akira  <akr@m17n.org>
 
 	* rubyio.h: don't deprecate rb_read_check.
