@@ -1,3 +1,30 @@
+Thu Oct  3 20:16:12 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* bcc32/mkexports.rb: to work on cygwin via telnet.
+	  [ruby-win32:358]
+
+	* ext/tcltklib/tcltklib.c (ip_invoke): requires command name
+	  argument.  [ruby-dev:18438]
+
+	* eval.c (ruby_init, ruby_options): Init_stack() with local
+	  location.  (ruby-bugs-ja:PR#277)
+
+	* eval.c (rb_call0): disable trace call.  [ruby-dev:18074]
+
+	* eval.c (eval, rb_load): enable trace call.  [ruby-dev:18074]
+
+	* eval.c (rb_f_require): set source file name for extension
+	  libraries.  [ruby-dev:18445]
+
+	* ruby.c (translate_char): translate a character in a string;
+	  DOSISH only.  [ruby-dev:18274]
+
+	* ruby.c (ruby_init_loadpath): added argv[0] handling under
+	  Human68K.  [ruby-dev:18274]
+
+	* ruby.c (proc_options): translate directory separator in $0 to
+	  '/'.  [ruby-dev:18274]
+
 Thu Oct  3 00:27:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/delegate.rb (Delegator::initialize): use Object#class

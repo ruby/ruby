@@ -887,6 +887,8 @@ static void assign _((VALUE,NODE*,VALUE,int));
 static VALUE trace_func = 0;
 static int tracing = 0;
 static void call_trace_func _((char*,NODE*,VALUE,ID,VALUE));
+#define ENABLE_TRACE() (tracing &= ~2)
+#define DISABLE_TRACE() (tracing |= 2)
 
 #define SET_CURRENT_SOURCE() (ruby_sourcefile = ruby_current_node->nd_file, \
 			      ruby_sourceline = nd_line(ruby_current_node))
@@ -1069,7 +1071,7 @@ ruby_init()
     rb_origenviron = environ;
 #endif
 
-    Init_stack(0);
+    Init_stack((void*)&state);
     Init_heap();
     PUSH_SCOPE();
     ruby_scope->local_vars = 0;
@@ -1190,6 +1192,7 @@ ruby_options(argc, argv)
 {
     int state;
 
+    Init_stack((void*)&state);
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	ruby_process_options(argc, argv);
@@ -1866,7 +1869,7 @@ is_defined(self, node, buf)
 	}
       check_bound:
 	{
-	    int call = nd_type(node)== NODE_CALL;
+	    int call = nd_type(node)==NODE_CALL;
 
 	    val = CLASS_OF(val);
 	    if (call) {
@@ -4499,13 +4502,16 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    }
 	    if (trace_func) {
 		int state;
+		volatile int old_tracing = tracing;
 
 		call_trace_func("c-call", ruby_current_node, recv, id, klass);
+		DISABLE_TRACE();
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
 		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
 		}
 		POP_TAG();
+		tracing = old_tracing;
 		ruby_current_node = ruby_frame->node;
 		call_trace_func("c-return", ruby_current_node, recv, id, klass);
 		if (state) JUMP_TAG(state);
@@ -4968,6 +4974,7 @@ eval(self, src, scope, file, line)
     struct FRAME frame;
     NODE *nodesave = ruby_current_node;
     volatile int iter = ruby_frame->iter;
+    volatile int old_tracing = tracing;
     int state;
 
     if (!NIL_P(scope)) {
@@ -5030,6 +5037,7 @@ eval(self, src, scope, file, line)
 	    compile_error(0);
 	}
 	if (!NIL_P(result)) ruby_errinfo = result;
+	ENABLE_TRACE();
 	result = eval_node(self, node); 
     }
     POP_TAG();
@@ -5071,6 +5079,7 @@ eval(self, src, scope, file, line)
     }
     ruby_current_node = nodesave;
     ruby_set_current_source();
+    tracing = old_tracing;
     if (state) {
 	if (state == TAG_RAISE) {
 	    VALUE err;
@@ -5304,6 +5313,7 @@ rb_load(fname, wrap)
     volatile ID last_func;
     volatile VALUE wrapper = 0;
     volatile VALUE self = ruby_top_self;
+    volatile int old_tracing = tracing;
     NODE *saved_cref = ruby_cref;
     TMP_PROTECT;
 
@@ -5357,6 +5367,7 @@ rb_load(fname, wrap)
 	node = ruby_eval_tree;
 	ALLOW_INTS;
 	if (ruby_nerrs == 0) {
+	    ENABLE_TRACE();
 	    eval_node(self, node);
 	}
     }
@@ -5372,6 +5383,7 @@ rb_load(fname, wrap)
     POP_CLASS();
     POP_VARS();
     ruby_wrapper = wrapper;
+    tracing = old_tracing;
     if (ruby_nerrs > 0) {
 	ruby_nerrs = 0;
 	rb_exc_raise(ruby_errinfo);
@@ -5576,7 +5588,13 @@ rb_f_require(obj, fname)
     rb_provide_feature(feature);
     {
 	int volatile old_vmode = scope_vmode;
+	NODE *const volatile old_node = ruby_current_node;
+	const volatile old_func = ruby_frame->last_func;
 
+	ruby_current_node = 0;
+	ruby_sourcefile = rb_source_filename(RSTRING(fname)->ptr);
+	ruby_sourceline = 0;
+	ruby_frame->last_func = 0;
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    void *handle;
@@ -5586,6 +5604,9 @@ rb_f_require(obj, fname)
 	    rb_ary_push(ruby_dln_librefs, LONG2NUM((long)handle));
 	}
 	POP_TAG();
+	ruby_current_node = old_node;
+	ruby_set_current_source();
+	ruby_frame->last_func = old_func;
 	SCOPE_SET(old_vmode);
     }
     if (state) JUMP_TAG(state);

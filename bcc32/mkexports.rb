@@ -1,14 +1,13 @@
 #!./miniruby -s
 
 SYM = {}
-objs = ARGV.collect {|s| s.tr('/', '\\')}
-system("tdump -oiPUBDEF -oiPUBD32 #{objs.join(' ')} > pub.def")
-sleep(1)
-IO.foreach('pub.def'){|l|
-  next unless /(PUBDEF|PUBD32)/ =~ l
-  /'(.*?)'/ =~ l
-  SYM[$1] = true
-}
+STDIN.reopen(open("nul"))
+ARGV.each do |obj|
+  IO.foreach("|tdump -q -oiPUBDEF -oiPUBD32 #{obj.tr('/', '\\')}") do |l|
+    next unless /(?:PUBDEF|PUBD32)/ =~ l
+    SYM[$1] = true if /'(.*?)'/ =~ l
+  end
+end
 
 exports = []
 if $name

@@ -203,8 +203,28 @@ ruby_incpush(path)
     }
 }
 
-#if defined _WIN32 || defined __CYGWIN__ || defined __DJGPP__ || defined __EMX__
+#if defined DOSISH || defined __CYGWIN__
 #define LOAD_RELATIVE 1
+#endif
+
+#ifdef DOSISH
+static inline void translate_char _((char *, int, int));
+
+static inline void
+translate_char(p, from, to)
+    char *p;
+    int from, to;
+{
+    while (*p) {
+	if ((unsigned char)*p == from)
+	    *p = to;
+#ifdef CharNext		/* defined as CharNext[AW] on Windows. */
+	p = CharNext(p);
+#else
+	p += mblen(p, MB_CUR_MAX);
+#endif
+    }
+}
 #endif
 
 void
@@ -224,19 +244,16 @@ ruby_init_loadpath()
 #elif defined(DJGPP)
     extern char *__dos_argv0;
     strncpy(libpath, __dos_argv0, FILENAME_MAX);
-#define CharNext(p) ((p) + mblen(p, MB_CUR_MAX))
+#elif defined(__human68k__)
+    extern char **_argv;
+    strncpy(libpath, _argv[0], FILENAME_MAX);
 #elif defined(__EMX__)
     _execname(libpath, FILENAME_MAX);
 #endif
 
-#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
-#define CharNext(p) ((p) + 1)
+#ifdef DOSISH
+    translate_char(libpath, '\\', '/');
 #endif
-
-    for (p = libpath; *p; p = CharNext(p))
-	if (*p == '\\')
-	    *p = '/';
-
     p = strrchr(libpath, '/');
     if (p) {
 	*p = 0;
@@ -711,6 +728,9 @@ proc_options(argc, argv)
 	if (!e_script) {
 	    argc--; argv++;
 	}
+#ifdef DOSISH
+	translate_char(script, '\\', '/');
+#endif
     }
 
     ruby_script(script);

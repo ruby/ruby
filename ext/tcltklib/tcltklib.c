@@ -767,6 +767,9 @@ ip_invoke(argc, argv, obj)
     VALUE *alloc_argv, *alloc_result;
     Tcl_QueuePosition position;
 
+    if (argc < 1) {
+	rb_raise(rb_eArgError, "command name missing");
+    }
     if (eventloop_thread == 0 || current == eventloop_thread) {
       DUMP2("invoke from current eventloop %lx", current);
       return ip_invoke_real(argc, argv, obj);
