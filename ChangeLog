@@ -1,3 +1,8 @@
+Thu Oct 21 19:06:15 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#send_body_io):
+	  ensure to close @body. (http://bugs.debian.org/277520)
+
 Wed Oct 20 19:45:13 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_gsub): 	reentrant check.  [ruby-dev:24432]

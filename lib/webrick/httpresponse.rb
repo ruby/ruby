@@ -254,24 +254,27 @@ module WEBrick
     private
 
     def send_body_io(socket)
-      if @request_method == "HEAD"
-        # do nothing
-      elsif chunked?
-        while buf = @body.read(BUFSIZE)
-          next if buf.empty?
-          data = ""
-          data << format("%x", buf.size) << CRLF
-          data << buf << CRLF
-          _write_data(socket, data)
-          @sent_size += buf.size
+      begin
+        if @request_method == "HEAD"
+          # do nothing
+        elsif chunked?
+          while buf = @body.read(BUFSIZE)
+            next if buf.empty?
+            data = ""
+            data << format("%x", buf.size) << CRLF
+            data << buf << CRLF
+            _write_data(socket, data)
+            @sent_size += buf.size
+          end
+          _write_data(socket, "0#{CRLF}#{CRLF}")
+        else
+          size = @header['content-length'].to_i
+          _send_file(socket, @body, 0, size)
+          @sent_size = size
         end
-        _write_data(socket, "0#{CRLF}#{CRLF}")
-      else
-        size = @header['content-length'].to_i
-        _send_file(socket, @body, 0, size)
-        @sent_size = size
+      ensure
+        @body.close
       end
-      @body.close
     end
 
     def send_body_string(socket)
