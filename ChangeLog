@@ -1,3 +1,8 @@
+Thu Oct 28 23:32:54 2004  akira yamada  <akira@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_detach_input): resets klass of z->input if
+	  z->input isn't nil.
+
 Thu Oct 28 23:19:31 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: prefer relative path.  [ruby-talk:93037]
