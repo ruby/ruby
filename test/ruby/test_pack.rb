@@ -30,4 +30,14 @@ class TestPack < Test::Unit::TestCase
     assert_equal "\000\000\000\001\000\000\000\001", [1,1].pack('N*')
     assert_equal "\000\000\000\001\000\000\000\001\000\000\000\001", [1,1,1].pack('N*')
   end
+
+  def test_unpack_N
+    assert_equal 1, "\000\000\000\001".unpack('N')[0]
+    assert_equal 2, "\000\000\000\002".unpack('N')[0]
+    assert_equal 3, "\000\000\000\003".unpack('N')[0]
+    assert_equal 3, "\000\000\000\003".unpack('N')[0]
+    assert_equal 4294967295, "\377\377\377\377".unpack('N')[0]
+    assert_equal [1,1], "\000\000\000\001\000\000\000\001".unpack('N*')
+    assert_equal [1,1,1], "\000\000\000\001\000\000\000\001\000\000\000\001".unpack('N*')
+  end
 end
