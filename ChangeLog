@@ -1,3 +1,7 @@
+Wed Oct  2 13:03:58 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: set ac_cv_func_setitimer to "no" on Cygwin.
+
 Tue Oct  1 23:48:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/socket/socket.c (sock_new): duplicate underlying socket

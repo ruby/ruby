@@ -194,7 +194,9 @@ darwin*)	LIBS="-lobjc $LIBS";;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	rb_cv_have_daylight=no
-		ac_cv_var_tzname=no;;
+		ac_cv_var_tzname=no
+		ac_cv_func_setitimer=no
+		;;
 mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
