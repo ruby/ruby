@@ -1,3 +1,8 @@
+Sun Jan  9 03:22:46 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb (test_copy_entry): copy_entry
+	  copies only file type, not mtime. [ruby-dev:25383]
+
 Sat Jan  8 04:38:47 2005  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml.rb: Kernel#y requires an argument.

@@ -751,12 +751,12 @@ end
     each_sample_file do |srcpath, destpath|
       copy_entry srcpath, destpath
       assert_same_file srcpath, destpath
-      assert_same_entry srcpath, destpath
+      assert_equal File.stat(srcpath).ftype, File.stat(destpath).ftype
     end
 if have_symlink?
     File.symlink 'somewhere', 'tmp/symsrc'
     copy_entry 'tmp/symsrc', 'tmp/symdest'
-    assert_equal File.lstat('tmp/symsrc').mode, File.lstat('tmp/symdest').mode
+    assert_equal File.lstat('tmp/symsrc').ftype, File.lstat('tmp/symdest').ftype
 end
   end
 
