@@ -1,3 +1,8 @@
+Thu Mar 31 14:15:44 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should return
+	  value. [ruby-dev:25971]
+
 Thu Mar 31 08:25:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RUBYOPT): clear for the environment RubyGems installed.
