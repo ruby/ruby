@@ -272,7 +272,7 @@ def create_makefile(target)
     $DLDFLAGS = $DLDFLAGS + " -L" + $topdir
   end
 
-  $srcdir = $top_srcdir + "/ext/" + target
+  $srcdir = $top_srcdir + "/ext/" + $mdir
   mfile = open("Makefile", "w")
   mfile.printf "\
 SHELL = /bin/sh

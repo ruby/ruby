@@ -4,10 +4,9 @@ SHELL = /bin/sh
 
 MAJOR=	@MAJOR@
 MINOR=	@MINOR@
-
-MAJOR=	@MAJOR@
-MINOR=	@MINOR@
 TEENY=	@TEENY@
+
+RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
 
 srcdir = @srcdir@
 VPATH = @srcdir@:@srcdir@/missing
@@ -31,7 +30,6 @@ SOLIBS = @SOLIBS@
 binsuffix = @binsuffix@
 
 #### End of system configuration section. ####
-
 
 LIBRUBY_A     = @LIBRUBY_A@
 LIBRUBY_SO    = @LIBRUBY_SO@

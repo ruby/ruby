@@ -365,6 +365,8 @@ method_list(mod, option, func)
     VALUE klass;
     VALUE *p, *q, *pend;
 
+    if (rb_safe_level() >= 4 && !FL_TEST(mod, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     for (klass = mod; klass; klass = RCLASS(klass)->super) {
 	st_foreach(RCLASS(klass)->m_tbl, func, ary);
@@ -426,6 +428,8 @@ rb_obj_singleton_methods(obj)
     VALUE klass;
     VALUE *p, *q, *pend;
 
+    if (rb_safe_level() >= 4 && !FL_TEST(obj, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     klass = CLASS_OF(obj);
     while (klass && FL_TEST(klass, FL_SINGLETON)) {

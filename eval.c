@@ -207,9 +207,9 @@ rb_alias(klass, name, def)
     }
     body = orig->nd_body;
     if (nd_type(body) == NODE_FBODY) { /* was alias */
-	body = body->nd_head;
 	def = body->nd_mid;
 	origin = body->nd_orig;
+	body = body->nd_head;
     }
 
     st_insert(RCLASS(klass)->m_tbl, name,
@@ -633,22 +633,33 @@ static VALUE ruby_wrapper;	/* security wrapper */
     ruby_scope = _scope;		\
     scope_vmode = SCOPE_PUBLIC;
 
+#ifdef USE_THREAD
 #define SCOPE_DONT_RECYCLE FL_USER2
-
-static void scope_dup(struct SCOPE *);
-
 #define POP_SCOPE() \
-    if (ruby_scope->flag == SCOPE_ALLOCA) {\
-	if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE)) {\
-	    scope_dup(ruby_scope);\
-	    FL_SET(_old, SCOPE_DONT_RECYCLE);\
-	}\
-	else {\
+    if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE)) {\
+	FL_SET(_old, SCOPE_DONT_RECYCLE);\
+    }\
+    else {\
+	if (ruby_scope->flag == SCOPE_ALLOCA) {\
 	    ruby_scope->local_vars = 0;\
 	    ruby_scope->local_tbl  = 0;\
 	    if (ruby_scope != top_scope)\
 		rb_gc_force_recycle((VALUE)ruby_scope);\
 	}\
+	else {\
+	    ruby_scope->flag |= SCOPE_NOSTACK;\
+	}\
+    }\
+    ruby_scope = _old;\
+    scope_vmode = _vmode;\
+}
+#else /* not USE_THREAD */
+#define POP_SCOPE() \
+    if (ruby_scope->flag == SCOPE_ALLOCA) {\
+	ruby_scope->local_vars = 0;\
+	ruby_scope->local_tbl  = 0;\
+	if (ruby_scope != top_scope)\
+	    rb_gc_force_recycle((VALUE)ruby_scope);\
     }\
     else {\
 	ruby_scope->flag |= SCOPE_NOSTACK;\
@@ -656,6 +667,7 @@ static void scope_dup(struct SCOPE *);
     ruby_scope = _old;\
     scope_vmode = _vmode;\
 }
+#endif /* USE_THREAD */
 
 static VALUE rb_eval _((VALUE,NODE*));
 static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
@@ -1128,6 +1140,10 @@ rb_eval_cmd(cmd, arg)
 	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
     }
 
+#ifdef USE_THREAD
+    if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
+	FL_SET(saved_scope, SCOPE_DONT_RECYCLE);
+#endif
     ruby_scope = saved_scope;
     safe_level = safe;
     POP_TAG();
@@ -3168,8 +3184,10 @@ rb_yield_0(val, self, klass)
     POP_VARS();
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
+#ifdef USE_THREAD
     if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
 	FL_SET(old_scope, SCOPE_DONT_RECYCLE);
+#endif
     ruby_scope = old_scope;
     if (state) JUMP_TAG(state);
     return result;
@@ -3684,14 +3702,12 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	break;
     }
 
-#if 0
     if ((++tick & 0x3ff) == 0) {
 	CHECK_INTS;		/* better than nothing */
 	if (stack_length() > STACK_LEVEL_MAX) {
 	    rb_raise(rb_eSysStackError, "stack level too deep");
 	}
     }
-#endif
     PUSH_ITER(itr);
     PUSH_FRAME();
 
@@ -4181,8 +4197,10 @@ eval(self, src, scope, file, line)
     rb_in_eval--;
     if (!NIL_P(scope)) {
 	ruby_frame = ruby_frame->prev;
+#ifdef USE_THREAD
 	if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
 	    FL_SET(old_scope, SCOPE_DONT_RECYCLE);
+#endif
 	ruby_scope = old_scope;
 	ruby_block = old_block;
 	ruby_calling_block = old_call_block;
@@ -4313,7 +4331,8 @@ static VALUE
 yield_under(under, self)
     VALUE under, self;
 {
-    rb_secure(4);
+    if (rb_safe_level() >= 4 && !FL_TEST(self, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't eval");
     return exec_under(yield_under_i, under, self);
 }
 
@@ -6573,41 +6592,42 @@ rb_thread_abort_exc_set(thread, val)
     return val;
 }
 
+#define THREAD_ALLOC(th) {\
+    th = ALLOC(struct thread);\
+\
+    th->status = 0;\
+    th->result = 0;\
+    th->rb_errinfo = Qnil;\
+\
+    th->stk_ptr = 0;\
+    th->stk_len = 0;\
+    th->stk_max = 0;\
+    th->wait_for = 0;\
+    th->fd = 0;\
+    th->delay = 0.0;\
+    th->join = 0;\
+\
+    th->frame = 0;\
+    th->scope = 0;\
+    th->klass = 0;\
+    th->dyna_vars = 0;\
+    th->block = 0;\
+    th->iter = 0;\
+    th->tag = 0;\
+    th->rb_errinfo = 0;\
+    th->last_status = 0;\
+    th->last_line = 0;\
+    th->last_match = 0;\
+    th->abort = 0;\
+}
+
 static thread_t
 rb_thread_alloc(klass)
     VALUE klass;
 {
     thread_t th;
 
-    th = ALLOC(struct thread);
-    th->status = THREAD_RUNNABLE;
-
-    th->status = 0;
-    th->result = 0;
-    th->rb_errinfo = Qnil;
-
-    th->stk_ptr = 0;
-    th->stk_len = 0;
-    th->stk_max = 0;
-    th->wait_for = 0;
-    th->fd = 0;
-    th->delay = 0.0;
-    th->join = 0;
-
-    th->frame = 0;
-    th->scope = 0;
-    th->klass = 0;
-    th->wrapper = 0;
-    th->dyna_vars = 0;
-    th->block = 0;
-    th->iter = 0;
-    th->tag = 0;
-    th->rb_errinfo = 0;
-    th->last_status = 0;
-    th->last_line = 0;
-    th->last_match = 0;
-    th->abort = 0;
-
+    THREAD_ALLOC(th);
     th->thread = Data_Wrap_Struct(klass, thread_mark, thread_free, th);
 
     if (curr_thread) {
@@ -7030,35 +7050,9 @@ rb_callcc(self)
     VALUE self;
 {
     volatile VALUE cont;
-    thread_t th = ALLOC(struct thread);
+    thread_t th;
 
-    th->status = THREAD_RUNNABLE;
-
-    th->status = 0;
-    th->result = 0;
-    th->rb_errinfo = Qnil;
-
-    th->stk_ptr = 0;
-    th->stk_len = 0;
-    th->stk_max = 0;
-    th->wait_for = 0;
-    th->fd = 0;
-    th->delay = 0.0;
-    th->join = 0;
-
-    th->frame = 0;
-    th->scope = 0;
-    th->klass = 0;
-    th->dyna_vars = 0;
-    th->block = 0;
-    th->iter = 0;
-    th->tag = 0;
-    th->rb_errinfo = 0;
-    th->last_status = 0;
-    th->last_line = 0;
-    th->last_match = 0;
-    th->abort = 0;
-
+    THREAD_ALLOC(th);
     th->thread = cont = Data_Wrap_Struct(rb_cContinuation, thread_mark,
 					 thread_free, th);
 

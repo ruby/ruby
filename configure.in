@@ -1,9 +1,10 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(ruby.h)
 
-MAJOR=1
-MINOR=3
-TEENY=1
+rb_version=`grep RUBY_VERSION $srcdir/version.h`
+MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
+MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
+TEENY=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.[0-9][0-9]*\.\([0-9][0-9]*\)"'`
 AC_SUBST(MAJOR)
 AC_SUBST(MINOR)
 AC_SUBST(TEENY)
@@ -572,14 +573,14 @@ if test "$fat_binary" = yes ; then
   CFLAGS="$CFLAGS $ARCH_FLAG"
 fi
 
-LIBRUBY_A='libruby.a'
+LIBRUBY_A='lib$(RUBY_INSTALL_NAME).a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG='$(LIBRUBY_A)'
 SOLIBS=
 if test "$host_os" = "beos"; then
   CFLAGS="$CFLAGS -relax_pointers"
   LIBRUBY='$(LIBRUBY_SO)'
-  LIBRUBYARG='-lruby'
+  LIBRUBYARG='-l$(RUBY_INSTALL_NAME)'
   SOLIBS='-lnet'
   echo creating ruby.def
   case "$host_cpu" in
@@ -593,21 +594,19 @@ if test "$host_os" = "beos"; then
   esac
 fi
 
-AC_SUBST(LIBSUFFIX)
-
-LIBRUBY_SO='libruby.so.$(MAJOR).$(MINOR).$(TEENY)'
-LIBRUBY_ALIASES='libruby.so'
+LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
+LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so'
 if test "$enable_shared" = 'yes'; then
   LIBRUBY='$(LIBRUBY_SO)'
-  LIBRUBYARG='-L./ -lruby'
+  LIBRUBYARG='-L./ -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   case "$host_os" in
-    freebsd2*|sunos4*)
-	LIBRUBY_ALIASES='libruby.so.$(MAJOR).$(MINOR) libruby.so'
+    freebsd2*|sunos4*|linux*)
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     hpux*)
-	LIBRUBY_SO='libruby.sl.$(MAJOR).$(MINOR).$(TEENY)'
-	LIBRUBY_ALIASES='libruby.sl.$(MAJOR).$(MINOR) libruby.sl'
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).sl'
 	;;
     *)
 	;;
@@ -628,7 +627,7 @@ case "$host_os" in
 		;;	
 esac
 
-
+AC_SUBST(RUBY_INSTALL_NAME)
 AC_SUBST(LIBRUBY_A)
 AC_SUBST(LIBRUBY_SO)
 AC_SUBST(LIBRUBY_ALIASES)
@@ -644,6 +643,7 @@ ri_suffix=
 test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
+LIBSUFFIX=$ri_suffix
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby")

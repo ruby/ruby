@@ -1330,20 +1330,23 @@ fix_step(from, to, step)
     if (!FIXNUM_P(to) || !FIXNUM_P(step))
 	return int_step(from, to, step);
 
+    i = FIX2LONG(from);
     end = FIX2LONG(to);
     diff = FIX2LONG(step);
 
     if (diff == 0) {
 	rb_raise(rb_eArgError, "step cannot be 0");
     }
-    else if (diff > 0) {
-	for (i=FIX2LONG(from); i <= end; i+=diff) {
+    if (diff > 0) {
+	while (i <= end) {
 	    rb_yield(INT2FIX(i));
+	    i += diff;
 	}
     }
     else {
-	for (i=FIX2LONG(from); i >= end; i+=diff) {
+	while (i >= end) {
 	    rb_yield(INT2FIX(i));
+	    i += diff;
 	}
     }
     return from;

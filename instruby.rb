@@ -37,12 +37,13 @@ end
 pwd = Dir.pwd
 Dir.chdir libdir
 if File.exist? CONFIG["LIBRUBY_SO"]
-  for alias in [CONFIG["LIBRUBY_SO"]]
-    if File.exist? alias
-       File.delete alias
+  for link in CONFIG["LIBRUBY_ALIASES"].split
+    if File.exist? link
+       File.delete link
     end
-    File.symlink CONFIG["LIBRUBY_SO"], alias
-    print "link #{CONFIG['LIBRUBY_SO']} -> #{alias}\n"
+    File.symlink CONFIG["LIBRUBY_SO"], link
+    print "link #{CONFIG['LIBRUBY_SO']} -> #{link}\n"
+  end
 end
 Dir.chdir pwd
 File.makedirs "#{destdir}#{pkglibdir}", true
@@ -58,7 +59,7 @@ File.makedirs(archdir,true)
 for f in Dir["*.h"]
   File.install f, "#{destdir}#{archdir}", 0644, true
 end
-File.install "libruby.a", "#{destdir}#{archdir}", 0644, true
+File.install CONFIG['LIBRUBY_A'], "#{destdir}#{archdir}", 0644, true
 
 File.makedirs "#{destdir}#{mandir}", true
 File.install "ruby.1", "#{destdir}#{mandir}", 0644, true
