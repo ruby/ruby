@@ -302,6 +302,35 @@ state messages during compiling scripts.  You don't have to specify
 this switch, unless you are going to debug the Ruby interpreter.
 .El
 .Pp
+.Sh ENVIRONMENT
+.Bl -tag -width "12"
+.Pp
+.It Sy "RUBYLIB"
+A colon-separated list of directories
+that are appended to ruby's library load path ($:).
+e.g. RUBYLIB="$HOME/lib/ruby:$HOME/lib/rubyext"
+.Pp
+.It Sy "RUBYOPT"
+Additional ruby options.
+e.g. RUBYOPT="-w -Ke"
+.Pp
+.It Sy "RUBYPATH"
+A colon-separated list of directories
+that are used when ruby searches ruby programs for "ruby -S".
+This variable precedes PATH environment variable.
+.Pp
+.It Sy "RUBYSHELL"
+The path to the system shell command.
+This environment variable is enabled for only mswin32, mingw32, and OS/2 platform.
+When this variable is not defined, ruby refers to COMSPEC.
+.Pp
+.It Sy "PATH"
+Ruby refers to PATH environment variable on calling Kernel#system.
+.Pp
+.It Sy "RUBYLIB_PREFIX"
+This variable is obsolete.
+.El
+.Pp
 .Sh AUTHORS
 Ruby is designed and implemented by
 .An Yukihiro Matsumoto Aq matz@netlab.jp .

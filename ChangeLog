@@ -1,3 +1,7 @@
+Fri Nov 21 14:49:42 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* ruby.1: wrote about ruby related environment variables.
+
 Fri Nov 21 01:40:00 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* configure.in: check <pthread.h>
