@@ -1,7 +1,7 @@
 #! /usr/local/bin/ruby
 
-# cal.rb (bsd compatible version): Written by Tadayoshi Funaba 1998, 1999
-# $Id: bsdcal.rb,v 1.4 1999/03/06 02:05:59 tadf Exp $
+# cal.rb: Written by Tadayoshi Funaba 1998, 1999
+# $Id: cal.rb,v 1.5 1999/08/04 14:54:18 tadf Exp $
 
 require 'date2'
 
@@ -35,11 +35,11 @@ def usage
   exit 1
 end
 
-def cal(m, y, gs)
+def cal(m, y, sg)
   for d in 1..31
-    break if jd = Date.exist?(y, m, d, gs)
+    break if jd = Date.exist?(y, m, d, sg)
   end
-  fst = cur = Date.new(jd, gs)
+  fst = cur = Date.new(jd, sg)
   ti = Date::MONTHNAMES[m]
   ti << ' ' << y.to_s unless $yr
   mo = ti.center((($w + 1) * 7) - 1) << "\n"
@@ -91,7 +91,7 @@ while /^-([^-].*)$/no =~ $*[0]
   $*.shift
 end
 $*.shift if /^--/no =~ $*[0]
-usage if (gs = $tab[$cc]).nil?
+usage if (sg = $tab[$cc]).nil?
 case $*.length
 when 0
   td = Date.today
@@ -110,10 +110,10 @@ usage unless m.nil? or (1..12) === m
 usage unless y >= -4712
 $w = if $jd then 3 else 2 end
 unless $yr
-  print cal(m, y, gs)
+  print cal(m, y, sg)
 else
   print y.to_s.center(((($w + 1) * 7) - 1) *
 		      (if $jd then 2 else 3 end) +
 		      (if $jd then 2 else 4 end)), "\n\n",
-    zip((1..12).collect{|m| cal(m, y, gs)}), "\n"
+    zip((1..12).collect{|m| cal(m, y, sg)}), "\n"
 end

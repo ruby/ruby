@@ -443,7 +443,8 @@ flo_cmp(x, y)
     }
     if (a == b) return INT2FIX(0);
     if (a > b) return INT2FIX(1);
-    return INT2FIX(-1);
+    if (a < b) return INT2FIX(-1);
+    rb_raise(rb_eFloatDomainError, "comparing NaN");
 }
 
 static VALUE

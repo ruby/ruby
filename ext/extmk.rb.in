@@ -17,6 +17,8 @@ end
 SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 $extlist = []
 
+$includedir = "@includedir@".gsub(/\$\{prefix\}|\$\(prefix\)/,'@prefix@')
+
 $cache_mod = false
 $lib_cache = {}
 $func_cache = {}
@@ -67,8 +69,8 @@ if RUBY_PLATFORM == "m68k-human"
 else
   CFLAGS = "@CFLAGS@"
 end
-LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I@includedir@ @LDFLAGS@ %s %s conftest.c %s %s @LIBS@"
-CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I@includedir@ %s %s conftest.c"
+LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s conftest.c %s %s @LIBS@"
+CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir %s %s conftest.c"
 
 if /cygwin|mswin32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ RUBY_PLATFORM
   $null = open("nul", "w")
@@ -80,6 +82,7 @@ $orgerr = $stderr.dup
 $orgout = $stdout.dup
 def xsystem command
   if $DEBUG
+    puts command
     return system(command)
   end
   $stderr.reopen($null) 
@@ -378,7 +381,7 @@ def create_makefile(target)
   if "@DLEXT@" == $OBJEXT
     libs = $libs.split
     for lib in libs
-      lib.sub!(/-l(.*)/, '"lib\1.#{$LIBEXT}"')
+      lib.sub!(/-l(.*)/, %%"lib\\1.#{$LIBEXT}"%)
     end
     $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
@@ -687,7 +690,10 @@ if $cache_mod
   f.close
 end
 
-exit if $install or $clean
+if $install or $clean
+  Dir.chdir ".."
+  exit
+end
 $extinit = "" unless $extinit
 
 ruby = "@RUBY_INSTALL_NAME@@EXEEXT@"

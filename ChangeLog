@@ -1,3 +1,48 @@
+Wed Aug 11 10:10:02 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): parse `[].length==0' as `([].length)==0', not
+	  `([].length=)=0'
+
+	* parse.y (yylex): parse `[].length!=0' as `([].length)!=0', not
+	  `([].length!)=0'
+
+	* parse.y (peek): peek-in lexical buffer.
+
+Wed Aug 11 00:34:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): bug on backward jump adjustment concerning
+	  stop_paren.
+
+Tue Aug 10 14:54:25 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/nkf/nkf.c (rb_nkf_guess): binary detection was wrong.
+
+Tue Aug 10 00:07:36 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_clone): should use CLONESETUP().
+
+Mon Aug  9 23:57:07 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.h (CLONESETUP): should have copied generic instance
+	  variables too.
+
+Mon Aug  9 10:46:54 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/extconf.rb: add check for <arpa/nameser.h> and
+	  <resolv.h>.
+
+Sat Aug  7 13:19:06 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* numeric.c (flo_cmp): comparing NaN should not return value.
+	  raises FloatDomainError.
+
+Sat Aug  7 03:09:08 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (blk_free): free copied frames too.
+
+	* eval.c (frame_dup): should copy previous frames from stack to
+	  heap to preserve frame information.
+
 Fri Aug  6 15:01:07 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.3.7 - version 1.4 beta
@@ -2420,7 +2465,6 @@ Fri Sep  4 11:27:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_search): wrong return value for \A.
 
->>>>>>> 1.1.1.2.2.154
 Thu Sep  3 14:08:14 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c4 released.

@@ -1,25 +1,12 @@
 #! /usr/local/bin/ruby
 
 # goodfriday.rb: Written by Tadayoshi Funaba 1998
-# $Id: goodfriday.rb,v 1.1 1998/03/08 09:44:44 tadf Exp $
+# $Id: goodfriday.rb,v 1.3 1999/08/04 14:54:18 tadf Exp $
 
 require 'date2'
+require 'holiday'
 
-def easter(y)
-  g = (y % 19) + 1
-  c = (y / 100) + 1
-  x = (3 * c / 4) - 12
-  z = ((8 * c + 5) / 25) - 5
-  d = (5 * y / 4) - x - 10
-  e = (11 * g + 20 + z - x) % 30
-  e += 1 if e == 25 and g > 11 or e == 24
-  n = 44 - e
-  n += 30 if n < 21
-  n = n + 7 - ((d + n) % 7)
-  if n <= 31 then [y, 3, n] else [y, 4, n - 31] end
-end
-
-es = Date.new3(*easter(Time.now.year))
+es = Date.easter(Date.today.year)
 [[-9*7, 'Septuagesima Sunday'],
  [-8*7, 'Sexagesima Sunday'],
  [-7*7, 'Quinquagesima Sunday (Shrove Sunday)'],

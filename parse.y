@@ -1865,6 +1865,8 @@ pushback(c)
     lex_p--;
 }
 
+#define peek(c) (lex_p != lex_pend && (c) == *lex_p)
+
 #define tokfix() (tokenbuf[tokidx]='\0')
 #define tok() tokenbuf
 #define toklen() tokidx
@@ -3186,15 +3188,8 @@ yylex()
 	}
 	c = nextc();
     }
-    if ((c == '!' || c == '?') && is_identchar(tok()[0])) {
+    if ((c == '!' || c == '?') && is_identchar(tok()[0]) && !peek('=')) {
 	tokadd(c);
-	if (c == '!') {
-	    c = nextc();
-	    if (c == '=') {
-		rb_warn("identifier! immediately followed by `='");
-	    }
-	    pushback(c);
-	}
     }
     else {
 	pushback(c);
@@ -3238,7 +3233,7 @@ yylex()
 	    } else {
 		result = tIDENTIFIER;
 		if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
-		    if ((c = nextc()) == '=') {
+		    if ((c = nextc()) == '=' && !peek('=')) {
 			tokadd(c);
 		    }
 		    else {

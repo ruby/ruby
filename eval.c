@@ -404,6 +404,7 @@ static struct SCOPE *top_scope;
     _frame.iter = ruby_iter->iter;	\
     _frame.cbase = ruby_frame->cbase;	\
     _frame.argc = 0;			\
+    _frame.argv = 0;			\
     ruby_frame = &_frame;		\
 
 #define POP_FRAME()  			\
@@ -2212,7 +2213,10 @@ rb_eval(self, node)
 
       case NODE_SCOPE:
 	{
-	    VALUE save = ruby_frame->cbase;
+	    struct FRAME frame = *ruby_frame;
+
+	    frame.tmp = ruby_frame;
+	    ruby_frame = &frame;
 
 	    PUSH_SCOPE();
 	    PUSH_TAG(PROT_NONE);
@@ -2233,7 +2237,7 @@ rb_eval(self, node)
 	    }
 	    POP_TAG();
 	    POP_SCOPE();
-	    ruby_frame->cbase = save;
+	    ruby_frame = frame.tmp;
 	    if (state) JUMP_TAG(state);
 	}
 	break;
@@ -2847,11 +2851,14 @@ module_setup(module, node)
     NODE * volatile node;
 {
     int state;
-    VALUE save = ruby_frame->cbase;
+    struct FRAME frame = *ruby_frame;
     VALUE result;		/* OK */
     char *file = ruby_sourcefile;
     int line = ruby_sourceline;
     TMP_PROTECT;
+
+    frame.tmp = ruby_frame;
+    ruby_frame = &frame;
 
     /* fill c-ref */
     node->nd_clss = module;
@@ -2888,7 +2895,7 @@ module_setup(module, node)
     POP_SCOPE();
     POP_CLASS();
 
-    ruby_frame->cbase = save;
+    ruby_frame = frame.tmp;
     if (trace_func) {
 	call_trace_func("end", file, line, 0, ruby_frame->last_func, 0);
     }
@@ -4199,7 +4206,6 @@ eval(self, src, scope, file, line)
     struct BLOCK * volatile old_block;
     struct RVarmap * volatile old_d_vars;
     int volatile old_vmode;
-    struct FRAME * volatile old_frame;
     struct FRAME frame;
     char *filesave = ruby_sourcefile;
     int linesave = ruby_sourceline;
@@ -4221,7 +4227,6 @@ eval(self, src, scope, file, line)
 	/* PUSH BLOCK from data */
 	frame = data->frame;
 	frame.tmp = ruby_frame;	/* gc protection */
-	old_frame = ruby_frame;
 	ruby_frame = &(frame);
 	old_scope = ruby_scope;
 	ruby_scope = data->scope;
@@ -4259,7 +4264,7 @@ eval(self, src, scope, file, line)
     POP_CLASS();
     ruby_in_eval--;
     if (!NIL_P(scope)) {
-	ruby_frame = old_frame;
+	ruby_frame = frame.tmp;
 	if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
 	    FL_SET(old_scope, SCOPE_DONT_RECYCLE);
 	ruby_scope = old_scope;
@@ -5324,10 +5329,20 @@ static void
 blk_free(data)
     struct BLOCK *data;
 {
-    struct BLOCK *tmp;
+    struct FRAME *frame;
+    void *tmp;
 
+    frame = data->frame.prev;
+    while (frame) {
+	if (frame->argc > 0)
+	    free(frame->argv);
+	tmp = frame;
+	frame = frame->prev;
+	free(tmp);
+    }
     while (data) {
-	free(data->frame.argv);
+	if (data->frame.argc > 0)
+	    free(data->frame.argv);
 	tmp = data;
 	data = data->prev;
 	free(tmp);
@@ -5343,14 +5358,36 @@ blk_copy_prev(block)
     while (block->prev) {
 	tmp = ALLOC_N(struct BLOCK, 1);
 	MEMCPY(tmp, block->prev, struct BLOCK, 1);
-	tmp->frame.argv = ALLOC_N(VALUE, tmp->frame.argc);
+	if (tmp->frame.argc > 0) {
+	    tmp->frame.argv = ALLOC_N(VALUE, tmp->frame.argc);
+	    MEMCPY(tmp->frame.argv, block->frame.argv, VALUE, tmp->frame.argc);
+	}
 	scope_dup(tmp->scope);
-	MEMCPY(tmp->frame.argv, block->frame.argv, VALUE, tmp->frame.argc);
 	block->prev = tmp;
 	block = tmp;
     }
 }
 
+static void
+frame_dup(frame)
+    struct FRAME *frame;
+{
+    VALUE *argv;
+    struct FRAME *tmp;
+
+    for (;;) {
+	if (frame->argc > 0) {
+	    argv = ALLOC_N(VALUE, frame->argc);
+	    MEMCPY(argv, frame->argv, VALUE, frame->argc);
+	    frame->argv = argv;
+	}
+	if (!frame->prev) break;
+	tmp = ALLOC(struct FRAME);
+	*tmp = *frame->prev;
+	frame->prev = tmp;
+	frame = tmp;
+    }
+}
 
 static VALUE
 bind_clone(self)
@@ -5363,8 +5400,7 @@ bind_clone(self)
     bind = Data_Make_Struct(rb_cBinding,struct BLOCK,blk_mark,blk_free,data);
     CLONESETUP(bind,self);
     MEMCPY(data, orig, struct BLOCK, 1);
-    data->frame.argv = ALLOC_N(VALUE, orig->frame.argc);
-    MEMCPY(data->frame.argv, orig->frame.argv, VALUE, orig->frame.argc);
+    frame_dup(&data->frame);
 
     if (data->iter) {
 	blk_copy_prev(data);
@@ -5389,11 +5425,10 @@ rb_f_binding(self)
 
     data->orig_thread = rb_thread_current();
     data->iter = rb_f_iterator_p();
+    frame_dup(&data->frame);
     if (ruby_frame->prev) {
 	data->frame.last_func = ruby_frame->prev->last_func;
     }
-    data->frame.argv = ALLOC_N(VALUE, data->frame.argc);
-    MEMCPY(data->frame.argv, ruby_block->frame.argv, VALUE, data->frame.argc);
 
     if (data->iter) {
 	blk_copy_prev(data);
@@ -5467,8 +5502,7 @@ proc_s_new(klass)
 
     data->orig_thread = rb_thread_current();
     data->iter = data->prev?Qtrue:Qfalse;
-    data->frame.argv = ALLOC_N(VALUE, data->frame.argc);
-    MEMCPY(data->frame.argv, ruby_block->frame.argv, VALUE, data->frame.argc);
+    frame_dup(&data->frame);
     if (data->iter) {
 	blk_copy_prev(data);
     }

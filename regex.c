@@ -2941,7 +2941,9 @@ re_search(bufp, string, size, startpos, range, regs)
       if (range > 0) {
 	if (startpos > 0)
 	  return -1;
-	return re_match(bufp, string, size, 0, regs);
+	else if (re_match(bufp, string, size, 0, regs) >= 0)
+	    return 0;
+	return -1;
       }
       break;
 
@@ -4066,12 +4068,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	   loop, need to pop this failure point and use the next one.  */
       pop_loop:
 	switch ((enum regexpcode)*p1) {
-	case stop_paren:
-#if 0
-	  failed_paren = 1;
-	  p1++;
-	  goto pop_loop;
-#endif
 	case jump_n:
 	case finalize_push_n:
 	  is_a_jump_n = 1;

@@ -1,4 +1,4 @@
-option nodynamic
+#option nodynamic
 
 #GD
 Win32API

@@ -2317,3 +2317,28 @@ wait()
 	return 0;
 }
 
+char *
+win32_getenv(const char *name)
+{
+    static char *curitem = NULL;	/* XXX threadead */
+    static DWORD curlen = 0;		/* XXX threadead */
+    DWORD needlen;
+    if (!curitem) {
+	curlen = 512;
+	curitem = ALLOC_N(char, curlen);
+    }
+
+    needlen = GetEnvironmentVariable(name,curitem,curlen);
+    if (needlen != 0) {
+	while (needlen > curlen) {
+	    REALLOC_N(curitem, char, needlen);
+	    curlen = needlen;
+	    needlen = GetEnvironmentVariable(name, curitem, curlen);
+	}
+    }
+    else {
+	return NULL;
+    }
+
+    return curitem;
+}

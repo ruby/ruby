@@ -1,12 +1,13 @@
 Language Spec.
 
+* compile time string concatenation, "hello" "world" => "helloworld"
 * ../... outside condition invokes operator method too.
 * %w(a\ b\ c abc) => ["a b c", "abc"]
 * package or access control for global variables
 * class variable (prefix?)
 * named arguments like foo(nation:="german") or foo(nation: "german").
 * method to retrieve argument information (need new C API)
-* multiple return values, yield values.  maybe incompatible
+* multiple return values, yield values.  maybe incompatible ???
 * cascading method invocation ???
 * def Class#method .. end ??
 * class Foo::Bar<Baz .. end, module Boo::Bar .. end
@@ -24,6 +25,7 @@ Hacking Interpreter
 
 Standard Libraries
 
+* Struct::new([name,]member,...) ??
 * String#scanf(?)
 * Object#fmt(?)
 * Time::strptime

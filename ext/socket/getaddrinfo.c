@@ -49,9 +49,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#if defined(HAVE_ARPA_NAMESER_H)
 #include <arpa/nameser.h>
+#endif
 #include <netdb.h>
+#if defined(HAVE_RESOLV_H)
 #include <resolv.h>
+#endif
 #include <unistd.h>
 #else
 #include <winsock2.h>

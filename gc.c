@@ -909,7 +909,13 @@ rb_gc()
 	rb_gc_mark_frame(frame); 
     }
     for (frame = ruby_frame; frame; frame = frame->prev) {
-	if (frame->tmp) rb_gc_mark_frame(frame->tmp); 
+	if (frame->tmp) {
+	    struct FRAME *tmp = frame->tmp;
+	    while (tmp) {
+		rb_gc_mark_frame(tmp);
+		tmp = tmp->prev;
+	    }
+	}
     }
     rb_gc_mark(ruby_class);
     rb_gc_mark(ruby_scope);

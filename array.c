@@ -86,6 +86,7 @@ rb_ary_new2(len)
     ary->len = 0;
     ary->capa = len;
     ary->ptr = 0;
+    if (len == 0) len++;
     ary->ptr = ALLOC_N(VALUE, len);
 
     return (VALUE)ary;

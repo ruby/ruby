@@ -14,7 +14,6 @@ if errorlevel 0 goto not_seen
 :not_seen
 sed -f top.sed < Makefile.in > Makefile
 sed -f top.sed < ext\extmk.rb.in > ext\extmk.rb
-copy ext\Setup.dj ext\Setup
 copy config_h.dj config.h
 if not (%OS%) == (Windows_NT) goto LFN
     copy missing\vsnprintf.c missing\vsnprint.c

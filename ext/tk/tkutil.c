@@ -33,6 +33,7 @@ tk_s_new(argc, argv, klass)
     return obj;
 }
 
+void
 Init_tkutil()
 {
     VALUE mTK = rb_define_module("TkUtil");

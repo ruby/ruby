@@ -400,7 +400,7 @@ if test "$with_dln_a_out" != yes; then
 			LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
-			   LDSHARED='gcc -Wl,-G'
+			   LDSHARED='$(CC) -Wl,-G'
 			   `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && LDFLAGS="-Wl,-E"
 			else
 			   LDSHARED='ld -G'
@@ -414,11 +414,11 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes;;
 	esix*|uxpds*) 	LDSHARED="ld -G"
 			rb_cv_dlopen=yes ;;
-	osf*) 		LDSHARED="gcc -shared"
+	osf*) 		LDSHARED="$CC -shared"
 			rb_cv_dlopen=yes ;;
-	linux*) 	LDSHARED="gcc -shared"
+	linux*) 	LDSHARED="$CC -shared"
 			rb_cv_dlopen=yes ;;
-	freebsd*)       LDSHARED="gcc -shared"
+	freebsd*)       LDSHARED="$CC -shared"
 			if test -x /usr/bin/objformat && \
 			   test `/usr/bin/objformat` = "elf" ; then
 			    LDFLAGS="-rdynamic"

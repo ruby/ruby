@@ -1,11 +1,11 @@
 =begin
-$Date: 1999/07/16 13:39:42 $
+$Date: 1999/08/10 05:20:21 $
 
 == SIMPLE TELNET CLIANT LIBRARY
 
 telnet.rb
 
-Version 0.231
+Version 0.232
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -34,7 +34,7 @@ the network or the host is very heavy, the value is enlarged.
 
 === STATUS OUTPUT
 
-	host = Telnet.new({"Hosh" => "localhost"){|c| print c }
+	host = Telnet.new({"Host" => "localhost"){|c| print c }
 
 connection status output.
 
@@ -146,6 +146,14 @@ of cource, set sync=true or flush is necessary.
 
 
 == HISTORY
+
+=== Version 0.232
+
+1999/08/10 05:20:21
+
+- STATUS OUTPUT sample code typo. thanks to Tadayoshi Funaba <tadf@kt.rim.or.jp>
+	host = Telnet.new({"Hosh" => "localhost"){|c| print c }
+	host = Telnet.new({"Host" => "localhost"){|c| print c }
 
 === Version 0.231
 
@@ -362,8 +370,8 @@ class Telnet < SimpleDelegator
   EOL  = CR + LF
 v = $-v
 $-v = false
-  VERSION = "0.231"
-  RELEASE_DATE = "$Date: 1999/07/16 13:39:42 $"
+  VERSION = "0.232"
+  RELEASE_DATE = "$Date: 1999/08/10 05:20:21 $"
 $-v = v
 
   def initialize(options)

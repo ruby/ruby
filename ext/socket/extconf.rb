@@ -259,6 +259,8 @@ else
   $objs += ["getnameinfo.#{$OBJEXT}"]
   have_func("inet_ntop") or have_func("inet_ntoa")
   have_func("inet_pton") or have_func("inet_aton")
+  have_header("arpa/nameser.h")
+  have_header("resolv.h")
 end
 
 have_header("sys/un.h")

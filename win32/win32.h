@@ -198,6 +198,7 @@ extern struct protoent *  mygetprotobyname(char *);
 extern struct protoent *  mygetprotobynumber(int);
 extern struct servent *  mygetservbyname(char *, char *);
 extern struct servent * mygetservbyport(int, char *);
+extern char *win32_getenv(const char *);
 
 extern int chown(const char *, int, int);
 extern int link(char *, char *);
@@ -385,4 +386,10 @@ extern char *mystrerror(int);
 #undef get_osfhandle
 #endif
 #define get_osfhandle myget_osfhandle
+
+#ifdef getenv
+#undef getenv
+#endif
+#define getenv win32_getenv
+
 #endif

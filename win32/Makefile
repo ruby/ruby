@@ -82,7 +82,7 @@ OBJS          = array.obj \
 
 all:		miniruby$(EXEEXT) rbconfig.rb ext/extmk.rb ext/Setup.nt rubymw.lib $(MISCLIBS)
 		set LIB=..\..\win32;$(ORGLIBPATH)
-		@.\miniruby$(EXEEXT) -Xext extmk.rb static
+		@.\miniruby$(EXEEXT) -Xext extmk.rb
 
 ext/extmk.rb:	ext/extmk.rb.in rbconfig.rb
 		@echo Creating ext/extmk.rb
