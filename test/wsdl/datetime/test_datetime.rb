@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'soap/wsdlDriver'
+require 'DatetimeService.rb'
 
 
 module WSDL
@@ -17,9 +18,6 @@ class TestDatetime < Test::Unit::TestCase
   end
 
   def setup_server
-    $:.push(DIR)
-    require File.join(DIR, 'DatetimeService.rb')
-    $:.delete(DIR)
     @server = DatetimePortTypeApp.new('Datetime server', nil, '0.0.0.0', Port)
     @server.level = Logger::Severity::ERROR
     @t = Thread.new {

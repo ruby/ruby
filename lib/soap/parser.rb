@@ -65,6 +65,7 @@ public
   attr_accessor :allow_unqualified_element
 
   def initialize(opt = {})
+    @opt = opt
     @parser = XSD::XMLParser.create_parser(self, opt)
     @parsestack = nil
     @lastnode = nil
@@ -116,7 +117,13 @@ public
     encodingstyle = find_encodingstyle(ns, attrs)
 
     # Children's encodingstyle is derived from its parent.
-    encodingstyle ||= parent_encodingstyle || @default_encodingstyle
+    if encodingstyle.nil?
+      if parent.node.is_a?(SOAPHeader)
+        encodingstyle = LiteralNamespace
+      else
+        encodingstyle = parent_encodingstyle || @default_encodingstyle
+      end
+    end
 
     node = decode_tag(ns, name, attrs, parent, encodingstyle)
 
@@ -201,6 +208,11 @@ private
     o = nil
     if ele.name == EleEnvelope
       o = SOAPEnvelope.new
+      if ext = @opt[:external_content]
+	ext.each do |k, v|
+	  o.external_content[k] = v
+	end
+      end
     elsif ele.name == EleHeader
       unless parent.node.is_a?(SOAPEnvelope)
 	raise FormatDecodeError.new("Header should be a child of Envelope.")
@@ -220,7 +232,6 @@ private
       o = SOAPFault.new
       parent.node.fault = o
     end
-    o.parent = parent if o
     o
   end
 

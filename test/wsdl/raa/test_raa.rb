@@ -1,5 +1,8 @@
 require 'test/unit'
 require 'soap/wsdlDriver'
+require 'RAA.rb'
+require 'RAAServant.rb'
+require 'RAAService.rb'
 
 
 module WSDL
@@ -17,11 +20,6 @@ class TestRAA < Test::Unit::TestCase
   end
 
   def setup_server
-    $:.push(DIR)
-    require File.join(DIR, 'RAA.rb')
-    require File.join(DIR, 'RAAServant.rb')
-    require File.join(DIR, 'RAAService.rb')
-    $:.delete(DIR)
     @server = App.new('RAA server', nil, '0.0.0.0', Port)
     @server.level = Logger::Severity::ERROR
     @t = Thread.new {

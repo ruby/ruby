@@ -1,5 +1,5 @@
 # soap/soap.rb: SOAP4R - Base definitions.
-# Copyright (C) 2000, 2001, 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000-2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -48,6 +48,7 @@ EleFaultStringName = XSD::QName.new(nil, EleFaultString)
 EleFaultActorName = XSD::QName.new(nil, EleFaultActor)
 EleFaultCodeName = XSD::QName.new(nil, EleFaultCode)
 EleFaultDetailName = XSD::QName.new(nil, EleFaultDetail)
+AttrMustUnderstandName = XSD::QName.new(EnvelopeNamespace, AttrMustUnderstand)
 AttrEncodingStyleName = XSD::QName.new(EnvelopeNamespace, AttrEncodingStyle)
 AttrRootName = XSD::QName.new(EncodingNamespace, AttrRoot)
 AttrArrayTypeName = XSD::QName.new(EncodingNamespace, AttrArrayType)
@@ -74,6 +75,8 @@ class ArrayIndexOutOfBoundsError < Error; end
 class ArrayStoreError < Error; end
 
 class RPCRoutingError < Error; end
+
+class UnhandledMustUnderstandHeaderError < Error; end
 
 class FaultError < Error
   attr_reader :faultcode

@@ -189,8 +189,8 @@ class TestXSD < Test::Unit::TestCase
     targets = [
       3.14159265358979,
       12.34e36,
-      1.4e-45,
-      -1.4e-45,
+      1.402e-45,
+      -1.402e-45,
     ]
     targets.each do |f|
       assert_equal(f, XSD::XSDFloat.new(f).data)
@@ -199,8 +199,8 @@ class TestXSD < Test::Unit::TestCase
     targets = [
       "+3.141592654",
       "+1.234e+37",
-      "+1.4e-45",
-      "-1.4e-45",
+      "+1.402e-45",
+      "-1.402e-45",
     ]
     targets.each do |f|
       assert_equal(f, XSD::XSDFloat.new(f).to_s)
@@ -211,13 +211,13 @@ class TestXSD < Test::Unit::TestCase
       [-2, "-2"],	# ditto
       [3.14159265358979, "+3.141592654"],
       [12.34e36, "+1.234e+37"],
-      [1.4e-45, "+1.4e-45"],
-      [-1.4e-45, "-1.4e-45"],
-      ["1.4e", "+1.4"],
+      [1.402e-45, "+1.402e-45"],
+      [-1.402e-45, "-1.402e-45"],
+      ["1.402e", "+1.402"],
       ["12.34E36", "+1.234e+37"],
-      ["1.4E-45", "+1.4e-45"],
-      ["-1.4E-45", "-1.4e-45"],
-      ["1.4E", "+1.4"],
+      ["1.402E-45", "+1.402e-45"],
+      ["-1.402E-45", "-1.402e-45"],
+      ["1.402E", "+1.402"],
     ]
     targets.each do |f, str|
       assert_equal(str, XSD::XSDFloat.new(f).to_s)
@@ -254,8 +254,8 @@ class TestXSD < Test::Unit::TestCase
     targets = [
       3.14159265358979,
       12.34e36,
-      1.4e-45,
-      -1.4e-45,
+      1.402e-45,
+      -1.402e-45,
     ]
     targets.each do |f|
       assert_equal(f, XSD::XSDDouble.new(f).data)
@@ -264,8 +264,8 @@ class TestXSD < Test::Unit::TestCase
     targets = [
       "+3.14159265358979",
       "+1.234e+37",
-      "+1.4e-45",
-      "-1.4e-45",
+      "+1.402e-45",
+      "-1.402e-45",
     ]
     targets.each do |f|
       assert_equal(f, XSD::XSDDouble.new(f).to_s)
@@ -276,13 +276,13 @@ class TestXSD < Test::Unit::TestCase
       [-2, "-2"],	# ditto.
       [3.14159265358979, "+3.14159265358979"],
       [12.34e36, "+1.234e+37"],
-      [1.4e-45, "+1.4e-45"],
-      [-1.4e-45, "-1.4e-45"],
-      ["1.4e", "+1.4"],
+      [1.402e-45, "+1.402e-45"],
+      [-1.402e-45, "-1.402e-45"],
+      ["1.402e", "+1.402"],
       ["12.34E36", "+1.234e+37"],
-      ["1.4E-45", "+1.4e-45"],
-      ["-1.4E-45", "-1.4e-45"],
-      ["1.4E", "+1.4"],
+      ["1.402E-45", "+1.402e-45"],
+      ["-1.402E-45", "-1.402e-45"],
+      ["1.402E", "+1.402"],
     ]
     targets.each do |f, str|
       assert_equal(str, XSD::XSDDouble.new(f).to_s)

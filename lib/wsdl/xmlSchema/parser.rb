@@ -116,7 +116,8 @@ private
       unless o
 	raise UnknownElementError.new("Unknown element #{ element }.")
       end
-      o.parent = parent
+      # node could be a pseudo element.  pseudo element has its own parent.
+      o.parent = parent if o.parent.nil?
     end
     attrs.each do |key, value|
       attr = unless /:/ =~ key

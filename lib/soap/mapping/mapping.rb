@@ -68,24 +68,26 @@ module Mapping
     md_ary
   end
 
-  def self.fault2exception(e, registry = nil)
+  def self.fault2exception(fault, registry = nil)
     registry ||= Mapping::DefaultRegistry
-    detail = if e.detail
-        soap2obj(e.detail, registry) || ""
+    detail = if fault.detail
+        soap2obj(fault.detail, registry) || ""
       else
         ""
       end
     if detail.is_a?(Mapping::SOAPException)
       begin
-	remote_backtrace = detail.to_e.backtrace
-        raise detail.to_e
-      rescue Exception => e2
-	e2.set_backtrace(remote_backtrace + e2.backtrace)
+        e = detail.to_e
+	remote_backtrace = e.backtrace
+        e.set_backtrace(nil)
+        raise e # ruby sets current caller as local backtrace of e => e2.
+      rescue Exception => e
+	e.set_backtrace(remote_backtrace + e.backtrace[1..-1])
         raise
       end
     else
-      e.detail = detail
-      e.set_backtrace(
+      fault.detail = detail
+      fault.set_backtrace(
         if detail.is_a?(Array)
 	  detail
         else
@@ -98,9 +100,7 @@ module Mapping
 
   def self._obj2soap(obj, registry, type = nil)
     if referent = Thread.current[:SOAPMarshalDataKey][obj.__id__]
-      soap_obj = SOAPReference.new
-      soap_obj.__setobj__(referent)
-      soap_obj
+      SOAPReference.new(referent)
     else
       registry.obj2soap(obj.class, obj, type)
     end

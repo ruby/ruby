@@ -6,111 +6,35 @@
 # either the dual license version in 2003, or any later version.
 
 
-require 'logger'
-require 'soap/rpc/soaplet'
-require 'soap/streamHandler'
-
-# require 'webrick'
-require 'webrick/compat.rb'
-require 'webrick/version.rb'
-require 'webrick/config.rb'
-require 'webrick/log.rb'
-require 'webrick/server.rb'
-require 'webrick/utils.rb'
-require 'webrick/accesslog'
-# require 'webrick/htmlutils.rb'
-require 'webrick/httputils.rb'
-# require 'webrick/cookie.rb'
-require 'webrick/httpversion.rb'
-require 'webrick/httpstatus.rb'
-require 'webrick/httprequest.rb'
-require 'webrick/httpresponse.rb'
-require 'webrick/httpserver.rb'
-# require 'webrick/httpservlet.rb'
-# require 'webrick/httpauth.rb'
+require 'soap/rpc/httpserver'
 
 
 module SOAP
 module RPC
 
 
-class StandaloneServer < Logger::Application
-  attr_reader :server
-
-  def initialize(app_name, namespace, host = "0.0.0.0", port = 8080)
-    super(app_name)
-    self.level = Logger::Severity::INFO
-    @namespace = namespace
+class StandaloneServer < HTTPServer
+  def initialize(appname, default_namespace, host = "0.0.0.0", port = 8080)
+    @appname = appname
+    @default_namespace = default_namespace
     @host = host
     @port = port
-    @server = nil
-    @soaplet = ::SOAP::RPC::SOAPlet.new
-    on_init
+    super(create_config)
   end
 
-  def on_init
-    # define extra methods in derived class.
-  end
-
-  def status
-    if @server
-      @server.status
-    else
-      nil
-    end
-  end
-
-  def shutdown
-    @server.shutdown
-  end
-  
-  def add_rpc_request_servant(klass, namespace = @namespace, mapping_registry = nil)
-    @soaplet.add_rpc_request_servant(klass, namespace, mapping_registry)
-  end
-
-  def add_rpc_servant(obj, namespace = @namespace)
-    @soaplet.add_rpc_servant(obj, namespace)
-  end
   alias add_servant add_rpc_servant
-
-  def mapping_registry
-    @soaplet.app_scope_router.mapping_registry
-  end
-
-  def mapping_registry=(mapping_registry)
-    @soaplet.app_scope_router.mapping_registry = mapping_registry
-  end
-
-  def add_method(obj, name, *param)
-    add_method_as(obj, name, name, *param)
-  end
-
-  def add_method_as(obj, name, name_as, *param)
-    qname = XSD::QName.new(@namespace, name_as)
-    soapaction = nil
-    method = obj.method(name)
-    param_def = if param.size == 1 and param[0].is_a?(Array)
-        param[0]
-      elsif param.empty?
-	::SOAP::RPC::SOAPMethod.create_param_def(
-	  (1..method.arity.abs).collect { |i| "p#{ i }" })
-      else
-        SOAP::RPC::SOAPMethod.create_param_def(param)
-      end
-    @soaplet.app_scope_router.add_method(obj, qname, soapaction, name, param_def)
-  end
+  alias add_headerhandler add_rpc_headerhandler
 
 private
 
-  def run
-    @server = WEBrick::HTTPServer.new(
+  def create_config
+    {
       :BindAddress => @host,
-      :Logger => @log,
+      :Port => @port,
       :AccessLog => [],
-      :Port => @port
-    )
-    @server.mount('/', @soaplet)
-    @server.start
+      :SOAPDefaultNamespace => @default_namespace,
+      :SOAPHTTPServerApplicationName => @appname,
+    }
   end
 end
 

@@ -68,9 +68,8 @@ public
 
     if @reftarget && !obj.precedents.empty?
       add_reftarget(obj.elename.name, obj)
-      ref = SOAPReference.new
+      ref = SOAPReference.new(obj)
       ref.elename.name = obj.elename.name
-      ref.__setobj__(obj)
       obj.precedents.clear	# Avoid cyclic delay.
       obj.encodingstyle = parent.encodingstyle
       # SOAPReference is encoded here.
@@ -91,9 +90,9 @@ public
       raise FormatEncodeError.new("Element name not defined: #{ obj }.")
     end
 
-    handler.encode_data(self, ns, qualified, obj, parent) do |child, child_q|
+    handler.encode_data(self, ns, qualified, obj, parent) do |child, nextq|
       indent_backup, @indent = @indent, @indent + '  '
-      encode_data(ns.clone_ns, child_q, child, obj)
+      encode_data(ns.clone_ns, nextq, child, obj)
       @indent = indent_backup
     end
     handler.encode_data_end(self, ns, qualified, obj, parent)
@@ -110,9 +109,9 @@ public
     attrs = {}
     if obj.is_a?(SOAPBody)
       @reftarget = obj
-      obj.encode(self, ns, attrs) do |child, child_q|
+      obj.encode(self, ns, attrs) do |child, nextq|
 	indent_backup, @indent = @indent, @indent + '  '
-        encode_data(ns.clone_ns, child_q, child, obj)
+        encode_data(ns.clone_ns, nextq, child, obj)
 	@indent = indent_backup
       end
       @reftarget = nil
@@ -125,9 +124,9 @@ public
           SOAPGenerator.assign_ns(attrs, ns, XSD::Namespace, XSDNamespaceTag)
         end
       end
-      obj.encode(self, ns, attrs) do |child, child_q|
+      obj.encode(self, ns, attrs) do |child, nextq|
 	indent_backup, @indent = @indent, @indent + '  '
-        encode_data(ns.clone_ns, child_q, child, obj)
+        encode_data(ns.clone_ns, nextq, child, obj)
 	@indent = indent_backup
       end
     end

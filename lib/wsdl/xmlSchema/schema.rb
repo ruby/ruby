@@ -17,6 +17,7 @@ module XMLSchema
 class Schema < Info
   attr_reader :targetnamespace	# required
   attr_reader :complextypes
+  attr_reader :simpletypes
   attr_reader :elements
   attr_reader :attributes
   attr_reader :imports
@@ -27,6 +28,7 @@ class Schema < Info
     super
     @targetnamespace = nil
     @complextypes = XSD::NamedElements.new
+    @simpletypes = XSD::NamedElements.new
     @elements = XSD::NamedElements.new
     @attributes = XSD::NamedElements.new
     @imports = []
@@ -44,8 +46,9 @@ class Schema < Info
       @complextypes << o
       o
     when SimpleTypeName
-      STDERR.puts("Restriction of basetype with simpleType definition is ignored for now.")
-      nil
+      o = SimpleType.new
+      @simpletypes << o
+      o
     when ElementName
       o = Element.new
       @elements << o
@@ -80,6 +83,12 @@ class Schema < Info
   def collect_complextypes
     result = XSD::NamedElements.new
     result.concat(@complextypes)
+    result
+  end
+
+  def collect_simpletypes
+    result = XSD::NamedElements.new
+    result.concat(@simpletypes)
     result
   end
 

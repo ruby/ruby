@@ -1,5 +1,5 @@
 # SOAP4R - XML Literal EncodingStyle handler library
-# Copyright (C) 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2001, 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -41,14 +41,18 @@ class LiteralHandler < Handler
       generator.encode_rawstring(data.to_s)
     when XSD::XSDString
       generator.encode_tag(name, attrs)
-      generator.encode_string(@charset ? XSD::Charset.encoding_to_xml(data.to_s, @charset) : data.to_s)
+      str = data.to_s
+      str = XSD::Charset.encoding_to_xml(str, @charset) if @charset
+      generator.encode_string(str)
     when XSD::XSDAnySimpleType
       generator.encode_tag(name, attrs)
       generator.encode_string(data.to_s)
     when SOAPStruct
       generator.encode_tag(name, attrs)
       data.each do |key, value|
-	value.elename.namespace = data.elename.namespace if !value.elename.namespace
+	if !value.elename.namespace
+	  value.elename.namespace = data.elename.namespace
+	end
         yield(value, true)
       end
     when SOAPArray
@@ -61,8 +65,6 @@ class LiteralHandler < Handler
       generator.encode_tag(name, attrs.update(data.extraattr))
       generator.encode_rawstring(data.text) if data.text
       data.each do |key, value|
-	value.elename.namespace = data.elename.namespace if !value.elename.namespace
-	#yield(value, data.qualified)
 	yield(value, qualified)
       end
     else
@@ -76,7 +78,8 @@ class LiteralHandler < Handler
       else
         data.elename.name
       end
-    generator.encode_tag_end(name)
+    cr = data.is_a?(SOAPElement) && !data.text
+    generator.encode_tag_end(name, cr)
   end
 
 
@@ -92,15 +95,17 @@ class LiteralHandler < Handler
   end
 
   class SOAPUnknown < SOAPTemporalObject
-    def initialize(handler, elename)
+    def initialize(handler, elename, extraattr)
       super()
       @handler = handler
       @elename = elename
+      @extraattr = extraattr
     end
 
-    def as_struct
-      o = SOAPStruct.decode(@elename, XSD::AnyTypeName)
+    def as_element
+      o = SOAPElement.decode(@elename)
       o.parent = @parent
+      o.extraattr.update(@extraattr)
       @handler.decode_parent(@parent, o)
       o
     end
@@ -108,6 +113,7 @@ class LiteralHandler < Handler
     def as_string
       o = SOAPString.decode(@elename)
       o.parent = @parent
+      o.extraattr.update(@extraattr)
       @handler.decode_parent(@parent, o)
       o
     end
@@ -115,6 +121,7 @@ class LiteralHandler < Handler
     def as_nil
       o = SOAPNil.decode(@elename)
       o.parent = @parent
+      o.extraattr.update(@extraattr)
       @handler.decode_parent(@parent, o)
       o
     end
@@ -123,7 +130,7 @@ class LiteralHandler < Handler
   def decode_tag(ns, elename, attrs, parent)
     # ToDo: check if @textbuf is empty...
     @textbuf = ''
-    o = SOAPUnknown.new(self, elename)
+    o = SOAPUnknown.new(self, elename, decode_attrs(ns, attrs))
     o.parent = parent
     o
   end
@@ -132,7 +139,7 @@ class LiteralHandler < Handler
     o = node.node
     if o.is_a?(SOAPUnknown)
       newnode = if /\A\s*\z/ =~ @textbuf
-	  o.as_struct
+	  o.as_element
 	else
 	  o.as_string
 	end
@@ -149,6 +156,15 @@ class LiteralHandler < Handler
     @textbuf << text
   end
 
+  def decode_attrs(ns, attrs)
+    extraattr = {}
+    attrs.each do |key, value|
+      qname = ns.parse(key)
+      extraattr[qname] = value
+    end
+    extraattr
+  end
+
   def decode_prologue
   end
 
@@ -158,13 +174,18 @@ class LiteralHandler < Handler
   def decode_parent(parent, node)
     case parent.node
     when SOAPUnknown
-      newparent = parent.node.as_struct
+      newparent = parent.node.as_element
       node.parent = newparent
       parent.replace_node(newparent)
       decode_parent(parent, node)
 
+    when SOAPElement
+      parent.node.add(node)
+      node.parent = parent.node
+
     when SOAPStruct
-      parent.node.add(node.name, node)
+      parent.node.add(node.elename.name, node)
+      node.parent = parent.node
 
     when SOAPArray
       if node.position
@@ -173,13 +194,14 @@ class LiteralHandler < Handler
       else
 	parent.node.add(node)
       end
+      node.parent = parent.node
 
     when SOAPBasetype
       raise EncodingStyleError.new("SOAP base type must not have a child.")
 
     else
       # SOAPUnknown does not have parent.
-      # raise EncodingStyleError.new("Illegal parent: #{ parent }.")
+      raise EncodingStyleError.new("Illegal parent: #{ parent }.")
     end
   end
 

@@ -44,6 +44,7 @@ class TestCalcCGI < Test::Unit::TestCase
     end
     @endpoint = "http://localhost:#{Port}/server.cgi"
     @calc = SOAP::RPC::Driver.new(@endpoint, 'http://tempuri.org/calcService')
+    @calc.wiredump_dev = STDERR if $DEBUG
     @calc.add_method('add', 'lhs', 'rhs')
     @calc.add_method('sub', 'lhs', 'rhs')
     @calc.add_method('multi', 'lhs', 'rhs')

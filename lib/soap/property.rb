@@ -34,22 +34,24 @@ module SOAP
 class Property
   include Enumerable
 
+  module Util
+    def const_from_name(fqname)
+      fqname.split("::").inject(Kernel) { |klass, name| klass.const_get(name) }
+    end
+    module_function :const_from_name
+
+    def require_from_name(fqname)
+      require File.join(fqname.split("::").collect { |ele| ele.downcase })
+    end
+    module_function :require_from_name
+  end
+
   def self.load(stream)
     new.load(stream)
   end
 
-  def self.open(filename)
-    File.open(filename) { |f| load(f) }
-  end
-
-  # find property from $:.
   def self.loadproperty(propname)
-    $:.each do |path|
-      if File.file?(file = File.join(path, propname))
-	return open(file)
-      end
-    end
-    nil
+    new.loadproperty(propname)
   end
 
   def initialize
@@ -87,6 +89,17 @@ class Property
     self
   end
 
+  # find property from $:.
+  def loadproperty(propname)
+    return loadpropertyfile(propname) if File.file?(propname)
+    $:.each do |path|
+      if File.file?(file = File.join(path, propname))
+        return loadpropertyfile(file)
+      end
+    end
+    nil
+  end
+
   # name: a Symbol, String or an Array
   def [](name)
     referent(name_to_a(name))
@@ -95,10 +108,10 @@ class Property
   # name: a Symbol, String or an Array
   # value: an Object
   def []=(name, value)
-    hooks = assign(name_to_a(name), value)
-    normalized_name = normalize_name(name)
+    name_pair = name_to_a(name).freeze
+    hooks = assign(name_pair, value)
     hooks.each do |hook|
-      hook.call(normalized_name, value)
+      hook.call(name_pair, value)
     end
     value
   end
@@ -109,13 +122,15 @@ class Property
     self[generate_new_key] = value
   end
 
-  # name: a Symbol, String or an Array.  nil means hook to the root
+  # name: a Symbol, String or an Array; nil means hook to the root
+  # cascade: true/false; for cascading hook of sub key
   # hook: block which will be called with 2 args, name and value
-  def add_hook(name = nil, &hook)
-    if name.nil?
-      assign_self_hook(&hook)
+  def add_hook(name = nil, cascade = false, &hook)
+    if name == nil or name == true or name == false
+      cascade = name
+      assign_self_hook(cascade, &hook)
     else
-      assign_hook(name_to_a(name), &hook)
+      assign_hook(name_to_a(name), cascade, &hook)
     end
   end
 
@@ -192,14 +207,18 @@ protected
     @store[key] = value
   end
 
-  def local_hook(key)
-    @self_hook + (@hook[key] || NO_HOOK)
+  def local_hook(key, direct)
+    hooks = []
+    (@self_hook + (@hook[key] || NO_HOOK)).each do |hook, cascade|
+      hooks << hook if direct or cascade
+    end
+    hooks
   end
 
-  def local_assign_hook(key, &hook)
+  def local_assign_hook(key, cascade, &hook)
     check_lock(key)
     @store[key] ||= nil
-    (@hook[key] ||= []) << hook
+    (@hook[key] ||= []) << [hook, cascade]
   end
 
 private
@@ -217,23 +236,23 @@ private
     hook = NO_HOOK
     ary[0..-2].each do |name|
       key = to_key(name)
-      hook += ref.local_hook(key)
+      hook += ref.local_hook(key, false)
       ref = ref.deref_key(key)
     end
     last_key = to_key(ary.last)
     ref.local_assign(last_key, value)
-    hook + ref.local_hook(last_key)
+    hook + ref.local_hook(last_key, true)
   end
 
-  def assign_hook(ary, &hook)
+  def assign_hook(ary, cascade, &hook)
     ary[0..-2].inject(self) { |ref, name|
       ref.deref_key(to_key(name))
-    }.local_assign_hook(to_key(ary.last), &hook)
+    }.local_assign_hook(to_key(ary.last), cascade, &hook)
   end
 
-  def assign_self_hook(&hook)
+  def assign_self_hook(cascade, &hook)
     check_lock(nil)
-    @self_hook << hook
+    @self_hook << [hook, cascade]
   end
 
   def each_key
@@ -267,10 +286,6 @@ private
     end
   end
 
-  def normalize_name(name)
-    name_to_a(name).collect { |key| to_key(key) }.join('.')
-  end
-
   def to_key(name)
     name.to_s.downcase
   end
@@ -285,6 +300,13 @@ private
 
   def key_max
     (@store.keys.max { |l, r| l.to_s.to_i <=> r.to_s.to_i }).to_s.to_i
+  end
+
+  def loadpropertyfile(file)
+    puts "find property at #{file}" if $DEBUG
+    File.open(file) do |f|
+      load(f)
+    end
   end
 end
 

@@ -33,7 +33,7 @@ class SOAPHandler < Handler
     attrs = encode_attrs(generator, ns, data, parent)
 
     if parent && parent.is_a?(SOAPArray) && parent.position
-      attrs[ns.name(AttrPositionName)] = '[' << parent.position.join(',') << ']'
+      attrs[ns.name(AttrPositionName)] = "[#{ parent.position.join(',') }]"
     end
 
     name = nil
@@ -46,14 +46,19 @@ class SOAPHandler < Handler
 
     case data
     when SOAPReference
-      attrs['href'] = '#' << data.refid
+      attrs['href'] = data.refidstr
+      generator.encode_tag(name, attrs)
+    when SOAPExternalReference
+      data.referred
+      attrs['href'] = data.refidstr
       generator.encode_tag(name, attrs)
     when SOAPRawString
       generator.encode_tag(name, attrs)
       generator.encode_rawstring(data.to_s)
     when XSD::XSDString
       generator.encode_tag(name, attrs)
-      generator.encode_string(@charset ? XSD::Charset.encoding_to_xml(data.to_s, @charset) : data.to_s)
+      generator.encode_string(@charset ?
+	XSD::Charset.encoding_to_xml(data.to_s, @charset) : data.to_s)
     when XSD::XSDAnySimpleType
       generator.encode_tag(name, attrs)
       generator.encode_string(data.to_s)
@@ -202,16 +207,12 @@ class SOAPHandler < Handler
       node.replace_node(newnode)
       o = node.node
     end
-    if o.is_a?(SOAPCompoundtype)
-      o.definedtype = nil
-    end
-
     decode_textbuf(o)
-    @textbuf = ''
+    # unlink definedtype
+    o.definedtype = nil
   end
 
   def decode_text(ns, text)
-    # @textbuf is set at decode_tag_end.
     @textbuf << text
   end
 
@@ -235,11 +236,9 @@ class SOAPHandler < Handler
       end
       parent.replace_node(newparent)
       decode_parent(parent, node)
-
     when SOAPStruct
       parent.node.add(node.elename.name, node)
       node.parent = parent.node
-
     when SOAPArray
       if node.position
 	parent.node[*(decode_arypos(node.position))] = node
@@ -248,10 +247,8 @@ class SOAPHandler < Handler
 	parent.node.add(node)
       end
       node.parent = parent.node
-
     when SOAPBasetype
       raise EncodingStyleError.new("SOAP base type must not have a child.")
-
     else
       raise EncodingStyleError.new("Illegal parent: #{ parent.node }.")
     end
@@ -269,7 +266,7 @@ private
 
   def create_arytype(ns, data)
     XSD::QName.new(data.arytype.namespace,
-      content_typename(data.arytype.name) << '[' << data.size.join(',') << ']')
+      content_typename(data.arytype.name) + "[#{ data.size.join(',') }]")
   end
 
   def encode_attrs(generator, ns, data, parent)
@@ -320,10 +317,9 @@ private
 
   def encode_attr_value(generator, ns, qname, value)
     if value.is_a?(SOAPType)
-      refid = SOAPReference.create_refid(value)
-      value.id = refid
+      ref = SOAPReference.new(value)
       generator.add_reftarget(qname.name, value)
-      '#' + refid
+      ref.refidstr
     else
       value.to_s
     end
@@ -349,8 +345,7 @@ private
 	typename = ns.parse(typestr)
 	typedef = @decode_typemap[typename]
 	if typedef
-	  return decode_defined_compoundtype(elename, typename, typedef,
-	    arytypestr)
+          return decode_definedtype(elename, typename, typedef, arytypestr)
 	end
       end
       return decode_tag_by_type(ns, elename, typestr, parent, arytypestr,
@@ -372,21 +367,42 @@ private
 
     definedtype_name = parenttype.child_type(elename)
     if definedtype_name and (klass = TypeMap[definedtype_name])
-      return klass.decode(elename)
+      return decode_basetype(klass, elename)
     elsif definedtype_name == XSD::AnyTypeName
       return decode_tag_by_type(ns, elename, typestr, parent, arytypestr,
 	extraattr)
     end
 
-    typedef = definedtype_name ? @decode_typemap[definedtype_name] :
-      parenttype.child_defined_complextype(elename)
-    decode_defined_compoundtype(elename, definedtype_name, typedef, arytypestr)
+    if definedtype_name
+      typedef = @decode_typemap[definedtype_name]
+    else
+      typedef = parenttype.child_defined_complextype(elename)
+    end
+    decode_definedtype(elename, definedtype_name, typedef, arytypestr)
   end
 
-  def decode_defined_compoundtype(elename, typename, typedef, arytypestr)
+  def decode_definedtype(elename, typename, typedef, arytypestr)
     unless typedef
       raise EncodingStyleError.new("Unknown type '#{ typename }'.")
     end
+    if typedef.is_a?(::WSDL::XMLSchema::SimpleType)
+      decode_defined_simpletype(elename, typename, typedef, arytypestr)
+    else
+      decode_defined_complextype(elename, typename, typedef, arytypestr)
+    end
+  end
+
+  def decode_basetype(klass, elename)
+    klass.decode(elename)
+  end
+
+  def decode_defined_simpletype(elename, typename, typedef, arytypestr)
+    o = decode_basetype(TypeMap[typedef.base], elename)
+    o.definedtype = typedef
+    o
+  end
+
+  def decode_defined_complextype(elename, typename, typedef, arytypestr)
     case typedef.compoundtype
     when :TYPE_STRUCT
       o = SOAPStruct.decode(elename, typename)
@@ -406,7 +422,7 @@ private
       o.definedtype = typedef
       return o
     end
-    return nil
+    nil
   end
 
   def decode_tag_by_type(ns, elename, typestr, parent, arytypestr, extraattr)
@@ -431,7 +447,7 @@ private
     end
 
     if (klass = TypeMap[type])
-      node = klass.decode(elename)
+      node = decode_basetype(klass, elename)
       node.extraattr.update(extraattr)
       return node
     end
@@ -446,10 +462,12 @@ private
       node.set_encoded(@textbuf)
     when XSD::XSDString
       if @charset
-	node.set(XSD::Charset.encoding_from_xml(@textbuf, @charset))
-      else
-	node.set(@textbuf)
+	@textbuf = XSD::Charset.encoding_from_xml(@textbuf, @charset)
       end
+      if node.definedtype
+        node.definedtype.check_lexical_format(@textbuf)
+      end
+      node.set(@textbuf)
     when SOAPNil
       # Nothing to do.
     when SOAPBasetype
@@ -457,6 +475,7 @@ private
     else
       # Nothing to do...
     end
+    @textbuf = ''
   end
 
   NilLiteralMap = {
@@ -526,7 +545,7 @@ private
 
   def decode_attr_value(ns, qname, value)
     if /\A#/ =~ value
-      o = SOAPReference.new(value)
+      o = SOAPReference.decode(nil, value)
       @refpool << o
       o
     else
@@ -544,16 +563,18 @@ private
     while !@refpool.empty? && count > 0
       @refpool = @refpool.find_all { |ref|
 	o = @idpool.find { |item|
-	  '#' + item.id == ref.refid
+	  item.id == ref.refid
 	}
-	unless o
-	  raise EncodingStyleError.new("Unresolved reference: #{ ref.refid }.")
-	end
 	if o.is_a?(SOAPReference)
-	  true
-	else
+	  true	# link of link.
+	elsif o
 	  ref.__setobj__(o)
 	  false
+	elsif o = ref.rootnode.external_content[ref.refid]
+	  ref.__setobj__(o)
+      	  false
+	else
+	  raise EncodingStyleError.new("Unresolved reference: #{ ref.refid }.")
 	end
       }
       count -= 1

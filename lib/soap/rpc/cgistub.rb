@@ -1,5 +1,5 @@
 # SOAP4R - CGI stub library
-# Copyright (C) 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2001, 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -40,7 +40,6 @@ class CGIStub < Logger::Application
       @method = ENV['REQUEST_METHOD']
       @size = ENV['CONTENT_LENGTH'].to_i || 0
       @contenttype = ENV['CONTENT_TYPE']
-      @charset = nil
       @soapaction = ENV['HTTP_SOAPAction']
       @source = stream
       @body = nil
@@ -48,7 +47,6 @@ class CGIStub < Logger::Application
 
     def init
       validate
-      @charset = StreamHandler.parse_media_type(@contenttype)
       @body = @source.read(@size)
       self
     end
@@ -61,8 +59,8 @@ class CGIStub < Logger::Application
       @soapaction
     end
 
-    def charset
-      @charset
+    def contenttype
+      @contenttype
     end
 
     def to_s
@@ -96,15 +94,21 @@ class CGIStub < Logger::Application
     on_init
   end
   
-  def add_servant(obj, namespace = @default_namespace, soapaction = nil)
+  def add_rpc_servant(obj, namespace = @default_namespace, soapaction = nil)
     RPC.defined_methods(obj).each do |name|
       qname = XSD::QName.new(namespace, name)
       param_size = obj.method(name).arity.abs
-      params = (1..param_size).collect { |i| "p#{ i }" }
+      params = (1..param_size).collect { |i| "p#{i}" }
       param_def = SOAP::RPC::SOAPMethod.create_param_def(params)
       @router.add_method(obj, qname, soapaction, name, param_def)
     end
   end
+  alias add_servant add_rpc_servant
+
+  def add_rpc_headerhandler(obj)
+    @router.headerhandler << obj
+  end
+  alias add_headerhandler add_rpc_headerhandler
 
   def on_init
     # Override this method in derived class to call 'add_method' to add methods.
@@ -142,8 +146,8 @@ class CGIStub < Logger::Application
     @router.add_method(receiver, qname, nil, name, param_def)
   end
 
-  def route(request_string, charset)
-    @router.route(request_string, charset)
+  def route(conn_data)
+    @router.route(conn_data)
   end
 
   def create_fault_response(e)
@@ -157,32 +161,30 @@ private
 
     httpversion = WEBrick::HTTPVersion.new('1.0')
     @response = WEBrick::HTTPResponse.new({:HTTPVersion => httpversion})
+    conn_data = nil
     begin
       log(INFO) { "Received a request from '#{ @remote_user }@#{ @remote_host }'." }
       # SOAP request parsing.
       @request = SOAPRequest.new.init
       @response['Status'] = 200
-      req_charset = @request.charset
-      req_string = @request.dump
-      log(DEBUG) { "XML Request: #{req_string}" }
-      res_string, is_fault = route(req_string, req_charset)
-      log(DEBUG) { "XML Response: #{res_string}" }
-
-      @response['Cache-Control'] = 'private'
-      if req_charset
-	@response['content-type'] = "#{@mediatype}; charset=\"#{req_charset}\""
-      else
-	@response['content-type'] = @mediatype
-      end
-      if is_fault
+      conn_data = ::SOAP::StreamHandler::ConnectionData.new
+      conn_data.receive_string = @request.dump
+      conn_data.receive_contenttype = @request.contenttype
+      log(DEBUG) { "XML Request: #{conn_data.receive_string}" }
+      conn_data = route(conn_data)
+      log(DEBUG) { "XML Response: #{conn_data.send_string}" }
+      if conn_data.is_fault
 	@response['Status'] = 500
       end
-      @response.body = res_string
-    rescue Exception
-      res_string = create_fault_response($!)
       @response['Cache-Control'] = 'private'
-      @response['content-type'] = @mediatype
+      @response.body = conn_data.send_string
+      @response['content-type'] = conn_data.send_contenttype
+    rescue Exception
+      conn_data = create_fault_response($!)
+      @response['Cache-Control'] = 'private'
       @response['Status'] = 500
+      @response.body = conn_data.send_string
+      @response['content-type'] = conn_data.send_contenttype || @mediatype
     ensure
       buf = ''
       @response.send_response(buf)

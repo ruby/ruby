@@ -11,6 +11,9 @@ require 'soap/processor'
 require 'soap/mapping'
 require 'soap/rpc/rpc'
 require 'soap/rpc/element'
+require 'soap/streamHandler'
+require 'soap/mimemessage'
+require 'soap/header/handlerset'
 
 
 module SOAP
@@ -24,6 +27,7 @@ class Router
   attr_accessor :allow_unqualified_element
   attr_accessor :default_encodingstyle
   attr_accessor :mapping_registry
+  attr_reader :headerhandler
 
   def initialize(actor)
     @actor = actor
@@ -33,6 +37,7 @@ class Router
     @allow_unqualified_element = false
     @default_encodingstyle = nil
     @mapping_registry = nil
+    @headerhandler = Header::HandlerSet.new
   end
 
   def add_method(receiver, qname, soapaction, name, param_def)
@@ -42,46 +47,111 @@ class Router
     @method[fqname] = RPC::SOAPMethodRequest.new(qname, param_def, soapaction)
   end
 
-  def add_header_handler
-    raise NotImplementedError.new
-  end
-
-  # Routing...
-  def route(soap_string, charset = nil)
-    opt = options
-    opt[:charset] = charset
-    is_fault = false
+  def route(conn_data)
+    soap_response = nil
     begin
-      header, body = Processor.unmarshal(soap_string, opt)
-      # So far, header is omitted...
-      soap_request = body.request
+      env = unmarshal(conn_data)
+      if env.nil?
+	raise ArgumentError.new("Illegal SOAP marshal format.")
+      end
+      receive_headers(env.header)
+      soap_request = env.body.request
       unless soap_request.is_a?(SOAPStruct)
 	raise RPCRoutingError.new("Not an RPC style.")
       end
       soap_response = dispatch(soap_request)
     rescue Exception
       soap_response = fault($!)
-      is_fault = true
+      conn_data.is_fault = true
     end
 
-    header = SOAPHeader.new
+    opt = options
+    opt[:external_content] = nil
+    header = call_headers
     body = SOAPBody.new(soap_response)
-    response_string = Processor.marshal(header, body, opt)
-
-    return response_string, is_fault
+    env = SOAPEnvelope.new(header, body)
+    response_string = Processor.marshal(env, opt)
+    conn_data.send_string = response_string
+    if ext = opt[:external_content]
+      mime = MIMEMessage.new
+      ext.each do |k, v|
+      	mime.add_attachment(v.data)
+      end
+      mime.add_part(conn_data.send_string + "\r\n")
+      mime.close
+      conn_data.send_string = mime.content_str
+      conn_data.send_contenttype = mime.headers['content-type'].str
+    end
+    conn_data
   end
 
   # Create fault response string.
   def create_fault_response(e, charset = nil)
     header = SOAPHeader.new
-    soap_response = fault(e)
-    body = SOAPBody.new(soap_response)
+    body = SOAPBody.new(fault(e))
+    env = SOAPEnvelope.new(header, body)
     opt = options
+    opt[:external_content] = nil
     opt[:charset] = charset
-    Processor.marshal(header, body, opt)
+    response_string = Processor.marshal(env, opt)
+    conn_data = StreamHandler::ConnectionData.new(response_string)
+    conn_data.is_fault = true
+    if ext = opt[:external_content]
+      mime = MIMEMessage.new
+      ext.each do |k, v|
+      	mime.add_attachment(v.data)
+      end
+      mime.add_part(conn_data.send_string + "\r\n")
+      mime.close
+      conn_data.send_string = mime.content_str
+      conn_data.send_contenttype = mime.headers['content-type'].str
+    end
+    conn_data
   end
 
 private
+
+  def call_headers
+    headers = @headerhandler.on_outbound
+    if headers.empty?
+      nil
+    else
+      h = ::SOAP::SOAPHeader.new
+      headers.each do |header|
+      h.add(header.elename.name, header)
+    end
+    h
+    end
+  end
+
+  def receive_headers(headers)
+    @headerhandler.on_inbound(headers) if headers
+  end
+
+  def unmarshal(conn_data)
+    opt = options
+    contenttype = conn_data.receive_contenttype
+    if /#{MIMEMessage::MultipartContentType}/i =~ contenttype
+      opt[:external_content] = {}
+      mime = MIMEMessage.parse("Content-Type: " + contenttype,
+      conn_data.receive_string)
+      mime.parts.each do |part|
+	value = Attachment.new(part.content)
+	value.contentid = part.contentid
+	obj = SOAPAttachment.new(value)
+	opt[:external_content][value.contentid] = obj if value.contentid
+      end
+      opt[:charset] =
+	StreamHandler.parse_media_type(mime.root.headers['content-type'].str)
+      env = Processor.unmarshal(mime.root.content, opt)
+    else
+      opt[:charset] = ::SOAP::StreamHandler.parse_media_type(contenttype)
+      env = Processor.unmarshal(conn_data.receive_string, opt)
+    end
+    charset = opt[:charset]
+    conn_data.send_contenttype = "text/xml; charset=\"#{charset}\""
+    env
+  end
 
   # Create new response.
   def create_response(qname, result)

@@ -33,21 +33,14 @@ class StreamHandler
     attr_accessor :send_contenttype
     attr_accessor :receive_string
     attr_accessor :receive_contenttype
+    attr_accessor :is_fault
 
-    def initialize
-      @send_string = nil
+    def initialize(send_string = nil)
+      @send_string = send_string
       @send_contenttype = nil
       @receive_string = nil
       @receive_contenttype = nil
-      @bag = {}
-    end
-
-    def [](idx)
-      @bag[idx]
-    end
-
-    def []=(idx, value)
-      @bag[idx] = value
+      @is_fault = false
     end
   end
 
@@ -59,7 +52,7 @@ class StreamHandler
 
   def self.parse_media_type(str)
     if /^#{ MediaType }(?:\s*;\s*charset=([^"]+|"[^"]+"))?$/i !~ str
-      raise StreamError.new("Illegal media type.");
+      return nil
     end
     charset = $1
     charset.gsub!(/"/, '') if charset
@@ -90,18 +83,24 @@ public
     @options = options
     set_options
     @client.debug_dev = @wiredump_dev
+    @cookie_store = nil
+  end
+
+  def test_loopback_response
+    @client.test_loopback_response
   end
 
   def inspect
     "#<#{self.class}:#{endpoint_url}>"
   end
 
-  def send(soap_string, soapaction = nil, charset = @charset)
-    send_post(soap_string, soapaction, charset)
+  def send(conn_data, soapaction = nil, charset = @charset)
+    send_post(conn_data, soapaction, charset)
   end
 
   def reset
     @client.reset(@endpoint_url)
+    @client.save_cookie_store if @cookie_store
   end
 
 private
@@ -125,10 +124,6 @@ private
     @options.add_hook("cookie_store_file") do |key, value|
       set_cookie_store_file(value)
     end
-    set_ssl_config(@options["ssl_config"])
-    @options.add_hook("ssl_config") do |key, value|
-      set_ssl_config(@options["ssl_config"])
-    end
     @charset = @options["charset"] || XSD::Charset.charset_label($KCODE)
     @options.add_hook("charset") do |key, value|
       @charset = value
@@ -138,12 +133,18 @@ private
       @wiredump_dev = value
       @client.debug_dev = @wiredump_dev
     end
+    ssl_config = @options["ssl_config"] ||= ::SOAP::Property.new
+    set_ssl_config(ssl_config)
+    ssl_config.add_hook(true) do |key, value|
+      set_ssl_config(ssl_config)
+    end
     basic_auth = @options["basic_auth"] ||= ::SOAP::Property.new
     set_basic_auth(basic_auth)
     basic_auth.add_hook do |key, value|
       set_basic_auth(basic_auth)
     end
     @options.lock(true)
+    ssl_config.unlock
     basic_auth.unlock
   end
 
@@ -154,34 +155,82 @@ private
   end
 
   def set_cookie_store_file(value)
-    return unless value
-    raise NotImplementedError.new
+    @cookie_store = value
+    @client.set_cookie_store(@cookie_store) if @cookie_store
   end
 
-  def set_ssl_config(value)
-    return unless value
-    raise NotImplementedError.new
+  def set_ssl_config(ssl_config)
+    ssl_config.each do |key, value|
+      cfg = @client.ssl_config
+      case key
+      when 'client_cert'
+	cfg.client_cert = cert_from_file(value)
+      when 'client_key'
+	cfg.client_key = key_from_file(value)
+      when 'client_ca'
+	cfg.client_ca = value
+      when 'ca_path'
+	cfg.set_trust_ca(value)
+      when 'ca_file'
+	cfg.set_trust_ca(value)
+      when 'crl'
+	cfg.set_crl(value)
+      when 'verify_mode'
+	cfg.verify_mode = ssl_config_int(value)
+      when 'verify_depth'
+	cfg.verify_depth = ssl_config_int(value)
+      when 'options'
+	cfg.options = value
+      when 'ciphers'
+	cfg.ciphers = value
+      when 'verify_callback'
+	cfg.verify_callback = value
+      when 'cert_store'
+	cfg.cert_store = value
+      else
+	raise ArgumentError.new("unknown ssl_config property #{key}")
+      end
+    end
   end
 
-  def send_post(soap_string, soapaction, charset)
-    data = ConnectionData.new
-    data.send_string = soap_string
-    data.send_contenttype = StreamHandler.create_media_type(charset)
+  def ssl_config_int(value)
+    if value.nil? or value.empty?
+      nil
+    else
+      begin
+        Integer(value)
+      rescue ArgumentError
+        ::SOAP::Property::Util.const_from_name(value)
+      end
+    end
+  end
+
+  def cert_from_file(filename)
+    OpenSSL::X509::Certificate.new(File.open(filename) { |f| f.read })
+  end
+
+  def key_from_file(filename)
+    OpenSSL::PKey::RSA.new(File.open(filename) { |f| f.read })
+  end
+
+  def send_post(conn_data, soapaction, charset)
+    conn_data.send_contenttype ||= StreamHandler.create_media_type(charset)
 
     if @wiredump_file_base
       filename = @wiredump_file_base + '_request.xml'
       f = File.open(filename, "w")
-      f << soap_string
+      f << conn_data.send_string
       f.close
     end
 
     extra = {}
-    extra['Content-Type'] = data.send_contenttype
+    extra['Content-Type'] = conn_data.send_contenttype
     extra['SOAPAction'] = "\"#{ soapaction }\""
+    send_string = conn_data.send_string
 
     @wiredump_dev << "Wire dump:\n\n" if @wiredump_dev
     begin
-      res = @client.post(@endpoint_url, soap_string, extra)
+      res = @client.post(@endpoint_url, send_string, extra)
     rescue
       @client.reset(@endpoint_url)
       raise
@@ -206,10 +255,9 @@ private
       raise HTTPStreamError.new("#{ res.status }: #{ res.reason }")
     end
 
-    data.receive_string = receive_string
-    data.receive_contenttype = res.contenttype
-
-    return data
+    conn_data.receive_string = receive_string
+    conn_data.receive_contenttype = res.contenttype
+    conn_data
   end
 
   CRLF = "\r\n"

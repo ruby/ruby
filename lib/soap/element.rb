@@ -1,5 +1,5 @@
 # SOAP4R - SOAP elements library
-# Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000, 2001, 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -71,6 +71,10 @@ public
       self.faultactor.elename = EleFaultActorName if self.faultactor
       self.detail.elename = EleFaultDetailName if self.detail
     end
+    faultcode.parent = self if faultcode
+    faultstring.parent = self if faultstring
+    faultactor.parent = self if faultactor
+    detail.parent = self if detail
   end
 
   def encode(generator, ns, attrs = {})
@@ -90,8 +94,6 @@ end
 
 class SOAPBody < SOAPStruct
   include SOAPEnvelopeElement
-
-public
 
   def initialize(data = nil, is_fault = false)
     super(nil)
@@ -138,38 +140,39 @@ class SOAPHeaderItem < XSD::NSDBase
 
 public
 
-  attr_accessor :content
+  attr_accessor :element
   attr_accessor :mustunderstand
   attr_accessor :encodingstyle
 
-  def initialize(content, mustunderstand = true, encodingstyle = nil)
-    super(nil)
-    @content = content
+  def initialize(element, mustunderstand = true, encodingstyle = nil)
+    super()
+    @type = nil
+    @element = element
     @mustunderstand = mustunderstand
-    @encodingstyle = encodingstyle || LiteralNamespace
+    @encodingstyle = encodingstyle
+    element.parent = self if element
   end
 
   def encode(generator, ns, attrs = {})
     attrs.each do |key, value|
-      @content.attr[key] = value
+      @element.extraattr[key] = value
     end
-    @content.attr[ns.name(EnvelopeNamespace, AttrMustUnderstand)] =
+    @element.extraattr[ns.name(AttrMustUnderstandName)] =
       (@mustunderstand ? '1' : '0')
     if @encodingstyle
-      @content.attr[ns.name(EnvelopeNamespace, AttrEncodingStyle)] =
-      	@encodingstyle
+      @element.extraattr[ns.name(AttrEncodingStyleName)] = @encodingstyle
     end
-    @content.encodingstyle = @encodingstyle if !@content.encodingstyle
-    yield(@content, true)
+    @element.encodingstyle = @encodingstyle if !@element.encodingstyle
+    yield(@element, true)
   end
 end
 
 
-class SOAPHeader < SOAPArray
+class SOAPHeader < SOAPStruct
   include SOAPEnvelopeElement
 
-  def initialize()
-    super(nil, 1)	# rank == 1
+  def initialize
+    super(nil)
     @elename = EleHeaderName
     @encodingstyle = nil
   end
@@ -183,9 +186,17 @@ class SOAPHeader < SOAPArray
     generator.encode_tag_end(name, true)
   end
 
+  def add(name, value)
+    mu = (value.extraattr[AttrMustUnderstandName] == '1')
+    encstyle = value.extraattr[AttrEncodingStyleName]
+    item = SOAPHeaderItem.new(value, mu, encstyle)
+    super(name, item)
+  end
+
   def length
     @data.length
   end
+  alias size length
 end
 
 
@@ -193,14 +204,29 @@ class SOAPEnvelope < XSD::NSDBase
   include SOAPEnvelopeElement
   include SOAPCompoundtype
 
-  attr_accessor :header
-  attr_accessor :body
+  attr_reader :header
+  attr_reader :body
+  attr_reader :external_content
 
   def initialize(header = nil, body = nil)
-    super(nil)
+    super()
+    @type = nil
     @elename = EleEnvelopeName
     @encodingstyle = nil
     @header = header
+    @body = body
+    @external_content = {}
+    header.parent = self if header
+    body.parent = self if body
+  end
+
+  def header=(header)
+    header.parent = self
+    @header = header
+  end
+
+  def body=(body)
+    body.parent = self
     @body = body
   end
 
@@ -214,6 +240,10 @@ class SOAPEnvelope < XSD::NSDBase
     yield(@body, true)
 
     generator.encode_tag_end(name, true)
+  end
+
+  def to_ary
+    [header, body]
   end
 end
 

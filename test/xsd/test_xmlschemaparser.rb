@@ -7,7 +7,7 @@ module XSD
 
 class TestXMLSchemaParser < Test::Unit::TestCase
   def setup
-    @file = File.join(File.dirname(__FILE__), 'xmlschema.xml')
+    @file = File.join(File.dirname(File.expand_path(__FILE__)), 'xmlschema.xml')
   end
 
   def test_wsdl
