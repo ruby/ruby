@@ -94,8 +94,36 @@ non-string formatting, etc.
 --- flush
     outputs buffered data.
 
+--- seplist(list[, separator_proc[, iter_method]]) {|elt| ... }
+    adds a separated list.
+    The list is separated by comma with breakable space, by default.
+
+    seplist iterates the ((|list|)) using ((|iter_method|)).
+    It yields each object to the block given for seplist.
+    The procedure ((|separator_proc|)) is called between each yields.
+
+    If the iteration is zero times, ((|separator_proc|)) is not called at all.
+
+    If ((|separator_proc|)) is nil or not given,
+    (({lambda { comma_breakable }})) is used.
+    If ((|iter_method|)) is not given, (({:each})) is used.
+
+    For example, following 3 code fragments has similar effect.
+
+      q.seplist([1,2,3]) {|v| xxx v }
+
+      q.seplist([1,2,3], lambda { comma_breakable }, :each) {|v| xxx v }
+
+      xxx 1
+      q.comma_breakable
+      xxx 2
+      q.comma_breakable
+      xxx 3
+
 --- first?
-    is a predicate to test the call is a first call to (({first?})) with
+    first? is obsoleted at 1.8.2.
+
+    first? is a predicate to test the call is a first call to (({first?})) with
     current group.
     It is useful to format comma separated values as:
 
@@ -114,10 +142,10 @@ non-string formatting, etc.
 
 == References
 Christian Lindig, Strictly Pretty, March 2000,
-((<URL:http://www.gaertner.de/~lindig/papers/strictly-pretty.html>))
+((<URL:http://www.st.cs.uni-sb.de/~lindig/papers/#pretty>))
 
 Philip Wadler, A prettier printer, March 1998,
-((<URL:http://www.research.avayalabs.com/user/wadler/topics/recent.html#prettier>))
+((<URL:http://homepages.inf.ed.ac.uk/wadler/topics/language-design.html#prettier>))
 
 == AUTHOR
 Tanaka Akira <akr@m17n.org>
@@ -173,6 +201,7 @@ class PrettyPrint
   end
 
   def first?
+    warn "PrettyPrint#first? is obsoleted at 1.8.2."
     current_group.first?
   end
 
