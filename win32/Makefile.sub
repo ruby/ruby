@@ -87,6 +87,13 @@ DESTDIR = $(prefix)
 !if !defined(libdir)
 libdir = $(exec_prefix)/lib
 !endif
+!ifndef RIDATADIR
+RIDATADIR = $(DESTDIR)/share/ri/$(MAJOR).$(MINOR)/system
+!endif
+!ifndef RDOCTARGET
+RDOCTARGET = install-nodoc
+!endif
+
 !if !defined(CFLAGS)
 CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !endif
@@ -424,13 +431,19 @@ $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 {$(srcdir)/win32}.def.lib:
 		$(AR) $(ARFLAGS)$@ -def:$<
 
-install:	rbconfig.rb
+install:	install-nodoc $(RDOCTARGET)
+
+install-nodoc:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS)
 		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(SCRIPT_ARGS) install
 
 what-where no-install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb -n $(SCRIPT_ARGS)
+		$(MINIRUBY) $(srcdir)/instruby.rb -n $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
 		$(MINIRUBY) $(srcdir)/ext/extmk.rb -n $(SCRIPT_ARGS) install
+
+install-doc:
+		@echo Generating RDoc documentation
+		$(DESTDIR:/=\)\bin\$(PROGRAM) $(srcdir)/bin/rdoc --all --ri-system --op "$(RIDATADIR)" $(srcdir)
 
 clean:		clean-ext clean-local
 

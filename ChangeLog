@@ -1,3 +1,11 @@
+Tue Dec 28 12:26:45 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub, win32/setup.mak (RDOCTARGET, install,
+	  install-nodoc, install-doc): rdoc support for mswin32.
+
+	* win32/configure.bat (--enable-install-doc, --disable-install-doc):
+	  ditto.
+
 Mon Dec 27 20:02:14 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix SEGV bug when deleting Tk interp

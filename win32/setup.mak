@@ -32,6 +32,9 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 	@type << > $(MAKEFILE)
 ### Makefile for ruby $(OS) ###
 srcdir = $(srcdir:\=/)
+!if defined(RDOCTARGET)
+RDOCTARGET = $(RDOCTARGET)
+!endif
 <<
 	@cl -nologo -EP -I$(srcdir) -DRUBY_EXTERN="//" <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"
