@@ -1,3 +1,8 @@
+Thu Jan  6 07:58:28 2005  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/usage.rb (RDoc::RDoc.usage_no_exit): Allow for colons
+	  in path names on DOS machines. (thanks to Johan Nilsson)
+
 Wed Jan  5 20:16:32 2005  Tanaka Akira  <akr@m17n.org>
 
 	* random.c (limited_big_rand): didn't work if SIZEOF_BDIGITS == 2.
