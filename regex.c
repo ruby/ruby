@@ -1271,13 +1271,9 @@ re_compile_pattern(pattern, size, bufp)
 
   if (bufp->allocated == 0) {
     bufp->allocated = INIT_BUF_SIZE;
-    if (bufp->buffer)
-      /* EXTEND_BUFFER loses when bufp->allocated is 0.  */
-      bufp->buffer = (char*)xrealloc(bufp->buffer, INIT_BUF_SIZE);
-    else
-      /* Caller did not allocate a buffer.  Do it for them.  */
-      bufp->buffer = (char*)xmalloc(INIT_BUF_SIZE);
-    if (!bufp->buffer) goto memory_exhausted;
+    /* EXTEND_BUFFER loses when bufp->allocated is 0.  */
+    bufp->buffer = (char*)xrealloc(bufp->buffer, INIT_BUF_SIZE);
+    if (!bufp->buffer) goto memory_exhausted; /* this not happen */
     begalt = b = bufp->buffer;
   }
 

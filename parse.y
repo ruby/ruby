@@ -3459,7 +3459,6 @@ yylex()
 		c = tLPAREN_ARG;
 	    }
 	    else if (lex_state == EXPR_ARG) {
-		rb_warning("%s (...) interpreted as method call", tok());
 		c = tLPAREN_ARG;
 		yylval.id = last_id;
 	    }

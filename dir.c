@@ -234,11 +234,16 @@ fnmatch(pat, string, flags)
 
 VALUE rb_cDir;
 
+struct dir_data {
+    DIR *dir;
+    char *path;
+};
+
 static void
 free_dir(dir)
-    DIR *dir;
+    struct dir_data *dir;
 {
-    if (dir) closedir(dir);
+    if (dir && dir->dir) closedir(dir->dir);
 }
 
 static VALUE dir_close _((VALUE));
@@ -249,8 +254,11 @@ dir_s_new(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    VALUE obj = Data_Wrap_Struct(klass, 0, free_dir, 0);
+    struct dir_data *dirp;
+    VALUE obj = Data_Make_Struct(klass, struct dir_data, 0, free_dir, dirp);
 
+    dirp->dir = NULL;
+    dirp->path = NULL;
     rb_obj_call_init(obj, argc, argv);
 
     return obj;
@@ -260,22 +268,25 @@ static VALUE
 dir_initialize(dir, dirname)
     VALUE dir, dirname;
 {
-    DIR *dirp;
+    struct dir_data *dp;
 
     SafeStringValue(dirname);
-    if (DATA_PTR(dir)) closedir(DATA_PTR(dir));
-    DATA_PTR(dir) = NULL;
-    dirp = opendir(RSTRING(dirname)->ptr);
-    if (dirp == NULL) {
+    Data_Get_Struct(dir, struct dir_data, dp);
+    if (dp->dir) closedir(dp->dir);
+    if (dp->path) free(dp->path);
+    dp->dir = NULL;
+    dp->path = NULL;
+    dp->dir = opendir(RSTRING(dirname)->ptr);
+    if (dp->dir == NULL) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    dirp = opendir(RSTRING(dirname)->ptr);
+	    dp->dir = opendir(RSTRING(dirname)->ptr);
 	}
-	if (dirp == NULL) {
+	if (dp->dir == NULL) {
 	    rb_sys_fail(RSTRING(dirname)->ptr);
 	}
     }
-    DATA_PTR(dir) = dirp;
+    dp->path = strdup(RSTRING(dirname)->ptr);
 
     return dir;
 }
@@ -284,7 +295,8 @@ static VALUE
 dir_s_open(klass, dirname)
     VALUE klass, dirname;
 {
-    VALUE dir = Data_Wrap_Struct(klass, 0, free_dir, 0);
+    struct dir_data *dp;
+    VALUE dir = Data_Make_Struct(klass, struct dir_data, 0, free_dir, dp);
 
     dir_initialize(dir, dirname);
     if (rb_block_given_p()) {
@@ -301,22 +313,34 @@ dir_closed()
 }
 
 #define GetDIR(obj, dirp) {\
-    Data_Get_Struct(obj, DIR, dirp);\
-    if (dirp == NULL) dir_closed();\
+    Data_Get_Struct(obj, struct dir_data, dirp);\
+    if (dirp->dir == NULL) dir_closed();\
+}
+
+static VALUE
+dir_path(dir)
+    VALUE dir;
+{
+    struct dir_data *dirp;
+
+    GetDIR(dir, dirp);
+    if (!dirp->path) return Qnil;
+    return rb_str_new2(dirp->path);
 }
 
 static VALUE
 dir_read(dir)
     VALUE dir;
 {
-    DIR *dirp;
+    struct dir_data *dirp;
     struct dirent *dp;
 
     GetDIR(dir, dirp);
     errno = 0;
-    dp = readdir(dirp);
-    if (dp)
+    dp = readdir(dirp->dir);
+    if (dp) {
 	return rb_tainted_str_new(dp->d_name, NAMLEN(dp));
+    }
     else if (errno == 0) {	/* end of stream */
 	return Qnil;
     }
@@ -330,13 +354,13 @@ static VALUE
 dir_each(dir)
     VALUE dir;
 {
-    DIR *dirp;
+    struct dir_data *dirp;
     struct dirent *dp;
 
     GetDIR(dir, dirp);
-    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
+    for (dp = readdir(dirp->dir); dp != NULL; dp = readdir(dirp->dir)) {
 	rb_yield(rb_tainted_str_new(dp->d_name, NAMLEN(dp)));
-	if (DATA_PTR(dir) == NULL) dir_closed();
+	if (dirp->dir == NULL) dir_closed();
     }
     return dir;
 }
@@ -346,11 +370,11 @@ dir_tell(dir)
     VALUE dir;
 {
 #ifdef HAVE_TELLDIR
-    DIR *dirp;
+    struct dir_data *dirp;
     long pos;
 
     GetDIR(dir, dirp);
-    pos = telldir(dirp);
+    pos = telldir(dirp->dir);
     return rb_int2inum(pos);
 #else
     rb_notimplement();
@@ -361,11 +385,11 @@ static VALUE
 dir_seek(dir, pos)
     VALUE dir, pos;
 {
-    DIR *dirp;
+    struct dir_data *dirp;
 
 #ifdef HAVE_SEEKDIR
     GetDIR(dir, dirp);
-    seekdir(dirp, NUM2INT(pos));
+    seekdir(dirp->dir, NUM2INT(pos));
     return dir;
 #else
     rb_notimplement();
@@ -376,10 +400,10 @@ static VALUE
 dir_rewind(dir)
     VALUE dir;
 {
-    DIR *dirp;
+    struct dir_data *dirp;
 
     GetDIR(dir, dirp);
-    rewinddir(dirp);
+    rewinddir(dirp->dir);
     return dir;
 }
 
@@ -387,12 +411,11 @@ static VALUE
 dir_close(dir)
     VALUE dir;
 {
-    DIR *dirp;
+    struct dir_data *dirp;
 
-    Data_Get_Struct(dir, DIR, dirp);
-    if (dirp == NULL) dir_closed();
-    closedir(dirp);
-    DATA_PTR(dir) = NULL;
+    GetDIR(dir, dirp);
+    closedir(dirp->dir);
+    dirp->dir = NULL;
 
     return Qnil;
 }
@@ -978,6 +1001,7 @@ Init_Dir()
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, 1);
 
     rb_define_method(rb_cDir,"initialize", dir_initialize, 1);
+    rb_define_method(rb_cDir,"path", dir_path, 0);
     rb_define_method(rb_cDir,"read", dir_read, 0);
     rb_define_method(rb_cDir,"each", dir_each, 0);
     rb_define_method(rb_cDir,"rewind", dir_rewind, 0);

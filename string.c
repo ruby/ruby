@@ -302,6 +302,21 @@ rb_str_s_new(argc, argv, klass)
     return str;
 }
 
+static VALUE rb_str_replace _((VALUE, VALUE));
+
+static VALUE
+rb_str_init(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    VALUE orig;
+
+    if (rb_scan_args(argc, argv, "01", &orig) == 1)
+	rb_str_replace(str, orig);
+    return str;
+}
+
 static VALUE
 rb_str_length(str)
     VALUE str;
@@ -2992,7 +3007,7 @@ Init_String()
     rb_include_module(rb_cString, rb_mComparable);
     rb_include_module(rb_cString, rb_mEnumerable);
     rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
-    rb_define_method(rb_cString, "initialize", rb_str_replace, 1);
+    rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "clone", rb_str_clone, 0);
     rb_define_method(rb_cString, "dup", rb_str_dup, 0);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);

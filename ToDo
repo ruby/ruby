@@ -28,7 +28,7 @@ Language Spec.
 * jar like combined library package.
 * resumable Exception via Exception#resume.
 * method combination, e.g. before, after, around, etc.
-* .. or something like defactive in Emacs.
+* .. or something like defadvice in Emacs.
 
 Hacking Interpreter
 
@@ -87,7 +87,7 @@ Standard Libraries
 * library to load per-user profile seeking .ruby_profile or ruby.ini file.
 * warning framework (warn, warning for Ruby level)
 * marshal should not depend on sprintf/strtod (works bad for locale).
-* ternary arg - a.pow(b,c) == a**b%c
+* ternary arg pow: a.pow(b,c) == a**b%c
 
 Extension Libraries
 

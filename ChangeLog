@@ -1,3 +1,14 @@
+Tue Sep 18 11:44:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_init): String.new() => ""
+
+Tue Sep 11 20:53:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_path): new method.
+
+	* dir.c (dir_initialize): wrap DIR into struct, along with path
+	  information.
+
 Sat Sep  8 07:13:42 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/net/telnet.rb: waitfor(): improvement. thanks to
