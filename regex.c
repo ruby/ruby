@@ -3089,6 +3089,9 @@ re_adjust_startpos(bufp, string, size, startpos, range)
 }
 
 
+static int re_match_exec _((struct re_pattern_buffer *, const char *, int, int, int,
+			    struct re_registers *));
+
 /* Using the compiled pattern in BUFP->buffer, first tries to match
    STRING, starting first at index STARTPOS, then at STARTPOS + 1, and
    so on.  RANGE is the number of places to try before giving up.  If
@@ -3109,7 +3112,7 @@ re_search(bufp, string, size, startpos, range, regs)
      struct re_registers *regs;
 {
   register char *fastmap = bufp->fastmap;
-  int val, anchor = 0;
+  int val, anchor = 0, initpos = startpos;
 
   /* Check for out-of-range starting position.  */
   if (startpos < 0  ||  startpos > size)
@@ -3238,7 +3241,7 @@ re_search(bufp, string, size, startpos, range, regs)
     if (startpos > size) return -1;
     if ((anchor || !bufp->can_be_null) && range > 0 && size > 0 && startpos == size)
       return -1;
-    val = re_match(bufp, string, size, startpos, regs);
+    val = re_match_exec(bufp, string, size, startpos, initpos, regs);
     if (val >= 0) return startpos;
     if (val == -2) return -2;
 
@@ -3471,6 +3474,16 @@ re_match(bufp, string_arg, size, pos, regs)
      struct re_pattern_buffer *bufp;
      const char *string_arg;
      int size, pos;
+     struct re_registers *regs;
+{
+  return re_match_exec(bufp, string_arg, size, pos, 0, regs);
+}
+
+static int
+re_match_exec(bufp, string_arg, size, pos, beg, regs)
+     struct re_pattern_buffer *bufp;
+     const char *string_arg;
+     int size, pos, beg;
      struct re_registers *regs;
 {
   register unsigned char *p = (unsigned char*)bufp->buffer;
@@ -3884,7 +3897,7 @@ re_match(bufp, string_arg, size, pos, regs)
 
 	/* Match at the starting position. */
       case begpos:
-	if (d - string == pos)
+	if (d - string == beg)
 	  break;
 	goto fail;
 

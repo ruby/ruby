@@ -1,3 +1,8 @@
+Wed Dec 25 16:41:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_match_exec): fix odd \G behavior based on the patch
+	  from Nobu.
+
 Wed Dec 25 11:05:11 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bcc32/setup.mak (-generic-): removed garbages.
