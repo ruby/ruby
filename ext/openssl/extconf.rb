@@ -79,7 +79,9 @@ if !result
     $CFLAGS += " " << `#{pkgconfig} --cflags openssl`.chomp
     $DLDFLAGS += " " << `#{pkgconfig} --libs-only-L openssl`.chomp
     $LIBS += " " << `#{pkgconfig} --libs-only-l openssl`.chomp
-  else
+    result = have_header("openssl/ssl.h")
+  end
+  if !result
     message "=== Checking for required stuff failed. ===\n"
     message "Makefile wasn't created. Fix the errors above.\n"
     exit 1
