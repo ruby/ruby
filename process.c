@@ -819,7 +819,7 @@ proc_waitall()
 	if (pid == -1) {
 	    if (errno == ECHILD)
 		break;
-            if (errno == EINTR) {
+	    if (errno == EINTR) {
 		rb_thread_schedule();
 		continue;
 	    }
@@ -1943,7 +1943,6 @@ proc_setpriority(obj, which, who, prio)
 #endif
 }
 
-#if SIZEOF_RLIM_T
 #if SIZEOF_RLIM_T == SIZEOF_INT
 # define RLIM2NUM(v) UINT2NUM(v)
 # define NUM2RLIM(v) NUM2UINT(v)
@@ -1955,7 +1954,6 @@ proc_setpriority(obj, which, who, prio)
 # define NUM2RLIM(v) NUM2ULL(v)
 #else
 # error cannot find an integer type which size is same as rlim_t.
-#endif
 #endif
 
 /*
@@ -1986,7 +1984,7 @@ proc_getrlimit(VALUE obj, VALUE resource)
     rb_secure(2);
 
     if (getrlimit(NUM2INT(resource), &rlim) < 0) {
-       rb_sys_fail("getrlimit");
+	rb_sys_fail("getrlimit");
     }
     return rb_assoc_new(RLIM2NUM(rlim.rlim_cur), RLIM2NUM(rlim.rlim_max));
 #else
@@ -2036,7 +2034,7 @@ proc_setrlimit(VALUE obj, VALUE resource, VALUE rlim_cur, VALUE rlim_max)
     rlim.rlim_max = NUM2RLIM(rlim_max);
 
     if (setrlimit(NUM2INT(resource), &rlim) < 0) {
-       rb_sys_fail("setrlimit");
+	rb_sys_fail("setrlimit");
     }
     return Qnil;
 #else
@@ -2653,11 +2651,11 @@ proc_getgroups(VALUE obj)
 
     ngroups = getgroups(maxgroups, groups);
     if (ngroups == -1)
-        rb_sys_fail(0);
+	rb_sys_fail(0);
 
     ary = rb_ary_new();
     for (i = 0; i < ngroups; i++)
-        rb_ary_push(ary, INT2NUM(groups[i]));
+	rb_ary_push(ary, INT2NUM(groups[i]));
 
     return ary;
 #else
@@ -2693,15 +2691,15 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     ngroups = RARRAY(ary)->len;
     if (ngroups > maxgroups)
-        rb_raise(rb_eArgError, "too many groups, %d max", maxgroups);
+	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups);
 
     groups = ALLOCA_N(gid_t, ngroups);
 
     for (i = 0; i < ngroups && i < RARRAY(ary)->len; i++) {
-        VALUE g = RARRAY(ary)->ptr[i];
+	VALUE g = RARRAY(ary)->ptr[i];
 
 	if (FIXNUM_P(g)) {
-            groups[i] = FIX2INT(g);
+	    groups[i] = FIX2INT(g);
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(g);
@@ -2721,7 +2719,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     i = setgroups(ngroups, groups);
     if (i == -1)
-        rb_sys_fail(0);
+	rb_sys_fail(0);
 
     return proc_getgroups(obj);
 #else
@@ -2833,25 +2831,25 @@ proc_daemon(argc, argv)
     return INT2FIX(n);
 #elif defined(HAVE_FORK)
     switch (rb_fork(0, 0, 0)) {
-    case -1:
-        return (-1);
-    case 0:
-        break;
-    default:
-        _exit(0);
+      case -1:
+	return (-1);
+      case 0:
+	break;
+      default:
+	_exit(0);
     }
 
     proc_setsid();
 
     if (!RTEST(nochdir))
-        (void)chdir("/");
+	(void)chdir("/");
 
     if (!RTEST(noclose) && (n = open("/dev/null", O_RDWR, 0)) != -1) {
-        (void)dup2(n, 0);
-        (void)dup2(n, 1);
-        (void)dup2(n, 2);
-        if (n > 2)
-            (void)close (n);
+	(void)dup2(n, 0);
+	(void)dup2(n, 1);
+	(void)dup2(n, 2);
+	if (n > 2)
+	    (void)close (n);
     }
     return INT2FIX(0);
 #else

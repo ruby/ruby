@@ -1,7 +1,9 @@
-Thu Dec 23 23:36:28 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Dec 23 23:43:24 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_setgroups): check if the argument lenght is
 	  modified.  fixed: [ruby-dev:25285]
+
+	* process.c (SIZEOF_RLIM_T): err if size of rlim_t is not set.
 
 Thu Dec 23 19:08:41 2004  Tanaka Akira  <akr@m17n.org>
 
