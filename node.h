@@ -297,7 +297,7 @@ typedef struct RNode {
 #define NEW_MATCH3(r,n2) NEW_NODE(NODE_MATCH3,r,n2,0)
 #define NEW_LIT(l) NEW_NODE(NODE_LIT,l,0,0)
 #define NEW_STR(s) NEW_NODE(NODE_STR,s,0,0)
-#define NEW_DSTR(s) NEW_NODE(NODE_DSTR,s,0,0)
+#define NEW_DSTR(s) NEW_NODE(NODE_DSTR,s,1,0)
 #define NEW_XSTR(s) NEW_NODE(NODE_XSTR,s,0,0)
 #define NEW_DXSTR(s) NEW_NODE(NODE_DXSTR,s,0,0)
 #define NEW_DSYM(s) NEW_NODE(NODE_DSYM,s,0,0)
