@@ -838,6 +838,10 @@ test/ruby/test_variable.rb
 test/ruby/test_whileuntil.rb
 test/ruby/ut_eof.rb
 test/runner.rb
+test/scanf/data.txt
+test/scanf/test_scanf.rb
+test/scanf/test_scanfblocks.rb
+test/scanf/test_scanfio.rb
 test/soap/calc/calc.rb
 test/soap/calc/calc2.rb
 test/soap/calc/server.cgi
