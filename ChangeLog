@@ -1,3 +1,12 @@
+Sat Nov 27 17:41:35 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/0.9.rb: supported RSS::Maker.make("0.91"). Now,
+	  "0.9" is just alias of "0.91."
+
+	* test/rss/test_maker_0.9.rb: make("0.9") -> maker("0.91").
+
+	* test/rss/test_to_s.rb: ditto.
+
 Sat Nov 27 17:21:30 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* sample/rss/list_description.rb: untabified.

@@ -60,7 +60,7 @@ module RSS
     end
     
     def test_to_s_09
-      rss = RSS::Maker.make("0.9") do |maker|
+      rss = RSS::Maker.make("0.91") do |maker|
         setup_full(maker)
       end
 

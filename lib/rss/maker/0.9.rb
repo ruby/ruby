@@ -221,5 +221,6 @@ module RSS
     end
     
     add_maker(filename_to_version(__FILE__), RSS09)
+    add_maker(filename_to_version(__FILE__) + "1", RSS09)
   end
 end
