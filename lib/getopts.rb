@@ -15,7 +15,7 @@
 # rewritten by Akinori MUSHA <knu@ruby-lang.org>
 #
 
-warn "Warning: getopts is deprecated after Ruby 1.8.1; use optparse instead"
+warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: getopts is deprecated after Ruby 1.8.1; use optparse instead"
 
 $RCS_ID=%q$Header$
 

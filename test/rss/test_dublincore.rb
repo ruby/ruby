@@ -1,7 +1,7 @@
 # -*- tab-width: 2 -*- vim: ts=2
 
 require "test/unit"
-require "cgi-lib"
+require "cgi"
 require "rexml/document"
 
 require "rss/1.0"

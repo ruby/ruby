@@ -1,6 +1,15 @@
+Wed Feb 25 20:44:45 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi-lib.rb, lib/getopts.rb, lib/importenv.rb, lib/parsearg.rb:
+	  warn with caller position.
+
+	* test/rss/test_content.rb, test/rss/test_dublincore.rb,
+	  test/rss/test_syndication.rb, test/rss/test_trackback.rb: use cgi
+	  instead of cgi-lib.
+
 Tue Feb 24 18:42:03  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* dir.c (glob_helper): '**/' should not match leading period 
+	* dir.c (glob_helper): '**/' should not match leading period
 	  unless File::FNM_DOTMATCH is set. (like '*/') [ruby-dev:23014]
 
 Tue Feb 24 18:03:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
