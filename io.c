@@ -1027,6 +1027,7 @@ rb_io_getline(rs, fptr)
 
     rb_io_check_readable(fptr);
     if (NIL_P(rs)) {
+	if (feof(fptr->f)) return Qnil;
 	str = read_all(fptr, 0, Qnil);
     }
     else if (rs == rb_default_rs) {
@@ -3223,10 +3224,8 @@ rb_f_backquote(obj, str)
 
     GetOpenFile(port, fptr);
     result = read_all(fptr, remain_size(fptr), Qnil);
-
     rb_io_close(port);
 
-    if (NIL_P(result)) return rb_str_new(0,0);
     return result;
 }
 

@@ -203,6 +203,8 @@ rb_quad_pack(buf, val)
 	long len = RBIGNUM(val)->len;
 	BDIGIT *ds;
 
+	if (len > SIZEOF_LONG_LONG/SIZEOF_BDIGITS)
+	    rb_raise(rb_eRangeError, "bignum too big to convert into `quad int'");
 	ds = BDIGITS(val);
 	q = 0;
 	while (len--) {
@@ -272,7 +274,9 @@ rb_quad_pack(buf, val)
 	val = rb_int2big(FIX2LONG(val));
     }
     len = RBIGNUM(val)->len * SIZEOF_BDIGITS;
-    if (len > QUAD_SIZE) len = QUAD_SIZE;
+    if (len > QUAD_SIZE) {
+	rb_raise(rb_eRangeError, "bignum too big to convert into `quad int'");
+    }
     memcpy(buf, (char*)BDIGITS(val), len);
     if (!RBIGNUM(val)->sign) {
 	len = QUAD_SIZE;
@@ -759,10 +763,10 @@ long
 rb_big2long(x)
     VALUE x;
 {
-    unsigned long num = big2ulong(x, "int");
+    unsigned long num = big2ulong(x, "long");
 
     if ((long)num < 0 && (RBIGNUM(x)->sign || (long)num != LONG_MIN)) {
-	rb_raise(rb_eRangeError, "bignum too big to convert into `int'");
+	rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
     }
     if (!RBIGNUM(x)->sign) return -(long)num;
     return num;

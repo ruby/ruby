@@ -377,15 +377,15 @@ num2u32(x)
 #endif
 
 #if SIZEOF_LONG == SIZE32 || SIZEOF_INT == SIZE32
-# define EXTEND32(x) ((I32)(x))
+# define EXTEND32(x) 
 #else
 /* invariant in modulo 1<<31 */
-# define EXTEND32(x) (I32)(((1<<31)-1-(x))^~(~0<<31))
+# define EXTEND32(x) do {if (!natint) {(x) = (I32)(((1<<31)-1-(x))^~(~0<<31))}} while(0)
 #endif
 #if SIZEOF_SHORT == SIZE16
-# define EXTEND16(x) (short)(x)
+# define EXTEND16(x) 
 #else
-# define EXTEND16(x) (short)(((1<<15)-1-(x))^~(~0<<15))
+# define EXTEND16(x) do { if (!natint) {(x) = (short)(((1<<15)-1-(x))^~(~0<<15))}} while(0)
 #endif
 
 #ifdef HAVE_LONG_LONG
@@ -725,8 +725,11 @@ pack_pack(ary, fmt)
 
 		from = NEXTFROM;
 		if (NIL_P(from)) i = 0;
-		else {
+		else if (type == 'i') {
 		    i = NATINT_I32(from);
+		}
+		else {
+		    i = NATINT_U32(from);
 		}
 		rb_str_buf_cat(res, OFF32(&i), NATINT_LEN(int,4));
 	    }
@@ -739,6 +742,9 @@ pack_pack(ary, fmt)
 
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
+		else if (type == 'l') {
+		    l = NATINT_I32(from);
+		}
 		else {
 		    l = NATINT_U32(from);
 		}
@@ -1558,9 +1564,7 @@ pack_unpack(str, fmt)
 	    while (len-- > 0) {
 		short tmp = 0;
 		memcpy(OFF16(&tmp), s, NATINT_LEN(short,2));
-#if SIZEOF_SHORT != SIZE16
-		if (!natint) tmp = EXTEND16(tmp);
-#endif
+		EXTEND16(tmp);
 		s += NATINT_LEN(short,2);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
@@ -1605,15 +1609,12 @@ pack_unpack(str, fmt)
 	    while (len-- > 0) {
 		long tmp = 0;
 		memcpy(OFF32(&tmp), s, NATINT_LEN(long,4));
-#if SIZEOF_LONG != SIZE32
-		if (!natint) tmp = EXTEND32(tmp);
-#endif
+		EXTEND32(tmp);
 		s += NATINT_LEN(long,4);
 		rb_ary_push(ary, LONG2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
-
 	  case 'L':
 	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {

@@ -1,3 +1,11 @@
+Fri Dec 26 23:02:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_backquote): need not to check nil result.
+	  [ruby-core:02078]
+
+	* io.c (rb_io_getline): should return nil on eof, even when nil rs is
+	  specified. [ruby-core:02077]
+
 Fri Dec 26 18:33:54 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check if getcontext and setcontext are available.
@@ -11,6 +19,13 @@ Fri Dec 26 16:40:53 2003  Tanaka Akira  <akr@m17n.org>
 Fri Dec 26 14:05:13 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_pack.rb: new test test_pack_N.
+
+Fri Dec 26 12:53:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): add sign check for 'i', and 'l'.
+	  [ruby-dev:22427]
+
+	* bignum.c (rb_quad_pack): add range check for 'quad int'.
 
 Fri Dec 26 10:58:58 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
 
