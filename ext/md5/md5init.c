@@ -76,20 +76,32 @@ md5i_clone(obj)
 }
 
 static VALUE
+md5i_init(argc, argv, self)
+    int argc;
+    VALUE* argv;
+    VALUE self;
+{
+    VALUE str;
+
+    rb_scan_args(argc, argv, "01", &str);
+
+    if (!NIL_P(str)) md5i_update(self, str);
+
+    return self;
+}
+
+static VALUE
 md5i_new(argc, argv, class)
     int argc;
     VALUE* argv;
     VALUE class;
 {
-    VALUE obj, str;
+    VALUE obj;
     md5_state_t *md5;
 
     obj = Data_Make_Struct(class, md5_state_t, 0, free, md5);
     md5_init(md5);
-    rb_scan_args(argc, argv, "01", &str);
-    if (argc == 1) {
-	md5i_update(obj, str);
-    }
+    rb_obj_call_init(obj, argc, argv);
 
     return obj;
 }
@@ -102,6 +114,7 @@ Init_md5()
     rb_define_singleton_method(cMD5, "new", md5i_new, -1);
     rb_define_singleton_method(cMD5, "md5", md5i_new, -1);
 
+    rb_define_method(cMD5, "initialize", md5i_init, -1);
     rb_define_method(cMD5, "update", md5i_update, 1);
     rb_define_method(cMD5, "<<", md5i_update, 1);
     rb_define_method(cMD5, "digest", md5i_digest, 0);

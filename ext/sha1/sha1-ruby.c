@@ -64,22 +64,32 @@ sha1_clone(obj)
 }
 
 static VALUE
+sha1_init(argc, argv, self)
+    int argc;
+    VALUE* argv;
+    VALUE self;
+{
+    VALUE arg;
+
+    rb_scan_args(argc, argv, "01", &arg);
+
+    if (!NIL_P(arg)) sha1_update(self, arg);
+
+    return self;
+}
+
+static VALUE
 sha1_new(argc, argv, class)
     int argc;
     VALUE* argv;
     VALUE class;
 {
-    VALUE arg, obj;
+    VALUE obj;
     SHA1_CTX *sha1;
-
-    rb_scan_args(argc, argv, "01", &arg);
-    if (!NIL_P(arg)) Check_Type(arg, T_STRING);
 
     obj = Data_Make_Struct(class, SHA1_CTX, 0, free, sha1);
     SHA1Init(sha1);
-    if (!NIL_P(arg)) {
-	sha1_update(obj, arg);
-    }
+    rb_obj_call_init(obj, argc, argv);
 
     return obj;
 }
@@ -93,6 +103,7 @@ Init_sha1()
     rb_define_singleton_method(cSHA1, "sha1", sha1_new, -1);
 
     rb_define_method(cSHA1, "update", sha1_update, 1);
+    rb_define_method(cSHA1, "initialize", sha1_init, -1);
     rb_define_method(cSHA1, "<<", sha1_update, 1);
     rb_define_method(cSHA1, "digest", sha1_digest, 0);
     rb_define_method(cSHA1, "hexdigest", sha1_hexdigest, 0);
