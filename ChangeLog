@@ -1,3 +1,9 @@
+Tue Feb  8 00:19:02 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv.rb (Resolv::DNS::Name#subdomain_of?): new method.
+	  (Resolv::DNS::Name#inspect): ditto.
+	  Suggested by Sam Roberts.  [ruby-talk:129086]
+
 Mon Feb  7 23:14:11 2005  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (io_getc): flush rb_stdout before read fro stdin, which is
