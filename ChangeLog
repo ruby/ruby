@@ -1,3 +1,10 @@
+Thu Jul  8 19:27:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_stack_end_address): detect stack end address
+	  variable supplied by system.  [ruby-core:03115]
+
+	* gc.c (Init_stack): use system provided address if possible.
+
 Thu Jul  8 00:05:23 2004  akira yamada  <akira@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile::initialize): got out code of
@@ -19,7 +26,7 @@ Wed Jul  7 00:48:34 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Tue Jul  6 18:38:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib : improve framework of developping Tcl/Tk extension 
+	* ext/tk/lib : improve framework of developping Tcl/Tk extension
 	  wrappers
 
 Mon Jul  5 23:56:42 2004  Kouhei Sutou  <kou@cozmixng.org>

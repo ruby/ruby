@@ -389,6 +389,18 @@ AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV
 
+AC_CACHE_CHECK(for stack end address, rb_cv_stack_end_address,
+[rb_cv_stack_end_address=no
+for addr in __libc_stack_end _SEND; do
+  AC_TRY_LINK(
+    [extern void *$addr;],
+    [if (!$addr) return 1;],
+    [rb_cv_stack_end_address="$addr"; break])
+done])
+if test $rb_cv_stack_end_address != no; then
+  AC_DEFINE_UNQUOTED(STACK_END_ADDRESS, $rb_cv_stack_end_address)
+fi
+
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL

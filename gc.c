@@ -44,6 +44,10 @@ extern unsigned long __libc_ia64_register_backing_store_base;
 #endif
 #endif
 
+#if defined _WIN32 || defined __CYGWIN__
+#include <windows.h>
+#endif
+
 void re_free_registers _((struct re_registers*));
 int rb_io_fptr_finalize _((struct OpenFile*));
 
@@ -1408,9 +1412,16 @@ void
 Init_stack(addr)
     VALUE *addr;
 {
-#if defined(__human68k__)
-    extern void *_SEND;
-    rb_gc_stack_start = _SEND;
+#if defined(_WIN32) || defined(__CYGWIN__)
+    MEMORY_BASIC_INFORMATION m;
+    memset(&m, 0, sizeof(m));
+    VirtualQuery(&m, &m, sizeof(m));
+    rb_gc_stack_start =
+	STACK_UPPER((VALUE *)&m, (VALUE *)m.BaseAddress,
+		    (VALUE *)((char *)m.BaseAddress + m.RegionSize) - 1);
+#elif defined(STACK_END_ADDRESS)
+    extern void *STACK_END_ADDRESS;
+    rb_gc_stack_start = STACK_END_ADDRESS;
 #else
     if (!addr) addr = (VALUE *)&addr;
     STACK_UPPER(&addr, addr, ++addr);
