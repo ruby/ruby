@@ -98,7 +98,7 @@ fc_i(key, value, res)
 	    arg.klass = res->klass;
 	    arg.track = value;
 	    arg.prev = res;
-	    st_foreach(RCLASS(value)->iv_tbl, fc_i, (st_data_t)&arg);
+	    st_foreach_safe(RCLASS(value)->iv_tbl, fc_i, (st_data_t)&arg);
 	    if (arg.path) {
 		res->path = arg.path;
 		return ST_STOP;
@@ -124,7 +124,7 @@ find_class_path(klass)
     arg.track = rb_cObject;
     arg.prev = 0;
     if (RCLASS(rb_cObject)->iv_tbl) {
-	st_foreach(RCLASS(rb_cObject)->iv_tbl, fc_i, (st_data_t)&arg);
+	st_foreach_safe(RCLASS(rb_cObject)->iv_tbl, fc_i, (st_data_t)&arg);
     }
     if (arg.path == 0) {
 	st_foreach(rb_class_tbl, fc_i, (st_data_t)&arg);
@@ -958,7 +958,7 @@ rb_mark_generic_ivar_tbl()
 {
     if (!generic_iv_tbl) return;
     if (special_generic_ivar == 0) return;
-    st_foreach(generic_iv_tbl, givar_i, 0);
+    st_foreach_safe(generic_iv_tbl, givar_i, 0);
 }
 
 void
@@ -1118,7 +1118,7 @@ rb_obj_instance_variables(obj)
       case T_CLASS:
       case T_MODULE:
 	if (ROBJECT(obj)->iv_tbl) {
-	    st_foreach(ROBJECT(obj)->iv_tbl, ivar_i, ary);
+	    st_foreach_safe(ROBJECT(obj)->iv_tbl, ivar_i, ary);
 	}
 	break;
       default:
@@ -1127,7 +1127,7 @@ rb_obj_instance_variables(obj)
 	    st_table *tbl;
 
 	    if (st_lookup(generic_iv_tbl, obj, (st_data_t *)&tbl)) {
-		st_foreach(tbl, ivar_i, ary);
+		st_foreach_safe(tbl, ivar_i, ary);
 	    }
 	}
 	break;
@@ -1511,7 +1511,7 @@ rb_mod_const_at(mod, data)
 	tbl = st_init_numtable();
     }
     if (RCLASS(mod)->iv_tbl) {
-	st_foreach(RCLASS(mod)->iv_tbl, sv_i, (st_data_t)tbl);
+	st_foreach_safe(RCLASS(mod)->iv_tbl, sv_i, (st_data_t)tbl);
     }
     return tbl;
 }
@@ -1875,7 +1875,7 @@ rb_mod_class_variables(obj)
 
     for (;;) {
 	if (RCLASS(obj)->iv_tbl) {
-	    st_foreach(RCLASS(obj)->iv_tbl, cv_i, ary);
+	    st_foreach_safe(RCLASS(obj)->iv_tbl, cv_i, ary);
 	}
 	obj = RCLASS(obj)->super;
 	if (!obj) break;

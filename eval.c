@@ -6187,12 +6187,13 @@ rb_f_eval(argc, argv, self)
 	SafeStringValue(src);
     }
     if (argc >= 3) {
-	file = StringValuePtr(vfile);
+	StringValue(vfile);
     }
     if (argc >= 4) {
 	line = NUM2INT(vline);
     }
 
+    if (!NIL_P(vfile)) file = RSTRING(vfile)->ptr;
     if (NIL_P(scope) && ruby_frame->prev) {
 	struct FRAME *prev;
 	VALUE val;
@@ -8096,6 +8097,14 @@ proc_invoke(proc, args, self, klass)
     POP_ITER();
     ruby_block = old_block;
     ruby_wrapper = old_wrapper;
+    if (FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
+	struct RVarmap *vars;
+
+	for (vars = old_dvars; vars; vars = vars->next) {
+	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
+	    FL_SET(vars, DVAR_DONT_RECYCLE);
+	}
+    }
     ruby_dyna_vars = old_dvars;
     ruby_safe_level = safe;
 
@@ -12076,6 +12085,7 @@ rb_callcc(self)
     volatile rb_thread_t th_save;
     struct tag *tag;
     struct RVarmap *vars;
+    struct BLOCK *blk;
 
     THREAD_ALLOC(th);
     cont = Data_Wrap_Struct(rb_cCont, thread_mark, thread_free, th);
@@ -12086,11 +12096,10 @@ rb_callcc(self)
     }
     th->thread = curr_thread->thread;
 
-    for (vars = th->dyna_vars; vars; vars = vars->next) {
+    for (vars = ruby_dyna_vars; vars; vars = vars->next) {
 	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
 	FL_SET(vars, DVAR_DONT_RECYCLE);
     }
-
     th_save = th;
     if (THREAD_SAVE_CONTEXT(th)) {
 	return th_save->result;

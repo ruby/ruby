@@ -1214,8 +1214,8 @@ rb_f_exec(argc, argv)
 	    rb_raise(rb_eArgError, "wrong first argument");
 	}
 	prog = RARRAY(tmp)->ptr[0];
-	SafeStringValue(prog);
 	argv[0] = RARRAY(tmp)->ptr[1];
+	SafeStringValue(prog);
     }
     if (argc == 1 && prog == 0) {
 	VALUE cmd = argv[0];

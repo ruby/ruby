@@ -1067,11 +1067,13 @@ io_read(argc, argv, io)
 	StringValue(str);
 	rb_str_modify(str);
 	rb_str_resize(str,len);
+	FL_SET(str, FL_FREEZE);
     }
     if (len == 0) return str;
 
     READ_CHECK(fptr->f);
     n = rb_io_fread(RSTRING(str)->ptr, len, fptr->f);
+    FL_UNSET(str, FL_FREEZE);
     if (n == 0) {
 	rb_str_resize(str,0);
 	if (!fptr->f) return Qnil;
@@ -2721,7 +2723,9 @@ rb_io_popen(str, argc, argv, klass)
 	mode = rb_io_modenum_mode(FIX2INT(pmode), mbuf);
     }
     else {
-	mode = StringValuePtr(pmode);
+	strncpy(mbuf, StringValuePtr(pmode), sizeof(mbuf) - 1);
+	mbuf[sizeof(mbuf) - 1] = 0;
+	mode = mbuf;
     }
     SafeStringValue(pname);
     port = pipe_open(str, mode);

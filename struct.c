@@ -34,18 +34,43 @@ rb_struct_iv_get(c, name)
 }
 
 static VALUE
-rb_struct_s_members(obj)
-    VALUE obj;
+struct_s_members(klass)
+    VALUE klass;
 {
-    VALUE member, ary;
+    VALUE members = rb_struct_iv_get(klass, "__members__");
+
+    if (NIL_P(members)) {
+	rb_bug("non-initialized struct");
+    }
+    return members;
+}
+
+static VALUE
+struct_members(s)
+    VALUE s;
+{
+    VALUE members = struct_s_members(rb_obj_class(s));
+
+    if (NIL_P(members)) {
+	rb_bug("non-initialized struct");
+    }
+    if (RSTRUCT(s)->len != RARRAY(members)->len) {
+	rb_raise(rb_eTypeError, "struct size differs (%d required %d given)",
+		 RARRAY(members)->len, RSTRUCT(s)->len);
+    }
+    return members;
+}
+
+static VALUE
+rb_struct_s_members(klass)
+    VALUE klass;
+{
+    VALUE members, ary;
     VALUE *p, *pend;
 
-    member = rb_struct_iv_get(obj, "__member__");
-    if (NIL_P(member)) {
-	rb_bug("uninitialized struct");
-    }
-    ary = rb_ary_new2(RARRAY(member)->len);
-    p = RARRAY(member)->ptr; pend = p + RARRAY(member)->len;
+    members = struct_s_members(klass);
+    ary = rb_ary_new2(RARRAY(members)->len);
+    p = RARRAY(members)->ptr; pend = p + RARRAY(members)->len;
     while (p < pend) {
 	rb_ary_push(ary, rb_str_new2(rb_id2name(SYM2ID(*p))));
 	p++;
@@ -78,16 +103,16 @@ rb_struct_getmember(obj, id)
     VALUE obj;
     ID id;
 {
-    VALUE member, slot;
+    VALUE members, slot;
     long i;
 
-    member = rb_struct_iv_get(rb_obj_class(obj), "__member__");
-    if (NIL_P(member)) {
+    members = rb_struct_iv_get(rb_obj_class(obj), "__members__");
+    if (NIL_P(members)) {
 	rb_bug("uninitialized struct");
     }
     slot = ID2SYM(id);
-    for (i=0; i<RARRAY(member)->len; i++) {
-	if (RARRAY(member)->ptr[i] == slot) {
+    for (i=0; i<RARRAY(members)->len; i++) {
+	if (RARRAY(members)->ptr[i] == slot) {
 	    return RSTRUCT(obj)->ptr[i];
 	}
     }
@@ -139,16 +164,16 @@ static VALUE
 rb_struct_set(obj, val)
     VALUE obj, val;
 {
-    VALUE member, slot;
+    VALUE members, slot;
     long i;
 
-    member = rb_struct_iv_get(rb_obj_class(obj), "__member__");
-    if (NIL_P(member)) {
+    members = rb_struct_iv_get(rb_obj_class(obj), "__members__");
+    if (NIL_P(members)) {
 	rb_bug("uninitialized struct");
     }
     rb_struct_modify(obj);
-    for (i=0; i<RARRAY(member)->len; i++) {
-	slot = RARRAY(member)->ptr[i];
+    for (i=0; i<RARRAY(members)->len; i++) {
+	slot = RARRAY(members)->ptr[i];
 	if (rb_id_attrset(SYM2ID(slot)) == rb_frame_last_func()) {
 	    return RSTRUCT(obj)->ptr[i] = val;
 	}
@@ -159,13 +184,14 @@ rb_struct_set(obj, val)
 }
 
 static VALUE
-make_struct(name, member, klass)
-    VALUE name, member, klass;
+make_struct(name, members, klass)
+    VALUE name, members, klass;
 {
     VALUE nstr;
     ID id;
     long i;
 
+    OBJ_FREEZE(members);
     if (NIL_P(name)) {
 	nstr = rb_class_new(klass);
 	rb_make_metaclass(nstr, RBASIC(klass)->klass);
@@ -183,15 +209,15 @@ make_struct(name, member, klass)
 	}
 	nstr = rb_define_class_under(klass, cname, klass);
     }
-    rb_iv_set(nstr, "__size__", LONG2NUM(RARRAY(member)->len));
-    rb_iv_set(nstr, "__member__", member);
+    rb_iv_set(nstr, "__size__", LONG2NUM(RARRAY(members)->len));
+    rb_iv_set(nstr, "__members__", members);
 
     rb_define_alloc_func(nstr, struct_alloc);
     rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members, 0);
-    for (i=0; i< RARRAY(member)->len; i++) {
-	ID id = SYM2ID(RARRAY(member)->ptr[i]);
+    for (i=0; i< RARRAY(members)->len; i++) {
+	ID id = SYM2ID(RARRAY(members)->ptr[i]);
 	if (i<10) {
 	    rb_define_method_id(nstr, id, ref_func[i], 0);
 	}
@@ -427,15 +453,12 @@ static VALUE
 rb_struct_each_pair(s)
     VALUE s;
 {
-    VALUE member;
+    VALUE members;
     long i;
 
-    member = rb_struct_iv_get(rb_obj_class(s), "__member__");
-    if (NIL_P(member)) {
-	rb_bug("non-initialized struct");
-    }
+    members = struct_members(s);
     for (i=0; i<RSTRUCT(s)->len; i++) {
-	rb_yield_values(2, RARRAY(member)->ptr[i], RSTRUCT(s)->ptr[i]);
+	rb_yield_values(2, rb_ary_entry(members, i), RSTRUCT(s)->ptr[i]);
     }
     return s;
 }
@@ -445,14 +468,10 @@ inspect_struct(s)
     VALUE s;
 {
     char *cname = rb_class2name(rb_obj_class(s));
-    VALUE str, member;
+    VALUE str, members;
     long i;
 
-    member = rb_struct_iv_get(rb_obj_class(s), "__member__");
-    if (NIL_P(member)) {
-	rb_bug("non-initialized struct");
-    }
-
+    members = struct_members(s);
     str = rb_str_buf_new2("#<struct ");
     rb_str_cat2(str, cname);
     rb_str_cat2(str, " ");
@@ -463,7 +482,7 @@ inspect_struct(s)
 	if (i > 0) {
 	    rb_str_cat2(str, ", ");
 	}
-	slot = RARRAY(member)->ptr[i];
+	slot = RARRAY(members)->ptr[i];
 	p = rb_id2name(SYM2ID(slot));
 	rb_str_cat2(str, p);
 	rb_str_cat2(str, "=");
@@ -539,17 +558,13 @@ rb_struct_aref_id(s, id)
     VALUE s;
     ID id;
 {
-    VALUE member;
+    VALUE members;
     long i, len;
 
-    member = rb_struct_iv_get(rb_obj_class(s), "__member__");
-    if (NIL_P(member)) {
-	rb_bug("non-initialized struct");
-    }
-
-    len = RARRAY(member)->len;
+    members = struct_members(s);
+    len = RARRAY(members)->len;
     for (i=0; i<len; i++) {
-	if (SYM2ID(RARRAY(member)->ptr[i]) == id) {
+	if (SYM2ID(RARRAY(members)->ptr[i]) == id) {
 	    return RSTRUCT(s)->ptr[i];
 	}
     }
@@ -602,18 +617,18 @@ rb_struct_aset_id(s, id, val)
     VALUE s, val;
     ID id;
 {
-    VALUE member;
+    VALUE members;
     long i, len;
 
-    member = rb_struct_iv_get(rb_obj_class(s), "__member__");
-    if (NIL_P(member)) {
-	rb_bug("non-initialized struct");
-    }
-
+    members = struct_members(s);
     rb_struct_modify(s);
-    len = RARRAY(member)->len;
+    len = RARRAY(members)->len;
+    if (RSTRUCT(s)->len != RARRAY(members)->len) {
+	rb_raise(rb_eTypeError, "struct size differs (%d required %d given)",
+		 RARRAY(members)->len, RSTRUCT(s)->len);
+    }
     for (i=0; i<len; i++) {
-	if (SYM2ID(RARRAY(member)->ptr[i]) == id) {
+	if (SYM2ID(RARRAY(members)->ptr[i]) == id) {
 	    RSTRUCT(s)->ptr[i] = val;
 	    return val;
 	}

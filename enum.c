@@ -389,26 +389,26 @@ static VALUE
 sort_by_i(i, ary)
     VALUE i, ary;
 {
-    VALUE v, e;
+    VALUE v;
+    NODE *memo;
 
     v = rb_yield(i);
-    e = rb_assoc_new(v, i);
-    OBJ_FREEZE(e);
-    rb_ary_push(ary, e);
+    memo = rb_node_newnode(NODE_MEMO, v, i, 0);
+    rb_ary_push(ary, (VALUE)memo);
     return Qnil;
 }
 
 static VALUE
 sort_by_cmp(values, ary)
-    VALUE values;
+    VALUE values, ary;
 {
-    VALUE a = RARRAY(values)->ptr[0];
-    VALUE b = RARRAY(values)->ptr[1];
+    NODE *a = (NODE*)RARRAY(values)->ptr[0];
+    NODE *b = (NODE*)RARRAY(values)->ptr[1];
 
-    /* pedantic check; they must be arrays */
-    Check_Type(a, T_ARRAY);
-    Check_Type(b, T_ARRAY);
-    return rb_funcall(RARRAY(a)->ptr[0], id_cmp, 1, RARRAY(b)->ptr[0]);
+    /* pedantic check; they must be memo nodes */
+    Check_Type(a, T_NODE);
+    Check_Type(b, T_NODE);
+    return rb_funcall(a->u1.value, id_cmp, 1, b->u1.value);
 }
 
 /*
@@ -498,8 +498,7 @@ enum_sort_by(obj)
 	rb_iterate(rb_ary_sort_bang, ary, sort_by_cmp, ary);
     }
     for (i=0; i<RARRAY(ary)->len; i++) {
-	VALUE e = RARRAY(ary)->ptr[i];
-	RARRAY(ary)->ptr[i] = RARRAY(e)->ptr[1];
+	RARRAY(ary)->ptr[i] = RNODE(RARRAY(ary)->ptr[i])->u2.value;
     }
     return ary;
 }

@@ -1,3 +1,30 @@
+Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_sum): check was done with false pointer.
+	  [ruby-dev:24383]
+
+	* string.c (rb_str_sum): string may be altered.  [ruby-dev:24381]
+
+Fri Oct  1 11:40:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_eval): defer pointer retrieval to prevent unsafe
+	  sourcefile string modification.  [ruby-dev:24373]
+
+	* io.c (io_read): block string buffer modification during
+	  rb_io_fread() by freezing it temporarily. [ruby-dev:24366]
+
+	* io.c (rb_io_s_popen): mode argument may be altered.
+	  [ruby-dev:24375]
+
+	* file.c (rb_file_s_basename): ext argument may be altered.
+	  [ruby-dev:24377]
+
+	* enum.c (enum_sort_by): use NODE instead of 2 element arrays.
+	  [ruby-dev:24378]
+
+	* string.c (rb_str_chomp_bang): StringValue() may change the
+	  receiver.  [ruby-dev:24371]
+
 Fri Oct  1 11:25:20 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/grid.rb: revive TkGrid.grid
@@ -21,6 +48,36 @@ Wed Sep 29 10:58:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (sort_by_i): internally used object must not be changed
 	  outside.  [ruby-dev:24368]
+
+Mon Sep 27 09:14:03 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (s_accept): don't retry for EWOULDBLOCK.
+	  [ruby-talk:113807]
+
+Fri Sep 24 16:09:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): propagate DVAR_DONT_RECYCLE on termination
+	  to avoid double call to rb_gc_force_recycle(). [ruby-dev:24311]
+
+Fri Sep 24 08:29:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_subseq): original object might be modified after
+	  sharing data creation.  [ruby-dev:24327]
+
+	* array.c (rb_ary_replace): ditto.
+
+	* array.c (ary_make_shared): freeze shared array. [ruby-dev:24325]
+
+	* struct.c (struct_members): always check struct size and size of
+	  members list in the class.  [ruby-dev:24320]
+
+Thu Sep 23 09:29:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_sub_bang): check if string is not modified
+	  during iteration.  [ruby-dev:24315]
+
+	* hash.c (rb_hash_rehash): replace st_foreach() by its deep
+	  checking counterpart.  [ruby-dev:24310]
 
 Wed Sep 22 13:38:12 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
