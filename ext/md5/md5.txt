@@ -5,7 +5,7 @@
 A class to implement MD5 Message-Digest Algorithm by RSA Data
 Security, Inc., described in RFC1321.
 
-SuperClass: Object
+Superclass: Object
 
 Class Methods:
 
