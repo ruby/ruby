@@ -1174,7 +1174,7 @@ def init_mkmf(config = CONFIG)
   dir_config("opt")
 end
 
-FailedMassage = <<MESSAGE
+FailedMessage = <<MESSAGE
 Could not create Makefile due to some reason, probably lack of
 necessary libraries and/or headers.  Check the mkmf.log file for more
 details.  You may need configuration options.
@@ -1185,7 +1185,7 @@ MESSAGE
 def mkmf_failed(path)
   unless $makefile_created
     opts = $arg_config.collect {|t, n| "\t#{t}#{"=#{n}" if n}\n"}
-    abort "*** #{path} failed ***\n" + FailedMassage + opts.join
+    abort "*** #{path} failed ***\n" + FailedMessage + opts.join
   end
 end
 

@@ -1,3 +1,7 @@
+Wed Feb 23 00:37:34 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/mkmf.rb (mkmf_failed): fixed typo.
+
 Tue Feb 22 23:52:45 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, lib/mkmf.rb: use simple commands if available.
