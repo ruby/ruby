@@ -870,12 +870,12 @@ sitedir='${prefix}/lib/ruby/site_ruby'
 AC_ARG_WITH(sitedir,
 	    [--with-sitedir=DIR        site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
             [sitedir=$withval])
-RUBY_SITE_LIB_PATH="${sitedir}"
-RUBY_SITE_LIB_PATH2="${sitedir}/${MAJOR}.${MINOR}"
+RUBY_SITE_LIB_PATH=`eval "echo ${sitedir}"`
+RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${MAJOR}.${MINOR}"
 
-AC_DEFINE_UNQUOTED(RUBY_LIB, "`eval "echo ${RUBY_LIB_PATH}"`")
-AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "`eval "echo ${RUBY_SITE_LIB_PATH}"`")
-AC_DEFINE_UNQUOTED(RUBY_SITE_LIB2, "`eval "echo ${RUBY_SITE_LIB_PATH2}"`")
+AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_LIB2, "${RUBY_SITE_LIB_PATH2}")
 
 AC_SUBST(arch)dnl
 AC_SUBST(sitedir)dnl
@@ -898,7 +898,7 @@ else
 fi
 
 AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")
-AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "`eval "echo ${RUBY_SITE_LIB_PATH2}/${arch}"`")
+AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH2}/${arch}")
 
 AC_ARG_WITH(search-path,
 		[--with-search-path	  specify the additional search path],
