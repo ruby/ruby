@@ -78,7 +78,7 @@ check_strio(self)
 {
     Check_Type(self, T_DATA);
     if (!IS_STRIO(self)) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected String::IO)",
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected StringIO)",
 		 rb_class2name(CLASS_OF(self)));
     }
     return DATA_PTR(self);
