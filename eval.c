@@ -22,6 +22,25 @@
 #include "st.h"
 #include "dln.h"
 
+/* Make alloca work the best possible way.  */
+#ifdef __GNUC__
+# ifndef atarist
+#  ifndef alloca
+#   define alloca __builtin_alloca
+#  endif
+# endif /* atarist */
+#else
+# if defined(HAVE_ALLOCA_H)
+#  include <alloca.h>
+# elif !defined(alloca)
+char *alloca();
+# endif
+#endif /* __GNUC__ */
+
+#ifdef _AIX
+#pragma alloca
+#endif
+
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start(a,b)
@@ -4126,7 +4145,7 @@ stack_length(p)
     alloca(0);
 # define STACK_END (&stack_end)
 #else
-# if defined(__GNUC__) && !defined(__alpha__) && !defined(__APPLE__)
+# if defined(__GNUC__) && defined(__i386__)
     VALUE *stack_end = __builtin_frame_address(0);
 # else
     VALUE *stack_end = alloca(1);

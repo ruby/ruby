@@ -1,3 +1,10 @@
+Sun Feb 11 16:00:30 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* eval.c (stack_length): use __builtin_frame_address() only if
+	  GCC and i386 CPU.
+
+	* gc.c (rb_gc, Init_stack): ditto.
+
 Fri Feb 10 00:06:28 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* win32/win32.c (win32_stat): replace stat for enable when pathname
