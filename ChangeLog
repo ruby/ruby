@@ -1,3 +1,8 @@
+Wed Apr 21 10:18:06  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* process.c(rb_spawn): fix SEGV at "p system('command line here')"
+	 (may happen only in bccwin32) [ruby-dev:23380]
+
 Mon Apr 19 20:58:44  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c: Updated RDocs.
