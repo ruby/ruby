@@ -3037,9 +3037,10 @@ argf_getline(argc, argv)
 	next_p = 1;
 	goto retry;
     }
-    gets_lineno++;
-    lineno = INT2FIX(gets_lineno);
-
+    if (!NIL_P(line)) {
+	gets_lineno++;
+	lineno = INT2FIX(gets_lineno);
+    }
     return line;
 }
 

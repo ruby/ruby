@@ -1563,7 +1563,12 @@ rb_ary_equal(ary1, ary2)
     long i;
 
     if (ary1 == ary2) return Qtrue;
-    if (TYPE(ary2) != T_ARRAY) return Qfalse;
+    if (TYPE(ary2) != T_ARRAY) {
+	if (!rb_respond_to(ary2, rb_intern("to_str"))) {
+	    return Qfalse;
+	}
+	return rb_equal(ary2, ary1);
+    }
     if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (!rb_equal(RARRAY(ary1)->ptr[i], RARRAY(ary2)->ptr[i]))

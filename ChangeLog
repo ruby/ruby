@@ -1,3 +1,18 @@
+Tue Feb  4 16:11:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_equal): a == b is true when b is non T_ARRAY
+	  object, if b has "to_ary" and b == a.
+
+	* hash.c (rb_hash_equal): a == b is true when b is non T_HASH
+	  object, if b has "to_hash" and b == a.
+
+	* string.c (rb_str_equal): a == b is true when b is non T_STRING
+	  object, if b has "to_str" and b == a.
+
+Mon Feb  3 23:46:48 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_getline): should not increment lineno at EOF.
+
 Mon Feb  3 16:49:19 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (Init_Object): default Object#=== now calls "=="

@@ -773,7 +773,12 @@ rb_str_equal(str1, str2)
     VALUE str1, str2;
 {
     if (str1 == str2) return Qtrue;
-    if (TYPE(str2) != T_STRING) return Qfalse;
+    if (TYPE(str2) != T_STRING) {
+	if (!rb_respond_to(str2, rb_intern("to_str"))) {
+	    return Qfalse;
+	}
+	return rb_equal(str2, str1);
+    }
     if (RSTRING(str1)->len == RSTRING(str2)->len &&
 	rb_str_cmp(str1, str2) == 0) {
 	return Qtrue;
