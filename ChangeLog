@@ -1,3 +1,7 @@
+Tue Jun  5 13:41:13 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/etc/extconf.rb: use egrep_cpp.
+
 Mon Jun  4 04:14:53 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/shellwords.rb: don't destroy argument.
