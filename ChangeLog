@@ -62,7 +62,6 @@ Mon Dec 27 15:21:07 2004  Minero Aoki  <aamine@loveruby.net>
 	  (backport from HEAD 1.48)
 
 	* lib/fileutils.rb (mv): wrongly did not overwrite file on Win32
->>>>>>> 1.3892
 	  platforms. (backport from HEAD 1.48)
 
 Sat Dec 25 11:11:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
