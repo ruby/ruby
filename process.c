@@ -2697,7 +2697,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     groups = ALLOCA_N(gid_t, ngroups);
 
-    for (i = 0; i < ngroups; i++) {
+    for (i = 0; i < ngroups && i < RARRAY(ary)->len; i++) {
         VALUE g = RARRAY(ary)->ptr[i];
 
 	if (FIXNUM_P(g)) {
