@@ -474,7 +474,7 @@ mypopen (char *cmd, char *mode)
     fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
     if (!fRet) {
 	errno = GetLastError();
-	rb_sys_fail("mypopen: CreatePipe");
+	return NULL;
     }
 
     if (reading) {
@@ -487,7 +487,7 @@ mypopen (char *cmd, char *mode)
     if (!child) {
 	CloseHandle(hInFile);
 	CloseHandle(hOutFile);
-	rb_sys_fail("mypopen: CreateChild");
+	return NULL;
     }
 
     if (reading) {
@@ -502,13 +502,13 @@ mypopen (char *cmd, char *mode)
     if (fd == -1) {
 	CloseHandle(reading ? hInFile : hOutFile);
 	CloseChildHandle(child);
-	rb_sys_fail("mypopen: _open_osfhandle");
+	return NULL;
     }
 
     if ((fp = (FILE *) fdopen(fd, mode)) == NULL) {
 	_close(fd);
 	CloseChildHandle(child);
-	rb_sys_fail("mypopen: fdopen");
+	return NULL;
     }
 
     child->pipe = fp;
@@ -551,7 +551,7 @@ char *cmd;
 {
     struct ChildRecord *child = CreateChild(cmd, NULL, NULL, NULL, NULL);
     if (!child) {
-	rb_sys_fail("do_spawn: CreateChild");
+	return -1;
     }
     rb_syswait(child->pid);
     return NUM2INT(rb_last_status);
