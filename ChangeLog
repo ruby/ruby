@@ -7,6 +7,8 @@ Mon Nov  1 13:59:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST, ext/**/MANIFEST: removed.
 
+	* README.EXT, README.EXT.ja: remove MANIFEST stuff.
+
 Mon Nov  1 00:36:48 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* main.c (_stklen): move to gc.c.
