@@ -1,3 +1,12 @@
+Sun Oct  3 21:16:05 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (TEXT_REGEXP): allow 8-bit characters for the german
+	version of Microsoft Exchange Server.
+
+	* lib/net/imap.rb (RTEXT_REGEXP): ditto.
+
+	* lib/net/imap.rb (CTEXT_REGEXP): ditto.
+
 Sat Oct  2 20:34:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (local_vars): moved to struct parser_params.

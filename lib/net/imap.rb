@@ -1909,14 +1909,14 @@ module Net
 (?# 7:  RPAR    )(\)))/ni
 
       TEXT_REGEXP = /\G(?:\
-(?# 1:  TEXT    )([^\x00\x80-\xff\r\n]*))/ni
+(?# 1:  TEXT    )([^\x00\r\n]*))/ni
 
       RTEXT_REGEXP = /\G(?:\
 (?# 1:  LBRA    )(\[)|\
-(?# 2:  TEXT    )([^\x00\x80-\xff\r\n]*))/ni
+(?# 2:  TEXT    )([^\x00\r\n]*))/ni
 
       CTEXT_REGEXP = /\G(?:\
-(?# 1:  TEXT    )([^\x00\x80-\xff\r\n\]]*))/ni
+(?# 1:  TEXT    )([^\x00\r\n\]]*))/ni
 
       Token = Struct.new(:symbol, :value)
 
