@@ -184,8 +184,8 @@ module WEBrick
       meta["REQUEST_METHOD"]    = @request_method.dup
       meta["REQUEST_URI"]       = @request_uri.to_s
       meta["SCRIPT_NAME"]       = @script_name.dup
-      meta["SERVER_NAME"]       = @request_uri.host
-      meta["SERVER_PORT"]       = @config[:Port].to_s
+      meta["SERVER_NAME"]       = @host
+      meta["SERVER_PORT"]       = @port
       meta["SERVER_PROTOCOL"]   = "HTTP/" + @config[:HTTPVersion].to_s
       meta["SERVER_SOFTWARE"]   = @config[:ServerSoftware].dup
 

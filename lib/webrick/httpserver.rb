@@ -31,10 +31,9 @@ module WEBrick
       end
 
       unless @config[:AccessLog]
-        basic_log = BasicLog::new
         @config[:AccessLog] = [
-          [ basic_log, AccessLog::COMMON_LOG_FORMAT ],
-          [ basic_log, AccessLog::REFERER_LOG_FORMAT ]
+          [ $stderr, AccessLog::COMMON_LOG_FORMAT ],
+          [ $stderr, AccessLog::REFERER_LOG_FORMAT ]
         ]
       end
     end
@@ -123,9 +122,8 @@ module WEBrick
 
     def access_log(config, req, res)
       param = AccessLog::setup_params(config, req, res)
-      level = Log::INFO
       @config[:AccessLog].each{|logger, fmt|
-        logger.log(level, AccessLog::format(fmt, param))
+        logger << AccessLog::format(fmt, param)
       }
     end
 

@@ -56,11 +56,11 @@ module WEBrick
       @logger.info("ruby #{rubyv}")
 
       @listeners = []
-      unless  @config[:DoNotListen]
+      unless @config[:DoNotListen]
+        if @config[:Listen]
+          warn(":Listen option is deprecated; use GenericServer#listen")
+        end
         listen(@config[:BindAddress], @config[:Port])
-        @config[:Listen].each{|addr, port|
-          listen(addr, port).each{|sock| @listeners << sock }
-        }
       end
     end
 

@@ -318,7 +318,7 @@ module WEBrick
         res.body << <<-_end_of_html_    
     <ADDRESS>
      #{HTMLUtils::escape(@config[:ServerSoftware])}<BR>
-     at #{req.request_uri.host}:#{@config[:Port]}
+     at #{req.host}:#{req.port}
     </ADDRESS>
   </BODY>
 </HTML>

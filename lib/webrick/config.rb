@@ -23,7 +23,6 @@ module WEBrick
       :ServerName     => Utils::getservername,
       :BindAddress    => nil,   # "0.0.0.0" or "::" or nil
       :Port           => nil,   # users MUST specifiy this!!
-      :Listen         => [],    # list of pairs of alt addr/port.
       :MaxClients     => 100,   # maximum number of the concurrent connections
       :ServerType     => nil,   # default: WEBrick::SimpleServer
       :Logger         => nil,   # default: WEBrick::Log.new

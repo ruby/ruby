@@ -40,6 +40,10 @@ module WEBrick
       end
     end
 
+    def <<(obj)
+      log(INFO, obj.to_s)
+    end
+
     def fatal(msg) log(FATAL, "FATAL " << format(msg)); end
     def error(msg) log(ERROR, "ERROR " << format(msg)); end
     def warn(msg)  log(WARN,  "WARN  " << format(msg)); end

@@ -1,3 +1,21 @@
+Mon Sep  8 18:26:41 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/accesslog.rb (AccessLog::setup_params): use req.port
+	  instead of config[:Port] or req.request_uri.port.
+
+	* lib/webrick/httprequest.rb (HTTPRequest#meta_vars): ditto.
+
+	* lib/webrick/httpservlet/filehandler.rb (FileHandler#dir_list): ditto.
+
+	* lib/webrick/config.rb: :Listen option never be used. 
+
+	* lib/webrick/server.rb (GenericServer#initialize): don't use :Listen
+	  option and add warning message.
+
+	* lib/webrick/log.rb (BasicLog#<<): shortcut of log(INFO, ...).
+
+	* lib/webrick/httpserver.rb (HTTPServer#accesslog): use << for logging.
+
 Sun Sep  7 16:08:28 2003    <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (lib_mainloop_core): fixed signal-trap bug

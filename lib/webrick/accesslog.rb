@@ -33,7 +33,7 @@ module WEBrick
       params["l"] = "-"
       params["m"] = req.request_method
       params["o"] = res
-      params["p"] = config[:Port]
+      params["p"] = req.port
       params["q"] = req.query_string
       params["r"] = req.request_line.sub(/\x0d?\x0a\z/o, '')
       params["s"] = res.status       # won't support "%>s"
