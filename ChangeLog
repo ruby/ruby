@@ -527,11 +527,12 @@ Mon Aug  4 17:25:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 
+Local variables:
 add-log-time-format: (lambda ()
   (let* ((time (current-time))
   	 (diff (+ (cadr time) 32400))
-	  (lo (% diff 65536))
-	  (hi  (+ (car time) (/ diff 65536))))
+	 (lo (% diff 65536))
+	 (hi  (+ (car time) (/ diff 65536))))
   (format-time-string "%a %b %e %H:%M:%S %Y" (list hi lo) t)))
 indent-tabs-mode: t
 tab-width: 8
