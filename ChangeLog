@@ -1,3 +1,7 @@
+Wed Jul 23 23:06:59 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* file.c (DOSISH): better Cygwin support.
+
 Wed Jul 23 18:43:00 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb: import erb-2.0.4b1.

@@ -1549,7 +1549,7 @@ file_expand_path(fname, dname, result)
 	    }
 	    BUFCHECK(strlen(dir) > buflen);
 	    strcpy(buf, dir);
-#ifdef DOSISH
+#if defined DOSISH || defined __CYGWIN__
 	    for (p = buf; *p; p = CharNext(p)) {
 		if (*p == '\\') {
 		    *p = '/';
@@ -1629,7 +1629,7 @@ file_expand_path(fname, dname, result)
 	    strcpy(buf, dir);
 	    free(dir);
 	}
-#ifdef DOSISH
+#if defined DOSISH || defined __CYGWIN__
 	if (isdirsep(*s)) {
 	    /* specified full path, but not drive letter nor UNC */
 	    /* we need to get the drive letter or UNC share name */
@@ -1677,7 +1677,7 @@ file_expand_path(fname, dname, result)
 		    }
 		    break;
 		  case '/':
-#if defined DOSISH
+#if defined DOSISH || defined __CYGWIN__
 		  case '\\':
 #endif
 		    b = ++s;
@@ -1689,7 +1689,7 @@ file_expand_path(fname, dname, result)
 	    }
 	    break;
 	  case '/':
-#if defined DOSISH
+#if defined DOSISH || defined __CYGWIN__
 	  case '\\':
 #endif
 	    if (s > b) {
