@@ -131,6 +131,7 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
     void *handle;
     const char *name;
     const char *err;
+    int i;
 
     rb_secure(2);
 
@@ -162,7 +163,6 @@ rb_dlhandle_sym(VALUE self, VALUE sym)
 #if defined(__CYGWIN__) || defined(WIN32) || defined(__MINGW32__)
 	{
 	    int  len = strlen(name);
-	    int  i;
 	    char *name_a = (char*)xmalloc(len+2);
 	    strcpy(name_a, name);
 	    name_a[len]   = 'A';
