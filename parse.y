@@ -2909,7 +2909,10 @@ yylex()
 	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
 	    pushback(c);
 	    if (lex_state == EXPR_ARG) arg_ambiguous();
-	    if (ISDIGIT(c)) goto start_num;
+	    if (ISDIGIT(c)) {
+		c = '+';
+		goto start_num;
+	    }
 	    lex_state = EXPR_BEG;
 	    return tUPLUS;
 	}
