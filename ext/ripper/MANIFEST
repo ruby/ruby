@@ -1,4 +1,5 @@
 MANIFEST
+Makefile.dev
 README
 depend
 eventids2.c

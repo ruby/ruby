@@ -1,14 +1,14 @@
-#define tIGNORED_NL (tLAST_TOKEN + 1)
-#define tCOMMENT    (tLAST_TOKEN + 2)
-#define tEMBDOC_BEG (tLAST_TOKEN + 3)
-#define tEMBDOC     (tLAST_TOKEN + 4)
-#define tEMBDOC_END (tLAST_TOKEN + 5)
-#define tLWSP       (tLAST_TOKEN + 6)
-#define tHEREDOC_BEG (tLAST_TOKEN + 7)
+#define tIGNORED_NL      (tLAST_TOKEN + 1)
+#define tCOMMENT         (tLAST_TOKEN + 2)
+#define tEMBDOC_BEG      (tLAST_TOKEN + 3)
+#define tEMBDOC          (tLAST_TOKEN + 4)
+#define tEMBDOC_END      (tLAST_TOKEN + 5)
+#define tSP              (tLAST_TOKEN + 6)
+#define tHEREDOC_BEG     (tLAST_TOKEN + 7)
 #define tHEREDOC_CONTENT (tLAST_TOKEN + 8)
-#define tHEREDOC_END (tLAST_TOKEN + 9)
-#define k__END__    (tLAST_TOKEN + 10)
-#define tCHAR       (tLAST_TOKEN + 11)
+#define tHEREDOC_END     (tLAST_TOKEN + 9)
+#define k__END__         (tLAST_TOKEN + 10)
+#define tCHAR            (tLAST_TOKEN + 11)
 
 static ID ripper_id_scan;
 
@@ -51,7 +51,7 @@ static ID ripper_id_comment;
 static ID ripper_id_embdoc_beg;
 static ID ripper_id_embdoc;
 static ID ripper_id_embdoc_end;
-static ID ripper_id_lwsp;
+static ID ripper_id_sp;
 static ID ripper_id_heredoc_beg;
 static ID ripper_id_heredoc_content;
 static ID ripper_id_heredoc_end;
@@ -102,7 +102,7 @@ ripper_init_eventids2()
     ripper_id_embdoc_beg = rb_intern("on__embdoc_beg");
     ripper_id_embdoc = rb_intern("on__embdoc");
     ripper_id_embdoc_end = rb_intern("on__embdoc_end");
-    ripper_id_lwsp = rb_intern("on__sp");
+    ripper_id_sp = rb_intern("on__sp");
     ripper_id_heredoc_beg = rb_intern("on__heredoc_beg");
     ripper_id_heredoc_content = rb_intern("on__heredoc_content");
     ripper_id_heredoc_end = rb_intern("on__heredoc_end");
@@ -241,13 +241,14 @@ static struct token_assoc {
     {tUPLUS,		&ripper_id_op},
     {tWORDS_BEG,	&ripper_id_words_beg},
     {tXSTRING_BEG,	&ripper_id_backtick},
-/* ripper specific tokens */
+
+    /* ripper specific tokens */
     {tIGNORED_NL,       &ripper_id_ignored_nl},
     {tCOMMENT,          &ripper_id_comment},
     {tEMBDOC_BEG,       &ripper_id_embdoc_beg},
     {tEMBDOC,           &ripper_id_embdoc},
     {tEMBDOC_END,       &ripper_id_embdoc_end},
-    {tLWSP,             &ripper_id_lwsp},
+    {tSP,               &ripper_id_sp},
     {tHEREDOC_BEG,      &ripper_id_heredoc_beg},
     {tHEREDOC_CONTENT,  &ripper_id_heredoc_content},
     {tHEREDOC_END,      &ripper_id_heredoc_end},

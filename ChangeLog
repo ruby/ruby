@@ -1,3 +1,37 @@
+Tue Sep 14 20:24:49 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y [ripper]: space event is on__sp, not on__lwsp.
+	  [ruby-dev:24257]
+
+	* ext/ripper/eventids2.c: ditto.
+
+	* ext/ripper/lib/ripper.rb: ditto.
+
+	* ext/ripper/depend (ripper.o): No action is needed.
+	  [ruby-dev:24260]
+
+	* ext/ripper/depend: Borland make does not accept pipes in
+	  Makefile rules. [ruby-dev:24589]
+
+	* ext/ripper/depend: separate rules for developpers.
+
+	* ext/ripper/Makefile.dev: new file.
+
+	* ext/ripper/MANIFEST: add Makefile.dev.
+
+	* ext/ripper/tools/generate-eventids1.rb: read from file, not
+	  stdin.
+
+	* ext/ripper/extconf.rb: clean ripper.E.
+
+	* ext/ripper/tools/generate-ripper_rb.rb: #include ids1/ids2
+	  function was lost.
+
+	* ext/ripper/tools/generate-ripper_rb.rb: SCANNER_EVENTS wrongly
+	  contained parser events.
+
+	* ext/ripper/lib/ripper.rb: ditto.
+
 Tue Sep 14 16:59:37 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix SEGV

@@ -1,8 +1,6 @@
-#
-# generate-eventids1.rb
-#
+# $Id$
 
-ids = ARGF.map {|s| s.strip }
+ids = File.readlines(ARGV[0]).map {|s| s.split[0] }
 
 ids.each do |id|
   puts "static ID ripper_id_#{id};"

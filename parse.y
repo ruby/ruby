@@ -4226,8 +4226,8 @@ ripper_dispatch_space(parser)
         long len = parser->token_head - parser->old_lex_p;
         VALUE str = rb_str_new(parser->old_lex_p, len);
 
-        ripper_dispatch2(parser, ripper_id_scan, ID2SYM(ripper_id_lwsp), rb_str_dup(str));
-        ripper_dispatch1(parser, ripper_id_lwsp, str);
+        ripper_dispatch2(parser, ripper_id_scan, ID2SYM(ripper_id_sp), rb_str_dup(str));
+        ripper_dispatch1(parser, ripper_id_sp, str);
         parser->current_position += len;
         parser->current_column += len;
     }

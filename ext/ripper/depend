@@ -1,6 +1,4 @@
-# Do not remove "./"; nmake requires this.
-ripper.o: ./ripper.c lex.c eventids1.c eventids2.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c ./ripper.c
+ripper.o: lex.c eventids1.c eventids2.c
 
 ripper.c: ripper.y
 	bison -t -v -o$@ ripper.y
@@ -8,31 +6,11 @@ ripper.c: ripper.y
 ripper.y: $(hdrdir)/parse.y $(srcdir)/tools/preproc.rb
 	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y > $@
 
-eventids1.c: $(hdrdir)/parse.y $(srcdir)/tools/list-parse-event-ids.rb $(srcdir)/tools/generate-eventids1.rb
-	$(RUBY) $(srcdir)/tools/list-parse-event-ids.rb $(hdrdir)/parse.y | $(RUBY) $(srcdir)/tools/generate-eventids1.rb > $@
+eventids1.c: $(hdrdir)/parse.y $(srcdir)/tools/generate-eventids1.rb ids1
+	$(RUBY) $(srcdir)/tools/generate-eventids1.rb ids1 > $@
 
-lex.c:
-	cp $(hdrdir)/lex.c . || cp $(srcdir)/lex.c .
+ids1: $(srcdir)/tools/list-parse-event-ids.rb $(hdrdir)/parse.y
+	$(RUBY) $(srcdir)/tools/list-parse-event-ids.rb -a $(hdrdir)/parse.y > $@
 
-#
-# Entries for ripper developpers (no srcdir/objdir support)
-#
-lib/ripper.rb: ripper.rb.in ids1 ids2 tools/generate-ripper_rb.rb
-	$(RUBY) tools/generate-ripper_rb.rb ripper.rb.in ids1 ids2 > $@
-
-ids1: tools/list-parse-event-ids.rb ../../parse.y
-	$(RUBY) tools/list-parse-event-ids.rb -a ../../parse.y > $@
-
-ids2: $(srcdir)/tools/list-scan-event-ids.rb eventids2.c
-	$(RUBY) tools/list-scan-event-ids.rb -a eventids2.c > $@
-
-test: ripper.so test/*.*
-	$(RUBY) test/check-event-arity.rb $(hdrdir)/parse.y
-	sh test/check-event-coverage.sh
-	$(RUBY) test/check-scanner-event-coverage.rb
-	$(RUBY) test/validate.rb > /dev/null
-	@echo OK
-
-preproc: ripper.E
-ripper.E: ripper.c
-	$(CC) -E $(CPPFLAGS) ripper.c | ruby tools/strip.rb > $@
+ids2: $(srcdir)/tools/list-scan-event-ids.rb $(srcdir)/eventids2.c
+	$(RUBY) $(srcdir)/tools/list-scan-event-ids.rb -a $(srcdir)/eventids2.c > $@

@@ -1,14 +1,13 @@
-#
-# generate-ripper_rb.rb
-# Creates ripper.rb, filling in default event handlers, given a basic 
-# template, the list of parser events (ids1), and a list of lexer 
-# events (ids2).
-#
+# $Id$
 
 def main
   template, ids1, ids2 = *ARGV
   File.foreach(template) do |line|
     case line
+    when /\A\#include ids1/
+      print_items read_ids(ids1)
+    when /\A\#include ids2/
+      print_items read_ids(ids2)
     when /\A\#include handlers1/
       File.foreach(ids1) do |line|
         id, arity = line.split
@@ -35,9 +34,20 @@ def main
   end
 end
 
-# Generate generic arg list depending on arity (n)
-# n:: [Integer] arity of method
-def argdecl( n )
+def print_items(ids)
+  comma = "\n"
+  ids.each do |id|
+    print comma; comma = ",\n"
+    print "    #{id.intern.inspect}"
+  end
+  puts
+end
+
+def read_ids(path)
+  File.readlines(path).map {|line| line.split[0] }
+end
+
+def argdecl(n)
   %w(a b c d e f g h i j k l m)[0, n].join(', ')
 end
 
