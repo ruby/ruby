@@ -1,3 +1,18 @@
+Mon Nov 18 02:59:31 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/tempfile.rb: Make this libary thread safe.
+
+	* lib/tempfile.rb: Do not pick a name which was once used and is
+	  still scheduled for removal.
+
+	* lib/tempfile.rb: A lock file need not and must not be scheduled
+	  for removal.
+
+	* lib/tempfile.rb: Compare Max_try with the number of mkdir
+	  failures instead of the suffix counter.
+
+	* lib/tempfile.rb: Overall cleanup and add some important notices.
+
 Fri Nov 15 07:51:24 2002  NAKAMURA Hiroshi  <nakahiro@sarion.co.jp>
 
 	* ostruct.rb: fix a bug in inspect which called String#+ with Symbol.
