@@ -8,7 +8,7 @@ include OpenSSL
 def usage
   myname = File::basename($0)
   $stderr.puts <<EOS
-Usage: #{myname} name [keypair_file]
+Usage: #{myname} [--key keypair_file] name
   name ... ex. /C=JP/O=RRR/OU=CA/CN=NaHi/emailAddress=nahi@example.org
 EOS
   exit
@@ -21,6 +21,7 @@ keyout = $OPT_keyout || "keypair.pem"
 
 $stdout.sync = true
 name_str = ARGV.shift or usage()
+p name_str
 name = X509::Name.parse(name_str)
 
 keypair = nil

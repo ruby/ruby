@@ -1,3 +1,7 @@
+Sat Jan 31 09:20:32 2004  NAKAMURA, Hiroshi  <nakahiro@sairon.co.jp>
+
+	* sample/openssl/gen_csr.rb: wrong usage string.
+
 Sat Jan 31 01:00:32 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/soap/wsdlDriver.rb, lib/wsdl/soap/operation.rb: add support of
