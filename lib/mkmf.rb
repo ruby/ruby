@@ -58,11 +58,12 @@ $orgout = $stdout.dup
 def xsystem command
   Config.expand(command)
   if $DEBUG
-    print command, "\n"
+    puts command
     return system(command)
   end
   $stderr.reopen($log) 
   $stdout.reopen($log) 
+  puts command
   r = system(command)
   $stderr.reopen($orgerr)
   $stdout.reopen($orgout)
