@@ -617,10 +617,11 @@ r_object(arg)
     switch (type) {
       case TYPE_LINK:
 	id = r_long(arg);
-	if (v = rb_hash_aref(arg->data, INT2FIX(id))) {
-	    return v;
+	v = rb_hash_aref(arg->data, INT2FIX(id));
+	if (NIL_P(v)) {
+	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
-	rb_raise(rb_eArgError, "dump format error (unlinked)");
+	return v;
       break;
 
       case TYPE_UCLASS:
@@ -791,7 +792,7 @@ r_object(arg)
         {
 	    char *buf;
 	    r_bytes(buf, arg);
-	    return rb_path2class(buf);
+	    return r_regist(rb_path2class(buf), arg);
 	}
 
       default:
