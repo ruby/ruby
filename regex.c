@@ -2000,7 +2000,6 @@ re_compile_pattern(pattern, size, bufp)
 
   /* set optimize flags */
   laststart = bufp->buffer;
-  if (*laststart == exactn) bufp->options |= RE_OPTIMIZE_EXACTN;
   if (*laststart == start_memory) laststart += 3;
   if (*laststart == dummy_failure_jump) laststart += 3;
   else if (*laststart == try_next) laststart += 3;
@@ -2025,18 +2024,25 @@ re_compile_pattern(pattern, size, bufp)
 
   bufp->used = b - bufp->buffer;
   bufp->re_nsub = regnum;
-  bufp->must = calculate_must_string(bufp->buffer, b);
-  if (current_mbctype) bufp->options |= RE_OPTIMIZE_NO_BM;
+  if (*bufp->buffer == exactn) {
+    bufp->options |= RE_OPTIMIZE_EXACTN;
+    bufp->must = bufp->buffer+1;
+  }
+  else {
+    bufp->must = calculate_must_string(bufp->buffer, b);
+  }
+  if (current_mbctype == MBCTYPE_SJIS) bufp->options |= RE_OPTIMIZE_NO_BM;
   else if (bufp->must) {
-      int i;
-      int len = ((unsigned char)bufp->must[0]);
+    int i;
+    int len = (unsigned char)bufp->must[0];
 
-      for (i=1; i<len; i++) {
-	  if ((unsigned char)bufp->must[i] == 0xff) {
-	      bufp->options |= RE_OPTIMIZE_NO_BM;
-	      break;
-	  }
+    for (i=1; i<len; i++) {
+      if ((unsigned char)bufp->must[i] == 0xff ||
+	  (current_mbctype == MBCTYPE_EUC && ismbchar(bufp->must[i]))) {
+	bufp->options |= RE_OPTIMIZE_NO_BM;
+	break;
       }
+    }
   }
 
   FREE_AND_RETURN(stackb, 0);
