@@ -1,4 +1,4 @@
-#! /usr/local/bin/ruby -s
+#! /usr/local/bin/ruby
 # -*- ruby -*-
 
 $force_static = nil
@@ -102,15 +102,11 @@ require 'getopts'
 
 getopts('', 'extstatic', 'make:', 'make-flags:')
 
-$force_static = $OPT['extstatic']
+$force_static = $OPT['extstatic'] == 'static'
 $make = $OPT['make'] || $make
 $mflags = Shellwords.shellwords($OPT['make-flags'] || "")
 
-if mflags = ENV["MAKEFLAGS"]
-  mflags, = mflags.split(nil, 2)
-else
-  mflags = ENV["MFLAGS"] || ""
-end
+mflags = $mflags.grep(/^-([^-].*)/) {$1}.join
 $continue = mflags.include?(?k)
 $dryrun = mflags.include?(?n)
 

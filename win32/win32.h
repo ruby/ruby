@@ -209,10 +209,8 @@ extern pid_t waitpid (pid_t, int *, int);
 extern int do_spawn(char *);
 extern int kill(int, int);
 extern pid_t rb_w32_getpid(void);
-#ifndef __BORLANDC__
-extern int isinf(double);
-extern int isnan(double);
-#else
+
+#ifdef __BORLANDC__
 #include <float.h>
 #ifndef isinf
 #define isinf    !_finite
@@ -246,6 +244,9 @@ extern int isnan(double);
 #define S_ISBLK(m)  (((unsigned short)(m) & S_IFMT) == S_IFBLK)
 #define S_ISCHR(m)  (((unsigned short)(m) & S_IFMT) == S_IFCHR)
 #define S_ISREG(m)  (((unsigned short)(m) & S_IFMT) == S_IFREG)
+#elif !defined __MINGW32__ || defined __NO_ISOCEXT
+extern int isinf(double);
+extern int isnan(double);
 #endif
 
 #if !defined S_IRUSR && !defined __MINGW32__
