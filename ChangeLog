@@ -1,3 +1,7 @@
+Tue Apr  8 17:13:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* random.c (rb_f_rand): normalize bignum argument.
+
 Tue Apr  8 11:49:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (Init_Proc): make Method and UnboundMethod independent.
@@ -33,6 +37,11 @@ Sun Apr  6 00:35:37 2003  Tanaka Akira  <akr@m17n.org>
 Sat Apr  5 23:41:28 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): small but serious typo.
+
+Sat Apr  5 04:23:05 2003  Warren Brown  <wkb@airmail.net>
+
+	* sprintf.c (rb_f_sprintf): was decrementing width even if there
+	  is no sign character.
 
 Sat Apr  5 01:41:28 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

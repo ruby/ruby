@@ -475,14 +475,16 @@ rb_f_sprintf(argc, argv)
 		    if (s[0] == '-') {
 			s++;
 			sc = '-';
+                        width--;
 		    }
 		    else if (flags & FPLUS) {
 			sc = '+';
+                        width--;
 		    }
 		    else if (flags & FSPACE) {
 			sc = ' ';
+                        width--;
 		    }
-		    width--;
 		    goto format_integer;
 		}
 		if (!RBIGNUM(val)->sign) {
