@@ -501,19 +501,25 @@ class << MultiTkIp
   alias __new new
   private :__new
 
-  def new_master(keys={})
-    __new(__getip, nil, keys)
+  def new_master(keys={}, &b)
+    ip = __new(__getip, nil, keys)
+    ip.eval_proc(&b) if b
+    ip
   end
 
   alias new new_master
 
-  def new_slave(keys={})
-    __new(__getip, false, keys)
+  def new_slave(keys={}, &b)
+    ip = __new(__getip, false, keys)
+    ip.eval_proc(&b) if b
+    ip
   end
   alias new_trusted_slave new_master
 
-  def new_safe_slave(keys={})
-    __new(__getip, true, keys)
+  def new_safe_slave(keys={},&b)
+    ip = __new(__getip, true, keys)
+    ip.eval_proc(&b) if b
+    ip
   end
   alias new_safeTk new_safe_slave
 end
