@@ -53,8 +53,7 @@ class TkCanvas<TkWindow
     if tag.kind_of?(TkcItem) || tag.kind_of?(TkcTag)
       tag.id
     else
-      # tag
-      _get_eval_string(tag)
+      tag  # maybe an Array of configure paramters
     end
   end
   private :tagid

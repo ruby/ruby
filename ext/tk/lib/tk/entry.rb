@@ -17,10 +17,7 @@ class TkEntry<TkLabel
   WidgetClassNames[WidgetClassName] = self
 
   #def create_self(keys)
-  #  tk_call_without_enc('entry', @path)
-  #  if keys and keys != None
-  #    configure(keys)
-  #  end
+  #  super(__conv_vcmd_on_hash_kv(keys))
   #end
   #private :create_self
 

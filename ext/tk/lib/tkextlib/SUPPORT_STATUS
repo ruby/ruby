@@ -61,7 +61,9 @@ ICONS       http://www.satisoft.com/tcltk/icons/        ==> ICONS
 
 ===< support (may be alpha or beta quality) >=================================
 
-TkImg       http://sf.net/projects/tkimg                ==>  tkimg
+IncrTcl     http://sf.net/projects/incrTcl              ==> itcl, itk
+
+TkImg       http://sf.net/projects/tkimg                ==> tkimg
 
 TkTreeCtrl  http://tktreectrl.sourceforge.net/          ==> treectrl
 
@@ -81,8 +83,6 @@ TkDND       http://sourceforge.net/projects/tkdnd  ==> tkDND
 ===< plan to support (alpha quality libraries may be included) >==============
 
 TclX        http://sf.net/projects/tclx      * may support Tk part only
-
-IncrTcl     http://sf.net/projects/incrTcl   * may support Tk part only
 
 IWidgets    http://sf.net/projects/incrTcl   
 

@@ -289,13 +289,16 @@ class TkTimer
     self
   end
 
-  def set_start_proc(sleep, init_proc, *init_args)
+  def set_start_proc(sleep, init_proc=nil, *init_args)
     if !sleep == 'idle' && !sleep.kind_of?(Integer)
       fail ArguemntError, "expect Integer or 'idle' for 1st argument"
     end
     @init_sleep = sleep
     @init_proc = init_proc
     @init_args = init_args
+
+    @init_proc = proc{|*args| } if @init_sleep > 0 && !@init_proc
+
     self
   end
 
@@ -306,6 +309,10 @@ class TkTimer
     @do_loop = @loop_exec
     @current_pos = 0
 
+    @init_sleep = 0
+    @init_proc  = nil
+    @init_args  = nil
+
     argc = init_args.size
     if argc > 0
       sleep = init_args.shift
@@ -315,7 +322,9 @@ class TkTimer
       @init_sleep = sleep
     end
     @init_proc = init_args.shift if argc > 1
-    @init_args = init_args if argc > 0
+    @init_args = init_args if argc > 2
+
+    @init_proc = proc{|*args| } if @init_sleep > 0 && !@init_proc
 
     @current_sleep = @init_sleep
     @running = true

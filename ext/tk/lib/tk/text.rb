@@ -135,8 +135,7 @@ class TkText<TkTextWin
       || tag.kind_of?(TkTextWindow)
       tag.id
     else
-      # tag
-      _get_eval_string(tag)
+      tag  # maybe an Array of configure paramters
     end
   end
   private :tagid
