@@ -28,7 +28,6 @@ Net::Protocol
 === Class Methods
 
 : new( address = 'localhost', port = 110 )
-
   This method create a new POP3 object.
   This will not open connection yet.
 
@@ -36,15 +35,12 @@ Net::Protocol
 === Methods
 
 : start( account, password )
-
   This method start POP3.
 
 : each{|popmail| ...}
-
   This method is equals to "pop3.mails.each"
 
 : mails
-
   This method returns an array of ((URL:#POPMail)).
   This array is renewed when login.
 
@@ -110,28 +106,22 @@ Object
 : all
 : pop
 : mail
-
   This method fetches a mail and return it.
 
 : header
-
   This method fetches only mail header.
 
 : top( lines )
-
   This method fetches mail header and 'lines' lines body.
 
 : delete
 : delete!
-
   This method deletes mail.
 
 : size
-
   size of mail(bytes)
 
 : deleted?
-
   true if mail was deleted
 
 =end
@@ -214,19 +204,16 @@ Net::Command
 === Class Methods
 
 : new( socket )
-
   This method creates new POP3Command object. 'socket' must be ProtocolSocket.
 
 
 === Methods
 
 : auth( account, password )
-
   This method do POP authorization (no RPOP)
   In case of failed authorization, raises Protocol::ProtocolError exception.
 
 : list
-
   a list of mails which existing on server.
   The list is an array like "array[ number ] = size".
 
@@ -244,29 +231,22 @@ Net::Command
     [ nil, 2452, 3355, nil, 9842, ... ]
 
 : quit
-
   This method ends POP using 'QUIT' commmand.
 
 : rset
-
   This method reset all changes done in current session,
   by sending 'RSET' command.
 
 : top( num, lines = 0 )
-
   This method gets all mail header and 'lines' lines body
   by sending 'TOP' command.  'num' is mail number.
 
   WARNING: the TOP command is 'Optional' in RFC1939 (POP3)
 
-
 : retr( num : Integer )
-
   This method gets a mail by 'RETR' command. 'num' is mail number.
 
-
 : dele( num : Integer )
-
   This method deletes a mail on server by 'DELE'.
 
 =end
@@ -377,7 +357,6 @@ POP3Command
 === Methods
 
 : auth( account, password )
-
   This method do authorization by sending 'APOP' command.
   If server is not APOP server, this raises Net::ProtoAuthError exception.
   On other errors, raises Net::ProtocolError.

@@ -27,29 +27,24 @@ class HTTPBadResponse < HTTPError; end
 == Class Methods
 
 : new( address, port = 80 )
-  
   create new HTTP object.
 
 : port
-
   returns HTTP default port, 80
 
 : command_type
-
   returns Command class, HTTPCommand
 
 
 == Methods
 
 : get( path, header = nil, ret = '' )
-  
   get data from "path" on connecting host.
   "header" is a Hash like { 'Accept' => '*/*', ... }.
   The data will be written to "ret" using "<<" method.
   This method returns response header (Hash) and "ret".
 
 : head( path, header = nil )
-  
   get only header from "path" on connecting host.
   "header" is a Hash like { 'Accept' => '*/*', ... }.
   This method returns header as a Hash like

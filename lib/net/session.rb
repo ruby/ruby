@@ -29,25 +29,21 @@ Object
 === Constants
 
 : Version
-
   The version of Session class. It is a string like "1.1.3".
 
 
 === Class Methods
 
 : new( address = 'localhost', port = nil )
-
   This method Creates a new Session object.
 
 : start( address = 'localhost', port = nil, *args )
 : start( address = 'localhost', port = nil, *args ){|session| .... }
-
   This method creates a new Session object and start session.
   If you call this method with block, Session object give itself
   to block and finish session when block returns.
 
 : Proxy( address, port )
-
   This method creates a proxy class of its protocol.
   Arguments are address/port of proxy host.
 
@@ -55,27 +51,22 @@ Object
 === Methods
 
 : address
-
   the address of connecting server (FQDN).
 
 : port
-
   connecting port number
 
 : start( *args )
-
   This method start protocol. If you call this method when the protocol
   is already started, this only returns false without doing anything.
 
   '*args' are specified in subclasses.
 
 : finish
-
   This method ends protocol. If you call this method before protocol starts,
   it only return false without doing anything.
 
 : active?
-
   true if session have been started
 
 =end
@@ -255,7 +246,6 @@ Object
 === Class Methods
 
 : new( socket )
-
   This method create new Command object. 'socket' must be ProtocolSocket.
   This method is abstract class.
 
@@ -263,7 +253,6 @@ Object
 === Methods
 
 : quit
-
   This method dispatch command which ends the protocol.
 
 =end
@@ -394,53 +383,42 @@ Object
 === Class Methods
 
 : new( address = 'localhost', port = nil )
-
   This create new ProtocolSocket object, and connect to server.
 
 
 === Methods
 
 : close
-
   This method closes socket.
 
 : address, addr
-
   a FQDN address of server
 
 : ip_address, ipaddr
-
   an IP address of server
 
 : port
-
   connecting port number.
 
 : closed?
-
   true if ProtocolSokcet have been closed already
 
 
 : read( length )
-
   This method read 'length' bytes and return the string.
 
 : readuntil( target )
-
   This method read until find 'target'. Returns read string.
 
 : readline
-
   read until "\r\n" and returns it without "\r\n".
 
 : read_pendstr
-
   This method read until "\r\n.\r\n".
   At the same time, delete period at line head and final line ("\r\n.\r\n").
 
 : read_pendlist
 : read_pendlist{|line| .... }
-
   This method read until "\r\n.\r\n". This method resembles to 'read_pendstr',
   but 'read_pendlist' don't check period at line head, and returns array which
   each element is one line.
@@ -449,21 +427,17 @@ Object
 
 
 : write( src )
-
   This method send 'src'. ProtocolSocket read strings from 'src' by 'each'
   iterator. This method returns written bytes.
 
 : writebin( src )
-
   This method send 'src'. ProtocolSokcet read string from 'src' by 'each'
   iterator. This method returns written bytes.
 
 : writeline( str )
-
   This method writes 'str'. There has not to be bare "\r" or "\n" in 'str'.
 
 : write_pendstr( src )
-
   This method writes 'src' as a mail.
   ProtocolSocket reads strings from 'src' by 'each' iterator.
   This returns written bytes.

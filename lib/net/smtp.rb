@@ -27,21 +27,19 @@ Net::Protocol
 === Class Methods
 
 : new( address = 'localhost', port = 25 )
-
   This method create new SMTP object.
 
 
 === Methods
 
 : start( helo_domain = ENV['HOSTNAME'] )
-
   This method opens TCP connection and start SMTP.
   If protocol had been started, do nothing and return false.
 
 : sendmail( mailsrc, from_domain, to_addrs )
-
-  This method sends 'mailsrc' as mail. SMTPSession read strings from 'mailsrc'
-  by calling 'each' iterator, and convert them into "\r\n" terminated string when write.
+  This method sends 'mailsrc' as mail. SMTPSession read strings
+  from 'mailsrc' by calling 'each' iterator, and convert them
+  into "\r\n" terminated string when write.
 
   Exceptions which SMTP raises are:
   * Net::ProtoSyntaxError: syntax error (errno.500)
@@ -50,7 +48,6 @@ Net::Protocol
   * Net::ProtoServerBusy: temporary error (errno.420/450)
 
 : finish
-
   This method ends SMTP.
   If protocol had not started, do nothind and return false.
 
@@ -98,34 +95,28 @@ Net::Command
 === Class Methods
 
 : new( socket )
-
   This method creates new SMTPCommand object, and open SMTP.
 
 
 === Methods
 
 : helo( helo_domain )
-
   This method send "HELO" command and start SMTP.
   helo_domain is localhost's FQDN.
 
 : mailfrom( from_addr )
-
   This method sends "MAIL FROM" command.
   from_addr is your mail address(????@????).
 
 : rcpt( to_addrs )
-
   This method sends "RCPT TO" command.
   to_addrs is array of mail address(???@???) of destination.
 
 : data( mailsrc )
-
   This method send 'mailsrc' as mail. SMTP reads strings from 'mailsrc'
   by calling 'each' iterator. 
 
 : quit
-
   This method sends "QUIT" command and ends SMTP session.
 
 =end
