@@ -2909,7 +2909,6 @@ rb_eval(self, n)
 	    result = rb_cvar_get(ruby_cbase, node->nd_vid);
 	    break;
 	}
-	self = rb_iv_get(ruby_cbase, "__attached__");
 	/* fall through */
       case NODE_CVAR2:		/* singleton method */
 	result = rb_cvar_get(rb_cvar_singleton(self), node->nd_vid);
