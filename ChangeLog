@@ -1,3 +1,8 @@
+Wed Mar 31 11:52:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (DelegateClass): define internal methods of the
+	  result class, but not metaclass of the caller.
+
 Tue Mar 30 20:25:34 2004  Tanaka Akira  <akr@m17n.org>
 
 	* time.c (search_time_t): limit guess range by mktime if it is
@@ -19,7 +24,7 @@ Sat Mar 27 10:40:48 2004  Tanaka Akira  <akr@m17n.org>
 
 Thu Mar 25 23:15:24 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/ri/ri_options.rb (RI::Options::show_version): 
+	* lib/rdoc/ri/ri_options.rb (RI::Options::show_version):
 	  Add --version option
 
 Thu Mar 25 04:16:18 2004  Dave Thomas  <dave@pragprog.com>
@@ -35,7 +40,7 @@ Thu Mar 25 03:57:47 2004  Dave Thomas  <dave@pragprog.com>
 
 Thu Mar 25 02:00:18 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/generators/template/html/one_page_html.rb (Page): 
+	* lib/rdoc/generators/template/html/one_page_html.rb (Page):
 	  Fix to work with C modules.
 
 Wed Mar 24 21:17:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
@@ -48,7 +53,7 @@ Wed Mar 24 21:17:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 	* lib/uri/https.rb: Ditto.
 	* lib/uri/ldap.rb: Ditto.
 	* lib/uri/mailto.rb: Ditto.
-	(All backported from 1.9)
+	  (All backported from 1.9)
 
 Wed Mar 24 18:48:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

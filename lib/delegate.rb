@@ -91,6 +91,9 @@ def DelegateClass(superclass)
   def initialize(obj)
     @_dc_obj = obj
   end
+  def __getobj__
+    @_dc_obj
+  end
   EOS
   for method in methods
     begin
@@ -108,10 +111,7 @@ def DelegateClass(superclass)
       raise NameError, "invalid identifier %s" % method, caller(3)
     end
   end
-  def __getobj__
-    @_dc_obj
-  end
-  return klass;
+  return klass
 end
 
 if __FILE__ == $0
