@@ -2,7 +2,7 @@
   regenc.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@ onigenc_set_default_encoding(OnigEncoding enc)
 }
 
 extern UChar*
-onigenc_get_right_adjust_char_head(OnigEncoding enc, UChar* start, UChar* s)
+onigenc_get_right_adjust_char_head(OnigEncoding enc, const UChar* start, const UChar* s)
 {
   UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s);
   if (p < s) {
@@ -62,22 +62,22 @@ onigenc_get_right_adjust_char_head(OnigEncoding enc, UChar* start, UChar* s)
 
 extern UChar*
 onigenc_get_right_adjust_char_head_with_prev(OnigEncoding enc,
-				   UChar* start, UChar* s, UChar** prev)
+				   const UChar* start, const UChar* s, const UChar** prev)
 {
   UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s);
 
   if (p < s) {
-    if (prev) *prev = p;
+    if (prev) *prev = (const UChar* )p;
     p += enc_len(enc, p);
   }
   else {
-    if (prev) *prev = (UChar* )NULL; /* Sorry */
+    if (prev) *prev = (const UChar* )NULL; /* Sorry */
   }
   return p;
 }
 
 extern UChar*
-onigenc_get_prev_char_head(OnigEncoding enc, UChar* start, UChar* s)
+onigenc_get_prev_char_head(OnigEncoding enc, const UChar* start, const UChar* s)
 {
   if (s <= start)
     return (UChar* )NULL;
@@ -86,7 +86,7 @@ onigenc_get_prev_char_head(OnigEncoding enc, UChar* start, UChar* s)
 }
 
 extern UChar*
-onigenc_step_back(OnigEncoding enc, UChar* start, UChar* s, int n)
+onigenc_step_back(OnigEncoding enc, const UChar* start, const UChar* s, int n)
 {
   while (ONIG_IS_NOT_NULL(s) && n-- > 0) {
     if (s <= start)
@@ -94,35 +94,38 @@ onigenc_step_back(OnigEncoding enc, UChar* start, UChar* s, int n)
 
     s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s - 1);
   }
-  return s;
+  return (UChar* )s;
 }
 
 extern UChar*
-onigenc_step(OnigEncoding enc, UChar* p, UChar* end, int n)
+onigenc_step(OnigEncoding enc, const UChar* p, const UChar* end, int n)
 {
+  UChar* q = (UChar* )p;
   while (n-- > 0) {
-    p += ONIGENC_MBC_ENC_LEN(enc, p);
+    q += ONIGENC_MBC_ENC_LEN(enc, q);
   }
-  return (p <= end ? p : (UChar* )NULL);
+  return (q <= end ? q : NULL);
 }
 
 extern int
-onigenc_strlen(OnigEncoding enc, UChar* p, UChar* end)
+onigenc_strlen(OnigEncoding enc, const UChar* p, const UChar* end)
 {
   int n = 0;
-
-  while (p < end) {
-    p += ONIGENC_MBC_ENC_LEN(enc, p);
+  UChar* q = (UChar* )p;
+  
+  while (q < end) {
+    q += ONIGENC_MBC_ENC_LEN(enc, q);
     n++;
   }
   return n;
 }
 
 extern int
-onigenc_strlen_null(OnigEncoding enc, UChar* p)
+onigenc_strlen_null(OnigEncoding enc, const UChar* s)
 {
   int n = 0;
-
+  UChar* p = (UChar* )s;
+  
   while (1) {
     if (*p == '\0') {
       UChar* q;
@@ -143,9 +146,10 @@ onigenc_strlen_null(OnigEncoding enc, UChar* p)
 }
 
 extern int
-onigenc_str_bytelen_null(OnigEncoding enc, UChar* p)
+onigenc_str_bytelen_null(OnigEncoding enc, const UChar* s)
 {
-  UChar* start = p;
+  UChar* start = (UChar* )s;
+  UChar* p = (UChar* )s;
 
   while (1) {
     if (*p == '\0') {
@@ -207,10 +211,10 @@ unsigned short OnigEnc_Unicode_ISO_8859_1_CtypeTable[256] = {
 };
 #endif
 
-UChar* OnigEncAsciiToLowerCaseTable = (UChar* )0;
+const UChar* OnigEncAsciiToLowerCaseTable = (const UChar* )0;
 
 #ifndef USE_APPLICATION_TO_LOWER_CASE_TABLE
-static UChar BuiltInAsciiToLowerCaseTable[] = {
+static const UChar BuiltInAsciiToLowerCaseTable[] = {
   '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
   '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
   '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
@@ -392,9 +396,9 @@ UChar OnigEncISO_8859_1_ToUpperCaseTable[256] = {
 #endif
 
 extern void
-onigenc_set_default_caseconv_table(UChar* table)
+onigenc_set_default_caseconv_table(const UChar* table)
 {
-  if (table == (UChar* )0) {
+  if (table == (const UChar* )0) {
 #ifndef USE_APPLICATION_TO_LOWER_CASE_TABLE
     table = BuiltInAsciiToLowerCaseTable;
 #else
@@ -408,7 +412,7 @@ onigenc_set_default_caseconv_table(UChar* table)
 }
 
 extern UChar*
-onigenc_get_left_adjust_char_head(OnigEncoding enc, UChar* start, UChar* s)
+onigenc_get_left_adjust_char_head(OnigEncoding enc, const UChar* start, const UChar* s)
 {
   return ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s);
 }
@@ -595,7 +599,7 @@ onigenc_not_support_get_ctype_code_range(int ctype,
 }
 
 extern int
-onigenc_is_mbc_newline_0x0a(UChar* p, UChar* end)
+onigenc_is_mbc_newline_0x0a(const UChar* p, const UChar* end)
 {
   if (p < end) {
     if (*p == 0x0a) return 1;
@@ -605,7 +609,7 @@ onigenc_is_mbc_newline_0x0a(UChar* p, UChar* end)
 
 /* for single byte encodings */
 extern int
-onigenc_ascii_mbc_to_normalize(OnigAmbigType flag, UChar** p, UChar*end,
+onigenc_ascii_mbc_to_normalize(OnigAmbigType flag, const UChar** p, const UChar*end,
                                UChar* lower)
 {
   if ((flag & ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE) != 0) {
@@ -620,9 +624,10 @@ onigenc_ascii_mbc_to_normalize(OnigAmbigType flag, UChar** p, UChar*end,
 }
 
 extern int
-onigenc_ascii_is_mbc_ambiguous(OnigAmbigType flag, UChar** pp, UChar* end)
+onigenc_ascii_is_mbc_ambiguous(OnigAmbigType flag,
+			       const UChar** pp, const UChar* end)
 {
-  UChar* p = *pp;
+  const UChar* p = *pp;
 
   (*pp)++;
   if ((flag & ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE) != 0) {
@@ -634,13 +639,13 @@ onigenc_ascii_is_mbc_ambiguous(OnigAmbigType flag, UChar** pp, UChar* end)
 }
 
 extern int
-onigenc_single_byte_mbc_enc_len(UChar* p)
+onigenc_single_byte_mbc_enc_len(const UChar* p)
 {
   return 1;
 }
 
 extern OnigCodePoint
-onigenc_single_byte_mbc_to_code(UChar* p, UChar* end)
+onigenc_single_byte_mbc_to_code(const UChar* p, const UChar* end)
 {
   return (OnigCodePoint )(*p);
 }
@@ -665,25 +670,25 @@ onigenc_single_byte_code_to_mbc(OnigCodePoint code, UChar *buf)
 }
 
 extern UChar*
-onigenc_single_byte_left_adjust_char_head(UChar* start, UChar* s)
+onigenc_single_byte_left_adjust_char_head(const UChar* start, const UChar* s)
 {
-  return s;
+  return (UChar* )s;
 }
 
 extern int
-onigenc_always_true_is_allowed_reverse_match(UChar* s, UChar* end)
+onigenc_always_true_is_allowed_reverse_match(const UChar* s, const UChar* end)
 {
   return TRUE;
 }
 
 extern int
-onigenc_always_false_is_allowed_reverse_match(UChar* s, UChar* end)
+onigenc_always_false_is_allowed_reverse_match(const UChar* s, const UChar* end)
 {
   return FALSE;
 }
 
 extern OnigCodePoint
-onigenc_mbn_mbc_to_code(OnigEncoding enc, UChar* p, UChar* end)
+onigenc_mbn_mbc_to_code(OnigEncoding enc, const UChar* p, const UChar* end)
 {
   int c, i, len;
   OnigCodePoint n;
@@ -702,10 +707,10 @@ onigenc_mbn_mbc_to_code(OnigEncoding enc, UChar* p, UChar* end)
 
 extern int
 onigenc_mbn_mbc_to_normalize(OnigEncoding enc, OnigAmbigType flag,
-                             UChar** pp, UChar* end, UChar* lower)
+                             const UChar** pp, const UChar* end, UChar* lower)
 {
   int len;
-  UChar *p = *pp;
+  const UChar *p = *pp;
 
   if (ONIGENC_IS_MBC_ASCII(p)) {
     if ((flag & ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE) != 0) {
@@ -732,9 +737,9 @@ onigenc_mbn_mbc_to_normalize(OnigEncoding enc, OnigAmbigType flag,
 
 extern int
 onigenc_mbn_is_mbc_ambiguous(OnigEncoding enc, OnigAmbigType flag,
-                             UChar** pp, UChar* end)
+                             const UChar** pp, const UChar* end)
 {
-  UChar* p = *pp;
+  const UChar* p = *pp;
 
   if (ONIGENC_IS_MBC_ASCII(p)) {
     (*pp)++;
@@ -881,8 +886,8 @@ onigenc_mb4_is_code_ctype(OnigEncoding enc, OnigCodePoint code,
 }
 
 extern int
-onigenc_with_ascii_strncmp(OnigEncoding enc, UChar* p, UChar* end,
-                           UChar* sascii /* ascii */, int n)
+onigenc_with_ascii_strncmp(OnigEncoding enc, const UChar* p, const UChar* end,
+                           const UChar* sascii /* ascii */, int n)
 {
   int x, c;
 
@@ -1019,7 +1024,8 @@ onigenc_get_left_adjust_char_head(OnigEncoding enc, UChar* start, UChar* s)
 }
 
 extern int
-onigenc_is_allowed_reverse_match(OnigEncoding enc, UChar* s, UChar* end)
+onigenc_is_allowed_reverse_match(OnigEncoding enc,
+				 const UChar* s, const UChar* end)
 {
   return ONIGENC_IS_SINGLEBYTE(enc);
 }

@@ -2,7 +2,7 @@
   sjis.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -71,7 +71,7 @@ static const char SJIS_CAN_BE_TRAIL_TABLE[256] = {
 #define SJIS_ISMB_TRAIL(byte)  SJIS_CAN_BE_TRAIL_TABLE[(byte)]
 
 static int
-sjis_mbc_enc_len(UChar* p)
+sjis_mbc_enc_len(const UChar* p)
 {
   return EncLen_SJIS[*p];
 }
@@ -93,7 +93,7 @@ sjis_code_to_mbclen(OnigCodePoint code)
 }
 
 static OnigCodePoint
-sjis_mbc_to_code(UChar* p, UChar* end)
+sjis_mbc_to_code(const UChar* p, const UChar* end)
 {
   int c, i, len;
   OnigCodePoint n;
@@ -127,9 +127,10 @@ sjis_code_to_mbc(OnigCodePoint code, UChar *buf)
 }
 
 static int
-sjis_mbc_to_normalize(OnigAmbigType flag, UChar** pp, UChar* end, UChar* lower)
+sjis_mbc_to_normalize(OnigAmbigType flag,
+		      const UChar** pp, const UChar* end, UChar* lower)
 {
-  UChar* p = *pp;
+  const UChar* p = *pp;
 
   if (ONIGENC_IS_MBC_ASCII(p)) {
     if ((flag & ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE) != 0) {
@@ -157,7 +158,7 @@ sjis_mbc_to_normalize(OnigAmbigType flag, UChar** pp, UChar* end, UChar* lower)
 }
 
 static int
-sjis_is_mbc_ambiguous(OnigAmbigType flag, UChar** pp, UChar* end)
+sjis_is_mbc_ambiguous(OnigAmbigType flag, const UChar** pp, const UChar* end)
 {
   return onigenc_mbn_is_mbc_ambiguous(ONIG_ENCODING_SJIS, flag, pp, end);
                                       
@@ -184,12 +185,12 @@ sjis_is_code_ctype(OnigCodePoint code, unsigned int ctype)
 }
 
 static UChar*
-sjis_left_adjust_char_head(UChar* start, UChar* s)
+sjis_left_adjust_char_head(const UChar* start, const UChar* s)
 {
-  UChar *p;
+  const UChar *p;
   int len;
 
-  if (s <= start) return s;
+  if (s <= start) return (UChar* )s;
   p = s;
 
   if (SJIS_ISMB_TRAIL(*p)) {
@@ -201,15 +202,15 @@ sjis_left_adjust_char_head(UChar* start, UChar* s)
     } 
   }
   len = enc_len(ONIG_ENCODING_SJIS, p);
-  if (p + len > s) return p;
+  if (p + len > s) return (UChar* )p;
   p += len;
-  return p + ((s - p) & ~1);
+  return (UChar* )(p + ((s - p) & ~1));
 }
 
 static int
-sjis_is_allowed_reverse_match(UChar* s, UChar* end)
+sjis_is_allowed_reverse_match(const UChar* s, const UChar* end)
 {
-  UChar c = *s;
+  const UChar c = *s;
   return (SJIS_ISMB_TRAIL(c) ? FALSE : TRUE);
 }
 

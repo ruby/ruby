@@ -2,7 +2,7 @@
   euc_jp.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,13 +51,13 @@ static int EncLen_EUCJP[] = {
 };
 
 static int
-eucjp_mbc_enc_len(UChar* p)
+eucjp_mbc_enc_len(const UChar* p)
 {
   return EncLen_EUCJP[*p];
 }
 
 static OnigCodePoint
-eucjp_mbc_to_code(UChar* p, UChar* end)
+eucjp_mbc_to_code(const UChar* p, const UChar* end)
 {
   int c, i, len;
   OnigCodePoint n;
@@ -119,11 +119,11 @@ eucjp_code_to_mbc(OnigCodePoint code, UChar *buf)
 }
 
 static int
-eucjp_mbc_to_normalize(OnigAmbigType flag, UChar** pp, UChar* end,
-                       UChar* lower)
+eucjp_mbc_to_normalize(OnigAmbigType flag,
+		       const UChar** pp, const UChar* end, UChar* lower)
 {
   int len;
-  UChar* p = *pp;
+  const UChar* p = *pp;
 
   if (ONIGENC_IS_MBC_ASCII(p)) {
     if ((flag & ONIGENC_AMBIGUOUS_MATCH_ASCII_CASE) != 0) {
@@ -150,7 +150,7 @@ eucjp_mbc_to_normalize(OnigAmbigType flag, UChar** pp, UChar* end,
 }
 
 static int
-eucjp_is_mbc_ambiguous(OnigAmbigType flag, UChar** pp, UChar* end)
+eucjp_is_mbc_ambiguous(OnigAmbigType flag, const UChar** pp, const UChar* end)
 {
   return onigenc_mbn_is_mbc_ambiguous(ONIG_ENCODING_EUC_JP, flag, pp, end);
 }
@@ -175,28 +175,28 @@ eucjp_is_code_ctype(OnigCodePoint code, unsigned int ctype)
 }
 
 static UChar*
-eucjp_left_adjust_char_head(UChar* start, UChar* s)
+eucjp_left_adjust_char_head(const UChar* start, const UChar* s)
 {
   /* In this encoding
      mb-trail bytes doesn't mix with single bytes.
   */
-  UChar *p;
+  const UChar *p;
   int len;
 
-  if (s <= start) return s;
+  if (s <= start) return (UChar* )s;
   p = s;
 
   while (!eucjp_islead(*p) && p > start) p--;
   len = enc_len(ONIG_ENCODING_EUC_JP, p);
-  if (p + len > s) return p;
+  if (p + len > s) return (UChar* )p;
   p += len;
-  return p + ((s - p) & ~1);
+  return (UChar* )(p + ((s - p) & ~1));
 }
 
 static int
-eucjp_is_allowed_reverse_match(UChar* s, UChar* end)
+eucjp_is_allowed_reverse_match(const UChar* s, const UChar* end)
 {
-  UChar c = *s;
+  const UChar c = *s;
   if (c <= 0x7e || c == 0x8e || c == 0x8f)
     return TRUE;
   else

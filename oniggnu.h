@@ -4,7 +4,7 @@
   oniggnu.h - Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,12 +44,17 @@ extern "C" {
 #ifndef RE_NREGS
 #define RE_NREGS                ONIG_NREGION
 #endif
-#define RE_OPTION_IGNORECASE    ONIG_OPTION_IGNORECASE
-#define RE_OPTION_EXTENDED      ONIG_OPTION_EXTEND
-#define RE_OPTION_MULTILINE     ONIG_OPTION_MULTILINE
-#define RE_OPTION_SINGLELINE    ONIG_OPTION_SINGLELINE
-#define RE_OPTION_LONGEST       ONIG_OPTION_FIND_LONGEST
-#define RE_OPTION_POSIXLINE    (RE_OPTION_MULTILINE|RE_OPTION_SINGLELINE)
+
+#define RE_OPTION_IGNORECASE         ONIG_OPTION_IGNORECASE
+#define RE_OPTION_EXTENDED           ONIG_OPTION_EXTEND
+#define RE_OPTION_MULTILINE          ONIG_OPTION_MULTILINE
+#define RE_OPTION_SINGLELINE         ONIG_OPTION_SINGLELINE
+#define RE_OPTION_LONGEST            ONIG_OPTION_FIND_LONGEST
+#define RE_OPTION_POSIXLINE         (RE_OPTION_MULTILINE|RE_OPTION_SINGLELINE)
+#define RE_OPTION_FIND_NOT_EMPTY     ONIG_OPTION_FIND_NOT_EMPTY
+#define RE_OPTION_NEGATE_SINGLELINE  ONIG_OPTION_NEGATE_SINGLELINE
+#define RE_OPTION_DONT_CAPTURE_GROUP ONIG_OPTION_DONT_CAPTURE_GROUP
+#define RE_OPTION_CAPTURE_GROUP      ONIG_OPTION_CAPTURE_GROUP
 
 #ifdef RUBY_PLATFORM
 

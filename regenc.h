@@ -4,7 +4,7 @@
   regenc.h -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2004  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2005  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -74,24 +74,24 @@ ONIG_EXTERN int onigenc_nothing_get_all_comp_ambig_codes P_((OnigAmbigType flag,
 ONIG_EXTERN int onigenc_iso_8859_1_get_all_pair_ambig_codes P_((OnigAmbigType flag, OnigPairAmbigCodes** acs));
 ONIG_EXTERN int onigenc_ess_tsett_get_all_comp_ambig_codes P_((OnigAmbigType flag, OnigCompAmbigCodes** acs));
 ONIG_EXTERN int onigenc_not_support_get_ctype_code_range P_((int ctype, OnigCodePoint* sbr[], OnigCodePoint* mbr[]));
-ONIG_EXTERN int onigenc_is_mbc_newline_0x0a P_((UChar* p, UChar* end));
+ONIG_EXTERN int onigenc_is_mbc_newline_0x0a P_((const UChar* p, const UChar* end));
 
 /* methods for single byte encoding */
-ONIG_EXTERN int onigenc_ascii_mbc_to_normalize P_((OnigAmbigType flag, UChar** p, UChar* end, UChar* lower));
-ONIG_EXTERN int onigenc_ascii_is_mbc_ambiguous P_((OnigAmbigType flag, UChar** p, UChar* end));
-ONIG_EXTERN int onigenc_single_byte_mbc_enc_len P_((UChar* p));
-ONIG_EXTERN OnigCodePoint onigenc_single_byte_mbc_to_code P_((UChar* p, UChar* end));
+ONIG_EXTERN int onigenc_ascii_mbc_to_normalize P_((OnigAmbigType flag, const UChar** p, const UChar* end, UChar* lower));
+ONIG_EXTERN int onigenc_ascii_is_mbc_ambiguous P_((OnigAmbigType flag, const UChar** p, const UChar* end));
+ONIG_EXTERN int onigenc_single_byte_mbc_enc_len P_((const UChar* p));
+ONIG_EXTERN OnigCodePoint onigenc_single_byte_mbc_to_code P_((const UChar* p, const UChar* end));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbclen P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbc_first P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbc P_((OnigCodePoint code, UChar *buf));
-ONIG_EXTERN UChar* onigenc_single_byte_left_adjust_char_head P_((UChar* start, UChar* s));
-ONIG_EXTERN int onigenc_always_true_is_allowed_reverse_match P_((UChar* s, UChar* end));
-ONIG_EXTERN int onigenc_always_false_is_allowed_reverse_match P_((UChar* s, UChar* end));
+ONIG_EXTERN UChar* onigenc_single_byte_left_adjust_char_head P_((const UChar* start, const UChar* s));
+ONIG_EXTERN int onigenc_always_true_is_allowed_reverse_match P_((const UChar* s, const UChar* end));
+ONIG_EXTERN int onigenc_always_false_is_allowed_reverse_match P_((const UChar* s, const UChar* end));
 
 /* methods for multi byte encoding */
-ONIG_EXTERN OnigCodePoint onigenc_mbn_mbc_to_code P_((OnigEncoding enc, UChar* p, UChar* end));
-ONIG_EXTERN int onigenc_mbn_mbc_to_normalize P_((OnigEncoding enc, OnigAmbigType flag, UChar** p, UChar* end, UChar* lower));
-ONIG_EXTERN int onigenc_mbn_is_mbc_ambiguous P_((OnigEncoding enc, OnigAmbigType flag, UChar** p, UChar* end));
+ONIG_EXTERN OnigCodePoint onigenc_mbn_mbc_to_code P_((OnigEncoding enc, const UChar* p, const UChar* end));
+ONIG_EXTERN int onigenc_mbn_mbc_to_normalize P_((OnigEncoding enc, OnigAmbigType flag, const UChar** p, const UChar* end, UChar* lower));
+ONIG_EXTERN int onigenc_mbn_is_mbc_ambiguous P_((OnigEncoding enc, OnigAmbigType flag, const UChar** p, const UChar* end));
 ONIG_EXTERN int onigenc_mb2_code_to_mbclen P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_mb2_code_to_mbc_first P_((OnigCodePoint code));
 ONIG_EXTERN int onigenc_mb2_code_to_mbc P_((OnigEncoding enc, OnigCodePoint code, UChar *buf));
@@ -123,16 +123,16 @@ ONIG_EXTERN OnigPairAmbigCodes OnigAsciiPairAmbigCodes[];
 #endif /* is not ONIG_RUBY_M17N */
 
 ONIG_EXTERN int
-onigenc_with_ascii_strncmp P_((OnigEncoding enc, UChar* p, UChar* end, UChar* sascii /* ascii */, int n));
+onigenc_with_ascii_strncmp P_((OnigEncoding enc, const UChar* p, const UChar* end, const UChar* sascii /* ascii */, int n));
 ONIG_EXTERN UChar*
-onigenc_step P_((OnigEncoding enc, UChar* p, UChar* end, int n));
+onigenc_step P_((OnigEncoding enc, const UChar* p, const UChar* end, int n));
 
 /* defined in regexec.c, but used in enc/xxx.c */
-extern int  onig_is_in_code_range P_((UChar* p, OnigCodePoint code));
+extern int  onig_is_in_code_range P_((const UChar* p, OnigCodePoint code));
 
 ONIG_EXTERN OnigEncoding  OnigEncDefaultCharEncoding;
-ONIG_EXTERN UChar* OnigEncAsciiToLowerCaseTable;
-ONIG_EXTERN UChar  OnigEncAsciiToUpperCaseTable[];
+ONIG_EXTERN const UChar* OnigEncAsciiToLowerCaseTable;
+ONIG_EXTERN const UChar  OnigEncAsciiToUpperCaseTable[];
 ONIG_EXTERN unsigned short OnigEncAsciiCtypeTable[];
 
 #define ONIGENC_ASCII_CODE_TO_LOWER_CASE(c) OnigEncAsciiToLowerCaseTable[c]
