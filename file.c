@@ -1332,7 +1332,7 @@ rb_file_s_expand_path(argc, argv)
     VALUE *argv;
 {
     VALUE fname, dname;
-    char *s, *p;
+    char *s, *p, *sbeg, *b;
     char buf[MAXPATHLEN+2];
     char *bend = buf + sizeof(buf) - 2;
     int tainted;
@@ -1340,7 +1340,7 @@ rb_file_s_expand_path(argc, argv)
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
     tainted = OBJ_TAINTED(fname);
-    s = StringValuePtr(fname);
+    s = sbeg = StringValuePtr(fname);
     p = buf;
     if (s[0] == '~') {
 	if (isdirsep(s[1]) || s[1] == '\0') {
@@ -1360,10 +1360,13 @@ rb_file_s_expand_path(argc, argv)
 	    struct passwd *pwPtr;
 	    s++;
 #endif
+	    b = s;
 	    while (*s && !isdirsep(*s)) {
-		*p++ = *s++;
-		if (p >= bend) goto toolong;
+		s = CharNext(s);
 	    }
+	    if (p + (s-b) >= bend) goto toolong;
+	    memcpy(p, b, s-b);
+	    p += s-b;
 	    *p = '\0';
 #ifdef HAVE_PWD_H
 	    pwPtr = getpwnam(buf);
@@ -1381,10 +1384,13 @@ rb_file_s_expand_path(argc, argv)
 #if defined DOSISH
     /* skip drive letter */
     else if (ISALPHA(s[0]) && s[1] == ':' && isdirsep(s[2])) {
+	b = s;
 	while (*s && !isdirsep(*s)) {
-	    *p++ = *s++;
-	    if (p >= bend) goto toolong;
+	    s = CharNext(s);
 	}
+	if (p + (s-b) >= bend) goto toolong;
+	memcpy(p, b, s-b);
+	p += s-b;
     }
 #endif
     else if (!isdirsep(*s)) {
@@ -1411,10 +1417,10 @@ rb_file_s_expand_path(argc, argv)
     }
     *p = '/';
 
-    for ( ; *s; s++) {
+    while (*s) {
 	switch (*s) {
 	  case '.':
-	    if (*(s+1)) {
+           if (*(s+1) && (s == sbeg || isdirsep(*(s - 1)))) {
 		switch (*++s) {
 		  case '.':
 		    if (*(s+1) == '\0' || isdirsep(*(s+1))) {
@@ -1440,6 +1446,9 @@ rb_file_s_expand_path(argc, argv)
 		  default:
 		    *++p = '.'; *++p = *s; break;
 		}
+           }
+           else {
+               *++p = '.';
 	    }
 	    break;
 	  case '/':
@@ -1448,9 +1457,14 @@ rb_file_s_expand_path(argc, argv)
 #endif
 	    if (!isdirsep(*p)) *++p = '/'; break;
 	  default:
-	    *++p = *s;
-	    if (p >= bend) goto toolong;
+	    b = s;
+	    s = CharNext(s);
+	    p = CharNext(p);
+	    if (p + (s-b) >= bend) goto toolong;
+	    memcpy(p, b, s-b);
+	    continue;
 	}
+	s = CharNext(s);
     }
 
     /* Place a \0 at end. If path ends with a "/", delete it */
@@ -2278,7 +2292,7 @@ rb_find_file_noext(filep)
 	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
-	f = STR2CSTR(fname);
+	f = StringValuePtr(fname);
 	*filep = fname;
     }
 
@@ -2329,7 +2343,7 @@ rb_find_file(path)
 	if (rb_safe_level() >= 2 && OBJ_TAINTED(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
-	f = STR2CSTR(path);
+	f = StringValuePtr(path);
     }
 
 #if defined(__MACOS__) || defined(riscos)
