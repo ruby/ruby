@@ -240,7 +240,7 @@ class Rational < Numeric
   end
   
   def hash
-    @numerator ^ @denominator
+    @numerator.hash ^ @denominator.hash
   end
   
   attr :numerator
