@@ -2934,7 +2934,7 @@ regx_options()
 enum string_type {
     str_squote = (0),
     str_dquote = (STR_FUNC_EXPAND),
-    str_xquote = (STR_FUNC_ESCAPE|STR_FUNC_EXPAND),
+    str_xquote = (STR_FUNC_EXPAND),
     str_regexp = (STR_FUNC_REGEXP|STR_FUNC_ESCAPE|STR_FUNC_EXPAND),
     str_sword  = (STR_FUNC_QWORDS),
     str_dword  = (STR_FUNC_QWORDS|STR_FUNC_EXPAND),
