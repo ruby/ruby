@@ -6,27 +6,29 @@ include Config
 $:.unshift File.join(CONFIG["srcdir"], "lib")
 require 'fileutils'
 require 'shellwords'
-require 'getopts'
+require 'optparse'
+require 'optparse/shellwords'
 require 'tempfile'
 
 File.umask(0)
 
 def parse_args()
-  getopts('n', 'dest-dir:',
-	  'make:', 'make-flags:', 'mflags:',
-	  'mantype:doc')
-
-  $dryrun = $OPT['n']
-  $destdir = $OPT['dest-dir'] || ''
-  $make = $OPT['make'] || $make || 'make'
-  $mantype = $OPT['mantype']
-  mflags = ($OPT['make-flags'] || '').strip
-  mflags = ($OPT['mflags'] || '').strip if mflags.empty?
-
-  $mflags = Shellwords.shellwords(mflags)
-  if arg = $mflags.first
-    arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
+  $mantype = 'doc'
+  $destdir = nil
+  $make = 'make'
+  $mflags = []
+  opt = OptionParser.new
+  opt.on('-n') {$dryrun = true}
+  opt.on('--dest-dir=DIR') {|dir| $destdir = dir}
+  opt.on('--make=COMMAND') {|make| $make = make}
+  opt.on('--mantype=MAN') {|man| $mantype = man}
+  opt.on('--make-flags=FLAGS', '--mflags', Shellwords) do |v|
+    if arg = v.first
+      arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
+    end
+    $mflags.concat(v)
   end
+  opt.parse! rescue abort [$!.message, opt].join("\n")
 
   $make, *rest = Shellwords.shellwords($make)
   $mflags.unshift(*rest) unless rest.empty?
@@ -71,14 +73,9 @@ def makedirs(dirs)
   super(dirs, :mode => 0755, :verbose => true) unless dirs.empty?
 end
 
-def join(dir1, dir2)
-  # same scheme as DESTDIR of lib/mkmf.rb
-  drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
-  if dir1.empty? || dir2.scan(drive).empty?
-    dir1 + dir2
-  else
-    dir1 + $'
-  end
+def with_destdir(dir)
+  dir = dir.sub(/\A\w:/, '') if File::PATH_SEPARATOR == ';'
+  $destdir + dir
 end
 
 exeext = CONFIG["EXEEXT"]
@@ -87,13 +84,13 @@ ruby_install_name = CONFIG["ruby_install_name"]
 rubyw_install_name = CONFIG["rubyw_install_name"]
 
 version = CONFIG["ruby_version"]
-bindir = join($destdir, CONFIG["bindir"])
-libdir = join($destdir, CONFIG["libdir"])
-rubylibdir = join($destdir, CONFIG["rubylibdir"])
-archlibdir = join($destdir, CONFIG["archdir"])
-sitelibdir = join($destdir, CONFIG["sitelibdir"])
-sitearchlibdir = join($destdir, CONFIG["sitearchdir"])
-mandir = File.join(join($destdir, CONFIG["mandir"]), "man")
+bindir = with_destdir(CONFIG["bindir"])
+libdir = with_destdir(CONFIG["libdir"])
+rubylibdir = with_destdir(CONFIG["rubylibdir"])
+archlibdir = with_destdir(CONFIG["archdir"])
+sitelibdir = with_destdir(CONFIG["sitelibdir"])
+sitearchlibdir = with_destdir(CONFIG["sitearchdir"])
+mandir = with_destdir(File.join(CONFIG["mandir"], "man"))
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO"]
@@ -128,6 +125,9 @@ end
 Dir.chdir CONFIG["srcdir"]
 
 ruby_shebang = File.join(CONFIG["bindir"], ruby_install_name)
+if File::ALT_SEPARATOR
+  ruby_bin_dosish = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
+end
 for src in Dir["bin/*"]
   next unless File.file?(src)
   next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
@@ -152,10 +152,9 @@ for src in Dir["bin/*"]
     end
   }
 
-  if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
-    ruby_bin_dosish = ruby_bin.gsub(Regexp.compile(File::SEPARATOR), File::ALT_SEPARATOR)
-    batfile = dest + ".bat"
-    open(batfile, "w") { |b|
+  if ruby_bin_dosish
+    batfile = File.join(CONFIG["bindir"], name + ".bat")
+    open(with_destdir(batfile), "w") { |b|
       b.print <<EOH, shebang, body, <<EOF
 @echo off
 if "%OS%" == "Windows_NT" goto WinNT

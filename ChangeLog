@@ -1,3 +1,10 @@
+Mon Feb 23 09:09:44 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (parse_args): use optparse instead of getopts.
+
+	* instruby.rb (DOSISH): embedded path in batch files should not be
+	  prefixed by DESTDIR.  [ruby-core:02186]
+
 Sun Feb 22 14:58:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: $extstatic is Array or nil now.  [ruby-talk:93383]
