@@ -1,3 +1,24 @@
+Mon Sep  8 19:26:33 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl.h: include openssl/conf.h and openssl/conf_api.h.
+
+	* ext/openssl/ossl_config.c: refine all with backward compatibility.
+
+	* ext/openssl/ossl_config.h: export GetConfigPtr() and DupConfigPtr().
+
+	* ext/openssl/ossl_x509.c: new constants DEFAULT_CERT_AREA,
+	  DEFAULT_CERT_DIR, DEFAULT_CERT_FILE, DEFAULT_CERT_DIR_ENV,
+	  DEFAULT_CERT_FILE_ENV and DEFAULT_PRIVATE_DIR in X509 module.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509extfactory_free): don't free
+	  the members of the struct. it's left to GC.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509_set_config): add for config=.
+
+	* ext/openssl/ossl_x509ext.c (Xossl_x509extfactory_initialize): 
+	  add attr readers: issuer_certificate, subject_certificate,
+	  subject_request, crl and config.
+
 Mon Sep  8 18:26:41 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/accesslog.rb (AccessLog::setup_params): use req.port
