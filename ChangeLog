@@ -1,3 +1,16 @@
+Tue Jan 13 18:54:28 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/logger.rb(Logger#msg2str): no special treatment for the object
+          which responds to :to_str.  commited at 2004-01-11T21:46:27 by
+	  gsinclair.
+
+	* lib/logger.rb(LogDevice#initialize): remove type checking if the
+          given object is a String.  Kernel.open handles it correctly.
+	  commited at 2004-01-11T21:46:27 by gsinclair.
+
+	* test/logger/test_logger.rb: follow above change (ArgumentError ->
+          TypeError.)  follow above commit.
+
 Tue Jan 13 14:27:13 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/test/unit/ui/testrunnerutilities.rb (TestRunnerUtilities):
