@@ -7825,6 +7825,7 @@ static int
 thread_switch(n)
     int n;
 {
+    rb_trap_immediate = (curr_thread->flags&0x100)?1:0;
     switch (n) {
       case 0:
 	return 0;
@@ -7890,6 +7891,7 @@ rb_thread_restore_context(th, exit)
 	if (&v < th->stk_pos + th->stk_len) stack_extend(th, exit);
     }
 
+    rb_trap_immediate = 0;	/* inhibit interrupts from here */
     ruby_frame = th->frame;
     ruby_scope = th->scope;
     ruby_class = th->klass;
@@ -7898,7 +7900,6 @@ rb_thread_restore_context(th, exit)
     ruby_dyna_vars = th->dyna_vars;
     ruby_block = th->block;
     scope_vmode = th->flags&SCOPE_MASK;
-    rb_trap_immediate = (th->flags&0x100)?1:0;
     ruby_iter = th->iter;
     prot_tag = th->tag;
     tracing = th->tracing;
