@@ -38,16 +38,32 @@ readline_readline(argc, argv, self)
     VALUE tmp, add_hist, result;
     char *prompt = NULL;
     char *buff;
+    int status;
 
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
 	prompt = StringValuePtr(tmp);
     }
-    buff = readline(prompt);
+
+    buff = (char*)rb_protect((VALUE(*)_((VALUE)))readline, (VALUE)prompt,
+                              &status);
+    if (status) {
+#if READLINE_40_OR_LATER
+        /* restore terminal mode and signal handler*/
+        rl_cleanup_after_signal();
+#elif READLINE_21_OR_LATER
+        /* restore terminal mode */
+        (*rl_deprep_term_function)();
+#else
+        rl_deprep_terminal();
+#endif
+        rb_jump_tag(status);
+    }
+
     if (RTEST(add_hist) && buff) {
 	add_history(buff);
     }
     if (buff)
-	result = rb_str_new2(buff);
+	result = rb_tainted_str_new2(buff);
     else
 	result = Qnil;
     if (buff) free(buff);
@@ -102,7 +118,7 @@ readline_attempted_completion_function(text, start, end)
 	return NULL;
     rl_attempted_completion_over = 1;
     case_fold = RTEST(rb_iv_get(mReadline, COMPLETION_CASE_FOLD));
-    ary = rb_funcall(proc, rb_intern("call"), 1, rb_str_new2(text));
+    ary = rb_funcall(proc, rb_intern("call"), 1, rb_tainted_str_new2(text));
     if (TYPE(ary) != T_ARRAY)
 	ary = rb_Array(ary);
     matches = RARRAY(ary)->len;
@@ -171,6 +187,7 @@ static VALUE
 readline_s_set_completion_append_character(self, str)
     VALUE self, str;
 {
+#ifdef READLINE_21_OR_LATER
     if (NIL_P(str)) {
 	rl_completion_append_character = '\0';
     } else {
@@ -180,12 +197,16 @@ readline_s_set_completion_append_character(self, str)
     }
 
     return self;
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
 }
 
 static VALUE
 readline_s_get_completion_append_character(self)
     VALUE self;
 {
+#ifdef READLINE_21_OR_LATER
     VALUE str;
 
     if (rl_completion_append_character == '\0')
@@ -195,6 +216,26 @@ readline_s_get_completion_append_character(self)
     RSTRING(str)->ptr[0] = rl_completion_append_character;
 
     return str;
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+rb_remove_history(index)
+    int index;
+{
+    HIST_ENTRY *entry;
+    VALUE val;
+
+    entry = remove_history(index);
+    if (entry) {
+        val = rb_tainted_str_new2(entry->line);
+        free(entry->line);
+        free(entry);
+        return val;
+    }
+    return Qnil;
 }
 
 static VALUE
@@ -214,10 +255,13 @@ hist_get(self, index)
 
     state = history_get_history_state();
     i = NUM2INT(index);
+    if (i < 0) {
+        i += state->length;
+    }
     if (i < 0 || i > state->length - 1) {
 	rb_raise(rb_eIndexError, "Invalid index");
     }
-    return rb_str_new2(state->entries[i]->line);
+    return rb_tainted_str_new2(state->entries[i]->line);
 }
 
 static VALUE
@@ -232,6 +276,9 @@ hist_set(self, index, str)
 
     state = history_get_history_state();
     i = NUM2INT(index);
+    if (i < 0) {
+        i += state->length;
+    }
     if (i < 0 || i > state->length - 1) {
 	rb_raise(rb_eIndexError, "Invalid index");
     }
@@ -268,12 +315,10 @@ hist_pop(self)
     VALUE self;
 {
     HISTORY_STATE *state;
-    HIST_ENTRY *entry;
 
     state = history_get_history_state();
     if (state->length > 0) {
-	entry = remove_history(state->length - 1);
-	return rb_str_new2(entry->line);
+	return rb_remove_history(state->length - 1);
     } else {
 	return Qnil;
     }
@@ -284,12 +329,10 @@ hist_shift(self)
     VALUE self;
 {
     HISTORY_STATE *state;
-    HIST_ENTRY *entry;
 
     state = history_get_history_state();
     if (state->length > 0) {
-	entry = remove_history(0);
-	return rb_str_new2(entry->line);
+	return rb_remove_history(0);
     } else {
 	return Qnil;
     }
@@ -304,7 +347,7 @@ hist_each(self)
 
     state = history_get_history_state();
     for (i = 0; i < state->length; i++) {
-	rb_yield(rb_str_new2(state->entries[i]->line));
+	rb_yield(rb_tainted_str_new2(state->entries[i]->line));
     }
     return self;
 }
@@ -338,16 +381,16 @@ hist_delete_at(self, index)
     VALUE index;
 {
     HISTORY_STATE *state;
-    HIST_ENTRY *entry;
     int i;
 
     state = history_get_history_state();
     i = NUM2INT(index);
+    if (i < 0)
+        i += state->length;
     if (i < 0 || i > state->length - 1) {
 	rb_raise(rb_eIndexError, "Invalid index");
     }
-    entry = remove_history(NUM2INT(index));
-    return rb_str_new2(entry->line);
+    return rb_remove_history(i);
 }
 
 static VALUE
@@ -364,7 +407,7 @@ filename_completion_proc_call(self, str)
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {
-	    rb_ary_push(result, rb_str_new2(matches[i]));
+	    rb_ary_push(result, rb_tainted_str_new2(matches[i]));
 	    free(matches[i]);
 	}
 	free(matches);
@@ -391,7 +434,7 @@ username_completion_proc_call(self, str)
     if (matches) {
 	result = rb_ary_new();
 	for (i = 0; matches[i]; i++) {
-	    rb_ary_push(result, rb_str_new2(matches[i]));
+	    rb_ary_push(result, rb_tainted_str_new2(matches[i]));
 	    free(matches[i]);
 	}
 	free(matches);
@@ -408,6 +451,9 @@ void
 Init_readline()
 {
     VALUE histary, fcomp, ucomp;
+
+    /* Allow conditional parsing of the ~/.inputrc file. */
+    rl_readline_name = "Ruby";
 
     using_history();
 
@@ -442,6 +488,8 @@ Init_readline()
     rb_define_singleton_method(histary,"shift", hist_shift, 0);
     rb_define_singleton_method(histary,"each", hist_each, 0);
     rb_define_singleton_method(histary,"length", hist_length, 0);
+    rb_define_singleton_method(histary,"size", hist_length, 0);
+
     rb_define_singleton_method(histary,"empty?", hist_empty_p, 0);
     rb_define_singleton_method(histary,"delete_at", hist_delete_at, 1);
     rb_define_const(mReadline, "HISTORY", histary);
@@ -455,6 +503,12 @@ Init_readline()
     rb_define_singleton_method(ucomp, "call",
 			       username_completion_proc_call, 1);
     rb_define_const(mReadline, "USERNAME_COMPLETION_PROC", ucomp);
+#if READLINE_21_OR_LATER
+    rb_define_const(mReadline, "VERSION", rb_str_new2(rl_library_version));
+#else
+    rb_define_const(mReadline, "VERSION",
+                    rb_str_new2("2.0 or before version"));
+#endif
 
     rl_attempted_completion_function
 	= (CPPFunction *) readline_attempted_completion_function;

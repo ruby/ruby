@@ -1,3 +1,25 @@
+Sun Aug 26 20:26:40 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* ext/readline/readline.c: restore terminal mode
+	  even if readline() interrupted.
+
+	* ext/readline/readline.c: returned string need to
+	  be tainted.
+
+	* ext/readline/readline.c: fixed memory leak.
+
+	* ext/readline/readline.c: allow negative index.
+
+	* ext/readline/readline.c: added Readline::HISTORY.size
+	  same as Readline::HISTORY.length
+
+	* ext/readline/readline.c: allow conditional parsing
+	  of the ~/.inputrc file by `$if Ruby'.
+
+	* ext/readline/extconf.rb: check whether the
+	  libreadline has the variable `rl_completion_append_character'
+	  (this feature was implemented from GNU readline 2.1).
+
 Thu Sep  6 13:56:14 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_s_digest,
