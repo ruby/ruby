@@ -859,7 +859,7 @@ ruby_strtod(string, endPtr)
 	 * fraction.
 	 */
     
-	if (exp > MDMAXEXPT - 18) {
+	if (exp >= MDMAXEXPT - 18) {
 	    exp = MDMAXEXPT;
 	    errno = ERANGE;
 	}
