@@ -13,8 +13,17 @@
 #include "ruby.h"
 #include <math.h>
 #include <stdio.h>
+
 #if defined(__FreeBSD__) && __FreeBSD__ < 4
 #include <floatingpoint.h>
+#endif
+
+#ifdef HAVE_FLOAT_H
+#include <float.h>
+#endif
+
+#ifndef DBL_EPSILON
+#define 2.2204460492503131E-16
 #endif
 
 static ID id_coerce, id_to_i, id_div;
@@ -61,30 +70,44 @@ coerce_rescue(x)
     return Qnil;		/* dummy */
 }
 
-static void
-do_coerce(x, y)
+static int
+do_coerce(x, y, err)
     VALUE *x, *y;
+    int err;
 {
     VALUE ary;
     VALUE a[2];
 
     a[0] = *x; a[1] = *y;
 
-    ary = rb_rescue(coerce_body, (VALUE)a, coerce_rescue, (VALUE)a);
+    ary = rb_rescue(coerce_body, (VALUE)a, err?coerce_rescue:0, (VALUE)a);
     if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
-	rb_raise(rb_eTypeError, "coerce must return [x, y]");
+	if (err) {
+	    rb_raise(rb_eTypeError, "coerce must return [x, y]");
+	}
+	return Qfalse;
     }
 
     *x = RARRAY(ary)->ptr[0];
     *y = RARRAY(ary)->ptr[1];
+    return Qtrue;
 }
 
 VALUE
 rb_num_coerce_bin(x, y)
     VALUE x, y;
 {
-    do_coerce(&x, &y);
+    do_coerce(&x, &y, Qtrue);
     return rb_funcall(x, rb_frame_last_func(), 1, y);
+}
+
+VALUE
+rb_num_coerce_cmp(x, y)
+    VALUE x, y;
+{
+    if (do_coerce(&x, &y, Qfalse)) 
+	return rb_funcall(x, rb_frame_last_func(), 1, y);
+    return Qnil;
 }
 
 static VALUE
@@ -110,7 +133,7 @@ num_uminus(num)
     VALUE zero;
 
     zero = INT2FIX(0);
-    do_coerce(&zero, &num);
+    do_coerce(&zero, &num, Qtrue);
 
     return rb_funcall(zero, '-', 1, num);
 }
@@ -494,7 +517,7 @@ rb_dbl_cmp(a, b)
     if (a == b) return INT2FIX(0);
     if (a > b) return INT2FIX(1);
     if (a < b) return INT2FIX(-1);
-    rb_raise(rb_eFloatDomainError, "comparing NaN");
+    return Qnil;
 }
 
 static VALUE
@@ -518,7 +541,7 @@ flo_cmp(x, y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
     return rb_dbl_cmp(a, b);
 }
@@ -824,7 +847,7 @@ num_step(argc, argv, from)
 	}
     }
     else if (TYPE(from) == T_FLOAT || TYPE(to) == T_FLOAT || TYPE(step) == T_FLOAT) {
-	const double epsilon = 2.2204460492503131E-16;
+	const double epsilon = DBL_EPSILON;
 	double beg = NUM2DBL(from);
 	double end = NUM2DBL(to);
 	double unit = NUM2DBL(step);
@@ -1322,7 +1345,7 @@ fix_cmp(x, y)
 	return INT2FIX(-1);
     }
     else {
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
 }
 

@@ -234,7 +234,7 @@ rb_f_kill(argc, argv)
         {
 	    VALUE str;
 
-	    str = rb_check_convert_type(argv[0], T_STRING, "String", "to_str");
+	    str = rb_check_string_type(argv[0]);
 	    if (!NIL_P(str)) {
 		s = RSTRING(str)->ptr;
 		goto str_signal;

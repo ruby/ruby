@@ -752,7 +752,7 @@ r_bytes0(len, arg)
 	VALUE n = LONG2NUM(len);
 	str = rb_funcall2(src, s_read, 1, &n);
 	if (NIL_P(str)) goto too_short;
-	Check_Type(str, T_STRING);
+	StringValue(str);
 	if (RSTRING(str)->len != len) goto too_short;
 	if (OBJ_TAINTED(str)) arg->taint = Qtrue;
     }

@@ -651,9 +651,7 @@ rb_mod_cmp(mod, arg)
       case T_CLASS:
 	break;
       default:
-	rb_raise(rb_eTypeError, "<=> requires Class or Module (%s given)",
-		 rb_class2name(CLASS_OF(arg)));
-	break;
+	return Qnil;
     }
 
     if (rb_mod_le(mod, arg)) {

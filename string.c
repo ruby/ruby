@@ -469,6 +469,13 @@ rb_string_value_ptr(ptr)
 }
 
 VALUE
+rb_check_string_type(str)
+    VALUE str;
+{
+    return rb_check_convert_type(str, T_STRING, "String", "to_str");
+}
+
+VALUE
 rb_str_substr(str, beg, len)
     VALUE str;
     long beg, len;
@@ -763,7 +770,7 @@ rb_str_equal(str1, str2)
 {
     if (str1 == str2) return Qtrue;
     if (TYPE(str2) != T_STRING) {
-	str2 = rb_check_convert_type(str2, T_STRING, "String", "to_str");
+	str2 = rb_check_string_type(str2);
 	if (NIL_P(str2)) return Qfalse;
     }
 
@@ -794,7 +801,10 @@ rb_str_cmp_m(str1, str2)
 {
     int result;
 
-    StringValue(str2);
+    if (TYPE(str2) != T_STRING) {
+	str2 = rb_check_string_type(str2);
+	if (NIL_P(str2)) return Qnil;
+    }
     result = rb_str_cmp(str1, str2);
     return INT2FIX(result);
 }
@@ -1428,7 +1438,7 @@ get_pat(pat, quote)
 	break;
 
       default:
-	val = rb_check_convert_type(pat, T_STRING, "String", "to_str");
+	val = rb_check_string_type(pat);
 	if (NIL_P(val)) {
 	    Check_Type(pat, T_REGEXP);
 	}

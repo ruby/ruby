@@ -2581,7 +2581,7 @@ rb_io_puts(argc, argv, out)
 	    line = rb_str_new2("nil");
 	}
 	else {
-	    line = rb_check_convert_type(argv[i], T_ARRAY, "Array", "to_ary");
+	    line = rb_check_array_type(argv[i]);
 	    if (!NIL_P(line)) {
 		rb_protect_inspect(io_puts_ary, line, out);
 		continue;

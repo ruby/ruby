@@ -52,6 +52,7 @@ VALUE rb_ary_includes _((VALUE, VALUE));
 VALUE rb_ary_cmp _((VALUE, VALUE));
 VALUE rb_protect_inspect _((VALUE(*)(ANYARGS),VALUE,VALUE));
 VALUE rb_inspecting_p _((VALUE));
+VALUE rb_check_array_value _((VALUE));
 /* bignum.c */
 VALUE rb_big_clone _((VALUE));
 void rb_big_2comp _((VALUE));
@@ -262,6 +263,7 @@ VALUE rb_marshal_load _((VALUE));
 /* numeric.c */
 void rb_num_zerodiv _((void));
 VALUE rb_num_coerce_bin _((VALUE, VALUE));
+VALUE rb_num_coerce_cmp _((VALUE, VALUE));
 VALUE rb_float_new _((double));
 VALUE rb_num2fix _((VALUE));
 VALUE rb_fix2str _((VALUE, int));
@@ -371,6 +373,7 @@ VALUE rb_str_buf_append _((VALUE, VALUE));
 VALUE rb_str_buf_cat _((VALUE, const char*, long));
 VALUE rb_str_buf_cat2 _((VALUE, const char*));
 VALUE rb_obj_as_string _((VALUE));
+VALUE rb_check_string_type _((VALUE));
 VALUE rb_str_dup _((VALUE));
 VALUE rb_str_dup_frozen _((VALUE));
 VALUE rb_str_plus _((VALUE, VALUE));

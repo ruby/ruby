@@ -853,7 +853,7 @@ rb_big_cmp(x, y)
 	return rb_dbl_cmp(rb_big2dbl(x), RFLOAT(y)->value);
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_cmp(x, y);
     }
 
     if (RBIGNUM(x)->sign > RBIGNUM(y)->sign) return INT2FIX(1);
@@ -1749,7 +1749,6 @@ Init_Bignum()
 
     rb_define_method(rb_cBignum, "<=>", rb_big_cmp, 1);
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
-    rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
     rb_define_method(rb_cBignum, "eql?", rb_big_eql, 1);
     rb_define_method(rb_cBignum, "hash", rb_big_hash, 0);
     rb_define_method(rb_cBignum, "to_f", rb_big_to_f, 0);

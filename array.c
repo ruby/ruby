@@ -204,6 +204,13 @@ to_ary(ary)
     return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
+VALUE
+rb_check_array_type(ary)
+    VALUE ary;
+{
+    return rb_check_convert_type(ary, T_ARRAY, "Array", "to_ary");
+}
+
 static VALUE rb_ary_replace _((VALUE, VALUE));
 
 static VALUE
@@ -225,7 +232,7 @@ rb_ary_initialize(argc, argv, ary)
     }
 
     if (argc == 1 && !FIXNUM_P(size)) {
-	val = rb_check_convert_type(size, T_ARRAY, "Array", "to_ary");
+	val = rb_check_array_type(size);
 	if (!NIL_P(val)) {
 	    rb_ary_replace(ary, val);
 	    return ary;

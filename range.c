@@ -123,6 +123,7 @@ r_lt(a, b)
 {
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
+    if (NIL_P(r)) return Qfalse;
     if (rb_cmpint(r) < 0) return Qtrue;
     return Qfalse;
 }
@@ -133,9 +134,11 @@ r_le(a, b)
 {
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
+    if (NIL_P(r)) return Qfalse;
     if (rb_cmpint(r) <= 0) return Qtrue;
     return Qfalse;
 }
+
 
 static int
 r_gt(a,b)
@@ -143,6 +146,7 @@ r_gt(a,b)
 {
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
+    if (NIL_P(r)) return Qfalse;
     if (rb_cmpint(r) > 0) return Qtrue;
     return Qfalse;
 }
@@ -474,12 +478,13 @@ range_include(range, val)
 
     beg = rb_ivar_get(range, id_beg);
     end = rb_ivar_get(range, id_end);
-    if (r_gt(beg, val)) return Qfalse;
-    if (EXCL(range)) {
-	if (r_lt(val, end)) return Qtrue;
-    }
-    else {
-	if (r_le(val, end)) return Qtrue;
+    if (r_le(beg, val)) {
+	if (EXCL(range)) {
+	    if (r_lt(val, end)) return Qtrue;
+	}
+	else {
+	    if (r_le(val, end)) return Qtrue;
+	}
     }
     return Qfalse;
 }

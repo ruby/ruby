@@ -4687,7 +4687,7 @@ aryset(recv, idx)
     NODE *recv, *idx;
 {
     value_expr(recv);
-    return NEW_CALL(recv, tASET, idx);
+    return NEW_ATTRASGN(recv, tASET, idx);
 }
 
 ID

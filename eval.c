@@ -1881,6 +1881,7 @@ is_defined(self, node, buf)
 	goto check_bound;
 
       case NODE_CALL:
+      case NODE_ATTRASGN:
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_eval(self, node->nd_recv);
@@ -1909,7 +1910,9 @@ is_defined(self, node, buf)
 	    }
 	    else if (!rb_method_boundp(val, node->nd_mid, call))
 		break;
-	    return arg_defined(self, node->nd_args, buf, "method");
+	    return arg_defined(self, node->nd_args, buf,
+			       nd_type(node) == NODE_ATTRASGN ?
+			       "assignment" : "method");
 	}
 	break;
 
@@ -1936,7 +1939,6 @@ is_defined(self, node, buf)
 	return "false";
 
       case NODE_ATTRSET:
-      case NODE_ATTRASGN:
       case NODE_OP_ASGN1:
       case NODE_OP_ASGN2:
       case NODE_MASGN:
@@ -5039,7 +5041,7 @@ compile(src, file, line)
     NODE *node;
 
     ruby_nerrs = 0;
-    Check_Type(src, T_STRING);
+    StringValue(src);
     node = rb_compile_string(file, src, line);
 
     if (ruby_nerrs == 0) return node;

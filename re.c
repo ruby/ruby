@@ -1110,6 +1110,27 @@ rb_reg_match(re, str)
 }
 
 VALUE
+rb_reg_eqq(re, str)
+    VALUE re, str;
+{
+    long start;
+
+    if (TYPE(str) != T_STRING) {
+	str = rb_check_string_type(str);
+	if (NIL_P(str)) {
+	    rb_backref_set(Qnil);
+	    return Qfalse;
+	}
+    }
+    StringValue(str);
+    start = rb_reg_search(re, str, 0, 0);
+    if (start < 0) {
+	return Qfalse;
+    }
+    return Qtrue;
+}
+
+VALUE
 rb_reg_match2(re)
     VALUE re;
 {
@@ -1583,7 +1604,7 @@ Init_Regexp()
     rb_define_method(rb_cRegexp, "eql?", rb_reg_equal, 1);
     rb_define_method(rb_cRegexp, "==", rb_reg_equal, 1);
     rb_define_method(rb_cRegexp, "=~", rb_reg_match, 1);
-    rb_define_method(rb_cRegexp, "===", rb_reg_match, 1);
+    rb_define_method(rb_cRegexp, "===", rb_reg_eqq, 1);
     rb_define_method(rb_cRegexp, "~", rb_reg_match2, 0);
     rb_define_method(rb_cRegexp, "match", rb_reg_match_m, 1);
     rb_define_method(rb_cRegexp, "to_s", rb_reg_to_s, 0);

@@ -1,6 +1,39 @@
+Thu Dec 19 01:00:09 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_step): use DBL_EPSILON.
+
+	* array.c (rb_check_array_type): new function: return an array
+	  (convert if possible), or nil.
+
+	* string.c (rb_check_string_type): new function: return a string
+	  (convert if possible), or nil.
+
+	* numeric.c (rb_dbl_cmp): returns nil if values are not
+	  comparable.
+
+	* numeric.c (fix_cmp,flo_cmp): use rb_num_coerce_cmp()
+
+	* bignum.c (rb_big_cmp): ditto.
+
+	* numeric.c (rb_num_coerce_cmp): new coercing function for "<=>",
+	  which does not raise TypeError.
+
+	* numeric.c (do_coerce): can be supress exception now.
+
+	* object.c (rb_mod_cmp): should return nil for non class/module
+	  objects.
+
 Thu Dec 19 04:21:10 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/open-uri.rb: add a missing ||. (found by: ruby -wc)
+
+Wed Dec 18 17:53:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_eqq): return false if the argument is not a
+	  string.  now returns boolean value.
+
+	* class.c (rb_include_module): argument should be T_MODULE, not
+	  T_class, nor T_ICLASS.
 
 Wed Dec 18 03:52:55 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -21,6 +54,14 @@ Tue Dec 17 21:08:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* string.c (rb_str_substr): tail sharing.  [ruby-core:00650]
 
 	* re.c (rb_reg_nth_match): ditto.
+
+Tue Dec 17 16:52:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): "defined?" should return "assignment" for
+	  attribute assignment (e.g. a.foo=b) and indexed assignment
+	  (e.g. a[2] = 44).
+
+	* parse.y (aryset): use NODE_ATTRASGN.
 
 Tue Dec 17 04:03:45 2002  Tanaka Akira  <akr@m17n.org>
 
@@ -77,6 +118,11 @@ Fri Dec 13 23:42:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/dbm/extconf.rb (db_check): check existence of the function
 	  in the specified library before checking it in libc.
+
+Fri Dec 13 17:15:49 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (generic_ivar_get): should always warn uninitialized
+	  instance variables.
 
 Fri Dec 13 12:33:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

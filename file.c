@@ -1826,12 +1826,10 @@ test_check(n, argc, argv)
     for (i=1; i<n; i++) {
 	switch (TYPE(argv[i])) {
 	  case T_STRING:
+	  default:
 	    SafeStringValue(argv[i]);
 	    break;
 	  case T_FILE:
-	    break;
-	  default:
-	    Check_Type(argv[i], T_STRING);
 	    break;
 	}
     }
