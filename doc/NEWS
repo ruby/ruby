@@ -1,3 +1,35 @@
+: Array expansion
+
+  Fixed with the following behavior:
+
+    a = *[1]
+    p a #=> [1]
+
+  Now 1-element array in rhs is expanded properly.
+
+    a = *[1]
+    p a #=> 1
+
+: NameError & NoMethodError
+
+  Moved and now NoMethodError < NameError < StandardError.
+
+: open
+
+  Extended so that when the third argument is permission flags it
+  calls open(2) instead of fopen(3).
+
+: Marshal
+
+  Fixed not to dump anonymous classes/modules.
+
+  Fixed with loading modules.
+
+: constants
+
+  Improved at the performance of searching by using an internal hash
+  table.
+
 : Syntax
 
   Experimentally altered to get the following code (note the space
