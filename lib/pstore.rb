@@ -104,10 +104,14 @@ class PStore
         commit_new(file) if FileTest.exist?(new_file)
         content = file.read()
       else
-        file = File.open(@filename, File::RDONLY)
-        file.binmode
-        file.flock(File::LOCK_SH)
-        content = (File.read(new_file) rescue file.read())
+        begin
+          file = File.open(@filename, File::RDONLY)
+          file.binmode
+          file.flock(File::LOCK_SH)
+          content = (File.read(new_file) rescue file.read())
+        rescue Errno::ENOENT
+          content = ""
+        end
       end
 
       if content != ""

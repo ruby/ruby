@@ -52,6 +52,13 @@ class OpenStruct
     end
   end
 
+  def new_ostruct_member(name)
+    self.instance_eval %{
+      def #{name}; @table[:#{name}]; end
+      def #{name}=(x); @table[:#{name}] = x; end
+    }
+  end
+
   def method_missing(mid, *args) # :nodoc:
     mname = mid.id2name
     len = args.length
@@ -64,6 +71,7 @@ class OpenStruct
       end
       mname.chop!
       @table[mname.intern] = args[0]
+      self.new_ostruct_member(mname)
     elsif len == 0
       @table[mid]
     else

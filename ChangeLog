@@ -1,3 +1,7 @@
+Wed Oct 27 17:27:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_sweep): recover ruby_in_compile variable.
+
 Wed Oct 27 09:17:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_gsub): use a string object for exception safeness.
