@@ -86,6 +86,13 @@ TkTimer.new(2000, -1, proc{p ['safe1', safe_slave1.deleted?]}).start
 TkTimer.new(2000, -1, proc{p ['safe2', safe_slave2.deleted?]}).start
 TkTimer.new(2000, -1, proc{p ['trusted', trusted_slave.deleted?]}).start
 
+TkTimer.new(7000, 1, 
+	    proc{
+	      safe_slave1.eval_proc{Tk.root.destroy}
+	      safe_slave1.delete
+	      print "*** The safe_slave1 is deleted by the timer.\n"
+	    }).start
+
 TkTimer.new(10000, 1, 
 	    proc{
 	      trusted_slave.eval_proc{Tk.root.destroy}

@@ -113,7 +113,6 @@ TkFrame.new{|f|
   }
 }
 
-
 ############################
 TkFrame.new(:borderwidth=>2, :relief=>:sunken, 
 	    :height=>5).pack(:side=>:top, :fill=>:x, :padx=>20)

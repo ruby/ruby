@@ -154,6 +154,8 @@ set_eventloop_tick(self, tick)
 {
     int ttick = NUM2INT(tick);
 
+    rb_secure(4);
+
     if (ttick < 0) {
 	rb_raise(rb_eArgError, 
 		 "timer-tick parameter must be 0 or positive number");
@@ -209,6 +211,8 @@ set_no_event_wait(self, wait)
 {
     int t_wait = NUM2INT(wait);
 
+    rb_secure(4);
+
     if (t_wait <= 0) {
 	rb_raise(rb_eArgError, 
 		 "no_event_wait parameter must be positive number");
@@ -255,6 +259,8 @@ set_eventloop_weight(self, loop_max, no_event)
 {
     int lpmax = NUM2INT(loop_max);
     int no_ev = NUM2INT(no_event);
+
+    rb_secure(4);
 
     if (lpmax <= 0 || no_ev <= 0) {
 	rb_raise(rb_eArgError, "weight parameters must be positive numbers");
@@ -336,6 +342,7 @@ ip_evloop_abort_on_exc_set(self, val)
 {
     struct tcltkip *ptr = get_ip(self);
 
+    rb_secure(4);
     if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
 	/* slave IP */
 	return lib_evloop_abort_on_exc(self);
@@ -392,6 +399,8 @@ lib_mainloop_core(check_root_widget)
 	    if (run_timer_flag) {
 		DUMP1("timer interrupt");
 		run_timer_flag = 0;
+		DUMP1("call rb_trap_exec()");
+		rb_trap_exec();
 		DUMP1("check Root Widget");
 		if (check && Tk_GetNumMainWindows() == 0) {
 		    return Qnil;
@@ -619,15 +628,18 @@ lib_do_one_event_core(argc, argv, self, is_ip)
 {
     VALUE vflags;
     int flags;
-    int ret;
 
     if (rb_scan_args(argc, argv, "01", &vflags) == 0) {
-	flags = TCL_ALL_EVENTS;
+	flags = TCL_ALL_EVENTS | TCL_DONT_WAIT;
     } else {
 	Check_Type(vflags, T_FIXNUM);
 	flags = FIX2INT(vflags);
     }
-    
+
+    if (rb_safe_level() >= 4 || (rb_safe_level() >=1 && OBJ_TAINTED(vflags))) {
+      flags |= TCL_DONT_WAIT;
+    }
+
     if (is_ip) {
 	/* check IP */
 	struct tcltkip *ptr = get_ip(self);
@@ -637,8 +649,7 @@ lib_do_one_event_core(argc, argv, self, is_ip)
 	}
     }
 
-    ret = Tcl_DoOneEvent(flags);
-    if (ret) {
+    if (Tcl_DoOneEvent(flags)) {
 	return Qtrue;
     } else {
 	return Qfalse;
@@ -681,6 +692,8 @@ lib_restart(self)
 {
     struct tcltkip *ptr = get_ip(self);
 
+    rb_secure(4);
+
     /* destroy the root wdiget */
     ptr->return_value = Tcl_Eval(ptr->ip, "destroy .");
     /* ignore ERROR */
@@ -715,6 +728,7 @@ ip_restart(self)
 {
     struct tcltkip *ptr = get_ip(self);
 
+    rb_secure(4);
     if (Tcl_GetMaster(ptr->ip) != (Tcl_Interp*)NULL) {
 	/* slave IP */
 	return Qnil;
@@ -912,6 +926,7 @@ ip_create_slave(argc, argv, self)
 	safe = 1;
     } else if (safemode == Qfalse || safemode == Qnil) {
 	safe = 0;
+	rb_secure(4);
     } else {
 	safe = 1;
     }
@@ -961,7 +976,7 @@ ip_delete(self)
     VALUE self;
 {
     struct tcltkip *ptr = get_ip(self);
-    
+
     Tcl_DeleteInterp(ptr->ip);
 
     return Qnil;
@@ -1131,7 +1146,6 @@ ip_invoke_real(argc, argv, obj)
 
     /* ip is deleted? */
     if (Tcl_InterpDeleted(ptr->ip)) {
-	Tcl_ResetResult(ptr->ip);
 	return rb_tainted_str_new2("");
     }
 
@@ -1139,7 +1153,7 @@ ip_invoke_real(argc, argv, obj)
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
 	/* if (event_loop_abort_on_exc || cmd[0] != '.') { */
 	if (event_loop_abort_on_exc > 0) {
-	    /*rb_ip_raise(obj, rb_eNameError, "invalid command name `%s'", cmd);*/
+	    /*rb_ip_raise(obj,rb_eNameError,"invalid command name `%s'",cmd);*/
 	    return create_ip_exc(obj, rb_eNameError, 
 				 "invalid command name `%s'", cmd);
 	} else {
@@ -1349,11 +1363,11 @@ ip_invoke(argc, argv, obj)
 
     /* get result & free allocated memory */
     result = *alloc_result;
-    if (rb_obj_is_kind_of(result, rb_eException)) {
-      rb_exc_raise(result);
-    }
     free(alloc_argv);
     free(alloc_result);
+    if (rb_obj_is_kind_of(result, rb_eException)) {
+	rb_exc_raise(result);
+    }
 
     return result;
 }

@@ -11,8 +11,8 @@ class TkTimer
 
   TkCommandNames = ['after'.freeze].freeze
 
-  Tk_CBID = ['a'.freeze, '00000'].freeze
-  Tk_CBTBL = {}
+  Tk_CBID = ['a'.freeze, '00000'.taint].freeze
+  Tk_CBTBL = {}.taint
 
   TkCore::INTERP.add_tk_procs('rb_after', 'id', <<-'EOL')
     if {[set st [catch {ruby [format "TkTimer.callback %%Q!%s!" $id]} ret]] != 0} {

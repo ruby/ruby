@@ -8,7 +8,7 @@ require "tcltklib"
 require "tkutil"
 
 module TkComm
-  WidgetClassNames = {}
+  WidgetClassNames = {}.taint
 
   None = Object.new
   def None.to_s
@@ -18,7 +18,7 @@ module TkComm
 
   #Tk_CMDTBL = {}
   #Tk_WINDOWS = {}
-  Tk_IDs = ["00000", "00000"].freeze	# [0]-cmdid, [1]-winid
+  Tk_IDs = ["00000".taint, "00000".taint].freeze  # [0]-cmdid, [1]-winid
 
   # for backward compatibility
   Tk_CMDTBL = Object.new
@@ -33,7 +33,7 @@ module TkComm
   Tk_WINDOWS.freeze
 
   self.instance_eval{
-    @cmdtbl = []
+    @cmdtbl = [].taint
   }
 
   def error_at
@@ -332,6 +332,7 @@ module TkComm
     #Tk_CMDTBL[id] = cmd
     TkCore::INTERP.tk_cmd_tbl[id] = TkCore::INTERP.get_cb_entry(cmd)
     @cmdtbl = [] unless defined? @cmdtbl
+    @cmdtbl.taint unless @cmdtbl.tainted?
     @cmdtbl.push id
     return format("rb_out %s", id);
   end
@@ -679,13 +680,13 @@ module TkCore
     end
 
     INTERP.instance_eval{
-      @tk_cmd_tbl = {}
-      @tk_windows = {}
+      @tk_cmd_tbl = {}.taint
+      @tk_windows = {}.taint
 
-      @tk_table_list = []
+      @tk_table_list = [].taint
 
-      @init_ip_env  = [] # table of Procs
-      @add_tk_procs = [] # table of [name, args, body]
+      @init_ip_env  = [].taint  # table of Procs
+      @add_tk_procs = [].taint  # table of [name, args, body]
 
       @cb_entry_class = Class.new{|c|
 	def initialize(ip, cmd)
@@ -711,7 +712,8 @@ module TkCore
     end
     def INTERP.create_table
       id = @tk_table_list.size
-      @tk_table_list << {}
+      (tbl = {}).tainted? || tbl.taint
+      @tk_table_list << tbl
       obj = Object.new
       obj.instance_eval <<-EOD
         def self.method_missing(m, *args)
@@ -1636,7 +1638,7 @@ class TkBindTag
 
   #BTagID_TBL = {}
   BTagID_TBL = TkCore::INTERP.create_table
-  Tk_BINDTAG_ID = ["btag".freeze, "00000"].freeze
+  Tk_BINDTAG_ID = ["btag".freeze, "00000".taint].freeze
 
   TkCore::INTERP.init_ip_env{ BTagID_TBL.clear }
 
@@ -1713,7 +1715,7 @@ class TkVariable
   #TkVar_ID_TBL = {}
   TkVar_CB_TBL = TkCore::INTERP.create_table
   TkVar_ID_TBL = TkCore::INTERP.create_table
-  Tk_VARIABLE_ID = ["v".freeze, "00000"].freeze
+  Tk_VARIABLE_ID = ["v".freeze, "00000".taint].freeze
 
   TkCore::INTERP.add_tk_procs('rb_var', 'args', 
 	"ruby [format \"TkVariable.callback %%Q!%s!\" $args]")
@@ -3004,20 +3006,76 @@ module TkOptionDB
   end
 
   def add(pat, value, pri=None)
+    if $SAFE >= 4
+      fail SecurityError, "can't call 'TkOptionDB.add' at $SAFE >= 4"
+    end
     tk_call 'option', 'add', pat, value, pri
   end
   def clear
+    if $SAFE >= 4
+      fail SecurityError, "can't call 'TkOptionDB.crear' at $SAFE >= 4"
+    end
     tk_call 'option', 'clear'
   end
   def get(win, name, klass)
-    tk_call('option', 'get', win ,name, klass).taint
+    tk_call('option', 'get', win ,name, klass)
   end
   def readfile(file, pri=None)
     tk_call 'option', 'readfile', file, pri
   end
   module_function :add, :clear, :get, :readfile
+
+  def read_entries(file, f_enc=nil)
+    if TkCore::INTERP.safe?
+      fail SecurityError, 
+	"can't call 'TkOptionDB.read_entries' on a safe interpreter"
+    end
+
+    i_enc = Tk.encoding()
+
+    unless f_enc
+      f_enc = i_enc
+    end
+
+    ent = []
+    cline = ''
+    open(file, 'r') {|f|
+      while line = f.gets
+	cline += line.chomp!
+	case cline
+	when /\\$/    # continue
+	  cline.chop!
+	  next
+	when /^!/     # coment
+	  cline = ''
+	  next
+	when /^([^:]+):\s(.*)$/
+	  pat = $1
+	  val = $2
+	  p "ResourceDB: #{[pat, val].inspect}" if $DEBUG
+	  pat = TkCore::INTERP._toUTF8(pat, f_enc)
+	  pat = TkCore::INTERP._fromUTF8(pat, i_enc)
+	  val = TkCore::INTERP._toUTF8(val, f_enc)
+	  val = TkCore::INTERP._fromUTF8(val, i_enc)
+	  ent << [pat, val]
+	  cline = ''
+	else          # unknown --> ignore
+	  cline = ''
+	  next
+	end
+      end
+    }
+    ent
+  end
+  module_function :read_entries
       
   def read_with_encoding(file, f_enc=nil, pri=None)
+    # try to read the file as an OptionDB file
+    readfile(file, pri).each{|pat, val|
+      add(pat, val, pri)
+    }
+
+=begin
     i_enc = Tk.encoding()
 
     unless f_enc
@@ -3051,6 +3109,7 @@ module TkOptionDB
 	end
       end
     }
+=end
   end
   module_function :read_with_encoding
 
@@ -4101,7 +4160,10 @@ class TkWindow<TkObject
       TkCore::INTERP.tk_windows.delete(path)
     }
 
-    tk_call 'destroy', epath
+    begin
+      tk_call 'destroy', epath
+    rescue
+    end
     uninstall_win
   end
 

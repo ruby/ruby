@@ -35,16 +35,16 @@ MultiTkIp_OK.freeze
 ################################################
 # methods for construction
 class MultiTkIp
-  SLAVE_IP_ID = ['slave'.freeze, '0'].freeze
+  SLAVE_IP_ID = ['slave'.freeze, '0'.taint].freeze
 
-  @@IP_TABLE = {}
+  @@IP_TABLE = {}.taint
 
-  @@INIT_IP_ENV  = [] # table of Procs
-  @@ADD_TK_PROCS = [] # table of [name, args, body]
+  @@INIT_IP_ENV  = [].taint # table of Procs
+  @@ADD_TK_PROCS = [].taint # table of [name, args, body]
 
-  @@TK_TABLE_LIST = []
+  @@TK_TABLE_LIST = [].taint
 
-  @@TK_CMD_TBL = {}
+  @@TK_CMD_TBL = {}.taint
 
   ######################################
 
@@ -64,7 +64,7 @@ class MultiTkIp
       rescue Exception
       end
     end
-  }
+  }.freeze
 
   ######################################
 
@@ -200,13 +200,13 @@ class MultiTkIp
 
   @@DEFAULT_MASTER = self.allocate
   @@DEFAULT_MASTER.instance_eval{
-    @encoding = []
+    @encoding = [].taint
 
-    @tk_windows = {}
+    @tk_windows = {}.taint
 
-    @tk_table_list = []
+    @tk_table_list = [].taint
 
-    @slave_ip_tbl = {}
+    @slave_ip_tbl = {}.taint
 
     unless keys.kind_of? Hash
       fail ArgumentError, "expecting a Hash object for the 2nd argument"
@@ -266,6 +266,7 @@ class MultiTkIp
     'nested'.freeze, 
     'deleteHook'.freeze
   ].freeze
+
   def _parse_slaveopts(keys)
     name = nil
     safe = false
@@ -462,17 +463,23 @@ class MultiTkIp
       fail SecurityError, "slave-ip cannot create master-ip"
     end
 
+    if safeip == nil && $SAFE >= 4
+      fail SecurityError, "cannot create master-ip at level #{$SAFE}"
+    end
+
     unless keys.kind_of? Hash
       fail ArgumentError, "expecting a Hash object for the 2nd argument"
     end
 
     @encoding = []
-
     @tk_windows = {}
-
     @tk_table_list = []
-
     @slave_ip_tbl = {}
+
+    @encoding.taint unless @encoding.tainted?
+    @tk_windows.taint unless @tk_windows.tainted?
+    @tk_table_list.taint unless @tk_table_list.tainted?
+    @slave_ip_tbl.taint unless @slave_ip_tbl.tainted?
 
     name, safe, safe_opts, tk_opts = _parse_slaveopts(keys)
 
@@ -508,7 +515,10 @@ class MultiTkIp
 
     @@IP_TABLE[@threadgroup] = self
     _init_ip_internal(@@INIT_IP_ENV, @@ADD_TK_PROCS)
-    @@TK_TABLE_LIST.size.times{ @tk_table_list << {} }
+    @@TK_TABLE_LIST.size.times{ 
+      (tbl = {}).tainted? || tbl.taint
+      @tk_table_list << tbl
+    }
 
     self.freeze  # defend against modification
   end
@@ -661,7 +671,10 @@ class MultiTkIp
   end
 
   def _add_new_tables
-    (@@TK_TABLE_LIST.size - @tk_table_list.size).times{ @tk_table_list << {} }
+    (@@TK_TABLE_LIST.size - @tk_table_list.size).times{ 
+      (tbl = {}).tainted? || tbl.taint
+      @tk_table_list << tbl
+    }
   end
 
   def _init_ip_env(script)
@@ -701,9 +714,9 @@ class MultiTkIp
     __getip._tk_table_list[id]
   end
   def self.create_table
-    if __getip.slave?
-      raise SecurityError, "slave-IP has no permission creating a new table"
-    end
+    #if __getip.slave?
+    #  raise SecurityError, "slave-IP has no permission creating a new table"
+    #end
     id = @@TK_TABLE_LIST.size
     obj = Object.new
     @@TK_TABLE_LIST << obj

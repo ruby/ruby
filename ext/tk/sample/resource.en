@@ -8,5 +8,6 @@
 *hello.text: HELLO
 *quit.text: QUIT
 *BTN_CMD.show_msg: {|arg| print "($SAFE=#{$SAFE}) ";\
-                          print "Hello!! This is a sample of #{arg}.\n"}
-*BTN_CMD.bye_msg:  {print "($SAFE=#{$SAFE}) Good-bye¡¥\n"}
+                          print "Hello!! This is a sample of #{arg}.";\
+                          print "(<<< $SAFE=#{$SAFE})\n"}
+*BTN_CMD.bye_msg:  {print "($SAFE=#{$SAFE} >>>) Good-bye¡¥(<<< $SAFE=#{$SAFE})\n"}

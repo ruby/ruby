@@ -807,7 +807,7 @@ class TkTextTag<TkObject
   include TkTreatTagFont
 
   TTagID_TBL = TkCore::INTERP.create_table
-  Tk_TextTag_ID = ['tag'.freeze, '00000'].freeze
+  Tk_TextTag_ID = ['tag'.freeze, '00000'.taint].freeze
 
   TkCore::INTERP.init_ip_env{ TTagID_TBL.clear }
 
@@ -1023,7 +1023,7 @@ end
 
 class TkTextMark<TkObject
   TMarkID_TBL = TkCore::INTERP.create_table
-  Tk_TextMark_ID = ['mark'.freeze, '00000'].freeze
+  Tk_TextMark_ID = ['mark'.freeze, '00000'.taint].freeze
 
   TkCore::INTERP.init_ip_env{ TMarkID_TBL.clear }
 

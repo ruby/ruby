@@ -557,7 +557,7 @@ class TkcTag<TkObject
   include TkcTagAccess
 
   CTagID_TBL = TkCore::INTERP.create_table
-  Tk_CanvasTag_ID = ['ctag'.freeze, '00000'].freeze
+  Tk_CanvasTag_ID = ['ctag'.freeze, '00000'.taint].freeze
 
   TkCore::INTERP.init_ip_env{ CTagID_TBL.clear }
 
@@ -688,7 +688,7 @@ class TkcTagCurrent<TkcTag
 end
 
 class TkcGroup<TkcTag
-  Tk_cGroup_ID = ['tkcg'.freeze, '00000'].freeze
+  Tk_cGroup_ID = ['tkcg'.freeze, '00000'.taint].freeze
   def create_self(parent, *args)
     if not parent.kind_of?(TkCanvas)
       fail format("%s need to be TkCanvas", parent.inspect)
@@ -851,7 +851,7 @@ class TkImage<TkObject
   TkCommandNames = ['image'.freeze].freeze
 
   Tk_IMGTBL = TkCore::INTERP.create_table
-  Tk_Image_ID = ['i'.freeze, '00000'].freeze
+  Tk_Image_ID = ['i'.freeze, '00000'.taint].freeze
 
   TkCore::INTERP.init_ip_env{ Tk_IMGTBL.clear }
 

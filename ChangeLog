@@ -1,3 +1,9 @@
+Sun Sep  7 16:08:28 2003    <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (lib_mainloop_core): fixed signal-trap bug
+
+	* ext/tk/lib/*.rb : Ruby/Tk works at $SAFE == 4
+
 Fri Sep  6 02:26:34 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_*.rb: assert_same, assert_match, and so on.
