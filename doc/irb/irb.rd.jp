@@ -3,7 +3,7 @@ irb -- interactive ruby
 			   	$Revision$
 			   	$Date$
 			   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
-==begin
+=begin
 = irbとは?
 
 irbはinteractive rubyの略です. rubyの式を標準入力から簡単に入力/実行す
@@ -378,7 +378,7 @@ rubyでは, 以下のプログラムはエラーになります.
 シンボルであるかどうかの判断を間違えることがあります. 具体的には式が完了
 しているのに継続行と見なすことがあります.
 
-==end
+=end
 
 % Begin Emacs Environment
 % Local Variables:

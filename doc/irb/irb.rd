@@ -5,7 +5,7 @@ irb -- interactive ruby
 			   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 				translate from japanese by gotoken-san
 
-==begin
+=begin
 = What is irb?
 
 irb stands for `interactive ruby'. irb is a tool to execute interactively
@@ -365,7 +365,7 @@ Implementation of Here-document is incomplete.
 Irb can not always recognize a symbol as to be Symbol. Concretely, an
 expression have completed, however Irb regard it as continuation line.
 
-==end
+=end
 
 % Begin Emacs Environment
 % Local Variables:
