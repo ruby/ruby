@@ -1060,10 +1060,9 @@ module TkCore
 
   WIDGET_DESTROY_HOOK = '<WIDGET_DESTROY_HOOK>'
   INTERP._invoke_without_enc('event', 'add', 
-                             "<#{WIDGET_DESTROY_HOOK}>", 'Destroy')
+                             "<#{WIDGET_DESTROY_HOOK}>", '<Destroy>')
   INTERP._invoke_without_enc('bind', 'all', "<#{WIDGET_DESTROY_HOOK}>",
-                             install_bind(proc{|xpath|
-                                path = xpath[1..-1]
+                             install_cmd(proc{|path|
                                 unless TkCore::INTERP.deleted?
                                   if (widget = TkCore::INTERP.tk_windows[path])
                                     if widget.respond_to?(:__destroy_hook__)
@@ -1074,7 +1073,8 @@ module TkCore
                                     end
                                   end
                                 end
-                             }, 'x%W'))
+                             }) << ' %W')
+
   INTERP.add_tk_procs(TclTkLib::FINALIZE_PROC_NAME, '', 
                       "bind all <#{WIDGET_DESTROY_HOOK}> {}")
 

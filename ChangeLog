@@ -1,3 +1,9 @@
+Fri Nov 12 14:08:01 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/event.rb: remove $LOADED_FEATURES trick
+
+	* ext/tk/lib/tk.rb: ditto
+
 Thu Nov 11 17:58:19 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (rb_glob): should have called rb_glob_caller().

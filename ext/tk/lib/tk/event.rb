@@ -2,16 +2,15 @@
 #  tk/event.rb - module for event
 #
 
-unless $LOADED_FEATURES.member?('tk.rb')
-  # change loading order
+module TkEvent
+end
 
-  $LOADED_FEATURES.delete('tk/event.rb')
+########################
 
-  require 'tkutil'
-  require 'tk'
+require 'tkutil'
+require 'tk'
 
-else
-################################################
+########################
 
 module TkEvent
   class Event < TkUtil::CallbackSubst
@@ -133,6 +132,8 @@ module TkEvent
 
   end
 
+  ###############################################
+
   def install_bind_for_event_class(klass, cmd, *args)
     extra_args_tbl = klass._get_extra_args_tbl
 
@@ -174,7 +175,4 @@ module TkEvent
   def install_bind(cmd, *args)
     install_bind_for_event_class(TkEvent::Event, cmd, *args)
   end
-end
-
-################################################
 end
