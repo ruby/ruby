@@ -7,10 +7,10 @@
  * modified by Yukihiro Matsumoto (matz@netlab.co.jp),
  *         Toki Yoshinori,
  *         Hitoshi Takahashi,
- *         and Takaaki Tateishi (ttate@jaist.ac.jp)
+ *         and Takaaki Tateishi (ttate@kt.jaist.ac.jp)
  *
  * maintainers:
- * - Takaaki Tateishi (ttate@jaist.ac.jp)
+ * - Takaaki Tateishi (ttate@kt.jaist.ac.jp)
  */
 
 #ifdef HAVE_NCURSES_H
@@ -396,7 +396,11 @@ curses_getstr(obj)
     char rtn[1024]; /* This should be big enough.. I hope */
 
     rb_read_check(stdin);
+#ifdef GETNSTR
+    getnstr(rtn,1023);
+#else
     getstr(rtn);
+#endif
     return rb_tainted_str_new2(rtn);
 }
 
@@ -1020,7 +1024,11 @@ window_getstr(obj)
     
     GetWINDOW(obj, winp);
     rb_read_check(stdin);
+#ifdef WGETNSTR
+    wgetnstr(winp->window, rtn, 1023);
+#else
     wgetstr(winp->window, rtn);
+#endif
     return rb_tainted_str_new2(rtn);
 }
 
