@@ -1,3 +1,8 @@
+Mon Apr  5 12:12:09 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (raise_socket_error): some platforms don't have
+	  EAI_SYSTEM.
+
 Mon Apr  5 08:18:23 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/rdoc.rb: Remove leading ./ from file names so that cross
@@ -5,8 +10,8 @@ Mon Apr  5 08:18:23 2004  Dave Thomas  <dave@pragprog.com>
 
 Sun Apr  4 14:01:20 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/options.rb (Options::parse): Allow multiple -x options to RDoc.
-	  Fix bug where files weren't being excluded properly
+	* lib/rdoc/options.rb (Options::parse): Allow multiple -x options to
+	  RDoc. Fix bug where files weren't being excluded properly
 
 Sat Apr  3 09:36:38 2004  why the lucky stiff  <why@ruby-lang.org>
 

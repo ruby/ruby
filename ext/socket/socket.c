@@ -533,7 +533,9 @@ raise_socket_error(reason, error)
     char *reason;
     int error;
 {
+#ifdef EAI_SYSTEM
     if (error == EAI_SYSTEM) rb_sys_fail(reason);
+#endif
     rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
 }
 
