@@ -25,7 +25,8 @@ module WEBrick
 
     attr_accessor :request_method, :request_uri, :request_http_version
     attr_accessor :filename
-    attr_reader :config, :keep_alive, :sent_size
+    attr_accessor :keep_alive
+    attr_reader :config, :sent_size
 
     def initialize(config)
       @config = config

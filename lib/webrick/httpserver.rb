@@ -47,6 +47,7 @@ module WEBrick
           res.request_method = req.request_method
           res.request_uri = req.request_uri
           res.request_http_version = req.http_version
+          res.keep_alive = req.keep_alive?
           if handler = @config[:RequestHandler]
             handler.call(req, res)
           end
