@@ -37,7 +37,7 @@ executed.
 
     require 'net/smtp'
     Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-      # use smtp object only in this block
+        # use smtp object only in this block
     }
 
 Replace 'your.smtp.server' by your SMTP server. Normally
@@ -49,7 +49,7 @@ Then you can send mail.
     require 'net/smtp'
 
     Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-      smtp.send_mail <<EndOfMail, 'your@mail.address', 'to@some.domain'
+        smtp.send_mail <<EndOfMail, 'your@mail.address', 'to@some.domain'
     From: Your Name <your@mail.address>
     To: Dest Address <to@some.domain>
     Subject: test mail
@@ -60,6 +60,23 @@ Then you can send mail.
     EndOfMail
     }
 
+=== Closing Session
+
+You MUST close SMTP session after sending mails, by calling #finish
+method. You can also use block form of SMTP.start/SMTP#start, which
+closes session automatically. I strongly recommend later one. It is
+more beautiful and simple.
+
+    # using SMTP#finish
+    smtp = Net::SMTP.start( 'your.smtp.server', 25 )
+    smtp.send_mail mail_string, 'from@address', 'to@address'
+    smtp.finish
+
+    # using block form of SMTP.start
+    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+        smtp.send_mail mail_string, 'from@address', 'to@address'
+    }
+
 === Sending Mails from Any Sources
 
 In an example above I sent mail from String (here document literal).
@@ -68,9 +85,9 @@ like File and Array.
 
     require 'net/smtp'
     Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-      File.open( 'Mail/draft/1' ) {|f|
-        smtp.send_mail f, 'your@mail.address', 'to@some.domain'
-      }
+        File.open( 'Mail/draft/1' ) {|f|
+            smtp.send_mail f, 'your@mail.address', 'to@some.domain'
+        }
     }
 
 === Giving "Hello" Domain
@@ -99,7 +116,7 @@ send or reject SMTP session by this data.
 
         # example
         Net::SMTP.start( 'your.smtp.server' ) {
-          smtp.send_mail mail_string, 'from@mail.address', 'dest@mail.address'
+            smtp.send_mail mail_string, 'from@mail.address', 'dest@mail.address'
         }
 
 === Instance Methods
@@ -153,9 +170,9 @@ send or reject SMTP session by this data.
 
         # example
         Net::SMTP.start( 'your.smtp.server' ) {|smtp|
-          smtp.send_mail mail_string,
-                         'from@mail.address',
-                         'dest@mail.address' 'dest2@mail.address'
+            smtp.send_mail mail_string,
+                           'from@mail.address',
+                           'dest@mail.address' 'dest2@mail.address'
         }
 
 : ready( from_addr, *to_addrs ) {|adapter| .... }
@@ -169,11 +186,11 @@ send or reject SMTP session by this data.
 
         # example
         Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-          smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) do |adapter|
-            adapter.write str1
-            adapter.write str2
-            adapter.write str3
-          end
+	    smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) do |adapter|
+	      adapter.write str1
+	      adapter.write str2
+	      adapter.write str3
+	    end
         }
 
 == Exceptions

@@ -12,57 +12,93 @@
 
 === メールの受信
 
-メールを受信してファイル 'inbox/1' 'inbox/2'... に書きこみ、
-サーバ上からメールを消します。
-pop3.server.address は適宜読みかえてください。
+以下のコードは、メールを受信してファイル 'inbox/1' 'inbox/2'... に
+書きこみ、サーバ上からメールを消します。pop3.server.address は適宜
+読みかえてください。
 
     require 'net/pop'
 
-    Net::POP3.start( 'pop3.server.address', 110,
-                     'YourAccount', 'YourPassword' ) {|pop|
-      if pop.mails.empty? then
-        puts 'no mail.'
-      else
-        i = 0
-        pop.each_mail do |m|   # or "pop.mails.each ..."
-          File.open( 'inbox/' + i.to_s, 'w' ) {|f|
+    pop = Net::POP3.new( 'pop3.server.address', 110 )
+    pop.start( 'YourAccount', 'YourPassword' )          ###
+    if pop.mails.empty? then
+      puts 'no mail.'
+    else
+      i = 0
+      pop.each_mail do |m|   # or "pop.mails.each ..."
+	File.open( 'inbox/' + i.to_s, 'w' ) {|f|
             f.write m.pop
-          }
-          m.delete
-          i += 1
-        end
+        }
+        m.delete
+        i += 1
       end
       puts "#{pop.mails.size} mails popped."
-    }
+    end
+    pop.finish                                           ###
+
+POP サーバはネットワークのむこうに存在するので、なにか仕事をさせる
+にはその前に開始手続きを、終わったら終了手続きを、行わなければいけ
+ません。それを行うのが Net::POP3#start と #finish で、POP3 オブジェクト
+はその二つのメソッドの間でだけ有効になります。
+
+サーバ上のメールは POPMail オブジェクトとして表現されており、この
+オブジェクトのメソッドを呼ぶことでメールを取ってきたり消したりする
+ことができます。POP3#mails はこの POPMail オブジェクトの配列であり、
+POP3#each_mail はさらに mails.each のショートカットです。
 
 === 短くする
 
-以下は動作は同じでコードを短くしたバージョンです。
+上の例はあえて省略や短縮用メソッドを避けたためにかなり冗長です。
+まず、ブロック付きの Net::POP3.start を使うことで POP3.new #start
+#finish を併合できます。
 
     require 'net/pop'
+
+    Net::POP3.start( 'pop3.server.address', 110 )
+                     'YourAccount', 'YourPassword' )
+	if pop.mails.empty? then
+	  puts 'no mail.'
+	else
+	  i = 0
+	  pop.each_mail do |m|   # or "pop.mails.each ..."
+	    File.open( 'inbox/' + i.to_s, 'w' ) {|f|
+                f.write m.pop
+	    }
+	    m.delete
+	    i += 1
+	  end
+          puts "#{pop.mails.size} mails popped."
+	end
+    }
+
+POP3#delete_all を使うとさらに #each_mail と m.delete を
+併合できます。
+
+    require 'net/pop'
+
     Net::POP3.start( 'pop3.server.address', 110,
                      'YourAccount', 'YourPassword' ) {|pop|
-      if pop.mails.empty? then
-        puts 'no mail.'
-      else
-        i = 0
-        pop.delete_all do |m|
-          File.open( 'inbox/' + i.to_s, 'w' ) {|f|
-            f.write m.pop
-          }
-          i += 1
-        end
-      end
+	if pop.mails.empty? then
+	  puts 'no mail.'
+	else
+	  i = 0
+	  pop.delete_all do |m|
+	    File.open( 'inbox/' + i.to_s, 'w' ) {|f|
+		f.write m.pop
+	    }
+	    i += 1
+	  end
+	end
     }
 
 クラスメソッドの POP3.delete_all を使うとさらに短くなります。
 
     require 'net/pop'
+
     i = 0
     Net::POP3.delete_all( 'pop3.server.address', 110,
                           'YourAccount', 'YourPassword' ) do |m|
       File.open( 'inbox/' + i.to_s, 'w' ) {|f|
-        f.write m.pop
+          f.write m.pop
       }
       i += 1
     end
@@ -78,7 +114,7 @@ pop3.server.address は適宜読みかえてください。
     Net::POP3.delete_all( 'pop3.server.address', 110,
                           'YourAccount', 'YourPassword' ) do |m|
       File.open( 'inbox', 'w' ) {|f|
-        m.pop f   ####
+          m.pop f   ####
       }
     end
 
@@ -93,7 +129,7 @@ APOP 認証を使うには
     require 'net/pop'
     Net::APOP.start( 'apop.server.address', 110,
                      'YourAccount', 'YourPassword' ) {|pop|
-      # Rest code is same.
+        # Rest code is same.
     }
 
     # (2)
@@ -102,7 +138,7 @@ APOP 認証を使うには
                      'YourAccount', 'YourPassword',
                      true   ####
     ) {|pop|
-      # Rest code is same.
+        # Rest code is same.
     }
 
 == Net::POP3 class
@@ -119,21 +155,21 @@ APOP 認証を使うには
     password で POP ログインします。第二引数 port に nil を渡すと
     POP3 のデフォルトポート(110)を使います。
 
-        Net::POP3.start( addr, port, account, password ) do |pop|
-          pop.each_mail do |m|
-            file.write m.pop
-            m.delete
-          end
-        end
+        Net::POP3.start( addr, port, account, password ) {|pop|
+	    pop.each_mail do |m|
+	      file.write m.pop
+	      m.delete
+	    end
+        }
 
 : foreach( address, port = 110, account, password ) {|mail| .... }
     POP セッションを開き、サーバ上のすべてのメールに対して繰り返します。
     以下と同じです。
 
         Net::POP3.start( address, port, account, password ) {|pop|
-          pop.each_mail do |m|
-            yield m
-          end
+            pop.each_mail do |m|
+	      yield m
+	    end
         }
 
         # example
@@ -159,10 +195,10 @@ APOP 認証を使うには
     POP before SMTP 専用です。
 
         # example
-        pop = Net::POP3.auth_only( 'your.pop3.server',
-                                    nil,     # using default (110)
-                                   'YourAccount',
-                                   'YourPassword' )
+        Net::POP3.auth_only( 'your.pop3.server',
+                             nil,     # using default (110)
+                             'YourAccount',
+                             'YourPassword' )
 
 === メソッド
 
@@ -249,20 +285,20 @@ POP サーバー上のメール一通を抽象的に表現するクラス。
         # example
         allmails = nil
         POP3.start( 'your.pop3.server', 110,
-                    'YourAccount, 'YourPassword' ) do |pop|
-          allmails = pop.mails.collect {|popmail| popmail.pop }
-        end
+                    'YourAccount, 'YourPassword' ) {|pop|
+            allmails = pop.mails.collect {|popmail| popmail.pop }
+        }
 
 : pop {|str| .... }
     メールの文字列を少しづつ読みこみ、順次ブロックに与えます。
 
         # example
         POP3.start( 'localhost', 110 ) {|pop3|
-          pop3.each_mail do |m|
-            m.pop do |str|
-              # do anything
-            end
-          end
+	    pop3.each_mail do |m|
+	      m.pop do |str|
+		# do anything
+	      end
+	    end
         }
 
 : header

@@ -27,8 +27,8 @@
 
     require 'net/http'
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
-      response , = http.post( '/cgi-bin/any.rhtml',
-                              'querytype=subject&target=ruby' )
+        response , = http.post( '/cgi-bin/any.rhtml',
+                                'querytype=subject&target=ruby' )
     }
 
 === プロクシ経由のアクセス
@@ -78,9 +78,9 @@ Net::HTTP を継承しているので Net::HTTP と全く同じように使えます。
     require 'net/http'
 
     Net::HTTP.start( 'auth.some.domain' ) {|http|
-      response , = http.get( '/need-auth.cgi',
-              'Authentication' => ["#{account}:#{password}"].pack('m').strip )
-      print response.body
+        response , = http.get( '/need-auth.cgi',
+                'Authentication' => ["#{account}:#{password}"].pack('m').strip )
+        print response.body
     }
 
 バージョン 1.2 (Ruby 1.7 以降に添付) では次のように書けます。
@@ -90,8 +90,8 @@ Net::HTTP を継承しているので Net::HTTP と全く同じように使えます。
     req = Net::HTTP::Get.new('/need-auth.cgi')
     req.basic_auth 'account', 'password'
     Net::HTTP.start( 'auth.some.domain' ) {|http|
-      response = http.request( req )
-      print response.body
+        response = http.request(req)
+        print response.body
     }
 
 == 新しい仕様への変更と移行措置について
@@ -148,11 +148,11 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
 
         # example
         proxy_class = Net::HTTP::Proxy( 'proxy.foo.org', 8080 )
-          :
-        proxy_class.start( 'www.ruby-lang.org' ) do |http|
-          # connecting proxy.foo.org:8080
-          :
-        end
+                        :
+        proxy_class.start( 'www.ruby-lang.org' ) {|http|
+            # connecting proxy.foo.org:8080
+                        :
+        }
 
 : proxy_class?
     自身が (Proxy メソッドによって作成された) プロクシ用のクラスならば真。
@@ -233,13 +233,13 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
         
         # using block
         File.open( 'save.txt', 'w' ) {|f|
-          http.get( '/~foo/', nil ) do |str|
-            f.write str
-          end
+            http.get( '/~foo/', nil ) do |str|
+              f.write str
+            end
         }
         # same effect
         File.open( 'save.txt', 'w' ) {|f|
-          http.get '/~foo/', nil, f
+            http.get '/~foo/', nil, f
         }
 
 : head( path, header = nil )
@@ -256,7 +256,7 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
 
         response = nil
         Net::HTTP.start( 'some.www.server', 80 ) {|http|
-          response = http.head( '/index.html' )
+            response = http.head( '/index.html' )
         }
         p response['content-type']
 
@@ -283,13 +283,13 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
 
         # using block
         File.open( 'save.html', 'w' ) {|f|
-          http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' ) do |str|
-            f.write str
-          end
+            http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' ) do |str|
+              f.write str
+            end
         }
         # same effect
         File.open( 'save.html', 'w' ) {|f|
-          http.post '/cgi-bin/search.rb', 'querytype=subject&target=ruby', nil, f
+            http.post '/cgi-bin/search.rb', 'querytype=subject&target=ruby', nil, f
         }
 
 : get2( path, header = nil )
@@ -309,10 +309,10 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
 
         # using block
         http.get2( '/index.html' ) {|response|
-          p response['content-type']
-          response.read_body do |str|   # read body now
-            print str
-          end
+            p response['content-type']
+            response.read_body do |str|   # read body now
+              print str
+            end
         }
 
 : post2( path, header = nil )
@@ -332,11 +332,11 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
 
         # using block
         http.post2( '/cgi-bin/nice.rb', 'datadatadata...' ) {|response|
-          p response.status
-          p response['content-type']
-          response.read_body do |str|   # read body now
-            print str
-          end
+            p response.status
+            p response['content-type']
+            response.read_body do |str|   # read body now
+              print str
+	    end
         }
 
 

@@ -1,3 +1,7 @@
+Sun Dec  9 18:06:05 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: calls on_connect before conn_command
+
 Fri Dec  7 19:20:44 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: uses Digest::MD5 instead of MD5 (again).

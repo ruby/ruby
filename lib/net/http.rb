@@ -43,8 +43,8 @@ This is required for compatibility.
 
     require 'net/http'
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
-      response , = http.post( '/cgi-bin/any.rhtml',
-                              'querytype=subject&target=ruby' )
+        response , = http.post( '/cgi-bin/any.rhtml',
+                                'querytype=subject&target=ruby' )
     }
 
 === Accessing via Proxy
@@ -94,9 +94,9 @@ URI class will be included in ruby standard library.
     require 'net/http'
 
     Net::HTTP.start( 'auth.some.domain' ) {|http|
-      response , = http.get( '/need-auth.cgi',
-              'Authentication' => ["#{account}:#{password}"].pack('m').strip )
-      print response.body
+        response , = http.get( '/need-auth.cgi',
+                'Authentication' => ["#{account}:#{password}"].pack('m').strip )
+        print response.body
     }
 
 In version 1.2 (Ruby 1.7 or later), you can write like this:
@@ -106,8 +106,8 @@ In version 1.2 (Ruby 1.7 or later), you can write like this:
     req = Net::HTTP::Get.new('/need-auth.cgi')
     req.basic_auth 'account', 'password'
     Net::HTTP.start( 'auth.some.domain' ) {|http|
-      response = http.request( req )
-      print response.body
+        response = http.request(req)
+        print response.body
     }
 
 == Switching Net::HTTP versions
@@ -157,11 +157,11 @@ Yes, this is not thread-safe.
 
         # example
         proxy_class = Net::HTTP::Proxy( 'proxy.foo.org', 8080 )
-          :
-        proxy_class.start( 'www.ruby-lang.org' ) do |http|
-          # connecting proxy.foo.org:8080
-          :
-        end
+                        :
+        proxy_class.start( 'www.ruby-lang.org' ) {|http|
+            # connecting proxy.foo.org:8080
+                        :
+        }
 
 : proxy_class?
     If self is HTTP, false.
@@ -242,13 +242,13 @@ Yes, this is not thread-safe.
         
         # using block
         File.open( 'save.txt', 'w' ) {|f|
-          http.get( '/~foo/', nil ) do |str|
-            f.write str
-          end
+            http.get( '/~foo/', nil ) do |str|
+              f.write str
+            end
         }
         # same effect
         File.open( 'save.txt', 'w' ) {|f|
-          http.get '/~foo/', nil, f
+            http.get '/~foo/', nil, f
         }
 
 : head( path, header = nil )
@@ -263,7 +263,7 @@ Yes, this is not thread-safe.
 
         response = nil
         Net::HTTP.start( 'some.www.server', 80 ) {|http|
-          response = http.head( '/index.html' )
+            response = http.head( '/index.html' )
         }
         p response['content-type']
 
@@ -290,13 +290,13 @@ Yes, this is not thread-safe.
 
         # using block
         File.open( 'save.html', 'w' ) {|f|
-          http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' ) do |str|
-            f.write str
-          end
+            http.post( '/cgi-bin/search.rb', 'querytype=subject&target=ruby' ) do |str|
+              f.write str
+            end
         }
         # same effect
         File.open( 'save.html', 'w' ) {|f|
-          http.post '/cgi-bin/search.rb', 'querytype=subject&target=ruby', nil, f
+            http.post '/cgi-bin/search.rb', 'querytype=subject&target=ruby', nil, f
         }
 
 : get2( path, header = nil )
@@ -315,10 +315,10 @@ Yes, this is not thread-safe.
 
         # using block
         http.get2( '/index.html' ) {|response|
-          p response['content-type']
-          response.read_body do |str|   # read body now
-            print str
-          end
+            p response['content-type']
+            response.read_body do |str|   # read body now
+              print str
+            end
         }
 
 : post2( path, header = nil )
@@ -335,11 +335,11 @@ Yes, this is not thread-safe.
 
         # using block
         http.post2( '/cgi-bin/nice.rb', 'datadatadata...' ) {|response|
-          p response.status
-          p response['content-type']
-          response.read_body do |str|   # read body now
-            print str
-          end
+            p response.status
+            p response['content-type']
+            response.read_body do |str|   # read body now
+              print str
+	    end
         }
 
 
