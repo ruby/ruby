@@ -18,14 +18,6 @@ require "mkmf"
 
 dir_config("openssl")
 
-if RUBY_PLATFORM =~ /mswin32/
-  CRYPTOLIB="libeay32"
-  SSLLIB="ssleay32"
-else
-  CRYPTOLIB="crypto"
-  SSLLIB="ssl"
-end
-
 if !defined? message
   def message(*s)
     printf(*s)
@@ -76,9 +68,10 @@ end
 message "=== Checking for required stuff... ===\n"
 
 result = have_header("openssl/crypto.h")
-result &= have_library(CRYPTOLIB, "OpenSSL_add_all_digests")
-result &= have_library(SSLLIB, "SSL_library_init")
-
+result &= ( have_library("crypto", "OpenSSL_add_all_digests") ||
+            have_library("libeay32", "OpenSSL_add_all_digests") )
+result &= ( have_library("ssl", "SSL_library_init") ||
+            have_library("ssleay32", "SSL_library_init") )
 if !result
   message "=== Checking for required stuff failed. ===\n"
   message "Makefile wasn't created. Fix the errors above.\n"
@@ -109,6 +102,9 @@ have_func("BN_mod_sqr")
 have_func("BN_mod_add")
 have_func("BN_mod_sub")
 have_func("CONF_get1_default_config_file")
+if try_cpp("#define FOO(a, ...) foo(a, ##__VA_ARGS__)\n")
+  $defs.push("-DHAVE_VA_ARGS_MACRO")
+end
 have_header("openssl/ocsp.h")
 have_struct_member("EVP_CIPHER_CTX", "flags", "openssl/evp.h")
 

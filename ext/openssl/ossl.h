@@ -143,7 +143,7 @@ int ossl_verify_cb(int, X509_STORE_CTX *);
  */
 extern VALUE dOSSL;
 
-#if defined(__GNUC__) || __STDC_VERSION__ >= 199901L
+#if defined(HAVE_VA_ARGS_MACRO)
 #define OSSL_Debug(fmt, ...) do { \
   if (dOSSL == Qtrue) { \
     fprintf(stderr, "OSSL_DEBUG: "); \

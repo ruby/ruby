@@ -1,3 +1,11 @@
+Thu Jul 24 15:50:42 JST 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: add check for win32 OpenSSL libraries.
+
+	* ext/openssl/extconf.rb: add check for __VA_AEGS__.
+
+	* ext/openssl/ossl.h: avoid non C99 compiler errors.
+
 Thu Jul 24 13:32:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (thgroup_add): no warning for terminated threads.
@@ -12672,7 +12680,7 @@ Fri Apr 13 16:41:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (none): should clear cmdarg_stack too.
 
-Fri Apr 13 06:19:29 2001  GOTOU YUUZOU  <gotoyuzo@notwork.org>
+Fri Apr 13 06:19:29 2001  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* io.c (rb_fopen): use setvbuf() to avoid recursive malloc() on
 	  some platforms.
@@ -14833,7 +14841,7 @@ Tue Sep 19 13:07:47 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (yylex): was confusing $~ and $_.
 
-Tue Sep 19 13:06:53 2000  GOTOU YUUZOU  <gotoyuzo@notwork.org>
+Tue Sep 19 13:06:53 2000  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* signal.c (rb_f_kill): signum may be a negative number, should be
 	  treated by signed number.
@@ -17005,7 +17013,7 @@ Fri Feb 25 12:50:20 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_thread_start_timer): interval changed to 10ms from 50ms.
 
-Fri Feb 25 06:42:26 2000  GOTOU YUUZOU  <gotoyuzo@notwork.org>
+Fri Feb 25 06:42:26 2000  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/socket/socket.c (ip_addrsetup): hostp should remain NULL if
 	  host is nil.
