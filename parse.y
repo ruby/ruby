@@ -2897,7 +2897,6 @@ yylex()
     register int c;
     int space_seen = 0;
     int cmd_state;
-    struct kwtable *kw;
 
     cmd_state = command_start;
     command_start = Qfalse;
@@ -3714,8 +3713,33 @@ yylex()
 	    else
 		result = tIVAR;
 	    break;
+
 	  default:
+	    if (toklast() == '!' || toklast() == '?') {
+		result = tFID;
+	    }
+	    else {
+		if (lex_state == EXPR_FNAME) {
+		    if ((c = nextc()) == '=' && !peek('~') && !peek('>') &&
+			(!peek('=') || lex_p + 1 < lex_pend && lex_p[1] == '>')) {
+			result = tIDENTIFIER;
+			tokadd(c);
+		    }
+		    else {
+			pushback(c);
+		    }
+		}
+		if (result == 0 && ISUPPER(tok()[0])) {
+		    result = tCONSTANT;
+		}
+		else {
+		    result = tIDENTIFIER;
+		}
+	    }
+
 	    if (lex_state != EXPR_DOT) {
+		struct kwtable *kw;
+
 		/* See if it is a reserved word.  */
 		kw = rb_reserved_word(tok(), toklen());
 		if (kw) {
@@ -3740,27 +3764,6 @@ yylex()
 		}
 	    }
 
-	    if (toklast() == '!' || toklast() == '?') {
-		result = tFID;
-	    }
-	    else {
-		if (lex_state == EXPR_FNAME) {
-		    if ((c = nextc()) == '=' && !peek('~') && !peek('>') &&
-			(!peek('=') || lex_p + 1 < lex_pend && lex_p[1] == '>')) {
-			result = tIDENTIFIER;
-			tokadd(c);
-		    }
-		    else {
-			pushback(c);
-		    }
-		}
-		if (result == 0 && ISUPPER(tok()[0])) {
-		    result = tCONSTANT;
-		}
-		else {
-		    result = tIDENTIFIER;
-		}
-	    }
 	    if (lex_state == EXPR_BEG ||
 		lex_state == EXPR_DOT ||
 		lex_state == EXPR_ARG ||

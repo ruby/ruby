@@ -27,7 +27,7 @@
 # define NO_LONG_FNAME
 #endif
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(sun)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(sun) || defined(_nec_ews)
 # define USE_SETVBUF
 #endif
 
@@ -1380,6 +1380,7 @@ rb_io_mode_binmode(mode)
 static char*
 rb_io_binmode_mode(flags, mode)
     int flags;
+    char *mode;
 {
     char *p = mode;
 

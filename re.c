@@ -1397,6 +1397,7 @@ Init_Regexp()
     rb_define_method(rb_cRegexp, "===", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "~", rb_reg_match2, 0);
     rb_define_method(rb_cRegexp, "match", rb_reg_match_m, 1);
+    rb_define_method(rb_cRegexp, "to_s", rb_reg_inspect, 0);
     rb_define_method(rb_cRegexp, "inspect", rb_reg_inspect, 0);
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
     rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
@@ -1425,6 +1426,6 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
-    rb_define_method(rb_cMatch, "string", match_string, 0);
     rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0);
+    rb_define_method(rb_cMatch, "string", match_string, 0);
 }

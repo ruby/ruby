@@ -50,7 +50,6 @@ Hacking Interpreter
 * Built-in Interactive Ruby.
 * trap every method invocation, which can be enabled by e.g. trap_call :method.
 * unify Errno exceptions of same errno, or new exception comparison scheme.
-* signal list (Signal::trap, Signal::list??).
 * 2.times{|i| if i==0 then a = 15 else puts eval("a") end} should print nil.
 
 Standard Libraries
@@ -63,7 +62,9 @@ Standard Libraries
 - Process::Status
 - File::lchown, File::lchmod; xxx - still need work for non existing platforms
 - move Time::times to Process.
-* Enumerable#sort_by for Schwartzian transformation
+- Enumerable#sort_by for Schwartzian transformation
+- fork_and_kill_other_threads.
+- signal list (Signal::trap, Signal::list).
 * String#scanf(?)
 * Object#fmt(?)
 * Integer#{bin,oct,hex,heX}
@@ -77,17 +78,16 @@ Standard Libraries
 * introduce Boolean class; super of TrueClass, FalseClass
 * synchronized method - synchronized{...}, synchronized :foo, :bar
 * Array#&, Array#| to allow duplication. ???
-* fork_and_kill_other_threads.
 * way to specify immortal (fork endurance) thread;
 * or raise ForkException to every thread but fork caller.
 * Hash::new{default} or recommend Hash#fetch?
 * new user-defined marshal scheme. _dump(dumper), _load(restorer)
-* warn, warning for Ruby level
 * hash etc. should handle self referenceing array/hash
 * move NameError under StandardError.
 * library to load per-user profile seeking .ruby_profile or ruby.ini file.
-* warning framework
+* warning framework (warn, warning for Ruby level)
 * marshal should not depend on sprintf/strtod (works bad for locale).
+* ternary arg - a.pow(b,c) == a**b%c
 
 Extension Libraries
 

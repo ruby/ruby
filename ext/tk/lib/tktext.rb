@@ -279,7 +279,7 @@ class TkText<TkTextWin
 
   def tag_cget(tag, key)
     case key
-    when 'text', 'label', 'show', 'data', 'flie'
+    when 'text', 'label', 'show', 'data', 'file'
       tk_call @path, 'tag', 'cget', tag, "-#{key}"
     else
       tk_tcl2ruby tk_call @path, 'tag', 'cget', tag, "-#{key}"
@@ -308,7 +308,7 @@ class TkText<TkTextWin
   def tag_configinfo(tag, key=nil)
     if key
       case key
-      when 'text', 'label', 'show', 'data', 'flie'
+      when 'text', 'label', 'show', 'data', 'file'
 	conf = tk_split_simplelist(tk_send('tag','configure',tag,"-#{key}"))
       else
 	conf = tk_split_list(tk_send('tag','configure',tag,"-#{key}"))
@@ -320,7 +320,7 @@ class TkText<TkTextWin
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]
-	when 'text', 'label', 'show', 'data', 'flie'
+	when 'text', 'label', 'show', 'data', 'file'
 	else
 	  if conf[3]
 	    if conf[3].index('{')
@@ -712,7 +712,7 @@ class TkTextTag<TkObject
 
   def cget(key)
     case key
-    when 'text', 'label', 'show', 'data', 'flie'
+    when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
     else
       tk_tcl2ruby tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
@@ -896,7 +896,7 @@ class TkTextWindow<TkObject
 
   def cget(slot)
     case slot
-    when 'text', 'label', 'show', 'data', 'flie'
+    when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
     else
       tk_tcl2ruby tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
@@ -947,7 +947,7 @@ class TkTextWindow<TkObject
   def configinfo(slot = nil)
     if slot
       case slot
-      when 'text', 'label', 'show', 'data', 'flie'
+      when 'text', 'label', 'show', 'data', 'file'
 	conf = tk_split_simplelist(tk_call @t.path, 'window', 'configure', 
 				   @index, "-#{slot}")
       else
@@ -962,7 +962,7 @@ class TkTextWindow<TkObject
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]
-	when 'text', 'label', 'show', 'data', 'flie'
+	when 'text', 'label', 'show', 'data', 'file'
 	else
 	  if conf[3]
 	    if conf[3].index('{')
@@ -1017,7 +1017,7 @@ class TkTextImage<TkObject
 
   def cget(slot)
     case slot
-    when 'text', 'label', 'show', 'data', 'flie'
+    when 'text', 'label', 'show', 'data', 'file'
       tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
     else
       tk_tcl2ruby tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
@@ -1046,7 +1046,7 @@ class TkTextImage<TkObject
   def configinfo(slot = nil)
     if slot
       case slot
-      when 'text', 'label', 'show', 'data', 'flie'
+      when 'text', 'label', 'show', 'data', 'file'
 	conf = tk_split_simplelist(tk_call @t.path, 'image', 'configure', 
 				   @index, "-#{slot}")
       else
@@ -1061,7 +1061,7 @@ class TkTextImage<TkObject
 	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
 	case conf[0]
-	when 'text', 'label', 'show', 'data', 'flie'
+	when 'text', 'label', 'show', 'data', 'file'
 	else
 	  if conf[3]
 	    if conf[3].index('{')

@@ -437,8 +437,8 @@ s_recvfrom(sock, argc, argv, from)
 
     str = rb_tainted_str_new(0, NUM2INT(len));
 
-    rb_thread_wait_fd(fd);
   retry:
+    rb_thread_wait_fd(fd);
     TRAP_BEG;
     RSTRING(str)->len = recvfrom(fd, RSTRING(str)->ptr, RSTRING(str)->len, flags,
 				 (struct sockaddr*)buf, &alen);
@@ -454,7 +454,6 @@ s_recvfrom(sock, argc, argv, from)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_wait_fd(fd);
 	    goto retry;
 	}
 	rb_sys_fail("recvfrom(2)");
@@ -1102,9 +1101,13 @@ s_accept(class, fd, sockaddr, len)
     rb_secure(3);
   retry:
     rb_thread_wait_fd(fd);
+#if defined(_nec_ews)
+    fd2 = accept(fd, sockaddr, len);
+#else
     TRAP_BEG;
     fd2 = accept(fd, sockaddr, len);
     TRAP_END;
+#endif
     if (fd2 < 0) {
 	switch (errno) {
 	  case EMFILE:
@@ -1121,7 +1124,6 @@ s_accept(class, fd, sockaddr, len)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    rb_thread_wait_fd(fd);
 	    goto retry;
 	}
 	rb_sys_fail(0);
@@ -2313,6 +2315,165 @@ Init_socket()
     sock_define_const("SOL_UDP", SOL_UDP);
 #endif
 
+#ifdef	IPPROTO_IP
+    sock_define_const("IPPROTO_IP", IPPROTO_IP);
+#else
+    sock_define_const("IPPROTO_IP", 0);
+#endif
+#ifdef	IPPROTO_ICMP
+    sock_define_const("IPPROTO_ICMP", IPPROTO_ICMP);
+#else
+    sock_define_const("IPPROTO_ICMP", 1);
+#endif
+#ifdef	IPPROTO_IGMP
+    sock_define_const("IPPROTO_IGMP", IPPROTO_IGMP);
+#endif
+#ifdef	IPPROTO_GGP
+    sock_define_const("IPPROTO_GGP", IPPROTO_GGP);
+#endif
+#ifdef	IPPROTO_TCP
+    sock_define_const("IPPROTO_TCP", IPPROTO_TCP);
+#else
+    sock_define_const("IPPROTO_TCP", 6);
+#endif
+#ifdef	IPPROTO_EGP
+    sock_define_const("IPPROTO_EGP", IPPROTO_EGP);
+#endif
+#ifdef	IPPROTO_PUP
+    sock_define_const("IPPROTO_PUP", IPPROTO_PUP);
+#endif
+#ifdef	IPPROTO_UDP
+    sock_define_const("IPPROTO_UDP", IPPROTO_UDP);
+#else
+    sock_define_const("IPPROTO_UDP", 17);
+#endif
+#ifdef	IPPROTO_IDP
+    sock_define_const("IPPROTO_IDP", IPPROTO_IDP);
+#endif
+#ifdef	IPPROTO_HELLO
+    sock_define_const("IPPROTO_HELLO", IPPROTO_HELLO);
+#endif
+#ifdef	IPPROTO_ND
+    sock_define_const("IPPROTO_ND", IPPROTO_ND);
+#endif
+#ifdef	IPPROTO_TP
+    sock_define_const("IPPROTO_TP", IPPROTO_TP);
+#endif
+#ifdef	IPPROTO_XTP
+    sock_define_const("IPPROTO_XTP", IPPROTO_XTP);
+#endif
+#ifdef	IPPROTO_EON
+    sock_define_const("IPPROTO_EON", IPPROTO_EON);
+#endif
+#ifdef	IPPROTO_BIP
+    sock_define_const("IPPROTO_BIP", IPPROTO_BIP);
+#endif
+/**/
+#ifdef	IPPROTO_RAW
+    sock_define_const("IPPROTO_RAW", IPPROTO_RAW);
+#else
+    sock_define_const("IPPROTO_RAW", 255);
+#endif
+#ifdef	IPPROTO_MAX
+    sock_define_const("IPPROTO_MAX", IPPROTO_MAX);
+#endif
+
+	/* Some port configuration */
+#ifdef	IPPORT_RESERVED
+    sock_define_const("IPPORT_RESERVED", IPPORT_RESERVED);
+#else
+    sock_define_const("IPPORT_RESERVED", 1024);
+#endif
+#ifdef	IPPORT_USERRESERVED
+    sock_define_const("IPPORT_USERRESERVED", IPPORT_USERRESERVED);
+#else
+    sock_define_const("IPPORT_USERRESERVED", 5000);
+#endif
+	/* Some reserved IP v.4 addresses */
+#ifdef	INADDR_ANY
+    sock_define_const("INADDR_ANY", INADDR_ANY);
+#else
+    sock_define_const("INADDR_ANY", 0x00000000);
+#endif
+#ifdef	INADDR_BROADCAST
+    sock_define_const("INADDR_BROADCAST", INADDR_BROADCAST);
+#else
+    sock_define_const("INADDR_BROADCAST", 0xffffffff);
+#endif
+#ifdef	INADDR_LOOPBACK
+    sock_define_const("INADDR_LOOPBACK", INADDR_LOOPBACK);
+#else
+    sock_define_const("INADDR_LOOPBACK", 0x7F000001);
+#endif
+#ifdef	INADDR_UNSPEC_GROUP
+    sock_define_const("INADDR_UNSPEC_GROUP", INADDR_UNSPEC_GROUP);
+#else
+    sock_define_const("INADDR_UNSPEC_GROUP", 0xe0000000);
+#endif
+#ifdef	INADDR_ALLHOSTS_GROUP
+    sock_define_const("INADDR_ALLHOSTS_GROUP", INADDR_ALLHOSTS_GROUP);
+#else
+    sock_define_const("INADDR_ALLHOSTS_GROUP", 0xe0000001);
+#endif
+#ifdef	INADDR_MAX_LOCAL_GROUP
+    sock_define_const("INADDR_MAX_LOCAL_GROUP", INADDR_MAX_LOCAL_GROUP);
+#else
+    sock_define_const("INADDR_MAX_LOCAL_GROUP", 0xe00000ff);
+#endif
+#ifdef	INADDR_NONE
+    sock_define_const("INADDR_NONE", INADDR_NONE);
+#else
+    sock_define_const("INADDR_NONE", 0xffffffff);
+#endif
+	/* IP [gs]etsockopt options */
+#ifdef	IP_OPTIONS
+    sock_define_const("IP_OPTIONS", IP_OPTIONS);
+#endif
+#ifdef	IP_HDRINCL
+    sock_define_const("IP_HDRINCL", IP_HDRINCL);
+#endif
+#ifdef	IP_TOS
+    sock_define_const("IP_TOS", IP_TOS);
+#endif
+#ifdef	IP_TTL
+    sock_define_const("IP_TTL", IP_TTL);
+#endif
+#ifdef	IP_RECVOPTS
+    sock_define_const("IP_RECVOPTS", IP_RECVOPTS);
+#endif
+#ifdef	IP_RECVRETOPTS
+    sock_define_const("IP_RECVRETOPTS", IP_RECVRETOPTS);
+#endif
+#ifdef	IP_RECVDSTADDR
+    sock_define_const("IP_RECVDSTADDR", IP_RECVDSTADDR);
+#endif
+#ifdef	IP_RETOPTS
+    sock_define_const("IP_RETOPTS", IP_RETOPTS);
+#endif
+#ifdef	IP_MULTICAST_IF
+    sock_define_const("IP_MULTICAST_IF", IP_MULTICAST_IF);
+#endif
+#ifdef	IP_MULTICAST_TTL
+    sock_define_const("IP_MULTICAST_TTL", IP_MULTICAST_TTL);
+#endif
+#ifdef	IP_MULTICAST_LOOP
+    sock_define_const("IP_MULTICAST_LOOP", IP_MULTICAST_LOOP);
+#endif
+#ifdef	IP_ADD_MEMBERSHIP
+    sock_define_const("IP_ADD_MEMBERSHIP", IP_ADD_MEMBERSHIP);
+#endif
+#ifdef	IP_DROP_MEMBERSHIP
+    sock_define_const("IP_DROP_MEMBERSHIP", IP_DROP_MEMBERSHIP);
+#endif
+#ifdef	IP_DEFAULT_MULTICAST_TTL
+    sock_define_const("IP_DEFAULT_MULTICAST_TTL", IP_DEFAULT_MULTICAST_TTL);
+#endif
+#ifdef	IP_DEFAULT_MULTICAST_LOOP
+    sock_define_const("IP_DEFAULT_MULTICAST_LOOP", IP_DEFAULT_MULTICAST_LOOP);
+#endif
+#ifdef	IP_MAX_MEMBERSHIPS
+    sock_define_const("IP_MAX_MEMBERSHIPS", IP_MAX_MEMBERSHIPS);
+#endif
 #ifdef SO_DEBUG
     sock_define_const("SO_DEBUG", SO_DEBUG);
 #endif
