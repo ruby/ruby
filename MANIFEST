@@ -80,6 +80,7 @@ bcc32/README.bcc32
 bcc32/configure.bat
 bcc32/mkexports.rb
 bcc32/setup.mak
+bin/irb
 cygwin/GNUmakefile.in
 djgpp/README.djgpp
 djgpp/config.hin
@@ -283,7 +284,6 @@ sample/from.rb
 sample/fullpath.rb
 sample/getopts.test
 sample/goodfriday.rb
-sample/irb.rb
 sample/less.rb
 sample/list.rb
 sample/list2.rb
