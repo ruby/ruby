@@ -442,7 +442,6 @@ The variable ruby-indent-level controls the amount of indentation.
 	(cond
 	 ((nth 0 state)			; within string
 	  (setq indent nil))		;  do nothing
-
 	 ((car (nth 1 state))		; in paren
 	  (goto-char (cdr (nth 1 state)))
 	  (if (eq (car (nth 1 state)) ?\( )
@@ -463,8 +462,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	      (goto-char parse-start)
 	      (back-to-indentation)
 	      (setq indent (ruby-indent-size (current-column) (nth 2 state)))))
-	    ))
-	  
+	    ))	  
 	 ((and (nth 2 state)(> (nth 2 state) 0)) ; in nest
 	  (if (null (cdr (nth 1 state)))
 	      (error "invalid nest"))
@@ -485,7 +483,7 @@ The variable ruby-indent-level controls the amount of indentation.
 
 	 ((and (nth 2 state) (< (nth 2 state) 0)) ; in negative nest
 	  (setq indent (ruby-indent-size (current-column) (nth 2 state)))))
-	 
+
 	(cond
 	 (indent
 	  (goto-char indent-point)
@@ -514,7 +512,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		(setq end (point))
 		(beginning-of-line)
 		(if (re-search-forward "^\\s *#" end t)
-		    (beginning-of-line)
+		    (forward-line 1)
 		  (setq done t))))
 	    (setq bol (point))
 	    (end-of-line)
@@ -538,9 +536,10 @@ The variable ruby-indent-level controls the amount of indentation.
 			(goto-char (match-end 0))
 			(not (looking-at "[a-z_]"))))
 		 (and (looking-at ruby-operator-re)
+		      (not (eq (char-after (1- (point))) ??))
+		      (not (eq (char-after (1- (point))) ?$))
 		      (or (not (eq ?/ (char-after (point))))
 			  (null (nth 0 (ruby-parse-region parse-start (point)))))
-		      (not (eq (char-after (1- (point))) ?$))
 		      (or (not (eq ?| (char-after (point))))
 			  (save-excursion
 			    (or (eolp) (forward-char -1))

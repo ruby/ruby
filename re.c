@@ -1038,7 +1038,7 @@ rb_reg_s_quote(argc, argv)
     VALUE str, kcode;
     int kcode_saved = reg_kcode;
     char *s, *send, *t;
-    char *tmp;
+    VALUE tmp;
     int len;
 
     rb_scan_args(argc, argv, "11", &str, &kcode);
@@ -1049,8 +1049,8 @@ rb_reg_s_quote(argc, argv)
     }
     s = rb_str2cstr(str, &len);
     send = s + len;
-    tmp = ALLOCA_N(char, len*2);
-    t = tmp;
+    tmp = rb_str_new(0, len*2);
+    t = RSTRING(tmp)->ptr;
 
     for (; s < send; s++) {
 	if (ismbchar(*s)) {
@@ -1073,8 +1073,9 @@ rb_reg_s_quote(argc, argv)
 	*t++ = *s;
     }
     kcode_reset_option();
+    rb_str_resize(tmp, t - RSTRING(tmp)->ptr);
 
-    return rb_str_new(tmp, t - tmp);
+    return tmp;
 }
 
 int

@@ -338,10 +338,10 @@ rb_struct_to_s(s)
     VALUE s;
 {
     char *cname = rb_class2name(CLASS_OF(s));
-    char *buf = ALLOCA_N(char, strlen(cname) + 4);
+    VALUE str = rb_str_new(0, strlen(cname) + 4);
 
-    sprintf(buf, "#<%s>", cname);
-    return rb_str_new2(buf);
+    sprintf(RSTRING(str)->ptr, "#<%s>", cname);
+    return str;
 }
 
 static VALUE
@@ -386,10 +386,10 @@ rb_struct_inspect(s)
 {
     if (rb_inspecting_p(s)) {
 	char *cname = rb_class2name(CLASS_OF(s));
-	char *buf = ALLOCA_N(char, strlen(cname) + 8);
+	VALUE str = rb_str_new(0, strlen(cname) + 8);
 
-	sprintf(buf, "#<%s:...>", cname);
-	return rb_str_new2(buf);
+	sprintf(RSTRING(str)->ptr, "#<%s:...>", cname);
+	return str;
     }
     return rb_protect_inspect(inspect_struct, s, 0);
 }

@@ -2172,7 +2172,7 @@ Init_File()
     define_filetest_function("file?", test_f, 1);
     define_filetest_function("zero?", test_z, 1);
     define_filetest_function("size?", test_s, 1);
-    define_filetest_function("size", test_s, 1);
+    define_filetest_function("size", rb_file_s_size, 1);
     define_filetest_function("owned?", test_owned, 1);
     define_filetest_function("grpowned?", test_grpowned, 1);
 
@@ -2194,7 +2194,6 @@ Init_File()
     rb_define_singleton_method(rb_cFile, "atime", rb_file_s_atime, 1);
     rb_define_singleton_method(rb_cFile, "mtime", rb_file_s_mtime, 1);
     rb_define_singleton_method(rb_cFile, "ctime", rb_file_s_ctime, 1);
-    rb_define_singleton_method(rb_cFile, "size",  rb_file_s_size, 1);
 
     rb_define_singleton_method(rb_cFile, "utime", rb_file_s_utime, -1);
     rb_define_singleton_method(rb_cFile, "chmod", rb_file_s_chmod, -1);

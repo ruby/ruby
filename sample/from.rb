@@ -50,8 +50,8 @@ end
 $outcount = 0;
 def fromout(date, from, subj)
   return if !date
-  y = m = d = 0
   y, m, d = parsedate(date) if date
+  y ||= 0; m ||= 0; d ||= 0
   if from
     from.gsub! /\n/, ""
   else

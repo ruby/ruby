@@ -1,8 +1,36 @@
+Tue Oct 10 09:49:23 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (Init_File): FileTest.size should return 0 (not nil) for
+	  empty files.
+
+Sun Oct  8 13:20:26 2000  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* eval.c (POP_SCOPE): not just set SCOPE_DONT_RECYCLE, but do
+	  scope_dup().
+
+Sat Oct  7 15:10:50 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_reverse_bang): unnecessary ALLOCA_N() was
+	  removed.
+
 Fri Oct  6 14:50:24 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: remove "DESTDIR =".
 
 	* Makefile.in, win32/Makefile.sub, ruby.1: renamed -X to -C.
+
+Fri Oct  6 12:50:52 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_plus): use to_ary(), not Check_Type().
+
+	* array.c (rb_ary_concat): ditto.
+
+	* gc.c (rb_gc): use __builtin_frame_address() for gcc.
+
+	* eval.c (stack_length): ditto.
+
+	* parse.y (assign_in_cond): stop warning till some better warning
+	  condition will be found.
 
 Thu Oct  5 18:02:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

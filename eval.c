@@ -796,10 +796,12 @@ static VALUE ruby_wrapper;	/* security wrapper */
 
 typedef struct thread * rb_thread_t;
 static rb_thread_t curr_thread = 0;
+static void scope_dup _((struct SCOPE *));
 
 #define POP_SCOPE() 			\
     if (ruby_scope->flag & SCOPE_DONT_RECYCLE) {\
-	if (_old) _old->flag |= SCOPE_DONT_RECYCLE;\
+       if (_old)\
+           scope_dup(_old);\
     }					\
     if (!(ruby_scope->flag & SCOPE_MALLOC)) {\
 	ruby_scope->local_vars = 0;	\
@@ -1259,7 +1261,7 @@ rb_eval_cmd(cmd, arg)
     }
 
     if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
-	saved_scope->flag |= SCOPE_DONT_RECYCLE;
+       scope_dup(saved_scope);
     ruby_scope = saved_scope;
     ruby_safe_level = safe;
     POP_TAG();
@@ -3499,7 +3501,7 @@ rb_yield_0(val, self, klass, acheck)
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
     if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
-	old_scope->flag |= SCOPE_DONT_RECYCLE;
+       scope_dup(old_scope);
     ruby_scope = old_scope;
     if (state) JUMP_TAG(state);
     return result;
@@ -3994,7 +3996,11 @@ stack_length(p)
     alloca(0);
 # define STACK_END (&stack_end)
 #else
+# if defined(__GNUC__)
+    VALUE *stack_end = __builtin_frame_address(0);
+# else
     VALUE *stack_end = alloca(1);
+# endif
 # define STACK_END (stack_end)
 #endif
     if (p) *p = STACK_END;
@@ -4659,7 +4665,7 @@ eval(self, src, scope, file, line)
     if (!NIL_P(scope)) {
 	ruby_frame = frame.tmp;
 	if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
-	    old_scope->flag |= SCOPE_DONT_RECYCLE;
+           scope_dup(old_scope);
 	ruby_scope = old_scope;
 	ruby_block = old_block;
 	ruby_dyna_vars = old_d_vars;
@@ -8164,9 +8170,8 @@ rb_thread_inspect(thread)
       default:
 	status = "unknown"; break;
     }
-    s = ALLOCA_N(char, strlen(cname)+6+16+9+1); /* 6:tags 16:addr 9:status 1:nul */
-    sprintf(s, "#<%s:0x%lx %s>", cname, thread, status);
-    str = rb_str_new2(s);
+    str = rb_str_new(0, strlen(cname)+6+16+9+1); /* 6:tags 16:addr 9:status 1:nul */ 
+    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx %s>", cname, thread, status);
     OBJ_INFECT(str, thread);
 
     return str;
@@ -8187,7 +8192,7 @@ rb_callcc(self)
     cont = Data_Wrap_Struct(rb_cCont, thread_mark,
 					 thread_free, th);
 
-    ruby_scope->flag |= SCOPE_DONT_RECYCLE;
+    scope_dup(ruby_scope);
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }

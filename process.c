@@ -281,7 +281,7 @@ proc_exec_v(argv, prog)
 
 	    for (n = 0; argv[n]; n++)
 		/* no-op */;
-	    new_argv = ALLOCA_N(char *, n + 2);
+	    new_argv = ALLOCA_N(char*, n + 2);
 	    for (; n > 0; n--)
 		new_argv[n + 1] = argv[n];
 	    new_argv[1] = strcpy(ALLOCA_N(char, strlen(argv[0]) + 1), argv[0]);
@@ -409,7 +409,7 @@ proc_spawn_v(argv, prog)
 
 	for (n = 0; argv[n]; n++)
 	    /* no-op */;
-	new_argv = ALLOCA_N(char *, n + 2);
+	new_argv = ALLOCA_N(char*, n + 2);
 	for (; n > 0; n--)
 	    new_argv[n + 1] = argv[n];
 	new_argv[1] = strcpy(ALLOCA_N(char, strlen(argv[0]) + 1), argv[0]);
@@ -439,13 +439,13 @@ proc_spawn_n(argc, argv, prog)
     char **args;
     int i;
 
-    args = ALLOCA_N(char *, argc + 1);
+    args = ALLOCA_N(char*, argc + 1);
     for (i = 0; i < argc; i++) {
 	Check_SafeStr(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
     Check_SafeStr(prog);
-    args[i] = (char *) 0;
+    args[i] = (char*) 0;
     if (args[0])
 	return proc_spawn_v(args, RSTRING(prog)->ptr);
     return -1;
@@ -471,7 +471,7 @@ proc_spawn(sv)
 	    return state;
 	}
     }
-    a = argv = ALLOCA_N(char *, (s - str) / 2 + 2);
+    a = argv = ALLOCA_N(char*, (s - str) / 2 + 2);
     s = ALLOCA_N(char, s - str + 1);
     strcpy(s, str);
     if (*a++ = strtok(s, " \t")) {

@@ -129,13 +129,11 @@ VALUE
 rb_any_to_s(obj)
     VALUE obj;
 {
-    char *s;
     char *cname = rb_class2name(CLASS_OF(obj));
     VALUE str;
 
-    s = ALLOCA_N(char, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
-    sprintf(s, "#<%s:0x%lx>", cname, obj);
-    str = rb_str_new2(s);
+    str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
+    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, obj);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
 
     return str;
@@ -195,17 +193,16 @@ rb_obj_inspect(obj)
 	&& ROBJECT(obj)->iv_tbl
 	&& ROBJECT(obj)->iv_tbl->num_entries > 0) {
 	VALUE str;
-	char *c, *b;
+	char *c;
 
 	c = rb_class2name(CLASS_OF(obj));
 	if (rb_inspecting_p(obj)) {
-	    b = ALLOCA_N(char, strlen(c)+8+16+1); /* 8:tags 16:addr 1:eos */
-	    sprintf(b, "#<%s:0x%lx ...>", c, obj);
-	    return rb_str_new2(b);
+	    str = rb_str_new(0, strlen(c)+8+16+1); /* 8:tags 16:addr 1:eos */
+	    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx ...>", c, obj);
+	    return str;
 	}
-	b = ALLOCA_N(char, strlen(c)+4+16+1); 	  /* 4:tags 16:addr 1:eos */
-	sprintf(b, "-<%s:0x%lx ", c, obj);
-	str = rb_str_new2(b);
+	str = rb_str_new(0, strlen(c)+4+16+1); /* 4:tags 16:addr 1:eos */
+	sprintf(RSTRING(str)->ptr, "-<%s:0x%lx ", c, obj);
 	return rb_protect_inspect(inspect_obj, obj, str);
     }
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);
@@ -495,13 +492,13 @@ static VALUE
 sym_inspect(sym)
     VALUE sym;
 {
-    char *name, *buf;
+    VALUE str;
+    char *name;
 
+    str = rb_str_new(0, strlen(name)+2);
     name = rb_id2name(SYM2ID(sym));
-    buf = ALLOCA_N(char, strlen(name)+2);
-    sprintf(buf, ":%s", name);
-
-    return rb_str_new2(buf);
+    sprintf(RSTRING(str)->ptr, ":%s", name);
+    return str;
 }
 
 static VALUE

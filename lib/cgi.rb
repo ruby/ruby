@@ -258,7 +258,7 @@ class CGI
 
 
 =begin
-=== ESCAPE HTML &"<>
+=== ESCAPE HTML &\"<>
   CGI::escapeHTML("string")
 =end
   def CGI::escapeHTML(string)

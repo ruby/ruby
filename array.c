@@ -278,6 +278,9 @@ rb_ary_push_m(argc, argv, ary)
     VALUE *argv;
     VALUE ary;
 {
+    if (argc == 0) {
+	rb_raise(rb_eArgError, "wrong # of arguments(at least 1)");
+    }
     if (argc > 0) {
 	long len = RARRAY(ary)->len;
 
@@ -903,9 +906,8 @@ rb_ary_reverse(ary)
 
     while (p1 < p2) {
 	tmp = *p1;
-	*p1 = *p2;
-	*p2 = tmp;
-	p1++; p2--;
+	*p1++ = *p2;
+	*p2-- = tmp;
     }
 
     return ary;
@@ -1236,8 +1238,7 @@ rb_ary_plus(x, y)
 {
     VALUE z;
 
-    Check_Type(y, T_ARRAY);
-
+    y = to_ary(y);
     z = rb_ary_new2(RARRAY(x)->len + RARRAY(y)->len);
     MEMCPY(RARRAY(z)->ptr, RARRAY(x)->ptr, VALUE, RARRAY(x)->len);
     MEMCPY(RARRAY(z)->ptr+RARRAY(x)->len, RARRAY(y)->ptr, VALUE, RARRAY(y)->len);
@@ -1249,9 +1250,10 @@ VALUE
 rb_ary_concat(x, y)
     VALUE x, y;
 {
-    Check_Type(y, T_ARRAY);
-
-    rb_ary_push_m(RARRAY(y)->len, RARRAY(y)->ptr, x);
+    y = to_ary(y);
+    if (RARRAY(y)->len > 0) {
+	rb_ary_push_m(RARRAY(y)->len, RARRAY(y)->ptr, x);
+    }
     return x;
 }
 

@@ -4342,11 +4342,6 @@ assign_in_cond(node)
     switch (nd_type(node->nd_value)) {
       case NODE_LIT:
       case NODE_STR:
-      case NODE_DSTR:
-      case NODE_XSTR:
-      case NODE_DXSTR:
-      case NODE_EVSTR:
-      case NODE_DREGX:
       case NODE_NIL:
       case NODE_TRUE:
       case NODE_FALSE:
@@ -4354,12 +4349,19 @@ assign_in_cond(node)
 	rb_warn("found = in conditional, should be ==");
 	return 1;
 
+      case NODE_DSTR:
+      case NODE_XSTR:
+      case NODE_DXSTR:
+      case NODE_EVSTR:
+      case NODE_DREGX:
       default:
 	break;
     }
+#if 0
     if (assign_in_cond(node->nd_value) == 0) {
 	rb_warning("assignment in condition");
     }
+#endif
     return 1;
 }
 
