@@ -1,3 +1,12 @@
+Sat Dec 20 21:59:03 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httprequest.rb (HTTPRequest#meta_vars): refine regexp.
+
+	* lib/webrick/cgi.rb (CGI#start): NPH scripts return status line
+	  instead of Status: header field.
+
+	* lib/webrick/cgi.rb (CGI::Socket): refine some coditions.
+
 Sat Dec 20 16:07:14 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Completion::complete): wrong
@@ -26,7 +35,7 @@ Sat Dec 20 02:18:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Dec 19 21:24:22 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* lib/webrick/httprequest.rb (meta_vers): should not set
+	* lib/webrick/httprequest.rb (HTTPRequest#meta_vars): should not set
 	  HTTP_CONTENT_TYPE and HTTP_CONTENT_LENGTH.
 
 	* lib/webrick/https.rb (HTTPRequest#parse): should check presence

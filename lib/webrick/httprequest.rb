@@ -190,8 +190,8 @@ module WEBrick
       meta["SERVER_SOFTWARE"]   = @config[:ServerSoftware].dup
 
       self.each{|key, val|
-        next if /content-type/ =~ key
-        next if /content-length/ =~ key
+        next if /^content-type$/i =~ key
+        next if /^content-length$/i =~ key
         name = "HTTP_" + key
         name.gsub!(/-/o, "_")
         name.upcase!

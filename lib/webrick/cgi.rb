@@ -37,11 +37,11 @@ module WEBrick
       sock = WEBrick::CGI::Socket.new(@config, env, stdin, stdout)
       req = HTTPRequest.new(@config)
       res = HTTPResponse.new(@config)
-      def res.setup_header
-        @header["status"] ||= @status
-        super
-      end
       unless @config[:NPH]
+        def res.setup_header
+          @header["status"] ||= @status
+          super
+        end
         def res.status_line
           ""
         end
@@ -49,11 +49,11 @@ module WEBrick
 
       begin
         req.parse(sock)
-        req.script_name = (ENV["SCRIPT_NAME"] || "").dup
-        if ENV["PATH_INFO"].nil? || ENV["PATH_INFO"].empty?
+        req.script_name = (env["SCRIPT_NAME"] || "").dup
+        if env["PATH_INFO"].nil? || env["PATH_INFO"].empty?
           req.path_info = nil
         else
-          req.path_info = ENV["PATH_INFO"].dup
+          req.path_info = env["PATH_INFO"].dup
         end
         res.request_method = req.request_method
         res.request_uri = req.request_uri
@@ -167,13 +167,13 @@ module WEBrick
 
       def cert
         if pem = @env["SSL_SERVER_CERT"]
-          OpenSSL::X509::Certificate.new(pem) if !pem.empty?
+          OpenSSL::X509::Certificate.new(pem) unless pem.empty?
         end
       end
 
       def peer_cert
         if pem = @env["SSL_CLIENT_CERT"]
-          OpenSSL::X509::Certificate.new(pem) if !pem.empty?
+          OpenSSL::X509::Certificate.new(pem) unless pem.empty?
         end
       end
 
@@ -183,7 +183,7 @@ module WEBrick
           certs = keys.sort.collect{|k|
             if /^SSL_CLIENT_CERT_CHAIN_\d+$/ =~ k
               if pem = @env[k]
-                OpenSSL::X509::Certificate.new(pem) if !pem.empty?
+                OpenSSL::X509::Certificate.new(pem) unless pem.empty?
               end
             end
           }
