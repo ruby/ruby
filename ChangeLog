@@ -1,3 +1,7 @@
+Thu Mar 21 01:03:05 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/configsub.rb: latest autoconf style support.
+
 Wed Mar 20 22:16:25 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* mkconfig.rb: close duplicated $stdout before renaming rbconfig.rb.

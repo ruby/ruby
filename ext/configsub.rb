@@ -12,7 +12,7 @@ BEGIN {
 
   File.foreach($config || "config.status") do |line|
     next if /^#/ =~ line
-    if /^s[%,]@(\w+)@[%,](.*)[%,]g/ =~ line
+    if /^s[%,]@(\w+)@[%,](.*)[%,][g;]/ =~ line
       name = $1
       val = $2 || ""
       next if /^(INSTALL|DEFS|configure_input|srcdir)$/ =~ name
