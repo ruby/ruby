@@ -249,7 +249,7 @@ module Test
           end
         end
   
-        class FaultListItem < FXListItem all
+        class FaultListItem < FXListItem
           attr_reader(:fault)
           def initialize(fault)
             super(fault.short_display)

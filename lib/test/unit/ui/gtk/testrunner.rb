@@ -383,7 +383,7 @@ module Test
           end
         end
   
-        class EnhancedProgressBar < Gtk::ProgressBar all
+        class EnhancedProgressBar < Gtk::ProgressBar
           def set_style(style)
             super
             hide
@@ -391,13 +391,13 @@ module Test
           end
         end
   
-        class EnhancedLabel < Gtk::Label all
+        class EnhancedLabel < Gtk::Label
           def set_text(text)
             super(text.gsub(/\n\t/, "\n" + (" " * 4)))
           end
         end
   
-        class FaultListItem < Gtk::ListItem all
+        class FaultListItem < Gtk::ListItem
           attr_reader(:fault)
           def initialize(fault)
             super(fault.short_display)

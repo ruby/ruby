@@ -9,17 +9,17 @@ require "test/unit/ui/testrunnerutilities"
 module Test
   module Unit
     module UI
-      module GTK2 all
+      module GTK2
 
         Gtk.init
 
-        class EnhancedLabel < Gtk::Label all
+        class EnhancedLabel < Gtk::Label
           def set_text(text)
             super(text.gsub(/\n\t/, "\n    "))
           end
         end
 
-        class FaultList < Gtk::TreeView all
+        class FaultList < Gtk::TreeView
           def initialize
             @faults = []
             @model = Gtk::ListStore.new(String, String)
