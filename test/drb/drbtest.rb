@@ -4,6 +4,8 @@ require 'drb/extservm'
 require 'timeout'
 require 'rbconfig'
 
+DRb::DRbServer.new(nil)
+
 class DRbService
   @@manager = DRb::ExtServManager.new
   @@ruby = File.join(
@@ -17,6 +19,7 @@ class DRbService
     DRb::ExtServManager.command[nm] = "#{@@ruby} #{@@dir}/#{nm}"
   end
   @server = @@server = DRb::DRbServer.new(nil, @@manager, {})
+  @@manager.uri = @@server.uri
   def self.manager
     @@manager
   end

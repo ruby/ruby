@@ -25,8 +25,9 @@ module DRb
       @waiting = []
       @queue = Queue.new
       @thread = invoke_thread
+      @uri = nil
     end
-    attr_reader :server
+    attr_accessor :uri
 
     def service(name)
       while true
@@ -84,10 +85,11 @@ module DRb
 	return if @servers.include?(name)
 	@servers[name] = false
       end
+      uri = @uri || DRb.uri
       if RUBY_PLATFORM =~ /mswin32/
-	system("cmd /c start /b #{command} #{DRb.uri} #{name}")
+	system("cmd /c start /b #{command} #{uri} #{name}")
       else
-	system("#{command} #{DRb.uri} #{name} &")
+	system("#{command} #{uri} #{name} &")
       end
     end
   end
