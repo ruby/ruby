@@ -2529,7 +2529,7 @@ nextc()
 	}
     }
     c = (unsigned char)*lex_p++;
-    if (c == '\r' && lex_p <= lex_pend && *lex_p == '\n') {
+    if (c == '\r' && lex_p < lex_pend && *lex_p == '\n') {
 	lex_p++;
 	c = '\n';
     }

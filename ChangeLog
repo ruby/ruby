@@ -1,3 +1,8 @@
+Mon Dec 16 15:53:20 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (nextc): get rid of overrun.  (pointed out by akr
+	  [ruby-list:36773])
+
 Sun Dec 15 21:16:44 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (init_mkmf): add $(topdir) to $LIBPATH if $extmk.
