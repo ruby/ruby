@@ -1,55 +1,62 @@
-GNU Readline Libraryを利用するための拡張モジュールです。
+Extension for GNU Readline Library
 
-require "readline"
-include Readline
+Example:
 
-line = readline("Prompt> ", TRUE)
+  require "readline"
+  include Readline
 
-のように使用してください。
+  line = readline("Prompt> ", true)
 
 [Readline]
 
-<モジュール関数>
+<module function>
 
-readline(prompt, add=nil)
+readline(prompt, add_history=nil)
 
-  一行入力を読み込みます。
-  addがTRUEの場合、ヒストリに読み込んだ文字列を追加します。
+  Reads one line with line editing.  The inputted line is added to the
+  history if add_history is true.
 
-<クラスメソッド>
+<class methods>
 
 completion_proc = proc
 
-  補完時の動作を決定するProcオブジェクトを指定します。
-  procは引数に入力文字列を取り、候補文字列の配列を返すように
-  してください。
+  Specifies a Proc object to determine completion behavior.  It
+  should take input-string, and return an array of completion
+  candidates.
 
 completion_proc
 
-  補完時の動作を決定するProcオブジェクトを返します。
+  Returns the completion Proc object.
 
-completion_case_fold = case_fold
+completion_case_fold = bool
 
-  補完時に大文字小文字を区別しない場合、TRUEを指定します。
+  Sets whether or not to ignore case on completion.
 
 completion_case_fold
 
-  補完時に大文字小文字を区別しない場合、TRUEを返します。
+  Returns true if completion ignores case.
+
+completion_append_character = char
+
+  Specifies a character to be appended on completion.
+  Nothing will be appended if an empty string ("") or nil is
+  specified.
+
+completion_append_character
+
+  Returns a string containing a character to be appended on
+  completion.  The default is a space (" ").
 
 vi_editing_mode
 
-  VIモードになります。
+  Specifies VI editing mode.
 
 emacs_editing_mode
 
-  Emacsモードになります。
+  Specifies Emacs editing mode.
 
-<クラス定数>
+<class constants>
 
 HISTORY
 
-ヒストリに対する操作はこの定数を通して行ってください。
-配列と同じように扱えるようになっています。
-
-
-	
+The history buffer.  It behaves just like an array.

@@ -1,3 +1,15 @@
+Fri Jul  6 00:49:05 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/readline/readline.c (readline_event): merge from 1.7: a
+	  non-void function should return a value.
+
+	* ext/readline/readline.c: merge from 1.7: add new methods:
+	  Readline::completion_append_character and
+	  Readline::completion_append_character=.
+
+	* ext/readline/README, ext/readline/README.jp: merge from 1.7: add
+	  an English version of the document.
+
 Wed Jul  4 00:12:37 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/find.rb: merge from 1.7: rescue Errno::EACCES as well.

@@ -1,5 +1,10 @@
 Summary of the changes since 1.6.4:
 
+: Readline::completion_append_characte
+: Readline::completion_append_character=
+
+  Added.
+
 : Socket::SO_*
 
   Added.
