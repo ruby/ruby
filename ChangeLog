@@ -1,3 +1,20 @@
+Tue Jul 22 17:22:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_mod_const_missing): new method. [ruby-core:00441]
+
+	* variable.c (rb_const_get_at): allow "const_missing" hook.
+
+	* variable.c (rb_const_get_0): ditto.
+
+	* eval.c (method_missing): rename from rb_undefined to clarify.
+
+	* eval.c (ruby_finalize_0): update exit status if any of END proc
+	  raises SystemExit. [ruby-core:01256]
+
+	* signal.c (rb_trap_exit): wrap rb_eval_cmd
+
+	* eval.c (rb_exec_end_proc): reduce rb_protect().
+
 Tue Jul 22 17:15:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST (lib/cgi/session/pstore.rb, lib/yaml/baseemitter.rb):
@@ -25,10 +42,10 @@ Tue Jul 22 00:19:19 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Jul 21 01:53:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* string.c: use StringValueCStr to retrieve paths to system calls.
-
 	* string.c (rb_string_value_cstr): check null byte in the string
 	  before retrieving C ptr.  accessed via macro StringValueCStr.
+
+	* file.c: use StringValueCStr to retrieve paths to system calls.
 
 	* file.c (sys_fail2): raise error for two operand system calls
 	  such as rename, link, symlink.  (ruby-bugs PR#1047)

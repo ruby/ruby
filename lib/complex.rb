@@ -184,7 +184,7 @@ class Complex < Numeric
       Complex.polar(r.power!(other), theta * other)
     else
       x, y = other.coerce(self)
-      x/y
+      x**y
     end
   end
   
@@ -222,7 +222,7 @@ class Complex < Numeric
   # plane.
   #
   def abs
-    Math.sqrt!((@real*@real + @image*@image).to_f)
+    Math.hypot(@real, @image)
   end
   
   #
@@ -352,6 +352,7 @@ class Complex < Numeric
 
   # The imaginary part of a complex number.
   attr :image
+  alias imag image
   
 end
 
@@ -382,6 +383,7 @@ class Numeric
   def image
     0
   end
+  alias imag image
   
   #
   # See Complex#arg.
@@ -390,7 +392,7 @@ class Numeric
     if self >= 0
       return 0
     else
-      return Math.atan2(1,1)*4
+      return Math::PI
     end
   end
   
@@ -458,10 +460,12 @@ module Math
 	Complex(0,sqrt!(-z))
       end
     else
-      if defined? Rational
-	z**Rational(1,2)
+      if z.image < 0
+	sqrt(z.conjugate).conjugate
       else
-	z**0.5
+	r = z.abs
+	x = z.real
+	Complex( sqrt!((r+x)/2), sqrt!((r-x)/2) )
       end
     end
   end

@@ -461,8 +461,8 @@ VALUE rb_const_get _((VALUE, ID));
 VALUE rb_const_get_at _((VALUE, ID));
 VALUE rb_const_get_from _((VALUE, ID));
 void rb_const_set _((VALUE, ID, VALUE));
-void rb_const_assign _((VALUE, ID, VALUE));
 VALUE rb_mod_constants _((VALUE));
+VALUE rb_mod_const_missing _((VALUE,VALUE));
 VALUE rb_cvar_defined _((VALUE, ID));
 #define RB_CVAR_SET_4ARGS 1
 void rb_cvar_set _((VALUE, ID, VALUE, int));

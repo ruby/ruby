@@ -1517,6 +1517,7 @@ Init_Object()
     rb_define_method(rb_cModule, "const_set", rb_mod_const_set, 2);
     rb_define_method(rb_cModule, "const_defined?", rb_mod_const_defined, 1);
     rb_define_private_method(rb_cModule, "remove_const", rb_mod_remove_const, 1);
+    rb_define_method(rb_cModule, "const_missing", rb_mod_const_missing, 1);
     rb_define_method(rb_cModule, "class_variables", rb_mod_class_variables, 0);
     rb_define_private_method(rb_cModule, "remove_class_variable", rb_mod_remove_cvar, 1);
 

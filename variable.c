@@ -1116,6 +1116,22 @@ uninitialized_constant(klass, id)
     }
 }
 
+static VALUE
+const_missing(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_funcall(klass, rb_intern("const_missing"), 1, ID2SYM(id));
+}
+
+VALUE
+rb_mod_const_missing(klass, name)
+    VALUE klass, name;
+{
+    uninitialized_constant(klass, rb_to_id(name));
+    return Qnil;		/* not reached */
+}
+
 static struct st_table *
 check_autoload_table(av)
     VALUE av;
@@ -1268,8 +1284,7 @@ rb_const_get_at(klass, id)
 	}
 	return value;
     }
-    uninitialized_constant(klass, id);
-    return Qnil;		/* not reached */
+    return const_missing(klass, id);
 }
 
 static VALUE
@@ -1303,8 +1318,7 @@ rb_const_get_0(klass, id, exclude)
 	goto retry;
     }
 
-    uninitialized_constant(klass, id);
-    return Qnil;		/* not reached */
+    return const_missing(klass, id);
 }
 
 VALUE
@@ -1524,25 +1538,6 @@ rb_const_set(klass, id, val)
     VALUE val;
 {
     mod_av_set(klass, id, val, Qtrue);
-}
-
-void
-rb_const_assign(klass, id, val)
-    VALUE klass;
-    ID id;
-    VALUE val;
-{
-    VALUE tmp = klass;
-
-    while (tmp) {
-	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
-	    st_insert(RCLASS(tmp)->iv_tbl, id, val);
-	    return;
-	}
-	tmp = RCLASS(tmp)->super;
-    }
-
-    uninitialized_constant(klass, id);
 }
 
 void

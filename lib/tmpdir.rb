@@ -16,7 +16,7 @@ class Dir
     if $SAFE > 0
       TMPDIR = '/tmp'
     else
-      TMPDIR = ENV['TMPDIR']||ENV['TMP']||ENV['TEMP']||'/tmp'
+      TMPDIR = File.expand_path(ENV['TMPDIR']||ENV['TMP']||ENV['TEMP']||'/tmp')
     end
   end
 end

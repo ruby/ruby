@@ -1319,20 +1319,30 @@ ruby_options(argc, argv)
 
 void rb_exec_end_proc _((void));
 
+static void
+ruby_finalize_0(exp)
+    int *exp;
+{
+    ruby_errinfo = 0;
+    PUSH_TAG(PROT_NONE);
+    if (EXEC_TAG() == 0) {
+	rb_trap_exit();
+    }
+    POP_TAG();
+    rb_exec_end_proc();
+    rb_gc_call_finalizer_at_exit();
+    if (exp && ruby_errinfo && rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
+	VALUE st = rb_iv_get(ruby_errinfo, "status");
+	*exp = NUM2INT(st);
+    }
+    trace_func = 0;
+    tracing = 0;
+}
+
 void
 ruby_finalize()
 {
-    int state;
-
-    PUSH_TAG(PROT_NONE);
-    if ((state = EXEC_TAG()) == 0) {
-	rb_trap_exit();
-	rb_exec_end_proc();
-	rb_gc_call_finalizer_at_exit();
-    }
-    POP_TAG();
-    trace_func = 0;
-    tracing = 0;
+    ruby_finalize_0(0);
 }
 
 int
@@ -1355,7 +1365,7 @@ ruby_cleanup(ex)
 
     ex = error_handle(ex);
     POP_TAG();
-    ruby_finalize();
+    ruby_finalize_0(&ex);
     return ex;
 }
 
@@ -4712,7 +4722,7 @@ rb_f_missing(argc, argv, obj)
 }
 
 static VALUE
-rb_undefined(obj, id, argc, argv, call_status)
+method_missing(obj, id, argc, argv, call_status)
     VALUE obj;
     ID    id;
     int   argc;
@@ -5077,7 +5087,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     ent = cache + EXPR1(klass, mid);
     if (ent->mid == mid && ent->klass == klass) {
 	if (!ent->method)
-	    return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
+	    return method_missing(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
 	klass = ent->origin;
 	id    = ent->mid0;
 	noex  = ent->noex;
@@ -5085,15 +5095,15 @@ rb_call(klass, recv, mid, argc, argv, scope)
     }
     else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
 	if (scope == 3) {
-	    return rb_undefined(recv, mid, argc, argv, CSTAT_SUPER);
+	    return method_missing(recv, mid, argc, argv, CSTAT_SUPER);
 	}
-	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
+	return method_missing(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
     }
 
     if (mid != missing) {
 	/* receiver specified form for private method */
 	if ((noex & NOEX_PRIVATE) && scope == 0)
-	    return rb_undefined(recv, mid, argc, argv, CSTAT_PRIV);
+	    return method_missing(recv, mid, argc, argv, CSTAT_PRIV);
 
 	/* self must be kind of a specified form for protected method */
 	if ((noex & NOEX_PROTECTED)) {
@@ -5103,7 +5113,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 		defined_class = RBASIC(defined_class)->klass;
 	    }
 	    if (!rb_obj_is_kind_of(ruby_frame->self, rb_class_real(defined_class)))
-		return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);
+		return method_missing(recv, mid, argc, argv, CSTAT_PROT);
 	}
     }
 
@@ -6443,7 +6453,11 @@ rb_exec_end_proc()
 
     save = link = end_procs;
     while (link) {
-	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
+	PUSH_TAG(PROT_NONE);
+	if ((status = EXEC_TAG()) == 0) {
+	    (*link->func)(link->data);
+	}
+	POP_TAG();
 	if (status) {
 	    error_handle(status);
 	}
@@ -6451,7 +6465,11 @@ rb_exec_end_proc()
     }
     link = end_procs;
     while (link != save) {
-	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
+	PUSH_TAG(PROT_NONE);
+	if ((status = EXEC_TAG()) == 0) {
+	    (*link->func)(link->data);
+	}
+	POP_TAG();
 	if (status) {
 	    error_handle(status);
 	}
@@ -6460,7 +6478,11 @@ rb_exec_end_proc()
     while (ephemeral_end_procs) {
 	link = ephemeral_end_procs;
 	ephemeral_end_procs = link->next;
-	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
+	PUSH_TAG(PROT_NONE);
+	if ((status = EXEC_TAG()) == 0) {
+	    (*link->func)(link->data);
+	}
+	POP_TAG();
 	if (status) {
 	    error_handle(status);
 	}
