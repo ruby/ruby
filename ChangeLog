@@ -1,3 +1,8 @@
+Thu May  6 22:27:32 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* ext/socket/socket.c (ippaddr): use NUMERICHOST if can not resolve
+	  hostname.
+
 Thu May  6 22:09:29 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil.c (get_eval_string_core): bug fix. [ruby-dev:23466]
