@@ -1,3 +1,8 @@
+Wed Aug  9 16:31:48 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_callcc): thread status for continuations must be
+	  THREAD_KILLED, otherwise thread_free() breaks other threads.
+
 Wed Aug  9 13:24:25 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* win32/win32.[ch]: emulate rename(2).

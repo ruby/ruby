@@ -2836,7 +2836,7 @@ rb_f_syscall(argc, argv)
     int argc;
     VALUE *argv;
 {
-#ifdef HAVE_SYSCALL
+#if defined(HAVE_SYSCALL) && !defined(__CHECKER__)
 #ifdef atarist
     unsigned long arg[14]; /* yes, we really need that many ! */
 #else

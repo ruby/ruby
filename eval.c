@@ -8092,6 +8092,7 @@ rb_callcc(self)
     struct tag *tag;
 
     THREAD_ALLOC(th);
+    th->status = THREAD_KILLED;
     th->thread = cont = Data_Wrap_Struct(rb_cCont, thread_mark,
 					 thread_free, th);
 
