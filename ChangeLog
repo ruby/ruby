@@ -1,3 +1,9 @@
+Tue Jun 20 06:14:43 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: change: version syntax. old: x.yz, now: x.y.z
+
+	* lib/net/telnet.rb: ditto.
+
 Wed Jun 14 13:17:02 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* io.c: typo(ig/if).
