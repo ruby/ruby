@@ -235,11 +235,11 @@ static void top_local_setup();
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> mrhs mrhs_basic superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
-%type <node> assoc_list assocs assoc undef_list backref
+%type <node> assoc_list assocs assoc undef_list backref string_dvar
 %type <node> block_var opt_block_var brace_block do_block lhs none
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fitem variable sym symbol operation operation2 operation3
-%type <id>   cname fname op f_rest_arg string_dvar
+%type <id>   cname fname op f_rest_arg
 %type <num>  f_norm_arg f_arg term_push
 %token tUPLUS 		/* unary+ */
 %token tUMINUS 		/* unary- */
@@ -1883,7 +1883,7 @@ string_content	: tSTRING_CONTENT {$$ = NEW_STR($1);}
 		    {
 			lex_strnest = $<num>1;
 			lex_strterm = $<node>2;
-			$$ = gettable($3);
+			$$ = $3;
 		    }
 		| tSTRING_DBEG term_push
 		    {
@@ -1904,9 +1904,10 @@ string_content	: tSTRING_CONTENT {$$ = NEW_STR($1);}
 		    }
 		;
 
-string_dvar	: tGVAR
-		| tIVAR
-		| tCVAR
+string_dvar	: tGVAR {$$ = NEW_GVAR($1);}
+		| tIVAR {$$ = NEW_IVAR($1);}
+		| tCVAR {$$ = NEW_CVAR($1);}
+		| backref
 		;
 
 term_push	: /* */

@@ -1,3 +1,7 @@
+Tue Jun 25 00:14:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (string_dvar): allow back references in interpolation.
+
 Mon Jun 24 16:32:31 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_eval): NODE_EVSTR is no longer used.
