@@ -418,14 +418,15 @@ iconv_s_open
 =begin
 --- Iconv.iconv(to, from, *strs)
     Shorthand for
-      Iconv.new(to, from) {|cd| (strs + nil).collect {|s| cd.iconv(s)}}
+      Iconv.open(to, from) {|cd| (strs + nil).collect {|s| cd.iconv(s)}}
     :Parameters
       :((|to|)), ((|from|))
         see ((<Iconv.new>)).
       :((|strs|))
         strings to be converted.
     :Exceptions
-      exceptions thrown by ((<Iconv.new>)) and ((<Iconv#iconv>)).
+      exceptions thrown by ((<Iconv.new>)), ((<Iconv.open>)) and
+      ((<Iconv#iconv>)).
 =end
 */
 
@@ -723,8 +724,8 @@ Init_iconv _((void))
       ensure
         cd.close
       end
-(2) Invoke ((<Iconv.new>)) with a block.
-      Iconv.new(to, from) do |cd|
+(2) Invoke ((<Iconv.open>)) with a block.
+      Iconv.open(to, from) do |cd|
         input.each {|s| output << cd.iconv(s)}
         output << cd.iconv(nil)
       end
