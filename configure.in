@@ -18,18 +18,24 @@ test "$rb_cv_mingw32" = yes && target_os="mingw32"
 esac])
 
 AC_DEFUN(RUBY_CPPOUTFILE,
+[AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
 [cppflags=$CPPFLAGS
-AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
-[CPPFLAGS='-o conftest.i'
-AC_TRY_CPP([], rb_cv_cppoutfile="$CPPFLAGS", rb_cv_cppoutfile=' >conftest.i')
+CPPFLAGS='-o conftest.i'
+AC_TRY_CPP([], rb_cv_cppoutfile=yes, rb_cv_cppoutfile=no)
+CPPFLAGS=$cppflags
 rm -f conftest*])
-CPPOUTFILE="$rb_cv_cppoutfile"
-AC_SUBST(CPPOUTFILE)
-CPPFLAGS=$cppflags])
+if test "$rb_cv_cppoutfile" = yes; then
+  CPPOUTFILE='-o conftest.i'
+elif test "$rb_cv_cppoutfile" = no; then
+  CPPOUTFILE='> conftest.i'
+elif test -n "$rb_cv_cppoutfile"; then
+  CPPOUTFILE="$rb_cv_cppoutfile"
+fi
+AC_SUBST(CPPOUTFILE)])
 
 AC_DEFUN(RUBY_PROG_GNU_LD,
 [AC_CACHE_CHECK(whether the linker is GNU ld, rb_cv_prog_gnu_ld,
-[if `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null; then
+[if `$CC $CFLAGS $CPPFLAGS $LDFLAGS --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null; then
   rb_cv_prog_gnu_ld=yes
 else
   rb_cv_prog_gnu_ld=no
@@ -1161,6 +1167,7 @@ case "$target_os" in
 	    LIBRUBY_SO=dummy
 	    LIBRUBY_DLDFLAGS=''
 	    LIBRUBY='lib$(RUBY_SO_NAME).a'
+	    LIBRUBYARG='-l$(RUBY_SO_NAME)'
 	fi
 	LIBRUBY_ALIASES=''
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in

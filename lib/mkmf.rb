@@ -767,6 +767,7 @@ all:		$(DLLIB)
 end
 
 def init_mkmf(config = CONFIG)
+  $enable_shared = config['ENABLE_SHARED'] == 'yes'
   $defs = []
   $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
   $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
@@ -776,16 +777,17 @@ def init_mkmf(config = CONFIG)
   $LIBEXT = config['LIBEXT'].dup
   $OBJEXT = config["OBJEXT"].dup
   $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
-  $LIBRUBYARG = config['LIBRUBYARG']
+  $LIBRUBYARG = ""
   $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
   $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
   $LIBPATH = []
 
   $objs = nil
   $libs = ""
-  if config['ENABLE_SHARED'] == 'yes' or config["LIBRUBY"] != config["LIBRUBY_A"]
+  if $enable_shared or Config.expand(config["LIBRUBY"].dup) != Config.expand(config["LIBRUBY_A"].dup)
     $LIBPATH = ["$(topdir)"]
     $LIBPATH.unshift("$(libdir)") unless $extmk or defined? CROSS_COMPILING
+    $LIBRUBYARG = config['LIBRUBYARG']
   end
   $LIBPATH << "$(archdir)"
 

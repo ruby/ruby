@@ -1,3 +1,19 @@
+Thu Dec 12 18:19:14 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (RUBY_PROG_GNU_LD): add $CFLAGS, $CPPFLAGS, $LDFLAGS
+	  to the option of $CC.
+
+	* configure.in: set LIBRUBYARG to '-l$(RUBY_SO_NAME)' if the
+	  target os is cygwin and --disable-shared option is supplied.
+
+	* lib/mkmf.rb (init_mkmf): expand config["LIBRUBY"] and
+	  config["LIBRUBY_A"].  don't link $LIBRUBYARG_STATIC if
+	  --disable-shared option is supplied.
+
+	* configure.in (RUBY_CPPOUTFILE): should be a better message.
+
+	* ext/Win32API/extconf.rb: join with a space.
+
 Thu Dec 12 17:27:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_hash): define Regexp#hash to make regexps to be
