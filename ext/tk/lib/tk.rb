@@ -2676,26 +2676,43 @@ module TkOptionDB
   @@resource_proc_class = Class.new
   class << @@resource_proc_class
     private :new
-
+ 
     CARRIER    = '.'.freeze
     METHOD_TBL = {}
     ADD_METHOD = false
     SAFE_MODE  = 4
 
+    def __closed_block_check__(str)
+      depth = 0
+      str.scan(/[{}]/){|x|
+	if x == "{"
+	  depth += 1
+	elsif x == "}"
+	  depth -= 1
+	end
+	if depth <= 0 && !($' =~ /\A\s*\Z/)
+	  fail RuntimeError, "bad string for procedure : #{str.inspect}"
+	end
+      }
+      str
+    end
+
     def __check_proc_string__(str)
       # If you want to check the proc_string, do it in this method.
+      # Please define this in the block given to 'new_proc_class' method. 
       str
     end
 
     def method_missing(id, *args)
       res_proc = self::METHOD_TBL[id]
       unless res_proc.kind_of? Proc
-        if id == :new || (!self::METHOD_TBL.has_key?(id) && !self::ADD_METHOD)
+        if id == :new || !(self::METHOD_TBL.has_key?(id) || self::ADD_METHOD)
           raise NoMethodError, 
                 "not support resource-proc '#{id.id2name}' for #{self.name}"
         end
-        proc_str = TkOptionDB.get(self::CARRIER, id.id2name, '')
+        proc_str = TkOptionDB.get(self::CARRIER, id.id2name, '').strip
         proc_str = '{' + proc_str + '}' unless /\A\{.*\}\Z/ =~ proc_str
+	proc_str = __closed_block_check__(proc_str)
         proc_str = __check_proc_string__(proc_str)
         res_proc = eval 'Proc.new' + proc_str
         self::METHOD_TBL[id] = res_proc
@@ -2706,10 +2723,11 @@ module TkOptionDB
       }.call
     end
 
-    private :__check_proc_string__, :method_missing
+    private :__closed_block_check__, :__check_proc_string__, :method_missing
   end
+  @@resource_proc_class.freeze
 
-  def new_proc_class(klass, func, safe = 4, add = false, parent = nil)
+  def __create_new_class(klass, func, safe = 4, add = false, parent = nil)
     klass = klass.to_s if klass.kind_of? Symbol
     unless (?A..?Z) === klass[0]
       fail ArgumentError, "bad string '#{klass}' for class name"
@@ -2733,21 +2751,86 @@ module TkOptionDB
         METHOD_TBL = {}
         ADD_METHOD = #{add}
         SAFE_MODE  = #{safe}
-        %w(#{func_str}).each{|f| METHOD_TBL.delete(f.intern) }
+        %w(#{func_str}).each{|f| METHOD_TBL[f.intern] = nil }
       end
     EOD
 
     if parent.kind_of?(Class) && parent <= @@resource_proc_class
-      parent.class_eval body
-      eval parent.name + '::' + klass
+      parent.class_eval(body)
+      eval(parent.name + '::' + klass)
     else
-      eval body
-      eval 'TkOptionDB::' + klass
+      eval(body)
+      eval('TkOptionDB::' + klass)
     end
   end
+  module_function :__create_new_class
+  private_class_method :__create_new_class
+
+  def __remove_methods_of_proc_class(klass)
+    # for security, make these methods invalid
+    class << klass
+      attr_reader :class_eval, :name, :superclass, 
+	:ancestors, :const_defined?, :const_get, :const_set, 
+	:constants, :included_modules, :instance_methods, 
+	:method_defined?, :module_eval, :private_instance_methods, 
+	:protected_instance_methods, :public_instance_methods, 
+	:remove_const, :remove_method, :undef_method, 
+	:to_s, :inspect, :display, :method, :methods, 
+	:instance_eval, :instance_variables, :kind_of?, :is_a?,
+	:private_methods, :protected_methods, :public_methods
+    end
+  end
+  module_function :__remove_methods_of_proc_class
+  private_class_method :__remove_methods_of_proc_class
+
+  RAND_BASE_CNT = [0]
+  RAND_BASE_HEAD = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  RAND_BASE_CHAR = RAND_BASE_HEAD + 'abcdefghijklmnopqrstuvwxyz0123456789_'
+  def __get_random_basename
+    name = '%s%03d' % [RAND_BASE_HEAD[rand(RAND_BASE_HEAD.size),1], 
+                       RAND_BASE_CNT[0]]
+    len = RAND_BASE_CHAR.size
+    (6+rand(10)).times{
+      name << RAND_BASE_CHAR[rand(len),1]
+    }
+    RAND_BASE_CNT[0] = RAND_BASE_CNT[0] + 1
+    name
+  end
+  module_function :__get_random_basename
+  private_class_method :__get_random_basename
+
+  # define new proc class :
+  # If you want to modify the new class or create a new subclass, 
+  # you must do such operation in the block parameter. 
+  # Because the created class is flozen after evaluating the block. 
+  def new_proc_class(klass, func, safe = 4, add = false, parent = nil, &b)
+    new_klass = __create_new_class(klass, func, safe, add, parent)
+    new_klass.class_eval(&b) if block_given?
+    __remove_methods_of_proc_class(new_klass)
+    new_klass.freeze
+    new_klass
+  end
   module_function :new_proc_class
+
+  def eval_under_random_base(parent = nil, &b)
+    new_klass = __create_new_class(__get_random_basename(), 
+				   [], 4, false, parent)
+    ret = new_klass.class_eval(&b) if block_given?
+    __remove_methods_of_proc_class(new_klass)
+    new_klass.freeze
+    ret
+  end
+  module_function :eval_under_random_base
+
+  def new_proc_class_random(klass, func, safe = 4, add = false, &b)
+    eval_under_random_base(){
+      TkOption.new_proc_class(klass, func, safe, add, self, &b)
+    }
+  end
+  module_function :new_proc_class_random
 end
 TkOption = TkOptionDB
+TkResourceDB = TkOptionDB
 
 module TkTreatFont
   def font_configinfo
@@ -3638,7 +3721,6 @@ class TkToplevel<TkWindow
 	keys['class'] = keys.delete('classname')
       end
       @classname = keys['class']
-      @screen    = keys['screen']
       @colormap  = keys['colormap']
       @container = keys['container']
       @screen    = keys['screen']
@@ -3647,8 +3729,11 @@ class TkToplevel<TkWindow
       if @classname.kind_of? TkBindTag
 	@db_class = @classname
 	@classname = @classname.id
-      else
+      elsif @classname
 	@db_class = TkDatabaseClass.new(@classname)
+      else
+	@db_class = self.class
+	@classname = @db_class::WidgetClassName
       end
       keys, cmds = _wm_command_option_chk(keys)
       super(keys)
@@ -3661,33 +3746,47 @@ class TkToplevel<TkWindow
       }
       return
     end
+
     if screen.kind_of? Hash
       keys = screen
     else
       @screen = screen
+      if classname.kind_of? Hash
+	keys = classname
+      else
+	@classname = classname
+      end
     end
-    @classname = classname
     if keys.kind_of? Hash
       keys = _symbolkey2str(keys)
       if keys.key?('classname')
 	keys['class'] = keys.delete('classname')
       end
-      @classname = keys['class']
+      @classname = keys['class']  unless @classname
       @colormap  = keys['colormap']
       @container = keys['container']
-      @screen    = keys['screen']
+      @screen    = keys['screen'] unless @screen
       @use       = keys['use']
       @visual    = keys['visual']
     end
     if @classname.kind_of? TkBindTag
       @db_class = @classname
       @classname = @classname.id
-    else
+    elsif @classname
       @db_class = TkDatabaseClass.new(@classname)
+    else
+      @db_class = self.class
+      @classname = @db_class::WidgetClassName
     end
     keys, cmds = _wm_command_option_chk(keys)
     super(parent, keys)
-    cmds.each{|k,v| self.send(k,v)}
+    cmds.each{|k,v| 
+      if v.kind_of? Array
+	self.send(k,*v)
+      else
+	self.send(k,v)
+      end
+    }
   end
 
   def create_self(keys)
@@ -3750,8 +3849,11 @@ class TkFrame<TkWindow
     if @classname.kind_of? TkBindTag
       @db_class = @classname
       @classname = @classname.id
-    else
+    elsif @classname
       @db_class = TkDatabaseClass.new(@classname)
+    else
+      @db_class = self.class
+      @classname = @db_class::WidgetClassName
     end
     super(keys)
   end
@@ -3812,7 +3914,7 @@ class TkPanedWindow<TkWindow
   alias remove forget
 
   def identify(x, y)
-    #########
+    list(tk_send('identify', x, y))
   end
 
   def proxy_coord
@@ -3830,12 +3932,16 @@ class TkPanedWindow<TkWindow
   def sash_coord(index)
     list(tk_send('sash', 'coord', index))
   end
+  def sash_dragto(index)
+    tk_send('sash', 'dragto', index, x, y)
+    self
+  end
   def sash_mark(index, x, y)
-    tk_send('sash', 'mark', x, y)
+    tk_send('sash', 'mark', index, x, y)
     self
   end
   def sash_place(index, x, y)
-    tk_send('sash', 'place', x, y)
+    tk_send('sash', 'place', index, x, y)
     self
   end
 
