@@ -1,31 +1,36 @@
+Mon Oct 18 07:26:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_truncate): discard read buffer before truncation.
+	  [ruby-dev:24197]
+
 Mon Oct 18 02:11:21 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
- 
+
 	* lib/webrick/config.rb (WEBrick::Config::General): add default values:
 	  - WEBrick::Config[:DoNotReverseLookup]
 	  - WEBrick::Config[:RequestCallback] (it used as an alias of
 	    :RequestHandler in WEBrick::HTTPServer#run)
 	  - WEBrick::Config::FileHandler[:AcceptableLanguages]
- 
+
 	* lib/webrick/httpservlet/filehandler.rb
 	  (WEBrick::HTTPServlet::FileHandler#set_filename): search files
 	  having suffix of language-name which Accept-Language header field
 	  includes if :AcceptableLanguages options is present.
- 
+
 	* lib/webrick/httpservlet/filehandler.rb
 	  (WEBrick::HTTPServlet::FileHandler#get_servlet): new method to
 	  search servlet correspond to the suffix of filename.
- 
+
 	* lib/webrick/httprequest.rb: add attributes access methods: accept,
 	  accept_charset, accept_encoding, accept_language, content_length
 	  and content_type.
- 
+
 	* lib/webrick/httpresponse.rb: add attribute access methods:
 	  content_length, content_length=, content_type and content_type=.
- 
+
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.mime_types):
 	  use the second suffix to detect media type. (the first suffix
 	  may be a language name.)
- 
+
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.parse_qvalues):
 	  add method to parse Accept header field. it returns an Array of
 	  values sorted by the qvalues.
@@ -70,7 +75,7 @@ Sat Oct 16 13:34:56 2004  Kouhei Sutou  <kou@cozmixng.org>
 Fri Oct 15 18:04:35 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb: TkTimer.new(interval, loop){ ... } is
-	  acceptable. Add TkTimer.start ( == new + start ). 
+	  acceptable. Add TkTimer.start ( == new + start ).
 
 Fri Oct 15 12:43:09 2004  Tanaka Akira  <akr@m17n.org>
 
