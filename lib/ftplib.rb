@@ -150,16 +150,23 @@ class FTP
   end
    
   def sendport(host, port)
-    hbytes = host.split(".")
-    pbytes = [port / 256, port % 256]
-    bytes = hbytes + pbytes
-    cmd = "PORT " + bytes.join(",")
+    af = (@sock.peeraddr)[0]
+    if af == "AF_INET"
+      hbytes = host.split(".")
+      pbytes = [port / 256, port % 256]
+      bytes = hbytes + pbytes
+      cmd = "PORT " + bytes.join(",")
+    elsif af == "AF_INET6"
+      cmd = "EPRT |2|" + host + "|" + sprintf("%d", port) + "|"
+    else
+      raise FTPProtoError, host
+    end
     voidcmd(cmd)
   end
   private :sendport
    
   def makeport
-    sock = TCPserver.open(0)
+    sock = TCPserver.open(@sock.addr[3], 0)
     port = sock.addr[1]
     host = TCPsocket.getaddress(@sock.addr[2])
     resp = sendport(host, port)
@@ -167,9 +174,20 @@ class FTP
   end
   private :makeport
    
+  def makepasv
+    if @sock.peeraddr[0] == "AF_INET"
+      host, port = parse227(sendcmd("PASV"))
+    else
+      host, port = parse229(sendcmd("EPSV"))
+#     host, port = parse228(sendcmd("LPSV"))
+    end
+    return host, port
+  end
+  private :makepasv
+   
   def transfercmd(cmd)
     if @passive
-      host, port = parse227(sendcmd("PASV"))
+      host, port = makepasv
       conn = open_socket(host, port)
       resp = sendcmd(cmd)
       if resp[0] != ?1
@@ -540,6 +558,57 @@ class FTP
     return host, port
   end
   private :parse227
+  
+  def parse228(resp)
+    if resp[0, 3] != "228"
+      raise FTPReplyError, resp
+    end
+    left = resp.index("(")
+    right = resp.index(")")
+    if left == nil or right == nil
+      raise FTPProtoError, resp
+    end
+    numbers = resp[left + 1 .. right - 1].split(",")
+    if numbers[0] == "4"
+      if numbers.length != 9 || numbers[1] != "4" || numbers[2 + 4] != "2"
+	raise FTPProtoError, resp
+      end
+      host = numbers[2, 4].join(".")
+      port = (numbers[7].to_i << 8) + numbers[8].to_i
+    elsif numbers[0] == "6"
+      if numbers.length != 21 || numbers[1] != "16" || numbers[2 + 16] != "2"
+	raise FTPProtoError, resp
+      end
+      v6 = ["", "", "", "", "", "", "", ""]
+      for i in 0 .. 7
+	v6[i] = sprintf("%02x%02x", numbers[(i * 2) + 2].to_i,
+			numbers[(i * 2) + 3].to_i)
+      end
+      host = v6[0, 8].join(":")
+      port = (numbers[19].to_i << 8) + numbers[20].to_i
+    end 
+    return host, port
+  end
+  private :parse228
+  
+  def parse229(resp)
+    if resp[0, 3] != "229"
+      raise FTPReplyError, resp
+    end
+    left = resp.index("(")
+    right = resp.index(")")
+    if left == nil or right == nil
+      raise FTPProtoError, resp
+    end
+    numbers = resp[left + 1 .. right - 1].split(resp[left + 1, 1])
+    if numbers.length != 4
+      raise FTPProtoError, resp
+    end
+    port = numbers[3].to_i
+    host = (@sock.peeraddr())[3]
+    return host, port
+  end
+  private :parse228
   
   def parse257(resp)
     if resp[0, 3] != "257"

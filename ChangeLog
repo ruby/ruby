@@ -1,3 +1,16 @@
+Fri Apr 30 15:24:58 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/addrinfo.h: compatibility hack for ipv4.
+
+	* ext/socket/socket.c: itojun's ipv6 patches applied.
+
+	* ext/socket/extconf.rb: detect ipv6 features based on itojun's
+	  ipv6 patches.
+
+	* ext/extmk.rb.in (enable_config): can handle --enable-xxx now.
+
+	* lib/mkmf.rb (enable_config): ditto.
+
 Tue Apr 27 14:11:45 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (fname): lazy workaround for keywords did not work well.

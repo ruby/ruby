@@ -1,1 +1,3 @@
 socket.o : socket.c $(hdrdir)/ruby.h $(hdrdir)/config.h $(hdrdir)/defines.h $(hdrdir)/rubyio.h $(hdrdir)/rubysig.h 
+
+.PATH: $(hdrdir)/missing
