@@ -1,3 +1,10 @@
+Thu Dec 30 05:39:35 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y: eliminate unused members in struct parser_params.
+	  [ruby-dev:25258] (again)
+
+	* parse.y: make parser_new() static.
+
 Wed Dec 29 11:07:07 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/html/kilmer.rb: Update to use new

@@ -115,17 +115,9 @@ struct local_vars {
                      token
 */
 struct parser_params {
-    VALUE value;
-    VALUE result;
-    VALUE parsing_thread;
-    int toplevel_p;
     union tmpyystype *parser_yylval;   /* YYSTYPE not defined yet */
     VALUE eofp;
 
-#ifndef RIPPER
-    NODE *parser_eval_tree_begin;
-    NODE *parser_eval_tree;
-#endif
     NODE *parser_lex_strterm;
     enum lex_state_e parser_lex_state;
     stack_type parser_cond_stack;
@@ -149,7 +141,12 @@ struct parser_params {
     int parser_lex_gets_ptr;
     VALUE (*parser_lex_gets) _((struct parser_params*,VALUE));
     struct local_vars *parser_lvtbl;
-#ifdef RIPPER
+#ifndef RIPPER
+    /* Ruby core only */
+    NODE *parser_eval_tree_begin;
+    NODE *parser_eval_tree;
+#else
+    /* Ripper only */
     int parser_ruby__end__seen;
     int parser_ruby_sourceline;
     VALUE parser_ruby_sourcefile;
@@ -157,6 +154,11 @@ struct parser_params {
     VALUE delayed;
     int delayed_line;
     int delayed_col;
+
+    VALUE value;
+    VALUE result;
+    VALUE parsing_thread;
+    int toplevel_p;
 #endif
 };
 
@@ -4185,7 +4187,7 @@ none		: /* none */
 # define yylval  (*((YYSTYPE*)(parser->parser_yylval)))
 
 #ifndef RIPPER
-static struct parser_params* parser_new _((void));
+static VALUE rb_parser_s_new _((void));
 #endif
 static int parser_regx_options _((struct parser_params*));
 static int parser_tokadd_string _((struct parser_params*,int,int,int,long*));
@@ -4432,9 +4434,10 @@ rb_compile_string(f, s, line)
     VALUE s;
     int line;
 {
-    struct parser_params *parser = parser_new();
-    volatile VALUE p = parser->value;
-
+    VALUE volatile vparser = rb_parser_s_new();
+    struct parser_params *parser;
+    
+    Data_Get_Struct(vparser, struct parser_params, parser);
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
     lex_input = s;
@@ -4467,9 +4470,10 @@ rb_compile_file(f, file, start)
     VALUE file;
     int start;
 {
-    struct parser_params *parser = parser_new();
-    volatile VALUE p = parser->value;
-
+    VALUE volatile vparser = rb_parser_s_new();
+    struct parser_params *parser;
+    
+    Data_Get_Struct(vparser, struct parser_params, parser);
     lex_gets = lex_io_gets;
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
@@ -8096,10 +8100,11 @@ special_local_set(c, val)
     char c;
     VALUE val;
 {
+    VALUE volatile vparser = rb_parser_s_new();
+    struct parser_params *parser;
     int cnt;
-    struct parser_params *parser = parser_new();
-    volatile VALUE p = parser->value;
-
+    
+    Data_Get_Struct(vparser, struct parser_params, parser);
     top_local_init();
     cnt = local_cnt(c);
     top_local_setup();
@@ -8157,14 +8162,8 @@ static void
 parser_initialize(parser)
     struct parser_params *parser;
 {
-    parser->result = Qnil;
-    parser->toplevel_p = Qtrue;
-    parser->parsing_thread = Qnil;
+    parser->eofp = Qfalse;
 
-#ifndef RIPPER
-    parser->parser_eval_tree_begin = 0;
-    parser->parser_eval_tree = 0;
-#endif
     parser->parser_lex_strterm = 0;
     parser->parser_cond_stack = 0;
     parser->parser_cmdarg_stack = 0;
@@ -8183,9 +8182,16 @@ parser_initialize(parser)
     parser->parser_lex_p = 0;
     parser->parser_lex_pend = 0;
     parser->parser_lvtbl = 0;
-#ifdef RIPPER
+#ifndef RIPPER
+    parser->parser_eval_tree_begin = 0;
+    parser->parser_eval_tree = 0;
+#else
     parser->parser_ruby_sourcefile = Qnil;
     parser->delayed = Qnil;
+
+    parser->result = Qnil;
+    parser->parsing_thread = Qnil;
+    parser->toplevel_p = Qtrue;
 #endif
 }
 
@@ -8195,18 +8201,17 @@ parser_mark(ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
 
-    rb_gc_mark(p->result);
-    rb_gc_mark(p->parsing_thread);
     rb_gc_mark((VALUE)p->parser_lex_strterm);
-    /*rb_gc_mark(p->parser_cur_mid);*/
     rb_gc_mark(p->parser_lex_input);
     rb_gc_mark(p->parser_lex_lastline);
-#ifdef RIPPER
-    rb_gc_mark(p->parser_ruby_sourcefile);
-    rb_gc_mark(p->delayed);
-#else
+#ifndef RIPPER
     rb_gc_mark((VALUE)p->parser_eval_tree_begin) ;
     rb_gc_mark((VALUE)p->parser_eval_tree) ;
+#else
+    rb_gc_mark(p->parser_ruby_sourcefile);
+    rb_gc_mark(p->delayed);
+    rb_gc_mark(p->result);
+    rb_gc_mark(p->parsing_thread);
 #endif
 }
 
@@ -8230,16 +8235,25 @@ parser_free(ptr)
 }
 
 #ifndef RIPPER
-struct parser_params *
+static struct parser_params *
 parser_new()
 {
     struct parser_params *p;
 
     p = ALLOC_N(struct parser_params, 1);
     MEMZERO(p, struct parser_params, 1);
-    p->value = Data_Wrap_Struct(rb_cData, parser_mark, parser_free, p);
     parser_initialize(p);
     return p;
+}
+
+static VALUE
+rb_parser_s_new()
+{
+    struct parser_params *p = parser_new();
+
+    /* Object class is a dummy */
+    return Data_Make_Struct(rb_cObject, struct parser_params,
+			    parser_mark, parser_free, p);
 }
 #endif
 
@@ -8518,6 +8532,7 @@ ripper_warning0(parser, fmt)
 }
 
 static VALUE ripper_lex_get_generic _((struct parser_params *, VALUE));
+
 static VALUE
 ripper_lex_get_generic(parser, src)
     struct parser_params *parser;
@@ -8527,6 +8542,7 @@ ripper_lex_get_generic(parser, src)
 }
 
 static VALUE ripper_s_allocate _((VALUE));
+
 static VALUE
 ripper_s_allocate(klass)
     VALUE klass;
