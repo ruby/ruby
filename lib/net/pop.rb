@@ -678,7 +678,7 @@ module Net
     end
 
     def logging(msg)
-      @debug_output << msg if @debug_output
+      @debug_output << msg + "\n" if @debug_output
     end
 
   end   # class POP3
