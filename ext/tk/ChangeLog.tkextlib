@@ -1,15 +1,25 @@
+2004-11-26  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* bwidget/notebook.rb: uses epath
+
+	* bwidget/widget.rb: ditto
+
+	* tktable/tktable.rb: ditto
+
+	* tcllib/cursor.rb: ditto, and bug fix
+
 2004-11-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* lib/tile/style.rb: bug fix
+	* tile/style.rb: bug fix
 
 2004-11-07  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb:
-	  bind-event methods accept multi substitution arguments.
+	* iwidgets/scrolledcanvas.rb: bind-event methods accept multi 
+	  substitution arguments.
 
-	* ext/tk/lib/tkextlib/tktable/tktable.rb: ditto.
+	* tktable/tktable.rb: ditto.
 
-	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: ditto
+	* treectrl/tktreectrl.rb: ditto
 
 2004-11-03  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

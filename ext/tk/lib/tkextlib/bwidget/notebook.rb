@@ -31,7 +31,8 @@ class Tk::BWidget::NoteBook
 
   def tagid(id)
     if id.kind_of?(TkWindow)
-      id.path
+      #id.path
+      id.epath
     elsif id.kind_of?(TkObject)
       id.to_eval
     else

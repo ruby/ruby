@@ -120,6 +120,18 @@ module Tk
       end
     end
 
+    def iconphoto(*imgs)
+      # Windows only
+      tk_call_without_enc('wm', 'iconphoto', path, *imgs)
+      self
+    end
+
+    def iconphoto_default(*imgs)
+      # Windows only
+      tk_call_without_enc('wm', 'iconphoto', path, '-default', *imgs)
+      self
+    end
+
     def iconify(ex = true)
       tk_call_without_enc('wm', 'iconify', path) if ex
       self

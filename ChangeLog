@@ -1,3 +1,13 @@
+Fri Nov 26 18:02:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: Tk.destroy uses TkWindow#epath
+
+	* ext/tk/lib/tk/image.rb: bug fix
+
+	* ext/tk/lib/tk/wm.rb: add 'iconphoto' method(Windows only)
+
+	* ext/tk/lib/tkextlib/*: some methods uses TkWindow#epath
+
 Fri Nov 26 14:29:39 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_initialize): [ruby-dev:24963]

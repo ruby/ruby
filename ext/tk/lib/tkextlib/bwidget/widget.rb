@@ -56,7 +56,7 @@ module Tk::BWidget::Widget
   end
 
   def self.destroy(win)
-    tk_call('Widget::destroy', win)
+    tk_call('Widget::destroy', _epath(win))
   end
 
   def self.focus_next(win)

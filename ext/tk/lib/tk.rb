@@ -1677,7 +1677,14 @@ module Tk
   end
 
   def Tk.destroy(*wins)
-    tk_call_without_enc('destroy', *wins)
+    #tk_call_without_enc('destroy', *wins)
+    tk_call_without_enc('destroy', *(wins.collect{|win|
+                                       if win.kind_of?(TkWindow)
+                                         win.epath
+                                       else
+                                         win
+                                       end
+                                     }))
   end
 
   def Tk.exit

@@ -70,7 +70,9 @@ class TkPhotoImage<TkImage
         keys.delete(opt)
       end
     }
-    hash_kv(keys).flatten
+    keys.collect{|k,v|
+      ['-' << k, v]
+    }.flatten
   end
   private :_photo_hash_kv
 
