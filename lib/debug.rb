@@ -781,8 +781,8 @@ class << DEBUGGER__
     saved_crit = Thread.critical
     Thread.critical = true
     make_thread_list
-    for th in @thread_list
-      context(th[0]).set_trace arg
+    for th, in @thread_list
+      context(th).set_trace arg
     end
     Thread.critical = saved_crit
     arg
@@ -796,9 +796,9 @@ class << DEBUGGER__
     saved_crit = Thread.critical
     Thread.critical = true
     make_thread_list
-    for th in @thread_list
-      next if th[0] == Thread.current
-      context(th[0]).set_suspend
+    for th, in @thread_list
+      next if th == Thread.current
+      context(th).set_suspend
     end
     Thread.critical = saved_crit
     # Schedule other threads to suspend as soon as possible.
@@ -809,9 +809,9 @@ class << DEBUGGER__
     saved_crit = Thread.critical
     Thread.critical = true
     make_thread_list
-    for th in @thread_list
-      next if th[0] == Thread.current
-      context(th[0]).clear_suspend
+    for th, in @thread_list
+      next if th == Thread.current
+      context(th).clear_suspend
     end
     waiting.each do |th|
       th.run

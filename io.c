@@ -3446,15 +3446,15 @@ rb_f_syscall(argc, argv)
 	rb_raise(rb_eArgError, "too few arguments for syscall");
     arg[0] = NUM2LONG(argv[0]); argv++;
     while (items--) {
-	if (FIXNUM_P(*argv)) {
-	    arg[i] = (unsigned long)NUM2LONG(*argv);
-	}
-	else {
-	    VALUE v = *argv;
+	VALUE v = rb_check_string_type(*argv);
 
+	if (!NIL_P(v)) {
 	    StringValue(v);
 	    rb_str_modify(v);
 	    arg[i] = (unsigned long)RSTRING(v)->ptr;
+	}
+	else {
+	    arg[i] = (unsigned long)NUM2LONG(*argv);
 	}
 	argv++;
 	i++;

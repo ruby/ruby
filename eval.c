@@ -95,7 +95,7 @@ char *strrchr _((const char*,const char));
 
 VALUE rb_cBlock, rb_cProc;
 static VALUE rb_cBinding;
-static VALUE block_invoke _((VALUE,VALUE,VALUE));
+static VALUE block_invoke _((VALUE,VALUE,VALUE,VALUE));
 static VALUE block_new _((void));
 static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
@@ -2255,7 +2255,7 @@ call_trace_func(event, node, self, id, klass)
 					     id?ID2SYM(id):Qnil,
 					     self?rb_f_binding(self):Qnil,
 					     klass),
-		    Qundef);
+		    Qundef, 0);
     }
     POP_TMPTAG();		/* do not propagate retval */
     POP_FRAME();
@@ -4046,7 +4046,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
 	/* FOR does not introduce new scope */
 	ruby_dyna_vars = block->dyna_vars;
     }
-    ruby_class = klass?klass:block->klass;
+    ruby_class = klass ? klass : block->klass;
     if (!klass) self = block->self;
     node = block->body;
 
@@ -4887,7 +4887,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	break;
 
       case NODE_BMETHOD:
-	result = block_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv);
+	result = block_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass);
 	break;
 
       case NODE_SCOPE:
@@ -6358,7 +6358,7 @@ call_end_proc(data)
     ruby_frame->self = ruby_frame->prev->self;
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
-    block_invoke(data, rb_ary_new2(0), Qundef);
+    block_invoke(data, rb_ary_new2(0), Qundef, 0);
     POP_FRAME();
     POP_ITER();
 }
@@ -6824,9 +6824,9 @@ block_alloc(klass, proc)
 	if ((proc && (ruby_block->flags & BLOCK_PROC)) ||
 	    (!proc && !(ruby_block->flags & BLOCK_PROC)))
 	    return ruby_block->block_obj;
+	ruby_block->flags &= ~BLOCK_PROC;
     }
     block = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);
-    ruby_block->block_obj = block;
     *data = *ruby_block;
 
     data->orig_thread = rb_thread_current();
@@ -6850,7 +6850,11 @@ block_alloc(klass, proc)
     }
     scope_dup(data->scope);
     block_save_safe_level(block);
-    if (proc) data->flags |= BLOCK_PROC;
+    if (proc) {
+	data->flags |= BLOCK_PROC;
+	ruby_block->flags |= BLOCK_PROC;
+    }
+    ruby_block->block_obj = block;
 
     return block;
 }
@@ -6911,9 +6915,9 @@ block_orphan(data)
 }
 
 static VALUE
-block_invoke(block, args, self)
+block_invoke(block, args, self, klass)
     VALUE block, args;		/* OK */
-    VALUE self;
+    VALUE self, klass;
 {
     struct BLOCK * volatile old_block;
     struct BLOCK _block;
@@ -6941,7 +6945,8 @@ block_invoke(block, args, self)
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
-    _block.frame.self = self;
+    if (self != Qundef) _block.frame.self = self;
+    if (klass) _block.frame.last_class = klass;
     ruby_block = &_block;
 
     PUSH_ITER(ITER_CUR);
@@ -6999,7 +7004,7 @@ static VALUE
 block_call(block, args)
     VALUE block, args;		/* OK */
 {
-    return block_invoke(block, args, Qundef);
+    return block_invoke(block, args, Qundef, 0);
 }
 
 static VALUE bmcall _((VALUE, VALUE));

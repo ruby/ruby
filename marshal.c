@@ -1248,7 +1248,7 @@ r_object0(arg, proc)
 	break;
     }
     if (proc) {
-	rb_funcall(proc, rb_intern("yield"), 1, v);
+	rb_funcall(proc, rb_intern("call"), 1, v);
     }
     return v;
 }

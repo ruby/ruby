@@ -5,6 +5,11 @@ Fri May 30 22:28:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ruby.h (NUM2UINT, FIX2INT): ditto.
 
+Fri May 30 15:01:05 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+	* ext/syck/token.c: preserve any indentation passed an explicit
+	  indentation.
+
 Fri May 30 14:55:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_Array): exclude Kernel#to_a instead of Object#to_a.
@@ -18,12 +23,7 @@ Fri May 30 14:55:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* lib/optparse.rb (OptionParser::Switch::PlacedArgument#parse):
 	  override next switch after argument conversion.
 
-Fri May 30 00:01:05 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
-
-	* ext/syck/token.c: preserve any indentation passed an explicit
-	  indentation.
-
-Thu May 29 23:41:34 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+Fri May 30 14:41:34 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/handler.c, ext/syck/syck.h: removed syck_fold_format().
 
@@ -71,12 +71,33 @@ Thu May 29 09:11:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* lib/optparse.rb (OptionParser::Switch::PlacedArgument::parse):
 	  do not treat unmatched argument as an option.
 
+Wed May 28 08:44:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_syscall): type dispatch should be based on
+	  rb_check_string_type(), not FIXNUM_P(), because values may be a
+	  bignum.  [ruby-talk:72257]
+
 Tue May 27 20:33:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c, util.c: removed duplicated includes/defines.
 
 	* ext/socket/socket.c (sock_addrinfo): get rid of SEGV at NULL ptr
 	  String.  increase buffer size for 64bit platforms.
+
+Tue May 27 02:34:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): should pass the current klass value to
+	  block_invoke, which may be called via "super". [ruby-core:01077]
+
+	* eval.c (block_invoke): now takes 4th argument "klass".
+
+	* eval.c (block_alloc): should propagate BLOCK_PROC to
+	  ruby_block.
+
+Mon May 26 23:51:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_object0): should not use "yield" method, use "call"
+	  instead. (ruby-bugs-ja PR#476)
 
 Mon May 26 21:39:46 2003  MoonWolf  <moonwolf@moonwolf.com>
 
