@@ -8598,7 +8598,7 @@ rb_block_pass(func, arg, proc)
     /* PUSH BLOCK from data */
     _block = *data;
     _block.outer = ruby_block;
-    _block.uniq = block_unique++;
+    if (orphan) _block.uniq = block_unique++;
     ruby_block = &_block;
     PUSH_ITER(ITER_PRE);
     if (ruby_frame->iter == ITER_NOT)

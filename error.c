@@ -312,6 +312,7 @@ VALUE rb_eLoadError;
 
 VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
+static VALUE eNOERROR;
 
 VALUE
 rb_exc_new(etype, ptr, len)
@@ -1016,6 +1017,13 @@ syserr_eqq(self, exc)
     return Qfalse;
 }
 
+static VALUE
+errno_missing(self, id)
+    VALUE self, id;
+{
+    return eNOERROR;
+}
+
 /*
  *  Descendents of class <code>Exception</code> are used to communicate
  *  between <code>raise</code> methods and <code>rescue</code>
@@ -1085,6 +1093,7 @@ Init_Exception()
     rb_define_singleton_method(rb_eSystemCallError, "===", syserr_eqq, 1);
 
     rb_mErrno = rb_define_module("Errno");
+    rb_define_singleton_method(rb_mErrno, "const_missing", errno_missing, 1);
 
     rb_define_global_function("warn", rb_warn_m, 1);
 }
@@ -1587,6 +1596,7 @@ Init_syserr()
 #ifdef EDQUOT
     set_syserr(EDQUOT, "EDQUOT");
 #endif
+    eNOERROR = set_syserr(0, "NOERROR");
 }
 
 static void
