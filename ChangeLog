@@ -1,3 +1,7 @@
+Fri Sep 17 16:07:09 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: improve exit operation
+
 Fri Sep 17 15:01:57 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix SEGV when (thread_)vwait or
