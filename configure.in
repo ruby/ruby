@@ -514,7 +514,7 @@ case "$target_os" in
   else
     LDFLAGS="-rdynamic"
   fi;;
-netbsd*)
+netbsd*|openbsd*)
     if [[ "`$CC -dM -E - </dev/null | grep __ELF__`" != "" ]]
     then
 	netbsd_elf=yes
@@ -603,7 +603,10 @@ if test "$with_dln_a_out" != yes; then
 			    LDFLAGS="-Wl,-export-dynamic"
 			fi
 			rb_cv_dlopen=yes ;;
-	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
+	openbsd*) 	LDSHARED="\$(CC) -shared ${CCDLFLAGS}"
+			if test "$rb_cv_binary_elf" = yes; then
+			    LDFLAGS="-Wl,-E"
+			fi
 			rb_cv_dlopen=yes ;;
 	bsdi3*) 	case "$CC" in
 			*shlicc*)	LDSHARED="$CC -r"
@@ -881,7 +884,8 @@ if test "$enable_shared" = 'yes'; then
  	;;
     openbsd*)
 	SOLIBS='$(LIBS)'
- 	;;
+        LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
+	;;
     solaris*)
 	XLDFLAGS='-R${prefix}/lib'
  	;;

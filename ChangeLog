@@ -1,3 +1,18 @@
+Tue Dec 31 20:23:25 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in: Improve OpenBSD support. [obtained from: OpenBSD
+	  ports]
+
+	* dln.c (FUNCNAME_PATTERN): Ditto.
+
+	* ext/tcltklib/extconf.rb (find_tcl, find_tk): Look for both
+	  lib{tcl,tk}M.N and lib{tcl,tk}MN on all platforms.  *BSD have
+	  Tcl/Tk libraries named this way.
+
+	* ext/socket/addrinfo.h (NI_MAXHOST): Define NI_MAXHOST and
+	  NI_MAXHOST only if they are not defined yet.  This fixes build
+	  on such platforms as OpenBSD.
+
 Tue Dec 31 19:29:47 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* defines.h (FLUSH_REGISTER_WINDOWS): Add support for
