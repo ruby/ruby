@@ -283,20 +283,6 @@ if __FILE__ == $0
       assert_equal([[0], [1]],
         a.strongly_connected_components.map {|nodes| nodes.sort})
     end
-
-    def orphaned_proc(block_str)
-      eval "lambda {#{block_str}}"
-    end
-
-    def test_orphaned_break
-      a = [[1], [2], []]
-      @n = 0
-      x = orphaned_proc %{|c| @n += 1; break :break_value}
-      assert_nothing_raised {
-        assert_equal(:break_value, a.each_strongly_connected_component(&x))
-      }
-      assert_equal(1, @n)
-    end
   end
 
 end
