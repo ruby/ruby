@@ -9001,8 +9001,10 @@ rb_thread_interrupt()
     if (curr_thread == main_thread) {
 	rb_interrupt();
     }
-    if (THREAD_SAVE_CONTEXT(curr_thread)) {
-	return;
+    if (!rb_thread_dead(curr_thread)) {
+	if (THREAD_SAVE_CONTEXT(curr_thread)) {
+	    return;
+	}
     }
     curr_thread = main_thread;
     rb_thread_restore_context(curr_thread, RESTORE_INTERRUPT);
@@ -9019,8 +9021,10 @@ rb_thread_signal_raise(sig)
 	rb_raise(rb_eSignal, "SIG%s", sig);
     }
     rb_thread_ready(main_thread);
-    if (THREAD_SAVE_CONTEXT(curr_thread)) {
-	return;
+    if (!rb_thread_dead(curr_thread)) {
+	if (THREAD_SAVE_CONTEXT(curr_thread)) {
+	    return;
+	}
     }
     th_signm = sig;
     curr_thread = main_thread;
@@ -9072,8 +9076,10 @@ rb_thread_raise(argc, argv, th)
 	rb_f_raise(argc, argv);
     }
 
-    if (!rb_thread_dead(curr_thread) && THREAD_SAVE_CONTEXT(curr_thread)) {
-	return th->thread;
+    if (!rb_thread_dead(curr_thread)) {
+	if (THREAD_SAVE_CONTEXT(curr_thread)) {
+	    return th->thread;
+	}
     }
 
     rb_scan_args(argc, argv, "11", &th_raise_argv[0], &th_raise_argv[1]);

@@ -1,3 +1,9 @@
+Fri Oct  4 20:25:38 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_thread_interrupt, rb_thread_signal_raise): no need to
+	  save dead thread context. (same as [ruby-dev:18322])
+	  (ruby-bugs-ja:PR#349)
+
 Fri Oct  4 13:05:58 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RUBY_PROG_GNU_LD): check whether the linker is GNU ld.
@@ -279,6 +285,7 @@ Sat Sep 21 23:28:28 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Sep 21 22:23:41 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_thread_raise): no need to save dead thread context.
+	  [ruby-dev:18322]
 
 Fri Sep 20 23:02:01 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
