@@ -64,10 +64,9 @@ fdbm_close(obj)
     return Qnil;
 }
 
+static VALUE fdbm_alloc _((VALUE));
 static VALUE
-fdbm_alloc(argc, argv, klass)
-    int argc;
-    VALUE *argv;
+fdbm_alloc(klass)
     VALUE klass;
 {
     return Data_Wrap_Struct(klass, 0, free_dbm, 0);
