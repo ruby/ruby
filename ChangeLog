@@ -1,3 +1,7 @@
+Sat May 26 07:00:05 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* MANIFEST: add win32/dir.h .
+
 Sat May 26 00:15:57 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/dir.h: replace missing/dir.h .
