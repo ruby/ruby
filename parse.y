@@ -68,12 +68,8 @@ typedef unsigned long stack_type;
 #endif
 
 static stack_type cond_stack = 0;
-#define COND_PUSH(n) do {\
-    cond_stack = (cond_stack<<1)|((n)&1);\
-} while(0)
-#define COND_POP() do {\
-    cond_stack >>= 1;\
-} while (0)
+#define COND_PUSH(n) (cond_stack = (cond_stack<<1)|((n)&1))
+#define COND_POP() (cond_stack >>= 1)
 #define COND_LEXPOP() do {\
     int last = COND_P();\
     cond_stack >>= 1;\
@@ -82,12 +78,8 @@ static stack_type cond_stack = 0;
 #define COND_P() (cond_stack&1)
 
 static stack_type cmdarg_stack = 0;
-#define CMDARG_PUSH(n) do {\
-    cmdarg_stack = (cmdarg_stack<<1)|((n)&1);\
-} while(0)
-#define CMDARG_POP() do {\
-    cmdarg_stack >>= 1;\
-} while (0)
+#define CMDARG_PUSH(n) (cmdarg_stack = (cmdarg_stack<<1)|((n)&1))
+#define CMDARG_POP() (cmdarg_stack >>= 1)
 #define CMDARG_LEXPOP() do {\
     int last = CMDARG_P();\
     cmdarg_stack >>= 1;\

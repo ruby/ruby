@@ -69,9 +69,11 @@ extern int rb_prohibit_interrupt;
 extern int rb_trap_pending;
 void rb_trap_exec _((void));
 
-# define CHECK_INTS if (!rb_prohibit_interrupt) {\
-    if (rb_trap_pending) rb_trap_exec();\
-}
+# define CHECK_INTS do {\
+    if (!rb_prohibit_interrupt) {\
+	if (rb_trap_pending) rb_trap_exec();\
+    }\
+} while (0)
 #endif
 
 /* Make alloca work the best possible way.  */
@@ -419,7 +421,6 @@ re_set_syntax(syntax)
     return 0;
 }
 
-
 /* Macros for re_compile_pattern, which is found below these definitions.  */
 
 #define TRANSLATE_P() ((options&RE_OPTION_IGNORECASE) && translate)

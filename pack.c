@@ -1046,12 +1046,11 @@ hex2num(c)
     PACK_LENGTH_ADJUST_SIZE(t__len);		\
 } while (0)
 #else
-#define PACK_LENGTH_ADJUST(type,sz) do {	\
-    PACK_LENGTH_ADJUST_SIZE(sizeof(type));	\
-} while (0)
+#define PACK_LENGTH_ADJUST(type,sz) 		\
+    PACK_LENGTH_ADJUST_SIZE(sizeof(type))
 #endif
 
-#define PACK_ITEM_ADJUST() while (tmp--) rb_ary_push(ary, Qnil);
+#define PACK_ITEM_ADJUST() while (tmp--) rb_ary_push(ary, Qnil)
 
 static VALUE
 pack_unpack(str, fmt)

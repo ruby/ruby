@@ -65,7 +65,9 @@ end
 
 class Complex < Numeric
   @RCS_ID='-$Id: complex.rb,v 1.3 1998/07/08 10:05:28 keiju Exp keiju $-'
-  
+
+  undef step
+
   def Complex.generic?(other)
     other.kind_of?(Integer) or
     other.kind_of?(Float) or

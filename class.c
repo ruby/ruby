@@ -661,19 +661,23 @@ rb_undef_method(klass, name)
 
 #if 0
 
-#define SPECIAL_SINGLETON(x,c) if (obj == (x)) {\
-    if (!FL_TEST(c, FL_SINGLETON)) {\
-	c = rb_singleton_class_new(c);\
-	rb_singleton_class_attached(c,obj);\
+#define SPECIAL_SINGLETON(x,c) do {
+    if (obj == (x)) {\
+	if (!FL_TEST(c, FL_SINGLETON)) {\
+	    c = rb_singleton_class_new(c);\
+	    rb_singleton_class_attached(c,obj);\
+	}\
+	return c;\
     }\
-    return c;\
-}
+} while (0)
 
 #else
 
-#define SPECIAL_SINGLETON(x,c) if (obj == (x)) {\
-    return c;\
-}
+#define SPECIAL_SINGLETON(x,c) do {\
+    if (obj == (x)) {\
+	return c;\
+    }\
+} while (0)
 
 #endif
 

@@ -127,7 +127,7 @@ rb_f_srand(argc, argv, obj)
     }
     old = rand_init(seed);
 
-    return rb_uint2inum(old);
+    return UINT2NUM(old);
 }
 
 static VALUE
@@ -170,7 +170,7 @@ rb_f_rand(argc, argv, obj)
     val = max*RANDOM_NUMBER;
 
     if (val < 0) val = -val;
-    return rb_int2inum(val);
+    return LONG2NUM(val);
 }
 
 void

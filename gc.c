@@ -365,9 +365,9 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 # define STACK_END (&stack_end)
 #else
 # if defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS)
-#  define  SET_STACK_END    VALUE *stack_end = __builtin_frame_address(0);
+#  define  SET_STACK_END    VALUE *stack_end = __builtin_frame_address(0)
 # else
-#  define  SET_STACK_END    VALUE *stack_end = alloca(1);
+#  define  SET_STACK_END    VALUE *stack_end = alloca(1)
 # endif
 # define STACK_END (stack_end)
 #endif
@@ -381,7 +381,7 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 #define CHECK_STACK(ret) do {\
     SET_STACK_END;\
     (ret) = (STACK_LENGTH > STACK_LEVEL_MAX);\
-} while (0)\
+} while (0)
 
 int
 ruby_stack_length(p)

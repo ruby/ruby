@@ -233,16 +233,17 @@ st_free_table(table)
 #define COLLISION
 #endif
 
-#define FIND_ENTRY(table, ptr, hash_val, bin_pos) \
-bin_pos = hash_val%(table)->num_bins;\
-ptr = (table)->bins[bin_pos];\
-if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {\
-    COLLISION;\
-    while (PTR_NOT_EQUAL(table, ptr->next, hash_val, key)) {\
+#define FIND_ENTRY(table, ptr, hash_val, bin_pos) do {\
+    bin_pos = hash_val%(table)->num_bins;\
+    ptr = (table)->bins[bin_pos];\
+    if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {\
+	COLLISION;\
+	while (PTR_NOT_EQUAL(table, ptr->next, hash_val, key)) {\
+	    ptr = ptr->next;\
+	}\
 	ptr = ptr->next;\
     }\
-    ptr = ptr->next;\
-}
+} while (0)
 
 int
 st_lookup(table, key, value)
@@ -266,7 +267,7 @@ st_lookup(table, key, value)
 }
 
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
-{\
+do {\
     st_table_entry *entry;\
     if (table->num_entries/(table->num_bins) > ST_DEFAULT_MAX_DENSITY) {\
 	rehash(table);\
@@ -281,7 +282,7 @@ st_lookup(table, key, value)
     entry->next = table->bins[bin_pos];\
     table->bins[bin_pos] = entry;\
     table->num_entries++;\
-}
+} while (0)
 
 int
 st_insert(table, key, value)

@@ -805,12 +805,12 @@ num_step(argc, argv, from)
 	long i = 0;
 
 	if (unit > 0) {
-	    for (i=0; n<=end; i++, n=unit*i+beg) {
+	    for (i=0; n<=end; i++, n=beg+unit*i) {
 		rb_yield(rb_float_new(n));
 	    }
 	}
 	else {
-	    for (i=0; n>=end; i++, n=unit*i+beg) {
+	    for (i=0; n>=end; i++, n=beg+unit*i) {
 		rb_yield(rb_float_new(n));
 	    }
 	}

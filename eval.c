@@ -116,7 +116,7 @@ static int scope_vmode;
 #define SCOPE_PROTECTED 2
 #define SCOPE_MODFUNC   5
 #define SCOPE_MASK      7
-#define SCOPE_SET(f)  scope_vmode=(f)
+#define SCOPE_SET(f)  (scope_vmode=(f))
 #define SCOPE_TEST(f) (scope_vmode&(f))
 
 int ruby_safe_level = 0;
