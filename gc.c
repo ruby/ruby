@@ -755,6 +755,7 @@ rb_gc_mark_children(ptr)
 	  case NODE_COLON2:
 	  case NODE_ARGS:
 	  case NODE_SPLAT:
+	  case NODE_TO_ARY:
 	  case NODE_SVALUE:
 	    ptr = (VALUE)obj->as.node.u1.node;
 	    goto again;

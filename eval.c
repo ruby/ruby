@@ -2774,6 +2774,10 @@ rb_eval(self, n)
 	result = splat_value(rb_eval(self, node->nd_head));
 	break;
 
+      case NODE_TO_ARY:
+	result = rb_ary_to_ary(rb_eval(self, node->nd_head));
+	break;
+
       case NODE_SVALUE:
 	result = avalue_splat(rb_eval(self, node->nd_head));
 	if (result == Qundef) result = Qnil;
@@ -6483,45 +6487,42 @@ rb_f_at_exit()
 void
 rb_exec_end_proc()
 {
-    struct end_proc_data *link, *save;
+    struct end_proc_data *link, *tmp;
     int status;
 
-    save = link = end_procs;
-    while (link) {
-	PUSH_TAG(PROT_NONE);
-	if ((status = EXEC_TAG()) == 0) {
-	    (*link->func)(link->data);
-	}
-	POP_TAG();
-	if (status) {
-	    error_handle(status);
-	}
-	link = link->next;
-    }
-    link = end_procs;
-    while (link != save) {
-	PUSH_TAG(PROT_NONE);
-	if ((status = EXEC_TAG()) == 0) {
-	    (*link->func)(link->data);
-	}
-	POP_TAG();
-	if (status) {
-	    error_handle(status);
-	}
-	link = link->next;
-    }
     while (ephemeral_end_procs) {
 	link = ephemeral_end_procs;
-	ephemeral_end_procs = link->next;
-	PUSH_TAG(PROT_NONE);
-	if ((status = EXEC_TAG()) == 0) {
-	    (*link->func)(link->data);
+	ephemeral_end_procs = 0;
+	while (link) {
+	    PUSH_TAG(PROT_NONE);
+	    if ((status = EXEC_TAG()) == 0) {
+		(*link->func)(link->data);
+	    }
+	    POP_TAG();
+	    if (status) {
+		error_handle(status);
+	    }
+	    tmp = link;
+	    link = link->next;
+	    free(tmp);
 	}
-	POP_TAG();
-	if (status) {
-	    error_handle(status);
+    }
+    while (end_procs) {
+	link = end_procs;
+	end_procs = 0;
+	while (link) {
+	    PUSH_TAG(PROT_NONE);
+	    if ((status = EXEC_TAG()) == 0) {
+		(*link->func)(link->data);
+	    }
+	    POP_TAG();
+	    if (status) {
+		error_handle(status);
+	    }
+	    tmp = link;
+	    link = link->next;
+	    free(tmp);
 	}
-	free(link);
     }
 }
 

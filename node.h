@@ -88,6 +88,7 @@ enum node_type {
     NODE_ARGSCAT,
     NODE_ARGSPUSH,
     NODE_SPLAT,
+    NODE_TO_ARY,
     NODE_SVALUE,
     NODE_BLOCK_ARG,
     NODE_BLOCK_PASS,
@@ -308,6 +309,7 @@ typedef struct RNode {
 #define NEW_ARGSCAT(a,b) NEW_NODE(NODE_ARGSCAT,a,b,0)
 #define NEW_ARGSPUSH(a,b) NEW_NODE(NODE_ARGSPUSH,a,b,0)
 #define NEW_SPLAT(a) NEW_NODE(NODE_SPLAT,a,0,0)
+#define NEW_TO_ARY(a) NEW_NODE(NODE_TO_ARY,a,0,0)
 #define NEW_SVALUE(a) NEW_NODE(NODE_SVALUE,a,0,0)
 #define NEW_BLOCK_ARG(v) NEW_NODE(NODE_BLOCK_ARG,v,0,local_cnt(v))
 #define NEW_BLOCK_PASS(b) NEW_NODE(NODE_BLOCK_PASS,0,b,0)

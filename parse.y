@@ -486,7 +486,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		| mlhs '=' command_call
 		    {
 			value_expr($3);
-			$1->nd_value = ($1->nd_head) ? NEW_SPLAT($3) : NEW_ARRAY($3);
+			$1->nd_value = NEW_TO_ARY($3);
 			$$ = $1;
 		    }
 		| var_lhs tOP_ASGN command_call
@@ -578,7 +578,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| mlhs '=' arg_value
 		    {
-			$1->nd_value = ($1->nd_head) ? NEW_SPLAT($3) : NEW_ARRAY($3);
+			$1->nd_value = NEW_TO_ARY($3);
 			$$ = $1;
 		    }
 		| mlhs '=' mrhs

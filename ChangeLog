@@ -1,3 +1,8 @@
+Tue Oct  7 02:57:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (stmt): rhs of multiple assignment should not be
+	  expanded using "to_a". [ruby-dev:21527]
+
 Tue Oct  7 01:42:34 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_get_asn1type): use appropriate
