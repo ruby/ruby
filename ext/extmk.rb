@@ -36,7 +36,7 @@ def extmake(target)
   end
 
   unless $ignore
-    return if $nodynamic and not $static
+    return true if $nodynamic and not $static
   end
 
   init_mkmf

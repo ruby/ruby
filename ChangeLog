@@ -1,3 +1,7 @@
+Mon Nov 25 19:55:38 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): return true if not dynamic and not static.
+
 Mon Nov 25 01:08:40 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dln.c: revert and add the MAXPATHLEN definition on mswin32/mingw32.
