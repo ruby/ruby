@@ -1,3 +1,35 @@
+Thu Nov 16 14:58:00 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/socket/socket.c (sock_new): duplicates file descriptor 
+	  with myfddup() on mswin32/mingw32.
+
+	* win32/win32.h: uses system original fdopen().
+
+	* win32/win32.c (myfddup): newly added instead of myfdopen().
+
+	* win32/win32.c (mybind, myconnect, mygetsockname, mygetsockopt, 
+	  mylisten, mysetsockopt): now accept file descriptor only, not 
+	  SOCKET.
+
+	* win32/win32.c (myaccept, mysocket): return file descriptor, 
+	  instead of SOCKET.
+
+Thu Nov 16 10:23:24 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (massign): too strict check for nameless rest argument.
+
+	* eval.c (method_arity): mere * should return -1.
+
+	* eval.c (intersect_fds): should check all FDs in the fd_set.
+
+Wed Nov 15 19:33:20 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_attr): should clear method cache before calling hook.
+
+	* eval.c (rb_eval): ditto.
+
+	* eval.c (rb_mod_modfunc): ditto.
+
 Mon Nov 13 22:44:52 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (rb_bug): print version to stderr.
@@ -10,12 +42,37 @@ Mon Nov 13 19:02:08 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 Sat Nov 11 22:57:38 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (arg): uniformed treatment of -a**b, where a is a
-	  number literal;  hacky but behavior appears uniformed.
+	  number literal;  hacky but behavior appears more consistent.
 
 	* parse.y (newline_node): reduce newline node (one per line).
 
 	* random.c (rb_f_srand): should be prohibited in safe level
 	  greater than 4.
+
+Sat Nov 11 22:37:36 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* rubysig.h: do not use rb_trap_immediate on win32.
+
+	* rubysig.h: new macros, ATOMIC_TEST, ATOMIC_SET, ATOMIC_INC,
+	  ATOMIC_DEC, RUBY_CRITICAL and new definition of TRAP_BEG,
+	  TRAP_END.
+
+	* gc.c (ruby_xmalloc): should wrap malloc() by RUBY_CRITICAL.
+
+	* signal.c (sighandle): better win32 sig handling.
+
+	* win32/win32.c (flock): better implementation.
+
+	* win32/win32.c (myselect): ditto.
+
+	* win32/win32.c (myaccept): ditto.
+
+	* win32/win32.c (waitpid): ditto.
+
+	* win32/win32.c (myrename): ditto.
+
+	* win32/win32.c (wait_events): support function for win32 signal
+	  handling.
 
 Sat Nov 11 08:34:18 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 

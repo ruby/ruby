@@ -182,6 +182,7 @@ sock_new(class, fd)
     fp->f = rb_fdopen(fd, "r");
 #ifdef NT
     fp->finalize = sock_finalize;
+    fd = myfddup(fd);
 #else
     fd = dup(fd);
 #endif

@@ -6,7 +6,7 @@ require "socket"
 gs = TCPserver.open(0)
 addr = gs.addr
 addr.shift
-printf("server is on %d\n", addr.join(":"))
+printf("server is on %s\n", addr.join(":"))
 
 while TRUE
   Thread.start(gs.accept) do |s|

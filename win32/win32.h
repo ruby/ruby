@@ -177,7 +177,7 @@ extern char *NtGetBin(void);
 extern FILE *mypopen(char *, char *);
 extern int   mypclose(FILE *);
 extern int  flock(int fd, int oper);
-extern FILE *  myfdopen(int, const char *);
+extern int  myfddup(int);
 extern void  myfdclose(FILE *);
 extern SOCKET  myaccept(SOCKET, struct sockaddr *, int *);
 extern int  mybind(SOCKET, struct sockaddr *, int);
@@ -266,11 +266,6 @@ extern char *mystrerror(int);
 
 /* #undef va_start */
 /* #undef va_end */
-
-#ifdef fdopen
-#undef fdopen
-#endif
-#define fdopen myfdopen
 
 #ifdef accept
 #undef accept

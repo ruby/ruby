@@ -1726,6 +1726,8 @@ my_open_osfhandle(long osfhandle, int flags)
     return fh;			/* return handle */
 }
 
+#undef getsockopt
+
 static int
 is_socket(SOCKET fd)
 {
@@ -1750,18 +1752,15 @@ is_socket(SOCKET fd)
     return TRUE;
 }
 
-FILE *
-myfdopen (int fd, const char *mode)
+int
+myfddup (int fd)
 {
-    if (is_socket((SOCKET)fd)) {
-	int fh;
+    SOCKET s = TO_SOCKET(fd);
 
-	fh = my_open_osfhandle((SOCKET)fd, O_RDWR|O_BINARY);
-	return _fdopen(fh, mode);		// return file pointer
-    }
-    else {
-	return (_fdopen(fd, mode));
-    }
+    if (s == -1)
+	return -1;
+
+    return my_open_osfhandle(s, O_RDWR|O_BINARY);
 }
 
 
@@ -2056,14 +2055,13 @@ SOCKET
 myaccept (SOCKET s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
-    int trap_immediate = rb_trap_immediate;
 
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
     if ((r = accept (TO_SOCKET(s), addr, addrlen)) == INVALID_SOCKET)
 	errno = WSAGetLastError();
-    return r;
+    return my_open_osfhandle(r, O_RDWR|O_BINARY);
 }
 
 #undef bind
@@ -2076,7 +2074,7 @@ mybind (SOCKET s, struct sockaddr *addr, int addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = bind (s, addr, addrlen)) == SOCKET_ERROR)
+    if ((r = bind (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2090,7 +2088,7 @@ myconnect (SOCKET s, struct sockaddr *addr, int addrlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = connect (s, addr, addrlen)) == SOCKET_ERROR)
+    if ((r = connect (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2124,8 +2122,6 @@ mygetsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
     return r;
 }
 
-#undef getsockopt
-
 int 
 mygetsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
 {
@@ -2133,7 +2129,7 @@ mygetsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = getsockopt (s, level, optname, optval, optlen)) == SOCKET_ERROR)
+    if ((r = getsockopt (TO_SOCKET(s), level, optname, optval, optlen)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2161,7 +2157,7 @@ mylisten (SOCKET s, int backlog)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = listen (s, backlog)) == SOCKET_ERROR)
+    if ((r = listen (TO_SOCKET(s), backlog)) == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
 }
@@ -2233,7 +2229,7 @@ mysetsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
-    if ((r = setsockopt (s, level, optname, optval, optlen))
+    if ((r = setsockopt (TO_SOCKET(s), level, optname, optval, optlen))
     		 == SOCKET_ERROR)
 	errno = WSAGetLastError();
     return r;
@@ -2266,7 +2262,7 @@ mysocket (int af, int type, int protocol)
 	errno = WSAGetLastError();
 	//fprintf(stderr, "socket fail (%d)", WSAGetLastError());
     }
-    return s;
+    return my_open_osfhandle(s, O_RDWR|O_BINARY);
 }
 
 #undef gethostbyaddr

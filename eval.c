@@ -477,15 +477,15 @@ rb_attr(klass, id, read, write, ex)
     attriv = rb_intern(buf);
     if (read) {
 	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
-	rb_funcall(klass, added, 1, ID2SYM(id));
 	rb_clear_cache_by_id(id);
+	rb_funcall(klass, added, 1, ID2SYM(id));
     }
     sprintf(buf, "%s=", name);
     id = rb_intern(buf);
     if (write) {
 	rb_add_method(klass, id, NEW_ATTRSET(attriv), noex);
-	rb_funcall(klass, added, 1, ID2SYM(id));
 	rb_clear_cache_by_id(id);
+	rb_funcall(klass, added, 1, ID2SYM(id));
     }
 }
 
@@ -2855,12 +2855,12 @@ rb_eval(self, n)
 		noex |= NOEX_UNDEF;
 	    }
 	    rb_add_method(ruby_class, node->nd_mid, node->nd_defn, noex);
+	    rb_clear_cache_by_id(node->nd_mid);
 	    if (scope_vmode == SCOPE_MODFUNC) {
 		rb_add_method(rb_singleton_class(ruby_class),
 			      node->nd_mid, node->nd_defn, NOEX_PUBLIC);
 		rb_funcall(ruby_class, singleton_added, 1, ID2SYM(node->nd_mid));
 	    }
-	    rb_clear_cache_by_id(node->nd_mid);
 	    if (FL_TEST(ruby_class, FL_SINGLETON)) {
 		rb_funcall(rb_iv_get(ruby_class, "__attached__"),
 			   singleton_added, 1, ID2SYM(node->nd_mid));
@@ -2900,8 +2900,8 @@ rb_eval(self, n)
 	    }
 	    rb_add_method(klass, node->nd_mid, node->nd_defn, 
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
-	    rb_funcall(recv, singleton_added, 1, ID2SYM(node->nd_mid));
 	    rb_clear_cache_by_id(node->nd_mid);
+	    rb_funcall(recv, singleton_added, 1, ID2SYM(node->nd_mid));
 	    result = Qnil;
 	}
 	break;
@@ -3564,9 +3564,7 @@ massign(self, node, val, check)
     if (check && list) goto arg_error;
     if (node->nd_args) {
 	if (node->nd_args == (NODE*)-1) {
-	    if (check) {
-		goto arg_error;
-	    }
+	    /* no check for mere `*' */
 	}
 	else if (!list && i<len) {
 	    assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), check);
@@ -5374,8 +5372,8 @@ rb_mod_modfunc(argc, argv, module)
 	    rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
 	}
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
-	rb_funcall(module, singleton_added, 1, ID2SYM(id));
 	rb_clear_cache_by_id(id);
+	rb_funcall(module, singleton_added, 1, ID2SYM(id));
     }
     return module;
 }
@@ -6428,7 +6426,7 @@ method_arity(method)
 	    body = body->nd_head;
 	if (!body) return INT2FIX(0);
 	n = body->nd_cnt;
-	if (body->nd_opt || body->nd_rest >= 0)
+	if (body->nd_opt || body->nd_rest != -1)
 	    n = -n-1;
 	return INT2FIX(n);
     }
@@ -6980,26 +6978,24 @@ match_fds(dst, src, max)
     return Qfalse;
 }
 
-static int
-intersect_fds(dst, src, max)
-    fd_set *dst, *src;
+static void
+intersect_fds(src, dst, max)
+    fd_set *src, *dst;
     int max;
 {
     int i;
 
     for (i=0; i<=max; i++) {
-	if (FD_ISSET(i, src)) {
-	    if (FD_ISSET(i, dst)) {
+	if (FD_ISSET(i, dst)) {
+	    if (FD_ISSET(i, src)) {
 		/* Wake up only one thread per fd. */
-		FD_CLR(i, dst);
-	    }
-	    else {
 		FD_CLR(i, src);
 	    }
-	    return Qtrue;
+	    else {
+		FD_CLR(i, dst);
+	    }
 	}
     }
-    return Qfalse;
 }
 
 static int

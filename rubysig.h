@@ -37,8 +37,12 @@ typedef int rb_atomic_t;
 # define ATOMIC_INC(var) (++(var))
 # define ATOMIC_DEC(var) (--(var))
 
-# define TRAP_BEG (rb_trap_immediate=1)
-# define TRAP_END (rb_trap_immediate=0)
+# define TRAP_BEG do {\
+    int trap_immediate = rb_trap_immediate;\
+    rb_trap_immediate = 1;
+# define TRAP_END rb_trap_immediate = trap_immediate;\
+} while (0)
+
 # define RUBY_CRITICAL(statements) do {\
     int trap_immediate = rb_trap_immediate;\
     rb_trap_immediate = 0;\
