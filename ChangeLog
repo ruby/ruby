@@ -1,3 +1,7 @@
+Fri Apr 11 15:56:08 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* sample/test.rb: NaN comparison test.
+
 Fri Apr 11 15:37:43 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* numeric.c (coerce_rescue): prevent inspected String from GC.

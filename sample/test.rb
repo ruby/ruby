@@ -972,6 +972,28 @@ test_ok((-2.6).truncate == -2)
 test_ok(2.6.round == 3)
 test_ok((-2.4).truncate == -2)
 test_ok((13.4 % 1 - 0.4).abs < 0.0001)
+nan = 0.0/0
+def nan.test(v)
+  test_ok(self != v)
+  test_ok((self < v) == false)
+  test_ok((self > v) == false)
+  test_ok((self <= v) == false)
+  test_ok((self >= v) == false)
+end
+nan.test(nan)
+nan.test(0)
+nan.test(1)
+nan.test(-1)
+nan.test(1000)
+nan.test(-1000)
+nan.test(1_000_000_000_000)
+nan.test(-1_000_000_000_000)
+nan.test(100.0);
+nan.test(-100.0);
+nan.test(0.001);
+nan.test(-0.001);
+nan.test(1.0/0);
+nan.test(-1.0/0);
 
 test_check "bignum"
 def fact(n)
