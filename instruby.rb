@@ -51,7 +51,9 @@ arc = CONFIG["LIBRUBY_A"]
 
 makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir]
 
-install ruby_install_name+exeext, File.join(bindir, ruby_install_name+exeext), 0755
+ruby_bin = File.join(bindir, ruby_install_name)
+
+install ruby_install_name+exeext, ruby_bin+exeext, 0755
 if rubyw_install_name and !rubyw_install_name.empty?
   install rubyw_install_name+exeext, bindir, 0755
 end
@@ -83,32 +85,39 @@ for src in Dir["bin/*"]
 
   install src, dest, 0755
 
+  next if $dryrun
+
+  shebang = ''
+  body = ''
   open(dest, "r+") { |f|
-    shebang = f.gets.sub(/ruby/, ruby_install_name)
+    shebang = f.gets
     body = f.read
 
-    f.rewind
-    f.print shebang, body
-    f.truncate(f.pos)
-    f.close
+    if shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_bin}
+      f.rewind
+      f.print shebang, body
+      f.truncate(f.pos)
+    end
+  }
 
-    if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
-      open(dest + ".bat", "w") { |b|
-	b.print <<EOH, shebang, body, <<EOF
+  if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
+    ruby_bin_dosish = ruby_bin.gsub(Regexp.compile(File::SEPARATOR), File::ALT_SEPARATOR)
+    batfile = dest + ".bat"
+    open(batfile, "w") { |b|
+      b.print <<EOH, shebang, body, <<EOF
 @echo off
 if "%OS%" == "Windows_NT" goto WinNT
-ruby -Sx "%0" %1 %2 %3 %4 %5 %6 %7 %8 %9
+#{ruby_bin_dosish} -x "#{batfile}" %1 %2 %3 %4 %5 %6 %7 %8 %9
 goto endofruby
 :WinNT
-ruby -Sx "%~nx0" %*
+#{ruby_bin_dosish} -x "#{batfile}" %*
 goto endofruby
 EOH
 __END__
 :endofruby
 EOF
-      }
-    end
-  } unless $dryrun
+    }
+  end
 end
 
 Dir.glob("lib/**/*{.rb,help-message}") do |f|

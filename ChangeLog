@@ -1,3 +1,8 @@
+Tue Jan 21 16:59:18 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* instruby.rb: use real interpreter pathname at shebang line.
+	  [ruby-dev:19370]
+
 Tue Jan 21 14:46:12 2003  Tanaka Akira  <akr@m17n.org>
 
         * lib/pp.rb: Use Test::Unit.
