@@ -78,6 +78,7 @@ static VALUE rb_f_block_given_p _((void));
 static VALUE block_pass _((VALUE,NODE*));
 static VALUE rb_cMethod;
 static VALUE method_proc _((VALUE));
+static VALUE rb_cUnboundMethod;
 
 static int scope_vmode;
 #define SCOPE_PUBLIC    0
@@ -5557,6 +5558,9 @@ Init_eval()
     rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);
     rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval, -1);
 
+    rb_undef_method(rb_cClass, "include");
+    rb_undef_method(rb_cClass, "module_function");
+
     rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, 1);
     rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, 1);
     rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
@@ -6094,22 +6098,20 @@ bm_mark(data)
 }
 
 static VALUE
-rb_obj_method(obj, vid)
-    VALUE obj;
-    VALUE vid;
+mnew(klass, obj, id, mklass)
+    VALUE klass, obj, mklass;
+    ID id;
 {
     VALUE method;
-    VALUE klass = CLASS_OF(obj);
-    ID id;
     NODE *body;
     int noex;
     struct METHOD *data;
-
-    id = rb_to_id(vid);
+    VALUE oklass = klass;
+    ID oid = id;
 
   again:
     if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
-	return rb_undefined(obj, rb_to_id(vid), 0, 0, 0);
+	print_undef(oklass, oid);
     }
 
     if (nd_type(body) == NODE_ZSUPER) {
@@ -6117,18 +6119,34 @@ rb_obj_method(obj, vid)
 	goto again;
     }
 
-    method = Data_Make_Struct(rb_cMethod, struct METHOD, bm_mark, free, data);
+    method = Data_Make_Struct(mklass, struct METHOD, bm_mark, free, data);
     data->klass = klass;
     data->recv = obj;
     data->id = id;
     data->body = body;
-    data->oklass = CLASS_OF(obj);
-    data->oid = rb_to_id(vid);
-    if (OBJ_TAINTED(obj)) {
+    data->oklass = oklass;
+    data->oid = oid;
+    if (OBJ_TAINTED(obj) || OBJ_TAINTED(klass)) {
 	OBJ_TAINT(method);
     }
 
     return method;
+}
+
+static VALUE
+rb_obj_method(obj, vid)
+    VALUE obj;
+    VALUE vid;
+{
+    return mnew(CLASS_OF(obj), obj, rb_to_id(vid), rb_cMethod);
+}
+
+static VALUE
+rb_mod_method(mod, vid)
+    VALUE mod;
+    VALUE vid;
+{
+    return mnew(mod, 0, rb_to_id(vid), rb_cUnboundMethod);
 }
 
 static VALUE
@@ -6139,7 +6157,7 @@ method_clone(self)
     struct METHOD *orig, *data;
 
     Data_Get_Struct(self, struct METHOD, orig);
-    clone = Data_Make_Struct(rb_cMethod,struct METHOD,bm_mark,free,data);
+    clone = Data_Make_Struct(CLASS_OF(self),struct METHOD,bm_mark,free,data);
     CLONESETUP(clone, self);
     *data = *orig;
 
@@ -6147,10 +6165,10 @@ method_clone(self)
 }
 
 static VALUE
-method_call(argc, argv, method)
+mcall(argc, argv, method, recv)
     int argc;
     VALUE *argv;
-    VALUE method;
+    VALUE method, recv;
 {
     VALUE result;
     struct METHOD *data;
@@ -6160,12 +6178,12 @@ method_call(argc, argv, method)
     Data_Get_Struct(method, struct METHOD, data);
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
     PUSH_TAG(PROT_NONE);
-    if (OBJ_TAINTED(data->recv) || OBJ_TAINTED(method)) {
+    if (OBJ_TAINTED(recv) || OBJ_TAINTED(method)) {
 	OBJ_TAINT(method);
 	if (ruby_safe_level < 4) ruby_safe_level = 4;
     }
     if ((state = EXEC_TAG()) == 0) {
-	result = rb_call0(data->klass, data->recv, data->id,
+	result = rb_call0(data->klass, recv, data->id,
 			  argc, argv, data->body, 0);
     }
     POP_TAG();
@@ -6173,6 +6191,42 @@ method_call(argc, argv, method)
     ruby_safe_level = safe;
     if (state) JUMP_TAG(state);
     return result;
+}
+
+static VALUE
+method_call(argc, argv, method)
+    int argc;
+    VALUE *argv;
+    VALUE method;
+{
+    struct METHOD *data;
+
+    Data_Get_Struct(method, struct METHOD, data);
+    return mcall(argc, argv, method, data->recv);
+}
+
+static VALUE
+umethod_call(argc, argv, method)
+    int argc;
+    VALUE *argv;
+    VALUE method;
+{
+    struct METHOD *data;
+
+    if (argc < 1) {
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
+    
+    Data_Get_Struct(method, struct METHOD, data);
+    if (FL_TEST(CLASS_OF(argv[0]), FL_SINGLETON) &&
+	st_lookup(RCLASS(CLASS_OF(argv[0]))->m_tbl, data->oid, 0)) {
+	rb_raise(rb_eTypeError, "method `%s' overridden", rb_id2name(data->oid));
+    }
+    if (!rb_obj_is_instance_of(argv[0], data->oklass)) {
+	rb_raise(rb_eTypeError, "first argument must be instance of %s",
+		 rb_class2name(data->oklass));
+    }
+    return mcall(argc-1, argv+1, method, argv[0]);
 }
 
 static VALUE
@@ -6247,7 +6301,7 @@ mproc()
 }
 
 static VALUE
-mcall(args, method)
+bmcall(args, method)
     VALUE args, method;
 {
     if (TYPE(args) == T_ARRAY) {
@@ -6257,10 +6311,27 @@ mcall(args, method)
 }
 
 static VALUE
+umcall(args, method)
+    VALUE args, method;
+{
+    if (TYPE(args) == T_ARRAY) {
+	return umethod_call(RARRAY(args)->len, RARRAY(args)->ptr, method);
+    }
+    return umethod_call(1, &args, method);
+}
+
+static VALUE
 method_proc(method)
     VALUE method;
 {
-    return rb_iterate(mproc, 0, mcall, method);
+    return rb_iterate(mproc, 0, bmcall, method);
+}
+
+static VALUE
+umethod_proc(method)
+    VALUE method;
+{
+    return rb_iterate(mproc, 0, umcall, method);
 }
 
 void
@@ -6292,6 +6363,12 @@ Init_Proc()
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_proc", method_proc, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
+
+    rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cMethod);
+    rb_define_method(rb_cUnboundMethod, "call", umethod_call, -1);
+    rb_define_method(rb_cUnboundMethod, "[]", umethod_call, -1);
+    rb_define_method(rb_cUnboundMethod, "to_proc", umethod_proc, 0);
+    rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
 }
 
 static VALUE rb_eThreadError;

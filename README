@@ -74,7 +74,7 @@ the error log and machine/OS type, to help others.
 
 * Copying
 
-Ruby is copyrighted free software by Yukihiro Matsumoto <matz@netlab.co.jp>.
+Ruby is copyrighted free software by Yukihiro Matsumoto <matz@zetabits.com>.
 You can redistribute it and/or modify it under either the terms of the GPL
 (see COPYING file), or the conditions below:
 
@@ -143,7 +143,7 @@ The URL of the Ruby home-page is:
 Feel free to send comments and bug reports to the author.  Here is the 
 author's latest mail address:
 
-  matz@netlab.co.jp
+  matz@zetabits.com
 
 -------------------------------------------------------
 created at: Thu Aug  3 11:57:36 JST 1995

@@ -1,3 +1,9 @@
+Sat Jul 15 01:32:34 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (Init_eval): should prohibit `include' and
+	  `module_function' for class Class.  The latter was very
+	  dangerous.
+
 Fri Jul 14 17:19:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* cygwin/GNUmakefile.in: use miniruby instead of sed.

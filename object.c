@@ -231,6 +231,7 @@ rb_obj_is_instance_of(obj, c)
     switch (TYPE(c)) {
       case T_MODULE:
       case T_CLASS:
+      case T_ICLASS:
 	break;
 
       case T_NIL:
@@ -266,6 +267,7 @@ rb_obj_is_kind_of(obj, c)
     switch (TYPE(c)) {
       case T_MODULE:
       case T_CLASS:
+      case T_ICLASS:
 	break;
 
       default:
