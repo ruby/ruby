@@ -1,3 +1,19 @@
+Wed Oct  2 23:32:48 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* configure.in (RUBY_CHECK_IO_NEED_FLUSH): check whether fflush()
+	  is needed.
+
+	* io.c (flush_before_seek): flush before seek if buffered data
+	  may remain.
+
+	* io.c (rb_io_check_readable): flush if the last operation was
+	  write.
+
+	* io.c (rb_io_check_writable): flush if the last operation was
+	  read.
+
+	* rubyio.h (FMODE_RBUF): added.
+
 Wed Oct  2 23:09:20 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (rb_io_wait_readable): handle retryable errors.

@@ -182,6 +182,29 @@ rb_io_check_closed(fptr)
     }
 }
 
+static void io_fflush _((FILE *, OpenFile *));
+
+#if NEED_IO_FLUSH_BEFORE_SEEK
+static OpenFile *
+flush_before_seek(fptr)
+    OpenFile *fptr;
+{
+    int mode = fptr->mode;
+    if (mode & FMODE_RBUF) {
+	if (!fptr->f2) io_fflush(fptr->f, fptr);
+    }
+    if (mode & FMODE_WBUF) {
+	io_fflush((fptr->f2 ? fptr->f2 : fptr->f), fptr);
+    }
+    return fptr;
+}
+#else
+#define flush_before_seek(fptr) fptr
+#endif
+
+#define io_seek(fptr, ofs, whence) fseeko(flush_before_seek(fptr)->f, ofs, whence)
+#define io_tell(fptr) ftello(flush_before_seek(fptr)->f)
+
 void
 rb_io_check_readable(fptr)
     OpenFile *fptr;
@@ -189,6 +212,12 @@ rb_io_check_readable(fptr)
     if (!(fptr->mode & FMODE_READABLE)) {
 	rb_raise(rb_eIOError, "not opened for reading");
     }
+#if NEED_IO_FLUSH_BETWEEN_RW
+    if ((fptr->mode & FMODE_WBUF) && !fptr->f2) {
+	io_fflush(fptr->f, fptr);
+    }
+    fptr->mode |= FMODE_RBUF;
+#endif
 }
 
 void
@@ -198,6 +227,11 @@ rb_io_check_writable(fptr)
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
+#if NEED_IO_FLUSH_BETWEEN_RW
+    if ((fptr->mode & FMODE_RBUF) && !fptr->f2) {
+	io_fflush(fptr->f, fptr);
+    }
+#endif
 }
 
 int
@@ -402,7 +436,7 @@ rb_io_tell(io)
     off_t pos;
 
     GetOpenFile(io, fptr);
-    pos = ftello(fptr->f);
+    pos = io_tell(fptr);
     if (ferror(fptr->f)) rb_sys_fail(fptr->path);
     return OFFT2NUM(pos);
 }
@@ -422,7 +456,7 @@ rb_io_seek(io, offset, whence)
     off_t pos;
 
     GetOpenFile(io, fptr);
-    pos = fseeko(fptr->f, NUM2OFFT(offset), whence);
+    pos = io_seek(fptr, NUM2OFFT(offset), whence);
     if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -453,7 +487,7 @@ rb_io_set_pos(io, offset)
     off_t pos;
 
     GetOpenFile(io, fptr);
-    pos = fseeko(fptr->f, NUM2OFFT(offset), SEEK_SET);
+    pos = io_seek(fptr, NUM2OFFT(offset), SEEK_SET);
     if (pos != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
@@ -467,7 +501,7 @@ rb_io_rewind(io)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
-    if (fseeko(fptr->f, 0L, 0) != 0) rb_sys_fail(fptr->path);
+    if (io_seek(fptr, 0L, 0) != 0) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
     if (io == current_file) {
 	gets_lineno -= fptr->lineno;
@@ -680,7 +714,7 @@ remain_size(fptr)
 #endif
 	)
     {
-	pos = ftello(fptr->f);
+	pos = io_tell(fptr);
 	if (st.st_size > pos && pos >= 0) {
 	    siz = st.st_size - pos + 1;
 	    if (siz > LONG_MAX) {
@@ -705,7 +739,7 @@ read_all(fptr, siz)
     READ_CHECK(fptr->f);
     if (!siz) siz = BUFSIZ;
     str = rb_tainted_str_new(0, siz);
-    pos = ftello(fptr->f);
+    pos = io_tell(fptr);
     for (;;) {
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
 	if (pos > 0 && n == 0 && bytes == 0) {
@@ -2207,7 +2241,7 @@ io_reopen(io, nfile)
 
     if (fptr == orig) return io;
     if (orig->mode & FMODE_READABLE) {
-	pos = ftello(orig->f);
+	pos = io_tell(orig);
     }
     if (orig->f2) {
 	io_fflush(orig->f2, orig);
@@ -2241,8 +2275,8 @@ io_reopen(io, nfile)
 	fptr->f = rb_fdopen(fd, mode);
     }
     if ((orig->mode & FMODE_READABLE) && pos >= 0) {
-	fseeko(fptr->f, pos, SEEK_SET);
-	fseeko(orig->f, pos, SEEK_SET);
+	io_seek(fptr, pos, SEEK_SET);
+	io_seek(orig, pos, SEEK_SET);
     }
 
     if (fptr->f2) {

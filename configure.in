@@ -249,11 +249,15 @@ darwin*)	LIBS="-lobjc $LIBS";;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	rb_cv_have_daylight=no
+		rb_cv_need_io_flush_between_rw=no
+		rb_cv_need_io_flush_before_seek=no
 		ac_cv_var_tzname=no
 		ac_cv_func__setjmp=no
 		ac_cv_func_setitimer=no
 		;;
 mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
+		rb_cv_need_io_flush_between_rw=no
+		rb_cv_need_io_flush_before_seek=no
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
 		ac_cv_header_utime_h=no
@@ -567,6 +571,50 @@ else
       AC_DEFINE_UNQUOTED(FILE_READEND, $rb_cv_frend)
     fi
   fi
+fi
+
+AC_DEFUN(RUBY_CHECK_IO_NEED_FLUSH,
+[AC_CACHE_CHECK(whether need to flush [$1], [$2],
+    [AC_TRY_RUN([
+#include <stdio.h>
+
+char *fn = "conftest.dat";
+char *wombat = "wombat\n";
+char *koara = "koara\n";
+
+int main()
+{
+    char buf[BUFSIZ];
+    FILE *f;
+    int r = 1;
+
+    if (!(f = fopen(fn, "w+"))) return 1;
+    fputs(wombat, f);
+    fflush(f);
+    fseek(f, 0, 0);
+    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
+    ]ifelse(index($2,between_rw),-1,fflush(f);)[
+    fputs(koara, f);
+    ]ifelse(index($2,before_seek),-1,fflush(f);)[
+    fseek(f, 0, 0);
+    ]ifelse(index($2,between_rw),-1,fflush(f);)[
+    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, wombat)) goto fail;
+    if (!fgets(buf, BUFSIZ, f) || strcmp(buf, koara)) goto fail;
+    r = 0;
+  fail:
+    fclose(f);
+    unlink(fn);
+    return r;
+}
+], [$2]=no, [$2]=yes, [$2]=yes)])])
+
+RUBY_CHECK_IO_NEED_FLUSH(between R/W, rb_cv_need_io_flush_between_rw)
+RUBY_CHECK_IO_NEED_FLUSH(before seek, rb_cv_need_io_flush_before_seek)
+if test "$rb_cv_need_io_flush_between_rw" = yes; then
+  AC_DEFINE(NEED_IO_FLUSH_BETWEEN_RW, 1)
+fi
+if test "$rb_cv_need_io_flush_before_seek" = yes; then
+  AC_DEFINE(NEED_IO_FLUSH_BEFORE_SEEK, 1)
 fi
 
 dnl default value for $KANJI
