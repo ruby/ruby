@@ -1,3 +1,12 @@
+Fri Oct  4 14:23:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (RUBY_PROG_GNU_LD): check whether the linker is GNU ld.
+
+	* ext/extmk.rb.in (create_makefile): add -Wl,-no-undefined to $DLDFLAGS
+	  on Linux if GNU ld is used and --enable-shared is specified.
+
+	* configure.in (RUBY_MINGW32): backport from 1.7.
+
 Thu Oct  3 20:09:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/tcltklib/tcltklib.c (invoke_queue_handler): make singleton

@@ -6,6 +6,46 @@ dnl workaround for autoconf 2.53
 m4_pattern_allow([^[L]IBOBJS$])
 '
 
+AC_DEFUN(RUBY_MINGW32,
+[case "$host_os" in
+cygwin*)
+AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
+[AC_TRY_CPP([
+#ifndef __MINGW32__
+# error
+#endif
+], rb_cv_mingw32=yes,rb_cv_mingw32=no)
+rm -f conftest*])
+test "$rb_cv_mingw32" = yes && target_os="mingw32"
+  ;;
+esac])
+
+AC_DEFUN(RUBY_CPPOUTFILE,
+[AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
+[cppflags=$CPPFLAGS
+CPPFLAGS='-o conftest.i'
+AC_TRY_CPP([], rb_cv_cppoutfile=yes, rb_cv_cppoutfile=no)
+if test "$rb_cv_cppoutfile" = yes; then
+  CPPOUTFILE=$CPPFLAGS
+else
+  CPPOUTFILE='> conftest.i'
+fi
+CPPFLAGS=$cppflags
+AC_SUBST(CPPOUTFILE)
+rm -f conftest*])
+])
+
+AC_DEFUN(RUBY_PROG_GNU_LD,
+[AC_CACHE_CHECK(whether the linker is GNU ld, rb_cv_prog_gnu_ld,
+[if `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null; then
+  rb_cv_prog_gnu_ld=yes
+else
+  rb_cv_prog_gnu_ld=no
+fi
+])
+GNU_LD=$rb_cv_prog_gnu_ld
+AC_SUBST(GNU_LD)])
+
 rb_version=`grep RUBY_VERSION $srcdir/version.h`
 MAJOR=`expr "$rb_version" : '#define RUBY_VERSION "\([0-9][0-9]*\)\.[0-9][0-9]*\.[0-9][0-9]*"'`
 MINOR=`expr "$rb_version" : '#define RUBY_VERSION "[0-9][0-9]*\.\([0-9][0-9]*\)\.[0-9][0-9]*"'`
@@ -90,6 +130,14 @@ if test x"${build}" != x"${host}"; then
 fi
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
+
+RUBY_PROG_GNU_LD
+RUBY_CPPOUTFILE
+
+OUTFLAG='-o '
+AC_SUBST(OUTFLAG)
+
+RUBY_MINGW32
 
 AC_PROG_YACC
 AC_CHECK_TOOL(RANLIB, ranlib, :)
@@ -550,7 +598,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
 			   LDSHARED='$(CC) -Wl,-G'
-			   if `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null; then
+			   if test "$rb_cv_prog_gnu_ld" = yes; then
 	 		       LDFLAGS="-Wl,-E"
 			       LDSHARED="$LDSHARED -shared"
 			   fi
@@ -577,7 +625,7 @@ if test "$with_dln_a_out" != yes; then
 			    LDFLAGS="-rdynamic"
 			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
 			else
-			  test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null || LDSHARED="ld -Bshareable"
+			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED="ld -Bshareable"
 			fi
 			rb_cv_dlopen=yes ;;
 	netbsd*)	LDSHARED='${CC} -shared'
