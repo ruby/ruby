@@ -1,3 +1,9 @@
+Sat Mar  5 02:41:00 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (eaccess): workaround for VC++8 runtime.
+
+	* win32/win32.c (ioinfo): VC++8 support.
+
 Fri Mar  4 19:39:55 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#do_includes): replace

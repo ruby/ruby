@@ -1585,6 +1585,10 @@ typedef struct	{
     int lockinitflag;
     CRITICAL_SECTION lock;
 #endif
+#if _MSC_VER >= 1400
+    char textmode;
+    char pipech2[2];
+#endif
 }	ioinfo;
 
 #if !defined _CRTIMP || defined __MINGW32__
