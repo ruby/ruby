@@ -1,3 +1,8 @@
+Sun Jan 11 02:07:47 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList): 
+	  Also accept command line options via the 'RI' environment variable.
+
 Sat Jan 10 23:01:41 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBPATHFLAG, RPATHFLAG): enclose paths with single
