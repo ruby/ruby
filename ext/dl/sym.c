@@ -261,7 +261,7 @@ rb_dlsym_inspect(VALUE self)
   str = dlmalloc(str_size);
   snprintf(str, str_size - 1,
 	   "#<DL::Symbol:0x%x func=0x%x '%s'>",
-	   sym, sym->func, RSTRING(proto)->len);
+	   sym, sym->func, RSTRING(proto)->ptr);
   val = rb_tainted_str_new2(str);
   dlfree(str);
 
