@@ -603,6 +603,7 @@ class TC_IPAddr < Test::Unit::TestCase
 	IPAddr.new(*args)
       }
     }
+  end
 
   def test_s_new_ntoh
     addr = ''
