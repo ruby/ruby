@@ -1,5 +1,18 @@
 Summary of the changes since 1.6.4:
 
+: Digest module
+
+  Added as a replacement for md5 and sha1 modules.
+
+    require 'digest/md5'
+    include Digest
+
+    md = MD5.new
+    md << "abc"
+    puts md
+
+    puts MD5.hexdigest("123")
+
 : Struct
 
   Fixed to check frozen and taint status before modifying.
