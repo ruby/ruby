@@ -1,3 +1,7 @@
+Wed May 22 20:18:31 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: need not link vsnprintf.o on MinGW.
+
 Wed May 22 18:40:22 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (yylex): case '<': here-document has eaten '-'.

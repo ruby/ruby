@@ -205,7 +205,9 @@ mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_header_sys_select_h=no
 		ac_cv_header_sys_times_h=no
 		ac_cv_func_times=yes
-		ac_cv_func_waitpid=yes;;
+		ac_cv_func_waitpid=yes
+		ac_cv_func_vsnprintf=yes
+		;;
 os2_emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;
 msdosdjgpp*)	LIBS="-lm $LIBS"
