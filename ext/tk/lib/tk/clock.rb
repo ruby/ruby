@@ -5,6 +5,10 @@ require 'tk'
 
 module Tk
   module Clock
+    def self.add(clk, *args)
+      tk_call_without_enc('clock','add', clk, *args).to_i
+    end
+
     def self.clicks(ms=nil)
       case ms
       when nil
@@ -52,6 +56,12 @@ module Tk
 
     def self.seconds
       tk_call_without_enc('clock','seconds').to_i
+    end
+    def self.milliseconds
+      tk_call_without_enc('clock','milliseconds').to_i
+    end
+    def self.microseconds
+      tk_call_without_enc('clock','microseconds').to_i
     end
   end
 end

@@ -110,6 +110,10 @@ class TkPanedWindow<TkWindow
         conf = tk_split_list(tk_send_without_enc('paneconfigure', 
                                                  win, "-#{key}"))
         conf[0] = conf[0][1..-1]
+        if conf[0] == 'hide'
+          conf[3] = bool(conf[3]) unless conf[3].empty?
+          conf[4] = bool(conf[4]) unless conf[4].empty?
+        end
         conf
       else
         tk_split_simplelist(tk_send_without_enc('paneconfigure', 
@@ -117,14 +121,18 @@ class TkPanedWindow<TkWindow
           conf = tk_split_simplelist(conflist)
           conf[0] = conf[0][1..-1]
           if conf[3]
-            if conf[3].index('{')
+            if conf[0] == 'hide'
+              conf[3] = bool(conf[3]) unless conf[3].empty?
+            elsif conf[3].index('{')
               conf[3] = tk_split_list(conf[3]) 
             else
               conf[3] = tk_tcl2ruby(conf[3]) 
             end
           end
           if conf[4]
-            if conf[4].index('{')
+            if conf[0] == 'hide'
+              conf[4] = bool(conf[4]) unless conf[4].empty?
+            elsif conf[4].index('{')
               conf[4] = tk_split_list(conf[4]) 
             else
               conf[4] = tk_tcl2ruby(conf[4]) 
@@ -141,6 +149,10 @@ class TkPanedWindow<TkWindow
         conf = tk_split_list(tk_send_without_enc('paneconfigure', 
                                                  win, "-#{key}"))
         key = conf.shift[1..-1]
+        if key == 'hide'
+          conf[2] = bool(conf[2]) unless conf[2].empty?
+          conf[3] = bool(conf[3]) unless conf[3].empty?
+        end
         { key => conf }
       else
         ret = {}
@@ -149,14 +161,18 @@ class TkPanedWindow<TkWindow
           conf = tk_split_simplelist(conflist)
           key = conf.shift[1..-1]
           if key
-            if conf[2].index('{')
+            if key == 'hide'
+              conf[2] = bool(conf[2]) unless conf[2].empty?
+            elsif conf[2].index('{')
               conf[2] = tk_split_list(conf[2]) 
             else
               conf[2] = tk_tcl2ruby(conf[2]) 
             end
           end
           if conf[3]
-            if conf[3].index('{')
+            if key == 'hide'
+              conf[3] = bool(conf[3]) unless conf[3].empty?
+            elsif conf[3].index('{')
               conf[3] = tk_split_list(conf[3]) 
             else
               conf[3] = tk_tcl2ruby(conf[3]) 
