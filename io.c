@@ -825,9 +825,9 @@ io_read(argc, argv, io)
 	    rb_str_resize(str, 0);
 	    return str;
 	}
-       if (len > RSTRING(str)->len) {
-           rb_str_resize(str,len);
-       }
+	if (len > RSTRING(str)->len) {
+	    rb_str_resize(str,len);
+	}
     }
 
     READ_CHECK(fptr->f);
