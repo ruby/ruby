@@ -146,6 +146,25 @@ so it only valid in rbc."
     (re-search-backward P)
   ))
 
+(if (not (functionp 'replace-in-string))
+    ;; simple version of replace-in-string in XEmacs
+    (defun replace-in-string (str regexp newtext)
+      "Replace all matches in STR for REGEXP with NEWTEXT string,
+ and returns the new string."
+      (let ((rtn-str "")
+	    (start 0)
+	    (special)
+	    match prev-start)
+	(while (setq match (string-match regexp str start))
+	  (setq prev-start start
+		start (match-end 0)
+		rtn-str
+		(concat
+		 rtn-str
+		 (substring str prev-start match) newtext)))
+	(concat rtn-str (substring str start))))
+)
+
 (defun ruby-get-old-input ()
   "Snarf the sexp ending at point"
   (save-excursion

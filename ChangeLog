@@ -1,3 +1,13 @@
+Wed Apr  8 17:24:11 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
+
+	* dir.c (dir_s_open): can be called with block (like IO#open).
+
+	* dir.c (dir_s_chdir): print directory path on error.
+
+	* dir.c (dir_s_chroot): ditto
+
+	* dir.c (Init_Dir): needed to override `new'.
+
 Thu Apr  9 18:24:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_09.

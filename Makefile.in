@@ -169,24 +169,24 @@ x68.o: @srcdir@/missing/x68.c
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 ###
-parse.o : parse.y ruby.h defines.h config.h intern.h env.h node.h st.h regex.h lex.c
+parse.o: parse.y ruby.h config.h defines.h intern.h env.h node.h st.h regex.h util.h lex.c
 ###
 array.o: array.c ruby.h config.h defines.h intern.h
 bignum.o: bignum.c ruby.h config.h defines.h intern.h
 class.o: class.c ruby.h config.h defines.h intern.h node.h st.h
 compar.o: compar.c ruby.h config.h defines.h intern.h
 dir.o: dir.c ruby.h config.h defines.h intern.h
-dln.o: dln.c config.h defines.h dln.h st.h
+dln.o: dln.c config.h defines.h dln.h
 dmyext.o: dmyext.c
 enum.o: enum.c ruby.h config.h defines.h intern.h
 error.o: error.c ruby.h config.h defines.h intern.h env.h
-eval.o: eval.c ruby.h config.h defines.h intern.h env.h node.h sig.h st.h dln.h
+eval.o: eval.c ruby.h config.h defines.h intern.h node.h env.h sig.h st.h dln.h
 file.o: file.c ruby.h config.h defines.h intern.h io.h sig.h
-gc.o: gc.c ruby.h config.h defines.h intern.h env.h sig.h st.h node.h re.h regex.h
-hash.o: hash.c ruby.h config.h defines.h intern.h st.h
+gc.o: gc.c ruby.h config.h defines.h intern.h sig.h st.h node.h env.h re.h regex.h
+hash.o: hash.c ruby.h config.h defines.h intern.h st.h sig.h
 inits.o: inits.c ruby.h config.h defines.h intern.h
 io.o: io.c ruby.h config.h defines.h intern.h io.h sig.h
-main.o: main.c
+main.o: main.c ruby.h config.h defines.h intern.h
 marshal.o: marshal.c ruby.h config.h defines.h intern.h io.h sig.h st.h
 math.o: math.c ruby.h config.h defines.h intern.h
 numeric.o: numeric.c ruby.h config.h defines.h intern.h
@@ -203,6 +203,6 @@ st.o: st.c config.h st.h
 string.o: string.c ruby.h config.h defines.h intern.h re.h regex.h
 struct.o: struct.c ruby.h config.h defines.h intern.h
 time.o: time.c ruby.h config.h defines.h intern.h
-util.o: util.c ruby.h defines.h intern.h config.h util.h
-variable.o: variable.c ruby.h config.h defines.h intern.h env.h st.h
+util.o: util.c ruby.h config.h defines.h intern.h util.h
+variable.o: variable.c ruby.h config.h defines.h intern.h env.h node.h st.h
 version.o: version.c ruby.h config.h defines.h intern.h version.h

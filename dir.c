@@ -59,6 +59,8 @@ free_dir(dir)
     if (dir) closedir(dir);
 }
 
+static VALUE dir_close _((VALUE));
+
 static VALUE
 dir_s_open(dir_class, dirname)
     VALUE dir_class, dirname;
@@ -81,6 +83,9 @@ dir_s_open(dir_class, dirname)
 
     obj = Data_Wrap_Struct(dir_class, 0, free_dir, dirp);
 
+    if (iterator_p())
+	rb_ensure(rb_yield, obj, dir_close, obj);
+
     return obj;
 }
 
@@ -94,6 +99,23 @@ dir_closed()
     Data_Get_Struct(obj, DIR, dirp);\
     if (dirp == NULL) dir_closed();\
 }
+
+#if 0
+static VALUE
+dir_read(dir)
+    VALUE dir;
+{
+    DIR *dirp;
+    struct dirent *dp;
+
+    GetDIR(dir, dirp);
+    dp = readdir(dirp);
+    if (dp)
+	return str_taint(str_new(dp->d_name, NAMLEN(dp)));
+    else
+	return Qnil;
+}
+#endif
 
 static VALUE
 dir_each(dir)
@@ -190,7 +212,7 @@ dir_s_chdir(argc, argv, obj)
     }
 
     if (chdir(dist) < 0)
-	rb_sys_fail(0);
+	rb_sys_fail(dist);
 
     return INT2FIX(0);
 }
@@ -220,7 +242,7 @@ dir_s_chroot(dir, path)
     Check_SafeStr(path);
 
     if (chroot(RSTRING(path)->ptr) == -1)
-	rb_sys_fail(0);
+	rb_sys_fail(RSTRING(path)->ptr);
 
     return INT2FIX(0);
 #else
@@ -402,9 +424,13 @@ Init_Dir()
 
     rb_include_module(cDir, mEnumerable);
 
+    rb_define_singleton_method(cDir, "new", dir_s_open, 1);
     rb_define_singleton_method(cDir, "open", dir_s_open, 1);
     rb_define_singleton_method(cDir, "foreach", dir_foreach, 1);
 
+#if 0
+    rb_define_method(cDir,"read", dir_read, 0);
+#endif
     rb_define_method(cDir,"each", dir_each, 0);
     rb_define_method(cDir,"rewind", dir_rewind, 0);
     rb_define_method(cDir,"tell", dir_tell, 0);
