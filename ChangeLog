@@ -1,3 +1,9 @@
+Mon May 26 21:21:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse.rb (OptionParser::Switch::parse,
+	  OptionParser::order): use {Block,Proc}#call instead of deprecated
+	  #yield.
+
 Mon May 26 16:39:10 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (Init_Proc): Block/Proc separation. [huge change]
