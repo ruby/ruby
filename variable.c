@@ -1254,16 +1254,6 @@ rb_autoload_p(mod, id)
     return autoload_file(mod, id);
 }
 
-static int
-top_const_get(id, klassp)
-    ID id;
-    VALUE *klassp;
-{
-    /* pre-defined class */
-    if (st_lookup(rb_class_tbl, id, klassp)) return Qtrue;
-    return Qfalse;
-}
-
 VALUE
 rb_const_get_at(klass, id)
     VALUE klass;
@@ -1276,9 +1266,6 @@ rb_const_get_at(klass, id)
 	    rb_autoload_load(klass, id);
 	    continue;
 	}
-	return value;
-    }
-    if (klass == rb_cObject && top_const_get(id, &value)) {
 	return value;
     }
     uninitialized_constant(klass, id);
@@ -1308,7 +1295,6 @@ rb_const_get_0(klass, id, exclude)
 	    }
 	    return value;
 	}
-	if (tmp == rb_cObject && top_const_get(id, &value)) return value;
 	tmp = RCLASS(tmp)->super;
     }
     if (!mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
@@ -1392,9 +1378,6 @@ rb_mod_const_at(mod, data)
     }
     if (RCLASS(mod)->iv_tbl) {
 	st_foreach(RCLASS(mod)->iv_tbl, sv_i, (st_data_t)tbl);
-    }
-    if ((VALUE)mod == rb_cObject) {
-	st_foreach(rb_class_tbl, sv_i, (st_data_t)tbl);
     }
     return tbl;
 }
@@ -1500,8 +1483,6 @@ rb_const_defined(klass, id)
     if (BUILTIN_TYPE(klass) == T_MODULE) {
 	return rb_const_defined(rb_cObject, id);
     }
-    if (st_lookup(rb_class_tbl, id, 0))
-	return Qtrue;
     return Qfalse;
 }
 
@@ -1523,8 +1504,7 @@ mod_av_set(klass, id, val, isconst)
     else if (isconst) {
 	VALUE value = Qfalse;
 
-	if (st_lookup(RCLASS(klass)->iv_tbl, id, &value) ||
-	    (klass == rb_cObject && st_lookup(rb_class_tbl, id, 0))) {
+	if (st_lookup(RCLASS(klass)->iv_tbl, id, &value)) {
 	    if (value == Qundef)
 		autoload_delete(klass, id);
 	    else
@@ -1558,12 +1538,6 @@ rb_const_assign(klass, id, val)
 	    return;
 	}
 	tmp = RCLASS(tmp)->super;
-    }
-    /* pre-defined class */
-    if (st_lookup(rb_class_tbl, id, 0)) {
-	st_delete(rb_class_tbl, &id, 0);
-	st_insert(RCLASS(rb_cObject)->iv_tbl, id, val);
-	return;
     }
 
     uninitialized_constant(klass, id);

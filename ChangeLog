@@ -1,3 +1,14 @@
+Tue Jul  1 10:36:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* class.c (rb_define_class, rb_define_module): also set constant under
+	  Object.  [ruby-dev:20445]
+
+	* object.c (boot_defclass): ditto.
+
+	* variable.c (rb_const_get_at, rb_const_get_0, rb_mod_const_at,
+	  rb_const_defined, mod_av_set, rb_const_assign): toplevel constants
+	  are now under Object, rb_class_tbl remains for GC.
+
 Mon Jun 30 17:53:06 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (mnew): ignore metaclasses have no influence, for rklass.

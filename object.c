@@ -1341,6 +1341,7 @@ boot_defclass(name, super)
 
     rb_name_class(obj, id);
     st_add_direct(rb_class_tbl, id, obj);
+    rb_const_set((rb_cObject ? rb_cObject : obj), id, obj);
     return obj;
 }
 

@@ -213,6 +213,7 @@ rb_define_class(name, super)
     }
     klass = rb_define_class_id(id, super);
     st_add_direct(rb_class_tbl, id, klass);
+    rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
 
     return klass;
@@ -292,6 +293,7 @@ rb_define_module(name)
     }
     module = rb_define_module_id(id);
     st_add_direct(rb_class_tbl, id, module);
+    rb_const_set(rb_cObject, id, module);
 
     return module;
 }
