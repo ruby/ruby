@@ -1,3 +1,7 @@
+2004-07-23  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* add TclX support (partially; infox command and XPG/3 MsgCat only)
+
 2004-07-15  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* bug fix
