@@ -1,3 +1,7 @@
+Fri Nov  5 13:17:54 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/text.rb: bug fix
+
 Thu Nov  4 19:27:46 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_f_open): fix typo.

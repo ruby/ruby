@@ -83,8 +83,8 @@ class TkText<TkTextWin
   end
 
   def __destroy_hook__
-    TTagID_TBL.delete(@path)
-    TMarkID_TBL.delete(@path)
+    TkTextTag::TTagID_TBL.delete(@path)
+    TkTextTag::TMarkID_TBL.delete(@path)
   end
 
   def create_self(keys)
