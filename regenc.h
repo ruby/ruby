@@ -26,12 +26,10 @@
 #endif
 
 /* error codes */
-/* internal error */
-#define ONIGERR_MEMORY                                         -5
-#define ONIGERR_TYPE_BUG                                       -6
-/* syntax error [-400, -999] */
-#define ONIGERR_INVALID_WIDE_CHAR_VALUE                      -400
-#define ONIGERR_TOO_BIG_WIDE_CHAR_VALUE                      -401
+#define ONIGENCERR_MEMORY                                         -5
+#define ONIGENCERR_TYPE_BUG                                       -6
+#define ONIGENCERR_INVALID_WIDE_CHAR_VALUE                      -400
+#define ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE                      -401
 
 #define ONIG_NEWLINE     '\n'
 #define ONIG_IS_NEWLINE(c)                ((c) == ONIG_NEWLINE)

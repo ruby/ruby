@@ -82,7 +82,7 @@ utf8_code_to_mbclen(OnigCodePoint code)
   else if ((code & 0xfc000000) == 0) return 5;
   else if ((code & 0x80000000) == 0) return 6;
   else
-    return ONIGERR_TOO_BIG_WIDE_CHAR_VALUE;
+    return ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE;
 }
 
 #if 0
@@ -103,7 +103,7 @@ utf8_code_to_mbc_first(OnigCodePoint code)
     else if ((code & 0x80000000) == 0)
       return ((code>>30) & 0x01) | 0xfc;
     else {
-      return ONIGERR_TOO_BIG_WIDE_CHAR_VALUE;
+      return ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE;
     }
   }
 }
@@ -148,7 +148,7 @@ utf8_code_to_mbc(OnigCodePoint code, UChar *buf)
       *p++ = UTF8_TRAILS(code,  6);
     }
     else {
-      return ONIGERR_TOO_BIG_WIDE_CHAR_VALUE;
+      return ONIGENCERR_TOO_BIG_WIDE_CHAR_VALUE;
     }
 
     *p++ = UTF8_TRAIL0(code);
@@ -417,7 +417,7 @@ utf8_get_ctype_code_range(int ctype, int* nsb, int* nmb,
     break;
 
   default:
-    return ONIGERR_TYPE_BUG;
+    return ONIGENCERR_TYPE_BUG;
     break;
   }
 

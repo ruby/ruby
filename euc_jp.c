@@ -45,20 +45,20 @@ eucjp_code_to_mbc_first(OnigCodePoint code)
     first = (code >> 16) & 0xff;
     /*
     if (enc_len(ONIG_ENCODING_EUC_JP, first) != 3)
-      return ONIGERR_INVALID_WIDE_CHAR_VALUE;
+      return ONIGENCERR_INVALID_WIDE_CHAR_VALUE;
     */
   }
   else if ((code & 0xff00) != 0) {
     first = (code >> 8) & 0xff;
     /*
     if (enc_len(ONIG_ENCODING_EUC_JP, first) != 2)
-      return ONIGERR_INVALID_WIDE_CHAR_VALUE;
+      return ONIGENCERR_INVALID_WIDE_CHAR_VALUE;
     */
   }
   else {
     /*
     if (enc_len(ONIG_ENCODING_EUC_JP, code) != 1)
-      return ONIGERR_INVALID_WIDE_CHAR_VALUE;
+      return ONIGENCERR_INVALID_WIDE_CHAR_VALUE;
     */
     return (int )code;
   }
@@ -76,7 +76,7 @@ eucjp_code_to_mbc(OnigCodePoint code, UChar *buf)
 
 #if 1
   if (enc_len(ONIG_ENCODING_EUC_JP, buf[0]) != (p - buf))
-    return ONIGERR_INVALID_WIDE_CHAR_VALUE;
+    return ONIGENCERR_INVALID_WIDE_CHAR_VALUE;
 #endif  
   return p - buf;
 }
@@ -127,8 +127,8 @@ eucjp_code_is_ctype(OnigCodePoint code, unsigned int ctype)
 static UChar*
 eucjp_left_adjust_char_head(UChar* start, UChar* s)
 {
-  /* Assumed in this encoding,
-     mb-trail bytes don't mix with single bytes.
+  /* In this encoding
+     mb-trail bytes doesn't mix with single bytes.
   */
   UChar *p;
   int len;

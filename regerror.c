@@ -145,7 +145,7 @@ onig_error_code_to_format(int code)
   case ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY:
     p = "group number is too big for capture history"; break;
   case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
-    p = "invalid character property name"; break;
+    p = "invalid character property name {%n}"; break;
   case ONIGERR_OVER_THREAD_PASS_LIMIT_COUNT:
     p = "over thread pass limit count"; break;
 
@@ -184,6 +184,7 @@ onig_error_code_to_str(s, code, va_alist)
   case ONIGERR_MULTIPLEX_DEFINITION_NAME_CALL:
   case ONIGERR_INVALID_GROUP_NAME:
   case ONIGERR_INVALID_CHAR_IN_GROUP_NAME:
+  case ONIGERR_INVALID_CHAR_PROPERTY_NAME:
     einfo = va_arg(vargs, OnigErrorInfo*);
     len = einfo->par_end - einfo->par;
     q = onig_error_code_to_format(code);

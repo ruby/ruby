@@ -361,7 +361,7 @@ onigenc_mb2_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
 
 #if 1
   if (enc_len(enc, buf[0]) != (p - buf))
-    return ONIGERR_INVALID_WIDE_CHAR_VALUE;
+    return ONIGENCERR_INVALID_WIDE_CHAR_VALUE;
 #endif
   return p - buf;
 }
@@ -384,7 +384,7 @@ onigenc_mb4_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
 
 #if 1
   if (enc_len(enc, buf[0]) != (p - buf))
-    return ONIGERR_INVALID_WIDE_CHAR_VALUE;
+    return ONIGENCERR_INVALID_WIDE_CHAR_VALUE;
 #endif
   return p - buf;
 }

@@ -85,7 +85,7 @@
 #define xmemset     memset
 #define xmemcpy     memcpy
 #define xmemmove    memmove
-#if defined(_WIN32) && !defined(__CYGWIN__)
+#if defined(_WIN32) && !defined(__GNUC__)
 #define xalloca     _alloca
 #ifdef NOT_RUBY
 #define vsnprintf   _vsnprintf
