@@ -326,7 +326,7 @@ module FileUtils
 
   def ln( src, dest, *options )
     force, noop, verbose, = fu_parseargs(options, :force, :noop, :verbose)
-    fu_output_message "ln #{[src,dest].flatten.join ' '}" if verbose
+    fu_output_message "ln#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
 
     fu_each_src_dest(src, dest) do |s,d|
@@ -372,7 +372,7 @@ module FileUtils
 
   def cp_r( src, dest, *options )
     preserve, noop, verbose, = fu_parseargs(options, :preserve, :noop, :verbose)
-    fu_output_message "cp -r #{[src,dest].flatten.join ' '}" if verbose
+    fu_output_message "cp -r#{preserve ? 'p' : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
 
     fu_each_src_dest(src, dest) do |s,d|
