@@ -191,14 +191,6 @@ class TestDRbMServer < Test::Unit::TestCase
   end
 end
 
-class TestDRbReusePort < TestDRbAry
-  def setup
-    sleep 1.2
-    @ext = DRbService.ext_service('ut_port.rb')
-    @there = @ext.front
-  end
-end
-
 class TestDRbSafe1 < TestDRbAry
   def setup
     @ext = DRbService.ext_service('ut_safe1.rb')

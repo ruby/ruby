@@ -1,3 +1,12 @@
+Mon Jan  3 11:03:37 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/test_drb.rb: move TestDRbReusePort to new file. 
+	  [ruby-dev:25238]
+
+	* test/drb/drbtest.rb: change timeout.
+
+	* test/drb/ignore_test_drb.rb: new file.
+
 Mon Jan  3 07:27:46 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpauth/htpasswd.rb (WEBrick::Htpasswd#reload):
