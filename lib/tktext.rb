@@ -47,7 +47,7 @@ class TkText<TkTextWin
   end
 
   def destroy
-    for t in @tags
+    @tags.each_value do |t|
       t.destroy
     end
     super

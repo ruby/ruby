@@ -5075,7 +5075,7 @@ thread_free(th)
 {
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
-    free(th);
+    if (th != main_thread) free(th);
 }
 
 static thread_t
