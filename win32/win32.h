@@ -95,9 +95,10 @@
 #include <sys/types.h>
 #include <sys/utime.h>
 
-//
-// Grrr...
-//
+#define UIDTYPE int
+#define GIDTYPE int
+#define pid_t   int
+#define WNOHANG -1
 
 #define access	   _access
 #define chmod	   _chmod
@@ -113,6 +114,7 @@
 #define lseek	   _lseek
 #define mktemp	   _mktemp
 #define open	   _open
+#define perror     _perror
 #define read	   _read
 #define setmode    _setmode
 #define sopen	   _sopen
@@ -129,6 +131,7 @@
 #define execvp	   _execvp
 #define execvpe    _execvpe
 #define getpid	   _getpid
+#define sleep(x)   Sleep((x)*1000)
 #define spawnl	   _spawnl
 #define spawnle    _spawnle
 #define spawnlp    _spawnlp
@@ -141,9 +144,11 @@
 #define fileno	   _fileno
 #endif
 #define utime      _utime
-//#define pipe       _pipe
-#define perror      _perror
-
+#define vsnprintf  _vsnprintf
+#define snprintf   _snprintf
+#define popen      _popen
+#define pclose     _pclose
+#define strcasecmp _strcmpi
 
 /* these are defined in nt.c */
 
@@ -186,14 +191,7 @@ extern struct servent * mygetservbyport(int, char *);
 //
 // stubs
 //
-// extern int       ioctl (int, unsigned int, char *);
 extern int       ioctl (int, unsigned int, long);
-#if 0
-extern void      sleep (unsigned int);
-#else
-#define sleep(x) Sleep(x*1000)
-#endif
-
 extern UIDTYPE   getuid (void);
 extern UIDTYPE   geteuid (void);
 extern GIDTYPE   getgid (void);
@@ -202,8 +200,6 @@ extern int       setuid (int);
 extern int       setgid (int);
 
 
-#undef IN  /* confict in parse.c */
-
 #if 0
 extern int sys_nerr;
 extern char *sys_errlist[];
@@ -214,11 +210,6 @@ extern char *mystrerror(int);
 
 #define PIPE_BUF 1024
 
-#define HAVE_STDLIB_H 1
-#define HAVE_GETLOGIN 1
-#define HAVE_WAITPID 1
-#define HAVE_GETCWD 1
-
 #define LOCK_SH 1
 #define LOCK_EX 2
 #define LOCK_NB 4
@@ -226,8 +217,6 @@ extern char *mystrerror(int);
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK 10035 /* EBASEERR + 35 (winsock.h) */
 #endif
-
-#define O_BINARY 0x8000
 
 #ifdef popen
 #undef popen

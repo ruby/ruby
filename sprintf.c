@@ -6,14 +6,18 @@
   $Date$
   created at: Fri Oct 15 10:39:26 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
 #include "ruby.h"
 #include <ctype.h>
 
+#ifdef USE_CWGUSI
+static void fmt_setup();
+#else
 static void fmt_setup _((char*,char,int,int,int));
+#endif
 
 static char*
 remove_sign_bits(str, base)
@@ -585,7 +589,7 @@ rb_f_sprintf(argc, argv)
     }
 
   sprint_exit:
-    if (RTEST(rb_verbose) && argc > 1) {
+    if (RTEST(ruby_verbose) && argc > 1) {
 	rb_raise(rb_eArgError, "too many argument for format string");
     }
     result = rb_str_new(buf, blen);

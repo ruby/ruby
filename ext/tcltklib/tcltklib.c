@@ -16,10 +16,10 @@
 # include <Quickdraw.h>
 #endif
 
-/* for rb_debug */
+/* for ruby_debug */
 
-#define DUMP1(ARG1) if (rb_debug) { fprintf(stderr, "tcltklib: %s\n", ARG1);}
-#define DUMP2(ARG1, ARG2) if (rb_debug) { fprintf(stderr, "tcltklib: ");\
+#define DUMP1(ARG1) if (ruby_debug) { fprintf(stderr, "tcltklib: %s\n", ARG1);}
+#define DUMP2(ARG1, ARG2) if (ruby_debug) { fprintf(stderr, "tcltklib: ");\
 fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); }
 /*
 #define DUMP1(ARG1)

@@ -16,6 +16,7 @@ module Profiler__
       data = MAP[id]
       unless data
 	name = klass.to_s
+	if name.nil? then name = '' end
 	if klass.kind_of? Class
 	  name += "#"
 	else
@@ -34,6 +35,7 @@ module Profiler__
   END {
     set_trace_func nil
     total = Float(Time.times[0]) - Start
+    if total == 0 then total = 0.01 end
     MAP[:toplevel][1] = total
 #    f = open("./rmon.out", "w")
     f = STDERR

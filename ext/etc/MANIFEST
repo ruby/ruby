@@ -1,5 +1,6 @@
 MANIFEST
 etc.c
-etc.doc
+etc.txt
+etc.txt.jp
 depend
 extconf.rb

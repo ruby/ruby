@@ -2,6 +2,12 @@ SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
+MAJOR=	@MAJOR@
+MINOR=	@MINOR@
+TEENY=	@TEENY@
+
+RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
+
 srcdir = @srcdir@
 VPATH = @srcdir@:@srcdir@/missing
 
@@ -25,7 +31,9 @@ binsuffix = @binsuffix@
 
 #### End of system configuration section. ####
 
-
+LIBRUBY_A     = @LIBRUBY_A@
+LIBRUBY_SO    = @LIBRUBY_SO@
+LIBRUBY_ALIASES= @LIBRUBY_ALIASES@
 LIBRUBY	      = @LIBRUBY@
 LIBRUBYARG    = @LIBRUBYARG@
 
@@ -50,6 +58,7 @@ OBJS	      = array.o \
 		inits.o \
 		io.o \
 		marshal.o \
+		prec.o \
 		math.o \
 		numeric.o \
 		object.o \
@@ -75,25 +84,30 @@ OBJS	      = array.o \
 all:		miniruby$(binsuffix) rbconfig.rb
 		@./miniruby$(binsuffix) -Xext extmk.rb @EXTSTATIC@
 
-miniruby$(binsuffix):	libruby.a $(MAINOBJ) dmyext.o
+miniruby$(binsuffix):	$(LIBRUBY_A) $(MAINOBJ) dmyext.o
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o libruby.a $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o $(LIBRUBY_A) $(LIBS) -o $@
 
 ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
-libruby.a:	$(OBJS) dmyext.o
+$(LIBRUBY_A):	$(OBJS) dmyext.o
 		@AR@ rcu $@ $(OBJS) dmyext.o
 		@-@RANLIB@ $@ 2> /dev/null || true
 
-libruby.so:	$(OBJS) dmyext.o
+$(LIBRUBY_SO):	$(OBJS) dmyext.o
 		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.o -o $@
+		@for alias in $(LIBRUBY_ALIASES); do \
+		  rm -f $$alias \
+		   && @LN_S@ $(LIBRUBY_SO) $$alias \
+		     && echo ln @LN_S@ $(LIBRUBY_SO) $$alias; \
+		done
 
 install:	rbconfig.rb
 		./miniruby$(binsuffix) $(srcdir)/instruby.rb $(DESTDIR)
 
-clean:;		@rm -f $(OBJS) $(LIBRUBY) $(MAINOBJ) rbconfig.rb
+clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.o dmyext.o
 		@if test -f ./miniruby$(binsuffix); then \
 			./miniruby$(binsuffix) -Xext extmk.rb clean; \
@@ -208,6 +222,7 @@ inits.o: inits.c ruby.h config.h defines.h intern.h
 io.o: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 main.o: main.c ruby.h config.h defines.h intern.h
 marshal.o: marshal.c ruby.h config.h defines.h intern.h rubyio.h st.h
+prec.o: prec.c ruby.h config.h defines.h intern.h
 math.o: math.c ruby.h config.h defines.h intern.h
 numeric.o: numeric.c ruby.h config.h defines.h intern.h
 object.o: object.c ruby.h config.h defines.h intern.h st.h
