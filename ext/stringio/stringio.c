@@ -405,7 +405,7 @@ strio_eof(self)
 }
 
 static VALUE
-strio_become(copy, orig)
+strio_copy(copy, orig)
     VALUE copy, orig;
 {
     struct StringIO *ptr;
@@ -452,7 +452,7 @@ strio_reopen(argc, argv, self)
 {
     rb_secure(4);
     if (argc == 1 && TYPE(*argv) != T_STRING) {
-	return strio_become(self, *argv);
+	return strio_copy(self, *argv);
     }
     return strio_initialize(argc, argv, self);
 }
@@ -900,7 +900,7 @@ Init_stringio()
     rb_define_singleton_method(StringIO, "open", strio_s_open, -1);
     rb_define_method(StringIO, "initialize", strio_initialize, -1);
     rb_enable_super(StringIO, "initialize");
-    rb_define_method(StringIO, "become", strio_become, 1);
+    rb_define_method(StringIO, "copy_object", strio_copy, 1);
     rb_define_method(StringIO, "reopen", strio_reopen, -1);
 
     rb_define_method(StringIO, "string", strio_get_string, 0);
