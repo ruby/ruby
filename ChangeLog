@@ -1,3 +1,10 @@
+Tue Dec 28 13:35:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c (rb_deflate_s_deflate, rb_inflate_s_inflate): ensure
+	  freeing internal zstreams.  fixed: [ruby-dev:25309]
+
+	* ext/zlib/zlib.c (rb_deflate_init_copy): replace rb_deflate_clone.
+
 Tue Dec 28 12:26:45 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub, win32/setup.mak (RDOCTARGET, install,
