@@ -135,6 +135,7 @@ static NODE *arg_concat();
 static NODE *arg_prepend();
 static NODE *literal_concat();
 static NODE *new_evstr();
+static NODE *evstr2dstr();
 static NODE *call_op();
 static int in_defined = 0;
 
@@ -1870,6 +1871,9 @@ strings		: string
 			if (!node) {
 			    node = NEW_STR(rb_str_new(0, 0));
 			}
+			else {
+			    node = evstr2dstr(node);
+			}
 			$$ = node;
 		    }
 		;
@@ -1962,7 +1966,7 @@ word_list	: /* none */
 		    }
 		| word_list word ' '
 		    {
-			$$ = list_append($1, $2);
+			$$ = list_append($1, evstr2dstr($2));
 		    }
 		;
 
@@ -4344,6 +4348,7 @@ yylex()
 			(!peek('=') || (lex_p + 1 < lex_pend && lex_p[1] == '>'))) {
 			result = tIDENTIFIER;
 			tokadd(c);
+			tokfix();
 		    }
 		    else {
 			pushback(c);
@@ -4402,9 +4407,9 @@ yylex()
 		lex_state = EXPR_END;
 	    }
 	}
-	tokfix();
 	yylval.id = rb_intern(tok());
-	if ((dyna_in_block() && rb_dvar_defined(yylval.id)) || local_id(yylval.id)) {
+	if (is_local_id(yylval.id) &&
+	    ((dyna_in_block() && rb_dvar_defined(yylval.id)) || local_id(yylval.id))) {
 	    lex_state = EXPR_END;
 	}
 	return result;
@@ -4645,6 +4650,16 @@ literal_concat(head, tail)
 	break;
     }
     return head;
+}
+
+static NODE *
+evstr2dstr(node)
+    NODE *node;
+{
+    if (nd_type(node) == NODE_EVSTR) {
+	node = list_append(NEW_DSTR(rb_str_new(0, 0)), node);
+    }
+    return node;
 }
 
 static NODE *
