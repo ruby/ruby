@@ -1028,11 +1028,11 @@ arg		: lhs '=' arg
 		    }
 		| tUMINUS_NUM tINTEGER tPOW arg
 		    {
-			$$ = call_op(call_op($2, tPOW, 1, $4), tUMINUS);
+			$$ = call_op(call_op($2, tPOW, 1, $4), tUMINUS, 0, 0);
 		    }
 		| tUMINUS_NUM tFLOAT tPOW arg
 		    {
-			$$ = call_op(call_op($2, tPOW, 1, $4), tUMINUS);
+			$$ = call_op(call_op($2, tPOW, 1, $4), tUMINUS, 0, 0);
 		    }
 		| tUPLUS arg
 		    {

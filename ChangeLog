@@ -1,3 +1,7 @@
+Thu Jan 23 15:49:57 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (arg): missing arguments.
+
 Thu Jan 23 14:56:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rational.rb: modified to support "quo".
