@@ -1,3 +1,10 @@
+Tue Jul 30 15:24:07 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/tcltklib/stubs.c (ruby_tcltk_stubs): win32_getenv returns
+	  the same address always, so allocate string by ruby_strdup.
+
+	* win32/win32.c: prototype; rb_w32_open_osfhandle().
+
 Tue Jul 30 09:11:07 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* eval.c (rb_thread_join_m): add parameter type declaration.

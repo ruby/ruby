@@ -82,6 +82,9 @@ static int valid_filename(char *s);
 static void StartSockets ();
 static char *str_grow(struct RString *str, size_t new_size);
 static DWORD wait_events(HANDLE event, DWORD timeout);
+#ifndef __BORLANDC__
+static int rb_w32_open_osfhandle(long osfhandle, int flags);
+#endif
 
 char *NTLoginName;
 
