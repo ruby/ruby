@@ -1,3 +1,10 @@
+Fri Aug  9 00:35:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
+
+	* ext/bigdecimal.c: F style output(like 1234.56789) implemented
+	  to to_s method.
+	* ext/bigdecimal_??.html: F style output(like 1234.56789)
+	  implemented to to_s method.
+
 Fri Aug  8 12:33:17 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* bcc32/Makefile.sub: rubyw.exe should be a Windows GUI program.
