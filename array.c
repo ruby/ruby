@@ -2129,7 +2129,7 @@ rb_ary_transpose(ary)
 	    }
 	}
 	else if (elen != RARRAY(tmp)->len) {
-	    rb_raise(rb_eIndexError, "element size differ (%d should be %d)",
+	    rb_raise(rb_eIndexError, "element size differs (%d should be %d)",
 		     RARRAY(tmp)->len, elen);
 	}
 	for (j=0; j<elen; j++) {

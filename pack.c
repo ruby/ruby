@@ -343,7 +343,7 @@ num2i32(x)
     if (TYPE(x) == T_BIGNUM) {
 	return rb_big2ulong_pack(x);
     }
-    rb_raise(rb_eTypeError, "cannot convert %s to `integer'", rb_obj_classname(x));
+    rb_raise(rb_eTypeError, "can't convert %s to `integer'", rb_obj_classname(x));
     return 0;			/* not reached */
 }
 
@@ -962,7 +962,7 @@ pack_pack(ary, fmt)
 		{
 		    long l = NUM2LONG(from);
 		    if (l < 0) {
-			rb_raise(rb_eArgError, "cannot compress negative numbers");
+			rb_raise(rb_eArgError, "can't compress negative numbers");
 		    }
 		    ul = l;
 		}

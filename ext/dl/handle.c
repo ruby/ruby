@@ -161,7 +161,7 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
 
   Data_Get_Struct(self, struct dl_handle, dlhandle);
   if (!dlhandle->open) {
-    rb_raise(rb_eRuntimeError, "Closed handle.");
+    rb_raise(rb_eRuntimeError, "closed handle");
   }
   handle = dlhandle->ptr;
 
@@ -187,11 +187,11 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
       if (!func)
 #endif
       {
-	rb_raise(rb_eRuntimeError, "Unknown symbol \"%sA\".", name);
+	rb_raise(rb_eRuntimeError, "unknown symbol \"%sA\"", name);
       }
     }
 #else
-    rb_raise(rb_eRuntimeError, "Unknown symbol \"%s\".", name);
+    rb_raise(rb_eRuntimeError, "unknown symbol \"%s\"", name);
 #endif
   }
   val = rb_dlsym_new(func, name, stype);

@@ -124,7 +124,7 @@ curses_init_screen()
     if (rb_stdscr) return rb_stdscr;
     initscr();
     if (stdscr == 0) {
-	rb_raise(rb_eRuntimeError, "cannot initialize curses");
+	rb_raise(rb_eRuntimeError, "can't initialize curses");
     }
     clear();
     rb_stdscr = prep_window(cWindow, stdscr);

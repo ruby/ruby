@@ -160,7 +160,7 @@ Win32API_Call(argc, argv, obj)
 
 
     if (items != nimport)
-	rb_raise(rb_eRuntimeError, "Wrong number of parameters: expected %d, got %d.\n",
+	rb_raise(rb_eRuntimeError, "wrong number of parameters: expected %d, got %d",
 	    nimport, items);
 
     for (i = 0; i < nimport; i++) {

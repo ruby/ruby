@@ -94,7 +94,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     name = StringValuePtr(str);
     GetCipher(self, ctx);
     if (!(cipher = EVP_get_cipherbyname(name))) {
-	ossl_raise(rb_eRuntimeError, "Unsupported cipher algorithm (%s).", name);
+	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%s)", name);
     }
     if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
@@ -198,7 +198,7 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     if(!NIL_P(vsalt)){
 	StringValue(vsalt);
 	if(RSTRING(vsalt)->len != PKCS5_SALT_LEN)
-	    rb_raise(eCipherError, "salt must be an 8-octet string.");
+	    rb_raise(eCipherError, "salt must be an 8-octet string");
 	salt = RSTRING(vsalt)->ptr;
     }
     iter = NIL_P(viter) ? 2048 : NUM2INT(viter);

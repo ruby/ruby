@@ -1,3 +1,7 @@
+Mon Feb 28 11:42:23 2005  Ian Macdonald  <ian@caliban.org>
+
+	* exception error messages updated.  [ruby-core:04497]
+
 Mon Feb 28 09:03:09 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (Init_socket): add bunch of Socket

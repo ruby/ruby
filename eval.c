@@ -5450,7 +5450,7 @@ call_cfunc(func, recv, len, argc, argv)
 		       argv[11], argv[12], argv[13], argv[14]);
 	break;
       default:
-	rb_raise(rb_eArgError, "too many arguments(%d)", len);
+	rb_raise(rb_eArgError, "too many arguments (%d)", len);
 	break;
     }
     return Qnil;		/* not reached */
@@ -5503,7 +5503,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    int len = body->nd_argc;
 
 	    if (len < -2) {
-		rb_bug("bad argc(%d) specified for `%s(%s)'",
+		rb_bug("bad argc (%d) specified for `%s(%s)'",
 		       len, rb_class2name(klass), rb_id2name(id));
 	    }
 	    if (trace_func) {
@@ -6003,7 +6003,7 @@ rb_f_caller(argc, argv)
 
     if (NIL_P(level)) lev = 1;
     else lev = NUM2INT(level);
-    if (lev < 0) rb_raise(rb_eArgError, "negative level(%d)", lev);
+    if (lev < 0) rb_raise(rb_eArgError, "negative level (%d)", lev);
 
     return backtrace(lev);
 }
@@ -6795,7 +6795,7 @@ static void
 load_failed(fname)
     VALUE fname;
 {
-    rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
+    rb_raise(rb_eLoadError, "no such file to load -- %s", RSTRING(fname)->ptr);
 }
 
 VALUE
@@ -8787,7 +8787,7 @@ method_call(argc, argv, method)
 
     Data_Get_Struct(method, struct METHOD, data);
     if (data->recv == Qundef) {
-	rb_raise(rb_eTypeError, "you cannot call unbound method; bind first");
+	rb_raise(rb_eTypeError, "can't call unbound method; bind first");
     }
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
     PUSH_TAG(PROT_NONE);

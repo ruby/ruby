@@ -1817,7 +1817,7 @@ check_uid_switch()
 {
     rb_secure(2);
     if (under_uid_switch) {
-	rb_raise(rb_eRuntimeError, "can't handle UID during evaluating the block given to the Process::UID.switch method");
+	rb_raise(rb_eRuntimeError, "can't handle UID while evaluating block given to Process::UID.switch method");
     }
 }
 
@@ -1827,7 +1827,7 @@ check_gid_switch()
 {
     rb_secure(2);
     if (under_gid_switch) {
-	rb_raise(rb_eRuntimeError, "can't handle GID during evaluating the block given to the Process::UID.switch method");
+	rb_raise(rb_eRuntimeError, "can't handle GID while evaluating block given to Process::UID.switch method");
     }
 }
 

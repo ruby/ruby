@@ -1888,7 +1888,7 @@ env_aset(obj, nm, val)
     char *name, *value;
 
     if (rb_safe_level() >= 4) {
-	rb_raise(rb_eSecurityError, "cannot change environment variable");
+	rb_raise(rb_eSecurityError, "can't change environment variable");
     }
 
     if (NIL_P(val)) {

@@ -2995,7 +2995,7 @@ rb_gzreader_readchar(obj)
     VALUE dst;
     dst = rb_gzreader_getc(obj);
     if (NIL_P(dst)) {
-	rb_raise(rb_eEOFError, "End of file reached");
+	rb_raise(rb_eEOFError, "end of file reached");
     }
     return dst;
 }
@@ -3177,7 +3177,7 @@ rb_gzreader_readline(argc, argv, obj)
     VALUE dst;
     dst = rb_gzreader_gets(argc, argv, obj);
     if (NIL_P(dst)) {
-	rb_raise(rb_eEOFError, "End of file reached");
+	rb_raise(rb_eEOFError, "end of file reached");
     }
     return dst;
 }

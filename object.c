@@ -2046,7 +2046,7 @@ convert_type(val, tname, method, raise)
     m = rb_intern(method);
     if (!rb_respond_to(val, m)) {
 	if (raise) {
-	    rb_raise(rb_eTypeError, "cannot convert %s into %s",
+	    rb_raise(rb_eTypeError, "can't convert %s into %s",
 		     NIL_P(val) ? "nil" :
 		     val == Qtrue ? "true" :
 		     val == Qfalse ? "false" :
@@ -2285,7 +2285,7 @@ rb_Float(val)
 	return rb_float_new(rb_str_to_dbl(val, Qtrue));
 
       case T_NIL:
-	rb_raise(rb_eTypeError, "cannot convert nil into Float");
+	rb_raise(rb_eTypeError, "can't convert nil into Float");
 	break;
 
       default:

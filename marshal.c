@@ -111,7 +111,7 @@ class2path(klass)
 		 n);
     }
     if (rb_path2class(n) != rb_class_real(klass)) {
-	rb_raise(rb_eTypeError, "%s cannot be referred", n);
+	rb_raise(rb_eTypeError, "%s can't be referred", n);
     }
     return path;
 }
@@ -615,7 +615,7 @@ w_object(obj, arg, limit)
 	    }
 	    else if (FL_TEST(obj, FL_USER2)) {
 		/* FL_USER2 means HASH_PROC_DEFAULT (see hash.c) */
-		rb_raise(rb_eTypeError, "cannot dump hash with default proc");
+		rb_raise(rb_eTypeError, "can't dump hash with default proc");
 	    }
 	    else {
 		w_byte(TYPE_HASH_DEF, arg);

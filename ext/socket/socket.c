@@ -1574,7 +1574,7 @@ unix_send_io(sock, val)
         fd = FIX2INT(val);
     }
     else {
-	rb_raise(rb_eTypeError, "IO nor file descriptor");
+	rb_raise(rb_eTypeError, "neither IO nor file descriptor");
     }
 
     GetOpenFile(sock, fptr);
@@ -1691,7 +1691,7 @@ unix_recv_io(argc, argv, sock)
         msg.msg_accrightslen != sizeof(fd)
 #endif
 	) {
-	rb_raise(rb_eSocket, "File descriptor was not passed");
+	rb_raise(rb_eSocket, "file descriptor was not passed");
     }
 
 #if FD_PASSING_BY_MSG_CONTROL
@@ -1841,7 +1841,7 @@ setup_domain_and_type(domain, dv, type, tv)
 	    *dv = PF_IPX;
 #endif
 	else
-	    rb_raise(rb_eSocket, "Unknown socket domain %s", ptr);
+	    rb_raise(rb_eSocket, "unknown socket domain %s", ptr);
     }
     else {
 	*dv = NUM2INT(domain);
@@ -1872,7 +1872,7 @@ setup_domain_and_type(domain, dv, type, tv)
 	    *tv = SOCK_PACKET;
 #endif
 	else
-	    rb_raise(rb_eSocket, "Unknown socket type %s", ptr);
+	    rb_raise(rb_eSocket, "unknown socket type %s", ptr);
     }
     else {
 	*tv = NUM2INT(type);

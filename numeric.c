@@ -1437,7 +1437,7 @@ num_step(argc, argv, from)
 	    rb_raise(rb_eArgError, "wrong number of arguments");
 	}
 	if (rb_equal(step, INT2FIX(0))) {
-	    rb_raise(rb_eArgError, "step cannot be 0");
+	    rb_raise(rb_eArgError, "step can't be 0");
 	}
     }
 

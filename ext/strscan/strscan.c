@@ -765,7 +765,7 @@ strscan_peek(self, vlen)
  *   s.unscan
  *   s.scan(/../)         # => "te"
  *   s.scan(/\d/)         # => nil
- *   s.unscan             # ScanError: cannot unscan: prev match had failed
+ *   s.unscan             # ScanError: can't unscan: prev match had failed
  */
 static VALUE
 strscan_peep(self, vlen)
@@ -783,7 +783,7 @@ strscan_unscan(self)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p))
-        rb_raise(ScanError, "cannot unscan: prev match had failed");
+        rb_raise(ScanError, "can't unscan: prev match had failed");
 
     p->curr = p->prev;
     CLEAR_MATCH_STATUS(p);

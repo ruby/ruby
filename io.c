@@ -173,7 +173,7 @@ extern int ReadDataPending();
 void
 rb_eof_error()
 {
-    rb_raise(rb_eEOFError, "End of file reached");
+    rb_raise(rb_eEOFError, "end of file reached");
 }
 
 VALUE
@@ -2412,7 +2412,7 @@ rb_io_flags_mode(flags)
 	}
 	return MODE_BINMODE("r+", "rb+");
     }
-    rb_raise(rb_eArgError, "illegal access mode %o", flags);
+    rb_raise(rb_eArgError, "illegal access modenum %o", flags);
     return NULL;		/* not reached */
 }
 
