@@ -908,7 +908,7 @@ strio_sysread(argc, argv, self)
     VALUE self;
 {
     VALUE val = strio_read(argc, argv, self);
-    if (NIL_P(val)) {
+    if (NIL_P(val) || RSTRING(val)->len == 0) {
 	rb_eof_error();
     }
     return val;
