@@ -75,7 +75,6 @@ Sat Oct 16 13:34:56 2004  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss: supported prety print.
 	* test/rss/test_1.0.rb: added test for calculating default indent size.
 
->>>>>>> 1.2673.2.531
 Fri Oct 15 18:04:35 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb: TkTimer.new(interval, loop){ ... } is
