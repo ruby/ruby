@@ -1,3 +1,7 @@
+Tue Jun 25 00:21:00 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* dln.c: remark definition rb_loaderror().
+
 Tue Jun 25 00:14:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (string_dvar): allow back references in interpolation.
