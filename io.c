@@ -400,7 +400,7 @@ rb_io_fwrite(ptr, len, f)
     long n, r;
 
     if ((n = len) <= 0) return n;
-#ifdef __human68k__
+#if defined __human68k__ || defined __BORLANDC__
     do {
 	if (fputc(*ptr++, f) == EOF) {
 	    if (ferror(f)) return -1L;
@@ -409,7 +409,11 @@ rb_io_fwrite(ptr, len, f)
     } while (--n > 0);
 #else
     while (errno = 0, ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
-	if (ferror(f)) {
+	if (ferror(f)
+#if defined __BORLANDC__
+	    || errno == EBAF
+#endif
+	) {
 #ifdef __hpux
 	    if (!errno) errno = EAGAIN;
 #endif

@@ -1,3 +1,8 @@
+Thu May 27 14:53:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (rb_io_fwrite): workaround for bcc32's fwrite bug.
+	  add errno checking.  [ruby-dev:23627]
+
 Thu May 27 11:25:03 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/csv/test_csv.rb: illegal require module name (../lib/csv.rb).
