@@ -1,3 +1,8 @@
+Sun Jun 30 17:05:29 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (seekdir, telldir): add ac_cv_func_telldir=yes,
+	  ac_cv_func_seekdir=yes for MinGW.
+
 Sat Jun 29 01:43:32 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* io.c (pipe_finalize, pipe_popen): two-way pipe support for win32.
