@@ -9,7 +9,7 @@ class TestTCPSocket < Test::Unit::TestCase
   def test_recvfrom # [ruby-dev:24705]
     c = s = nil
     svr = TCPServer.new("localhost", 0)
-    Thread.new {
+    th = Thread.new {
       c = svr.accept
       ObjectSpace.each_object(String) {|s|
         s.replace "a" if s.length == 0x10000 and !s.frozen?
@@ -21,5 +21,7 @@ class TestTCPSocket < Test::Unit::TestCase
     assert_raise(RuntimeError, SocketError) {
       sock.recvfrom(0x10000)
     }
+  ensure
+    th.join
   end
 end if defined?(TCPSocket)

@@ -1,29 +1,34 @@
+Thu Dec  9 10:19:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/socket/test_socket.rb (test_setsockopt): use SO_LINGER instead
+	  of SO_BINDTODEVICE.  fixed: [ruby-dev:25133]
+
 Thu Dec  9 03:08:36 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_init): set root-win title to "ruby" when
-	  the running script is '-e one-liner' or '-' (stdin). 
+	  the running script is '-e one-liner' or '-' (stdin).
 
 	* ext/tcltklib/extconf.rb: add find_library("#{lib}#{ver}",..) for
-	  stub libs 
+	  stub libs
 
 	* ext/tk/lib/tk/textmark.rb: TkTextMarkCurrent and TkTextMarkAnchor
-	  have a wrong parent class. 
+	  have a wrong parent class.
 
-	* ext/tk/lib/tk/dialog.rb: rename TkDialog2 --> TkDialogObj and 
+	* ext/tk/lib/tk/dialog.rb: rename TkDialog2 --> TkDialogObj and
 	  TkWarning2 --> TkWarningObj (old names are changed to alias names)
 
 	* ext/tk/lib/tk/dialog.rb: bug fix of treatment of 'prev_command'
 	  option and hashes for configuration
 
 	* ext/tk/lib/tk/dialog.rb: add TkDialogObj#name to return the
-	  button name 
+	  button name
 
 	* ext/tk/lib/tk/radiobutton.rb: rename enbugged method value() ==>
 	  get_value() and value=(val) ==> set_value(val).
 
 	* ext/tk/lib/tk/menu.rb: add TkMenu.new_menuspec
 
-	* ext/tk/lib/tk/menu.rb: add alias (TkMenuButton = TkMenubutton, 
+	* ext/tk/lib/tk/menu.rb: add alias (TkMenuButton = TkMenubutton,
 	  TkOptionMenuButton = TkOptionMenubutton)
 
 	* ext/tk/lib/tk/event.rb: new method aliases (same as option keys of
