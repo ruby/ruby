@@ -30,10 +30,17 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 
 -prologue-: nul
 	@echo Creating $(MAKEFILE)
-	@type > $(MAKEFILE) &&|
-\#\#\# Makefile for ruby $(OS) \#\#\#
-srcdir = $(srcdir:\=/)
+	@cpp32 -I$(srcdir) -P- -o$(MAKEFILE) > nul &&|
+\#define COMMENT \#
+COMMENT Makefile for ruby $(OS)
+\#include "version.h"
+MAJOR = RUBY_VERSION_MAJOR
+MINOR = RUBY_VERSION_MINOR
+TEENY = RUBY_VERSION_TEENY
 |
+	@copy $(MAKEFILE).i $(MAKEFILE) > nul
+	@del $(MAKEFILE).i
+	@$(APPEND) srcdir = $(srcdir:\=/)
 
 -generic-: nul
 !if defined(PROCESSOR_ARCHITECTURE) ||  defined(PROCESSOR_LEVEL)
@@ -68,7 +75,7 @@ srcdir = $(srcdir:\=/)
 \# OS = $(OS)
 \# RT = $(RT)
 \# RUBY_INSTALL_NAME = ruby
-\# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)17
+\# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
 \# prefix = /usr
 \# CFLAGS = -q $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) -w-
 \# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"

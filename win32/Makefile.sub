@@ -68,7 +68,7 @@ OS = mswin32
 RT = msvcrt
 
 !ifndef RUBY_SO_NAME
-RUBY_SO_NAME = $(RT)-$(RUBY_INSTALL_NAME)17
+RUBY_SO_NAME = $(RT)-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)
 !endif
 
 !if !defined(prefix)
@@ -191,6 +191,7 @@ config.h: Makefile $(srcdir)/win32/Makefile.sub
 #define HAVE_STDLIB_H 1
 #define HAVE_STRING_H 1
 #define HAVE_MEMORY_H 1
+#define HAVE_FLOAT_H 1
 #define HAVE_OFF_T 1
 #define SIZEOF_INT 4
 #define SIZEOF_SHORT 2
@@ -265,12 +266,12 @@ config.h: Makefile $(srcdir)/win32/Makefile.sub
 #define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
 #define DLEXT2 ".dll"
-#define RUBY_LIB "/lib/ruby/1.7"
+#define RUBY_LIB "/lib/ruby/$(MAJOR).$(MINOR)"
 #define RUBY_SITE_LIB "/lib/ruby/site_ruby"
-#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/1.7"
+#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)"
 #define RUBY_PLATFORM "$(ARCH)-$(OS)"
-#define RUBY_ARCHLIB "/lib/ruby/1.7/$(ARCH)-$(OS)"
-#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.7/$(ARCH)-$(RT)"
+#define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
+#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(RT)"
 <<KEEP
 
 config.status: Makefile $(srcdir)/win32/Makefile.sub
@@ -604,7 +605,7 @@ pack.obj: {$(srcdir)}pack.c {$(srcdir)}ruby.h config.h \
 parse.obj: {$(srcdir)}parse.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}env.h {$(srcdir)}node.h {$(srcdir)}st.h {$(srcdir)}regex.h \
-  {$(srcdir)}util.h {$(srcdir)}lex.c
+  {$(srcdir)}util.h {$(srcdir)}lex.c {$(srcdir)}/win32/win32.h
 prec.obj: {$(srcdir)}prec.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h

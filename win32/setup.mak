@@ -29,11 +29,15 @@ i686-$(OS): -prologue- -i686- -epilogue-
 alpha-$(OS): -prologue- -alpha- -epilogue-
 
 -prologue-: nul
-	@echo Creating <<$(MAKEFILE)
-### Makefile for ruby $(OS) ###
-srcdir = $(srcdir:\=/)
-
-<<KEEP
+	@cl -nologo -EP -I$(srcdir) <<"Creating $(MAKEFILE)" > $(MAKEFILE)
+#define COMMENT #
+COMMENT Makefile for ruby $(OS)
+#include "version.h"
+MAJOR = RUBY_VERSION_MAJOR
+MINOR = RUBY_VERSION_MINOR
+TEENY = RUBY_VERSION_TEENY
+<<
+	@$(APPEND) srcdir = $(srcdir:\=/)
 
 -generic-: nul
 !if defined($(ARCH)) || defined($(CPU))
@@ -67,7 +71,7 @@ $(CPU) = $(PROCESSOR_LEVEL)
 # OS = $(OS)
 # RT = $(RT)
 # RUBY_INSTALL_NAME = ruby
-# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)17
+# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
 # prefix = /usr
 # CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
 # CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
