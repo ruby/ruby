@@ -42,350 +42,366 @@
 ### $Id$
 ###
 
-$name = $date = $id = nil
-$refauthors = $reftitle = $refissue = $refdate = $refopt = nil
+class Mdoc2Man
+  def initialize
+    @name = @date = @id = nil
+    @refauthors = @reftitle = @refissue = @refdate = @refopt = nil
 
-$optlist = 0		### 1 = bullet, 2 = enum, 3 = tag, 4 = item
-$oldoptlist = 0
-$nospace = 0		### 0, 1, 2
-$enum = 0
-$synopsis = true
-$reference = false
-$ext = false
-$extopt = false
-$literal = false
+    @optlist = 0		### 1 = bullet, 2 = enum, 3 = tag, 4 = item
+    @oldoptlist = 0
+    @nospace = 0		### 0, 1, 2
+    @enum = 0
+    @synopsis = true
+    @reference = false
+    @ext = false
+    @extopt = false
+    @literal = false
+  end
 
-def parse_macro(line)
-  words = line.split
-  retval = ''
-
-  option = false
-  parens = false
-
-  while word = words.shift
-    case word
-    when 'Li', 'Pf'
-      next
-    when 'Xo'
-      $ext = true
-      retval << ' ' unless retval.empty? || /[\n ]\z/ =~ retval
-      next
-    when 'Xc'
-      $ext = false
-      retval << "\n" unless $extopt
-      break
-    when 'Bd'
-      $literal = true if words[0] == '-literal'
-      retval << "\n"
-      break
-    when 'Ed'
-      $literal = false
-      break
-    when 'Ns'
-      $nospace = 1 if $nospace == 0
-      retval.chomp!(' ')
-      next
-    when 'No'
-      retval.chomp!(' ')
-      retval << words.shift
-      next
-    when 'Dq'
-      retval << '``'
-      begin
-	retval << words.shift << ' '
-      end until words.empty? || /^[\.,]/ =~ words[0]
-      retval.chomp!(' ')
-      retval << '\'\''
-      $nospace = 1 if $nospace == 0 && /^[\.,]/ =~ words[0]
-      next
-    when 'Sq', 'Ql'
-      retval << '`' << words.shift << '\''
-      $nospace = 1 if $nospace == 0 && /^[\.,]/ =~ words[0]
-      next
-    # when  'Ic'
-    #   retval << '\\fB' << words.shift << '\\fP'
-    #   next
-    when 'Oo'
-      #retval << "[\\c\n"
-      $extopt = true
-      $nospace = 1 if $nospace == 0
-      retval << '['
-      next
-    when 'Oc'
-      $extopt = false
-      retval << ']'
-      next
-    end
-
-    retval << ' ' if $nospace == 0 && !(retval.empty? || /[\n ]\z/ =~ retval)
-    $nospace = 0 if $nospace == 1
-
-    case word
-    when 'Dd'
-      $date = words.join(' ')
-      return nil
-    when 'Dt'
-      $id = words.join(' ')
-      return nil
-    when 'Os'
-      retval << '.TH ' << $id << ' "' << $date << '" "' <<
-	words.join(' ') << '"'
-      break
-    when 'Sh'
-      retval << '.SH'
-      $synopsis = (words[0] == 'SYNOPSIS')
-      next
-    when 'Xr'
-      retval << '\\fB' << words.shift <<
-	'\\fP(' << words.shift << ')' << words.shift
-      break
-    when 'Rs'
-      $refauthors = []
-      $reftitle = ''
-      $refissue = ''
-      $refdate = ''
-      $refopt = ''
-      $reference = true
-      break
-    when 'Re'
-      retval << "\n"
-
-      # authors
-      while @refauthors.size > 1
-	retval << @refauthors.shift << ', '
-      end
-      retval << 'and ' unless retval.empty?
-      retval << @refauthors.shift
-
-      # title 
-      retval << ', \\fI' << $reftitle << '\\fP'
-
-      # issue
-      retval << ', ' << $refissue unless $refissue.empty?
-
-      # date
-      retval << ', ' << $refdate unless $refdate.empty?
-
-      # optional info
-      retval << ', ' << $refopt unless $refopt.empty?
-
-      retval << ".\n"
-
-      $reference = false
-      break
-    when 'Ux'
-      retval << "UNIX"
-      next
-    end
-
-    if $reference
-      case word
-      when '%A'
-	@refauthors.unshift(words.join(' '))
-	break
-      when '%T'
-	$reftitle = words.join(' ')
-	$reftitle.sub!(/^"/, '')
-	$reftitle.sub!(/"$/, '')
-	break
-      when '%N'
-	$refissue = words.join(' ')
-	break
-      when '%D'
-	$refdate = words.join(' ')
-	break
-      when '%O'
-	$refopt = words.join(' ')
-	break
-      end
-    end
-
-    case word
-    when 'Nm'
-      name = words.empty? ? $name : words.shift
-      $name ||= name
-      retval << ".br\n" if $synopsis
-      retval << "\\fB" << name << "\\fP"
-      $nospace = 1 if $nospace == 0 && /^[\.,]/ =~ words[0]
-      next
-    when 'Nd'
-      retval << '\\-'
-      next
-    when 'Fl'
-      retval << '\\fB\\-' << words.shift << '\\fP'
-      $nospace = 1 if $nospace == 0 && /^[\.,]/ =~ words[0]
-      next
-    when 'Ar'
-      retval << '\\fI'
-      if words.empty?
-	retval << 'file ...\\fP'
-      else
-	retval << words.shift << '\\fP'
-	while words[0] == '|'
-	  retval << ' ' << words.shift << ' \\fI' << words.shift << '\\fP'
-	end
-	$nospace = 1 if $nospace == 0 && /^[\.,]/ =~ words[0]
+  def mdoc2man(i, o)
+    i.each { |line|
+      if /^\./ !~ line
+	o.print line
+	o.print ".br\n" if @literal
 	next
       end
-    when 'Cm'
-      retval << '\\fB' << words.shift << '\\fP'
-      while /^[\.,:)]$/ =~ words[0]
-	retval << words.shift
-      end
-      next
-    when 'Op'
-      option = true
-      $nospace = 1 if $nospace == 0
-      retval << '['
-      # words.push(words.pop + ']')
-      next
-    when 'Pp'
-      retval << "\n"
-      next
-    when 'Ss'
-      retval << '.SS'
-      next
-    end
 
-    if word == 'Pa' && !option
-      retval << '\\fI'
-      retval << '\\&' if /^\./ =~ words[0]
-      retval << words.shift << '\\fP'
-      while /^[\.,:;)]$/ =~ words[0]
-	retval << words.shift
-      end
-      # $nospace = 1 if $nospace == 0 && /^[\.,]/ =~ words[0]
-      next
-    end
+      line.slice!(0, 1)
 
-    case word
-    when 'Dv'
-      retval << '.BR'
-      next
-    when 'Em', 'Ev'
-      retval << '.IR'
-      next
-    when 'Pq'
-      retval << '('
-      $nospace = 1
-      parens = true
-      next
-    when 'Sx', 'Sy'
-      retval << '.B ' << words.join(' ')
-      break
-    when 'Ic'
-      retval << '\\fB'
-      until words.empty? || /^[\.,]/ =~ words[0]
-	case words[0]
-	when 'Op'
-	  words.shift
-	  retval << '['
-	  words.push(words.pop + ']')
-	  next
-	when 'Ar'
-	  words.shift
-	  retval << '\\fI' << words.shift << '\\fP'
+      next if /\\"/ =~ line
+
+      line = parse_macro(line) and o.print line
+    }
+
+    initialize
+  end
+
+  def parse_macro(line)
+    words = line.split
+    retval = ''
+
+    option = false
+    parens = false
+
+    while word = words.shift
+      case word
+      when 'Li', 'Pf'
+	next
+      when 'Xo'
+	@ext = true
+	retval << ' ' unless retval.empty? || /[\n ]\z/ =~ retval
+	next
+      when 'Xc'
+	@ext = false
+	retval << "\n" unless @extopt
+	break
+      when 'Bd'
+	@literal = true if words[0] == '-literal'
+	retval << "\n"
+	break
+      when 'Ed'
+	@literal = false
+	break
+      when 'Ns'
+	@nospace = 1 if @nospace == 0
+	retval.chomp!(' ')
+	next
+      when 'No'
+	retval.chomp!(' ')
+	retval << words.shift
+	next
+      when 'Dq'
+	retval << '``'
+	begin
+	  retval << words.shift << ' '
+	end until words.empty? || /^[\.,]/ =~ words[0]
+	retval.chomp!(' ')
+	retval << '\'\''
+	@nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	next
+      when 'Sq', 'Ql'
+	retval << '`' << words.shift << '\''
+	@nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	next
+	# when  'Ic'
+	#   retval << '\\fB' << words.shift << '\\fP'
+	#   next
+      when 'Oo'
+	#retval << "[\\c\n"
+	@extopt = true
+	@nospace = 1 if @nospace == 0
+	retval << '['
+	next
+      when 'Oc'
+	@extopt = false
+	retval << ']'
+	next
+      end
+
+      retval << ' ' if @nospace == 0 && !(retval.empty? || /[\n ]\z/ =~ retval)
+      @nospace = 0 if @nospace == 1
+
+      case word
+      when 'Dd'
+	@date = words.join(' ')
+	return nil
+      when 'Dt'
+	@id = words.join(' ')
+	return nil
+      when 'Os'
+	retval << '.TH ' << @id << ' "' << @date << '" "' <<
+	  words.join(' ') << '"'
+	break
+      when 'Sh'
+	retval << '.SH'
+	@synopsis = (words[0] == 'SYNOPSIS')
+	next
+      when 'Xr'
+	retval << '\\fB' << words.shift <<
+	  '\\fP(' << words.shift << ')' << words.shift
+	break
+      when 'Rs'
+	@refauthors = []
+	@reftitle = ''
+	@refissue = ''
+	@refdate = ''
+	@refopt = ''
+	@reference = true
+	break
+      when 'Re'
+	retval << "\n"
+
+	# authors
+	while @refauthors.size > 1
+	  retval << @refauthors.shift << ', '
+	end
+	retval << 'and ' unless retval.empty?
+	retval << @refauthors.shift
+
+	# title 
+	retval << ', \\fI' << @reftitle << '\\fP'
+
+	# issue
+	retval << ', ' << @refissue unless @refissue.empty?
+
+	# date
+	retval << ', ' << @refdate unless @refdate.empty?
+
+	# optional info
+	retval << ', ' << @refopt unless @refopt.empty?
+
+	retval << ".\n"
+
+	@reference = false
+	break
+      when 'Ux'
+	retval << "UNIX"
+	next
+      end
+
+      if @reference
+	case word
+	when '%A'
+	  @refauthors.unshift(words.join(' '))
+	  break
+	when '%T'
+	  @reftitle = words.join(' ')
+	  @reftitle.sub!(/^"/, '')
+	  @reftitle.sub!(/"$/, '')
+	  break
+	when '%N'
+	  @refissue = words.join(' ')
+	  break
+	when '%D'
+	  @refdate = words.join(' ')
+	  break
+	when '%O'
+	  @refopt = words.join(' ')
+	  break
+	end
+      end
+
+      case word
+      when 'Nm'
+	name = words.empty? ? @name : words.shift
+	@name ||= name
+	retval << ".br\n" if @synopsis
+	retval << "\\fB" << name << "\\fP"
+	@nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	next
+      when 'Nd'
+	retval << '\\-'
+	next
+      when 'Fl'
+	retval << '\\fB\\-' << words.shift << '\\fP'
+	@nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	next
+      when 'Ar'
+	retval << '\\fI'
+	if words.empty?
+	  retval << 'file ...\\fP'
 	else
+	  retval << words.shift << '\\fP'
+	  while words[0] == '|'
+	    retval << ' ' << words.shift << ' \\fI' << words.shift << '\\fP'
+	  end
+	  @nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	  next
+	end
+      when 'Cm'
+	retval << '\\fB' << words.shift << '\\fP'
+	while /^[\.,:)]$/ =~ words[0]
 	  retval << words.shift
 	end
-
-	retval << ' ' if $nospace == 0
+	next
+      when 'Op'
+	option = true
+	@nospace = 1 if @nospace == 0
+	retval << '['
+	# words.push(words.pop + ']')
+	next
+      when 'Pp'
+	retval << "\n"
+	next
+      when 'Ss'
+	retval << '.SS'
+	next
       end
 
-      retval.chomp!(' ')
-      retval << '\\fP'
-      retval << words.shift unless words.empty?
-      break
-    when 'Bl'
-      $oldoptlist = $optlist
-
-      case words[0]
-      when '-bullet'
-	$optlist = 1
-      when '-enum'
-	$optlist = 2
-	$enum = 0
-      when '-tag'
-	$optlist = 3
-      when '-item'
-	$optlist = 4
-      end
-
-      break
-    when 'El'
-      $optlist = $oldoptlist
-      next
-    end
-
-    if $optlist != 0 && word == 'It'
-      case $optlist
-      when 1
-	# bullets
-	retval << '.IP \\(bu'
-      when 2
-	# enum
-	$enum += 1
-	retval << '.IP ' << $enum << '.'
-      when 3
-	# tags
-	retval << ".TP\n"
-	case words[0]
-	when 'Pa', 'Ev'
-	  words.shift
-	  retval << '.B'
+      if word == 'Pa' && !option
+	retval << '\\fI'
+	retval << '\\&' if /^\./ =~ words[0]
+	retval << words.shift << '\\fP'
+	while /^[\.,:;)]$/ =~ words[0]
+	  retval << words.shift
 	end
-      when 4
-	# item
-	retval << ".IP\n"
+	# @nospace = 1 if @nospace == 0 && /^[\.,]/ =~ words[0]
+	next
       end
 
-      next
-    end
+      case word
+      when 'Dv'
+	retval << '.BR'
+	next
+      when 'Em', 'Ev'
+	retval << '.IR'
+	next
+      when 'Pq'
+	retval << '('
+	@nospace = 1
+	parens = true
+	next
+      when 'Sx', 'Sy'
+	retval << '.B ' << words.join(' ')
+	break
+      when 'Ic'
+	retval << '\\fB'
+	until words.empty? || /^[\.,]/ =~ words[0]
+	  case words[0]
+	  when 'Op'
+	    words.shift
+	    retval << '['
+	    words.push(words.pop + ']')
+	    next
+	  when 'Ar'
+	    words.shift
+	    retval << '\\fI' << words.shift << '\\fP'
+	  else
+	    retval << words.shift
+	  end
 
-    case word
-    when 'Sm'
-      case words[0]
-      when 'off'
-	$nospace = 2
-      when 'on'
-	# retval << "\n"
-	$nospace = 0
+	  retval << ' ' if @nospace == 0
+	end
+
+	retval.chomp!(' ')
+	retval << '\\fP'
+	retval << words.shift unless words.empty?
+	break
+      when 'Bl'
+	@oldoptlist = @optlist
+
+	case words[0]
+	when '-bullet'
+	  @optlist = 1
+	when '-enum'
+	  @optlist = 2
+	  @enum = 0
+	when '-tag'
+	  @optlist = 3
+	when '-item'
+	  @optlist = 4
+	end
+
+	break
+      when 'El'
+	@optlist = @oldoptlist
+	next
       end
-      words.shift
-      next
+
+      if @optlist != 0 && word == 'It'
+	case @optlist
+	when 1
+	  # bullets
+	  retval << '.IP \\(bu'
+	when 2
+	  # enum
+	  @enum += 1
+	  retval << '.IP ' << @enum << '.'
+	when 3
+	  # tags
+	  retval << ".TP\n"
+	  case words[0]
+	  when 'Pa', 'Ev'
+	    words.shift
+	    retval << '.B'
+	  end
+	when 4
+	  # item
+	  retval << ".IP\n"
+	end
+
+	next
+      end
+
+      case word
+      when 'Sm'
+	case words[0]
+	when 'off'
+	  @nospace = 2
+	when 'on'
+	  # retval << "\n"
+	  @nospace = 0
+	end
+	words.shift
+	next
+      end
+
+      retval << word
     end
 
-    retval << word
+    return nil if retval == '.'
+
+    retval.sub!(/\A\.([^a-zA-Z])/, "\\1")
+    # retval.chomp!(' ')
+
+    retval << ')' if parens
+
+    retval << ']' if option
+
+    # retval << ' ' unless @nospace == 0 || retval.empty? || /\n\z/ =~ retval
+
+    retval << ' ' unless !@ext || @extopt || / $/ =~ retval
+
+    retval << "\n" unless @ext || @extopt || retval.empty? || /\n\z/ =~ retval
+
+    return retval
   end
 
-  return nil if retval == '.'
-
-  retval.sub!(/\A\.([^a-zA-Z])/, "\\1")
-  # retval.chomp!(' ')
-
-  retval << ')' if parens
-
-  retval << ']' if option
-
-  # retval << ' ' unless $nospace == 0 || retval.empty? || /\n\z/ =~ retval
-
-  retval << ' ' unless !$ext || $extopt || / $/ =~ retval
-
-  retval << "\n" unless $ext || $extopt || retval.empty? || /\n\z/ =~ retval
-
-  return retval
+  def self.mdoc2man(i, o)
+    new.mdoc2man(i, o)
+  end
 end
 
-ARGF.each { |line|
-  if /^\./ !~ line
-    print line
-    print ".br\n" if $literal
-    next
-  end
-
-  line.slice!(0, 1)
-
-  next if /\\"/ =~ line
-
-  line = parse_macro(line) and print line
-}
+if $0 == __FILE__
+  Mdoc2Man.mdoc2man(ARGF, STDOUT)
+end

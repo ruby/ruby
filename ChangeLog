@@ -1,3 +1,7 @@
+Mon Jan 20 19:43:41 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* mdoc2man.rb: Make this work as a library.
+
 Mon Jan 20 18:22:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_f_require): purge too many goto's.
