@@ -694,6 +694,7 @@ struct BLOCK {
 
 #define BLOCK_D_SCOPE 1
 #define BLOCK_LAMBDA  2
+#define BLOCK_FROM_METHOD  4
 
 static struct BLOCK *ruby_block;
 static unsigned long block_unique = 0;
@@ -1006,8 +1007,7 @@ static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 
 #define YIELD_LAMBDA_CALL 1
 #define YIELD_PROC_CALL   2
-#define YIELD_PROC_BLOCK  4
-#define YIELD_PUBLIC_DEF  8
+#define YIELD_PUBLIC_DEF  4
 #define YIELD_FUNC_AVALUE 1
 #define YIELD_FUNC_SVALUE 2
 
@@ -4576,6 +4576,12 @@ static VALUE bmcall _((VALUE, VALUE));
 static VALUE method_arity _((VALUE));
 
 static VALUE
+kk()
+{
+    return rb_proc_new(rb_yield, Qnil);
+}
+
+static VALUE
 rb_yield_0(val, self, klass, flags, avalue)
     VALUE val, self, klass;	/* OK */
     int flags, avalue;
@@ -4721,7 +4727,7 @@ rb_yield_0(val, self, klass, flags, avalue)
 		if (val == Qundef && node->nd_state != YIELD_FUNC_SVALUE)
 		    val = Qnil;
 	    }
-	    if ((flags&YIELD_PROC_BLOCK) && RTEST(block->block_obj)) {
+	    if ((block->flags&BLOCK_FROM_METHOD) && RTEST(block->block_obj)) {
 		struct BLOCK *data, _block;
 		Data_Get_Struct(block->block_obj, struct BLOCK, data);
 		_block = *data;
@@ -8200,9 +8206,7 @@ proc_invoke(proc, args, self, klass)
 	if (klass != ruby_frame->last_class)
 	    klass = rb_obj_class(proc);
 	bvar = rb_block_proc();
-	pcall |= YIELD_PROC_BLOCK;
     }
-
 
     PUSH_VARS();
     ruby_wrapper = data->wrapper;
@@ -9197,6 +9201,7 @@ method_proc(method)
     bdata->body->nd_file = mdata->body->nd_file;
     nd_set_line(bdata->body, nd_line(mdata->body));
     bdata->body->nd_state = YIELD_FUNC_SVALUE;
+    bdata->flags |= BLOCK_FROM_METHOD;
 
     return proc;
 }
@@ -9366,6 +9371,8 @@ Init_Proc()
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_method(rb_cProc, "to_proc", proc_to_self, 0);
     rb_define_method(rb_cProc, "binding", proc_binding, 0);
+
+    rb_define_global_function("kk", kk, 0);
 
     rb_define_global_function("proc", rb_block_proc, 0);
     rb_define_global_function("lambda", proc_lambda, 0);

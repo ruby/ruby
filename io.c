@@ -456,14 +456,14 @@ rb_io_wait_writable(f)
 }
 
 /* writing functions */
-long
-io_fwrite(ptr, len, fptr)
-    const char *ptr;
-    long len;
+static long
+io_fwrite(str, fptr)
+    VALUE str;
     OpenFile *fptr;
 {
-    long n, r;
+    long len, n, r, offset = 0;
 
+    len = RSTRING(str)->len;
     if ((n = len) <= 0) return n;
     if (fptr->wbuf == NULL && !(fptr->mode & FMODE_SYNC)) {
         fptr->wbuf_off = 0;
@@ -473,14 +473,14 @@ io_fwrite(ptr, len, fptr)
     }
     if ((fptr->mode & FMODE_SYNC) ||
         (fptr->wbuf && fptr->wbuf_capa <= fptr->wbuf_len + len) ||
-        ((fptr->mode & FMODE_LINEBUF) && memchr(ptr, '\n', len))) {
+        ((fptr->mode & FMODE_LINEBUF) && memchr(RSTRING(str)->ptr+offset, '\n', len))) {
         /* xxx: use writev to avoid double write if available */
         if (fptr->wbuf_len+len <= fptr->wbuf_capa) {
             if (fptr->wbuf_capa < fptr->wbuf_off+fptr->wbuf_len+len) {
                 MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
                 fptr->wbuf_off = 0;
             }
-            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr, char, len);
+            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING(str)->ptr+offset, char, len);
             fptr->wbuf_len += len;
             n = 0;
         }
@@ -493,17 +493,18 @@ io_fwrite(ptr, len, fptr)
 	}
       retry:
         TRAP_BEG;
-	r = write(fptr->fd, ptr, n);
+	r = write(fptr->fd, RSTRING(str)->ptr+offset, n);
         TRAP_END; /* xxx: signal handler may modify given string. */
         if (r == n) return len;
         if (0 <= r) {
-            ptr += r;
+            offset += r;
             n -= r;
             errno = EAGAIN;
         }
         if (rb_io_wait_writable(fptr->fd)) {
             rb_io_check_closed(fptr);
-            goto retry;
+	    if (offset < RSTRING(str)->len)
+		goto retry;
         }
         return -1L;
     }
@@ -513,7 +514,7 @@ io_fwrite(ptr, len, fptr)
             MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
         fptr->wbuf_off = 0;
     }
-    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr, char, len);
+    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING(str)->ptr+offset, char, len);
     fptr->wbuf_len += len;
     return len;
 }
@@ -530,7 +531,7 @@ rb_io_fwrite(ptr, len, f)
     of.f = f;
     of.mode = FMODE_WRITABLE;
     of.path = NULL;
-    return io_fwrite(ptr, len, &of);
+    return io_fwrite(rb_str_new(ptr, len), &of);
 }
 
 /*
@@ -572,9 +573,7 @@ io_write(io, str)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
-    rb_str_locktmp(str);
-    n = io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, fptr);
-    rb_str_unlocktmp(str);
+    n = io_fwrite(str, fptr);
     if (n == -1L) rb_sys_fail(fptr->path);
 
     return LONG2FIX(n);
@@ -1048,19 +1047,20 @@ read_buffered_data(char *ptr, long len, OpenFile *fptr)
     return n;
 }
 
-long
-io_fread(ptr, len, fptr)
-    char *ptr;
-    long len;
+static long
+io_fread(str, offset, fptr)
+    VALUE str;
+    long offset;
     OpenFile *fptr;
 {
+    long len = RSTRING(str)->len - offset;
     long n = len;
     int c;
 
     while (n > 0) {
-	c = read_buffered_data(ptr, n, fptr);
+	c = read_buffered_data(RSTRING(str)->ptr+offset, n, fptr);
 	if (c > 0) {
-	    ptr += c;
+	    offset += c;
 	    if ((n -= c) <= 0) break;
 	}
 	rb_thread_wait_fd(fptr->fd);
@@ -1069,7 +1069,8 @@ io_fread(ptr, len, fptr)
 	if (c < 0) {
 	    break;
 	}
-	*ptr++ = c;
+	RSTRING(str)->ptr[offset++] = c;
+	if (offset > RSTRING(str)->len) break;
 	n--;
     }
     return len - n;
@@ -1082,11 +1083,16 @@ rb_io_fread(ptr, len, f)
     FILE *f;
 {
     OpenFile of;
+    VALUE str;
+    long n;
 
     of.fd = fileno(f);
     of.f = f;
     of.mode = FMODE_READABLE;
-    return io_fread(ptr, len, &of);
+    str = rb_str_new(ptr, len);
+    n = io_fread(str, 0, &of);
+    MEMCPY(ptr, RSTRING(str)->ptr, char, n);
+    return n;
 }
 
 #ifndef S_ISREG
@@ -1137,10 +1143,8 @@ read_all(fptr, siz, str)
 	rb_str_resize(str, siz);
     }
     for (;;) {
-	rb_str_locktmp(str);
 	READ_CHECK(fptr);
-	n = io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr);
-	rb_str_unlocktmp(str);
+	n = io_fread(str, bytes, fptr);
 	if (n == 0 && bytes == 0) {
             break;
 	}
@@ -1316,13 +1320,11 @@ io_read(argc, argv, io)
     rb_io_check_readable(fptr);
     if (len == 0) return str;
 
-    rb_str_locktmp(str);
     READ_CHECK(fptr);
     if (RSTRING(str)->len != len) {
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
-    n = io_fread(RSTRING(str)->ptr, len, fptr);
-    rb_str_unlocktmp(str);
+    n = io_fread(str, 0, fptr);
     if (n == 0) {
 	if (!fptr->f) return Qnil;
         rb_str_resize(str, 0);
@@ -2273,7 +2275,6 @@ rb_io_sysread(argc, argv, io)
     if (READ_DATA_BUFFERED(fptr)) {
 	rb_raise(rb_eIOError, "sysread for buffered IO");
     }
-    rb_str_locktmp(str);
 
     n = fptr->fd;
     rb_thread_wait_fd(fptr->fd);
@@ -2285,7 +2286,6 @@ rb_io_sysread(argc, argv, io)
     n = read(fptr->fd, RSTRING(str)->ptr, ilen);
     TRAP_END;
 
-    rb_str_unlocktmp(str);
     if (n == -1) {
 	rb_sys_fail(fptr->path);
     }

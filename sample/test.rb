@@ -1365,6 +1365,37 @@ end
 
 ITER_TEST4.new.foo(44){55}   
 
+class ITER_TEST5
+   def tt(aa)
+     aa
+   end
+
+   def uu(a)
+      class << self
+         define_method(:tt) do |sym|
+            super(sym)
+         end
+      end
+   end
+
+   def xx(*x)
+     x.size
+   end
+end
+
+a = ITER_TEST5.new
+a.uu(12)
+test_ok(a.tt(1) == 1)
+
+class ITER_TEST6 < ITER_TEST5
+   def xx(*a)
+      a << 12
+      super
+   end
+end
+
+test_ok(ITER_TEST6.new.xx([24]) == 2)
+
 test_check "float"
 test_ok(2.6.floor == 2)
 test_ok((-2.6).floor == -3)

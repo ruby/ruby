@@ -1,3 +1,7 @@
+Tue Dec  7 00:27:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_setgroups): [ruby-dev:25081]
+
 Mon Dec  6 23:07:57 2004  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: check -lsocket for socketpair and shutdown.
@@ -35,6 +39,10 @@ Mon Dec  6 19:40:40 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in (.y.c): simplify the rule.
 
+Mon Dec  6 18:08:10 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_eqq): document fix.  [ruby-talk:122541]
+
 Mon Dec  6 17:49:30 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (run_trap_eval): add prototype for Microsoft compiler.
@@ -62,6 +70,15 @@ Mon Dec  6 17:15:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/socket/test_udp.rb (TestUDPSocket#test_bind):
 	  UDPSocket#bind dumps core.  [ruby-dev:25057]
 
+Mon Dec  6 09:59:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fread): take VALUE argument.
+
+	* ext/socket/socket.c (sock_connect): use rb_str_new4().
+	  [ruby-dev:25052]
+
+	* eval.c (rb_yield_0): [ruby-dev:25051]
+
 Mon Dec  6 01:32:31 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_public_encrypt,
@@ -87,6 +104,29 @@ Sun Dec  5 00:54:32 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* mkconfig.rb: setup library paths before requiring library.
 	  [ruby-core:03892]
+
+Sat Dec  4 22:54:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_write): remove rb_str_locktmp().  [ruby-dev:25050]
+
+	* io.c (io_fwrite): takes VALUE string as an argument.
+	  [ruby-dev:25050]
+
+	* ext/socket/socket.c (sock_connect): remove rb_str_locktmp().
+	  [ruby-dev:25050]
+
+	* ext/socket/socket.c (udp_connect): [ruby-dev:25045]
+
+	* ext/socket/socket.c (udp_bind): ditto.
+
+	* ext/socket/socket.c (udp_send): ditto.
+
+	* ext/socket/socket.c (bsock_send): ditto.
+
+	* ext/socket/socket.c (s_recvfrom): ditto.
+
+	* hash.c (rb_hash_hash): should provide "hash" method where "eql?"
+	  is redefined.  [ruby-talk:122482]
 
 Sat Dec  4 21:29:05 2004  Minero Aoki  <aamine@loveruby.net>
 
@@ -123,6 +163,10 @@ Sat Dec  4 14:28:56 2004  Dave Thomas  <dave@pragprog.com>
 	      # -----------
 	   The lines before :section: are removed, and identical lines at the end are
 	   also removed if present.
+
+Sat Dec  4 00:35:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (bsock_setsockopt): [ruby-dev:25039]
 
 Fri Dec  3 12:25:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

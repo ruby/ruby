@@ -20,6 +20,8 @@ class TestTCPSocket < Test::Unit::TestCase
         s.replace "a" if s.length == 0x10000
       }
     }
-    assert_raise(SocketError) {s.recvfrom(0x10000)}
+    assert_raise(RuntimeError) {
+      open("/tmp/n", "w"){|f| f.puts(data = s.recvfrom(0x10000))}
+    }
   end
 end if defined?(TCPSocket)

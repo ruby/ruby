@@ -2708,10 +2708,10 @@ proc_setgroups(VALUE obj, VALUE ary)
 		groups[i] = NUM2INT(g);
 	    }
 	    else {
-		gr = getgrnam(RSTRING(g)->ptr);
+		gr = getgrnam(RSTRING(tmp)->ptr);
 		if (gr == NULL)
 		    rb_raise(rb_eArgError,
-			     "can't find group for %s", RSTRING(g)->ptr);
+			     "can't find group for %s", RSTRING(tmp)->ptr);
 		groups[i] = gr->gr_gid;
 	    }
 	}
