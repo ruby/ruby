@@ -366,17 +366,15 @@ io_write(io, str)
 
     ptr = RSTRING(str)->ptr;
     n = RSTRING(str)->len;
-    do {
 #ifdef __human68k__
+    do {
 	if (fputc(*ptr++, f) == EOF) {
 	    if (ferror(f)) rb_sys_fail(fptr->path);
 	    break;
 	}
-	--n;
+    } while (--n > 0);
 #else
-	r = fwrite(ptr, 1, n, f);
-	ptr += r;
-	n -= r;
+    for (; (r = fwrite(ptr, 1, n, f)) < n; ptr += r, n -= r) {
 	if (ferror(f)) {
 	    if (rb_io_wait_writable(fileno(f))) {
 		clearerr(f);
@@ -384,8 +382,8 @@ io_write(io, str)
 	    }
 	    rb_sys_fail(fptr->path);
 	}
+    }
 #endif
-    } while (n > 0);
     n = ptr - RSTRING(str)->ptr;
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr);

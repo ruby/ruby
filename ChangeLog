@@ -1,3 +1,8 @@
+Tue Oct  8 14:19:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (io_write): must check returned value from fwrite() before
+	  test with ferror().  (ruby-bugs-ja:PR#350)
+
 Tue Oct  8 10:55:23 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/prettyprint.rb (PrettyPrint.singleline_format): new method.
