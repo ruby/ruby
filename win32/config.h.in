@@ -44,6 +44,9 @@
 #define HAVE_GETLOGIN 1
 #define HAVE_TELLDIR 1
 #define HAVE_SEEKDIR 1
+#define HAVE_COSH 1
+#define HAVE_SINH 1
+#define HAVE_TANH 1
 
 #define RSHIFT(x,y) ((x)>>y)
 #define FILE_COUNT _cnt

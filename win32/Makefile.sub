@@ -83,7 +83,7 @@ RFLAGS = -r
 EXTLIBS =
 !endif
 LIBS = user32.lib advapi32.lib wsock32.lib $(EXTLIBS)
-MISSING = crypt.obj win32.obj isinf.obj isnan.obj
+MISSING = acosh.obj crypt.obj win32.obj isinf.obj isnan.obj
 LDSHARED = $(CC) -LD
 DLDFLAGS = 
 SOLIBS = 
@@ -215,7 +215,7 @@ s,@RANLIB@,rem,;t t
 s,@AR@,lib -nologo,;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
-s,@LIBOBJS@, crypt.obj win32.obj isinf.obj isnan.obj,;t t
+s,@LIBOBJS@, acosh.obj crypt.obj win32.obj isinf.obj isnan.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
@@ -384,6 +384,7 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(LIBRUBY_SO).rc: rbconfig.rb
 
 {$(srcdir)}parse.c: parse.y
 
+acosh.obj: $(srcdir)/missing/acosh.c
 alloca.obj: $(srcdir)/missing/alloca.c
 crypt.obj: $(srcdir)/missing/crypt.c
 dup2.obj: $(srcdir)/missing/dup2.c
