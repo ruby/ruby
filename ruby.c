@@ -94,7 +94,7 @@ usage(name)
 "-T[level]       turn on tainting checks",
 "-v              print version number, then turn on verbose mode",
 "-w              turn warnings on for your script",
-"-W[level]       set warning level; 0=silence, 1=medium, 3=verbose (default)",
+"-W[level]       set warning level; 0=silence, 1=medium, 2=verbose (default)",
 "-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
 "--copyright     print the copyright",
 "--version       print the version",
