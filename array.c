@@ -590,6 +590,8 @@ rb_ary_indexes(argc, argv, ary)
     VALUE new_ary;
     long i;
 
+    rb_warn("Array#%s is deprecated; use Array#select",
+	    rb_id2name(rb_frame_last_func()));
     new_ary = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
 	rb_ary_push(new_ary, rb_ary_aref(1, argv+i, ary));
@@ -1169,6 +1171,33 @@ rb_ary_filter(ary)
 {
     rb_warn("Array#filter is deprecated; use Array#collect!");
     return rb_ary_collect_bang(ary);
+}
+
+static VALUE
+rb_ary_select(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE result = rb_ary_new();
+    long i;
+
+    if (rb_block_given_p()) {
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	}
+	for (i = 0; i < RARRAY(ary)->len; i++) {
+	    if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
+		rb_ary_push(result, RARRAY(ary)->ptr[i]);
+	    }
+	}
+    }
+    else {
+	for (i=0; i<argc; i++) {
+	    rb_ary_push(result, rb_ary_entry(ary, NUM2LONG(argv[i])));
+	}
+    }
+    return result;
 }
 
 VALUE
@@ -1837,6 +1866,7 @@ Init_Array()
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
     rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
+    rb_define_method(rb_cArray, "select", rb_ary_select, -1);
     rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "filter", rb_ary_filter, 0);

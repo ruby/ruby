@@ -507,6 +507,34 @@ rb_struct_aset(s, idx, val)
     return RSTRUCT(s)->ptr[i] = val;
 }
 
+
+static VALUE
+rb_struct_select(argc, argv, s)
+    int argc;
+    VALUE *argv;
+    VALUE s;
+{
+    VALUE result = rb_ary_new();
+    long i;
+
+    if (rb_block_given_p()) {
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	}
+	for (i = 0; i < RSTRUCT(s)->len; i++) {
+	    if (RTEST(rb_yield(RARRAY(s)->ptr[i]))) {
+		rb_ary_push(result, RSTRUCT(s)->ptr[i]);
+	    }
+	}
+    }
+    else {
+	for (i=0; i<argc; i++) {
+	    rb_ary_push(result, rb_struct_aref(s, argv[i]));
+	}
+    }
+    return result;
+}
+
 static VALUE
 rb_struct_equal(s, s2)
     VALUE s, s2;
@@ -556,6 +584,7 @@ Init_Struct()
     rb_define_method(rb_cStruct, "each", rb_struct_each, 0);
     rb_define_method(rb_cStruct, "[]", rb_struct_aref, 1);
     rb_define_method(rb_cStruct, "[]=", rb_struct_aset, 2);
+    rb_define_method(rb_cStruct, "select", rb_struct_select, -1);
 
     rb_define_method(rb_cStruct, "members", rb_struct_members, 0);
 }

@@ -812,6 +812,7 @@ static VALUE
 rb_str_match2(str)
     VALUE str;
 {
+    StringValue(str);
     return rb_reg_match2(rb_reg_regcomp(str));
 }
 
@@ -819,6 +820,12 @@ static VALUE
 rb_str_match_m(str, re)
     VALUE str, re;
 {
+    VALUE str2 = rb_check_convert_type(re, T_STRING, "String", "to_str");
+
+    if (!NIL_P(str2)) {
+	StringValue(re);
+	re = rb_reg_regcomp(re);
+    }
     return rb_funcall(re, rb_intern("match"), 1, str);
 }
 

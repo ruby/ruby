@@ -766,7 +766,7 @@ rb_gc_mark_children(ptr)
 	break;
 
       case T_STRING:
-#define STR_ASSOC FL_USER2   /* copied from string.c */
+#define STR_ASSOC FL_USER3   /* copied from string.c */
 	if (FL_TEST(obj, ELTS_SHARED|STR_ASSOC)) {
 	    rb_gc_mark(obj->as.string.aux.shared);
 	}

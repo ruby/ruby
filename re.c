@@ -785,7 +785,7 @@ match_to_a(match)
     for (i=0; i<regs->num_regs; i++) {
 	if (regs->beg[i] == -1) rb_ary_push(ary, Qnil);
 	else rb_ary_push(ary, rb_str_new(ptr+regs->beg[i],
-				   regs->end[i]-regs->beg[i]));
+					 regs->end[i]-regs->beg[i]));
     }
     return ary;
 }
@@ -804,6 +804,32 @@ match_aref(argc, argv, match)
 	return rb_ary_aref(argc, argv, match_to_a(match));
     }
     return rb_reg_nth_match(FIX2INT(idx), match);
+}
+
+static VALUE
+match_select(argc, argv, match)
+    int argc;
+    VALUE *argv;
+    VALUE match;
+{
+    struct re_registers *regs = RMATCH(match)->regs;
+    char *ptr = RSTRING(RMATCH(match)->str)->ptr;
+    VALUE result = rb_ary_new();
+    int i;
+    long idx;
+
+    for (i=0; i<argc; i++) {
+	idx = NUM2LONG(argv[i]);
+	if (idx < 0) idx += regs->num_regs;
+	if (idx < 0 || regs->num_regs <= idx) {
+	    rb_ary_push(result, Qnil);
+	}
+	else {
+	    rb_ary_push(result, rb_str_new(ptr+regs->beg[idx],
+					   regs->end[idx]-regs->beg[idx]));
+	}
+    }
+    return result;
 }
 
 static VALUE
@@ -1436,6 +1462,7 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
     rb_define_method(rb_cMatch, "to_ary", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
+    rb_define_method(rb_cMatch, "select", match_select, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);

@@ -385,6 +385,8 @@ rb_hash_indexes(argc, argv, hash)
     VALUE indexes;
     int i;
 
+    rb_warn("Hash#%s is deprecated; use Hash#select",
+	    rb_id2name(rb_frame_last_func()));
     indexes = rb_ary_new2(argc);
     for (i=0; i<argc; i++) {
 	RARRAY(indexes)->ptr[i] = rb_hash_aref(hash, argv[i]);
@@ -481,6 +483,42 @@ rb_hash_reject(hash)
     VALUE hash;
 {
     return rb_hash_delete_if(rb_obj_dup(hash));
+}
+
+static int
+select_i(key, value, result)
+    VALUE key, value;
+{
+    VALUE assoc;
+
+    if (key == Qundef) return ST_CONTINUE;
+    assoc = rb_assoc_new(key, value);
+    if (RTEST(rb_yield(assoc)))
+	rb_ary_push(result, assoc);
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_hash_select(argc, argv, hash)
+    int argc;
+    VALUE *argv;
+    VALUE hash;
+{
+    VALUE result = rb_ary_new();
+    long i;
+
+    if (rb_block_given_p()) {
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	}
+	rb_hash_foreach(hash, select_i, result);
+    }
+    else {
+	for (i=0; i<argc; i++) {
+	    rb_ary_push(result, rb_hash_aref(hash, argv[i]));
+	}
+    }
+    return result;
 }
 
 static int
@@ -1253,6 +1291,42 @@ env_delete_if()
 }
 
 static VALUE
+env_select(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE result = rb_ary_new();
+    long i;
+
+    if (rb_block_given_p()) {
+	char **env;
+
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	}
+	env = GET_ENVIRON(environ);
+	while (*env) {
+	    char *s = strchr(*env, '=');
+	    if (s) {
+		VALUE str = rb_tainted_str_new(*env, s-*env);
+
+		if (RTEST(rb_yield(str))) {
+		    rb_ary_push(result, str);
+		}
+	    }
+	    env++;
+	}
+	FREE_ENVIRON(environ);
+    }
+    else {
+	for (i=0; i<argc; i++) {
+	    rb_ary_push(result, rb_f_getenv(Qnil, argv[i]));
+	}
+    }
+    return result;
+}
+
+static VALUE
 env_to_s()
 {
     return rb_str_new2("ENV");
@@ -1407,6 +1481,8 @@ env_indexes(argc, argv)
     int i;
     VALUE indexes = rb_ary_new2(argc);
 
+    rb_warn("ENV.%s is deprecated; use ENV.select",
+	    rb_id2name(rb_frame_last_func()));
     for (i=0;i<argc;i++) {
 	char *v = 0;
 	if (TYPE(argv[i]) == T_STRING) {
@@ -1498,6 +1574,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"shift", rb_hash_shift, 0);
     rb_define_method(rb_cHash,"delete", rb_hash_delete, 1);
     rb_define_method(rb_cHash,"delete_if", rb_hash_delete_if, 0);
+    rb_define_method(rb_cHash,"select", rb_hash_select, -1);
     rb_define_method(rb_cHash,"reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash,"reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash,"clear", rb_hash_clear, 0);
@@ -1529,6 +1606,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"delete_if", env_delete_if, 0);
     rb_define_singleton_method(envtbl,"reject", env_reject, 0);
     rb_define_singleton_method(envtbl,"reject!", env_reject_bang, 0);
+    rb_define_singleton_method(envtbl,"select", env_select, -1);
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
     rb_define_singleton_method(envtbl,"inspect", env_inspect, 0);
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);

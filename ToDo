@@ -74,6 +74,7 @@ Standard Libraries
 - Integer#to_s(base)
 - Hash::new{default}
 - hash etc. should handle self referenceing array/hash
+- Array#select(n1,n2...) works like Array#indexes(n1,n2...)
 * String#scanf(?)
 * Object#fmt(?)
 * Time::strptime
@@ -96,7 +97,6 @@ Standard Libraries
 * new caller(), e.g. call_stack; needs better name.
 * remove dependency on MAXPATHLEN.
 * pointer share mechanism similar to one in String for Array.
-* Array#select(n1,n2...) works like Array#indexes(n1,n2...)
 * deprecate Array#indexes, and Array#indices.
 
 Extension Libraries

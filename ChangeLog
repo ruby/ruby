@@ -1,3 +1,21 @@
+Tue Dec 11 12:45:28 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_match_m): should convert an argument into
+	  regexp if it's a string.
+
+Tue Dec 11 03:40:23 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_select): Array#select(n,m,...) now works like
+	  Array#indexes(n,m,..). [new, experimental]
+
+	* hash.c (rb_hash_select): ditto.
+
+	* hash.c (env_select): ditto.
+
+	* re.c (match_select): ditto.
+
+	* struct.c (rb_struct_select): ditto.
+
 Tue Dec 11 03:17:19 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* object.c (rb_class_real): follow included modules.
@@ -6,6 +24,14 @@ Mon Dec 10 23:37:51 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* util.h: change prototype of ruby_qsort() to accord with its
 	  definition.
+
+Mon Dec 10 20:30:01 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* gc.c (STR_ASSOC): use FL_USER3 instead of FL_USER2.
+
+Mon Dec 10 17:40:02 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* parse.y (str_extend): make up pushback call.
 
 Mon Dec 10 02:09:28 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
