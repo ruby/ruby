@@ -356,7 +356,7 @@ class Date
 	end
       end
 
-      if $1.size > 2
+      if $3 && $1.size > 2
 	comp = false
 	year, mon, mday = mon, mday, year
       end

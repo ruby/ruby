@@ -99,7 +99,7 @@ class Time
     #     # your timezone is GMT:
     #     Time.parse("16:30")     #=> Thu Nov 29 16:30:00 GMT 2001
     #     Time.parse("7/23")      #=> Mon Jul 23 00:00:00 GMT 2001
-    #     Time.parse("2002/1")    #=> Tue Jan 01 00:00:00 GMT 2002
+    #     Time.parse("Aug 31")    #=> Fri Aug 31 00:00:00 GMT 2001
     #
     # Since there are numerous conflicts among locally defined timezone
     # abbreviations all over the world, this method is not made to
@@ -525,8 +525,6 @@ if __FILE__ == $0
                    Time.parse("2001/11/29 21:12", now))
       assert_equal(Time.local( 2001,11,29),
                    Time.parse("2001/11/29", now))
-      assert_equal(Time.local( 2001,11),
-                   Time.parse("2001/11", now))
       assert_equal(Time.local( 2001,11,29),
                    Time.parse(     "11/29", now))
       #assert_equal(Time.local(2001,11,1), Time.parse("Nov", now))
