@@ -788,7 +788,6 @@ num_step(argc, argv, from)
 	    while (i <= end) {
 		rb_yield(INT2FIX(i));
 		i += diff;
-		printf("<<%g>>\n", i - end);
 	    }
 	}
 	else {

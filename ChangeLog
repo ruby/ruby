@@ -1,3 +1,7 @@
+Thu May  2 08:01:56 2002  Chris Thomas  <kenshin@apple.com>
+
+	* error.c: use HAVE_DECL_SYS_NERR instead of platform names.
+
 Tue Apr 30 09:23:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (num_step): better iteration condition for float

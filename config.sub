@@ -157,6 +157,9 @@ case $os in
 		os=-vxworks
 		basic_machine=$1
 		;;
+	-hiuxmpp)
+		os=-hiuxmpp
+		;;
 	-hiux*)
 		os=-hiuxwe2
 		;;

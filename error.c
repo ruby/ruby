@@ -513,7 +513,7 @@ static const syserr_index_entry syserr_index[]= {
 static VALUE *syserr_list;
 #endif
 
-#if !defined(NT) && !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__) && !defined(sys_nerr)
+#if !HAVE_DECL_SYS_NERR
 extern int sys_nerr;
 #endif
 

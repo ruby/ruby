@@ -265,26 +265,17 @@ range_step(argc, argv, range)
     }
 
     if (FIXNUM_P(b) && FIXNUM_P(e)) { /* fixnums are special */
-	long beg = FIX2LONG(b), end = FIX2LONG(e), s = NUM2LONG(step);
+	long beg, end = FIX2LONG(e), s = NUM2LONG(step);
 	long i;
 	if (s <= 0) {
 	    rb_raise(rb_eArgError, "step can't be <= 0");
 	}
-	if ((end - beg) < 0) {
-	    if (!EXCL(range)) end -= 1;
-	    for (i=beg; i>end; i-=s) {
-		rb_yield(LONG2NUM(i));
-	    }
-	}
-	else {
-	    if (!EXCL(range)) end += 1;
-	    for (i=beg; i<end; i+=s) {
-		rb_yield(INT2NUM(i));
-	    }
+	if (!EXCL(range)) end += 1;
+	for (i=FIX2LONG(b); i<end; i+=s) {
+	    rb_yield(INT2NUM(i));
 	}
     }
     else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
-	VALUE diff;
 	b = rb_Integer(b);
 	e = rb_Integer(e);
 	step = rb_Integer(step);
@@ -292,20 +283,10 @@ range_step(argc, argv, range)
 	if (RTEST(rb_funcall(step, rb_intern("<="), 1, INT2FIX(0)))) {
 	    rb_raise(rb_eArgError, "step can't be <= 0");
 	}
-	diff = rb_funcall(e, '-', 1, b);
-	if (RTEST(rb_funcall(diff, '<', 1, INT2FIX(0)))) {
-	    if (!EXCL(range)) e = rb_funcall(e, '-', 1, INT2FIX(1));
-	    while (RTEST(rb_funcall(b, '>', 1, e))) {
-		rb_yield(b);
-		b = rb_funcall(b, '-', 1, step);
-	    }
-	}
-	else {
-	    if (!EXCL(range)) e = rb_funcall(e, '+', 1, INT2FIX(1));
-	    while (RTEST(rb_funcall(b, '<', 1, e))) {
-		rb_yield(b);
-		b = rb_funcall(b, '+', 1, step);
-	    }
+	if (!EXCL(range)) e = rb_funcall(e, '+', 1, INT2FIX(1));
+	while (RTEST(rb_funcall(b, '<', 1, e))) {
+	    rb_yield(b);
+	    b = rb_funcall(b, '+', 1, step);
 	}
     }
     else if (TYPE(b) == T_STRING) {
@@ -314,14 +295,20 @@ range_step(argc, argv, range)
 
 	args[0] = b; args[1] = e; args[2] = range;
 	iter[0] = 1; iter[1] = NUM2LONG(step);
+	if (iter[1] <= 0) {
+	    rb_raise(rb_eArgError, "step can't be <= 0");
+	}
 	rb_iterate((VALUE(*)_((VALUE)))r_step_str, (VALUE)args, r_step_str_i,
 		   (VALUE)iter);
     }
     else {			/* generic each */
 	VALUE v = b;
-	long lim = NUM2INT(step);
+	long lim = NUM2LONG(step);
 	long i;
 
+	if (lim <= 0) {
+	    rb_raise(rb_eArgError, "step can't be <= 0");
+	}
 	if (EXCL(range)) {
 	    while (r_lt(v, e)) {
 		if (r_eq(v, e)) break;
