@@ -87,14 +87,14 @@ class ThreadsWait
   attr :threads
   
   #
-  # Returns true if there are no threads to be synchronized.
+  # Returns +true+ if there are no threads to be synchronized.
   #
   def empty?
     @threads.empty?
   end
   
   #
-  # Returns true if any thread has terminated.
+  # Returns +true+ if any thread has terminated.
   #
   def finished?
     !@wait_queue.empty?
