@@ -3504,7 +3504,7 @@ rb_f_abort(argc, argv)
 
 	rb_scan_args(argc, argv, "01", &mesg);
 	rb_io_puts(argc, argv, rb_stderr);
-	exit(1);
+	rb_exit(1);
     }
     return Qnil;		/* not reached */
 }

@@ -1,3 +1,9 @@
+Mon Mar 18 17:18:06 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_f_abort): should not bypass cleanup.
+
+	* ext/stringio/stringio.c (check_modifiable): void function.
+
 Mon Mar 18 12:52:01 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/iconv/extconf.rb: workaround for GNU libiconv.
