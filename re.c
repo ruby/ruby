@@ -502,8 +502,8 @@ static VALUE
 rb_reg_options_m(re)
     VALUE re;
 {
-    rb_reg_check(re);
-    return INT2NUM(RREGEXP(re)->ptr->options);
+    int options = rb_reg_options(re);
+    return INT2NUM(options);
 }
 
 static VALUE
@@ -1303,9 +1303,10 @@ rb_reg_initialize_m(argc, argv, self)
 	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
 	    else if (RTEST(argv[1])) flags = RE_OPTION_IGNORECASE;
 	}
-	if (argc == 3) {
+	if (argc == 3 && !NIL_P(argv[2])) {
 	    char *kcode = StringValuePtr(argv[2]);
 
+	    flags &= ~0x70;
 	    switch (kcode[0]) {
 	      case 'n': case 'N':
 		flags |= 16;
@@ -1471,15 +1472,11 @@ int
 rb_reg_options(re)
     VALUE re;
 {
-    int options = 0;
+    int options;
 
     rb_reg_check(re);
-    if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
-	options |= RE_OPTION_IGNORECASE;
-    if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
-	options |= RE_OPTION_MULTILINE;
-    if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
-	options |= RE_OPTION_EXTENDED;
+    options = RREGEXP(re)->ptr->options &
+	(RE_OPTION_IGNORECASE|RE_OPTION_MULTILINE|RE_OPTION_EXTENDED);
     if (FL_TEST(re, KCODE_FIXED)) {
 	options |= rb_reg_get_kcode(re);
     }

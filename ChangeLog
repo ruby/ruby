@@ -1,6 +1,17 @@
+Fri Jul 25 13:38:38 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* re.c (rb_reg_options_m): use rb_reg_options() to mask internal
+	  flags.
+
+	* re.c (rb_reg_initialize_m): allow nil as third argument and
+	  ignore, and mask code flags if the argument is given.
+	  [ruby-dev:20885]
+
+	* re.c (rb_reg_options): get common flags directly.
+
 Fri Jul 25 03:52:21 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-    * lib/yaml/dbm.rb: replace indexes with values_at.
+	* lib/yaml/dbm.rb: replace indexes with values_at.
 
 Fri Jul 25 02:55:59 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -10,14 +21,14 @@ Fri Jul 25 02:55:59 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Fri Jul 25 01:27:59 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/emitter.c (syck_emitter_flush): accepts count
-      of bytes to flush.  anchor offsets now functional.
+	* ext/syck/emitter.c (syck_emitter_flush): accepts count
+	  of bytes to flush.  anchor offsets now functional.
 
-    * ext/syck/syck.h (syck_emitter_flush): ditto.
+	* ext/syck/syck.h (syck_emitter_flush): ditto.
 
-    * ext/syck/rubyext.c: ditto.
+	* ext/syck/rubyext.c: ditto.
 
-    * ext/syck/token.c: URI escaping now supported.
+	* ext/syck/token.c: URI escaping now supported.
 
 Thu Jul 24 16:41:31 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -23276,4 +23287,6 @@ add-log-time-format: (lambda ()
 	  (lo (% diff 65536))
 	  (hi  (+ (car time) (/ diff 65536))))
     (format-time-string "%a %b %e %H:%M:%S %Y" (list hi lo) t)))
+indent-tabs-mode: t
+tab-width: 8
 end:
