@@ -1,3 +1,7 @@
+Mon Jan  6 02:32:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* struct.c (make_struct): needs meta class.
+
 Sun Jan  5 22:54:05 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/fileutils.rb (ln): `argv' is not a argument.
