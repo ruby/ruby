@@ -3194,11 +3194,11 @@ io_reopen(io, nfile)
 	    if (f2) {
 		fptr->f = rb_fdopen(fd, "r");
 		fptr->f2 = f2;
-		fptr->mode |= FMODE_READABLE;
 	    }
 	    else {
 		fptr->f = rb_fdopen(fd, mode);
 	    }
+	    fptr->mode |= FMODE_READABLE;
 	}
 	rb_thread_fd_close(fd);
 	if ((orig->mode & FMODE_READABLE) && pos >= 0) {

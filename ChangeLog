@@ -1,3 +1,8 @@
+Thu Dec 23 09:18:53 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_reopen): readable flag was left unset for read-only IO.
+	  fixed: [ruby-core:04003]
+
 Thu Dec 23 00:16:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (bsdi): use $(CC) for LDSHARED.  fixed [ruby-dev:25270]
