@@ -2150,7 +2150,7 @@ rb_io_binmode(io)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
-    if ((fptr->mode & FMODE_BINMODE) && READ_DATA_BUFFERED(fptr->f)) {
+    if (!(fptr->mode & FMODE_BINMODE) && READ_DATA_BUFFERED(fptr->f)) {
 	rb_raise(rb_eIOError, "buffer already filled with text-mode content");
     }
 #ifdef __human68k__

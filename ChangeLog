@@ -1,3 +1,7 @@
+Thu Apr  8 19:03:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_binmode): inverted condition.  [ruby-dev:23349]
+
 Thu Apr  8 18:22:00 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_s_list): return encoding list if no block
