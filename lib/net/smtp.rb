@@ -141,12 +141,11 @@ Net::Protocol
       end
 
       if user and secret then
-        begin
-          mid = 'auth_' + (authtype || 'cram_md5').to_s
-          @command.send mid, user, secret
-        rescue NameError
+        mid = 'auth_' + (authtype || 'cram_md5').to_s
+        unless @command.respond_to? mid then
           raise ArgumentError, "wrong auth type #{authtype.to_s}"
         end
+        @command.send mid, user, secret
       end
     end
 

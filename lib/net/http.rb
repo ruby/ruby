@@ -156,7 +156,7 @@ All "key" is case-insensitive.
 
 
     def get( path, u_header = nil, dest = nil, &block )
-      resp = get2( path, u_header ) {|f| dest = f.entity( dest, &block ) }
+      resp = get2( path, u_header ) {|f| dest = f.body( dest, &block ) }
       resp.value
       return resp, dest
     end
@@ -184,7 +184,7 @@ All "key" is case-insensitive.
 
     def post( path, data, u_header = nil, dest = nil, &block )
       resp = post2( path, data, u_header ) {|f|
-                    dest = f.entity( dest, &block ) }
+                    dest = f.body( dest, &block ) }
       resp.value
       return resp, dest
     end
@@ -199,7 +199,7 @@ All "key" is case-insensitive.
     # not tested because I could not setup apache  (__;;;
     def put( path, src, u_header = nil )
       ret = nil
-      resp = put2( path, src, u_header ) {|f| ret = f.entity }
+      resp = put2( path, src, u_header ) {|f| ret = f.body }
       resp.value
       return resp, ret
     end
@@ -249,8 +249,12 @@ All "key" is case-insensitive.
         if /keep-alive/i === resp['connection'] then
           return true
         end
+      elsif resp.key? 'proxy-connection' then
+        if /keep-alive/i === resp['proxy-connection'] then
+          return true
+        end
       elsif header.key? 'Connection' then
-        if /\A\s*keep-alive/i === header['Connection'] then
+        if /keep-alive/i === header['Connection'] then
           return true
         end
       else
@@ -518,12 +522,10 @@ All "key" is case-insensitive.
               tmp = resp['connection']
               if tmp and /close/i === tmp then
                 @socket.read_all dest
-                @socket.close
               else
                 tmp = resp['proxy-connection']
                 if tmp and /close/i === tmp then
                   @socket.read_all dest
-                  @socket.close
                 end
               end
             end
