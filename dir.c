@@ -185,14 +185,14 @@ bracket(p, s, flags)
 	if (escape && *t1 == '\\')
 	    t1++;
 	if (!*t1)
-	    return 0;
+	    return NULL;
 	p = Next(t1);
 	if (p[0] == '-' && p[1] != ']') {
 	    const char *t2 = p + 1;
 	    if (escape && *t2 == '\\')
 		t2++;
 	    if (!*t2)
-		return 0;
+		return NULL;
 	    p = Next(t2);
 	    if (!ok && Compare(t1, s) <= 0 && Compare(s, t2) <= 0)
 		ok = 1;
@@ -202,7 +202,7 @@ bracket(p, s, flags)
 		ok = 1;
     }
 
-    return ok == not ? 0 : (char *)p + 1;
+    return ok == not ? NULL : (char *)p + 1;
 }
 
 /* If FNM_PATHNAME is set, only path element will be matched. (upto '/' or '\0')
