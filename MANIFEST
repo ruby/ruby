@@ -937,6 +937,7 @@ test/xsd/test_xmlschemaparser.rb
 test/xsd/test_xsd.rb
 test/xsd/xmlschema.xml
 test/yaml/test_yaml.rb
+test/zlib/test_zlib.rb
 vms/config.h
 vms/vms.h
 win32/Makefile.sub
