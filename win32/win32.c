@@ -780,14 +780,12 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 
 	/* associate handle to file descritor */
 	*pipe = rb_w32_open_osfhandle((long)hDupFile, pipemode);
+	CloseHandle(hOrg);
 	if (*pipe == -1) {
-	    CloseHandle(hOrg);
 	    CloseHandle(hDupFile);
 	    CloseChildHandle(child);
 	    break;
 	}
-	if (!(reading && writing))
-	    CloseHandle(hOrg);
 
 	ret = child->pid;
     } while (0));
