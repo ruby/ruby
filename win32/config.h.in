@@ -38,6 +38,7 @@
 
 #define RSHIFT(x,y) ((x)>>y)
 #define FILE_COUNT _cnt
+#define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
 #define DLEXT2 ".dll"
 #define RUBY_LIB "/lib/ruby/1.6"

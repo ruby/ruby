@@ -1,13 +1,38 @@
+Mon Sep  4 12:58:31 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.0 released.
+
 Mon Sep  4 13:40:40 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: renamed libruby.a to libruby.{cygwin,mingw32}.a
 	  on cygwin and mingw32.
 
-Fri Sep  1 10:36:45 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Sun Sep  3 23:44:04 2000  Noriaki Harada  <tenmei@maoh.office.ne.jp>
 
-	* stable version 1.6.0 released.
+	* io.c (NO_SAFE_RENAME): for BeOS too.
+
+Sun Sep  3 11:31:53 2000  Takaaki Tateishi  <ttate@jaist.ac.jp>
+
+	* parse.y (rescue): no assignment was done if rescue body as
+	  empty.
+
+Sat Sep  2 10:52:21 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (call_args,aref_args): block_call can be the last
+	  argument.
+
+	* parse.y (COND_PUSH,COND_POP): maintain condition stack to allow
+	  kDO2 in parentheses in while/until/for conditions.
+
+	* parse.y (yylex): generate kDO2 for EXPR_ARG outside of
+	  while/until/for condition.
 
 Fri Sep  1 10:36:29 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (aref_args,opt_call_args): add block_call to allow a
+	  method without parentheses and with block as a last argument.
+
+	* hash.c (rb_hash_sort): should not retrun nil.
 
 	* re.c (match_aref): should use rb_reg_nth_match().
 

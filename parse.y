@@ -58,6 +58,17 @@ static enum lex_state {
 } lex_state;
 
 static int cond_nest = 0;
+static unsigned long cond_stack = 0;
+#define COND_PUSH do {\
+    cond_nest++;\
+    cond_stack = (cond_stack<<1)|1;\
+} while(0)
+#define COND_POP do {\
+    cond_nest--;\
+    cond_stack >>= 1;\
+} while (0)
+#define IN_COND (cond_nest > 0 && (cond_stack&1))
+
 static int class_nest = 0;
 static int in_single = 0;
 static int compile_for_eval = 0;
@@ -214,8 +225,6 @@ static void top_local_setup();
  *	precedence table
  */
 
-/*%nonassoc kDO
-%nonassoc kDO2*/
 %left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD kRESCUE_MOD
 %left  kOR kAND
 %right kNOT
@@ -859,15 +868,19 @@ aref_args	: none
 		    {
 			$$ = NEW_LIST($1);
 		    }
+		| args ',' command_call opt_nl
+		    {
+			$$ = list_append($1, $3);
+		    }
 		| block_call opt_nl
 		    {
 			$$ = NEW_LIST($1);
 		    }
-		| args opt_nl
+		| args ',' block_call opt_nl
 		    {
-			$$ = $1;
+			$$ = list_append($1, $3);
 		    }
-		| args ',' opt_nl
+		| args trailer
 		    {
 			$$ = $1;
 		    }
@@ -876,11 +889,7 @@ aref_args	: none
 			value_expr($4);
 			$$ = arg_concat($1, $4);
 		    }
-		| assocs
-		    {
-			$$ = NEW_LIST(NEW_HASH($1));
-		    }
-		| assocs ','
+		| assocs trailer
 		    {
 			$$ = NEW_LIST(NEW_HASH($1));
 		    }
@@ -895,6 +904,10 @@ opt_call_args	: none
 		| block_call opt_nl
 		    {
 			$$ = NEW_LIST($1);
+		    }
+		| args ',' block_call
+		    {
+			$$ = list_append($1, $3);
 		    }
 
 call_args	: command_call
@@ -1152,7 +1165,7 @@ primary		: literal
 			$$ = NEW_UNLESS(cond($2), $4, $5);
 		        fixpos($$, $2);
 		    }
-		| kWHILE {cond_nest++;} expr do { cond_nest--; }
+		| kWHILE {COND_PUSH;} expr do {COND_POP;}
 		  compstmt
 		  kEND
 		    {
@@ -1160,7 +1173,7 @@ primary		: literal
 			$$ = NEW_WHILE(cond($3), $6, 1);
 		        fixpos($$, $3);
 		    }
-		| kUNTIL {cond_nest++;} expr do { cond_nest--; } 
+		| kUNTIL {COND_PUSH;} expr do {COND_POP;} 
 		  compstmt
 		  kEND
 		    {
@@ -1176,7 +1189,7 @@ primary		: literal
 			$$ = NEW_CASE($2, $3);
 		        fixpos($$, $2);
 		    }
-		| kFOR block_var kIN {cond_nest++;} expr do {cond_nest--;}
+		| kFOR block_var kIN {COND_PUSH;} expr do {COND_POP;}
 		  compstmt
 		  kEND
 		    {
@@ -1442,8 +1455,7 @@ method_call	: operation '(' opt_call_args close_paren
 
 close_paren	: ')'
 		    {
-			if (cond_nest == 0)
-			    lex_state = EXPR_PAREN;
+			if (!IN_COND) lex_state = EXPR_PAREN;
 		    }
 
 stmt_rhs	: block_call
@@ -1484,7 +1496,7 @@ rescue		: kRESCUE exc_list exc_var then
 		  compstmt
 		  rescue
 		    {
-		        if ($3 && $5) {
+		        if ($3) {
 		            $3 = node_assign($3, NEW_GVAR(rb_intern("$!")));
 			    $5 = block_append($3, $5);
 			}
@@ -1908,6 +1920,7 @@ yycompile(f, line)
     rb_gc();
     ruby_in_compile = 0;
     cond_nest = 0;
+    cond_stack = 0;
     class_nest = 0;
     in_single = 0;
     cur_mid = 0;
@@ -3198,7 +3211,13 @@ yylex()
 
       case ']':
       case '}':
+	lex_state = EXPR_END;
+	return c;
+
       case ')':
+	if (cond_nest > 0) {
+	    cond_stack >>= 1;
+	}
 	lex_state = EXPR_END;
 	return c;
 
@@ -3264,6 +3283,9 @@ yylex()
 	return '~';
 
       case '(':
+	if (cond_nest > 0) {
+	    cond_stack = (cond_stack<<1)|0;
+	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
 	    c = tLPAREN;
 	}
@@ -3513,7 +3535,9 @@ yylex()
 		    if (state == EXPR_FNAME) {
 			yylval.id = rb_intern(kw->name);
 		    }
-		    if (state == EXPR_PAREN && kw->id[0] == kDO) {
+		    if (kw->id[0] == kDO &&
+			(state == EXPR_PAREN ||
+			 (!IN_COND && state == EXPR_ARG))) {
 			return kDO2;
 		    }
 		    return kw->id[state != EXPR_BEG];

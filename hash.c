@@ -613,7 +613,9 @@ static VALUE
 rb_hash_sort(hash)
     VALUE hash;
 {
-    return rb_ary_sort_bang(rb_hash_to_a(hash));
+    VALUE entries = rb_hash_to_a(hash);
+    rb_ary_sort_bang(entries);
+    return entries;
 }
 
 static int

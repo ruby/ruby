@@ -19,7 +19,7 @@
 #include <ctype.h>
 #include <errno.h>
 
-#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(NT) || defined(__human68k__) || defined(__EMX__)
+#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(NT) || defined(__human68k__) || defined(__EMX__) || defined(__BEOS__)
 # define NO_SAFE_RENAME
 #endif
 
