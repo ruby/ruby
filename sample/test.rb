@@ -1,5 +1,6 @@
 #! /usr/bin/env ruby
 
+$KCODE = "none"
 $testnum=0
 $ntest=0
 $failed = 0

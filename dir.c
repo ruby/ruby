@@ -783,7 +783,7 @@ push_braces(ary, s)
 	p++;
     }
 
-    if (lbrace) {
+    if (lbrace && rbrace) {
 	int len = strlen(s);
 	if (len >= MAXPATHLEN)
 	    buf = xmalloc(len + 1);

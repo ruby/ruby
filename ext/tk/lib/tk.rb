@@ -1227,7 +1227,7 @@ class TkVariable
   def ==(other)
     case other
     when TkVariable
-      self.equal(self)
+      self.equal(other)
     when String
       self.to_s == other
     when Integer

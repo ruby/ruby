@@ -1,3 +1,8 @@
+Tue May 20 00:45:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (push_braces): do not push_braces() unless rbrace is found.
+	  (ruby-bugs-ja:PR#469)
+
 Thu May 15 19:30:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_block_given_p): false if ruby_block is null.
@@ -24,6 +29,10 @@ Sun Mar 23 19:55:32 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): use free() if dfree is -1.
 
+Thu Mar 20 10:11:23 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_require): clear ruby_errinfo.
+
 Wed Mar 19 23:05:30 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 
 	* lib/tracer.rb (trace_func): save and recover Thread.critical state.
@@ -40,6 +49,7 @@ Fri Mar  7 00:30:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/Win32API/extconf.rb: no need to add gcc options.
 
+>>>>>>> 1.285.2.597
 Fri Feb 28 22:53:55 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (flock): maps error code.
@@ -13953,3 +13963,6 @@ Wed Aug 13 17:51:46 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1 alpha0 released.
 
+Local variables:
+add-log-time-format: current-time-string
+end:

@@ -5504,6 +5504,7 @@ rb_f_require(obj, fname)
 	SCOPE_SET(old_vmode);
     }
     if (state) JUMP_TAG(state);
+    ruby_errinfo = Qnil;
 
     return Qtrue;
 
