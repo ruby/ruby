@@ -16,6 +16,10 @@
 #include <stdio.h>
 #include <errno.h>
 
+#if defined(HAVE_STDIO_EXT_H)
+#include <stdio_ext.h>
+#endif
+
 typedef struct OpenFile {
     FILE *f;			/* stdio ptr for read/write */
     FILE *f2;			/* additional ptr for rw pipes */

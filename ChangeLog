@@ -3,6 +3,11 @@ Sat Nov 20 01:45:04 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* test/xmlrpc/test_webrick_server.rb : move `requrie "webrick/https"'
 	  into #setup_http_server mohtod to avoid soap test errors.
 
+Sat Nov 20 00:07:16 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): internal buffer should not be listed by
+	  ObjectSpace.each_object() by String#gsub.  [ruby-dev:24931]
+
 Fri Nov 19 22:44:43 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb: better support for -p/-x option.
@@ -62,6 +67,12 @@ Fri Nov 19 10:32:36 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_s_set_completion_append_character):
 	  accept nil.  [ruby-core:03765]
+
+Fri Nov 19 01:20:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session::FileStore::initialize): raise
+	  exception if data corresponding to session specified from the
+	  client does not exist.
 
 Fri Nov 19 00:59:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
