@@ -593,6 +593,36 @@ module Tk
     tk_tcl2ruby(tk_call('focus', '-lastfor', win))
   end
 
+  def Tk.show_kinsoku(mode='both')
+    begin
+      if /^8\.*/ === TK_VERSION  && JAPANIZED_TK
+        tk_split_simplelist(tk_call('kinsoku', 'show', mode))
+      end
+    rescue
+    end
+  end
+  def Tk.add_kinsoku(chars, mode='both')
+    begin
+      if /^8\.*/ === TK_VERSION  && JAPANIZED_TK
+        tk_split_simplelist(tk_call('kinsoku', 'add', mode, 
+                                    *(chars.split(''))))
+      else
+        []
+      end
+    rescue
+      []
+    end
+  end
+  def Tk.delete_kinsoku(chars, mode='both')
+    begin
+      if /^8\.*/ === TK_VERSION  && JAPANIZED_TK
+        tk_split_simplelist(tk_call('kinsoku', 'delete', mode, 
+                            *(chars.split(''))))
+      end
+    rescue
+    end
+  end
+
   def toUTF8(str,encoding)
     INTERP._toUTF8(str,encoding)
   end
@@ -1181,6 +1211,73 @@ module TkKinput
   end
   def kanji_input_end
     TkKinput.input_end(self)
+  end
+end
+
+module TkXIM
+  include Tk
+  extend Tk
+
+  def TkXIM.useinputmethods(window=nil, value=nil)
+    if window
+      if value
+        tk_call 'tk', 'useinputmethods', '-displayof', window.path, value
+      else
+        tk_call 'tk', 'useinputmethods', '-displayof', window.path
+      end
+    else
+      if value
+        tk_call 'tk', 'useinputmethods', value
+      else
+        tk_call 'tk', 'useinputmethods'
+      end
+    end
+  end
+
+  def TkXIM.configure(window, slot, value=None)
+    begin
+      if /^8\.*/ === Tk::TK_VERSION  && JAPANIZED_TK
+        if slot.kind_of? Hash
+          tk_call 'imconfigure', window.path, *hash_kv(slot)
+        else
+          tk_call 'imconfigure', window.path, "-#{slot}", value
+        end
+      end
+    rescue
+    end
+  end
+
+  def TkXIM.configinfo(window, slot=nil)
+    begin
+      if /^8\.*/ === Tk::TK_VERSION  && JAPANIZED_TK
+        if slot
+          conf = tk_split_list(tk_call('imconfigure', window.path, "-#{slot}"))
+          conf[0] = conf[0][1..-1]
+          conf
+        else
+          tk_split_list(tk_call('imconfigure', window.path)).collect{|conf|
+            conf[0] = conf[0][1..-1]
+            conf
+          }
+        end
+      else
+        []
+      end
+    rescue
+      []
+    end
+  end
+
+  def useinputmethods(value=nil)
+    TkXIM.useinputmethods(self, value=nil)
+  end
+
+  def imconfigure(window, slot, value=None)
+    TkXIM.configinfo(window, slot, value)
+  end
+
+  def imconfiginfo(slot=nil)
+    TkXIM.configinfo(window, slot)
   end
 end
 

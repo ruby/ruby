@@ -13,8 +13,42 @@ class TkFont
   Tk_FontNameTBL = {}
   Tk_FontUseTBL = {}
 
-  DEFAULT_LATIN_FONT_NAME = 'a14'.freeze
-  DEFAULT_KANJI_FONT_NAME = 'k14'.freeze
+  case Tk::TK_VERSION
+  when /^4\.*/
+    DEFAULT_LATIN_FONT_NAME = 'a14'.freeze
+    DEFAULT_KANJI_FONT_NAME = 'k14'.freeze
+  when /^8\.*/
+    if JAPANIZED_TK
+      begin
+        fontnames = tk_call('font', 'names')
+	case fontnames
+	when /defaultgui/
+          # Tcl/Tk-JP for Windows
+          ltn = 'defaultgui'
+          knj = 'defaultgui'
+	when /Mincho:Helvetica-12/
+          # Tcl/Tk-JP for UNIX/X
+          ltn, knj = tk_split_simplelist(tk_call('font', 'configure', 
+                                                 'Mincho:Helvetica-12', 
+                                                 '-compound'))
+        else
+          # unknown Tcl/Tk-JP
+          ltn = 'Helvetica'
+          knj = 'mincho'
+        end
+      rescue
+        ltn = 'Helvetica'
+        knj = 'mincho'
+      end
+      DEFAULT_LATIN_FONT_NAME = ltn.freeze
+      DEFAULT_KANJI_FONT_NAME = knj.freeze
+    else
+      DEFAULT_LATIN_FONT_NAME = 'Helvetica'.freeze
+      DEFAULT_KANJI_FONT_NAME = 'mincho'.freeze
+    end
+  end
+  p "default latin font = #{DEFAULT_LATIN_FONT_NAME}" if $DEBUG
+  p "default kanji font = #{DEFAULT_KANJI_FONT_NAME}" if $DEBUG
 
   ###################################
   # class methods
@@ -48,9 +82,10 @@ class TkFont
   end
 
   def TkFont.create_copy(font)
+    fail 'source-font need to be TkFont' unless font.kind_of? TkFont
     keys = {}
     font.configinfo.each{|key,value| keys[key] = value }
-    new_font = TkFont.new(font.latin_font, font.kanji_font, keys)
+    TkFont.new(font.latin_font, font.kanji_font, keys)
   end
 
   def TkFont.get_obj(name)
@@ -117,6 +152,15 @@ class TkFont
       Tk_FontUseTBL[path]
     else
       Tk_FontUseTBL.values | []
+    end
+  end
+
+  def TkFont.failsafe(font)
+    begin
+      if /^8\.*/ === Tk::TK_VERSION  && JAPANIZED_TK
+        tk_call('font', 'failsafe', font)
+      end
+    rescue
     end
   end
 
@@ -191,7 +235,11 @@ class TkFont
       @latinfont = font.latin_font
 
     else
-      @latinfont = font
+      if font
+        @latinfont = font
+      else
+        @latinfont = DEFAULT_LATIN_FONT_NAME
+      end
 
     end
   end
@@ -237,7 +285,11 @@ class TkFont
     elsif font.kind_of? TkFont
       @kanjifont = font.kanji_font
     else
-      @kanjifont = font
+      if font
+        @kanjifont = font
+      else
+        @kanjifont = DEFAULT_KANJI_FONT_NAME
+      end
     end
   end
 
@@ -256,13 +308,22 @@ class TkFont
 
     if JAPANIZED_TK
       if font.kind_of? Hash
-	tk_call('font', 'create', @latinfont, *hash_kv(font))
+	if font['charset']
+	  tk_call('font', 'create', @latinfont, *hash_kv(font))
+	else
+	  tk_call('font', 'create', @latinfont, 
+                  '-charset', 'iso8859', *hash_kv(font))
+	end
       elsif font.kind_of? Array
 	tk_call('font', 'create', @latinfont, '-copy', array2tk_list(font))
+        tk_call('font', 'configure', @latinfont, '-charset', 'iso8859')
       elsif font.kind_of? TkFont
 	tk_call('font', 'create', @latinfont, '-copy', font.latin_font)
+      elsif font
+	tk_call('font', 'create', @latinfont, '-copy', font, 
+                '-charset', 'iso8859')
       else
-	tk_call('font', 'create', @latinfont, '-copy', font)
+	tk_call('font', 'create', @latinfont, '-charset', 'iso8859')
       end
     else
       if font.kind_of? Hash
@@ -273,7 +334,7 @@ class TkFont
 	  actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
 	elsif font.kind_of? TkFont
 	  actual_core(font.latin_font).each{|key,val| keys[key] = val}
-	else
+	elsif font
 	  actual_core(font).each{|key,val| keys[key] = val}
 	end
 	tk_call('font', 'create', @latinfont, *hash_kv(keys))
@@ -299,12 +360,13 @@ class TkFont
     elsif font.kind_of? Array
       tk_call('font', 'create', @kanjifont, '-copy', array2tk_list(font))
       tk_call('font', 'configure', @kanjifont, '-charset', 'jisx0208.1983')
-
     elsif font.kind_of? TkFont
       tk_call('font', 'create', @kanjifont, '-copy', font.kanji_font)
-    else
+    elsif font
       tk_call('font', 'create', @kanjifont, '-copy', font, 
 	      '-charset', 'jisx0208.1983')
+    else
+      tk_call('font', 'create', @kanjifont, '-charset', 'jisx0208.1983')
     end
   end
 
@@ -319,7 +381,7 @@ class TkFont
 	actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
       elsif font.kind_of? TkFont
 	actual_core(font.kanji_font).each{|key,val| keys[key] = val}
-      else
+      elsif font
 	actual_core(font).each{|key,val| keys[key] = val}
       end
       tk_call('font', 'create', @kanjifont, *hash_kv(keys))
@@ -399,9 +461,9 @@ class TkFont
       ""
     elsif option
       if window
-	tk_call('font', 'actual', font, "-#{option}")
-      else
 	tk_call('font', 'actual', font, "-displayof", window, "-#{option}")
+      else
+	tk_call('font', 'actual', font, "-#{option}")
       end
     else
       l = tk_split_simplelist(if window
@@ -663,7 +725,7 @@ class TkFont
     alias measure_core        measure_core_tk8x
     alias metrics_core        metrics_core_tk8x
 
-  when /^8\.[12]/
+  when /^8\.[123]/
     alias create_latinfont    create_latinfont_tk8x
     alias create_kanjifont    create_kanjifont_tk81
     alias create_compoundfont create_compoundfont_tk81
