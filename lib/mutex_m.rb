@@ -1,10 +1,12 @@
 #
 #   mutex_m.rb - 
-#   	$Release Version: 2.0$
+#   	$Release Version: 3.0$
 #   	$Revision: 1.7 $
 #   	$Date: 1998/02/27 04:28:57 $
 #       Original from mutex.rb
-#   	by Keiju ISHITSUKA(SHL Japan Inc.)
+#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#       modified by matz
+#       patched by akira yamada
 #
 # --
 #   Usage:
@@ -27,7 +29,7 @@ module Mutex_m
 	alias synchronize mu_synchronize
       }
     end
-    return self
+    self
   end
   
   def Mutex_m.extend_object(obj)
@@ -49,7 +51,7 @@ module Mutex_m
 	alias synchronize mu_synchronize
       end"
     end
-    initialize
+    mu_initialize
   end
   
   # locking 
@@ -102,10 +104,13 @@ module Mutex_m
   
   private
   
-  def initialize(*args)
-    ret = super
+  def mu_initialize
     @mu_waiting = []
     @mu_locked = false;
-    return ret
+  end
+
+  def initialize(*args)
+    mu_initialize
+    super
   end
 end
