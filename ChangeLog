@@ -1,6 +1,6 @@
 Mon Feb  3 13:18:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* re.c (rb_memsearch): algolithm body of String#index.
+	* re.c (rb_memsearch): algorithm body of String#index.
 
 	* error.c (Init_Exception): "to_str" removed.
 
@@ -17,7 +17,7 @@ Sat Feb  1 23:56:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Jan 31 14:16:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* string.c (rb_str_index): search using Karp-Rabin algolithm.
+	* string.c (rb_str_index): search using Karp-Rabin algorithm.
 
 Fri Jan 31 12:45:11 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -6617,7 +6617,7 @@ Fri Dec  7 19:12:14 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: HTTP.new requires at least one arg.
 
-	* lib/net/http.rb: changes implicit start algolithm.
+	* lib/net/http.rb: changes implicit start algorithm.
 
 Fri Dec  7 15:49:39 2001  Usaku Nakamura <usa@ruby-lang.org>
 
