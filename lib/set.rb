@@ -100,7 +100,7 @@ class Set
     self
   end
 
-  # Converts the set to an array. (the order is uncertain)
+  # Converts the set to an array.  The order of elements is uncertain.
   def to_a
     @hash.keys
   end
