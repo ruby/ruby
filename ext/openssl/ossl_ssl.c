@@ -433,6 +433,12 @@ ossl_ssl_setup(VALUE self)
     return Qtrue;
 }
 
+#ifdef _WIN32
+#define ssl_get_error(ssl, ret) (errno = GetLastError(), SSL_get_error(ssl, ret))
+#else
+#define ssl_get_error(ssl, ret) SSL_get_error(ssl, ret)
+#endif
+
 static VALUE
 ossl_start_ssl(VALUE self, int (*func)())
 {
@@ -447,7 +453,7 @@ ossl_start_ssl(VALUE self, int (*func)())
     SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)cb);
     for(;;){
 	if((ret = func(ssl)) > 0) break;
-	switch(SSL_get_error(ssl, ret)){
+	switch(ssl_get_error(ssl, ret)){
 	case SSL_ERROR_WANT_WRITE:
             rb_io_wait_writable(fptr->fd);
             continue;
@@ -503,7 +509,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 	    rb_thread_wait_fd(fptr->fd);
 	for (;;){
 	    nread = SSL_read(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
-	    switch(SSL_get_error(ssl, nread)){
+	    switch(ssl_get_error(ssl, nread)){
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_ZERO_RETURN:
@@ -550,7 +556,7 @@ ossl_ssl_write(VALUE self, VALUE str)
     if (ssl) {
 	for (;;){
 	    nwrite = SSL_write(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
-	    switch(SSL_get_error(ssl, nwrite)){
+	    switch(ssl_get_error(ssl, nwrite)){
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:

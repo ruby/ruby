@@ -1,3 +1,8 @@
+Mon Mar  7 16:46:02 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_start_ssl, ossl_ssl_read,
+	  ossl_ssl_write): need to set errno on Win32 platform.
+
 Mon Mar  7 14:13:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/buffering.rb (Buffering#initialize):
