@@ -1,3 +1,7 @@
+Fri Oct  8 01:13:05 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/optiondb.rb: make it more secure
+
 Thu Oct  7 23:47:57 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/scrollbar.rb: When 'set' operation, a scrollbar

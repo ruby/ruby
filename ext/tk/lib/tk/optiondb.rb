@@ -129,13 +129,23 @@ module TkOptionDB
 
   # support procs on the resource database
   @@resource_proc_class = Class.new
+
+  @@resource_proc_class.const_set(:CARRIER, '.'.freeze)
+
+  @@resource_proc_class.instance_variable_set('@method_tbl', 
+					      TkCore::INTERP.create_table)
+  @@resource_proc_class.instance_variable_set('@add_method', false)
+  @@resource_proc_class.instance_variable_set('@safe_mode', 4)
+
   class << @@resource_proc_class
     private :new
- 
+
+=begin 
     CARRIER    = '.'.freeze
     METHOD_TBL = TkCore::INTERP.create_table
     ADD_METHOD = false
     SAFE_MODE  = 4
+=end
 
 =begin
     def __closed_block_check__(str)
@@ -162,13 +172,15 @@ module TkOptionDB
     end
 
     def method_missing(id, *args)
-      res_proc, proc_str = self::METHOD_TBL[id]
+      #res_proc, proc_str = self::METHOD_TBL[id]
+      res_proc, proc_str = @method_tbl[id]
 
       proc_source = TkOptionDB.get(self::CARRIER, id.id2name, '').strip
       res_proc = nil if proc_str != proc_source # resource is changed
 
       unless res_proc.kind_of? Proc
-        if id == :new || !(self::METHOD_TBL.has_key?(id) || self::ADD_METHOD)
+        #if id == :new || !(self::METHOD_TBL.has_key?(id) || self::ADD_METHOD)
+        if id == :new || !(@method_tbl.has_key?(id) || @add_method)
           raise NoMethodError, 
                 "not support resource-proc '#{id.id2name}' for #{self.name}"
         end
@@ -178,14 +190,16 @@ module TkOptionDB
         proc_str = __check_proc_string__(proc_str)
         res_proc = proc{ 
 	  begin
-	    eval("$SAFE = #{self::SAFE_MODE};\nProc.new" + proc_str)
+	    #eval("$SAFE = #{self::SAFE_MODE};\nProc.new" + proc_str)
+	    eval("$SAFE = #{@safe_mode};\nProc.new" + proc_str)
 	  rescue SyntaxError=>err
 	    raise SyntaxError, 
 	      TkCore::INTERP._toUTF8(err.message.gsub(/\(eval\):\d:/, 
 						      "(#{id.id2name}):"))
 	  end
 	}.call
-        self::METHOD_TBL[id] = [res_proc, proc_source]
+        #self::METHOD_TBL[id] = [res_proc, proc_source]
+        @method_tbl[id] = [res_proc, proc_source]
       end
       res_proc.call(*args)
     end
@@ -266,10 +280,19 @@ module TkOptionDB
       cmd_klass = Class.new(TkOptionDB.module_eval('@@resource_proc_class'))
     end
     cmd_klass.const_set(:CARRIER, carrier.dup.freeze)
+
+    cmd_klass.instance_variable_set('@method_tbl', TkCore::INTERP.create_table)
+    cmd_klass.instance_variable_set('@add_method', add)
+    cmd_klass.instance_variable_set('@safe_mode', safe)
+    func.each{|f| 
+      cmd_klass.instance_variable_get('@method_tbl')[f.to_s.intern] = nil
+    }
+=begin
     cmd_klass.const_set(:METHOD_TBL, TkCore::INTERP.create_table)
     cmd_klass.const_set(:ADD_METHOD, add)
     cmd_klass.const_set(:SAFE_MODE, safe)
     func.each{|f| cmd_klass::METHOD_TBL[f.to_s.intern] = nil }
+=end
 
     cmd_klass
   end
@@ -279,25 +302,15 @@ module TkOptionDB
   def __remove_methods_of_proc_class(klass)
     # for security, make these methods invalid
     class << klass
-=begin
-      attr_reader :class_eval, :name, :superclass, 
-	:ancestors, :const_defined?, :const_get, :const_set, 
-	:constants, :included_modules, :instance_methods, 
-	:method_defined?, :module_eval, :private_instance_methods, 
-	:protected_instance_methods, :public_instance_methods, 
-	:remove_const, :remove_method, :undef_method, 
-	:to_s, :inspect, :display, :method, :methods, 
-	:instance_eval, :instance_variables, :kind_of?, :is_a?,
-	:private_methods, :protected_methods, :public_methods
-=end
       def __null_method(*args); nil; end
-      [ :class_eval, :name, :superclass, 
-	:ancestors, :const_defined?, :const_get, :const_set, 
-	:constants, :included_modules, :instance_methods, 
+      [ :class_eval, :name, :superclass, :clone, :dup, :autoload, :autoload?, 
+	:ancestors, :const_defined?, :const_get, :const_set, :const_missing, 
+	:class_variables, :constants, :included_modules, :instance_methods, 
 	:method_defined?, :module_eval, :private_instance_methods, 
 	:protected_instance_methods, :public_instance_methods, 
-	:remove_const, :remove_method, :undef_method, 
-	:to_s, :inspect, :display, :method, :methods, 
+	:singleton_methods, :remove_const, :remove_method, :undef_method, 
+	:to_s, :inspect, :display, :method, :methods, :respond_to?, 
+        :instance_variable_get, :instance_variable_set, :instance_method, 
 	:instance_eval, :instance_variables, :kind_of?, :is_a?,
 	:private_methods, :protected_methods, :public_methods ].each{|m|
 	alias_method(m, :__null_method)
