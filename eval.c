@@ -3559,6 +3559,13 @@ rb_yield_0(val, self, klass, acheck)
 	POP_TAG();
 	if (state) goto pop_state;
     }
+    else {
+	/* argument adjust for proc_call etc. */
+	if (acheck && val != Qundef &&
+	    TYPE(val) == T_ARRAY && RARRAY(val)->len == 1) {
+	    val = RARRAY(val)->ptr[0];
+	}
+    }
 
     PUSH_ITER(block->iter);
     PUSH_TAG(PROT_NONE);

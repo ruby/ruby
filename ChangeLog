@@ -1,3 +1,8 @@
+Thu May 24 14:23:35 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): need argument adjustment for C defined
+	  blocks too.
+
 Tue May 22 17:10:35 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* variable.c (rb_alias_variable): should not allow variable
