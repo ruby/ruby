@@ -1,3 +1,9 @@
+Tue Mar 26 20:25:28 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* doc/net/protocol.rd.ja, smtp.rd.ja, pop.rd.ja: removed.
+
+	* MANIFEST: remove doc/net/* entries.
+
 Tue Mar 26 18:45:15 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (FILE_READPTR): check bufread instead of bufend
