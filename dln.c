@@ -1166,7 +1166,7 @@ dln_strerror()
 }
 
 
-#if defined(_AIX)
+#if defined(_AIX) && ! defined(_IA64)
 static void
 aix_loaderror(const char *pathname)
 {
@@ -1204,7 +1204,7 @@ aix_loaderror(const char *pathname)
 	    if (nerr == load_errtab[i].errno && load_errtab[i].errstr)
 		ERRBUF_APPEND(load_errtab[i].errstr);
 	}
-	while (isdigit(*message[i])) message[i]++; 
+	while (ISDIGIT(*message[i])) message[i]++; 
 	ERRBUF_APPEND(message[i]);
 	ERRBUF_APPEND("\n");
     }
@@ -1310,7 +1310,7 @@ dln_load(file)
     }
 #endif /* hpux */
 
-#if defined(_AIX)
+#if defined(_AIX) && ! defined(_IA64)
 #define DLN_DEFINED
     {
 	void (*init_fct)();

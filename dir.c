@@ -61,6 +61,10 @@ char *strchr _((char*,char));
 
 #include <ctype.h>
 
+#ifndef HAVE_LSTAT
+#define lstat rb_sys_stat
+#endif
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_PERIOD	0x04
@@ -69,7 +73,7 @@ char *strchr _((char*,char));
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
 
-#define downcase(c) (nocase && isupper(c) ? tolower(c) : (c))
+#define downcase(c) (nocase && ISUPPER(c) ? tolower(c) : (c))
 
 #if defined DOSISH
 #define isdirsep(c) ((c) == '/' || (c) == '\\')
@@ -531,7 +535,11 @@ extract_path(p, pend)
     len = pend - p;
     alloc = ALLOC_N(char, len+1);
     memcpy(alloc, p, len);
-    if (len > 1 && pend[-1] == '/') {
+    if (len > 1 && pend[-1] == '/'
+#if defined DOSISH
+    && pend[-2] != ':'
+#endif
+    ) {
 	alloc[len-1] = 0;
     }
     else {
@@ -568,7 +576,7 @@ rb_glob_helper(path, flag, func, arg)
     char *p, *m;
 
     if (!has_magic(path, 0)) {
-	if (stat(path, &st) == 0) {
+	if (rb_sys_stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
 	return;
@@ -601,12 +609,27 @@ rb_glob_helper(path, flag, func, arg)
 		rb_glob_helper(buf, flag, func, arg);
 		free(buf);
 	    }
-	    dirp = opendir(dir);
-	    if (dirp == NULL) {
-		free(base);
-		break;
+	    if (lstat(dir, &st) < 0) {
+	        free(base);
+	        break;
 	    }
+	    if (S_ISDIR(st.st_mode)) {
+	       dirp = opendir(dir);
+	       if (dirp == NULL) {
+		   free(base);
+		   break;
+	       }
+	    }
+	    else {
+	      free(base);
+	      break;
+	    }
+	    
+#if defined DOSISH
+#define BASE (*base && !((isdirsep(*base) && !base[1]) || (base[1] == ':' && isdirsep(base[2]) && !base[3])))
+#else
 #define BASE (*base && !(*base == '/' && !base[1]))
+#endif
 
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 		if (recursive) {
@@ -636,7 +659,7 @@ rb_glob_helper(path, flag, func, arg)
 	    free(base);
 	    free(magic);
 	    while (link) {
-		stat(link->path, &st); /* should success */
+		lstat(link->path, &st); /* should success */
 		if (S_ISDIR(st.st_mode)) {
 		    int len = strlen(link->path);
 		    int mlen = strlen(m);
@@ -679,7 +702,14 @@ push_pattern(path, ary)
     char *path;
     VALUE ary;
 {
-    rb_ary_push(ary, rb_tainted_str_new2(path));
+    VALUE str = rb_tainted_str_new2(path);
+
+    if (ary) {
+	rb_ary_push(ary, str);
+    }
+    else {
+	rb_yield(str);
+    }
 }
 
 static void
@@ -753,10 +783,12 @@ dir_s_glob(dir, str)
     char buffer[MAXPATHLEN], *buf = buffer;
     char *t;
     int nest;
-    VALUE ary;
+    VALUE ary = 0;
 
     Check_SafeStr(str);
-    ary = rb_ary_new();
+    if (!rb_block_given_p()) {
+	ary = rb_ary_new();
+    }
     if (RSTRING(str)->len >= MAXPATHLEN)
 	buf = xmalloc(RSTRING(str)->len + 1);
 
@@ -783,14 +815,6 @@ dir_s_glob(dir, str)
     }
     if (buf != buffer)
 	free(buf);
-    if (rb_block_given_p()) {
-	long len = RARRAY(ary)->len;
-	VALUE *ptr = RARRAY(ary)->ptr;
-
-	while (len--) {
-	    rb_yield(*ptr++);
-	}
-    }
     return ary;
 }
 

@@ -1475,6 +1475,12 @@ module Net
 	when /\A(?:UIDVALIDITY|UIDNEXT|UNSEEN)\z/n
 	  match(T_SPACE)
 	  result = ResponseCode.new(name, number)
+	else
+	  match(T_SPACE)
+	  @lex_state = EXPR_CTEXT
+	  token = match(T_TEXT)
+	  @lex_state = EXPR_BEG
+	  result = ResponseCode.new(name, token.value)
 	end
 	match(T_RBRA)
 	@lex_state = EXPR_RTEXT

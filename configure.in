@@ -90,14 +90,20 @@ AC_CHECK_TOOL(AR, ar)
 AC_CHECK_PROGS(AR, ar aal, ar)
 
 case "$target_os" in
-    cygwin*|mingw*)
-	AC_CHECK_TOOL(NM, nm)
-	AC_CHECK_TOOL(DLLWRAP, dllwrap)
-	AC_CHECK_TOOL(AS, as)
-	AC_CHECK_TOOL(DLLTOOL, dlltool)
-	AC_CHECK_TOOL(WINDRES, windres)
-	;;
+cygwin*|mingw*)
+    AC_CHECK_TOOL(NM, nm)
+    AC_CHECK_TOOL(DLLWRAP, dllwrap)
+    AC_CHECK_TOOL(AS, as)
+    AC_CHECK_TOOL(DLLTOOL, dlltool)
+    AC_CHECK_TOOL(WINDRES, windres)
+    echo 'main(){}' > conftest.c
+    if $CC -mwin32 -c conftest.c 2> /dev/null; then
+	MWIN32=-mwin32
+	CFLAGS="$CFLAGS $MWIN32"
+    fi
+    ;;
 esac
+AC_SUBST(MWIN32)
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -184,6 +190,8 @@ mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_func_times=yes;;
 os2_emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;
+msdosdjgpp*)	LIBS="-lm $LIBS"
+		ac_cv_func_getpgrp_void=yes;;
 freebsd*)	LIBS="-lm $LIBS"
 		AC_CACHE_CHECK([whether -lxpg4 has to be linked],
 		  rb_cv_lib_xpg4_needed,
@@ -313,6 +321,7 @@ main()
 ], rb_cv_func_strtod=yes, rb_cv_func_strtod=no, rb_cv_func_strtod=no)])
 test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
 
+AC_C_INLINE
 AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_CHAR_UNSIGNED
@@ -757,6 +766,9 @@ if test "$enable_shared" = 'yes'; then
   LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   ENABLE_SHARED=yes
+  if test "$rb_cv_binary_elf" = yes; then
+    SOLIBS='$(LIBS)'
+  fi
   case "$target_os" in
     sunos4*)
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
@@ -766,6 +778,7 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     freebsd*)
+	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
 	if test "$rb_cv_binary_elf" != "yes" ; then
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
@@ -773,12 +786,16 @@ if test "$enable_shared" = 'yes'; then
 	fi
 	;;
     netbsd*)
+	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
 	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
 	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so'
 	else
 	   LIBRUBY_ALIASES=  # a.out platforms
 	fi
+ 	;;
+    openbsd*)
+	SOLIBS='$(LIBS)'
  	;;
     solaris*)
 	XLDFLAGS='-R${prefix}/lib'
@@ -963,5 +980,6 @@ fi
 
 echo "creating config.h"
 tr -d '\015' < confdefs.h > config.h
+: > confdefs.h
 
 AC_OUTPUT($FIRSTMAKEFILE Makefile ext/extmk.rb)

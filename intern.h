@@ -41,6 +41,7 @@ VALUE rb_ary_sort _((VALUE));
 VALUE rb_ary_sort_bang _((VALUE));
 VALUE rb_ary_delete _((VALUE, VALUE));
 VALUE rb_ary_delete_at _((VALUE, long));
+VALUE rb_ary_clear _((VALUE));
 VALUE rb_ary_plus _((VALUE, VALUE));
 VALUE rb_ary_concat _((VALUE, VALUE));
 VALUE rb_ary_assoc _((VALUE, VALUE));
@@ -107,7 +108,8 @@ VALUE rb_exc_new3 _((VALUE, VALUE));
 void rb_loaderror __((const char*, ...)) NORETURN;
 void rb_compile_error __((const char*, ...));
 void rb_compile_error_append __((const char*, ...));
-void rb_error_frozen _((char*));
+void rb_load_fail _((char*)) NORETURN;
+void rb_error_frozen _((char*)) NORETURN;
 /* eval.c */
 void rb_exc_raise _((VALUE)) NORETURN;
 void rb_exc_fatal _((VALUE)) NORETURN;

@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb version 1.1.32
+= net/smtp.rb version 1.1.34
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -30,10 +30,8 @@ Net::Protocol
 
 === Methods
 
-: start( helo_domain = Socket.gethostname, \
-         account = nil, password = nil, authtype = nil )
-: start( helo_domain = Socket.gethostname, \
-         account = nil, password = nil, authtype = nil ) {|smtp| .... }
+: start( helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
+: start( helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
   opens TCP connection and starts SMTP session.
   If protocol had been started, do nothing and return false.
 
@@ -53,10 +51,10 @@ Net::Protocol
   to_addrs must be a String(s) or an Array of String.
 
   Exceptions which SMTP raises are:
-  * Net::ProtoSyntaxError: syntax error (errno.500)
-  * Net::ProtoFatalError: fatal error (errno.550)
-  * Net::ProtoUnknownError: unknown error
-  * Net::ProtoServerBusy: temporary error (errno.420/450)
+      * Net::ProtoSyntaxError: syntax error (errno.500)
+      * Net::ProtoFatalError: fatal error (errno.550)
+      * Net::ProtoUnknownError: unknown error
+      * Net::ProtoServerBusy: temporary error (errno.420/450)
 
     # usage example
 
@@ -153,12 +151,15 @@ module Net
         end
       end
 
-      if user and secret then
+      if user or secret then
+        (user and secret) or
+            raise ArgumentError, 'both of account and password are required'
+
         mid = 'auth_' + (authtype || 'cram_md5').to_s
-        unless @command.respond_to? mid then
-          raise ArgumentError, "wrong auth type #{authtype.to_s}"
-        end
-        @command.send mid, user, secret
+        @command.respond_to? mid or
+            raise ArgumentError, "wrong auth type #{authtype.to_s}"
+
+        @command.__send__ mid, user, secret
       end
     end
 

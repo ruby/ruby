@@ -370,7 +370,7 @@ def create_makefile(target)
 
   if $configure_args['--enable-shared'] or "@LIBRUBY@" != "@LIBRUBY_A@"
     $libs = "@LIBRUBYARG@ " + $libs
-    $LIBPATH |= [$topdir]
+    $LIBPATH.unshift $topdir
   end
 
   defflag = ''
@@ -505,6 +505,9 @@ EOS
     mfile.print "
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
+
+.cc.@OBJEXT@ .cpp.@OBJEXT@ .cxx.@OBJEXT@ .C.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
 "
   end
 

@@ -1,8 +1,9 @@
 =begin
 
-= net/http.rb version 1.1.32
+= net/http.rb version 1.1.34
 
-maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+
 This file is derived from "http-access.rb".
 
 This program is free software.
@@ -14,9 +15,34 @@ You can get it from RAA
 (Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
 
 
-= class HTTP
+== http.rb version 1.2 features
 
-== Class Methods
+You can use 1.2 features by calling HTTP.version_1_2. And
+calling Net::HTTP.version_1_1 allows to use 1.1 features.
+
+  # example
+  HTTP.start {|http1| ...(http1 has 1.1 features)... }
+
+  HTTP.version_1_2
+  HTTP.start {|http2| ...(http2 has 1.2 features)... }
+
+  HTTP.version_1_1
+  HTTP.start {|http3| ...(http3 has 1.1 features)... }
+
+Changes are:
+
+  * HTTP#get, head, post does not raise ProtocolError
+  * HTTP#get, head, post returns only one object, a HTTPResponse object
+  * HTTPResponseReceiver is joined into HTTPResponse
+  * request object: HTTP::Get, Head, Post; and HTTP#request(req)
+
+WARNING: These features are not definite yet.
+They will change without notice!
+
+
+== class HTTP
+
+=== Class Methods
 
 : new( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
   creates a new Net::HTTP object.
@@ -49,7 +75,7 @@ You can get it from RAA
   HTTP default port (80).
 
 
-== Methods
+=== Methods
 
 : start
 : start {|http| .... }
@@ -72,7 +98,7 @@ You can get it from RAA
   get data from "path" on connecting host.
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   Data is written to "dest" by using "<<" method.
-  This method returns Net::HTTPResponse object, and "dest".
+  This method returns HTTPResponse object, and "dest".
 
     # example
     response, body = http.get( '/index.html' )
@@ -95,7 +121,7 @@ You can get it from RAA
 : head( path, header = nil )
   gets only header from "path" on connecting host.
   "header" is a Hash like { 'Accept' => '*/*', ... }.
-  This method returns a Net::HTTPResponse object.
+  This method returns a HTTPResponse object.
   You can http header from this object like:
 
     response['content-length']   #-> '2554'
@@ -109,7 +135,7 @@ You can get it from RAA
   If the body exists, also gets entity body.
   Data is written to "dest" by using "<<" method.
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
-  This method returns Net::HTTPResponse object and "dest".
+  This method returns HTTPResponse object and "dest".
 
   If called with block, gives a part of entity body string.
 
@@ -181,21 +207,21 @@ You can get it from RAA
     response.body
 
 
-= class HTTPResponse
+== class HTTPResponse
 
 HTTP response object.
 All "key" is case-insensitive.
 
-== Methods
+=== Methods
 
 : body
-  the entity body. ("dest" argument for HTTP#get, post, put)
+  the entity body (String).
 
 : self[ key ]
   returns header field for "key".
   for HTTP, value is a string like 'text/plain'(for Content-Type),
-  '2045'(for Content-Length), 'bytes 0-1024/10024'(for Content-Range).
-  Multiple header had be joined by HTTP1.1 scheme.
+  '2045'(for Content-Length), 'bytes 0-1023/10024'(for Content-Range).
+  If there's some fields which has same name, they are joined with ','.
 
 : self[ key ] = val
   set field value for "key".
@@ -204,62 +230,38 @@ All "key" is case-insensitive.
   true if key exists
 
 : each {|name,value| .... }
-  iterates for each field name and value pair
+  iterates for each field name and value pair.
 
 : code
-  HTTP result code string. For example, '302'
+  HTTP result code string. For example, '302'.
 
 : message
-  HTTP result message. For example, 'Not Found'
+  HTTP result message. For example, 'Not Found'.
 
 
-= class HTTPResponseReceiver
+== class HTTPResponseReceiver
 
-== Methods
+=== Methods
 
 : header
 : response
-  Net::HTTPResponse object
+  HTTPResponse object
 
-: body( dest = '' )
-: entity( dest = '' )
-  entity body. A body is written to "dest" using "<<" method.
+: read_body( dest = '' )
+  reads entity body into DEST by calling "<<" method and
+  returns DEST.
 
-: body {|str| ... }
-  gets entity body with block.
-  If this method is called twice, block is not executed and
-  returns first "dest".
+: read_body {|string| ... }
+  reads entity body little by little and gives it to block
+  until entity ends.
 
+: body
+: entity
+  entity body. If #read_body is called already, returns its
+  argument DEST. Else returns entity body as String.
 
-= http.rb version 1.2 features
-
-You can use 1.2 features by calling HTTP.version_1_2. And
-calling Net::HTTP.version_1_1 allows to use 1.1 features.
-
-  # example
-  HTTP.start {|http1| ...(http1 has 1.1 features)... }
-
-  HTTP.version_1_2
-  HTTP.start {|http2| ...(http2 has 1.2 features)... }
-
-  HTTP.version_1_1
-  HTTP.start {|http3| ...(http3 has 1.1 features)... }
-
-== Method (only diff to 1.1)
-
-: get( path, u_header = nil )
-: get( path, u_header = nil ) {|str| .... }
-  gets document from "path".
-  returns HTTPResponse object.
-
-: head( path, u_header = nil )
-  gets only document header from "path".
-  returns HTTPResponse object.
-
-: post( path, data, u_header = nil )
-: post( path, data, u_header = nil ) {|str| .... }
-  posts "data" to "path" entity and gets document.
-  returns HTTPResponse object.
+  Calling this method any times causes returning same
+  object (does not read entity again).
 
 =end
 
@@ -269,23 +271,51 @@ require 'net/protocol'
 module Net
 
   class HTTPBadResponse < StandardError; end
+  class HTTPHeaderSyntaxError < StandardError; end
 
 
   class HTTP < Protocol
 
-    protocol_param :port,         '80'
-    protocol_param :command_type, '::Net::NetPrivate::HTTPCommand'
+    HTTPVersion = '1.1'
+
+    #
+    # connection
+    #
+
+    protocol_param :port, '80'
 
 
-    ###
-    ### proxy
-    ###
+    def initialize( addr = nil, port = nil )
+      super
+
+      @proxy_address = nil
+      @proxy_port = nil
+
+      @curr_http_version = HTTPVersion
+      @seems_1_0_server = false
+    end
+
+
+    private
+
+    def conn_command( sock )
+    end
+
+    def do_finish
+    end
+
+
+    #
+    # proxy
+    #
+
+    public
+
 
     class << self
 
       def Proxy( p_addr, p_port = nil )
-        ::Net::NetPrivate::HTTPProxy.create_proxy_class(
-            p_addr, p_port || self.port )
+        ProxyMod.create_proxy_class( p_addr, p_port || self.port )
       end
 
       alias orig_new new
@@ -293,7 +323,7 @@ module Net
       def new( address = nil, port = nil, p_addr = nil, p_port = nil )
         c = p_addr ? self::Proxy(p_addr, p_port) : self
         i = c.orig_new( address, port )
-        setimplv i
+        setvar i
         i
       end
 
@@ -332,384 +362,229 @@ module Net
     end
 
 
-    ###
-    ### 1.2 implementation
-    ###
+    module ProxyMod
+
+      class << self
+
+        def create_proxy_class( p_addr, p_port )
+          mod = self
+          klass = Class.new( HTTP )
+          klass.module_eval {
+            include mod
+            @proxy_address = p_addr
+            @proxy_port    = p_port
+          }
+          def klass.proxy_class?
+            true
+          end
+
+          def klass.proxy_address
+            @proxy_address
+          end
+
+          def klass.proxy_port
+            @proxy_port
+          end
+
+          klass
+        end
+
+      end
+
+      def initialize( addr, port )
+        super
+        @proxy_address = type.proxy_address
+        @proxy_port    = type.proxy_port
+      end
+    
+      attr_reader :proxy_address, :proxy_port
+
+      alias proxyaddr proxy_address
+      alias proxyport proxy_port
+
+      def proxy?
+        true
+      end
+    
+      private
+    
+      def conn_socket( addr, port )
+        super @proxy_address, @proxy_port
+      end
+
+      def edit_path( path )
+        'http://' + addr_port + path
+      end
+    
+    end   # module ProxyMod
+
+
+    #
+    # for backward compatibility
+    #
 
     @@newimpl = false
 
-    #class << self
+    class << self
 
-      def self.version_1_2
+      def version_1_2
         @@newimpl = true
       end
 
-      def self.version_1_1
+      def version_1_1
         @@newimpl = false
       end
 
-      #private
+      private
 
-      def self.setimplv( obj )
+      def setvar( obj )
         f = @@newimpl
         obj.instance_eval { @newimpl = f }
       end
 
-    #end
-
-
-    ###
-    ### http operations
-    ###
-
-    def get( path, u_header = nil, dest = nil, &block )
-      resp = get2( path, u_header ) {|f| f.body( dest, &block ) }
-      if @newimpl then
-        resp
-      else
-        resp.value
-        return resp, resp.body
-      end
     end
 
-    def get2( path, u_header = nil, &block )
-      common_oper( u_header, true, block ) {|uh|
-        @command.get edit_path(path), uh
+
+    #
+    # http operations
+    #
+
+    public
+
+    def self.def_http_method( nm, hasdest, hasdata )
+      name = nm.id2name.downcase
+      cname = nm.id2name
+      lineno = __LINE__ + 2
+      src = <<"      ----"
+
+        def #{name}( path, #{hasdata ? 'data,' : ''}
+                     u_header = nil #{hasdest ? ',dest = nil, &block' : ''} )
+          resp = nil
+          request(
+              #{cname}.new( path, u_header ) #{hasdata ? ',data' : ''}
+          ) do |resp|
+            resp.read_body( #{hasdest ? 'dest, &block' : ''} )
+          end
+          if @newimpl then
+            resp
+          else
+            resp.value
+            #{hasdest ? 'return resp, resp.body' : 'resp'}
+          end
+        end
+
+        def #{name}2( path, #{hasdata ? 'data,' : ''}
+                      u_header = nil, &block )
+          request( #{cname}.new(path, u_header),
+                   #{hasdata ? 'data,' : ''} &block )
+        end
+      ----
+      module_eval src, __FILE__, lineno
+    end
+
+    def_http_method :Get,  true,  false
+    def_http_method :Head, false, false
+    def_http_method :Post, true,  true
+    def_http_method :Put,  false, true
+
+    def request( req, *args )
+      common_oper( req ) {
+        req.__send__( :exec,
+                @socket, @curr_http_version, edit_path(req.path), *args )
+        yield req.response if block_given?
       }
-    end
-
-
-    def head( path, u_header = nil )
-      resp = head2( path, u_header )
-      unless @newimpl then
-        resp.value
-      end
-      resp
-    end
-
-    def head2( path, u_header = nil, &block )
-      common_oper( u_header, false, block ) {|uh|
-        @command.head edit_path(path), uh
-      }
-    end
-
-
-    def post( path, data, u_header = nil, dest = nil, &block )
-      resp = post2( path, data, u_header ) {|f| f.body( dest, &block ) }
-      if @newimpl then
-        resp
-      else
-        resp.value
-        return resp, resp.body
-      end
-    end
-
-    def post2( path, data, u_header = nil, &block )
-      common_oper( u_header, true, block ) {|uh|
-        @command.post edit_path(path), uh, data
-      }
-    end
-
-
-    # not tested because I could not setup apache  (__;;;
-    def put( path, src, u_header = nil )
-      resp = put2( path, src, u_header ) {|f| f.body }
-      if @newimpl then
-        resp
-      else
-        resp.value
-        return resp, resp.body
-      end
-    end
-
-    def put2( path, src, u_header = nil, &block )
-      common_oper( u_header, true, block ) {|uh|
-        @command.put path, uh, src
-      }
+      req.response
     end
 
 
     private
 
 
-    def common_oper( u_header, body_exist, block )
-      header = procheader( u_header )
-      recv = err = nil
-
-      connecting( header ) {
-        recv = HTTPResponseReceiver.new( @command, body_exist )
-        yield header
-        begin
-          block.call recv if block
-        rescue Exception => err
-          ;
-        end
-        recv.terminate
-
-        recv.response
-      }
-      raise err if err
-
-      recv.response
-    end
-
-    def connecting( header )
+    def common_oper( req )
+      req['connection'] ||= 'keep-alive'
       if not @socket then
-        header['Connection'] = 'close'
         start
+        req['connection'] = 'close'
       elsif @socket.closed? then
-        @socket.reopen
+        re_connect
       end
+      if not req.body_exist? or @seems_1_0_server then
+        req['connection'] = 'close'
+      end
+      req['host'] = addr_port
 
-      resp = yield
+      yield req
+      req.response.__send__ :terminate
+      @curr_http_version = req.response.http_version
 
-      unless keep_alive? header, resp then
+      if not req.response.body then
         @socket.close
-      end
-    end
-
-    def keep_alive?( header, resp )
-      if resp.key? 'connection' then
-        if /keep-alive/i === resp['connection'] then
-          return true
-        end
-      elsif resp.key? 'proxy-connection' then
-        if /keep-alive/i === resp['proxy-connection'] then
-          return true
-        end
-      elsif header.key? 'Connection' then
-        if /keep-alive/i === header['Connection'] then
-          return true
+      elsif keep_alive? req, req.response then
+        D 'Conn keep-alive'
+        if @socket.closed? then   # (only) read stream had been closed
+          D 'Conn (but seems 1.0 server)'
+          @seems_1_0_server = true
+          @socket.close
         end
       else
-        if @command.http_version == '1.1' then
-          return true
-        end
+        D 'Conn close'
+        @socket.close
       end
 
+      req.response
+    end
+
+    def keep_alive?( req, res )
+      /close/i === req['connection'].to_s            and return false
+      @seems_1_0_server                              and return false
+
+      /keep-alive/i === res['connection'].to_s       and return true
+      /close/i      === res['connection'].to_s       and return false
+      /keep-alive/i === res['proxy-connection'].to_s and return true
+      /close/i      === res['proxy-connection'].to_s and return false
+
+      @curr_http_version == '1.1'                    and return true
       false
     end
 
-    def procheader( h )
-      ret = {}
-      ret[ 'Host' ]       = address +
-                            ((port == HTTP.port) ? '' : ":#{port}")
-      ret[ 'Connection' ] = 'Keep-Alive'
-      ret[ 'Accept' ]     = '*/*'
 
-      return ret unless h
-      tmp = {}
-      h.each do |k,v|
-        key = k.split('-').collect {|i| i.capitalize }.join('-')
-        if tmp[key] then
-          $stderr.puts "'#{key}' http header appered twice" if $VERBOSE
-        end
-        tmp[key] = v
-      end
-      ret.update tmp
+    #
+    # utils
+    #
 
-      ret
+    public
+
+    def self.get( addr, path, port = nil )
+      req = Get.new( path )
+      resp = nil
+      new( addr, port || HTTP.port ).start {|http|
+        resp = http.request( req )
+      }
+      resp.body
+    end
+
+    def self.get_print( addr, path, port = nil )
+      print get( addr, path, port )
     end
 
 
-    def do_finish
+    private
+
+    def addr_port
+      address + (port == HTTP.port ? '' : ":#{port}")
+    end
+
+    def D( msg )
+      if @dout then
+        @dout << msg
+        @dout << "\n"
+      end
     end
 
   end
 
   HTTPSession = HTTP
 
-
-  module NetPrivate
-
-  module HTTPProxy
-
-    class << self
-
-      def create_proxy_class( p_addr, p_port )
-        klass = Class.new( HTTP )
-        klass.module_eval {
-          include HTTPProxy
-          @proxy_address = p_addr
-          @proxy_port    = p_port
-        }
-        def klass.proxy_class?
-          true
-        end
-
-        def klass.proxy_address
-          @proxy_address
-        end
-
-        def klass.proxy_port
-          @proxy_port
-        end
-
-        klass
-      end
-
-    end
-
-
-    def initialize( addr, port )
-      super
-      @proxy_address = type.proxy_address
-      @proxy_port    = type.proxy_port
-    end
-
-    attr_reader :proxy_address, :proxy_port
-
-    alias proxyaddr proxy_address
-    alias proxyport proxy_port
-
-    def proxy?
-      true
-    end
-  
-    def connect( addr = nil, port = nil )
-      super @proxy_address, @proxy_port
-    end
-
-    def edit_path( path )
-      'http://' + address + (port == type.port ? '' : ":#{port}") + path
-    end
-  
-  end
-
-  end   # net private
-
-
-
-  class HTTPResponseReceiver
-
-    def initialize( command, body_exist )
-      @command = command
-      @body_exist = body_exist
-      @header = @body = nil
-    end
-
-    def inspect
-      "#<#{type}>"
-    end
-
-    def read_header
-      unless @header then
-        stream_check
-        @header = @command.get_response
-      end
-      @header
-    end
-
-    alias header read_header
-    alias response read_header
-
-    def read_body( dest = nil, &block )
-      unless @body then
-        read_header
-
-        to = procdest( dest, block )
-        stream_check
-
-        if @body_exist and @header.code_type.body_exist? then
-          @command.get_body @header, to
-          @header.body = @body = to
-        else
-          @command.no_body
-          @header.body = nil
-          @body = 1
-        end
-      end
-      @body == 1 ? nil : @body
-    end
-
-    alias body read_body
-    alias entity read_body
-
-    def terminate
-      read_header
-      read_body
-      @command = nil
-    end
-
-
-    private
-
-    def stream_check
-      unless @command then
-        raise IOError, 'receiver was used out of block'
-      end
-    end
-
-    def procdest( dest, block )
-      if dest and block then
-        raise ArgumentError,
-          'both of arg and block are given for HTTP method'
-      end
-      if block then
-        NetPrivate::ReadAdapter.new block
-      else
-        dest or ''
-      end
-    end
-
-  end
-
-  HTTPReadAdapter = HTTPResponseReceiver
-
-
-  class HTTPResponse < Response
-
-    def initialize( code_type, code, msg )
-      super
-      @data = {}
-      @body = nil
-    end
-
-    attr_accessor :body
-
-    def inspect
-      "#<#{type.name} #{code}>"
-    end
-
-    def []( key )
-      @data[ key.downcase ]
-    end
-
-    def []=( key, val )
-      @data[ key.downcase ] = val
-    end
-
-    def each( &block )
-      @data.each( &block )
-    end
-
-    def each_key( &block )
-      @data.each_key( &block )
-    end
-
-    def each_value( &block )
-      @data.each_value( &block )
-    end
-
-    def delete( key )
-      @data.delete key.downcase
-    end
-
-    def key?( key )
-      @data.key? key.downcase
-    end
-
-    def to_hash
-      @data.dup
-    end
-
-    def value
-      unless SuccessCode === self then
-        error! self
-      end
-    end
-
-  end
 
 
   class Code
@@ -776,101 +651,246 @@ module Net
   HTTPVersionNotSupported           = HTTPServerErrorCode.http_mkchild
 
 
-  module NetPrivate
 
+  ###
+  ### header
+  ###
 
-  class HTTPCommand < Command
+  net_private {
 
-    HTTPVersion = '1.1'
+  module HTTPHeader
 
-    def initialize( sock )
-      @http_version = HTTPVersion
-      super sock
+    def size
+      @header.size
     end
 
-    attr_reader :http_version
+    alias length size
+
+    def []( key )
+      @header[ key.downcase ]
+    end
+
+    def []=( key, val )
+      @header[ key.downcase ] = val
+    end
+
+    def each( &block )
+      @header.each( &block )
+    end
+
+    def each_key( &block )
+      @header.each_key( &block )
+    end
+
+    def each_value( &block )
+      @header.each_value( &block )
+    end
+
+    def delete( key )
+      @header.delete key.downcase
+    end
+
+    def key?( key )
+      @header.key? key.downcase
+    end
+
+    def to_hash
+      @header.dup
+    end
+
+    def canonical_each
+      @header.each do |k,v|
+        yield canonical(k), v
+      end
+    end
+
+    def canonical( k )
+      k.split('-').collect {|i| i.capitalize }.join('-')
+    end
+
+    def range
+      s = @header['range']
+      s or return nil
+
+      arr = []
+      s.split(',').each do |spec|
+        m = /bytes\s*=\s*(\d+)?\s*-\s*(\d+)?/i.match( spec )
+        m or raise HTTPHeaderSyntaxError, "wrong Range: #{spec}"
+
+        d1 = m[1].to_i
+        d2 = m[2].to_i
+        if    m[1] and m[2] then arr.push (d1 .. d2)
+        elsif m[1]          then arr.push (d1 .. -1)
+        elsif          m[2] then arr.push (-d2 .. -1)
+        else
+          raise HTTPHeaderSyntaxError, 'range is not specified'
+        end
+      end
+
+      return *arr
+    end
+
+    def range=( r, fin = nil )
+      if fin then
+        r = r ... r+fin
+      end
+
+      case r
+      when Numeric
+        s = r > 0 ? "0-#{r - 1}" : "-#{-r}"
+      when Range
+        first = r.first
+        last = r.last
+        if r.exclude_end? then
+          last -= 1
+        end
+
+        if last == -1 then
+          s = first > 0 ? "#{first}-" : "-#{-first}"
+        else
+          first >= 0 or raise HTTPHeaderSyntaxError, 'range.first is negative' 
+          last > 0  or raise HTTPHeaderSyntaxError, 'range.last is negative' 
+          first < last or raise HTTPHeaderSyntaxError, 'must be .first < .last'
+          s = "#{first}-#{last}"
+        end
+      else
+        raise TypeError, 'Range/Integer is required'
+      end
+
+      @header['range'] = "bytes=#{s}"
+      r
+    end
+
+    alias set_range range=
+
+    def content_length
+      s = @header['content-length']
+      s or return nil
+
+      m = /\d+/.match(s)
+      m or raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
+      m[0].to_i
+    end
+
+    def chunked?
+      s = @header['transfer-encoding']
+      (s and /(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i === s) ? true : false
+    end
+
+    def content_range
+      s = @header['content-range']
+      s or return nil
+
+      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>i.match( s )
+      m or raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
+
+      m[1].to_i .. m[2].to_i + 1
+    end
+
+    def range_length
+      r = content_range
+      r and r.length
+    end
+
+    def basic_auth( acc, pass )
+      @header['authorization'] =
+              'Basic ' + ["#{acc}:#{pass}"].pack('m').gsub(/\s+/, '')
+    end
+
+  end
+
+  }
+
+
+  ###
+  ### request
+  ###
+
+  net_private {
+
+  class HTTPRequest
+
+    include ::Net::NetPrivate::HTTPHeader
+
+    def initialize( path, uhead = nil )
+      @path = path
+      @header = tmp = {}
+      return unless uhead
+      uhead.each do |k,v|
+        key = k.downcase
+        if tmp.key? key then
+          $stderr.puts "WARNING: duplicated HTTP header: #{k}" if $VERBOSE
+        end
+        tmp[ key ] = v.strip
+      end
+      tmp['accept'] ||= '*/*'
+
+      @socket = nil
+      @response = nil
+    end
+
+    attr_reader :path
+    attr_reader :response
 
     def inspect
-      "#<Net::HTTPCommand>"
+      "\#<#{type}>"
     end
 
-
-    ###
-    ### request
-    ###
-
-    public
-
-    def get( path, u_header )
-      return unless begin_critical
-      request sprintf('GET %s HTTP/%s', path, HTTPVersion), u_header
-    end
-      
-    def head( path, u_header )
-      return unless begin_critical
-      request sprintf('HEAD %s HTTP/%s', path, HTTPVersion), u_header
-    end
-
-    def post( path, u_header, data )
-      return unless begin_critical
-      u_header[ 'Content-Length' ] = data.size.to_s
-      request sprintf('POST %s HTTP/%s', path, HTTPVersion), u_header
-      @socket.write data
-    end
-
-    def put( path, u_header, src )
-      return unless begin_critical
-      request sprintf('PUT %s HTTP/%s', path, HTTPVersion), u_header
-      @socket.write_bin src
-    end
-
-    # def delete
-
-    # def trace
-
-    # def options
-
-    def quit
+    def body_exist?
+      type::HAS_BODY
     end
 
 
     private
 
-    def request( req, u_header )
-      @socket.writeline req
-      u_header.each do |n,v|
-        @socket.writeline n + ': ' + v
+    #
+    # write
+    #
+
+    def exec( sock, ver, path )
+      ready( sock ) {
+        request ver, path
+      }
+      @response
+    end
+
+    def ready( sock )
+      @response = nil
+      @socket = sock
+      yield
+      @response = get_response
+      @socket = nil
+    end
+
+    def request( ver, path )
+      @socket.writeline sprintf('%s %s HTTP/%s', type::METHOD, path, ver)
+      canonical_each do |k,v|
+        @socket.writeline k + ': ' + v
       end
       @socket.writeline ''
     end
 
-
-    ###
-    ### response line & header
-    ###
-
-    public
+    #
+    # read
+    #
 
     def get_response
-      resp = get_resp0
-      resp = get_resp0 while ContinueCode === resp
+      begin
+        resp = read_response
+      end while ContinueCode === resp
       resp
     end
 
-
-    private
-
-    def get_resp0
-      resp = get_reply
+    def read_response
+      resp = get_resline
 
       while true do
-        line = @socket.readline
+        line = @socket.readuntil( "\n", true )   # ignore EOF
+        line.sub!( /\s+\z/, '' )                 # don't use chop!
         break if line.empty?
 
         m = /\A([^:]+):\s*/.match( line )
-        unless m then
-          raise HTTPBadResponse, 'wrong header line format'
-        end
+        m or raise HTTPBadResponse, 'wrong header line format'
         nm = m[1]
         line = m.post_match
         if resp.key? nm then
@@ -883,23 +903,117 @@ module Net
       resp
     end
 
-    def get_reply
+    def get_resline
       str = @socket.readline
-      m = /\AHTTP\/(\d+\.\d+)?\s+(\d\d\d)\s*(.*)\z/i.match( str )
-      unless m then
-        raise HTTPBadResponse, "wrong status line: #{str}"
-      end
-      @http_version = m[1]
+      m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/i.match( str )
+      m or raise HTTPBadResponse, "wrong status line: #{str}"
+      httpver = m[1]
       status  = m[2]
       discrip = m[3]
       
-      code = HTTPCODE_TO_OBJ[status] ||
-             HTTPCODE_CLASS_TO_OBJ[status[0,1]] ||
-             UnknownCode
-      HTTPResponse.new( code, status, discrip )
+      ::Net::NetPrivate::HTTPResponse.new(
+              status, discrip, @socket, type::HAS_BODY, httpver )
+    end
+  
+  end
+
+
+  class HTTPRequestWithBody < HTTPRequest
+  
+    private
+
+    def exec( sock, ver, path, str = nil )
+      check_arg str, block_given?
+
+      if block_given? then
+        ac = Accumulator.new
+        yield ac              # must be yield, DO NOT USE block.call
+        data = ac.terminate
+      else
+        data = str
+      end
+      @header['content-length'] = data.size.to_s
+      @header.delete 'transfer-encoding'
+
+      ready( sock ) {
+        request ver, path
+        @socket.write data
+      }
+      @response
     end
 
-    HTTPCODE_CLASS_TO_OBJ = {
+    def check_arg( data, blkp )
+      if data and blkp then
+        raise ArgumentError, 'both of data and block given'
+      end
+      unless data or blkp then
+        raise ArgumentError, 'str or block required'
+      end
+    end
+  
+  end
+
+
+  class Accumulator
+  
+    def initialize
+      @buf = ''
+    end
+
+    def write( s )
+      @buf.concat s
+    end
+
+    alias << write
+
+    def terminate
+      ret = @buf
+      @buf = nil
+      ret
+    end
+  
+  end
+
+  }
+
+
+  class HTTP
+
+    class Get < ::Net::NetPrivate::HTTPRequest
+      HAS_BODY = true
+      METHOD = 'GET'
+    end
+
+    class Head < ::Net::NetPrivate::HTTPRequest
+      HAS_BODY = false
+      METHOD = 'HEAD'
+    end
+
+    class Post < ::Net::NetPrivate::HTTPRequestWithBody
+      HAS_BODY = true
+      METHOD = 'POST'
+    end
+
+    class Put < ::Net::NetPrivate::HTTPRequestWithBody
+      HAS_BODY = true
+      METHOD = 'PUT'
+    end
+
+  end
+
+
+
+  ###
+  ### response
+  ###
+
+  net_private {
+
+  class HTTPResponse < Response
+
+    include ::Net::NetPrivate::HTTPHeader
+
+    CODE_CLASS_TO_OBJ = {
       '1' => HTTPInformationCode,
       '2' => HTTPSuccessCode,
       '3' => HTTPRedirectionCode,
@@ -907,7 +1021,7 @@ module Net
       '5' => HTTPServerErrorCode
     }
 
-    HTTPCODE_TO_OBJ = {
+    CODE_TO_OBJ = {
       '100' => ContinueCode,
       '101' => HTTPSwitchProtocol,
 
@@ -951,22 +1065,87 @@ module Net
       '505' => HTTPVersionNotSupported
     }
 
+    def initialize( stat, msg, sock, be, hv )
+      code = CODE_TO_OBJ[stat] ||
+             CODE_CLASS_TO_OBJ[stat[0,1]] ||
+             UnknownCode
+      super code, stat, msg
+      @socket = sock
+      @body_exist = be
+      @http_version = hv
 
-    ###
-    ### body
-    ###
+      @header = {}
+      @body = nil
+      @read = false
+    end
 
-    public
+    attr_reader :http_version
 
-    def get_body( resp, dest )
-      if chunked? resp then
+    def inspect
+      "#<#{type} #{code}>"
+    end
+
+    def value
+      SuccessCode === self or error! self
+    end
+
+
+    #
+    # header (for backward compatibility)
+    #
+
+    def read_header
+      self
+    end
+
+    alias header read_header
+    alias response read_header
+
+    #
+    # body
+    #
+
+    def read_body( dest = nil, &block )
+      if @read and (dest or block) then
+        raise IOError, "#{type}\#read_body called twice with argument"
+      end
+
+      unless @read then
+        to = procdest( dest, block )
+        stream_check
+
+        if @body_exist and code_type.body_exist? then
+          read_body_0 to
+          @body = to
+        else
+          @body = nil
+        end
+        @read = true
+      end
+
+      @body
+    end
+
+    alias body read_body
+    alias entity read_body
+
+
+    private
+
+
+    def terminate
+      read_body
+    end
+
+    def read_body_0( dest )
+      if chunked? then
         read_chunked dest
       else
-        clen = content_length( resp )
+        clen = content_length
         if clen then
-          @socket.read clen, dest
+          @socket.read clen, dest, true   # ignore EOF
         else
-          clen = range_length( resp )
+          clen = range_length
           if clen then
             @socket.read clen, dest
           else
@@ -974,15 +1153,7 @@ module Net
           end
         end
       end
-      end_critical
     end
-
-    def no_body
-      end_critical
-    end
-
-
-    private
 
     def read_chunked( dest )
       len = nil
@@ -991,9 +1162,7 @@ module Net
       while true do
         line = @socket.readline
         m = /[0-9a-fA-F]+/.match( line )
-        unless m then
-          raise HTTPBadResponse, "wrong chunk size line: #{line}"
-        end
+        m or raise HTTPBadResponse, "wrong chunk size line: #{line}"
         len = m[0].hex
         break if len == 0
         @socket.read( len, dest ); total += len
@@ -1004,44 +1173,27 @@ module Net
       end
     end
 
-    def content_length( resp )
-      if resp.key? 'content-length' then
-        m = /\d+/.match( resp['content-length'] )
-        unless m then
-          raise HTTPBadResponse, 'wrong Content-Length format'
-        end
-        m[0].to_i
-      else
-        nil
-      end
+    def stream_check
+      @socket.closed? and raise IOError, 'try to read body out of block'
     end
 
-    def chunked?( resp )
-      tmp = resp['transfer-encoding']
-      tmp and /(?:\A|\s+)chunked(?:\s+|\z)/i === tmp
-     end
-
-    def range_length( resp )
-      if resp.key? 'content-range' then
-        m = %r<bytes\s+(\d+)-(\d+)/\d+>.match( resp['content-range'] )
-        unless m then
-          raise HTTPBadResponse, 'wrong Content-Range format'
-        end
-        l = m[2].to_i
-        u = m[1].to_i
-        if l > u then
-          nil
-        else
-          u - l
-        end
+    def procdest( dest, block )
+      if dest and block then
+        raise ArgumentError, 'both of arg and block are given for HTTP method'
+      end
+      if block then
+        ::Net::NetPrivate::ReadAdapter.new block
       else
-        nil
+        dest || ''
       end
     end
 
   end
 
+  }
 
-  end   # module Net::NetPrivate
+
+  HTTPResponse         = NetPrivate::HTTPResponse
+  HTTPResponseReceiver = NetPrivate::HTTPResponse
 
 end   # module Net

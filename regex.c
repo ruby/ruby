@@ -3461,7 +3461,8 @@ re_search(bufp, string, size, startpos, range, regs)
 #define PREV_IS_A_LETTER(d) ((current_mbctype == MBCTYPE_SJIS)?		\
 			     IS_A_LETTER((d)-(!AT_STRINGS_BEG((d)-1)&&	\
 					      ismbchar((d)[-2])?2:1)):	\
-			     ((d)[-1] >= 0x80 || IS_A_LETTER((d)-1)))
+                             ((current_mbctype && ((d)[-1] >= 0x80)) ||	\
+			      IS_A_LETTER((d)-1)))
 
 static void
 init_regs(regs, num_regs)

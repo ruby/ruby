@@ -1171,7 +1171,7 @@ rb_ary_replace_m(ary, ary2)
     return ary;
 }
 
-static VALUE
+VALUE
 rb_ary_clear(ary)
     VALUE ary;
 {

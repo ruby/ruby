@@ -1,5 +1,5 @@
-# parsedate.rb: Written by Tadayoshi Funaba 2000
-# $Id: parsedate.rb,v 1.2 2000-04-01 12:16:56+09 tadf Exp $
+# parsedate3.rb: Written by Tadayoshi Funaba 2000, 2001
+# $Id: parsedate3.rb,v 1.3 2001-01-18 12:09:47+09 tadf Exp $
 
 module ParseDate
 
@@ -46,7 +46,12 @@ module ParseDate
       hour = $1.to_i
       min = $2.to_i
       sec = $3.to_i if $3
-      hour += 12 if $4 and $4.downcase == 'p'
+      if $4
+	hour %= 12
+	if $4.downcase == 'p'
+	  hour += 12
+	end
+      end
       zone = $5
     end
 

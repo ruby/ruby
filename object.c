@@ -162,6 +162,7 @@ inspect_i(id, value, str)
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
     if (RSTRING(str)->ptr[0] == '-') { /* first element */
 	RSTRING(str)->ptr[0] = '#';
+	rb_str_cat2(str, " ");
     }
     else {
 	rb_str_cat2(str, ", ");
@@ -182,6 +183,7 @@ inspect_obj(obj, str)
 {
     st_foreach(ROBJECT(obj)->iv_tbl, inspect_i, str);
     rb_str_cat2(str, ">");
+    RSTRING(str)->ptr[0] = '#';
     OBJ_INFECT(str, obj);
 
     return str;
@@ -286,6 +288,9 @@ rb_obj_taint(obj)
     VALUE obj;
 {
     rb_secure(4);
+    if (OBJ_FROZEN(obj)) {
+	rb_error_frozen("object");
+    }
     OBJ_TAINT(obj);
     return obj;
 }
@@ -532,11 +537,14 @@ rb_mod_clone(module)
 }
 
 static VALUE
-rb_mod_dup(module)
-    VALUE module;
+rb_mod_dup(mod)
+    VALUE mod;
 {
-    VALUE dup = rb_mod_clone(module);
-    OBJSETUP(dup, RBASIC(module)->klass, BUILTIN_TYPE(module));
+    VALUE dup = rb_mod_clone(mod);
+    OBJSETUP(dup, RBASIC(mod)->klass, BUILTIN_TYPE(mod));
+    if (FL_TEST(mod, FL_SINGLETON)) {
+	FL_SET(dup, FL_SINGLETON);
+    }
     return dup;
 }
 

@@ -19,42 +19,6 @@
 #define RUBY_NO_INLINE
 #include "ruby.h"
 
-VALUE
-rb_class_of(obj)
-    VALUE obj;
-{
-    if (FIXNUM_P(obj)) return rb_cFixnum;
-    if (obj == Qnil) return rb_cNilClass;
-    if (obj == Qfalse) return rb_cFalseClass;
-    if (obj == Qtrue) return rb_cTrueClass;
-    if (SYMBOL_P(obj)) return rb_cSymbol;
-
-    return RBASIC(obj)->klass;
-}
-
-int
-rb_type(obj)
-    VALUE obj;
-{
-    if (FIXNUM_P(obj)) return T_FIXNUM;
-    if (obj == Qnil) return T_NIL;
-    if (obj == Qfalse) return T_FALSE;
-    if (obj == Qtrue) return T_TRUE;
-    if (obj == Qundef) return T_UNDEF;
-    if (SYMBOL_P(obj)) return T_SYMBOL;
-
-    return BUILTIN_TYPE(obj);
-}
-
-int
-rb_special_const_p(obj)
-    VALUE obj;
-{
-    if (SPECIAL_CONST_P(obj)) return Qtrue;
-
-    return Qfalse;
-}
-
 #include "util.h"
 #ifndef HAVE_STRING_H
 char *strchr _((char*,char));

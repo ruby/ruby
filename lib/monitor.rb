@@ -1,27 +1,44 @@
 =begin
 
-monitor.rb
-Author: Shugo Maeda <shugo@netlab.co.jp>
-Version: 1.2.1
+= monitor.rb
 
-USAGE:
+Copyright (C) 2001  Shugo Maeda <shugo@ruby-lang.org>
 
-  foo = Foo.new
-  foo.extend(MonitorMixin)
-  cond = foo.new_cond
+This library is distributed under the terms of the Ruby license.
+You can freely distribute/modify this library.
 
-  thread1:
-  foo.synchronize {
-    ...
-    cond.wait_until { foo.done? }
-    ...
-  }
+== example
 
-  thread2:
-  foo.synchronize {
-    foo.do_something
-    cond.signal
-  }
+This is a simple example.
+
+  require 'monitor.rb'
+  
+  buf = []
+  buf.extend(MonitorMixin)
+  empty_cond = buf.new_cond
+  
+  # consumer
+  Thread.start do
+    loop do
+      buf.synchronize do
+        empty_cond.wait_while { buf.empty? }
+        print buf.shift
+      end
+    end
+  end
+  
+  # producer
+  while line = ARGF.gets
+    buf.synchronize do
+      buf.push(line)
+      empty_cond.signal
+    end
+  end
+
+The consumer thread waits for the producer thread to push a line
+to buf while buf.empty?, and the producer thread (main thread)
+reads a line from ARGF and push it to buf, then call
+empty_cond.signal.
 
 =end
   

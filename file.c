@@ -67,7 +67,7 @@ char *strrchr _((const char*,const char));
 #include <sys/stat.h>
 
 #ifndef HAVE_LSTAT
-#define lstat stat
+#define lstat rb_sys_stat
 #endif
  
 VALUE rb_cFile;
@@ -314,7 +314,7 @@ rb_stat(file, st)
 #if defined DJGPP
     if (RSTRING(file)->len == 0) return -1;
 #endif
-    return stat(RSTRING(file)->ptr, st);
+    return rb_sys_stat(RSTRING(file)->ptr, st);
 }
 
 static VALUE
@@ -324,7 +324,7 @@ rb_file_s_stat(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) == -1) {
+    if (rb_sys_stat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
     return stat_new(&st);
@@ -420,7 +420,7 @@ eaccess(path, mode)
   struct stat st;
   static int euid = -1;
 
-  if (stat(path, &st) < 0) return (-1);
+  if (rb_sys_stat(path, &st) < 0) return (-1);
 
   if (euid == -1)
     euid = geteuid ();
@@ -722,7 +722,7 @@ check3rdbyte(file, mode)
 {
     struct stat st;
 
-    if (stat(file, &st) < 0) return Qfalse;
+    if (rb_sys_stat(file, &st) < 0) return Qfalse;
     if (st.st_mode & mode) return Qtrue;
     return Qfalse;
 }
@@ -1170,8 +1170,13 @@ rb_file_s_rename(obj, from, to)
     Check_SafeStr(from);
     Check_SafeStr(to);
 
-    if (rename(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
+    if (rename(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0) {
+#if defined __CYGWIN__
+	extern unsigned long __attribute__((stdcall)) GetLastError();
+	errno = GetLastError(); /* This is a Cygwin bug */
+#endif
 	rb_sys_fail(RSTRING(from)->ptr);
+    }
 
     return INT2FIX(0);
 }
@@ -1253,7 +1258,7 @@ rb_file_s_expand_path(argc, argv)
     }
 #if defined DOSISH
     /* skip drive letter */
-    else if (isalpha(s[0]) && s[1] == ':' && isdirsep(s[2])) {
+    else if (ISALPHA(s[0]) && s[1] == ':' && isdirsep(s[2])) {
 	while (*s && !isdirsep(*s)) {
 	    *p++ = *s++;
 	}
@@ -2029,6 +2034,7 @@ path_check_1(path)
     }
     for (;;) {
 	if (stat(path, &st) == 0 && (st.st_mode & 002)) {
+           if (p) *p = '/';
 	    return 0;
 	}
 	s = strrchr(path, '/');
@@ -2056,7 +2062,10 @@ rb_path_check(path)
 
 	if (pend) *pend = '\0';
 	safe = path_check_1(p);
-	if (!safe) return 0;
+       if (!safe) {
+           if (pend) *pend = sep;
+           return 0;
+       }
 	if (!pend) break;
 	*pend = sep;
 	p = pend + 1;

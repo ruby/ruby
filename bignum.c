@@ -209,6 +209,10 @@ rb_cstr2inum(str, base)
 	str++;
 	sign = 0;
     }
+    if (str[0] == '+' || str[0] == '-') {
+	if (badcheck) goto bad;
+	return INT2FIX(0);
+    }
     if (base == 0) {
 	if (str[0] == '0') {
 	    if (str[1] == 'x' || str[1] == 'X') {
@@ -467,7 +471,7 @@ rb_big2long(x)
 {
     unsigned long num = big2ulong(x, "int");
 
-    if ((long)num < 0) {
+    if ((long)num < 0 && (long)num != LONG_MIN) {
 	rb_raise(rb_eRangeError, "bignum too big to convert into `int'");
     }
     if (!RBIGNUM(x)->sign) return -(long)num;
@@ -831,8 +835,10 @@ bigdivrem(x, y, divp, modp)
 	    t2 %= dd;
 	}
 	RBIGNUM(z)->sign = RBIGNUM(x)->sign==RBIGNUM(y)->sign;
-	if (!RBIGNUM(x)->sign) t2 = -(long)t2;
-	if (modp) *modp = rb_int2big((long)t2);
+	if (modp) {
+	    *modp = rb_uint2big((unsigned long)t2);
+	    RBIGNUM(*modp)->sign = RBIGNUM(x)->sign;
+	}
 	if (divp) *divp = z;
 	return;
     }

@@ -31,6 +31,25 @@ void rb_io_fptr_finalize _((struct OpenFile*));
 #endif
 #endif
 
+/* Make alloca work the best possible way.  */
+#ifdef __GNUC__
+# ifndef atarist
+#  ifndef alloca
+#   define alloca __builtin_alloca
+#  endif
+# endif /* atarist */
+#else
+# if defined(HAVE_ALLOCA_H)
+#  include <alloca.h>
+# elif !defined(alloca)
+char *alloca();
+# endif
+#endif /* __GNUC__ */
+
+#ifdef _AIX
+#pragma alloca
+#endif
+
 #ifdef C_ALLOCA
 #ifndef alloca
 void *alloca();
@@ -53,10 +72,17 @@ static void
 mem_error(mesg)
     char *mesg;
 {
+    static int recurse = 0;
+
     if (rb_safe_level() >= 4) {
 	rb_raise(rb_eNoMemError, mesg);
     }
-    rb_fatal(mesg);
+    if (recurse == 0) {
+	recurse++;
+	rb_fatal(mesg);
+    }
+    fprintf(stderr, "[FATAL] failed to allocate memory\n");
+    exit(1);
 }
 
 void *
@@ -308,10 +334,7 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
-#if defined(__GNUC__) && __GNUC__ >= 2
-__inline__
-#endif
-static int
+static inline int
 is_pointer_to_heap(ptr)
     void *ptr;
 {
@@ -606,6 +629,7 @@ rb_gc_mark(ptr)
       case T_REGEXP:
       case T_FLOAT:
       case T_BIGNUM:
+      case T_BLKTAG:
 	break;
 
       case T_MATCH:
@@ -712,7 +736,7 @@ gc_sweep()
     during_gc = 0;
 
     /* clear finalization list */
-    if (need_call_final && final_list) {
+    if (final_list) {
 	RVALUE *tmp;
 
 	if (rb_prohibit_interrupt || ruby_in_compile) {
@@ -822,6 +846,7 @@ obj_free(obj)
 
       case T_FLOAT:
       case T_VARMAP:
+      case T_BLKTAG:
 	break;
 
       case T_BIGNUM:
@@ -924,7 +949,7 @@ rb_gc()
     alloca(0);
 # define STACK_END (&stack_end)
 #else
-# if defined(__GNUC__) && !defined(__alpha__) && !defined(__APPLE__)
+# if defined(__GNUC__) && defined(__i386__)
     VALUE *stack_end = __builtin_frame_address(0);
 # else
     VALUE *stack_end = alloca(1);
@@ -1004,7 +1029,7 @@ Init_stack(addr)
 #if defined(__human68k__)
     extern void *_SEND;
     rb_gc_stack_start = _SEND;
-#elif defined(__GNUC__) && !defined(__alpha__) && !defined(__APPLE__)
+#elif defined(__GNUC__) && defined(__i386__)
     rb_gc_stack_start = __builtin_frame_address(2);
 #else
     VALUE start;
@@ -1044,6 +1069,7 @@ os_live_obj()
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
+		    if (!p->as.basic.klass) continue;
 		    rb_yield((VALUE)p);
 		    n++;
 		}
@@ -1076,6 +1102,7 @@ os_obj_of(of)
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
+		    if (!p->as.basic.klass) continue;
 		    if (rb_obj_is_kind_of((VALUE)p, of)) {
 			rb_yield((VALUE)p);
 			n++;
@@ -1207,8 +1234,7 @@ run_final(obj)
 	args[0] = RARRAY(finalizers)->ptr[i];
 	rb_protect(run_single_final, (VALUE)args, &status);
     }
-    if (finalizer_table && st_lookup(finalizer_table, obj, &table)) {
-	st_delete(finalizer_table, &obj, 0);
+    if (finalizer_table && st_delete(finalizer_table, &obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
 	    args[0] = RARRAY(table)->ptr[i];
 	    rb_protect(run_single_final, (VALUE)args, &status);
@@ -1223,14 +1249,25 @@ rb_gc_call_finalizer_at_exit()
     int i;
 
     /* run finalizers */
-    for (i = 0; i < heaps_used; i++) {
-	p = heaps[i]; pend = p + HEAP_SLOTS;
-	while (p < pend) {
-	    if (FL_TEST(p, FL_FINALIZE)) {
-		p->as.free.flag = 0;
-		run_final((VALUE)p);
+    if (need_call_final) {
+	if (deferred_final_list) {
+	    p = deferred_final_list;
+	    while (p) {
+		RVALUE *tmp = p;
+		p = p->as.free.next;
+		run_final((VALUE)tmp);
 	    }
-	    p++;
+	}
+	for (i = 0; i < heaps_used; i++) {
+	    p = heaps[i]; pend = p + HEAP_SLOTS;
+	    while (p < pend) {
+		if (FL_TEST(p, FL_FINALIZE)) {
+		    FL_UNSET(p, FL_FINALIZE);
+		    p->as.basic.klass = 0;
+		    run_final((VALUE)p);
+		}
+		p++;
+	    }
 	}
     }
     /* run data object's finaliers */
@@ -1255,21 +1292,22 @@ static VALUE
 id2ref(obj, id)
     VALUE obj, id;
 {
-    unsigned long ptr;
+    unsigned long ptr, p0;
 
     rb_secure(4);
-    ptr = NUM2UINT(id);
+    p0 = ptr = NUM2UINT(id);
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
+    if (SYMBOL_P(ptr)) return (VALUE)ptr;
     if (ptr == Qtrue) return Qtrue;
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
 
     ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
     if (!is_pointer_to_heap(ptr)) {
-	rb_raise(rb_eRangeError, "0x%x is not id value", ptr);
+	rb_raise(rb_eRangeError, "0x%x is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0) {
-	rb_raise(rb_eRangeError, "0x%x is recycled object", ptr);
+	rb_raise(rb_eRangeError, "0x%x is recycled object", p0);
     }
     return (VALUE)ptr;
 }
