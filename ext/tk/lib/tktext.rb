@@ -471,7 +471,7 @@ class TkTextTag<TkObject
   end
 
   def ranges
-    l = tk_split_list(tk_call(@t.path, 'tag', 'ranges', @id))
+    l = tk_split_simplelist(tk_call(@t.path, 'tag', 'ranges', @id))
     r = []
     while key=l.shift
       r.push [key, l.shift]
