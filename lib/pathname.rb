@@ -10,6 +10,8 @@ class Pathname
   def initialize(path)
     @path = path.to_str.dup
     @path.freeze
+
+    raise ArgumentError, "pathname contains \\0: #{@path.inspect}" if /\0/ =~ @path
   end
 
   def ==(other)
@@ -180,14 +182,6 @@ class Pathname
     end
   end
 
-=begin
-  def rootdir?
-    stat1 = self.lstat
-    stat2 = self.parent.lstat
-    stat1.dev == stat2.dev && stat1.ino == stat2.ino
-  end
-=end
-
   # root? method is a predicate for root directory.
   # I.e. it returns true if the pathname consists of consecutive slashes.
   #
@@ -197,12 +191,6 @@ class Pathname
   def root?
     %r{\A/+\z} =~ @path ? true : false
   end
-
-=begin
-  def working_directory?
-    %r{\A\./*\z} =~ @path ? true : false
-  end
-=end
 
   # absolute? method is a predicate for absolute pathname.
   # It returns true if self is beginning with a slash.
@@ -244,12 +232,57 @@ class Pathname
     }.compact
   end
 
+  # Pathname#relative_path_from returns a relative path from the argument to
+  # self.
+  # If self is absolute, the argument must be absolute too.
+  # If self is relative, the argument must be relative too.
+  #
+  # relative_path_from doesn't access actual filesystem.
+  # It assumes no symlinks.
+  #
+  # ArgumentError is raised when it cannot find a relative path.
+  #
+  def relative_path_from(base_directory)
+    if self.absolute? != base_directory.absolute?
+      raise ArgumentError, "relative path between absolute and relative path: #{self.inspect}, #{base_directory.inspect}"
+    end
+
+    dest = []
+    self.cleanpath.each_filename {|f|
+      next if f == '.'
+      dest << f
+    }
+
+    base = []
+    base_directory.cleanpath.each_filename {|f|
+      next if f == '.'
+      base << f
+    }
+
+    while !base.empty? && !dest.empty? && base[0] == dest[0]
+      base.shift
+      dest.shift
+    end
+
+    if base.include? '..'
+      raise ArgumentError, "base_directory has ..: #{base_directory.inspect}"
+    end
+
+    base.fill '..'
+    relpath = base + dest
+    if relpath.empty?
+      Pathname.new(".")
+    else
+      Pathname.new(relpath.join('/'))
+    end
+  end
+
 end
 
 # IO
 class Pathname
-  def foreachline(*args, &block) IO.foreach(@path, *args, &block) end
-  alias each_line foreachline
+  def each_line(*args, &block) IO.foreach(@path, *args, &block) end
+  alias foreachline each_line # compatibility to 1.8.0.  obsoleted.
 
   def read(*args) IO.read(@path, *args) end
   def readlines(*args) IO.readlines(@path, *args) end
@@ -324,11 +357,18 @@ class Pathname
   def Pathname.getwd() Pathname.new(Dir.getwd) end
   class << self; alias pwd getwd end
 
-  def chdir(&block) Dir.chdir(@path, &block) end
+  def chdir(&block) # compatibility to 1.8.0.
+    warn "Pathname#chdir is obsoleted.  Use Dir.chdir."
+    Dir.chdir(@path, &block)
+  end
+
   def chroot() Dir.chroot(@path) end
   def rmdir() Dir.rmdir(@path) end
   def entries() Dir.entries(@path).map {|f| Pathname.new(f) } end
-  def dir_foreach(&block) Dir.foreach(@path) {|f| yield Pathname.new(f) } end
+
+  def each_entry(&block) Dir.foreach(@path) {|f| yield Pathname.new(f) } end
+  alias dir_foreach each_entry # compatibility to 1.8.0.  obsoleted.
+
   def mkdir(*args) Dir.mkdir(@path, *args) end
   def opendir(&block) Dir.open(@path, &block) end
 end
@@ -369,7 +409,8 @@ class Pathname
   end
   alias delete unlink
 
-  def foreach(*args, &block)
+  def foreach(*args, &block) # compatibility to 1.8.0.  obsoleted.
+    warn "Pathname#foreach is obsoleted.  Use each_line or each_entry."
     if FileTest.directory? @path
       # For polymorphism between Dir.foreach and IO.foreach,
       # Pathname#foreach doesn't yield Pathname object.
@@ -540,6 +581,53 @@ if $0 == __FILE__
       path = Pathname.new("a")
       path.to_s.replace "b"
       assert_equal(Pathname.new("a"), path)
+    end
+
+    def test_null_character
+      assert_raises(ArgumentError) { Pathname.new("\0") }
+    end
+
+    def assert_relpath(result, dest, base)
+      assert_equal(Pathname.new(result),
+        Pathname.new(dest).relative_path_from(Pathname.new(base)))
+    end
+
+    def assert_relpath_err(dest, base)
+      assert_raises(ArgumentError) {
+        Pathname.new(dest).relative_path_from(Pathname.new(base))
+      }
+    end
+
+    def test_relative_path_from
+      assert_relpath("../a", "a", "b")
+      assert_relpath("../a", "/a", "/b")
+
+      assert_relpath("../b", "a/b", "a/c")
+      assert_relpath("../a", "../a", "../b")
+
+      assert_relpath("a", "a", ".")
+      assert_relpath("..", ".", "a")
+
+      assert_relpath(".", ".", ".")
+      assert_relpath(".", "..", "..")
+      assert_relpath("..", "..", ".")
+
+      assert_relpath("c/d", "/a/b/c/d", "/a/b")
+      assert_relpath("../..", "/a/b", "/a/b/c/d")
+      assert_relpath("../../../../e", "/e", "/a/b/c/d")
+      assert_relpath("../b/c", "a/b/c", "a/d")
+
+      assert_relpath("../a", "/../a", "/b")
+      assert_relpath("../../a", "../a", "b")
+      assert_relpath(".", "/a/../../b", "/b")
+
+      assert_relpath("a", "a", "b/..")
+      assert_relpath("b/c", "b/c", "b/..")
+
+      assert_relpath_err("/", ".")
+      assert_relpath_err(".", "/")
+      assert_relpath_err("a", "..")
+      assert_relpath_err(".", "..")
     end
 
   end

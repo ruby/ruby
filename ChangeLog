@@ -1,3 +1,11 @@
+Sat Oct  4 14:59:51 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (initialize): raise ArgumentError if argument has
+	  '\0' character.
+	  (relative_path_from): new method.
+	  (each_entry): new method for replacement of dir_foreach.
+	  (foreach, foreachline, dir_foreach, chdir): obsoleted.
+
 Sat Oct  4 12:58:48 2003  akira yamada  <akira@ruby-lang.org>
 
 	* test/uri/* (6 files): added.
