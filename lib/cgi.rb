@@ -2258,33 +2258,12 @@ class CGI
 
     extend QueryExtension
     @multipart = false
-    if "POST" != env_table['REQUEST_METHOD']
-      initialize_query()  # set @params, @cookies
+    if defined?(CGI_PARAMS)
+      warn "do not use CGI_PARAMS and CGI_COOKIES"
+      @params = CGI_PARAMS.dup
+      @cookies = CGI_COOKIES.dup
     else
-      if defined?(CGI_PARAMS)
-        @params  = CGI_PARAMS.nil?  ? nil : CGI_PARAMS.dup
-        @cookies = CGI_COOKIES.nil? ? nil : CGI_COOKIES.dup
-      else
-        initialize_query()  # set @params, @cookies
-        params  = @params.nil?  ? nil : @params.dup
-        cookies = @cookies.nil? ? nil : @cookies.dup
-        (class << self; self; end).class_eval do
-          const_set(:CGI_PARAMS,  params)
-          const_set(:CGI_COOKIES, cookies)
-        end
-        if defined?(MOD_RUBY) and (RUBY_VERSION < "1.4.3")
-          raise "Please, use ruby1.4.3 or later."
-        else
-          at_exit() do
-            if defined?(CGI_PARAMS)
-              CGI.class_eval do
-                remove_const(:CGI_PARAMS)
-                remove_const(:CGI_COOKIES)
-              end
-            end
-          end
-        end
-      end
+      initialize_query()  # set @params, @cookies
     end
     @output_cookies = nil
     @output_hidden = nil

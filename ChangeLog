@@ -1,3 +1,8 @@
+Wed Jul 28 18:59:17 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::initialize): remove at_exit code for CGI_PARAMS
+	  and CGI_COOKIES.  they will no longer be used.
+
 Wed Jul 28 01:04:44 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (run_final): wrong order of data. [ruby-dev:23984]
