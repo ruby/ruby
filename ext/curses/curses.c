@@ -423,7 +423,8 @@ window_close(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    free_window(winp);
+    delwin(winp->window);
+    winp->window = 0;
 
     return Qnil;
 }
