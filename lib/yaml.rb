@@ -1,16 +1,16 @@
 # -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*- vim: sw=4 ts=4
 # $Id$
 #
+# = yaml.rb: top-level module with methods for loading and parsing YAML documents
+#
+# Author:: why the lucky stiff
+# 
 
 require 'yaml/syck'
 require 'yaml/loader'
 require 'yaml/stream'
 
-# = yaml.rb: top-level module with methods for loading and parsing YAML documents
-#
-# Author:: why the lucky stiff
-# 
-# == About YAML
+# == YAML
 #
 # YAML(tm) (rhymes with 'camel') is a
 # straightforward machine parsable data serialization format designed for
@@ -89,13 +89,13 @@ module YAML
 	# Converts _obj_ to YAML and writes the YAML result to _io_.
     #     
     #   File.open( 'animals.yaml', 'w' ) do |out|
-    #     YAML::dump( ['badger', 'elephant', 'tiger'], out )
+    #     YAML.dump( ['badger', 'elephant', 'tiger'], out )
     #   end
     #
     # If no _io_ is provided, a string containing the dumped YAML
     # is returned.
 	#
-    #   YAML::dump( :locked )
+    #   YAML.dump( :locked )
     #      #=> "--- :locked"
     #
 	def YAML.dump( obj, io = nil )
@@ -107,7 +107,7 @@ module YAML
 	#
 	# Load the first document from the current _io_ stream.
 	#
-    #   File.open( 'animals.yml' ) { |yml| YAML::load( yml ) }
+    #   File.open( 'animals.yaml' ) { |yf| YAML::load( yf ) }
     #      #=> ['badger', 'elephant', 'tiger']
     #
     # Can also load from a string.
@@ -122,7 +122,7 @@ module YAML
 	#
 	# Parse the first document from the current _io_ stream
 	#
-    #   File.open( 'animals.yml' ) { |yml| YAML::load( yml ) }
+    #   File.open( 'animals.yaml' ) { |yf| YAML::load( yf ) }
     #      #=> #<YAML::Syck::Node:0x82ccce0
     #           @kind=:seq,
     #           @value=
@@ -151,35 +151,69 @@ module YAML
 	end
 
 	#
-	# Load all documents from the current stream
+	# Calls _block_ with each consecutive document in the YAML
+    # stream contained in _io_.
+    #
+    #   File.open( 'many-docs.yaml' ) do |yf|
+    #     YAML.each_document( yf ) do |ydoc|
+    #       ## ydoc contains the single object
+    #       ## from the YAML document
+    #     end
+    #   end
 	#
-	def YAML.each_document( io, &doc_proc )
-		yp = @@parser.new.load_documents( io, &doc_proc )
+	def YAML.each_document( io, &block )
+		yp = @@parser.new.load_documents( io, &block )
     end
 
 	#
-	# Identical to each_document
+	# Calls _block_ with each consecutive document in the YAML
+    # stream contained in _io_.
+    #
+    #   File.open( 'many-docs.yaml' ) do |yf|
+    #     YAML.load_documents( yf ) do |ydoc|
+    #       ## ydoc contains the single object
+    #       ## from the YAML document
+    #     end
+    #   end
 	#
 	def YAML.load_documents( io, &doc_proc )
 		YAML.each_document( io, &doc_proc )
     end
 
 	#
-	# Parse all documents from the current stream
+	# Calls _block_ with a tree of +YAML::BaseNodes+, one tree for
+    # each consecutive document in the YAML stream contained in _io_.
+    #
+    #   File.open( 'many-docs.yaml' ) do |yf|
+    #     YAML.each_node( yf ) do |ydoc|
+    #       ## ydoc contains a tree of nodes
+    #       ## from the YAML document
+    #     end
+    #   end
 	#
 	def YAML.each_node( io, &doc_proc )
 		yp = @@parser.new( :Model => :Generic ).load_documents( io, &doc_proc )
     end
 
 	#
-	# Parse all documents from the current stream
+	# Calls _block_ with a tree of +YAML::BaseNodes+, one tree for
+    # each consecutive document in the YAML stream contained in _io_.
+    #
+    #   File.open( 'many-docs.yaml' ) do |yf|
+    #     YAML.parse_documents( yf ) do |ydoc|
+    #       ## ydoc contains a tree of nodes
+    #       ## from the YAML document
+    #     end
+    #   end
 	#
 	def YAML.parse_documents( io, &doc_proc )
 		YAML.each_node( io, &doc_proc )
     end
 
 	#
-	# Load all documents from the current stream
+	# Loads all documents from the current _io_ stream, 
+    # returning a +YAML::Stream+ object containing all
+    # loaded documents.
 	#
 	def YAML.load_stream( io )
 		yp = @@parser.new
@@ -192,7 +226,13 @@ module YAML
 	end
 
 	#
-    # Dump documents to a stream
+    # Returns a YAML stream containing each of the items in +objs+,
+    # each having their own document.
+    #
+    #   YAML.dump_stream( 0, [], {} )
+    #     #=> --- 0
+    #         --- []
+    #         --- {}
     #
 	def YAML.dump_stream( *objs )
 		d = YAML::Stream.new
@@ -203,7 +243,7 @@ module YAML
 	end
 
 	#
-	# Add a transfer method to a domain
+	# Add a global handler for a YAML domain type.
 	#
 	def YAML.add_domain_type( domain, type_re, &transfer_proc )
         @@loader.add_domain_type( domain, type_re, &transfer_proc )
