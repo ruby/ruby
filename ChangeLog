@@ -1,4 +1,13 @@
-Tue Apr  5 15:15:26 2005  Kouhei Sutou  <kou@kono.cis.iwate-u.ac.jp>
+Tue Apr  5 15:45:33 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* sample/rss/tdiary_plugin/rss-recent.rb:
+	  new option: @options['rss-recent.use-image-link']:
+	  use image as link instread of text if available.
+
+	* sample/rss/tdiary_plugin/rss-recent.rb (RSS_RECENT_VERSION):
+	  0.0.5 -> 0.0.6.
+
+Tue Apr  5 15:15:26 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/dublincore.rb: supported multiple DublinCore items.
 
