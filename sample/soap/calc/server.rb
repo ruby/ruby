@@ -13,5 +13,9 @@ class CalcServer < SOAP::RPC::StandaloneServer
 end
 
 if $0 == __FILE__
-  status = CalcServer.new('CalcServer', nil, '0.0.0.0', 7000).start
+  server = CalcServer.new('CalcServer', nil, '0.0.0.0', 7000)
+  trap(:INT) do
+    server.shutdown
+  end
+  server.start
 end

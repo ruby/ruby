@@ -1,3 +1,7 @@
+Mon Dec 20 22:52:29 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* added samples for the previous soap4r's commit.
+
 Mon Dec 20 22:56:39 2004  Tanaka Akira  <akr@m17n.org>
 
 	* gc.c (set_stack_end): gcc noinline attribute is available since

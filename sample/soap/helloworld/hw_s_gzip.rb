@@ -2,6 +2,7 @@ require 'soap/rpc/standaloneServer'
 
 class HelloWorldServer < SOAP::RPC::StandaloneServer
   def on_init
+    @soaplet.allow_content_encoding_gzip = true
     @log.level = Logger::Severity::DEBUG
     add_method(self, 'hello_world', 'from')
   end
