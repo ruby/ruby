@@ -1017,9 +1017,27 @@ static VALUE module_setup _((VALUE,NODE*));
 static VALUE massign _((VALUE,NODE*,VALUE,int));
 static void assign _((VALUE,NODE*,VALUE,int));
 
+typedef struct event_hook {
+    rb_event_hook_func_t func;
+    rb_event_t events;
+    struct event_hook *next;
+} rb_event_hook_t;
+
+static rb_event_hook_t *event_hooks;
+
+#define EXEC_EVENT_HOOK(event, node, self, id, klass) \
+    do { \
+	rb_event_hook_t *hook; \
+	\
+	for (hook = event_hooks; hook; hook = hook->next) { \
+	    if (hook->events & event) \
+		(*hook->func)(event, node, self, id, klass); \
+	} \
+    } while (0)
+
 static VALUE trace_func = 0;
 static int tracing = 0;
-static void call_trace_func _((char*,NODE*,VALUE,ID,VALUE));
+static void call_trace_func _((rb_event_t,NODE*,VALUE,ID,VALUE));
 
 #if 0
 #define SET_CURRENT_SOURCE() (ruby_sourcefile = ruby_current_node->nd_file, \
@@ -2384,6 +2402,45 @@ rb_obj_is_proc(proc)
     return Qfalse;
 }
 
+void
+rb_add_event_hook(func, events)
+    rb_event_hook_func_t func;
+    rb_event_t events;
+{
+    rb_event_hook_t *hook;
+
+    hook = ALLOC(rb_event_hook_t);
+    hook->func = func;
+    hook->events = events;
+    hook->next = event_hooks;
+    event_hooks = hook;
+}
+
+int
+rb_remove_event_hook(func)
+    rb_event_hook_func_t func;
+{
+    rb_event_hook_t *prev, *hook;
+
+    prev = NULL;
+    hook = event_hooks;
+    while (hook) {
+	if (hook->func == func) {
+	    if (prev) {
+		prev->next = hook->next;
+	    }
+	    else {
+		event_hooks = hook->next;
+	    }
+	    xfree(hook);
+	    return 0;
+	}
+	prev = hook;
+	hook = hook->next;
+    }
+    return -1;
+}
+
 /*
  *  call-seq:
  *     set_trace_func(proc)    => proc
@@ -2432,19 +2489,53 @@ static VALUE
 set_trace_func(obj, trace)
     VALUE obj, trace;
 {
+    rb_event_hook_t *hook;
+
     if (NIL_P(trace)) {
 	trace_func = 0;
+	rb_remove_event_hook(call_trace_func);
 	return Qnil;
     }
     if (!rb_obj_is_proc(trace)) {
 	rb_raise(rb_eTypeError, "trace_func needs to be Proc");
     }
-    return trace_func = trace;
+    trace_func = trace;
+    for (hook = event_hooks; hook; hook = hook->next) {
+	if (hook->func == call_trace_func)
+	    return trace;
+    }
+    rb_add_event_hook(call_trace_func, RUBY_EVENT_ALL);
+    return trace;
+}
+
+static char *
+get_event_name(rb_event_t event)
+{
+    switch (event) {
+    case RUBY_EVENT_LINE:
+	return "line";
+    case RUBY_EVENT_CLASS:
+	return "class";
+    case RUBY_EVENT_END:
+	return "end";
+    case RUBY_EVENT_CALL:
+	return "call";
+    case RUBY_EVENT_RETURN:
+	return "return";
+    case RUBY_EVENT_C_CALL:
+	return "c-call";
+    case RUBY_EVENT_C_RETURN:
+	return "c-return";
+    case RUBY_EVENT_RAISE:
+	return "raise";
+    default:
+	return "unknown";
+    }
 }
 
 static void
 call_trace_func(event, node, self, id, klass)
-    char *event;
+    rb_event_t event;
     NODE *node;
     VALUE self;
     ID id;
@@ -2454,6 +2545,7 @@ call_trace_func(event, node, self, id, klass)
     struct FRAME *prev;
     NODE *node_save;
     VALUE srcfile;
+    char *event_name;
 
     if (!trace_func) return;
     if (tracing) return;
@@ -2488,7 +2580,8 @@ call_trace_func(event, node, self, id, klass)
     raised = thread_reset_raised();
     if ((state = EXEC_TAG()) == 0) {
 	srcfile = rb_str_new2(ruby_sourcefile?ruby_sourcefile:"(ruby)");
-	proc_invoke(trace_func, rb_ary_new3(6, rb_str_new2(event),
+	event_name = get_event_name(event);
+	proc_invoke(trace_func, rb_ary_new3(6, rb_str_new2(event_name),
 					    srcfile,
 					    INT2FIX(ruby_sourceline),
 					    id?ID2SYM(id):Qnil,
@@ -2769,11 +2862,9 @@ rb_eval(self, n)
 	RETURN(Qfalse);
 
       case NODE_IF:
-	if (trace_func) {
-	    call_trace_func("line", node, self,
-			    ruby_frame->last_func,
-			    ruby_frame->last_class);
-	}
+	EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node, self,
+			ruby_frame->last_func,
+			ruby_frame->last_class);
 	if (RTEST(rb_eval(self, node->nd_cond))) {
 	    node = node->nd_body;
 	}
@@ -2789,11 +2880,9 @@ rb_eval(self, n)
 	    if (nd_type(node) != NODE_WHEN) goto again;
 	    tag = node->nd_head;
 	    while (tag) {
-		if (trace_func) {
-		    call_trace_func("line", tag, self,
-				    ruby_frame->last_func,
-				    ruby_frame->last_class);
-		}
+		EXEC_EVENT_HOOK(RUBY_EVENT_LINE, tag, self,
+				ruby_frame->last_func,
+				ruby_frame->last_class);
 		if (tag->nd_head && nd_type(tag->nd_head) == NODE_WHEN) {
 		    VALUE v = rb_eval(self, tag->nd_head->nd_head);
 		    long i;
@@ -2832,11 +2921,9 @@ rb_eval(self, n)
 		}
 		tag = node->nd_head;
 		while (tag) {
-		    if (trace_func) {
-			call_trace_func("line", tag, self,
-					ruby_frame->last_func,
-					ruby_frame->last_class);
-		    }
+		    EXEC_EVENT_HOOK(RUBY_EVENT_LINE, tag, self,
+				    ruby_frame->last_func,
+				    ruby_frame->last_class);
 		    if (tag->nd_head && nd_type(tag->nd_head) == NODE_WHEN) {
 			VALUE v = rb_eval(self, tag->nd_head->nd_head);
 			long i;
@@ -3875,11 +3962,9 @@ rb_eval(self, n)
 	break;
 
       case NODE_NEWLINE:
-	if (trace_func) {
-	    call_trace_func("line", node, self,
-			    ruby_frame->last_func,
-			    ruby_frame->last_class);
-	}
+	EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node, self, 
+			ruby_frame->last_func,
+			ruby_frame->last_class);
 	node = node->nd_next;
 	goto again;
 
@@ -3930,9 +4015,8 @@ module_setup(module, n)
     PUSH_CREF(module);
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	if (trace_func) {
-	    call_trace_func("class", n, ruby_cbase, ruby_frame->last_func, ruby_frame->last_class);
-	}
+	EXEC_EVENT_HOOK(RUBY_EVENT_CLASS, n, ruby_cbase,
+			ruby_frame->last_func, ruby_frame->last_class);
 	result = rb_eval(ruby_cbase, node->nd_next);
     }
     POP_TAG();
@@ -3942,9 +4026,8 @@ module_setup(module, n)
     POP_CLASS();
 
     ruby_frame = frame.tmp;
-    if (trace_func) {
-	call_trace_func("end", n, 0, ruby_frame->last_func, ruby_frame->last_class);
-    }
+    EXEC_EVENT_HOOK(RUBY_EVENT_END, n, 0,
+		    ruby_frame->last_func, ruby_frame->last_class);
     if (state) JUMP_TAG(state);
 
     return result;
@@ -4339,8 +4422,8 @@ rb_longjmp(tag, mesg)
     }
 
     rb_trap_restore_mask();
-    if (trace_func && tag != TAG_FATAL) {
-	call_trace_func("raise", ruby_current_node,
+    if (tag != TAG_FATAL) {
+	EXEC_EVENT_HOOK(RUBY_EVENT_RAISE, ruby_current_node,
 			ruby_frame->self,
 			ruby_frame->last_func,
 			ruby_frame->last_class);
@@ -5506,17 +5589,19 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		rb_bug("bad argc (%d) specified for `%s(%s)'",
 		       len, rb_class2name(klass), rb_id2name(id));
 	    }
-	    if (trace_func) {
+	    if (event_hooks) {
 		int state;
 
-		call_trace_func("c-call", ruby_current_node, recv, id, klass);
+		EXEC_EVENT_HOOK(RUBY_EVENT_C_CALL, ruby_current_node,
+				recv, id, klass);
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
 		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
 		}
 		POP_TAG();
 		ruby_current_node = ruby_frame->node;
-		call_trace_func("c-return", ruby_current_node, recv, id, klass);
+		EXEC_EVENT_HOOK(RUBY_EVENT_C_RETURN, ruby_current_node,
+				recv, id, klass);
 		if (state) JUMP_TAG(state);
 	    }
 	    else {
@@ -5552,7 +5637,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    int state;
 	    VALUE *local_vars;	/* OK */
 	    NODE *saved_cref = 0;
-	    int trace_return = 0;
+	    int hook_return = 0;
 
 	    PUSH_SCOPE();
 
@@ -5647,8 +5732,8 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		}
 
 		if (trace_func) {
-		    call_trace_func("call", b2, recv, id, klass);
-		    trace_return = 1;
+		    EXEC_EVENT_HOOK(RUBY_EVENT_CALL, b2, recv, id, klass);
+		    hook_return = 1;
 		}
 		result = rb_eval(recv, body);
 	    }
@@ -5661,8 +5746,8 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
-	    if (trace_return) {
-		call_trace_func("return", body, recv, id, klass);
+	    if (hook_return) {
+		EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
 	    }
 	    switch (state) {
 	      case 0:
