@@ -31,11 +31,13 @@ test(iconv_t cd, char **inptr, size_t *inlen, char **outptr, size_t *outlen)
     else
       conf = prefix + "config.charset"
     end
+    wrapper = "iconv.rb"
+    $cleanfiles << wrapper
   end
   create_makefile("iconv")
   if conf
     open("Makefile", "a") do |mf|
-      mf.print("\nall: iconv.rb\n\niconv.rb: ", prefix, "charset_alias.rb")
+      mf.print("\nall: #{wrapper}\n\n#{wrapper}: #{prefix}charset_alias.rb")
       mf.print(" ", conf) unless scheme
       mf.print("\n\t$(RUBY) ", prefix, "charset_alias.rb ", conf, " $@\n")
     end

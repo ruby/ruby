@@ -7,8 +7,21 @@ require 'rbconfig'
 OS = Config::CONFIG["target"]
 SHELL = Config::CONFIG['SHELL']
 
+class Hash::Ordered < Hash
+  def [](key)
+    val = super and val.last
+  end
+  def []=(key, val)
+    ary = fetch(key) {return super(key, [self.size, key, val])} and
+      ary.last = val
+  end
+  def each
+    values.sort.each {|i, key, val| yield key, val}
+  end
+end
+
 def charset_alias(config_charset, mapfile, target = OS)
-  map = {}
+  map = Hash::Ordered.new
   comments = []
   IO.foreach("|#{SHELL} #{config_charset} #{target}") do |list|
     next comments << list if /^\#/ =~ list
@@ -29,7 +42,7 @@ def charset_alias(config_charset, mapfile, target = OS)
     f.puts
     f.puts(comments)
     f.puts("class Iconv")
-    map.keys.sort.each {|can| f.puts("  charset_map['#{can}'.freeze] = '#{map[can]}'.freeze")}
+    map.each {|can, sys| f.puts("  charset_map['#{can}'.freeze] = '#{sys}'.freeze")}
     f.puts("end")
   end
 end
