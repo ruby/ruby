@@ -1803,7 +1803,7 @@ is_defined(self, node, buf)
 
       case NODE_VCALL:
       case NODE_FCALL:
-	val = CLASS_OF(self);
+	val = self;
 	goto check_bound;
 
       case NODE_CALL:
@@ -1811,7 +1811,6 @@ is_defined(self, node, buf)
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_eval(self, node->nd_recv);
-	    val = CLASS_OF(val);
 	}
 	POP_TAG();
 	if (state) {
@@ -1821,6 +1820,8 @@ is_defined(self, node, buf)
       check_bound:
 	{
 	    int call = nd_type(node)== NODE_CALL;
+
+	    val = CLASS_OF(val);
 	    if (call) {
 		int noex;
 		ID id = node->nd_mid;

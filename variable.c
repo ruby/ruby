@@ -145,6 +145,10 @@ classname(klass)
     VALUE path = Qnil;
     ID classpath = rb_intern("__classpath__");
 
+    if (TYPE(klass) == T_ICLASS) {
+	klass = RBASIC(klass)->klass;
+    }
+    klass = rb_class_real(klass);
     if (!klass) klass = rb_cObject;
     if (ROBJECT(klass)->iv_tbl &&
 	!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
@@ -172,7 +176,7 @@ VALUE
 rb_mod_name(mod)
     VALUE mod;
 {
-    VALUE path = classname(rb_class_real(mod));
+    VALUE path = classname(mod);
 
     if (path) return rb_str_dup(path);
     return rb_str_new(0,0);
@@ -182,7 +186,7 @@ VALUE
 rb_class_path(klass)
     VALUE klass;
 {
-    VALUE path = classname(rb_class_real(klass));
+    VALUE path = classname(klass);
 
     if (path) return path;
     else {

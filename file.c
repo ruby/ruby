@@ -1377,22 +1377,33 @@ strrdirsep(path)
     return last;
 }
 
+#define BUFCHECK(cond) while (cond) {\
+    long bdiff = p - buf;\
+    buflen *= 2;\
+    rb_str_resize(result, buflen);\
+    buf = RSTRING(result)->ptr;\
+    p = buf + bdiff;\
+    pend = buf + buflen;\
+}
+
 VALUE
 rb_file_s_expand_path(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE fname, dname;
-    char *s, *p, *b;
-    char buf[MAXPATHLEN+2];
-    char *bend = buf + sizeof(buf) - 2;
+    VALUE fname, dname, result;
+    char *s, *buf, *b, *p, *pend;
+    long buflen = MAXPATHLEN;
     int tainted;
 
     rb_scan_args(argc, argv, "11", &fname, &dname);
+    result = rb_str_new(0, buflen + 2);
 
-    tainted = OBJ_TAINTED(fname);
     s = StringValuePtr(fname);
-    p = buf;
+    p = buf = RSTRING(result)->ptr;
+    pend = p + buflen;
+    tainted = OBJ_TAINTED(fname);
+
     if (s[0] == '~') {
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    char *dir = getenv("HOME");
@@ -1400,9 +1411,9 @@ rb_file_s_expand_path(argc, argv)
 	    if (!dir) {
 		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `%s'", s);
 	    }
-	    if (strlen(dir) > MAXPATHLEN) goto toolong;
+	    BUFCHECK (strlen(dir) > buflen);
 	    strcpy(buf, dir);
-	    p = &buf[strlen(buf)];
+	    p = buf + strlen(dir);
 	    s++;
 	    tainted = 1;
 	}
@@ -1415,7 +1426,7 @@ rb_file_s_expand_path(argc, argv)
 	    while (*s && !isdirsep(*s)) {
 		s = CharNext(s);
 	    }
-	    if (p + (s-b) >= bend) goto toolong;
+	    BUFCHECK (p + (s-b) >= pend);
 	    memcpy(p, b, s-b);
 	    p += s-b;
 	    *p = '\0';
@@ -1425,9 +1436,9 @@ rb_file_s_expand_path(argc, argv)
 		endpwent();
 		rb_raise(rb_eArgError, "user %s doesn't exist", buf);
 	    }
-	    if (strlen(pwPtr->pw_dir) > MAXPATHLEN) goto toolong;
+	    BUFCHECK (strlen(pwPtr->pw_dir) > buflen);
 	    strcpy(buf, pwPtr->pw_dir);
-	    p = &buf[strlen(buf)];
+	    p = buf + strlen(pwPtr->pw_dir);
 	    endpwent();
 #endif
 	}
@@ -1439,7 +1450,7 @@ rb_file_s_expand_path(argc, argv)
 	while (*s && !isdirsep(*s)) {
 	    s = CharNext(s);
 	}
-	if (p + (s-b) >= bend) goto toolong;
+	BUFCHECK (p + (s-b) >= pend);
 	memcpy(p, b, s-b);
 	p += s-b;
     }
@@ -1448,12 +1459,15 @@ rb_file_s_expand_path(argc, argv)
 	if (!NIL_P(dname)) {
 	    dname = rb_file_s_expand_path(1, &dname);
 	    if (OBJ_TAINTED(dname)) tainted = 1;
-	    if (strlen(RSTRING(dname)->ptr) > MAXPATHLEN) goto toolong;
+	    BUFCHECK (strlen(RSTRING(dname)->ptr) > buflen);
 	    strcpy(buf, RSTRING(dname)->ptr);
 	}
 	else {
+	    char *dir = my_getcwd();
+
 	    tainted = 1;
-	    getcwd(buf, MAXPATHLEN);
+	    BUFCHECK (strlen(dir) > buflen);
+	    strcpy(buf, dir);
 	}
 	p = &buf[strlen(buf)];
 	while (p > buf && *(p - 1) == '/') p--;
@@ -1461,7 +1475,7 @@ rb_file_s_expand_path(argc, argv)
     else {
 	while (*s && isdirsep(*s)) {
 	    *p++ = '/';
-	    if (p >= bend) goto toolong;
+	    BUFCHECK (p >= pend);
 	    s++;
 	}
 	if (p > buf && *s) p--;
@@ -1507,7 +1521,7 @@ rb_file_s_expand_path(argc, argv)
 	  case '\\':
 #endif
 	    if (s > b) {
-		if (p + (s-b+1) >= bend) goto toolong;
+		BUFCHECK (p + (s-b+1) >= pend);
 		memcpy(++p, b, s-b);
 		p += s-b;
 		*p = '/';
@@ -1521,7 +1535,7 @@ rb_file_s_expand_path(argc, argv)
     }
 
     if (s > b) {
-	if (p + (s-b) >= bend) goto toolong;
+	BUFCHECK (p + (s-b) >= pend);
 	memcpy(++p, b, s-b);
 	p += s-b;
     }
@@ -1539,13 +1553,9 @@ rb_file_s_expand_path(argc, argv)
     }
 #endif
 
-    fname = rb_str_new(buf, p - buf);
-    if (tainted) OBJ_TAINT(fname);
-    return fname;
-
-  toolong:
-    rb_raise(rb_eArgError, "argument too long (size=%d)", RSTRING(fname)->len);
-    return Qnil;		/* not reached */
+    if (tainted) OBJ_TAINT(result);
+    RSTRING(result)->len = p - buf;
+    return result;
 }
 
 static int
@@ -2297,6 +2307,7 @@ path_check_1(path)
     for (;;) {
 	if (stat(p0, &st) == 0 && (st.st_mode & 002)) {
 	    if (p) *p = '/';
+	    rb_warn("Bad mode 0%o on %s", st.st_mode, p0);
 	    return 0;
 	}
 	s = strrdirsep(p0);
