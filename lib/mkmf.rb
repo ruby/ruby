@@ -544,7 +544,7 @@ SHELL = /bin/sh
 srcdir = #{srcdir}
 topdir = #{$topdir}
 hdrdir = #{$hdrdir}
-VPATH = $(srcdir)
+VPATH = #{$mingw and CONFIG['build_os'] == 'cygwin' ? '$(shell cygpath -u $(srcdir))' : '$(srcdir)'}
 }
   drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
   if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?

@@ -1,3 +1,8 @@
+Thu Jul  3 12:13:05 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (VPATH): convert from Windows form to Unix form on 
+	  MinGW.  This fixes the build with GNU make 3.80-1 for Cygwin.
+
 Wed Jul  2 13:22:39 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_shared_replace): clear flags before copy.
