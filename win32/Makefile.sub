@@ -513,7 +513,7 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 
 {$(srcdir)}.y.c:
 	$(YACC) $(YFLAGS) $(<:\=/)
-	sed -e "s!^extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $@
+	sed -e "s!^ *extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $@
 	@del y.tab.c
 
 {$(srcdir)}parse.c: parse.y

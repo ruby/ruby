@@ -1,3 +1,8 @@
+Fri Oct 31 01:38:14 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* wince/Makefile.sub, win32/Makefile.sub (.y.c): allow white spaces
+	  at the beginning of line to remove by sed. (ruby-bugs-ja PR#580)
+
 Fri Oct 31 01:02:24 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compar.c (cmp_equal): protect exceptions from <=> comparison
