@@ -1,3 +1,12 @@
+Sun Apr  4 20:33:42 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* eval.c (Init_load): make $LOADED_FEATURES built-in.
+	  [ruby-dev:23299]
+
+	* ruby.c (ruby_prog_init): make $PROGRAM_NAME built-in.
+
+	* lib/English.rb: remove $LOADED_FEATURES and $PROGRAM_NAME.
+
 Sun Apr  4 14:01:20 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/options.rb (Options::parse): Allow multiple -x options to RDoc.
