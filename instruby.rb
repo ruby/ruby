@@ -3,7 +3,8 @@
 load "./rbconfig.rb"
 include Config
 
-$:.unshift File.join(CONFIG["srcdir"], "lib")
+srcdir = File.dirname(__FILE__)
+$:.unshift File.join(srcdir, "lib")
 require 'fileutils'
 require 'shellwords'
 require 'getopts'
@@ -121,7 +122,7 @@ if dll == lib and dll != arc
   end
 end
 
-Dir.chdir CONFIG["srcdir"]
+Dir.chdir srcdir
 
 ruby_shebang = File.join(CONFIG["bindir"], ruby_install_name)
 if File::ALT_SEPARATOR

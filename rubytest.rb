@@ -1,12 +1,14 @@
 #! ./miniruby
 
+exit if defined?(CROSS_COMPILING)
 load './rbconfig.rb'
 include Config
 
-unless File.exist? "./#{CONFIG['ruby_install_name']}#{CONFIG['EXEEXT']}"
-  print "./#{CONFIG['ruby_install_name']} is not found.\n"
+ruby = "./#{CONFIG['ruby_install_name']}#{CONFIG['EXEEXT']}"
+unless File.exist? ruby
+  print "#{ruby} is not found.\n"
   print "Try `make' first, then `make test', please.\n"
-  exit 1
+  exit false
 end
 
 if File.exist? CONFIG['LIBRUBY_SO']
@@ -34,7 +36,8 @@ end
 $stderr.reopen($stdout)
 error = ''
 
-`./#{CONFIG["ruby_install_name"]}#{CONFIG["EXEEXT"]} -I#{CONFIG["srcdir"]}/lib #{CONFIG["srcdir"]}/sample/test.rb`.each do |line|
+srcdir = File.dirname(__FILE__)
+`#{ruby} -I#{srcdir}/lib #{srcdir}/sample/test.rb`.each do |line|
   if line =~ /^end of test/
     print "test succeeded\n"
     exit 0

@@ -1,3 +1,16 @@
+Mon Feb  7 01:56:20 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* instruby.rb, rubytest.rb (srcdir): no longer embed srcdir into
+	  rbconfig.rb. (backported from CVS HEAD)
+
+	* ext/socket/extconf.rb (sockaddr_storage): winsock2.h have the
+	  definition of struct sockaddr_storage, but socket.c doesn't
+	  include it because this version of ruby still has binary level
+	  compatibility with winsock1.
+
+	* lib/mkmf.rb (create_makefile): should support header files in
+	  depend file.
+
 Mon Feb  7 01:21:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/extconf.rb: check if getaddrinfo() works fine only when

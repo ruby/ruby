@@ -123,7 +123,8 @@ end
     cppflags = $CPPFLAGS
     $CPPFLAGS += flags
   end
-  if have_struct_member("struct sockaddr_storage", "ss_family", headers)
+  if /mswin32|mingw/ !~ RUBY_PLATFORM and
+     have_struct_member("struct sockaddr_storage", "ss_family", headers)
     $defs[-1] = "-DHAVE_SOCKADDR_STORAGE"
     break
   elsif flags
