@@ -1,6 +1,6 @@
 Tue Oct  7 12:23:47 2003  Tanaka Akira  <akr@m17n.org>
 
-	* ext/fcntl/fcntl.c (Init_fcntl): define Fcntl::ACCMODE.
+	* ext/fcntl/fcntl.c (Init_fcntl): define Fcntl::O_ACCMODE.
 
 	* ext/socket/extconf.rb: useless assignment removed.
 
