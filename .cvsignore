@@ -12,6 +12,7 @@ config.h
 config.log
 config.status
 configure
+libruby.so.*
 miniruby
 newver.rb
 parse.c
