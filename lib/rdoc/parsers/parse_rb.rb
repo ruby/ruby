@@ -1747,7 +1747,7 @@ module RDoc
       when TkCONSTANT
 	name = name_t.name
         superclass = "Object"
-        
+
         if peek_tk.kind_of?(TkLT)
           get_tk
           skip_tkspace(true)
@@ -1826,6 +1826,7 @@ module RDoc
         get_tk
         name_t = get_tk
       end
+      skip_tkspace(false)
       return [container, name_t]
     end
 
