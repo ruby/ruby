@@ -1,3 +1,26 @@
+Tue Sep 21 18:29:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_uniq_bang): element size might change during
+	  comparison.  [ruby-dev:24298]
+
+Mon Sep 20 00:24:19 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_sort_by): do not use qsort directly.  use
+	  rb_ary_sort_bang() instead.  [ruby-dev:24291]
+
+	* enum.c (enum_sort_by): pedantic type check added.
+	  [ruby-dev:24291]
+
+	* hash.c (rb_hash_foreach_iter): check iter_lev after each
+	  iteration.  [ruby-dev:24289]
+
+	* array.c (rb_ary_and): element size might change during
+	  comparison.  [ruby-dev:24290]
+
+	* array.c (rb_ary_or): ditto. [ruby-dev:24292]
+
+	* array.c (rb_ary_equal): wrong fix. [ruby-dev:24286]
+
 Sat Sep 18 15:02:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_equal): element size might change during

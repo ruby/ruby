@@ -397,14 +397,17 @@ sort_by_i(i, ary)
     return Qnil;
 }
 
-static int
-sort_by_cmp(a, b)
-    VALUE *a, *b;
+static VALUE
+sort_by_cmp(values, ary)
+    VALUE values;
 {
-    VALUE retval;
+    VALUE a = RARRAY(values)->ptr[0];
+    VALUE b = RARRAY(values)->ptr[1];
 
-    retval = rb_funcall(RARRAY(*a)->ptr[0], id_cmp, 1, RARRAY(*b)->ptr[0]);
-    return rb_cmpint(retval, *a, *b);
+    /* pedantic check; they must be arrays */
+    Check_Type(a, T_ARRAY);
+    Check_Type(b, T_ARRAY);
+    return rb_funcall(RARRAY(a)->ptr[0], id_cmp, 1, RARRAY(b)->ptr[0]);
 }
 
 /*
@@ -491,7 +494,7 @@ enum_sort_by(obj)
     }
     rb_iterate(rb_each, obj, sort_by_i, ary);
     if (RARRAY(ary)->len > 1) {
-	qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp);
+	rb_iterate(rb_ary_sort_bang, ary, sort_by_cmp, ary);
     }
     for (i=0; i<RARRAY(ary)->len; i++) {
 	VALUE e = RARRAY(ary)->ptr[i];

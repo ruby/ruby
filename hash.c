@@ -131,8 +131,12 @@ rb_hash_foreach_iter(key, value, arg)
 
     if (key == Qundef) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
-    if (RHASH(arg->hash)->tbl != tbl || RHASH(arg->hash)->tbl->bins != bins){
+    if (RHASH(arg->hash)->tbl != tbl ||
+	RHASH(arg->hash)->tbl->bins != bins) {
 	rb_raise(rb_eIndexError, "rehash occurred during iteration");
+    }
+    if (RHASH(arg->hash)->iter_lev == 0) {
+	rb_raise(rb_eArgError, "block re-entered");
     }
     return status;
 }

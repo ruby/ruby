@@ -648,8 +648,9 @@ dir_s_chdir(argc, argv, obj)
 
     if (rb_block_given_p()) {
 	struct chdir_data args;
+	char *cwd = my_getcwd();
 
-	args.old_path = rb_str_new2(my_getcwd());
+	args.old_path = rb_tainted_str_new2(cwd); free(cwd);
 	args.new_path = path;
 	args.done = Qfalse;
 	return rb_ensure(chdir_yield, (VALUE)&args, chdir_restore, (VALUE)&args);

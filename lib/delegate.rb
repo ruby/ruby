@@ -92,7 +92,6 @@ def DelegateClass(superclass)
       @_dc_obj = obj
     end
     def method_missing(m, *args)
-      p [m, *args]
       unless @_dc_obj.respond_to?(m)
         super(m, *args)
       end
