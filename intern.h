@@ -378,6 +378,8 @@ void rb_free_generic_ivar _((VALUE));
 VALUE rb_ivar_get _((VALUE, ID));
 VALUE rb_ivar_set _((VALUE, ID, VALUE));
 VALUE rb_ivar_defined _((VALUE, ID));
+VALUE rb_iv_set _((VALUE, const char *, VALUE));
+VALUE rb_iv_get _((VALUE, const char *));
 VALUE rb_obj_instance_variables _((VALUE));
 VALUE rb_obj_remove_instance_variable _((VALUE, VALUE));
 void *rb_mod_const_at _((VALUE, void*));
@@ -399,6 +401,9 @@ VALUE rb_cvar_defined _((VALUE, ID));
 void rb_cvar_set _((VALUE, ID, VALUE));
 VALUE rb_cvar_get _((VALUE, ID));
 VALUE rb_cvar_singleton _((VALUE));
+VALUE rb_cv_set _((VALUE, const char *, VALUE));
+VALUE rb_cv_get _((VALUE, const char *));
+void rb_define_class_variable _((VALUE, const char *, VALUE));
 VALUE rb_mod_class_variables _((VALUE));
 VALUE rb_mod_remove_cvar _((VALUE, VALUE));
 /* version.c */
