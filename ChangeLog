@@ -1,3 +1,8 @@
+Wed Dec 10 15:01:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/monitor/test_monitor.rb (test_cond): use Queue#deq
+	insteadof sleep.
+
 Wed Dec 10 14:45:39 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/pty/pty.c (HAVE_SYS_IOCTL_H): already defined at config.h, so

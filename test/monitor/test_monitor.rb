@@ -113,8 +113,9 @@ class TestMonitor < Test::Unit::TestCase
     end
 
     c = "foo"
+    queue3 = Queue.new
     Thread.start do
-      sleep(0.2)
+      queue3.deq
       @monitor.synchronize do
         c = "bar"
         cond.signal
@@ -125,6 +126,7 @@ class TestMonitor < Test::Unit::TestCase
       result3 = cond.wait(0.1)
       assert_equal(false, result3)
       assert_equal("foo", c)
+      queue3.enq(nil)
       result4 = cond.wait
       assert_equal(true, result4)
       assert_equal("bar", c)
