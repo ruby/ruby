@@ -3,7 +3,7 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 : -W option
 
   new option to specify warning level. -W0 to shut up warnings, -W1 for normal level,
-  -W2 for verbose level.  -w equals to -W1.
+  -W2 for verbose level.  -w equals to -W2.
 
 : Marshal to use marshal_dump and marshal_load
 
