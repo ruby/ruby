@@ -8,6 +8,7 @@ make=false
 have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM
 if have_header("ncurses.h") and have_library("ncurses", "initscr")
   make=true
+elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr") and have_library("tinfo", "tgetent") 
 elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr")
   make=true
 elsif have_header("curses_colr/curses.h") and have_library("cur_colr", "initscr")

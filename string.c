@@ -241,12 +241,12 @@ rb_str_shared_replace(str, str2)
     }
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
     RSTRING(str)->len = RSTRING(str2)->len;
+    FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
     if (FL_TEST(str2, ELTS_SHARED|STR_ASSOC)) {
 	FL_SET(str, RBASIC(str2)->flags & (ELTS_SHARED|STR_ASSOC));
 	RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
     }
     else {
-	FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
 	RSTRING(str)->aux.capa = RSTRING(str2)->aux.capa;
     }
     RSTRING(str2)->ptr = 0;	/* abandon str2 */
@@ -559,7 +559,7 @@ rb_str_resize(str, len)
 	rb_str_modify(str);
 	if (RSTRING(str)->len < len || RSTRING(str)->len - len > 1024) {
 	    REALLOC_N(RSTRING(str)->ptr, char, len+1);
-	    if (!FL_TEST(str, STR_ASSOC)) {
+	    if (!FL_TEST(str, STR_ASSOC|ELTS_SHARED)) {
 		RSTRING(str)->aux.capa = len;
 	    }
 	}
@@ -1705,6 +1705,7 @@ rb_str_replace(str, str2)
 	RSTRING(str)->len = RSTRING(str2)->len;
 	RSTRING(str)->ptr = RSTRING(str2)->ptr;
 	FL_SET(str, ELTS_SHARED);
+	FL_UNSET(str, STR_ASSOC);
 	RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
     }
     else {

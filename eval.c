@@ -950,6 +950,10 @@ static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
 static NODE *compile _((VALUE, char*, int));
 
 static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
+
+#define YIELD_PROC_CALL  1
+#define YIELD_PUBLIC_DEF 2
+
 static VALUE rb_call _((VALUE,VALUE,ID,int,const VALUE*,int));
 static VALUE module_setup _((VALUE,NODE*));
 
@@ -2780,7 +2784,7 @@ rb_eval(self, n)
 	    result = Qundef;	/* no arg */
 	}
 	SET_CURRENT_SOURCE();
-	result = rb_yield_0(result, 0, 0, Qfalse, node->nd_state);
+	result = rb_yield_0(result, 0, 0, 0, node->nd_state);
 	break;
 
       case NODE_RESCUE:
@@ -4010,9 +4014,9 @@ rb_f_block_given_p()
 }
 
 static VALUE
-rb_yield_0(val, self, klass, pcall, avalue)
+rb_yield_0(val, self, klass, flags, avalue)
     VALUE val, self, klass;	/* OK */
-    int pcall, avalue;
+    int flags, avalue;
 {
     NODE *node;
     volatile VALUE result = Qnil;
@@ -4043,7 +4047,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
     old_scope = ruby_scope;
     ruby_scope = block->scope;
     old_vmode = scope_vmode;
-    scope_vmode = block->vmode;
+    scope_vmode = (flags & YIELD_PUBLIC_DEF) ? SCOPE_PUBLIC : block->vmode;
     ruby_block = block->prev;
     if (block->flags & BLOCK_D_SCOPE) {
 	/* put place holder for dynamic (in-block) local variables */
@@ -4061,7 +4065,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    if (block->var == (NODE*)1) { /* no parameter || */
-		if (pcall && RARRAY(val)->len != 0) {
+		if ((flags & YIELD_PROC_CALL) && RARRAY(val)->len != 0) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
 			     RARRAY(val)->len);
 		}
@@ -4076,7 +4080,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
 		if (!avalue) {
 		    val = svalue_to_mrhs(val, block->var->nd_head);
 		}
-		massign(self, block->var, val, pcall);
+		massign(self, block->var, val, flags&YIELD_PROC_CALL);
 	    }
 	    else {
 		int len = 0;
@@ -4100,7 +4104,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
 			ruby_current_node = curr;
 		    }
 		}
-		assign(self, block->var, val, pcall);
+		assign(self, block->var, val, flags&YIELD_PROC_CALL);
 	    }
 	}
 	POP_TAG();
@@ -5589,7 +5593,7 @@ static VALUE
 yield_under_i(self)
     VALUE self;
 {
-    return rb_yield_0(self, self, ruby_class, Qfalse, Qfalse);
+    return rb_yield_0(self, self, ruby_class, YIELD_PUBLIC_DEF, Qfalse);
 }
 
 /* block eval under the class/module context */
@@ -6954,7 +6958,7 @@ proc_invoke(proc, args, self, klass)
 
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = block_orphan(data);
-    pcall = data->flags & BLOCK_LAMBDA;
+    pcall = data->flags & BLOCK_LAMBDA ? YIELD_PROC_CALL : 0;
 
     ruby_wrapper = data->wrapper;
     ruby_dyna_vars = data->dyna_vars;

@@ -1,3 +1,12 @@
+Wed Jul  2 13:22:39 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_shared_replace): clear flags before copy.
+
+	* string.c (rb_str_replace): ditto.
+
+	* eval.c (rb_yield_0): override visibility mode for module_eval
+	  etc. (ruby-bugs-ja PR#505)
+
 Wed Jul  2 11:45:34 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: synchronize document with source code.
