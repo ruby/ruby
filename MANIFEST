@@ -810,6 +810,8 @@ test/wsdl/raa/RAAService.rb
 test/wsdl/raa/README.txt
 test/wsdl/raa/raa.wsdl
 test/wsdl/raa/test_raa.rb
+test/wsdl/soap/soapbodyparts.wsdl
+test/wsdl/soap/test_soapbodyparts.rb
 test/wsdl/test_emptycomplextype.rb
 test/wsdl/test_fault.rb
 test/xsd/noencoding.xml
