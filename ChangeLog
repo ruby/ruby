@@ -1,3 +1,8 @@
+Thu Nov 25 20:14:57 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/thwait.rb (ThreadsWait#join_nowait): abnormally terminated
+	  threads should be also processed.  [ruby-talk:121320]
+
 Thu Nov 25 18:06:37 2004  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in: AC_CHECK_SIZEOF(rlim_t) to include stdio.h to fix
@@ -116,11 +121,11 @@ Fri Nov 19 22:44:43 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Fri Nov 19 17:46:56 2004  Kouhei Sutou  <kou@cozmixng.org>
 
-	* lib/rss/maker/0.9.rb (RSS::Maker::RSS09::Image#have_required_values): 
+	* lib/rss/maker/0.9.rb (RSS::Maker::RSS09::Image#have_required_values):
 	  changed /rss/channel/image to be optional. [ruby-Bugs:1047]
 
 	* test/rss/test_maker_0.9.rb: added tests for the above.
-	
+
 Fri Nov 19 17:18:17 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::VERSION): 0.1.0 -> 0.1.1.
@@ -137,7 +142,7 @@ Fri Nov 19 17:18:17 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/2.0.rb (RSS::Rss::Channel#ttl): changed return value
 	  type which is not String but Integer.
-	
+
 	* lib/rss/0.9.rb (RSS::Rss::Channel): <skipDays> has <day>s and
 	  <skipHours> has <hour>s.
 
