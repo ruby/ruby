@@ -1,3 +1,8 @@
+Tue May 21 13:25:18 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-font-lock-keywords): symbols end with
+	  '_'.
+
 Tue May 21 04:48:37 2002  Sean Chittenden <sean@chittenden.org>
 
 	* lib/cgi-lib.rb: Checking for constant MOD_RUBY instead of
