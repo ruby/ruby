@@ -2,7 +2,7 @@
  * ext/curses/curses.c
  * 
  * by MAEDA Shugo (ender@pic-internet.or.jp)
- * modified by Yukihiro Matsumoto (matz@ruby.club.or.jp)
+ * modified by Yukihiro Matsumoto (matz@netlab.co.jp)
  */
 
 #ifdef HAVE_NCURSES_H

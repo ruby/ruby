@@ -1,3 +1,10 @@
+Thu Mar 26 11:51:09 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_dump): new method.
+
+	* eval.c (block_pass): block argument can be nil, which means no
+	  block is supplied for the method.
+
 Wed Mar 25 08:12:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* numeric.c (flo_modulo): caused SEGV if left operand is not a

@@ -1423,7 +1423,7 @@ str_inspect(str)
 	    *b++ = '\\';
 	    *b++ = 'f';
 	}
-	else if (c == '\13') {
+	else if (c == '\013') {
 	    CHECK(2);
 	    *b++ = '\\';
 	    *b++ = 'v';
@@ -1447,6 +1447,92 @@ str_inspect(str)
     }
     *b++ = '"';
     return str_new(buf, b - buf);
+}
+
+VALUE
+str_dump(str)
+    VALUE str;
+{
+    int len;
+    UCHAR *p, *pend;
+    UCHAR *q, *qend;
+    VALUE result;
+
+    len = 2;			/* "" */
+    p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
+    while (p < pend) {
+	UCHAR c = *p++;
+	switch (c) {
+	  case '"':  case '\'':
+	  case '\n': case '\r':
+	  case '\t': case '\f':
+	  case '\013': case '\007': case '\033': 
+	    len += 2;
+	    break;
+
+	  default:
+	    if (isascii(c) && isprint(c)) {
+		len++;
+	    }
+	    else {
+		len += 4;		/* \nnn */
+	    }
+	    break;
+	}
+    }
+
+    result = str_new(0, len);
+    p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
+    q = RSTRING(result)->ptr; qend = q + len;
+
+    *q++ = '"';
+    while (p < pend) {
+	UCHAR c = *p++;
+
+	if (c == '"' || c == '\\') {
+	    *q++ = '\\';
+	    *q++ = c;
+	}
+	else if (isascii(c) && isprint(c)) {
+	    *q++ = c;
+	}
+	else if (c == '\n') {
+	    *q++ = '\\';
+	    *q++ = 'n';
+	}
+	else if (c == '\r') {
+	    *q++ = '\\';
+	    *q++ = 'r';
+	}
+	else if (c == '\t') {
+	    *q++ = '\\';
+	    *q++ = 't';
+	}
+	else if (c == '\f') {
+	    *q++ = '\\';
+	    *q++ = 'f';
+	}
+	else if (c == '\13') {
+	    *q++ = '\\';
+	    *q++ = 'v';
+	}
+	else if (c == '\007') {
+	    *q++ = '\\';
+	    *q++ = 'a';
+	}
+	else if (c == 033) {
+	    *q++ = '\\';
+	    *q++ = 'e';
+	}
+	else {
+	    *q++ = '\\';
+	    sprintf(q, "%03o", c);
+	    q += 3;
+	}
+    }
+    *q++ = '"';
+
+    return result;
 }
 
 static VALUE
@@ -2544,6 +2630,7 @@ Init_String()
     rb_define_method(cString, "to_f", str_to_f, 0);
     rb_define_method(cString, "to_s", str_to_s, 0);
     rb_define_method(cString, "inspect", str_inspect, 0);
+    rb_define_method(cString, "dump", str_dump, 0);
 
     rb_define_method(cString, "upcase", str_upcase, 0);
     rb_define_method(cString, "downcase", str_downcase, 0);

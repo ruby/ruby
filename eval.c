@@ -4708,6 +4708,9 @@ block_pass(self, node)
     volatile int orphan;
     volatile int safe = safe_level;
 
+    if (NIL_P(block)) {
+	return rb_eval(self, node->nd_iter);
+    }
     if (obj_is_kind_of(block, cMethod)) {
 	block = method_proc(block);
     }
