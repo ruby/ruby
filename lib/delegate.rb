@@ -21,7 +21,7 @@ class Delegator
   def initialize(obj)
     preserved = ::Kernel.instance_methods
     preserved -= ["to_s","to_a","inspect","==","=~","==="]
-    for t in self.type.ancestors
+    for t in self.class.ancestors
       preserved |= t.instance_methods
       preserved |= t.private_instance_methods
       preserved |= t.protected_instance_methods
@@ -111,7 +111,7 @@ if __FILE__ == $0
   end
 
   ary = ExtArray.new
-  p ary.type
+  p ary.class
   ary.push 25
   p ary
 

@@ -1,3 +1,8 @@
+Thu Oct  3 00:27:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/delegate.rb (Delegator::initialize): use Object#class
+	  instead of deprecated Object#type.
+
 Wed Oct  2 23:32:48 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (RUBY_CHECK_IO_NEED_FLUSH): check whether fflush()
@@ -41,7 +46,7 @@ Wed Oct  2 10:59:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* gc.c (gc_sweep): free unused heap page to reduce process size if
 	  possible.
 
-	* object.c (rb_obj_type): deperecated Object#type; use Object#class.
+	* object.c (rb_obj_type): depercated Object#type; use Object#class.
 
 Tue Oct  1 23:48:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
