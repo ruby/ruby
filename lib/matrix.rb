@@ -394,7 +394,7 @@ class Matrix
   
   # ARITHMETIC
   
-  def *(m) #is matrix or vector or number"
+  def *(m) # m is matrix or vector or number
     case(m)
     when Numeric
       rows = @rows.collect {
@@ -693,7 +693,7 @@ class Matrix
   end
 
   def row_vectors
-    rows = (0 .. column_size - 1).collect {
+    rows = (0 .. row_size - 1).collect {
       |i|
       row(i)
     }
@@ -701,7 +701,7 @@ class Matrix
   end
   
   def column_vectors
-    columns = (0 .. row_size - 1).collect {
+    columns = (0 .. column_size - 1).collect {
       |i|
       column(i)
     }
@@ -896,7 +896,7 @@ class Vector
   
   # ARITHMETIC
   
-  def *(x)
+  def *(x) #x is matrix or number
     case x
     when Numeric
       els = @elements.collect{|e| e * x}

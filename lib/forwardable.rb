@@ -51,7 +51,7 @@ module Forwardable
 	  #{accessor}.__send__(:#{method}, *args, &block)
 	rescue Exception
 	  $@.delete_if{|s| /^\\(__FORWARDABLE__\\):/ =~ s} unless Forwardable::debug
-	  raise
+	  Kernel::raise
 	end
       end
     EOS
@@ -79,7 +79,7 @@ module SingleForwardable
 	   #{accessor}.__send__(:#{method}, *args,&block)
 	 rescue Exception
 	   $@.delete_if{|s| /^\\(__FORWARDABLE__\\):/ =~ s} unless Forwardable::debug
-	   raise
+	   Kernel::raise
 	 end
        end
     EOS

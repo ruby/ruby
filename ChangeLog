@@ -1,3 +1,9 @@
+Sat Nov  3 22:28:51 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
+	* matrix.rb (Matrix#column_vectors, Matrix#row_vectors): ditto bug. 
+	  this bug report and fix by tsutomu@nucba.ac.jp.
+	
+	* forwardable.rb: change raise to Kernel::raise
+	
 Thu Nov  1 14:08:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_aref): idx may be a Bignum.
