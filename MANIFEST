@@ -663,6 +663,14 @@ sample/time.rb
 sample/trojan.rb
 sample/tsvr.rb
 sample/uumerge.rb
+sample/webrick/demo-app.rb
+sample/webrick/demo-multipart.cgi
+sample/webrick/demo-servlet.rb
+sample/webrick/demo-urlencoded.cgi
+sample/webrick/hello.cgi
+sample/webrick/hello.rb
+sample/webrick/httpd.rb
+sample/webrick/httpsd.rb
 sample/wsdl/amazon/AmazonSearch.rb
 sample/wsdl/amazon/AmazonSearchDriver.rb
 sample/wsdl/amazon/sampleClient.rb
