@@ -1,6 +1,11 @@
-require "openssl"
+begin
+  require "openssl"
+  require File.join(File.dirname(__FILE__), "utils.rb")
+rescue LoadError
+end
 require "test/unit"
-require File.join(File.dirname(__FILE__), "utils.rb")
+
+if defined?(OpenSSL)
 
 class OpenSSL::TestX509Certificate < Test::Unit::TestCase
   def setup
@@ -165,4 +170,6 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
                         nil, nil, OpenSSL::Digest::SHA1.new) 
     }
   end
+end
+
 end

@@ -1,5 +1,10 @@
-require "openssl"
+begin
+  require "openssl"
+rescue LoadError
+end
 require "test/unit"
+
+if defined?(OpenSSL)
 
 class OpenSSL::TestX509Name < Test::Unit::TestCase
   def setup
@@ -152,4 +157,6 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     assert_equal(OpenSSL::ASN1::IA5STRING, ary[3][2])
     assert_equal(OpenSSL::ASN1::PRINTABLESTRING, ary[4][2])
   end
+end
+
 end
