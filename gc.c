@@ -1109,7 +1109,6 @@ obj_free(obj)
 	}
 	break;
       case T_ICLASS:
-	rb_clear_cache_by_class((VALUE)obj);
 	/* iClass shares table with the module */
 	break;
 

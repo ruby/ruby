@@ -256,7 +256,7 @@ rb_clear_cache_by_class(klass)
     if (!ruby_running) return;
     ent = cache; end = ent + CACHE_SIZE;
     while (ent < end) {
-	if (ent->origin == klass) {
+	if (ent->klass == klass || ent->origin == klass) {
 	    ent->mid = 0;
 	}
 	ent++;
@@ -365,6 +365,7 @@ rb_get_method_body(klassp, idp, noexp)
 
     if (ruby_running) {
 	/* store in cache */
+	if (BUILTIN_TYPE(origin) == T_ICLASS) origin = RBASIC(origin)->klass;
 	ent = cache + EXPR1(klass, id);
 	ent->klass  = klass;
 	ent->noex   = body->nd_noex;
@@ -949,6 +950,8 @@ static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 
 #define YIELD_PROC_CALL  1
 #define YIELD_PUBLIC_DEF 2
+#define YIELD_FUNC_AVALUE 1
+#define YIELD_FUNC_SVALUE 2
 
 static VALUE rb_call _((VALUE,VALUE,ID,int,const VALUE*,int));
 static VALUE module_setup _((VALUE,NODE*));
@@ -4121,7 +4124,18 @@ rb_yield_0(val, self, klass, flags, avalue)
 	    result = Qnil;
 	}
 	else if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
-	    if (avalue) val = avalue_to_svalue(val);
+	    if (node->nd_state == YIELD_FUNC_AVALUE) {
+		if (!avalue) {
+		    val = svalue_to_avalue(val);
+		}
+	    }
+	    else {
+		if (avalue) {
+		    val = avalue_to_svalue(val);
+		}
+		if (val == Qundef && node->nd_state != YIELD_FUNC_SVALUE)
+		    val = Qnil;
+	    }
 	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
 	}
 	else {
@@ -7557,24 +7571,17 @@ struct proc_funcall_data {
     VALUE val;
 };
 
-static VALUE
-proc_funcall(args, data)
-    VALUE args;
-    struct proc_funcall_data *data;
-{
-    return (*data->func)(svalue_to_avalue(args), data->val);
-}
-
 VALUE
 rb_proc_new(func, val)
     VALUE (*func)(ANYARGS);	/* VALUE yieldarg[, VALUE procarg] */
     VALUE val;
 {
-    struct proc_funcall_data data;
+    struct BLOCK *data;
+    VALUE proc = rb_iterate((VALUE(*)_((VALUE)))mproc, 0, func, val);
 
-    data.func = func;
-    data.val = val;
-    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, proc_funcall, (VALUE)&data);
+    Data_Get_Struct(proc, struct BLOCK, data);
+    data->body->nd_state = YIELD_FUNC_AVALUE;
+    return proc;
 }
 
 static VALUE
@@ -10061,12 +10068,12 @@ catch_i(tag)
 }
 
 VALUE
-rb_catch(tag, proc, data)
+rb_catch(tag, func, data)
     const char *tag;
-    VALUE (*proc)();
+    VALUE (*func)();
     VALUE data;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))catch_i, rb_intern(tag), proc, data);
+    return rb_iterate((VALUE(*)_((VALUE)))catch_i, rb_intern(tag), func, data);
 }
 
 static VALUE

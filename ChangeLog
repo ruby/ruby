@@ -1,3 +1,7 @@
+Thu Jul 17 17:57:32 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_clear_cache_by_class): check both klass and origin.
+
 Thu Jul 17 13:46:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (ruby_init): set ruby_running to true after

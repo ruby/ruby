@@ -329,10 +329,6 @@ class Integer
 end
 
 class Fixnum
-  unless defined? Complex
-    alias power! **;
-  end
-  
   undef quo
   def quo(other)
     Rational.new!(self,1) / other
@@ -346,8 +342,9 @@ class Fixnum
       Rational.new!(self,1)**other
     end
   end
-    
-  unless defined? Complex
+
+  unless defined? 1.power!
+    alias power! ** 
     alias ** rpower
   end
 end

@@ -411,19 +411,18 @@ end
 
 
 class Fixnum
-  alias power! **
-  
+  unless defined? 1.power!
+    alias power! ** 
+    p [__FILE__, defined? 1.power!]
+  end
+
   # Redefined to handle a Complex argument.
   def ** (other)
     if self < 0
       Complex.new!(self, 0) ** other
     else
-      if defined? Rational
-	if other >= 0
-	  self.power!(other)
-	else
-	  Rational.new!(self,1)**other
-	end
+      if defined? self.rpower
+        self.rpower(other)
       else
 	self.power!(other)
       end
@@ -596,7 +595,6 @@ module Math
   module_function :atanh!
   
 end
-
 
 # Documentation comments:
 #  - source: original (researched from pickaxe)
