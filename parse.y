@@ -472,8 +472,8 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| klEND '{' compstmt '}'
 		    {
-			if (compile_for_eval && (in_def || in_single)) {
-			    yyerror("END in method; use at_exit");
+			if (in_def || in_single) {
+			    rb_warn("END in method; use at_exit");
 			}
 
 			$$ = NEW_ITER(0, NEW_POSTEXE(), $3);

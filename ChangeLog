@@ -1,3 +1,8 @@
+Mon Oct  6 16:02:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (stmt): END in method should cause warning.
+	  [ruby-dev:21519]
+
 Mon Oct  6 15:17:23 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_iterator.rb (test_block_argument_without_paren):
