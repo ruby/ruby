@@ -1,6 +1,11 @@
-Tue Sep 12 14:36:49 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Tue Sep 12 15:41:13 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.
+
+Tue Sep 12 15:37:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): stripped array too much, should be just for
+	  proc_call(). 
 
 Tue Sep 12 07:05:24 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 

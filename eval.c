@@ -3427,7 +3427,7 @@ rb_yield_0(val, self, klass, acheck)
 	    if (nd_type(block->var) == NODE_MASGN)
 		massign(self, block->var, val, acheck);
 	    else {
-		if (val != Qundef &&
+		if (acheck && val != Qundef &&
 		    TYPE(val) == T_ARRAY && RARRAY(val)->len == 1) {
 		    val = RARRAY(val)->ptr[0];
 		}
