@@ -1,3 +1,7 @@
+Sun Feb 13 00:52:33 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (ERB::Util.h, u): make it module_function.
+
 Sat Feb 12 17:29:19 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (OpenURI.open_loop): send authentication only for

@@ -781,6 +781,8 @@ class ERB
       s.to_s.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
     end
     alias h html_escape
+    module_function :h
+    module_function :html_escape
     
     #
     # A utility method for encoding the String _s_ as a URL.
@@ -798,6 +800,8 @@ class ERB
       s.to_s.gsub(/[^a-zA-Z0-9_\-.]/n){ sprintf("%%%02X", $&.unpack("C")[0]) }
     end
     alias u url_encode
+    module_function :u
+    module_function :url_encode
   end
 end
 
