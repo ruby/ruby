@@ -1,3 +1,9 @@
+Sun Mar  9 19:30:25 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/fileutils.rb (mkdir, mkdir_p): revert.
+
+	* instruby.rb (umask): umask 0022, not 0.
+
 Sun Mar  9 17:09:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/fileutils.rb (mkdir, mkdir_p): set mode to 0755.

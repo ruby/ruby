@@ -9,7 +9,7 @@ require 'shellwords'
 require 'getopts'
 require 'tempfile'
 
-File.umask(0)
+File.umask(0022)
 
 def parse_args()
   getopts('n', 'dest-dir:',
