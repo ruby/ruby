@@ -1484,6 +1484,9 @@ pipe_finalize(fptr)
 	status = pclose(fptr->f2);
     }
     fptr->f = fptr->f2 = 0;
+#if defined DJGPP || (defined NT && !defined __BORLANDC__)
+    status <<= 8;
+#endif
     rb_last_status = INT2FIX(status);
 #else
     fptr_finalize(fptr);
