@@ -23,7 +23,7 @@ module RUNIT
         def @suite.suite
           self
         end
-        @output_level = (quiet_mode ? PROGRESS_ONLY : NORMAL)
+        @output_level = (quiet_mode ? Test::Unit::UI::PROGRESS_ONLY : Test::Unit::UI::VERBOSE)
         start
       end
       
