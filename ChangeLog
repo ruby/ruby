@@ -1,3 +1,8 @@
+Fri Jun 18 23:12:22 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (proc_save_safe_level, rb_set_safe_level, safe_setter): limit
+	  safe level.
+
 Wed Jun 16 23:05:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_mod_freeze): prepare string representation before
