@@ -434,6 +434,7 @@ s_recvfrom(sock, argc, argv, from)
     char buf[1024];
     socklen_t alen = sizeof buf;
     VALUE len, flg;
+    long slen;
     int fd, flags;
 
     rb_scan_args(argc, argv, "11", &len, &flg);
@@ -447,22 +448,26 @@ s_recvfrom(sock, argc, argv, from)
     }
     fd = fileno(fptr->f);
 
-    str = rb_tainted_str_new(0, NUM2INT(len));
+    slen = NUM2INT(len);
+    str = rb_tainted_str_new(0, slen);
 
   retry:
     rb_thread_wait_fd(fd);
     TRAP_BEG;
-    RSTRING(str)->len = recvfrom(fd, RSTRING(str)->ptr, RSTRING(str)->len, flags,
-				 (struct sockaddr*)buf, &alen);
+    slen = recvfrom(fd, RSTRING(str)->ptr, slen, flags, (struct sockaddr*)buf, &alen);
     TRAP_END;
 
-    if (RSTRING(str)->len < 0) {
+    if (slen < 0) {
 	switch (errno) {
 	  case EINTR:
 	    rb_thread_schedule();
 	    goto retry;
 	}
 	rb_sys_fail("recvfrom(2)");
+    }
+    if (slen < RSTRING(str)->len) {
+	RSTRING(str)->len = slen;
+	RSTRING(str)->ptr[slen] = '\0';
     }
     rb_obj_taint(str);
     switch (from) {

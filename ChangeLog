@@ -1,3 +1,12 @@
+Thu Aug  1 17:47:15 2002  Tachino Nobuhiro <tachino@jp.fujitsu.com>
+
+	* parse.y (tokadd_string): ignore backslashed spaces in %w.
+
+Thu Aug  1 14:14:15 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_find): do not use rb_eval_cmd(); should not accept
+	  a string for if_none.
+
 Wed Jul 31 14:11:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_undef): undef should be done for klass, not ruby_class.

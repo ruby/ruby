@@ -2836,6 +2836,9 @@ tokadd_string(func, term, paren)
 		    if (func & STR_FUNC_ESCAPE) tokadd('\\');
 		    c = read_escape();
 		}
+		else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
+		    /* ignore backslashed spaces in %w */
+		}
 		else if (c != term && !(paren && c == paren)) {
 		    tokadd('\\');
 		}

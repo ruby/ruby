@@ -308,7 +308,7 @@ AC_CHECK_FUNCS(ftello)
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul crypt flock vsnprintf\
 		 isinf isnan finite hypot acosh)
-AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall chroot fsync\
+AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync\
 	      truncate chsize times utimes fcntl lockf lstat symlink readlink\
 	      setitimer setruid seteuid setreuid setresuid setproctitle\
 	      setrgid setegid setregid setresgid pause lchown lchmod\

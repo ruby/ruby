@@ -90,7 +90,7 @@ enum_find(argc, argv, obj)
     }
     rb_gc_force_recycle((VALUE)memo);
     if (!NIL_P(if_none)) {
-	rb_eval_cmd(if_none, rb_ary_new2(0), 0);
+	return rb_funcall(if_none, rb_intern("call"), 0, 0);
     }
     return Qnil;
 }
