@@ -1,3 +1,21 @@
+Mon Mar 25 23:39:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* configure.in (FILE_READPTR): new.  for IO#gets improvement.
+
+	* io.c (READ_DATA_PENDING_PTR): ditto.
+
+	* io.c (remain_size): separated from read_all().
+
+	* io.c (read_all): argument chagend.
+
+	* io.c (appendline): new.  get a line and append to string.
+
+	* io.c (swallow): new.  swallow continuous line delimiters.
+
+	* io.c (rb_io_getline_fast): add delimiter argument.
+
+	* io.c (rb_io_getline): performance improvement.
+
 Mon Mar 25 19:30:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in (arg_config): get rid of single quotes

@@ -125,23 +125,35 @@ static VALUE lineno;
 #  ifdef _IO_fpos_t
 #    define READ_DATA_PENDING(fp) ((fp)->_IO_read_ptr != (fp)->_IO_read_end)
 #    define READ_DATA_PENDING_COUNT(fp) ((fp)->_IO_read_end - (fp)->_IO_read_ptr)
+#    define READ_DATA_PENDING_PTR(fp) ((fp)->_IO_read_ptr)
 #  else
 #    define READ_DATA_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
 #    define READ_DATA_PENDING_COUNT(fp) ((fp)->_egptr - (fp)->_gptr)
+#    define READ_DATA_PENDING_PTR(fp) ((fp)->_gptr)
 #  endif
 #elif defined(FILE_COUNT)
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_COUNT)
+#elif defined(FILE_READEND)
+#  define READ_DATA_PENDING(fp) ((fp)->FILE_READPTR < (fp)->FILE_READEND)
+#  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_READEND - (fp)->FILE_READPTR)
 #elif defined(__BEOS__)
 #  define READ_DATA_PENDING(fp) (fp->_state._eof == 0)
 #elif defined(__UCLIBC__)
 #  define READ_DATA_PENDING(fp) ((fp)->bufpos < (fp)->bufend)
+#  define READ_DATA_PENDING_COUNT(fp) ((fp)->bufend - (fp)->bufpos)
+#  define READ_DATA_PENDING_PTR(fp) ((fp)->bufpos)
 #elif defined(__VMS)
 #  define READ_DATA_PENDING(fp) (((unsigned int)((*(fp))->_flag) & _IOEOF) == 0)
 #else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
 #  define READ_DATA_PENDING(fp) ReadDataPending(fp)
+#endif
+#ifndef READ_DATA_PENDING_PTR
+# ifdef FILE_READPTR
+#  define READ_DATA_PENDING_PTR(fp) ((fp)->FILE_READPTR)
+# endif
 #endif
 
 #define READ_CHECK(fp) do {\
@@ -605,21 +617,16 @@ io_fread(ptr, len, f)
 
 #define SMALLBUF 100
 
-static VALUE
-read_all(port)
-    VALUE port;
-{
+static long
+remain_size(fptr)
     OpenFile *fptr;
-    VALUE str = Qnil;
+{
     struct stat st;
     off_t siz = BUFSIZ;
     long bytes = 0;
     int n;
 
-    GetOpenFile(port, fptr);
-    rb_io_check_readable(fptr);
-
-    if (feof(fptr->f)) return Qnil;
+    if (feof(fptr->f)) return 0;
     if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)
 #ifdef __BEOS__
 	&& (st.st_dev > 3)
@@ -629,12 +636,7 @@ read_all(port)
 	off_t pos;
 
 	if (st.st_size == 0) {
-	    int c = getc(fptr->f);
-
-	    if (c == EOF) {
-		return rb_str_new(0, 0);
-	    }
-	    ungetc(c, fptr->f);
+	    return 1;		/* force EOF */
 	}
 	pos = ftello(fptr->f);
 	if (st.st_size > pos && pos >= 0) {
@@ -644,8 +646,22 @@ read_all(port)
 	    }
 	}
     }
-    str = rb_tainted_str_new(0, (long)siz);
+    return (long)siz;
+}
+
+static VALUE
+read_all(fptr, siz)
+    OpenFile *fptr;
+    long siz;
+{
+    VALUE str;
+    long bytes = 0;
+    int n;
+
+    if (feof(fptr->f)) return Qnil;
     READ_CHECK(fptr->f);
+    if (!siz) siz = BUFSIZ;
+    str = rb_tainted_str_new(0, siz);
     for (;;) {
 	n = io_fread(RSTRING(str)->ptr+bytes, (long)siz-bytes, fptr->f);
 	if (n == 0 && bytes == 0) {
@@ -674,16 +690,17 @@ io_read(argc, argv, io)
     VALUE length, str;
 
     rb_scan_args(argc, argv, "01", &length);
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
     if (NIL_P(length)) {
-	return read_all(io);
+	return read_all(fptr, remain_size(fptr));
     }
 
     len = NUM2INT(length);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative length %d given", len);
     }
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
 
     if (feof(fptr->f)) return Qnil;
     str = rb_str_new(0, len);
@@ -702,22 +719,47 @@ io_read(argc, argv, io)
     return str;
 }
 
-static VALUE
-rb_io_getline_fast(fptr)
+static int
+appendline(fptr, delim, strp)
     OpenFile *fptr;
+    int delim;
+    VALUE *strp;
 {
     FILE *f = fptr->f;
-    VALUE str = Qnil;
-    int c;
+    VALUE str = *strp;
+    int c = EOF;
+#ifndef READ_DATA_PENDING_PTR
     char buf[8192];
-    char *bp, *bpe = buf + sizeof buf - 3;
+    char *bp = buf, *bpe = buf + sizeof buf - 3;
     int cnt;
-    int append = 0;
+#endif
 
-  again:
-    bp = buf;
-    for (;;) {
+    do {
+#ifdef READ_DATA_PENDING_PTR
+	int pending = READ_DATA_PENDING_COUNT(f);
+	if (pending > 0) {
+	    const char *p = READ_DATA_PENDING_PTR(f);
+	    const char *e = memchr(p, delim, pending);
+	    long last = 0;
+	    if (e) pending = e - p + 1;
+	    if (!NIL_P(str)) {
+		last = RSTRING(str)->len;
+		rb_str_resize(str, last + (c != EOF) + pending);
+	    }
+	    else {
+		*strp = str = rb_str_new(0, (c != EOF) + pending);
+	    }
+	    if (c != EOF) {
+		RSTRING(str)->ptr[last++] = c;
+	    }
+	    fread(RSTRING(str)->ptr + last, 1, pending, f); /* must not fail */
+	    if (e) return delim;
+	}
+	rb_thread_wait_fd(fileno(f));
+	rb_io_check_closed(fptr);
+#else
 	READ_CHECK(f);
+#endif
 	TRAP_BEG;
 	c = getc(f);
 	TRAP_END;
@@ -726,29 +768,86 @@ rb_io_getline_fast(fptr)
 		if (errno == EINTR) continue;
 		rb_sys_fail(fptr->path);
 	    }
-	    break;
+	    return c;
 	}
-	if ((*bp++ = c) == '\n') break;
-	if (bp == bpe) break;
+#ifndef READ_DATA_PENDING_PTR
+	if ((*bp++ = c) == delim || bp == bpe) {
+	    cnt = bp - buf;
+
+	    if (cnt > 0) {
+		if (!NIL_P(str))
+		    rb_str_cat(str, buf, cnt);
+		else
+		    *strp = str = rb_str_new(buf, cnt);
+	    }
+	    bp = buf;
+	}
+#endif
+    } while (c != delim);
+
+#ifdef READ_DATA_PENDING_PTR
+    {
+	char ch = c;
+	if (!NIL_P(str)) {
+	    rb_str_cat(str, &ch, 1);
+	}
+	else {
+	    *strp = str = rb_str_new(&ch, 1);
+	}
     }
-    cnt = bp - buf;
+#endif
 
-    if (c == EOF && !append && cnt == 0) {
-	str = Qnil;
-	goto return_gets;
-    }
+    return c;
+}
 
-    if (append)
-	rb_str_cat(str, buf, cnt);
-    else
-	str = rb_str_new(buf, cnt);
+static inline int
+swallow(fptr, term)
+    OpenFile *fptr;
+    int term;
+{
+    FILE *f = fptr->f;
+    int c;
 
-    if (c != EOF && RSTRING(str)->ptr[RSTRING(str)->len-1] != '\n') {
-	append = 1;
-	goto again;
-    }
+    do {
+#ifdef READ_DATA_PENDING_PTR
+	int cnt;
+	while ((cnt = READ_DATA_PENDING_COUNT(f)) > 0) {
+	    char buf[1024];
+	    const char *p = READ_DATA_PENDING_PTR(f);
+	    int i;
+	    if (cnt > sizeof buf) cnt = sizeof buf;
+	    if (*p != term) return Qtrue;
+	    i = cnt;
+	    while (--i && *++p == term);
+	    if (!fread(buf, 1, cnt - i, f)) /* must not fail */
+		rb_sys_fail(fptr->path);
+	}
+	rb_thread_wait_fd(fileno(f));
+	rb_io_check_closed(fptr);
+#else
+	READ_CHECK(f);
+#endif
+	TRAP_BEG;
+	c = getc(f);
+	TRAP_END;
+	if (c != term) {
+	    ungetc(c, f);
+	    return Qtrue;
+	}
+    } while (c != EOF);
+    return Qfalse;
+}
 
-  return_gets:
+static VALUE
+rb_io_getline_fast(fptr, delim)
+    OpenFile *fptr;
+    int delim;
+{
+    VALUE str = Qnil;
+    int c;
+
+    while ((c = appendline(fptr, delim, &str)) != EOF && c != delim);
+
     if (!NIL_P(str)) {
 	fptr->lineno++;
 	lineno = INT2FIX(fptr->lineno);
@@ -763,118 +862,42 @@ rb_io_getline(rs, fptr)
     VALUE rs;
     OpenFile *fptr;
 {
-    FILE *f;
     VALUE str = Qnil;
-    int c, newline;
-    char *rsptr;
-    int rslen, rspara = 0;
 
     if (NIL_P(rs)) {
-	rsptr = 0;
-	rslen = 0;
+	str = read_all(fptr, 0);
     }
     else if (rs == rb_default_rs) {
-	return rb_io_getline_fast(fptr);
+	return rb_io_getline_fast(fptr, '\n');
     }
     else {
+	int c, newline;
+	char *rsptr;
+	int rslen, rspara = 0;
+
 	StringValue(rs);
 	rslen = RSTRING(rs)->len;
 	if (rslen == 0) {
 	    rsptr = "\n\n";
 	    rslen = 2;
 	    rspara = 1;
+	    swallow(fptr, '\n');
 	}
-	else if (rslen == 1 && RSTRING(rs)->ptr[0] == '\n') {
-	    return rb_io_getline_fast(fptr);
+	else if (rslen == 1) {
+	    return rb_io_getline_fast(fptr, RSTRING(rs)->ptr[0]);
 	}
 	else {
 	    rsptr = RSTRING(rs)->ptr;
 	}
-    }
+	newline = rsptr[rslen - 1];
 
-    f = fptr->f;
-    if (rspara) {
-	do {
-	    READ_CHECK(f);
-	    TRAP_BEG;
-	    c = getc(f);
-	    TRAP_END;
-	    if (c != '\n') {
-		ungetc(c,f);
-		break;
-	    }
-	} while (c != EOF);
-    }
+	while ((c = appendline(fptr, newline, &str)) != EOF &&
+	       (c != newline || RSTRING(str)->len < rslen ||
+		memcmp(RSTRING(str)->ptr+RSTRING(str)->len-rslen,rsptr,rslen)));
 
-    newline = rslen ? rsptr[rslen - 1] : 0777;
-    {
-	char buf[8192];
-	char *bp, *bpe = buf + sizeof buf - 3;
-	int cnt;
-	int append = 0;
-
-      again:
-	bp = buf;
-
-	if (rslen) {
-	    for (;;) {
-		READ_CHECK(f);
-		TRAP_BEG;
-		c = getc(f);
-		TRAP_END;
-		if (c == EOF) {
-		    if (ferror(f)) {
-			if (errno == EINTR) continue;
-			rb_sys_fail(fptr->path);
-		    }
-		    break;
-		}
-		if ((*bp++ = c) == newline) break;
-		if (bp == bpe) break;
-	    }
-	    cnt = bp - buf;
-	}
-	else {
-	    READ_CHECK(f);
-	    cnt = io_fread(buf, sizeof(buf), f);
-	    if (cnt == 0) {
-		if (ferror(f)) rb_sys_fail(fptr->path);
-		c = EOF;
-	    }
-	    else {
-		c = 0;
-	    }
-	}
-
-	if (c == EOF && !append && cnt == 0) {
-	    str = Qnil;
-	    goto return_gets;
-	}
-
-	if (append)
-	    rb_str_cat(str, buf, cnt);
-	else
-	    str = rb_str_new(buf, cnt);
-
-	if (c != EOF &&
-	    (!rslen ||
-	     RSTRING(str)->len < rslen ||
-	     memcmp(RSTRING(str)->ptr+RSTRING(str)->len-rslen,rsptr,rslen))) {
-	    append = 1;
-	    goto again;
-	}
-    }
-
-  return_gets:
-    if (rspara) {
-	while (c != EOF) {
-	    READ_CHECK(f);
-	    TRAP_BEG;
-	    c = getc(f);
-	    TRAP_END;
-	    if (c != '\n') {
-		ungetc(c, f);
-		break;
+	if (rspara) {
+	    if (c != EOF) {
+		swallow(fptr, '\n');
 	    }
 	}
     }
@@ -896,7 +919,7 @@ rb_io_gets(io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    return rb_io_getline_fast(fptr);
+    return rb_io_getline_fast(fptr, '\n');
 }
 
 static VALUE
@@ -2871,11 +2894,14 @@ rb_f_backquote(obj, str)
     VALUE obj, str;
 {
     VALUE port, result;
+    OpenFile *fptr;
 
     SafeStringValue(str);
     port = pipe_open(RSTRING(str)->ptr, "r");
     if (NIL_P(port)) return rb_str_new(0,0);
-    result = read_all(port);
+
+    GetOpenFile(port, fptr);
+    result = read_all(fptr, remain_size(fptr));
 
     rb_io_close(port);
 
