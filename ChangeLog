@@ -1,3 +1,14 @@
+Tue Mar  5 05:56:29 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/getopts.rb: Rewrite to fix some bugs and complete features.
+	  - Accept options with the colon in the first argument;
+	    getopts("a:bcd:") is equivalent to getopts("bc", "a:", "d:").
+	  - Do not discard the argument that caused an error.
+	  - Do not discard '-', which commonly stands for stdin.
+	  - Allow specifying a long option with a value using '='.
+	    (command --long-option=value)
+	  - Stop reading options when it meets a non-option argument.
+
 Mon Mar  4 13:19:18 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in (dir_config): Sync with mkmf.rb: Fix a bug where
