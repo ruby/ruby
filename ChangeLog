@@ -1,3 +1,9 @@
+Thu Aug  7 04:19:15 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* gc.c: FreeBSD/ia64's mcontext_t is a bit different from that of
+	  Linux/ia64.  This makes gc.c compile but miniruby coredumps for
+	  the moment.
+
 Wed Aug  7 00:15:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal.c: Comparison results adjusted to Float's.

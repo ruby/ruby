@@ -1260,7 +1260,11 @@ rb_gc()
 	mark_locations_array((VALUE*)&ctx.uc_mcontext,
 			     ((size_t)(sizeof(VALUE)-1 + sizeof ctx.uc_mcontext)/sizeof(VALUE)));
 	bot = (VALUE*)__libc_ia64_register_backing_store_base;
+#if defined(__FreeBSD__)
+	top = (VALUE*)ctx.uc_mcontext.mc_special.bspstore;
+#else
 	top = (VALUE*)ctx.uc_mcontext.sc_ar_bsp;
+#endif
 	rb_gc_mark_locations(bot, top);
     }
 #endif
