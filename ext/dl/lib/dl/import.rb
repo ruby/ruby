@@ -9,15 +9,11 @@ module DL
 
     module Internal
       def init_types()
-	if( !@types )
-	  @types = ::DL::Types.new
-	end
+	@types ||= ::DL::Types.new
       end
 
       def init_sym()
-	if( !@SYM )
-	  @SYM = {}
-	end
+	@SYM ||= {}
       end
 
       def [](name)
@@ -85,7 +81,7 @@ module DL
 	  "  args = enc.call(args) if enc",
 	  "  r,rs = #{func}(*args)",
 	  "  r  = renc.call(r) if rdec",
-	  "  rs = dec.call(rs) if dec",
+	  "  rs = dec.call(rs) if (dec && rs)",
 	  "  @retval = r",
 	  "  @args   = rs",
 	  "  @retval",
