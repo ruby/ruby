@@ -24,6 +24,10 @@ Sat Mar 22 12:44:15 2003  Tanaka Akira  <akr@m17n.org>
         * lib/date/format.rb, lib/uri/common.rb: `[', `]', `-' in chracter
           class in regexp to avoid warning.
 
+Sat Mar 22 07:39:32 2003  Ulf Betlehem  <flu@iki.fi>
+
+	* io.c (rb_io_fread): may lose data on nonblocking read.
+
 Fri Mar 21 23:40:41 2003  Tanaka Akira  <akr@m17n.org>
 
         * regex.c (re_compile_pattern): fix previous change.

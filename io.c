@@ -710,7 +710,7 @@ rb_io_fread(ptr, len, f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 		  case EWOULDBLOCK:
 #endif
-		    if (len - n > 0) {
+                   if (len - n >= 0) {
 			clearerr(f);
 			return len - n;
 		    }

@@ -407,9 +407,7 @@ end
 
 
 class Fixnum
-  if not defined? Rational
-    alias power! **
-  end
+  alias power! **
   
   # Redefined to handle a Complex argument.
   def ** (other)
@@ -430,9 +428,7 @@ class Fixnum
 end
 
 class Bignum
-  if not defined? Rational
-    alias power! **
-  end
+  alias power! **
 end
 
 class Float
@@ -459,7 +455,11 @@ module Math
 	Complex(0,sqrt!(-z))
       end
     else
-      z**Rational(1,2)
+      if defined? Rational
+	z**Rational(1,2)
+      else
+	z**0.5
+      end
     end
   end
   
