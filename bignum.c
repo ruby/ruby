@@ -1250,7 +1250,7 @@ bigdivmod(x, y, divp, modp)
     VALUE mod;
 
     bigdivrem(x, y, divp, &mod);
-    if (RBIGNUM(x)->sign != RBIGNUM(y)->sign && !BIGZEROP(x)) {
+    if (RBIGNUM(x)->sign != RBIGNUM(y)->sign && !BIGZEROP(mod)) {
 	if (divp) *divp = bigadd(*divp, rb_int2big(1), 0);
 	if (modp) *modp = bigadd(mod, y, 1);
     }

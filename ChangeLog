@@ -1,3 +1,7 @@
+Wed Apr  9 15:49:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigdivmod): small typo.
+
 Wed Apr  9 15:35:04 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/readline/readline.c: include <unistd.h> only when
