@@ -25,7 +25,7 @@ srcdir = Config::CONFIG["srcdir"]
 $:.replace [srcdir, srcdir+"/lib", "."]
 
 require 'mkmf'
-require 'getopts'
+require 'optparse/shellwords'
 
 $topdir = "."
 $top_srcdir = srcdir
@@ -137,41 +137,45 @@ def extmake(target)
 end
 
 def parse_args()
-  getopts('n', 'extstatic:', 'extension:', 'dest-dir:', 'extout:',
-	  'make:', 'make-flags:', 'mflags:', 'message:')
+  $mflags = []
 
-  $dryrun = $OPT['n']
-  if $extension = $OPT['extension']
-    if $extension.empty?
-      $extension = nil
-    elsif $extension == "none"
-      $extension = []
-    else
-      $extension = $extension.split(/[\s,]+/)
+  opts = nil
+  ARGV.options do |opts|
+    opts.on('-n') {$dryrun = true}
+    opts.on('--[no-]extension [EXTS]', Array) do |v|
+      $extension = (v == false ? [] : v)
     end
-  end
-  if $extstatic = $OPT['extstatic']
-    if $extstatic.empty?
-      $extstatic = nil
-    elsif $extstatic == "none"
-      $extstatic = ""
-    else
-      $force_static = true
-      $extstatic = nil if $extstatic == 'static'
+    opts.on('--[no-]extstatic [STATIC]', Array) do |v|
+      if ($extstatic = v) == false
+        $extstatic = []
+      elsif v
+        $force_static = true
+        $extstatic.delete("static")
+        $extstatic = nil if $extstatic.empty?
+      end
     end
-  end
-  $destdir = $OPT['dest-dir'] || ''
-  if opt = $OPT['extout'] and !opt.empty?
-    $extout = opt
-  end
-  $make = $OPT['make'] || $make || 'make'
-  mflags = ($OPT['make-flags'] || '').strip
-  mflags = ($OPT['mflags'] || '').strip if mflags.empty?
+    opts.on('--dest-dir=DIR') do |v|
+      $destdir = v
+    end
+    opts.on('--extout=DIR') do |v|
+      $extout = (v unless v.empty?)
+    end
+    opts.on('--make=MAKE') do |v|
+      $make = v || 'make'
+    end
+    opts.on('--make-flags=FLAGS', '--mflags', Shellwords) do |v|
+      if arg = v.first
+        arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
+      end
+      $mflags.concat(v)
+    end
+    opts.on('--message [MESSAGE]', String) do |v|
+      $message = v
+    end
+    opts.parse!
+  end or abort opts.to_s
 
-  $mflags = Shellwords.shellwords(mflags)
-  if arg = $mflags.first
-    arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
-  end
+  $destdir ||= ''
 
   $make, *rest = Shellwords.shellwords($make)
   $mflags.unshift(*rest) unless rest.empty?
@@ -200,8 +204,6 @@ def parse_args()
     $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
     $mflags << "extout=#$extout" << "extout_prefix=#$extout_prefix"
   end
-
-  $message = $OPT['message']
 end
 
 parse_args()

@@ -1,3 +1,9 @@
+Sun Feb 22 12:58:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: use optparse instead of getopts.
+
+	* Makefile.in, bcc32/Makefile.sub, win32/Makefile.sub: ditto.
+
 Sat Feb 22 09:51:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* re.c: corrected documentation format (rb_reg_initialize_m)
