@@ -1,3 +1,9 @@
+Fri Sep 20 23:02:01 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (block_append): eliminate unused literal nodes.
+
+	* parse.y (literal_concat): refined literal concatination.
+
 Fri Sep 20 19:43:40 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb: Merge rough/lib/set.rb rev.1.5-1.15.

@@ -130,6 +130,7 @@ static NODE *arg_concat();
 static NODE *arg_prepend();
 static NODE *literal_concat();
 static NODE *literal_append();
+static NODE *new_evstr();
 static NODE *call_op();
 static int in_defined = 0;
 
@@ -1749,16 +1750,6 @@ strings		: string
 			if (!node) {
 			    node = NEW_STR(rb_str_new(0, 0));
 			}
-			else {
-			    switch (nd_type(node)) {
-			      case NODE_STR: case NODE_DSTR:
-				break;
-			      default:
-				node = rb_node_newnode(NODE_DSTR, rb_str_new(0, 0),
-						       1, NEW_LIST(node));
-				break;
-			    }
-			}
 			$$ = node;
 		    }
 		;
@@ -1901,7 +1892,7 @@ xstring_contents: /* none */
 		    }
 		| xstring_contents string_content
 		    {
-			$$ = literal_append($1, $2);
+			$$ = literal_concat($1, $2);
 		    }
 		;
 
@@ -1935,7 +1926,7 @@ string_content	: tSTRING_CONTENT
 			    $$ = $$->nd_next;
 			    rb_gc_force_recycle((VALUE)$4);
 			}
-		        $$ = NEW_EVSTR($$);
+			$$ = new_evstr($$);
 		    }
 		;
 
@@ -4290,19 +4281,28 @@ static NODE*
 block_append(head, tail)
     NODE *head, *tail;
 {
-    NODE *end;
+    NODE *end, *h = head;
 
     if (tail == 0) return head;
-    if (head == 0) return tail;
 
-    if (nd_type(head) != NODE_BLOCK) {
+  again:
+    if (h == 0) return tail;
+    switch (nd_type(h)) {
+      case NODE_NEWLINE:
+	h = h->nd_next;
+	goto again;
+      case NODE_LIT:
+      case NODE_STR:
+	return tail;
+      default:
 	end = NEW_BLOCK(head);
 	end->nd_end = end;
 	fixpos(end, head);
 	head = end;
-    }
-    else {
-	end = head->nd_end;
+	break;
+      case NODE_BLOCK:
+	end = h->nd_end;
+	break;
     }
 
     if (RTEST(ruby_verbose)) {
@@ -4372,130 +4372,79 @@ list_concat(head, tail)
     return head;
 }
 
-static NODE *
-literal_concat_string(head, tail, str)
-    NODE *head, *tail;
-    VALUE str;
-{
-    NODE *last = head, *last1 = 0, *prev = 0;
-
-    for (;;) {
-	switch (nd_type(last)) {
-	  case NODE_NEWLINE:
-	    last = last->nd_next;
-	    break;
-	  case NODE_BLOCK:
-	  case NODE_DSTR:
-	    if (!last1) last1 = prev;
-	    prev = last;
-	    while (last->nd_next) {
-		last = last->nd_next;
-	    }
-	    last = last->nd_head;
-	    break;
-	  case NODE_STR:
-	    rb_str_concat(last->nd_lit, str);
-	    if (tail) rb_gc_force_recycle((VALUE)tail);
-	    return head;
-	  default:
-	    if (!last1) {
-		last1 = head;
-		head = NEW_DSTR(rb_str_new(0, 0));
-		head->nd_next = last1 = NEW_LIST(last1);
-		head->nd_alen += 1;
-	    }
-	    if (!tail) tail = NEW_STR(str);
-	    list_append(head, tail);
-	    return head;
-	}
-    }
-}
-
-static NODE *
-literal_concat_dstr(head, tail)
-    NODE *head, *tail;
-{
-    NODE *last;
-
-    switch (nd_type(head)) {
-      case NODE_STR:
-	tail->nd_lit = head->nd_lit;
-	rb_gc_force_recycle((VALUE)head);
-	return tail;
-      case NODE_DSTR:
-	last = tail->nd_next;
-	last->nd_alen = tail->nd_alen;
-	rb_gc_force_recycle((VALUE)tail);
-	return list_concat(head, last);
-      default:
-	head = NEW_LIST(head);
-      case NODE_ARRAY:
-      case NODE_ZARRAY:
-	tail->nd_lit = 0;
-	tail->nd_alen += head->nd_alen;
-	tail->nd_next = list_concat(head, tail->nd_next);
-	return tail;
-    }
-}
-
-static NODE *
-literal_concat_list(head, tail)
-    NODE *head, *tail;
-{
-    tail = NEW_LIST(tail);
-    switch (nd_type(head)) {
-      case NODE_STR:
-	nd_set_type(head, NODE_DSTR);
-	head->nd_next = tail;
-	head->nd_alen = tail->nd_alen;
-	return head;
-      case NODE_DSTR:
-	return list_concat(head, tail);
-      default:
-	head = NEW_LIST(head);
-	return list_concat(NEW_DSTR(rb_str_new(0, 0)), list_concat(head, tail));
-    }
-}
-
-static NODE *
-literal_append(head, tail)
-    NODE *head, *tail;
-{
-    if (!head) return tail;
-    if (!tail) return head;
-
-    switch (nd_type(tail)) {
-      case NODE_STR:
-	if (nd_type(head) == NODE_STR) {
-	    rb_str_concat(head->nd_lit, tail->nd_lit);
-	    rb_gc_force_recycle((VALUE)tail);
-	    return head;
-	}
-
-      default:
-	return literal_concat_list(head, tail);
-    }
-}
-
 /* concat two string literals */
 static NODE *
 literal_concat(head, tail)
     NODE *head, *tail;
 {
+    enum node_type htype;
+
     if (!head) return tail;
     if (!tail) return head;
 
+    htype = nd_type(head);
+    if (htype == NODE_EVSTR) {
+	NODE *node = NEW_DSTR(rb_str_new(0, 0));
+	node->nd_next = NEW_LIST(head);
+	node->nd_alen += 1;
+	head = node;
+    }
     switch (nd_type(tail)) {
       case NODE_STR:
-	return literal_concat_string(head, tail, tail->nd_lit);
+	if (htype == NODE_STR) {
+	    rb_str_concat(head->nd_lit, tail->nd_lit);
+	    rb_gc_force_recycle((VALUE)tail);
+	}
+	else {
+	    list_append(head, tail);
+	}
+	return head;
 
       case NODE_DSTR:
-	head = literal_concat_string(head, 0, tail->nd_lit);
-	return literal_concat_dstr(head, tail);
+	if (htype == NODE_STR) {
+	    rb_str_concat(head->nd_lit, tail->nd_lit);
+	    tail->nd_lit = head->nd_lit;
+	    rb_gc_force_recycle((VALUE)head);
+	    head = tail;
+	}
+	else {
+	    nd_set_type(tail, NODE_ARRAY);
+	    tail->nd_head = NEW_STR(tail->nd_lit);
+	    list_concat(head, tail);
+	}
+	return head;
 
-      default:
-	return literal_concat_list(head, tail);
+      case NODE_EVSTR:
+	if (htype == NODE_STR) {
+	    nd_set_type(head, NODE_DSTR);
+	}
+	list_append(head, tail);
+	return head;
     }
+}
+
+static NODE *
+new_evstr(node)
+    NODE *node;
+{
+    NODE *n;
+
+    if (node) {
+	switch (nd_type(node)) {
+	  case NODE_STR: case NODE_DSTR: case NODE_EVSTR:
+	    return node;
+	  case NODE_BLOCK:
+	    for (n = node; n->nd_next; n = n->nd_next) {
+		NODE *h = n->nd_head;
+		enum node_type t;
+		if (!h) continue;
+		if (t != NODE_STR && t != NODE_LIT) goto evstr;
+	    }
+	    return n->nd_head;
+	}
+    }
+  evstr:
+    return NEW_EVSTR(node);
 }
 
 static NODE *
@@ -5003,7 +4952,10 @@ range_op(node)
     value_expr(node);
     node = cond0(node);
     type = nd_type(node);
-    if (type == NODE_NEWLINE) node = node->nd_next;
+    if (type == NODE_NEWLINE) {
+	node = node->nd_next;
+	type = nd_type(node);
+    }
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
 	warn_unless_e_option("integer literal in conditional range");
 	return call_op(node,tEQ,1,NEW_GVAR(rb_intern("$.")));
