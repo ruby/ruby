@@ -222,6 +222,7 @@ rb_str_shared_replace(str, str2)
 	RSTRING(str)->ptr = 0;
 	RSTRING(str)->len = 0;
 	RSTRING(str)->aux.capa = 0;
+	FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
 	return;
     }
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
@@ -231,6 +232,7 @@ rb_str_shared_replace(str, str2)
 	RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
     }
     else {
+	FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
 	RSTRING(str)->aux.capa = RSTRING(str2)->aux.capa;
     }
     RSTRING(str2)->ptr = 0;	/* abandon str2 */
@@ -632,13 +634,11 @@ VALUE
 rb_str_append(str, str2)
     VALUE str, str2;
 {
-    long len;
-
-    StringValue(str2);
     rb_str_modify(str);
+    StringValue(str2);
     if (RSTRING(str2)->len > 0) {
 	if (FL_TEST(str, STR_ASSOC)) {
-	    len = RSTRING(str)->len+RSTRING(str2)->len;
+	    long len = RSTRING(str)->len+RSTRING(str2)->len;
 	    REALLOC_N(RSTRING(str)->ptr, char, len+1);
 	    memcpy(RSTRING(str)->ptr + RSTRING(str)->len,
 		   RSTRING(str2)->ptr, RSTRING(str2)->len);
@@ -1636,7 +1636,7 @@ rb_str_replace(str, str2)
 	}
 	RSTRING(str)->len = RSTRING(str2)->len;
 	RSTRING(str)->ptr = RSTRING(str2)->ptr;
-	FL_SET(str, RBASIC(str2)->flags & (ELTS_SHARED|STR_ASSOC));
+	FL_SET(str, ELTS_SHARED);
 	RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
     }
     else {
@@ -1644,7 +1644,7 @@ rb_str_replace(str, str2)
 	rb_str_resize(str, RSTRING(str2)->len);
 	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
 	if (FL_TEST(str2, STR_ASSOC)) {
-	    FL_SET(str, RBASIC(str2)->flags & (ELTS_SHARED|STR_ASSOC));
+	    FL_SET(str, STR_ASSOC);
 	    RSTRING(str)->aux.shared = RSTRING(str2)->aux.shared;
 	}
     }
@@ -2305,6 +2305,7 @@ rb_str_delete_bang(argc, argv, str)
     if (argc < 1) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }
+    rb_str_modify(str);
     for (i=0; i<argc; i++) {
 	VALUE s = argv[i];
 
@@ -2313,7 +2314,6 @@ rb_str_delete_bang(argc, argv, str)
 	init = 0;
     }
 
-    rb_str_modify(str);
     s = t = RSTRING(str)->ptr;
     if (!s || RSTRING(str)->len == 0) return Qnil;
     send = s + RSTRING(str)->len;
@@ -2354,6 +2354,7 @@ rb_str_squeeze_bang(argc, argv, str)
     int init = 1;
     int i;
 
+    rb_str_modify(str);
     if (argc == 0) {
 	for (i=0; i<256; i++) {
 	    squeez[i] = 1;
@@ -2369,7 +2370,6 @@ rb_str_squeeze_bang(argc, argv, str)
 	}
     }
 
-    rb_str_modify(str);
     s = t = RSTRING(str)->ptr;
     if (!s || RSTRING(str)->len == 0) return Qnil;
     send = s + RSTRING(str)->len;
