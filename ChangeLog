@@ -1,3 +1,46 @@
+Wed Sep  1 00:28:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_call): call rb_undefined() if a method appears not to
+	  be exist explicitly from cache.
+
+	* eval.c (rb_method_boundp): check method cache before calling
+	  rb_get_method_body().
+
+	* eval.c (rb_get_method_body): store method non-existence
+	  information in the cache.
+
+	* random.c (rb_f_srand): use getpid(2) to generate seed.
+
+	* regex.c (re_match): do not apply partial mbc match for
+	  charset_not.
+
+	* regex.c (re_compile_pattern): put extended literal prefix (0xff)
+	  only before numeric literals, not before all >0x80 char.
+
+	* regex.c (re_compile_pattern): put numeric literal in extended
+	  charset region, not normal charset bits.
+
+	* regex.c (re_compile_fastmap): calculate fastmap for charset and
+	  charset_not to treat numeric literal (e.g. \246) specially.
+
+Fri Aug 28 17:32:55 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* eval.c (rb_eval): should set return value (nil) explicitly if a
+	  value is ommited for return statement.
+
+Thu Aug 26 15:06:11 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* gc.c (rb_gc): local variables may be placed beyond stack_end, so
+	  use an address from alloca(1) on non C_ALLOCA platforms.
+
+Thu Aug 26 01:24:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (rb_f_sprintf): "%%" is legal, but "%3.14%" is not.
+
+Mon Aug 23 00:00:54 1999  Tsukada Takuya  <tsukada@fminn.nagano.nagano.jp>
+
+	* regex.c (re_compile_fastmap): wrong macro caused memory leak.
+
 Sat Aug 21 11:30:51 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (ADJ): should not adjust addresses to data on heap.

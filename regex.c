@@ -116,11 +116,11 @@ char *alloca();
 
 #define RE_ALLOCATE xmalloc
 
-#define FREE_VAR(var) if (var) free(var); var = NULL
+#define FREE_VAR(var) do { if (var) free(var); var = NULL; } while(0)
 #define FREE_VARIABLES()
 
-#define FREE_AND_RETURN_VOID(stackb)   free(stackb);return
-#define FREE_AND_RETURN(stackb,val)    free(stackb);return(val)
+#define FREE_AND_RETURN_VOID(stackb)   do { free(stackb); return; } while(0)
+#define FREE_AND_RETURN(stackb,val)    do { free(stackb); return(val); } while(0)
 #define DOUBLE_STACK(stackx,stackb,len,type) \
         (type*)xrealloc(stackb, 2 * len * sizeof(type))
 #endif /* NO_ALLOCA */
@@ -452,7 +452,7 @@ re_set_syntax(syntax)
   } while(0)
 
 #define WC2MBC1ST(c)							\
- ((current_mbctype != MBCTYPE_UTF8)?(((c)>>8)&0xff):utf8_firstbyte(c))
+ ((c<0x100)?(c):((current_mbctype != MBCTYPE_UTF8)?(((c)>>8)&0xff):utf8_firstbyte(c)))
 
 static unsigned int
 utf8_firstbyte(c)
@@ -488,6 +488,9 @@ print_mbc(c)
       printf("%c%c%c%c%c", utf8_firstbyte(c), (c>>18)&0x3f, (c>>12)&0x3f, (c>>6)&0x3f, c&0x3f);
     else if (c <= 0x7fffffff)
       printf("%c%c%c%c%c%c", utf8_firstbyte(c), (c>>24)&0x3f, (c>>18)&0x3f, (c>>12)&0x3f, (c>>6)&0x3f, c&0x3f);
+  }
+  else if (c < 0xff) {
+    printf("\\%o", c);
   }
   else {
     printf("%c%c", c>>BYTEWIDTH, c&0xff);
@@ -1178,6 +1181,7 @@ re_compile_pattern(pattern, size, bufp)
 
   int range = 0;
   int had_mbchar = 0;
+  int had_num_literal = 0;
   int had_char_class = 0;
 
   int options = bufp->options;
@@ -1338,6 +1342,7 @@ re_compile_pattern(pattern, size, bufp)
       memset(b, 0, (1 << BYTEWIDTH) / BYTEWIDTH + 2);
 
       had_mbchar = 0;
+      had_num_literal = 0;
       had_char_class = 0;
 
       /* charset_not matches newline according to a syntax bit.  */
@@ -1441,6 +1446,7 @@ re_compile_pattern(pattern, size, bufp)
 	  case 'x':
 	    c = scan_hex(p, 2, &numlen);
 	    p += numlen;
+	    had_num_literal = 1;
 	    break;
 
 	  case '0': case '1': case '2': case '3': case '4':
@@ -1448,6 +1454,7 @@ re_compile_pattern(pattern, size, bufp)
 	    PATUNFETCH;
 	    c = scan_oct(p, 3, &numlen);
 	    p += numlen;
+	    had_num_literal = 1;
 	    break;
 
 	  default:
@@ -1558,8 +1565,10 @@ re_compile_pattern(pattern, size, bufp)
 	    last = ':';
 	  }
 	}
-	else if (had_mbchar == 0)
+	else if (had_mbchar == 0 && (!current_mbctype || !had_num_literal)) {
 	  SET_LIST_BIT(c);
+	  had_num_literal = 0;
+	}
 	else
 	  set_list_bits(c, c, b);
 	had_mbchar = 0;
@@ -2088,6 +2097,7 @@ re_compile_pattern(pattern, size, bufp)
 	had_mbchar = 0;
 	c = scan_hex(p, 2, &numlen);
 	p += numlen;
+	had_num_literal = 1;
 	goto numeric_char;
 
 	/* octal */
@@ -2095,6 +2105,7 @@ re_compile_pattern(pattern, size, bufp)
 	had_mbchar = 0;
 	c = scan_oct(p, 3, &numlen);
 	p += numlen;
+	had_num_literal = 1;
 	goto numeric_char;
 
 	/* back-ref or octal */
@@ -2118,6 +2129,7 @@ re_compile_pattern(pattern, size, bufp)
 	    c = scan_oct(p_save, 3, &numlen) & 0xff;
 	    p = p_save + numlen;
 	    c1 = 0;
+	    had_num_literal = 1;
 	    goto numeric_char;
 	  }
 	}
@@ -2174,9 +2186,10 @@ re_compile_pattern(pattern, size, bufp)
 	pending_exact = b;
 	BUFPUSH(0);
       }
-      if (!had_mbchar && c > 0x7f) {
+      if (had_num_literal && current_mbctype) {
 	BUFPUSH(0xff);
 	(*pending_exact)++;
+	had_num_literal = 0;
       }
       BUFPUSH(c);
       (*pending_exact)++;
@@ -2590,7 +2603,7 @@ re_compile_fastmap(bufp)
   register int j, k;
   unsigned is_a_succeed_n;
 
-  unsigned char **stackb = TMALLOC(NFAILURES, unsigned char*);
+  unsigned char **stackb = RE_TALLOC(NFAILURES, unsigned char*);
   unsigned char **stackp = stackb;
   unsigned char **stacke = stackb + NFAILURES;
   int options = bufp->options;
@@ -2802,7 +2815,7 @@ re_compile_fastmap(bufp)
 	for (j = *p++ * BYTEWIDTH - 1; j >= 0; j--)
 	  if (p[j / BYTEWIDTH] & (1 << (j % BYTEWIDTH))) {
 	    int tmp = TRANSLATE_P()?translate[j]:j;
-	    fastmap[tmp] = (tmp>0x7f)?2:1;
+	    fastmap[tmp] = 1;
 	  }
 	{
 	  unsigned short size;
@@ -2819,7 +2832,9 @@ re_compile_fastmap(bufp)
 	    while (beg <= end) {
 	      /* NOTE: Charset for multi-byte chars might contain
 		 single-byte chars.  We must reject them. */
-	      if (ismbchar(beg))
+	      if (beg < 0x100)
+		fastmap[beg] = 2;
+	      else if (ismbchar(beg))
 		fastmap[beg] = 1;
 	      beg++;
 	    }
@@ -2848,14 +2863,10 @@ re_compile_fastmap(bufp)
 	    if (!ismbchar(j))
 	      fastmap[j] = 1;
 	  }
-	if (current_mbctype) {
-	  for (j = 0x80; j < (1 << BYTEWIDTH); j++)
-	    if (!(p[j / BYTEWIDTH] & (1 << (j % BYTEWIDTH))))
-	      fastmap[j] = 2;
-	}
 	{
 	  unsigned short size;
 	  unsigned long c, beg;
+	  int num_literal = 0;
 
 	  p += p[-1] + 2;
 	  size = EXTRACT_UNSIGNED(&p[-2]);
@@ -2865,7 +2876,7 @@ re_compile_fastmap(bufp)
 		fastmap[j] = 1;
 	    break;
 	  }
-	  for (j = 0,c = 0x80;j < (int)size; j++) {
+	  for (j = 0,c = 0;j < (int)size; j++) {
 	    int cc = EXTRACT_MBC(&p[j*8]);
 	    beg = WC2MBC1ST(cc);
 	    while (c < beg) {
@@ -2875,10 +2886,21 @@ re_compile_fastmap(bufp)
 	    }
 
 	    cc = EXTRACT_MBC(&p[j*8+4]);
-	    c = WC2MBC1ST(cc) + 1;
+	    beg = WC2MBC1ST(cc);
+	    if (cc < 0xff) {
+	      num_literal = 1;
+	      while (c <= beg) {
+		if (ismbchar(c))
+		  fastmap[c] = 1;
+		c++;
+	      }
+	    }
+	    c = beg + 1;
 	  }
 
 	  for (j = c; j < (1 << BYTEWIDTH); j++)
+	    if (num_literal)
+	      fastmap[j] = 1;
 	    if (ismbchar(j))
 	      fastmap[j] = 1;
 	}
@@ -3613,11 +3635,11 @@ re_match(bufp, string_arg, size, pos, regs)
 	    cc = c = (unsigned char)translate[c];
 
 	  not = is_in_list(c, p);
-	  if (!not && cc != c) {
-	      part = not = is_in_list(cc, p);
-	  }
 	  if (*(p - 1) == (unsigned char)charset_not) {
 	    not = !not;
+	  }
+	  else if (!not && cc != c) {
+	      part = not = is_in_list(cc, p);
 	  }
 	  if (!not) goto fail;
 

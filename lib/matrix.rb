@@ -1,8 +1,8 @@
 #
 #   matrix.rb - 
 #   	$Release Version: 1.0$
-#   	$Revision: 1.8 $
-#   	$Date: 1999/02/17 12:34:19 $
+#   	$Revision: 1.9 $
+#   	$Date: 1999/08/24 10:25:00 $
 #       Original Version from Smalltalk-80 version
 #	   on July 23, 1985 at 8:37:17 am
 #   	by Keiju ISHITSUKA
@@ -593,6 +593,7 @@ class Matrix
 	end while a[i][k] == 0
 	a[i], a[k] = a[k], a[i]
 	akk = a[k][k]
+	det *= -1
       end
       (k + 1).upto(size) do
 	|i|

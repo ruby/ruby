@@ -12,6 +12,9 @@
 
 #include "ruby.h"
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include <time.h>
 #ifndef NT
 #ifdef HAVE_SYS_TIME_H
@@ -92,7 +95,7 @@ rb_f_srand(argc, argv, obj)
 	struct timeval tv;
 
 	gettimeofday(&tv, 0);
-	seed = tv.tv_sec ^ tv.tv_usec;
+	seed = tv.tv_sec ^ tv.tv_usec ^ getpid();
     }
     else {
 	seed = NUM2UINT(seed);

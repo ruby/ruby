@@ -1,5 +1,5 @@
 # date2.rb: Written by Tadayoshi Funaba 1998, 1999
-# $Id: date2.rb,v 1.13 1999/08/11 01:10:02 tadf Exp $
+# $Id: date2.rb,v 1.15 1999/08/29 15:23:52 tadf Exp $
 
 class Date
 
@@ -31,10 +31,10 @@ class Date
 	y -= 1
 	m += 12
       end
-      a = (y / 100).to_i
-      b = 2 - a + (a / 4).to_i
-      jd = (365.25 * (y + 4716)).to_i +
-	(30.6001 * (m + 1)).to_i +
+      a = (y / 100.0).floor
+      b = 2 - a + (a / 4.0).floor
+      jd = (365.25 * (y + 4716)).floor +
+	(30.6001 * (m + 1)).floor +
 	d + b - 1524
       if os?(jd, sg)
 	jd -= b
@@ -46,14 +46,14 @@ class Date
       if os?(jd, sg)
 	a = jd
       else
-	x = ((jd - 1867216.25) / 36524.25).to_i
-	a = jd + 1 + x - (x / 4).to_i
+	x = ((jd - 1867216.25) / 36524.25).floor
+	a = jd + 1 + x - (x / 4.0).floor
       end
       b = a + 1524
-      c = ((b - 122.1) / 365.25).to_i
-      d = (365.25 * c).to_i
-      e = ((b - d) / 30.6001).to_i
-      dom = b - d - (30.6001 * e).to_i
+      c = ((b - 122.1) / 365.25).floor
+      d = (365.25 * c).floor
+      e = ((b - d) / 30.6001).floor
+      dom = b - d - (30.6001 * e).floor
       if e <= 13
 	m = e - 1
 	y = c - 4716
@@ -70,8 +70,7 @@ class Date
 
     def jd_to_ordinal(jd, sg=true)
       y = jd_to_civil(jd, sg)[0]
-      pl = civil_to_jd(y - 1, 12, 31, ns?(jd, sg))
-      doy = jd - pl
+      doy = jd - civil_to_jd(y - 1, 12, 31, ns?(jd, sg))
       return y, doy
     end
 

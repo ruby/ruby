@@ -73,7 +73,7 @@ module ParseDate
     elsif date.sub!(/\d\d/i, ' ')
       year = $&.to_i
     end
-    if guess
+    if guess and year
       if year < 100
 	if year >= 69
 	  year += 1900

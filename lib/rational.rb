@@ -1,8 +1,8 @@
 #
 #   rational.rb - 
 #   	$Release Version: 0.5 $
-#   	$Revision: 1.3 $
-#   	$Date: 1998/03/11 14:09:03 $
+#   	$Revision: 1.7 $
+#   	$Date: 1999/08/24 12:49:28 $
 #   	by Keiju ISHITSUKA(SHL Japan Inc.)
 #
 # --
@@ -44,7 +44,7 @@ def Rational(a, b = 1)
 end
   
 class Rational < Numeric
-  @RCS_ID='-$Id: rational.rb,v 1.3 1998/03/11 14:09:03 keiju Exp keiju $-'
+  @RCS_ID='-$Id: rational.rb,v 1.7 1999/08/24 12:49:28 keiju Exp keiju $-'
 
   def Rational.reduce(num, den = 1)
     raise ZeroDivisionError, "denometor is 0" if den == 0
@@ -235,6 +235,10 @@ class Rational < Numeric
     self
   end
   
+  def inspect
+    sprintf("Rational(%s, %s)", @numerator.inspect, @denominator.inspect)
+  end
+  
   def hash
     @numerator ^ @denominator
   end
@@ -258,7 +262,27 @@ class Integer
     Rational(self, 1)
   end
   
-  def gcd(int)
+  def gcd(n)
+    m = self.abs
+    n = n.abs
+
+    return n if m == 0
+    return m if n == 0
+
+    b = 0
+    while n[0] == 0 && m[0] == 0
+      b += 1; n >>= 1; m >>= 1
+    end
+    m >>= 1 while m[0] == 0
+    n >>= 1 while n[0] == 0
+    while m != n
+      m, n = n, m if n > m
+      m -= n; m >>= 1 while m[0] == 0
+    end
+    m << b
+  end
+  
+  def gcd2(int)
     a = self.abs
     b = int.abs
   
@@ -270,7 +294,7 @@ class Integer
     end
     return a
   end
-  
+
   def lcm(int)
     a = self.abs
     b = int.abs

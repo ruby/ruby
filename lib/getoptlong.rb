@@ -303,7 +303,7 @@ class GetoptLong
     when STATUS_YET
       @status = STATUS_STARTED
     when STATUS_TERMINATED
-      return
+      return nil
     end
 
     #
@@ -320,7 +320,7 @@ class GetoptLong
       end
       if ARGV.length == 0
 	terminate
-	return
+	return nil
       end
       $_ = ARGV.shift
     elsif @ordering == REQUIRE_ORDER 

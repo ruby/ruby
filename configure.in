@@ -375,7 +375,7 @@ if test "$with_dln_a_out" != yes; then
     openstep*)	;;
     rhapsody*)	;;
     human*)	;;
-    bsdi3*)	;;
+    bsdi*)	;;
     cygwin*)	;;
     netbsd*) CCDLFLAGS=-fpic
      case "$host_cpu" in
@@ -436,6 +436,9 @@ if test "$with_dln_a_out" != yes; then
 			*shlicc*)	LDSHARED="$CC -r"
 					rb_cv_dlopen=yes ;;
 			esac ;;
+	bsdi*)		LDSHARED="ld -shared"
+			LDFLAGS="-rdynamic -Wl,-rpath,/usr/local/lib/ruby/1.4/i386-bsdi4.0"
+			rb_cv_dlopen=yes ;;
 	nextstep*)	LDSHARED='cc -r -nostdlib'
 			LDFLAGS="-u libsys_s"
 			DLDFLAGS="$ARCH_FLAG" 

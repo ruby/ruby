@@ -892,7 +892,9 @@ rb_gc()
     struct gc_list *list;
     struct FRAME * volatile frame; /* gcc 2.7.2.3 -O2 bug??  */
     jmp_buf save_regs_gc_mark;
+#ifdef C_ALLOCA
     VALUE stack_end;
+#endif
 
     alloc_objects = 0;
     malloc_memories = 0;
@@ -923,7 +925,11 @@ rb_gc()
     /* This assumes that all registers are saved into the jmp_buf */
     setjmp(save_regs_gc_mark);
     mark_locations_array((VALUE*)save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
+#ifdef C_ALLOCA
     rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)&stack_end);
+#else
+    rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)alloca(1));
+#endif
 #if defined(THINK_C) || defined(__human68k__)
 #ifndef __human68k__
     mark_locations_array((VALUE*)((char*)save_regs_gc_mark+2),

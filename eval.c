@@ -168,10 +168,17 @@ rb_get_method_body(klassp, idp, noexp)
     NODE * volatile body;
     struct cache_entry *ent;
 
-    if ((body = search_method(klass, id, &origin)) == 0) {
+    if ((body = search_method(klass, id, &origin)) == 0 || !body->nd_body) {
+	/* store in cache */
+	ent = cache + EXPR1(klass, id);
+	ent->klass  = klass;
+	ent->origin = klass;
+	ent->mid = ent->mid0 = id;
+	ent->noex   = 0;
+	ent->method = 0;
+	
 	return 0;
     }
-    if (!body->nd_body) return 0;
 
     /* store in cache */
     ent = cache + EXPR1(klass, id);
@@ -327,8 +334,17 @@ rb_method_boundp(klass, id, ex)
     ID id;
     int ex;
 {
+    struct cache_entry *ent;
     int noex;
 
+    /* is it in the method cache? */
+    ent = cache + EXPR1(klass, id);
+    if (ent->mid == id && ent->klass == klass) {
+	if (ex && (ent->noex & NOEX_PRIVATE))
+	    return Qfalse;
+	if (!ent->method) return Qfalse;
+	return Qtrue;
+    }
     if (rb_get_method_body(&klass, &id, &noex)) {
 	if (ex && (noex & NOEX_PRIVATE))
 	    return Qfalse;
@@ -2140,8 +2156,12 @@ rb_eval(self, node)
 
       case NODE_RETURN:
 	if (node->nd_stts) {
-	    return_value(rb_eval(self, node->nd_stts));
+ 	    return_value(rb_eval(self, node->nd_stts));
+ 	}
+	else {
+	    return_value(Qnil);
 	}
+	return_value(rb_eval(self, node->nd_stts));
 	return_check();
 	JUMP_TAG(TAG_RETURN);
 	break;
@@ -3976,6 +3996,8 @@ rb_call(klass, recv, mid, argc, argv, scope)
     /* is it in the method cache? */
     ent = cache + EXPR1(klass, mid);
     if (ent->mid == mid && ent->klass == klass) {
+	if (!ent->method)
+	    return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
 	klass = ent->origin;
 	id    = ent->mid0;
 	noex  = ent->noex;

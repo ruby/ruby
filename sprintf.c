@@ -23,7 +23,7 @@ double strtod();
 #ifdef USE_CWGUSI
 static void fmt_setup();
 #else
-static void fmt_setup _((char*,char,int,int,int));
+static void fmt_setup _((char*,int,int,int,int));
 #endif
 
 static char*
@@ -263,6 +263,9 @@ rb_f_sprintf(argc, argv)
 	    p--;
 	  case '\0':
 	  case '%':
+	    if (flags != FNONE) {
+		rb_raise(rb_eArgError, "illegal format character - %%");
+	    }
 	    PUSH("%", 1);
 	    break;
 
@@ -620,7 +623,8 @@ rb_f_sprintf(argc, argv)
 
 static void
 fmt_setup(buf, c, flags, width, prec)
-    char *buf, c;
+    char *buf;
+    int c;
     int flags, width, prec;
 {
     *buf++ = '%';

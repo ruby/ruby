@@ -104,7 +104,7 @@ class String
       self.gsub!(pattern, last)
     else
       h = HashCache[from + "::" + to] ||= expand_ch_hash(from, to)
-      self.gsub!(pattern) do |c| h[c] end
+      self.gsub!(pattern) do |c| p [c,h[c]]; h[c] end
     end
   end
 
