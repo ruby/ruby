@@ -10,8 +10,7 @@
 
 **********************************************************************/
 
-#include "config.h"
-#include "defines.h"
+#include "ruby.h"
 #include "dln.h"
 
 #ifdef __CHECKER__
@@ -1224,6 +1223,11 @@ void*
 dln_load(file)
     const char *file;
 {
+#if !defined(_AIX) && !defined(NeXT)
+    const char *error = 0;
+#define DLN_ERROR() (error = dln_strerror(), strcpy(ALLOCA_N(char, strlen(error) + 1), error))
+#endif
+
 #if defined _WIN32 && !defined __CYGWIN__
     HINSTANCE handle;
     char winfile[MAXPATHLEN];
@@ -1239,6 +1243,7 @@ dln_load(file)
 
     /* Load file */
     if ((handle = LoadLibrary(winfile)) == NULL) {
+	error = dln_strerror();
 	goto failed;
     }
 
@@ -1251,6 +1256,7 @@ dln_load(file)
 #else
 #ifdef USE_DLN_A_OUT
     if (load(file) == -1) {
+	error = dln_strerror();
 	goto failed;
     }
     return 0;
@@ -1275,10 +1281,12 @@ dln_load(file)
 
 	/* Load file */
 	if ((handle = (void*)dlopen(file, RTLD_LAZY|RTLD_GLOBAL)) == NULL) {
+	    error = dln_strerror();
 	    goto failed;
 	}
 
 	if ((init_fct = (void(*)())dlsym(handle, buf)) == NULL) {
+	    error = DLN_ERROR();
 	    dlclose(handle);
 	    goto failed;
 	}
@@ -1504,7 +1512,7 @@ dln_load(file)
 #endif
 #if !defined(_AIX) && !defined(NeXT)
   failed:
-    rb_loaderror("%s - %s", dln_strerror(), file);
+    rb_loaderror("%s - %s", error, file);
 #endif
 }
 

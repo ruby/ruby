@@ -1,3 +1,8 @@
+Mon Jun 17 10:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* dln.c (dln_load): need to preserve dln_strerror() result,
+	  calling other dl family can clear it.
+
 Sat Jun 15 19:30:44 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* dir.c (rb_glob_helper): Use lstat() instead of rb_sys_stat() so
