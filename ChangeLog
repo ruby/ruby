@@ -1,3 +1,8 @@
+Thu May 20 12:38:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_eq): alway check if operands are NaN.
+	  [ruby-list:39685]
+
 Thu May 20 12:34:39 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_visibility): 
@@ -7,8 +12,7 @@ Thu May 20 12:34:39 2004  Dave Thomas  <dave@pragprog.com>
 Thu May 20 12:22:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_type): do not check pointer to incomplete type,
-	  which always get compiled.
-	  [ruby-list:39683]
+	  which always get compiled.  [ruby-list:39683]
 
 Wed May 19 11:09:00 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -1296,6 +1300,11 @@ Thu Jan 29 15:33:23 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  second argument takes OBJECT_TYPE_TEMPLATE by default.
 
 	* sample/openssl/gen_csr.rb: use OpenSSL::X509::Name.parse.
+
+Wed Jan 28 04:29:41 2004  Eric Schwartz  <emschwar@fc.hp.com>
+
+	* lib/cgi/session.rb: use LOCK_SH to read, and a few other
+	  improvements.  [ruby-core:02328]
 
 Tue Jan 27 11:09:29 2004  FUKUMOTO Atsushi  <fukumoto@nospam.imasy.or.jp>
 
