@@ -1,3 +1,11 @@
+Mon Feb 28 21:55:49 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+
+	* ext/strscan/strscan.c (strscan_s_allocate):
+	  use onig_region_init().
+
+	* ext/strscan/strscan.c (adjust_registers_to_matched):
+	  use onig_region_set().
+
 Mon Feb 28 15:12:06 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/socket/socket.c (Init_socket): ported more Socket::Constants
@@ -12,7 +20,7 @@ Sun Feb 27 05:55:38 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: fix typo. [ruby-core:04494]
 
-Sat Feb 26 16:58:20 2005  K.Kosako <sndgk393@ybb.ne.jp>
+Sat Feb 26 16:58:20 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
 
 	* parse.y, re.c, regex.h, LEGAL, ext/strscan/strscan.c:
 	  remove oniggnu.h (GNU regex API).
@@ -121,11 +129,11 @@ Sat Feb 19 01:28:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* ext/bigdecimal/lib/bigdecimal/nlsolve.rb: removed because this file
 	  is sample script and same file exists in ext/bigdecimal/sample.
 
-Thu Feb 17 22:15:34 2005  K.Kosako <sndgk@ybb.ne.jp>
+Thu Feb 17 22:15:34 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
 
 	* ext/strscan/strscan.c: calls Oniguruma API directly.
 
-Thu Feb 17 21:53:12 2005  K.Kosako <sndgk@ybb.ne.jp>
+Thu Feb 17 21:53:12 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
 
 	* common.mk, LEGAL: remove reggnu.c.
 

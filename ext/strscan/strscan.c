@@ -185,7 +185,7 @@ strscan_s_allocate(klass)
     p = ALLOC(struct strscanner);
     MEMZERO(p, struct strscanner, 1);
     CLEAR_MATCH_STATUS(p);
-    MEMZERO(&(p->regs), struct re_registers, 1);
+    onig_region_init(&(p->regs));
     p->str = Qnil;
     return Data_Wrap_Struct(klass, strscan_mark, strscan_free, p);
 }
@@ -678,19 +678,12 @@ strscan_search_full(self, re, s, f)
     return strscan_do_scan(self, re, RTEST(s), RTEST(f), 0);
 }
 
-/* DANGEROUS; need to synchronize with regex.c */
 static void
 adjust_registers_to_matched(p)
     struct strscanner *p;
 {
-    if (p->regs.allocated == 0) {
-        p->regs.beg = ALLOC_N(int, ONIG_NREGION);
-        p->regs.end = ALLOC_N(int, ONIG_NREGION);
-        p->regs.allocated = ONIG_NREGION;
-    }
-    p->regs.num_regs = 1;
-    p->regs.beg[0] = 0;
-    p->regs.end[0] = p->curr - p->prev;
+    onig_region_clear(&(p->regs));
+    onig_region_set(&(p->regs), 0, 0, p->curr - p->prev);
 }
 
 /*
