@@ -197,15 +197,26 @@ fromUTF8_toDefaultEnc(str, self)
 }
 
 
+static void
+hash_check(err)
+    int err;
+{
+    if (err) {
+	rb_raise(rb_eRuntimeError, "hash modified");
+    }
+}
+
 static int
-to_strkey(key, value, hash)
+to_strkey(key, value, hash, err)
     VALUE key;
     VALUE value;
     VALUE hash;
+    int err;
 {
+    hash_check(err);
     if (key == Qundef) return ST_CONTINUE;
     rb_hash_aset(hash, rb_funcall(key, ID_to_s, 0, 0), value);
-    return ST_CONTINUE;
+    return ST_CHECK;
 }
 
 static VALUE
@@ -216,9 +227,7 @@ tk_symbolkey2str(self, keys)
     volatile VALUE new_keys = rb_hash_new();
 
     if NIL_P(keys) return new_keys;
-    if (TYPE(keys) != T_HASH) {
-	rb_raise(rb_eArgError, "Hash is expected");
-    }
+    keys = rb_convert_type(keys, T_HASH, "Hash", "to_hash");
     st_foreach(RHASH(keys)->tbl, to_strkey, new_keys);
     return new_keys;
 }
@@ -437,12 +446,16 @@ assoc2kv_enc(assoc, ary, self)
 }
 
 static int
-push_kv(key, val, args)
+push_kv(key, val, args, err)
     VALUE key;
     VALUE val;
     VALUE args;
+    int err;
 {
-    volatile VALUE ary = RARRAY(args)->ptr[0];
+    volatile VALUE ary;
+
+    hash_check(err);
+    ary = RARRAY(args)->ptr[0];
 
     if (key == Qundef) return ST_CONTINUE;
 #if 0
@@ -451,12 +464,12 @@ push_kv(key, val, args)
 #endif
     RARRAY(ary)->ptr[RARRAY(ary)->len++] = key2keyname(key);
 
-    if (val == TK_None) return ST_CONTINUE;
+    if (val == TK_None) return ST_CHECK;
 
     RARRAY(ary)->ptr[RARRAY(ary)->len++]
 	= get_eval_string_core(val, Qnil, RARRAY(args)->ptr[1]);
 
-    return ST_CONTINUE;
+    return ST_CHECK;
 }
 
 static VALUE
@@ -483,12 +496,16 @@ hash2kv(hash, ary, self)
 }
 
 static int
-push_kv_enc(key, val, args)
+push_kv_enc(key, val, args, err)
     VALUE key;
     VALUE val;
     VALUE args;
+    int err;
 {
-    volatile VALUE ary = RARRAY(args)->ptr[0];
+    volatile VALUE ary;
+
+    hash_check(err);
+    ary = RARRAY(args)->ptr[0];
 
     if (key == Qundef) return ST_CONTINUE;
 #if 0
@@ -500,12 +517,12 @@ push_kv_enc(key, val, args)
 #endif
     RARRAY(ary)->ptr[RARRAY(ary)->len++] = key2keyname(key);
 
-    if (val == TK_None) return ST_CONTINUE;
+    if (val == TK_None) return ST_CHECK;
 
     RARRAY(ary)->ptr[RARRAY(ary)->len++] 
 	= get_eval_string_core(val, Qtrue, RARRAY(args)->ptr[1]);
 
-    return ST_CONTINUE;
+    return ST_CHECK;
 }
 
 static VALUE

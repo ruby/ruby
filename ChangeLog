@@ -1,3 +1,20 @@
+Fri Sep 24 08:29:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (rb_parser_append_print): should handle prelude.
+	  [llama@u01.gate0]
+
+	* parse.y (rb_parser_while_loop): ditto.
+
+	* array.c (rb_ary_subseq): original object might be modified after
+	  sharing data creation.  [ruby-dev:24327]
+
+	* array.c (rb_ary_replace): ditto.
+
+	* array.c (ary_make_shared): freeze shared array. [ruby-dev:24325]
+
+	* struct.c (struct_members): always check struct size and size of
+	  members list in the class.  [ruby-dev:24320]
+
 Thu Sep 23 19:48:14 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/Makefile.dev: removed.
@@ -15,6 +32,9 @@ Thu Sep 23 19:48:14 2004  Minero Aoki  <aamine@loveruby.net>
 	* test/ripper/*.rb: event name is changed: on__XXX -> on_XXX.
 
 Thu Sep 23 09:29:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_sub_bang): check if string is not modified
+	  during iteration.  [ruby-dev:24315]
 
 	* hash.c (rb_hash_rehash): replace st_foreach() by its deep
 	  checking counterpart.  [ruby-dev:24310]

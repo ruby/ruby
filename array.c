@@ -237,7 +237,7 @@ rb_values_new2(n, elts)
     return val;
 }
 
-static void
+static VALUE
 ary_make_shared(ary)
     VALUE ary;
 {
@@ -250,6 +250,11 @@ ary_make_shared(ary)
 	shared->aux.capa = RARRAY(ary)->aux.capa;
 	RARRAY(ary)->aux.shared = (VALUE)shared;
 	FL_SET(ary, ELTS_SHARED);
+	OBJ_FREEZE(shared);
+	return (VALUE)shared;
+    }
+    else {
+	return RARRAY(ary)->aux.shared;
     }
 }
 
@@ -744,7 +749,8 @@ rb_ary_subseq(ary, beg, len)
     VALUE ary;
     long beg, len;
 {
-    VALUE klass, ary2;
+    VALUE klass, ary2, shared;
+    VALUE *ptr;
 
     if (beg > RARRAY(ary)->len) return Qnil;
     if (beg < 0 || len < 0) return Qnil;
@@ -757,11 +763,12 @@ rb_ary_subseq(ary, beg, len)
     klass = rb_obj_class(ary);
     if (len == 0) return ary_new(klass, 0);
 
-    ary_make_shared(ary);
+    shared = ary_make_shared(ary);
+    ptr = RARRAY(ary)->ptr;
     ary2 = ary_alloc(klass);
-    RARRAY(ary2)->ptr = RARRAY(ary)->ptr + beg;
+    RARRAY(ary2)->ptr = ptr + beg;
     RARRAY(ary2)->len = len;
-    RARRAY(ary2)->aux.shared = RARRAY(ary)->aux.shared;
+    RARRAY(ary2)->aux.shared = shared;
     FL_SET(ary2, ELTS_SHARED);
 
     return ary2;
@@ -1675,7 +1682,6 @@ sort_1(a, b, data)
     VALUE retval = rb_yield_values(2, *a, *b);
     int n;
 
-    ary_sort_check(data);
     n = rb_cmpint(retval, *a, *b);
     ary_sort_check(data);
     return n;
@@ -1700,7 +1706,6 @@ sort_2(ap, bp, data)
     }
 
     retval = rb_funcall(a, id_cmp, 1, b);
-    ary_sort_check(data);
     n = rb_cmpint(retval, a, b);
     ary_sort_check(data);
 
@@ -2263,15 +2268,17 @@ static VALUE
 rb_ary_replace(copy, orig)
     VALUE copy, orig;
 {
+    VALUE shared;
+
     rb_ary_modify(copy);
     orig = to_ary(orig);
     if (copy == orig) return copy;
-    ary_make_shared(orig);
+    shared = ary_make_shared(orig);
     if (RARRAY(copy)->ptr && !FL_TEST(copy, ELTS_SHARED))
 	free(RARRAY(copy)->ptr);
-    RARRAY(copy)->ptr = RARRAY(orig)->ptr;
-    RARRAY(copy)->len = RARRAY(orig)->len;
-    RARRAY(copy)->aux.shared = RARRAY(orig)->aux.shared;
+    RARRAY(copy)->ptr = RARRAY(shared)->ptr;
+    RARRAY(copy)->len = RARRAY(shared)->len;
+    RARRAY(copy)->aux.shared = shared;
     FL_SET(copy, ELTS_SHARED);
 
     return copy;
@@ -2987,8 +2994,11 @@ flatten(ary, idx, ary2, memo)
     rb_ary_push(memo, id);
     rb_ary_update(ary, idx, 1, ary2);
     while (i < lim) {
-	if (TYPE(RARRAY(ary)->ptr[i]) == T_ARRAY) {
-	    n = flatten(ary, i, RARRAY(ary)->ptr[i], memo);
+	VALUE tmp;
+
+	tmp = rb_check_array_type(RARRAY(ary)->ptr[i]);
+	if (!NIL_P(tmp)) {
+	    n = flatten(ary, i, tmp, memo);
 	    i += n; lim += n;
 	}
 	i++;
@@ -3023,12 +3033,14 @@ rb_ary_flatten_bang(ary)
     rb_ary_modify(ary);
     while (i<RARRAY(ary)->len) {
 	VALUE ary2 = RARRAY(ary)->ptr[i];
+	VALUE tmp;
 
-	if (TYPE(ary2) == T_ARRAY) {
+	tmp = rb_check_array_type(ary2);
+	if (!NIL_P(tmp)) {
 	    if (NIL_P(memo)) {
 		memo = rb_ary_new();
 	    }
-	    i += flatten(ary, i, ary2, memo);
+	    i += flatten(ary, i, tmp, memo);
 	    mod = 1;
 	}
 	i++;

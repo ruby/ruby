@@ -141,7 +141,6 @@ struct parser_params {
     int parser_lex_gets_ptr;
     VALUE (*parser_lex_gets) _((struct parser_params*,VALUE));
 #ifdef RIPPER
-    int parser_ruby_in_compile;
     int parser_ruby__end__seen;
     int parser_ruby_sourceline;
     VALUE parser_ruby_sourcefile;
@@ -185,7 +184,6 @@ static int parser_yyerror _((struct parser_params*, const char*));
 #define lex_gets_ptr		(parser->parser_lex_gets_ptr)
 #define lex_gets		(parser->parser_lex_gets)
 #ifdef RIPPER
-#define ruby_in_compile		(parser->parser_ruby_in_compile)
 #define ruby__end__seen		(parser->parser_ruby__end__seen)
 #define ruby_sourceline		(parser->parser_ruby_sourceline)
 #define ruby_sourcefile		(parser->parser_ruby_sourcefile)
@@ -3388,16 +3386,16 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			int options = $3;
 			NODE *node = $2;
 			if (!node) {
-			    node = NEW_LIT(rb_reg_new("", 0, options & ~RE_OPTION_ONCE));
+			    node = NEW_LIT(rb_reg_compile("", 0, options & ~RE_OPTION_ONCE));
 			}
 			else switch (nd_type(node)) {
 			  case NODE_STR:
 			    {
 				VALUE src = node->nd_lit;
 				nd_set_type(node, NODE_LIT);
-				node->nd_lit = rb_reg_new(RSTRING(src)->ptr,
-							  RSTRING(src)->len,
-							  options & ~RE_OPTION_ONCE);
+				node->nd_lit = rb_reg_compile(RSTRING(src)->ptr,
+							      RSTRING(src)->len,
+							      options & ~RE_OPTION_ONCE);
 			    }
 			    break;
 			  default:
@@ -4292,7 +4290,6 @@ parser_yyerror(parser, msg)
 }
 
 #ifndef RIPPER
-int ruby_in_compile = 0;
 int ruby__end__seen;
 static VALUE ruby_debug_lines;
 
@@ -4306,7 +4303,6 @@ yycompile(parser, f, line)
     NODE *node = 0;
     struct RVarmap *vp, *vars = ruby_dyna_vars;
 
-    ruby_in_compile = 1;
     if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
 	VALUE hash, fname;
@@ -4334,7 +4330,6 @@ yycompile(parser, f, line)
     n = yyparse((void*)parser);
     ruby_debug_lines = 0;
     compile_for_eval = 0;
-    ruby_in_compile = 0;
 
     vp = ruby_dyna_vars;
     ruby_dyna_vars = vars;
@@ -7727,16 +7722,6 @@ dyna_init(node, pre)
     return block_append(var, node);
 }
 
-int
-ruby_parser_stack_on_heap()
-{
-#if defined(YYBISON) && !defined(C_ALLOCA)
-    return Qfalse;
-#else
-    return Qtrue;
-#endif
-}
-
 void
 rb_gc_mark_parser()
 {
@@ -7747,9 +7732,19 @@ NODE*
 rb_parser_append_print(node)
     NODE *node;
 {
-    return block_append(node,
+    NODE *prelude = (nd_type(node) == NODE_PRELUDE) ? node : 0;
+
+    if (prelude) {
+	node = node->nd_body;
+    }
+    node = block_append(node,
 			NEW_FCALL(rb_intern("print"),
 				  NEW_ARRAY(NEW_GVAR(rb_intern("$_")))));
+    if (prelude) {
+	prelude->nd_body = node;
+	return prelude;
+    }
+    return node;
 }
 
 NODE *
@@ -7757,6 +7752,11 @@ rb_parser_while_loop(node, chop, split)
     NODE *node;
     int chop, split;
 {
+    NODE *prelude = (nd_type(node) == NODE_PRELUDE) ? node : 0;
+
+    if (prelude) {
+	node = node->nd_body;
+    }
     if (split) {
 	node = block_append(NEW_GASGN(rb_intern("$F"),
 				      NEW_CALL(NEW_GVAR(rb_intern("$_")),
@@ -7767,7 +7767,12 @@ rb_parser_while_loop(node, chop, split)
 	node = block_append(NEW_CALL(NEW_GVAR(rb_intern("$_")),
 				     rb_intern("chop!"), 0), node);
     }
-    return NEW_OPT_N(node);
+    node = NEW_OPT_N(node);
+    if (prelude) {
+	prelude->nd_body = node;
+	return prelude;
+    }
+    return node;
 }
 
 static struct {
@@ -8513,7 +8518,6 @@ ripper_initialize(argc, argv, self)
     parser_initialize(parser);
     parser->parser_ruby_sourcefile = fname;
     parser->parser_ruby_sourceline = NIL_P(lineno) ? 0 : NUM2INT(lineno) - 1;
-    parser->parser_ruby_in_compile = Qtrue;
     parser->parser_ruby__end__seen = 0;
 
     return Qnil;

@@ -642,8 +642,6 @@ rb_attr(klass, id, read, write, ex)
     }
 }
 
-extern int ruby_in_compile;
-
 VALUE ruby_errinfo = Qnil;
 extern int ruby_nerrs;
 
@@ -2451,7 +2449,6 @@ call_trace_func(event, node, self, id, klass)
 
     if (!trace_func) return;
     if (tracing) return;
-    if (ruby_in_compile) return;
     if (id == ID_ALLOCATOR) return;
 
     if (!(node_save = ruby_current_node)) {
@@ -10379,7 +10376,6 @@ rb_thread_wait_fd(fd)
     int fd;
 {
     if (rb_thread_critical) return;
-    if (ruby_in_compile) return;
     if (curr_thread == curr_thread->next) return;
     if (curr_thread->status == THREAD_TO_KILL) return;
 

@@ -178,7 +178,6 @@ ruby_xfree(x)
 	RUBY_CRITICAL(free(x));
 }
 
-extern int ruby_in_compile;
 static int dont_gc;
 static int during_gc;
 static int need_call_final = 0;
@@ -1001,19 +1000,6 @@ gc_sweep()
     int i, j;
     unsigned long live = 0;
 
-    if (ruby_in_compile && ruby_parser_stack_on_heap()) {
-	/* should not reclaim nodes during compilation
-           if yacc's semantic stack is not allocated on machine stack */
-	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i].slot; pend = p + heaps[i].limit;
-	    while (p < pend) {
-		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
-		    gc_mark((VALUE)p, 0);
-		p++;
-	    }
-	}
-    }
-
     mark_source_filename(ruby_sourcefile);
     st_foreach(source_filenames, sweep_source_filename, 0);
 
@@ -1080,7 +1066,7 @@ gc_sweep()
     if (final_list) {
 	RVALUE *tmp;
 
-	if (rb_prohibit_interrupt || ruby_in_compile) {
+	if (rb_prohibit_interrupt) {
 	    deferred_final_list = final_list;
 	    return;
 	}

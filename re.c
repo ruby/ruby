@@ -266,8 +266,6 @@ rb_reg_check(re)
     }
 }
 
-extern int ruby_in_compile;
-
 static void
 rb_reg_expr_str(str, s, len)
     VALUE str;
@@ -520,15 +518,16 @@ rb_reg_to_s(re)
 }
 
 static void
-rb_reg_raise(s, len, err, re)
+rb_reg_raise(s, len, err, re, ce)
     const char *s;
     long len;
     const char *err;
     VALUE re;
+    int ce;
 {
     VALUE desc = rb_reg_desc(s, len, re);
 
-    if (ruby_in_compile)
+    if (ce)
 	rb_compile_error("%s: %s", err, RSTRING(desc)->ptr);
     else
 	rb_raise(rb_eRegexpError, "%s: %s", err, RSTRING(desc)->ptr);
@@ -617,10 +616,11 @@ rb_reg_kcode_m(re)
 }
 
 static Regexp*
-make_regexp(s, len, flags)
+make_regexp(s, len, flags, ce)
     const char *s;
     long len;
     int flags;
+    int ce;
 {
     Regexp *rp;
     char err[ONIG_MAX_ERROR_MESSAGE_LEN];
@@ -636,7 +636,7 @@ make_regexp(s, len, flags)
     r = re_alloc_pattern(&rp);
     if (r) {
 	re_error_code_to_str((UChar* )err, r);
-	rb_reg_raise(s, len, err, 0);
+	rb_reg_raise(s, len, err, 0, ce);
     }
 
     if (flags) {
@@ -645,7 +645,7 @@ make_regexp(s, len, flags)
     r = re_compile_pattern(s, len, rp, err);
 
     if (r != 0) {
-	rb_reg_raise(s, len, err, 0);
+	rb_reg_raise(s, len, err, 0, ce);
     }
     return rp;
 }
@@ -854,7 +854,7 @@ rb_reg_prepare_re(re)
 	rb_reg_check(re);
 	r = re_recompile_pattern(RREGEXP(re)->str, RREGEXP(re)->len, RREGEXP(re)->ptr, err);
 	if (r != 0) {
-	    rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, re);
+	    rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, re, Qfalse);
 	}
     }
 }
@@ -921,15 +921,15 @@ rb_reg_search(re, str, pos, reverse)
 	kcode_reset_option();
 
     if (result < 0) {
-      if (result == ONIG_MISMATCH) {
-        rb_backref_set(Qnil);
-        return result;
-      }
-      else {
-        char err[ONIG_MAX_ERROR_MESSAGE_LEN];
-        re_error_code_to_str((UChar* )err, result);
-        rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, 0);
-      }
+	if (result == ONIG_MISMATCH) {
+	    rb_backref_set(Qnil);
+	    return result;
+	}
+	else {
+	    char err[ONIG_MAX_ERROR_MESSAGE_LEN];
+	    re_error_code_to_str((UChar* )err, result);
+	    rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, 0, Qfalse);
+	}
     }
 
     match = rb_backref_get();
@@ -1322,7 +1322,7 @@ match_string(match)
 VALUE rb_cRegexp;
 
 static void
-rb_reg_initialize(obj, s, len, options)
+rb_reg_initialize(obj, s, len, options, ce)
     VALUE obj;
     const char *s;
     long len;
@@ -1333,6 +1333,7 @@ rb_reg_initialize(obj, s, len, options)
 				/* CODE_EUC  = 32 */
 				/* CODE_SJIS = 48 */
 				/* CODE_UTF8 = 64 */
+    int ce;			/* call rb_compile_error() */
 {
     struct RRegexp *re = RREGEXP(obj);
 
@@ -1367,7 +1368,7 @@ rb_reg_initialize(obj, s, len, options)
 	options |= RE_OPTION_IGNORECASE;
 	FL_SET(re, REG_CASESTATE);
     }
-    re->ptr = make_regexp(s, len, options & 0xf);
+    re->ptr = make_regexp(s, len, options & 0xf, ce);
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
     re->str[len] = '\0';
@@ -1400,7 +1401,19 @@ rb_reg_new(s, len, options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
 
-    rb_reg_initialize(re, s, len, options);
+    rb_reg_initialize(re, s, len, options, Qfalse);
+    return (VALUE)re;
+}
+
+VALUE
+rb_reg_compile(s, len, options)
+    const char *s;
+    long len;
+    int options;
+{
+    VALUE re = rb_reg_s_alloc(rb_cRegexp);
+
+    rb_reg_initialize(re, s, len, options, Qtrue);
     return (VALUE)re;
 }
 

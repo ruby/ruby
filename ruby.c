@@ -341,7 +341,6 @@ static void
 require_libraries()
 {
     extern NODE *ruby_eval_tree;
-    extern NODE *ruby_eval_tree_begin;
     NODE *save[3];
     struct req_list *list = req_list_head.next;
     struct req_list *tmp;
@@ -915,10 +914,6 @@ load_file(fname, script)
     }
     else if (f != rb_stdin) {
 	rb_io_close(f);
-    }
-
-    if (ruby_parser_stack_on_heap()) {
-        rb_gc();
     }
 }
 

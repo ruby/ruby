@@ -1927,8 +1927,13 @@ rb_str_sub_bang(argc, argv, str)
 	regs = RMATCH(match)->regs;
 
 	if (iter) {
+	    char *p = RSTRING(str)->ptr; long len = RSTRING(str)->len;
+
 	    rb_match_busy(match);
 	    repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	    if (RSTRING(str)->ptr != p || RSTRING(str)->len != len) {
+		rb_raise(rb_eRuntimeError, "string modified");
+	    }
 	    rb_backref_set(match);
 	}
 	else {
