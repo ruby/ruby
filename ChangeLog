@@ -1,3 +1,10 @@
+Sun Dec 28 11:55:29 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/csv/test_csv.rb: generate bom.csv and mac.csv files on the fly.
+	  [ruby-talk:88852]
+
+	* test/csv/{bom.csv,mac.csv}: removed.
+
 Sun Dec 28 08:56:51 2003  Dave Thomas  <dave@pragprog.com>
 
 	* eval.c: Thead[Group] RDoc (thanks to MG)
@@ -28,8 +35,8 @@ Sun Dec 28 01:05:31 2003  Dave Thomas  <dave@pragprog.com>
 Sun Dec 28 00:46:25 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_class_comment):
-		  Some Ruby source uses lower-case class names for the
-		  Init_Xxx C function name.
+	  Some Ruby source uses lower-case class names for the
+	  Init_Xxx C function name.
 
 Sat Dec 27 23:41:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 

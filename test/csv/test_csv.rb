@@ -275,8 +275,8 @@ public
     @infiletsv = File.join(@tmpdir, 'in.tsv')
     @emptyfile = File.join(@tmpdir, 'empty.csv')
     @outfile = File.join(@tmpdir, 'out.csv')
-    @bomfile = File.join(File.dirname(__FILE__), "bom.csv")
-    @macfile = File.join(File.dirname(__FILE__), "mac.csv")
+    @bomfile = File.join(@tmpdir, "bom.csv")
+    @macfile = File.join(@tmpdir, "mac.csv")
 
     CSV.open(@infile, "w") do |writer|
       @@fullCSVDataArray.each do |row|
@@ -292,6 +292,14 @@ public
 
     CSV.generate(@emptyfile) do |writer|
       # Create empty file.
+    end
+
+    File.open(@bomfile, "wb") do |f|
+      f.write("\357\273\277\"foo\"\r\n\"bar\"\r\n")
+    end
+
+    File.open(@macfile, "wb") do |f|
+      f.write("\"Avenches\",\"aus Umgebung\"\r\"Bad Hersfeld\",\"Ausgrabung\"")
     end
   end
 
