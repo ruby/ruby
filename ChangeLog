@@ -1,8 +1,15 @@
+Thu Feb 19 02:37:28 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: merge documentation from 1.8 branch. Thanks Gavin Sinclair.
+
 Wed Feb 19 00:20:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/cgi-lib.rb:   deprecated after 1.8.1
+
 	* lib/getopts.rb:   ditto
+
 	* lib/importenv.rb: ditto
+
 	* lib/parsearg.rb:  ditto
 
 Thu Feb 19 00:11:05 2004  Dave Thomas  <dave@pragprog.com>
@@ -123,7 +130,9 @@ Mon Feb 16 23:28:14 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 Mon Feb 16 22:22:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/generator.rb: corrected doc format
+
 	* lib/rinda/rinda.rb: added documentation (from Hugh Sasse)
+
 	* lib/rinda/tuplespace.rb: ditto
 	
 	[Note: rinda files actually committed Wed Feb 18 07:27:00 2004]
