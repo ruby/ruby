@@ -1,7 +1,10 @@
-Sat Jun 26 11:05:39 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun 26 11:07:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (aix): -b must come at the start of the command line,
 	  and -e must not appear while testing libraries.  [ruby-talk:104501]
+
+	* lib/mkmf.rb (libpathflag, dir_config): quote directory names if
+	  necessary.  [ruby-talk:104505]
 
 Fri Jun 25 15:33:19 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
