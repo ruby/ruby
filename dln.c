@@ -1668,7 +1668,7 @@ dln_find_1(fname, path, exe_flag)
 	if (stat(fbuf, &st) == 0) {
 	    if (exe_flag == 0) return fbuf;
 	    /* looking for executable */
-	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
+	    if (!S_ISDIR(st.st_mode) && eaccess(fbuf, X_OK) == 0) return fbuf;
 	}
 #else
 	if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf)) {
