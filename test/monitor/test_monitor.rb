@@ -10,8 +10,9 @@ class TestMonitor < Test::Unit::TestCase
 
   def test_enter
     ary = []
+    queue = Queue.new
     th = Thread.start {
-      Thread.pass
+      queue.pop
       @monitor.enter
       for i in 6 .. 10
         ary.push(i)
@@ -20,6 +21,7 @@ class TestMonitor < Test::Unit::TestCase
       @monitor.exit
     }
     @monitor.enter
+    queue.enq(nil)
     for i in 1 .. 5
       ary.push(i)
       Thread.pass
@@ -31,8 +33,9 @@ class TestMonitor < Test::Unit::TestCase
 
   def test_synchronize
     ary = []
+    queue = Queue.new
     th = Thread.start {
-      Thread.pass
+      queue.pop
       @monitor.synchronize do
         for i in 6 .. 10
           ary.push(i)
@@ -41,6 +44,7 @@ class TestMonitor < Test::Unit::TestCase
       end
     }
     @monitor.synchronize do
+      queue.enq(nil)
       for i in 1 .. 5
         ary.push(i)
         Thread.pass
@@ -51,18 +55,23 @@ class TestMonitor < Test::Unit::TestCase
   end
 
   def test_try_enter
-    queue = Queue.new
+    queue1 = Queue.new
+    queue2 = Queue.new
     th = Thread.start {
-      queue.deq
+      queue1.deq
       @monitor.enter
-      queue.deq
+      queue2.enq(nil)
+      queue1.deq
       @monitor.exit
+      queue2.enq(nil)
     }
     assert_equal(true, @monitor.try_enter)
     @monitor.exit
-    queue.enq(Object.new)
+    queue1.enq(nil)
+    queue2.deq
     assert_equal(false, @monitor.try_enter)
-    queue.enq(Object.new)
+    queue1.enq(nil)
+    queue2.deq
     assert_equal(true, @monitor.try_enter)
   end
 
@@ -70,14 +79,16 @@ class TestMonitor < Test::Unit::TestCase
     cond = @monitor.new_cond
 
     a = "foo"
+    queue1 = Queue.new
     Thread.start do
-      Thread.pass
+      queue1.deq
       @monitor.synchronize do
         a = "bar"
         cond.signal
       end
     end
     @monitor.synchronize do
+      queue1.enq(nil)
       assert_equal("foo", a)
       result1 = cond.wait
       assert_equal(true, result1)
@@ -85,14 +96,16 @@ class TestMonitor < Test::Unit::TestCase
     end
 
     b = "foo"
+    queue2 = Queue.new
     Thread.start do
-      Thread.pass
+      queue2.deq
       @monitor.synchronize do
         b = "bar"
         cond.signal
       end
     end
     @monitor.synchronize do
+      queue2.enq(nil)
       assert_equal("foo", b)
       result2 = cond.wait(0.1)
       assert_equal(true, result2)
@@ -117,28 +130,30 @@ class TestMonitor < Test::Unit::TestCase
       assert_equal("bar", c)
     end
 
-    d = "foo"
-    cumber_thread = Thread.start {
-      loop do
-        @monitor.synchronize do
-          d = "foo"
-        end
-      end
-    }
-    Thread.start do
-      Thread.pass
-      @monitor.synchronize do
-        d = "bar"
-        cond.signal
-      end
-    end
-    @monitor.synchronize do
-      assert_equal("foo", d)
-      result5 = cond.wait
-      assert_equal(true, result5)
-      # this thread has priority over cumber_thread
-      assert_equal("bar", d)
-    end
-    cumber_thread.kill
+#     d = "foo"
+#     cumber_thread = Thread.start {
+#       loop do
+#         @monitor.synchronize do
+#           d = "foo"
+#         end
+#       end
+#     }
+#     queue3 = Queue.new
+#     Thread.start do
+#       queue3.pop
+#       @monitor.synchronize do
+#         d = "bar"
+#         cond.signal
+#       end
+#     end
+#     @monitor.synchronize do
+#       queue3.enq(nil)
+#       assert_equal("foo", d)
+#       result5 = cond.wait
+#       assert_equal(true, result5)
+#       # this thread has priority over cumber_thread
+#       assert_equal("bar", d)
+#     end
+#     cumber_thread.kill
   end
 end

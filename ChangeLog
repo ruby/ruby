@@ -1,3 +1,7 @@
+Wed Nov 12 14:09:43 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/monitor/test_monitor.rb: fix the timing problem by Queue.
+
 Wed Nov 12 12:59:44 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/monitor/test_monitor.rb: added.
