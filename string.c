@@ -1966,7 +1966,7 @@ rb_str_count(argc, argv, str)
     int init = 1;
     int i;
 
-    if (argc < 0) {
+    if (argc < 1) {
 	rb_raise(rb_eArgError, "wrong # of arguments");
     }
     for (i=0; i<argc; i++) {

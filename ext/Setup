@@ -9,7 +9,7 @@
 #md5
 #pty
 #sdbm
-#socket
+socket
 #tkutil
 #tcltklib
 #gtk
