@@ -1,3 +1,7 @@
+Sat Feb 21 14:33:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: prefer relative path.  [ruby-talk:93037]
+
 Sat Feb 21 11:12:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/os2.c, missing/x68.c: typo fix.  pointed out by greentea.

@@ -27,7 +27,7 @@ $:.replace [srcdir, srcdir+"/lib", "."]
 require 'mkmf'
 require 'getopts'
 
-$topdir = File.expand_path(".")
+$topdir = "."
 $top_srcdir = srcdir
 $hdrdir = $top_srcdir
 
@@ -52,7 +52,17 @@ def extmake(target)
   init_mkmf
 
   FileUtils.mkpath target unless File.directory?(target)
-  Dir.chdir(target) do
+  begin
+    dir = Dir.pwd
+    FileUtils.mkpath target unless File.directory?(target)
+    Dir.chdir target
+    top_srcdir = $top_srcdir
+    topdir = $topdir
+    prefix = "../" * (target.count("/")+1)
+    if File.expand_path(top_srcdir) != File.expand_path(top_srcdir, dir)
+      $hdrdir = $top_srcdir = prefix + top_srcdir
+    end
+    $topdir = prefix + $topdir
     $target = target
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
@@ -112,6 +122,10 @@ def extmake(target)
       $extlibs = merge_libs($extlibs, $libs.split, $LOCAL_LIBS.split)
       $extpath |= $LIBPATH
     end
+  ensure
+    $hdrdir = $top_srcdir = top_srcdir
+    $topdir = topdir
+    Dir.chdir dir
   end
   begin
     Dir.rmdir target
@@ -182,11 +196,7 @@ def parse_args()
     $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
   end
   if $extout
-    $absextout = File.expand_path(Config::expand($extout.dup), $topdir)
     $extout = '$(topdir)/'+$extout
-    unless Config::expand($extout.dup) == $absextout
-      $extout = $absextout
-    end
     $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
     $mflags << "extout=#$extout" << "extout_prefix=#$extout_prefix"
   end
@@ -277,28 +287,36 @@ exts |= Dir.glob("#{ext_prefix}/*/**/MANIFEST").collect {|d|
 } unless $extension
 
 if $extout
+  Config.expand(extout = $extout+"/.")
   if $install
     Config.expand(dest = "#{$destdir}#{$rubylibdir}")
-    FileUtils.cp_r($absextout+"/.", dest, :verbose => true, :noop => $dryrun)
+    FileUtils.cp_r(extout, dest, :verbose => true, :noop => $dryrun)
     exit
   end
   unless $ignore
-    FileUtils.mkpath($absextout)
+    FileUtils.mkpath(extout)
   end
 end
 
+dir = Dir.pwd
 FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
+if File.expand_path(srcdir) != File.expand_path(srcdir, dir)
+  $hdrdir = $top_srcdir = "../" + srcdir
+end
+$topdir = ".."
 exts.each do |d|
   extmake(d) or abort
 end
+$hdrdir = $top_srcdir = srcdir
+$topdir = "."
 
 if $ignore
   Dir.chdir ".."
   if $clean
     Dir.rmdir('ext') rescue nil
-    FileUtils.rm_rf($absextout) if $extout
+    FileUtils.rm_rf(extout) if $extout
   end
   exit
 end
