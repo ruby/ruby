@@ -165,6 +165,7 @@ static ID   internal_id();
 static struct RVarmap *dyna_push();
 static void dyna_pop();
 static int dyna_in_block();
+static NODE *dyna_init();
 
 static void top_local_init();
 static void top_local_setup();
@@ -645,11 +646,11 @@ cmd_brace_block	: tLBRACE_ARG
 			$<vars>$ = dyna_push();
 			$<num>1 = ruby_sourceline;
 		    }
-		  opt_block_var
+		  opt_block_var {$<vars>$ = ruby_dyna_vars;}
 		  compstmt
 		  '}'
 		    {
-			$$ = NEW_ITER($3, 0, $4);
+			$$ = NEW_ITER($3, 0, dyna_init($5, $<vars>4));
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    }
@@ -1714,11 +1715,11 @@ do_block	: kDO_BLOCK
 		        $<vars>$ = dyna_push();
 			$<num>1 = ruby_sourceline;
 		    }
-		  opt_block_var
+		  opt_block_var {$<vars>$ = ruby_dyna_vars;}
 		  compstmt
 		  kEND
 		    {
-			$$ = NEW_ITER($3, 0, $4);
+			$$ = NEW_ITER($3, 0, dyna_init($5, $<vars>4));
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    }
@@ -1777,10 +1778,10 @@ brace_block	: '{'
 		        $<vars>$ = dyna_push();
 			$<num>1 = ruby_sourceline;
 		    }
-		  opt_block_var
+		  opt_block_var {$<vars>$ = ruby_dyna_vars;}
 		  compstmt '}'
 		    {
-			$$ = NEW_ITER($3, 0, $4);
+			$$ = NEW_ITER($3, 0, dyna_init($5, $<vars>4));
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    }
@@ -1789,10 +1790,10 @@ brace_block	: '{'
 		        $<vars>$ = dyna_push();
 			$<num>1 = ruby_sourceline;
 		    }
-		  opt_block_var
+		  opt_block_var {$<vars>$ = ruby_dyna_vars;}
 		  compstmt kEND
 		    {
-			$$ = NEW_ITER($3, 0, $4);
+			$$ = NEW_ITER($3, 0, dyna_init($5, $<vars>4));
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    }
@@ -5654,6 +5655,21 @@ static int
 dyna_in_block()
 {
     return (lvtbl->dlev > 0);
+}
+
+static NODE *
+dyna_init(node, pre)
+    NODE *node;
+    struct RVarmap *pre;
+{
+    struct RVarmap *post = ruby_dyna_vars;
+    NODE *var;
+
+    if (!node || !post || pre == post) return node;
+    for (var = 0; post != pre && post->id; post = post->next) {
+	var = NEW_DASGN_CURR(post->id, var);
+    }
+    return block_append(var, node);
 }
 
 int

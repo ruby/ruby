@@ -1047,7 +1047,7 @@ error_print()
     else {
 	errat = Qnil;
     }
-    POP_TAG();
+    if (EXEC_TAG()) goto error;
     if (NIL_P(errat)){
 	ruby_set_current_source();
 	if (ruby_sourcefile)
@@ -1068,7 +1068,6 @@ error_print()
     }
 
     eclass = CLASS_OF(ruby_errinfo);
-    PUSH_TAG(PROT_NONE);
     if (EXEC_TAG() == 0) {
 	VALUE e = rb_obj_as_string(ruby_errinfo);
 	einfo = RSTRING(e)->ptr;
@@ -1078,7 +1077,7 @@ error_print()
 	einfo = "";
 	elen = 0;
     }
-    POP_TAG();
+    if (EXEC_TAG()) goto error;
     if (eclass == rb_eRuntimeError && elen == 0) {
 	warn_print(": unhandled exception\n");
     }
@@ -1132,6 +1131,8 @@ error_print()
 	    }
 	}
     }
+  error:
+    POP_TAG();
 }
 
 #if defined(__APPLE__)
@@ -1221,10 +1222,18 @@ int ruby_in_eval;
 static void rb_thread_cleanup _((void));
 static void rb_thread_wait_other_threads _((void));
 
+static int thread_set_raised();
+static void thread_reset_raised();
+
+static VALUE exception_error;
+static VALUE sysstack_error;
+
 static int
 error_handle(ex)
     int ex;
 {
+    if (thread_set_raised()) return 1;
+
     switch (ex & TAG_MASK) {
       case 0:
 	ex = 0;
@@ -1282,6 +1291,7 @@ error_handle(ex)
 	rb_bug("Unknown longjmp status %d", ex);
 	break;
     }
+    thread_reset_raised();
     return ex;
 }
 
@@ -3838,9 +3848,6 @@ rb_iter_break()
 NORETURN(static void rb_longjmp _((int, VALUE)));
 static VALUE make_backtrace _((void));
 
-static int thread_set_raised();
-static void thread_reset_raised();
-
 static void
 rb_longjmp(tag, mesg)
     int tag;
@@ -3848,6 +3855,10 @@ rb_longjmp(tag, mesg)
 {
     VALUE at;
 
+    if (thread_set_raised()) {
+	ruby_errinfo = exception_error;
+	JUMP_TAG(TAG_FATAL);
+    }
     if (NIL_P(mesg)) mesg = ruby_errinfo;
     if (NIL_P(mesg)) {
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
@@ -3866,7 +3877,6 @@ rb_longjmp(tag, mesg)
     }
 
     if (RTEST(ruby_debug) && !NIL_P(ruby_errinfo)
-	&& !thread_set_raised()
 	&& !rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
 	VALUE e = ruby_errinfo;
 	int status;
@@ -3880,8 +3890,10 @@ rb_longjmp(tag, mesg)
 			RSTRING(e)->ptr);
 	}
 	POP_TAG();
-	thread_reset_raised();
-	if (status) JUMP_TAG(status);
+	if (status) {
+	    thread_reset_raised();
+	    JUMP_TAG(status);
+	}
     }
 
     rb_trap_restore_mask();
@@ -3894,6 +3906,7 @@ rb_longjmp(tag, mesg)
     if (!prot_tag) {
 	error_print();
     }
+    thread_reset_raised();
     JUMP_TAG(tag);
 }
 
@@ -4573,7 +4586,7 @@ stack_check()
 	overflowing = 1;
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
-	    rb_raise(rb_eSysStackError, "stack level too deep");
+	    rb_exc_raise(sysstack_error);
 	}
 	POP_TAG();
 	overflowing = 0;
@@ -7627,7 +7640,12 @@ Init_Proc()
     rb_define_method(rb_eLocalJumpError, "exit_value", localjump_xvalue, 0);
     rb_define_method(rb_eLocalJumpError, "reason", localjump_reason, 0);
 
+    exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
+    rb_global_variable(&exception_error);
+
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
+    sysstack_error = rb_exc_new2(rb_eSysStackError, "stack level too deep");
+    rb_global_variable(&sysstack_error);
 
     rb_cBlock = rb_define_class("Block", rb_cObject);
     rb_undef_alloc_func(rb_cBlock);

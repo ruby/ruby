@@ -1,3 +1,18 @@
+Fri Jun  6 20:29:14 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (error_print): needs to be exception proof.
+
+	* eval.c (error_handle, rb_longjmp): bails out when exception
+	  reentered.  (ruby-bugs-ja:PR#487), [ruby-core:01119],
+	  [ruby-core:01122]
+
+	* eval.c (Init_Proc): pre-allocates critical error objects.
+
+Fri Jun  6 20:29:14 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (cmd_brace_block, do_block, brace_block): initialize block
+	  variables at the beginning of the block.  [ruby-talk:72521]
+
 Fri Jun  6 18:33:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (define_final): eliminate rb_f_lambda() call.
@@ -65,18 +80,18 @@ Thu Jun  5 15:09:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (math_erf,math_erfc): new function. [ruby-list:37753]
 
-Thu Jun  5 05:49:43 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+Thu Jun  5 14:49:43 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/rubyext.c: using GC nodes caused segfault. [ruby-core:1071]
+	* ext/syck/rubyext.c: using GC nodes caused segfault. [ruby-core:1071]
 
-Thu Jun  5 04:48:57 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+Thu Jun  5 13:48:57 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/token.c: directives choked on a period.
+	* ext/syck/token.c: directives choked on a period.
 
-    * ext/syck/gram.y: anchors work above a collection. [ruby-core:1071]
+	* ext/syck/gram.y: anchors work above a collection. [ruby-core:1071]
 
-    * ext/syck/handler.c, ext/syck/syck.c: ensure a fresh strtable between
-      parser iterations.
+	* ext/syck/handler.c, ext/syck/syck.c: ensure a fresh strtable between
+	  parser iterations.
 
 Wed Jun  4 12:06:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
