@@ -39,6 +39,23 @@ $sitedir = CONFIG["sitedir"]
 $sitelibdir = CONFIG["sitelibdir"]
 $sitearchdir = CONFIG["sitearchdir"]
 
+def dir_re(dir)
+  Regexp.new('\$(?:\('+dir+'\)|\{'+dir+'\})(?:\$\(target_prefix\)|\{target_prefix\})?')
+end
+commondir = dir_re('commondir')
+
+INSTALL_DIRS = [
+  [commondir, "$(rubylibdir)"],
+  [dir_re('sitelibdir'), "$(rubylibdir)$(target_prefix)"],
+  [dir_re('sitearchdir'), "$(archdir)$(target_prefix)"]
+]
+
+SITEINSTALL_DIRS = [
+  [commondir, "$(sitedir)$(target_prefix)"],
+  [dir_re('rubylibdir'), "$(sitelibdir)$(target_prefix)"],
+  [dir_re('archdir'), "$(sitearchdir)$(target_prefix)"]
+]
+
 if File.exist? Config::CONFIG["archdir"] + "/ruby.h"
   $hdrdir = $archdir
 elsif File.exist? $srcdir + "/ruby.h"
@@ -160,31 +177,45 @@ def try_run(src, opt="")
   end
 end
 
-def install_rb(mfile, dest, srcdir = nil)
-  libdir = "lib"
-  libdir = srcdir + "/" + libdir if srcdir
-  path = []
-  dir = []
-  if File.directory? libdir
-    Find.find(libdir) do |f|
-      next unless /\.rb$/ =~ f
-      f = f[libdir.length+1..-1]
-      path.push f
-      dir |= [File.dirname(f)]
-    end
-  end
-  for f in dir
-    if f == "."
-      mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s\n", dest
+def install_files(mfile, ifiles, map = INSTALL_DIRS, srcprefix = nil)
+  ifiles or return
+  srcprefix ||= '$(srcdir)'
+  Config::expand(srcdir = srcprefix.dup)
+  dirs = []
+  path = Hash.new {|h, i| h[i] = dirs.push([i])[-1]}
+  ifiles.each do |files, dir, prefix|
+    dir = map.inject(dir) {|dir, (orig, new)| dir.gsub(orig, new)} if map
+    prefix = %r"\A#{Regexp.quote(prefix)}/" if prefix
+    if( files[0,1] == "." )
+      # install files which are in current working directory.
+      Dir.glob(files) do |f|
+	d = File.dirname(f)
+	d.sub!(prefix, "") if prefix
+	d = (d.empty? || d == ".") ? dir : File.join(dir,d)
+	path[d] << f
+      end
     else
-      mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s/%s\n", dest, f
+      # install files which are under the $(srcdir).
+      Dir.glob(File.join(srcdir,files)) do |f|
+	f[0..srcdir.size] = ""
+	d = File.dirname(f)
+	d.sub!(prefix, "") if prefix
+	d = (d.empty? || d == ".") ? dir : File.join(dir, d)
+	path[d] << (srcprefix ? File.join(srcprefix, f) : f)
+      end
     end
   end
-  for f in path
-    d = '/' + File::dirname(f)
-    d = '' if d == '/.' 
-    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' %s/%s %s%s\n", libdir, f, dest, d
+
+  dirs.each do |dir, *files|
+    mfile.printf("\t@$(MAKEDIRS) %s\n", dir)
+    files.each do |f|
+      mfile.printf("\t@$(INSTALL_DATA) %s %s\n", f, dir)
+    end
   end
+end
+
+def install_rb(mfile, dest, srcdir = nil)
+  install_files(mfile, [["lib/**/*.rb", dest, "lib"]], INSTALL_DIRS, srcdir)
 end
 
 def append_library(libs, lib)
@@ -373,7 +404,7 @@ def with_destdir(dir)
   /^\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
 end
 
-def create_makefile(target, srcdir = $srcdir)
+def create_makefile(target, srcprefix = nil)
   save_libs = $libs.dup
   save_libpath = $LIBPATH.dup
   print "creating Makefile\n"
@@ -398,7 +429,8 @@ def create_makefile(target, srcdir = $srcdir)
   $configure_args['--enable-shared'] or $LIBPATH |= [$topdir]
   $LIBPATH |= [CONFIG["libdir"]]
 
-  srcdir ||= '.'
+  srcprefix ||= '$(srcdir)'
+  Config::expand(srcdir = srcprefix.dup)
   defflag = ''
   if RUBY_PLATFORM =~ /cygwin|mingw/
     deffile = target + '.def'
@@ -463,21 +495,19 @@ RUBY_INSTALL_NAME = #{CONFIG["RUBY_INSTALL_NAME"]}
 RUBY_SO_NAME = #{CONFIG["RUBY_SO_NAME"]}
 arch = #{CONFIG["arch"]}
 ruby_version = #{Config::CONFIG["ruby_version"]}
-#{
-if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?
-  "\nDESTDIR = " + destdir
-else
-  ""
-end
-}
-prefix = #{with_destdir CONFIG["prefix"].sub(drive, '')}
-exec_prefix = #{with_destdir CONFIG["exec_prefix"].sub(drive, '')}
-libdir = #{with_destdir $libdir.sub(drive, '')}
-rubylibdir = #{with_destdir $rubylibdir.sub(drive, '')}
-archdir = #{with_destdir $archdir.sub(drive, '')}
-sitedir = #{with_destdir $sitedir.sub(drive, '')}
-sitelibdir = #{with_destdir $sitelibdir.sub(drive, '')}
-sitearchdir = #{with_destdir $sitearchdir.sub(drive, '')}
+EOMF
+  if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?
+    mfile.print "\nDESTDIR = ", destdir, "\n"
+  end
+  CONFIG.select do |key, var|
+    next if /prefix$/ !~ key
+    mfile.print key, " = ", with_destdir(var.sub(drive, '')), "\n"
+  end
+  CONFIG.select do |key, var|
+    next if key == "srcdir" or /dir$/ !~ key
+    mfile.print key, " = ", with_destdir(var.sub(drive, '')), "\n"
+  end
+  mfile.print  <<EOMF
 target_prefix = #{target_prefix}
 
 #### End of system configuration section. ####
@@ -491,6 +521,9 @@ DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
 
 RUBY = #{CONFIG["ruby_install_name"]}
 RM = $(RUBY) -rftools -e "File::rm_f(*ARGV.map{|x|Dir[x]}.flatten.uniq)"
+MAKEDIRS = $(RUBY) -r ftools -e 'File::makedirs(*ARGV)'
+INSTALL_PROG = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)'
+INSTALL_DATA = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)'
 
 EXEEXT = #{CONFIG["EXEEXT"]}
 
@@ -510,19 +543,21 @@ install:	$(archdir)$(target_prefix)/$(DLLIB)
 site-install:	$(sitearchdir)$(target_prefix)/$(DLLIB)
 
 $(archdir)$(target_prefix)/$(DLLIB): $(DLLIB)
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(rubylibdir) $(archdir)$(target_prefix)
-	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(archdir)$(target_prefix)/$(DLLIB)
-EOMF
-  install_rb(mfile, "$(rubylibdir)$(target_prefix)", srcdir)
-  mfile.printf "\n"
+	@$(MAKEDIRS) $(rubylibdir) $(archdir)$(target_prefix)
+	@$(INSTALL_PROG) $(DLLIB) $(archdir)$(target_prefix)/$(DLLIB)
 
-  mfile.printf <<EOMF
 $(sitearchdir)$(target_prefix)/$(DLLIB): $(DLLIB)
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(sitearchdir)$(target_prefix)
-	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(sitearchdir)$(target_prefix)/$(DLLIB)
+	@$(MAKEDIRS) $(sitearchdir)$(target_prefix)
+	@$(INSTALL_PROG) $(DLLIB) $(sitearchdir)$(target_prefix)/$(DLLIB)
+
 EOMF
-  install_rb(mfile, "$(sitelibdir)$(target_prefix)", srcdir)
-  mfile.printf "\n"
+  mfile.print "install:\n"
+  install_rb(mfile, "$(rubylibdir)$(target_prefix)", srcprefix)
+  install_files(mfile, $INSTALLFILES, INSTALL_DIRS, srcprefix)
+  mfile.print "\n"
+  mfile.print "site-install:\n"
+  install_rb(mfile, "$(sitelibdir)$(target_prefix)", srcprefix)
+  install_files(mfile, $INSTALLFILES, SITEINSTALL_DIRS, srcprefix)
 
   unless /mswin32/ =~ RUBY_PLATFORM
     src = '$<'
@@ -624,7 +659,9 @@ $LIBPATH = []
 
 dir_config("opt")
 
-$srcdir = arg_config("--srcdir", File.dirname($0))
+Config::CONFIG["srcdir"] = CONFIG["srcdir"] =
+  $srcdir = arg_config("--srcdir", File.dirname($0))
 $configure_args["--topsrcdir"] ||= $srcdir
-$curdir = arg_config("--curdir", Dir.pwd)
+Config::CONFIG["topdir"] = CONFIG["topdir"] =
+  $curdir = arg_config("--curdir", Dir.pwd)
 $configure_args["--topdir"] ||= $curdir

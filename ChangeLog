@@ -1,3 +1,8 @@
+Mon Apr  1 23:48:12 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+
+	* lib/mkmf.rb: install any files using $INSTALLFILES.
+	  (see also [ruby-dev:16683])
+
 Mon Apr  1 17:25:50 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_fptr_cleanup): need flush even when io will not be
