@@ -500,9 +500,12 @@ rb_str_substr(str, beg, len)
     if (len > sizeof(struct RString)/2 &&
 	beg + len == RSTRING(str)->len &&
 	!FL_TEST(str, STR_ASSOC)) {
-	if (!FL_TEST(str, ELTS_SHARED)) str = str_new4(CLASS_OF(str), str);
+	if (FL_TEST(str, ELTS_SHARED))
+	    str = RSTRING(str)->aux.shared;
+	else
+	    str = str_new4(CLASS_OF(str), str);
 	str2 = rb_str_new3(str);
-	RSTRING(str2)->ptr += beg;
+	RSTRING(str2)->ptr += RSTRING(str2)->len - len;
 	RSTRING(str2)->len = len;
     }
     else {
