@@ -1,3 +1,17 @@
+Sat Feb 12 22:17:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (TAG_THREAD): to start a new thread.
+
+	* eval.c (ruby_init, ruby_options, ruby_cleanup, rb_protect,
+	  rb_load_protect, rb_thread_start_0): make thread anchor.
+
+	* eval.c (proc_alloc): clone proc object if klass is not Proc or
+	  created in different thread.
+
+	* eval.c (rb_block_pass): call a function with a block.  [new]
+
+	* eval.c (rb_f_throw): raise NameError in main thread.
+
 Sat Feb 12 17:29:19 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (OpenURI.open_loop): send authentication only for

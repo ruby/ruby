@@ -948,6 +948,7 @@ static struct tag *prot_tag;
 #define TAG_THROW	0x7
 #define TAG_FATAL	0x8
 #define TAG_CONTCALL	0x9
+#define TAG_THREAD	0xa
 #define TAG_MASK	0xf
 
 VALUE ruby_class;
@@ -998,6 +999,28 @@ static void scope_dup _((struct SCOPE *));
     ruby_scope = _old;			\
     scope_vmode = _vmode;		\
 } while (0)
+
+struct ruby_env {
+    struct ruby_env *prev;
+    struct FRAME *frame;
+    struct SCOPE *scope;
+    struct BLOCK *block;
+    struct iter *iter;
+    struct tag *tag;
+    NODE *cref;
+};
+
+static void push_thread_anchor _((struct ruby_env *));
+static void pop_thread_anchor _((struct ruby_env *));
+
+#define PUSH_THREAD_TAG() PUSH_TAG(PROT_THREAD); \
+    do {					 \
+	struct ruby_env _interp;		 \
+	push_thread_anchor(&_interp);
+#define POP_THREAD_TAG()			 \
+	pop_thread_anchor(&_interp);		 \
+    } while (0);				 \
+    POP_TAG()
 
 static VALUE rb_eval _((VALUE,NODE*));
 static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
@@ -1220,6 +1243,8 @@ is_ruby_native_thread() {
 }
 #endif
 
+NORETURN(static void rb_thread_start_1 _((void)));
+
 void
 ruby_init()
 {
@@ -1374,16 +1399,19 @@ ruby_options(argc, argv)
 #endif
 
     Init_stack((void*)&state);
-    PUSH_TAG(PROT_NONE);
+    PUSH_THREAD_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	ruby_process_options(argc, argv);
     }
     else {
+	if (state == TAG_THREAD) {
+	    rb_thread_start_1();
+	}
 	trace_func = 0;
 	tracing = 0;
 	exit(error_handle(state));
     }
-    POP_TAG();
+    POP_THREAD_TAG();
 
 #ifdef _WIN32_WCE
     wce_FreeCommandLine();
@@ -1429,13 +1457,16 @@ ruby_cleanup(ex)
 
     ruby_safe_level = 0;
     Init_stack((void*)&state);
-    ruby_finalize_0();
-    if (ruby_errinfo) err = ruby_errinfo;
-    PUSH_TAG(PROT_NONE);
+    PUSH_THREAD_TAG();
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
+	ruby_finalize_0();
+	if (ruby_errinfo) err = ruby_errinfo;
 	rb_thread_cleanup();
 	rb_thread_wait_other_threads();
+    }
+    else if (state == TAG_THREAD) {
+	rb_thread_start_1();
     }
     else if (ex == 0) {
 	ex = state;
@@ -1444,7 +1475,7 @@ ruby_cleanup(ex)
     ruby_errinfo = err;
     ex = error_handle(ex);
     ruby_finalize_1();
-    POP_TAG();
+    POP_THREAD_TAG();
 
     if (err && rb_obj_is_kind_of(err, rb_eSystemExit)) {
 	VALUE st = rb_iv_get(err, "status");
@@ -1462,7 +1493,7 @@ ruby_exec_internal()
 {
     int state;
 
-    PUSH_TAG(PROT_THREAD);
+    PUSH_THREAD_TAG();
     PUSH_ITER(ITER_NOT);
     /* default visibility is private at toplevel */
     SCOPE_SET(SCOPE_PRIVATE);
@@ -1474,8 +1505,11 @@ ruby_exec_internal()
 	cont_call(prot_tag->retval);
     }
 #endif
+    else if (state == TAG_THREAD) {
+	rb_thread_start_1();
+    }
     POP_ITER();
-    POP_TAG();
+    POP_THREAD_TAG();
     return state;
 }
 
@@ -5194,13 +5228,16 @@ rb_protect(proc, data, state)
     VALUE result = Qnil;	/* OK */
     int status;
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_THREAD_TAG();
     cont_protect = (VALUE)rb_node_newnode(NODE_MEMO, cont_protect, 0, 0);
     if ((status = EXEC_TAG()) == 0) {
 	result = (*proc)(data);
     }
+    else if (status == TAG_THREAD) {
+	rb_thread_start_1();
+    }
     cont_protect = ((NODE *)cont_protect)->u1.value;
-    POP_TAG();
+    POP_THREAD_TAG();
     if (state) {
 	*state = status;
     }
@@ -6552,11 +6589,14 @@ rb_load_protect(fname, wrap, state)
 {
     int status;
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_THREAD_TAG();
     if ((status = EXEC_TAG()) == 0) {
 	rb_load(fname, wrap);
     }
-    POP_TAG();
+    else if (status == TAG_THREAD) {
+	rb_thread_start_1();
+    }
+    POP_THREAD_TAG();
     if (state) *state = status;
 }
 
@@ -8035,8 +8075,13 @@ proc_alloc(klass, proc)
 	rb_warn("tried to create Proc object without a block");
     }
 
-    if (!proc && ruby_block->block_obj && CLASS_OF(ruby_block->block_obj) == klass) {
-	return ruby_block->block_obj;
+    if (!proc && ruby_block->block_obj) {
+	VALUE obj = ruby_block->block_obj;
+	if (CLASS_OF(obj) != klass) {
+	    obj = proc_clone(obj);
+	    RBASIC(obj)->klass = klass;
+	}
+	return obj;
     }
     block = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);
     *data = *ruby_block;
@@ -8486,11 +8531,11 @@ proc_binding(proc)
 }
 
 static VALUE
-block_pass(self, node)
-    VALUE self;
-    NODE *node;
+rb_block_pass(func, arg, proc)
+    VALUE (*func) _((VALUE));
+    VALUE arg;
+    VALUE proc;
 {
-    VALUE proc = rb_eval(self, node->nd_body);	/* OK */
     VALUE b;
     struct BLOCK * volatile old_block;
     struct BLOCK _block;
@@ -8502,7 +8547,7 @@ block_pass(self, node)
 
     if (NIL_P(proc)) {
 	PUSH_ITER(ITER_NOT);
-	result = rb_eval(self, node->nd_iter);
+	result = (*func)(arg);
 	POP_ITER();
 	return result;
     }
@@ -8523,7 +8568,7 @@ block_pass(self, node)
 
     if (ruby_block && ruby_block->block_obj == proc) {
 	PUSH_ITER(ITER_PRE);
-	result = rb_eval(self, node->nd_iter);
+	result = (*func)(arg);
 	POP_ITER();
 	return result;
     }
@@ -8547,7 +8592,7 @@ block_pass(self, node)
 	proc_set_safe_level(proc);
 	if (safe > ruby_safe_level)
 	    ruby_safe_level = safe;
-	result = rb_eval(self, node->nd_iter);
+	result = (*func)(arg);
     }
     else if (state == TAG_BREAK && TAG_DST()) {
 	result = prot_tag->retval;
@@ -8574,6 +8619,30 @@ block_pass(self, node)
     }
 
     return result;
+}
+
+struct block_arg {
+    VALUE self;
+    NODE *iter;
+};
+
+static VALUE
+call_block(arg)
+    struct block_arg *arg;
+{
+    return rb_eval(arg->self, arg->iter);
+}
+
+static VALUE
+block_pass(self, node)
+    VALUE self;
+    NODE *node;
+{
+    struct block_arg arg;
+    arg.self = self;
+    arg.iter = node->nd_iter;
+    return rb_block_pass((VALUE (*)_((VALUE)))call_block,
+			 (VALUE)&arg, rb_eval(self, node->nd_body));
 }
 
 struct METHOD {
@@ -9601,6 +9670,7 @@ struct thread {
     VALUE klass;
     VALUE wrapper;
     NODE *cref;
+    struct ruby_env *anchor;
 
     int flags;		/* misc. states (vmode/rb_trap_immediate/raised) */
 
@@ -11383,6 +11453,7 @@ rb_thread_group(thread)
     th->thgroup = thgroup_default;\
     th->locals = 0;\
     th->thread = 0;\
+    th->anchor = 0;\
 } while (0)
 
 static rb_thread_t
@@ -11493,6 +11564,50 @@ rb_thread_stop_timer()
 int rb_thread_tick = THREAD_TICK;
 #endif
 
+NORETURN(static void rb_thread_terminated _((rb_thread_t, int, enum thread_status)));
+static VALUE rb_thread_yield _((VALUE, rb_thread_t));
+
+static void
+push_thread_anchor(ip)
+    struct ruby_env *ip;
+{
+    ip->tag = prot_tag;
+    ip->frame = ruby_frame;
+    ip->block = ruby_block;
+    ip->scope = ruby_scope;
+    ip->iter = ruby_iter;
+    ip->cref = ruby_cref;
+    ip->prev = curr_thread->anchor;
+    curr_thread->anchor = ip;
+}
+
+static void
+pop_thread_anchor(ip)
+    struct ruby_env *ip;
+{
+    curr_thread->anchor = ip->prev;
+}
+
+static void
+thread_insert(th)
+    rb_thread_t th;
+{
+    if (!th->next) {
+	/* merge in thread list */
+	th->prev = curr_thread;
+	curr_thread->next->prev = th;
+	th->next = curr_thread->next;
+	curr_thread->next = th;
+	th->priority = curr_thread->priority;
+	th->thgroup = curr_thread->thgroup;
+    }
+}
+
+static struct {
+    rb_thread_t thread;
+    VALUE proc, arg;
+} new_thread;
+
 static VALUE
 rb_thread_start_0(fn, arg, th)
     VALUE (*fn)();
@@ -11531,6 +11646,15 @@ rb_thread_start_0(fn, arg, th)
 	return thread;
     }
 
+    if (fn == rb_thread_yield && curr_thread->anchor) {
+	struct ruby_env *ip = curr_thread->anchor;
+	new_thread.thread = th;
+	new_thread.proc = rb_block_proc();
+	new_thread.arg = (VALUE)arg;
+	th->anchor = ip;
+	longjmp(ip->tag->buf, TAG_THREAD);
+    }
+
     if (ruby_block) {		/* should nail down higher blocks */
 	struct BLOCK dummy;
 
@@ -11540,17 +11664,9 @@ rb_thread_start_0(fn, arg, th)
     }
     scope_dup(ruby_scope);
 
-    if (!th->next) {
-	/* merge in thread list */
-	th->prev = curr_thread;
-	curr_thread->next->prev = th;
-	th->next = curr_thread->next;
-	curr_thread->next = th;
-	th->priority = curr_thread->priority;
-	th->thgroup = curr_thread->thgroup;
-    }
+    thread_insert(th);
 
-    PUSH_TAG(PROT_THREAD);
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (THREAD_SAVE_CONTEXT(th) == 0) {
 	    curr_thread = th;
@@ -11572,6 +11688,16 @@ rb_thread_start_0(fn, arg, th)
 	blk_free(saved_block);
     }
 
+    rb_thread_terminated(th, state, status);
+    return 0;			/* not reached */
+}
+
+static void
+rb_thread_terminated(th, state, status)
+    rb_thread_t th;
+    int state;
+    enum thread_status status;
+{
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {
 	th->flags |= THREAD_RAISED;
 	if (state == TAG_FATAL) {
@@ -11601,7 +11727,55 @@ rb_thread_start_0(fn, arg, th)
     }
     rb_thread_schedule();
     ruby_stop(0);		/* last thread termination */
-    return 0;			/* not reached */
+}
+
+static VALUE
+rb_thread_yield_0(arg)
+    VALUE arg;
+{
+    return rb_thread_yield(arg, curr_thread);
+}
+
+static void
+rb_thread_start_1()
+{
+    rb_thread_t th = new_thread.thread;
+    volatile rb_thread_t th_save = th;
+    VALUE proc = new_thread.proc;
+    VALUE arg = new_thread.arg;
+    struct ruby_env *ip = th->anchor;
+    enum thread_status status;
+    int state;
+
+    thread_insert(th);
+
+    ruby_frame = ip->frame;
+    ruby_block = ip->block;
+    ruby_scope = ip->scope;
+    ruby_iter = ip->iter;
+    ruby_cref = ip->cref;
+    ruby_dyna_vars = 0;
+    PUSH_FRAME();
+    _frame.iter = ITER_CUR;
+    PUSH_TAG(PROT_NONE);
+    if ((state = EXEC_TAG()) == 0) {
+	if (THREAD_SAVE_CONTEXT(th) == 0) {
+	    curr_thread = th;
+	    th->result = rb_block_pass(rb_thread_yield_0, arg, proc);
+	}
+	th = th_save;
+    }
+    else if (TAG_DST()) {
+	th = th_save;
+	th->result = prot_tag->retval;
+    }
+    POP_TAG();
+    POP_FRAME();
+    status = th->status;
+
+    if (th == main_thread) ruby_stop(state);
+    rb_thread_remove(th);
+    rb_thread_terminated(th, state, status);
 }
 
 VALUE
