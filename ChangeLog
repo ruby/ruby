@@ -67,7 +67,7 @@ Thu May 30 12:52:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* range.c (range_each): iteration done using "succ".  If the
 	  elements does not respond to "succ", raise TypeError.  As a
 	  result, all Enumerable methods, e.g. collect, require elements
-	  to respond to "succ'.
+	  to respond to "succ".
 
 	* range.c (range_member): comparison done using "each", if
 	  elements are non-Numeric or no-"succ" objects.  Otherwise
