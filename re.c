@@ -514,10 +514,11 @@ make_regexp(s, len, flags)
 static VALUE rb_cMatch;
 
 static VALUE
-match_alloc()
+match_alloc(klass)
+    VALUE klass;
 {
     NEWOBJ(match, struct RMatch);
-    OBJSETUP(match, rb_cMatch, T_MATCH);
+    OBJSETUP(match, klass, T_MATCH);
 
     match->str = 0;
     match->regs = 0;
@@ -528,37 +529,20 @@ match_alloc()
 }
 
 static VALUE
-match_clone(match)
-    VALUE match;
+match_become(obj, orig)
+    VALUE obj, orig;
 {
-    NEWOBJ(clone, struct RMatch);
-    CLONESETUP(clone, match);
+    if (obj == orig) return obj;
 
-    clone->str = RMATCH(match)->str;
-    clone->regs = 0;
+    if (!rb_obj_is_instance_of(orig, rb_obj_class(obj))) {
+	rb_raise(rb_eTypeError, "wrong argument class");
+    }
+    RMATCH(obj)->str = RMATCH(orig)->str;
+    re_free_registers(RMATCH(obj)->regs);
+    RMATCH(obj)->regs->allocated = 0;
+    re_copy_registers(RMATCH(obj)->regs, RMATCH(orig)->regs);
 
-    clone->regs = ALLOC(struct re_registers);
-    clone->regs->allocated = 0;
-    re_copy_registers(clone->regs, RMATCH(match)->regs);
-
-    return (VALUE)clone;
-}
-
-static VALUE
-match_dup(match)
-    VALUE match;
-{
-    NEWOBJ(dup, struct RMatch);
-    DUPSETUP(dup, match);
-
-    dup->str = RMATCH(match)->str;
-    dup->regs = 0;
-
-    dup->regs = ALLOC(struct re_registers);
-    dup->regs->allocated = 0;
-    re_copy_registers(dup->regs, RMATCH(match)->regs);
-
-    return (VALUE)dup;
+    return obj;
 }
 
 static VALUE
@@ -741,7 +725,7 @@ rb_reg_search(re, str, pos, reverse)
 
     match = rb_backref_get();
     if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
-	match = match_alloc();
+	match = match_alloc(rb_obj_class(re));
     }
     else {
 	if (rb_safe_level() >= 3) 
@@ -1601,13 +1585,10 @@ Init_Regexp()
 
     rb_cMatch  = rb_define_class("MatchData", rb_cObject);
     rb_define_global_const("MatchingData", rb_cMatch);
-    rb_undef_method(CLASS_OF(rb_cMatch), "allocate");
+    rb_define_singleton_method(rb_cMatch, "allocate", match_alloc, 0);
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
 
-    /* to be replaced by allocation framework */
-    rb_define_method(rb_cMatch, "clone", match_clone, 0);
-    rb_define_method(rb_cMatch, "dup", match_dup, 0);
-
+    rb_define_method(rb_cMatch, "become", match_become, 1);
     rb_define_method(rb_cMatch, "size", match_size, 0);
     rb_define_method(rb_cMatch, "length", match_size, 0);
     rb_define_method(rb_cMatch, "offset", match_offset, 1);
