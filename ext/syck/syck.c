@@ -169,7 +169,7 @@ syck_new_parser()
     p->io_type = syck_io_str;
     p->io.str = NULL;
     p->syms = NULL;
-    p->anchors = st_init_strtable();
+    p->anchors = NULL;
     p->implicit_typing = 1;
     p->taguri_expansion = 0;
     p->bufsize = SYCK_BUFFERSIZE;
@@ -207,28 +207,38 @@ syck_st_free_nodes( char *key, SyckNode *n, char *arg )
 }
 
 void
-syck_free_parser( SyckParser *p )
+syck_st_free( SyckParser *p )
 {
-    char *key;
-    SyckNode *node;
-
     //
     // Free the adhoc symbol table
     // 
     if ( p->syms != NULL )
     {
         st_free_table( p->syms );
+        p->syms = NULL;
     }
 
     //
     // Free the anchor table
     //
-    st_foreach( p->anchors, syck_st_free_nodes, 0 );
-    st_free_table( p->anchors );
+    if ( p->anchors != NULL )
+    {
+        st_foreach( p->anchors, syck_st_free_nodes, 0 );
+        st_free_table( p->anchors );
+        p->anchors = NULL;
+    }
+}
+
+void
+syck_free_parser( SyckParser *p )
+{
+    char *key;
+    SyckNode *node;
 
     //
-    // Free all else
+    // Free tables, levels
     //
+    syck_st_free( p );
     syck_parser_reset_levels( p );
     S_FREE( p->levels[0].domain );
     S_FREE( p->levels );
@@ -467,6 +477,7 @@ syck_parse( SyckParser *p )
 
     ASSERT( p != NULL );
 
+    syck_st_free( p );
     syck_parser_reset_levels( p );
     yyparse( p );
     return p->root;

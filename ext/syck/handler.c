@@ -31,6 +31,10 @@ SyckNode *
 syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
 {
     n->anchor = a;
+    if ( p->anchors == NULL )
+    {
+        p->anchors = st_init_strtable();
+    }
     st_insert( p->anchors, (st_data_t)a, (st_data_t)n );
     return n;
 }
@@ -40,9 +44,12 @@ syck_hdlr_add_alias( SyckParser *p, char *a )
 {
     SyckNode *n;
 
-    if ( st_lookup( p->anchors, (st_data_t)a, (st_data_t *)&n ) )
+    if ( p->anchors != NULL )
     {
-        return n;
+       if ( st_lookup( p->anchors, (st_data_t)a, (st_data_t *)&n ) )
+       {
+           return n;
+       }
     }
 
     //

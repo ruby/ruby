@@ -192,7 +192,6 @@ syck_map_update( SyckNode *map1, SyckNode *map2 )
         S_REALLOC_N( m1->keys, SYMID, m1->capa );
         S_REALLOC_N( m1->values, SYMID, m1->capa );
     }
-    new_idx = 0;
     for ( new_idx = 0; new_idx < m2->idx; m1->idx++, new_idx++ )
     {
         m1->keys[m1->idx] = m2->keys[new_idx]; 

@@ -1,3 +1,12 @@
+Thu Jun  5 04:48:57 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/token.c: directives choked on a period.
+
+    * ext/syck/gram.y: anchors work above a collection. [ruby-core:1071]
+
+    * ext/syck/handler.c, ext/syck/syck.c: ensure a fresh strtable between
+      parser iterations.
+
 Tue Jun  3 22:20:49 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call_super): should search superclass method based on

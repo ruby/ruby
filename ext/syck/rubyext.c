@@ -438,6 +438,14 @@ rb_syck_ensure(parser)
     return 0;
 }
 
+static void
+syck_mark_parser(parser)
+    SyckParser *parser;
+{
+    rb_gc_mark(parser->root);
+    rb_gc_mark(parser->root_on_error);
+}
+
 /*
  * YAML::Syck::Parser.new
  */
@@ -451,7 +459,7 @@ syck_parser_new(argc, argv, class)
     SyckParser *parser = syck_new_parser();
 
     rb_scan_args(argc, argv, "01", &options);
-	pobj = Data_Wrap_Struct( class, 0, syck_free_parser, parser );
+	pobj = Data_Wrap_Struct( class, syck_mark_parser, syck_free_parser, parser );
 
     syck_parser_set_root_on_error( parser, Qnil );
 
