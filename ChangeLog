@@ -1,3 +1,9 @@
+Wed Jan 30 15:58:04 2002  K.Kosako  <kosako@sofnec.co.jp>
+
+	* regex.c (re_adjust_startpos): fix for SJIS. 
+
+	* regex.c (mbc_startpos): ditto.
+
 Wed Jan 30 02:25:38 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* regex.c (re_adjust_startpos): search start of multibyte

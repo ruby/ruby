@@ -3080,11 +3080,17 @@ re_adjust_startpos(bufp, string, size, startpos, range)
   if (current_mbctype && startpos>0 && !(bufp->options&RE_OPTIMIZE_BMATCH)) {
     int i = mbc_startpos(string, startpos);
 
-    if (i < startpos && range > 0) {
-      startpos = i + mbclen(string[i]);
-    }
-    else {
-      startpos = i;
+    if (i < startpos) {
+      if (range > 0) {
+	startpos = i + mbclen(string[i]);
+      }
+      else {
+	int len = mbclen(string[i]);
+	if (i + len <= startpos)
+	  startpos = i + len;
+	else
+	  startpos = i;
+      }
     }
   }
   return startpos;
@@ -4570,10 +4576,16 @@ mbc_startpos(string, pos)
 
   switch (current_mbctype) {
   case MBCTYPE_EUC:
-  case MBCTYPE_SJIS:
-    /* double byte char only */
     return i + ((pos - i) & ~1);
+
+  case MBCTYPE_SJIS:
+    while (i + (w = mbclen(string[i])) < pos) {
+      i += w;
+    }
+    return i;
+
   case MBCTYPE_UTF8:
+    return i;
   default:
     return pos;
   }
