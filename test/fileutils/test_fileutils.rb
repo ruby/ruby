@@ -6,6 +6,7 @@ $:.unshift File.dirname(__FILE__)
 
 require 'fileutils'
 require 'fileasserts'
+require 'pathname'
 require 'tmpdir'
 require 'test/unit'
 
@@ -27,6 +28,20 @@ ensure
 end
 def have_symlink?
   HAVE_SYMLINK
+end
+
+begin
+  File.open('linktmp', 'w') {|f| f.puts 'dummy' }
+  File.link 'linktmp', 'linktest'
+  HAVE_HARDLINK = true
+rescue NotImplementedError
+  HAVE_HARDLINK = false
+ensure
+  File.unlink 'linktest' if File.exist?('linktest')
+  File.unlink 'linktmp' if File.exist?('linktmp')
+end
+def have_hardlink?
+  HAVE_HARDLINK
 end
 
 case RUBY_PLATFORM
@@ -138,6 +153,14 @@ end
     assert_raises(ArgumentError) {
       cmp TARGETS[0], TARGETS[0], :undefinedoption => true
     }
+
+    # pathname
+    touch 'tmp/cmptmp'
+    assert_nothing_raised {
+      cmp Pathname.new('tmp/cmptmp'), 'tmp/cmptmp'
+      cmp 'tmp/cmptmp', Pathname.new('tmp/cmptmp')
+      cmp Pathname.new('tmp/cmptmp'), Pathname.new('tmp/cmptmp')
+    }
   end
 
   def test_cp
@@ -178,6 +201,15 @@ if have_symlink?
       cp 'tmp/symlink', 'tmp/symlink'
     }
 end
+
+    # pathname
+    assert_nothing_raised {
+      cp 'tmp/cptmp', Pathname.new('tmp/tmpdest')
+      cp Pathname.new('tmp/cptmp'), 'tmp/tmpdest'
+      cp Pathname.new('tmp/cptmp'), Pathname.new('tmp/tmpdest')
+      mkdir 'tmp/tmpdir'
+      cp ['tmp/cptmp', 'tmp/tmpdest'], Pathname.new('tmp/tmpdir')
+    }
   end
 
   def test_cp_r
@@ -185,6 +217,14 @@ end
     TARGETS.each do |fname|
       assert_same_file fname, "tmp/#{fname}"
     end
+
+    # pathname
+    touch 'tmp/cprtmp'
+    assert_nothing_raised {
+      cp_r Pathname.new('tmp/cprtmp'), 'tmp/tmpdest'
+      cp_r 'tmp/cprtmp', Pathname.new('tmp/tmpdest')
+      cp_r Pathname.new('tmp/cprtmp'), Pathname.new('tmp/tmpdest')
+    }
   end
 
   def test_mv
@@ -214,6 +254,16 @@ if have_symlink?
       mv 'tmp/symlink', 'tmp/symlink'
     }
 end
+
+    # pathname
+    assert_nothing_raised {
+      touch 'tmp/mvtmpsrc'
+      mv Pathname.new('tmp/mvtmpsrc'), 'tmp/mvtmpdest'
+      touch 'tmp/mvtmpsrc'
+      mv 'tmp/mvtmpsrc', Pathname.new('tmp/mvtmpdest')
+      touch 'tmp/mvtmpsrc'
+      mv Pathname.new('tmp/mvtmpsrc'), Pathname.new('tmp/mvtmpdest')
+    }
   end
 
   def test_rm
@@ -222,6 +272,18 @@ end
       rm 'tmp/rmsrc'
       assert_file_not_exist 'tmp/rmsrc'
     end
+
+    # pathname
+    touch 'tmp/rmtmp1'
+    touch 'tmp/rmtmp2'
+    touch 'tmp/rmtmp3'
+    assert_nothing_raised {
+      rm Pathname.new('tmp/rmtmp1')
+      rm [Pathname.new('tmp/rmtmp2'), Pathname.new('tmp/rmtmp3')]
+    }
+    assert_file_not_exist 'tmp/rmtmp1'
+    assert_file_not_exist 'tmp/rmtmp2'
+    assert_file_not_exist 'tmp/rmtmp3'
   end
 
   def test_rm_f
@@ -245,6 +307,20 @@ end
     Dir.mkdir 'tmpdatadir'
     # rm_f 'tmpdatadir'
     Dir.rmdir 'tmpdatadir'
+
+    # pathname
+    touch 'tmp/rmtmp1'
+    touch 'tmp/rmtmp2'
+    touch 'tmp/rmtmp3'
+    touch 'tmp/rmtmp4'
+    assert_nothing_raised {
+      rm_f Pathname.new('tmp/rmtmp1')
+      rm_f [Pathname.new('tmp/rmtmp2'), Pathname.new('tmp/rmtmp3')]
+    }
+    assert_file_not_exist 'tmp/rmtmp1'
+    assert_file_not_exist 'tmp/rmtmp2'
+    assert_file_not_exist 'tmp/rmtmp3'
+    assert_file_exist 'tmp/rmtmp4'
   end
 
   def test_rm_r
@@ -275,6 +351,18 @@ end
     rm_r 'tmp/tmpdir'
     assert_file_not_exist 'tmp/tmpdir'
     assert_file_exist     'tmp'
+
+    # pathname
+    Dir.mkdir 'tmp/tmpdir1'; touch 'tmp/tmpdir1/tmp'
+    Dir.mkdir 'tmp/tmpdir2'; touch 'tmp/tmpdir2/tmp'
+    Dir.mkdir 'tmp/tmpdir3'; touch 'tmp/tmpdir3/tmp'
+    assert_nothing_raised {
+      rm_r Pathname.new('tmp/tmpdir1')
+      rm_r [Pathname.new('tmp/tmpdir2'), Pathname.new('tmp/tmpdir3')]
+    }
+    assert_file_not_exist 'tmp/tmpdir1'
+    assert_file_not_exist 'tmp/tmpdir2'
+    assert_file_not_exist 'tmp/tmpdir3'
   end
 
   def test_with_big_file
@@ -292,6 +380,7 @@ end
     assert_file_not_exist 'tmp/mvdest'
   end
 
+if have_hardlink?
   def test_ln
     TARGETS.each do |fname|
       ln fname, 'tmp/lndest'
@@ -327,7 +416,16 @@ if have_symlink?
       ln 'tmp/cptmp_symlink', 'tmp/cptmp_symlink'
     }
 end
+
+    # pathname
+    touch 'tmp/lntmp'
+    assert_nothing_raised {
+      ln Pathname.new('tmp/lntmp'), 'tmp/lndesttmp1'
+      ln 'tmp/lntmp', Pathname.new('tmp/lndesttmp2')
+      ln Pathname.new('tmp/lntmp'), Pathname.new('tmp/lndesttmp3')
+    }
   end
+end
 
 if have_symlink?
   def test_ln_s
@@ -341,6 +439,14 @@ if have_symlink?
       ln_s 'symlink', 'tmp/symlink'
     }
     assert_symlink 'tmp/symlink'
+
+    # pathname
+    touch 'tmp/lnsdest'
+    assert_nothing_raised {
+      ln_s Pathname.new('lnsdest'), 'tmp/symlink_tmp1'
+      ln_s 'lnsdest', Pathname.new('tmp/symlink_tmp2')
+      ln_s Pathname.new('lnsdest'), Pathname.new('tmp/symlink_tmp3')
+    }
   end
 end
 
@@ -355,6 +461,14 @@ if have_symlink?
     end
     assert_nothing_raised {
       ln_sf 'symlink', 'tmp/symlink'
+    }
+
+    # pathname
+    touch 'tmp/lns_dest'
+    assert_nothing_raised {
+      ln_sf Pathname.new('lns_dest'), 'tmp/symlink_tmp1'
+      ln_sf 'lns_dest', Pathname.new('tmp/symlink_tmp2')
+      ln_sf Pathname.new('lns_dest'), Pathname.new('tmp/symlink_tmp3')
     }
   end
 end
@@ -373,6 +487,11 @@ end
     assert_directory 'tmp/tmp'
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
     Dir.rmdir 'tmp/tmp'
+
+    # pathname
+    assert_nothing_raised {
+      mkdir 'tmp/tmpdirtmp'
+    }
   end
 
   def test_mkdir_p
@@ -410,6 +529,11 @@ end
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
     assert_equal 0700, (File.stat('tmp/tmp/tmp').mode & 0777) if have_file_perm?
     rm_rf 'tmp/tmp'
+
+    # pathname
+    assert_nothing_raised {
+      mkdir_p Pathname.new('tmp/tmp/tmp')
+    }
   end
 
   def test_uptodate?
@@ -417,6 +541,17 @@ end
       assert(   uptodate?('newest', %w(old newer notexist)) )
       assert( ! uptodate?('newer', %w(old newest notexist)) )
       assert( ! uptodate?('notexist', %w(old newest newer)) )
+    }
+
+    # pathname
+    touch 'tmp/a'
+    touch 'tmp/b'
+    touch 'tmp/c'
+    assert_nothing_raised {
+      uptodate? Pathname.new('tmp/a'), ['tmp/b', 'tmp/c']
+      uptodate? 'tmp/a', [Pathname.new('tmp/b'), 'tmp/c']
+      uptodate? 'tmp/a', ['tmp/b', Pathname.new('tmp/c')]
+      uptodate? Pathname.new('tmp/a'), [Pathname.new('tmp/b'), Pathname.new('tmp/c')]
     }
   end
 
@@ -457,6 +592,24 @@ if have_symlink?
       install 'tmp/symlink', 'tmp/symlink'
     }
 end
+
+    # pathname
+    assert_nothing_raised {
+      rm_f 'tmp/a'; touch 'tmp/a'
+      install 'tmp/a', Pathname.new('tmp/b')
+      rm_f 'tmp/a'; touch 'tmp/a'
+      install Pathname.new('tmp/a'), 'tmp/b'
+      rm_f 'tmp/a'; touch 'tmp/a'
+      install Pathname.new('tmp/a'), Pathname.new('tmp/b')
+      rm_f 'tmp/a'
+      touch 'tmp/a'
+      touch 'tmp/b'
+      mkdir 'tmp/dest'
+      install [Pathname.new('tmp/a'), Pathname.new('tmp/b')], 'tmp/dest'
+      rm_rf 'tmp/dest'
+      mkdir 'tmp/dest'
+      install [Pathname.new('tmp/a'), Pathname.new('tmp/b')], Pathname.new('tmp/dest')
+    }
   end
 
 end
