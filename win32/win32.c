@@ -299,7 +299,6 @@ char *getlogin()
 struct ChildRecord {
     HANDLE hProcess;	/* process handle */
     pid_t pid;		/* process id */
-    FILE* pipe;		/* pipe */
 } ChildRecord[MAXCHILDNUM];
 
 #define FOREACH_CHILD(v) do { \
@@ -328,17 +327,6 @@ FindChildSlot(pid_t pid)
     return NULL;
 }
 
-static struct ChildRecord *
-FindPipedChildSlot(FILE *fp)
-{
-    FOREACH_CHILD(child) {
-	if (child->pid && child->pipe == fp) {
-	    return child;
-	}
-    } END_FOREACH_CHILD;
-    return NULL;
-}
-
 static void
 CloseChildHandle(struct ChildRecord *child)
 {
@@ -355,7 +343,6 @@ FindFreeChildSlot(void)
 	if (!child->pid) {
 	    child->pid = -1;	/* lock the slot */
 	    child->hProcess = NULL;
-	    child->pipe = NULL;
 	    return child;
 	}
     } END_FOREACH_CHILD;
@@ -443,148 +430,202 @@ rb_w32_get_osfhandle(int fh)
 
 }
 
-
-FILE *
-rb_w32_popen (char *cmd, char *mode) 
+pid_t
+pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 {
-    FILE *fp;
-    int reading;
-    int pipemode;
     struct ChildRecord* child;
-    BOOL fRet;
-    HANDLE hInFile, hOutFile, hSavedStdIo, hDupFile;
+    HANDLE hReadIn, hReadOut;
+    HANDLE hWriteIn, hWriteOut;
+    HANDLE hSavedStdIn, hSavedStdOut;
+    HANDLE hDupInFile, hDupOutFile;
     HANDLE hCurProc;
     SECURITY_ATTRIBUTES sa;
-    int fd;
+    BOOL fRet;
+    BOOL reading, writing;
+    int fdin, fdout;
+    int pipemode;
+    char modes[3];
+    int ret;
 
-    //
-    // Figure out what we're doing...
-    //
+    /* Figure out what we're doing... */
+    writing = (mode & (O_WRONLY | O_RDWR)) ? TRUE : FALSE;
+    reading = ((mode & O_RDWR) || !writing) ? TRUE : FALSE;
+    pipemode = (mode & O_BINARY) ? O_BINARY : O_TEXT;
 
-    reading = (*mode == 'r') ? TRUE : FALSE;
-    pipemode = (*(mode+1) == 'b') ? O_BINARY : O_TEXT;
-
-    //
-    // Now get a pipe
-    //
     sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle       = TRUE;
 
-    fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
-    if (!fRet) {
-	errno = GetLastError();
-	return NULL;
-    }
-
-    /* save parent's STDIO and redirect for child */
-    hCurProc = GetCurrentProcess();
-    if (reading) {
-	hSavedStdIo = GetStdHandle(STD_OUTPUT_HANDLE);
-	if (!SetStdHandle(STD_OUTPUT_HANDLE, hOutFile) ||
-	    !DuplicateHandle(hCurProc, hInFile, hCurProc, &hDupFile, 0, FALSE,
-			     DUPLICATE_SAME_ACCESS)) {
-	    errno = GetLastError();
-	    CloseHandle(hInFile);
-	    CloseHandle(hOutFile);
-	    CloseHandle(hCurProc);
-	    return NULL;
+    /* create pipe, save parent's STDIN/STDOUT and redirect them for child */
+    RUBY_CRITICAL(do {
+	ret = -1;
+	hCurProc = GetCurrentProcess();
+	if (reading) {
+	    fRet = CreatePipe(&hReadIn, &hReadOut, &sa, 2048L);
+	    if (!fRet) {
+		errno = GetLastError();
+		break;
+	    }
+	    hSavedStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	    if (!SetStdHandle(STD_OUTPUT_HANDLE, hReadOut) ||
+		!DuplicateHandle(hCurProc, hReadIn, hCurProc, &hDupInFile, 0,
+				 FALSE, DUPLICATE_SAME_ACCESS)) {
+		errno = GetLastError();
+		CloseHandle(hReadIn);
+		CloseHandle(hReadOut);
+		CloseHandle(hCurProc);
+		break;
+	    }
+	    CloseHandle(hReadIn);
 	}
-	CloseHandle(hInFile);
-    }
-    else {
-	hSavedStdIo = GetStdHandle(STD_INPUT_HANDLE);
-	if (!SetStdHandle(STD_INPUT_HANDLE, hInFile) ||
-	    !DuplicateHandle(hCurProc, hOutFile, hCurProc, &hDupFile, 0, FALSE,
-			     DUPLICATE_SAME_ACCESS)) {
-	    errno = GetLastError();
-	    CloseHandle(hInFile);
-	    CloseHandle(hOutFile);
-	    CloseHandle(hCurProc);
-	    return NULL;
+	if (writing) {
+	    fRet = CreatePipe(&hWriteIn, &hWriteOut, &sa, 2048L);
+	    if (!fRet) {
+		errno = GetLastError();
+		if (reading) {
+		    CloseHandle(hDupInFile);
+		    CloseHandle(hReadOut);
+		}
+		break;
+	    }
+	    hSavedStdIn = GetStdHandle(STD_INPUT_HANDLE);
+	    if (!SetStdHandle(STD_INPUT_HANDLE, hWriteIn) ||
+		!DuplicateHandle(hCurProc, hWriteOut, hCurProc, &hDupOutFile, 0,
+				 FALSE, DUPLICATE_SAME_ACCESS)) {
+		errno = GetLastError();
+		CloseHandle(hWriteIn);
+		CloseHandle(hWriteOut);
+		CloseHandle(hCurProc);
+		if (reading) {
+		    CloseHandle(hDupInFile);
+		    CloseHandle(hReadOut);
+		}
+		break;
+	    }
+	    CloseHandle(hWriteOut);
 	}
-	CloseHandle(hOutFile);
+	CloseHandle(hCurProc);
+	ret = 0;
+    } while (0));
+    if (ret != 0) {
+	return ret;
     }
-    CloseHandle(hCurProc);
 
     /* create child process */
     child = CreateChild(cmd, &sa, NULL, NULL, NULL);
     if (!child) {
-	CloseHandle(reading ? hOutFile : hInFile);
-	CloseHandle(hDupFile);
-	return NULL;
+	RUBY_CRITICAL({
+	    if (reading) {
+		SetStdHandle(STD_OUTPUT_HANDLE, hSavedStdOut);
+		CloseHandle(hReadOut);
+		CloseHandle(hDupInFile);
+	    }
+	    if (writing) {
+		SetStdHandle(STD_INPUT_HANDLE, hSavedStdIn);
+		CloseHandle(hWriteIn);
+		CloseHandle(hDupOutFile);
+	    }
+	});
+	return -1;
     }
 
-    /* restore STDIO */
+    /* restore STDIN/STDOUT */
+    RUBY_CRITICAL(do {
+	ret = -1;
+	if (reading) {
+	    if (!SetStdHandle(STD_OUTPUT_HANDLE, hSavedStdOut)) {
+		errno = GetLastError();
+		CloseChildHandle(child);
+		CloseHandle(hReadOut);
+		CloseHandle(hDupInFile);
+		if (writing) {
+		    CloseHandle(hWriteIn);
+		    CloseHandle(hDupOutFile);
+		}
+		break;
+	    }
+	}
+	if (writing) {
+	    if (!SetStdHandle(STD_INPUT_HANDLE, hSavedStdIn)) {
+		errno = GetLastError();
+		CloseChildHandle(child);
+		CloseHandle(hWriteIn);
+		CloseHandle(hDupOutFile);
+		if (reading) {
+		    CloseHandle(hReadOut);
+		    CloseHandle(hDupInFile);
+		}
+		break;
+	    }
+	}
+	ret = 0;
+    } while (0));
+    if (ret != 0) {
+	return ret;
+    }
+
     if (reading) {
-	if (!SetStdHandle(STD_OUTPUT_HANDLE, hSavedStdIo)) {
-	    errno = GetLastError();
+#ifdef __BORLANDC__
+	fdin = _open_osfhandle((long)hDupInFile, (_O_RDONLY | pipemode));
+#else
+	fdin = rb_w32_open_osfhandle((long)hDupInFile, (_O_RDONLY | pipemode));
+#endif
+	CloseHandle(hReadOut);
+	if (fdin == -1) {
+	    CloseHandle(hDupInFile);
+	    if (writing) {
+		CloseHandle(hWriteIn);
+		CloseHandle(hDupOutFile);
+	    }
 	    CloseChildHandle(child);
-	    CloseHandle(hDupFile);
-	    CloseHandle(hOutFile);
-	    return NULL;
+	    return -1;
 	}
     }
-    else {
-	if (!SetStdHandle(STD_INPUT_HANDLE, hSavedStdIo)) {
-	    errno = GetLastError();
+    if (writing) {
+#ifdef __BORLANDC__
+	fdout = _open_osfhandle((long)hDupOutFile, (_O_WRONLY | pipemode));
+#else
+	fdout = rb_w32_open_osfhandle((long)hDupOutFile,
+				      (_O_WRONLY | pipemode));
+#endif
+	CloseHandle(hWriteIn);
+	if (fdout == -1) {
+	    CloseHandle(hDupOutFile);
+	    if (reading) {
+		_close(fdin);
+	    }
 	    CloseChildHandle(child);
-	    CloseHandle(hInFile);
-	    CloseHandle(hDupFile);
-	    return NULL;
+	    return -1;
 	}
     }
 
     if (reading) {
-	fd = _open_osfhandle((long)hDupFile, (_O_RDONLY | pipemode));
-	CloseHandle(hOutFile);
+	sprintf(modes, "r%s", pipemode == O_BINARY ? "b" : "");
+	if ((*fpr = (FILE *)fdopen(fdin, modes)) == NULL) {
+	    _close(fdin);
+	    if (writing) {
+		_close(fdout);
+	    }
+	    CloseChildHandle(child);
+	    return -1;
+	}
     }
-    else {
-	fd = _open_osfhandle((long)hDupFile, (_O_WRONLY | pipemode));
-	CloseHandle(hInFile);
+    if (writing) {
+	sprintf(modes, "w%s", pipemode == O_BINARY ? "b" : "");
+	if ((*fpw = (FILE *)fdopen(fdout, modes)) == NULL) {
+	    _close(fdout);
+	    if (reading) {
+		fclose(*fpr);
+	    }
+	    CloseChildHandle(child);
+	    return -1;
+	}
     }
 
-    if (fd == -1) {
-	CloseHandle(hDupFile);
-	CloseChildHandle(child);
-	return NULL;
-    }
-
-    if ((fp = (FILE *) fdopen(fd, mode)) == NULL) {
-	_close(fd);
-	CloseChildHandle(child);
-	return NULL;
-    }
-
-    child->pipe = fp;
-
-    return fp;
+    return child->pid;
 }
 
 extern VALUE rb_last_status;
-
-int
-rb_w32_pclose(FILE *fp)
-{
-    struct ChildRecord *child = FindPipedChildSlot(fp);
-
-    if (!child) {
-	return -1;		/* may closed in waitpid() */
-    }
-
-    //
-    // close the pipe
-    //
-    child->pipe = NULL;
-    fflush(fp);
-    fclose(fp);
-
-    //
-    // get the return status of the process
-    //
-    rb_syswait(child->pid);
-    return NUM2INT(rb_last_status);
-}
 
 int
 do_spawn(cmd)

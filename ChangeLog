@@ -1,3 +1,15 @@
+Sat Jun 29 01:43:32 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* io.c (pipe_finalize, pipe_popen): two-way pipe support for win32.
+
+	* win32/win32.c (ChildRecord, FindFreeChildSlot): ditto.
+
+	* win32/win32.c, win32/win32.h (pipe_exec): new function for two-way
+	  pipe support for win32.
+
+	* win32/win32.c, win32/win32.h (FindPipedChildSlot, rb_w32_popen,
+	  rb_w32_pclose): removed functions for two-way pipe support for win32.
+
 Fri Jun 28 23:49:34 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* pack.c (pack_unpack): change names of local variables because their

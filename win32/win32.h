@@ -145,11 +145,8 @@ extern "C++" {
 #define utime      _utime
 #define vsnprintf  _vsnprintf
 #define snprintf   _snprintf
-#define popen      _popen
-#define pclose     _pclose
 #undef stat
 #define stat(path,st) rb_w32_stat(path,st)
-/* these are defined in nt.c */
 
 #ifdef __MINGW32__
 struct timezone {
@@ -161,8 +158,7 @@ extern int    NtMakeCmdVector(char *, char ***, int);
 extern void   NtInitialize(int *, char ***);
 extern char * NtGetLib(void);
 extern char * NtGetBin(void);
-extern FILE * rb_w32_popen(char *, char *);
-extern int    rb_w32_pclose(FILE *);
+extern pid_t  pipe_exec(char *, int, FILE **, FILE **);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_fddup(int);
 extern void   rb_w32_fdclose(FILE *);
@@ -276,14 +272,6 @@ extern char *rb_w32_strerror(int);
 #define EWOULDBLOCK 10035 /* EBASEERR + 35 (winsock.h) */
 #endif
 
-#ifdef popen
-#undef popen
-#define popen    rb_w32_popen
-#endif
-#ifdef pclose
-#undef pclose
-#define pclose   rb_w32_pclose
-#endif
 
 /* #undef va_start */
 /* #undef va_end */

@@ -1761,7 +1761,7 @@ static void
 pipe_finalize(fptr)
     OpenFile *fptr;
 {
-#if !defined (__CYGWIN__)
+#if !defined (__CYGWIN__) && !defined(NT)
     extern VALUE rb_last_status;
     int status;
     if (fptr->f) {
@@ -1803,7 +1803,7 @@ pipe_open(pname, mode)
     int modef = rb_io_mode_flags(mode);
     OpenFile *fptr;
 
-#if defined(NT) || defined(DJGPP) || defined(__human68k__) || defined(__VMS)
+#if defined(DJGPP) || defined(__human68k__) || defined(__VMS)
     FILE *f = popen(pname, mode);
 
     if (!f) rb_sys_fail(pname);
@@ -1821,7 +1821,40 @@ pipe_open(pname, mode)
 	    else fptr->f = f;
 	    rb_io_synchronized(fptr);
 	}
-	return port;
+	return (VALUE)port;
+    }
+#else
+#if defined(NT)
+    int pid;
+    FILE *fpr, *fpw;
+
+retry:
+    pid = pipe_exec(pname, rb_io_mode_modenum(mode), &fpr, &fpw);
+    if (pid == -1) {		/* exec failed */
+	if (errno == EAGAIN) {
+	    rb_thread_sleep(1);
+	    goto retry;
+	}
+	rb_sys_fail(pname);
+    }
+    else {
+        VALUE port = rb_obj_alloc(rb_cIO);
+
+	MakeOpenFile(port, fptr);
+	fptr->mode = modef;
+	fptr->mode |= FMODE_SYNC;
+	fptr->pid = pid;
+
+	if (modef & FMODE_READABLE) {
+	    fptr->f = fpr;
+    }
+	if (modef & FMODE_WRITABLE) {
+	    if (fptr->f) fptr->f2 = fpw;
+	    else fptr->f = fpw;
+	}
+	fptr->finalize = pipe_finalize;
+	pipe_add_fptr(fptr);
+	return (VALUE)port;
     }
 #else
     int pid, pr[2], pw[2];
@@ -1907,6 +1940,7 @@ pipe_open(pname, mode)
 	    return port;
 	}
     }
+#endif
 #endif
 }
 
