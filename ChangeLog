@@ -1,3 +1,7 @@
+Fri Jan 25 17:48:43 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (solaris): add '-shared' only for GNU ld.
+
 Fri Jan 25 17:16:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_include_module): detect cyclic module inclusion.

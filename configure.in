@@ -530,8 +530,11 @@ if test "$with_dln_a_out" != yes; then
 			LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
-			   LDSHARED='$(CC) -Wl,-G -shared'
-			   `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && LDFLAGS="-Wl,-E"
+			   LDSHARED='$(CC) -Wl,-G'
+			   if `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null; then
+	 		       LDFLAGS="-Wl,-E"
+			       LDSHARED="$LDSHARED -shared"
+			   fi
 			else
 			   LDSHARED='ld -G'
 			fi
