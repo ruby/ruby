@@ -164,6 +164,8 @@ lib/ostruct.rb
 lib/parsearg.rb
 lib/parsedate.rb
 lib/ping.rb
+lib/pp.rb
+lib/prettyprint.rb
 lib/profile.rb
 lib/pstore.rb
 lib/rational.rb
