@@ -448,7 +448,7 @@ class DEBUGGER__
 	      stdout.print "At toplevel\n"
 	    end
 	    binding, binding_file, binding_line = @frames[frame_pos]
-           stdout.printf "#%d %s:%s\n", frame_pos+1, binding_file, binding_line
+	    stdout.printf "#%d %s:%s\n", frame_pos+1, binding_file, binding_line
 
 	  when /^\s*down(?:\s+(\d+))?$/
 	    previous_line = nil
@@ -463,7 +463,7 @@ class DEBUGGER__
 	      stdout.print "At stack bottom\n"
 	    end
 	    binding, binding_file, binding_line = @frames[frame_pos]
-           stdout.printf "#%d %s:%s\n", frame_pos+1, binding_file, binding_line
+	    stdout.printf "#%d %s:%s\n", frame_pos+1, binding_file, binding_line
 
 	  when /^\s*fin(?:ish)?$/
 	    if frame_pos == @frames.size
