@@ -7,7 +7,7 @@ Fri Mar  1 11:22:51 2002  Amos Gouaux  <amos+ruby@utdallas.edu>
 	* lib/net/imap.rb (setacl): remove the rights if the rights
 	parameter is nil.
 
-	* lib/net/imap.rb (getacl): return a MailboxACLItem object.
+	* lib/net/imap.rb (getacl): return an array of MailboxACLItem.
 
 Fri Mar  1 06:25:49 2002  Tanaka Akira  <akr@m17n.org>
 
