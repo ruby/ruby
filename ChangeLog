@@ -1,3 +1,12 @@
+Fri Oct 11 06:05:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* win32/win32.c (win32_fclose, win32_close): use closesocket()
+	  for socket.  [ruby-win32:382]
+
+	* win32/win32.c (StartSockets): set NtSocketsInitialized.
+
+	* win32/win32.h: prototypes; win32_fclose, win32_close
+
 Thu Oct 10 17:26:12 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tcltklib/stubs.c (ruby_tcltk_stubs): fix memory leak.

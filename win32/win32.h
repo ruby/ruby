@@ -1,5 +1,5 @@
-#ifndef EXT_NT_H
-#define EXT_NT_H
+#ifndef RUBY_WIN32_H
+#define RUBY_WIN32_H
 
 /*
  *  Copyright (c) 1993, Intergraph Corporation
@@ -119,7 +119,8 @@ extern "C++" {
 #define access	   _access
 #define chmod	   _chmod
 #define chsize	   _chsize
-#define close	   _close
+#define close	   win32_close
+#define fclose	   win32_fclose
 #define creat	   _creat
 #define dup	   _dup
 #define dup2	   _dup2
@@ -467,6 +468,8 @@ void win32_enter_syscall(void);
 void win32_leave_syscall(void);
 void win32_disable_interrupt(void);
 void win32_enable_interrupt(void);
+int  win32_close(int);
+int  win32_fclose(FILE*);
 #define Sleep(msec) (void)win32_sleep(msec)
 
 /*

@@ -34,6 +34,10 @@
 #endif
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
+#undef fclose
+#undef close
+#undef setsockopt
+
 #ifndef bool
 #define bool int
 #endif
@@ -1962,7 +1966,7 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 #endif /* USE_INTERRUPT_WINSOCK */
     int file_nfds;
 
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     r = 0;
@@ -2013,7 +2017,7 @@ StartSockets ()
     WORD version;
     WSADATA retdata;
     int ret;
-	int iSockOpt;
+    int iSockOpt;
     
     //
     // initalize the winsock interface and insure that it\'s
@@ -2043,6 +2047,7 @@ StartSockets ()
     interrupted_event = CreateSignal();
     if (!interrupted_event)
 	rb_fatal("Unable to create interrupt event!\n");
+    NtSocketsInitialized = 1;
 }
 
 #undef accept
@@ -2052,7 +2057,7 @@ myaccept (SOCKET s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
 
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = accept (TO_SOCKET(s), addr, addrlen)) == INVALID_SOCKET)
@@ -2067,7 +2072,7 @@ mybind (SOCKET s, struct sockaddr *addr, int addrlen)
 {
     int r;
 
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = bind (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
@@ -2081,7 +2086,7 @@ int
 myconnect (SOCKET s, struct sockaddr *addr, int addrlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = connect (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
@@ -2096,7 +2101,7 @@ int
 mygetpeername (SOCKET s, struct sockaddr *addr, int *addrlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = getpeername (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
@@ -2110,7 +2115,7 @@ int
 mygetsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = getsockname (TO_SOCKET(s), addr, addrlen)) == SOCKET_ERROR)
@@ -2122,7 +2127,7 @@ int
 mygetsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = getsockopt (TO_SOCKET(s), level, optname, optval, optlen)) == SOCKET_ERROR)
@@ -2136,7 +2141,7 @@ int
 myioctlsocket (SOCKET s, long cmd, u_long *argp)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = ioctlsocket (TO_SOCKET(s), cmd, argp)) == SOCKET_ERROR)
@@ -2150,7 +2155,7 @@ int
 mylisten (SOCKET s, int backlog)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = listen (TO_SOCKET(s), backlog)) == SOCKET_ERROR)
@@ -2164,7 +2169,7 @@ int
 myrecv (SOCKET s, char *buf, int len, int flags)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = recv (TO_SOCKET(s), buf, len, flags)) == SOCKET_ERROR)
@@ -2179,7 +2184,7 @@ myrecvfrom (SOCKET s, char *buf, int len, int flags,
 		struct sockaddr *from, int *fromlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = recvfrom (TO_SOCKET(s), buf, len, flags, from, fromlen)) == SOCKET_ERROR)
@@ -2193,7 +2198,7 @@ int
 mysend (SOCKET s, char *buf, int len, int flags)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = send (TO_SOCKET(s), buf, len, flags)) == SOCKET_ERROR)
@@ -2208,7 +2213,7 @@ mysendto (SOCKET s, char *buf, int len, int flags,
 		struct sockaddr *to, int tolen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = sendto (TO_SOCKET(s), buf, len, flags, to, tolen)) == SOCKET_ERROR)
@@ -2222,7 +2227,7 @@ int
 mysetsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = setsockopt (TO_SOCKET(s), level, optname, optval, optlen))
@@ -2237,7 +2242,7 @@ int
 myshutdown (SOCKET s, int how)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = shutdown (TO_SOCKET(s), how)) == SOCKET_ERROR)
@@ -2251,7 +2256,7 @@ SOCKET
 mysocket (int af, int type, int protocol)
 {
     SOCKET s;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((s = socket (af, type, protocol)) == INVALID_SOCKET) {
@@ -2267,7 +2272,7 @@ struct hostent *
 mygethostbyaddr (char *addr, int len, int type)
 {
     struct hostent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = gethostbyaddr (addr, len, type)) == NULL)
@@ -2281,7 +2286,7 @@ struct hostent *
 mygethostbyname (char *name)
 {
     struct hostent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = gethostbyname (name)) == NULL)
@@ -2295,7 +2300,7 @@ int
 mygethostname (char *name, int len)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = gethostname (name, len)) == SOCKET_ERROR)
@@ -2309,7 +2314,7 @@ struct protoent *
 mygetprotobyname (char *name)
 {
     struct protoent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = getprotobyname (name)) == NULL)
@@ -2323,7 +2328,7 @@ struct protoent *
 mygetprotobynumber (int num)
 {
     struct protoent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = getprotobynumber (num)) == NULL)
@@ -2337,7 +2342,7 @@ struct servent *
 mygetservbyname (char *name, char *proto)
 {
     struct servent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = getservbyname (name, proto)) == NULL)
@@ -2351,7 +2356,7 @@ struct servent *
 mygetservbyport (int port, char *proto)
 {
     struct servent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     if ((r = getservbyport (port, proto)) == NULL)
@@ -2995,4 +3000,38 @@ void win32_free_environ(char **env)
 
     while (*t) free(*t++);
     free(env);
+}
+
+int
+win32_fclose(FILE *fp)
+{
+    int fd = fileno(fp);
+    SOCKET sock = TO_SOCKET(fd);
+
+    if (fflush(fp)) return -1;
+    if (!is_socket(sock)) {
+	return fclose(fp);
+    }
+    _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
+    fclose(fp);
+    if (closesocket(sock) == SOCKET_ERROR) {
+	errno = WSAGetLastError();
+	return -1;
+    }
+    return 0;
+}
+
+int
+win32_close(int fd)
+{
+    SOCKET sock = TO_SOCKET(fd);
+
+    if (!is_socket(sock)) {
+	return _close(fd);
+    }
+    if (closesocket(sock) == SOCKET_ERROR) {
+	errno = WSAGetLastError();
+	return -1;
+    }
+    return 0;
 }
