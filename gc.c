@@ -42,7 +42,7 @@ void rb_io_fptr_finalize _((struct OpenFile*));
 # if defined(HAVE_ALLOCA_H)
 #  include <alloca.h>
 # elif !defined(alloca)
-char *alloca();
+void *alloca();
 # endif
 #endif /* __GNUC__ */
 
@@ -1296,11 +1296,13 @@ id2ref(obj, id)
 
     rb_secure(4);
     p0 = ptr = NUM2UINT(id);
-    if (FIXNUM_P(ptr)) return (VALUE)ptr;
-    if (SYMBOL_P(ptr)) return (VALUE)ptr;
     if (ptr == Qtrue) return Qtrue;
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
+    if (FIXNUM_P(ptr)) return (VALUE)ptr;
+    if (SYMBOL_P(ptr) && rb_id2name(SYM2ID((VALUE)ptr)) != 0) {
+	return (VALUE)ptr;
+    }
 
     ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
     if (!is_pointer_to_heap(ptr)) {
