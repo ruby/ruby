@@ -5311,7 +5311,7 @@ rb_feature_p(feature, wait)
     return Qtrue;
 }
 
-static const char *const loadable_ext[] = {
+static const char * const loadable_ext[] = {
     ".rb", DLEXT,
 #ifdef DLEXT2
     DLEXT2,

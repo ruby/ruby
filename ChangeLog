@@ -1,3 +1,8 @@
+Thu Sep  6 03:15:24 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): should check whole ancestors to
+	  avoid duplicate module inclusion.
+
 Thu Sep  6 14:27:54 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/digest.c (rb_digest_base_s_hexdigest): remove a debug
@@ -21,6 +26,11 @@ Thu Sep  6 12:02:49 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 Wed Sep  5 17:41:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/jcode.rb (_regexp_quote): fix quote handling.
+
+Wed Sep  5 20:02:27 2001  Shin'ya Adzumi  <adzumi@denpa.org>
+
+	* string.c (trnext): should check backslash before updating "now"
+	  position.
 
 Mon Sep  3 20:26:08 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

@@ -278,17 +278,14 @@ rb_include_module(klass, module)
 	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
 	    if (BUILTIN_TYPE(p) == T_ICLASS &&
 		RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
-		if (RCLASS(module)->super) {
-		    rb_include_module(p, RCLASS(module)->super);
-		}
-		if (changed) rb_clear_cache();
-		return;
+		goto skip;
 	    }
 	}
 	RCLASS(klass)->super = include_class_new(module, RCLASS(klass)->super);
 	klass = RCLASS(klass)->super;
-	module = RCLASS(module)->super;
 	changed = 1;
+      skip:
+	module = RCLASS(module)->super;
     }
     if (changed) rb_clear_cache();
 }
