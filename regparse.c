@@ -96,7 +96,7 @@ OnigSyntaxType OnigSyntaxJava = {
       ONIG_SYN_OP2_OPTION_PERL | ONIG_SYN_OP2_PLUS_POSSESSIVE_REPEAT |
       ONIG_SYN_OP2_PLUS_POSSESSIVE_INTERVAL | ONIG_SYN_OP2_CCLASS_SET_OP |
       ONIG_SYN_OP2_ESC_V_VTAB | ONIG_SYN_OP2_ESC_U_HEX4 |
-      ONIG_SYN_OP2_ESC_P_CHAR_PROPERTY )
+      ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY )
   , ( SYN_GNU_REGEX_BV | ONIG_SYN_DIFFERENT_LEN_ALT_LOOK_BEHIND )
   , ONIG_OPTION_SINGLELINE
 };
@@ -109,7 +109,9 @@ OnigSyntaxType OnigSyntaxPerl = {
    & ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END )
   , ( ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE |
       ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
-      ONIG_SYN_OP2_ESC_P_CHAR_PROPERTY )
+      ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY |
+      ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT |
+      ONIG_SYN_OP2_CHAR_PROPERTY_PREFIX_IS )
   , SYN_GNU_REGEX_BV
   , ONIG_OPTION_SINGLELINE
 };
@@ -192,26 +194,30 @@ OnigMetaCharTableType OnigMetaCharTable = {
 };
 
 #ifdef USE_VARIABLE_META_CHARS
-extern int onig_set_meta_char(unsigned int what, unsigned int c)
+extern int onig_set_meta_char(unsigned int what, OnigCodePoint code)
 {
+  if (code >= 256) { /* restricted by current implementation. */
+    return ONIGERR_INVALID_ARGUMENT;
+  }
+
   switch (what) {
   case ONIG_META_CHAR_ESCAPE:
-    OnigMetaCharTable.esc = c;
+    OnigMetaCharTable.esc = (UChar )code;
     break;
   case ONIG_META_CHAR_ANYCHAR:
-    OnigMetaCharTable.anychar = c;
+    OnigMetaCharTable.anychar = (UChar )code;
     break;
   case ONIG_META_CHAR_ANYTIME:
-    OnigMetaCharTable.anytime = c;
+    OnigMetaCharTable.anytime = (UChar )code;
     break;
   case ONIG_META_CHAR_ZERO_OR_ONE_TIME:
-    OnigMetaCharTable.zero_or_one_time = c;
+    OnigMetaCharTable.zero_or_one_time = (UChar )code;
     break;
   case ONIG_META_CHAR_ONE_OR_MORE_TIME:
-    OnigMetaCharTable.one_or_more_time = c;
+    OnigMetaCharTable.one_or_more_time = (UChar )code;
     break;
   case ONIG_META_CHAR_ANYCHAR_ANYTIME:
-    OnigMetaCharTable.anychar_anytime = c;
+    OnigMetaCharTable.anychar_anytime = (UChar )code;
     break;
   default:
     return ONIGERR_INVALID_ARGUMENT;
@@ -2574,10 +2580,20 @@ fetch_token_in_cc(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
     case 'p':
     case 'P':
       if (PPEEK == '{' &&
-	  IS_SYNTAX_OP2(syn, ONIG_SYN_OP2_ESC_P_CHAR_PROPERTY)) {
+	  IS_SYNTAX_OP2(syn, ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY)) {
 	PINC;
 	tok->type = TK_CHAR_PROPERTY;
 	tok->u.prop.not = (c == 'P' ? 1 : 0);
+
+	if (IS_SYNTAX_OP2(syn, ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT)) {
+	  int c2;
+	  PFETCH(c2);
+	  if (c2 == '^') {
+	    tok->u.prop.not = (tok->u.prop.not == 0 ? 1 : 0);
+	  }
+	  else
+	    PUNFETCH;
+	}
       }
       break;
 
@@ -3055,10 +3071,20 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
     case 'p':
     case 'P':
       if (PPEEK == '{' &&
-	  IS_SYNTAX_OP2(syn, ONIG_SYN_OP2_ESC_P_CHAR_PROPERTY)) {
+	  IS_SYNTAX_OP2(syn, ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY)) {
 	PINC;
 	tok->type = TK_CHAR_PROPERTY;
 	tok->u.prop.not = (c == 'P' ? 1 : 0);
+
+	if (IS_SYNTAX_OP2(syn, ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT)) {
+	  int c2;
+	  PFETCH(c2);
+	  if (c2 == '^') {
+	    tok->u.prop.not = (tok->u.prop.not == 0 ? 1 : 0);
+	  }
+	  else
+	    PUNFETCH;
+	}
       }
       break;
 
@@ -3483,22 +3509,40 @@ property_name_to_ctype(UChar* p, UChar* end)
       return pb->ctype;
   }
 
-  return ONIGERR_INVALID_CHAR_PROPERTY_NAME;
+  return -1;
 }
 
 static int
 fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
 {
   int ctype;
-  UChar *prev, *p = *src;
-  int c = 0;
+  UChar *prev, *start, *p = *src;
+  int c;
+
+  /* 'IsXXXX' => 'XXXX' */
+  if (!PEND &&
+      IS_SYNTAX_OP2(env->syntax, ONIG_SYN_OP2_CHAR_PROPERTY_PREFIX_IS)) {
+    c = PPEEK;
+    if (c == 'I') {
+      PINC;
+      if (! PEND) {
+	c = PPEEK;
+	if (c == 's')
+	  PINC;
+	else
+	  PUNFETCH;
+      }
+    }
+  }
+
+  start = prev = p;
 
   while (!PEND) {
     prev = p;
     PFETCH(c);
     if (c == '}') {
-      ctype = property_name_to_ctype(*src, prev);
-      if (ctype < 0) return ctype;
+      ctype = property_name_to_ctype(start, prev);
+      if (ctype < 0) break;
 
       *src = p;
       return ctype;
@@ -3507,6 +3551,8 @@ fetch_char_property_to_ctype(UChar** src, UChar* end, ScanEnv* env)
       break;
   }
 
+  onig_scan_env_set_error_string(env, ONIGERR_INVALID_CHAR_PROPERTY_NAME,
+				 *src, prev);
   return ONIGERR_INVALID_CHAR_PROPERTY_NAME;
 }
 

@@ -1,3 +1,8 @@
+Wed Mar 17 00:22:03 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* oniguruma.h: imported Oniguruma 2.2.5.
+	* regparse.c: ditto.
+
 Tue Mar 16 11:14:17  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (fnmatch_helper): File.fnmatch('\.', '.') should return true.

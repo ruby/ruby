@@ -11,7 +11,7 @@
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   2
 #define ONIGURUMA_VERSION_MINOR   2
-#define ONIGURUMA_VERSION_TEENY   4
+#define ONIGURUMA_VERSION_TEENY   5
 
 #ifndef P_
 #if defined(__STDC__) || defined(_WIN32)
@@ -464,7 +464,9 @@ ONIG_EXTERN OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIG_SYN_OP2_ESC_V_VTAB                 (1<<13)  /* \v as VTAB */
 #define ONIG_SYN_OP2_ESC_U_HEX4                 (1<<14)  /* \uHHHH */
 #define ONIG_SYN_OP2_ESC_GNU_BUF_ANCHOR         (1<<15)  /* \`, \' */
-#define ONIG_SYN_OP2_ESC_P_CHAR_PROPERTY        (1<<16)  /* \p{...}, \P{...} */
+#define ONIG_SYN_OP2_ESC_P_BRACE_CHAR_PROPERTY  (1<<16)  /* \p{...}, \P{...} */
+#define ONIG_SYN_OP2_ESC_P_BRACE_CIRCUMFLEX_NOT (1<<17)  /* \p{^..}, \P{^..} */
+#define ONIG_SYN_OP2_CHAR_PROPERTY_PREFIX_IS    (1<<18)  /* \p{IsXDigit} */
 
 /* syntax (behavior) */
 #define ONIG_SYN_CONTEXT_INDEP_ANCHORS           (1<<31) /* not implemented */
@@ -503,7 +505,10 @@ ONIG_EXTERN OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIG_NORMAL                                            0
 #define ONIG_MISMATCH                                         -1
 #define ONIG_NO_SUPPORT_CONFIG                                -2
+
 /* internal error */
+#define ONIGERR_MEMORY                                         -5
+#define ONIGERR_TYPE_BUG                                       -6
 #define ONIGERR_PARSER_BUG                                    -11
 #define ONIGERR_STACK_BUG                                     -12
 #define ONIGERR_UNDEFINED_BYTECODE                            -13
@@ -558,8 +563,11 @@ ONIG_EXTERN OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIGERR_NEVER_ENDING_RECURSION                       -221
 #define ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY        -222
 #define ONIGERR_INVALID_CHAR_PROPERTY_NAME                   -223
+#define ONIGERR_INVALID_WIDE_CHAR_VALUE                      -400
+#define ONIGERR_TOO_BIG_WIDE_CHAR_VALUE                      -401
+
 /* errors related to thread */
-#define ONIGERR_OVER_THREAD_PASS_LIMIT_COUNT                 -1001
+#define ONIGERR_OVER_THREAD_PASS_LIMIT_COUNT                -1001
 
 
 /* must be smaller than BIT_STATUS_BITS_NUM (unsigned int * 8) */
@@ -706,7 +714,7 @@ void onig_set_syntax_behavior P_((OnigSyntaxType* syntax, unsigned int behavior)
 ONIG_EXTERN
 void onig_set_syntax_options P_((OnigSyntaxType* syntax, OnigOptionType options));
 ONIG_EXTERN
-int onig_set_meta_char P_((unsigned int what, unsigned int c));
+int onig_set_meta_char P_((unsigned int what, OnigCodePoint code));
 ONIG_EXTERN
 int onig_end P_((void));
 ONIG_EXTERN
