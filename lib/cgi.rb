@@ -943,6 +943,9 @@ convert string charset, and set language to "ja".
 
     def [](key)
       value = @params[key][0]
+      def value.to_ary
+        [self.dup]
+      end
       def value.[](key)
         $stderr.puts <<END
 CAUTION! cgi['key'] == cgi.params['key'][0] If want Array, use cgi.params['key']

@@ -1,3 +1,8 @@
+Sat Dec 28 03:09:58 2002  Wakou Aoyama  <wakou@ruby-lang.org>
+
+	* lib/cgi.rb (CGI#[]): improvement. thanks to Kazuhiro NISHIYAMA
+	  <zn@mbf.nifty.com>
+
 Sat Dec 28 00:34:03 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* {win32,bcc32}/Makefile.sub: remove `=' from --make-flags options.
