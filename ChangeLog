@@ -1,3 +1,22 @@
+Fri Jun 22 18:08:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): no mvalue_to_svalue conversion here.
+
+	* eval.c (massign): takes svalue, convert it to mvalue inside.
+
+	* eval.c (rb_eval): parameters for yield/return are always
+	  svalues now.
+
+	* eval.c (svalue_to_mvalue): more strict conversion.
+
+	* eval.c (mvalue_to_svalue): ditto.
+
+Fri Jun 22 17:12:23 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (new_size): prime hash size enabled.
+
+	* ext/socket/socket.c (Init_socket): SO_* constants added.
+
 Tue Jun 19 22:24:07 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* gc.c (rb_setjmp): avoid GCC 3.0 warnings.

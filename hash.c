@@ -668,7 +668,8 @@ static VALUE
 rb_hash_inspect(hash)
     VALUE hash;
 {
-    if (RHASH(hash)->tbl->num_entries == 0) return rb_str_new2("{}");
+    if (RHASH(hash)->tbl == 0 || RHASH(hash)->tbl->num_entries == 0)
+	return rb_str_new2("{}");
     if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
     return rb_protect_inspect(inspect_hash, hash, 0);
 }
