@@ -68,6 +68,7 @@ sample/demos-en/hscale.rb
 sample/demos-en/icon.rb
 sample/demos-en/image1.rb
 sample/demos-en/image2.rb
+sample/demos-en/image3.rb
 sample/demos-en/images/earth.gif
 sample/demos-en/images/earthris.gif
 sample/demos-en/images/face.xbm
@@ -144,6 +145,7 @@ sample/demos-jp/hscale.rb
 sample/demos-jp/icon.rb
 sample/demos-jp/image1.rb
 sample/demos-jp/image2.rb
+sample/demos-jp/image3.rb
 sample/demos-jp/images/earth.gif
 sample/demos-jp/images/earthris.gif
 sample/demos-jp/images/face.bmp
