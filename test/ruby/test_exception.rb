@@ -94,4 +94,96 @@ class TestException < Test::Unit::TestCase
        })
 
   end
+
+  def test_else
+    begin
+      assert(true)
+    rescue
+      assert(false)
+    else
+      assert(true)
+    end
+
+    begin
+      assert(true)
+      raise
+      assert(false)
+    rescue
+      assert(true)
+    else
+      assert(false)
+    end
+
+    begin
+      assert(true)
+      begin
+	assert(true)
+      rescue
+	assert(false)
+      else
+	assert(true)
+      end
+      assert(true)
+    rescue
+      assert(false)
+    else
+      assert(true)
+    end
+
+    begin
+      assert(true)
+      begin
+	assert(true)
+	raise
+	assert(false)
+      rescue
+	assert(true)
+      else
+	assert(false)
+      end
+      assert(true)
+    rescue
+      assert(false)
+    else
+      assert(true)
+    end
+
+    begin
+      assert(true)
+      begin
+	assert(true)
+      rescue
+	assert(false)
+      else
+	assert(true)
+      end
+      assert(true)
+      raise
+      assert(false)
+    rescue
+      assert(true)
+    else
+      assert(false)
+    end
+
+    begin
+      assert(true)
+      begin
+	assert(true)
+	raise
+	assert(false)
+      rescue
+	assert(true)
+      else
+	assert(false)
+      end
+      assert(true)
+      raise
+      assert(false)
+    rescue
+      assert(true)
+    else
+      assert(false)
+    end
+  end
 end

@@ -1,3 +1,7 @@
+Sun Oct  5 03:03:20 2003  akira yamada  <akira@ruby-lang.org>
+
+	* test/ruby/test_exception.rb (test_else): added.
+
 Sun Oct  5 02:12:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb: changed assertion messages to rely more
