@@ -907,7 +907,7 @@ syck_loader_initialize( self )
     rb_hash_aset(families, rb_str_new2( YAML_DOMAIN ), rb_hash_new());
     rb_hash_aset(families, rb_str_new2( RUBY_DOMAIN ), rb_hash_new());
 
-       return self;
+    return self;
 }
 
 /*
@@ -1286,13 +1286,12 @@ syck_emitter_new(argc, argv, class)
 {
 	VALUE pobj, options, init_argv[1];
     SyckEmitter *emitter = syck_new_emitter();
+    rb_scan_args(argc, argv, "01", &options);
+
+	pobj = Data_Wrap_Struct( class, syck_mark_emitter, syck_free_emitter, emitter );
     syck_emitter_ignore_id( emitter, Qnil );
     syck_emitter_handler( emitter, rb_syck_output_handler );
-
     emitter->bonus = (void *)rb_str_new2( "" );
-
-    rb_scan_args(argc, argv, "01", &options);
-	pobj = Data_Wrap_Struct( class, syck_mark_emitter, syck_free_emitter, emitter );
 
     if ( ! rb_obj_is_instance_of( options, rb_cHash ) )
     {

@@ -1,3 +1,8 @@
+Wed Jun 30 02:41:10 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_emitter_new): set buffer after
+	  Data_Wrap_Struct to avoid possible GC. [ruby-talk:104835]
+
 Tue Jun 29 10:31:19 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval_cmd, rb_thread_trap_eval): restore safe level.
