@@ -1,3 +1,7 @@
+Sat Mar 28 20:40:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_06.
+
 Sat Mar 28 16:07:11 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* io.c (io_closed): should not cause exception fot closed IO.
