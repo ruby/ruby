@@ -51,6 +51,12 @@ class Delegator
     raise NotImplementedError, "need to define `__getobj__'"
   end
 
+  def marshal_dump
+    __getobj__
+  end
+  def marshal_load(obj)
+    initialize(obj)
+  end
 end
 
 class SimpleDelegator<Delegator
