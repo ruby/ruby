@@ -1,3 +1,7 @@
+Sat Nov  9 16:06:57 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/tcltklib/stubs.c: should include "util.h" for ruby_strdup.
+
 Fri Nov  8 22:11:56 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.8 release candidate.

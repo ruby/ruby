@@ -4,6 +4,7 @@
 #include "ruby.h"
 
 #if defined _WIN32 || defined __CYGWIN__
+# include "util.h"
 # include <windows.h>
   typedef HINSTANCE DL_HANDLE;
 # define DL_OPEN LoadLibrary
