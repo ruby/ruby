@@ -2829,6 +2829,14 @@ enum string_type {
     str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND),
 };
 
+static void
+dispose_string(str)
+    VALUE str;
+{
+    free(RSTRING(str)->ptr);
+    rb_gc_force_recycle(str);
+}
+
 static int
 tokadd_string(func, term, paren)
     int func, term, paren;
@@ -3044,7 +3052,7 @@ heredoc_restore(here)
     lex_p = lex_pbeg + here->nd_nth;
     heredoc_end = ruby_sourceline;
     ruby_sourceline = nd_line(here);
-    rb_gc_force_recycle(here->nd_lit);
+    dispose_string(here->nd_lit);
     rb_gc_force_recycle((VALUE)here);
 }
 
@@ -3099,7 +3107,7 @@ here_document(here)
 		str = rb_str_new(RSTRING(line)->ptr, RSTRING(line)->len);
 	    lex_p = lex_pend;
 	    if (nextc() == -1) {
-		if (str) rb_gc_force_recycle(str);
+		if (str) dispose_string(str);
 		goto error;
 	    }
 	} while (!whole_match_p(eos, len, indent));

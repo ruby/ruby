@@ -1,10 +1,16 @@
+Sun Dec 15 11:43:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (dispose_string): dispose String object.
+
+	* parse.y (heredoc_restore, here_document): fix memory leak.
+
 Sat Dec 14 14:25:00 2002  Takaaki Uematsu <mail@uema2.cjb.net>
 
-    * wince/sys : add stat.c, stat.h, timeb.c, timeb.h,
-                  types.h, utime.c, utime.h
-    * wince/dll.mak : object file name changed.
-    * wince/io.c : add empty dup2().
-    * wince/io.h : add dup2 definition.
+	* wince/sys : add stat.c, stat.h, timeb.c, timeb.h,
+		      types.h, utime.c, utime.h
+	* wince/dll.mak : object file name changed.
+	* wince/io.c : add empty dup2().
+	* wince/io.h : add dup2 definition.
 
 Sat Dec 14 01:51:29 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
