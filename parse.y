@@ -4473,6 +4473,28 @@ fixpos(node, orig)
     nd_set_line(node, nd_line(orig));
 }
 
+static void
+parser_warning(node, mesg)
+    NODE *node;
+    const char *mesg;
+{
+    int line = ruby_sourceline;
+    ruby_sourceline = nd_line(node);
+    rb_warning(mesg);
+    ruby_sourceline = line;
+}
+
+static void
+parser_warn(node, mesg)
+    NODE *node;
+    const char *mesg;
+{
+    int line = ruby_sourceline;
+    ruby_sourceline = nd_line(node);
+    rb_warn(mesg);
+    ruby_sourceline = line;
+}
+
 static NODE*
 block_append(head, tail)
     NODE *head, *tail;
@@ -4489,7 +4511,7 @@ block_append(head, tail)
 	goto again;
       case NODE_LIT:
       case NODE_STR:
-	rb_warning("unused literal ignored");
+	parser_warning(h, "unused literal ignored");
 	return tail;
       default:
 	end = NEW_BLOCK(head);
@@ -4511,7 +4533,7 @@ block_append(head, tail)
 	  case NODE_NEXT:
 	  case NODE_REDO:
 	  case NODE_RETRY:
-	    rb_warning("statement not reached");
+	    parser_warning(nd, "statement not reached");
 	    break;
 
 	case NODE_NEWLINE:
@@ -4927,7 +4949,7 @@ value_expr0(node)
 	  case NODE_MODULE:
 	  case NODE_DEFN:
 	  case NODE_DEFS:
-	    rb_warning("void value expression");
+	    parser_warning(node, "void value expression");
 	    return Qfalse;
 
 	  case NODE_RETURN:
@@ -5130,7 +5152,7 @@ assign_in_cond(node)
       case NODE_TRUE:
       case NODE_FALSE:
 	/* reports always */
-	rb_warn("found = in conditional, should be ==");
+	parser_warn(node->nd_value, "found = in conditional, should be ==");
 	return 1;
 
       case NODE_DSTR:
@@ -5143,7 +5165,7 @@ assign_in_cond(node)
     }
 #if 0
     if (assign_in_cond(node->nd_value) == 0) {
-	rb_warning("assignment in condition");
+	parser_warning(node->nd_value, "assignment in condition");
     }
 #endif
     return 1;
@@ -5158,17 +5180,19 @@ e_option_supplied()
 }
 
 static void
-warn_unless_e_option(str)
+warn_unless_e_option(node, str)
+    NODE *node;
     const char *str;
 {
-    if (!e_option_supplied()) rb_warn(str);
+    if (!e_option_supplied()) parser_warn(node, str);
 }
 
 static void
-warning_unless_e_option(str)
+warning_unless_e_option(node, str)
+    NODE *node;
     const char *str;
 {
-    if (!e_option_supplied()) rb_warning(str);
+    if (!e_option_supplied()) parser_warning(node, str);
 }
 
 static NODE *cond0();
@@ -5190,7 +5214,7 @@ range_op(node)
 	type = nd_type(node);
     }
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
-	warn_unless_e_option("integer literal in conditional range");
+	warn_unless_e_option(node, "integer literal in conditional range");
 	return call_op(node,tEQ,1,NEW_GVAR(rb_intern("$.")));
     }
     return node;
@@ -5235,7 +5259,7 @@ cond0(node)
 
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
-	warning_unless_e_option("regex literal in condition");
+	warning_unless_e_option(node, "regex literal in condition");
 	local_cnt('_');
 	local_cnt('~');
 	return NEW_MATCH2(node, NEW_GVAR(rb_intern("$_")));
@@ -5257,24 +5281,24 @@ cond0(node)
 	    int b = literal_node(node->nd_beg);
 	    int e = literal_node(node->nd_end);
 	    if ((b == 1 && e == 1) || (b + e >= 2 && RTEST(ruby_verbose))) {
-		rb_warn("range literal in condition");
+		parser_warn(node, "range literal in condition");
 	    }
 	}
 	break;
 
       case NODE_DSYM:
-	rb_warning("literal in condition");
+	parser_warning(node, "literal in condition");
 	break;
 
       case NODE_LIT:
 	if (TYPE(node->nd_lit) == T_REGEXP) {
-	    warn_unless_e_option("regex literal in condition");
+	    warn_unless_e_option(node, "regex literal in condition");
 	    nd_set_type(node, NODE_MATCH);
 	    local_cnt('_');
 	    local_cnt('~');
 	}
 	else {
-	    rb_warning("literal in condition");
+	    parser_warning(node, "literal in condition");
 	}
       default:
 	break;

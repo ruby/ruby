@@ -1,3 +1,9 @@
+Mon Apr 21 17:44:34 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (block_append, value_expr0, assign_in_cond,
+	  warn_unless_e_option, warning_unless_e_option, range_op,
+	  cond0): adjust line number in warning.
+
 Mon Apr 21 00:47:42 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* sample/test.rb: avoid the MSVCRT *printf problem(float).
