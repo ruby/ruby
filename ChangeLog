@@ -1,3 +1,9 @@
+Tue Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: original nkf.c rev:1.40
+
+	* ext/nkf/test.rb: add test for mime encode/decode
+
 Sat Nov 20 01:45:04 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* test/xmlrpc/test_webrick_server.rb : move `requrie "webrick/https"'
