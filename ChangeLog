@@ -1,3 +1,7 @@
+Mon Mar  8 21:38:18 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (add_header): remove warning. [ruby-dev:23170]
+
 Mon Mar  8 21:09:39  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (range): Cancel change for incomplete '['. More discussion

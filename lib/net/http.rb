@@ -1045,7 +1045,7 @@ module Net # :nodoc:
     #   p request.get_fields('X-My-Header')   #=> ["a", "b", "c"]
     #
     def add_header(key, val)
-      if header.key?(key.downcase)
+      if @header.key?(key.downcase)
         @header[key.downcase].concat Array(val)
       else
         @header[key.downcase] = Array(val).dup
