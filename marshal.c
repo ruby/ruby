@@ -1050,7 +1050,7 @@ r_object0(arg, proc, ivp, extmod)
 	      format_error:
 		rb_raise(rb_eArgError, "dump format error (user class)");
 	    }
-	    if (TYPE(v) == T_MODULE || !RTEST(rb_funcall(c, '<', 1, RBASIC(v)->klass))) {
+	    if (TYPE(v) == T_MODULE || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
 		VALUE tmp = rb_obj_alloc(c);
 
 		if (TYPE(v) != TYPE(tmp)) goto format_error;
