@@ -632,6 +632,10 @@ rb_str_rindex(argc, argv, str)
 
     if (rb_scan_args(argc, argv, "11", &sub, &position) == 2) {
 	pos = NUM2INT(position);
+        if (pos < 0) {
+	    pos += RSTRING(str)->len;
+	    if (pos < 0) return Qnil;
+        }
 	if (pos > RSTRING(str)->len) pos = RSTRING(str)->len;
     }
     else {

@@ -5394,6 +5394,9 @@ Init_eval()
     rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);
     rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval, -1);
 
+    rb_undef_method(rb_cClass, "include");
+    rb_undef_method(rb_cClass, "module_function");
+
     rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, 1);
     rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, 1);
     rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);

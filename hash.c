@@ -22,8 +22,8 @@
 char *strchr _((char*,char));
 #endif
 
-#ifdef USE_CWGUSI
-char* strdup(const char*);
+#ifndef strdup
+char *strdup();
 #endif
 
 #define HASH_FREEZE   FL_USER1

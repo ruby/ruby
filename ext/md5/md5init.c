@@ -106,6 +106,7 @@ Init_md5()
     cMD5 = rb_define_class("MD5", rb_cObject);
 
     rb_define_singleton_method(cMD5, "new", md5_new, -1);
+    rb_define_singleton_method(cMD5, "md5", md5_new, -1);
 
     rb_define_method(cMD5, "update", md5_update, 1);
     rb_define_method(cMD5, "digest", md5_digest, 0);

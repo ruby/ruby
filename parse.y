@@ -2093,6 +2093,8 @@ tokadd_escape()
 	    int numlen;
 
 	    scan_hex(lex_p, 2, &numlen);
+	    tokadd('\\');
+	    tokadd('x');
 	    while (numlen--)
 		tokadd(nextc());
 	}

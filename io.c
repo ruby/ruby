@@ -382,6 +382,32 @@ rb_io_to_io(io)
 
 /* reading functions */
 
+static size_t
+io_fread(ptr, len, f)
+    char *ptr;
+    size_t len;
+    FILE *f;
+{
+    size_t n = len;
+    int c;
+
+    while (n--) {
+	if (!READ_DATA_PENDING(f)) {
+	    rb_thread_wait_fd(fileno(f));
+	}
+	TRAP_BEG;
+	c = getc(f);
+	TRAP_END;
+	if (c == EOF) {
+	    *ptr = '\0';
+	    break;
+	}
+	*ptr++ = c;
+    }
+
+    return len - n - 1;
+}
+
 #ifndef S_ISREG
 #   define S_ISREG(m) ((m & S_IFMT) == S_IFREG)
 #endif
@@ -421,11 +447,9 @@ read_all(port)
 	}
     }
     str = rb_str_new(0, siz);
+    READ_CHECK(fptr->f);
     for (;;) {
-	READ_CHECK(fptr->f);
-	TRAP_BEG;
-	n = fread(RSTRING(str)->ptr+bytes, 1, siz-bytes, fptr->f);
-	TRAP_END;
+	n = io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
 	if (n == 0 && bytes == 0) {
 	    if (feof(fptr->f)) return Qnil;
 	    rb_sys_fail(fptr->path);
@@ -440,32 +464,6 @@ read_all(port)
     OBJ_TAINT(str);
 
     return str;
-}
-
-static size_t
-io_fread(ptr, len, f)
-    char *ptr;
-    size_t len;
-    FILE *f;
-{
-    size_t n = len;
-    int c;
-
-    while (n--) {
-	if (!READ_DATA_PENDING(f)) {
-	    rb_thread_wait_fd(fileno(f));
-	}
-	TRAP_BEG;
-	c = getc(f);
-	TRAP_END;
-	if (c == EOF) {
-	    *ptr = '\0';
-	    break;
-	}
-	*ptr++ = c;
-    }
-
-    return len - n - 1;
 }
 
 static VALUE
@@ -1727,6 +1725,7 @@ rb_io_reopen(io, nfile)
     mode = rb_io_mode_string(fptr);
     fd = fileno(fptr->f);
     if (fd < 3) {
+	clearerr(fptr->f);
 	/* need to keep stdio */
 	if (dup2(fileno(orig->f), fd) < 0)
 	    rb_sys_fail(orig->path);
@@ -3086,8 +3085,6 @@ static VALUE
 argf_eof()
 {
     if (init_p == 0 && !next_argv())
-	return Qtrue;
-    if (next_p == -1)
 	return Qtrue;
     if (TYPE(current_file) != T_FILE) {
 	return argf_forward();

@@ -58,10 +58,13 @@ char *strrchr _((const char*,const char));
 #include <sys/stat.h>
 
 #ifdef USE_CWGUSI
- #include "macruby_missing.h"
- extern int fileno(FILE *stream);
- extern int utimes();
- char* strdup(char*);
+#include "macruby_missing.h"
+extern int fileno(FILE *stream);
+extern int utimes();
+#endif
+
+#ifndef strdup
+char *strdup();
 #endif
 
 #ifdef __EMX__

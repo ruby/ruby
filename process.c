@@ -864,8 +864,9 @@ proc_getpriority(obj, which, who)
     iwhich = NUM2INT(which);
     iwho   = NUM2INT(who);
 
+    errno = 0;
     prio = getpriority(iwhich, iwho);
-    if (prio < 0) rb_sys_fail(0);
+    if (errno) rb_sys_fail(0);
     return INT2FIX(prio);
 #else
     rb_notimplement();

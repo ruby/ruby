@@ -907,7 +907,9 @@ rb_reg_match_method(re, str)
     VALUE result = rb_reg_match(re, str);
 
     if (NIL_P(result)) return Qnil;
-    return rb_backref_get();
+    result = rb_backref_get();
+    rb_match_busy(result, Qtrue);
+    return result;
 }
 
 static VALUE
