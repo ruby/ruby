@@ -378,6 +378,19 @@ module URI
 
 =begin
 
+--- URI::join(str[, str, ...])
+
+=end
+  def self.join(*str)
+    u = self.parse(str[0])
+    str[1 .. -1].each do |x|
+      u = u.merge(x)
+    end
+    u
+  end
+
+=begin
+
 --- URI::extract(str[, schemes])
 
 =end

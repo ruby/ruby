@@ -1,3 +1,13 @@
+Thu Feb 07 13:44:08 2002  akira yamada  <akira@arika.org>
+
+	* uri/common.rb (URI::join): new method.
+
+	* uri/generic.rb (Generic#merge): URI.parse("http://a/")+"b" should
+	  return "http://a/b" but it returned "http://a//b".
+
+	* uri/generic.rb (Generic#check_path): corrected error message, 
+	  @path -> v
+
 Wed Feb  6 17:18:54 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* configure.in: keep old config.h unless changed.

@@ -494,7 +494,7 @@ Object
       else
 	if v && v != '' && ABS_PATH !~ v && REL_PATH !~ v
 	  raise InvalidComponentError, 
-	    "bad component(expected relative path component): #{@path}"
+	    "bad component(expected relative path component): #{v}"
 	end
       end
 
@@ -688,7 +688,7 @@ Object
 	end
 
 	# RFC2396, Section 5.2, 6), a)
-	base_path.pop if !base_path.last.empty?
+	base_path.pop unless base_path.size == 1
 
 	# RFC2396, Section 5.2, 6), c)
  	# RFC2396, Section 5.2, 6), d)
@@ -719,7 +719,7 @@ Object
 	    #   valid absolute path
 	    # end
 	    base_path << x
-	    base_path += tmp
+	    tmp.each {|t| base_path << t}
 	    add_trailer_slash = false
 	    break
 	  end
