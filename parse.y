@@ -4088,12 +4088,12 @@ gettable(id)
 	return NEW_FALSE();
     }
     else if (id == k__FILE__) {
-	return NEW_STR(rb_str_new2(ruby_sourcefile));
-    }
-    else if (id == k__LINE__) {
 	VALUE f = rb_str_new2(ruby_sourcefile);
 	OBJ_FREEZE(f);
 	return NEW_STR(f);
+    }
+    else if (id == k__LINE__) {
+	return NEW_LIT(INT2FIX(ruby_sourceline));
     }
     else if (is_local_id(id)) {
 	if (dyna_in_block() && rb_dvar_defined(id)) return NEW_DVAR(id);

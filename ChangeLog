@@ -1,6 +1,6 @@
 Mon Dec 10 01:06:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* parse.y (gettable): should freeze __LINE__ string.
+	* parse.y (gettable): should freeze __FILE__ string.
 
 Sun Dec  9 23:00:54 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 	* matrix.rb: Vector#* bug. reported from Massimiliano Mirra
