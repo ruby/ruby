@@ -1,6 +1,10 @@
-Sat Mar 28 00:47:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Sat Mar 28 16:07:11 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
-	* ruby.c (ruby_prog_init): `site_ruby' added to load_path.
+	* io.c (io_closed): should not cause exception fot closed IO.
+
+	* string.c (str_tr): returned nil for success.
+
+Sat Mar 28 00:47:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (f_local_variables): new method to return an array of
  	  local variable names.
@@ -12,6 +16,10 @@ Sat Mar 28 00:47:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  current scope.
 
 Fri Mar 27 13:49:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_05.
+
+	* ruby.c (ruby_prog_init): `site_ruby' added to load_path.
 
 	* ruby.c (ruby_prog_init): load-path order changed.  Paths in
  	  the RUBYLIB environment variable comes first in non-tainted
@@ -64,7 +72,7 @@ Fri Mar 20 16:40:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
  	  nil if it does not modify the string.
 
 	* string.c (str_sub_iter_s): should check last pattern since it
-	  may be matched to null.
+ 	  may be matched to null.
 
 Thu Mar 19 13:48:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

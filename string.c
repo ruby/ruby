@@ -1824,7 +1824,7 @@ str_tr(str, src, repl)
     VALUE val = tr_trans(str_dup(str), src, repl, 0);
 
     if (NIL_P(val)) return str;
-    return Qnil;
+    return val;
 }
 
 static void

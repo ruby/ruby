@@ -739,8 +739,8 @@ io_closed(io)
 {
     OpenFile *fptr;
 
-    GetOpenFile(io, fptr);
-    return fptr->f?FALSE:TRUE;
+    fptr = RFILE(io)->fptr;
+    return (fptr->f || fptr->f2)?FALSE:TRUE;
 }
 
 static VALUE
