@@ -98,9 +98,7 @@ module Mapping
 
   def self._obj2soap(obj, registry, type = nil)
     if referent = Thread.current[:SOAPMarshalDataKey][obj.__id__]
-      soap_obj = SOAPReference.new
-      soap_obj.__setobj__(referent)
-      soap_obj
+      SOAPReference.new(referent)
     else
       registry.obj2soap(obj.class, obj, type)
     end

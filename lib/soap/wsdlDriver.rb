@@ -12,6 +12,7 @@ require 'xsd/qname'
 require 'soap/element'
 require 'soap/baseData'
 require 'soap/streamHandler'
+require 'soap/mimemessage'
 require 'soap/mapping'
 require 'soap/mapping/wsdlRegistry'
 require 'soap/rpc/rpc'
@@ -212,6 +213,7 @@ class WSDLDriver
       method.type = XSD::QName.new	# Request should not be typed.
       req_header = nil
       req_body = SOAPBody.new(method)
+      req_env = SOAPEnvelope.new(req_header, req_body)
 
       if @wiredump_file_base
 	@streamhandler.wiredump_file_base =
@@ -221,19 +223,19 @@ class WSDLDriver
       begin
 	opt = create_options
 	opt[:decode_typemap] = @rpc_decode_typemap
-	res_header, res_body = invoke(req_header, req_body, op_info, opt)
-	if res_body.fault
-	  raise SOAP::FaultError.new(res_body.fault)
+	res_env = invoke(req_env, op_info, opt)
+	if res_env.body.fault
+	  raise SOAP::FaultError.new(res_env.body.fault)
 	end
       rescue SOAP::FaultError => e
 	Mapping.fault2exception(e)
       end
 
-      ret = res_body.response ?
-	Mapping.soap2obj(res_body.response, @mapping_registry) : nil
+      ret = res_env.body.response ?
+	Mapping.soap2obj(res_env.body.response, @mapping_registry) : nil
 
-      if res_body.outparams
-	outparams = res_body.outparams.collect { |outparam|
+      if res_env.body.outparams
+	outparams = res_env.body.outparams.collect { |outparam|
   	  Mapping.soap2obj(outparam)
    	}
     	return [ret].concat(outparams)
@@ -249,14 +251,15 @@ class WSDLDriver
       op_info = @operations[name]
       req_header = header_from_obj(header_obj, op_info)
       req_body = body_from_obj(body_obj, op_info)
+      req_env = SOAPEnvelope.new(req_header, req_body)
       opt = create_options
-      res_header, res_body = invoke(req_header, req_body, op_info, opt)
-      if res_body.fault
-	raise SOAP::FaultError.new(res_body.fault)
+      res_env = invoke(req_env, op_info, opt)
+      if res_env.body.fault
+	raise SOAP::FaultError.new(res_env.body.fault)
       end
-      res_body_obj = res_body.response ?
-	Mapping.soap2obj(res_body.response, @mapping_registry) : nil
-      return res_header, res_body_obj
+      res_body_obj = res_env.body.response ?
+	Mapping.soap2obj(res_env.body.response, @mapping_registry) : nil
+      return res_env.header, res_body_obj
     end
 
   private
@@ -269,18 +272,50 @@ class WSDLDriver
       o
     end
 
-    def invoke(req_header, req_body, op_info, opt)
-      send_string = Processor.marshal(req_header, req_body, opt)
+    def invoke(req_env, op_info, opt)
+      opt[:external_content] = nil
+      send_string = Processor.marshal(req_env, opt)
       log(DEBUG) { "invoke: sending string #{ send_string }" }
-      data = @streamhandler.send(send_string, op_info.soapaction)
-      log(DEBUG) { "invoke: received string #{ data.receive_string }" }
-      if data.receive_string.empty?
+      conn_data = StreamHandler::ConnectionData.new(send_string)
+      if ext = opt[:external_content]
+       	mime = MIMEMessage.new
+	ext.each do |k, v|
+	  mime.add_attachment(v.data)
+	end
+	mime.add_part(conn_data.send_string + "\r\n")
+	mime.close
+	conn_data.send_string = mime.content_str
+	conn_data.send_contenttype = mime.headers['content-type'].str
+      end
+      conn_data = @streamhandler.send(conn_data, op_info.soapaction)
+      log(DEBUG) { "invoke: received string #{ conn_data.receive_string }" }
+      if conn_data.receive_string.empty?
 	return nil, nil
       end
-      opt[:charset] = @mandatorycharset ||
-	StreamHandler.parse_media_type(data.receive_contenttype)
-      res_header, res_body = Processor.unmarshal(data.receive_string, opt)
-      return res_header, res_body
+      unmarshal(conn_data, opt)
+    end
+
+    def unmarshal(conn_data, opt)
+      contenttype = conn_data.receive_contenttype
+      if /#{MIMEMessage::MultipartContentType}/i =~ contenttype
+	opt[:external_content] = {}
+	mime = MIMEMessage.parse("Content-Type: " + contenttype,
+	  conn_data.receive_string)
+	mime.parts.each do |part|
+	  value = Attachment.new(part.content)
+	  value.contentid = part.contentid
+	  obj = SOAPAttachment.new(value)
+	  opt[:external_content][value.contentid] = obj if value.contentid
+	end
+	opt[:charset] = @mandatorycharset ||
+	  StreamHandler.parse_media_type(mime.root.headers['content-type'].str)
+	env = Processor.unmarshal(mime.root.content, opt)
+      else
+	opt[:charset] = @mandatorycharset ||
+	::SOAP::StreamHandler.parse_media_type(contenttype)
+	env = Processor.unmarshal(conn_data.receive_string, opt)
+      end
+      env
     end
 
     def header_from_obj(obj, op_info)

@@ -46,14 +46,19 @@ class SOAPHandler < Handler
 
     case data
     when SOAPReference
-      attrs['href'] = '#' << data.refid
+      attrs['href'] = data.refidstr
+      generator.encode_tag(name, attrs)
+    when SOAPExternalReference
+      data.referred
+      attrs['href'] = data.refidstr
       generator.encode_tag(name, attrs)
     when SOAPRawString
       generator.encode_tag(name, attrs)
       generator.encode_rawstring(data.to_s)
     when XSD::XSDString
       generator.encode_tag(name, attrs)
-      generator.encode_string(@charset ? XSD::Charset.encoding_to_xml(data.to_s, @charset) : data.to_s)
+      generator.encode_string(@charset ?
+	XSD::Charset.encoding_to_xml(data.to_s, @charset) : data.to_s)
     when XSD::XSDAnySimpleType
       generator.encode_tag(name, attrs)
       generator.encode_string(data.to_s)
@@ -320,10 +325,9 @@ private
 
   def encode_attr_value(generator, ns, qname, value)
     if value.is_a?(SOAPType)
-      refid = SOAPReference.create_refid(value)
-      value.id = refid
+      ref = SOAPReference.new(value)
       generator.add_reftarget(qname.name, value)
-      '#' + refid
+      ref.refidstr
     else
       value.to_s
     end
@@ -526,7 +530,7 @@ private
 
   def decode_attr_value(ns, qname, value)
     if /\A#/ =~ value
-      o = SOAPReference.new(value)
+      o = SOAPReference.decode(nil, value)
       @refpool << o
       o
     else
@@ -544,16 +548,18 @@ private
     while !@refpool.empty? && count > 0
       @refpool = @refpool.find_all { |ref|
 	o = @idpool.find { |item|
-	  '#' + item.id == ref.refid
+	  item.id == ref.refid
 	}
-	unless o
-	  raise EncodingStyleError.new("Unresolved reference: #{ ref.refid }.")
-	end
 	if o.is_a?(SOAPReference)
-	  true
-	else
+	  true	# link of link.
+	elsif o
 	  ref.__setobj__(o)
 	  false
+	elsif o = ref.rootnode.external_content[ref.refid]
+	  ref.__setobj__(o)
+      	  false
+	else
+	  raise EncodingStyleError.new("Unresolved reference: #{ ref.refid }.")
 	end
       }
       count -= 1

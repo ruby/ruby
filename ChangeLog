@@ -1,3 +1,41 @@
+Tue Jan  6 09:38:27 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* import soap4r/1.5.2;
+
+	* lib/soap/{attachment.rb,baseData.rb,encodingstyle/soapHandler.rb}:
+	  introduce SOAPExternalReference class as a referenct to SOAPEnvelope
+	  external content.
+
+	* lib/soap/{attachment.rb,mimemessage.rb}: great SwA (SOAP messages
+	  with Attachments) support code by Jamie Herre.
+
+	* lib/soap/{element.rb,marshal.rb,parser.rb,processor.rb,
+	  streamHandler.rb,wsdlDriver.rb}: SwA support.
+
+	* lib/soap/rpc/{cgistub.rb,driver.rb,element.rb,proxy.rb,router.rb,
+	  soaplet.rb}: SwA support and refactoring.
+
+	* lib/soap/generator.rb, lib/soap/mapping/mapping.rb: follow
+	  SOAPReference#initialize signature change.
+
+	* lib/soap/mapping/factory.rb: deleted unused methods.
+
+	* lib/soap/mapping/rubytypeFactory.rb: do no ignore case while xsi:type
+	  string <-> Ruby class name matching.
+
+	* lib/xsd/datatypes.rb: check the smallest positive non-zero
+	  single-precision float exactly instead of packing with "f".
+	  [ruby-talk:88822]
+
+	* test/soap/test_basetype.rb, test/xsd/test_xsd.rb: use 1.402e-45, not
+	  1.4e-45.  1.4e-45 is smaller than 2 ** -149...
+
+	* test/soap/test_basetype.rb, test/soap/marshal/test_marshal.rb,
+	  test/xsd/test_xsd.rb: use "(-1.0 / (1.0 / 0.0))" instead of "-0.0".
+
+	* test/soap/test_streamhandler.rb: revert to the previous test that
+	  warns "basic_auth unsupported under net/http".
+
 Tue Jan  6 06:37:53 2004  Dave Thomas  <dave@pragprog.com>
 
 	* bin/rdoc: Add --ri-system switch

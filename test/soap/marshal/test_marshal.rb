@@ -7,6 +7,7 @@ module Marshal
 
 
 module MarshalTestLib
+  NegativeZero = (-1.0 / (1.0 / 0.0))
 
   module Mod1; end
   module Mod2; end
@@ -205,7 +206,7 @@ module MarshalTestLib
     marshal_equal(1.0/0.0)
     marshal_equal(-1.0/0.0)
     marshal_equal(0.0/0.0) {|o| o.nan?}
-    marshal_equal(-1.0 / (1.0 / 0.0)) {|o| 1.0/o}	# -0.0
+    marshal_equal(NegativeZero) {|o| 1.0/o}
   end
 
   def test_float_ivar

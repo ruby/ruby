@@ -68,9 +68,8 @@ public
 
     if @reftarget && !obj.precedents.empty?
       add_reftarget(obj.elename.name, obj)
-      ref = SOAPReference.new
+      ref = SOAPReference.new(obj)
       ref.elename.name = obj.elename.name
-      ref.__setobj__(obj)
       obj.precedents.clear	# Avoid cyclic delay.
       obj.encodingstyle = parent.encodingstyle
       # SOAPReference is encoded here.

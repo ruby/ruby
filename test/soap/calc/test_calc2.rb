@@ -30,6 +30,7 @@ class TestCalc2 < Test::Unit::TestCase
     end
     @endpoint = "http://localhost:#{Port}/"
     @var = SOAP::RPC::Driver.new(@endpoint, 'http://tempuri.org/calcService')
+    @var.wiredump_dev = STDERR if $DEBUG
     @var.add_method('set', 'newValue')
     @var.add_method('get')
     @var.add_method_as('+', 'add', 'rhs')

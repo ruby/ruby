@@ -67,25 +67,25 @@ public
   def do_POST(req, res)
     namespace = parse_soapaction(req.meta_vars['HTTP_SOAPACTION'])
     router = lookup_router(namespace)
-
-    is_fault = false
-
-    charset = ::SOAP::StreamHandler.parse_media_type(req['content-type'])
     begin
-      response_stream, is_fault = router.route(req.body, charset)
+      conn_data = ::SOAP::StreamHandler::ConnectionData.new
+      conn_data.receive_string = req.body
+      conn_data.receive_contenttype = req['content-type']
+      conn_data = router.route(conn_data)
+      if conn_data.is_fault
+	res.status = WEBrick::HTTPStatus::RC_INTERNAL_SERVER_ERROR
+      end
+      res.body = conn_data.send_string
+      res['content-type'] = conn_data.send_contenttype
     rescue Exception => e
-      response_stream = router.create_fault_response(e)
-      is_fault = true
-    end
-
-    res.body = response_stream
-    res['content-type'] = "text/xml; charset=\"#{charset}\""
-    if response_stream.is_a?(IO)
-      res.chunked = true
-    end
-
-    if is_fault
+      conn_data = router.create_fault_response(e)
       res.status = WEBrick::HTTPStatus::RC_INTERNAL_SERVER_ERROR
+      res.body = conn_data.send_string
+      res['content-type'] = conn_data.send_contenttype || "text/xml"
+    end
+
+    if res.body.is_a?(IO)
+      res.chunked = true
     end
   end
 

@@ -180,15 +180,21 @@ private
 
     def invoke(headers, body)
       set_wiredump_file_base(body.elename.name)
-      @proxy.invoke(headers, body)
+      env = @proxy.invoke(headers, body)
+      if env.nil?
+	return nil, nil
+      else
+	return env.header, env.body
+      end
     end
 
     def call(name, *params)
       set_wiredump_file_base(name)
       # Convert parameters: params array => SOAPArray => members array
       params = Mapping.obj2soap(params, @mapping_registry).to_a
-      header, body = @proxy.call(nil, name, *params)
-      raise EmptyResponseError.new("Empty response.") unless body
+      env = @proxy.call(nil, name, *params)
+      raise EmptyResponseError.new("Empty response.") unless env
+      header, body = env.header, env.body
       begin
 	@proxy.check_fault(body)
       rescue SOAP::FaultError => e

@@ -71,6 +71,10 @@ public
       self.faultactor.elename = EleFaultActorName if self.faultactor
       self.detail.elename = EleFaultDetailName if self.detail
     end
+    faultcode.parent = self if faultcode
+    faultstring.parent = self if faultstring
+    faultactor.parent = self if faultactor
+    detail.parent = self if detail
   end
 
   def encode(generator, ns, attrs = {})
@@ -147,6 +151,7 @@ public
     @content = content
     @mustunderstand = mustunderstand
     @encodingstyle = encodingstyle || LiteralNamespace
+    content.parent = self if content
   end
 
   def encode(generator, ns, attrs = {})
@@ -193,14 +198,28 @@ class SOAPEnvelope < XSD::NSDBase
   include SOAPEnvelopeElement
   include SOAPCompoundtype
 
-  attr_accessor :header
-  attr_accessor :body
+  attr_reader :header
+  attr_reader :body
+  attr_reader :external_content
 
   def initialize(header = nil, body = nil)
     super(nil)
     @elename = EleEnvelopeName
     @encodingstyle = nil
     @header = header
+    @body = body
+    @external_content = {}
+    header.parent = self if header
+    body.parent = self if body
+  end
+
+  def header=(header)
+    header.parent = self
+    @header = header
+  end
+
+  def body=(body)
+    body.parent = self
     @body = body
   end
 
@@ -214,6 +233,10 @@ class SOAPEnvelope < XSD::NSDBase
     yield(@body, true)
 
     generator.encode_tag_end(name, true)
+  end
+
+  def to_ary
+    [header, body]
   end
 end
 

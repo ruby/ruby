@@ -33,21 +33,14 @@ class StreamHandler
     attr_accessor :send_contenttype
     attr_accessor :receive_string
     attr_accessor :receive_contenttype
+    attr_accessor :is_fault
 
-    def initialize
-      @send_string = nil
+    def initialize(send_string = nil)
+      @send_string = send_string
       @send_contenttype = nil
       @receive_string = nil
       @receive_contenttype = nil
-      @bag = {}
-    end
-
-    def [](idx)
-      @bag[idx]
-    end
-
-    def []=(idx, value)
-      @bag[idx] = value
+      @is_fault = false
     end
   end
 
@@ -59,7 +52,7 @@ class StreamHandler
 
   def self.parse_media_type(str)
     if /^#{ MediaType }(?:\s*;\s*charset=([^"]+|"[^"]+"))?$/i !~ str
-      raise StreamError.new("Illegal media type.");
+      return nil
     end
     charset = $1
     charset.gsub!(/"/, '') if charset
@@ -96,8 +89,8 @@ public
     "#<#{self.class}:#{endpoint_url}>"
   end
 
-  def send(soap_string, soapaction = nil, charset = @charset)
-    send_post(soap_string, soapaction, charset)
+  def send(conn_data, soapaction = nil, charset = @charset)
+    send_post(conn_data, soapaction, charset)
   end
 
   def reset
@@ -163,25 +156,24 @@ private
     raise NotImplementedError.new
   end
 
-  def send_post(soap_string, soapaction, charset)
-    data = ConnectionData.new
-    data.send_string = soap_string
-    data.send_contenttype = StreamHandler.create_media_type(charset)
+  def send_post(conn_data, soapaction, charset)
+    conn_data.send_contenttype ||= StreamHandler.create_media_type(charset)
 
     if @wiredump_file_base
       filename = @wiredump_file_base + '_request.xml'
       f = File.open(filename, "w")
-      f << soap_string
+      f << conn_data.send_string
       f.close
     end
 
     extra = {}
-    extra['Content-Type'] = data.send_contenttype
+    extra['Content-Type'] = conn_data.send_contenttype
     extra['SOAPAction'] = "\"#{ soapaction }\""
+    send_string = conn_data.send_string
 
     @wiredump_dev << "Wire dump:\n\n" if @wiredump_dev
     begin
-      res = @client.post(@endpoint_url, soap_string, extra)
+      res = @client.post(@endpoint_url, send_string, extra)
     rescue
       @client.reset(@endpoint_url)
       raise
@@ -206,10 +198,9 @@ private
       raise HTTPStreamError.new("#{ res.status }: #{ res.reason }")
     end
 
-    data.receive_string = receive_string
-    data.receive_contenttype = res.contenttype
-
-    return data
+    conn_data.receive_string = receive_string
+    conn_data.receive_contenttype = res.contenttype
+    conn_data
   end
 
   CRLF = "\r\n"

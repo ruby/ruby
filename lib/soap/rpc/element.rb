@@ -43,7 +43,7 @@ class SOAPBody < SOAPStruct
   end
 
   def void?
-    root_node.nil? # || root_node.is_a?(SOAPNil)
+    root_node.nil?
   end
 
   def fault
@@ -113,6 +113,7 @@ class SOAPMethod < SOAPStruct
     params.each do |param, data|
       @inparam[param] = data
       data.elename.name = param
+      data.parent = self
     end
   end
 
@@ -226,6 +227,8 @@ class SOAPMethodResponse < SOAPMethod
   def retval=(retval)
     @retval = retval
     @retval.elename = @retval.elename.dup_name(@retval_name || 'return')
+    retval.parent = self
+    retval
   end
 
   def each

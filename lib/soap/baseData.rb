@@ -64,6 +64,14 @@ public
     @position = nil
     @extraattr = {}
   end
+
+  def rootnode
+    node = self
+    while node = node.parent
+      break if SOAPEnvelope === node
+    end
+    node
+  end
 end
 
 
@@ -117,7 +125,7 @@ public
   attr_accessor :elename
 
   # Override the definition in SOAPBasetype.
-  def initialize(refid = nil)
+  def initialize(obj = nil)
     super()
     @type = XSD::QName.new
     @encodingstyle = nil
@@ -126,8 +134,9 @@ public
     @precedents = []
     @root = false
     @parent = nil
-    @refid = refid
+    @refid = nil
     @obj = nil
+    __setobj__(obj) if obj
   end
 
   def __getobj__
@@ -136,7 +145,7 @@ public
 
   def __setobj__(obj)
     @obj = obj
-    @refid = SOAPReference.create_refid(@obj)
+    @refid = @obj.id || SOAPReference.create_refid(@obj)
     @obj.id = @refid unless @obj.id
     @obj.precedents << self
     # Copies NSDBase information
@@ -159,16 +168,58 @@ public
     end
   end
 
-  def self.decode(elename, refid)
+  def refidstr
+    '#' + @refid
+  end
+
+  def self.create_refid(obj)
+    'id' + obj.__id__.to_s
+  end
+
+  def self.decode(elename, refidstr)
+    if /\A#(.*)\z/ =~ refidstr
+      refid = $1
+    elsif /\Acid:(.*)\z/ =~ refidstr
+      refid = $1
+    else
+      raise ArgumentError.new("illegal refid #{refidstr}")
+    end
     d = super(elename)
     d.refid = refid
     d
   end
+end
 
-  def self.create_refid(obj)
-    'id' << obj.__id__.to_s
+
+class SOAPExternalReference < XSD::NSDBase
+  include SOAPBasetype
+  extend SOAPModuleUtils
+
+  def initialize
+    super()
+    @type = XSD::QName.new
+    @encodingstyle = nil
+    @elename = XSD::QName.new
+    @precedents = []
+    @root = false
+    @parent = nil
+  end
+
+  def referred
+    rootnode.external_content[external_contentid] = self
+  end
+
+  def refidstr
+    'cid:' + external_contentid
+  end
+
+private
+
+  def external_contentid
+    raise NotImplementedError.new
   end
 end
+
 
 class SOAPNil < XSD::XSDNil
   include SOAPBasetype
@@ -362,6 +413,7 @@ public
 
   def []=(idx, data)
     if @array.include?(idx)
+      data.parent = self if data.respond_to?(:parent=)
       @data[@array.index(idx)] = data
     else
       add(idx, data)
@@ -401,6 +453,8 @@ private
     @array.push(name)
     value.elename = value.elename.dup_name(name)
     @data.push(value)
+    value.parent = self if value.respond_to?(:parent=)
+    value
   end
 end
 
@@ -410,22 +464,31 @@ class SOAPElement
   include Enumerable
 
   attr_accessor :encodingstyle
-  attr_accessor :extraattr
+
+  attr_accessor :elename
+  attr_accessor :id
   attr_reader :precedents
+  attr_accessor :root
+  attr_accessor :parent
+  attr_accessor :position
+  attr_accessor :extraattr
 
   attr_accessor :qualified
-  attr_accessor :elename
 
   def initialize(elename, text = nil)
     if !elename.is_a?(XSD::QName)
       elename = XSD::QName.new(nil, elename)
     end
     @encodingstyle = LiteralNamespace
-    @extraattr = {}
+    @elename = elename
+    @id = nil
     @precedents = []
+    @root = false
+    @parent = nil
+    @position = nil
+    @extraattr = {}
 
     @qualified = false
-    @elename = elename
 
     @array = []
     @data = []
@@ -450,6 +513,7 @@ class SOAPElement
 
   def []=(idx, data)
     if @array.include?(idx)
+      data.parent = self if data.respond_to?(:parent=)
       @data[@array.index(idx)] = data
     else
       add(data)
@@ -508,6 +572,8 @@ private
     add_accessor(name)
     @array.push(name)
     @data.push(value)
+    value.parent = self if value.respond_to?(:parent=)
+    value
   end
 
   def add_accessor(name)
@@ -609,6 +675,7 @@ public
     end
 
     @offset = idxary
+    value.parent = self if value.respond_to?(:parent=)
     offsetnext
   end
 

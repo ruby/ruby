@@ -25,20 +25,18 @@ module Processor
   class << self
   public
 
-    def marshal(header, body, opt = {}, io = nil)
-      env = SOAPEnvelope.new(header, body)
+    def marshal(env, opt = {}, io = nil)
       generator = create_generator(opt)
-      generator.generate(env, io)
+      marshalled_str = generator.generate(env, io)
+      unless env.external_content.empty?
+	opt[:external_content] = env.external_content
+      end
+      marshalled_str
     end
 
     def unmarshal(stream, opt = {})
       parser = create_parser(opt)
-      env = parser.parse(stream)
-      if env
-	return env.header, env.body
-      else
-	return nil, nil
-      end
+      parser.parse(stream)
     end
 
     def default_parser_option=(rhs)

@@ -142,9 +142,16 @@ __EOX__
   end
 
   def test_basic_auth
-    # soap4r + basic_auth is not officially supported in ruby/1.8.1 even though
-    # soap4r + basic_auth + http-access2 should run fine.
-    return
+    unless Object.const_defined?('HTTPAccess2')
+      STDERR.puts("basic_auth is not supported under soap4r + net/http for now.")
+      return
+    end
+    str = ""
+    @client.wiredump_dev = str
+    @client.options["protocol.http.basic_auth"] << [@url, "foo", "bar"]
+    assert_nil(@client.do_server_proc)
+    r, h = parse_req_header(str)
+    assert_equal("Basic Zm9vOmJhcg==", h["authorization"])
   end
 
   def test_proxy

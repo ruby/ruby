@@ -37,15 +37,16 @@ module Marshal
       soap_obj = Mapping.obj2soap(obj, mapping_registry)
       body = SOAPBody.new
       body.add(elename, soap_obj)
-      SOAP::Processor.marshal(nil, body, {}, io)
+      env = SOAPEnvelope.new(nil, body)
+      SOAP::Processor.marshal(env, {}, io)
     end
 
     def unmarshal(stream, mapping_registry = MarshalMappingRegistry)
-      header, body = SOAP::Processor.unmarshal(stream)
-      if body.nil?
+      env = SOAP::Processor.unmarshal(stream)
+      if env.nil?
 	raise ArgumentError.new("Illegal SOAP marshal format.")
       end
-      Mapping.soap2obj(body.root_node, mapping_registry)
+      Mapping.soap2obj(env.body.root_node, mapping_registry)
     end
   end
 end
