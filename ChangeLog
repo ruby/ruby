@@ -1,3 +1,8 @@
+Sat Oct 26 04:39:48 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* parse.y (str_extend): pushback() takes one argument, so properly
+	  pass c to it.
+
 Sat Oct 26 04:38:25 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dbm/dbm.c (fdbm_indexes, fdbm_select): add a missing

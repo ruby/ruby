@@ -717,7 +717,7 @@ arg		: lhs '=' arg
 		    }
 		| primary '[' aref_args ']' tOP_ASGN arg
 		    {
-                        NODE *tmp, *args = NEW_LIST($6);
+                        NODE *args = NEW_LIST($6);
 
 			value_expr($6);
 			$3 = list_append($3, NEW_NIL());
@@ -3993,7 +3993,7 @@ str_extend(list, term, paren)
 	    tokadd(c);
 	    c = nextc();
 	    if (!is_identchar(c)) {
-		pushback();
+		pushback(c);
 		goto invalid_interporate;
 	    }
 	    tokadd(c);
