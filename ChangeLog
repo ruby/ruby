@@ -1,3 +1,7 @@
+Wed Feb  6 17:18:54 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* configure.in: keep old config.h unless changed.
+
 Mon Feb  4 15:38:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_class_real): should not follow ICLASS link

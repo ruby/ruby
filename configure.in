@@ -1032,8 +1032,12 @@ if test "$search_path" != ""; then
     AC_DEFINE_UNQUOTED(RUBY_SEARCH_PATH,"$search_path")
 fi
 
-echo "creating config.h"
-tr -d '\015' < confdefs.h > config.h
+if test -f config.h && tr -d '\015' < confdefs.h | cmp -s config.h -; then
+  echo "config.h unchanged"
+else
+  echo "creating config.h"
+  tr -d '\015' < confdefs.h > config.h
+fi
 : > confdefs.h
 
 AC_OUTPUT($FIRSTMAKEFILE Makefile ext/extmk.rb)
