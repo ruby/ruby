@@ -145,34 +145,23 @@ classname(klass)
 
     klass = rb_class_real(klass);
     if (!klass) klass = rb_cObject;
-    if (ROBJECT(klass)->iv_tbl &&
-	!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
-	ID classid = rb_intern("__classid__");
+    if (ROBJECT(klass)->iv_tbl) {
+	if (!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
+	    ID classid = rb_intern("__classid__");
 
-	if (st_lookup(ROBJECT(klass)->iv_tbl, classid, &path)) {
+	    if (!st_lookup(ROBJECT(klass)->iv_tbl, classid, &path)) {
+		return Qnil;
+	    }
 	    path = rb_str_new2(rb_id2name(SYM2ID(path)));
 	    st_insert(ROBJECT(klass)->iv_tbl, classpath, path);
 	    st_delete(RCLASS(klass)->iv_tbl, &classid, 0);
 	}
-    }
-    if (NIL_P(path)) {
-	ID tmppath = rb_intern("__tmp_classpath__");
-
-	path = find_class_path(klass);
-	if (NIL_P(path)) {
-	    if (!RCLASS(klass)->iv_tbl ||
-		!st_lookup(RCLASS(klass)->iv_tbl, tmppath, &path)) {
-		return 0;
-	    }
-	}
-	else if (RCLASS(klass)->iv_tbl) {
-	    st_delete(RCLASS(klass)->iv_tbl, &tmppath, 0);
+	if (TYPE(path) != T_STRING) {
+	    rb_bug("class path is not set properly");
 	}
 	return path;
     }
-    if (TYPE(path) != T_STRING)
-	rb_bug("class path is not set properly");
-    return path;
+    return Qnil;
 }
 
 VALUE
@@ -181,8 +170,8 @@ rb_mod_name(mod)
 {
     VALUE path = classname(mod);
 
-    if (path) return rb_str_dup(path);
-    return rb_str_dup(rb_class_path(mod));
+    if (!NIL_P(path)) return rb_str_dup(path);
+    return rb_str_new(0,0);
 }
 
 VALUE
@@ -191,10 +180,19 @@ rb_class_path(klass)
 {
     VALUE path = classname(klass);
 
-    if (path) return path;
+    if (!NIL_P(path)) return path;
     else {
-	VALUE str;
+	ID tmppath = rb_intern("__tmp_classpath__");
 	char *s = "Class";
+
+	path = find_class_path(klass);
+	if (!NIL_P(path)) {
+	    st_delete(RCLASS(klass)->iv_tbl, &tmppath, 0);
+	    return path;
+	}
+	if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, tmppath, &path)) {
+	    return path;
+	}
 
 	if (TYPE(klass) == T_MODULE) {
 	    if (rb_obj_class(klass) == rb_cModule) {
@@ -204,12 +202,12 @@ rb_class_path(klass)
 		s = rb_class2name(RBASIC(klass)->klass);
 	    }
 	}
-	str = rb_str_new(0, 2 + strlen(s) + 3 + 2 * SIZEOF_LONG + 1);
-	sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", s, klass);
-	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
-	rb_iv_set(klass, "__tmp_classpath__", str);
+	path = rb_str_new(0, 2 + strlen(s) + 3 + 2 * SIZEOF_LONG + 1);
+	sprintf(RSTRING(path)->ptr, "#<%s:0x%lx>", s, klass);
+	RSTRING(path)->len = strlen(RSTRING(path)->ptr);
+	rb_iv_set(klass, "__tmp_classpath__", path);
 
-	return str;
+	return path;
     }
 }
 

@@ -4271,10 +4271,10 @@ yylex()
 	}
 	if (ISDIGIT(c)) {
 	    if (tokidx == 1) {
-		rb_compile_error("`@%c' is not allowable as an instance variable name", c);
+		rb_compile_error("`@%c' is not allowed as an instance variable name", c);
 	    }
 	    else {
-		rb_compile_error("`@@%c' is not allowable as a class variable name", c);
+		rb_compile_error("`@@%c' is not allowed as a class variable name", c);
 	    }
 	}
 	if (!is_identchar(c)) {

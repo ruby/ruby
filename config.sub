@@ -1093,7 +1093,7 @@ case $os in
 		os=-sysv4.2uw
 		;;
 	-gnu/linux*)
-		os=`echo $os | sed -e 's|gnu/linux|linux-gnu|'`
+		os=`echo $os | sed -e 's|gnu/linux|linux|'`
 		;;
 	# First accept the basic system types.
 	# The portable systems comes first.
@@ -1143,7 +1143,7 @@ case $os in
 		os=`echo $os | sed -e 's|mac|macos|'`
 		;;
 	-linux*)
-		os=`echo $os | sed -e 's|linux|linux-gnu|'`
+		os=-linux
 		;;
 	-sunos5*)
 		os=`echo $os | sed -e 's|sunos5|solaris2|'`

@@ -6080,20 +6080,6 @@ rb_obj_call_init(obj, argc, argv)
     POP_ITER();
 }
 
-static VALUE
-top_include(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    rb_secure(4);
-    if (ruby_wrapper) {
-	return rb_mod_include(argc, argv, ruby_wrapper);
-    }
-    else {
-	return rb_mod_include(argc, argv, rb_cObject);
-    }
-}
-
 void
 rb_extend_object(obj, module)
     VALUE obj, module;
@@ -6125,6 +6111,21 @@ rb_obj_extend(argc, argv, obj)
 	rb_funcall(argv[argc], rb_intern("extend_object"), 1, obj);
     }
     return obj;
+}
+
+static VALUE
+top_include(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    rb_secure(4);
+    if (ruby_wrapper) {
+	rb_obj_extend(argc, argv, ruby_top_self);
+	return rb_mod_include(argc, argv, ruby_wrapper);
+    }
+    else {
+	return rb_mod_include(argc, argv, rb_cObject);
+    }
 }
 
 VALUE rb_f_trace_var();
