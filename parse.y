@@ -692,7 +692,7 @@ arg		: lhs '=' arg
 		    {
 			NODE *args = NEW_LIST($6);
 
-			list_append($3, NEW_NIL());
+			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
 			if ($5 == tOROP) {
 			    $5 = 0;
