@@ -109,8 +109,6 @@ static int
 r_eq(a, b)
     VALUE a, b;
 {
-    VALUE r;
-
     if (a == b) return Qtrue;
 
     if (rb_funcall(a, id_cmp, 1, b) == INT2FIX(0))

@@ -55,6 +55,7 @@ shortlen(len, ds)
 
 #define TYPE_UCLASS	'C'
 #define TYPE_OBJECT	'o'
+#define TYPE_DATA      'd'
 #define TYPE_USERDEF	'u'
 #define TYPE_USRMARHAL	'U'
 #define TYPE_FLOAT	'f'
@@ -76,6 +77,7 @@ shortlen(len, ds)
 #define TYPE_LINK	'@'
 
 static ID s_dump, s_load;
+static ID s_dump_data, s_load_data, s_alloc;
 
 struct dump_arg {
     VALUE obj;
@@ -489,6 +491,34 @@ w_object(obj, arg, limit)
 		w_ivar(ROBJECT(obj)->iv_tbl, &c_arg);
 	    }
 	    break;
+
+         case T_DATA:
+           w_byte(TYPE_DATA, arg);
+           {
+               VALUE klass = CLASS_OF(obj);
+               char *path;
+
+               if (FL_TEST(klass, FL_SINGLETON)) {
+                   if (RCLASS(klass)->m_tbl->num_entries > 0 ||
+                       RCLASS(klass)->iv_tbl->num_entries > 1) {
+                       rb_raise(rb_eTypeError, "singleton can't be dumped");
+                   }
+               }
+               path = rb_class2name(klass);
+               w_unique(path, arg);
+           }
+           {
+               VALUE v;
+
+               if (!rb_respond_to(obj, s_dump_data)) {
+                   rb_raise(rb_eTypeError,
+                            "class %s needs to have instance method `_dump_data'",
+                            rb_class2name(CLASS_OF(obj)));
+               }
+               v = rb_funcall(obj, s_dump_data, 0);
+               w_object(v, arg, limit);
+           }
+           break;
 
 	  default:
 	    rb_raise(rb_eTypeError, "can't dump %s",
@@ -1010,6 +1040,30 @@ r_object(arg)
 	}
 	break;
 
+      case TYPE_DATA:
+       {
+           VALUE klass;
+
+           klass = rb_path2class(r_unique(arg));
+           if (!rb_respond_to(klass, s_alloc)) {
+               rb_raise(rb_eTypeError,
+                        "class %s needs to have class method `_alloc'",
+                        rb_class2name(klass));
+           }
+           v = rb_funcall(klass, s_alloc, 0);
+           if (TYPE(v) != T_DATA) {
+               rb_raise(rb_eArgError, "dump format error");
+           }
+           r_regist(v, arg);
+           if (!rb_respond_to(v, s_load_data)) {
+               rb_raise(rb_eTypeError,
+                        "class %s needs to have instance method `_load_data'",
+                        rb_class2name(klass));
+           }
+           rb_funcall(v, s_load_data, 1, r_object(arg));
+       }
+       break;
+
       case TYPE_MODULE_OLD:
         {
 	    char *buf;
@@ -1134,6 +1188,9 @@ Init_marshal()
 
     s_dump = rb_intern("_dump");
     s_load = rb_intern("_load");
+    s_dump_data = rb_intern("_dump_data");
+    s_load_data = rb_intern("_load_data");
+    s_alloc = rb_intern("_alloc");
     rb_define_module_function(rb_mMarshal, "dump", marshal_dump, -1);
     rb_define_module_function(rb_mMarshal, "load", marshal_load, -1);
     rb_define_module_function(rb_mMarshal, "restore", marshal_load, -1);

@@ -1587,7 +1587,7 @@ rb_file_s_basename(argc, argv)
     VALUE *argv;
 {
     VALUE fname, fext, basename;
-    char *name, *p, *ext;
+    char *name, *p, *ext = NULL;
     int f;
 
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
@@ -1998,7 +1998,7 @@ static VALUE
 rb_stat_clone(obj)
     VALUE obj;
 {
-    struct stat st, *nst;
+    struct stat *nst;
 
     VALUE clone;
 
@@ -2403,7 +2403,7 @@ rb_find_file_ext(filep, ext)
     VALUE *filep;
     const char * const *ext;
 {
-    char *path, *e, *found;
+    char *path, *found;
     char *f = RSTRING(*filep)->ptr;
     VALUE fname;
     int i, j;
@@ -2454,10 +2454,9 @@ VALUE
 rb_find_file(path)
     VALUE path;
 {
-    VALUE tmp, fname;
+    VALUE tmp;
     char *f = RSTRING(path)->ptr;
     char *lpath;
-    struct stat st;
 
     if (f[0] == '~') {
 	path = rb_file_s_expand_path(1, &path);

@@ -207,13 +207,6 @@ to_ary(ary)
     return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
-static VALUE
-to_ary_failed(failed)
-    int *failed;
-{
-    *failed = Qtrue;
-}
-
 static VALUE rb_ary_replace _((VALUE, VALUE));
 
 static VALUE

@@ -105,7 +105,6 @@ static void rb_f_END _((void));
 static VALUE rb_f_block_given_p _((void));
 static VALUE block_pass _((VALUE,NODE*));
 static VALUE rb_cMethod;
-static VALUE method_proc _((VALUE));
 static VALUE method_call _((int, VALUE*, VALUE));
 static VALUE rb_cUnboundMethod;
 static VALUE umethod_bind _((VALUE, VALUE));
@@ -117,7 +116,7 @@ static int scope_vmode;
 #define SCOPE_PROTECTED 2
 #define SCOPE_MODFUNC   5
 #define SCOPE_MASK      7
-#define SCOPE_SET(f)  do {scope_vmode=(f);} while(0)
+#define SCOPE_SET(f)  scope_vmode=(f)
 #define SCOPE_TEST(f) (scope_vmode&(f))
 
 int ruby_safe_level = 0;
@@ -440,7 +439,7 @@ rb_method_boundp(klass, id, ex)
     return Qfalse;
 }
 
-static ID init, alloc, eqq, each, aref, aset, match, to_ary, missing;
+static ID init, alloc, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
 static ID __id__, __send__;
 
@@ -507,7 +506,7 @@ struct SCOPE *ruby_scope;
 static struct FRAME *top_frame;
 static struct SCOPE *top_scope;
 
-#define PUSH_FRAME() {			\
+#define PUSH_FRAME() do {		\
     struct FRAME _frame;		\
     _frame.prev = ruby_frame;		\
     _frame.tmp  = 0;			\
@@ -524,7 +523,7 @@ static struct SCOPE *top_scope;
     ruby_sourcefile = _frame.file;	\
     ruby_sourceline = _frame.line;	\
     ruby_frame = _frame.prev;		\
-}
+} while (0)
 
 struct BLOCKTAG {
     struct RBasic super;
@@ -565,7 +564,7 @@ new_blktag()
     return blktag;
 }
 
-#define PUSH_BLOCK(v,b) {		\
+#define PUSH_BLOCK(v,b) do {		\
     struct BLOCK _block;		\
     _block.tag = new_blktag();		\
     _block.var = v;			\
@@ -590,10 +589,10 @@ new_blktag()
    else	if (!(_block.scope->flags & SCOPE_DONT_RECYCLE)) \
        rb_gc_force_recycle((VALUE)_block.tag); \
    ruby_block = _block.prev; 		\
-}
+} while (0)
 
 struct RVarmap *ruby_dyna_vars;
-#define PUSH_VARS() { \
+#define PUSH_VARS() do { \
     struct RVarmap * volatile _old; \
     _old = ruby_dyna_vars; \
     ruby_dyna_vars = 0
@@ -604,7 +603,7 @@ struct RVarmap *ruby_dyna_vars;
            FL_SET(_old, DVAR_DONT_RECYCLE); \
     }\
     ruby_dyna_vars = _old; \
-}
+} while (0)
 
 #define DVAR_DONT_RECYCLE FL_USER2
 
@@ -747,7 +746,7 @@ static struct iter *ruby_iter;
 #define ITER_PRE 1
 #define ITER_CUR 2
 
-#define PUSH_ITER(i) {			\
+#define PUSH_ITER(i) do {		\
     struct iter _iter;			\
     _iter.prev = ruby_iter;		\
     _iter.iter = (i);			\
@@ -755,7 +754,7 @@ static struct iter *ruby_iter;
 
 #define POP_ITER()			\
     ruby_iter = _iter.prev;		\
-}
+} while (0)
 
 struct tag {
     jmp_buf buf;
@@ -769,7 +768,7 @@ struct tag {
 };
 static struct tag *prot_tag;
 
-#define PUSH_TAG(ptag) {		\
+#define PUSH_TAG(ptag) do {		\
     struct tag _tag;			\
     _tag.retval = Qnil;			\
     _tag.frame = ruby_frame;		\
@@ -796,11 +795,11 @@ static struct tag *prot_tag;
     if (_tag.prev)			\
         _tag.prev->retval = _tag.retval;\
     prot_tag = _tag.prev;		\
-}
+} while (0)
 
 #define POP_TMPTAG()			\
     prot_tag = _tag.prev;		\
-}
+} while (0)
 
 #define TAG_RETURN	0x1
 #define TAG_BREAK	0x2
@@ -815,18 +814,18 @@ static struct tag *prot_tag;
 VALUE ruby_class;
 static VALUE ruby_wrapper;	/* security wrapper */
 
-#define PUSH_CLASS() {			\
+#define PUSH_CLASS() do {		\
     VALUE _class = ruby_class
 
 #define POP_CLASS() ruby_class = _class; \
-}
+} while (0)
 
 static NODE *ruby_cref = 0;
 static NODE *top_cref;
 #define PUSH_CREF(c) ruby_cref = rb_node_newnode(NODE_CREF,(c),0,ruby_cref)
 #define POP_CREF() ruby_cref = ruby_cref->nd_next
 
-#define PUSH_SCOPE() {			\
+#define PUSH_SCOPE() do {		\
     volatile int _vmode = scope_vmode;	\
     struct SCOPE * volatile _old;	\
     NEWOBJ(_scope, struct SCOPE);	\
@@ -858,7 +857,7 @@ static void scope_dup _((struct SCOPE *));
     ruby_scope->flags |= SCOPE_NOSTACK;	\
     ruby_scope = _old;			\
     scope_vmode = _vmode;		\
-}
+} while (0)
 
 static VALUE rb_eval _((VALUE,NODE*));
 static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
@@ -1756,7 +1755,7 @@ copy_node_scope(node, rval)
     }\
 } while (0)
 
-#define BEGIN_CALLARGS {\
+#define BEGIN_CALLARGS do {\
     struct BLOCK *tmp_block = ruby_block;\
     if (ruby_iter->iter == ITER_PRE) {\
 	ruby_block = ruby_block->prev;\
@@ -1766,7 +1765,7 @@ copy_node_scope(node, rval)
 #define END_CALLARGS \
     ruby_block = tmp_block;\
     POP_ITER();\
-}
+} while (0)
 
 #define MATCH_DATA *rb_svar(node->nd_cnt)
 
@@ -2152,7 +2151,10 @@ rb_eval(self, n)
     int state;
     volatile VALUE result = Qnil;
 
-#define RETURN(v) { result = (v); goto finish; }
+#define RETURN(v) do { \
+    result = (v); \
+    goto finish; \
+} while (0)
 
   again:
     if (!node) RETURN(Qnil);
@@ -4929,7 +4931,7 @@ eval(self, src, scope, file, line)
     char *file;
     int line;
 {
-    struct BLOCK *data;
+    struct BLOCK *data = NULL;
     volatile VALUE result = Qnil;
     struct SCOPE * volatile old_scope;
     struct BLOCK * volatile old_block;
@@ -5472,7 +5474,6 @@ rb_f_require(obj, fname)
 {
     VALUE feature, tmp;
     char *ext, *ftptr; /* OK */
-    volatile VALUE load;
     int state;
     volatile int safe = ruby_safe_level;
 
@@ -6019,7 +6020,6 @@ Init_eval()
     aref = rb_intern("[]");
     aset = rb_intern("[]=");
     match = rb_intern("=~");
-    to_ary = rb_intern("to_ary");
     missing = rb_intern("method_missing");
     added = rb_intern("method_added");
     singleton_added = rb_intern("singleton_method_added");
@@ -6590,6 +6590,7 @@ block_pass(self, node)
     NODE *node;
 {
     VALUE block = rb_eval(self, node->nd_body);	/* OK */
+    VALUE b;
     struct BLOCK * volatile old_block;
     struct BLOCK _block;
     struct BLOCK *data;
@@ -6604,13 +6605,12 @@ block_pass(self, node)
 	POP_ITER();
 	return result;
     }
-    if (rb_obj_is_kind_of(block, rb_cMethod)) {
-	block = method_proc(block);
-    }
-    else if (!rb_obj_is_proc(block)) {
+    b = rb_check_convert_type(block, T_DATA, "Proc", "to_proc");
+    if (!rb_obj_is_proc(b)) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc)",
 		 rb_class2name(CLASS_OF(block)));
     }
+    block = b;
 
     if (rb_safe_level() >= 1 && OBJ_TAINTED(block)) {
 	if (rb_safe_level() > proc_get_safe_level(block)) {
@@ -8697,8 +8697,10 @@ rb_thread_cleanup()
 	    rb_thread_ready(th);
 	    th->gid = 0;
 	    th->priority = 0;
-	    th->status = THREAD_TO_KILL;
-	    RDATA(th->thread)->dfree = NULL;
+	    if (th != main_thread) {
+		th->status = THREAD_TO_KILL;
+		RDATA(th->thread)->dfree = NULL;
+	    }
 	}
     }
     END_FOREACH(th);

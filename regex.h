@@ -23,8 +23,8 @@
    Last change: May 21, 1993 by t^2  */
 /* modified for Ruby by matz@netlab.co.jp */
 
-#ifndef __REGEXP_LIBRARY
-#define __REGEXP_LIBRARY
+#ifndef REGEX_H
+#define REGEX_H
 
 /* symbol mangling for ruby */
 #ifdef RUBY
@@ -222,4 +222,4 @@ extern void re_free_registers ();
 
 #endif /* __STDC__ */
 
-#endif /* !__REGEXP_LIBRARY */
+#endif /* !REGEX_H */

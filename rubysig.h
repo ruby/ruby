@@ -23,8 +23,9 @@ typedef LONG rb_atomic_t;
 
 /* Windows doesn't allow interrupt while system calls */
 # define TRAP_BEG do {\
-    rb_atomic_t trap_immediate = ATOMIC_SET(rb_trap_immediate, 1);
-# define TRAP_END ATOMIC_SET(rb_trap_immediate, trap_immediate);\
+    rb_atomic_t trap_immediate = ATOMIC_SET(rb_trap_immediate, 1)
+# define TRAP_END\
+	ATOMIC_SET(rb_trap_immediate, trap_immediate);\
 } while (0)
 # define RUBY_CRITICAL(statements) do {\
     win32_enter_critical();\
@@ -41,7 +42,7 @@ typedef int rb_atomic_t;
 
 # define TRAP_BEG do {\
     int trap_immediate = rb_trap_immediate;\
-    rb_trap_immediate = 1;
+    rb_trap_immediate = 1
 # define TRAP_END rb_trap_immediate = trap_immediate;\
 } while (0)
 
@@ -55,9 +56,12 @@ typedef int rb_atomic_t;
 EXTERN rb_atomic_t rb_trap_immediate;
 
 EXTERN int rb_prohibit_interrupt;
-#define DEFER_INTS {rb_prohibit_interrupt++;}
-#define ALLOW_INTS {rb_prohibit_interrupt--; CHECK_INTS;}
-#define ENABLE_INTS {rb_prohibit_interrupt--;}
+#define DEFER_INTS (rb_prohibit_interrupt++)
+#define ALLOW_INTS do {\
+    rb_prohibit_interrupt--;\
+    CHECK_INTS;\
+} while (0)
+#define ENABLE_INTS (rb_prohibit_interrupt--)
 
 VALUE rb_with_disable_interrupt _((VALUE(*)(ANYARGS),VALUE));
 
@@ -68,23 +72,28 @@ EXTERN int rb_thread_critical;
 void rb_thread_schedule _((void));
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
 EXTERN int rb_thread_pending;
-# define CHECK_INTS if (!rb_prohibit_interrupt) {\
-    if (rb_trap_pending) rb_trap_exec();\
-    if (rb_thread_pending && !rb_thread_critical) rb_thread_schedule();\
-}
+# define CHECK_INTS do {\
+    if (!rb_prohibit_interrupt) {\
+	if (rb_trap_pending) rb_trap_exec();\
+	if (rb_thread_pending && !rb_thread_critical)\
+	    rb_thread_schedule();\
+    }\
+} while (0)
 #else
 /* pseudo preemptive thread switching */
 EXTERN int rb_thread_tick;
 #define THREAD_TICK 500
-#define CHECK_INTS if (!rb_prohibit_interrupt) {\
-    if (rb_trap_pending) rb_trap_exec();\
-    if (!rb_thread_critical) {\
-	if (rb_thread_tick-- <= 0) {\
-	    rb_thread_tick = THREAD_TICK;\
-	    rb_thread_schedule();\
+#define CHECK_INTS do {\
+    if (!rb_prohibit_interrupt) {\
+	if (rb_trap_pending) rb_trap_exec();\
+	if (!rb_thread_critical) {\
+	    if (rb_thread_tick-- <= 0) {\
+		rb_thread_tick = THREAD_TICK;\
+		rb_thread_schedule();\
+	    }\
 	}\
     }\
-}
+} while (0)
 #endif
 
 #endif

@@ -293,7 +293,6 @@ str_copy(str, clone)
     int clone;
 {
     VALUE str2;
-    VALUE klass;
     int flags;
 
     StringValue(str);
@@ -528,16 +527,18 @@ rb_str_resize(str, len)
     VALUE str;
     long len;
 {
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+	
     if (len != RSTRING(str)->len) {
 	rb_str_modify(str);
 
-	if (len >= 0) {
-	    if (RSTRING(str)->len < len || RSTRING(str)->len - len > 1024) {
-		RESIZE_CAPA(str, len);
-	    }
-	    RSTRING(str)->len = len;
-	    RSTRING(str)->ptr[len] = '\0';	/* sentinel */
+	if (RSTRING(str)->len < len || RSTRING(str)->len - len > 1024) {
+	    RESIZE_CAPA(str, len);
 	}
+	RSTRING(str)->len = len;
+	RSTRING(str)->ptr[len] = '\0';	/* sentinel */
     }
     return str;
 }
@@ -548,7 +549,7 @@ rb_str_buf_cat(str, ptr, len)
     const char *ptr;
     long len;
 {
-    long i, capa, total;
+    long capa, total;
 
     if (FL_TEST(str, ELTS_SHARED)) {
 	rb_str_modify(str);
@@ -582,8 +583,6 @@ rb_str_cat(str, ptr, len)
     const char *ptr;
     long len;
 {
-    long i, capa;
-
     rb_str_modify(str);
     if (len > 0) {
 	if (!FL_TEST(str, ELTS_SHARED) && !FL_TEST(str, STR_ASSOC)) {
@@ -615,7 +614,7 @@ VALUE
 rb_str_buf_append(str, str2)
     VALUE str, str2;
 {
-    long i, capa, len;
+    long capa, len;
 
     if (FL_TEST(str, ELTS_SHARED)) {
 	rb_str_modify(str);
@@ -641,7 +640,7 @@ VALUE
 rb_str_append(str, str2)
     VALUE str, str2;
 {
-    long i, capa, len;
+    long len;
 
     StringValue(str2);
     rb_str_modify(str);

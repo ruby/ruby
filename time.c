@@ -1153,9 +1153,11 @@ time_zone(time)
     VALUE time;
 {
     struct time_object *tobj;
+#if !defined(HAVE_TM_ZONE) && (!defined(HAVE_TZNAME) || !defined(HAVE_DAYLIGHT))
     char buf[64];
     int len;
-
+#endif
+    
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
 	time_get_tm(time, tobj->gmt);

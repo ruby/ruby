@@ -472,7 +472,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| primary_value '[' aref_args ']' tOP_ASGN command_call
 		    {
-                        NODE *tmp, *args = NEW_LIST($6);
+                        NODE *args = NEW_LIST($6);
 
 			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
@@ -836,7 +836,7 @@ arg		: lhs '=' arg
 		    }
 		| primary_value '[' aref_args ']' tOP_ASGN arg
 		    {
-                        NODE *tmp, *args = NEW_LIST($6);
+                        NODE *args = NEW_LIST($6);
 
 			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
@@ -5203,46 +5203,46 @@ static struct {
     ID token;
     char *name;
 } op_tbl[] = {
-    tDOT2,	"..",
-    tDOT3,	"...",
-    '+',	"+",
-    '-',	"-",
-    '+',	"+(binary)",
-    '-',	"-(binary)",
-    '*',	"*",
-    '/',	"/",
-    '%',	"%",
-    tPOW,	"**",
-    tUPLUS,	"+@",
-    tUMINUS,	"-@",
-    tUPLUS,	"+(unary)",
-    tUMINUS,	"-(unary)",
-    '|',	"|",
-    '^',	"^",
-    '&',	"&",
-    tCMP,	"<=>",
-    '>',	">",
-    tGEQ,	">=",
-    '<',	"<",
-    tLEQ,	"<=",
-    tEQ,	"==",
-    tEQQ,	"===",
-    tNEQ,	"!=",
-    tMATCH,	"=~",
-    tNMATCH,	"!~",
-    '!',	"!",
-    '~',	"~",
-    '!',	"!(unary)",
-    '~',	"~(unary)",
-    '!',	"!@",
-    '~',	"~@",
-    tAREF,	"[]",
-    tASET,	"[]=",
-    tLSHFT,	"<<",
-    tRSHFT,	">>",
-    tCOLON2,	"::",
-    '`',	"`",
-    0,		0,
+    {tDOT2,	".."},
+    {tDOT3,	"..."},
+    {'+',	"+"},
+    {'-',	"-"},
+    {'+',	"+(binary)"},
+    {'-',	"-(binary)"},
+    {'*',	"*"},
+    {'/',	"/"},
+    {'%',	"%"},
+    {tPOW,	"**"},
+    {tUPLUS,	"+@"},
+    {tUMINUS,	"-@"},
+    {tUPLUS,	"+(unary)"},
+    {tUMINUS,	"-(unary)"},
+    {'|',	"|"},
+    {'^',	"^"},
+    {'&',	"&"},
+    {tCMP,	"<=>"},
+    {'>',	">"},
+    {tGEQ,	">="},
+    {'<',	"<"},
+    {tLEQ,	"<="},
+    {tEQ,	"=="},
+    {tEQQ,	"==="},
+    {tNEQ,	"!="},
+    {tMATCH,	"=~"},
+    {tNMATCH,	"!~"},
+    {'!',	"!"},
+    {'~',	"~"},
+    {'!',	"!(unary)"},
+    {'~',	"~(unary)"},
+    {'!',	"!@"},
+    {'~',	"~@"},
+    {tAREF,	"[]"},
+    {tASET,	"[]="},
+    {tLSHFT,	"<<"},
+    {tRSHFT,	">>"},
+    {tCOLON2,	"::"},
+    {'`',	"`"},
+    {0,	0}
 };
 
 static st_table *sym_tbl;

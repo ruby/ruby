@@ -66,22 +66,19 @@ static void run_final();
 #endif
 
 static unsigned long malloc_memories = 0;
+static VALUE nomem_error;
 
-static void
-mem_error(mesg)
-    char *mesg;
+void
+rb_memerror()
 {
     static int recurse = 0;
 
-    if (rb_safe_level() >= 4) {
-	rb_raise(rb_eNoMemError, mesg);
+    if (recurse > 0 && rb_safe_level() < 4) {
+	fprintf(stderr, "[FATAL] failed to allocate memory\n");
+	exit(1);
     }
-    if (recurse == 0) {
-	recurse++;
-	rb_fatal(mesg);
-    }
-    fprintf(stderr, "[FATAL] failed to allocate memory\n");
-    exit(1);
+    recurse++;
+    rb_exc_raise(nomem_error);
 }
 
 void *
@@ -104,10 +101,7 @@ ruby_xmalloc(size)
 	rb_gc();
 	RUBY_CRITICAL(mem = malloc(size));
 	if (!mem) {
-	    if (size >= 10 * 1024 * 1024) {
-		mem_error("tried to allocate too big memory");
-	    }
-	    mem_error("failed to allocate memory");
+	    rb_memerror();
 	}
     }
 
@@ -144,10 +138,7 @@ ruby_xrealloc(ptr, size)
 	rb_gc();
 	RUBY_CRITICAL(mem = realloc(ptr, size));
 	if (!mem) {
-	    if (size >= 10 * 1024 * 1024) {
-		rb_raise(rb_eNoMemError, "tried to re-allocate too big memory");
-	    }
-	    mem_error("failed to allocate memory(realloc)");
+	    rb_memerror();
         }
     }
 
@@ -287,11 +278,11 @@ add_heap()
 	RUBY_CRITICAL(heaps = (heaps_used>0)?
 			(RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE*)):
 			(RVALUE**)malloc(heaps_length*sizeof(RVALUE*)));
-	if (heaps == 0) mem_error("heaps: can't alloc memory");
+	if (heaps == 0) rb_memerror();
 	RUBY_CRITICAL(heaps_limits = (heaps_used>0)?
 			(int*)realloc(heaps_limits, heaps_length*sizeof(int)):
 			(int*)malloc(heaps_length*sizeof(int)));
-	if (heaps_limits == 0) mem_error("heaps_limits: can't alloc memory");
+	if (heaps_limits == 0) rb_memerror();
     }
 
     for (;;) {
@@ -299,7 +290,7 @@ add_heap()
 	heaps_limits[heaps_used] = heap_slots;
 	if (p == 0) {
 	    if (heap_slots == HEAP_MIN_SLOTS) {
-		mem_error("add_heap: can't alloc memory");
+		rb_memerror();
 	    }
 	    heap_slots = HEAP_MIN_SLOTS;
 	    continue;
@@ -396,8 +387,6 @@ int
 ruby_stack_length(p)
     VALUE **p;
 {
-    int ret;
-
     SET_STACK_END;
     if (p) *p = STACK_END;
     return STACK_LENGTH;
@@ -1558,4 +1547,7 @@ Init_GC()
     finalizers = rb_ary_new();
 
     source_filenames = st_init_strtable();
+
+    nomem_error = rb_exc_new(rb_eNoMemError, "failed to allocate memory");
+    rb_global_variable(&nomem_error);
 }

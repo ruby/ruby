@@ -265,7 +265,7 @@ io_write(io, str)
 {
     OpenFile *fptr;
     FILE *f;
-    int n;
+    long n;
 
     rb_secure(4);
     if (TYPE(str) != T_STRING)
@@ -284,7 +284,7 @@ io_write(io, str)
 #ifdef __human68k__
     {
 	register char *ptr = RSTRING(str)->ptr;
-	n = (int)RSTRING(str)->len;
+	n = RSTRING(str)->len;
 	while (--n >= 0)
 	    if (fputc(*ptr++, f) == EOF)
 		break;
@@ -305,7 +305,7 @@ io_write(io, str)
 	fptr->mode |= FMODE_WBUF;
     }
 
-    return INT2FIX(n);
+    return LONG2FIX(n);
 }
 
 VALUE
@@ -613,8 +613,7 @@ remain_size(fptr)
 {
     struct stat st;
     off_t siz = BUFSIZ;
-    long bytes = 0;
-    int n;
+    off_t pos;
 
     if (feof(fptr->f)) return 0;
     if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)
@@ -623,8 +622,6 @@ remain_size(fptr)
 #endif
 	)
     {
-	off_t pos;
-
 	pos = ftello(fptr->f);
 	if (st.st_size > pos && pos >= 0) {
 	    siz = st.st_size - pos + 1;
@@ -643,14 +640,14 @@ read_all(fptr, siz)
 {
     VALUE str;
     long bytes = 0;
-    int n;
+    long n;
 
     if (feof(fptr->f)) return Qnil;
     READ_CHECK(fptr->f);
     if (!siz) siz = BUFSIZ;
     str = rb_tainted_str_new(0, siz);
     for (;;) {
-	n = io_fread(RSTRING(str)->ptr+bytes, (long)siz-bytes, fptr->f);
+	n = io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
 	if (n == 0 && bytes == 0) {
 	    if (feof(fptr->f)) return Qnil;
 	    rb_sys_fail(fptr->path);
@@ -1003,7 +1000,7 @@ rb_io_readlines(argc, argv, io)
     VALUE io;
 {
     VALUE line, ary;
-    VALUE rs, str;
+    VALUE rs;
     OpenFile *fptr;
 
     if (argc == 0) {
@@ -1452,16 +1449,18 @@ rb_io_mode_flags(mode)
 	rb_raise(rb_eArgError, "illegal access mode %s", mode);
     }
 
-    if (*m == 'b') {
-	flags |= FMODE_BINMODE;
-	m++;
+    while (*m) {
+        switch (*m++) {
+        case 'b':
+            flags |= FMODE_BINMODE;
+            break;
+        case '+':
+            flags |= FMODE_READWRITE;
+            break;
+        default:
+            goto error;
+        }
     }
-
-    if (*m == '+') {
-	flags |= FMODE_READWRITE;
-	if (m[1] != 0) goto error;
-    }
-    else if (*m != 0) goto error;
 
     return flags;
 }
@@ -1470,7 +1469,7 @@ static int
 rb_io_modenum_flags(mode)
     int mode;
 {
-    int flags;
+    int flags = 0;
 
     switch (mode & (O_RDONLY|O_WRONLY|O_RDWR)) {
       case O_RDONLY:
@@ -1515,18 +1514,20 @@ rb_io_mode_modenum(mode)
 	rb_raise(rb_eArgError, "illegal access mode %s", mode);
     }
 
-    if (*m == 'b') {
+    while (*m) {
+        switch (*m++) {
+        case 'b':
 #ifdef O_BINARY
-	flags |= O_BINARY;
+            flags |= O_BINARY;
 #endif
-	m++;
+            break;
+        case '+':
+            flags |= O_RDWR;
+            break;
+        default:
+            goto error;
+        }
     }
-
-    if (*m == '+') {
-	flags |= O_RDWR;
-	if (m[1] != 0) goto error;
-    }
-    else if (*m != 0) goto error;
 
     return flags;
 }
@@ -3554,8 +3555,6 @@ argf_readchar()
 static VALUE
 argf_eof()
 {
-    int first = first_p;
-
     if (!next_argv()) return Qtrue;
     if (next_p == 1) {
 	return Qtrue;

@@ -69,8 +69,6 @@ fc_i(key, value, res)
     VALUE value;
     struct fc_result *res;
 {
-    VALUE path;
-    
     if (!rb_is_const_id(key)) return ST_CONTINUE;
 
     if (value == res->klass) {
@@ -1150,8 +1148,7 @@ rb_const_get(klass, id)
 		      rb_id2name(id),
 		      RSTRING(rb_class_path(klass))->ptr);
     }
-    else {
-      global_uninitialized:
+    else { /* global_uninitialized */
 	rb_name_error(id, "uninitialized constant %s",rb_id2name(id));
     }
     return Qnil;		/* not reached */

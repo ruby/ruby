@@ -720,9 +720,9 @@ is_in_list(c, b)
     else
       j = k;
   }
-  if (i < size && EXTRACT_MBC(&b[i*8]) <= c
-      && ((unsigned char)c != '\n' && (unsigned char)c != '\0'))
+  if (i < size && EXTRACT_MBC(&b[i*8]) <= c)
     return 1;
+
   return 0;
 }
 
@@ -832,7 +832,7 @@ print_partial_compiled_pattern(start, end)
 	  unsigned bit;
 	  unsigned char map_byte = p[c];
 
-	  putchar ('/');
+	  putchar('/');
 
 	  for (bit = 0; bit < BYTEWIDTH; bit++)
 	    if (map_byte & (1 << bit))
@@ -840,10 +840,10 @@ print_partial_compiled_pattern(start, end)
 	}
 	p += mcnt;
 	mcnt = EXTRACT_UNSIGNED_AND_INCR(p);
-	printf("/");
+	putchar('/');
 	while (mcnt--) {
 	  print_mbc(EXTRACT_MBC_AND_INCR(p));
-	  printf("-");
+	  putchar('-');
 	  print_mbc(EXTRACT_MBC_AND_INCR(p));
 	}
 	break;

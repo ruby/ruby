@@ -66,7 +66,7 @@ extern "C" {
 #endif
 
 #if SIZEOF_LONG != SIZEOF_VOIDP
----->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
+# error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
 typedef unsigned long VALUE;
 typedef unsigned long ID;
@@ -271,11 +271,11 @@ char *rb_str2cstr _((VALUE,int*));
 
 VALUE rb_newobj _((void));
 #define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()
-#define OBJSETUP(obj,c,t) {\
+#define OBJSETUP(obj,c,t) do {\
     RBASIC(obj)->flags = (t);\
     RBASIC(obj)->klass = (c);\
     if (rb_safe_level() >= 3) FL_SET(obj, FL_TAINT);\
-}
+} while (0)
 #define CLONESETUP(clone,obj) do {\
     OBJSETUP(clone,rb_singleton_class_clone(RBASIC(obj)->klass),RBASIC(obj)->flags);\
     rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);\
@@ -365,9 +365,8 @@ typedef void (*RUBY_DATA_FUNC) _((void*));
 
 VALUE rb_data_object_alloc _((VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
 
-#define Data_Wrap_Struct(klass,mark,free,sval) (\
-    rb_data_object_alloc(klass,sval,(RUBY_DATA_FUNC)mark,(RUBY_DATA_FUNC)free)\
-)
+#define Data_Wrap_Struct(klass,mark,free,sval)\
+    rb_data_object_alloc(klass,sval,(RUBY_DATA_FUNC)mark,(RUBY_DATA_FUNC)free)
 
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
     sval = ALLOC(type),\
@@ -375,10 +374,10 @@ VALUE rb_data_object_alloc _((VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
     Data_Wrap_Struct(klass,mark,free,sval)\
 )
 
-#define Data_Get_Struct(obj,type,sval) {\
+#define Data_Get_Struct(obj,type,sval) do {\
     Check_Type(obj, T_DATA); \
     sval = (type*)DATA_PTR(obj);\
-}
+} while (0)
 
 struct RStruct {
     struct RBasic basic;

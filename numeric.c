@@ -153,7 +153,7 @@ num_remainder(x, y)
 {
     VALUE z = rb_funcall(x, '%', 1, y);
 
-    if ((!RTEST(rb_equal(z, INT2FIX(0)))) &&
+    if ((!rb_equal(z, INT2FIX(0))) &&
 	((RTEST(rb_funcall(x, '<', 1, INT2FIX(0))) &&
 	  RTEST(rb_funcall(y, '>', 1, INT2FIX(0)))) ||
 	 (RTEST(rb_funcall(x, '>', 1, INT2FIX(0))) &&
@@ -184,7 +184,7 @@ static VALUE
 num_zero_p(num)
     VALUE num;
 {
-    if (RTEST(rb_equal(num, INT2FIX(0)))) {
+    if (rb_equal(num, INT2FIX(0))) {
 	return Qtrue;
     }
     return Qfalse;
@@ -760,6 +760,59 @@ num_truncate(num)
     VALUE num;
 {
     return flo_truncate(rb_Float(num));
+}
+
+static VALUE
+num_step(argc, argv, from)
+    int argc;
+    VALUE *argv;
+    VALUE from;
+{
+    VALUE to, step;
+    VALUE i = from;
+    ID cmp;
+
+    if (rb_scan_args(argc, argv, "11", &to, &step) == 1) {
+	step = INT2FIX(1);
+    }
+    else if (rb_equal(step, INT2FIX(0))) {
+	rb_raise(rb_eArgError, "step cannot be 0");
+    }
+
+    if (FIXNUM_P(from) && FIXNUM_P(to) && FIXNUM_P(step)) {
+	long i, end, diff;
+
+	i = FIX2LONG(from);
+	end = FIX2LONG(to);
+	diff = FIX2LONG(step);
+
+	if (diff > 0) {
+	    while (i <= end) {
+		rb_yield(INT2FIX(i));
+		i += diff;
+	    }
+	}
+	else {
+	    while (i >= end) {
+		rb_yield(INT2FIX(i));
+		i += diff;
+	    }
+	}
+	return from;
+    }
+
+    if (RTEST(rb_funcall(step, '>', 1, INT2FIX(0)))) {
+	cmp = '>';
+    }
+    else {
+	cmp = '<';
+    }
+    for (;;) {
+	if (RTEST(rb_funcall(i, cmp, 1, to))) break;
+	rb_yield(i);
+	i = rb_funcall(i, '+', 1, step);
+    }
+    return from;
 }
 
 long
@@ -1452,12 +1505,22 @@ static VALUE
 int_upto(from, to)
     VALUE from, to;
 {
-    VALUE i = from;
+    if (FIXNUM_P(from) && FIXNUM_P(to)) {
+	long i, end;
 
-    for (;;) {
-	if (RTEST(rb_funcall(i, '>', 1, to))) break;
-	rb_yield(i);
-	i = rb_funcall(i, '+', 1, INT2FIX(1));
+	end = FIX2LONG(to);
+	for (i = FIX2LONG(from); i <= end; i++) {
+	    rb_yield(INT2FIX(i));
+	}
+    }
+    else {
+	VALUE i = from;
+
+	for (;;) {
+	    if (RTEST(rb_funcall(i, '>', 1, to))) break;
+	    rb_yield(i);
+	    i = rb_funcall(i, '+', 1, INT2FIX(1));
+	}
     }
     return from;
 }
@@ -1466,37 +1529,22 @@ static VALUE
 int_downto(from, to)
     VALUE from, to;
 {
-    VALUE i = from;
+    if (FIXNUM_P(from) && FIXNUM_P(to)) {
+	long i, end;
 
-    for (;;) {
-	if (RTEST(rb_funcall(i, '<', 1, to))) break;
-	rb_yield(i);
-	i = rb_funcall(i, '-', 1, INT2FIX(1));
-    }
-    return from;
-}
-
-static VALUE
-int_step(from, to, step)
-    VALUE from, to, step;
-{
-    VALUE i = from;
-    ID cmp;
-
-    if (rb_equal(step, INT2FIX(0))) {
-	rb_raise(rb_eArgError, "step cannot be 0");
-    }
-
-    if (RTEST(rb_funcall(step, '>', 1, INT2FIX(0)))) {
-	cmp = '>';
+	end = FIX2LONG(to);
+	for (i=FIX2LONG(from); i >= end; i--) {
+	    rb_yield(INT2FIX(i));
+	}
     }
     else {
-	cmp = '<';
-    }
-    for (;;) {
-	if (RTEST(rb_funcall(i, cmp, 1, to))) break;
-	rb_yield(i);
-	i = rb_funcall(i, '+', 1, step);
+	VALUE i = from;
+
+	for (;;) {
+	    if (RTEST(rb_funcall(i, '<', 1, to))) break;
+	    rb_yield(i);
+	    i = rb_funcall(i, '-', 1, INT2FIX(1));
+	}
     }
     return from;
 }
@@ -1505,93 +1553,22 @@ static VALUE
 int_dotimes(num)
     VALUE num;
 {
-    VALUE i = INT2FIX(0);
+    if (FIXNUM_P(num)) {
+	long i, end;
 
-    for (;;) {
-	if (!RTEST(rb_funcall(i, '<', 1, num))) break;
-	rb_yield(i);
-	i = rb_funcall(i, '+', 1, INT2FIX(1));
-    }
-    return num;
-}
-
-static VALUE
-fix_upto(from, to)
-    VALUE from, to;
-{
-    long i, end;
-
-    if (!FIXNUM_P(to)) return int_upto(from, to);
-    end = FIX2LONG(to);
-    for (i = FIX2LONG(from); i <= end; i++) {
-	rb_yield(INT2FIX(i));
-    }
-
-    return from;
-}
-
-VALUE
-rb_fix_upto(from, to)
-    VALUE from, to;
-{
-    return fix_upto(from, to);
-}
-
-static VALUE
-fix_downto(from, to)
-    VALUE from, to;
-{
-    long i, end;
-
-    if (!FIXNUM_P(to)) return int_downto(from, to);
-    end = FIX2LONG(to);
-    for (i=FIX2LONG(from); i >= end; i--) {
-	rb_yield(INT2FIX(i));
-    }
-
-    return from;
-}
-
-static VALUE
-fix_step(from, to, step)
-    VALUE from, to, step;
-{
-    long i, end, diff;
-
-    if (!FIXNUM_P(to) || !FIXNUM_P(step))
-	return int_step(from, to, step);
-
-    i = FIX2LONG(from);
-    end = FIX2LONG(to);
-    diff = FIX2LONG(step);
-
-    if (diff == 0) {
-	rb_raise(rb_eArgError, "step cannot be 0");
-    }
-    if (diff > 0) {
-	while (i <= end) {
+	end = FIX2LONG(num);
+	for (i=0; i<end; i++) {
 	    rb_yield(INT2FIX(i));
-	    i += diff;
 	}
     }
     else {
-	while (i >= end) {
-	    rb_yield(INT2FIX(i));
-	    i += diff;
+	VALUE i = INT2FIX(0);
+
+	for (;;) {
+	    if (!RTEST(rb_funcall(i, '<', 1, num))) break;
+	    rb_yield(i);
+	    i = rb_funcall(i, '+', 1, INT2FIX(1));
 	}
-    }
-    return from;
-}
-
-static VALUE
-fix_dotimes(num)
-    VALUE num;
-{
-    long i, end;
-
-    end = FIX2LONG(num);
-    for (i=0; i<end; i++) {
-	rb_yield(INT2FIX(i));
     }
     return num;
 }
@@ -1643,6 +1620,7 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "ceil", num_ceil, 0);
     rb_define_method(rb_cNumeric, "round", num_round, 0);
     rb_define_method(rb_cNumeric, "truncate", num_truncate, 0);
+    rb_define_method(rb_cNumeric, "step", num_step, -1);
 
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
     rb_undef_method(CLASS_OF(rb_cInteger), "allocate");
@@ -1651,7 +1629,6 @@ Init_Numeric()
     rb_define_method(rb_cInteger, "integer?", int_int_p, 0);
     rb_define_method(rb_cInteger, "upto", int_upto, 1);
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
-    rb_define_method(rb_cInteger, "step", int_step, 2);
     rb_define_method(rb_cInteger, "times", int_dotimes, 0);
     rb_include_module(rb_cInteger, rb_mPrecision);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
@@ -1703,13 +1680,7 @@ Init_Numeric()
     rb_define_method(rb_cFixnum, ">>", fix_rshift, 1);
 
     rb_define_method(rb_cFixnum, "to_f", fix_to_f, 0);
-
     rb_define_method(rb_cFixnum, "size", fix_size, 0);
-
-    rb_define_method(rb_cFixnum, "upto", fix_upto, 1);
-    rb_define_method(rb_cFixnum, "downto", fix_downto, 1);
-    rb_define_method(rb_cFixnum, "step", fix_step, 2);
-    rb_define_method(rb_cFixnum, "times", fix_dotimes, 0);
     rb_define_method(rb_cFixnum, "zero?", fix_zero_p, 0);
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);

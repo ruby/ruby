@@ -90,8 +90,6 @@ rb_memcmp(p1, p2, len)
     char *p1, *p2;
     long len;
 {
-    int tmp;
-
     if (!ruby_ignorecase) {
 	return memcmp(p1, p2, len);
     }
@@ -230,7 +228,7 @@ rb_reg_expr_str(str, s, len)
 	    need_escape = 1;
 	    break;
 	}
-	p++;
+	p += mbclen(*p);
     }
     if (!need_escape) {
 	rb_str_buf_cat(str, s, len);
@@ -238,13 +236,7 @@ rb_reg_expr_str(str, s, len)
     else {
 	p = s; 
 	while (p<pend) {
-	    if (*p == '\\') {
-		rb_str_buf_cat(str, p++, 1);
-		if (p<pend) {
-		    rb_str_buf_cat(str, p, 1);
-		}
-	    }
-	    else if (*p == '/') {
+	    if (*p == '/' && (s == p || p[-1] != '\\')) {
 		char c = '\\';
 		rb_str_buf_cat(str, &c, 1);
 		rb_str_buf_cat(str, p, 1);
@@ -257,35 +249,14 @@ rb_reg_expr_str(str, s, len)
 	    else if (ISPRINT(*p)) {
 		rb_str_buf_cat(str, p, 1);
 	    }
-	    else {
+	    else if (!ISSPACE(*p)) {
 		char b[8];
-		switch (*p) {
-		case '\r':
-		    rb_str_buf_cat(str, "\\r", 2);
-		    break;
-		case '\n':
-		    rb_str_buf_cat(str, "\\n", 2);
-		    break;
-		case '\t':
-		    rb_str_buf_cat(str, "\\t", 2);
-		    break;
-		case '\f':
-		    rb_str_buf_cat(str, "\\f", 2);
-		    break;
-		case 007:
-		    rb_str_buf_cat(str, "\\a", 2);
-		    break;
-		case 013:
-		    rb_str_buf_cat(str, "\\v", 2);
-		    break;
-		case 033:
-		    rb_str_buf_cat(str, "\\e", 2);
-		    break;
-		default:
-		    sprintf(b, "\\%03o", *p & 0377);
-		    rb_str_buf_cat(str, b, 4);
-		    break;
-		}
+
+		sprintf(b, "\\%03o", *p & 0377);
+		rb_str_buf_cat(str, b, 4);
+	    }
+	    else {
+		rb_str_buf_cat(str, p, 1);
 	    }
 	    p++;
 	}
@@ -367,10 +338,11 @@ rb_reg_to_s(re)
     options = RREGEXP(re)->ptr->options;
     ptr = RREGEXP(re)->str;
     len = RREGEXP(re)->len;
-    if (len >= 4 && ptr[0] == '(' && ptr[1] == '?' && ptr[len-1] == ')') {
+  again:
+    if (len >= 4 && ptr[0] == '(' && ptr[1] == '?') {
 	int err = 1;
 	ptr += 2;
-	if ((len -= 3) > 0) {
+	if ((len -= 2) > 0) {
 	    do {
 		if (*ptr == 'm') {
 		    options |= RE_OPTION_MULTILINE;
@@ -402,11 +374,17 @@ rb_reg_to_s(re)
 		++ptr;
 	    } while (--len > 0);
 	}
-	if (*ptr == ':') {
-	    Regexp *rp = ALLOC(Regexp);
-	    MEMZERO((char *)rp, Regexp, 1);
+	if (*ptr == ')') {
+	    --len;
+	    ++ptr;
+	    goto again;
+	}
+	if (*ptr == ':' && ptr[len-1] == ')') {
+	    Regexp *rp;
 	    kcode_set_option(re);
-	    err = re_compile_pattern(++ptr, --len, rp) != 0;
+	    rp = ALLOC(Regexp);
+	    MEMZERO((char *)rp, Regexp, 1);
+	    err = re_compile_pattern(++ptr, len -= 2, rp) != 0;
 	    kcode_reset_option();
 	    re_free_pattern(rp);
 	}

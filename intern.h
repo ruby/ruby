@@ -202,6 +202,7 @@ void rb_file_const _((const char*, VALUE));
 int rb_find_file_ext _((VALUE*, const char* const*));
 VALUE rb_find_file _((VALUE));
 /* gc.c */
+NORETURN(void rb_memerror __((void)));
 int ruby_stack_check _((void));
 int ruby_stack_length _((VALUE**));
 char *rb_source_filename _((const char*));
@@ -254,7 +255,6 @@ VALUE rb_num_coerce_bin _((VALUE, VALUE));
 VALUE rb_float_new _((double));
 VALUE rb_num2fix _((VALUE));
 VALUE rb_fix2str _((VALUE, int));
-VALUE rb_fix_upto _((VALUE, VALUE));
 /* object.c */
 int rb_eql _((VALUE, VALUE));
 VALUE rb_any_to_s _((VALUE));

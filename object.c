@@ -867,7 +867,7 @@ convert_type(val, tname, method, raise)
     m = rb_intern(method);
     if (!rb_respond_to(val, m)) {
 	if (raise) {
-	    rb_raise(rb_eTypeError, "failed to convert %s into %s",
+	    rb_raise(rb_eTypeError, "cannot convert %s into %s",
 		     NIL_P(val) ? "nil" :
 		     val == Qtrue ? "true" :
 		     val == Qfalse ? "false" :
@@ -906,7 +906,8 @@ rb_check_convert_type(val, type, tname, method)
 {
     VALUE v;
 
-    if (TYPE(val) == type) return val;
+    /* always convert T_DATA */
+    if (TYPE(val) == type && type != T_DATA) return val;
     v = convert_type(val, tname, method, Qfalse);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {

@@ -1,3 +1,9 @@
+Wed Apr 24 06:48:31 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* io.c (rb_io_mode_flags): both 'r+b' and 'rb+' should be allowed.
+
+	* io.c (rb_io_mode_modenum): ditto.
+
 Wed Apr 24 01:16:14 2002  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_mark): must check if ptr is NULL
@@ -14,11 +20,60 @@ Wed Apr 24 00:37:12 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 	* lib/mkmf.rb (create_makefile): add `{$(srcdir)}' when including depend
 	  file.
 
+Tue Apr 23 12:58:18 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_memerror): rename from mem_error, and exported.
+
+	* gc.c (Init_GC): pre-allocate NoMemoryError instance.
+
+	* object.c (convert_type): error message changed from "failed to
+	  convert" to "cannot convert", since it does not try to convert
+	  if an object does not respond to the converting method.
+
+Mon Apr 22 09:31:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): convert Method to Proc using
+	  rb_check_convert_type().
+
+	* object.c (rb_check_convert_type): always convert T_DATA
+
+	* eval.c (rb_thread_cleanup): should not terminate main_thread by
+	  Fatal error.
+
+	* regex.c (is_in_list): need to not exclude NUL and NEWLINE.
+
+Sat Apr 20 00:19:13 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_expr_str): wrong backslash escapement.
+
+	* re.c (rb_reg_expr_str): do not escape embedded space
+	  characters.
+
 Fri Apr 19 22:03:40 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: add -DNT to $CFLAGS instead of $CPPFLAGS.
 
 	* win32/setup.mak: ditto.
+
+Fri Apr 19 17:24:22 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): T_DATA process patch from Joel VanderWerf
+	  <vjoel@PATH.Berkeley.EDU>.  This is temporary hack; it remains
+	  undocumented, and it will be removed when marshaling is
+	  re-designed.
+
+	* marshal.c (r_object): ditto.
+
+Fri Apr 19 17:10:55 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_step): Integer#step is moved to Numeric#step;
+	  Fixnum#step is merged into this method.
+
+	* numeric.c (int_dotimes): Fixnum#times is merged.
+
+	* numeric.c (int_upto): Fixnum#upto is merged.
+
+	* numeric.c (int_downto): Fixnum#downto is merged.
 
 Fri Apr 19 16:22:55 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
