@@ -166,7 +166,7 @@ syck_add_sym( SyckParser *p, char *data )
         p->syms = st_init_numtable();
     }
     id = p->syms->num_entries;
-    st_insert( p->syms, id, data );
+    st_insert( p->syms, id, (st_data_t)data );
     return id;
 }
 
@@ -174,10 +174,10 @@ int
 syck_lookup_sym( SyckParser *p, SYMID id, char **data )
 {
     if ( p->syms == NULL ) return 0;
-    return st_lookup( p->syms, id, data );
+    return st_lookup( p->syms, id, (st_data_t *)data );
 }
 
-enum st_retval 
+int
 syck_st_free_nodes( char *key, SyckNode *n, char *arg )
 {
     syck_free_node( n );
@@ -201,7 +201,7 @@ syck_free_parser( SyckParser *p )
     //
     // Free the anchor table
     //
-    st_foreach( p->anchors, syck_st_free_nodes, NULL );
+    st_foreach( p->anchors, syck_st_free_nodes, 0 );
     st_free_table( p->anchors );
 
     //
