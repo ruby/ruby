@@ -5,6 +5,7 @@ Makefile.in
 README
 README.jp
 README.EXT
+README.EXT.jp
 ToDo
 array.c
 bignum.c
