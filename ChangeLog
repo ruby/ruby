@@ -6,8 +6,8 @@ Tue Mar 16 11:14:17  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* dir.c (fnmatch_helper): File.fnmatch('\/', '/', File::FNM_PATHNAME)
 	  should return true. (Rev1.112 lost compatiblity)
 
-	* dir.c (fnmatch): '**/' shouldn't match leading period unless
-	  File::FNM_DOTMATCH is set.
+	* dir.c (fnmatch): File.fnmatch('**/.boo', '.foo/.boo',
+	  File::FNM_PATHNAME) should return false because of leading period.
 
 Mon Mar 15 10:14:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
