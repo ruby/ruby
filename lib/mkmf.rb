@@ -746,6 +746,7 @@ all:		#{target ? "$(DLLIB)" : "Makefile"}
 
   mfile.print "$(DLLIB): $(OBJS)\n\t"
   mfile.print "@-$(RM) $@\n\t"
+  mfile.print "@-$(RM) $(TARGET).lib\n\t" if $mswin
   if $static
     mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$(DLLIB) $(OBJS)"
     if ranlib = config_string('RANLIB')

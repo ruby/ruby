@@ -15,6 +15,7 @@ $dryrun = $OPT["n"]
 Shellwords.shellwords($OPT["make-flags"] || "").grep(/^-[^-]*n/) do
   break $dryrun = true
 end
+ARGV.delete_if{|x|x[0] == ?-}
 destdir = ARGV[0] || ''
 
 include FileUtils::Verbose

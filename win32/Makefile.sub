@@ -407,7 +407,7 @@ $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 		$(AR) $(ARFLAGS)$@ -def:$<
 
 install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb -$(MFLAGS)$(MAKEFLAGS) $(DESTDIR)
+		$(MINIRUBY) $(srcdir)/instruby.rb --make-flags "-$(MFLAGS)$(MAKEFLAGS)" $(DESTDIR)
 		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make "$(MAKE)" --make-flags "-$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
 
 clean:		clean-ext clean-local

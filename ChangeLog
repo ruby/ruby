@@ -1,3 +1,12 @@
+Sat Dec 28 19:21:24 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* instruby.rb: remove junk args.
+
+	* lib/mkmf.rb (create_makefile): remove a trouble library
+	  before making a shared library.
+
+	* win32/Makefile.sub: invoke instruby.rb with the --make-flags option.
+
 Sat Dec 28 03:09:58 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#[]): improvement. thanks to Kazuhiro NISHIYAMA
