@@ -5120,6 +5120,9 @@ rb_exec_end_proc()
 	link = tmp;
     }
     end_proc_data = 0;
+    if (top_scope && top_scope->local_tbl) {
+	rb_mem_clear(top_scope->local_vars, top_scope->local_tbl[0]);
+    }
 }
 
 void
