@@ -1170,8 +1170,13 @@ rb_file_s_rename(obj, from, to)
     Check_SafeStr(from);
     Check_SafeStr(to);
 
-    if (rename(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
+    if (rename(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0) {
+#if defined __CYGWIN__
+	extern unsigned long __attribute__((stdcall)) GetLastError();
+	errno = GetLastError(); /* This is a Cygwin bug */
+#endif
 	rb_sys_fail(RSTRING(from)->ptr);
+    }
 
     return INT2FIX(0);
 }
