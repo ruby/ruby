@@ -105,7 +105,6 @@ lib/ftools.rb
 lib/getopts.rb
 lib/getoptlong.rb
 lib/importenv.rb
-lib/irb/bind.rb
 lib/irb/completion.rb
 lib/irb/frame.rb
 lib/irb/input-method.rb
@@ -116,6 +115,8 @@ lib/irb/ruby-lex.rb
 lib/irb/ruby-token.rb
 lib/irb/slex.rb
 lib/irb/version.rb
+lib/irb/workspace-binding-2.rb
+lib/irb/workspace-binding.rb
 lib/irb/xmp.rb
 lib/jcode.rb
 lib/mailread.rb
