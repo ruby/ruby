@@ -1,3 +1,8 @@
+Tue Sep  2 09:51:36 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): should not handle exceptions within rescue
+	  argument.  [ruby-talk:80804]
+
 Tue Sep  2 00:44:37 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_memsearch): fix overrun.  [ruby-talk:80759]

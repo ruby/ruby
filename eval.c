@@ -2782,7 +2782,10 @@ rb_eval(self, n)
 		result = rb_eval(self, node->nd_head);
 	    }
 	    else if (rescuing) {
-		if (state == TAG_RETRY) {
+		if (rescuing < 0) {
+		    /* in rescue argument, just reraise */
+		}
+		else if (state == TAG_RETRY) {
 		    rescuing = state = 0;
 		    e_info = ruby_errinfo = Qnil;
 		    result = rb_eval(self, node->nd_head);
@@ -2794,6 +2797,7 @@ rb_eval(self, n)
 	    else if (state == TAG_RAISE) {
 		NODE *resq = node->nd_resq;
 
+		rescuing = -1;
 		while (resq) {
 		    ruby_current_node = resq;
 		    if (handle_rescue(self, resq)) {
