@@ -1,3 +1,8 @@
+Fri Nov 28 17:47:46 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (DRbMessage#load): rescue Errno::* and raise
+	  DRbConnError.
+
 Fri Nov 28 15:41:15 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#realpath): obsolete the force_absolute
