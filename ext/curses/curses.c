@@ -1339,8 +1339,14 @@ window_nodelay(VALUE obj, VALUE val)
 #ifdef HAVE_NODELAY
   struct windata *winp;
   GetWINDOW(obj,winp);
-  
+
+  /* nodelay() of NetBSD's libcurses returns no value */
+#if defined(__NetBSD__) && !defined(NCURSES_VERSION)
+  nodelay(winp->window, RTEST(val) ? TRUE : FALSE);
+  return Qnil;
+#else
   return nodelay(winp->window,RTEST(val) ? TRUE : FALSE) == OK ? Qtrue : Qfalse;
+#endif
 #else
     rb_notimplement();
 #endif

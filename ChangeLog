@@ -1,3 +1,8 @@
+Sat Nov 22 18:49:47 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/curses/curses.c (window_nodelay): nodelay() of NetBSD's
+	  libcruses returns no value, just like keypad().
+
 Sat Nov 22 17:36:36 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
