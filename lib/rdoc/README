@@ -164,7 +164,10 @@ Options are:
     include line numbers in the source code
 
 [<tt>--main</tt> _name_]
-    set the class, module, or file to appear on the index page
+    the class of module _name_ will appear on the index page. If you
+    want to set a particular file as a main page (a README, for
+    example) simply specifiy its name as the first on the command
+    line.
 
 [<tt>--merge</tt>]
     when generating _ri_ output, if classes being processed already

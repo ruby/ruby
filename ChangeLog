@@ -1,3 +1,8 @@
+Tue Sep 14 23:45:44 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_formatter.rb (RI::TextFormatter::TextFormatter.for):
+	  Add Eric Hodel's simpleformatter.
+
 Tue Sep 14 22:11:08 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: Add rdoc.
@@ -45,6 +50,7 @@ Tue Sep 14 16:59:37 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/sample/multi-ip_sample.rb: rename of old 'safe-tk.rb'
 
 	* ext/tk/sample/safe-tk.rb: new sample script
+
 
 Mon Sep 13 21:33:40 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 

@@ -1,20 +1,6 @@
 module RI
   class TextFormatter
 
-    def TextFormatter.list
-      "plain, html, bs, ansi"
-    end
-
-    def TextFormatter.for(name)
-      case name
-      when /plain/i then TextFormatter
-      when /html/i  then HtmlFormatter
-      when /bs/i    then OverstrikeFormatter
-      when /ansi/i  then AnsiFormatter
-      else nil
-      end
-    end
-
     attr_reader :indent
     
     def initialize(options, indent)
@@ -594,6 +580,72 @@ module RI
     end
 
   end
+
+  ##################################################
+  
+  # This formatter reduces extra lines for a simpler output.
+  # It improves way output looks for tools like IRC bots.
+
+  class SimpleFormatter < TextFormatter
+
+    ######################################################################
+
+    # No extra blank lines
+
+    def blankline
+    end
+
+    ######################################################################
+
+    # Display labels only, no lines
+
+    def draw_line(label=nil)
+      unless label.nil? then
+        bold_print(label) 
+        puts
+      end
+    end
+
+    ######################################################################
+
+    # Place heading level indicators inline with heading.
+
+    def display_heading(text, level, indent)
+      case level
+      when 1
+        puts "= " + text.upcase
+      when 2
+        puts "-- " + text
+      else
+        print indent, text, "\n"
+      end
+    end
+
+  end
+
+
+  # Finally, fill in the list of known formatters
+
+  class TextFormatter
+
+    FORMATTERS = {
+      "ansi"   => AnsiFormatter,
+      "bs"     => OverstrikeFormatter,
+      "html"   => HtmlFormatter,
+      "plain"  => TextFormatter,
+      "simple" => SimpleFormatter,
+    }
+      
+    def TextFormatter.list
+      FORMATTERS.keys.sort.join(", ")
+    end
+
+    def TextFormatter.for(name)
+      FORMATTERS[name.downcase]
+    end
+
+  end
+
 end
 
 
