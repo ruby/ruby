@@ -28,5 +28,24 @@ class TkRadioButton<TkButton
   def variable(v)
     configure 'variable', tk_trace_variable(v)
   end
+
+  def value
+    var = tk_send_without_enc('cget', '-variable')
+    if TkVariable::USE_TCLs_SET_VARIABLE_FUNCTIONS
+      _fromUTF8(INTERP._get_global_var(var))
+    else
+      INTERP._eval(Kernel.format('global %s; set %s', var, var))
+    end
+  end
+
+  def value=(val)
+    var = tk_send_without_enc('cget', '-variable')
+    if TkVariable::USE_TCLs_SET_VARIABLE_FUNCTIONS
+      _fromUTF8(INTERP._set_global_var(var, _get_eval_string(val, true)))
+    else
+      s = '"' + _get_eval_string(val).gsub(/[\[\]$"\\]/, '\\\\\&') + '"'
+      INTERP._eval(Kernel.format('global %s; set %s %s', var, var, s))
+    end
+  end
 end
 TkRadiobutton = TkRadioButton

@@ -86,7 +86,7 @@ EOD
 end
 
 if $tk_major_ver >= 8
-$image['print'] = TkPhotoImage.new(:height=>16, :format=>'GIF', :data=><<EOD)
+$image['print'] = TkPhotoImage.new(:height=>19, :format=>'GIF', :data=><<EOD)
     R0lGODlhGgATAPcAACEQOTEpQjEpUkIpc0IxY0I5c0oxjEo5SlJCY1JCe1JK
     UlpChFpCjFpGkFpSc1paa2NKc2NKnGNja2tapWtjc29KnHNanHNjc3NjrXNr
     jHNrnHNzc3tjpXtrtXtzhICAgIRzvYSEjIZzqox7tYyEnIyMjJSEtZSEvZSM
@@ -807,7 +807,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.4.3-jp\n\n" + 
+                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.4.4-jp\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 
