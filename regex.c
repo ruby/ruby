@@ -352,6 +352,8 @@ enum regexpcode
     casefold_off,  /* Turn off casefold flag. */
     mline_on,      /* Turn on multi line match (match with newlines). */
     mline_off,     /* Turn off multi line match. */
+    posix_on,      /* Turn on POSIXified line match (match with newlines). */
+    posix_off,     /* Turn off POSIXified line match. */
     start_nowidth, /* Save string point to the stack. */
     stop_nowidth,  /* Restore string place at the point start_nowidth. */
     pop_and_fail,  /* Fail after popping nowidth entry from stack. */
@@ -772,6 +774,12 @@ print_partial_compiled_pattern(start, end)
       printf("/mline_off");
       break;
 
+    case posix_on:
+      printf("/posix_on");
+
+    case posix_off:
+      printf("/posix_off");
+
     case start_nowidth:
       EXTRACT_NUMBER_AND_INCR (mcnt, p);
       printf("/start_nowidth//%d", mcnt);
@@ -1027,6 +1035,8 @@ calculate_must_string(start, end)
     case stop_paren:
     case mline_on:
     case mline_off:
+    case posix_on:
+    case posix_off:
       break;
 
     case charset:
@@ -1276,21 +1286,30 @@ re_compile_pattern(pattern, size, bufp)
 
     switch (c) {
     case '$':
-      p0 = p;
-      /* When testing what follows the $,
-	 look past the \-constructs that don't consume anything.  */
-
-      while (p0 != pend) {
-	if (*p0 == '\\' && p0 + 1 != pend
-	    && (p0[1] == 'b' || p0[1] == 'B'))
-	  p0 += 2;
-	else
-	  break;
+      if (bufp->options & RE_OPTION_POSIXLINE) {
+	BUFPUSH(endbuf);
       }
-      BUFPUSH(endline);
+      else {
+	p0 = p;
+	/* When testing what follows the $,
+	   look past the \-constructs that don't consume anything.  */
+
+	while (p0 != pend) {
+	  if (*p0 == '\\' && p0 + 1 != pend
+	      && (p0[1] == 'b' || p0[1] == 'B'))
+	    p0 += 2;
+	  else
+	    break;
+	}
+	BUFPUSH(endline);
+      }
       break;
+
     case '^':
-      BUFPUSH(begline);
+      if (bufp->options & RE_OPTION_POSIXLINE)
+	BUFPUSH(begbuf);
+      else
+	BUFPUSH(begline);
       break;
 
     case '+':
@@ -1671,7 +1690,16 @@ re_compile_pattern(pattern, size, bufp)
 	      break;
 
 	    case 'p':
-	      FREE_AND_RETURN(stackb, "(?p) is deprecated");
+	      if (negative) {
+		if (options&RE_OPTION_POSIXLINE) {
+		  options &= ~RE_OPTION_POSIXLINE;
+		  BUFPUSH(posix_off);
+		}
+	      }
+	      else if (!(options&RE_OPTION_POSIXLINE)) {
+		options |= RE_OPTION_POSIXLINE;
+		BUFPUSH(posix_on);
+	      }
 	      break;
 
 	    case 'm':
@@ -1686,6 +1714,7 @@ re_compile_pattern(pattern, size, bufp)
 		BUFPUSH(mline_on);
 	      }
 	      break;
+
 	    case 'i':
 	      if (negative) {
 		if (options&RE_OPTION_IGNORECASE) {
@@ -1795,6 +1824,9 @@ re_compile_pattern(pattern, size, bufp)
 	FREE_AND_RETURN(stackb, "unmatched )");
       if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
 	BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
+      }
+      if ((options ^ stackp[-1]) & RE_OPTION_POSIXLINE) {
+	BUFPUSH((options&RE_OPTION_MULTILINE)?posix_off:posix_on);
       }
       if ((options ^ stackp[-1]) & RE_OPTION_MULTILINE) {
 	BUFPUSH((options&RE_OPTION_MULTILINE)?mline_off:mline_on);
@@ -2163,9 +2195,11 @@ re_compile_pattern(pattern, size, bufp)
 	break;
 
       case 'Z':
-	BUFPUSH(endbuf2);
-	break;
-
+	if ((bufp->options & RE_OPTION_POSIXLINE) == 0) {
+	  BUFPUSH(endbuf2);
+	  break;
+	}
+	/* fall through */
       case 'z':
 	BUFPUSH(endbuf);
 	break;
@@ -2760,12 +2794,17 @@ re_compile_fastmap(bufp)
 	options ^= RE_OPTION_MULTILINE;
 	continue;
 
+      case posix_on:
+      case posix_off:
+	options ^= RE_OPTION_POSIXLINE;
+	continue;
+
       case endline:
 	if (TRANSLATE_P())
 	  fastmap[translate['\n']] = 1;
 	else
 	  fastmap['\n'] = 1;
-	if (bufp->can_be_null == 0)
+	if ((options & RE_OPTION_POSIXLINE) == 0 && bufp->can_be_null == 0)
 	  bufp->can_be_null = 2;
 	break;
 
@@ -2850,7 +2889,7 @@ re_compile_fastmap(bufp)
       case anychar_repeat:
       case anychar:
 	for (j = 0; j < (1 << BYTEWIDTH); j++) {
-	  if (j != '\n')
+	  if (j != '\n' || (options & RE_OPTION_POSIXLINE))
 	    fastmap[j] = 1;
 	}
 	if (bufp->can_be_null) {
@@ -3128,6 +3167,9 @@ re_search(bufp, string, size, startpos, range, regs)
     }
   }
   if (bufp->options & RE_OPTIMIZE_ANCHOR) {
+    if (bufp->options&RE_OPTION_POSIXLINE) {
+      goto begbuf_match;
+    }
     anchor = 1;
   }
 
@@ -3742,6 +3784,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	  break;
 	}
 	if (!(options&RE_OPTION_MULTILINE) &&
+	    !(options&RE_OPTION_POSIXLINE) &&
 	    (TRANSLATE_P() ? translate[*d] : *d) == '\n')
 	  goto fail;
 	SET_REGS_MATCHED;
@@ -4095,6 +4138,14 @@ re_match(bufp, string_arg, size, pos, regs)
 
       case mline_off:
 	options &= ~RE_OPTION_MULTILINE;
+	continue;
+
+      case posix_on:
+	options |= RE_OPTION_POSIXLINE;
+	continue;
+
+      case posix_off:
+	options &= ~RE_OPTION_POSIXLINE;
 	continue;
 
       case wordbound:
