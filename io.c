@@ -908,9 +908,9 @@ appendline(fptr, delim, strp)
 	TRAP_END;
 	if (c == EOF) {
 	    if (ferror(f)) {
+		clearerr(f);
 		if (!rb_io_wait_readable(fileno(f)))
 		    rb_sys_fail(fptr->path);
-		clearerr(f);
 		continue;
 	    }
 	    return c;

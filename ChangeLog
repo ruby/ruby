@@ -1,3 +1,12 @@
+Sun Aug  3 02:45:06 2003  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* numeric.c (flo_to_s): get rid of buffer overflow.
+
+Sat Aug  2 23:51:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (appendline): clearerr(3) before raising exception, since
+	  exception may be captured by rescue. [ruby-talk:77794]
+
 Sat Aug  2 20:59:38 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/https.rb: change an option name.
