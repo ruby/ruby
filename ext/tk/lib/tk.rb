@@ -4289,6 +4289,10 @@ class TkWindow<TkObject
     self
   end
 
+  def caret(keys=nil)
+    TkXIM.caret(path, keys)
+  end
+
   def destroy
     super
     children = []
@@ -5399,6 +5403,9 @@ class TkMenu<TkWindow
   def postcommand(cmd=Proc.new)
     configure_cmd 'postcommand', cmd
     self
+  end
+  def set_focus
+    tk_call('tk_menuSetFocus', path)
   end
   def tearoffcommand(cmd=Proc.new)
     configure_cmd 'tearoffcommand', cmd

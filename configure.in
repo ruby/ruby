@@ -323,6 +323,7 @@ freebsd*)	LIBS="-lm $LIBS"
 			if test "$rb_cv_supplementary_lib_c_r" = yes; then
 				MAINLIBS="-lc_r $MAINLIBS"			
 			else
+				AC_DEFINE(HAVE_LIBPTHREAD)
 				MAINLIBS="-pthread $MAINLIBS"			
 				CFLAGS="-D_THREAD_SAFE $CFLAGS"
 			fi
@@ -663,6 +664,11 @@ AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $rb_cv_stack_grow_dir)
 
 dnl default value for $KANJI
 DEFAULT_KCODE="KCODE_NONE"
+
+AC_ARG_WITH(pthread-ext, 
+	[  --with-pthread-ext      use pthread library on external modules ],
+	[AC_CHECK_LIB(pthread, pthread_mutex_trylock)
+	 AC_DEFINE(USE_PTHREAD_EXTLIB)])
 
 AC_ARG_WITH(default-kcode, 
 	[  --with-default-kcode=CODE specify default value for \$KCODE (utf8|euc|sjis|none)], 

@@ -284,6 +284,21 @@ class TkText<TkTextWin
     self
   end
 
+  def text_copy
+    # Tk8.4 feature
+    tk_call('tk_textCopy', @path)
+  end
+
+  def text_cut
+    # Tk8.4 feature
+    tk_call('tk_textCut', @path)
+  end
+
+  def text_paste
+    # Tk8.4 feature
+    tk_call('tk_textPaste', @path)
+  end
+
   def tag_add(tag, index1, index2=None)
     tk_send 'tag', 'add', tag, index1, index2
     self

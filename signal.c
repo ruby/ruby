@@ -706,6 +706,48 @@ install_sighandler(signum, handler)
     }
 }
 
+static void
+init_sigchld(sig)
+    int sig;
+{
+    sighandler_t oldfunc;
+#ifndef _WIN32
+# ifdef HAVE_SIGPROCMASK
+    sigset_t mask;
+# else
+    int mask;
+# endif
+#endif
+
+#ifndef _WIN32
+    /* disable interrupt */
+# ifdef HAVE_SIGPROCMASK
+    sigfillset(&mask);
+    sigprocmask(SIG_BLOCK, &mask, &mask);
+# else
+    mask = sigblock(~0);
+# endif
+#endif
+
+    oldfunc = ruby_signal(sig, SIG_DFL);
+    if (oldfunc != SIG_DFL && oldfunc != SIG_IGN) {
+	ruby_signal(sig, oldfunc);
+    } else {
+	trap_list[sig] = 0;
+    }
+
+#ifndef _WIN32
+#ifdef HAVE_SIGPROCMASK
+    sigdelset(&mask, sig);
+    sigprocmask(SIG_SETMASK, &mask, NULL);
+#else
+    mask &= ~sigmask(sig);
+    sigsetmask(mask);
+#endif
+    trap_last_mask = mask;
+#endif
+}
+
 void
 Init_signal()
 {
@@ -742,5 +784,13 @@ Init_signal()
 #ifdef SIGPIPE
     install_sighandler(SIGPIPE, sigpipe);
 #endif
+
+#ifdef SIGCLD
+    init_sigchld(SIGCLD);
+#endif
+#ifdef SIGCHLD
+    init_sigchld(SIGCHLD);
+#endif
+
 #endif /* MACOS_UNUSE_SIGNAL */
 }

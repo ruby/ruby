@@ -33,6 +33,10 @@
 #include "st.h"
 #include "dln.h"
 
+#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
+#include <pthread.h>
+#endif
+
 #ifdef __APPLE__
 #include <crt_externs.h>
 #endif
@@ -8604,6 +8608,11 @@ find_bad_fds(dst, src, max)
     return test;
 }
 
+#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
+static pthread_t thid;
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 void
 rb_thread_schedule()
 {
@@ -8620,6 +8629,9 @@ rb_thread_schedule()
     int n, max;
     int need_select = 0;
     int select_timeout = 0;
+#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
+    int st;
+#endif
 
     rb_thread_pending = 0;
     if (curr_thread == curr_thread->next
@@ -8628,6 +8640,16 @@ rb_thread_schedule()
 
     next = 0;
     curr = curr_thread;		/* starting thread */
+
+#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
+    if ((st = pthread_mutex_trylock(&mtx)) == EBUSY) {
+	if (pthread_self() != thid) {
+	    return;
+	}
+    } else {
+	thid = pthread_self();
+    }
+#endif
 
     while (curr->status == THREAD_KILLED) {
 	curr = curr->prev;
@@ -8826,12 +8848,22 @@ rb_thread_schedule()
     }
     next->wait_for = 0;
     if (next->status == THREAD_RUNNABLE && next == curr_thread) {
+#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
+	if (st != EBUSY) {
+	    pthread_mutex_unlock(& mtx);
+	}
+#endif
 	return;
     }
 
     /* context switch */
     if (curr == curr_thread) {
 	if (THREAD_SAVE_CONTEXT(curr)) {
+#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
+	    if (st != EBUSY) {
+		pthread_mutex_unlock(& mtx);
+	    }
+#endif
 	    return;
 	}
     }
@@ -8841,9 +8873,19 @@ rb_thread_schedule()
 	if (!(next->flags & THREAD_TERMINATING)) {
 	    next->flags |= THREAD_TERMINATING;
 	    /* terminate; execute ensure-clause if any */
+#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
+	    if (st != EBUSY) {
+		pthread_mutex_unlock(& mtx);
+	    }
+#endif
 	    rb_thread_restore_context(next, RESTORE_FATAL);
 	}
     }
+#if defined(HAVE_LIBPTHREAD) && defined(USE_PTHREAD_EXTLIB)
+    if (st != EBUSY) {
+	pthread_mutex_unlock(& mtx);
+    }
+#endif
     rb_thread_restore_context(next, RESTORE_NORMAL);
 }
 

@@ -29,5 +29,12 @@ directry of Ruby sources, please try something like as the followings.
  $ rm Makefile
  $ CONFIGURE_ARGS='--with-tcl-include=/usr/local/include/tcl8.3/ --with-tcllib=tcl8.3 --with-tklib=tk8.3 --enable-tcltk_stubs' ruby extconf.rb
 
+
+ *** ATTENTION ***
+If your Tcl/Tk libraries are compiled with "pthread support", Ruby/Tk
+may cause "Hang-up" or "Segmentation Fault" frequently. To avoid this 
+trouble, please try to use the '--with-pthread-ext' option of the 
+'configure' command and re-compile Ruby sources.
+
 ==========================================================
                 Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
