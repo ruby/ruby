@@ -48,4 +48,12 @@ class OpenStruct
     end
     str << ">"
   end
+
+  attr_reader :table
+  protected :table
+
+  def ==(other)
+    return false unless(other.kind_of?(OpenStruct))
+    return @table == other.table
+  end
 end
