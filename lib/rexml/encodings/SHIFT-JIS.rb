@@ -5,11 +5,11 @@ begin
     module Encoding
       @@__REXML_encoding_methods =<<-EOL
       def decode(str)
-        return Iconv::iconv("utf-8", "shift-jis", str)[0]
+        return Iconv::iconv("utf-8", "shift_jis", str)[0]
       end
 
       def encode content
-        return Iconv::iconv("shift-jis", "utf-8", content)[0]
+        return Iconv::iconv("shift_jis", "utf-8", content)[0]
       end
       EOL
     end
@@ -21,11 +21,11 @@ rescue LoadError
     module REXML
       module Encoding
         @@__REXML_encoding_methods =<<-EOL
-        def to_shift_jis content
+        def encode(content)
           Uconv::u8tosjis(content)
         end
 
-        def from_shift_jis(str)
+        def decode(str)
           Uconv::sjistou8(str)
         end
         EOL
