@@ -1,3 +1,7 @@
+Sun Feb 22 13:05:37 2004  akira yamada  <akira@ruby-lang.org>
+
+	* lib/uri/mailto.rb (URI::MailTo::to_s): should include fragment.
+
 Sun Feb 22 12:58:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: use optparse instead of getopts.

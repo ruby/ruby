@@ -59,6 +59,10 @@ module URI
         \\?
         (#{HEADER_PATTERN}(?:\\&#{HEADER_PATTERN})*)  (?# 2: headers)
       )?
+      (?:
+        \\#
+	(#{PATTERN::FRAGMENT})                        (?# 3: fragment)
+      )?
       \\z
     ", Regexp::EXTENDED, 'N').freeze
 
@@ -226,6 +230,11 @@ module URI
 	end + 
 	if @headers.size > 0
 	  '?' + @headers.collect{|x| x.join('=')}.join('&')
+	else
+	  ''
+	end +
+	if @fragment
+	  '#' + @fragment
 	else
 	  ''
 	end
