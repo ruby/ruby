@@ -251,6 +251,7 @@ config.h:
 #define HAVE_STRTOD 1
 #define HAVE_STRTOL 1
 #define HAVE_STRTOUL 1
+#define HAVE_GETCWD 1
 #define HAVE_FLOCK 1
 #define HAVE_VSNPRINTF 1
 #define HAVE_ISINF 1
@@ -344,6 +345,7 @@ s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
 s,@OBJEXT@,obj,;t t
+s,@XCFLAGS@,$(XCFLAGS),;t t
 s,@XLDFLAGS@,$(XLDFLAGS),;t t
 s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH) -def:$$(DEFFILE),;t t
 s,@STATIC@,$(STATIC),;t t

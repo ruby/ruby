@@ -1,3 +1,11 @@
+Sat Nov 22 17:36:36 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
+	  (HAVE_GETCWD): output to config.h.
+
+	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
+	  (XCFLAGS): output to config.status.
+
 Sat Nov 22 13:10:10 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (have_st_ino?): djgpp has valid st_ino.
