@@ -12,18 +12,6 @@
 
 #include "ruby.h"
 
-#ifdef DJGPP
-unsigned int _stklen = 0x180000;
-#endif
-
-#ifdef __human68k__
-int _stacksize = 262144;
-#endif
-
-#if defined __MINGW32__
-int _CRT_glob = 0;
-#endif
-
 #if defined(__MACOS__) && defined(__MWERKS__)
 #include <console.h>
 #endif

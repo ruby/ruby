@@ -407,18 +407,14 @@ VALUE *rb_gc_stack_start = 0;
 
 #if defined(DJGPP) || defined(_WIN32_WCE)
 static unsigned int STACK_LEVEL_MAX = 65535;
-#else
-#ifdef __human68k__
-extern unsigned int _stacksize;
+#elif defined(__human68k__)
+unsigned int _stacksize = 262144;
 # define STACK_LEVEL_MAX (_stacksize - 4096)
 # undef HAVE_GETRLIMIT
-#else
-#ifdef HAVE_GETRLIMIT
+#elif defined(HAVE_GETRLIMIT)
 static unsigned int STACK_LEVEL_MAX = 655300;
 #else
 # define STACK_LEVEL_MAX 655300
-#endif
-#endif
 #endif
 
 #ifdef C_ALLOCA

@@ -1,3 +1,12 @@
+Wed Jun 23 21:48:27 2004  Michal Rokos  <michal@cvs-lang.org>
+
+	* time.c: Fix indentation.
+
+	* main.c: Remove _stklen, and _CRT_glob. Move _stacksize for
+	  __human68k__ to gc.c where the others are.
+
+	* gc.c: put _stacksize in place and clean the #ifdefs macros.
+
 Wed Jun 23 17:37:54 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: added new option --ssl.
