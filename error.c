@@ -469,7 +469,9 @@ static VALUE *syserr_list;
 #endif
 
 #if !defined(NT) && !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__) && !defined(sys_nerr)
+#  if !defined(__APPLE__) || (__APPLE_CC__ < 1151)
 extern int sys_nerr;
+#  endif
 #endif
 
 static VALUE

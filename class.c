@@ -643,7 +643,7 @@ rb_singleton_class(obj)
 	klass = RBASIC(obj)->klass;
     }
     else {
-	klass = rb_make_metaclass(obj, RBASIC(obj)->klass);
+	klass = rb_make_metaclass(obj, CLASS_OF(obj));
     }
     if (OBJ_TAINTED(obj)) {
 	OBJ_TAINT(klass);

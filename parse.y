@@ -1362,8 +1362,7 @@ primary		: literal
 			}
 			if ($8) $5 = NEW_ENSURE($5, $8);
 
-		        /* NOEX_PRIVATE for toplevel */
-			$$ = NEW_DEFN($2, $4, $5, class_nest?NOEX_PUBLIC:NOEX_PRIVATE);
+			$$ = NEW_DEFN($2, $4, $5, NOEX_PRIVATE);
 			if (is_attrset_id($2)) $$->nd_noex = NOEX_PUBLIC;
 		        fixpos($$, $4);
 		        local_pop();
@@ -3154,22 +3153,22 @@ yylex()
 	}
 	if (ISSPACE(c)){
 	    if (lex_state != EXPR_ARG){
-		int c = 0;
+		int c2 = 0;
 		switch (c) {
 		  case ' ':
-		    c = 's';
+		    c2 = 's';
 		    break;
 		  case '\n':
-		    c = 'n';
+		    c2 = 'n';
 		    break;
 		  case '\t':
-		    c = 't';
+		    c2 = 't';
 		    break;
 		  case '\v':
-		    c = 'v';
+		    c2 = 'v';
 		    break;
 		}
-		if (c) {
+		if (c2) {
 		    rb_warn("invalid character syntax; use ?\\%c", c);
 		}
 	    }
@@ -4066,13 +4065,13 @@ str_extend(list, term, paren)
 
       case '{':
 	if (c == '{') brace = '}';
-	brace_nest = 0;
+	brace_nest = 1;
 	do {
 	  loop_again:
 	    c = nextc();
 	    switch (c) {
 	      case -1:
-		if (brace_nest > 0) {
+		if (brace_nest > 1) {
 		    yyerror("bad substitution in string");
 		    newtok();
 		    return list;
@@ -4080,8 +4079,8 @@ str_extend(list, term, paren)
 		return (NODE*)-1;
 	      case '}':
 		if (c == brace) {
-		    if (brace_nest == 0) break;
 		    brace_nest--;
+		    if (brace_nest == 0) break;
 		}
 		tokadd(c);
 		goto loop_again;
@@ -4099,6 +4098,22 @@ str_extend(list, term, paren)
 	      case '{':
 		if (brace != -1) brace_nest++;
 	      default:
+		/* within brace */
+		if (brace_nest > 0) {
+		    if (ismbchar(c)) {
+			int i, len = mbclen(c)-1;
+
+			for (i = 0; i < len; i++) {
+			    tokadd(c);
+			    c = nextc();
+			}
+		    }
+		    else {
+			tokadd(c);
+		    }
+		    break;
+		}
+		/* out of brace */
 		if (c == paren) paren_nest++;
 		else if (c == term && (!paren || paren_nest-- == 0)) {
 		    pushback(c);
@@ -4109,14 +4124,7 @@ str_extend(list, term, paren)
 		    newtok();
 		    return list;
 		}
-		else if (ismbchar(c)) {
-		    int i, len = mbclen(c)-1;
-
-		    for (i = 0; i < len; i++) {
-			tokadd(c);
-			c = nextc();
-		    }
-		}
+		break;
 	      case '\n':
 		tokadd(c);
 		break;

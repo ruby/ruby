@@ -2354,7 +2354,7 @@ rb_str_each_line(argc, argv, str)
 	    if (*++p != '\n') continue;
 	    while (*p == '\n') p++;
 	}
-	if (p[-1] == newline &&
+	if (RSTRING(str)->ptr < p && p[-1] == newline &&
 	    (rslen <= 1 ||
 	     rb_memcmp(RSTRING(rs)->ptr, p-rslen, rslen) == 0)) {
 	    line = rb_str_new(s, p - s);

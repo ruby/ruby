@@ -114,8 +114,8 @@ rb_obj_dup(obj)
     VALUE dup;
 
     dup = rb_funcall(obj, clone, 0, 0);
-    if (TYPE(dup) != TYPE(obj)) {
-	rb_raise(rb_eTypeError, "dupulicated object must be same type");
+    if (TYPE(dup) != TYPE(obj) || rb_obj_class(dup) != rb_obj_class(obj)) {
+	rb_raise(rb_eTypeError, "dupulicated object must be same class");
     }
     if (!SPECIAL_CONST_P(dup)) {
 	OBJSETUP(dup, rb_obj_class(obj), BUILTIN_TYPE(obj));

@@ -1216,6 +1216,8 @@ ruby_run()
     Init_stack(&tmp);
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
+    /* default visibility is private at toplevel */
+    SCOPE_SET(SCOPE_PRIVATE);
     if ((state = EXEC_TAG()) == 0) {
 	eval_node(ruby_top_self, ruby_eval_tree);
     }
@@ -2995,14 +2997,14 @@ rb_eval(self, n)
 		}
 	    }
 
-	    if (SCOPE_TEST(SCOPE_PRIVATE) || node->nd_mid == init) {
+	    if (node->nd_noex == NOEX_PUBLIC) {
+		noex = NOEX_PUBLIC; 	/* means is is an attrset */
+	    }
+	    else if (SCOPE_TEST(SCOPE_PRIVATE) || node->nd_mid == init) {
 		noex = NOEX_PRIVATE;
 	    }
 	    else if (SCOPE_TEST(SCOPE_PROTECTED)) {
 		noex = NOEX_PROTECTED;
-	    }
-	    else if (ruby_class == rb_cObject) {
-		noex =  node->nd_noex;
 	    }
 	    else {
 		noex = NOEX_PUBLIC;
@@ -3159,8 +3161,8 @@ rb_eval(self, n)
 	    }
 	    else {
 		module = rb_define_module_id(node->nd_cname);
-		rb_const_set(ruby_class, node->nd_cname, module);
 		rb_set_class_path(module,ruby_class,rb_id2name(node->nd_cname));
+		rb_const_set(ruby_class, node->nd_cname, module);
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(module, ruby_wrapper);
@@ -7946,7 +7948,7 @@ void
 rb_thread_wait_for(time)
     struct timeval time;
 {
-    double date;
+    double limit;
 
     if (rb_thread_critical ||
 	curr_thread == curr_thread->next ||
@@ -7986,9 +7988,9 @@ rb_thread_wait_for(time)
 	}
     }
 
-    date = timeofday() + (double)time.tv_sec + (double)time.tv_usec*1e-6;
+    limit = timeofday() + (double)time.tv_sec + (double)time.tv_usec*1e-6;
     curr_thread->status = THREAD_STOPPED;
-    curr_thread->delay = date;
+    curr_thread->delay = limit;
     curr_thread->wait_for = WAIT_TIME;
     rb_thread_schedule();
 }

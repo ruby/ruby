@@ -221,19 +221,40 @@ VALUE
 rb_path2class(path)
     const char *path;
 {
-    VALUE c;
+    const char *pbeg, *p;
+    ID id;
+    VALUE c = rb_cObject;
 
     if (path[0] == '#') {
 	rb_raise(rb_eArgError, "can't retrieve anonymous class %s", path);
     }
-    c = rb_eval_string(path);
-    switch (TYPE(c)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
-	rb_raise(rb_eTypeError, "class path %s does not point class", path);
+    pbeg = p = path;
+    while (*p) {
+	VALUE str;
+
+	while (*p && *p != ':') p++;
+	str = rb_str_new(pbeg, p-pbeg);
+	id = rb_intern(RSTRING(str)->ptr);
+	if (p[0] == ':') {
+	    if (p[1] != ':') goto undefined_class;
+	    p += 2;
+	    pbeg = p;
+	}
+	if (!rb_const_defined(c, id)) {
+	  undefined_class:
+	    rb_raise(rb_eArgError, "undefined class/module %s", rb_id2name(id));
+	    rb_raise(rb_eArgError, "undefined class/module %s", path);
+	}
+	c = rb_const_get_at(c, id);
+	switch (TYPE(c)) {
+	  case T_MODULE:
+	  case T_CLASS:
+	    break;
+	  default:
+	    rb_raise(rb_eTypeError, "%s does not refer class/module %d", path, TYPE(c));
+	}
     }
+
     return c;
 }
 

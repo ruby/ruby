@@ -90,7 +90,7 @@ static VALUE
 range_eq(range, obj)
     VALUE range, obj;
 {
-    if (!rb_obj_is_kind_of(obj, rb_cRange)) return Qfalse;
+    if (!rb_obj_is_kind_of(obj, rb_obj_class(range))) return Qfalse;
 
     if (!rb_equal(rb_ivar_get(range, id_beg), rb_ivar_get(obj, id_beg)))
 	return Qfalse;
@@ -140,7 +140,7 @@ range_eql(range, obj)
     VALUE range, obj;
 {
     if (range == obj) return Qtrue;
-    if (!rb_obj_is_kind_of(obj, rb_cRange)) return Qfalse;
+    if (!rb_obj_is_kind_of(obj, rb_obj_class(range))) return Qfalse;
 
     if (!rb_eql(rb_ivar_get(range, id_beg), rb_ivar_get(obj, id_beg)))
 	return Qfalse;

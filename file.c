@@ -2198,6 +2198,7 @@ rb_find_file_ext(filep, ext)
 	VALUE str = RARRAY(rb_load_path)->ptr[i];
 
 	Check_SafeStr(str);
+	if (RSTRING(str)->len == 0) return 0;
 	path = RSTRING(str)->ptr;
 	for (j=0; ext[j]; j++) {
 	    fname = rb_str_dup(*filep);
@@ -2262,15 +2263,23 @@ rb_find_file(path)
 	    }
 	}
 	tmp = rb_ary_join(tmp, rb_str_new2(PATH_SEP));
-	lpath = STR2CSTR(tmp);
-	if (rb_safe_level() >= 2 && !rb_path_check(lpath)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", lpath);
+	if (RSTRING(tmp)->len == 0) {
+	    lpath = 0;
+	}
+	else {
+	    lpath = STR2CSTR(tmp);
+	    if (rb_safe_level() >= 2 && !rb_path_check(lpath)) {
+		rb_raise(rb_eSecurityError, "loading from unsafe path %s", lpath);
+	    }
 	}
     }
     else {
 	lpath = 0;
     }
 
+    if (!lpath) {
+	return 0;		/* no path, no load */
+    }
     f = dln_find_file(f, lpath);
     if (file_load_ok(f)) {
 	return rb_str_new2(f);

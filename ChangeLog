@@ -1,3 +1,19 @@
+Mon Sep 23 02:46:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_run): should set toplevel visibility again here. 
+
+	* eval.c (rb_eval): should not rely on ruby_class == rb_cObject
+	  check.   Besides allow implicit publicity for attribute set
+	  methods.
+
+	* parse.y (primary): need not to check class_nest, just set
+	  whether method is an attrset or not.
+
+Sun Sep 22 17:08:11 2002  Tanaka Akira  <akr@m17n.org>
+	
+	* string.c (rb_str_each_line): p might be at the top of the
+	  string.
+
 Sun Sep 22 15:31:33 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb: some backports.
@@ -97,6 +113,15 @@ Fri Sep  6 05:11:48 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* intern.h (rb_gc_mark_parser): added.
 
+Thu Sep  5 18:32:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_path2class): should not use rb_eval_string().
+
+Thu Sep  5 15:33:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): expression substitution can contain string
+	  terminator again.
+
 Thu Sep  5 13:09:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_eval): overriding false constant with class/module
@@ -108,6 +133,11 @@ Thu Sep  5 13:09:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* ruby.c (require_libraries): not clear source file.
 	  [ruby-dev:18074]
 
+Wed Sep  4 05:10:16 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* parse.y (yylex): the warning message "invalid
+          character syntax" was never issued.
+
 Tue Sep  3 00:22:43 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* gc.c (gc_sweep): does reclaim nodes in also compile time, if we
@@ -118,6 +148,19 @@ Tue Sep  3 00:22:43 2002  Minero Aoki  <aamine@loveruby.net>
 	* parse.y (ruby_parser_stack_on_heap): new function.
 
 	* intern.h (ruby_parser_stack_on_heap): added.
+
+Tue Aug 27 15:03:35 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_find_file): $LOAD_PATH must not be empty.
+
+	* file.c (rb_find_file_ext): ditto.
+
+Tue Aug 27 02:35:21 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_eq): class check should be based on range.class,
+	  instead of Range to work with Range.dup.
+
+	* range.c (range_eql): ditto.
 
 Sun Aug 25 20:10:32 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
