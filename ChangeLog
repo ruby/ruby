@@ -1,3 +1,8 @@
+Wed Feb 26 00:02:41 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* string.c (rb_str_dup): set FL_EXIVAR when copied generic ivar.
+	  (ruby-bugs-ja:PR#400)
+
 Sat Feb 22 02:45:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_create): may called from place higher than

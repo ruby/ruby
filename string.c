@@ -221,8 +221,10 @@ rb_str_dup(str)
 	str2 = rb_str_new3(rb_str_new4(str));
     }
     OBJ_INFECT(str2, str);
-    if (FL_TEST(str, FL_EXIVAR))
+    if (FL_TEST(str, FL_EXIVAR)) {
 	rb_clone_generic_ivar(str2, str);
+	FL_SET(str2, FL_EXIVAR);
+    }
     RBASIC(str2)->klass = klass;
     return str2;
 }
