@@ -1398,15 +1398,15 @@ module Net
 	  buf.concat(b1 | 0xc0)
 	  buf.concat(b2 | 0x80)
 	elsif c >= 0xdc00 && c < 0xe000
-	  raise "invalid surrogate detected"
+	  raise DataFormatError, "invalid surrogate detected"
 	elsif c >= 0xd800 && c < 0xdc00
 	  if i + 2 > len
-	    raise "invalid surrogate detected"
+	    raise DataFormatError, "invalid surrogate detected"
 	  end
 	  low = s[i] << 8 | s[i + 1]
 	  i += 2
 	  if low < 0xdc00 || low > 0xdfff
-	    raise "invalid surrogate detected"
+	    raise DataFormatError, "invalid surrogate detected"
 	  end
 	  c = (((c & 0x03ff)) << 10 | (low & 0x03ff)) + 0x10000
 	  b4 = c & 0x003f
@@ -1444,7 +1444,7 @@ module Net
 	    inlen >= 2 &&
 	    (s[i + 1] & 0xc0) == 0x80
 	  if c == 0xc0 || c == 0xc1
-	    raise format("non-shortest UTF-8 sequence (%02x)", c)
+	    raise DataFormatError, format("non-shortest UTF-8 sequence (%02x)", c)
 	  end
 	  u = ((c & 0x1f) << 6) | (s[i + 1] & 0x3f)
 	  buf.concat(u >> 8)
@@ -1455,12 +1455,12 @@ module Net
 	    (s[i + 1] & 0xc0) == 0x80 &&
 	    (s[i + 2] & 0xc0) == 0x80
 	  if c == 0xe0 && s[i + 1] < 0xa0
-	    raise format("non-shortest UTF-8 sequence (%02x)", c)
+	    raise DataFormatError, format("non-shortest UTF-8 sequence (%02x)", c)
 	  end
 	  u = ((c & 0x0f) << 12) | ((s[i + 1] & 0x3f) << 6) | (s[i + 2] & 0x3f)
 	  # surrogate chars
 	  if u >= 0xd800 && u <= 0xdfff
-	    raise format("none-UTF-16 char detected (%04x)", u)
+	    raise DataFormatError, format("none-UTF-16 char detected (%04x)", u)
 	  end
 	  buf.concat(u >> 8)
 	  buf.concat(u & 0x00ff)
@@ -1471,7 +1471,7 @@ module Net
 	    (s[i + 2] & 0xc0) == 0x80 &&
 	    (s[i + 3] & 0xc0) == 0x80
 	  if c == 0xf0 && s[i + 1] < 0x90
-	    raise format("non-shortest UTF-8 sequence (%02x)", c)
+	    raise DataFormatError, format("non-shortest UTF-8 sequence (%02x)", c)
 	  end
 	  u = ((c & 0x07) << 18) | ((s[i + 1] & 0x3f) << 12) |
 	    ((s[i + 2] & 0x3f) << 6) | (s[i + 3] & 0x3f)
@@ -1486,11 +1486,11 @@ module Net
 	    buf.concat(low >> 8)
 	    buf.concat(low & 0x00ff)
 	  else
-	    raise format("none-UTF-16 char detected (%04x)", u)
+	    raise DataFormatError, format("none-UTF-16 char detected (%04x)", u)
 	  end
 	  i += 4
 	else
-	  raise format("illegal UTF-8 sequence (%02x)", c)
+	  raise DataFormatError, format("illegal UTF-8 sequence (%02x)", c)
 	end
       end
       return buf
