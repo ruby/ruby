@@ -1,4 +1,9 @@
-Fri Jul 25 15:04:25 2003  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+Sat Jul 26 01:33:51 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_setup): need to pass the real
+	  socket to SSL_get_fd on native win32 platforms.
+
+Fri Jul 26 00:04:25 2003  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* ext/openssl/sample: Add samples.
 	  - cert2text.rb: Dump certificate file as text.

@@ -19,6 +19,12 @@
 
 #define numberof(ary) (sizeof(ary)/sizeof(ary[0]))
 
+#ifdef OPENSSL_SYS_WINDOWS
+#  define TO_SOCKET(s) _get_osfhandle(s)
+#else
+#  define TO_SOCKET(s) s
+#endif
+
 VALUE mSSL;
 VALUE eSSLError;
 VALUE cSSLContext;
@@ -392,7 +398,7 @@ ossl_ssl_setup(VALUE self)
         GetOpenFile(io, fptr);
         rb_io_check_readable(fptr);
         rb_io_check_writable(fptr);
-        SSL_set_fd(ssl, fileno(fptr->f));
+        SSL_set_fd(ssl, TO_SOCKET(fileno(fptr->f)));
     }
 
     return Qtrue;
