@@ -1,3 +1,8 @@
+Sat Jul 17 05:26:27 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/diagram.rb: Incorporate Micheal Neuman's
+	  client-side imagemao patch
+
 Fri Jul 16 15:23:53 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (return_jump, break_jump): raise unexpceted local jump
