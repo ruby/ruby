@@ -1,3 +1,8 @@
+Mon Mar  8 21:09:39  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (range): Cancel change for incomplete '['. More discussion
+	  is needed.
+
 Mon Mar  8 19:35:13 2004  akira yamada  <akira@arika.org>
 
 	* lib/uri/common.rb (URI::REGEXP::PATTERN::HOSTPORT): (?:#{PORT})

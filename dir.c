@@ -172,12 +172,12 @@ CompareImpl(p1, p2, nocase)
 
 static const char *
 range(
-    const char *pattern,
+    const char *p, /* pattern */
     const char *test,
     int flags)
 {
     int not = 0, ok = 0;
-    const char *p = pattern, *t1, *t2;
+    const char *t1, *t2;
     const int nocase = flags & FNM_CASEFOLD;
     const int escape = !(flags & FNM_NOESCAPE);
 
@@ -211,7 +211,7 @@ range(
 	}
     }
 
-    return *test == '[' ? pattern : 0; /* treat incompleted '[' as ordinary character */
+    return 0;
 }
 
 #define ISDIRSEP(c) (pathname && isdirsep(c))
