@@ -236,7 +236,7 @@ class TestLogDevice < Test::Unit::TestCase
     logdev = d(STDERR)
     assert_equal(STDERR, logdev.dev)
     assert_nil(logdev.filename)
-    assert_raises(ArgumentError) do
+    assert_raises(TypeError) do
       d(nil)
     end
     #

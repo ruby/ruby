@@ -3,11 +3,11 @@
 #
 # Simple logging utility.
 #
-# Author:: NAKAMURA, Hiroshi
+# Author:: NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 # Documentation:: NAKAMURA, Hiroshi and Gavin Sinclair
 # License::
-#   This module is copyrighted free software by NAKAMURA, Hiroshi.
-#   You can redistribute it and/or modify it under the same terms as Ruby.
+#   You can redistribute it and/or modify it under the same terms of Ruby's
+#   license; either the dual license version in 2003, or any later version.
 # Revision:: $Id$
 #
 # See Logger for documentation.
@@ -104,7 +104,7 @@
 #      #   file = open('foo.log', File::WRONLY | File::APPEND | File::CREAT)
 #      logger = Logger.new(file)
 #
-# 4. Create a logger which ages logfile onmce it reaches a certain size.  Leave
+# 4. Create a logger which ages logfile once it reaches a certain size.  Leave
 #    10 "old log files" and each file is about 1,024,000 bytes.
 #
 #      logger = Logger.new('foo.log', 10, 1024000)
@@ -175,13 +175,11 @@
 # have some luck hacking the Format constant.
 #
 class Logger
-  # :stopdoc:
   /: (\S+),v (\S+)/ =~ %q$Id$
   ProgName = "#{$1}/#{$2}"
 
   class Error < RuntimeError; end
   class ShiftingError < Error; end
-  # :startdoc:
 
   # Logging severity.
   module Severity
@@ -291,8 +289,8 @@ class Logger
   # #error, and #fatal.
   #
   # <b>Message format</b>: +message+ can be any object, but it has to be
-  # converted to a String in order to log it.  Generally, +to_str+ is used (so
-  # a String object goes through unchanged).  Failing that, +inspect+ is used.
+  # converted to a String in order to log it.  Generally, +inspect+ is used
+  # if the given object is not a String.
   # A special case is an +Exception+ object, which will be printed in detail,
   # including message, class, and backtrace.  See #msg2str for the
   # implementation if required.
@@ -421,7 +419,7 @@ class Logger
 private
 
   # Severity label for logging. (max 5 char)
-  SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY)    # :nodoc:
+  SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY)
 
   def format_severity(severity)
     SEV_LABEL[severity] || 'ANY'
@@ -435,21 +433,17 @@ private
     end
   end
 
-  Format = "%s, [%s#%d] %5s -- %s: %s\n"   # :nodoc:
+  Format = "%s, [%s#%d] %5s -- %s: %s\n"
   def format_message(severity, timestamp, msg, progname)
     Format % [severity[0..0], timestamp, $$, severity, progname, msg]
   end
 
-  #
-  # Converts +msg+ into a String for the sake of emitting a log message.
-  #
-  def msg2str(msg) # :doc:
-    if msg.is_a?(::String)
+  def msg2str(msg)
+    case msg
+    when ::String
       msg
-    elsif msg.is_a?(::Exception)
+    when ::Exception
       "#{ msg.message } (#{ msg.class })\n" << (msg.backtrace || []).join("\n")
-    elsif msg.respond_to?(:to_str)
-      msg.to_str
     else
       msg.inspect
     end
@@ -499,14 +493,12 @@ private
       @dev = @filename = @shift_age = @shift_size = nil
       if log.respond_to?(:write) and log.respond_to?(:close)
 	@dev = log
-      elsif log.is_a?(String)
+      else
 	@dev = open_logfile(log)
 	@dev.sync = true
 	@filename = log
 	@shift_age = opt[:shift_age] || 7
 	@shift_size = opt[:shift_size] || 1048576
-      else
-	raise ArgumentError.new("Wrong argument: #{ log } for log.")
       end
     end
 
@@ -622,7 +614,7 @@ private
     def eod(t)
       Time.mktime(t.year, t.month, t.mday, 23, 59, 59)
     end
-  end  # class LogDevice
+  end
 
 
   #
@@ -711,7 +703,6 @@ private
       set_log(logdev)
     end
 
-
     #
     # Set the logging threshold, just like <tt>Logger#level=</tt>.
     #
@@ -720,12 +711,10 @@ private
       @log.level = @level
     end
 
-  protected
-
     #
     # See Logger#add.  This application's +appname+ is used.
     #
-    def log(severity, message = nil, &block) # :doc:
+    def log(severity, message = nil, &block)
       @log.add(severity, message, @appname, &block) if @log
     end
 
@@ -734,6 +723,5 @@ private
     def run
       raise RuntimeError.new('Method run must be defined in the derived class.')
     end
-
-  end  # class Application
-end  # class Logger
+  end
+end

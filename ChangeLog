@@ -1,3 +1,14 @@
+Tue Jan  6 20:51:10 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/logger.rb(Logger#msg2str): no special treatment for the object
+	  which responds to :to_str.
+
+	* lib/logger.rb(LogDevice#initialize): remove type checking if the
+	  given object is a String.  Kernel.open handles it correctly.
+
+	* test/logger/test_logger.rb: follow above change (ArgumentError ->
+	  TypeError.)
+
 Tue Jan  6 14:53:14 2004  Dave Thomas  <dave@pragprog.com>
 
 	* bin/ri: split out the display side, making it pluggable. Added
